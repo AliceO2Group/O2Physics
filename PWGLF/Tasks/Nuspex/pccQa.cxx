@@ -28,25 +28,11 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/O2DatabasePDGPlugin.h>
-
-#include <iostream>
-
-// Workaround local
-/* void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
-{
-  workflowOptions.push_back(
-    {"doMC",
-     o2::framework::VariantType::Bool,
-     false,
-     {"Use MC info"}}
-  );
-} */
-
-#include "Framework/Logger.h"
 #include <Framework/runDataProcessing.h>
 
 #include <TMCProcess.h>
 
+#include <iostream>
 #include <vector>
 
 using namespace o2;
@@ -85,29 +71,8 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{adaptAnalysisTask<PccQa>(cfgc)};
 }
 
-// Workaround local:
-/* WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  const bool doMC = cfgc.options().get<bool>("doMC");
-
-  LOGP(info, "doMC = {}", static_cast<bool>(doMC));
-
-  SetDefaultProcesses processes;
-  processes.map = {
-    {"processData", !doMC},
-    {"processMC", doMC}
-  };
-
-  return WorkflowSpec{
-    adaptAnalysisTask<PccQa>(cfgc, processes)
-  };
-} */
-
 void PccQa::init(InitContext const&)
 {
-
-  LOGP(info, "processData = {}", static_cast<bool>(doprocessData));
-  LOGP(info, "processMC   = {}", static_cast<bool>(doprocessMC));
 
   histos.add("eventCounter", "", kTH1D, {{1, 0.5, 1.5}});
   const AxisSpec dcaAxis = {1000, -1., 1., "#it{DCA}_{xy}", "dca"};
@@ -152,13 +117,10 @@ void PccQa::init(InitContext const&)
 
 void PccQa::processData(CollisionTableData::iterator const& collision, TrackTableData const& tracks)
 {
-  std::cout << "using processData function:  " << '\n';
   processMeas<false>(collision, tracks);
 }
 void PccQa::processMC(CollisionTableMCTrue::iterator const&, TrackTableMC const& tracks, CollisionTableMC const& collisions, ParticleTableMC const&)
 {
-
-  std::cout << "using processMC function:  " << '\n';
 
   for (const auto& collision : collisions) {
     auto curTracks = tracks.sliceBy(perCollision, collision.globalIndex());

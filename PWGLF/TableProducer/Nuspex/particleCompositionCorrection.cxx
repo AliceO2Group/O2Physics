@@ -119,43 +119,31 @@ void ParticleCompositionCorrection::init(InitContext const&)
     const int nBinsMult = maxMult + 1;
     const AxisSpec multAxis = {nBinsMult, -0.5, nBinsMult - 0.5, "#it{N}_{ch}", "mult"};
 
-    // Multiplicity distributions: fiducial vs INELg0
     histos.add("multDist_INELg0", "", kTH1D, {multAxis});
     histos.add("multDist_fid", "", kTH1D, {multAxis});
     histos.add("multDist_fidVsINELg0", "", kTH2D, {multAxis, multAxis});
 
-    // Fractions data 1D
-    // histos.add("frac/data/pion", "", kTProfile, {ptAxis});
     histos.add("frac/data/kaon", "", kTProfile, {ptAxis});
     histos.add("frac/data/proton", "", kTProfile, {ptAxis});
     histos.add("frac/data/sigma", "", kTProfile, {ptAxis});
 
-    // Fractions data 2D
-    // histos.add("frac/data/pion_mult", "", kTProfile2D, {multAxis, ptAxis});
     histos.add("frac/data/kaon_mult", "", kTProfile2D, {multAxis, ptAxis});
     histos.add("frac/data/proton_mult", "", kTProfile2D, {multAxis, ptAxis});
     histos.add("frac/data/sigma_mult", "", kTProfile2D, {multAxis, ptAxis});
 
-    // Fractions MC
     histos.addClone("frac/data/", "frac/mc/");
 
-    // Weights Data / MC 1D
-    // histos.add("weight/pion", "", kTProfile, {ptAxis});
     histos.add("weight/kaon", "", kTProfile, {ptAxis});
     histos.add("weight/proton", "", kTProfile, {ptAxis});
     histos.add("weight/sigma", "", kTProfile, {ptAxis});
 
-    // Weights Data / MC 2D
-    // histos.add("weight/pion_mult", "", kTProfile2D, {multAxis,ptAxis});
     histos.add("weight/kaon_mult", "", kTProfile2D, {multAxis, ptAxis});
     histos.add("weight/proton_mult", "", kTProfile2D, {multAxis, ptAxis});
     histos.add("weight/sigma_mult", "", kTProfile2D, {multAxis, ptAxis});
 
-    // Weights Secondaries 1D
     histos.add("weight/secDec", "", kTProfile, {ptAxis});
     histos.add("weight/secMat", "", kTProfile, {ptAxis});
 
-    // Weights Secondaries 2D
     histos.add("weight/secDec_mult", "", kTProfile2D, {multAxis, ptAxis});
     histos.add("weight/secMat_mult", "", kTProfile2D, {multAxis, ptAxis});
   }
@@ -176,10 +164,7 @@ std::tuple<float, float, float> ParticleCompositionCorrection::getWeights(aod::M
     auto absPDGCode = std::abs(particle.pdgCode());
     // translate abs PDG code to PID variable of neural networks (0: pion, 1: kaon, 2: proton, 3: sigma)
 
-    // std::cout << "absPDGCode:  " << absPDGCode << '\n';
-
     if (absPDGCode == PDG_t::kPiPlus || absPDGCode == PDG_t::kPi0) {
-      // std::cout << "same PDG code as Pi +- (" << PDG_t::kPiPlus  <<") or Pi0 (" << PDG_t::kPi0  <<")--> skipping  " << '\n';
       return noWeights;
     }
 
@@ -215,14 +200,6 @@ std::tuple<float, float, float> ParticleCompositionCorrection::getWeights(aod::M
         storedWeights[particle.index()] = weights;
       }
       if (enableQAHistos && particle.isPhysicalPrimary() && std::abs(particle.eta()) < 0.8) { // o2-linter: disable=magic-number (usual range of charged-partilce measurements)
-        /* if (iterMapPID->first == PDG_t::kPiPlus) {
-          histos.fill(HIST("frac/data/pion"), pt, fracData);
-          histos.fill(HIST("frac/mc/pion"), pt, fracMC);
-          histos.fill(HIST("frac/data/pion_mult"), dNdEta, pt, fracData);
-          histos.fill(HIST("frac/mc/pion_mult"), dNdEta, pt, fracMC);
-          histos.fill(HIST("weight/pion"), pt, weight);
-          histos.fill(HIST("weight/pion_mult"), dNdEta, pt, weight);
-        } */
         if (iterMapPID->first == PDG_t::kKPlus) {
           histos.fill(HIST("frac/data/kaon"), pt, fracData);
           histos.fill(HIST("frac/mc/kaon"), pt, fracMC);
@@ -296,7 +273,7 @@ void ParticleCompositionCorrection::process(aod::McCollisions::iterator const&, 
     if (!pdgParticle || pdgParticle->Charge() == 0.) {
       continue;
     }
-    if (std::abs(particle.eta()) >= 0.8) { // o2-linter: disable=magic-number (particle density at mid-rapidity)
+    if (std::abs(particle.eta()) >= etaCut) { 
       continue;
     }
     if (std::abs(particle.eta()) < 0.5) { // o2-linter: disable=magic-number (particle density at mid-rapidity)
