@@ -1179,7 +1179,6 @@ struct HfTaskCharmHadronsTrackFemtoDream {
                          o2::aod::FDExtMCParticles const&,
                          FilteredCharmMcCand3Prongs const&)
   {
-
     for (const auto& col : cols) {
       eventHisto.fillQA(col);
       auto* partitionTrk1Selected = &partitionMcTrk1;
