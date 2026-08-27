@@ -88,9 +88,9 @@ struct kstarInOO {
   Configurable<bool> cfgTrackGlobalWoDCATrack{"cfgTrackGlobalWoDCATrack", true, "Global track selection without DCA"};
   // kQualityTracks (kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits) | kInAcceptanceTracks (kPtRange | kEtaRange)
   // TPC
-  Configurable<double> cfgTrackFindableTPCClusters{"cfgTrackFindableTPCClusters", 50, "nFindable TPC Clusters"};
+  Configurable<double> cfgTrackFindableTPCClusters{"cfgTrackFindableTPCClusters", 0, "nFindable TPC Clusters"}; // origin = 50
   Configurable<double> cfgTrackTPCCrossedRows{"cfgTrackTPCCrossedRows", 70, "nCrossed TPC Rows"};
-  Configurable<double> cfgTrackRowsOverFindable{"cfgTrackRowsOverFindable", 1.2, "nRowsOverFindable TPC CLusters"};
+  Configurable<double> cfgTrackRowsOverFindable{"cfgTrackRowsOverFindable", 0, "nRowsOverFindable TPC CLusters"}; // origin = 1.2
   Configurable<double> cfgTrackTPCChi2{"cfgTrackTPCChi2", 4.0, "nTPC Chi2 per Cluster"};
 
   // ITS
@@ -120,7 +120,6 @@ struct kstarInOO {
   // MCGen
   Configurable<bool> cfgForceGenReco{"cfgForceGenReco", false, "Only consider events which are reconstructed (neglect event-loss)"};
   Configurable<bool> cfgReqMcEffPID{"cfgReqMcEffPID", false, "Request McEfficiency PID"};
-  Configurable<bool> cfgReqMcEffTrackQA{"cfgRecMcEffTrackQA", false, "Enable Jet Cut on Trig"};
 
   // Pair
   Configurable<int> cfgMinvNBins{"cfgMinvNBins", 300, "Number of bins for Minv axis"};
@@ -258,8 +257,6 @@ struct kstarInOO {
       histos.add("mcpjet_eta", "MC particle-level Jet Eta", kTH1F, {{100, -1.0, 1.0}});
       histos.add("mcpjet_phi", "MC particle-level Jet Phi", kTH1F, {{80, -1.0, 7.0}});
 
-      histos.add("nJet_6_8", "MC particle-level nJet pT 6 < jet pT < 8 (GeV/c)", kTH1F, {{2000, 0., 100.}});
-
       histos.add("Gen_KstarPt_All_BR", "Generated K*0 All pT (GeV/c)", kTH1F, {{2000, 0., 100.}});
       histos.add("Gen_Kstar_BR", "Generated K*0 BR", kTH1F, {minvAxis});
       histos.add("Gen_KstarPt_BR", "Generated K*0 pT (GeV/c)", kTH1F, {{2000, 0., 100.}});
@@ -268,6 +265,7 @@ struct kstarInOO {
       histos.add("dR_taggedjet_pion", "dR between tagged jet and pion wo pT cut", {HistType::kTH2F, {{100, 0., 3.0}, {150, 0., 30.}}});
       histos.add("dR_taggedjet_all", "dR between tagged jet and kpi", {HistType::kTH2F, {{100, 0., 3.0}, {150, 0., 30.}}});
       histos.add("dR_taggedjet_all_6_8", "dR between tagged jet and kpi 6 < jet pT < 8", {HistType::kTH2F, {{100, 0., 3.0}, {150, 0., 30.}}});
+      histos.add("dR_taggedjet_all_8_12", "dR between tagged jet and kpi 8 < jet pT < 12", {HistType::kTH2F, {{100, 0., 3.0}, {150, 0., 30.}}});
 
       histos.add("dR_kstar_pion", "dR between kstar and pion", {HistType::kTH2F, {{100, 0., 3.0}, {150, 0., 30.}}});
       histos.add("dR_kstar_kaon", "dR between kstar and kaon", {HistType::kTH2F, {{100, 0., 3.0}, {150, 0., 30.}}});
@@ -275,6 +273,7 @@ struct kstarInOO {
       histos.add("Kstar_pT_INJet_6_8", "K*0 pT Inside 6-8 Jet", kTH1F, {{1000, 0., 50.}});
       histos.add("Kstar_pT_INJet_8_10", "K*0 pT Inside 8-10 Jet", kTH1F, {{1000, 0., 50.}});
       histos.add("Kstar_pT_INJet_10_12", "K*0 pT Inside 10-12 Jet", kTH1F, {{1000, 0., 50.}});
+      histos.add("Kstar_pT_INJet_8_12", "K*0 pT Inside 8-12 Jet", kTH1F, {{1000, 0., 50.}});
 
       histos.add("JetpT_8to", "Jet pT 8 to", kTH1F, {{2000, 0., 100.}});
       histos.add("recoveredJetpT_6_8to8", "Recovered Jet pT 6-8 --> 8", kTH1F, {{2000, 0., 100.}});
@@ -336,7 +335,6 @@ struct kstarInOO {
 
       histos.add("hEffRecLowPtKstarDaughter", "EffRecLow Kstar daughter_pT (GeV/c)", kTH1F, {{800, 0., 40.}});
 
-      histos.add("hEffGen_pT", "EffGen_pT (GeV/c)", kTH1F, {{800, 0., 40.}});
       histos.add("hMotherPdg1", "hMotherPdg1", kTH1F, {{5000, 0., 5000.}});
       histos.add("hMotherPdg2", "hMotherPdg2", kTH1F, {{5000, 0., 5000.}});
     }
@@ -806,10 +804,10 @@ struct kstarInOO {
       return {};
     }
 
-    if (isMIDCut && isMIDPion(trk1, QA)) {
+    if (isMIDCut && isMIDPion(trk1, true)) {
       return {};
     }
-    if (isMIDCut && isMIDKaon(trk2, QA)) {
+    if (isMIDCut && isMIDKaon(trk2, true)) {
       return {};
     }
 
@@ -1316,11 +1314,11 @@ struct kstarInOO {
       }
       //////////////////////////////
       //////////////////////////////
-      if (cfgReqMcEffTrackQA) { // false, true
-        if (!trackSelection(trk1, true) || !trackSelection(trk2, false)) {
-          continue;
-        }
+
+      if (!trackSelection(trk1, true) || !trackSelection(trk2, false)) {
+        continue;
       }
+
       //////////////////////////////
       //////////////////////////////
 
@@ -1335,6 +1333,14 @@ struct kstarInOO {
       if (cfgJetMCHistos) {
         histos.fill(HIST("hEffRecTest3_pT"), lResonanceTest1.Pt());
       }
+
+      if (isMIDCut && isMIDPion(trk1, true)) {
+        continue;
+      }
+      if (isMIDCut && isMIDKaon(trk2, true)) {
+        continue;
+      }
+
       auto particle1 = trk1.mcParticle();
       auto particle2 = trk2.mcParticle();
       ////////////////////////////////////////////////////////////////////////
@@ -1894,12 +1900,6 @@ struct kstarInOO {
         continue;
       }
 
-      if (bestJet.Pt() > 6.0 && bestJet.Pt() < 8.0) {
-        if (cfgJetdRHistos) {
-          histos.fill(HIST("nJet_6_8"), bestJet.Pt());
-        }
-      }
-
       //==================
       // daughters
       double dR_kaon = 0;
@@ -1973,6 +1973,11 @@ struct kstarInOO {
           }
           if (bestJet.Pt() > 10.0 && bestJet.Pt() < 12.0) {
             histos.fill(HIST("Kstar_pT_INJet_10_12"), lResonance.Pt());
+          }
+          if (bestJet.Pt() > 8.0 && bestJet.Pt() < 12.0) {
+            histos.fill(HIST("dR_taggedjet_all_8_12"), dR_kaon, lResonance.Pt());
+            histos.fill(HIST("dR_taggedjet_all_8_12"), dR_pion, lResonance.Pt());
+            histos.fill(HIST("Kstar_pT_INJet_8_12"), lResonance.Pt());
           }
 
           // Daughters out of jets
