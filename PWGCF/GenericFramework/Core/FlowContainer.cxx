@@ -426,7 +426,6 @@ TH1D* FlowContainer::GetCorrXXVsPt(const char* order, double lminmulti, double l
   }
   if (lmaxmulti > lminmulti)
     maxm = fProf->GetXaxis()->FindBin(lmaxmulti - 0.001);
-  ProfileSubset* rhProfSub = new ProfileSubset(*fProf);
   TString l_name("");
   Ssiz_t l_pos = 0;
   while (fIDName.Tokenize(l_name, l_pos)) {
@@ -439,18 +438,15 @@ TH1D* FlowContainer::GetCorrXXVsPt(const char* order, double lminmulti, double l
       return nullptr;
     }
     const TString temporaryTag = Form("%s_%s_%.3f_%.3f", fIDName.Data(), order, lminmulti, lmaxmulti);
-    TProfile* profY = rhProfSub->ProfileY(Form("profY_%s", temporaryTag.Data()), minm, maxm);
+    TProfile* profY = fProf->ProfileY(Form("profY_%s", temporaryTag.Data()), minm, maxm);
     TH1D* histY = ProfToHist(profY);
     delete profY;
     TH1D* hist = new TH1D(Form("temphist_%s", temporaryTag.Data()), "temphist", fNbinsPt, fbinsPt);
     for (int ibin = 1; ibin <= hist->GetNbinsX(); ibin++) {
-      TString bLabel = rhProfSub->GetYaxis()->GetBinLabel(ibin + ybn1 - 1);
-      // hist->GetXaxis()->SetBinLabel(ibin, bLabel.Data());
       hist->SetBinContent(ibin, histY->GetBinContent(ibin + ybn1 - 1));
       hist->SetBinError(ibin, histY->GetBinError(ibin + ybn1 - 1));
     }
     delete histY;
-    delete rhProfSub;
     return hist;
   }
   return nullptr;
