@@ -38,7 +38,6 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 #include <MCHTracking/TrackExtrap.h>
-#include <MathUtils/Utils.h>
 #include <ReconstructionDataFormats/GlobalFwdTrack.h>
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
@@ -47,6 +46,7 @@
 #include <TH1.h>
 
 #include <algorithm>
+#include <cfloat>
 #include <cmath>
 #include <map>
 #include <memory>
@@ -56,7 +56,9 @@
 #include <utility>
 #include <vector>
 
-#include <math.h>
+#include <stdint.h>
+
+// #include <math.h>
 
 struct globalDimuonFilter {
   o2::framework::Produces<o2::aod::GlobalDimuonFilters> tags;
@@ -186,7 +188,7 @@ struct globalDimuonFilter {
     }
     o2::mch::TrackExtrap::setField();
     const double centerMFT[3] = {0, 0, -61.4};
-    o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
+    o2::field::MagneticField* field = dynamic_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
     mBz = field->getBz(centerMFT); // Get field at centre of MFT
     LOGF(info, "Bz at center of MFT = %f kZG", mBz);
 
@@ -400,13 +402,13 @@ struct globalDimuonFilter {
     float rAtAbsorberEnd = fwdtrack.rAtAbsorberEnd(); // this works only for GlobalMuonTrack
     int nClustersMFT = mfttrack.nClusters();
     int ndf_mchmft = 2.f * (mchtrack.nClusters() + nClustersMFT) - 5.f;
-    float chi2 = fwdtrack.chi2() / ndf_mchmft;
+    float chi2 = fwdtrack.chi2() / static_cast<float>(ndf_mchmft);
     if (chi2 < 0.f || glMuonCutGroup.maxChi2 < chi2) {
       return false;
     }
 
     int ndf_mft = 2.f * nClustersMFT - 5.f;
-    float chi2mft = mfttrack.chi2() / ndf_mft;
+    float chi2mft = mfttrack.chi2() / static_cast<float>(ndf_mft);
     if (chi2mft < 0.f || glMuonCutGroup.maxChi2MFT < chi2mft) {
       return false;
     }
@@ -547,13 +549,13 @@ struct globalDimuonFilter {
 
     int nClustersMFT = mfttrack.nClusters();
     int ndf_mchmft = 2.f * (mchtrack.nClusters() + nClustersMFT) - 5.f;
-    float chi2 = fwdtrack.chi2() / ndf_mchmft;
+    float chi2 = fwdtrack.chi2() / static_cast<float>(ndf_mchmft);
     if (tagMuonCutGroup.maxChi2 < chi2) {
       return false;
     }
 
     int ndf_mft = 2.f * nClustersMFT - 5.f;
-    float chi2mft = mfttrack.chi2() / ndf_mft;
+    float chi2mft = mfttrack.chi2() / static_cast<float>(ndf_mft);
     if (tagMuonCutGroup.maxChi2MFT < chi2mft) {
       return false;
     }
@@ -635,13 +637,13 @@ struct globalDimuonFilter {
     nclsMCH = mchtrack.nClusters();
     nclsMFT = mfttrack.nClusters();
     int ndf_mchmft = 2.f * (nclsMCH + nclsMFT) - 5.f;
-    chi2 = fwdtrack.chi2() / ndf_mchmft;
+    chi2 = fwdtrack.chi2() / static_cast<float>(ndf_mchmft);
     if (probeMuonCutGroup.maxChi2 < chi2) {
       return false;
     }
 
     int ndf_mft = 2.f * nclsMFT - 5.f;
-    chi2mft = mfttrack.chi2() / ndf_mft;
+    chi2mft = mfttrack.chi2() / static_cast<float>(ndf_mft);
     if (probeMuonCutGroup.maxChi2MFT < chi2mft) {
       return false;
     }
