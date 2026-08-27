@@ -134,6 +134,10 @@ DECLARE_SOA_COLUMN(PidPion4, pidPion4, float);
 DECLARE_SOA_COLUMN(PidElectron4, pidElectron4, float);
 DECLARE_SOA_COLUMN(PidKaon4, pidKaon4, float);
 DECLARE_SOA_COLUMN(PidProton4, pidProton4, float);
+DECLARE_SOA_COLUMN(HasTof1, hasTof1, int);
+DECLARE_SOA_COLUMN(HasTof2, hasTof2, int);
+DECLARE_SOA_COLUMN(HasTof3, hasTof3, int);
+DECLARE_SOA_COLUMN(HasTof4, hasTof4, int);
 } // namespace datarows
 
 DECLARE_SOA_TABLE(TwoTrkTable, "AOD", "TWOTRKTABLE",
@@ -144,7 +148,8 @@ DECLARE_SOA_TABLE(TwoTrkTable, "AOD", "TWOTRKTABLE",
                   datarows::ChannelsFT0A, datarows::ChannelsFT0C, datarows::ChannelsFV0A, datarows::ChannelsFDDA, datarows::ChannelsFDDC,
                   datarows::EnergyCommonZNA, datarows::EnergyCommonZNC, datarows::TimeZNA, datarows::TimeZNC,
                   datarows::Pt1, datarows::Eta1, datarows::Phi1, datarows::Q1, datarows::PidPion1, datarows::PidElectron1, datarows::PidKaon1, datarows::PidProton1,
-                  datarows::Pt2, datarows::Eta2, datarows::Phi2, datarows::Q2, datarows::PidPion2, datarows::PidElectron2, datarows::PidKaon2, datarows::PidProton2);
+                  datarows::Pt2, datarows::Eta2, datarows::Phi2, datarows::Q2, datarows::PidPion2, datarows::PidElectron2, datarows::PidKaon2, datarows::PidProton2,
+                  datarows::HasTof1, datarows::HasTof2);
 DECLARE_SOA_TABLE(FourTrkTable, "AOD", "FOURTRKTABLE",
                   datarows::RunNumber, datarows::PosX, datarows::PosY, datarows::PosZ, datarows::Chi2,
                   datarows::LocalBC, datarows::LocalTF, datarows::LocalROF, datarows::UpcFlag,
@@ -155,7 +160,8 @@ DECLARE_SOA_TABLE(FourTrkTable, "AOD", "FOURTRKTABLE",
                   datarows::Pt1, datarows::Eta1, datarows::Phi1, datarows::Q1, datarows::PidPion1, datarows::PidElectron1, datarows::PidKaon1, datarows::PidProton1,
                   datarows::Pt2, datarows::Eta2, datarows::Phi2, datarows::Q2, datarows::PidPion2, datarows::PidElectron2, datarows::PidKaon2, datarows::PidProton2,
                   datarows::Pt3, datarows::Eta3, datarows::Phi3, datarows::Q3, datarows::PidPion3, datarows::PidElectron3, datarows::PidKaon3, datarows::PidProton3,
-                  datarows::Pt4, datarows::Eta4, datarows::Phi4, datarows::Q4, datarows::PidPion4, datarows::PidElectron4, datarows::PidKaon4, datarows::PidProton4);
+                  datarows::Pt4, datarows::Eta4, datarows::Phi4, datarows::Q4, datarows::PidPion4, datarows::PidElectron4, datarows::PidKaon4, datarows::PidProton4,
+                  datarows::HasTof1, datarows::HasTof2, datarows::HasTof3, datarows::HasTof4);
 } // namespace o2::aod
 
 struct UpcVmRof {
@@ -204,6 +210,8 @@ struct UpcVmRof {
   // PbPb triggers: 1ZNC, FV0CH+FT0VTX, OO: 1ZNC, FT0CE+FT0VTX
   static constexpr int Ft0VtxIdx = 2;
   static constexpr int Ft0CeIdx = 4;
+  static constexpr int Ft0AIdx = 0;
+  static constexpr int Ft0CIdx = 1;
 
   // number of tracks for the selected event topologies
   static constexpr int NTrksTwoBody = 2;
@@ -390,6 +398,10 @@ struct UpcVmRof {
     // trigger info per bcb
     bcTH2Pointers[Form("bc/%d/ft0Vtx_bcb_H", run)] = bcTH2Registry.add<TH2>(Form("bc/%d/ft0Vtx_bcb_H", run), "ft0Vtx triggers; TF; bc-B idx; Counter",
                                                                             {HistType::kTH2F, {{nBinsTF, -0.5, static_cast<double>(lastTFinHisto) - 0.5}, {nbcB, -0.5, nbcB - 0.5}}});
+    bcTH2Pointers[Form("bc/%d/ft0CnotA_bcb_H", run)] = bcTH2Registry.add<TH2>(Form("bc/%d/ft0CnotA_bcb_H", run), "ft0CnotA triggers; TF; bc-B idx; Counter",
+                                                                              {HistType::kTH2F, {{nBinsTF, -0.5, static_cast<double>(lastTFinHisto) - 0.5}, {nbcB, -0.5, nbcB - 0.5}}});
+    bcTH2Pointers[Form("bc/%d/ft0AnotC_bcb_H", run)] = bcTH2Registry.add<TH2>(Form("bc/%d/ft0AnotC_bcb_H", run), "ft0AnotC triggers; TF; bc-B idx; Counter",
+                                                                              {HistType::kTH2F, {{nBinsTF, -0.5, static_cast<double>(lastTFinHisto) - 0.5}, {nbcB, -0.5, nbcB - 0.5}}});
     bcTH2Pointers[Form("bc/%d/ft0VtxCe_bcb_H", run)] = bcTH2Registry.add<TH2>(Form("bc/%d/ft0VtxCe_bcb_H", run), "ft0Vtx triggers; TF; bc-B idx; Counter",
                                                                               {HistType::kTH2F, {{nBinsTF, -0.5, static_cast<double>(lastTFinHisto) - 0.5}, {nbcB, -0.5, nbcB - 0.5}}});
   } // addBcHistos
@@ -491,7 +503,15 @@ struct UpcVmRof {
       // get triggers
       std::bitset<64> mask = bc.inputMask();
       bool ft0vtxTrg = mask[Ft0VtxIdx];
+      bool ft0aTrg = mask[Ft0AIdx];
+      bool ft0cTrg = mask[Ft0CIdx];
       bool ft0ceTrg = mask[Ft0CeIdx];
+      if (ft0aTrg && !ft0cTrg) {
+        bcTH2Pointers[Form("bc/%d/ft0AnotC_bcb_H", runNumberBc)]->Fill(thisTF, bcbIdx[thisBC]);
+      }
+      if (!ft0aTrg && ft0cTrg) {
+        bcTH2Pointers[Form("bc/%d/ft0CnotA_bcb_H", runNumberBc)]->Fill(thisTF, bcbIdx[thisBC]);
+      }
       if (ft0vtxTrg) {
         bcTH2Pointers[Form("bc/%d/ft0Vtx_H", runNumberBc)]->Fill(thisTF, thisROF);
         bcTH2Pointers[Form("bc/%d/ft0Vtx_bcb_H", runNumberBc)]->Fill(thisTF, bcbIdx[thisBC]);
@@ -745,7 +765,14 @@ struct UpcVmRof {
 
     // fill output table
     const int recoFlag = ((col.flags() & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) != 0) ? upcReco : stdReco;
+    int tof[4] = {0, 0, 0, 0};
     if (isTwoBody) {
+      if (selTrks[0].hasTOF()) {
+        tof[0] = 1;
+      }
+      if (selTrks[1].hasTOF()) {
+        tof[1] = 1;
+      }
       colTH1Pointers[Form("col/%d/twoTrkTF_H", runNumberCol)]->Fill(thisTF);
       twoTrkTable(runNumberCol, col.posX(), col.posY(), col.posZ(), col.chi2(), thisBC, thisTF, thisROF, recoFlag,
                   aFT0A, aFT0C, aFV0A, aFDDA, aFDDC, tFT0A, tFT0C, tFV0A, tFDDA, tFDDC, nFT0A, nFT0C, nFV0A, nFDDA, nFDDC,
@@ -753,9 +780,22 @@ struct UpcVmRof {
                   selTrks[0].pt(), selTrks[0].eta(), selTrks[0].phi(), selTrks[0].sign(),
                   selTrks[0].tpcNSigmaPi(), selTrks[0].tpcNSigmaEl(), selTrks[0].tpcNSigmaKa(), selTrks[0].tpcNSigmaPr(),
                   selTrks[1].pt(), selTrks[1].eta(), selTrks[1].phi(), selTrks[1].sign(),
-                  selTrks[1].tpcNSigmaPi(), selTrks[1].tpcNSigmaEl(), selTrks[1].tpcNSigmaKa(), selTrks[1].tpcNSigmaPr());
+                  selTrks[1].tpcNSigmaPi(), selTrks[1].tpcNSigmaEl(), selTrks[1].tpcNSigmaKa(), selTrks[1].tpcNSigmaPr(),
+                  tof[0], tof[1]);
     }
     if (isFourBody) {
+      if (selTrks[0].hasTOF()) {
+        tof[0] = 1;
+      }
+      if (selTrks[1].hasTOF()) {
+        tof[1] = 1;
+      }
+      if (selTrks[2].hasTOF()) {
+        tof[2] = 1;
+      }
+      if (selTrks[3].hasTOF()) {
+        tof[3] = 1;
+      }
       colTH1Pointers[Form("col/%d/fourTrkTF_H", runNumberCol)]->Fill(thisTF);
       fourTrkTable(runNumberCol, col.posX(), col.posY(), col.posZ(), col.chi2(), thisBC, thisTF, thisROF, recoFlag,
                    aFT0A, aFT0C, aFV0A, aFDDA, aFDDC, tFT0A, tFT0C, tFV0A, tFDDA, tFDDC, nFT0A, nFT0C, nFV0A, nFDDA, nFDDC,
@@ -767,7 +807,8 @@ struct UpcVmRof {
                    selTrks[2].pt(), selTrks[2].eta(), selTrks[2].phi(), selTrks[2].sign(),
                    selTrks[2].tpcNSigmaPi(), selTrks[2].tpcNSigmaEl(), selTrks[2].tpcNSigmaKa(), selTrks[2].tpcNSigmaPr(),
                    selTrks[3].pt(), selTrks[3].eta(), selTrks[3].phi(), selTrks[3].sign(),
-                   selTrks[3].tpcNSigmaPi(), selTrks[3].tpcNSigmaEl(), selTrks[3].tpcNSigmaKa(), selTrks[3].tpcNSigmaPr());
+                   selTrks[3].tpcNSigmaPi(), selTrks[3].tpcNSigmaEl(), selTrks[3].tpcNSigmaKa(), selTrks[3].tpcNSigmaPr(),
+                   tof[0], tof[1], tof[2], tof[3]);
     }
 
   } // end processCol

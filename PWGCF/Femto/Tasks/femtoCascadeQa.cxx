@@ -41,7 +41,7 @@ using namespace o2::analysis::femto;
 
 struct FemtoCascadeQa {
 
-  using FemtoCollisions = o2::soa::Join<o2::aod::FCols, o2::aod::FColMasks, o2::aod::FColPos, o2::aod::FColSphericities, o2::aod::FColMults>;
+  using FemtoCollisions = o2::soa::Join<o2::aod::FCols, o2::aod::FColMasks, o2::aod::FColPos, o2::aod::FColSphericities, o2::aod::FColMults, o2::aod::FColCents>;
   using FilteredFemtoCollisions = o2::soa::Filtered<FemtoCollisions>;
   using FilteredFemtoCollision = FilteredFemtoCollisions::iterator;
 
@@ -195,7 +195,7 @@ struct FemtoCascadeQa {
       if (!xiCleaner.isClean(xi, mcParticles, mcMothers, mcPartonicMothers)) {
         continue;
       }
-      xiHistManager.fill<modes::Mode::kReco_Qa_Mc>(xi, tracks, mcParticles, mcMothers, mcPartonicMothers);
+      xiHistManager.fill<modes::Mode::kReco_Qa_Mc>(xi, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
   PROCESS_SWITCH(FemtoCascadeQa, processXiMc, "Process Xis with MC information", false);
@@ -224,7 +224,7 @@ struct FemtoCascadeQa {
       if (!omegaCleaner.isClean(omega, mcParticles, mcMothers, mcPartonicMothers)) {
         continue;
       }
-      omegaHistManager.fill<modes::Mode::kReco_Qa_Mc>(omega, tracks, mcParticles, mcMothers, mcPartonicMothers);
+      omegaHistManager.fill<modes::Mode::kReco_Qa_Mc>(omega, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
   PROCESS_SWITCH(FemtoCascadeQa, processOmegaMc, "Process Omegas with MC information", false);

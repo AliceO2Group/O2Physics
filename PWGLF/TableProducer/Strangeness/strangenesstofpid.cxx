@@ -27,6 +27,7 @@
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
+#include "Common/Core/PID/PIDTOFParamService.h"
 #include "Common/Core/TableHelper.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
@@ -51,7 +52,6 @@
 #include <Framework/runDataProcessing.h>
 #include <GPU/GPUROOTCartesianFwd.h>
 #include <MathUtils/Primitive2D.h>
-#include <PID/PIDTOFParamService.h>
 #include <ReconstructionDataFormats/PID.h>
 #include <ReconstructionDataFormats/Track.h>
 #include <ReconstructionDataFormats/TrackLTIntegral.h>
@@ -736,6 +736,8 @@ struct strangenesstofpid {
             if (!hSigmaPosOmPi || !hSigmaPosOmPr || !hSigmaNegOmPi || !hSigmaNegOmPr || !hSigmaBachOmKa)
               LOG(info) << "Problems finding omega sigma histograms!";
           }
+        } else {
+          LOG(warn) << "Problems finding calibration objects for run " << runNumber << " at " << ccdbConfigurations.nSigmaPath << ". Proceed without it";
         }
       }
     }
@@ -2112,7 +2114,7 @@ struct strangenesstofpid {
 
           nTof.tofExpMom = nTofExt.tofExpMom();
           nTof.tofEvTime = reassociateTracks.value ? collision.eventTime() : nTofExt.tofEvTime();
-          nTof.tofEvTimeErr = reassociateTracks.value ? collision.eventTime() : nTofExt.tofEvTimeErr();
+          nTof.tofEvTimeErr = reassociateTracks.value ? collision.eventTimeErr() : nTofExt.tofEvTimeErr();
           // nTof.tofEvTimeErr = nTofExt.tofEvTimeErr();
           nTof.tofSignal = nTofExt.tofSignal() + (doBCshift.value ? deltaTimeBc : 0.0f);
           nTof.length = nTofExt.length();

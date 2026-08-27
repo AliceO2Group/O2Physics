@@ -768,6 +768,13 @@ struct HfTaskCharmHadronsTrackFemtoDream {
 
       timeStamp = part.timeStamp();
 
+      int charmHadMc = 0;
+      int originType = 0;
+      if constexpr (IsMc) {
+        charmHadMc = part.flagMc();
+        originType = part.originMcRec();
+      }
+
       if constexpr (Channel == DecayChannel::DplusToPiKPi || Channel == DecayChannel::LcToPKPi) {
 
         rowFemtoResultCharm3Prong(
@@ -783,7 +790,9 @@ struct HfTaskCharmHadronsTrackFemtoDream {
           part.charge(),
           part.bdtBkg(),
           part.bdtPrompt(),
-          part.bdtFD());
+          part.bdtFD(),
+          charmHadMc,
+          originType);
       } else if constexpr (Channel == DecayChannel::XicToXiPiPi) {
         rowFemtoResultCharm3Prong(
           col.globalIndex(),
@@ -798,7 +807,9 @@ struct HfTaskCharmHadronsTrackFemtoDream {
           part.charge(),
           part.bdtBkg(),
           part.bdtPrompt(),
-          part.bdtFD());
+          part.bdtFD(),
+          charmHadMc,
+          originType);
       } else if constexpr (Channel == DecayChannel::D0ToPiK) {
         rowFemtoResultCharm2Prong(
           col.globalIndex(),
@@ -812,7 +823,9 @@ struct HfTaskCharmHadronsTrackFemtoDream {
           part.charge(),
           part.bdtBkg(),
           part.bdtPrompt(),
-          part.bdtFD());
+          part.bdtFD(),
+          charmHadMc,
+          originType);
       } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
         float invMassD0 = getCharmHadronMass<Channel>(part, true);
         rowFemtoResultCharmDstar(
@@ -829,7 +842,9 @@ struct HfTaskCharmHadronsTrackFemtoDream {
           part.charge(),
           part.bdtBkg(),
           part.bdtPrompt(),
-          part.bdtFD());
+          part.bdtFD(),
+          charmHadMc,
+          originType);
       }
     }
     // ---- Fill Track Table ----

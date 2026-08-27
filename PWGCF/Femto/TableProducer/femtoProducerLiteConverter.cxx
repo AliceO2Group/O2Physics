@@ -26,6 +26,7 @@ using namespace o2::analysis::femto;
 
 struct FemtoProducerLiteConverter {
   o2::framework::Produces<o2::aod::FCols> producedCols;
+  o2::framework::Produces<o2::aod::FColShapes> producedColShapes;
   o2::framework::Produces<o2::aod::FTracks> producedTracks;
   o2::framework::Produces<o2::aod::FLambdas> producedLambdas;
   o2::framework::Produces<o2::aod::FK0shorts> producedK0shorts;
@@ -36,6 +37,9 @@ struct FemtoProducerLiteConverter {
 
   void init(o2::framework::InitContext&)
   {
+    if (!doprocessLiteCols) {
+      LOG(fatal) << "At least processLiteCols needs to be enabled, otherwise the collision index points no where!";
+    }
   }
 
   void processLiteCols(o2::aod::FLiteCols::iterator const& liteCol)
@@ -46,6 +50,13 @@ struct FemtoProducerLiteConverter {
                  liteCol.magField());
   }
   PROCESS_SWITCH(FemtoProducerLiteConverter, processLiteCols, "Convert FLiteCols to FCols", true);
+
+  void processLiteColShapes(o2::aod::FLiteColShapes::iterator const& liteColShape)
+  {
+    producedColShapes(liteColShape.qvec(),
+                      liteColShape.eventPlaneAngle());
+  }
+  PROCESS_SWITCH(FemtoProducerLiteConverter, processLiteColShapes, "Convert FLiteColShapes to FColShapes", false);
 
   void processLiteTracks(o2::aod::FLiteTracks::iterator const& liteTrack)
   {

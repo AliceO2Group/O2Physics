@@ -56,7 +56,7 @@ using namespace o2::framework::expressions;
 using namespace o2::constants::math;
 
 // define the filtered collisions and tracks
-#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
+#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, (DEFAULT), (HELP)}; // NOLINT(bugprone-macro-parentheses)
 
 struct FlowCorrelationsUpc {
   O2_DEFINE_CONFIGURABLE(cfgZVtxCut, float, 10.0f, "Accepted z-vertex range")
@@ -93,6 +93,10 @@ struct FlowCorrelationsUpc {
   O2_DEFINE_CONFIGURABLE(cfgIRMaxCut, double, 50, "maximum interaction rate for UPC events")
   O2_DEFINE_CONFIGURABLE(cfgZdcTime, bool, false, "choose zdc time cut")
   O2_DEFINE_CONFIGURABLE(cfgZdcTimeCut, float, 2.0, "zdc time cut")
+  O2_DEFINE_CONFIGURABLE(cfgSbp, bool, true, "choose sbp")
+  O2_DEFINE_CONFIGURABLE(cfgvtxITSTPC, bool, true, "choose vtxITSTPC")
+  O2_DEFINE_CONFIGURABLE(cfgItsROFb, bool, true, "choose itsROFb")
+  O2_DEFINE_CONFIGURABLE(cfgTfb, bool, true, "choose tfb")
 
   ConfigurableAxis axisVertex{"axisVertex", {10, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisEta{"axisEta", {40, -1., 1.}, "eta axis for histograms"};
@@ -118,14 +122,14 @@ struct FlowCorrelationsUpc {
 
   // make the filters and cuts.
   Filter trackFilter = (aod::udtrack::isPVContributor == true);
-  Filter collisionFilter = (cfgGapSideMerge == true)
+  Filter collisionFilter = cfgGapSideMerge
                              ? ((aod::udcollision::gapSide == (uint8_t)0 || aod::udcollision::gapSide == (uint8_t)1) &&
                                 (aod::upcservice::truegapside == 0 || aod::upcservice::truegapside == 1))
                              : ((aod::udcollision::gapSide == (uint8_t)cfgGapSide) &&
                                 (aod::upcservice::truegapside == cfgGapSide));
 
   // Connect to ccdb
-  Service<ccdb::BasicCCDBManager> ccdb;
+  Service<ccdb::BasicCCDBManager> ccdb{};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
   // global variables
@@ -208,8 +212,9 @@ struct FlowCorrelationsUpc {
 
     float dPhiStar = phi1 - phi2 - charge1 * fbSign * std::asin(0.075 * radius / pt1) + charge2 * fbSign * std::asin(0.075 * radius / pt2);
 
-    if (dPhiStar > constants::math::PI)
+    if (dPhiStar > constants::math::PI) {
       dPhiStar = constants::math::TwoPI - dPhiStar;
+    }
     return dPhiStar;
   }
 
@@ -240,14 +245,18 @@ struct FlowCorrelationsUpc {
     int neutronClass = -1;
     float energyCommonZNA = collision.energyCommonZNA(), energyCommonZNC = collision.energyCommonZNC();
     float timeZNA = collision.timeZNA(), timeZNC = collision.timeZNC();
-    if (std::isinf(energyCommonZNA))
+    if (std::isinf(energyCommonZNA)) {
       energyCommonZNA = -999;
-    if (std::isinf(energyCommonZNC))
+    }
+    if (std::isinf(energyCommonZNC)) {
       energyCommonZNC = -999;
-    if (std::isinf(timeZNA))
+    }
+    if (std::isinf(timeZNA)) {
       timeZNA = -999;
-    if (std::isinf(timeZNC))
+    }
+    if (std::isinf(timeZNC)) {
       timeZNC = -999;
+    }
     registry.fill(HIST("ZDCEnergy"), energyCommonZNC, energyCommonZNA);
     registry.fill(HIST("ZDCTime"), timeZNC, timeZNA);
     if (std::abs(timeZNA) > cfgZdcTimeCut && std::abs(timeZNC) > cfgZdcTimeCut) {
@@ -289,19 +298,19 @@ struct FlowCorrelationsUpc {
     if (cfgIfVertex && std::abs(collision.posZ()) > cfgZVtxCut) {
       return false;
     }
-    if (!collision.vtxITSTPC()) {
+    if (cfgvtxITSTPC && !collision.vtxITSTPC()) {
       return false;
     }
 
-    if (!collision.sbp()) {
+    if (cfgSbp && !collision.sbp()) {
       return false;
     }
 
-    if (!collision.itsROFb()) {
+    if (cfgItsROFb && !collision.itsROFb()) {
       return false;
     }
 
-    if (!collision.tfb()) {
+    if (cfgTfb && !collision.tfb()) {
       return false;
     }
 
@@ -310,8 +319,13 @@ struct FlowCorrelationsUpc {
     }
 
     if (cfgRctFlagEnabled) {
-      if (!isGoodRctFlag(collision)) // check RCT flags
+      if (!isGoodRctFlag(collision)) { // check RCT flags
         return false;
+      }
+    }
+
+    if (!zdcTimeCut(collision)) {
+      return false;
     }
 
     if (!zdcTimeCut(collision)) {
@@ -322,7 +336,7 @@ struct FlowCorrelationsUpc {
   }
 
   template <typename TTrack>
-  bool trackSelected(TTrack track)
+  bool trackSelected(const TTrack& track)
   {
     // registry.fill(HIST("hTrackCount"), 0.5);
     auto momentum = std::array<double, 3>{track.px(), track.py(), track.pz()};
@@ -359,6 +373,7 @@ struct FlowCorrelationsUpc {
     }
     auto tpcClu = track.tpcNClsFindable() - track.tpcNClsFindableMinusFound();
     if (tpcClu < cfgCutTPCclu) {
+      // NOLINTNEXTLINE(readability-simplify-boolean-expr)
       return false;
     }
     // registry.fill(HIST("hTrackCount"), 5.5);
@@ -370,7 +385,7 @@ struct FlowCorrelationsUpc {
     if (correctionsLoaded) {
       return;
     }
-    if (cfgEfficiency.value.empty() == false) {
+    if (!cfgEfficiency.value.empty()) {
       mEfficiency = ccdb->getForTimeStamp<TH3D>(cfgEfficiency, timestamp);
       if (mEfficiency == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiency.value.c_str());
@@ -391,28 +406,31 @@ struct FlowCorrelationsUpc {
     } else {
       eff = 1.0;
     }
-    if (eff <= 0)
+    if (eff <= 0) {
       return false;
+    }
     weight_nue = 1. / eff;
     return true;
   }
   // fill multiple histograms
   template <typename TCollision, typename TTracks>
-  void fillYield(TCollision collision, TTracks tracks, float vtxz) // function to fill the yield and etaphi histograms.
+  void fillYield(const TCollision& collision, const TTracks& tracks, float vtxz) // function to fill the yield and etaphi histograms.
   {
     registry.fill(HIST("Nch"), tracks.size());
     registry.fill(HIST("zVtx"), collision.posZ());
 
     for (auto const& track1 : tracks) {
-      if (!trackSelected(track1))
+      if (!trackSelected(track1)) {
         continue;
+      }
       auto momentum = std::array<double, 3>{track1.px(), track1.py(), track1.pz()};
       double pt = RecoDecay::pt(momentum);
       double phi = RecoDecay::phi(momentum);
       double eta = RecoDecay::eta(momentum);
       float weff = 1.;
-      if (!getEfficiencyCorrection(weff, eta, pt, vtxz))
+      if (!getEfficiencyCorrection(weff, eta, pt, vtxz)) {
         continue;
+      }
 
       registry.fill(HIST("Phi"), phi);
       registry.fill(HIST("Eta"), eta);
@@ -423,7 +441,7 @@ struct FlowCorrelationsUpc {
   }
 
   template <typename TTracks>
-  void fillCorrelations(TTracks tracks1, TTracks tracks2, float posZ, int system, int runnum, float vtxz, float eventWeight, double independent) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
+  void fillCorrelations(const TTracks& tracks1, const TTracks& tracks2, float posZ, int system, int runnum, float vtxz, float eventWeight, double independent) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
 
     if (mEfficiency) {
@@ -439,41 +457,47 @@ struct FlowCorrelationsUpc {
       }
     }
 
-    int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
+    const int fSampleIndex = static_cast<int>(gRandom->Uniform(0., cfgSampleSize));
 
     // loop over all tracks
     for (auto const& track1 : tracks1) {
-      if (!trackSelected(track1))
+      if (!trackSelected(track1)) {
         continue;
+      }
 
       auto momentum1 = std::array<double, 3>{track1.px(), track1.py(), track1.pz()};
       double pt1 = RecoDecay::pt(momentum1);
       double phi1 = RecoDecay::phi(momentum1);
       double eta1 = RecoDecay::eta(momentum1);
 
-      // 计算track1的权重
-      float weff1 = 1., wacc1 = 1.;
+      float weff1 = 1.;
+      if (!getEfficiencyCorrection(weff1, eta1, pt1, posZ))
+        continue;
       if (system == SameEvent) {
-        registry.fill(HIST("Trig_hist"), fSampleIndex, posZ, independent, pt1, eventWeight * weff1 * wacc1);
+        registry.fill(HIST("Trig_hist"), fSampleIndex, posZ, independent, pt1, eventWeight * weff1);
       }
 
       for (auto const& track2 : tracks2) {
-        if (!trackSelected(track2))
+        if (!trackSelected(track2)) {
           continue;
+        }
 
-        if (track1.globalIndex() == track2.globalIndex())
+        if (track1.globalIndex() == track2.globalIndex()) {
           continue;
-        if (system == SameEvent && cfgUsePtOrder && pt1 <= track2.pt())
+        }
+        if (system == SameEvent && cfgUsePtOrder && pt1 <= track2.pt()) {
           continue;
-        if (system == MixedEvent && cfgUsePtOrderInMixEvent && pt1 <= track2.pt())
+        }
+        if (system == MixedEvent && cfgUsePtOrderInMixEvent && pt1 <= track2.pt()) {
           continue;
+        }
 
         auto momentum2 = std::array<double, 3>{track2.px(), track2.py(), track2.pz()};
         double pt2 = RecoDecay::pt(momentum2);
         double phi2 = RecoDecay::phi(momentum2);
         double eta2 = RecoDecay::eta(momentum2);
 
-        float weff2 = 1., wacc2 = 1.;
+        float weff2 = 1.;
         if (mEfficiency) {
           weff2 = efficiencyCache[track2.filteredIndex()];
         } else {
@@ -483,7 +507,7 @@ struct FlowCorrelationsUpc {
         float deltaPhi = RecoDecay::constrainAngle(phi1 - phi2, -PIHalf);
         float deltaEta = eta1 - eta2;
 
-        float weight = eventWeight * weff1 * weff2 * wacc1 * wacc2;
+        float weight = eventWeight * weff1 * weff2;
 
         // Merging cut
         if (std::abs(deltaEta) < cfgCutMerging) {
@@ -493,15 +517,20 @@ struct FlowCorrelationsUpc {
           bool bIsBelow = false;
 
           if (std::abs(dPhiStarLow) < kLimit || std::abs(dPhiStarHigh) < kLimit || dPhiStarLow * dPhiStarHigh < 0) {
-            for (double rad(cfgRadiusLow); rad < cfgRadiusHigh; rad += 0.01) {
+            constexpr float kRadiusStep = 0.01f;
+            const float radiusLow = cfgRadiusLow;
+            const float radiusHigh = cfgRadiusHigh;
+            for (int iRadius = 0; radiusLow + static_cast<float>(iRadius) * kRadiusStep < radiusHigh; ++iRadius) {
+              const float rad = radiusLow + static_cast<float>(iRadius) * kRadiusStep;
               double dPhiStar = getDPhiStar(track1, track2, rad, runnum, phi1, phi2);
               if (std::abs(dPhiStar) < kLimit) {
                 bIsBelow = true;
                 break;
               }
             }
-            if (bIsBelow)
+            if (bIsBelow) {
               continue;
+            }
           }
         }
 
@@ -527,8 +556,9 @@ struct FlowCorrelationsUpc {
     auto currentRunNumber = collision.runNumber();
     auto runDuration = ccdb->getRunDuration(currentRunNumber);
 
-    if (!eventSelected(collision))
+    if (!eventSelected(collision)) {
       return;
+    }
 
     loadCorrections(runDuration.first);
 
@@ -539,8 +569,9 @@ struct FlowCorrelationsUpc {
     double nTracksCorrected = 0.;
 
     for (const auto& track : tracks) {
-      if (!trackSelected(track))
+      if (!trackSelected(track)) {
         continue;
+      }
 
       auto momentum = std::array<double, 3>{track.px(), track.py(), track.pz()};
       double pt = RecoDecay::pt(momentum);
@@ -593,8 +624,9 @@ struct FlowCorrelationsUpc {
           tracks2.size() < cfgMinMult || tracks2.size() > cfgMaxMult) {
         continue;
       }
-      if (!eventSelected(collision1) || !eventSelected(collision2))
+      if (!eventSelected(collision1) || !eventSelected(collision2)) {
         continue;
+      }
 
       auto runDuration1 = ccdb->getRunDuration(collision1.runNumber());
       loadCorrections(runDuration1.first);
@@ -605,8 +637,9 @@ struct FlowCorrelationsUpc {
       double nTracksCorrected = 0.;
 
       for (const auto& track : tracks1) {
-        if (!trackSelected(track))
+        if (!trackSelected(track)) {
           continue;
+        }
 
         auto momentum = std::array<double, 3>{track.px(), track.py(), track.pz()};
         double pt = RecoDecay::pt(momentum);

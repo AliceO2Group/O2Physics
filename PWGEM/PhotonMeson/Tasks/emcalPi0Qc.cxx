@@ -50,7 +50,7 @@
 #include <TString.h>
 
 #include <algorithm>
-#include <climits>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -69,33 +69,33 @@ using MyBCs = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels, o2::aod::Timestamps>;
 
 struct Photon {
   Photon(float eta_tmp, float phi_tmp, float energy_tmp, int clusid = 0, uint8_t sm_tmp = 0)
+    : eta(eta_tmp),
+      phi(phi_tmp),
+      energy(energy_tmp),
+      theta(2.f * std::atan2(std::exp(-eta), 1)),
+      px(energy * std::sin(theta) * std::cos(phi)),
+      py(energy * std::sin(theta) * std::sin(phi)),
+      pz(energy * std::cos(theta)),
+      pt(std::sqrt(px * px + py * py)),
+      photon(px, py, pz, energy),
+      id(clusid),
+      sm(sm_tmp),
+      onDCal(phi < 6 && phi > 4) // o2-linter: disable=magic-number (DCal phi range)
   {
-    eta = eta_tmp;
-    phi = phi_tmp;
-    energy = energy_tmp;
-    theta = 2 * std::atan2(std::exp(-eta), 1);
-    px = energy * std::sin(theta) * std::cos(phi);
-    py = energy * std::sin(theta) * std::sin(phi);
-    pz = energy * std::cos(theta);
-    pt = std::sqrt(px * px + py * py);
-    photon.SetPxPyPzE(px, py, pz, energy);
-    id = clusid;
-    sm = sm_tmp;
-    onDCal = (phi < 6 && phi > 4);
   }
 
-  ROOT::Math::PxPyPzEVector photon;
-  float pt;
-  float px;
-  float py;
-  float pz;
   float eta;
   float phi;
   float energy;
   float theta;
+  float px;
+  float py;
+  float pz;
+  float pt;
+  ROOT::Math::PxPyPzEVector photon;
   int id;
   uint8_t sm;
-  bool onDCal; // Checks whether photon is in phi region of the DCal, otherwise: EMCal
+  bool onDCal{phi < 6 && phi > 4}; // Checks whether photon is in phi region of the DCal, otherwise: EMCal
 };
 
 enum SubGeneratorId {
@@ -104,29 +104,27 @@ enum SubGeneratorId {
 };
 
 struct Meson {
-  Meson(Photon p1, Photon p2) : pgamma1(p1),
-                                pgamma2(p2)
+  Meson(Photon const& p1, Photon const& p2) : pgamma1(p1), pgamma2(p2), pMeson(p1.photon + p2.photon)
   {
-    pMeson = p1.photon + p2.photon;
   }
   Photon pgamma1;
   Photon pgamma2;
   ROOT::Math::PxPyPzEVector pMeson;
 
-  float getMass() const { return pMeson.M(); }
-  float getPt() const { return pMeson.Pt(); }
-  float getOpeningAngle() const
+  [[nodiscard]] float getMass() const { return pMeson.M(); }
+  [[nodiscard]] float getPt() const { return pMeson.Pt(); }
+  [[nodiscard]] float getOpeningAngle() const
   {
     float cosAngle = pgamma1.photon.Vect().Dot(pgamma2.photon.Vect()) / (pgamma1.photon.P() * pgamma2.photon.P());
     float angle = std::acos(std::clamp(cosAngle, -1.0f, 1.0f));
     return angle;
   }
-  ROOT::Math::PxPyPzEVector getMathVector() const { return pMeson; }
+  [[nodiscard]] ROOT::Math::PxPyPzEVector getMathVector() const { return pMeson; }
 };
 
 struct EventMixVec {
 
-  void addEvent(std::vector<Photon> vecGamma)
+  void addEvent(std::vector<Photon> const& vecGamma)
   {
     if (vecEvtMix.size() < nEVtMixSize) {
       vecEvtMix.push_back(vecGamma);
@@ -148,9 +146,9 @@ struct EmcalPi0Qc {
 
   // configurable parameters
   // TODO adapt mDoEventSel switch to also allow selection of other triggers (e.g. EMC7)
-  Configurable<bool> mDoEventSel{"mDoEventSel", 0, "demand kINT7"};
-  Configurable<bool> mRequireCaloReadout{"mRequireCaloReadout", 0, "require kTVXinEMC"};
-  Configurable<bool> mRequireEMCalCells{"mRequireEMCalCells", 0, "require at least one EMC cell in each collision"};
+  Configurable<bool> mDoEventSel{"mDoEventSel", false, "demand kINT7"};
+  Configurable<bool> mRequireCaloReadout{"mRequireCaloReadout", false, "require kTVXinEMC"};
+  Configurable<bool> mRequireEMCalCells{"mRequireEMCalCells", false, "require at least one EMC cell in each collision"};
   Configurable<std::string> mVetoBCID{"mVetoBCID", "", "BC ID(s) to be excluded, this should be used as an alternative to the event selection"};
   Configurable<std::string> mSelectBCID{"mSelectBCID", "all", "BC ID(s) to be included, this should be used as an alternative to the event selection"};
   Configurable<double> mVertexCut{"mVertexCut", -1, "apply z-vertex cut with value in cm"};
@@ -162,8 +160,8 @@ struct EmcalPi0Qc {
   Configurable<int> mMinNCellsCut{"mMinNCellsCut", 1, "apply min cluster number of cell cut"};
   Configurable<float> mMinOpenAngleCut{"mMinOpenAngleCut", 0.0202, "apply min opening angle cut"};
   Configurable<std::string> mClusterDefinition{"mClusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
-  Configurable<bool> mSplitEMCalDCal{"mSplitEMCalDCal", 0, "Create and fill inv mass histograms for photons on EMCal and DCal individually"};
-  Configurable<bool> mDoSumw2{"mDoSumw2", 1, "enable Sumw2 for all histograms"};
+  Configurable<bool> mSplitEMCalDCal{"mSplitEMCalDCal", false, "Create and fill inv mass histograms for photons on EMCal and DCal individually"};
+  Configurable<bool> mDoSumw2{"mDoSumw2", true, "enable Sumw2 for all histograms"};
   std::vector<int> mVetoBCIDs;
   std::vector<int> mSelectBCIDs;
 
@@ -296,10 +294,10 @@ struct EmcalPi0Qc {
       mHistManager.add(Form("mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM%d", ism), Form("invariant mass vs collision timestamp in Supermodule %d", ism), HistType::kTH2F, {invmassAxis, collisionTimeAxis}, mDoSumw2.value);
     }
 
-    if (mVetoBCID->length()) {
+    if (!mVetoBCID->empty()) {
       std::stringstream parser(mVetoBCID.value);
       std::string token;
-      int bcid;
+      int bcid = -1;
       while (std::getline(parser, token, ',')) {
         bcid = std::stoi(token);
         LOG(info) << "Veto BCID " << bcid;
@@ -309,7 +307,7 @@ struct EmcalPi0Qc {
     if (mSelectBCID.value != "all") {
       std::stringstream parser(mSelectBCID.value);
       std::string token;
-      int bcid;
+      int bcid = -1;
       while (std::getline(parser, token, ',')) {
         bcid = std::stoi(token);
         LOG(info) << "Select BCID " << bcid;
@@ -327,9 +325,9 @@ struct EmcalPi0Qc {
   template <uint8_t supermoduleID>
   void supermoduleHistHelperPhoton(float time, float m02, int NCell, float timeSinceSOR)
   {
-    static constexpr std::string_view ClusterTimeHistSM[20] = {"clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM0", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM1", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM2", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM3", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM4", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM5", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM6", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM7", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM8", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM9", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM10", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM11", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM12", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM13", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM14", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM15", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM16", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM17", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM18", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM19"};
-    static constexpr std::string_view ClusterNcellHistSM[20] = {"clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM0", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM1", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM2", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM3", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM4", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM5", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM6", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM7", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM8", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM9", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM10", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM11", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM12", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM13", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM14", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM15", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM16", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM17", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM18", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM19"};
-    static constexpr std::string_view ClusterM02HistSM[20] = {"clusterM02VsTimeStamp/clusterM02VsTimeStampSM0", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM1", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM2", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM3", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM4", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM5", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM6", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM7", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM8", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM9", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM10", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM11", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM12", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM13", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM14", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM15", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM16", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM17", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM18", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM19"};
+    static constexpr std::array<std::string_view, 20> ClusterTimeHistSM = {"clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM0", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM1", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM2", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM3", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM4", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM5", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM6", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM7", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM8", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM9", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM10", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM11", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM12", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM13", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM14", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM15", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM16", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM17", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM18", "clusterTimeVsTimeStamp/clusterTimeVsTimeStampSM19"};
+    static constexpr std::array<std::string_view, 20> ClusterNcellHistSM = {"clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM0", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM1", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM2", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM3", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM4", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM5", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM6", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM7", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM8", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM9", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM10", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM11", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM12", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM13", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM14", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM15", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM16", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM17", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM18", "clusterNcellVsTimeStamp/clusterNCellVsTimeStampSM19"};
+    static constexpr std::array<std::string_view, 20> ClusterM02HistSM = {"clusterM02VsTimeStamp/clusterM02VsTimeStampSM0", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM1", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM2", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM3", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM4", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM5", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM6", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM7", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM8", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM9", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM10", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM11", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM12", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM13", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM14", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM15", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM16", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM17", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM18", "clusterM02VsTimeStamp/clusterM02VsTimeStampSM19"};
     mHistManager.fill(HIST(ClusterTimeHistSM[supermoduleID]), time, timeSinceSOR, mWeight);
     mHistManager.fill(HIST(ClusterNcellHistSM[supermoduleID]), NCell, timeSinceSOR, mWeight);
     mHistManager.fill(HIST(ClusterM02HistSM[supermoduleID]), m02, timeSinceSOR, mWeight);
@@ -338,7 +336,7 @@ struct EmcalPi0Qc {
   template <uint8_t supermoduleID>
   void supermoduleHistHelperMeson(float minv, float timeSinceSOR)
   {
-    static constexpr std::string_view MesonInvMassHistSM[20] = {"mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM0", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM1", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM2", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM3", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM4", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM5", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM6", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM7", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM8", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM9", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM10", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM11", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM12", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM13", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM14", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM15", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM16", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM17", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM18", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM19"};
+    static constexpr std::array<std::string_view, 20> MesonInvMassHistSM = {"mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM0", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM1", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM2", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM3", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM4", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM5", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM6", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM7", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM8", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM9", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM10", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM11", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM12", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM13", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM14", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM15", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM16", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM17", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM18", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM19"};
     mHistManager.fill(HIST(MesonInvMassHistSM[supermoduleID]), minv, timeSinceSOR, mWeight);
   }
 
@@ -491,7 +489,7 @@ struct EmcalPi0Qc {
 
     auto cellIter = cells.begin();
     auto bcIter = bcs.begin();
-    int runNumber = bcIter.runNumber();
+    int runNumber = 0;
     std::unordered_map<uint64_t, int> cellGlobalBCs;
     // Build map of number of cells for corrected BCs using global BCs
     // used later in the determination whether a BC has EMC cell content (for speed reason)
@@ -608,7 +606,7 @@ struct EmcalPi0Qc {
   {
     auto cellIter = cells.begin();
     auto bcIter = bcs.begin();
-    int runNumber = bcIter.runNumber();
+    int runNumber = 0;
     std::unordered_map<uint64_t, int> cellGlobalBCs;
     // Build map of number of cells for corrected BCs using global BCs
     // used later in the determination whether a BC has EMC cell content (for speed reason)
@@ -748,7 +746,7 @@ struct EmcalPi0Qc {
       LOG(info) << "Event rejected because of veto BCID " << eventIR.bc;
       return;
     }
-    if (mSelectBCIDs.size() && (std::find(mSelectBCIDs.begin(), mSelectBCIDs.end(), eventIR.bc) == mSelectBCIDs.end())) {
+    if (!mSelectBCIDs.empty() && (std::find(mSelectBCIDs.begin(), mSelectBCIDs.end(), eventIR.bc) == mSelectBCIDs.end())) {
       return;
     }
     mHistManager.fill(HIST("eventBCSelected"), eventIR.bc);
@@ -803,8 +801,9 @@ struct EmcalPi0Qc {
 
       fillClusterQAHistos<decltype(cluster), 0>(cluster);
 
-      if (clusterRejectedByCut(cluster))
+      if (clusterRejectedByCut(cluster)) {
         continue;
+      }
 
       fillClusterQAHistos<decltype(cluster), 1>(cluster);
 
@@ -819,15 +818,15 @@ struct EmcalPi0Qc {
   {
     // In this implementation the cluster properties are directly loaded from the flat table,
     // in the future one should consider using the AnalysisCluster object to work with after loading.
-    static constexpr std::string_view ClusterQAHistEnergy[2] = {"ClustersBeforeCuts/clusterE", "ClustersAfterCuts/clusterE"};
-    static constexpr std::string_view ClusterQAHistEnergySimpleBinning[2] = {"ClustersBeforeCuts/clusterE_SimpleBinning", "ClustersAfterCuts/clusterE_SimpleBinning"};
-    static constexpr std::string_view ClusterQAHistTime[2] = {"ClustersBeforeCuts/clusterTime", "ClustersAfterCuts/clusterTime"};
-    static constexpr std::string_view ClusterQAHistEtaPhi[2] = {"ClustersBeforeCuts/clusterEtaPhi", "ClustersAfterCuts/clusterEtaPhi"};
-    static constexpr std::string_view ClusterQAHistM02[2] = {"ClustersBeforeCuts/clusterM02", "ClustersAfterCuts/clusterM02"};
-    static constexpr std::string_view ClusterQAHistM20[2] = {"ClustersBeforeCuts/clusterM20", "ClustersAfterCuts/clusterM20"};
-    static constexpr std::string_view ClusterQAHistNLM[2] = {"ClustersBeforeCuts/clusterNLM", "ClustersAfterCuts/clusterNLM"};
-    static constexpr std::string_view ClusterQAHistNCells[2] = {"ClustersBeforeCuts/clusterNCells", "ClustersAfterCuts/clusterNCells"};
-    static constexpr std::string_view ClusterQAHistDistanceToBadChannel[2] = {"ClustersBeforeCuts/clusterDistanceToBadChannel", "ClustersAfterCuts/clusterDistanceToBadChannel"};
+    static constexpr std::array<std::string_view, 2> ClusterQAHistEnergy = {"ClustersBeforeCuts/clusterE", "ClustersAfterCuts/clusterE"};
+    static constexpr std::array<std::string_view, 2> ClusterQAHistEnergySimpleBinning = {"ClustersBeforeCuts/clusterE_SimpleBinning", "ClustersAfterCuts/clusterE_SimpleBinning"};
+    static constexpr std::array<std::string_view, 2> ClusterQAHistTime = {"ClustersBeforeCuts/clusterTime", "ClustersAfterCuts/clusterTime"};
+    static constexpr std::array<std::string_view, 2> ClusterQAHistEtaPhi = {"ClustersBeforeCuts/clusterEtaPhi", "ClustersAfterCuts/clusterEtaPhi"};
+    static constexpr std::array<std::string_view, 2> ClusterQAHistM02 = {"ClustersBeforeCuts/clusterM02", "ClustersAfterCuts/clusterM02"};
+    static constexpr std::array<std::string_view, 2> ClusterQAHistM20 = {"ClustersBeforeCuts/clusterM20", "ClustersAfterCuts/clusterM20"};
+    static constexpr std::array<std::string_view, 2> ClusterQAHistNLM = {"ClustersBeforeCuts/clusterNLM", "ClustersAfterCuts/clusterNLM"};
+    static constexpr std::array<std::string_view, 2> ClusterQAHistNCells = {"ClustersBeforeCuts/clusterNCells", "ClustersAfterCuts/clusterNCells"};
+    static constexpr std::array<std::string_view, 2> ClusterQAHistDistanceToBadChannel = {"ClustersBeforeCuts/clusterDistanceToBadChannel", "ClustersAfterCuts/clusterDistanceToBadChannel"};
     mHistManager.fill(HIST(ClusterQAHistEnergy[BeforeCuts]), cluster.energy(), mWeight);
     mHistManager.fill(HIST(ClusterQAHistEnergySimpleBinning[BeforeCuts]), cluster.energy(), mWeight);
     mHistManager.fill(HIST(ClusterQAHistTime[BeforeCuts]), cluster.time(), mWeight);
@@ -872,8 +871,9 @@ struct EmcalPi0Qc {
     LOG(debug) << "processMesons " << mPhotons.size();
 
     // if less then 2 clusters are found, skip event
-    if (mPhotons.size() < 2)
+    if (mPhotons.size() < 2) {
       return;
+    }
 
     // loop over all photon combinations and build meson candidates
     for (unsigned int ig1 = 0; ig1 < mPhotons.size(); ++ig1) {
@@ -933,7 +933,6 @@ struct EmcalPi0Qc {
       lvRotationPion = meson.getMathVector();
 
       // calculate rotation axis and matrix
-      lvRotationPion = lvRotationPhoton1 + lvRotationPhoton2;
       ROOT::Math::AxisAngle rotationAxis(lvRotationPion.Vect(), rotationAngle);
       ROOT::Math::Rotation3D rotationMatrix(rotationAxis);
 
@@ -973,7 +972,7 @@ struct EmcalPi0Qc {
     }
   }
 
-  void calculateMixedBack(Photon gamma)
+  void calculateMixedBack(Photon const& gamma)
   {
     for (unsigned int i = 0; i < evtMix.vecEvtMix.size(); ++i) {
       for (unsigned int ig1 = 0; ig1 < evtMix.vecEvtMix[i].size(); ++ig1) {
@@ -1005,7 +1004,7 @@ struct EmcalPi0Qc {
         result.emplace_back(0.10 * i);
       } else if (i < 140) {
         result.emplace_back(10. + 0.25 * (i - 100));
-      } else if (i < 180) {
+      } else if (i < 179) {
         result.emplace_back(20. + 1.00 * (i - 140));
       } else {
         result.emplace_back(maxPt);
@@ -1015,10 +1014,10 @@ struct EmcalPi0Qc {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<EmcalPi0Qc>(cfgc, TaskName{"EmcalPi0QcAssociate"}, SetDefaultProcesses{{{"processCollision", true}, {"processCollisionMC", false}, {"processAmbiguous", false}}}),  // o2-linter: disable=name/o2-task (adapted multiple times)
-    adaptAnalysisTask<EmcalPi0Qc>(cfgc, TaskName{"EmcalPi0QcAmbiguous"}, SetDefaultProcesses{{{"processCollision", false}, {"processCollisionMC", false}, {"processAmbiguous", true}}})}; // o2-linter: disable=name/o2-task (adapted multiple times)
+    adaptAnalysisTask<EmcalPi0Qc>(context, TaskName{"EmcalPi0QcAssociate"}, SetDefaultProcesses{{{"processCollision", true}, {"processCollisionMC", false}, {"processAmbiguous", false}}}),  // o2-linter: disable=name/o2-task (adapted multiple times)
+    adaptAnalysisTask<EmcalPi0Qc>(context, TaskName{"EmcalPi0QcAmbiguous"}, SetDefaultProcesses{{{"processCollision", false}, {"processCollisionMC", false}, {"processAmbiguous", true}}})}; // o2-linter: disable=name/o2-task (adapted multiple times)
   return workflow;
 }

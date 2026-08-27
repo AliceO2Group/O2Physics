@@ -609,58 +609,33 @@ bool isHFDaughterTrack(T& track, U& candidate)
  * @param particles particle table
  */
 template <typename T, typename U, typename V>
-auto matchedHFParticle(const T& candidate, const U& /*tracks*/, const V& /*particles*/, bool& isMatched)
+auto matchedHFParticle(const T& candidate, const U& /*tracks*/, const V& /*particles*/)
 {
 
   typename V::iterator candidateDaughterParticle;
-  isMatched = false;
   if constexpr (isD0Candidate<T>()) {
-    if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
-      candidateDaughterParticle = candidate.template prong0_as<U>().template mcParticle_as<V>();
-      isMatched = true;
-    }
+    candidateDaughterParticle = candidate.template prong0_as<U>().template mcParticle_as<V>();
   }
   if constexpr (isDplusCandidate<T>()) {
-    if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) {
-      candidateDaughterParticle = candidate.template prong0_as<U>().template mcParticle_as<V>();
-      isMatched = true;
-    }
+    candidateDaughterParticle = candidate.template prong0_as<U>().template mcParticle_as<V>();
   }
   if constexpr (isDsCandidate<T>()) {
-    if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) {
-      candidateDaughterParticle = candidate.template prong0_as<U>().template mcParticle_as<V>();
-      isMatched = true;
-    }
+    candidateDaughterParticle = candidate.template prong0_as<U>().template mcParticle_as<V>();
   }
   if constexpr (isDstarCandidate<T>()) {
-    if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi) {
-      candidateDaughterParticle = candidate.template prong2_as<U>().template mcParticle_as<V>();
-      isMatched = true;
-    }
+    candidateDaughterParticle = candidate.template prong2_as<U>().template mcParticle_as<V>();
   }
   if constexpr (isLcCandidate<T>()) {
-    if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
-      candidateDaughterParticle = candidate.template prong0_as<U>().template mcParticle_as<V>();
-      isMatched = true;
-    }
+    candidateDaughterParticle = candidate.template prong0_as<U>().template mcParticle_as<V>();
   }
   if constexpr (isB0Candidate<T>()) {
-    if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_beauty::DecayChannelMain::B0ToDminusPi) {
-      candidateDaughterParticle = candidate.template prong3_as<U>().template mcParticle_as<V>();
-      isMatched = true;
-    }
+    candidateDaughterParticle = candidate.template prong3_as<U>().template mcParticle_as<V>();
   }
   if constexpr (isBplusCandidate<T>()) {
-    if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_beauty::DecayChannelMain::BplusToD0Pi) {
-      candidateDaughterParticle = candidate.template prong2_as<U>().template mcParticle_as<V>();
-      isMatched = true;
-    }
+    candidateDaughterParticle = candidate.template prong2_as<U>().template mcParticle_as<V>();
   }
   if constexpr (isXicToXiPiPiCandidate<T>()) {
-    if (std::abs(candidate.flagMcMatchRec()) == o2::aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi) {
-      candidateDaughterParticle = candidate.template prong0_as<U>().template mcParticle_as<V>();
-      isMatched = true;
-    }
+    candidateDaughterParticle = candidate.template prong0_as<U>().template mcParticle_as<V>();
   }
   return candidateDaughterParticle.template mothers_first_as<V>();
 }
@@ -675,13 +650,8 @@ auto matchedHFParticle(const T& candidate, const U& /*tracks*/, const V& /*parti
 template <typename T, typename U, typename V>
 auto matchedHFParticleId(const T& candidate, const U& tracks, const V& particles)
 {
-  bool isMatched = false;
-  auto matchedParticle = matchedHFParticle(candidate, tracks, particles, isMatched);
-  if (isMatched) {
-    return matchedParticle.globalIndex();
-  } else {
-    return int64_t{-1}; // does this clash with the case where a track doesnt have an associated particle?
-  }
+  auto matchedParticle = matchedHFParticle(candidate, tracks, particles);
+  return matchedParticle.globalIndex();
 }
 
 /**

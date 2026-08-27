@@ -236,6 +236,7 @@ using MyEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::
 using MyEventsSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::ReducedMCEventLabels>;
 using MyEventsVtxCov = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::ReducedMCEventLabels>;
 using MyEventsVtxCovSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedMCEventLabels>;
+using MyEventsVtxCovSelectedInfo = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedMCEventLabels, aod::ReducedEventsInfo>;
 using MyEventsVtxCovSelectedMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedMCEventLabels>;
 using MyEventsVtxCovSelectedQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsQvector>;
 using MyEventsQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvector>;
@@ -2343,8 +2344,8 @@ struct AnalysisSameEventPairing {
                            t1.sign() + t2.sign(), twoTrackFilter, mcDecision);
 
             if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrackCollInfo) > 0) {
-              dielectronInfoList(t1.collisionId(), t1.trackId(), t2.trackId());
-              dileptonInfoList(t1.collisionId(), event.posX(), event.posY(), event.posZ());
+              dielectronInfoList(event.collisionId(), t1.trackId(), t2.trackId());
+              dileptonInfoList(event.collisionId(), event.posX(), event.posY(), event.posZ());
             }
             if constexpr (trackHasCov && TTwoProngFitter) {
               dielectronsExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauzProjected], VarManager::fgValues[VarManager::kVertexingLzProjected], VarManager::fgValues[VarManager::kVertexingLxyProjected]);
@@ -2362,11 +2363,12 @@ struct AnalysisSameEventPairing {
                                     VarManager::fgValues[VarManager::kVertexingLzProjected], VarManager::fgValues[VarManager::kVertexingLxyProjected]);
                 }
                 if (fConfigOptions.polarTables.value && t1.has_reducedMCTrack() && t2.has_reducedMCTrack()) {
-                  dileptonPolarList(VarManager::fgValues[VarManager::kCosThetaHE], VarManager::fgValues[VarManager::kPhiHE], VarManager::fgValues[VarManager::kPhiTildeHE],
+                  dileptonPolarList(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], t1.sign() + t2.sign(), twoTrackFilter,
+                                    VarManager::fgValues[VarManager::kCosThetaHE], VarManager::fgValues[VarManager::kPhiHE], VarManager::fgValues[VarManager::kPhiTildeHE],
                                     VarManager::fgValues[VarManager::kCosThetaCS], VarManager::fgValues[VarManager::kPhiCS], VarManager::fgValues[VarManager::kPhiTildeCS],
                                     VarManager::fgValues[VarManager::kCosThetaPP], VarManager::fgValues[VarManager::kPhiPP], VarManager::fgValues[VarManager::kPhiTildePP],
                                     VarManager::fgValues[VarManager::kCosThetaRM],
-                                    VarManager::fgValues[VarManager::kCosThetaStarTPC], VarManager::fgValues[VarManager::kCosThetaStarFT0A], VarManager::fgValues[VarManager::kCosThetaStarFT0C]);
+                                    VarManager::fgValues[VarManager::kCosThetaStarTPC], VarManager::fgValues[VarManager::kCosThetaStarFT0A], VarManager::fgValues[VarManager::kCosThetaStarFT0C], VarManager::fgValues[VarManager::kCosThetaStarRandom]);
                 }
               }
             }
@@ -2433,7 +2435,7 @@ struct AnalysisSameEventPairing {
                      VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi],
                      t1.sign() + t2.sign(), twoTrackFilter, mcDecision);
           if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedMuonCollInfo) > 0) {
-            dileptonInfoList(t1.collisionId(), event.posX(), event.posY(), event.posZ());
+            dileptonInfoList(event.collisionId(), event.posX(), event.posY(), event.posZ());
           }
 
           if constexpr (TTwoProngFitter) {
@@ -2610,8 +2612,10 @@ struct AnalysisSameEventPairing {
 
   PresliceUnsorted<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
 
-  template <int TPairType>
-  void runMCGen(MyEventsVtxCovSelected const& events, ReducedMCEvents const& mcEvents, ReducedMCTracks const& mcTracks)
+  template <int TPairType, typename TEvents>
+  void runMCGen(TEvents const& events,
+                ReducedMCEvents const& mcEvents,
+                ReducedMCTracks const& mcTracks)
   {
     uint32_t mcDecision = 0;
     int isig = 0;
@@ -3068,7 +3072,7 @@ struct AnalysisSameEventPairing {
     runMCGen<VarManager::kDecayToEE>(events, mcEvents, mcTracks);
   }
 
-  void processBarrelOnlyWithCollSkimmed(MyEventsVtxCovSelected const& events,
+  void processBarrelOnlyWithCollSkimmed(MyEventsVtxCovSelectedInfo const& events,
                                         soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
                                         MyBarrelTracksWithCovWithAmbiguitiesWithColl const& barrelTracks, ReducedMCEvents const& mcEvents, ReducedMCTracks const& mcTracks)
   {

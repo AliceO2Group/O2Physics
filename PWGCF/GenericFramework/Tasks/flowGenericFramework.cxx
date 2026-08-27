@@ -132,7 +132,8 @@ struct FlowGenericFramework {
   O2_DEFINE_CONFIGURABLE(cfgUsePID, bool, true, "Enable PID information")
   O2_DEFINE_CONFIGURABLE(cfgUseGapMethod, bool, false, "Use gap method in vn-pt calculations")
   struct : ConfigurableGroup {
-    O2_DEFINE_CONFIGURABLE(cfgUseMultiplicityFlowWeights, bool, true, "Enable or disable the use of multiplicity-based event weighting");
+    O2_DEFINE_CONFIGURABLE(cfgUsePtCorrWeights, bool, true, "Enable or disable the use of multiplicity-based event weighting for pt-pt correlations");
+    O2_DEFINE_CONFIGURABLE(cfgUseMultiplicityFlowWeights, bool, true, "Enable or disable the use of multiplicity-based event weighting for azimuthal correlations");
     O2_DEFINE_CONFIGURABLE(cfgUseMultiplicityFractionWeights, bool, false, "Enable or disable the use of multiplicity-based event weighting for the spectral fraction");
   } cfgEventWeight;
   struct : ConfigurableGroup{
@@ -159,6 +160,7 @@ struct FlowGenericFramework {
     O2_DEFINE_CONFIGURABLE(cfgDCAz, float, 2, "Cut on DCA in the longitudinal direction (cm)");
     O2_DEFINE_CONFIGURABLE(cfgNTPCCls, float, 50, "Cut on number of TPC clusters found");
     O2_DEFINE_CONFIGURABLE(cfgNTPCXrows, float, 70, "Cut on number of TPC crossed rows");
+    O2_DEFINE_CONFIGURABLE(cfgNTPCXrowsDaughters, float, 70, "Cut on number of TPC crossed rows of V0 daughters");
     O2_DEFINE_CONFIGURABLE(cfgMinNITSCls, float, 5, "Cut on minimum number of ITS clusters found");
     O2_DEFINE_CONFIGURABLE(cfgChi2PrITSCls, float, 36, "Cut on chi^2 per ITS clusters found");
     O2_DEFINE_CONFIGURABLE(cfgChi2PrTPCCls, float, 2.5, "Cut on chi^2 per TPC clusters found");
@@ -176,9 +178,8 @@ struct FlowGenericFramework {
     O2_DEFINE_CONFIGURABLE(cfgTVXinTRD, bool, true, "TVXinTRD - Use TVXinTRD (reject TRD triggered events)");
     O2_DEFINE_CONFIGURABLE(cfgIsVertexITSTPC, bool, true, "IsVertexITSTPC - Selects collisions with at least one ITS-TPC track");
   } cfgEventCutFlags;
-  struct ConfigurableGroup {
-    O2_DEFINE_CONFIGURABLE(cfgOccupancySelection, int, 2000, "Max occupancy selection, -999 to disable");
-    O2_DEFINE_CONFIGURABLE(cfgDoOccupancySel, bool, true, "Bool for event selection on detector occupancy");
+  struct : ConfigurableGroup {
+    O2_DEFINE_CONFIGURABLE(cfgOccupancySelection, int, -999, "Max occupancy selection, -999 to disable");
     O2_DEFINE_CONFIGURABLE(cfgMagField, float, 99999, "Configurable magnetic field; default CCDB will be queried");
     O2_DEFINE_CONFIGURABLE(cfgMultCut, bool, false, "Use additional event cut on mult correlations");
   } cfgEventSelection;
@@ -205,14 +206,13 @@ struct FlowGenericFramework {
   Configurable<LabeledArray<int>> resonanceSwitches{"resonanceSwitches", {LongArrayInt.front().data(), 8, 3, {"UseParticle", "UseCosPA", "NMassBins", "UseDCAxDaughters", "UseProperLifetime", "UseV0Radius", "UseArmPodCut", "UseCompetingMassRejection"}, {"K0", "Lambda", "Phi"}}, "Labeled array (int) for various cuts on resonances"};
 
   struct : ConfigurableGroup {
-    O2_DEFINE_CONFIGURABLE(cfgUseLsPhi, bool, true, "Use LikeSign for Phi v2")
-    O2_DEFINE_CONFIGURABLE(cfgUseOnlyTPC, bool, true, "Use only TPC PID for daughter selection")
-    O2_DEFINE_CONFIGURABLE(cfgFakeKaonCut, float, 0.1f, "Maximum difference in measured momentum and TPC inner ring momentum of particle")
-    O2_DEFINE_CONFIGURABLE(cfgUseAsymmetricPID, bool, false, "Use asymmetric PID cuts")
-    O2_DEFINE_CONFIGURABLE(cfgTPCNsigmaCut, float, 3.0f, "TPC N-sigma cut for pions, kaons, protons")
-    O2_DEFINE_CONFIGURABLE(cfgUseStrictPID, bool, true, "Use strict PID cuts for TPC")
+    O2_DEFINE_CONFIGURABLE(cfgUseOnlyTPC, bool, true, "Use only TPC PID for daughter selection");
+    O2_DEFINE_CONFIGURABLE(cfgDaughterPIDRejection, bool, true, "Reject daughters if not consistent with expected K0/Lambda decay products");
+    O2_DEFINE_CONFIGURABLE(cfgUseAsymmetricPID, bool, false, "Use asymmetric PID cuts");
+    O2_DEFINE_CONFIGURABLE(cfgTPCNsigmaCut, float, 3.0f, "TPC N-sigma cut for pions, kaons, protons");
+    O2_DEFINE_CONFIGURABLE(cfgUseStrictPID, bool, true, "Use strict PID cuts for TPC");
     O2_DEFINE_CONFIGURABLE(cfgTofPtCut, float, 0.5, "pt cut on TOF for PID");
-    O2_DEFINE_CONFIGURABLE(cfgUseItsPID, bool, true, "Use ITS PID for particle identification")
+    O2_DEFINE_CONFIGURABLE(cfgUseItsPID, bool, true, "Use ITS PID for particle identification");
     O2_DEFINE_CONFIGURABLE(cfgK0SignalMin, float, 0.48, "Minimum cut on K0 mT signal");
     O2_DEFINE_CONFIGURABLE(cfgK0SignalMax, float, 0.51, "Maximum cut on K0 mT signal");
     O2_DEFINE_CONFIGURABLE(cfgLambdaSignalMin, float, 1.1, "Minimum cut on Lambda mT signal");
@@ -236,6 +236,7 @@ struct FlowGenericFramework {
 
   ConfigurableAxis axisNsigmaTPC{"axisNsigmaTPC", {80, -5, 5}, "nsigmaTPC axis"};
   ConfigurableAxis axisNsigmaTOF{"axisNsigmaTOF", {80, -5, 5}, "nsigmaTOF axis"};
+  ConfigurableAxis axisFeeddownXiPt{"axisFeeddownXiPt", {VARIABLE_WIDTH, 0, 0.1, 0.5, 0.9, 1.1, 1.3, 1.5, 1.7, 1.9, 2.1, 2.3, 2.5, 2.7, 2.9, 3.9, 4.9, 5.9, 9.9, 16.0}, "Xi pt axis for Lambda feeddown correction"};
 
   struct GFWMemberCache {
     std::vector<double> ptbinning = {0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10};
@@ -245,9 +246,9 @@ struct FlowGenericFramework {
     float ptrefup = 3.0;
     float ptlow = 0.2;
     float ptup = 10.0;
-    int etabins = 16;
-    float etalow = -0.8;
-    float etaup = 0.8;
+    int etabins = 100;
+    float etalow = -1;
+    float etaup = 1;
     int vtxZbins = 40;
     float vtxZlow = -10.0;
     float vtxZup = 10.0;
@@ -393,11 +394,27 @@ struct FlowGenericFramework {
     V0EfficiencyCommonPrimaryMother,
     V0EfficiencyMotherSpecies,
     V0EfficiencyMotherRapidity,
+    V0EfficiencySelection,
     V0EfficiencyGeneratedDaughterEta,
     V0EfficiencyRecoDaughterEta,
-    V0EfficiencySelection,
     V0EfficiencyFilled,
     V0EfficiencyStageCount
+  };
+  enum V0EfficiencyDaughterPdgCategory {
+    V0EfficiencyDaughterOther = 0,
+    V0EfficiencyDaughterPiPlus,
+    V0EfficiencyDaughterPiMinus,
+    V0EfficiencyDaughterProton,
+    V0EfficiencyDaughterAntiProton,
+    V0EfficiencyDaughterElectron,
+    V0EfficiencyDaughterPositron,
+    V0EfficiencyDaughterKaon,
+    V0EfficiencyDaughterPdgCategoryCount
+  };
+  enum LambdaFeeddownSpecies {
+    FeeddownLambdaFromXiMinus = 0,
+    FeeddownAntiLambdaFromXiPlus,
+    LambdaFeeddownSpeciesCount
   };
   enum ResoIDs {
     K0Sideband1 = 0,
@@ -454,6 +471,7 @@ struct FlowGenericFramework {
     FillProperLifetime,
     FillArmPodCut,
     FillCompetingMass,
+    FillDaughterTrackSelected,
     FillV02DaughterTrackSelection,
     FillV0DaughterTrackSelection
   };
@@ -619,6 +637,9 @@ struct FlowGenericFramework {
     AxisSpec efficiencyParticleAxis = {EfficiencySpeciesCount, -0.5, static_cast<float>(EfficiencySpeciesCount) - 0.5, "particle"};
     AxisSpec efficiencyStepAxis = {EfficiencyStepCount, -0.5, static_cast<float>(EfficiencyStepCount) - 0.5, "generated/reconstructed"};
     AxisSpec v0EfficiencyStageAxis = {V0EfficiencyStageCount, -0.5, static_cast<float>(V0EfficiencyStageCount) - 0.5, "stage"};
+    AxisSpec v0EfficiencyDebugEtaAxis = {160, -4.f, 4.f, "#eta"};
+    AxisSpec v0EfficiencyDaughterPdgAxis = {V0EfficiencyDaughterPdgCategoryCount, -0.5, static_cast<float>(V0EfficiencyDaughterPdgCategoryCount) - 0.5, "daughter PDG category"};
+    AxisSpec lambdaFeeddownSpeciesAxis = {LambdaFeeddownSpeciesCount, -0.5, static_cast<float>(LambdaFeeddownSpeciesCount) - 0.5, "species"};
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -642,6 +663,10 @@ struct FlowGenericFramework {
     if (doprocessEfficiency) {
       registry.add("Efficiency/efficiencyHist", "; #it{p}_{T}^{MC}; Centrality (%)", {HistType::kTHnSparseF, {{ptAxis, centAxis, efficiencyParticleAxis, efficiencyStepAxis}}});
       registry.add("Efficiency/v0RecoDebug", "; #it{p}_{T}; Centrality (%)", {HistType::kTHnSparseF, {{ptAxis, centAxis, efficiencyParticleAxis, v0EfficiencyStageAxis}}});
+      registry.add("Efficiency/v0RecoDaughterEtaDebug", "; Centrality (%); particle; #eta^{MC}_{pos}; #eta^{MC}_{neg}; #eta^{reco}_{pos}; #eta^{reco}_{neg}", {HistType::kTHnSparseF, {{centAxis, efficiencyParticleAxis, v0EfficiencyDebugEtaAxis, v0EfficiencyDebugEtaAxis, v0EfficiencyDebugEtaAxis, v0EfficiencyDebugEtaAxis}}});
+      registry.add("Efficiency/v0RecoDaughterPdgDebug", "; Centrality (%); particle; PDG^{MC}_{pos}; PDG^{MC}_{neg}", {HistType::kTHnSparseF, {{centAxis, efficiencyParticleAxis, v0EfficiencyDaughterPdgAxis, v0EfficiencyDaughterPdgAxis}}});
+      registry.add("Efficiency/lambdaFeeddownRecoXi", "; #it{p}_{T}^{#Lambda, reco}; #it{p}_{T}^{#Xi, gen}; Centrality (%)", {HistType::kTHnSparseF, {{ptAxis, axisFeeddownXiPt, centAxis, lambdaFeeddownSpeciesAxis}}});
+      registry.add("Efficiency/lambdaFeeddownGeneratedXi", "; #it{p}_{T}^{#Xi, gen}; Centrality (%)", {HistType::kTHnSparseF, {{axisFeeddownXiPt, centAxis, lambdaFeeddownSpeciesAxis}}});
     }
     if (doprocessMCReco || doprocessData || doprocessRun2 || doprocessEfficiency) {
       if (cfgFill.cfgFillQA) {
@@ -661,8 +686,6 @@ struct FlowGenericFramework {
         registryQA.add("trackQA/after/Nch_uncorrected", "; N_{ch}; Counts", {HistType::kTH1D, {nchAxis}});
         registryQA.add("trackQA/after/etaNch", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
         registryQA.add("trackQA/after/etaPtPt", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
-        registryQA.add("trackQA/after/etaV02", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
-        registryQA.add("trackQA/after/etaV0", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
         if (!cfgFill.cfgFillRunByRunQA) {
           if (cfgUsePID) {
             registryQA.add<TH3>("phi_eta_vtxz_ref", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
@@ -705,8 +728,12 @@ struct FlowGenericFramework {
 
       AxisSpec axisK0Mass = {resoSwitchVals[MassBins][K0], resoCutVals[MassMin][K0], resoCutVals[MassMax][K0]};
       AxisSpec axisLambdaMass = {resoSwitchVals[MassBins][Lambda], resoCutVals[MassMin][Lambda], resoCutVals[MassMax][Lambda]};
-
+      AxisSpec yAxis = {100, -1, 1};
       // QA histograms for V0s
+      if (cfgFill.cfgFillV0QA && (resoSwitchVals[UseParticle][K0] != 0 || resoSwitchVals[UseParticle][Lambda] != 0)) {
+        registryQA.add("trackQA/after/etaV02", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
+        registryQA.add("trackQA/after/etaV0", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
+      }
       if (resoSwitchVals[UseParticle][K0] != 0) {
         if (cfgFill.cfgFillV0QA) {
           registryQA.add("K0/PiPlusTPC_K0", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTPC}}});
@@ -714,13 +741,13 @@ struct FlowGenericFramework {
           registryQA.add("K0/PiPlusTOF_K0", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTOF}}});
           registryQA.add("K0/PiMinusTOF_K0", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTOF}}});
           registryQA.add("K0/hK0Phi", "", {HistType::kTH1D, {phiAxis}});
-          registryQA.add("K0/hK0Eta", "", {HistType::kTH1D, {etaAxis}});
-          registryQA.add("K0/hK0AP", "", {HistType::kTH2D, {{100, -1, 1}, {500, 0, 1.}}});
+          registryQA.add("K0/hK0EtaY", "", {HistType::kTH2D, {etaAxis, yAxis}});
+          registryQA.add("K0/hK0AP", "", {HistType::kTH2D, {{100, -1, 1}, {250, 0, 0.5}}});
           registryQA.add("K0/hK0Mass_sparse", "", {HistType::kTHnSparseF, {{axisK0Mass, ptAxis, nchAxis}}});
           registryQA.add("K0/hK0s", "", {HistType::kTH1D, {singleCount}});
           registryQA.add("K0/hK0s_corrected", "", {HistType::kTH1D, {singleCount}});
         }
-        registryQA.add("K0/hK0Count", "Number of K0;; Count", {HistType::kTH1D, {{13, 0.5, 13.5}}});
+        registryQA.add("K0/hK0Count", "Number of K0;; Count", {HistType::kTH1D, {{14, 0.5, 14.5}}});
         registryQA.get<TH1>(HIST("K0/hK0Count"))->GetXaxis()->SetBinLabel(FillCandidate, "K0 candidates");
         registryQA.get<TH1>(HIST("K0/hK0Count"))->GetXaxis()->SetBinLabel(FillDaughterPt, "Daughter pt");
         registryQA.get<TH1>(HIST("K0/hK0Count"))->GetXaxis()->SetBinLabel(FillMassCut, "Mass cut");
@@ -732,8 +759,9 @@ struct FlowGenericFramework {
         registryQA.get<TH1>(HIST("K0/hK0Count"))->GetXaxis()->SetBinLabel(FillProperLifetime, "Proper lifetime");
         registryQA.get<TH1>(HIST("K0/hK0Count"))->GetXaxis()->SetBinLabel(FillArmPodCut, "Armenteros-Podolanski cut");
         registryQA.get<TH1>(HIST("K0/hK0Count"))->GetXaxis()->SetBinLabel(FillCompetingMass, "Competing mass rejection");
-        registryQA.get<TH1>(HIST("K0/hK0Count"))->GetXaxis()->SetBinLabel(FillV02DaughterTrackSelection, "v02 Daughter track selection");
-        registryQA.get<TH1>(HIST("K0/hK0Count"))->GetXaxis()->SetBinLabel(FillV0DaughterTrackSelection, "v0 Daughter track selection");
+        registryQA.get<TH1>(HIST("K0/hK0Count"))->GetXaxis()->SetBinLabel(FillDaughterTrackSelected, "Daughter track selected");
+        registryQA.get<TH1>(HIST("K0/hK0Count"))->GetXaxis()->SetBinLabel(FillV02DaughterTrackSelection, "v02 Daughter eta selection");
+        registryQA.get<TH1>(HIST("K0/hK0Count"))->GetXaxis()->SetBinLabel(FillV0DaughterTrackSelection, "v0 Daughter eta selection");
       }
 
       if (resoSwitchVals[UseParticle][Lambda] != 0) {
@@ -743,21 +771,21 @@ struct FlowGenericFramework {
           registryQA.add("Lambda/PrPlusTOF_L", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTOF}}});
           registryQA.add("Lambda/PiMinusTOF_L", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTOF}}});
           registryQA.add("Lambda/hLambdaPhi", "", {HistType::kTH1D, {phiAxis}});
-          registryQA.add("Lambda/hLambdaEta", "", {HistType::kTH1D, {etaAxis}});
-          registryQA.add("Lambda/hLambdaAP", "", {HistType::kTH2D, {{100, -1, 1}, {100, 0, 5.}}});
+          registryQA.add("Lambda/hLambdaEtaY", "", {HistType::kTH2D, {etaAxis, yAxis}});
+          registryQA.add("Lambda/hLambdaAP", "", {HistType::kTH2D, {{100, -1, 1}, {250, 0, 0.5}}});
           registryQA.add("Lambda/hLambdaMass_sparse", "", {HistType::kTHnSparseF, {{axisLambdaMass, ptAxis, nchAxis}}});
           registryQA.add("Lambda/PiPlusTPC_AL", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTPC}}});
           registryQA.add("Lambda/PrMinusTPC_AL", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTPC}}});
           registryQA.add("Lambda/PiPlusTOF_AL", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTOF}}});
           registryQA.add("Lambda/PrMinusTOF_AL", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTOF}}});
           registryQA.add("Lambda/hAntiLambdaPhi", "", {HistType::kTH1D, {phiAxis}});
-          registryQA.add("Lambda/hAntiLambdaEta", "", {HistType::kTH1D, {etaAxis}});
-          registryQA.add("Lambda/hAntiLambdaAP", "", {HistType::kTH2D, {{100, -1, 1}, {100, 0, 5.}}});
+          registryQA.add("Lambda/hAntiLambdaEtaY", "", {HistType::kTH2D, {etaAxis, yAxis}});
+          registryQA.add("Lambda/hAntiLambdaAP", "", {HistType::kTH2D, {{100, -1, 1}, {250, 0, 0.5}}});
           registryQA.add("Lambda/hAntiLambdaMass_sparse", "", {HistType::kTHnSparseF, {{axisLambdaMass, ptAxis, nchAxis}}});
           registryQA.add("Lambda/hLambdas", "", {HistType::kTH1D, {singleCount}});
           registryQA.add("Lambda/hLambdas_corrected", "", {HistType::kTH1D, {singleCount}});
         }
-        registryQA.add("Lambda/hLambdaCount", "Number of Lambda;; Count", {HistType::kTH1D, {{13, 0.5, 13.5}}});
+        registryQA.add("Lambda/hLambdaCount", "Number of Lambda;; Count", {HistType::kTH1D, {{14, 0.5, 14.5}}});
         registryQA.get<TH1>(HIST("Lambda/hLambdaCount"))->GetXaxis()->SetBinLabel(FillCandidate, "Lambda candidates");
         registryQA.get<TH1>(HIST("Lambda/hLambdaCount"))->GetXaxis()->SetBinLabel(FillDaughterPt, "Daughter pt");
         registryQA.get<TH1>(HIST("Lambda/hLambdaCount"))->GetXaxis()->SetBinLabel(FillMassCut, "Mass cut");
@@ -769,6 +797,7 @@ struct FlowGenericFramework {
         registryQA.get<TH1>(HIST("Lambda/hLambdaCount"))->GetXaxis()->SetBinLabel(FillProperLifetime, "Proper lifetime");
         registryQA.get<TH1>(HIST("Lambda/hLambdaCount"))->GetXaxis()->SetBinLabel(FillArmPodCut, "Armenteros-Podolanski cut");
         registryQA.get<TH1>(HIST("Lambda/hLambdaCount"))->GetXaxis()->SetBinLabel(FillCompetingMass, "Competing mass rejection");
+        registryQA.get<TH1>(HIST("Lambda/hLambdaCount"))->GetXaxis()->SetBinLabel(FillDaughterTrackSelected, "Daughter track selected");
         registryQA.get<TH1>(HIST("Lambda/hLambdaCount"))->GetXaxis()->SetBinLabel(FillV02DaughterTrackSelection, "v02 Daughter track selection");
         registryQA.get<TH1>(HIST("Lambda/hLambdaCount"))->GetXaxis()->SetBinLabel(FillV0DaughterTrackSelection, "v0 Daughter track selection");
       }
@@ -856,7 +885,7 @@ struct FlowGenericFramework {
       fFCgen->Initialize(oba, multAxis, cfgNbootstrap);
     }
     delete oba;
-
+    fFCpt->setEventWeight(cfgEventWeight.cfgUsePtCorrWeights ? eventweight::TupleWeight : eventweight::UnityWeight);
     fFCpt->setUseCentralMoments(cfgUseCentralMoments);
     fFCpt->setUseGapMethod(cfgUseGapMethod);
     fFCpt->initialise(multAxis, cfgMpar, gfwMemberCache.configs, cfgNbootstrap);
@@ -1364,7 +1393,7 @@ struct FlowGenericFramework {
     if (cfgTrackCuts.cfgDCAxyNSigma && (std::fabs(track.dcaXY()) > fPtDepDCAxy->Eval(track.pt()))) {
       return false;
     }
-    if (!cfgTrackCuts.cfgDCAzPtDep.value.empty() && std::fabs(track.dcaZ() > fPtDepDCAz->Eval(track.pt()))) {
+    if (!cfgTrackCuts.cfgDCAzPtDep.value.empty() && std::fabs(track.dcaZ()) > fPtDepDCAz->Eval(track.pt())) {
       return false;
     }
     return ((track.tpcNClsCrossedRows() >= cfgTrackCuts.cfgNTPCXrows) && (track.tpcNClsFound() >= cfgTrackCuts.cfgNTPCCls) && (track.itsNCls() >= cfgTrackCuts.cfgMinNITSCls));
@@ -1378,7 +1407,7 @@ struct FlowGenericFramework {
     if (cfgTrackCuts.cfgDCAxyNSigma && (std::fabs(track.dcaXY()) > defaultNsigma / cfgTrackCuts.cfgDCAxyNSigma * fPtDepDCAxy->Eval(track.pt()))) {
       return false;
     }
-    if (!cfgTrackCuts.cfgDCAzPtDep.value.empty() && std::fabs(track.dcaZ() > fPtDepDCAz->Eval(track.pt()))) {
+    if (!cfgTrackCuts.cfgDCAzPtDep.value.empty() && std::fabs(track.dcaZ()) > fPtDepDCAz->Eval(track.pt())) {
       return false;
     }
     int tpcNClsCrossedRowsDefault = 70;
@@ -1641,23 +1670,11 @@ struct FlowGenericFramework {
       return;
     }
 
-    double mpt = 0;
-    double dnx = 0;
-    if (cfgKinematics.cfgEtaPtPt->first * cfgKinematics.cfgEtaPtPt->second >= 0) {
-      if (fFCpt->corrDen[1] == 0.) {
-        return;
-      }
-      dnx = fFCpt->corrDen[1];
-      mpt = fFCpt->corrNum[1] / dnx;
-    } else {
-      if (fFCpt->corrDenSub[0][1] == 0. || fFCpt->corrDenSub[1][1] == 0.) {
-        return;
-      }
-      double mptSub1 = fFCpt->corrNumSub[0][1] / fFCpt->corrDenSub[0][1];
-      double mptSub2 = fFCpt->corrNumSub[1][1] / fFCpt->corrDenSub[1][1];
-      dnx = 0.5 * (fFCpt->corrDenSub[0][1] + fFCpt->corrDenSub[1][1]);
-      mpt = 0.5 * (mptSub1 + mptSub2);
+    if (fFCpt->corrDen[1] == 0.) {
+      return;
     }
+    double dnx = fFCpt->corrDen[1];
+    double mpt = fFCpt->corrNum[1] / dnx;
     if (std::isnan(mpt)) {
       return;
     }
@@ -1669,7 +1686,7 @@ struct FlowGenericFramework {
           if (cfgEventWeight.cfgUseMultiplicityFractionWeights) {
             profileWeight *= dnsV0[l_ind];
           }
-          (dt == Gen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, mpt * nptV0[l_ind]->GetBinContent(i) / dnsV0[l_ind], cfgEventWeight.cfgUseMultiplicityFlowWeights ? profileWeight : 1.0, rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, mpt * nptV0[l_ind]->GetBinContent(i) / dnsV0[l_ind], cfgEventWeight.cfgUseMultiplicityFlowWeights ? profileWeight : 1.0, rndm);
+          (dt == Gen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, mpt * nptV0[l_ind]->GetBinContent(i) / dnsV0[l_ind], cfgEventWeight.cfgUsePtCorrWeights ? profileWeight : 1.0, rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, mpt * nptV0[l_ind]->GetBinContent(i) / dnsV0[l_ind], cfgEventWeight.cfgUsePtCorrWeights ? profileWeight : 1.0, rndm);
         }
       }
     }
@@ -1809,12 +1826,16 @@ struct FlowGenericFramework {
 
       for (uint l_ind = 4; l_ind < corrconfigsV0.size(); ++l_ind) {
         for (int i = 1; i <= fPtAxis->GetNbins(); i++) {
-          if (dns[l_ind - 4] > 0) {
-            if (cfgEventWeight.cfgUseMultiplicityFractionWeights) {
-              dnx *= dns[l_ind - 4];
-            }
+          if (dns[l_ind - 4] <= 0) {
+            continue;
           }
-          (dt == Gen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, mpt * histosResoNpt[FractionV0][l_ind - 4]->GetBinContent(i) / dns[l_ind - 4], 1.0, rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, mpt * histosResoNpt[FractionV0][l_ind - 4]->GetBinContent(i) / dns[l_ind - 4], 1.0, rndm);
+          double profileWeight = dnx;
+          if (cfgEventWeight.cfgUseMultiplicityFractionWeights) {
+            profileWeight *= dns[l_ind - 4];
+          }
+          const double value = mpt * histosResoNpt[FractionV0][l_ind - 4]->GetBinContent(i) / dns[l_ind - 4];
+          const double weight = cfgEventWeight.cfgUsePtCorrWeights ? profileWeight : 1.0;
+          (dt == Gen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, value, weight, rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, value, weight, rndm);
         }
       }
     }
@@ -2103,11 +2124,11 @@ struct FlowGenericFramework {
               if (!selectionV0DaughterEta(postrack, fractionSetup) || !selectionV0DaughterEta(negtrack, fractionSetup)) {
                 continue;
               }
+              registryQA.fill(HIST("K0/hK0Count"), (fractionSetup == FractionV02) ? FillV02DaughterTrackSelection : FillV0DaughterTrackSelection);
 
               if (cfgFill.cfgFillV0QA && fractionSetup == FractionV02) {
                 fillV0QA(k0Selection, v0, postrack, negtrack, centrality, weff);
               }
-              registryQA.fill(HIST("K0/hK0Count"), (fractionSetup == FractionV02) ? FillV02DaughterTrackSelection : FillV0DaughterTrackSelection);
 
               if (v0.mK0Short() > cfgPIDCuts.cfgK0SideBand1Min && v0.mK0Short() < cfgPIDCuts.cfgK0SideBand1Max) {
                 histosResoNpt[fractionSetup][K0Sideband1]->Fill(v0.pt(), (cfgUseNchCorrection) ? weff : 1.0);
@@ -2144,8 +2165,8 @@ struct FlowGenericFramework {
               if (cfgFill.cfgFillV0QA && fractionSetup == FractionV02) {
                 fillV0QA(lambdaSelection, v0, postrack, negtrack, centrality, weff);
               }
-
-              if (v0.mLambda() > cfgPIDCuts.cfgLambdaSideBand1Min && v0.mLambda() < cfgPIDCuts.cfgLambdaSideBand1Max) {
+              const double lambdaMass = lambdaSelection.isL ? v0.mLambda() : v0.mAntiLambda();
+              if (lambdaMass > cfgPIDCuts.cfgLambdaSideBand1Min && lambdaMass < cfgPIDCuts.cfgLambdaSideBand1Max) {
                 histosResoNpt[fractionSetup][LambdaSideband1]->Fill(v0.pt(), (cfgUseNchCorrection) ? weff : 1.0);
               }
               if (v0.mLambda() > cfgPIDCuts.cfgLambdaSignalMin && v0.mLambda() < cfgPIDCuts.cfgLambdaSignalMax) {
@@ -2220,37 +2241,29 @@ struct FlowGenericFramework {
   template <typename TTrack>
   bool selectionV0Daughter(const TTrack& track, int pid)
   {
-    if (!(track.itsNCls() > cfgTrackCuts.cfgMinNITSCls)) {
-      return 0;
-    }
-    if (!track.hasTPC()) {
+    if (track.tpcNClsCrossedRows() < cfgTrackCuts.cfgNTPCXrowsDaughters) {
       return false;
     }
-    if (track.tpcNClsFound() < cfgTrackCuts.cfgNTPCCls) {
-      return false;
-    }
-    if (!(track.tpcNClsCrossedRows() > cfgTrackCuts.cfgNTPCXrows)) {
-      return 0;
-    }
-
-    if (cfgPIDCuts.cfgUseOnlyTPC) {
-      if (pid == Pions && std::abs(track.tpcNSigmaPi()) > cfgPIDCuts.cfgTPCNsigmaCut) {
+    // Only accept daughters consistent with the expected identities of K0 or Lambda decay.
+    if (cfgPIDCuts.cfgDaughterPIDRejection) {
+      if (cfgPIDCuts.cfgUseOnlyTPC) {
+        if (pid == Pions) {
+          return std::abs(track.tpcNSigmaPi()) <= cfgPIDCuts.cfgTPCNsigmaCut;
+        }
+        if (pid == Protons) {
+          return std::abs(track.tpcNSigmaPr()) <= cfgPIDCuts.cfgTPCNsigmaCut;
+        }
         return false;
       }
-      if (pid == Kaons && std::abs(track.tpcNSigmaKa()) > cfgPIDCuts.cfgTPCNsigmaCut) {
-        return false;
-      }
-      if (pid == Protons && std::abs(track.tpcNSigmaPr()) > cfgPIDCuts.cfgTPCNsigmaCut) {
-        return false;
-      }
-    } else {
       int partIndex = cfgPIDCuts.cfgUseAsymmetricPID ? getNsigmaPIDAssymmetric(track) : getNsigmaPID(track);
       int pidIndex = partIndex - 1; // 0 = pion, 1 = kaon, 2 = proton
+      if (pid != Pions && pid != Protons) {
+        return false;
+      }
       if (pidIndex != pid) {
         return false;
       }
     }
-
     return true;
   }
 
@@ -2351,15 +2364,17 @@ struct FlowGenericFramework {
     if (!selectionV0Daughter(postrack, Pions) || !selectionV0Daughter(negtrack, Pions)) {
       return selection;
     }
-
+    registryQA.fill(HIST("K0/hK0Count"), FillDaughterTrackSelected);
     selection.selected = true;
     selection.isK0 = true;
-    registryQA.fill(HIST("K0/hK0AP"), v0.alpha(), v0.qtarm());
+    if (cfgFill.cfgFillV0QA) {
+      registryQA.fill(HIST("K0/hK0AP"), v0.alpha(), v0.qtarm());
+    }
     return selection;
   }
 
   template <typename TCollision, typename TV0, typename TTracks>
-  V0Selection selectLambda(const TCollision& collision, const TV0& v0, const TTracks&)
+  V0Selection selectLambda(const TCollision& collision, const TV0& v0, const TTracks&, bool fillSelectionQA = true)
   {
     using V0TrackTable = std::decay_t<TTracks>;
     V0Selection selection;
@@ -2371,12 +2386,16 @@ struct FlowGenericFramework {
     auto postrack = v0.template posTrack_as<V0TrackTable>();
     auto negtrack = v0.template negTrack_as<V0TrackTable>();
 
-    registryQA.fill(HIST("Lambda/hLambdaCount"), FillCandidate);
+    if (fillSelectionQA) {
+      registryQA.fill(HIST("Lambda/hLambdaCount"), FillCandidate);
+    }
     if (postrack.pt() < resoCutVals[PosTrackPt][Lambda] || negtrack.pt() < resoCutVals[NegTrackPt][Lambda]) {
       return selection;
     }
 
-    registryQA.fill(HIST("Lambda/hLambdaCount"), FillDaughterPt);
+    if (fillSelectionQA) {
+      registryQA.fill(HIST("Lambda/hLambdaCount"), FillDaughterPt);
+    }
     if (mlambda > resoCutVals[MassMin][Lambda] && mlambda < resoCutVals[MassMax][Lambda]) {
       selection.isL = true;
     }
@@ -2387,13 +2406,17 @@ struct FlowGenericFramework {
     if (!selection.isL && !selection.isAL) {
       return selection;
     }
-    registryQA.fill(HIST("Lambda/hLambdaCount"), FillMassCut);
+    if (fillSelectionQA) {
+      registryQA.fill(HIST("Lambda/hLambdaCount"), FillMassCut);
+    }
 
     // Rapidity correction
     if (std::abs(v0.yLambda()) > resoCutVals[Rapidity][Lambda]) {
       return selection;
     }
-    registryQA.fill(HIST("Lambda/hLambdaCount"), FillRapidityCut);
+    if (fillSelectionQA) {
+      registryQA.fill(HIST("Lambda/hLambdaCount"), FillRapidityCut);
+    }
     // DCA cuts for lambda and antilambda
     if (selection.isL) {
       if (std::abs(v0.dcapostopv()) < resoCutVals[DCAPosToPVMin][Lambda] || std::abs(v0.dcanegtopv()) < resoCutVals[DCANegToPVMin][Lambda]) {
@@ -2405,48 +2428,69 @@ struct FlowGenericFramework {
         return selection;
       }
     }
-    registryQA.fill(HIST("Lambda/hLambdaCount"), FillDCAtoPV);
+    if (fillSelectionQA) {
+      registryQA.fill(HIST("Lambda/hLambdaCount"), FillDCAtoPV);
+    }
     if (resoSwitchVals[UseDCAxDaughters][Lambda] != 0 && std::abs(v0.dcaV0daughters()) > resoCutVals[DCAxDaughters][Lambda]) {
       return selection;
     }
-    registryQA.fill(HIST("Lambda/hLambdaCount"), FillDCAxDaughters);
+    if (fillSelectionQA) {
+      registryQA.fill(HIST("Lambda/hLambdaCount"), FillDCAxDaughters);
+    }
     // v0 radius cuts
     if (resoSwitchVals[UseV0Radius][Lambda] != 0 && (v0.v0radius() < resoCutVals[RadiusMin][Lambda] || v0.v0radius() > resoCutVals[RadiusMax][Lambda])) {
       return selection;
     }
-    registryQA.fill(HIST("Lambda/hLambdaCount"), FillV0Radius);
+    if (fillSelectionQA) {
+      registryQA.fill(HIST("Lambda/hLambdaCount"), FillV0Radius);
+    }
     // cosine pointing angle cuts
     if (v0.v0cosPA() < resoCutVals[CosPA][Lambda]) {
       return selection;
     }
-    registryQA.fill(HIST("Lambda/hLambdaCount"), FillCosPA);
+    if (fillSelectionQA) {
+      registryQA.fill(HIST("Lambda/hLambdaCount"), FillCosPA);
+    }
     // Proper lifetime
     if (resoSwitchVals[UseProperLifetime][Lambda] != 0 && v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massLambda > resoCutVals[LifeTime][Lambda]) {
       return selection;
     }
-    registryQA.fill(HIST("Lambda/hLambdaCount"), FillProperLifetime);
+    if (fillSelectionQA) {
+      registryQA.fill(HIST("Lambda/hLambdaCount"), FillProperLifetime);
+    }
     // ArmenterosPodolanskiCut
     if (resoSwitchVals[UseArmPodCut][Lambda] != 0 && (v0.qtarm() / std::abs(v0.alpha())) < resoCutVals[ArmPodMin][Lambda]) {
       return selection;
     }
-    registryQA.fill(HIST("Lambda/hLambdaCount"), FillArmPodCut);
+    if (fillSelectionQA) {
+      registryQA.fill(HIST("Lambda/hLambdaCount"), FillArmPodCut);
+    }
     if (resoSwitchVals[UseCompetingMassRejection][Lambda] != 0) {
       if (std::abs(v0.mK0Short() - o2::constants::physics::MassK0Short) < resoCutVals[MassRejection][Lambda]) {
         return selection;
       }
     }
-    registryQA.fill(HIST("Lambda/hLambdaCount"), FillCompetingMass);
+    if (fillSelectionQA) {
+      registryQA.fill(HIST("Lambda/hLambdaCount"), FillCompetingMass);
+    }
     if (selection.isL) {
       if (!selectionV0Daughter(postrack, Protons) || !selectionV0Daughter(negtrack, Pions)) {
-        registryQA.fill(HIST("Lambda/hLambdaAP"), v0.alpha(), v0.qtarm());
         return selection;
+      }
+      if (fillSelectionQA && cfgFill.cfgFillV0QA) {
+        registryQA.fill(HIST("Lambda/hLambdaAP"), v0.alpha(), v0.qtarm());
       }
     }
     if (selection.isAL) {
       if (!selectionV0Daughter(postrack, Pions) || !selectionV0Daughter(negtrack, Protons)) {
-        registryQA.fill(HIST("Lambda/hAntiLambdaAP"), v0.alpha(), v0.qtarm());
         return selection;
       }
+      if (fillSelectionQA && cfgFill.cfgFillV0QA) {
+        registryQA.fill(HIST("Lambda/hAntiLambdaAP"), v0.alpha(), v0.qtarm());
+      }
+    }
+    if (fillSelectionQA) {
+      registryQA.fill(HIST("Lambda/hLambdaCount"), FillDaughterTrackSelected);
     }
     selection.selected = true;
 
@@ -2589,7 +2633,7 @@ struct FlowGenericFramework {
     if (selection.isK0) {
       registryQA.fill(HIST("K0/hK0Mass_sparse"), v0.mK0Short(), v0.pt(), centrality);
       registryQA.fill(HIST("K0/hK0Phi"), v0.phi());
-      registryQA.fill(HIST("K0/hK0Eta"), v0.eta());
+      registryQA.fill(HIST("K0/hK0EtaY"), v0.eta(), v0.yK0Short());
       registryQA.fill(HIST("K0/PiPlusTPC_K0"), postrack.pt(), postrack.tpcNSigmaKa());
       registryQA.fill(HIST("K0/PiPlusTOF_K0"), postrack.pt(), postrack.tofNSigmaKa());
       registryQA.fill(HIST("K0/PiMinusTPC_K0"), negtrack.pt(), negtrack.tpcNSigmaKa());
@@ -2603,7 +2647,7 @@ struct FlowGenericFramework {
     if (selection.isL) {
       registryQA.fill(HIST("Lambda/hLambdaMass_sparse"), v0.mLambda(), v0.pt(), centrality);
       registryQA.fill(HIST("Lambda/hLambdaPhi"), v0.phi());
-      registryQA.fill(HIST("Lambda/hLambdaEta"), v0.eta());
+      registryQA.fill(HIST("Lambda/hLambdaEtaY"), v0.eta(), v0.yLambda());
       registryQA.fill(HIST("Lambda/PrPlusTPC_L"), postrack.pt(), postrack.tpcNSigmaKa());
       registryQA.fill(HIST("Lambda/PrPlusTOF_L"), postrack.pt(), postrack.tofNSigmaKa());
       registryQA.fill(HIST("Lambda/PiMinusTPC_L"), negtrack.pt(), negtrack.tpcNSigmaKa());
@@ -2612,7 +2656,7 @@ struct FlowGenericFramework {
     if (selection.isAL) {
       registryQA.fill(HIST("Lambda/hAntiLambdaMass_sparse"), v0.mAntiLambda(), v0.pt(), centrality);
       registryQA.fill(HIST("Lambda/hAntiLambdaPhi"), v0.phi());
-      registryQA.fill(HIST("Lambda/hAntiLambdaEta"), v0.eta());
+      registryQA.fill(HIST("Lambda/hAntiLambdaEtaY"), v0.eta(), v0.yLambda());
       registryQA.fill(HIST("Lambda/PiPlusTPC_AL"), postrack.pt(), postrack.tpcNSigmaKa());
       registryQA.fill(HIST("Lambda/PiPlusTOF_AL"), postrack.pt(), postrack.tofNSigmaKa());
       registryQA.fill(HIST("Lambda/PrMinusTPC_AL"), negtrack.pt(), negtrack.tpcNSigmaKa());
@@ -2714,7 +2758,7 @@ struct FlowGenericFramework {
       th1sList[run][EventSel]->Fill(1.5);
     }
     float centrality = getCentrality(collision);
-    if (cfgEventSelection.cfgDoOccupancySel) {
+    if (cfgEventSelection.cfgOccupancySelection >= 0) {
       int occupancy = collision.trackOccupancyInTimeRange();
       if (cfgFill.cfgFillQA) {
         registryQA.fill(HIST("eventQA/before/occ_mult_cent"), occupancy, tracks.size(), centrality);
@@ -2777,13 +2821,17 @@ struct FlowGenericFramework {
 
     const auto centrality = getCentrality(collision);
 
-    if (cfgEventSelection.cfgDoOccupancySel) {
+    if (cfgEventSelection.cfgOccupancySelection >= 0) {
       int occupancy = collision.trackOccupancyInTimeRange();
-      registryQA.fill(HIST("eventQA/before/occ_mult_cent"), occupancy, tracks.size(), centrality);
+      if (cfgFill.cfgFillQA) {
+        registryQA.fill(HIST("eventQA/before/occ_mult_cent"), occupancy, tracks.size(), centrality);
+      }
       if (occupancy < 0 || occupancy > cfgEventSelection.cfgOccupancySelection) {
         return;
       }
-      registryQA.fill(HIST("eventQA/after/occ_mult_cent"), occupancy, tracks.size(), centrality);
+      if (cfgFill.cfgFillQA) {
+        registryQA.fill(HIST("eventQA/after/occ_mult_cent"), occupancy, tracks.size(), centrality);
+      }
     }
     registryQA.fill(HIST("eventQA/eventSel"), 2.5);
     if (cfgFill.cfgFillRunByRunQA) {
@@ -2826,7 +2874,9 @@ struct FlowGenericFramework {
   void processOnTheFly(soa::Filtered<aod::McCollisions>::iterator const& mcCollision, aod::McParticles const& mcParticles, aod::V0Datas const& v0s)
   {
     int run = 0;
-    registryQA.fill(HIST("MCGen/impactParameter"), mcCollision.impactParameter(), mcParticles.size());
+    if (cfgFill.cfgFillQA) {
+      registryQA.fill(HIST("MCGen/impactParameter"), mcCollision.impactParameter(), mcParticles.size());
+    }
     processCollision<Gen>(mcCollision, mcParticles, v0s, mcCollision.impactParameter(), -999, run);
   }
   PROCESS_SWITCH(FlowGenericFramework, processOnTheFly, "Process analysis for MC on-the-fly generated events", false);
@@ -2890,6 +2940,30 @@ struct FlowGenericFramework {
     registry.fill(HIST("Efficiency/efficiencyHist"), particle.pt(), centrality, particleIndex, EfficiencyGenerated);
   }
 
+  template <typename TParticle>
+  bool isGeneratedFeeddownXi(const TParticle& particle)
+  {
+    return particle.isPhysicalPrimary() && std::abs(particle.pdgCode()) == PDG_t::kXiMinus && std::abs(particle.y()) < resoCutVals[Rapidity][Lambda];
+  }
+
+  template <typename TParticle>
+  int getLambdaFeeddownSpeciesFromXi(const TParticle& xiParticle)
+  {
+    return xiParticle.pdgCode() == PDG_t::kXiMinus ? FeeddownLambdaFromXiMinus : FeeddownAntiLambdaFromXiPlus;
+  }
+
+  template <typename TParticle>
+  void fillGeneratedLambdaFeeddownXi(const TParticle& particle, float centrality)
+  {
+    if (resoSwitchVals[UseParticle][Lambda] == 0) {
+      return;
+    }
+    if (!isGeneratedFeeddownXi(particle)) {
+      return;
+    }
+    registry.fill(HIST("Efficiency/lambdaFeeddownGeneratedXi"), particle.pt(), centrality, getLambdaFeeddownSpeciesFromXi(particle));
+  }
+
   template <typename TCollision>
   bool isEfficiencyEventSelected(const TCollision& collision, const int multTrk, float& centrality)
   {
@@ -2900,7 +2974,7 @@ struct FlowGenericFramework {
     if (centrality < gfwMemberCache.centbinning.front() || centrality > gfwMemberCache.centbinning.back()) {
       return false;
     }
-    if (cfgEventSelection.cfgDoOccupancySel) {
+    if (cfgEventSelection.cfgOccupancySelection >= 0) {
       int occupancy = collision.trackOccupancyInTimeRange();
       if (occupancy < 0 || occupancy > cfgEventSelection.cfgOccupancySelection) {
         return false;
@@ -2916,6 +2990,41 @@ struct FlowGenericFramework {
     return track.eta() > cfgKinematics.cfgEta->first && track.eta() < cfgKinematics.cfgEta->second;
   }
 
+  template <typename TParticle>
+  int getV0EfficiencyDaughterPdgCategory(const TParticle& particle)
+  {
+    const int pdgCode = particle.pdgCode();
+    if (pdgCode == kPiPlus) {
+      return V0EfficiencyDaughterPiPlus;
+    }
+    if (pdgCode == -kPiPlus) {
+      return V0EfficiencyDaughterPiMinus;
+    }
+    if (pdgCode == kProton) {
+      return V0EfficiencyDaughterProton;
+    }
+    if (pdgCode == -kProton) {
+      return V0EfficiencyDaughterAntiProton;
+    }
+    if (pdgCode == kElectron) {
+      return V0EfficiencyDaughterElectron;
+    }
+    if (pdgCode == -kElectron) {
+      return V0EfficiencyDaughterPositron;
+    }
+    if (std::abs(pdgCode) == kKPlus) {
+      return V0EfficiencyDaughterKaon;
+    }
+    return V0EfficiencyDaughterOther;
+  }
+
+  template <typename TParticle, typename TTrack>
+  void fillV0EfficiencyDaughterDebug(int particleIndex, float centrality, const TParticle& posMcParticle, const TParticle& negMcParticle, const TTrack& postrack, const TTrack& negtrack)
+  {
+    registry.fill(HIST("Efficiency/v0RecoDaughterEtaDebug"), centrality, particleIndex, posMcParticle.eta(), negMcParticle.eta(), postrack.eta(), negtrack.eta());
+    registry.fill(HIST("Efficiency/v0RecoDaughterPdgDebug"), centrality, particleIndex, getV0EfficiencyDaughterPdgCategory(posMcParticle), getV0EfficiencyDaughterPdgCategory(negMcParticle));
+  }
+
   void fillV0EfficiencyRecoDebug(float pt, float centrality, int particleIndex, int stage)
   {
     registry.fill(HIST("Efficiency/v0RecoDebug"), pt, centrality, particleIndex, stage);
@@ -2929,6 +3038,65 @@ struct FlowGenericFramework {
     }
     if (resoSwitchVals[UseParticle][Lambda] != 0) {
       fillV0EfficiencyRecoDebug(v0.pt(), centrality, EfficiencyLambda, stage);
+    }
+  }
+
+  template <typename TV0, typename TCollision, typename TTracks>
+  void fillLambdaFeeddownReco(const TV0& v0, const TCollision& collision, const TTracks& tracks, float centrality)
+  {
+    if (resoSwitchVals[UseParticle][Lambda] == 0) {
+      return;
+    }
+
+    using V0TrackTable = std::decay_t<TTracks>;
+    auto postrack = v0.template posTrack_as<V0TrackTable>();
+    auto negtrack = v0.template negTrack_as<V0TrackTable>();
+
+    if (!postrack.has_mcParticle() || !negtrack.has_mcParticle()) {
+      return;
+    }
+
+    auto posMcParticle = postrack.template mcParticle_as<aod::McParticles>();
+    auto negMcParticle = negtrack.template mcParticle_as<aod::McParticles>();
+    if (!posMcParticle.has_mothers() || !negMcParticle.has_mothers()) {
+      return;
+    }
+
+    for (const auto& posMother : posMcParticle.template mothers_as<aod::McParticles>()) {
+      for (const auto& negMother : negMcParticle.template mothers_as<aod::McParticles>()) {
+        if (posMother.globalIndex() != negMother.globalIndex() || std::abs(posMother.pdgCode()) != PDG_t::kLambda0) {
+          continue;
+        }
+
+        if (!posMother.has_mothers()) {
+          continue;
+        }
+        for (const auto& xiMother : posMother.template mothers_as<aod::McParticles>()) {
+          if (!isGeneratedFeeddownXi(xiMother)) {
+            continue;
+          }
+
+          const bool isLambda = posMother.pdgCode() == PDG_t::kLambda0 && xiMother.pdgCode() == PDG_t::kXiMinus;
+          const bool isAntiLambda = posMother.pdgCode() == -PDG_t::kLambda0 && xiMother.pdgCode() == -PDG_t::kXiMinus;
+          if (!isLambda && !isAntiLambda) {
+            continue;
+          }
+
+          auto selection = selectLambda(collision, v0, tracks, false);
+          if (!selection.selected || (isLambda && !selection.isL) || (isAntiLambda && !selection.isAL)) {
+            return;
+          }
+          if (!isWithinEfficiencyEtaAcceptance(posMcParticle) || !isWithinEfficiencyEtaAcceptance(negMcParticle)) {
+            return;
+          }
+          if (!isWithinEfficiencyEtaAcceptance(postrack) || !isWithinEfficiencyEtaAcceptance(negtrack)) {
+            return;
+          }
+
+          registry.fill(HIST("Efficiency/lambdaFeeddownRecoXi"), v0.pt(), xiMother.pt(), centrality, getLambdaFeeddownSpeciesFromXi(xiMother));
+          return;
+        }
+      }
     }
   }
 
@@ -2960,7 +3128,9 @@ struct FlowGenericFramework {
   void fillEfficiencyRecoV0(const TV0& v0, const TCollision& collision, const TTracks& tracks, float centrality)
   {
     using V0TrackTable = std::decay_t<TTracks>;
-    fillEnabledV0EfficiencyRecoDebug(v0, centrality, V0EfficiencyCandidate);
+    if (cfgFill.cfgFillV0QA) {
+      fillEnabledV0EfficiencyRecoDebug(v0, centrality, V0EfficiencyCandidate);
+    }
 
     auto postrack = v0.template posTrack_as<V0TrackTable>();
     auto negtrack = v0.template negTrack_as<V0TrackTable>();
@@ -2968,14 +3138,18 @@ struct FlowGenericFramework {
     if (!postrack.has_mcParticle() || !negtrack.has_mcParticle()) {
       return;
     }
-    fillEnabledV0EfficiencyRecoDebug(v0, centrality, V0EfficiencyDaughterMCLabels);
+    if (cfgFill.cfgFillV0QA) {
+      fillEnabledV0EfficiencyRecoDebug(v0, centrality, V0EfficiencyDaughterMCLabels);
+    }
 
     auto posMcParticle = postrack.template mcParticle_as<aod::McParticles>();
     auto negMcParticle = negtrack.template mcParticle_as<aod::McParticles>();
     if (!posMcParticle.has_mothers() || !negMcParticle.has_mothers()) {
       return;
     }
-    fillEnabledV0EfficiencyRecoDebug(v0, centrality, V0EfficiencyDaughterMothers);
+    if (cfgFill.cfgFillV0QA) {
+      fillEnabledV0EfficiencyRecoDebug(v0, centrality, V0EfficiencyDaughterMothers);
+    }
 
     for (const auto& posMother : posMcParticle.template mothers_as<aod::McParticles>()) {
       for (const auto& negMother : negMcParticle.template mothers_as<aod::McParticles>()) {
@@ -2985,52 +3159,78 @@ struct FlowGenericFramework {
 
         int pdgCode = std::abs(posMother.pdgCode());
         if (pdgCode == PDG_t::kK0Short && resoSwitchVals[UseParticle][K0] != 0) {
-          fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencyCommonPrimaryMother);
-          fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencyMotherSpecies);
+          if (cfgFill.cfgFillV0QA) {
+            fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencyCommonPrimaryMother);
+            fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencyMotherSpecies);
+          }
           if (std::abs(posMother.y()) >= resoCutVals[Rapidity][K0]) {
             return;
           }
-          fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencyMotherRapidity);
+          if (cfgFill.cfgFillV0QA) {
+            fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencyMotherRapidity);
+          }
           auto selection = selectK0(collision, v0, tracks);
           if (!selection.selected) {
             return;
           }
-          fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencySelection);
+          if (cfgFill.cfgFillV0QA) {
+            fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencySelection);
+            fillV0EfficiencyDaughterDebug(EfficiencyK0, centrality, posMcParticle, negMcParticle, postrack, negtrack);
+          }
           if (!isWithinEfficiencyEtaAcceptance(posMcParticle) || !isWithinEfficiencyEtaAcceptance(negMcParticle)) {
             return;
           }
-          fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencyGeneratedDaughterEta);
+          if (cfgFill.cfgFillV0QA) {
+            fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencyGeneratedDaughterEta);
+          }
           if (!isWithinEfficiencyEtaAcceptance(postrack) || !isWithinEfficiencyEtaAcceptance(negtrack)) {
             return;
           }
-          fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencyRecoDaughterEta);
+          if (cfgFill.cfgFillV0QA) {
+            fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencyRecoDaughterEta);
+          }
           registry.fill(HIST("Efficiency/efficiencyHist"), posMother.pt(), centrality, EfficiencyK0, EfficiencyReconstructed);
-          fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencyFilled);
+          if (cfgFill.cfgFillV0QA) {
+            fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencyFilled);
+          }
           return;
         }
 
         if (pdgCode == PDG_t::kLambda0 && resoSwitchVals[UseParticle][Lambda] != 0) {
-          fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencyCommonPrimaryMother);
-          fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencyMotherSpecies);
+          if (cfgFill.cfgFillV0QA) {
+            fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencyCommonPrimaryMother);
+            fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencyMotherSpecies);
+          }
           if (std::abs(posMother.y()) >= resoCutVals[Rapidity][Lambda]) {
             return;
           }
-          fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencyMotherRapidity);
+          if (cfgFill.cfgFillV0QA) {
+            fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencyMotherRapidity);
+          }
           auto selection = selectLambda(collision, v0, tracks);
           if (!selection.selected) {
             return;
           }
-          fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencySelection);
+          if (cfgFill.cfgFillV0QA) {
+            fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencySelection);
+            fillV0EfficiencyDaughterDebug(EfficiencyLambda, centrality, posMcParticle, negMcParticle, postrack, negtrack);
+          }
           if (!isWithinEfficiencyEtaAcceptance(posMcParticle) || !isWithinEfficiencyEtaAcceptance(negMcParticle)) {
             return;
           }
-          fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencyGeneratedDaughterEta);
+          if (cfgFill.cfgFillV0QA) {
+            fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencyGeneratedDaughterEta);
+          }
           if (!isWithinEfficiencyEtaAcceptance(postrack) || !isWithinEfficiencyEtaAcceptance(negtrack)) {
             return;
           }
-          fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencyRecoDaughterEta);
+          if (cfgFill.cfgFillV0QA) {
+            fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencyRecoDaughterEta);
+          }
           registry.fill(HIST("Efficiency/efficiencyHist"), posMother.pt(), centrality, EfficiencyLambda, EfficiencyReconstructed);
-          fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencyFilled);
+          if (cfgFill.cfgFillV0QA) {
+            fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencyFilled);
+          }
           return;
         }
       }
@@ -3071,6 +3271,9 @@ struct FlowGenericFramework {
         continue;
       }
       fillGeneratedEfficiencyTrack(particle, selectedCentrality);
+      if (cfgFill.cfgFillV0QA) {
+        fillGeneratedLambdaFeeddownXi(particle, selectedCentrality);
+      }
       if (isGeneratedEfficiencyV0(particle, PDG_t::kK0Short, K0) && resoSwitchVals[UseParticle][K0] != 0) {
         fillGeneratedEfficiencyV0(particle, EfficiencyK0, selectedCentrality);
       }
@@ -3094,6 +3297,9 @@ struct FlowGenericFramework {
       for (const auto& v0 : v0s) {
         if (v0.collisionId() != bestCollisionIndex) {
           continue;
+        }
+        if (cfgFill.cfgFillV0QA) {
+          fillLambdaFeeddownReco(v0, collision, tracks, selectedCentrality);
         }
         fillEfficiencyRecoV0(v0, collision, tracks, selectedCentrality);
       }

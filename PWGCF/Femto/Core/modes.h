@@ -101,12 +101,12 @@ enum class Particle : o2::analysis::femto::datatypes::ParticleType {
 };
 
 enum class McOrigin : o2::analysis::femto::datatypes::McOriginType {
-  kNoMcParticle = 0,       // no associated mc particle normally indicated a wrongly reconstruced partilce
-  kFromWrongCollision = 1, // partilce originates from the wrong collision or a collision which was wrongly reconstructed (like a split vertex)
+  kNoMcParticle = 0,       // no associated mc particle, normally indicated by wrongly reconstructed particle
+  kFromWrongCollision = 1, // particle originates from the wrong collision or a collision which was wrongly reconstructed (like a split vertex)
   kPhysicalPrimary = 2,    // primary particle
   kFromSecondaryDecay = 3, // particle from secondary decay
-  kFromMaterial = 4,       // partilce orginates from material
-  kMissidentified = 5,     // partilce was kMissidentified (also know as fake)
+  kFromMaterial = 4,       // particle originates from material
+  kMissidentified = 5,     // particle was kMissidentified (also know as fake)
   kPrompt = 6,             // HF only: charm hadron produced promptly (from c quark)
   kNonPrompt = 7,          // HF only: charm hadron from beauty decay
   kMcOriginLast = 8
@@ -174,8 +174,20 @@ enum class TwoTrackResonance : o2::analysis::femto::datatypes::TwoTrackResonance
 enum class CharmHadron : o2::analysis::femto::datatypes::CharmHadronType {
   kD0,
   kD0Bar,
-  kDplus,
-  kLc
+  kLc,
+  kLcBar
+};
+
+enum class QvecDetector : o2::analysis::femto::datatypes::QvecDetectorType {
+  kFT0C = 0,
+  kFT0A = 1,
+  kQvecDetectorLast = 2
+};
+
+enum class QvecHarmonic : o2::analysis::femto::datatypes::QvecHarmonicType {
+  kN2 = 2,
+  kN3 = 3,
+  kQvecHarmonicLast = 4
 };
 
 }; // namespace o2::analysis::femto::modes

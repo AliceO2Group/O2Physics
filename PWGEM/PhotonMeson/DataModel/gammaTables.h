@@ -14,7 +14,7 @@
 /// \author D. Sekihata, daiki.sekihata@cern.ch; Marvin Hemmer (marvin.hemmer@cern.ch) - Goethe University Frankfurt
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
-#include "PWGEM/PhotonMeson/DataModel/EventTables.h"
+#include "PWGEM/PhotonMeson/DataModel/EventTables.h" // IWYU pragma: keep (needed)
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/CaloClusters.h"
@@ -23,7 +23,6 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CommonConstants/MathConstants.h>
-#include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 
 #include <array>

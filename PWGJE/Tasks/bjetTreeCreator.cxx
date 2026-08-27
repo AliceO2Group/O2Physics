@@ -49,8 +49,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include <math.h>
-
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -112,6 +110,8 @@ DECLARE_SOA_COLUMN(TrackTPCChi2NCl, tracktpcchi2ncl, float);           //! The t
 DECLARE_SOA_COLUMN(TrackITSNCls, trackitsncls, float);                 //! The track ITS NCls
 DECLARE_SOA_COLUMN(TrackTPCNCls, tracktpcncls, float);                 //! The track TPC NCls (Found)
 DECLARE_SOA_COLUMN(TrackTPCNCrossedRows, tracktpcncrossedrows, float); //! The track TPC NCrossedRows
+// DECLARE_SOA_COLUMN(TrackTPCNSigmaPi, tracktpcnsigmapi, float);                 //! The track TPC nSigma Pi
+// DECLARE_SOA_COLUMN(TrackTOFNSigmaPi, tracktofnsigmapi, float);                 //! The track TOF nSigma Pi
 DECLARE_SOA_COLUMN(TrackOrigin, trk_origin, int);                      //! The track origin label for GNN track origin predictions
 DECLARE_SOA_COLUMN(TrackVtxIndex, trk_vtx_index, int);                 //! The track vertex index for GNN vertex predictions
 // DECLARE_SOA_COLUMN(DCATrackJet, dcatrackjet, float);                              //! The distance between track and jet, unfortunately it cannot be calculated in O2
@@ -157,6 +157,18 @@ DECLARE_SOA_TABLE(bjetTracksParamsExtrb, "AOD", "BJETTRACKSEXTRB",
                   trackInfo::TrackVtxIndex);
 
 using bjetTracksParamExtrb = bjetTracksParamsExtrb::iterator;
+
+// // PID information
+// DECLARE_SOA_TABLE(bjetTracksParamsExtrc, "AOD", "BJETTRACKSEXTRC",
+//                   // o2::soa::Index<>,
+//                   trackInfo::TrackPhi,
+//                   trackInfo::TrackCharge,
+//                   trackInfo::TrackTPCNSigmaPi,
+//                   trackInfo::TrackTOFNSigmaPi,
+//                   trackInfo::TrackOrigin,
+//                   trackInfo::TrackVtxIndex);
+
+// using bjetTracksParamExtrc = bjetTracksParamsExtrc::iterator;
 
 namespace SVInfo
 {
@@ -554,7 +566,10 @@ struct BJetTreeCreator {
 
       trkIdx++;
 
-      if (constituent.pt() < trackPtMin || !jettaggingutilities::trackAcceptanceWithDca(constituent, maxIPxy, maxIPz)) {
+      // No DCA-acceptance cut here: matches BjetTaggingGnn::fillMCDJetHistograms(), which only applies
+      // a track pT cut (trackPtMinGnn) for GNN input tracks, so the training tree stays consistent with
+      // what is evaluated at inference time.
+      if (constituent.pt() < trackPtMin) {
         continue;
       }
 
@@ -794,7 +809,7 @@ struct BJetTreeCreator {
     }
 
     // Uses only collisionId % trainingDatasetRaioParam == 0 for training dataset
-    if (trainingDatasetRatioParam && collision.collisionId() % trainingDatasetRatioParam != 0) {
+    if (trainingDatasetRatioParam != 0 && collision.collisionId() % trainingDatasetRatioParam != 0) {
       return;
     }
 

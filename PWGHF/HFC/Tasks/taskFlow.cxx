@@ -1228,7 +1228,7 @@ struct HfTaskFlow {
       LOGF(info, "Loaded efficiency histogram from %s (%p)", configTask.loadEfficienciesForTpc.value.c_str(), static_cast<void*>(mEfficiencyTpc));
     }
     if (configTask.loadEfficienciesForMft.value.empty() == false) {
-      mEfficiencyMft = ccdb->getForTimeStamp<TH3D>(configTask.loadEfficienciesForTpc, timestamp);
+      mEfficiencyMft = ccdb->getForTimeStamp<TH3D>(configTask.loadEfficienciesForMft, timestamp);
       if (mEfficiencyMft == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for MFT tracks from %s", configTask.loadEfficienciesForMft.value.c_str());
       }

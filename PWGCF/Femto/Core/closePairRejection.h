@@ -84,6 +84,11 @@ struct ConfCpr : o2::framework::ConfigurableGroup {
 constexpr const char PrefixCprTrackTrack[] = "CprTrackTrack";
 constexpr const char PrefixCprTrackV0Daughter[] = "CprTrackV0Daughter";
 constexpr const char PrefixCprTrackD0Daughter[] = "CprTrackD0Daughter";
+constexpr const char PrefixCprTrackLcProton[] = "CprTrackLcProton";
+constexpr const char PrefixCprTrackLcKaon[] = "CprTrackLcKaon";
+constexpr const char PrefixCprTrackLcPion[] = "CprTrackLcPion";
+constexpr const char PrefixCprD0DaughterD0DaughterPos[] = "CprD0DaughterD0DaughterPos";
+constexpr const char PrefixCprD0DaughterD0DaughterNeg[] = "CprD0DaughterD0DaughterNeg";
 constexpr const char PrefixCprTrackResonanceDaughter[] = "CprTrackResonanceDaughter";
 constexpr const char PrefixCprTrackKinkDaughter[] = "CprTrackKinkDaughter";
 constexpr const char PrefixCprV0DaughterV0DaughterPos[] = "CprV0DaughterV0DaughterPos";
@@ -96,6 +101,11 @@ constexpr const char PrefixCprTrackCascadeBachelor[] = "CprTrackCascadeBachelor"
 using ConfCprTrackTrack = ConfCpr<PrefixCprTrackTrack>;
 using ConfCprTrackV0Daughter = ConfCpr<PrefixCprTrackV0Daughter>;
 using ConfCprTrackD0Daughter = ConfCpr<PrefixCprTrackD0Daughter>;
+using ConfCprTrackLcProton = ConfCpr<PrefixCprTrackLcProton>;
+using ConfCprTrackLcKaon = ConfCpr<PrefixCprTrackLcKaon>;
+using ConfCprTrackLcPion = ConfCpr<PrefixCprTrackLcPion>;
+using ConfCprD0DaugherD0DaughterPos = ConfCpr<PrefixCprD0DaughterD0DaughterPos>;
+using ConfCprD0DaugherD0DaughterNeg = ConfCpr<PrefixCprD0DaughterD0DaughterNeg>;
 using ConfCprTrackResonanceDaughter = ConfCpr<PrefixCprTrackResonanceDaughter>;
 using ConfCprTrackKinkDaughter = ConfCpr<PrefixCprTrackKinkDaughter>;
 using ConfCprV0DaugherV0DaughterPos = ConfCpr<PrefixCprV0DaughterV0DaughterPos>;
@@ -115,6 +125,16 @@ constexpr char PrefixTrackV0DaughterSe[] = "CPR_TrackV0Dau/SE/";
 constexpr char PrefixTrackV0DaughterMe[] = "CPR_TrackV0Dau/ME/";
 constexpr char PrefixTrackD0DaughterSe[] = "CPR_TrackD0Dau/SE/";
 constexpr char PrefixTrackD0DaughterMe[] = "CPR_TrackD0Dau/ME/";
+constexpr char PrefixD0D0PosSe[] = "CPR_D0D0_PosDau/SE/";
+constexpr char PrefixD0D0NegSe[] = "CPR_D0D0_NegDau/SE/";
+constexpr char PrefixD0D0PosMe[] = "CPR_D0D0_PosDau/ME/";
+constexpr char PrefixD0D0NegMe[] = "CPR_D0D0_NegDau/ME/";
+constexpr char PrefixTrackLcProtonSe[] = "CPR_TrackLc_Proton/SE/";
+constexpr char PrefixTrackLcKaonSe[] = "CPR_TrackLc_Kaon/SE/";
+constexpr char PrefixTrackLcPionSe[] = "CPR_TrackLc_Pion/SE/";
+constexpr char PrefixTrackLcProtonMe[] = "CPR_TrackLc_Proton/ME/";
+constexpr char PrefixTrackLcKaonMe[] = "CPR_TrackLc_Kaon/ME/";
+constexpr char PrefixTrackLcPionMe[] = "CPR_TrackLc_Pion/ME/";
 constexpr char PrefixV0V0PosSe[] = "CPR_V0V0_PosDau/SE/";
 constexpr char PrefixV0V0NegSe[] = "CPR_V0V0_NegDau/SE/";
 constexpr char PrefixV0V0PosMe[] = "CPR_V0V0_PosDau/ME/";
@@ -529,6 +549,58 @@ class ClosePairRejectionTrackV0 // can also be used for any particle type that h
 
  private:
   CloseTrackRejection<prefixTrackV0> mCtr;
+};
+
+template <auto& prefixProton, auto& prefixKaon, auto& prefixPion>
+class ClosePairRejectionTrackLc
+{
+ public:
+  template <typename T1, typename T2, typename T3>
+  void init(o2::framework::HistogramRegistry* registry,
+            std::map<CprHist, std::vector<o2::framework::AxisSpec>> const& specsProton,
+            std::map<CprHist, std::vector<o2::framework::AxisSpec>> const& specsKaon,
+            std::map<CprHist, std::vector<o2::framework::AxisSpec>> const& specsPion,
+            T1 const& confCprProton,
+            T2 const& confCprKaon,
+            T3 const& confCprPion,
+            int absChargeTrack)
+  {
+    mCtrProton.init(registry, specsProton, confCprProton, absChargeTrack, 1);
+    mCtrKaon.init(registry, specsKaon, confCprKaon, absChargeTrack, 1);
+    mCtrPion.init(registry, specsPion, confCprPion, absChargeTrack, 1);
+  }
+
+  void setMagField(float magField)
+  {
+    mCtrProton.setMagField(magField);
+    mCtrKaon.setMagField(magField);
+    mCtrPion.setMagField(magField);
+  }
+
+  template <typename T1, typename T2, typename T3>
+  void setPair(T1 const& track, T2 const& lc, T3 const& trackTable)
+  {
+    auto prong0 = trackTable.rawIteratorAt(lc.prong0DauId() - trackTable.offset());
+    mCtrProton.compute(track, prong0);
+    auto prong1 = trackTable.rawIteratorAt(lc.prong1DauId() - trackTable.offset());
+    mCtrKaon.compute(track, prong1);
+    auto prong2 = trackTable.rawIteratorAt(lc.prong2DauId() - trackTable.offset());
+    mCtrPion.compute(track, prong2);
+  }
+
+  [[nodiscard]] bool isClosePair() const { return mCtrProton.isClosePair() || mCtrKaon.isClosePair() || mCtrPion.isClosePair(); }
+
+  void fill(float kstar)
+  {
+    mCtrProton.fill(kstar);
+    mCtrKaon.fill(kstar);
+    mCtrPion.fill(kstar);
+  }
+
+ private:
+  CloseTrackRejection<prefixProton> mCtrProton;
+  CloseTrackRejection<prefixKaon> mCtrKaon;
+  CloseTrackRejection<prefixPion> mCtrPion;
 };
 
 template <auto& prefixBachelor, auto& prefixV0Daughter>

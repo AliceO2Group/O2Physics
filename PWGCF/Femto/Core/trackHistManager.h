@@ -160,6 +160,11 @@ constexpr const char PrefixV02PosDauBinning[] = "V02PosDauBinning";
 constexpr const char PrefixV02NegDauBinning[] = "V02NegDauBinning";
 constexpr const char PrefixD01PosDauBinning[] = "D01PosDauBinning";
 constexpr const char PrefixD01NegDauBinning[] = "D01NegDauBinning";
+constexpr const char PrefixD02PosDauBinning[] = "D02PosDauBinning";
+constexpr const char PrefixD02NegDauBinning[] = "D02NegDauBinning";
+constexpr const char PrefixLc1ProtonDauBinning[] = "Lc1ProtonDauBinning";
+constexpr const char PrefixLc1KaonDauBinning[] = "Lc1KaonDauBinning";
+constexpr const char PrefixLc1PionDauBinning[] = "Lc1PionDauBinning";
 constexpr const char PrefixCascadePosDauBinning[] = "CascadePosDauBinning";
 constexpr const char PrefixCascadeNegDauBinning[] = "CascadeNegDauBinning";
 constexpr const char PrefixCascadeBachelorBinning[] = "CascadeBachelorBinning";
@@ -180,6 +185,11 @@ using ConfV02PosDauBinning = ConfTrackBinning<PrefixV02PosDauBinning>;
 using ConfV02NegDauBinning = ConfTrackBinning<PrefixV02NegDauBinning>;
 using ConfD01PosDauBinning = ConfTrackBinning<PrefixD01PosDauBinning>;
 using ConfD01NegDauBinning = ConfTrackBinning<PrefixD01NegDauBinning>;
+using ConfD02PosDauBinning = ConfTrackBinning<PrefixD02PosDauBinning>;
+using ConfD02NegDauBinning = ConfTrackBinning<PrefixD02NegDauBinning>;
+using ConfLc1ProtonDauBinning = ConfTrackBinning<PrefixLc1ProtonDauBinning>;
+using ConfLc1KaonDauBinning = ConfTrackBinning<PrefixLc1KaonDauBinning>;
+using ConfLc1PionDauBinning = ConfTrackBinning<PrefixLc1PionDauBinning>;
 using ConfCascadePosDauBinning = ConfTrackBinning<PrefixCascadePosDauBinning>;
 using ConfCascadeNegDauBinning = ConfTrackBinning<PrefixCascadeNegDauBinning>;
 using ConfCascadeBachelorBinning = ConfTrackBinning<PrefixCascadeBachelorBinning>;
@@ -269,6 +279,9 @@ constexpr const char PrefixV02PosDauQaBinning[] = "V02PosDauQaBinning";
 constexpr const char PrefixV02NegDauQaBinning[] = "V02NegDauQaBinning";
 constexpr const char PrefixD01PosDauQaBinning[] = "D01PosDauQaBinning";
 constexpr const char PrefixD01NegDauQaBinning[] = "D01NegDauQaBinning";
+constexpr const char PrefixLc1ProtonDauQaBinning[] = "Lc1ProtonDauQaBinning";
+constexpr const char PrefixLc1KaonDauQaBinning[] = "Lc1KaonDauQaBinning";
+constexpr const char PrefixLc1PionDauQaBinning[] = "Lc1PionDauQaBinning";
 constexpr const char PrefixCascadePosDauQaBinning[] = "CascadePosDauQaBinning";
 constexpr const char PrefixCascadeNegDauQaBinning[] = "CascadeNegDauQaBinning";
 constexpr const char PrefixCascadeBachelorQaBinning[] = "CascadeBachelorQaBinning";
@@ -284,6 +297,9 @@ using ConfV02PosDauQaBinning = ConfTrackQaBinning<PrefixV02PosDauQaBinning>;
 using ConfV02NegDauQaBinning = ConfTrackQaBinning<PrefixV02NegDauQaBinning>;
 using ConfD01PosDauQaBinning = ConfTrackQaBinning<PrefixD01PosDauQaBinning>;
 using ConfD01NegDauQaBinning = ConfTrackQaBinning<PrefixD01NegDauQaBinning>;
+using ConfLc1ProtonDauQaBinning = ConfTrackQaBinning<PrefixLc1ProtonDauQaBinning>;
+using ConfLc1KaonDauQaBinning = ConfTrackQaBinning<PrefixLc1KaonDauQaBinning>;
+using ConfLc1PionDauQaBinning = ConfTrackQaBinning<PrefixLc1PionDauQaBinning>;
 using ConfCascadePosDauQaBinning = ConfTrackQaBinning<PrefixCascadePosDauQaBinning>;
 using ConfCascadeNegDauQaBinning = ConfTrackQaBinning<PrefixCascadeNegDauQaBinning>;
 using ConfCascadeBachelorQaBinning = ConfTrackQaBinning<PrefixCascadeBachelorQaBinning>;
@@ -527,8 +543,17 @@ constexpr char PrefixResonanceNegDaughterQa[] = "ResonanceNegDauQa/";
 
 constexpr char PrefixD01PosDaughter[] = "D01PosDau/";
 constexpr char PrefixD01NegDaughter[] = "D01NegDau/";
+constexpr char PrefixD02PosDaughter[] = "D02PosDau/";
+constexpr char PrefixD02NegDaughter[] = "D02NegDau/";
 constexpr char PrefixD01PosDaughterQa[] = "D01PosDauQa/";
 constexpr char PrefixD01NegDaughterQa[] = "D01NegDauQa/";
+
+constexpr char PrefixLc1ProtonDaughter[] = "Lc1ProtonDau/";
+constexpr char PrefixLc1KaonDaughter[] = "Lc1KaonDau/";
+constexpr char PrefixLc1PionDaughter[] = "Lc1PionDau/";
+constexpr char PrefixLc1ProtonDaughterQa[] = "Lc1ProtonDauQa/";
+constexpr char PrefixLc1KaonDaughterQa[] = "Lc1KaonDauQa/";
+constexpr char PrefixLc1PionDaughterQa[] = "Lc1PionDauQa/";
 
 constexpr char PrefixV01PosDaughter[] = "V01PosDau/";
 constexpr char PrefixV01NegDaughter[] = "V01NegDau/";
@@ -634,8 +659,8 @@ class TrackHistManager
     }
   }
 
-  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5>
-  void fill(T1 const& track, T2 const& /*trackTable*/, T3 const& mcParticles, T4 const& mcMothers, T5 const& mcPartonicMothers)
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
+  void fill(T1 const& track, T2 const& /*trackTable*/, T3 const& col, T4 const& mcParticles, T5 const& mcMothers, T6 const& mcPartonicMothers)
   {
     if constexpr (isFlagSet(mode, modes::Mode::kReco)) {
       this->fillAnalysis(track);
@@ -644,7 +669,7 @@ class TrackHistManager
       this->fillQa(track);
     }
     if constexpr (isFlagSet(mode, modes::Mode::kMc)) {
-      this->template fillMc<mode>(track, mcParticles, mcMothers, mcPartonicMothers);
+      this->template fillMc<mode>(track, col, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
 
@@ -952,8 +977,8 @@ class TrackHistManager
     }
   }
 
-  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4>
-  void fillMc(T1 const& track, T2 const& /*mcParticles*/, T3 const& /*mcMothers*/, T4 const& /*mcPartonicMothers*/)
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5>
+  void fillMc(T1 const& track, T2 const& col, T3 const& /*mcParticles*/, T4 const& /*mcMothers*/, T5 const& /*mcPartonicMothers*/)
   {
     // No MC Particle
     if (!track.has_fMcParticle()) {
@@ -968,7 +993,11 @@ class TrackHistManager
     }
 
     // Retrieve MC particle
-    auto mcParticle = track.template fMcParticle_as<T2>();
+    auto mcParticle = track.template fMcParticle_as<T3>();
+
+    // particles associcated to wrong collision
+    // whether a particle is associated to a wrong collision or not cannot be known by the producer so we check it here
+    bool fromWrongCollision = mcParticle.fMcColId() != col.fMcColId();
 
     // missidentifed particles are special case
     // whether a particle is missidentfied or not cannot be known by the producer so we check it here
@@ -977,8 +1006,10 @@ class TrackHistManager
     mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTruePtVsPt, HistTable)), mcParticle.pt(), track.pt());
     mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueEtaVsEta, HistTable)), mcParticle.eta(), track.eta());
     mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTruePhiVsPhi, HistTable)), mcParticle.phi(), track.phi());
-    if (isMissidentified) {
-      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), static_cast<int>(modes::McOrigin::kMissidentified));
+    if (fromWrongCollision) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), static_cast<float>(modes::McOrigin::kFromWrongCollision));
+    } else if (isMissidentified) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), static_cast<float>(modes::McOrigin::kMissidentified));
     } else {
       mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), mcParticle.origin());
     }
@@ -986,7 +1017,7 @@ class TrackHistManager
 
     // get mother
     if (mcParticle.has_fMcMother()) {
-      auto mother = mcParticle.template fMcMother_as<T3>();
+      auto mother = mcParticle.template fMcMother_as<T4>();
       mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kPdgMother, HistTable)), mother.pdgCode());
     } else {
       mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kPdgMother, HistTable)), 0);
@@ -994,7 +1025,7 @@ class TrackHistManager
 
     // get partonic mother
     if (mcParticle.has_fMcPartMoth()) {
-      auto partonicMother = mcParticle.template fMcPartMoth_as<T4>();
+      auto partonicMother = mcParticle.template fMcPartMoth_as<T5>();
       mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kPdgPartonicMother, HistTable)), partonicMother.pdgCode());
     } else {
       mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kPdgPartonicMother, HistTable)), 0);
@@ -1002,8 +1033,10 @@ class TrackHistManager
 
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
       if (mPlotOrigins) {
-        // check first if particle is missidentified
-        if (isMissidentified) {
+        // check first if particle is from a wrong collision
+        if (fromWrongCollision) {
+          mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kFromWrongCollision, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
+        } else if (isMissidentified) {
           // if it is, we fill it as such
           mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kMissidentified, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
         } else {
@@ -1012,15 +1045,12 @@ class TrackHistManager
             case modes::McOrigin::kPhysicalPrimary:
               mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kPrimary, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
               break;
-            case modes::McOrigin::kFromWrongCollision:
-              mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kFromWrongCollision, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
-              break;
             case modes::McOrigin::kFromMaterial:
               mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kFromMaterial, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
               break;
             case modes::McOrigin::kFromSecondaryDecay:
               if (mcParticle.has_fMcMother()) {
-                auto mother = mcParticle.template fMcMother_as<T3>();
+                auto mother = mcParticle.template fMcMother_as<T4>();
                 int motherPdgCode = std::abs(mother.pdgCode());
                 // Switch on PDG of the mother
                 if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel1 && motherPdgCode == mPdgCodesSecondaryMother[0]) {

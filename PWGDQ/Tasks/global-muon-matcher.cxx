@@ -202,6 +202,9 @@ struct GlobalMuonMatching {
     Configurable<float> cfgMFTAlignmentCorrYOffsetBottom{"cfgMFTAlignmentCorrYOffsetBottom", 0.f, "MFT Y offset correction - bottom half"};
   } configMftAlignmentCorrections;
 
+  // Magnetic field position bias
+  Configurable<float> cfgFieldOriginBiasZ{"cfgFieldOriginBiasZ", 0.0f, "Bias applied to the magnetic field z position"};
+
   // Variables for CCDB objects access and retrieval
   struct : ConfigurableGroup {
     Configurable<std::string> cfgCcdbUrl{"cfgCcdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -754,6 +757,9 @@ struct GlobalMuonMatching {
     ccdbManager->setLocalObjectValidityChecking();
     fCCDBApi.init(configCcdb.cfgCcdbUrl);
     mRunNumber = 0;
+
+    // configure magnetic field position bias
+    o2::conf::ConfigurableParam::setValue("FieldOriginBias.z", std::to_string(cfgFieldOriginBiasZ.value));
 
     // Configuration for track fitter
     const auto& trackerParam = mch::TrackerParam::Instance();

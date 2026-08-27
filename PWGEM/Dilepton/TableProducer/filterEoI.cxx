@@ -19,6 +19,7 @@
 
 #include "Common/Core/TableHelper.h"
 
+#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -28,6 +29,7 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
+#include <Math/Vector4D.h>
 #include <TH1.h>
 
 #include <cstdint>
@@ -108,7 +110,6 @@ struct filterEoI {
       if constexpr (static_cast<bool>(system & kPCM)) {
         auto v0s_coll = v0s.sliceBy(perCollision_v0, collision.globalIndex());
         if (v0s_coll.size() >= 1) {
-          does_pcm_exist = true;
           fRegistry.fill(HIST("hEventCounter"), 4);
         }
       }

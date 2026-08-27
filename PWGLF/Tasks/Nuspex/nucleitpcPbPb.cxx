@@ -187,6 +187,7 @@ struct NucleitpcPbPb {
   // ---- Track selection configurables ------------------------------------
   Configurable<bool> cfgUsePVcontributors{"cfgUsePVcontributors", true, "use tracks that are PV contibutors"};
   Configurable<bool> cfgPassedITSRefit{"cfgPassedITSRefit", true, "Require ITS refit"};
+  Configurable<bool> occupancycutrequire{"occupancycutrequire", true, "Require occupancy cut"};
   Configurable<bool> cfgPassedTPCRefit{"cfgPassedTPCRefit", true, "Require TPC refit"};
   Configurable<bool> cfgetaRequire{"cfgetaRequire", true, "eta cut require"};
   Configurable<bool> cfgetaRequireMC{"cfgetaRequireMC", true, "eta cut require for generated particles"};
@@ -197,6 +198,7 @@ struct NucleitpcPbPb {
   Configurable<float> cfgCutRapiditymax{"cfgCutRapiditymax", 0.5f, "max Rapidity range"};
   Configurable<float> cfgtpcNClsFindable{"cfgtpcNClsFindable", 0.8f, "tpcNClsFindable over crossedRows"};
   Configurable<float> centcut{"centcut", 80.0f, "centrality cut"};
+  Configurable<float> occupancycut{"occupancycut", 1000.0f, "occupancy cut"};
   Configurable<bool> cfgZvertexRequireMC{"cfgZvertexRequireMC", true, "Pos Z cut in MC"};
 
   // ---- Track quality-cut configurables -----------------------------------
@@ -424,6 +426,9 @@ struct NucleitpcPbPb {
       if (collision.centFT0C() > centcut)
         continue;
       histos.fill(HIST("histNev"), 6.5);
+      if (occupancycutrequire && (occupancy > occupancycut))
+        continue;
+      histos.fill(HIST("histNev"), 7.5);
       histos.fill(HIST("histCentFTOC_cut"), collision.centFT0C());
 
       auto tracksInColl = tracks.sliceBy(tracksPerCollision, collision.globalIndex());

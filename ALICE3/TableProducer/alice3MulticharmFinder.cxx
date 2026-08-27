@@ -127,8 +127,8 @@ struct Alice3MulticharmFinder {
   Configurable<float> picMinPt{"picMinPt", 0.15, "Minimum pT for XiC pions"};
 
   Configurable<float> xicMaxDauDCA{"xicMaxDauDCA", 0.005f, "DCA between XiC daughters (cm)"};
-  Configurable<float> xicMaxDCAxy{"xicMaxDCAxy", 0.0005f, "maxDCA"};
-  Configurable<float> xicMaxDCAz{"xicMaxDCAz", 0.0005f, "maxDCA"};
+  Configurable<float> xicMinDCAxy{"xicMinDCAxy", 0.0005f, "Minimum DCA to PV"};
+  Configurable<float> xicMinDCAz{"xicMinDCAz", 0.0005f, "Minimum DCA to PV"};
   Configurable<float> xicMinDecayRadius{"xicMinDecayRadius", -1, "Minimum R2D for XiC decay (cm)"};
   Configurable<float> xicMinDecayDistanceFromPV{"xicMinDecayDistanceFromPV", -1, "Minimum distance for XiC decay from PV (cm)"};
   Configurable<float> xicMinProperLength{"xicMinProperLength", 0.002, "Minimum proper length for XiC decay (cm)"};
@@ -199,6 +199,8 @@ struct Alice3MulticharmFinder {
   // Helper structs to pass candidate information
   struct {
     float radius{};
+    float pt{};
+    float eta{};
     o2::track::TrackParCov trackParCov;
   } thisXiCandidate;
 
@@ -686,7 +688,7 @@ struct Alice3MulticharmFinder {
           xicdcaZ = dcaInfo.getZ();
         }
 
-        if (std::fabs(xicdcaXY) < xicMaxDCAxy || std::fabs(xicdcaZ) < xicMaxDCAz) {
+        if (std::fabs(xicdcaXY) < xicMinDCAxy || std::fabs(xicdcaZ) < xicMinDCAz) {
           continue;
         }
 
@@ -812,6 +814,7 @@ struct Alice3MulticharmFinder {
                            thisXiccCandidate.eta, thisXiccCandidate.dca,
                            thisXicCandidate.mass, thisXicCandidate.pt,
                            thisXicCandidate.eta, thisXicCandidate.dca,
+                           thisXiCandidate.pt, thisXiCandidate.eta,
                            xi.dcaXYCascToPV(), xi.dcaZCascToPV(),
                            xicdcaXY, xicdcaZ,
                            xiccdcaXY, xiccdcaZ,
@@ -886,6 +889,8 @@ struct Alice3MulticharmFinder {
       hist<TH1>("hDCAzXi")->Fill(xi.dcaZ() * ToMicrons);
       hist<TH1>("hMinXiDecayRadius")->Fill(xiCand.cascRadius());
       thisXiCandidate.radius = xiCand.cascRadius();
+      thisXiCandidate.pt = xi.pt();
+      thisXiCandidate.eta = xi.eta();
       thisXiCandidate.trackParCov = getTrackParCov(xi);
       processFindXicc(collision, xiCand, picTracksGrouped, piccTracksGrouped);
     }
@@ -971,6 +976,8 @@ struct Alice3MulticharmFinder {
       std::array<float, NCovMatElements> cascCovMat{};
       std::copy(xiCand.covMat(), xiCand.covMat() + NCovMatElements, cascCovMat.begin());
       thisXiCandidate.radius = xiCand.cascradius();
+      thisXiCandidate.pt = xiCand.pt();
+      thisXiCandidate.eta = xiCand.eta();
       thisXiCandidate.trackParCov = o2::track::TrackParCov(cascSV, cascP, cascCovMat, chargeCascade);
       processFindXicc(collision, xiCand, picTracksGrouped, piccTracksGrouped);
     }

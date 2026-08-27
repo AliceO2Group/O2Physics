@@ -132,12 +132,12 @@ FlowPtContainer::FlowPtContainer(const char* name, const char* title) : TNamed(n
                                                                         arr(),
                                                                         warr(),
                                                                         subevents() {}
-void FlowPtContainer::initialise(const o2::framework::AxisSpec axis, const int& m, const GFWCorrConfigs& configs, const int& nsub)
+void FlowPtContainer::initialise(const o2::framework::AxisSpec axis, const int& maxOrder, const GFWCorrConfigs& configs, const int& nsub)
 {
   arr.resize(3 * 3 * 3 * 3);
   warr.resize(3 * 3 * 3 * 3);
   if (!mpar)
-    mpar = m;
+    mpar = maxOrder;
   std::vector<double> multiBins = axis.binEdges;
   int nMultiBins = axis.nBins.value_or(0);
   if (nMultiBins <= 0)
@@ -161,7 +161,7 @@ void FlowPtContainer::initialise(const o2::framework::AxisSpec axis, const int& 
   for (int m = 0; m < mpar; ++m) {
     fCorrList->Add(new BootstrapProfile(Form("mpt%i", m + 1), Form("mpt%i", m + 1), nMultiBins, &multiBins[0]));
   }
-  for (int m = 0; m < 4; ++m) {
+  for (int m = 0; m < centralMomentMaxOrder; ++m) {
     for (int i = 0; i <= m; ++i) {
       fCMTermList->Add(new BootstrapProfile(Form("cm%i_Mpt%i", m + 1, i), Form("cm%i_Mpt%i", m + 1, i), nMultiBins, &multiBins[0]));
     }
@@ -230,12 +230,12 @@ void FlowPtContainer::initialise(const o2::framework::AxisSpec axis, const int& 
   LOGF(info, "Container %s initialized with m = %i\n and %i subsamples", this->GetName(), mpar, nsub);
   return;
 };
-void FlowPtContainer::initialise(int nbinsx, double* xbins, const int& m, const GFWCorrConfigs& configs, const int& nsub)
+void FlowPtContainer::initialise(int nbinsx, double* xbins, const int& maxOrder, const GFWCorrConfigs& configs, const int& nsub)
 {
   arr.resize(3 * 3 * 5 * 5);
   warr.resize(3 * 3 * 5 * 5);
   if (!mpar)
-    mpar = m;
+    mpar = maxOrder;
   if (fCMTermList)
     delete fCMTermList;
   fCMTermList = new TList();
@@ -251,7 +251,7 @@ void FlowPtContainer::initialise(int nbinsx, double* xbins, const int& m, const 
   for (int m = 0; m < mpar; ++m) {
     fCorrList->Add(new BootstrapProfile(Form("mpt%i", m + 1), Form("mpt%i", m + 1), nbinsx, xbins));
   }
-  for (int m = 0; m < 4; ++m) {
+  for (int m = 0; m < centralMomentMaxOrder; ++m) {
     for (int i = 0; i <= m; ++i) {
       fCMTermList->Add(new BootstrapProfile(Form("cm%i_Mpt%i", m + 1, i), Form("cm%i_Mpt%i", m + 1, i), nbinsx, xbins));
     }
@@ -318,12 +318,12 @@ void FlowPtContainer::initialise(int nbinsx, double* xbins, const int& m, const 
   }
   LOGF(info, "Container %s initialized with m = %i\n", this->GetName(), mpar);
 };
-void FlowPtContainer::initialise(int nbinsx, double xlow, double xhigh, const int& m, const GFWCorrConfigs& configs, const int& nsub)
+void FlowPtContainer::initialise(int nbinsx, double xlow, double xhigh, const int& maxOrder, const GFWCorrConfigs& configs, const int& nsub)
 {
   arr.resize(3 * 3 * 5 * 5);
   warr.resize(3 * 3 * 5 * 5);
   if (!mpar)
-    mpar = m;
+    mpar = maxOrder;
   if (fCMTermList)
     delete fCMTermList;
   fCMTermList = new TList();
@@ -339,7 +339,7 @@ void FlowPtContainer::initialise(int nbinsx, double xlow, double xhigh, const in
   for (int m = 0; m < mpar; ++m) {
     fCorrList->Add(new BootstrapProfile(Form("mpt%i", m + 1), Form("mpt%i", m + 1), nbinsx, xlow, xhigh));
   }
-  for (int m = 0; m < 4; ++m) {
+  for (int m = 0; m < centralMomentMaxOrder; ++m) {
     for (int i = 0; i <= m; ++i) {
       fCMTermList->Add(new BootstrapProfile(Form("cm%i_Mpt%i", m + 1, i), Form("cm%i_Mpt%i", m + 1, i), nbinsx, xlow, xhigh));
     }
@@ -406,7 +406,7 @@ void FlowPtContainer::initialise(int nbinsx, double xlow, double xhigh, const in
   }
   LOGF(info, "Container %s initialized with m = %i\n", this->GetName(), mpar);
 };
-void FlowPtContainer::initialiseSubevent(const o2::framework::AxisSpec axis, const int& m, const int& nsubev, const int& nsub)
+void FlowPtContainer::initialiseSubevent(const o2::framework::AxisSpec axis, const int& maxOrder, const int& nsubev, const int& nsub)
 {
   if (nsubev < 1) {
     LOGF(fatal, "Need at least one subevent");
@@ -414,7 +414,7 @@ void FlowPtContainer::initialiseSubevent(const o2::framework::AxisSpec axis, con
   }
   nSubevents = nsubev;
   if (!mpar)
-    mpar = m;
+    mpar = maxOrder;
   std::vector<double> multiBins = axis.binEdges;
   int nMultiBins = axis.nBins.value_or(0);
   if (nMultiBins <= 0)
@@ -431,9 +431,9 @@ void FlowPtContainer::initialiseSubevent(const o2::framework::AxisSpec axis, con
 
   // Get all possible subevent combinations given m particles and nsubev subevents - also considering not using all m particles, e.g. all lower orders
   std::vector<int> current;
-  getSubevents(m, nsubev + 1, current, subevents);
+  getSubevents(mpar, nsubev + 1, current, subevents);
   // remove unused "extra" subevent
-  for (auto& subevent : subevents)
+  for (auto& subevent : subevents) // o2-linter: disable=const-ref-in-for-loop (modified through pop_back())
     subevent.pop_back();
   subevents.erase(subevents.begin(), subevents.begin() + 1);
 
@@ -455,14 +455,15 @@ void FlowPtContainer::initialiseSubevent(const o2::framework::AxisSpec axis, con
     delete fSubCMList;
   fSubCMList = new TList();
   fSubCMList->SetOwner(kTRUE);
-  for (int subEv = 0; subEv < 2; ++subEv) {
-    for (int m = 0; m < 4; ++m) {
+  const int maxSubEv = 2;
+  for (int subEv = 0; subEv < maxSubEv; ++subEv) {
+    for (int m = 0; m < centralMomentMaxOrder; ++m) {
       for (int i = 0; i <= m; ++i) {
         fSubCMList->Add(new BootstrapProfile(Form("cm%i_sub%i_Mpt%i", m + 1, subEv + 1, i), this->GetTitle(), nMultiBins, &multiBins[0]));
       }
     }
   }
-  for (int m = 2; m <= 4; ++m) {
+  for (int m = 2; m <= centralMomentMaxOrder; ++m) {
     for (int first = 1; first < m; ++first) {
       for (int second = first; second < m; ++second) {
         if (first > second)
@@ -485,7 +486,7 @@ void FlowPtContainer::initialiseSubevent(const o2::framework::AxisSpec axis, con
   }
   LOGF(info, "Container %s initialized Subevents and %i subsamples", this->GetName(), nsub);
 }
-void FlowPtContainer::initialiseSubevent(int nbinsx, double* xbins, const int& m, const int& nsubev, const int& nsub)
+void FlowPtContainer::initialiseSubevent(int nbinsx, double* xbins, const int& maxOrder, const int& nsubev, const int& nsub)
 {
   if (nsubev < 1) {
     LOGF(fatal, "Need at least one subevent");
@@ -493,7 +494,7 @@ void FlowPtContainer::initialiseSubevent(int nbinsx, double* xbins, const int& m
   }
   nSubevents = nsubev;
   if (!mpar)
-    mpar = m;
+    mpar = maxOrder;
 
   if (fSubList)
     delete fSubList;
@@ -502,9 +503,9 @@ void FlowPtContainer::initialiseSubevent(int nbinsx, double* xbins, const int& m
 
   // Get all possible subevent combinations given m particles and nsubev subevents - also considering not using all m particles, e.g. all lower orders
   std::vector<int> current;
-  getSubevents(m, nsubev + 1, current, subevents);
+  getSubevents(mpar, nsubev + 1, current, subevents);
   // remove unused "extra" subevent
-  for (auto& subevent : subevents)
+  for (auto& subevent : subevents) // o2-linter: disable=const-ref-in-for-loop (modified through pop_back())
     subevent.pop_back();
   subevents.erase(subevents.begin(), subevents.begin() + 1);
 
@@ -526,14 +527,15 @@ void FlowPtContainer::initialiseSubevent(int nbinsx, double* xbins, const int& m
     delete fSubCMList;
   fSubCMList = new TList();
   fSubCMList->SetOwner(kTRUE);
-  for (int subEv = 0; subEv < 2; ++subEv) {
-    for (int m = 0; m < 4; ++m) {
+  const int maxSubEv = 2;
+  for (int subEv = 0; subEv < maxSubEv; ++subEv) {
+    for (int m = 0; m < centralMomentMaxOrder; ++m) {
       for (int i = 0; i <= m; ++i) {
         fSubCMList->Add(new BootstrapProfile(Form("cm%i_sub%i_Mpt%i", m + 1, subEv + 1, i), this->GetTitle(), nbinsx, xbins));
       }
     }
   }
-  for (int m = 2; m <= 4; ++m) {
+  for (int m = 2; m <= centralMomentMaxOrder; ++m) {
     for (int first = 1; first < m; ++first) {
       for (int second = first; second < m; ++second) {
         if (first > second)
@@ -556,7 +558,7 @@ void FlowPtContainer::initialiseSubevent(int nbinsx, double* xbins, const int& m
   }
   LOGF(info, "Container %s initialized Subevents and %i subsamples", this->GetName(), nsub);
 }
-void FlowPtContainer::initialiseSubevent(int nbinsx, double xlow, double xhigh, const int& m, const int& nsubev, const int& nsub)
+void FlowPtContainer::initialiseSubevent(int nbinsx, double xlow, double xhigh, const int& maxOrder, const int& nsubev, const int& nsub)
 {
   if (nsubev < 1) {
     LOGF(fatal, "Need at least one subevent");
@@ -564,7 +566,7 @@ void FlowPtContainer::initialiseSubevent(int nbinsx, double xlow, double xhigh, 
   }
   nSubevents = nsubev;
   if (!mpar)
-    mpar = m;
+    mpar = maxOrder;
   if (fSubList)
     delete fSubList;
   fSubList = new TList();
@@ -574,7 +576,7 @@ void FlowPtContainer::initialiseSubevent(int nbinsx, double xlow, double xhigh, 
   std::vector<int> current;
   getSubevents(mpar, nsubev + 1, current, subevents);
   // remove unused "extra" subevent
-  for (auto& subevent : subevents)
+  for (auto& subevent : subevents) // o2-linter: disable=const-ref-in-for-loop (modified through pop_back())
     subevent.pop_back();
   subevents.erase(subevents.begin(), subevents.begin() + 1);
 
@@ -596,14 +598,15 @@ void FlowPtContainer::initialiseSubevent(int nbinsx, double xlow, double xhigh, 
     delete fSubCMList;
   fSubCMList = new TList();
   fSubCMList->SetOwner(kTRUE);
-  for (int subEv = 0; subEv < 2; ++subEv) {
-    for (int m = 0; m < 4; ++m) {
+  const int maxSubEv = 2;
+  for (int subEv = 0; subEv < maxSubEv; ++subEv) {
+    for (int m = 0; m < centralMomentMaxOrder; ++m) {
       for (int i = 0; i <= m; ++i) {
         fSubCMList->Add(new BootstrapProfile(Form("cm%i_sub%i_Mpt%i", m + 1, subEv + 1, i), this->GetTitle(), nbinsx, xlow, xhigh));
       }
     }
   }
-  for (int m = 2; m <= 4; ++m) {
+  for (int m = 2; m <= centralMomentMaxOrder; ++m) {
     for (int first = 1; first < m; ++first) {
       for (int second = first; second < m; ++second) {
         if (first > second)
@@ -669,10 +672,10 @@ void FlowPtContainer::calculateSubeventCorrelations()
 {
   corrNumSub.clear();
   corrNumSub.resize(nSubevents, std::vector<double>(mpar + 1, 0));
-  for (auto& corrnum : corrNumSub)
+  for (auto& corrnum : corrNumSub) // o2-linter: disable=const-ref-in-for-loop (assigned a value)
     corrnum[0] = 1.0;
   corrDenSub.resize(nSubevents, std::vector<double>(mpar + 1, 0));
-  for (auto& corrden : corrDenSub)
+  for (auto& corrden : corrDenSub) // o2-linter: disable=const-ref-in-for-loop (assigned a value)
     corrden[0] = 1.0;
 
   for (int subIndex = 0; subIndex < nSubevents; ++subIndex) {
@@ -784,15 +787,34 @@ void FlowPtContainer::fillVnDeltaPtProfiles(const int configIndex, const double&
   if (!mask) {
     return;
   }
-  int startIndex = fCovFirstIndex[configIndex];
+
+  if (configIndex < 0 || static_cast<size_t>(configIndex) >= fCovFirstIndex.size()) {
+    LOGF(error, "Invalid configuration index %d", configIndex);
+    return;
+  }
+  int profileIndex = fCovFirstIndex[configIndex];
   for (auto m(1); m <= mpar; ++m) {
     if (!(mask & (1 << (m - 1))))
       continue;
-    for (auto i = 0; i <= m; ++i) {
-      if (cmDen[m] != 0) {
-        dynamic_cast<BootstrapProfile*>(fCovList->At(startIndex))->FillProfile(centmult, flowval * ((i == m) ? cmVal[0] : cmVal[m * (m - 1) / 2 + i + 1]), (fEventWeight == UnityWeight) ? 1.0 : flowtuples * cmDen[m], rn);
+    for (auto i = 0; i <= m; ++i, ++profileIndex) {
+      const size_t cmIndex = (i == m) ? 0u : static_cast<size_t>(m * (m - 1) / 2 + i + 1);
+
+      if (static_cast<size_t>(m) >= cmDen.size() || cmIndex >= cmVal.size() || cmDen[m] == 0.) {
+        continue;
       }
-      ++startIndex;
+
+      if (!fCovList || profileIndex >= fCovList->GetEntries()) {
+        LOGF(error, "Profile index %d out of range (entries=%d, config=%d, m=%d)", profileIndex, fCovList ? fCovList->GetEntries() : 0, configIndex, m);
+        continue;
+      }
+
+      auto* profile = dynamic_cast<BootstrapProfile*>(fCovList->At(profileIndex));
+
+      if (!profile) {
+        LOGF(error, "Missing BootstrapProfile at index %d for config %d", profileIndex, configIndex);
+        continue;
+      }
+      profile->FillProfile(centmult, flowval * cmVal[cmIndex], (fEventWeight == UnityWeight) ? 1.0 : flowtuples * cmDen[m], rn);
     }
   }
   return;
@@ -893,13 +915,13 @@ void FlowPtContainer::fillCMProfiles(const double& centmult, const double& rn)
     return;
   cmVal.push_back(sumP[getVectorIndex(1, 1)] / cmDen[1]);
   dynamic_cast<BootstrapProfile*>(fCMTermList->At(0))->FillProfile(centmult, cmVal[1], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[1], rn);
-  if (mpar < 2 || sumP[getVectorIndex(2, 0)] == 0 || cmDen[2] == 0)
+  if (mpar < 2 || sumP[getVectorIndex(2, 0)] == 0 || cmDen[2] == 0) // o2-linter: disable=magic-number (less than order 2)
     return;
   cmVal.push_back(1 / cmDen[2] * (sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 1)] - sumP[getVectorIndex(2, 2)]));
   dynamic_cast<BootstrapProfile*>(fCMTermList->At(1))->FillProfile(centmult, cmVal[2], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[2], rn);
   cmVal.push_back(-2 * 1 / cmDen[2] * (sumP[getVectorIndex(1, 0)] * sumP[getVectorIndex(1, 1)] - sumP[getVectorIndex(2, 1)]));
   dynamic_cast<BootstrapProfile*>(fCMTermList->At(2))->FillProfile(centmult, cmVal[3], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[2], rn);
-  if (mpar < 3 || sumP[getVectorIndex(3, 0)] == 0 || cmDen[3] == 0)
+  if (mpar < 3 || sumP[getVectorIndex(3, 0)] == 0 || cmDen[3] == 0) // o2-linter: disable=magic-number (less than order 3)
     return;
   cmVal.push_back(1 / cmDen[3] * (sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 1)] - 3 * sumP[getVectorIndex(2, 2)] * sumP[getVectorIndex(1, 1)] + 2 * sumP[getVectorIndex(3, 3)]));
   dynamic_cast<BootstrapProfile*>(fCMTermList->At(3))->FillProfile(centmult, cmVal[4], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[3], rn);
@@ -907,7 +929,7 @@ void FlowPtContainer::fillCMProfiles(const double& centmult, const double& rn)
   dynamic_cast<BootstrapProfile*>(fCMTermList->At(4))->FillProfile(centmult, cmVal[5], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[3], rn);
   cmVal.push_back(3 * 1 / cmDen[3] * (sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 0)] * sumP[getVectorIndex(1, 0)] - 2 * sumP[getVectorIndex(2, 1)] * sumP[getVectorIndex(1, 0)] + 2 * sumP[getVectorIndex(3, 1)] - sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(2, 0)]));
   dynamic_cast<BootstrapProfile*>(fCMTermList->At(5))->FillProfile(centmult, cmVal[6], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[3], rn);
-  if (mpar < 4 || sumP[getVectorIndex(4, 0)] == 0 || cmDen[4] == 0)
+  if (mpar < 4 || sumP[getVectorIndex(4, 0)] == 0 || cmDen[4] == 0) // o2-linter: disable=magic-number (less than order 4)
     return;
   cmVal.push_back(1 / cmDen[4] * (sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 1)] - 6 * sumP[getVectorIndex(2, 2)] * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 1)] + 3 * sumP[getVectorIndex(2, 2)] * sumP[getVectorIndex(2, 2)] + 8 * sumP[getVectorIndex(3, 3)] * sumP[getVectorIndex(1, 1)] - 6 * sumP[getVectorIndex(4, 4)]));
   dynamic_cast<BootstrapProfile*>(fCMTermList->At(6))->FillProfile(centmult, cmVal[7], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[4], rn);
@@ -924,7 +946,8 @@ void FlowPtContainer::fillCMSubeventProfiles(const double& centmult, const doubl
   // do I need to add an extra return statement here to match fillCMProfiles?
   if (mpar < 1)
     return;
-  if (nSubevents < 2)
+  const int minSubevents = 2;
+  if (nSubevents < minSubevents)
     return;
 
   int indOffset = 0;
@@ -958,7 +981,7 @@ void FlowPtContainer::fillCMSubeventProfiles(const double& centmult, const doubl
     dynamic_cast<BootstrapProfile*>(fSubCMList->At(indOffset + 0))->FillProfile(centmult, cmValSub[nSubevents - 1][1], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[nSubevents - 1][1], rn);
   }
 
-  if (mpar >= 2) {
+  if (mpar >= 2) { // o2-linter: disable=magic-number (greater than order 2)
     if (insub[0][getVectorIndex(2, 0)] != 0 && cmDenSub[0][2] != 0) {
       cmValSub[0].push_back(1 / cmDenSub[0][2] * (insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 1)] - insub[0][getVectorIndex(2, 2)]));
       dynamic_cast<BootstrapProfile*>(fSubCMList->At(1))->FillProfile(centmult, cmValSub[0][2], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[0][2], rn);
@@ -974,7 +997,7 @@ void FlowPtContainer::fillCMSubeventProfiles(const double& centmult, const doubl
     validMpar[0] = true;
   }
 
-  if (mpar >= 3) {
+  if (mpar >= 3) { // o2-linter: disable=magic-number (greater than order 3)
     if (insub[0][getVectorIndex(3, 0)] != 0 && cmDenSub[0][3] != 0) {
       cmValSub[0].push_back(1 / cmDenSub[0][3] * (insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 1)] - 3 * insub[0][getVectorIndex(2, 2)] * insub[0][getVectorIndex(1, 1)] + 2 * insub[0][getVectorIndex(3, 3)]));
       dynamic_cast<BootstrapProfile*>(fSubCMList->At(3))->FillProfile(centmult, cmValSub[0][4], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[0][3], rn);
@@ -993,7 +1016,7 @@ void FlowPtContainer::fillCMSubeventProfiles(const double& centmult, const doubl
     }
     validMpar[1] = true;
   }
-  if (mpar >= 4) {
+  if (mpar >= 4) { // o2-linter: disable=magic-number (greater than order 4)
     if (insub[0][getVectorIndex(4, 0)] != 0 && cmDenSub[0][4] != 0) {
       cmValSub[0].push_back(1 / cmDenSub[0][4] * (insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 1)] - 6 * insub[0][getVectorIndex(2, 2)] * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 1)] + 3 * insub[0][getVectorIndex(2, 2)] * insub[0][getVectorIndex(2, 2)] + 8 * insub[0][getVectorIndex(3, 3)] * insub[0][getVectorIndex(1, 1)] - 6 * insub[0][getVectorIndex(4, 4)]));
       dynamic_cast<BootstrapProfile*>(fSubCMList->At(6))->FillProfile(centmult, cmValSub[0][7], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[0][4], rn);
@@ -1017,7 +1040,7 @@ void FlowPtContainer::fillCMSubeventProfiles(const double& centmult, const doubl
     validMpar[2] = true;
   }
   // Fill cross terms
-  for (int m = 2; m <= 4; ++m) {
+  for (int m = 2; m <= centralMomentMaxOrder; ++m) {
     if (!validMpar[m - 2])
       continue;
     for (int first = 1; first < m; ++first) {
@@ -1039,7 +1062,8 @@ void FlowPtContainer::fillCMSubeventProfiles(const double& centmult, const doubl
 }
 void FlowPtContainer::fillArray(FillType a, FillType b, double c, double d)
 {
-  for (int idx = 0; idx < 225; ++idx) {
+  const int nTerms = 3 * 3 * 5 * 5;
+  for (int idx = 0; idx < nTerms; ++idx) {
     int i = idx % 3;
     int j = ((idx - i) / 3) % 3;
     int k = ((idx - j * 3 - i) / 9) % 5;
@@ -1744,7 +1768,7 @@ void FlowPtContainer::createCentralMomentList()
     delete fCentralMomentList;
   fCentralMomentList = new TList();
   fCentralMomentList->SetOwner();
-  for (auto m(1); m <= 4; ++m) {
+  for (auto m(1); m <= centralMomentMaxOrder; ++m) {
     for (int i = -1; i < reinterpret_cast<BootstrapProfile*>(fCMTermList->At(0))->getNSubs(); ++i) {
       TH1* hMpt = reinterpret_cast<BootstrapProfile*>(fCMTermList->At(0))->getHist(i);
       std::vector<TH1*> hTs;
@@ -1817,7 +1841,7 @@ void FlowPtContainer::calculateCumulantHists(std::vector<TH1*> inh, int ind)
   }
   return;
 }
-Long64_t FlowPtContainer::Merge(TCollection* collist)
+Long64_t FlowPtContainer::Merge(TCollection* collist) // o2-linter: disable=name/function-variable (Keep name consistent with ROOT streamer merging)
 {
   if (!fCorrList || !fCMTermList)
     return 0;
@@ -1905,19 +1929,19 @@ TH1* FlowPtContainer::raiseHistToPower(TH1* inh, double p)
   }
   return reth;
 }
-void FlowPtContainer::getSubevents(int k, int n, std::vector<int>& current, std::vector<std::vector<int>>& subevents)
+void FlowPtContainer::getSubevents(int k, int n, std::vector<int>& current, std::vector<std::vector<int>>& outputSubevents)
 {
   if (n == 1) {
     // Last box gets all remaining objects
     current.push_back(k);
-    subevents.push_back(current);
+    outputSubevents.push_back(current);
     current.pop_back();
     return;
   }
 
   for (int i = 0; i <= k; ++i) {
     current.push_back(i);
-    getSubevents(k - i, n - 1, current, subevents);
+    getSubevents(k - i, n - 1, current, outputSubevents);
     current.pop_back();
   }
 }
