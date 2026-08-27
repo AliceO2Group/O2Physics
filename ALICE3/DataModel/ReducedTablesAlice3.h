@@ -23,6 +23,8 @@
 #include "ALICE3/DataModel/OTFPIDTrk.h"
 #include "ALICE3/DataModel/OTFRICH.h"
 #include "ALICE3/DataModel/OTFTOF.h"
+#include "ALICE3/DataModel/collisionAlice3.h"
+#include "Common/DataModel/Centrality.h"
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
@@ -41,19 +43,15 @@ DECLARE_SOA_COLUMN(MCPosY, mcPosY, float); //!  MC event position Y
 DECLARE_SOA_COLUMN(MCPosZ, mcPosZ, float); //!  MC event position Z
 } // namespace reducedeventalice3
 
-namespace reducedeventmcalice3
-{
-DECLARE_SOA_COLUMN(MultMCNParticlesEta05, multMCNParticlesEta05, float);
-DECLARE_SOA_COLUMN(MultMCNParticlesEta08, multMCNParticlesEta08, float);
-DECLARE_SOA_COLUMN(MultMCNParticlesEta10, multMCNParticlesEta10, float);
-DECLARE_SOA_COLUMN(MultMCNParticlesEta20, multMCNParticlesEta20, float);
-DECLARE_SOA_COLUMN(MultMCNParticlesEta40, multMCNParticlesEta40, float);
-} // namespace reducedeventmcalice3
-
 DECLARE_SOA_TABLE_STAGED(ReA3Events, "REA3EVENT", //!   Main event information table
                          o2::soa::Index<>,
                          collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib,
                          collision::CollisionTime, collision::CollisionTimeRes, reducedeventalice3::MultDensity);
+
+DECLARE_SOA_TABLE(ReA3EventsExtended, "AOD", "REA3EVENTEXT", //!    Event vertex covariance matrix
+                  mult::MultNTracksPV, mult::MultNTracksPVeta1, mult::MultNTracksPVetaHalf,
+                  mult::MultNTracksGlobal, mult::MultNGlobalTracksPV,
+                  cent::CentRun2V0M);
 
 DECLARE_SOA_TABLE(ReducedA3EventsVtxCov, "AOD", "REA3VTXCOV", //!    Event vertex covariance matrix
                   collision::CovXX, collision::CovXY, collision::CovXZ,
@@ -65,7 +63,8 @@ DECLARE_SOA_TABLE(ReducedA3EventsInfo, "AOD", "REA3EVENTINFO", //!   Main event 
 DECLARE_SOA_TABLE(ReA3MCEvents, "AOD", "REA3MCEVENT", //!   Event level MC truth information
                   o2::soa::Index<>,
                   mccollision::GeneratorsID, reducedeventalice3::MCPosX, reducedeventalice3::MCPosY, reducedeventalice3::MCPosZ,
-                  mccollision::T, mccollision::Weight, mccollision::ImpactParameter);
+                  mccollision::T, mccollision::Weight, mccollision::ImpactParameter,
+                  mcmult_alice3::MultMC, mcmult_alice3::MultMC25, mcmult_alice3::MultMC125, mcmult_alice3::MultMC09);
 
 using ReducedA3MCEvent = ReA3MCEvents::iterator;
 using ReA3Event = ReA3Events::iterator;
