@@ -679,7 +679,7 @@ struct DalitzSelection {
     uint32_t bitMask = (static_cast<uint32_t>(1) << 8);
     fMixingEvent->ClearFilteringMask(bitMask);
 
-    for (auto& poolEvent : pool.events) { // o2-linter disable=const-ref-in-for-loop (false positive, it cannot be made const since it is modified within the loop)
+    for (auto& poolEvent : pool.events) { // o2-linter: disable=const-ref-in-for-loop (false positive, it cannot be made const since it is modified within the loop)
       if ((poolEvent.filteringMask & static_cast<uint32_t>(255)) == 0) {
         // all other bits have been erased, so we can also mark bit 8 for deletion
         poolEvent.filteringMask |= bitMask;

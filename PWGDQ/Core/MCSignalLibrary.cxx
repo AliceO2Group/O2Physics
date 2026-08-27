@@ -2124,9 +2124,9 @@ std::vector<MCSignal*> o2::aod::dqmcsignals::GetMCSignalsFromJSON(const char* js
     if (!ValidateJSONMCSignal(&signal, sigName)) {
       LOG(fatal) << "MCSignal JSON not properly defined for " << sigName << ". Skipping";
       continue;
-    } else {
-      LOG(debug) << "MCSignal validated";
     }
+
+    LOG(debug) << "MCSignal validated";
 
     // Get the signal title
     const char* title = (signal.HasMember("title") ? signal.FindMember("title")->value.GetString() : "");
@@ -2175,7 +2175,7 @@ std::vector<MCSignal*> o2::aod::dqmcsignals::GetMCSignalsFromJSON(const char* js
       }
     }
 
-    if (prongs.size() == 0) {
+    if (prongs.empty()) {
       LOG(fatal) << "No prongs were defined for this MCSignal!";
       return signals;
     }

@@ -7973,9 +7973,10 @@ o2::aod::dqmlcuts::BdtScoreConfig o2::aod::dqmlcuts::GetBdtScoreCutsAndConfigFro
       binaryCfg.cutsMl = makeLabeledCutsMl(cutsMl, labelsFlatBin, labelsClass);
 
       return binaryCfg;
-
-      // MultiClass
-    } else if (typeStr == "MultiClass") {
+    }
+    
+    // MultiClass
+    if (typeStr == "MultiClass") {
       dqmlcuts::MultiClassBdtScoreConfig multiCfg;
       multiCfg.inputFeatures = namesInputFeatures;
       multiCfg.onnxFiles = onnxFileNames;
