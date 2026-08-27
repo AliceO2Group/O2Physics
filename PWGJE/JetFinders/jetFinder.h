@@ -72,8 +72,8 @@ struct JetFinderTask {
   o2::framework::Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum track eta"};
   o2::framework::Configurable<float> trackPhiMin{"trackPhiMin", -999, "minimum track phi"};
   o2::framework::Configurable<float> trackPhiMax{"trackPhiMax", 999, "maximum track phi"};
-  o2::framework::Configurable<float> phiExclusionMin{"phiExclusionMin", 999, "minimum of phi exclusion region which is applied for tracks and for jets (jetR is added to the exclusion region for jets)"};
-  o2::framework::Configurable<float> phiExclusionMax{"phiExclusionMax", -999, "maximum of phi exclusion region which is applied for tracks and for jets (jetR is added to the exclusion region for jets)"};
+  o2::framework::Configurable<float> phiExclusionMin{"phiExclusionMin", -999, "minimum of phi exclusion region which is applied for tracks and for jets (jetR is added to the exclusion region for jets)"};
+  o2::framework::Configurable<float> phiExclusionMax{"phiExclusionMax", 999, "maximum of phi exclusion region which is applied for tracks and for jets (jetR is added to the exclusion region for jets)"};
   o2::framework::Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
   o2::framework::Configurable<std::string> particleSelections{"particleSelections", "PhysicalPrimary", "set particle selections"};
 
@@ -143,12 +143,16 @@ struct JetFinderTask {
       jetFinder.phiMax = 2.0 * M_PI;
     }
 
-    if (phiExclusionMin < 998.0) {
+    if (phiExclusionMin > -998.0) {
       jetFinder.phiExclusionMin = phiExclusionMin;
       jetFinder.phiExclusionMax = phiExclusionMax;
       if (phiExclusionMin >= phiExclusionMax) {
         throw std::runtime_error("Invalid phi exclusion range: require phiExclusionMin < phiExclusionMax when both are set.");
       }
+    } else {
+      // default case
+      phiExclusionMin = -1.0 * phiExclusionMin;
+      phiExclusionMax = -1.0 * phiExclusionMax;
     }
 
     jetFinder.jetPhiMin = jetPhiMin;
