@@ -468,6 +468,7 @@ struct PhotonConversionBuilder {
     if (mRunNumber == bc.runNumber()) {
       return;
     }
+    mRunNumber = bc.runNumber();
     // In case override, don't proceed, please - no CCDB access required
     if (d_bz_input > -990) { // o2-linter: disable=magic-number (override value)
       d_bz = d_bz_input;
@@ -476,7 +477,7 @@ struct PhotonConversionBuilder {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f)); // o2-linter: disable=magic-number (override value)
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
-      mRunNumber = bc.runNumber();
+
       return;
     }
 
@@ -485,7 +486,6 @@ struct PhotonConversionBuilder {
     // Fetch magnetic field from ccdb for current collision
     d_bz = bc.grpMagField().getNominalL3Field();
     LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
-    mRunNumber = bc.runNumber();
 
     if (useMatCorrType == 2) { // o2-linter: disable=magic-number (material budget correction)
       // setMatLUT only after magfield has been initalized (setMatLUT has implicit and problematic init field call if not)

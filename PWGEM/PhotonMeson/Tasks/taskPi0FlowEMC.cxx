@@ -173,7 +173,9 @@ struct TaskPi0FlowEMC {
     Configurable<bool> cfgEMCUseTM{"cfgEMCUseTM", false, "flag to use EMCal track matching cut or not"};
     Configurable<bool> emcUseSecondaryTM{"emcUseSecondaryTM", false, "flag to use EMCal secondary track matching cut or not"};
     Configurable<bool> cfgEnableQA{"cfgEnableQA", false, "flag to turn QA plots on/off"};
-    Configurable<bool> separateEMCalDCal{"separateEMCalDCal", false, "flag to only pair EMCal with EMCal and DCal with DCal clusters"};
+    Configurable<bool> useEMCal{"useEMCal", false, "flag to use EMCal clusters"};
+    Configurable<bool> useDCal{"useDCal", false, "flag to use DCal clusters"};
+    Configurable<bool> useCrosspairs{"useCrosspairs", true, "flag to allow pairing of EMCal with DCal clusters. If this is set, useEMCal and useDCal are ignored!"};
   } emccuts;
 
   V0PhotonCut fV0PhotonCut;
@@ -253,8 +255,8 @@ struct TaskPi0FlowEMC {
   int runNow = 0;
   int runBefore = -1;
 
-  static constexpr float MaxPhiEMCal = 3.5f;
-  static constexpr uint16_t MaxPhiEMCalUint = static_cast<uint16_t>(INT16_MAX); // Maximum value currently useable for partitions for some weird reason, but luckily enough
+  static constexpr float MaxPhiEMCal = 3.9f;                                 // exatly the middle between EMCal and DCal
+  static constexpr uint16_t MaxPhiEMCalUint = static_cast<uint16_t>(39000u); // exatly the middle between EMCal and DCal but as uint16_t that is used for storing phi values in derived data
 
   // Filter clusterFilter = aod::skimmedcluster::time >= emccuts.cfgEMCminTime && aod::skimmedcluster::time <= emccuts.cfgEMCmaxTime && aod::skimmedcluster::m02 >= emccuts.cfgEMCminM02 && aod::skimmedcluster::m02 <= emccuts.cfgEMCmaxM02 && aod::skimmedcluster::e >= emccuts.cfgEMCminE;
   Filter collisionFilter = (nabs(aod::collision::posZ) <= eventcuts.cfgZvtxMax) && (aod::evsel::ft0cOccupancyInTimeRange <= eventcuts.cfgFT0COccupancyMax) && (aod::evsel::ft0cOccupancyInTimeRange >= eventcuts.cfgFT0COccupancyMin);
@@ -1093,7 +1095,6 @@ struct TaskPi0FlowEMC {
     fEMCCut.AreSelectedRunning(flags, clusters, matchedPrims, matchedSeconds, &registry);
 
     for (const auto& collision : collisions) {
-
       if (!isFullEventSelected(collision, true)) {
         continue;
       }
@@ -1121,10 +1122,13 @@ struct TaskPi0FlowEMC {
           registry.fill(HIST("clusterQA/hClusterEtaPhiAfter"), photon.phi(), photon.eta()); // after cuts
         }
       }
-      if (emccuts.separateEMCalDCal.value) {
+      if (emccuts.useEMCal.value && !emccuts.useCrosspairs.value) {
         runPairingLoop(collision, emcalPhotonsPerCollision, emcalPhotonsPerCollision, flags, flags);
+      }
+      if (emccuts.useDCal.value && !emccuts.useCrosspairs.value) {
         runPairingLoop(collision, dcalPhotonsPerCollision, dcalPhotonsPerCollision, flags, flags);
-      } else {
+      }
+      if (emccuts.useCrosspairs.value) {
         runPairingLoop(collision, photonsPerCollision, photonsPerCollision, flags, flags);
       }
       if (rotationConfig.cfgDoRotation.value) {
@@ -1181,8 +1185,11 @@ struct TaskPi0FlowEMC {
         if (!(flags.test(g1.globalIndex())) || !(flags.test(g2.globalIndex()))) {
           continue;
         }
-        if (emccuts.separateEMCalDCal.value && isEMCalRegion(g1.phi()) != isEMCalRegion(g2.phi())) {
-          continue; // only pair EMCal-EMCal or DCal-DCal
+        if (emccuts.useEMCal.value && !emccuts.useCrosspairs.value && (!isEMCalRegion(g1.phi()) || !isEMCalRegion(g2.phi()))) {
+          continue;
+        }
+        if (emccuts.useDCal.value && !emccuts.useCrosspairs.value && (isEMCalRegion(g1.phi()) || isEMCalRegion(g2.phi()))) {
+          continue;
         }
 
         // Cut edge clusters away, similar to rotation method to ensure same acceptance is used
