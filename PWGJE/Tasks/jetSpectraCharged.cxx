@@ -85,6 +85,7 @@ struct JetSpectraCharged {
   Configurable<float> kappa{"kappa", 1.0, "angularity kappa"};
   Configurable<float> alpha{"alpha", 1.0, "angularity alpha"};
   Configurable<bool> useFT0CVariant{"useFT0CVariant", false, "IF checkCentFT0M is false: false -> use standard FT0C centrality selection; true -> use FT0CVariant1"};
+  Configurable<float> rhoShift{"rhoShift", 0, "value of artificial rho shift: rho -> rho - rhoShift ; 0 by default"};
 
   std::vector<int> eventSelectionBits;
   int trackSelection = -1;
@@ -521,7 +522,7 @@ struct JetSpectraCharged {
     if (jet.pt() > pTHatMaxMCD * pTHat || pTHat < pTHatAbsoluteMin) {
       return;
     }
-    double jetcorrpt = jet.pt() - (rho * jet.area());
+    double jetcorrpt = jet.pt() - ((rho - rhoShift) * jet.area());
     if (jet.r() == round(selectedJetsRadius * 100.0f)) {
       // fill jet histograms after area-based subtraction
       registry.fill(HIST("h_jet_pt_rhoareasubtracted"), jetcorrpt, weight);
@@ -579,7 +580,7 @@ struct JetSpectraCharged {
     }
     if (jet.r() == round(selectedJetsRadius * 100.0f)) {
       // fill mcp jet histograms
-      double jetcorrpt = jet.pt() - (rho * jet.area());
+      double jetcorrpt = jet.pt() - ((rho - rhoShift) * jet.area());
       registry.fill(HIST("h_jet_pt_part_rhoareasubtracted"), jetcorrpt, weight);
       registry.fill(HIST("h3_jet_pt_jet_eta_jet_phi_part_rhoareasubtracted"), jetcorrpt, jet.eta(), jet.phi(), weight);
       if (jetcorrpt > 0) {
