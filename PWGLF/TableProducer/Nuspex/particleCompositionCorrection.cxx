@@ -273,7 +273,7 @@ void ParticleCompositionCorrection::process(aod::McCollisions::iterator const&, 
     if (!pdgParticle || pdgParticle->Charge() == 0.) {
       continue;
     }
-    if (std::abs(particle.eta()) >= etaCut) { 
+    if (std::abs(particle.eta()) >= etaCut) {
       continue;
     }
     if (std::abs(particle.eta()) < 0.5) { // o2-linter: disable=magic-number (particle density at mid-rapidity)
