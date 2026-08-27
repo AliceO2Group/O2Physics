@@ -12,29 +12,26 @@
 /// \file  multandptFluctuations.cxx
 /// \brief Calculate multiplicity and transverse momentum fluctuations using strongly intensive observables
 /// \author Omama Rubza
-#include "Common/Core/TrackSelection.h"
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/CCDB/EventSelectionParams.h"
 
-#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
-#include <Framework/runDataProcessing.h>
 #include <Framework/Configurable.h>
 #include <Framework/InitContext.h>
-#include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TProfile.h>
 
 #include <vector>
+#include <cmath>
 
 using namespace o2;
 using namespace o2::framework;
@@ -138,16 +135,21 @@ struct MultandptFluctuations {
     }
 
     histos.fill(HIST("QA/BeforeCut/Cent"), cent);
-    if (!col.sel8())
+    if (!col.sel8()) {
       return;
-    if (std::abs(col.posZ()) > vtxZcut)
+    }
+    if (std::abs(col.posZ()) > vtxZcut) {
       return;
-    if (cfgNoSameBunchPileup && !col.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+    }
+    if (cfgNoSameBunchPileup && !col.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       return;
-    if (cfgEvSelUseGoodZvtxFT0vsPV && !col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+    }
+    if (cfgEvSelUseGoodZvtxFT0vsPV && !col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return;
-    if (cfgUseGoodITSLayerAllCut && !col.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))
+    }
+    if (cfgUseGoodITSLayerAllCut && !col.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
       return;
+    }
 
     histos.fill(HIST("hEventCounter"), cent);
     histos.fill(HIST("QA/AfterCut/VtxZ"), col.posZ());
@@ -167,31 +169,41 @@ struct MultandptFluctuations {
 
       // Track quality cuts
 
-      if (requireITS && !track.hasITS())
+      if (requireITS && !track.hasITS()) {
         continue;
-      if (requireTPC && !track.hasTPC())
+      }
+      if (requireTPC && !track.hasTPC()) {
         continue;
-      if (track.itsNCls() < itsNClsCut)
+      }
+      if (track.itsNCls() < itsNClsCut) {
         continue;
-      if (track.tpcNClsCrossedRows() < tpcCrossCut)
+      }
+      if (track.tpcNClsCrossedRows() < tpcCrossCut) {
         continue;
-      if (track.tpcCrossedRowsOverFindableCls() < crossedRowsOverFindableCut)
+      }
+      if (track.tpcCrossedRowsOverFindableCls() < crossedRowsOverFindableCut) {
         continue;
-      if (std::abs(track.dcaZ()) > dcaZCut)
+      }
+      if (std::abs(track.dcaZ()) > dcaZCut) {
         continue;
-      if (std::abs(track.dcaXY()) > dcaXYCut)
+      }
+      if (std::abs(track.dcaXY()) > dcaXYCut) {
         continue;
-      if (track.tpcChi2NCl() > tpcChiCut)
+      }
+      if (track.tpcChi2NCl() > tpcChiCut) {
         continue;
-      if (track.itsChi2NCl() > itsChiCut)
+      }
+      if (track.itsChi2NCl() > itsChiCut) {
         continue;
-      if (std::abs(track.eta()) > etaCut)
+      }
+      if (std::abs(track.eta()) > etaCut) {
         continue;
+      }
       if (requireInnerITS) {
         auto itsMap = track.itsClusterMap();
-        if (!(itsMap & (1 << 0)) &&
-            !(itsMap & (1 << 1)) &&
-            !(itsMap & (1 << 2))) {
+        if (((itsMap & (1 << 0)) == 0) &&
+            ((itsMap & (1 << 1)) == 0) &&
+            ((itsMap & (1 << 2)) == 0)) {
           continue;
         }
       }
