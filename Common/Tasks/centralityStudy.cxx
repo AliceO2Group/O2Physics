@@ -221,7 +221,7 @@ struct CentralityStudy {
   ConfigurableAxis axisMultITSTPC{"axisMultITSTPC", {200, 0, 6000}, "Number of ITSTPC matched tracks"};
 
   // For centrality studies if requested
-  ConfigurableAxis axisCentrality{"axisCentrality", {100, 0, 100}, "FT0C percentile"};
+  ConfigurableAxis axisCentrality{"axisCentrality", {100, 0, 100}, "FT0C percentile (%)"};
   ConfigurableAxis axisImpactParameter{"axisImpactParameter", {200, 0.0f, 20.0f}, "b (fm)"};
   ConfigurableAxis axisPVChi2{"axisPVChi2", {300, 0, 30}, "FT0C percentile"};
   ConfigurableAxis axisDeltaTime{"axisDeltaTime", {300, 0, 300}, "#Delta time"};
