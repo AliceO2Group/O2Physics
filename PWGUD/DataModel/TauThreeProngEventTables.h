@@ -139,6 +139,7 @@ DECLARE_SOA_COLUMN(True6DaugPy, true6DaugPy, float[6]);
 DECLARE_SOA_COLUMN(True6DaugPz, true6DaugPz, float[6]);
 DECLARE_SOA_COLUMN(True6DaugPdgCode, true6DaugPdgCode, int[6]);
 DECLARE_SOA_COLUMN(Problem, problem, int8_t);
+DECLARE_SOA_COLUMN(IsRec, isRec, int8_t);
 } // namespace tautree
 
 DECLARE_SOA_TABLE(DataTauFourTracks, "AOD", "TAUFOURTRACK",
@@ -200,6 +201,15 @@ DECLARE_SOA_TABLE(TrueTauFourTracks, "AOD", "TRUETAU",
                   tautree::TrueDaugPdgCode,
                   tautree::Problem);
 
+DECLARE_SOA_TABLE(GenTauFourTracks, "AOD", "GENTAU",
+                  tautree::TrueChannel,
+                  tautree::TruePosZ,
+                  tautree::TrueTauPx, tautree::TrueTauPy, tautree::TrueTauPz,
+                  tautree::TrueDaugPx, tautree::TrueDaugPy, tautree::TrueDaugPz,
+                  tautree::TrueDaugPdgCode,
+                  tautree::Problem,
+                  tautree::IsRec);
+
 DECLARE_SOA_TABLE(DataTauSixTracks, "AOD", "TAUSIXTRACK",
                   tautree::RunNumber, tautree::Bc, tautree::TotalTracks, tautree::NumContrib,
                   tautree::RctOk,
@@ -258,6 +268,15 @@ DECLARE_SOA_TABLE(TrueTauSixTracks, "AOD", "TRUETAUSIX",
                   tautree::True6DaugPx, tautree::True6DaugPy, tautree::True6DaugPz,
                   tautree::True6DaugPdgCode,
                   tautree::Problem);
+
+DECLARE_SOA_TABLE(GenTauSixTracks, "AOD", "GENTAUSIX",
+                  tautree::TrueChannel,
+                  tautree::TruePosZ,
+                  tautree::TrueTauPx, tautree::TrueTauPy, tautree::TrueTauPz,
+                  tautree::True6DaugPx, tautree::True6DaugPy, tautree::True6DaugPz,
+                  tautree::True6DaugPdgCode,
+                  tautree::Problem,
+                  tautree::IsRec);
 
 } // namespace o2::aod
 
