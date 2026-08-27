@@ -519,150 +519,81 @@ struct HfTaskCd {
       }
 
       if (fillCandLiteTree || fillCandFullTree) {
-        float invMassCd = 0.f;
-        float invMassLc = 0.f;
-        int candFlag = -999;
-        int candSign = -999;
-
-        float nSigmaTpcDe = 0.f, nSigmaTpcKa = 0.f, nSigmaTpcPi = 0.f, nSigmaTpcPr = 0.f;
-        float nSigmaItsDe = 0.f;
-        float nSigmaTofDe = 0.f, nSigmaTofKa = 0.f, nSigmaTofPi = 0.f;
-        float tofBetaDe = -999.f;
-        float tpcInnerParamDe = -999.f;
-        float tofExpMomDe = -999.f;
-
-        float dcaDeuteron = 0.f, dcaKaon = 0.f, dcaPion = 0.f;
-
         const bool selDeKPi = (candidate.isSelCdToDeKPi() >= selectionFlagCd);
         const bool selPiKDe = (candidate.isSelCdToPiKDe() >= selectionFlagCd);
-
         auto prong0 = candidate.template prong0_as<HFTracksMc>();
         auto prong1 = candidate.template prong1_as<HFTracksMc>();
         auto prong2 = candidate.template prong2_as<HFTracksMc>();
-
         auto prong0Its = tracksWithItsPid.iteratorAt(candidate.prong0Id() - tracksWithItsPid.offset());
         auto prong2Its = tracksWithItsPid.iteratorAt(candidate.prong2Id() - tracksWithItsPid.offset());
 
-        candSign = static_cast<int8_t>(-prong1.sign());
-        nSigmaTpcKa = candidate.nSigTpcKa1();
-        nSigmaTofKa = candidate.nSigTofKa1();
+        auto writeMcHypothesis = [&](bool isDeKPi) {
+          const float invMassCd = isDeKPi ? HfHelper::invMassCdToDeKPi(candidate) : HfHelper::invMassCdToPiKDe(candidate);
+          const float invMassLc = isDeKPi ? HfHelper::invMassLcToPKPi(candidate) : HfHelper::invMassLcToPiKP(candidate);
+          const int candFlag = isDeKPi ? 1 : -1;
+          const int candSign = static_cast<int8_t>(-prong1.sign());
+          const float nSigmaTpcDe = isDeKPi ? candidate.nSigTpcDe0() : candidate.nSigTpcDe2();
+          const float nSigmaTpcPr = isDeKPi ? candidate.nSigTpcPr0() : candidate.nSigTpcPr2();
+          const float nSigmaTofDe = isDeKPi ? candidate.nSigTofDe0() : candidate.nSigTofDe2();
+          const float nSigmaTpcPi = isDeKPi ? candidate.nSigTpcPi2() : candidate.nSigTpcPi0();
+          const float nSigmaTofPi = isDeKPi ? candidate.nSigTofPi2() : candidate.nSigTofPi0();
+          const float nSigmaItsDe = isDeKPi ? prong0Its.itsNSigmaDe() : prong2Its.itsNSigmaDe();
+          const float nSigmaTpcKa = candidate.nSigTpcKa1();
+          const float nSigmaTofKa = candidate.nSigTofKa1();
+          const auto& deuteronProng = isDeKPi ? prong0 : prong2;
+          const float tofBetaDe = (deuteronProng.hasTOF() && deuteronProng.beta() > 0.f) ? deuteronProng.beta() : -999.f;
+          const float tpcInnerParamDe = deuteronProng.tpcInnerParam();
+          const float tofExpMomDe = deuteronProng.hasTOF() ? deuteronProng.tofExpMom() : -999.f;
+          const float dcaDeuteron = isDeKPi ? candidate.impactParameter0() : candidate.impactParameter2();
+          const float dcaKaon = candidate.impactParameter1();
+          const float dcaPion = isDeKPi ? candidate.impactParameter2() : candidate.impactParameter0();
 
-        if (selDeKPi) {
-          invMassCd = HfHelper::invMassCdToDeKPi(candidate);
-          invMassLc = HfHelper::invMassLcToPKPi(candidate);
-          candFlag = 1;
-          nSigmaTpcDe = candidate.nSigTpcDe0();
-          nSigmaTpcPr = candidate.nSigTpcPr0();
-          nSigmaTofDe = candidate.nSigTofDe0();
-          tofBetaDe = (prong0.hasTOF() && prong0.beta() > 0.f) ? prong0.beta() : -999.f;
-          tpcInnerParamDe = prong0.tpcInnerParam();
-          tofExpMomDe = prong0.hasTOF() ? prong0.tofExpMom() : -999.f;
-          nSigmaTpcPi = candidate.nSigTpcPi2();
-          nSigmaTofPi = candidate.nSigTofPi2();
-          nSigmaItsDe = prong0Its.itsNSigmaDe();
-          dcaDeuteron = candidate.impactParameter0();
-          dcaKaon = candidate.impactParameter1();
-          dcaPion = candidate.impactParameter2();
-        } else if (selPiKDe) {
-          invMassCd = HfHelper::invMassCdToPiKDe(candidate);
-          invMassLc = HfHelper::invMassLcToPiKP(candidate);
-          candFlag = -1;
-          nSigmaTpcDe = candidate.nSigTpcDe2();
-          nSigmaTpcPr = candidate.nSigTpcPr2();
-          nSigmaTofDe = candidate.nSigTofDe2();
-          tofBetaDe = (prong2.hasTOF() && prong2.beta() > 0.f) ? prong2.beta() : -999.f;
-          tpcInnerParamDe = prong2.tpcInnerParam();
-          tofExpMomDe = prong2.hasTOF() ? prong2.tofExpMom() : -999.f;
-          nSigmaTpcPi = candidate.nSigTpcPi0();
-          nSigmaTofPi = candidate.nSigTofPi0();
-          nSigmaItsDe = prong2Its.itsNSigmaDe();
-          dcaDeuteron = candidate.impactParameter2();
-          dcaKaon = candidate.impactParameter1();
-          dcaPion = candidate.impactParameter0();
-        }
+          if (cfgUseTofPidForDeuteron && std::abs(nSigmaTofDe) > cfgMaxDeuteronTofPidPreselection) {
+            return;
+          }
+          if (std::abs(dcaDeuteron) < cfgMinDeuteronDcaPreselection) {
+            return;
+          }
+          if (cfgCutOnDeuteronDcaOrdering && (std::abs(dcaDeuteron) > std::abs(dcaKaon) || std::abs(dcaDeuteron) > std::abs(dcaPion))) {
+            return;
+          }
 
-        if (cfgUseTofPidForDeuteron && std::abs(nSigmaTofDe) > cfgMaxDeuteronTofPidPreselection) {
-          continue;
-        }
-        if (std::abs(dcaDeuteron) < cfgMinDeuteronDcaPreselection) {
-          continue;
-        }
-        if (cfgCutOnDeuteronDcaOrdering && (std::abs(dcaDeuteron) > std::abs(dcaKaon) || std::abs(dcaDeuteron) > std::abs(dcaPion))) {
-          continue;
-        }
+          if (fillCandLiteTree) {
+            rowCandCdLite(
+              invMassCd, invMassLc, candidate.pt(), candidate.eta(), candidate.phi(),
+              candidate.ptProng0(), candidate.ptProng1(), candidate.ptProng2(),
+              candidate.impactParameter0(), candidate.impactParameter1(), candidate.impactParameter2(),
+              candidate.decayLength(), candidate.cpa(), candidate.chi2PCA(),
+              nSigmaTpcDe, nSigmaTpcPr, nSigmaItsDe, nSigmaTofDe,
+              tofBetaDe, tpcInnerParamDe, tofExpMomDe,
+              candidate.ct(o2::constants::physics::MassCDeuteron) * cmToMum,
+              candFlag, candSign, candidate.flagMcMatchRec(), candidate.originMcRec(),
+              candidate.flagMcDecayChanRec(), ctGen, o2::hf_centrality::getCentralityColl(collision));
+          }
 
-        if (fillCandLiteTree) {
-          rowCandCdLite(
-            invMassCd,
-            invMassLc,
-            candidate.pt(),
-            candidate.eta(),
-            candidate.phi(),
-            candidate.ptProng0(),
-            candidate.ptProng1(),
-            candidate.ptProng2(),
-            candidate.impactParameter0(),
-            candidate.impactParameter1(),
-            candidate.impactParameter2(),
-            candidate.decayLength(),
-            candidate.cpa(),
-            candidate.chi2PCA(),
-            nSigmaTpcDe,
-            nSigmaTpcPr,
-            nSigmaItsDe,
-            nSigmaTofDe,
-            tofBetaDe,
-            tpcInnerParamDe,
-            tofExpMomDe,
-            candidate.ct(o2::constants::physics::MassCDeuteron) * cmToMum,
-            candFlag,
-            candSign,
-            candidate.flagMcMatchRec(),
-            candidate.originMcRec(),
-            candidate.flagMcDecayChanRec(),
-            ctGen,
-            o2::hf_centrality::getCentralityColl(collision));
-        }
+          if (fillCandFullTree) {
+            rowCandCdFull(
+              candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0(),
+              candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1(),
+              candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2(),
+              candidate.impactParameter0(), candidate.impactParameter1(), candidate.impactParameter2(),
+              candidate.decayLength(), candidate.cpa(), candidate.chi2PCA(),
+              nSigmaTpcDe, nSigmaTpcPr, nSigmaItsDe, nSigmaTofDe,
+              tofBetaDe, tpcInnerParamDe, tofExpMomDe,
+              nSigmaTpcPi, nSigmaTofPi, nSigmaTpcKa, nSigmaTofKa,
+              candidate.ct(o2::constants::physics::MassCDeuteron) * cmToMum,
+              candFlag, candSign, candidate.flagMcMatchRec(), candidate.originMcRec(),
+              candidate.flagMcDecayChanRec(), ctGen, o2::hf_centrality::getCentralityColl(collision),
+              collision.posZ(), collision.globalIndex(), timeStamp);
+          }
+        };
 
-        if (fillCandFullTree) {
-          rowCandCdFull(
-            candidate.pxProng0(),
-            candidate.pyProng0(),
-            candidate.pzProng0(),
-            candidate.pxProng1(),
-            candidate.pyProng1(),
-            candidate.pzProng1(),
-            candidate.pxProng2(),
-            candidate.pyProng2(),
-            candidate.pzProng2(),
-            candidate.impactParameter0(),
-            candidate.impactParameter1(),
-            candidate.impactParameter2(),
-            candidate.decayLength(),
-            candidate.cpa(),
-            candidate.chi2PCA(),
-            nSigmaTpcDe,
-            nSigmaTpcPr,
-            nSigmaItsDe,
-            nSigmaTofDe,
-            tofBetaDe,
-            tpcInnerParamDe,
-            tofExpMomDe,
-            nSigmaTpcPi,
-            nSigmaTofPi,
-            nSigmaTpcKa,
-            nSigmaTofKa,
-            candidate.ct(o2::constants::physics::MassCDeuteron) * cmToMum,
-            candFlag,
-            candSign,
-            candidate.flagMcMatchRec(),
-            candidate.originMcRec(),
-            candidate.flagMcDecayChanRec(),
-            ctGen,
-            o2::hf_centrality::getCentralityColl(collision),
-            collision.posZ(),
-            collision.globalIndex(),
-            timeStamp);
+        // For MC, retain only the hypothesis that matches the true deuteron prong.
+        if (selDeKPi && pdgCodeProng0 == o2::constants::physics::Pdg::kDeuteron) {
+          writeMcHypothesis(true);
+        }
+        if (selPiKDe && pdgCodeProng0 == kPiPlus) {
+          writeMcHypothesis(false);
         }
       }
 
@@ -727,12 +658,13 @@ struct HfTaskCd {
         vtxZ = recCol.posZ();
       }
       const float cent = o2::hf_centrality::getCentralityGenColl(recoCollsPerMcColl);
-      const float ptGenB = particle.originMcGen() == RecoDecay::OriginType::Prompt ? -1.f : mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
+      const bool isPrompt = particle.originMcGen() == 0;
+      const float ptGenB = isPrompt ? -1.f : mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
       const auto firstDau = particle.template daughters_as<CandCdMcGen>().begin();
       const float ctGen = RecoDecay::ct(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::distance(std::array{particle.vx(), particle.vy(), particle.vz()}, std::array{firstDau.vx(), firstDau.vy(), firstDau.vz()}), o2::constants::physics::MassCDeuteron) * cmToMum;
 
       fillHistogramsGen<Signal>(particle, yGen);
-      if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
+      if (isPrompt) {
         fillHistogramsGen<Prompt>(particle, yGen);
       } else if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
         fillHistogramsGen<NonPrompt>(particle, yGen);
@@ -784,17 +716,6 @@ struct HfTaskCd {
       const auto chi2PCA = candidate.chi2PCA();
       const auto cpa = candidate.cpa();
       const auto cpaXY = candidate.cpaXY();
-      float invMassCd = 0.f;
-      float invMassLc = 0.f;
-      if (candidate.isSelCdToDeKPi() >= selectionFlagCd) {
-        invMassCd = HfHelper::invMassCdToDeKPi(candidate);
-        invMassLc = HfHelper::invMassLcToPKPi(candidate);
-      }
-      if (candidate.isSelCdToPiKDe() >= selectionFlagCd) {
-        invMassCd = HfHelper::invMassCdToPiKDe(candidate);
-        invMassLc = HfHelper::invMassLcToPiKP(candidate);
-      }
-
       if (candidate.isSelCdToDeKPi() >= selectionFlagCd) {
         registry.fill(HIST("Data/hMass"), HfHelper::invMassCdToDeKPi(candidate));
         registry.fill(HIST("Data/hMassVsPtVsNPvContributors"), HfHelper::invMassCdToDeKPi(candidate), pt, numPvContributors);
@@ -852,187 +773,93 @@ struct HfTaskCd {
       }
 
       if (fillCandLiteTree || fillCandFullTree) {
-
-        int candFlag = -999;
-        int candSign = -999;
-
-        float nSigmaTpcDe = 0.f, nSigmaTpcKa = 0.f, nSigmaTpcPi = 0.f, nSigmaTpcPr = 0.f;
-        float nSigmaItsDe = 0.f;
-        float nSigmaTofDe = 0.f, nSigmaTofKa = 0.f, nSigmaTofPi = 0.f;
-        float tofBetaDe = -999.f;
-        float tpcInnerParamDe = -999.f;
-        float tofExpMomDe = -999.f;
-
-        float dcaDeuteron = 0.f, dcaKaon = 0.f, dcaPion = 0.f;
-        // int itsNClusterSizeDe = 0;
-
-        float tpcSignalsDe = 0.f;
-        float tpcSignalsPi = 0.f;
-        float tpcSignalsKa = 0.f;
-
-        float itsSignalsDe = 0.f;
-
-        float pSignedDe = -999.f;
-        float pSignedPi = -999.f;
-
-        nSigmaTpcKa = candidate.nSigTpcKa1();
-        nSigmaTofKa = candidate.nSigTofKa1();
-
         const bool selDeKPi = (candidate.isSelCdToDeKPi() >= selectionFlagCd);
         const bool selPiKDe = (candidate.isSelCdToPiKDe() >= selectionFlagCd);
-
         auto prong0 = candidate.template prong0_as<TrackType>();
         auto prong1 = candidate.template prong1_as<TrackType>();
         auto prong2 = candidate.template prong2_as<TrackType>();
-
         auto prong0Its = tracksWithItsPid.iteratorAt(candidate.prong0Id() - tracksWithItsPid.offset());
         auto prong2Its = tracksWithItsPid.iteratorAt(candidate.prong2Id() - tracksWithItsPid.offset());
 
-        candSign = static_cast<int8_t>(-prong1.sign());
+        auto writeDataHypothesis = [&](bool isDeKPi) {
+          const float invMassCd = isDeKPi ? HfHelper::invMassCdToDeKPi(candidate) : HfHelper::invMassCdToPiKDe(candidate);
+          const float invMassLc = isDeKPi ? HfHelper::invMassLcToPKPi(candidate) : HfHelper::invMassLcToPiKP(candidate);
+          const int candFlag = isDeKPi ? 1 : -1;
+          const int candSign = static_cast<int8_t>(-prong1.sign());
+          const float nSigmaTpcDe = isDeKPi ? candidate.nSigTpcDe0() : candidate.nSigTpcDe2();
+          const float nSigmaTpcPr = isDeKPi ? candidate.nSigTpcPr0() : candidate.nSigTpcPr2();
+          const float nSigmaTofDe = isDeKPi ? candidate.nSigTofDe0() : candidate.nSigTofDe2();
+          const float nSigmaTpcPi = isDeKPi ? candidate.nSigTpcPi2() : candidate.nSigTpcPi0();
+          const float nSigmaTofPi = isDeKPi ? candidate.nSigTofPi2() : candidate.nSigTofPi0();
+          const float nSigmaItsDe = isDeKPi ? prong0Its.itsNSigmaDe() : prong2Its.itsNSigmaDe();
+          const float nSigmaTpcKa = candidate.nSigTpcKa1();
+          const float nSigmaTofKa = candidate.nSigTofKa1();
+          const auto& deuteronProng = isDeKPi ? prong0 : prong2;
+          const auto& pionProng = isDeKPi ? prong2 : prong0;
+          const float tofBetaDe = (deuteronProng.hasTOF() && deuteronProng.beta() > 0.f) ? deuteronProng.beta() : -999.f;
+          const float tpcInnerParamDe = deuteronProng.tpcInnerParam();
+          const float tofExpMomDe = deuteronProng.hasTOF() ? deuteronProng.tofExpMom() : -999.f;
+          const float dcaDeuteron = isDeKPi ? candidate.impactParameter0() : candidate.impactParameter2();
+          const float dcaKaon = candidate.impactParameter1();
+          const float dcaPion = isDeKPi ? candidate.impactParameter2() : candidate.impactParameter0();
+          const float pSignedDe = deuteronProng.tpcInnerParam() * deuteronProng.sign();
+          const float pSignedPi = pionProng.tpcInnerParam() * pionProng.sign();
 
-        tpcSignalsKa = prong1.tpcSignal();
+          // Fill PID QA per retained mass hypothesis.
+          registry.fill(HIST("Data/hNsigmaTPCDeVsP"), pSignedDe, nSigmaTpcDe);
+          registry.fill(HIST("Data/hNsigmaTPCPrVsP"), pSignedDe, nSigmaTpcPr);
+          registry.fill(HIST("Data/hNsigmaTOFDeVsP"), pSignedDe, nSigmaTofDe);
+          registry.fill(HIST("Data/hNsigmaITSDeVsP"), pSignedDe, nSigmaItsDe);
+          registry.fill(HIST("Data/hTPCSignalDeVsP"), pSignedDe, deuteronProng.tpcSignal());
+          registry.fill(HIST("Data/hTPCSignalPiVsP"), pSignedPi, pionProng.tpcSignal());
+          registry.fill(HIST("Data/hTPCSignalKaVsP"), prong1.tpcInnerParam() * prong1.sign(), prong1.tpcSignal());
+          registry.fill(HIST("Data/hITSSignalDeVsP"), pSignedDe, itsSignal(deuteronProng));
+          registry.fill(HIST("Data/hNsigmaTPCPiVsP"), pSignedPi, nSigmaTpcPi);
+          registry.fill(HIST("Data/hNsigmaTOFPiVsP"), pSignedPi, nSigmaTofPi);
+          registry.fill(HIST("Data/hNsigmaTPCKaVsP"), prong1.tpcInnerParam() * prong1.sign(), nSigmaTpcKa);
+          registry.fill(HIST("Data/hNsigmaTOFKaVsP"), prong1.tpcInnerParam() * prong1.sign(), nSigmaTofKa);
 
+          if (cfgUseTofPidForDeuteron && std::abs(nSigmaTofDe) > cfgMaxDeuteronTofPidPreselection) {
+            return;
+          }
+          if (std::abs(dcaDeuteron) < cfgMinDeuteronDcaPreselection) {
+            return;
+          }
+          if (cfgCutOnDeuteronDcaOrdering && (std::abs(dcaDeuteron) > std::abs(dcaKaon) || std::abs(dcaDeuteron) > std::abs(dcaPion))) {
+            return;
+          }
+
+          if (fillCandLiteTree) {
+            rowCandCdLite(
+              invMassCd, invMassLc, pt, eta, phi, ptProng0, ptProng1, ptProng2,
+              candidate.impactParameter0(), candidate.impactParameter1(), candidate.impactParameter2(),
+              decayLength, cpa, chi2PCA, nSigmaTpcDe, nSigmaTpcPr, nSigmaItsDe, nSigmaTofDe,
+              tofBetaDe, tpcInnerParamDe, tofExpMomDe,
+              candidate.ct(o2::constants::physics::MassCDeuteron),
+              candFlag, candSign, 0, 0, -1, -1.f, cent);
+          }
+
+          if (fillCandFullTree) {
+            rowCandCdFull(
+              candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0(),
+              candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1(),
+              candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2(),
+              candidate.impactParameter0(), candidate.impactParameter1(), candidate.impactParameter2(),
+              decayLength, cpa, chi2PCA, nSigmaTpcDe, nSigmaTpcPr, nSigmaItsDe, nSigmaTofDe,
+              tofBetaDe, tpcInnerParamDe, tofExpMomDe,
+              nSigmaTpcPi, nSigmaTofPi, nSigmaTpcKa, nSigmaTofKa,
+              candidate.ct(o2::constants::physics::MassCDeuteron),
+              candFlag, candSign, 0, 0, -1, -1.f, cent,
+              collision.posZ(), collision.globalIndex(), timeStamp);
+          }
+        };
+
+        // Data have no truth information: retain every selected hypothesis.
         if (selDeKPi) {
-          candFlag = 1;
-          pSignedDe = prong0.tpcInnerParam() * prong0.sign();
-          pSignedPi = prong2.tpcInnerParam() * prong2.sign();
-          nSigmaTpcDe = candidate.nSigTpcDe0();
-          nSigmaTpcPr = candidate.nSigTpcPr0();
-          nSigmaTofDe = candidate.nSigTofDe0();
-          tofBetaDe = (prong0.hasTOF() && prong0.beta() > 0.f) ? prong0.beta() : -999.f;
-          tpcInnerParamDe = prong0.tpcInnerParam();
-          tofExpMomDe = prong0.hasTOF() ? prong0.tofExpMom() : -999.f;
-          nSigmaTpcPi = candidate.nSigTpcPi2();
-          nSigmaTofPi = candidate.nSigTofPi2();
-          nSigmaItsDe = prong0Its.itsNSigmaDe();
-          // itsNClusterSizeDe = prong0.itsClusterSizes();
-          tpcSignalsDe = prong0.tpcSignal();
-          tpcSignalsPi = prong2.tpcSignal();
-          itsSignalsDe = itsSignal(prong0);
-
-          dcaDeuteron = candidate.impactParameter0();
-          dcaKaon = candidate.impactParameter1();
-          dcaPion = candidate.impactParameter2();
-        } else if (selPiKDe) {
-          candFlag = -1;
-          pSignedDe = prong2.tpcInnerParam() * prong2.sign();
-          pSignedPi = prong0.tpcInnerParam() * prong0.sign();
-          nSigmaTpcDe = candidate.nSigTpcDe2();
-          nSigmaTpcPr = candidate.nSigTpcPr2();
-          nSigmaTofDe = candidate.nSigTofDe2();
-          tofBetaDe = (prong2.hasTOF() && prong2.beta() > 0.f) ? prong2.beta() : -999.f;
-          tpcInnerParamDe = prong2.tpcInnerParam();
-          tofExpMomDe = prong2.hasTOF() ? prong2.tofExpMom() : -999.f;
-          nSigmaTpcPi = candidate.nSigTpcPi0();
-          nSigmaTofPi = candidate.nSigTofPi0();
-          nSigmaItsDe = prong2Its.itsNSigmaDe();
-          // itsNClusterSizeDe = prong2.itsClusterSizes();
-          tpcSignalsDe = prong2.tpcSignal();
-          tpcSignalsPi = prong0.tpcSignal();
-          itsSignalsDe = itsSignal(prong2);
-
-          dcaDeuteron = candidate.impactParameter2();
-          dcaKaon = candidate.impactParameter1();
-          dcaPion = candidate.impactParameter0();
+          writeDataHypothesis(true);
         }
-
-        //  PID QA
-        registry.fill(HIST("Data/hNsigmaTPCDeVsP"), pSignedDe, nSigmaTpcDe);
-        registry.fill(HIST("Data/hNsigmaTPCPrVsP"), pSignedDe, nSigmaTpcPr);
-        registry.fill(HIST("Data/hNsigmaTOFDeVsP"), pSignedDe, nSigmaTofDe);
-        registry.fill(HIST("Data/hNsigmaITSDeVsP"), pSignedDe, nSigmaItsDe);
-        registry.fill(HIST("Data/hTPCSignalDeVsP"), pSignedDe, tpcSignalsDe);
-        registry.fill(HIST("Data/hTPCSignalPiVsP"), pSignedPi, tpcSignalsPi);
-        registry.fill(HIST("Data/hTPCSignalKaVsP"), prong1.tpcInnerParam() * prong1.sign(), tpcSignalsKa);
-        registry.fill(HIST("Data/hITSSignalDeVsP"), pSignedDe, itsSignalsDe);
-        registry.fill(HIST("Data/hNsigmaTPCPiVsP"), pSignedPi, nSigmaTpcPi);
-        registry.fill(HIST("Data/hNsigmaTOFPiVsP"), pSignedPi, nSigmaTofPi);
-        registry.fill(HIST("Data/hNsigmaTPCKaVsP"), prong1.tpcInnerParam() * prong1.sign(), nSigmaTpcKa);
-        registry.fill(HIST("Data/hNsigmaTOFKaVsP"), prong1.tpcInnerParam() * prong1.sign(), nSigmaTofKa);
-
-        if (cfgUseTofPidForDeuteron && std::abs(nSigmaTofDe) > cfgMaxDeuteronTofPidPreselection) {
-          continue;
-        }
-        if (std::abs(dcaDeuteron) < cfgMinDeuteronDcaPreselection) {
-          continue;
-        }
-        if (cfgCutOnDeuteronDcaOrdering && (std::abs(dcaDeuteron) > std::abs(dcaKaon) || std::abs(dcaDeuteron) > std::abs(dcaPion))) {
-          continue;
-        }
-        if (fillCandLiteTree) {
-
-          rowCandCdLite(
-            invMassCd,
-            invMassLc,
-            pt,
-            eta,
-            phi,
-            ptProng0,
-            ptProng1,
-            ptProng2,
-            candidate.impactParameter0(),
-            candidate.impactParameter1(),
-            candidate.impactParameter2(),
-            decayLength,
-            cpa,
-            chi2PCA,
-            nSigmaTpcDe,
-            nSigmaTpcPr,
-            nSigmaItsDe,
-            nSigmaTofDe,
-            tofBetaDe,
-            tpcInnerParamDe,
-            tofExpMomDe,
-            candidate.ct(o2::constants::physics::MassCDeuteron),
-            candFlag,
-            candSign,
-            0,
-            0,
-            -1,
-            -1.f,
-            cent);
-        }
-
-        if (fillCandFullTree) {
-
-          rowCandCdFull(
-            candidate.pxProng0(),
-            candidate.pyProng0(),
-            candidate.pzProng0(),
-            candidate.pxProng1(),
-            candidate.pyProng1(),
-            candidate.pzProng1(),
-            candidate.pxProng2(),
-            candidate.pyProng2(),
-            candidate.pzProng2(),
-            candidate.impactParameter0(),
-            candidate.impactParameter1(),
-            candidate.impactParameter2(),
-            decayLength,
-            cpa,
-            chi2PCA,
-            nSigmaTpcDe,
-            nSigmaTpcPr,
-            nSigmaItsDe,
-            nSigmaTofDe,
-            tofBetaDe,
-            tpcInnerParamDe,
-            tofExpMomDe,
-            nSigmaTpcPi,
-            nSigmaTofPi,
-            nSigmaTpcKa,
-            nSigmaTofKa,
-            candidate.ct(o2::constants::physics::MassCDeuteron),
-            candFlag,
-            candSign,
-            0,
-            0,
-            -1,
-            -1.f,
-            cent,
-            collision.posZ(),
-            collision.globalIndex(),
-            timeStamp);
+        if (selPiKDe) {
+          writeDataHypothesis(false);
         }
       }
     }
