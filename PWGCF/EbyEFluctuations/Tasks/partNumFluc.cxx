@@ -139,7 +139,7 @@ namespace fluctuation_calculator_base
 {
 inline constexpr std::int8_t MaxOrder{8};
 inline constexpr std::int32_t NExponentKeys{MaxOrder * (MaxOrder + 1) / 2};
-inline constexpr std::array<std::pair<std::int8_t, std::int8_t>, NExponentKeys> ExponentKeys{[]() constexpr -> std::array<std::pair<std::int8_t, std::int8_t>, NExponentKeys> {
+inline constexpr std::array<std::pair<std::int8_t, std::int8_t>, NExponentKeys> ExponentKeys{[]() consteval noexcept -> std::array<std::pair<std::int8_t, std::int8_t>, NExponentKeys> {
   std::array<std::pair<std::int8_t, std::int8_t>, NExponentKeys> result{};
   std::int32_t index{};
   for (std::int32_t const& iExponent : std::views::iota(1, MaxOrder + 1)) {
@@ -149,7 +149,7 @@ inline constexpr std::array<std::pair<std::int8_t, std::int8_t>, NExponentKeys> 
   }
   return result;
 }()};
-inline constexpr std::int32_t NOrderKeys{[]() constexpr -> std::int32_t {
+inline constexpr std::int32_t NOrderKeys{[]() consteval noexcept -> std::int32_t {
   std::array<std::int32_t, MaxOrder + 1> counts{1};
   for (std::pair<std::int8_t, std::int8_t> const& exponentKey /* o2-linter: disable=const-ref-in-for-loop */ : ExponentKeys) {
     const std::int32_t weight{exponentKey.first};
@@ -159,11 +159,11 @@ inline constexpr std::int32_t NOrderKeys{[]() constexpr -> std::int32_t {
   }
   return std::accumulate(counts.begin(), counts.end(), 0);
 }()};
-inline constexpr std::array<std::array<std::int8_t, NExponentKeys>, NOrderKeys> OrderKeys{[]() constexpr -> std::array<std::array<std::int8_t, NExponentKeys>, NOrderKeys> {
+inline constexpr std::array<std::array<std::int8_t, NExponentKeys>, NOrderKeys> OrderKeys{[]() consteval noexcept -> std::array<std::array<std::int8_t, NExponentKeys>, NOrderKeys> {
   std::array<std::array<std::int8_t, NExponentKeys>, NOrderKeys> result{};
   std::array<std::int8_t, NExponentKeys> current{};
   std::int32_t index{};
-  const auto fillOrderKeys{[&current, &index, &result](const auto& self, const std::int32_t position, const std::int32_t sum, const std::int32_t target) constexpr -> void {
+  const auto fillOrderKeys{[&current, &index, &result](const auto& self, const std::int32_t position, const std::int32_t sum, const std::int32_t target) consteval noexcept -> void {
     if (position == NExponentKeys) {
       if (sum == target) {
         result[index++] = current;
@@ -182,19 +182,42 @@ inline constexpr std::array<std::array<std::int8_t, NExponentKeys>, NOrderKeys> 
   }
   return result;
 }()};
+inline constexpr std::array<std::pair<std::int32_t, std::pair<std::int32_t, std::int8_t>>, NOrderKeys> OrderKeyProductLinks{[]() consteval noexcept -> std::array<std::pair<std::int32_t, std::pair<std::int32_t, std::int8_t>>, NOrderKeys> {
+  std::array<std::pair<std::int32_t, std::pair<std::int32_t, std::int8_t>>, NOrderKeys> result{};
+  for (std::int32_t const& iOrderKey : std::views::iota(1, NOrderKeys)) {
+    result[iOrderKey].first = iOrderKey;
+    std::array<std::int8_t, NExponentKeys> orderKeyParent{OrderKeys[iOrderKey]};
+    for (std::int32_t const& iExponentKey : std::views::iota(0, NExponentKeys) | std::views::reverse) {
+      const std::int8_t power{orderKeyParent[iExponentKey]};
+      if (power <= 0) {
+        continue;
+      }
+
+      orderKeyParent[iExponentKey] = {};
+      for (std::int32_t const& iOrderKeyParent : std::views::iota(0, iOrderKey)) {
+        if (OrderKeys[iOrderKeyParent] == orderKeyParent) {
+          result[iOrderKey] = {iOrderKeyParent, {iExponentKey, power}};
+          break;
+        }
+      }
+      break;
+    }
+  }
+  return result;
+}()};
 } // namespace fluctuation_calculator_base
 
 class FluctuationCalculatorTrack
 {
  public:
-  FluctuationCalculatorTrack() = default;
-  FluctuationCalculatorTrack(const FluctuationCalculatorTrack&) = default;
+  FluctuationCalculatorTrack() noexcept = default;
+  FluctuationCalculatorTrack(const FluctuationCalculatorTrack&) noexcept = default;
   FluctuationCalculatorTrack(FluctuationCalculatorTrack&&) noexcept = default;
-  FluctuationCalculatorTrack& operator=(const FluctuationCalculatorTrack&) = default;
+  FluctuationCalculatorTrack& operator=(const FluctuationCalculatorTrack&) noexcept = default;
   FluctuationCalculatorTrack& operator=(FluctuationCalculatorTrack&&) noexcept = default;
-  virtual ~FluctuationCalculatorTrack() = default;
+  virtual ~FluctuationCalculatorTrack() noexcept = default;
 
-  [[nodiscard]] std::array<double, fluctuation_calculator_base::NOrderKeys> getProducts(const double weight = 1.) const
+  [[nodiscard]] std::array<double, fluctuation_calculator_base::NOrderKeys> getProducts(const double weight = 1.) const noexcept
   {
     std::array<std::array<double, fluctuation_calculator_base::MaxOrder + 1>, fluctuation_calculator_base::NExponentKeys> powersQ{};
     for (std::int32_t const& iExponentKey : std::views::iota(0, fluctuation_calculator_base::NExponentKeys)) {
@@ -204,22 +227,20 @@ class FluctuationCalculatorTrack
       }
     }
 
-    std::array<double, fluctuation_calculator_base::NOrderKeys> products{};
-    products.fill(weight);
-    for (std::int32_t const& iOrderKey : std::views::iota(0, fluctuation_calculator_base::NOrderKeys)) {
-      for (std::int32_t const& iExponentKey : std::views::iota(0, fluctuation_calculator_base::NExponentKeys)) {
-        if (const std::int32_t power{fluctuation_calculator_base::OrderKeys[iOrderKey][iExponentKey]}; power > 0) {
-          products[iOrderKey] *= powersQ[iExponentKey][power];
-        }
-      }
+    std::array<double, fluctuation_calculator_base::NOrderKeys> products{weight};
+    for (std::int32_t const& iOrderKey : std::views::iota(1, fluctuation_calculator_base::NOrderKeys)) {
+      const auto& [iOrderKeyParent, factor]{fluctuation_calculator_base::OrderKeyProductLinks[iOrderKey]};
+      const auto& [iExponentKey, power]{factor};
+      products[iOrderKey] = products[iOrderKeyParent] * powersQ[iExponentKey][power];
     }
     return products;
   }
-  void clear() { mQs.fill({}); }
-  void fill(const double charge, const double efficiency, const double weight = 1.)
+  void addQ(const std::int32_t exponentKeyIndex, const double q) noexcept { mQs[exponentKeyIndex] += q; }
+  void clear() noexcept { mQs.fill({}); }
+  void fill(const double charge, const double efficiency, const double weight = 1.) noexcept
   {
     const double inverseEfficiency{1. / efficiency};
-    std::array<double, fluctuation_calculator_base::MaxOrder + 1> powersCharge{1.};
+    std::array<double, fluctuation_calculator_base::MaxOrder + 1> powersCharge{weight};
     std::array<double, fluctuation_calculator_base::MaxOrder + 1> powersInverseEfficiency{1.};
     for (std::int32_t const& exponent : std::views::iota(1, fluctuation_calculator_base::MaxOrder + 1)) {
       powersCharge[exponent] = powersCharge[exponent - 1] * charge;
@@ -227,7 +248,7 @@ class FluctuationCalculatorTrack
     }
     for (std::int32_t const& iExponentKey : std::views::iota(0, fluctuation_calculator_base::NExponentKeys)) {
       const auto& [exponentCharge, exponentEfficiency]{fluctuation_calculator_base::ExponentKeys[iExponentKey]};
-      mQs[iExponentKey] += weight * powersCharge[exponentCharge] * powersInverseEfficiency[exponentEfficiency];
+      addQ(iExponentKey, powersCharge[exponentCharge] * powersInverseEfficiency[exponentEfficiency]);
     }
   }
 
@@ -516,10 +537,12 @@ struct PartNumFluc {
   struct HolderCcdb {
     [[maybe_unused]] static constexpr std::int32_t NDimensionsEfficiency{4};
 
+    const TList* lCcdb{};
     std::map<std::int32_t, std::pair<std::int32_t, std::int32_t>> runNumbersIndicesGroupIndices;
-    std::vector<std::array<std::array<std::array<std::pair<const TFormula*, const TH3*>, NEs<ChargeSpecies>>, NEs<DcaAxis>>, NEs<DcaMeasure>>> fPtMeasureDca;
-    std::vector<std::array<std::array<std::array<const TH3*, NEs<ChargeSpecies>>, NEs<ParticleSpecies>>, NEs<Detector>>> hCentralityPtEtaShiftNSigmaPid;
-    std::vector<std::array<std::array<std::array<const THnBase*, NEs<ChargeSpecies>>, NEs<ParticleSpecies>>, NEs<PidStrategy>>> hVzCentralityPtEtaEfficiency;
+    std::int32_t runGroupIndexCurrent{};
+    std::array<std::array<std::array<std::pair<const TFormula*, const TH3*>, NEs<ChargeSpecies>>, NEs<DcaAxis>>, NEs<DcaMeasure>> fPtMeasureDca{};
+    std::array<std::array<std::array<const TH3*, NEs<ChargeSpecies>>, NEs<ParticleSpecies>>, NEs<Detector>> hCentralityPtEtaShiftNSigmaPid{};
+    std::array<std::array<std::array<const THnBase*, NEs<ChargeSpecies>>, NEs<ParticleSpecies>>, NEs<PidStrategy>> hVzCentralityPtEtaEfficiency{};
   } holderCcdb{};
 
   struct HolderMcEvent {
@@ -641,7 +664,7 @@ struct PartNumFluc {
     }
   } holderDerivedData{};
 
-  std::array<std::array<std::unique_ptr<FluctuationCalculatorTrack>, NEs<ChargeNumber>>, NEs<ParticleNumber>> fluctuationCalculatorTrack{};
+  std::array<std::array<std::unique_ptr<FluctuationCalculatorTrack>, NEs<ChargeNumber>>, NEs<ParticleNumber>> fluctuationCalculatorsTrack{};
 
   struct : ConfigurableGroup {
     Configurable<std::string> cfgCcdbUrl{"cfgCcdbUrl", "http://ccdb-test.cern.ch:8080", "Url of CCDB"};
@@ -778,41 +801,13 @@ struct PartNumFluc {
     if (groupCcdb.cfgCcdbTimestampLatest.value >= 0) {
       ccdb->setCreatedNotAfter(groupCcdb.cfgCcdbTimestampLatest.value);
     }
-    const TList* const ccdbObject{ccdb->get<TList>(groupCcdb.cfgCcdbPath.value)};
-    if (!ccdbObject || ccdbObject->IsA() != TList::Class()) {
-      LOG(fatal) << "Invalid CCDB object!";
-    }
 
+    readCcdb<true>();
     std::int32_t nRunsBad{};
-    std::int32_t nRunGroups{};
-    {
-      const TGraph* const gRunNumberGroupIndex{dynamic_cast<const TGraph*>(ccdbObject->FindObject("gRunNumberGroupIndex"))};
-      if (!gRunNumberGroupIndex || gRunNumberGroupIndex->IsA() != TGraph::Class()) {
-        LOG(fatal) << "Invalid gRunNumberGroupIndex!";
-      }
-      for (std::int32_t const& iRun : std::views::iota(0, gRunNumberGroupIndex->GetN())) {
-        const std::int32_t runGroupIndex{static_cast<std::int32_t>(std::llrint(gRunNumberGroupIndex->GetY()[iRun]))};
-        if (runGroupIndex == 0 || (groupEvent.cfgFlagRejectionRunBad.value && runGroupIndex < 0)) {
-          ++nRunsBad;
-        }
-        nRunGroups = std::max(nRunGroups, std::abs(runGroupIndex));
-        holderCcdb.runNumbersIndicesGroupIndices[std::llrint(gRunNumberGroupIndex->GetX()[iRun])] = {iRun, runGroupIndex};
-      }
-    }
-    if (groupEvent.cfgFlagRejectionRunBadMc.value) {
-      const TGraph* const gRunNumberGroupIndex{dynamic_cast<const TGraph*>(ccdbObject->FindObject("gRunNumberGroupIndex_mc"))};
-      if (!gRunNumberGroupIndex || gRunNumberGroupIndex->IsA() != TGraph::Class()) {
-        LOG(fatal) << "Invalid gRunNumberGroupIndex_mc!";
-      }
-      for (std::int32_t const& iRun : std::views::iota(0, gRunNumberGroupIndex->GetN())) {
-        if (std::llrint(gRunNumberGroupIndex->GetY()[iRun]) <= 0) {
-          if (const auto iter{holderCcdb.runNumbersIndicesGroupIndices.find(std::llrint(gRunNumberGroupIndex->GetX()[iRun]))}; iter != holderCcdb.runNumbersIndicesGroupIndices.end() && iter->second.second > 0) {
-            iter->second.second = -iter->second.second;
-            if (groupEvent.cfgFlagRejectionRunBad.value) {
-              ++nRunsBad;
-            }
-          }
-        }
+    for (const auto& runNumberIndexGroupIndex : holderCcdb.runNumbersIndicesGroupIndices) {
+      const std::int32_t runGroupIndex{runNumberIndexGroupIndex.second.second};
+      if (runGroupIndex == 0 || (groupEvent.cfgFlagRejectionRunBad.value && runGroupIndex < 0)) {
+        ++nRunsBad;
       }
     }
 
@@ -869,68 +864,6 @@ struct PartNumFluc {
       default:
         LOG(info) << "Enabling centrality definition: FT0M";
         break;
-    }
-
-    static constexpr auto ReadListRunGroup{[](const TList* const ccdbObject, const std::int32_t runGroupIndex) -> const TList* {
-      const std::string name{std::format("lRunGroup_{}", runGroupIndex)};
-      const TList* const lRunGroup{dynamic_cast<const TList*>(ccdbObject->FindObject(name.c_str()))};
-      if (!lRunGroup) {
-        LOG(fatal) << "Invalid " << name << "!";
-      }
-      return lRunGroup;
-    }};
-
-    if (groupTrack.cfgFlagRecalibrationDca.value) {
-      LOG(info) << "Enabling DCA recalibration.";
-
-      holderCcdb.fPtMeasureDca.resize(nRunGroups);
-      for (std::int32_t const& iRunGroup : std::views::iota(0, nRunGroups)) {
-        const TList* const lRunGroup{ReadListRunGroup(ccdbObject, iRunGroup + 1)};
-        for (std::int32_t const& iDcaMeasure : std::views::iota(0, NEs<DcaMeasure>)) {
-          for (std::int32_t const& iDcaAxis : std::views::iota(0, NEs<DcaAxis>)) {
-            for (std::int32_t const& iChargeSpecies : std::views::iota(0, NEs<ChargeSpecies>)) {
-              std::pair<const TFormula*, const TH3*>& calibration{holderCcdb.fPtMeasureDca[iRunGroup][iDcaMeasure][iDcaAxis][iChargeSpecies]};
-              const std::string nameFormula{std::format("fPt{}Dca{}{}{}_runGroup{}", getName<DcaMeasure>(iDcaMeasure), getName<DcaAxis>(iDcaAxis), getName<ChargeSpecies>(iChargeSpecies), doProcessMc.value ? "_mc" : "", iRunGroup + 1)};
-              calibration.first = dynamic_cast<const TFormula*>(lRunGroup->FindObject(nameFormula.c_str()));
-              if (!calibration.first || calibration.first->GetNdim() != 1 || calibration.first->GetNpar() <= 0) {
-                LOG(fatal) << "Invalid " << nameFormula << "!";
-              }
-              LOG(info) << "Reading from CCDB: " << nameFormula << " \"" << calibration.first->GetExpFormula() << "\"";
-              const std::int32_t nParameters{calibration.first->GetNpar()};
-
-              const std::string nameHistogram{std::format("hCentralityEtaParameterPt{}Dca{}{}{}_runGroup{}", getName<DcaMeasure>(iDcaMeasure), getName<DcaAxis>(iDcaAxis), getName<ChargeSpecies>(iChargeSpecies), doProcessMc.value ? "_mc" : "", iRunGroup + 1)};
-              calibration.second = dynamic_cast<const TH3*>(lRunGroup->FindObject(nameHistogram.c_str()));
-              if (calibration.second == nullptr || calibration.second->GetNbinsZ() != nParameters || std::ranges::any_of(std::views::iota(0, nParameters), [zAxis = calibration.second->GetZaxis()](const std::int32_t binIndex) -> bool { return zAxis->GetBinCenter(binIndex + 1) != binIndex; })) {
-                LOG(fatal) << "Invalid " << nameHistogram << "!";
-              }
-              LOG(info) << "Reading from CCDB: " << nameHistogram;
-            }
-          }
-        }
-      }
-    }
-
-    for (std::int32_t const& iParticleSpecies : std::views::iota(0, NEs<ParticleSpecies>)) {
-      if (!static_cast<bool>(groupTrack.cfgFlagsRecalibrationNSigmaPid.value.get(iParticleSpecies))) {
-        continue;
-      }
-
-      LOG(info) << "Enabling nSigma" << getName<ParticleSpecies>(iParticleSpecies) << " recalibration.";
-
-      holderCcdb.hCentralityPtEtaShiftNSigmaPid.resize(nRunGroups);
-      for (std::int32_t const& iRunGroup : std::views::iota(0, nRunGroups)) {
-        const TList* const lRunGroup{ReadListRunGroup(ccdbObject, iRunGroup + 1)};
-        for (std::int32_t const& iDetector : std::views::iota(0, NEs<Detector>)) {
-          for (std::int32_t const& iChargeSpecies : std::views::iota(0, NEs<ChargeSpecies>)) {
-            const std::string name{std::format("hCentralityPtEtaShift{}NSigma{}{}{}_runGroup{}", getName<Detector>(iDetector), getName<ParticleSpecies>(iParticleSpecies), getName<ChargeSpecies>(iChargeSpecies), doProcessMc.value ? "_mc" : "", iRunGroup + 1)};
-            holderCcdb.hCentralityPtEtaShiftNSigmaPid[iRunGroup][iDetector][iParticleSpecies][iChargeSpecies] = dynamic_cast<const TH3*>(lRunGroup->FindObject(name.c_str()));
-            if (!holderCcdb.hCentralityPtEtaShiftNSigmaPid[iRunGroup][iDetector][iParticleSpecies][iChargeSpecies]) {
-              LOG(fatal) << "Invalid " << name << "!";
-            }
-            LOG(info) << "Reading from CCDB: " << name;
-          }
-        }
-      }
     }
 
     hrCounter.add("hNEvents", ";;No. of Events", {HistType::kTH1D, {{10 + aod::evsel::EventSelectionFlags::kNsel, -0.5, 9.5 + static_cast<double>(aod::evsel::EventSelectionFlags::kNsel), "Selection"}}});
@@ -1212,7 +1145,7 @@ struct PartNumFluc {
       const HistogramConfigSpec hcsFluctuationCalculator{HistType::kTH3D, {asCentrality, {groupEvent.cfgNSubgroups.value, -0.5, groupEvent.cfgNSubgroups.value - 0.5, "Subgroup Index"}, {fluctuation_calculator_base::NOrderKeys, -0.5, fluctuation_calculator_base::NOrderKeys - 0.5, "Order Key Index"}}};
 
       for (std::int32_t const& iChargeNumber : std::views::iota(0, NEs<ChargeNumber>)) {
-        fluctuationCalculatorTrack[iParticleNumber][iChargeNumber] = std::make_unique<FluctuationCalculatorTrack>();
+        fluctuationCalculatorsTrack[iParticleNumber][iChargeNumber] = std::make_unique<FluctuationCalculatorTrack>();
       }
 
       if (doProcessMc.value) {
@@ -1227,20 +1160,111 @@ struct PartNumFluc {
         hrCalculationFluctuation.add(std::format("CalculationFluctuation/hFluctuationCalculator{}{}", getName<ParticleNumber>(iParticleNumber), getName<ChargeNumber>(iChargeNumber)).c_str(), "", hcsFluctuationCalculator);
       }
     }
+  }
 
-    for (std::int32_t const& iParticleSpecies : std::views::iota(0, NEs<ParticleSpecies>)) {
-      if (!static_cast<bool>(groupAnalysis.cfgFlagsCalculationFluctuation.value.get(toI(ParticleNumber::Charge))) && (iParticleSpecies != toI(ParticleSpecies::Kaon) || !static_cast<bool>(groupAnalysis.cfgFlagsCalculationFluctuation.value.get(toI(ParticleNumber::Kaon)))) && (iParticleSpecies != toI(ParticleSpecies::Proton) || !static_cast<bool>(groupAnalysis.cfgFlagsCalculationFluctuation.value.get(toI(ParticleNumber::Proton))))) {
-        continue;
+  template <bool DoInit>
+  void readCcdb()
+  {
+    if constexpr (DoInit) {
+      holderCcdb.lCcdb = ccdb->get<TList>(groupCcdb.cfgCcdbPath.value);
+      if (!holderCcdb.lCcdb || holderCcdb.lCcdb->IsA() != TList::Class()) {
+        LOG(fatal) << "Invalid CCDB object!";
       }
 
-      holderCcdb.hVzCentralityPtEtaEfficiency.resize(nRunGroups);
-      for (std::int32_t const& iRunGroup : std::views::iota(0, nRunGroups)) {
-        const TList* const lRunGroup{ReadListRunGroup(ccdbObject, iRunGroup + 1)};
+      const TGraph* const gRunNumberGroupIndex{dynamic_cast<const TGraph*>(holderCcdb.lCcdb->FindObject("gRunNumberGroupIndex"))};
+      if (!gRunNumberGroupIndex || gRunNumberGroupIndex->IsA() != TGraph::Class()) {
+        LOG(fatal) << "Invalid gRunNumberGroupIndex!";
+      }
+      for (std::int32_t const& iRun : std::views::iota(0, gRunNumberGroupIndex->GetN())) {
+        holderCcdb.runNumbersIndicesGroupIndices[std::llrint(gRunNumberGroupIndex->GetX()[iRun])] = {iRun, static_cast<std::int32_t>(std::llrint(gRunNumberGroupIndex->GetY()[iRun]))};
+      }
+
+      if (groupEvent.cfgFlagRejectionRunBadMc.value) {
+        const TGraph* const gRunNumberGroupIndexMc{dynamic_cast<const TGraph*>(holderCcdb.lCcdb->FindObject("gRunNumberGroupIndex_mc"))};
+        if (!gRunNumberGroupIndexMc || gRunNumberGroupIndexMc->IsA() != TGraph::Class()) {
+          LOG(fatal) << "Invalid gRunNumberGroupIndex_mc!";
+        }
+        for (std::int32_t const& iRun : std::views::iota(0, gRunNumberGroupIndexMc->GetN())) {
+          if (std::llrint(gRunNumberGroupIndexMc->GetY()[iRun]) <= 0) {
+            if (const auto iter{holderCcdb.runNumbersIndicesGroupIndices.find(std::llrint(gRunNumberGroupIndexMc->GetX()[iRun]))}; iter != holderCcdb.runNumbersIndicesGroupIndices.end() && iter->second.second > 0) {
+              iter->second.second = -iter->second.second;
+            }
+          }
+        }
+      }
+    } else {
+      const std::int32_t runGroupIndex{std::abs(holderEvent.runGroupIndex)};
+      if (holderCcdb.runGroupIndexCurrent == runGroupIndex) {
+        return;
+      }
+
+      holderCcdb.runGroupIndexCurrent = runGroupIndex;
+      holderCcdb.fPtMeasureDca = {};
+      holderCcdb.hCentralityPtEtaShiftNSigmaPid = {};
+      holderCcdb.hVzCentralityPtEtaEfficiency = {};
+      if (!groupTrack.cfgFlagRecalibrationDca.value && !isEnabled(groupTrack.cfgFlagsRecalibrationNSigmaPid) && !doCalculationFluctuation) {
+        return;
+      }
+
+      const std::string nameList{std::format("lRunGroup_{}", runGroupIndex)};
+      const TList* const lRunGroup{dynamic_cast<const TList*>(holderCcdb.lCcdb->FindObject(nameList.c_str()))};
+      if (!lRunGroup) {
+        LOG(fatal) << "Invalid " << nameList << "!";
+      }
+
+      if (groupTrack.cfgFlagRecalibrationDca.value) {
+        for (std::int32_t const& iDcaMeasure : std::views::iota(0, NEs<DcaMeasure>)) {
+          for (std::int32_t const& iDcaAxis : std::views::iota(0, NEs<DcaAxis>)) {
+            for (std::int32_t const& iChargeSpecies : std::views::iota(0, NEs<ChargeSpecies>)) {
+              std::pair<const TFormula*, const TH3*>& calibration{holderCcdb.fPtMeasureDca[iDcaMeasure][iDcaAxis][iChargeSpecies]};
+              const std::string nameFormula{std::format("fPt{}Dca{}{}{}_runGroup{}", getName<DcaMeasure>(iDcaMeasure), getName<DcaAxis>(iDcaAxis), getName<ChargeSpecies>(iChargeSpecies), doProcessMc.value ? "_mc" : "", runGroupIndex)};
+              calibration.first = dynamic_cast<const TFormula*>(lRunGroup->FindObject(nameFormula.c_str()));
+              if (!calibration.first || calibration.first->GetNdim() != 1 || calibration.first->GetNpar() <= 0) {
+                LOG(fatal) << "Invalid " << nameFormula << "!";
+              }
+              LOG(info) << "Reading from CCDB: " << nameFormula << " \"" << calibration.first->GetExpFormula() << "\"";
+              const std::int32_t nParameters{calibration.first->GetNpar()};
+
+              const std::string nameHistogram{std::format("hCentralityEtaParameterPt{}Dca{}{}{}_runGroup{}", getName<DcaMeasure>(iDcaMeasure), getName<DcaAxis>(iDcaAxis), getName<ChargeSpecies>(iChargeSpecies), doProcessMc.value ? "_mc" : "", runGroupIndex)};
+              calibration.second = dynamic_cast<const TH3*>(lRunGroup->FindObject(nameHistogram.c_str()));
+              if (calibration.second == nullptr || calibration.second->GetNbinsZ() != nParameters || std::ranges::any_of(std::views::iota(0, nParameters), [zAxis = calibration.second->GetZaxis()](const std::int32_t binIndex) -> bool { return zAxis->GetBinCenter(binIndex + 1) != binIndex; })) {
+                LOG(fatal) << "Invalid " << nameHistogram << "!";
+              }
+              LOG(info) << "Reading from CCDB: " << nameHistogram;
+            }
+          }
+        }
+      }
+
+      for (std::int32_t const& iParticleSpecies : std::views::iota(0, NEs<ParticleSpecies>)) {
+        if (!static_cast<bool>(groupTrack.cfgFlagsRecalibrationNSigmaPid.value.get(iParticleSpecies))) {
+          continue;
+        }
+
+        for (std::int32_t const& iDetector : std::views::iota(0, NEs<Detector>)) {
+          for (std::int32_t const& iChargeSpecies : std::views::iota(0, NEs<ChargeSpecies>)) {
+            const std::string name{std::format("hCentralityPtEtaShift{}NSigma{}{}{}_runGroup{}", getName<Detector>(iDetector), getName<ParticleSpecies>(iParticleSpecies), getName<ChargeSpecies>(iChargeSpecies), doProcessMc.value ? "_mc" : "", runGroupIndex)};
+            const TH3*& histogram{holderCcdb.hCentralityPtEtaShiftNSigmaPid[iDetector][iParticleSpecies][iChargeSpecies]};
+            histogram = dynamic_cast<const TH3*>(lRunGroup->FindObject(name.c_str()));
+            if (!histogram) {
+              LOG(fatal) << "Invalid " << name << "!";
+            }
+            LOG(info) << "Reading from CCDB: " << name;
+          }
+        }
+      }
+
+      for (std::int32_t const& iParticleSpecies : std::views::iota(0, NEs<ParticleSpecies>)) {
+        if (!static_cast<bool>(groupAnalysis.cfgFlagsCalculationFluctuation.value.get(toI(ParticleNumber::Charge))) && (iParticleSpecies != toI(ParticleSpecies::Kaon) || !static_cast<bool>(groupAnalysis.cfgFlagsCalculationFluctuation.value.get(toI(ParticleNumber::Kaon)))) && (iParticleSpecies != toI(ParticleSpecies::Proton) || !static_cast<bool>(groupAnalysis.cfgFlagsCalculationFluctuation.value.get(toI(ParticleNumber::Proton))))) {
+          continue;
+        }
+
         for (std::int32_t const& iPidStrategy : std::views::iota(0, NEs<PidStrategy>)) {
           for (std::int32_t const& iChargeSpecies : std::views::iota(0, NEs<ChargeSpecies>)) {
-            const std::string name{std::format("hVzCentralityPtEtaEfficiency{}{}{}_runGroup{}", getName<PidStrategy>(iPidStrategy), getName<ParticleSpecies>(iParticleSpecies), getName<ChargeSpecies>(iChargeSpecies), iRunGroup + 1)};
-            holderCcdb.hVzCentralityPtEtaEfficiency[iRunGroup][iPidStrategy][iParticleSpecies][iChargeSpecies] = dynamic_cast<const THnBase*>(lRunGroup->FindObject(name.c_str()));
-            if (!holderCcdb.hVzCentralityPtEtaEfficiency[iRunGroup][iPidStrategy][iParticleSpecies][iChargeSpecies] || holderCcdb.hVzCentralityPtEtaEfficiency[iRunGroup][iPidStrategy][iParticleSpecies][iChargeSpecies]->GetNdimensions() != HolderCcdb::NDimensionsEfficiency) {
+            const std::string name{std::format("hVzCentralityPtEtaEfficiency{}{}{}_runGroup{}", getName<PidStrategy>(iPidStrategy), getName<ParticleSpecies>(iParticleSpecies), getName<ChargeSpecies>(iChargeSpecies), runGroupIndex)};
+            const THnBase*& histogram{holderCcdb.hVzCentralityPtEtaEfficiency[iPidStrategy][iParticleSpecies][iChargeSpecies]};
+            histogram = dynamic_cast<const THnBase*>(lRunGroup->FindObject(name.c_str()));
+            if (!histogram || histogram->GetNdimensions() != HolderCcdb::NDimensionsEfficiency) {
               LOG(fatal) << "Invalid " << name << "!";
             }
             LOG(info) << "Reading from CCDB: " << name;
@@ -1254,34 +1278,34 @@ struct PartNumFluc {
     requires IsValid<PidStrategyValue, ParticleSpeciesValue, ChargeSpeciesValue>
   double getEfficiency(const bool doUseMcParticleMomentum) const
   {
-    const THnBase* const hVzCentralityPtEtaEfficiency{holderCcdb.hVzCentralityPtEtaEfficiency[std::abs(holderEvent.runGroupIndex) - 1][toI(PidStrategyValue)][toI(ParticleSpeciesValue)][toI(ChargeSpeciesValue)]};
+    const THnBase* const hVzCentralityPtEtaEfficiency{holderCcdb.hVzCentralityPtEtaEfficiency[toI(PidStrategyValue)][toI(ParticleSpeciesValue)][toI(ChargeSpeciesValue)]};
     return hVzCentralityPtEtaEfficiency ? hVzCentralityPtEtaEfficiency->GetBinContent(hVzCentralityPtEtaEfficiency->GetBin(std::array<double, HolderCcdb::NDimensionsEfficiency>{doProcessMc.value && groupEvent.cfgFlagMcCollisionVz.value ? holderMcEvent.vz : holderEvent.vz, holderEvent.centrality, doUseMcParticleMomentum ? holderMcParticle.pt : holderTrack.pt, doUseMcParticleMomentum ? holderMcParticle.eta : holderTrack.eta}.data())) : 0.;
   }
 
-  template <bool DoRecalibration, Detector DetectorValue, ParticleSpecies ParticleSpeciesValue>
+  template <bool DoRecalibrate, Detector DetectorValue, ParticleSpecies ParticleSpeciesValue>
     requires IsValid<ParticleSpeciesValue, DetectorValue>
   double getShiftNSigmaPid() const
   {
-    if constexpr (DoRecalibration) {
+    if constexpr (DoRecalibrate) {
       if (groupTrack.cfgFlagsRecalibrationNSigmaPid.value.get(toI(ParticleSpeciesValue))) {
-        return interpolate(holderCcdb.hCentralityPtEtaShiftNSigmaPid[std::abs(holderEvent.runGroupIndex) - 1][toI(DetectorValue)][toI(ParticleSpeciesValue)][holderTrack.sign > 0 ? toI(ChargeSpecies::Plus) : toI(ChargeSpecies::Minus)], holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta);
+        return interpolate(holderCcdb.hCentralityPtEtaShiftNSigmaPid[toI(DetectorValue)][toI(ParticleSpeciesValue)][holderTrack.sign > 0 ? toI(ChargeSpecies::Plus) : toI(ChargeSpecies::Minus)], holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta);
       }
     }
     return 0.;
   }
 
-  template <bool DoRecalibration, typename T>
+  template <bool DoRecalibrate, typename T>
   void setNSigmaPid(const T& track)
   {
     if (holderTrack.hasPid[toI(Detector::Tpc)]) {
-      holderTrack.nSigmaPid[toI(Detector::Tpc)][toI(ParticleSpecies::Pion)] = HolderTrack::truncateNSigmaPid(track.tpcNSigmaPi(), getShiftNSigmaPid<DoRecalibration, Detector::Tpc, ParticleSpecies::Pion>());
-      holderTrack.nSigmaPid[toI(Detector::Tpc)][toI(ParticleSpecies::Kaon)] = HolderTrack::truncateNSigmaPid(track.tpcNSigmaKa(), getShiftNSigmaPid<DoRecalibration, Detector::Tpc, ParticleSpecies::Kaon>());
-      holderTrack.nSigmaPid[toI(Detector::Tpc)][toI(ParticleSpecies::Proton)] = HolderTrack::truncateNSigmaPid(track.tpcNSigmaPr(), getShiftNSigmaPid<DoRecalibration, Detector::Tpc, ParticleSpecies::Proton>());
+      holderTrack.nSigmaPid[toI(Detector::Tpc)][toI(ParticleSpecies::Pion)] = HolderTrack::truncateNSigmaPid(track.tpcNSigmaPi(), getShiftNSigmaPid<DoRecalibrate, Detector::Tpc, ParticleSpecies::Pion>());
+      holderTrack.nSigmaPid[toI(Detector::Tpc)][toI(ParticleSpecies::Kaon)] = HolderTrack::truncateNSigmaPid(track.tpcNSigmaKa(), getShiftNSigmaPid<DoRecalibrate, Detector::Tpc, ParticleSpecies::Kaon>());
+      holderTrack.nSigmaPid[toI(Detector::Tpc)][toI(ParticleSpecies::Proton)] = HolderTrack::truncateNSigmaPid(track.tpcNSigmaPr(), getShiftNSigmaPid<DoRecalibrate, Detector::Tpc, ParticleSpecies::Proton>());
     }
     if (holderTrack.hasPid[toI(Detector::Tof)]) {
-      holderTrack.nSigmaPid[toI(Detector::Tof)][toI(ParticleSpecies::Pion)] = HolderTrack::truncateNSigmaPid(track.tofNSigmaPi(), getShiftNSigmaPid<DoRecalibration, Detector::Tof, ParticleSpecies::Pion>());
-      holderTrack.nSigmaPid[toI(Detector::Tof)][toI(ParticleSpecies::Kaon)] = HolderTrack::truncateNSigmaPid(track.tofNSigmaKa(), getShiftNSigmaPid<DoRecalibration, Detector::Tof, ParticleSpecies::Kaon>());
-      holderTrack.nSigmaPid[toI(Detector::Tof)][toI(ParticleSpecies::Proton)] = HolderTrack::truncateNSigmaPid(track.tofNSigmaPr(), getShiftNSigmaPid<DoRecalibration, Detector::Tof, ParticleSpecies::Proton>());
+      holderTrack.nSigmaPid[toI(Detector::Tof)][toI(ParticleSpecies::Pion)] = HolderTrack::truncateNSigmaPid(track.tofNSigmaPi(), getShiftNSigmaPid<DoRecalibrate, Detector::Tof, ParticleSpecies::Pion>());
+      holderTrack.nSigmaPid[toI(Detector::Tof)][toI(ParticleSpecies::Kaon)] = HolderTrack::truncateNSigmaPid(track.tofNSigmaKa(), getShiftNSigmaPid<DoRecalibrate, Detector::Tof, ParticleSpecies::Kaon>());
+      holderTrack.nSigmaPid[toI(Detector::Tof)][toI(ParticleSpecies::Proton)] = HolderTrack::truncateNSigmaPid(track.tofNSigmaPr(), getShiftNSigmaPid<DoRecalibrate, Detector::Tof, ParticleSpecies::Proton>());
     }
   }
 
@@ -1388,10 +1412,10 @@ struct PartNumFluc {
       }
     } else {
       const std::int32_t chargeSpeciesIndex{holderTrack.sign > 0 ? toI(ChargeSpecies::Plus) : toI(ChargeSpecies::Minus)};
-      const std::array<std::array<std::array<std::pair<const TFormula*, const TH3*>, NEs<ChargeSpecies>>, NEs<DcaAxis>>, NEs<DcaMeasure>>& fPtMeasureDcaGroup{holderCcdb.fPtMeasureDca[std::abs(holderEvent.runGroupIndex) - 1]};
+      const std::array<std::array<std::array<std::pair<const TFormula*, const TH3*>, NEs<ChargeSpecies>>, NEs<DcaAxis>>, NEs<DcaMeasure>>& fPtMeasureDca{holderCcdb.fPtMeasureDca};
       for (std::int32_t const& iDcaAxis : std::views::iota(0, NEs<DcaAxis>)) {
-        const double mean{getMeasureDca(fPtMeasureDcaGroup[toI(DcaMeasure::Mean)][iDcaAxis][chargeSpeciesIndex])};
-        const double sigma{getMeasureDca(fPtMeasureDcaGroup[toI(DcaMeasure::Sigma)][iDcaAxis][chargeSpeciesIndex])};
+        const double mean{getMeasureDca(fPtMeasureDca[toI(DcaMeasure::Mean)][iDcaAxis][chargeSpeciesIndex])};
+        const double sigma{getMeasureDca(fPtMeasureDca[toI(DcaMeasure::Sigma)][iDcaAxis][chargeSpeciesIndex])};
         if (!(std::abs(holderTrack.dca[iDcaAxis] - mean) < groupTrack.cfgCutsMaxAbsNSigmaDca.value.get(iDcaAxis) * sigma)) {
           return false;
         }
@@ -1786,7 +1810,7 @@ struct PartNumFluc {
     for (std::int32_t const& iParticleNumber : std::views::iota(0, NEs<ParticleNumber>)) {
       if (static_cast<bool>(groupAnalysis.cfgFlagsCalculationFluctuation.value.get(iParticleNumber))) {
         for (std::int32_t const& iChargeNumber : std::views::iota(0, NEs<ChargeNumber>)) {
-          fluctuationCalculatorTrack[iParticleNumber][iChargeNumber]->clear();
+          fluctuationCalculatorsTrack[iParticleNumber][iChargeNumber]->clear();
         }
       }
     }
@@ -1865,13 +1889,13 @@ struct PartNumFluc {
             const auto fill{
               [this, efficiency]() -> void {
                 if constexpr (ChargeSpeciesValue == ChargeSpecies::Plus) {
-                  fluctuationCalculatorTrack[toI(ParticleNumberValue)][toI(ChargeNumber::Plus)]->fill(1., efficiency);
-                  fluctuationCalculatorTrack[toI(ParticleNumberValue)][toI(ChargeNumber::Net)]->fill(1., efficiency);
+                  fluctuationCalculatorsTrack[toI(ParticleNumberValue)][toI(ChargeNumber::Plus)]->fill(1., efficiency);
+                  fluctuationCalculatorsTrack[toI(ParticleNumberValue)][toI(ChargeNumber::Net)]->fill(1., efficiency);
                 } else {
-                  fluctuationCalculatorTrack[toI(ParticleNumberValue)][toI(ChargeNumber::Minus)]->fill(1., efficiency);
-                  fluctuationCalculatorTrack[toI(ParticleNumberValue)][toI(ChargeNumber::Net)]->fill(-1., efficiency);
+                  fluctuationCalculatorsTrack[toI(ParticleNumberValue)][toI(ChargeNumber::Minus)]->fill(1., efficiency);
+                  fluctuationCalculatorsTrack[toI(ParticleNumberValue)][toI(ChargeNumber::Net)]->fill(-1., efficiency);
                 }
-                fluctuationCalculatorTrack[toI(ParticleNumberValue)][toI(ChargeNumber::Total)]->fill(1., efficiency);
+                fluctuationCalculatorsTrack[toI(ParticleNumberValue)][toI(ChargeNumber::Total)]->fill(1., efficiency);
               }};
             if constexpr (DataModeValue == DataMode::McMcParticle) {
               ++holderMcEvent.numbers[toI(ParticleNumberValue)][toI(ChargeSpeciesValue)];
@@ -1924,7 +1948,7 @@ struct PartNumFluc {
       [this]<ChargeNumber ChargeNumberValue>
         requires IsValid<ChargeNumberValue>
       () -> void {
-        const std::array<double, fluctuation_calculator_base::NOrderKeys> products{fluctuationCalculatorTrack[toI(ParticleNumberValue)][toI(ChargeNumberValue)]->getProducts()};
+        const std::array<double, fluctuation_calculator_base::NOrderKeys> products{fluctuationCalculatorsTrack[toI(ParticleNumberValue)][toI(ChargeNumberValue)]->getProducts()};
         for (std::int32_t const& iOrderKey : std::views::iota(0, fluctuation_calculator_base::NOrderKeys)) {
           if constexpr (DataModeValue == DataMode::McMcParticle) {
             hrCalculationFluctuation.fill(C_CS("CalculationFluctuation/hFluctuationCalculator") + C_SV(getName(ParticleNumberValue)) + C_SV(getName(ChargeNumberValue)) + C_CS("_mc"), holderEvent.centrality, holderEvent.subgroupIndex, iOrderKey, products[iOrderKey]);
@@ -2178,6 +2202,7 @@ struct PartNumFluc {
     }
 
     fillEventSelection(1.);
+    readCcdb<false>();
 
     if (groupAnalysis.cfgFlagQaEvent.value) {
       if (holderEvent.getNGlobalTracks() > 0) {
