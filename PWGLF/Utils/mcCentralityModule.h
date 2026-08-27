@@ -396,13 +396,13 @@ struct BuilderModule {
   {
 
     auto CalibMC = [&](TString const& estimator) {
-      LOGF(info, "\e[1;31mCalibration for %s estimator\e[0;00m -> Starting...\n", estimator.Data());
+      LOGF(info, "Calibration for %s estimator -> Starting...\n", estimator.Data());
 
       std::vector<double> percentile_center(nCentBins);
       std::vector<double> epercentile_center(nCentBins);
 
       // Histograms
-      TH2D* h2dMultVsCent_Data = getHist<TH2D>(Form("h2dMultVsCent%s_Data", estimator.Data()));
+      TH2D* h2dMultVsCent_Data = getHist<TH2D>(Form("hMultEta05VsCent%s_Data", estimator.Data()));
       TH2D* h2dMultRecoVsMultGen_MC = getHist<TH2D>(Form("hMultEta05VsGenMult%s", estimator.Data()));
       if (!h2dMultVsCent_Data || !h2dMultRecoVsMultGen_MC) {
         return (TH1D*)0x0;
@@ -489,11 +489,10 @@ struct BuilderModule {
             }
           }
 
-          LOGF(info, "\e[1;31mCalibration for %s estimator\e[0;00m -> Data centrality bin \e[1;31m%g-%g%%\e[0;00m\n", estimator.Data(), centralityBins[irev], centralityBins[irev + 1]);
-          LOGF(info, "\e[1;31mCalibration for %s estimator\e[0;00m -> MC multiplicity range %g-%g\n", estimator.Data(), projMC->GetBinLowEdge(endBinMc), projMC->GetBinLowEdge(startBinMc));
-          LOGF(info, "\e[1;31mCalibration for %s estimator\e[0;00m -> <PV> data = %.4f Vs <PV> MC = %.4f (MC/Data = %.4f%%)\n", estimator.Data(), meanMult_Data, meanMult_MC, (meanMult_MC - meanMult_Data) * 100 / meanMult_Data);
-          LOGF(info, "\e[1;31mCalibration for %s estimator\e[0;00m -> N entries Data = %g Vs N entries MC = %g\n", estimator.Data(), projData->Integral(), projMC->Integral());
-          LOGF(info, "\n");
+          LOGF(info, "Calibration for %s estimator -> Data centrality bin %g-%g%%\n", estimator.Data(), centralityBins[irev], centralityBins[irev + 1]);
+          LOGF(info, "Calibration for %s estimator -> MC multiplicity range %g-%g\n", estimator.Data(), projMC->GetBinLowEdge(endBinMc), projMC->GetBinLowEdge(startBinMc));
+          LOGF(info, "Calibration for %s estimator -> <PV> data = %.4f Vs <PV> MC = %.4f (MC/Data = %.4f%%)\n", estimator.Data(), meanMult_Data, meanMult_MC, (meanMult_MC - meanMult_Data) * 100 / meanMult_Data);
+          LOGF(info, "Calibration for %s estimator -> N entries Data = %g Vs N entries MC = %g\n", estimator.Data(), projData->Integral(), projMC->Integral());
           for (int ibin = 1; ibin <= h1dCalib->GetNbinsX(); ibin++) {
             if (ibin <= startBinMc && ibin >= endBinMc) {
               h1dCalib->SetBinContent(ibin, percentile_center[i]);
@@ -563,10 +562,10 @@ struct BuilderModule {
             }
           }
 
-          LOGF(info, "\e[1;31mCalibration for %s estimator\e[0;00m -> Data centrality bin \e[1;31m%g-%g%%\e[0;00m\n", estimator.Data(), centralityBins[irev - 1], centralityBins[irev]);
-          LOGF(info, "\e[1;31mCalibration for %s estimator\e[0;00m -> MC multiplicity range %g-%g\n", estimator.Data(), projMC->GetBinLowEdge(startBinMc), projMC->GetBinLowEdge(endBinMc + 1));
-          LOGF(info, "\e[1;31mCalibration for %s estimator\e[0;00m -> <PV> data = %.4f Vs <PV> MC = %.4f\n", estimator.Data(), meanMult_Data, meanMult_MC);
-          LOGF(info, "\e[1;31mCalibration for %s estimator\e[0;00m -> N entries Data = %g Vs N entries MC = %g\n", estimator.Data(), projData->Integral(), projMC->Integral());
+          LOGF(info, "Calibration for %s estimator -> Data centrality bin %g-%g%%\n", estimator.Data(), centralityBins[irev - 1], centralityBins[irev]);
+          LOGF(info, "Calibration for %s estimator -> MC multiplicity range %g-%g\n", estimator.Data(), projMC->GetBinLowEdge(startBinMc), projMC->GetBinLowEdge(endBinMc + 1));
+          LOGF(info, "Calibration for %s estimator -> <PV> data = %.4f Vs <PV> MC = %.4f\n", estimator.Data(), meanMult_Data, meanMult_MC);
+          LOGF(info, "Calibration for %s estimator -> N entries Data = %g Vs N entries MC = %g\n", estimator.Data(), projData->Integral(), projMC->Integral());
           for (int ibin = 1; ibin <= h1dCalib->GetNbinsX(); ibin++) {
             if (ibin <= endBinMc && ibin >= startBinMc) {
               h1dCalib->SetBinContent(ibin, percentile_center[i]);
@@ -577,7 +576,7 @@ struct BuilderModule {
         } // End loop over centrality bins
       }
 
-      LOGF(info, "\e[1;31mCalibration for %s estimator\e[0;00m -> Done!\n", estimator.Data());
+      LOGF(info, "Calibration for %s estimator -> Done!\n", estimator.Data());
 
       return h1dCalib;
     };
