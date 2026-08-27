@@ -75,7 +75,7 @@ struct CascadeAnalysisLightIonsDerivedData {
 
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  int mRunNumber;
+  int mRunNumber{-1};
 
   // Define histogram registries
   HistogramRegistry registryData{"registryData", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -856,7 +856,7 @@ struct CascadeAnalysisLightIonsDerivedData {
     registryData.fill(HIST("number_of_events_data_vs_centrality"), 9, centrality);
 
     if (!rctConfigurations.cfgRCTLabel.value.empty() && !rctFlagsChecker(collision)) {
-      return false;
+      return;
     }
     registryData.fill(HIST("number_of_events_data"), 10 /* Pass CBT condition */);
     registryData.fill(HIST("number_of_events_data_vs_centrality"), 10, centrality);
@@ -1010,8 +1010,8 @@ struct CascadeAnalysisLightIonsDerivedData {
     registryMC.fill(HIST("number_of_events_mc_rec"), 9 /* Not at same bunch pile-up */);
     registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 9, centralityMcRec);
 
-    if (!rctConfigurations.cfgRCTLabel.value.empty() && !rctFlagsChecker(collision)) {
-      return false;
+    if (!rctConfigurations.cfgRCTLabel.value.empty() && !rctFlagsChecker(RecCol)) {
+      return;
     }
     registryMC.fill(HIST("number_of_events_mc_rec"), 10 /* Pass CBT condition */);
     registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 10, centralityMcRec);
@@ -1092,7 +1092,7 @@ struct CascadeAnalysisLightIonsDerivedData {
       bool isTrueMCCascadeDecay = false;
       bool isCorrectLambdaDecay = false;
 
-      if (isPhysPrim && (isXiMC || isOmegaMC))
+      if (isXiMC || isOmegaMC)
         isTrueMCCascade = true;
       if (isTrueMCCascade && ((casc.sign() > 0 && cascMC.pdgCodePositive() == PDG_t::kPiPlus && cascMC.pdgCodeNegative() == PDG_t::kProtonBar) || (casc.sign() < 0 && cascMC.pdgCodePositive() == PDG_t::kProton && cascMC.pdgCodeNegative() == PDG_t::kPiMinus)))
         isCorrectLambdaDecay = true;
