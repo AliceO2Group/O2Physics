@@ -979,6 +979,8 @@ struct Photonhbt {
     fRegistryCF.add("Pair/same/hPhi_lowerPtV0", "azimuthal angle of lower-p_{T} V0 in pair;#phi (rad);counts", kTH1D, {axisPhi}, true);
     addFullRangeHistograms("Pair/same/FullRange/");
 
+    fRegistryCF.add("Pair/same/CF_QLcms_Qinv", "diphoton CF |q|_{LCMS} vs. q_{inv}", kTHnSparseD, {axisQabsLcms, axisQinv, axisKt}, true);
+
     fRegistryCF.addClone("Pair/same/", "Pair/mix/");
 
     fRegistryCF.add("Pair/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current}-BC_{mixed}|", kTH1D, {{10001, -0.5, 10000.5}}, true);
@@ -1984,6 +1986,11 @@ struct Photonhbt {
       } else {
         fRegistryCF.fill(HIST("Pair/mix/CF_1D"), hbtanalysis.cfgUseLCMS ? qabs_lcms : qinv, kt, weight);
       }
+    }
+    if constexpr (ev_id == 0) {
+      fRegistryCF.fill(HIST("Pair/same/CF_QLcms_Qinv"), qabs_lcms, std::fabs(qinv), kt, weight);
+    } else {
+      fRegistryCF.fill(HIST("Pair/mix/CF_QLcms_Qinv"), qabs_lcms, std::fabs(qinv), kt, weight);
     }
     float deta_pair = v1.Eta() - v2.Eta();
     float dphi_pair = v1.Phi() - v2.Phi();
