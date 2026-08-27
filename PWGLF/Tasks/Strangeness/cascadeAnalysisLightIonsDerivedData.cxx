@@ -19,6 +19,7 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/Core/RecoDecay.h"
 
 #include <CCDB/BasicCCDBManager.h>
@@ -48,6 +49,8 @@ using namespace o2::framework::expressions;
 using namespace o2::constants::math;
 using namespace o2::constants::physics;
 
+using namespace o2::aod::rctsel;
+
 using SelCollisions = soa::Join<aod::StraCollisions, aod::StraEvSels, aod::StraCents, aod::StraStamps>;
 using SimCollisions = soa::Join<aod::StraCollisions, aod::StraEvSels, aod::StraCents, aod::StraStamps, aod::StraCollLabels>;
 using CascadeCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascTOFPIDs, aod::CascTOFNSigmas>;
@@ -72,7 +75,7 @@ struct CascadeAnalysisLightIonsDerivedData {
 
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  int mRunNumber;
+  int mRunNumber{-1};
 
   // Define histogram registries
   HistogramRegistry registryData{"registryData", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -137,6 +140,15 @@ struct CascadeAnalysisLightIonsDerivedData {
   ConfigurableAxis axisNch{"axisNch", {500, 0.0f, +5000.0f}, "Number of charged particles"};
   ConfigurableAxis axisMult{"axisMult", {500, 0.0f, +100000.0f}, "Multiplicity"};
 
+  struct : ConfigurableGroup {
+    std::string prefix = "rctConfigurations"; // JSON group name
+    Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "", "Which detector condition requirements? (CBT, CBT_hadronPID, CBT_electronPID, CBT_calo, CBT_muon, CBT_muon_glo)"};
+    Configurable<bool> cfgCheckZDC{"cfgCheckZDC", false, "Include ZDC flags in the bit selection (for Pb-Pb only)"};
+    Configurable<bool> cfgTreatLimitedAcceptanceAsBad{"cfgTreatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
+  } rctConfigurations;
+
+  RCTFlagsChecker rctFlagsChecker{rctConfigurations.cfgRCTLabel.value};
+
   // Centrality estimator
   Configurable<int> centralityEstimator{"centralityEstimator", 0, "0 = FT0C, 1 = FTOM, 2 = FV0A, 3 = NGlobal"};
 
@@ -172,6 +184,9 @@ struct CascadeAnalysisLightIonsDerivedData {
     const AxisSpec nsigmaTOFAxis{200, -10, 10, "n#sigma_{TOF}"};
     const AxisSpec nsigmaTPCAxis{200, -10, 10, "n#sigma_{TPC}"};
 
+    // Initialise the RCTFlagsChecker
+    rctFlagsChecker.init(rctConfigurations.cfgRCTLabel.value, rctConfigurations.cfgCheckZDC, rctConfigurations.cfgTreatLimitedAcceptanceAsBad);
+
     // Histograms for data
     if (doprocessData) {
       registryData.add("number_of_events_data", "number of events in data", HistType::kTH1D, {{20, -0.5f, +19.5f}});
@@ -185,7 +200,8 @@ struct CascadeAnalysisLightIonsDerivedData {
       registryData.get<TH1>(HIST("number_of_events_data"))->GetXaxis()->SetBinLabel(8, "kIsVertexTOFmatched");
       registryData.get<TH1>(HIST("number_of_events_data"))->GetXaxis()->SetBinLabel(9, "kIsVertexTRDmatched");
       registryData.get<TH1>(HIST("number_of_events_data"))->GetXaxis()->SetBinLabel(10, "kNoSameBunchPileup");
-      registryData.get<TH1>(HIST("number_of_events_data"))->GetXaxis()->SetBinLabel(11, "kINELgr0");
+      registryData.get<TH1>(HIST("number_of_events_data"))->GetXaxis()->SetBinLabel(11, "RCT flags");
+      registryData.get<TH1>(HIST("number_of_events_data"))->GetXaxis()->SetBinLabel(12, "kINELgr0");
 
       registryData.add("number_of_events_data_vs_centrality", "number of events in data vs centrality", HistType::kTH2D, {{20, -0.5f, +19.5f}, {101, 0.0f, 101.0f}});
       registryData.get<TH2>(HIST("number_of_events_data_vs_centrality"))->GetXaxis()->SetBinLabel(1, "All collisions");
@@ -198,7 +214,8 @@ struct CascadeAnalysisLightIonsDerivedData {
       registryData.get<TH2>(HIST("number_of_events_data_vs_centrality"))->GetXaxis()->SetBinLabel(8, "kIsVertexTOFmatched");
       registryData.get<TH2>(HIST("number_of_events_data_vs_centrality"))->GetXaxis()->SetBinLabel(9, "kIsVertexTRDmatched");
       registryData.get<TH2>(HIST("number_of_events_data_vs_centrality"))->GetXaxis()->SetBinLabel(10, "kNoSameBunchPileup");
-      registryData.get<TH2>(HIST("number_of_events_data_vs_centrality"))->GetXaxis()->SetBinLabel(11, "kINELgr0");
+      registryData.get<TH2>(HIST("number_of_events_data_vs_centrality"))->GetXaxis()->SetBinLabel(11, "RCT flags");
+      registryData.get<TH2>(HIST("number_of_events_data_vs_centrality"))->GetXaxis()->SetBinLabel(12, "kINELgr0");
       registryData.get<TH2>(HIST("number_of_events_data_vs_centrality"))->GetYaxis()->SetTitle("Centrality (%)");
 
       // QC Histograms
@@ -248,7 +265,8 @@ struct CascadeAnalysisLightIonsDerivedData {
       registryMC.get<TH1>(HIST("number_of_events_mc_rec"))->GetXaxis()->SetBinLabel(8, "kIsVertexTOFmatched");
       registryMC.get<TH1>(HIST("number_of_events_mc_rec"))->GetXaxis()->SetBinLabel(9, "kIsVertexTRDmatched");
       registryMC.get<TH1>(HIST("number_of_events_mc_rec"))->GetXaxis()->SetBinLabel(10, "kNoSameBunchPileup");
-      registryMC.get<TH1>(HIST("number_of_events_mc_rec"))->GetXaxis()->SetBinLabel(11, "kINELgr0");
+      registryMC.get<TH1>(HIST("number_of_events_mc_rec"))->GetXaxis()->SetBinLabel(11, "RCT flags");
+      registryMC.get<TH1>(HIST("number_of_events_mc_rec"))->GetXaxis()->SetBinLabel(12, "kINELgr0");
 
       registryMC.add("number_of_events_mc_rec_vs_centrality", "number of events in mc_rec vs centrality", HistType::kTH2D, {{20, -0.5f, +19.5f}, {101, 0.0f, 101.0f}});
       registryMC.get<TH2>(HIST("number_of_events_mc_rec_vs_centrality"))->GetXaxis()->SetBinLabel(1, "All collisions");
@@ -261,7 +279,8 @@ struct CascadeAnalysisLightIonsDerivedData {
       registryMC.get<TH2>(HIST("number_of_events_mc_rec_vs_centrality"))->GetXaxis()->SetBinLabel(8, "kIsVertexTOFmatched");
       registryMC.get<TH2>(HIST("number_of_events_mc_rec_vs_centrality"))->GetXaxis()->SetBinLabel(9, "kIsVertexTRDmatched");
       registryMC.get<TH2>(HIST("number_of_events_mc_rec_vs_centrality"))->GetXaxis()->SetBinLabel(10, "kNoSameBunchPileup");
-      registryMC.get<TH2>(HIST("number_of_events_mc_rec_vs_centrality"))->GetXaxis()->SetBinLabel(11, "kINELgr0");
+      registryMC.get<TH2>(HIST("number_of_events_mc_rec_vs_centrality"))->GetXaxis()->SetBinLabel(11, "RCT flags");
+      registryMC.get<TH2>(HIST("number_of_events_mc_rec_vs_centrality"))->GetXaxis()->SetBinLabel(12, "kINELgr0");
       registryMC.get<TH2>(HIST("number_of_events_mc_rec_vs_centrality"))->GetYaxis()->SetTitle("Centrality (%)");
 
       // QC Histograms
@@ -836,11 +855,17 @@ struct CascadeAnalysisLightIonsDerivedData {
     registryData.fill(HIST("number_of_events_data"), 9 /* Not at same bunch pile-up */);
     registryData.fill(HIST("number_of_events_data_vs_centrality"), 9, centrality);
 
+    if (!rctConfigurations.cfgRCTLabel.value.empty() && !rctFlagsChecker(collision)) {
+      return;
+    }
+    registryData.fill(HIST("number_of_events_data"), 10 /* Pass CBT condition */);
+    registryData.fill(HIST("number_of_events_data_vs_centrality"), 10, centrality);
+
     if (requireInel0 && collision.multNTracksPVeta1() < 1) {
       return;
     }
-    registryData.fill(HIST("number_of_events_data"), 10 /* INEL > 0 */);
-    registryData.fill(HIST("number_of_events_data_vs_centrality"), 10, centrality);
+    registryData.fill(HIST("number_of_events_data"), 11 /* INEL > 0 */);
+    registryData.fill(HIST("number_of_events_data_vs_centrality"), 11, centrality);
 
     // Store the Zvtx
     registryQC.fill(HIST("hVertexZdata"), collision.posZ());
@@ -985,11 +1010,17 @@ struct CascadeAnalysisLightIonsDerivedData {
     registryMC.fill(HIST("number_of_events_mc_rec"), 9 /* Not at same bunch pile-up */);
     registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 9, centralityMcRec);
 
+    if (!rctConfigurations.cfgRCTLabel.value.empty() && !rctFlagsChecker(RecCol)) {
+      return;
+    }
+    registryMC.fill(HIST("number_of_events_mc_rec"), 10 /* Pass CBT condition */);
+    registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 10, centralityMcRec);
+
     if (requireInel0 && RecCol.multNTracksPVeta1() < 1) {
       return;
     }
-    registryMC.fill(HIST("number_of_events_mc_rec"), 10 /* INEL > 0 */);
-    registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 10, centralityMcRec);
+    registryMC.fill(HIST("number_of_events_mc_rec"), 11 /* INEL > 0 */);
+    registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 11, centralityMcRec);
 
     // Store the Zvtx
     registryQC.fill(HIST("hVertexZRec"), RecCol.posZ());
@@ -1061,7 +1092,7 @@ struct CascadeAnalysisLightIonsDerivedData {
       bool isTrueMCCascadeDecay = false;
       bool isCorrectLambdaDecay = false;
 
-      if (isPhysPrim && (isXiMC || isOmegaMC))
+      if (isXiMC || isOmegaMC)
         isTrueMCCascade = true;
       if (isTrueMCCascade && ((casc.sign() > 0 && cascMC.pdgCodePositive() == PDG_t::kPiPlus && cascMC.pdgCodeNegative() == PDG_t::kProtonBar) || (casc.sign() < 0 && cascMC.pdgCodePositive() == PDG_t::kProton && cascMC.pdgCodeNegative() == PDG_t::kPiMinus)))
         isCorrectLambdaDecay = true;
