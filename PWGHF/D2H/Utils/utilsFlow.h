@@ -42,10 +42,10 @@ enum QvecEstimator { FV0A = 0,
                      TPCNeg,
                      TPCTot };
 
-class QVectorResoHelper {
+class HfQVectorResoHelper {
  public:
 
-  QVectorResoHelper() = default;
+  HfQVectorResoHelper() = default;
 
   /// Call once per run / timestamp update
   void update(o2::framework::Service<o2::ccdb::BasicCCDBManager>& ccdb,

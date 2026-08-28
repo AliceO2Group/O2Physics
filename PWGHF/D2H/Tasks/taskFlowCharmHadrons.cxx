@@ -92,7 +92,7 @@ DECLARE_SOA_TABLE(HfCandFlowInfos, "AOD", "HFCANDFLOWINFO",
                   full::MlScore1,
                   full::ScalarProd,
                   full::Cent);
-DECLARE_SOA_TABLE(HfCandFlowMcs, "AOD", "HFCANDFLOWMC",
+DECLARE_SOA_TABLE(HfCandFlowPvs, "AOD", "HFCANDFLOWPV",
                   full::M,
                   full::Pt,
                   full::MlScore0,
@@ -132,7 +132,7 @@ struct HfTaskFlowCharmHadrons {
   Produces<o2::aod::HfCandMPtInfos> rowCandMassPtMl;
   Produces<o2::aod::HfCandFlowInfos> rowCandMassPtMlSpCent;
   Produces<o2::aod::HfCandFlowEses> rowCandFlowEsE;
-  Produces<o2::aod::HfCandFlowMcs> rowCandFlowMc;
+  Produces<o2::aod::HfCandFlowPvs> rowCandMassPtMlSpCentPv;
 
   Configurable<int> harmonic{"harmonic", 2, "harmonic number"};
   Configurable<int> qVecDetector{"qVecDetector", 3, "Detector for Q vector estimation (FV0A: 0, FT0M: 1, FT0A: 2, FT0C: 3, TPC Pos: 4, TPC Neg: 5, TPC Tot: 6)"};
@@ -145,7 +145,7 @@ struct HfTaskFlowCharmHadrons {
   Configurable<bool> storeMl{"storeMl", false, "Flag to store ML scores"};
   Configurable<bool> storeSPQVec{"storeSPQVec", true, "Flag to store the Q-vectors for SP"};
   Configurable<bool> storeRedQVec{"storeRedQVec", false, "Flag to store reduced Q-vectors for ESE"};
-  Configurable<bool> subtractDaugsFromRedQVec{"subtractDaugsFromRedQVec", true, "Flag to subtract daughter tracks from reduced Q-vectors for ESE"};
+  Configurable<bool> useRedQVecDaugsSubtr{"useRedQVecDaugsSubtr", true, "Flag to subtract daughter tracks from reduced Q-vectors for ESE"};
   Configurable<bool> fillMassPtMlTree{"fillMassPtMlTree", false, "Flag to fill mass, pt and ML scores tree"};
   Configurable<bool> fillMassPtMlSpCentTree{"fillMassPtMlSpCentTree", false, "Flag to fill mass, pt, ML scores, SP and centrality tree"};
   Configurable<bool> fillMassPtMlSpCentPvTree{"fillMassPtMlSpCentPvTree", false, "Flag to fill mass, pt, ML scores, SP, centrality, PV contrib tree"};
@@ -170,22 +170,17 @@ struct HfTaskFlowCharmHadrons {
   HfEventSelection hfEvSel; // event selection and monitoring
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb{};
   SliceCache cache;
-  QVectorResoHelper qVecResoHelper;
+  HfQVectorResoHelper qVecResoHelper;
   int lastRunNumber{-1};
   float scalarProdReso{-1.f}; // resolution value for online correction
 
   using CandDsDataWMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfMlDsToKKPi>>;
-  using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;
   using CandDplusDataWMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
-  using CandDplusData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
-  using CandLcData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>;
   using CandLcDataWMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfMlLcToPKPi>>;
-  using CandXicData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi>>;
   using CandXicDataWMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi, aod::HfMlXicToPKPi>>;
   using CandXic0Data = soa::Filtered<soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf>>;
   using CandXic0DataWMl = soa::Filtered<soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfMlToXiPi>>;
   using CandD0DataWMl = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>>;
-  using CandD0Data = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
   using CollsWithSPQvecs = soa::Join<aod::Collisions, o2::aod::BCsWithTimestamps, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::QvectorBTots, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0CVariant2s>;
   using CollsWithEsEQvecs = soa::Join<aod::Collisions, o2::aod::BCsWithTimestamps, aod::EvSels, aod::EseQvecPercs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0CVariant2s>;
   using CollsWithSPEsEQvecs = soa::Join<aod::Collisions, o2::aod::BCsWithTimestamps, aod::EvSels, aod::EseQvecPercs, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::QvectorBTots, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0CVariant2s>;
@@ -198,20 +193,12 @@ struct HfTaskFlowCharmHadrons {
   Filter filterSelectXicCandidates = aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlag || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlag;
   Filter filterSelectXic0Candidates = aod::hf_sel_toxipi::resultSelections == true;
 
-  Partition<CandDsData> selectedDsToKKPi = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlag;
-  Partition<CandDsData> selectedDsToPiKK = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlag;
   Partition<CandDsDataWMl> selectedDsToKKPiWMl = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlag;
   Partition<CandDsDataWMl> selectedDsToPiKKWMl = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlag;
-  Partition<CandD0Data> selectedD0ToPiK = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlag;
-  Partition<CandD0Data> selectedD0ToKPi = aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlag;
   Partition<CandD0DataWMl> selectedD0ToPiKWMl = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlag;
   Partition<CandD0DataWMl> selectedD0ToKPiWMl = aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlag;
-  Partition<CandLcData> selectedLcToPKPi = aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlag;
-  Partition<CandLcData> selectedLcToPiKP = aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlag;
   Partition<CandLcDataWMl> selectedLcToPKPiWMl = aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlag;
   Partition<CandLcDataWMl> selectedLcToPiKPWMl = aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlag;
-  Partition<CandXicData> selectedXicToPKPi = aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlag;
-  Partition<CandXicData> selectedXicToPiKP = aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlag;
   Partition<CandXicDataWMl> selectedXicToPKPiWMl = aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlag;
   Partition<CandXicDataWMl> selectedXicToPiKPWMl = aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlag;
   Partition<CandXic0Data> selectedXic0 = aod::hf_sel_toxipi::resultSelections == true;
@@ -404,17 +391,17 @@ struct HfTaskFlowCharmHadrons {
                       std::vector<float>& tracksQx,
                       std::vector<float>& tracksQy,
                       const float amplQVec,
-                      QvecEstimator qVecDetector)
+                      QvecEstimator qVecDet)
   {
     auto addProngIfInSubevent = [&](float px, float py, float pz) {
       const std::array<float, 3> pVec{px, py, pz};
       const float eta = RecoDecay::eta(pVec);
 
       // only subtract daughters that actually contributed to THIS subevent Q
-      if (qVecDetector == QvecEstimator::TPCPos && eta <= 0.f) {
+      if (qVecDet == QvecEstimator::TPCPos && eta <= 0.f) {
         return;
       }
-      if (qVecDetector == QvecEstimator::TPCNeg && eta >= 0.f) {
+      if (qVecDet == QvecEstimator::TPCNeg && eta >= 0.f) {
         return;
       }
       // for TPCTot: no early return, all prongs contribute
@@ -446,16 +433,16 @@ struct HfTaskFlowCharmHadrons {
                          std::vector<float>& tracksQx,
                          std::vector<float>& tracksQy,
                          float amplQVec,
-                         QvecEstimator qVecDetector)
+                         QvecEstimator qVecDet)
   {
     auto addProngIfInSubevent = [&](float px, float py, float pz) {
       const std::array<float, 3> pVec{px, py, pz};
       const float eta = RecoDecay::eta(pVec);
 
-      if (qVecDetector == QvecEstimator::TPCPos && eta <= 0.f) {
+      if (qVecDet == QvecEstimator::TPCPos && eta <= 0.f) {
         return;
       }
-      if (qVecDetector == QvecEstimator::TPCNeg && eta >= 0.f) {
+      if (qVecDet == QvecEstimator::TPCNeg && eta >= 0.f) {
         return;
       }
 
@@ -640,49 +627,42 @@ struct HfTaskFlowCharmHadrons {
         lastRunNumber = collision.runNumber();
       }
       scalarProdReso = qVecResoHelper[static_cast<int>(cent - 0.5f)]; // Cent is given in X.5f format
-      LOG(info) << "scalarProdReso: " << scalarProdReso << " for centrality " << cent;
     }
 
     for (const auto& candidate : candidates) {
       float massCand = 0.;
       float signCand = 0.;
       std::vector<float> outputMl = {-999., -999.};
-      if constexpr (std::is_same_v<T1, CandDsData> || std::is_same_v<T1, CandDsDataWMl>) {
+      if constexpr (std::is_same_v<T1, CandDsDataWMl>) {
         switch (Channel) {
           case DecayChannel::DsToKKPi:
             massCand = HfHelper::invMassDsToKKPi(candidate);
             signCand = 1;
-            if constexpr (std::is_same_v<T1, CandDsDataWMl>) {
-              for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-                outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
-              }
+            for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+              outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
             }
             break;
           case DecayChannel::DsToPiKK:
             massCand = HfHelper::invMassDsToPiKK(candidate);
             signCand = -1;
-            if constexpr (std::is_same_v<T1, CandDsDataWMl>) {
-              for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-                outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
-              }
+            for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+              outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
             }
             break;
           default:
             break;
         }
-      } else if constexpr (std::is_same_v<T1, CandDplusData> || std::is_same_v<T1, CandDplusDataWMl>) {
+      } else if constexpr (std::is_same_v<T1, CandDplusDataWMl>) {
         massCand = HfHelper::invMassDplusToPiKPi(candidate);
         if (std::abs(massCand - MassDPlus) < nSigmaMass * sigmaMDplus) {
           hasCandInMassWin = true;
         }
         auto trackprong0 = candidate.template prong0_as<Trk>();
         signCand = trackprong0.sign();
-        if constexpr (std::is_same_v<T1, CandDplusDataWMl>) {
-          for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-            outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
-          }
+        for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+          outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
         }
-      } else if constexpr (std::is_same_v<T1, CandD0Data> || std::is_same_v<T1, CandD0DataWMl>) {
+      } else if constexpr (std::is_same_v<T1, CandD0DataWMl>) {
         switch (Channel) {
           case DecayChannel::D0ToPiK:
             signCand = candidate.isSelD0bar() ? 3 : 1; // 3: reflected D0bar, 1: pure D0 excluding reflected D0bar
@@ -690,10 +670,8 @@ struct HfTaskFlowCharmHadrons {
             if (std::abs(massCand - MassD0) < nSigmaMass * sigmaMD0) {
               hasCandInMassWin = true;
             }
-            if constexpr (std::is_same_v<T1, CandD0DataWMl>) {
-              for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-                outputMl[iclass] = candidate.mlProbD0()[classMl->at(iclass)];
-              }
+            for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+              outputMl[iclass] = candidate.mlProbD0()[classMl->at(iclass)];
             }
             break;
           case DecayChannel::D0ToKPi:
@@ -702,56 +680,46 @@ struct HfTaskFlowCharmHadrons {
               hasCandInMassWin = true;
             }
             signCand = candidate.isSelD0() ? 3 : 2; // 3: reflected D0, 2: pure D0bar excluding reflected D0
-            if constexpr (std::is_same_v<T1, CandD0DataWMl>) {
-              for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-                outputMl[iclass] = candidate.mlProbD0bar()[classMl->at(iclass)];
-              }
+            for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+              outputMl[iclass] = candidate.mlProbD0bar()[classMl->at(iclass)];
             }
             break;
           default:
             break;
         }
-      } else if constexpr (std::is_same_v<T1, CandLcData> || std::is_same_v<T1, CandLcDataWMl>) {
+      } else if constexpr (std::is_same_v<T1, CandLcDataWMl>) {
         switch (Channel) {
           case DecayChannel::LcToPKPi:
             massCand = HfHelper::invMassLcToPKPi(candidate);
             signCand = 1;
-            if constexpr (std::is_same_v<T1, CandLcDataWMl>) {
-              for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-                outputMl[iclass] = candidate.mlProbLcToPKPi()[classMl->at(iclass)];
-              }
+            for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+              outputMl[iclass] = candidate.mlProbLcToPKPi()[classMl->at(iclass)];
             }
             break;
           case DecayChannel::LcToPiKP:
             massCand = HfHelper::invMassLcToPiKP(candidate);
             signCand = -1;
-            if constexpr (std::is_same_v<T1, CandLcDataWMl>) {
-              for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-                outputMl[iclass] = candidate.mlProbLcToPiKP()[classMl->at(iclass)];
-              }
+            for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+              outputMl[iclass] = candidate.mlProbLcToPiKP()[classMl->at(iclass)];
             }
             break;
           default:
             break;
         }
-      } else if constexpr (std::is_same_v<T1, CandXicData> || std::is_same_v<T1, CandXicDataWMl>) {
+      } else if constexpr (std::is_same_v<T1, CandXicDataWMl>) {
         switch (Channel) {
           case DecayChannel::XicToPKPi:
             massCand = HfHelper::invMassXicToPKPi(candidate);
             signCand = 1;
-            if constexpr (std::is_same_v<T1, CandXicDataWMl>) {
-              for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-                outputMl[iclass] = candidate.mlProbXicToPKPi()[classMl->at(iclass)];
-              }
+            for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+              outputMl[iclass] = candidate.mlProbXicToPKPi()[classMl->at(iclass)];
             }
             break;
           case DecayChannel::XicToPiKP:
             massCand = HfHelper::invMassXicToPiKP(candidate);
             signCand = -1;
-            if constexpr (std::is_same_v<T1, CandXicDataWMl>) {
-              for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-                outputMl[iclass] = candidate.mlProbXicToPiKP()[classMl->at(iclass)];
-              }
+            for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+              outputMl[iclass] = candidate.mlProbXicToPiKP()[classMl->at(iclass)];
             }
             break;
           default:
@@ -810,12 +778,12 @@ struct HfTaskFlowCharmHadrons {
         scalprodCand = cosNPhi * xQVec + sinNPhi * yQVec;
       }
       LOG(info) << "\nScalar product before correction" << scalprodCand;
-      if (useOnlineResoCorrection) {
+      if (useOnlineResoCorrection && scalarProdReso > 1e-5f) {
         scalprodCand /= scalarProdReso;
       }
       LOG(info) << "Scalar product after correction" << scalprodCand;
 
-      if (fillMassPtMlTree || fillMassPtMlSpCentTree) {
+      if (fillMassPtMlTree || fillMassPtMlSpCentTree || fillMassPtMlSpCentPvTree) {
         if (downSampleFactor < 1.) {
           float const pseudoRndm = ptCand * 1000. - static_cast<int64_t>(ptCand * 1000);
           if (ptCand < ptDownSampleMax && pseudoRndm >= downSampleFactor) {
@@ -833,7 +801,7 @@ struct HfTaskFlowCharmHadrons {
         }
       }
 
-      bool subtractDaugsFromRedQVec = storeRedQVec && subtrDaugsFromRedQVec  &&
+      bool subtractDaugsFromRedQVec = storeRedQVec && useRedQVecDaugsSubtr  &&
                                       (qVecRedDetector == QvecEstimator::TPCNeg ||
                                        qVecRedDetector == QvecEstimator::TPCPos ||
                                        qVecRedDetector == QvecEstimator::TPCTot);
@@ -916,7 +884,7 @@ struct HfTaskFlowCharmHadrons {
 
   // Dplus with ML EsE
   void processDplusEsEMl(CollsWithEsEQvecs::iterator const& collision,
-                         CandDplusDataWMl const& /*candidatesD0*/,
+                         CandDplusDataWMl const& candidatesDplus,
                          TracksWithExtra const& tracks)
   {
     runFlowAnalysis<RunMode::kEsE, DecayChannel::DplusToPiKPi>(collision, candidatesDplus, tracks);
@@ -925,8 +893,8 @@ struct HfTaskFlowCharmHadrons {
 
   // Dplus with ML SP and EsE
   void processDplusSPEsEMl(CollsWithSPEsEQvecs::iterator const& collision,
-                        CandDplusDataWMl const& /*candidatesD0*/,
-                        TracksWithExtra const& tracks)
+                           CandDplusDataWMl const& candidatesDplus,
+                           TracksWithExtra const& tracks)
   {
     runFlowAnalysis<RunMode::kSPEsE, DecayChannel::DplusToPiKPi>(collision, candidatesDplus, tracks);
   }
