@@ -69,38 +69,38 @@ using namespace o2::framework::expressions;
 using namespace o2::aod::track;
 using namespace o2::aod::rctsel;
 
-AxisSpec ptAxis = {2001, -0.005, 20.005};
-AxisSpec deltazAxis = {6100, -6.1, 6.1};
-AxisSpec zAxis = {3001, -30.1, 30.1};
-AxisSpec phiAxis = {629, 0, o2::constants::math::TwoPI, "Rad", "phi axis"};
-AxisSpec etaAxis = {18, -4.6, -1.};
-// AxisSpec dcaXyAxis = {2000, -10, 10};
-// AxisSpec dcaZAxis  = {2000, -10, 10};
-// AxisSpec dcaXAxis  = {2000, -10, 10};
-// AxisSpec dcaYAxis  = {2000, -10, 10};// previous AxisSpec dcaYAxis  = {2000, -10, 10};
+const AxisSpec ptAxis = {2001, -0.005, 20.005};
+const AxisSpec deltazAxis = {6100, -6.1, 6.1};
+const AxisSpec zAxis = {3001, -30.1, 30.1};
+const AxisSpec phiAxis = {629, 0, o2::constants::math::TwoPI, "Rad", "phi axis"};
+const AxisSpec etaAxis = {18, -4.6, -1.};
+// const AxisSpec dcaXyAxis = {2000, -10, 10};
+// const AxisSpec dcaZAxis  = {2000, -10, 10};
+// const AxisSpec dcaXAxis  = {2000, -10, 10};
+// const AxisSpec dcaYAxis  = {2000, -10, 10};// previous AxisSpec dcaYAxis  = {2000, -10, 10};
 
-AxisSpec dcaXyAxis = {6000, -30, 30};
-AxisSpec dcaZAxis = {6000, -30, 30};
-AxisSpec dcaXAxis = {6000, -30, 30};
-AxisSpec dcaYAxis = {6000, -30, 30}; // previous AxisSpec dcaYAxis  = {2000, -10, 10};
-// AxisSpec dcaXyAxis = {600, -0.15f, 0.15f};
-// AxisSpec dcaZAxis  = {600, -0.15f, 0.15f};
-// AxisSpec dcaXAxis  = {600, -0.15f, 0.15f};
-// AxisSpec dcaYAxis  = {600, -0.15f, 0.15f};
+const AxisSpec dcaXyAxis = {6000, -30, 30};
+const AxisSpec dcaZAxis = {6000, -30, 30};
+const AxisSpec dcaXAxis = {6000, -30, 30};
+const AxisSpec dcaYAxis = {6000, -30, 30}; // previous AxisSpec dcaYAxis  = {2000, -10, 10};
+// const AxisSpec dcaXyAxis = {600, -0.15f, 0.15f};
+// const AxisSpec dcaZAxis  = {600, -0.15f, 0.15f};
+// const AxisSpec dcaXAxis  = {600, -0.15f, 0.15f};
+// const AxisSpec dcaYAxis  = {600, -0.15f, 0.15f};
 // bin width 0.0005 cm: range [-30, 30] cm => 60/0.0005 = 120000 bins
 // Keep bin width = 0.0005 cm (5 um): range [-1, 1] cm => 2.0/0.0005 = 4000 bins
-// AxisSpec axisBinsDCA = {600, -0.15f, 0.15f, "#it{dca}_{xy} (cm)"};
-AxisSpec centAxis = {{0, 10, 20, 30, 40, 50, 60, 70, 80, 100}};
+// const AxisSpec axisBinsDCA = {600, -0.15f, 0.15f, "#it{dca}_{xy} (cm)"};
+const AxisSpec centAxis = {{0, 10, 20, 30, 40, 50, 60, 70, 80, 100}};
 
 // Vertex position axes (cm)
-AxisSpec vxAxis = {200, -0.5, 0.5, "V_{x} (cm)"};
-AxisSpec vyAxis = {200, -0.5, 0.5, "V_{y} (cm)"};
+const AxisSpec vxAxis = {200, -0.5, 0.5, "V_{x} (cm)"};
+const AxisSpec vyAxis = {200, -0.5, 0.5, "V_{y} (cm)"};
 // Status axis for reco/truth (1=reco, 2=true)
-AxisSpec recoTruthStatusAxis = {2, 0.5, 2.5, "status"};
+const AxisSpec recoTruthStatusAxis = {2, 0.5, 2.5, "status"};
 
 // Delta-vertex axes (reco - true) in cm
-AxisSpec deltaVxAxis = {400, -0.5, 0.5, "#DeltaV_{x} = V_{x}^{rec}-V_{x}^{true} (cm)"};
-AxisSpec deltaVyAxis = {400, -0.5, 0.5, "#DeltaV_{y} = V_{y}^{rec}-V_{y}^{true} (cm)"};
+const AxisSpec deltaVxAxis = {400, -0.5, 0.5, "#DeltaV_{x} = V_{x}^{rec}-V_{x}^{true} (cm)"};
+const AxisSpec deltaVyAxis = {400, -0.5, 0.5, "#DeltaV_{y} = V_{y}^{rec}-V_{y}^{true} (cm)"};
 
 static constexpr TrackSelectionFlags::flagtype TrackSelectionIts =
   TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF |
@@ -153,10 +153,10 @@ struct PseudorapidityDensityMFT {
   Preslice<aod::McParticles> perMcCol = aod::mcparticle::mcCollisionId;
   Preslice<aod::Tracks> perColCentral = aod::track::collisionId;
 
-  Service<o2::framework::O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg{};
 
   // --- CCDB magnetic field (needed for propagateToDCAhelix in this device) ---
-  Service<o2::ccdb::BasicCCDBManager> ccdbMgr;
+  Service<o2::ccdb::BasicCCDBManager> ccdbMgr{};
   Configurable<std::string> ccdburlMag{"ccdburlMag", "http://alice-ccdb.cern.ch",
                                        "CCDB url for GRPMagField"};
   Configurable<std::string> grpmagPathMag{"grpmagPathMag", "GLO/Config/GRPMagField",
@@ -165,7 +165,7 @@ struct PseudorapidityDensityMFT {
   int magRunNumber = -1;
   float bzMFT = 0.f;
   o2::parameters::GRPMagField* grpmag = nullptr;
-  static constexpr double CenterMft[3] = {0., 0., -61.4};
+  static constexpr std::array<double, 3> CenterMft{0., 0., -61.4};
 
   enum class GenRecoCutBin : int {
     AllRecoCollisions = 1,
@@ -315,9 +315,10 @@ struct PseudorapidityDensityMFT {
     o2::base::Propagator::initFieldFromGRP(grpmag);
     magRunNumber = bc.runNumber();
 
-    auto* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
+    auto* field = dynamic_cast<o2::field::MagneticField*>(
+    TGeoGlobalMagField::Instance()->GetField());
     if (field) {
-      bzMFT = field->getBz(CenterMft);
+    bzMFT = field->getBz(CenterMft.data());
       LOGP(info, "Initialized magnetic field for run {}: bzMFT={} kG", magRunNumber, bzMFT);
     } else {
       LOGF(warning, "TGeoGlobalMagField has no field even after initFieldFromGRP; bzMFT=0");
@@ -1534,8 +1535,9 @@ struct PseudorapidityDensityMFT {
                 ((phi > o2::constants::math::PI - cfgPhiCut) && (phi < o2::constants::math::PI + cfgPhiCut)) ||
                 (phi > o2::constants::math::TwoPI - cfgPhiCut) ||
                 ((phi > ((o2::constants::math::PIHalf - 0.1) * o2::constants::math::PI) - cfgPhiCut) &&
-                 (phi < ((o2::constants::math::PIHalf - 0.1) * o2::constants::math::PI) + cfgPhiCut)))
+                 (phi < ((o2::constants::math::PIHalf - 0.1) * o2::constants::math::PI) + cfgPhiCut))) {
               continue;
+            }
           }
 
           registry.fill(HIST("TracksEtaZvtx"), track.eta(), z);
@@ -1617,7 +1619,7 @@ struct PseudorapidityDensityMFT {
     const auto passEventSelection = [&](auto const& collision) {
       struct EvSelStep {
         bool enabled{false};
-        decltype(aod::evsel::kIsTriggerTVX) bit;
+        decltype(aod::evsel::kIsTriggerTVX) bit{};
         DataCutBin bin{DataCutBin::All};
       };
 
@@ -1874,8 +1876,9 @@ struct PseudorapidityDensityMFT {
               ((phi > o2::constants::math::PI - cfgPhiCut) && (phi < o2::constants::math::PI + cfgPhiCut)) ||
               (phi > o2::constants::math::TwoPI - cfgPhiCut) ||
               ((phi > ((o2::constants::math::PIHalf - 0.1) * o2::constants::math::PI) - cfgPhiCut) &&
-               (phi < ((o2::constants::math::PIHalf - 0.1) * o2::constants::math::PI) + cfgPhiCut)))
+               (phi < ((o2::constants::math::PIHalf - 0.1) * o2::constants::math::PI) + cfgPhiCut))) {
             continue;
+          }
         }
 
         registry.fill(HIST("Tracks/Centrality/EtaZvtx"), track.eta(), z, c);
@@ -2016,12 +2019,14 @@ struct PseudorapidityDensityMFT {
         if (usePhiCut) {
           if ((phi <= PhiVetoLow) ||
               ((phi >= PhiVetoPiMin) && (phi <= PhiVetoPiMax)) ||
-              (phi >= PhiVetoHigh))
+              (phi >= PhiVetoHigh)) {
             continue;
+          }
         }
         if (usePtCut) {
-          if (ptCut > cfgnPt)
+          if (ptCut > cfgnPt) {
             continue;
+          }
         }
         if (cfgnEta1 < particle.eta() && particle.eta() < cfgnEta2 && (phi > cfgPhiCut1 && phi < cfgPhiCut2)) {
           registry.fill(HIST("TracksEtaZvtxGen_t"), particle.eta(),
@@ -2198,7 +2203,7 @@ struct PseudorapidityDensityMFT {
     const auto countAndPassEvSelGenReco = [&](auto const& collision) {
       struct EvSelStep {
         bool enabled{false};
-        decltype(aod::evsel::kIsTriggerTVX) bit;
+        decltype(aod::evsel::kIsTriggerTVX) bit{};
         GenRecoCutBin bin{GenRecoCutBin::AllRecoCollisions};
       };
 
@@ -2330,7 +2335,7 @@ struct PseudorapidityDensityMFT {
       }
 
       const int recoCol = track.collisionId();
-      if (acceptedRecoCols.find(recoCol) == acceptedRecoCols.end()) {
+      if (!acceptedRecoCols.contains(recoCol)) {
         continue;
       }
 
@@ -2505,7 +2510,7 @@ struct PseudorapidityDensityMFT {
     const auto countAndPassEvSelGenReco = [&](auto const& collision) {
       struct EvSelStep {
         bool enabled{false};
-        decltype(aod::evsel::kIsTriggerTVX) bit;
+        decltype(aod::evsel::kIsTriggerTVX) bit{};
         GenRecoCutBin bin{GenRecoCutBin::AllRecoCollisions};
       };
 
@@ -2716,7 +2721,7 @@ struct PseudorapidityDensityMFT {
         // std::cout << " track.collisionId() " << track.collisionId() << "track.bestCollisionId()" << track.bestCollisionId() << std::endl; // "    track.globalIndex()  "<<track.globalIndex() This is track id
 
         const int recoCol = originalTrack.collisionId();
-        if (acceptedRecoCols.find(recoCol) == acceptedRecoCols.end()) {
+        if (!acceptedRecoCols.contains(recoCol)) {
           continue;
         }
 
@@ -2840,11 +2845,11 @@ struct PseudorapidityDensityMFT {
         const int mcOfTrack = isTrueByLabel ? track.mcParticle().mcCollisionId() : InvalidCollisionId;
 
         const bool foundRecoColInRecoList =
-          recoCollisionIds.find(recoCol) != recoCollisionIds.end();
+        recoCollisionIds.contains(recoCol);
         const bool foundBestColInRecoList =
-          recoCollisionIds.find(bestColID) != recoCollisionIds.end();
+        recoCollisionIds.contains(bestColID);
         const bool foundInMCTrueList =
-          isTrueByLabel && (trueMCCollisionIds.find(mcOfTrack) != trueMCCollisionIds.end());
+        isTrueByLabel && trueMCCollisionIds.contains(mcOfTrack);
 
         static constexpr int RecoColMissingBin = 1;
         static constexpr int BestRecoColMissingBin = 2;
@@ -3240,12 +3245,14 @@ struct PseudorapidityDensityMFT {
       if (usePhiCut) {
         if ((phi <= PhiVetoLow) ||
             ((phi >= PhiVetoPiMin) && (phi <= PhiVetoPiMax)) ||
-            (phi >= PhiVetoHigh))
+            (phi >= PhiVetoHigh)) {
           continue;
+        }
       }
       if (usePtCut) {
-        if (ptCut > cfgnPt)
+        if (ptCut > cfgnPt) {
           continue;
+        }
       }
       if (cfgnEta1 < particle.eta() && particle.eta() < cfgnEta2 && (phi > cfgPhiCut1 && phi < cfgPhiCut2)) {
         if (onlyVz) {
