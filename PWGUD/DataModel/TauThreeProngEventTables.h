@@ -180,8 +180,9 @@ DECLARE_SOA_TABLE(TrueTauFourTracks, "AOD", "TRUETAU",
                   // tautree::Trs, tautree::Trofs, tautree::Hmpr,
                   // tautree::Tfb, tautree::ItsRofb, tautree::Sbp, tautree::ZvtxFT0vsPv, tautree::VtxITSTPC,
                   //
-                  tautree::ZdcAenergy, tautree::ZdcCenergy,
-                  tautree::ZdcAtime, tautree::ZdcCtime,
+                  // zdc information do not exist in MC
+                  // tautree::ZdcAenergy, tautree::ZdcCenergy,
+                  // tautree::ZdcAtime, tautree::ZdcCtime,
                   // tautree::Qtot,
                   tautree::TotalFT0AmplitudeA, tautree::TotalFT0AmplitudeC, tautree::TotalFV0AmplitudeA,
                   // tautree::TimeFT0A, tautree::TimeFT0C, tautree::TimeFV0A,
@@ -248,8 +249,9 @@ DECLARE_SOA_TABLE(TrueTauSixTracks, "AOD", "TRUETAUSIX",
                   // tautree::Trs, tautree::Trofs, tautree::Hmpr,
                   // tautree::Tfb, tautree::ItsRofb, tautree::Sbp, tautree::ZvtxFT0vsPv, tautree::VtxITSTPC,
                   //
-                  tautree::ZdcAenergy, tautree::ZdcCenergy,
-                  tautree::ZdcAtime, tautree::ZdcCtime,
+                  // ZDC information do not exist in MC
+                  // tautree::ZdcAenergy, tautree::ZdcCenergy,
+                  // tautree::ZdcAtime, tautree::ZdcCtime,
                   // tautree::Qtot,
                   tautree::TotalFT0AmplitudeA, tautree::TotalFT0AmplitudeC, tautree::TotalFV0AmplitudeA,
                   // tautree::TimeFT0A, tautree::TimeFT0C, tautree::TimeFV0A,

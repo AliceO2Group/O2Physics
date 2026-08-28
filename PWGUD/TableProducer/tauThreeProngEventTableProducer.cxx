@@ -1304,10 +1304,10 @@ struct TauThreeProngEventTableProducer {
       int8_t bcSels[8] = {-99, -99, -99, -99, -99, -99, -99, -99};
       uint8_t bcSelBits = 0;
       // zdc information - there is no information in MC
-      float energyZNA = -999.;
-      float energyZNC = -999.;
-      float timeZNA = -999.;
-      float timeZNC = -999.;
+      // float energyZNA = -999.;
+      // float energyZNC = -999.;
+      // float timeZNA = -999.;
+      // float timeZNC = -999.;
 
       float amplitudesFIT[3] = {-999., -999., -999.}; // FT0A, FT0C, FV0
       // float timesFIT[3] = {-999., -999., -999.};      // FT0A, FT0C, FV0
@@ -1624,8 +1624,8 @@ struct TauThreeProngEventTableProducer {
                             bcSelBits,
                             // bcSels[0], bcSels[1], bcSels[2], // to test it
                             // bcSels[3], bcSels[4], bcSels[5], bcSels[6], bcSels[7],
-                            energyZNA, energyZNC,
-                            timeZNA, timeZNC,
+                            // energyZNA, energyZNC,
+                            // timeZNA, timeZNC,
                             // qtot, <<-------- comment out
                             amplitudesFIT[0], amplitudesFIT[1], amplitudesFIT[2],
                             // timesFIT[0], timesFIT[1], timesFIT[2],
@@ -1656,8 +1656,8 @@ struct TauThreeProngEventTableProducer {
                            bcSelBits,
                            // bcSels[0], bcSels[1], bcSels[2], // to test it
                            // bcSels[3], bcSels[4], bcSels[5], bcSels[6], bcSels[7],
-                           energyZNA, energyZNC,
-                           timeZNA, timeZNC,
+                           // energyZNA, energyZNC,
+                           // timeZNA, timeZNC,
                            // qtot, <<-------- comment out
                            amplitudesFIT[0], amplitudesFIT[1], amplitudesFIT[2],
                            // timesFIT[0], timesFIT[1], timesFIT[2],
@@ -1890,22 +1890,6 @@ struct TauThreeProngEventTableProducer {
         registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->Fill(8., 1.);
       }
 
-      bool trueHasRecoColl = false;
-      // find reconstructed collisions associated to the generated collision
-      auto const& collFromMcColls = collisions.sliceBy(colPerMcCollision, mccoll.globalIndex());
-      if (verbose)
-        LOGF(info, "-- coll from MC Coll %d", collFromMcColls.size());
-      // check the generated collision was reconstructed
-      if (collFromMcColls.size() > 0) { // get the truth and reco-level info
-        trueHasRecoColl = true;
-        registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->Fill(9., 1.);
-        if (verbose)
-          LOGF(info, "--- MC Collision has reconstructed collision!");
-      } else { // get only the truth information.
-        if (verbose)
-          LOGF(info, "MC Collision has NO reconstructed collision!");
-      }
-
       // get particles associated to generated collision
       auto const& partsFromMcColl = mcParticles.sliceBy(partPerMcCollision, mccoll.globalIndex());
       if (verbose)
@@ -1958,6 +1942,25 @@ struct TauThreeProngEventTableProducer {
 
       // decide the channel and set the variable.
       trueChannel = trueChannel + countPi0 * 10 + zerothTau * 100;
+
+      //
+      // check whwther event is reconstructed
+      //
+      bool trueHasRecoColl = false;
+      // find reconstructed collisions associated to the generated collision
+      auto const& collFromMcColls = collisions.sliceBy(colPerMcCollision, mccoll.globalIndex());
+      if (verbose)
+        LOGF(info, "-- coll from MC Coll %d", collFromMcColls.size());
+      // check the generated collision was reconstructed
+      if (collFromMcColls.size() > 0) { // get the truth and reco-level info
+        trueHasRecoColl = true;
+        registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->Fill(9., 1.);
+        if (verbose)
+          LOGF(info, "--- MC Collision has reconstructed collision!");
+      } else { // get only the truth information.
+        if (verbose)
+          LOGF(info, "MC Collision has NO reconstructed collision!");
+      }
 
       // LOGF(info, "Should be written!");
 
