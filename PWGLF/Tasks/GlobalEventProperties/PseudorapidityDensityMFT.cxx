@@ -295,17 +295,7 @@ struct PseudorapidityDensityMFT {
   }
   static constexpr int NoCompatibleCollisions = 0;
   static constexpr int SingleCompatibleCollision = 1;
-
-  static constexpr int OrphanAmbDegree = 0;
-  static constexpr int NonAmbiguousAmbDegree = 1;
-
   static constexpr int ChargeUnitTimesThree = 3;
-
-  struct EvSelStep {
-    bool enabled;
-    uint32_t bit;
-    GenRecoCutBin bin;
-  };
 
   void initMagField(FullBCs::iterator const& bc)
   {
@@ -446,20 +436,20 @@ struct PseudorapidityDensityMFT {
            "enabled!");
     }
     AxisSpec multAxis = {multBinning, "N_{trk}"};
-    auto hstat = registry.get<TH1>(HIST("EventSelection"));
-    auto* x = hstat->GetXaxis();
-    x->SetBinLabel(static_cast<int>(EventSelectionBin::All), "All");
-    x->SetBinLabel(static_cast<int>(EventSelectionBin::Vz), "Vz");
-    x->SetBinLabel(static_cast<int>(EventSelectionBin::VzItsRof), "Vz+ITSRof");
-    x->SetBinLabel(static_cast<int>(EventSelectionBin::VzSelected), "Vz+Selected");
-    x->SetBinLabel(static_cast<int>(EventSelectionBin::Sel8VzInelGt0), "Sel8+Vz+INEL>0");
-    x->SetBinLabel(static_cast<int>(EventSelectionBin::SelInelInelFwdGt0), "Sel INEL,INEL_fwd>0");
-    x->SetBinLabel(static_cast<int>(EventSelectionBin::Rejected), "Rejected");
-    x->SetBinLabel(static_cast<int>(EventSelectionBin::GoodBCs), "Good BCs");
-    x->SetBinLabel(static_cast<int>(EventSelectionBin::BCsWithCollisions), "BCs with collisions");
-    x->SetBinLabel(static_cast<int>(EventSelectionBin::BCsWithPileupSplitting), "BCs with pile-up/splitting");
-    x->SetBinLabel(static_cast<int>(EventSelectionBin::PerCollisionSampleGt0), "percollisionSample>0");
-    x->SetBinLabel(static_cast<int>(EventSelectionBin::MidtracksAndPerCollisionSampleGt0), "midtracks+percollisionSample>0");
+    auto eventSelectionHist = registry.get<TH1>(HIST("EventSelection"));
+    auto* eventSelectionAxis = eventSelectionHist->GetXaxis();
+    eventSelectionAxis->SetBinLabel(static_cast<int>(EventSelectionBin::All), "All");
+    eventSelectionAxis->SetBinLabel(static_cast<int>(EventSelectionBin::Vz), "Vz");
+    eventSelectionAxis->SetBinLabel(static_cast<int>(EventSelectionBin::VzItsRof), "Vz+ITSRof");
+    eventSelectionAxis->SetBinLabel(static_cast<int>(EventSelectionBin::VzSelected), "Vz+Selected");
+    eventSelectionAxis->SetBinLabel(static_cast<int>(EventSelectionBin::Sel8VzInelGt0), "Sel8+Vz+INEL>0");
+    eventSelectionAxis->SetBinLabel(static_cast<int>(EventSelectionBin::SelInelInelFwdGt0), "Sel INEL,INEL_fwd>0");
+    eventSelectionAxis->SetBinLabel(static_cast<int>(EventSelectionBin::Rejected), "Rejected");
+    eventSelectionAxis->SetBinLabel(static_cast<int>(EventSelectionBin::GoodBCs), "Good BCs");
+    eventSelectionAxis->SetBinLabel(static_cast<int>(EventSelectionBin::BCsWithCollisions), "BCs with collisions");
+    eventSelectionAxis->SetBinLabel(static_cast<int>(EventSelectionBin::BCsWithPileupSplitting), "BCs with pile-up/splitting");
+    eventSelectionAxis->SetBinLabel(static_cast<int>(EventSelectionBin::PerCollisionSampleGt0), "percollisionSample>0");
+    eventSelectionAxis->SetBinLabel(static_cast<int>(EventSelectionBin::MidtracksAndPerCollisionSampleGt0), "midtracks+percollisionSample>0");
     registry.add({"EventSelectionData",
                   ";cut;events",
                   {HistType::kTH1F, {{16, 0.5, 16.5}}}});
@@ -1160,12 +1150,12 @@ struct PseudorapidityDensityMFT {
                     ";status;centrality;events",
                     {HistType::kTH1F, {{5, 0.5, 5.5}}}});
       auto heff = registry.get<TH1>(HIST("EventEfficiencymc"));
-      x = heff->GetXaxis();
-      x->SetBinLabel(static_cast<int>(EventEfficiencyBin::Generated), "Generated");
-      x->SetBinLabel(static_cast<int>(EventEfficiencyBin::GeneratedInelGt0), "Generated INEL>0");
-      x->SetBinLabel(static_cast<int>(EventEfficiencyBin::Reconstructed), "Reconstructed");
-      x->SetBinLabel(static_cast<int>(EventEfficiencyBin::Selected), "Selected");
-      x->SetBinLabel(static_cast<int>(EventEfficiencyBin::SelectedInelGt0), "Selected INEL>0");
+      auto* eventEfficiencyAxis = heff->GetXaxis();
+      eventEfficiencyAxis->SetBinLabel(static_cast<int>(EventEfficiencyBin::Generated), "Generated");
+      eventEfficiencyAxis->SetBinLabel(static_cast<int>(EventEfficiencyBin::GeneratedInelGt0), "Generated INEL>0");
+      eventEfficiencyAxis->SetBinLabel(static_cast<int>(EventEfficiencyBin::Reconstructed), "Reconstructed");
+      eventEfficiencyAxis->SetBinLabel(static_cast<int>(EventEfficiencyBin::Selected), "Selected");
+      eventEfficiencyAxis->SetBinLabel(static_cast<int>(EventEfficiencyBin::SelectedInelGt0), "Selected INEL>0");
     }
 
     if (doprocessGen) {
@@ -1426,9 +1416,9 @@ struct PseudorapidityDensityMFT {
 
     std::vector<typename std::decay_t<decltype(collisions)>::iterator> cols;
     for (const auto& bc : bcs) {
-      if (!useEvSel ||
-          (useEvSel && ((bc.selection_bit(aod::evsel::kIsBBT0A) &&
-                         bc.selection_bit(aod::evsel::kIsBBT0C)) != 0))) {
+  if (!useEvSel ||
+    (bc.selection_bit(aod::evsel::kIsBBT0A) &&
+     bc.selection_bit(aod::evsel::kIsBBT0C))) {
         registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::GoodBCs));
         cols.clear();
         for (const auto& collision : collisions) {
@@ -1518,7 +1508,7 @@ struct PseudorapidityDensityMFT {
   {
 
     registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::All));
-    if (!useEvSel || (useEvSel && collision.sel8())) {
+    if (!useEvSel || collision.sel8()) {
       registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::VzSelected));
       auto z = collision.posZ();
       auto perCollisionSample = sampleCentral->sliceByCached(
@@ -2089,7 +2079,7 @@ struct PseudorapidityDensityMFT {
       if constexpr (ExColsGenCent::template contains<aod::CentFT0Cs>()) {
         cRec = collision.centFT0C();
       }
-      if (!useEvSel || (useEvSel && collision.sel8())) {
+      if (!useEvSel || collision.sel8()) {
         if constexpr (ExColsGenCent::template contains<aod::CentFT0Cs>()) {
           if (!atLeastOne) {
             cGen = cRec;
@@ -2165,7 +2155,7 @@ struct PseudorapidityDensityMFT {
     soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
     MFTTracksLabeled const& tracks, aod::McParticles const&)
   {
-    if (!useEvSel || (useEvSel && collision.sel8())) {
+    if (!useEvSel || collision.sel8()) {
       for (const auto& track : tracks) {
         if (!track.has_mcParticle()) {
           continue;
