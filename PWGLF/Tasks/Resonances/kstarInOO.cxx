@@ -54,7 +54,7 @@
 #include <utility>
 #include <vector>
 
-#include <stdlib.h>
+#include <cstdlib>
 
 using namespace o2;
 using namespace o2::framework;
@@ -881,7 +881,8 @@ struct kstarInOO {
       return {};
     }
 
-    double track1_mass, track2_mass;
+    double track1_mass =0;
+    double track2_mass =0;
     if (std::abs(particle1.pdgCode()) == PionPDG) {
       track1_mass = massPi;
     } else {
@@ -973,10 +974,7 @@ struct kstarInOO {
       double phidiff = TVector2::Phi_mpi_pi(jet.phi() - lResonance.Phi());
       double etadiff = jet.eta() - lResonance.Eta();
       double R = TMath::Sqrt((phidiff * phidiff) + (etadiff * etadiff));
-      if (R < cfgJetR && bestR == 0) {
-        bestR = R;
-        bestJetpT = jet.pt();
-      } else if (R < bestR) {
+      if (R < cfgJetR && (bestR == 0 || R < bestR)) {
         bestR = R;
         bestJetpT = jet.pt();
       }
@@ -1100,9 +1098,9 @@ struct kstarInOO {
   using JetTrackCandidates = soa::Join<aod::JTracks, aod::JTrackPIs>;
   using JetFilteredJets = soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>>;
 
-  int nJetEvents = 0;
   void processDataJets(o2::aod::JetCollision const& collision, JetFilteredJets const& chargedjets, JetTrackCandidates const& jetTracks, TrackCandidates const&)
   {
+    static int nJetEvents = 0;
     if (cDebugLevel > 0) {
       nJetEvents++;
       if ((nJetEvents + 1) % 10000 == 0) {
@@ -1174,7 +1172,7 @@ struct kstarInOO {
 
     bool HasJets = false;
     int nJets = 0;
-    for (auto chargedjet : chargedjets) {
+    for (auto& chargedjet : chargedjets) {
       if (std::abs(chargedjet.eta()) > (cfgJetMaxEta - cfgJetdR)) {
         continue;
       }
@@ -1225,9 +1223,9 @@ struct kstarInOO {
   //|                 JET MC STUFF
   //|
   //=======================================================
-  int nJetMCEvents = 0;
   void processMCJets(o2::aod::JetCollision const& collision, JetTrackCandidatesMC const& jetTracks, soa::Filtered<aod::ChargedMCDetectorLevelJets> const& mcdjets, TrackCandidatesMC const&, aod::McParticles const&, aod::JetParticles const&)
   {
+    static int nJetMCEvents = 0;
     if (cDebugLevel > 0) {
       nJetMCEvents++;
       if ((nJetMCEvents + 1) % 10000 == 0) {
@@ -1261,7 +1259,7 @@ struct kstarInOO {
 
     bool HasJets = false;
     int nJets = 0;
-    for (auto mcdjet : mcdjets) {
+    for (auto& mcdjet : mcdjets) {
       if (std::abs(mcdjet.eta()) > cfgJetMaxEta - cfgJetdR) {
         continue;
       }
@@ -1421,9 +1419,9 @@ struct kstarInOO {
   //|                  DATA STUFF (SE)
   //|
   //=======================================================
-  int nEvents = 0;
   void processDataSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& tracks)
   {
+    static int nEvents = 0;
     if (cDebugLevel > 0) {
       nEvents++;
       if ((nEvents + 1) % 10000 == 0) {
@@ -1466,9 +1464,10 @@ struct kstarInOO {
   //|                  DATA STUFF (ME)
   //|
   //=======================================================
-  int nEventsMix = 0;
+ 
   void processDataMixedEvent(EventCandidates const& collisions, TrackCandidates const& tracks)
   {
+    static int nEventsMix = 0;
     auto tracksTuple = std::make_tuple(tracks);
     BinningType colBinning{{cfgBinsMixVtx, cfgBinsMixMult}, true}; // true is for 'ignore overflows' (true by default)
     SameKindPair<EventCandidates, TrackCandidates, BinningType> pairs{colBinning, cfgMixNMixedEvents, -1, collisions, tracksTuple, &cache};
@@ -1511,9 +1510,9 @@ struct kstarInOO {
   //|                  MC STUFF (SE)
   //|
   //=========================================================
-  int nEventsMC = 0;
   void processSameEventMC(EventCandidates::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const&)
   {
+    static int nEventsMC = 0;
     if (cDebugLevel > 0) {
       nEventsMC++;
       if ((nEventsMC + 1) % 10000 == 0) {
@@ -1558,9 +1557,9 @@ struct kstarInOO {
   //|                  MC STUFF (ME)
   //|
   //=======================================================
-  int nEventsMCMix = 0;
   void processMixedEventMC(EventCandidates const& collisions, TrackCandidatesMC const& tracks, aod::McParticles const&)
   {
+    static int nEventsMCMix = 0;
     auto tracksTuple = std::make_tuple(tracks);
     BinningType colBinning{{cfgBinsMixVtx, cfgBinsMixMult}, true}; // true is for 'ignore overflows' (true by default)
     SameKindPair<EventCandidates, TrackCandidatesMC, BinningType> pairs{colBinning, cfgMixNMixedEvents, -1, collisions, tracksTuple, &cache};
@@ -1587,9 +1586,9 @@ struct kstarInOO {
   //|           GENERATED STUFF
   //|
   //======================================
-  int nEventsGen = 0;
   void processGen(EventCandidatesTrue::iterator const& collision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, EventCandidates>> const& recocolls, aod::McParticles const& mcParticles)
   {
+    static int nEventsGen = 0;
     if (cDebugLevel > 0) {
       ++nEventsGen;
       if (nEventsGen % 10000 == 0) {
@@ -1691,9 +1690,9 @@ struct kstarInOO {
   //|    GENERATED STUFF (INCLUSIVE & JETS)
   //|
   //==============================================
-  int nprocessGenEvents = 0;
   void processGenJets(o2::aod::JetMcCollision const& collision, soa::SmallGroups<soa::Join<aod::JMcCollisionLbs, aod::JetCollisions>> const& recocolls, aod::JetParticles const& mcParticles)
   {
+    static int nprocessGenEvents = 0;
     if (cDebugLevel > 0) {
       ++nprocessGenEvents;
       if (nprocessGenEvents % 10000 == 0) {
@@ -1804,9 +1803,9 @@ struct kstarInOO {
   } // end of process
   PROCESS_SWITCH(kstarInOO, processGenJets, "Process Generated Particles Inclusive&Jets", false);
 
-  int ndRtest = 0;
   void processJetQA(o2::aod::JetMcCollision const& collision, soa::Filtered<aod::ChargedMCParticleLevelJets> const& mcpjets, aod::JetParticles const& mcParticles, aod::McParticles const&)
   {
+    static int ndRtest = 0;
     if (cDebugLevel > 0) {
       ++ndRtest;
       if (ndRtest % 10000 == 0) {
