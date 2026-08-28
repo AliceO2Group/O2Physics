@@ -743,42 +743,42 @@ struct skimmerPrimaryElectronFromDalitzEE {
 
       switch (varFillingMode) {
         case enumFillingMode::SingleTrack:
-          fillTrackInfo<true>(collision, slicedTracks);
+          fillTrackInfo<false>(collision, slicedTracks);
           break;
         case enumFillingMode::EpEmPairs:
-          fillPairInfo<true, 0>(collision, posTracks_per_coll, negTracks_per_coll); // ULS
+          fillPairInfo<false, 0>(collision, posTracks_per_coll, negTracks_per_coll); // ULS
           if (fillLS) {
-            fillPairInfo<true, 1>(collision, posTracks_per_coll, posTracks_per_coll); // LS++
-            fillPairInfo<true, 2>(collision, negTracks_per_coll, negTracks_per_coll); // LS--
+            fillPairInfo<false, 1>(collision, posTracks_per_coll, posTracks_per_coll); // LS++
+            fillPairInfo<false, 2>(collision, negTracks_per_coll, negTracks_per_coll); // LS--
           }
           if ((!acceptedPosTrackIds_per_collision.empty() && !acceptedNegTrackIds_per_collision.empty())) {
             for (const auto& posId : acceptedPosTrackIds_per_collision) {
               iterEp.setCursor(posId);
-              fillTrackTable<true>(collision, iterEp);
+              fillTrackTable<false>(collision, iterEp);
             }
             for (const auto& eleId : acceptedNegTrackIds_per_collision) {
               iterEm.setCursor(eleId);
-              fillTrackTable<true>(collision, iterEm);
+              fillTrackTable<false>(collision, iterEm);
             }
           }
           break;
         case enumFillingMode::EpEmPairsAndPhoton:
           std::set<int64_t> tracksToFill;
 
-          fillPairInfo<true, 0>(collision, posTracks_per_coll, negTracks_per_coll); // ULS
+          fillPairInfo<false, 0>(collision, posTracks_per_coll, negTracks_per_coll); // ULS
           if (fillLS) {
-            fillPairInfo<true, 1>(collision, posTracks_per_coll, posTracks_per_coll); // LS++
-            fillPairInfo<true, 2>(collision, negTracks_per_coll, negTracks_per_coll); // LS--
+            fillPairInfo<false, 1>(collision, posTracks_per_coll, posTracks_per_coll); // LS++
+            fillPairInfo<false, 2>(collision, negTracks_per_coll, negTracks_per_coll); // LS--
           }
           if (v0photons_per_coll.size() >= 1 && ((!acceptedPosTrackIds_per_collision.empty() && !acceptedNegTrackIds_per_collision.empty()))) {
             if (!fillWithEtaMassCut) {
               for (const auto& posId : acceptedPosTrackIds_per_collision) {
                 iterEp.setCursor(posId);
-                fillTrackTable<true>(collision, iterEp);
+                fillTrackTable<false>(collision, iterEp);
               }
               for (const auto& eleId : acceptedNegTrackIds_per_collision) {
                 iterEm.setCursor(eleId);
-                fillTrackTable<true>(collision, iterEm);
+                fillTrackTable<false>(collision, iterEm);
               }
             } else {
               for (const auto& posId : acceptedPosTrackIds_per_collision) {
@@ -805,7 +805,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
           if (fillWithEtaMassCut) {
             for (const auto& trackId : tracksToFill) {
               iterTrack.setCursor(trackId);
-              fillTrackTable<true>(collision, iterTrack);
+              fillTrackTable<false>(collision, iterTrack);
             }
           }
           break;
