@@ -801,7 +801,7 @@ struct HfTaskFlowCharmHadrons {
         }
       }
 
-      bool subtractDaugsFromRedQVec = storeRedQVec && useRedQVecDaugsSubtr  &&
+      bool subtractDaugsFromRedQVec = storeRedQVec && useRedQVecDaugsSubtr &&
                                       (qVecRedDetector == QvecEstimator::TPCNeg ||
                                        qVecRedDetector == QvecEstimator::TPCPos ||
                                        qVecRedDetector == QvecEstimator::TPCTot);
@@ -1036,8 +1036,6 @@ struct HfTaskFlowCharmHadrons {
   //   runFlowAnalysis<RunMode::kSP, DecayChannel::XicToPiKP>(collision, candsXicToPiKP, tracks);
   // }
   // PROCESS_SWITCH(HfTaskFlowCharmHadrons, processXic, "Process Xic candidates", false);
-
-
 
   /// Compute resolution
   /// \param collision is the collision with the Q vector information
