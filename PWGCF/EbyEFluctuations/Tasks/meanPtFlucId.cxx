@@ -118,7 +118,7 @@ struct MeanPtFlucId {
   Configurable<std::vector<double>> etaBins{"etaBins", {-0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8}, "#eta bins"};
 
   Service<o2::framework::O2DatabasePDG> pdg{};
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   HistogramRegistry hist{"hist", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -252,7 +252,7 @@ struct MeanPtFlucId {
     if (cfgApplyEfficiencyCorrection) {
       ccdb->setURL(cfgEfficiencyCCDBUrl.value);
       ccdb->setCaching(true);
-      TList* efficiencyList = ccdb->getForTimeStamp<TList>(cfgEfficiencyCCDBPath.value, cfgEfficiencyTimestamp.value);
+      auto* efficiencyList = ccdb->getForTimeStamp<TList>(cfgEfficiencyCCDBPath.value, cfgEfficiencyTimestamp.value);
       if (!efficiencyList) {
         LOGF(fatal, "Cannot load ccdb_object containing the efficiency maps");
       }
@@ -1460,7 +1460,7 @@ struct MeanPtFlucId {
   PROCESS_SWITCH(MeanPtFlucId, processMCRecoSimRun3, "process MC Reconstructed & Truth Run-3", true);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  return WorkflowSpec{adaptAnalysisTask<MeanPtFlucId>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<MeanPtFlucId>(context)};
 }
