@@ -81,6 +81,8 @@ struct k892hadronphotonBkg {
 
   Configurable<bool> doPPAnalysis{"doPPAnalysis", true, "if in pp, set to true"};
 
+  Configurable<bool> doArm{"doArm", true, "Fill the 3D Armenteros histograms"};
+
   // For ML Selection
   Configurable<bool> useMLScores{"useMLScores", false, "use ML scores to select candidates"};
 
@@ -244,6 +246,8 @@ struct k892hadronphotonBkg {
     ConfigurableAxis axisKStarMass{"axisKStarMass", {500, 0.6f, 1.6f}, "M_{K^{*}} (GeV/c^{2})"};
     ConfigurableAxis axisLambdaStarMass{"axisLambdaStarMass", {500, 1.1f, 2.1f}, "M_{#Lambda(1520)} (GeV/c^{2})"};
     ConfigurableAxis axisIRBinning{"axisIRBinning", {151, -10, 1500}, "Binning for the interaction rate (kHz)"};
+    ConfigurableAxis axisAPAlpha{"axisAPAlpha", {220, -1.1f, 1.1f}, "Resonance AP alpha (#gamma = positive leg)"};
+    ConfigurableAxis axisAPQt{"axisAPQt", {220, 0.0f, 1.1f}, "Resonance AP q_{T} (GeV/c)"};
     ConfigurableAxis axisCandSel{"axisCandSel", {15, 0.5f, +15.5f}, "Candidate Selection"};
   } axisConfig;
 
@@ -312,11 +316,19 @@ struct k892hadronphotonBkg {
       histos.add("KStarBkg/h2dRotKStarMassVsPt", "h2dRotKStarMassVsPt", kTH2D, {axisConfig.axisKStarMass, axisConfig.axisPt});
       histos.add("KStarBkg/h3dRotKStarMassVsPt", "h3dRotKStarMassVsPt", kTH3D, {axisConfig.axisCentrality, axisConfig.axisPt, axisConfig.axisKStarMass});
       histos.add("KStarBkg/h3dRotKStarPtVsOPAngle", "h3dRotKStarPtVsOPAngle", kTH3D, {{140, 0.f, 7.f}, axisConfig.axisPt, axisConfig.axisKStarMass});
+      if (doArm) {
+        histos.add("KStarBkg/h3dRotKStarPtVsAPAlpha", "h3dRotKStarPtVsAPAlpha", kTH3D, {axisConfig.axisAPAlpha, axisConfig.axisPt, axisConfig.axisKStarMass});
+        histos.add("KStarBkg/h3dRotKStarPtVsAPQt", "h3dRotKStarPtVsAPQt", kTH3D, {axisConfig.axisAPQt, axisConfig.axisPt, axisConfig.axisKStarMass});
+      }
     }
     if (kstarBkgConfig.doEvtMixing) {
       histos.add("KStarBkg/h2dMixedKStarMassVsPt", "h2dMixedKStarMassVsPt", kTH2D, {axisConfig.axisKStarMass, axisConfig.axisPt});
       histos.add("KStarBkg/h3dMixedKStarMassVsPt", "h3dMixedKStarMassVsPt", kTH3D, {axisConfig.axisCentrality, axisConfig.axisPt, axisConfig.axisKStarMass});
       histos.add("KStarBkg/h3dMixedKStarPtVsOPAngle", "h3dMixedKStarPtVsOPAngle", kTH3D, {{140, 0.f, 7.f}, axisConfig.axisPt, axisConfig.axisKStarMass});
+      if (doArm) {
+        histos.add("KStarBkg/h3dMixedKStarPtVsAPAlpha", "h3dMixedKStarPtVsAPAlpha", kTH3D, {axisConfig.axisAPAlpha, axisConfig.axisPt, axisConfig.axisKStarMass});
+        histos.add("KStarBkg/h3dMixedKStarPtVsAPQt", "h3dMixedKStarPtVsAPQt", kTH3D, {axisConfig.axisAPQt, axisConfig.axisPt, axisConfig.axisKStarMass});
+      }
     }
 
     // Lambda(1520) -> Lambda + gamma
@@ -328,11 +340,19 @@ struct k892hadronphotonBkg {
       histos.add("LambdaStarBkg/h2dRotLambdaStarMassVsPt", "h2dRotLambdaStarMassVsPt", kTH2D, {axisConfig.axisLambdaStarMass, axisConfig.axisPt});
       histos.add("LambdaStarBkg/h3dRotLambdaStarMassVsPt", "h3dRotLambdaStarMassVsPt", kTH3D, {axisConfig.axisCentrality, axisConfig.axisPt, axisConfig.axisLambdaStarMass});
       histos.add("LambdaStarBkg/h3dRotLambdaStarPtVsOPAngle", "h3dRotLambdaStarPtVsOPAngle", kTH3D, {{140, 0.f, 7.f}, axisConfig.axisPt, axisConfig.axisLambdaStarMass});
+      if (doArm) {
+        histos.add("LambdaStarBkg/h3dRotLambdaStarPtVsAPAlpha", "h3dRotLambdaStarPtVsAPAlpha", kTH3D, {axisConfig.axisAPAlpha, axisConfig.axisPt, axisConfig.axisLambdaStarMass});
+        histos.add("LambdaStarBkg/h3dRotLambdaStarPtVsAPQt", "h3dRotLambdaStarPtVsAPQt", kTH3D, {axisConfig.axisAPQt, axisConfig.axisPt, axisConfig.axisLambdaStarMass});
+      }
     }
     if (lstarBkgConfig.doEvtMixing) {
       histos.add("LambdaStarBkg/h2dMixedLambdaStarMassVsPt", "h2dMixedLambdaStarMassVsPt", kTH2D, {axisConfig.axisLambdaStarMass, axisConfig.axisPt});
       histos.add("LambdaStarBkg/h3dMixedLambdaStarMassVsPt", "h3dMixedLambdaStarMassVsPt", kTH3D, {axisConfig.axisCentrality, axisConfig.axisPt, axisConfig.axisLambdaStarMass});
       histos.add("LambdaStarBkg/h3dMixedLambdaStarPtVsOPAngle", "h3dMixedLambdaStarPtVsOPAngle", kTH3D, {{140, 0.f, 7.f}, axisConfig.axisPt, axisConfig.axisLambdaStarMass});
+      if (doArm) {
+        histos.add("LambdaStarBkg/h3dMixedLambdaStarPtVsAPAlpha", "h3dMixedLambdaStarPtVsAPAlpha", kTH3D, {axisConfig.axisAPAlpha, axisConfig.axisPt, axisConfig.axisLambdaStarMass});
+        histos.add("LambdaStarBkg/h3dMixedLambdaStarPtVsAPQt", "h3dMixedLambdaStarPtVsAPQt", kTH3D, {axisConfig.axisAPQt, axisConfig.axisPt, axisConfig.axisLambdaStarMass});
+      }
     }
   }
 
@@ -756,6 +776,27 @@ struct k892hadronphotonBkg {
   }
 
   //_______________________________________________
+  // Armenteros-Podolanski variables of the (photon + hadron) pair.
+  static float armenterosAlpha(std::array<float, 3> const& photonP,
+                               std::array<float, 3> const& hadronP)
+  {
+    const std::array<float, 3> momRes{photonP[0] + hadronP[0], photonP[1] + hadronP[1], photonP[2] + hadronP[2]};
+    const double momTot = RecoDecay::p(momRes);
+    const double lQlNeg = RecoDecay::dotProd(hadronP, momRes) / momTot;
+    const double lQlPos = RecoDecay::dotProd(photonP, momRes) / momTot;
+    return (lQlPos - lQlNeg) / (lQlPos + lQlNeg);
+  }
+
+  static float armenterosQt(std::array<float, 3> const& photonP,
+                            std::array<float, 3> const& hadronP)
+  {
+    const std::array<float, 3> momRes{photonP[0] + hadronP[0], photonP[1] + hadronP[1], photonP[2] + hadronP[2]};
+    const double momTot2 = RecoDecay::p2(momRes);
+    const double dp = RecoDecay::dotProd(hadronP, momRes);
+    return std::sqrt(RecoDecay::p2(hadronP) - dp * dp / momTot2);
+  }
+
+  //_______________________________________________
   // Compute same-event rotational background within a single collision.
   template <int resonance, typename TCollision, typename TV0s>
   void calculateRotBackground(TCollision const& coll,
@@ -800,10 +841,10 @@ struct k892hadronphotonBkg {
           ROOT::Math::PtEtaPhiMVector hRot(hadron.pt(), hadron.eta(), hadron.phi() + theta, HadronMass);
           ROOT::Math::PtEtaPhiMVector gRot(photon.pt(), photon.eta(), photon.phi() + theta, o2::constants::physics::MassGamma);
 
-          auto reso = pGamma + hRot;
-          if (rotGamma) {
-            reso = gRot + pHadron;
-          }
+          const auto& gammaLeg = rotGamma ? gRot : pGamma;
+          const auto& hadronLeg = rotGamma ? pHadron : hRot;
+
+          auto reso = gammaLeg + hadronLeg;
 
           float rapidity = RecoDecay::y(std::array{static_cast<float>(reso.Px()),
                                                    static_cast<float>(reso.Py()),
@@ -812,22 +853,32 @@ struct k892hadronphotonBkg {
           if (std::abs(rapidity) > maxRap)
             continue;
 
-          // Opening angle between photon and rotated hadron (QA only, not used as a cut)
-          double cosOA = pGamma.Vect().Dot(hRot.Vect()) / (pGamma.P() * hRot.P());
-          if (rotGamma) {
-            cosOA = gRot.Vect().Dot(pHadron.Vect()) / (gRot.P() * pHadron.P());
-          }
-
+          // Opening angle between photon and hadron
+          double cosOA = gammaLeg.Vect().Dot(hadronLeg.Vect()) / (gammaLeg.P() * hadronLeg.P());
           double openAngle = std::acos(cosOA);
+
+          // Armenteros-Podolanski of the rotated pair
+          const std::array<float, 3> gammaMom{static_cast<float>(gammaLeg.Px()), static_cast<float>(gammaLeg.Py()), static_cast<float>(gammaLeg.Pz())};
+          const std::array<float, 3> hadronMom{static_cast<float>(hadronLeg.Px()), static_cast<float>(hadronLeg.Py()), static_cast<float>(hadronLeg.Pz())};
+          const float apAlpha = armenterosAlpha(gammaMom, hadronMom);
+          const float apQt = armenterosQt(gammaMom, hadronMom);
 
           if constexpr (resonance == kResoKStar) {
             histos.fill(HIST("KStarBkg/h2dRotKStarMassVsPt"), reso.M(), reso.Pt());
             histos.fill(HIST("KStarBkg/h3dRotKStarMassVsPt"), centrality, reso.Pt(), reso.M());
             histos.fill(HIST("KStarBkg/h3dRotKStarPtVsOPAngle"), openAngle, reso.Pt(), reso.M());
+            if (doArm) {
+              histos.fill(HIST("KStarBkg/h3dRotKStarPtVsAPAlpha"), apAlpha, reso.Pt(), reso.M());
+              histos.fill(HIST("KStarBkg/h3dRotKStarPtVsAPQt"), apQt, reso.Pt(), reso.M());
+            }
           } else {
             histos.fill(HIST("LambdaStarBkg/h2dRotLambdaStarMassVsPt"), reso.M(), reso.Pt());
             histos.fill(HIST("LambdaStarBkg/h3dRotLambdaStarMassVsPt"), centrality, reso.Pt(), reso.M());
             histos.fill(HIST("LambdaStarBkg/h3dRotLambdaStarPtVsOPAngle"), openAngle, reso.Pt(), reso.M());
+            if (doArm) {
+              histos.fill(HIST("LambdaStarBkg/h3dRotLambdaStarPtVsAPAlpha"), apAlpha, reso.Pt(), reso.M());
+              histos.fill(HIST("LambdaStarBkg/h3dRotLambdaStarPtVsAPQt"), apQt, reso.Pt(), reso.M());
+            }
           }
         }
       }
@@ -885,14 +936,28 @@ struct k892hadronphotonBkg {
         if (std::abs(rapidity) > maxRap)
           continue;
 
+        // Armenteros-Podolanski of the mixed pair
+        const std::array<float, 3> gammaMom{photon.px(), photon.py(), photon.pz()};
+        const std::array<float, 3> hadronMom{hadron.px(), hadron.py(), hadron.pz()};
+        const float apAlpha = armenterosAlpha(gammaMom, hadronMom);
+        const float apQt = armenterosQt(gammaMom, hadronMom);
+
         if constexpr (resonance == kResoKStar) {
           histos.fill(HIST("KStarBkg/h2dMixedKStarMassVsPt"), mass, pt);
           histos.fill(HIST("KStarBkg/h3dMixedKStarMassVsPt"), centrality, pt, mass);
           histos.fill(HIST("KStarBkg/h3dMixedKStarPtVsOPAngle"), openAngle, pt, mass);
+          if (doArm) {
+            histos.fill(HIST("KStarBkg/h3dMixedKStarPtVsAPAlpha"), apAlpha, pt, mass);
+            histos.fill(HIST("KStarBkg/h3dMixedKStarPtVsAPQt"), apQt, pt, mass);
+          }
         } else {
           histos.fill(HIST("LambdaStarBkg/h2dMixedLambdaStarMassVsPt"), mass, pt);
           histos.fill(HIST("LambdaStarBkg/h3dMixedLambdaStarMassVsPt"), centrality, pt, mass);
           histos.fill(HIST("LambdaStarBkg/h3dMixedLambdaStarPtVsOPAngle"), openAngle, pt, mass);
+          if (doArm) {
+            histos.fill(HIST("LambdaStarBkg/h3dMixedLambdaStarPtVsAPAlpha"), apAlpha, pt, mass);
+            histos.fill(HIST("LambdaStarBkg/h3dMixedLambdaStarPtVsAPQt"), apQt, pt, mass);
+          }
         }
       }
     }
