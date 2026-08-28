@@ -13,7 +13,6 @@
 /// \brief Ds-tagged jet analysis with substructure histogram outputs
 /// \author Monalisa Melo <monalisa.melo@cern.ch>, Universidade de São Paulo
 
-#include "PWGHF/Core/DecayChannels.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
