@@ -316,9 +316,9 @@ struct PseudorapidityDensityMFT {
     magRunNumber = bc.runNumber();
 
     auto* field = dynamic_cast<o2::field::MagneticField*>(
-    TGeoGlobalMagField::Instance()->GetField());
+      TGeoGlobalMagField::Instance()->GetField());
     if (field) {
-    bzMFT = field->getBz(CenterMft.data());
+      bzMFT = field->getBz(CenterMft.data());
       LOGP(info, "Initialized magnetic field for run {}: bzMFT={} kG", magRunNumber, bzMFT);
     } else {
       LOGF(warning, "TGeoGlobalMagField has no field even after initFieldFromGRP; bzMFT=0");
@@ -2845,11 +2845,11 @@ struct PseudorapidityDensityMFT {
         const int mcOfTrack = isTrueByLabel ? track.mcParticle().mcCollisionId() : InvalidCollisionId;
 
         const bool foundRecoColInRecoList =
-        recoCollisionIds.contains(recoCol);
+          recoCollisionIds.contains(recoCol);
         const bool foundBestColInRecoList =
-        recoCollisionIds.contains(bestColID);
+          recoCollisionIds.contains(bestColID);
         const bool foundInMCTrueList =
-        isTrueByLabel && trueMCCollisionIds.contains(mcOfTrack);
+          isTrueByLabel && trueMCCollisionIds.contains(mcOfTrack);
 
         static constexpr int RecoColMissingBin = 1;
         static constexpr int BestRecoColMissingBin = 2;
