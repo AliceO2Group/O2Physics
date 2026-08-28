@@ -1083,7 +1083,8 @@ struct Alice3Dilepton {
   } // end of processRec
 
   void processRecAll(MyFilteredAlice3Collision const& collisions,
-                     MyFilteredTracksMC const&)
+                     MyFilteredTracksMC const&,
+                     const aod::McParticles&)
   {
     for (const auto& collision : collisions) {
       registry.fill(HIST("Reconstructed/Event/VtxZ"), collision.posZ());
