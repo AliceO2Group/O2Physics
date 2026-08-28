@@ -32,7 +32,6 @@
 
 #include <TMCProcess.h>
 
-#include <iostream>
 #include <vector>
 
 using namespace o2;
