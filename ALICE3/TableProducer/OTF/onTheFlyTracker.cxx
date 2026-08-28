@@ -619,6 +619,14 @@ struct OnTheFlyTracker {
         insertHist(histPath + "h2dSecondaryKaPtRes", "h2dSecondaryKaPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", kTH2D, {{axes.axisMomentum, axes.axisPtRes}});
         insertHist(histPath + "h2dPrimaryPrPtRes", "h2dPrimaryPrPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", kTH2D, {{axes.axisMomentum, axes.axisPtRes}});
         insertHist(histPath + "h2dSecondaryPrPtRes", "h2dSecondaryPrPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", kTH2D, {{axes.axisMomentum, axes.axisPtRes}});
+
+        if (fastPrimaryTrackerSettings.fastTrackShortLivedParticles) {
+          insertHist(histPath + "h2dGenShortLivedParticleRadius", "h2dGenShortLivedParticleRadius;Radius (cm);Momentum p_{T}", kTH2D, {{axes.axisDecayRadius, axes.axisMomentum}});
+          insertHist(histPath + "h2dRecShortLivedParticleRadius", "h2dRecShortLivedParticleRadius;Radius (cm);Momentum p_{T}", kTH2D, {{axes.axisDecayRadius, axes.axisMomentum}});
+          insertHist(histPath + "h2dGenRadiusIniVsDecay", "h2dGenRadiusIniVsDecay;Radius (cm);Radius (cm)", kTH2D, {{axes.axisDecayRadius, axes.axisDecayRadius}});
+          insertHist(histPath + "h2dRecRadiusIniVsDecay", "h2dRecRadiusIniVsDecay;Radius (cm);Radius (cm)", kTH2D, {{axes.axisDecayRadius, axes.axisDecayRadius}});
+          insertHist(histPath + "h2dDecayRadiusVsNhits", "h2dDecayRadiusVsNhits;Radius (cm);Nhits", kTH2D, {{axes.axisDecayRadius, {20, 0.5, 20}}});
+        }
       }
 
     } // end config loop
@@ -2151,11 +2159,17 @@ struct OnTheFlyTracker {
         o2::upgrade::convertMCParticleToO2Track(mcParticle, perfectTrackParCov, pdgDB);
         perfectTrackParCov.setPID(pdgCodeToPID(mcParticle.pdgCode()));
         computeBremsstrahlungLoss(icfg, mcParticle, perfectTrackParCov);
-        nTrkHits = fastTracker[icfg]->FastTrack(perfectTrackParCov, trackParCov, dNdEta);
+        nTrkHits = fastTracker[icfg]->FastTrack(perfectTrackParCov, trackParCov, dNdEta, mcParticle.decayRadius());
+        getHist<TH2>(histPath + "h2dGenShortLivedParticleRadius")->Fill(mcParticle.decayRadius(), perfectTrackParCov.getPt());
+        getHist<TH2>(histPath + "h2dGenRadiusIniVsDecay")->Fill(std::hypot(perfectTrackParCov.getX(), perfectTrackParCov.getY()), mcParticle.decayRadius());
         if (nTrkHits < fastPrimaryTrackerSettings.minSiliconHits) {
           reconstructed = false;
         } else {
           reconstructed = true;
+          getHist<TH2>(histPath + "h2dRecShortLivedParticleRadius")->Fill(mcParticle.decayRadius(), perfectTrackParCov.getPt());
+          getHist<TH2>(histPath + "h2dRecRadiusIniVsDecay")->Fill(std::hypot(perfectTrackParCov.getX(), perfectTrackParCov.getY()), mcParticle.decayRadius());
+          getHist<TH2>(histPath + "h2dDecayRadiusVsNhits")->Fill(mcParticle.decayRadius(), nTrkHits);
+          LOG(info) << mcParticle.decayRadius();
         }
       } else if (enableSecondarySmearing && isSecondary) {
         o2::track::TrackParCov perfectTrackParCov;
@@ -2259,7 +2273,7 @@ struct OnTheFlyTracker {
     fillTracksInfo(ghostTracksAlice3, primaryVertex, icfg);
   }
 
-  void processDecayer(aod::McCollision const& mcCollision, soa::Join<aod::McParticles, aod::OTFDecayerBits> const& mcParticles)
+  void processDecayer(aod::McCollision const& mcCollision, soa::Join<aod::McParticles, aod::OTFParticleExtras> const& mcParticles)
   {
     for (size_t icfg = 0; icfg < mSmearer.size(); ++icfg) {
       processConfigurationDev(mcCollision, mcParticles, static_cast<int>(icfg));
