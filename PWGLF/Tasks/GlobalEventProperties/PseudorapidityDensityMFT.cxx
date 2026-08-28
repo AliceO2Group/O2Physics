@@ -1626,9 +1626,9 @@ struct PseudorapidityDensityMFT {
 
     const auto passEventSelection = [&](auto const& collision) {
       struct EvSelStep {
-        bool enabled;
+        bool enabled{false};
         decltype(aod::evsel::kIsTriggerTVX) bit;
-        DataCutBin bin;
+        DataCutBin bin{DataCutBin::All};
       };
 
       const std::array<EvSelStep, 11> steps = {{
@@ -2207,9 +2207,9 @@ struct PseudorapidityDensityMFT {
 
     const auto countAndPassEvSelGenReco = [&](auto const& collision) {
       struct EvSelStep {
-        bool enabled;
+        bool enabled{false};
         decltype(aod::evsel::kIsTriggerTVX) bit;
-        GenRecoCutBin bin;
+        GenRecoCutBin bin{GenRecoCutBin::AllRecoCollisions};
       };
 
       const std::array<EvSelStep, 10> steps = {{
@@ -2514,9 +2514,9 @@ struct PseudorapidityDensityMFT {
 
     const auto countAndPassEvSelGenReco = [&](auto const& collision) {
       struct EvSelStep {
-        bool enabled;
+        bool enabled{false};
         decltype(aod::evsel::kIsTriggerTVX) bit;
-        GenRecoCutBin bin;
+        GenRecoCutBin bin{GenRecoCutBin::AllRecoCollisions};
       };
 
       const std::array<EvSelStep, 10> steps = {{
@@ -2674,7 +2674,6 @@ struct PseudorapidityDensityMFT {
     std::unordered_set<int> uniqueBestRecoCols;
 
     if (tracks.size() > 0) {
-      bool countedPrimary = false;
       for (const auto& track : tracks) {
         const auto originalTrack = track.template mfttrack_as<MFTTracksLabeledOrg>();
         float ndf = getTrackNdf(originalTrack);
@@ -3177,14 +3176,13 @@ struct PseudorapidityDensityMFT {
 
           registry.fill(HIST("Purity/SelectedAfterDCAxy/PrimaryAll"), static_cast<int>(SingleCountBin::Count));
           registry.fill(HIST("Purity/SelectedAfterDCAxy/PrimaryAllEta"), mcPart.eta());
-          countedPrimary = true;
 
           registry.fill(HIST("Purity/PurityOverall"),
                         static_cast<int>(SingleCountBin::Count),
-                        countedPrimary ? static_cast<int>(BoolBin::Yes)
+                        isPrimaryCharged ? static_cast<int>(BoolBin::Yes)
                                        : static_cast<int>(BoolBin::No));
           registry.fill(HIST("Purity/PurityVsEta"), originalTrack.eta(),
-                        countedPrimary ? static_cast<int>(BoolBin::Yes)
+                        isPrimaryCharged ? static_cast<int>(BoolBin::Yes)
                                        : static_cast<int>(BoolBin::No));
         } // hasmclable
       } // track loop
