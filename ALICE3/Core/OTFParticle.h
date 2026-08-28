@@ -78,6 +78,7 @@ class OTFParticle
   void setIndicesDaughter(const int start, const int stop) { mIndicesDaughter = {start, stop}; }
   void setProductionTime(const float vt) { mVt = vt; }
   void setFlags(uint8_t flag) { mFlag = flag; }
+  void setDecayRadius(const float decayRadius) { mDecayRadius = decayRadius; }
   void setVxVyVz(const float vx, const float vy, const float vz)
   {
     mVx = vx;
@@ -123,6 +124,7 @@ class OTFParticle
   float pz() const { return mPz; }
   float e() const { return mE; }
   float radius() const { return std::hypot(mVx, mVy); }
+  float decayRadius() const { return mDecayRadius; }
   float r() const { return radius(); }
   float pt() const { return std::hypot(mPx, mPy); }
   float p() const { return std::hypot(mPx, mPy, mPz); }
@@ -185,6 +187,7 @@ class OTFParticle
   int mCollisionId{-1};
   float mVx{}, mVy{}, mVz{}, mVt{};
   float mPx{}, mPy{}, mPz{}, mE{};
+  float mDecayRadius{-1};
 
   int mStatusCode{};
   uint8_t mFlag{};
