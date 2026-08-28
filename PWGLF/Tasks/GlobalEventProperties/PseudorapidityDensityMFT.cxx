@@ -196,6 +196,7 @@ struct PseudorapidityDensityMFT {
     NoTimeFrameBorder,
     NoITSROFrameBorder,
     NoSameBunchPileup,
+    UseGoodItsLayersAll,
     GoodZvtxFT0vsPV,
     NoCollInRofStandard,
     NoCollInRofStrict,
@@ -473,6 +474,7 @@ struct PseudorapidityDensityMFT {
       x->SetBinLabel(static_cast<int>(DataCutBin::NoTimeFrameBorder), "kNoTimeFrameBorder (if useEvSel)");
       x->SetBinLabel(static_cast<int>(DataCutBin::NoITSROFrameBorder), "kNoITSROFrameBorder (if useEvSel)");
       x->SetBinLabel(static_cast<int>(DataCutBin::NoSameBunchPileup), "kNoSameBunchPileup");
+      x->SetBinLabel(static_cast<int>(DataCutBin::UseGoodItsLayersAll), "kIsGoodITSLayersAll");
       x->SetBinLabel(static_cast<int>(DataCutBin::GoodZvtxFT0vsPV), "kIsGoodZvtxFT0vsPV");
       x->SetBinLabel(static_cast<int>(DataCutBin::NoCollInRofStandard), "kNoCollInRofStandard (cfg)");
       x->SetBinLabel(static_cast<int>(DataCutBin::NoCollInRofStrict), "kNoCollInRofStrict (cfg)");
@@ -1629,11 +1631,12 @@ struct PseudorapidityDensityMFT {
         DataCutBin bin;
       };
 
-      const std::array<EvSelStep, 10> steps = {{
+      const std::array<EvSelStep, 11> steps = {{
         {useTriggerTVX, aod::evsel::kIsTriggerTVX, DataCutBin::IsTriggerTVX},
         {useNoTimeFrameBorderCut, aod::evsel::kNoTimeFrameBorder, DataCutBin::NoTimeFrameBorder},
         {useNoITSROFrameBorderCut, aod::evsel::kNoITSROFrameBorder, DataCutBin::NoITSROFrameBorder},
         {useNoSameBunchPileup, aod::evsel::kNoSameBunchPileup, DataCutBin::NoSameBunchPileup},
+        {useGoodItsLayersAll, aod::evsel::kIsGoodITSLayersAll, DataCutBin::UseGoodItsLayersAll},
         {useGoodZvtxFT0vsPV, aod::evsel::kIsGoodZvtxFT0vsPV, DataCutBin::GoodZvtxFT0vsPV},
         {useNoCollInRofStandard, aod::evsel::kNoCollInRofStandard, DataCutBin::NoCollInRofStandard},
         {useNoCollInRofStrict, aod::evsel::kNoCollInRofStrict, DataCutBin::NoCollInRofStrict},
