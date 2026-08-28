@@ -72,8 +72,8 @@ using namespace o2::aod::rctsel;
 const AxisSpec ptAxis = {2001, -0.005, 20.005};
 const AxisSpec deltazAxis = {6100, -6.1, 6.1};
 const AxisSpec zAxis = {3001, -30.1, 30.1};
-const AxisSpec phiAxis = {629, 0, o2::constants::math::TwoPI, "Rad", "phi axis"}; //do not change
-const AxisSpec etaAxis = {18, -4.6, -1.}; //do not change
+const AxisSpec phiAxis = {629, 0, o2::constants::math::TwoPI, "Rad", "phi axis"}; // do not change
+const AxisSpec etaAxis = {18, -4.6, -1.};                                         // do not change
 // const AxisSpec dcaXyAxis = {2000, -10, 10};
 // const AxisSpec dcaZAxis  = {2000, -10, 10};
 // const AxisSpec dcaXAxis  = {2000, -10, 10};
