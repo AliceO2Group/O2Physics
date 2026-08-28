@@ -221,6 +221,7 @@ struct ConfPairBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis dalitzM12{"dalitzM12", {{100, 0, 10}}, "Mass12 binning of darlitz plot"};
   o2::framework::ConfigurableAxis dalitzM13{"dalitzM13", {{100, 0, 10}}, "Mass13 binning of darlitz plot"};
   o2::framework::Configurable<int> transverseMassType{"transverseMassType", static_cast<int>(modes::TransverseMassType::kAveragePdgMass), "Type of transverse mass (0-> Average Pdg Mass, 1-> Reduced Pdg Mass, 2-> Mt from combined 4 vector)"};
+  o2::framework::Configurable<int> kinematicVariable{"kinematicVariable", static_cast<int>(modes::KinematicVariable::kKstar), "Type of kinematic variable (0->kstar, 1->kT, 2->mT) for PC and CPR plots"};
   o2::framework::ConfigurableAxis binningDeltaEta{"binningDeltaEta", {{35, -1.6, 1.6}}, "Delta eta"};
   o2::framework::ConfigurableAxis binningDeltaPhi{"binningDeltaPhi", {{35, -o2::constants::math::PIHalf, 3 * o2::constants::math::PIHalf}}, "Delta phi"};
   o2::framework::Configurable<bool> plotBertschPratt{"plotBertschPratt", false, "(Reco/Mc) Enable 1D projections and 3D (q_out, q_side, q_long) Bertsch-Pratt histograms in LCMS"};
@@ -596,6 +597,9 @@ class PairHistManager
     // transverse mass type
     mMtType = static_cast<modes::TransverseMassType>(ConfPairBinning.transverseMassType.value);
 
+    // kinematic variable
+    mKinematicVariable = static_cast<modes::KinematicVariable>(ConfPairBinning.kinematicVariable.value);
+
     // values for cuts
     mKstarMin = ConfPairCuts.kstarMin.value;
     mKstarMax = ConfPairCuts.kstarMax.value;
@@ -918,7 +922,23 @@ class PairHistManager
     }
   }
 
-  float getKstar() const { return mKstar; }
+  float getKinematic() const
+  {
+    switch (mKinematicVariable) {
+      case modes::KinematicVariable::kKstar:
+        return mKstar;
+        break;
+      case modes::KinematicVariable::kKt:
+        return mKt;
+        break;
+      case modes::KinematicVariable::kMt:
+        return mMt;
+        break;
+      default:
+        LOG(fatal) << "Invalid kinematic Variable, breaking...";
+    }
+    return mKstar;
+  }
 
  private:
   void initAnalysis(std::map<PairHist, std::vector<o2::framework::AxisSpec>> const& Specs)
@@ -1601,6 +1621,7 @@ class PairHistManager
   double mPdgMassNegDau2 = 0;
 
   modes::TransverseMassType mMtType = modes::TransverseMassType::kAveragePdgMass;
+  modes::KinematicVariable mKinematicVariable = modes::KinematicVariable::kKstar;
 
   int mAbsCharge1 = 1;
   int mAbsCharge2 = 1;

@@ -190,5 +190,13 @@ enum class QvecHarmonic : o2::analysis::femto::datatypes::QvecHarmonicType {
   kQvecHarmonicLast = 4
 };
 
+enum class KinematicVariable : o2::analysis::femto::datatypes::KinematicVariableType {
+  kKstar = 1,
+  kKt = 2,
+  kMt = 3,
+  kQ3 = 4,
+  kKinematicVariableLast = 5
+};
+
 }; // namespace o2::analysis::femto::modes
 #endif // PWGCF_FEMTO_CORE_MODES_H_
