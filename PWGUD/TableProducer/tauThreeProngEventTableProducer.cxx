@@ -834,6 +834,7 @@ struct TauThreeProngEventTableProducer {
     // different events flags
     int8_t bcSels[8] = {-99, -99, -99, -99, -99, -99, -99, -99};
     uint8_t bcSelBits = 0;
+    const int nBitsMax = 8;
     bcSels[0] = dgcand.trs();
     bcSels[1] = dgcand.trofs();
     bcSels[2] = dgcand.hmpr();
@@ -845,7 +846,7 @@ struct TauThreeProngEventTableProducer {
 
     const int offset = 1;
     bcSelBits = bcSels[0]; // initialization
-    for (int ibit = 1; ibit < 8; ibit++) {
+    for (int ibit = 1; ibit < nBitsMax; ibit++) {
       bcSelBits = (bcSelBits << offset); // shift by 1 position towards left
       bcSelBits += bcSels[ibit];         // add next bit to the pool
     }
@@ -1257,7 +1258,7 @@ struct TauThreeProngEventTableProducer {
         continue;
       }
 
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(3., 1.); // particles from tau in |eta|<0.9
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(3., 1.); // charged particles from tau in |eta|<0.9
 
       registrySkim.get<TH1>(HIST("skim/nChPartMC"))->Fill(nChargedDaughtersTau[0] + nChargedDaughtersTau[1]); // N charged particles from taus
       // check number of charged particles in MC event
@@ -1267,18 +1268,12 @@ struct TauThreeProngEventTableProducer {
         continue;
       }
 
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(4., 1.);        // 1+3 (3+3) topology
-      if (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] == fourTracks) { // 4
-        registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(5., 1.);
-      } else if (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] == sixTracks) { // 6
-        registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(6., 1.);
-      }
-
-      //      if (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] == fourTracks) { // 4
-      //        registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(7., 1.);
-      //      } else if (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] == sixTracks) { // 6
-      //        registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(8., 1.);
-      //      }
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(4., 1.); // 1+3 (3+3) topology = 4 or 6 tracks
+      // if (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] == fourTracks) { // 4
+      //   registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(5., 1.);
+      // } else if (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] == sixTracks) { // 6
+      //   registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(6., 1.);
+      // }
 
       if ((nChargedDaughtersTau[0] == oneProng) ||                                          // 1
           (nChargedDaughtersTau[0] == threeProng && nChargedDaughtersTau[1] == threeProng)) // 3 and 3
@@ -1303,6 +1298,7 @@ struct TauThreeProngEventTableProducer {
       double hadronicRate = -999.;
       int8_t bcSels[8] = {-99, -99, -99, -99, -99, -99, -99, -99};
       uint8_t bcSelBits = 0;
+      const int nBitsMax = 8;
       // zdc information - there is no information in MC
       // float energyZNA = -999.;
       // float energyZNC = -999.;
@@ -1350,7 +1346,7 @@ struct TauThreeProngEventTableProducer {
       float trueDaugY[6] = {-998., -998., -998., -998., -998., -998.};
       float trueDaugZ[6] = {-998., -998., -998., -998., -998., -998.};
       int trueDaugPdgCode[6] = {-999, -999, -999, -999, -999, -999};
-      //      bool problem = false;
+
       MyRecoProblem problem = NO_PROBLEM;
       registrySkim.get<TH1>(HIST("skim/problemMC"))->Fill(NO_PROBLEM);
 
@@ -1360,14 +1356,19 @@ struct TauThreeProngEventTableProducer {
       // 3 = pi+3pi
       // 4 = 3pi+3pi
 
-      if (nElec == oneProng && nPi == threeProng) // 1 + 3
+      if (nElec == oneProng && nPi == threeProng) { // 1 + 3
         trueChannel = 1;
-      else if (nMuon == oneProng && nPi == threeProng) // 1 + 3
+        registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(5., 1.);
+      } else if (nMuon == oneProng && nPi == threeProng) { // 1 + 3
         trueChannel = 2;
-      else if (nPi == fourTracks) // 4
+        registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(6., 1.);
+      } else if (nPi == fourTracks) { // 4
         trueChannel = 3;
-      else if (nPi == sixTracks) // 6
+        registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(7., 1.);
+      } else if (nPi == sixTracks) { // 6
         trueChannel = 4;
+        registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(8., 1.);
+      }
 
       // LOGF(info, "MC Coll global index %d", mccoll.globalIndex());
       // LOGF(info, "2. <MC> UDMcCollision size %d, Collisions size %d, UDtracks %d, UDMcParticles %d", mcCollisions.size(), collisions.size(), tracks.size(), mcParticles.size());
@@ -1383,6 +1384,7 @@ struct TauThreeProngEventTableProducer {
       if (collFromMcColls.size() > 0) { // get the truth and reco-level info
         if (verbose)
           LOGF(info, "--- MC Collision has reconstructed collision!");
+        registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(9., 1.);
         // trueHasRecoColl = true;
         // check there is exactly one reco-level collision associated to generated collision
         if (collFromMcColls.size() > 1) {
@@ -1446,7 +1448,7 @@ struct TauThreeProngEventTableProducer {
 
           const int offset = 1;
           bcSelBits = bcSels[0]; // initialization
-          for (int ibit = 1; ibit < 8; ibit++) {
+          for (int ibit = 1; ibit < nBitsMax; ibit++) {
             bcSelBits = (bcSelBits << offset); // shift by 1 position towards left
             bcSelBits += bcSels[ibit];         // add next bit to the pool
           }
@@ -1839,7 +1841,7 @@ struct TauThreeProngEventTableProducer {
         continue;
       }
 
-      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->Fill(3., 1.); // particles from tau in |eta|<=0.9
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->Fill(3., 1.); // charged particles from tau in |eta|<=0.9
 
       registrySkim.get<TH1>(HIST("gen/nChPartMC"))->Fill(nChargedDaughtersTau[0] + nChargedDaughtersTau[1]); // N charged particles from taus
       // check number of charged particles in MC event
@@ -1850,11 +1852,6 @@ struct TauThreeProngEventTableProducer {
       }
 
       registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->Fill(4., 1.); // 1+3 (3+3) topology = 4 or 6 tracks
-                                                                     //      if (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] == fourTracks) { // 4
-                                                                     //        registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->Fill(5., 1.);
-                                                                     //      } else if (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] == sixTracks) { // 6
-                                                                     //        registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->Fill(6., 1.);
-                                                                     //      }
 
       if ((nChargedDaughtersTau[0] == oneProng) ||                                          // 1
           (nChargedDaughtersTau[0] == threeProng && nChargedDaughtersTau[1] == threeProng)) // 3 and 3
