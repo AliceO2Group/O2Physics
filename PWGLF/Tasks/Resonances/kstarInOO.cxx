@@ -54,8 +54,6 @@
 #include <utility>
 #include <vector>
 
-#include <cstdlib>
-
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -881,8 +879,8 @@ struct kstarInOO {
       return {};
     }
 
-    double track1_mass =0;
-    double track2_mass =0;
+    double track1_mass = 0;
+    double track2_mass = 0;
     if (std::abs(particle1.pdgCode()) == PionPDG) {
       track1_mass = massPi;
     } else {
@@ -1464,7 +1462,7 @@ struct kstarInOO {
   //|                  DATA STUFF (ME)
   //|
   //=======================================================
- 
+
   void processDataMixedEvent(EventCandidates const& collisions, TrackCandidates const& tracks)
   {
     static int nEventsMix = 0;
