@@ -3180,10 +3180,10 @@ struct PseudorapidityDensityMFT {
           registry.fill(HIST("Purity/PurityOverall"),
                         static_cast<int>(SingleCountBin::Count),
                         isPrimaryCharged ? static_cast<int>(BoolBin::Yes)
-                                       : static_cast<int>(BoolBin::No));
+                                         : static_cast<int>(BoolBin::No));
           registry.fill(HIST("Purity/PurityVsEta"), originalTrack.eta(),
                         isPrimaryCharged ? static_cast<int>(BoolBin::Yes)
-                                       : static_cast<int>(BoolBin::No));
+                                         : static_cast<int>(BoolBin::No));
         } // hasmclable
       } // track loop
     } // track>mid
