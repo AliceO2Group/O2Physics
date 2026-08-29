@@ -1356,11 +1356,11 @@ struct strangenesstofpid {
               // wrong hypothesis
               casctof.nSigmaXiLaEl = -999.;
               casctof.nSigmaXiLaKa = -999.;
-              casctof.nSigmaXiLaPi = -999.;
+              casctof.nSigmaXiLaPr = -999.;
 
               casctof.nSigmaOmLaEl = -999.;
               casctof.nSigmaOmLaKa = -999.;
-              casctof.nSigmaOmLaPi = -999.;
+              casctof.nSigmaOmLaPr = -999.;
             }
           } else {
             casctof.nSigmaXiLaPi = mTOFResponse->nSigma<o2::track::PID::Pion>(pTof.tofSignal - xiFlight - lambdaFlight, pTof.tofExpMom, lengthPositive, posTrack.getP(), posTrack.getEta(), pTof.tofEvTime, pTof.tofEvTimeErr);
@@ -1466,11 +1466,11 @@ struct strangenesstofpid {
               // wrong hypothesis
               casctof.nSigmaXiLaEl = -999.;
               casctof.nSigmaXiLaKa = -999.;
-              casctof.nSigmaXiLaPi = -999.;
+              casctof.nSigmaXiLaPr = -999.;
 
               casctof.nSigmaOmLaEl = -999.;
               casctof.nSigmaOmLaKa = -999.;
-              casctof.nSigmaOmLaPi = -999.;
+              casctof.nSigmaOmLaPr = -999.;
             }
           } else {
             casctof.nSigmaXiLaPi = mTOFResponse->nSigma<o2::track::PID::Pion>(nTof.tofSignal - xiFlight - lambdaFlight, nTof.tofExpMom, lengthNegative, negTrack.getP(), negTrack.getEta(), nTof.tofEvTime, nTof.tofEvTimeErr);
