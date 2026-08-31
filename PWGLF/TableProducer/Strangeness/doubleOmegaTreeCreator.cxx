@@ -20,6 +20,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
@@ -36,6 +37,7 @@
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include <GPU/GPUROOTCartesianFwd.h>
 #include <ReconstructionDataFormats/Track.h>
 
 #include <TH1.h>
@@ -44,6 +46,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <iterator>
 #include <vector>
@@ -127,7 +130,7 @@ struct BuiltOmegaCandidate {
 struct doubleOmegaTreeCreator {
   Produces<aod::DoubleOmegaTable> doubleOmegaTable;
   Produces<aod::DoubleOmegaTableMC> doubleOmegaTableMC;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   static constexpr int kDoubleOmegaPdg = 1060020020;
   enum FindabilityStep : uint8_t {
@@ -353,10 +356,10 @@ struct doubleOmegaTreeCreator {
     }
 
     builtLambda.candidate = {
-      lambdaMomentum[0],
-      lambdaMomentum[1],
-      lambdaMomentum[2],
-      mass};
+      .px = lambdaMomentum[0],
+      .py = lambdaMomentum[1],
+      .pz = lambdaMomentum[2],
+      .mass = mass};
     builtLambda.parentTrack = fitter.createParentTrackParCov(0);
     builtLambda.decayVertex = decayVertex;
     builtLambda.v0Id = v0.globalIndex();
@@ -1092,7 +1095,7 @@ struct doubleOmegaTreeCreator {
       }
       bool allDaughtersReconstructed = true;
       bool allDaughtersSelected = true;
-      for (size_t iDaughter = 0; iDaughter < reconstructedDaughters.size(); ++iDaughter) {
+      for (std::size_t iDaughter = 0; iDaughter < reconstructedDaughters.size(); ++iDaughter) {
         allDaughtersReconstructed &= reconstructedDaughters[iDaughter];
         allDaughtersSelected &= selectedReconstructedDaughters[iDaughter];
       }
@@ -1104,7 +1107,7 @@ struct doubleOmegaTreeCreator {
           const std::array<int64_t, 3> cascadeTrackIds{
             cascadeV0.posTrackId(), cascadeV0.negTrackId(), cascade.bachelorId()};
           bool allOmegaTracksInCascade = true;
-          for (size_t iDaughter = 0; iDaughter < 3; ++iDaughter) {
+          for (std::size_t iDaughter = 0; iDaughter < 3; ++iDaughter) {
             if (std::find(cascadeTrackIds.begin(), cascadeTrackIds.end(), daughterTrackIds[iDaughter]) == cascadeTrackIds.end()) {
               allOmegaTracksInCascade = false;
               break;
@@ -1120,7 +1123,7 @@ struct doubleOmegaTreeCreator {
         for (const auto& v0 : v0s) {
           const std::array<int64_t, 2> v0TrackIds{v0.posTrackId(), v0.negTrackId()};
           bool allDirectLambdaTracksInV0 = true;
-          for (size_t iDaughter = 3; iDaughter < 5; ++iDaughter) {
+          for (std::size_t iDaughter = 3; iDaughter < 5; ++iDaughter) {
             if (std::find(v0TrackIds.begin(), v0TrackIds.end(), daughterTrackIds[iDaughter]) == v0TrackIds.end()) {
               allDirectLambdaTracksInV0 = false;
               break;
@@ -1139,7 +1142,7 @@ struct doubleOmegaTreeCreator {
       if (allDaughtersSelected) {
         histos.fill(HIST("MC/generatedAndFindable"), kFindableSelectedTracks);
         LOG(debug) << "----------------------------------------";
-        for (size_t iDaughter = 0; iDaughter < daughterTrackIds.size(); ++iDaughter) {
+        for (std::size_t iDaughter = 0; iDaughter < daughterTrackIds.size(); ++iDaughter) {
           LOG(debug) << "+++++++";
           const auto daughterTrack = tracks.rawIteratorAt(daughterTrackIds[iDaughter]);
           const auto daughterMCParticle = daughterTrack.mcParticle_as<aod::McParticles>();
