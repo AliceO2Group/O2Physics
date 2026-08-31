@@ -69,7 +69,6 @@ struct PidMlProducer {
     Configurable<float> centMax{"centMax", 200.f, "Maximum centrality (FT0C)."};
   } confBasicEventSelection;
 
-
   // Strict event selection: criteria boolean flags (see their details) + TPC occupancy
   struct : o2::framework::ConfigurableGroup {
     std::string prefix = "confStrictEventSelection";
