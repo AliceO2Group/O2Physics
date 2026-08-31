@@ -1529,7 +1529,7 @@ struct JetFinderQATask {
   void processQcMultCutCheck(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::JMcCollisionLbs>>::iterator const& collision,
                              soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs> const&,
                              soa::Join<aod::McCollisions, aod::HepMCXSections> const&,
-                             aod::JBCs const&, 
+                             aod::JBCs const&,
                              soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& mcdjets,
                              soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras, aod::JTrackPIs>> const& tracks,
                              soa::Filtered<aod::JetParticles> const& mcparticles)
@@ -1570,7 +1570,7 @@ struct JetFinderQATask {
     registry.fill(HIST("h2_centrality_njets"), collision.centFT0M(), mcdjets.size(), eventWeight);
     registry.fill(HIST("h2_ntracks_rho"), tracks.size(), collision.rho(), eventWeight);
     registry.fill(HIST("h2_centrality_rho"), collision.centFT0M(), collision.rho(), eventWeight);
-    
+
     int nTracksAll = tracks.size();
     int nTracksSel = 0;
     for (auto const& track : tracks) {
@@ -1586,7 +1586,7 @@ struct JetFinderQATask {
     }
     registry.fill(HIST("h_ntracksall"), nTracksAll);
     registry.fill(HIST("h_ntrackssel"), nTracksSel);
-    
+
     int nParticlesPrimary = 0;
     if (collision.has_mcCollision()) {
       auto particleMcCollision = mcparticles.sliceBy(ParticlesPerMCPCollision, collision.mcCollisionId());
