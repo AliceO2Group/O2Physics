@@ -117,6 +117,8 @@ struct TwoParticleCorrelationsMpi {
   Configurable<float> cfgEventSeedPriorExposure{"cfgEventSeedPriorExposure", 1.f, "Gamma-prior strength in equivalent event exposures for MAP-EM"};
   Configurable<int> cfgEventSeedEMMaxIterations{"cfgEventSeedEMMaxIterations", 10, "Maximum number of weighted MAP-EM iterations per event"};
   Configurable<float> cfgEventSeedEMTolerance{"cfgEventSeedEMTolerance", 1.e-5f, "Relative component-yield convergence tolerance for MAP-EM"};
+  Configurable<std::vector<float>> cfgEventSeedPercentileLower{"cfgEventSeedPercentileLower", {}, "Lower event-seed percentile boundary in each axisMultiplicity bin; empty keeps the raw Seed user axis"};
+  Configurable<std::vector<float>> cfgEventSeedPercentileUpper{"cfgEventSeedPercentileUpper", {}, "Upper event-seed percentile boundary in each axisMultiplicity bin; empty keeps the raw Seed user axis"};
 
   Configurable<int> cfgNumMixedEvents{"cfgNumMixedEvents", 5, "Number of mixed events per event"};
 
@@ -260,6 +262,7 @@ struct TwoParticleCorrelationsMpi {
   int pairAcceptanceSchemaVersion = 0;
   const TList* loadedCcdbYieldTemplateObject = nullptr;
   bool eventSeedEstimatorEnabled = false;
+  bool eventSeedPercentileAxisEnabled = false;
 
   enum CorrelationMethod {
     All = 0,
@@ -307,6 +310,36 @@ struct TwoParticleCorrelationsMpi {
     if (cfgUserAxis == EventSeedAxis && !eventSeedEstimatorEnabled) {
       LOGF(fatal, "cfgUserAxis=2 requires an event-seed template configured through cfgNuncSeedsTemplateFile or cfgNuncSeedsTemplate");
     }
+    const bool hasLowerPercentileBoundaries = !cfgEventSeedPercentileLower->empty();
+    const bool hasUpperPercentileBoundaries = !cfgEventSeedPercentileUpper->empty();
+    if (hasLowerPercentileBoundaries != hasUpperPercentileBoundaries) {
+      LOGF(fatal, "Configure both cfgEventSeedPercentileLower and cfgEventSeedPercentileUpper, or leave both empty");
+    }
+    eventSeedPercentileAxisEnabled = hasLowerPercentileBoundaries;
+    if (eventSeedPercentileAxisEnabled) {
+      const int nMultiplicityBins = AxisSpec(axisMultiplicity).getNbins();
+      if (static_cast<int>(cfgEventSeedPercentileLower->size()) != nMultiplicityBins ||
+          static_cast<int>(cfgEventSeedPercentileUpper->size()) != nMultiplicityBins) {
+        LOGF(fatal, "Event-seed percentile boundary vectors must each contain exactly %d values, one per axisMultiplicity bin", nMultiplicityBins);
+      }
+      for (int multBin = 0; multBin < nMultiplicityBins; ++multBin) {
+        if (!std::isfinite(cfgEventSeedPercentileLower->at(multBin)) ||
+            !std::isfinite(cfgEventSeedPercentileUpper->at(multBin)) ||
+            cfgEventSeedPercentileLower->at(multBin) >= cfgEventSeedPercentileUpper->at(multBin)) {
+          LOGF(fatal, "Invalid event-seed percentile boundaries in multiplicity bin %d: lower=%g upper=%g",
+               multBin, cfgEventSeedPercentileLower->at(multBin), cfgEventSeedPercentileUpper->at(multBin));
+        }
+      }
+      if (cfgUserAxis == EventSeedAxis) {
+        const std::vector<double> expectedEdges{-1.5, -0.5, 0.5, 1.5, 2.5};
+        const auto& configuredEdges = AxisSpec(axisUser).binEdges;
+        if (configuredEdges.size() != expectedEdges.size() ||
+            !std::equal(configuredEdges.begin(), configuredEdges.end(), expectedEdges.begin(),
+                        [](double lhs, double rhs) { return std::abs(lhs - rhs) < 1.e-6; })) {
+          LOGF(fatal, "Percentile-class Seed axis requires axisUser edges {-1.5,-0.5,0.5,1.5,2.5}");
+        }
+      }
+    }
     LOGF(info, "Event seed estimator histogram booking: %s (local template='%s', CCDB template='%s')",
          eventSeedEstimatorEnabled ? "enabled" : "disabled",
          cfgNuncSeedsTemplateFile.value.c_str(), cfgNuncSeedsTemplate.value.c_str());
@@ -342,6 +375,7 @@ struct TwoParticleCorrelationsMpi {
       registry.add("eventSeedEstimatorStatus", "event-estimator status", {HistType::kTH1F, {{5, -0.5, 4.5, "status"}}});
       registry.add("eventSeedTemplateCoverage", "template coverage vs multiplicity", {HistType::kTH2F, {{100, 0, 100, "multiplicity"}, {102, -0.01, 1.01, "matched/candidate pairs"}}});
       registry.add("eventSeedEstimateVsMultiplicity", "event-level seed estimate vs multiplicity", {HistType::kTH2F, {{100, 0, 100, "multiplicity"}, {200, 0, 100, "N_{uncorrelated seeds}"}}});
+      registry.add("eventSeedFixedProbabilityVsMultiplicity", "fixed-probability event Seed versus multiplicity;multiplicity;N_{seed}^{probability sum}", {HistType::kTH2F, {axisMultiplicity, {1000, 0, 100}}});
       registry.add("eventNearYieldVsMultiplicity", "event-level near yield vs multiplicity", {HistType::kTH2F, {{100, 0, 100, "multiplicity"}, {200, 0, 20, "Y_{near}"}}});
       registry.add("eventAwayYieldVsMultiplicity", "event-level away yield vs multiplicity", {HistType::kTH2F, {{100, 0, 100, "multiplicity"}, {200, 0, 20, "Y_{away}"}}});
       registry.add("profileEventNTriggers", "mean event trigger count", {HistType::kTProfile, {axisMultiplicity}});
@@ -365,6 +399,7 @@ struct TwoParticleCorrelationsMpi {
         registry.add("profileEventEMAwayPrior", "mean MAP-EM away-component prior mode", {HistType::kTProfile, {axisMultiplicity}});
         registry.add("profileEventEMBaselinePrior", "mean MAP-EM baseline-component prior mode", {HistType::kTProfile, {axisMultiplicity}});
         registry.add("eventSeedMAPVsProbability", "MAP-EM versus fixed-probability seed estimate;N_{seed}^{probability sum};N_{seed}^{MAP-EM}", {HistType::kTH2F, {{200, 0, 100}, {200, 0, 100}}});
+        registry.add("eventSeedMAPEMVsMultiplicity", "MAP-EM event Seed versus multiplicity;multiplicity;N_{seed}^{MAP-EM}", {HistType::kTH2F, {axisMultiplicity, {1000, 0, 100}}});
         registry.add("profileEventProbabilityNuncSeeds", "mean fixed-probability seed estimate", {HistType::kTProfile, {axisMultiplicity}});
       }
       auto* estimatorStatus = registry.get<TH1>(HIST("eventSeedEstimatorStatus")).get();
@@ -475,8 +510,9 @@ struct TwoParticleCorrelationsMpi {
       userAxis.emplace_back(axisUser, "m (GeV/c^2)");
       userMixingAxis.emplace_back(axisUser, "m (GeV/c^2)");
     } else if (cfgUserAxis == EventSeedAxis) {
-      userAxis.emplace_back(axisUser, "N_{seed}");
-      userMixingAxis.emplace_back(axisUser, "N_{seed}");
+      const char* title = eventSeedPercentileAxisEnabled ? "N_{seed} percentile class" : "N_{seed}";
+      userAxis.emplace_back(axisUser, title);
+      userMixingAxis.emplace_back(axisUser, title);
     }
     same.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, userAxis));
     mixed.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, userMixingAxis));
@@ -929,6 +965,24 @@ struct TwoParticleCorrelationsMpi {
     return static_cast<int>(std::distance(edges.begin(), upper)) - 1;
   }
 
+  double getEventSeedUserAxisValue(double multiplicity, double eventSeed) const
+  {
+    if (!eventSeedPercentileAxisEnabled || eventSeed < 0.0) {
+      return eventSeed;
+    }
+    const int multBin = findPairAcceptanceMultiplicityBin(multiplicity);
+    if (multBin < 0 || multBin >= static_cast<int>(cfgEventSeedPercentileLower->size())) {
+      return -1.0;
+    }
+    if (eventSeed < cfgEventSeedPercentileLower->at(multBin)) {
+      return 0.0;
+    }
+    if (eventSeed >= cfgEventSeedPercentileUpper->at(multBin)) {
+      return 2.0;
+    }
+    return 1.0;
+  }
+
   double getPairAcceptance(double multiplicity, double deltaPhi, double deltaEta, double posZ) const
   {
     const int multBin = findPairAcceptanceMultiplicityBin(multiplicity);
@@ -1125,6 +1179,7 @@ struct TwoParticleCorrelationsMpi {
     registry.fill(HIST("eventSeedEstimator"), multiplicity, estimate.nTriggers, estimate.nearYield(), estimate.awayYield(), estimate.nuncSeeds());
     registry.fill(HIST("eventSeedPairProbabilities"), estimate.probabilityBaselinePairs, estimate.probabilityNearPairs, estimate.probabilityAwayPairs);
     registry.fill(HIST("eventSeedEstimateVsMultiplicity"), multiplicity, estimate.nuncSeeds());
+    registry.fill(HIST("eventSeedFixedProbabilityVsMultiplicity"), multiplicity, estimate.probabilityNuncSeeds());
     registry.fill(HIST("eventNearYieldVsMultiplicity"), multiplicity, estimate.nearYield());
     registry.fill(HIST("eventAwayYieldVsMultiplicity"), multiplicity, estimate.awayYield());
     registry.fill(HIST("profileEventNearYield"), multiplicity, estimate.nearYield());
@@ -1138,6 +1193,7 @@ struct TwoParticleCorrelationsMpi {
       registry.fill(HIST("profileEventEMAwayPrior"), multiplicity, estimate.priorComponentCounts[1]);
       registry.fill(HIST("profileEventEMBaselinePrior"), multiplicity, estimate.priorComponentCounts[2]);
       registry.fill(HIST("eventSeedMAPVsProbability"), estimate.probabilityNuncSeeds(), estimate.nuncSeeds());
+      registry.fill(HIST("eventSeedMAPEMVsMultiplicity"), multiplicity, estimate.nuncSeeds());
     }
   }
 
@@ -1233,10 +1289,10 @@ struct TwoParticleCorrelationsMpi {
   void flushSeedAxisFills(TTarget target, const std::vector<PendingSeedTriggerFill>& triggerFills, const std::vector<PendingSeedPairFill>& pairFills, double eventSeed)
   {
     for (const auto& fill : triggerFills) {
-      target->getTriggerHist()->Fill(step, fill.pt, fill.multiplicity, fill.posZ, eventSeed, fill.weight);
+      target->getTriggerHist()->Fill(step, fill.pt, fill.multiplicity, fill.posZ, getEventSeedUserAxisValue(fill.multiplicity, eventSeed), fill.weight);
     }
     for (const auto& fill : pairFills) {
-      target->getPairHist()->Fill(step, fill.deltaEta, fill.assocPt, fill.triggerPt, fill.multiplicity, fill.deltaPhi, fill.posZ, eventSeed, fill.weight);
+      target->getPairHist()->Fill(step, fill.deltaEta, fill.assocPt, fill.triggerPt, fill.multiplicity, fill.deltaPhi, fill.posZ, getEventSeedUserAxisValue(fill.multiplicity, eventSeed), fill.weight);
     }
   }
 
@@ -1661,7 +1717,7 @@ struct TwoParticleCorrelationsMpi {
 
       if (fillReco && hasEfficiency) {
         fillContainerEvent(same, multiplicity, CorrelationContainer::kCFStepCorrected);
-        fillCorrelations<CorrelationContainer::kCFStepCorrected>(same, tracks1, tracks2, multiplicity, collision.posZ(), field, 1.0f, nullptr, nullptr, nullptr, seedEstimate.nuncSeeds());
+        fillCorrelations<CorrelationContainer::kCFStepCorrected>(same, tracks1, tracks2, multiplicity, collision.posZ(), field, 1.0f, nullptr, nullptr, nullptr, getEventSeedUserAxisValue(multiplicity, seedEstimate.nuncSeeds()));
       }
       fillEventSeedEstimatorQA(multiplicity, seedEstimate);
       if (trueNMPI) {
@@ -1731,7 +1787,7 @@ struct TwoParticleCorrelationsMpi {
         if (cfgUserAxis == EventSeedAxis) {
           auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
           loadCcdbYieldTemplates(bc.timestamp());
-          triggerEventSeed = estimateEventSeedWithoutFilling<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, collision1.centRun2V0M(), collision1.posZ(), getMagneticField(bc.timestamp()));
+          triggerEventSeed = getEventSeedUserAxisValue(collision1.centRun2V0M(), estimateEventSeedWithoutFilling<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, collision1.centRun2V0M(), collision1.posZ(), getMagneticField(bc.timestamp())));
         }
       }
       if (!collision2.alias_bit(kINT7) || !collision2.sel7()) {
@@ -1798,7 +1854,7 @@ struct TwoParticleCorrelationsMpi {
         if (cfgUserAxis == EventSeedAxis) {
           loadCcdbYieldTemplates(collision1.timestamp());
           if constexpr (std::is_same_v<std::remove_cvref_t<TA>, std::remove_cvref_t<TB>>) {
-            triggerEventSeed = estimateEventSeedWithoutFilling<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, collision1.multiplicity(), collision1.posZ(), field);
+            triggerEventSeed = getEventSeedUserAxisValue(collision1.multiplicity(), estimateEventSeedWithoutFilling<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, collision1.multiplicity(), collision1.posZ(), field));
           } else {
             LOGF(fatal, "Event-seed user axis for mixed events requires the same trigger and associated track table so the trigger event can be estimated independently");
           }
