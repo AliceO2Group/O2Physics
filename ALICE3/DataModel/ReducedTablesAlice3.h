@@ -31,8 +31,6 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/DataTypes.h>
 
-#include <>
-
 #include <cmath>
 #include <cstdint>
 
