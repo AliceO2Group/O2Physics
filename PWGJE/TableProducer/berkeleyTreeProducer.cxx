@@ -32,43 +32,51 @@ using namespace o2::framework::expressions;
 
 namespace o2::aod
 {
-namespace tree
+namespace berkeleyTree
 {
 DECLARE_SOA_COLUMN(VtxZ, vtxZ, float);
 DECLARE_SOA_COLUMN(Weight, weight, float);
 DECLARE_SOA_COLUMN(PtHat, ptHat, float);
 DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);
+DECLARE_SOA_COLUMN(Occupancy, occupancy, int);
+DECLARE_SOA_COLUMN(EventSel, eventSel, uint16_t);
 DECLARE_SOA_BITMAP_COLUMN(Rct, rct, 32);
 
 DECLARE_SOA_COLUMN(DetPt, detPt, std::vector<float>);
 DECLARE_SOA_COLUMN(DetEta, detEta, std::vector<float>);
 DECLARE_SOA_COLUMN(DetPhi, detPhi, std::vector<float>);
-DECLARE_SOA_COLUMN(DetCharge, detCharge, std::vector<int>);
+DECLARE_SOA_COLUMN(DetTrackSel, detTrackSel, std::vector<uint8_t>);
+DECLARE_SOA_COLUMN(DetMcId, detMcId, std::vector<long>);
 
 DECLARE_SOA_COLUMN(GenPt, genPt, std::vector<float>);
 DECLARE_SOA_COLUMN(GenEta, genEta, std::vector<float>);
 DECLARE_SOA_COLUMN(GenPhi, genPhi, std::vector<float>);
 DECLARE_SOA_COLUMN(GenE, genE, std::vector<float>);
 DECLARE_SOA_COLUMN(GenCharge, genCharge, std::vector<int>);
+DECLARE_SOA_COLUMN(GenMcId, genMcId, std::vector<long>);
 DECLARE_SOA_COLUMN(PdgId, pdgId, std::vector<int>);
 }
 
-DECLARE_SOA_TABLE(TREE, "AOD", "TREE",
-    tree::VtxZ,
-    tree::Weight,
-    tree::PtHat,
-    tree::Multiplicity,
-    tree::Rct,
-    tree::DetPt,
-    tree::DetEta,
-    tree::DetPhi,
-    tree::DetCharge,
-    tree::GenPt,
-    tree::GenEta,
-    tree::GenPhi,
-    tree::GenE,
-    tree::GenCharge,
-    tree::PdgId);
+DECLARE_SOA_TABLE(BerkeleyTree, "AOD", "BERKELEYTREE",
+    berkeleyTree::VtxZ,
+    berkeleyTree::Weight,
+    berkeleyTree::PtHat,
+    berkeleyTree::Multiplicity,
+    berkeleyTree::EventSel,
+    berkeleyTree::Occupancy,
+    berkeleyTree::Rct,
+    berkeleyTree::DetPt,
+    berkeleyTree::DetEta,
+    berkeleyTree::DetPhi,
+    berkeleyTree::DetTrackSel,
+    berkeleyTree::DetMcId,
+    berkeleyTree::GenPt,
+    berkeleyTree::GenEta,
+    berkeleyTree::GenPhi,
+    berkeleyTree::GenE,
+    berkeleyTree::GenCharge,
+    berkeleyTree::GenMcId,
+    berkeleyTree::PdgId);
 }
 
 struct BerkeleyTreeProducer
@@ -118,21 +126,24 @@ struct BerkeleyTreeProducer
     eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(eventSelections);
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(trackSelections);
   }
-
-  void processMC(aod::JetCollisionsMCD::iterator const& collision, aod::JetTracks const& tracks, aod::JMcParticles const& mcParticles,aod::JetMcCollisions const&)
+  
+  using JetParticlesWithOriginal = soa::Join<aod::JetParticles, aod::JMcParticlePIs>;
+  void processMCJJ(aod::JetCollisionsMCD::iterator const& collision, aod::JetTracksMCD const& tracks, JetParticlesWithOriginal const& mcParticles,aod::JetMcCollisions const&)
   {
     // do not do any RCT selections, will be done on analysis level
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, false, "", false, false)) return;
     if (std::abs(collision.posZ()) > vertexZCut) return;
 
-    float w = collision.has_mcCollision() ? collision.mcCollision().weight() : 1.f;
-    float pthard = collision.has_mcCollision() ? collision.mcCollision().ptHard() : 1.f;
+    float weight = collision.has_mcCollision() ? collision.mcCollision().weight() : 1.f;
+    float pthat = collision.has_mcCollision() ? collision.mcCollision().ptHard() : 1.f;
 
     std::vector<float> detPt, detEta, detPhi;
-    std::vector<int> detCharge;
-
+    std::vector<uint8_t> detTrackSel;
+    std::vector<long> detMcId;
+    
     std::vector<float> genPt, genEta, genPhi, genE;
     std::vector<int> genCharge, pdgId;
+    std::vector<long> genMcId;
 
     for (auto const& track : tracks) {
       if (!jetderiveddatautilities::selectTrack(track, trackSelection)) continue;
@@ -143,7 +154,18 @@ struct BerkeleyTreeProducer
       detPt.push_back(track.pt());
       detEta.push_back(track.eta());
       detPhi.push_back(track.phi());
-      detCharge.push_back(track.sign());
+      detTrackSel.push_back(track.trackSel());
+      if (track.has_mcParticle()) {
+        detMcId.push_back(track.mcParticleId());
+        // auto mcpart = track.mcParticle_as<JetParticlesWithOriginal>();
+        // LOGP(info, "partid  type is {}", typeid(track.mcParticleId()).name());
+        // LOGP(info, "globidx type is {}", typeid(mcpart.globalIndex()).name());
+        // if (std::is_same_v<decltype(track.mcParticleId()), int>) LOGP(info, "partid is a int.");
+        // if (std::is_same_v<decltype(mcpart.globalIndex()), long>) LOGP(info, "globidx is a long.");
+        // // LOGP(info, "trk globalIndex {} mcParticleId {}, part globalIndex {}", track.globalIndex(), track.mcParticleId(), mcpart.globalIndex());
+        // if (track.mcParticleId() != mcpart.globalIndex()) LOGP(fatal, "trk globalIndex {} mcParticleId {}, part globalIndex {}", track.globalIndex(), track.mcParticleId(), mcpart.globalIndex());
+      }
+      else detMcId.push_back(-1);
     }
 
     int mcId = collision.has_mcCollision() ? collision.mcCollisionId() : -1;
@@ -162,11 +184,12 @@ struct BerkeleyTreeProducer
         genPhi.push_back(p.phi());
         genE.push_back(p.e());
         genCharge.push_back(getCharge(p.pdgCode()));
+        genMcId.push_back(p.globalIndex());
         pdgId.push_back(p.pdgCode());
       }
     }
 
-    tree( collision.posZ(), w, pthard, collision.multFT0C(), collision.rct_raw(), detPt, detEta, detPhi, detCharge, genPt, genEta, genPhi, genE, genCharge, pdgId);
+    tree( collision.posZ(), weight, pthat, collision.multFT0C(), collision.eventSel(), collision.trackOccupancyInTimeRange(), collision.rct_raw(), detPt, detEta, detPhi, detTrackSel, detMcId, genPt, genEta, genPhi, genE, genCharge, genMcId, pdgId);
   }
 
   PROCESS_SWITCH(BerkeleyTreeProducer, processMC, "MC processing", true);
