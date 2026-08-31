@@ -68,7 +68,7 @@ struct CentralityQa {
   ConfigurableAxis axisChannelAmplitude{"axisChannelAmplitude", {5000, 0, 5000}, "Channel Amplitude"};
   ConfigurableAxis axisCentrality{"axisCentrality", {101, 0.0f, 101.0f}, "Centrality (%)"};
 
-  Configurable<bool> loopOverMcCollisionsForMcHist{"loopOverMcCollisionsForMcHist", true, "Fill MC histograms in a loop over MC collisions? If no, they will be filled in a loop over reconstructed collisions"};
+  Configurable<bool> loopOverMcCollisionsForMcHist{"loopOverMcCollisionsForMcHist", false, "Fill MC histograms in a loop over MC collisions? If no, they will be filled in a loop over reconstructed collisions"};
 
   struct : ConfigurableGroup {
     std::string prefix = "eventSelections"; // JSON group name
