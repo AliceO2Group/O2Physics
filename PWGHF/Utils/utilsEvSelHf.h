@@ -404,8 +404,8 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
       }
     }
 
-    /// require INEL>0
-    if (collision.multNTracksPVeta1() < 1) {
+    /// INEL>0 condition
+    if (requireINEL0 && !collision.isInelGt0()) {
       SETBIT(rejectionMask, EventRejection::Inel0);
     }
 
