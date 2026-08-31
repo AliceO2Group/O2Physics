@@ -288,7 +288,7 @@ struct TableMaker {
     Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
     Configurable<std::string> fConfigGeoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
     Configurable<std::string> fConfigGrpMagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-    Configurable<std::string> fFwdShiftPath{"fwdShiftPath", "Users/m/mcoquet/ZShift", "CCDB path for the shift to apply to forward tracks, either 1 value (z) or 3 values (x, y, z)"};
+    Configurable<std::string> fFwdShiftPath{"fwdShiftPath", "Users/m/mcoquet/ZShift", "CCDB path for the shift to apply to forward tracks: 1 (z), 3 (x,y,z), or 10 (x,y,z,slopeX,slopeY for top then bottom; slopes unused)"};
     Configurable<bool> fUseRemoteFwdShift{"cfgUseRemoteFwdShift", false, "Enable getting the forward track shift from ccdb"};
     Configurable<float> fManualZShift{"cfgManualZShift", 0.f, "Manual value for the Zshift for muons."};
     Configurable<std::string> fConfigGrpMagPathRun2{"grpmagPathRun2", "GLO/GRP/GRP", "CCDB path of the GRPObject (Usage for Run 2)"};
@@ -1870,8 +1870,15 @@ struct TableMaker {
             VarManager::SetZShift((*fFwdShift)[0]);
           } else if (fFwdShift->size() == 3) {
             VarManager::Set3DShift((*fFwdShift)[0], (*fFwdShift)[1], (*fFwdShift)[2]);
+          } else if (fFwdShift->size() == 10) {
+            // x_top, y_top, z_top, slopeX_top, slopeY_top, x_bottom, y_bottom, z_bottom, slopeX_bottom, slopeY_bottom
+            // Slopes are unused for now; shift is selected from track y (top: y >= 0, bottom: y < 0)
+            VarManager::SetTopBottom3DShift((*fFwdShift)[0], (*fFwdShift)[1], (*fFwdShift)[2],
+                                           (*fFwdShift)[5], (*fFwdShift)[6], (*fFwdShift)[7]);
+            LOG(info) << "Loaded top/bottom forward track shifts from CCDB: top=(" << (*fFwdShift)[0] << ", " << (*fFwdShift)[1] << ", " << (*fFwdShift)[2]
+                      << "), bottom=(" << (*fFwdShift)[5] << ", " << (*fFwdShift)[6] << ", " << (*fFwdShift)[7] << ")";
           } else {
-            LOG(fatal) << "Unexpected number of shift values from CCDB: " << fFwdShift->size() << ", expected 1 (z) or 3 (x, y, z)";
+            LOG(fatal) << "Unexpected number of shift values from CCDB: " << fFwdShift->size() << ", expected 1 (z), 3 (x, y, z) or 10 (top/bottom x,y,z + slopes)";
           }
         } else {
           VarManager::SetZShift(fConfigCCDB.fManualZShift.value);
