@@ -206,7 +206,7 @@ struct JetBackgroundAnalysisTask {
           float dPhi = RecoDecay::constrainAngle(randomNumber.Uniform(0.0, o2::constants::math::TwoPI) - randomConePhi, static_cast<float>(-o2::constants::math::PI)); // ignores actual phi of track
           float dEta = randomNumber.Uniform(trackEtaMin, trackEtaMax) - randomConeEta;                                                                                 // ignores actual eta of track
           if (std::sqrt(dEta * dEta + dPhi * dPhi) < randomConeR) {
-            const bool inLead = hasLead && trackIsInJet(track, jets.iteratorAt(0));
+            const bool inLead = trackIsInJet(track, jets.iteratorAt(0));
             const bool inSub = hasSub && trackIsInJet(track, jets.iteratorAt(1));
             if (!inLead) {
               randomConePtWithoutOneLeadJet += track.pt();
@@ -287,7 +287,7 @@ struct JetBackgroundAnalysisTask {
         float dPhi = RecoDecay::constrainAngle(randomNumber.Uniform(0.0, o2::constants::math::TwoPI) - randomConePhi, static_cast<float>(-o2::constants::math::PI)); // ignores actual phi of track
         float dEta = randomNumber.Uniform(trackEtaMin, trackEtaMax) - randomConeEta;                                                                                 // ignores actual eta of track
         if (std::sqrt(dEta * dEta + dPhi * dPhi) < randomConeR) {
-          const bool inLead = hasLead && trackIsInJet(track, jets.iteratorAt(0));
+          const bool inLead = trackIsInJet(track, jets.iteratorAt(0));
           const bool inSub = hasSub && trackIsInJet(track, jets.iteratorAt(1));
           if (!inLead) {
             randomConePtWithoutOneLeadJet += track.pt();
