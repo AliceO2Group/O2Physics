@@ -93,7 +93,7 @@ struct BerkeleyTreeProducer
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", ""};
   Configurable<bool> skipMBGapEvents{"skipMBGapEvents", true, "skip MB gap events"};
 
-  Produces<aod::TREE> tree;
+  Produces<aod::BerkeleyTree> tree;
 
   std::vector<int> eventSelectionBits;
   int trackSelection = -1;
