@@ -15,6 +15,7 @@
 /// \author Maja Kabus <mkabus@cern.ch>
 /// \author Marek Mytkowski <marek.mytkowski@cern.ch>
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
