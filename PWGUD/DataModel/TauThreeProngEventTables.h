@@ -124,10 +124,10 @@ DECLARE_SOA_COLUMN(TrueChannel, trueChannel, int);
 // DECLARE_SOA_COLUMN(TruePosX, truePosX, float);
 // DECLARE_SOA_COLUMN(TruePosY, truePosY, float);
 DECLARE_SOA_COLUMN(TruePosZ, truePosZ, float);
-// truth tau particles // index 0: tau+ // index 1: tau -
-DECLARE_SOA_COLUMN(TrueTauPx, trueTauPx, float[2]);
-DECLARE_SOA_COLUMN(TrueTauPy, trueTauPy, float[2]);
-DECLARE_SOA_COLUMN(TrueTauPz, trueTauPz, float[2]);
+// // truth tau particles // index 0: tau+ // index 1: tau -
+// DECLARE_SOA_COLUMN(TrueTauPx, trueTauPx, float[2]);
+// DECLARE_SOA_COLUMN(TrueTauPy, trueTauPy, float[2]);
+// DECLARE_SOA_COLUMN(TrueTauPz, trueTauPz, float[2]);
 // truth tau daughter particles - 4 particles
 DECLARE_SOA_COLUMN(TrueDaugPx, trueDaugPx, float[4]);
 DECLARE_SOA_COLUMN(TrueDaugPy, trueDaugPy, float[4]);
@@ -197,7 +197,7 @@ DECLARE_SOA_TABLE(TrueTauFourTracks, "AOD", "TRUETAU",
                   tautree::TrueChannel,
                   // tautree::TrueHasRecoColl,
                   tautree::TruePosZ,
-                  tautree::TrueTauPx, tautree::TrueTauPy, tautree::TrueTauPz,
+                  // tautree::TrueTauPx, tautree::TrueTauPy, tautree::TrueTauPz,
                   tautree::TrueDaugPx, tautree::TrueDaugPy, tautree::TrueDaugPz,
                   tautree::TrueDaugPdgCode,
                   tautree::Problem);
@@ -205,7 +205,7 @@ DECLARE_SOA_TABLE(TrueTauFourTracks, "AOD", "TRUETAU",
 DECLARE_SOA_TABLE(GenTauFourTracks, "AOD", "GENTAU",
                   tautree::TrueChannel,
                   tautree::TruePosZ,
-                  tautree::TrueTauPx, tautree::TrueTauPy, tautree::TrueTauPz,
+                  // tautree::TrueTauPx, tautree::TrueTauPy, tautree::TrueTauPz,
                   tautree::TrueDaugPx, tautree::TrueDaugPy, tautree::TrueDaugPz,
                   tautree::TrueDaugPdgCode,
                   tautree::Problem,
@@ -266,7 +266,7 @@ DECLARE_SOA_TABLE(TrueTauSixTracks, "AOD", "TRUETAUSIX",
                   tautree::TrueChannel,
                   // tautree::TrueHasRecoColl,
                   tautree::TruePosZ,
-                  tautree::TrueTauPx, tautree::TrueTauPy, tautree::TrueTauPz,
+                  // tautree::TrueTauPx, tautree::TrueTauPy, tautree::TrueTauPz,
                   tautree::True6DaugPx, tautree::True6DaugPy, tautree::True6DaugPz,
                   tautree::True6DaugPdgCode,
                   tautree::Problem);
@@ -274,7 +274,7 @@ DECLARE_SOA_TABLE(TrueTauSixTracks, "AOD", "TRUETAUSIX",
 DECLARE_SOA_TABLE(GenTauSixTracks, "AOD", "GENTAUSIX",
                   tautree::TrueChannel,
                   tautree::TruePosZ,
-                  tautree::TrueTauPx, tautree::TrueTauPy, tautree::TrueTauPz,
+                  // tautree::TrueTauPx, tautree::TrueTauPy, tautree::TrueTauPz,
                   tautree::True6DaugPx, tautree::True6DaugPy, tautree::True6DaugPz,
                   tautree::True6DaugPdgCode,
                   tautree::Problem,
