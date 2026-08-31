@@ -1874,7 +1874,7 @@ struct TableMaker {
             // x_top, y_top, z_top, slopeX_top, slopeY_top, x_bottom, y_bottom, z_bottom, slopeX_bottom, slopeY_bottom
             // Slopes are unused for now; shift is selected from track y (top: y >= 0, bottom: y < 0)
             VarManager::SetTopBottom3DShift((*fFwdShift)[0], (*fFwdShift)[1], (*fFwdShift)[2],
-                                           (*fFwdShift)[5], (*fFwdShift)[6], (*fFwdShift)[7]);
+                                            (*fFwdShift)[5], (*fFwdShift)[6], (*fFwdShift)[7]);
             LOG(info) << "Loaded top/bottom forward track shifts from CCDB: top=(" << (*fFwdShift)[0] << ", " << (*fFwdShift)[1] << ", " << (*fFwdShift)[2]
                       << "), bottom=(" << (*fFwdShift)[5] << ", " << (*fFwdShift)[6] << ", " << (*fFwdShift)[7] << ")";
           } else {
