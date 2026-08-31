@@ -227,15 +227,15 @@ struct AntinucleiInJets {
   Configurable<double> coalescenceMomentum{"coalescenceMomentum", 0.15, "p0 (GeV/c)"};
 
   // Reweighting histograms
-  TH1F* primaryAntiprotons;
-  TH1F* primaryAntiLambda;
-  TH1F* primaryAntiSigma;
-  TH1F* primaryAntiXi;
-  TH1F* primaryAntiOmega;
-  TH1F* antiprotonsInsideJets;
-  TH1F* antiprotonsPerpCone;
-  TH1F* antideuteronsInsideJets;
-  TH1F* antideuteronsPerpCone;
+  TH1F* primaryAntiprotons = nullptr;
+  TH1F* primaryAntiLambda = nullptr;
+  TH1F* primaryAntiSigma = nullptr;
+  TH1F* primaryAntiXi = nullptr;
+  TH1F* primaryAntiOmega = nullptr;
+  TH1F* antiprotonsInsideJets = nullptr;
+  TH1F* antiprotonsPerpCone = nullptr;
+  TH1F* antideuteronsInsideJets = nullptr;
+  TH1F* antideuteronsPerpCone = nullptr;
 
   // CCDB manager service for accessing condition data
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -781,7 +781,7 @@ struct AntinucleiInJets {
 
   // Evaluate proton–neutron coalescence for deuteron formation
   template <typename ReducedPart>
-  bool passDeuteronCoalescence(const ReducedPart& p, const ReducedPart& n, double p0, TRandom3& mRand)
+  bool passDeuteronCoalescence(const ReducedPart& p, const ReducedPart& n, double p0, TRandom3& random)
   {
     // Nucleon masses
     const double mp = o2::constants::physics::MassProton;
@@ -821,7 +821,7 @@ struct AntinucleiInJets {
     }
 
     // Spin-statistical acceptance
-    if (mRand.Uniform() > SpinFactor) {
+    if (random.Uniform() > SpinFactor) {
       return false;
     }
     return true;
