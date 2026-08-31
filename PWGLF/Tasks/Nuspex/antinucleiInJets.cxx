@@ -205,7 +205,7 @@ struct AntinucleiInJets {
   // Configuration parameters for CCDB access and reweighting input files
   Configurable<bool> applyReweighting{"applyReweighting", true, "enable reweighting for efficiency"};
   Configurable<std::string> urlToCcdb{"urlToCcdb", "http://alice-ccdb.cern.ch/", "url of the personal ccdb"};
-  Configurable<std::string> pathToFile{"pathToFile", "Users/a/alcaliva/reweightingHistogramsAnalysis/", "path to file"};
+  Configurable<std::string> pathToFile{"pathToFile", "Users/a/alcaliva/reweightingHistogramsAntinucleiInJets/", "path to file"};
   Configurable<std::string> weightsProton{"weightsProton", "weightsProton", "weightsProton"};
   Configurable<std::string> weightsLambda{"weightsLambda", "weightsLambda", "weightsLambda"};
   Configurable<std::string> weightsSigma{"weightsSigma", "weightsSigma", "weightsSigma"};
@@ -213,6 +213,8 @@ struct AntinucleiInJets {
   Configurable<std::string> weightsOmega{"weightsOmega", "weightsOmega", "weightsOmega"};
   Configurable<std::string> weightsJet{"weightsJet", "weightsJet", "weightsJet"};
   Configurable<std::string> weightsUe{"weightsUe", "weightsUe", "weightsUe"};
+  Configurable<std::string> weightsAntidJet{"weightsAntidJet", "weightsAntidJet", "weightsAntidJet"};
+  Configurable<std::string> weightsAntidUe{"weightsAntidUe", "weightsAntidUe", "weightsAntidUe"};
 
   // Number of events
   Configurable<int> shrinkInterval{"shrinkInterval", 1000, "variable that controls how often shrinking happens"};
@@ -232,6 +234,8 @@ struct AntinucleiInJets {
   TH1F* primaryAntiOmega;
   TH1F* antiprotonsInsideJets;
   TH1F* antiprotonsPerpCone;
+  TH1F* antideuteronsInsideJets;
+  TH1F* antideuteronsPerpCone;
 
   // CCDB manager service for accessing condition data
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -284,7 +288,7 @@ struct AntinucleiInJets {
       ccdb->setLocalObjectValidityChecking();
       ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
       ccdb->setFatalWhenNull(false);
-      getReweightingHistograms(ccdb, TString(pathToFile), TString(weightsProton), TString(weightsLambda), TString(weightsSigma), TString(weightsXi), TString(weightsOmega), TString(weightsJet), TString(weightsUe));
+      getReweightingHistograms(ccdb, TString(pathToFile), TString(weightsProton), TString(weightsLambda), TString(weightsSigma), TString(weightsXi), TString(weightsOmega), TString(weightsJet), TString(weightsUe), TString(weightsAntidJet), TString(weightsAntidUe));
     }
 
     // Binning
@@ -686,7 +690,7 @@ struct AntinucleiInJets {
     }
   }
 
-  void getReweightingHistograms(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj, TString filepath, TString antip, TString antilambda, TString antisigma, TString antixi, TString antiomega, TString jet, TString ue)
+  void getReweightingHistograms(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj, TString filepath, TString antip, TString antilambda, TString antisigma, TString antixi, TString antiomega, TString jet, TString ue, TString antidJet, TString antidUe)
   {
     TList* list = ccdbObj->get<TList>(filepath.Data());
     if (!list) {
@@ -705,11 +709,18 @@ struct AntinucleiInJets {
       LOGP(error, "Missing one or more reweighting histograms for primary fraction in CCDB list");
     }
 
-    // Get reweighting histograms for efficiency
+    // Get reweighting histograms for antiproton efficiency
     antiprotonsInsideJets = static_cast<TH1F*>(list->FindObject(jet));
     antiprotonsPerpCone = static_cast<TH1F*>(list->FindObject(ue));
     if (!antiprotonsInsideJets || !antiprotonsPerpCone) {
-      LOGP(error, "Missing one or more reweighting histograms for efficiency in CCDB list");
+      LOGP(error, "Missing one or more reweighting histograms for antiproton efficiency in CCDB list");
+    }
+
+    // Get reweighting histograms for antideuteron efficiency
+    antideuteronsInsideJets = static_cast<TH1F*>(list->FindObject(antidJet));
+    antideuteronsPerpCone = static_cast<TH1F*>(list->FindObject(antidUe));
+    if (!antideuteronsInsideJets || !antideuteronsPerpCone) {
+      LOGP(error, "Missing one or more reweighting histograms for antideuteron efficiency in CCDB list");
     }
 
     LOGP(info, "Successfully loaded reweighting histograms from CCDB path");
@@ -2188,7 +2199,13 @@ struct AntinucleiInJets {
 
           // Fill antideuteron spectra
           if (isAntid) {
-            registryMC.fill(HIST("antideuteron_gen_jet"), particle.pt());
+            double weightJetAntid(1.0);
+            if (applyReweighting && particle.pt() < antideuteronsInsideJets->GetXaxis()->GetXmax()) {
+              int ipt = antideuteronsInsideJets->FindBin(particle.pt());
+              weightJetAntid = antideuteronsInsideJets->GetBinContent(ipt);
+            }
+
+            registryMC.fill(HIST("antideuteron_gen_jet"), particle.pt(), weightJetAntid);
           }
         }
 
@@ -2255,8 +2272,15 @@ struct AntinucleiInJets {
           if (deltaRUe1 > rJet && deltaRUe2 > rJet)
             continue;
 
+          // Calculate weight
+          double weightUeAntid(1.0);
+          if (applyReweighting && deuteronVec.Pt() < antideuteronsPerpCone->GetXaxis()->GetXmax()) {
+            int ipt = antideuteronsPerpCone->FindBin(deuteronVec.Pt());
+            weightUeAntid = antideuteronsPerpCone->GetBinContent(ipt);
+          }
+            
           // Fill histogram for antideuterons in the UE
-          registryMC.fill(HIST("antideuteron_gen_ue"), deuteronVec.Pt());
+          registryMC.fill(HIST("antideuteron_gen_ue"), deuteronVec.Pt(), weightUeAntid);
         }
       }
       if (isAtLeastOneJetSelected) {
@@ -2512,7 +2536,7 @@ struct AntinucleiInJets {
             // Fill antiproton spectrum for physical primaries
             registryMC.fill(HIST("antiproton_prim_jet"), pt);
 
-            // Calculate weight
+            // Calculate weights
             double weightJet(1.0);
             if (applyReweighting && mcparticle.pt() < antiprotonsInsideJets->GetXaxis()->GetXmax()) {
               int ipt = antiprotonsInsideJets->FindBin(mcparticle.pt());
@@ -2549,16 +2573,23 @@ struct AntinucleiInJets {
             if (std::fabs(dcaxy) > maxDcaxy || std::fabs(dcaz) > maxDcaz)
               continue;
 
-            // Select physical primary antiprotons
+            // Select physical primary antideuterons
             if (!mcparticle.isPhysicalPrimary())
               continue;
 
+            // Calculate weight
+            double weightJetAntid(1.0);
+            if (applyReweighting && mcparticle.pt() < antideuteronsInsideJets->GetXaxis()->GetXmax()) {
+              int ipt = antideuteronsInsideJets->FindBin(mcparticle.pt());
+              weightJetAntid = antideuteronsInsideJets->GetBinContent(ipt);
+            }
+
             // Fill histograms (TPC and TOF) only for selected candidates
             if (nsigmaTPCDe > minNsigmaTpc && nsigmaTPCDe < maxNsigmaTpc) {
-              registryMC.fill(HIST("antideuteron_rec_tpc_jet"), pt);
+              registryMC.fill(HIST("antideuteron_rec_tpc_jet"), pt, weightJetAntid);
 
               if (track.hasTOF() && nsigmaTOFDe > minNsigmaTof && nsigmaTOFDe < maxNsigmaTof) {
-                registryMC.fill(HIST("antideuteron_rec_tof_jet"), pt);
+                registryMC.fill(HIST("antideuteron_rec_tof_jet"), pt, weightJetAntid);
               }
             }
           } // end of isAntid
@@ -2624,7 +2655,7 @@ struct AntinucleiInJets {
           // Fill antiproton spectrum for physical primaries
           registryMC.fill(HIST("antiproton_prim_ue"), pt);
 
-          // Calculate weight
+          // Calculate weights
           double weightUe(1.0);
           if (applyReweighting && mcparticle.pt() < antiprotonsPerpCone->GetXaxis()->GetXmax()) {
             int ipt = antiprotonsPerpCone->FindBin(mcparticle.pt());
@@ -2689,16 +2720,23 @@ struct AntinucleiInJets {
           if (deltaRUe1 > rJet && deltaRUe2 > rJet)
             continue;
 
-          // Select physical primary antiprotons
+          // Select physical primary antideuterons
           if (!mcparticle.isPhysicalPrimary())
             continue;
 
+          // Calculate weight
+          double weightUeAntid(1.0);
+          if (applyReweighting && mcparticle.pt() < antideuteronsPerpCone->GetXaxis()->GetXmax()) {
+            int ipt = antideuteronsPerpCone->FindBin(mcparticle.pt());
+            weightUeAntid = antideuteronsPerpCone->GetBinContent(ipt);
+          }
+
           // Fill histograms (TPC and TOF) only for selected candidates
           if (nsigmaTPCDe > minNsigmaTpc && nsigmaTPCDe < maxNsigmaTpc) {
-            registryMC.fill(HIST("antideuteron_rec_tpc_ue"), pt);
+            registryMC.fill(HIST("antideuteron_rec_tpc_ue"), pt, weightUeAntid);
 
             if (track.hasTOF() && nsigmaTOFDe > minNsigmaTof && nsigmaTOFDe < maxNsigmaTof) {
-              registryMC.fill(HIST("antideuteron_rec_tof_ue"), pt);
+              registryMC.fill(HIST("antideuteron_rec_tof_ue"), pt, weightUeAntid);
             }
           }
         }
