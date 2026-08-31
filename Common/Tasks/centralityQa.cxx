@@ -1434,7 +1434,7 @@ struct CentralityQa {
         // Check if there is at least one of the reconstructed collisions associated to this MC collision
         // If so, we consider it
         int biggestNContribs = -1;
-        int nContribsInEta05 = -1;
+        // int nContribsInEta05 = -1;
         float centrality = 100.5f;
         for (auto const& col : groupedCollisions) {
           if (!isCollisionAccepted(col)) {
@@ -1446,7 +1446,7 @@ struct CentralityQa {
 
           if (biggestNContribs < col.multPVTotalContributors()) {
             biggestNContribs = col.multPVTotalContributors();
-            nContribsInEta05 = col.multNTracksPVetaHalf();
+            // nContribsInEta05 = col.multNTracksPVetaHalf();
             centrality = centMFT;
           }
         }
