@@ -445,7 +445,7 @@ struct Alice3DqTableMaker {
       (dynamic_cast<TH2I*>(fStatsList->At(0)))->Fill(3.0, static_cast<float>(o2::aod::evsel::kNsel));
 
       // Fill historams after event cuts
-      fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
+      fHistMan->FillHistClass("Event_AfterCuts", dqefficiency_helpers::varValues());
 
       event(collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(),
             collision.collisionTime(), collision.collisionTimeRes(), collision.multDensity());

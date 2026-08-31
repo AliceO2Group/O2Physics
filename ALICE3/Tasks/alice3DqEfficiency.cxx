@@ -1920,15 +1920,30 @@ struct Alice3DqEfficiencyAnalysisAsymmetricPairing {
   }
 
   // Function to run same event pairing with asymmetric pairs (e.g. kaon-pion)
-  void runAsymmetricPairing(MyEventsVtxCovSelected const& events, PresliceUnsorted<MyBarrelAssocs>& preslice, MyBarrelAssocs const& /*assocs*/, MyBarrelTracksWithCovWithAmbiguities const& /*tracks*/, ReA3MCEvents const& /*mcEvents*/, ReA3MCTracks const& /*mcTracks*/)
+  void runAsymmetricPairing(MyEventsVtxCovSelected const& events, PresliceUnsorted<MyBarrelAssocs>& preslice, MyBarrelAssocs const& assocs, MyBarrelTracksWithCovWithAmbiguities const& /*tracks*/, ReA3MCEvents const& /*mcEvents*/, ReA3MCTracks const& /*mcTracks*/)
   {
     fPairCount.clear();
 
     int sign1 = 0;
     int sign2 = 0;
     uint32_t mcDecision = 0;
-    ditrackList.reserve(1);
-    ditrackExtraList.reserve(1);
+
+    int64_t reserveSize = 0;
+    for (auto const& event : events) {
+      if (event.isEventSelected_bit(0)) {
+        auto groupedAssocs = assocs.sliceBy(preslice, event.globalIndex());
+        size_t nGood = 0;
+        for (auto const& t : groupedAssocs) {
+          if (t.isBarrelSelected_raw() > 0u) {
+            nGood++;
+          }
+        }
+        reserveSize += nGood * (nGood - 1) / 2;
+      }
+    }
+
+    ditrackList.reserve(reserveSize);
+    ditrackExtraList.reserve(reserveSize);
 
     for (const auto& event : events) {
       if (!event.isEventSelected_bit(0)) {
