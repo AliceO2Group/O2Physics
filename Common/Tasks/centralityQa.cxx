@@ -947,7 +947,7 @@ struct CentralityQa {
             centrality = centFV0A;
           }
         }
-        
+
         histos.fill(HIST("hMultEta05VsGenMultFV0A"), mcCol.multMCFV0A(), nContribsInEta05);
         histos.fill(HIST("hGenMultEta05VsCentralityFV0A"), centrality, mcCol.multMCNParticlesEta05());
         histos.fill(HIST("hGenMultVsCentralityFV0A"), centrality, mcCol.multMCFV0A());
@@ -1003,7 +1003,7 @@ struct CentralityQa {
             centrality = centFT0M;
           }
         }
-        
+
         histos.fill(HIST("hMultEta05VsGenMultFT0M"), mcCol.multMCFT0A() + mcCol.multMCFT0C(), nContribsInEta05);
         histos.fill(HIST("hGenMultEta05VsCentralityFT0M"), centrality, mcCol.multMCNParticlesEta05());
         histos.fill(HIST("hGenMultVsCentralityFT0M"), centrality, mcCol.multMCFT0A() + mcCol.multMCFT0C());
@@ -1059,7 +1059,7 @@ struct CentralityQa {
             centrality = centFT0A;
           }
         }
-        
+
         histos.fill(HIST("hMultEta05VsGenMultFT0A"), mcCol.multMCFT0A(), nContribsInEta05);
         histos.fill(HIST("hGenMultEta05VsCentralityFT0A"), centrality, mcCol.multMCNParticlesEta05());
         histos.fill(HIST("hGenMultVsCentralityFT0A"), centrality, mcCol.multMCFT0A());
@@ -1115,7 +1115,7 @@ struct CentralityQa {
             centrality = centFT0C;
           }
         }
-        
+
         histos.fill(HIST("hMultEta05VsGenMultFT0C"), mcCol.multMCFT0C(), nContribsInEta05);
         histos.fill(HIST("hGenMultEta05VsCentralityFT0C"), centrality, mcCol.multMCNParticlesEta05());
         histos.fill(HIST("hGenMultVsCentralityFT0C"), centrality, mcCol.multMCFT0C());
@@ -1171,7 +1171,7 @@ struct CentralityQa {
             centrality = centFT0Cvar1;
           }
         }
-        
+
         histos.fill(HIST("hMultEta05VsGenMultFT0CVar1"), mcCol.multMCFT0C(), nContribsInEta05);
         histos.fill(HIST("hGenMultEta05VsCentralityFT0CVar1"), centrality, mcCol.multMCNParticlesEta05());
         histos.fill(HIST("hGenMultVsCentralityFT0CVar1"), centrality, mcCol.multMCFT0C());
@@ -1227,7 +1227,7 @@ struct CentralityQa {
             centrality = centFT0Cvar2;
           }
         }
-        
+
         histos.fill(HIST("hMultEta05VsGenMultFT0CVar2"), mcCol.multMCFT0C(), nContribsInEta05);
         histos.fill(HIST("hGenMultEta05VsCentralityFT0CVar2"), centrality, mcCol.multMCNParticlesEta05());
         histos.fill(HIST("hGenMultVsCentralityFT0CVar2"), centrality, mcCol.multMCFT0C());
@@ -1283,7 +1283,7 @@ struct CentralityQa {
             centrality = centFDDM;
           }
         }
-        
+
         histos.fill(HIST("hMultEta05VsGenMultFDDM"), mcCol.multMCFDDA() + mcCol.multMCFDDC(), nContribsInEta05);
         histos.fill(HIST("hGenMultEta05VsCentralityFDDM"), centrality, mcCol.multMCNParticlesEta05());
         histos.fill(HIST("hGenMultVsCentralityFDDM"), centrality, mcCol.multMCFDDA() + mcCol.multMCFDDC());
@@ -1338,7 +1338,7 @@ struct CentralityQa {
             centrality = centNTPV;
           }
         }
-        
+
         histos.fill(HIST("hMultEta05VsGenMultNTPV"), mcCol.multMCNParticlesEta08(), nContribsInEta05);
         histos.fill(HIST("hGenMultEta05VsCentralityNTPV"), centrality, mcCol.multMCNParticlesEta05());
         histos.fill(HIST("hGenMultVsCentralityNTPV"), centrality, mcCol.multMCNParticlesEta08());
@@ -1394,7 +1394,7 @@ struct CentralityQa {
             centrality = centNGlo;
           }
         }
-        
+
         histos.fill(HIST("hMultEta05VsGenMultNGlobal"), mcCol.multMCNParticlesEta08(), nContribsInEta05);
         histos.fill(HIST("hGenMultEta05VsCentralityNGlobal"), centrality, mcCol.multMCNParticlesEta05());
         histos.fill(HIST("hGenMultVsCentralityNGlobal"), centrality, mcCol.multMCNParticlesEta08());
@@ -1450,7 +1450,7 @@ struct CentralityQa {
             centrality = centMFT;
           }
         }
-        
+
         // histos.fill(HIST("hMultEta05VsGenMultMFT"), mcCol.multMCMFT(), nContribsInEta05); // FIXME: uncomment when MC MFT mult is added in aod::MultMCExtras
         histos.fill(HIST("hGenMultEta05VsCentralityMFT"), centrality, mcCol.multMCNParticlesEta05());
         // histos.fill(HIST("hGenMultVsCentralityMFT"), col.centMFT(), mcCol.multMCMFT()); // FIXME: uncomment when MC MFT mult is added in aod::MultMCExtras
