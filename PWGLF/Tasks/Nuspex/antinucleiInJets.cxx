@@ -399,6 +399,8 @@ struct AntinucleiInJets {
       // Generated spectra of antideuterons
       registryMC.add("antideuteron_gen_jet", "antideuteron_gen_jet", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antideuteron_gen_ue", "antideuteron_gen_ue", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antideuteron_gen_jet_noweight", "antideuteron_gen_jet_noweight", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antideuteron_gen_ue_noweight", "antideuteron_gen_ue_noweight", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
 
       // Generated spectra of antiprotons for closure test
       registryMC.add("antiproton_gen_jet_data", "antiproton_gen_jet_data", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
@@ -2206,6 +2208,7 @@ struct AntinucleiInJets {
             }
 
             registryMC.fill(HIST("antideuteron_gen_jet"), particle.pt(), weightJetAntid);
+            registryMC.fill(HIST("antideuteron_gen_jet_noweight"), particle.pt());
           }
         }
 
@@ -2281,6 +2284,7 @@ struct AntinucleiInJets {
 
           // Fill histogram for antideuterons in the UE
           registryMC.fill(HIST("antideuteron_gen_ue"), deuteronVec.Pt(), weightUeAntid);
+          registryMC.fill(HIST("antideuteron_gen_ue_noweight"), deuteronVec.Pt());
         }
       }
       if (isAtLeastOneJetSelected) {
