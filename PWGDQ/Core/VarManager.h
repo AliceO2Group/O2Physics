@@ -118,6 +118,7 @@ class VarManager : public TObject
     RapidityGapFilter = BIT(21),
     Fit = BIT(22),
     ReducedFit = BIT(23),
+    ReducedEventSpherocity = BIT(24),  // Achu-Changes
     Track = BIT(0),
     TrackCov = BIT(1),
     TrackExtra = BIT(2),
@@ -283,6 +284,8 @@ class VarManager : public TObject
     kMultNTracksITSTPC,
     kMultNTracksPVeta1,
     kMultNTracksPVetaHalf,
+    kSpherocity,         // transverse spherocity
+    kSpherocityPtWeighted, // pT-weighted transverse spherocity
     kTrackOccupancyInTimeRange,
     kFT0COccupancyInTimeRange,
     kNoCollInTimeRangeStandard,
@@ -1438,6 +1441,12 @@ class VarManager : public TObject
   {
     return RecoDecay::constrainAngle(psi1 - psi2, -o2::constants::math::PI / harmonic, harmonic);
   }
+
+  // Spherocity function declaration--Start
+  template <typename T>
+  static float CalculateSpherocity(T const & tracks, float ptMin = 0.15, float ptMax = 10.0, float etaMin = -0.8, float etaMax = 0.8, int minMult = 10, bool usePtWeight = false);
+  //------------------------------------End
+
   template <typename T, typename T1>
   static o2::dataformats::VertexBase RecalculatePrimaryVertex(T const& track0, T const& track1, const T1& collision);
 
@@ -2314,6 +2323,11 @@ void VarManager::FillEvent(T const& event, float* values)
     if (fgUsedVars[kIsMUP11]) {
       values[kIsMUP11] = static_cast<float>(event.alias_bit(kMUP11) > 0);
     }
+  }
+
+  if constexpr ((fillMap & ObjTypes::ReducedEventSpherocity) > 0) {
+    values[kSpherocity] = event.spherocity();
+    values[kSpherocityPtWeighted] = event.spherocityPtWeighted();
   }
 
   if constexpr ((fillMap & ReducedEventVtxCov) > 0) {
@@ -7996,5 +8010,83 @@ void VarManager::FillTripletVertexingALICE3(C const& collision, T const& t1, T c
     values[kVertexingTauxyzProjected] = values[kVertexingLxyzProjected] * v123.M() / (v123.P());
   }
 }
+template <typename T>
+float VarManager::CalculateSpherocity(T const& tracks, float ptMin, float ptMax, float etaMin, float etaMax, int minMult, bool usePtWeight) 
+{
+  LOGF(info, "    >>> CalculateSpherocity CALLED: ptMin=%.2f, ptMax=%.2f, etaMin=%.2f, etaMax=%.2f, minMult=%d, usePtWeight=%s",
+    ptMin, ptMax, etaMin, etaMax, minMult, usePtWeight ? "true" : "false");
+  
+  std::vector<float> pxNorm;
+  std::vector<float> pyNorm;
+  std::vector<float> ptValues;
+  float sumPt = 0.0;
+  int nTracks = 0;
+
+  // Collect valid tracks
+  for (const auto& track : tracks) {
+    float pt = track.pt();
+    float eta = track.eta();
+    
+    if (pt < ptMin || pt > ptMax) continue;
+    if (eta < etaMin || eta > etaMax) continue;
+    
+    float px = track.px();
+    float py = track.py();
+
+    if (pt <= 0.f) {
+      continue;
+    }
+    pxNorm.push_back(px / pt);
+    pyNorm.push_back(py / pt);
+    ptValues.push_back(pt);
+    sumPt += pt;
+    nTracks++;
+  }
+
+  // Check minimum multiplicity
+  if (nTracks < minMult) {
+    return -1.0f;
+  }
+
+  // Minimize over azimuthal angle
+  float spherocity = 5.0f; //float prevSpherocity = 5.0f; const float convergenceThreshold = 1e-4f;
+  const int nSteps = 360;
+
+  for (int iStep = 0; iStep < nSteps; iStep++) {
+    float phi = 2.0f * M_PI * static_cast<float>(iStep) / static_cast<float>(nSteps);
+    float nx = std::cos(phi);
+    float ny = std::sin(phi);
+
+    float numerator = 0.0f;
+    float denominator = 0.0f;
+
+    for (int iTrk = 0; iTrk < nTracks; iTrk++) {
+      // Cross product magnitude: |p_T x n| = |px*ny - py*nx|
+      float crossProduct = std::abs(pxNorm[iTrk] * ny - pyNorm[iTrk] * nx);
+      
+      if (usePtWeight) {
+        numerator += ptValues[iTrk] * crossProduct;
+        denominator += ptValues[iTrk];
+      } else {
+        numerator += crossProduct;
+        denominator += 1.0f;
+      }
+    }
+
+    float sph = std::pow(numerator / denominator, 2);
+    if (sph < spherocity) {
+      spherocity = sph;
+    }
+    // // Early exit if converged
+    // if (iStep > 10 && std::abs(spherocity - prevSpherocity) < convergenceThreshold) {
+    //   break;
+    // }
+    // prevSpherocity = spherocity;
+  }
+
+  spherocity *= (M_PI * M_PI / 4.0f);
+  return spherocity;
+}
+
 
 #endif // PWGDQ_CORE_VARMANAGER_H_
