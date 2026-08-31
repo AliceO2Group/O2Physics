@@ -23,6 +23,7 @@
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/PIDResponseTOF.h"
@@ -234,12 +235,12 @@ struct HfTaskCd {
 
   SliceCache cache;
 
-  using CollisionsWEvSel = soa::Join<aod::Collisions, aod::EvSels>;
-  using CollisionsMc = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
-  using CollisionsWithEvSelFT0C = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
-  using CollisionsMcWithEvSelFT0C = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs>;
-  using CollisionsWithEvSelFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
-  using CollisionsMcWithEvSelFT0M = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Ms>;
+  using CollisionsWEvSel = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults>;
+  using CollisionsMc = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults>;
+  using CollisionsWithEvSelFT0C = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs>;
+  using CollisionsMcWithEvSelFT0C = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults, aod::CentFT0Cs>;
+  using CollisionsWithEvSelFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms>;
+  using CollisionsMcWithEvSelFT0M = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults, aod::CentFT0Ms>;
 
   using CdCandidates = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelCd, aod::HfCand3ProngWPidPiKaDe>>;
   using CdCandidatesMc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelCd, aod::HfCand3ProngWPidPiKaDe, aod::HfCand3ProngMcRec>>;
