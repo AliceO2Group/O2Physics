@@ -333,9 +333,10 @@ struct TwoParticleCorrelationsMpi {
       if (cfgUserAxis == EventSeedAxis) {
         const std::vector<double> expectedEdges{-1.5, -0.5, 0.5, 1.5, 2.5};
         const auto& configuredEdges = AxisSpec(axisUser).binEdges;
+        const float threshold = 1.e-6;
         if (configuredEdges.size() != expectedEdges.size() ||
             !std::equal(configuredEdges.begin(), configuredEdges.end(), expectedEdges.begin(),
-                        [](double lhs, double rhs) { return std::abs(lhs - rhs) < 1.e-6; })) {
+                        [](double lhs, double rhs) { return std::abs(lhs - rhs) < threshold; })) {
           LOGF(fatal, "Percentile-class Seed axis requires axisUser edges {-1.5,-0.5,0.5,1.5,2.5}");
         }
       }
