@@ -2278,7 +2278,7 @@ struct AntinucleiInJets {
             int ipt = antideuteronsPerpCone->FindBin(deuteronVec.Pt());
             weightUeAntid = antideuteronsPerpCone->GetBinContent(ipt);
           }
-            
+
           // Fill histogram for antideuterons in the UE
           registryMC.fill(HIST("antideuteron_gen_ue"), deuteronVec.Pt(), weightUeAntid);
         }
