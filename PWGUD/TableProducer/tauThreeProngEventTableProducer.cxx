@@ -262,7 +262,7 @@ struct TauThreeProngEventTableProducer {
       registrySkim.add("skim/nTof", ";N_{TOFtrk};events", {HistType::kTH1F, {{10, -1., 9.}}});
     }
     if (doprocessMonteCarlo) {
-      registrySkim.add("skim/efficiencyMC", ";efficiency;events", {HistType::kTH1D, {{10, 0., 10.}}});
+      registrySkim.add("skim/efficiencyMC", ";efficiency;events", {HistType::kTH1D, {{15, 0., 15.}}});
       registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(1, "1: All");
       registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(2, "2: N^{#tau}=2");
       registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(3, "3: |y^{#tau}| <= 0.9");
@@ -273,6 +273,10 @@ struct TauThreeProngEventTableProducer {
       registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(8, "#pi+3#pi");
       registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(9, "6#pi");
       registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(10, "rec");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(11, "rec e+3#pi");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(12, "rec #mu+3#pi");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(13, "rec #pi+3#pi");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(14, "rec 6#pi");
 
       registrySkim.add("skim/problemMC", ";problem;events", {HistType::kTH1D, {{10, 0., 10.}}});
 
@@ -290,7 +294,7 @@ struct TauThreeProngEventTableProducer {
       registrySkim.add("skim/daughterPtMC", ";p_{T}^{daughter};events", {HistType::kTH1F, {{100, 0, 5.0}}});
     }
     if (doprocessGenerated) {
-      registrySkim.add("gen/efficiencyMC", ";efficiency;events", {HistType::kTH1D, {{10, 0., 10.}}});
+      registrySkim.add("gen/efficiencyMC", ";efficiency;events", {HistType::kTH1D, {{15, 0., 15.}}});
       registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(1, "All");
       registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(2, "N^{#tau}=2");
       registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(3, "|y^{#tau}| <=0.9");
@@ -303,6 +307,10 @@ struct TauThreeProngEventTableProducer {
       registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(8, "#pi+3#pi");
       registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(9, "6#pi");
       registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(10, "rec");
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(11, "rec e+3#pi");
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(12, "rec #mu+3#pi");
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(13, "rec #pi+3#pi");
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(14, "rec 6#pi");
 
       registrySkim.add("gen/problemMC", ";problem;events", {HistType::kTH1D, {{10, 0., 10.}}});
       registrySkim.get<TH1>(HIST("gen/problemMC"))->GetXaxis()->SetBinLabel(1, "1: NoProblem");
@@ -1397,6 +1405,17 @@ struct TauThreeProngEventTableProducer {
         if (verbose)
           LOGF(info, "--- MC Collision has reconstructed collision!");
         registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(9., 1.);
+        // reconstruction in a given channel
+        if (nElec == oneProng && nPi == threeProng) { // 1 + 3
+          registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(10., 1.);
+        } else if (nMuon == oneProng && nPi == threeProng) { // 1 + 3
+          registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(11., 1.);
+        } else if (nPi == fourTracks) { // 4
+          registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(12., 1.);
+        } else if (nPi == sixTracks) { // 6
+          registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(13., 1.);
+        }
+
         // trueHasRecoColl = true;
         // check there is exactly one reco-level collision associated to generated collision
         if (collFromMcColls.size() > 1) {
@@ -1973,6 +1992,18 @@ struct TauThreeProngEventTableProducer {
         registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->Fill(9., 1.);
         if (verbose)
           LOGF(info, "--- MC Collision has reconstructed collision!");
+
+        // reconstruction in a given channel
+        if (nElec == oneProng && nPi == threeProng) { // 1 + 3
+          registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->Fill(10., 1.);
+        } else if (nMuon == oneProng && nPi == threeProng) { // 1 + 3
+          registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->Fill(11., 1.);
+        } else if (nPi == fourTracks) { // 4
+          registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->Fill(12., 1.);
+        } else if (nPi == sixTracks) { // 6
+          registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->Fill(13., 1.);
+        }
+
       } else { // get only the truth information.
         if (verbose)
           LOGF(info, "MC Collision has NO reconstructed collision!");
