@@ -934,7 +934,9 @@ struct CentralityStudy {
       return;
     }
     histos.fill(HIST("hCollisionSelection"), 17 /* is INEL > 0 */);
-    getHist<TH1>(histPath + "hCollisionSelection")->Fill(17);
+    if (studies.doRunByRunHistograms) {
+      getHist<TH1>(histPath + "hCollisionSelection")->Fill(17);
+    }
 
     if (evsel.applyBcSel) {
       if constexpr (requires { collision.has_multBC(); }) {
