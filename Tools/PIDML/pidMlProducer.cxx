@@ -43,6 +43,7 @@
 #include <cstdint>
 #include <limits>
 #include <memory>
+#include <string>
 #include <string_view>
 
 using namespace o2;
