@@ -60,7 +60,7 @@ class TPCVDriftManager
     mTPCVDriftNS = mVD->refVDrift * mVD->corrFact * 1e-3;
 
     mValid = true;
-    LOGP(info, "Updated VDrift for timestamp {} with vdrift={:.7f} (cm/ns)", mVD->creationTime, mTPCVDriftNS);
+    LOGP(debug, "Updated VDrift for timestamp {} with vdrift={:.7f} (cm/ns)", mVD->creationTime, mTPCVDriftNS);
   }
 
   template <typename BCs, typename Collisions, typename Collision, typename TrackExtra, typename Track>
