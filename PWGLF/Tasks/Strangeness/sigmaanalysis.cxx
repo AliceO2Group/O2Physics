@@ -445,8 +445,7 @@ struct sigmaanalysis {
         histos.add(histodir + "/Sigma0/h3dMass", "h3dMass", kTH3D, {axisCentrality, axisPt, axisSigmaMass});
         histos.add(histodir + "/Sigma0/h3dOPAngleVsMass", "h3dOPAngleVsMass", kTH3D, {{140, 0.0f, +7.0f}, axisPt, axisSigmaMass});
         if (doArm) {
-          histos.add(histodir + "/Sigma0/h3dAlphaVsMass", "h3dAlphaVsMass", kTH3D, {{100, -5.0f, +5.0f}, axisPt, axisSigmaMass});
-          histos.add(histodir + "/Sigma0/h3dQtarmVsMass", "h3dQtarmVsMass", kTH3D, {{100, -5.0f, +5.0f}, axisPt, axisSigmaMass});
+          histos.add(histodir + "/Sigma0/h4dAlphaVsQtarmVsMass", "h4dAlphaVsQtarmVsMass", kTHnD, {axisAPAlpha, axisAPQt, axisPt, axisSigmaMass});
         }
 
         histos.add(histodir + "/ASigma0/hMass", "hMass", kTH1D, {axisSigmaMass});
@@ -458,8 +457,7 @@ struct sigmaanalysis {
         histos.add(histodir + "/ASigma0/h3dMass", "h3dMass", kTH3D, {axisCentrality, axisPt, axisSigmaMass});
         histos.add(histodir + "/ASigma0/h3dOPAngleVsMass", "h3dOPAngleVsMass", kTH3D, {{140, 0.0f, +7.0f}, axisPt, axisSigmaMass});
         if (doArm) {
-          histos.add(histodir + "/ASigma0/h3dAlphaVsMass", "h3dAlphaVsMass", kTH3D, {{100, -5.0f, +5.0f}, axisPt, axisSigmaMass});
-          histos.add(histodir + "/ASigma0/h3dQtarmVsMass", "h3dQtarmVsMass", kTH3D, {{100, -5.0f, +5.0f}, axisPt, axisSigmaMass});
+          histos.add(histodir + "/ASigma0/h4dAlphaVsQtarmVsMass", "h4dAlphaVsQtarmVsMass", kTHnD, {axisAPAlpha, axisAPQt, axisPt, axisSigmaMass});
         }
 
         // Process MC
@@ -500,8 +498,7 @@ struct sigmaanalysis {
           histos.add(histodir + "/MC/Sigma0/h3dMass", "h3dMass", kTH3D, {axisCentrality, axisPt, axisSigmaMass});
           histos.add(histodir + "/MC/Sigma0/h3dMCProcess", "h3dMCProcess", kTH3D, {{50, -0.5f, 49.5f}, axisPt, axisSigmaMass});
           if (doArm) {
-            histos.add(histodir + "/MC/Sigma0/h3dAlphaVsMass", "h3dAlphaVsMass", kTH3D, {{100, -5.0f, +5.0f}, axisPt, axisSigmaMass});
-            histos.add(histodir + "/MC/Sigma0/h3dQtarmVsMass", "h3dQtarmVsMass", kTH3D, {{100, -5.0f, +5.0f}, axisPt, axisSigmaMass});
+            histos.add(histodir + "/MC/Sigma0/h4dAlphaVsQtarmVsMass", "h4dAlphaVsQtarmVsMass", kTHnD, {axisAPAlpha, axisAPQt, axisPt, axisSigmaMass});
           }
 
           histos.add(histodir + "/MC/ASigma0/hPt", "hPt", kTH1D, {axisPt});
@@ -515,8 +512,7 @@ struct sigmaanalysis {
           histos.add(histodir + "/MC/ASigma0/h3dMass", "h3dMass", kTH3D, {axisCentrality, axisPt, axisSigmaMass});
           histos.add(histodir + "/MC/ASigma0/h3dMCProcess", "h3dMCProcess", kTH3D, {{50, -0.5f, 49.5f}, axisPt, axisSigmaMass});
           if (doArm) {
-            histos.add(histodir + "/MC/ASigma0/h3dAlphaVsMass", "h3dAlphaVsMass", kTH3D, {{100, -5.0f, +5.0f}, axisPt, axisSigmaMass});
-            histos.add(histodir + "/MC/ASigma0/h3dQtarmVsMass", "h3dQtarmVsMass", kTH3D, {{100, -5.0f, +5.0f}, axisPt, axisSigmaMass});
+            histos.add(histodir + "/MC/ASigma0/h4dAlphaVsQtarmVsMass", "h4dAlphaVsQtarmVsMass", kTHnD, {axisAPAlpha, axisAPQt, axisPt, axisSigmaMass});
           }
 
           histos.add(histodir + "/MC/LambdaStar/h3dMCPtvsOPAngle_Sig", "h3dMCPtvsOPAngle_Sig", kTH3D, {{140, 0.f, 7.f}, axisPt, axisSigmaMass});
@@ -1219,8 +1215,7 @@ struct sigmaanalysis {
       histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/h3dMass"), centrality, sigma.pt(), sigma.sigma0Mass());
       histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/h3dOPAngleVsMass"), sigma.opAngle(), sigma.pt(), sigma.sigma0Mass());
       if (doArm) {
-        histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/h3dAlphaVsMass"), sigma.lStarAlpha(), sigma.pt(), sigma.sigma0Mass());
-        histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/h3dQtarmVsMass"), sigma.lStarQtarm(), sigma.pt(), sigma.sigma0Mass());
+        histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/h4dAlphaVsQtarmVsMass"), sigma.lStarAlpha(), sigma.lStarQtarm(), sigma.pt(), sigma.sigma0Mass());
       }
 
     } else {
@@ -1243,8 +1238,7 @@ struct sigmaanalysis {
       histos.fill(HIST(MainDir[mode]) + HIST("/ASigma0/h3dMass"), centrality, sigma.pt(), sigma.sigma0Mass());
       histos.fill(HIST(MainDir[mode]) + HIST("/ASigma0/h3dOPAngleVsMass"), sigma.opAngle(), sigma.pt(), sigma.sigma0Mass());
       if (doArm) {
-        histos.fill(HIST(MainDir[mode]) + HIST("/ASigma0/h3dAlphaVsMass"), sigma.lStarAlpha(), sigma.pt(), sigma.sigma0Mass());
-        histos.fill(HIST(MainDir[mode]) + HIST("/ASigma0/h3dQtarmVsMass"), sigma.lStarQtarm(), sigma.pt(), sigma.sigma0Mass());
+        histos.fill(HIST(MainDir[mode]) + HIST("/ASigma0/h4dAlphaVsQtarmVsMass"), sigma.lStarAlpha(), sigma.lStarQtarm(), sigma.pt(), sigma.sigma0Mass());
       }
     }
 
@@ -1303,8 +1297,7 @@ struct sigmaanalysis {
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/Sigma0/hMass"), sigma.sigma0Mass());
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/Sigma0/h3dMass"), centrality, sigma.mcpt(), sigma.sigma0Mass());
           if (doArm) {
-            histos.fill(HIST(MainDir[mode]) + HIST("/MC/Sigma0/h3dAlphaVsMass"), sigma.lStarAlpha(), sigma.mcpt(), sigma.sigma0Mass());
-            histos.fill(HIST(MainDir[mode]) + HIST("/MC/Sigma0/h3dQtarmVsMass"), sigma.lStarQtarm(), sigma.mcpt(), sigma.sigma0Mass());
+            histos.fill(HIST(MainDir[mode]) + HIST("/MC/Sigma0/h4dAlphaVsQtarmVsMass"), sigma.lStarAlpha(), sigma.lStarQtarm(), sigma.mcpt(), sigma.sigma0Mass());
           }
 
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/Sigma0/hMCProcess"), sigma.mcprocess());
@@ -1324,8 +1317,7 @@ struct sigmaanalysis {
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/ASigma0/hMass"), sigma.sigma0Mass());
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/ASigma0/h3dMass"), centrality, sigma.mcpt(), sigma.sigma0Mass());
           if (doArm) {
-            histos.fill(HIST(MainDir[mode]) + HIST("/MC/ASigma0/h3dAlphaVsMass"), sigma.lStarAlpha(), sigma.mcpt(), sigma.sigma0Mass());
-            histos.fill(HIST(MainDir[mode]) + HIST("/MC/ASigma0/h3dQtarmVsMass"), sigma.lStarQtarm(), sigma.mcpt(), sigma.sigma0Mass());
+            histos.fill(HIST(MainDir[mode]) + HIST("/MC/ASigma0/h4dAlphaVsQtarmVsMass"), sigma.lStarAlpha(), sigma.lStarQtarm(), sigma.mcpt(), sigma.sigma0Mass());
           }
 
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/ASigma0/hMCProcess"), sigma.mcprocess());
