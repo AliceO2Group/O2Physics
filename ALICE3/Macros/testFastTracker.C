@@ -19,7 +19,7 @@
 
 #include <string>
 
-void testFastTracker(std::string geometryFile = "a3geo.ini")
+void testFastTracker(const std::string& geometryFile = "a3geo.ini")
 {
 
   fair::Logger::SetConsoleSeverity(fair::Severity::debug);
