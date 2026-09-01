@@ -1379,7 +1379,10 @@ struct HfDataCreatorCharmHadPiReduced {
           if constexpr (WithMl) {
             std::array<float, 6> mlScores = {-1.f, -1.f, -1.f, -1.f, -1.f, -1.f};
             if constexpr (DecChannel == DecayChannel::B0ToDminusPi) {
-              tables.hfCand3ProngMl(candC.mlProbDplusToPiKPi()[0], candC.mlProbDplusToPiKPi()[1], candC.mlProbDplusToPiKPi()[2], -1., -1., -1.);
+              if (candC.mlProbDplusToPiKPi().size() == NSizeMLScore) {
+                std::copy(candC.mlProbDplusToPiKPi().begin(), candC.mlProbDplusToPiKPi().end(), mlScores.begin());
+              }
+              tables.hfCand3ProngMl(mlScores[0], mlScores[1], mlScores[2], -1., -1., -1.);
             } else if constexpr (DecChannel == DecayChannel::BsToDsminusPi) {
               if (candC.mlProbDsToKKPi().size() == NSizeMLScore) {
                 std::copy(candC.mlProbDsToKKPi().begin(), candC.mlProbDsToKKPi().end(), mlScores.begin());
