@@ -306,7 +306,7 @@ struct lambdav2 {
     histos.fill(HIST("hpQxpQytvscent"), centrality, QxpQyt);
     histos.fill(HIST("hpQxtQypvscent"), centrality, QxtQyp);
 
-    for (auto track : tracks) {
+    for (const auto& track : tracks) {
       if (!selectionTrack(track)) {
         continue;
       }

@@ -839,7 +839,7 @@ struct lambda1405analysis {
                                aod::KinkCands::iterator const& sigmaCand,
                                TracksFull const& tracks,
                                std::vector<lambda1405candidate>& selectedCandidates,
-                               TBinningType binPolicy)
+                               const TBinningType& binPolicy)
   {
 
     lambda1405candidate lambda1405Cand{};
@@ -1112,7 +1112,7 @@ struct lambda1405analysis {
   }
 
   template <typename TCollision, typename TCand, typename TTrack, typename TBinningType>
-  void fillOutputData(const TCollision& collision, const TCand& sigmaCands, const TTrack& tracks, TBinningType binPolicy)
+  void fillOutputData(const TCollision& collision, const TCand& sigmaCands, const TTrack& tracks, const TBinningType& binPolicy)
   {
     if (std::abs(collision.posZ()) > eventSelection.cutZVertex || !collision.sel8()) {
       return;

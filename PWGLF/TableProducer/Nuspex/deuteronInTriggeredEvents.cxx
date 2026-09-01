@@ -355,7 +355,7 @@ struct DeuteronInTriggeredEvents {
 
   HistogramRegistry spectra{"spectra", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
-  double computeAbsoDecL(aod::McParticles::iterator particle)
+  double computeAbsoDecL(const aod::McParticles::iterator& particle)
   {
     if (!particle.has_daughters())
       return -1.f;

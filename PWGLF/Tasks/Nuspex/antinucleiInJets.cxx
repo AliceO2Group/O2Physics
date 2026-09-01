@@ -686,7 +686,7 @@ struct AntinucleiInJets {
     }
   }
 
-  void getReweightingHistograms(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj, TString filepath, TString antip, TString antilambda, TString antisigma, TString antixi, TString antiomega, TString jet, TString ue)
+  void getReweightingHistograms(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj, const TString& filepath, const TString& antip, const TString& antilambda, const TString& antisigma, const TString& antixi, const TString& antiomega, const TString& jet, const TString& ue)
   {
     TList* list = ccdbObj->get<TList>(filepath.Data());
     if (!list) {

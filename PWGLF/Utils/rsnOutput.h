@@ -80,7 +80,7 @@ enum class MixingType {
   none
 };
 
-MixingType mixingTypeName(std::string name)
+MixingType mixingTypeName(const std::string& name)
 {
   if (name == "ce")
     return MixingType::ce;
@@ -217,7 +217,7 @@ class Output
   virtual void fillRotationpm(double* point) = 0;
   virtual void fillSystematics(double* point) = 0;
 
-  PairAxisType type(std::string name)
+  PairAxisType type(const std::string& name)
   {
     auto it = std::find(pair_axis::names.begin(), pair_axis::names.end(), name);
     if (it == pair_axis::names.end()) {
@@ -226,7 +226,7 @@ class Output
     return static_cast<PairAxisType>(std::distance(pair_axis::names.begin(), it));
   }
 
-  SystematicsAxisType typeSys(std::string name)
+  SystematicsAxisType typeSys(const std::string& name)
   {
     auto it = std::find(systematic_axis::names.begin(), systematic_axis::names.end(), name);
     if (it == systematic_axis::names.end()) {

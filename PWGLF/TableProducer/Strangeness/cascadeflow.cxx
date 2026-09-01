@@ -438,7 +438,7 @@ struct cascadeFlow {
   }
 
   template <typename TCascade, typename TDaughter>
-  bool IsCascAccepted(TCascade casc, TDaughter negExtra, TDaughter posExtra, TDaughter bachExtra, int& counter) // loose cuts on topological selections of cascades
+  bool IsCascAccepted(const TCascade& casc, const TDaughter& negExtra, const TDaughter& posExtra, const TDaughter& bachExtra, int& counter) // loose cuts on topological selections of cascades
   {
     // TPC cuts as those implemented for the training of the signal
     if (doNTPCSigmaCut) {
@@ -476,7 +476,7 @@ struct cascadeFlow {
   }
 
   template <typename TDaughter>
-  bool isLambdaAccepted(TDaughter negExtra, TDaughter posExtra, int& counter) // loose cuts on topological selections of v0s
+  bool isLambdaAccepted(const TDaughter& negExtra, const TDaughter& posExtra, int& counter) // loose cuts on topological selections of v0s
   {
     // TPC cuts as those implemented for the training of the signal
     if (doNTPCSigmaCut) {
@@ -492,7 +492,7 @@ struct cascadeFlow {
     return true;
   }
   template <typename TDaughter>
-  bool isAntiLambdaAccepted(TDaughter negExtra, TDaughter posExtra, int& counter) // loose cuts on topological selections of v0s
+  bool isAntiLambdaAccepted(const TDaughter& negExtra, const TDaughter& posExtra, int& counter) // loose cuts on topological selections of v0s
   {
     // TPC cuts as those implemented for the training of the signal
     if (doNTPCSigmaCut) {
@@ -509,7 +509,7 @@ struct cascadeFlow {
   }
 
   template <typename TV0>
-  bool isV0TopoAccepted(TV0 v0)
+  bool isV0TopoAccepted(const TV0& v0)
   {
     // topological selections
     if (v0.v0radius() < V0Configs.v0radius)
@@ -582,7 +582,7 @@ struct cascadeFlow {
   std::string fullCCDBShiftCorrPathTPCR;
 
   template <typename TCollision>
-  double ApplyShiftCorrection(TCollision coll, double psiT0C, TProfile3D* shiftprofile)
+  double ApplyShiftCorrection(const TCollision& coll, double psiT0C, TProfile3D* shiftprofile)
   {
     auto deltapsiFT0C = 0.0;
     int nmode = 2;
@@ -597,7 +597,7 @@ struct cascadeFlow {
   }
 
   template <typename TCollision>
-  double ComputeEPResolutionwShifts(TCollision coll, double psiT0C, double psiV0A, double psiT0A, double psiTPCA, double psiTPCC, TProfile3D* shiftprofileA, TProfile3D* shiftprofileB, TProfile3D* shiftprofileC, TProfile3D* shiftprofileD, TProfile3D* shiftprofileE)
+  double ComputeEPResolutionwShifts(const TCollision& coll, double psiT0C, double psiV0A, double psiT0A, double psiTPCA, double psiTPCC, TProfile3D* shiftprofileA, TProfile3D* shiftprofileB, TProfile3D* shiftprofileC, TProfile3D* shiftprofileD, TProfile3D* shiftprofileE)
   {
     int nmode = 2;
     auto deltapsiFT0C = 0.0;
@@ -674,7 +674,7 @@ struct cascadeFlow {
   }
 
   template <class collision_t, class cascade_t>
-  void fillTrainingTable(collision_t coll, cascade_t casc, int pdgCode)
+  void fillTrainingTable(const collision_t& coll, const cascade_t& casc, int pdgCode)
   {
     trainingSample(coll.centFT0C(),
                    casc.sign(),
@@ -699,7 +699,7 @@ struct cascadeFlow {
   }
 
   template <class collision_t, class cascade_t, class bachExtra_t>
-  void fillAnalysedTable(collision_t coll, bool hasEventPlane, bool hasSpectatorPlane, cascade_t casc, float v2CSP, float v2CEP, float v1SP_ZDCA, float v1SP_ZDCC, float PsiT0C, float BDTresponseXi, float BDTresponseOmega, int pdgCode, bachExtra_t bachExtra)
+  void fillAnalysedTable(const collision_t& coll, bool hasEventPlane, bool hasSpectatorPlane, const cascade_t& casc, float v2CSP, float v2CEP, float v1SP_ZDCA, float v1SP_ZDCC, float PsiT0C, float BDTresponseXi, float BDTresponseOmega, int pdgCode, const bachExtra_t& bachExtra)
   {
     double masses[nParticles]{o2::constants::physics::MassXiMinus, o2::constants::physics::MassOmegaMinus};
     ROOT::Math::PxPyPzMVector cascadeVector[nParticles], lambdaVector, protonVector;
@@ -802,7 +802,7 @@ struct cascadeFlow {
   }
 
   template <class collision_t, class v0_t>
-  void fillAnalysedLambdaTable(collision_t coll, bool hasEventPlane, bool hasSpectatorPlane, int chargeIndex, v0_t v0, float v2CEP, float psiT0C, double pzs2Lambda, double cos2ThetaLambda, double cosThetaLambda)
+  void fillAnalysedLambdaTable(const collision_t& coll, bool hasEventPlane, bool hasSpectatorPlane, int chargeIndex, const v0_t& v0, float v2CEP, float psiT0C, double pzs2Lambda, double cos2ThetaLambda, double cosThetaLambda)
   {
     double invMassLambda = 0;
     if (chargeIndex == 0)
