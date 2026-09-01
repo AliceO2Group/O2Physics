@@ -14,7 +14,6 @@
 /// \author Maxim Virta, NBI, maxim.virta@cern.ch
 
 #include "PWGCF/DataModel/CorrelationsDerived.h"
-#include "PWGCF/GenericFramework/Core/FlowContainer.h"
 #include "PWGCF/GenericFramework/Core/GFW.h"
 #include "PWGCF/GenericFramework/Core/GFWConfig.h"
 #include "PWGCF/GenericFramework/Core/GFWWeights.h"
@@ -51,7 +50,6 @@
 #include <TString.h>
 
 #include <boost/algorithm/string/find.hpp>
-#include <sys/types.h>
 
 #include <RtypesCore.h>
 
@@ -849,16 +847,16 @@ struct FlowGfwV02 {
   }
 
   template <DataType dt>
-  void fillOutputContainers(const float& centmult, const int& multiplicity, const double& rndm, const int& /*run*/ = 0)
+  void fillOutputContainers(const float& centmult)
   {
     double threshold = 1.01;
 
+    int bootstrap = fRndm->Integer(gfwMemberCache.nBootstrap);
     // Calculate V02
     if (cfgUseV02) {
       double v22npt = 0;
       double ptMeanMid = pidStates.hPtMid[PidCharged]->GetMean();
       double ptFractionMid = 0.;
-      int bootstrap = fRndm->Integer(gfwMemberCache.nBootstrap);
       double dnxAB = fGFW->Calculate(corrconfigs.at(0), 0, kTRUE).real(); // V22 weight for AB
       auto valAB = fGFW->Calculate(corrconfigs.at(0), 0, kFALSE).real() / dnxAB;
       if (std::abs(valAB) > threshold) {
@@ -937,7 +935,6 @@ struct FlowGfwV02 {
       double ptMeanBackward = pidStates.hPtBackward[PidCharged]->GetMean();
       double ptFractionForward = 0.;
       double ptFractionBackward = 0.;
-      int bootstrap = fRndm->Integer(gfwMemberCache.nBootstrap);
       double WeightA = 1.0;
       double WeightB = 1.0;
       for (int pid = 0; pid < PidTotal; pid++) {
@@ -1030,7 +1027,7 @@ struct FlowGfwV02 {
   };
 
   template <DataType dt, typename TCollision, typename TTracks>
-  void processCollision(TCollision const& collision, TTracks const& tracks, const XAxis& xaxis, const int& run)
+  void processCollision(TCollision const& collision, TTracks const& tracks, const XAxis& xaxis)
   {
     float vtxz = collision.posZ();
     if (tracks.size() < 1)
@@ -1053,12 +1050,10 @@ struct FlowGfwV02 {
     pidStates.hPtForward[PidKaons]->Reset();
     pidStates.hPtForward[PidProtons]->Reset();
 
-    float lRandom = fRndm->Rndm();
-
     // Loop over tracks and check if they are accepted
     AcceptedTracks acceptedTracks{.nPos = 0, .nNeg = 0, .nFull = 0, .nMid = 0};
     for (const auto& track : tracks) {
-      processTrack(track, vtxz, xaxis.multiplicity, run, acceptedTracks);
+      processTrack(track, vtxz, xaxis.multiplicity, acceptedTracks);
       if (track.eta() > cfgSubeventCuts.cfgEtaSubCMin && track.eta() < cfgSubeventCuts.cfgEtaSubCMax)
         pidStates.hPtMid[PidCharged]->Fill(track.pt(), getEfficiency(track, PidCharged));
       if (track.eta() > cfgSubeventCuts.cfgEtaSubAMin && track.eta() < cfgSubeventCuts.cfgEtaSubAMax) // add mean pT
@@ -1099,7 +1094,7 @@ struct FlowGfwV02 {
       if (acceptedTracks.nPos < 2 || acceptedTracks.nMid < 2 || acceptedTracks.nNeg < 2) // o2-linter: disable=magic-number (at least two tracks in all three subevents)
         return;
     // Fill output containers
-    fillOutputContainers<dt>(xaxis.centrality, xaxis.multiplicity, lRandom, run);
+    fillOutputContainers<dt>(xaxis.centrality);
   }
 
   template <typename TTrack>
@@ -1147,7 +1142,7 @@ struct FlowGfwV02 {
   }
 
   template <typename TTrack>
-  inline void processTrack(TTrack const& track, const float& vtxz, const int& multiplicity, const int& /*run*/, AcceptedTracks& acceptedTracks)
+  inline void processTrack(TTrack const& track, const float& vtxz, const int& multiplicity, AcceptedTracks& acceptedTracks)
   {
 
     if (cfgFillQA) {
@@ -1333,7 +1328,7 @@ struct FlowGfwV02 {
 
     registry.fill(HIST("eventQA/after/centrality"), xaxis.centrality);
     registry.fill(HIST("eventQA/after/multiplicity"), xaxis.multiplicity);
-    processCollision<kReco>(collision, tracks, xaxis, run);
+    processCollision<kReco>(collision, tracks, xaxis);
   }
   PROCESS_SWITCH(FlowGfwV02, processData, "Process analysis for non-derived data", true);
 
@@ -1350,7 +1345,7 @@ struct FlowGfwV02 {
     registry.fill(HIST("eventQA/after/centrality"), xaxis.centrality);
     registry.fill(HIST("eventQA/after/multiplicity"), xaxis.multiplicity);
 
-    // processCollision<kReco>(collision, tracks, xaxis, run);
+    // processCollision<kReco>(collision, tracks, xaxis);
   }
   PROCESS_SWITCH(FlowGfwV02, processCFDerived, "Process analysis for CF derived data", false);
   void processCFDerivedCorrected(aod::CFCollision const& collision, soa::Filtered<soa::Join<aod::CFTracks, aod::JWeights>> const& tracks)
@@ -1363,7 +1358,7 @@ struct FlowGfwV02 {
     const XAxis xaxis{.centrality = collision.multiplicity(), .multiplicity = tracks.size()};
     registry.fill(HIST("eventQA/after/centrality"), xaxis.centrality);
     registry.fill(HIST("eventQA/after/multiplicity"), xaxis.multiplicity);
-    // processCollision<kReco>(collision, tracks, xaxis, run);
+    // processCollision<kReco>(collision, tracks, xaxis);
   }
   PROCESS_SWITCH(FlowGfwV02, processCFDerivedCorrected, "Process analysis for CF derived data with corrections", false);
 };
