@@ -448,7 +448,6 @@ struct FlowGfwV02 {
       registry.add("analysis/charged/v223pc", "", {HistType::kTProfile2D, {bsAxis, centAxis}});
     }
 
-
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
