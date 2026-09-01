@@ -56,7 +56,6 @@
 #include <TGraph.h>
 #include <TH1.h>
 #include <TH3.h>
-#include <THashList.h>
 #include <THnSparse.h>
 #include <TProfile2D.h>
 #include <TString.h>
@@ -111,7 +110,6 @@ static constexpr o2::track::PID::ID NpartChrg = Npart * Ncharges;
 const std::array<int, Npart> pDGs{11, 13, 211, 321, 2212};
 const std::array<int, NpartChrg> pIdSgn{11, 13, 211, 321, 2212, -11, -13, -211, -321, -2212};
 const std::array<const char*, Npart> pID{"el", "mu", "pi", "ka", "pr"};
-const std::array<const char*, NpartChrg> pIdChrg{"e^{-}", "#mu^{-}", "#pi^{+}", "K^{+}", "p", "e^{+}", "#mu^{+}", "#pi^{-}", "K^{-}", "#bar{p}"};
 static constexpr std::array<std::string, Npart> CspeciesAll{"El", "Mu", "Pi", "Ka", "Pr"};
 
 // histogram naming
@@ -240,7 +238,6 @@ struct FlattenictyPikp {
   HistogramRegistry registryMC{"registryMC", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry registryQC{"registryQC", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
-  OutputObj<THashList> listEfficiency{"Efficiency"};
   Service<o2::framework::O2DatabasePDG> pdg{};
 
   std::vector<float> fv0AmplCorr;
@@ -265,6 +262,8 @@ struct FlattenictyPikp {
     Configurable<bool> fillV0Hist{"fillV0Hist", false, "fill V0 histograms"};
     Configurable<bool> fillChrgType{"fillChrgType", false, "fill histograms per charge types"};
     Configurable<bool> fillChrgTypeV0s{"fillChrgTypeV0s", false, "fill V0s histograms per charge types"};
+    Configurable<bool> fillMCRecCheck{"fillMCRecCheck", false, "fill MC rec histograms"};
+    Configurable<bool> fillMCRecDCA{"fillMCRecDCA", false, "fill MC rec DCA histograms"};
     Configurable<std::string> calibDeDxFunction{"calibDeDxFunction", "pol8", "Functional form for dEdx calibration"};
     Configurable<std::vector<float>> paramsFuncMIPposEtaP{"paramsFuncMIPposEtaP", std::vector<float>{-1.f}, "function parameters"};
     Configurable<std::vector<float>> paramsFuncMIPnegEtaP{"paramsFuncMIPnegEtaP", std::vector<float>{-1.f}, "function parameters"};
@@ -875,15 +874,10 @@ struct FlattenictyPikp {
         registryMC.add({fmt::format(CEtaVsPtVsPMcRecPrimSelF.data(), CspeciesAll[i].data()).c_str(), "; #eta; #it{p}_{T} (GeV/#it{c}); #it{p} (GeV/#it{c})", {kTHnSparseF, {etaAxis, ptAxis, pAxis}}});
       }
 
-      // Hash list for efficiency
-      listEfficiency.setObject(new THashList);
       static_for<0, 1>([&](auto pidSgn) {
         bookMcHist<pidSgn, o2::track::PID::Pion>();
         bookMcHist<pidSgn, o2::track::PID::Kaon>();
         bookMcHist<pidSgn, o2::track::PID::Proton>();
-        initEfficiency<pidSgn, o2::track::PID::Pion>();
-        initEfficiency<pidSgn, o2::track::PID::Kaon>();
-        initEfficiency<pidSgn, o2::track::PID::Proton>();
       });
 
       LOG(info) << "Size of the MC histograms:";
@@ -2252,53 +2246,6 @@ struct FlattenictyPikp {
   }
 
   template <int pidSgn, o2::track::PID::ID id>
-  void initEfficiency()
-  {
-    static_assert(pidSgn == CnullInt || pidSgn == ConeInt);
-    static_assert(id > CnullInt && id < Npart);
-    constexpr int Cidx = id + pidSgn * Npart;
-    const TString partName = pIdChrg[Cidx];
-    auto lhash = new THashList();
-    lhash->SetName(partName);
-    listEfficiency->Add(lhash);
-
-    auto bookEff = [&](const TString& eName, const auto& h) {
-      const TAxis* axis = h->GetXaxis();
-      TString eTitle = h->GetTitle();
-      eTitle.ReplaceAll("Numerator", "").Strip(TString::kBoth);
-      eTitle = Form("%s;%s;Efficiency", eTitle.Data(), axis->GetTitle());
-      lhash->Add(new TEfficiency(eName, eTitle, axis->GetNbins(), axis->GetXbins()->GetArray()));
-    };
-
-    const int idx = id + pidSgn * Npart;
-    bookEff("hEffvsPt", hPtEffRec[idx]);
-  }
-
-  template <int pidSgn, o2::track::PID::ID id>
-  void fillEfficiency()
-  {
-    static_assert(pidSgn == CnullInt || pidSgn == ConeInt);
-    constexpr int ChistIdx = id + pidSgn * Npart;
-    const char* partName = pIdChrg[ChistIdx];
-    auto lhash = dynamic_cast<THashList*>(listEfficiency->FindObject(partName));
-    if (!lhash) {
-      LOG(warning) << "No efficiency object found for particle " << partName;
-      return;
-    }
-
-    auto fillEff = [&](const TString& eName, const auto& num, const auto& den) {
-      auto eff = dynamic_cast<TEfficiency*>(lhash->FindObject(eName));
-      if (!eff) {
-        LOG(warning) << "Cannot find TEfficiency " << eName;
-        return;
-      }
-      eff->SetTotalHistogram(*den, "f");
-      eff->SetPassedHistogram(*num, "f");
-    };
-    fillEff("hEffvsPt", hPtEffRec[ChistIdx], hPtEffGen[ChistIdx]);
-  }
-
-  template <int pidSgn, o2::track::PID::ID id>
   void fillMCRecTrack(MyLabeledPIDTracks::iterator const& track, const float mult, const float flat)
   {
     static_assert(pidSgn == CnullInt || pidSgn == ConeInt);
@@ -2552,38 +2499,40 @@ struct FlattenictyPikp {
         if (particle.pt() < trkSelOpt.trkPtMin) {
           continue;
         }
-        static_for<0, 1>([&](auto pidSgn) { // for checking purposes only: use gen Nch, gen Flat
-          fillMCRecTrack<pidSgn, o2::track::PID::Pion>(track, multMC, flatMC);
-          fillMCRecTrack<pidSgn, o2::track::PID::Kaon>(track, multMC, flatMC);
-          fillMCRecTrack<pidSgn, o2::track::PID::Proton>(track, multMC, flatMC);
-        });
-        static_for<0, 4>([&](auto i) {
-          constexpr int Cidx = i.value;
-          if (std::fabs(particle.pdgCode()) == pDGs[Cidx]) {
-            if (!particle.isPhysicalPrimary()) {
-              if (particle.getProcess() == CprocessIdWeak) {
-                registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyWeakAll), multRecGt1, flatRec, track.pt(), track.dcaXY());
+        if (defOpt.fillMCRecCheck) { // for checking purposes only: use gen Nch, gen Flat
+          static_for<0, 1>([&](auto pidSgn) {
+            fillMCRecTrack<pidSgn, o2::track::PID::Pion>(track, multMC, flatMC);
+            fillMCRecTrack<pidSgn, o2::track::PID::Kaon>(track, multMC, flatMC);
+            fillMCRecTrack<pidSgn, o2::track::PID::Proton>(track, multMC, flatMC);
+          });
+        }
+        if (defOpt.fillMCRecDCA) {
+          static_for<0, 4>([&](auto i) {
+            constexpr int Cidx = i.value;
+            if (std::fabs(particle.pdgCode()) == pDGs[Cidx]) {
+              if (!particle.isPhysicalPrimary()) {
+                if (particle.getProcess() == CprocessIdWeak) {
+                  registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyWeakAll), multRecGt1, flatRec, track.pt(), track.dcaXY());
+                } else {
+                  registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyMatAll), multRecGt1, flatRec, track.pt(), track.dcaXY());
+                }
               } else {
-                registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyMatAll), multRecGt1, flatRec, track.pt(), track.dcaXY());
+                registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyPrimAll), multRecGt1, flatRec, track.pt(), track.dcaXY());
+                registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CdEdxMcRecPrim), track.eta(), multRecGt1, flatRec, track.p(), track.tpcSignal());
               }
-            } else {
-              registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyPrimAll), multRecGt1, flatRec, track.pt(), track.dcaXY());
-              registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CdEdxMcRecPrim), track.eta(), multRecGt1, flatRec, track.p(), track.tpcSignal());
+              registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyAll), multRecGt1, flatRec, track.pt(), track.dcaXY());
             }
-            registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyAll), multRecGt1, flatRec, track.pt(), track.dcaXY());
-          }
-        });
+          });
+        }
         if (isGoodTrack<true>(track, magField)) {
           static_for<0, 4>([&](auto i) {
             constexpr int Cidx = i.value;
-            if (std::sqrt(std::pow(std::fabs(o2::aod::pidutils::tpcNSigma<Cidx>(track)), 2) + std::pow(std::fabs(o2::aod::pidutils::tofNSigma<Cidx>(track)), 2) < trkSelOpt.dcaNsigmaCombinedMax)) {
-              if (std::fabs(particle.pdgCode()) == pDGs[Cidx]) {
-                if (particle.isPhysicalPrimary()) {
-                  registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CdEdxMcRecPrimSel), track.eta(), multRecGt1, flatRec, track.p(), track.tpcSignal());
-                  registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CEtaVsPtVsPMcRecPrimSel), track.eta(), track.pt(), track.p());
-                  registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTeffPrimRecEvt), multRecGt1, flatRec, track.pt()); // Tracking eff. num
-                  registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTmcClosureRec), multMC, flatMC, track.pt());       // closure
-                }
+            if (std::fabs(particle.pdgCode()) == pDGs[Cidx]) {
+              if (particle.isPhysicalPrimary()) {
+                registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CdEdxMcRecPrimSel), track.eta(), multRecGt1, flatRec, track.p(), track.tpcSignal());
+                registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CEtaVsPtVsPMcRecPrimSel), track.eta(), track.pt(), track.p());
+                registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTeffPrimRecEvt), multRecGt1, flatRec, track.pt()); // Tracking eff. num
+                registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTmcClosureRec), multMC, flatMC, track.pt());       // closure
               }
             }
           });
@@ -2593,11 +2542,6 @@ struct FlattenictyPikp {
       }
       registryQC.fill(HIST("Events/hNchVsCent"), nTrk, multRecGt1);
     }
-    static_for<0, 1>([&](auto pidSgn) {
-      fillEfficiency<pidSgn, o2::track::PID::Pion>();
-      fillEfficiency<pidSgn, o2::track::PID::Kaon>();
-      fillEfficiency<pidSgn, o2::track::PID::Proton>();
-    });
 
     // Loop on generated particles (no requirement on availaability of reconstructed collision; no event selection)
     //
