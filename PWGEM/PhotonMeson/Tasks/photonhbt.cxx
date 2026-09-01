@@ -355,6 +355,7 @@ struct Photonhbt {
     Configurable<bool> cfgFillDRDZSparse{"cfgFillDRDZSparse", true, "book/fill the FullRange |R1-R2|-Deltaz-qinv sparse (large; needs cfgQaLevel>=2)"};
     Configurable<float> cfgMaxQinvForProcessing{"cfgMaxQinvForProcessing", 0.5, "skip mixed pairs with q_inv above this before building observables"};
     Configurable<bool> cfgFillLegPairSparses{"cfgFillLegPairSparses", false, "book/fill the 4D leg-pair QA sparses (very large)"};
+    Configurable<bool> cfgFillLegSimilaritySparse{"cfgFillLegSimilaritySparse", true, "book/fill the like-sign leg similarity sparse (duplicate diagnostic: DeltaEta, DeltaPhi, pT ratio, dNsigma_e vs qinv)"};
     Configurable<bool> cfgFillR1R2Sparse{"cfgFillR1R2Sparse", true, "book/fill the FullRange (R1, R2, q_inv) sparse: fix one conversion radius, see where the partner sits, per q_inv"};
   } qaflags;
 
@@ -365,7 +366,7 @@ struct Photonhbt {
     Configurable<bool> cfgDo2D{"cfgDo2D", false, "enable 2D (qout,qinv) projection (requires cfgDo3D)"};
     Configurable<bool> cfgUseLCMS{"cfgUseLCMS", false, "measure 1D relative momentum in LCMS"};
     Configurable<bool> cfgDoQinvGate3D{"cfgDoQinvGate3D", false, "book/fill CF_3D_Qinv: 3D LCMS CF with a COARSE qinv axis (edges = candidate gate values)"};
-    ConfigurableAxis confMultNTracksBins{"confMultNTracksBins", {VARIABLE_WIDTH, 0., 5., 10., 15., 20., 30., 40., 50., 60., 70., 80., 90., 100., 200., 300., 400., 500., 1000., 2000., 2100., 2200., 2300., 2400., 2500., 2600., 2700., 2800., 2900., 3000., 4000., 5000.}, "N_{tracks}^{PV} |#eta|<1 bins for CF sparses"};
+    ConfigurableAxis confMultNTracksBins{"confMultNTracksBins", {VARIABLE_WIDTH, 0., 100., 200., 300., 400., 500., 600, 700, 800, 900, 1000., 1100., 1200., 1300., 1400., 1500., 1600., 1700., 1800., 1900., 2000., 2100., 2200., 2300., 2400., 2500., 2600., 2700., 2800., 2900., 3000., 4000., 5000.}, "N_{tracks}^{PV} |#eta|<1 bins for CF sparses"};
     ConfigurableAxis confMultFT0MBins{"confMultFT0MBins", {VARIABLE_WIDTH, 0., 25., 50., 100., 200., 400., 800., 2000., 2500., 3000., 3500., 4000., 5000., 6000., 7000., 8000., 9000., 10000., 15000., 40000., 100000., 250000.}, "FT0M amplitude bins for CF sparses"};
   } hbtanalysis;
 
@@ -1129,6 +1130,13 @@ struct Photonhbt {
       addQAHistogramsForStep(std::string("Pair/same/QA/") + step);
     }
 
+    if (qaflags.cfgFillLegSimilaritySparse.value) {
+      const AxisSpec axisLSDEta{50, -0.5f, 0.5f, "#Delta#eta(LS legs)"};
+      const AxisSpec axisLSDPhi{50, -0.5f, 0.5f, "#Delta#varphi(LS legs) (rad)"};
+      const AxisSpec axisLSPtRatio{50, 0.f, 1.f, "|p_{T,1}-p_{T,2}|/(p_{T,1}+p_{T,2})"};
+      const AxisSpec axisLSDNsig{40, 0.f, 8.f, "|#Delta n#sigma_{e}^{TPC}|"};
+      fRegistryPairQA.add("Pair/same/LegSimilarity/hSparse_dEta_dPhi_ptRatio_dNsig_Qinv", "like-sign leg similarity;#Delta#eta(LS legs);#Delta#varphi(LS legs) (rad);|p_{T,1}-p_{T,2}|/(p_{T,1}+p_{T,2});|#Delta n#sigma_{e}^{TPC}|;q_{inv} (GeV/c)", kTHnSparseF, {axisLSDEta, axisLSDPhi, axisLSPtRatio, axisLSDNsig, axisQinv}, true);
+    }
     fRegistryPairQA.addClone("Pair/same/QA/", "Pair/mix/QA/");
     if (mQa.legPairQa) {
       addLegPairQAForStep("Pair/same/QA/Before/");
@@ -1244,6 +1252,15 @@ struct Photonhbt {
         fRegistryPairMC.add((mixBase + "CF_1D").c_str(), hbtanalysis.cfgUseLCMS ? "MC mixed CF 1D LCMS" : "MC mixed CF 1D (qinv)", kTH2D, {hbtanalysis.cfgUseLCMS ? axisQabsLcms : axisQinv, axisKt}, true);
       }
       fRegistryPairMC.add((mixBase + "CF_QLcms_Qinv").c_str(), "MC mixed CF |q|_{LCMS} vs. q_{inv}", kTHnSparseD, {axisQabsLcms, axisQinv, axisKt}, true);
+    }
+
+    const AxisSpec axisLegOrigin{6, -0.5f, 5.5f, "0=conv e, 1=#pi^{0} Dalitz e, 2=#eta Dalitz e, 3=primary e, 4=other e, 5=NOT an electron"};
+    for (const auto& cls : {std::string("truePhotons/"), std::string("fakePhotons/")}) {
+      const std::string spBase = "SinglePhotonMC/" + cls;
+      fRegistryPairMC.add((spBase + "hEtaPhi").c_str(), "#eta vs #varphi;#eta;#varphi (rad)", kTH2F, {axisEta, axisPhi}, true);
+      fRegistryPairMC.add((spBase + "hRZ").c_str(), "conversion point;z_{conv} (cm);R_{conv} (cm)", kTH2F, {axisZConv, axisR}, true);
+      fRegistryPairMC.add((spBase + "hEtaPt").c_str(), "#eta vs p_{T};#eta;p_{T} (GeV/c)", kTH2F, {axisEta, axisPt}, true);
+      fRegistryPairMC.add((spBase + "hLegOriginMatrix").c_str(), "pos-leg origin vs neg-leg origin;pos leg;neg leg", kTH2F, {axisLegOrigin, axisLegOrigin}, true);
     }
 
     const AxisSpec axisFakeSubtype{3, -0.5f, 2.5f, "0=ordinary, 1=swap doublet, 2=partial swap"};
@@ -1891,6 +1908,24 @@ struct Photonhbt {
   // FILL HELPERS
   /*************************************************/
 
+  template <typename TLegA, typename TLegB>
+  void fillLegSimilarity(TLegA const& legA, TLegB const& legB, float qinv)
+  {
+    if (!qaflags.cfgFillLegSimilaritySparse.value || qinv > 0.3f) { // o2-linter: disable=magic-number (sparse axis range)
+      return;
+    }
+    const float deta = legA.eta() - legB.eta();
+    const float dphi = RecoDecay::constrainAngle(legA.phi() - legB.phi(), -o2::constants::math::PI);
+    if (std::fabs(deta) > 0.5f || std::fabs(dphi) > 0.5f) { // o2-linter: disable=magic-number (sparse axis range)
+      return;
+    }
+    const float ptSum = legA.pt() + legB.pt();
+    const float ptRatio = (ptSum > 0.f) ? std::fabs(legA.pt() - legB.pt()) / ptSum : 0.f;
+    const float dNsigma = std::fabs(legA.tpcNSigmaEl() - legB.tpcNSigmaEl());
+    fRegistryPairQA.fill(HIST("Pair/same/LegSimilarity/hSparse_dEta_dPhi_ptRatio_dNsig_Qinv"),
+                         deta, dphi, ptRatio, std::min(dNsigma, 7.99f), qinv); // o2-linter: disable=magic-number (clamp to axis)
+  }
+
   template <int ev_id>
   inline void fillFullRangeQA(PairQAObservables const& obs, float cent, float occupancy)
   {
@@ -2035,7 +2070,8 @@ struct Photonhbt {
           fRegistryCF.fill(HIST("Pair/same/CF_2D"), std::fabs(qout_lcms), std::fabs(qinv), multNTracks, multFT0M, kt, weight);
         }
         if (hbtanalysis.cfgDoQinvGate3D) {
-          fRegistryCF.fill(HIST("Pair/same/CF_3D_Qinv"), std::fabs(qout_lcms), std::fabs(qside_lcms), std::fabs(qlong_lcms), kt, std::fabs(qinv), weight);
+          fRegistryCF.fill(HIST("Pair/same/CF_3D_Qinv"), std::fabs(qout_lcms), std::fabs(qside_lcms),
+                           std::fabs(qlong_lcms), kt, std::fabs(qinv), weight);
         }
       } else {
         fRegistryCF.fill(HIST("Pair/mix/CF_3D"), std::fabs(qout_lcms), std::fabs(qside_lcms), std::fabs(qlong_lcms), kt, weight);
@@ -2043,7 +2079,8 @@ struct Photonhbt {
           fRegistryCF.fill(HIST("Pair/mix/CF_2D"), std::fabs(qout_lcms), std::fabs(qinv), multNTracks, multFT0M, kt, weight);
         }
         if (hbtanalysis.cfgDoQinvGate3D) {
-          fRegistryCF.fill(HIST("Pair/mix/CF_3D_Qinv"), std::fabs(qout_lcms), std::fabs(qside_lcms), std::fabs(qlong_lcms), kt, std::fabs(qinv), weight);
+          fRegistryCF.fill(HIST("Pair/mix/CF_3D_Qinv"), std::fabs(qout_lcms), std::fabs(qside_lcms),
+                           std::fabs(qlong_lcms), kt, std::fabs(qinv), weight);
         }
       }
     } else {
@@ -2469,6 +2506,35 @@ struct Photonhbt {
     return PairTruthType::TrueTrueDistinct;
   }
 
+  // 0 = electron from a photon conversion, 1 = pi0 Dalitz electron, 2 = eta Dalitz electron, 3 = primary electron, 4 = other electron, 5 = not an electron at all (PID contamination)
+  template <typename TMCParticles>
+  static int classifyLegOrigin(TMCParticles const& mcParticles, int legMcId)
+  {
+    constexpr int kNotElectron = 5;
+    constexpr int kEtaMesonPdg = 221; // o2-linter: disable=magic-number (PDG code)
+    if (legMcId < 0) {
+      return kNotElectron;
+    }
+    const auto particle = mcParticles.iteratorAt(legMcId);
+    if (std::abs(particle.pdgCode()) != PDG_t::kElectron) {
+      return kNotElectron;
+    }
+    if (!particle.has_mothers()) {
+      return 3; // primary electron
+    }
+    const int motherPdg = mcParticles.iteratorAt(particle.mothersIds()[0]).pdgCode();
+    if (motherPdg == kGamma) {
+      return 0;
+    }
+    if (motherPdg == kPi0) {
+      return 1;
+    }
+    if (motherPdg == kEtaMesonPdg) {
+      return 2;
+    }
+    return 4;
+  }
+
   static int classifyFakeSubtype(PhotonMCInfo const& m1, PhotonMCInfo const& m2)
   {
     const bool cross12 = m1.posMotherId >= 0 && m1.posMotherId == m2.negMotherId && m1.posMotherIsPhoton;
@@ -2602,6 +2668,9 @@ struct Photonhbt {
         if (doFR) {
           fillFullRangeDeltaRCosOA<0>(obs.qinv, obs.drOverCosOA);
         }
+
+        fillLegSimilarity(pos1, pos2, obs.qinv);
+        fillLegSimilarity(ele1, ele2, obs.qinv);
 
         // ─── Pair cuts ────────────────────────────────────────────────────
         if (!passPhotonClassPairCut(pwl1.legCounts(), pwl2.legCounts())) {
@@ -2790,6 +2859,23 @@ struct Photonhbt {
         for (const auto& g : photonsColl) {
           if (cut.template IsSelected<decltype(g), TLegs>(g)) {
             fillSinglePhotonQAStep<0>(g);
+            const auto mcg = buildPhotonMCInfo<decltype(g), TLegs>(g, mcParticles);
+            if (mcg.hasMC) {
+              const float rConvQA = std::hypot(g.vx(), g.vy());
+              const auto originPos = static_cast<float>(classifyLegOrigin(mcParticles, mcg.mcPosId));
+              const auto originNeg = static_cast<float>(classifyLegOrigin(mcParticles, mcg.mcNegId));
+              if (mcg.sameMother && mcg.isTruePhoton) {
+                fRegistryPairMC.fill(HIST("SinglePhotonMC/truePhotons/hEtaPhi"), g.eta(), g.phi());
+                fRegistryPairMC.fill(HIST("SinglePhotonMC/truePhotons/hRZ"), g.vz(), rConvQA);
+                fRegistryPairMC.fill(HIST("SinglePhotonMC/truePhotons/hEtaPt"), g.eta(), g.pt());
+                fRegistryPairMC.fill(HIST("SinglePhotonMC/truePhotons/hLegOriginMatrix"), originPos, originNeg);
+              } else {
+                fRegistryPairMC.fill(HIST("SinglePhotonMC/fakePhotons/hEtaPhi"), g.eta(), g.phi());
+                fRegistryPairMC.fill(HIST("SinglePhotonMC/fakePhotons/hRZ"), g.vz(), rConvQA);
+                fRegistryPairMC.fill(HIST("SinglePhotonMC/fakePhotons/hEtaPt"), g.eta(), g.pt());
+                fRegistryPairMC.fill(HIST("SinglePhotonMC/fakePhotons/hLegOriginMatrix"), originPos, originNeg);
+              }
+            }
           }
         }
       }
@@ -2834,6 +2920,9 @@ struct Photonhbt {
         if (doFR) {
           fillFullRangeDeltaRCosOA<0>(obs.qinv, obs.drOverCosOA);
         }
+
+        fillLegSimilarity(pos1, pos2, obs.qinv);
+        fillLegSimilarity(ele1, ele2, obs.qinv);
 
         // ─── Pair cuts ────────────────────────────────────────────────────
         if (obs.drOverCosOA < ggpaircuts.cfgMinDRCosOA) {
@@ -2906,10 +2995,8 @@ struct Photonhbt {
             }
           }
 
-          auto fillPsiPair = [&](auto const& g, PhotonMCInfo const& mc) { fRegistryPairMC.fill(HIST("Pair/same/MC/hSparse_PsiPair_PhiV_Qinv_Type"), std::fabs(g.psipair()), g.phiv(), obs.qinv, static_cast<float>(static_cast<int>(truthType)), (mc.sameMother && mc.isTruePhoton) ? 1.f : 0.f); };
-
-          fillPsiPair(g1, mc1);
-          fillPsiPair(g2, mc2);
+          fRegistryPairMC.fill(HIST("Pair/same/MC/hSparse_PsiPair_PhiV_Qinv_Type"), std::fabs(g1.psipair()), g1.phiv(), obs.qinv, static_cast<float>(static_cast<int>(truthType)), (mc1.sameMother && mc1.isTruePhoton) ? 1.f : 0.f);
+          fRegistryPairMC.fill(HIST("Pair/same/MC/hSparse_PsiPair_PhiV_Qinv_Type"), std::fabs(g2.psipair()), g2.phiv(), obs.qinv, static_cast<float>(static_cast<int>(truthType)), (mc2.sameMother && mc2.isTruePhoton) ? 1.f : 0.f);
           if (truthType == PairTruthType::FakeFake || truthType == PairTruthType::TrueFake) {
             fRegistryPairMC.fill(HIST("Pair/same/MC/hFakeSubtypeVsQinv"), obs.qinv,
                                  static_cast<float>(classifyFakeSubtype(mc1, mc2)));
