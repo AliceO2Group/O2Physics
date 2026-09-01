@@ -43,8 +43,8 @@ class multCalibrator : public TNamed
   // Interface: steering functions to be used in calibration macro
 
   // Set Filenames
-  void SetInputFile(TString lFile) { fInputFileName = lFile.Data(); }
-  void SetOutputFile(TString lFile) { fOutputFileName = lFile.Data(); }
+  void SetInputFile(const TString& lFile) { fInputFileName = lFile.Data(); }
+  void SetOutputFile(const TString& lFile) { fOutputFileName = lFile.Data(); }
   // Set Boundaries to find
   void SetBoundaries(Long_t lNB, Double_t* lB)
   {
@@ -68,7 +68,7 @@ class multCalibrator : public TNamed
   Bool_t Calibrate();
 
   // Aux function. Keep public, accessible outside as rather useful utility
-  TH1F* GetCalibrationHistogram(TH1* histoRaw, TString lHistoName = "hCalib");
+  TH1F* GetCalibrationHistogram(TH1* histoRaw, const TString& lHistoName = "hCalib");
 
   // Auxiliary functions
   Double_t GetRawMax(TH1* histo);

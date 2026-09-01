@@ -119,11 +119,11 @@ void TrackSelection::SetMaxDcaZ(float maxDcaZ)
 
 void TrackSelection::SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut)
 {
-  mMaxDcaXYPtDep = ptDepCut;
+  mMaxDcaXYPtDep = std::move(ptDepCut);
   LOG(info) << "Track selection, set max DCA xy pt dep: " << mMaxDcaXYPtDep(1.0);
 }
 
-void TrackSelection::SetRequireHitsInITSLayers(int8_t minNRequiredHits, std::set<uint8_t> requiredLayers)
+void TrackSelection::SetRequireHitsInITSLayers(int8_t minNRequiredHits, const std::set<uint8_t>& requiredLayers)
 {
   // layer 0 corresponds to the the innermost ITS layer
   uint8_t mask = 0;
@@ -133,7 +133,7 @@ void TrackSelection::SetRequireHitsInITSLayers(int8_t minNRequiredHits, std::set
   mRequiredITSHits.push_back(std::make_pair(minNRequiredHits, mask));
   LOG(info) << "Track selection, set require hits in ITS layers: " << static_cast<int>(minNRequiredHits);
 }
-void TrackSelection::SetRequireNoHitsInITSLayers(std::set<uint8_t> excludedLayers)
+void TrackSelection::SetRequireNoHitsInITSLayers(const std::set<uint8_t>& excludedLayers)
 {
   uint8_t mask = 0;
   for (const auto& layer : excludedLayers) {

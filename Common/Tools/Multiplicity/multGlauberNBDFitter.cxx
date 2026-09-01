@@ -46,6 +46,7 @@
 #include <RtypesCore.h>
 
 #include <iostream> // FIXME
+#include <utility>
 
 using namespace std;
 
@@ -274,7 +275,7 @@ void multGlauberNBDFitter::SetFitRange(Double_t lMin, Double_t lMax)
 //________________________________________________________________
 void multGlauberNBDFitter::SetFitOptions(TString lOpt)
 {
-  fFitOptions = lOpt;
+  fFitOptions = std::move(lOpt);
 }
 
 //________________________________________________________________
