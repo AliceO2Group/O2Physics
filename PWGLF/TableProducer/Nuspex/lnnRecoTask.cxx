@@ -187,8 +187,8 @@ struct LnnCandidate {
   float genPhiPi() const { return std::atan2(gMomPi[1], gMomPi[0]); }
   float genEtaPi() const { return std::asinh(gMomPi[2] / genPtPi()); }
 
-  int posTrackID;
-  int negTrackID;
+  int posTrackID{-1};
+  int negTrackID{-1};
   float dcaV0dau = -10;
   float cosPA = -10;
   float nSigma3H = -10;
@@ -201,13 +201,13 @@ struct LnnCandidate {
   float dcaPvtoPi = -10.f;
   float beta = -10.f;
   float tpcChi3H = -10.f;
-  std::array<float, 3> mom3H;
-  std::array<float, 3> momPi;
-  std::array<float, 3> decVtx;
-  std::array<float, 3> gMom;
-  std::array<float, 3> gMom3H;
-  std::array<float, 3> gMomPi;
-  std::array<float, 3> gDecVtx;
+  std::array<float, 3> mom3H{};
+  std::array<float, 3> momPi{};
+  std::array<float, 3> decVtx{};
+  std::array<float, 3> gMom{};
+  std::array<float, 3> gMom3H{};
+  std::array<float, 3> gMomPi{};
+  std::array<float, 3> gDecVtx{};
   uint16_t tpcSignal3H = 0u;
   uint16_t tpcSignalPi = 0u;
   uint8_t nTPCClusters3H = 0u;
@@ -225,7 +225,7 @@ struct LnnCandidate {
   uint8_t flags = 0u;           // flags for dughter particles
 };
 
-struct lnnRecoTask {
+struct LnnRecoTask {
 
   Produces<aod::DataLnnCands> outputDataTable;
   Produces<aod::MCLnnCands> outputMCTable;
@@ -325,9 +325,9 @@ struct lnnRecoTask {
 
   HistogramRegistry qaRegistry{"QA", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  int mRunNumber;
-  float d_bz;
-  std::array<float, 6> mBBparams3H;
+  int mRunNumber{-1};
+  float dBz{0.f};
+  std::array<float, 6> mBBparams3H{};
 
   static constexpr float KallEvents = 0.;
   static constexpr float KevAfterSel8 = 1.;
@@ -494,7 +494,7 @@ struct lnnRecoTask {
     if (mRunNumber == bc.runNumber()) {
       return;
     }
-    auto run3grp_timestamp = bc.timestamp();
+    auto run3grptimestamp = bc.timestamp();
 
     static const double kBzAutoThreshold = -990.;
 
@@ -505,12 +505,12 @@ struct lnnRecoTask {
       if (dBzInput < kBzAutoThreshold) {
         // Fetch magnetic field from ccdb for current collision
         d_bz = grpo->getNominalL3Field();
-        LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+        LOG(info) << "Retrieved GRP for timestamp " << run3grptimestamp << " with magnetic field of " << d_bz << " kZG";
       } else {
         d_bz = dBzInput;
       }
     } else {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
+      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grptimestamp);
       if (!grpmag) {
         LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
       }
@@ -518,13 +518,13 @@ struct lnnRecoTask {
       if (dBzInput < kBzAutoThreshold) {
         // Fetch magnetic field from ccdb for current collision
         d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-        LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+        LOG(info) << "Retrieved GRP for timestamp " << run3grptimestamp << " with magnetic field of " << d_bz << " kZG";
       } else {
         d_bz = dBzInput;
       }
     }
     if (!pidPath.value.empty()) {
-      auto h3pid = ccdb->getForTimeStamp<std::array<float, 6>>(pidPath.value + "_3H", run3grp_timestamp);
+      auto h3pid = ccdb->getForTimeStamp<std::array<float, 6>>(pidPath.value + "_3H", run3grptimestamp);
       std::copy(h3pid->begin(), h3pid->end(), mBBparams3H.begin());
     } else {
       int kNBetheBlochParams = 5;
@@ -595,8 +595,8 @@ struct lnnRecoTask {
       }
       auto& h3track = lnnCand.isMatter ? posTrack : negTrack;
       auto& pitrack = lnnCand.isMatter ? negTrack : posTrack;
-      auto& h3Rigidity = lnnCand.isMatter ? posRigidity : negRigidity;
-      auto& piRigidity = lnnCand.isMatter ? negRigidity : posRigidity;
+      auto& float h3Rigidity = lnnCand.isMatter ? posRigidity : negRigidity;
+      auto& float piRigidity = lnnCand.isMatter ? negRigidity : posRigidity;
 
       if (doTrackQA) {
         // fill QA track histogram studies to check track signal before selections
@@ -709,10 +709,10 @@ struct lnnRecoTask {
         continue;
       }
       // Definition of lnn mass
-      float mLNN_HypHI = 3.00; // , but 2993.7 MeV/c**2
+      float mLnnHypHi = 3.00; // , but 2993.7 MeV/c**2
       float massLNNL = std::sqrt(h3lE * h3lE - lnnMom[0] * lnnMom[0] - lnnMom[1] * lnnMom[1] - lnnMom[2] * lnnMom[2]);
       bool isLNNMass = false;
-      if (massLNNL > mLNN_HypHI - masswidth && massLNNL < mLNN_HypHI + masswidth) {
+      if (massLNNL > mLnnHypHi - masswidth && massLNNL < mLnnHypHi + masswidth) {
         isLNNMass = true;
       }
       if (!isLNNMass) {
@@ -924,10 +924,10 @@ struct lnnRecoTask {
       hCentFV0A->Fill(collision.centFV0A());
 
       const uint64_t collIdx = collision.globalIndex();
-      auto v0Table_thisCollision = V0s.sliceBy(perCollision, collIdx);
-      v0Table_thisCollision.bindExternalIndices(&tracks);
+      auto v0TablethisCollision = V0s.sliceBy(perCollision, collIdx);
+      v0TablethisCollision.bindExternalIndices(&tracks);
 
-      fillCandidateData(collision, v0Table_thisCollision);
+      fillCandidateData(collision, v0TablethisCollision);
 
       for (const auto& lnnCand : lnnCandidates) {
         outputDataTable(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
@@ -944,7 +944,7 @@ struct lnnRecoTask {
       }
     }
   }
-  PROCESS_SWITCH(lnnRecoTask, processData, "Data analysis", true);
+  PROCESS_SWITCH(LnnRecoTask, processData, "Data analysis", true);
 
   // MC process
   void processMC(CollisionsFullMC const& collisions, aod::McCollisions const& mcCollisions, aod::V0s const& V0s, aod::BCsWithTimestamps const&, TracksFull const& tracks, TracksFullMC const& tracksMC, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
@@ -996,10 +996,10 @@ struct lnnRecoTask {
       }
 
       const uint64_t collIdx = collision.globalIndex();
-      auto v0Table_thisCollision = V0s.sliceBy(perCollision, collIdx);
-      v0Table_thisCollision.bindExternalIndices(&tracks);
+      auto v0TablethisCollision = V0s.sliceBy(perCollision, collIdx);
+      v0TablethisCollision.bindExternalIndices(&tracks);
 
-      fillCandidateData(collision, v0Table_thisCollision);
+      fillCandidateData(collision, v0TablethisCollision);
       fillMCinfo(trackLabelsMC, particlesMC);
 
       // Fill MC gen. particles producing to the current MC collision
@@ -1146,7 +1146,7 @@ struct lnnRecoTask {
                     lnnCand.gDecVtx[0], lnnCand.gDecVtx[1], lnnCand.gDecVtx[2], lnnCand.isReco, lnnCand.isSignal, lnnCand.recoMcColl, lnnCand.survEvSelection);
     }
   }
-  PROCESS_SWITCH(lnnRecoTask, processMC, "MC analysis", false);
+  PROCESS_SWITCH(LnnRecoTask, processMC, "MC analysis", false);
 
   template <typename CollType>
   bool passEvtSel(const CollType& collision)
@@ -1268,12 +1268,12 @@ struct lnnRecoTask {
       }
     }
   }
-  PROCESS_SWITCH(lnnRecoTask, processSigEvtLossMC, "Signal and event loss analysis", false);
+  PROCESS_SWITCH(LnnRecoTask, processSigEvtLossMC, "Signal and event loss analysis", false);
 };
 
 WorkflowSpec
   defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<lnnRecoTask>(cfgc)};
+    adaptAnalysisTask<LnnRecoTask>(cfgc)};
 }
