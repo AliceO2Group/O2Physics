@@ -315,24 +315,11 @@ struct HfCandidateSelectorCd {
 
       if (usePid) {
         // track-level PID selection
-        TrackSelectorPID::Status pidTrackPos1Deuteron = TrackSelectorPID::NotApplicable;
-        TrackSelectorPID::Status pidTrackPos2Deuteron = TrackSelectorPID::NotApplicable;
-        TrackSelectorPID::Status pidTrackPos1Pion = TrackSelectorPID::NotApplicable;
-        TrackSelectorPID::Status pidTrackPos2Pion = TrackSelectorPID::NotApplicable;
-        TrackSelectorPID::Status pidTrackNegKaon = TrackSelectorPID::NotApplicable;
-        if (usePidTpcAndTof) {
-          pidTrackPos1Deuteron = selectorDeuteron.statusTpcAndTof(trackPos1, candidate.nSigTpcDe0(), candidate.nSigTofDe0());
-          pidTrackPos2Deuteron = selectorDeuteron.statusTpcAndTof(trackPos2, candidate.nSigTpcDe2(), candidate.nSigTofDe2());
-          pidTrackPos1Pion = selectorPion.statusTpcAndTof(trackPos1, candidate.nSigTpcPi0(), candidate.nSigTofPi0());
-          pidTrackPos2Pion = selectorPion.statusTpcAndTof(trackPos2, candidate.nSigTpcPi2(), candidate.nSigTofPi2());
-          pidTrackNegKaon = selectorKaon.statusTpcAndTof(trackNeg, candidate.nSigTpcKa1(), candidate.nSigTofKa1());
-        } else {
-          pidTrackPos1Deuteron = selectorDeuteron.statusTpcOrTof(trackPos1, candidate.nSigTpcDe0(), candidate.nSigTofDe0());
-          pidTrackPos2Deuteron = selectorDeuteron.statusTpcOrTof(trackPos2, candidate.nSigTpcDe2(), candidate.nSigTofDe2());
-          pidTrackPos1Pion = selectorPion.statusTpcOrTof(trackPos1, candidate.nSigTpcPi0(), candidate.nSigTofPi0());
-          pidTrackPos2Pion = selectorPion.statusTpcOrTof(trackPos2, candidate.nSigTpcPi2(), candidate.nSigTofPi2());
-          pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg, candidate.nSigTpcKa1(), candidate.nSigTofKa1());
-        }
+        const auto pidTrackPos1Deuteron = usePidTpcAndTof ? selectorDeuteron.statusTpcAndTof(trackPos1, candidate.nSigTpcDe0(), candidate.nSigTofDe0()) : selectorDeuteron.statusTpcOrTof(trackPos1, candidate.nSigTpcDe0(), candidate.nSigTofDe0());
+        const auto pidTrackPos2Deuteron = usePidTpcAndTof ? selectorDeuteron.statusTpcAndTof(trackPos2, candidate.nSigTpcDe2(), candidate.nSigTofDe2()) : selectorDeuteron.statusTpcOrTof(trackPos2, candidate.nSigTpcDe2(), candidate.nSigTofDe2());
+        const auto pidTrackPos1Pion = usePidTpcAndTof ? selectorPion.statusTpcAndTof(trackPos1, candidate.nSigTpcPi0(), candidate.nSigTofPi0()) : selectorPion.statusTpcOrTof(trackPos1, candidate.nSigTpcPi0(), candidate.nSigTofPi0());
+        const auto pidTrackPos2Pion = usePidTpcAndTof ? selectorPion.statusTpcAndTof(trackPos2, candidate.nSigTpcPi2(), candidate.nSigTofPi2()) : selectorPion.statusTpcOrTof(trackPos2, candidate.nSigTpcPi2(), candidate.nSigTofPi2());
+        const auto pidTrackNegKaon = usePidTpcAndTof ? selectorKaon.statusTpcAndTof(trackNeg, candidate.nSigTpcKa1(), candidate.nSigTofKa1()) : selectorKaon.statusTpcOrTof(trackNeg, candidate.nSigTpcKa1(), candidate.nSigTofKa1());
 
         if (!isSelectedPID(pidTrackPos1Deuteron, pidTrackNegKaon, pidTrackPos2Pion)) {
           pidCdToDeKPi = 0; // reject CdToDeKPi
