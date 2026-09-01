@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
+/// \file hadronnucleicorrelation.cxx
 /// \brief Hadron-nuclei correlation analysis task
 /// \author Francesca Ercolessi
 /// \since 21 April 2024
@@ -450,12 +451,12 @@ struct HadronNucleiCorrelation {
   {
     bool isProton = false;
 
-    bool isTPCPID = std::abs(track.tpcNSigmaPr()) < nsigmaTPC;
-    bool isTOFPID = std::abs(track.tofNSigmaPr()) < nsigmaTOF;
-    bool isTPCElRejection = rejectionEl && track.beta() < betahasTOFthr && track.pt() < pTthrprTPCEl && track.tpcNSigmaEl() >= nsigmaElPr;
-    bool isITSPID = track.itsNSigmaPr() > nsigmaITSPr;
+    const bool isTPCPID = std::abs(track.tpcNSigmaPr()) < nsigmaTPC;
+    const bool isTOFPID = std::abs(track.tofNSigmaPr()) < nsigmaTOF;
+    const bool isTPCElRejection = rejectionEl && track.beta() < betahasTOFthr && track.pt() < pTthrprTPCEl && track.tpcNSigmaEl() >= nsigmaElPr;
+    const bool isITSPID = track.itsNSigmaPr() > nsigmaITSPr;
 
-    bool isQuadraticPID = TMath::Sqrt(track.tpcNSigmaPr() * track.tpcNSigmaPr() + track.tofNSigmaPr() * track.tofNSigmaPr()) < nsigmaTPC;
+    const bool isQuadraticPID = std::hypot(track.tpcNSigmaPr(), track.tofNSigmaPr()) < nsigmaTPC;
 
     if (!doQuadraticPID) {
       if (isTPCPID) {
@@ -547,12 +548,12 @@ struct HadronNucleiCorrelation {
   bool IsDeuteron(Type const& track, int sign)
   {
     bool isDeuteron = false;
-    bool isTPCPID = std::abs(track.tpcNSigmaDe()) < nsigmaTPC;
-    bool isTOFPID = std::abs(track.tofNSigmaDe()) < nsigmaTOF;
-    bool isTPCElRejection = rejectionEl && track.beta() < betahasTOFthr && track.pt() < pTthrdeTPCEl && track.tpcNSigmaEl() >= nsigmaElDe;
-    bool isITSPID = track.itsNSigmaDe() > nsigmaITSDe;
+    const bool isTPCPID = std::abs(track.tpcNSigmaDe()) < nsigmaTPC;
+    const bool isTOFPID = std::abs(track.tofNSigmaDe()) < nsigmaTOF;
+    const bool isTPCElRejection = rejectionEl && track.beta() < betahasTOFthr && track.pt() < pTthrdeTPCEl && track.tpcNSigmaEl() >= nsigmaElDe;
+    const bool isITSPID = track.itsNSigmaDe() > nsigmaITSDe;
 
-    bool isQuadraticPID = TMath::Sqrt(track.tpcNSigmaDe() * track.tpcNSigmaDe() + track.tofNSigmaDe() * track.tofNSigmaDe()) < nsigmaTPC;
+    const bool isQuadraticPID = std::hypot(track.tpcNSigmaDe(), track.tofNSigmaDe()) < nsigmaTPC;
 
     if (!doQuadraticPID) {
       if (isTPCPID) {
