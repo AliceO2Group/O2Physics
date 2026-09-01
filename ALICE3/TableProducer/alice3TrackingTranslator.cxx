@@ -54,6 +54,7 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 TString inputPath;
@@ -113,7 +114,7 @@ struct Alice3TrackingTranslator {
   }
 
   struct FileStruct {
-    FileStruct(std::string filename, std::string treename) : mFile(filename.c_str(), "READ")
+    FileStruct(const std::string& filename, const std::string& treename) : mFile(filename.c_str(), "READ")
     {
       if (mFile.IsZombie()) {
         LOG(fatal) << "Could not open file '" << filename << "'";
@@ -137,7 +138,7 @@ struct Alice3TrackingTranslator {
   };
 
   struct ParticleStruct : public FileStruct {
-    ParticleStruct(std::string filename, std::string treename) : FileStruct(filename, treename)
+    ParticleStruct(const std::string& filename, const std::string& treename) : FileStruct(std::move(filename), std::move(treename))
     {
       // mTree->Print();
       SETADDRESS("particle_type", m_particle_type);
@@ -180,7 +181,7 @@ struct Alice3TrackingTranslator {
   };
 
   struct VertexStruct : public FileStruct {
-    VertexStruct(std::string filename, std::string treename) : FileStruct(filename, treename)
+    VertexStruct(const std::string& filename, const std::string& treename) : FileStruct(filename, treename)
     {
       SETADDRESS("vx", m_x);
       SETADDRESS("vy", m_y);
@@ -214,7 +215,7 @@ struct Alice3TrackingTranslator {
   };
 
   struct TrackStruct : public FileStruct {
-    TrackStruct(std::string filename, std::string treename) : FileStruct(filename, treename)
+    TrackStruct(const std::string& filename, const std::string& treename) : FileStruct(std::move(filename), std::move(treename))
     {
       mTree->Print();
       // Set branch addresses for ACTS track parameters
@@ -288,7 +289,7 @@ struct Alice3TrackingTranslator {
   };
 
   struct HitsStruct : public FileStruct {
-    HitsStruct(std::string filename, std::string treename) : FileStruct(filename, treename)
+    HitsStruct(const std::string& filename, const std::string& treename) : FileStruct(std::move(filename), std::move(treename))
     {
       mTree->Print();
       SETADDRESS("barcode", barcode);
