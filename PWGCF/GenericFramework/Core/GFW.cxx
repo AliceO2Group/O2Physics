@@ -31,7 +31,7 @@ GFW::~GFW()
   for (auto pItr = fCumulants.begin(); pItr != fCumulants.end(); ++pItr)
     pItr->DestroyComplexVectorArray();
 };
-void GFW::AddRegion(string refName, double lEtaMin, double lEtaMax, int lNpT, int BitMask)
+void GFW::AddRegion(const string& refName, double lEtaMin, double lEtaMax, int lNpT, int BitMask)
 {
   if (lNpT < 1) {
     printf("Number of pT bins cannot be less than 1! Not adding anything.\n");
@@ -56,9 +56,9 @@ void GFW::AddRegion(string refName, double lEtaMin, double lEtaMax, int lNpT, in
   lOneRegion.BitMask = BitMask;   // Bit mask
   AddRegion(lOneRegion);
 };
-void GFW::AddRegion(string refName, vector<int> lNparVec, double lEtaMin, double lEtaMax, int lNpT, int BitMask)
+void GFW::AddRegion(const string& refName, const vector<int>& lNparVec, double lEtaMin, double lEtaMax, int lNpT, int BitMask)
 {
-  AddRegion(refName, lEtaMin, lEtaMax, lNpT, BitMask);
+  AddRegion(std::move(refName), lEtaMin, lEtaMax, lNpT, BitMask);
   (fRegions.end() - 1)->Nhar = static_cast<int>(lNparVec.size());
   (fRegions.end() - 1)->NparVec = lNparVec;
   (fRegions.end() - 1)->powsDefined = true;
@@ -68,14 +68,14 @@ void GFW::AddRegion(string refName, int lNhar, int lNpar, double lEtaMin, double
   vector<int> tVec = {};
   for (int i = 0; i < lNhar; i++)
     tVec.push_back(lNpar);
-  AddRegion(refName, tVec, lEtaMin, lEtaMax, lNpT, BitMask);
+  AddRegion(std::move(refName), tVec, lEtaMin, lEtaMax, lNpT, BitMask);
 };
 void GFW::AddRegion(string refName, int lNhar, int* lNparVec, double lEtaMin, double lEtaMax, int lNpT, int BitMask)
 {
   vector<int> tVec = {};
   for (int i = 0; i < lNhar; i++)
     tVec.push_back(lNparVec[i]);
-  AddRegion(refName, tVec, lEtaMin, lEtaMax, lNpT, BitMask);
+  AddRegion(std::move(refName), tVec, lEtaMin, lEtaMax, lNpT, BitMask);
 };
 int GFW::CreateRegions()
 {
@@ -246,7 +246,7 @@ GFW::CorrConfig GFW::GetCorrelatorConfig(string config, string head, bool ptdif)
     while (s_tokenize(harstr, ts, dummys, " "))
       ReturnConfig.Hars.at(counter - 1).push_back(stoi(ts));
   }
-  ReturnConfig.Head = head;
+  ReturnConfig.Head = std::move(head);
   ReturnConfig.pTDif = ptdif;
   // ReturnConfig.pTbin = ptbin;
   fListOfCFGs.push_back(ReturnConfig);
@@ -325,7 +325,7 @@ void GFW::InitializePowerArrays()
   vector<vector<vector<int>>> harSets(static_cast<int>(fRegions.size()));
   for (const CorrConfig& lConf : fListOfCFGs) {
     auto HarPerReg = GetHarmonicsSingleConfig(lConf);
-    for (auto oneHar : HarPerReg)
+    for (const auto& oneHar : HarPerReg)
       harSets[oneHar.first].push_back(oneHar.second);
   }
   // Now, loop through all combinations of different harmonics for each region and calculate power arrays
@@ -343,7 +343,7 @@ complex<double> GFW::Calculate(int poi, vector<int> hars)
   GFWCumulant* qpoi = &fCumulants.at(poi);
   return RecursiveCorr(qpoi, qpoi, qpoi, 0, hars);
 };
-int GFW::FindRegionByName(string refName)
+int GFW::FindRegionByName(const string& refName)
 {
   for (int i = 0; i < static_cast<int>(fRegions.size()); i++)
     if (fRegions.at(i).rName == refName)

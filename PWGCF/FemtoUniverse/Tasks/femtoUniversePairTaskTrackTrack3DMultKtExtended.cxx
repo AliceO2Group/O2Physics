@@ -450,7 +450,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
   }
 
   template <typename CollisionType>
-  void fillCollision(CollisionType col, bool IsCent)
+  void fillCollision(const CollisionType& col, bool IsCent)
   {
     if (IsCent) {
       MixQaRegistry.fill(HIST("MixingQA/hSECollisionBins"), colBinningCent.getBin({col.posZ(), col.multV0M()}));
@@ -471,7 +471,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
   /// @param magFieldTesla magnetic field of the collision
   /// @param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType, typename PartType, typename MCParticles = std::nullptr_t>
-  void doSameEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartType parts, float magFieldTesla, int multCol, int ContType, bool fillQA, [[maybe_unused]] MCParticles mcParts = nullptr)
+  void doSameEvent(const PartitionType& groupPartsOne, const PartitionType& groupPartsTwo, const PartType& parts, float magFieldTesla, int multCol, int ContType, bool fillQA, [[maybe_unused]] const MCParticles& mcParts = nullptr)
   {
 
     /// Histogramming same event
@@ -718,7 +718,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
   /// \param magFieldTesla magnetic field of the collision
   /// \param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType, typename PartType>
-  void doMixedEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartType parts, float magFieldTesla, int multCol, int ContType)
+  void doMixedEvent(const PartitionType& groupPartsOne, const PartitionType& groupPartsTwo, const PartType& parts, float magFieldTesla, int multCol, int ContType)
   {
 
     for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {

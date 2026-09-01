@@ -563,7 +563,7 @@ struct FemtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   }
 
   template <typename CollisionType>
-  void fillCollision(CollisionType col, bool IsCent)
+  void fillCollision(const CollisionType& col, bool IsCent)
   {
     if (IsCent) {
       mixQaRegistry.fill(HIST("MixingQA/hSECollisionBins"), colBinningCent.getBin({col.posZ(), col.multV0M()}));
@@ -584,7 +584,7 @@ struct FemtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   /// @param magFieldTesla magnetic field of the collision
   /// @param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType, typename PartType>
-  void doSameEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartType parts, float magFieldTesla, int multCol, PairType contType, bool fillQA)
+  void doSameEvent(const PartitionType& groupPartsOne, const PartitionType& groupPartsTwo, const PartType& parts, float magFieldTesla, int multCol, PairType contType, bool fillQA)
   {
     /// Histogramming same event
     if ((contType == PairType::PlusMinus || contType == PairType::PlusPlus) && fillQA) {
@@ -892,7 +892,7 @@ struct FemtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   /// @param magFieldTesla magnetic field of the collision
   /// @param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType>
-  void doSameEventMCTruth(PartitionType groupPartsOne, PartitionType groupPartsTwo, int multCol, PairType contType, bool fillQA)
+  void doSameEventMCTruth(const PartitionType& groupPartsOne, const PartitionType& groupPartsTwo, int multCol, PairType contType, bool fillQA)
   {
 
     randgen = new TRandom2(0);
@@ -1045,7 +1045,7 @@ struct FemtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   /// \param magFieldTesla magnetic field of the collision
   /// \param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType>
-  void doMixedEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, float magFieldTesla, int multCol, PairType contType)
+  void doMixedEvent(const PartitionType& groupPartsOne, const PartitionType& groupPartsTwo, float magFieldTesla, int multCol, PairType contType)
   {
 
     for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
@@ -1389,7 +1389,7 @@ struct FemtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   /// \param magFieldTesla magnetic field of the collision
   /// \param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType>
-  void doMixedEventMCTruth(PartitionType groupPartsOne, PartitionType groupPartsTwo, int multCol, PairType contType)
+  void doMixedEventMCTruth(const PartitionType& groupPartsOne, const PartitionType& groupPartsTwo, int multCol, PairType contType)
   {
     randgen = new TRandom2(0);
     for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {

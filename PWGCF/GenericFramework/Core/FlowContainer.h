@@ -40,7 +40,7 @@ class FlowContainer : public TNamed
   enum StatisticsType { kSingleSample,
                         kJackKnife,
                         kBootstrap };
-  void Initialize(TObjArray* inputList, const o2::framework::AxisSpec axis, int nRandomized = 0);
+  void Initialize(TObjArray* inputList, const o2::framework::AxisSpec& axis, int nRandomized = 0);
   void Initialize(TObjArray* inputList, int nMultiBins, double MultiMin, double MultiMax, int nRandomized = 0);
   bool CreateBinsFromAxis(TAxis* inax);
   void SetXAxis(TAxis* inax);
