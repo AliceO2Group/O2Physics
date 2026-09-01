@@ -271,9 +271,9 @@ struct HfTaskCd {
   ConfigurableAxis thnConfigAxisNumPvContr{"thnConfigAxisNumPvContr", {200, -0.5, 199.5}, "Number of PV contributors"};
   ConfigurableAxis thnConfigAxisCt{"thnConfigAxisCt", {500, 0., 5000.}, ""};
 
-  constexpr static std::string_view SignalFolders[] = {"signal", "prompt", "nonprompt"};
-  constexpr static std::string_view SignalSuffixes[] = {"", "Prompt", "NonPrompt"};
-  const float cmToMum = 1.e4;
+  static constexpr std::array<std::string_view, 3> SignalFolders = {"signal", "prompt", "nonprompt"};
+  static constexpr std::array<std::string_view, 3> SignalSuffixes = {"", "Prompt", "NonPrompt"};
+  static constexpr float CmToMum = 1.e4f;
 
   enum SignalClasses : int {
     Signal = 0,
@@ -539,7 +539,7 @@ struct HfTaskCd {
         pdgCodeProng0 = std::abs(mcParticleProng0.pdgCode());
         const auto indexMother = RecoDecay::getMother(mcParticles, mcParticleProng0, o2::constants::physics::Pdg::kCDeuteron, true);
         const auto particleMother = mcParticles.rawIteratorAt(indexMother);
-        ctGen = RecoDecay::ct(std::array{particleMother.px(), particleMother.py(), particleMother.pz()}, RecoDecay::distance(std::array{particleMother.vx(), particleMother.vy(), particleMother.vz()}, std::array{mcParticleProng0.vx(), mcParticleProng0.vy(), mcParticleProng0.vz()}), o2::constants::physics::MassCDeuteron) * cmToMum;
+        ctGen = RecoDecay::ct(std::array{particleMother.px(), particleMother.py(), particleMother.pz()}, RecoDecay::distance(std::array{particleMother.vx(), particleMother.vy(), particleMother.vz()}, std::array{mcParticleProng0.vx(), mcParticleProng0.vy(), mcParticleProng0.vz()}), o2::constants::physics::MassCDeuteron) * CmToMum;
         ptGen = particleMother.pt();
       }
 
@@ -591,7 +591,7 @@ struct HfTaskCd {
               candidate.decayLength(), candidate.cpa(), candidate.chi2PCA(),
               nSigmaTpcDe, nSigmaTpcPr, nSigmaItsDe, nSigmaTofDe,
               tofBetaDe, tpcInnerParamDe, tofExpMomDe,
-              candidate.ct(o2::constants::physics::MassCDeuteron) * cmToMum,
+              candidate.ct(o2::constants::physics::MassCDeuteron) * CmToMum,
               candFlag, candSign, candidate.flagMcMatchRec(), candidate.originMcRec(),
               candidate.flagMcDecayChanRec(), ctGen, o2::hf_centrality::getCentralityColl(collision));
           }
@@ -606,7 +606,7 @@ struct HfTaskCd {
               nSigmaTpcDe, nSigmaTpcPr, nSigmaItsDe, nSigmaTofDe,
               tofBetaDe, tpcInnerParamDe, tofExpMomDe,
               nSigmaTpcPi, nSigmaTofPi, nSigmaTpcKa, nSigmaTofKa,
-              candidate.ct(o2::constants::physics::MassCDeuteron) * cmToMum,
+              candidate.ct(o2::constants::physics::MassCDeuteron) * CmToMum,
               candFlag, candSign, candidate.flagMcMatchRec(), candidate.isCandidateSwapped(), candidate.originMcRec(),
               candidate.flagMcDecayChanRec(), ctGen, collision.numContrib(), o2::hf_centrality::getCentralityColl(collision),
               collision.posZ(), collision.globalIndex(), timeStamp);
@@ -697,7 +697,7 @@ struct HfTaskCd {
       const bool isPrompt = particle.originMcGen() == 0;
       const float ptGenB = isPrompt ? -1.f : mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
       const auto firstDau = particle.template daughters_as<CandCdMcGen>().begin();
-      const float ctGen = RecoDecay::ct(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::distance(std::array{particle.vx(), particle.vy(), particle.vz()}, std::array{firstDau.vx(), firstDau.vy(), firstDau.vz()}), o2::constants::physics::MassCDeuteron) * cmToMum;
+      const float ctGen = RecoDecay::ct(std::array{particle.px(), particle.py(), particle.pz()}, RecoDecay::distance(std::array{particle.vx(), particle.vy(), particle.vz()}, std::array{firstDau.vx(), firstDau.vy(), firstDau.vz()}), o2::constants::physics::MassCDeuteron) * CmToMum;
 
       fillHistogramsGen<Signal>(particle, yGen);
       if (isPrompt) {
