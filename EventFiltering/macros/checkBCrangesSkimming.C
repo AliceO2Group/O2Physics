@@ -181,7 +181,7 @@ void checkNearbyBCs(std::vector<selectedFrames>& frames, ULong64_t bcDiffToleran
 }
 
 // Get RunNumber
-std::string getRunNumber(std::string fileName)
+std::string getRunNumber(const std::string& fileName)
 {
   std::string runNumber = "";
   std::regex re("/5[0-9]*");
