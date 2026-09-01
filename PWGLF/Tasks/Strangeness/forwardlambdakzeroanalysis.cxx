@@ -2210,8 +2210,8 @@ struct forwardlambdakzeroanalysis {
     return t.propagateToVtxhelixWithMCS(PV[2], {PV[0], PV[1]}, PVcov, magField, x2x0);
   }
 
-  template <typename TCollision, typename TTracks, typename TMFTTracks, typename TMCParticles>
-  std::vector<PairTopoInfo> buildV0s(TCollision const& collision, TMFTTracks const& /*mftTracks*/, TTracks const& besttracks, TMCParticles const& mcParticles)
+  template <typename TCollision, typename TTracks, typename TMFTTracks, typename TMCCollisions, typename TMCParticles>
+  std::vector<PairTopoInfo> buildV0s(TCollision const& collision, TMFTTracks const& /*mftTracks*/, TTracks const& besttracks, TMCCollisions const& /*mccollisions*/, TMCParticles const& mcParticles)
   {
     std::vector<PairTopoInfo> v0;
     for (const auto& [amft1, amft2] : combinations(besttracks, besttracks)) {
@@ -2417,7 +2417,7 @@ struct forwardlambdakzeroanalysis {
             if (originatingV0.has_mcCollision()) {
               pairInfo.mcCollision = originatingV0.mcCollisionId(); // save this reference, please
 
-              auto mcCollision = originatingV0.mcCollision();
+              auto mcCollision = originatingV0.template mcCollision_as<TMCCollisions>();
               // Radius
               pairInfo.RadiusMc = std::hypot(pairInfo.xMc - mcCollision.posX(), pairInfo.yMc - mcCollision.posY());
               pairInfo.ZdistMc = (pairInfo.zMc - mcCollision.posZ());
@@ -2489,7 +2489,7 @@ struct forwardlambdakzeroanalysis {
     int nAntiLambdas = 0;
     int nD0s = 0;
     int nAntiD0s = 0;
-    std::vector<PairTopoInfo> V0s = buildV0s(collision, mftTracks, besttracks, static_cast<TObject*>(nullptr));
+    std::vector<PairTopoInfo> V0s = buildV0s(collision, mftTracks, besttracks, static_cast<TObject*>(nullptr), static_cast<TObject*>(nullptr));
     for (const auto& v0 : V0s) {
       // fill AP plot for all V0s
       histos.fill(HIST("GeneralQA/h2dArmenterosAll"), v0.AlphaArm, v0.QtArm);
@@ -2532,8 +2532,8 @@ struct forwardlambdakzeroanalysis {
 
   // ______________________________________________________
   // Simulated processing (subscribes to MC information too)
-  template <typename TCollision, typename TMFTTracks, typename TTracks, typename TBCs, typename TMCParticles>
-  void analyzeRecoedV0sInMonteCarlo(TCollision const& collision, TMFTTracks const& mftTracks, TTracks const& besttracks, TBCs const& bcs, TMCParticles const& mcParticles)
+  template <typename TCollision, typename TMCCollisions, typename TMFTTracks, typename TTracks, typename TBCs, typename TMCParticles>
+  void analyzeRecoedV0sInMonteCarlo(TCollision const& collision, TMCCollisions const& mcCollisions, TMFTTracks const& mftTracks, TTracks const& besttracks, TBCs const& bcs, TMCParticles const& mcParticles)
   {
     // Fire up CCDB
     initCCDB(bcs, collision);
@@ -2552,7 +2552,7 @@ struct forwardlambdakzeroanalysis {
     fillReconstructedEventProperties(collision, bcs, centrality, collisionOccupancy, interactionRate, gapSide, selGapSide);
 
     if (collision.has_mcCollision()) {
-      auto mcCollision = collision.mcCollision();
+      auto mcCollision = collision.template mcCollision_as<TMCCollisions>();
       histos.fill(HIST("hEventPVxDiff"), mcCollision.posX(), (mcCollision.posX() - collision.posX()));
       histos.fill(HIST("hEventPVyDiff"), mcCollision.posY(), (mcCollision.posY() - collision.posY()));
       histos.fill(HIST("hEventPVzDiff"), mcCollision.posZ(), (mcCollision.posZ() - collision.posZ()));
@@ -2567,7 +2567,7 @@ struct forwardlambdakzeroanalysis {
     int nAntiLambdas = 0;
     int nD0s = 0;
     int nAntiD0s = 0;
-    std::vector<PairTopoInfo> V0s = buildV0s(collision, mftTracks, besttracks, mcParticles);
+    std::vector<PairTopoInfo> V0s = buildV0s(collision, mftTracks, besttracks, mcCollisions, mcParticles);
     for (const auto& v0 : V0s) {
       if (v0.label < 0) {
         continue;
@@ -2738,10 +2738,10 @@ struct forwardlambdakzeroanalysis {
                          soa::Join<aod::MFTTracks, aod::McMFTTrackLabels> const& tracks,
                          soa::SmallGroups<soa::Join<aod::BestCollisionsFwd3d, aod::McMFTTrackLabels>> const& besttracks,
                          aod::BCsWithTimestamps const& bcs,
-                         soa::Join<aod::McCollisions, aod::MultsExtraMC> const& /*mccollisions*/,
+                         soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mccollisions,
                          aod::McParticles const& mcParticles)
   {
-    analyzeRecoedV0sInMonteCarlo(collision, tracks, besttracks, bcs, mcParticles);
+    analyzeRecoedV0sInMonteCarlo(collision, mccollisions, tracks, besttracks, bcs, mcParticles);
   }
 
   // ______________________________________________________
