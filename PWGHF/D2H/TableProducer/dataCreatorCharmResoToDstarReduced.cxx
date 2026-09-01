@@ -223,7 +223,7 @@ struct HfDataCreatorCharmResoToDstarReduced {
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoToDstarReduced, processDstarV0, "Process Dstar candidates paired with V0s", true);
 
-  void processDstarTrack(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::PVMults> const& collisions,
+  void processDstarTrack(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                          CandsDstarFiltered const& candsDstar,
                          aod::TrackAssoc const& trackIndices,
                          TracksWithPID const& tracks,
