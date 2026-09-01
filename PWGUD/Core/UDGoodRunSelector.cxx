@@ -69,7 +69,7 @@ bool UDGoodRunSelector::isGoodRun(int runNumber)
   }
 }
 
-std::vector<int> UDGoodRunSelector::goodRuns(std::string runPeriod)
+std::vector<int> UDGoodRunSelector::goodRuns(const std::string& runPeriod)
 {
   auto it = mrunMap.find(runPeriod.c_str());
   if (it != mrunMap.end()) {
