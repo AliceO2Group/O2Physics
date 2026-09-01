@@ -75,6 +75,7 @@ struct HfCandidateSelectorCd {
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_cd_to_de_k_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_cd_to_de_k_pi::Cuts[0], hf_cuts_cd_to_de_k_pi::NBinsPt, hf_cuts_cd_to_de_k_pi::NCutVars, hf_cuts_cd_to_de_k_pi::labelsPt, hf_cuts_cd_to_de_k_pi::labelsCutVar}, "Cd candidate selection per pT bin"};
+  Configurable<bool> acceptCandidatesWithoutCdFlag{"acceptCandidatesWithoutCdFlag", false, "Apply the Cd mass hypotheses also to 3-prong candidates without the Cd skim bit; intended for MC reflection studies"};
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
 
@@ -264,7 +265,7 @@ struct HfCandidateSelectorCd {
 
       auto ptCand = candidate.pt();
 
-      if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::CdToDeKPi)) {
+      if (!acceptCandidatesWithoutCdFlag && !(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::CdToDeKPi)) {
         hfSelCdCandidate(statusCdToDeKPi, statusCdToPiKDe);
         if (activateQA) {
           registry.fill(HIST("hSelections"), 1, ptCand);
