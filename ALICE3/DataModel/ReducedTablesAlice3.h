@@ -25,6 +25,7 @@
 #include "ALICE3/DataModel/OTFTOF.h"
 #include "ALICE3/DataModel/collisionAlice3.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/Multiplicity.h"
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
