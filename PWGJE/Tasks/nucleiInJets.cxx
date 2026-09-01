@@ -791,7 +791,7 @@ struct nucleiInJets {
   }
 
   template <typename TrackType>
-  bool isTrackSelectedWithoutDcaxy(const TrackType track)
+  bool isTrackSelectedWithoutDcaxy(const TrackType& track)
   {
     // standard track selection
     if (track.pt() < cfgtrkMinPt)
@@ -822,7 +822,7 @@ struct nucleiInJets {
   }
 
   template <typename TrackType>
-  bool isTrackSelected(const TrackType track)
+  bool isTrackSelected(const TrackType& track)
   {
     if (!isTrackSelectedWithoutDcaxy(track))
       return false;

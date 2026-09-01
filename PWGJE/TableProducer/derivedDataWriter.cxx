@@ -711,11 +711,11 @@ struct JetDerivedDataWriter {
 
         const auto particlesPerMcCollision = particles.sliceBy(preslices.ParticlesPerMcCollision, mcCollision.globalIndex());
 
-        for (auto particle : particlesPerMcCollision) {
+        for (const auto& particle : particlesPerMcCollision) {
           particleMapping[particle.globalIndex()] = particleTableIndex;
           particleTableIndex++;
         }
-        for (auto particle : particlesPerMcCollision) {
+        for (const auto& particle : particlesPerMcCollision) {
 
           std::vector<int32_t> mothersIds;
           int daughtersIds[2] = {-1, -1};
