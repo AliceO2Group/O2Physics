@@ -170,7 +170,7 @@ void setEventRejectionLabels(Histo& hRejection, std::string const& softwareTrigg
   hRejection->GetXaxis()->SetBinLabel(EventRejection::IsGoodZvtxFT0vsPV + 1, "PV #it{z} consistency FT0 timing");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::NoSameBunchPileup + 1, "No same-bunch pile-up"); // POTENTIALLY BAD FOR BEAUTY ANALYSES
   hRejection->GetXaxis()->SetBinLabel(EventRejection::Occupancy + 1, "Occupancy");
-  hRejection->GetXaxis()->SetBinLabel(EventRejection::Inel0 + 1, "INEL0");
+  hRejection->GetXaxis()->SetBinLabel(EventRejection::Inel0 + 1, "INEL > 0");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::NContrib + 1, "# of PV contributors");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::Chi2 + 1, "PV #it{#chi}^{2}");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::PositionZ + 1, "PV #it{z}");
