@@ -1326,14 +1326,6 @@ struct strangenesstofpid {
             if (nSigmaCalibLoaded) {
               casctof.nSigmaXiLaPr = (casctof.posDeltaTimeAsXiPr - hMeanPosXiPr->Interpolate(cascade.p())) / hSigmaPosXiPr->Interpolate(cascade.p());
               casctof.nSigmaOmLaPr = (casctof.posDeltaTimeAsOmPr - hMeanPosOmPr->Interpolate(cascade.p())) / hSigmaPosOmPr->Interpolate(cascade.p());
-              // wrong hypothesis
-              casctof.nSigmaXiLaEl = -999.;
-              casctof.nSigmaXiLaKa = -999.;
-              casctof.nSigmaXiLaPi = -999.;
-
-              casctof.nSigmaOmLaEl = -999.;
-              casctof.nSigmaOmLaKa = -999.;
-              casctof.nSigmaOmLaPi = -999.;
             }
           } else {
             casctof.nSigmaXiLaPr = mTOFResponse->nSigma<o2::track::PID::Proton>(pTof.tofSignal - xiFlight - lambdaFlight, pTof.tofExpMom, lengthPositive, posTrack.getP(), posTrack.getEta(), pTof.tofEvTime, pTof.tofEvTimeErr);
@@ -1353,14 +1345,6 @@ struct strangenesstofpid {
             if (nSigmaCalibLoaded) {
               casctof.nSigmaXiLaPi = (casctof.posDeltaTimeAsXiPi - hMeanPosXiPi->Interpolate(cascade.p())) / hSigmaPosXiPi->Interpolate(cascade.p());
               casctof.nSigmaOmLaPi = (casctof.posDeltaTimeAsOmPi - hMeanPosOmPi->Interpolate(cascade.p())) / hSigmaPosOmPi->Interpolate(cascade.p());
-              // wrong hypothesis
-              casctof.nSigmaXiLaEl = -999.;
-              casctof.nSigmaXiLaKa = -999.;
-              casctof.nSigmaXiLaPr = -999.;
-
-              casctof.nSigmaOmLaEl = -999.;
-              casctof.nSigmaOmLaKa = -999.;
-              casctof.nSigmaOmLaPr = -999.;
             }
           } else {
             casctof.nSigmaXiLaPi = mTOFResponse->nSigma<o2::track::PID::Pion>(pTof.tofSignal - xiFlight - lambdaFlight, pTof.tofExpMom, lengthPositive, posTrack.getP(), posTrack.getEta(), pTof.tofEvTime, pTof.tofEvTimeErr);
@@ -1463,14 +1447,6 @@ struct strangenesstofpid {
             if (nSigmaCalibLoaded) {
               casctof.nSigmaXiLaPi = (casctof.negDeltaTimeAsXiPi - hMeanNegXiPi->Interpolate(cascade.p())) / hSigmaNegXiPi->Interpolate(cascade.p());
               casctof.nSigmaOmLaPi = (casctof.negDeltaTimeAsOmPi - hMeanNegOmPi->Interpolate(cascade.p())) / hSigmaNegOmPi->Interpolate(cascade.p());
-              // wrong hypothesis
-              casctof.nSigmaXiLaEl = -999.;
-              casctof.nSigmaXiLaKa = -999.;
-              casctof.nSigmaXiLaPr = -999.;
-
-              casctof.nSigmaOmLaEl = -999.;
-              casctof.nSigmaOmLaKa = -999.;
-              casctof.nSigmaOmLaPr = -999.;
             }
           } else {
             casctof.nSigmaXiLaPi = mTOFResponse->nSigma<o2::track::PID::Pion>(nTof.tofSignal - xiFlight - lambdaFlight, nTof.tofExpMom, lengthNegative, negTrack.getP(), negTrack.getEta(), nTof.tofEvTime, nTof.tofEvTimeErr);
@@ -1490,14 +1466,6 @@ struct strangenesstofpid {
             if (nSigmaCalibLoaded) {
               casctof.nSigmaXiLaPr = (casctof.negDeltaTimeAsXiPr - hMeanNegXiPr->Interpolate(cascade.p())) / hSigmaNegXiPr->Interpolate(cascade.p());
               casctof.nSigmaOmLaPr = (casctof.negDeltaTimeAsOmPr - hMeanNegOmPr->Interpolate(cascade.p())) / hSigmaNegOmPr->Interpolate(cascade.p());
-              // wrong hypothesis
-              casctof.nSigmaXiLaEl = -999.;
-              casctof.nSigmaXiLaKa = -999.;
-              casctof.nSigmaXiLaPi = -999.;
-
-              casctof.nSigmaOmLaEl = -999.;
-              casctof.nSigmaOmLaKa = -999.;
-              casctof.nSigmaOmLaPi = -999.;
             }
           } else {
             casctof.nSigmaXiLaPr = mTOFResponse->nSigma<o2::track::PID::Proton>(nTof.tofSignal - xiFlight - lambdaFlight, nTof.tofExpMom, lengthNegative, negTrack.getP(), negTrack.getEta(), nTof.tofEvTime, nTof.tofEvTimeErr);
@@ -1597,15 +1565,6 @@ struct strangenesstofpid {
           if (nSigmaCalibLoaded) {
             casctof.nSigmaXiPi = (casctof.bachDeltaTimeAsXiPi - hMeanBachXiPi->Interpolate(cascade.p())) / hSigmaBachXiPi->Interpolate(cascade.p());
             casctof.nSigmaOmKa = (casctof.bachDeltaTimeAsOmKa - hMeanBachOmKa->Interpolate(cascade.p())) / hSigmaBachOmKa->Interpolate(cascade.p());
-
-            // wrong hypothesis
-            casctof.nSigmaXiEl = -999.;
-            casctof.nSigmaXiKa = -999.;
-            casctof.nSigmaXiPr = -999.;
-
-            casctof.nSigmaOmEl = -999.;
-            casctof.nSigmaOmPi = -999.;
-            casctof.nSigmaOmPr = -999.;
           }
         } else {
           casctof.nSigmaXiPi = mTOFResponse->nSigma<o2::track::PID::Pion>(bTof.tofSignal - xiFlight, bTof.tofExpMom, lengthBachelor, bachTrack.getP(), bachTrack.getEta(), bTof.tofEvTime, bTof.tofEvTimeErr);
