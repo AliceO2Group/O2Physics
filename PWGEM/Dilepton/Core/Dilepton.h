@@ -149,6 +149,7 @@ struct Dilepton {
   o2::framework::ConfigurableAxis ConfPolarizationQuadMomBins{"ConfPolarizationQuadMomBins", {15, -0.5, 1}, "quadrupole moment bins for polarization analysis"}; // quardrupole moment <(3 x cos^2(theta) -1)/2>
 
   o2::framework::Configurable<int> cfgNumBootstrapSamples{"cfgNumBootstrapSamples", 1, "Number of Bootstrap Samples"};
+  
 
   EMEventCut fEMEventCut;
   struct : o2::framework::ConfigurableGroup {
@@ -323,6 +324,15 @@ struct Dilepton {
     o2::framework::Configurable<uint64_t> bcMarginForSoftwareTrigger{"bcMarginForSoftwareTrigger", 100, "Number of BCs of margin for software triggers"};
   } zorroGroup;
 
+  struct : o2::framework::ConfigurableGroup {
+    std::string prefix = "flowcorrection_group";
+    o2::framework::Configurable<bool> cfgApplyWeightNUA{"cfgApplyWeightNUA", false, "flag to apply q-vector Non-uniform acceptance  weighting"};
+    o2::framework::Configurable<std::string> nuaPath{"nuaPath", "Users/o/omassen/Dielectron/NUAWeights/LHC23_PbPb_pass5", "Path to NUA-weights file"};
+    o2::framework::ConfigurableAxis ConfNUAPhiBins{"ConfNUAPhiBins", {60, -M_PI, M_PI}, "NUA histogram bins - phi-angle"};
+    o2::framework::ConfigurableAxis ConfNUAEtaBins{"ConfNUAEtaBins", {40, -1., +1.}, "NUA histogram bins - eta"};
+    o2::framework::ConfigurableAxis ConfNUAZVtxBins{"ConfNUAZVtxBins", {40, -10., 10.}, "NUA histogram bins - z-vtx"};
+  } flowcorrectionGroup;
+
   Zorro zorro;
   int mToIidx = 0;
   int mTOICounter = 0;
@@ -355,6 +365,7 @@ struct Dilepton {
   float beamP1 = 0.f;                                // beam momentum
   float beamP2 = 0.f;                                // beam momentum
   TH2D* h2sp_resolution = nullptr;
+  std::vector<TH3D*> h3nua_weights;
 
   void init(o2::framework::InitContext& /*context*/)
   {
@@ -558,6 +569,16 @@ struct Dilepton {
       h2sp_resolution = reinterpret_cast<TH2D*>(list->FindObject(spresoHistName.value.data()));
       LOGF(info, "h2sp_resolution.GetBinContent(40, 1) = %f", h2sp_resolution->GetBinContent(40, 1));
     }
+
+    if(flowcorrectionGroup.cfgApplyWeightNUA){
+      auto list_nua = ccdb->getForTimeStamp<TList>(flowcorrectionGroup.nuaPath, collision.timestamp());
+      h3nua_weights.push_back(reinterpret_cast<TH3D*>(list_nua->FindObject("weights_uls_NUA")));
+      LOGF(info, "h3nua_weights.at(0)->GetBinContent(5, 5, 5) = %f", h3nua_weights.at(0)->GetBinContent(5, 5, 5));
+      h3nua_weights.push_back(reinterpret_cast<TH3D*>(list_nua->FindObject("weights_lspp_NUA")));
+      LOGF(info, "h3nua_weights.at(1)->GetBinContent(5, 5, 5) = %f", h3nua_weights.at(1)->GetBinContent(5, 5, 5));
+      h3nua_weights.push_back(reinterpret_cast<TH3D*>(list_nua->FindObject("weights_lsmm_NUA")));
+      LOGF(info, "h3nua_weights.at(2)->GetBinContent(5, 5, 5) = %f", h3nua_weights.at(2)->GetBinContent(5, 5, 5));
+    }
   }
 
   ~Dilepton()
@@ -648,6 +669,7 @@ struct Dilepton {
       const o2::framework::AxisSpec axis_sp{ConfSPBins, Form("#vec{u}_{%d,ll} #upoint #vec{Q}_{%d}^{%s}", nmod, nmod, qvec_det_names[cfgQvecEstimator].data())};
 
       fRegistry.add("Pair/same/uls/hs", "dilepton", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_y, axis_sp}, true);
+      fRegistry.add("Pair/same/uls/hNUA", "NUA Histogram;#phi (rad.);#eta;VtxZ;", o2::framework::HistType::kTH3D, {flowcorrectionGroup.ConfNUAPhiBins, flowcorrectionGroup.ConfNUAEtaBins, flowcorrectionGroup.ConfNUAZVtxBins}, true);
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
 
@@ -880,6 +902,22 @@ struct Dilepton {
     }
   }
 
+  float getNUAweight(const int type_int, const float phi, const float eta, const float zVtx)
+  { 
+    if (h3nua_weights.at(type_int) == nullptr){
+      return 1.f;
+    }
+    int binId_phi = h3nua_weights.at(type_int)->GetXaxis()->FindBin(phi);
+    int binId_eta = h3nua_weights.at(type_int)->GetYaxis()->FindBin(eta);
+    int binId_zVtx = h3nua_weights.at(type_int)->GetZaxis()->FindBin(zVtx);
+    float nuaWeight = h3nua_weights.at(type_int)->GetBinContent(binId_phi, binId_eta, binId_zVtx);
+
+    if (nuaWeight == 0 || std::isnan(nuaWeight) || std::isinf(nuaWeight)) {
+      nuaWeight = 1.f;
+    }
+    return nuaWeight;
+  }
+
   template <int ev_id, typename TCollision, typename TTrack1, typename TTrack2, typename TCut, typename TAllTracks>
   bool fillPairInfo(TCollision const& collision, TTrack1 const& t1, TTrack2 const& t2, TCut const& cut, TAllTracks const&, const std::vector<float> weightvector)
   {
@@ -1054,14 +1092,20 @@ struct Dilepton {
 
       if constexpr (ev_id == 0) {
         // LOGF(info, "collision.centFT0C() = %f, collision.trackOccupancyInTimeRange() = %d, getSPresolution = %f", collision.centFT0C(), collision.trackOccupancyInTimeRange(), getSPresolution(collision.centFT0C(), collision.trackOccupancyInTimeRange()));
+        if(flowcorrectionGroup.cfgApplyWeightNUA){
+          weight *= 1./getNUAweight(t1.sign() * t2.sign() < 0 ? 0 : (t1.sign() > 0 && t2.sign() > 0 ? 1 : 2), v12.Phi(), v12.Eta(), collision.posZ());
+        }
 
         float sp = RecoDecay::dotProd(std::array<float, 2>{static_cast<float>(std::cos(nmod * v12.Phi())), static_cast<float>(std::sin(nmod * v12.Phi()))}, qvectors[nmod][cfgQvecEstimator]) / getSPresolution(collision.centFT0C(), collision.trackOccupancyInTimeRange());
         if (t1.sign() * t2.sign() < 0) { // ULS
           fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), pair_dca, v12.Rapidity(), sp, weight);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hNUA"), v12.Phi(), v12.Eta(), collision.posZ(), weight);
         } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
           fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), pair_dca, v12.Rapidity(), sp, weight);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hNUA"), v12.Phi(), v12.Eta(), collision.posZ(), weight);
         } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
           fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), pair_dca, v12.Rapidity(), sp, weight);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hNUA"), v12.Phi(), v12.Eta(), collision.posZ(), weight);
         }
       } else if constexpr (ev_id == 1) {
         if (t1.sign() * t2.sign() < 0) { // ULS
