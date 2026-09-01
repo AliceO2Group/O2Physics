@@ -224,9 +224,9 @@ struct globalDimuonFilter {
 
     fRegistry.add("Vertex/MB/hZvtx", "vertex z; Z_{vtx} (cm)", o2::framework::HistType::kTH1D, {{40, -20, +20}}, false);
     fRegistry.add("Vertex/MB/hChi2vsNContrib", "vertex #chi^{2}/N_{contrib} vs. N_{contrib};N_{contrib};#chi^{2}/N_{contrib}", o2::framework::HistType::kTH2D, {{200, 0.5, 200.5}, {100, 0, 10}}, false);
-    fRegistry.add("Vertex/MB/hSigmaX", "vertex #sigma_{X} vs. N_{contrib};N_{contrib};#sigma_{X} (#mum)", o2::framework::HistType::kTH2D, {{200, 0.5, 200.5}, {1000, 0, 100}}, false);
-    fRegistry.add("Vertex/MB/hSigmaY", "vertex #sigma_{Y} vs. N_{contrib};N_{contrib};#sigma_{Y} (#mum)", o2::framework::HistType::kTH2D, {{200, 0.5, 200.5}, {1000, 0, 100}}, false);
-    fRegistry.add("Vertex/MB/hSigmaZ", "vertex #sigma_{Z} vs. N_{contrib};N_{contrib};#sigma_{Z} (#mum)", o2::framework::HistType::kTH2D, {{200, 0.5, 200.5}, {1000, 0, 100}}, false);
+    fRegistry.add("Vertex/MB/hSigmaX", "vertex #sigma_{X} vs. N_{contrib};N_{contrib};#sigma_{X} (#mum)", o2::framework::HistType::kTH2D, {{200, 0.5, 200.5}, {2000, 0, 200}}, false);
+    fRegistry.add("Vertex/MB/hSigmaY", "vertex #sigma_{Y} vs. N_{contrib};N_{contrib};#sigma_{Y} (#mum)", o2::framework::HistType::kTH2D, {{200, 0.5, 200.5}, {2000, 0, 200}}, false);
+    fRegistry.add("Vertex/MB/hSigmaZ", "vertex #sigma_{Z} vs. N_{contrib};N_{contrib};#sigma_{Z} (#mum)", o2::framework::HistType::kTH2D, {{200, 0.5, 200.5}, {2000, 0, 200}}, false);
     fRegistry.addClone("Vertex/MB/", "Vertex/Triggered/");
 
     fRegistry.add("MFTMCHMID/positive/hPt", "pT;p_{T} (GeV/c)", o2::framework::HistType::kTH1D, {{200, 0.0f, 10}}, false);
@@ -251,13 +251,15 @@ struct globalDimuonFilter {
     fRegistry.add("MFTMCHMID/positive/hDCAxResolutionvsPt", "DCA_{x} resolution vs. p_{T};p_{T} (GeV/c);DCA_{x} resolution (#mum);", o2::framework::HistType::kTH2D, {{100, 0, 10.f}, {500, 0, 500}}, false);
     fRegistry.add("MFTMCHMID/positive/hDCAyResolutionvsPt", "DCA_{y} resolution vs. p_{T};p_{T} (GeV/c);DCA_{y} resolution (#mum);", o2::framework::HistType::kTH2D, {{100, 0, 10.f}, {500, 0, 500}}, false);
     fRegistry.add("MFTMCHMID/positive/hDCAxyResolutionvsPt", "DCA_{xy} resolution vs. p_{T};p_{T} (GeV/c);DCA_{xy} resolution (#mum);", o2::framework::HistType::kTH2D, {{100, 0, 10.f}, {500, 0, 500}}, false);
-    fRegistry.add("MFTMCHMID/positive/hDCAx_PosZ", "DCAx vs. posZ;Z_{vtx} (cm);DCA_{x} (cm)", o2::framework::HistType::kTH2D, {{200, -10, +10}, {400, -0.2, +0.2}}, false);
-    fRegistry.add("MFTMCHMID/positive/hDCAy_PosZ", "DCAy vs. posZ;Z_{vtx} (cm);DCA_{y} (cm)", o2::framework::HistType::kTH2D, {{200, -10, +10}, {400, -0.2, +0.2}}, false);
     fRegistry.add("MFTMCHMID/positive/hDCAx_Phi", "DCAx vs. #varphi;#varphi (rad.);DCA_{x} (cm)", o2::framework::HistType::kTH2D, {{180, -M_PI, M_PI}, {400, -0.2, +0.2}}, false);
     fRegistry.add("MFTMCHMID/positive/hDCAy_Phi", "DCAy vs. #varphi;#varphi (rad.);DCA_{y} (cm)", o2::framework::HistType::kTH2D, {{180, -M_PI, M_PI}, {400, -0.2, +0.2}}, false);
+    fRegistry.add("MFTMCHMID/positive/hDCAx_PosZ_MFTtop", "DCAx vs. posZ for MFT top;Z_{vtx} (cm);DCA_{x} (cm)", o2::framework::HistType::kTH2D, {{200, -10, +10}, {400, -0.2, +0.2}}, false);
+    fRegistry.add("MFTMCHMID/positive/hDCAy_PosZ_MFTtop", "DCAy vs. posZ for MFT top;Z_{vtx} (cm);DCA_{y} (cm)", o2::framework::HistType::kTH2D, {{200, -10, +10}, {400, -0.2, +0.2}}, false);
+    fRegistry.add("MFTMCHMID/positive/hDCAx_PosZ_MFTbottom", "DCAx vs. posZ for MFT bottom;Z_{vtx} (cm);DCA_{x} (cm)", o2::framework::HistType::kTH2D, {{200, -10, +10}, {400, -0.2, +0.2}}, false);
+    fRegistry.add("MFTMCHMID/positive/hDCAy_PosZ_MFTbottom", "DCAy vs. posZ for MFT bottom;Z_{vtx} (cm);DCA_{y} (cm)", o2::framework::HistType::kTH2D, {{200, -10, +10}, {400, -0.2, +0.2}}, false);
     fRegistry.addClone("MFTMCHMID/positive/", "MFTMCHMID/negative/");
 
-    const o2::framework::AxisSpec axisMll{{0.20, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.30, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.40, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.50, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.70, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00, 1.01, 1.02, 1.03, 1.04, 1.05, 1.06, 1.07, 1.08, 1.09, 1.10, 1.11, 1.12, 1.13, 1.14, 1.15, 1.16, 1.17, 1.18, 1.19, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.10, 2.20, 2.30, 2.40, 2.50, 2.60, 2.70, 2.75, 2.80, 2.85, 2.90, 2.95, 3.00, 3.05, 3.10, 3.15, 3.20, 3.25, 3.30, 3.35, 3.40, 3.45, 3.50, 3.55, 3.60, 3.65, 3.70, 3.75, 3.80, 3.85, 3.90, 3.95, 4.00, 4.50, 5.00, 5.50, 6.00, 6.50, 7.00, 7.50, 8.00, 8.1, 8.2, 8.3, 8.4, 8.50, 8.60, 8.70, 8.80, 8.90, 9.00, 9.10, 9.20, 9.30, 9.40, 9.50, 9.60, 9.70, 9.80, 9.90, 10.00, 10.10, 10.20, 10.30, 10.40, 10.50, 10.60, 10.70, 10.80, 10.90, 11.0, 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 11.9, 12.0}, "m_{#mu#mu} (GeV/c^{2})"};
+    const o2::framework::AxisSpec axisMll{{0.20, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.30, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.40, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.50, 0.505, 0.51, 0.515, 0.52, 0.525, 0.53, 0.535, 0.54, 0.545, 0.55, 0.555, 0.56, 0.565, 0.57, 0.575, 0.58, 0.585, 0.59, 0.595, 0.60, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.70, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00, 1.01, 1.02, 1.03, 1.04, 1.05, 1.06, 1.07, 1.08, 1.09, 1.10, 1.11, 1.12, 1.13, 1.14, 1.15, 1.16, 1.17, 1.18, 1.19, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.10, 2.20, 2.30, 2.40, 2.50, 2.60, 2.70, 2.75, 2.80, 2.85, 2.90, 2.95, 3.00, 3.05, 3.10, 3.15, 3.20, 3.25, 3.30, 3.35, 3.40, 3.45, 3.50, 3.55, 3.60, 3.65, 3.70, 3.75, 3.80, 3.85, 3.90, 3.95, 4.00, 4.50, 5.00, 5.50, 6.00, 6.50, 7.00, 7.50, 8.00, 8.1, 8.2, 8.3, 8.4, 8.50, 8.60, 8.70, 8.80, 8.90, 9.00, 9.10, 9.20, 9.30, 9.40, 9.50, 9.60, 9.70, 9.80, 9.90, 10.00, 10.10, 10.20, 10.30, 10.40, 10.50, 10.60, 10.70, 10.80, 10.90, 11.0, 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 11.9, 12.0}, "m_{#mu#mu} (GeV/c^{2})"};
     const o2::framework::AxisSpec axisPtll{{0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8, 9, 10}, "p_{T,#mu#mu} (GeV/c)"};
     const o2::framework::AxisSpec axisYll{40, -4.0, -2.0, "y_{#mu#mu}"};
 
@@ -512,10 +514,15 @@ struct globalDimuonFilter {
         fRegistry.fill(HIST("MFTMCHMID/positive/hDCAxResolutionvsPt"), pt, std::sqrt(cXX) * 1e+4); // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/positive/hDCAyResolutionvsPt"), pt, std::sqrt(cYY) * 1e+4); // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/positive/hDCAxyResolutionvsPt"), pt, sigma_dcaXY * 1e+4);   // convert cm to um
-        fRegistry.fill(HIST("MFTMCHMID/positive/hDCAx_PosZ"), collision.posZ(), dcaX);
-        fRegistry.fill(HIST("MFTMCHMID/positive/hDCAy_PosZ"), collision.posZ(), dcaY);
         fRegistry.fill(HIST("MFTMCHMID/positive/hDCAx_Phi"), std::atan2(yMFT, xMFT), dcaX);
         fRegistry.fill(HIST("MFTMCHMID/positive/hDCAy_Phi"), std::atan2(yMFT, xMFT), dcaY);
+        if (std::atan2(yMFT, xMFT) > 0.f) {
+          fRegistry.fill(HIST("MFTMCHMID/positive/hDCAx_PosZ_MFTtop"), collision.posZ(), dcaX);
+          fRegistry.fill(HIST("MFTMCHMID/positive/hDCAy_PosZ_MFTtop"), collision.posZ(), dcaY);
+        } else {
+          fRegistry.fill(HIST("MFTMCHMID/positive/hDCAx_PosZ_MFTbottom"), collision.posZ(), dcaX);
+          fRegistry.fill(HIST("MFTMCHMID/positive/hDCAy_PosZ_MFTbottom"), collision.posZ(), dcaY);
+        }
       } else {
         fRegistry.fill(HIST("MFTMCHMID/negative/hPt"), pt);
         fRegistry.fill(HIST("MFTMCHMID/negative/hPtResolution"), pt, relPtResolution);
@@ -539,13 +546,17 @@ struct globalDimuonFilter {
         fRegistry.fill(HIST("MFTMCHMID/negative/hDCAxResolutionvsPt"), pt, std::sqrt(cXX) * 1e+4); // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/negative/hDCAyResolutionvsPt"), pt, std::sqrt(cYY) * 1e+4); // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/negative/hDCAxyResolutionvsPt"), pt, sigma_dcaXY * 1e+4);   // convert cm to um
-        fRegistry.fill(HIST("MFTMCHMID/negative/hDCAx_PosZ"), collision.posZ(), dcaX);
-        fRegistry.fill(HIST("MFTMCHMID/negative/hDCAy_PosZ"), collision.posZ(), dcaY);
         fRegistry.fill(HIST("MFTMCHMID/negative/hDCAx_Phi"), std::atan2(yMFT, xMFT), dcaX);
         fRegistry.fill(HIST("MFTMCHMID/negative/hDCAy_Phi"), std::atan2(yMFT, xMFT), dcaY);
+        if (std::atan2(yMFT, xMFT) > 0.f) {
+          fRegistry.fill(HIST("MFTMCHMID/negative/hDCAx_PosZ_MFTtop"), collision.posZ(), dcaX);
+          fRegistry.fill(HIST("MFTMCHMID/negative/hDCAy_PosZ_MFTtop"), collision.posZ(), dcaY);
+        } else {
+          fRegistry.fill(HIST("MFTMCHMID/negative/hDCAx_PosZ_MFTbottom"), collision.posZ(), dcaX);
+          fRegistry.fill(HIST("MFTMCHMID/negative/hDCAy_PosZ_MFTbottom"), collision.posZ(), dcaY);
+        }
       }
     }
-
     return true;
   }
 
