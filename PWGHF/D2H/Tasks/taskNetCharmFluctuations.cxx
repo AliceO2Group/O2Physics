@@ -21,8 +21,8 @@
 #include "PWGHF/Utils/utilsEvSelHf.h"
 
 #include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <Framework/ASoA.h>
