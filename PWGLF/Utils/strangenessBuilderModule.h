@@ -1907,7 +1907,7 @@ class BuilderModule
                   // special treatment of Lambda --> neutron pi0 (both PDG codes > 0)
                   //                  and K0s --> pi0 pi0 (both PDG codes > 0)
                   // take neutron as positive daughter and pi0 as negative daughter
-                  // if the first daughter was the pi0 (already assigned as positive), 
+                  // if the first daughter was the pi0 (already assigned as positive),
                   // then transfer the information to the negative and fill the information
                   // of the positive daughter with those of the neutrons
                   if (thisInfo.pdgCodePositive > -1 && thisInfo.pdgCodePositive == PDG_t::kPi0) {
@@ -2482,7 +2482,7 @@ class BuilderModule
                     thisCascInfo.xyz[2] = dau.vz();
                     thisCascInfo.mcParticleBachelor = dau.globalIndex();
                   }
-                  // Treatment of Lambda --> p pi ; Lambda --> n pi 
+                  // Treatment of Lambda --> p pi ; Lambda --> n pi
                   if (std::abs(dau.pdgCode()) == PDG_t::kLambda0) {
                     thisCascInfo.pdgCodeV0 = dau.pdgCode();
 
@@ -2494,7 +2494,7 @@ class BuilderModule
                       if (v0Dau.pdgCode() > 0) {
                         // special treatment of Lambda --> neutron pi0 (both PDG codes > 0)
                         // take neutron as positive daughter and pi0 as negative daughter
-                        // if the first daughter was the pi0 (already assigned as positive), 
+                        // if the first daughter was the pi0 (already assigned as positive),
                         // then transfer the information to the negative and fill the information
                         // of the positive daughter with those of the neutrons
                         if (thisCascInfo.pdgCodePositive > -1 && thisCascInfo.pdgCodePositive == PDG_t::kPi0) {
@@ -2526,7 +2526,7 @@ class BuilderModule
                       }
                     }
                   }
-                  // Special treatment of Xi0 and Xi from Omega --> Xi0 pi ; Omega --> Xi pi0 
+                  // Special treatment of Xi0 and Xi from Omega --> Xi0 pi ; Omega --> Xi pi0
                   if (std::abs(dau.pdgCode()) == PDG_t::kXiMinus || std::abs(dau.pdgCode()) == o2::constants::physics::Pdg::kXi0) {
                     thisCascInfo.pdgCodeV0 = dau.pdgCode();
 
