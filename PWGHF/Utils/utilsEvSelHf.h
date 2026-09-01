@@ -404,7 +404,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
       }
     }
 
-    /// INEL>0 condition
+    /// INEL > 0
     if (requireINEL0 && !collision.isInelGt0()) {
       SETBIT(rejectionMask, EventRejection::Inel0);
     }
