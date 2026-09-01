@@ -344,7 +344,7 @@ struct skimmerPrimaryMuonQC {
   }
 
   template <bool isMC, typename TFwdTracks, typename TMFTTracks, typename TCollision, typename TFwdTrack>
-  bool fillMuonInfo(TCollision const& collision, TFwdTrack fwdtrack)
+  bool fillMuonInfo(TCollision const& collision, const TFwdTrack& fwdtrack)
   {
     if (fwdtrack.trackType() != static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && fwdtrack.trackType() != static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack)) {
       return false;

@@ -537,7 +537,7 @@ class DielectronCut : public TNamed
   //   mPIDMlResponse = mlResponse;
   // }
 
-  void SetMLThresholds(const std::vector<float> bins, const std::vector<float> cuts)
+  void SetMLThresholds(const std::vector<float>& bins, const std::vector<float>& cuts)
   {
     if (bins.size() != cuts.size() + 1) {
       LOG(fatal) << "cuts.size() + 1 mutst be exactly the same as bins.size(). Check your bins and thresholds.";
