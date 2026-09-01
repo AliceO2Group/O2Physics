@@ -153,27 +153,27 @@ struct HadronNucleiCorrelation {
   using FilteredTracksMC = soa::Filtered<soa::Join<aod::SingleTrackSels, aod::SingleTrkMCs, aod::SingleTrkExtras, aod::SinglePIDEls, aod::SinglePIDPrs, aod::SinglePIDDes>>; // new tables (v3)
 
   HistogramRegistry registry{"registry"};
-  HistogramRegistry QA{"QA"};
+  HistogramRegistry registryQa{"registryQa"};
 
   using trkType = const FilteredTracks::iterator*;
   // using trkTypeMC = const FilteredTracksMC::iterator*;
   // typedef std::shared_ptr<FilteredCollisions::iterator> colType;
   // typedef std::shared_ptr<SimCollisions::iterator> MCcolType;
 
-  std::unique_ptr<o2::aod::singletrackselector::FemtoPair<trkType>> Pair = std::make_unique<o2::aod::singletrackselector::FemtoPair<trkType>>();
+  std::unique_ptr<o2::aod::singletrackselector::FemtoPair<trkType>> pair = std::make_unique<o2::aod::singletrackselector::FemtoPair<trkType>>();
   // std::unique_ptr<o2::aod::singletrackselector::FemtoPair<trkTypeMC>> PairMC = std::make_unique<o2::aod::singletrackselector::FemtoPair<trkTypeMC>>();
 
   // Data histograms
-  std::vector<std::shared_ptr<TH3>> hEtaPhi_SE;
-  std::vector<std::shared_ptr<TH3>> hEtaPhi_ME;
-  std::vector<std::shared_ptr<TH3>> hCorrEtaPhi_SE;
-  std::vector<std::shared_ptr<TH3>> hCorrEtaPhi_ME;
+  std::vector<std::shared_ptr<TH3>> hEtaPhiSameEv;
+  std::vector<std::shared_ptr<TH3>> hEtaPhiMixdEv;
+  std::vector<std::shared_ptr<TH3>> hCorrEtaPhiSameEv;
+  std::vector<std::shared_ptr<TH3>> hCorrEtaPhiMixdEv;
 
   int nBinspT = 0;
-  TH2F* hEffpTEta_proton = nullptr;
-  TH2F* hEffpTEta_antiproton = nullptr;
-  TH2F* hEffpTEta_deuteron = nullptr;
-  TH2F* hEffpTEta_antideuteron = nullptr;
+  TH2F* hEffPtEtaProton = nullptr;
+  TH2F* hEffPtEtaAntiProton = nullptr;
+  TH2F* hEffPtEtaDeuteron = nullptr;
+  TH2F* hEffPtEtaAntiDeuteron = nullptr;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
   o2::ccdb::CcdbApi ccdbApi;
@@ -190,21 +190,16 @@ struct HadronNucleiCorrelation {
 
     if (doCorrection) {
       GetCorrection(ccdb, TString(fCorrectionPath), TString(fCorrectionHisto));
-    } else {
-      hEffpTEta_proton = nullptr;
-      hEffpTEta_antiproton = nullptr;
-      hEffpTEta_deuteron = nullptr;
-      hEffpTEta_antideuteron = nullptr;
     }
 
-    AxisSpec ptBinnedAxis = {pTBins, "#it{p}_{T} of #bar{p} (GeV/c)"};
-    AxisSpec etaAxis = {100, -1., 1., "#eta"};
-    AxisSpec phiAxis = {157, 0., o2::constants::math::TwoPI, "#phi (rad)"};
-    AxisSpec pTAxis = {200, -10.f, 10.f, "p_{T} GeV/c"};
-    AxisSpec pTAxis_small = {100, -5.f, 5.f, "p_{T} GeV/c"};
+    const AxisSpec ptBinnedAxis = {pTBins, "#it{p}_{T} of #bar{p} (GeV/c)"};
+    const AxisSpec etaAxis = {100, -1., 1., "#eta"};
+    const AxisSpec phiAxis = {157, 0., o2::constants::math::TwoPI, "#phi (rad)"};
+    const AxisSpec ptAxis = {200, -10.f, 10.f, "p_{T} GeV/c"};
+    const AxisSpec ptAxisSmall = {100, -5.f, 5.f, "p_{T} GeV/c"};
 
-    AxisSpec DeltaEtaAxis = {300, -1.5, 1.5, "#Delta#eta"};
-    AxisSpec DeltaRapAxis = {300, -1.5, 1.5, "#Delta y"};
+    const AxisSpec deltaEtaAxis = {300, -1.5, 1.5, "#Delta#eta"};
+    const AxisSpec deltaRapAxis = {300, -1.5, 1.5, "#Delta y"};
 
     if (doprocessSameEvent || doprocessSameEventEvSel) {
       registry.add("hNEvents", "hNEvents", {HistType::kTH1D, {{7, 0.f, 7.f}}});
@@ -248,27 +243,17 @@ struct HadronNucleiCorrelation {
       for (int i = 0; i < nBinspT; i++) {
 
         if (doRapidity) {
+          hEtaPhiSameEv.push_back(std::move(registry.add<TH3>(Form("hEtaPhi_%s_SE_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("Raw #Delta y #Delta#phi (%.1f<p_{T}^{assoc} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {deltaRapAxis, deltaPhiAxis, ptBinnedAxis}})));
+          hEtaPhiMixdEv.push_back(std::move(registry.add<TH3>(Form("hEtaPhi_%s_ME_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("Raw #Delta y #Delta#phi (%.1f<p_{T}^{assoc} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {deltaRapAxis, deltaPhiAxis, ptBinnedAxis}})));
 
-          auto htempSE_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhi_%s_SE_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("Raw #Delta y #Delta#phi (%.1f<p_{T}^{assoc} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaRapAxis, deltaPhiAxis, ptBinnedAxis}});
-          auto htempME_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhi_%s_ME_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("Raw #Delta y #Delta#phi (%.1f<p_{T}^{assoc} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaRapAxis, deltaPhiAxis, ptBinnedAxis}});
-          hEtaPhi_SE.push_back(std::move(htempSE_AntiDeAntiPr));
-          hEtaPhi_ME.push_back(std::move(htempME_AntiDeAntiPr));
-
-          auto hCorrtempSE_AntiDeAntiPr = registry.add<TH3>(Form("hCorrEtaPhi_%s_SE_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("#Delta y #Delta#phi (%.1f<p_{T}^{assoc} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaRapAxis, deltaPhiAxis, ptBinnedAxis}});
-          auto hCorrtempME_AntiDeAntiPr = registry.add<TH3>(Form("hCorrEtaPhi_%s_ME_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("#Delta y #Delta#phi (%.1f<p_{T}^{assoc} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaRapAxis, deltaPhiAxis, ptBinnedAxis}});
-          hCorrEtaPhi_SE.push_back(std::move(hCorrtempSE_AntiDeAntiPr));
-          hCorrEtaPhi_ME.push_back(std::move(hCorrtempME_AntiDeAntiPr));
+          hCorrEtaPhiSameEv.push_back(std::move(registry.add<TH3>(Form("hCorrEtaPhi_%s_SE_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("#Delta y #Delta#phi (%.1f<p_{T}^{assoc} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {deltaRapAxis, deltaPhiAxis, ptBinnedAxis}})));
+          hCorrEtaPhiMixdEv.push_back(std::move(registry.add<TH3>(Form("hCorrEtaPhi_%s_ME_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("#Delta y #Delta#phi (%.1f<p_{T}^{assoc} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {deltaRapAxis, deltaPhiAxis, ptBinnedAxis}})));
         } else {
+          hEtaPhiSameEv.push_back(std::move(registry.add<TH3>(Form("hEtaPhi_%s_SE_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("Raw #Delta#eta#Delta#phi (%.1f<p_{T}^{assoc} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {deltaEtaAxis, deltaPhiAxis, ptBinnedAxis}})));
+          hEtaPhiMixdEv.push_back(std::move(registry.add<TH3>(Form("hEtaPhi_%s_ME_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("Raw #Delta#eta#Delta#phi (%.1f<p_{T}^{assoc} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {deltaEtaAxis, deltaPhiAxis, ptBinnedAxis}})));
 
-          auto htempSE_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhi_%s_SE_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("Raw #Delta#eta#Delta#phi (%.1f<p_{T}^{assoc} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, deltaPhiAxis, ptBinnedAxis}});
-          auto htempME_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhi_%s_ME_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("Raw #Delta#eta#Delta#phi (%.1f<p_{T}^{assoc} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, deltaPhiAxis, ptBinnedAxis}});
-          hEtaPhi_SE.push_back(std::move(htempSE_AntiDeAntiPr));
-          hEtaPhi_ME.push_back(std::move(htempME_AntiDeAntiPr));
-
-          auto hCorrtempSE_AntiDeAntiPr = registry.add<TH3>(Form("hCorrEtaPhi_%s_SE_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("#Delta#eta#Delta#phi (%.1f<p_{T}^{assoc} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, deltaPhiAxis, ptBinnedAxis}});
-          auto hCorrtempME_AntiDeAntiPr = registry.add<TH3>(Form("hCorrEtaPhi_%s_ME_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("#Delta#eta#Delta#phi (%.1f<p_{T}^{assoc} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, deltaPhiAxis, ptBinnedAxis}});
-          hCorrEtaPhi_SE.push_back(std::move(hCorrtempSE_AntiDeAntiPr));
-          hCorrEtaPhi_ME.push_back(std::move(hCorrtempME_AntiDeAntiPr));
+          hCorrEtaPhiSameEv.push_back(std::move(registry.add<TH3>(Form("hCorrEtaPhi_%s_SE_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("#Delta#eta#Delta#phi (%.1f<p_{T}^{assoc} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {deltaEtaAxis, deltaPhiAxis, ptBinnedAxis}})));
+          hCorrEtaPhiMixdEv.push_back(std::move(registry.add<TH3>(Form("hCorrEtaPhi_%s_ME_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("#Delta#eta#Delta#phi (%.1f<p_{T}^{assoc} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {deltaEtaAxis, deltaPhiAxis, ptBinnedAxis}})));
         }
       }
     }
@@ -283,44 +268,44 @@ struct HadronNucleiCorrelation {
 
     if (doQA) {
       // Track QA
-      QA.add("QA/hVtxZ_trk", "#it{z}_{vtx}", {HistType::kTH1D, {{150, -15.f, 15.f, "#it{z}_{vtx} (cm)"}}});
-      QA.add("QA/hTPCnClusters", "N TPC Clusters; N TPC Clusters", {HistType::kTH1D, {{200, 0.f, 200.f}}});
-      QA.add("QA/hTPCSharedClusters", "N TPC Shared Clusters; N TPC SharedClusters", {HistType::kTH1D, {{100, 0.f, 1.f}}});
-      QA.add("QA/hTPCchi2", "TPC chi2/Ncls; TPC chi2/Ncls", {HistType::kTH1D, {{100, 0.f, 10.f}}});
-      QA.add("QA/hTPCcrossedRowsOverFindableCls", "TPC crossed Rows Over Findable Cls; TPC Crossed Rows Over Findable Cls", {HistType::kTH1D, {{100, 0.f, 2.f}}});
-      QA.add("QA/hITSchi2", "ITS chi2/Ncls; ITS chi2/Ncls", {HistType::kTH1D, {{100, 0.f, 20.f}}});
-      QA.add("QA/hDCAxy", "DCAxy", {HistType::kTH2D, {{200, -0.2f, 0.2f, "DCA xy (cm)"}, {100, 0.f, 10.f, "p_{T} GeV/c"}}});
-      QA.add("QA/hDCAz", "DCAz", {HistType::kTH2D, {{200, -0.2f, 0.2f, "DCA z (cm)"}, {100, 0.f, 10.f, "p_{T} GeV/c"}}});
-      QA.add("QA/TPCChi2VsPZ", "TPCChi2VsPZ", {HistType::kTH2D, {{100, 0.f, 10.f, "p_{TPC}/Z (GeV/c)"}, {120, 0.f, 6.f, "TPC Chi2"}}});
-      QA.add("QA/h2dTPCTOF_Pr", "n#sigma TPC vs n#sigma TOF; n#sigma TPC; n#sigma TOF", {HistType::kTH2D, {axisNSigma, axisNSigma}});
-      QA.add("QA/h2dTPCTOF_AntiPr", "n#sigma TPC vs n#sigma TOF; n#sigma TPC; n#sigma TOF", {HistType::kTH2D, {axisNSigma, axisNSigma}});
-      QA.add("QA/hnSigmaTPCVsPt_El", "n#sigma TPC vs p_{T} for e hypothesis (all tracks); p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2D, {pTAxis, axisNSigma}});
-      QA.add("QA/hnSigmaTPCVsPt_Pr", "n#sigma TPC vs p_{T} for p hypothesis (all tracks); p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2D, {pTAxis, axisNSigma}});
-      QA.add("QA/hnSigmaTPCVsPt_De", "n#sigma TPC vs p_{T} for d hypothesis (all tracks); p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2D, {pTAxis, axisNSigma}});
-      QA.add("QA/hnSigmaTOFVsPt_Pr", "n#sigma TOF vs p_{T} for p hypothesis (all tracks); p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2D, {pTAxis, axisNSigma}});
-      QA.add("QA/hnSigmaTOFVsPt_De", "n#sigma TOF vs p_{T} for d hypothesis (all tracks); p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2D, {pTAxis, axisNSigma}});
-      QA.add("QA/hnSigmaITSVsPt_Pr", "n#sigma ITS vs p_{T} for p hypothesis (all tracks); p_{T} (GeV/c); n#sigma ITS", {HistType::kTH2D, {pTAxis, axisNSigma}});
-      QA.add("QA/hnSigmaITSVsPt_De", "n#sigma ITS vs p_{T} for d hypothesis (all tracks); p_{T} (GeV/c); n#sigma ITS", {HistType::kTH2D, {pTAxis, axisNSigma}});
-      QA.add("QA/hdEtadPhistar", ";dPhi*;dEta ", {HistType::kTH2D, {{101, -0.2, 0.2, "dPhi*"}, {101, -0.2, 0.2, "dEta"}}});
+      registryQa.add("QA/hVtxZ_trk", "#it{z}_{vtx}", {HistType::kTH1D, {{150, -15.f, 15.f, "#it{z}_{vtx} (cm)"}}});
+      registryQa.add("QA/hTPCnClusters", "N TPC Clusters; N TPC Clusters", {HistType::kTH1D, {{200, 0.f, 200.f}}});
+      registryQa.add("QA/hTPCSharedClusters", "N TPC Shared Clusters; N TPC SharedClusters", {HistType::kTH1D, {{100, 0.f, 1.f}}});
+      registryQa.add("QA/hTPCchi2", "TPC chi2/Ncls; TPC chi2/Ncls", {HistType::kTH1D, {{100, 0.f, 10.f}}});
+      registryQa.add("QA/hTPCcrossedRowsOverFindableCls", "TPC crossed Rows Over Findable Cls; TPC Crossed Rows Over Findable Cls", {HistType::kTH1D, {{100, 0.f, 2.f}}});
+      registryQa.add("QA/hITSchi2", "ITS chi2/Ncls; ITS chi2/Ncls", {HistType::kTH1D, {{100, 0.f, 20.f}}});
+      registryQa.add("QA/hDCAxy", "DCAxy", {HistType::kTH2D, {{200, -0.2f, 0.2f, "DCA xy (cm)"}, {100, 0.f, 10.f, "p_{T} GeV/c"}}});
+      registryQa.add("QA/hDCAz", "DCAz", {HistType::kTH2D, {{200, -0.2f, 0.2f, "DCA z (cm)"}, {100, 0.f, 10.f, "p_{T} GeV/c"}}});
+      registryQa.add("QA/TPCChi2VsPZ", "TPCChi2VsPZ", {HistType::kTH2D, {{100, 0.f, 10.f, "p_{TPC}/Z (GeV/c)"}, {120, 0.f, 6.f, "TPC Chi2"}}});
+      registryQa.add("QA/h2dTPCTOF_Pr", "n#sigma TPC vs n#sigma TOF; n#sigma TPC; n#sigma TOF", {HistType::kTH2D, {axisNSigma, axisNSigma}});
+      registryQa.add("QA/h2dTPCTOF_AntiPr", "n#sigma TPC vs n#sigma TOF; n#sigma TPC; n#sigma TOF", {HistType::kTH2D, {axisNSigma, axisNSigma}});
+      registryQa.add("QA/hnSigmaTPCVsPt_El", "n#sigma TPC vs p_{T} for e hypothesis (all tracks); p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2D, {ptAxis, axisNSigma}});
+      registryQa.add("QA/hnSigmaTPCVsPt_Pr", "n#sigma TPC vs p_{T} for p hypothesis (all tracks); p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2D, {ptAxis, axisNSigma}});
+      registryQa.add("QA/hnSigmaTPCVsPt_De", "n#sigma TPC vs p_{T} for d hypothesis (all tracks); p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2D, {ptAxis, axisNSigma}});
+      registryQa.add("QA/hnSigmaTOFVsPt_Pr", "n#sigma TOF vs p_{T} for p hypothesis (all tracks); p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2D, {ptAxis, axisNSigma}});
+      registryQa.add("QA/hnSigmaTOFVsPt_De", "n#sigma TOF vs p_{T} for d hypothesis (all tracks); p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2D, {ptAxis, axisNSigma}});
+      registryQa.add("QA/hnSigmaITSVsPt_Pr", "n#sigma ITS vs p_{T} for p hypothesis (all tracks); p_{T} (GeV/c); n#sigma ITS", {HistType::kTH2D, {ptAxis, axisNSigma}});
+      registryQa.add("QA/hnSigmaITSVsPt_De", "n#sigma ITS vs p_{T} for d hypothesis (all tracks); p_{T} (GeV/c); n#sigma ITS", {HistType::kTH2D, {ptAxis, axisNSigma}});
+      registryQa.add("QA/hdEtadPhistar", ";dPhi*;dEta ", {HistType::kTH2D, {{101, -0.2, 0.2, "dPhi*"}, {101, -0.2, 0.2, "dEta"}}});
 
       if (!isMC) {
-        QA.add("QA/hEtaPr", Form("#eta ditribution for p"), {HistType::kTH1F, {etaAxis}});
-        QA.add("QA/hPhiPr", Form("#phi ditribution for p"), {HistType::kTH1F, {phiAxis}});
-        QA.add("QA/hEtaAntiPr", Form("#eta ditribution for #bar{p}"), {HistType::kTH1F, {etaAxis}});
-        QA.add("QA/hPhiAntiPr", Form("#phi ditribution for #bar{p}"), {HistType::kTH1F, {phiAxis}});
-        QA.add("QA/hEtaDe", Form("#eta ditribution for d"), {HistType::kTH1F, {etaAxis}});
-        QA.add("QA/hPhiDe", Form("#phi ditribution for d"), {HistType::kTH1F, {phiAxis}});
-        QA.add("QA/hEtaAntiDe", Form("#eta ditribution for #bar{d}"), {HistType::kTH1F, {etaAxis}});
-        QA.add("QA/hPhiAntiDe", Form("#phi ditribution for #bar{d}"), {HistType::kTH1F, {phiAxis}});
+        registryQa.add("QA/hEtaPr", Form("#eta ditribution for p"), {HistType::kTH1F, {etaAxis}});
+        registryQa.add("QA/hPhiPr", Form("#phi ditribution for p"), {HistType::kTH1F, {phiAxis}});
+        registryQa.add("QA/hEtaAntiPr", Form("#eta ditribution for #bar{p}"), {HistType::kTH1F, {etaAxis}});
+        registryQa.add("QA/hPhiAntiPr", Form("#phi ditribution for #bar{p}"), {HistType::kTH1F, {phiAxis}});
+        registryQa.add("QA/hEtaDe", Form("#eta ditribution for d"), {HistType::kTH1F, {etaAxis}});
+        registryQa.add("QA/hPhiDe", Form("#phi ditribution for d"), {HistType::kTH1F, {phiAxis}});
+        registryQa.add("QA/hEtaAntiDe", Form("#eta ditribution for #bar{d}"), {HistType::kTH1F, {etaAxis}});
+        registryQa.add("QA/hPhiAntiDe", Form("#phi ditribution for #bar{d}"), {HistType::kTH1F, {phiAxis}});
 
-        QA.add("QA/hnSigmaTPCVsPt_Pr_AfterSel", "n#sigma TPC vs p_{T} for p hypothesis (all tracks); p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2D, {pTAxis, axisNSigma}});
-        QA.add("QA/hnSigmaTPCVsPt_De_AfterSel", "n#sigma TPC vs p_{T} for d hypothesis (all tracks); p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2D, {pTAxis, axisNSigma}});
-        QA.add("QA/hnSigmaTOFVsPt_Pr_AfterSel", "n#sigma TOF vs p_{T} for p hypothesis (all tracks); p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2D, {pTAxis, axisNSigma}});
-        QA.add("QA/hnSigmaTOFVsPt_De_AfterSel", "n#sigma TOF vs p_{T} for d hypothesis (all tracks); p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2D, {pTAxis, axisNSigma}});
-        QA.add("QA/hnSigmaITSVsPt_Pr_AfterSel", "n#sigma ITS vs p_{T} for p hypothesis (all tracks); p_{T} (GeV/c); n#sigma ITS", {HistType::kTH2D, {pTAxis, axisNSigma}});
-        QA.add("QA/hnSigmaITSVsPt_De_AfterSel", "n#sigma ITS vs p_{T} for d hypothesis (all tracks); p_{T} (GeV/c); n#sigma ITS", {HistType::kTH2D, {pTAxis, axisNSigma}});
-        QA.add("QA/h2dTPCTOF_Pr_AfterSel", "n#sigma TPC vs n#sigma TOF; n#sigma TPC; n#sigma TOF", {HistType::kTH2D, {axisNSigma, axisNSigma}});
-        QA.add("QA/h2dTPCTOF_AntiPr_AfterSel", "n#sigma TPC vs n#sigma TOF; n#sigma TPC; n#sigma TOF", {HistType::kTH2D, {axisNSigma, axisNSigma}});
+        registryQa.add("QA/hnSigmaTPCVsPt_Pr_AfterSel", "n#sigma TPC vs p_{T} for p hypothesis (all tracks); p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2D, {ptAxis, axisNSigma}});
+        registryQa.add("QA/hnSigmaTPCVsPt_De_AfterSel", "n#sigma TPC vs p_{T} for d hypothesis (all tracks); p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2D, {ptAxis, axisNSigma}});
+        registryQa.add("QA/hnSigmaTOFVsPt_Pr_AfterSel", "n#sigma TOF vs p_{T} for p hypothesis (all tracks); p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2D, {ptAxis, axisNSigma}});
+        registryQa.add("QA/hnSigmaTOFVsPt_De_AfterSel", "n#sigma TOF vs p_{T} for d hypothesis (all tracks); p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2D, {ptAxis, axisNSigma}});
+        registryQa.add("QA/hnSigmaITSVsPt_Pr_AfterSel", "n#sigma ITS vs p_{T} for p hypothesis (all tracks); p_{T} (GeV/c); n#sigma ITS", {HistType::kTH2D, {ptAxis, axisNSigma}});
+        registryQa.add("QA/hnSigmaITSVsPt_De_AfterSel", "n#sigma ITS vs p_{T} for d hypothesis (all tracks); p_{T} (GeV/c); n#sigma ITS", {HistType::kTH2D, {ptAxis, axisNSigma}});
+        registryQa.add("QA/h2dTPCTOF_Pr_AfterSel", "n#sigma TPC vs n#sigma TOF; n#sigma TPC; n#sigma TOF", {HistType::kTH2D, {axisNSigma, axisNSigma}});
+        registryQa.add("QA/h2dTPCTOF_AntiPr_AfterSel", "n#sigma TPC vs n#sigma TOF; n#sigma TPC; n#sigma TOF", {HistType::kTH2D, {axisNSigma, axisNSigma}});
       }
     }
 
@@ -338,32 +323,32 @@ struct HadronNucleiCorrelation {
       registry.add("hSecWeakDeDCAxy", "DCAxy d", {HistType::kTH2D, {{600, -3.f, 3.f, "DCA xy (cm)"}, {100, 0.f, 10.f, "p_{T} GeV/c"}}});
       registry.add("hSecWeakAntiDeDCAxy", "DCAxy #bar{d}", {HistType::kTH2D, {{600, -3.f, 3.f, "DCA xy (cm)"}, {100, 0.f, 10.f, "p_{T} GeV/c"}}});
 
-      registry.add("hReco_EtaPhiPt_Proton", "Gen (anti)protons in reco collisions", {HistType::kTH3F, {etaAxis, phiAxis, pTAxis_small}});
-      registry.add("hReco_EtaPhiPt_Deuteron", "Gen (anti)deuteron in reco collisions", {HistType::kTH3F, {etaAxis, phiAxis, pTAxis_small}});
-      registry.add("hReco_PID_EtaPhiPt_Proton", "Gen (anti)protons + PID in reco collisions", {HistType::kTH3F, {etaAxis, phiAxis, pTAxis_small}});
-      registry.add("hReco_PID_EtaPhiPt_Deuteron", "Gen (anti)deuteron + PID in reco collisions", {HistType::kTH3F, {etaAxis, phiAxis, pTAxis_small}});
-      registry.add("hReco_EtaPhiPtMC_Proton", "Gen (anti)protons in reco collisions (MC info used)", {HistType::kTH3F, {etaAxis, phiAxis, pTAxis_small}});
-      registry.add("hReco_EtaPhiPtMC_Deuteron", "Gen (anti)deuteron in reco collisions (MC info used)", {HistType::kTH3F, {etaAxis, phiAxis, pTAxis_small}});
-      registry.add("hReco_Pt_Proton", "Reco (anti)protons in reco collisions", {HistType::kTH1F, {pTAxis_small}});
-      registry.add("hReco_Pt_Deuteron", "Reco (anti)deuterons in reco collisions", {HistType::kTH1F, {pTAxis_small}});
+      registry.add("hReco_EtaPhiPt_Proton", "Gen (anti)protons in reco collisions", {HistType::kTH3F, {etaAxis, phiAxis, ptAxisSmall}});
+      registry.add("hReco_EtaPhiPt_Deuteron", "Gen (anti)deuteron in reco collisions", {HistType::kTH3F, {etaAxis, phiAxis, ptAxisSmall}});
+      registry.add("hReco_PID_EtaPhiPt_Proton", "Gen (anti)protons + PID in reco collisions", {HistType::kTH3F, {etaAxis, phiAxis, ptAxisSmall}});
+      registry.add("hReco_PID_EtaPhiPt_Deuteron", "Gen (anti)deuteron + PID in reco collisions", {HistType::kTH3F, {etaAxis, phiAxis, ptAxisSmall}});
+      registry.add("hReco_EtaPhiPtMC_Proton", "Gen (anti)protons in reco collisions (MC info used)", {HistType::kTH3F, {etaAxis, phiAxis, ptAxisSmall}});
+      registry.add("hReco_EtaPhiPtMC_Deuteron", "Gen (anti)deuteron in reco collisions (MC info used)", {HistType::kTH3F, {etaAxis, phiAxis, ptAxisSmall}});
+      registry.add("hReco_Pt_Proton", "Reco (anti)protons in reco collisions", {HistType::kTH1F, {ptAxisSmall}});
+      registry.add("hReco_Pt_Deuteron", "Reco (anti)deuterons in reco collisions", {HistType::kTH1F, {ptAxisSmall}});
 
-      registry.add("hSec_EtaPhiPt_Proton", "Secondary (anti)protons", {HistType::kTH3F, {etaAxis, phiAxis, pTAxis_small}});
-      registry.add("hPrimSec_EtaPhiPt_Proton", "Primary + Secondary (anti)protons", {HistType::kTH3F, {etaAxis, phiAxis, pTAxis_small}});
+      registry.add("hSec_EtaPhiPt_Proton", "Secondary (anti)protons", {HistType::kTH3F, {etaAxis, phiAxis, ptAxisSmall}});
+      registry.add("hPrimSec_EtaPhiPt_Proton", "Primary + Secondary (anti)protons", {HistType::kTH3F, {etaAxis, phiAxis, ptAxisSmall}});
 
-      registry.add("hnSigmaTPCVsPt_Pr_MC", "n#sigma TPC vs p_{T} for p hypothesis true MC; p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2F, {pTAxis, axisNSigma}});
-      registry.add("hnSigmaTPCVsPt_De_MC", "n#sigma TPC vs p_{T} for d hypothesis true MC; p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2F, {pTAxis, axisNSigma}});
-      registry.add("hnSigmaTOFVsPt_Pr_MC", "n#sigma TOF vs p_{T} for p hypothesis true MC; p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2F, {pTAxis, axisNSigma}});
-      registry.add("hnSigmaTOFVsPt_De_MC", "n#sigma TOF vs p_{T} for d hypothesis true MC; p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2F, {pTAxis, axisNSigma}});
+      registry.add("hnSigmaTPCVsPt_Pr_MC", "n#sigma TPC vs p_{T} for p hypothesis true MC; p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2F, {ptAxis, axisNSigma}});
+      registry.add("hnSigmaTPCVsPt_De_MC", "n#sigma TPC vs p_{T} for d hypothesis true MC; p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2F, {ptAxis, axisNSigma}});
+      registry.add("hnSigmaTOFVsPt_Pr_MC", "n#sigma TOF vs p_{T} for p hypothesis true MC; p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2F, {ptAxis, axisNSigma}});
+      registry.add("hnSigmaTOFVsPt_De_MC", "n#sigma TOF vs p_{T} for d hypothesis true MC; p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2F, {ptAxis, axisNSigma}});
 
       registry.add("hResPt_Proton", "; p_{T}(gen) [GeV/c]; p_{T}(reco) - p_{T}(gen) ", {HistType::kTH2F, {{100, 0.f, 10.f, "p_{T}(gen) GeV/c"}, {200, -1.f, 1.f, "p_{T}(reco) - p_{T}(gen) "}}});
       registry.add("hResPt_Deuteron", "; p_{T}(gen) [GeV/c]; p_{T}(reco) - p_{T}(gen) ", {HistType::kTH2F, {{100, 0.f, 10.f, "p_{T}(gen) GeV/c"}, {200, -1.f, 1.f, "p_{T}(reco) - p_{T}(gen) "}}});
       registry.add("hResPt_AntiProton", "; p_{T}(gen) [GeV/c]; p_{T}(reco) - p_{T}(gen) ", {HistType::kTH2F, {{100, 0.f, 10.f, "p_{T}(gen) GeV/c"}, {200, -1.f, 1.f, "p_{T}(reco) - p_{T}(gen) "}}});
       registry.add("hResPt_AntiDeuteron", "; p_{T}(gen) [GeV/c]; p_{T}(reco) - p_{T}(gen) ", {HistType::kTH2F, {{100, 0.f, 10.f, "p_{T}(gen) GeV/c"}, {200, -1.f, 1.f, "p_{T}(reco) - p_{T}(gen) "}}});
 
-      registry.add("hNumeratorPurity_Proton", " p(#bar{p}); p_{T} (GeV/c);S", {HistType::kTH1F, {pTAxis_small}});
-      registry.add("hNumeratorPurity_Deuteron", " d(#bar{d}); p_{T} (GeV/c);S", {HistType::kTH1F, {pTAxis_small}});
-      registry.add("hDenominatorPurity_Proton", " p(#bar{p}); p_{T} (GeV/c);(S + B)", {HistType::kTH1F, {pTAxis_small}});
-      registry.add("hDenominatorPurity_Deuteron", " d(#bar{d}); p_{T} (GeV/c); (S + B)", {HistType::kTH1F, {pTAxis_small}});
+      registry.add("hNumeratorPurity_Proton", " p(#bar{p}); p_{T} (GeV/c);S", {HistType::kTH1F, {ptAxisSmall}});
+      registry.add("hNumeratorPurity_Deuteron", " d(#bar{d}); p_{T} (GeV/c);S", {HistType::kTH1F, {ptAxisSmall}});
+      registry.add("hDenominatorPurity_Proton", " p(#bar{p}); p_{T} (GeV/c);(S + B)", {HistType::kTH1F, {ptAxisSmall}});
+      registry.add("hDenominatorPurity_Deuteron", " d(#bar{d}); p_{T} (GeV/c); (S + B)", {HistType::kTH1F, {ptAxisSmall}});
 
       if (doMCQA) {
 
@@ -376,37 +361,37 @@ struct HadronNucleiCorrelation {
         registry.add("hResPhi_AntiProton", "; #phi(gen); #phi(reco) - #phi(gen)", {HistType::kTH2F, {{100, 0.f, o2::constants::math::TwoPI, "#phi(gen)"}, {200, -0.5f, 0.5f, "#phi(reco) - #phi(gen)"}}});
         registry.add("hResPhi_AntiDeuteron", "; #phi(gen); #phi(reco) - #phi(gen)", {HistType::kTH2F, {{100, 0.f, o2::constants::math::TwoPI, "#phi(gen)"}, {200, -0.5f, 0.5f, "#phi(reco) - #phi(gen)"}}});
 
-        registry.add("hNumeratorPurity_Proton_TPC", " p(#bar{p}); p_{T} (GeV/c);S", {HistType::kTH1F, {pTAxis_small}});
-        registry.add("hNumeratorPurity_Deuteron_TPC", " d(#bar{d}); p_{T} (GeV/c);S", {HistType::kTH1F, {pTAxis_small}});
-        registry.add("hNumeratorPurity_Proton_TPCTOF", " p(#bar{p}); p_{T} (GeV/c);S", {HistType::kTH1F, {pTAxis_small}});
-        registry.add("hNumeratorPurity_Deuteron_TPCTOF", " d(#bar{d}); p_{T} (GeV/c);S", {HistType::kTH1F, {pTAxis_small}});
-        registry.add("hNumeratorPurity_Proton_TPC_or_TOF", " p(#bar{p}); p_{T} (GeV/c);S", {HistType::kTH1F, {pTAxis_small}});
-        registry.add("hNumeratorPurity_Deuteron_TPC_or_TOF", " d(#bar{d}); p_{T} (GeV/c);S", {HistType::kTH1F, {pTAxis_small}});
-        registry.add("hNumeratorPurity_Proton_TPCEl_or_TOF", " p(#bar{p}); p_{T} (GeV/c);S", {HistType::kTH1F, {pTAxis_small}});
-        registry.add("hNumeratorPurity_Proton_TPCEl", " p(#bar{p}); p_{T} (GeV/c);S", {HistType::kTH1F, {pTAxis_small}});
-        registry.add("hNumeratorPurity_Deuteron_TPCEl", " d(#bar{d}); p_{T} (GeV/c);S", {HistType::kTH1F, {pTAxis_small}});
-        registry.add("hNumeratorPurity_Deuteron_TPCEl_or_TOF", " d(#bar{d}); p_{T} (GeV/c);S", {HistType::kTH1F, {pTAxis_small}});
-        registry.add("hDenominatorPurity_Proton_TPC", " p(#bar{p}); p_{T} (GeV/c); (S + B)", {HistType::kTH1F, {pTAxis_small}});
-        registry.add("hDenominatorPurity_Deuteron_TPC", " d(#bar{d}); p_{T} (GeV/c); (S + B)", {HistType::kTH1F, {pTAxis_small}});
-        registry.add("hDenominatorPurity_Proton_TPCTOF", " p(#bar{p}); p_{T} (GeV/c); (S + B)", {HistType::kTH1F, {pTAxis_small}});
-        registry.add("hDenominatorPurity_Deuteron_TPCTOF", " d(#bar{d}); p_{T} (GeV/c); (S + B)", {HistType::kTH1F, {pTAxis_small}});
-        registry.add("hDenominatorPurity_Proton_TPC_or_TOF", " p(#bar{p}); p_{T} (GeV/c); (S + B)", {HistType::kTH1F, {pTAxis_small}});
-        registry.add("hDenominatorPurity_Deuteron_TPC_or_TOF", " d(#bar{d}); p_{T} (GeV/c); (S + B)", {HistType::kTH1F, {pTAxis_small}});
-        registry.add("hDenominatorPurity_Proton_TPCEl", " p(#bar{p}); p_{T} (GeV/c); (S + B)", {HistType::kTH1F, {pTAxis_small}});
-        registry.add("hDenominatorPurity_Proton_TPCEl_or_TOF", " p(#bar{p}); p_{T} (GeV/c); (S + B)", {HistType::kTH1F, {pTAxis_small}});
-        registry.add("hDenominatorPurity_Deuteron_TPCEl", " d(#bar{d}); p_{T} (GeV/c); (S + B)", {HistType::kTH1F, {pTAxis_small}});
-        registry.add("hDenominatorPurity_Deuteron_TPCEl_or_TOF", " d(#bar{d}); p_{T} (GeV/c); (S + B)", {HistType::kTH1F, {pTAxis_small}});
+        registry.add("hNumeratorPurity_Proton_TPC", " p(#bar{p}); p_{T} (GeV/c);S", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hNumeratorPurity_Deuteron_TPC", " d(#bar{d}); p_{T} (GeV/c);S", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hNumeratorPurity_Proton_TPCTOF", " p(#bar{p}); p_{T} (GeV/c);S", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hNumeratorPurity_Deuteron_TPCTOF", " d(#bar{d}); p_{T} (GeV/c);S", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hNumeratorPurity_Proton_TPC_or_TOF", " p(#bar{p}); p_{T} (GeV/c);S", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hNumeratorPurity_Deuteron_TPC_or_TOF", " d(#bar{d}); p_{T} (GeV/c);S", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hNumeratorPurity_Proton_TPCEl_or_TOF", " p(#bar{p}); p_{T} (GeV/c);S", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hNumeratorPurity_Proton_TPCEl", " p(#bar{p}); p_{T} (GeV/c);S", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hNumeratorPurity_Deuteron_TPCEl", " d(#bar{d}); p_{T} (GeV/c);S", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hNumeratorPurity_Deuteron_TPCEl_or_TOF", " d(#bar{d}); p_{T} (GeV/c);S", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hDenominatorPurity_Proton_TPC", " p(#bar{p}); p_{T} (GeV/c); (S + B)", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hDenominatorPurity_Deuteron_TPC", " d(#bar{d}); p_{T} (GeV/c); (S + B)", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hDenominatorPurity_Proton_TPCTOF", " p(#bar{p}); p_{T} (GeV/c); (S + B)", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hDenominatorPurity_Deuteron_TPCTOF", " d(#bar{d}); p_{T} (GeV/c); (S + B)", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hDenominatorPurity_Proton_TPC_or_TOF", " p(#bar{p}); p_{T} (GeV/c); (S + B)", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hDenominatorPurity_Deuteron_TPC_or_TOF", " d(#bar{d}); p_{T} (GeV/c); (S + B)", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hDenominatorPurity_Proton_TPCEl", " p(#bar{p}); p_{T} (GeV/c); (S + B)", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hDenominatorPurity_Proton_TPCEl_or_TOF", " p(#bar{p}); p_{T} (GeV/c); (S + B)", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hDenominatorPurity_Deuteron_TPCEl", " d(#bar{d}); p_{T} (GeV/c); (S + B)", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hDenominatorPurity_Deuteron_TPCEl_or_TOF", " d(#bar{d}); p_{T} (GeV/c); (S + B)", {HistType::kTH1F, {ptAxisSmall}});
 
-        registry.add("hReco_Pt_Proton_TPC", "Reco (anti)protons in reco collisions", {HistType::kTH1F, {pTAxis_small}});
-        registry.add("hReco_Pt_Deuteron_TPC", "Reco (anti)deuterons in reco collisions", {HistType::kTH1F, {pTAxis_small}});
-        registry.add("hReco_Pt_Proton_TPCTOF", "Reco (anti)protons in reco collisions", {HistType::kTH1F, {pTAxis_small}});
-        registry.add("hReco_Pt_Deuteron_TPCTOF", "Reco (anti)deuterons in reco collisions", {HistType::kTH1F, {pTAxis_small}});
-        registry.add("hReco_Pt_Proton_TPC_or_TOF", "Reco (anti)protons in reco collisions", {HistType::kTH1F, {pTAxis_small}});
-        registry.add("hReco_Pt_Deuteron_TPC_or_TOF", "Reco (anti)deuterons in reco collisions", {HistType::kTH1F, {pTAxis_small}});
-        registry.add("hReco_Pt_Proton_TPCEl", "Reco (anti)protons in reco collisions", {HistType::kTH1F, {pTAxis_small}});
-        registry.add("hReco_Pt_Proton_TPCEl_or_TOF", "Reco (anti)protons in reco collisions", {HistType::kTH1F, {pTAxis_small}});
-        registry.add("hReco_Pt_Deuteron_TPCEl", "Reco (anti)deuterons in reco collisions", {HistType::kTH1F, {pTAxis_small}});
-        registry.add("hReco_Pt_Deuteron_TPCEl_or_TOF", "Reco (anti)protons in reco collisions", {HistType::kTH1F, {pTAxis_small}});
+        registry.add("hReco_Pt_Proton_TPC", "Reco (anti)protons in reco collisions", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hReco_Pt_Deuteron_TPC", "Reco (anti)deuterons in reco collisions", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hReco_Pt_Proton_TPCTOF", "Reco (anti)protons in reco collisions", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hReco_Pt_Deuteron_TPCTOF", "Reco (anti)deuterons in reco collisions", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hReco_Pt_Proton_TPC_or_TOF", "Reco (anti)protons in reco collisions", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hReco_Pt_Deuteron_TPC_or_TOF", "Reco (anti)deuterons in reco collisions", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hReco_Pt_Proton_TPCEl", "Reco (anti)protons in reco collisions", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hReco_Pt_Proton_TPCEl_or_TOF", "Reco (anti)protons in reco collisions", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hReco_Pt_Deuteron_TPCEl", "Reco (anti)deuterons in reco collisions", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hReco_Pt_Deuteron_TPCEl_or_TOF", "Reco (anti)protons in reco collisions", {HistType::kTH1F, {ptAxisSmall}});
       }
     }
 
@@ -414,8 +399,8 @@ struct HadronNucleiCorrelation {
       registry.add("Generated/hNEventsMC", "hNEventsMC", {HistType::kTH1D, {{1, 0.f, 1.f}}});
       registry.get<TH1>(HIST("Generated/hNEventsMC"))->GetXaxis()->SetBinLabel(1, "All");
 
-      registry.add("hGen_EtaPhiPt_Proton", "Gen (anti)protons in gen collisions", {HistType::kTH3F, {etaAxis, phiAxis, pTAxis_small}});
-      registry.add("hGen_EtaPhiPt_Deuteron", "Gen (anti)deuteron in gen collisions", {HistType::kTH3F, {etaAxis, phiAxis, pTAxis_small}});
+      registry.add("hGen_EtaPhiPt_Proton", "Gen (anti)protons in gen collisions", {HistType::kTH3F, {etaAxis, phiAxis, ptAxisSmall}});
+      registry.add("hGen_EtaPhiPt_Deuteron", "Gen (anti)deuteron in gen collisions", {HistType::kTH3F, {etaAxis, phiAxis, ptAxisSmall}});
 
       auto hp = registry.add<TH1>("Generated/hQAProtons", "hQAProtons", {HistType::kTH1D, {{5, 0.f, 5.f}}});
       hp->GetXaxis()->SetBinLabel(1, "All");
@@ -658,15 +643,15 @@ struct HadronNucleiCorrelation {
   template <typename T1>
   void fillHistograms(T1 const& part0, T1 const& part1, bool ME, bool isIdentical)
   {
-    Pair->SetPair(&part0, &part1);
-    Pair->SetIdentical(isIdentical);
-    if (isIdentical && Pair->IsClosePair(dEta, dPhi, radiusTPC)) {
-      QA.fill(HIST("QA/hdEtadPhistar"), Pair->GetPhiStarDiff(radiusTPC), Pair->GetEtaDiff());
+    pair->SetPair(&part0, &part1);
+    pair->SetIdentical(isIdentical);
+    if (isIdentical && pair->IsClosePair(dEta, dPhi, radiusTPC)) {
+      registryQa.fill(HIST("QA/hdEtadPhistar"), pair->GetPhiStarDiff(radiusTPC), pair->GetEtaDiff());
       return;
     }
 
-    if (doClosePairRejection && Pair->IsClosePair(dEta, dPhi, radiusTPC)) {
-      QA.fill(HIST("QA/hdEtadPhistar"), Pair->GetPhiStarDiff(radiusTPC), Pair->GetEtaDiff());
+    if (doClosePairRejection && pair->IsClosePair(dEta, dPhi, radiusTPC)) {
+      registryQa.fill(HIST("QA/hdEtadPhistar"), pair->GetPhiStarDiff(radiusTPC), pair->GetEtaDiff());
       return;
     }
 
@@ -683,55 +668,55 @@ struct HadronNucleiCorrelation {
         if (doCorrection) { // Apply corrections
           switch (mode) {
             case kDbarPbar:
-              corr0 = hEffpTEta_antideuteron->Interpolate(part0.pt(), part0.eta());
-              corr1 = hEffpTEta_antiproton->Interpolate(part1.pt(), part1.eta());
+              corr0 = hEffPtEtaAntiDeuteron->Interpolate(part0.pt(), part0.eta());
+              corr1 = hEffPtEtaAntiProton->Interpolate(part1.pt(), part1.eta());
               break;
             case kDP:
-              corr0 = hEffpTEta_deuteron->Interpolate(part0.pt(), part0.eta());
-              corr1 = hEffpTEta_proton->Interpolate(part1.pt(), part1.eta());
+              corr0 = hEffPtEtaDeuteron->Interpolate(part0.pt(), part0.eta());
+              corr1 = hEffPtEtaProton->Interpolate(part1.pt(), part1.eta());
               break;
             case kDbarP:
-              corr0 = hEffpTEta_antideuteron->Interpolate(part0.pt(), part0.eta());
-              corr1 = hEffpTEta_proton->Interpolate(part1.pt(), part1.eta());
+              corr0 = hEffPtEtaAntiDeuteron->Interpolate(part0.pt(), part0.eta());
+              corr1 = hEffPtEtaProton->Interpolate(part1.pt(), part1.eta());
               break;
             case kDPbar:
-              corr0 = hEffpTEta_deuteron->Interpolate(part0.pt(), part0.eta());
-              corr1 = hEffpTEta_antiproton->Interpolate(part1.pt(), part1.eta());
+              corr0 = hEffPtEtaDeuteron->Interpolate(part0.pt(), part0.eta());
+              corr1 = hEffPtEtaAntiProton->Interpolate(part1.pt(), part1.eta());
               break;
             case kPbarP:
-              corr0 = hEffpTEta_antiproton->Interpolate(part0.pt(), part0.eta());
-              corr1 = hEffpTEta_proton->Interpolate(part1.pt(), part1.eta());
+              corr0 = hEffPtEtaAntiProton->Interpolate(part0.pt(), part0.eta());
+              corr1 = hEffPtEtaProton->Interpolate(part1.pt(), part1.eta());
               break;
             case kPbarPbar:
-              corr0 = hEffpTEta_antiproton->Interpolate(part0.pt(), part0.eta());
-              corr1 = hEffpTEta_antiproton->Interpolate(part1.pt(), part1.eta());
+              corr0 = hEffPtEtaAntiProton->Interpolate(part0.pt(), part0.eta());
+              corr1 = hEffPtEtaAntiProton->Interpolate(part1.pt(), part1.eta());
               break;
             case kPP:
-              corr0 = hEffpTEta_proton->Interpolate(part0.pt(), part0.eta());
-              corr1 = hEffpTEta_proton->Interpolate(part1.pt(), part1.eta());
+              corr0 = hEffPtEtaProton->Interpolate(part0.pt(), part0.eta());
+              corr1 = hEffPtEtaProton->Interpolate(part1.pt(), part1.eta());
               break;
             case kPPbar:
-              corr0 = hEffpTEta_proton->Interpolate(part0.pt(), part0.eta());
-              corr1 = hEffpTEta_antiproton->Interpolate(part1.pt(), part1.eta());
+              corr0 = hEffPtEtaProton->Interpolate(part0.pt(), part0.eta());
+              corr1 = hEffPtEtaAntiProton->Interpolate(part1.pt(), part1.eta());
               break;
           }
         }
 
         if (ME) {
-          hEtaPhi_ME[k]->Fill(deltaEta, deltaPhi, part1.pt());
+          hEtaPhiMixdEv[k]->Fill(deltaEta, deltaPhi, part1.pt());
           if (corr0 != 0 && corr1 != 0) {
-            hCorrEtaPhi_ME[k]->Fill(deltaEta, deltaPhi, part1.pt(), 1. / (corr0 * corr1));
+            hCorrEtaPhiMixdEv[k]->Fill(deltaEta, deltaPhi, part1.pt(), 1. / (corr0 * corr1));
           }
         } else {
-          hEtaPhi_SE[k]->Fill(deltaEta, deltaPhi, part1.pt());
+          hEtaPhiSameEv[k]->Fill(deltaEta, deltaPhi, part1.pt());
           if (corr0 != 0 && corr1 != 0) {
-            hCorrEtaPhi_SE[k]->Fill(deltaEta, deltaPhi, part1.pt(), 1. / (corr0 * corr1));
+            hCorrEtaPhiSameEv[k]->Fill(deltaEta, deltaPhi, part1.pt(), 1. / (corr0 * corr1));
           }
         } // SE
       } // pT condition
     } // nBinspT loop
 
-    Pair->ResetPair();
+    pair->ResetPair();
   }
 
   template <typename T1>
@@ -747,11 +732,11 @@ struct HadronNucleiCorrelation {
       if (part0.pt() >= pTBins.value.at(k) && part0.pt() < pTBins.value.at(k + 1)) {
 
         if (ME) {
-          hEtaPhi_ME[k]->Fill(deltaEta, deltaPhi, part1.pt());
-          hCorrEtaPhi_ME[k]->Fill(deltaEta, deltaPhi, part1.pt());
+          hEtaPhiMixdEv[k]->Fill(deltaEta, deltaPhi, part1.pt());
+          hCorrEtaPhiMixdEv[k]->Fill(deltaEta, deltaPhi, part1.pt());
         } else {
-          hEtaPhi_SE[k]->Fill(deltaEta, deltaPhi, part1.pt());
-          hCorrEtaPhi_SE[k]->Fill(deltaEta, deltaPhi, part1.pt());
+          hEtaPhiSameEv[k]->Fill(deltaEta, deltaPhi, part1.pt());
+          hCorrEtaPhiSameEv[k]->Fill(deltaEta, deltaPhi, part1.pt());
         } // SE
       } // pT condition
     } // nBinspT loop
@@ -764,23 +749,23 @@ struct HadronNucleiCorrelation {
       LOGP(error, "Could not open corrections file {}", Form("%s", filepath.Data()));
       return;
     }
-    hEffpTEta_proton = static_cast<TH2F*>(l->FindObject(Form("%s_proton", histname.Data())));
-    if (!hEffpTEta_proton) {
+    hEffPtEtaProton = static_cast<TH2F*>(l->FindObject(Form("%s_proton", histname.Data())));
+    if (!hEffPtEtaProton) {
       LOGP(error, "Could not open histogram {}", Form("%s_proton", histname.Data()));
       return;
     }
-    hEffpTEta_antiproton = static_cast<TH2F*>(l->FindObject(Form("%s_antiproton", histname.Data())));
-    if (!hEffpTEta_antiproton) {
+    hEffPtEtaAntiProton = static_cast<TH2F*>(l->FindObject(Form("%s_antiproton", histname.Data())));
+    if (!hEffPtEtaAntiProton) {
       LOGP(error, "Could not open histogram {}", Form("%s_antiproton", histname.Data()));
       return;
     }
-    hEffpTEta_deuteron = static_cast<TH2F*>(l->FindObject(Form("%s_deuteron", histname.Data())));
-    if (!hEffpTEta_deuteron) {
+    hEffPtEtaDeuteron = static_cast<TH2F*>(l->FindObject(Form("%s_deuteron", histname.Data())));
+    if (!hEffPtEtaDeuteron) {
       LOGP(error, "Could not open histogram {}", Form("%s_deuteron", histname.Data()));
       return;
     }
-    hEffpTEta_antideuteron = static_cast<TH2F*>(l->FindObject(Form("%s_antideuteron", histname.Data())));
-    if (!hEffpTEta_antideuteron) {
+    hEffPtEtaAntiDeuteron = static_cast<TH2F*>(l->FindObject(Form("%s_antideuteron", histname.Data())));
+    if (!hEffPtEtaAntiDeuteron) {
       LOGP(error, "Could not open histogram {}", Form("%s_antideuteron", histname.Data()));
       return;
     }
@@ -840,60 +825,60 @@ struct HadronNucleiCorrelation {
         continue;
 
       if (doQA) {
-        QA.fill(HIST("QA/hTPCnClusters"), track.tpcNClsFound());
-        QA.fill(HIST("QA/hTPCSharedClusters"), track.tpcFractionSharedCls());
-        QA.fill(HIST("QA/hTPCchi2"), track.tpcChi2NCl());
-        QA.fill(HIST("QA/hTPCcrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
-        QA.fill(HIST("QA/hITSchi2"), track.itsChi2NCl());
-        QA.fill(HIST("QA/hDCAxy"), track.dcaXY(), track.pt());
-        QA.fill(HIST("QA/hDCAz"), track.dcaZ(), track.pt());
-        QA.fill(HIST("QA/TPCChi2VsPZ"), track.tpcInnerParam() / track.sign(), track.tpcChi2NCl());
-        QA.fill(HIST("QA/hVtxZ_trk"), collision.posZ());
-        QA.fill(HIST("QA/hnSigmaTPCVsPt_El"), track.pt() * track.sign(), track.tpcNSigmaEl());
-        QA.fill(HIST("QA/hnSigmaTPCVsPt_Pr"), track.pt() * track.sign(), track.tpcNSigmaPr());
-        QA.fill(HIST("QA/hnSigmaTPCVsPt_De"), track.pt() * track.sign(), track.tpcNSigmaDe());
-        QA.fill(HIST("QA/hnSigmaTOFVsPt_Pr"), track.pt() * track.sign(), track.tofNSigmaPr());
-        QA.fill(HIST("QA/hnSigmaTOFVsPt_De"), track.pt() * track.sign(), track.tofNSigmaDe());
-        QA.fill(HIST("QA/hnSigmaITSVsPt_Pr"), track.pt() * track.sign(), track.itsNSigmaPr());
-        QA.fill(HIST("QA/hnSigmaITSVsPt_De"), track.pt() * track.sign(), track.itsNSigmaDe());
-        QA.fill(HIST("QA/h2dTPCTOF_AntiPr"), track.tpcNSigmaPr(), track.tofNSigmaPr());
-        QA.fill(HIST("QA/h2dTPCTOF_Pr"), track.tpcNSigmaPr(), track.tofNSigmaPr());
+        registryQa.fill(HIST("QA/hTPCnClusters"), track.tpcNClsFound());
+        registryQa.fill(HIST("QA/hTPCSharedClusters"), track.tpcFractionSharedCls());
+        registryQa.fill(HIST("QA/hTPCchi2"), track.tpcChi2NCl());
+        registryQa.fill(HIST("QA/hTPCcrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
+        registryQa.fill(HIST("QA/hITSchi2"), track.itsChi2NCl());
+        registryQa.fill(HIST("QA/hDCAxy"), track.dcaXY(), track.pt());
+        registryQa.fill(HIST("QA/hDCAz"), track.dcaZ(), track.pt());
+        registryQa.fill(HIST("QA/TPCChi2VsPZ"), track.tpcInnerParam() / track.sign(), track.tpcChi2NCl());
+        registryQa.fill(HIST("QA/hVtxZ_trk"), collision.posZ());
+        registryQa.fill(HIST("QA/hnSigmaTPCVsPt_El"), track.pt() * track.sign(), track.tpcNSigmaEl());
+        registryQa.fill(HIST("QA/hnSigmaTPCVsPt_Pr"), track.pt() * track.sign(), track.tpcNSigmaPr());
+        registryQa.fill(HIST("QA/hnSigmaTPCVsPt_De"), track.pt() * track.sign(), track.tpcNSigmaDe());
+        registryQa.fill(HIST("QA/hnSigmaTOFVsPt_Pr"), track.pt() * track.sign(), track.tofNSigmaPr());
+        registryQa.fill(HIST("QA/hnSigmaTOFVsPt_De"), track.pt() * track.sign(), track.tofNSigmaDe());
+        registryQa.fill(HIST("QA/hnSigmaITSVsPt_Pr"), track.pt() * track.sign(), track.itsNSigmaPr());
+        registryQa.fill(HIST("QA/hnSigmaITSVsPt_De"), track.pt() * track.sign(), track.itsNSigmaDe());
+        registryQa.fill(HIST("QA/h2dTPCTOF_AntiPr"), track.tpcNSigmaPr(), track.tofNSigmaPr());
+        registryQa.fill(HIST("QA/h2dTPCTOF_Pr"), track.tpcNSigmaPr(), track.tofNSigmaPr());
 
         if (IsProton(track, -1)) {
-          QA.fill(HIST("QA/hEtaAntiPr"), track.eta());
-          QA.fill(HIST("QA/hPhiAntiPr"), track.phi());
-          QA.fill(HIST("QA/hnSigmaTOFVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.tofNSigmaPr());
-          QA.fill(HIST("QA/hnSigmaTPCVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.tpcNSigmaPr());
-          QA.fill(HIST("QA/hnSigmaITSVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.itsNSigmaPr());
-          QA.fill(HIST("QA/h2dTPCTOF_AntiPr_AfterSel"), track.tpcNSigmaPr(), track.tofNSigmaPr());
+          registryQa.fill(HIST("QA/hEtaAntiPr"), track.eta());
+          registryQa.fill(HIST("QA/hPhiAntiPr"), track.phi());
+          registryQa.fill(HIST("QA/hnSigmaTOFVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.tofNSigmaPr());
+          registryQa.fill(HIST("QA/hnSigmaTPCVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.tpcNSigmaPr());
+          registryQa.fill(HIST("QA/hnSigmaITSVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.itsNSigmaPr());
+          registryQa.fill(HIST("QA/h2dTPCTOF_AntiPr_AfterSel"), track.tpcNSigmaPr(), track.tofNSigmaPr());
         }
         if (IsProton(track, +1)) {
-          QA.fill(HIST("QA/hEtaPr"), track.eta());
-          QA.fill(HIST("QA/hPhiPr"), track.phi());
-          QA.fill(HIST("QA/hnSigmaTOFVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.tofNSigmaPr());
-          QA.fill(HIST("QA/hnSigmaTPCVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.tpcNSigmaPr());
-          QA.fill(HIST("QA/hnSigmaITSVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.itsNSigmaPr());
-          QA.fill(HIST("QA/h2dTPCTOF_Pr_AfterSel"), track.tpcNSigmaPr(), track.tofNSigmaPr());
+          registryQa.fill(HIST("QA/hEtaPr"), track.eta());
+          registryQa.fill(HIST("QA/hPhiPr"), track.phi());
+          registryQa.fill(HIST("QA/hnSigmaTOFVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.tofNSigmaPr());
+          registryQa.fill(HIST("QA/hnSigmaTPCVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.tpcNSigmaPr());
+          registryQa.fill(HIST("QA/hnSigmaITSVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.itsNSigmaPr());
+          registryQa.fill(HIST("QA/h2dTPCTOF_Pr_AfterSel"), track.tpcNSigmaPr(), track.tofNSigmaPr());
         }
         if (IsDeuteron(track, -1)) {
-          QA.fill(HIST("QA/hEtaAntiDe"), track.eta());
-          QA.fill(HIST("QA/hPhiAntiDe"), track.phi());
-          QA.fill(HIST("QA/hnSigmaTOFVsPt_De_AfterSel"), track.pt() * track.sign(), track.tofNSigmaDe());
-          QA.fill(HIST("QA/hnSigmaTPCVsPt_De_AfterSel"), track.pt() * track.sign(), track.tpcNSigmaDe());
-          QA.fill(HIST("QA/hnSigmaITSVsPt_De_AfterSel"), track.pt() * track.sign(), track.itsNSigmaDe());
+          registryQa.fill(HIST("QA/hEtaAntiDe"), track.eta());
+          registryQa.fill(HIST("QA/hPhiAntiDe"), track.phi());
+          registryQa.fill(HIST("QA/hnSigmaTOFVsPt_De_AfterSel"), track.pt() * track.sign(), track.tofNSigmaDe());
+          registryQa.fill(HIST("QA/hnSigmaTPCVsPt_De_AfterSel"), track.pt() * track.sign(), track.tpcNSigmaDe());
+          registryQa.fill(HIST("QA/hnSigmaITSVsPt_De_AfterSel"), track.pt() * track.sign(), track.itsNSigmaDe());
         }
         if (IsDeuteron(track, +1)) {
-          QA.fill(HIST("QA/hEtaDe"), track.eta());
-          QA.fill(HIST("QA/hPhiDe"), track.phi());
-          QA.fill(HIST("QA/hnSigmaTOFVsPt_De_AfterSel"), track.pt() * track.sign(), track.tofNSigmaDe());
-          QA.fill(HIST("QA/hnSigmaTPCVsPt_De_AfterSel"), track.pt() * track.sign(), track.tpcNSigmaDe());
-          QA.fill(HIST("QA/hnSigmaITSVsPt_De_AfterSel"), track.pt() * track.sign(), track.itsNSigmaDe());
+          registryQa.fill(HIST("QA/hEtaDe"), track.eta());
+          registryQa.fill(HIST("QA/hPhiDe"), track.phi());
+          registryQa.fill(HIST("QA/hnSigmaTOFVsPt_De_AfterSel"), track.pt() * track.sign(), track.tofNSigmaDe());
+          registryQa.fill(HIST("QA/hnSigmaTPCVsPt_De_AfterSel"), track.pt() * track.sign(), track.tpcNSigmaDe());
+          registryQa.fill(HIST("QA/hnSigmaITSVsPt_De_AfterSel"), track.pt() * track.sign(), track.itsNSigmaDe());
         }
       }
     }
 
-    Pair->SetMagField1(collision.magField());
-    Pair->SetMagField2(collision.magField());
+    pair->SetMagField1(collision.magField());
+    pair->SetMagField2(collision.magField());
 
     if (mode == kPbarPbar || mode == kPP) { // Identical particle combinations
 
@@ -1034,60 +1019,60 @@ struct HadronNucleiCorrelation {
         continue;
 
       if (doQA) {
-        QA.fill(HIST("QA/hTPCnClusters"), track.tpcNClsFound());
-        QA.fill(HIST("QA/hTPCSharedClusters"), track.tpcFractionSharedCls());
-        QA.fill(HIST("QA/hTPCchi2"), track.tpcChi2NCl());
-        QA.fill(HIST("QA/hTPCcrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
-        QA.fill(HIST("QA/hITSchi2"), track.itsChi2NCl());
-        QA.fill(HIST("QA/hDCAxy"), track.dcaXY(), track.pt());
-        QA.fill(HIST("QA/hDCAz"), track.dcaZ(), track.pt());
-        QA.fill(HIST("QA/TPCChi2VsPZ"), track.tpcInnerParam() / track.sign(), track.tpcChi2NCl());
-        QA.fill(HIST("QA/hVtxZ_trk"), collision.posZ());
-        QA.fill(HIST("QA/hnSigmaTPCVsPt_El"), track.pt() * track.sign(), track.tpcNSigmaEl());
-        QA.fill(HIST("QA/hnSigmaTPCVsPt_Pr"), track.pt() * track.sign(), track.tpcNSigmaPr());
-        QA.fill(HIST("QA/hnSigmaTPCVsPt_De"), track.pt() * track.sign(), track.tpcNSigmaDe());
-        QA.fill(HIST("QA/hnSigmaTOFVsPt_Pr"), track.pt() * track.sign(), track.tofNSigmaPr());
-        QA.fill(HIST("QA/hnSigmaTOFVsPt_De"), track.pt() * track.sign(), track.tofNSigmaDe());
-        QA.fill(HIST("QA/hnSigmaITSVsPt_Pr"), track.pt() * track.sign(), track.itsNSigmaPr());
-        QA.fill(HIST("QA/hnSigmaITSVsPt_De"), track.pt() * track.sign(), track.itsNSigmaDe());
-        QA.fill(HIST("QA/h2dTPCTOF_AntiPr"), track.tpcNSigmaPr(), track.tofNSigmaPr());
-        QA.fill(HIST("QA/h2dTPCTOF_Pr"), track.tpcNSigmaPr(), track.tofNSigmaPr());
+        registryQa.fill(HIST("QA/hTPCnClusters"), track.tpcNClsFound());
+        registryQa.fill(HIST("QA/hTPCSharedClusters"), track.tpcFractionSharedCls());
+        registryQa.fill(HIST("QA/hTPCchi2"), track.tpcChi2NCl());
+        registryQa.fill(HIST("QA/hTPCcrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
+        registryQa.fill(HIST("QA/hITSchi2"), track.itsChi2NCl());
+        registryQa.fill(HIST("QA/hDCAxy"), track.dcaXY(), track.pt());
+        registryQa.fill(HIST("QA/hDCAz"), track.dcaZ(), track.pt());
+        registryQa.fill(HIST("QA/TPCChi2VsPZ"), track.tpcInnerParam() / track.sign(), track.tpcChi2NCl());
+        registryQa.fill(HIST("QA/hVtxZ_trk"), collision.posZ());
+        registryQa.fill(HIST("QA/hnSigmaTPCVsPt_El"), track.pt() * track.sign(), track.tpcNSigmaEl());
+        registryQa.fill(HIST("QA/hnSigmaTPCVsPt_Pr"), track.pt() * track.sign(), track.tpcNSigmaPr());
+        registryQa.fill(HIST("QA/hnSigmaTPCVsPt_De"), track.pt() * track.sign(), track.tpcNSigmaDe());
+        registryQa.fill(HIST("QA/hnSigmaTOFVsPt_Pr"), track.pt() * track.sign(), track.tofNSigmaPr());
+        registryQa.fill(HIST("QA/hnSigmaTOFVsPt_De"), track.pt() * track.sign(), track.tofNSigmaDe());
+        registryQa.fill(HIST("QA/hnSigmaITSVsPt_Pr"), track.pt() * track.sign(), track.itsNSigmaPr());
+        registryQa.fill(HIST("QA/hnSigmaITSVsPt_De"), track.pt() * track.sign(), track.itsNSigmaDe());
+        registryQa.fill(HIST("QA/h2dTPCTOF_AntiPr"), track.tpcNSigmaPr(), track.tofNSigmaPr());
+        registryQa.fill(HIST("QA/h2dTPCTOF_Pr"), track.tpcNSigmaPr(), track.tofNSigmaPr());
 
         if (IsProton(track, -1)) {
-          QA.fill(HIST("QA/hEtaAntiPr"), track.eta());
-          QA.fill(HIST("QA/hPhiAntiPr"), track.phi());
-          QA.fill(HIST("QA/hnSigmaTOFVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.tofNSigmaPr());
-          QA.fill(HIST("QA/hnSigmaTPCVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.tpcNSigmaPr());
-          QA.fill(HIST("QA/hnSigmaITSVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.itsNSigmaPr());
-          QA.fill(HIST("QA/h2dTPCTOF_AntiPr_AfterSel"), track.tpcNSigmaPr(), track.tofNSigmaPr());
+          registryQa.fill(HIST("QA/hEtaAntiPr"), track.eta());
+          registryQa.fill(HIST("QA/hPhiAntiPr"), track.phi());
+          registryQa.fill(HIST("QA/hnSigmaTOFVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.tofNSigmaPr());
+          registryQa.fill(HIST("QA/hnSigmaTPCVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.tpcNSigmaPr());
+          registryQa.fill(HIST("QA/hnSigmaITSVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.itsNSigmaPr());
+          registryQa.fill(HIST("QA/h2dTPCTOF_AntiPr_AfterSel"), track.tpcNSigmaPr(), track.tofNSigmaPr());
         }
         if (IsProton(track, +1)) {
-          QA.fill(HIST("QA/hEtaPr"), track.eta());
-          QA.fill(HIST("QA/hPhiPr"), track.phi());
-          QA.fill(HIST("QA/hnSigmaTOFVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.tofNSigmaPr());
-          QA.fill(HIST("QA/hnSigmaTPCVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.tpcNSigmaPr());
-          QA.fill(HIST("QA/hnSigmaITSVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.itsNSigmaPr());
-          QA.fill(HIST("QA/h2dTPCTOF_Pr_AfterSel"), track.tpcNSigmaPr(), track.tofNSigmaPr());
+          registryQa.fill(HIST("QA/hEtaPr"), track.eta());
+          registryQa.fill(HIST("QA/hPhiPr"), track.phi());
+          registryQa.fill(HIST("QA/hnSigmaTOFVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.tofNSigmaPr());
+          registryQa.fill(HIST("QA/hnSigmaTPCVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.tpcNSigmaPr());
+          registryQa.fill(HIST("QA/hnSigmaITSVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.itsNSigmaPr());
+          registryQa.fill(HIST("QA/h2dTPCTOF_Pr_AfterSel"), track.tpcNSigmaPr(), track.tofNSigmaPr());
         }
         if (IsDeuteron(track, -1)) {
-          QA.fill(HIST("QA/hEtaAntiDe"), track.eta());
-          QA.fill(HIST("QA/hPhiAntiDe"), track.phi());
-          QA.fill(HIST("QA/hnSigmaTOFVsPt_De_AfterSel"), track.pt() * track.sign(), track.tofNSigmaDe());
-          QA.fill(HIST("QA/hnSigmaTPCVsPt_De_AfterSel"), track.pt() * track.sign(), track.tpcNSigmaDe());
-          QA.fill(HIST("QA/hnSigmaITSVsPt_De_AfterSel"), track.pt() * track.sign(), track.itsNSigmaDe());
+          registryQa.fill(HIST("QA/hEtaAntiDe"), track.eta());
+          registryQa.fill(HIST("QA/hPhiAntiDe"), track.phi());
+          registryQa.fill(HIST("QA/hnSigmaTOFVsPt_De_AfterSel"), track.pt() * track.sign(), track.tofNSigmaDe());
+          registryQa.fill(HIST("QA/hnSigmaTPCVsPt_De_AfterSel"), track.pt() * track.sign(), track.tpcNSigmaDe());
+          registryQa.fill(HIST("QA/hnSigmaITSVsPt_De_AfterSel"), track.pt() * track.sign(), track.itsNSigmaDe());
         }
         if (IsDeuteron(track, +1)) {
-          QA.fill(HIST("QA/hEtaDe"), track.eta());
-          QA.fill(HIST("QA/hPhiDe"), track.phi());
-          QA.fill(HIST("QA/hnSigmaTOFVsPt_De_AfterSel"), track.pt() * track.sign(), track.tofNSigmaDe());
-          QA.fill(HIST("QA/hnSigmaTPCVsPt_De_AfterSel"), track.pt() * track.sign(), track.tpcNSigmaDe());
-          QA.fill(HIST("QA/hnSigmaITSVsPt_De_AfterSel"), track.pt() * track.sign(), track.itsNSigmaDe());
+          registryQa.fill(HIST("QA/hEtaDe"), track.eta());
+          registryQa.fill(HIST("QA/hPhiDe"), track.phi());
+          registryQa.fill(HIST("QA/hnSigmaTOFVsPt_De_AfterSel"), track.pt() * track.sign(), track.tofNSigmaDe());
+          registryQa.fill(HIST("QA/hnSigmaTPCVsPt_De_AfterSel"), track.pt() * track.sign(), track.tpcNSigmaDe());
+          registryQa.fill(HIST("QA/hnSigmaITSVsPt_De_AfterSel"), track.pt() * track.sign(), track.itsNSigmaDe());
         }
       }
     }
 
-    Pair->SetMagField1(collision.magField());
-    Pair->SetMagField2(collision.magField());
+    pair->SetMagField1(collision.magField());
+    pair->SetMagField2(collision.magField());
 
     if (mode == kPbarPbar || mode == kPP) { // Identical particle combinations
 
@@ -1224,8 +1209,8 @@ struct HadronNucleiCorrelation {
         continue;
       }
 
-      Pair->SetMagField1(magFieldTesla1);
-      Pair->SetMagField2(magFieldTesla2);
+      pair->SetMagField1(magFieldTesla1);
+      pair->SetMagField2(magFieldTesla2);
 
       for (const auto& [part0, part1] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
 
@@ -1328,8 +1313,8 @@ struct HadronNucleiCorrelation {
         continue;
       }
 
-      Pair->SetMagField1(magFieldTesla1);
-      Pair->SetMagField2(magFieldTesla2);
+      pair->SetMagField1(magFieldTesla1);
+      pair->SetMagField2(magFieldTesla2);
 
       for (const auto& [part0, part1] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
 
@@ -1474,19 +1459,19 @@ struct HadronNucleiCorrelation {
       // continue;
 
       if (doQA) {
-        QA.fill(HIST("QA/hTPCnClusters"), track.tpcNClsFound());
-        QA.fill(HIST("QA/hTPCSharedClusters"), track.tpcFractionSharedCls());
-        QA.fill(HIST("QA/hTPCchi2"), track.tpcChi2NCl());
-        QA.fill(HIST("QA/hTPCcrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
-        QA.fill(HIST("QA/hITSchi2"), track.itsChi2NCl());
-        QA.fill(HIST("QA/hDCAxy"), track.dcaXY(), track.pt());
-        QA.fill(HIST("QA/hDCAz"), track.dcaZ(), track.pt());
-        QA.fill(HIST("QA/hVtxZ_trk"), track.template singleCollSel_as<FilteredCollisions>().posZ());
-        QA.fill(HIST("QA/hnSigmaTPCVsPt_El"), track.pt() * track.sign(), track.tpcNSigmaEl());
-        QA.fill(HIST("QA/hnSigmaTPCVsPt_Pr"), track.pt() * track.sign(), track.tpcNSigmaPr());
-        QA.fill(HIST("QA/hnSigmaTPCVsPt_De"), track.pt() * track.sign(), track.tpcNSigmaDe());
-        QA.fill(HIST("QA/hnSigmaTOFVsPt_Pr"), track.pt() * track.sign(), track.tofNSigmaPr());
-        QA.fill(HIST("QA/hnSigmaTOFVsPt_De"), track.pt() * track.sign(), track.tofNSigmaDe());
+        registryQa.fill(HIST("QA/hTPCnClusters"), track.tpcNClsFound());
+        registryQa.fill(HIST("QA/hTPCSharedClusters"), track.tpcFractionSharedCls());
+        registryQa.fill(HIST("QA/hTPCchi2"), track.tpcChi2NCl());
+        registryQa.fill(HIST("QA/hTPCcrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
+        registryQa.fill(HIST("QA/hITSchi2"), track.itsChi2NCl());
+        registryQa.fill(HIST("QA/hDCAxy"), track.dcaXY(), track.pt());
+        registryQa.fill(HIST("QA/hDCAz"), track.dcaZ(), track.pt());
+        registryQa.fill(HIST("QA/hVtxZ_trk"), track.template singleCollSel_as<FilteredCollisions>().posZ());
+        registryQa.fill(HIST("QA/hnSigmaTPCVsPt_El"), track.pt() * track.sign(), track.tpcNSigmaEl());
+        registryQa.fill(HIST("QA/hnSigmaTPCVsPt_Pr"), track.pt() * track.sign(), track.tpcNSigmaPr());
+        registryQa.fill(HIST("QA/hnSigmaTPCVsPt_De"), track.pt() * track.sign(), track.tpcNSigmaDe());
+        registryQa.fill(HIST("QA/hnSigmaTOFVsPt_Pr"), track.pt() * track.sign(), track.tofNSigmaPr());
+        registryQa.fill(HIST("QA/hnSigmaTOFVsPt_De"), track.pt() * track.sign(), track.tofNSigmaDe());
       }
 
       bool isPr = (IsProton(track, +1) && track.pdgCode() == PDG_t::kProton);
