@@ -1274,7 +1274,7 @@ class VarManager : public TObject
   }
 
   // Setup the collision system
-  static void SetCollisionSystem(TString system, float energy);
+  static void SetCollisionSystem(const TString& system, float energy);
   static void SetCollisionSystem(o2::parameters::GRPLHCIFData* grplhcif);
 
   static void SetMagneticField(float magField)
@@ -1673,7 +1673,7 @@ class VarManager : public TObject
   static KFPTrack createKFPFwdTrackFromFwdTrack(const T& muon);
   template <typename T>
   static KFPVertex createKFPVertexFromCollision(const T& collision);
-  static float calculateCosPA(KFParticle kfp, KFParticle PV);
+  static float calculateCosPA(const KFParticle& kfp, const KFParticle& PV);
   template <int pairType, typename T1, typename T2>
   static float calculatePhiV(const T1& t1, const T2& t2);
   template <typename T1, typename T2>
@@ -4100,11 +4100,7 @@ void VarManager::FillPairRotation(T1 const& t1, T2 const& t2, int rotation, floa
     rotationphi2 = 2 * values[kPsi2A] - t2.phi() + o2::constants::math::PI;
   }
 
-  if (rotationphi2 >= o2::constants::math::TwoPI) {
-    rotationphi2 -= o2::constants::math::TwoPI;
-  } else if (rotationphi2 < 0) {
-    rotationphi2 += o2::constants::math::TwoPI;
-  }
+  rotationphi2 = RecoDecay::constrainAngle(rotationphi2);
 
   values[kCharge] = t1.sign() + t2.sign();
   values[kCharge1] = t1.sign();
