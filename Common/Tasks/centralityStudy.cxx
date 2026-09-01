@@ -147,7 +147,7 @@ struct CentralityStudy {
   } evsel;
 
   // _______________________________________
-  // BC Selection
+  // BC Selections
   struct : ConfigurableGroup {
     std::string prefix = "bcsel";
     Configurable<bool> rejectZNAC{"rejectZNAC", false, "reject if !(kIsBBZNA && kIsBBZNC)"};
@@ -934,7 +934,9 @@ struct CentralityStudy {
       return;
     }
     histos.fill(HIST("hCollisionSelection"), 17 /* is INEL > 0 */);
-    getHist<TH1>(histPath + "hCollisionSelection")->Fill(17);
+    if (studies.doRunByRunHistograms) {
+      getHist<TH1>(histPath + "hCollisionSelection")->Fill(17);
+    }
 
     if (evsel.applyBcSel) {
       if constexpr (requires { collision.has_multBC(); }) {
