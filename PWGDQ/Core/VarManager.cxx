@@ -59,6 +59,10 @@ float VarManager::fgzMatching = -77.5;
 float VarManager::fgxShiftFwd = 0.0;
 float VarManager::fgyShiftFwd = 0.0;
 float VarManager::fgzShiftFwd = 0.0;
+bool VarManager::fgUseTopBottomShift = false;
+float VarManager::fgxShiftFwdBottom = 0.0;
+float VarManager::fgyShiftFwdBottom = 0.0;
+float VarManager::fgzShiftFwdBottom = 0.0;
 float VarManager::fgValues[VarManager::kNVars] = {0.0f};
 float VarManager::fgTPCInterSectorBoundary = 1.0; // cm
 int VarManager::fgITSROFbias = 0;
@@ -147,7 +151,7 @@ void VarManager::ResetValues(int startValue, int endValue, float* values)
 }
 
 //__________________________________________________________________
-void VarManager::SetCollisionSystem(TString system, float energy)
+void VarManager::SetCollisionSystem(const TString& system, float energy)
 {
   //
   // Set the collision system and the center of mass energy
@@ -200,8 +204,8 @@ void VarManager::SetCollisionSystem(TString system, float energy)
   // TO Do: add more systems
 
   // set the beam 4-momentum vectors
-  float beamAEnergy = energy / 2.0 * sqrt(NumberOfProtonsA * NumberOfProtonsC / NumberOfProtonsC / NumberOfProtonsA); // GeV
-  float beamCEnergy = energy / 2.0 * sqrt(NumberOfProtonsC * NumberOfProtonsA / NumberOfProtonsA / NumberOfProtonsC); // GeV
+  float beamAEnergy = energy / 2.0f * std::sqrt(static_cast<float>(NumberOfProtonsA) * NumberOfProtonsC / NumberOfProtonsC / NumberOfProtonsA); // GeV
+  float beamCEnergy = energy / 2.0f * std::sqrt(static_cast<float>(NumberOfProtonsC) * NumberOfProtonsA / NumberOfProtonsA / NumberOfProtonsC); // GeV
   float beamAMomentum = std::sqrt(beamAEnergy * beamAEnergy - NumberOfNucleonsA * NumberOfNucleonsA * MassProton * MassProton);
   float beamCMomentum = std::sqrt(beamCEnergy * beamCEnergy - NumberOfNucleonsC * NumberOfNucleonsC * MassProton * MassProton);
   fgBeamA.SetPxPyPzE(0, 0, beamAMomentum, beamAEnergy);
@@ -243,7 +247,7 @@ void VarManager::FillTrackDerived(float* values)
 }
 
 //__________________________________________________________________
-float VarManager::calculateCosPA(KFParticle kfp, KFParticle PV)
+float VarManager::calculateCosPA(const KFParticle& kfp, const KFParticle& PV)
 {
   return cpaFromKF(kfp, PV);
 }
@@ -256,7 +260,8 @@ double VarManager::ComputePIDcalibration(int species, double nSigmaValue)
 
   if (fgCalibrationType == 1) {
     // get the calibration histograms
-    CalibObjects calibMean, calibSigma;
+    CalibObjects calibMean = kTPCElectronMean;
+    CalibObjects calibSigma = kTPCElectronSigma;
     switch (species) {
       case 0:
         calibMean = kTPCElectronMean;
@@ -279,8 +284,8 @@ double VarManager::ComputePIDcalibration(int species, double nSigmaValue)
         return -999.0; // Return zero if species is invalid
     }
 
-    TH3F* calibMeanHist = reinterpret_cast<TH3F*>(fgCalibs[calibMean]);
-    TH3F* calibSigmaHist = reinterpret_cast<TH3F*>(fgCalibs[calibSigma]);
+    TH3F* calibMeanHist = dynamic_cast<TH3F*>(fgCalibs[calibMean]);
+    TH3F* calibSigmaHist = dynamic_cast<TH3F*>(fgCalibs[calibSigma]);
     if (!calibMeanHist || !calibSigmaHist) {
       LOG(fatal) << "Calibration histograms not found for species: " << species;
       return -999.0; // Return zero if histograms are not found
@@ -302,7 +307,9 @@ double VarManager::ComputePIDcalibration(int species, double nSigmaValue)
     return (nSigmaValue - mean) / sigma; // Return the calibrated nSigma value
   } else if (fgCalibrationType == 2) {
     // get the calibration histograms
-    CalibObjects calibMean, calibSigma, calibStatus;
+    CalibObjects calibMean = kTPCElectronMean;
+    CalibObjects calibSigma = kTPCElectronSigma;
+    CalibObjects calibStatus = kTPCElectronStatus;
     switch (species) {
       case 0:
         calibMean = kTPCElectronMean;
@@ -329,9 +336,9 @@ double VarManager::ComputePIDcalibration(int species, double nSigmaValue)
         return -999.0; // Return zero if species is invalid
     }
 
-    THnF* calibMeanHist = reinterpret_cast<THnF*>(fgCalibs[calibMean]);
-    THnF* calibSigmaHist = reinterpret_cast<THnF*>(fgCalibs[calibSigma]);
-    THnF* calibStatusHist = reinterpret_cast<THnF*>(fgCalibs[calibStatus]);
+    THnF* calibMeanHist = dynamic_cast<THnF*>(fgCalibs[calibMean]);
+    THnF* calibSigmaHist = dynamic_cast<THnF*>(fgCalibs[calibSigma]);
+    THnF* calibStatusHist = dynamic_cast<THnF*>(fgCalibs[calibStatus]);
     if (!calibMeanHist || !calibSigmaHist || !calibStatusHist) {
       LOG(fatal) << "Calibration histograms not found for species: " << species;
       return -999.0; // Return zero if histograms are not found
@@ -351,17 +358,18 @@ double VarManager::ComputePIDcalibration(int species, double nSigmaValue)
     binTlong = (binTlong == 0 ? 1 : binTlong);
     binTlong = (binTlong > calibMeanHist->GetAxis(3)->GetNbins() ? calibMeanHist->GetAxis(3)->GetNbins() : binTlong);
 
-    int bin[4] = {binEta, binNpv, binNlong, binTlong};
-    int status = static_cast<int>(calibStatusHist->GetBinContent(bin));
-    double mean = calibMeanHist->GetBinContent(bin);
-    double sigma = calibSigmaHist->GetBinContent(bin);
+    std::array<int, 4> bin{binEta, binNpv, binNlong, binTlong};
+    int status = static_cast<int>(calibStatusHist->GetBinContent(bin.data()));
+    double mean = calibMeanHist->GetBinContent(bin.data());
+    double sigma = calibSigmaHist->GetBinContent(bin.data());
     switch (status) {
       case 0:
         // good calibration, return the calibrated nSigma value
         return (nSigmaValue - mean) / sigma;
         break;
       case 1:
-        // calibration not valid, return the original nSigma value
+      case 4:
+        // calibration not valid or interpolation failed, return the original nSigma value
         return nSigmaValue;
         break;
       case 2: // calibration constant has poor stat uncertainty, consider the user option for what to do
@@ -373,10 +381,6 @@ double VarManager::ComputePIDcalibration(int species, double nSigmaValue)
           // return the original nSigma value
           return nSigmaValue;
         }
-        break;
-      case 4:
-        // calibration constants interpolation failed, return the original nSigma value
-        return nSigmaValue;
         break;
       default:
         return nSigmaValue; // unknown status, return the original nSigma value
@@ -419,7 +423,7 @@ void VarManager::FillEfficiency(float* values)
       LOG(fatal) << "efficiency histogram not set";
       return;
     }
-    TH3F* efficiencyHist = reinterpret_cast<TH3F*>(fgEfficiencyHist);
+    TH3F* efficiencyHist = dynamic_cast<TH3F*>(fgEfficiencyHist);
     // Get the bin indices for the efficiency histogram
     int binPt = efficiencyHist->GetXaxis()->FindBin(values[kPt]);
     binPt = (binPt == 0 ? 1 : binPt);
@@ -439,7 +443,7 @@ void VarManager::FillEfficiency(float* values)
       LOG(fatal) << "efficiency histogram not set";
       return;
     }
-    TH3F* efficiencyHist = reinterpret_cast<TH3F*>(fgEfficiencyHist);
+    TH3F* efficiencyHist = dynamic_cast<TH3F*>(fgEfficiencyHist);
     // Get the bin indices for the efficiency histogram
     int binPt = efficiencyHist->GetXaxis()->FindBin(values[kPt]);
     binPt = (binPt == 0 ? 1 : binPt);
@@ -541,10 +545,9 @@ std::tuple<float, float, float, float, float> VarManager::BimodalityCoefficientU
   float mean = std::accumulate(data.begin(), data.end(), 0.0) / n;
 
   float m2 = 0.0, m3 = 0.0, m4 = 0.0;
-  float diff, diff2;
-  for (float x : data) {
-    diff = x - mean;
-    diff2 = diff * diff;
+  for (const float& x : data) {
+    const float diff = x - mean;
+    const float diff2 = diff * diff;
     m2 += diff2;
     m3 += diff2 * diff;
     m4 += diff2 * diff2;
@@ -581,7 +584,7 @@ std::tuple<float, float, float, float, float, int> VarManager::BimodalityCoeffic
   int nBins = static_cast<int>((max - min) / binWidth);
   std::vector<int> counts(nBins, 0.0);
 
-  for (float x : data) {
+  for (const float& x : data) {
     if (x < min || x >= max) {
       continue; // skip out-of-range values
     }
@@ -688,14 +691,13 @@ std::tuple<float, float, float, float, float, int> VarManager::BimodalityCoeffic
 
   // then compute the second, third, and fourth central moments
   float m2 = 0.0, m3 = 0.0, m4 = 0.0;
-  float diff, diff2, binCenter;
   for (int i = 0; i < nBins; ++i) {
     if (counts[i] == 0) {
       continue; // skip empty bins
     }
-    binCenter = min + (i + 0.5) * binWidth;
-    diff = binCenter - mean;
-    diff2 = diff * diff;
+    const float binCenter = min + (i + 0.5f) * binWidth;
+    const float diff = binCenter - mean;
+    const float diff2 = diff * diff;
     m2 += counts[i] * diff2;
     m3 += counts[i] * diff2 * diff;
     m4 += counts[i] * diff2 * diff2;
