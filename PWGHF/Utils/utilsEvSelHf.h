@@ -195,7 +195,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> occEstimator{"occEstimator", 1, "Occupancy estimation (1: ITS, 2: FT0C)"};
   o2::framework::Configurable<int> occupancyMin{"occupancyMin", 0, "Minimum occupancy"};
   o2::framework::Configurable<int> occupancyMax{"occupancyMax", 1000000, "Maximum occupancy"};
-  o2::framework::Configurable<bool> requireINEL0{"requireINEL0", false, "require INEL>0 event selection"};
+  o2::framework::Configurable<bool> requireINEL0{"requireINEL0", false, "Require INEL > 0"};
   o2::framework::Configurable<int> nPvContributorsMin{"nPvContributorsMin", 0, "Minimum number of PV contributors"};
   o2::framework::Configurable<float> chi2PvMax{"chi2PvMax", -1.f, "Maximum PV chi2"};
   o2::framework::Configurable<float> zPvPosMin{"zPvPosMin", -10.f, "Minimum PV posZ (cm)"};
