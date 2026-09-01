@@ -864,7 +864,7 @@ struct MftReassociationValidation {
   // =========================
 
   template <typename TCollision>
-  float getMultiplicityEstimator(TCollision collision)
+  float getMultiplicityEstimator(const TCollision& collision)
   {
     switch (configCollision.multiplicityEstimator) {
       case MultiplicityEstimators::MultNTracksPV:
@@ -896,7 +896,7 @@ struct MftReassociationValidation {
   }
 
   template <typename TTrack>
-  bool isTrueCollisionAmongCompatibleCollisions(TTrack track)
+  bool isTrueCollisionAmongCompatibleCollisions(const TTrack& track)
   {
 
     auto const& compatibleIds = track.compatibleCollIds();
