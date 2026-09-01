@@ -52,6 +52,7 @@ struct filterEoI {
   Configurable<bool> inheritFromOtherTask{"inheritFromOtherTask", true, "Flag to iherit all common configurables from skimmerPrimaryElectron or skimmerPrimaryMuon"};
   Configurable<int> minNelectron{"minNelectron", -1, "min number of electron candidates per collision"};
   Configurable<int> minNmuon{"minNmuon", -1, "min number of muon candidates per collision"};
+  Configurable<int> minNgamma{"minNgamma", 1, "min number of V0-photon candidates per collision"};
   Configurable<std::string> taskNameForNelectron{"taskNameForNelectron", "skimmer-primary-electron", "task name where minNelectron is defined."};
   Configurable<std::string> varNameForNelectron{"varNameForNelectron", "minNelectron", "variable name for minNelectron"};
 
@@ -109,7 +110,8 @@ struct filterEoI {
       }
       if constexpr (static_cast<bool>(system & kPCM)) {
         auto v0s_coll = v0s.sliceBy(perCollision_v0, collision.globalIndex());
-        if (v0s_coll.size() >= 1) {
+        if (v0s_coll.size() >= minNgamma) {
+          does_pcm_exist = true;
           fRegistry.fill(HIST("hEventCounter"), 4);
         }
       }
