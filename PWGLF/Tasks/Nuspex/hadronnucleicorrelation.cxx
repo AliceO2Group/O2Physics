@@ -168,16 +168,16 @@ struct HadronNucleiCorrelation {
   std::vector<std::shared_ptr<TH3>> hCorrEtaPhi_SE;
   std::vector<std::shared_ptr<TH3>> hCorrEtaPhi_ME;
 
-  int nBinspT;
-  TH2F* hEffpTEta_proton;
-  TH2F* hEffpTEta_antiproton;
-  TH2F* hEffpTEta_deuteron;
-  TH2F* hEffpTEta_antideuteron;
+  int nBinspT = 0;
+  TH2F* hEffpTEta_proton = nullptr;
+  TH2F* hEffpTEta_antiproton = nullptr;
+  TH2F* hEffpTEta_deuteron = nullptr;
+  TH2F* hEffpTEta_antideuteron = nullptr;
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   o2::ccdb::CcdbApi ccdbApi;
 
-  Service<o2::framework::O2DatabasePDG> pdgDB;
+  Service<o2::framework::O2DatabasePDG> pdgDB{};
 
   void init(o2::framework::InitContext&)
   {
@@ -239,6 +239,8 @@ struct HadronNucleiCorrelation {
       case kPPbar:
         name = "PrAntiPr";
         break;
+      default:
+        LOG(fatal) << "Unhandled case " << mode;
     }
 
     if (!isMC) {
