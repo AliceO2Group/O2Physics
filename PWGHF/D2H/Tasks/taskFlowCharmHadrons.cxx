@@ -76,6 +76,7 @@ DECLARE_SOA_COLUMN(MlScore0, mlScore0, float);     //! ML score of the first con
 DECLARE_SOA_COLUMN(MlScore1, mlScore1, float);     //! ML score of the second configured index
 DECLARE_SOA_COLUMN(ScalarProd, scalarProd, float); //! Scalar product
 DECLARE_SOA_COLUMN(Cent, cent, float);             //! Centrality
+DECLARE_SOA_COLUMN(PvContrib, pvContrib, float);   //! Number of primary vertex contributors
 DECLARE_SOA_COLUMN(RedQVec, redQVec, float);       //! Reduced Q-vector
 } // namespace full
 DECLARE_SOA_TABLE(HfCandMPtInfos, "AOD", "HFCANDMPTINFO",
@@ -91,6 +92,14 @@ DECLARE_SOA_TABLE(HfCandFlowInfos, "AOD", "HFCANDFLOWINFO",
                   full::MlScore1,
                   full::ScalarProd,
                   full::Cent);
+DECLARE_SOA_TABLE(HfCandFlowPvs, "AOD", "HFCANDFLOWPV",
+                  full::M,
+                  full::Pt,
+                  full::MlScore0,
+                  full::MlScore1,
+                  full::ScalarProd,
+                  full::Cent,
+                  full::PvContrib);
 DECLARE_SOA_TABLE(HfCandFlowEses, "AOD", "HFCANDFLOWESE",
                   full::M,
                   full::Pt,
@@ -123,6 +132,7 @@ struct HfTaskFlowCharmHadrons {
   Produces<o2::aod::HfCandMPtInfos> rowCandMassPtMl;
   Produces<o2::aod::HfCandFlowInfos> rowCandMassPtMlSpCent;
   Produces<o2::aod::HfCandFlowEses> rowCandFlowEsE;
+  Produces<o2::aod::HfCandFlowPvs> rowCandMassPtMlSpCentPv;
 
   Configurable<int> harmonic{"harmonic", 2, "harmonic number"};
   Configurable<int> qVecDetector{"qVecDetector", 3, "Detector for Q vector estimation (FV0A: 0, FT0M: 1, FT0A: 2, FT0C: 3, TPC Pos: 4, TPC Neg: 5, TPC Tot: 6)"};
@@ -135,8 +145,10 @@ struct HfTaskFlowCharmHadrons {
   Configurable<bool> storeMl{"storeMl", false, "Flag to store ML scores"};
   Configurable<bool> storeSPQVec{"storeSPQVec", true, "Flag to store the Q-vectors for SP"};
   Configurable<bool> storeRedQVec{"storeRedQVec", false, "Flag to store reduced Q-vectors for ESE"};
+  Configurable<bool> useRedQVecDaugsSubtr{"useRedQVecDaugsSubtr", true, "Flag to subtract daughter tracks from reduced Q-vectors for ESE"};
   Configurable<bool> fillMassPtMlTree{"fillMassPtMlTree", false, "Flag to fill mass, pt and ML scores tree"};
   Configurable<bool> fillMassPtMlSpCentTree{"fillMassPtMlSpCentTree", false, "Flag to fill mass, pt, ML scores, SP and centrality tree"};
+  Configurable<bool> fillMassPtMlSpCentPvTree{"fillMassPtMlSpCentPvTree", false, "Flag to fill mass, pt, ML scores, SP, centrality, PV contrib tree"};
   Configurable<bool> fillSparse{"fillSparse", true, "Flag to fill sparse"};
   Configurable<float> downSampleFactor{"downSampleFactor", 1., "Fraction of candidates to keep in TTree"};
   Configurable<float> ptDownSampleMax{"ptDownSampleMax", 10., "Maximum pt for the application of the downsampling factor"};
@@ -149,28 +161,29 @@ struct HfTaskFlowCharmHadrons {
   Configurable<int> occEstimator{"occEstimator", 0, "Occupancy estimation (0: None, 1: ITS, 2: FT0C)"};
   Configurable<bool> saveEpResoHisto{"saveEpResoHisto", false, "Flag to save event plane resolution histogram"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbResoHistPath{"ccdbResoHistPath", "", "path to the resolution histogram in the ccdb"};
+  Configurable<bool> useOnlineResoCorrection{"useOnlineResoCorrection", false, "True to fill candidate histograms with SP / R"};
+  Configurable<std::string> resoTripletPath{"resoTripletPath", "FT0c_FV0a_TPCtot", "Detector resolution triplet for online correction"};
   Configurable<std::vector<int>> classMl{"classMl", {0, 2}, "Indexes of BDT scores to be stored. Two indexes max."};
 
   EventPlaneHelper epHelper;
   HfEventSelection hfEvSel; // event selection and monitoring
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb{};
   SliceCache cache;
+  HfQVectorResoHelper qVecResoHelper;
+  int lastRunNumber{-1};
+  float scalarProdReso{-1.f}; // resolution value for online correction
 
   using CandDsDataWMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfMlDsToKKPi>>;
-  using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;
   using CandDplusDataWMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
-  using CandDplusData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
-  using CandLcData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>;
   using CandLcDataWMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfMlLcToPKPi>>;
-  using CandXicData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi>>;
   using CandXicDataWMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi, aod::HfMlXicToPKPi>>;
   using CandXic0Data = soa::Filtered<soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf>>;
   using CandXic0DataWMl = soa::Filtered<soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfMlToXiPi>>;
   using CandD0DataWMl = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>>;
-  using CandD0Data = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
-  using CollsWithSPQvecs = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::QvectorBTots, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0CVariant2s>;
-  using CollsWithEsEQvecs = soa::Join<aod::Collisions, aod::EvSels, aod::EseQvecPercs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0CVariant2s>;
-  using CollsWithSPEsEQvecs = soa::Join<aod::Collisions, aod::EvSels, aod::EseQvecPercs, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::QvectorBTots, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0CVariant2s>;
+  using CollsWithSPQvecs = soa::Join<aod::Collisions, o2::aod::BCsWithTimestamps, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::QvectorBTots, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0CVariant2s>;
+  using CollsWithEsEQvecs = soa::Join<aod::Collisions, o2::aod::BCsWithTimestamps, aod::EvSels, aod::EseQvecPercs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0CVariant2s>;
+  using CollsWithSPEsEQvecs = soa::Join<aod::Collisions, o2::aod::BCsWithTimestamps, aod::EvSels, aod::EseQvecPercs, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::QvectorBTots, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0CVariant2s>;
   using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra>;
 
   Filter filterSelectDsCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlag || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlag;
@@ -180,47 +193,41 @@ struct HfTaskFlowCharmHadrons {
   Filter filterSelectXicCandidates = aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlag || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlag;
   Filter filterSelectXic0Candidates = aod::hf_sel_toxipi::resultSelections == true;
 
-  Partition<CandDsData> selectedDsToKKPi = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlag;
-  Partition<CandDsData> selectedDsToPiKK = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlag;
   Partition<CandDsDataWMl> selectedDsToKKPiWMl = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlag;
   Partition<CandDsDataWMl> selectedDsToPiKKWMl = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlag;
-  Partition<CandD0Data> selectedD0ToPiK = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlag;
-  Partition<CandD0Data> selectedD0ToKPi = aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlag;
   Partition<CandD0DataWMl> selectedD0ToPiKWMl = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlag;
   Partition<CandD0DataWMl> selectedD0ToKPiWMl = aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlag;
-  Partition<CandLcData> selectedLcToPKPi = aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlag;
-  Partition<CandLcData> selectedLcToPiKP = aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlag;
   Partition<CandLcDataWMl> selectedLcToPKPiWMl = aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlag;
   Partition<CandLcDataWMl> selectedLcToPiKPWMl = aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlag;
-  Partition<CandXicData> selectedXicToPKPi = aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlag;
-  Partition<CandXicData> selectedXicToPiKP = aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlag;
   Partition<CandXicDataWMl> selectedXicToPKPiWMl = aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlag;
   Partition<CandXicDataWMl> selectedXicToPiKPWMl = aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlag;
   Partition<CandXic0Data> selectedXic0 = aod::hf_sel_toxipi::resultSelections == true;
   Partition<CandXic0DataWMl> selectedXic0WMl = aod::hf_sel_toxipi::resultSelections == true;
 
-  ConfigurableAxis thnConfigAxisInvMass{"thnConfigAxisInvMass", {100, 1.78, 2.05}, ""};
-  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {10, 0., 10.}, ""};
-  ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {10000, 0., 100.}, ""};
-  ConfigurableAxis thnConfigAxisCosNPhi{"thnConfigAxisCosNPhi", {100, -1., 1.}, ""};
-  ConfigurableAxis thnConfigAxisPsi{"thnConfigAxisPsi", {6000, 0, constants::math::TwoPI}, ""};
-  ConfigurableAxis thnConfigAxisCosDeltaPhi{"thnConfigAxisCosDeltaPhi", {100, -1., 1.}, ""};
-  ConfigurableAxis thnConfigAxisScalarProd{"thnConfigAxisScalarProd", {100, 0., 1.}, ""};
-  ConfigurableAxis thnConfigAxisMlOne{"thnConfigAxisMlOne", {1000, 0., 1.}, ""};
-  ConfigurableAxis thnConfigAxisMlTwo{"thnConfigAxisMlTwo", {1000, 0., 1.}, ""};
-  ConfigurableAxis thnConfigAxisOccupancyITS{"thnConfigAxisOccupancyITS", {14, 0, 14000}, ""};
-  ConfigurableAxis thnConfigAxisOccupancyFT0C{"thnConfigAxisOccupancyFT0C", {14, 0, 140000}, ""};
-  ConfigurableAxis thnConfigAxisNoSameBunchPileup{"thnConfigAxisNoSameBunchPileup", {2, 0, 2}, ""};
-  ConfigurableAxis thnConfigAxisOccupancy{"thnConfigAxisOccupancy", {2, 0, 2}, ""};
-  ConfigurableAxis thnConfigAxisNoCollInTimeRangeNarrow{"thnConfigAxisNoCollInTimeRangeNarrow", {2, 0, 2}, ""};
-  ConfigurableAxis thnConfigAxisNoCollInTimeRangeStandard{"thnConfigAxisNoCollInTimeRangeStandard", {2, 0, 2}, ""};
-  ConfigurableAxis thnConfigAxisNoCollInRofStandard{"thnConfigAxisNoCollInRofStandard", {2, 0, 2}, ""};
-  ConfigurableAxis thnConfigAxisResoFT0cFV0a{"thnConfigAxisResoFT0cFV0a", {160, -8, 8}, ""};
-  ConfigurableAxis thnConfigAxisResoFT0cTPCtot{"thnConfigAxisResoFT0cTPCtot", {160, -8, 8}, ""};
-  ConfigurableAxis thnConfigAxisResoFV0aTPCtot{"thnConfigAxisResoFV0aTPCtot", {160, -8, 8}, ""};
-  ConfigurableAxis thnConfigAxisCandidateEta{"thnConfigAxisCandidateEta", {100, -5, 5}, ""};
-  ConfigurableAxis thnConfigAxisSign{"thnConfigAxisSign", {6, -3.0, 3.0}, ""};
-  ConfigurableAxis thnConfigAxisRedQVec{"thnConfigAxisRedQVec", {1000, 0, 100}, ""};
+  struct : o2::framework::ConfigurableGroup {
+    ConfigurableAxis thnConfigAxisInvMass{"thnConfigAxisInvMass", {100, 1.78, 2.05}, ""};
+    ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {10, 0., 10.}, ""};
+    ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {10000, 0., 100.}, ""};
+    ConfigurableAxis thnConfigAxisCosNPhi{"thnConfigAxisCosNPhi", {100, -1., 1.}, ""};
+    ConfigurableAxis thnConfigAxisPsi{"thnConfigAxisPsi", {6000, 0, constants::math::TwoPI}, ""};
+    ConfigurableAxis thnConfigAxisCosDeltaPhi{"thnConfigAxisCosDeltaPhi", {100, -1., 1.}, ""};
+    ConfigurableAxis thnConfigAxisScalarProd{"thnConfigAxisScalarProd", {100, 0., 1.}, ""};
+    ConfigurableAxis thnConfigAxisMlOne{"thnConfigAxisMlOne", {1000, 0., 1.}, ""};
+    ConfigurableAxis thnConfigAxisMlTwo{"thnConfigAxisMlTwo", {1000, 0., 1.}, ""};
+    ConfigurableAxis thnConfigAxisOccupancyITS{"thnConfigAxisOccupancyITS", {14, 0, 14000}, ""};
+    ConfigurableAxis thnConfigAxisOccupancyFT0C{"thnConfigAxisOccupancyFT0C", {14, 0, 140000}, ""};
+    ConfigurableAxis thnConfigAxisNoSameBunchPileup{"thnConfigAxisNoSameBunchPileup", {2, 0, 2}, ""};
+    ConfigurableAxis thnConfigAxisOccupancy{"thnConfigAxisOccupancy", {2, 0, 2}, ""};
+    ConfigurableAxis thnConfigAxisNoCollInTimeRangeNarrow{"thnConfigAxisNoCollInTimeRangeNarrow", {2, 0, 2}, ""};
+    ConfigurableAxis thnConfigAxisNoCollInTimeRangeStandard{"thnConfigAxisNoCollInTimeRangeStandard", {2, 0, 2}, ""};
+    ConfigurableAxis thnConfigAxisNoCollInRofStandard{"thnConfigAxisNoCollInRofStandard", {2, 0, 2}, ""};
+    ConfigurableAxis thnConfigAxisResoFT0cFV0a{"thnConfigAxisResoFT0cFV0a", {160, -8, 8}, ""};
+    ConfigurableAxis thnConfigAxisResoFT0cTPCtot{"thnConfigAxisResoFT0cTPCtot", {160, -8, 8}, ""};
+    ConfigurableAxis thnConfigAxisResoFV0aTPCtot{"thnConfigAxisResoFV0aTPCtot", {160, -8, 8}, ""};
+    ConfigurableAxis thnConfigAxisCandidateEta{"thnConfigAxisCandidateEta", {100, -5, 5}, ""};
+    ConfigurableAxis thnConfigAxisSign{"thnConfigAxisSign", {6, -3.0, 3.0}, ""};
+    ConfigurableAxis thnConfigAxisRedQVec{"thnConfigAxisRedQVec", {1000, 0, 100}, ""};
+  } thnAxesCfgs;
 
   HistogramRegistry registry{"registry", {}};
 
@@ -235,30 +242,30 @@ struct HfTaskFlowCharmHadrons {
     if (storeSPQVec && doprocessD0EsEMl) {
       LOGP(fatal, "Scalar product tables not available for this process function. Please check your configuration!");
     }
-    const AxisSpec thnAxisInvMass{thnConfigAxisInvMass, "Inv. mass (GeV/#it{c}^{2})"};
-    const AxisSpec thnAxisPt{thnConfigAxisPt, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec thnAxisCent{thnConfigAxisCent, "Centrality"};
-    const AxisSpec thnAxisCosNPhi{thnConfigAxisCosNPhi, Form("cos(%d#varphi)", harmonic.value)};
-    const AxisSpec thnAxisSinNPhi{thnConfigAxisCosNPhi, Form("sin(%d#varphi)", harmonic.value)};
-    const AxisSpec thnAxisPsi{thnConfigAxisPsi, Form("#Psi_{%d}", harmonic.value)};
-    const AxisSpec thnAxisCosDeltaPhi{thnConfigAxisCosDeltaPhi, Form("cos(%d(#varphi - #Psi_{sub}))", harmonic.value)};
-    const AxisSpec thnAxisScalarProd{thnConfigAxisScalarProd, "SP"};
-    const AxisSpec thnAxisMlOne{thnConfigAxisMlOne, "Bkg score"};
-    const AxisSpec thnAxisMlTwo{thnConfigAxisMlTwo, "FD score"};
-    const AxisSpec thnAxisOccupancyITS{thnConfigAxisOccupancyITS, "OccupancyITS"};
-    const AxisSpec thnAxisOccupancyFT0C{thnConfigAxisOccupancyFT0C, "OccupancyFT0C"};
-    const AxisSpec thnAxisCandEta{thnConfigAxisCandidateEta, "#eta"};
-    const AxisSpec thnAxisSign{thnConfigAxisSign, "Sign"};
-    const AxisSpec thnAxisNoSameBunchPileup{thnConfigAxisNoSameBunchPileup, "NoSameBunchPileup"};
-    const AxisSpec thnAxisOccupancy{thnConfigAxisOccupancy, "Occupancy"};
-    const AxisSpec thnAxisNoCollInTimeRangeNarrow{thnConfigAxisNoCollInTimeRangeNarrow, "NoCollInTimeRangeNarrow"};
-    const AxisSpec thnAxisNoCollInTimeRangeStandard{thnConfigAxisNoCollInTimeRangeStandard, "NoCollInTimeRangeStandard"};
-    const AxisSpec thnAxisNoCollInRofStandard{thnConfigAxisNoCollInRofStandard, "NoCollInRofStandard"};
-    const AxisSpec thnAxisRedQVec{thnConfigAxisRedQVec, "Reduced Q-vector"};
+    const AxisSpec thnAxisInvMass{thnAxesCfgs.thnConfigAxisInvMass, "Inv. mass (GeV/#it{c}^{2})"};
+    const AxisSpec thnAxisPt{thnAxesCfgs.thnConfigAxisPt, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec thnAxisCent{thnAxesCfgs.thnConfigAxisCent, "Centrality"};
+    const AxisSpec thnAxisCosNPhi{thnAxesCfgs.thnConfigAxisCosNPhi, Form("cos(%d#varphi)", harmonic.value)};
+    const AxisSpec thnAxisSinNPhi{thnAxesCfgs.thnConfigAxisCosNPhi, Form("sin(%d#varphi)", harmonic.value)};
+    const AxisSpec thnAxisPsi{thnAxesCfgs.thnConfigAxisPsi, Form("#Psi_{%d}", harmonic.value)};
+    const AxisSpec thnAxisCosDeltaPhi{thnAxesCfgs.thnConfigAxisCosDeltaPhi, Form("cos(%d(#varphi - #Psi_{sub}))", harmonic.value)};
+    const AxisSpec thnAxisScalarProd{thnAxesCfgs.thnConfigAxisScalarProd, "SP"};
+    const AxisSpec thnAxisMlOne{thnAxesCfgs.thnConfigAxisMlOne, "Bkg score"};
+    const AxisSpec thnAxisMlTwo{thnAxesCfgs.thnConfigAxisMlTwo, "FD score"};
+    const AxisSpec thnAxisOccupancyITS{thnAxesCfgs.thnConfigAxisOccupancyITS, "OccupancyITS"};
+    const AxisSpec thnAxisOccupancyFT0C{thnAxesCfgs.thnConfigAxisOccupancyFT0C, "OccupancyFT0C"};
+    const AxisSpec thnAxisCandEta{thnAxesCfgs.thnConfigAxisCandidateEta, "#eta"};
+    const AxisSpec thnAxisSign{thnAxesCfgs.thnConfigAxisSign, "Sign"};
+    const AxisSpec thnAxisNoSameBunchPileup{thnAxesCfgs.thnConfigAxisNoSameBunchPileup, "NoSameBunchPileup"};
+    const AxisSpec thnAxisOccupancy{thnAxesCfgs.thnConfigAxisOccupancy, "Occupancy"};
+    const AxisSpec thnAxisNoCollInTimeRangeNarrow{thnAxesCfgs.thnConfigAxisNoCollInTimeRangeNarrow, "NoCollInTimeRangeNarrow"};
+    const AxisSpec thnAxisNoCollInTimeRangeStandard{thnAxesCfgs.thnConfigAxisNoCollInTimeRangeStandard, "NoCollInTimeRangeStandard"};
+    const AxisSpec thnAxisNoCollInRofStandard{thnAxesCfgs.thnConfigAxisNoCollInRofStandard, "NoCollInRofStandard"};
+    const AxisSpec thnAxisRedQVec{thnAxesCfgs.thnConfigAxisRedQVec, "Reduced Q-vector"};
     // TODO: currently only the Q vector of FT0c FV0a and TPCtot are considered
-    const AxisSpec thnAxisResoFT0cFV0a{thnConfigAxisResoFT0cFV0a, "Q_{FT0c} #bullet Q_{FV0a}"};
-    const AxisSpec thnAxisResoFT0cTPCtot{thnConfigAxisResoFT0cTPCtot, "Q_{FT0c} #bullet Q_{TPCtot}"};
-    const AxisSpec thnAxisResoFV0aTPCtot{thnConfigAxisResoFV0aTPCtot, "Q_{FV0a} #bullet Q_{TPCtot}"};
+    const AxisSpec thnAxisResoFT0cFV0a{thnAxesCfgs.thnConfigAxisResoFT0cFV0a, "Q_{FT0c} #bullet Q_{FV0a}"};
+    const AxisSpec thnAxisResoFT0cTPCtot{thnAxesCfgs.thnConfigAxisResoFT0cTPCtot, "Q_{FT0c} #bullet Q_{TPCtot}"};
+    const AxisSpec thnAxisResoFV0aTPCtot{thnAxesCfgs.thnConfigAxisResoFV0aTPCtot, "Q_{FV0a} #bullet Q_{TPCtot}"};
 
     std::vector<AxisSpec> axes = {thnAxisInvMass, thnAxisPt, thnAxisCent};
     if (storeSPQVec) {
@@ -384,17 +391,17 @@ struct HfTaskFlowCharmHadrons {
                       std::vector<float>& tracksQx,
                       std::vector<float>& tracksQy,
                       const float amplQVec,
-                      QvecEstimator qVecDetector)
+                      QvecEstimator qVecDet)
   {
     auto addProngIfInSubevent = [&](float px, float py, float pz) {
       const std::array<float, 3> pVec{px, py, pz};
       const float eta = RecoDecay::eta(pVec);
 
       // only subtract daughters that actually contributed to THIS subevent Q
-      if (qVecDetector == QvecEstimator::TPCPos && eta <= 0.f) {
+      if (qVecDet == QvecEstimator::TPCPos && eta <= 0.f) {
         return;
       }
-      if (qVecDetector == QvecEstimator::TPCNeg && eta >= 0.f) {
+      if (qVecDet == QvecEstimator::TPCNeg && eta >= 0.f) {
         return;
       }
       // for TPCTot: no early return, all prongs contribute
@@ -426,16 +433,16 @@ struct HfTaskFlowCharmHadrons {
                          std::vector<float>& tracksQx,
                          std::vector<float>& tracksQy,
                          float amplQVec,
-                         QvecEstimator qVecDetector)
+                         QvecEstimator qVecDet)
   {
     auto addProngIfInSubevent = [&](float px, float py, float pz) {
       const std::array<float, 3> pVec{px, py, pz};
       const float eta = RecoDecay::eta(pVec);
 
-      if (qVecDetector == QvecEstimator::TPCPos && eta <= 0.f) {
+      if (qVecDet == QvecEstimator::TPCPos && eta <= 0.f) {
         return;
       }
-      if (qVecDetector == QvecEstimator::TPCNeg && eta >= 0.f) {
+      if (qVecDet == QvecEstimator::TPCNeg && eta >= 0.f) {
         return;
       }
 
@@ -612,46 +619,50 @@ struct HfTaskFlowCharmHadrons {
     float const yRedQVec = qVecRedComps[1];
     float const amplRedQVec = qVecRedComps[2];
 
+    if (useOnlineResoCorrection) {
+      // Per-run update
+      if (collision.runNumber() != lastRunNumber) {
+        LOG(info) << "Run number changed from " << lastRunNumber << " to " << collision.runNumber() << ". Updating resolution values.";
+        qVecResoHelper.update(ccdb, ccdbResoHistPath, resoTripletPath.value, collision.timestamp(), collision.runNumber());
+        lastRunNumber = collision.runNumber();
+      }
+      scalarProdReso = qVecResoHelper[static_cast<int>(cent - 0.5f)]; // Cent is given in X.5f format
+    }
+
     for (const auto& candidate : candidates) {
       float massCand = 0.;
       float signCand = 0.;
       std::vector<float> outputMl = {-999., -999.};
-      if constexpr (std::is_same_v<T1, CandDsData> || std::is_same_v<T1, CandDsDataWMl>) {
+      if constexpr (std::is_same_v<T1, CandDsDataWMl>) {
         switch (Channel) {
           case DecayChannel::DsToKKPi:
             massCand = HfHelper::invMassDsToKKPi(candidate);
             signCand = 1;
-            if constexpr (std::is_same_v<T1, CandDsDataWMl>) {
-              for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-                outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
-              }
+            for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+              outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
             }
             break;
           case DecayChannel::DsToPiKK:
             massCand = HfHelper::invMassDsToPiKK(candidate);
             signCand = -1;
-            if constexpr (std::is_same_v<T1, CandDsDataWMl>) {
-              for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-                outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
-              }
+            for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+              outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
             }
             break;
           default:
             break;
         }
-      } else if constexpr (std::is_same_v<T1, CandDplusData> || std::is_same_v<T1, CandDplusDataWMl>) {
+      } else if constexpr (std::is_same_v<T1, CandDplusDataWMl>) {
         massCand = HfHelper::invMassDplusToPiKPi(candidate);
         if (std::abs(massCand - MassDPlus) < nSigmaMass * sigmaMDplus) {
           hasCandInMassWin = true;
         }
         auto trackprong0 = candidate.template prong0_as<Trk>();
         signCand = trackprong0.sign();
-        if constexpr (std::is_same_v<T1, CandDplusDataWMl>) {
-          for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-            outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
-          }
+        for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+          outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
         }
-      } else if constexpr (std::is_same_v<T1, CandD0Data> || std::is_same_v<T1, CandD0DataWMl>) {
+      } else if constexpr (std::is_same_v<T1, CandD0DataWMl>) {
         switch (Channel) {
           case DecayChannel::D0ToPiK:
             signCand = candidate.isSelD0bar() ? 3 : 1; // 3: reflected D0bar, 1: pure D0 excluding reflected D0bar
@@ -659,10 +670,8 @@ struct HfTaskFlowCharmHadrons {
             if (std::abs(massCand - MassD0) < nSigmaMass * sigmaMD0) {
               hasCandInMassWin = true;
             }
-            if constexpr (std::is_same_v<T1, CandD0DataWMl>) {
-              for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-                outputMl[iclass] = candidate.mlProbD0()[classMl->at(iclass)];
-              }
+            for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+              outputMl[iclass] = candidate.mlProbD0()[classMl->at(iclass)];
             }
             break;
           case DecayChannel::D0ToKPi:
@@ -671,56 +680,46 @@ struct HfTaskFlowCharmHadrons {
               hasCandInMassWin = true;
             }
             signCand = candidate.isSelD0() ? 3 : 2; // 3: reflected D0, 2: pure D0bar excluding reflected D0
-            if constexpr (std::is_same_v<T1, CandD0DataWMl>) {
-              for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-                outputMl[iclass] = candidate.mlProbD0bar()[classMl->at(iclass)];
-              }
+            for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+              outputMl[iclass] = candidate.mlProbD0bar()[classMl->at(iclass)];
             }
             break;
           default:
             break;
         }
-      } else if constexpr (std::is_same_v<T1, CandLcData> || std::is_same_v<T1, CandLcDataWMl>) {
+      } else if constexpr (std::is_same_v<T1, CandLcDataWMl>) {
         switch (Channel) {
           case DecayChannel::LcToPKPi:
             massCand = HfHelper::invMassLcToPKPi(candidate);
             signCand = 1;
-            if constexpr (std::is_same_v<T1, CandLcDataWMl>) {
-              for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-                outputMl[iclass] = candidate.mlProbLcToPKPi()[classMl->at(iclass)];
-              }
+            for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+              outputMl[iclass] = candidate.mlProbLcToPKPi()[classMl->at(iclass)];
             }
             break;
           case DecayChannel::LcToPiKP:
             massCand = HfHelper::invMassLcToPiKP(candidate);
             signCand = -1;
-            if constexpr (std::is_same_v<T1, CandLcDataWMl>) {
-              for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-                outputMl[iclass] = candidate.mlProbLcToPiKP()[classMl->at(iclass)];
-              }
+            for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+              outputMl[iclass] = candidate.mlProbLcToPiKP()[classMl->at(iclass)];
             }
             break;
           default:
             break;
         }
-      } else if constexpr (std::is_same_v<T1, CandXicData> || std::is_same_v<T1, CandXicDataWMl>) {
+      } else if constexpr (std::is_same_v<T1, CandXicDataWMl>) {
         switch (Channel) {
           case DecayChannel::XicToPKPi:
             massCand = HfHelper::invMassXicToPKPi(candidate);
             signCand = 1;
-            if constexpr (std::is_same_v<T1, CandXicDataWMl>) {
-              for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-                outputMl[iclass] = candidate.mlProbXicToPKPi()[classMl->at(iclass)];
-              }
+            for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+              outputMl[iclass] = candidate.mlProbXicToPKPi()[classMl->at(iclass)];
             }
             break;
           case DecayChannel::XicToPiKP:
             massCand = HfHelper::invMassXicToPiKP(candidate);
             signCand = -1;
-            if constexpr (std::is_same_v<T1, CandXicDataWMl>) {
-              for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-                outputMl[iclass] = candidate.mlProbXicToPiKP()[classMl->at(iclass)];
-              }
+            for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+              outputMl[iclass] = candidate.mlProbXicToPiKP()[classMl->at(iclass)];
             }
             break;
           default:
@@ -778,8 +777,13 @@ struct HfTaskFlowCharmHadrons {
       } else {
         scalprodCand = cosNPhi * xQVec + sinNPhi * yQVec;
       }
+      LOG(info) << "\nScalar product before correction" << scalprodCand;
+      if (useOnlineResoCorrection && scalarProdReso > 1e-5f) {
+        scalprodCand /= scalarProdReso;
+      }
+      LOG(info) << "Scalar product after correction" << scalprodCand;
 
-      if (fillMassPtMlTree || fillMassPtMlSpCentTree) {
+      if (fillMassPtMlTree || fillMassPtMlSpCentTree || fillMassPtMlSpCentPvTree) {
         if (downSampleFactor < 1.) {
           float const pseudoRndm = ptCand * 1000. - static_cast<int64_t>(ptCand * 1000);
           if (ptCand < ptDownSampleMax && pseudoRndm >= downSampleFactor) {
@@ -792,11 +796,15 @@ struct HfTaskFlowCharmHadrons {
         if (fillMassPtMlSpCentTree) {
           rowCandMassPtMlSpCent(massCand, ptCand, outputMl[0], outputMl[1], scalprodCand, cent);
         }
+        if (fillMassPtMlSpCentPvTree) {
+          rowCandMassPtMlSpCentPv(massCand, ptCand, outputMl[0], outputMl[1], scalprodCand, cent, collision.numContrib());
+        }
       }
 
-      bool subtractDaugsFromRedQVec = storeRedQVec && (qVecRedDetector == QvecEstimator::TPCNeg ||
-                                                       qVecRedDetector == QvecEstimator::TPCPos ||
-                                                       qVecRedDetector == QvecEstimator::TPCTot);
+      bool subtractDaugsFromRedQVec = storeRedQVec && useRedQVecDaugsSubtr &&
+                                      (qVecRedDetector == QvecEstimator::TPCNeg ||
+                                       qVecRedDetector == QvecEstimator::TPCPos ||
+                                       qVecRedDetector == QvecEstimator::TPCTot);
       if (subtractDaugsFromRedQVec) {
         std::vector<float> tracksRedQx;
         std::vector<float> tracksRedQy;
@@ -841,17 +849,29 @@ struct HfTaskFlowCharmHadrons {
   }
   PROCESS_SWITCH(HfTaskFlowCharmHadrons, processDsMl, "Process Ds candidates with ML", false);
 
-  // Ds with rectangular cuts
-  void processDs(CollsWithSPQvecs::iterator const& collision,
-                 CandDsData const& /*candidatesDs*/,
-                 TracksWithExtra const& tracks)
+  // Ds with ML EsE
+  void processDsEsEMl(CollsWithEsEQvecs::iterator const& collision,
+                      CandDsDataWMl const& /*candidatesDs*/,
+                      TracksWithExtra const& tracks)
   {
-    auto candsDsToKKPi = selectedDsToKKPi->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-    auto candsDsToPiKK = selectedDsToPiKK->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-    runFlowAnalysis<RunMode::kSP, DecayChannel::DsToKKPi>(collision, candsDsToKKPi, tracks);
-    runFlowAnalysis<RunMode::kSP, DecayChannel::DsToPiKK>(collision, candsDsToPiKK, tracks);
+    auto candsDsToKKPiWMl = selectedDsToKKPiWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+    auto candsDsToPiKKWMl = selectedDsToPiKKWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+    runFlowAnalysis<RunMode::kEsE, DecayChannel::DsToKKPi>(collision, candsDsToKKPiWMl, tracks);
+    runFlowAnalysis<RunMode::kEsE, DecayChannel::DsToPiKK>(collision, candsDsToPiKKWMl, tracks);
   }
-  PROCESS_SWITCH(HfTaskFlowCharmHadrons, processDs, "Process Ds candidates", false);
+  PROCESS_SWITCH(HfTaskFlowCharmHadrons, processDsEsEMl, "Process Ds candidates with ML for EsE information", false);
+
+  // Ds with ML EsE and SP
+  void processDsSPEsEMl(CollsWithSPEsEQvecs::iterator const& collision,
+                        CandDsDataWMl const& /*candidatesDs*/,
+                        TracksWithExtra const& tracks)
+  {
+    auto candsDsToKKPiWMl = selectedDsToKKPiWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+    auto candsDsToPiKKWMl = selectedDsToPiKKWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+    runFlowAnalysis<RunMode::kSPEsE, DecayChannel::DsToKKPi>(collision, candsDsToKKPiWMl, tracks);
+    runFlowAnalysis<RunMode::kSPEsE, DecayChannel::DsToPiKK>(collision, candsDsToPiKKWMl, tracks);
+  }
+  PROCESS_SWITCH(HfTaskFlowCharmHadrons, processDsSPEsEMl, "Process Ds candidates with ML for SP and EsE information", false);
 
   // Dplus with ML
   void processDplusMl(CollsWithSPQvecs::iterator const& collision,
@@ -862,14 +882,23 @@ struct HfTaskFlowCharmHadrons {
   }
   PROCESS_SWITCH(HfTaskFlowCharmHadrons, processDplusMl, "Process Dplus candidates with ML", false);
 
-  // Dplus with rectangular cuts
-  void processDplus(CollsWithSPQvecs::iterator const& collision,
-                    CandDplusData const& candidatesDplus,
-                    TracksWithExtra const& tracks)
+  // Dplus with ML EsE
+  void processDplusEsEMl(CollsWithEsEQvecs::iterator const& collision,
+                         CandDplusDataWMl const& candidatesDplus,
+                         TracksWithExtra const& tracks)
   {
-    runFlowAnalysis<RunMode::kSP, DecayChannel::DplusToPiKPi>(collision, candidatesDplus, tracks);
+    runFlowAnalysis<RunMode::kEsE, DecayChannel::DplusToPiKPi>(collision, candidatesDplus, tracks);
   }
-  PROCESS_SWITCH(HfTaskFlowCharmHadrons, processDplus, "Process Dplus candidates", true);
+  PROCESS_SWITCH(HfTaskFlowCharmHadrons, processDplusEsEMl, "Process Dplus candidates with ML for EsE information", false);
+
+  // Dplus with ML SP and EsE
+  void processDplusSPEsEMl(CollsWithSPEsEQvecs::iterator const& collision,
+                           CandDplusDataWMl const& candidatesDplus,
+                           TracksWithExtra const& tracks)
+  {
+    runFlowAnalysis<RunMode::kSPEsE, DecayChannel::DplusToPiKPi>(collision, candidatesDplus, tracks);
+  }
+  PROCESS_SWITCH(HfTaskFlowCharmHadrons, processDplusSPEsEMl, "Process Dplus candidates with ML for SP and EsE information", false);
 
   // D0 with ML
   void processD0Ml(CollsWithSPQvecs::iterator const& collision,
@@ -907,18 +936,6 @@ struct HfTaskFlowCharmHadrons {
   }
   PROCESS_SWITCH(HfTaskFlowCharmHadrons, processD0SPEsEMl, "Process D0 candidates with ML for SP and EsE information", false);
 
-  // D0 with rectangular cuts
-  void processD0(CollsWithSPQvecs::iterator const& collision,
-                 CandD0Data const& /*candidatesD0*/,
-                 TracksWithExtra const& tracks)
-  {
-    auto candsD0ToPiK = selectedD0ToPiK->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-    auto candsD0ToKPi = selectedD0ToKPi->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-    runFlowAnalysis<RunMode::kSP, DecayChannel::D0ToPiK>(collision, candsD0ToPiK, tracks);
-    runFlowAnalysis<RunMode::kSP, DecayChannel::D0ToKPi>(collision, candsD0ToKPi, tracks);
-  }
-  PROCESS_SWITCH(HfTaskFlowCharmHadrons, processD0, "Process D0 candidates", false);
-
   // Lc with ML
   void processLcMl(CollsWithSPQvecs::iterator const& collision,
                    CandLcDataWMl const& /*candidatesLc*/,
@@ -931,18 +948,6 @@ struct HfTaskFlowCharmHadrons {
   }
   PROCESS_SWITCH(HfTaskFlowCharmHadrons, processLcMl, "Process Lc candidates with ML", false);
 
-  // Lc with rectangular cuts
-  void processLc(CollsWithSPQvecs::iterator const& collision,
-                 CandLcData const& /*candidatesLc*/,
-                 TracksWithExtra const& tracks)
-  {
-    auto candsLcToPKPi = selectedLcToPKPi->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-    auto candsLcToPiKP = selectedLcToPiKP->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-    runFlowAnalysis<RunMode::kSP, DecayChannel::LcToPKPi>(collision, candsLcToPKPi, tracks);
-    runFlowAnalysis<RunMode::kSP, DecayChannel::LcToPiKP>(collision, candsLcToPiKP, tracks);
-  }
-  PROCESS_SWITCH(HfTaskFlowCharmHadrons, processLc, "Process Lc candidates", false);
-
   // Xic with ML
   void processXicMl(CollsWithSPQvecs::iterator const& collision,
                     CandXicDataWMl const& /*candidatesXic*/,
@@ -954,18 +959,6 @@ struct HfTaskFlowCharmHadrons {
     runFlowAnalysis<RunMode::kSP, DecayChannel::XicToPiKP>(collision, candsXicToPiKPWMl, tracks);
   }
   PROCESS_SWITCH(HfTaskFlowCharmHadrons, processXicMl, "Process Xic candidates with ML", false);
-
-  // Xic with rectangular cuts
-  void processXic(CollsWithSPQvecs::iterator const& collision,
-                  CandXicData const& /*candidatesXic*/,
-                  TracksWithExtra const& tracks)
-  {
-    auto candsXicToPKPi = selectedXicToPKPi->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-    auto candsXicToPiKP = selectedXicToPiKP->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-    runFlowAnalysis<RunMode::kSP, DecayChannel::XicToPKPi>(collision, candsXicToPKPi, tracks);
-    runFlowAnalysis<RunMode::kSP, DecayChannel::XicToPiKP>(collision, candsXicToPiKP, tracks);
-  }
-  PROCESS_SWITCH(HfTaskFlowCharmHadrons, processXic, "Process Xic candidates", false);
 
   // Xic0 with ML
   void processXic0Ml(CollsWithSPQvecs::iterator const& collision,
@@ -986,6 +979,63 @@ struct HfTaskFlowCharmHadrons {
     runFlowAnalysis<RunMode::kSP, DecayChannel::Xic0ToXiPi>(collision, candsXic0, tracks);
   }
   PROCESS_SWITCH(HfTaskFlowCharmHadrons, processXic0, "Process Xic0 candidates", false);
+
+  // // Ds with rectangular cuts
+  // void processDs(CollsWithSPQvecs::iterator const& collision,
+  //                CandDsData const& /*candidatesDs*/,
+  //                TracksWithExtra const& tracks)
+  // {
+  //   auto candsDsToKKPi = selectedDsToKKPi->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+  //   auto candsDsToPiKK = selectedDsToPiKK->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+  //   runFlowAnalysis<RunMode::kSP, DecayChannel::DsToKKPi>(collision, candsDsToKKPi, tracks);
+  //   runFlowAnalysis<RunMode::kSP, DecayChannel::DsToPiKK>(collision, candsDsToPiKK, tracks);
+  // }
+  // PROCESS_SWITCH(HfTaskFlowCharmHadrons, processDs, "Process Ds candidates", false);
+
+  // // D0 with rectangular cuts
+  // void processD0(CollsWithSPQvecs::iterator const& collision,
+  //                CandD0Data const& /*candidatesD0*/,
+  //                TracksWithExtra const& tracks)
+  // {
+  //   auto candsD0ToPiK = selectedD0ToPiK->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+  //   auto candsD0ToKPi = selectedD0ToKPi->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+  //   runFlowAnalysis<RunMode::kSP, DecayChannel::D0ToPiK>(collision, candsD0ToPiK, tracks);
+  //   runFlowAnalysis<RunMode::kSP, DecayChannel::D0ToKPi>(collision, candsD0ToKPi, tracks);
+  // }
+  // PROCESS_SWITCH(HfTaskFlowCharmHadrons, processD0, "Process D0 candidates", false);
+
+  // // Dplus with rectangular cuts
+  // void processDplus(CollsWithSPQvecs::iterator const& collision,
+  //                   CandDplusData const& candidatesDplus,
+  //                   TracksWithExtra const& tracks)
+  // {
+  //   runFlowAnalysis<RunMode::kSP, DecayChannel::DplusToPiKPi>(collision, candidatesDplus, tracks);
+  // }
+  // PROCESS_SWITCH(HfTaskFlowCharmHadrons, processDplus, "Process Dplus candidates", true);
+
+  // // Lc with rectangular cuts
+  // void processLc(CollsWithSPQvecs::iterator const& collision,
+  //                CandLcData const& /*candidatesLc*/,
+  //                TracksWithExtra const& tracks)
+  // {
+  //   auto candsLcToPKPi = selectedLcToPKPi->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+  //   auto candsLcToPiKP = selectedLcToPiKP->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+  //   runFlowAnalysis<RunMode::kSP, DecayChannel::LcToPKPi>(collision, candsLcToPKPi, tracks);
+  //   runFlowAnalysis<RunMode::kSP, DecayChannel::LcToPiKP>(collision, candsLcToPiKP, tracks);
+  // }
+  // PROCESS_SWITCH(HfTaskFlowCharmHadrons, processLc, "Process Lc candidates", false);
+
+  // // Xic with rectangular cuts
+  // void processXic(CollsWithSPQvecs::iterator const& collision,
+  //                 CandXicData const& /*candidatesXic*/,
+  //                 TracksWithExtra const& tracks)
+  // {
+  //   auto candsXicToPKPi = selectedXicToPKPi->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+  //   auto candsXicToPiKP = selectedXicToPiKP->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+  //   runFlowAnalysis<RunMode::kSP, DecayChannel::XicToPKPi>(collision, candsXicToPKPi, tracks);
+  //   runFlowAnalysis<RunMode::kSP, DecayChannel::XicToPiKP>(collision, candsXicToPiKP, tracks);
+  // }
+  // PROCESS_SWITCH(HfTaskFlowCharmHadrons, processXic, "Process Xic candidates", false);
 
   /// Compute resolution
   /// \param collision is the collision with the Q vector information
@@ -1042,8 +1092,8 @@ struct HfTaskFlowCharmHadrons {
       return;
     }
 
-    float redQVec{-999.f};
-    std::array<float, 3> qVecRedComps{-999.f, -999.f, -999.f};
+    float redQVec{0.f};
+    std::array<float, 3> qVecRedComps{0.f, 0.f, 0.f};
     if constexpr (HasRedQVecs) {
       qVecRedComps = getEseQvec(collision, qVecRedDetector.value);
     }

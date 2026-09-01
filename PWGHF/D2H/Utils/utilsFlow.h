@@ -18,10 +18,19 @@
 
 #include "Common/Core/RecoDecay.h"
 
+#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Logger.h>
 
+#include <algorithm>
 #include <array>
+#include <cassert>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 namespace o2::analysis
 {
@@ -34,6 +43,48 @@ enum QvecEstimator { FV0A = 0,
                      TPCPos,
                      TPCNeg,
                      TPCTot };
+
+class HfQVectorResoHelper
+{
+ public:
+  HfQVectorResoHelper() = default;
+
+  /// Call once per run / timestamp update
+  void update(o2::framework::Service<o2::ccdb::BasicCCDBManager>& ccdb,
+              std::string const& basePath,
+              std::string const& tripletPath,
+              int64_t timestamp,
+              int runNumber)
+  {
+    if (mCurrentRun == runNumber && mResoValues != nullptr) {
+      return;
+    }
+
+    std::string fullPath = basePath + "/" + tripletPath + "/";
+    LOG(info) << "Fetching resolution array from CCDB path: " << fullPath << " for timestamp " << timestamp << " and run number " << runNumber;
+
+    mResoValues = ccdb->getForTimeStamp<std::array<float, 100>>(fullPath, timestamp);
+    if (!mResoValues) {
+      LOGF(fatal, "Resolution array not found in CCDB at path: %s", fullPath.c_str());
+    }
+
+    mCurrentRun = runNumber;
+  }
+
+  /// Get pointer to the full array
+  const std::array<float, 100>* getResoValues() const { return mResoValues; }
+
+  /// Direct array access with simple float return type
+  float operator[](size_t index) const
+  {
+    assert(mResoValues != nullptr && "CCDB resolution array accessed before initialization!");
+    return (*mResoValues)[index];
+  }
+
+ private:
+  const std::array<float, 100>* mResoValues{nullptr};
+  int64_t mCurrentRun{-1};
+};
 
 /// Compute the delta psi in the range [0, pi/harmonic]
 /// \param psi1 is the first angle
