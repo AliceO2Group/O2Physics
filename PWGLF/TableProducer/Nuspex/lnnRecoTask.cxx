@@ -19,6 +19,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -41,8 +42,11 @@
 #include <Framework/runDataProcessing.h>
 #include <MathUtils/BetheBlochAleph.h>
 
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 #include <TH1.h>
 #include <TH2.h>
+#include <TPDGCode.h>
 #include <TString.h>
 
 #include <algorithm>
@@ -59,15 +63,19 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
+
 using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, o2::aod::TrackSelection, aod::TracksCovIU, aod::pidTOFFullTr, aod::pidTOFbeta, aod::pidTOFmass, aod::TracksDCA, aod::Tracks>;
 using TracksFullMC = soa::Join<aod::TracksIU, aod::TracksExtra, o2::aod::TrackSelection, aod::TracksCovIU, aod::pidTOFFullTr, aod::pidTOFbeta, aod::pidTOFmass, aod::McTrackLabels>;
-using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As>;
-using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As>;
+using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::MultsGlobal>;
+using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::MultsGlobal >;
 
 using CollisionCandidates = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, aod::CentFT0Cs>;
 using CollisionCandidatesMC = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, aod::CentFT0Cs, o2::aod::McCollisionLabels>;
 using TrackCandidates = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension, o2::aod::TracksDCA>;
 using TrackCandidatesMC = o2::soa::Join<TrackCandidates, o2::aod::McTrackLabels>;
+
+using McCollisionMults = soa::Join<aod::McCollisions, aod::MultMCExtras>;
+using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::Mults>;
 
 namespace
 {
@@ -83,6 +91,7 @@ std::shared_ptr<TH1> hCentFT0M;
 std::shared_ptr<TH1> hCentFV0A;
 std::shared_ptr<TH2> hNsigma3HSel;
 std::shared_ptr<TH2> hNsigma3HSelTOF;
+std::shared_ptr<TH2> h2Nsigma3HSelTPCTOF;
 std::shared_ptr<TH2> hdEdx3HSel;
 std::shared_ptr<TH2> hdEdx3HPosTrack;
 std::shared_ptr<TH2> hdEdx3HNegTrack;
@@ -92,6 +101,8 @@ std::shared_ptr<TH2> h3HSignalPtTOF;
 std::shared_ptr<TH1> hIsMatterGen;
 std::shared_ptr<TH1> hLnnCandLoss;
 std::shared_ptr<TH1> hDecayChannel;
+// QA centrality scaling
+std::shared_ptr<TH2> h2GlobalTrackMultVsCent;
 // QA histograms before track selections
 std::shared_ptr<TH2> h2FT0CnClusTPCtoTrBfSel;
 std::shared_ptr<TH2> h2FT0CnClusTPCtoPiBfSel;
@@ -106,6 +117,7 @@ std::shared_ptr<TH2> h2FT0CptPiBfSelItsTpc;
 // QA MC tracks from the lnn decay
 std::shared_ptr<TH2> hPtGeneratedTrStr;
 std::shared_ptr<TH2> hPtGeneratedPiStr;
+std::shared_ptr<TH2> hPtGeneratedLnnStr;
 std::shared_ptr<TH2> hPtItsTpcTrStr;
 std::shared_ptr<TH2> hPtTrkItsTpcTrStr;
 std::shared_ptr<TH2> hPtItsTpcTofTrStr;
@@ -120,6 +132,28 @@ std::shared_ptr<TH2> h2FT0CPtGenColRecPiStrMC;
 std::shared_ptr<TH2> h2FT0CPtGenColGenCandMC;
 std::shared_ptr<TH2> h2FT0CPtGenColGenTrStrMC;
 std::shared_ptr<TH2> h2FT0CPtGenColGenPiStrMC;
+// Event and signal loss 
+std::shared_ptr<TH1> hEvtMC;
+std::shared_ptr<TH1> hImpactParamGen;
+std::shared_ptr<TH1> hImpactParamGenOneReco;
+std::shared_ptr<TH1> hImpactParamReco;
+std::shared_ptr<TH1> hGenLnnBeforeEvtSel;
+std::shared_ptr<TH1> hGenLnnAfterSel;
+std::shared_ptr<TH1> hGenOneRecoCentrality;
+std::shared_ptr<TH1> hRecoCentrality;
+std::shared_ptr<TH2> hGenEventsNchEta08;
+std::shared_ptr<TH2> hGenCentralityColvsMultiplicityGenEta08;
+std::shared_ptr<TH2> hGenCentralityColvsImpactParamGen;
+std::shared_ptr<TH2> hGenCentralityColvsFT0Cmultiplicity;
+std::shared_ptr<TH2> hRecoCentralityColvsMultiplicityRecoEta08;
+std::shared_ptr<TH2> hRecoCentralityColvsImpactParamReco;
+std::shared_ptr<TH2> hRecoCentralityColvsFT0Cmultiplicity;
+std::shared_ptr<TH2> hGenLnnvsImpactParameterBeforeEvtSel;
+std::shared_ptr<TH2> hGenLnnvsImpactParameterAfterSel;
+std::shared_ptr<TH2> hGenLnnvsMultiplicityGenEta08BeforeEvtSel;
+std::shared_ptr<TH2> hGenLnnvsMultiplicityGenEta08AfterSel;
+std::shared_ptr<TH2> hGenLnnvsMultiplicityFT0CBeforeEvtSel;
+std::shared_ptr<TH2> hGenLnnvsMultiplicityFT0CAfterSel;
 
 float alphaAP(std::array<float, 3> const& momB, std::array<float, 3> const& momC)
 {
@@ -246,7 +280,7 @@ struct lnnRecoTask {
   Configurable<int> piDauPdg{"piDauPdg", 211, "PDG Pi"};            // PDG Pi
   Configurable<int> lnnPdg{"lnnPdg", 1010000030, "PDG Lnn"};        // PDG Lnn
 
-  // Histogram configuration QA lnn-task
+  // histograms axes
   ConfigurableAxis rigidityBins{"rigidityBins", {200, -10.f, 10.f}, "Binning for rigidity"};
   ConfigurableAxis dEdxBins{"dEdxBins", {5000, 0.f, 1000.f}, "Binning for dE/dx"};
   ConfigurableAxis nSigmaBins{"nSigmaBins", {200, -5.f, 5.f}, "Binning for n#sigma_{TPC}"};
@@ -263,8 +297,16 @@ struct lnnRecoTask {
   ConfigurableAxis tpcNClsCrossedRowsBins{"tpcNClsCrossedRowsBins", {260, 30, 165}, "Binning for TPCNClsCrossedRows"};
   ConfigurableAxis tpcChi2NClusBins{"tpcChi2NClusBins", {20, 0.5, 10}, "Binning for chi2NClusTPC"};
   ConfigurableAxis itsChi2NClusBins{"itsChi2NClusBins", {72, 0, 36}, "Binning for chi2NClusTPC"};
-  ConfigurableAxis candPtBins{"candPtBins", {160, 0, 8}, "Binning for lnn cand pt"};
+  ConfigurableAxis candPtBins{"candPtBins", {32, -8, 8}, "Binning for lnn cand pt"};
   ConfigurableAxis candEtaBins{"candEtaBins", {160, -0.8, 0.8}, "Binning for eta"};
+
+  // histogram axes for EvtLossMC
+  ConfigurableAxis binsImpactPar{"binsImpactPar", {80, 0, 16}, "Binning of the impact parameter axis"};
+  ConfigurableAxis binsCent{"binsCent", {10, 0.0, 100.0}, "Binning of the centrality axis"};
+  ConfigurableAxis binsPt{"binsPt", {20, 0, 10}, "Binning of the pt"};
+  ConfigurableAxis binsFT0CMult{"binsFT0CMult", {500, 0.0f, +500.0f}, "Binning of the FT0C multiplicity"};
+  ConfigurableAxis binsMult{"binsMult", {500, 0.0f, +500.0f}, ""};
+  ConfigurableAxis binsglobalTrackMult{"binsglobalTrackMult", {100, 0.f, 1000.f}, "Binning for global track multiplicity"};
 
   // std vector of candidates
   std::vector<LnnCandidate> lnnCandidates;
@@ -277,6 +319,10 @@ struct lnnRecoTask {
   // vector to armazenade h3Track
 
   Preslice<aod::V0s> perCollision = o2::aod::v0::collisionId;
+
+  Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
+  Preslice<TracksFullMC> tracksPerCollision = aod::track::collisionId;
+
   HistogramRegistry qaRegistry{"QA", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   int mRunNumber;
@@ -311,7 +357,8 @@ struct lnnRecoTask {
 
     const AxisSpec rigidityAxis{rigidityBins, "#it{p}^{TPC}/#it{z}"};
     const AxisSpec dEdxAxis{dEdxBins, "d#it{E}/d#it{x}"};
-    const AxisSpec nSigma3HAxis{nSigmaBins, "n_{#sigma}({}^{3}H)"};
+    const AxisSpec nSigma3HtpcAxis{nSigmaBins, "n_{#sigma TPC}({}^{3}H)"};
+    const AxisSpec nSigma3HtofAxis{nSigmaBins, "n_{#sigma TOF}({}^{3}H)"};
     const AxisSpec zVtxAxis{zVtxBins, "z_{vtx} (cm)"};
     const AxisSpec centAxis{centBins, "FT0C (%)"};
     const AxisSpec mTOFAxis{mTOFBins, "#frac{m^{2}}{z^{2}}"};
@@ -326,8 +373,17 @@ struct lnnRecoTask {
     const AxisSpec candPtAxis(candPtBins, "#it{p}_{T} (Gev/#it{c})");
     const AxisSpec candEtaAxis(candEtaBins, "#eta");
 
-    hNsigma3HSel = qaRegistry.add<TH2>("PID/hNsigma3HSel", ";#it{p}^{TPC}/z (GeV/#it{c}); n_{#sigma} ({}^{3}H)", HistType::kTH2F, {rigidityAxis, nSigma3HAxis});
-    hNsigma3HSelTOF = qaRegistry.add<TH2>("PID/hNsigma3HSelTOF", ";#it{p}_{T} (GeV/#it{c}); n_{#sigma} ({}^{3}H)", HistType::kTH2F, {tPtAxis, nSigma3HAxis});
+    const AxisSpec impactParamAxis{binsImpactPar, "Impact Parameter (b)"};
+    const AxisSpec centFT0CAxis{binsCent, "Centrality (FT0C %)"};
+    const AxisSpec binsFT0CMultAxis{binsFT0CMult, "FT0C multiplicity"};
+    const AxisSpec ptAxis{binsPt, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec multAxis = {binsMult, "Multiplicity #eta <0.5"};
+    const AxisSpec globalTrackMultAxis = {binsglobalTrackMult, "N_{global track mult.}"};
+
+
+    hNsigma3HSel = qaRegistry.add<TH2>("PID/hNsigma3HSel", ";#it{p}^{TPC}/z (GeV/#it{c}); n_{#sigma} ({}^{3}H)", HistType::kTH2F, {rigidityAxis, nSigma3HtpcAxis});
+    hNsigma3HSelTOF = qaRegistry.add<TH2>("PID/hNsigma3HSelTOF", ";#it{p}_{T} (GeV/#it{c}); n_{#sigma} ({}^{3}H)", HistType::kTH2F, {tPtAxis, nSigma3HtpcAxis});
+    h2Nsigma3HSelTPCTOF = qaRegistry.add<TH2>("PID/h2Nsigma3HSelTPCTOF", ";n_{#sigma TPC} ({}^{3}H); n_{#sigma TOF} ({}^{3}H)", HistType::kTH2F, {nSigma3HtpcAxis, nSigma3HtofAxis});
     hdEdx3HSel = qaRegistry.add<TH2>("hdEdx3HSel", ";#it{p}^{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dEdxAxis});
     hdEdx3HPosTrack = qaRegistry.add<TH2>("PID/hdEdx3HPosTrack", "; #it{p}^{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {tPosRigidityAxis, dEdxAxis});
     hdEdx3HNegTrack = qaRegistry.add<TH2>("PID/hdEdx3HNegTrack", "; #it{p}^{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {tPNegRigidityAxis, dEdxAxis});
@@ -335,27 +391,16 @@ struct lnnRecoTask {
     h3HMassPtTOF = qaRegistry.add<TH2>("PID/hTrMassPtTOF", "; #it{p}_{T} ({}^{3}H) (GeV/#it{c}); #frac{m^{2}}{z^{2}} (GeV^{2}/#it{c}^{4})", HistType::kTH2F, {tPtAxis, mTOFAxis});
     h3HSignalPtTOF = qaRegistry.add<TH2>("PID/h3HSignalPtTOF", "; #it{p}_{T}({}^{3}H) (GeV/#it{c}); #beta_{TOF}", HistType::kTH2F, {tPtAxis, betaAxis});
     hEvents = qaRegistry.add<TH1>("hEvents", ";Events; ", HistType::kTH1D, {{4, -0.5, 3.5}});
-    hLnnCandLoss = qaRegistry.add<TH1>("CandCounts/hLnnCandLoss", ";CandLoss; ", HistType::kTH1D, {{7, -0.5, 6.5}});
-    // QA its-tpc and its-tpc-tof tracks before selection
-    h2FT0CnClusTPCtoTrBfSel = qaRegistry.add<TH2>("QATracks/h2FT0CnClusTPCtoTrBfSel", ";FT0C (%);N_{clus}^{TPC}", HistType::kTH2F, {centAxis, tpcNClusAxis});
-    h2FT0CnClusTPCtoPiBfSel = qaRegistry.add<TH2>("QATracks/h2FT0CnClusTPCtoPiBfSel", ";FT0C (%);N_{clus}^{TPC}", HistType::kTH2F, {centAxis, tpcNClusAxis});
-    h2FT0Cchi2NClTPCtoTrBfSel = qaRegistry.add<TH2>("QATracks/h2FT0Cchi2NClTPCtoTrBfSel", ";FT0C (%);{#Chi}^{2}/N_{clus}^{TPC} ", HistType::kTH2F, {centAxis, tpcChi2NClusAxis});
-    h2FT0Cchi2NClITStoTrBfSel = qaRegistry.add<TH2>("QATracks/h2FT0Cchi2NClITStoTrBfSel", ";FT0C (%);{#Chi}^{2}/N_{clus}^{ITS}", HistType::kTH2F, {centAxis, itsChi2NClusAxis});
-    h2FT0CnTPCNClsCrossedRows3HBfSel = qaRegistry.add<TH2>("QATracks/h2FT0CnTPCNClsCrossedRows3H", ";FT0C (%);N_{TPC} crossed rows", HistType::kTH2F, {centAxis, tpcNClsCrossedRowsAxis});
-    h2FT0CnTPCNClsCrossedRowsPiBfSel = qaRegistry.add<TH2>("QATracks/h2FT0CnTPCNClsCrossedRowsPi", ";FT0C (%);N_{TPC} crossed rows", HistType::kTH2F, {centAxis, tpcNClsCrossedRowsAxis});
-    h2FT0CptTrBfSelItsTpc = qaRegistry.add<TH2>("QATracks/h2FT0CptTrBfSelItsTpc", ";FT0C (%);#it{p}_{T}", HistType::kTH2F, {centAxis, candPtBins});
-    h2FT0CptTrBfSelItsTpcTof = qaRegistry.add<TH2>("QATracks/h2FT0CptTrBfSelItsTpcTof", ";FT0C (%);#it{p}_{T}", HistType::kTH2F, {centAxis, candPtBins});
-    h2FT0CptPiBfSelItsTpc = qaRegistry.add<TH2>("QATracks/h2FT0CptPiBfSelItsTpc", ";FT0C (%);#it{p}_{T}", HistType::kTH2F, {centAxis, candPtBins});
-    // QA its-tpc, its-tpc-tof, and generated MC
-    hPtItsTpcTrStr = qaRegistry.add<TH2>("MC/McTracks/hPtItsTpcTrStr", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{10, 0, 100}, {160, 0, 8}});
-    hPtTrkItsTpcTrStr = qaRegistry.add<TH2>("MC/McTracks/hPtTrkItsTpcTrStr", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{10, 0, 100}, {160, 0, 8}});
-    hPtItsTpcTofTrStr = qaRegistry.add<TH2>("MC/McTracks/hPtItsTpcTofTrStr", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{10, 0, 100}, {160, 0, 8}});
-    hPtTrkItsTpcTofTrStr = qaRegistry.add<TH2>("MC/McTracks/hPtTrkItsTpcTofTrStr", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{10, 0, 100}, {160, 0, 8}});
-    hPtItsTpcPiStr = qaRegistry.add<TH2>("MC/McTracks/hPtItsTpcPiStr", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{10, 0, 100}, {160, 0, 8}});
-    hPtTrkItsTpcPiStr = qaRegistry.add<TH2>("MC/McTracks/hPtTrkItsTpcPiStr", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{10, 0, 100}, {160, 0, 8}});
-    hPtGeneratedTrStr = qaRegistry.add<TH2>("MC/McGen/hPtGeneratedTrStr", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{10, 0, 100}, {160, 0, 8}});
-    hPtGeneratedPiStr = qaRegistry.add<TH2>("MC/McGen/hPtGeneratedPiStr", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{10, 0, 100}, {160, 0, 8}});
 
+    h2GlobalTrackMultVsCent = qaRegistry.add<TH2>("QATracks/h2GlobalTrackMultVsCent", ";FT0C (%); N_{global track mult.}", HistType::kTH2F, {centAxis, globalTrackMultAxis});
+
+    hZvtx = qaRegistry.add<TH1>("hZvtx", ";z_{vtx} (cm); ", HistType::kTH1D, {{100, -20, 20}});
+    hCentFT0A = qaRegistry.add<TH1>("hCentFT0A", ";Centrality; ", HistType::kTH1D, {{100, 0, 100}});
+    hCentFT0C = qaRegistry.add<TH1>("hCentFT0C", ";Centrality; ", HistType::kTH1D, {{100, 0, 100}});
+    hCentFT0M = qaRegistry.add<TH1>("hCentFT0M", ";Centrality; ", HistType::kTH1D, {{100, 0, 100}});
+    hCentFV0A = qaRegistry.add<TH1>("hCentFV0A", ";Centrality; ", HistType::kTH1D, {{100, 0, 100}});
+    
+    hLnnCandLoss = qaRegistry.add<TH1>("CandCounts/hLnnCandLoss", ";CandLoss; ", HistType::kTH1D, {{7, -0.5, 6.5}});
     hEvents->GetXaxis()->SetBinLabel(1, "All");
     hEvents->GetXaxis()->SetBinLabel(2, "sel8");
     hEvents->GetXaxis()->SetBinLabel(3, "z_{vtx}");
@@ -369,6 +414,28 @@ struct lnnRecoTask {
     hLnnCandLoss->GetXaxis()->SetBinLabel(5, "!isLnnMass");
     hLnnCandLoss->GetXaxis()->SetBinLabel(6, "DCA #it{V}_{0} daughter");
     hLnnCandLoss->GetXaxis()->SetBinLabel(7, "cosPA");
+
+    // QA its-tpc and its-tpc-tof tracks before selection
+    h2FT0CnClusTPCtoTrBfSel = qaRegistry.add<TH2>("QATracks/h2FT0CnClusTPCtoTrBfSel", ";FT0C (%);N_{clus}^{TPC}", HistType::kTH2F, {centAxis, tpcNClusAxis});
+    h2FT0CnClusTPCtoPiBfSel = qaRegistry.add<TH2>("QATracks/h2FT0CnClusTPCtoPiBfSel", ";FT0C (%);N_{clus}^{TPC}", HistType::kTH2F, {centAxis, tpcNClusAxis});
+    h2FT0Cchi2NClTPCtoTrBfSel = qaRegistry.add<TH2>("QATracks/h2FT0Cchi2NClTPCtoTrBfSel", ";FT0C (%);{#Chi}^{2}/N_{clus}^{TPC} ", HistType::kTH2F, {centAxis, tpcChi2NClusAxis});
+    h2FT0Cchi2NClITStoTrBfSel = qaRegistry.add<TH2>("QATracks/h2FT0Cchi2NClITStoTrBfSel", ";FT0C (%);{#Chi}^{2}/N_{clus}^{ITS}", HistType::kTH2F, {centAxis, itsChi2NClusAxis});
+    h2FT0CnTPCNClsCrossedRows3HBfSel = qaRegistry.add<TH2>("QATracks/h2FT0CnTPCNClsCrossedRows3H", ";FT0C (%);N_{TPC} crossed rows", HistType::kTH2F, {centAxis, tpcNClsCrossedRowsAxis});
+    h2FT0CnTPCNClsCrossedRowsPiBfSel = qaRegistry.add<TH2>("QATracks/h2FT0CnTPCNClsCrossedRowsPi", ";FT0C (%);N_{TPC} crossed rows", HistType::kTH2F, {centAxis, tpcNClsCrossedRowsAxis});
+    h2FT0CptTrBfSelItsTpc = qaRegistry.add<TH2>("QATracks/h2FT0CptTrBfSelItsTpc", ";FT0C (%);#it{p}_{T}", HistType::kTH2F, {centAxis, candPtAxis});
+    h2FT0CptTrBfSelItsTpcTof = qaRegistry.add<TH2>("QATracks/h2FT0CptTrBfSelItsTpcTof", ";FT0C (%);#it{p}_{T}", HistType::kTH2F, {centAxis, candPtAxis});
+    h2FT0CptPiBfSelItsTpc = qaRegistry.add<TH2>("QATracks/h2FT0CptPiBfSelItsTpc", ";FT0C (%);#it{p}_{T}", HistType::kTH2F, {centAxis, candPtAxis});
+    // QA its-tpc, its-tpc-tof, and generated MC
+    hPtItsTpcTrStr = qaRegistry.add<TH2>("MC/McTracks/hPtItsTpcTrStr", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{10, 0, 100}, {320, -8, 8}});
+    hPtTrkItsTpcTrStr = qaRegistry.add<TH2>("MC/McTracks/hPtTrkItsTpcTrStr", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{10, 0, 100}, {320, -8, 8}});
+    hPtItsTpcTofTrStr = qaRegistry.add<TH2>("MC/McTracks/hPtItsTpcTofTrStr", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{10, 0, 100}, {320, -8, 8}});
+    hPtTrkItsTpcTofTrStr = qaRegistry.add<TH2>("MC/McTracks/hPtTrkItsTpcTofTrStr", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{10, 0, 100}, {320, -8, 8}});
+    hPtItsTpcPiStr = qaRegistry.add<TH2>("MC/McTracks/hPtItsTpcPiStr", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{10, 0, 100}, {320, -8, 8}});
+    hPtTrkItsTpcPiStr = qaRegistry.add<TH2>("MC/McTracks/hPtTrkItsTpcPiStr", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{10, 0, 100}, {320, -8, 8}});
+    hPtGeneratedTrStr = qaRegistry.add<TH2>("MC/McGen/hPtGeneratedTrStr", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{10, 0, 100}, {320, -8, 8}});
+    hPtGeneratedPiStr = qaRegistry.add<TH2>("MC/McGen/hPtGeneratedPiStr", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{10, 0, 100}, {320, -8, 8}});
+    hPtGeneratedLnnStr = qaRegistry.add<TH2>("MC/McGen/hPtGeneratedLnnStr", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{10, 0, 100}, {320, -8, 8}});
+
     if (doprocessMC) {
       hDecayChannel = qaRegistry.add<TH1>("MC/hDecayChannel", ";Decay channel; ", HistType::kTH1D, {{2, -0.5, 1.5}});
       hDecayChannel->GetXaxis()->SetBinLabel(1, "All");
@@ -385,11 +452,40 @@ struct lnnRecoTask {
       h2FT0CPtGenColGenTrStrMC = qaRegistry.add<TH2>("MC/QASignalGenSV/h2FT0CPtGenColGenTrStrMC", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {centAxis, candPtAxis});
       h2FT0CPtGenColGenPiStrMC = qaRegistry.add<TH2>("MC/QASignalGenSV/h2FT0CPtGenColGenPiStrMC", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {centAxis, candPtAxis});
     }
-    hZvtx = qaRegistry.add<TH1>("hZvtx", ";z_{vtx} (cm); ", HistType::kTH1D, {{100, -20, 20}});
-    hCentFT0A = qaRegistry.add<TH1>("hCentFT0A", ";Centrality; ", HistType::kTH1D, {{100, 0, 100}});
-    hCentFT0C = qaRegistry.add<TH1>("hCentFT0C", ";Centrality; ", HistType::kTH1D, {{100, 0, 100}});
-    hCentFT0M = qaRegistry.add<TH1>("hCentFT0M", ";Centrality; ", HistType::kTH1D, {{100, 0, 100}});
-    hCentFV0A = qaRegistry.add<TH1>("hCentFV0A", ";Centrality; ", HistType::kTH1D, {{100, 0, 100}});
+
+    if (doprocessEventLossMC) {
+      // Infomation for all generated collisions
+      hEvtMC = qaRegistry.add<TH1>("QAEvent/hEvtMC", ";; ", HistType::kTH1D, {{3, -0.5, 2.5}});
+      hEvtMC->GetXaxis()->SetBinLabel(1, "All gen evts");
+      hEvtMC->GetXaxis()->SetBinLabel(2, "Gen evts with al least one reconstructed");
+      hEvtMC->GetXaxis()->SetBinLabel(3, "Gen evts with no reconstructed collisions");
+      hGenEventsNchEta08 = qaRegistry.add<TH2>("QAEvent/hGenEventsNchEta08", ";;", HistType::kTH2D, {{multAxis}, {2, -0.5f, +1.5f}});
+      hGenEventsNchEta08->GetYaxis()->SetBinLabel(1, "All gen. events");
+      hGenEventsNchEta08->GetYaxis()->SetBinLabel(2, "Gen evts with at least 1 rec. collisions");
+      hImpactParamGen = qaRegistry.add<TH1>("QAEvent/McColAll/hImpactParamGen", "Impact parameter of generated MC events; Impact Parameter (b); Counts", HistType::kTH1D, {impactParamAxis});
+      // Infomation for generated collisions which at least one rec. collision and passed the event selection
+      hImpactParamGenOneReco = qaRegistry.add<TH1>("QAEvent/McColPassedEvSel/hImpactParamGenOneReco", "Impact parameter of generated MC events with at least one rec. evt and passed the event selection; Impact Parameter (b); Counts", HistType::kTH1D, {impactParamAxis});
+      hGenOneRecoCentrality = qaRegistry.add<TH1>("QAEvent/McColPassedEvSel/hGenOneRecoCentrality", "Centrality distribution of generated MC events with at least one rec. evt and passed the event selection; Centrality (FT0C %); Counts", HistType::kTH1D, {centFT0CAxis});
+      hGenCentralityColvsMultiplicityGenEta08 = qaRegistry.add<TH2>("QAEvent/McColPassedEvSel/hGenCentralityColvsMultiplicityGenEta08", "Correlation between FT0C centrality and charged particle multiplicity in generated MC events with at least one rec. evt and passed the event selection; Multiplicity #eta <0.8; Counts", HistType::kTH2D, {centFT0CAxis, multAxis});
+      hGenCentralityColvsImpactParamGen = qaRegistry.add<TH2>("QAEvent/McColPassedEvSel/hGenCentralityColvsImpactParamGen", "Correlation between FT0C centrality and impact parameter in generated MC events with at least one rec. evt and passed the event selection; Multiplicity #eta <0.8; Counts", HistType::kTH2D, {centFT0CAxis, impactParamAxis});
+      hGenCentralityColvsFT0Cmultiplicity = qaRegistry.add<TH2>("QAEvent/McColPassedEvSel/hGenCentralityColvsFT0Cmultiplicity", "Correlation between FT0C centrality and FT0C multiplicity in generated MC events with at least one rec. evt and passed the event selection; FT0c multiplicity", HistType::kTH2D, {centFT0CAxis, binsFT0CMultAxis});
+      // Infomation for all reconstructed collisions passed the event selection (for Event Splitting)
+      hImpactParamReco = qaRegistry.add<TH1>("QAEvent/McColAll/hImpactParamReco", "Impact parameter of generated MC events with at least one rec. evt; Impact Parameter (b); Counts", HistType::kTH1D, {impactParamAxis});
+      hRecoCentrality = qaRegistry.add<TH1>("QAEvent/McColAll/hRecoCentrality", "Centrality distribution of reconstructed MC events passed the event selection; Centrality (FT0C %); Counts", HistType::kTH1D, {centFT0CAxis});
+      hRecoCentralityColvsMultiplicityRecoEta08 = qaRegistry.add<TH2>("QAEvent/McColAll/hRecoCentralityColvsMultiplicityRecoEta08", "Correlation between FT0C centrality and charged particle multiplicity in reconstructed MC events passed the event selection; Multiplicity #eta <0.8; Counts", HistType::kTH2D, {centFT0CAxis, multAxis});
+      hRecoCentralityColvsImpactParamReco = qaRegistry.add<TH2>("QAEvent/McColAll/hRecoCentralityColvsImpactParamReco", "Correlation between FT0C centrality and impact parameter in reconstructed MC events passed the event selection; Impact Parameter (b); Counts", HistType::kTH2D, {centFT0CAxis, impactParamAxis});
+      hRecoCentralityColvsFT0Cmultiplicity = qaRegistry.add<TH2>("QAEvent/McColAll/hRecoCentralityColvsFT0Cmultiplicity", "Correlation between FT0C centrality and FT0C multiplicity in reconstructed MC events passed the event selection; FT0C (%); FT0c multiplicity", HistType::kTH2D, {centFT0CAxis, binsFT0CMultAxis});
+      // Information of generated Lnn in generated events
+      hGenLnnBeforeEvtSel = qaRegistry.add<TH1>("QAEvent/McColLnn/hGenLnnBeforeEvtSel", "Lnn generated #it{p}_{T} distribution in all gen evt;#it{p}_{T} (GeV/#it{c}); Counts", HistType::kTH1D, {ptAxis});
+      hGenLnnvsImpactParameterBeforeEvtSel = qaRegistry.add<TH2>("QAEvent/McColLnn/hGenLnnvsImpactParameterBeforeEvtSel", "Correlation Lnn generated #it{p}_{T} and impact parameter in all gen evt;#it{p}_{T} (GeV/#it{c}); Impact parameter (b)", HistType::kTH2D, {ptAxis, impactParamAxis});
+      hGenLnnvsMultiplicityGenEta08BeforeEvtSel = qaRegistry.add<TH2>("QAEvent/McColLnn/hGenLnnvsMultiplicityGenEta08BeforeEvtSel", "Correlation Lnn generated #it{p}_{T} and charged particle multiplicity in all gen evt;#it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.8", HistType::kTH2D, {ptAxis, multAxis});
+      hGenLnnvsMultiplicityFT0CBeforeEvtSel = qaRegistry.add<TH2>("QAEvent/McColLnn/hGenLnnvsMultiplicityFT0CBeforeEvtSel", "Correlation Lnn generated #it{p}_{T} and FT0C multiplicity in all gen evt;#it{p}_{T} (GeV/#it{c}); FT0C Multiplicity", HistType::kTH2D, {ptAxis, binsFT0CMultAxis});
+      // Information of generated Lnn in generated events with at least one rec. event and passed the event selection
+      hGenLnnAfterSel = qaRegistry.add<TH1>("QAEvent/McColLnn/hGenLnnAfterSel", "Lnn generated #it{p}_{T} distribution in gen. evts with at least one rec. evt; #it{p}_{T} (GeV/#it{c}); Counts", HistType::kTH1D, {ptAxis});
+      hGenLnnvsImpactParameterAfterSel = qaRegistry.add<TH2>("QAEvent/McColLnn/hGenLnnvsImpactParameterAfterSel", "Correlation Lnn generated #it{p}_{T} and impact parameter in gen. evts with at least one rec. evt;#it{p}_{T} (GeV/#it{c}); Impact parameter (b)", HistType::kTH2D, {ptAxis, impactParamAxis});
+      hGenLnnvsMultiplicityGenEta08AfterSel = qaRegistry.add<TH2>("QAEvent/McColLnn/hGenLnnvsMultiplicityGenEta08AfterSel", "Correlation Lnn generated #it{p}_{T} and charged particle multiplicity in gen. evts with at least one rec. evt;#it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.8", HistType::kTH2D, {ptAxis, multAxis});
+      hGenLnnvsMultiplicityFT0CAfterSel = qaRegistry.add<TH2>("QAEvent/McColLnn/hGenLnnvsMultiplicityFT0CAfterSel", "Correlation Lnn generated #it{p}_{T} and FT0C multiplicity in gen. evts with at least one rec;#it{p}_{T} (GeV/#it{c}); FT0C Multiplicity", HistType::kTH2D, {ptAxis, binsFT0CMultAxis});
+    }
   }
 
   // group BCs
@@ -502,15 +598,16 @@ struct lnnRecoTask {
       auto& h3Rigidity = lnnCand.isMatter ? posRigidity : negRigidity;
       auto& piRigidity = lnnCand.isMatter ? negRigidity : posRigidity;
 
-      // fill QA track histogram studies to check track signal before selections
-      h2FT0CnClusTPCtoTrBfSel->Fill(collision.centFT0C(), h3track.tpcNClsFound());
-      h2FT0CnClusTPCtoPiBfSel->Fill(collision.centFT0C(), pitrack.tpcNClsFound());
-      h2FT0CnTPCNClsCrossedRows3HBfSel->Fill(collision.centFT0C(), h3track.tpcNClsCrossedRows());
-      h2FT0CnTPCNClsCrossedRowsPiBfSel->Fill(collision.centFT0C(), pitrack.tpcNClsCrossedRows());
-      h2FT0Cchi2NClTPCtoTrBfSel->Fill(collision.centFT0C(), h3track.tpcChi2NCl());
-      h2FT0Cchi2NClITStoTrBfSel->Fill(collision.centFT0C(), h3track.itsChi2NCl());
-
       if (doTrackQA) {
+        // fill QA track histogram studies to check track signal before selections
+
+        h2FT0CnClusTPCtoTrBfSel->Fill(collision.centFT0C(), h3track.tpcNClsFound());
+        h2FT0CnClusTPCtoPiBfSel->Fill(collision.centFT0C(), pitrack.tpcNClsFound());
+        h2FT0CnTPCNClsCrossedRows3HBfSel->Fill(collision.centFT0C(), h3track.tpcNClsCrossedRows());
+        h2FT0CnTPCNClsCrossedRowsPiBfSel->Fill(collision.centFT0C(), pitrack.tpcNClsCrossedRows());
+        h2FT0Cchi2NClTPCtoTrBfSel->Fill(collision.centFT0C(), h3track.tpcChi2NCl());
+        h2FT0Cchi2NClITStoTrBfSel->Fill(collision.centFT0C(), h3track.itsChi2NCl());
+
         bool passedTrTrackITS = h3track.hasITS();
         bool passedTrTrackTOF = h3track.hasTOF();
         bool passedPiTrackITS = pitrack.hasITS();
@@ -526,11 +623,13 @@ struct lnnRecoTask {
       }
 
       if (h3Rigidity < tpcRigidityMin3H ||
-          h3track.tpcNClsCrossedRows() < nTPCNClsCrossedRows3H ||
           h3track.tpcChi2NCl() < chi2nClusTPCMin ||
           h3track.tpcChi2NCl() > chi2nClusTPCMax ||
           h3track.itsChi2NCl() > chi2nClusITS ||
-          pitrack.tpcNClsCrossedRows() < nTPCNClsCrossedRowsPi) {
+          h3track.tpcNClsCrossedRows() < nTPCNClsCrossedRows3H ||
+          pitrack.tpcNClsCrossedRows() < nTPCNClsCrossedRowsPi ||
+          h3track.tpcNClsFound() < nTPCClusMin3H ||
+          pitrack.tpcNClsFound() < nTPCClusMinPi) {
         continue;
       }
 
@@ -658,14 +757,16 @@ struct lnnRecoTask {
 
       // Fill 2D map after all selections
       hdEdx3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, h3track.tpcSignal());
-      hdEdx3HPosTrack->Fill(lnnCand.mom3HTPC, h3track.tpcSignal());
-      if (!lnnCand.isMatter) {
-        hdEdx3HNegTrack->Fill(-lnnCand.mom3HTPC, h3track.tpcSignal());
-      }
+      if (lnnCand.isMatter) {
+        hdEdx3HPosTrack->Fill(lnnCand.mom3HTPC, h3track.tpcSignal());
+      } else {
+        hdEdx3HNegTrack->Fill(-lnnCand.mom3HTPC, h3track.tpcSignal());}
+      
       hNsigma3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, lnnCand.nSigma3H);
       if (h3track.hasTOF()) {
         h3HSignalPtTOF->Fill(chargeFactor * h3track.pt(), beta);
-        hNsigma3HSelTOF->Fill(chargeFactor * h3track.p(), h3track.tofNSigmaTr());
+        hNsigma3HSelTOF->Fill(chargeFactor * h3track.pt(), h3track.tofNSigmaTr());
+        h2Nsigma3HSelTPCTOF->Fill(lnnCand.nSigma3H, h3track.tofNSigmaTr());
         h3HMassPtTOF->Fill(chargeFactor * h3track.pt(), lnnCand.mass2TrTOF);
       }
     }
@@ -674,7 +775,7 @@ struct lnnRecoTask {
   // Monte Carlo information
   void fillMCinfo(aod::McTrackLabels const& trackLabels, aod::McParticles const&)
   {
-    for (auto& lnnCand : lnnCandidates) {
+    for (const auto& lnnCand : lnnCandidates) {
       auto mcLabPos = trackLabels.rawIteratorAt(lnnCand.posTrackID);
       auto mcLabNeg = trackLabels.rawIteratorAt(lnnCand.negTrackID);
 
@@ -744,10 +845,29 @@ struct lnnRecoTask {
     return motherIsAccepted;
   }
 
+  // Generated MC particles
+  template <class Tcoll>
+  void fillGeneratedMcHistograms(aod::McParticles::iterator const& mc, Tcoll const& collision)
+  {
+    const int pdg = std::abs(mc.pdgCode());
+
+    if (pdg == lnnPdg) {
+      hPtGeneratedLnnStr->Fill(collision.centFT0C(), mc.pt());
+    }
+
+    if (pdg == h3DauPdg) {
+      hPtGeneratedTrStr->Fill(collision.centFT0C(), mc.pt());
+    }
+
+    if (pdg == piDauPdg) {
+      hPtGeneratedPiStr->Fill(collision.centFT0C(), mc.pt());
+    }
+  }
+
+  // Reconstructed tracks associated to MC generated particles
   template <class Tcoll>
   void fillMcHistograms(TracksFullMC::iterator const& mcTrack, aod::McParticles::iterator const& mc, Tcoll const& collision)
   {
-
     bool passedTrackITS = mcTrack.hasITS();
     bool passedTrackTPC = mcTrack.hasTPC();
     bool passedTrackTOF = mcTrack.hasTOF();
@@ -755,8 +875,6 @@ struct lnnRecoTask {
     int pdg = std::abs(mc.pdgCode());
 
     if (pdg == h3DauPdg) {
-      hPtGeneratedTrStr->Fill(collision.centFT0C(), mc.pt());
-
       if (passedTrackITS && passedTrackTPC) {
         hPtItsTpcTrStr->Fill(collision.centFT0C(), mc.pt());
         hPtTrkItsTpcTrStr->Fill(collision.centFT0C(), mcTrack.pt());
@@ -768,7 +886,6 @@ struct lnnRecoTask {
     }
 
     if (pdg == piDauPdg) {
-      hPtGeneratedPiStr->Fill(collision.centFT0C(), mc.pt());
       if (passedTrackITS && passedTrackTPC) {
         hPtItsTpcPiStr->Fill(collision.centFT0C(), mc.pt());
         hPtTrkItsTpcPiStr->Fill(collision.centFT0C(), mcTrack.pt());
@@ -797,6 +914,8 @@ struct lnnRecoTask {
         continue;
       }
       hEvents->Fill(KevPileupCut);
+
+      h2GlobalTrackMultVsCent->Fill(collision.centFT0C(), collision.multNTracksGlobal());
 
       hZvtx->Fill(collision.posZ());
       hCentFT0A->Fill(collision.centFT0A());
@@ -832,25 +951,14 @@ struct lnnRecoTask {
   {
     filledMothers.clear();
     isGoodCollision.clear();
-    isGoodCollision.resize(mcCollisions.size(), false);
     collisionFT0Ccent.clear();
-    collisionFT0Ccent.resize(mcCollisions.size(), -1.f);
     recoCollisionIds.clear();
+
+    isGoodCollision.resize(mcCollisions.size(), false);
+    collisionFT0Ccent.resize(mcCollisions.size(), -1.f);
     recoCollisionIds.resize(mcCollisions.size(), -1);
 
     for (const auto& collision : collisions) {
-      for (auto const& trackMC : tracksMC) {
-
-        if (!trackMC.has_mcParticle())
-          continue;
-
-        auto mc = trackMC.mcParticle();
-
-        if (!isLnnDecay(mc))
-          continue;
-
-        fillMcHistograms(trackMC, mc, collision);
-      }
 
       lnnCandidates.clear();
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -874,6 +982,8 @@ struct lnnRecoTask {
       }
       hEvents->Fill(KevPileupCut);
 
+      h2GlobalTrackMultVsCent->Fill(collision.centFT0C(), collision.multNTracksGlobal());
+
       hZvtx->Fill(collision.posZ());
       hCentFT0A->Fill(collision.centFT0A());
       hCentFT0C->Fill(collision.centFT0C());
@@ -891,6 +1001,27 @@ struct lnnRecoTask {
 
       fillCandidateData(collision, v0Table_thisCollision);
       fillMCinfo(trackLabelsMC, particlesMC);
+
+      // Fill MC gen. particles producing to the current MC collision
+      const auto mcCollId = collision.mcCollisionId();
+      auto particlesThisMcCollision = particlesMC.sliceBy(mcParticlesPerMcCollision, mcCollId);
+      for (const auto& mc : particlesThisMcCollision) {
+        fillGeneratedMcHistograms(mc, collision);
+      }
+
+      // Fill only tracks producing to the current reconstructed collision
+      auto tracksThisCollision = tracksMC.sliceBy( tracksPerCollision, collIdx);
+      for (const auto& trackMC : tracksThisCollision) {
+        if (!trackMC.has_mcParticle()) {
+          continue;
+        }
+        auto mc = trackMC.mcParticle();
+        // Select only daughters from the Λnn decay
+        if (!isLnnDecay(mc)) {
+          continue;
+        }
+        fillMcHistograms(trackMC, mc,collision);
+      }
 
       for (const auto& lnnCand : lnnCandidates) {
         if (!lnnCand.isSignal && mcSignalOnly) {
@@ -926,17 +1057,20 @@ struct lnnRecoTask {
       }
       float cent = collisionFT0Ccent[mcPart.mcCollisionId()];
 
-      h2FT0CPtGenColGenCandMC->Fill(cent, mcPart.pt());
+      int chargeFactorGen = mcPart.pdgCode() > 0 ? 1 : -1;
+
+      h2FT0CPtGenColGenCandMC->Fill(cent, chargeFactorGen * mcPart.pt());
 
       constexpr std::size_t KVtxDim = 3;
-      std::array<float, KVtxDim> secVtx;
+      std::array<float, KVtxDim> secVtx{};
       std::array<float, KVtxDim> primVtx = {mcPart.vx(), mcPart.vy(), mcPart.vz()};
 
-      constexpr std::size_t kArrayDim = 3;
-      std::array<float, kArrayDim> momMother = mcPart.pVector();
+      constexpr std::size_t KArrayDim = 3;
+      std::array<float, KArrayDim> momMother = mcPart.pVector();
 
-      std::array<float, kArrayDim> mom3H;
-      std::array<float, kArrayDim> momPi;
+      std::array<float, KArrayDim> mom3H{};
+      std::array<float, KArrayDim> momPi{};
+
       bool is3HFound = false;
 
       for (const auto& mcDaught : mcPart.daughters_as<aod::McParticles>()) {
@@ -945,13 +1079,17 @@ struct lnnRecoTask {
         if (pdg == h3DauPdg) {
           secVtx = {mcDaught.vx(), mcDaught.vy(), mcDaught.vz()};
           mom3H = mcDaught.pVector();
-          h2FT0CPtGenColGenTrStrMC->Fill(cent, mcDaught.pt());
+          h2FT0CPtGenColGenTrStrMC->Fill(cent, chargeFactorGen * mcDaught.pt());
           is3HFound = true;
           break;
         }
         if (pdg == piDauPdg) {
           momPi = mcDaught.pVector();
-          h2FT0CPtGenColGenPiStrMC->Fill(cent, mcDaught.pt());
+          h2FT0CPtGenColGenPiStrMC->Fill(cent, chargeFactorGen * mcDaught.pt());
+        }
+
+        if (is3HFound) {
+          break;
         }
       }
 
@@ -973,6 +1111,7 @@ struct lnnRecoTask {
       LnnCandidate lnnCand;
       lnnCand.pdgCode = mcPart.pdgCode();
       lnnCand.survEvSelection = isGoodCollision[mcPart.mcCollisionId()];
+      
       int chargeFactor = -1 + 2 * (lnnCand.pdgCode > 0);
 
       int kDimGen = 3;
@@ -1008,6 +1147,128 @@ struct lnnRecoTask {
     }
   }
   PROCESS_SWITCH(lnnRecoTask, processMC, "MC analysis", false);
+
+  template <typename CollType>
+  bool passEvtSel(const CollType& collision)
+  {
+    if (!collision.sel8())
+      return false;
+
+    if ((std::abs(collision.posZ())) > vtxZCut)
+      return false;
+
+    if (useNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup))
+      return false;
+
+    return true;
+  }
+
+  void processSigEvtLossMC(McCollisionMults::iterator const& mcCollision, soa::SmallGroups<EventCandidatesMC> const& collisions, aod::McParticles const& GenParticles)
+  {
+    if (std::abs(mcCollision.posZ()) > vtxZCut) {
+      return;
+    }
+    //////////// Event loss estimation via impact parameter and multiplicity by FT0C
+
+    // Fill all generated events
+    hEvtMC->Fill(0);
+    hImpactParamGen->Fill(mcCollision.impactParameter());
+    hGenEventsNchEta08->Fill(mcCollision.multMCNParticlesEta08(), 0);
+
+    // Fill generated events with no reconstructed collisions
+    if (collisions.size() == 0) {
+      hEvtMC->Fill(1);
+    }
+
+    // Define the generated events with at least one reconstructed event
+    bool atLeastOneRecoEvt = false;
+    auto centralityFT0C = -999.;
+    int biggestNContribs = -1;
+
+    for (auto const& col : collisions) {
+      if (!passEvtSel(col)) {
+        continue;
+      }
+      // In case of multiple reconstructed collisions associated to the same generated one, only consider the one with the biggest number of contributors
+      if (biggestNContribs < col.numContrib()) {
+        biggestNContribs = col.numContrib();
+        centralityFT0C = col.centFT0C();
+      }
+      atLeastOneRecoEvt = true;
+      hImpactParamReco->Fill(mcCollision.impactParameter());
+      hRecoCentrality->Fill(col.centFT0C());
+      hRecoCentralityColvsMultiplicityRecoEta08->Fill(col.centFT0C(), mcCollision.multMCNParticlesEta08());
+      hRecoCentralityColvsImpactParamReco->Fill(col.centFT0C(), mcCollision.impactParameter());
+      hRecoCentralityColvsFT0Cmultiplicity->Fill(col.centFT0C(), mcCollision.multMCFT0C());
+    }
+
+    if (atLeastOneRecoEvt) {
+      hEvtMC->Fill(2);
+      hGenEventsNchEta08->Fill(mcCollision.multMCNParticlesEta08(), 1);
+      hImpactParamGenOneReco->Fill(mcCollision.impactParameter());
+      hGenOneRecoCentrality->Fill(centralityFT0C);
+      hGenCentralityColvsMultiplicityGenEta08->Fill(centralityFT0C, mcCollision.multMCNParticlesEta08());
+      hGenCentralityColvsImpactParamGen->Fill(centralityFT0C, mcCollision.impactParameter());
+      hGenCentralityColvsFT0Cmultiplicity->Fill(centralityFT0C, mcCollision.multMCFT0C());
+    }
+    // Construct the H3L 4-vector based on the generated daugthers identification by PDG
+    ROOT::Math::PxPyPzMVector daugh1, daugh2, mother;
+
+    for (const auto& genParticle : GenParticles) {
+      if (std::abs(genParticle.y()) > 1)
+        continue;
+      if (std::abs(genParticle.pdgCode()) != lnnPdg)
+        continue;
+
+      auto daughters = genParticle.daughters_as<aod::McParticles>();
+
+      bool dauTr = false;
+      bool dauPi = false;
+
+      int trSign = 0;
+      int piSign = 0;
+
+      for (const auto& daughter : daughters) {
+
+        if (std::abs(daughter.pdgCode()) == h3DauPdg) {
+
+          dauTr = true;
+          trSign = daughter.pdgCode() > 0 ? 1 : -1;
+
+          daugh1 = ROOT::Math::PxPyPzMVector(daughter.px(), daughter.py(), daughter.pz(), h3Mass);
+        
+        }
+        else if (std::abs(daughter.pdgCode()) == piDauPdg) {
+
+          dauPi = true;
+          piSign = daughter.pdgCode() > 0 ? 1 : -1;
+
+          daugh2 = ROOT::Math::PxPyPzMVector(daughter.px(), daughter.py(), daughter.pz(), piMass);
+        }
+      }
+
+      if (!dauTr || !dauPi || (trSign * piSign) > 0) {
+          continue;
+      }
+
+      mother = daugh1 + daugh2;
+
+      // Fill informations for generated 3HL in all generated events
+      hGenLnnBeforeEvtSel->Fill(mother.pt());
+      hGenLnnvsImpactParameterBeforeEvtSel->Fill(mother.pt(), mcCollision.impactParameter());
+      hGenLnnvsMultiplicityGenEta08BeforeEvtSel->Fill(mother.pt(), mcCollision.multMCNParticlesEta08());
+      hGenLnnvsMultiplicityFT0CBeforeEvtSel->Fill(mother.pt(), mcCollision.multMCFT0C());
+
+      // Fill informations for generated 3HL in generated events with at least one reconstructed event
+      if (atLeastOneRecoEvt) {
+        hGenLnnAfterSel->Fill(mother.pt());
+        hGenLnnvsImpactParameterAfterSel->Fill(mother.pt(), mcCollision.impactParameter());
+        hGenLnnvsMultiplicityGenEta08AfterSel->Fill(mother.pt(), mcCollision.multMCNParticlesEta08());
+        hGenLnnvsMultiplicityFT0CAfterSel->Fill(mother.pt(), mcCollision.multMCFT0C());
+      }
+    }
+  }
+  PROCESS_SWITCH(lnnRecoTask, processSigEvtLossMC, "Signal and event loss analysis", false);
 };
 
 WorkflowSpec
