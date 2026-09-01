@@ -1203,7 +1203,7 @@ struct QuarkoniaToHyperons {
   }
 
   template <typename TCollision>
-  bool isEventAccepted(TCollision collision, bool fillHists)
+  bool isEventAccepted(const TCollision& collision, bool fillHists)
   // check whether the collision passes our collision selections
   {
     if (fillHists)
@@ -1295,7 +1295,7 @@ struct QuarkoniaToHyperons {
   }
 
   template <typename TCollision>
-  void fillEventHistograms(TCollision collision, float& centrality, int& selGapSide)
+  void fillEventHistograms(const TCollision& collision, float& centrality, int& selGapSide)
   {
     if (isPP) { //
       centrality = collision.centFT0M();
@@ -1337,7 +1337,7 @@ struct QuarkoniaToHyperons {
   }
 
   template <typename TV0, typename TCollision>
-  uint64_t computeReconstructionBitmap(TV0 v0, TCollision collision, float rapidityLambda, float rapidityK0Short, float /*pT*/)
+  uint64_t computeReconstructionBitmap(const TV0& v0, const TCollision& collision, float rapidityLambda, float rapidityK0Short, float /*pT*/)
   // precalculate this information so that a check is one mask operation, not many
   {
     uint64_t bitMap = 0;
@@ -1492,7 +1492,7 @@ struct QuarkoniaToHyperons {
   }
 
   template <typename TCascade, typename TCollision>
-  bool isCascadeSelected(TCascade casc, TCollision collision, float rapidity, bool isXi)
+  bool isCascadeSelected(const TCascade& casc, const TCollision& collision, float rapidity, bool isXi)
   // precalculate this information so that a check is one mask operation, not many
   {
     //
@@ -1728,7 +1728,7 @@ struct QuarkoniaToHyperons {
   }
 
   template <typename TV0>
-  uint64_t computeMCAssociation(TV0 v0)
+  uint64_t computeMCAssociation(const TV0& v0)
   // precalculate this information so that a check is one mask operation, not many
   {
     uint64_t bitMap = 0;
@@ -1758,7 +1758,7 @@ struct QuarkoniaToHyperons {
   }
 
   template <typename TV0>
-  void analyseV0Candidate(TV0 v0, float pt, uint64_t selMap, std::vector<int>& selK0ShortIndices, std::vector<int>& selLambdaIndices, std::vector<int>& selAntiLambdaIndices /*, int v0TableOffset*/)
+  void analyseV0Candidate(const TV0& v0, float pt, uint64_t selMap, std::vector<int>& selK0ShortIndices, std::vector<int>& selLambdaIndices, std::vector<int>& selAntiLambdaIndices /*, int v0TableOffset*/)
   // precalculate this information so that a check is one mask operation, not many
   {
     bool passK0ShortSelections = false;
@@ -1825,7 +1825,7 @@ struct QuarkoniaToHyperons {
   }
 
   template <typename TCollision, typename THyperon>
-  void fillQAplot(TCollision collision, PairTopoInfo pair, THyperon hyperon, THyperon antiHyperon, float pt, float invmass, int type)
+  void fillQAplot(const TCollision& collision, PairTopoInfo pair, const THyperon& hyperon, const THyperon& antiHyperon, float pt, float invmass, int type)
   { // fill QA information about hyperon - antihyperon pair
     if (type == 0) {
       if constexpr (requires { hyperon.mK0Short(); antiHyperon.mK0Short(); }) { // check if v0 information is available
@@ -2152,7 +2152,7 @@ struct QuarkoniaToHyperons {
   }
 
   template <typename TCollision, typename THyperon>
-  void analyseHyperonPairCandidate(TCollision collision, THyperon hyperon, THyperon antiHyperon, float centrality, uint8_t gapSide, int type)
+  void analyseHyperonPairCandidate(const TCollision& collision, const THyperon& hyperon, const THyperon& antiHyperon, float centrality, uint8_t gapSide, int type)
   // fill information related to the quarkonium mother
   // type = 0 (Lambda), 1 (Xi), 2 (Omega)
   {
@@ -2408,7 +2408,7 @@ struct QuarkoniaToHyperons {
 
   // function to check that the hyperon and antihyperon have different daughter tracks
   template <typename THyperon>
-  bool checkTrackIndices(THyperon hyperon, THyperon antiHyperon)
+  bool checkTrackIndices(const THyperon& hyperon, const THyperon& antiHyperon)
   {
     if constexpr (requires { hyperon.template bachTrackExtra_as<DauTracks>(); }) { // cascade case: check if bachelor information is available
       // check that bachelor track from hyperon is different from daughter tracks of antiHyperon
