@@ -63,6 +63,27 @@ class TPCVDriftManager
     LOGP(info, "Updated VDrift for timestamp {} with vdrift={:.7f} (cm/ns)", mVD->creationTime, mTPCVDriftNS);
   }
 
+  // Adopts a drift correction obtained elsewhere, typically straight from the
+  // aod::TpcCalibCCDBObjects column, so no CCDB manager is involved at all.
+  void update(const o2::tpc::VDriftCorrFact& vd) noexcept
+  {
+    if (mVD == &vd) { // same object as last time, nothing to recompute
+      return;
+    }
+    if (vd.firstTime < 0 || vd.lastTime < 0) {
+      LOGP(error, "Got invalid VDriftCorrFact created at {}", vd.creationTime);
+      mValid = false;
+      return;
+    }
+    mVD = &vd;
+
+    // TODO account for laser calib
+
+    mTPCVDriftNS = mVD->refVDrift * mVD->corrFact * 1e-3;
+    mValid = true;
+    LOGP(debug, "Updated VDrift for timestamp {} with vdrift={:.7f} (cm/ns)", mVD->creationTime, mTPCVDriftNS);
+  }
+
   template <typename BCs, typename Collisions, typename Collision, typename TrackExtra, typename Track>
   [[nodiscard]] bool moveTPCTrack(const Collision& col, const TrackExtra& trackExtra, Track& track) noexcept
   {
