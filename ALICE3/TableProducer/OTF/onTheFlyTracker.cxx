@@ -23,6 +23,7 @@
 /// \author Roberto Preghenella preghenella@bo.infn.it
 ///
 
+#include "ALICE3/Core/Decayer.h"
 #include "ALICE3/Core/DetLayer.h"
 #include "ALICE3/Core/FastTracker.h"
 #include "ALICE3/Core/FlatTrackSmearer.h"
@@ -378,6 +379,9 @@ struct OnTheFlyTracker {
 
   // Track smearer array, one per geometry
   std::vector<std::unique_ptr<o2::delphes::TrackSmearer>> mSmearer;
+  // Configuration defined at init time
+  o2::fastsim::GeometryContainer mGeoContainer;
+  float mMagneticField = 0.0f;
 
   // For processing and vertexing
   std::vector<TrackAlice3> recoPrimaries;
@@ -395,10 +399,8 @@ struct OnTheFlyTracker {
   // For TGenPhaseSpace seed
   TRandom3 rand;
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
+  o2::upgrade::Decayer decayer;
 
-  // Configuration defined at init time
-  o2::fastsim::GeometryContainer mGeoContainer;
-  float mMagneticField = 0.0f;
   // Time resolution constants
   static constexpr float timeResolutionNs = 100.f; // ns
   static constexpr float nsToMus = 1e-3f;
@@ -438,6 +440,7 @@ struct OnTheFlyTracker {
 
     const int nGeometries = mGeoContainer.getNumberOfConfigurations();
     mMagneticField = mGeoContainer.getFloatValue(0, "global", "magneticfield");
+    decayer.setBField(mMagneticField);
     for (int icfg = 0; icfg < nGeometries; ++icfg) {
       const std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
       mSmearer.emplace_back(std::make_unique<o2::delphes::TrackSmearer>());
@@ -1910,7 +1913,6 @@ struct OnTheFlyTracker {
     uint32_t multiplicityCounter = 0;
     // Now that the multiplicity is known, we can process the particles to smear them
     for (const auto& mcParticle : mcParticles) {
-
       if (!mcParticle.isPhysicalPrimary()) {
         continue;
       }
@@ -1950,12 +1952,21 @@ struct OnTheFlyTracker {
       bool reconstructed = true;
       int nTrkHits = 0;
       if (enablePrimarySmearing) {
-        if (fastPrimaryTrackerSettings.fastTrackPrimaries || fastPrimaryTrackerSettings.fastTrackShortLivedParticles) {
-          o2::track::TrackParCov perfectTrackParCov;
-          o2::upgrade::convertMCParticleToO2Track(mcParticle, perfectTrackParCov, pdgDB);
+        if (fastPrimaryTrackerSettings.fastTrackPrimaries && longLivedToBeHandled) {
+          o2::track::TrackParCov perfectTrackParCov = o2::upgrade::convertMCParticleToO2Track(mcParticle, pdgDB);
           perfectTrackParCov.setPID(pdgCodeToPID(mcParticle.pdgCode()));
           computeBremsstrahlungLoss(icfg, mcParticle, perfectTrackParCov);
           nTrkHits = fastTracker[icfg]->FastTrack(perfectTrackParCov, trackParCov, dNdEta);
+          if (nTrkHits < fastPrimaryTrackerSettings.minSiliconHits) {
+            reconstructed = false;
+          }
+        } else if (fastPrimaryTrackerSettings.fastTrackShortLivedParticles && shortLivedToBeHandled) {
+          o2::track::TrackParCov perfectTrackParCov = o2::upgrade::convertMCParticleToO2Track(mcParticle, pdgDB);
+          perfectTrackParCov.setPID(pdgCodeToPID(mcParticle.pdgCode()));
+          computeBremsstrahlungLoss(icfg, mcParticle, perfectTrackParCov);
+          const std::array<float, 3> decayVtx = decayer.generateDecayVertex(mcParticle, pdgDB);
+          const float decayRadius2D = std::hypot(decayVtx[0], decayVtx[1]);
+          nTrkHits = fastTracker[icfg]->FastTrack(perfectTrackParCov, trackParCov, dNdEta, decayRadius2D);
           if (nTrkHits < fastPrimaryTrackerSettings.minSiliconHits) {
             reconstructed = false;
           }
@@ -2155,8 +2166,7 @@ struct OnTheFlyTracker {
         computeBremsstrahlungLoss(icfg, mcParticle, trackParCov);
         reconstructed = mSmearer[icfg]->smearTrack(trackParCov, mcParticle.pdgCode(), dNdEta);
       } else if (shortLivedToBeHandled && fastPrimaryTrackerSettings.fastTrackShortLivedParticles) {
-        o2::track::TrackParCov perfectTrackParCov;
-        o2::upgrade::convertMCParticleToO2Track(mcParticle, perfectTrackParCov, pdgDB);
+        o2::track::TrackParCov perfectTrackParCov = o2::upgrade::convertMCParticleToO2Track(mcParticle, pdgDB);
         perfectTrackParCov.setPID(pdgCodeToPID(mcParticle.pdgCode()));
         computeBremsstrahlungLoss(icfg, mcParticle, perfectTrackParCov);
         nTrkHits = fastTracker[icfg]->FastTrack(perfectTrackParCov, trackParCov, dNdEta, mcParticle.decayRadius());

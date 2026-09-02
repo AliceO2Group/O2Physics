@@ -152,7 +152,7 @@ struct OnTheFlyDecayer {
       }
 
       particle.setBitOff(o2::upgrade::DecayerBits::IsAlive);
-      std::vector<o2::upgrade::OTFParticle> decayStack = decayer.decayParticle(pdgDB, particle);
+      std::vector<o2::upgrade::OTFParticle> decayStack = decayer.decayParticle(particle, pdgDB);
       if (decayStack.empty()) {
         continue;
       }
