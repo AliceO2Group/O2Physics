@@ -32,7 +32,7 @@
 ///                     building and deduplication, separating genuine
 ///                     reconstruction quality from reconstruction artifacts.
 ///
-/// \author Daiki Sekihata <daiki.sekihata@cern.ch> and  Stefanie Mrozinski <stefanie.mrozinski@cern.ch>
+/// \author Daiki Sekihata <daiki.sekihata@cern.ch> and author Stefanie Mrozinski <stefanie.mrozinski@cern.ch>
 
 #include "PWGEM/Dilepton/Utils/MCUtilities.h"
 #include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
@@ -459,9 +459,7 @@ struct PCMQC {
       fRegistry.add("V0/primary/hEtaVsPt", "#eta vs. pT;p_{T,#gamma} (GeV/c);#eta", kTH2F, {{100, 0, 10}, {200, -1.0f, 1.0f}}, false);
       fRegistry.add("V0/primary/hPhiVsPt", "#varphi vs. pT;p_{T,#gamma} (GeV/c);#varphi (rad.)", kTH2F, {{100, 0, 10}, {90, 0, o2::constants::math::TwoPI}}, false);
       fRegistry.add("V0/primary/hsAlphaQtPt", "Armenteros vs. pT;#alpha;q_{T} (GeV/c);p_{T,#gamma} (GeV/c)", kTHnSparseF, {{100, -1.0f, +1.0f}, {125, 0.0f, 0.25f}, {100, 0, 10}}, false);
-      if (doprocessPCMQCMCML) {
-        fRegistry.add("V0/primary/hPsiPairVsPt", "#psi_{pair} vs. pT;p_{T,#gamma} (GeV/c);#psi_{pair} (rad.)", kTH2F, {{100, 0, 10}, {200, -0.5f, +0.5f}}, false);
-      }
+      fRegistry.add("V0/primary/hPsiPairVsPt", "#psi_{pair} vs. pT;p_{T,#gamma} (GeV/c);#psi_{pair} (rad.)", kTH2F, {{100, 0, 10}, {200, -0.5f, +0.5f}}, false);
       fRegistry.add("V0/primary/hMassGamma", "hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", kTH2F, {{200, 0.0f, 100.0f}, {100, 0.0f, 0.1f}}, false);
       fRegistry.add("V0/primary/hKFChi2vsM", "KF chi2 vs. m_{ee};m_{ee} (GeV/c^{2});KF chi2/NDF", kTH2F, {{100, 0.0f, 0.1f}, {100, 0.f, 100.0f}}, false);
       fRegistry.add("V0/primary/hKFChi2vsR", "KF chi2 vs. conversion point in XY;R_{xy} (cm);KF chi2/NDF", kTH2F, {{200, 0.0f, 100.0f}, {100, 0.f, 100.0f}}, false);
@@ -708,7 +706,9 @@ struct PCMQC {
     fRegistry.fill(HIST("V0/hEtaVsPt"), v0.pt(), v0.eta());
     fRegistry.fill(HIST("V0/hPhiVsPt"), v0.pt(), v0.phi());
     fRegistry.fill(HIST("V0/hsAlphaQtPt"), v0.alpha(), v0.qtarm(), v0.pt());
-    fRegistry.fill(HIST("V0/hPsiPairVsPt"), v0.pt(), v0.psipair());
+    if constexpr (requires { v0.psipair(); }) {
+      fRegistry.fill(HIST("V0/hPsiPairVsPt"), v0.pt(), v0.psipair());
+    }
     fRegistry.fill(HIST("V0/hMassGamma"), v0.v0radius(), v0.mGamma());
     fRegistry.fill(HIST("V0/hKFChi2vsM"), v0.mGamma(), v0.chiSquareNDF());
     fRegistry.fill(HIST("V0/hKFChi2vsR"), v0.v0radius(), v0.chiSquareNDF());
@@ -842,7 +842,7 @@ struct PCMQC {
         if (!fV0PhotonCut.IsSelected<decltype(v0), aod::V0Legs>(v0)) {
           continue;
         }
-        fillLossQAInfo<1>(v0); // survivors
+        fillLossQAInfo<1>(v0);
         fillV0Info(v0);
         fillMaterialBudgetInfo(v0);
         for (const auto& leg : {pos, ele}) {
@@ -1254,7 +1254,7 @@ struct PCMQC {
       }
       return mc.mothersIds()[0];
     };
-    std::unordered_map<int, int> nV0CandsOfMcPhoton; // counted: >=2 = duplicate candidates for the same true photon
+    std::unordered_map<int, int> nV0CandsOfMcPhoton;
     for (const auto& v0 : v0photonsKF) {
       const int legPosIdx = v0.posTrackId();
       const int legNegIdx = v0.negTrackId();
