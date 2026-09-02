@@ -29,6 +29,7 @@
 #include <TH3F.h>
 #include <TMath.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <vector>
