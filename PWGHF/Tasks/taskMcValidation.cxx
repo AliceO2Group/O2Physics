@@ -1154,8 +1154,8 @@ struct HfTaskMcValidationRec {
                   aod::McCollisions const&,
                   aod::BCsWithTimestamps const&,
                   Coll const& collisions,
-                  Preslice<HfCand2ProngWithMCRec> cand2ProngsPerCollision,
-                  Preslice<HfCand3ProngWithMCRec> cand3ProngsPerCollision)
+                  const Preslice<HfCand2ProngWithMCRec>& cand2ProngsPerCollision,
+                  const Preslice<HfCand3ProngWithMCRec>& cand3ProngsPerCollision)
   {
     // loop over collisions
     for (const auto& collision : collisions) {

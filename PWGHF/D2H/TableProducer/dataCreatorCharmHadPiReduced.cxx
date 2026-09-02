@@ -488,7 +488,7 @@ struct HfDataCreatorCharmHadPiReduced {
                       const PParticles& particlesMc,
                       const std::vector<TTrack>& vecDaughtersB,
                       int& indexHfCandCharm,
-                      std::map<int64_t, int64_t> selectedTracksPion,
+                      const std::map<int64_t, int64_t>& selectedTracksPion,
                       const int64_t indexCollisionMaxNumContrib)
   {
 
@@ -619,7 +619,7 @@ struct HfDataCreatorCharmHadPiReduced {
         }
         tables.rowHfDPiMcCheckReduced(pdgCodeBeautyMother, pdgCodeCharmMother, pdgCodeProng0, pdgCodeProng1, pdgCodeProng2, pdgCodeProng3);
       }
-      tables.rowHfDPiMcRecReduced(indexHfCandCharm, selectedTracksPion[vecDaughtersB.back().globalIndex()], flag, flagWrongCollision, debug, motherPt);
+      tables.rowHfDPiMcRecReduced(indexHfCandCharm, selectedTracksPion.at(vecDaughtersB.back().globalIndex()), flag, flagWrongCollision, debug, motherPt);
     } else if constexpr (DecChannel == DecayChannel::BsToDsminusPi) {
       // Bs → Ds- π+ → (K- K+ π-) π+
       auto indexRec = RecoDecay::getMatchedMCRec<true, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2], vecDaughtersB[3]}, Pdg::kBS, std::array{-kKPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
@@ -774,7 +774,7 @@ struct HfDataCreatorCharmHadPiReduced {
         }
         tables.rowHfDsPiMcCheckReduced(pdgCodeBeautyMother, pdgCodeCharmMother, pdgCodeProng0, pdgCodeProng1, pdgCodeProng2, pdgCodeProng3);
       }
-      tables.rowHfDsPiMcRecReduced(indexHfCandCharm, selectedTracksPion[vecDaughtersB.back().globalIndex()], flag, flagWrongCollision, debug, motherPt);
+      tables.rowHfDsPiMcRecReduced(indexHfCandCharm, selectedTracksPion.at(vecDaughtersB.back().globalIndex()), flag, flagWrongCollision, debug, motherPt);
     } else if constexpr (DecChannel == DecayChannel::BplusToD0barPi) {
       // B+ → D0(bar) π+ → (K+ π-) π+
       auto indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2]}, Pdg::kBPlus, std::array{+kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
@@ -871,7 +871,7 @@ struct HfDataCreatorCharmHadPiReduced {
         }
         tables.rowHfD0PiMcCheckReduced(pdgCodeBeautyMother, pdgCodeCharmMother, pdgCodeProng0, pdgCodeProng1, pdgCodeProng2);
       }
-      tables.rowHfD0PiMcRecReduced(indexHfCandCharm, selectedTracksPion[vecDaughtersB.back().globalIndex()], flag, flagWrongCollision, debug, motherPt);
+      tables.rowHfD0PiMcRecReduced(indexHfCandCharm, selectedTracksPion.at(vecDaughtersB.back().globalIndex()), flag, flagWrongCollision, debug, motherPt);
     } else if constexpr (DecChannel == DecayChannel::LbToLcplusPi) {
       // Lb → Lc+ π- → (p K- π+) π-
       auto indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2], vecDaughtersB[3]}, Pdg::kLambdaB0, std::array{+kProton, -kKPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
@@ -975,7 +975,7 @@ struct HfDataCreatorCharmHadPiReduced {
         }
         tables.rowHfLcPiMcCheckReduced(pdgCodeBeautyMother, pdgCodeCharmMother, pdgCodeProng0, pdgCodeProng1, pdgCodeProng2, pdgCodeProng3);
       }
-      tables.rowHfLcPiMcRecReduced(indexHfCandCharm, selectedTracksPion[vecDaughtersB.back().globalIndex()], flag, flagWrongCollision, debug, motherPt);
+      tables.rowHfLcPiMcRecReduced(indexHfCandCharm, selectedTracksPion.at(vecDaughtersB.back().globalIndex()), flag, flagWrongCollision, debug, motherPt);
     } else if constexpr (DecChannel == DecayChannel::B0ToDstarPi) {
       // B0 → D*+ π- → (D0 π+) π- → (K- π+ π+) π-
       auto indexRec = RecoDecay::getMatchedMCRec<true, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2], vecDaughtersB[3]}, Pdg::kB0, std::array{+kKPlus, -kPiPlus, -kPiPlus, +kPiPlus}, true, &sign, 4);
@@ -1012,7 +1012,7 @@ struct HfDataCreatorCharmHadPiReduced {
           checkWrongCollision(particleMother, collision, indexCollisionMaxNumContrib, flagWrongCollision);
         }
       }
-      tables.rowHfDStarPiMcRecReduced(indexHfCandCharm, selectedTracksPion[vecDaughtersB.back().globalIndex()], flag, flagWrongCollision, debug, motherPt);
+      tables.rowHfDStarPiMcRecReduced(indexHfCandCharm, selectedTracksPion.at(vecDaughtersB.back().globalIndex()), flag, flagWrongCollision, debug, motherPt);
     }
   }
 
@@ -1447,7 +1447,7 @@ struct HfDataCreatorCharmHadPiReduced {
           tables.hfCandPidProng1(candC.nSigTpcPi1(), candC.nSigTofPi1(), candC.nSigTpcKa1(), candC.nSigTofKa1(), nSigmaTpcPr1, nSigmaTofPr1, charmHadDauTracks[1].hasTOF(), charmHadDauTracks[1].hasTPC());
 
           // Soft pion tables
-          auto trackSoftPion = charmHadDauTracks.back();
+          const auto& trackSoftPion = charmHadDauTracks.back();
           auto trackParCovSoftPion = getTrackParCov(trackSoftPion);
           std::array<float, 2> dcaSoftPion{trackSoftPion.dcaXY(), trackSoftPion.dcaZ()};
           std::array<float, 3> pVecSoftPion = trackSoftPion.pVector();

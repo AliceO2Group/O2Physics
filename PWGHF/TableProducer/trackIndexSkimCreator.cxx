@@ -2071,7 +2071,7 @@ struct HfTrackIndexSkimCreator {
   /// \param outputScores is the array of vectors with the output scores to be filled
   /// \param isSelected ia s bitmap with selection outcome
   template <bool UsePidForHfFiltersBdt>
-  void applyMlSelectionForHfFilters3Prong(std::vector<float> featuresCand, std::vector<float> featuresCandPid, std::array<std::vector<float>, kN3ProngDecaysUsedMlForHfFilters>& outputScores, auto& isSelected)
+  void applyMlSelectionForHfFilters3Prong(std::vector<float> featuresCand, const std::vector<float>& featuresCandPid, std::array<std::vector<float>, kN3ProngDecaysUsedMlForHfFilters>& outputScores, auto& isSelected)
   {
     if (isSelected == 0) {
       return;
