@@ -333,7 +333,7 @@ struct JetDsSpecSubs {
     // Particle-level sparse with origin and matching status
     registry.add("hSparse_ds_mcp", ";#it{p}_{T,D_{S}}^{part};#it{p}_{T,jet}^{part};z^{D_{S},jet}_{||,part};#DeltaR_{D_{S},jet}^{part};Origin(D_{S});Matching status", {HistType::kTHnSparseF, {{60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.2}, {20, 0., 1.}, {3, -0.5, 2.5}, {2, -0.5, 1.5}}});
 
-    registry.add("hSparseMatchedJets", ";Matched Ds-tagged jets;#it{p}_{T,jet}^{part};#it{p}_{T,jet}^{det};#it{p}_{T,D_{S}}^{part};#it{p}_{T,D_{S}}^{det};z_{||}^{part};z_{||}^{det};Origin(D_{S})", {HistType::kTHnSparseF, {{60, 0., 100.}, {60, 0., 100.}, {60, 0., 80.}, {60, 0., 80.}, {20, 0., 1.2}, {20, 0., 1.2}, {3, -0.5, 2.5}}});
+    registry.add("hSparseMatchedJets", ";Matched Ds-tagged jets;#it{p}_{T,jet}^{part};#it{p}_{T,jet}^{det};#it{p}_{T,D_{S}}^{part};#it{p}_{T,D_{S}}^{det};z_{||}^{part};z_{||}^{det};Origin(D_{S});flagMcMatchRec", {HistType::kTHnSparseF, {{60, 0., 100.}, {60, 0., 100.}, {60, 0., 80.}, {60, 0., 80.}, {20, 0., 1.2}, {20, 0., 1.2}, {3, -0.5, 2.5}, {21, -10.5, 10.5}}});
 
     auto mcCollisionCounter = registry.get<TH1>(HIST("hMCColCounter"));
     mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::AllMCCollisions, "All MC coll.");
@@ -892,7 +892,8 @@ struct JetDsSpecSubs {
             mcdCandidate.pt(),
             zParallelMCP,
             zParallelMCD,
-            originMCP);
+            originMCP,
+            static_cast<int>(mcdCandidate.flagMcMatchRec()));
 
           // Matched AOD
           outputMatchedJets(
