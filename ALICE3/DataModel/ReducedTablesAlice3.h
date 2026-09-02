@@ -151,9 +151,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! Particle rapidity
                              float pz = pt * std::sinh(eta);
                              if ((e - pz) > static_cast<float>(1e-7)) {
                                return 0.5f * std::log((e + pz) / (e - pz));
-                             } else {
-                               return -999.0f;
                              }
+                             return -999.0f;
                            });
 } // namespace reducedA3trackMC
 

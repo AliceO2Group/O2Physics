@@ -303,7 +303,7 @@ struct Alice3DqEfficiencyAnalysisTrackSelection {
   Configurable<std::string> cfgTrackMCsignalsJSON{"cfgTrackMCsignalsJSON", "", "Additional list of MC signals via JSON"};
 
   HistogramManager* fHistMan = nullptr;
-  std::vector<AnalysisCompositeCut*> fTrackCuts;
+  std::vector<AnalysisCut*> fTrackCuts;
   std::vector<MCSignal*> fMCSignals; // list of signals to be checked
   std::vector<TString> fHistNamesReco;
   std::vector<TString> fHistNamesMCMatched;
@@ -330,7 +330,7 @@ struct Alice3DqEfficiencyAnalysisTrackSelection {
     if (addTrackCutsStr != "") {
       std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
       for (const auto& t : addTrackCuts) {
-        fTrackCuts.push_back(static_cast<AnalysisCompositeCut*>(t));
+        fTrackCuts.push_back(t);
       }
     }
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
@@ -735,12 +735,6 @@ struct Alice3DqEfficiencyAnalysisPrefilterSelection {
 // The task implements also process functions for running event mixing
 struct Alice3DqEfficiencyAnalysisSameEventPairing {
 
-  Produces<aod::Dielectrons> dielectronList;
-  Produces<aod::DielectronsExtra> dielectronsExtraList;
-  Produces<aod::DielectronsAll> dielectronAllList;
-  Produces<aod::OniaMCTruth> mcTruthTableEffi;
-
-  o2::base::MatLayerCylSet* fLUT = nullptr;
   OutputObj<THashList> fOutputList{"output"};
 
   struct : ConfigurableGroup {
@@ -1020,27 +1014,6 @@ struct Alice3DqEfficiencyAnalysisSameEventPairing {
     bool isCorrectAssocLeg1 = false;
     bool isCorrectAssocLeg2 = false;
 
-    int64_t reserveSize = 0;
-    for (auto const& event : events) {
-      if (event.isEventSelected_bit(0)) {
-        auto groupedAssocs = assocs.sliceBy(preslice, event.globalIndex());
-        size_t nGood = 0;
-        for (auto const& t : groupedAssocs) {
-          if (t.isBarrelSelected_raw() > 0u) {
-            nGood++;
-          }
-        }
-        reserveSize += nGood * (nGood - 1) / 2;
-      }
-    }
-
-    dielectronList.reserve(reserveSize);
-    dielectronsExtraList.reserve(reserveSize);
-
-    if (fConfigOptions.cfgFlatTables.value) {
-      dielectronAllList.reserve(reserveSize);
-    }
-
     for (const auto& event : events) {
       if (!event.isEventSelected_bit(0)) {
         continue;
@@ -1102,11 +1075,6 @@ struct Alice3DqEfficiencyAnalysisSameEventPairing {
         }
 
         VarManager::FillPairVertexingAlice3<VarManager::kDecayToEE, GkEventFillMap, GkTrackFillMap>(event, t1, t2, fConfigOptions.cfgPropToPCA);
-        if (!fConfigMC.cfgSkimSignalOnly || mcDecision > 0) {
-          dielectronList(event.globalIndex(), VarManager::fgValues[VarManager::kMass],
-                         VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi],
-                         t1.sign() + t2.sign(), twoTrackFilter, mcDecision);
-        }
 
         // Fill histograms
         bool isAmbiInBunch = false;
@@ -1253,7 +1221,6 @@ struct Alice3DqEfficiencyAnalysisSameEventPairing {
         for (const auto& sig : fGenMCSignals) {
           if (sig->CheckSignal(true, trackRaw)) {
             fHistMan->FillHistClass(Form("MCTruthGenSel_%s", sig->GetName()), dqefficiency_helpers::varValues());
-            mcTruthTableEffi(VarManager::fgValues[VarManager::kMCPt], VarManager::fgValues[VarManager::kMCEta], VarManager::fgValues[VarManager::kMCY], VarManager::fgValues[VarManager::kMCPhi], VarManager::fgValues[VarManager::kMCVz], VarManager::fgValues[VarManager::kMCVtxZ], VarManager::fgValues[VarManager::kMultFT0A], VarManager::fgValues[VarManager::kMultFT0C], VarManager::fgValues[VarManager::kCentFT0M], VarManager::fgValues[VarManager::kVtxNcontribReal]);
           }
         }
       }
@@ -1360,7 +1327,6 @@ struct Alice3DqEfficiencyAnalysisSameEventPairing {
         for (const auto& sig : fGenMCSignals) {
           if (sig->CheckSignal(true, trackRaw)) {
             fHistMan->FillHistClass(Form("MCTruthGenSel_%s", sig->GetName()), dqefficiency_helpers::varValues());
-            mcTruthTableEffi(VarManager::fgValues[VarManager::kMCPt], VarManager::fgValues[VarManager::kMCEta], VarManager::fgValues[VarManager::kMCY], VarManager::fgValues[VarManager::kMCPhi], VarManager::fgValues[VarManager::kMCVz], VarManager::fgValues[VarManager::kMCVtxZ], VarManager::fgValues[VarManager::kMultFT0A], VarManager::fgValues[VarManager::kMultFT0C], VarManager::fgValues[VarManager::kCentFT0M], VarManager::fgValues[VarManager::kVtxNcontribReal]);
           }
         }
       }
@@ -1446,7 +1412,6 @@ struct Alice3DqEfficiencyAnalysisSameEventPairing {
         for (const auto& sig : fGenMCSignals) {
           if (sig->CheckSignal(true, trackRaw)) {
             fHistMan->FillHistClass(Form("MCTruthGenSel_%s", sig->GetName()), dqefficiency_helpers::varValues());
-            mcTruthTableEffi(VarManager::fgValues[VarManager::kMCPt], VarManager::fgValues[VarManager::kMCEta], VarManager::fgValues[VarManager::kMCY], VarManager::fgValues[VarManager::kMCPhi], VarManager::fgValues[VarManager::kMCVz], VarManager::fgValues[VarManager::kMCVtxZ], VarManager::fgValues[VarManager::kMultFT0A], VarManager::fgValues[VarManager::kMultFT0C], VarManager::fgValues[VarManager::kCentFT0M], VarManager::fgValues[VarManager::kVtxNcontribReal]);
           }
         }
       }
@@ -1509,9 +1474,6 @@ struct Alice3DqEfficiencyAnalysisSameEventPairing {
 
 struct Alice3DqEfficiencyAnalysisAsymmetricPairing {
 
-  Produces<aod::Ditracks> ditrackList;
-  Produces<aod::DitracksExtra> ditrackExtraList;
-
   // Output objects
   OutputObj<THashList> fOutputList{"output"};
 
@@ -1538,7 +1500,7 @@ struct Alice3DqEfficiencyAnalysisAsymmetricPairing {
 
   HistogramManager* fHistMan = nullptr;
 
-  std::vector<AnalysisCompositeCut*> fPairCuts;
+  std::vector<AnalysisCut*> fPairCuts;
   int fNPairHistPrefixes = 0;
 
   std::vector<MCSignal*> fRecMCSignals;
@@ -1609,7 +1571,7 @@ struct Alice3DqEfficiencyAnalysisAsymmetricPairing {
     if (addPairCutsStr != "") {
       std::vector<AnalysisCut*> addPairCuts = dqcuts::GetCutsFromJSON(addPairCutsStr.Data());
       for (const auto& t : addPairCuts) {
-        fPairCuts.push_back(static_cast<AnalysisCompositeCut*>(t));
+        fPairCuts.push_back(t);
         pairCutNamesStr += Form(",%s", t->GetName());
       }
     }
@@ -1920,30 +1882,13 @@ struct Alice3DqEfficiencyAnalysisAsymmetricPairing {
   }
 
   // Function to run same event pairing with asymmetric pairs (e.g. kaon-pion)
-  void runAsymmetricPairing(MyEventsVtxCovSelected const& events, PresliceUnsorted<MyBarrelAssocs>& preslice, MyBarrelAssocs const& assocs, MyBarrelTracksWithCovWithAmbiguities const& /*tracks*/, ReA3MCEvents const& /*mcEvents*/, ReA3MCTracks const& /*mcTracks*/)
+  void runAsymmetricPairing(MyEventsVtxCovSelected const& events, PresliceUnsorted<MyBarrelAssocs>& preslice, MyBarrelAssocs const& /*assocs*/, MyBarrelTracksWithCovWithAmbiguities const& /*tracks*/, ReA3MCEvents const& /*mcEvents*/, ReA3MCTracks const& /*mcTracks*/)
   {
     fPairCount.clear();
 
     int sign1 = 0;
     int sign2 = 0;
     uint32_t mcDecision = 0;
-
-    int64_t reserveSize = 0;
-    for (auto const& event : events) {
-      if (event.isEventSelected_bit(0)) {
-        auto groupedAssocs = assocs.sliceBy(preslice, event.globalIndex());
-        size_t nGood = 0;
-        for (auto const& t : groupedAssocs) {
-          if (t.isBarrelSelected_raw() > 0u) {
-            nGood++;
-          }
-        }
-        reserveSize += nGood * (nGood - 1) / 2;
-      }
-    }
-
-    ditrackList.reserve(reserveSize);
-    ditrackExtraList.reserve(reserveSize);
 
     for (const auto& event : events) {
       if (!event.isEventSelected_bit(0)) {
@@ -2171,9 +2116,6 @@ struct Alice3DqEfficiencyAnalysisAsymmetricPairing {
             } // end loop (pair cuts)
           }
         } // end loop (cuts)
-        ditrackList(event.globalIndex(), VarManager::fgValues[VarManager::kMass],
-                    VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi],
-                    t1.sign() + t2.sign(), twoTrackFilter, pairFilter, twoTrackCommonFilter);
       } // end inner assoc loop (leg A)
     } // end event loop
   }
