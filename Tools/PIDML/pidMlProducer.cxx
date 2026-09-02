@@ -15,13 +15,15 @@
 /// \author Maja Kabus <mkabus@cern.ch>
 /// \author Marek Mytkowski <marek.mytkowski@cern.ch>
 
-#include "Tools/PIDML/pidMl.h"
-#include "Tools/PIDML/pidUtils.h"
-//
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Tools/PIDML/pidMl.h"
+#include "Tools/PIDML/pidUtils.h"
 
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -41,6 +43,7 @@
 #include <cstdint>
 #include <limits>
 #include <memory>
+#include <string>
 #include <string_view>
 
 using namespace o2;
@@ -58,18 +61,49 @@ struct PidMlProducer {
   Produces<aod::PidTracksMcMl> pidTracksTableMCML;
   Produces<aod::PidTracksMc> pidTracksTableMC;
 
+  // Basic event selection: sel8() + (zVertex < zVertexMax) + (centMin <= FT0C <= centMax)
+  struct : o2::framework::ConfigurableGroup {
+    std::string prefix = "confBasicEventSelection";
+
+    Configurable<bool> enableSel8{"enableSel8", true, "enable sel8 cut."};
+    Configurable<float> zVertexMax{"zVertexMax", 10., "Maximum Z Vertex value cm."};
+    Configurable<float> centMin{"centMin", 0.f, "Minimum centrality (FT0C)."};
+    Configurable<float> centMax{"centMax", 200.f, "Maximum centrality (FT0C)."};
+  } confBasicEventSelection;
+
+  // Strict event selection: criteria boolean flags (see their details) + TPC occupancy
+  struct : o2::framework::ConfigurableGroup {
+    std::string prefix = "confStrictEventSelection";
+    Configurable<bool> enable{"enable", false, "Enable stricter event selection filtering"};
+
+    struct : o2::framework::ConfigurableGroup {
+      std::string prefix = "confStrictEventSelection.criteria";
+      Configurable<bool> evIsGoodZvtxFT0vsPV{"evIsGoodZvtxFT0vsPV", true, "Require kIsGoodZvtxFT0vsPV selection on events"};
+      Configurable<bool> evNoSameBunchPileup{"evNoSameBunchPileup", true, "Require kNoSameBunchPileup selection on events"};
+      Configurable<bool> evIsVertexITSTPC{"evIsVertexITSTPC", true, "Require kIsVertexITSTPC selection on events"};
+      Configurable<bool> isGoodITSLayersAll{"isGoodITSLayersAll", true, "Require kIsGoodITSLayersAll selection on events"};
+      Configurable<bool> noITSROFrameBorder{"noITSROFrameBorder", true, "Require kNoITSROFrameBorder selection on events"};
+      Configurable<bool> noTimeFrameBorder{"noTimeFrameBorder", true, "Require kNoTimeFrameBorder selection on events"};
+      Configurable<bool> noCollInRofStandard{"noCollInRofStandard", true, "Require kNoCollInRofStandard selection on events"};
+      Configurable<bool> noHighMultCollInPrevRof{"noHighMultCollInPrevRof", true, "Require kNoHighMultCollInPrevRof selection on events"};
+      Configurable<bool> noCollInTimeRangeStandard{"noCollInTimeRangeStandard", true, "Require kNoCollInTimeRangeStandard selection on events"};
+      Configurable<int> tpcOccupancyMin{"tpcOccupancyMin", 0, "Minimum value for TPC occupancy selection"};
+      Configurable<int> tpcOccupancyMax{"tpcOccupancyMax", 500, "Maximum value for TPC occupancy selection"};
+    } criteria;
+  } confStrictEventSelection;
+
   Filter trackFilter = requireGlobalTrackInFilter();
 
   // Data tracks
-  using BigTracksDataML = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTOFbeta, aod::TrackSelection, aod::TOFSignal>>;
-  using BigTracksData = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTOFbeta, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::pidTPCFullMu, aod::pidTOFFullMu, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TrackSelection, aod::TOFSignal>>;
+  using BigTracksDataML = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksDCA, aod::pidTOFbeta, aod::TrackSelection, aod::TOFSignal>>;
+  using BigTracksData = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksDCA, aod::pidTOFbeta, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::pidTPCFullMu, aod::pidTOFFullMu, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TrackSelection, aod::TOFSignal>>;
 
   // MC tracks
-  using BigTracksMCML = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTOFbeta, aod::TrackSelection, aod::TOFSignal, aod::McTrackLabels>>;
-  using BigTracksMC = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTOFbeta, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::pidTPCFullMu, aod::pidTOFFullMu, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TrackSelection, aod::TOFSignal, aod::McTrackLabels>>;
+  using BigTracksMCML = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksDCA, aod::pidTOFbeta, aod::TrackSelection, aod::TOFSignal, aod::McTrackLabels>>;
+  using BigTracksMC = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksCov, aod::TracksDCA, aod::pidTOFbeta, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::pidTPCFullMu, aod::pidTOFFullMu, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TrackSelection, aod::TOFSignal, aod::McTrackLabels>>;
 
-  using MyCollisionML = aod::Collisions::iterator;
-  using MyCollision = soa::Join<aod::Collisions, aod::Mults>::iterator;
+  using MyCollisionML = soa::Join<aod::Collisions, aod::CentFT0Cs, aod::Mults, aod::EvSels>::iterator;
+  using MyCollision = soa::Join<aod::Collisions, aod::CentFT0Cs, aod::Mults, aod::EvSels>::iterator;
 
   static constexpr uint32_t NCharges = 2;
 
@@ -230,10 +264,64 @@ struct PidMlProducer {
     return trdMissing(track) ? static_cast<uint8_t>(0U) : track.trdPattern();
   }
 
-  void processDataML(MyCollisionML const& /*collision*/, BigTracksDataML const& tracks)
+  // inspired by PWGCF/FemtoUniverse/TableProducer/femtoUniverseProducerTask.cxx
+  template <bool isMC, typename CollisionType>
+  bool fillCollisionsCentRun3(CollisionType const& col)
   {
+    // Basic Event Selection
+    {
+      const auto& basic_criteria = confBasicEventSelection;
+
+      // Z Vertex filter
+      if (std::abs(col.posZ()) > basic_criteria.zVertexMax.value)
+        return false;
+
+      // Selection 8 filters
+      if (basic_criteria.enableSel8.value && !col.sel8())
+        return false;
+
+      // Centrality filter
+      const auto cent = col.centFT0C();
+      if ((cent < basic_criteria.centMin.value) || (cent > basic_criteria.centMax.value))
+        return false;
+    }
+
+    // Strict Event Selection
+    {
+      if (!confStrictEventSelection.enable)
+        return true;
+
+      const auto& criteria = confStrictEventSelection.criteria;
+
+      // TPC Occupancy filter
+      const auto occupancy = col.trackOccupancyInTimeRange();
+      if (occupancy < criteria.tpcOccupancyMin.value || occupancy > criteria.tpcOccupancyMax.value)
+        return false;
+
+      // Event Selection boolean filters
+      if ((!criteria.evNoSameBunchPileup.value || col.selection_bit(aod::evsel::kNoSameBunchPileup)) &&
+          (!criteria.evIsGoodZvtxFT0vsPV.value || col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) &&
+          (!criteria.isGoodITSLayersAll.value || col.selection_bit(aod::evsel::kIsGoodITSLayersAll)) &&
+          (!criteria.noCollInRofStandard.value || col.selection_bit(aod::evsel::kNoCollInRofStandard)) &&
+          (!criteria.noHighMultCollInPrevRof.value || col.selection_bit(aod::evsel::kNoHighMultCollInPrevRof)) &&
+          (!criteria.evIsVertexITSTPC.value || col.selection_bit(aod::evsel::kIsVertexITSTPC)) &&
+          (!criteria.noCollInTimeRangeStandard.value || col.selection_bit(aod::evsel::kNoCollInTimeRangeStandard)) &&
+          (!criteria.noITSROFrameBorder.value || col.selection_bit(aod::evsel::kNoITSROFrameBorder)) &&
+          (!criteria.noTimeFrameBorder.value || col.selection_bit(aod::evsel::kNoTimeFrameBorder)))
+        return true;
+
+      return false;
+    }
+  }
+
+  void processDataML(MyCollisionML const& collision, BigTracksDataML const& tracks)
+  {
+    if (!fillCollisionsCentRun3<false>(collision)) {
+      return;
+    }
+
     for (const auto& track : tracks) {
-      pidTracksTableDataML(track.tpcSignal(), getTRDSignal(track), getTRDPattern(track),
+      pidTracksTableDataML(track.collisionId(), track.tpcSignal(), getTRDSignal(track), getTRDPattern(track),
                            getTOFSignal(track), getTOFBeta(track),
                            track.p(), track.pt(), track.px(), track.py(), track.pz(),
                            track.sign(),
@@ -250,11 +338,25 @@ struct PidMlProducer {
 
   void processDataAll(MyCollision const& collision, BigTracksData const& tracks)
   {
+    if (!fillCollisionsCentRun3<false>(collision)) {
+      return;
+    }
+
     for (const auto& track : tracks) {
-      pidTracksTableData(collision.multFV0A(), collision.multFV0C(), collision.multFV0M(),
+      pidTracksTableData(track.collisionId(), collision.multFV0A(), collision.multFV0C(), collision.multFV0M(),
                          collision.multFT0A(), collision.multFT0C(), collision.multFT0M(),
-                         collision.multZNA(), collision.multZNC(),
-                         collision.multTracklets(), collision.multTPC(),
+                         collision.multZNA(), collision.multZNC(), collision.multTracklets(),
+                         collision.multTPC(), collision.multNTracksPV(),
+                         collision.posZ(), collision.trackOccupancyInTimeRange(), collision.centFT0C(),
+                         collision.selection_bit(aod::evsel::kNoSameBunchPileup),
+                         collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV),
+                         collision.selection_bit(aod::evsel::kIsGoodITSLayersAll),
+                         collision.selection_bit(aod::evsel::kNoCollInRofStandard),
+                         collision.selection_bit(aod::evsel::kNoHighMultCollInPrevRof),
+                         collision.selection_bit(aod::evsel::kIsVertexITSTPC),
+                         collision.selection_bit(aod::evsel::kNoCollInTimeRangeStandard),
+                         collision.selection_bit(aod::evsel::kNoITSROFrameBorder),
+                         collision.selection_bit(aod::evsel::kNoTimeFrameBorder),
                          track.tpcSignal(), getTRDSignal(track), getTRDPattern(track),
                          track.trackEtaEmcal(), track.trackPhiEmcal(),
                          getTOFSignal(track), getTOFBeta(track),
@@ -274,15 +376,23 @@ struct PidMlProducer {
                          track.tpcNSigmaKa(), track.tpcExpSigmaKa(), track.tpcExpSignalDiffKa(),
                          track.tofNSigmaKa(), track.tofExpSigmaKa(), track.tofExpSignalDiffKa(),
                          track.tpcNSigmaPr(), track.tpcExpSigmaPr(), track.tpcExpSignalDiffPr(),
-                         track.tofNSigmaPr(), track.tofExpSigmaPr(), track.tofExpSignalDiffPr());
+                         track.tofNSigmaPr(), track.tofExpSigmaPr(), track.tofExpSignalDiffPr(),
+                         track.snp(), track.tgl(), track.sigmaY(), track.sigmaZ(), track.sigmaSnp(),
+                         track.sigmaTgl(), track.sigma1Pt(), track.tpcNClsFindable(), track.tpcNClsFound(),
+                         track.tpcNClsPID(), track.tpcChi2NCl(), track.trackTime(), track.length(),
+                         track.tofChi2(), track.itsClusterMap(), track.trdChi2());
 
       fillHist(track);
     }
   }
   PROCESS_SWITCH(PidMlProducer, processDataAll, "Produce all real data", false);
 
-  void processMcMl(MyCollisionML const& /*collision*/, BigTracksMCML const& tracks, aod::McParticles const& /*mctracks*/)
+  void processMcMl(MyCollisionML const& collision, BigTracksMCML const& tracks, aod::McParticles const& /*mctracks*/)
   {
+    if (!fillCollisionsCentRun3<true>(collision)) {
+      return;
+    }
+
     for (const auto& track : tracks) {
       if (!track.has_mcParticle()) {
         continue;
@@ -290,7 +400,7 @@ struct PidMlProducer {
       const auto mcParticle = track.mcParticle_as<aod::McParticles>();
       uint8_t isPrimary = static_cast<uint8_t>(mcParticle.isPhysicalPrimary());
       uint32_t pdgCode = mcParticle.pdgCode();
-      pidTracksTableMCML(track.tpcSignal(), getTRDSignal(track), getTRDPattern(track),
+      pidTracksTableMCML(track.collisionId(), track.tpcSignal(), getTRDSignal(track), getTRDPattern(track),
                          getTOFSignal(track), getTOFBeta(track),
                          track.p(), track.pt(), track.px(), track.py(), track.pz(),
                          track.sign(),
@@ -309,6 +419,10 @@ struct PidMlProducer {
 
   void processMcAll(MyCollision const& collision, BigTracksMC const& tracks, aod::McParticles const& /*mctracks*/)
   {
+    if (!fillCollisionsCentRun3<true>(collision)) {
+      return;
+    }
+
     for (const auto& track : tracks) {
       if (!track.has_mcParticle()) {
         continue;
@@ -316,10 +430,20 @@ struct PidMlProducer {
       const auto mcParticle = track.mcParticle_as<aod::McParticles>();
       uint8_t isPrimary = static_cast<uint8_t>(mcParticle.isPhysicalPrimary());
       uint32_t pdgCode = mcParticle.pdgCode();
-      pidTracksTableMC(collision.multFV0A(), collision.multFV0C(), collision.multFV0M(),
+      pidTracksTableMC(track.collisionId(), collision.multFV0A(), collision.multFV0C(), collision.multFV0M(),
                        collision.multFT0A(), collision.multFT0C(), collision.multFT0M(),
-                       collision.multZNA(), collision.multZNC(),
-                       collision.multTracklets(), collision.multTPC(),
+                       collision.multZNA(), collision.multZNC(), collision.multTracklets(),
+                       collision.multTPC(), collision.multNTracksPV(),
+                       collision.posZ(), collision.trackOccupancyInTimeRange(), collision.centFT0C(),
+                       collision.selection_bit(aod::evsel::kNoSameBunchPileup),
+                       collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV),
+                       collision.selection_bit(aod::evsel::kIsGoodITSLayersAll),
+                       collision.selection_bit(aod::evsel::kNoCollInRofStandard),
+                       collision.selection_bit(aod::evsel::kNoHighMultCollInPrevRof),
+                       collision.selection_bit(aod::evsel::kIsVertexITSTPC),
+                       collision.selection_bit(aod::evsel::kNoCollInTimeRangeStandard),
+                       collision.selection_bit(aod::evsel::kNoITSROFrameBorder),
+                       collision.selection_bit(aod::evsel::kNoTimeFrameBorder),
                        track.tpcSignal(), getTRDSignal(track), getTRDPattern(track),
                        track.trackEtaEmcal(), track.trackPhiEmcal(),
                        getTOFSignal(track), getTOFBeta(track),
@@ -340,6 +464,10 @@ struct PidMlProducer {
                        track.tofNSigmaKa(), track.tofExpSigmaKa(), track.tofExpSignalDiffKa(),
                        track.tpcNSigmaPr(), track.tpcExpSigmaPr(), track.tpcExpSignalDiffPr(),
                        track.tofNSigmaPr(), track.tofExpSigmaPr(), track.tofExpSignalDiffPr(),
+                       track.snp(), track.tgl(), track.sigmaY(), track.sigmaZ(), track.sigmaSnp(),
+                       track.sigmaTgl(), track.sigma1Pt(), track.tpcNClsFindable(), track.tpcNClsFound(),
+                       track.tpcNClsPID(), track.tpcChi2NCl(), track.trackTime(), track.length(),
+                       track.tofChi2(), track.itsClusterMap(), track.trdChi2(),
                        pdgCode,
                        isPrimary);
 
