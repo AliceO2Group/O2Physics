@@ -16,11 +16,13 @@
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
 
 #include "Common/Core/RecoDecay.h"
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/ConfigContext.h>
 #include <Framework/Configurable.h>
@@ -283,14 +285,14 @@ struct JetDsSpecSubs {
     registry.add("h_ds_phi_data", ";#varphi_{D_{S}};entries", {HistType::kTH1F, {{80, -1., 7.}}});
 
     // Ds-tagged jet observables
-    registry.add("h_ds_jet_projection_data", ";z^{D_{S},jet}_{||};entries", {HistType::kTH1F, {{200, 0., 1.2}}});
+    registry.add("h_ds_jet_projection_data", ";z^{D_{S},jet}_{||};entries", {HistType::kTH1F, {{200, 0., 1.}}});
     registry.add("h_ds_jet_distance_data", ";#DeltaR_{D_{S},jet};entries", {HistType::kTH1F, {{200, 0., 1.}}});
     registry.add("h_ds_jet_mass_data", ";m_{jet}^{ch} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{300, 0., 25.}}});
     registry.add("h_ds_jet_lambda11_data", ";#lambda_{1}^{1};entries", {HistType::kTH1F, {{100, 0., 1.}}});
     registry.add("h_ds_jet_lambda21_data", ";#lambda_{2}^{1};entries", {HistType::kTH1F, {{100, 0., 1.}}});
 
     // Main data sparse
-    registry.add("hSparse_ds_data", ";m_{D_{S}};#it{p}_{T,D_{S}};#it{p}_{T,jet};z^{D_{S},jet}_{||};#DeltaR_{D_{S},jet}", {HistType::kTHnSparseF, {{60, 1.6, 2.3}, {60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.2}, {20, 0., 1.}}});
+    registry.add("hSparse_ds_data", ";m_{D_{S}};#it{p}_{T,D_{S}};#it{p}_{T,jet};z^{D_{S},jet}_{||};#DeltaR_{D_{S},jet}", {HistType::kTHnSparseF, {{60, 1.6, 2.3}, {60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.}, {20, 0., 1.}}});
 
     auto hEventCounter = registry.get<TH1>(HIST("h_event_counter_data"));
     hEventCounter->GetXaxis()->SetBinLabel(1, "Input collisions");
@@ -316,9 +318,9 @@ struct JetDsSpecSubs {
     registry.add("h_ds_mass_mcd", ";m_{D_{S}}^{det} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{200, 1.7, 2.15}}});
 
     // Detector-level sparse histograms
-    registry.add("hSparse_ds_mcd1", ";m_{D_{S}}^{rec};#it{p}_{T,D_{S}}^{det};#it{p}_{T,jet}^{det};z^{D_{S},jet}_{||,det};Origin(D_{S});Matching status", {HistType::kTHnSparseF, {{60, 1.6, 2.3}, {60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.2}, {3, -0.5, 2.5}, {2, -0.5, 1.5}}});
+    registry.add("hSparse_ds_mcd1", ";m_{D_{S}}^{rec};#it{p}_{T,D_{S}}^{det};#it{p}_{T,jet}^{det};z^{D_{S},jet}_{||,det};Origin(D_{S});Matching status", {HistType::kTHnSparseF, {{60, 1.6, 2.3}, {60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.}, {3, -0.5, 2.5}, {2, -0.5, 1.5}}});
     registry.add("hSparse_ds_mcd2", ";#it{p}_{T,D_{S}}^{det};#it{p}_{T,jet}^{det};#DeltaR_{D_{S},jet}^{det}", {HistType::kTHnSparseF, {{60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.}}});
-    registry.add("hSparse_ds_mcd3", ";#it{p}_{T,jet}^{det};z^{D_{S},jet}_{||,det};#DeltaR_{D_{S},jet}^{det}", {HistType::kTHnSparseF, {{60, 0., 100.}, {20, 0., 1.2}, {20, 0., 1.}}});
+    registry.add("hSparse_ds_mcd3", ";#it{p}_{T,jet}^{det};z^{D_{S},jet}_{||,det};#DeltaR_{D_{S},jet}^{det}", {HistType::kTHnSparseF, {{60, 0., 100.}, {20, 0., 1.}, {20, 0., 1.}}});
 
     // Particle-level jet QA
     registry.add("h_jet_pt_mcp", "particle-level jet pT;#it{p}_{T,jet}^{part} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}});
@@ -331,9 +333,9 @@ struct JetDsSpecSubs {
     registry.add("h_ds_phi_mcp", ";#varphi_{D_{S}}^{part};entries", {HistType::kTH1F, {{80, -1., 7.}}});
 
     // Particle-level sparse with origin and matching status
-    registry.add("hSparse_ds_mcp", ";#it{p}_{T,D_{S}}^{part};#it{p}_{T,jet}^{part};z^{D_{S},jet}_{||,part};#DeltaR_{D_{S},jet}^{part};Origin(D_{S});Matching status", {HistType::kTHnSparseF, {{60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.2}, {20, 0., 1.}, {3, -0.5, 2.5}, {2, -0.5, 1.5}}});
+    registry.add("hSparse_ds_mcp", ";#it{p}_{T,D_{S}}^{part};#it{p}_{T,jet}^{part};z^{D_{S},jet}_{||,part};#DeltaR_{D_{S},jet}^{part};Origin(D_{S});Matching status", {HistType::kTHnSparseF, {{60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.}, {20, 0., 1.}, {3, -0.5, 2.5}, {2, -0.5, 1.5}}});
 
-    registry.add("hSparseMatchedJets", ";Matched Ds-tagged jets;#it{p}_{T,jet}^{part};#it{p}_{T,jet}^{det};#it{p}_{T,D_{S}}^{part};#it{p}_{T,D_{S}}^{det};z_{||}^{part};z_{||}^{det};Origin(D_{S});flagMcMatchRec", {HistType::kTHnSparseF, {{60, 0., 100.}, {60, 0., 100.}, {60, 0., 80.}, {60, 0., 80.}, {20, 0., 1.2}, {20, 0., 1.2}, {3, -0.5, 2.5}, {21, -10.5, 10.5}}});
+    registry.add("hSparseMatchedJets", "Matched Ds-tagged jets;#it{p}_{T,jet}^{part};#it{p}_{T,jet}^{det};#it{p}_{T,D_{S}}^{part};#it{p}_{T,D_{S}}^{det};z_{||}^{part};z_{||}^{det};Origin(D_{S});flagMcMatchRec", {HistType::kTHnSparseF, {{60, 0., 100.}, {60, 0., 100.}, {60, 0., 80.}, {60, 0., 80.}, {20, 0., 1.}, {20, 0., 1.}, {3, -0.5, 2.5}, {21, -10.5, 10.5}}});
 
     auto mcCollisionCounter = registry.get<TH1>(HIST("hMCColCounter"));
     mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::AllMCCollisions, "All MC coll.");
