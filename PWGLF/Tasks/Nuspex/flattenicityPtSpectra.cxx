@@ -14,18 +14,21 @@
 /// \file flattenicityPtSpectra.cxx
 /// \brief  Analysis to do flattenicity pt spectra
 
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/FT0Corrected.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
 #include <CommonConstants/MathConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/runDataProcessing.h>
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/FT0Corrected.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
+
 #include <TH1F.h>
 #include <TH2F.h>
 #include <TH3F.h>
 #include <TMath.h>
+
 #include <array>
 #include <cmath>
 #include <vector>
@@ -42,36 +45,40 @@ using MyCollisions = soa::Join<aod::Collisions,
 
 struct FlattenicityPtSpectra {
 
- 
   Configurable<float> etaMin{"etaMin", -0.8f, "Min eta for mid-rapidity tracks"};
-  Configurable<float> etaMax{"etaMax",  0.8f, "Max eta for mid-rapidity tracks"};
-  Configurable<float> ptMin{"ptMin",   0.15f, "Min pT (GeV/c)"};
-  Configurable<float> ptMax{"ptMax",   20.0f, "Max pT (GeV/c)"};
-  Configurable<int> minTPCnClsFound{"minTPCnClsFound", 70,"Min TPC found clusters"};
+  Configurable<float> etaMax{"etaMax", 0.8f, "Max eta for mid-rapidity tracks"};
+  Configurable<float> ptMin{"ptMin", 0.15f, "Min pT (GeV/c)"};
+  Configurable<float> ptMax{"ptMax", 20.0f, "Max pT (GeV/c)"};
+  Configurable<int> minTPCnClsFound{"minTPCnClsFound", 70, "Min TPC found clusters"};
   Configurable<float> maxDCAz{"maxDCAz", 2.0f, "Max |DCAz| (cm)"};
   Configurable<float> maxVtxZ{"maxVtxZ", 10.0f, "Max |vtx z| (cm)"};
 
+  Configurable<int> minActiveFT0Ch{"minActiveFT0Ch", 4, "Min active FT0 channels for flattenicity"};
 
-Configurable<int> minActiveFT0Ch{"minActiveFT0Ch", 4, "Min active FT0 channels for flattenicity"};
-
-  static constexpr int NChA   = 96;
-  static constexpr int NChC   = 96;
+  static constexpr int NChA = 96;
+  static constexpr int NChC = 96;
   static constexpr int NCells = NChA + NChC; // 192 total
 
   HistogramRegistry registry{
-    "registry", {},
-    OutputObjHandlingPolicy::AnalysisObject, true, true};
-
-
+    "registry",
+    {},
+    OutputObjHandlingPolicy::AnalysisObject,
+    true,
+    true};
 
   template <typename TrackType>
   bool isGoodTrack(TrackType const& track) const
   {
-    if (!track.hasTPC())                                              return false;
-    if (track.tpcNClsFound() < minTPCnClsFound.value)                return false;
-    if (track.eta() < etaMin.value || track.eta() > etaMax.value)    return false;
-    if (std::abs(track.dcaZ()) > maxDCAz.value)                      return false;
-    if (track.pt() < ptMin.value   || track.pt() > ptMax.value)      return false;
+    if (!track.hasTPC())
+      return false;
+    if (track.tpcNClsFound() < minTPCnClsFound.value)
+      return false;
+    if (track.eta() < etaMin.value || track.eta() > etaMax.value)
+      return false;
+    if (std::abs(track.dcaZ()) > maxDCAz.value)
+      return false;
+    if (track.pt() < ptMin.value || track.pt() > ptMax.value)
+      return false;
     return true;
   }
 
@@ -106,14 +113,16 @@ Configurable<int> minActiveFT0Ch{"minActiveFT0Ch", 4, "Min active FT0 channels f
       ++chIdx;
     }
 
-    if (nActive < minActive) return -1.f;
+    if (nActive < minActive)
+      return -1.f;
 
     float mRho = 0.f;
     for (int i = 0; i < NCells; ++i) {
       mRho += signals[i];
     }
     mRho /= static_cast<float>(NCells);
-    if (mRho <= 0.f) return -1.f;
+    if (mRho <= 0.f)
+      return -1.f;
 
     float sRhoTmp = 0.f;
     for (int i = 0; i < NCells; ++i) {
@@ -138,7 +147,6 @@ Configurable<int> minActiveFT0Ch{"minActiveFT0Ch", 4, "Min active FT0 channels f
     AxisSpec nchAxis{500, -0.5f, 499.5f, "Raw N_{ch} (|#eta|<0.8, p_{T}>0.15)"};
     AxisSpec vtxzAxis{200, -20.f, 20.f, "v_{z} (cm)"};
 
-  
     registry.add("hEventCounter",
                  "Event counter",
                  HistType::kTH1F, {{5, 0.5, 5.5}});
@@ -190,7 +198,6 @@ Configurable<int> minActiveFT0Ch{"minActiveFT0Ch", 4, "Min active FT0 channels f
                  "FT0M amplitude (a.u.);Flattenicity",
                  HistType::kTH2F, {multAxis, flatAxis});
 
-
     registry.add("hFT0MMultVsFlattenicityVsPt",
                  "FT0M multiplicity vs Flattenicity vs #it{p}_{T};"
                  "FT0M amplitude (a.u.);Flattenicity;#it{p}_{T} (GeV/c)",
@@ -217,64 +224,79 @@ Configurable<int> minActiveFT0Ch{"minActiveFT0Ch", 4, "Min active FT0 channels f
   }
 
   void process(MyCollisions::iterator const& collision,
-               MyTracks const&              tracks,
-               aod::FT0s const&             /*ft0s*/)
+               MyTracks const& tracks,
+               aod::FT0s const& /*ft0s*/)
   {
     registry.fill(HIST("hEventCounter"), 1.f);
 
-    if (std::abs(collision.posZ()) > maxVtxZ.value) return;
+    if (std::abs(collision.posZ()) > maxVtxZ.value)
+      return;
     registry.fill(HIST("hEventCounter"), 2.f);
     registry.fill(HIST("hVtxZ"), collision.posZ());
 
-    if (!collision.has_foundFT0()) return;
+    if (!collision.has_foundFT0())
+      return;
     registry.fill(HIST("hEventCounter"), 3.f);
 
     auto ft0 = collision.foundFT0();
 
-    float sumA  = 0.f, sumC = 0.f;
-    int   nActive = 0;
-    for (const auto& a : ft0.amplitudeA()) { if (a > 0.f) { sumA += a; ++nActive; } }
-    for (const auto& a : ft0.amplitudeC()) { if (a > 0.f) { sumC += a; ++nActive; } }
+    float sumA = 0.f, sumC = 0.f;
+    int nActive = 0;
+    for (const auto& a : ft0.amplitudeA()) {
+      if (a > 0.f) {
+        sumA += a;
+        ++nActive;
+      }
+    }
+    for (const auto& a : ft0.amplitudeC()) {
+      if (a > 0.f) {
+        sumC += a;
+        ++nActive;
+      }
+    }
 
-    registry.fill(HIST("hFT0AAmplitude"),      sumA);
-    registry.fill(HIST("hFT0CAmplitude"),      sumC);
+    registry.fill(HIST("hFT0AAmplitude"), sumA);
+    registry.fill(HIST("hFT0CAmplitude"), sumC);
     registry.fill(HIST("hNActiveFT0Channels"), static_cast<float>(nActive));
 
-    if (sumA + sumC <= 0.f) return;
+    if (sumA + sumC <= 0.f)
+      return;
     registry.fill(HIST("hEventCounter"), 4.f);
 
     float flattenicity = calculateFlattenicityFT0(ft0, minActiveFT0Ch.value);
-    if (flattenicity < 0.f) return;  
+    if (flattenicity < 0.f)
+      return;
     registry.fill(HIST("hEventCounter"), 5.f);
 
     float multFT0M = collision.multFT0M();
 
-    registry.fill(HIST("hFT0MMultiplicity"),          multFT0M);
-    registry.fill(HIST("hFlattenicityDistribution"),  flattenicity);
-    registry.fill(HIST("hFT0MMultVsFlattenicity"),    multFT0M, flattenicity);
+    registry.fill(HIST("hFT0MMultiplicity"), multFT0M);
+    registry.fill(HIST("hFlattenicityDistribution"), flattenicity);
+    registry.fill(HIST("hFT0MMultVsFlattenicity"), multFT0M, flattenicity);
 
     std::vector<typename MyTracks::iterator> goodTracks;
-    goodTracks.reserve(1000);  
-    
+    goodTracks.reserve(1000);
+
     for (const auto& track : tracks) {
-      if (!isGoodTrack(track)) continue;
+      if (!isGoodTrack(track))
+        continue;
       goodTracks.push_back(track);
     }
-    
+
     int rawNch = goodTracks.size();
-    
+
     // Fill per-event histograms with Nch
     registry.fill(HIST("hNchDistribution"), rawNch);
     registry.fill(HIST("hNchVsFlattenicity"), rawNch, flattenicity);
-    
+
     // Fill per-track histograms using the collected good tracks
     for (const auto& track : goodTracks) {
       registry.fill(HIST("hEtaDistribution"), track.eta());
       registry.fill(HIST("hPhiDistribution"), track.phi());
-      registry.fill(HIST("hPtSpectrum_All"),  track.pt());
+      registry.fill(HIST("hPtSpectrum_All"), track.pt());
       registry.fill(HIST("hFT0MMultVsFlattenicityVsPt"),
                     multFT0M, flattenicity, track.pt());
-      
+
       // NEW: Fill Nch-based 3D histogram
       registry.fill(HIST("hNchVsFlattenicityVsPt"),
                     rawNch, flattenicity, track.pt());
