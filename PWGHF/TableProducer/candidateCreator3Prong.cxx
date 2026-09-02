@@ -38,6 +38,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Tools/KFparticle/KFUtilities.h"
 
 #include <CCDB/BasicCCDBManager.h>
@@ -715,7 +716,7 @@ struct HfCandidateCreator3Prong {
   ///////////////////////////////////
 
   /// @brief process function using DCA fitter  w/ PV refit and w/o centrality selections
-  void processPvRefitWithDCAFitterN(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processPvRefitWithDCAFitterN(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                                     FilteredPvRefitHf3Prongs const& rowsTrackIndexProng3,
                                     TracksWCovExtraPidPiKaPrLightNuclei const& tracks,
                                     aod::BCsWithTimestamps const& bcWithTimeStamps)
@@ -725,7 +726,7 @@ struct HfCandidateCreator3Prong {
   PROCESS_SWITCH(HfCandidateCreator3Prong, processPvRefitWithDCAFitterN, "Run candidate creator using DCA fitter with PV refit and w/o centrality selections", false);
 
   /// @brief process function using DCA fitter  w/o PV refit and w/o centrality selections
-  void processNoPvRefitWithDCAFitterN(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processNoPvRefitWithDCAFitterN(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                                       FilteredHf3Prongs const& rowsTrackIndexProng3,
                                       TracksWCovExtraPidPiKaPrLightNuclei const& tracks,
                                       aod::BCsWithTimestamps const& bcWithTimeStamps)
@@ -735,7 +736,7 @@ struct HfCandidateCreator3Prong {
   PROCESS_SWITCH(HfCandidateCreator3Prong, processNoPvRefitWithDCAFitterN, "Run candidate creator using DCA fitter without PV refit and w/o centrality selections", true);
 
   /// @brief process function using KFParticle package  w/ PV refit and w/o centrality selections
-  void processPvRefitWithKFParticle(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processPvRefitWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                                     FilteredPvRefitHf3Prongs const& rowsTrackIndexProng3,
                                     TracksWCovExtraPidPiKaPrLightNuclei const& tracks,
                                     aod::BCsWithTimestamps const& bcWithTimeStamps)
@@ -745,7 +746,7 @@ struct HfCandidateCreator3Prong {
   PROCESS_SWITCH(HfCandidateCreator3Prong, processPvRefitWithKFParticle, "Run candidate creator using KFParticle package with PV refit and w/o centrality selections", false);
 
   /// @brief process function using KFParticle package  w/o PV refit and w/o centrality selections
-  void processNoPvRefitWithKFParticle(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processNoPvRefitWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                                       FilteredHf3Prongs const& rowsTrackIndexProng3,
                                       TracksWCovExtraPidPiKaPrLightNuclei const& tracks,
                                       aod::BCsWithTimestamps const& bcWithTimeStamps)
@@ -761,7 +762,7 @@ struct HfCandidateCreator3Prong {
   /////////////////////////////////////////////
 
   /// @brief process function using DCA fitter  w/ PV refit and w/ centrality selection on FT0C
-  void processPvRefitWithDCAFitterNCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+  void processPvRefitWithDCAFitterNCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs> const& collisions,
                                             FilteredPvRefitHf3Prongs const& rowsTrackIndexProng3,
                                             TracksWCovExtraPidPiKaPrLightNuclei const& tracks,
                                             aod::BCsWithTimestamps const& bcWithTimeStamps)
@@ -771,7 +772,7 @@ struct HfCandidateCreator3Prong {
   PROCESS_SWITCH(HfCandidateCreator3Prong, processPvRefitWithDCAFitterNCentFT0C, "Run candidate creator using DCA fitter with PV refit and w/ centrality selection on FT0C", false);
 
   /// @brief process function using DCA fitter  w/o PV refit and  w/ centrality selection on FT0C
-  void processNoPvRefitWithDCAFitterNCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+  void processNoPvRefitWithDCAFitterNCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs> const& collisions,
                                               FilteredHf3Prongs const& rowsTrackIndexProng3,
                                               TracksWCovExtraPidPiKaPrLightNuclei const& tracks,
                                               aod::BCsWithTimestamps const& bcWithTimeStamps)
@@ -781,7 +782,7 @@ struct HfCandidateCreator3Prong {
   PROCESS_SWITCH(HfCandidateCreator3Prong, processNoPvRefitWithDCAFitterNCentFT0C, "Run candidate creator using DCA fitter without PV refit and  w/ centrality selection on FT0C", false);
 
   /// @brief process function using KFParticle package  w/ PV refit and w/ centrality selection on FT0C
-  void processPvRefitWithKFParticleCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+  void processPvRefitWithKFParticleCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs> const& collisions,
                                             FilteredPvRefitHf3Prongs const& rowsTrackIndexProng3,
                                             TracksWCovExtraPidPiKaPrLightNuclei const& tracks,
                                             aod::BCsWithTimestamps const& bcWithTimeStamps)
@@ -791,7 +792,7 @@ struct HfCandidateCreator3Prong {
   PROCESS_SWITCH(HfCandidateCreator3Prong, processPvRefitWithKFParticleCentFT0C, "Run candidate creator using KFParticle package with PV refit and w/ centrality selection on FT0C", false);
 
   /// @brief process function using KFParticle package  w/o PV refit and  w/ centrality selection on FT0C
-  void processNoPvRefitWithKFParticleCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+  void processNoPvRefitWithKFParticleCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs> const& collisions,
                                               FilteredHf3Prongs const& rowsTrackIndexProng3,
                                               TracksWCovExtraPidPiKaPrLightNuclei const& tracks,
                                               aod::BCsWithTimestamps const& bcWithTimeStamps)
@@ -807,7 +808,7 @@ struct HfCandidateCreator3Prong {
   /////////////////////////////////////////////
 
   /// @brief process function using DCA fitter  w/ PV refit and w/ centrality selection on FT0M
-  void processPvRefitWithDCAFitterNCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+  void processPvRefitWithDCAFitterNCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms> const& collisions,
                                             FilteredPvRefitHf3Prongs const& rowsTrackIndexProng3,
                                             TracksWCovExtraPidPiKaPrLightNuclei const& tracks,
                                             aod::BCsWithTimestamps const& bcWithTimeStamps)
@@ -817,7 +818,7 @@ struct HfCandidateCreator3Prong {
   PROCESS_SWITCH(HfCandidateCreator3Prong, processPvRefitWithDCAFitterNCentFT0M, "Run candidate creator using DCA fitter with PV refit and w/ centrality selection on FT0M", false);
 
   /// @brief process function using DCA fitter  w/o PV refit and  w/ centrality selection on FT0M
-  void processNoPvRefitWithDCAFitterNCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+  void processNoPvRefitWithDCAFitterNCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms> const& collisions,
                                               FilteredHf3Prongs const& rowsTrackIndexProng3,
                                               TracksWCovExtraPidPiKaPrLightNuclei const& tracks,
                                               aod::BCsWithTimestamps const& bcWithTimeStamps)
@@ -827,7 +828,7 @@ struct HfCandidateCreator3Prong {
   PROCESS_SWITCH(HfCandidateCreator3Prong, processNoPvRefitWithDCAFitterNCentFT0M, "Run candidate creator using DCA fitter without PV refit and  w/ centrality selection on FT0M", false);
 
   /// @brief process function using KFParticle package  w/ PV refit and w/ centrality selection on FT0M
-  void processPvRefitWithKFParticleCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+  void processPvRefitWithKFParticleCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms> const& collisions,
                                             FilteredPvRefitHf3Prongs const& rowsTrackIndexProng3,
                                             TracksWCovExtraPidPiKaPrLightNuclei const& tracks,
                                             aod::BCsWithTimestamps const& bcWithTimeStamps)
@@ -837,7 +838,7 @@ struct HfCandidateCreator3Prong {
   PROCESS_SWITCH(HfCandidateCreator3Prong, processPvRefitWithKFParticleCentFT0M, "Run candidate creator using KFParticle package with PV refit and w/ centrality selection on FT0M", false);
 
   /// @brief process function using KFParticle package  w/o PV refit and  w/ centrality selection on FT0M
-  void processNoPvRefitWithKFParticleCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+  void processNoPvRefitWithKFParticleCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms> const& collisions,
                                               FilteredHf3Prongs const& rowsTrackIndexProng3,
                                               TracksWCovExtraPidPiKaPrLightNuclei const& tracks,
                                               aod::BCsWithTimestamps const& bcWithTimeStamps)
@@ -853,7 +854,7 @@ struct HfCandidateCreator3Prong {
   /////////////////////////////////////////////
 
   /// @brief process function using DCA fitter  w/ PV refit and w/ centrality selection on UPC
-  void processPvRefitWithDCAFitterNUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processPvRefitWithDCAFitterNUpc(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                                        FilteredPvRefitHf3Prongs const& rowsTrackIndexProng3,
                                        TracksWCovExtraPidPiKaPrLightNuclei const& tracks,
                                        aod::BcFullInfos const& bcWithTimeStamps,
@@ -867,7 +868,7 @@ struct HfCandidateCreator3Prong {
   PROCESS_SWITCH(HfCandidateCreator3Prong, processPvRefitWithDCAFitterNUpc, "Run candidate creator using DCA fitter with PV refit and w/ centrality selection on UPC", false);
 
   /// @brief process function using DCA fitter  w/o PV refit and  w/ centrality selection on UPC
-  void processNoPvRefitWithDCAFitterNUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processNoPvRefitWithDCAFitterNUpc(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                                          FilteredHf3Prongs const& rowsTrackIndexProng3,
                                          TracksWCovExtraPidPiKaPrLightNuclei const& tracks,
                                          aod::BcFullInfos const& bcWithTimeStamps,
@@ -881,7 +882,7 @@ struct HfCandidateCreator3Prong {
   PROCESS_SWITCH(HfCandidateCreator3Prong, processNoPvRefitWithDCAFitterNUpc, "Run candidate creator using DCA fitter without PV refit and  w/ centrality selection on UPC", false);
 
   /// @brief process function using KFParticle package  w/ PV refit and w/ centrality selection on UPC
-  void processPvRefitWithKFParticleUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processPvRefitWithKFParticleUpc(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                                        FilteredPvRefitHf3Prongs const& rowsTrackIndexProng3,
                                        TracksWCovExtraPidPiKaPrLightNuclei const& tracks,
                                        aod::BcFullInfos const& bcWithTimeStamps,
@@ -895,7 +896,7 @@ struct HfCandidateCreator3Prong {
   PROCESS_SWITCH(HfCandidateCreator3Prong, processPvRefitWithKFParticleUpc, "Run candidate creator using KFParticle package with PV refit and w/ centrality selection on UPC", false);
 
   /// @brief process function using KFParticle package  w/o PV refit and  w/ centrality selection on UPC
-  void processNoPvRefitWithKFParticleUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processNoPvRefitWithKFParticleUpc(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                                          FilteredHf3Prongs const& rowsTrackIndexProng3,
                                          TracksWCovExtraPidPiKaPrLightNuclei const& tracks,
                                          aod::BcFullInfos const& bcWithTimeStamps,
@@ -915,7 +916,7 @@ struct HfCandidateCreator3Prong {
   ///////////////////////////////////////////////////////////
 
   /// @brief process function to monitor collisions - no centrality
-  void processCollisions(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
+  void processCollisions(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
   {
     /// loop over collisions
     for (const auto& collision : collisions) {
@@ -934,7 +935,7 @@ struct HfCandidateCreator3Prong {
   PROCESS_SWITCH(HfCandidateCreator3Prong, processCollisions, "Collision monitoring - no centrality", true);
 
   /// @brief process function to monitor collisions - FT0C centrality
-  void processCollisionsCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
+  void processCollisionsCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs> const& collisions, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
   {
     /// loop over collisions
     for (const auto& collision : collisions) {
@@ -953,7 +954,7 @@ struct HfCandidateCreator3Prong {
   PROCESS_SWITCH(HfCandidateCreator3Prong, processCollisionsCentFT0C, "Collision monitoring - FT0C centrality", false);
 
   /// @brief process function to monitor collisions - FT0M centrality
-  void processCollisionsCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
+  void processCollisionsCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms> const& collisions, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
   {
     /// loop over collisions
     for (const auto& collision : collisions) {
@@ -972,7 +973,7 @@ struct HfCandidateCreator3Prong {
   PROCESS_SWITCH(HfCandidateCreator3Prong, processCollisionsCentFT0M, "Collision monitoring - FT0M centrality", false);
 
   /// @brief process function to monitor collisions - UPC
-  void processCollisionsUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processCollisionsUpc(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                             aod::BcFullInfos const& bcs,
                             aod::FT0s const& /*ft0s*/,
                             aod::FV0As const& /*fv0as*/,
@@ -1014,9 +1015,9 @@ struct HfCandidateCreator3ProngExpressions {
   HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
 
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
-  using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
-  using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
-  using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms>;
+  using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels>;
+  using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels, aod::CentFT0Cs>;
+  using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels, aod::CentFT0Ms>;
   using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
 
   Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;

@@ -34,6 +34,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -191,7 +192,7 @@ struct HfDataCreatorJpsiHadReduced {
   using TracksPid = soa::Join<aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullEl, aod::pidTOFFullEl>;
   using TracksPidWithSel = soa::Join<aod::TracksWCovDcaExtra, TracksPid, aod::TrackSelection>;
   using TracksPidWithSelAndMc = soa::Join<TracksPidWithSel, aod::McTrackLabels>;
-  using CollisionsWCMcLabels = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
+  using CollisionsWCMcLabels = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults>;
   using BCsInfo = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
 
   Preslice<aod::HfCand2ProngWPid> candsJpsiPerCollision = aod::track_association::collisionId;
@@ -1479,7 +1480,7 @@ struct HfDataCreatorJpsiHadReduced {
     // }
   }
 
-  void processJpsiKData(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processJpsiKData(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                         aod::HfCand2ProngWPid const& candsJpsi,
                         aod::TrackAssoc const& trackIndices,
                         TracksPidWithSel const& tracks,
@@ -1507,7 +1508,7 @@ struct HfDataCreatorJpsiHadReduced {
   }
   PROCESS_SWITCH(HfDataCreatorJpsiHadReduced, processJpsiKData, "Process J/Psi K without MC info", true);
 
-  void processJpsiPhiData(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processJpsiPhiData(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                           aod::HfCand2ProngWPid const& candsJpsi,
                           aod::TrackAssoc const& trackIndices,
                           TracksPidWithSel const& tracks,
@@ -1535,7 +1536,7 @@ struct HfDataCreatorJpsiHadReduced {
   }
   PROCESS_SWITCH(HfDataCreatorJpsiHadReduced, processJpsiPhiData, "Process J/Psi phi without MC info", false);
 
-  void processJpsiK0StarData(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processJpsiK0StarData(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                              aod::HfCand2ProngWPid const& candsJpsi,
                              aod::TrackAssoc const& trackIndices,
                              TracksPidWithSel const& tracks,

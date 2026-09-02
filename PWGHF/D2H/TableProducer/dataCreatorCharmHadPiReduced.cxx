@@ -37,6 +37,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/Qvectors.h"
@@ -244,7 +245,7 @@ struct HfDataCreatorCharmHadPiReduced {
   using CandsDstarFiltered = soa::Filtered<soa::Join<aod::HfCandDstarsWPid, aod::HfD0FromDstar, aod::HfSelDstarToD0Pi>>;
   using CandsDstarFilteredWithMl = soa::Filtered<soa::Join<aod::HfCandDstarsWPid, aod::HfD0FromDstar, aod::HfSelDstarToD0Pi, aod::HfMlDstarToD0Pi>>;
 
-  using CollisionsWCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs>;
+  using CollisionsWCent = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms, aod::CentFT0Cs>;
   using CollisionsWCentAndMcLabels = soa::Join<CollisionsWCent, aod::McCollisionLabels>;
   using CollisionsWCentAndQvectors = soa::Join<CollisionsWCent, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorTPCposs, aod::QvectorTPCnegs, aod::QvectorTPCalls>;
   using BCsInfo = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
