@@ -28,6 +28,7 @@ class PlotType(IntEnum):
     Frac = auto()
     Cov = auto()
     Unc = auto()
+    RelUnc = auto()
     N = auto()
 
 class ObjectToSave(IntEnum):
@@ -89,6 +90,7 @@ def main(config):
     is_draw_title[PlotType.Frac] = cfg.get("is_draw_title", {}).get("frac", False)
     is_draw_title[PlotType.Cov] = cfg.get("is_draw_title", {}).get("cov", False)
     is_draw_title[PlotType.Unc] = cfg.get("is_draw_title", {}).get("unc", True)
+    is_draw_title[PlotType.RelUnc] = cfg.get("is_draw_title", {}).get("relunc", True)
 
     is_save_canvas_as_macro = [False] * PlotType.N
     is_save_canvas_as_macro[PlotType.Rawy] = cfg.get("is_save_canvas_as_macro", {}).get("rawy", False)
@@ -96,6 +98,7 @@ def main(config):
     is_save_canvas_as_macro[PlotType.Frac] = cfg.get("is_save_canvas_as_macro", {}).get("frac", False)
     is_save_canvas_as_macro[PlotType.Cov] = cfg.get("is_save_canvas_as_macro", {}).get("cov", False)
     is_save_canvas_as_macro[PlotType.Unc] = cfg.get("is_save_canvas_as_macro", {}).get("unc", False)
+    is_save_canvas_as_macro[PlotType.RelUnc] = cfg.get("is_save_canvas_as_macro", {}).get("relunc", False)
 
     is_save_to_root_file = [False] * ObjectToSave.N
     is_save_to_root_file[ObjectToSave.Canvas] = cfg.get("is_save_to_root_file", {}).get("canvas", True)
@@ -301,6 +304,17 @@ def main(config):
             if is_save_canvas_as_macro[PlotType.Unc]:
                 canv_unc.SaveAs(f"canv_unc_{ipt+1}.C")
 
+            hist_bin_title_rel_unc = hist_bin_title if is_draw_title[PlotType.RelUnc] else ""
+            canv_rel_unc, histos_rel_unc, leg_rel_unc = minimiser.plot_relative_uncertainties(f"_pt_{pt_min}_to_{pt_max}", hist_bin_title_rel_unc)
+            output.cd()
+            if is_save_to_root_file[ObjectToSave.Canvas]:
+                canv_rel_unc.Write()
+            if is_save_to_root_file[ObjectToSave.Uncertainty]:
+                for _, hist in histos_rel_unc.items():
+                    hist.Write()
+            if is_save_canvas_as_macro[PlotType.RelUnc]:
+                canv_rel_unc.SaveAs(f"canv_rel_unc_{ipt+1}.C")
+
             hist_bin_title_eff = hist_bin_title if is_draw_title[PlotType.Eff] else ""
             canv_eff, histos_eff, leg_e = minimiser.plot_efficiencies(f"_pt_{pt_min}_to_{pt_max}", hist_bin_title_eff)
             output.cd()
@@ -340,6 +354,7 @@ def main(config):
             canv_frac = ROOT.TCanvas("c_frac_minimization_error", "Minimization error", 500, 500)
             canv_cov = ROOT.TCanvas("c_conv_minimization_error", "Minimization error", 500, 500)
             canv_unc = ROOT.TCanvas("c_unc_minimization_error", "Minimization error", 500, 500)
+            canv_rel_unc = ROOT.TCanvas("c_rel_unc_minimization_error", "Minimization error", 500, 500)
 
         canv_combined = ROOT.TCanvas(f"canv_combined_{ipt}", "", 1000, 1000)
         canv_combined.Divide(2, 2)
@@ -359,6 +374,7 @@ def main(config):
         output_name_frac_pdf = f"Frac_{output_name_template}"
         output_name_covmat_pdf = f"CovMatrix_{output_name_template}"
         output_name_unc_pdf = f"Unc_{output_name_template}"
+        output_name_rel_unc_pdf = f"RelUnc_{output_name_template}"
         output_name_pdf = f"{output_name_template}"
 
         if hist_rawy[0].GetNbinsX() == 1 or pt_bin_to_process != -1:
@@ -375,6 +391,7 @@ def main(config):
         canv_cov.Print(f"{os.path.join(cfg['output']['directory'], output_name_covmat_pdf)}{print_bracket}")
         canv_combined.Print(f"{os.path.join(cfg['output']['directory'], output_name_pdf)}{print_bracket}")
         canv_unc.Print(f"{os.path.join(cfg['output']['directory'], output_name_unc_pdf)}{print_bracket}")
+        canv_rel_unc.Print(f"{os.path.join(cfg['output']['directory'], output_name_rel_unc_pdf)}{print_bracket}")
 
     output.cd()
     if is_save_to_root_file[ObjectToSave.CorrectedYield]:
