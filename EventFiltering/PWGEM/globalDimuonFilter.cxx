@@ -147,13 +147,17 @@ struct globalDimuonFilter {
   // for z shift for propagation
   o2::framework::Configurable<bool> cfgApplyZShiftFromCCDB{"cfgApplyZShiftFromCCDB", false, "flag to apply z shift"};
   o2::framework::Configurable<std::string> cfgZShiftPath{"cfgZShiftPath", "Users/m/mcoquet/ZShift", "CCDB path for z shift to apply to forward tracks"};
-  o2::framework::Configurable<float> cfgManualZShift{"cfgManualZShift", 0, "manual z-shift for propagation of global muon to PV"};
+  o2::framework::Configurable<float> cfgManualXShift{"cfgManualXShift", 0, "manual x shift for propagation of global muon to PV"};
+  o2::framework::Configurable<float> cfgManualYShift{"cfgManualYShift", 0, "manual y shift for propagation of global muon to PV"};
+  o2::framework::Configurable<float> cfgManualZShift{"cfgManualZShift", 0, "manual z shift for propagation of global muon to PV"};
 
   o2::framework::HistogramRegistry fRegistry{"output", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject, false, false};
   o2::ccdb::CcdbApi ccdbApi;
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
   int mRunNumber = 0;
   float mBz = 0;
+  float mXShift = 0;
+  float mYShift = 0;
   float mZShift = 0;
 
   void init(o2::framework::InitContext&)
@@ -165,6 +169,8 @@ struct globalDimuonFilter {
     ccdbApi.init(ccdburl);
     mRunNumber = 0;
     mBz = 0;
+    mXShift = 0;
+    mYShift = 0;
     mZShift = 0;
 
     addHistograms();
@@ -203,6 +209,8 @@ struct globalDimuonFilter {
       }
     } else {
       LOGF(info, "z shift is manually set to %f cm", cfgManualZShift.value);
+      mXShift = cfgManualXShift;
+      mYShift = cfgManualYShift;
       mZShift = cfgManualZShift;
     }
   }
@@ -418,12 +426,12 @@ struct globalDimuonFilter {
       return false;
     }
 
-    o2::dataformats::GlobalFwdTrack propmuonAtPV_Matched = o2::aod::fwdtrackutils::propagateMuon(mchtrack, mchtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, glMuonCutGroup.matchingZ, mBz, mZShift);
+    o2::dataformats::GlobalFwdTrack propmuonAtPV_Matched = o2::aod::fwdtrackutils::propagateMuon(mchtrack, mchtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, glMuonCutGroup.matchingZ, mBz, mXShift, mYShift, mZShift);
     float etaMatchedMCHMID = propmuonAtPV_Matched.getEta();
     float phiMatchedMCHMID = propmuonAtPV_Matched.getPhi();
     phiMatchedMCHMID = RecoDecay::constrainAngle(phiMatchedMCHMID, 0, 1U);
 
-    o2::dataformats::GlobalFwdTrack propmuonAtPV = o2::aod::fwdtrackutils::propagateMuon(fwdtrack, fwdtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, glMuonCutGroup.matchingZ, mBz, mZShift);
+    o2::dataformats::GlobalFwdTrack propmuonAtPV = o2::aod::fwdtrackutils::propagateMuon(fwdtrack, fwdtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, glMuonCutGroup.matchingZ, mBz, mXShift, mYShift, mZShift);
     pt = propmuonAtPV.getPt();
     eta = propmuonAtPV.getEta();
     phi = propmuonAtPV.getPhi();
@@ -440,7 +448,7 @@ struct globalDimuonFilter {
       return false;
     }
 
-    o2::dataformats::GlobalFwdTrack propmuonAtDCA = o2::aod::fwdtrackutils::propagateMuon(fwdtrack, fwdtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToDCA, glMuonCutGroup.matchingZ, mBz, mZShift);
+    o2::dataformats::GlobalFwdTrack propmuonAtDCA = o2::aod::fwdtrackutils::propagateMuon(fwdtrack, fwdtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToDCA, glMuonCutGroup.matchingZ, mBz, mXShift, mYShift, mZShift);
     float dcaX = propmuonAtDCA.getX() - collision.posX();
     float dcaY = propmuonAtDCA.getY() - collision.posY();
     float dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
@@ -474,7 +482,7 @@ struct globalDimuonFilter {
     }
     float sigma_dcaXY = dcaXY / dcaXYinSigma / std::sqrt(2.f);
 
-    o2::dataformats::GlobalFwdTrack propmuonAtDCA_Matched = o2::aod::fwdtrackutils::propagateMuon(mchtrack, mchtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToDCA, glMuonCutGroup.matchingZ, mBz, mZShift);
+    o2::dataformats::GlobalFwdTrack propmuonAtDCA_Matched = o2::aod::fwdtrackutils::propagateMuon(mchtrack, mchtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToDCA, glMuonCutGroup.matchingZ, mBz, mXShift, mYShift, mZShift);
     float dcaX_Matched = propmuonAtDCA_Matched.getX() - collision.posX();
     float dcaY_Matched = propmuonAtDCA_Matched.getY() - collision.posY();
     float dcaXY_Matched = std::sqrt(dcaX_Matched * dcaX_Matched + dcaY_Matched * dcaY_Matched);
@@ -488,7 +496,7 @@ struct globalDimuonFilter {
       return false;
     }
 
-    float chi2IP = o2::aod::fwdtrackutils::getFwdChi2IP(fwdtrack, collision, mBz, mZShift);
+    float chi2IP = o2::aod::fwdtrackutils::getFwdChi2IP(fwdtrack, collision, mBz, mXShift, mYShift, mZShift);
 
     if constexpr (fillHistograms) {
       if (fwdtrack.sign() > 0) {
@@ -605,12 +613,12 @@ struct globalDimuonFilter {
       return false;
     }
 
-    o2::dataformats::GlobalFwdTrack propmuonAtPV_Matched = o2::aod::fwdtrackutils::propagateMuon(mchtrack, mchtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, tagMuonCutGroup.matchingZ, mBz, mZShift);
+    o2::dataformats::GlobalFwdTrack propmuonAtPV_Matched = o2::aod::fwdtrackutils::propagateMuon(mchtrack, mchtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, tagMuonCutGroup.matchingZ, mBz, mXShift, mYShift, mZShift);
     float etaMatchedMCHMID = propmuonAtPV_Matched.getEta();
     float phiMatchedMCHMID = propmuonAtPV_Matched.getPhi();
     phiMatchedMCHMID = RecoDecay::constrainAngle(phiMatchedMCHMID, 0, 1U);
 
-    o2::dataformats::GlobalFwdTrack propmuonAtPV = o2::aod::fwdtrackutils::propagateMuon(fwdtrack, fwdtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, tagMuonCutGroup.matchingZ, mBz, mZShift);
+    o2::dataformats::GlobalFwdTrack propmuonAtPV = o2::aod::fwdtrackutils::propagateMuon(fwdtrack, fwdtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, tagMuonCutGroup.matchingZ, mBz, mXShift, mYShift, mZShift);
     pt = propmuonAtPV.getPt();
     eta = propmuonAtPV.getEta();
     phi = propmuonAtPV.getPhi();
@@ -693,12 +701,12 @@ struct globalDimuonFilter {
       return false;
     }
 
-    o2::dataformats::GlobalFwdTrack propmuonAtPV_Matched = o2::aod::fwdtrackutils::propagateMuon(mchtrack, mchtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, probeMuonCutGroup.matchingZ, mBz, mZShift);
+    o2::dataformats::GlobalFwdTrack propmuonAtPV_Matched = o2::aod::fwdtrackutils::propagateMuon(mchtrack, mchtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, probeMuonCutGroup.matchingZ, mBz, mXShift, mYShift, mZShift);
     float etaMatchedMCHMID = propmuonAtPV_Matched.getEta();
     float phiMatchedMCHMID = propmuonAtPV_Matched.getPhi();
     phiMatchedMCHMID = RecoDecay::constrainAngle(phiMatchedMCHMID, 0, 1U);
 
-    o2::dataformats::GlobalFwdTrack propmuonAtPV = o2::aod::fwdtrackutils::propagateMuon(fwdtrack, fwdtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, probeMuonCutGroup.matchingZ, mBz, mZShift);
+    o2::dataformats::GlobalFwdTrack propmuonAtPV = o2::aod::fwdtrackutils::propagateMuon(fwdtrack, fwdtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, probeMuonCutGroup.matchingZ, mBz, mXShift, mYShift, mZShift);
     pt = propmuonAtPV.getPt();
     eta = propmuonAtPV.getEta();
     phi = propmuonAtPV.getPhi();
@@ -722,7 +730,7 @@ struct globalDimuonFilter {
       return false;
     }
 
-    o2::dataformats::GlobalFwdTrack propmuonAtDCA_Matched = o2::aod::fwdtrackutils::propagateMuon(mchtrack, mchtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToDCA, probeMuonCutGroup.matchingZ, mBz, mZShift);
+    o2::dataformats::GlobalFwdTrack propmuonAtDCA_Matched = o2::aod::fwdtrackutils::propagateMuon(mchtrack, mchtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToDCA, probeMuonCutGroup.matchingZ, mBz, mXShift, mYShift, mZShift);
     float dcaX_Matched = propmuonAtDCA_Matched.getX() - collision.posX();
     float dcaY_Matched = propmuonAtDCA_Matched.getY() - collision.posY();
     float dcaXY_Matched = std::sqrt(dcaX_Matched * dcaX_Matched + dcaY_Matched * dcaY_Matched);
