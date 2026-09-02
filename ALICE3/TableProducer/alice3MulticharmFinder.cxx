@@ -1001,7 +1001,7 @@ struct Alice3MulticharmFinder {
         continue;
       }
 
-      if (selFlags.applyLaMaxDauDCA && xiCand.v0radius() < selVals.laMinDecayRadius) {
+      if (selFlags.applyLaMinDecayRadius && xiCand.v0radius() < selVals.laMinDecayRadius) {
         continue;
       }
 
@@ -1037,7 +1037,7 @@ struct Alice3MulticharmFinder {
         continue;
       }
 
-      if (xiCand.cascradius() < selVals.xiMinDecayRadius) {
+      if (selFlags.applyXiMinDecayRadius && xiCand.cascradius() < selVals.xiMinDecayRadius) {
         continue;
       }
 
