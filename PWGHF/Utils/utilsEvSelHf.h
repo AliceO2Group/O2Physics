@@ -211,9 +211,9 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> rctCheckZDC{"rctCheckZDC", false, "RCT flag to check whether the ZDC is present or not"};
   o2::framework::Configurable<bool> rctTreatLimitedAcceptanceAsBad{"rctTreatLimitedAcceptanceAsBad", false, "RCT flag to reject events with limited acceptance for selected detectors"};
   o2::framework::Configurable<std::string> irSource{"irSource", "", "Estimator of the interaction rate (Empty: automatically set. Otherwise recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
-  o2::framework::Configurable<bool> useUpcZdcTimeCut{"useUpcZdcTimeCut", false, "Apply ZDC time selection for UPC neutron class"};
-  o2::framework::Configurable<float> upcZdcTimeMin{"upcZdcTimeMin", -2.f, "Minimum ZDC time for UPC neutron class selection (ns)"};
-  o2::framework::Configurable<float> upcZdcTimeMax{"upcZdcTimeMax", 2.f, "Maximum ZDC time for UPC neutron class selection (ns)"};
+  o2::framework::Configurable<bool> useUpcZdcTimeCut{"useUpcZdcTimeCut", false, "Apply ZDC time selection for UPC neutron class (only relevant for UPC event selection)"};
+  o2::framework::Configurable<float> upcZdcTimeMin{"upcZdcTimeMin", -2.f, "Minimum ZDC time for UPC neutron class selection (ns) (only relevant for UPC event selection)"};
+  o2::framework::Configurable<float> upcZdcTimeMax{"upcZdcTimeMax", 2.f, "Maximum ZDC time for UPC neutron class selection (ns) (only relevant for UPC event selection)"};
 
   //  SG selector
   SGSelector sgSelector;
