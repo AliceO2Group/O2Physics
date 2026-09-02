@@ -972,7 +972,7 @@ class CutVarMinimiser:
             self.n_sets - 0.5,
         )
 
-        for i_bin, (unc_rawy, rawy, unc_eff_prompt, eff_prompt, unc_eff_nonprompt, eff_nonprompt) in enumerate(zip(self.unc_raw_yields, self.raw_yields, self.unc_eff_prompts, self.eff_prompts, self.unc_eff_nonprompts, self.eff_nonprompts)):
+        for i_bin, (unc_rawy, rawy, unc_eff_prompt, eff_prompt, unc_eff_nonprompt, eff_nonprompt) in enumerate(zip(self.unc_raw_yields, self.raw_yields, self.unc_eff_prompt, self.eff_prompt, self.unc_eff_nonprompt, self.eff_nonprompt)):
             hist_raw_yield_rel_unc.SetBinContent(i_bin + 1, unc_rawy / rawy)
             hist_eff_prompt_rel_unc.SetBinContent(i_bin+1, unc_eff_prompt / eff_prompt)
             hist_eff_nonprompt_rel_unc.SetBinContent(i_bin+1, unc_eff_nonprompt / eff_nonprompt)
@@ -986,10 +986,10 @@ class CutVarMinimiser:
             -0.5,
             0.0,
             self.n_sets - 0.5,
-            hist_raw_yield_rel_unc.GetMaximum() * 1.2,
+            max(hist_raw_yield_rel_unc.GetMaximum(), hist_eff_prompt_rel_unc.GetMaximum(), hist_eff_nonprompt_rel_unc.GetMaximum()) * 1.2,
             ";cut set;relative unc.",
         )
-        leg = ROOT.TLegend(0.6, 0.75, 0.8, 0.85)
+        leg = ROOT.TLegend(0.2, 0.75, 0.4, 0.85)
         leg.SetBorderSize(0)
         leg.SetFillStyle(0)
         leg.SetTextSize(0.04)
