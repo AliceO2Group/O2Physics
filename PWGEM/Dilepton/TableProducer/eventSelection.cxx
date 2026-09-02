@@ -37,6 +37,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
+using EventSelectionBits = o2::aod::emevsel::EMEventSelectionBits;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 using MyCollisions_Cent = soa::Join<MyCollisions, aod::Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
@@ -46,6 +47,7 @@ using MyCollisionsMC_Cent = soa::Join<MyCollisionsMC, aod::Mults, aod::CentFT0Ms
 
 struct EMEventSelection {
   Produces<o2::aod::EMEvSels> emevsel;
+  Produces<o2::aod::EMEvSelBits> emevselbits;
 
   // Configurables
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
@@ -73,61 +75,78 @@ struct EMEventSelection {
 
   Configurable<bool> cfgRequireTVXinEMC{"cfgRequireTVXinEMC", false, "require kTVXinEMC (only for EMC analyses)"};
 
+  Configurable<bool> cfgRequireSel8{"cfgRequireSel8", false, "require sel8 condition"};
+
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
+
+  std::vector<uint64_t> vecEvSelBits;
 
   void init(InitContext&)
   {
     rctChecker.init(cfgRCTLabel.value, cfgCheckZDC.value, cfgTreatLimitedAcceptanceAsBad.value);
+    vecEvSelBits.assign(EventSelectionBits::kSize, 0);
   }
 
   template <typename TCollision>
   bool isSelectedEvent(TCollision const& collision)
   {
+    vecEvSelBits[EventSelectionBits::kAll]++;
     if constexpr (std::is_same_v<std::decay_t<TCollision>, MyCollisionsMC::iterator> || std::is_same_v<std::decay_t<TCollision>, MyCollisionsMC_Cent::iterator>) {
       if (!collision.has_mcCollision()) {
         return false;
       }
     }
+    vecEvSelBits[EventSelectionBits::kHasMCColl]++;
 
     if (collision.posZ() < cfgZvtxMin || cfgZvtxMax < collision.posZ()) {
       return false;
     }
+    vecEvSelBits[EventSelectionBits::kGoodZVtx]++;
 
     if (cfgRequireFT0AND && !collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
       return false;
     }
+    vecEvSelBits[EventSelectionBits::kIsFT0AND]++;
 
     if (cfgRequireNoTFB && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
       return false;
     }
+    vecEvSelBits[EventSelectionBits::kNoTFB]++;
 
     if (cfgRequireNoITSROFB && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       return false;
     }
+    vecEvSelBits[EventSelectionBits::kITSROFB]++;
 
     if (cfgRequireNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
+    vecEvSelBits[EventSelectionBits::kNoSameBunchPileUp]++;
 
     if (cfgRequireGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
     }
+    vecEvSelBits[EventSelectionBits::kGoodZVtxFTOPV]++;
 
     if (cfgRequireNoCollInTimeRangeStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return false;
     }
+    vecEvSelBits[EventSelectionBits::kNoCollInTimeRange]++;
 
     if (!(cfgTrackOccupancyMin <= collision.trackOccupancyInTimeRange() && collision.trackOccupancyInTimeRange() < cfgTrackOccupancyMax)) {
       return false;
     }
+    vecEvSelBits[EventSelectionBits::kGoodTrackOccupancy]++;
 
     if (!(cfgFT0COccupancyMin <= collision.ft0cOccupancyInTimeRange() && collision.ft0cOccupancyInTimeRange() < cfgFT0COccupancyMax)) {
       return false;
     }
+    vecEvSelBits[EventSelectionBits::kGoodFT0Occupancy]++;
 
     if (cfgRequireTVXinEMC && !collision.alias_bit(triggerAliases::kTVXinEMC)) {
       return false;
     }
+    vecEvSelBits[EventSelectionBits::kTVXInEMC]++;
 
     if constexpr (std::is_same_v<std::decay_t<TCollision>, MyCollisions_Cent::iterator>) {
       const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
@@ -135,11 +154,18 @@ struct EMEventSelection {
         return false;
       }
     }
+    vecEvSelBits[EventSelectionBits::kGoodCent]++;
 
     if (cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
       // LOGF(info, "rejected by RCT flag");
       return false;
     }
+    vecEvSelBits[EventSelectionBits::kGoodRCT]++;
+
+    if (cfgRequireSel8 && !collision.sel8()) {
+      return false;
+    }
+    vecEvSelBits[EventSelectionBits::kGoodSel8]++;
 
     return true;
   }
@@ -147,9 +173,14 @@ struct EMEventSelection {
   template <typename TCollisions>
   void processEventSelection(TCollisions const& collisions)
   {
+    // reset the event counter to zero for all elements
+    vecEvSelBits.assign(EventSelectionBits::kSize, 0);
+
     for (const auto& collision : collisions) {
       emevsel(isSelectedEvent(collision));
     } // end of collision loop
+    // Write event selection info at the end of DF
+    emevselbits(vecEvSelBits);
   } // end of process
 
   PROCESS_SWITCH_FULL(EMEventSelection, processEventSelection<MyCollisions>, processEventSelection, "event selection", true);

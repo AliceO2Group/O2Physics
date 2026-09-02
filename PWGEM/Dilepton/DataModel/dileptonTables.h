@@ -127,6 +127,28 @@ uint32_t reduceSelectionBit(TBC const& bc)
   }
   return bitMap;
 }
+
+// enum that is used as an index for an event-counter during the DD production.
+// This keeps the DD size minimal as its only filled once per DF
+enum EMEventSelectionBits {
+  kAll = 0, // o2-linter: disable=magic-number (enum)
+  kHasMCColl,
+  kGoodZVtx,
+  kIsFT0AND,
+  kNoTFB,
+  kITSROFB,
+  kNoSameBunchPileUp,
+  kGoodZVtxFTOPV,
+  kNoCollInTimeRange,
+  kGoodTrackOccupancy,
+  kGoodFT0Occupancy,
+  kTVXInEMC,
+  kGoodCent,
+  kGoodRCT,
+  kGoodSel8,
+  kSize
+};
+
 } // namespace emevsel
 
 namespace emevent
@@ -193,18 +215,19 @@ DECLARE_SOA_COLUMN(QyZDCC, qyZDCC, float);   //! Qy in ZDCC (i.e. negative eta)
 DECLARE_SOA_COLUMN(SpherocityPtWeighted, spherocity_ptweighted, float);     //! transverse spherocity
 DECLARE_SOA_COLUMN(SpherocityPtUnWeighted, spherocity_ptunweighted, float); //! transverse spherocity
 DECLARE_SOA_COLUMN(NtrackSpherocity, ntspherocity, int);
-DECLARE_SOA_COLUMN(IsSelected, isSelected, bool);                //! MB event selection info
-DECLARE_SOA_COLUMN(IsEoI, isEoI, bool);                          //! lepton or photon exists in MB event (not for CEFP)
-DECLARE_SOA_COLUMN(PosX, posX, float);                           //! only for treeCreatetorML.cxx
-DECLARE_SOA_COLUMN(PosY, posY, float);                           //! only for treeCreatetorML.cxx
-DECLARE_SOA_COLUMN(PosZint16, posZint16, int16_t);               //! this is only to reduce data size
-DECLARE_SOA_COLUMN(CentFT0Cuint16, centFT0Cuint16, uint16_t);    //! this is only to reduce data size
-DECLARE_SOA_COLUMN(PosZint8, posZint8, int8_t);                  //! this is only to reduce data size
-DECLARE_SOA_COLUMN(CentFT0Cuint8, centFT0Cuint8, uint8_t);       //! this is only to reduce data size
-DECLARE_SOA_COLUMN(CentNTPVuint8, centNTPVuint8, uint8_t);       //! this is only to reduce data size
-DECLARE_SOA_COLUMN(CentNGlobaluint8, centNGlobaluint8, uint8_t); //! this is only to reduce data size
-DECLARE_SOA_COLUMN(CentFT0Muint8, centFT0Muint8, uint8_t);       //! this is only to reduce data size
-DECLARE_SOA_COLUMN(CentFT0Auint8, centFT0Auint8, uint8_t);       //! this is only to reduce data size
+DECLARE_SOA_COLUMN(IsSelected, isSelected, bool);                                //! MB event selection info
+DECLARE_SOA_COLUMN(EventSelectionBit, eventSelectionBit, std::vector<uint64_t>); //! Event selection info stored in binned data for each DF
+DECLARE_SOA_COLUMN(IsEoI, isEoI, bool);                                          //! lepton or photon exists in MB event (not for CEFP)
+DECLARE_SOA_COLUMN(PosX, posX, float);                                           //! only for treeCreatetorML.cxx
+DECLARE_SOA_COLUMN(PosY, posY, float);                                           //! only for treeCreatetorML.cxx
+DECLARE_SOA_COLUMN(PosZint16, posZint16, int16_t);                               //! this is only to reduce data size
+DECLARE_SOA_COLUMN(CentFT0Cuint16, centFT0Cuint16, uint16_t);                    //! this is only to reduce data size
+DECLARE_SOA_COLUMN(PosZint8, posZint8, int8_t);                                  //! this is only to reduce data size
+DECLARE_SOA_COLUMN(CentFT0Cuint8, centFT0Cuint8, uint8_t);                       //! this is only to reduce data size
+DECLARE_SOA_COLUMN(CentNTPVuint8, centNTPVuint8, uint8_t);                       //! this is only to reduce data size
+DECLARE_SOA_COLUMN(CentNGlobaluint8, centNGlobaluint8, uint8_t);                 //! this is only to reduce data size
+DECLARE_SOA_COLUMN(CentFT0Muint8, centFT0Muint8, uint8_t);                       //! this is only to reduce data size
+DECLARE_SOA_COLUMN(CentFT0Auint8, centFT0Auint8, uint8_t);                       //! this is only to reduce data size
 // DECLARE_SOA_COLUMN(CentFT0Cuint8, centFT0Cuint8, uint8_t);       //! this is only to reduce data size
 // DECLARE_SOA_COLUMN(CentNTPVuint8, centNTPVuint8, uint8_t);       //! this is only to reduce data size
 // DECLARE_SOA_COLUMN(CentNGlobaluint8, centNGlobaluint8, uint8_t); //! this is only to reduce data size
@@ -434,6 +457,10 @@ using EMEventNee = EMEventsNee::iterator;
 DECLARE_SOA_TABLE(EMEvSels, "AOD", "EMEVSEL", //! joinable to o2::aod::Collisions
                   emevent::IsSelected);
 using EMEvSel = EMEvSels::iterator;
+
+DECLARE_SOA_TABLE(EMEvSelBits, "AOD", "EMEVSELBITS", //! produces binned data that can be loaded in analysis task for event counting
+                  emevent::EventSelectionBit);
+using EMEvSelBit = EMEvSelBits::iterator;
 
 DECLARE_SOA_TABLE(EMEoIs, "AOD", "EMEOI", //! joinable to o2::aod::Collisions in createEMEventDilepton.cxx
                   emevent::IsEoI);
