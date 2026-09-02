@@ -62,14 +62,16 @@
         "frac": false,
         "eff": false,
         "cov": false,
-        "unc": true
+        "unc": true,
+        "relunc": true
     },
     "is_save_canvas_as_macro": {
         "rawy": false,
         "frac": false,
         "eff": false,
         "cov": false,
-        "unc": false
+        "unc": false,
+        "relunc": false
     },
     "is_save_to_root_file": {
         "canvas": true,
