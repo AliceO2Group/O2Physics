@@ -655,7 +655,7 @@ struct UpcCandProducer {
   }
 
   template <int32_t tracksSwitch, typename TAmbTrack>
-  int64_t getAmbTrackId(TAmbTrack ambTrack)
+  int64_t getAmbTrackId(const TAmbTrack& ambTrack)
   {
     int64_t trkId = -1;
     if constexpr (tracksSwitch == 0) { // central barrel
@@ -671,7 +671,7 @@ struct UpcCandProducer {
   template <int32_t tracksSwitch, typename TBCs, typename TAmbTracks>
   void collectAmbTrackBCs(std::unordered_map<int64_t, uint64_t>& ambTrIds,
                           TBCs const& bcs,
-                          TAmbTracks ambTracks)
+                          const TAmbTracks& ambTracks)
   {
     for (const auto& ambTrk : ambTracks) {
       auto trkId = getAmbTrackId<tracksSwitch>(ambTrk);
