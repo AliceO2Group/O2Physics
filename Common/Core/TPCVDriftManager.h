@@ -46,7 +46,7 @@ class TPCVDriftManager
       return;
     }
 
-    // Update Obj
+    // Update Object
     mVD = mCCDB->getForTimeStamp<o2::tpc::VDriftCorrFact>("TPC/Calib/VDriftTgl", timestamp);
     if (mVD == nullptr || mVD->firstTime < 0 || mVD->lastTime < 0) {
       LOGP(error, "Got invalid VDriftCorrFact for {}", timestamp);
