@@ -438,6 +438,7 @@ struct PCMQC {
       fRegistry.add("Generated/hsConvPoint", "photon conversion point;r_{xy} (cm);#varphi (rad.);#eta;", kTHnSparseF, {{100, 0.0f, 100}, {90, 0, o2::constants::math::TwoPI}, {80, -2, +2}}, true);
       fRegistry.add("Generated/hR_ConversionPhoton_wideR", "converted photon R_{xy} up to the EMCal, before fiducial cuts;R_{xy} (cm);N_{#gamma}", kTH1F, {{250, 0.0f, 500.0f}}, true);
       fRegistry.add("Generated/hRZ_wideR", "conversion point in RZ up to the EMCal, before fiducial cuts;V_{z} (cm);R_{xy} (cm)", kTH2F, {{200, -400.0f, 400.0f}, {250, 0.0f, 500.0f}}, true);
+      fRegistry.add("Generated/hsRZPhi_wideR", "conversion point up to the EMCal, before fiducial cuts;V_{z} (cm);#varphi (rad.);R_{xy} (cm)", kTHnSparseF, {{200, -400.0f, 400.0f}, {360, 0.0f, o2::constants::math::TwoPI}, {250, 0.0f, 500.0f}}, true);
       if (mcAnalysisModeSettings.cfgDoDetailedResolution) {
         fRegistry.add("Generated/hPtEtaPhi", "Photon pt vs eta, and phi;p_{T, gen} (GeV/c);#eta;#phi", kTHnSparseF, {{200, 0., 20.}, {18, -0.9, 0.9}, {36, 0, o2::constants::math::TwoPI}}, false);
       }
@@ -1171,7 +1172,7 @@ struct PCMQC {
 
         fRegistry.fill(HIST("Generated/hR_ConversionPhoton_wideR"), rxy_gen_e);
         fRegistry.fill(HIST("Generated/hRZ_wideR"), daughter.vz(), rxy_gen_e);
-
+        fRegistry.fill(HIST("Generated/hsRZPhi_wideR"), daughter.vz(), phi_cp, rxy_gen_e);
         if (rxy_gen_e < std::fabs(daughter.vz()) * std::tan(2 * std::atan(std::exp(-v0cuts.cfgMaxEtaV0))) - genSettingsGroup.cfgMarginZMC) {
           continue;
         }
