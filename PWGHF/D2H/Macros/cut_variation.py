@@ -920,3 +920,97 @@ class CutVarMinimiser:
         }
 
         return canvas, histos, leg
+
+
+    # pylint: disable=no-member
+    def plot_relative_uncertainties(self, suffix="", title=""):
+        """
+        Helper function to plot uncertainties as a function of cut set
+
+        Parameters
+        -----------------------------------------------------
+        - suffix: str
+            suffix to be added in the name of the output objects
+        - title: str
+            title to be written at the top margin of the output objects
+
+        Returns
+        -----------------------------------------------------
+        - canvas: ROOT.TCanvas
+            canvas with plot
+        - histos: dict
+            dictionary of ROOT.TH1F with relative uncertainties distributions
+            for raw yield and efficiencies
+        - leg: ROOT.TLegend
+            needed otherwise it is destroyed
+        """
+        suffix = suffix.replace(".", "_")
+
+        set_global_style(padleftmargin=0.16, padbottommargin=0.12, padtopmargin=0.075, titleoffsety=1.6)
+
+        hist_raw_yield_rel_unc = ROOT.TH1F(
+            f"hRawYieldRelUncVsCut{suffix}",
+            ";cut set;relative unc.",
+            self.n_sets,
+            -0.5,
+            self.n_sets - 0.5,
+        )
+
+        hist_eff_prompt_rel_unc = ROOT.TH1F(
+            f"hEffPromptRelUncVsCut{suffix}",
+            ";cut set;relative unc.",
+            self.n_sets,
+            -0.5,
+            self.n_sets - 0.5,
+        )
+
+        hist_eff_nonprompt_rel_unc = ROOT.TH1F(
+            f"hEffNonPromptRelUncVsCut{suffix}",
+            ";cut set;relative unc.",
+            self.n_sets,
+            -0.5,
+            self.n_sets - 0.5,
+        )
+
+        for i_bin, (unc_rawy, rawy, unc_eff_prompt, eff_prompt, unc_eff_nonprompt, eff_nonprompt) in enumerate(zip(self.unc_raw_yields, self.raw_yields, self.unc_eff_prompts, self.eff_prompts, self.unc_eff_nonprompts, self.eff_nonprompts)):
+            hist_raw_yield_rel_unc.SetBinContent(i_bin + 1, unc_rawy / rawy)
+            hist_eff_prompt_rel_unc.SetBinContent(i_bin+1, unc_eff_prompt / eff_prompt)
+            hist_eff_nonprompt_rel_unc.SetBinContent(i_bin+1, unc_eff_nonprompt / eff_nonprompt)
+
+        set_object_style(hist_raw_yield_rel_unc, color=ROOT.kBlack, fillstyle=0)
+        set_object_style(hist_eff_prompt_rel_unc, color=ROOT.kRed + 1, fillstyle=0)
+        set_object_style(hist_eff_nonprompt_rel_unc, color=ROOT.kAzure + 4, fillstyle=0)
+
+        canvas = ROOT.TCanvas(f"cRelUncVsCut{suffix}", "", 500, 500)
+        canvas.DrawFrame(
+            -0.5,
+            0.0,
+            self.n_sets - 0.5,
+            hist_raw_yield_rel_unc.GetMaximum() * 1.2,
+            ";cut set;relative unc.",
+        )
+        leg = ROOT.TLegend(0.6, 0.75, 0.8, 0.85)
+        leg.SetBorderSize(0)
+        leg.SetFillStyle(0)
+        leg.SetTextSize(0.04)
+        leg.AddEntry(hist_raw_yield_rel_unc, "raw yield", "l")
+        leg.AddEntry(hist_eff_prompt_rel_unc, "efficiency prompt", "l")
+        leg.AddEntry(hist_eff_nonprompt_rel_unc, "efficiency nonprompt", "l")
+        leg.Draw()
+        hist_raw_yield_rel_unc.Draw("histsame")
+        hist_eff_prompt_rel_unc.Draw("histsame")
+        hist_eff_nonprompt_rel_unc.Draw("histsame")
+        tex = ROOT.TLatex()
+        tex.SetTextSize(0.04)
+        tex.SetTextAlign(31)
+        tex.DrawLatexNDC(0.95, 0.95, title)
+        canvas.Modified()
+        canvas.Update()
+
+        histos = {
+            "rawy": hist_raw_yield_rel_unc,
+            "prompt": hist_eff_prompt_rel_unc,
+            "nonprompt": hist_eff_nonprompt_rel_unc
+        }
+
+        return canvas, histos, leg
