@@ -203,20 +203,21 @@ struct RecoilJets {
 
     ConfigurableAxis axisPtTrackEff{"axisPtTrackEff", {VARIABLE_WIDTH, 0.0, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 12.0, 15.0, 20.0, 25.0, 30.0, 40.0, 50.0, 70.0, 100.0}, "#it{p}_{T} (GeV/#it{c})"};
 
-    ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, -5.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 100.0, 105.0}, "Centrality (%)"};
+    ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, -5.0, 0.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 100.0, 105.0}, "Centrality (%)"};
   } hist;
 
   // ---------- Rho-shift settings ----------
   struct RhoShift : ConfigurableGroup {
     std::string prefix = "rhoShiftTTRef";
 
-    Configurable<float> mb{"mb", 0.283998f, "Rho shift for MB"};
-    Configurable<float> ea0To20{"ea0To20", 0.199249f, "Rho shift for EA 0-20%"};
-    Configurable<float> ea0To10{"ea0To10", 0.186661f, "Rho shift for EA 0-10%"};
-    Configurable<float> ea20To40{"ea20To40", 0.137945f, "Rho shift for EA 20-40%"};
-    Configurable<float> ea60To80{"ea60To80", 0.0962535f, "Rho shift for EA 60-80%"};
-    Configurable<float> ea50To100{"ea50To100", 0.106919f, "Rho shift for EA 50-100%"};
-    Configurable<float> ea80To100{"ea80To100", 0.0871301f, "Rho shift for EA 80-100%"};
+    // Values from train 747883
+    Configurable<float> mb{"mb", 0.286292f, "Rho shift for MB"};
+    Configurable<float> ea0To20{"ea0To20", 0.189813f, "Rho shift for EA 0-20%"};
+    Configurable<float> ea0To10{"ea0To10", 0.180575f, "Rho shift for EA 0-10%"};
+    Configurable<float> ea20To40{"ea20To40", 0.158425f, "Rho shift for EA 20-40%"};
+    Configurable<float> ea60To80{"ea60To80", 0.0986109f, "Rho shift for EA 60-80%"};
+    Configurable<float> ea50To100{"ea50To100", 0.11872f, "Rho shift for EA 50-100%"};
+    Configurable<float> ea80To100{"ea80To100", 0.098644f, "Rho shift for EA 80-100%"};
   } cfgRhoShift;
 
   // Auxiliary variables
@@ -575,6 +576,10 @@ struct RecoilJets {
                     Form("Correlation of %s vs. FT0M^{*}", centAxis.label),
                     kTH2F, {{centAxis.axis, centAxis.axisName}, scaledFT0M}, hist.sumw2);
       }
+
+      spectra.add("hCentFT0C_ScaledFT0C",
+                  "Correlation of CentFT0C vs. scaled FT0C",
+                  kTH2F, {{hist.axisCentrality, nameCentralityAxis}, scaledFT0C}, hist.sumw2);
 
       // Register TTRef recoil spectra with rho-shift correction.
       for (const auto& ea : eaRhoShifts) {
@@ -1359,6 +1364,9 @@ struct RecoilJets {
     // Correlation: centrality vs FT0M*
     spectra.fill(HIST("hCentFT0C_FT0MStar"), centFT0C, scaledFT0M, weight);
     spectra.fill(HIST("hCentFT0M_FT0MStar"), centFT0M, scaledFT0M, weight);
+
+    // Correlation: centrality FT0C vs scaled FT0C
+    spectra.fill(HIST("hCentFT0C_ScaledFT0C"), centFT0C, ft0Metrics.multFT0C, weight);
 
     // Z vertex position vs EA / centrality
     spectra.fill(HIST("hScaledFT0C_vertexZ"), scaledFT0C, vertexZ, weight);
