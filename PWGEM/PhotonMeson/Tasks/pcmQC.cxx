@@ -267,11 +267,11 @@ struct PCMQC {
     }
 
     // In case override, don't proceed, please - no CCDB access required
-    if (d_bz_input > -990) {
+    if (d_bz_input > -990) { // o2-linter: disable=magic-number (dummy value to indicate override)
       d_bz = d_bz_input;
       o2::parameters::GRPMagField grpmag;
-      if (std::fabs(d_bz) > 1e-5) {
-        grpmag.setL3Current(30000.f / (d_bz / 5.0f));
+      if (std::fabs(d_bz) > 1e-5) {                   // o2-linter: disable=magic-number (dummy value to indicate override)
+        grpmag.setL3Current(30000.f / (d_bz / 5.0f)); // o2-linter: disable=magic-number (dummy value to indicate override)
       }
       mRunNumber = collision.runNumber();
       return;
@@ -353,11 +353,11 @@ struct PCMQC {
     fRegistry.add("V0/hNgamma", "Number of #gamma candidates per collision", kTH1F, {{101, -0.5f, 100.5f}});
 
     if (mlcuts.cfgApplyPCMMl) {
-      if (mlcuts.cfgNClassesPCMMl == 2) {
+      if (mlcuts.cfgNClassesPCMMl == 2) { // o2-linter: disable=magic-number (BDT class)
         fRegistry.add("V0/hBDTBackgroundScoreVsPt", "BDT background score vs pT; pT (GeV/c); BDT background score", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}});
         fRegistry.add("V0/hBDTSignalScoreVsPt", "BDT signal score vs pT; pT (GeV/c); BDT signal score", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}});
         fRegistry.add("V0/hPhiVPsi", "#varphi vs. #psi angle;#psi (rad.); #varphi (rad.)", kTH2F, {{200, -o2::constants::math::PI, o2::constants::math::PI}, {200, 0, o2::constants::math::TwoPI}}, false);
-      } else if (mlcuts.cfgNClassesPCMMl == 3) {
+      } else if (mlcuts.cfgNClassesPCMMl == 3) { // o2-linter: disable=magic-number (BDT class)
         fRegistry.add("V0/hBDTBackgroundScoreVsPt", "BDT background score vs pT; pT (GeV/c); BDT background score", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}});
         fRegistry.add("V0/hBDTPrimaryPhotonScoreVsPt", "BDT primary photon score vs pT; pT (GeV/c); BDT primary photon score", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}});
         fRegistry.add("V0/hBDTSecondaryPhotonScoreVsPt", "BDT secondary photon score vs pT; pT (GeV/c); BDT secondary photon score", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}});
@@ -412,16 +412,16 @@ struct PCMQC {
     if (doprocessGen) {
       std::vector<double> ptbins;
       ptbins.reserve(72);
-      for (int i = 0; i < 2; i++) {
+      for (int i = 0; i < 2; i++) {                // o2-linter: disable=magic-number (binning)
         ptbins.emplace_back(0.05 * (i - 0) + 0.0); // from 0 to 0.05 GeV/c, every 0.05 GeV/c
       }
-      for (int i = 2; i < 51; i++) {
+      for (int i = 2; i < 51; i++) {              // o2-linter: disable=magic-number (binning)
         ptbins.emplace_back(0.1 * (i - 2) + 0.1); // from 0.1 to 4.9 GeV/c, every 0.1 GeV/c
       }
-      for (int i = 51; i < 61; i++) {
+      for (int i = 51; i < 61; i++) {              // o2-linter: disable=magic-number (binning)
         ptbins.emplace_back(0.5 * (i - 51) + 5.0); // from 5 to 9.5 GeV/c, every 0.5 GeV/c
       }
-      for (int i = 61; i < 72; i++) {
+      for (int i = 61; i < 72; i++) {               // o2-linter: disable=magic-number (binning)
         ptbins.emplace_back(1.0 * (i - 61) + 10.0); // from 10 to 20 GeV/c, every 1 GeV/c
       }
       const AxisSpec axisPtGen{ptbins, "p_{T,#gamma} (GeV/c)"};
@@ -487,10 +487,10 @@ struct PCMQC {
         fRegistry.add("V0/primary/hPtEtaPhi", "pt, eta, and phi;p_{T} (GeV/c);#eta;#phi", kTHnSparseF, {{200, 0., 20.}, {18, -0.9, 0.9}, {36, 0, o2::constants::math::TwoPI}}, false);
       }
       if (mlcuts.cfgApplyPCMMl) {
-        if (mlcuts.cfgNClassesPCMMl == 2) {
+        if (mlcuts.cfgNClassesPCMMl == 2) { // o2-linter: disable=magic-number (BDT group)
           fRegistry.add("V0/primary/hBDTBackgroundScoreVsPt", "BDT background score vs pT; pT (GeV/c); BDT background score", {HistType::kTH2F, {{200, 0.0f, 20.0f}, {100, 0.0f, 1.0f}}});
           fRegistry.add("V0/primary/hBDTSignalScoreVsPt", "BDT signal score vs pT; pT (GeV/c); BDT signal score", {HistType::kTH2F, {{200, 0.0f, 20.0f}, {100, 0.0f, 1.0f}}});
-        } else if (mlcuts.cfgNClassesPCMMl == 3) {
+        } else if (mlcuts.cfgNClassesPCMMl == 3) { // o2-linter: disable=magic-number (BDT group)
           fRegistry.add("V0/primary/hBDTBackgroundScoreVsPt", "BDT background score vs pT; pT (GeV/c); BDT background score", {HistType::kTH2F, {{200, 0.0f, 20.0f}, {100, 0.0f, 1.0f}}});
           fRegistry.add("V0/primary/hBDTPrimaryPhotonScoreVsPt", "BDT primary photon score vs pT; pT (GeV/c); BDT primary photon score", {HistType::kTH2F, {{200, 0.0f, 20.0f}, {100, 0.0f, 1.0f}}});
           fRegistry.add("V0/primary/hBDTSecondaryPhotonScoreVsPt", "BDT secondary photon score vs pT; pT (GeV/c); BDT secondary photon score", {HistType::kTH2F, {{200, 0.0f, 20.0f}, {100, 0.0f, 1.0f}}});
@@ -673,7 +673,7 @@ struct PCMQC {
     if (collision.sel8()) {
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 8.0);
     }
-    if (std::fabs(collision.posZ()) < 10.0) {
+    if (std::fabs(collision.posZ()) < 10.0) { // o2-linter: disable=magic-number (vertex cut)
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 9.0);
     }
     fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hZvtx"), collision.posZ());
@@ -731,10 +731,10 @@ struct PCMQC {
         phiv = v0.phiv();
       }
       fRegistry.fill(HIST("V0/hPhiVPsi"), psipair, phiv);
-      if (mlcuts.cfgNClassesPCMMl == 2 && bdtValue.size() == 2) {
+      if (mlcuts.cfgNClassesPCMMl == 2 && bdtValue.size() == 2) { // o2-linter: disable=magic-number (BDT)
         fRegistry.fill(HIST("V0/hBDTBackgroundScoreVsPt"), v0.pt(), bdtValue[0]);
         fRegistry.fill(HIST("V0/hBDTSignalScoreVsPt"), v0.pt(), bdtValue[1]);
-      } else if (mlcuts.cfgNClassesPCMMl == 3 && bdtValue.size() == 3) {
+      } else if (mlcuts.cfgNClassesPCMMl == 3 && bdtValue.size() == 3) { // o2-linter: disable=magic-number (BDT)
         fRegistry.fill(HIST("V0/hBDTBackgroundScoreVsPt"), v0.pt(), bdtValue[0]);
         fRegistry.fill(HIST("V0/hBDTPrimaryPhotonScoreVsPt"), v0.pt(), bdtValue[1]);
         fRegistry.fill(HIST("V0/hBDTSecondaryPhotonScoreVsPt"), v0.pt(), bdtValue[2]);
@@ -930,14 +930,14 @@ struct PCMQC {
         phiv = v0.phiv();
       }
       fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hPhiVPsi"), psipair, phiv);
-      if (mlcuts.cfgNClassesPCMMl == 2 && bdtValue.size() == 2) {
+      if (mlcuts.cfgNClassesPCMMl == 2 && bdtValue.size() == 2) { // o2-linter: disable=magic-number (BDT)
         fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hBDTBackgroundScoreVsPt"), v0.pt(), bdtValue[0]);
         fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hBDTSignalScoreVsPt"), v0.pt(), bdtValue[1]);
-      } else if (mlcuts.cfgNClassesPCMMl == 3 && bdtValue.size() == 3) {
+      } else if (mlcuts.cfgNClassesPCMMl == 3 && bdtValue.size() == 3) { // o2-linter: disable=magic-number (BDT)
         fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hBDTBackgroundScoreVsPt"), v0.pt(), bdtValue[0]);
         fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hBDTPrimaryPhotonScoreVsPt"), v0.pt(), bdtValue[1]);
         fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hBDTSecondaryPhotonScoreVsPt"), v0.pt(), bdtValue[2]);
-      } else if (bdtValue.size() == 1) {
+      } else if (bdtValue.size() == 1) { // o2-linter: disable=magic-number (BDT)
         fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hBDTScoreVsPt"), v0.pt(), bdtValue[0]);
       }
     }
@@ -1280,7 +1280,7 @@ struct PCMQC {
           continue;
         }
         int idPos = -1, idNeg = -1;
-        for (const int daughterId : mctrack.daughtersIds()) {
+        for (const auto& daughterId : mctrack.daughtersIds()) {
           if (daughterId < 0 || daughterId >= static_cast<int>(mcparticles.size())) {
             continue;
           }
@@ -1346,7 +1346,7 @@ struct PCMQC {
         }
 
         if (recoQASettingsGroup.cfgDoDetailedTrackQA) {
-          for (const int legMcId : {idPos, idNeg}) {
+          for (const auto& legMcId : {idPos, idNeg}) {
             if (countIn(nTracksOfMcId, legMcId) == 0) {
               continue;
             }
