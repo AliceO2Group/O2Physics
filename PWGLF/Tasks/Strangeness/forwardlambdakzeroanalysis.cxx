@@ -35,18 +35,18 @@
 #include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/FwdDCAFitterN.h>
 #include <DataFormatsParameters/GRPMagField.h>
-#include <DetectorsBase/MatLayerCylSet.h>
-#include <DetectorsBase/Propagator.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -59,14 +59,14 @@
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/TrackFwd.h>
 
-#include <Math/MatrixRepresentationsStatic.h>
-#include <Math/SMatrix.h>
 #include <Math/SVector.h>
+#include <Math/SMatrix.h>
+#include <Math/MatrixRepresentationsStatic.h>
 #include <TH1.h>
 #include <TH2.h>
-#include <TObject.h>
 #include <TPDGCode.h>
 #include <TVector3.h>
+#include <TObject.h>
 
 #include <array>
 #include <cmath>
@@ -123,6 +123,9 @@ struct forwardlambdakzeroanalysis {
   // for MC
   Configurable<bool> doTreatPiToMuon{"doTreatPiToMuon", false, "Take pi decay into muon into account in MC"};
   Configurable<bool> doMCAssociation{"doMCAssociation", true, "if MC, do MC association"};
+
+  // propagation option
+  Configurable<bool> useNewPropagationToVtx{"useNewPropagationToVtx", true, "Use propagation to vtx based on propagateToDCAhelix (most recent) instead of the one based on propagateToVtxhelixWithMCS"};
 
   struct : ConfigurableGroup {
     std::string prefix = "eventSelections"; // JSON group name
@@ -186,6 +189,7 @@ struct forwardlambdakzeroanalysis {
     Configurable<float> minPseudolifetime{"minPseudolifetime", -1e+09, "minimum V0 pseudo-proper lifetime (cm)"};
     Configurable<float> maxPseudolifetime{"maxPseudolifetime", 1e+09, "maximum V0 pseudo-proper lifetime (cm)"};
     Configurable<LabeledArray<float>> lifetimeCut{"lifetimeCut", {DefaultLifetimeCuts[0], 3, {"lifetimecutD0", "lifetimecutLambda", "lifetimecutK0S"}}, "lifetimeCut"};
+    Configurable<bool> rejectFailedPropagation{"rejectFailedPropagation", true, "Reject tracks which could not be propagated to the primary vertex (DCA = DefaultDCA = 999.)"};
 
     // invariant mass selection
     Configurable<float> compMassRejectionK0Short{"compMassRejectionK0Short", -1, "Competing K^{0}_{S} mass rejection (GeV/#it{c}^{2})"};
@@ -226,7 +230,7 @@ struct forwardlambdakzeroanalysis {
   } ccdbConfigurations;
 
   o2::ccdb::CcdbApi ccdbApi;
-  Service<o2::ccdb::BasicCCDBManager> ccdb{};
+  Service<o2::ccdb::BasicCCDBManager> ccdb {};
   ctpRateFetcher rateFetcher;
   int mRunNumber = 0;
   float magField = 0.;
@@ -1214,17 +1218,21 @@ struct forwardlambdakzeroanalysis {
       BITSET(bitMap, selZmax);
     }
     // DCA proton and pion to PV for Lambda and AntiLambda decay hypotheses
-    if (std::fabs(v0.dcaPosToPVxy) > v0Selections.dcaPosToPVxy) {
+    if ((!v0Selections.rejectFailedPropagation || std::fabs(v0.dcaPosToPVxy) < o2::track::DefaultDCA) &&  
+        std::fabs(v0.dcaPosToPVxy) > v0Selections.dcaPosToPVxy) {
       BITSET(bitMap, selDCAPosToPVxy);
     }
-    if (std::fabs(v0.dcaNegToPVxy) > v0Selections.dcaNegToPVxy) {
+    if ((!v0Selections.rejectFailedPropagation || std::fabs(v0.dcaNegToPVxy) < o2::track::DefaultDCA) &&  
+        std::fabs(v0.dcaNegToPVxy) > v0Selections.dcaNegToPVxy) {
       BITSET(bitMap, selDCANegToPVxy);
     }
     // DCA proton and pion to PV for Lambda and AntiLambda decay hypotheses
-    if (std::fabs(v0.dcaPosToPVz) > v0Selections.dcaPosToPVz) {
+    if ((!v0Selections.rejectFailedPropagation || std::fabs(v0.dcaPosToPVz) < o2::track::DefaultDCA) &&  
+        std::fabs(v0.dcaPosToPVz) > v0Selections.dcaPosToPVz) {
       BITSET(bitMap, selDCAPosToPVz);
     }
-    if (std::fabs(v0.dcaNegToPVz) > v0Selections.dcaNegToPVz) {
+    if ((!v0Selections.rejectFailedPropagation || std::fabs(v0.dcaNegToPVz) < o2::track::DefaultDCA) &&  
+        std::fabs(v0.dcaNegToPVz) > v0Selections.dcaNegToPVz) {
       BITSET(bitMap, selDCANegToPVz);
     }
     // V0 cosine of pointing angle
@@ -1453,18 +1461,18 @@ struct forwardlambdakzeroanalysis {
       histos.fill(HIST("hPositiveMFTchi2"), v0.posChi2);
       histos.fill(HIST("hNegativeMFTchi2"), v0.negChi2);
       if (doprocessMonteCarlo) {
-        histos.fill(HIST("hPositivePtResolution"), v0.positivePtMc(), (v0.positivePtMc() - v0.positivePt()) / v0.positivePtMc());
-        histos.fill(HIST("hNegativePtResolution"), v0.negativePtMc(), (v0.negativePtMc() - v0.negativePt()) / v0.negativePtMc());
-        histos.fill(HIST("hPositivePzResolution"), v0.positivePzMc(), (v0.positivePzMc() - v0.positivePz()) / v0.positivePzMc());
-        histos.fill(HIST("hNegativePzResolution"), v0.negativePzMc(), (v0.negativePzMc() - v0.negativePz()) / v0.negativePzMc());
+        histos.fill(HIST("hPositivePtResolution"), v0.positivePtMc(), (v0.positivePtMc() - v0.positivePt())/v0.positivePtMc());
+        histos.fill(HIST("hNegativePtResolution"), v0.negativePtMc(), (v0.negativePtMc() - v0.negativePt())/v0.negativePtMc());
+        histos.fill(HIST("hPositivePzResolution"), v0.positivePzMc(), (v0.positivePzMc() - v0.positivePz())/v0.positivePzMc());
+        histos.fill(HIST("hNegativePzResolution"), v0.negativePzMc(), (v0.negativePzMc() - v0.negativePz())/v0.negativePzMc());
 
         histos.fill(HIST("hV0XDiff"), v0.xMc, (v0.xMc - v0.X));
         histos.fill(HIST("hV0YDiff"), v0.yMc, (v0.yMc - v0.Y));
         histos.fill(HIST("hV0ZDiff"), v0.zMc, (v0.zMc - v0.Z));
-        histos.fill(HIST("hV0RadiusDiff"), v0.RadiusMc, (v0.RadiusMc - v0.Radius) / v0.RadiusMc);
-        histos.fill(HIST("hV0DistZDiff"), v0.ZdistMc, (v0.ZdistMc - v0.Zdist) / v0.ZdistMc);
-        histos.fill(HIST("hV0PtResolution"), v0.pTMc, (v0.pTMc - v0.pT) / v0.pTMc);
-        histos.fill(HIST("hV0PzResolution"), v0.pZMc, (v0.pZMc - v0.pZ) / v0.pZMc);
+        histos.fill(HIST("hV0RadiusDiff"), v0.RadiusMc, (v0.RadiusMc - v0.Radius)/v0.RadiusMc);
+        histos.fill(HIST("hV0DistZDiff"), v0.ZdistMc, (v0.ZdistMc - v0.Zdist)/v0.ZdistMc);
+        histos.fill(HIST("hV0PtResolution"), v0.pTMc, (v0.pTMc - v0.pT)/v0.pTMc);
+        histos.fill(HIST("hV0PzResolution"), v0.pZMc, (v0.pZMc - v0.pZ)/v0.pZMc);
       }
     }
 
@@ -1530,18 +1538,18 @@ struct forwardlambdakzeroanalysis {
         histos.fill(HIST("K0Short/hPositiveMFTchi2"), v0.posChi2);
         histos.fill(HIST("K0Short/hNegativeMFTchi2"), v0.negChi2);
         if (doprocessMonteCarlo) {
-          histos.fill(HIST("K0Short/hPositivePtResolution"), v0.positivePtMc(), (v0.positivePtMc() - v0.positivePt()) / v0.positivePtMc());
-          histos.fill(HIST("K0Short/hNegativePtResolution"), v0.negativePtMc(), (v0.negativePtMc() - v0.negativePt()) / v0.negativePtMc());
-          histos.fill(HIST("K0Short/hPositivePzResolution"), v0.positivePzMc(), (v0.positivePzMc() - v0.positivePz()) / v0.positivePzMc());
-          histos.fill(HIST("K0Short/hNegativePzResolution"), v0.negativePzMc(), (v0.negativePzMc() - v0.negativePz()) / v0.negativePzMc());
+          histos.fill(HIST("K0Short/hPositivePtResolution"), v0.positivePtMc(), (v0.positivePtMc() - v0.positivePt())/v0.positivePtMc());
+          histos.fill(HIST("K0Short/hNegativePtResolution"), v0.negativePtMc(), (v0.negativePtMc() - v0.negativePt())/v0.negativePtMc());
+          histos.fill(HIST("K0Short/hPositivePzResolution"), v0.positivePzMc(), (v0.positivePzMc() - v0.positivePz())/v0.positivePzMc());
+          histos.fill(HIST("K0Short/hNegativePzResolution"), v0.negativePzMc(), (v0.negativePzMc() - v0.negativePz())/v0.negativePzMc());
 
           histos.fill(HIST("K0Short/hV0XDiff"), v0.xMc, (v0.xMc - v0.X));
           histos.fill(HIST("K0Short/hV0YDiff"), v0.yMc, (v0.yMc - v0.Y));
           histos.fill(HIST("K0Short/hV0ZDiff"), v0.zMc, (v0.zMc - v0.Z));
-          histos.fill(HIST("K0Short/hV0RadiusDiff"), v0.RadiusMc, (v0.RadiusMc - v0.Radius) / v0.RadiusMc);
-          histos.fill(HIST("K0Short/hV0DistZDiff"), v0.ZdistMc, (v0.ZdistMc - v0.Zdist) / v0.ZdistMc);
-          histos.fill(HIST("K0Short/hV0PtResolution"), v0.pTMc, (v0.pTMc - v0.pT) / v0.pTMc);
-          histos.fill(HIST("K0Short/hV0PzResolution"), v0.pZMc, (v0.pZMc - v0.pZ) / v0.pZMc);
+          histos.fill(HIST("K0Short/hV0RadiusDiff"), v0.RadiusMc, (v0.RadiusMc - v0.Radius)/v0.RadiusMc);
+          histos.fill(HIST("K0Short/hV0DistZDiff"), v0.ZdistMc, (v0.ZdistMc - v0.Zdist)/v0.ZdistMc);
+          histos.fill(HIST("K0Short/hV0PtResolution"), v0.pTMc, (v0.pTMc - v0.pT)/v0.pTMc);
+          histos.fill(HIST("K0Short/hV0PzResolution"), v0.pZMc, (v0.pZMc - v0.pZ)/v0.pZMc);
         }
       }
       nK0Shorts++;
@@ -1596,18 +1604,18 @@ struct forwardlambdakzeroanalysis {
         histos.fill(HIST("Lambda/hPositiveMFTchi2"), v0.posChi2);
         histos.fill(HIST("Lambda/hNegativeMFTchi2"), v0.negChi2);
         if (doprocessMonteCarlo) {
-          histos.fill(HIST("Lambda/hPositivePtResolution"), v0.positivePtMc(), (v0.positivePtMc() - v0.positivePt()) / v0.positivePtMc());
-          histos.fill(HIST("Lambda/hNegativePtResolution"), v0.negativePtMc(), (v0.negativePtMc() - v0.negativePt()) / v0.negativePtMc());
-          histos.fill(HIST("Lambda/hPositivePzResolution"), v0.positivePzMc(), (v0.positivePzMc() - v0.positivePz()) / v0.positivePzMc());
-          histos.fill(HIST("Lambda/hNegativePzResolution"), v0.negativePzMc(), (v0.negativePzMc() - v0.negativePz()) / v0.negativePzMc());
+          histos.fill(HIST("Lambda/hPositivePtResolution"), v0.positivePtMc(), (v0.positivePtMc() - v0.positivePt())/v0.positivePtMc());
+          histos.fill(HIST("Lambda/hNegativePtResolution"), v0.negativePtMc(), (v0.negativePtMc() - v0.negativePt())/v0.negativePtMc());
+          histos.fill(HIST("Lambda/hPositivePzResolution"), v0.positivePzMc(), (v0.positivePzMc() - v0.positivePz())/v0.positivePzMc());
+          histos.fill(HIST("Lambda/hNegativePzResolution"), v0.negativePzMc(), (v0.negativePzMc() - v0.negativePz())/v0.negativePzMc());
 
           histos.fill(HIST("Lambda/hV0XDiff"), v0.xMc, (v0.xMc - v0.X));
           histos.fill(HIST("Lambda/hV0YDiff"), v0.yMc, (v0.yMc - v0.Y));
           histos.fill(HIST("Lambda/hV0ZDiff"), v0.zMc, (v0.zMc - v0.Z));
-          histos.fill(HIST("Lambda/hV0RadiusDiff"), v0.RadiusMc, (v0.RadiusMc - v0.Radius) / v0.RadiusMc);
-          histos.fill(HIST("Lambda/hV0DistZDiff"), v0.ZdistMc, (v0.ZdistMc - v0.Zdist) / v0.ZdistMc);
-          histos.fill(HIST("Lambda/hV0PtResolution"), v0.pTMc, (v0.pTMc - v0.pT) / v0.pTMc);
-          histos.fill(HIST("Lambda/hV0PzResolution"), v0.pZMc, (v0.pZMc - v0.pZ) / v0.pZMc);
+          histos.fill(HIST("Lambda/hV0RadiusDiff"), v0.RadiusMc, (v0.RadiusMc - v0.Radius)/v0.RadiusMc);
+          histos.fill(HIST("Lambda/hV0DistZDiff"), v0.ZdistMc, (v0.ZdistMc - v0.Zdist)/v0.ZdistMc);
+          histos.fill(HIST("Lambda/hV0PtResolution"), v0.pTMc, (v0.pTMc - v0.pT)/v0.pTMc);
+          histos.fill(HIST("Lambda/hV0PzResolution"), v0.pZMc, (v0.pZMc - v0.pZ)/v0.pZMc);
         }
       }
       nLambdas++;
@@ -1662,18 +1670,18 @@ struct forwardlambdakzeroanalysis {
         histos.fill(HIST("AntiLambda/hPositiveMFTchi2"), v0.posChi2);
         histos.fill(HIST("AntiLambda/hNegativeMFTchi2"), v0.negChi2);
         if (doprocessMonteCarlo) {
-          histos.fill(HIST("AntiLambda/hPositivePtResolution"), v0.positivePtMc(), (v0.positivePtMc() - v0.positivePt()) / v0.positivePtMc());
-          histos.fill(HIST("AntiLambda/hNegativePtResolution"), v0.negativePtMc(), (v0.negativePtMc() - v0.negativePt()) / v0.negativePtMc());
-          histos.fill(HIST("AntiLambda/hPositivePzResolution"), v0.positivePzMc(), (v0.positivePzMc() - v0.positivePz()) / v0.positivePzMc());
-          histos.fill(HIST("AntiLambda/hNegativePzResolution"), v0.negativePzMc(), (v0.negativePzMc() - v0.negativePz()) / v0.negativePzMc());
+          histos.fill(HIST("AntiLambda/hPositivePtResolution"), v0.positivePtMc(), (v0.positivePtMc() - v0.positivePt())/v0.positivePtMc());
+          histos.fill(HIST("AntiLambda/hNegativePtResolution"), v0.negativePtMc(), (v0.negativePtMc() - v0.negativePt())/v0.negativePtMc());
+          histos.fill(HIST("AntiLambda/hPositivePzResolution"), v0.positivePzMc(), (v0.positivePzMc() - v0.positivePz())/v0.positivePzMc());
+          histos.fill(HIST("AntiLambda/hNegativePzResolution"), v0.negativePzMc(), (v0.negativePzMc() - v0.negativePz())/v0.negativePzMc());
 
           histos.fill(HIST("AntiLambda/hV0XDiff"), v0.xMc, (v0.xMc - v0.X));
           histos.fill(HIST("AntiLambda/hV0YDiff"), v0.yMc, (v0.yMc - v0.Y));
           histos.fill(HIST("AntiLambda/hV0ZDiff"), v0.zMc, (v0.zMc - v0.Z));
-          histos.fill(HIST("AntiLambda/hV0RadiusDiff"), v0.RadiusMc, (v0.RadiusMc - v0.Radius) / v0.RadiusMc);
-          histos.fill(HIST("AntiLambda/hV0DistZDiff"), v0.ZdistMc, (v0.ZdistMc - v0.Zdist) / v0.Zdist);
-          histos.fill(HIST("AntiLambda/hV0PtResolution"), v0.pTMc, (v0.pTMc - v0.pT) / v0.pTMc);
-          histos.fill(HIST("AntiLambda/hV0PzResolution"), v0.pZMc, (v0.pZMc - v0.pZ) / v0.pZMc);
+          histos.fill(HIST("AntiLambda/hV0RadiusDiff"), v0.RadiusMc, (v0.RadiusMc - v0.Radius)/v0.RadiusMc);
+          histos.fill(HIST("AntiLambda/hV0DistZDiff"), v0.ZdistMc, (v0.ZdistMc - v0.Zdist)/v0.Zdist);
+          histos.fill(HIST("AntiLambda/hV0PtResolution"), v0.pTMc, (v0.pTMc - v0.pT)/v0.pTMc);
+          histos.fill(HIST("AntiLambda/hV0PzResolution"), v0.pZMc, (v0.pZMc - v0.pZ)/v0.pZMc);
         }
       }
       nAntiLambdas++;
@@ -1728,18 +1736,18 @@ struct forwardlambdakzeroanalysis {
         histos.fill(HIST("D0/hPositiveMFTchi2"), v0.posChi2);
         histos.fill(HIST("D0/hNegativeMFTchi2"), v0.negChi2);
         if (doprocessMonteCarlo) {
-          histos.fill(HIST("D0/hPositivePtResolution"), v0.positivePtMc(), (v0.positivePtMc() - v0.positivePt()) / v0.positivePtMc());
-          histos.fill(HIST("D0/hNegativePtResolution"), v0.negativePtMc(), (v0.negativePtMc() - v0.negativePt()) / v0.negativePtMc());
-          histos.fill(HIST("D0/hPositivePzResolution"), v0.positivePzMc(), (v0.positivePzMc() - v0.positivePz()) / v0.positivePzMc());
-          histos.fill(HIST("D0/hNegativePzResolution"), v0.negativePzMc(), (v0.negativePzMc() - v0.negativePz()) / v0.negativePzMc());
+          histos.fill(HIST("D0/hPositivePtResolution"), v0.positivePtMc(), (v0.positivePtMc() - v0.positivePt())/v0.positivePtMc());
+          histos.fill(HIST("D0/hNegativePtResolution"), v0.negativePtMc(), (v0.negativePtMc() - v0.negativePt())/v0.negativePtMc());
+          histos.fill(HIST("D0/hPositivePzResolution"), v0.positivePzMc(), (v0.positivePzMc() - v0.positivePz())/v0.positivePzMc());
+          histos.fill(HIST("D0/hNegativePzResolution"), v0.negativePzMc(), (v0.negativePzMc() - v0.negativePz())/v0.negativePzMc());
 
           histos.fill(HIST("D0/hV0XDiff"), v0.xMc, (v0.xMc - v0.X));
           histos.fill(HIST("D0/hV0YDiff"), v0.yMc, (v0.yMc - v0.Y));
           histos.fill(HIST("D0/hV0ZDiff"), v0.zMc, (v0.zMc - v0.Z));
-          histos.fill(HIST("D0/hV0RadiusDiff"), v0.RadiusMc, (v0.RadiusMc - v0.Radius) / v0.RadiusMc);
-          histos.fill(HIST("D0/hV0DistZDiff"), v0.ZdistMc, (v0.ZdistMc - v0.Zdist) / v0.ZdistMc);
-          histos.fill(HIST("D0/hV0PtResolution"), v0.pTMc, (v0.pTMc - v0.pT) / v0.pTMc);
-          histos.fill(HIST("D0/hV0PzResolution"), v0.pZMc, (v0.pZMc - v0.pZ) / v0.pZMc);
+          histos.fill(HIST("D0/hV0RadiusDiff"), v0.RadiusMc, (v0.RadiusMc - v0.Radius)/v0.RadiusMc);
+          histos.fill(HIST("D0/hV0DistZDiff"), v0.ZdistMc, (v0.ZdistMc - v0.Zdist)/v0.ZdistMc);
+          histos.fill(HIST("D0/hV0PtResolution"), v0.pTMc, (v0.pTMc - v0.pT)/v0.pTMc);
+          histos.fill(HIST("D0/hV0PzResolution"), v0.pZMc, (v0.pZMc - v0.pZ)/v0.pZMc);
         }
       }
       nD0s++;
@@ -1794,18 +1802,18 @@ struct forwardlambdakzeroanalysis {
         histos.fill(HIST("AntiD0/hPositiveMFTchi2"), v0.posChi2);
         histos.fill(HIST("AntiD0/hNegativeMFTchi2"), v0.negChi2);
         if (doprocessMonteCarlo) {
-          histos.fill(HIST("AntiD0/hPositivePtResolution"), v0.positivePtMc(), (v0.positivePtMc() - v0.positivePt()) / v0.positivePtMc());
-          histos.fill(HIST("AntiD0/hNegativePtResolution"), v0.negativePtMc(), (v0.negativePtMc() - v0.negativePt()) / v0.negativePtMc());
-          histos.fill(HIST("AntiD0/hPositivePzResolution"), v0.positivePzMc(), (v0.positivePzMc() - v0.positivePz()) / v0.positivePzMc());
-          histos.fill(HIST("AntiD0/hNegativePzResolution"), v0.negativePzMc(), (v0.negativePzMc() - v0.negativePz()) / v0.negativePzMc());
+          histos.fill(HIST("AntiD0/hPositivePtResolution"), v0.positivePtMc(), (v0.positivePtMc() - v0.positivePt())/v0.positivePtMc());
+          histos.fill(HIST("AntiD0/hNegativePtResolution"), v0.negativePtMc(), (v0.negativePtMc() - v0.negativePt())/v0.negativePtMc());
+          histos.fill(HIST("AntiD0/hPositivePzResolution"), v0.positivePzMc(), (v0.positivePzMc() - v0.positivePz())/v0.positivePzMc());
+          histos.fill(HIST("AntiD0/hNegativePzResolution"), v0.negativePzMc(), (v0.negativePzMc() - v0.negativePz())/v0.negativePzMc());
 
           histos.fill(HIST("AntiD0/hV0XDiff"), v0.xMc, (v0.xMc - v0.X));
           histos.fill(HIST("AntiD0/hV0YDiff"), v0.yMc, (v0.yMc - v0.Y));
           histos.fill(HIST("AntiD0/hV0ZDiff"), v0.zMc, (v0.zMc - v0.Z));
-          histos.fill(HIST("AntiD0/hV0RadiusDiff"), v0.RadiusMc, (v0.RadiusMc - v0.Radius) / v0.RadiusMc);
-          histos.fill(HIST("AntiD0/hV0DistZDiff"), v0.ZdistMc, (v0.ZdistMc - v0.Zdist) / v0.ZdistMc);
-          histos.fill(HIST("AntiD0/hV0PtResolution"), v0.pTMc, (v0.pTMc - v0.pT) / v0.pTMc);
-          histos.fill(HIST("AntiD0/hV0PzResolution"), v0.pZMc, (v0.pZMc - v0.pZ) / v0.pZMc);
+          histos.fill(HIST("AntiD0/hV0RadiusDiff"), v0.RadiusMc, (v0.RadiusMc - v0.Radius)/v0.RadiusMc);
+          histos.fill(HIST("AntiD0/hV0DistZDiff"), v0.ZdistMc, (v0.ZdistMc - v0.Zdist)/v0.ZdistMc);
+          histos.fill(HIST("AntiD0/hV0PtResolution"), v0.pTMc, (v0.pTMc - v0.pT)/v0.pTMc);
+          histos.fill(HIST("AntiD0/hV0PzResolution"), v0.pZMc, (v0.pZMc - v0.pZ)/v0.pZMc);
         }
       }
       nAntiD0s++;
@@ -2201,13 +2209,34 @@ struct forwardlambdakzeroanalysis {
   //___________________________________________________________________
   // Taken from https://github.com/AliceO2Group/AliceO2/blob/be5a2bb6c1be6757b7a496f9e90d470304d98fe7/Common/DCAFitter/include/DCAFitter/FwdDCAFitterN.h#L1281
   // Re-adapted for this task
-  bool propagateToVtx(o2::track::TrackParCovFwd& t, const std::array<float, 3>& PV, const std::array<float, 2>& PVcov) const
+  template <typename TCollision>
+  void propagateToVtx(o2::track::TrackParCovFwd& t, TCollision const& collision, std::array<double, 3>& dca) const
   {
+    dca[0] = o2::track::DefaultDCA;
+    dca[1] = o2::track::DefaultDCA;
+    dca[2] = o2::track::DefaultDCA;
+    
     // propagate track to vertex including MCS effects if material budget included, simple propagation to Z otherwise
     float x2x0 = 0;
-    auto mb = lut->getMatBudget(t.getX(), t.getY(), t.getZ(), PV[0], PV[1], PV[2]);
+    auto mb = lut->getMatBudget(t.getX(), t.getY(), t.getZ(), collision.posX(), collision.posY(), collision.posZ());
     x2x0 = static_cast<float>(mb.meanX2X0);
-    return t.propagateToVtxhelixWithMCS(PV[2], {PV[0], PV[1]}, PVcov, magField, x2x0);
+    t.propagateToVtxhelixWithMCS(collision.posZ(), {collision.posX(), collision.posY()}, std::array{collision.covXX(), collision.covYY()}, magField, x2x0);
+
+    dca[0] = t.getX() - collision.posX();
+    dca[1] = t.getY() - collision.posY();
+    dca[2] = t.getZ() - collision.posZ();
+  }
+
+  //___________________________________________________________________
+  // Taken from https://github.com/AliceO2Group/O2Physics/blob/master/Common/Core/fwdtrackUtilities.h#L183
+  // Re-adapted for this task
+  template <typename TCollision>
+  void propagateToVtxNew(o2::track::TrackParCovFwd& t, TCollision const& collision, std::array<double, 3>& dca) const
+  {
+    dca[0] = o2::track::DefaultDCA;
+    dca[1] = o2::track::DefaultDCA;
+    dca[2] = o2::track::DefaultDCA;
+    t.propagateToDCAhelix(magField, {collision.posX(), collision.posY(), collision.posZ()}, dca);
   }
 
   template <typename TCollision, typename TTracks, typename TMFTTracks, typename TMCCollisions, typename TMCParticles>
@@ -2263,15 +2292,15 @@ struct forwardlambdakzeroanalysis {
       o2::track::TrackParCovFwd pars2{mftNegative.z(), tpars2, tcovs2, mftNegative.chi2()};
       o2::track::TrackParCovFwd pars2Copy{mftNegative.z(), tpars2, tcovs2, mftNegative.chi2()};
 
-      propagateToVtx(pars1Copy, std::array{collision.posX(), collision.posY(), collision.posZ()}, std::array{collision.covXX(), collision.covYY()});
-      propagateToVtx(pars2Copy, std::array{collision.posX(), collision.posY(), collision.posZ()}, std::array{collision.covXX(), collision.covYY()});
-      float dcaPosToPVx = pars1Copy.getX() - collision.posX();
-      float dcaPosToPVy = pars1Copy.getY() - collision.posY();
-      float dcaPosToPVz = pars1Copy.getZ() - collision.posZ();
-
-      float dcaNegToPVx = pars2Copy.getX() - collision.posX();
-      float dcaNegToPVy = pars2Copy.getY() - collision.posY();
-      float dcaNegToPVz = pars2Copy.getZ() - collision.posZ();
+      std::array<double, 3> dcaPosToPV{o2::track::DefaultDCA, o2::track::DefaultDCA, o2::track::DefaultDCA};
+      std::array<double, 3> dcaNegToPV{o2::track::DefaultDCA, o2::track::DefaultDCA, o2::track::DefaultDCA};
+      if (useNewPropagationToVtx) {
+        propagateToVtxNew(pars1Copy, collision, dcaPosToPV);
+        propagateToVtxNew(pars2Copy, collision, dcaNegToPV);
+      } else {
+        propagateToVtx(pars1Copy, collision, dcaPosToPV);
+        propagateToVtx(pars2Copy, collision, dcaNegToPV);
+      }
 
       // Move close to minima
       int nCand = 0;
@@ -2303,10 +2332,10 @@ struct forwardlambdakzeroanalysis {
       pairInfo.Z = vtx[2];
 
       // get daughter DCA to PV
-      pairInfo.dcaPosToPVxy = std::sqrt(dcaPosToPVx * dcaPosToPVx + dcaPosToPVy * dcaPosToPVy);
-      pairInfo.dcaNegToPVxy = std::sqrt(dcaNegToPVx * dcaNegToPVx + dcaNegToPVy * dcaNegToPVy);
-      pairInfo.dcaPosToPVz = dcaPosToPVz;
-      pairInfo.dcaNegToPVz = dcaNegToPVz;
+      pairInfo.dcaPosToPVxy = std::hypot(dcaPosToPV[0], dcaPosToPV[1]);
+      pairInfo.dcaNegToPVxy = std::hypot(dcaNegToPV[0], dcaNegToPV[1]);
+      pairInfo.dcaPosToPVz = dcaPosToPV[2];
+      pairInfo.dcaNegToPVz = dcaNegToPV[2];
 
       // get daughter momenta
       pairInfo.positiveMomentum[0] = lTrack1.getPx();
@@ -2533,7 +2562,7 @@ struct forwardlambdakzeroanalysis {
   // ______________________________________________________
   // Simulated processing (subscribes to MC information too)
   template <typename TCollision, typename TMCCollisions, typename TMFTTracks, typename TTracks, typename TBCs, typename TMCParticles>
-  void analyzeRecoedV0sInMonteCarlo(TCollision const& collision, TMCCollisions const& mcCollisions, TMFTTracks const& mftTracks, TTracks const& besttracks, TBCs const& bcs, TMCParticles const& mcParticles)
+  void analyzeRecoedV0sInMonteCarlo(TCollision const& collision, TMCCollisions const& mcCollisions,TMFTTracks const& mftTracks, TTracks const& besttracks, TBCs const& bcs, TMCParticles const& mcParticles)
   {
     // Fire up CCDB
     initCCDB(bcs, collision);
