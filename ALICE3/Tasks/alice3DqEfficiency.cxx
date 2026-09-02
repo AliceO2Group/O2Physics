@@ -1910,8 +1910,8 @@ struct Alice3DqEfficiencyAnalysisAsymmetricPairing {
       for (const auto& [a1, a2] : combinations(soa::CombinationsFullIndexPolicy(groupedLegAAssocs, groupedLegBAssocs))) {
         uint32_t twoTrackFilter = 0;
         uint32_t twoTrackCommonFilter = 0;
-        uint32_t pairFilter = 0;
         bool isPairIdWrong = false;
+
         for (int icut = 0; icut < fNLegCuts; ++icut) {
           // Find leg pair definitions both candidates participate in
           if (((a1.isBarrelSelected_raw() & fConstructedLegAFilterMasksMap[icut]) != 0u) && ((a2.isBarrelSelected_raw() & fConstructedLegBFilterMasksMap[icut]) != 0u)) {
@@ -2062,7 +2062,6 @@ struct Alice3DqEfficiencyAnalysisAsymmetricPairing {
               if (!((*cut)->IsSelected(dqefficiency_helpers::varValues()))) { // apply pair cuts
                 continue;
               }
-              pairFilter |= (static_cast<uint32_t>(1) << iPairCut);
               // Histograms with pair cuts
               if (sign1 * sign2 < 0) {
                 fHistMan->FillHistClass(Form("PairsBarrelSEPM_%s_%s", fLegCutNames[icut].Data(), fPairCutNames[iPairCut].Data()), dqefficiency_helpers::varValues());
