@@ -516,12 +516,13 @@ struct Alice3MulticharmFinder {
     fitter.setBz(cfgMagneticField);
     fitter.setMatCorrType(o2::base::Propagator::MatCorrType::USEMatCorrNONE);
 
+    // initialize O2 3-prong fitter (only once)
     fitter3.setPropagateToPCA(cfgFitter.propagateToPCA);
     fitter3.setMaxR(cfgFitter.maxR);
     fitter3.setMinParamChange(cfgFitter.minParamChange);
     fitter3.setMinRelChi2Change(cfgFitter.minRelChi2Change);
     fitter3.setMaxDZIni(cfgFitter.maxDZIni);
-    fitter3.setMaxDZIni(cfgFitter.maxDXYIni);
+    fitter3.setMaxDXYIni(cfgFitter.maxDXYIni);
     fitter3.setMaxChi2(cfgFitter.maxVtxChi2);
     fitter3.setUseAbsDCA(cfgFitter.useAbsDCA);
     fitter3.setWeightedFinalPCA(cfgFitter.useWeightedFinalPCA);
