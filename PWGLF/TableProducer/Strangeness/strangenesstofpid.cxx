@@ -2088,7 +2088,7 @@ struct strangenesstofpid {
 
           nTof.tofExpMom = nTofExt.tofExpMom();
           nTof.tofEvTime = reassociateTracks.value ? collision.eventTime() : nTofExt.tofEvTime();
-          nTof.tofEvTimeErr = reassociateTracks.value ? collision.eventTime() : nTofExt.tofEvTimeErr();
+          nTof.tofEvTimeErr = reassociateTracks.value ? collision.eventTimeErr() : nTofExt.tofEvTimeErr();
           // nTof.tofEvTimeErr = nTofExt.tofEvTimeErr();
           nTof.tofSignal = nTofExt.tofSignal() + (doBCshift.value ? deltaTimeBc : 0.0f);
           nTof.length = nTofExt.length();
