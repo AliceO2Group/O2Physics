@@ -718,10 +718,10 @@ struct PhianalysisTHnSparse {
       }
 
       dataQA = true;
-      bool selected = selectedTrack(track, track.sign() > 0);
+      bool selectedTrackCandidate = selectedTrack(track, track.sign() > 0);
       dataQA = false;
 
-      if (!selected) {
+      if (!selectedTrackCandidate) {
         continue;
       }
 
