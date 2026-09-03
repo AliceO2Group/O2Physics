@@ -28,8 +28,8 @@ namespace hyperrec
 DECLARE_SOA_COLUMN(CentralityFT0A, centralityFT0A, float); // centrality with FT0A estimator
 DECLARE_SOA_COLUMN(CentralityFT0C, centralityFT0C, float); // centrality with FT0C estimator
 DECLARE_SOA_COLUMN(CentralityFT0M, centralityFT0M, float); // centrality with FT0M estimator
-DECLARE_SOA_COLUMN(TrackOccupancyInTimeRange, trackOccupancyInTimeRange, int);   // Track occupancy in the time range around the collision
-DECLARE_SOA_COLUMN(FT0COccupancyInTimeRange, ft0cOccupancyInTimeRange, float);  // FT0C occupancy in the time range around the collision
+DECLARE_SOA_COLUMN(TrackOccupancyInTimeRange, trackOccupancyInTimeRange, int); // Track occupancy in the time range around the collision
+DECLARE_SOA_COLUMN(FT0COccupancyInTimeRange, ft0cOccupancyInTimeRange, float); // FT0C occupancy in the time range around the collision
 DECLARE_SOA_COLUMN(PsiFT0A, psiFT0A, float);               // Psi with FT0A estimator
 DECLARE_SOA_COLUMN(MultFT0A, multFT0A, float);             // Multiplicity with FT0A estimator
 DECLARE_SOA_COLUMN(PsiFT0C, psiFT0C, float);               // Psi with FT0C estimator
