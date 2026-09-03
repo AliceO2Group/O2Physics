@@ -9,7 +9,12 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// Task for analysing (anti)deuteron production in jets using pT-triggered data - update: 05-02-2026
+/// \file deuteronInJetsTrgPt.cxx
+/// \brief d and antid production in and out of jets using pTjet triggered data
+///
+/// \author Cristian Moscatelli <cristian.moscatelli@cern.ch>
+/// \since 02/2026
+// ================
 //
 // Executable : o2-analysis-lf-deuteron-in-jets-trg-pt
 
@@ -76,13 +81,13 @@ struct DeuteronInJetsTrgPt {
     std::string prefix{"cfgTrackCut"};
     // General specific
     Configurable<bool> requirePvContributor{"requirePvContributor", false, "Require that the track is a PV contributor"};
-    Configurable<float> EtaMax{"EtaMax", 0.9f, "Max Eta for track acceptance"};
+    Configurable<float> etaMax{"etaMax", 0.9f, "Max Eta for track acceptance"};
     Configurable<double> minPt{"minPt", 0.3, "Minimum pt of the tracks"};
     Configurable<double> maxDcaxy{"maxDcaxy", 0.05, "Maximum DCAxy"};
     Configurable<double> maxDcaz{"maxDcaz", 0.05, "Maximum DCAz"};
     // Part relative to ITS
-    Configurable<int> ITSnClusMin{"ITSnClsMin", 6, "Minimum number of ITS clusters"};
-    Configurable<float> ITSchi2ClusMax{"ITSchi2ClusMax", 36.f, "Max ITS Chi2 per cluster"};
+    Configurable<int> itsNClusMin{"itsNClusMin", 6, "Minimum number of ITS clusters"};
+    Configurable<float> itsChi2ClusMax{"itsChi2ClusMax", 36.f, "Max ITS Chi2 per cluster"};
     Configurable<bool> applyItsPid{"applyItsPid", false, "apply ITS PID"};
     Configurable<bool> setMCDefaultItsParams{"setMCDefaultItsParams", true, "Set MC default parameters for ITS PID"};
     Configurable<double> nSigmaItsMin{"nSigmaItsMin", -3.0, "nSigmaITS min"};
@@ -90,17 +95,12 @@ struct DeuteronInJetsTrgPt {
     Configurable<double> ptMaxItsPidProt{"ptMaxItsPidProt", 1.0, "maximum pt for ITS PID for protons"};
     Configurable<double> ptMaxItsPidDeut{"ptMaxItsPidDeut", 1.0, "maximum pt for ITS PID for deuterons"};
     // Part relative to TPC
-    Configurable<int> TPCnClsMin{"TPCnClsMin", 100, "Minimum number of TPC clusters"};
-    Configurable<float> TPCchi2ClusMin{"TPCchi2ClusMin", 0.f, "Min TPC Chi2 per cluster"};
-    Configurable<float> TPCchi2ClusMax{"TPCchi2ClusMax", 4.f, "Max TPC Chi2 per cluster"};
-    Configurable<int> TPCnCrossedRowsMin{"TPCnCrossedRowsMin", 100, "Minimum number of TPC crossed rows"};
-    Configurable<double> Rtpc{"minRtpc", 0.8, "Minimum value of TPC crossed rows/TPC n cluster findable"};
-    Configurable<float> TPCrigidityMin{"TPCrigidityMin", 0.3f, "Minimum TPC rigidity (p/Z) for track"};
-    Configurable<double> minNsigmaTpc{"minNsigmaTpc", -3.0, "Minimum nsigma TPC"};
-    Configurable<double> maxNsigmaTpc{"maxNsigmaTpc", +3.0, "Maximum nsigma TPC"};
-    // Part relatuive to TOF
-    Configurable<double> minNsigmaTof{"minNsigmaTof", -3.0, "Minimum nsigma TOF"};
-    Configurable<double> maxNsigmaTof{"maxNsigmaTof", +3.5, "Maximum nsigma TOF"};
+    Configurable<int> tpcNClsMin{"tpcNClsMin", 100, "Minimum number of TPC clusters"};
+    Configurable<float> tpcChi2ClusMin{"tpcChi2ClusMin", 0.f, "Min TPC Chi2 per cluster"};
+    Configurable<float> tpcChi2ClusMax{"tpcChi2ClusMax", 4.f, "Max TPC Chi2 per cluster"};
+    Configurable<int> tpcNCrossedRowsMin{"tpcNCrossedRowsMin", 100, "Minimum number of TPC crossed rows"};
+    Configurable<double> minNsigmaTpc{"minNsigmaTpc", -3.0, "Minimum nsigma TPC for TOF analysis"};
+    Configurable<double> maxNsigmaTpc{"maxNsigmaTpc", +3.0, "Maximum nsigma TPC for TOF analysis"};
   } cfgTrackCut;
 
   // Setting default selection criteria for events. May be changes when configuring the analysis.
@@ -122,9 +122,9 @@ struct DeuteronInJetsTrgPt {
   } cfgJetCut;
 
   // Setting the number of bins and min and max value for the nsigma distribution
-  Configurable<int> cfgNbins{"Nbins", 120, "Number of pT-bins"};
-  Configurable<double> cfgpt_min{"pt_min", 0.0, "Min pT value of pT-axis"};
-  Configurable<double> cfgpt_max{"pt_max", 6.0, "Max pT value of pT-axis"};
+  Configurable<int> cfgNbins{"cfgNbins", 120, "Number of pT-bins"};
+  Configurable<double> cfgPtMin{"cfgPtMin", 0.0, "Min pT value of pT-axis"};
+  Configurable<double> cfgPtMax{"cfgPtMax", 6.0, "Max pT value of pT-axis"};
 
   // CCDB manager service for accessing condition data
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -159,45 +159,45 @@ struct DeuteronInJetsTrgPt {
       itsResponse.setMCDefaultParameters();
 
     // Initialize random seed using high-resolution clock to ensure unique sequences across parallel Grid jobs
-    auto time_seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-    mRand.SetSeed(time_seed);
+    auto timeSeed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+    mRand.SetSeed(timeSeed);
 
     // Histrograms for real data
     if (doprocessData) {
       registryData.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{4, 0, 4, "counter"}});                                           // Event counters
-      registryData.add("settingData", "settingData", HistType::kTH2F, {{100, 0.0, 50.0, "min #it{p}^{jet}_{T} [GeV/#it{c}]"}, {20, 0.0, 1.0, "#it{R}_{jet}"}}); // Configuration
+      registryData.add("settingData", "settingData", HistType::kTH2F, {{100, 0.0, 50.0, "min #it{p}^{jet}_{T} (GeV/#it{c})"}, {20, 0.0, 1.0, "#it{R}_{jet}"}}); // Configuration
       registryData.add("jetEffectiveAreaOverPiR2", "jet effective area / piR^2", HistType::kTH1F, {{2000, 0, 2, "Area/#piR^{2}"}});                             // Jet effective area over piR^2
 
       // Antiprotons
-      registryData.add("antiproton_jet_tpc", "antiproton_jet_tpc", HistType::kTH2F, {{cfgNbins, cfgpt_min, cfgpt_max, "#it{p}_{T} [GeV/#it{c}]"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}});
-      registryData.add("antiproton_jet_tof", "antiproton_jet_tof", HistType::kTH2F, {{cfgNbins, cfgpt_min, cfgpt_max, "#it{p}_{T} [GeV/#it{c}]"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}});
-      registryData.add("antiproton_ue_tpc", "antiproton_ue_tpc", HistType::kTH2F, {{cfgNbins, cfgpt_min, cfgpt_max, "#it{p}_{T} [GeV/#it{c}]"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}});
-      registryData.add("antiproton_ue_tof", "antiproton_ue_tof", HistType::kTH2F, {{cfgNbins, cfgpt_min, cfgpt_max, "#it{p}_{T} [GeV/#it{c}]"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}});
-      registryData.add("antiproton_dca_jet", "antiproton_dca_jet", HistType::kTH2F, {{cfgNbins, cfgpt_min, cfgpt_max, "#it{p}_{T} [GeV/#it{c}]"}, {200, -1.0, 1.0, "DCA_{xy} [cm]"}});
-      registryData.add("antiproton_dca_ue", "antiproton_dca_ue", HistType::kTH2F, {{cfgNbins, cfgpt_min, cfgpt_max, "#it{p}_{T} [GeV/#it{c}]"}, {200, -1.0, 1.0, "DCA_{xy} [cm]"}});
+      registryData.add("antiproton_jet_tpc", "antiproton_jet_tpc", HistType::kTH2F, {{cfgNbins, cfgPtMin, cfgPtMax, "#it{p}_{T} (GeV/#it{c})"}, {1000, -20.0, 20.0, "n#sigma_{TPC}"}});
+      registryData.add("antiproton_jet_tof", "antiproton_jet_tof", HistType::kTH2F, {{cfgNbins, cfgPtMin, cfgPtMax, "#it{p}_{T} (GeV/#it{c})"}, {1000, -20.0, 20.0, "n#sigma_{TOF}"}});
+      registryData.add("antiproton_ue_tpc", "antiproton_ue_tpc", HistType::kTH2F, {{cfgNbins, cfgPtMin, cfgPtMax, "#it{p}_{T} (GeV/#it{c})"}, {1000, -20.0, 20.0, "n#sigma_{TPC}"}});
+      registryData.add("antiproton_ue_tof", "antiproton_ue_tof", HistType::kTH2F, {{cfgNbins, cfgPtMin, cfgPtMax, "#it{p}_{T} (GeV/#it{c})"}, {1000, -20.0, 20.0, "n#sigma_{TOF}"}});
+      registryData.add("antiproton_dca_jet", "antiproton_dca_jet", HistType::kTH2F, {{cfgNbins, cfgPtMin, cfgPtMax, "#it{p}_{T} (GeV/#it{c})"}, {2000, -1.0, 1.0, "DCA_{xy} (cm)"}});
+      registryData.add("antiproton_dca_ue", "antiproton_dca_ue", HistType::kTH2F, {{cfgNbins, cfgPtMin, cfgPtMax, "#it{p}_{T} (GeV/#it{c})"}, {2000, -1.0, 1.0, "DCA_{xy} (cm)"}});
 
       // protons
-      registryData.add("proton_jet_tpc", "proton_jet_tpc", HistType::kTH2F, {{cfgNbins, cfgpt_min, cfgpt_max, "#it{p}_{T} [GeV/#it{c}]"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}});
-      registryData.add("proton_jet_tof", "proton_jet_tof", HistType::kTH2F, {{cfgNbins, cfgpt_min, cfgpt_max, "#it{p}_{T} [GeV/#it{c}]"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}});
-      registryData.add("proton_ue_tpc", "proton_ue_tpc", HistType::kTH2F, {{cfgNbins, cfgpt_min, cfgpt_max, "#it{p}_{T} [GeV/#it{c}]"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}});
-      registryData.add("proton_ue_tof", "proton_ue_tof", HistType::kTH2F, {{cfgNbins, cfgpt_min, cfgpt_max, "#it{p}_{T} [GeV/#it{c}]"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}});
-      registryData.add("proton_dca_jet", "proton_dca_jet", HistType::kTH2F, {{cfgNbins, cfgpt_min, cfgpt_max, "#it{p}_{T} [GeV/#it{c}]"}, {200, -1.0, 1.0, "DCA_{xy} [cm]"}});
-      registryData.add("proton_dca_ue", "proton_dca_ue", HistType::kTH2F, {{cfgNbins, cfgpt_min, cfgpt_max, "#it{p}_{T} [GeV/#it{c}]"}, {200, -1.0, 1.0, "DCA_{xy} [cm]"}});
+      registryData.add("proton_jet_tpc", "proton_jet_tpc", HistType::kTH2F, {{cfgNbins, cfgPtMin, cfgPtMax, "#it{p}_{T} (GeV/#it{c})"}, {1000, -20.0, 20.0, "n#sigma_{TPC}"}});
+      registryData.add("proton_jet_tof", "proton_jet_tof", HistType::kTH2F, {{cfgNbins, cfgPtMin, cfgPtMax, "#it{p}_{T} (GeV/#it{c})"}, {1000, -20.0, 20.0, "n#sigma_{TOF}"}});
+      registryData.add("proton_ue_tpc", "proton_ue_tpc", HistType::kTH2F, {{cfgNbins, cfgPtMin, cfgPtMax, "#it{p}_{T} (GeV/#it{c})"}, {1000, -20.0, 20.0, "n#sigma_{TPC}"}});
+      registryData.add("proton_ue_tof", "proton_ue_tof", HistType::kTH2F, {{cfgNbins, cfgPtMin, cfgPtMax, "#it{p}_{T} (GeV/#it{c})"}, {1000, -20.0, 20.0, "n#sigma_{TOF}"}});
+      registryData.add("proton_dca_jet", "proton_dca_jet", HistType::kTH2F, {{cfgNbins, cfgPtMin, cfgPtMax, "#it{p}_{T} (GeV/#it{c})"}, {2000, -1.0, 1.0, "DCA_{xy} (cm)"}});
+      registryData.add("proton_dca_ue", "proton_dca_ue", HistType::kTH2F, {{cfgNbins, cfgPtMin, cfgPtMax, "#it{p}_{T} (GeV/#it{c})"}, {2000, -1.0, 1.0, "DCA_{xy} (cm)"}});
 
       // Antideuterons
-      registryData.add("antideuteron_jet_tpc", "antideuteron_jet_tpc", HistType::kTH2F, {{cfgNbins, 2 * cfgpt_min, 2 * cfgpt_max, "#it{p}_{T} [GeV/#it{c}]"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}});
-      registryData.add("antideuteron_jet_tof", "antideuteron_jet_tof", HistType::kTH2F, {{cfgNbins, 2 * cfgpt_min, 2 * cfgpt_max, "#it{p}_{T} [GeV/#it{c}]"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}});
-      registryData.add("antideuteron_ue_tpc", "antideuteron_ue_tpc", HistType::kTH2F, {{cfgNbins, 2 * cfgpt_min, 2 * cfgpt_max, "#it{p}_{T} [GeV/#it{c}]"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}});
-      registryData.add("antideuteron_ue_tof", "antideuteron_ue_tof", HistType::kTH2F, {{cfgNbins, 2 * cfgpt_min, 2 * cfgpt_max, "#it{p}_{T} [GeV/#it{c}]"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}});
+      registryData.add("antideuteron_jet_tpc", "antideuteron_jet_tpc", HistType::kTH2F, {{cfgNbins, 2 * cfgPtMin, 2 * cfgPtMax, "#it{p}_{T} (GeV/#it{c})"}, {1000, -20.0, 20.0, "n#sigma_{TPC}"}});
+      registryData.add("antideuteron_jet_tof", "antideuteron_jet_tof", HistType::kTH2F, {{cfgNbins, 2 * cfgPtMin, 2 * cfgPtMax, "#it{p}_{T} (GeV/#it{c})"}, {1000, -20.0, 20.0, "n#sigma_{TOF}"}});
+      registryData.add("antideuteron_ue_tpc", "antideuteron_ue_tpc", HistType::kTH2F, {{cfgNbins, 2 * cfgPtMin, 2 * cfgPtMax, "#it{p}_{T} (GeV/#it{c})"}, {1000, -20.0, 20.0, "n#sigma_{TPC}"}});
+      registryData.add("antideuteron_ue_tof", "antideuteron_ue_tof", HistType::kTH2F, {{cfgNbins, 2 * cfgPtMin, 2 * cfgPtMax, "#it{p}_{T} (GeV/#it{c})"}, {1000, -20.0, 20.0, "n#sigma_{TOF}"}});
 
       // Deuterons
-      registryData.add("deuteron_jet_tpc", "deuteron_jet_tpc", HistType::kTH2F, {{cfgNbins, 2 * cfgpt_min, 2 * cfgpt_max, "#it{p}_{T} [GeV/#it{c}]"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}});
-      registryData.add("deuteron_jet_tof", "deuteron_jet_tof", HistType::kTH2F, {{cfgNbins, 2 * cfgpt_min, 2 * cfgpt_max, "#it{p}_{T} [GeV/#it{c}]"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}});
-      registryData.add("deuteron_ue_tpc", "deuteron_ue_tpc", HistType::kTH2F, {{cfgNbins, 2 * cfgpt_min, 2 * cfgpt_max, "#it{p}_{T} [GeV/#it{c}]"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}});
-      registryData.add("deuteron_ue_tof", "deuteron_ue_tof", HistType::kTH2F, {{cfgNbins, 2 * cfgpt_min, 2 * cfgpt_max, "#it{p}_{T} [GeV/#it{c}]"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}});
+      registryData.add("deuteron_jet_tpc", "deuteron_jet_tpc", HistType::kTH2F, {{cfgNbins, 2 * cfgPtMin, 2 * cfgPtMax, "#it{p}_{T} (GeV/#it{c})"}, {1000, -20.0, 20.0, "n#sigma_{TPC}"}});
+      registryData.add("deuteron_jet_tof", "deuteron_jet_tof", HistType::kTH2F, {{cfgNbins, 2 * cfgPtMin, 2 * cfgPtMax, "#it{p}_{T} (GeV/#it{c})"}, {1000, -20.0, 20.0, "n#sigma_{TOF}"}});
+      registryData.add("deuteron_ue_tpc", "deuteron_ue_tpc", HistType::kTH2F, {{cfgNbins, 2 * cfgPtMin, 2 * cfgPtMax, "#it{p}_{T} (GeV/#it{c})"}, {1000, -20.0, 20.0, "n#sigma_{TPC}"}});
+      registryData.add("deuteron_ue_tof", "deuteron_ue_tof", HistType::kTH2F, {{cfgNbins, 2 * cfgPtMin, 2 * cfgPtMax, "#it{p}_{T} (GeV/#it{c})"}, {1000, -20.0, 20.0, "n#sigma_{TOF}"}});
 
       // nsigmaITS for antiproton candidates
-      registryData.add("antiproton_nsigma_its_data", "antiproton_nsigma_its_data", HistType::kTH2F, {{cfgNbins, cfgpt_min, cfgpt_max, "#it{p}_{T} [GeV/#it{c}]"}, {400, -20.0, 20.0, "n#sigma_{ITS}"}});
+      registryData.add("antiproton_nsigma_its_data", "antiproton_nsigma_its_data", HistType::kTH2F, {{cfgNbins, cfgPtMin, cfgPtMax, "#it{p}_{T} (GeV/#it{c})"}, {1000, -20.0, 20.0, "n#sigma_{ITS}"}});
     }
   }
 
@@ -286,7 +286,7 @@ struct DeuteronInJetsTrgPt {
     static constexpr double DcazMaxTrack = 2.0;
 
     // General part
-    if (std::fabs(track.eta()) > cfgTrackCut.EtaMax)
+    if (std::fabs(track.eta()) > cfgTrackCut.etaMax)
       return false;
     if (track.pt() < MinPtTrack)
       return false;
@@ -319,7 +319,7 @@ struct DeuteronInJetsTrgPt {
     // General part
     if (cfgTrackCut.requirePvContributor && !(track.isPVContributor()))
       return false; // Flag to check if the track contributed to the collision vertex fit
-    if (std::fabs(track.eta()) > cfgTrackCut.EtaMax)
+    if (std::fabs(track.eta()) > cfgTrackCut.etaMax)
       return false; // Eta
     if (track.pt() < cfgTrackCut.minPt)
       return false;
@@ -328,23 +328,21 @@ struct DeuteronInJetsTrgPt {
       return false; // Flag to check if track has a ITS match
     if ((!hasHitITS(track, 1)) && (!hasHitITS(track, 2)) && (!hasHitITS(track, 3)))
       return false; // Require IB hit
-    if (track.itsNCls() < cfgTrackCut.ITSnClusMin)
+    if (track.itsNCls() < cfgTrackCut.itsNClusMin)
       return false; // Minimum number of ITS cluster
-    if (track.itsChi2NCl() > cfgTrackCut.ITSchi2ClusMax)
+    if (track.itsChi2NCl() > cfgTrackCut.itsChi2ClusMax)
       return false; // Minimum chi2 per cluster in ITS
     // Part relative to TPC
     if (!track.hasTPC())
       return false; // Flag to check if track has a ITS match
-    if (track.tpcNClsFound() < cfgTrackCut.TPCnClsMin)
+    if (track.tpcNClsFound() < cfgTrackCut.tpcNClsMin)
       return false; // Minimum number of TPC cluster
-    if (track.tpcNClsCrossedRows() < cfgTrackCut.TPCnCrossedRowsMin)
+    if (track.tpcNClsCrossedRows() < cfgTrackCut.tpcNCrossedRowsMin)
       return false; // Minimum number of crossed rows in TPC
-    if (track.tpcChi2NCl() < cfgTrackCut.TPCchi2ClusMin)
+    if (track.tpcChi2NCl() < cfgTrackCut.tpcChi2ClusMin)
       return false; // Minimum chi2 per cluster in TPC
-    if (track.tpcChi2NCl() > cfgTrackCut.TPCchi2ClusMax)
+    if (track.tpcChi2NCl() > cfgTrackCut.tpcChi2ClusMax)
       return false; // Maximum chi2 per cluster in TPC
-    if (track.tpcCrossedRowsOverFindableCls() < cfgTrackCut.Rtpc)
-      return false; // R_{TPC} > 0.8
 
     return true;
   }
@@ -359,7 +357,7 @@ struct DeuteronInJetsTrgPt {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
-    // If skimmed processing is enabled, aplly Zorro trigger selection
+    // If skimmed processing is enabled, apply Zorro trigger selection
     if (cfgSkimmedProcessing && !zorro.isSelected(collision.template bc_as<aod::BCsWithTimestamps>().globalBC()))
       return;
     registryData.fill(HIST("number_of_events_data"), 1.5);
@@ -397,7 +395,7 @@ struct DeuteronInJetsTrgPt {
     bool isAtLeastOneJetSelected = false;
     for (auto const& jet : jets) {
 
-      if ((std::fabs(jet.eta()) + cfgJetCut.rJet) > (cfgTrackCut.EtaMax - cfgJetCut.deltaEtaEdge))
+      if ((std::fabs(jet.eta()) + cfgJetCut.rJet) > (cfgTrackCut.etaMax - cfgJetCut.deltaEtaEdge))
         continue; // Jet must be fully contained in the acceptance
 
       // Jet pt must be larger than threshold
