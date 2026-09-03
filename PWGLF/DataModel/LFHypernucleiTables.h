@@ -28,6 +28,8 @@ namespace hyperrec
 DECLARE_SOA_COLUMN(CentralityFT0A, centralityFT0A, float); // centrality with FT0A estimator
 DECLARE_SOA_COLUMN(CentralityFT0C, centralityFT0C, float); // centrality with FT0C estimator
 DECLARE_SOA_COLUMN(CentralityFT0M, centralityFT0M, float); // centrality with FT0M estimator
+DECLARE_SOA_COLUMN(TrackOccupancyInTimeRange, trackOccupancyInTimeRange, int);   // Track occupancy in the time range around the collision
+DECLARE_SOA_COLUMN(FT0COccupancyInTimeRange, ft0cOccupancyInTimeRange, float);  // FT0C occupancy in the time range around the collision
 DECLARE_SOA_COLUMN(PsiFT0A, psiFT0A, float);               // Psi with FT0A estimator
 DECLARE_SOA_COLUMN(MultFT0A, multFT0A, float);             // Multiplicity with FT0A estimator
 DECLARE_SOA_COLUMN(PsiFT0C, psiFT0C, float);               // Psi with FT0C estimator
@@ -35,7 +37,7 @@ DECLARE_SOA_COLUMN(QFT0C, qFT0C, float);                   // Amplitude with FT0
 DECLARE_SOA_COLUMN(MultFT0C, multFT0C, float);             // Multiplicity with FT0C estimator
 DECLARE_SOA_COLUMN(PsiTPC, psiTPC, float);                 // Psi with TPC estimator
 DECLARE_SOA_COLUMN(MultTPC, multTPC, float);               // Multiplicity with TPC estimator
-DECLARE_SOA_COLUMN(CollisionId, collisionId, int64_t);     // CollisionID
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);            // Collision index
 
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t);                    // Run number
 DECLARE_SOA_COLUMN(IsMatter, isMatter, bool);                         // bool: true for matter
@@ -95,6 +97,7 @@ DECLARE_SOA_COLUMN(IsTwoBodyDecay, isTwoBodyDecay, bool);             // bool: t
 DECLARE_SOA_TABLE(DataHypCands, "AOD", "HYPCANDS",
                   o2::soa::Index<>,
                   hyperrec::CentralityFT0A, hyperrec::CentralityFT0C, hyperrec::CentralityFT0M,
+                  hyperrec::TrackOccupancyInTimeRange, hyperrec::FT0COccupancyInTimeRange,
                   hyperrec::XPrimVtx, hyperrec::YPrimVtx, hyperrec::ZPrimVtx,
 
                   hyperrec::RunNumber, hyperrec::IsMatter,
@@ -111,6 +114,7 @@ DECLARE_SOA_TABLE(DataHypCands, "AOD", "HYPCANDS",
 DECLARE_SOA_TABLE(DataHypCandsFlow, "AOD", "HYPCANDSFLOW",
                   o2::soa::Index<>,
                   hyperrec::CentralityFT0A, hyperrec::CentralityFT0C, hyperrec::CentralityFT0M,
+                  hyperrec::TrackOccupancyInTimeRange, hyperrec::FT0COccupancyInTimeRange,
                   hyperrec::PsiFT0A, hyperrec::MultFT0A,
                   hyperrec::PsiFT0C, hyperrec::MultFT0C, hyperrec::QFT0C,
                   hyperrec::PsiTPC, hyperrec::MultTPC,
@@ -130,6 +134,7 @@ DECLARE_SOA_TABLE(DataHypCandsFlow, "AOD", "HYPCANDSFLOW",
 DECLARE_SOA_TABLE(MCHypCands, "AOD", "MCHYPCANDS",
                   o2::soa::Index<>,
                   hyperrec::CentralityFT0A, hyperrec::CentralityFT0C, hyperrec::CentralityFT0M,
+                  hyperrec::TrackOccupancyInTimeRange, hyperrec::FT0COccupancyInTimeRange,
                   hyperrec::XPrimVtx, hyperrec::YPrimVtx, hyperrec::ZPrimVtx,
 
                   hyperrec::RunNumber, hyperrec::IsMatter,
@@ -159,6 +164,7 @@ DECLARE_SOA_TABLE(MCHypCands, "AOD", "MCHYPCANDS",
 DECLARE_SOA_TABLE(DataHypCandsWColl, "AOD", "HYPCANDSWCOLL",
                   o2::soa::Index<>,
                   hyperrec::CollisionId, hyperrec::CentralityFT0A, hyperrec::CentralityFT0C, hyperrec::CentralityFT0M,
+                  hyperrec::TrackOccupancyInTimeRange, hyperrec::FT0COccupancyInTimeRange,
                   hyperrec::XPrimVtx, hyperrec::YPrimVtx, hyperrec::ZPrimVtx,
 
                   hyperrec::RunNumber, hyperrec::IsMatter,

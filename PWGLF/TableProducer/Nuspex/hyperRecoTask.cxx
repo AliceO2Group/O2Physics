@@ -810,7 +810,7 @@ struct hyperRecoTask {
               hypCand.isSignal = true;
               hypCand.isFakeHeOnITSLayer = mcLabHe.mcMask() & 0x7F; // check if any of the first 7 bits is set
               hypCand.pdgCode = heMother.pdgCode();
-              hypCand.isRecoMCCollision = recoCollisionIds[heMother.mcCollisionId()] > 0;
+              hypCand.isRecoMCCollision = recoCollisionIds[heMother.mcCollisionId()] >= 0;
               hypCand.isSurvEvSelection = isSurvEvSelCollision[heMother.mcCollisionId()];
               filledMothers.push_back(heMother.globalIndex());
             }
@@ -844,6 +844,7 @@ struct hyperRecoTask {
       auto collision = collisions.rawIteratorAt(hypCand.collisionID);
       float trackedHypClSize = !trackedClSize.empty() ? trackedClSize[hypCand.v0ID] : 0;
       outputDataTable(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
+                      collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(),
                       collision.posX(), collision.posY(), collision.posZ(),
                       mRunNumber, hypCand.isMatter,
                       hypCand.recoPtHe3(), hypCand.recoPhiHe3(), hypCand.recoEtaHe3(),
@@ -877,6 +878,7 @@ struct hyperRecoTask {
       }
       float trackedHypClSize = !trackedClSize.empty() ? trackedClSize[hypCand.v0ID] : 0;
       outputDataTableWithFlow(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
+                              collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(),
                               collision.psiFT0A(), collision.multFT0A(),
                               collision.psiFT0C(), collision.multFT0C(), collision.qFT0C(),
                               collision.psiTPC(), collision.multTPC(),
@@ -909,6 +911,7 @@ struct hyperRecoTask {
       auto collision = collisions.rawIteratorAt(hypCand.collisionID);
       float trackedHypClSize = !trackedClSize.empty() ? trackedClSize[hypCand.v0ID] : 0;
       outputDataTableWithCollID(hypCand.collisionID, collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
+                                collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(),
                                 collision.posX(), collision.posY(), collision.posZ(),
                                 mRunNumber, hypCand.isMatter,
                                 hypCand.recoPtHe3(), hypCand.recoPhiHe3(), hypCand.recoEtaHe3(),
@@ -946,6 +949,7 @@ struct hyperRecoTask {
       int chargeFactor = -1 + 2 * (hypCand.pdgCode > 0);
       float trackedHypClSize = !trackedClSize.empty() ? trackedClSize[hypCand.v0ID] : 0;
       outputMCTable(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
+                    collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(),
                     collision.posX(), collision.posY(), collision.posZ(),
                     mRunNumber, hypCand.isMatter,
                     hypCand.recoPtHe3(), hypCand.recoPhiHe3(), hypCand.recoEtaHe3(),
@@ -1004,7 +1008,7 @@ struct hyperRecoTask {
       }
       hyperCandidate hypCand;
       hypCand.pdgCode = mcPart.pdgCode();
-      hypCand.isRecoMCCollision = recoCollisionIds[mcPart.mcCollisionId()] > 0;
+      hypCand.isRecoMCCollision = recoCollisionIds[mcPart.mcCollisionId()] >= 0;
       hypCand.isSurvEvSelection = isSurvEvSelCollision[mcPart.mcCollisionId()];
       int chargeFactor = -1 + 2 * (hypCand.pdgCode > 0);
       for (int i = 0; i < 3; i++) {
@@ -1017,15 +1021,20 @@ struct hyperRecoTask {
       hypCand.isSignal = true;
 
       float centFT0A = -1, centFT0C = -1, centFT0M = -1;
+      int trackOccupancyInTimeRange = -1;
+      float ft0cOccupancyInTimeRange = -1.f;
       if (hypCand.isRecoMCCollision) {
         auto recoCollision = collisions.rawIteratorAt(recoCollisionIds[mcPart.mcCollisionId()]);
         centFT0A = recoCollision.centFT0A();
         centFT0C = recoCollision.centFT0C();
         centFT0M = recoCollision.centFT0M();
+        trackOccupancyInTimeRange = recoCollision.trackOccupancyInTimeRange();
+        ft0cOccupancyInTimeRange = recoCollision.ft0cOccupancyInTimeRange();
       }
 
       outputMCTable(centFT0A, centFT0C, centFT0M,
-                    -1, -1, -1,
+                    trackOccupancyInTimeRange, ft0cOccupancyInTimeRange,
+                    primVtx[0], primVtx[1], primVtx[2],
                     mRunNumber, 0,
                     -1, -1, -1,
                     -1, -1, -1,

@@ -744,6 +744,7 @@ struct TrackedHypertritonRecoTask {
     flags |= static_cast<uint8_t>(piTrack.pidForTracking() & 0xf);
 
     fillCandidate(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
+                  collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(),
                   collision.posX(), collision.posY(), collision.posZ(),
                   runNumber, heTrack.sign() > 0,
                   std::hypot(v0.momHelium[0], v0.momHelium[1]), std::atan2(v0.momHelium[1], v0.momHelium[0]), RecoDecay::eta(v0.momHelium),
@@ -1137,6 +1138,8 @@ struct TrackedHypertritonRecoTask {
         float centralityFT0A = -1.f;
         float centralityFT0C = -1.f;
         float centralityFT0M = -1.f;
+        int trackOccupancyInTimeRange = -1;
+        float ft0cOccupancyInTimeRange = -1.f;
         float primaryVertexX = -1.f;
         float primaryVertexY = -1.f;
         float primaryVertexZ = -1.f;
@@ -1151,12 +1154,15 @@ struct TrackedHypertritonRecoTask {
             centralityFT0A = collision.centFT0A();
             centralityFT0C = collision.centFT0C();
             centralityFT0M = collision.centFT0M();
+            trackOccupancyInTimeRange = collision.trackOccupancyInTimeRange();
+            ft0cOccupancyInTimeRange = collision.ft0cOccupancyInTimeRange();
             primaryVertexX = collision.posX();
             primaryVertexY = collision.posY();
             primaryVertexZ = collision.posZ();
           }
         }
         mcHypCands(centralityFT0A, centralityFT0C, centralityFT0M,
+                   trackOccupancyInTimeRange, ft0cOccupancyInTimeRange,
                    primaryVertexX, primaryVertexY, primaryVertexZ,
                    runNumber, mother.pdgCode() > 0,
                    -1.f, -1.f, -1.f,
