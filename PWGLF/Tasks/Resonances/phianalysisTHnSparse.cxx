@@ -746,7 +746,7 @@ struct PhianalysisTHnSparse {
   }
   PROCESS_SWITCH(PhianalysisTHnSparse, processQA, "Process Event for Data", true);
 
-  void processData(EventCandidate const& collision, TrackCandidates const& tracks)
+  void processData(EventCandidate const& collision, TrackCandidates const& /*tracks*/)
   {
     auto posDaughters = positive->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto negDaughters = negative->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
