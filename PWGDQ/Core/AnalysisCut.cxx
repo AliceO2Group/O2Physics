@@ -21,8 +21,6 @@
 using std::cout;
 using std::endl;
 
-ClassImp(AnalysisCut);
-
 std::vector<int> AnalysisCut::fgUsedVars = {};
 
 //____________________________________________________________________________

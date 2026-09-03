@@ -41,9 +41,13 @@ using namespace o2::analysis::femto;
 struct FemtoTrackQa {
 
   // setup tables
-  using FemtoCollisions = o2::soa::Join<o2::aod::FCols, o2::aod::FColMasks, o2::aod::FColPos, o2::aod::FColSphericities, o2::aod::FColMults>;
+  using FemtoCollisions = o2::soa::Join<o2::aod::FCols, o2::aod::FColMasks, o2::aod::FColPos, o2::aod::FColSphericities, o2::aod::FColMults, o2::aod::FColCents>;
   using FilteredFemtoCollisions = o2::soa::Filtered<FemtoCollisions>;
   using FilteredFemtoCollision = FilteredFemtoCollisions::iterator;
+
+  using FemtoCollisionsWithEventShape = o2::soa::Join<FemtoCollisions, o2::aod::FColShapes>;
+  using FilteredFemtoCollisionsWithEventShape = o2::soa::Filtered<FemtoCollisionsWithEventShape>;
+  using FilteredFemtoCollisionWithEventShape = FilteredFemtoCollisionsWithEventShape::iterator;
 
   using FemtoCollisionsWithLabel = o2::soa::Join<FemtoCollisions, o2::aod::FColLabels>;
   using FilteredFemtoCollisionsWithLabel = o2::soa::Filtered<FemtoCollisionsWithLabel>;
@@ -52,6 +56,8 @@ struct FemtoTrackQa {
   using FemtoTracks = o2::soa::Join<o2::aod::FTracks, o2::aod::FTrackMasks, o2::aod::FTrackMass, o2::aod::FTrackDcas, o2::aod::FTrackExtras, o2::aod::FTrackPids>;
 
   using FemtoTracksWithLabel = o2::soa::Join<FemtoTracks, o2::aod::FTrackLabels>;
+
+  using FemtoMcParticlesWithLabel = o2::soa::Join<o2::aod::FMcParticles, o2::aod::FMcMotherLabels>;
 
   o2::framework::SliceCache cache;
 
@@ -81,25 +87,25 @@ struct FemtoTrackQa {
 
   void init(o2::framework::InitContext&)
   {
-    if ((doprocessData + doprocessMc) > 1) {
+    if ((static_cast<int>(doprocessData) + static_cast<int>(doprocessMc) + static_cast<int>(doprocessDataWithEventShape)) > 1) {
       LOG(fatal) << "More than 1 process function is activated. Breaking...";
     }
-    bool processData = doprocessData;
+    bool processDataFlag = doprocessData || doprocessDataWithEventShape;
     trackCleaner.init(confTrackCleaner);
 
     std::map<colhistmanager::ColHist, std::vector<o2::framework::AxisSpec>> colHistSpec;
     std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> trackHistSpec;
 
-    if (processData) {
+    if (processDataFlag) {
       colHistSpec = colhistmanager::makeColQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
-      colHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, colHistSpec, confCollisionBinning, confCollisionQaBinning);
+      colHistManager.init<modes::Mode::kReco_Qa>(&hRegistry, colHistSpec, confCollisionBinning, confCollisionQaBinning);
       trackHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confTrackBinning, confTrackQaBinning);
-      trackHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, trackHistSpec, confTrackSelection, confTrackQaBinning);
+      trackHistManager.init<modes::Mode::kReco_Qa>(&hRegistry, trackHistSpec, confTrackSelection, confTrackQaBinning);
     } else {
       colHistSpec = colhistmanager::makeColMcQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
-      colHistManager.init<modes::Mode::kAnalysis_Qa_Mc>(&hRegistry, colHistSpec, confCollisionBinning, confCollisionQaBinning);
+      colHistManager.init<modes::Mode::kReco_Qa_Mc>(&hRegistry, colHistSpec, confCollisionBinning, confCollisionQaBinning);
       trackHistSpec = trackhistmanager::makeTrackMcQaHistSpecMap(confTrackBinning, confTrackQaBinning);
-      trackHistManager.init<modes::Mode::kAnalysis_Qa_Mc>(&hRegistry, trackHistSpec, confTrackSelection, confTrackQaBinning);
+      trackHistManager.init<modes::Mode::kReco_Qa_Mc>(&hRegistry, trackHistSpec, confTrackSelection, confTrackQaBinning);
     }
     hRegistry.print();
   };
@@ -110,35 +116,48 @@ struct FemtoTrackQa {
     if (trackSlice.size() == 0) {
       return;
     }
-    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col);
+    colHistManager.fill<modes::Mode::kReco_Qa>(col);
     for (auto const& track : trackSlice) {
-      trackHistManager.fill<modes::Mode::kAnalysis_Qa>(track, tracks);
+      trackHistManager.fill<modes::Mode::kReco_Qa>(track, tracks);
     }
   };
   PROCESS_SWITCH(FemtoTrackQa, processData, "Track QA in Data", true);
 
-  void processMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
+  void processMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoMcParticlesWithLabel const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
     auto trackSlice = trackWithLabelPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     if (trackSlice.size() == 0) {
       return;
     }
-    colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols);
+    colHistManager.fill<modes::Mode::kReco_Qa_Mc>(col, mcCols);
     for (auto const& track : trackSlice) {
       if (!trackCleaner.isClean(track, mcParticles, mcMothers, mcPartonicMothers)) {
         continue;
       }
-      trackHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(track, tracks, mcParticles, mcMothers, mcPartonicMothers);
+      trackHistManager.fill<modes::Mode::kReco_Qa_Mc>(track, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
   PROCESS_SWITCH(FemtoTrackQa, processMc, "Track QA in Monte Carlo", false);
+
+  void processDataWithEventShape(FilteredFemtoCollisionWithEventShape const& col, FemtoTracks const& tracks)
+  {
+    auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (trackSlice.size() == 0) {
+      return;
+    }
+    colHistManager.fill<modes::Mode::kReco_Qa>(col);
+    for (auto const& track : trackSlice) {
+      trackHistManager.fill<modes::Mode::kReco_Qa>(track, tracks);
+    }
+  };
+  PROCESS_SWITCH(FemtoTrackQa, processDataWithEventShape, "Track QA in Data with event shape information", false);
 };
 
 o2::framework::WorkflowSpec
-  defineDataProcessing(o2::framework::ConfigContext const& cfgc)
+  defineDataProcessing(o2::framework::ConfigContext const& context)
 {
   o2::framework::WorkflowSpec workflow{
-    adaptAnalysisTask<FemtoTrackQa>(cfgc),
+    adaptAnalysisTask<FemtoTrackQa>(context),
   };
   return workflow;
 }

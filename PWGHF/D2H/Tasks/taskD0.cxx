@@ -32,6 +32,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
@@ -120,10 +121,10 @@ struct HfTaskD0 {
   using D0CandidatesMlKF = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0, aod::HfCand2ProngKF>>;
   using D0CandidatesMlMcKF = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0, aod::HfCand2ProngKF, aod::HfCand2ProngMcRec>>;
 
-  using Collisions = soa::Join<aod::Collisions, aod::EvSels>;
-  using CollisionsCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs>;
-  using CollisionsWithMcLabels = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
-  using CollisionsWithMcLabelsCent = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs>;
+  using Collisions = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults>;
+  using CollisionsCent = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms, aod::CentFT0Cs>;
+  using CollisionsWithMcLabels = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults>;
+  using CollisionsWithMcLabelsCent = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults, aod::CentFT0Ms, aod::CentFT0Cs>;
   using TracksSelQuality = soa::Join<aod::TracksExtra, aod::TracksWMc>;
   using TracksWPid = soa::Join<o2::aod::FullTracks, aod::TracksDCA, o2::aod::TrackSelection, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr>;
   // using TracksWithExtra = o2::soa::Join<o2::aod::FullTracks, o2::aod::TrackSelection>;
@@ -345,10 +346,10 @@ struct HfTaskD0 {
     if (doprocessMcWithDCAFitterN || doprocessMcWithDCAFitterNCent || doprocessMcWithKFParticle || doprocessMcWithDCAFitterNMl || doprocessMcWithDCAFitterNMlCent || doprocessMcWithKFParticleMl) {
       axes.push_back(thnAxisPtB);
       axes.push_back(thnAxisOrigin);
-      axes.push_back(thnAxisNumPvContr);
     }
     if (storeCentrality) {
       axes.push_back(thnAxisCent);
+      axes.push_back(thnAxisNumPvContr);
     }
     if (storeOccupancyAndIR) {
       axes.push_back(thnAxisOccupancy);
@@ -365,8 +366,8 @@ struct HfTaskD0 {
 
       // Insert ML scores after pt (position 2) to match taskDplus structure: [mass, pt, mlScores, ...]
       if (doprocessDataWithDCAFitterNMlWithUpc) {
-        axes.insert(axes.begin() + 2, thnAxisPromptScore);
         axes.insert(axes.begin() + 2, thnAxisNonPromptScore);
+        axes.insert(axes.begin() + 2, thnAxisPromptScore);
         axes.insert(axes.begin() + 2, thnAxisBkgScore);
       } else {
         axes.insert(axes.begin(), thnAxisPromptScore);
@@ -556,10 +557,12 @@ struct HfTaskD0 {
       float cent{-1.f};
       float occ{-1.f};
       float ir{-1.f};
+      int numPvContributors = -1;
       if (storeCentrality || storeOccupancyAndIR) {
         auto collision = candidate.template collision_as<CollType>();
         if (storeCentrality && centEstimator != CentralityEstimator::None) {
           cent = getCentralityColl(collision, centEstimator);
+          numPvContributors = collision.numContrib();
         }
         if (storeOccupancyAndIR && occEstimator != OccupancyEstimator::None) {
           occ = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
@@ -575,21 +578,21 @@ struct HfTaskD0 {
       if constexpr (ApplyMl) {
         if (storeCentrality && storeOccupancyAndIR) {
           if (candidate.isSelD0() >= selectionFlagD0) {
-            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, HfHelper::yD0(candidate), SigD0, cent, occ, ir);
-            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, HfHelper::yD0(candidate), candidate.isSelD0bar() ? ReflectedD0 : PureSigD0, cent, occ, ir);
+            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, HfHelper::yD0(candidate), SigD0, cent, numPvContributors, occ, ir);
+            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, HfHelper::yD0(candidate), candidate.isSelD0bar() ? ReflectedD0 : PureSigD0, cent, numPvContributors, occ, ir);
           }
           if (candidate.isSelD0bar() >= selectionFlagD0bar) {
-            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, HfHelper::yD0(candidate), SigD0bar, cent, occ, ir);
-            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, HfHelper::yD0(candidate), candidate.isSelD0() ? ReflectedD0bar : PureSigD0bar, cent, occ, ir);
+            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, HfHelper::yD0(candidate), SigD0bar, cent, numPvContributors, occ, ir);
+            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, HfHelper::yD0(candidate), candidate.isSelD0() ? ReflectedD0bar : PureSigD0bar, cent, numPvContributors, occ, ir);
           }
         } else if (storeCentrality && !storeOccupancyAndIR) {
           if (candidate.isSelD0() >= selectionFlagD0) {
-            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, HfHelper::yD0(candidate), SigD0, cent);
-            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, HfHelper::yD0(candidate), candidate.isSelD0bar() ? ReflectedD0 : PureSigD0, cent);
+            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, HfHelper::yD0(candidate), SigD0, cent, numPvContributors);
+            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, HfHelper::yD0(candidate), candidate.isSelD0bar() ? ReflectedD0 : PureSigD0, cent, numPvContributors);
           }
           if (candidate.isSelD0bar() >= selectionFlagD0bar) {
-            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, HfHelper::yD0(candidate), SigD0bar, cent);
-            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, HfHelper::yD0(candidate), candidate.isSelD0() ? ReflectedD0bar : PureSigD0bar, cent);
+            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, HfHelper::yD0(candidate), SigD0bar, cent, numPvContributors);
+            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, HfHelper::yD0(candidate), candidate.isSelD0() ? ReflectedD0bar : PureSigD0bar, cent, numPvContributors);
           }
         } else if (!storeCentrality && storeOccupancyAndIR) {
           if (candidate.isSelD0() >= selectionFlagD0) {
@@ -622,21 +625,21 @@ struct HfTaskD0 {
       } else {
         if (storeCentrality && storeOccupancyAndIR) {
           if (candidate.isSelD0() >= selectionFlagD0) {
-            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, HfHelper::yD0(candidate), SigD0, cent, occ, ir);
-            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, HfHelper::yD0(candidate), candidate.isSelD0bar() ? ReflectedD0 : PureSigD0, cent, occ, ir);
+            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, HfHelper::yD0(candidate), SigD0, cent, numPvContributors, occ, ir);
+            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, HfHelper::yD0(candidate), candidate.isSelD0bar() ? ReflectedD0 : PureSigD0, cent, numPvContributors, occ, ir);
           }
           if (candidate.isSelD0bar() >= selectionFlagD0bar) {
-            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, HfHelper::yD0(candidate), SigD0bar, cent, occ, ir);
-            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, HfHelper::yD0(candidate), candidate.isSelD0() ? ReflectedD0bar : PureSigD0bar, cent, occ, ir);
+            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, HfHelper::yD0(candidate), SigD0bar, cent, numPvContributors, occ, ir);
+            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, HfHelper::yD0(candidate), candidate.isSelD0() ? ReflectedD0bar : PureSigD0bar, cent, numPvContributors, occ, ir);
           }
         } else if (storeCentrality && !storeOccupancyAndIR) {
           if (candidate.isSelD0() >= selectionFlagD0) {
-            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, HfHelper::yD0(candidate), SigD0, cent);
-            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, HfHelper::yD0(candidate), candidate.isSelD0bar() ? ReflectedD0 : PureSigD0, cent);
+            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, HfHelper::yD0(candidate), SigD0, cent, numPvContributors);
+            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, HfHelper::yD0(candidate), candidate.isSelD0bar() ? ReflectedD0 : PureSigD0, cent, numPvContributors);
           }
           if (candidate.isSelD0bar() >= selectionFlagD0bar) {
-            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, HfHelper::yD0(candidate), SigD0bar, cent);
-            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, HfHelper::yD0(candidate), candidate.isSelD0() ? ReflectedD0bar : PureSigD0bar, cent);
+            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, HfHelper::yD0(candidate), SigD0bar, cent, numPvContributors);
+            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, HfHelper::yD0(candidate), candidate.isSelD0() ? ReflectedD0bar : PureSigD0bar, cent, numPvContributors);
           }
         } else if (!storeCentrality && storeOccupancyAndIR) {
           if (candidate.isSelD0() >= selectionFlagD0) {
@@ -1122,27 +1125,27 @@ struct HfTaskD0 {
           registry.fill(HIST("hMassSigD0"), massD0, ptCandidate, rapidityCandidate);
           if constexpr (ApplyMl) {
             if (storeCentrality && storeOccupancyAndIR) {
-              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent, occ, ir);
+              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), cent, numPvContributors, occ, ir);
             } else if (storeCentrality && !storeOccupancyAndIR) {
-              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent);
+              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), cent, numPvContributors);
             } else if (!storeCentrality && storeOccupancyAndIR) {
-              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, occ, ir);
+              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), occ, ir);
             } else if (storeTrackQuality) {
-              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, minItsClustersOfProngs, minTpcCrossedRowsOfProngs);
+              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), minItsClustersOfProngs, minTpcCrossedRowsOfProngs);
             } else {
-              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors);
+              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec());
             }
           } else {
             if (storeCentrality && storeOccupancyAndIR) {
-              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent, occ, ir);
+              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), cent, numPvContributors, occ, ir);
             } else if (storeCentrality && !storeOccupancyAndIR) {
-              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent);
+              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), cent, numPvContributors);
             } else if (!storeCentrality && storeOccupancyAndIR) {
-              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, occ, ir);
+              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), occ, ir);
             } else if (storeTrackQuality) {
-              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, minItsClustersOfProngs, minTpcCrossedRowsOfProngs);
+              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), minItsClustersOfProngs, minTpcCrossedRowsOfProngs);
             } else {
-              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors);
+              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec());
             }
           }
         } else {
@@ -1164,27 +1167,27 @@ struct HfTaskD0 {
             registry.fill(HIST("hMassReflBkgD0"), massD0, ptCandidate, rapidityCandidate);
             if constexpr (ApplyMl) {
               if (storeCentrality && storeOccupancyAndIR) {
-                registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent, occ, ir);
+                registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), cent, numPvContributors, occ, ir);
               } else if (storeCentrality && !storeOccupancyAndIR) {
-                registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent);
+                registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), cent, numPvContributors);
               } else if (!storeCentrality && storeOccupancyAndIR) {
-                registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, occ, ir);
+                registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), occ, ir);
               } else if (storeTrackQuality) {
-                registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, minItsClustersOfProngs, minTpcCrossedRowsOfProngs);
+                registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), minItsClustersOfProngs, minTpcCrossedRowsOfProngs);
               } else {
-                registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors);
+                registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec());
               }
             } else {
               if (storeCentrality && storeOccupancyAndIR) {
-                registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent, occ, ir);
+                registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), cent, numPvContributors, occ, ir);
               } else if (storeCentrality && !storeOccupancyAndIR) {
-                registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent);
+                registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), cent, numPvContributors);
               } else if (!storeCentrality && storeOccupancyAndIR) {
-                registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, occ, ir);
+                registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), occ, ir);
               } else if (storeTrackQuality) {
-                registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, minItsClustersOfProngs, minTpcCrossedRowsOfProngs);
+                registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), minItsClustersOfProngs, minTpcCrossedRowsOfProngs);
               } else {
-                registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors);
+                registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec());
               }
             }
           }
@@ -1196,27 +1199,27 @@ struct HfTaskD0 {
           registry.fill(HIST("hMassSigD0bar"), massD0bar, ptCandidate, rapidityCandidate);
           if constexpr (ApplyMl) {
             if (storeCentrality && storeOccupancyAndIR) {
-              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent, occ, ir);
+              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), cent, numPvContributors, occ, ir);
             } else if (storeCentrality && !storeOccupancyAndIR) {
-              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent);
+              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), cent, numPvContributors);
             } else if (!storeCentrality && storeOccupancyAndIR) {
-              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, occ, ir);
+              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), occ, ir);
             } else if (storeTrackQuality) {
-              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, minItsClustersOfProngs, minTpcCrossedRowsOfProngs);
+              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), minItsClustersOfProngs, minTpcCrossedRowsOfProngs);
             } else {
-              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors);
+              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec());
             }
           } else {
             if (storeCentrality && storeOccupancyAndIR) {
-              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent, occ, ir);
+              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), cent, numPvContributors, occ, ir);
             } else if (storeCentrality && !storeOccupancyAndIR) {
-              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent);
+              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), cent, numPvContributors);
             } else if (!storeCentrality && storeOccupancyAndIR) {
-              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, occ, ir);
+              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), occ, ir);
             } else if (storeTrackQuality) {
-              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, minItsClustersOfProngs, minTpcCrossedRowsOfProngs);
+              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), minItsClustersOfProngs, minTpcCrossedRowsOfProngs);
             } else {
-              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors);
+              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec());
             }
           }
         } else {
@@ -1225,9 +1228,9 @@ struct HfTaskD0 {
             registry.fill(HIST("hMassReflBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
             if constexpr (ApplyMl) {
               if (storeCentrality && storeOccupancyAndIR) {
-                registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, rapidityCandidate, ReflectedD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent, occ, ir);
+                registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, rapidityCandidate, ReflectedD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), cent, numPvContributors, occ, ir);
               } else if (storeCentrality && !storeOccupancyAndIR) {
-                registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, rapidityCandidate, ReflectedD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent);
+                registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, rapidityCandidate, ReflectedD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), cent, numPvContributors);
               } else if (!storeCentrality && storeOccupancyAndIR) {
                 registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, rapidityCandidate, ReflectedD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, occ, ir);
               } else if (storeTrackQuality) {
@@ -1237,15 +1240,15 @@ struct HfTaskD0 {
               }
             } else {
               if (storeCentrality && storeOccupancyAndIR) {
-                registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, ReflectedD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent, occ, ir);
+                registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, ReflectedD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), cent, numPvContributors, occ, ir);
               } else if (storeCentrality && !storeOccupancyAndIR) {
-                registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, ReflectedD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent);
+                registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, ReflectedD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), cent, numPvContributors);
               } else if (!storeCentrality && storeOccupancyAndIR) {
-                registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, ReflectedD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, occ, ir);
+                registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, ReflectedD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), occ, ir);
               } else if (storeTrackQuality) {
-                registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, ReflectedD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, minItsClustersOfProngs, minTpcCrossedRowsOfProngs);
+                registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, ReflectedD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), minItsClustersOfProngs, minTpcCrossedRowsOfProngs);
               } else {
-                registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, ReflectedD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors);
+                registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, ReflectedD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec());
               }
             }
           }
@@ -1386,7 +1389,7 @@ struct HfTaskD0 {
   PROCESS_SWITCH(HfTaskD0, processMcWithKFParticleMl, "Process MC with KFParticle and ML selections", false);
   // TODO: add the processMcWithKFParticleMlCent
 
-  void processDataWithDCAFitterNWithUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processDataWithDCAFitterNWithUpc(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                                         aod::BcFullInfos const& bcs,
                                         D0Candidates const&,
                                         aod::TracksWExtra const&,
@@ -1401,7 +1404,7 @@ struct HfTaskD0 {
   }
   PROCESS_SWITCH(HfTaskD0, processDataWithDCAFitterNWithUpc, "Process real data with DCAFitterN w/o ML with UPC", false);
 
-  void processDataWithDCAFitterNMlWithUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processDataWithDCAFitterNMlWithUpc(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                                           aod::BcFullInfos const& bcs,
                                           D0CandidatesMl const&,
                                           aod::TracksWExtra const&,

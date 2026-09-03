@@ -104,6 +104,13 @@ class FlatLutData
    */
   void initialize(const lutHeader_t& header);
 
+  size_t getEntryIndex(int nch_bin, int rad_bin, int eta_bin, int pt_bin) const
+  {
+    // Linear index: nch varies slowest, pt varies fastest
+    // idx = nch * (rad*eta*pt) + rad * (eta*pt) + eta * pt + pt
+    return static_cast<size_t>(nch_bin) * (mRadBins * mEtaBins * mPtBins) + static_cast<size_t>(rad_bin) * (mEtaBins * mPtBins) + static_cast<size_t>(eta_bin) * mPtBins + static_cast<size_t>(pt_bin);
+  }
+
   /**
    * @brief Get LUT entry by bin indices (view)
    */

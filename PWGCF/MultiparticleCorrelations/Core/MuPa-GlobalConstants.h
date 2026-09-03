@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file MuPa-GlobalConstants.h
-/// \brief ... TBI 20250425
+/// \brief Task to calculate multiparticle correlations and related observables
 /// \author Ante.Bilandzic@cern.ch
 
 #ifndef PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_GLOBALCONSTANTS_H_
@@ -23,5 +23,9 @@ const int gMaxNoBinsKine = 1000;           // max number of bins for differentia
 const int gMaxBinsDiffWeights = 100;       // max number of bins for differential weights, see MakeWeights.C
 const int gMaxNumberEtaSeparations = 9;    // max number of different eta separations used to calculated 2p corr. with eta separations
 const int gMaxNumberSparseDimensions = 10; // max number of dimensions in sparse histograms
+const int gOrderIsotropic = 4;             // if set to 4, i consider 2p, 4p, 6p, and 8p isotropic correlators
+const int grsN = 2;                        // rec or sim + silencing o2_linter : Avoid magic numbers in expressions
+const int gbaN = 2;                        // before or after + silencing o2_linter : Avoid magic numbers in expressions
+const int gewN = 2;                        // number of eta windows + silencing o2_linter : Avoid magic numbers in expressions
 
 #endif // PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_GLOBALCONSTANTS_H_

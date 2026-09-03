@@ -9,21 +9,18 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-//  *+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-//  Lambdakzero ML selection task
-//  *+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-//
-//    Comments, questions, complaints, suggestions?
-//    Please write to:
-//    gianni.shigeru.setoue.liveraro@cern.ch
-//    romain.schotter@cern.ch
-//    david.dobrigkeit.chinellato@cern.ch
+/// \file Cascade ML selection task
+/// \brief Produces ML response table for cascade selection at analysis level, either when running over original data or derived data.
+/// \author Gianni Shigeru Setoue Liveraro Catalano <gianni.shigeru.setoue.liveraro@cern.ch>, UNICAMP
+/// \author Romain Schotter <romain.schotter@cern.ch>, Austrian Academy of Sciences
+/// \author David Dobrigkeit Chinellato <david.dobrigkeit.chinellato@cern.ch>, Austrian Academy of Sciences
 //
 
 #include "PWGLF/DataModel/LFStrangenessMLTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/Utils/CascadeMlResponse.h"
 
-#include "Tools/ML/model.h"
+#include "Tools/ML/MlResponse.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
@@ -31,6 +28,7 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -38,10 +36,16 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TH1.h>
+#include <TString.h>
+
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
+#include <iterator>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -51,34 +55,39 @@ using namespace o2::framework::expressions;
 using namespace o2::ml;
 
 // For original data loops
-using CascOriginalDatas = soa::Join<aod::CascIndices, aod::CascCores>;
+using CascOriginalDatas = soa::Join<aod::CascIndices, aod::CascCores, aod::CascBBs>;
 
 // For derived data analysis
-using CascDerivedDatas = soa::Join<aod::CascCores, aod::CascExtras, aod::CascCollRefs>;
+using CascDerivedDatas = soa::Join<aod::CascCores, aod::CascExtras, aod::CascCollRefs, aod::CascBBs>;
 
 struct cascademlselection {
-  o2::ml::OnnxModel mlModelXiMinus;
-  o2::ml::OnnxModel mlModelXiPlus;
-  o2::ml::OnnxModel mlModelOmegaMinus;
-  o2::ml::OnnxModel mlModelOmegaPlus;
+  o2::analysis::CascadeMlResponse<float> mlModelXiMinus;
+  o2::analysis::CascadeMlResponse<float> mlModelXiPlus;
+  o2::analysis::CascadeMlResponse<float> mlModelOmegaMinus;
+  o2::analysis::CascadeMlResponse<float> mlModelOmegaPlus;
 
   // Custom grouping
   std::vector<std::vector<int>> cascadesGrouped;
-
-  std::map<std::string, std::string> metadata;
 
   Produces<aod::CascXiMLScores> xiMLSelections;    // optionally aggregate information from ML output for posterior analysis (derived data)
   Produces<aod::CascOmMLScores> omegaMLSelections; // optionally aggregate information from ML output for posterior analysis (derived data)
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  // BDT score histograms, indexed [pT bin][class], one set per particle species
+  std::vector<std::vector<std::shared_ptr<TH1>>> histScoreXiMinus;
+  std::vector<std::vector<std::shared_ptr<TH1>>> histScoreXiPlus;
+  std::vector<std::vector<std::shared_ptr<TH1>>> histScoreOmegaMinus;
+  std::vector<std::vector<std::shared_ptr<TH1>>> histScoreOmegaPlus;
+
   // CCDB configuration
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  int mRunNumber;
+  int mRunNumber = -1;
 
   // CCDB options
   struct : ConfigurableGroup {
+    std::string prefix = "ccdbConfigurations";
     Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
     Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
     Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
@@ -88,29 +97,43 @@ struct cascademlselection {
 
   // Machine learning evaluation for pre-selection and corresponding information generation
   struct : ConfigurableGroup {
+    std::string prefix = "mlConfigurations";
     // ML classifiers: master flags to populate ML Selection tables
     Configurable<bool> calculateXiMinusScores{"mlConfigurations.calculateXiMinusScores", true, "calculate XiMinus ML scores"};
     Configurable<bool> calculateXiPlusScores{"mlConfigurations.calculateXiPlusScores", true, "calculate XiPlus ML scores"};
     Configurable<bool> calculateOmegaMinusScores{"mlConfigurations.calculateOmegaMinusScores", true, "calculate OmegaMinus ML scores"};
     Configurable<bool> calculateOmegaPlusScores{"mlConfigurations.calculateOmegaPlusScores", true, "calculate OmegaPlus ML scores"};
 
-    // ML input for ML calculation
-    Configurable<std::string> modelPathCCDB{"mlConfigurations.modelPathCCDB", "", "ML Model path in CCDB"};
+    // List and order of input features fed to the ONNX models; any subset/order of the names
+    // registered in CascMlResponse::setAvailableInputFeatures can be used here
+    Configurable<std::vector<std::string>> namesInputFeatures{"mlConfigurations.namesInputFeatures", std::vector<std::string>{"cascradius", "v0radius", "casccosPA", "v0cosPA", "dcapostopv", "dcanegtopv", "dcabachtopv", "dcacascdaughters", "dcaV0daughters", "dcav0topv", "bachBaryonCosPA", "bachBaryonDCAxyToPV"}, "Names (and order) of the input features to be used in the ML models"};
+
+    // ML input for ML calculation: one model (ONNX file / CCDB path) per pT bin
+    Configurable<std::vector<std::string>> modelPathsCCDBXiMinus{"mlConfigurations.modelPathsCCDBXiMinus", std::vector<std::string>{""}, "ML Model paths in CCDB for Xi-. One per pT bin."};
+    Configurable<std::vector<std::string>> modelPathsCCDBXiPlus{"mlConfigurations.modelPathsCCDBXiPlus", std::vector<std::string>{""}, "ML Model paths in CCDB for Xi+. One per pT bin."};
+    Configurable<std::vector<std::string>> modelPathsCCDBOmegaMinus{"mlConfigurations.modelPathsCCDBOmegaMinus", std::vector<std::string>{""}, "ML Model paths in CCDB for Omega-. One per pT bin."};
+    Configurable<std::vector<std::string>> modelPathsCCDBOmegaPlus{"mlConfigurations.modelPathsCCDBOmegaPlus", std::vector<std::string>{""}, "ML Model paths in CCDB for Omega+. One per pT bin."};
     Configurable<int64_t> timestampCCDB{"mlConfigurations.timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB.  Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
     Configurable<bool> loadModelsFromCCDB{"mlConfigurations.loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
     Configurable<bool> enableOptimizations{"mlConfigurations.enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
 
-    // Local paths for test purposes
-    Configurable<std::string> localModelPathXiMinus{"mlConfigurations.localModelPathXiMinus", "XiMinus_BDTModel.onnx", "(std::string) Path to the local .onnx file."};
-    Configurable<std::string> localModelPathXiPlus{"mlConfigurations.localModelPathXiPlus", "XiPlus_BDTModel.onnx", "(std::string) Path to the local .onnx file."};
-    Configurable<std::string> localModelPathOmegaMinus{"mlConfigurations.localModelPathOmegaMinus", "OmegaMinus_BDTModel.onnx", "(std::string) Path to the local .onnx file."};
-    Configurable<std::string> localModelPathOmegaPlus{"mlConfigurations.localModelPathOmegaPlus", "OmegaPlus_BDTModel.onnx", "(std::string) Path to the local .onnx file."};
+    // Local/cvmfs paths (also used as CCDB download destination filenames), one per pT bin
+    Configurable<std::vector<std::string>> onnxFileNamesXiMinus{"mlConfigurations.onnxFileNamesXiMinus", std::vector<std::string>{"XiMinus_BDTModel.onnx"}, "(std::string) Paths to the local .onnx file. One per pT bin."};
+    Configurable<std::vector<std::string>> onnxFileNamesXiPlus{"mlConfigurations.onnxFileNamesXiPlus", std::vector<std::string>{"XiPlus_BDTModel.onnx"}, "(std::string) Paths to the local .onnx file. One per pT bin."};
+    Configurable<std::vector<std::string>> onnxFileNamesOmegaMinus{"mlConfigurations.onnxFileNamesOmegaMinus", std::vector<std::string>{"OmegaMinus_BDTModel.onnx"}, "(std::string) Paths to the local .onnx file. One per pT bin."};
+    Configurable<std::vector<std::string>> onnxFileNamesOmegaPlus{"mlConfigurations.onnxFileNamesOmegaPlus", std::vector<std::string>{"OmegaPlus_BDTModel.onnx"}, "(std::string) Paths to the local .onnx file. One per pT bin."};
 
-    // Thresholds for choosing to populate V0Cores tables with pre-selections
-    Configurable<float> thresholdXiMinus{"mlConfigurations.thresholdXiMinus", -1.0f, "Threshold to keep XiMinus candidates"};
-    Configurable<float> thresholdXiPlus{"mlConfigurations.thresholdXiPlus", -1.0f, "Threshold to keep XiPlus candidates"};
-    Configurable<float> thresholdOmegaMinus{"mlConfigurations.thresholdOmegaMinus", -1.0f, "Threshold to keep OmegaMinus candidates"};
-    Configurable<float> thresholdOmegaPlus{"mlConfigurations.thresholdOmegaPlus", -1.0f, "Threshold to keep OmegaPlus candidates"};
+    // Binning
+    Configurable<std::vector<double>> binsPtXiMinus{"binsPtXiMinus", std::vector<double>{0., 10.}, "pT bin limits for ML application for Xi-"};
+    Configurable<std::vector<double>> binsPtXiPlus{"binsPtXiPlus", std::vector<double>{0., 10.}, "pT bin limits for ML application for Xi+"};
+    Configurable<std::vector<double>> binsPtOmegaMinus{"binsPtOmegaMinus", std::vector<double>{0., 10.}, "pT bin limits for ML application for Omega-"};
+    Configurable<std::vector<double>> binsPtOmegaPlus{"binsPtOmegaPlus", std::vector<double>{0., 10.}, "pT bin limits for ML application for Omega+"};
+
+    // Number of classes in the ML models. Default is 2 (signal and background)
+    Configurable<int> nClassesMlXiMinus{"nClassesMlXiMinus", 2, "Number of classes in ML model for Xi-"};
+    Configurable<int> nClassesMlXiPlus{"nClassesMlXiPlus", 2, "Number of classes in ML model for Xi+"};
+    Configurable<int> nClassesMlOmegaMinus{"nClassesMlOmegaMinus", 2, "Number of classes in ML model for Omega-"};
+    Configurable<int> nClassesMlOmegaPlus{"nClassesMlOmegaPlus", 2, "Number of classes in ML model for Omega+"};
   } mlConfigurations;
 
   // Axis
@@ -146,62 +169,35 @@ struct cascademlselection {
         mlConfigurations.calculateOmegaPlusScores) {
       if (mlConfigurations.timestampCCDB.value != -1)
         timeStampML = mlConfigurations.timestampCCDB.value;
-      LoadMachines(timeStampML);
+      loadMachines(timeStampML);
     }
   }
 
   // function to load models for ML-based classifiers
-  void LoadMachines(int64_t timeStampML)
+  void loadMachines(int64_t timeStampML)
   {
+    auto loadModel = [&](bool doCalculate, o2::analysis::CascadeMlResponse<float>& model, std::vector<std::string> const& onnxFileNames, std::vector<std::string> const& pathsCCDB) {
+      if (!doCalculate) {
+        return;
+      }
+      if (mlConfigurations.loadModelsFromCCDB) {
+        model.setModelPathsCCDB(onnxFileNames, ccdbApi, pathsCCDB, timeStampML);
+      } else {
+        model.setModelPathsLocal(onnxFileNames);
+      }
+      model.init(mlConfigurations.enableOptimizations.value);
+    };
+
     if (mlConfigurations.loadModelsFromCCDB) {
       ccdbApi.init(ccdbConfigurations.ccdburl);
       LOG(info) << "Fetching cascade models for timestamp: " << timeStampML;
-
-      if (mlConfigurations.calculateXiMinusScores) {
-        bool retrieveSuccess = ccdbApi.retrieveBlob(mlConfigurations.modelPathCCDB, ".", metadata, timeStampML, false, mlConfigurations.localModelPathXiMinus.value);
-        if (retrieveSuccess) {
-          mlModelXiMinus.initModel(mlConfigurations.localModelPathXiMinus.value, mlConfigurations.enableOptimizations.value);
-        } else {
-          LOG(fatal) << "Error encountered while fetching/loading the XiMinus model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";
-        }
-      }
-
-      if (mlConfigurations.calculateXiPlusScores) {
-        bool retrieveSuccess = ccdbApi.retrieveBlob(mlConfigurations.modelPathCCDB, ".", metadata, timeStampML, false, mlConfigurations.localModelPathXiPlus.value);
-        if (retrieveSuccess) {
-          mlModelXiPlus.initModel(mlConfigurations.localModelPathXiPlus.value, mlConfigurations.enableOptimizations.value);
-        } else {
-          LOG(fatal) << "Error encountered while fetching/loading the XiPlus model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";
-        }
-      }
-
-      if (mlConfigurations.calculateOmegaMinusScores) {
-        bool retrieveSuccess = ccdbApi.retrieveBlob(mlConfigurations.modelPathCCDB, ".", metadata, timeStampML, false, mlConfigurations.localModelPathOmegaMinus.value);
-        if (retrieveSuccess) {
-          mlModelOmegaMinus.initModel(mlConfigurations.localModelPathOmegaMinus.value, mlConfigurations.enableOptimizations.value);
-        } else {
-          LOG(fatal) << "Error encountered while fetching/loading the OmegaMinus model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";
-        }
-      }
-
-      if (mlConfigurations.calculateOmegaPlusScores) {
-        bool retrieveSuccess = ccdbApi.retrieveBlob(mlConfigurations.modelPathCCDB, ".", metadata, timeStampML, false, mlConfigurations.localModelPathOmegaPlus.value);
-        if (retrieveSuccess) {
-          mlModelOmegaPlus.initModel(mlConfigurations.localModelPathOmegaPlus.value, mlConfigurations.enableOptimizations.value);
-        } else {
-          LOG(fatal) << "Error encountered while fetching/loading the OmegaPlus model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";
-        }
-      }
-    } else {
-      if (mlConfigurations.calculateXiMinusScores)
-        mlModelXiMinus.initModel(mlConfigurations.localModelPathXiMinus.value, mlConfigurations.enableOptimizations.value);
-      if (mlConfigurations.calculateXiPlusScores)
-        mlModelXiPlus.initModel(mlConfigurations.localModelPathXiPlus.value, mlConfigurations.enableOptimizations.value);
-      if (mlConfigurations.calculateOmegaMinusScores)
-        mlModelOmegaMinus.initModel(mlConfigurations.localModelPathOmegaMinus.value, mlConfigurations.enableOptimizations.value);
-      if (mlConfigurations.calculateOmegaPlusScores)
-        mlModelOmegaPlus.initModel(mlConfigurations.localModelPathOmegaPlus.value, mlConfigurations.enableOptimizations.value);
     }
+
+    loadModel(mlConfigurations.calculateXiMinusScores, mlModelXiMinus, mlConfigurations.onnxFileNamesXiMinus, mlConfigurations.modelPathsCCDBXiMinus);
+    loadModel(mlConfigurations.calculateXiPlusScores, mlModelXiPlus, mlConfigurations.onnxFileNamesXiPlus, mlConfigurations.modelPathsCCDBXiPlus);
+    loadModel(mlConfigurations.calculateOmegaMinusScores, mlModelOmegaMinus, mlConfigurations.onnxFileNamesOmegaMinus, mlConfigurations.modelPathsCCDBOmegaMinus);
+    loadModel(mlConfigurations.calculateOmegaPlusScores, mlModelOmegaPlus, mlConfigurations.onnxFileNamesOmegaPlus, mlConfigurations.modelPathsCCDBOmegaPlus);
+
     LOG(info) << "Cascade ML Models loaded.";
   }
 
@@ -211,45 +207,96 @@ struct cascademlselection {
     histos.add("hEventVertexZ", "hEventVertexZ", kTH1F, {vertexZ});
 
     ccdb->setURL(ccdbConfigurations.ccdburl);
+
+    // builds a shape-valid but functionally unused cuts array: this task only stores
+    // raw ML scores (thresholds are applied downstream), so no cut direction is used
+    auto dummyCuts = [](int nBins, int nClasses) {
+      std::vector<double> zeros(static_cast<std::size_t>(nBins) * static_cast<std::size_t>(nClasses), 0.);
+      return LabeledArray<double>(zeros.data(), nBins, nClasses);
+    };
+
+    auto configureModel = [&](o2::analysis::CascadeMlResponse<float>& model, std::vector<double> const& binsPt, int nClasses) {
+      int nBins = static_cast<int>(binsPt.size()) - 1;
+      model.configure(binsPt, dummyCuts(nBins, nClasses), std::vector<int>(nClasses, o2::cuts_ml::CutNot), nClasses);
+      model.cacheInputFeaturesIndices(mlConfigurations.namesInputFeatures);
+    };
+
+    auto bookScoreHistos = [&](std::vector<std::vector<std::shared_ptr<TH1>>>& target, std::vector<double> const& binsPt, int nClasses, std::string const& particleName) {
+      int nBins = static_cast<int>(binsPt.size()) - 1;
+      target.resize(nBins);
+      for (int iBin = 0; iBin < nBins; iBin++) {
+        target[iBin].resize(nClasses);
+        for (int iClass = 0; iClass < nClasses; iClass++) {
+          target[iBin][iClass] = histos.add<TH1>(Form("BDTScore/%s/pTbin%d/class%d", particleName.c_str(), iBin, iClass),
+                                                 Form("%s BDT score, %.2f #leq p_{T} < %.2f GeV/c, class %d;BDT score;entries", particleName.c_str(), binsPt[iBin], binsPt[iBin + 1], iClass),
+                                                 kTH1F, {{100, 0., 1.}});
+        }
+      }
+    };
+
+    if (mlConfigurations.calculateXiMinusScores) {
+      configureModel(mlModelXiMinus, mlConfigurations.binsPtXiMinus, mlConfigurations.nClassesMlXiMinus);
+      bookScoreHistos(histScoreXiMinus, mlConfigurations.binsPtXiMinus, mlConfigurations.nClassesMlXiMinus, "XiMinus");
+    }
+    if (mlConfigurations.calculateXiPlusScores) {
+      configureModel(mlModelXiPlus, mlConfigurations.binsPtXiPlus, mlConfigurations.nClassesMlXiPlus);
+      bookScoreHistos(histScoreXiPlus, mlConfigurations.binsPtXiPlus, mlConfigurations.nClassesMlXiPlus, "XiPlus");
+    }
+    if (mlConfigurations.calculateOmegaMinusScores) {
+      configureModel(mlModelOmegaMinus, mlConfigurations.binsPtOmegaMinus, mlConfigurations.nClassesMlOmegaMinus);
+      bookScoreHistos(histScoreOmegaMinus, mlConfigurations.binsPtOmegaMinus, mlConfigurations.nClassesMlOmegaMinus, "OmegaMinus");
+    }
+    if (mlConfigurations.calculateOmegaPlusScores) {
+      configureModel(mlModelOmegaPlus, mlConfigurations.binsPtOmegaPlus, mlConfigurations.nClassesMlOmegaPlus);
+      bookScoreHistos(histScoreOmegaPlus, mlConfigurations.binsPtOmegaPlus, mlConfigurations.nClassesMlOmegaPlus, "OmegaPlus");
+    }
+  }
+
+  // Finds the pT bin matching the MlResponse internal convention (upper_bound over bin edges);
+  // returns -1 if pt falls outside the configured range, since evaluating the model in that
+  // case would otherwise trigger a LOG(fatal) inside MlResponse::getModelOutput
+  int findPtBin(std::vector<double> const& binsPt, float pt)
+  {
+    if (pt < binsPt.front() || pt >= binsPt.back()) {
+      return -1;
+    }
+    return static_cast<int>(std::distance(binsPt.begin(), std::upper_bound(binsPt.begin(), binsPt.end(), pt))) - 1;
+  }
+
+  // Evaluates one particle hypothesis' model for a candidate, fills the per-bin/per-class
+  // score histograms, and returns the signal (class 1) score to be stored in the output table
+  template <typename TCascObject, typename TCollision>
+  std::vector<float> evaluateModel(o2::analysis::CascadeMlResponse<float>& model, std::vector<std::vector<std::shared_ptr<TH1>>>& scoreHistos, std::vector<double> const& binsPt, bool doCalculate, TCascObject const& casc, float pt, TCollision const& coll)
+  {
+    if (!doCalculate) {
+      return {};
+    }
+    int iBin = findPtBin(binsPt, pt);
+    if (iBin < 0) {
+      return {};
+    }
+
+    auto inputFeatures = model.getInputFeatures(casc, coll);
+    std::vector<float> output;
+    model.isSelectedMl(inputFeatures, pt, output);
+
+    for (std::size_t iClass = 0; iClass < output.size() && iClass < scoreHistos[iBin].size(); iClass++) {
+      scoreHistos[iBin][iClass]->Fill(output[iClass]);
+    }
+    return output;
   }
 
   // Process candidate and store properties in object
-  template <typename TCascObject>
-  void processCandidate(TCascObject const& cand)
+  template <typename TCascObject, typename TCollision>
+  void processCandidate(TCascObject const& casc, float pt, TCollision const& coll)
   {
-    // Select features
-    // FIXME THIS NEEDS ADJUSTING
-    std::vector<float> inputFeatures{0.0f, 0.0f,
-                                     0.0f, 0.0f};
-
-    // calculate scores
-    if (cand.sign() < 0) {
-      if (mlConfigurations.calculateXiMinusScores) {
-        float* xiMinusProbability = mlModelXiMinus.evalModel(inputFeatures);
-        xiMLSelections(xiMinusProbability[1]);
-      } else {
-        xiMLSelections(-1);
-      }
-      if (mlConfigurations.calculateOmegaMinusScores) {
-        float* omegaMinusProbability = mlModelOmegaMinus.evalModel(inputFeatures);
-        omegaMLSelections(omegaMinusProbability[1]);
-      } else {
-        omegaMLSelections(-1);
-      }
-    }
-    if (cand.sign() > 0) {
-      if (mlConfigurations.calculateXiPlusScores) {
-        float* xiPlusProbability = mlModelXiPlus.evalModel(inputFeatures);
-        xiMLSelections(xiPlusProbability[1]);
-      } else {
-        xiMLSelections(-1);
-      }
-      if (mlConfigurations.calculateOmegaPlusScores) {
-        float* omegaPlusProbability = mlModelOmegaPlus.evalModel(inputFeatures);
-        omegaMLSelections(omegaPlusProbability[1]);
-      } else {
-        omegaMLSelections(-1);
-      }
+    // calculate scores (cascades only ever carry sign +1 or -1)
+    if (casc.sign() < 0) {
+      xiMLSelections(evaluateModel(mlModelXiMinus, histScoreXiMinus, mlConfigurations.binsPtXiMinus, mlConfigurations.calculateXiMinusScores, casc, pt, coll));
+      omegaMLSelections(evaluateModel(mlModelOmegaMinus, histScoreOmegaMinus, mlConfigurations.binsPtOmegaMinus, mlConfigurations.calculateOmegaMinusScores, casc, pt, coll));
+    } else {
+      xiMLSelections(evaluateModel(mlModelXiPlus, histScoreXiPlus, mlConfigurations.binsPtXiPlus, mlConfigurations.calculateXiPlusScores, casc, pt, coll));
+      omegaMLSelections(evaluateModel(mlModelOmegaPlus, histScoreOmegaPlus, mlConfigurations.binsPtOmegaPlus, mlConfigurations.calculateOmegaPlusScores, casc, pt, coll));
     }
   }
 
@@ -269,11 +316,7 @@ struct cascademlselection {
       histos.fill(HIST("hEventVertexZ"), collision.posZ());
       for (std::size_t i = 0; i < cascadesGrouped[collision.globalIndex()].size(); i++) {
         auto casc = cascades.rawIteratorAt(cascadesGrouped[collision.globalIndex()][i]);
-        nCandidates++;
-        if (nCandidates % 50000 == 0) {
-          LOG(info) << "Candidates processed: " << nCandidates;
-        }
-        processCandidate(casc);
+        processCandidate(casc, casc.pt(), collision);
       }
     }
   }
@@ -293,11 +336,7 @@ struct cascademlselection {
       histos.fill(HIST("hEventVertexZ"), collision.posZ());
       for (std::size_t i = 0; i < cascadesGrouped[collision.globalIndex()].size(); i++) {
         auto casc = cascades.rawIteratorAt(cascadesGrouped[collision.globalIndex()][i]);
-        nCandidates++;
-        if (nCandidates % 50000 == 0) {
-          LOG(info) << "Candidates processed: " << nCandidates;
-        }
-        processCandidate(casc);
+        processCandidate(casc, casc.pt(), collision);
       }
     }
   }

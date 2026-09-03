@@ -130,11 +130,12 @@ struct AnalysisEnergyCorrelator {
     Configurable<std::string> fConfigAddDileptonHadronHistogram{"cfgAddDileptonHadronHistogram", "", "Dilepton-hadron histograms"};
     Configurable<std::string> fConfigMCRecSignals{"cfgMCRecDileptonHadronSignals", "", "Comma separated list of MC signals (reconstructed)"};
     Configurable<std::string> fConfigMCGenSignals{"cfgMCGenDileptonHadronSignals", "", "Comma separated list of MC signals (generated)"};
+    Configurable<std::string> fConfigMCGenPairSignals{"cfgMCGenDileptonHadronPairSignals", "", "Comma separated list of MC pair signals (generated)"};
     Configurable<std::string> fConfigMCRecSignalsJSON{"cfgMCRecDileptonHadronSignalsJSON", "", "Additional list of MC signals (reconstructed) via JSON"};
     Configurable<std::string> fConfigMCGenSignalsJSON{"cfgMCGenDileptonHadronSignalsJSON", "", "Comma separated list of MC signals (generated) via JSON"};
+    Configurable<std::string> fConfigMCGenPairSignalsJSON{"cfgMCGenDileptonHadronPairSignalsJSON", "", "Comma separated list of MC pair signals (generated) via JSON"};
     Configurable<float> fConfigMCGenHadronEtaAbs{"cfgMCGenHadronEtaAbs", 0.9f, "eta abs range for the hadron"};
     Configurable<float> fConfigMCGenHadronPtMin{"cfgMCGenHadronPtMin", 0.1f, "minimum pt for the hadron"};
-    Configurable<bool> fConfigContainlepton{"cfgContainlepton", false, "If true, require the hadron to contain the lepton in its decay tree for the energy correlator study"};
     Configurable<bool> fConfigUsePionMass{"cfgUsePionMass", false, "If true, use pion mass for the hadron in the energy correlator study"};
     Configurable<bool> fConfigApplyEfficiency{"cfgApplyEfficiency", false, "If true, apply efficiency correction for the energy correlator study"};
     Configurable<bool> fConfigApplyEfficiencyME{"cfgApplyEfficiencyME", false, "If true, apply efficiency correction for the energy correlator study"};
@@ -167,6 +168,7 @@ struct AnalysisEnergyCorrelator {
   std::vector<MCSignal*> fRecMCTrackSignals; // MC signals for reconstructed tracks
   std::vector<MCSignal*> fRecMCSignals;      // MC signals for reconstructed pairs
   std::vector<MCSignal*> fGenMCSignals;
+  std::vector<MCSignal*> fGenMCPairSignals;
   std::vector<MCSignal*> fRecMCTripleSignals; // MC signals for reconstructed triples
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
@@ -183,6 +185,7 @@ struct AnalysisEnergyCorrelator {
   TH2F* hEfficiency_dilepton;
   TH2F* hEfficiency_hadron;
   TH1F* hMasswindow;
+  TH2F* hReweighthadron;
 
   void init(o2::framework::InitContext& context)
   {
@@ -337,6 +340,29 @@ struct AnalysisEnergyCorrelator {
       }
     }
 
+    // Add histogram classes for each specified MCsignal at the generator level
+    // TODO: create a std::vector of hist classes to be used at Fill time, to avoid using Form in the process function
+    TString sigpairGenNamesStr = fConfigDileptonHadronOptions.fConfigMCGenPairSignals.value;
+    std::unique_ptr<TObjArray> objGenPairSigArray(sigpairGenNamesStr.Tokenize(","));
+    for (int isig = 0; isig < objGenPairSigArray->GetEntries(); isig++) {
+      MCSignal* sig = o2::aod::dqmcsignals::GetMCSignal(objGenPairSigArray->At(isig)->GetName());
+      if (sig) {
+        fGenMCPairSignals.push_back(sig);
+      }
+    }
+
+    // Add the MCSignals from the JSON config
+    TString addMCSignalsPairGenStr = fConfigDileptonHadronOptions.fConfigMCGenPairSignalsJSON.value;
+    if (addMCSignalsPairGenStr != "") {
+      std::vector<MCSignal*> addMCSignals = dqmcsignals::GetMCSignalsFromJSON(addMCSignalsPairGenStr.Data());
+      for (auto& mcIt : addMCSignals) {
+        if (mcIt->GetNProngs() != 2) { // NOTE: only 2 prong signals
+          continue;
+        }
+        fGenMCPairSignals.push_back(mcIt);
+      }
+    }
+
     // TODO: create a std::vector of hist classes to be used at Fill time, to avoid using Form in the process function
     TString sigRecTrackNamesStr = fConfigTrackOptions.fConfigMCRecTrackSignals.value;
     std::unique_ptr<TObjArray> objRecTrackSigArray(sigRecTrackNamesStr.Tokenize(","));
@@ -440,6 +466,14 @@ struct AnalysisEnergyCorrelator {
       if (sig->GetNProngs() == 1) {
         if (isMCGen_energycorrelators) {
           DefineHistograms(fHistMan, Form("MCTruthGenSel_%s", sig->GetName()), "");
+        }
+      }
+    }
+
+    for (auto& sig : fGenMCPairSignals) {
+      LOG(info) << "Defining histograms for pair signal: " << sig->GetNProngs();
+      if (sig->GetNProngs() == 2) {
+        if (isMCGen_energycorrelators) {
           DefineHistograms(fHistMan, Form("MCTruthEenergyCorrelators_%s", sig->GetName()), "");
           DefineHistograms(fHistMan, Form("MCTruthEenergyCorrelators_Pion_%s", sig->GetName()), "");
         }
@@ -472,7 +506,8 @@ struct AnalysisEnergyCorrelator {
     hAcceptance_rec = static_cast<TH2F*>(listAccs->FindObject("hAcceptance_rec"));
     hAcceptance_gen = static_cast<TH2F*>(listAccs->FindObject("hAcceptance_gen"));
     hMasswindow = static_cast<TH1F*>(listAccs->FindObject("hMasswindow"));
-    if (!hAcceptance_rec || !hAcceptance_gen || !hEfficiency_dilepton || !hEfficiency_hadron || !hMasswindow) {
+    hReweighthadron = static_cast<TH2F*>(listAccs->FindObject("hReweighthadron"));
+    if (!hAcceptance_rec || !hAcceptance_gen || !hEfficiency_dilepton || !hEfficiency_hadron || !hMasswindow || !hReweighthadron) {
       LOG(fatal) << "Problem getting histograms from the TList object with efficiencies!";
     }
   }
@@ -533,11 +568,22 @@ struct AnalysisEnergyCorrelator {
       float Effdilepton = GetSafeInterpolationWeight(hEfficiency_dilepton, dilepton_rap, dilepton_pt);
       float Effhadron = GetSafeInterpolationWeight(hEfficiency_hadron, hadron_eta, hadron.pt());
       float Masswindow = hMasswindow->Interpolate(dilepton_pt);
-      Accweight_gen = Accweight_gen * Effdilepton * Effhadron;
+      float Reweighthadron = 1.0f;
+      if (std::abs(hadronMC.pdgCode()) == PDG_t::kPiPlus) {
+        int bin = hReweighthadron->FindBin(0, hadron.pt());
+        Reweighthadron = hReweighthadron->GetBinContent(bin);
+      } else if (std::abs(hadronMC.pdgCode()) == PDG_t::kProton) {
+        int bin = hReweighthadron->FindBin(1, hadron.pt());
+        Reweighthadron = hReweighthadron->GetBinContent(bin);
+      } else if (std::abs(hadronMC.pdgCode()) == PDG_t::kKPlus) {
+        int bin = hReweighthadron->FindBin(2, hadron.pt());
+        Reweighthadron = hReweighthadron->GetBinContent(bin);
+      }
+      Accweight_gen = Accweight_gen * Effdilepton * Effhadron * Reweighthadron;
       if (fConfigDileptonHadronOptions.fConfigApplyEfficiencyME) {
-        Effweight_rec = Effdilepton * Effhadron * Masswindow; // for the moment, apply the efficiency correction also for the mixed event pairs, but this can be changed in case we want to apply it only for the same event pairs
+        Effweight_rec = Effdilepton * Effhadron * Masswindow * Reweighthadron; // for the moment, apply the efficiency correction also for the mixed event pairs, but this can be changed in case we want to apply it only for the same event pairs
       } else {
-        Effweight_rec = Effweight_rec * Effdilepton * Effhadron * Masswindow; // apply acceptance and efficiency correction for the real pairs
+        Effweight_rec = Effweight_rec * Effdilepton * Effhadron * Masswindow * Reweighthadron; // apply acceptance and efficiency correction for the real pairs
       }
     }
 
@@ -936,11 +982,8 @@ struct AnalysisEnergyCorrelator {
         continue;
       // for the energy correlators
       for (auto& t2 : groupedMCTracks2) {
-        auto t2_raw = groupedMCTracks2.rawIteratorAt(t2.globalIndex());
+        auto t2_raw = mcTracks.rawIteratorAt(t2.globalIndex());
         if (t2.mcCollisionId() != event2.mcCollisionId()) { // check that the mc track belongs to the same mc collision as the reconstructed event
-          continue;
-        }
-        if (!t2_raw.isPhysicalPrimary()) {
           continue;
         }
         if (t2_raw.has_mothers()) {
@@ -948,12 +991,6 @@ struct AnalysisEnergyCorrelator {
           if (mother_raw.globalIndex() == t1_raw.globalIndex()) {
             continue;
           }
-        }
-        if (fConfigDileptonHadronOptions.fConfigContainlepton && std::abs(t2_raw.pdgCode()) != PDG_t::kPiPlus && std::abs(t2_raw.pdgCode()) != PDG_t::kKPlus && std::abs(t2_raw.pdgCode()) != PDG_t::kProton && std::abs(t2_raw.pdgCode()) != PDG_t::kElectron && std::abs(t2_raw.pdgCode()) != PDG_t::kMuonMinus) {
-          continue;
-        }
-        if (!fConfigDileptonHadronOptions.fConfigContainlepton && std::abs(t2_raw.pdgCode()) != PDG_t::kPiPlus && std::abs(t2_raw.pdgCode()) != PDG_t::kKPlus && std::abs(t2_raw.pdgCode()) != PDG_t::kProton) {
-          continue;
         }
         if (t2_raw.pt() < fConfigDileptonHadronOptions.fConfigMCGenHadronPtMin.value || std::abs(t2_raw.eta()) > fConfigDileptonHadronOptions.fConfigMCGenHadronEtaAbs.value) {
           continue;
@@ -966,11 +1003,24 @@ struct AnalysisEnergyCorrelator {
           float hadron_phi = t2_raw.phi();
           float deltaphi = RecoDecay::constrainAngle(dilepton_phi - hadron_phi, -0.5 * o2::constants::math::PI);
           acceptance = hAcceptance_gen->Interpolate(dilepton_eta - hadron_eta, deltaphi);
+          float Reweighthadron = 1.0f;
+          if (std::abs(t2_raw.pdgCode()) == PDG_t::kPiPlus) {
+            int bin = hReweighthadron->FindBin(0, t2_raw.pt());
+            Reweighthadron = hReweighthadron->GetBinContent(bin);
+          } else if (std::abs(t2_raw.pdgCode()) == PDG_t::kProton) {
+            int bin = hReweighthadron->FindBin(1, t2_raw.pt());
+            Reweighthadron = hReweighthadron->GetBinContent(bin);
+          } else if (std::abs(t2_raw.pdgCode()) == PDG_t::kKPlus) {
+            int bin = hReweighthadron->FindBin(2, t2_raw.pt());
+            Reweighthadron = hReweighthadron->GetBinContent(bin);
+          }
+          acceptance = acceptance * Reweighthadron;
         }
         std::vector<float> fTransRange = fConfigDileptonHadronOptions.fConfigTransRange;
         VarManager::FillEnergyCorrelatorsMC<THadronMassType>(t1_raw, t2_raw, VarManager::fgValues, fTransRange[0], fTransRange[1], 1. / acceptance);
-        for (auto& sig : fGenMCSignals) {
-          if (sig->CheckSignal(true, t1_raw)) {
+        for (auto& sig : fGenMCPairSignals) {
+
+          if (sig->CheckSignal(true, t1_raw, t2_raw)) {
             if (!MixedEvent && !PionMass) {
               fHistMan->FillHistClass(Form("MCTruthEenergyCorrelators_%s", sig->GetName()), VarManager::fgValues);
             }

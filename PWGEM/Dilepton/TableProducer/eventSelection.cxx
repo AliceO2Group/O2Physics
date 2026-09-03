@@ -60,7 +60,6 @@ struct EMEventSelection {
 
   Configurable<float> cfgZvtxMin{"cfgZvtxMin", -1e+10, "min. Zvtx"};
   Configurable<float> cfgZvtxMax{"cfgZvtxMax", 1e+10, "max. Zvtx"};
-  Configurable<bool> cfgRequireSel8{"cfgRequireSel8", false, "require sel8 in event cut"};
   Configurable<bool> cfgRequireFT0AND{"cfgRequireFT0AND", false, "require FT0AND in event cut"};
   Configurable<bool> cfgRequireNoTFB{"cfgRequireNoTFB", false, "require No time frame border in event cut"};
   Configurable<bool> cfgRequireNoITSROFB{"cfgRequireNoITSROFB", false, "require no ITS readout frame border in event cut"};

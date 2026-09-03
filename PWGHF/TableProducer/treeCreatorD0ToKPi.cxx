@@ -21,7 +21,6 @@
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/Utils/utilsAnalysis.h"
 
 #include "Common/Core/RecoDecay.h"
 
@@ -116,6 +115,8 @@ DECLARE_SOA_TABLE(HfCandD0Lites, "AOD", "HFCANDD0LITE",
                   hf_cand::ImpactParameter1,
                   full::ImpactParameterNormalised0,
                   full::ImpactParameterNormalised1,
+                  hf_cand::ImpactParameterZ0,
+                  hf_cand::ImpactParameterZ1,
                   full::NSigTpcPi0,
                   full::NSigTpcKa0,
                   full::NSigTofPi0,
@@ -175,6 +176,8 @@ DECLARE_SOA_TABLE(HfCandD0Fulls, "AOD", "HFCANDD0FULL",
                   hf_cand::ImpactParameter1,
                   hf_cand::ErrorImpactParameter0,
                   hf_cand::ErrorImpactParameter1,
+                  hf_cand::ImpactParameterZ0,
+                  hf_cand::ImpactParameterZ1,
                   full::NSigTpcPi0,
                   full::NSigTpcKa0,
                   full::NSigTofPi0,
@@ -289,7 +292,7 @@ struct HfTreeCreatorD0ToKPi {
 
   template <bool ApplyMl, typename T>
   auto fillTable(const T& candidate, int candFlag, double invMass, double topoChi2,
-                 double ct, double y, double e, int8_t flagMc, int8_t flagMcDecay, int8_t origin, int8_t flagBmother)
+                 double ct, double y, double e, int8_t flagMc, int8_t flagMcDecay, int8_t origin, int pdgBmother)
   {
     if (fillCandidateLiteTable) {
       rowCandidateLite(
@@ -304,6 +307,8 @@ struct HfTreeCreatorD0ToKPi {
         candidate.impactParameter1(),
         candidate.impactParameterNormalised0(),
         candidate.impactParameterNormalised1(),
+        candidate.impactParameterZ0(),
+        candidate.impactParameterZ1(),
         candidate.nSigTpcPi0(),
         candidate.nSigTpcKa0(),
         candidate.nSigTofPi0(),
@@ -329,7 +334,7 @@ struct HfTreeCreatorD0ToKPi {
         flagMc,
         flagMcDecay,
         origin,
-        flagBmother);
+        pdgBmother);
     } else {
       double cosThetaStar = candFlag == 0 ? HfHelper::cosThetaStarD0(candidate) : HfHelper::cosThetaStarD0bar(candidate);
       rowCandidateFull(
@@ -364,6 +369,8 @@ struct HfTreeCreatorD0ToKPi {
         candidate.impactParameter1(),
         candidate.errorImpactParameter0(),
         candidate.errorImpactParameter1(),
+        candidate.impactParameterZ0(),
+        candidate.impactParameterZ1(),
         candidate.nSigTpcPi0(),
         candidate.nSigTpcKa0(),
         candidate.nSigTofPi0(),
@@ -393,7 +400,7 @@ struct HfTreeCreatorD0ToKPi {
         flagMc,
         flagMcDecay,
         origin,
-        flagBmother);
+        pdgBmother);
     }
     if constexpr (ApplyMl) {
       if (candFlag == 0) {
@@ -423,12 +430,14 @@ struct HfTreeCreatorD0ToKPi {
 
     // Filling candidate properties
     if (fillCandidateLiteTable) {
-      rowCandidateLite.reserve(candidates.size());
+      // Account for candidates passing both D0 and D0bar
+      // selection, which will be stored twice in the lite table
+      rowCandidateLite.reserve(candidates.size() * 2);
     } else {
-      rowCandidateFull.reserve(candidates.size());
+      rowCandidateFull.reserve(candidates.size() * 2);
     }
     if constexpr (ApplyMl) {
-      rowCandidateMl.reserve(candidates.size());
+      rowCandidateMl.reserve(candidates.size() * 2);
     }
     for (const auto& candidate : candidates) {
       if (downSampleBkgFactor < 1.) {
@@ -451,10 +460,10 @@ struct HfTreeCreatorD0ToKPi {
         massD0bar = HfHelper::invMassD0barToKPi(candidate);
       }
       if (candidate.isSelD0()) {
-        fillTable<ApplyMl>(candidate, 0, massD0, topolChi2PerNdf, ctD, yD, eD, 0, 0, 0, -1);
+        fillTable<ApplyMl>(candidate, 0, massD0, topolChi2PerNdf, ctD, yD, eD, 0, 0, 0, 0);
       }
       if (candidate.isSelD0bar()) {
-        fillTable<ApplyMl>(candidate, 1, massD0bar, topolChi2PerNdf, ctD, yD, eD, 0, 0, 0, -1);
+        fillTable<ApplyMl>(candidate, 1, massD0bar, topolChi2PerNdf, ctD, yD, eD, 0, 0, 0, 0);
       }
     }
   }
@@ -511,12 +520,12 @@ struct HfTreeCreatorD0ToKPi {
 
     // Filling candidate properties
     if (fillCandidateLiteTable) {
-      rowCandidateLite.reserve(candidates.size());
+      rowCandidateLite.reserve(candidates.size() * 2);
     } else {
-      rowCandidateFull.reserve(candidates.size());
+      rowCandidateFull.reserve(candidates.size() * 2);
     }
     if constexpr (ApplyMl) {
-      rowCandidateMl.reserve(candidates.size());
+      rowCandidateMl.reserve(candidates.size() * 2);
     }
     for (const auto& candidate : candidates) {
       if constexpr (OnlyBkg) {
@@ -552,10 +561,10 @@ struct HfTreeCreatorD0ToKPi {
         massD0bar = HfHelper::invMassD0barToKPi(candidate);
       }
       if (candidate.isSelD0()) {
-        fillTable<ApplyMl>(candidate, 0, massD0, topolChi2PerNdf, ctD, yD, eD, candidate.flagMcMatchRec(), candidate.flagMcDecayChanRec(), candidate.originMcRec(), o2::analysis::getBHadMotherFlag(candidate.pdgBhadMotherPart()));
+        fillTable<ApplyMl>(candidate, 0, massD0, topolChi2PerNdf, ctD, yD, eD, candidate.flagMcMatchRec(), candidate.flagMcDecayChanRec(), candidate.originMcRec(), candidate.pdgBhadMotherPart());
       }
       if (candidate.isSelD0bar()) {
-        fillTable<ApplyMl>(candidate, 1, massD0bar, topolChi2PerNdf, ctD, yD, eD, candidate.flagMcMatchRec(), candidate.flagMcDecayChanRec(), candidate.originMcRec(), o2::analysis::getBHadMotherFlag(candidate.pdgBhadMotherPart()));
+        fillTable<ApplyMl>(candidate, 1, massD0bar, topolChi2PerNdf, ctD, yD, eD, candidate.flagMcMatchRec(), candidate.flagMcDecayChanRec(), candidate.originMcRec(), candidate.pdgBhadMotherPart());
       }
     }
 

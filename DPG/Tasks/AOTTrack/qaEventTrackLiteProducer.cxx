@@ -17,7 +17,7 @@
 /// \brief  Task to produce a table with reduced information used for correlation studies for track selection, ideally used with qaEventTrackite
 ///
 
-#include "qaEventTrack.h"
+#include "qaEventTrackLite.h"
 
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/McCollisionExtra.h"

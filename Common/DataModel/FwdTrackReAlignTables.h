@@ -72,6 +72,19 @@ using FwdTrackRealign = FwdTracksReAlign::iterator;
 using FwdTrkCovRealign = FwdTrksCovReAlign::iterator;
 using FullFwdTracksRealign = soa::Join<FwdTracksReAlign, FwdTrksCovReAlign>;
 using FullFwdTrackRealign = FullFwdTracksRealign::iterator;
+
+// ambiguity table for realigned muons
+namespace fwdtrackrealignambiguous
+{
+DECLARE_SOA_INDEX_COLUMN_FULL(FwdTrackRealign, fwdTrackRealign, int, FwdTracksReAlign, ""); //! FwdTracksReAlign index
+DECLARE_SOA_SLICE_INDEX_COLUMN(BC, bc);
+
+} // namespace fwdtrackrealignambiguous
+
+DECLARE_SOA_TABLE(AmbiguousFwdTrksReAlign, "AOD", "AMBIFWDREALIGN", //! Table for FwdTracksReAlign which are not associated with a collision
+                  o2::soa::Index<>, fwdtrackrealignambiguous::FwdTrackRealignId, fwdtrackrealignambiguous::BCIdSlice);
+
+using AmbiguousFwdTrkRealign = AmbiguousFwdTrksReAlign::iterator;
 } // namespace o2::aod
 
 #endif // COMMON_DATAMODEL_FWDTRACKREALIGNTABLES_H_

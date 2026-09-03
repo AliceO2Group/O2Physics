@@ -31,6 +31,7 @@ struct muonConverter1 {
 
   void process(aod::EMPrimaryMuons_000 const& muons)
   {
+    muon_001.reserve(muons.size());
     for (const auto& muon : muons) {
       muon_001(
         muon.collisionId(),

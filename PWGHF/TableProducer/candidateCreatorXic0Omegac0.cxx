@@ -28,6 +28,7 @@
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
+//
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 
@@ -36,6 +37,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Tools/KFparticle/KFUtilities.h"
 
 #include <CCDB/BasicCCDBManager.h>
@@ -57,6 +59,7 @@
 #include <Framework/RunningWorkflowInfo.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/PID.h>
 #include <ReconstructionDataFormats/Track.h>
 
 #include <TH1.h>
@@ -95,6 +98,28 @@ enum McMatchFlag : uint8_t {
   CascUnmatched,
   V0Unmatched
 };
+
+// Convert the absolute KFParticle PDG code to the O2 track PID enum needed by getTrackParCovFromKFP()
+o2::track::PID::ID getTrackPIDFromPDG(const int pdg)
+{
+  switch (std::abs(pdg)) {
+    case kPiPlus:
+      return o2::track::PID::Pion;
+    case kKPlus:
+      return o2::track::PID::Kaon;
+    case kProton:
+      return o2::track::PID::Proton;
+    case kLambda0:
+      return o2::track::PID::Lambda;
+    case kXiMinus:
+      return o2::track::PID::XiMinus;
+    case kOmegaMinus:
+      return o2::track::PID::OmegaMinus;
+    default:
+      LOGF(fatal, "Unsupported PDG code %d in getTrackPIDFromPDG()", pdg);
+      return o2::track::PID::Pion;
+  }
+}
 
 // Reconstruction of omegac0 and xic0 candidates
 struct HfCandidateCreatorXic0Omegac0 {
@@ -808,7 +833,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       KFParticle const kfNegKa(kfTrackBach, kKMinus);
       KFParticle const kfNegPiRej(kfTrackBach, kPiMinus); // rej
       KFParticle const kfPosPi(kfTrack0, kPiPlus);
-      KFParticle const kfNegPr(kfTrack1, kProton);
+      KFParticle const kfNegPr(kfTrack1, kProtonBar);
       KFParticle const kfPosKa(kfTrackBach, kKPlus);
       KFParticle const kfPosPiRej(kfTrackBach, kPiPlus); // rej
 
@@ -866,6 +891,8 @@ struct HfCandidateCreatorXic0Omegac0 {
       // construct cascade
       KFParticle kfOmega;
       KFParticle kfOmegarej; // rej
+      kfOmega.SetPDG(bachCharge < 0 ? kOmegaMinus : kOmegaPlusBar);
+      kfOmegarej.SetPDG(bachCharge < 0 ? kOmegaMinus : kOmegaPlusBar);
       kfOmega.SetConstructMethod(kfConstructMethod);
       kfOmegarej.SetConstructMethod(kfConstructMethod); // rej
       try {
@@ -959,12 +986,16 @@ struct HfCandidateCreatorXic0Omegac0 {
 
       omegaDauChargedTrackParCov = getTrackParCovFromKFP(kfBachKaonToOmega, o2::track::PID::Kaon, bachCharge); // Cascade bach kaon
       omegaDauChargedTrackParCov.setAbsCharge(1);
-      o2::track::TrackParCov trackCasc = getTrackParCovFromKFP(kfOmegaToOmegaC, kfOmegaToOmegaC.GetPDG(), bachCharge);
+      o2::track::PID::ID pidCasc = getTrackPIDFromPDG(kfOmegaToOmegaC.GetPDG());
+      o2::track::TrackParCov trackCasc = getTrackParCovFromKFP(kfOmegaToOmegaC, pidCasc, bachCharge);
       trackCasc.setAbsCharge(1);
 
-      trackParCovV0Dau0 = getTrackParCovFromKFP(kfPos, kfPos.GetPDG(), 1); // V0 postive daughter
+      o2::track::PID::ID pidV0Dau0 = getTrackPIDFromPDG(kfPos.GetPDG());
+      trackParCovV0Dau0 = getTrackParCovFromKFP(kfPos, pidV0Dau0, +1); // V0 postive daughter
       trackParCovV0Dau0.setAbsCharge(1);
-      trackParCovV0Dau1 = getTrackParCovFromKFP(kfNeg, kfNeg.GetPDG(), -1); // V0 negtive daughter
+
+      o2::track::PID::ID pidV0Dau1 = getTrackPIDFromPDG(kfNeg.GetPDG());
+      trackParCovV0Dau1 = getTrackParCovFromKFP(kfNeg, pidV0Dau1, -1); // V0 negative daughter
       trackParCovV0Dau1.setAbsCharge(1);
 
       //-------------------------- V0 info---------------------------
@@ -1297,7 +1328,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       KFParticle const kfNegPi(kfTrack1, kPiMinus);
       KFParticle const kfNegBachPi(kfTrackBach, kPiMinus);
       KFParticle const kfPosPi(kfTrack0, kPiPlus);
-      KFParticle const kfNegPr(kfTrack1, kProton);
+      KFParticle const kfNegPr(kfTrack1, kProtonBar);
       KFParticle const kfPosBachPi(kfTrackBach, kPiPlus);
 
       KFParticle kfBachPion;
@@ -1355,6 +1386,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       const KFParticle* xiDaugthers[2] = {&kfBachPion, &kfV0};
       // construct cascade
       KFParticle kfXi;
+      kfXi.SetPDG(bachCharge < 0 ? kXiMinus : kXiPlusBar);
       kfXi.SetConstructMethod(kfConstructMethod);
       try {
         kfXi.Construct(xiDaugthers, 2);
@@ -1452,12 +1484,17 @@ struct HfCandidateCreatorXic0Omegac0 {
 
       xiDauChargedTrackParCov = getTrackParCovFromKFP(kfBachPionToXi, o2::track::PID::Pion, bachCharge); // Cascade bach pion
       xiDauChargedTrackParCov.setAbsCharge(1);
-      o2::track::TrackParCov trackCasc = getTrackParCovFromKFP(kfXiToXiC, kfXiToXiC.GetPDG(), bachCharge);
+
+      o2::track::PID::ID pidCasc = getTrackPIDFromPDG(kfXiToXiC.GetPDG());
+      o2::track::TrackParCov trackCasc = getTrackParCovFromKFP(kfXiToXiC, pidCasc, bachCharge);
       trackCasc.setAbsCharge(1);
 
-      trackParCovV0Dau0 = getTrackParCovFromKFP(kfPos, kfPos.GetPDG(), 1); // V0 postive daughter
+      o2::track::PID::ID pidV0Dau0 = getTrackPIDFromPDG(kfPos.GetPDG());
+      trackParCovV0Dau0 = getTrackParCovFromKFP(kfPos, pidV0Dau0, +1); // V0 postive daughter
       trackParCovV0Dau0.setAbsCharge(1);
-      trackParCovV0Dau1 = getTrackParCovFromKFP(kfNeg, kfNeg.GetPDG(), -1); // V0 negtive daughter
+
+      o2::track::PID::ID pidV0Dau1 = getTrackPIDFromPDG(kfNeg.GetPDG());
+      trackParCovV0Dau1 = getTrackParCovFromKFP(kfNeg, pidV0Dau1, -1); // V0 negative daughter
       trackParCovV0Dau1.setAbsCharge(1);
 
       //-------------------------- V0 info---------------------------
@@ -1988,7 +2025,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   }
 
   /// @brief process function w/o centrality selections
-  void processNoCentToXiPi(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processNoCentToXiPi(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                            aod::BCsWithTimestamps const& bcWithTimeStamps,
                            TracksWCovDca const& tracks,
                            MyLFTracksWCov const& lfTracks,
@@ -2000,7 +2037,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processNoCentToXiPi, "Run candidate creator w/o centrality selections for xi pi decay channel", true);
 
-  void processNoCentToXiPiTraCasc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processNoCentToXiPiTraCasc(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                                   aod::BCsWithTimestamps const& bcWithTimeStamps,
                                   TracksWCovDca const& tracks,
                                   MyLFTracksWCov const& lfTracks,
@@ -2012,7 +2049,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processNoCentToXiPiTraCasc, "Run candidate creator w/o centrality selections for xi pi decay channel with tracked cascades", false);
 
-  void processNoCentToOmegaPi(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processNoCentToOmegaPi(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                               aod::BCsWithTimestamps const& bcWithTimeStamps,
                               TracksWCovDca const& tracks,
                               MyLFTracksWCov const& lfTracks,
@@ -2024,7 +2061,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processNoCentToOmegaPi, "Run candidate creator w/o centrality selections for omega pi decay channel", false);
 
-  void processNoCentOmegacToOmegaPiWithKFParticle(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processNoCentOmegacToOmegaPiWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                                                   aod::BCsWithTimestamps const& bcWithTimeStamps,
                                                   MyKfTracksIU const& tracksIU,
                                                   MyKfTracks const& tracks,
@@ -2036,7 +2073,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processNoCentOmegacToOmegaPiWithKFParticle, "Run candidate creator w/o centrality selections for Omegac0 To omega pi decay channel using KFParticle", false);
 
-  void processNoCentOmegac0Xic0ToOmegaKaCreatorWithKFParticle(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processNoCentOmegac0Xic0ToOmegaKaCreatorWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                                                               aod::BCsWithTimestamps const& bcWithTimeStamps,
                                                               MyKfTracksIU const& tracksIU,
                                                               MyKfTracks const& tracks,
@@ -2048,7 +2085,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processNoCentOmegac0Xic0ToOmegaKaCreatorWithKFParticle, "Run candidate creator w/o centrality selections for Omegac0 To omega ka decay channel using KFParticle", false);
 
-  void processNoCentXicToXiPiWithKFParticle(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processNoCentXicToXiPiWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                                             aod::BCsWithTimestamps const& bcWithTimeStamps,
                                             MyKfTracksIU const& tracksIU,
                                             MyKfTracks const& tracks,
@@ -2060,7 +2097,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processNoCentXicToXiPiWithKFParticle, "Run candidate creator w/o centrality selections for Xic0 To Xi pi decay channel using KFParticle", false);
 
-  void processNoCentToOmegaK(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processNoCentToOmegaK(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                              aod::BCsWithTimestamps const& bcWithTimeStamps,
                              TracksWCovDca const& tracks,
                              MyLFTracksWCov const& lfTracks,
@@ -2073,7 +2110,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processNoCentToOmegaK, "Run candidate creator w/o centrality selections for omega K decay channel", false);
 
   /// @brief process function w/ FT0C centrality selections
-  void processCentFT0CToXiPi(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+  void processCentFT0CToXiPi(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs> const& collisions,
                              aod::BCsWithTimestamps const& bcWithTimeStamps,
                              TracksWCovDca const& tracks,
                              MyLFTracksWCov const& lfTracks,
@@ -2085,7 +2122,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCentFT0CToXiPi, "Run candidate creator w/ centrality selection on FT0C for xi pi channel", false);
 
-  void processCentFT0CToOmegaPi(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+  void processCentFT0CToOmegaPi(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs> const& collisions,
                                 aod::BCsWithTimestamps const& bcWithTimeStamps,
                                 TracksWCovDca const& tracks,
                                 MyLFTracksWCov const& lfTracks,
@@ -2097,7 +2134,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCentFT0CToOmegaPi, "Run candidate creator w/ centrality selection on FT0C for omega pi channel", false);
 
-  void processCentFT0COmegacToOmegaPiWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+  void processCentFT0COmegacToOmegaPiWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs> const& collisions,
                                                     aod::BCsWithTimestamps const& bcWithTimeStamps,
                                                     MyKfTracksIU const& tracksIU,
                                                     MyKfTracks const& tracks,
@@ -2109,7 +2146,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCentFT0COmegacToOmegaPiWithKFParticle, "Run candidate creator w/o centrality selections for Omegac0 To omega pi decay channel using KFParticle", false);
 
-  void processCentFT0COmegac0Xic0ToOmegaKaCreatorWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+  void processCentFT0COmegac0Xic0ToOmegaKaCreatorWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs> const& collisions,
                                                                 aod::BCsWithTimestamps const& bcWithTimeStamps,
                                                                 MyKfTracksIU const& tracksIU,
                                                                 MyKfTracks const& tracks,
@@ -2121,7 +2158,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCentFT0COmegac0Xic0ToOmegaKaCreatorWithKFParticle, "Run candidate creator w/o centrality selections for Omegac0 To omega ka decay channel using KFParticle", false);
 
-  void processCentFT0CXicToXiPiWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+  void processCentFT0CXicToXiPiWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs> const& collisions,
                                               aod::BCsWithTimestamps const& bcWithTimeStamps,
                                               MyKfTracksIU const& tracksIU,
                                               MyKfTracks const& tracks,
@@ -2133,7 +2170,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCentFT0CXicToXiPiWithKFParticle, "Run candidate creator w FT0C centrality selections for Xic0 To Xi pi decay channel using KFParticle", false);
 
-  void processCentFT0CToOmegaK(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+  void processCentFT0CToOmegaK(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs> const& collisions,
                                aod::BCsWithTimestamps const& bcWithTimeStamps,
                                TracksWCovDca const& tracks,
                                MyLFTracksWCov const& lfTracks,
@@ -2146,7 +2183,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCentFT0CToOmegaK, "Run candidate creator w/ centrality selection on FT0C for omega K channel", false);
 
   /// @brief process function w/ FT0M centrality selections
-  void processCentFT0MToXiPi(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+  void processCentFT0MToXiPi(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms> const& collisions,
                              aod::BCsWithTimestamps const& bcWithTimeStamps,
                              TracksWCovDca const& tracks,
                              MyLFTracksWCov const& lfTracks,
@@ -2158,7 +2195,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCentFT0MToXiPi, "Run candidate creator w/ centrality selection on FT0M for xi pi channel", false);
 
-  void processCentFT0MToOmegaPi(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+  void processCentFT0MToOmegaPi(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms> const& collisions,
                                 aod::BCsWithTimestamps const& bcWithTimeStamps,
                                 TracksWCovDca const& tracks,
                                 MyLFTracksWCov const& lfTracks,
@@ -2170,7 +2207,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCentFT0MToOmegaPi, "Run candidate creator w/ centrality selection on FT0M for omega pi channel", false);
 
-  void processCentFT0MOmegacToOmegaPiWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+  void processCentFT0MOmegacToOmegaPiWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms> const& collisions,
                                                     aod::BCsWithTimestamps const& bcWithTimeStamps,
                                                     MyKfTracksIU const& tracksIU,
                                                     MyKfTracks const& tracks,
@@ -2182,7 +2219,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCentFT0MOmegacToOmegaPiWithKFParticle, "Run candidate creator w/o centrality selections for Omegac0 To omega pi decay channel using KFParticle", false);
 
-  void processCentFT0MOmegac0Xic0ToOmegaKaCreatorWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+  void processCentFT0MOmegac0Xic0ToOmegaKaCreatorWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms> const& collisions,
                                                                 aod::BCsWithTimestamps const& bcWithTimeStamps,
                                                                 MyKfTracksIU const& tracksIU,
                                                                 MyKfTracks const& tracks,
@@ -2194,7 +2231,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCentFT0MOmegac0Xic0ToOmegaKaCreatorWithKFParticle, "Run candidate creator w/o centrality selections for Omegac0 To omega ka decay channel using KFParticle", false);
 
-  void processCentFT0MXicToXiPiWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+  void processCentFT0MXicToXiPiWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms> const& collisions,
                                               aod::BCsWithTimestamps const& bcWithTimeStamps,
                                               MyKfTracksIU const& tracksIU,
                                               MyKfTracks const& tracks,
@@ -2206,7 +2243,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCentFT0MXicToXiPiWithKFParticle, "Run candidate creator w FT0M centrality selections for Xic0 To Xi pi decay channel using KFParticle", false);
 
-  void processCentFT0MToOmegaK(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+  void processCentFT0MToOmegaK(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms> const& collisions,
                                aod::BCsWithTimestamps const& bcWithTimeStamps,
                                TracksWCovDca const& tracks,
                                MyLFTracksWCov const& lfTracks,
@@ -2225,7 +2262,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   ///////////////////////////////////////////////////////////
 
   /// @brief process function to monitor collisions - no centrality
-  void processCollisions(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
+  void processCollisions(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
   {
     /// loop over collisions
     for (const auto& collision : collisions) {
@@ -2244,7 +2281,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCollisions, "Collision monitoring - no centrality", true);
 
   /// @brief process function to monitor collisions - FT0C centrality
-  void processCollisionsCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
+  void processCollisionsCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs> const& collisions, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
   {
     /// loop over collisions
     for (const auto& collision : collisions) {
@@ -2263,7 +2300,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCollisionsCentFT0C, "Collision monitoring - FT0C centrality", false);
 
   /// @brief process function to monitor collisions - FT0M centrality
-  void processCollisionsCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
+  void processCollisionsCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms> const& collisions, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
   {
     /// loop over collisions
     for (const auto& collision : collisions) {
@@ -2299,9 +2336,9 @@ struct HfCandidateCreatorXic0Omegac0Mc {
   Configurable<bool> acceptTrackIntWithMaterial{"acceptTrackIntWithMaterial", false, " switch to accept candidates with final (i.e. p, K, pi) daughter tracks interacting with material"};
 
   using MyTracksWMc = soa::Join<TracksIU, McTrackLabels>;
-  using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
-  using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
-  using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms>;
+  using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels>;
+  using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels, aod::CentFT0Cs>;
+  using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels, aod::CentFT0Ms>;
   using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
 

@@ -100,8 +100,19 @@ DECLARE_SOA_COLUMN(TimeToNext, timeToNext, float);               //!
 DECLARE_SOA_COLUMN(TimeToNeNext, timeToNeNext, float);           //!
 
 // Extra information from FIT detectors
-DECLARE_SOA_COLUMN(MultFV0AOuter, multFV0AOuter, float);     //! FV0 without innermost ring
 DECLARE_SOA_COLUMN(FT0TriggerMask, ft0TriggerMask, uint8_t); //!
+DECLARE_SOA_COLUMN(MultFV0AOuter, multFV0AOuter, float);     //! FV0 without innermost ring
+DECLARE_SOA_COLUMN(MultFT0AOuter, multFT0AOuter, float);     //! FT0A without innermost ring
+
+// Timing information
+DECLARE_SOA_COLUMN(TimeZNA, timeZNA, float); //!
+DECLARE_SOA_COLUMN(TimeZNC, timeZNC, float); //!
+DECLARE_SOA_COLUMN(TimeZPA, timeZPA, float); //!
+DECLARE_SOA_COLUMN(TimeZPC, timeZPC, float); //!
+DECLARE_SOA_COLUMN(TimeT0A, timeT0A, float); //!
+DECLARE_SOA_COLUMN(TimeT0C, timeT0C, float); //!
+DECLARE_SOA_COLUMN(TimeFDA, timeFDA, float); //!
+DECLARE_SOA_COLUMN(TimeFDC, timeFDC, float); //!
 
 } // namespace mult
 DECLARE_SOA_TABLE(FV0Mults, "AOD", "FV0MULT", //! Multiplicity with the FV0 detector
@@ -132,6 +143,7 @@ DECLARE_SOA_TABLE(MFTMults, "AOD", "MFTMULT", //! Multiplicity with MFT
 
 DECLARE_SOA_TABLE(FITExtraMults, "AOD", "FITEXTRAMULT", //! Extra information from FIT detectors
                   mult::MultFV0AOuter,
+                  mult::MultFT0AOuter,
                   mult::FT0TriggerMask);
 
 using BarrelMults = soa::Join<TrackletMults, TPCMults, PVMults>;
@@ -260,7 +272,7 @@ DECLARE_SOA_COLUMN(MultCollidingBC, multCollidingBC, bool);          //! CTP tri
 DECLARE_SOA_COLUMN(MultFT0PosZ, multFT0PosZ, float);          //! Position along Z computed with the FT0 information within the BC
 DECLARE_SOA_COLUMN(MultFT0PosZValid, multFT0PosZValid, bool); //! Validity of the position along Z computed with the FT0 information
 } // namespace mult
-DECLARE_SOA_TABLE(MultBCs, "AOD", "MULTBC", //!
+DECLARE_SOA_TABLE(MultBCs_000, "AOD", "MULTBC", //!
                   mult::MultFT0A,
                   mult::MultFT0C,
                   mult::MultFT0PosZ,
@@ -283,10 +295,53 @@ DECLARE_SOA_TABLE(MultBCs, "AOD", "MULTBC", //!
                   mult::MultCollidingBC,
                   timestamp::Timestamp,
                   bc::Flags);
-using MultBC = MultBCs::iterator;
 
-DECLARE_SOA_TABLE(MultBcSel, "AOD", "MULTBCSEL", //! BC selection bits joinable with multBCs
+DECLARE_SOA_TABLE_VERSIONED(MultBCs_001, "AOD", "MULTBC", 1, //!
+                            mult::MultFT0A,
+                            mult::MultFT0C,
+                            mult::MultFV0A,
+                            mult::MultFDDA,
+                            mult::MultFDDC,
+                            mult::MultZNA,
+                            mult::MultZNC,
+                            mult::MultZEM1,
+                            mult::MultZEM2,
+                            mult::MultZPA,
+                            mult::MultZPC,
+                            mult::MultFV0AOuter,
+                            mult::MultFT0AOuter);
+
+DECLARE_SOA_TABLE(MultBcSel_000, "AOD", "MULTBCSEL", //! BC selection bits joinable with multBCs
                   evsel::Selection);
+
+DECLARE_SOA_TABLE_VERSIONED(MultBcSel_001, "AOD", "MULTBCSEL", 1, //! BC selection bits joinable with multBCs
+                            evsel::Selection,
+                            evsel::Rct,
+                            bc::Flags,
+                            timestamp::Timestamp,
+                            mult::MultFT0PosZ,
+                            mult::MultFT0PosZValid,
+                            mult::MultV0triggerBits,
+                            mult::MultT0triggerBits,
+                            mult::MultFDDtriggerBits,
+                            mult::MultTriggerMask,
+                            mult::MultCollidingBC,
+                            mult::MultTVX,
+                            mult::MultFV0OrA);
+
+DECLARE_SOA_TABLE(TimeBCs, "AOD", "TIMEBC", //!
+                  mult::TimeT0A,
+                  mult::TimeT0C,
+                  mult::TimeFDA,
+                  mult::TimeFDC,
+                  mult::TimeZNA,
+                  mult::TimeZNC,
+                  mult::TimeZPA,
+                  mult::TimeZPC)
+
+using MultBCs = MultBCs_001;
+using MultBcSel = MultBcSel_001;
+using MultBC = MultBCs::iterator;
 
 // crosslinks
 namespace mult

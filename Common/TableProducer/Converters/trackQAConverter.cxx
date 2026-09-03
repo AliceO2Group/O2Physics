@@ -24,6 +24,7 @@ struct trackQAConverter {
 
   void process(aod::TracksQA_000 const& tracksQA_000)
   {
+    tracksQA_001.reserve(tracksQA_000.size());
     for (const auto& trackQA : tracksQA_000) {
       tracksQA_001(
         trackQA.trackId(),

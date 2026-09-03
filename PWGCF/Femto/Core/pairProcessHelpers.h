@@ -23,12 +23,10 @@
 #include <Framework/Logger.h>
 
 #include <cstdint>
+#include <optional>
 
-namespace o2::analysis::femto
+namespace o2::analysis::femto::pairprocesshelpers
 {
-namespace pairprocesshelpers
-{
-
 enum PairOrder : uint8_t {
   kOrder12,
   kOrder21
@@ -57,16 +55,7 @@ void processSameEvent(T1 const& SliceParticle,
     ParticleHistManager.template fill<mode>(part, TrackTable);
   }
   for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(SliceParticle, SliceParticle))) {
-    // check if pair is clean
-    if (!PcManager.isCleanPair(p1, p2, TrackTable)) {
-      continue;
-    }
-    // check if pair is close
-    CprManager.setPair(p1, p2, TrackTable);
-    if (CprManager.isClosePair()) {
-      continue;
-    }
-    // Randomize pair order if enabled
+    // Randomize pair order if enabled, then compute the kinematic (kstar) for this pair
     switch (pairOrder) {
       case kOrder12:
         PairHistManager.setPair(p1, p2, TrackTable, Collision);
@@ -77,8 +66,14 @@ void processSameEvent(T1 const& SliceParticle,
       default:
         PairHistManager.setPair(p1, p2, TrackTable, Collision);
     }
-    // fill deta-dphi histograms with kstar cutoff
-    CprManager.fill(PairHistManager.getKstar());
+    // check if pair is clean
+    if (!PcManager.isCleanPair(p1, p2, TrackTable, PairHistManager)) {
+      continue;
+    }
+    // check if pair is close; fills deta-dphi/kinematic histograms internally
+    if (CprManager.isClosePair(p1, p2, TrackTable, PairHistManager)) {
+      continue;
+    }
     // if pair cuts are configured check them before filling
     if (PairHistManager.checkPairCuts()) {
       PairHistManager.template fill<mode>();
@@ -121,7 +116,7 @@ void processSameEvent(T1 const& SliceParticle,
     if (!ParticleCleaner.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
       continue;
     }
-    ParticleHistManager.template fill<mode>(part, TrackTable, mcParticles, mcMothers, mcPartonicMothers);
+    ParticleHistManager.template fill<mode>(part, TrackTable, Collision, mcParticles, mcMothers, mcPartonicMothers);
   }
   for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(SliceParticle, SliceParticle))) {
     // check if particles are clean
@@ -129,16 +124,7 @@ void processSameEvent(T1 const& SliceParticle,
         !ParticleCleaner.isClean(p2, mcParticles, mcMothers, mcPartonicMothers)) {
       continue;
     }
-    // check if pair is clean
-    if (!PcManager.isCleanPair(p1, p2, TrackTable, mcPartonicMothers)) {
-      continue;
-    }
-    // check if pair is close
-    CprManager.setPair(p1, p2, TrackTable);
-    if (CprManager.isClosePair()) {
-      continue;
-    }
-    // Randomize pair order if enabled
+    // Randomize pair order if enabled, then compute the kinematic (kstar) for this pair
     switch (pairOrder) {
       case kOrder12:
         PairHistManager.setPairMc(p1, p2, TrackTable, mcParticles, Collision, mcCollisions);
@@ -149,8 +135,14 @@ void processSameEvent(T1 const& SliceParticle,
       default:
         PairHistManager.setPairMc(p1, p2, TrackTable, mcParticles, Collision, mcCollisions);
     }
-    // fill deta-dphi histograms with kstar cutoff
-    CprManager.fill(PairHistManager.getKstar());
+    // check if pair is clean
+    if (!PcManager.isCleanPair(p1, p2, TrackTable, mcParticles, mcPartonicMothers, PairHistManager)) {
+      continue;
+    }
+    // check if pair is close; fills deta-dphi/kinematic histograms internally
+    if (CprManager.isClosePair(p1, p2, TrackTable, PairHistManager)) {
+      continue;
+    }
     // if pair cuts are configured check them before filling
     if (PairHistManager.checkPairCuts()) {
       PairHistManager.template fill<mode>();
@@ -190,17 +182,16 @@ void processSameEvent(T1 const& SliceParticle1,
     ParticleHistManager2.template fill<mode>(part, TrackTable);
   }
   for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(SliceParticle1, SliceParticle2))) {
-    // pair cleaning
-    if (!PcManager.isCleanPair(p1, p2, TrackTable)) {
-      continue;
-    }
-    // Close pair rejection
-    CprManager.setPair(p1, p2, TrackTable);
-    if (CprManager.isClosePair()) {
-      continue;
-    }
+    // compute the kinematic (kstar) for this pair
     PairHistManager.setPair(p1, p2, TrackTable, Collision);
-    CprManager.fill(PairHistManager.getKstar());
+    // pair cleaning
+    if (!PcManager.isCleanPair(p1, p2, TrackTable, PairHistManager)) {
+      continue;
+    }
+    // Close pair rejection; fills deta-dphi/kinematic histograms internally
+    if (CprManager.isClosePair(p1, p2, TrackTable, PairHistManager)) {
+      continue;
+    }
     if (PairHistManager.checkPairCuts()) {
       PairHistManager.template fill<mode>();
       PairHistManager.trackParticlesPerEvent(p1, p2);
@@ -248,13 +239,13 @@ void processSameEvent(T1 const& SliceParticle1,
     if (!ParticleCleaner1.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
       continue;
     }
-    ParticleHistManager1.template fill<mode>(part, TrackTable, mcParticles, mcMothers, mcPartonicMothers);
+    ParticleHistManager1.template fill<mode>(part, TrackTable, Collision, mcParticles, mcMothers, mcPartonicMothers);
   }
   for (auto const& part : SliceParticle2) {
     if (!ParticleCleaner2.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
       continue;
     }
-    ParticleHistManager2.template fill<mode>(part, TrackTable, mcParticles, mcMothers, mcPartonicMothers);
+    ParticleHistManager2.template fill<mode>(part, TrackTable, Collision, mcParticles, mcMothers, mcPartonicMothers);
   }
   for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(SliceParticle1, SliceParticle2))) {
     // check if particles are clean
@@ -262,17 +253,141 @@ void processSameEvent(T1 const& SliceParticle1,
         !ParticleCleaner2.isClean(p2, mcParticles, mcMothers, mcPartonicMothers)) {
       continue;
     }
-    // pair cleaning
-    if (!PcManager.isCleanPair(p1, p2, TrackTable, mcPartonicMothers)) {
-      continue;
-    }
-    // Close pair rejection
-    CprManager.setPair(p1, p2, TrackTable);
-    if (CprManager.isClosePair()) {
-      continue;
-    }
+    // compute the kinematic (kstar) for this pair
     PairHistManager.setPairMc(p1, p2, TrackTable, mcParticles, Collision, mcCollisions);
-    CprManager.fill(PairHistManager.getKstar());
+    // pair cleaning
+    if (!PcManager.isCleanPair(p1, p2, TrackTable, mcParticles, mcPartonicMothers, PairHistManager)) {
+      continue;
+    }
+    // Close pair rejection; fills deta-dphi/kinematic histograms internally
+    if (CprManager.isClosePair(p1, p2, TrackTable, PairHistManager)) {
+      continue;
+    }
+    if (PairHistManager.checkPairCuts()) {
+      PairHistManager.template fill<mode>();
+      PairHistManager.trackParticlesPerEvent(p1, p2);
+    }
+  }
+  PairHistManager.fillMixingQaSe();
+}
+// process same event for identical particles, mc truth only (no track table, no reco collisions)
+template <modes::Mode mode,
+          typename T1,
+          typename T2,
+          typename T3,
+          typename T4,
+          typename T5,
+          typename T6,
+          typename T7,
+          typename T8,
+          typename T9,
+          typename T10>
+void processSameEvent(T1 const& SliceParticle,
+                      T2 const& /*mcParticles*/,
+                      T3 const& mcMothers,
+                      T4 const& mcPartonicMothers,
+                      T5 const& Collision,
+                      T6& ParticleHistManager,
+                      T7& PairHistManager,
+                      T8& ParticleCleaner,
+                      T9& CprManager,
+                      T10& PcManager,
+                      PairOrder pairOrder)
+{
+  PairHistManager.resetTrackedParticlesPerEvent();
+  for (auto const& part : SliceParticle) {
+    if (!ParticleCleaner.isClean(part, mcMothers, mcPartonicMothers)) {
+      continue;
+    }
+    ParticleHistManager.fill(part, mcMothers, mcPartonicMothers);
+  }
+  for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(SliceParticle, SliceParticle))) {
+    if (!ParticleCleaner.isClean(p1, mcMothers, mcPartonicMothers) ||
+        !ParticleCleaner.isClean(p2, mcMothers, mcPartonicMothers)) {
+      continue;
+    }
+    // Randomize pair order if enabled, then compute the kinematic (kstar) for this pair
+    switch (pairOrder) {
+      case kOrder12:
+        PairHistManager.setPairMcTruth(p1, p2, Collision);
+        break;
+      case kOrder21:
+        PairHistManager.setPairMcTruth(p2, p1, Collision);
+        break;
+      default:
+        PairHistManager.setPairMcTruth(p1, p2, Collision);
+    }
+    if (!PcManager.isCleanPair(p1, p2, mcPartonicMothers, PairHistManager)) {
+      continue;
+    }
+    // Close pair rejection; fills deta-dphi/kinematic histograms internally
+    if (CprManager.isClosePair(p1, p2, PairHistManager)) {
+      continue;
+    }
+    if (PairHistManager.checkPairCuts()) {
+      PairHistManager.template fill<mode>();
+      PairHistManager.trackParticlesPerEvent(p1, p2);
+    }
+  }
+  PairHistManager.fillMixingQaSe();
+}
+
+// process same event for non-identical particles, mc truth only
+template <modes::Mode mode,
+          typename T1,
+          typename T2,
+          typename T3,
+          typename T4,
+          typename T5,
+          typename T6,
+          typename T7,
+          typename T8,
+          typename T9,
+          typename T10,
+          typename T11,
+          typename T12,
+          typename T13>
+void processSameEvent(T1 const& SliceParticle1,
+                      T2 const& SliceParticle2,
+                      T3 const& /*mcParticles*/,
+                      T4 const& mcMothers,
+                      T5 const& mcPartonicMothers,
+                      T6 const& Collision,
+                      T7& ParticleHistManager1,
+                      T8& ParticleHistManager2,
+                      T9& PairHistManager,
+                      T10& ParticleCleaner1,
+                      T11& ParticleCleaner2,
+                      T12& CprManager,
+                      T13& PcManager)
+{
+  PairHistManager.resetTrackedParticlesPerEvent();
+  for (auto const& part : SliceParticle1) {
+    if (!ParticleCleaner1.isClean(part, mcMothers, mcPartonicMothers)) {
+      continue;
+    }
+    ParticleHistManager1.fill(part, mcMothers, mcPartonicMothers);
+  }
+  for (auto const& part : SliceParticle2) {
+    if (!ParticleCleaner2.isClean(part, mcMothers, mcPartonicMothers)) {
+      continue;
+    }
+    ParticleHistManager2.fill(part, mcMothers, mcPartonicMothers);
+  }
+  for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(SliceParticle1, SliceParticle2))) {
+    if (!ParticleCleaner1.isClean(p1, mcMothers, mcPartonicMothers) ||
+        !ParticleCleaner2.isClean(p2, mcMothers, mcPartonicMothers)) {
+      continue;
+    }
+    // compute the kinematic (kstar) for this pair
+    PairHistManager.setPairMcTruth(p1, p2, Collision);
+    if (!PcManager.isCleanPair(p1, p2, mcPartonicMothers, PairHistManager)) {
+      continue;
+    }
+    // Close pair rejection; fills deta-dphi/kinematic histograms internally
+    if (CprManager.isClosePair(p1, p2, PairHistManager)) {
+      continue;
+    }
     if (PairHistManager.checkPairCuts()) {
       PairHistManager.template fill<mode>();
       PairHistManager.trackParticlesPerEvent(p1, p2);
@@ -308,6 +423,12 @@ void processMixedEvent(T1 const& Collisions,
   int windowSizeRaw = 0;
   int windowSizeEffective = 0;
 
+  // collision1 is fixed across each mixing window, so its track slice is
+  // materialized once per window and reused for every mixing partner, instead
+  // of being re-sliced (a fresh arrow Slice + selection copy, the dominant cost
+  // on the heaviest femto trains) on every (collision1, collision2) pair.
+  std::optional<decltype(Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, 0, cache))> sliceParticle1;
+
   for (auto const& [collision1, collision2] : o2::soa::selfCombinations(policy, depth, -1, Collisions, Collisions)) {
 
     // --- new window ---
@@ -318,6 +439,7 @@ void processMixedEvent(T1 const& Collisions,
       windowSizeRaw = 0;
       windowSizeEffective = 0;
       lastCollisionIndex = collision1.globalIndex();
+      sliceParticle1.emplace(Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache));
     }
 
     ++windowSizeRaw;
@@ -329,32 +451,30 @@ void processMixedEvent(T1 const& Collisions,
 
     CprManager.setMagField(collision1.magField());
 
-    auto sliceParticle1 = Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache);
-
     auto sliceParticle2 = Partition2->sliceByCached(o2::aod::femtobase::stored::fColId, collision2.globalIndex(), cache);
 
     PairHistManager.resetTrackedParticlesPerEvent();
 
-    if (sliceParticle1.size() == 0 || sliceParticle2.size() == 0) {
+    if (sliceParticle1->size() == 0 || sliceParticle2.size() == 0) {
       PairHistManager.fillMixingQaMePerEvent();
       continue;
     }
 
     bool hasValidPair = false;
     PairHistManager.fillMixingQaMe(collision1, collision2);
-    for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(sliceParticle1, sliceParticle2))) {
+    for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(*sliceParticle1, sliceParticle2))) {
 
-      if (!PcManager.isCleanPair(p1, p2, TrackTable)) {
-        continue;
-      }
-
-      CprManager.setPair(p1, p2, TrackTable);
-      if (CprManager.isClosePair()) {
-        continue;
-      }
-
+      // compute the kinematic (kstar) for this pair
       PairHistManager.setPair(p1, p2, TrackTable, collision1, collision2);
-      CprManager.fill(PairHistManager.getKstar());
+
+      if (!PcManager.isCleanPair(p1, p2, TrackTable, PairHistManager)) {
+        continue;
+      }
+
+      // Close pair rejection; fills deta-dphi/kinematic histograms internally
+      if (CprManager.isClosePair(p1, p2, TrackTable, PairHistManager)) {
+        continue;
+      }
 
       if (PairHistManager.checkPairCuts()) {
         hasValidPair = true;
@@ -415,6 +535,12 @@ void processMixedEvent(T1 const& Collisions,
   int windowSizeRaw = 0;
   int windowSizeEffective = 0;
 
+  // collision1 is fixed across each mixing window, so its track slice is
+  // materialized once per window and reused for every mixing partner, instead
+  // of being re-sliced (a fresh arrow Slice + selection copy, the dominant cost
+  // on the heaviest femto trains) on every (collision1, collision2) pair.
+  std::optional<decltype(Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, 0, cache))> sliceParticle1;
+
   for (auto const& [collision1, collision2] : o2::soa::selfCombinations(policy, depth, -1, Collisions, Collisions)) {
     if (collision1.globalIndex() != lastCollisionIndex) {
       if (lastCollisionIndex != -1) {
@@ -423,6 +549,7 @@ void processMixedEvent(T1 const& Collisions,
       windowSizeRaw = 0;
       windowSizeEffective = 0;
       lastCollisionIndex = collision1.globalIndex();
+      sliceParticle1.emplace(Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache));
     }
 
     ++windowSizeRaw;
@@ -434,13 +561,11 @@ void processMixedEvent(T1 const& Collisions,
 
     CprManager.setMagField(collision1.magField());
 
-    auto sliceParticle1 = Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache);
-
     auto sliceParticle2 = Partition2->sliceByCached(o2::aod::femtobase::stored::fColId, collision2.globalIndex(), cache);
 
     PairHistManager.resetTrackedParticlesPerEvent();
 
-    if (sliceParticle1.size() == 0 || sliceParticle2.size() == 0) {
+    if (sliceParticle1->size() == 0 || sliceParticle2.size() == 0) {
       PairHistManager.fillMixingQaMePerEvent();
       continue;
     }
@@ -448,25 +573,124 @@ void processMixedEvent(T1 const& Collisions,
     bool hasValidPair = false;
     PairHistManager.fillMixingQaMe(collision1, collision2);
 
-    for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(sliceParticle1, sliceParticle2))) {
+    for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(*sliceParticle1, sliceParticle2))) {
 
       if (!ParticleCleaner1.isClean(p1, mcParticles, mcMothers, mcPartonicMothers) ||
           !ParticleCleaner2.isClean(p2, mcParticles, mcMothers, mcPartonicMothers)) {
         continue;
       }
 
-      if (!PcManager.isCleanPair(p1, p2, TrackTable)) {
-        continue;
-      }
-
-      CprManager.setPair(p1, p2, TrackTable);
-      if (CprManager.isClosePair()) {
-        continue;
-      }
-
+      // compute the kinematic (kstar) for this pair
       PairHistManager.setPairMc(p1, p2, TrackTable, mcParticles, collision1, collision2, mcCollisions);
 
-      CprManager.fill(PairHistManager.getKstar());
+      if (!PcManager.isCleanPair(p1, p2, TrackTable, PairHistManager)) {
+        continue;
+      }
+
+      // Close pair rejection; fills deta-dphi/kinematic histograms internally
+      if (CprManager.isClosePair(p1, p2, TrackTable, PairHistManager)) {
+        continue;
+      }
+
+      if (PairHistManager.checkPairCuts()) {
+        hasValidPair = true;
+        PairHistManager.trackParticlesPerEvent(p1, p2);
+        PairHistManager.template fill<mode>();
+      }
+    }
+
+    if (hasValidPair) {
+      ++windowSizeEffective;
+    }
+
+    PairHistManager.fillMixingQaMePerEvent();
+  }
+
+  if (windowSizeRaw > 0) {
+    PairHistManager.fillMixingQaMePerMixingBin(windowSizeRaw, windowSizeEffective);
+  }
+}
+// process mixed event, mc truth only (no track table, collisions already mc truth so no separate mcCollisions)
+template <modes::Mode mode,
+          typename T1,
+          typename T2,
+          typename T3,
+          typename T4,
+          typename T5,
+          typename T6,
+          typename T7,
+          typename T8,
+          typename T9,
+          typename T10,
+          typename T11,
+          typename T12,
+          typename T13,
+          typename T14>
+void processMixedEvent(T1 const& Collisions,
+                       T2& Partition1,
+                       T3& Partition2,
+                       T4 const& /*mcParticles*/,
+                       T5 const& mcMothers,
+                       T6 const& mcPartonicMothers,
+                       T7& cache,
+                       T8 const& policy,
+                       T9 const& depth,
+                       T10& PairHistManager,
+                       T11& ParticleCleaner1,
+                       T12& ParticleCleaner2,
+                       T13& CprManager,
+                       T14& PcManager)
+{
+  int64_t lastCollisionIndex = -1;
+  int windowSizeRaw = 0;
+  int windowSizeEffective = 0;
+
+  std::optional<decltype(Partition1->sliceByCached(o2::aod::femtomcparticle::fMcColId, 0, cache))> sliceParticle1;
+
+  for (auto const& [collision1, collision2] : o2::soa::selfCombinations(policy, depth, -1, Collisions, Collisions)) {
+
+    if (collision1.globalIndex() != lastCollisionIndex) {
+      if (lastCollisionIndex != -1) {
+        PairHistManager.fillMixingQaMePerMixingBin(windowSizeRaw, windowSizeEffective);
+      }
+      windowSizeRaw = 0;
+      windowSizeEffective = 0;
+      lastCollisionIndex = collision1.globalIndex();
+      sliceParticle1.emplace(Partition1->sliceByCached(o2::aod::femtomcparticle::fMcColId, collision1.globalIndex(), cache));
+    }
+
+    ++windowSizeRaw;
+
+    auto sliceParticle2 = Partition2->sliceByCached(o2::aod::femtomcparticle::fMcColId, collision2.globalIndex(), cache);
+
+    PairHistManager.resetTrackedParticlesPerEvent();
+
+    if (sliceParticle1->size() == 0 || sliceParticle2.size() == 0) {
+      PairHistManager.fillMixingQaMePerEvent();
+      continue;
+    }
+
+    bool hasValidPair = false;
+    PairHistManager.fillMixingQaMe(collision1, collision2);
+
+    for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(*sliceParticle1, sliceParticle2))) {
+
+      if (!ParticleCleaner1.isClean(p1, mcMothers, mcPartonicMothers) ||
+          !ParticleCleaner2.isClean(p2, mcMothers, mcPartonicMothers)) {
+        continue;
+      }
+
+      // compute the kinematic (kstar) for this pair
+      PairHistManager.setPairMcTruth(p1, p2, collision1, collision2);
+
+      if (!PcManager.isCleanPair(p1, p2, mcPartonicMothers, PairHistManager)) {
+        continue;
+      }
+
+      // Close pair rejection; fills deta-dphi/kinematic histograms internally
+      if (CprManager.isClosePair(p1, p2, PairHistManager)) {
+        continue;
+      }
 
       if (PairHistManager.checkPairCuts()) {
         hasValidPair = true;
@@ -487,7 +711,6 @@ void processMixedEvent(T1 const& Collisions,
   }
 }
 
-} // namespace pairprocesshelpers
-} // namespace o2::analysis::femto
+} // namespace o2::analysis::femto::pairprocesshelpers
 
 #endif // PWGCF_FEMTO_CORE_PAIRPROCESSHELPERS_H_

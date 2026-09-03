@@ -202,6 +202,49 @@ std::array<float, 3> getQvec(TCollision const& collision, const int qvecEst)
   return std::array<float, 3>{-999.f, -999.f, -999.f};
 }
 
+/// Get the EsE Q vector
+template <typename T>
+concept HasEsEQvecFT0A = requires(T collision) {
+  collision.eseQvecFT0ARe();
+  collision.eseQvecFT0AIm();
+};
+
+template <typename T>
+concept HasEsEQvecFT0C = requires(T collision) {
+  collision.eseQvecFT0CRe();
+  collision.eseQvecFT0CIm();
+};
+
+template <typename T>
+concept HasEsEQvecFT0M = requires(T collision) {
+  collision.eseQvecFT0MRe();
+  collision.eseQvecFT0MIm();
+};
+
+template <typename T>
+concept HasEsEQvecFV0A = requires(T collision) {
+  collision.eseQvecFV0ARe();
+  collision.eseQvecFV0AIm();
+};
+
+template <typename T>
+concept HasEsEQvecTPCpos = requires(T collision) {
+  collision.eseQvecTPCposRe();
+  collision.eseQvecTPCposIm();
+};
+
+template <typename T>
+concept HasEsEQvecTPCneg = requires(T collision) {
+  collision.eseQvecTPCnegRe();
+  collision.eseQvecTPCnegIm();
+};
+
+template <typename T>
+concept HasEsEQvecTPCtot = requires(T collision) {
+  collision.eseQvecTPCallRe();
+  collision.eseQvecTPCallIm();
+};
+
 /// Get the Ese Q vector choosing your favourite estimator
 /// \param collision is the collision with the Q vector information
 /// \param qvecEst is the chosen Q-vector estimator
@@ -210,37 +253,37 @@ std::array<float, 3> getEseQvec(TCollision const& collision, const int qvecEst)
 {
   switch (qvecEst) {
     case QvecEstimator::FV0A:
-      if constexpr (HasQvecFV0A<TCollision>) {
+      if constexpr (HasEsEQvecFV0A<TCollision>) {
         return std::array<float, 3>{collision.eseQvecFV0ARe(), collision.eseQvecFV0AIm(), collision.sumAmplFV0A()};
       }
       break;
     case QvecEstimator::FT0A:
-      if constexpr (HasQvecFT0A<TCollision>) {
+      if constexpr (HasEsEQvecFT0A<TCollision>) {
         return std::array<float, 3>{collision.eseQvecFT0ARe(), collision.eseQvecFT0AIm(), collision.sumAmplFT0A()};
       }
       break;
     case QvecEstimator::FT0C:
-      if constexpr (HasQvecFT0C<TCollision>) {
+      if constexpr (HasEsEQvecFT0C<TCollision>) {
         return std::array<float, 3>{collision.eseQvecFT0CRe(), collision.eseQvecFT0CIm(), collision.sumAmplFT0C()};
       }
       break;
     case QvecEstimator::FT0M:
-      if constexpr (HasQvecFT0M<TCollision>) {
+      if constexpr (HasEsEQvecFT0M<TCollision>) {
         return std::array<float, 3>{collision.eseQvecFT0MRe(), collision.eseQvecFT0MIm(), collision.sumAmplFT0M()};
       }
       break;
     case QvecEstimator::TPCPos:
-      if constexpr (HasQvecTPCpos<TCollision>) {
+      if constexpr (HasEsEQvecTPCpos<TCollision>) {
         return std::array<float, 3>{collision.eseQvecTPCposRe(), collision.eseQvecTPCposIm(), static_cast<float>(collision.nTrkTPCpos())};
       }
       break;
     case QvecEstimator::TPCNeg:
-      if constexpr (HasQvecTPCneg<TCollision>) {
+      if constexpr (HasEsEQvecTPCneg<TCollision>) {
         return std::array<float, 3>{collision.eseQvecTPCnegRe(), collision.eseQvecTPCnegIm(), static_cast<float>(collision.nTrkTPCneg())};
       }
       break;
     case QvecEstimator::TPCTot:
-      if constexpr (HasQvecTPCtot<TCollision>) {
+      if constexpr (HasEsEQvecTPCtot<TCollision>) {
         return std::array<float, 3>{collision.eseQvecTPCallRe(), collision.eseQvecTPCallIm(), static_cast<float>(collision.nTrkTPCall())};
       }
       break;

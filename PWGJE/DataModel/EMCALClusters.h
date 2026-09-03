@@ -50,6 +50,8 @@ const EMCALClusterDefinition kV3MostSplitSmallTimeDiff(ClusterAlgorithm_t::kV3, 
 const EMCALClusterDefinition kV3MostSplitSmallerTimeDiff(ClusterAlgorithm_t::kV3, 44, 1, "kV3MostSplitSmallerTimeDiff", 0.5, 0.1, -10000, 10000, 100, true, 0., false);
 const EMCALClusterDefinition kV3MostSplitSmallestTimeDiff(ClusterAlgorithm_t::kV3, 45, 1, "kV3MostSplitSmallestTimeDiff", 0.5, 0.1, -10000, 10000, 50, true, 0., false);
 const EMCALClusterDefinition kV3MostSplitSmallestTimeDiffLowestSeed(ClusterAlgorithm_t::kV3, 50, 1, "kV3MostSplitSmallestTimeDiffLowestSeed", 0.1, 0.1, -10000, 10000, 50, true, 0., false);
+const EMCALClusterDefinition kV3MostSplitSmallestTimeDiffLowSeed(ClusterAlgorithm_t::kV3, 51, 1, "kV3MostSplitSmallestTimeDiffLowSeed", 0.3, 0.1, -10000, 10000, 50, true, 0., false);
+const EMCALClusterDefinition kV3MostSplitSmallestTimeDiffLowerSeed(ClusterAlgorithm_t::kV3, 52, 1, "kV3MostSplitSmallestTimeDiffLowerSeed", 0.2, 0.1, -10000, 10000, 50, true, 0., false);
 
 /// \brief function returns EMCALClusterDefinition for the given name
 /// \param name name of the cluster definition
@@ -92,6 +94,10 @@ inline const EMCALClusterDefinition getClusterDefinitionFromString(const std::st
     return kV3MostSplitSmallestTimeDiff;
   } else if (clusterDefinitionName == "kV3MostSplitSmallestTimeDiffLowestSeed") {
     return kV3MostSplitSmallestTimeDiffLowestSeed;
+  } else if (clusterDefinitionName == "kV3MostSplitSmallestTimeDiffLowSeed") {
+    return kV3MostSplitSmallestTimeDiffLowSeed;
+  } else if (clusterDefinitionName == "kV3MostSplitSmallestTimeDiffLowerSeed") {
+    return kV3MostSplitSmallestTimeDiffLowerSeed;
   } else {
     throw std::invalid_argument("Cluster definition name not recognized");
   }

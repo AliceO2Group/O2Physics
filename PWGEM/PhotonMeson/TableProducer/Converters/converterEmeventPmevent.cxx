@@ -31,6 +31,7 @@ struct ConverterEmeventPmevent {
 
   void process(EMEvents_004 const& collisions)
   {
+    pmEvents.reserve(collisions.size());
     for (const auto& collision : collisions) {
       pmEvents(
         collision.collisionId(),

@@ -109,11 +109,13 @@ enum EventRejection {
   IsGoodZvtxFT0vsPV,
   NoSameBunchPileup,
   Occupancy,
+  Inel0,
   NContrib,
   NoCollInTimeRangeNarrow,
   NoCollInTimeRangeStandard,
   NoCollInRofStandard,
   UpcEventCut,
+  UpcZdcNeutronClass,
   Chi2,
   PositionZ,
   NEventRejection
@@ -121,8 +123,32 @@ enum EventRejection {
 
 using HfCollisionRejectionMask = uint32_t; // 32 bits, in case new ev. selections will be added
 
+enum UpcZdcNeutronClassSelection {
+  kXn0n = 0,
+  k0nXn,
+  kInvalid
+};
+
 const o2::framework::AxisSpec axisEvents = {EventRejection::NEventRejection, -0.5f, +EventRejection::NEventRejection - 0.5f, ""};
 const o2::framework::AxisSpec axisUpcEvents = {o2::aod::sgselector::DoubleGap + 1, -0.5f, +o2::aod::sgselector::DoubleGap + 0.5f, ""};
+
+template <typename TBc>
+int getUpcZdcNeutronClass(TBc const& bc, const float zdcTimeMin, const float zdcTimeMax)
+{
+  if (!bc.has_zdc()) {
+    return UpcZdcNeutronClassSelection::kInvalid;
+  }
+  const auto zdc = bc.zdc();
+  const bool isZNAinTime = zdc.timeZNA() >= zdcTimeMin && zdc.timeZNA() <= zdcTimeMax;
+  const bool isZNCinTime = zdc.timeZNC() >= zdcTimeMin && zdc.timeZNC() <= zdcTimeMax;
+  if (isZNAinTime && !isZNCinTime) {
+    return UpcZdcNeutronClassSelection::kXn0n;
+  }
+  if (!isZNAinTime && isZNCinTime) {
+    return UpcZdcNeutronClassSelection::k0nXn;
+  }
+  return UpcZdcNeutronClassSelection::kInvalid;
+}
 
 /// \brief Function to put labels on monitoring histogram
 /// \param hRejection monitoring histogram
@@ -140,9 +166,11 @@ void setEventRejectionLabels(Histo& hRejection, std::string const& softwareTrigg
   hRejection->GetXaxis()->SetBinLabel(EventRejection::TimeFrameBorderCut + 1, "TF border");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::ItsRofBorderCut + 1, "ITS ROF border");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::UpcEventCut + 1, "UPC event");
+  hRejection->GetXaxis()->SetBinLabel(EventRejection::UpcZdcNeutronClass + 1, "UPC ZDC 0nXn/Xn0n");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::IsGoodZvtxFT0vsPV + 1, "PV #it{z} consistency FT0 timing");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::NoSameBunchPileup + 1, "No same-bunch pile-up"); // POTENTIALLY BAD FOR BEAUTY ANALYSES
   hRejection->GetXaxis()->SetBinLabel(EventRejection::Occupancy + 1, "Occupancy");
+  hRejection->GetXaxis()->SetBinLabel(EventRejection::Inel0 + 1, "INEL > 0");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::NContrib + 1, "# of PV contributors");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::Chi2 + 1, "PV #it{#chi}^{2}");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::PositionZ + 1, "PV #it{z}");
@@ -167,6 +195,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> occEstimator{"occEstimator", 1, "Occupancy estimation (1: ITS, 2: FT0C)"};
   o2::framework::Configurable<int> occupancyMin{"occupancyMin", 0, "Minimum occupancy"};
   o2::framework::Configurable<int> occupancyMax{"occupancyMax", 1000000, "Maximum occupancy"};
+  o2::framework::Configurable<bool> requireINEL0{"requireINEL0", false, "Require INEL > 0"};
   o2::framework::Configurable<int> nPvContributorsMin{"nPvContributorsMin", 0, "Minimum number of PV contributors"};
   o2::framework::Configurable<float> chi2PvMax{"chi2PvMax", -1.f, "Maximum PV chi2"};
   o2::framework::Configurable<float> zPvPosMin{"zPvPosMin", -10.f, "Minimum PV posZ (cm)"};
@@ -185,6 +214,9 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> rctCheckZDC{"rctCheckZDC", false, "RCT flag to check whether the ZDC is present or not"};
   o2::framework::Configurable<bool> rctTreatLimitedAcceptanceAsBad{"rctTreatLimitedAcceptanceAsBad", false, "RCT flag to reject events with limited acceptance for selected detectors"};
   o2::framework::Configurable<std::string> irSource{"irSource", "", "Estimator of the interaction rate (Empty: automatically set. Otherwise recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
+  o2::framework::Configurable<bool> useUpcZdcTimeCut{"useUpcZdcTimeCut", true, "Apply ZDC time selection for UPC neutron class"};
+  o2::framework::Configurable<float> upcZdcTimeMin{"upcZdcTimeMin", -2.f, "Minimum ZDC time for UPC neutron class selection (ns)"};
+  o2::framework::Configurable<float> upcZdcTimeMax{"upcZdcTimeMax", 2.f, "Maximum ZDC time for UPC neutron class selection (ns)"};
 
   //  SG selector
   SGSelector sgSelector;
@@ -372,6 +404,11 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
       }
     }
 
+    /// INEL > 0
+    if (requireINEL0 && !collision.isInelGt0()) {
+      SETBIT(rejectionMask, EventRejection::Inel0);
+    }
+
     /// number of PV contributors
     if (collision.numContrib() < nPvContributorsMin) {
       SETBIT(rejectionMask, EventRejection::NContrib);
@@ -435,6 +472,12 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
       if (upcEventType > o2::aod::sgselector::DoubleGap) {
         SETBIT(rejectionMaskWithUpc, EventRejection::UpcEventCut);
       } else {
+        if (useUpcZdcTimeCut) {
+          const auto upcZdcNeutronClass = getUpcZdcNeutronClass(*sgSelectionResult.bc, upcZdcTimeMin, upcZdcTimeMax);
+          if (upcZdcNeutronClass != UpcZdcNeutronClassSelection::kXn0n && upcZdcNeutronClass != UpcZdcNeutronClassSelection::k0nXn) {
+            SETBIT(rejectionMaskWithUpc, EventRejection::UpcZdcNeutronClass);
+          }
+        }
         hUpCollisions->Fill(upcEventType);
       }
     }

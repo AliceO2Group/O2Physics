@@ -32,6 +32,20 @@ DECLARE_SOA_TABLE(CollisionsAlice3, "AOD", "COLLALICE3",
 
 using CollisionAlice3 = CollisionsAlice3::iterator;
 
+namespace mcmult_alice3
+{
+DECLARE_SOA_COLUMN(MultMC, multMC, int);       //! Total MCTruth multiplicity
+DECLARE_SOA_COLUMN(MultMC25, multMC25, int);   //! MCTruth multiplicity in |eta| < 2.5
+DECLARE_SOA_COLUMN(MultMC125, multMC125, int); //! MCTruth multiplicity in |eta| < 1.25
+DECLARE_SOA_COLUMN(MultMC09, multMC09, int);   //! MCTruth multiplicity in |eta| < 0.9
+} // namespace mcmult_alice3
+DECLARE_SOA_TABLE(MultsMCAlice3, "AOD", "MULTMCALICE3",
+                  mcmult_alice3::MultMC,
+                  mcmult_alice3::MultMC25,
+                  mcmult_alice3::MultMC125,
+                  mcmult_alice3::MultMC09);
+
+using MultMCAlice3 = MultsMCAlice3::iterator;
 } // namespace o2::aod
 
 #endif // ALICE3_DATAMODEL_COLLISIONALICE3_H_

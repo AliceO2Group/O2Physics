@@ -18,7 +18,7 @@
 ///         This task runs on prefiltered data
 ///
 
-#include "qaEventTrack.h"
+#include "qaEventTrackLite.h"
 
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
@@ -41,6 +41,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <ostream>
+#include <string>
 #include <vector>
 
 #include <math.h>

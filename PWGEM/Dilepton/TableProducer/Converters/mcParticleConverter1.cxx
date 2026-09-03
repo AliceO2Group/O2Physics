@@ -33,6 +33,7 @@ struct mcParticleConverter1 {
 
   void process(aod::EMMCParticles_000 const& mcParticles)
   {
+    mcParticle_001.reserve(mcParticles.size());
     for (const auto& mcParticle : mcParticles) {
       // LOGF(info, "mcParticles.emmceventId() = %d, mcParticle.mothersIds().size() = %d, mcParticle.daughtersIds().size() = %d", mcParticle.emmceventId(), mcParticle.mothersIds().size(), mcParticle.daughtersIds().size());
 

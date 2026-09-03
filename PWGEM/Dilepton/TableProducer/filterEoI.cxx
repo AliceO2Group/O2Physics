@@ -19,6 +19,7 @@
 
 #include "Common/Core/TableHelper.h"
 
+#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -28,9 +29,11 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
+#include <Math/Vector4D.h>
 #include <TH1.h>
 
 #include <cstdint>
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;
@@ -49,12 +52,15 @@ struct filterEoI {
   Configurable<bool> inheritFromOtherTask{"inheritFromOtherTask", true, "Flag to iherit all common configurables from skimmerPrimaryElectron or skimmerPrimaryMuon"};
   Configurable<int> minNelectron{"minNelectron", -1, "min number of electron candidates per collision"};
   Configurable<int> minNmuon{"minNmuon", -1, "min number of muon candidates per collision"};
+  Configurable<int> minNgamma{"minNgamma", 1, "min number of V0-photon candidates per collision"};
+  Configurable<std::string> taskNameForNelectron{"taskNameForNelectron", "skimmer-primary-electron", "task name where minNelectron is defined."};
+  Configurable<std::string> varNameForNelectron{"varNameForNelectron", "minNelectron", "variable name for minNelectron"};
 
   HistogramRegistry fRegistry{"output"};
   void init(o2::framework::InitContext& initContext)
   {
     if (inheritFromOtherTask.value) { // Inheriting from other task
-      getTaskOptionValue(initContext, "skimmer-primary-electron", "minNelectron", minNelectron.value, true);
+      getTaskOptionValue(initContext, taskNameForNelectron.value, varNameForNelectron.value, minNelectron.value, true);
       getTaskOptionValue(initContext, "skimmer-primary-muon", "minNmuon", minNmuon.value, true);
     }
 
@@ -104,7 +110,7 @@ struct filterEoI {
       }
       if constexpr (static_cast<bool>(system & kPCM)) {
         auto v0s_coll = v0s.sliceBy(perCollision_v0, collision.globalIndex());
-        if (v0s_coll.size() >= 1) {
+        if (v0s_coll.size() >= minNgamma) {
           does_pcm_exist = true;
           fRegistry.fill(HIST("hEventCounter"), 4);
         }

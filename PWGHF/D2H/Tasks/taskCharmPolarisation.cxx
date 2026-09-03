@@ -29,6 +29,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Qvectors.h"
 
 #include <CCDB/BasicCCDBManager.h>
@@ -226,9 +227,9 @@ struct HfTaskCharmPolarisation {
   HfEventSelection hfEvSel;  // event selection and monitoring
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
-  using CollisionsWithMcLabels = soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>>;
-  using CollisionsWithMcLabelsAndCent = soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms, aod::CentFT0Cs>>;
-  using CollsWithQVecs = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::QvectorBTots, aod::CentFT0Ms, aod::CentFT0Cs>;
+  using CollisionsWithMcLabels = soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels>>;
+  using CollisionsWithMcLabelsAndCent = soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels, aod::CentFT0Ms, aod::CentFT0Cs>>;
+  using CollsWithQVecs = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::QvectorBTots, aod::CentFT0Ms, aod::CentFT0Cs>;
   using TracksWithMcLabels = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels>;
   using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra>;
 
@@ -2344,11 +2345,11 @@ struct HfTaskCharmPolarisation {
           float const xQvec = (*qVecs).at(0);
           float const yQvec = (*qVecs).at(1);
           ROOT::Math::XYZVector const qVecNorm = ROOT::Math::XYZVector(yQvec, -xQvec, 0.f);
-          ROOT::Math::XYZVector const qVec = ROOT::Math::XYZVector(xQvec, yQvec, 0.);
-          ROOT::Math::XYZVector threeVecDauCMXY = ROOT::Math::XYZVector(threeVecDauCM.X(), threeVecDauCM.Y(), 0.);
-          float const phiEP = qVec.Dot(threeVecDauCMXY) / std::sqrt(threeVecDauCMXY.Mag2()) / std::sqrt(qVec.Mag2());
+          float const phiStarBeam = std::atan2(threeVecDauCM.Y(), threeVecDauCM.X());
+          float const psiAngle = epHelper.GetEventPlane(xQvec, yQvec, 2);
+          float const deltaPhiStarEP = RecoDecay::constrainAngle(phiStarBeam - psiAngle, 0., 2);
           float const cosThetaStarEP = qVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(qVecNorm.Mag2());
-          fillRecoHistos<Channel, WithMl, DoMc, charm_polarisation::CosThetaStarType::EP>(invMassCharmHadForSparse, ptCharmHad, numPvContributors, rapidity, invMassD0, invMassKPiLc, cosThetaStarEP, phiEP, outputMl, isRotatedCandidate, origin, ptBhadMother, resoChannelLc, absEtaTrackMin, numItsClsMin, numTpcClsMin, charge, nMuons, partRecoDstar, centrality);
+          fillRecoHistos<Channel, WithMl, DoMc, charm_polarisation::CosThetaStarType::EP>(invMassCharmHadForSparse, ptCharmHad, numPvContributors, rapidity, invMassD0, invMassKPiLc, cosThetaStarEP, deltaPhiStarEP, outputMl, isRotatedCandidate, origin, ptBhadMother, resoChannelLc, absEtaTrackMin, numItsClsMin, numTpcClsMin, charge, nMuons, partRecoDstar, centrality);
         }
         if (DoMc) {
           // EP analysis for MC

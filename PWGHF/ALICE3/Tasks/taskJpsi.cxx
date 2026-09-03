@@ -16,6 +16,8 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 /// \author Biao Zhang <biao.zhang@cern.ch>, CCNU
 
+#include "PWGHF/ALICE3/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/ALICE3/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"

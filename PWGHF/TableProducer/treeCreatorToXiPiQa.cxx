@@ -17,9 +17,12 @@
 /// \author Krista Smith <krista.lizbeth.smith@cern.ch>, Pusan National University
 
 #include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/DecayChannelsLegacy.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGLF/DataModel/mcCentrality.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -34,10 +37,13 @@
 #include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
 
+#include <Rtypes.h>
+
 #include <cstdint>
 
 using namespace o2;
 using namespace o2::framework;
+using namespace o2::framework::expressions;
 
 // SV Reco method
 enum {
@@ -124,6 +130,8 @@ DECLARE_SOA_COLUMN(EtaPiFromCasc, etaPiFromCasc, float);
 DECLARE_SOA_COLUMN(EtaPiFromCharmBaryon, etaPiFromCharmBaryon, float);
 DECLARE_SOA_COLUMN(EtaCharmBaryon, etaCharmBaryon, float);
 DECLARE_SOA_COLUMN(EtaCascade, etaCascade, float);
+DECLARE_SOA_COLUMN(PhiCharmBaryon, phiCharmBaryon, float);
+DECLARE_SOA_COLUMN(YCharmBaryon, yCharmBaryon, float);
 DECLARE_SOA_COLUMN(EtaV0, etaV0, float);
 DECLARE_SOA_COLUMN(DcaXYToPvV0Dau0, dcaXYToPvV0Dau0, float);
 DECLARE_SOA_COLUMN(DcaXYToPvV0Dau1, dcaXYToPvV0Dau1, float);
@@ -212,6 +220,14 @@ DECLARE_SOA_COLUMN(CascChi2OverNdf, cascChi2OverNdf, float);
 DECLARE_SOA_COLUMN(XicChi2OverNdf, xicChi2OverNdf, float);
 DECLARE_SOA_COLUMN(MassV0Chi2OverNdf, massV0Chi2OverNdf, float);
 DECLARE_SOA_COLUMN(MassCascChi2OverNdf, massCascChi2OverNdf, float);
+// MC
+DECLARE_SOA_COLUMN(ParticlePdg, particlePdg, int);
+DECLARE_SOA_COLUMN(PtGenB, ptGenB, float);
+DECLARE_SOA_COLUMN(NContribMax, nContribMax, int);
+DECLARE_SOA_COLUMN(NRecoColl, nRecoColl, int);
+DECLARE_SOA_COLUMN(HasRecoCollTVX, hasRecoCollTVX, bool);
+DECLARE_SOA_COLUMN(HasRecoCollSel8, hasRecoCollSel8, bool);
+DECLARE_SOA_COLUMN(HasRecoCollSel8Zvtx, hasRecoCollSel8Zvtx, bool);
 } // namespace full
 
 DECLARE_SOA_TABLE(HfToXiPiEvs, "AOD", "HFTOXIPIEV",
@@ -303,6 +319,22 @@ DECLARE_SOA_TABLE(HfKfXicFulls, "AOD", "HFKFXICFULL",
                   full::ResultSelections,
                   full::FlagMcMatchRec, full::DebugMcRec, full::OriginRec, full::CollisionMatched);
 
+DECLARE_SOA_TABLE(HfCandToXiPiGen, "AOD", "HFCANDTOXIPIGEN",
+                  full::InvMassCharmBaryon,
+                  full::PtCharmBaryon,
+                  full::EtaCharmBaryon,
+                  full::PhiCharmBaryon,
+                  full::YCharmBaryon,
+                  full::FlagMcMatchRec,
+                  full::OriginRec,
+                  full::ParticlePdg,
+                  full::PtGenB,
+                  full::NContribMax,
+                  full::NRecoColl,
+                  full::HasRecoCollTVX,
+                  full::HasRecoCollSel8,
+                  full::HasRecoCollSel8Zvtx);
+
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
@@ -311,15 +343,33 @@ struct HfTreeCreatorToXiPiQa {
   Produces<o2::aod::HfToXiPiFulls> rowCandidateFull;
   Produces<o2::aod::HfToXiPiLites> rowCandidateLite;
   Produces<o2::aod::HfKfXicFulls> rowKfCandidate;
+  Produces<o2::aod::HfCandToXiPiGen> rowCandidateParticles;
   Produces<o2::aod::HfToXiPiEvs> rowEv;
 
   Configurable<float> zPvCut{"zPvCut", 10., "Cut on absolute value of primary vertex z coordinate"};
+  Configurable<int8_t> genSelection{"genSelection", o2::aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi, "Decay channel to be used to match particle information"};
+  Configurable<bool> fillGenTable{"fillGenTable", true, "Fill generated MC information if requested"};
 
   using MyTrackTable = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>;
+  using MyCandTableDca = soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi>;
+  using MyCandTableKf = soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf>;
+  using MyCandTableXic0McDca = soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfXicToXiPiMCRec>;
+  using MyCandTableXic0McKf = soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfXicToXiPiMCRec>;
+  using MyCandTableOmegac0McDca = soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfOmegacToXiPiMCRec>;
   using MyEventTable = soa::Join<aod::Collisions, aod::EvSels>;
   using MyEventTableWithFT0C = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
   using MyEventTableWithFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
   using MyEventTableWithNTracksPV = soa::Join<aod::Collisions, aod::EvSels, aod::CentNTPVs>;
+  using MyEventTableWithMcLabels = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
+
+  using MatchedGenXiPi = soa::Filtered<soa::Join<aod::McParticles, aod::HfXicToXiPiMCGen>>;
+
+  using McCollisionsCentFT0Cs = soa::Join<aod::McCollisions, aod::McCentFT0Cs>;
+  using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
+
+  Filter filterGenXiPi = nabs(aod::hf_cand_mc_flag::flagMcMatchGen) == static_cast<int8_t>(BIT(genSelection));
+
+  PresliceUnsorted<MyEventTableWithMcLabels> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
 
   void init(InitContext const&)
   {
@@ -335,9 +385,9 @@ struct HfTreeCreatorToXiPiQa {
   //////////////////////////////////////////////////////
 
   template <bool useCentrality, typename T>
-  void fillEvent(const T& collision, float cutZPv)
+  void fillEvent(const T& collision)
   {
-    rowEv(collision.sel8(), std::abs(collision.posZ()) < cutZPv);
+    rowEv(collision.sel8(), std::abs(collision.posZ()) < zPvCut);
   }
 
   template <int svReco, int tableSize, bool useCentrality, typename MyEventTableType, typename T>
@@ -611,6 +661,55 @@ struct HfTreeCreatorToXiPiQa {
     }
   }
 
+  template <typename McCollType, typename CollType, typename CandType>
+  void fillParticle(const CandType& mcParticles, const CollType& collisions)
+  {
+    for (const auto& particle : mcParticles) {
+
+      auto ptGen = particle.pt();
+      auto yGen = particle.rapidityCharmBaryonGen();
+
+      int nContribMax = 0;
+      bool recoCollPassedTvx = false;
+      bool recoCollPassedSel8 = false;
+      bool recoCollPassedSel8Zvtx = false;
+
+      auto mcCollision = particle.template mcCollision_as<McCollType>();
+      const auto& recoCollsPerMcColl = collisions.sliceBy(colPerMcCollision, mcCollision.globalIndex());
+
+      for (const auto& recoCol : recoCollsPerMcColl) {
+        nContribMax = recoCol.numContrib() > nContribMax ? recoCol.numContrib() : nContribMax;
+        if (recoCol.selection_bit(aod::evsel::kIsTriggerTVX)) {
+          recoCollPassedTvx = true;
+          if (recoCol.sel8()) {
+            recoCollPassedSel8 = true;
+            if (std::abs(recoCol.posZ()) < zPvCut) {
+              recoCollPassedSel8Zvtx = true;
+              break;
+            }
+          }
+        }
+      }
+
+      float ptGenBhad = (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) ? mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt() : -999.f;
+
+      rowCandidateParticles(RecoDecay::m(particle.pVector(), particle.e()),
+                            ptGen,
+                            particle.eta(),
+                            particle.phi(),
+                            yGen,
+                            particle.flagMcMatchGen(),
+                            particle.originMcGen(),
+                            particle.pdgCode(),
+                            ptGenBhad,
+                            nContribMax,
+                            recoCollsPerMcColl.size(),
+                            recoCollPassedTvx,
+                            recoCollPassedSel8,
+                            recoCollPassedSel8Zvtx);
+    }
+  }
+
   ////////////////////////////////////
   //                                //
   //       Process functions        //
@@ -621,13 +720,14 @@ struct HfTreeCreatorToXiPiQa {
   //*~~~~~~~Data with DCAFitter~~~~~~~~*//
   //*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*//
 
-  void processDataFull(MyEventTable const& collisions, MyTrackTable const&,
-                       soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
+  void processDataFull(MyEventTable const& collisions,
+                       MyTrackTable const&,
+                       MyCandTableDca const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      fillEvent<false>(collision, zPvCut);
+      fillEvent<false>(collision);
     }
 
     // Filling candidate properties
@@ -637,13 +737,14 @@ struct HfTreeCreatorToXiPiQa {
     }
   }
 
-  void processDataLite(MyEventTable const& collisions, MyTrackTable const&,
-                       soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
+  void processDataLite(MyEventTable const& collisions,
+                       MyTrackTable const&,
+                       MyCandTableDca const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      fillEvent<false>(collision, zPvCut);
+      fillEvent<false>(collision);
     }
 
     // Filling candidate properties
@@ -653,13 +754,14 @@ struct HfTreeCreatorToXiPiQa {
     }
   }
 
-  void processDataLiteWithFT0M(MyEventTableWithFT0M const& collisions, MyTrackTable const&,
-                               soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
+  void processDataLiteWithFT0M(MyEventTableWithFT0M const& collisions,
+                               MyTrackTable const&,
+                               MyCandTableDca const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      fillEvent<true>(collision, zPvCut);
+      fillEvent<true>(collision);
     }
 
     // Filling candidate properties
@@ -669,13 +771,14 @@ struct HfTreeCreatorToXiPiQa {
     }
   }
 
-  void processDataLiteWithFT0C(MyEventTableWithFT0C const& collisions, MyTrackTable const&,
-                               soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
+  void processDataLiteWithFT0C(MyEventTableWithFT0C const& collisions,
+                               MyTrackTable const&,
+                               MyCandTableDca const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      fillEvent<true>(collision, zPvCut);
+      fillEvent<true>(collision);
     }
 
     // Filling candidate properties
@@ -685,13 +788,14 @@ struct HfTreeCreatorToXiPiQa {
     }
   }
 
-  void processDataLiteWithNTracksPV(MyEventTableWithNTracksPV const& collisions, MyTrackTable const&,
-                                    soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
+  void processDataLiteWithNTracksPV(MyEventTableWithNTracksPV const& collisions,
+                                    MyTrackTable const&,
+                                    MyCandTableDca const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      fillEvent<true>(collision, zPvCut);
+      fillEvent<true>(collision);
     }
 
     // Filling candidate properties
@@ -710,13 +814,14 @@ struct HfTreeCreatorToXiPiQa {
   //*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*//
   //*~~~~~~~Data with KFParticle~~~~~~~~*//
   //*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*//
-  void processKfData(MyEventTable const& collisions, MyTrackTable const&,
-                     soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf> const& candidates)
+  void processKfData(MyEventTable const& collisions,
+                     MyTrackTable const&,
+                     MyCandTableKf const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      fillEvent<false>(collision, zPvCut);
+      fillEvent<false>(collision);
     }
 
     // Filling candidate properties
@@ -726,13 +831,14 @@ struct HfTreeCreatorToXiPiQa {
     }
   }
 
-  void processKfDataWithFT0M(MyEventTableWithFT0M const& collisions, MyTrackTable const&,
-                             soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf> const& candidates)
+  void processKfDataWithFT0M(MyEventTableWithFT0M const& collisions,
+                             MyTrackTable const&,
+                             MyCandTableKf const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      fillEvent<true>(collision, zPvCut);
+      fillEvent<true>(collision);
     }
 
     // Filling candidate properties
@@ -742,13 +848,14 @@ struct HfTreeCreatorToXiPiQa {
     }
   }
 
-  void processKfDataWithFT0C(MyEventTableWithFT0C const& collisions, MyTrackTable const&,
-                             soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf> const& candidates)
+  void processKfDataWithFT0C(MyEventTableWithFT0C const& collisions,
+                             MyTrackTable const&,
+                             MyCandTableKf const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      fillEvent<true>(collision, zPvCut);
+      fillEvent<true>(collision);
     }
 
     // Filling candidate properties
@@ -758,13 +865,14 @@ struct HfTreeCreatorToXiPiQa {
     }
   }
 
-  void processKfDataWithNTracksPV(MyEventTableWithNTracksPV const& collisions, MyTrackTable const&,
-                                  soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf> const& candidates)
+  void processKfDataWithNTracksPV(MyEventTableWithNTracksPV const& collisions,
+                                  MyTrackTable const&,
+                                  MyCandTableKf const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      fillEvent<true>(collision, zPvCut);
+      fillEvent<true>(collision);
     }
 
     // Filling candidate properties
@@ -783,45 +891,66 @@ struct HfTreeCreatorToXiPiQa {
   //*~~~~~~~MC with DCAFitter~~~~~~~~*//
   //*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*//
 
-  void processMcFullXic0(MyEventTable const& collisions, MyTrackTable const&,
-                         soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfXicToXiPiMCRec> const& candidates)
+  void processMcFullXic0(MyEventTableWithMcLabels const& collsWithMcLable,
+                         aod::McCollisions const&,
+                         MyTrackTable const&,
+                         MyCandTableXic0McDca const& candidates,
+                         MatchedGenXiPi const& mcParticles)
   {
     // Filling event properties
-    rowEv.reserve(collisions.size());
-    for (const auto& collision : collisions) {
-      fillEvent<false>(collision, zPvCut);
+    rowEv.reserve(collsWithMcLable.size());
+    for (const auto& collision : collsWithMcLable) {
+      fillEvent<false>(collision);
     }
 
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate<DCAFITTER, FULL, false, MyEventTable>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originMcRec(), candidate.collisionMatched());
+      fillCandidate<DCAFITTER, FULL, false, MyEventTableWithMcLabels>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originMcRec(), candidate.collisionMatched());
+    }
+
+    // Filling particle properties if requested
+    if (fillGenTable) {
+      rowCandidateParticles.reserve(mcParticles.size());
+      fillParticle<aod::McCollisions>(mcParticles, collsWithMcLable);
     }
   }
 
-  void processMcFullOmegac0(MyEventTable const& collisions, MyTrackTable const&,
-                            soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfOmegacToXiPiMCRec> const& candidates)
+  void processMcFullOmegac0(MyEventTableWithMcLabels const& collsWithMcLable,
+                            aod::McCollisions const&,
+                            MyTrackTable const&,
+                            MyCandTableOmegac0McDca const& candidates,
+                            MatchedGenXiPi const& mcParticles)
   {
     // Filling event properties
-    rowEv.reserve(collisions.size());
-    for (const auto& collision : collisions) {
-      fillEvent<false>(collision, zPvCut);
+    rowEv.reserve(collsWithMcLable.size());
+    for (const auto& collision : collsWithMcLable) {
+      fillEvent<false>(collision);
     }
 
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate<DCAFITTER, FULL, false, MyEventTable>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originMcRec(), candidate.collisionMatched());
+      fillCandidate<DCAFITTER, FULL, false, MyEventTableWithMcLabels>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originMcRec(), candidate.collisionMatched());
+    }
+
+    // Filling particle properties if requested
+    if (fillGenTable) {
+      rowCandidateParticles.reserve(mcParticles.size());
+      fillParticle<aod::McCollisions>(mcParticles, collsWithMcLable);
     }
   }
 
-  void processMcLiteXic0(MyEventTable const& collisions, MyTrackTable const&,
-                         soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfXicToXiPiMCRec> const& candidates)
+  void processMcLiteXic0(MyEventTableWithMcLabels const& collsWithMcLable,
+                         aod::McCollisions const&,
+                         MyTrackTable const&,
+                         MyCandTableXic0McDca const& candidates,
+                         MatchedGenXiPi const& mcParticles)
   {
     // Filling event properties
-    rowEv.reserve(collisions.size());
-    for (const auto& collision : collisions) {
-      fillEvent<false>(collision, zPvCut);
+    rowEv.reserve(collsWithMcLable.size());
+    for (const auto& collision : collsWithMcLable) {
+      fillEvent<false>(collision);
     }
 
     // Filling candidate properties
@@ -829,15 +958,24 @@ struct HfTreeCreatorToXiPiQa {
     for (const auto& candidate : candidates) {
       fillCandidate<DCAFITTER, LITE, false, MyEventTable>(candidate, candidate.flagMcMatchRec(), -7, candidate.originMcRec(), candidate.collisionMatched());
     }
+
+    // Filling particle properties if requested
+    if (fillGenTable) {
+      rowCandidateParticles.reserve(mcParticles.size());
+      fillParticle<aod::McCollisions>(mcParticles, collsWithMcLable);
+    }
   }
 
-  void processMcLiteXic0WithFT0C(MyEventTableWithFT0C const& collisions, MyTrackTable const&,
-                                 soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfXicToXiPiMCRec> const& candidates)
+  void processMcLiteXic0WithFT0C(MyEventTableWithMcLabels const& collsWithMcLable,
+                                 McCollisionsCentFT0Cs const&,
+                                 MyTrackTable const&,
+                                 MyCandTableXic0McDca const& candidates,
+                                 MatchedGenXiPi const& mcParticles)
   {
     // Filling event properties
-    rowEv.reserve(collisions.size());
-    for (const auto& collision : collisions) {
-      fillEvent<true>(collision, zPvCut);
+    rowEv.reserve(collsWithMcLable.size());
+    for (const auto& collision : collsWithMcLable) {
+      fillEvent<true>(collision);
     }
 
     // Filling candidate properties
@@ -845,15 +983,24 @@ struct HfTreeCreatorToXiPiQa {
     for (const auto& candidate : candidates) {
       fillCandidate<DCAFITTER, LITE, true, MyEventTableWithFT0C>(candidate, candidate.flagMcMatchRec(), -7, candidate.originMcRec(), candidate.collisionMatched());
     }
+
+    // Filling particle properties if requested
+    if (fillGenTable) {
+      rowCandidateParticles.reserve(mcParticles.size());
+      fillParticle<McCollisionsCentFT0Cs>(mcParticles, collsWithMcLable);
+    }
   }
 
-  void processMcLiteXic0WithFT0M(MyEventTableWithFT0M const& collisions, MyTrackTable const&,
-                                 soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfXicToXiPiMCRec> const& candidates)
+  void processMcLiteXic0WithFT0M(MyEventTableWithMcLabels const& collsWithMcLable,
+                                 McCollisionsCentFT0Ms const&,
+                                 MyTrackTable const&,
+                                 MyCandTableXic0McDca const& candidates,
+                                 MatchedGenXiPi const& mcParticles)
   {
     // Filling event properties
-    rowEv.reserve(collisions.size());
-    for (const auto& collision : collisions) {
-      fillEvent<true>(collision, zPvCut);
+    rowEv.reserve(collsWithMcLable.size());
+    for (const auto& collision : collsWithMcLable) {
+      fillEvent<true>(collision);
     }
 
     // Filling candidate properties
@@ -861,15 +1008,24 @@ struct HfTreeCreatorToXiPiQa {
     for (const auto& candidate : candidates) {
       fillCandidate<DCAFITTER, LITE, true, MyEventTableWithFT0M>(candidate, candidate.flagMcMatchRec(), -7, candidate.originMcRec(), candidate.collisionMatched());
     }
+
+    // Filling particle properties if requested
+    if (fillGenTable) {
+      rowCandidateParticles.reserve(mcParticles.size());
+      fillParticle<McCollisionsCentFT0Ms>(mcParticles, collsWithMcLable);
+    }
   }
 
-  void processMcLiteXic0WithNTracksPV(MyEventTableWithNTracksPV const& collisions, MyTrackTable const&,
-                                      soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfXicToXiPiMCRec> const& candidates)
+  void processMcLiteXic0WithNTracksPV(MyEventTableWithMcLabels const& collsWithMcLable,
+                                      aod::McCollisions const&,
+                                      MyTrackTable const&,
+                                      MyCandTableXic0McDca const& candidates,
+                                      MatchedGenXiPi const& mcParticles)
   {
     // Filling event properties
-    rowEv.reserve(collisions.size());
-    for (const auto& collision : collisions) {
-      fillEvent<true>(collision, zPvCut);
+    rowEv.reserve(collsWithMcLable.size());
+    for (const auto& collision : collsWithMcLable) {
+      fillEvent<true>(collision);
     }
 
     // Filling candidate properties
@@ -877,21 +1033,36 @@ struct HfTreeCreatorToXiPiQa {
     for (const auto& candidate : candidates) {
       fillCandidate<DCAFITTER, LITE, true, MyEventTableWithNTracksPV>(candidate, candidate.flagMcMatchRec(), -7, candidate.originMcRec(), candidate.collisionMatched());
     }
+
+    // Filling particle properties if requested
+    if (fillGenTable) {
+      rowCandidateParticles.reserve(mcParticles.size());
+      fillParticle<aod::McCollisions>(mcParticles, collsWithMcLable);
+    }
   }
 
-  void processMcLiteOmegac0(MyEventTable const& collisions, MyTrackTable const&,
-                            soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfOmegacToXiPiMCRec> const& candidates)
+  void processMcLiteOmegac0(MyEventTableWithMcLabels const& collsWithMcLable,
+                            aod::McCollisions const&,
+                            MyTrackTable const&,
+                            MyCandTableOmegac0McDca const& candidates,
+                            MatchedGenXiPi const& mcParticles)
   {
     // Filling event properties
-    rowEv.reserve(collisions.size());
-    for (const auto& collision : collisions) {
-      fillEvent<false>(collision, zPvCut);
+    rowEv.reserve(collsWithMcLable.size());
+    for (const auto& collision : collsWithMcLable) {
+      fillEvent<false>(collision);
     }
 
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
       fillCandidate<DCAFITTER, LITE, false, MyEventTable>(candidate, candidate.flagMcMatchRec(), -7, candidate.originMcRec(), candidate.collisionMatched());
+    }
+
+    // Filling particle properties if requested
+    if (fillGenTable) {
+      rowCandidateParticles.reserve(mcParticles.size());
+      fillParticle<aod::McCollisions>(mcParticles, collsWithMcLable);
     }
   }
 
@@ -906,13 +1077,16 @@ struct HfTreeCreatorToXiPiQa {
   //*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*//
   //*~~~~~~~MC with KFParticle~~~~~~~~*//
   //*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*//
-  void processKfMcXic0(MyEventTable const& collisions, MyTrackTable const&,
-                       soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfXicToXiPiMCRec> const& candidates)
+  void processKfMcXic0(MyEventTableWithMcLabels const& collsWithMcLable,
+                       aod::McCollisions const&,
+                       MyTrackTable const&,
+                       MyCandTableXic0McKf const& candidates,
+                       MatchedGenXiPi const& mcParticles)
   {
     // Filling event properties
-    rowEv.reserve(collisions.size());
-    for (const auto& collision : collisions) {
-      fillEvent<false>(collision, zPvCut);
+    rowEv.reserve(collsWithMcLable.size());
+    for (const auto& collision : collsWithMcLable) {
+      fillEvent<false>(collision);
     }
 
     // Filling candidate properties
@@ -920,15 +1094,24 @@ struct HfTreeCreatorToXiPiQa {
     for (const auto& candidate : candidates) {
       fillCandidate<KFPARTICLE, FULL, false, MyEventTable>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originMcRec(), candidate.collisionMatched());
     }
+
+    // Filling particle properties if requested
+    if (fillGenTable) {
+      rowCandidateParticles.reserve(mcParticles.size());
+      fillParticle<aod::McCollisions>(mcParticles, collsWithMcLable);
+    }
   }
 
-  void processKfMcXic0WithFT0C(MyEventTableWithFT0C const& collisions, MyTrackTable const&,
-                               soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfXicToXiPiMCRec> const& candidates)
+  void processKfMcXic0WithFT0C(MyEventTableWithMcLabels const& collsWithMcLable,
+                               McCollisionsCentFT0Cs const&,
+                               MyTrackTable const&,
+                               MyCandTableXic0McKf const& candidates,
+                               MatchedGenXiPi const& mcParticles)
   {
     // Filling event properties
-    rowEv.reserve(collisions.size());
-    for (const auto& collision : collisions) {
-      fillEvent<true>(collision, zPvCut);
+    rowEv.reserve(collsWithMcLable.size());
+    for (const auto& collision : collsWithMcLable) {
+      fillEvent<true>(collision);
     }
 
     // Filling candidate properties
@@ -936,15 +1119,24 @@ struct HfTreeCreatorToXiPiQa {
     for (const auto& candidate : candidates) {
       fillCandidate<KFPARTICLE, FULL, true, MyEventTableWithFT0C>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originMcRec(), candidate.collisionMatched());
     }
+
+    // Filling particle properties if requested
+    if (fillGenTable) {
+      rowCandidateParticles.reserve(mcParticles.size());
+      fillParticle<McCollisionsCentFT0Cs>(mcParticles, collsWithMcLable);
+    }
   }
 
-  void processKfMcXic0WithFT0M(MyEventTableWithFT0M const& collisions, MyTrackTable const&,
-                               soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfXicToXiPiMCRec> const& candidates)
+  void processKfMcXic0WithFT0M(MyEventTableWithMcLabels const& collsWithMcLable,
+                               McCollisionsCentFT0Ms const&,
+                               MyTrackTable const&,
+                               MyCandTableXic0McKf const& candidates,
+                               MatchedGenXiPi const& mcParticles)
   {
     // Filling event properties
-    rowEv.reserve(collisions.size());
-    for (const auto& collision : collisions) {
-      fillEvent<true>(collision, zPvCut);
+    rowEv.reserve(collsWithMcLable.size());
+    for (const auto& collision : collsWithMcLable) {
+      fillEvent<true>(collision);
     }
 
     // Filling candidate properties
@@ -952,21 +1144,36 @@ struct HfTreeCreatorToXiPiQa {
     for (const auto& candidate : candidates) {
       fillCandidate<KFPARTICLE, FULL, true, MyEventTableWithFT0M>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originMcRec(), candidate.collisionMatched());
     }
+
+    // Filling particle properties if requested
+    if (fillGenTable) {
+      rowCandidateParticles.reserve(mcParticles.size());
+      fillParticle<McCollisionsCentFT0Ms>(mcParticles, collsWithMcLable);
+    }
   }
 
-  void processKfMcXic0WithNTracksPV(MyEventTableWithNTracksPV const& collisions, MyTrackTable const&,
-                                    soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfXicToXiPiMCRec> const& candidates)
+  void processKfMcXic0WithNTracksPV(MyEventTableWithMcLabels const& collsWithMcLable,
+                                    aod::McCollisions const&,
+                                    MyTrackTable const&,
+                                    MyCandTableXic0McKf const& candidates,
+                                    MatchedGenXiPi const& mcParticles)
   {
     // Filling event properties
-    rowEv.reserve(collisions.size());
-    for (const auto& collision : collisions) {
-      fillEvent<true>(collision, zPvCut);
+    rowEv.reserve(collsWithMcLable.size());
+    for (const auto& collision : collsWithMcLable) {
+      fillEvent<true>(collision);
     }
 
     // Filling candidate table
     rowKfCandidate.reserve(candidates.size());
     for (const auto& candidate : candidates) {
       fillCandidate<KFPARTICLE, FULL, true, MyEventTableWithNTracksPV>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originMcRec(), candidate.collisionMatched());
+    }
+
+    // Filling particle properties if requested
+    if (fillGenTable) {
+      rowCandidateParticles.reserve(mcParticles.size());
+      fillParticle<aod::McCollisions>(mcParticles, collsWithMcLable);
     }
   }
 

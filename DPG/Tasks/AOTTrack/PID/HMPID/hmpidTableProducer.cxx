@@ -19,20 +19,32 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
-#include <Framework/ASoA.h>
+#include <CommonConstants/MathConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
-#include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
+#include <Framework/ServiceSpec.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TGeoManager.h>
+#include <TMath.h>
+#include <TPDGCode.h>
+
+#include <HMPIDBase/Param.h>
+
+#include <array>
+#include <cmath>
 #include <cstdint>
 #include <string>
 #include <unordered_set>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -40,50 +52,339 @@ using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 
 struct HmpidTableProducer {
-  HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-
-  const AxisSpec axisEvtCounter{1, 0, +1, ""};
-
-  // CCDB configurable
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
-  struct : ConfigurableGroup {
-    Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "URL of the CCDB repository"};
-  } ccdbConfig;
 
   Produces<aod::HmpidAnalysis> hmpidAnalysis;
+  Produces<aod::HmpidAnalysisMC> hmpidAnalysisMC;
 
-  // configurable for quality requirements
+  HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  AxisSpec axisEvtCounter{1, 0, +1, ""};
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
+  struct : ConfigurableGroup {
+    Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "URL of the CCDB repository"};
+    Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the material LUT"};
+    Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the aligned geometry"};
+    Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of GRPMagField"};
+  } ccdbConfig;
+
+  // -----------------------------------------------------------------------
+  // Quality configurables
+  // -----------------------------------------------------------------------
   Configurable<bool> requireITS{"requireITS", true, "Require ITS track"};
   Configurable<bool> requireTPC{"requireTPC", true, "Require TPC track"};
   Configurable<bool> requireTOF{"requireTOF", true, "Require TOF track"};
 
+  Configurable<bool> useInAbsorberGeomMethod{"useInAbsorberGeomMethod", false, "Use geometrical method to check if daughters are born in absorber"};
+
+  // (reference) 473 cm - was the legacy value in run2 simulation
+  Configurable<float> survivalThresholdRich2{"survivalThresholdRich2", 437.5f, "survivalThresholdRich2"};
+  Configurable<float> survivalThresholdRich4{"survivalThresholdRich4", 439.0f, "survivalThresholdRich4"};
+
   using CollisionCandidates = o2::soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFV0As>;
 
-  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
-                                    aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
-                                    aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
+  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra,
+                                    aod::TracksDCA, aod::TrackSelection,
+                                    aod::pidTPCFullPi, aod::pidTPCFullKa,
+                                    aod::pidTPCFullPr, aod::pidTPCFullDe,
+                                    aod::pidTOFFullPi, aod::pidTOFFullKa,
+                                    aod::pidTOFFullPr, aod::pidTOFFullDe>;
+
+  using TrackCandidatesMC = soa::Join<aod::Tracks, aod::TracksExtra,
+                                      aod::TracksDCA, aod::TrackSelection,
+                                      aod::pidTPCFullPi, aod::pidTPCFullKa,
+                                      aod::pidTPCFullPr, aod::pidTPCFullDe,
+                                      aod::pidTOFFullPi, aod::pidTOFFullKa,
+                                      aod::pidTOFFullPr, aod::pidTOFFullDe,
+                                      aod::McTrackLabels>;
+
+  std::unordered_set<uint32_t> mCollisionsWithHmpid;
+
+  static constexpr int Rich2 = 2, Rich4 = 4;
+
+  // (reference) HMPID Detector class in O2
+  static constexpr double AbsThetaDeg = 33.5;
+  double mAbsCosT = 0., mAbsSinT = 0.;
+
+  // Rich2 absorber: trans2 = {435.5, 0., -155.}, thickness 40mm -> halfX = 2cm
+  static constexpr double AbsRich2CenterX = 435.5, AbsRich2CenterZ = -155.;
+  static constexpr double AbsRich2HalfX = 2.0;
+
+  // Rich4 absorber: trans4 = {435., 0., 155.}, thickness 80mm -> halfX = 4cm
+  static constexpr double AbsRich4CenterX = 435.0, AbsRich4CenterZ = 155.;
+  static constexpr double AbsRich4HalfX = 4.0;
+
+  // common to both absorbers: box is 1300x1300mm -> halfY = halfZ = 65cm
+  static constexpr double AbsHalfY = 65.0, AbsHalfZ = 65.0;
 
   void init(o2::framework::InitContext&)
   {
-    // Configure CCDB
+    mAbsCosT = std::cos(AbsThetaDeg * TMath::DegToRad());
+    mAbsSinT = std::sin(AbsThetaDeg * TMath::DegToRad());
+
     ccdb->setURL(ccdbConfig.ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
-    histos.add("eventCounter", "eventCounter", kTH1F, {axisEvtCounter});
-    histos.add("goodEventCounter", "goodEventCounter", kTH1F, {axisEvtCounter});
-    histos.add("eventsHmpid", "eventsWithHmpid", kTH1F, {axisEvtCounter});
+    // event counters
+    histos.add("eventCounter", "All events", kTH1F, {axisEvtCounter});
+    histos.add("goodEventCounter", "Events passing sel8", kTH1F, {axisEvtCounter});
+    histos.add("eventsHmpid", "Events with HMPID track", kTH1F, {axisEvtCounter});
+
+    // chamber extraction quality checks - M1 propagation, M2 clusSize encoding, M3 hybrid configuration
+    const AxisSpec axisCh{10, -1.5, 8.5, "Chamber"};
+    histos.add("hChamberM1", "Chamber M1 (propagation)", kTH1F, {axisCh});
+    histos.add("hChamberM2", "Chamber M2 (clusSize encoding)", kTH1F, {axisCh});
+    histos.add("hChamberM3", "Chamber M3 (hybrid, in table)", kTH1F, {axisCh});
+
+    histos.add("hChamberM1vsM2", "M1 vs M2; M2; M1", kTH2F, {axisCh, axisCh});
+    histos.add("hChamberM3vsM2", "M3 vs M2; M2; M3", kTH2F, {axisCh, axisCh});
+
+    histos.add("hClusSize", "Raw hmpidClusSize", kTH1F, {{500, -1.1e6, 1e6, "clusSize"}});
+    histos.add("hClusSizeCorrupt", "Corrupt entries (<=0)", kTH1F, {{200, -1.1e6, 1., "clusSize"}});
+
+    histos.add("hChamberAssignment",
+               "Chamber assignment outcome; category; counts",
+               kTH1F, {{4, -0.5, 3.5, ""}});
+
+    histos.add("hProdVertex", ";X (cm);Y (cm);Z (cm)", HistType::kTH3F, {{500, -500., 500.}, {500, -500., 500.}, {500, -500., 500.}});
+    histos.add("hDaughterRCyl_Rich2", "hDaughterRCyl_Rich2", kTH1F, {{600, 0., 600.}});
+    histos.add("hDaughterRCyl_Rich4", "hDaughterRCyl_Rich4", kTH1F, {{600, 0., 600.}});
+    histos.add("hDaughterRSph_Rich2", "hDaughterRSph_Rich2", kTH1F, {{600, 0., 600.}});
+    histos.add("hDaughterRSph_Rich4", "hDaughterRSph_Rich4", kTH1F, {{600, 0., 600.}});
   }
 
-  // function to manage ccdb
+  // -----------------------------------------------------------------------
+  // CCDB initialisation per run
+  // -----------------------------------------------------------------------
   int mCCDBRunNumber = 0;
+
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
     if (mCCDBRunNumber == bc.runNumber()) {
       return;
     }
     mCCDBRunNumber = bc.runNumber();
+
+    auto grpMag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(
+      ccdbConfig.grpmagPath, bc.timestamp());
+    if (!grpMag) {
+      LOGF(fatal, "initCCDB: GRPMagField not found at %s",
+           ccdbConfig.grpmagPath.value.c_str());
+      return;
+    }
+    o2::base::Propagator::initFieldFromGRP(grpMag);
+
+    auto lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(
+      ccdb->get<o2::base::MatLayerCylSet>(ccdbConfig.lutPath));
+    o2::base::Propagator::Instance()->setMatLUT(lut);
+
+    // Geometry needed by o2::hmpid::Param for mars2Lors
+    if (!gGeoManager) {
+      ccdb->get<TGeoManager>(ccdbConfig.geoPath);
+    }
+
+    LOGF(info, "initCCDB: run %d initialised (mag + LUT + geo)", bc.runNumber());
+  }
+
+  void propagateHelix(
+    double len,
+    double bz,
+    int charge,
+    std::array<double, 3>& x,
+    std::array<double, 3>& p)
+  {
+    // Extrapolate track along simple helix in magnetic field
+
+    constexpr double KB2C = 0.299792458e-3;
+
+    double px = p[0];
+    double py = p[1];
+    double pz = p[2];
+
+    double pmod = std::hypot(px, py, pz);
+    double pt = std::hypot(px, py);
+
+    if (pt < o2::constants::math::Almost0 || std::abs(bz) < o2::constants::math::Almost0) // straight-line tracks
+    {
+      x[0] += px / pmod * len;
+      x[1] += py / pmod * len;
+      x[2] += pz / pmod * len;
+
+      return;
+    }
+
+    double a = -KB2C * bz * charge;
+    double rho = a / pmod;
+
+    double sinr = std::sin(rho * len);
+    double cosr = std::cos(rho * len);
+
+    x[0] += px * sinr / a - py * (1. - cosr) / a;
+    x[1] += py * sinr / a + px * (1. - cosr) / a;
+    x[2] += pz * len / pmod;
+
+    double px0 = px;
+
+    p[0] = px0 * cosr - py * sinr;
+    p[1] = py * cosr + px0 * sinr;
+    p[2] = pz;
+  }
+
+  bool intersectHelixPlane(
+    double bz,
+    int charge,
+    const std::array<double, 3>& x0,
+    const std::array<double, 3>& p0,
+    const std::array<double, 3>& planePoint,
+    const std::array<double, 3>& planeNormal,
+    std::array<double, 3>& xOut,
+    std::array<double, 3>& pOut)
+  {
+    // Intersect a helix with a plane defined by normals and points, using an iterative approach.
+
+    double s =
+      (planePoint[0] - x0[0]) * planeNormal[0] +
+      (planePoint[1] - x0[1]) * planeNormal[1] +
+      (planePoint[2] - x0[2]) * planeNormal[2];
+
+    double dist = 99999., distPrev = dist;
+
+    const double kConvThr = 0.00001;
+    const int kMaxIter = 100;
+
+    std::array<double, 3> x{};
+    std::array<double, 3> p{};
+
+    for (int iter = 0; iter < kMaxIter; ++iter) {
+
+      x = x0;
+      p = p0;
+      propagateHelix(s, bz, charge, x, p);
+
+      dist =
+        (x[0] - planePoint[0]) * planeNormal[0] +
+        (x[1] - planePoint[1]) * planeNormal[1] +
+        (x[2] - planePoint[2]) * planeNormal[2];
+
+      if (std::abs(dist) >= std::abs(distPrev)) {
+        return false;
+      }
+
+      distPrev = dist;
+      s -= dist;
+
+      if (std::abs(dist) < kConvThr) {
+        xOut = x;
+        pOut = p;
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  int getHmpidChamber(
+    const std::array<double, 3>& xIn,
+    const std::array<double, 3>& pIn,
+    double bz,
+    int charge)
+  {
+    std::array<double, 3> x{};
+    std::array<double, 3> p{};
+
+    x = xIn;
+    p = pIn;
+
+    auto* param = o2::hmpid::Param::instance();
+
+    for (int ch = o2::hmpid::Param::kMinCh; ch <= o2::hmpid::Param::kMaxCh; ++ch) {
+
+      // Chamber module geometry: points and normals for radiators and PCs
+      std::array<double, 3> pRad{}, pPc{};
+      std::array<double, 3> nRad{}, nPc{};
+
+      param->point(ch, pRad.data(), o2::hmpid::Param::kRad);
+      param->norm(ch, nRad.data());
+      param->point(ch, pPc.data(), o2::hmpid::Param::kPc);
+      param->norm(ch, nPc.data());
+
+      // Intersection track - radiator plane
+      std::array<double, 3> xRad{}, pAtRad{};
+
+      if (!intersectHelixPlane(bz, charge, x, p, pRad, nRad, xRad, pAtRad)) {
+        continue;
+      }
+
+      // Intersection track - PC plane
+      std::array<double, 3> xPc{}, pAtPc{};
+
+      if (!intersectHelixPlane(bz, charge, xRad, pAtRad, pPc, nPc, xPc, pAtPc)) {
+        continue;
+      }
+
+      double theta = 0., phi = 0.;
+      param->mars2LorsVec(ch, pAtRad.data(), theta, phi);
+
+      double xL = 0., yL = 0.;
+      param->mars2Lors(ch, xPc.data(), xL, yL);
+
+      // Use isInside to check Chamber intersected
+      if (param->isInside(xL, yL, param->distCut())) {
+        return ch;
+      }
+    }
+
+    // No chamber intersected
+    return -1;
+  }
+
+  // Checks whether a point in global (MARS/ALICE) coordinates lies inside the
+  // absorber box in front of the given chamber (Rich2 or Rich4). See the
+  // geometry block above for the derivation of the transform used here.
+  bool isInAbsorber(double vx, double vy, double vz, int chamber) const
+  {
+    double centerX = 0., centerZ = 0., halfX = 0.;
+
+    if (chamber == Rich2) {
+      centerX = AbsRich2CenterX;
+      centerZ = AbsRich2CenterZ;
+      halfX = AbsRich2HalfX;
+    } else if (chamber == Rich4) {
+      centerX = AbsRich4CenterX;
+      centerZ = AbsRich4CenterZ;
+      halfX = AbsRich4HalfX;
+    } else {
+      return false;
+    }
+
+    // translate to box center
+    const double lx = vx - centerX;
+    const double ly = vy; // centerY = 0
+    const double lz = vz - centerZ;
+
+    // rotate by -theta into the box local frame
+    const double rx = lx * mAbsCosT + ly * mAbsSinT;
+    const double ry = -lx * mAbsSinT + ly * mAbsCosT;
+    const double rz = lz;
+
+    return std::abs(rx) <= halfX && std::abs(ry) <= AbsHalfY && std::abs(rz) <= AbsHalfZ;
+  }
+
+  bool survivedAbsorber(double vx, double vy, int chamber)
+  {
+    float thresholdR = 0.;
+    if (chamber == Rich2) {
+      thresholdR = survivalThresholdRich2;
+    } else if (chamber == Rich4) {
+      thresholdR = survivalThresholdRich4;
+    } else {
+      return false;
+    }
+
+    const float r = std::hypot(vx, vy);
+    return r > thresholdR;
   }
 
   void processEvent(CollisionCandidates::iterator const& col,
@@ -93,72 +394,247 @@ struct HmpidTableProducer {
     if (col.sel8()) {
       histos.fill(HIST("goodEventCounter"), 0.5);
     }
-
-    // initialize CCDB for current BC
     initCCDB(col.bc_as<aod::BCsWithTimestamps>());
   }
-  PROCESS_SWITCH(HmpidTableProducer, processEvent, "Process event level - collisions", true);
+  PROCESS_SWITCH(HmpidTableProducer, processEvent, "Process event level", true);
 
-  void processHmpid(
+  template <bool isMC, typename TTrackTable, typename TMcParticles = int>
+  void runHmpidAnalysis(
     aod::HMPIDs const& hmpids,
-    TrackCandidates const&,
+    TTrackTable const&,
     CollisionCandidates const&,
-    aod::BCsWithTimestamps const&)
+    aod::BCsWithTimestamps const&,
+    TMcParticles const& mcParticles = 0)
   {
-    // --- Static set to track unique collisions with HMPID tracks ---
-    static std::unordered_set<uint32_t> collisionsWithHmpid;
+    for (auto const& t : hmpids) { // begin loop over hmpids
 
-    for (auto const& t : hmpids) {
+      const auto& globalTrack = t.template track_as<TTrackTable>();
 
-      // Access the global track associated to the HMPID track
-      const auto& globalTrack = t.track_as<TrackCandidates>();
-
-      if (!globalTrack.has_collision())
+      if (!globalTrack.has_collision()) {
         continue;
+      }
 
-      // Access the associated collision
-      const auto& col = globalTrack.collision_as<CollisionCandidates>();
-      initCCDB(col.bc_as<aod::BCsWithTimestamps>());
+      const auto& col = globalTrack.template collision_as<CollisionCandidates>();
+      initCCDB(col.template bc_as<aod::BCsWithTimestamps>());
       uint32_t collId = col.globalIndex();
 
-      // --- Track quality selection ---
       if ((requireITS && !globalTrack.hasITS()) ||
           (requireTPC && !globalTrack.hasTPC()) ||
           (requireTOF && !globalTrack.hasTOF())) {
         continue;
       }
 
-      // Count collisions with at least one valid HMPID track
-      if (collisionsWithHmpid.insert(collId).second) {
+      if (mCollisionsWithHmpid.insert(collId).second) {
         histos.fill(HIST("eventsHmpid"), 0.5);
       }
 
-      float centrality = col.centFV0A();
+      // clusSize diagnostics
+      histos.fill(HIST("hClusSize"), t.hmpidClusSize());
+      bool isCorrupt = (t.hmpidClusSize() <= 0);
+      if (isCorrupt) {
+        histos.fill(HIST("hClusSizeCorrupt"), t.hmpidClusSize());
+      }
 
-      // check cluster size sign
-      if (t.hmpidClusSize() <= 0)
+      // --- M2: clusSize encoding ---
+      int chamberM2 = t.hmpidClusSize() / 1000000;
+      histos.fill(HIST("hChamberM2"), chamberM2);
+
+      // --- M1: propagation
+      // obtain global coordinates
+      double sinA = std::sin(globalTrack.alpha());
+      double cosA = std::cos(globalTrack.alpha());
+
+      std::array<double, 3> x = {
+        globalTrack.x() * cosA - globalTrack.y() * sinA,
+        globalTrack.x() * sinA + globalTrack.y() * cosA,
+        static_cast<double>(globalTrack.z())};
+
+      std::array<double, 3> p = {
+        static_cast<double>(globalTrack.px()),
+        static_cast<double>(globalTrack.py()),
+        static_cast<double>(globalTrack.pz())};
+
+      int16_t charge = globalTrack.sign();
+
+      auto prop = o2::base::Propagator::Instance();
+      auto bz = static_cast<double>(prop->getNominalBz());
+
+      int chamberM1 = getHmpidChamber(x, p, bz, charge);
+
+      histos.fill(HIST("hChamberM1"), chamberM1);
+
+      if (!isCorrupt) { // begin if(!isCorrupt) - fill M1vsM2
+        histos.fill(HIST("hChamberM1vsM2"), chamberM2, chamberM1);
+      } // end if(!isCorrupt) - fill M1vsM2
+
+      // --- M3: hybrid ---
+      int chamberM3 = -1;
+      if (!isCorrupt) { // begin if/else - M3 assignment
+        chamberM3 = chamberM2;
+      } else {
+        chamberM3 = chamberM1;
+      } // end if/else - M3 assignment
+
+      // Legend:
+      // bin 0 = clusSize > 0,  chamber found   (M2 ok)
+      // bin 1 = clusSize > 0,  chamber not found
+      // bin 2 = clusSize <= 0, M1 recovery      (corrupt, M1 ok)
+      // bin 3 = clusSize <= 0, M1 fails        (corrupt, skipped)
+
+      if (!isCorrupt && chamberM3 >= 0) {
+        histos.fill(HIST("hChamberAssignment"), 0.);
+      } else if (!isCorrupt && chamberM3 < 0) {
+        histos.fill(HIST("hChamberAssignment"), 1.);
+      } else if (isCorrupt && chamberM3 >= 0) {
+        histos.fill(HIST("hChamberAssignment"), 2.);
+      } else {
+        histos.fill(HIST("hChamberAssignment"), 3.);
+      }
+
+      histos.fill(HIST("hChamberM3"), chamberM3);
+      histos.fill(HIST("hChamberM3vsM2"), chamberM2, chamberM3);
+
+      if (chamberM3 < 0) {
         continue;
+      }
 
-      float hmpidPhotsCharge2[o2::aod::kDimPhotonsCharge];
+      std::vector<float> hmpidPhotsCharge2(o2::aod::kDimPhotonsCharge, 0.f);
 
       for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
         hmpidPhotsCharge2[i] = t.hmpidPhotsCharge()[i];
       }
 
-      /////FILL HMPID CUSTOM TABLE
-      hmpidAnalysis(t.hmpidSignal(), t.hmpidMom(),
-                    globalTrack.p(), t.hmpidXTrack(), t.hmpidYTrack(), t.hmpidXMip(),
-                    t.hmpidYMip(), t.hmpidNPhotons(), t.hmpidQMip(), (t.hmpidClusSize() % 1000000) / 1000,
-                    t.hmpidClusSize() / 1000000, hmpidPhotsCharge2, globalTrack.eta(), globalTrack.phi(),
-                    globalTrack.px(), globalTrack.py(), globalTrack.pz(), globalTrack.itsNCls(),
-                    globalTrack.tpcNClsFound(), globalTrack.tpcNClsCrossedRows(), globalTrack.tpcChi2NCl(), globalTrack.itsChi2NCl(),
-                    globalTrack.dcaXY(), globalTrack.dcaZ(), globalTrack.tpcNSigmaPi(), globalTrack.tofNSigmaPi(),
-                    globalTrack.tpcNSigmaKa(), globalTrack.tofNSigmaKa(), globalTrack.tpcNSigmaPr(), globalTrack.tofNSigmaPr(),
-                    globalTrack.tpcNSigmaDe(), globalTrack.tofNSigmaDe(), centrality);
-    } // end loop on hmpid table entries
-  }
+      // fill hmpid table
+      hmpidAnalysis(
+        t.hmpidSignal(), t.hmpidMom(),
+        globalTrack.p(), t.hmpidXTrack(), t.hmpidYTrack(),
+        t.hmpidXMip(), t.hmpidYMip(),
+        t.hmpidNPhotons(), t.hmpidQMip(),
+        (t.hmpidClusSize() % 1000000) / 1000,
+        chamberM3,
+        hmpidPhotsCharge2,
+        globalTrack.eta(), globalTrack.phi(),
+        globalTrack.px(), globalTrack.py(), globalTrack.pz(),
+        globalTrack.itsNCls(), globalTrack.tpcNClsFound(), globalTrack.tpcNClsCrossedRows(),
+        globalTrack.tpcChi2NCl(), globalTrack.itsChi2NCl(),
+        globalTrack.dcaXY(), globalTrack.dcaZ(),
+        globalTrack.tpcNSigmaPi(), globalTrack.tofNSigmaPi(),
+        globalTrack.tpcNSigmaKa(), globalTrack.tofNSigmaKa(),
+        globalTrack.tpcNSigmaPr(), globalTrack.tofNSigmaPr(),
+        globalTrack.tpcNSigmaDe(), globalTrack.tofNSigmaDe(),
+        col.centFV0A());
 
-  PROCESS_SWITCH(HmpidTableProducer, processHmpid, "Process hmpid entries - tracks", true);
+      // fill hmpid table for mc tracks if running on MC
+      if constexpr (isMC) {
+        if (globalTrack.has_mcParticle()) {
+          const auto& mc = globalTrack.mcParticle();
+
+          bool interactionInAbsorber = false;
+
+          if ((chamberM3 == Rich2 || chamberM3 == Rich4) && mc.has_daughters()) {
+            auto dIds = mc.daughtersIds();
+            bool foundRelevantDaughter = false; // true if at least one non-delta/photon daughter was examined
+
+            if (useInAbsorberGeomMethod) {
+              for (int32_t idx = dIds.front(); idx <= dIds.back(); ++idx) {
+                auto daughter = mcParticles.rawIteratorAt(idx);
+
+                int absPdg = std::abs(daughter.pdgCode());
+                if (absPdg == kElectron || absPdg == kGamma) {
+                  continue;
+                }
+
+                foundRelevantDaughter = true;
+
+                // diagnostics on daughters distribution
+                histos.fill(HIST("hProdVertex"), daughter.vx(), daughter.vy(), daughter.vz());
+
+                double rCyl = std::hypot(daughter.vx(), daughter.vy());
+                double rSph = std::hypot(daughter.vx(), daughter.vy(), daughter.vz());
+                if (chamberM3 == Rich2) {
+                  histos.fill(HIST("hDaughterRCyl_Rich2"), rCyl);
+                  histos.fill(HIST("hDaughterRSph_Rich2"), rSph);
+                } else {
+                  histos.fill(HIST("hDaughterRCyl_Rich4"), rCyl);
+                  histos.fill(HIST("hDaughterRSph_Rich4"), rSph);
+                }
+
+                if (isInAbsorber(daughter.vx(), daughter.vy(), daughter.vz(), chamberM3)) {
+                  interactionInAbsorber = true;
+                }
+              } // end loop daughters
+            } else {
+              bool survived = false;
+              for (int32_t idx = dIds.front(); idx <= dIds.back(); ++idx) {
+                auto daughter = mcParticles.rawIteratorAt(idx);
+
+                // skip delta rays (e-/e+), photons, and HMPID Cherenkov/feedback
+                int absPdg = std::abs(daughter.pdgCode());
+                if (absPdg == kElectron || absPdg == kGamma) {
+                  continue;
+                }
+
+                foundRelevantDaughter = true;
+
+                histos.fill(HIST("hProdVertex"), daughter.vx(), daughter.vy(), daughter.vz());
+
+                double rCyl = std::hypot(daughter.vx(), daughter.vy());
+                double rSph = std::hypot(daughter.vx(), daughter.vy(), daughter.vz());
+                if (chamberM3 == Rich2) {
+                  histos.fill(HIST("hDaughterRCyl_Rich2"), rCyl);
+                  histos.fill(HIST("hDaughterRSph_Rich2"), rSph);
+                } else {
+                  histos.fill(HIST("hDaughterRCyl_Rich4"), rCyl);
+                  histos.fill(HIST("hDaughterRSph_Rich4"), rSph);
+                }
+
+                if (survivedAbsorber(daughter.vx(), daughter.vy(), chamberM3)) {
+                  survived = true;
+                }
+              } // end loop daughters
+
+              // No relevant daughter found (only delta rays/photons, or no
+              // daughters at all): no evidence of a genuine interaction -> treat
+              // as primary/survived, consistent with the "no daughters" case.
+              interactionInAbsorber = foundRelevantDaughter ? !survived : false;
+            }
+          } // end if has_daughters
+
+          hmpidAnalysisMC(mc.pdgCode(), mc.vx(), mc.vy(), mc.vz(),
+                          mc.isPhysicalPrimary(), mc.getProcess(), interactionInAbsorber);
+        } else {
+          // No MC truth associated to this track
+          hmpidAnalysisMC(-999, -999.f, -999.f, -999.f, false, -100, false);
+        }
+      } // end if constexpr (isMC)
+
+    } // end for - loop over hmpids
+  } // end runHmpidAnalysis
+
+  // process real data
+  void processHmpid(aod::HMPIDs const& hmpids,
+                    TrackCandidates const& tracks,
+                    CollisionCandidates const& cols,
+                    aod::BCsWithTimestamps const& bcs)
+  {
+    // isMC False
+    runHmpidAnalysis<false>(hmpids, tracks, cols, bcs);
+  }
+  PROCESS_SWITCH(HmpidTableProducer, processHmpid, "Process HMPID entries", true);
+
+  // process MC
+  void processHmpidMC(aod::HMPIDs const& hmpids,
+                      TrackCandidatesMC const& tracks,
+                      CollisionCandidates const& cols,
+                      aod::BCsWithTimestamps const& bcs,
+                      aod::McParticles const& mcParticles)
+  {
+    runHmpidAnalysis<true>(hmpids, tracks, cols, bcs, mcParticles);
+  }
+  PROCESS_SWITCH(HmpidTableProducer, processHmpidMC, "Process HMPID MC entries", true);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfg) { return WorkflowSpec{adaptAnalysisTask<HmpidTableProducer>(cfg)}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
+{
+  return WorkflowSpec{adaptAnalysisTask<HmpidTableProducer>(cfg)};
+}

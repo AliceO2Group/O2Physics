@@ -30,6 +30,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
@@ -323,7 +324,7 @@ struct HfCandidateCreatorCascade {
   }
 
   /// @brief process function w/o centrality selections
-  void processNoCent(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processNoCent(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                      aod::HfCascades const& rowsTrackIndexCasc,
                      aod::V0sLinked const& v0sLinked,
                      V0full const& v0Full,
@@ -335,7 +336,7 @@ struct HfCandidateCreatorCascade {
   PROCESS_SWITCH(HfCandidateCreatorCascade, processNoCent, " Run candidate creator w/o centrality selections", true);
 
   /// @brief process function w/ centrality selection on FT0C
-  void processCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+  void processCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs> const& collisions,
                        aod::HfCascades const& rowsTrackIndexCasc,
                        aod::V0sLinked const& v0sLinked,
                        V0full const& v0Full,
@@ -347,7 +348,7 @@ struct HfCandidateCreatorCascade {
   PROCESS_SWITCH(HfCandidateCreatorCascade, processCentFT0C, " Run candidate creator w/ centrality selection on FT0C", false);
 
   /// @brief process function w/ centrality selection on FT0M
-  void processCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+  void processCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms> const& collisions,
                        aod::HfCascades const& rowsTrackIndexCasc,
                        aod::V0sLinked const& v0sLinked,
                        V0full const& v0Full,
@@ -365,7 +366,7 @@ struct HfCandidateCreatorCascade {
   ///////////////////////////////////////////////////////////
 
   /// @brief process function to monitor collisions - no centrality
-  void processCollisions(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
+  void processCollisions(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
   {
     /// loop over collisions
     for (const auto& collision : collisions) {
@@ -384,7 +385,7 @@ struct HfCandidateCreatorCascade {
   PROCESS_SWITCH(HfCandidateCreatorCascade, processCollisions, "Collision monitoring - no centrality", true);
 
   /// @brief process function to monitor collisions - FT0C centrality
-  void processCollisionsCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
+  void processCollisionsCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs> const& collisions, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
   {
     /// loop over collisions
     for (const auto& collision : collisions) {
@@ -403,7 +404,7 @@ struct HfCandidateCreatorCascade {
   PROCESS_SWITCH(HfCandidateCreatorCascade, processCollisionsCentFT0C, "Collision monitoring - FT0C centrality", false);
 
   /// @brief process function to monitor collisions - FT0M centrality
-  void processCollisionsCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
+  void processCollisionsCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms> const& collisions, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
   {
     /// loop over collisions
     for (const auto& collision : collisions) {
@@ -435,9 +436,9 @@ struct HfCandidateCreatorCascadeMc {
 
   using MyTracksWMc = soa::Join<aod::TracksWCov, aod::McTrackLabels>;
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
-  using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
-  using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
-  using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms>;
+  using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels>;
+  using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels, aod::CentFT0Cs>;
+  using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels, aod::CentFT0Ms>;
   using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
 
   Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;

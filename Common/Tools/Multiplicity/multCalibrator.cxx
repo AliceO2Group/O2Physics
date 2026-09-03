@@ -40,7 +40,7 @@ const TString multCalibrator::fCentEstimName[kNCentEstim] = {
 multCalibrator::multCalibrator() : TNamed(),
                                    lDesiredBoundaries(0),
                                    lNDesiredBoundaries(0),
-                                   fkPrecisionWarningThreshold(1.0),
+                                   fkPrecisionWarningThreshold(1000.0),
                                    fInputFileName("AnalysisResults.root"),
                                    fOutputFileName("CCDB-objects.root"),
                                    fAnchorPointValue(-1),
@@ -57,7 +57,7 @@ multCalibrator::multCalibrator() : TNamed(),
 multCalibrator::multCalibrator(const char* name, const char* title) : TNamed(name, title),
                                                                       lDesiredBoundaries(0),
                                                                       lNDesiredBoundaries(0),
-                                                                      fkPrecisionWarningThreshold(1.0),
+                                                                      fkPrecisionWarningThreshold(1000.0),
                                                                       fInputFileName("AnalysisResults.root"),
                                                                       fOutputFileName("CCDB-objects.root"),
                                                                       fAnchorPointValue(-1),
@@ -231,6 +231,54 @@ void multCalibrator::SetStandardAdaptiveBoundaries()
 }
 
 //________________________________________________________________
+void multCalibrator::SetRun3AdaptiveBoundaries()
+{
+  // Function to set standard adaptive boundaries
+  // Run 3 exclusive: goes to 0.00001% binning for highest multiplicity
+  // Warning: this setting requires well filled input histograms
+  //
+  // -> at 0.00001%, one needs 10 million events to get a single one in the highest
+  // category. In Run 3, at 500 kHz, this corresponds to 20 seconds of dataking;
+  // any run lasting over 5 minutes should have enough to calibrate to the highest
+  // boundary.
+  //
+  // QA when using hyperfine binning is still advised:
+  // Selecting very fine percentages may select on spurious situations
+  // such as beam-background, pileup, etc.
+
+  lNDesiredBoundaries = 0;
+  lDesiredBoundaries = new Double_t[1100];
+  lDesiredBoundaries[0] = 100;
+  // From Low To High Multiplicity
+  for (Int_t ib = 1; ib < 91; ib++) {
+    lNDesiredBoundaries++;
+    lDesiredBoundaries[lNDesiredBoundaries] = lDesiredBoundaries[lNDesiredBoundaries - 1] - 1.0;
+  }
+  for (Int_t ib = 1; ib < 91; ib++) {
+    lNDesiredBoundaries++;
+    lDesiredBoundaries[lNDesiredBoundaries] = lDesiredBoundaries[lNDesiredBoundaries - 1] - 0.1;
+  }
+  for (Int_t ib = 1; ib < 91; ib++) {
+    lNDesiredBoundaries++;
+    lDesiredBoundaries[lNDesiredBoundaries] = lDesiredBoundaries[lNDesiredBoundaries - 1] - 0.01;
+  }
+  for (Int_t ib = 1; ib < 91; ib++) {
+    lNDesiredBoundaries++;
+    lDesiredBoundaries[lNDesiredBoundaries] = lDesiredBoundaries[lNDesiredBoundaries - 1] - 0.001;
+  }
+  for (Int_t ib = 1; ib < 91; ib++) {
+    lNDesiredBoundaries++;
+    lDesiredBoundaries[lNDesiredBoundaries] = lDesiredBoundaries[lNDesiredBoundaries - 1] - 0.0001;
+  }
+  for (Int_t ib = 1; ib < 101; ib++) {
+    lNDesiredBoundaries++;
+    lDesiredBoundaries[lNDesiredBoundaries] = lDesiredBoundaries[lNDesiredBoundaries - 1] - 0.00001;
+  }
+  lNDesiredBoundaries++;
+  cout << "Set run 3 adaptive percentile boundaries! Nboundaries: " << lNDesiredBoundaries << endl;
+}
+
+//________________________________________________________________
 void multCalibrator::SetStandardOnePercentBoundaries()
 {
   // Function to set standard adaptive boundaries
@@ -242,6 +290,32 @@ void multCalibrator::SetStandardOnePercentBoundaries()
   for (Int_t ib = 1; ib < 101; ib++)
     lDesiredBoundaries[ib] = lDesiredBoundaries[ib - 1] - 1.0;
   cout << "Set standard 1%-wide percentile boundaries! Nboundaries: " << lNDesiredBoundaries << endl;
+}
+
+//________________________________________________________________
+bool multCalibrator::IsBinningSane(TH1* histogram)
+{
+  // check if binning that will be attempted is too fine for this histogram
+  double minimumBinWidth = 1000.0f;
+  for (int ib = 0; ib < lNDesiredBoundaries - 1; ib++) {
+    if (std::abs(lDesiredBoundaries[ib + 1] - lDesiredBoundaries[ib]) < minimumBinWidth) {
+      minimumBinWidth = std::abs(lDesiredBoundaries[ib + 1] - lDesiredBoundaries[ib]);
+    }
+  }
+  if (minimumBinWidth < 1e-9) {
+    cout << "Excessively fine binning requested: minimum bin width registers as " << minimumBinWidth << endl;
+    return false; // not reasonable
+  }
+  if (histogram->GetEntries() < 1000.0 / minimumBinWidth) {
+    cout << "Histogram " << histogram->GetName() << " does not have enough entries (" << histogram->GetEntries() << ") to calibrate!" << endl;
+    return false;
+  }
+  if (std::abs(histogram->GetMean()) < 1e-9) {
+    cout << "Histogram " << histogram->GetName() << " has suspicious mean: " << histogram->GetMean() << endl;
+    return false;
+  }
+  cout << "Sanity check: " << histogram->GetName() << ", entries = " << histogram->GetEntries() << ", 1/(min bin width) = " << 100.0 / minimumBinWidth << " -> OK ! " << endl;
+  return true;
 }
 
 //________________________________________________________________
@@ -258,6 +332,19 @@ TH1F* multCalibrator::GetCalibrationHistogram(TH1* histoRaw, TString lHistoName)
     cout << "PROBLEM WITH ANCHOR POINT SETTINGS! " << endl;
     cout << "Anchor point percentage requested: " << fAnchorPointPercentage << endl;
     cout << "Last boundary: " << lDesiredBoundaries[0] << endl;
+  }
+
+  // binning check
+  if (!IsBinningSane(histoRaw)) {
+    cout << "Requested binning is not viable for input histogram named " << histoRaw->GetName() << "! Will return 100.5 for all requests." << endl;
+    Double_t lDummyBounds[2];
+    lDummyBounds[0] = 0;
+    lDummyBounds[1] = 1.0;
+    TH1F* hCalib = new TH1F(lHistoName.Data(), "", 1, lDummyBounds);
+    hCalib->SetBinContent(0, 100.5);
+    hCalib->SetBinContent(1, 100.5);
+    hCalib->SetBinContent(2, 100.5);
+    return hCalib;
   }
 
   // Aux vars
@@ -278,15 +365,22 @@ TH1F* multCalibrator::GetCalibrationHistogram(TH1* histoRaw, TString lHistoName)
     if (fAnchorPointValue > 0)
       lDisplacedii++;
     lBounds[lDisplacedii] = GetBoundaryForPercentile(histoRaw, lDesiredBoundaries[ii], lPrecision[ii]);
+    bool warnUser = false;
     TString lPrecisionString = "(Precision OK)";
     if (ii != 0 && ii != lNDesiredBoundaries - 1) {
       // check precision, please
-      if (lPrecision[ii] / TMath::Abs(lDesiredBoundaries[ii + 1] - lDesiredBoundaries[ii]) > fkPrecisionWarningThreshold)
+      if ((lPrecision[ii] / TMath::Abs(lDesiredBoundaries[ii + 1] - lDesiredBoundaries[ii])) > fkPrecisionWarningThreshold) {
         lPrecisionString = "(WARNING: BINNING MAY LEAD TO IMPRECISION!)";
-      if (lPrecision[ii] / TMath::Abs(lDesiredBoundaries[ii - 1] - lDesiredBoundaries[ii]) > fkPrecisionWarningThreshold)
+        warnUser = true;
+      }
+      if ((lPrecision[ii] / TMath::Abs(lDesiredBoundaries[ii - 1] - lDesiredBoundaries[ii])) > fkPrecisionWarningThreshold) {
         lPrecisionString = "(WARNING: BINNING MAY LEAD TO IMPRECISION!)";
+        warnUser = true;
+      }
     }
-    cout << histoRaw->GetName() << " boundaries, percentile: " << lDesiredBoundaries[ii] << "%\t Signal value = " << lBounds[lDisplacedii] << "\tprecision = " << lPrecision[ii] << "% " << lPrecisionString.Data() << endl;
+    if (warnUser) {
+      cout << histoRaw->GetName() << " boundaries, percentile: " << lDesiredBoundaries[ii] << "%\t Signal value = " << lBounds[lDisplacedii] << "\tprecision = " << lPrecision[ii] << "% " << lPrecisionString.Data() << endl;
+    }
   }
   TH1F* hCalib = new TH1F(lHistoName.Data(), "", fAnchorPointValue < 0 ? lNDesiredBoundaries - 1 : lNDesiredBoundaries, lBounds);
   hCalib->SetDirectory(0);
@@ -311,7 +405,6 @@ void multCalibrator::ResetPrecisionHistogram()
     Double_t lInverseDesiredBoundaries[1100];
     for (Int_t ii = 0; ii < lNDesiredBoundaries; ii++) {
       lInverseDesiredBoundaries[ii] = lDesiredBoundaries[lNDesiredBoundaries - (ii + 1)];
-      cout << "Boundary " << ii << " is " << lInverseDesiredBoundaries[ii] << endl;
     }
     fPrecisionHistogram = new TH1D("hPrecisionHistogram", "", lNDesiredBoundaries - 1, lInverseDesiredBoundaries);
   }

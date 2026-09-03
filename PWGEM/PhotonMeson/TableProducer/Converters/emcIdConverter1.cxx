@@ -26,6 +26,7 @@ struct emcIdConverter1 {
 
   void process(aod::EMCEMEventIds_000 const& ids)
   {
+    id_001.reserve(ids.size());
     for (const auto& id : ids) {
       id_001(id.emeventId());
     } // end of id loop

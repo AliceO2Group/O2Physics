@@ -106,3 +106,10 @@ o2physics_add_dpl_workflow(converter-reduced-3-prongs-ml
                      SOURCES converterReducedHadronDausPid.cxx
                      PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                      COMPONENT_NAME Analysis)
+
+# Tree creator
+
+o2physics_add_dpl_workflow(tree-creator-dstar-spin-align-mixing
+                    SOURCES treeCreatorDstarSpinAlignMixing.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
