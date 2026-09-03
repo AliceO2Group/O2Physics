@@ -161,17 +161,10 @@ class CutVarMinimiser:
                     )
 
                     if correlated and unc_row > 0 and unc_col > 0:
-                        if unc_row < unc_col:
-                            rho = unc_row / unc_col
-                        else:
-                            rho = unc_col / unc_row
+                        self.m_cov_sets[i_row, i_col] = min(unc_row **2, unc_col ** 2)
                     else:
-                        if i_row == i_col:
-                            rho = 1.0
-                        else:
-                            rho = 0.0
-                    cov_row_col = rho * unc_row * unc_col
-                    self.m_cov_sets[i_row, i_col] = cov_row_col
+                        self.m_cov_sets[i_row, i_col] = unc_row ** 2 if i_row == i_col else 0.0
+
 
             self.m_cov_sets = np.matrix(self.m_cov_sets)
             try:
@@ -637,15 +630,9 @@ class CutVarMinimiser:
         for i_row, unc_row in enumerate(self.unc_raw_yields):
             for i_col, unc_col in enumerate(self.unc_raw_yields):
                 if correlated and unc_row > 0 and unc_col > 0:
-                    if unc_row < unc_col:
-                        rho = unc_row / unc_col
-                    else:
-                        rho = unc_col / unc_row
+                    rho = min(unc_row / unc_col, unc_col / unc_row)
                 else:
-                    if i_row == i_col:
-                        rho = 1.0
-                    else:
-                        rho = 0.0
+                    rho = 1.0 if i_row == i_col else 0.0
                 hist_corr_matrix.SetBinContent(i_row + 1, i_col + 1, rho)
 
         canvas = ROOT.TCanvas(f"cCorrMatrixCutSets{suffix}", "", 500, 500)
