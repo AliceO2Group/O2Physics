@@ -859,7 +859,7 @@ struct FlowGfwV02 {
       double ptFractionMid = 0.;
       double dnxAB = fGFW->Calculate(corrconfigs.at(0), 0, kTRUE).real(); // V22 weight for AB
       auto valAB = fGFW->Calculate(corrconfigs.at(0), 0, kFALSE).real() / dnxAB;
-      if (std::abs(valAB) > threshold) {
+      if (std::abs(valAB) > threshold || std::isnan(valAB) || std::isinf(valAB) || dnxAB < 1e-8) {
         return;
       }
       double v22pt = valAB * ptMeanMid;
