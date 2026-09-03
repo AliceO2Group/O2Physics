@@ -1242,9 +1242,9 @@ struct forwardlambdakzeroanalysis {
     fitter.setBz(magField);
   }
 
-// Ideal Armenteros-Podolanski ellipse of a two-body decay hypothesis: centre and half-axes
+  // Ideal Armenteros-Podolanski ellipse of a two-body decay hypothesis: centre and half-axes
   struct ArmenterosEllipse {
-    float alphaCenter;   // (E*_pos - E*_neg) / M, vanishes for symmetric decays
+    float alphaCenter;    // (E*_pos - E*_neg) / M, vanishes for symmetric decays
     float alphaHalfWidth; // 2 qStar / (beta M)
     float qStar;          // daughter momentum in the mother rest frame = maximum qT
   };
