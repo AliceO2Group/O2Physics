@@ -392,7 +392,7 @@ void FlatLutWriter::diagonalise(lutEntry_t& lutEntry)
   TMatrixDSymEigen eigen(m);
 
   // Eigenvalues
-  TVectorD eigenVal = eigen.GetEigenValues();
+  const TVectorD& eigenVal = eigen.GetEigenValues();
   for (int i = 0; i < kEig; ++i)
     lutEntry.eigval[i] = eigenVal[i];
 

@@ -50,6 +50,8 @@ class JetFinder
 
   float phiMin = -1. * M_PI;
   float phiMax = 2. * M_PI;
+  float phiExclusionMin = -999.;
+  float phiExclusionMax = 999.;
   float etaMin = -.9;
   float etaMax = .9;
 

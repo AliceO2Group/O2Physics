@@ -27,6 +27,7 @@
 #include "Common/Core/ZorroSummary.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -289,7 +290,7 @@ struct HfDataCreatorHiddenCharmReduced {
     return isSelectedPid(track);
   }
 
-  void processEtaCTrack(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processEtaCTrack(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                         aod::TrackAssoc const& trackIndices,
                         TracksWithPID const& tracks,
                         aod::BCsWithTimestamps const&)

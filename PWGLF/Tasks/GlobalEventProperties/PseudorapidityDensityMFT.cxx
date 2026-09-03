@@ -10,8 +10,8 @@
 // or submit itself to any jurisdiction.
 
 /// \file   PseudorapidityDensityMFT.cxx
-/// \author Sarah Herrmann <sarah.herrmann@cern.ch>
 /// \author Tulika Tripathy <tulika.tripathy@cern.ch>
+/// \author Sarah Herrmann <sarah.herrmann@cern.ch>
 /// \brief This code loops over MFT tracks and collisions and fills histograms
 ///        useful to compute dNdeta
 
@@ -69,38 +69,38 @@ using namespace o2::framework::expressions;
 using namespace o2::aod::track;
 using namespace o2::aod::rctsel;
 
-AxisSpec ptAxis = {2001, -0.005, 20.005};
-AxisSpec deltazAxis = {6100, -6.1, 6.1};
-AxisSpec zAxis = {3001, -30.1, 30.1};
-AxisSpec phiAxis = {629, 0, o2::constants::math::TwoPI, "Rad", "phi axis"};
-AxisSpec etaAxis = {18, -4.6, -1.};
-// AxisSpec dcaXyAxis = {2000, -10, 10};
-// AxisSpec dcaZAxis  = {2000, -10, 10};
-// AxisSpec dcaXAxis  = {2000, -10, 10};
-// AxisSpec dcaYAxis  = {2000, -10, 10};// previous AxisSpec dcaYAxis  = {2000, -10, 10};
+const AxisSpec ptAxis = {2001, -0.005, 20.005};
+const AxisSpec deltazAxis = {6100, -6.1, 6.1};
+const AxisSpec zAxis = {3001, -30.1, 30.1};
+const AxisSpec phiAxis = {629, 0, o2::constants::math::TwoPI, "Rad", "phi axis"}; // do not change
+const AxisSpec etaAxis = {18, -4.6, -1.};                                         // do not change
+// const AxisSpec dcaXyAxis = {2000, -10, 10};
+// const AxisSpec dcaZAxis  = {2000, -10, 10};
+// const AxisSpec dcaXAxis  = {2000, -10, 10};
+// const AxisSpec dcaYAxis  = {2000, -10, 10};// previous AxisSpec dcaYAxis  = {2000, -10, 10};
 
-AxisSpec dcaXyAxis = {6000, -30, 30};
-AxisSpec dcaZAxis = {6000, -30, 30};
-AxisSpec dcaXAxis = {6000, -30, 30};
-AxisSpec dcaYAxis = {6000, -30, 30}; // previous AxisSpec dcaYAxis  = {2000, -10, 10};
-// AxisSpec dcaXyAxis = {600, -0.15f, 0.15f};
-// AxisSpec dcaZAxis  = {600, -0.15f, 0.15f};
-// AxisSpec dcaXAxis  = {600, -0.15f, 0.15f};
-// AxisSpec dcaYAxis  = {600, -0.15f, 0.15f};
+const AxisSpec dcaXyAxis = {6000, -30, 30};
+const AxisSpec dcaZAxis = {6000, -30, 30};
+const AxisSpec dcaXAxis = {6000, -30, 30};
+const AxisSpec dcaYAxis = {6000, -30, 30}; // previous AxisSpec dcaYAxis  = {2000, -10, 10};
+// const AxisSpec dcaXyAxis = {600, -0.15f, 0.15f};
+// const AxisSpec dcaZAxis  = {600, -0.15f, 0.15f};
+// const AxisSpec dcaXAxis  = {600, -0.15f, 0.15f};
+// const AxisSpec dcaYAxis  = {600, -0.15f, 0.15f};
 // bin width 0.0005 cm: range [-30, 30] cm => 60/0.0005 = 120000 bins
 // Keep bin width = 0.0005 cm (5 um): range [-1, 1] cm => 2.0/0.0005 = 4000 bins
-// AxisSpec axisBinsDCA = {600, -0.15f, 0.15f, "#it{dca}_{xy} (cm)"};
-AxisSpec centAxis = {{0, 10, 20, 30, 40, 50, 60, 70, 80, 100}};
+// const AxisSpec axisBinsDCA = {600, -0.15f, 0.15f, "#it{dca}_{xy} (cm)"};
+const AxisSpec centAxis = {{0, 10, 20, 30, 40, 50, 60, 70, 80, 100}};
 
 // Vertex position axes (cm)
-AxisSpec vxAxis = {200, -0.5, 0.5, "V_{x} (cm)"};
-AxisSpec vyAxis = {200, -0.5, 0.5, "V_{y} (cm)"};
+const AxisSpec vxAxis = {200, -0.5, 0.5, "V_{x} (cm)"};
+const AxisSpec vyAxis = {200, -0.5, 0.5, "V_{y} (cm)"};
 // Status axis for reco/truth (1=reco, 2=true)
-AxisSpec recoTruthStatusAxis = {2, 0.5, 2.5, "status"};
+const AxisSpec recoTruthStatusAxis = {2, 0.5, 2.5, "status"};
 
 // Delta-vertex axes (reco - true) in cm
-AxisSpec deltaVxAxis = {400, -0.5, 0.5, "#DeltaV_{x} = V_{x}^{rec}-V_{x}^{true} (cm)"};
-AxisSpec deltaVyAxis = {400, -0.5, 0.5, "#DeltaV_{y} = V_{y}^{rec}-V_{y}^{true} (cm)"};
+const AxisSpec deltaVxAxis = {400, -0.5, 0.5, "#DeltaV_{x} = V_{x}^{rec}-V_{x}^{true} (cm)"};
+const AxisSpec deltaVyAxis = {400, -0.5, 0.5, "#DeltaV_{y} = V_{y}^{rec}-V_{y}^{true} (cm)"};
 
 static constexpr TrackSelectionFlags::flagtype TrackSelectionIts =
   TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF |
@@ -153,10 +153,10 @@ struct PseudorapidityDensityMFT {
   Preslice<aod::McParticles> perMcCol = aod::mcparticle::mcCollisionId;
   Preslice<aod::Tracks> perColCentral = aod::track::collisionId;
 
-  Service<o2::framework::O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg{};
 
   // --- CCDB magnetic field (needed for propagateToDCAhelix in this device) ---
-  Service<o2::ccdb::BasicCCDBManager> ccdbMgr;
+  Service<o2::ccdb::BasicCCDBManager> ccdbMgr{};
   Configurable<std::string> ccdburlMag{"ccdburlMag", "http://alice-ccdb.cern.ch",
                                        "CCDB url for GRPMagField"};
   Configurable<std::string> grpmagPathMag{"grpmagPathMag", "GLO/Config/GRPMagField",
@@ -165,7 +165,7 @@ struct PseudorapidityDensityMFT {
   int magRunNumber = -1;
   float bzMFT = 0.f;
   o2::parameters::GRPMagField* grpmag = nullptr;
-  static constexpr double CenterMft[3] = {0., 0., -61.4};
+  static constexpr std::array<double, 3> CenterMft{0., 0., -61.4};
 
   enum class GenRecoCutBin : int {
     AllRecoCollisions = 1,
@@ -196,6 +196,7 @@ struct PseudorapidityDensityMFT {
     NoTimeFrameBorder,
     NoITSROFrameBorder,
     NoSameBunchPileup,
+    UseGoodItsLayersAll,
     GoodZvtxFT0vsPV,
     NoCollInRofStandard,
     NoCollInRofStrict,
@@ -294,17 +295,7 @@ struct PseudorapidityDensityMFT {
   }
   static constexpr int NoCompatibleCollisions = 0;
   static constexpr int SingleCompatibleCollision = 1;
-
-  static constexpr int OrphanAmbDegree = 0;
-  static constexpr int NonAmbiguousAmbDegree = 1;
-
   static constexpr int ChargeUnitTimesThree = 3;
-
-  struct EvSelStep {
-    bool enabled;
-    uint32_t bit;
-    GenRecoCutBin bin;
-  };
 
   void initMagField(FullBCs::iterator const& bc)
   {
@@ -324,9 +315,10 @@ struct PseudorapidityDensityMFT {
     o2::base::Propagator::initFieldFromGRP(grpmag);
     magRunNumber = bc.runNumber();
 
-    auto* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
+    auto* field = dynamic_cast<o2::field::MagneticField*>(
+      TGeoGlobalMagField::Instance()->GetField());
     if (field) {
-      bzMFT = field->getBz(CenterMft);
+      bzMFT = field->getBz(CenterMft.data());
       LOGP(info, "Initialized magnetic field for run {}: bzMFT={} kG", magRunNumber, bzMFT);
     } else {
       LOGF(warning, "TGeoGlobalMagField has no field even after initFieldFromGRP; bzMFT=0");
@@ -445,20 +437,20 @@ struct PseudorapidityDensityMFT {
            "enabled!");
     }
     AxisSpec multAxis = {multBinning, "N_{trk}"};
-    auto hstat = registry.get<TH1>(HIST("EventSelection"));
-    auto* x = hstat->GetXaxis();
-    x->SetBinLabel(static_cast<int>(EventSelectionBin::All), "All");
-    x->SetBinLabel(static_cast<int>(EventSelectionBin::Vz), "Vz");
-    x->SetBinLabel(static_cast<int>(EventSelectionBin::VzItsRof), "Vz+ITSRof");
-    x->SetBinLabel(static_cast<int>(EventSelectionBin::VzSelected), "Vz+Selected");
-    x->SetBinLabel(static_cast<int>(EventSelectionBin::Sel8VzInelGt0), "Sel8+Vz+INEL>0");
-    x->SetBinLabel(static_cast<int>(EventSelectionBin::SelInelInelFwdGt0), "Sel INEL,INEL_fwd>0");
-    x->SetBinLabel(static_cast<int>(EventSelectionBin::Rejected), "Rejected");
-    x->SetBinLabel(static_cast<int>(EventSelectionBin::GoodBCs), "Good BCs");
-    x->SetBinLabel(static_cast<int>(EventSelectionBin::BCsWithCollisions), "BCs with collisions");
-    x->SetBinLabel(static_cast<int>(EventSelectionBin::BCsWithPileupSplitting), "BCs with pile-up/splitting");
-    x->SetBinLabel(static_cast<int>(EventSelectionBin::PerCollisionSampleGt0), "percollisionSample>0");
-    x->SetBinLabel(static_cast<int>(EventSelectionBin::MidtracksAndPerCollisionSampleGt0), "midtracks+percollisionSample>0");
+    auto eventSelectionHist = registry.get<TH1>(HIST("EventSelection"));
+    auto* eventSelectionAxis = eventSelectionHist->GetXaxis();
+    eventSelectionAxis->SetBinLabel(static_cast<int>(EventSelectionBin::All), "All");
+    eventSelectionAxis->SetBinLabel(static_cast<int>(EventSelectionBin::Vz), "Vz");
+    eventSelectionAxis->SetBinLabel(static_cast<int>(EventSelectionBin::VzItsRof), "Vz+ITSRof");
+    eventSelectionAxis->SetBinLabel(static_cast<int>(EventSelectionBin::VzSelected), "Vz+Selected");
+    eventSelectionAxis->SetBinLabel(static_cast<int>(EventSelectionBin::Sel8VzInelGt0), "Sel8+Vz+INEL>0");
+    eventSelectionAxis->SetBinLabel(static_cast<int>(EventSelectionBin::SelInelInelFwdGt0), "Sel INEL,INEL_fwd>0");
+    eventSelectionAxis->SetBinLabel(static_cast<int>(EventSelectionBin::Rejected), "Rejected");
+    eventSelectionAxis->SetBinLabel(static_cast<int>(EventSelectionBin::GoodBCs), "Good BCs");
+    eventSelectionAxis->SetBinLabel(static_cast<int>(EventSelectionBin::BCsWithCollisions), "BCs with collisions");
+    eventSelectionAxis->SetBinLabel(static_cast<int>(EventSelectionBin::BCsWithPileupSplitting), "BCs with pile-up/splitting");
+    eventSelectionAxis->SetBinLabel(static_cast<int>(EventSelectionBin::PerCollisionSampleGt0), "percollisionSample>0");
+    eventSelectionAxis->SetBinLabel(static_cast<int>(EventSelectionBin::MidtracksAndPerCollisionSampleGt0), "midtracks+percollisionSample>0");
     registry.add({"EventSelectionData",
                   ";cut;events",
                   {HistType::kTH1F, {{16, 0.5, 16.5}}}});
@@ -473,6 +465,7 @@ struct PseudorapidityDensityMFT {
       x->SetBinLabel(static_cast<int>(DataCutBin::NoTimeFrameBorder), "kNoTimeFrameBorder (if useEvSel)");
       x->SetBinLabel(static_cast<int>(DataCutBin::NoITSROFrameBorder), "kNoITSROFrameBorder (if useEvSel)");
       x->SetBinLabel(static_cast<int>(DataCutBin::NoSameBunchPileup), "kNoSameBunchPileup");
+      x->SetBinLabel(static_cast<int>(DataCutBin::UseGoodItsLayersAll), "kIsGoodITSLayersAll");
       x->SetBinLabel(static_cast<int>(DataCutBin::GoodZvtxFT0vsPV), "kIsGoodZvtxFT0vsPV");
       x->SetBinLabel(static_cast<int>(DataCutBin::NoCollInRofStandard), "kNoCollInRofStandard (cfg)");
       x->SetBinLabel(static_cast<int>(DataCutBin::NoCollInRofStrict), "kNoCollInRofStrict (cfg)");
@@ -1158,12 +1151,12 @@ struct PseudorapidityDensityMFT {
                     ";status;centrality;events",
                     {HistType::kTH1F, {{5, 0.5, 5.5}}}});
       auto heff = registry.get<TH1>(HIST("EventEfficiencymc"));
-      x = heff->GetXaxis();
-      x->SetBinLabel(static_cast<int>(EventEfficiencyBin::Generated), "Generated");
-      x->SetBinLabel(static_cast<int>(EventEfficiencyBin::GeneratedInelGt0), "Generated INEL>0");
-      x->SetBinLabel(static_cast<int>(EventEfficiencyBin::Reconstructed), "Reconstructed");
-      x->SetBinLabel(static_cast<int>(EventEfficiencyBin::Selected), "Selected");
-      x->SetBinLabel(static_cast<int>(EventEfficiencyBin::SelectedInelGt0), "Selected INEL>0");
+      auto* eventEfficiencyAxis = heff->GetXaxis();
+      eventEfficiencyAxis->SetBinLabel(static_cast<int>(EventEfficiencyBin::Generated), "Generated");
+      eventEfficiencyAxis->SetBinLabel(static_cast<int>(EventEfficiencyBin::GeneratedInelGt0), "Generated INEL>0");
+      eventEfficiencyAxis->SetBinLabel(static_cast<int>(EventEfficiencyBin::Reconstructed), "Reconstructed");
+      eventEfficiencyAxis->SetBinLabel(static_cast<int>(EventEfficiencyBin::Selected), "Selected");
+      eventEfficiencyAxis->SetBinLabel(static_cast<int>(EventEfficiencyBin::SelectedInelGt0), "Selected INEL>0");
     }
 
     if (doprocessGen) {
@@ -1425,8 +1418,8 @@ struct PseudorapidityDensityMFT {
     std::vector<typename std::decay_t<decltype(collisions)>::iterator> cols;
     for (const auto& bc : bcs) {
       if (!useEvSel ||
-          (useEvSel && ((bc.selection_bit(aod::evsel::kIsBBT0A) &&
-                         bc.selection_bit(aod::evsel::kIsBBT0C)) != 0))) {
+          (bc.selection_bit(aod::evsel::kIsBBT0A) &&
+           bc.selection_bit(aod::evsel::kIsBBT0C))) {
         registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::GoodBCs));
         cols.clear();
         for (const auto& collision : collisions) {
@@ -1516,7 +1509,7 @@ struct PseudorapidityDensityMFT {
   {
 
     registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::All));
-    if (!useEvSel || (useEvSel && collision.sel8())) {
+    if (!useEvSel || collision.sel8()) {
       registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::VzSelected));
       auto z = collision.posZ();
       auto perCollisionSample = sampleCentral->sliceByCached(
@@ -1542,8 +1535,9 @@ struct PseudorapidityDensityMFT {
                 ((phi > o2::constants::math::PI - cfgPhiCut) && (phi < o2::constants::math::PI + cfgPhiCut)) ||
                 (phi > o2::constants::math::TwoPI - cfgPhiCut) ||
                 ((phi > ((o2::constants::math::PIHalf - 0.1) * o2::constants::math::PI) - cfgPhiCut) &&
-                 (phi < ((o2::constants::math::PIHalf - 0.1) * o2::constants::math::PI) + cfgPhiCut)))
+                 (phi < ((o2::constants::math::PIHalf - 0.1) * o2::constants::math::PI) + cfgPhiCut))) {
               continue;
+            }
           }
 
           registry.fill(HIST("TracksEtaZvtx"), track.eta(), z);
@@ -1624,16 +1618,17 @@ struct PseudorapidityDensityMFT {
 
     const auto passEventSelection = [&](auto const& collision) {
       struct EvSelStep {
-        bool enabled;
-        decltype(aod::evsel::kIsTriggerTVX) bit;
-        DataCutBin bin;
+        bool enabled{false};
+        decltype(aod::evsel::kIsTriggerTVX) bit{};
+        DataCutBin bin{DataCutBin::All};
       };
 
-      const std::array<EvSelStep, 10> steps = {{
+      const std::array<EvSelStep, 11> steps = {{
         {useTriggerTVX, aod::evsel::kIsTriggerTVX, DataCutBin::IsTriggerTVX},
         {useNoTimeFrameBorderCut, aod::evsel::kNoTimeFrameBorder, DataCutBin::NoTimeFrameBorder},
         {useNoITSROFrameBorderCut, aod::evsel::kNoITSROFrameBorder, DataCutBin::NoITSROFrameBorder},
         {useNoSameBunchPileup, aod::evsel::kNoSameBunchPileup, DataCutBin::NoSameBunchPileup},
+        {useGoodItsLayersAll, aod::evsel::kIsGoodITSLayersAll, DataCutBin::UseGoodItsLayersAll},
         {useGoodZvtxFT0vsPV, aod::evsel::kIsGoodZvtxFT0vsPV, DataCutBin::GoodZvtxFT0vsPV},
         {useNoCollInRofStandard, aod::evsel::kNoCollInRofStandard, DataCutBin::NoCollInRofStandard},
         {useNoCollInRofStrict, aod::evsel::kNoCollInRofStrict, DataCutBin::NoCollInRofStrict},
@@ -1881,8 +1876,9 @@ struct PseudorapidityDensityMFT {
               ((phi > o2::constants::math::PI - cfgPhiCut) && (phi < o2::constants::math::PI + cfgPhiCut)) ||
               (phi > o2::constants::math::TwoPI - cfgPhiCut) ||
               ((phi > ((o2::constants::math::PIHalf - 0.1) * o2::constants::math::PI) - cfgPhiCut) &&
-               (phi < ((o2::constants::math::PIHalf - 0.1) * o2::constants::math::PI) + cfgPhiCut)))
+               (phi < ((o2::constants::math::PIHalf - 0.1) * o2::constants::math::PI) + cfgPhiCut))) {
             continue;
+          }
         }
 
         registry.fill(HIST("Tracks/Centrality/EtaZvtx"), track.eta(), z, c);
@@ -2023,12 +2019,14 @@ struct PseudorapidityDensityMFT {
         if (usePhiCut) {
           if ((phi <= PhiVetoLow) ||
               ((phi >= PhiVetoPiMin) && (phi <= PhiVetoPiMax)) ||
-              (phi >= PhiVetoHigh))
+              (phi >= PhiVetoHigh)) {
             continue;
+          }
         }
         if (usePtCut) {
-          if (ptCut > cfgnPt)
+          if (ptCut > cfgnPt) {
             continue;
+          }
         }
         if (cfgnEta1 < particle.eta() && particle.eta() < cfgnEta2 && (phi > cfgPhiCut1 && phi < cfgPhiCut2)) {
           registry.fill(HIST("TracksEtaZvtxGen_t"), particle.eta(),
@@ -2086,7 +2084,7 @@ struct PseudorapidityDensityMFT {
       if constexpr (ExColsGenCent::template contains<aod::CentFT0Cs>()) {
         cRec = collision.centFT0C();
       }
-      if (!useEvSel || (useEvSel && collision.sel8())) {
+      if (!useEvSel || collision.sel8()) {
         if constexpr (ExColsGenCent::template contains<aod::CentFT0Cs>()) {
           if (!atLeastOne) {
             cGen = cRec;
@@ -2162,7 +2160,7 @@ struct PseudorapidityDensityMFT {
     soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
     MFTTracksLabeled const& tracks, aod::McParticles const&)
   {
-    if (!useEvSel || (useEvSel && collision.sel8())) {
+    if (!useEvSel || collision.sel8()) {
       for (const auto& track : tracks) {
         if (!track.has_mcParticle()) {
           continue;
@@ -2204,9 +2202,9 @@ struct PseudorapidityDensityMFT {
 
     const auto countAndPassEvSelGenReco = [&](auto const& collision) {
       struct EvSelStep {
-        bool enabled;
-        decltype(aod::evsel::kIsTriggerTVX) bit;
-        GenRecoCutBin bin;
+        bool enabled{false};
+        decltype(aod::evsel::kIsTriggerTVX) bit{};
+        GenRecoCutBin bin{GenRecoCutBin::AllRecoCollisions};
       };
 
       const std::array<EvSelStep, 10> steps = {{
@@ -2337,7 +2335,7 @@ struct PseudorapidityDensityMFT {
       }
 
       const int recoCol = track.collisionId();
-      if (acceptedRecoCols.find(recoCol) == acceptedRecoCols.end()) {
+      if (!acceptedRecoCols.contains(recoCol)) {
         continue;
       }
 
@@ -2511,9 +2509,9 @@ struct PseudorapidityDensityMFT {
 
     const auto countAndPassEvSelGenReco = [&](auto const& collision) {
       struct EvSelStep {
-        bool enabled;
-        decltype(aod::evsel::kIsTriggerTVX) bit;
-        GenRecoCutBin bin;
+        bool enabled{false};
+        decltype(aod::evsel::kIsTriggerTVX) bit{};
+        GenRecoCutBin bin{GenRecoCutBin::AllRecoCollisions};
       };
 
       const std::array<EvSelStep, 10> steps = {{
@@ -2671,7 +2669,6 @@ struct PseudorapidityDensityMFT {
     std::unordered_set<int> uniqueBestRecoCols;
 
     if (tracks.size() > 0) {
-      bool countedPrimary = false;
       for (const auto& track : tracks) {
         const auto originalTrack = track.template mfttrack_as<MFTTracksLabeledOrg>();
         float ndf = getTrackNdf(originalTrack);
@@ -2724,7 +2721,7 @@ struct PseudorapidityDensityMFT {
         // std::cout << " track.collisionId() " << track.collisionId() << "track.bestCollisionId()" << track.bestCollisionId() << std::endl; // "    track.globalIndex()  "<<track.globalIndex() This is track id
 
         const int recoCol = originalTrack.collisionId();
-        if (acceptedRecoCols.find(recoCol) == acceptedRecoCols.end()) {
+        if (!acceptedRecoCols.contains(recoCol)) {
           continue;
         }
 
@@ -2848,11 +2845,11 @@ struct PseudorapidityDensityMFT {
         const int mcOfTrack = isTrueByLabel ? track.mcParticle().mcCollisionId() : InvalidCollisionId;
 
         const bool foundRecoColInRecoList =
-          recoCollisionIds.find(recoCol) != recoCollisionIds.end();
+          recoCollisionIds.contains(recoCol);
         const bool foundBestColInRecoList =
-          recoCollisionIds.find(bestColID) != recoCollisionIds.end();
+          recoCollisionIds.contains(bestColID);
         const bool foundInMCTrueList =
-          isTrueByLabel && (trueMCCollisionIds.find(mcOfTrack) != trueMCCollisionIds.end());
+          isTrueByLabel && trueMCCollisionIds.contains(mcOfTrack);
 
         static constexpr int RecoColMissingBin = 1;
         static constexpr int BestRecoColMissingBin = 2;
@@ -3174,15 +3171,14 @@ struct PseudorapidityDensityMFT {
 
           registry.fill(HIST("Purity/SelectedAfterDCAxy/PrimaryAll"), static_cast<int>(SingleCountBin::Count));
           registry.fill(HIST("Purity/SelectedAfterDCAxy/PrimaryAllEta"), mcPart.eta());
-          countedPrimary = true;
 
           registry.fill(HIST("Purity/PurityOverall"),
                         static_cast<int>(SingleCountBin::Count),
-                        countedPrimary ? static_cast<int>(BoolBin::Yes)
-                                       : static_cast<int>(BoolBin::No));
+                        isPrimaryCharged ? static_cast<int>(BoolBin::Yes)
+                                         : static_cast<int>(BoolBin::No));
           registry.fill(HIST("Purity/PurityVsEta"), originalTrack.eta(),
-                        countedPrimary ? static_cast<int>(BoolBin::Yes)
-                                       : static_cast<int>(BoolBin::No));
+                        isPrimaryCharged ? static_cast<int>(BoolBin::Yes)
+                                         : static_cast<int>(BoolBin::No));
         } // hasmclable
       } // track loop
     } // track>mid
@@ -3249,12 +3245,14 @@ struct PseudorapidityDensityMFT {
       if (usePhiCut) {
         if ((phi <= PhiVetoLow) ||
             ((phi >= PhiVetoPiMin) && (phi <= PhiVetoPiMax)) ||
-            (phi >= PhiVetoHigh))
+            (phi >= PhiVetoHigh)) {
           continue;
+        }
       }
       if (usePtCut) {
-        if (ptCut > cfgnPt)
+        if (ptCut > cfgnPt) {
           continue;
+        }
       }
       if (cfgnEta1 < particle.eta() && particle.eta() < cfgnEta2 && (phi > cfgPhiCut1 && phi < cfgPhiCut2)) {
         if (onlyVz) {

@@ -140,7 +140,7 @@ struct TagAndProbe {
       THashList* list_pair_subsys_photoncut = o2::aod::pwgem::photon::histogram::AddHistClass(list_pair, photon_cut_name.data());
 
       for (auto& cut3 : paircuts) {
-        std::string pair_cut_name = cut3.getName();
+        std::string const& pair_cut_name = cut3.getName();
         o2::aod::pwgem::photon::histogram::AddHistClass(list_pair_subsys_photoncut, pair_cut_name.data());
         auto* list_pair_subsys_paircut = dynamic_cast<THashList*>(list_pair_subsys_photoncut->FindObject(pair_cut_name.data()));
         o2::aod::pwgem::photon::histogram::DefineHistograms(list_pair_subsys_paircut, "tag_and_probe", pairname.data());

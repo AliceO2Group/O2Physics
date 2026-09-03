@@ -36,6 +36,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Tools/KFparticle/KFUtilities.h"
 
 #include <CCDB/BasicCCDBManager.h>
@@ -817,7 +818,7 @@ struct HfCandidateCreatorXicToXiPiPi {
   ///                                                     ///
   ///////////////////////////////////////////////////////////
 
-  void processNoCentXicplusWithDcaFitter(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processNoCentXicplusWithDcaFitter(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                                          aod::HfCascLf3Prongs const& rowsTrackIndexXicPlus,
                                          CascadesLinked const& cascadesLinked,
                                          CascFull const& cascadesFull,
@@ -828,7 +829,7 @@ struct HfCandidateCreatorXicToXiPiPi {
   }
   PROCESS_SWITCH(HfCandidateCreatorXicToXiPiPi, processNoCentXicplusWithDcaFitter, "Run candidate creator with DCAFitter without centrality selection.", true);
 
-  void processCentFT0CXicplusWithDcaFitter(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+  void processCentFT0CXicplusWithDcaFitter(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs> const& collisions,
                                            aod::HfCascLf3Prongs const& rowsTrackIndexXicPlus,
                                            CascadesLinked const& cascadesLinked,
                                            CascFull const& cascadesFull,
@@ -839,7 +840,7 @@ struct HfCandidateCreatorXicToXiPiPi {
   }
   PROCESS_SWITCH(HfCandidateCreatorXicToXiPiPi, processCentFT0CXicplusWithDcaFitter, "Run candidate creator with DCAFitter with centrality selection on FT0C.", false);
 
-  void processCentFT0MXicplusWithDcaFitter(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+  void processCentFT0MXicplusWithDcaFitter(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms> const& collisions,
                                            aod::HfCascLf3Prongs const& rowsTrackIndexXicPlus,
                                            CascadesLinked const& cascadesLinked,
                                            CascFull const& cascadesFull,
@@ -856,7 +857,7 @@ struct HfCandidateCreatorXicToXiPiPi {
   ///                                                     ///
   ///////////////////////////////////////////////////////////
 
-  void processNoCentXicplusWithKFParticle(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processNoCentXicplusWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                                           aod::HfCascLf3Prongs const& rowsTrackIndexXicPlus,
                                           KFCascadesLinked const& kfCascadesLinked,
                                           KFCascFull const& kfCascadesFull,
@@ -867,7 +868,7 @@ struct HfCandidateCreatorXicToXiPiPi {
   }
   PROCESS_SWITCH(HfCandidateCreatorXicToXiPiPi, processNoCentXicplusWithKFParticle, "Run candidate creator with KFParticle without centrality selection.", false);
 
-  void processCentFT0CXicplusWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+  void processCentFT0CXicplusWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs> const& collisions,
                                             aod::HfCascLf3Prongs const& rowsTrackIndexXicPlus,
                                             KFCascadesLinked const& kfCascadesLinked,
                                             KFCascFull const& kfCascadesFull,
@@ -878,7 +879,7 @@ struct HfCandidateCreatorXicToXiPiPi {
   }
   PROCESS_SWITCH(HfCandidateCreatorXicToXiPiPi, processCentFT0CXicplusWithKFParticle, "Run candidate creator with KFParticle with centrality selection on FT0C.", false);
 
-  void processCentFT0MXicplusWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+  void processCentFT0MXicplusWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms> const& collisions,
                                             aod::HfCascLf3Prongs const& rowsTrackIndexXicPlus,
                                             KFCascadesLinked const& kfCascadesLinked,
                                             KFCascFull const& kfCascadesFull,
@@ -895,7 +896,7 @@ struct HfCandidateCreatorXicToXiPiPi {
   ///                                                     ///
   ///////////////////////////////////////////////////////////
 
-  void processCollisions(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCsWithTimestamps const&)
+  void processCollisions(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions, aod::BCsWithTimestamps const&)
   {
     /// loop over collisions
     for (const auto& collision : collisions) {
@@ -913,7 +914,7 @@ struct HfCandidateCreatorXicToXiPiPi {
   }
   PROCESS_SWITCH(HfCandidateCreatorXicToXiPiPi, processCollisions, "Collision monitoring - no centrality", false);
 
-  void processCollisionsCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::BCsWithTimestamps const&)
+  void processCollisionsCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs> const& collisions, aod::BCsWithTimestamps const&)
   {
     /// loop over collisions
     for (const auto& collision : collisions) {
@@ -931,7 +932,7 @@ struct HfCandidateCreatorXicToXiPiPi {
   }
   PROCESS_SWITCH(HfCandidateCreatorXicToXiPiPi, processCollisionsCentFT0C, "Collision monitoring - FT0C centrality", false);
 
-  void processCollisionsCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions, aod::BCsWithTimestamps const&)
+  void processCollisionsCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms> const& collisions, aod::BCsWithTimestamps const&)
   {
     /// loop over collisions
     for (const auto& collision : collisions) {
@@ -969,9 +970,9 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
                   XiToPiPPi,
                   LambdaToPPi };
 
-  using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
-  using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
-  using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms>;
+  using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels>;
+  using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels, aod::CentFT0Cs>;
+  using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels, aod::CentFT0Ms>;
   using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
 

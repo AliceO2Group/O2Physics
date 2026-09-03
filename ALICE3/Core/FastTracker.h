@@ -46,7 +46,7 @@ class FastTracker
   virtual ~FastTracker() {}
 
   // Layer and layer configuration
-  DetLayer* AddLayer(TString name, float r, float z, float x0, float xrho, float resRPhi = 0.0f, float resZ = 0.0f, float eff = 0.0f, int type = 0);
+  DetLayer* AddLayer(const TString& name, float r, float z, float x0, float xrho, float resRPhi = 0.0f, float resZ = 0.0f, float eff = 0.0f, int type = 0);
 
   /// Add a dead region in phi for a specific layer
   /// \param layerName Name of the layer to modify
@@ -59,11 +59,11 @@ class FastTracker
   size_t GetNLayers() const { return layers.size(); }
   bool IsLayerInert(const int layer) const { return layers[layer].isInert(); }
   void ClearLayers() { layers.clear(); }
-  void SetRadiationLength(const std::string layerName, float x0) { layers[GetLayerIndex(layerName)].setRadiationLength(x0); }
-  void SetRadius(const std::string layerName, float r) { layers[GetLayerIndex(layerName)].setRadius(r); }
-  void SetResolutionRPhi(const std::string layerName, float resRPhi) { layers[GetLayerIndex(layerName)].setResolutionRPhi(resRPhi); }
-  void SetResolutionZ(const std::string layerName, float resZ) { layers[GetLayerIndex(layerName)].setResolutionZ(resZ); }
-  void SetResolution(const std::string layerName, float resRPhi, float resZ)
+  void SetRadiationLength(const std::string& layerName, float x0) { layers[GetLayerIndex(layerName)].setRadiationLength(x0); }
+  void SetRadius(const std::string& layerName, float r) { layers[GetLayerIndex(layerName)].setRadius(r); }
+  void SetResolutionRPhi(const std::string& layerName, float resRPhi) { layers[GetLayerIndex(layerName)].setResolutionRPhi(resRPhi); }
+  void SetResolutionZ(const std::string& layerName, float resZ) { layers[GetLayerIndex(layerName)].setResolutionZ(resZ); }
+  void SetResolution(const std::string& layerName, float resRPhi, float resZ)
   {
     SetResolutionRPhi(layerName, resRPhi);
     SetResolutionZ(layerName, resZ);
@@ -80,7 +80,7 @@ class FastTracker
    *
    * @param configMap Configuration map describing the detector.
    */
-  void AddGenericDetector(o2::fastsim::GeometryEntry configMap, o2::ccdb::BasicCCDBManager* ccdbManager = nullptr);
+  void AddGenericDetector(const o2::fastsim::GeometryEntry& configMap, o2::ccdb::BasicCCDBManager* ccdbManager = nullptr);
 
   void Print();
 

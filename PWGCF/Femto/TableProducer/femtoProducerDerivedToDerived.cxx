@@ -114,7 +114,8 @@ struct FemtoProducerDerivedToDerived {
   {
     const int activeProcesses =
       static_cast<int>(doprocessTracks) + static_cast<int>(doprocessTracksWithMass) +
-      static_cast<int>(doprocessTracksLambdas) + static_cast<int>(doprocessLambdas) +
+      static_cast<int>(doprocessTracksLambdas) + static_cast<int>(doprocessTracksWithMassLambdas) +
+      static_cast<int>(doprocessLambdas) +
       static_cast<int>(doprocessTracksXis) + static_cast<int>(doprocessTracksOmegas) +
       static_cast<int>(doprocessTracksK0shorts) + static_cast<int>(doprocessTracksSigma) +
       static_cast<int>(doprocessTracksSigmaPlus);
@@ -162,6 +163,18 @@ struct FemtoProducerDerivedToDerived {
     v0Builder.processLambdas(col, lambdas, tracks, lambdaPartition, trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksLambdas, "Process lambdas and tracks", false);
+
+  void processTracksWithMassLambdas(FilteredFemtoCollision const& col, FemtoTracksWithMass const& tracks, FemtoLambdas const& lambdas)
+  {
+    if (trackBuilder.collisionHasTooFewTracks(col, tracks, trackWithMassPartition1, trackWithMassPartition2, cache) || v0Builder.collisionHasTooFewLambdas(col, lambdas, lambdaPartition, cache)) {
+      return;
+    }
+    trackBuilder.reset(tracks);
+    collisionBuilder.processCollision(col, collisionBuilderProducts);
+    trackBuilder.processTracks(col, tracks, trackWithMassPartition1, trackWithMassPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
+    v0Builder.processLambdas(col, lambdas, tracks, lambdaPartition, trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+  }
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksWithMassLambdas, "Process lambdas and tracks with mass", false);
 
   void processLambdas(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoLambdas const& lambdas)
   {

@@ -23,6 +23,7 @@
 /// \author Roberto Preghenella preghenella@bo.infn.it
 ///
 
+#include "ALICE3/Core/Decayer.h"
 #include "ALICE3/Core/DetLayer.h"
 #include "ALICE3/Core/FastTracker.h"
 #include "ALICE3/Core/FlatTrackSmearer.h"
@@ -378,6 +379,9 @@ struct OnTheFlyTracker {
 
   // Track smearer array, one per geometry
   std::vector<std::unique_ptr<o2::delphes::TrackSmearer>> mSmearer;
+  // Configuration defined at init time
+  o2::fastsim::GeometryContainer mGeoContainer;
+  float mMagneticField = 0.0f;
 
   // For processing and vertexing
   std::vector<TrackAlice3> recoPrimaries;
@@ -395,10 +399,8 @@ struct OnTheFlyTracker {
   // For TGenPhaseSpace seed
   TRandom3 rand;
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
+  o2::upgrade::Decayer decayer;
 
-  // Configuration defined at init time
-  o2::fastsim::GeometryContainer mGeoContainer;
-  float mMagneticField = 0.0f;
   // Time resolution constants
   static constexpr float timeResolutionNs = 100.f; // ns
   static constexpr float nsToMus = 1e-3f;
@@ -423,7 +425,7 @@ struct OnTheFlyTracker {
     std::get<std::shared_ptr<T>>(it->second)->Fill(std::forward<Args>(args)...);
   }
 
-  void insertHist(const std::string& name, const std::string& title, HistType type, std::vector<AxisSpec> axisSpecs)
+  void insertHist(const std::string& name, const std::string& title, HistType type, const std::vector<AxisSpec>& axisSpecs)
   {
     histPointers[name] = histos.add(name.c_str(), title.c_str(), type, axisSpecs);
   }
@@ -438,6 +440,7 @@ struct OnTheFlyTracker {
 
     const int nGeometries = mGeoContainer.getNumberOfConfigurations();
     mMagneticField = mGeoContainer.getFloatValue(0, "global", "magneticfield");
+    decayer.setBField(mMagneticField);
     for (int icfg = 0; icfg < nGeometries; ++icfg) {
       const std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
       mSmearer.emplace_back(std::make_unique<o2::delphes::TrackSmearer>());
@@ -619,6 +622,14 @@ struct OnTheFlyTracker {
         insertHist(histPath + "h2dSecondaryKaPtRes", "h2dSecondaryKaPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", kTH2D, {{axes.axisMomentum, axes.axisPtRes}});
         insertHist(histPath + "h2dPrimaryPrPtRes", "h2dPrimaryPrPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", kTH2D, {{axes.axisMomentum, axes.axisPtRes}});
         insertHist(histPath + "h2dSecondaryPrPtRes", "h2dSecondaryPrPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", kTH2D, {{axes.axisMomentum, axes.axisPtRes}});
+
+        if (fastPrimaryTrackerSettings.fastTrackShortLivedParticles) {
+          insertHist(histPath + "h2dGenShortLivedParticleRadius", "h2dGenShortLivedParticleRadius;Radius (cm);Momentum p_{T}", kTH2D, {{axes.axisDecayRadius, axes.axisMomentum}});
+          insertHist(histPath + "h2dRecShortLivedParticleRadius", "h2dRecShortLivedParticleRadius;Radius (cm);Momentum p_{T}", kTH2D, {{axes.axisDecayRadius, axes.axisMomentum}});
+          insertHist(histPath + "h2dGenRadiusIniVsDecay", "h2dGenRadiusIniVsDecay;Radius (cm);Radius (cm)", kTH2D, {{axes.axisDecayRadius, axes.axisDecayRadius}});
+          insertHist(histPath + "h2dRecRadiusIniVsDecay", "h2dRecRadiusIniVsDecay;Radius (cm);Radius (cm)", kTH2D, {{axes.axisDecayRadius, axes.axisDecayRadius}});
+          insertHist(histPath + "h2dDecayRadiusVsNhits", "h2dDecayRadiusVsNhits;Radius (cm);Nhits", kTH2D, {{axes.axisDecayRadius, {20, 0.5, 20}}});
+        }
       }
 
     } // end config loop
@@ -1902,7 +1913,6 @@ struct OnTheFlyTracker {
     uint32_t multiplicityCounter = 0;
     // Now that the multiplicity is known, we can process the particles to smear them
     for (const auto& mcParticle : mcParticles) {
-
       if (!mcParticle.isPhysicalPrimary()) {
         continue;
       }
@@ -1942,12 +1952,21 @@ struct OnTheFlyTracker {
       bool reconstructed = true;
       int nTrkHits = 0;
       if (enablePrimarySmearing) {
-        if (fastPrimaryTrackerSettings.fastTrackPrimaries || fastPrimaryTrackerSettings.fastTrackShortLivedParticles) {
-          o2::track::TrackParCov perfectTrackParCov;
-          o2::upgrade::convertMCParticleToO2Track(mcParticle, perfectTrackParCov, pdgDB);
+        if (fastPrimaryTrackerSettings.fastTrackPrimaries && longLivedToBeHandled) {
+          o2::track::TrackParCov perfectTrackParCov = o2::upgrade::convertMCParticleToO2Track(mcParticle, pdgDB);
           perfectTrackParCov.setPID(pdgCodeToPID(mcParticle.pdgCode()));
           computeBremsstrahlungLoss(icfg, mcParticle, perfectTrackParCov);
           nTrkHits = fastTracker[icfg]->FastTrack(perfectTrackParCov, trackParCov, dNdEta);
+          if (nTrkHits < fastPrimaryTrackerSettings.minSiliconHits) {
+            reconstructed = false;
+          }
+        } else if (fastPrimaryTrackerSettings.fastTrackShortLivedParticles && shortLivedToBeHandled) {
+          o2::track::TrackParCov perfectTrackParCov = o2::upgrade::convertMCParticleToO2Track(mcParticle, pdgDB);
+          perfectTrackParCov.setPID(pdgCodeToPID(mcParticle.pdgCode()));
+          computeBremsstrahlungLoss(icfg, mcParticle, perfectTrackParCov);
+          const std::array<float, 3> decayVtx = decayer.generateDecayVertex(mcParticle, pdgDB);
+          const float decayRadius2D = std::hypot(decayVtx[0], decayVtx[1]);
+          nTrkHits = fastTracker[icfg]->FastTrack(perfectTrackParCov, trackParCov, dNdEta, decayRadius2D);
           if (nTrkHits < fastPrimaryTrackerSettings.minSiliconHits) {
             reconstructed = false;
           }
@@ -2147,15 +2166,20 @@ struct OnTheFlyTracker {
         computeBremsstrahlungLoss(icfg, mcParticle, trackParCov);
         reconstructed = mSmearer[icfg]->smearTrack(trackParCov, mcParticle.pdgCode(), dNdEta);
       } else if (shortLivedToBeHandled && fastPrimaryTrackerSettings.fastTrackShortLivedParticles) {
-        o2::track::TrackParCov perfectTrackParCov;
-        o2::upgrade::convertMCParticleToO2Track(mcParticle, perfectTrackParCov, pdgDB);
+        o2::track::TrackParCov perfectTrackParCov = o2::upgrade::convertMCParticleToO2Track(mcParticle, pdgDB);
         perfectTrackParCov.setPID(pdgCodeToPID(mcParticle.pdgCode()));
         computeBremsstrahlungLoss(icfg, mcParticle, perfectTrackParCov);
-        nTrkHits = fastTracker[icfg]->FastTrack(perfectTrackParCov, trackParCov, dNdEta);
+        nTrkHits = fastTracker[icfg]->FastTrack(perfectTrackParCov, trackParCov, dNdEta, mcParticle.decayRadius());
+        getHist<TH2>(histPath + "h2dGenShortLivedParticleRadius")->Fill(mcParticle.decayRadius(), perfectTrackParCov.getPt());
+        getHist<TH2>(histPath + "h2dGenRadiusIniVsDecay")->Fill(std::hypot(perfectTrackParCov.getX(), perfectTrackParCov.getY()), mcParticle.decayRadius());
         if (nTrkHits < fastPrimaryTrackerSettings.minSiliconHits) {
           reconstructed = false;
         } else {
           reconstructed = true;
+          getHist<TH2>(histPath + "h2dRecShortLivedParticleRadius")->Fill(mcParticle.decayRadius(), perfectTrackParCov.getPt());
+          getHist<TH2>(histPath + "h2dRecRadiusIniVsDecay")->Fill(std::hypot(perfectTrackParCov.getX(), perfectTrackParCov.getY()), mcParticle.decayRadius());
+          getHist<TH2>(histPath + "h2dDecayRadiusVsNhits")->Fill(mcParticle.decayRadius(), nTrkHits);
+          LOG(info) << mcParticle.decayRadius();
         }
       } else if (enableSecondarySmearing && isSecondary) {
         o2::track::TrackParCov perfectTrackParCov;
@@ -2259,7 +2283,7 @@ struct OnTheFlyTracker {
     fillTracksInfo(ghostTracksAlice3, primaryVertex, icfg);
   }
 
-  void processDecayer(aod::McCollision const& mcCollision, soa::Join<aod::McParticles, aod::OTFDecayerBits> const& mcParticles)
+  void processDecayer(aod::McCollision const& mcCollision, soa::Join<aod::McParticles, aod::OTFParticleExtras> const& mcParticles)
   {
     for (size_t icfg = 0; icfg < mSmearer.size(); ++icfg) {
       processConfigurationDev(mcCollision, mcParticles, static_cast<int>(icfg));

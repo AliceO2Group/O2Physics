@@ -199,7 +199,7 @@ struct JetSpectraEseTask {
   using ETracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
 
   SliceCache cache;
-  using BinningType = ColumnBinningPolicy<aod::jcollision::PosZ, aod::jcollision::CentFT0C>;
+  using BinningType = ColumnBinningPolicy<aod::jcollision::PosZ, aod::jcollision::CentFT0M>;
   BinningType corrBinning{{binsZVtx, binsCentrality}, true};
   Service<o2::framework::O2DatabasePDG> pdg{};
 
@@ -632,7 +632,7 @@ struct JetSpectraEseTask {
     double eff{1.0};
     if (cfg.is3D) {
       if (cfg.h3Eff) {
-        eff = cfg.h3Eff->GetBinContent(cfg.h3Eff->FindBin(track.pt(), track.eta(), vtxZ));
+        eff = cfg.h3Eff->GetBinContent(cfg.h3Eff->FindBin(track.pt(), vtxZ, track.eta()));
       }
     } else {
       if (cfg.hEff) {
@@ -830,7 +830,7 @@ struct JetSpectraEseTask {
       }
       registry.fill(HIST("eventQA/hEventCounterMixed"), kRhoLocal);
       if (fLeadJetPtCut) {
-        if (!isAcceptedLeadingJet<false>(c1, jets, centrality)) {
+        if (!isAcceptedLeadingJet<false>(c1, jets1, centrality)) {
           return;
         }
       }

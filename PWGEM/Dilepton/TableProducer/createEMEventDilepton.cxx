@@ -138,6 +138,12 @@ struct CreateEMEventDilepton {
         continue;
       }
 
+      if constexpr (eventtype == EMEventType::kEvent_Cent_ZDC) {
+        if (!collision.triggereventsp()) {
+          continue; // dummy comment
+        }
+      }
+
       if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
         int8_t posZint8 = static_cast<int8_t>(collision.posZ() * 2.f);
         if (posZint8 == 0) {

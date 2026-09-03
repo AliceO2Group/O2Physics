@@ -1465,11 +1465,17 @@ struct muonGlobalAlignment { // o2-linter: disable=name/workflow-file,name/struc
                                          std::sqrt(mftTrackPar.getSigma2X()),
                                          std::sqrt(mftTrackPar.getSigma2Y()));
 
-    auto fwdTrackProp = fwdtrackutils::refitGlobalMuonCov(MCHtoFwd(mchTrackAtMFT), mftTrackPar);
+    auto fwdTrackRefit = fwdtrackutils::refitGlobalMuonCov(MCHtoFwd(mchTrackAtMFT), mftTrackPar);
 
-    auto geoMan = o2::base::GeometryManager::meanMaterialBudget(fwdTrackProp.getX(), fwdTrackProp.getY(), fwdTrackProp.getZ(), collision.posX(), collision.posY(), collision.posZ());
-    auto x2x0 = static_cast<float>(geoMan.meanX2X0);
-    fwdTrackProp.propagateToVtxhelixWithMCS(collision.posZ(), {collision.posX(), collision.posY()}, {collision.covXX(), collision.covYY()}, mBzAtMftCenter, x2x0);
+    // apply vertex shift correction
+    fwdTrackRefit.setZ(fwdTrackRefit.getZ() + cfgVertexZshift.value);
+
+    auto fwdTrackProp = fwdtrackutils::propagateTrackParCovFwd(fwdTrackRefit,
+                                                               0,
+                                                               collision,
+                                                               fwdtrackutils::propagationPoint::kToVertex,
+                                                               cfgRefPlaneZMFT,
+                                                               mBzAtMftCenter);
 
     return fwdTrackProp;
   }

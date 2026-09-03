@@ -154,7 +154,7 @@ struct FwdTrackPropagation {
         // debug
         // LOGP(info, "track {}, before: {} {} {} {} {} {}", t.globalIndex(), t.x(), t.y(), t.z(), t.phi(), t.tgl(), t.signed1Pt());
         // LOGP(info, "track {}, after: {} {} {} {} {} {}", t.globalIndex(), pft.getX(), pft.getY(), pft.getZ(), pft.getPhi(), pft.getTgl(), pft.getInvQPt());
-        SMatrix55 cov = pft.getCovariances();
+        const SMatrix55& cov = pft.getCovariances();
         float sigX = std::sqrt(cov(0, 0));
         float sigY = std::sqrt(cov(1, 1));
         float sigPhi = std::sqrt(cov(2, 2));

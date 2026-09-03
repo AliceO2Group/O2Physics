@@ -190,7 +190,7 @@ struct DgCandProducer {
     outputTracksLabel(track.globalIndex());
   }
 
-  void createHistograms(std::string histdir)
+  void createHistograms(const std::string& histdir)
   {
     const int nXbinsInStatH = 26;
     std::string labels[nXbinsInStatH] = {
@@ -237,7 +237,7 @@ struct DgCandProducer {
   }
 
   template <typename TBC>
-  void fillFIThistograms(TBC const& bc, std::string histdir)
+  void fillFIThistograms(TBC const& bc, const std::string& histdir)
   {
     LOGF(debug, "");
     std::array<bool, 5> triggers{{true, !udhelpers::cleanFIT(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits()),
@@ -295,7 +295,7 @@ struct DgCandProducer {
   }
 
   template <typename TCol>
-  void processReco(std::string histdir, TCol const& collision, BCs const& bcs,
+  void processReco(const std::string& histdir, TCol const& collision, BCs const& bcs,
                    TCs const& tracks, FWs const& fwdtracks,
                    aod::FV0As const& fv0as, aod::FT0s const& ft0s, aod::FDDs const& fdds)
   {
