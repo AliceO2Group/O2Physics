@@ -116,7 +116,7 @@ struct qaKFEventTrack {
   int pVContrib = 0;
 
   void initMagneticFieldCCDB(o2::aod::BCsWithTimestamps::iterator const& bc, int& mRunNumber,
-                             o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, std::string ccdbPathGrp, o2::base::MatLayerCylSet* lut,
+                             o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, const std::string& ccdbPathGrp, o2::base::MatLayerCylSet* lut,
                              bool isRun3)
   {
 
@@ -536,7 +536,7 @@ struct qaKFEvent {
   Produces<o2::aod::TreeCollisions> rowKFCollisions;
 
   void initMagneticFieldCCDB(o2::aod::BCsWithTimestamps::iterator const& bc, int& mRunNumber,
-                             o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, std::string ccdbPathGrp, o2::base::MatLayerCylSet* lut,
+                             o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, const std::string& ccdbPathGrp, o2::base::MatLayerCylSet* lut,
                              bool isRun3)
   {
 
