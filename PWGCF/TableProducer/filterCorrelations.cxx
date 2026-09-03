@@ -112,7 +112,7 @@ struct FilterCF {
   O2_DEFINE_CONFIGURABLE(chi2peritscluster, float, 36, "maximum Chi2 / cluster for the ITS track segment")
   O2_DEFINE_CONFIGURABLE(cfgEstimatorBitMask, uint16_t, 0, "BitMask for multiplicity estimators to be included in the CFMultSet tables.");
 
-  O2_DEFINE_CONFIGURABLE(cfgEfficiencyMultiplicity, std::string, "", "Multiplicity efficiency (RecoAll / MC): CCDB path or local ROOT file with a 4D ccdb_object (eta, pT, multiplicity, z-vtx); empty copies the original multiplicity")
+  O2_DEFINE_CONFIGURABLE(cfgEfficiencyMultiplicity, std::string, "", "Multiplicity efficiency (RecoAll / MC): CCDB path or local ROOT file with a 4D ccdb_object (eta, pT, multiplicity, z-vtx); empty disables CFCollisionsExtra output")
   O2_DEFINE_CONFIGURABLE(cfgLocalEfficiency, int, 0, "0 = CCDB efficiency, 1 = local ROOT efficiency")
   O2_DEFINE_CONFIGURABLE(cfgMultiplicityTrackBitMask, uint16_t, 0, "Required track-type bits for corrected multiplicity; match cfgTrackBitMask used to produce the efficiency (0 = all stored tracks)")
 
@@ -132,6 +132,7 @@ struct FilterCF {
   HistogramRegistry registrytrackQA{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   Produces<aod::CFCollisions> outputCollisions;
+  Produces<aod::CFCollisionsExtra> outputCollisionsExtra;
   Produces<aod::CFTracks> outputTracks;
 
   Produces<aod::CFCollLabels> outputMcCollisionLabels;
@@ -338,10 +339,6 @@ struct FilterCF {
   template <bool applyDCA, typename TCollision, typename TTracks>
   float getCorrectedMultiplicity(const TCollision& collision, const TTracks& tracks, uint64_t timestamp)
   {
-    if (cfgEfficiencyMultiplicity.value.empty()) {
-      return collision.multiplicity();
-    }
-
     auto* efficiency = loadMultiplicityEfficiency(timestamp);
     double correctedMultiplicity = 0.;
     for (const auto& track : tracks) {
@@ -397,7 +394,10 @@ struct FilterCF {
     }
 
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-    outputCollisions(bc.runNumber(), collision.posZ(), collision.multiplicity(), bc.timestamp(), getCorrectedMultiplicity<true>(collision, tracks, bc.timestamp()));
+    outputCollisions(bc.runNumber(), collision.posZ(), collision.multiplicity(), bc.timestamp());
+    if (!cfgEfficiencyMultiplicity.value.empty()) {
+      outputCollisionsExtra(getCorrectedMultiplicity<true>(collision, tracks, bc.timestamp()));
+    }
 
     if constexpr (std::experimental::is_detected<HasMultTables, C1>::value) {
       multiplicities.clear();
@@ -575,7 +575,10 @@ struct FilterCF {
 
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       // NOTE works only when we store all MC collisions (as we do here)
-      outputCollisions(bc.runNumber(), collision.posZ(), collision.multiplicity(), bc.timestamp(), getCorrectedMultiplicity<false>(collision, groupedTracks, bc.timestamp()));
+      outputCollisions(bc.runNumber(), collision.posZ(), collision.multiplicity(), bc.timestamp());
+      if (!cfgEfficiencyMultiplicity.value.empty()) {
+        outputCollisionsExtra(getCorrectedMultiplicity<false>(collision, groupedTracks, bc.timestamp()));
+      }
       outputMcCollisionLabels(collision.mcCollisionId());
 
       if constexpr (std::experimental::is_detected<HasMultTables, C1>::value) {
