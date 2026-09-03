@@ -56,6 +56,7 @@
 #include <algorithm>
 #include <array>
 #include <chrono>
+#include <cmath>
 #include <complex>
 #include <cstdint>
 #include <cstdlib>
@@ -506,16 +507,18 @@ struct FlowGfwV02 {
     registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(kMultCuts, "after Mult cuts");
     registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(kTrackCent, "has track + within cent");
 
-    if (gfwMemberCache.regions.GetSize() < 0)
+    if (gfwMemberCache.regions.GetSize() < 0) {
       LOGF(error, "Configuration contains vectors of different size - check the GFWRegions configurable");
+    }
     for (auto i(0); i < gfwMemberCache.regions.GetSize(); ++i) {
       fGFW->AddRegion(gfwMemberCache.regions.GetNames()[i], gfwMemberCache.regions.GetEtaMin()[i], gfwMemberCache.regions.GetEtaMax()[i], (gfwMemberCache.regions.GetpTDifs()[i] != 0) ? ptbins + 1 : 1, gfwMemberCache.regions.GetBitmasks()[i]);
     }
     for (auto i = 0; i < gfwMemberCache.configs.GetSize(); ++i) {
       corrconfigs.push_back(fGFW->GetCorrelatorConfig(gfwMemberCache.configs.GetCorrs()[i], gfwMemberCache.configs.GetHeads()[i], gfwMemberCache.configs.GetpTDifs()[i] != 0));
     }
-    if (corrconfigs.empty())
+    if (corrconfigs.empty()) {
       LOGF(error, "Configuration contains vectors of different size - check the GFWCorrConfig configurable");
+    }
     fGFW->CreateRegions();
     auto* oba = new TObjArray();
     oba->SetOwner(kTRUE);
@@ -642,8 +645,9 @@ struct FlowGfwV02 {
   void loadCorrections(aod::BCsWithTimestamps::iterator const& bc)
   {
     uint64_t timestamp = bc.timestamp();
-    if (cfg.correctionsLoaded)
+    if (cfg.correctionsLoaded) {
       return;
+    }
     if (!cfgAcceptance.value.empty()) {
       cfg.mAcceptance = ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value, timestamp);
     }
@@ -670,8 +674,9 @@ struct FlowGfwV02 {
 
   void loadCorrections(int runnumber)
   {
-    if (cfg.correctionsLoaded)
+    if (cfg.correctionsLoaded) {
       return;
+    }
     if (!cfgAcceptance.value.empty()) {
       cfg.mAcceptance = ccdb->getForRun<GFWWeights>(cfgAcceptance.value, runnumber);
     }
@@ -685,8 +690,9 @@ struct FlowGfwV02 {
   double getJTrackAcceptance(TTrack const& track)
   {
     double wacc = 1;
-    if constexpr (requires { track.weightNUA(); })
+    if constexpr (requires { track.weightNUA(); }) {
       wacc = 1. / track.weightNUA();
+    }
     return wacc;
   }
 
@@ -694,8 +700,9 @@ struct FlowGfwV02 {
   double getJTrackEfficiency(TTrack const& track)
   {
     double eff = 1.;
-    if constexpr (requires { track.weightEff(); })
+    if constexpr (requires { track.weightEff(); }) {
       eff = track.weightEff();
+    }
     return eff;
   }
 
@@ -703,8 +710,9 @@ struct FlowGfwV02 {
   double getAcceptance(TTrack const& track, const double& vtxz)
   {
     double wacc = 1;
-    if (cfg.mAcceptance)
+    if (cfg.mAcceptance) {
       wacc = cfg.mAcceptance->getNUA(track.phi(), track.eta(), vtxz);
+    }
     return wacc;
   }
 
@@ -712,10 +720,12 @@ struct FlowGfwV02 {
   double getEfficiency(TTrack const& track, const int& pid = PidCharged)
   {
     double eff = 1.;
-    if (cfg.mEfficiency[pid])
+    if (cfg.mEfficiency[pid]) {
       eff = cfg.mEfficiency[pid]->GetBinContent(cfg.mEfficiency[pid]->FindBin(track.pt()));
-    if (eff == 0)
+    }
+    if (eff == 0) {
       return -1.;
+    }
     return 1. / eff;
   }
 
@@ -805,25 +815,32 @@ struct FlowGfwV02 {
       float zRes = std::sqrt(collision.covZZ());
       float minZRes = 0.25;
       int minNContrib = 20;
-      if (zRes > minZRes && collision.numContrib() < minNContrib)
+      if (zRes > minZRes && collision.numContrib() < minNContrib) {
         vtxz = -999;
+      }
     }
     auto multNTracksPV = collision.multNTracksPV();
 
-    if (vtxz > gfwMemberCache.vtxZup || vtxz < gfwMemberCache.vtxZlow)
+    if (vtxz > gfwMemberCache.vtxZup || vtxz < gfwMemberCache.vtxZlow) {
       return 0;
+    }
 
     if (cfgMultCut) {
-      if (multNTracksPV < fMultPVCutLow->Eval(centrality))
+      if (multNTracksPV < fMultPVCutLow->Eval(centrality)) {
         return 0;
-      if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
+      }
+      if (multNTracksPV > fMultPVCutHigh->Eval(centrality)) {
         return 0;
-      if (multTrk < fMultCutLow->Eval(centrality))
+      }
+      if (multTrk < fMultCutLow->Eval(centrality)) {
         return 0;
-      if (multTrk > fMultCutHigh->Eval(centrality))
+      }
+      if (multTrk > fMultCutHigh->Eval(centrality)) {
         return 0;
-      if (multTrk > fMultPVGlobalCutHigh->Eval(collision.multNTracksPV()))
+      }
+      if (multTrk > fMultPVGlobalCutHigh->Eval(collision.multNTracksPV())) {
         return 0;
+      }
       registry.fill(HIST("eventQA/eventSel"), kMultCuts);
     }
     return 1;
@@ -837,19 +854,23 @@ struct FlowGfwV02 {
 
   int getPIDIndex(const std::string& corrconfig)
   {
-    if (!boost::ifind_first(corrconfig, "pi").empty())
+    if (!boost::ifind_first(corrconfig, "pi").empty()) {
       return PidPions;
-    if (!boost::ifind_first(corrconfig, "ka").empty())
+    }
+    if (!boost::ifind_first(corrconfig, "ka").empty()) {
       return PidKaons;
-    if (!boost::ifind_first(corrconfig, "pr").empty())
+    }
+    if (!boost::ifind_first(corrconfig, "pr").empty()) {
       return PidProtons;
+    }
     return PidCharged;
   }
 
   template <DataType dt>
   void fillOutputContainers(const float& centmult)
   {
-    double threshold = 1.01;
+    constexpr double threshold = 1.01;
+    constexpr double minDnxAB = 1e-8; // skip events with vanishing V22 weight
 
     int bootstrap = fRndm->Integer(gfwMemberCache.nBootstrap);
     // Calculate V02
@@ -859,7 +880,7 @@ struct FlowGfwV02 {
       double ptFractionMid = 0.;
       double dnxAB = fGFW->Calculate(corrconfigs.at(0), 0, kTRUE).real(); // V22 weight for AB
       auto valAB = fGFW->Calculate(corrconfigs.at(0), 0, kFALSE).real() / dnxAB;
-      if (std::abs(valAB) > threshold || std::isnan(valAB) || std::isinf(valAB) || dnxAB < 1e-8) {
+      if (std::abs(valAB) > threshold || std::isnan(valAB) || std::isinf(valAB) || dnxAB < minDnxAB) {
         return;
       }
       double v22pt = valAB * ptMeanMid;
@@ -1030,12 +1051,15 @@ struct FlowGfwV02 {
   void processCollision(TCollision const& collision, TTracks const& tracks, const XAxis& xaxis)
   {
     float vtxz = collision.posZ();
-    if (tracks.size() < 1)
+    if (tracks.size() < 1) {
       return;
-    if (xaxis.centrality >= 0 && (xaxis.centrality < gfwMemberCache.centbinning.front() || xaxis.centrality > gfwMemberCache.centbinning.back()))
+    }
+    if (xaxis.centrality >= 0 && (xaxis.centrality < gfwMemberCache.centbinning.front() || xaxis.centrality > gfwMemberCache.centbinning.back())) {
       return;
-    if (xaxis.multiplicity < cfgFixedMultMin || xaxis.multiplicity > cfgFixedMultMax)
+    }
+    if (xaxis.multiplicity < cfgFixedMultMin || xaxis.multiplicity > cfgFixedMultMax) {
       return;
+    }
     fGFW->Clear();
     pidStates.hPtMid[PidCharged]->Reset();
     pidStates.hPtMid[PidPions]->Reset();
@@ -1054,45 +1078,59 @@ struct FlowGfwV02 {
     AcceptedTracks acceptedTracks{.nPos = 0, .nNeg = 0, .nFull = 0, .nMid = 0};
     for (const auto& track : tracks) {
       processTrack(track, vtxz, xaxis.multiplicity, acceptedTracks);
-      if (track.eta() > cfgSubeventCuts.cfgEtaSubCMin && track.eta() < cfgSubeventCuts.cfgEtaSubCMax)
+      if (track.eta() > cfgSubeventCuts.cfgEtaSubCMin && track.eta() < cfgSubeventCuts.cfgEtaSubCMax) {
         pidStates.hPtMid[PidCharged]->Fill(track.pt(), getEfficiency(track, PidCharged));
-      if (track.eta() > cfgSubeventCuts.cfgEtaSubAMin && track.eta() < cfgSubeventCuts.cfgEtaSubAMax) // add mean pT
+      }
+      if (track.eta() > cfgSubeventCuts.cfgEtaSubAMin && track.eta() < cfgSubeventCuts.cfgEtaSubAMax) { // add mean pT
         pidStates.hPtBackward[PidCharged]->Fill(track.pt(), getEfficiency(track, PidCharged));
-      if (track.eta() > cfgSubeventCuts.cfgEtaSubBMin && track.eta() < cfgSubeventCuts.cfgEtaSubBMax) // add mean pT
+      }
+      if (track.eta() > cfgSubeventCuts.cfgEtaSubBMin && track.eta() < cfgSubeventCuts.cfgEtaSubBMax) { // add mean pT
         pidStates.hPtForward[PidCharged]->Fill(track.pt(), getEfficiency(track, PidCharged));
+      }
       // If PID is identified, fill pt spectrum for the corresponding particle
       int pidInd = getNsigmaPID(track);
       if (pidInd != -1 && track.eta() > cfgSubeventCuts.cfgEtaSubCMin && track.eta() < cfgSubeventCuts.cfgEtaSubCMax) {
-        if (cfgPIDEfficiency)
+        if (cfgPIDEfficiency) {
           pidStates.hPtMid[pidInd]->Fill(track.pt(), getEfficiency(track, pidInd));
-        else
+        } else {
           pidStates.hPtMid[pidInd]->Fill(track.pt(), getEfficiency(track, PidCharged)); // Default to charged particles if PID efficiency is not used
+        }
       }
       if (pidInd != -1 && track.eta() > cfgSubeventCuts.cfgEtaSubAMin && track.eta() < cfgSubeventCuts.cfgEtaSubAMax) {
-        if (cfgPIDEfficiency)
+        if (cfgPIDEfficiency) {
           pidStates.hPtBackward[pidInd]->Fill(track.pt(), getEfficiency(track, pidInd));
-        else
+        } else {
           pidStates.hPtBackward[pidInd]->Fill(track.pt(), getEfficiency(track, PidCharged)); // Default to charged particles if PID efficiency is not used
+        }
       }
       if (pidInd != -1 && track.eta() > cfgSubeventCuts.cfgEtaSubBMin && track.eta() < cfgSubeventCuts.cfgEtaSubBMax) {
-        if (cfgPIDEfficiency)
+        if (cfgPIDEfficiency) {
           pidStates.hPtForward[pidInd]->Fill(track.pt(), getEfficiency(track, pidInd));
-        else
+        } else {
           pidStates.hPtForward[pidInd]->Fill(track.pt(), getEfficiency(track, PidCharged)); // Default to charged particles if PID efficiency is not used
+        }
       }
     }
-    if (cfgConsistentEventFlag & 1)
-      if (!acceptedTracks.nPos || !acceptedTracks.nNeg)
+    if (cfgConsistentEventFlag & 1) {
+      if (!acceptedTracks.nPos || !acceptedTracks.nNeg) {
         return;
-    if (cfgConsistentEventFlag & 2)
-      if (acceptedTracks.nFull < 4) // o2-linter: disable=magic-number (at least four tracks in full acceptance)
+      }
+    }
+    if (cfgConsistentEventFlag & 2) {
+      if (acceptedTracks.nFull < 4) { // o2-linter: disable=magic-number (at least four tracks in full acceptance)
         return;
-    if (cfgConsistentEventFlag & 4)
-      if (acceptedTracks.nPos < 2 || acceptedTracks.nNeg < 2) // o2-linter: disable=magic-number (at least two tracks in each subevent)
+      }
+    }
+    if (cfgConsistentEventFlag & 4) {
+      if (acceptedTracks.nPos < 2 || acceptedTracks.nNeg < 2) { // o2-linter: disable=magic-number (at least two tracks in each subevent)
         return;
-    if (cfgConsistentEventFlag & 8)
-      if (acceptedTracks.nPos < 2 || acceptedTracks.nMid < 2 || acceptedTracks.nNeg < 2) // o2-linter: disable=magic-number (at least two tracks in all three subevents)
+      }
+    }
+    if (cfgConsistentEventFlag & 8) {
+      if (acceptedTracks.nPos < 2 || acceptedTracks.nMid < 2 || acceptedTracks.nNeg < 2) { // o2-linter: disable=magic-number (at least two tracks in all three subevents)
         return;
+      }
+    }
     // Fill output containers
     fillOutputContainers<dt>(xaxis.centrality);
   }
@@ -1100,21 +1138,26 @@ struct FlowGfwV02 {
   template <typename TTrack>
   void fillAcceptedTracks(TTrack const& track, AcceptedTracks& acceptedTracks)
   {
-    if (posRegionIndex >= 0 && track.eta() > gfwMemberCache.regions.GetEtaMin()[posRegionIndex] && track.eta() < gfwMemberCache.regions.GetEtaMax()[posRegionIndex])
+    if (posRegionIndex >= 0 && track.eta() > gfwMemberCache.regions.GetEtaMin()[posRegionIndex] && track.eta() < gfwMemberCache.regions.GetEtaMax()[posRegionIndex]) {
       ++acceptedTracks.nPos;
-    if (negRegionIndex >= 0 && track.eta() > gfwMemberCache.regions.GetEtaMin()[negRegionIndex] && track.eta() < gfwMemberCache.regions.GetEtaMax()[negRegionIndex])
+    }
+    if (negRegionIndex >= 0 && track.eta() > gfwMemberCache.regions.GetEtaMin()[negRegionIndex] && track.eta() < gfwMemberCache.regions.GetEtaMax()[negRegionIndex]) {
       ++acceptedTracks.nNeg;
-    if (fullRegionIndex >= 0 && track.eta() > gfwMemberCache.regions.GetEtaMin()[fullRegionIndex] && track.eta() < gfwMemberCache.regions.GetEtaMax()[fullRegionIndex])
+    }
+    if (fullRegionIndex >= 0 && track.eta() > gfwMemberCache.regions.GetEtaMin()[fullRegionIndex] && track.eta() < gfwMemberCache.regions.GetEtaMax()[fullRegionIndex]) {
       ++acceptedTracks.nFull;
-    if (midRegionIndex >= 0 && track.eta() > gfwMemberCache.regions.GetEtaMin()[midRegionIndex] && track.eta() < gfwMemberCache.regions.GetEtaMax()[midRegionIndex])
+    }
+    if (midRegionIndex >= 0 && track.eta() > gfwMemberCache.regions.GetEtaMin()[midRegionIndex] && track.eta() < gfwMemberCache.regions.GetEtaMax()[midRegionIndex]) {
       ++acceptedTracks.nMid;
+    }
   }
 
   template <typename TTrack>
   bool trackSelected(TTrack const& track)
   {
-    if (cfgTrackCuts.cfgDCAxyNSigma && (std::fabs(track.dcaXY()) > fPtDepDCAxy->Eval(track.pt())))
+    if (cfgTrackCuts.cfgDCAxyNSigma && (std::fabs(track.dcaXY()) > fPtDepDCAxy->Eval(track.pt()))) {
       return false;
+    }
     return ((track.tpcNClsCrossedRows() >= cfgTrackCuts.cfgNTPCXrows) && (track.tpcNClsFound() >= cfgTrackCuts.cfgNTPCCls) && (track.itsNCls() >= cfgTrackCuts.cfgMinNITSCls));
   }
 
@@ -1150,11 +1193,13 @@ struct FlowGfwV02 {
       registry.fill(HIST("trackQA/before/nch_pt"), multiplicity, track.pt());
     }
 
-    if (cfgGetNsigmaQA)
+    if (cfgGetNsigmaQA) {
       fillPidQA<kBefore>(track, getNsigmaPID(track));
+    }
 
-    if (!trackSelected(track))
+    if (!trackSelected(track)) {
       return;
+    }
 
     fillGFW<kReco>(track, vtxz);               // Fill GFW
     fillAcceptedTracks(track, acceptedTracks); // Fill accepted tracks
@@ -1163,8 +1208,9 @@ struct FlowGfwV02 {
       registry.fill(HIST("trackQA/after/nch_pt"), multiplicity, track.pt());
     }
 
-    if (cfgGetNsigmaQA)
+    if (cfgGetNsigmaQA) {
       fillPidQA<kAfter>(track, getNsigmaPID(track));
+    }
   }
 
   template <DataType dt, typename TTrack>
@@ -1175,24 +1221,30 @@ struct FlowGfwV02 {
     bool withinPtRef = (track.pt() > gfwMemberCache.ptreflow && track.pt() < gfwMemberCache.ptrefup);
     bool withinPtPOI = (track.pt() > gfwMemberCache.ptpoilow && track.pt() < gfwMemberCache.ptpoiup);
 
-    if (!withinPtPOI && !withinPtRef)
+    if (!withinPtPOI && !withinPtRef) {
       return;
+    }
     double weff = getEfficiency(track, PidCharged);
-    if (weff < 0)
+    if (weff < 0) {
       return;
+    }
 
     double wacc = getAcceptance(track, vtxz);
 
     // Fill cumulants for different particles
     // ***Need to add proper weights for each particle!***
-    if (withinPtRef)
+    if (withinPtRef) {
       fGFW->Fill(track.eta(), fSecondAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, 1);
-    if (withinPtPOI && pidInd == PidPions)
+    }
+    if (withinPtPOI && pidInd == PidPions) {
       fGFW->Fill(track.eta(), fSecondAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, PidPions + 1);
-    if (withinPtPOI && pidInd == PidKaons)
+    }
+    if (withinPtPOI && pidInd == PidKaons) {
       fGFW->Fill(track.eta(), fSecondAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, PidKaons + 1);
-    if (withinPtPOI && pidInd == PidProtons)
+    }
+    if (withinPtPOI && pidInd == PidProtons) {
       fGFW->Fill(track.eta(), fSecondAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, PidProtons + 1);
+    }
   }
 
   template <QAFillTime ft, typename TTrack>
@@ -1310,8 +1362,9 @@ struct FlowGfwV02 {
     loadCorrections(bc);
 
     registry.fill(HIST("eventQA/eventSel"), kFilteredEvent);
-    if (!collision.sel8())
+    if (!collision.sel8()) {
       return;
+    }
     registry.fill(HIST("eventQA/eventSel"), kSel8);
     registry.fill(HIST("eventQA/eventSel"), kOccupancy); // Add occupancy selection later
 
@@ -1321,10 +1374,12 @@ struct FlowGfwV02 {
       registry.fill(HIST("eventQA/before/centrality"), xaxis.centrality);
       registry.fill(HIST("eventQA/before/multiplicity"), xaxis.multiplicity);
     }
-    if (cfgUseAdditionalEventCut && !eventSelected(collision, xaxis.multiplicity, xaxis.centrality))
+    if (cfgUseAdditionalEventCut && !eventSelected(collision, xaxis.multiplicity, xaxis.centrality)) {
       return;
-    if (cfgFillQA)
+    }
+    if (cfgFillQA) {
       fillEventQA<kAfter>(collision, xaxis);
+    }
 
     registry.fill(HIST("eventQA/after/centrality"), xaxis.centrality);
     registry.fill(HIST("eventQA/after/multiplicity"), xaxis.multiplicity);
