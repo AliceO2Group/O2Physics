@@ -78,7 +78,6 @@ struct DeuteronInJetsTrgPt {
 
   // Setting default selection criteria to select tracks. May be changed when configuring the analysis.
   struct : o2::framework::ConfigurableGroup {
-    std::string prefix{"cfgTrackCut"};
     // General specific
     Configurable<bool> requirePvContributor{"requirePvContributor", false, "Require that the track is a PV contributor"};
     Configurable<float> etaMax{"etaMax", 0.9f, "Max Eta for track acceptance"};
@@ -105,9 +104,8 @@ struct DeuteronInJetsTrgPt {
 
   // Setting default selection criteria for events. May be changes when configuring the analysis.
   struct : o2::framework::ConfigurableGroup {
-    std::string prefix{"cgfEventCut"};
     Configurable<double> zVtx{"zVtx", 10.0, "Maximum z vertex"};
-  } cfgEvCut;
+  } cfgEventCut;
 
   // Skimmed data flag and list of active triggers for processing
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Skimmed dataset processing"};
@@ -115,7 +113,6 @@ struct DeuteronInJetsTrgPt {
 
   // Setting default selection criteria fr jet identification. May be changes when configuring the analysis.
   struct : o2::framework::ConfigurableGroup {
-    std::string prefix{"cgfJetCut"};
     Configurable<double> minJetPt{"minJetPt", 10.0, "Minimum pt of the jet after bkg subtraction"};
     Configurable<double> rJet{"rJet", 0.3, "Jet parameter R"};
     Configurable<double> deltaEtaEdge{"deltaEtaEdge", 0.05, "eta gap from the edge"};
@@ -363,7 +360,7 @@ struct DeuteronInJetsTrgPt {
     registryData.fill(HIST("number_of_events_data"), 1.5);
 
     // Apply standard event selection
-    if (!collision.sel8() || std::fabs(collision.posZ()) >= cfgEvCut.zVtx)
+    if (!collision.sel8() || std::fabs(collision.posZ()) >= cfgEventCut.zVtx)
       return;
     registryData.fill(HIST("number_of_events_data"), 2.5); // Save number of collisions that passed standard selections
 
