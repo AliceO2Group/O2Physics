@@ -49,12 +49,14 @@ enum class PairType {
   unlikemp,
   likepp,
   likemm,
-  unliketrue,
+  unliketruerec,
+  unliketruegen,
   unlikegen,
-  unlikegenold,
   mixingpm,
   mixingmp,
-  rotationpm,
+  rotationz,
+  rotation,
+  rotationlike,
   all
 };
 
@@ -209,12 +211,14 @@ class Output
   virtual void fillUnlikemp(double* point) = 0;
   virtual void fillLikepp(double* point) = 0;
   virtual void fillLikemm(double* point) = 0;
-  virtual void fillUnliketrue(double* point) = 0;
-  virtual void fillUnlikegen(double* point) = 0;
-  virtual void fillUnlikegenOld(double* point) = 0;
+  virtual void fillUnlikeTrueRec(double* point) = 0;
+  virtual void fillUnlikeTrueGen(double* point) = 0;
+  virtual void fillUnlikeGen(double* point) = 0;
   virtual void fillMixingpm(double* point) = 0;
   virtual void fillMixingmp(double* point) = 0;
-  virtual void fillRotationpm(double* point) = 0;
+  virtual void fillRotationZ(double* point) = 0;
+  virtual void fillRotation(double* point) = 0;
+  virtual void fillRotationLike(double* point) = 0;
   virtual void fillSystematics(double* point) = 0;
 
   PairAxisType type(std::string name)
@@ -278,16 +282,18 @@ class OutputSparse : public Output
       mHistogramRegistry->add("likemm", "Like MM", *mPairHisto);
     }
     if (produceTrue) {
-      mHistogramRegistry->add("unliketrue", "Unlike True", *mPairHisto);
+      mHistogramRegistry->add("unliketruerec", "Unlike True (Rec)", *mPairHisto);
+      mHistogramRegistry->add("unliketruegen", "Unlike True (Gen)", *mPairHisto);
       mHistogramRegistry->add("unlikegen", "Unlike Gen", *mPairHisto);
-      mHistogramRegistry->add("unlikegenold", "Unlike Gen Old", *mPairHisto);
     }
     if (eventMixing != MixingType::none) {
       mHistogramRegistry->add("mixingpm", "Event Mixing pm", *mPairHisto);
       mHistogramRegistry->add("mixingmp", "Event Mixing mp", *mPairHisto);
     }
     if (produceRotational) {
-      mHistogramRegistry->add("rotationpm", "Rotational pm", *mPairHisto);
+      mHistogramRegistry->add("rotationz", "Rotation around z axis", *mPairHisto);
+      mHistogramRegistry->add("rotation", "Momentum-axis rotation, unlike-sign", *mPairHisto);
+      mHistogramRegistry->add("rotationlike", "Momentum-axis rotation, like-sign", *mPairHisto);
     }
     mHistogramRegistry->add("Mapping/systematics", "Systematics mapping", *mPairHistoSys);
   }
@@ -319,14 +325,14 @@ class OutputSparse : public Output
       case PairType::likemm:
         fillLikemm(point);
         break;
-      case PairType::unliketrue:
-        fillUnliketrue(point);
+      case PairType::unliketruerec:
+        fillUnlikeTrueRec(point);
         break;
       case PairType::unlikegen:
-        fillUnlikegen(point);
+        fillUnlikeGen(point);
         break;
-      case PairType::unlikegenold:
-        fillUnlikegenOld(point);
+      case PairType::unliketruegen:
+        fillUnlikeTrueGen(point);
         break;
       case PairType::mixingpm:
         fillMixingpm(point);
@@ -334,8 +340,14 @@ class OutputSparse : public Output
       case PairType::mixingmp:
         fillMixingmp(point);
         break;
-      case PairType::rotationpm:
-        fillRotationpm(point);
+      case PairType::rotationz:
+        fillRotationZ(point);
+        break;
+      case PairType::rotation:
+        fillRotation(point);
+        break;
+      case PairType::rotationlike:
+        fillRotationLike(point);
         break;
       default:
         break;
@@ -358,17 +370,17 @@ class OutputSparse : public Output
   {
     fillSparse(HIST("likemm"), point);
   }
-  virtual void fillUnliketrue(double* point)
+  virtual void fillUnlikeTrueRec(double* point)
   {
-    fillSparse(HIST("unliketrue"), point);
+    fillSparse(HIST("unliketruerec"), point);
   }
-  virtual void fillUnlikegen(double* point)
+  virtual void fillUnlikeTrueGen(double* point)
+  {
+    fillSparse(HIST("unliketruegen"), point);
+  }
+  virtual void fillUnlikeGen(double* point)
   {
     fillSparse(HIST("unlikegen"), point);
-  }
-  virtual void fillUnlikegenOld(double* point)
-  {
-    fillSparse(HIST("unlikegenold"), point);
   }
   virtual void fillMixingpm(double* point)
   {
@@ -378,9 +390,17 @@ class OutputSparse : public Output
   {
     fillSparse(HIST("mixingmp"), point);
   }
-  virtual void fillRotationpm(double* point)
+  virtual void fillRotationZ(double* point)
   {
-    fillSparse(HIST("rotationpm"), point);
+    fillSparse(HIST("rotationz"), point);
+  }
+  virtual void fillRotation(double* point)
+  {
+    fillSparse(HIST("rotation"), point);
+  }
+  virtual void fillRotationLike(double* point)
+  {
+    fillSparse(HIST("rotationlike"), point);
   }
   virtual void fillSystematics(double* point)
   {
