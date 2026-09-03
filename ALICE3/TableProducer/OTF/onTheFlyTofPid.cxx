@@ -83,7 +83,7 @@ struct OnTheFlyTofPid {
   Produces<aod::UpgradeTofMC> upgradeTofMC;
   Produces<aod::UpgradeTof> upgradeTof;
   Produces<aod::UpgradeTofExpectedTime> upgradeTofExpectedTime;
-  Produces<aod::UpgradeTofExtra> upgradeTofExtra;
+  Produces<aod::UpgradeTofExtra> upgradeTofExtraLongLived;
 
   // necessary for particle charges
   Service<o2::framework::O2DatabasePDG> pdg;
@@ -148,19 +148,19 @@ struct OnTheFlyTofPid {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   OutputObj<THashList> listEfficiency{"efficiency"};
 
-  enum ParticleType : int { El = 0,
-                            Mu,
-                            Pi,
-                            Ka,
-                            Pr,
-                            Sp,
-                            Sm,
-                            Xi,
-                            Om,
-                            De,
-                            Tr,
-                            He3,
-                            Al,
+  enum ParticleType : int { El = 0, // electron
+                            Mu,     // muon
+                            Pi,     // pion
+                            Ka,     // kaon
+                            Pr,     // proton
+                            Sp,     // sigma plus
+                            Sm,     // sigma minus
+                            Xi,     // xi
+                            Om,     // omega
+                            De,     // deuteron
+                            Tr,     // triton
+                            He,     // helium 3
+                            Al,     // alpha
                             NParticles };
 
   struct ParticleInfo {
@@ -184,7 +184,7 @@ struct OnTheFlyTofPid {
     {"#it{#Omega}", "Omeg", Om, PDG_t::kOmegaMinus, o2::constants::physics::MassOmegaMinus, 1.f},
     {"#it{d}", "Deut", De, o2::constants::physics::kDeuteron, o2::constants::physics::MassDeuteron, 1.f},
     {"#it{t}", "Trit", Tr, o2::constants::physics::kTriton, o2::constants::physics::MassTriton, 1.f},
-    {"^{3}He", "He3", He3, o2::constants::physics::kHelium3, o2::constants::physics::MassHelium3, 2.f},
+    {"^{3}He", "He", He, o2::constants::physics::kHelium3, o2::constants::physics::MassHelium3, 2.f},
     {"#it{#alpha}", "Al", Al, o2::constants::physics::kAlpha, o2::constants::physics::MassAlpha, 2.f},
   };
 
@@ -929,16 +929,16 @@ struct OnTheFlyTofPid {
 
       // Sigmas have been fully calculated. Please populate the NSigma helper table (once per track)
       upgradeTof(tzero[0], tzero[1],
-                 nSigmaInnerTOF[El], nSigmaInnerTOF[Mu], nSigmaInnerTOF[Pi], nSigmaInnerTOF[Ka], nSigmaInnerTOF[Pr], nSigmaInnerTOF[De], nSigmaInnerTOF[Tr], nSigmaInnerTOF[He3], nSigmaInnerTOF[Al],
+                 nSigmaInnerTOF[El], nSigmaInnerTOF[Mu], nSigmaInnerTOF[Pi], nSigmaInnerTOF[Ka], nSigmaInnerTOF[Pr], nSigmaInnerTOF[De], nSigmaInnerTOF[Tr], nSigmaInnerTOF[He], nSigmaInnerTOF[Al],
                  measuredTimeInnerTOF, trackLengthRecoInnerTOF,
-                 nSigmaOuterTOF[El], nSigmaOuterTOF[Mu], nSigmaOuterTOF[Pi], nSigmaOuterTOF[Ka], nSigmaOuterTOF[Pr], nSigmaOuterTOF[De], nSigmaOuterTOF[Tr], nSigmaOuterTOF[He3], nSigmaOuterTOF[Al],
+                 nSigmaOuterTOF[El], nSigmaOuterTOF[Mu], nSigmaOuterTOF[Pi], nSigmaOuterTOF[Ka], nSigmaOuterTOF[Pr], nSigmaOuterTOF[De], nSigmaOuterTOF[Tr], nSigmaOuterTOF[He], nSigmaOuterTOF[Al],
                  measuredTimeOuterTOF, trackLengthRecoOuterTOF);
-      upgradeTofExpectedTime(expectedTimeInnerTOF[El], expectedTimeInnerTOF[Mu], expectedTimeInnerTOF[Pi], expectedTimeInnerTOF[Ka], expectedTimeInnerTOF[Pr], expectedTimeInnerTOF[De], expectedTimeInnerTOF[Tr], expectedTimeInnerTOF[He3], expectedTimeInnerTOF[Al],
-                             expectedTimeOuterTOF[El], expectedTimeOuterTOF[Mu], expectedTimeOuterTOF[Pi], expectedTimeOuterTOF[Ka], expectedTimeOuterTOF[Pr], expectedTimeOuterTOF[De], expectedTimeOuterTOF[Tr], expectedTimeOuterTOF[He3], expectedTimeOuterTOF[Al]);
-      upgradeTofExtra(nSigmaInnerTOF[Sp], nSigmaInnerTOF[Sm], nSigmaInnerTOF[Xi], nSigmaInnerTOF[Om],
-                      nSigmaOuterTOF[Sp], nSigmaOuterTOF[Sm], nSigmaOuterTOF[Xi], nSigmaOuterTOF[Om],
-                      expectedTimeInnerTOF[Sp], expectedTimeInnerTOF[Sm], expectedTimeInnerTOF[Xi], expectedTimeInnerTOF[Om],
-                      expectedTimeOuterTOF[Sp], expectedTimeOuterTOF[Sm], expectedTimeOuterTOF[Xi], expectedTimeOuterTOF[Om]);
+      upgradeTofExpectedTime(expectedTimeInnerTOF[El], expectedTimeInnerTOF[Mu], expectedTimeInnerTOF[Pi], expectedTimeInnerTOF[Ka], expectedTimeInnerTOF[Pr], expectedTimeInnerTOF[De], expectedTimeInnerTOF[Tr], expectedTimeInnerTOF[He], expectedTimeInnerTOF[Al],
+                             expectedTimeOuterTOF[El], expectedTimeOuterTOF[Mu], expectedTimeOuterTOF[Pi], expectedTimeOuterTOF[Ka], expectedTimeOuterTOF[Pr], expectedTimeOuterTOF[De], expectedTimeOuterTOF[Tr], expectedTimeOuterTOF[He], expectedTimeOuterTOF[Al]);
+      upgradeTofExtraLongLived(nSigmaInnerTOF[Sp], nSigmaInnerTOF[Sm], nSigmaInnerTOF[Xi], nSigmaInnerTOF[Om],
+                               nSigmaOuterTOF[Sp], nSigmaOuterTOF[Sm], nSigmaOuterTOF[Xi], nSigmaOuterTOF[Om],
+                               expectedTimeInnerTOF[Sp], expectedTimeInnerTOF[Sm], expectedTimeInnerTOF[Xi], expectedTimeInnerTOF[Om],
+                               expectedTimeOuterTOF[Sp], expectedTimeOuterTOF[Sm], expectedTimeOuterTOF[Xi], expectedTimeOuterTOF[Om]);
     }
 
     if (trackWithTimeIndex != tracks.size()) {
