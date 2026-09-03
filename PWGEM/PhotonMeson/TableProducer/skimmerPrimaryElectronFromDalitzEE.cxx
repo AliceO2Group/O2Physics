@@ -64,7 +64,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 
-using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>;
+using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::PMEvSels>;
 using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
 using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::PcmObjects>;
 
