@@ -1720,9 +1720,8 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
   void bookCorrHistograms(T1 const& lCrBins)
   {
     // (mult)(cent)(NContribMult) offset
-    constexpr int BoundOffset = histType == eCorrCent ? eCentABBound :
-                                histType == eCorrMult ? eMultABBound :
-                                eNumContribMultBound;
+    constexpr int BoundOffset = histType == eCorrCent ? eCentABBound : histType == eCorrMult ? eMultABBound
+                                                                                             : eNumContribMultBound;
 
     // (mult)(cent)(NContribMult) book functions:
     if constexpr (histType == eCorrCent || histType == eCorrMult) {
