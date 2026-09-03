@@ -8,7 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-// Measure heavy flavour angularity(D0 & Lamdda_c)
+// Measure heavy flavour angularity(D0 & Lambda_c)
 
 /// \author Rajdeep Nandi
 /// \author Preeti Dhankher
@@ -33,6 +33,7 @@
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
+#include <THnSparse.h>
 
 #include <array>
 #include <cmath>
@@ -47,6 +48,8 @@ namespace
 {
 constexpr int kOriginMcPrompt = 1;    // MC origin flag: prompt
 constexpr int kOriginMcNonPrompt = 2; // MC origin flag: non-prompt
+constexpr int8_t kCandSelFlagD0 = 0;
+constexpr int8_t kCandSelFlagD0bar = 1;
 } // namespace
 
 namespace o2::aod
@@ -86,6 +89,7 @@ DECLARE_SOA_COLUMN(JetMatchedPt, jetMatchedPt, float);
 DECLARE_SOA_COLUMN(JetMatchedEta, jetMatchedEta, float);
 DECLARE_SOA_COLUMN(JetMatchedPhi, jetMatchedPhi, float);
 DECLARE_SOA_COLUMN(JetMatchedDR, jetMatchedDR, float);
+DECLARE_SOA_COLUMN(JetMatchedD0Pt, jetMatchedD0Pt, float);
 
 DECLARE_SOA_TABLE(D0JetObjTable, "AOD", "D0JETOBJTABLE",
                   JetHfDist,
@@ -170,7 +174,8 @@ DECLARE_SOA_TABLE(D0JetMCDObjMatchedTable, "AOD", "D0JMCDOBJMATCH",
                   JetMatchedPt,
                   JetMatchedEta,
                   JetMatchedPhi,
-                  JetMatchedDR);
+                  JetMatchedDR,
+                  JetMatchedD0Pt);
 
 } // namespace o2::aod
 
@@ -189,6 +194,22 @@ enum BinCollCntr {
 enum BinJetCntr {
   ChargedJets = 1,
   D0TaggedJets = 2
+};
+
+/// MC-efficiency collision-counter bins (jet-matching based efficiency)
+enum BinMCColCntr {
+  All = 1,
+  ZCut = 2,
+  Matched = 3,
+  MatchedSel8ZCut = 4
+};
+
+/// MC-efficiency jet-counter bins (jet-matching based efficiency)
+enum BinMCJetCntr {
+  DetectorLevelJetInMCCollision = 1,
+  ParticleLevelJetInMCCollision = 2,
+  DetectorLevelJetWithMatchedCandidate = 3,
+  ParticleLevelJetWithMatchedCandidate = 4
 };
 
 struct JetHFAngularityTask {
@@ -244,6 +265,17 @@ struct JetHFAngularityTask {
 
   float massD0MCP = -1.f;
 
+  // Slices for the jet-matching based MC efficiency calculation
+
+  // Reconstructed collisions associated to a given JetMcCollision
+  PresliceUnsorted<aod::JetCollisionsMCD> collisionsPerMCCollisionPreslice = aod::jmccollisionlb::mcCollisionId;
+
+  // D0-tagged (matched) MCD jets per reconstructed collision
+  Preslice<D0MCDJetsMatched> d0MCDJetsPerCollisionPreslice = aod::jet::collisionId;
+
+  // D0-tagged (matched) MCP jets per MC collision
+  Preslice<D0MCPJetsMatched> d0MCPJetsPerMCCollisionPreslice = aod::jet::mcCollisionId;
+
   // Filters
 
   Filter jetCutsPt = aod::jet::pt > jetPtMin;
@@ -297,7 +329,7 @@ struct JetHFAngularityTask {
                                            {"h_d0_mlscore2", ";ML score 2 (non-prompt);entries", {HistType::kTH1F, {{100, 0., 1.}}}},
 
                                            // ----- Sparse: (m_D0, pT_D0, pT_jet, z_parallel, DeltaR) -----
-                                           {"hSparse_d0", ";m_{D^{0}};#it{p}_{T,D^{0}};#it{p}_{T,jet};z_{||};#DeltaR", {HistType::kTHnSparseF, {{300, 1.7, 2.0}, {200, 0., 100.}, {200, 0., 100.}, {200, 0., 2.}, {200, 0., 1.}}}},
+                                           {"hSparse_d0", ";m_{D^{0}};#it{p}_{T,D^{0}};#it{p}_{T,jet};z_{||};#DeltaR;#lambda_{1}^{1};#lambda_{2}^{1}", {HistType::kTHnSparseF, {{300, 1.7, 2.0}, {200, 0., 100.}, {200, 0., 100.}, {200, 0., 2.}, {200, 0., 1.}, {50, 0., 1.}, {50, 0., 1.}}}},
 
                                            //               MC DETECTOR LEVEL (MCD)
 
@@ -323,7 +355,16 @@ struct JetHFAngularityTask {
 
                                            {"h_d0_origin_mcd", ";origin (0=none,1=prompt,2=non-prompt);entries", {HistType::kTH1F, {{3, 0., 3.}}}},
 
-                                           {"hSparse_d0_mcd", ";m_{D^{0}}^{det};#it{p}_{T,D^{0}}^{det};#it{p}_{T,jet}^{det};z_{||}^{det};#DeltaR^{det}", {HistType::kTHnSparseF, {{300, 1.7, 2.0}, {200, 0., 100.}, {200, 0., 100.}, {200, 0., 2.}, {200, 0., 1.}}}},
+                                           {"hSparse_d0_mcd", ";m_{D^{0}}^{det};#it{p}_{T,D^{0}}^{det};#it{p}_{T,jet}^{det};z_{||}^{det};#DeltaR^{det};#lambda_{1}^{1,det};#lambda_{2}^{1,det}", {HistType::kTHnSparseF, {{300, 1.7, 2.0}, {200, 0., 100.}, {200, 0., 100.}, {200, 0., 2.}, {200, 0., 1.}, {50, 0., 1.}, {50, 0., 1.}}}},
+                                           
+                                           {"hSparse_d0_mcd_calib", ";m_{D^{0}}^{det};#it{p}_{T,D^{0}}^{det};#it{p}_{T,jet}^{det};z_{||}^{det};Origin(D^{0});#lambda_{1}^{1,det};#lambda_{2}^{1,det}",
+                                            {HistType::kTHnSparseF, {{300, 1.7, 2.0}, {200, 0., 100.}, {200, 0., 100.}, {200, 0., 2.}, {3, -0.5, 2.5}, {50, 0., 1.}, {50, 0., 1.}}}},
+
+                                           {"h_d0_mass_mcd_signal", ";m_{K#pi}^{det} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{300, 1.7, 2.0}}}},
+                                           {"h_d0_mass_mcd_reflection", ";m_{K#pi}^{det} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{300, 1.7, 2.0}}}},
+
+                                           {"hSparse_d0_mcd_reflection", ";m_{D^{0}}^{det};#it{p}_{T,D^{0}}^{det};#it{p}_{T,jet}^{det};z_{||}^{det};Origin(D^{0});#lambda_{1}^{1,det};#lambda_{2}^{1,det}",
+                                            {HistType::kTHnSparseF, {{300, 1.7, 2.0}, {200, 0., 100.}, {200, 0., 100.}, {200, 0., 2.}, {3, -0.5, 2.5}, {50, 0., 1.}, {50, 0., 1.}}}},
 
                                            //                    MC PARTICLE LEVEL (MCP)
 
@@ -369,17 +410,43 @@ struct JetHFAngularityTask {
                                            // Detector-level vs matched particle-level jet pT
 
                                            {"h_jet_pt_response_matrix", ";#it{p}_{T,jet}^{det} (GeV/#it{c});#it{p}_{T,jet}^{part} (GeV/#it{c})", {HistType::kTH2F, {{200, 0., 200.}, {200, 0., 200.}}}},
+                                           {"h_jet_pt_response_matrix_pr", ";#it{p}_{T,jet}^{det} (GeV/#it{c});#it{p}_{T,jet}^{part} (GeV/#it{c}) (prompt)", {HistType::kTH2F, {{200, 0., 200.}, {200, 0., 200.}}}},
+                                           {"h_jet_pt_response_matrix_np", ";#it{p}_{T,jet}^{det} (GeV/#it{c});#it{p}_{T,jet}^{part} (GeV/#it{c}) (non-prompt)", {HistType::kTH2F, {{200, 0., 200.}, {200, 0., 200.}}}},
 
+                                           // Axes: pT_jet^det, pT_D0^det, pT_jet^part, pT_D0^part
+                                           {"h_response_d0pt_pr", ";#it{p}_{T,jet}^{det} (GeV/#it{c});#it{p}_{T,D^{0}}^{det} (GeV/#it{c});#it{p}_{T,jet}^{part} (GeV/#it{c});#it{p}_{T,D^{0}}^{part} (GeV/#it{c})", {HistType::kTHnSparseF, {{40, 0., 200.}, {50, 0., 50.}, {40, 0., 200.}, {50, 0., 50.}}}},
+                                           {"h_response_d0pt_np", ";#it{p}_{T,jet}^{det} (GeV/#it{c});#it{p}_{T,D^{0}}^{det} (GeV/#it{c});#it{p}_{T,jet}^{part} (GeV/#it{c});#it{p}_{T,D^{0}}^{part} (GeV/#it{c})", {HistType::kTHnSparseF, {{40, 0., 200.}, {50, 0., 50.}, {40, 0., 200.}, {50, 0., 50.}}}},
+                                        
+                                           {"h_kineff_gen_num_pr", ";#it{p}_{T,jet}^{part} (GeV/#it{c});#it{p}_{T,D^{0}}^{part} (GeV/#it{c})", {HistType::kTH2F, {{40, 0., 200.}, {50, 0., 50.}}}},
+                                           {"h_kineff_gen_den_pr", ";#it{p}_{T,jet}^{part} (GeV/#it{c});#it{p}_{T,D^{0}}^{part} (GeV/#it{c})", {HistType::kTH2F, {{40, 0., 200.}, {50, 0., 50.}}}},
+                                           {"h_kineff_gen_num_np", ";#it{p}_{T,jet}^{part} (GeV/#it{c});#it{p}_{T,D^{0}}^{part} (GeV/#it{c})", {HistType::kTH2F, {{40, 0., 200.}, {50, 0., 50.}}}},
+                                           {"h_kineff_gen_den_np", ";#it{p}_{T,jet}^{part} (GeV/#it{c});#it{p}_{T,D^{0}}^{part} (GeV/#it{c})", {HistType::kTH2F, {{40, 0., 200.}, {50, 0., 50.}}}},
+
+                                           {"h_kineff_det_num_pr", ";#it{p}_{T,jet}^{det} (GeV/#it{c});#it{p}_{T,D^{0}}^{det} (GeV/#it{c})", {HistType::kTH2F, {{40, 0., 200.}, {50, 0., 50.}}}},
+                                           {"h_kineff_det_den_pr", ";#it{p}_{T,jet}^{det} (GeV/#it{c});#it{p}_{T,D^{0}}^{det} (GeV/#it{c})", {HistType::kTH2F, {{40, 0., 200.}, {50, 0., 50.}}}},
+                                           {"h_kineff_det_num_np", ";#it{p}_{T,jet}^{det} (GeV/#it{c});#it{p}_{T,D^{0}}^{det} (GeV/#it{c})", {HistType::kTH2F, {{40, 0., 200.}, {50, 0., 50.}}}},
+                                           {"h_kineff_det_den_np", ";#it{p}_{T,jet}^{det} (GeV/#it{c});#it{p}_{T,D^{0}}^{det} (GeV/#it{c})", {HistType::kTH2F, {{40, 0., 200.}, {50, 0., 50.}}}},
                                            //             ANGULARITY RESPONSE MATRIX
 
                                            {"h_response_angularity_pr", ";#it{p}_{T,jet}^{det} (GeV/#it{c});#lambda_{1}^{1,det};#it{p}_{T,jet}^{part} (GeV/#it{c});#lambda_{1}^{1,part}", {HistType::kTHnSparseF, {{40, 0., 200.}, {50, 0., 1.}, {40, 0., 200.}, {50, 0., 1.}}}},
                                            {"h_response_angularity_np", ";#it{p}_{T,jet}^{det} (GeV/#it{c});#lambda_{1}^{1,det};#it{p}_{T,jet}^{part} (GeV/#it{c});#lambda_{1}^{1,part}", {HistType::kTHnSparseF, {{40, 0., 200.}, {50, 0., 1.}, {40, 0., 200.}, {50, 0., 1.}}}},
+                                           {"h_response_girth_pr", ";#it{p}_{T,jet}^{det} (GeV/#it{c});#lambda_{2}^{1,det};#it{p}_{T,jet}^{part} (GeV/#it{c});#lambda_{2}^{1,part}", {HistType::kTHnSparseF, {{40, 0., 200.}, {50, 0., 1.}, {40, 0., 200.}, {50, 0., 1.}}}},
+                                           {"h_response_girth_np", ";#it{p}_{T,jet}^{det} (GeV/#it{c});#lambda_{2}^{1,det};#it{p}_{T,jet}^{part} (GeV/#it{c});#lambda_{2}^{1,part}", {HistType::kTHnSparseF, {{40, 0., 200.}, {50, 0., 1.}, {40, 0., 200.}, {50, 0., 1.}}}},
 
                                            {"h_eff_run2_num_pr", ";#it{p}_{T,D^{0}}^{det} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 50.}}}},
                                            {"h_eff_run2_num_np", ";#it{p}_{T,D^{0}}^{det} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 50.}}}},
                                            {"h_eff_run2_den_pr", ";#it{p}_{T,D^{0}}^{part} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 50.}}}},
                                            {"h_eff_run2_den_np", ";#it{p}_{T,D^{0}}^{part} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 50.}}}},
 
+                                           //        MC EFFICIENCY (jet-to-jet matching based)
+
+                                           {"MC_CollisionCounter", "N_{collisions};", {HistType::kTH1F, {{4, 0., 4.}}}},
+                                           {"MC_JetCounter", "N_{jet};", {HistType::kTH1F, {{4, 0., 4.}}}},
+
+                                           {"hSparse_d0_mcd_eff", ";m_{D^{0}}^{det};#it{p}_{T,D^{0}}^{det};#it{p}_{T,jet}^{det};z_{||}^{det};Origin(D^{0});Matching status;#lambda_{1}^{1,det};#lambda_{2}^{1,det};IsReflection", {HistType::kTHnSparseF, {{300, 1.7, 2.0}, {200, 0., 100.}, {200, 0., 100.}, {200, 0., 2.}, {3, -0.5, 2.5}, {2, -0.5, 1.5}, {50, 0., 1.}, {50, 0., 1.}, {2, -0.5, 1.5}}}},
+                                            
+                                           {"hSparse_d0_mcp_eff", ";#it{p}_{T,D^{0}}^{part};#it{p}_{T,jet}^{part};z_{||}^{part};Origin(D^{0});Matching status;#lambda_{1}^{1,part};#lambda_{2}^{1,part}", {HistType::kTHnSparseF, {{200, 0., 100.}, {200, 0., 100.}, {200, 0., 2.}, {3, -0.5, 2.5}, {2, -0.5, 1.5}, {50, 0., 1.}, {50, 0., 1.}}}},
+                                            
                                          }};
 
   // init()
@@ -446,6 +513,55 @@ struct JetHFAngularityTask {
     auto hGeoCandDisagreeMCD = registry.get<TH1>(HIST("h_jet_matching_geocand_disagree_mcd"));
     hGeoCandDisagreeMCD->GetXaxis()->SetBinLabel(1, "disagree");
     hGeoCandDisagreeMCD->GetXaxis()->SetBinLabel(2, "agree");
+
+    // ---- MC efficiency (jet-to-jet matching based) bin labels ----
+    auto mcCollisionCounter = registry.get<TH1>(HIST("MC_CollisionCounter"));
+    mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::All, "MC collisions");
+    mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::ZCut, "MC collisions passing z cut");
+    mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::Matched, "Matched reconstructed collisions");
+    mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::MatchedSel8ZCut, "Matched collisions passing selections");
+
+    auto jetCounter = registry.get<TH1>(HIST("MC_JetCounter"));
+    jetCounter->GetXaxis()->SetBinLabel(BinMCJetCntr::DetectorLevelJetInMCCollision, "Detector-level D0 jets");
+    jetCounter->GetXaxis()->SetBinLabel(BinMCJetCntr::ParticleLevelJetInMCCollision, "Particle-level D0 jets");
+    jetCounter->GetXaxis()->SetBinLabel(BinMCJetCntr::DetectorLevelJetWithMatchedCandidate, "Detector jets matched to particle");
+    jetCounter->GetXaxis()->SetBinLabel(BinMCJetCntr::ParticleLevelJetWithMatchedCandidate, "Particle jets matched to detector");
+
+    auto hSparseMCDEff = registry.get<THnSparse>(HIST("hSparse_d0_mcd_eff"));
+    hSparseMCDEff->GetAxis(4)->SetBinLabel(1, "none/bkg");
+    hSparseMCDEff->GetAxis(4)->SetBinLabel(2, "prompt");
+    hSparseMCDEff->GetAxis(4)->SetBinLabel(3, "non-prompt");
+    hSparseMCDEff->GetAxis(5)->SetBinLabel(1, "Unmatched");
+    hSparseMCDEff->GetAxis(5)->SetBinLabel(2, "Matched");
+    hSparseMCDEff->GetAxis(8)->SetBinLabel(1, "Not reflection");
+    hSparseMCDEff->GetAxis(8)->SetBinLabel(2, "Reflection");
+
+    auto hSparseMCPEff = registry.get<THnSparse>(HIST("hSparse_d0_mcp_eff"));
+    hSparseMCPEff->GetAxis(3)->SetBinLabel(1, "none/bkg");
+    hSparseMCPEff->GetAxis(3)->SetBinLabel(2, "prompt");
+    hSparseMCPEff->GetAxis(3)->SetBinLabel(3, "non-prompt");
+    hSparseMCPEff->GetAxis(4)->SetBinLabel(1, "Unmatched");
+    hSparseMCPEff->GetAxis(4)->SetBinLabel(2, "Matched");
+
+    // ---- Reflection sparse bin labels ----
+    auto hSparseMCDRefl = registry.get<THnSparse>(HIST("hSparse_d0_mcd_reflection"));
+    hSparseMCDRefl->GetAxis(4)->SetBinLabel(1, "none/bkg");
+    hSparseMCDRefl->GetAxis(4)->SetBinLabel(2, "prompt");
+    hSparseMCDRefl->GetAxis(4)->SetBinLabel(3, "non-prompt");
+  }
+
+  // Helper: reflection identification (MCD only)
+
+  template <typename CAND>
+  bool isReflectedCandidate(CAND const& cand)
+  {
+    const int8_t flagMcMatchRec = cand.flagMcMatchRec();
+    if (flagMcMatchRec == 0) {
+      return false; // not truth-matched -> background, not a reflection
+    }
+    const bool trueIsD0 = flagMcMatchRec > 0;                                   // sign encodes true species
+    const bool thisRowIsD0Hypothesis = (cand.candidateSelFlag() == kCandSelFlagD0); // which hypothesis this row uses
+    return thisRowIsD0Hypothesis != trueIsD0;
   }
 
   // Helper: angularity
@@ -603,7 +719,8 @@ struct JetHFAngularityTask {
 
         registry.fill(HIST("hSparse_d0"),
                       d0Candidate.m(), d0Candidate.pt(),
-                      jet.pt(), zParallel, axisDistance);
+                      jet.pt(), zParallel, axisDistance,
+                      angularity, girth);
 
         objJetTable(axisDistance,
                     jet.pt(),
@@ -693,6 +810,22 @@ struct JetHFAngularityTask {
         const int8_t flagMcMatch = d0Candidate.flagMcMatchRec();
         const int8_t originMc = d0Candidate.originMcRec(); // 0 none, 1 prompt, 2 non-prompt
 
+        // ---- Reflection identification ----
+        const bool isReflection = isReflectedCandidate(d0Candidate);
+        const bool isTrueSignal = (flagMcMatch != 0) && !isReflection;
+
+        if (isReflection) {
+          registry.fill(HIST("h_d0_mass_mcd_reflection"), d0Candidate.m());
+          registry.fill(HIST("hSparse_d0_mcd_reflection"),
+                        d0Candidate.m(), d0Candidate.pt(), jet.pt(), zParallel, originMc,
+                        angularity, girth);
+        } else if (isTrueSignal) {
+          registry.fill(HIST("h_d0_mass_mcd_signal"), d0Candidate.m());
+          registry.fill(HIST("hSparse_d0_mcd_calib"),
+                        d0Candidate.m(), d0Candidate.pt(), jet.pt(), zParallel, originMc,
+                        angularity, girth);
+        }
+
         // ---- Histograms ----
         registry.fill(HIST("h_d0_mass_mcd"), d0Candidate.m());
         registry.fill(HIST("h_d0_pt_mcd"), d0Candidate.pt());
@@ -704,13 +837,15 @@ struct JetHFAngularityTask {
         registry.fill(HIST("h_d0_origin_mcd"), static_cast<float>(originMc));
         registry.fill(HIST("hSparse_d0_mcd"),
                       d0Candidate.m(), d0Candidate.pt(),
-                      jet.pt(), zParallel, axisDistance);
+                      jet.pt(), zParallel, axisDistance,
+                      angularity, girth);
 
         if (originMc == kOriginMcPrompt) {
           registry.fill(HIST("h_eff_run2_num_pr"), d0Candidate.pt());
         } else if (originMc == kOriginMcNonPrompt) {
           registry.fill(HIST("h_eff_run2_num_np"), d0Candidate.pt());
         }
+
 
         objJetMCDTable(axisDistance,
                        jet.pt(),
@@ -751,168 +886,6 @@ struct JetHFAngularityTask {
 
   PROCESS_SWITCH(JetHFAngularityTask, processMCDChargedSubstructure,
                  "MC DETECTOR LEVEL: D0-tagged charged jet substructure", false);
-
-  // Process: MC DETECTOR-LEVEL, WITH jet-to-jet matching
-
-  void processMCDChargedSubstructureMatched(
-    soa::Filtered<aod::JetCollisionsMCD>::iterator const& collision,
-    aod::JetMcCollisions const&,
-    soa::Filtered<D0MCDJetsMatched> const& mcdjets,
-    D0CandidatesMCD const& /*candidates*/,
-    D0MCPJetsMatched const& /*mcpjets*/,
-    D0CandidatesMCP const& /*candidatesP*/,
-    aod::JetTracks const&,
-    aod::JetParticles const&)
-  {
-    //  Event selection (same sel8 + |z| logic as the unmatched MCD process)
-
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
-      return;
-    }
-
-    const float mcWeight = collision.mcCollision().weight();
-
-    for (const auto& jet : mcdjets) {
-
-      // Jet-level quantities
-      auto jetTracks = jet.template tracks_as<aod::JetTracks>();
-      auto jetCandidates = jet.template candidates_as<D0CandidatesMCD>();
-
-      const int nConst = static_cast<int>(jetTracks.size()) + static_cast<int>(jetCandidates.size());
-      const float angularity = computeLambda(jet, jetTracks, jetCandidates, 1.f, 1.f); // λ_1^1
-      const float girth = computeLambda(jet, jetTracks, jetCandidates, 2.f, 1.f);      // λ_2^1
-      const float mjet = computeJetMass(jetTracks, jetCandidates);
-
-      const std::array<double, 3> jetMom{jet.px(), jet.py(), jet.pz()};
-
-      bool isGeoMatched = false;
-      float matchedPt = -1.f;
-      float matchedEta = -999.f;
-      float matchedPhi = -999.f;
-      float matchedDR = -1.f;
-      float matchedAngularity = -1.f;
-      int geoMatchedGlobalIndex = -1;
-      int nGeoMatches = 0;
-
-      if (jet.has_matchedJetGeo()) {
-
-        for (const auto& mcpjet : jet.template matchedJetGeo_as<D0MCPJetsMatched>()) {
-          ++nGeoMatches;
-
-          const float dR = jetutilities::deltaR(jet, mcpjet);
-          registry.fill(HIST("h_jet_matching_dr_mcd_allcand"), dR, mcWeight);
-          registry.fill(HIST("h_jet_pt_response_matrix_allcand"), jet.pt(), mcpjet.pt(), mcWeight);
-
-          if (!isGeoMatched) {
-            isGeoMatched = true;
-            matchedPt = mcpjet.pt();
-            matchedEta = mcpjet.eta();
-            matchedPhi = mcpjet.phi();
-            matchedDR = dR;
-            geoMatchedGlobalIndex = mcpjet.globalIndex();
-
-            auto mcpjetParticles = mcpjet.template tracks_as<aod::JetParticles>();
-            auto mcpjetCandidates = mcpjet.template candidates_as<D0CandidatesMCP>();
-            matchedAngularity = computeLambda(mcpjet, mcpjetParticles, mcpjetCandidates, 1.f, 1.f); // λ_1^1
-          }
-        }
-      }
-      registry.fill(HIST("h_jet_matching_ngeo_mcd"), nGeoMatches, mcWeight);
-
-      // Candidate-based match
-
-      bool isCandMatched = false;
-      int candMatchedGlobalIndex = -1;
-      int nCandMatches = 0;
-
-      if (jet.has_matchedJetCand()) {
-        for (const auto& mcpjet : jet.template matchedJetCand_as<D0MCPJetsMatched>()) {
-          ++nCandMatches;
-          if (!isCandMatched) {
-            isCandMatched = true;
-            candMatchedGlobalIndex = mcpjet.globalIndex();
-          }
-        }
-      }
-      registry.fill(HIST("h_jet_matching_ncand_mcd"), nCandMatches, mcWeight);
-
-      // "Clean" match: both criteria fire AND agree on the same target jet.
-
-      const bool isCleanMatched = isGeoMatched && isCandMatched &&
-                                  (geoMatchedGlobalIndex == candMatchedGlobalIndex);
-
-      registry.fill(HIST("h_jet_matching_geo_status_mcd"), isGeoMatched ? 1.5f : 0.5f, mcWeight);
-      registry.fill(HIST("h_jet_matching_cand_status_mcd"), isCandMatched ? 1.5f : 0.5f, mcWeight);
-      registry.fill(HIST("h_jet_matching_clean_mcd"), isCleanMatched ? 1.5f : 0.5f, mcWeight);
-
-      if (isGeoMatched) {
-        const bool agree = isCandMatched && (geoMatchedGlobalIndex == candMatchedGlobalIndex);
-        registry.fill(HIST("h_jet_matching_geocand_disagree_mcd"), agree ? 1.5f : 0.5f, mcWeight);
-      }
-
-      if (isCleanMatched) {
-        registry.fill(HIST("h_jet_pt_response_matrix"), jet.pt(), matchedPt, mcWeight);
-        registry.fill(HIST("h_jet_matching_dr_mcd"), matchedDR, mcWeight);
-      }
-
-      const int8_t geoStatus = static_cast<int8_t>(isGeoMatched);
-      const int8_t candStatus = static_cast<int8_t>(isCandMatched);
-      const int8_t cleanStatus = static_cast<int8_t>(isCleanMatched);
-
-      // ---- D0 candidate loop
-      for (const auto& d0Candidate : jetCandidates) {
-
-        const std::array<double, 3> d0Mom{d0Candidate.px(), d0Candidate.py(), d0Candidate.pz()};
-
-        const float zParallel = RecoDecay::dotProd(d0Mom, jetMom) / RecoDecay::mag2(jetMom);
-        const float axisDistance = jetutilities::deltaR(jet, d0Candidate);
-
-        const int8_t flagMcMatch = d0Candidate.flagMcMatchRec();
-        const int8_t originMc = d0Candidate.originMcRec();
-
-        //  Angularity response matrix
-
-        if (isCleanMatched) {
-          if (originMc == kOriginMcPrompt) {
-            registry.fill(HIST("h_response_angularity_pr"), jet.pt(), angularity, matchedPt, matchedAngularity, mcWeight);
-          } else if (originMc == kOriginMcNonPrompt) {
-            registry.fill(HIST("h_response_angularity_np"), jet.pt(), angularity, matchedPt, matchedAngularity, mcWeight);
-          }
-        }
-
-        objJetMCDMatchedTable(axisDistance,
-                              jet.pt(),
-                              jet.eta(),
-                              jet.phi(),
-                              nConst,
-                              angularity,
-                              girth,
-                              mjet,
-                              zParallel,
-                              d0Candidate.pt(),
-                              d0Candidate.eta(),
-                              d0Candidate.phi(),
-                              d0Candidate.m(),
-                              d0Candidate.y(),
-                              d0Candidate.mlScores()[0],
-                              d0Candidate.mlScores()[1],
-                              d0Candidate.mlScores()[2],
-                              flagMcMatch,
-                              originMc,
-                              geoStatus,
-                              candStatus,
-                              cleanStatus,
-                              matchedPt,
-                              matchedEta,
-                              matchedPhi,
-                              matchedDR);
-      } // end D0 loop
-
-    } // end jet loop
-  }
-
-  PROCESS_SWITCH(JetHFAngularityTask, processMCDChargedSubstructureMatched,
-                 "MC DETECTOR LEVEL: D0-tagged charged jet substructure WITH jet-to-jet matching (needs jet-matching workflow)", false);
 
   // Process: MC PARTICLE-LEVEL (MCP)
 
@@ -969,14 +942,11 @@ struct JetHFAngularityTask {
         registry.fill(HIST("h_d0_jet_distance_mcp"), axisDistance);
         registry.fill(HIST("h_d0_origin_mcp"), static_cast<float>(originMc));
 
-        // Run 2 style efficiency denominator
-
         if (originMc == kOriginMcPrompt) {
           registry.fill(HIST("h_eff_run2_den_pr"), d0Particle.pt());
         } else if (originMc == kOriginMcNonPrompt) {
           registry.fill(HIST("h_eff_run2_den_np"), d0Particle.pt());
         }
-
         objJetMCPTable(axisDistance,
                        jet.pt(),
                        jet.eta(),
@@ -1012,6 +982,308 @@ struct JetHFAngularityTask {
 
   PROCESS_SWITCH(JetHFAngularityTask, processMCPChargedSubstructure,
                  "MC PARTICLE LEVEL: D0-tagged charged jet substructure", false);
+
+  void processMCDChargedSubstructureMatched(aod::JetMcCollisions const& mccollisions,
+                                              aod::JetCollisionsMCD const& collisions,
+                                              D0MCDJetsMatched const& mcdjets, // now Filtered: jetCutsPt/jetCutsR applied automatically
+                                              D0MCPJetsMatched const& mcpjets,                // MUST stay bare -- accessor target type
+                                              D0CandidatesMCD const&,
+                                              D0CandidatesMCP const&,
+                                              aod::JetTracks const&,
+                                              aod::JetParticles const&)
+  {
+ 
+  const int jetRBin = static_cast<int>(std::lround(static_cast<float>(jetR) * 100.0f));
+
+  for (const auto& mccollision : mccollisions) {
+
+    registry.fill(HIST("MC_CollisionCounter"), getValFromBin(BinMCColCntr::All));
+
+    if (std::abs(mccollision.posZ()) > vertexZCut) {
+      continue;
+    }
+    registry.fill(HIST("MC_CollisionCounter"), getValFromBin(BinMCColCntr::ZCut));
+
+    const float mcWeight = mccollision.weight();
+
+    const auto collisionsPerMCCollision = collisions.sliceBy(collisionsPerMCCollisionPreslice, mccollision.globalIndex());
+    for (const auto& collision : collisionsPerMCCollision) {
+
+      registry.fill(HIST("MC_CollisionCounter"), getValFromBin(BinMCColCntr::Matched));
+
+      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) ||
+          !(std::abs(collision.posZ()) < vertexZCut)) {
+        continue;
+      }
+      registry.fill(HIST("MC_CollisionCounter"), getValFromBin(BinMCColCntr::MatchedSel8ZCut));
+
+      const auto d0mcdJetsPerCollision = mcdjets.sliceBy(d0MCDJetsPerCollisionPreslice, collision.globalIndex());
+      for (const auto& mcdjet : d0mcdJetsPerCollision) {
+        if (!(mcdjet.pt() > jetPtMin && mcdjet.r() == jetRBin)) {
+          continue;
+        } 
+        registry.fill(HIST("MC_JetCounter"), getValFromBin(BinMCJetCntr::DetectorLevelJetInMCCollision));
+
+        auto jetTracks = mcdjet.template tracks_as<aod::JetTracks>();
+        auto jetCandidates = mcdjet.template candidates_as<D0CandidatesMCD>();
+
+        const int nConst = static_cast<int>(jetTracks.size()) + static_cast<int>(jetCandidates.size());
+        const float angularity = computeLambda(mcdjet, jetTracks, jetCandidates, 1.f, 1.f); // λ_1^1
+        const float girth = computeLambda(mcdjet, jetTracks, jetCandidates, 2.f, 1.f);      // λ_2^1
+        const float mjet = computeJetMass(jetTracks, jetCandidates);
+
+        const std::array<double, 3> jetMomMCD{mcdjet.px(), mcdjet.py(), mcdjet.pz()};
+
+        bool isGeoMatched = false;
+        float matchedPt = -1.f;
+        float matchedEta = -999.f;
+        float matchedPhi = -999.f;
+        float matchedDR = -1.f;
+        float matchedAngularity = -1.f;
+        float matchedGirth = -1.f;
+        float matchedD0Pt = -1.f;   // NEW
+        int geoMatchedGlobalIndex = -1;
+        int nGeoMatches = 0;
+
+        if (mcdjet.has_matchedJetGeo()) {
+          for (const auto& mcpjet : mcdjet.template matchedJetGeo_as<D0MCPJetsMatched>()) {
+            ++nGeoMatches;
+
+            const float dR = jetutilities::deltaR(mcdjet, mcpjet);
+            registry.fill(HIST("h_jet_matching_dr_mcd_allcand"), dR, mcWeight);
+            registry.fill(HIST("h_jet_pt_response_matrix_allcand"), mcdjet.pt(), mcpjet.pt(), mcWeight);
+
+            if (!isGeoMatched) {
+              isGeoMatched = true;
+              matchedPt = mcpjet.pt();
+              matchedEta = mcpjet.eta();
+              matchedPhi = mcpjet.phi();
+              matchedDR = dR;
+              geoMatchedGlobalIndex = mcpjet.globalIndex();
+
+              auto mcpjetParticles = mcpjet.template tracks_as<aod::JetParticles>();
+              auto mcpjetCandidates = mcpjet.template candidates_as<D0CandidatesMCP>();
+              matchedAngularity = computeLambda(mcpjet, mcpjetParticles, mcpjetCandidates, 1.f, 1.f); // λ_1^1
+              matchedGirth = computeLambda(mcpjet, mcpjetParticles, mcpjetCandidates, 2.f, 1.f);      // λ_2^1
+              if (mcpjetCandidates.size() > 0) {
+                 auto matchedMcpD0 = mcpjet.template candidates_first_as<D0CandidatesMCP>();
+                 matchedD0Pt = matchedMcpD0.pt();
+              }
+            }
+          }
+        }
+        registry.fill(HIST("h_jet_matching_ngeo_mcd"), nGeoMatches, mcWeight);
+
+        bool isCandMatched = false;
+        int candMatchedGlobalIndex = -1;
+        int nCandMatches = 0;
+
+        if (mcdjet.has_matchedJetCand()) {
+          for (const auto& mcpjet : mcdjet.template matchedJetCand_as<D0MCPJetsMatched>()) {
+            ++nCandMatches;
+            if (!isCandMatched) {
+              isCandMatched = true;
+              candMatchedGlobalIndex = mcpjet.globalIndex();
+            }
+          }
+        }
+        registry.fill(HIST("h_jet_matching_ncand_mcd"), nCandMatches, mcWeight);
+
+        // "Clean" match: both criteria fire AND agree on the same target jet.
+        const bool isCleanMatched = isGeoMatched && isCandMatched &&
+                                    (geoMatchedGlobalIndex == candMatchedGlobalIndex);
+
+        registry.fill(HIST("h_jet_matching_geo_status_mcd"), isGeoMatched ? 1.5f : 0.5f, mcWeight);
+        registry.fill(HIST("h_jet_matching_cand_status_mcd"), isCandMatched ? 1.5f : 0.5f, mcWeight);
+        registry.fill(HIST("h_jet_matching_clean_mcd"), isCleanMatched ? 1.5f : 0.5f, mcWeight);
+
+        if (isGeoMatched) {
+          const bool agree = isCandMatched && (geoMatchedGlobalIndex == candMatchedGlobalIndex);
+          registry.fill(HIST("h_jet_matching_geocand_disagree_mcd"), agree ? 1.5f : 0.5f, mcWeight);
+        }
+
+        if (isCleanMatched) {
+          registry.fill(HIST("h_jet_pt_response_matrix"), mcdjet.pt(), matchedPt, mcWeight);
+          registry.fill(HIST("h_jet_matching_dr_mcd"), matchedDR, mcWeight);
+        }
+
+        const int8_t geoStatus = static_cast<int8_t>(isGeoMatched);
+        const int8_t candStatus = static_cast<int8_t>(isCandMatched);
+        const int8_t cleanStatus = static_cast<int8_t>(isCleanMatched);
+
+        const int isCleanMatchedMCD = isCleanMatched ? 1 : 0;
+
+        if (isCleanMatched) {
+          registry.fill(HIST("MC_JetCounter"), getValFromBin(BinMCJetCntr::DetectorLevelJetWithMatchedCandidate));
+        }
+
+        for (const auto& mcdD0cand : jetCandidates) {
+
+          const std::array<double, 3> candMomMCD{mcdD0cand.px(), mcdD0cand.py(), mcdD0cand.pz()};
+          const float zParallelMCD = RecoDecay::dotProd(candMomMCD, jetMomMCD) / RecoDecay::mag2(jetMomMCD);
+          const float axisDistance = jetutilities::deltaR(mcdjet, mcdD0cand);
+
+          const int8_t flagMcMatch = mcdD0cand.flagMcMatchRec();
+          const int originMcd = mcdD0cand.originMcRec(); // 0 none/bkg, 1 prompt, 2 non-prompt
+
+          // Reflection identification: candidateSelFlag() hypothesis vs. true species
+          const bool isReflection = isReflectedCandidate(mcdD0cand);
+          const int isReflectionFlag = isReflection ? 1 : 0;
+          const bool isTrueSignal = (flagMcMatch != 0) && !isReflection;
+
+          if (isReflection) {
+            registry.fill(HIST("h_d0_mass_mcd_reflection"), mcdD0cand.m(), mcWeight);
+            registry.fill(HIST("hSparse_d0_mcd_reflection"),
+                          mcdD0cand.m(), mcdD0cand.pt(), mcdjet.pt(), zParallelMCD, originMcd,
+                          angularity, girth);
+          } else if (isTrueSignal) {
+            registry.fill(HIST("h_d0_mass_mcd_signal"), mcdD0cand.m(), mcWeight);
+            registry.fill(HIST("hSparse_d0_mcd_calib"),
+                          mcdD0cand.m(), mcdD0cand.pt(), mcdjet.pt(), zParallelMCD, originMcd,
+                          angularity, girth);
+          }
+
+          registry.fill(HIST("hSparse_d0_mcd_eff"),
+                        mcdD0cand.m(),
+                        mcdD0cand.pt(),
+                        mcdjet.pt(),
+                        zParallelMCD,
+                        originMcd,
+                        isCleanMatchedMCD,
+                        angularity,
+                        girth,
+                        isReflectionFlag);
+          
+          if (originMcd == kOriginMcPrompt) {
+            registry.fill(HIST("h_eff_run2_num_pr"), mcdD0cand.pt());
+            registry.fill(HIST("h_kineff_det_den_pr"), mcdjet.pt(), mcdD0cand.pt());
+            if (isGeoMatched) {
+                registry.fill(HIST("h_kineff_det_num_pr"), mcdjet.pt(), mcdD0cand.pt());
+            }
+          } else if (originMcd == kOriginMcNonPrompt) {
+            registry.fill(HIST("h_eff_run2_num_np"), mcdD0cand.pt());
+            registry.fill(HIST("h_kineff_det_den_np"), mcdjet.pt(), mcdD0cand.pt());
+            if (isGeoMatched) {
+                 registry.fill(HIST("h_kineff_det_num_np"), mcdjet.pt(), mcdD0cand.pt());
+            }     
+          }
+
+          if (isCleanMatched) {
+            if (originMcd == kOriginMcPrompt) {
+              registry.fill(HIST("h_jet_pt_response_matrix_pr"), mcdjet.pt(), matchedPt, mcWeight);
+              registry.fill(HIST("h_response_angularity_pr"), mcdjet.pt(), angularity, matchedPt, matchedAngularity, mcWeight);
+              registry.fill(HIST("h_response_girth_pr"), mcdjet.pt(), girth, matchedPt, matchedGirth, mcWeight);
+              registry.fill(HIST("h_response_d0pt_pr"), mcdjet.pt(), mcdD0cand.pt(), matchedPt, matchedD0Pt, mcWeight);
+            } else if (originMcd == kOriginMcNonPrompt) {
+              registry.fill(HIST("h_jet_pt_response_matrix_np"), mcdjet.pt(), matchedPt, mcWeight);
+              registry.fill(HIST("h_response_angularity_np"), mcdjet.pt(), angularity, matchedPt, matchedAngularity, mcWeight);
+              registry.fill(HIST("h_response_girth_np"), mcdjet.pt(), girth, matchedPt, matchedGirth, mcWeight);
+              registry.fill(HIST("h_response_d0pt_np"), mcdjet.pt(), mcdD0cand.pt(), matchedPt, matchedD0Pt, mcWeight);
+            }
+          }
+
+          objJetMCDMatchedTable(axisDistance,
+                                mcdjet.pt(),
+                                mcdjet.eta(),
+                                mcdjet.phi(),
+                                nConst,
+                                angularity,
+                                girth,
+                                mjet,
+                                zParallelMCD,
+                                mcdD0cand.pt(),
+                                mcdD0cand.eta(),
+                                mcdD0cand.phi(),
+                                mcdD0cand.m(),
+                                mcdD0cand.y(),
+                                mcdD0cand.mlScores()[0],
+                                mcdD0cand.mlScores()[1],
+                                mcdD0cand.mlScores()[2],
+                                flagMcMatch,
+                                originMcd,
+                                geoStatus,
+                                candStatus,
+                                cleanStatus,
+                                matchedPt,
+                                matchedEta,
+                                matchedPhi,
+                                matchedDR,
+                                matchedD0Pt);
+        } // end D0 candidate loop
+      } // end MCD jet loop
+    } // end reconstructed-collision loop
+
+    const auto d0mcpJetsPerMCCollision = mcpjets.sliceBy(d0MCPJetsPerMCCollisionPreslice, mccollision.globalIndex());
+    for (const auto& mcpjet : d0mcpJetsPerMCCollision) {
+
+      if (!(mcpjet.pt() > jetPtMin && mcpjet.r() == jetRBin)) {
+        continue;
+      }
+
+      registry.fill(HIST("MC_JetCounter"), getValFromBin(BinMCJetCntr::ParticleLevelJetInMCCollision));
+
+      auto mcpD0cand = mcpjet.template candidates_first_as<D0CandidatesMCP>();
+
+      const int originMcp = mcpD0cand.originMcGen(); // 0 none/bkg, 1 prompt, 2 non-prompt
+
+      bool mcpIsCleanMatched = false;
+      if (mcpjet.has_matchedJetGeo() && mcpjet.has_matchedJetCand()) {
+        int mcpGeoTarget = -1;
+        for (const auto& mcdjetGeo : mcpjet.template matchedJetGeo_as<D0MCDJetsMatched>()) {
+          mcpGeoTarget = mcdjetGeo.globalIndex();
+          break; // first geo match, mirrors the MCD-side "first match wins" convention
+        }
+        int mcpCandTarget = -1;
+        for (const auto& mcdjetCand : mcpjet.template matchedJetCand_as<D0MCDJetsMatched>()) {
+          mcpCandTarget = mcdjetCand.globalIndex();
+          break;
+        }
+        mcpIsCleanMatched = (mcpGeoTarget == mcpCandTarget) && (mcpGeoTarget != -1);
+      }
+      const int isCleanMatchedMCP = mcpIsCleanMatched ? 1 : 0;
+
+      if (mcpIsCleanMatched) {
+        registry.fill(HIST("MC_JetCounter"), getValFromBin(BinMCJetCntr::ParticleLevelJetWithMatchedCandidate));
+      }
+
+      const std::array<double, 3> jetMomMCP{mcpjet.px(), mcpjet.py(), mcpjet.pz()};
+      const std::array<double, 3> candMomMCP{mcpD0cand.px(), mcpD0cand.py(), mcpD0cand.pz()};
+      const float zParallelMCP = RecoDecay::dotProd(candMomMCP, jetMomMCP) / RecoDecay::mag2(jetMomMCP);
+
+      auto mcpJetParticles = mcpjet.template tracks_as<aod::JetParticles>();
+      auto mcpJetCandidates = mcpjet.template candidates_as<D0CandidatesMCP>();
+      const float angularityMCP = computeLambda(mcpjet, mcpJetParticles, mcpJetCandidates, 1.f, 1.f); // λ_1^1
+      const float girthMCP = computeLambda(mcpjet, mcpJetParticles, mcpJetCandidates, 2.f, 1.f);      // λ_2^1
+
+      registry.fill(HIST("hSparse_d0_mcp_eff"),
+                    mcpD0cand.pt(),
+                    mcpjet.pt(),
+                    zParallelMCP,
+                    originMcp,
+                    isCleanMatchedMCP,
+                    angularityMCP,
+                    girthMCP);
+                    
+      const bool mcpIsGeoMatched = mcpjet.has_matchedJetGeo();
+      if (originMcp == kOriginMcPrompt) {
+        registry.fill(HIST("h_eff_run2_den_pr"), mcpD0cand.pt());
+        registry.fill(HIST("h_kineff_gen_den_pr"), mcpjet.pt(), mcpD0cand.pt());
+        if (mcpIsGeoMatched) {
+           registry.fill(HIST("h_kineff_gen_num_pr"), mcpjet.pt(), mcpD0cand.pt());
+        }   
+      } else if (originMcp == kOriginMcNonPrompt) {
+        registry.fill(HIST("h_eff_run2_den_np"), mcpD0cand.pt());
+        registry.fill(HIST("h_kineff_gen_den_np"), mcpjet.pt(), mcpD0cand.pt());
+        if (mcpIsGeoMatched) {
+           registry.fill(HIST("h_kineff_gen_num_np"), mcpjet.pt(), mcpD0cand.pt());
+        }   
+      }
+    } // end MCP jet loop
+  } // end MC collision loop
+}
+
+PROCESS_SWITCH(JetHFAngularityTask, processMCDChargedSubstructureMatched,
+               "MC: unified efficiency + jet matching + response matrix + reflection (needs jet-matching workflow)", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
