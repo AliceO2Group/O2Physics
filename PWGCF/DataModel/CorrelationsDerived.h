@@ -65,13 +65,14 @@ using CFMultiplicity = CFMultiplicities::iterator;
 
 namespace cfcollision
 {
-DECLARE_SOA_INDEX_COLUMN(CFMcCollision, cfMcCollision); //! Index to reduced MC collision
-DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);  //! Centrality/multiplicity value
+DECLARE_SOA_INDEX_COLUMN(CFMcCollision, cfMcCollision);                  //! Index to reduced MC collision
+DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);                   //! Centrality/multiplicity value
+DECLARE_SOA_COLUMN(MultiplicityCorrected, multiplicityCorrected, float); //! Efficiency-corrected track count; original multiplicity when correction is disabled
 } // namespace cfcollision
 DECLARE_SOA_TABLE(CFCollisions, "AOD", "CFCOLLISION", //! Reduced collision table
                   o2::soa::Index<>,
                   bc::RunNumber, collision::PosZ,
-                  cfcollision::Multiplicity, timestamp::Timestamp);
+                  cfcollision::Multiplicity, timestamp::Timestamp, cfcollision::MultiplicityCorrected);
 DECLARE_SOA_TABLE(CFCollLabels, "AOD", "CFCOLLLABEL", //! Labels for reduced collision table
                   cfcollision::CFMcCollisionId);
 using CFCollision = CFCollisions::iterator;
