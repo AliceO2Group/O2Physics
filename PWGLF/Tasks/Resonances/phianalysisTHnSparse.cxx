@@ -43,10 +43,12 @@
 
 #include <Math/GenVector/AxisAngle.h>
 #include <Math/GenVector/Rotation3D.h>
-#include <Math/Vector4D.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 #include <TH1.h>
 #include <TH2.h>
 #include <TMath.h>
+#include <TString.h>
 
 #include <fmt/format.h>
 
@@ -452,60 +454,77 @@ struct PhianalysisTHnSparse {
     }
   }
   template <typename T>
-  bool selectedEvent(const T& collision, bool fillQA = false)
+  bool selectedEvent(const T& collision)
   {
-    if (fillQA)
+    if (dataQA) {
       registry.fill(HIST("QA/Event/hSelection"), 0.5); // all events
+    }
 
-    if (static_cast<bool>(eventCuts.isTriggerTVX) && !collision.selection_bit(aod::evsel::kIsTriggerTVX))
+    if (static_cast<bool>(eventCuts.isTriggerTVX) && !collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
       return false;
-    if (fillQA)
+    }
+    if (dataQA) {
       registry.fill(HIST("QA/Event/hSelection"), 1.5); // events passing trigger TVX cut
+    }
 
-    if (static_cast<bool>(eventCuts.noTimeFrameBorder) && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
+    if (static_cast<bool>(eventCuts.noTimeFrameBorder) && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       return false;
-    if (fillQA)
+    }
+    if (dataQA) {
       registry.fill(HIST("QA/Event/hSelection"), 2.5); // events passing no time frame border cut
+    }
 
-    if (static_cast<bool>(eventCuts.noITSROFrameBorder) && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
+    if (static_cast<bool>(eventCuts.noITSROFrameBorder) && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       return false;
-    if (fillQA)
+    }
+    if (dataQA) {
       registry.fill(HIST("QA/Event/hSelection"), 3.5); // events passing no ITS RO frame border cut
+    }
 
-    if (static_cast<bool>(eventCuts.sel8) && !collision.sel8())
+    if (static_cast<bool>(eventCuts.sel8) && !collision.sel8()) {
       return false;
-    if (fillQA)
+    }
+    if (dataQA) {
       registry.fill(HIST("QA/Event/hSelection"), 4.5); // events passing sel8 cut (contains all the previous cuts)
+    }
 
-    if (static_cast<bool>(eventCuts.isVertexITSTPC) && !collision.selection_bit(aod::evsel::kIsVertexITSTPC))
+    if (static_cast<bool>(eventCuts.isVertexITSTPC) && !collision.selection_bit(aod::evsel::kIsVertexITSTPC)) {
       return false;
-    if (fillQA)
+    }
+    if (dataQA) {
       registry.fill(HIST("QA/Event/hSelection"), 5.5); // events passing IsVertexITSTPC cut
+    }
 
-    if (static_cast<bool>(eventCuts.noSameBunchPileup) && !collision.selection_bit(aod::evsel::kNoSameBunchPileup))
+    if (static_cast<bool>(eventCuts.noSameBunchPileup) && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return false;
-    if (fillQA)
+    }
+    if (dataQA) {
       registry.fill(HIST("QA/Event/hSelection"), 6.5); // events passing no same bunch pileup cut
+    }
 
-    if (static_cast<bool>(eventCuts.isGoodZvtxFT0vsPV) && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
+    if (static_cast<bool>(eventCuts.isGoodZvtxFT0vsPV) && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
-    if (fillQA)
+    }
+    if (dataQA) {
       registry.fill(HIST("QA/Event/hSelection"), 7.5); // events passing IsGoodZvtxFT0vsPV cut
+    }
 
-    if (std::abs(collision.posZ()) > static_cast<float>(eventCuts.vzCut))
+    if (std::abs(collision.posZ()) > static_cast<float>(eventCuts.vzCut)) {
       return false;
-    if (fillQA)
+    }
+    if (dataQA) {
       registry.fill(HIST("QA/Event/hSelection"), 8.5); // events passing V_{z} cut
+    }
 
-    if (fillQA)
+    if (dataQA) {
       registry.fill(HIST("QA/Event/hSelection"), 9.5); // INEL
+    }
 
-    if (static_cast<bool>(eventCuts.inelGt0) && !collision.isInelGt0())
+    if (static_cast<bool>(eventCuts.inelGt0) && !collision.isInelGt0()) {
       return false;
-    if (fillQA)
+    }
+    if (dataQA) {
       registry.fill(HIST("QA/Event/hSelection"), 10.5); // events passing INEL>0 cut
-
-    if (fillQA) {
       registry.fill(HIST("QA/Event/hVtxZ"), collision.posZ());
       registry.fill(HIST("QA/Event/hMult"), getMultiplicity(collision));
       registry.fill(HIST("QA/Event/hCent"), getCentrality(collision));
@@ -519,12 +538,13 @@ struct PhianalysisTHnSparse {
     float tpcNsigma = 0.0f;
     int particleType = (track.sign() > 0) ? static_cast<int>(daughterPos) : static_cast<int>(daughterNeg);
 
-    if (particleType == pion)
+    if (particleType == pion) {
       tpcNsigma = track.tpcNSigmaPi();
-    else if (particleType == kaon)
+    } else if (particleType == kaon) {
       tpcNsigma = track.tpcNSigmaKa();
-    else if (particleType == proton)
+    } else if (particleType == proton) {
       tpcNsigma = track.tpcNSigmaPr();
+    }
     return tpcNsigma;
   }
   template <typename T>
@@ -544,69 +564,80 @@ struct PhianalysisTHnSparse {
   template <typename T>
   bool selectedTrack(const T& track, bool isPositive)
   {
-    if (dataQA)
-      registry.fill(HIST("QA/Track/hSelection"), 0.5); // all tracks
+    if (dataQA) {
+      registry.fill(HIST("QA/Track/hSelection"), 0.5);
+    }
 
-    // Apply pT cut
-    if (track.pt() < static_cast<float>(trackCuts.pt))
+    if (track.pt() < static_cast<float>(trackCuts.pt)) {
       return false;
-    if (dataQA)
+    }
+    if (dataQA) {
       registry.fill(HIST("QA/Track/hSelection"), 1.5);
+    }
 
-    // Apply eta trackCuts
-    if (std::abs(track.eta()) >= static_cast<float>(trackCuts.etatrack))
+    if (std::abs(track.eta()) >= static_cast<float>(trackCuts.etatrack)) {
       return false;
-    if (dataQA)
+    }
+    if (dataQA) {
       registry.fill(HIST("QA/Track/hSelection"), 2.5);
+    }
 
-    // Apply DCA cuts
     if (std::abs(track.dcaXY()) >= static_cast<float>(trackCuts.dcaXY) ||
-        std::abs(track.dcaZ()) >= static_cast<float>(trackCuts.dcaZ))
+        std::abs(track.dcaZ()) >= static_cast<float>(trackCuts.dcaZ)) {
       return false;
-    if (dataQA)
+    }
+    if (dataQA) {
       registry.fill(HIST("QA/Track/hSelection"), 3.5);
+    }
 
     // PID selection: TPC-only for pt < threshold value, TPC+TOF for pt >= threshold value and have TOF, else TPC-only
     float nSigmaCut = isPositive ? static_cast<float>(trackCuts.tpcnSigmaPos) : static_cast<float>(trackCuts.tpcnSigmaNeg);
     if (track.pt() < static_cast<float>(trackCuts.ptTOFThreshold) || !track.hasTOF() || static_cast<bool>(trackCuts.tpcPidOnly)) {
-      if (std::abs(tpcNsigma(track)) >= nSigmaCut)
+      if (std::abs(tpcNsigma(track)) >= nSigmaCut) {
         return false;
+      }
     } else {
-      if (std::sqrt(tpcNsigma(track) * tpcNsigma(track) + tofNsigma(track) * tofNsigma(track)) >= static_cast<float>(trackCuts.combinedNSigma))
+      if (std::sqrt(tpcNsigma(track) * tpcNsigma(track) + tofNsigma(track) * tofNsigma(track)) >= static_cast<float>(trackCuts.combinedNSigma)) {
         return false;
+      }
     }
-    if (dataQA)
+    if (dataQA) {
       registry.fill(HIST("QA/Track/hSelection"), 4.5);
+    }
 
-    // Apply tpcNClsFound cut
-    if (track.tpcNClsFound() < static_cast<int>(trackCuts.tpcNClsFound))
+    if (track.tpcNClsFound() < static_cast<int>(trackCuts.tpcNClsFound)) {
       return false;
-    if (dataQA)
+    }
+    if (dataQA) {
       registry.fill(HIST("QA/Track/hSelection"), 5.5);
+    }
 
-    // Apply tpcNClsCrossedRows cut
-    if (track.tpcNClsCrossedRows() < static_cast<int>(trackCuts.tpcNClsCrossedRows))
+    if (track.tpcNClsCrossedRows() < static_cast<int>(trackCuts.tpcNClsCrossedRows)) {
       return false;
-    if (dataQA)
+    }
+    if (dataQA) {
       registry.fill(HIST("QA/Track/hSelection"), 6.5);
+    }
 
     if (static_cast<bool>(trackCuts.globalTrack)) {
-      // Apply Global track cuts
-      if (!track.isGlobalTrack())
+      if (!track.isGlobalTrack()) {
         return false;
+      }
     } else if (static_cast<bool>(trackCuts.primaryTrack)) {
-      // Apply Primary track cuts
-      if (!track.isPrimaryTrack())
+      if (!track.isPrimaryTrack()) {
         return false;
+      }
     }
-    if (dataQA)
+    if (dataQA) {
       registry.fill(HIST("QA/Track/hSelection"), 7.5);
+    }
 
-    // Apply PV Contributor cuts
-    if (static_cast<bool>(trackCuts.pvContributor) && !track.isPVContributor())
+    if (static_cast<bool>(trackCuts.pvContributor) && !track.isPVContributor()) {
       return false;
-    if (dataQA)
+    }
+    if (dataQA) {
       registry.fill(HIST("QA/Track/hSelection"), 8.5);
+    }
 
     return true;
   }
@@ -617,11 +648,9 @@ struct PhianalysisTHnSparse {
     d2 = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massNeg);
     return d1 + d2;
   }
-  bool selectedMother(const ROOT::Math::PxPyPzMVector& mother)
+  bool selectedMother(const ROOT::Math::PxPyPzMVector& motherCandidate)
   {
-    if (std::abs(mother.Rapidity()) > static_cast<float>(trackCuts.rapidity))
-      return false;
-    return true;
+    return std::abs(motherCandidate.Rapidity()) <= static_cast<float>(trackCuts.rapidity);
   }
   template <typename T>
   float getMultiplicity(const T& collision)
@@ -655,11 +684,17 @@ struct PhianalysisTHnSparse {
 
   void processQA(EventCandidate const& collision, TrackCandidates const& tracks)
   {
-    if (!selectedEvent(collision, true))
+    dataQA = true;
+    bool selected = selectedEvent(collision);
+    dataQA = false;
+
+    if (!selected) {
       return;
+    }
 
     double centrality = getCentrality(collision);
 
+    int nch = 0;
     for (const auto& track : tracks) {
 
       registry.fill(HIST("QA/Track/hEta"), track.pt(), centrality, track.eta());
@@ -678,8 +713,17 @@ struct PhianalysisTHnSparse {
         registry.fill(HIST("QA/PID/hTOFBetaP"), track.p(), track.beta());
       }
 
-      if (!selectedTrack(track, track.sign() > 0))
+      if (track.isPrimaryTrack() && std::abs(track.eta()) < static_cast<float>(trackCuts.etatrack)) {
+        nch++;
+      }
+
+      dataQA = true;
+      bool selected = selectedTrack(track, track.sign() > 0);
+      dataQA = false;
+
+      if (!selected) {
         continue;
+      }
 
       registry.fill(HIST("QA/Kaon/hEta"), track.pt(), centrality, track.eta());
       registry.fill(HIST("QA/Kaon/hPt"), track.pt(), centrality);
@@ -698,6 +742,7 @@ struct PhianalysisTHnSparse {
         registry.fill(HIST("QA/PID/hTPCTOFnSigma"), track.pt(), tpcNsigma(track), tofNsigma(track));
       }
     }
+    registry.fill(HIST("QA/Event/hCentNch"), getCentrality(collision), nch);
   }
   PROCESS_SWITCH(PhianalysisTHnSparse, processQA, "Process Event for Data", true);
 
@@ -706,30 +751,23 @@ struct PhianalysisTHnSparse {
     auto posDaughters = positive->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto negDaughters = negative->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
-    if (!selectedEvent(collision))
+    if (!selectedEvent(collision)) {
       return;
-
-    int nch = 0;
-    dataQA = true;
-    for (const auto& track : tracks) {
-      if (track.isPrimaryTrack() && std::abs(track.eta()) < static_cast<float>(trackCuts.etatrack))
-        nch++;
-      selectedTrack(track, false);
     }
-    dataQA = false;
-
-    registry.fill(HIST("QA/Event/hCentNch"), getCentrality(collision), nch);
 
     for (const auto& [track1, track2] : combinations(o2::soa::CombinationsFullIndexPolicy(posDaughters, negDaughters))) {
 
-      if (!selectedTrack(track1, true)) // track1 is positive
+      if (!selectedTrack(track1, true)) {
         continue;
-      if (!selectedTrack(track2, false)) // track2 is negative
+      }
+      if (!selectedTrack(track2, false)) {
         continue;
+      }
 
       mother = calculateMother(track1, track2);
-      if (!selectedMother(mother))
+      if (!selectedMother(mother)) {
         continue;
+      }
 
       registry.fill(HIST("QA/Phi/hRapidity"), mother.Pt(), getCentrality(collision), mother.Rapidity());
       registry.fill(HIST("QA/Phi/hEta"), mother.Pt(), getCentrality(collision), mother.Eta());
@@ -793,10 +831,12 @@ struct PhianalysisTHnSparse {
 
         if (negDaughters.size() > 1) {
           for (const auto& track3 : negDaughters) {
-            if (track3.globalIndex() == track1.globalIndex() || track3.globalIndex() == track2.globalIndex())
+            if (track3.globalIndex() == track1.globalIndex() || track3.globalIndex() == track2.globalIndex()) {
               continue;
-            if (!selectedTrack(track3, false))
+            }
+            if (!selectedTrack(track3, false)) {
               continue;
+            }
             ROOT::Math::PxPyPzMVector d3(track3.px(), track3.py(), track3.pz(), massNeg);
             auto motherRot = rotD1 + d3;
 
@@ -843,11 +883,13 @@ struct PhianalysisTHnSparse {
         if (posDaughters.size() > 1) {
           for (const auto& track3 : posDaughters) {
 
-            if (track3.globalIndex() == track1.globalIndex() || track3.globalIndex() == track2.globalIndex())
+            if (track3.globalIndex() == track1.globalIndex() || track3.globalIndex() == track2.globalIndex()) {
               continue;
+            }
 
-            if (!selectedTrack(track3, true))
+            if (!selectedTrack(track3, true)) {
               continue;
+            }
 
             ROOT::Math::PxPyPzMVector d3(track3.px(), track3.py(), track3.pz(), massPos);
 
@@ -897,14 +939,17 @@ struct PhianalysisTHnSparse {
     if (static_cast<bool>(produce.produceLikesign)) {
 
       for (const auto& [track1, track2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(posDaughters, posDaughters))) {
-        if (!selectedTrack(track1, true))
+        if (!selectedTrack(track1, true)) {
           continue;
-        if (!selectedTrack(track2, true))
+        }
+        if (!selectedTrack(track2, true)) {
           continue;
+        }
 
         mother = calculateMother(track1, track2);
-        if (!selectedMother(mother))
+        if (!selectedMother(mother)) {
           continue;
+        }
 
         pointPair = fillPointPair(mother.M(),
                                   mother.Pt(),
@@ -923,14 +968,17 @@ struct PhianalysisTHnSparse {
       }
 
       for (const auto& [track1, track2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(negDaughters, negDaughters))) {
-        if (!selectedTrack(track1, false))
+        if (!selectedTrack(track1, false)) {
           continue;
-        if (!selectedTrack(track2, false))
+        }
+        if (!selectedTrack(track2, false)) {
           continue;
+        }
 
         mother = calculateMother(track1, track2);
-        if (!selectedMother(mother))
+        if (!selectedMother(mother)) {
           continue;
+        }
 
         pointPair = fillPointPair(mother.M(),
                                   mother.Pt(),
@@ -953,14 +1001,16 @@ struct PhianalysisTHnSparse {
 
   void processTrue(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
   {
-    if (!static_cast<bool>(produce.produceMC))
+    if (!static_cast<bool>(produce.produceMC)) {
       return;
+    }
 
     registry.fill(HIST("QAMC/Rec/hSelection"), 0.5);
     registry.fill(HIST("QAMC/Factors/hRecEvents"), getCentrality(collision), 0.5);
 
-    if (!selectedEvent(collision))
+    if (!selectedEvent(collision)) {
       return;
+    }
 
     registry.fill(HIST("QAMC/Rec/hSelection"), 1.5);
     registry.fill(HIST("QAMC/Factors/hRecEvents"), getCentrality(collision), 1.5);
@@ -968,8 +1018,9 @@ struct PhianalysisTHnSparse {
     auto posDaughtersMC = positiveMC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto negDaughtersMC = negativeMC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
-    if (!collision.has_mcCollision())
+    if (!collision.has_mcCollision()) {
       return;
+    }
 
     auto mcCollision = collision.mcCollision();
     registry.fill(HIST("QAMC/Resolution/h2ResolutionVz"), collision.posZ(), (collision.posZ() - mcCollision.posZ()));
@@ -983,48 +1034,58 @@ struct PhianalysisTHnSparse {
 
     for (const auto& [track1, track2] : combinations(o2::soa::CombinationsFullIndexPolicy(posDaughtersMC, negDaughtersMC))) {
 
-      if (!track1.has_mcParticle())
+      if (!track1.has_mcParticle()) {
         continue;
+      }
+      if (!track2.has_mcParticle()) {
+        continue;
+      }
 
-      if (!track2.has_mcParticle())
+      if (!selectedTrack(track1, true)) {
         continue;
-
-      if (!selectedTrack(track1, true)) // track1 is positive
+      }
+      if (!selectedTrack(track2, false)) {
         continue;
-      if (!selectedTrack(track2, false)) // track2 is negative
-        continue;
+      }
 
       const auto mctrack1 = track1.mcParticle();
       const auto mctrack2 = track2.mcParticle();
       int track1PDG = std::abs(mctrack1.pdgCode());
       int track2PDG = std::abs(mctrack2.pdgCode());
 
-      if (!(track1PDG == daughterPosPDG && track2PDG == daughterNegPDG)) {
+      if (track1PDG != daughterPosPDG || track2PDG != daughterNegPDG) {
         continue;
       }
+
       int n = 0;
       for (const auto& mothertrack1 : mctrack1.mothers_as<aod::McParticles>()) {
         for (const auto& mothertrack2 : mctrack2.mothers_as<aod::McParticles>()) {
 
-          if (mothertrack1.pdgCode() != mothertrack2.pdgCode())
+          if (mothertrack1.pdgCode() != mothertrack2.pdgCode()) {
             continue;
+          }
 
-          if (mothertrack1.globalIndex() != mothertrack2.globalIndex())
+          if (mothertrack1.globalIndex() != mothertrack2.globalIndex()) {
             continue;
+          }
 
-          if (std::abs(mothertrack1.y()) > static_cast<float>(trackCuts.rapidity))
+          if (std::abs(mothertrack1.y()) > static_cast<float>(trackCuts.rapidity)) {
             continue;
+          }
 
-          if (std::abs(mothertrack1.pdgCode()) != motherPDG)
+          if (std::abs(mothertrack1.pdgCode()) != motherPDG) {
             continue;
+          }
 
           mother = calculateMother(track1, track2);
           motherGen = calculateMother(mctrack1, mctrack2);
-          if (!selectedMother(mother))
+          if (!selectedMother(mother)) {
             continue;
+          }
 
-          if (n > 0)
+          if (n > 0) {
             continue;
+          }
 
           pointPair = fillPointPair(mother.M(),
                                     mother.Pt(),
@@ -1070,8 +1131,9 @@ struct PhianalysisTHnSparse {
 
   void processGen(McCollisionMults::iterator const& mcCollision, soa::SmallGroups<EventCandidatesMCGen> const& collisions, LabeledTracks const& /*particles*/, aod::McParticles const& mcParticles)
   {
-    if (!static_cast<bool>(produce.produceMC))
+    if (!static_cast<bool>(produce.produceMC)) {
       return;
+    }
 
     registry.fill(HIST("QAMC/Factors/hNrecInGen"), collisions.size());
     registry.fill(HIST("QAMC/Gen/hSelection"), 0.5);
@@ -1089,8 +1151,9 @@ struct PhianalysisTHnSparse {
 
     for (const auto& collision : collisions) {
       registry.fill(HIST("QAMC/Factors/hGenEvents"), mcCollision.multMCNParticlesEta05(), 1.5);
-      if (!selectedEvent(collision))
+      if (!selectedEvent(collision)) {
         continue;
+      }
 
       if (collision.numContrib() > nContributors) {
         nContributors = collision.numContrib();
@@ -1100,20 +1163,21 @@ struct PhianalysisTHnSparse {
       }
     }
 
-    // if (std::abs(mcCollision.posZ()) > static_cast<float>(eventCuts.vzCut) && !mcCollision.isInelGt0())
     registry.fill(HIST("QAMC/Factors/hGenEventsCentNch"), centrality, mcCollision.multMCNParticlesEta05());
 
     // All generated Phi mesons
     for (const auto& particle : mcParticles) {
 
-      if (std::abs(particle.y()) > static_cast<float>(trackCuts.rapidity))
+      if (std::abs(particle.y()) > static_cast<float>(trackCuts.rapidity)) {
         continue;
+      }
 
       if (particle.pdgCode() == motherPDG) {
 
         auto daughters = particle.daughters_as<aod::McParticles>();
-        if (daughters.size() != dauSize)
+        if (daughters.size() != dauSize) {
           continue;
+        }
 
         auto daup = false;
         auto daun = false;
@@ -1127,8 +1191,9 @@ struct PhianalysisTHnSparse {
             d2 = ROOT::Math::PxPyPzMVector(dau.px(), dau.py(), dau.pz(), massNeg);
           }
         }
-        if (!daup || !daun)
+        if (!daup || !daun) {
           continue;
+        }
 
         mother = d1 + d2;
 
@@ -1136,8 +1201,9 @@ struct PhianalysisTHnSparse {
       }
     }
 
-    if (!hasSelectedCollision)
+    if (!hasSelectedCollision) {
       return;
+    }
 
     registry.fill(HIST("QAMC/Gen/hSelection"), 2.5);
     registry.fill(HIST("QAMC/Factors/hGenEvents"), mcCollision.multMCNParticlesEta05(), 3.5);
@@ -1145,13 +1211,15 @@ struct PhianalysisTHnSparse {
 
     // Generated Phi mesons in selected collisions
     for (const auto& mcParticle : mcParticles) {
-      if (std::abs(mcParticle.y()) > static_cast<float>(trackCuts.rapidity))
+      if (std::abs(mcParticle.y()) > static_cast<float>(trackCuts.rapidity)) {
         continue;
+      }
 
       if (mcParticle.pdgCode() == motherPDG) {
         auto daughters = mcParticle.daughters_as<aod::McParticles>();
-        if (daughters.size() != dauSize)
+        if (daughters.size() != dauSize) {
           continue;
+        }
 
         auto daup = false;
         auto daun = false;
@@ -1166,8 +1234,9 @@ struct PhianalysisTHnSparse {
           }
         }
 
-        if (!daup || !daun)
+        if (!daup || !daun) {
           continue;
+        }
 
         mother = d1 + d2;
 
@@ -1195,8 +1264,9 @@ struct PhianalysisTHnSparse {
 
   void processMixed(EventCandidates const& collisions, TrackCandidates const& tracks)
   {
-    if (mixingType == rsn::MixingType::none)
+    if (mixingType == rsn::MixingType::none) {
       return;
+    }
 
     auto tracksTuple = std::make_tuple(tracks);
 
@@ -1208,8 +1278,9 @@ struct PhianalysisTHnSparse {
 
     if (mixingType == rsn::MixingType::ce) {
       for (const auto& [c1, tracks1, c2, tracks2] : pairVzCe) {
-        if (!selectedEvent(c1) || !selectedEvent(c2))
+        if (!selectedEvent(c1) || !selectedEvent(c2)) {
           continue;
+        }
 
         auto posDaughtersc1 = positive->sliceByCached(aod::track::collisionId, c1.globalIndex(), cache);
         auto posDaughtersc2 = positive->sliceByCached(aod::track::collisionId, c2.globalIndex(), cache);
@@ -1222,14 +1293,17 @@ struct PhianalysisTHnSparse {
 
         for (const auto& [track1, track2] : combinations(o2::soa::CombinationsFullIndexPolicy(posDaughtersc1, negDaughtersc2))) {
 
-          if (!selectedTrack(track1, true)) // track1 is positive
+          if (!selectedTrack(track1, true)) {
             continue;
-          if (!selectedTrack(track2, false)) // track2 is negative
+          }
+          if (!selectedTrack(track2, false)) {
             continue;
+          }
 
           mother = calculateMother(track1, track2);
-          if (!selectedMother(mother))
+          if (!selectedMother(mother)) {
             continue;
+          }
 
           registry.fill(HIST("QA/Mixing/hdPhideta"), track1.eta() - track2.eta(), track1.phi() - track2.phi());
 
@@ -1251,14 +1325,17 @@ struct PhianalysisTHnSparse {
 
         for (const auto& [track1, track2] : combinations(o2::soa::CombinationsFullIndexPolicy(posDaughtersc2, negDaughtersc1))) {
 
-          if (!selectedTrack(track1, true)) // track1 is positive
+          if (!selectedTrack(track1, true)) {
             continue;
-          if (!selectedTrack(track2, false)) // track2 is negative
+          }
+          if (!selectedTrack(track2, false)) {
             continue;
+          }
 
           mother = calculateMother(track1, track2);
-          if (!selectedMother(mother))
+          if (!selectedMother(mother)) {
             continue;
+          }
 
           pointPair = fillPointPair(mother.M(),
                                     mother.Pt(),
@@ -1279,8 +1356,9 @@ struct PhianalysisTHnSparse {
     }
     if (mixingType == rsn::MixingType::mu) {
       for (const auto& [c1, tracks1, c2, tracks2] : pairVzMu) {
-        if (!selectedEvent(c1) || !selectedEvent(c2))
+        if (!selectedEvent(c1) || !selectedEvent(c2)) {
           continue;
+        }
 
         auto posDaughtersc1 = positive->sliceByCached(aod::track::collisionId, c1.globalIndex(), cache);
         auto posDaughtersc2 = positive->sliceByCached(aod::track::collisionId, c2.globalIndex(), cache);
@@ -1293,15 +1371,18 @@ struct PhianalysisTHnSparse {
 
         for (const auto& [track1, track2] : combinations(o2::soa::CombinationsFullIndexPolicy(posDaughtersc1, negDaughtersc2))) {
 
-          if (!selectedTrack(track1, true)) // track1 is positive
+          if (!selectedTrack(track1, true)) {
             continue;
+          }
 
-          if (!selectedTrack(track2, false)) // track2 is negative
+          if (!selectedTrack(track2, false)) {
             continue;
+          }
 
           mother = calculateMother(track1, track2);
-          if (!selectedMother(mother))
+          if (!selectedMother(mother)) {
             continue;
+          }
 
           pointPair = fillPointPair(mother.M(),
                                     mother.Pt(),
@@ -1321,15 +1402,17 @@ struct PhianalysisTHnSparse {
 
         for (const auto& [track1, track2] : combinations(o2::soa::CombinationsFullIndexPolicy(posDaughtersc2, negDaughtersc1))) {
 
-          if (!selectedTrack(track1, true))
-
+          if (!selectedTrack(track1, true)) {
             continue;
-          if (!selectedTrack(track2, false))
+          }
+          if (!selectedTrack(track2, false)) {
             continue;
+          }
 
           mother = calculateMother(track1, track2);
-          if (!selectedMother(mother))
+          if (!selectedMother(mother)) {
             continue;
+          }
 
           pointPair = fillPointPair(mother.M(),
                                     mother.Pt(),
