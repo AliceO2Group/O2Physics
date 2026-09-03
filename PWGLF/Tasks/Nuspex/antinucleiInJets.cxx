@@ -206,15 +206,6 @@ struct AntinucleiInJets {
   Configurable<bool> applyReweighting{"applyReweighting", true, "enable reweighting for efficiency"};
   Configurable<std::string> urlToCcdb{"urlToCcdb", "http://alice-ccdb.cern.ch/", "url of the personal ccdb"};
   Configurable<std::string> pathToFile{"pathToFile", "Users/a/alcaliva/reweightingHistogramsAntinucleiInJets/", "path to file"};
-  Configurable<std::string> weightsProton{"weightsProton", "weightsProton", "weightsProton"};
-  Configurable<std::string> weightsLambda{"weightsLambda", "weightsLambda", "weightsLambda"};
-  Configurable<std::string> weightsSigma{"weightsSigma", "weightsSigma", "weightsSigma"};
-  Configurable<std::string> weightsXi{"weightsXi", "weightsXi", "weightsXi"};
-  Configurable<std::string> weightsOmega{"weightsOmega", "weightsOmega", "weightsOmega"};
-  Configurable<std::string> weightsJet{"weightsJet", "weightsJet", "weightsJet"};
-  Configurable<std::string> weightsUe{"weightsUe", "weightsUe", "weightsUe"};
-  Configurable<std::string> weightsAntidJet{"weightsAntidJet", "weightsAntidJet", "weightsAntidJet"};
-  Configurable<std::string> weightsAntidUe{"weightsAntidUe", "weightsAntidUe", "weightsAntidUe"};
 
   // Number of events
   Configurable<int> shrinkInterval{"shrinkInterval", 1000, "variable that controls how often shrinking happens"};
@@ -288,7 +279,7 @@ struct AntinucleiInJets {
       ccdb->setLocalObjectValidityChecking();
       ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
       ccdb->setFatalWhenNull(false);
-      getReweightingHistograms(ccdb, TString(pathToFile), TString(weightsProton), TString(weightsLambda), TString(weightsSigma), TString(weightsXi), TString(weightsOmega), TString(weightsJet), TString(weightsUe), TString(weightsAntidJet), TString(weightsAntidUe));
+      getReweightingHistograms(ccdb, TString(pathToFile));
     }
 
     // Binning
@@ -692,7 +683,7 @@ struct AntinucleiInJets {
     }
   }
 
-  void getReweightingHistograms(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj, TString filepath, TString antip, TString antilambda, TString antisigma, TString antixi, TString antiomega, TString jet, TString ue, TString antidJet, TString antidUe)
+  void getReweightingHistograms(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj, TString filepath)
   {
     TList* list = ccdbObj->get<TList>(filepath.Data());
     if (!list) {
@@ -701,26 +692,26 @@ struct AntinucleiInJets {
     }
 
     // Get reweighting histograms for primary fraction
-    primaryAntiprotons = static_cast<TH1F*>(list->FindObject(antip));
-    primaryAntiLambda = static_cast<TH1F*>(list->FindObject(antilambda));
-    primaryAntiSigma = static_cast<TH1F*>(list->FindObject(antisigma));
-    primaryAntiXi = static_cast<TH1F*>(list->FindObject(antixi));
-    primaryAntiOmega = static_cast<TH1F*>(list->FindObject(antiomega));
+    primaryAntiprotons = static_cast<TH1F*>(list->FindObject("weightsProton"));
+    primaryAntiLambda = static_cast<TH1F*>(list->FindObject("weightsLambda"));
+    primaryAntiSigma = static_cast<TH1F*>(list->FindObject("weightsSigma"));
+    primaryAntiXi = static_cast<TH1F*>(list->FindObject("weightsXi"));
+    primaryAntiOmega = static_cast<TH1F*>(list->FindObject("weightsOmega"));
 
     if (!primaryAntiprotons || !primaryAntiSigma || !primaryAntiLambda || !primaryAntiXi || !primaryAntiOmega) {
       LOGP(error, "Missing one or more reweighting histograms for primary fraction in CCDB list");
     }
 
     // Get reweighting histograms for antiproton efficiency
-    antiprotonsInsideJets = static_cast<TH1F*>(list->FindObject(jet));
-    antiprotonsPerpCone = static_cast<TH1F*>(list->FindObject(ue));
+    antiprotonsInsideJets = static_cast<TH1F*>(list->FindObject("weightsJet"));
+    antiprotonsPerpCone = static_cast<TH1F*>(list->FindObject("weightsUe"));
     if (!antiprotonsInsideJets || !antiprotonsPerpCone) {
       LOGP(error, "Missing one or more reweighting histograms for antiproton efficiency in CCDB list");
     }
 
     // Get reweighting histograms for antideuteron efficiency
-    antideuteronsInsideJets = static_cast<TH1F*>(list->FindObject(antidJet));
-    antideuteronsPerpCone = static_cast<TH1F*>(list->FindObject(antidUe));
+    antideuteronsInsideJets = static_cast<TH1F*>(list->FindObject("weightsAntidJet"));
+    antideuteronsPerpCone = static_cast<TH1F*>(list->FindObject("weightsAntidUe"));
     if (!antideuteronsInsideJets || !antideuteronsPerpCone) {
       LOGP(error, "Missing one or more reweighting histograms for antideuteron efficiency in CCDB list");
     }
