@@ -11,7 +11,7 @@
 
 /// \file MultModule.h
 /// \brief combined multiplicity + centrality module with autodetect features
-/// \author ALICE
+/// \author ALICE Collaboration
 
 #ifndef COMMON_TOOLS_MULTIPLICITY_MULTMODULE_H_
 #define COMMON_TOOLS_MULTIPLICITY_MULTMODULE_H_
