@@ -245,10 +245,10 @@ struct strangenesstofpid {
   TH1 *hMeanNegOmPr = nullptr, *hSigmaNegOmPr = nullptr;
   TH1 *hMeanBachOmKa = nullptr, *hSigmaBachOmKa = nullptr;
 
-  int mRunNumber;
-  float d_bz;
-  float maxSnp;  // max sine phi for propagation
-  float maxStep; // max step size (cm) for propagation
+  int mRunNumber = 0;
+  float d_bz = 0.;
+  float maxSnp = 0.85;  // max sine phi for propagation
+  float maxStep = 2.00; // max step size (cm) for propagation
 
   // enum to keep track of the TOF-related properties for V0s
   enum tofEnum { kLength = 0,
