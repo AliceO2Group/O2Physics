@@ -124,6 +124,9 @@ struct forwardlambdakzeroanalysis {
   Configurable<bool> doTreatPiToMuon{"doTreatPiToMuon", false, "Take pi decay into muon into account in MC"};
   Configurable<bool> doMCAssociation{"doMCAssociation", true, "if MC, do MC association"};
 
+  // propagation option
+  Configurable<bool> useNewPropagationToVtx{"useNewPropagationToVtx", true, "Use propagation to vtx based on propagateToDCAhelix (most recent) instead of the one based on propagateToVtxhelixWithMCS"};
+
   struct : ConfigurableGroup {
     std::string prefix = "eventSelections"; // JSON group name
     Configurable<bool> requireSel8{"requireSel8", true, "require sel8 event selection"};
@@ -186,6 +189,7 @@ struct forwardlambdakzeroanalysis {
     Configurable<float> minPseudolifetime{"minPseudolifetime", -1e+09, "minimum V0 pseudo-proper lifetime (cm)"};
     Configurable<float> maxPseudolifetime{"maxPseudolifetime", 1e+09, "maximum V0 pseudo-proper lifetime (cm)"};
     Configurable<LabeledArray<float>> lifetimeCut{"lifetimeCut", {DefaultLifetimeCuts[0], 3, {"lifetimecutD0", "lifetimecutLambda", "lifetimecutK0S"}}, "lifetimeCut"};
+    Configurable<bool> rejectFailedPropagation{"rejectFailedPropagation", true, "Reject tracks which could not be propagated to the primary vertex (DCA = DefaultDCA = 999.)"};
 
     // invariant mass selection
     Configurable<float> compMassRejectionK0Short{"compMassRejectionK0Short", -1, "Competing K^{0}_{S} mass rejection (GeV/#it{c}^{2})"};
@@ -786,8 +790,8 @@ struct forwardlambdakzeroanalysis {
       }
       if (analyseK0Short) {
         histos.add("K0Short/hPosDCAToPVxy", "hPosDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
-        histos.add("K0Short/hNegDCAToPVxy", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVz});
-        histos.add("K0Short/hPosDCAToPVz", "hPosDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVxy});
+        histos.add("K0Short/hNegDCAToPVxy", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
+        histos.add("K0Short/hPosDCAToPVz", "hPosDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
         histos.add("K0Short/hNegDCAToPVz", "hNegDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
         histos.add("K0Short/hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
         histos.add("K0Short/hCosPA", "hCosPA", kTH1D, {axisConfigurations.axisCosPA});
@@ -836,8 +840,8 @@ struct forwardlambdakzeroanalysis {
       }
       if (analyseLambda) {
         histos.add("Lambda/hPosDCAToPVxy", "hPosDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
-        histos.add("Lambda/hNegDCAToPVxy", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVz});
-        histos.add("Lambda/hPosDCAToPVz", "hPosDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVxy});
+        histos.add("Lambda/hNegDCAToPVxy", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
+        histos.add("Lambda/hPosDCAToPVz", "hPosDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
         histos.add("Lambda/hNegDCAToPVz", "hNegDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
         histos.add("Lambda/hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
         histos.add("Lambda/hCosPA", "hCosPA", kTH1D, {axisConfigurations.axisCosPA});
@@ -885,8 +889,8 @@ struct forwardlambdakzeroanalysis {
       }
       if (analyseAntiLambda) {
         histos.add("AntiLambda/hPosDCAToPVxy", "hPosDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
-        histos.add("AntiLambda/hNegDCAToPVxy", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVz});
-        histos.add("AntiLambda/hPosDCAToPVz", "hPosDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVxy});
+        histos.add("AntiLambda/hNegDCAToPVxy", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
+        histos.add("AntiLambda/hPosDCAToPVz", "hPosDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
         histos.add("AntiLambda/hNegDCAToPVz", "hNegDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
         histos.add("AntiLambda/hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
         histos.add("AntiLambda/hCosPA", "hCosPA", kTH1D, {axisConfigurations.axisCosPA});
@@ -934,8 +938,8 @@ struct forwardlambdakzeroanalysis {
       }
       if (analyseD0) {
         histos.add("D0/hPosDCAToPVxy", "hPosDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
-        histos.add("D0/hNegDCAToPVxy", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVz});
-        histos.add("D0/hPosDCAToPVz", "hPosDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVxy});
+        histos.add("D0/hNegDCAToPVxy", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
+        histos.add("D0/hPosDCAToPVz", "hPosDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
         histos.add("D0/hNegDCAToPVz", "hNegDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
         histos.add("D0/hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
         histos.add("D0/hCosPA", "hCosPA", kTH1D, {axisConfigurations.axisCosPA});
@@ -983,8 +987,8 @@ struct forwardlambdakzeroanalysis {
       }
       if (analyseAntiD0) {
         histos.add("AntiD0/hPosDCAToPVxy", "hPosDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
-        histos.add("AntiD0/hNegDCAToPVxy", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVz});
-        histos.add("AntiD0/hPosDCAToPVz", "hPosDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVxy});
+        histos.add("AntiD0/hNegDCAToPVxy", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
+        histos.add("AntiD0/hPosDCAToPVz", "hPosDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
         histos.add("AntiD0/hNegDCAToPVz", "hNegDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
         histos.add("AntiD0/hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
         histos.add("AntiD0/hCosPA", "hCosPA", kTH1D, {axisConfigurations.axisCosPA});
@@ -1214,17 +1218,21 @@ struct forwardlambdakzeroanalysis {
       BITSET(bitMap, selZmax);
     }
     // DCA proton and pion to PV for Lambda and AntiLambda decay hypotheses
-    if (std::fabs(v0.dcaPosToPVxy) > v0Selections.dcaPosToPVxy) {
+    if ((!v0Selections.rejectFailedPropagation || std::fabs(v0.dcaPosToPVxy) < o2::track::DefaultDCA) &&
+        std::fabs(v0.dcaPosToPVxy) > v0Selections.dcaPosToPVxy) {
       BITSET(bitMap, selDCAPosToPVxy);
     }
-    if (std::fabs(v0.dcaNegToPVxy) > v0Selections.dcaNegToPVxy) {
+    if ((!v0Selections.rejectFailedPropagation || std::fabs(v0.dcaNegToPVxy) < o2::track::DefaultDCA) &&
+        std::fabs(v0.dcaNegToPVxy) > v0Selections.dcaNegToPVxy) {
       BITSET(bitMap, selDCANegToPVxy);
     }
     // DCA proton and pion to PV for Lambda and AntiLambda decay hypotheses
-    if (std::fabs(v0.dcaPosToPVz) > v0Selections.dcaPosToPVz) {
+    if ((!v0Selections.rejectFailedPropagation || std::fabs(v0.dcaPosToPVz) < o2::track::DefaultDCA) &&
+        std::fabs(v0.dcaPosToPVz) > v0Selections.dcaPosToPVz) {
       BITSET(bitMap, selDCAPosToPVz);
     }
-    if (std::fabs(v0.dcaNegToPVz) > v0Selections.dcaNegToPVz) {
+    if ((!v0Selections.rejectFailedPropagation || std::fabs(v0.dcaNegToPVz) < o2::track::DefaultDCA) &&
+        std::fabs(v0.dcaNegToPVz) > v0Selections.dcaNegToPVz) {
       BITSET(bitMap, selDCANegToPVz);
     }
     // V0 cosine of pointing angle
@@ -2201,13 +2209,34 @@ struct forwardlambdakzeroanalysis {
   //___________________________________________________________________
   // Taken from https://github.com/AliceO2Group/AliceO2/blob/be5a2bb6c1be6757b7a496f9e90d470304d98fe7/Common/DCAFitter/include/DCAFitter/FwdDCAFitterN.h#L1281
   // Re-adapted for this task
-  bool propagateToVtx(o2::track::TrackParCovFwd& t, const std::array<float, 3>& PV, const std::array<float, 2>& PVcov) const
+  template <typename TCollision>
+  void propagateToVtx(o2::track::TrackParCovFwd& t, TCollision const& collision, std::array<double, 3>& dca) const
   {
+    dca[0] = o2::track::DefaultDCA;
+    dca[1] = o2::track::DefaultDCA;
+    dca[2] = o2::track::DefaultDCA;
+
     // propagate track to vertex including MCS effects if material budget included, simple propagation to Z otherwise
     float x2x0 = 0;
-    auto mb = lut->getMatBudget(t.getX(), t.getY(), t.getZ(), PV[0], PV[1], PV[2]);
+    auto mb = lut->getMatBudget(t.getX(), t.getY(), t.getZ(), collision.posX(), collision.posY(), collision.posZ());
     x2x0 = static_cast<float>(mb.meanX2X0);
-    return t.propagateToVtxhelixWithMCS(PV[2], {PV[0], PV[1]}, PVcov, magField, x2x0);
+    t.propagateToVtxhelixWithMCS(collision.posZ(), {collision.posX(), collision.posY()}, std::array{collision.covXX(), collision.covYY()}, magField, x2x0);
+
+    dca[0] = t.getX() - collision.posX();
+    dca[1] = t.getY() - collision.posY();
+    dca[2] = t.getZ() - collision.posZ();
+  }
+
+  //___________________________________________________________________
+  // Taken from https://github.com/AliceO2Group/O2Physics/blob/master/Common/Core/fwdtrackUtilities.h#L183
+  // Re-adapted for this task
+  template <typename TCollision>
+  void propagateToVtxNew(o2::track::TrackParCovFwd& t, TCollision const& collision, std::array<double, 3>& dca) const
+  {
+    dca[0] = o2::track::DefaultDCA;
+    dca[1] = o2::track::DefaultDCA;
+    dca[2] = o2::track::DefaultDCA;
+    t.propagateToDCAhelix(magField, {collision.posX(), collision.posY(), collision.posZ()}, dca);
   }
 
   template <typename TCollision, typename TTracks, typename TMFTTracks, typename TMCCollisions, typename TMCParticles>
@@ -2263,15 +2292,15 @@ struct forwardlambdakzeroanalysis {
       o2::track::TrackParCovFwd pars2{mftNegative.z(), tpars2, tcovs2, mftNegative.chi2()};
       o2::track::TrackParCovFwd pars2Copy{mftNegative.z(), tpars2, tcovs2, mftNegative.chi2()};
 
-      propagateToVtx(pars1Copy, std::array{collision.posX(), collision.posY(), collision.posZ()}, std::array{collision.covXX(), collision.covYY()});
-      propagateToVtx(pars2Copy, std::array{collision.posX(), collision.posY(), collision.posZ()}, std::array{collision.covXX(), collision.covYY()});
-      float dcaPosToPVx = pars1Copy.getX() - collision.posX();
-      float dcaPosToPVy = pars1Copy.getY() - collision.posY();
-      float dcaPosToPVz = pars1Copy.getZ() - collision.posZ();
-
-      float dcaNegToPVx = pars2Copy.getX() - collision.posX();
-      float dcaNegToPVy = pars2Copy.getY() - collision.posY();
-      float dcaNegToPVz = pars2Copy.getZ() - collision.posZ();
+      std::array<double, 3> dcaPosToPV{o2::track::DefaultDCA, o2::track::DefaultDCA, o2::track::DefaultDCA};
+      std::array<double, 3> dcaNegToPV{o2::track::DefaultDCA, o2::track::DefaultDCA, o2::track::DefaultDCA};
+      if (useNewPropagationToVtx) {
+        propagateToVtxNew(pars1Copy, collision, dcaPosToPV);
+        propagateToVtxNew(pars2Copy, collision, dcaNegToPV);
+      } else {
+        propagateToVtx(pars1Copy, collision, dcaPosToPV);
+        propagateToVtx(pars2Copy, collision, dcaNegToPV);
+      }
 
       // Move close to minima
       int nCand = 0;
@@ -2303,10 +2332,10 @@ struct forwardlambdakzeroanalysis {
       pairInfo.Z = vtx[2];
 
       // get daughter DCA to PV
-      pairInfo.dcaPosToPVxy = std::sqrt(dcaPosToPVx * dcaPosToPVx + dcaPosToPVy * dcaPosToPVy);
-      pairInfo.dcaNegToPVxy = std::sqrt(dcaNegToPVx * dcaNegToPVx + dcaNegToPVy * dcaNegToPVy);
-      pairInfo.dcaPosToPVz = dcaPosToPVz;
-      pairInfo.dcaNegToPVz = dcaNegToPVz;
+      pairInfo.dcaPosToPVxy = std::hypot(dcaPosToPV[0], dcaPosToPV[1]);
+      pairInfo.dcaNegToPVxy = std::hypot(dcaNegToPV[0], dcaNegToPV[1]);
+      pairInfo.dcaPosToPVz = dcaPosToPV[2];
+      pairInfo.dcaNegToPVz = dcaNegToPV[2];
 
       // get daughter momenta
       pairInfo.positiveMomentum[0] = lTrack1.getPx();
