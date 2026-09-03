@@ -110,7 +110,7 @@ o2physics_add_dpl_workflow(upc-cand-analyzer
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(upc-cand-producer-qa
-                           SOURCES upcCandidateProducerQa.cpp
+                           SOURCES upcCandidateProducerQa.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
                            COMPONENT_NAME Analysis)
 
