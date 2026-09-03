@@ -1198,13 +1198,13 @@ class MultModule
       LOGF(info, "centrality loading procedure for timestamp=%llu, run number=%d", bc.timestamp(), bc.runNumber());
 
       // capture the need for PYTHIA calibration in Pb-Pb runs
-      if (metadataInfo.isMC() && mRunNumber >= 544013 && mRunNumber <= 545367 && internalOpts.generatorName.empty()) {
+      if (metadataInfo.isMC() && mRunNumber >= 544013 && mRunNumber <= 545367 && internalOpts.generatorName.value.empty()) {
         LOGF(info, "This is MC for Pb-Pb. Setting generatorName automatically to PYTHIA");
         internalOpts.generatorName.value = "PYTHIA";
       }
 
       // capture the need for PYTHIA calibration in light ion runs automatically
-      if (metadataInfo.isMC() && mRunNumber >= 564250 && mRunNumber <= 564472 && internalOpts.generatorName.empty()) {
+      if (metadataInfo.isMC() && mRunNumber >= 564250 && mRunNumber <= 564472 && internalOpts.generatorName.value.empty()) {
         LOGF(info, "This is MC for light ion runs. Setting generatorName automatically to PYTHIA");
         internalOpts.generatorName.value = "PYTHIA";
       }
