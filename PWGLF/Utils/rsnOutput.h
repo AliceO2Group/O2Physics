@@ -28,9 +28,7 @@
 #include <utility>
 #include <vector>
 
-namespace o2::analysis
-{
-namespace rsn
+namespace o2::analysis::rsn
 {
 enum class EventType {
   zvertex,
@@ -124,7 +122,7 @@ class Output
     for (int i = 0; i < static_cast<int>(PairAxisType::unknown); i++) {
       auto aname = *std::move(allAxes[i].name);
       LOGF(debug, "Check axis '%s' %d", aname.c_str(), i);
-      if (aname != pair_axis::names[static_cast<int>(i)]) {
+      if (aname != pair_axis::names[i]) {
         LOGF(fatal, "rsn::Output::Error: Order in allAxes is not correct !!! Expected axis '%s' and has '%s'.", aname.c_str(), pair_axis::names[static_cast<int>(i)]);
       }
     }
@@ -141,9 +139,8 @@ class Output
       mCurrentAxisTypes.push_back(currentType);
     }
 
-    if (mFillPoint != nullptr) {
-      delete mFillPoint;
-    }
+    delete mFillPoint;
+
     mFillPoint = new double[mCurrentAxisTypes.size()];
 
     LOGF(info, "Number of axis added: %d", mCurrentAxes.size());
@@ -153,7 +150,7 @@ class Output
     for (int i = 0; i < static_cast<int>(SystematicsAxisType::unknown); i++) {
       auto aname = *std::move(allAxes_sys[i].name);
       LOGF(debug, "Check axis '%s' %d", aname.c_str(), i);
-      if (aname != systematic_axis::names[static_cast<int>(i)]) {
+      if (aname != systematic_axis::names[i]) {
         LOGF(fatal, "rsn::Output::Error: Order in allAxes_sys is not correct !!! Expected axis '%s' and has '%s'.", aname.c_str(), systematic_axis::names[static_cast<int>(i)]);
       }
     }
@@ -170,9 +167,8 @@ class Output
       mCurrentAxisTypesSys.push_back(currentTypeSys);
     }
 
-    if (mFillPointSys != nullptr) {
-      delete mFillPointSys;
-    }
+    delete mFillPointSys;
+
     mFillPointSys = new double[mCurrentAxisTypesSys.size()];
 
     LOGF(info, "Number of systematic axis added: %d", mCurrentAxesSys.size());
@@ -180,7 +176,7 @@ class Output
   }
 
   template <typename T>
-  void fillSparse(const T& h, double* point)
+  void fillSparse(const T& h, const double* point)
   {
     int i = 0;
     for (const auto& at : mCurrentAxisTypes) {
@@ -190,7 +186,7 @@ class Output
   }
 
   template <typename T>
-  void fillSparseSys(const T& h, double* point)
+  void fillSparseSys(const T& h, const double* point)
   {
     int i = 0;
     for (const auto& at : mCurrentAxisTypesSys) {
@@ -411,7 +407,6 @@ class OutputSparse : public Output
     fillSparse(HIST("Mapping/systematics"), point);
   }
 };
-} // namespace rsn
-} // namespace o2::analysis
+} // namespace o2::analysis::rsn
 
 #endif // PWGLF_UTILS_RSNOUTPUT_H_

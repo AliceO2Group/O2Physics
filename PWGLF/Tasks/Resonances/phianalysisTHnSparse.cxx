@@ -162,7 +162,7 @@ struct PhianalysisTHnSparse {
   HistogramRegistry registry{"registry"};
   o2::analysis::rsn::Output* rsnOutput = nullptr;
 
-  Service<o2::framework::O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg{};
 
   float massPos = o2::track::PID::getMass(3);
   float massNeg = o2::track::PID::getMass(3);
@@ -553,12 +553,13 @@ struct PhianalysisTHnSparse {
     float tofNsigma = 0.0f;
     int particleType = (track.sign() > 0) ? static_cast<int>(daughterPos) : static_cast<int>(daughterNeg);
 
-    if (particleType == pion)
+    if (particleType == pion) {
       tofNsigma = track.tofNSigmaPi();
-    else if (particleType == kaon)
+    } else if (particleType == kaon) {
       tofNsigma = track.tofNSigmaKa();
-    else if (particleType == proton)
+    } else if (particleType == proton) {
       tofNsigma = track.tofNSigmaPr();
+    }
     return tofNsigma;
   }
   template <typename T>
