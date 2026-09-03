@@ -1365,7 +1365,7 @@ struct strangenesstofpid {
             casctof.nSigmaXiPositiveLaPi = mTOFResponse->nSigma<o2::track::PID::Pion>(pTof.tofSignal - xiFlight - lambdaFlight, pTof.tofExpMom, lengthPositive, posTrack.getP(), posTrack.getEta(), pTof.tofEvTime, pTof.tofEvTimeErr);
             casctof.nSigmaXiPositiveLaKa = mTOFResponse->nSigma<o2::track::PID::Kaon>(pTof.tofSignal - xiFlight - lambdaFlight, pTof.tofExpMom, lengthPositive, posTrack.getP(), posTrack.getEta(), pTof.tofEvTime, pTof.tofEvTimeErr);
             casctof.nSigmaXiPositiveLaPr = mTOFResponse->nSigma<o2::track::PID::Proton>(pTof.tofSignal - xiFlight - lambdaFlight, pTof.tofExpMom, lengthPositive, posTrack.getP(), posTrack.getEta(), pTof.tofEvTime, pTof.tofEvTimeErr);
-            
+
             casctof.nSigmaOmPositiveLaEl = mTOFResponse->nSigma<o2::track::PID::Electron>(pTof.tofSignal - omFlight - lambdaFlight, pTof.tofExpMom, lengthPositive, posTrack.getP(), posTrack.getEta(), pTof.tofEvTime, pTof.tofEvTimeErr);
             casctof.nSigmaOmPositiveLaPi = mTOFResponse->nSigma<o2::track::PID::Pion>(pTof.tofSignal - omFlight - lambdaFlight, pTof.tofExpMom, lengthPositive, posTrack.getP(), posTrack.getEta(), pTof.tofEvTime, pTof.tofEvTimeErr);
             casctof.nSigmaOmPositiveLaKa = mTOFResponse->nSigma<o2::track::PID::Kaon>(pTof.tofSignal - omFlight - lambdaFlight, pTof.tofExpMom, lengthPositive, posTrack.getP(), posTrack.getEta(), pTof.tofEvTime, pTof.tofEvTimeErr);
@@ -1483,7 +1483,7 @@ struct strangenesstofpid {
             casctof.nSigmaXiNegativeLaPi = mTOFResponse->nSigma<o2::track::PID::Pion>(nTof.tofSignal - xiFlight - lambdaFlight, nTof.tofExpMom, lengthNegative, negTrack.getP(), negTrack.getEta(), nTof.tofEvTime, nTof.tofEvTimeErr);
             casctof.nSigmaXiNegativeLaKa = mTOFResponse->nSigma<o2::track::PID::Kaon>(nTof.tofSignal - xiFlight - lambdaFlight, nTof.tofExpMom, lengthNegative, negTrack.getP(), negTrack.getEta(), nTof.tofEvTime, nTof.tofEvTimeErr);
             casctof.nSigmaXiNegativeLaPr = mTOFResponse->nSigma<o2::track::PID::Proton>(nTof.tofSignal - xiFlight - lambdaFlight, nTof.tofExpMom, lengthNegative, negTrack.getP(), negTrack.getEta(), nTof.tofEvTime, nTof.tofEvTimeErr);
-            
+
             casctof.nSigmaOmNegativeLaEl = mTOFResponse->nSigma<o2::track::PID::Electron>(nTof.tofSignal - omFlight - lambdaFlight, nTof.tofExpMom, lengthNegative, negTrack.getP(), negTrack.getEta(), nTof.tofEvTime, nTof.tofEvTimeErr);
             casctof.nSigmaOmNegativeLaPi = mTOFResponse->nSigma<o2::track::PID::Pion>(nTof.tofSignal - omFlight - lambdaFlight, nTof.tofExpMom, lengthNegative, negTrack.getP(), negTrack.getEta(), nTof.tofEvTime, nTof.tofEvTimeErr);
             casctof.nSigmaOmNegativeLaKa = mTOFResponse->nSigma<o2::track::PID::Kaon>(nTof.tofSignal - omFlight - lambdaFlight, nTof.tofExpMom, lengthNegative, negTrack.getP(), negTrack.getEta(), nTof.tofEvTime, nTof.tofEvTimeErr);
@@ -2014,17 +2014,17 @@ struct strangenesstofpid {
             v0tof.nSigmaNegativeLambdaPr, v0tof.nSigmaPositiveLambdaPi,
             v0tof.nSigmaPositiveK0ShortPi, v0tof.nSigmaNegativeK0ShortPi);
 
-            if (calculateV0sNSigmaAll.value > 0) {
-              v0tofnsigmasall(
-                v0tof.nSigmaPositivePhotonEl, v0tof.nSigmaPositiveK0ShortEl, v0tof.nSigmaPositiveLambdaEl,
-                v0tof.nSigmaNegativePhotonEl, v0tof.nSigmaNegativeK0ShortEl, v0tof.nSigmaNegativeLambdaEl,
-                v0tof.nSigmaPositivePhotonPi, v0tof.nSigmaPositiveK0ShortPi, v0tof.nSigmaPositiveLambdaPi,
-                v0tof.nSigmaNegativePhotonPi, v0tof.nSigmaNegativeK0ShortPi, v0tof.nSigmaNegativeLambdaPi,
-                v0tof.nSigmaPositivePhotonKa, v0tof.nSigmaPositiveK0ShortEl, v0tof.nSigmaPositiveLambdaEl,
-                v0tof.nSigmaNegativePhotonKa, v0tof.nSigmaNegativeK0ShortEl, v0tof.nSigmaNegativeLambdaEl,
-                v0tof.nSigmaPositivePhotonPr, v0tof.nSigmaPositiveK0ShortPr, v0tof.nSigmaPositiveLambdaPr,
-                v0tof.nSigmaNegativePhotonPr, v0tof.nSigmaNegativeK0ShortPr, v0tof.nSigmaNegativeLambdaPr);
-            }
+          if (calculateV0sNSigmaAll.value > 0) {
+            v0tofnsigmasall(
+              v0tof.nSigmaPositivePhotonEl, v0tof.nSigmaPositiveK0ShortEl, v0tof.nSigmaPositiveLambdaEl,
+              v0tof.nSigmaNegativePhotonEl, v0tof.nSigmaNegativeK0ShortEl, v0tof.nSigmaNegativeLambdaEl,
+              v0tof.nSigmaPositivePhotonPi, v0tof.nSigmaPositiveK0ShortPi, v0tof.nSigmaPositiveLambdaPi,
+              v0tof.nSigmaNegativePhotonPi, v0tof.nSigmaNegativeK0ShortPi, v0tof.nSigmaNegativeLambdaPi,
+              v0tof.nSigmaPositivePhotonKa, v0tof.nSigmaPositiveK0ShortEl, v0tof.nSigmaPositiveLambdaEl,
+              v0tof.nSigmaNegativePhotonKa, v0tof.nSigmaNegativeK0ShortEl, v0tof.nSigmaNegativeLambdaEl,
+              v0tof.nSigmaPositivePhotonPr, v0tof.nSigmaPositiveK0ShortPr, v0tof.nSigmaPositiveLambdaPr,
+              v0tof.nSigmaNegativePhotonPr, v0tof.nSigmaNegativeK0ShortPr, v0tof.nSigmaNegativeLambdaPr);
+          }
         }
         if (calculateV0TOFPIDs.value) {
           v0tofpid(v0tof.deltaTimePositiveLambdaPi, v0tof.deltaTimePositiveLambdaPr,
