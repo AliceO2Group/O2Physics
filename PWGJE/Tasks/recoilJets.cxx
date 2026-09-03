@@ -214,10 +214,10 @@ struct RecoilJets {
     Configurable<float> mb{"mb", 0.286292f, "Rho shift for MB"};
     Configurable<float> ea0To20{"ea0To20", 0.189813f, "Rho shift for EA 0-20%"};
     Configurable<float> ea0To10{"ea0To10", 0.180575f, "Rho shift for EA 0-10%"};
-    Configurable<float> ea20To40{"ea20To40", 0.158425f, "Rho shift for EA 20-40%"};
-    Configurable<float> ea60To80{"ea60To80", 0.0986109f, "Rho shift for EA 60-80%"};
-    Configurable<float> ea50To100{"ea50To100", 0.11872f, "Rho shift for EA 50-100%"};
-    Configurable<float> ea80To100{"ea80To100", 0.098644f, "Rho shift for EA 80-100%"};
+    Configurable<float> ea20To40{"ea20To40", 0.131103f, "Rho shift for EA 20-40%"};
+    Configurable<float> ea60To80{"ea60To80", 0.092541f, "Rho shift for EA 60-80%"};
+    Configurable<float> ea50To100{"ea50To100", 0.106569f, "Rho shift for EA 50-100%"};
+    Configurable<float> ea80To100{"ea80To100", 0.0998433f, "Rho shift for EA 80-100%"};
   } cfgRhoShift;
 
   // Auxiliary variables
