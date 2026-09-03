@@ -242,7 +242,7 @@ DECLARE_SOA_TABLE(UpgradeTofExpectedTimes, "AOD", "UPGRADETOFEXPT",
                   upgrade_tof::OuterTOFExpectedTimeHe3,
                   upgrade_tof::OuterTOFExpectedTimeAl);
 
-DECLARE_SOA_TABLE(UpgradeTofExtras, "AOD", "UPGRADETOFEXTRAS",
+DECLARE_SOA_TABLE(UpgradeTofShortLiveds, "AOD", "UPGRTOFSHRTLVD",
                   upgrade_tof::NSigmaSplusInnerTOF,
                   upgrade_tof::NSigmaSminusInnerTOF,
                   upgrade_tof::NSigmaXiInnerTOF,
@@ -263,7 +263,7 @@ DECLARE_SOA_TABLE(UpgradeTofExtras, "AOD", "UPGRADETOFEXTRAS",
 using UpgradeTofMC = UpgradeTofMCs::iterator;
 using UpgradeTof = UpgradeTofs::iterator;
 using UpgradeTofExpectedTime = UpgradeTofExpectedTimes::iterator;
-using UpgradeTofExtra = UpgradeTofExtras::iterator;
+using UpgradeTofShortLived = UpgradeTofShortLiveds::iterator;
 
 } // namespace o2::aod
 

@@ -83,7 +83,7 @@ struct OnTheFlyTofPid {
   Produces<aod::UpgradeTofMC> upgradeTofMC;
   Produces<aod::UpgradeTof> upgradeTof;
   Produces<aod::UpgradeTofExpectedTime> upgradeTofExpectedTime;
-  Produces<aod::UpgradeTofExtra> upgradeTofExtraLongLived;
+  Produces<aod::UpgradeTofShortLived> upgradeTofShortLived;
 
   // necessary for particle charges
   Service<o2::framework::O2DatabasePDG> pdg;
@@ -935,7 +935,7 @@ struct OnTheFlyTofPid {
                  measuredTimeOuterTOF, trackLengthRecoOuterTOF);
       upgradeTofExpectedTime(expectedTimeInnerTOF[El], expectedTimeInnerTOF[Mu], expectedTimeInnerTOF[Pi], expectedTimeInnerTOF[Ka], expectedTimeInnerTOF[Pr], expectedTimeInnerTOF[De], expectedTimeInnerTOF[Tr], expectedTimeInnerTOF[He], expectedTimeInnerTOF[Al],
                              expectedTimeOuterTOF[El], expectedTimeOuterTOF[Mu], expectedTimeOuterTOF[Pi], expectedTimeOuterTOF[Ka], expectedTimeOuterTOF[Pr], expectedTimeOuterTOF[De], expectedTimeOuterTOF[Tr], expectedTimeOuterTOF[He], expectedTimeOuterTOF[Al]);
-      upgradeTofExtraLongLived(nSigmaInnerTOF[Sp], nSigmaInnerTOF[Sm], nSigmaInnerTOF[Xi], nSigmaInnerTOF[Om],
+      upgradeTofShortLived(nSigmaInnerTOF[Sp], nSigmaInnerTOF[Sm], nSigmaInnerTOF[Xi], nSigmaInnerTOF[Om],
                                nSigmaOuterTOF[Sp], nSigmaOuterTOF[Sm], nSigmaOuterTOF[Xi], nSigmaOuterTOF[Om],
                                expectedTimeInnerTOF[Sp], expectedTimeInnerTOF[Sm], expectedTimeInnerTOF[Xi], expectedTimeInnerTOF[Om],
                                expectedTimeOuterTOF[Sp], expectedTimeOuterTOF[Sm], expectedTimeOuterTOF[Xi], expectedTimeOuterTOF[Om]);
