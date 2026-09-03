@@ -163,7 +163,6 @@ struct forwardlambdakzeroanalysis {
 
   static constexpr float DefaultLifetimeCuts[1][3] = {{20., 30., 20.}};
 
-  static constexpr float DefaultLifetimeCuts[1][3] = {{20., 30., 20.}};
   // Armenteros-Podolanski elliptic band: inner and outer ellipse half-axes, in units of the ideal
   // two-body ones. The alpha and qT axes are scaled independently, so the band can be made much
   // wider in alpha than in qT (the resolution smears the two very differently, in particular for
