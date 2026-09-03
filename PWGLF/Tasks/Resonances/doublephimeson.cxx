@@ -75,6 +75,62 @@ struct doublephimeson {
   Configurable<float> cfgCrossPhiHigh{"cfgCrossPhiHigh", 1.03, "Upper edge of phi mass window for cross-pairing (ghost) veto"};
   Configurable<bool> useParametrized{"useParametrized", false, "Use pT dependent mass peak and width"};
   Configurable<bool> useCrossPairRejection{"useCrossPairRejection", true, "Use cross pair phi signal compatibilaty"};
+  Configurable<bool> cfgFillDataDrivenPhiResolution{
+    "cfgFillDataDrivenPhiResolution", true,
+    "Fill the single-phi daughter-kinematics sparse used for data-driven X resolution and inter-dataset momentum-scale calibration"};
+
+  Configurable<bool> cfgFillSelectedXResolutionSparse{
+    "cfgFillSelectedXResolutionSparse", true,
+    "Fill compact selected-X candidate sparse for data-driven X mass-resolution study"};
+  Configurable<float> cfgSelectedXResolutionMassLow{
+    "cfgSelectedXResolutionMassLow", 2.63f,
+    "Lower M(phi-phi) edge for selected-X resolution sparse (GeV/c^2)"};
+  Configurable<float> cfgSelectedXResolutionMassHigh{
+    "cfgSelectedXResolutionMassHigh", 2.75f,
+    "Upper M(phi-phi) edge for selected-X resolution sparse (GeV/c^2)"};
+  Configurable<float> cfgSelectedXResolutionPtMin{
+    "cfgSelectedXResolutionPtMin", 9.0f,
+    "Minimum pT(phi-phi) for selected-X resolution sparse (GeV/c)"};
+
+  // Optional 2025 -> 2026 kaon momentum-scale correction used only in
+  // processopti5. The selected calibration model is a sigmoid plus a quadratic
+  // tail:
+  //
+  // epsilon_corr(%) = p0 + p1/[1 + exp(-(pT_phi-p2)/p3)]
+  //                   + p4*pT_phi + p5*pT_phi^2,
+  //
+  // with pT_phi, p2 and p3 in GeV/c. Both kaons belonging to a phi candidate
+  // receive the same scale factor:
+  // p_corr = (1 + epsilon_corr/100) * p_measured.
+  // The numerical parameters should be supplied from the JSON file generated
+  // by CalibratePhiMomentumScaleVsPt.C after the final calibration fit.
+  Configurable<bool> cfgApplyKaonMomentumCorrection{
+    "cfgApplyKaonMomentumCorrection", false,
+    "Apply the pT-dependent kaon momentum-scale correction in processopti5"};
+  Configurable<double> cfgMomCorrP0Percent{
+    "cfgMomCorrP0Percent", 0.749950,
+    "p0 of epsilon_corr(pT_phi) in percent"};
+  Configurable<double> cfgMomCorrP1Percent{
+    "cfgMomCorrP1Percent", 0.421824,
+    "p1 sigmoid-step amplitude of epsilon_corr in percent"};
+  Configurable<double> cfgMomCorrP2GeV{
+    "cfgMomCorrP2GeV", 1.614360,
+    "p2 sigmoid turn-on position in GeV/c"};
+  Configurable<double> cfgMomCorrP3GeV{
+    "cfgMomCorrP3GeV", 0.290147,
+    "p3 sigmoid width in GeV/c; must be positive"};
+  Configurable<double> cfgMomCorrP4PercentPerGeV{
+    "cfgMomCorrP4PercentPerGeV", 0.0279158,
+    "p4 linear-tail slope in percent per GeV/c"};
+  Configurable<double> cfgMomCorrP5PercentPerGeV2{
+    "cfgMomCorrP5PercentPerGeV2", 0.0,
+    "p5 quadratic-tail coefficient in percent per (GeV/c)^2"};
+  Configurable<double> cfgMomCorrPtMin{
+    "cfgMomCorrPtMin", 0.8,
+    "Minimum uncorrected phi pT for applying the momentum correction (GeV/c)"};
+  Configurable<double> cfgMomCorrPtMax{
+    "cfgMomCorrPtMax", 20.0,
+    "Maximum uncorrected phi pT for applying the momentum correction (GeV/c)"};
   // ------------------------------------------------------------
   // pT-dependent phi mass peak and width from single-phi BW fits
   //
@@ -156,18 +212,72 @@ struct doublephimeson {
   ConfigurableAxis configThnAxisDaughterPt{"configThnAxisDaughterPt", {100, 0.0, 100.}, "daughter #it{p}_{T} (GeV/#it{c})"};
   ConfigurableAxis configThnAxisKstar{"configThnAxisKstar", {200, 0.0, 2.0}, "#it{k}^{*} (GeV/#it{c})"};
   ConfigurableAxis configThnAxisDeltaR{"configThnAxisDeltaR", {VARIABLE_WIDTH, 0.0, 0.0001, 0.0003, 0.0005, 0.0007, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.02, 0.03, 0.04, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 2.0, 10.0}, "#it{k}^{*} (GeV/#it{c})"};
-  ConfigurableAxis configThnAxisCosTheta{"configThnAxisCosTheta", {160, 0.0, 3.2}, "cos #theta{*}"};
-  ConfigurableAxis configThnAxisNumPhi{"configThnAxisNumPhi", {101, -0.5, 100.5}, "cos #theta{*}"};
+  ConfigurableAxis configThnAxisCosTheta{"configThnAxisCosTheta", {10, 0.0, 1.0}, "cos #theta{*}"};
+  ConfigurableAxis configThnAxisRapidity{"configThnAxisRapidity", {10, 0.0, 1.0}, "Rapidity"};
+  ConfigurableAxis configThnAxisNumPhi{"configThnAxisNumPhi", {6, -0.5, 5.5}, "Number of Kaon daughter have TOF hit"};
   ConfigurableAxis configThnAxisDeltaPt{"configThnAxisDeltaPt", {100, 0.0, 1.0}, "delta pt"};
   Configurable<float> maxDeltaMPhi{"maxDeltaMPhi", 0.01f, "Delta-m cut on the two phi masses: sqrt((m1-mPDG)^2 + (m2-mPDG)^2) < maxDeltaMPhi (GeV/c^2)"};
   // --- NEW: steerable axes from JSON ---
   ConfigurableAxis configThnAxisDeltaRPhi{"configThnAxisDeltaRPhi", {120, 0.0, 6.0}, "ΔR(φ,φ)"};
   ConfigurableAxis configThnAxisZ{"configThnAxisZ", {100, 0.0, 1.0}, "z"};
-  ConfigurableAxis configThnAxisA{"configThnAxisA", {100, 0.0, 1.0}, "A"};
+  ConfigurableAxis configThnAxisA{"configThnAxisA", {10, 0.0, 1.0}, "A"};
   ConfigurableAxis configThnAxisPhiPtVertex{"configThnAxisPhiPtVertex", {100, 0.0, 100.0}, "phi pT (GeV/c)"};
   ConfigurableAxis configThnAxisDecayLength{"configThnAxisDecayLength", {200, 0.0, 1.0}, "3D decay length (cm)"};
   ConfigurableAxis configThnAxisFitChi2Ndf{"configThnAxisFitChi2Ndf", {200, 0.0, 100.0}, "four-kaon fit chi2/NDF"};
   ConfigurableAxis configThnAxisRmsDcaSig{"configThnAxisRmsDcaSig", {300, 0.0, 15.0}, "RMS DCA significance"};
+
+  // Data-driven mass-resolution inputs.
+  //
+  // 1) PhiMassResolutionDataDriven:
+  //    inclusive single-phi calibration, filled after daughter/PID selections
+  //    but before the hard phi-mass window.
+  //
+  // 2) SelectedXResolutionDataDriven:
+  //    compact candidate-level sparse filled only for the selected X window.
+  //    It keeps the measured joint pT configuration of the two phis and all
+  //    four kaons, so no pT(X) reweighting or regenerated daughter-pT topology
+  //    is needed later.
+  ConfigurableAxis cfgDDPhiMassAxis{
+    "cfgDDPhiMassAxis",
+    {100, 0.995, 1.045},
+    "m(KK) for data-driven resolution (GeV/c^2)"};
+  // The pT edges are deliberately fine around 1--3 GeV/c, where the momentum
+  // response changes fastest, and coarser at high pT.  eta and DeltaPhi are
+  // retained only as validation axes; the primary extraction integrates them.
+  ConfigurableAxis cfgDDCalibKaonPtAxis{
+    "cfgDDCalibKaonPtAxis",
+    {VARIABLE_WIDTH, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0,
+     1.1, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.5, 3.0,
+     3.5, 4.0, 5.0, 6.0, 8.0, 10.0, 15.0, 20.0, 30.0, 50.0},
+    "kaon pT in single-phi calibration (GeV/c)"};
+  ConfigurableAxis cfgDDCalibKaonEtaAxis{
+    "cfgDDCalibKaonEtaAxis",
+    {10, -1.0, 1.0},
+    "kaon eta in single-phi calibration"};
+  ConfigurableAxis cfgDDCalibDeltaPhiAxis{
+    "cfgDDCalibDeltaPhiAxis",
+    {36, -3.141592653589793, 3.141592653589793},
+    "Delta phi(K+,K-) in single-phi calibration"};
+  ConfigurableAxis cfgDDPhiPtAxis{
+    "cfgDDPhiPtAxis",
+    {VARIABLE_WIDTH, 0.0, 0.4, 0.5, 0.6, 0.8, 0.9, 1.0, 1.1, 1.2,
+     1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0,
+     3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0,
+     12.0, 14.0, 16.0, 18.0, 20.0, 25.0, 30.0, 40.0, 50.0, 100.0},
+    "phi pT for data-driven resolution (GeV/c)"};
+
+  // Compact pT(X) axis.  The sparse itself is only filled for pT(X)>9 GeV/c,
+  // so there is no need to allocate fine bins below the analysis threshold.
+  ConfigurableAxis cfgDDSelectedXPtAxis{
+    "cfgDDSelectedXPtAxis",
+    {VARIABLE_WIDTH, 9.0, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0,
+     25.0, 30.0, 40.0, 50.0, 70.0, 100.0},
+    "pT(phi-phi) for selected-X data-driven resolution (GeV/c)"};
+
+  // The selected-X candidate sparse is intentionally restricted at filling
+  // time to the narrow M(phi-phi) window and pT(X) threshold.  M(phi-phi) is
+  // therefore NOT stored as an axis, keeping the 9D sparse compact.
+
   // Initialize the ananlysis task
   void init(o2::framework::InitContext&)
   {
@@ -197,15 +307,24 @@ struct doublephimeson {
     const AxisSpec thnAxisInvMassDeltaPhiSigma{configThnAxisInvMassDeltaPhiSigma, "#it{M} (GeV/#it{c}^{2}) sigma"};
     const AxisSpec thnAxisDeltaR{configThnAxisDeltaR, "#Delta R)"};
     const AxisSpec thnAxisCosTheta{configThnAxisCosTheta, "cos #theta"};
+    const AxisSpec thnAxisRapidity{configThnAxisRapidity, "Rapidity"};
     const AxisSpec thnAxisNumPhi{configThnAxisNumPhi, "Number of phi meson"};
     const AxisSpec thnAxisPtCorr{configThnAxisPtCorr, "Pt Corr var"};
     const AxisSpec thnAxisDeltaRPhi{configThnAxisDeltaRPhi, "#Delta R(#phi,#phi)"};
     const AxisSpec thnAxisZ{configThnAxisZ, "z = p_{T1}/(p_{T1}+p_{T2})"};
     const AxisSpec thnAxisA{configThnAxisA, "A = |p_{T1}-p_{T2}|/(p_{T1}+p_{T2})"};
-
+    AxisSpec axisDoublePhiPID{50, 0.0, 5.0, "max daughter n_{#sigma}^{comb}"};
     const AxisSpec thnAxisDecayLength{configThnAxisDecayLength, "#it{L}_{3D} (cm)"};
     const AxisSpec thnAxisFitChi2Ndf{configThnAxisFitChi2Ndf, "#chi^{2}/NDF"};
     const AxisSpec thnAxisRmsDcaSig{configThnAxisRmsDcaSig, "RMS DCA significance"};
+
+    const AxisSpec ddPhiMassAxis{cfgDDPhiMassAxis, "m_{K^{+}K^{-}} (GeV/c^{2})"};
+    const AxisSpec ddCalibKaonPtAxis{cfgDDCalibKaonPtAxis, "p_{T,K} (GeV/c)"};
+    const AxisSpec ddCalibKaonEtaAxis{cfgDDCalibKaonEtaAxis, "#eta_{K}"};
+    const AxisSpec ddCalibDeltaPhiAxis{cfgDDCalibDeltaPhiAxis, "#Delta#varphi_{K^{+}K^{-}}"};
+    const AxisSpec ddPhiPtAxis{cfgDDPhiPtAxis, "p_{T,#phi} (GeV/c)"};
+
+    const AxisSpec ddSelectedXPtAxis{cfgDDSelectedXPtAxis, "p_{T,X} (GeV/c)"};
 
     histos.add("SEMassUnlike", "SEMassUnlike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisDeltaR, thnAxisPt, thnAxisDeltaR, thnAxisInvMassDeltaPhi, thnAxisPtCorr});
     // histos.add("SEMassLike", "SEMassLike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisDeltaR, thnAxisInvMassPhi, thnAxisInvMassPhi, thnAxisNumPhi});
@@ -236,7 +355,52 @@ struct doublephimeson {
                 thnAxisPtCorr,
                 thnAxisNumPhi}); // pT correlation variable
 
+    histos.add("SEMassDoublePhi", "SEMassDoublePhi", HistType::kTHnSparseF,
+               {thnAxisInvMass, // M(phi-phi)
+                thnAxisPt,      // pT(phi-phi)
+                thnAxisA,
+                thnAxisRapidity,
+                thnAxisInvMassPhi,      // m(phi1)
+                thnAxisInvMassPhi,      // m(phi2)
+                thnAxisInvMassDeltaPhi, // DeltaM_phi
+                thnAxisNumPhi,
+                axisDoublePhiPID});
+
     histos.add("SEMassUnlike_VertexVars", "SEMassUnlike_VertexVars", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisInvMassDeltaPhi, thnAxisInvMassPhi, thnAxisInvMassPhi, thnAxisDecayLength, thnAxisFitChi2Ndf, thnAxisRmsDcaSig});
+
+    // Single-phi calibration input. Axis order:
+    //   0 m(KK), 1 pT(K+), 2 pT(K-), 3 eta(K+), 4 eta(K-),
+    //   5 DeltaPhi(K+,K-), 6 pT(phi).
+    // It is intentionally filled BEFORE minPhiMass/maxPhiMass are applied.
+    histos.add("PhiMassResolutionDataDriven", "PhiMassResolutionDataDriven",
+               HistType::kTHnSparseF,
+               {ddPhiMassAxis, ddCalibKaonPtAxis, ddCalibKaonPtAxis,
+                ddCalibKaonEtaAxis, ddCalibKaonEtaAxis,
+                ddCalibDeltaPhiAxis, ddPhiPtAxis});
+
+    // Selected-X candidate-level resolution sparse.  Filled only for
+    //   cfgSelectedXResolutionMassLow < M(phi-phi) < cfgSelectedXResolutionMassHigh
+    //   pT(phi-phi) > cfgSelectedXResolutionPtMin.
+    //
+    // Axis order:
+    //   0 pT(X)
+    //   1 m(phi1)
+    //   2 m(phi2)
+    //   3 pT(phi1)
+    //   4 pT(phi2)
+    //   5 pT(K+ from phi1)
+    //   6 pT(K- from phi1)
+    //   7 pT(K+ from phi2)
+    //   8 pT(K- from phi2)
+    //
+    // No eta axes and no M(phi-phi) axis are stored.
+    histos.add("SelectedXResolutionDataDriven", "SelectedXResolutionDataDriven",
+               HistType::kTHnSparseF,
+               {ddSelectedXPtAxis,
+                ddPhiMassAxis, ddPhiMassAxis,
+                ddPhiPtAxis, ddPhiPtAxis,
+                ddCalibKaonPtAxis, ddCalibKaonPtAxis,
+                ddCalibKaonPtAxis, ddCalibKaonPtAxis});
   }
 
   // get kstar
@@ -310,6 +474,104 @@ struct doublephimeson {
 
   bool selectionPID(float nsigmaTPC, float nsigmaTOF, int TOFHit, int PIDStrategy, float ptcand)
   {
+
+    if (PIDStrategy == 2003) {
+      constexpr float radius2Max = 2.5f * 2.5f;
+      const bool hasTOF = (TOFHit == 1);
+
+      if (!hasTOF) {
+        // TPC-only branch
+        if (ptcand < 0.5f) {
+          return std::abs(nsigmaTPC) < cutNsigmaTPC;
+        } else {
+          return nsigmaTPC > -2.0f &&
+                 nsigmaTPC < cutNsigmaTPC;
+        }
+
+      } else {
+        // TPC+TOF branch
+        const float radius2 =
+          nsigmaTPC * nsigmaTPC +
+          nsigmaTOF * nsigmaTOF;
+
+        if (radius2 >= radius2Max) {
+          return false;
+        }
+
+        // Circle only below 2 GeV/c
+        if (ptcand < 2.0f) {
+          return true;
+        }
+
+        float slope = 0.0f;
+        float intercept = 0.0f;
+
+        if (ptcand < 2.5f) {
+          slope = 1.29f;
+          intercept = 3.34f;
+        } else if (ptcand < 3.0f) {
+          slope = 0.94f;
+          intercept = 2.45f;
+        } else if (ptcand < 4.0f) {
+          slope = 0.62f;
+          intercept = 1.55f;
+        } else if (ptcand < 5.0f) {
+          slope = 0.32f;
+          intercept = 1.45f;
+        } else if (ptcand < 7.0f) {
+          slope = 0.22f;
+          intercept = 1.35f;
+        } else {
+          slope = 0.10f;
+          intercept = 1.25f;
+        }
+
+        return nsigmaTPC <
+               slope * nsigmaTOF + intercept;
+      }
+    }
+
+    if (PIDStrategy == 2004) {
+
+      const bool hasTOF = (TOFHit == 1);
+
+      if (!hasTOF) {
+        // No TOF hit
+        return std::abs(nsigmaTPC) < 2.0f;
+
+      } else {
+        // TOF hit present
+
+        if (ptcand < 2.0f) {
+          // No TPC or TOF PID cut
+          return true;
+        }
+
+        if (ptcand < 2.5f) {
+          return !(nsigmaTPC > 1.5f &&
+                   nsigmaTOF < -1.6f);
+        }
+
+        if (ptcand < 3.0f) {
+          return !(nsigmaTPC > 1.0f &&
+                   nsigmaTOF < -1.0f);
+        }
+
+        if (ptcand < 3.5f) {
+          return !(nsigmaTPC > 1.0f &&
+                   nsigmaTOF < -0.8f);
+        }
+
+        if (ptcand < 4.5f) {
+          return !(nsigmaTPC > 1.0f &&
+                   nsigmaTOF < -0.5f);
+        }
+
+        // pT >= 4.5 GeV/c
+        return !(nsigmaTPC > 1.0f &&
+                 nsigmaTOF < 1.0f);
+      }
+    }
 
     if (PIDStrategy == 1000) {
       if (TOFHit == 1 && std::sqrt(nsigmaTOF * nsigmaTOF + nsigmaTPC * nsigmaTPC) < 2.5) {
@@ -1574,11 +1836,69 @@ struct doublephimeson {
   }
   PROCESS_SWITCH(doublephimeson, processopti4, "Process Optimized same event", true);
   double dMNominal = 100.0;
+
   void processopti5(aod::RedPhiEvents::iterator const& collision, aod::PhiTracks const& phitracks)
   {
     if (additionalEvsel && (collision.numPos() < 2 || collision.numNeg() < 2)) {
       return;
     }
+
+    constexpr double mPhiPDG = o2::constants::physics::MassPhi; // GeV/c^2
+    constexpr double mKPDG = o2::constants::physics::MassKPlus; // GeV/c^2
+
+    // Build the phi and its daughter-kaon four-vectors. With the correction
+    // disabled this reproduces the original opti5 construction exactly. With
+    // it enabled, the scale is evaluated using the uncorrected phi pT, both
+    // kaon three-momenta are scaled coherently, their energies are recomputed
+    // using mKPDG, and the corrected phi is rebuilt from the two kaons.
+    const auto buildPhiAndKaons = [&](const auto& t,
+                                      TLorentzVector& phi,
+                                      TLorentzVector& kplus,
+                                      TLorentzVector& kminus) {
+      kplus.SetXYZM(t.phid1Px(), t.phid1Py(), t.phid1Pz(), mKPDG);
+      kminus.SetXYZM(t.phid2Px(), t.phid2Py(), t.phid2Pz(), mKPDG);
+      phi.SetXYZM(t.phiPx(), t.phiPy(), t.phiPz(), t.phiMass());
+
+      if (!cfgApplyKaonMomentumCorrection) {
+        return;
+      }
+
+      const double uncorrectedPhiPt = std::hypot(t.phiPx(), t.phiPy());
+      if (!std::isfinite(uncorrectedPhiPt) || uncorrectedPhiPt <= 0. ||
+          uncorrectedPhiPt < cfgMomCorrPtMin ||
+          uncorrectedPhiPt > cfgMomCorrPtMax) {
+        return;
+      }
+
+      const double sigmoidWidth = cfgMomCorrP3GeV;
+      if (!std::isfinite(sigmoidWidth) || sigmoidWidth <= 0.) {
+        return;
+      }
+
+      const double sigmoid =
+        1. / (1. + std::exp(-(uncorrectedPhiPt - cfgMomCorrP2GeV) /
+                            sigmoidWidth));
+      const double epsilonPercent =
+        cfgMomCorrP0Percent +
+        cfgMomCorrP1Percent * sigmoid +
+        cfgMomCorrP4PercentPerGeV * uncorrectedPhiPt +
+        cfgMomCorrP5PercentPerGeV2 * uncorrectedPhiPt * uncorrectedPhiPt;
+      const double scale = 1. + 0.01 * epsilonPercent;
+
+      if (!std::isfinite(scale) || scale <= 0.) {
+        return;
+      }
+
+      kplus.SetXYZM(scale * t.phid1Px(),
+                    scale * t.phid1Py(),
+                    scale * t.phid1Pz(),
+                    mKPDG);
+      kminus.SetXYZM(scale * t.phid2Px(),
+                     scale * t.phid2Py(),
+                     scale * t.phid2Pz(),
+                     mKPDG);
+      phi = kplus + kminus;
+    };
 
     // --- phi multiplicity with PID ---
     int phimult = 0;
@@ -1591,14 +1911,15 @@ struct doublephimeson {
       histos.fill(HIST("hnsigmaTPCKaonPlusBefore"), t.phid1TPC(), kpluspt);
       histos.fill(HIST("hnsigmaTPCKaonMinusBefore"), t.phid2TPC(), kminuspt);
 
-      if (t.phiMass() < minPhiMass1 || t.phiMass() > maxPhiMass1) {
-        continue;
-      }
       TLorentzVector phi1;
-      phi1.SetXYZM(t.phiPx(), t.phiPy(), t.phiPz(), t.phiMass());
-      if (phi1.Pt() < minPhiPt || phi1.Pt() > maxPhiPt) {
-        continue;
-      }
+      TLorentzVector kplus;
+      TLorentzVector kminus;
+      buildPhiAndKaons(t, phi1, kplus, kminus);
+      const double phi1Mass = cfgApplyKaonMomentumCorrection ? phi1.M() : t.phiMass();
+
+      // Apply the same daughter/PID requirements before filling the calibration
+      // sparse.  The phi-pT requirement for that sparse is evaluated below from
+      // the RAW daughters, so it remains independent of any optional correction.
       if (kpluspt > maxKaonPt || kminuspt > maxKaonPt) {
         continue;
       }
@@ -1609,10 +1930,39 @@ struct doublephimeson {
         continue;
       }
 
+      if (cfgFillDataDrivenPhiResolution) {
+        // IMPORTANT: always store the RAW reconstructed daughter momenta here,
+        // independent of cfgApplyKaonMomentumCorrection.  This keeps the
+        // resolution calibration data-driven and also allows two data sets to
+        // be compared later to infer their relative momentum-scale shift
+        // without circularly applying a pre-existing correction first.
+        TLorentzVector kplusRaw;
+        TLorentzVector kminusRaw;
+        kplusRaw.SetXYZM(t.phid1Px(), t.phid1Py(), t.phid1Pz(), mKPDG);
+        kminusRaw.SetXYZM(t.phid2Px(), t.phid2Py(), t.phid2Pz(), mKPDG);
+        const TLorentzVector phiForResolution = kplusRaw + kminusRaw;
+        const double dPhiKK = TVector2::Phi_mpi_pi(kplusRaw.Phi() - kminusRaw.Phi());
+        if (phiForResolution.Pt() >= minPhiPt && phiForResolution.Pt() <= maxPhiPt) {
+          histos.fill(HIST("PhiMassResolutionDataDriven"),
+                      phiForResolution.M(),
+                      kplusRaw.Pt(), kminusRaw.Pt(),
+                      kplusRaw.Eta(), kminusRaw.Eta(),
+                      dPhiKK, phiForResolution.Pt());
+        }
+      }
+
+      // From here onward keep the original signal-phi definition unchanged.
+      if (phi1.Pt() < minPhiPt || phi1.Pt() > maxPhiPt) {
+        continue;
+      }
+      if (phi1Mass < minPhiMass1 || phi1Mass > maxPhiMass1) {
+        continue;
+      }
+
       histos.fill(HIST("hnsigmaTPCTOFKaon"), t.phid1TPC(), t.phid1TOF(), kpluspt);
       histos.fill(HIST("hnsigmaTPCKaonPlus"), t.phid1TPC(), kpluspt);
       histos.fill(HIST("hnsigmaTPCKaonMinus"), t.phid2TPC(), kminuspt);
-      histos.fill(HIST("hPhiMassVsPt"), t.phiMass(), phi1.Pt());
+      histos.fill(HIST("hPhiMassVsPt"), phi1Mass, phi1.Pt());
 
       ++phimult;
     }
@@ -1620,9 +1970,6 @@ struct doublephimeson {
     if (phimult < 2) {
       return;
     }
-
-    constexpr double mPhiPDG = o2::constants::physics::MassPhi; // GeV/c^2
-    constexpr double mKPDG = o2::constants::physics::MassKPlus; // GeV/c^2
 
     const auto deltaMPhiNominal = [=](double m1, double m2) {
       const double d1 = m1 - mPhiPDG;
@@ -1635,30 +1982,127 @@ struct doublephimeson {
       const double deta = eta1 - eta2;
       return std::sqrt(dphi * dphi + deta * deta);
     };
-    const auto minKaonDeltaR = [&](const ROOT::Math::PtEtaPhiMVector& kplus1,
-                                   const ROOT::Math::PtEtaPhiMVector& kminus1,
-                                   const ROOT::Math::PtEtaPhiMVector& kplus2,
-                                   const ROOT::Math::PtEtaPhiMVector& kminus2) {
-      const double dRkplus = deltaR(kplus1.Phi(), kplus1.Eta(), kplus2.Phi(), kplus2.Eta());
-      const double dRkminus = deltaR(kminus1.Phi(), kminus1.Eta(), kminus2.Phi(), kminus2.Eta());
 
-      histos.fill(HIST("hDeltaRkaonplus"), dRkplus);
-      histos.fill(HIST("hDeltaRkaonminus"), dRkminus);
+    const auto minKaonDeltaR =
+      [&](const ROOT::Math::PtEtaPhiMVector& kplus1,
+          const ROOT::Math::PtEtaPhiMVector& kminus1,
+          const ROOT::Math::PtEtaPhiMVector& kplus2,
+          const ROOT::Math::PtEtaPhiMVector& kminus2) {
+        const double dRpp =
+          deltaR(kplus1.Phi(), kplus1.Eta(),
+                 kplus2.Phi(), kplus2.Eta());
 
-      double minDR = dRkplus;
-      minDR = std::min(minDR, dRkminus);
-      minDR = std::min(minDR, deltaR(kplus1.Phi(), kplus1.Eta(), kminus1.Phi(), kminus1.Eta()));
-      minDR = std::min(minDR, deltaR(kplus1.Phi(), kplus1.Eta(), kminus2.Phi(), kminus2.Eta()));
-      minDR = std::min(minDR, deltaR(kplus2.Phi(), kplus2.Eta(), kminus1.Phi(), kminus1.Eta()));
-      minDR = std::min(minDR, deltaR(kplus2.Phi(), kplus2.Eta(), kminus2.Phi(), kminus2.Eta()));
+        const double dRmm =
+          deltaR(kminus1.Phi(), kminus1.Eta(),
+                 kminus2.Phi(), kminus2.Eta());
 
-      return minDR;
+        const double dRpm =
+          deltaR(kplus1.Phi(), kplus1.Eta(),
+                 kminus2.Phi(), kminus2.Eta());
+
+        const double dRmp =
+          deltaR(kminus1.Phi(), kminus1.Eta(),
+                 kplus2.Phi(), kplus2.Eta());
+
+        histos.fill(HIST("hDeltaRkaonplus"), dRpp);
+        histos.fill(HIST("hDeltaRkaonminus"), dRmm);
+        return std::min({dRpp, dRmm, dRpm, dRmp});
+      };
+
+    const auto phiPtAsymmetry =
+      [](const auto& phi1,
+         const auto& phi2) -> double {
+      const double sumPt = phi1.Pt() + phi2.Pt();
+
+      if (sumPt <= 0.) {
+        return -1.;
+      }
+
+      return std::abs(phi1.Pt() - phi2.Pt()) / sumPt;
+    };
+
+    const auto absCosThetaStar =
+      [](const TLorentzVector& phi1,
+         const TLorentzVector& phi2) -> double {
+      const TLorentzVector pair = phi1 + phi2;
+
+      if (pair.E() <= 0. || pair.P() <= 0.) {
+        return -1.;
+      }
+
+      // Helicity axis: phi-phi flight direction in the laboratory.
+      const TVector3 helicityAxis = pair.Vect().Unit();
+
+      // Boost phi1 into the phi-phi rest frame.
+      TLorentzVector phi1Star = phi1;
+      phi1Star.Boost(-pair.BoostVector());
+
+      if (phi1Star.P() <= 0.) {
+        return -1.;
+      }
+
+      double cosThetaStar =
+        phi1Star.Vect().Unit().Dot(helicityAxis);
+
+      cosThetaStar = std::clamp(cosThetaStar, -1.0, 1.0);
+
+      return std::abs(cosThetaStar);
+    };
+
+    const auto nKaonTOFHits =
+      [](const auto& t1, const auto& t2) -> int {
+      return static_cast<int>(t1.phid1TOFHit() == 1) +
+             static_cast<int>(t1.phid2TOFHit() == 1) +
+             static_cast<int>(t2.phid1TOFHit() == 1) +
+             static_cast<int>(t2.phid2TOFHit() == 1);
+    };
+
+    const auto doublePhiPIDScore =
+      [](const auto& t1, const auto& t2) -> double {
+      const auto kaonPIDScore =
+        [](double nSigmaTPC,
+           double nSigmaTOF,
+           int tofHit) -> double {
+        // TOFHit is 1 when TOF is available and -1 otherwise.
+        if (tofHit == 1) {
+          return std::sqrt(
+            (nSigmaTPC * nSigmaTPC +
+             nSigmaTOF * nSigmaTOF));
+        }
+
+        // TPC-only track
+        return std::abs(nSigmaTPC);
+      };
+
+      const double pid1 =
+        kaonPIDScore(t1.phid1TPC(),
+                     t1.phid1TOF(),
+                     t1.phid1TOFHit());
+
+      const double pid2 =
+        kaonPIDScore(t1.phid2TPC(),
+                     t1.phid2TOF(),
+                     t1.phid2TOFHit());
+
+      const double pid3 =
+        kaonPIDScore(t2.phid1TPC(),
+                     t2.phid1TOF(),
+                     t2.phid1TOFHit());
+
+      const double pid4 =
+        kaonPIDScore(t2.phid2TPC(),
+                     t2.phid2TOF(),
+                     t2.phid2TOFHit());
+
+      return std::max({pid1, pid2, pid3, pid4});
     };
 
     std::vector<ROOT::Math::PtEtaPhiMVector> pairV;
     std::vector<ROOT::Math::PtEtaPhiMVector> phi1V;
     std::vector<ROOT::Math::PtEtaPhiMVector> phi2V;
     std::vector<double> minDRV;
+    std::vector<int> nTOFV;
+    std::vector<double> pid4KV;
 
     for (auto const& t1 : phitracks) {
       const double kplus1pt = std::hypot(t1.phid1Px(), t1.phid1Py());
@@ -1678,11 +2122,10 @@ struct doublephimeson {
       TLorentzVector k1p;
       TLorentzVector k1m;
 
-      phi1.SetXYZM(t1.phiPx(), t1.phiPy(), t1.phiPz(), t1.phiMass());
-      k1p.SetXYZM(t1.phid1Px(), t1.phid1Py(), t1.phid1Pz(), mKPDG);
-      k1m.SetXYZM(t1.phid2Px(), t1.phid2Py(), t1.phid2Pz(), mKPDG);
+      buildPhiAndKaons(t1, phi1, k1p, k1m);
+      const double phi1Mass = cfgApplyKaonMomentumCorrection ? phi1.M() : t1.phiMass();
 
-      if (t1.phiMass() < minPhiMass1 || t1.phiMass() > maxPhiMass1) {
+      if (phi1Mass < minPhiMass1 || phi1Mass > maxPhiMass1) {
         continue;
       }
       if (phi1.Pt() < minPhiPt || phi1.Pt() > maxPhiPt) {
@@ -1694,6 +2137,7 @@ struct doublephimeson {
       for (auto const& t2 : phitracks) {
         const auto id2 = t2.index();
         if (id2 <= id1) {
+          // LOGF(info, "track reject %d %d %f %f", id1, id2, t1.phiMass(), t2.phiMass());
           continue;
         }
         const double kplus2pt = std::hypot(t2.phid1Px(), t2.phid1Py());
@@ -1713,11 +2157,10 @@ struct doublephimeson {
         TLorentzVector k2p;
         TLorentzVector k2m;
 
-        phi2.SetXYZM(t2.phiPx(), t2.phiPy(), t2.phiPz(), t2.phiMass());
-        k2p.SetXYZM(t2.phid1Px(), t2.phid1Py(), t2.phid1Pz(), mKPDG);
-        k2m.SetXYZM(t2.phid2Px(), t2.phid2Py(), t2.phid2Pz(), mKPDG);
+        buildPhiAndKaons(t2, phi2, k2p, k2m);
+        const double phi2Mass = cfgApplyKaonMomentumCorrection ? phi2.M() : t2.phiMass();
 
-        if (t2.phiMass() < minPhiMass2 || t2.phiMass() > maxPhiMass2) {
+        if (phi2Mass < minPhiMass1 || phi2Mass > maxPhiMass1) {
           continue;
         }
         if (phi2.Pt() < minPhiPt || phi2.Pt() > maxPhiPt) {
@@ -1751,6 +2194,32 @@ struct doublephimeson {
             continue; // another pairing of these four tracks is better
           }
         }
+
+        // Compact candidate-level input for the data-driven X resolution.
+        // Fill only in the requested X mass window and above the X pT threshold.
+        // At this point the candidate has already passed:
+        //   - daughter pT/PID selections,
+        //   - phi mass and phi pT selections,
+        //   - pair pT / broad pair-mass selections,
+        //   - shared-track rejection,
+        //   - cross-pairing rejection.
+        //
+        // Use the same four-vectors that define the selected candidate.  Thus,
+        // if cfgApplyKaonMomentumCorrection is enabled, the sparse consistently
+        // stores the corrected candidate kinematics; otherwise it stores raw
+        // reconstructed kinematics.
+        if (cfgFillSelectedXResolutionSparse &&
+            pair.Pt() > cfgSelectedXResolutionPtMin &&
+            pair.M() > cfgSelectedXResolutionMassLow &&
+            pair.M() < cfgSelectedXResolutionMassHigh) {
+          histos.fill(HIST("SelectedXResolutionDataDriven"),
+                      pair.Pt(),
+                      phi1.M(), phi2.M(),
+                      phi1.Pt(), phi2.Pt(),
+                      k1p.Pt(), k1m.Pt(),
+                      k2p.Pt(), k2m.Pt());
+        }
+
         histos.fill(HIST("hPhiMass"), phi1.M(), phi2.M(), pair.Pt());
         histos.fill(HIST("hPhiMassNormalized"), getNormalizedMPhi(phi1.M(), phi1.Pt()), getNormalizedMPhi(phi2.M(), phi2.Pt()), pair.Pt());
 
@@ -1760,11 +2229,14 @@ struct doublephimeson {
         ROOT::Math::PtEtaPhiMVector k2mV(k2m.Pt(), k2m.Eta(), k2m.Phi(), mKPDG);
 
         const double minDR = minKaonDeltaR(k1pV, k1mV, k2pV, k2mV);
-
+        const int nTOF = nKaonTOFHits(t1, t2);
+        const double pid4K = doublePhiPIDScore(t1, t2);
         pairV.emplace_back(pair.Pt(), pair.Eta(), pair.Phi(), pair.M());
         phi1V.emplace_back(phi1.Pt(), phi1.Eta(), phi1.Phi(), phi1.M());
         phi2V.emplace_back(phi2.Pt(), phi2.Eta(), phi2.Phi(), phi2.M());
         minDRV.emplace_back(minDR);
+        nTOFV.emplace_back(nTOF);
+        pid4KV.emplace_back(pid4K);
       }
     }
 
@@ -1785,6 +2257,8 @@ struct doublephimeson {
       const double pairPt = pair.Pt();
       const double dRphi = deltaR(p1.Phi(), p1.Eta(), p2.Phi(), p2.Eta());
       const double minDR = minDRV[i];
+      const double combine4kpid = pid4KV[i];
+      const double nkaonTOF = nTOFV[i];
       if (!useParametrized) {
         dMNominal = deltaMPhiNominal(p1.M(), p2.M());
       } else {
@@ -1801,6 +2275,9 @@ struct doublephimeson {
       if (ptsum <= 0.0) {
         continue;
       }
+      const double apt = phiPtAsymmetry(p1, p2);
+      const double absCosTheta = absCosThetaStar(p1, p2);
+
       if (pairPt > minExoticPt) {
         histos.fill(HIST("hPtCorrelation"), pairPt, ptcorr);
         // histos.fill(HIST("hMassCent"), p1.M(), p2.M(), collision.centrality());
@@ -1815,6 +2292,17 @@ struct doublephimeson {
                     dMNominalNsigma,
                     ptcorr,
                     pairV.size());
+
+        histos.fill(HIST("SEMassDoublePhi"),
+                    M,
+                    pairPt,
+                    apt,
+                    std::abs(pair.Rapidity()),
+                    p1.M(),
+                    p2.M(),
+                    dMNominal,
+                    nkaonTOF,
+                    combine4kpid);
       }
     }
   }
