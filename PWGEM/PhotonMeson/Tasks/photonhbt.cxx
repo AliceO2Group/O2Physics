@@ -3053,7 +3053,7 @@ struct Photonhbt {
           }
 
           const auto crossMC = computeCrossObs(pwl1, pwl2, obs.qinv);
-          if (crossMC.meeOverQ < 900.f) { // 999 = qinv was zero, skip
+          if (crossMC.meeOverQ < 900.f) { // o2-linter: disable=magic-number (qinv was zero, skip)
             fRegistryPairMC.fill(HIST("Pair/same/MC/hSparse_MeeRatio_Qinv_Type"), crossMC.meeOverQ, obs.qinv, static_cast<float>(static_cast<int>(truthType)));
           }
 
@@ -3174,7 +3174,7 @@ struct Photonhbt {
             fillPairHistogram<1>(collision, obs.v1, obs.v2, 1.f);
             if (g1.fIsTruePhoton >= 0 && g2.fIsTruePhoton >= 0) {
               const int nTrue = g1.fIsTruePhoton + g2.fIsTruePhoton;
-              if (nTrue == 2) {
+              if (nTrue == 2) { // o2-linter: disable=magic-number (both pairs are true)
                 fRegistryPairMC.fill(HIST("Pair/mix/MC/hQinv_TrueTrue"), obs.qinv);
                 fillPairHistogramMC<1, PairTruthType::TrueTrueDistinct>(collision, obs.v1, obs.v2);
               } else if (nTrue == 1) {
