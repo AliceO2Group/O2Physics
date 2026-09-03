@@ -582,9 +582,9 @@ struct TrackedHypertritonRecoTask {
     std::array<float, 6> xyzpxpypz{};
     trackHeliumCov.getPxPyPzGlo(pxpypz);
     trackHeliumCov.getXYZGlo(xyz);
-    for (int i = 0; i < 3; ++i) {
+    for (std::size_t i = 0; i < xyz.size(); ++i) {
       xyzpxpypz[i] = xyz[i];
-      xyzpxpypz[i + 3] = pxpypz[i] * 2;
+      xyzpxpypz[i + xyz.size()] = pxpypz[i] * 2;
     }
     std::array<float, 21> cv{};
     trackHeliumCov.getCovXYZPxPyPzGlo(cv);
@@ -690,7 +690,7 @@ struct TrackedHypertritonRecoTask {
 
     // get SV position
     const auto& secondaryVertex = fitter2Body.getPCACandidate();
-    for (int i = 0; i < 3; i++) {
+    for (std::size_t i = 0; i < v0.decayVertex.size(); i++) {
       v0.decayVertex[i] = secondaryVertex[i];
     }
     v0.chi2 = std::sqrt(fitter2Body.getChi2AtPCACandidate());
@@ -911,13 +911,13 @@ struct TrackedHypertritonRecoTask {
     selectCollisions(collisions, skimmedProcessing);
 
     for (const auto& trackedV0 : trackedV0s) {
-      const auto v0 = trackedV0.v0_as<aod::V0s>();
-      if (v0.collisionId() < 0 || !goodCollision[v0.collisionId()] || (skimmedProcessing && !zorroDecision[v0.collisionId()][kHe])) {
+      const auto inputV0 = trackedV0.v0_as<aod::V0s>();
+      if (inputV0.collisionId() < 0 || !goodCollision[inputV0.collisionId()] || (skimmedProcessing && !zorroDecision[inputV0.collisionId()][kHe])) {
         continue;
       }
-      const auto collision = v0.collision_as<Collisions>();
-      const auto positiveTrack = v0.posTrack_as<Tracks>();
-      const auto negativeTrack = v0.negTrack_as<Tracks>();
+      const auto collision = inputV0.collision_as<Collisions>();
+      const auto positiveTrack = inputV0.posTrack_as<Tracks>();
+      const auto negativeTrack = inputV0.negTrack_as<Tracks>();
       const float nSigmaPositive = nSigmaHe3(positiveTrack);
       const float nSigmaNegative = nSigmaHe3(negativeTrack);
       const bool positiveTrackedAsHe = positiveTrack.pidForTracking() == o2::track::PID::Helium3 || positiveTrack.pidForTracking() == o2::track::PID::Alpha;
@@ -993,13 +993,13 @@ struct TrackedHypertritonRecoTask {
     std::vector<bool> reconstructedThreeBody(mcParticles.size(), false);
 
     for (const auto& trackedV0 : trackedV0s) {
-      const auto v0 = trackedV0.v0_as<aod::V0s>();
-      if (v0.collisionId() < 0 || !goodCollision[v0.collisionId()]) {
+      const auto inputV0 = trackedV0.v0_as<aod::V0s>();
+      if (inputV0.collisionId() < 0 || !goodCollision[inputV0.collisionId()]) {
         continue;
       }
-      const auto collision = v0.collision_as<CollisionsMC>();
-      const auto positiveTrack = v0.posTrack_as<TracksMC>();
-      const auto negativeTrack = v0.negTrack_as<TracksMC>();
+      const auto collision = inputV0.collision_as<CollisionsMC>();
+      const auto positiveTrack = inputV0.posTrack_as<TracksMC>();
+      const auto negativeTrack = inputV0.negTrack_as<TracksMC>();
       const float nSigmaPositive = nSigmaHe3(positiveTrack);
       const float nSigmaNegative = nSigmaHe3(negativeTrack);
       const bool positiveTrackedAsHe = positiveTrack.pidForTracking() == o2::track::PID::Helium3 || positiveTrack.pidForTracking() == o2::track::PID::Alpha;
