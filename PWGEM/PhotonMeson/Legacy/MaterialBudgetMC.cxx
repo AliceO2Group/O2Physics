@@ -30,6 +30,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 
+#include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -83,7 +84,7 @@ struct MaterialBudgetMC {
 
   Configurable<std::string> fConfigEMEventCut{"cfgEMEventCut", "minbias", "em event cut"}; // only 1 event cut per wagon
   EMPhotonEventCut fEMEventCut;
-  static constexpr std::string_view event_types[2] = {"before", "after"};
+  static constexpr std::array<std::string_view, 2> event_types = {"before", "after"};
 
   OutputObj<THashList> fOutputEvent{"Event"};
   OutputObj<THashList> fOutputV0{"V0"};
@@ -109,36 +110,37 @@ struct MaterialBudgetMC {
     TString ev_cut_name = fConfigEMEventCut.value;
     fEMEventCut = *eventcuts::GetCut(ev_cut_name.Data());
 
-    fOutputEvent.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Event")));
-    fOutputV0.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("V0")));
-    fOutputPair.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Pair")));
-    fOutputGen.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Generated")));
+    fOutputEvent.setObject(dynamic_cast<THashList*>(fMainList->FindObject("Event")));
+    fOutputV0.setObject(dynamic_cast<THashList*>(fMainList->FindObject("V0")));
+    fOutputPair.setObject(dynamic_cast<THashList*>(fMainList->FindObject("Pair")));
+    fOutputGen.setObject(dynamic_cast<THashList*>(fMainList->FindObject("Generated")));
   }
 
   template <typename TCuts1, typename TCuts2, typename TCuts3>
-  void add_pair_histograms(THashList* list_pair, const std::string pairname, TCuts1 const& tagcuts, TCuts2 const& probecuts, TCuts3 const& cuts3)
+  void add_pair_histograms(THashList* list_pair, std::string const& pairname, TCuts1 const& tagcuts, TCuts2 const& probecuts, TCuts3 const& cuts3)
   {
     for (const auto& tagcut : tagcuts) {
       for (const auto& probecut : probecuts) {
-        std::string cutname1 = tagcut.getName();
-        std::string cutname2 = probecut.getName();
+        std::string const& cutname1 = tagcut.getName();
+        std::string const& cutname2 = probecut.getName();
 
-        THashList* list_pair_subsys = reinterpret_cast<THashList*>(list_pair->FindObject(pairname.data()));
-        std::string photon_cut_name = cutname1 + "_" + cutname2;
+        auto* list_pair_subsys = dynamic_cast<THashList*>(list_pair->FindObject(pairname.data()));
+        std::string photon_cut_name = cutname1;
+        photon_cut_name.append("_").append(cutname2);
         o2::aod::pwgem::photon::histogram::AddHistClass(list_pair_subsys, photon_cut_name.data());
-        THashList* list_pair_subsys_photoncut = reinterpret_cast<THashList*>(list_pair_subsys->FindObject(photon_cut_name.data()));
+        auto* list_pair_subsys_photoncut = dynamic_cast<THashList*>(list_pair_subsys->FindObject(photon_cut_name.data()));
 
         for (const auto& cut3 : cuts3) {
-          std::string pair_cut_name = cut3.getName();
+          std::string const& pair_cut_name = cut3.getName();
           o2::aod::pwgem::photon::histogram::AddHistClass(list_pair_subsys_photoncut, pair_cut_name.data());
-          THashList* list_pair_subsys_paircut = reinterpret_cast<THashList*>(list_pair_subsys_photoncut->FindObject(pair_cut_name.data()));
+          auto* list_pair_subsys_paircut = dynamic_cast<THashList*>(list_pair_subsys_photoncut->FindObject(pair_cut_name.data()));
           o2::aod::pwgem::photon::histogram::DefineHistograms(list_pair_subsys_paircut, "material_budget_study", "Pair");
         } // end of cut3 loop pair cut
       } // end of probecut loop
     } // end of tagcut loop
   }
 
-  static constexpr std::string_view pairnames[9] = {"PCMPCM", "PHOSPHOS", "EMCEMC", "PCMPHOS", "PCMEMC", "PCMDalitzEE", "PCMDalitzMuMu", "PHOSEMC", "DalitzEEDalitzEE"};
+  static constexpr std::array<std::string_view, 9> pairnames = {"PCMPCM", "PHOSPHOS", "EMCEMC", "PCMPHOS", "PCMEMC", "PCMDalitzEE", "PCMDalitzMuMu", "PHOSEMC", "DalitzEEDalitzEE"};
   void addhistograms()
   {
     fMainList->SetOwner(true);
@@ -146,13 +148,13 @@ struct MaterialBudgetMC {
 
     // create sub lists first.
     o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "Event");
-    THashList* list_ev = reinterpret_cast<THashList*>(fMainList->FindObject("Event"));
+    auto* list_ev = dynamic_cast<THashList*>(fMainList->FindObject("Event"));
 
     o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "Pair");
-    THashList* list_pair = reinterpret_cast<THashList*>(fMainList->FindObject("Pair"));
+    auto* list_pair = dynamic_cast<THashList*>(fMainList->FindObject("Pair"));
 
     o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "V0");
-    THashList* list_v0 = reinterpret_cast<THashList*>(fMainList->FindObject("V0"));
+    auto* list_v0 = dynamic_cast<THashList*>(fMainList->FindObject("V0"));
 
     // for V0s
     for (const auto& cut : fProbeCuts) {
@@ -164,9 +166,9 @@ struct MaterialBudgetMC {
     for (const auto& pairname : fPairNames) {
       LOGF(info, "Enabled pairs = %s", pairname.data());
 
-      THashList* list_ev_pair = reinterpret_cast<THashList*>(o2::aod::pwgem::photon::histogram::AddHistClass(list_ev, pairname.data()));
+      THashList* list_ev_pair = o2::aod::pwgem::photon::histogram::AddHistClass(list_ev, pairname.data());
       for (const auto& evtype : event_types) {
-        THashList* list_ev_type = reinterpret_cast<THashList*>(o2::aod::pwgem::photon::histogram::AddHistClass(list_ev_pair, evtype.data()));
+        THashList* list_ev_type = o2::aod::pwgem::photon::histogram::AddHistClass(list_ev_pair, evtype.data());
         o2::aod::pwgem::photon::histogram::DefineHistograms(list_ev_type, "Event", evtype.data());
       }
 
@@ -179,7 +181,7 @@ struct MaterialBudgetMC {
     } // end of pair name loop
 
     o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "Generated");
-    THashList* list_gen = reinterpret_cast<THashList*>(fMainList->FindObject("Generated"));
+    auto* list_gen = dynamic_cast<THashList*>(fMainList->FindObject("Generated"));
     o2::aod::pwgem::photon::histogram::DefineHistograms(list_gen, "Generated", "");
   }
 
@@ -245,12 +247,12 @@ struct MaterialBudgetMC {
   template <PairType pairtype, typename TEvents, typename TPhotons, typename TPreslice, typename TCuts, typename TLegs, typename TMCParticles, typename TMCEvents>
   void fillsinglephoton(TEvents const& collisions, TPhotons const& photons, TPreslice const& perCollision, TCuts const& cuts, TLegs const& /*legs*/, TMCParticles const& mcparticles, TMCEvents const&)
   {
-    THashList* list_ev_pair_before = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject(event_types[0].data()));
-    THashList* list_ev_pair_after = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject(event_types[1].data()));
-    THashList* list_v0 = static_cast<THashList*>(fMainList->FindObject("V0"));
-    double value[4] = {0.f};
+    auto* list_ev_pair_before = dynamic_cast<THashList*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject(event_types[0].data()));
+    auto* list_ev_pair_after = dynamic_cast<THashList*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject(event_types[1].data()));
+    auto* list_v0 = dynamic_cast<THashList*>(fMainList->FindObject("V0"));
+    std::array<double, 4> value = {0.f};
     for (const auto& collision : collisions) {
-      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      std::array<float, 3> centralities{collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
@@ -260,8 +262,8 @@ struct MaterialBudgetMC {
         continue;
       }
       o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev_pair_after, "", collision);
-      reinterpret_cast<TH1F*>(list_ev_pair_before->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
-      reinterpret_cast<TH1F*>(list_ev_pair_after->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
+      dynamic_cast<TH1F*>(list_ev_pair_before->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
+      dynamic_cast<TH1F*>(list_ev_pair_after->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
 
       auto photons_coll = photons.sliceBy(perCollision, collision.globalIndex());
       for (const auto& cut : cuts) {
@@ -293,7 +295,7 @@ struct MaterialBudgetMC {
           value[1] = photon.v0radius();
           value[2] = RecoDecay::constrainAngle(phi_cp);
           value[3] = eta_cp;
-          reinterpret_cast<THnSparseF*>(list_v0->FindObject(cut.getName().c_str())->FindObject("hs_conv_point"))->Fill(value);
+          dynamic_cast<THnSparseF*>(list_v0->FindObject(cut.getName().c_str())->FindObject("hs_conv_point"))->Fill(value.data());
 
         } // end of photon loop
       } // end of cut loop
@@ -304,10 +306,10 @@ struct MaterialBudgetMC {
   template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2, typename TCuts1, typename TCuts2, typename TPairCuts, typename TLegs, typename TMCParticles, typename TMCEvents>
   void TruePairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TCuts1 const& tagcuts, TCuts2 const& probecuts, TPairCuts const& paircuts, TLegs const& /*legs*/, TMCParticles const& mcparticles, TMCEvents const&)
   {
-    THashList* list_pair_ss = static_cast<THashList*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data()));
+    auto* list_pair_ss = dynamic_cast<THashList*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data()));
 
     for (const auto& collision : collisions) {
-      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      std::array<float, 3> centralities{collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
@@ -318,7 +320,7 @@ struct MaterialBudgetMC {
       auto photons1_coll = photons1.sliceBy(perCollision1, collision.globalIndex());
       auto photons2_coll = photons2.sliceBy(perCollision2, collision.globalIndex());
 
-      double value[6] = {0.f};
+      std::array<double, 6> value{0.};
       float phi_cp2 = 0.f, eta_cp2 = 0.f;
       for (const auto& tagcut : tagcuts) {
         for (const auto& probecut : probecuts) {
@@ -386,7 +388,7 @@ struct MaterialBudgetMC {
                 value[3] = g2.v0radius();
                 value[4] = RecoDecay::constrainAngle(phi_cp2);
                 value[5] = eta_cp2;
-                reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", tagcut.getName().c_str(), probecut.getName().c_str()))->FindObject(paircut.getName().c_str())->FindObject("hs_conv_point_same"))->Fill(value);
+                dynamic_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", tagcut.getName().c_str(), probecut.getName().c_str()))->FindObject(paircut.getName().c_str())->FindObject("hs_conv_point_same"))->Fill(value.data());
               } // end of pair cut loop
             } // end of g2 loop
           } // end of g1 loop
@@ -413,30 +415,30 @@ struct MaterialBudgetMC {
     // all MC tracks which belong to the MC event corresponding to the current reconstructed event
 
     for (const auto& collision : grouped_collisions) {
-      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      std::array<float, 3> centralities = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
       auto mccollision = collision.emmcevent();
       // LOGF(info, "mccollision.globalIndex() = %d", mccollision.globalIndex());
 
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(1.0);
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hZvtx_before"))->Fill(mccollision.posZ());
+      dynamic_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(1.0);
+      dynamic_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hZvtx_before"))->Fill(mccollision.posZ());
       if (!collision.sel8()) {
         continue;
       }
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(2.0);
+      dynamic_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(2.0);
 
       if (collision.numContrib() < 0.5) {
         continue;
       }
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(3.0);
+      dynamic_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(3.0);
 
       if (std::abs(collision.posZ()) > 10.0) {
         continue;
       }
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(4.0);
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hZvtx_after"))->Fill(mccollision.posZ());
+      dynamic_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(4.0);
+      dynamic_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hZvtx_after"))->Fill(mccollision.posZ());
     } // end of collision loop
   }
 
@@ -447,8 +449,8 @@ struct MaterialBudgetMC {
   PROCESS_SWITCH(MaterialBudgetMC, processDummy, "Dummy function", true);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<MaterialBudgetMC>(cfgc, TaskName{"material-budget-mc"})};
+    adaptAnalysisTask<MaterialBudgetMC>(context, TaskName{"material-budget-mc"})};
 }

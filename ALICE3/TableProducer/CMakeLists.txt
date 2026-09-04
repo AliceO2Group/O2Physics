@@ -22,7 +22,12 @@ o2physics_add_dpl_workflow(alice3-trackextension
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(alice3-centrality
-                    SOURCES alice3-centrality.cxx
+                    SOURCES alice3Centrality.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(alice3-multiplicity
+                    SOURCES alice3Multiplicity.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 

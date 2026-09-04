@@ -17,6 +17,7 @@
 #define PWGEM_PHOTONMESON_CORE_EMCPHOTONCUT_H_
 
 #include "PWGEM/PhotonMeson/Core/EMBitFlags.h"
+#include "PWGEM/PhotonMeson/DataModel/EventTables.h" // IWYU pragma: keep
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
 #include <CommonConstants/MathConstants.h>
@@ -29,6 +30,7 @@
 
 #include <sys/types.h>
 
+#include <array>
 #include <cmath>
 #include <concepts>
 #include <cstddef>
@@ -61,7 +63,7 @@ concept IsNonLinContainer = o2::soa::is_table<T> && requires(T t) {
 };
 
 template <typename T>
-concept IsTrackIterator = o2::soa::is_iterator<T> && requires(T t) {
+concept IsFullTrackIterator = o2::soa::is_iterator<T> && !o2::soa::is_filtered_iterator<T> && requires(T t) {
   // Check that the *elements* of the container have the required methods:
   { t.deltaEta() } -> std::same_as<float>;
   { t.deltaPhi() } -> std::same_as<float>;
@@ -70,7 +72,7 @@ concept IsTrackIterator = o2::soa::is_iterator<T> && requires(T t) {
 };
 
 template <typename T>
-concept IsTrackContainer = o2::soa::is_table<T> && requires(T t) {
+concept IsFullTrackContainer = o2::soa::is_table<T> && o2::soa::is_not_filtered_table<T> && requires(T t) {
   // Check that the *elements* of the container have the required methods:
   { t.begin().deltaEta() } -> std::same_as<float>;
   { t.begin().deltaPhi() } -> std::same_as<float>;
@@ -134,7 +136,7 @@ class EMCPhotonCut
   const std::string& getName() const { return name; }
   const std::string& getTitle() const { return title; }
 
-  static std::array<std::string, static_cast<std::size_t>(EMCPhotonCut::EMCPhotonCuts::kNCuts)> mCutNames;
+  static const std::array<std::string, static_cast<std::size_t>(EMCPhotonCut::EMCPhotonCuts::kNCuts)> mCutNames;
 
   static constexpr auto getClusterId(o2::soa::is_iterator auto const& t)
   {
@@ -198,18 +200,18 @@ class EMCPhotonCut
   /// \brief performs check if track is matched with given cluster
   /// \param cluster cluster to be checked
   /// \param emcmatchedtrack matched track iterator
-  /// \param emcmatchedtrackEnd matched track end iterator
+  /// \param nMatchedTracks number of matched tracks
   /// \param GetEtaCut lambda to get the eta cut value
   /// \param GetPhiCut lambda to get the phi cut value
   /// \param applyEoverP bool to check if E/p should be checked (for secondaries we do not check this!)
-  bool checkTrackMatching(o2::soa::is_iterator auto const& cluster, IsTrackIterator auto& emcmatchedtrack, o2::soa::RowViewSentinel const emcmatchedtrackEnd, bool applyEoverP, auto GetEtaCut, auto GetPhiCut, o2::framework::HistogramRegistry* fRegistry = nullptr, TrackType trackType = TrackType::kPrimary) const
+  bool checkTrackMatching(o2::soa::is_iterator auto const& cluster, IsFullTrackIterator auto& emcmatchedtrack, int64_t const nMatchedTracks, bool applyEoverP, auto GetEtaCut, auto GetPhiCut, o2::framework::HistogramRegistry* fRegistry = nullptr, TrackType trackType = TrackType::kPrimary) const
   {
     // advance to cluster
-    while (emcmatchedtrack != emcmatchedtrackEnd && getClusterId(emcmatchedtrack) < cluster.globalIndex()) {
+    while (emcmatchedtrack.globalIndex() < nMatchedTracks && getClusterId(emcmatchedtrack) < cluster.globalIndex()) {
       ++emcmatchedtrack;
     }
     // all matched tracks have been checked
-    if (emcmatchedtrack == emcmatchedtrackEnd) {
+    if (emcmatchedtrack.globalIndex() >= nMatchedTracks) {
       return true;
     }
     // if all remaining tracks are beyond this cluster, it survives
@@ -217,7 +219,7 @@ class EMCPhotonCut
       return true;
     }
     // iterate over tracks belonging to this cluster
-    while (emcmatchedtrack != emcmatchedtrackEnd && getClusterId(emcmatchedtrack) == cluster.globalIndex()) {
+    while (emcmatchedtrack.globalIndex() < nMatchedTracks && getClusterId(emcmatchedtrack) == cluster.globalIndex()) {
       const auto dEta = emcmatchedtrack.deltaEta();
       const auto dPhi = emcmatchedtrack.deltaPhi();
       const auto fdEta = std::fabs(emcmatchedtrack.deltaEta());
@@ -286,18 +288,18 @@ class EMCPhotonCut
   /// \brief check if given clusters survives all cuts
   /// \param flags EMBitFlags where results will be stored
   /// \param cluster cluster table to check
-  /// \param matchedTracks matched primary tracks table
-  /// \param matchedSecondaries matched secondary tracks table
+  /// \param matchedTracks matched primary tracks table. HAS TO BE FULL TABLE!
+  /// \param matchedSecondaries matched secondary tracks table. HAS TO BE FULL TABLE!
   /// \param fRegistry  o2::framework::HistogramRegistry pointer of the main task
-  void AreSelectedRunning(EMBitFlags& flags, o2::soa::is_table auto const& clusters, IsTrackContainer auto const& emcmatchedtracks, IsTrackContainer auto const& secondaries, o2::framework::HistogramRegistry* fRegistry = nullptr) const
+  void AreSelectedRunning(EMBitFlags& flags, o2::soa::is_table auto const& clusters, IsFullTrackContainer auto const& emcmatchedtracks, IsFullTrackContainer auto const& secondaries, o2::framework::HistogramRegistry* fRegistry = nullptr) const
   {
     if (clusters.size() <= 0) {
       return;
     }
     auto emcmatchedtrackIter = emcmatchedtracks.begin();
-    auto emcmatchedtrackEnd = emcmatchedtracks.end();
+    int64_t nMatchedTracks = emcmatchedtracks.size();
     auto secondaryIter = secondaries.begin();
-    auto secondaryEnd = secondaries.end();
+    int64_t nSecondaryTracks = secondaries.size();
     size_t iCluster = 0;
 
     const bool doQA = mDoQA && fRegistry != nullptr;
@@ -309,7 +311,7 @@ class EMCPhotonCut
       if (doQA) {
         fillBeforeClusterHistogram(cluster, fRegistry);
       }
-      if (!IsSelectedRunning(cluster, emcmatchedtrackIter, emcmatchedtrackEnd, secondaryIter, secondaryEnd, fRegistry)) {
+      if (!IsSelectedRunning(cluster, emcmatchedtrackIter, nMatchedTracks, secondaryIter, nSecondaryTracks, fRegistry)) {
         flags.set(iCluster);
       } else if (doQA) {
         fillAfterClusterHistogram(cluster, fRegistry);
@@ -329,11 +331,11 @@ class EMCPhotonCut
   /// \brief check if given cluster survives all cuts
   /// \param cluster cluster to check
   /// \param emcmatchedtrackIter current iterator of matched primary tracks
-  /// \param emcmatchedtrackEnd end iterator of matched primary tracks
+  /// \param nMatchedTracks number of matched primary tracks
   /// \param secondaryIter current iterator of matched secondary tracks
-  /// \param secondaryEnd end iterator of matched secondary tracks
+  /// \param nSecondaryTracks number of matched secondary tracks
   /// \return true if cluster survives all cuts else false
-  bool IsSelectedRunning(o2::soa::is_iterator auto const& cluster, IsTrackIterator auto& emcmatchedtrackIter, o2::soa::RowViewSentinel const emcmatchedtrackEnd, IsTrackIterator auto& secondaryIter, o2::soa::RowViewSentinel const secondaryEnd, o2::framework::HistogramRegistry* fRegistry = nullptr) const
+  bool IsSelectedRunning(o2::soa::is_iterator auto const& cluster, IsFullTrackIterator auto& emcmatchedtrackIter, int64_t const nMatchedTracks, IsFullTrackIterator auto& secondaryIter, int64_t const nSecondaryTracks, o2::framework::HistogramRegistry* fRegistry = nullptr) const
   {
     const bool doQA = mDoQA && fRegistry != nullptr;
     if (!IsSelectedEMCalRunning(EMCPhotonCuts::kDefinition, cluster)) {
@@ -366,13 +368,13 @@ class EMCPhotonCut
       }
       return false;
     }
-    if (mUseTM && (!IsSelectedEMCalRunning(EMCPhotonCuts::kTM, cluster, emcmatchedtrackIter, emcmatchedtrackEnd, fRegistry))) {
+    if (mUseTM && (!IsSelectedEMCalRunning(EMCPhotonCuts::kTM, cluster, emcmatchedtrackIter, nMatchedTracks, fRegistry))) {
       if (doQA) {
         fRegistry->fill(HIST("QA/Cluster/hClusterQualityCuts"), static_cast<int>(EMCPhotonCuts::kTM) + 1, cluster.e());
       }
       return false;
     }
-    if (mUseSecondaryTM && (!IsSelectedEMCalRunning(EMCPhotonCuts::kSecondaryTM, cluster, secondaryIter, secondaryEnd, fRegistry))) {
+    if (mUseSecondaryTM && (!IsSelectedEMCalRunning(EMCPhotonCuts::kSecondaryTM, cluster, secondaryIter, nSecondaryTracks, fRegistry))) {
       if (doQA) {
         fRegistry->fill(HIST("QA/Cluster/hClusterQualityCuts"), static_cast<int>(EMCPhotonCuts::kSecondaryTM) + 1, cluster.e());
       }
@@ -437,16 +439,20 @@ class EMCPhotonCut
   /// \param cut enum of the cluster cut to check
   /// \param cluster cluster to check
   /// \param matchedTrackIter current iterator of matched primary or secondary tracks
-  /// \param matchedTrackEnd end iterator of matched primary or secondary tracks
+  /// \param nMatchedTracks number of matched primary or secondary tracks
   /// \return true if cluster survives cut else false
-  bool IsSelectedEMCalRunning(const EMCPhotonCuts& cut, o2::soa::is_iterator auto const& cluster, IsTrackIterator auto& matchedTrackIter, o2::soa::RowViewSentinel const matchedTrackEnd, o2::framework::HistogramRegistry* fRegistry = nullptr) const
+  bool IsSelectedEMCalRunning(const EMCPhotonCuts& cut, o2::soa::is_iterator auto const& cluster, IsFullTrackIterator auto& matchedTrackIter, int64_t const nMatchedTracks, o2::framework::HistogramRegistry* fRegistry = nullptr) const
   {
+    if (nMatchedTracks == 0) {
+      // there are not tracks to match with, so its true
+      return true;
+    }
     switch (cut) {
       case EMCPhotonCuts::kTM:
-        return checkTrackMatching(cluster, matchedTrackIter, matchedTrackEnd, true, [this](float pt) { return GetTrackMatchingEta(pt); }, [this](float pt) { return GetTrackMatchingPhi(pt); }, fRegistry, TrackType::kPrimary);
+        return checkTrackMatching(cluster, matchedTrackIter, nMatchedTracks, true, [this](float pt) { return GetTrackMatchingEta(pt); }, [this](float pt) { return GetTrackMatchingPhi(pt); }, fRegistry, TrackType::kPrimary);
 
       case EMCPhotonCuts::kSecondaryTM:
-        return checkTrackMatching(cluster, matchedTrackIter, matchedTrackEnd, false, [this](float pt) { return GetSecTrackMatchingEta(pt); }, [this](float pt) { return GetSecTrackMatchingPhi(pt); }, fRegistry, TrackType::kSecondary);
+        return checkTrackMatching(cluster, matchedTrackIter, nMatchedTracks, false, [this](float pt) { return GetSecTrackMatchingEta(pt); }, [this](float pt) { return GetSecTrackMatchingPhi(pt); }, fRegistry, TrackType::kSecondary);
 
       default:
         return true;
@@ -518,7 +524,7 @@ class EMCPhotonCut
         return mMinTime <= cluster.time() && cluster.time() <= mMaxTime;
 
       case EMCPhotonCuts::kTM: {
-        if constexpr (IsTrackContainer<TMatchedTracks>) {
+        if constexpr (IsFullTrackContainer<TMatchedTracks>) {
           for (const auto& emcmatchedtrack : emcmatchedtracks) {
             auto dEta = std::fabs(emcmatchedtrack.deltaEta());
             auto dPhi = std::fabs(emcmatchedtrack.deltaPhi());
@@ -551,7 +557,7 @@ class EMCPhotonCut
         return true; // when we don't have any tracks the cluster should always survive the TM cut!
       }
       case EMCPhotonCuts::kSecondaryTM: {
-        if constexpr (IsTrackContainer<TMatchedTracks>) {
+        if constexpr (IsFullTrackContainer<TMatchedTracks>) {
           for (const auto& emcmatchedtrack : emcmatchedtracks) {
             auto dEta = std::fabs(emcmatchedtrack.deltaEta());
             auto dPhi = std::fabs(emcmatchedtrack.deltaPhi());

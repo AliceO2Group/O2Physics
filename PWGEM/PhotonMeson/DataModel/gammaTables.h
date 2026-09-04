@@ -14,7 +14,7 @@
 /// \author D. Sekihata, daiki.sekihata@cern.ch; Marvin Hemmer (marvin.hemmer@cern.ch) - Goethe University Frankfurt
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
-#include "PWGEM/PhotonMeson/DataModel/EventTables.h"
+#include "PWGEM/PhotonMeson/DataModel/EventTables.h" // IWYU pragma: keep (needed)
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/CaloClusters.h"
@@ -23,7 +23,6 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CommonConstants/MathConstants.h>
-#include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 
 #include <array>
@@ -648,10 +647,10 @@ DECLARE_SOA_INDEX_COLUMN(EmEmcCluster, emEmcCluster); //!
 } // namespace trackmatching
 
 DECLARE_SOA_TABLE(EmEmcMTracks, "AOD", "EMEMCMTRACK", //!
-                  trackmatching::EmEmcClusterId, emctm::DeltaPhi, emctm::DeltaEta, emctm::TrackP, emctm::TrackPt);
+                  o2::soa::Index<>, trackmatching::EmEmcClusterId, emctm::DeltaPhi, emctm::DeltaEta, emctm::TrackP, emctm::TrackPt);
 
 DECLARE_SOA_TABLE(EmEmcMSTracks, "AOD", "EMEMCMSTRACK", //!
-                  trackmatching::EmEmcClusterId, emctm::DeltaPhi, emctm::DeltaEta, emctm::TrackP, emctm::TrackPt);
+                  o2::soa::Index<>, trackmatching::EmEmcClusterId, emctm::DeltaPhi, emctm::DeltaEta, emctm::TrackP, emctm::TrackPt);
 
 DECLARE_SOA_TABLE(EMCEMEventIds_000, "AOD", "EMCEMEVENTID", emccluster::EMEventId);              // To be joined with SkimEMCClusters table at analysis level.
 DECLARE_SOA_TABLE_VERSIONED(EMCEMEventIds_001, "AOD", "EMCEMEVENTID", 1, emccluster::PMEventId); // To be joined with SkimEMCClusters table at analysis level.

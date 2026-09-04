@@ -221,6 +221,7 @@ struct ConfPairBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis dalitzM12{"dalitzM12", {{100, 0, 10}}, "Mass12 binning of darlitz plot"};
   o2::framework::ConfigurableAxis dalitzM13{"dalitzM13", {{100, 0, 10}}, "Mass13 binning of darlitz plot"};
   o2::framework::Configurable<int> transverseMassType{"transverseMassType", static_cast<int>(modes::TransverseMassType::kAveragePdgMass), "Type of transverse mass (0-> Average Pdg Mass, 1-> Reduced Pdg Mass, 2-> Mt from combined 4 vector)"};
+  o2::framework::Configurable<int> kinematicVariable{"kinematicVariable", static_cast<int>(modes::KinematicVariable::kKstar), "Type of kinematic variable (0->kstar, 1->kT, 2->mT) for PC and CPR plots"};
   o2::framework::ConfigurableAxis binningDeltaEta{"binningDeltaEta", {{35, -1.6, 1.6}}, "Delta eta"};
   o2::framework::ConfigurableAxis binningDeltaPhi{"binningDeltaPhi", {{35, -o2::constants::math::PIHalf, 3 * o2::constants::math::PIHalf}}, "Delta phi"};
   o2::framework::Configurable<bool> plotBertschPratt{"plotBertschPratt", false, "(Reco/Mc) Enable 1D projections and 3D (q_out, q_side, q_long) Bertsch-Pratt histograms in LCMS"};
@@ -499,6 +500,8 @@ constexpr char PrefixTrackV0Me[] = "TrackV0/ME/";
 
 constexpr char PrefixTrackD0Se[] = "TrackD0/SE/";
 constexpr char PrefixTrackD0Me[] = "TrackD0/ME/";
+constexpr char PrefixTrackLcSe[] = "TrackLc/SE/";
+constexpr char PrefixTrackLcMe[] = "TrackLc/ME/";
 constexpr char PrefixD0D0Se[] = "D0D0/SE/";
 constexpr char PrefixD0D0Me[] = "D0D0/ME/";
 
@@ -593,6 +596,9 @@ class PairHistManager
 
     // transverse mass type
     mMtType = static_cast<modes::TransverseMassType>(ConfPairBinning.transverseMassType.value);
+
+    // kinematic variable
+    mKinematicVariable = static_cast<modes::KinematicVariable>(ConfPairBinning.kinematicVariable.value);
 
     // values for cuts
     mKstarMin = ConfPairCuts.kstarMin.value;
@@ -710,9 +716,8 @@ class PairHistManager
     }
 
     if (mPlotDalitz) {
-      if constexpr (modes::isEqual(particleType1, modes::Particle::kTrack) && (modes::isEqual(particleType2, modes::Particle::kV0) ||
-                                                                               modes::isEqual(particleType2, modes::Particle::kTwoTrackResonance) ||
-                                                                               modes::isEqual(particleType2, modes::Particle::kCharmHadron))) {
+      if constexpr (modes::isEqual(particleType1, modes::Particle::kTrack) && (modes::isEqual(particleType2, modes::Particle::kV0) || modes::isEqual(particleType2, modes::Particle::kTwoTrackResonance) || modes::isEqual(particleType2, modes::Particle::kCharmHadron)) &&
+                    requires(T2 p) { p.posDauId(); p.negDauId(); }) {
         auto posDaughter = trackTable.rawIteratorAt(particle2.posDauId() - trackTable.offset());
         auto negDaughter = trackTable.rawIteratorAt(particle2.negDauId() - trackTable.offset());
         ROOT::Math::PtEtaPhiMVector posDau4v = ROOT::Math::PtEtaPhiMVector(posDaughter.pt(), posDaughter.eta(), posDaughter.phi(), mPdgMassPosDau2);
@@ -917,7 +922,23 @@ class PairHistManager
     }
   }
 
-  float getKstar() const { return mKstar; }
+  float getKinematic() const
+  {
+    switch (mKinematicVariable) {
+      case modes::KinematicVariable::kKstar:
+        return mKstar;
+        break;
+      case modes::KinematicVariable::kKt:
+        return mKt;
+        break;
+      case modes::KinematicVariable::kMt:
+        return mMt;
+        break;
+      default:
+        LOG(fatal) << "Invalid kinematic Variable, breaking...";
+    }
+    return mKstar;
+  }
 
  private:
   void initAnalysis(std::map<PairHist, std::vector<o2::framework::AxisSpec>> const& Specs)
@@ -1600,6 +1621,7 @@ class PairHistManager
   double mPdgMassNegDau2 = 0;
 
   modes::TransverseMassType mMtType = modes::TransverseMassType::kAveragePdgMass;
+  modes::KinematicVariable mKinematicVariable = modes::KinematicVariable::kKstar;
 
   int mAbsCharge1 = 1;
   int mAbsCharge2 = 1;

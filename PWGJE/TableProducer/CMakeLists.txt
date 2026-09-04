@@ -88,6 +88,11 @@ o2physics_add_dpl_workflow(jet-sv-reconstruction
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(quark-gluon-jets-producer
+                    SOURCES quarkGluonJetsProducer.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 endif()
 
 
@@ -108,6 +113,11 @@ o2physics_add_dpl_workflow(emcal-cluster-hadronic-correction-task
 
 o2physics_add_dpl_workflow(slim-tables-producer
                     SOURCES slimTablesProducer.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(berkeley-tree-producer
+                    SOURCES berkeleyTreeProducer.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 

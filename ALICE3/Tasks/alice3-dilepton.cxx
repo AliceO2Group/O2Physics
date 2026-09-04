@@ -50,11 +50,18 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct Alice3Lepton {
+  enum HFType {
+    kUndef = -1,
+    kCe = 0,
+    kBe = 1,
+    kBCe = 2,
+    kPPi0 = 4,
+  };
 
   Service<o2::framework::O2DatabasePDG> inspdg;
 
   Configurable<int> pdg{"pdg", 11, "pdg code for analysis. dielectron:11, dimuon:13"};
-  Configurable<bool> requireHFE{"requireHFE", false, "Require HFE"};
+  Configurable<int> requireHFE{"requireHFE", -1, "-1: no selection, 0: charm, 1: direct beauty, 2: beauty->charm->e, 3: HFE, 4: promptPi0"};
   Configurable<float> ptMin{"ptMin", 0.f, "Lower limit in pT"};
   Configurable<float> ptMax{"ptMax", 5.f, "Upper limit in pT"};
   Configurable<float> etaMin{"etaMin", -5.f, "Lower limit in eta"};
@@ -84,7 +91,8 @@ struct Alice3Lepton {
     const AxisSpec axisSigmaEl{200, -10, 10, "n#sigma_{El}"};
     const AxisSpec axisTrackLengthOuterTOF{300, 0., 300., "Track length (cm)"};
     const AxisSpec axisEta{1000, -5, 5, "#it{#eta}"};
-    const AxisSpec axisDCAxy{1000, 0, 20, "DCA_{xy,ll} (#sigma)"};
+    const AxisSpec axisDCAxysigma{1000, -20, 20, "DCA_{xy} (#sigma)"};
+    const AxisSpec axisDCAxy{1000, -1000, 1000, "DCA_{xy} (#micro m)"};
     const AxisSpec axisPhi{360, 0, TMath::TwoPi(), "#it{#varphi} (rad.)"};
     const AxisSpec axisProdx{2000, -100, 100, "Prod. Vertex X (cm)"};
     const AxisSpec axisPrody{2000, -100, 100, "Prod. Vertex Y (cm)"};
@@ -113,10 +121,17 @@ struct Alice3Lepton {
       registry.add("Reconstructed/Track/Eta", "Track Eta", kTH1F, {axisEta});
       registry.add("Reconstructed/Track/Phi", "Track Phi", kTH1F, {axisPhi});
       registry.add("Reconstructed/Track/Eta_Pt", "Eta vs. Pt", kTH2F, {axisPt, axisEta}, true);
+      registry.add("Reconstructed/Track/DCAxysigma", "Track DCAxy in #sigma", kTH2F, {axisPt, axisDCAxysigma});
+      registry.add("Reconstructed/Track/DCAxy", "Track DCAxy in #micro m", kTH2F, {axisPt, axisDCAxy});
       registry.add("Reconstructed/Track/SigmaOTofvspt", "Track #sigma oTOF", kTH2F, {axisPt, axisSigmaEl});
       registry.add("Reconstructed/Track/SigmaITofvspt", "Track #sigma iTOF", kTH2F, {axisPt, axisSigmaEl});
       registry.add("Reconstructed/Track/SigmaRichvspt", "Track #sigma RICH", kTH2F, {axisPt, axisSigmaEl});
       registry.add("Reconstructed/Track/outerTOFTrackLength", "Track length outer TOF", kTH1F, {axisTrackLengthOuterTOF});
+
+      registry.add("Reconstructed/Track/PtMC", "Track Pt", kTH1F, {axisPt});
+      registry.add("Reconstructed/Track/EtaMC", "Track Eta", kTH1F, {axisEta});
+      registry.add("Reconstructed/Track/PhiMC", "Track Phi", kTH1F, {axisPhi});
+      registry.add("Reconstructed/Track/EtaMC_PtMC", "Eta vs. Pt", kTH2F, {axisPt, axisEta}, true);
 
       registry.addClone("Reconstructed/Track/", "Reconstructed/TrackPID/");
       registry.addClone("Reconstructed/Track/", "Reconstructed/TrackPIDPre/");
@@ -131,6 +146,8 @@ struct Alice3Lepton {
       registry.add("Reconstructed/Track/Eta", "Track Eta", kTH1F, {axisEta});
       registry.add("Reconstructed/Track/Phi", "Track Phi", kTH1F, {axisPhi});
       registry.add("Reconstructed/Track/Eta_Pt", "Eta vs. Pt", kTH2F, {axisPt, axisEta}, true);
+      registry.add("Reconstructed/Track/DCAxysigma", "Track DCAxy in #sigma", kTH2F, {axisPt, axisDCAxysigma});
+      registry.add("Reconstructed/Track/DCAxy", "Track DCAxy in #micro m", kTH2F, {axisPt, axisDCAxy});
 
       registry.add("Reconstructed/Track/PtMC", "Track Pt", kTH1F, {axisPt});
       registry.add("Reconstructed/Track/EtaMC", "Track Eta", kTH1F, {axisEta});
@@ -140,6 +157,61 @@ struct Alice3Lepton {
       registry.addClone("Reconstructed/Track/", "Reconstructed/TrackPID/");
       registry.addClone("Reconstructed/Track/", "Reconstructed/TrackPIDPre/");
     }
+  }
+
+  template <typename TMCParticle1, typename TMCParticles>
+  int IsHF(TMCParticle1 const& p1, TMCParticles const& mcparticles)
+  {
+    if (!p1.has_mothers())
+      return HFType::kUndef;
+
+    int motherid_p1 = p1.mothersIds()[0];
+    if (motherid_p1 > -1) {
+      auto mother_p1 = mcparticles.iteratorAt(motherid_p1);
+      int mother1_pdg = mother_p1.pdgCode();
+      // direct beauty
+      if (((500 < std::abs(mother1_pdg) && std::abs(mother1_pdg) < 599) || (5000 < std::abs(mother1_pdg) && std::abs(mother1_pdg) < 5999))) {
+        return HFType::kBe;
+      }
+      // charm direct or from beauty
+      if (((400 < std::abs(mother1_pdg) && std::abs(mother1_pdg) < 499) || (4000 < std::abs(mother1_pdg) && std::abs(mother1_pdg) < 4999))) {
+        if (mother_p1.has_mothers()) {
+          int motherId = mother_p1.mothersIds()[0];
+          while (motherId > -1) {
+            auto mp = mcparticles.rawIteratorAt(motherId);
+            if (((500 < std::abs(mp.pdgCode()) && std::abs(mp.pdgCode()) < 599) || (5000 < std::abs(mp.pdgCode()) && std::abs(mp.pdgCode()) < 5999))) {
+              return HFType::kBCe;
+            }
+            if (mp.has_mothers()) {
+              motherId = mp.mothersIds()[0];
+            } else {
+              motherId = -999;
+            }
+          }
+        }
+        return HFType::kCe;
+      }
+      // pi0 not from HF
+      if (mother1_pdg == 111) {
+        if (mother_p1.has_mothers()) {
+          int motherId = mother_p1.mothersIds()[0];
+          while (motherId > -1) {
+            auto mp = mcparticles.rawIteratorAt(motherId);
+            if (((500 < std::abs(mp.pdgCode()) && std::abs(mp.pdgCode()) < 599) || (5000 < std::abs(mp.pdgCode()) && std::abs(mp.pdgCode()) < 5999)) || ((400 < std::abs(mp.pdgCode()) && std::abs(mp.pdgCode()) < 499) || (4000 < std::abs(mp.pdgCode()) && std::abs(mp.pdgCode()) < 4999))) {
+              return HFType::kUndef;
+            }
+            if (mp.has_mothers()) {
+              motherId = mp.mothersIds()[0];
+            } else {
+              motherId = -999;
+            }
+          }
+        }
+        return HFType::kPPi0;
+      }
+      return HFType::kUndef;
+    }
+    return HFType::kUndef;
   }
 
   template <bool isWithSmearing, typename TTrack>
@@ -191,7 +263,7 @@ struct Alice3Lepton {
 
   template <bool isWithSmearing, typename TTracks>
   void FillRec(TTracks const& tracks,
-               const aod::McParticles& /*mcParticles*/)
+               const aod::McParticles& mcParticles)
   {
     for (const auto& track : tracks) {
       if (!track.has_mcParticle()) {
@@ -216,6 +288,21 @@ struct Alice3Lepton {
       if (std::abs(mcParticle.pdgCode()) != pdg) {
         continue;
       }
+      if (requireHFE > -1) {
+        int typehfe = IsHF(mcParticle, mcParticles);
+        if (requireHFE < 3 && typehfe != requireHFE) {
+          continue;
+        }
+        if (requireHFE == 3 && typehfe == HFType::kUndef) {
+          continue;
+        }
+      }
+      const float dcaXY = track.dcaXY();
+      const float dcaXY_res = std::sqrt(track.cYY());
+      float dcaXYinSigma = dcaXY / dcaXY_res;
+      float dcaXYinmicrom = dcaXY * 10000.;
+      registry.fill(HIST("Reconstructed/Track/DCAxy"), mcParticle.pt(), dcaXYinmicrom);
+      registry.fill(HIST("Reconstructed/Track/DCAxysigma"), mcParticle.pt(), dcaXYinSigma);
       if constexpr (isWithSmearing) {
         registry.fill(HIST("Reconstructed/Track/Pt"), track.ptSmeared());
         registry.fill(HIST("Reconstructed/Track/Eta"), track.etaSmeared());
@@ -234,10 +321,16 @@ struct Alice3Lepton {
         registry.fill(HIST("Reconstructed/Track/Eta"), track.eta());
         registry.fill(HIST("Reconstructed/Track/Phi"), track.phi());
         registry.fill(HIST("Reconstructed/Track/Eta_Pt"), track.pt(), track.eta());
+        registry.fill(HIST("Reconstructed/Track/PtMC"), mcParticle.pt());
+        registry.fill(HIST("Reconstructed/Track/EtaMC"), mcParticle.eta());
+        registry.fill(HIST("Reconstructed/Track/PhiMC"), mcParticle.phi());
+        registry.fill(HIST("Reconstructed/Track/EtaMC_PtMC"), mcParticle.pt(), mcParticle.eta());
       }
       // implement pid
       if constexpr (isWithSmearing) {
         if (track.selected()) {
+          registry.fill(HIST("Reconstructed/TrackPID/DCAxy"), mcParticle.pt(), dcaXYinmicrom);
+          registry.fill(HIST("Reconstructed/TrackPID/DCAxysigma"), mcParticle.pt(), dcaXYinSigma);
           registry.fill(HIST("Reconstructed/TrackPID/Pt"), track.ptSmeared());
           registry.fill(HIST("Reconstructed/TrackPID/Eta"), track.etaSmeared());
           registry.fill(HIST("Reconstructed/TrackPID/Phi"), track.phiSmeared());
@@ -248,6 +341,8 @@ struct Alice3Lepton {
           registry.fill(HIST("Reconstructed/TrackPID/EtaMC_PtMC"), mcParticle.pt(), mcParticle.eta());
 
           if (track.isTrackPrefilter() == 0) {
+            registry.fill(HIST("Reconstructed/TrackPIDPre/DCAxy"), mcParticle.pt(), dcaXYinmicrom);
+            registry.fill(HIST("Reconstructed/TrackPIDPre/DCAxysigma"), mcParticle.pt(), dcaXYinSigma);
             registry.fill(HIST("Reconstructed/TrackPIDPre/Pt"), track.ptSmeared());
             registry.fill(HIST("Reconstructed/TrackPIDPre/Eta"), track.etaSmeared());
             registry.fill(HIST("Reconstructed/TrackPIDPre/Phi"), track.phiSmeared());
@@ -267,20 +362,32 @@ struct Alice3Lepton {
           registry.fill(HIST("Reconstructed/TrackPID/SigmaITofvspt"), track.pt(), track.nSigmaElectronInnerTOF());
           registry.fill(HIST("Reconstructed/TrackPID/SigmaRichvspt"), track.pt(), track.nSigmaElectronRich());
           registry.fill(HIST("Reconstructed/TrackPID/outerTOFTrackLength"), track.outerTOFTrackLength());
+          registry.fill(HIST("Reconstructed/TrackPID/DCAxy"), mcParticle.pt(), dcaXYinmicrom);
+          registry.fill(HIST("Reconstructed/TrackPID/DCAxysigma"), mcParticle.pt(), dcaXYinSigma);
           registry.fill(HIST("Reconstructed/TrackPID/Pt"), track.pt());
           registry.fill(HIST("Reconstructed/TrackPID/Eta"), track.eta());
           registry.fill(HIST("Reconstructed/TrackPID/Phi"), track.phi());
           registry.fill(HIST("Reconstructed/TrackPID/Eta_Pt"), track.pt(), track.eta());
+          registry.fill(HIST("Reconstructed/TrackPID/PtMC"), mcParticle.pt());
+          registry.fill(HIST("Reconstructed/TrackPID/EtaMC"), mcParticle.eta());
+          registry.fill(HIST("Reconstructed/TrackPID/PhiMC"), mcParticle.phi());
+          registry.fill(HIST("Reconstructed/TrackPID/EtaMC_PtMC"), mcParticle.pt(), mcParticle.eta());
 
           if (track.isTrackPrefilter() == 0) {
             registry.fill(HIST("Reconstructed/TrackPIDPre/SigmaOTofvspt"), track.pt(), track.nSigmaElectronOuterTOF());
             registry.fill(HIST("Reconstructed/TrackPIDPre/SigmaITofvspt"), track.pt(), track.nSigmaElectronInnerTOF());
             registry.fill(HIST("Reconstructed/TrackPIDPre/SigmaRichvspt"), track.pt(), track.nSigmaElectronRich());
             registry.fill(HIST("Reconstructed/TrackPIDPre/outerTOFTrackLength"), track.outerTOFTrackLength());
+            registry.fill(HIST("Reconstructed/TrackPIDPre/DCAxy"), mcParticle.pt(), dcaXYinmicrom);
+            registry.fill(HIST("Reconstructed/TrackPIDPre/DCAxysigma"), mcParticle.pt(), dcaXYinSigma);
             registry.fill(HIST("Reconstructed/TrackPIDPre/Pt"), track.pt());
             registry.fill(HIST("Reconstructed/TrackPIDPre/Eta"), track.eta());
             registry.fill(HIST("Reconstructed/TrackPIDPre/Phi"), track.phi());
             registry.fill(HIST("Reconstructed/TrackPIDPre/Eta_Pt"), track.pt(), track.eta());
+            registry.fill(HIST("Reconstructed/TrackPIDPre/PtMC"), mcParticle.pt());
+            registry.fill(HIST("Reconstructed/TrackPIDPre/EtaMC"), mcParticle.eta());
+            registry.fill(HIST("Reconstructed/TrackPIDPre/PhiMC"), mcParticle.phi());
+            registry.fill(HIST("Reconstructed/TrackPIDPre/EtaMC_PtMC"), mcParticle.pt(), mcParticle.eta());
           }
         }
       }
@@ -321,6 +428,15 @@ struct Alice3Lepton {
           }
           if (!mcParticle.isPhysicalPrimary()) {
             continue;
+          }
+          if (requireHFE > -1) {
+            int typehfe = IsHF(mcParticle, mcParticles);
+            if (requireHFE < 3 && typehfe != requireHFE) {
+              continue;
+            }
+            if (requireHFE == 3 && typehfe == HFType::kUndef) {
+              continue;
+            }
           }
           if (!IsInAcceptance<false>(mcParticle)) {
             continue;
@@ -448,8 +564,6 @@ struct Alice3Dilepton {
       registry.add("Reconstructed/Track/Eta", "Particle Eta", kTH1F, {axisEta});
       registry.add("Reconstructed/Track/Phi", "Particle Phi", kTH1F, {axisPhi});
       registry.add("Reconstructed/Track/Pre", "Particle Pre", kTH1F, {axisPre});
-    }
-    if (doprocessRecAllWithSmearing) {
       registry.add("Reconstructed/Track/PtMC", "Track Pt", kTH1F, {axisPt});
       registry.add("Reconstructed/Track/EtaMC", "Particle Eta", kTH1F, {axisEta});
       registry.add("Reconstructed/Track/PhiMC", "Particle Phi", kTH1F, {axisPhi});
@@ -969,26 +1083,47 @@ struct Alice3Dilepton {
   } // end of processRec
 
   void processRecAll(MyFilteredAlice3Collision const& collisions,
-                     MyFilteredTracksMC const& tracks)
+                     MyFilteredTracksMC const&,
+                     const aod::McParticles&)
   {
-
-    for (const auto& track : tracks) {
-      if (!IsInAcceptance<false>(track)) {
-        continue;
-      }
-      registry.fill(HIST("Reconstructed/Track/Pt"), track.pt());
-      registry.fill(HIST("Reconstructed/Track/Eta"), track.eta());
-      registry.fill(HIST("Reconstructed/Track/Phi"), track.phi());
-      registry.fill(HIST("Reconstructed/Track/Pre"), track.isTrackPrefilter());
-      registry.fill(HIST("Reconstructed/Track/SigmaOTofvspt"), track.pt(), track.nSigmaElectronOuterTOF());
-      registry.fill(HIST("Reconstructed/Track/SigmaITofvspt"), track.pt(), track.nSigmaElectronInnerTOF());
-      registry.fill(HIST("Reconstructed/Track/SigmaRichvspt"), track.pt(), track.nSigmaElectronRich());
-    }
-
     for (const auto& collision : collisions) {
       registry.fill(HIST("Reconstructed/Event/VtxZ"), collision.posZ());
       auto negTracks_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache_rec);
       auto posTracks_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache_rec);
+
+      for (const auto& track : negTracks_coll) {
+        if (!IsInAcceptance<false>(track)) {
+          continue;
+        }
+        if (!track.has_mcParticle()) {
+          continue;
+        }
+        const auto mcParticle = track.template mcParticle_as<aod::McParticles>();
+        registry.fill(HIST("Reconstructed/Track/PtMC"), mcParticle.pt());
+        registry.fill(HIST("Reconstructed/Track/EtaMC"), mcParticle.eta());
+        registry.fill(HIST("Reconstructed/Track/PhiMC"), mcParticle.phi());
+        registry.fill(HIST("Reconstructed/Track/Pt"), track.pt());
+        registry.fill(HIST("Reconstructed/Track/Eta"), track.eta());
+        registry.fill(HIST("Reconstructed/Track/Phi"), track.phi());
+        registry.fill(HIST("Reconstructed/Track/Pre"), track.isTrackPrefilter());
+      }
+
+      for (const auto& track : posTracks_coll) {
+        if (!IsInAcceptance<false>(track)) {
+          continue;
+        }
+        if (!track.has_mcParticle()) {
+          continue;
+        }
+        const auto mcParticle = track.template mcParticle_as<aod::McParticles>();
+        registry.fill(HIST("Reconstructed/Track/PtMC"), mcParticle.pt());
+        registry.fill(HIST("Reconstructed/Track/EtaMC"), mcParticle.eta());
+        registry.fill(HIST("Reconstructed/Track/PhiMC"), mcParticle.phi());
+        registry.fill(HIST("Reconstructed/Track/Pt"), track.pt());
+        registry.fill(HIST("Reconstructed/Track/Eta"), track.eta());
+        registry.fill(HIST("Reconstructed/Track/Phi"), track.phi());
+        registry.fill(HIST("Reconstructed/Track/Pre"), track.isTrackPrefilter());
+      }
 
       FillPairRecAll<false, PairType::kULS>(negTracks_coll, posTracks_coll);
       FillPairRecAll<false, PairType::kLSpp>(posTracks_coll, posTracks_coll);

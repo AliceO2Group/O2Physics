@@ -115,6 +115,9 @@ struct CentralityStudy {
     Configurable<bool> doOccupancyStudyVsRawValues3d{"doOccupancyStudyVsRawValues3d", false, "0 - no, 1 - yes"};
     Configurable<bool> doTimeStudies{"doTimeStudies", false, "0 - no, 1 - yes"};
     Configurable<bool> doNGlobalTracksVsRawSignals{"doNGlobalTracksVsRawSignals", true, "0 - no, 1 - yes"};
+    Configurable<bool> doNTracksPVeta05VsRawSignals{"doNTracksPVeta05VsRawSignals", false, "0 - no, 1 - yes"};
+    Configurable<bool> doNTracksPVeta08VsRawSignals{"doNTracksPVeta08VsRawSignals", false, "0 - no, 1 - yes"};
+    Configurable<bool> doNTracksPVeta10VsRawSignals{"doNTracksPVeta10VsRawSignals", false, "0 - no, 1 - yes"};
   } studies;
 
   // _______________________________________
@@ -123,6 +126,7 @@ struct CentralityStudy {
     std::string prefix = "evsel";
     Configurable<bool> applySel8{"applySel8", true, "0 - no, 1 - yes"};
     Configurable<bool> applyVtxZ{"applyVtxZ", true, "0 - no, 1 - yes"};
+    Configurable<bool> requireINELgtZERO{"requireINELgtZERO", true, "0 no, 1 - yes"};
     Configurable<bool> selectUPCcollisions{"selectUPCcollisions", false, "select collisions tagged with UPC flag"};
     Configurable<bool> rejectITSROFBorder{"rejectITSROFBorder", true, "reject events at ITS ROF border"};
     Configurable<bool> rejectTFBorder{"rejectTFBorder", true, "reject events at TF border"};
@@ -143,7 +147,7 @@ struct CentralityStudy {
   } evsel;
 
   // _______________________________________
-  // BC Selection
+  // BC Selections
   struct : ConfigurableGroup {
     std::string prefix = "bcsel";
     Configurable<bool> rejectZNAC{"rejectZNAC", false, "reject if !(kIsBBZNA && kIsBBZNC)"};
@@ -217,7 +221,7 @@ struct CentralityStudy {
   ConfigurableAxis axisMultITSTPC{"axisMultITSTPC", {200, 0, 6000}, "Number of ITSTPC matched tracks"};
 
   // For centrality studies if requested
-  ConfigurableAxis axisCentrality{"axisCentrality", {100, 0, 100}, "FT0C percentile"};
+  ConfigurableAxis axisCentrality{"axisCentrality", {100, 0, 100}, "FT0C percentile (%)"};
   ConfigurableAxis axisImpactParameter{"axisImpactParameter", {200, 0.0f, 20.0f}, "b (fm)"};
   ConfigurableAxis axisPVChi2{"axisPVChi2", {300, 0, 30}, "FT0C percentile"};
   ConfigurableAxis axisDeltaTime{"axisDeltaTime", {300, 0, 300}, "#Delta time"};
@@ -300,6 +304,39 @@ struct CentralityStudy {
         histos.add("hFT0AOuterVsFT0C", "hFT0AOuterVsFT0C", kTH2F, {axisMultFT0C, axisMultFT0A});
         histos.add("hFDDAVsFT0C", "hFDDAVsFT0C", kTH2F, {axisMultFT0C, axisMultFDDA});
         histos.add("hFDDCVsFT0C", "hFDDCVsFT0C", kTH2F, {axisMultFT0C, axisMultFDDC});
+      }
+
+      if (studies.doNTracksPVeta05VsRawSignals) {
+        histos.add("hNTracksPVeta05VsFT0A", "hNTracksPVeta05VsFT0A", kTH2F, {axisMultFT0A, axisMultPVContributors});
+        histos.add("hNTracksPVeta05VsFT0C", "hNTracksPVeta05VsFT0C", kTH2F, {axisMultFT0C, axisMultPVContributors});
+        histos.add("hNTracksPVeta05VsFT0M", "hNTracksPVeta05VsFT0M", kTH2F, {axisMultFT0M, axisMultPVContributors});
+        histos.add("hNTracksPVeta05VsFV0A", "hNTracksPVeta05VsFV0A", kTH2F, {axisMultFV0A, axisMultPVContributors});
+        histos.add("hNTracksPVeta05VsFDDA", "hNTracksPVeta05VsFDDA", kTH2F, {axisMultFDDA, axisMultPVContributors});
+        histos.add("hNTracksPVeta05VsFDDC", "hNTracksPVeta05VsFDDC", kTH2F, {axisMultFDDC, axisMultPVContributors});
+        histos.add("hNTracksPVeta05VsNMFTTracks", "hNTracksPVeta05VsNMFTTracks", kTH2F, {axisMultMFTTracks, axisMultPVContributors});
+        histos.add("hNTracksPVeta05VsNTPV", "hNTracksPVeta05VsNTPV", kTH2F, {axisMultPVContributors, axisMultPVContributors});
+      }
+
+      if (studies.doNTracksPVeta08VsRawSignals) {
+        histos.add("hNTracksPVeta08VsFT0A", "hNTracksPVeta08VsFT0A", kTH2F, {axisMultFT0A, axisMultPVContributors});
+        histos.add("hNTracksPVeta08VsFT0C", "hNTracksPVeta08VsFT0C", kTH2F, {axisMultFT0C, axisMultPVContributors});
+        histos.add("hNTracksPVeta08VsFT0M", "hNTracksPVeta08VsFT0M", kTH2F, {axisMultFT0M, axisMultPVContributors});
+        histos.add("hNTracksPVeta08VsFV0A", "hNTracksPVeta08VsFV0A", kTH2F, {axisMultFV0A, axisMultPVContributors});
+        histos.add("hNTracksPVeta08VsFDDA", "hNTracksPVeta08VsFDDA", kTH2F, {axisMultFDDA, axisMultPVContributors});
+        histos.add("hNTracksPVeta08VsFDDC", "hNTracksPVeta08VsFDDC", kTH2F, {axisMultFDDC, axisMultPVContributors});
+        histos.add("hNTracksPVeta08VsNMFTTracks", "hNTracksPVeta08VsNMFTTracks", kTH2F, {axisMultMFTTracks, axisMultPVContributors});
+        histos.add("hNTracksPVeta08VsNTPV", "hNTracksPVeta08VsNTPV", kTH2F, {axisMultPVContributors, axisMultPVContributors});
+      }
+
+      if (studies.doNTracksPVeta10VsRawSignals) {
+        histos.add("hNTracksPVeta10VsFT0A", "hNTracksPVeta10VsFT0A", kTH2F, {axisMultFT0A, axisMultPVContributors});
+        histos.add("hNTracksPVeta10VsFT0C", "hNTracksPVeta10VsFT0C", kTH2F, {axisMultFT0C, axisMultPVContributors});
+        histos.add("hNTracksPVeta10VsFT0M", "hNTracksPVeta10VsFT0M", kTH2F, {axisMultFT0M, axisMultPVContributors});
+        histos.add("hNTracksPVeta10VsFV0A", "hNTracksPVeta10VsFV0A", kTH2F, {axisMultFV0A, axisMultPVContributors});
+        histos.add("hNTracksPVeta10VsFDDA", "hNTracksPVeta10VsFDDA", kTH2F, {axisMultFDDA, axisMultPVContributors});
+        histos.add("hNTracksPVeta10VsFDDC", "hNTracksPVeta10VsFDDC", kTH2F, {axisMultFDDC, axisMultPVContributors});
+        histos.add("hNTracksPVeta10VsNMFTTracks", "hNTracksPVeta10VsNMFTTracks", kTH2F, {axisMultMFTTracks, axisMultPVContributors});
+        histos.add("hNTracksPVeta10VsNTPV", "hNTracksPVeta10VsNTPV", kTH2F, {axisMultPVContributors, axisMultPVContributors});
       }
 
       if (studies.doNGlobalTracksVsRawSignals) {
@@ -499,7 +536,8 @@ struct CentralityStudy {
       getHist<TH1>(histPath + "hCollisionSelection")->GetXaxis()->SetBinLabel(15, "rejectCollInTimeRangeNarrow");
       getHist<TH1>(histPath + "hCollisionSelection")->GetXaxis()->SetBinLabel(16, "em/upc rejection");
       getHist<TH1>(histPath + "hCollisionSelection")->GetXaxis()->SetBinLabel(17, "isFlangeEvent");
-      getHist<TH1>(histPath + "hCollisionSelection")->GetXaxis()->SetBinLabel(18, "bcsel");
+      getHist<TH1>(histPath + "hCollisionSelection")->GetXaxis()->SetBinLabel(18, "INEL>0");
+      getHist<TH1>(histPath + "hCollisionSelection")->GetXaxis()->SetBinLabel(19, "bcsel");
 
       histPointers.insert({histPath + "hFT0C_Collisions", histos.add((histPath + "hFT0C_Collisions").c_str(), "hFT0C_Collisions", {kTH1D, {{axisMultUltraFineFT0C}}})});
       histPointers.insert({histPath + "hFT0A_Collisions", histos.add((histPath + "hFT0A_Collisions").c_str(), "hFT0A_Collisions", {kTH1D, {{axisMultUltraFineFT0A}}})});
@@ -562,6 +600,39 @@ struct CentralityStudy {
       histPointers.insert({histPath + "hNGlobalTracksVsFV0A", histos.add((histPath + "hNGlobalTracksVsFV0A").c_str(), "hNGlobalTracksVsFV0A", {kTH2F, {{axisMultFV0A, axisMultGlobalTracks}}})});
       histPointers.insert({histPath + "hNGlobalTracksVsNMFTTracks", histos.add((histPath + "hNGlobalTracksVsNMFTTracks").c_str(), "hNGlobalTracksVsNMFTTracks", {kTH2F, {{axisMultMFTTracks, axisMultGlobalTracks}}})});
       histPointers.insert({histPath + "hNGlobalTracksVsNTPV", histos.add((histPath + "hNGlobalTracksVsNTPV").c_str(), "hNGlobalTracksVsNTPV", {kTH2F, {{axisMultPVContributors, axisMultGlobalTracks}}})});
+    }
+
+    if (studies.doNTracksPVeta05VsRawSignals) {
+      histPointers.insert({histPath + "hNTracksPVeta05VsFT0A", histos.add((histPath + "hNTracksPVeta05VsFT0A").c_str(), "hNTracksPVeta05VsFT0A", {kTH2F, {{axisMultFT0A, axisMultPVContributors}}})});
+      histPointers.insert({histPath + "hNTracksPVeta05VsFT0C", histos.add((histPath + "hNTracksPVeta05VsFT0C").c_str(), "hNTracksPVeta05VsFT0C", {kTH2F, {{axisMultFT0C, axisMultPVContributors}}})});
+      histPointers.insert({histPath + "hNTracksPVeta05VsFT0M", histos.add((histPath + "hNTracksPVeta05VsFT0M").c_str(), "hNTracksPVeta05VsFT0M", {kTH2F, {{axisMultFT0M, axisMultPVContributors}}})});
+      histPointers.insert({histPath + "hNTracksPVeta05VsFV0A", histos.add((histPath + "hNTracksPVeta05VsFV0A").c_str(), "hNTracksPVeta05VsFV0A", {kTH2F, {{axisMultFV0A, axisMultPVContributors}}})});
+      histPointers.insert({histPath + "hNTracksPVeta05VsFDDA", histos.add((histPath + "hNTracksPVeta05VsFDDA").c_str(), "hNTracksPVeta05VsFDDA", {kTH2F, {{axisMultFDDA, axisMultPVContributors}}})});
+      histPointers.insert({histPath + "hNTracksPVeta05VsFDDC", histos.add((histPath + "hNTracksPVeta05VsFDDC").c_str(), "hNTracksPVeta05VsFDDC", {kTH2F, {{axisMultFDDC, axisMultPVContributors}}})});
+      histPointers.insert({histPath + "hNTracksPVeta05VsNMFTTracks", histos.add((histPath + "hNTracksPVeta05VsNMFTTracks").c_str(), "hNTracksPVeta05VsNMFTTracks", {kTH2F, {{axisMultMFTTracks, axisMultPVContributors}}})});
+      histPointers.insert({histPath + "hNTracksPVeta05VsNTPV", histos.add((histPath + "hNTracksPVeta05VsNTPV").c_str(), "hNTracksPVeta05VsNTPV", {kTH2F, {{axisMultPVContributors, axisMultPVContributors}}})});
+    }
+
+    if (studies.doNTracksPVeta08VsRawSignals) {
+      histPointers.insert({histPath + "hNTracksPVeta08VsFT0A", histos.add((histPath + "hNTracksPVeta08VsFT0A").c_str(), "hNTracksPVeta08VsFT0A", {kTH2F, {{axisMultFT0A, axisMultPVContributors}}})});
+      histPointers.insert({histPath + "hNTracksPVeta08VsFT0C", histos.add((histPath + "hNTracksPVeta08VsFT0C").c_str(), "hNTracksPVeta08VsFT0C", {kTH2F, {{axisMultFT0C, axisMultPVContributors}}})});
+      histPointers.insert({histPath + "hNTracksPVeta08VsFT0M", histos.add((histPath + "hNTracksPVeta08VsFT0M").c_str(), "hNTracksPVeta08VsFT0M", {kTH2F, {{axisMultFT0M, axisMultPVContributors}}})});
+      histPointers.insert({histPath + "hNTracksPVeta08VsFV0A", histos.add((histPath + "hNTracksPVeta08VsFV0A").c_str(), "hNTracksPVeta08VsFV0A", {kTH2F, {{axisMultFV0A, axisMultPVContributors}}})});
+      histPointers.insert({histPath + "hNTracksPVeta08VsFDDA", histos.add((histPath + "hNTracksPVeta08VsFDDA").c_str(), "hNTracksPVeta08VsFDDA", {kTH2F, {{axisMultFDDA, axisMultPVContributors}}})});
+      histPointers.insert({histPath + "hNTracksPVeta08VsFDDC", histos.add((histPath + "hNTracksPVeta08VsFDDC").c_str(), "hNTracksPVeta08VsFDDC", {kTH2F, {{axisMultFDDC, axisMultPVContributors}}})});
+      histPointers.insert({histPath + "hNTracksPVeta08VsNMFTTracks", histos.add((histPath + "hNTracksPVeta08VsNMFTTracks").c_str(), "hNTracksPVeta08VsNMFTTracks", {kTH2F, {{axisMultMFTTracks, axisMultPVContributors}}})});
+      histPointers.insert({histPath + "hNTracksPVeta08VsNTPV", histos.add((histPath + "hNTracksPVeta08VsNTPV").c_str(), "hNTracksPVeta08VsNTPV", {kTH2F, {{axisMultPVContributors, axisMultPVContributors}}})});
+    }
+
+    if (studies.doNTracksPVeta10VsRawSignals) {
+      histPointers.insert({histPath + "hNTracksPVeta10VsFT0A", histos.add((histPath + "hNTracksPVeta10VsFT0A").c_str(), "hNTracksPVeta10VsFT0A", {kTH2F, {{axisMultFT0A, axisMultPVContributors}}})});
+      histPointers.insert({histPath + "hNTracksPVeta10VsFT0C", histos.add((histPath + "hNTracksPVeta10VsFT0C").c_str(), "hNTracksPVeta10VsFT0C", {kTH2F, {{axisMultFT0C, axisMultPVContributors}}})});
+      histPointers.insert({histPath + "hNTracksPVeta10VsFT0M", histos.add((histPath + "hNTracksPVeta10VsFT0M").c_str(), "hNTracksPVeta10VsFT0M", {kTH2F, {{axisMultFT0M, axisMultPVContributors}}})});
+      histPointers.insert({histPath + "hNTracksPVeta10VsFV0A", histos.add((histPath + "hNTracksPVeta10VsFV0A").c_str(), "hNTracksPVeta10VsFV0A", {kTH2F, {{axisMultFV0A, axisMultPVContributors}}})});
+      histPointers.insert({histPath + "hNTracksPVeta10VsFDDA", histos.add((histPath + "hNTracksPVeta10VsFDDA").c_str(), "hNTracksPVeta10VsFDDA", {kTH2F, {{axisMultFDDA, axisMultPVContributors}}})});
+      histPointers.insert({histPath + "hNTracksPVeta10VsFDDC", histos.add((histPath + "hNTracksPVeta10VsFDDC").c_str(), "hNTracksPVeta10VsFDDC", {kTH2F, {{axisMultFDDC, axisMultPVContributors}}})});
+      histPointers.insert({histPath + "hNTracksPVeta10VsNMFTTracks", histos.add((histPath + "hNTracksPVeta10VsNMFTTracks").c_str(), "hNTracksPVeta10VsNMFTTracks", {kTH2F, {{axisMultMFTTracks, axisMultPVContributors}}})});
+      histPointers.insert({histPath + "hNTracksPVeta10VsNTPV", histos.add((histPath + "hNTracksPVeta10VsNTPV").c_str(), "hNTracksPVeta10VsNTPV", {kTH2F, {{axisMultPVContributors, axisMultPVContributors}}})});
     }
 
     if (studies.doTimeStudies) {
@@ -652,6 +723,10 @@ struct CentralityStudy {
     float multNTracksGlobal = collision.multNTracksGlobal();
     float mftNtracks = collision.mftNtracks();
     float multNTracksPV = collision.multNTracksPV();
+    float multNTracksPV05 = collision.multNTracksPVetaHalf();
+    float multNTracksPV10 = collision.multNTracksPVeta1();
+    float multFDDA = collision.multFDDA();
+    float multFDDC = collision.multFDDC();
     if (applyVertexZEqualization) {
       float epsilon = 1e-2; // average value after which this collision will be disregarded
       multFV0A = -1.0f;
@@ -660,24 +735,25 @@ struct CentralityStudy {
       multNTracksGlobal = -1.0f;
       mftNtracks = -1.0f;
       multNTracksPV = -1.0f;
-
-      if (hVtxZFV0A->Interpolate(collision.multPVz()) > epsilon) {
-        multFV0A = hVtxZFV0A->Interpolate(0.0) * collision.multFV0A() / hVtxZFV0A->Interpolate(collision.multPVz());
-      }
-      if (hVtxZFT0A->Interpolate(collision.multPVz()) > epsilon) {
-        multFT0A = hVtxZFT0A->Interpolate(0.0) * collision.multFT0A() / hVtxZFT0A->Interpolate(collision.multPVz());
-      }
-      if (hVtxZFT0C->Interpolate(collision.multPVz()) > epsilon) {
-        multFT0C = hVtxZFT0C->Interpolate(0.0) * collision.multFT0C() / hVtxZFT0C->Interpolate(collision.multPVz());
-      }
-      if (hVtxZNGlobals->Interpolate(collision.multPVz()) > epsilon) {
-        multNTracksGlobal = hVtxZNGlobals->Interpolate(0.0) * collision.multNTracksGlobal() / hVtxZNGlobals->Interpolate(collision.multPVz());
-      }
-      if (hVtxZMFT->Interpolate(collision.multPVz()) > epsilon) {
-        mftNtracks = hVtxZMFT->Interpolate(0.0) * collision.mftNtracks() / hVtxZMFT->Interpolate(collision.multPVz());
-      }
-      if (hVtxZNTracks->Interpolate(collision.multPVz()) > epsilon) {
-        multNTracksPV = hVtxZNTracks->Interpolate(0.0) * collision.multNTracksPV() / hVtxZNTracks->Interpolate(collision.multPVz());
+      if (std::abs(collision.multPVz()) < evsel.maxVtxZ) {
+        if (hVtxZFV0A && hVtxZFV0A->Interpolate(collision.multPVz()) > epsilon) {
+          multFV0A = hVtxZFV0A->Interpolate(0.0) * collision.multFV0A() / hVtxZFV0A->Interpolate(collision.multPVz());
+        }
+        if (hVtxZFT0A && hVtxZFT0A->Interpolate(collision.multPVz()) > epsilon) {
+          multFT0A = hVtxZFT0A->Interpolate(0.0) * collision.multFT0A() / hVtxZFT0A->Interpolate(collision.multPVz());
+        }
+        if (hVtxZFT0C && hVtxZFT0C->Interpolate(collision.multPVz()) > epsilon) {
+          multFT0C = hVtxZFT0C->Interpolate(0.0) * collision.multFT0C() / hVtxZFT0C->Interpolate(collision.multPVz());
+        }
+        if (hVtxZNGlobals && hVtxZNGlobals->Interpolate(collision.multPVz()) > epsilon) {
+          multNTracksGlobal = hVtxZNGlobals->Interpolate(0.0) * collision.multNTracksGlobal() / hVtxZNGlobals->Interpolate(collision.multPVz());
+        }
+        if (hVtxZMFT && hVtxZMFT->Interpolate(collision.multPVz()) > epsilon) {
+          mftNtracks = hVtxZMFT->Interpolate(0.0) * collision.mftNtracks() / hVtxZMFT->Interpolate(collision.multPVz());
+        }
+        if (hVtxZNTracks && hVtxZNTracks->Interpolate(collision.multPVz()) > epsilon) {
+          multNTracksPV = hVtxZNTracks->Interpolate(0.0) * collision.multNTracksPV() / hVtxZNTracks->Interpolate(collision.multPVz());
+        }
       }
     }
 
@@ -692,13 +768,14 @@ struct CentralityStudy {
     bool passRejectITSinROFpileupStrict = !(evsel.rejectITSinROFpileupStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict));
     bool passSelectUPCcollisions = !(evsel.selectUPCcollisions && collision.flags() < 1);
     bool passRejectCollInTimeRangeNarrow = !(evsel.rejectCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow));
+    bool passINELgtZERO = !(evsel.requireINELgtZERO && !collision.isInelGt0());
 
     // _______________________________________________________
     // sidestep vertex-Z rejection for vertex-Z profile histograms
     if (studies.doRunByRunHistograms) {
       if (passRejectITSROFBorder && passRejectTFBorder && passRequireIsVertexITSTPC && passRequireIsGoodZvtxFT0VsPV &&
           passRequireIsVertexTOFmatched && passRequireIsVertexTRDmatched && passRejectSameBunchPileup && passRejectITSinROFpileupStandard && passRejectITSinROFpileupStrict &&
-          passSelectUPCcollisions && passRejectCollInTimeRangeNarrow) {
+          passSelectUPCcollisions && passRejectCollInTimeRangeNarrow && passINELgtZERO) {
         getHist<TProfile>(histPath + "hFT0CvsPVz_Collisions")->Fill(collision.multPVz(), multFT0C * scale.factorFT0C);
         getHist<TProfile>(histPath + "hFT0CvsPVz_Collisions")->Fill(collision.multPVz(), multFT0C * scale.factorFT0C);
         getHist<TProfile>(histPath + "hFT0AvsPVz_Collisions")->Fill(collision.multPVz(), multFT0A * scale.factorFT0C);
@@ -853,6 +930,14 @@ struct CentralityStudy {
       getHist<TH1>(histPath + "hCollisionSelection")->Fill(16);
     }
 
+    if (!passINELgtZERO) {
+      return;
+    }
+    histos.fill(HIST("hCollisionSelection"), 17 /* is INEL > 0 */);
+    if (studies.doRunByRunHistograms) {
+      getHist<TH1>(histPath + "hCollisionSelection")->Fill(17);
+    }
+
     if (evsel.applyBcSel) {
       if constexpr (requires { collision.has_multBC(); }) {
         if (collision.has_multBC()) {
@@ -871,9 +956,9 @@ struct CentralityStudy {
       }
     }
 
-    histos.fill(HIST("hCollisionSelection"), 17 /* bc selections */);
+    histos.fill(HIST("hCollisionSelection"), 18 /* bc selections */);
     if (studies.doRunByRunHistograms) {
-      getHist<TH1>(histPath + "hCollisionSelection")->Fill(17);
+      getHist<TH1>(histPath + "hCollisionSelection")->Fill(18);
     }
 
     // if we got here, we also finally fill the FT0C histogram, please
@@ -961,6 +1046,75 @@ struct CentralityStudy {
         getHist<TH2>(histPath + "hNGlobalTracksVsFV0A")->Fill(multFV0A, multNTracksGlobal);
         getHist<TH2>(histPath + "hNGlobalTracksVsNMFTTracks")->Fill(mftNtracks, multNTracksGlobal);
         getHist<TH2>(histPath + "hNGlobalTracksVsNTPV")->Fill(multNTracksPV, multNTracksGlobal);
+      }
+    }
+
+    if (studies.doNTracksPVeta05VsRawSignals) {
+      histos.fill(HIST("hNTracksPVeta05VsFT0A"), multFT0A, multNTracksPV05);
+      histos.fill(HIST("hNTracksPVeta05VsFT0C"), multFT0C, multNTracksPV05);
+      histos.fill(HIST("hNTracksPVeta05VsFT0M"), (multFT0A + multFT0C), multNTracksPV05);
+      histos.fill(HIST("hNTracksPVeta05VsFV0A"), multFV0A, multNTracksPV05);
+      histos.fill(HIST("hNTracksPVeta05VsFDDA"), multFDDA, multNTracksPV05);
+      histos.fill(HIST("hNTracksPVeta05VsFDDC"), multFDDC, multNTracksPV05);
+      histos.fill(HIST("hNTracksPVeta05VsNMFTTracks"), mftNtracks, multNTracksPV05);
+      histos.fill(HIST("hNTracksPVeta05VsNTPV"), multNTracksPV, multNTracksPV05);
+
+      // per run
+      if (studies.doRunByRunHistograms) {
+        getHist<TH2>(histPath + "hNTracksPVeta05VsFT0A")->Fill(multFT0A, multNTracksPV05);
+        getHist<TH2>(histPath + "hNTracksPVeta05VsFT0C")->Fill(multFT0C, multNTracksPV05);
+        getHist<TH2>(histPath + "hNTracksPVeta05VsFT0M")->Fill(multFT0A + multFT0C, multNTracksPV05);
+        getHist<TH2>(histPath + "hNTracksPVeta05VsFV0A")->Fill(multFV0A, multNTracksPV05);
+        getHist<TH2>(histPath + "hNTracksPVeta05VsFDDA")->Fill(multFDDA, multNTracksPV05);
+        getHist<TH2>(histPath + "hNTracksPVeta05VsFDDC")->Fill(multFDDC, multNTracksPV05);
+        getHist<TH2>(histPath + "hNTracksPVeta05VsNMFTTracks")->Fill(mftNtracks, multNTracksPV05);
+        getHist<TH2>(histPath + "hNTracksPVeta05VsNTPV")->Fill(multNTracksPV, multNTracksPV05);
+      }
+    }
+
+    if (studies.doNTracksPVeta08VsRawSignals) {
+      histos.fill(HIST("hNTracksPVeta08VsFT0A"), multFT0A, multNTracksPV);
+      histos.fill(HIST("hNTracksPVeta08VsFT0C"), multFT0C, multNTracksPV);
+      histos.fill(HIST("hNTracksPVeta08VsFT0M"), (multFT0A + multFT0C), multNTracksPV);
+      histos.fill(HIST("hNTracksPVeta08VsFV0A"), multFV0A, multNTracksPV);
+      histos.fill(HIST("hNTracksPVeta08VsFDDA"), multFDDA, multNTracksPV);
+      histos.fill(HIST("hNTracksPVeta08VsFDDC"), multFDDC, multNTracksPV);
+      histos.fill(HIST("hNTracksPVeta08VsNMFTTracks"), mftNtracks, multNTracksPV);
+      histos.fill(HIST("hNTracksPVeta08VsNTPV"), multNTracksPV, multNTracksPV);
+
+      // per run
+      if (studies.doRunByRunHistograms) {
+        getHist<TH2>(histPath + "hNTracksPVeta08VsFT0A")->Fill(multFT0A, multNTracksPV);
+        getHist<TH2>(histPath + "hNTracksPVeta08VsFT0C")->Fill(multFT0C, multNTracksPV);
+        getHist<TH2>(histPath + "hNTracksPVeta08VsFT0M")->Fill(multFT0A + multFT0C, multNTracksPV);
+        getHist<TH2>(histPath + "hNTracksPVeta08VsFV0A")->Fill(multFV0A, multNTracksPV);
+        getHist<TH2>(histPath + "hNTracksPVeta08VsFDDA")->Fill(multFDDA, multNTracksPV);
+        getHist<TH2>(histPath + "hNTracksPVeta08VsFDDC")->Fill(multFDDC, multNTracksPV);
+        getHist<TH2>(histPath + "hNTracksPVeta08VsNMFTTracks")->Fill(mftNtracks, multNTracksPV);
+        getHist<TH2>(histPath + "hNTracksPVeta08VsNTPV")->Fill(multNTracksPV, multNTracksPV);
+      }
+    }
+
+    if (studies.doNTracksPVeta10VsRawSignals) {
+      histos.fill(HIST("hNTracksPVeta10VsFT0A"), multFT0A, multNTracksPV10);
+      histos.fill(HIST("hNTracksPVeta10VsFT0C"), multFT0C, multNTracksPV10);
+      histos.fill(HIST("hNTracksPVeta10VsFT0M"), (multFT0A + multFT0C), multNTracksPV10);
+      histos.fill(HIST("hNTracksPVeta10VsFV0A"), multFV0A, multNTracksPV10);
+      histos.fill(HIST("hNTracksPVeta10VsFDDA"), multFDDA, multNTracksPV10);
+      histos.fill(HIST("hNTracksPVeta10VsFDDC"), multFDDC, multNTracksPV10);
+      histos.fill(HIST("hNTracksPVeta10VsNMFTTracks"), mftNtracks, multNTracksPV10);
+      histos.fill(HIST("hNTracksPVeta10VsNTPV"), multNTracksPV, multNTracksPV10);
+
+      // per run
+      if (studies.doRunByRunHistograms) {
+        getHist<TH2>(histPath + "hNTracksPVeta10VsFT0A")->Fill(multFT0A, multNTracksPV10);
+        getHist<TH2>(histPath + "hNTracksPVeta10VsFT0C")->Fill(multFT0C, multNTracksPV10);
+        getHist<TH2>(histPath + "hNTracksPVeta10VsFT0M")->Fill(multFT0A + multFT0C, multNTracksPV10);
+        getHist<TH2>(histPath + "hNTracksPVeta10VsFV0A")->Fill(multFV0A, multNTracksPV10);
+        getHist<TH2>(histPath + "hNTracksPVeta10VsFDDA")->Fill(multFDDA, multNTracksPV10);
+        getHist<TH2>(histPath + "hNTracksPVeta10VsFDDC")->Fill(multFDDC, multNTracksPV10);
+        getHist<TH2>(histPath + "hNTracksPVeta10VsNMFTTracks")->Fill(mftNtracks, multNTracksPV10);
+        getHist<TH2>(histPath + "hNTracksPVeta10VsNTPV")->Fill(multNTracksPV, multNTracksPV10);
       }
     }
 

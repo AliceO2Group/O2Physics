@@ -16,6 +16,7 @@
 #ifndef PWGCF_FEMTO_CORE_CHARMHADRONHISTMANAGER_H_
 #define PWGCF_FEMTO_CORE_CHARMHADRONHISTMANAGER_H_
 
+#include "PWGCF/Femto/Core/charmHadronBuilder.h"
 #include "PWGCF/Femto/Core/histManager.h"
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/Core/trackHistManager.h"
@@ -34,7 +35,6 @@
 #include <map>
 #include <string>
 #include <string_view>
-#include <utility>
 #include <vector>
 
 namespace o2::analysis::femto::charmhadronhistmanager
@@ -49,17 +49,31 @@ enum CharmHadronHist {
   kPtVsEta,
   kPtVsPhi,
   kPhiVsEta,
+
+  // mass under each hypothesis
   kMassD0,
   kMassD0bar,
+  kMassLcToPKPi,
+  kMassLcToPiKP,
+
+  // ml scores
   kMlBkg,
   kMlPrompt,
   kMlNonPrompt,
+
+  // topology, common
   kCpa,
   kCpaXY,
   kDecayLength,
   kDecayLengthXY,
+
+  // topology, 2-prong only (D0)
   kImpactParameterProduct,
   kCosThetaStar,
+
+  // topology, 3-prong only (Lc)
+  kChi2Pca,
+  kImpactParameterProngSqSum,
 
   // mc
   kOrigin,
@@ -86,20 +100,29 @@ enum CharmHadronHist {
   o2::framework::ConfigurableAxis phi2d{"phi2d", {{200, 0, 1.f * o2::constants::math::TwoPI}}, "Phi for 2D QA"};
 
 template <auto& Prefix>
-struct ConfD0Binning : o2::framework::ConfigurableGroup {
+struct ConfCharmHadronBinning : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
   CHARMHADRON_DEFAULT_BINNING(1.7, 2.0)
+};
+
+template <auto& Prefix>
+struct ConfLcBinning : o2::framework::ConfigurableGroup {
+  std::string prefix = Prefix;
+  CHARMHADRON_DEFAULT_BINNING(2.15, 2.42)
 };
 
 #undef CHARMHADRON_DEFAULT_BINNING
 
 constexpr const char PrefixD0Binning1[] = "D0Binning1";
 constexpr const char PrefixD0Binning2[] = "D0Binning2";
-using ConfD0Binning1 = ConfD0Binning<PrefixD0Binning1>;
-using ConfD0Binning2 = ConfD0Binning<PrefixD0Binning2>;
+using ConfD0Binning1 = ConfCharmHadronBinning<PrefixD0Binning1>;
+using ConfD0Binning2 = ConfCharmHadronBinning<PrefixD0Binning2>;
+
+constexpr const char PrefixLcBinning1[] = "LcBinning1";
+using ConfLcBinning1 = ConfLcBinning<PrefixLcBinning1>;
 
 template <auto& Prefix>
-struct ConfD0QaBinning : o2::framework::ConfigurableGroup {
+struct ConfCharmHadronQaBinning : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
   o2::framework::Configurable<bool> plotTopology{"plotTopology", true, "Generate topological QA plots (cpa, decayLength, impactParameterProduct, cosThetaStar)"};
   o2::framework::ConfigurableAxis massD0{"massD0", {{200, 1.7, 2.0}}, "Mass of candidates selected as D0"};
@@ -112,7 +135,23 @@ struct ConfD0QaBinning : o2::framework::ConfigurableGroup {
 };
 
 constexpr const char PrefixD0QaBinning1[] = "D0QaBinning1";
-using ConfD0QaBinning1 = ConfD0QaBinning<PrefixD0QaBinning1>;
+using ConfD0QaBinning1 = ConfCharmHadronQaBinning<PrefixD0QaBinning1>;
+
+template <auto& Prefix>
+struct ConfLcQaBinning : o2::framework::ConfigurableGroup {
+  std::string prefix = Prefix;
+  o2::framework::Configurable<bool> plotTopology{"plotTopology", true, "Generate topological QA plots (cpa, decayLength, chi2Pca, impactParameterProngSqSum)"};
+  o2::framework::ConfigurableAxis massLcToPKPi{"massLcToPKPi", {{200, 2.15, 2.42}}, "Mass under the p K pi hypothesis"};
+  o2::framework::ConfigurableAxis massLcToPiKP{"massLcToPiKP", {{200, 2.15, 2.42}}, "Mass under the pi K p hypothesis"};
+  o2::framework::ConfigurableAxis mlScore{"mlScore", {{100, 0.f, 1.f}}, "BDT ML score (bkg/prompt/non-prompt)"};
+  o2::framework::ConfigurableAxis cpa{"cpa", {{100, 0.9f, 1.f}}, "Cosine of pointing angle"};
+  o2::framework::ConfigurableAxis decayLength{"decayLength", {{200, 0.f, 0.2f}}, "Decay length (cm)"};
+  o2::framework::ConfigurableAxis chi2Pca{"chi2Pca", {{200, 0.f, 0.1f}}, "Sum of distances of the secondary vertex to its prongs (cm)"};
+  o2::framework::ConfigurableAxis impactParameterProngSqSum{"impactParameterProngSqSum", {{200, 0.f, 0.01f}}, "Sum of squared prong impact parameters (cm^2)"};
+};
+
+constexpr const char PrefixLcQaBinning1[] = "LcQaBinning1";
+using ConfLcQaBinning1 = ConfLcQaBinning<PrefixLcQaBinning1>;
 
 // must be in sync with enum CharmHadronHist
 // the enum gives the correct index in the array
@@ -128,6 +167,8 @@ constexpr std::array<histmanager::HistInfo<CharmHadronHist>, kCharmHadronHistLas
    {kPhiVsEta, o2::framework::HistType::kTH2F, "hPhiVsEta", "#varphi vs #eta; #varphi; #eta"},
    {kMassD0, o2::framework::HistType::kTH1F, "hMassD0", "Invariant mass of D^{0} candidates; m_{Inv} (GeV/#it{c}^{2}); Entries"},
    {kMassD0bar, o2::framework::HistType::kTH1F, "hMassD0bar", "Invariant mass of #bar{D}^{0} candidates; m_{Inv} (GeV/#it{c}^{2}); Entries"},
+   {kMassLcToPKPi, o2::framework::HistType::kTH1F, "hMassLcToPKPi", "Invariant mass under the p K #pi hypothesis; m_{Inv} (GeV/#it{c}^{2}); Entries"},
+   {kMassLcToPiKP, o2::framework::HistType::kTH1F, "hMassLcToPiKP", "Invariant mass under the #pi K p hypothesis; m_{Inv} (GeV/#it{c}^{2}); Entries"},
    {kMlBkg, o2::framework::HistType::kTH1F, "hMlBkg", "BDT background score; ML score (bkg); Entries"},
    {kMlPrompt, o2::framework::HistType::kTH1F, "hMlPrompt", "BDT prompt score; ML score (prompt); Entries"},
    {kMlNonPrompt, o2::framework::HistType::kTH1F, "hMlNonPrompt", "BDT non-prompt score; ML score (non-prompt); Entries"},
@@ -137,6 +178,8 @@ constexpr std::array<histmanager::HistInfo<CharmHadronHist>, kCharmHadronHistLas
    {kDecayLengthXY, o2::framework::HistType::kTH1F, "hDecayLengthXY", "Decay length (XY); L_{XY} (cm); Entries"},
    {kImpactParameterProduct, o2::framework::HistType::kTH1F, "hImpactParameterProduct", "Product of daughter impact parameters; d_{0}^{K} #times d_{0}^{#pi} (cm^{2}); Entries"},
    {kCosThetaStar, o2::framework::HistType::kTH1F, "hCosThetaStar", "Cosine of decay angle in D0 rest frame; cos(#theta*); Entries"},
+   {kChi2Pca, o2::framework::HistType::kTH1F, "hChi2Pca", "Sum of distances of the secondary vertex to its prongs; #Sigma d (cm); Entries"},
+   {kImpactParameterProngSqSum, o2::framework::HistType::kTH1F, "hImpactParameterProngSqSum", "Sum of squared prong impact parameters; #Sigma d_{0}^{2} (cm^{2}); Entries"},
    {kOrigin, o2::framework::HistType::kTH1F, "hOrigin", "MC origin (prompt / non-prompt); origin; Entries"},
    {kPdg, o2::framework::HistType::kTH1F, "hPdg", "PDG code of matched generated particle; PDG code; Entries"},
    {kPdgMother, o2::framework::HistType::kTH1F, "hPdgMother", "PDG code of the mother; PDG code; Entries"},
@@ -159,7 +202,7 @@ constexpr std::array<histmanager::HistInfo<CharmHadronHist>, kCharmHadronHistLas
     {kPhiVsEta, {(conf).phi2d, (conf).eta2d}},
 
 template <typename T>
-auto makeD0HistSpecMap(const T& confBinningAnalysis)
+auto makeCharmHadronHistSpecMap(const T& confBinningAnalysis)
 {
   return std::map<CharmHadronHist, std::vector<o2::framework::AxisSpec>>{
     CHARMHADRON_HIST_ANALYSIS_MAP(confBinningAnalysis)};
@@ -175,7 +218,7 @@ auto makeD0HistSpecMap(const T& confBinningAnalysis)
     {kPtVsOrigin, {(conf).pt2d}},
 
 template <typename T>
-auto makeD0McHistSpecMap(const T& confBinningAnalysis)
+auto makeCharmHadronMcHistSpecMap(const T& confBinningAnalysis)
 {
   return std::map<CharmHadronHist, std::vector<o2::framework::AxisSpec>>{
     CHARMHADRON_HIST_ANALYSIS_MAP(confBinningAnalysis)
@@ -212,14 +255,47 @@ auto makeD0McQaHistSpecMap(const T1& confBinningAnalysis, const T2& confBinningQ
         CHARMHADRON_HIST_MC_MAP(confBinningAnalysis)};
 }
 
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define LC_HIST_QA_MAP(conf)                \
+  {kMassLcToPKPi, {(conf).massLcToPKPi}},   \
+    {kMassLcToPiKP, {(conf).massLcToPiKP}}, \
+    {kMlBkg, {(conf).mlScore}},             \
+    {kMlPrompt, {(conf).mlScore}},          \
+    {kMlNonPrompt, {(conf).mlScore}},       \
+    {kCpa, {(conf).cpa}},                   \
+    {kCpaXY, {(conf).cpa}},                 \
+    {kDecayLength, {(conf).decayLength}},   \
+    {kDecayLengthXY, {(conf).decayLength}}, \
+    {kChi2Pca, {(conf).chi2Pca}},           \
+    {kImpactParameterProngSqSum, {(conf).impactParameterProngSqSum}},
+
+template <typename T>
+auto makeLcQaHistSpecMap(const T& confBinningQa)
+{
+  return std::map<CharmHadronHist, std::vector<o2::framework::AxisSpec>>{
+    LC_HIST_QA_MAP(confBinningQa)};
+}
+
+template <typename T1, typename T2>
+auto makeLcMcQaHistSpecMap(const T1& confBinningAnalysis, const T2& confBinningQa)
+{
+  return std::map<CharmHadronHist, std::vector<o2::framework::AxisSpec>>{
+    CHARMHADRON_HIST_ANALYSIS_MAP(confBinningAnalysis)
+      LC_HIST_QA_MAP(confBinningQa)
+        CHARMHADRON_HIST_MC_MAP(confBinningAnalysis)};
+}
+
 #undef CHARMHADRON_HIST_ANALYSIS_MAP
 #undef CHARMHADRON_HIST_MC_MAP
 #undef CHARMHADRON_HIST_QA_MAP
+#undef LC_HIST_QA_MAP
 
 // prefixes for the output directories in the histogram registry
 constexpr char PrefixD01[] = "D01/";
 constexpr char PrefixD02[] = "D02/";
 constexpr char PrefixD0Qa[] = "D0QA/";
+constexpr char PrefixLc1[] = "Lc1/";
+constexpr char PrefixLcQa[] = "LcQA/";
 constexpr std::string_view AnalysisDir = "Analysis/";
 constexpr std::string_view McDir = "MC/";
 constexpr std::string_view QaDir = "QA/";
@@ -229,6 +305,7 @@ constexpr std::string_view QaDir = "QA/";
 template <auto& charmHadronPrefix,
           auto& prong0Prefix,
           auto& prong1Prefix,
+          auto& prong2Prefix,
           modes::CharmHadron charmHadron>
 class CharmHadronHistManager
 {
@@ -236,21 +313,22 @@ class CharmHadronHistManager
   CharmHadronHistManager() = default;
   ~CharmHadronHistManager() = default;
 
-  // init for analysis
+  // init for analysis, two-prong candidates
   template <modes::Mode mode, typename T>
   void init(o2::framework::HistogramRegistry* registry,
             std::map<CharmHadronHist, std::vector<o2::framework::AxisSpec>> const& CharmHadronSpecs,
             T const& ConfCharmHadronSelection,
-            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& Prong0Specs,
-            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& Prong1Specs)
+            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& PosDauSpecs,
+            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& NegDauSpecs)
   {
+    static_assert(!charmhadronbuilder::isThreeProng<charmHadron>(), "Use the three-prong init for 3-prong candidates");
     mHistogramRegistry = registry;
     mPdgCode = std::abs(ConfCharmHadronSelection.pdgCodeAbs.value);
 
-    auto [prong0PdgCodeAbs, prong1PdgCodeAbs] = this->resolveProngPdgCodes(ConfCharmHadronSelection.sign.value);
+    auto prongPdgCodes = this->resolveProngPdgCodes(ConfCharmHadronSelection.sign.value);
 
-    mProng0Manager.template init<mode>(registry, Prong0Specs, AbsCharge, SignPlus, prong0PdgCodeAbs);
-    mProng1Manager.template init<mode>(registry, Prong1Specs, AbsCharge, SignMinus, prong1PdgCodeAbs);
+    mProng0Manager.template init<mode>(registry, PosDauSpecs, AbsCharge, SignPlus, prongPdgCodes[0]);
+    mProng1Manager.template init<mode>(registry, NegDauSpecs, AbsCharge, SignMinus, prongPdgCodes[1]);
 
     if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       this->initAnalysis(CharmHadronSpecs);
@@ -260,26 +338,94 @@ class CharmHadronHistManager
     }
   }
 
-  // init for analysis and qa
+  // init for analysis, three-prong candidates
+  template <modes::Mode mode, typename T>
+  void init(o2::framework::HistogramRegistry* registry,
+            std::map<CharmHadronHist, std::vector<o2::framework::AxisSpec>> const& CharmHadronSpecs,
+            T const& ConfCharmHadronSelection,
+            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& ProtonDauSpecs,
+            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& KaonDauSpecs,
+            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& PionDauSpecs)
+  {
+    static_assert(charmhadronbuilder::isThreeProng<charmHadron>(), "Use the two-prong init for 2-prong candidates");
+    mHistogramRegistry = registry;
+    mPdgCode = std::abs(ConfCharmHadronSelection.pdgCodeAbs.value);
+
+    auto prongPdgCodes = this->resolveProngPdgCodes(ConfCharmHadronSelection.sign.value);
+
+    constexpr int ProtonSign = charmhadronbuilder::isParticle<charmHadron>() ? SignPlus : SignMinus;
+    constexpr int KaonSign = -ProtonSign;
+    mProng0Manager.template init<mode>(registry, ProtonDauSpecs, AbsCharge, ProtonSign, prongPdgCodes[0]);
+    mProng1Manager.template init<mode>(registry, KaonDauSpecs, AbsCharge, KaonSign, prongPdgCodes[1]);
+    mProng2Manager.template init<mode>(registry, PionDauSpecs, AbsCharge, ProtonSign, prongPdgCodes[2]);
+
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
+      this->initAnalysis(CharmHadronSpecs);
+    }
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kMc)) {
+      this->initMc(CharmHadronSpecs);
+    }
+  }
+
+  // init for analysis and qa, two-prong candidates
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4>
   void init(o2::framework::HistogramRegistry* registry,
             std::map<CharmHadronHist, std::vector<o2::framework::AxisSpec>> const& CharmHadronSpecs,
             std::map<CharmHadronHist, std::vector<o2::framework::AxisSpec>> const& CharmHadronQaSpecs,
             T1 const& ConfCharmHadronSelection,
             T2 const& ConfCharmHadronQaBinning,
-            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& Prong0Specs,
-            T3 const& ConfProng0BinningQa,
-            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& Prong1Specs,
-            T4 const& ConfProng1BinningQa)
+            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& PosDauSpecs,
+            T3 const& ConfPosDauBinningQa,
+            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& NegDauSpecs,
+            T4 const& ConfNegDauBinningQa)
   {
+    static_assert(!charmhadronbuilder::isThreeProng<charmHadron>(), "Use the three-prong init for 3-prong candidates");
     mHistogramRegistry = registry;
     mPdgCode = std::abs(ConfCharmHadronSelection.pdgCodeAbs.value);
     this->enableOptionalHistograms(ConfCharmHadronQaBinning);
 
-    auto [prong0PdgCodeAbs, prong1PdgCodeAbs] = this->resolveProngPdgCodes(ConfCharmHadronSelection.sign.value);
+    auto prongPdgCodes = this->resolveProngPdgCodes(ConfCharmHadronSelection.sign.value);
 
-    mProng0Manager.template init<mode>(registry, Prong0Specs, AbsCharge, SignPlus, prong0PdgCodeAbs, ConfProng0BinningQa);
-    mProng1Manager.template init<mode>(registry, Prong1Specs, AbsCharge, SignMinus, prong1PdgCodeAbs, ConfProng1BinningQa);
+    mProng0Manager.template init<mode>(registry, PosDauSpecs, AbsCharge, SignPlus, prongPdgCodes[0], ConfPosDauBinningQa);
+    mProng1Manager.template init<mode>(registry, NegDauSpecs, AbsCharge, SignMinus, prongPdgCodes[1], ConfNegDauBinningQa);
+
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
+      this->initAnalysis(CharmHadronSpecs);
+    }
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
+      this->initQa(CharmHadronQaSpecs);
+    }
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kMc)) {
+      this->initMc(CharmHadronSpecs);
+    }
+  }
+
+  // init for analysis and qa, three-prong candidates
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5>
+  void init(o2::framework::HistogramRegistry* registry,
+            std::map<CharmHadronHist, std::vector<o2::framework::AxisSpec>> const& CharmHadronSpecs,
+            std::map<CharmHadronHist, std::vector<o2::framework::AxisSpec>> const& CharmHadronQaSpecs,
+            T1 const& ConfCharmHadronSelection,
+            T2 const& ConfCharmHadronQaBinning,
+            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& ProtonDauSpecs,
+            T3 const& ConfProtonDauBinningQa,
+            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& KaonDauSpecs,
+            T4 const& ConfKaonDauBinningQa,
+            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& PionDauSpecs,
+            T5 const& ConfPionDauBinningQa)
+  {
+    static_assert(charmhadronbuilder::isThreeProng<charmHadron>(), "Use the two-prong init for 2-prong candidates");
+    mHistogramRegistry = registry;
+    mPdgCode = std::abs(ConfCharmHadronSelection.pdgCodeAbs.value);
+    this->enableOptionalHistograms(ConfCharmHadronQaBinning);
+
+    auto prongPdgCodes = this->resolveProngPdgCodes(ConfCharmHadronSelection.sign.value);
+
+    constexpr int ProtonSign = charmhadronbuilder::isParticle<charmHadron>() ? SignPlus : SignMinus;
+    constexpr int KaonSign = -ProtonSign;
+    mProng0Manager.template init<mode>(registry, ProtonDauSpecs, AbsCharge, ProtonSign, prongPdgCodes[0], ConfProtonDauBinningQa);
+    mProng1Manager.template init<mode>(registry, KaonDauSpecs, AbsCharge, KaonSign, prongPdgCodes[1], ConfKaonDauBinningQa);
+    mProng2Manager.template init<mode>(registry, PionDauSpecs, AbsCharge, ProtonSign, prongPdgCodes[2], ConfPionDauBinningQa);
 
     if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       this->initAnalysis(CharmHadronSpecs);
@@ -295,10 +441,19 @@ class CharmHadronHistManager
   template <modes::Mode mode, typename T1, typename T2>
   void fill(T1 const& charmHadronCandidate, T2 const& tracks)
   {
-    auto prong0 = tracks.rawIteratorAt(charmHadronCandidate.posDauId() - tracks.offset());
-    mProng0Manager.template fill<mode>(prong0, tracks);
-    auto prong1 = tracks.rawIteratorAt(charmHadronCandidate.negDauId() - tracks.offset());
-    mProng1Manager.template fill<mode>(prong1, tracks);
+    if constexpr (charmhadronbuilder::isThreeProng<charmHadron>()) {
+      auto prong0 = tracks.rawIteratorAt(charmHadronCandidate.prong0DauId() - tracks.offset());
+      mProng0Manager.template fill<mode>(prong0, tracks);
+      auto prong1 = tracks.rawIteratorAt(charmHadronCandidate.prong1DauId() - tracks.offset());
+      mProng1Manager.template fill<mode>(prong1, tracks);
+      auto prong2 = tracks.rawIteratorAt(charmHadronCandidate.prong2DauId() - tracks.offset());
+      mProng2Manager.template fill<mode>(prong2, tracks);
+    } else {
+      auto prong0 = tracks.rawIteratorAt(charmHadronCandidate.posDauId() - tracks.offset());
+      mProng0Manager.template fill<mode>(prong0, tracks);
+      auto prong1 = tracks.rawIteratorAt(charmHadronCandidate.negDauId() - tracks.offset());
+      mProng1Manager.template fill<mode>(prong1, tracks);
+    }
 
     if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       this->fillAnalysis(charmHadronCandidate);
@@ -311,10 +466,19 @@ class CharmHadronHistManager
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
   void fill(T1 const& charmHadronCandidate, T2 const& tracks, T3 const& col, T4 const& mcParticles, T5 const& mcMothers, T6 const& mcPartonicMothers)
   {
-    auto prong0 = tracks.rawIteratorAt(charmHadronCandidate.posDauId() - tracks.offset());
-    mProng0Manager.template fill<mode>(prong0, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
-    auto prong1 = tracks.rawIteratorAt(charmHadronCandidate.negDauId() - tracks.offset());
-    mProng1Manager.template fill<mode>(prong1, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
+    if constexpr (charmhadronbuilder::isThreeProng<charmHadron>()) {
+      auto prong0 = tracks.rawIteratorAt(charmHadronCandidate.prong0DauId() - tracks.offset());
+      mProng0Manager.template fill<mode>(prong0, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
+      auto prong1 = tracks.rawIteratorAt(charmHadronCandidate.prong1DauId() - tracks.offset());
+      mProng1Manager.template fill<mode>(prong1, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
+      auto prong2 = tracks.rawIteratorAt(charmHadronCandidate.prong2DauId() - tracks.offset());
+      mProng2Manager.template fill<mode>(prong2, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
+    } else {
+      auto prong0 = tracks.rawIteratorAt(charmHadronCandidate.posDauId() - tracks.offset());
+      mProng0Manager.template fill<mode>(prong0, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
+      auto prong1 = tracks.rawIteratorAt(charmHadronCandidate.negDauId() - tracks.offset());
+      mProng1Manager.template fill<mode>(prong1, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
+    }
 
     if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       this->fillAnalysis(charmHadronCandidate);
@@ -335,18 +499,29 @@ class CharmHadronHistManager
   // charge of the prongs is fixed by the PWGHF reconstruction: prong0 is the positive
   // daughter, prong1 the negative one. The D0/D0bar hypothesis only swaps which prong is
   // the pion and which is the kaon, not their charge.
-  std::pair<int, int> resolveProngPdgCodes(int sign)
+  std::array<int, 3> resolveProngPdgCodes(int sign)
   {
-    if (mPdgCode != o2::constants::physics::Pdg::kD0) {
-      LOG(fatal) << "PDG code for charm hadron has to be D0";
+    if constexpr (charmhadronbuilder::isThreeProng<charmHadron>()) {
+      if (mPdgCode != o2::constants::physics::Pdg::kLambdaCPlus) {
+        LOG(fatal) << "PDG code for a 3-prong charm hadron has to be Lc";
+      }
+      if (sign < 0) {
+        mPdgCode = -1 * mPdgCode; // switch sign for Lcbar
+      }
+      // Lc -> p K pi, prongs stored remapped so that prong 0 is always the proton
+      return {std::abs(PDG_t::kProton), std::abs(PDG_t::kKPlus), std::abs(PDG_t::kPiPlus)};
+    } else {
+      if (mPdgCode != o2::constants::physics::Pdg::kD0) {
+        LOG(fatal) << "PDG code for charm hadron has to be D0";
+      }
+      if (sign > 0) {
+        // D0 -> pi+ K-
+        return {std::abs(PDG_t::kPiPlus), std::abs(PDG_t::kKMinus), 0};
+      }
+      // D0bar -> K+ pi-
+      mPdgCode = -1 * mPdgCode; // switch sign for D0bar
+      return {std::abs(PDG_t::kKPlus), std::abs(PDG_t::kPiMinus), 0};
     }
-    if (sign > 0) {
-      // D0 -> pi+ K-
-      return {std::abs(PDG_t::kPiPlus), std::abs(PDG_t::kKMinus)};
-    }
-    // D0bar -> K+ pi-
-    mPdgCode = -1 * mPdgCode; // switch sign for D0bar
-    return {std::abs(PDG_t::kKPlus), std::abs(PDG_t::kPiMinus)};
   }
 
   template <typename T>
@@ -386,8 +561,13 @@ class CharmHadronHistManager
   void initQa(std::map<CharmHadronHist, std::vector<o2::framework::AxisSpec>> const& CharmHadronQaSpecs)
   {
     std::string qaDir = std::string(charmHadronPrefix) + std::string(QaDir);
-    mHistogramRegistry->add(qaDir + getHistNameV2(kMassD0, HistTable), getHistDesc(kMassD0, HistTable), getHistType(kMassD0, HistTable), {CharmHadronQaSpecs.at(kMassD0)});
-    mHistogramRegistry->add(qaDir + getHistNameV2(kMassD0bar, HistTable), getHistDesc(kMassD0bar, HistTable), getHistType(kMassD0bar, HistTable), {CharmHadronQaSpecs.at(kMassD0bar)});
+    if constexpr (charmhadronbuilder::isThreeProng<charmHadron>()) {
+      mHistogramRegistry->add(qaDir + getHistNameV2(kMassLcToPKPi, HistTable), getHistDesc(kMassLcToPKPi, HistTable), getHistType(kMassLcToPKPi, HistTable), {CharmHadronQaSpecs.at(kMassLcToPKPi)});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kMassLcToPiKP, HistTable), getHistDesc(kMassLcToPiKP, HistTable), getHistType(kMassLcToPiKP, HistTable), {CharmHadronQaSpecs.at(kMassLcToPiKP)});
+    } else {
+      mHistogramRegistry->add(qaDir + getHistNameV2(kMassD0, HistTable), getHistDesc(kMassD0, HistTable), getHistType(kMassD0, HistTable), {CharmHadronQaSpecs.at(kMassD0)});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kMassD0bar, HistTable), getHistDesc(kMassD0bar, HistTable), getHistType(kMassD0bar, HistTable), {CharmHadronQaSpecs.at(kMassD0bar)});
+    }
     mHistogramRegistry->add(qaDir + getHistNameV2(kMlBkg, HistTable), getHistDesc(kMlBkg, HistTable), getHistType(kMlBkg, HistTable), {CharmHadronQaSpecs.at(kMlBkg)});
     mHistogramRegistry->add(qaDir + getHistNameV2(kMlPrompt, HistTable), getHistDesc(kMlPrompt, HistTable), getHistType(kMlPrompt, HistTable), {CharmHadronQaSpecs.at(kMlPrompt)});
     mHistogramRegistry->add(qaDir + getHistNameV2(kMlNonPrompt, HistTable), getHistDesc(kMlNonPrompt, HistTable), getHistType(kMlNonPrompt, HistTable), {CharmHadronQaSpecs.at(kMlNonPrompt)});
@@ -397,8 +577,13 @@ class CharmHadronHistManager
       mHistogramRegistry->add(qaDir + getHistNameV2(kCpaXY, HistTable), getHistDesc(kCpaXY, HistTable), getHistType(kCpaXY, HistTable), {CharmHadronQaSpecs.at(kCpaXY)});
       mHistogramRegistry->add(qaDir + getHistNameV2(kDecayLength, HistTable), getHistDesc(kDecayLength, HistTable), getHistType(kDecayLength, HistTable), {CharmHadronQaSpecs.at(kDecayLength)});
       mHistogramRegistry->add(qaDir + getHistNameV2(kDecayLengthXY, HistTable), getHistDesc(kDecayLengthXY, HistTable), getHistType(kDecayLengthXY, HistTable), {CharmHadronQaSpecs.at(kDecayLengthXY)});
-      mHistogramRegistry->add(qaDir + getHistNameV2(kImpactParameterProduct, HistTable), getHistDesc(kImpactParameterProduct, HistTable), getHistType(kImpactParameterProduct, HistTable), {CharmHadronQaSpecs.at(kImpactParameterProduct)});
-      mHistogramRegistry->add(qaDir + getHistNameV2(kCosThetaStar, HistTable), getHistDesc(kCosThetaStar, HistTable), getHistType(kCosThetaStar, HistTable), {CharmHadronQaSpecs.at(kCosThetaStar)});
+      if constexpr (charmhadronbuilder::isThreeProng<charmHadron>()) {
+        mHistogramRegistry->add(qaDir + getHistNameV2(kChi2Pca, HistTable), getHistDesc(kChi2Pca, HistTable), getHistType(kChi2Pca, HistTable), {CharmHadronQaSpecs.at(kChi2Pca)});
+        mHistogramRegistry->add(qaDir + getHistNameV2(kImpactParameterProngSqSum, HistTable), getHistDesc(kImpactParameterProngSqSum, HistTable), getHistType(kImpactParameterProngSqSum, HistTable), {CharmHadronQaSpecs.at(kImpactParameterProngSqSum)});
+      } else {
+        mHistogramRegistry->add(qaDir + getHistNameV2(kImpactParameterProduct, HistTable), getHistDesc(kImpactParameterProduct, HistTable), getHistType(kImpactParameterProduct, HistTable), {CharmHadronQaSpecs.at(kImpactParameterProduct)});
+        mHistogramRegistry->add(qaDir + getHistNameV2(kCosThetaStar, HistTable), getHistDesc(kCosThetaStar, HistTable), getHistType(kCosThetaStar, HistTable), {CharmHadronQaSpecs.at(kCosThetaStar)});
+      }
     }
   }
 
@@ -424,38 +609,55 @@ class CharmHadronHistManager
   template <typename T>
   void fillQa(T const& charmHadronCandidate)
   {
-    // invariant mass split by hypothesis: D0 (sign > 0) or D0bar (sign < 0)
-    if (charmHadronCandidate.sign() > 0) {
-      mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(QaDir) + HIST(getHistName(kMassD0, HistTable)), charmHadronCandidate.mass());
-    } else {
-      mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(QaDir) + HIST(getHistName(kMassD0bar, HistTable)), charmHadronCandidate.mass());
-    }
-
-    // BDT scores of the accepted hypothesis: D0 (sign > 0) or D0bar (sign < 0)
     float mlBkg = 0.f;
     float mlPrompt = 0.f;
     float mlNonPrompt = 0.f;
-    if (charmHadronCandidate.sign() > 0) {
-      mlBkg = charmHadronCandidate.mlProbD0Bkg();
-      mlPrompt = charmHadronCandidate.mlProbD0Prompt();
-      mlNonPrompt = charmHadronCandidate.mlProbD0NonPrompt();
+
+    if constexpr (charmhadronbuilder::isThreeProng<charmHadron>()) {
+      // both hypotheses are histogrammed, so ambiguous candidates are visible
+      mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(QaDir) + HIST(getHistName(kMassLcToPKPi, HistTable)), charmHadronCandidate.isSelLcToPKPi() ? charmHadronCandidate.mass() : charmHadronCandidate.massCompetingHypothesis());
+      mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(QaDir) + HIST(getHistName(kMassLcToPiKP, HistTable)), charmHadronCandidate.isSelLcToPKPi() ? charmHadronCandidate.massCompetingHypothesis() : charmHadronCandidate.mass());
+
+      if (charmHadronCandidate.isSelLcToPKPi()) {
+        mlBkg = charmHadronCandidate.mlProbLcToPKPiBkg();
+        mlPrompt = charmHadronCandidate.mlProbLcToPKPiPrompt();
+        mlNonPrompt = charmHadronCandidate.mlProbLcToPKPiNonPrompt();
+      } else {
+        mlBkg = charmHadronCandidate.mlProbLcToPiKPBkg();
+        mlPrompt = charmHadronCandidate.mlProbLcToPiKPPrompt();
+        mlNonPrompt = charmHadronCandidate.mlProbLcToPiKPNonPrompt();
+      }
     } else {
-      mlBkg = charmHadronCandidate.mlProbD0barBkg();
-      mlPrompt = charmHadronCandidate.mlProbD0barPrompt();
-      mlNonPrompt = charmHadronCandidate.mlProbD0barNonPrompt();
+      // invariant mass split by hypothesis: D0 (sign > 0) or D0bar (sign < 0)
+      if (charmHadronCandidate.sign() > 0) {
+        mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(QaDir) + HIST(getHistName(kMassD0, HistTable)), charmHadronCandidate.mass());
+        mlBkg = charmHadronCandidate.mlProbD0Bkg();
+        mlPrompt = charmHadronCandidate.mlProbD0Prompt();
+        mlNonPrompt = charmHadronCandidate.mlProbD0NonPrompt();
+      } else {
+        mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(QaDir) + HIST(getHistName(kMassD0bar, HistTable)), charmHadronCandidate.mass());
+        mlBkg = charmHadronCandidate.mlProbD0barBkg();
+        mlPrompt = charmHadronCandidate.mlProbD0barPrompt();
+        mlNonPrompt = charmHadronCandidate.mlProbD0barNonPrompt();
+      }
     }
+
     mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(QaDir) + HIST(getHistName(kMlBkg, HistTable)), mlBkg);
     mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(QaDir) + HIST(getHistName(kMlPrompt, HistTable)), mlPrompt);
     mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(QaDir) + HIST(getHistName(kMlNonPrompt, HistTable)), mlNonPrompt);
 
-    // topological variables PWGHF selects on
     if (mPlotTopology) {
       mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(QaDir) + HIST(getHistName(kCpa, HistTable)), charmHadronCandidate.cpa());
       mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(QaDir) + HIST(getHistName(kCpaXY, HistTable)), charmHadronCandidate.cpaXY());
       mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(QaDir) + HIST(getHistName(kDecayLength, HistTable)), charmHadronCandidate.decayLength());
       mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(QaDir) + HIST(getHistName(kDecayLengthXY, HistTable)), charmHadronCandidate.decayLengthXY());
-      mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(QaDir) + HIST(getHistName(kImpactParameterProduct, HistTable)), charmHadronCandidate.impactParameterProduct());
-      mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(QaDir) + HIST(getHistName(kCosThetaStar, HistTable)), charmHadronCandidate.cosThetaStar());
+      if constexpr (charmhadronbuilder::isThreeProng<charmHadron>()) {
+        mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(QaDir) + HIST(getHistName(kChi2Pca, HistTable)), charmHadronCandidate.chi2PCA());
+        mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(QaDir) + HIST(getHistName(kImpactParameterProngSqSum, HistTable)), charmHadronCandidate.impactParameterProngSqSum());
+      } else {
+        mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(QaDir) + HIST(getHistName(kImpactParameterProduct, HistTable)), charmHadronCandidate.impactParameterProduct());
+        mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(QaDir) + HIST(getHistName(kCosThetaStar, HistTable)), charmHadronCandidate.cosThetaStar());
+      }
     }
   }
 
@@ -496,6 +698,7 @@ class CharmHadronHistManager
 
   trackhistmanager::TrackHistManager<prong0Prefix> mProng0Manager;
   trackhistmanager::TrackHistManager<prong1Prefix> mProng1Manager;
+  trackhistmanager::TrackHistManager<prong2Prefix> mProng2Manager;
 };
 }; // namespace o2::analysis::femto::charmhadronhistmanager
 #endif // PWGCF_FEMTO_CORE_CHARMHADRONHISTMANAGER_H_

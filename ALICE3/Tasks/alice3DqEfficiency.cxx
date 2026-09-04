@@ -111,10 +111,9 @@ DECLARE_SOA_TABLE(OniaMCTruth, "AOD", "MCTRUTHONIA", dqanalysisflags::OniaPt, dq
 
 // TODO: USE PROPER TABLES
 
-using MyEvents = soa::Join<aod::ReA3Events, aod::ReducedA3MCEventLabels>;
-using MyEventsSelected = soa::Join<aod::ReA3Events, aod::EventCuts, aod::ReducedA3MCEventLabels>;
-using MyEventsVtxCov = soa::Join<aod::ReA3Events, aod::ReducedA3EventsVtxCov, aod::ReducedA3MCEventLabels>;
-using MyEventsVtxCovSelected = soa::Join<aod::ReA3Events, aod::ReducedA3EventsVtxCov, aod::EventCuts, aod::ReducedA3MCEventLabels>;
+using MyEvents = soa::Join<aod::ReA3Events, aod::ReA3EventsExtended, aod::ReducedA3MCEventLabels>;
+using MyEventsVtxCov = soa::Join<aod::ReA3Events, aod::ReA3EventsExtended, aod::ReducedA3EventsVtxCov, aod::ReducedA3MCEventLabels>;
+using MyEventsVtxCovSelected = soa::Join<aod::ReA3Events, aod::ReA3EventsExtended, aod::ReducedA3EventsVtxCov, aod::EventCuts, aod::ReducedA3MCEventLabels>;
 
 using MyBarrelAssocs = soa::Join<aod::ReducedA3TracksAssoc, aod::BarrelTrackCuts>;
 using MyBarrelAssocsPrefilter = soa::Join<aod::ReducedA3TracksAssoc, aod::BarrelTrackCuts, aod::Prefilter>;
@@ -304,7 +303,7 @@ struct Alice3DqEfficiencyAnalysisTrackSelection {
   Configurable<std::string> cfgTrackMCsignalsJSON{"cfgTrackMCsignalsJSON", "", "Additional list of MC signals via JSON"};
 
   HistogramManager* fHistMan = nullptr;
-  std::vector<AnalysisCompositeCut*> fTrackCuts;
+  std::vector<AnalysisCut*> fTrackCuts;
   std::vector<MCSignal*> fMCSignals; // list of signals to be checked
   std::vector<TString> fHistNamesReco;
   std::vector<TString> fHistNamesMCMatched;
@@ -331,7 +330,7 @@ struct Alice3DqEfficiencyAnalysisTrackSelection {
     if (addTrackCutsStr != "") {
       std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
       for (const auto& t : addTrackCuts) {
-        fTrackCuts.push_back(static_cast<AnalysisCompositeCut*>(t));
+        fTrackCuts.push_back(t);
       }
     }
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
@@ -402,7 +401,7 @@ struct Alice3DqEfficiencyAnalysisTrackSelection {
 
     // Loop over associations
     for (const auto& assoc : assocs) {
-      auto event = assoc.template reA3event_as<MyEventsVtxCovSelected>();
+      auto event = assoc.template reA3Event_as<MyEventsVtxCovSelected>();
       if (!event.isEventSelected_bit(0)) {
         trackSel(0);
         continue;
@@ -415,7 +414,7 @@ struct Alice3DqEfficiencyAnalysisTrackSelection {
         VarManager::FillEventAlice3<VarManager::ObjTypes::ReducedEventMC>(event.reA3MCEvent());
       }
 
-      auto track = assoc.template reA3track_as<MyBarrelTracksWithCov>();
+      auto track = assoc.template reA3Track_as<MyBarrelTracksWithCov>();
       VarManager::FillTrackAlice3<GkTrackFillMapWithCov>(track);
       // compute quantities which depend on the associated collision, such as DCA
       VarManager::FillTrackCollision<GkTrackFillMapWithCov>(track, event);
@@ -564,7 +563,7 @@ struct Alice3DqEfficiencyAnalysisPrefilterSelection {
   uint32_t fPrefilterMask = 0;
   int fPrefilterCutBit = -1;
 
-  PresliceUnsorted<aod::ReducedA3TracksAssoc> trackAssocsPerCollision = aod::reducedA3track_association::reA3eventId;
+  PresliceUnsorted<aod::ReducedA3TracksAssoc> trackAssocsPerCollision = aod::reduceda3trackassociation::reA3EventId;
 
   void init(o2::framework::InitContext& context)
   {
@@ -598,10 +597,10 @@ struct Alice3DqEfficiencyAnalysisPrefilterSelection {
       // get the list of cuts that were computed in the barrel track-selection task and create a bit mask
       //  to mark just the ones we want to apply a prefilter on
       string trackCuts;
-      getTaskOptionValue<string>(context, "analysis-track-selection", "cfgTrackCuts", trackCuts, false);
+      getTaskOptionValue<string>(context, "alice3-dq-efficiency-analysis-track-selection", "cfgTrackCuts", trackCuts, false);
       TString allTrackCutsStr = trackCuts;
       // check also the cuts added via JSON and add them to the string of cuts
-      getTaskOptionValue<string>(context, "analysis-track-selection", "cfgBarrelTrackCutsJSON", trackCuts, false);
+      getTaskOptionValue<string>(context, "alice3-dq-efficiency-analysis-track-selection", "cfgBarrelTrackCutsJSON", trackCuts, false);
       TString addTrackCutsStr = trackCuts;
       if (addTrackCutsStr != "") {
         std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
@@ -651,8 +650,8 @@ struct Alice3DqEfficiencyAnalysisPrefilterSelection {
     }
 
     for (const auto& [assoc1, assoc2] : o2::soa::combinations(assocs, assocs)) {
-      auto track1 = assoc1.template reA3track_as<MyBarrelTracks>();
-      auto track2 = assoc2.template reA3track_as<MyBarrelTracks>();
+      auto track1 = assoc1.template reA3Track_as<MyBarrelTracks>();
+      auto track2 = assoc2.template reA3Track_as<MyBarrelTracks>();
 
       // NOTE: here we restrict to just pairs of opposite sign (conversions), but in principle this can be made
       // a configurable and check also same-sign pairs (track splitting)
@@ -708,7 +707,7 @@ struct Alice3DqEfficiencyAnalysisPrefilterSelection {
     } else {
       for (const auto& assoc : assocs) {
         // TODO: just use the index from the assoc (no need to cast the whole track)
-        auto track = assoc.template reA3track_as<MyBarrelTracks>();
+        auto track = assoc.template reA3Track_as<MyBarrelTracks>();
         mymap = -1;
         if (!fPrefilterMap.contains(track.globalIndex())) {
           // NOTE: publish the bitwise negated bits (~), so there will be zeroes for cuts that failed the prefiltering and 1 everywhere else
@@ -736,12 +735,6 @@ struct Alice3DqEfficiencyAnalysisPrefilterSelection {
 // The task implements also process functions for running event mixing
 struct Alice3DqEfficiencyAnalysisSameEventPairing {
 
-  Produces<aod::Dielectrons> dielectronList;
-  Produces<aod::DielectronsExtra> dielectronsExtraList;
-  Produces<aod::DielectronsAll> dielectronAllList;
-  Produces<aod::OniaMCTruth> mcTruthTableEffi;
-
-  o2::base::MatLayerCylSet* fLUT = nullptr;
   OutputObj<THashList> fOutputList{"output"};
 
   struct : ConfigurableGroup {
@@ -795,7 +788,7 @@ struct Alice3DqEfficiencyAnalysisSameEventPairing {
 
   bool fEnableBarrelHistos = false;
 
-  PresliceUnsorted<MyBarrelAssocsPrefilter> trackAssocsPerCollision = aod::reducedA3track_association::reA3eventId;
+  PresliceUnsorted<MyBarrelAssocsPrefilter> trackAssocsPerCollision = aod::reduceda3trackassociation::reA3EventId;
 
   void init(o2::framework::InitContext& context)
   {
@@ -852,10 +845,10 @@ struct Alice3DqEfficiencyAnalysisSameEventPairing {
 
     // get the barrel track selection cuts
     string tempCuts;
-    getTaskOptionValue<string>(context, "analysis-track-selection", "cfgTrackCuts", tempCuts, false);
+    getTaskOptionValue<string>(context, "alice3-dq-efficiency-analysis-track-selection", "cfgTrackCuts", tempCuts, false);
     TString tempCutsStr = tempCuts;
     // check also the cuts added via JSON and add them to the string of cuts
-    getTaskOptionValue<string>(context, "analysis-track-selection", "cfgBarrelTrackCutsJSON", tempCuts, false);
+    getTaskOptionValue<string>(context, "alice3-dq-efficiency-analysis-track-selection", "cfgBarrelTrackCutsJSON", tempCuts, false);
     TString addTrackCutsStr = tempCuts;
     if (addTrackCutsStr != "") {
       std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
@@ -1021,27 +1014,6 @@ struct Alice3DqEfficiencyAnalysisSameEventPairing {
     bool isCorrectAssocLeg1 = false;
     bool isCorrectAssocLeg2 = false;
 
-    int64_t reserveSize = 0;
-    for (auto const& event : events) {
-      if (event.isEventSelected_bit(0)) {
-        auto groupedAssocs = assocs.sliceBy(preslice, event.globalIndex());
-        size_t nGood = 0;
-        for (auto const& t : groupedAssocs) {
-          if (t.isBarrelSelected_raw() > 0u) {
-            nGood++;
-          }
-        }
-        reserveSize += nGood * (nGood - 1) / 2;
-      }
-    }
-
-    dielectronList.reserve(reserveSize);
-    dielectronsExtraList.reserve(reserveSize);
-
-    if (fConfigOptions.cfgFlatTables.value) {
-      dielectronAllList.reserve(reserveSize);
-    }
-
     for (const auto& event : events) {
       if (!event.isEventSelected_bit(0)) {
         continue;
@@ -1064,8 +1036,8 @@ struct Alice3DqEfficiencyAnalysisSameEventPairing {
           continue;
         }
 
-        auto t1 = a1.template reA3track_as<MyBarrelTracksWithCovWithAmbiguities>();
-        auto t2 = a2.template reA3track_as<MyBarrelTracksWithCovWithAmbiguities>();
+        auto t1 = a1.template reA3Track_as<MyBarrelTracksWithCovWithAmbiguities>();
+        auto t2 = a2.template reA3Track_as<MyBarrelTracksWithCovWithAmbiguities>();
         sign1 = t1.sign();
         sign2 = t2.sign();
         // store the ambiguity number of the two dilepton legs in the last 4 digits of the two-track filter
@@ -1103,11 +1075,6 @@ struct Alice3DqEfficiencyAnalysisSameEventPairing {
         }
 
         VarManager::FillPairVertexingAlice3<VarManager::kDecayToEE, GkEventFillMap, GkTrackFillMap>(event, t1, t2, fConfigOptions.cfgPropToPCA);
-        if (!fConfigMC.cfgSkimSignalOnly || mcDecision > 0) {
-          dielectronList(event.globalIndex(), VarManager::fgValues[VarManager::kMass],
-                         VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi],
-                         t1.sign() + t2.sign(), twoTrackFilter, mcDecision);
-        }
 
         // Fill histograms
         bool isAmbiInBunch = false;
@@ -1209,7 +1176,7 @@ struct Alice3DqEfficiencyAnalysisSameEventPairing {
     } // end loop over events
   }
 
-  PresliceUnsorted<ReA3MCTracks> perReducedMcEvent = aod::reducedA3trackMC::reA3MCEventId;
+  PresliceUnsorted<ReA3MCTracks> perReducedMcEvent = aod::reduceda3trackmc::reA3MCEventId;
 
   void runMCGenWithGrouping(MyEventsVtxCovSelected const& events, ReA3MCEvents const& /*mcEvents*/, ReA3MCTracks const& mcTracks)
   {
@@ -1254,7 +1221,6 @@ struct Alice3DqEfficiencyAnalysisSameEventPairing {
         for (const auto& sig : fGenMCSignals) {
           if (sig->CheckSignal(true, trackRaw)) {
             fHistMan->FillHistClass(Form("MCTruthGenSel_%s", sig->GetName()), dqefficiency_helpers::varValues());
-            mcTruthTableEffi(VarManager::fgValues[VarManager::kMCPt], VarManager::fgValues[VarManager::kMCEta], VarManager::fgValues[VarManager::kMCY], VarManager::fgValues[VarManager::kMCPhi], VarManager::fgValues[VarManager::kMCVz], VarManager::fgValues[VarManager::kMCVtxZ], VarManager::fgValues[VarManager::kMultFT0A], VarManager::fgValues[VarManager::kMultFT0C], VarManager::fgValues[VarManager::kCentFT0M], VarManager::fgValues[VarManager::kVtxNcontribReal]);
           }
         }
       }
@@ -1325,7 +1291,7 @@ struct Alice3DqEfficiencyAnalysisSameEventPairing {
     runMCGenWithGrouping(events, mcEvents, mcTracks);
   }
 
-  PresliceUnsorted<ReA3MCTracks> perReducedMcGenEvent = aod::reducedA3trackMC::reA3MCEventId;
+  PresliceUnsorted<ReA3MCTracks> perReducedMcGenEvent = aod::reduceda3trackmc::reA3MCEventId;
 
   void processMCGen(soa::Filtered<MyEventsVtxCovSelected> const& events, ReA3MCEvents const& /*mcEvents*/, ReA3MCTracks const& mcTracks)
   {
@@ -1361,7 +1327,6 @@ struct Alice3DqEfficiencyAnalysisSameEventPairing {
         for (const auto& sig : fGenMCSignals) {
           if (sig->CheckSignal(true, trackRaw)) {
             fHistMan->FillHistClass(Form("MCTruthGenSel_%s", sig->GetName()), dqefficiency_helpers::varValues());
-            mcTruthTableEffi(VarManager::fgValues[VarManager::kMCPt], VarManager::fgValues[VarManager::kMCEta], VarManager::fgValues[VarManager::kMCY], VarManager::fgValues[VarManager::kMCPhi], VarManager::fgValues[VarManager::kMCVz], VarManager::fgValues[VarManager::kMCVtxZ], VarManager::fgValues[VarManager::kMultFT0A], VarManager::fgValues[VarManager::kMultFT0C], VarManager::fgValues[VarManager::kCentFT0M], VarManager::fgValues[VarManager::kVtxNcontribReal]);
           }
         }
       }
@@ -1447,7 +1412,6 @@ struct Alice3DqEfficiencyAnalysisSameEventPairing {
         for (const auto& sig : fGenMCSignals) {
           if (sig->CheckSignal(true, trackRaw)) {
             fHistMan->FillHistClass(Form("MCTruthGenSel_%s", sig->GetName()), dqefficiency_helpers::varValues());
-            mcTruthTableEffi(VarManager::fgValues[VarManager::kMCPt], VarManager::fgValues[VarManager::kMCEta], VarManager::fgValues[VarManager::kMCY], VarManager::fgValues[VarManager::kMCPhi], VarManager::fgValues[VarManager::kMCVz], VarManager::fgValues[VarManager::kMCVtxZ], VarManager::fgValues[VarManager::kMultFT0A], VarManager::fgValues[VarManager::kMultFT0C], VarManager::fgValues[VarManager::kCentFT0M], VarManager::fgValues[VarManager::kVtxNcontribReal]);
           }
         }
       }
@@ -1510,9 +1474,6 @@ struct Alice3DqEfficiencyAnalysisSameEventPairing {
 
 struct Alice3DqEfficiencyAnalysisAsymmetricPairing {
 
-  Produces<aod::Ditracks> ditrackList;
-  Produces<aod::DitracksExtra> ditrackExtraList;
-
   // Output objects
   OutputObj<THashList> fOutputList{"output"};
 
@@ -1539,7 +1500,7 @@ struct Alice3DqEfficiencyAnalysisAsymmetricPairing {
 
   HistogramManager* fHistMan = nullptr;
 
-  std::vector<AnalysisCompositeCut*> fPairCuts;
+  std::vector<AnalysisCut*> fPairCuts;
   int fNPairHistPrefixes = 0;
 
   std::vector<MCSignal*> fRecMCSignals;
@@ -1569,8 +1530,8 @@ struct Alice3DqEfficiencyAnalysisAsymmetricPairing {
 
   Filter eventFilter = aod::dqanalysisflags::isEventSelected > static_cast<uint32_t>(0);
 
-  PresliceUnsorted<MyBarrelAssocs> trackAssocsPerCollision = aod::reducedA3track_association::reA3eventId;
-  // PresliceUnsorted<aod::ReducedA3TracksAssoc> trackAssocsPerCollision = aod::reducedA3track_association::reA3eventId;
+  PresliceUnsorted<MyBarrelAssocs> trackAssocsPerCollision = aod::reduceda3trackassociation::reA3EventId;
+  // PresliceUnsorted<aod::ReducedA3TracksAssoc> trackAssocsPerCollision = aod::reduceda3trackassociation::reA3EventId;
 
   // Partitions for triplets and asymmetric pairs
   Partition<MyBarrelAssocs> legACandidateAssocs = (o2::aod::dqanalysisflags::isBarrelSelected & cfgLegAFilterMask) > static_cast<uint32_t>(0);
@@ -1610,7 +1571,7 @@ struct Alice3DqEfficiencyAnalysisAsymmetricPairing {
     if (addPairCutsStr != "") {
       std::vector<AnalysisCut*> addPairCuts = dqcuts::GetCutsFromJSON(addPairCutsStr.Data());
       for (const auto& t : addPairCuts) {
-        fPairCuts.push_back(static_cast<AnalysisCompositeCut*>(t));
+        fPairCuts.push_back(t);
         pairCutNamesStr += Form(",%s", t->GetName());
       }
     }
@@ -1649,10 +1610,10 @@ struct Alice3DqEfficiencyAnalysisAsymmetricPairing {
 
     // Get the barrel track selection cuts
     string tempCuts;
-    getTaskOptionValue<string>(context, "analysis-track-selection", "cfgTrackCuts", tempCuts, false);
+    getTaskOptionValue<string>(context, "alice3-dq-efficiency-analysis-track-selection", "cfgTrackCuts", tempCuts, false);
     TString tempCutsStr = tempCuts;
     // check also the cuts added via JSON and add them to the string of cuts
-    getTaskOptionValue<string>(context, "analysis-track-selection", "cfgBarrelTrackCutsJSON", tempCuts, false);
+    getTaskOptionValue<string>(context, "alice3-dq-efficiency-analysis-track-selection", "cfgBarrelTrackCutsJSON", tempCuts, false);
     TString addTrackCutsStr = tempCuts;
     if (addTrackCutsStr != "") {
       std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
@@ -1928,8 +1889,6 @@ struct Alice3DqEfficiencyAnalysisAsymmetricPairing {
     int sign1 = 0;
     int sign2 = 0;
     uint32_t mcDecision = 0;
-    ditrackList.reserve(1);
-    ditrackExtraList.reserve(1);
 
     for (const auto& event : events) {
       if (!event.isEventSelected_bit(0)) {
@@ -1951,8 +1910,8 @@ struct Alice3DqEfficiencyAnalysisAsymmetricPairing {
       for (const auto& [a1, a2] : combinations(soa::CombinationsFullIndexPolicy(groupedLegAAssocs, groupedLegBAssocs))) {
         uint32_t twoTrackFilter = 0;
         uint32_t twoTrackCommonFilter = 0;
-        uint32_t pairFilter = 0;
         bool isPairIdWrong = false;
+
         for (int icut = 0; icut < fNLegCuts; ++icut) {
           // Find leg pair definitions both candidates participate in
           if (((a1.isBarrelSelected_raw() & fConstructedLegAFilterMasksMap[icut]) != 0u) && ((a2.isBarrelSelected_raw() & fConstructedLegBFilterMasksMap[icut]) != 0u)) {
@@ -1973,8 +1932,8 @@ struct Alice3DqEfficiencyAnalysisAsymmetricPairing {
         // Find common track cuts both candidates pass
         twoTrackCommonFilter |= a1.isBarrelSelected_raw() & a2.isBarrelSelected_raw() & fCommonTrackCutMask;
 
-        auto t1 = a1.template reA3track_as<MyBarrelTracksWithCovWithAmbiguities>();
-        auto t2 = a2.template reA3track_as<MyBarrelTracksWithCovWithAmbiguities>();
+        auto t1 = a1.template reA3Track_as<MyBarrelTracksWithCovWithAmbiguities>();
+        auto t2 = a2.template reA3Track_as<MyBarrelTracksWithCovWithAmbiguities>();
 
         // Avoid self-pairs
         if (t1.globalIndex() == t2.globalIndex()) {
@@ -2103,7 +2062,6 @@ struct Alice3DqEfficiencyAnalysisAsymmetricPairing {
               if (!((*cut)->IsSelected(dqefficiency_helpers::varValues()))) { // apply pair cuts
                 continue;
               }
-              pairFilter |= (static_cast<uint32_t>(1) << iPairCut);
               // Histograms with pair cuts
               if (sign1 * sign2 < 0) {
                 fHistMan->FillHistClass(Form("PairsBarrelSEPM_%s_%s", fLegCutNames[icut].Data(), fPairCutNames[iPairCut].Data()), dqefficiency_helpers::varValues());
@@ -2157,9 +2115,6 @@ struct Alice3DqEfficiencyAnalysisAsymmetricPairing {
             } // end loop (pair cuts)
           }
         } // end loop (cuts)
-        ditrackList(event.globalIndex(), VarManager::fgValues[VarManager::kMass],
-                    VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi],
-                    t1.sign() + t2.sign(), twoTrackFilter, pairFilter, twoTrackCommonFilter);
       } // end inner assoc loop (leg A)
     } // end event loop
   }
@@ -2242,9 +2197,9 @@ struct Alice3DqEfficiencyAnalysisAsymmetricPairing {
     // Find common track cuts all candidates pass
     threeTrackCommonFilter |= a1.isBarrelSelected_raw() & a2.isBarrelSelected_raw() & a3.isBarrelSelected_raw() & fCommonTrackCutMask;
 
-    auto t1 = a1.template reA3track_as<TTracks>();
-    auto t2 = a2.template reA3track_as<TTracks>();
-    auto t3 = a3.template reA3track_as<TTracks>();
+    auto t1 = a1.template reA3Track_as<TTracks>();
+    auto t2 = a2.template reA3Track_as<TTracks>();
+    auto t3 = a3.template reA3Track_as<TTracks>();
 
     // Avoid self-pairs
     if (t1 == t2 || t1 == t3 || t2 == t3) {
@@ -2369,7 +2324,7 @@ struct Alice3DqEfficiencyAnalysisAsymmetricPairing {
   {
     // loop over mc stack and fill histograms for pure MC truth signals
     // group all the MC tracks which belong to the MC event corresponding to the current reconstructed event
-    // auto groupedMCTracks = tracksMC.sliceBy(aod::reducedA3trackMC::reA3MCEventId, event.reducedMCevent().globalIndex());
+    // auto groupedMCTracks = tracksMC.sliceBy(aod::reduceda3trackmc::reA3MCEventId, event.reducedMCevent().globalIndex());
     for (const auto& mctrack : mcTracks) {
 
       VarManager::FillTrackMC(mcTracks, mctrack);
@@ -2384,7 +2339,7 @@ struct Alice3DqEfficiencyAnalysisAsymmetricPairing {
     }
   }
 
-  PresliceUnsorted<ReA3MCTracks> perReducedMcEvent = aod::reducedA3trackMC::reA3MCEventId;
+  PresliceUnsorted<ReA3MCTracks> perReducedMcEvent = aod::reduceda3trackmc::reA3MCEventId;
 
   void processMCGenWithEventSelection(soa::Filtered<MyEventsVtxCovSelected> const& events,
                                       ReA3MCEvents const& /*mcEvents*/, ReA3MCTracks const& mcTracks)

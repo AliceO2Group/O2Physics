@@ -16,9 +16,12 @@
 #ifndef PWGEM_PHOTONMESON_UTILS_MCUTILITIES_H_
 #define PWGEM_PHOTONMESON_UTILS_MCUTILITIES_H_
 
+#include "PWGEM/PhotonMeson/Utils/ParticleOrigin.h"
+
 #include <Framework/ASoA.h>
 #include <Framework/Concepts.h>
 
+#include <TMCProcess.h>
 #include <TPDGCode.h>
 
 #include <algorithm>
@@ -31,6 +34,9 @@
 //_______________________________________________________________________
 namespace o2::aod::pwgem::photonmeson::utils::mcutil
 {
+
+constexpr float kVertexEps = 1e-4f; // cm
+
 template <o2::soa::is_iterator TTrack>
 bool IsPhysicalPrimary(TTrack const& mctrack)
 {
@@ -89,6 +95,7 @@ int IsXFromY(T const& mctrack, TMCs const& mcTracks, const int pdgX, const int p
   }
   return -1;
 }
+
 //_______________________________________________________________________
 // Go up the decay chain of a mcparticle looking for a mother with the given pdg codes, if found return this mothers daughter
 // E.g. Find the gamma that was created in a pi0 or eta decay
@@ -106,6 +113,51 @@ int FindMotherInChain(T const& mcparticle, TMCs const& mcparticles, TTargetPDGs 
   }
   return FindMotherInChain(mother, mcparticles, motherpdgs, Depth - 1);
 }
+
+//_______________________________________________________________________
+/// \brief Go up the decay chain of a mcparticle looking for a mother with the given pdg codes,
+/// and return that MOTHER's own index (unlike FindMotherInChain, which returns its daughter).
+/// Two different particles that share the same meson ancestor will resolve to the same value here.
+/// \param mcparticle iterator of McParticles
+/// \param mcparticles table of McParticles
+/// \param motherpdgs ranges of mother PDG values to compare against
+/// \param Depth how many links should this go up
+template <o2::soa::is_iterator T, o2::soa::is_table TMCs, std::ranges::input_range TTargetPDGs>
+int GetMesonInChain(T const& mcparticle, TMCs const& mcparticles, TTargetPDGs const& motherpdgs, const int Depth = 15)
+{
+  int decayChildIdx = FindMotherInChain(mcparticle, mcparticles, motherpdgs, Depth);
+  if (decayChildIdx < 0) {
+    return -1;
+  }
+  auto decayChild = mcparticles.iteratorAt(decayChildIdx);
+  return decayChild.mothersIds()[0]; // the meson itself, not its daughter
+}
+
+//_______________________________________________________________________
+/// \brief Go up the decay chain of a mcparticle looking for a mother with the given pdg codes, if found return this mothers daughter
+/// E.g. Find the gamma that was created in a pi0 or eta decay
+/// \param mcIter iterator of mcparticle -- WILL BE MODIFIED/CONSUMED by this function
+/// \param motherPdgs target mother PDG values
+/// \param depth how many steps in the chain this check should go maximum before failing
+template <o2::soa::is_iterator T, std::ranges::input_range TTargetPDGs>
+int findMotherInChain(T& mcIter, TTargetPDGs const& motherPdgs, const int depth = 50)
+{
+  int currentIndex = mcIter.globalIndex(); // the node whose immediate mother we're about to test
+
+  for (int d = 0; d < depth; ++d) {
+    if (!mcIter.has_mothers()) {
+      return -1;
+    }
+    const int motherId = mcIter.mothersIds()[0];
+    mcIter.setCursor(motherId);
+    if (std::find(motherPdgs.begin(), motherPdgs.end(), mcIter.pdgCode()) != motherPdgs.end()) {
+      return currentIndex; // mother matches -- return the node directly below it
+    }
+    currentIndex = motherId; // no match -- this mother becomes "current" for the next step up
+  }
+  return -1;
+}
+
 //_______________________________________________________________________
 template <o2::soa::is_iterator T, o2::soa::is_table TMCs>
 int IsEleFromPC(T const& mctrack, TMCs const& mcTracks)
@@ -321,7 +373,7 @@ bool isMotherPDG(const T& mcparticle, T& mcparticleWorking, const int motherPDG,
 /// \param mcCursor iterator of mcparticle
 /// \param iter shared iterator used to walk to the mother
 template <o2::soa::is_iterator TIter>
-bool isFromBremsstrahlung(TIter const& mcCursor, TIter& iter)
+bool isFromBremsstrahlung(TIter const& mcCursor, TIter& iter, int& motherId)
 {
   if (!mcCursor.has_mothers()) {
     return false;
@@ -329,7 +381,10 @@ bool isFromBremsstrahlung(TIter const& mcCursor, TIter& iter)
   if (mcCursor.pdgCode() != PDG_t::kGamma) {
     return false; // only a photon can itself be a bremsstrahlung emission
   }
-  const int motherId = mcCursor.mothersIds()[0];
+  if (mcCursor.mothersIds().size() != 1) {
+    return false; // mother can be only a single lepton, otherwise it might be e+e- annihilation or something else
+  }
+  motherId = mcCursor.mothersIds()[0];
   iter.setCursor(motherId);
   return std::abs(iter.pdgCode()) == PDG_t::kElectron;
 }
@@ -337,48 +392,93 @@ bool isFromBremsstrahlung(TIter const& mcCursor, TIter& iter)
 //_______________________________________________________________________
 /// \brief Go up the decay chain of a mcparticle looking for a mother with the given pdg codes, if found return id else -1
 /// E.g. if electron cluster is coming from a photon return true, if primary electron return false
-/// \param mcparticle iterator of mxparticle, WILL BE CHANGED by this function!
+/// \param mcParticle iterator of mxparticle, WILL BE CHANGED by this function!
 /// \param motherPDG target mother PDG value
 /// \param depth how many steps in the chain this check should go maximum before failing
 template <o2::soa::is_iterator T>
-int32_t getMotherIndexFromChain(T& mcparticle, const int motherPDG, const int depth = 10) // o2-linter: disable=pdg/explicit-code (false positive)
+int32_t getMotherIndexFromChain(T& mcParticle, const int motherPDG, const int depth = 10)
 {
-  if (!mcparticle.has_mothers() || depth < 1) {
-    return -1;
+  for (int d = 0; d < depth; ++d) {
+    if (!mcParticle.has_mothers()) {
+      return -1;
+    }
+    const int32_t motherid = mcParticle.mothersIds()[0];
+    mcParticle.setCursor(motherid);
+    if (mcParticle.pdgCode() == motherPDG) {
+      return motherid;
+    }
   }
-
-  int32_t motherid = mcparticle.mothersIds()[0];
-  mcparticle.setCursor(motherid);
-  if (mcparticle.pdgCode() == motherPDG) {
-    return motherid; // The mother has the required pdg code, so return its daughters global mc particle code.
-  }
-  return getMotherIndexFromChain(mcparticle, motherPDG, depth - 1);
+  return -1;
 }
 
 //_______________________________________________________________________
-/// \brief Go up the decay chain of a mcparticle looking for a mother with the given pdg codes, if found return id else -1
-/// E.g. if electron cluster is coming from a photon return the photon's id, if primary electron return -1
-/// \param mcparticle iterator of mcparticle, NOT modified by this function
-/// \param mcparticleWorking a second iterator of the SAME table, used as scratch space to walk up the chain -- caller must supply this so the function doesn't construct its own
-/// \param motherPDG target mother PDG value
-/// \param depth how many steps in the chain this check should go maximum before failing
-template <o2::soa::is_iterator T>
-int32_t getMotherIndexFromChain(const T& mcparticle, T& mcparticleWorking, const int motherPDG, const int depth = 10) // o2-linter: disable=pdg/explicit-code (false positive)
+/// \brief Obtains given photon mcpartlices origin type
+/// \param mcPhoton mcparticle iterator of photon
+/// \param iter mcparticle iterator used to walk to the mother
+/// \param motherDPGs list of pdg values of mothers that would be excepted for PhotonOrigin::Decay
+/// \return given photon mcpartlices origin type
+template <o2::soa::is_iterator TIter, std::ranges::input_range TTargetPDGs>
+o2::analysis::em::PhotonOrigin getPhotonOriginType(TIter const& mcPhoton, TIter& mcIter, TTargetPDGs const& motherPdgs, int& motherId)
 {
-  if (!mcparticle.has_mothers() || depth < 1) {
-    return -1;
+  switch (mcPhoton.getProcess()) {
+    case TMCProcess::kPBrem:
+      return o2::analysis::em::PhotonOrigin::Bremsstrahlung;
+    case TMCProcess::kPAnnihilation:
+      return o2::analysis::em::PhotonOrigin::Annihilation;
+    case TMCProcess::kPHadronic:
+      return o2::analysis::em::PhotonOrigin::Hadronic;
+    default:
+      break;
   }
-
-  int32_t motherid = mcparticle.mothersIds()[0];
-  mcparticleWorking.setCursor(motherid);
-  if (mcparticleWorking.pdgCode() == motherPDG) {
-    return motherid;
+  if (!mcPhoton.has_mothers()) {
+    return o2::analysis::em::PhotonOrigin::Other;
   }
-  return getMotherIndexFromChain(mcparticleWorking, mcparticleWorking, motherPDG, depth - 1);
+  mcIter.setCursor(mcPhoton.globalIndex());
+  motherId = findMotherInChain(mcIter, motherPdgs);
+  if (motherId >= 0) {
+    return o2::analysis::em::PhotonOrigin::Decay;
+  }
+  motherId = mcPhoton.mothersIds()[0];
+  mcIter.setCursor(motherId);
+  if ((std::abs(mcIter.pdgCode()) >= PDG_t::kDown && std::abs(mcIter.pdgCode()) <= PDG_t::kTop) || std::abs(mcIter.pdgCode()) == PDG_t::kGluon) {
+    return o2::analysis::em::PhotonOrigin::Direct;
+  }
+  return o2::analysis::em::PhotonOrigin::Other;
 }
 
 //_______________________________________________________________________
+/// \brief Obtains given lepton mcpartlices origin type
+/// \param mcLepton mcparticle iterator of lepton
+/// \param iter mcparticle iterator used to walk to the mother
+/// \param motherDPGs list of pdg values of mothers that would be excepted for PhotonOrigin::Decay
+/// \return given lepton mcpartlices origin type
+template <o2::soa::is_iterator TIter, std::ranges::input_range TTargetPDGs>
+o2::analysis::em::LeptonOrigin getLeptonOriginType(TIter const& mcLepton, TIter& mcIter, TTargetPDGs const& motherPdgs)
+{
+  switch (mcLepton.getProcess()) {
+    case TMCProcess::kPPair:
+      return o2::analysis::em::LeptonOrigin::Conversion;
+    case TMCProcess::kPCompton:
+      return o2::analysis::em::LeptonOrigin::Compton;
+    case TMCProcess::kPPhotoelectric:
+      return o2::analysis::em::LeptonOrigin::PhotoElectric;
+    case TMCProcess::kPDeltaRay:
+      return o2::analysis::em::LeptonOrigin::DeltaRay;
+    case TMCProcess::kPDecay: {
+      if (!mcLepton.has_mothers()) {
+        return o2::analysis::em::LeptonOrigin::Other;
+      }
+      mcIter.setCursor(mcLepton.mothersIds()[0]);
+      if (std::find(motherPdgs.begin(), motherPdgs.end(), mcIter.pdgCode()) != motherPdgs.end()) {
+        return o2::analysis::em::LeptonOrigin::DirectMesonDecay;
+      }
+      return o2::analysis::em::LeptonOrigin::Other; // decay, but not from your target meson list
+    }
+    default:
+      return o2::analysis::em::LeptonOrigin::Other;
+  }
+}
+
 } // namespace o2::aod::pwgem::photonmeson::utils::mcutil
-//_______________________________________________________________________
-//_______________________________________________________________________
+
 #endif // PWGEM_PHOTONMESON_UTILS_MCUTILITIES_H_

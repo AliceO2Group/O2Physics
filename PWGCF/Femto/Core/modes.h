@@ -174,8 +174,8 @@ enum class TwoTrackResonance : o2::analysis::femto::datatypes::TwoTrackResonance
 enum class CharmHadron : o2::analysis::femto::datatypes::CharmHadronType {
   kD0,
   kD0Bar,
-  kDplus,
-  kLc
+  kLc,
+  kLcBar
 };
 
 enum class QvecDetector : o2::analysis::femto::datatypes::QvecDetectorType {
@@ -188,6 +188,14 @@ enum class QvecHarmonic : o2::analysis::femto::datatypes::QvecHarmonicType {
   kN2 = 2,
   kN3 = 3,
   kQvecHarmonicLast = 4
+};
+
+enum class KinematicVariable : o2::analysis::femto::datatypes::KinematicVariableType {
+  kKstar = 1,
+  kKt = 2,
+  kMt = 3,
+  kQ3 = 4,
+  kKinematicVariableLast = 5
 };
 
 }; // namespace o2::analysis::femto::modes

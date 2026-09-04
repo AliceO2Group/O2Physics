@@ -524,20 +524,28 @@ struct JetDerivedDataSelector {
 
   void processStoreCollisionDecision(aod::JCollision const& collision)
   {
+    bool isSelectedForSignalTriggerTrack = false;
+    if (doprocessCollisionSplitting || doprocessCollisionSplittingMC) {
+      isSelectedForSignalTriggerTrack = collisionSplitFlag[collision.globalIndex()];
+    }
     if (collisionFlag[collision.globalIndex()]) {
-      collisionSelectionsTable(true);
+      collisionSelectionsTable(true, isSelectedForSignalTriggerTrack);
     } else {
-      collisionSelectionsTable(false);
+      collisionSelectionsTable(false, isSelectedForSignalTriggerTrack);
     }
   }
   PROCESS_SWITCH(JetDerivedDataSelector, processStoreCollisionDecision, "write out decision of storing collision", true);
 
   void processStoreMcCollisionDecision(aod::JMcCollision const& mcCollision)
   {
+    bool isSelectedForSignalTriggerTrack = false;
+    if (doprocessCollisionSplittingMC) {
+      isSelectedForSignalTriggerTrack = mcCollisionSplitFlag[mcCollision.globalIndex()];
+    }
     if (mcCollisionFlag[mcCollision.globalIndex()]) {
-      mcCollisionSelectionsTable(true);
+      mcCollisionSelectionsTable(true, isSelectedForSignalTriggerTrack);
     } else {
-      mcCollisionSelectionsTable(false);
+      mcCollisionSelectionsTable(false, isSelectedForSignalTriggerTrack);
     }
   }
   PROCESS_SWITCH(JetDerivedDataSelector, processStoreMcCollisionDecision, "write out decision of storing mcCollision", false);

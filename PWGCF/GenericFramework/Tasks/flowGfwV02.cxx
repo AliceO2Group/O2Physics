@@ -11,10 +11,9 @@
 //
 /// \file flowGfwV02.cxx
 /// \brief Skeleton copy of flowGfwLightIons with empty function bodies
-/// \author Emil Gorm Nielsen, NBI, emil.gorm.nielsen@cern.ch
+/// \author Maxim Virta, NBI, maxim.virta@cern.ch
 
 #include "PWGCF/DataModel/CorrelationsDerived.h"
-#include "PWGCF/GenericFramework/Core/FlowContainer.h"
 #include "PWGCF/GenericFramework/Core/GFW.h"
 #include "PWGCF/GenericFramework/Core/GFWConfig.h"
 #include "PWGCF/GenericFramework/Core/GFWWeights.h"
@@ -51,7 +50,6 @@
 #include <TString.h>
 
 #include <boost/algorithm/string/find.hpp>
-#include <sys/types.h>
 
 #include <RtypesCore.h>
 
@@ -132,6 +130,7 @@ struct FlowGfwV02 {
   O2_DEFINE_CONFIGURABLE(cfgNormalizeByCharged, bool, true, "Enable or disable the normalization by charged particles");
   O2_DEFINE_CONFIGURABLE(cfgConsistentEventFlag, int, 15, "Flag for consistent event selection");
   O2_DEFINE_CONFIGURABLE(cfgMultCut, bool, true, "Use additional event cut on mult correlations");
+  O2_DEFINE_CONFIGURABLE(cfgUseV02, bool, false, "Use V02 analysis");
   O2_DEFINE_CONFIGURABLE(cfgUseV0, bool, false, "Use V0 analysis");
 
   // Event selection cuts
@@ -221,7 +220,6 @@ struct FlowGfwV02 {
   } cfg{};
 
   // Define output
-  OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};
   HistogramRegistry registry{"registry"};
 
   enum CentEstimators {
@@ -413,21 +411,40 @@ struct FlowGfwV02 {
     AxisSpec dcaXYAxis = {200, -0.5, 0.5, "DCA_{xy} (cm)"};
     AxisSpec bsAxis = {gfwMemberCache.nBootstrap, -0.5, gfwMemberCache.nBootstrap - 0.5, "Bootstrap Index"};
 
-    registry.add("v02pt", "", {HistType::kTProfile3D, {ptAxis, centAxis, nchAxis}});
-    registry.add("nchMid", "", {HistType::kTProfile3D, {ptAxis, centAxis, nchAxis}});
-    registry.add("v02centmult", "", {HistType::kTProfile2D, {centAxis, nchAxis}});
-
+    // V0 spectra
     registry.add("analysis/charged/v0AB", "", {HistType::kTProfile3D, {bsAxis, ptAxis, centAxis}});
     registry.add("analysis/charged/v0BA", "", {HistType::kTProfile3D, {bsAxis, ptAxis, centAxis}});
     registry.add("analysis/charged/nchA", "", {HistType::kTProfile3D, {bsAxis, ptAxis, centAxis}});
     registry.add("analysis/charged/nchB", "", {HistType::kTProfile3D, {bsAxis, ptAxis, centAxis}});
-    registry.add("analysis/charged/ptA", "", {HistType::kTProfile3D, {bsAxis, centAxis, nchAxis}});
-    registry.add("analysis/charged/ptB", "", {HistType::kTProfile3D, {bsAxis, centAxis, nchAxis}});
-    registry.add("analysis/charged/ptAB", "", {HistType::kTProfile3D, {bsAxis, centAxis, nchAxis}});
+
+    // V02 spectra
+    registry.add("analysis/charged/v22npt", "", {HistType::kTProfile3D, {bsAxis, ptAxis, centAxis}});
+    registry.add("analysis/charged/nchC", "", {HistType::kTProfile3D, {bsAxis, ptAxis, centAxis}});
+
+    if (cfgUseMultiplicityFracWeights) {
+      registry.add("analysis/charged/nchA2pc", "", {HistType::kTProfile3D, {bsAxis, ptAxis, centAxis}});
+      registry.add("analysis/charged/nchB2pc", "", {HistType::kTProfile3D, {bsAxis, ptAxis, centAxis}});
+      registry.add("analysis/charged/nchC3pc", "", {HistType::kTProfile3D, {bsAxis, ptAxis, centAxis}});
+    }
 
     registry.addClone("analysis/charged/", "analysis/pion/");
     registry.addClone("analysis/charged/", "analysis/kaon/");
     registry.addClone("analysis/charged/", "analysis/proton/");
+
+    // Only charged particles
+    registry.add("analysis/charged/v22pt", "", {HistType::kTProfile2D, {bsAxis, centAxis}});
+    registry.add("analysis/charged/ptA", "", {HistType::kTProfile2D, {bsAxis, centAxis}});
+    registry.add("analysis/charged/ptB", "", {HistType::kTProfile2D, {bsAxis, centAxis}});
+    registry.add("analysis/charged/ptAB", "", {HistType::kTProfile2D, {bsAxis, centAxis}});
+    registry.add("analysis/charged/ptC", "", {HistType::kTProfile2D, {bsAxis, centAxis}});
+    registry.add("analysis/charged/v22", "", {HistType::kTProfile2D, {bsAxis, centAxis}});
+
+    if (cfgUseMultiplicityFracWeights) {
+      registry.add("analysis/charged/ptA2pc", "", {HistType::kTProfile2D, {bsAxis, centAxis}});
+      registry.add("analysis/charged/ptB2pc", "", {HistType::kTProfile2D, {bsAxis, centAxis}});
+      registry.add("analysis/charged/ptC3pc", "", {HistType::kTProfile2D, {bsAxis, centAxis}});
+      registry.add("analysis/charged/v223pc", "", {HistType::kTProfile2D, {bsAxis, centAxis}});
+    }
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
@@ -504,9 +521,6 @@ struct FlowGfwV02 {
     oba->SetOwner(kTRUE);
     addConfigObjectsToObjArray(oba, corrconfigs);
     LOGF(info, "Number of correlators: %d", oba->GetEntries());
-    fFC->SetName("FlowContainer");
-    fFC->SetXAxis(fSecondAxis.get());
-    fFC->Initialize(oba, centAxis, cfgNbootstrap);
     delete oba;
 
     if (cfgConsistentEventFlag != 0) {
@@ -833,48 +847,87 @@ struct FlowGfwV02 {
   }
 
   template <DataType dt>
-  void fillOutputContainers(const float& centmult, const int& multiplicity, const double& rndm, const int& /*run*/ = 0)
+  void fillOutputContainers(const float& centmult)
   {
-    for (uint l_ind = 0; l_ind < corrconfigs.size(); ++l_ind) {
-      if (!corrconfigs.at(l_ind).pTDif) {
-        auto dnx = fGFW->Calculate(corrconfigs.at(l_ind), 0, kTRUE).real();
-        if (dnx == 0)
-          continue;
-        auto val = fGFW->Calculate(corrconfigs.at(l_ind), 0, kFALSE).real() / dnx;
+    double threshold = 1.01;
 
-        if (std::abs(val) < 1) {
-          fFC->FillProfile(corrconfigs.at(l_ind).Head.c_str(), centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm);
+    int bootstrap = fRndm->Integer(gfwMemberCache.nBootstrap);
+    // Calculate V02
+    if (cfgUseV02) {
+      double v22npt = 0;
+      double ptMeanMid = pidStates.hPtMid[PidCharged]->GetMean();
+      double ptFractionMid = 0.;
+      double dnxAB = fGFW->Calculate(corrconfigs.at(0), 0, kTRUE).real(); // V22 weight for AB
+      auto valAB = fGFW->Calculate(corrconfigs.at(0), 0, kFALSE).real() / dnxAB;
+      if (std::abs(valAB) > threshold) {
+        return;
+      }
+      double v22pt = valAB * ptMeanMid;
+      double WeightAB = (cfgUseMultiplicityFlowWeights) ? dnxAB : 1.0;
+      double WeightC = 1.0;
+      // Calculate V02 for each particle type
+      for (int pid = 0; pid < PidTotal; pid++) {
+        int normIndex = (cfgNormalizeByCharged) ? PidCharged : pid;
+        if (!(pidStates.hPtMid[normIndex]->Integral() > 0)) {
+          continue; // Mid pT distribution is not defined
         }
-        continue;
+        if (cfgUseMultiplicityFracWeights) {
+          WeightC = pidStates.hPtMid[PidCharged]->Integral(); // Mean pt/npt C weight
+        }
+        for (int i = 1; i <= fSecondAxis->GetNbins(); i++) {
+          ptFractionMid = pidStates.hPtMid[pid]->GetBinContent(i) / pidStates.hPtMid[normIndex]->Integral();
+          v22npt = valAB * ptFractionMid;
+
+          switch (pid) {
+            case PidCharged:
+              registry.fill(HIST("analysis/charged/v22npt"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v22npt, WeightC * WeightAB);
+              registry.fill(HIST("analysis/charged/nchC"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionMid, WeightC);
+              if (cfgUseMultiplicityFracWeights) {
+                registry.fill(HIST("analysis/charged/nchC3pc"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionMid, WeightC * WeightAB);
+              }
+              break;
+            case PidPions:
+              registry.fill(HIST("analysis/pion/v22npt"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v22npt, WeightC * WeightAB);
+              registry.fill(HIST("analysis/pion/nchC"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionMid, WeightC);
+              if (cfgUseMultiplicityFracWeights) {
+                registry.fill(HIST("analysis/pion/nchC3pc"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionMid, WeightC * WeightAB);
+              }
+              break;
+            case PidKaons:
+              registry.fill(HIST("analysis/kaon/v22npt"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v22npt, WeightC * WeightAB);
+              registry.fill(HIST("analysis/kaon/nchC"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionMid, WeightC);
+              if (cfgUseMultiplicityFracWeights) {
+                registry.fill(HIST("analysis/kaon/nchC3pc"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionMid, WeightC * WeightAB);
+              }
+              break;
+            case PidProtons:
+              registry.fill(HIST("analysis/proton/v22npt"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v22npt, WeightC * WeightAB);
+              registry.fill(HIST("analysis/proton/nchC"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionMid, WeightC);
+              if (cfgUseMultiplicityFracWeights) {
+                registry.fill(HIST("analysis/proton/nchC3pc"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionMid, WeightC * WeightAB);
+              }
+              break;
+            default:
+              break;
+          }
+        }
       }
 
-      // Fill pt profiles for different particles
-      int pidInd = getPIDIndex(corrconfigs.at(l_ind).Head);
-
-      auto dnx = fGFW->Calculate(corrconfigs.at(0), 0, kTRUE).real();
-      if (dnx == 0)
-        continue;
-      auto val = fGFW->Calculate(corrconfigs.at(0), 0, kFALSE).real() / dnx;
-      double ebyeWeight = (cfgUseMultiplicityFlowWeights) ? dnx : 1.0;
-      for (int i = 1; i <= fSecondAxis->GetNbins(); i++) {
-        if (corrconfigs.at(l_ind).Head.find("nch") != std::string::npos) {
-          ebyeWeight = 1.0;
-          val = 1.0;
-        }
-        if (cfgUseMultiplicityFracWeights && pidStates.hPtMid[PidCharged]->Integral() > 0) {
-          ebyeWeight *= pidStates.hPtMid[PidCharged]->Integral();
-        }
-        double ptFraction = 0;
-        double threshold = 1.01;
-        int normIndex = (cfgNormalizeByCharged) ? PidCharged : pidInd; // Configured to normalize by charged particles or the selected particle
-        if (pidStates.hPtMid[normIndex]->Integral() > 0) {
-          ptFraction = pidStates.hPtMid[pidInd]->GetBinContent(i) / pidStates.hPtMid[normIndex]->Integral();
-          if (std::abs(val) < threshold)
-            fFC->FillProfile(Form("%s_pt_%i", corrconfigs.at(l_ind).Head.c_str(), i), centmult, val * ptFraction, ebyeWeight, rndm);
-        }
+      // Calculate NCv22pt
+      if (cfgUseMultiplicityFracWeights) {
+        WeightC = pidStates.hPtMid[PidCharged]->Integral();
       }
-    }
 
+      registry.fill(HIST("analysis/charged/v22pt"), bootstrap, centmult, v22pt, WeightC * WeightAB);
+      registry.fill(HIST("analysis/charged/v22"), bootstrap, centmult, valAB, WeightAB);
+      registry.fill(HIST("analysis/charged/ptC"), bootstrap, centmult, ptMeanMid, WeightC);
+      if (cfgUseMultiplicityFracWeights) {
+        registry.fill(HIST("analysis/charged/v223pc"), bootstrap, centmult, valAB, WeightC * WeightAB);
+        registry.fill(HIST("analysis/charged/ptC3pc"), bootstrap, centmult, ptMeanMid, WeightC * WeightAB);
+      }
+    } // End of V02
+
+    // Calculate V0
     if (cfgUseV0) {
       double v0corrAB = 0;
       double v0corrBA = 0;
@@ -882,11 +935,16 @@ struct FlowGfwV02 {
       double ptMeanBackward = pidStates.hPtBackward[PidCharged]->GetMean();
       double ptFractionForward = 0.;
       double ptFractionBackward = 0.;
-      int bootstrap = fRndm->Integer(gfwMemberCache.nBootstrap);
+      double WeightA = 1.0;
+      double WeightB = 1.0;
       for (int pid = 0; pid < PidTotal; pid++) {
         int normIndex = (cfgNormalizeByCharged) ? PidCharged : pid;
         if (!(pidStates.hPtForward[normIndex]->Integral() > 0) || !(pidStates.hPtBackward[normIndex]->Integral() > 0)) {
           continue; // Forward or backward pT distribution is not defined
+        }
+        if (cfgUseMultiplicityFracWeights) {
+          WeightA = pidStates.hPtForward[PidCharged]->Integral();
+          WeightB = pidStates.hPtBackward[PidCharged]->Integral();
         }
         for (int i = 1; i <= fSecondAxis->GetNbins(); i++) {
           ptFractionForward = pidStates.hPtForward[pid]->GetBinContent(i) / pidStates.hPtForward[normIndex]->Integral();
@@ -895,77 +953,66 @@ struct FlowGfwV02 {
           v0corrBA = ptFractionBackward * ptMeanForward;
           switch (pid) {
             case PidCharged:
-              registry.fill(HIST("analysis/charged/v0AB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrAB);
-              registry.fill(HIST("analysis/charged/v0BA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrBA);
-              registry.fill(HIST("analysis/charged/nchA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionForward);
-              registry.fill(HIST("analysis/charged/nchB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionBackward);
+              registry.fill(HIST("analysis/charged/v0AB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrAB, WeightA * WeightB);
+              registry.fill(HIST("analysis/charged/v0BA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrBA, WeightA * WeightB);
+              registry.fill(HIST("analysis/charged/nchA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionForward, WeightA);
+              registry.fill(HIST("analysis/charged/nchB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionBackward, WeightB);
+              if (cfgUseMultiplicityFracWeights) {
+                registry.fill(HIST("analysis/charged/nchA2pc"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionForward, WeightA * WeightB);
+                registry.fill(HIST("analysis/charged/nchB2pc"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionBackward, WeightA * WeightB);
+              }
               break;
             case PidPions:
-              registry.fill(HIST("analysis/pion/v0AB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrAB);
-              registry.fill(HIST("analysis/pion/v0BA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrBA);
-              registry.fill(HIST("analysis/pion/nchA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionForward);
-              registry.fill(HIST("analysis/pion/nchB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionBackward);
+              registry.fill(HIST("analysis/pion/v0AB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrAB, WeightA * WeightB);
+              registry.fill(HIST("analysis/pion/v0BA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrBA, WeightA * WeightB);
+              registry.fill(HIST("analysis/pion/nchA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionForward, WeightA);
+              registry.fill(HIST("analysis/pion/nchB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionBackward, WeightB);
+              if (cfgUseMultiplicityFracWeights) {
+                registry.fill(HIST("analysis/pion/nchA2pc"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionForward, WeightA * WeightB);
+                registry.fill(HIST("analysis/pion/nchB2pc"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionBackward, WeightA * WeightB);
+              }
               break;
             case PidKaons:
-              registry.fill(HIST("analysis/kaon/v0AB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrAB);
-              registry.fill(HIST("analysis/kaon/v0BA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrBA);
-              registry.fill(HIST("analysis/kaon/nchA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionForward);
-              registry.fill(HIST("analysis/kaon/nchB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionBackward);
+              registry.fill(HIST("analysis/kaon/v0AB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrAB, WeightA * WeightB);
+              registry.fill(HIST("analysis/kaon/v0BA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrBA, WeightA * WeightB);
+              registry.fill(HIST("analysis/kaon/nchA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionForward, WeightA);
+              registry.fill(HIST("analysis/kaon/nchB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionBackward, WeightB);
+              if (cfgUseMultiplicityFracWeights) {
+                registry.fill(HIST("analysis/kaon/nchA2pc"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionForward, WeightA * WeightB);
+                registry.fill(HIST("analysis/kaon/nchB2pc"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionBackward, WeightA * WeightB);
+              }
               break;
             case PidProtons:
-              registry.fill(HIST("analysis/proton/v0AB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrAB);
-              registry.fill(HIST("analysis/proton/v0BA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrBA);
-              registry.fill(HIST("analysis/proton/nchA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionForward);
-              registry.fill(HIST("analysis/proton/nchB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionBackward);
+              registry.fill(HIST("analysis/proton/v0AB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrAB, WeightA * WeightB);
+              registry.fill(HIST("analysis/proton/v0BA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrBA, WeightA * WeightB);
+              registry.fill(HIST("analysis/proton/nchA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionForward, WeightA);
+              registry.fill(HIST("analysis/proton/nchB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionBackward, WeightB);
+              if (cfgUseMultiplicityFracWeights) {
+                registry.fill(HIST("analysis/proton/nchA2pc"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionForward, WeightA * WeightB);
+                registry.fill(HIST("analysis/proton/nchB2pc"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionBackward, WeightA * WeightB);
+              }
               break;
             default:
               break;
           }
         }
-        switch (pid) {
-          case PidCharged:
-            registry.fill(HIST("analysis/charged/ptA"), bootstrap, centmult, multiplicity, ptMeanForward);
-            registry.fill(HIST("analysis/charged/ptB"), bootstrap, centmult, multiplicity, ptMeanBackward);
-            registry.fill(HIST("analysis/charged/ptAB"), bootstrap, centmult, multiplicity, ptMeanForward * ptMeanBackward);
-            break;
-          case PidPions:
-            registry.fill(HIST("analysis/pion/ptA"), bootstrap, centmult, multiplicity, ptMeanForward);
-            registry.fill(HIST("analysis/pion/ptB"), bootstrap, centmult, multiplicity, ptMeanBackward);
-            registry.fill(HIST("analysis/pion/ptAB"), bootstrap, centmult, multiplicity, ptMeanForward * ptMeanBackward);
-            break;
-          case PidKaons:
-            registry.fill(HIST("analysis/kaon/ptA"), bootstrap, centmult, multiplicity, ptMeanForward);
-            registry.fill(HIST("analysis/kaon/ptB"), bootstrap, centmult, multiplicity, ptMeanBackward);
-            registry.fill(HIST("analysis/kaon/ptAB"), bootstrap, centmult, multiplicity, ptMeanForward * ptMeanBackward);
-            break;
-          case PidProtons:
-            registry.fill(HIST("analysis/proton/ptA"), bootstrap, centmult, multiplicity, ptMeanForward);
-            registry.fill(HIST("analysis/proton/ptB"), bootstrap, centmult, multiplicity, ptMeanBackward);
-            registry.fill(HIST("analysis/proton/ptAB"), bootstrap, centmult, multiplicity, ptMeanForward * ptMeanBackward);
-            break;
-          default:
-            break;
-        }
-      }
-    }
+      } // End of PID dependent parts of V0
 
-    // Fill the profiles for each pT bin
-    auto dnx = fGFW->Calculate(corrconfigs.at(0), 0, kTRUE).real();
-    if (dnx == 0)
-      return;
-    auto val = fGFW->Calculate(corrconfigs.at(0), 0, kFALSE).real() / dnx;
-    for (int i = 1; i <= fSecondAxis->GetNbins(); i++) {
-      double ptFraction = 0;
-      if (pidStates.hPtMid[PidCharged]->Integral() > 0) {
-        ptFraction = pidStates.hPtMid[PidCharged]->GetBinContent(i) / pidStates.hPtMid[PidCharged]->Integral();
-        double threshold = 1.01;
-        if (std::abs(val) < threshold)
-          registry.fill(HIST("v02pt"), fSecondAxis->GetBinCenter(i), centmult, multiplicity, val * ptFraction, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0);
-        registry.fill(HIST("nchMid"), fSecondAxis->GetBinCenter(i), centmult, multiplicity, ptFraction);
+      // Calculate PID independent parts of V0
+      if (cfgUseMultiplicityFracWeights) {
+        WeightA = pidStates.hPtForward[PidCharged]->Integral();
+        WeightB = pidStates.hPtBackward[PidCharged]->Integral();
       }
-    }
-    registry.fill(HIST("v02centmult"), centmult, multiplicity, val);
-  }
+      registry.fill(HIST("analysis/charged/ptA"), bootstrap, centmult, ptMeanForward, WeightA);
+      registry.fill(HIST("analysis/charged/ptB"), bootstrap, centmult, ptMeanBackward, WeightB);
+      if (cfgUseMultiplicityFracWeights) {
+        registry.fill(HIST("analysis/charged/ptA2pc"), bootstrap, centmult, ptMeanForward, WeightA * WeightB);
+        registry.fill(HIST("analysis/charged/ptB2pc"), bootstrap, centmult, ptMeanBackward, WeightA * WeightB);
+      }
+      registry.fill(HIST("analysis/charged/ptAB"), bootstrap, centmult, ptMeanForward * ptMeanBackward, WeightA * WeightB);
+
+    } // End of V0
+  } // End of Filling
 
   struct XAxis {
     float centrality;
@@ -980,7 +1027,7 @@ struct FlowGfwV02 {
   };
 
   template <DataType dt, typename TCollision, typename TTracks>
-  void processCollision(TCollision const& collision, TTracks const& tracks, const XAxis& xaxis, const int& run)
+  void processCollision(TCollision const& collision, TTracks const& tracks, const XAxis& xaxis)
   {
     float vtxz = collision.posZ();
     if (tracks.size() < 1)
@@ -1003,12 +1050,10 @@ struct FlowGfwV02 {
     pidStates.hPtForward[PidKaons]->Reset();
     pidStates.hPtForward[PidProtons]->Reset();
 
-    float lRandom = fRndm->Rndm();
-
     // Loop over tracks and check if they are accepted
     AcceptedTracks acceptedTracks{.nPos = 0, .nNeg = 0, .nFull = 0, .nMid = 0};
     for (const auto& track : tracks) {
-      processTrack(track, vtxz, xaxis.multiplicity, run, acceptedTracks);
+      processTrack(track, vtxz, xaxis.multiplicity, acceptedTracks);
       if (track.eta() > cfgSubeventCuts.cfgEtaSubCMin && track.eta() < cfgSubeventCuts.cfgEtaSubCMax)
         pidStates.hPtMid[PidCharged]->Fill(track.pt(), getEfficiency(track, PidCharged));
       if (track.eta() > cfgSubeventCuts.cfgEtaSubAMin && track.eta() < cfgSubeventCuts.cfgEtaSubAMax) // add mean pT
@@ -1049,7 +1094,7 @@ struct FlowGfwV02 {
       if (acceptedTracks.nPos < 2 || acceptedTracks.nMid < 2 || acceptedTracks.nNeg < 2) // o2-linter: disable=magic-number (at least two tracks in all three subevents)
         return;
     // Fill output containers
-    fillOutputContainers<dt>(xaxis.centrality, xaxis.multiplicity, lRandom, run);
+    fillOutputContainers<dt>(xaxis.centrality);
   }
 
   template <typename TTrack>
@@ -1097,7 +1142,7 @@ struct FlowGfwV02 {
   }
 
   template <typename TTrack>
-  inline void processTrack(TTrack const& track, const float& vtxz, const int& multiplicity, const int& /*run*/, AcceptedTracks& acceptedTracks)
+  inline void processTrack(TTrack const& track, const float& vtxz, const int& multiplicity, AcceptedTracks& acceptedTracks)
   {
 
     if (cfgFillQA) {
@@ -1283,7 +1328,7 @@ struct FlowGfwV02 {
 
     registry.fill(HIST("eventQA/after/centrality"), xaxis.centrality);
     registry.fill(HIST("eventQA/after/multiplicity"), xaxis.multiplicity);
-    processCollision<kReco>(collision, tracks, xaxis, run);
+    processCollision<kReco>(collision, tracks, xaxis);
   }
   PROCESS_SWITCH(FlowGfwV02, processData, "Process analysis for non-derived data", true);
 
@@ -1300,7 +1345,7 @@ struct FlowGfwV02 {
     registry.fill(HIST("eventQA/after/centrality"), xaxis.centrality);
     registry.fill(HIST("eventQA/after/multiplicity"), xaxis.multiplicity);
 
-    // processCollision<kReco>(collision, tracks, xaxis, run);
+    // processCollision<kReco>(collision, tracks, xaxis);
   }
   PROCESS_SWITCH(FlowGfwV02, processCFDerived, "Process analysis for CF derived data", false);
   void processCFDerivedCorrected(aod::CFCollision const& collision, soa::Filtered<soa::Join<aod::CFTracks, aod::JWeights>> const& tracks)
@@ -1313,7 +1358,7 @@ struct FlowGfwV02 {
     const XAxis xaxis{.centrality = collision.multiplicity(), .multiplicity = tracks.size()};
     registry.fill(HIST("eventQA/after/centrality"), xaxis.centrality);
     registry.fill(HIST("eventQA/after/multiplicity"), xaxis.multiplicity);
-    // processCollision<kReco>(collision, tracks, xaxis, run);
+    // processCollision<kReco>(collision, tracks, xaxis);
   }
   PROCESS_SWITCH(FlowGfwV02, processCFDerivedCorrected, "Process analysis for CF derived data with corrections", false);
 };

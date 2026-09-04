@@ -302,7 +302,8 @@ struct NucleiAntineutronCex {
         double antipE = particle.e();
         int antipId = particle.globalIndex();
 
-        // Selection conditions: Produced in the ITS IB
+        // Selection conditions MC: Produced in the ITS IB
+
         const double r = std::sqrt(antipVx * antipVx + antipVy * antipVy);
         // Config for ITS
         // if(3.9<=r && r<=43.0 && std::abs(antipVz)<=48.9){
@@ -543,12 +544,15 @@ struct NucleiAntineutronCex {
           double antipTrkP = 0.;
           double antipTrkEta = 0.;
           double antipTrkTpcSignal = 0;
-          // int antip_trk_nClsTPC = 0;
           int antipTrkNClsIts = 0;
           uint16_t apItsMap = 0;
-          float pTrkItsNSigmaPr = -999.f;
-          int8_t pTrkItsPidValid = 0;
-          float pTrkTgl = 0.f;
+          float antipTrkItsNSigmaPr = -999.f;
+          int8_t antipTrkItsPidValid = 0;
+          float antipTrkTgl = 0.f;
+          int antipTrkTpcNClsCrossedRows = -1;
+          float antipTrkTpcCrossedRowsOverFindableCls = -999.f;
+          float antipTrkTpcChi2NCl = -999.f;
+          float antipTrkItsChi2NCl = -999.f;
 
           bool pLayersCondition = false;
           bool pHasTrack = false;
@@ -558,12 +562,15 @@ struct NucleiAntineutronCex {
           double pTrkP = 0.;
           double pTrkEta = 0.;
           double pTrkTpcSignal = 0;
-          // int p_trk_nClsTPC = 0;
           int pTrkNClsIts = 0;
           uint16_t pItsMap = 0;
-          float antipTrkItsNSigmaPr = -999.f;
-          int8_t antipTrkItsPidValid = 0;
-          float antipTrkTgl = 0.f;
+          float pTrkItsNSigmaPr = -999.f;
+          int8_t pTrkItsPidValid = 0;
+          float pTrkTgl = 0.f;
+          int pTrkTpcNClsCrossedRows = -1;
+          float pTrkTpcCrossedRowsOverFindableCls = -999.f;
+          float pTrkTpcChi2NCl = -999.f;
+          float pTrkItsChi2NCl = -999.f;
 
           o2::aod::ITSResponse itsResponse;
 
@@ -602,6 +609,10 @@ struct NucleiAntineutronCex {
               // antip_trk_nClsTPC = track.tpcNCls();
               antipTrkNClsIts = track.itsNCls();
               antipTrkTgl = track.tgl();
+              antipTrkTpcNClsCrossedRows = track.tpcNClsCrossedRows();
+              antipTrkTpcCrossedRowsOverFindableCls = track.tpcCrossedRowsOverFindableCls();
+              antipTrkTpcChi2NCl = track.tpcChi2NCl();
+              antipTrkItsChi2NCl = track.itsChi2NCl();
               const auto nsigmaITSantip = itsResponse.nSigmaITS<o2::track::PID::Proton>(track);
               antipTrkItsNSigmaPr = static_cast<float>(nsigmaITSantip);
               antipTrkItsPidValid = std::isfinite(nsigmaITSantip) ? 1 : 0;
@@ -629,8 +640,11 @@ struct NucleiAntineutronCex {
               // p_trk_nClsTPC = track.tpcNCls();
               pTrkNClsIts = track.itsNCls();
               pTrkTgl = track.tgl();
-              const auto nsigmaITSp =
-                itsResponse.nSigmaITS<o2::track::PID::Proton>(track);
+              pTrkTpcNClsCrossedRows = track.tpcNClsCrossedRows();
+              pTrkTpcCrossedRowsOverFindableCls = track.tpcCrossedRowsOverFindableCls();
+              pTrkTpcChi2NCl = track.tpcChi2NCl();
+              pTrkItsChi2NCl = track.itsChi2NCl();
+              const auto nsigmaITSp = itsResponse.nSigmaITS<o2::track::PID::Proton>(track);
               pTrkItsNSigmaPr = static_cast<float>(nsigmaITSp);
               pTrkItsPidValid = std::isfinite(nsigmaITSp) ? 1 : 0;
               pHasTrack = true;
@@ -714,12 +728,17 @@ struct NucleiAntineutronCex {
               if (motherPdg != -kNeutron)
                 histos.fill(HIST("cexbg_pairtrkVtxfitDcaPair"), dcaPair);
 
+              if (pRow->isPVContributor() || apRow->isPVContributor())
+                continue;
               if (!(antipLayersCondition && pLayersCondition))
                 continue;
+              const double radius = std::hypot(secX, secY);
+              if (radius < kIts2MinR || radius > kIts2MaxR || std::abs(secZ) > kIts2MaxVz)
+                continue;
+
               double cexPairTrkP = total_trk_pVec.Mag();
               double cexPairTrkPt = total_trk_pVec.Pt();
               double cexPairTrkPz = pTrkPz + antipTrkPz;
-              const double radius = std::hypot(secX, secY);
               const double dxPv = secX - pvtxX;
               const double dyPv = secY - pvtxY;
               const double dzPv = secZ - pvtxZ;
@@ -812,11 +831,20 @@ struct NucleiAntineutronCex {
 
               outPairs(
                 isCex,
+
                 motherPdg,
                 motherP,
-                colId,
-                pId,
-                antipId,
+                motherPt,
+                motherPz,
+                motherEta,
+                motherVz,
+
+                pion0,
+                static_cast<int32_t>(procEnum),
+
+                static_cast<int64_t>(colId),
+                static_cast<int64_t>(pId),
+                static_cast<int64_t>(antipId),
 
                 cexPairMcP,
                 cexPairMcPt,
@@ -882,6 +910,8 @@ struct NucleiAntineutronCex {
                 pItsMap,
                 apItsMap,
 
+                pvtxX,
+                pvtxY,
                 pvtxZ,
 
                 pTrkItsNSigmaPr,
@@ -890,7 +920,17 @@ struct NucleiAntineutronCex {
 
                 antipTrkItsNSigmaPr,
                 antipTrkItsPidValid,
-                antipTrkTgl);
+                antipTrkTgl,
+
+                pTrkTpcNClsCrossedRows,
+                pTrkTpcCrossedRowsOverFindableCls,
+                pTrkTpcChi2NCl,
+                pTrkItsChi2NCl,
+
+                antipTrkTpcNClsCrossedRows,
+                antipTrkTpcCrossedRowsOverFindableCls,
+                antipTrkTpcChi2NCl,
+                antipTrkItsChi2NCl);
             }
           }
           // ==== end DCAFitter2 ====

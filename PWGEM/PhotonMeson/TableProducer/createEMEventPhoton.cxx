@@ -25,6 +25,7 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Qvectors.h"
 
+#include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -37,7 +38,6 @@
 #include <TH1.h>
 #include <TH2.h>
 
-#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -54,19 +54,13 @@ using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels, aod:
 using MyCollisionsCent = soa::Join<MyCollisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>; // centrality table has dependency on multiplicity table.
 using MyCollisionsCentQvec = soa::Join<MyCollisionsCent, MyQvectors>;
 
-// using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
-// using MyCollisionsWithSWT_Cent = soa::Join<MyCollisionsWithSWT, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>; // centrality table has dependency on multiplicity table.
-// using MyCollisionsWithSWT_Cent_Qvec = soa::Join<MyCollisionsWithSWT_Cent, MyQvectors>;
-
 using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
 using MyCollisionsMCCent = soa::Join<MyCollisionsMC, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>; // centrality table has dependency on multiplicity table.
 using MyCollisionsMCCentQvec = soa::Join<MyCollisionsMCCent, MyQvectors>;
 
 struct CreateEMEventPhoton {
-  // Produces<o2::aod::EMBCs> embc;
   Produces<o2::aod::PMEvents> event;
   Produces<o2::aod::EMEventsAlias> eventalias;
-  // Produces<o2::aod::EMEventsCov> eventCov;
   Produces<o2::aod::EMEventsMult_000> eventMult;
   Produces<o2::aod::EMEventsCent_000> eventCent;
   Produces<o2::aod::EMEventsQvec_001> eventQvec;
@@ -81,12 +75,6 @@ struct CreateEMEventPhoton {
     kEvent_JJ = 3,
   };
 
-  // CCDB options
-  // Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  // Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-  // Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  // Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
-  // Configurable<double> dBzInput{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<bool> needEMCTrigger{"needEMCTrigger", false, "flag to only save events which have kTVXinEMC trigger bit. To reduce PbPb derived data size"};
   Configurable<bool> needPHSTrigger{"needPHSTrigger", false, "flag to only save events which have kTVXinPHOS trigger bit. To reduce PbPb derived data size"};
   Configurable<bool> enableJJHistograms{"enableJJHistograms", false, "flag to fill JJ QA histograms for outlier rejection"};
@@ -104,58 +92,9 @@ struct CreateEMEventPhoton {
     }
   }
 
-  int mRunNumber;
-  // float dBz;
-  // Service<o2::ccdb::BasicCCDBManager> ccdb;
-
-  template <typename TBC>
-  void initCCDB(TBC const& bc)
-  {
-    if (mRunNumber == bc.runNumber()) {
-      return;
-    }
-
-    // // In case override, don't proceed, please - no CCDB access required
-    // if (dBzInput > -990) {
-    //   dBz = dBzInput;
-    //   o2::parameters::GRPMagField grpmag;
-    //   if (std::fabs(dBz) > 1e-5) {
-    //     grpmag.setL3Current(30000.f / (dBz / 5.0f));
-    //   }
-    //   mRunNumber = bc.runNumber();
-    //   return;
-    // }
-
-    // auto run3GRPTimestamp = bc.timestamp();
-    // o2::parameters::GRPObject* grpo = 0x0;
-    // o2::parameters::GRPMagField* grpmag = 0x0;
-    // if (!skipGRPOquery)
-    //   grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3GRPTimestamp);
-    // if (grpo) {
-    //   // Fetch magnetic field from ccdb for current collision
-    //   dBz = grpo->getNominalL3Field();
-    //   LOG(info) << "Retrieved GRP for timestamp " << run3GRPTimestamp << " with magnetic field of " << dBz << " kZG";
-    // } else {
-    //   grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3GRPTimestamp);
-    //   if (!grpmag) {
-    //     LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3GRPTimestamp;
-    //   }
-    //   // Fetch magnetic field from ccdb for current collision
-    //   dBz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-    //   LOG(info) << "Retrieved GRP for timestamp " << run3GRPTimestamp << " with magnetic field of " << dBz << " kZG";
-    // }
-    mRunNumber = bc.runNumber();
-  }
-
   template <bool isMC, bool isTriggerAnalysis, EMEventType eventtype, typename TCollisions, typename TBCs>
   void skimEvent(TCollisions const& collisions, TBCs const&)
   {
-    // for (const auto& bc : bcs) {
-    //   if (bc.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
-    //     embc(bc.selection_raw(), bc.rct_raw()); // TVX is fired.
-    //   }
-    // } // end of bc loop
-
     for (const auto& collision : collisions) {
       if constexpr (isMC) {
         if (!collision.has_mcCollision()) {
@@ -163,9 +102,7 @@ struct CreateEMEventPhoton {
         }
       }
 
-      // auto bc = collision.template foundBC_as<TBCs>();
       auto bc = collision.template bc_as<TBCs>(); // use this for Zorro
-      initCCDB(bc);
 
       if (needEMCTrigger && !collision.alias_bit(kTVXinEMC)) {
         continue;
@@ -175,7 +112,7 @@ struct CreateEMEventPhoton {
       }
 
       if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
-        int16_t posZint16 = static_cast<int16_t>(collision.posZ() * 100.f);
+        auto posZint16 = static_cast<int16_t>(collision.posZ() * 100.f);
         if (posZint16 == 0.f) {
           if (collision.posZ() < 0) {
             posZint16 = -1;
@@ -183,9 +120,7 @@ struct CreateEMEventPhoton {
             posZint16 = +1;
           }
         }
-        if constexpr (eventtype == EMEventType::kEvent) {
-          event_norm_info(collision.selection_raw(), collision.rct_raw(), posZint16, static_cast<uint16_t>(105.f * 500.f));
-        } else if constexpr (eventtype == EMEventType::kEvent_Cent || eventtype == EMEventType::kEvent_Cent_Qvec) {
+        if constexpr (eventtype == EMEventType::kEvent_Cent || eventtype == EMEventType::kEvent_Cent_Qvec) {
           event_norm_info(collision.selection_raw(), collision.rct_raw(), posZint16, static_cast<uint16_t>(collision.centFT0C() * 500.f));
         } else {
           event_norm_info(collision.selection_raw(), collision.rct_raw(), posZint16, static_cast<uint16_t>(105.f * 500.f));
@@ -199,14 +134,6 @@ struct CreateEMEventPhoton {
       if (!collision.isEoI()) { // events with at least 1 photon for data reduction.
         continue;
       }
-
-      // if constexpr (isTriggerAnalysis) {
-      //   if (collision.triggerMask_raw() == 0) {
-      //     continue;
-      //   } else {
-      //     emswtbit(collision.triggerMask_raw());
-      //   }
-      // }
 
       const float qDefault = 999.f; // default value for q vectors if not obtained
 
@@ -229,11 +156,7 @@ struct CreateEMEventPhoton {
         eventWeights(1.f);
       }
 
-      if constexpr (eventtype == EMEventType::kEvent) {
-        eventCent(105.f, 105.f, 105.f);
-        eventQvec(qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault,
-                  qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault);
-      } else if constexpr (eventtype == EMEventType::kEvent_Cent) {
+      if constexpr (eventtype == EMEventType::kEvent_Cent) {
         eventCent(collision.centFT0M(), collision.centFT0A(), collision.centFT0C());
         eventQvec(qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault,
                   qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault);
@@ -260,7 +183,7 @@ struct CreateEMEventPhoton {
 
   using MyJJCollisions = soa::Join<aod::McCollisions, aod::HepMCXSections>;
 
-  void fillEventWeights(MyCollisionsMC const& collisions, MyJJCollisions const&, MyBCs const&, aod::FullMCParticleLevelJets const& jets)
+  void fillEventWeights(MyCollisionsMC const& collisions, MyJJCollisions const&, aod::FullMCParticleLevelJets const& jets)
   {
     for (const auto& collision : collisions) {
       if (!collision.has_mcCollision()) {
@@ -270,9 +193,6 @@ struct CreateEMEventPhoton {
         continue;
       }
 
-      auto bc = collision.template foundBC_as<MyBCs>();
-      initCCDB(bc);
-
       auto mcCollision = collision.mcCollision_as<MyJJCollisions>();
 
       // Outlier rejection: Set weight to 0 for events with large pTJet/pTHard
@@ -280,8 +200,9 @@ struct CreateEMEventPhoton {
       auto jetsInThisCollision = jets.sliceBy(perCollision_jet, mcCollision.globalIndex());
       float collisionWeight = mcCollision.weight();
       for (const auto& jet : jetsInThisCollision) {
-        if (jet.pt() > maxpTJetOverpTHard * mcCollision.ptHard())
+        if (jet.pt() > maxpTJetOverpTHard * mcCollision.ptHard()) {
           collisionWeight = 0.f;
+        }
         registry.fill(HIST("hJJ_pTHardVsJetpT"), mcCollision.ptHard(), jet.pt());
       }
 
@@ -336,7 +257,7 @@ struct CreateEMEventPhoton {
   void processEventJJMC(MyCollisionsMC const& collisions, MyJJCollisions const& mcCollisions, MyBCs const& bcs, aod::FullMCParticleLevelJets const& jets)
   {
     skimEvent<true, false, EMEventType::kEvent_JJ>(collisions, bcs);
-    fillEventWeights(collisions, mcCollisions, bcs, jets);
+    fillEventWeights(collisions, mcCollisions, jets);
   }
   PROCESS_SWITCH(CreateEMEventPhoton, processEventJJMC, "process event info", false);
 
@@ -419,10 +340,10 @@ struct AssociatePhotonToEMEvent {
   // PROCESS_SWITCH(AssociatePhotonToEMEvent, processChargedTrack, "process indexing for charged tracks", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processDummy, "process dummy", true);
 };
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<CreateEMEventPhoton>(cfgc, TaskName{"create-emevent-photon"}),
-    adaptAnalysisTask<AssociatePhotonToEMEvent>(cfgc, TaskName{"associate-photon-to-emevent"}),
+    adaptAnalysisTask<CreateEMEventPhoton>(context, TaskName{"create-emevent-photon"}),
+    adaptAnalysisTask<AssociatePhotonToEMEvent>(context, TaskName{"associate-photon-to-emevent"}),
   };
 }

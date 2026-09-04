@@ -22,6 +22,7 @@
 #include "PWGEM/PhotonMeson/Core/EmMlResponsePCM.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCandidate.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
+#include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
@@ -39,10 +40,10 @@
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
-#include <DataFormatsParameters/GRPObject.h>
 #include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/MatLayerCylSet.h>
 #include <DetectorsBase/Propagator.h>
+#include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -90,6 +91,7 @@ using std::array;
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
 // using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
 using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
+using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::PcmObjects>;
 
 using MyTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCFullEl, aod::pidTPCFullPi>;
 using MyTracksIUMC = soa::Join<MyTracksIU, aod::McTrackLabels, aod::mcTPCTuneOnData>;
@@ -123,6 +125,9 @@ struct V0CandidateHelper {
   float pca = -1.f;
   float score = -1.f;
   float mee = 0.f; // e+e- mass at the secondary vertex (GeV/c^2)
+  float pxAtPV = 0.f;
+  float pyAtPV = 0.f;
+  float pzAtPV = 0.f;
 
   V0CandidateHelper() = default;
 
@@ -144,9 +149,6 @@ struct DedupDiag {
   std::map<CandKey, std::vector<CandKey>> blockersByKey; // rejected candidate -> ALL candidates that took one of its legs
   std::vector<V0CandidateHelper> snapshot;               // ALL candidates, before deduplication
   std::vector<CandKey> stored;                           // the survivors
-  // group matching only: rejected candidate -> (how many candidates the best solution CONTAINING
-  // it would have cost, by how much its best solution was worse in total score).
-  // deficit == 0 means an equally large alternative existed and the score alone decided.
   std::map<CandKey, std::pair<int, float>> lossMargin;
 };
 
@@ -161,84 +163,100 @@ struct PhotonConversionBuilder {
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
-  Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
 
   // Operation and minimisation criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
   Configurable<int> modeTrackPropagation{"modeTrackPropagation", 0, "0: use real track propagation, including material, 1: use fast approximation using only geometry, 2: Use real track propagation and make comparison to fast propagation (only for debugging and testing)"};
-  Configurable<int> deduplicationMode{"deduplicationMode", 0, "0: Pairwise deduplication, 1: Based on Greedy matching (best score wins), 2: Based on Group matching (crossed pairs are both kept), 3: Keep all V0s, our default in the config is mode 0, however if a wrong configuration is used, the default will be mode 1 (Greedy matching) to avoid crashes"};
-  Configurable<float> deduplicationScoreWeight{"deduplicationScoreWeight", 0.5f, "0.:only pca goes into the score, 1: only cosPA goes itno score, any number in between is a mix of pca and cosPA"};
-  Configurable<bool> cfgDedupTruthMaps{"cfgDedupTruthMaps", true, "fill the fine (dEta, dPhi, q) truth maps in MC"};
-  Configurable<int> dedupMaxGroupSize{"dedupMaxGroupSize", 12, "group matching (mode 2): conflict groups up to this size are solved exactly, larger ones greedily (capped at 16)"};
+  Configurable<float> propV0LegsRadius{"propV0LegsRadius", 60.f, "Radius to which the V0 legs are propagated to calculate psipair and phiV"};
+
+  // deduplication settings
+  struct : ConfigurableGroup {
+    std::string prefix = "dedup_group";
+    Configurable<int> deduplicationMode{"deduplicationMode", 0, "0: Pairwise deduplication, 1: Based on Greedy matching (best score wins), 2: Based on Group matching (crossed pairs are both kept), 3: Keep all V0s, our default in the config is mode 0, however if a wrong configuration is used, the default will be mode 1 (Greedy matching) to avoid crashes"};
+    Configurable<float> deduplicationScoreWeight{"deduplicationScoreWeight", 0.5f, "0.:only pca goes into the score, 1: only cosPA goes itno score, any number in between is a mix of pca and cosPA"};
+    Configurable<bool> cfgDedupTruthMaps{"cfgDedupTruthMaps", true, "fill the fine (dEta, dPhi, q) truth maps in MC"};
+    Configurable<int> dedupMaxGroupSize{"dedupMaxGroupSize", 12, "group matching (mode 2): conflict groups up to this size are solved exactly, larger ones greedily (capped at 16)"};
+  } dedup;
+
+  // event-level skim for derived data
+  struct : ConfigurableGroup {
+    std::string prefix = "skim_group";
+    Configurable<int> minNv0PerCollision{"minNv0PerCollision", -1, "store V0 photons only for collisions with at least this many surviving candidates (event-level skim for derived data). negative = store all"};
+    Configurable<float> maxMinvPairPerCollision{"maxMinvPairPerCollision", -1.f, "store a collision's photons only if at least one photon pair has qinv below this (GeV/c^2). negative = disabled"};
+  } skim;
 
   // single track cuts
-  Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 0, "min ncluster tpc"};
-  Configurable<int> mincrossedrows{"mincrossedrows", 40, "min crossed rows"};
-  Configurable<bool> moveTPCTracks{"moveTPCTracks", true, "Move TPC-only tracks under the collision assumption"};
-  Configurable<bool> disableITSonlyTracks{"disableITSonlyTracks", false, "disable ITSonly tracks in V0 legs"};
-  Configurable<bool> disableTPConlyTracks{"disableTPConlyTracks", false, "disable TPConly tracks in V0 legs"};
-  Configurable<bool> requireITShit{"requireITShit", false, "require ITS hit to V0 legs"};
+  struct : ConfigurableGroup {
+    std::string prefix = "trackcut_group";
+    Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 0, "min ncluster tpc"};
+    Configurable<int> mincrossedrows{"mincrossedrows", 40, "min crossed rows"};
+    Configurable<bool> moveTPCTracks{"moveTPCTracks", true, "Move TPC-only tracks under the collision assumption"};
+    Configurable<bool> disableITSonlyTracks{"disableITSonlyTracks", false, "disable ITSonly tracks in V0 legs"};
+    Configurable<bool> disableTPConlyTracks{"disableTPConlyTracks", false, "disable TPConly tracks in V0 legs"};
+    Configurable<bool> requireITShit{"requireITShit", false, "require ITS hit to V0 legs"};
+    Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max chi2/NclsTPC"}; // default 4.0 + 1.0
+    Configurable<float> maxchi2its{"maxchi2its", 6.0, "max chi2/NclsITS"}; // default 5.0 + 1.0
+    Configurable<float> maxpt_itsonly{"maxpt_itsonly", 0.15, "max pT for ITSonly tracks at SV"};
+    Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 4.0, "max. TPC n sigma for electron"};
+    Configurable<float> minTPCNsigmaEl{"minTPCNsigmaEl", -4.0, "min. TPC n sigma for electron"};
+    Configurable<float> max_frac_shared_clusters_tpc{"max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
+    Configurable<float> dcanegtopv{"dcanegtopv", 0.1, "DCA Neg To PV"};
+    Configurable<float> dcapostopv{"dcapostopv", 0.1, "DCA Pos To PV"};
+    Configurable<float> maxX{"maxX", 83.1, "max X for track IU"};
+    Configurable<float> min_pt_trackiu{"min_pt_trackiu", 0.05, "min pT for trackiu"}; // this comes from online processing. pT of track seed is above 50 MeV/c in B = 0.5 T, 20 MeV/c in B = 0.2 T.
+  } trackcuts;
 
-  Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max chi2/NclsTPC"}; // default 4.0 + 1.0
-  Configurable<float> maxchi2its{"maxchi2its", 6.0, "max chi2/NclsITS"}; // default 5.0 + 1.0
-  Configurable<float> maxpt_itsonly{"maxpt_itsonly", 0.15, "max pT for ITSonly tracks at SV"};
-  Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 4.0, "max. TPC n sigma for electron"};
-  Configurable<float> minTPCNsigmaEl{"minTPCNsigmaEl", -4.0, "min. TPC n sigma for electron"};
-  Configurable<float> max_frac_shared_clusters_tpc{"max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
-  Configurable<float> dcanegtopv{"dcanegtopv", 0.1, "DCA Neg To PV"};
-  Configurable<float> dcapostopv{"dcapostopv", 0.1, "DCA Pos To PV"};
-  Configurable<float> maxX{"maxX", 83.1, "max X for track IU"};
-  Configurable<float> min_pt_trackiu{"min_pt_trackiu", 0.05, "min pT for trackiu"}; // this comes from online processing. pT of track seed is above 50 MeV/c in B = 0.5 T, 20 MeV/c in B = 0.2 T.
-
-  // v0 cuts
-  Configurable<float> min_v0cospa_tpconly{"min_v0cospa_tpconly", 0.99, "min V0 CosPA to V0s with TPConly tracks"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
-  Configurable<float> min_v0cospa_its{"min_v0cospa_its", 0.99, "min V0 CosPA to V0s with ITs hits"};               // double -> N.B. dcos(x)/dx = 0 at x=0)
-  Configurable<float> max_dcav0dau_tpconly{"max_dcav0dau_tpconly", 3.0, "max distance btween 2 legs to V0s with TPConly tracks"};
-  Configurable<float> max_dcav0dau_its{"max_dcav0dau_its", 0.5, "max distance btween 2 legs to V0s with ITS hits"};
-  Configurable<float> max_dcav0dau_itsibss{"max_dcav0dau_itsibss", 1.0, "max distance btween 2 legs to V0s with ITS hits on ITSib SS"};
-  Configurable<float> max_dcav0dau_tpc_inner_fc{"max_dcav0dau_tpc_inner_fc", 1.5, "max distance btween 2 legs to V0s with ITS hits on TPC inner FC"};
-  Configurable<float> min_v0radius{"min_v0radius", 1.0, "min v0 radius"};
-  Configurable<float> max_v0radius{"max_v0radius", 90.0, "max v0 radius"};
-  Configurable<float> margin_r_its{"margin_r_its", 3.0, "margin for r cut in cm"};
-  Configurable<float> margin_r_tpc{"margin_r_tpc", 7.0, "margin for r cut in cm"};
-  Configurable<float> margin_r_itstpc_tpc{"margin_r_itstpc_tpc", 7.0, "margin for r cut in cm"};
-  Configurable<float> margin_z{"margin_z", 7.0, "margin for z cut in cm"};
-  Configurable<float> max_alpha_ap{"max_alpha_ap", 0.95, "max alpha for AP cut"};
-  Configurable<float> max_qt_ap{"max_qt_ap", 0.01, "max qT for AP cut"};
-  Configurable<float> min_pt_v0{"min_pt_v0", 0.1, "min pT for v0 photons at PV"};
-  Configurable<float> max_pt_v0_itsonly{"max_pt_v0_itsonly", 0.3, "max pT for v0 photons wth 2 ITSonly tracks at PV"};
-  Configurable<float> max_eta_v0{"max_eta_v0", 0.9, "max eta for v0 photons at PV"};
-  Configurable<float> kfMassConstrain{"kfMassConstrain", -1.f, "mass constrain for the KFParticle mother particle"};
-  Configurable<float> max_r_req_its{"max_r_req_its", 16.0, "max Rxy for V0 with ITS hits"};
-  Configurable<float> min_r_tpconly{"min_r_tpconly", 32.0, "min Rxy for V0 with TPConly tracks"};
-  Configurable<float> max_r_itsmft_ss{"max_r_itsmft_ss", 66.0, "max Rxy for ITS/MFT SS"};
-  Configurable<float> max_dcatopv_xy_v0{"max_dcatopv_xy_v0", +1e+10, "max. DCAxy to PV for V0"};
-  Configurable<float> max_dcatopv_z_v0{"max_dcatopv_z_v0", +1e+10, "max. DCAz to PV for V0"};
-  Configurable<bool> reject_v0_on_itsib{"reject_v0_on_itsib", true, "flag to reject v0s on ITSib"};
+  // v0 photon cuts
+  struct : ConfigurableGroup {
+    std::string prefix = "v0cut_group";
+    Configurable<float> min_v0cospa_tpconly{"min_v0cospa_tpconly", 0.99, "min V0 CosPA to V0s with TPConly tracks"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
+    Configurable<float> min_v0cospa_its{"min_v0cospa_its", 0.99, "min V0 CosPA to V0s with ITs hits"};               // double -> N.B. dcos(x)/dx = 0 at x=0)
+    Configurable<float> max_dcav0dau_tpconly{"max_dcav0dau_tpconly", 3.0, "max distance btween 2 legs to V0s with TPConly tracks"};
+    Configurable<float> max_dcav0dau_its{"max_dcav0dau_its", 0.5, "max distance btween 2 legs to V0s with ITS hits"};
+    Configurable<float> max_dcav0dau_itsibss{"max_dcav0dau_itsibss", 1.0, "max distance btween 2 legs to V0s with ITS hits on ITSib SS"};
+    Configurable<float> max_dcav0dau_tpc_inner_fc{"max_dcav0dau_tpc_inner_fc", 1.5, "max distance btween 2 legs to V0s with ITS hits on TPC inner FC"};
+    Configurable<float> min_v0radius{"min_v0radius", 1.0, "min v0 radius"};
+    Configurable<float> max_v0radius{"max_v0radius", 90.0, "max v0 radius"};
+    Configurable<float> margin_r_its{"margin_r_its", 3.0, "margin for r cut in cm"};
+    Configurable<float> margin_r_tpc{"margin_r_tpc", 7.0, "margin for r cut in cm"};
+    Configurable<float> margin_r_itstpc_tpc{"margin_r_itstpc_tpc", 7.0, "margin for r cut in cm"};
+    Configurable<float> margin_z{"margin_z", 7.0, "margin for z cut in cm"};
+    Configurable<float> max_alpha_ap{"max_alpha_ap", 0.95, "max alpha for AP cut"};
+    Configurable<float> max_qt_ap{"max_qt_ap", 0.01, "max qT for AP cut"};
+    Configurable<float> min_pt_v0{"min_pt_v0", 0.1, "min pT for v0 photons at PV"};
+    Configurable<float> max_pt_v0_itsonly{"max_pt_v0_itsonly", 0.3, "max pT for v0 photons wth 2 ITSonly tracks at PV"};
+    Configurable<float> max_eta_v0{"max_eta_v0", 0.9, "max eta for v0 photons at PV"};
+    Configurable<float> kfMassConstrain{"kfMassConstrain", -1.f, "mass constrain for the KFParticle mother particle"};
+    Configurable<float> max_r_req_its{"max_r_req_its", 16.0, "max Rxy for V0 with ITS hits"};
+    Configurable<float> min_r_tpconly{"min_r_tpconly", 32.0, "min Rxy for V0 with TPConly tracks"};
+    Configurable<float> max_r_itsmft_ss{"max_r_itsmft_ss", 66.0, "max Rxy for ITS/MFT SS"};
+    Configurable<float> max_dcatopv_xy_v0{"max_dcatopv_xy_v0", +1e+10, "max. DCAxy to PV for V0"};
+    Configurable<float> max_dcatopv_z_v0{"max_dcatopv_z_v0", +1e+10, "max. DCAz to PV for V0"};
+    Configurable<bool> reject_v0_on_itsib{"reject_v0_on_itsib", true, "flag to reject v0s on ITSib"};
+  } v0cuts;
 
   // PCM ML inference
-  Configurable<bool> applyPCMMl{"applyPCMMl", false, "Flag to apply ML selections"};
-  Configurable<bool> use2DBinning{"use2DBinning", false, "Flag to enable/disable 2D binning for ML application"};
-  Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
-  Configurable<int> nClassesPCMMl{"nClassesPCMMl", static_cast<int>(o2::analysis::em_cuts_ml::NCutScores), "Number of classes in ML model"};
-  Configurable<int> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
-  Configurable<int> centTypePCMMl{"centTypePCMMl", 2, "Centrality type for 2D ML application: FT0M:0, FT0A:1, FT0C:2"};
-  Configurable<std::vector<int>> cutDirPCMMl{"cutDirPCMMl", std::vector<int>{o2::analysis::em_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
-  Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
-  Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"path_ccdb/BDT_PCM/"}, "Paths of models on CCDB"};
-  Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"ModelHandler_onnx_PCM.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
-  Configurable<std::vector<std::string>> labelsBinsPCMMl{"labelsBinsPCMMl", std::vector<std::string>{"bin 0", "bin 1"}, "Labels for bins"};
-  Configurable<std::vector<std::string>> labelsCutScoresPCMMl{"labelsCutScoresPCMMl", std::vector<std::string>{o2::analysis::em_cuts_ml::labelsCutScore}, "Labels for cut scores"};
-  Configurable<std::vector<double>> binsPtPCMMl{"binsPtPCMMl", std::vector<double>{0.0, +1e+10}, "pT bin limits for ML application"};
-  Configurable<std::vector<double>> binsCentPCMMl{"binsCentPCMMl", std::vector<double>{0.0, 100.0}, "Centrality bin limits for ML application"};
-  Configurable<std::vector<double>> cutsPCMMlFlat{"cutsPCMMlFlat", {0.5}, "Flattened ML cuts: [bin0_score0, bin0_score1, ..., binN_scoreM]"};
-
-  Configurable<float> propV0LegsRadius{"propV0LegsRadius", 60.f, "Radius to which the V0 legs are propagated to calculate psipair and phiV"};
+  struct : ConfigurableGroup {
+    std::string prefix = "mlcut_group";
+    Configurable<bool> applyPCMMl{"applyPCMMl", false, "Flag to apply ML selections"};
+    Configurable<bool> use2DBinning{"use2DBinning", false, "Flag to enable/disable 2D binning for ML application"};
+    Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
+    Configurable<int> nClassesPCMMl{"nClassesPCMMl", static_cast<int>(o2::analysis::em_cuts_ml::NCutScores), "Number of classes in ML model"};
+    Configurable<int> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
+    Configurable<int> centTypePCMMl{"centTypePCMMl", 2, "Centrality type for 2D ML application: FT0M:0, FT0A:1, FT0C:2"};
+    Configurable<std::vector<int>> cutDirPCMMl{"cutDirPCMMl", std::vector<int>{o2::analysis::em_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
+    Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
+    Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"path_ccdb/BDT_PCM/"}, "Paths of models on CCDB"};
+    Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"ModelHandler_onnx_PCM.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
+    Configurable<std::vector<std::string>> labelsBinsPCMMl{"labelsBinsPCMMl", std::vector<std::string>{"bin 0", "bin 1"}, "Labels for bins"};
+    Configurable<std::vector<std::string>> labelsCutScoresPCMMl{"labelsCutScoresPCMMl", std::vector<std::string>{o2::analysis::em_cuts_ml::labelsCutScore}, "Labels for cut scores"};
+    Configurable<std::vector<double>> binsPtPCMMl{"binsPtPCMMl", std::vector<double>{0.0, +1e+10}, "pT bin limits for ML application"};
+    Configurable<std::vector<double>> binsCentPCMMl{"binsCentPCMMl", std::vector<double>{0.0, 100.0}, "Centrality bin limits for ML application"};
+    Configurable<std::vector<double>> cutsPCMMlFlat{"cutsPCMMlFlat", {0.5}, "Flattened ML cuts: [bin0_score0, bin0_score1, ..., binN_scoreM]"};
+  } mlcuts;
 
   o2::analysis::EmMlResponsePCM<float> emMlResponse;
   std::vector<float> outputML;
@@ -296,11 +314,13 @@ struct PhotonConversionBuilder {
     maxStep = 2.00f; // could be changed later
 
     static constexpr std::array<const char*, 4> DedupNames = {"pairwise", "greedy matching", "group matching", "keep all"};
-    if (deduplicationMode < 0 || deduplicationMode >= static_cast<int>(DedupNames.size())) {
-      LOG(fatal) << "unknown deduplicationMode " << deduplicationMode.value;
+    if (dedup.deduplicationMode < 0 || dedup.deduplicationMode >= static_cast<int>(DedupNames.size())) {
+      LOG(fatal) << "unknown deduplicationMode " << dedup.deduplicationMode.value;
     }
     LOGF(info, "photon-conversion-builder: deduplicationMode = %d (%s), score weight = %.2f",
-         deduplicationMode.value, DedupNames[deduplicationMode.value], deduplicationScoreWeight.value);
+         dedup.deduplicationMode.value, DedupNames[dedup.deduplicationMode.value], dedup.deduplicationScoreWeight.value);
+    LOGF(info, "photon-conversion-builder: minNv0PerCollision = %d, maxMinvPairPerCollision = %f",
+         skim.minNv0PerCollision.value, skim.maxMinvPairPerCollision.value);
 
     ccdb->setURL(ccdburl);
     ccdb->setCaching(true);
@@ -326,62 +346,62 @@ struct PhotonConversionBuilder {
         break;
     }
 
-    if (applyPCMMl) {
-      if (use2DBinning) {
-        int binsNPt = static_cast<int>(binsPtPCMMl->size()) - 1;
-        int binsNCent = static_cast<int>(binsCentPCMMl->size()) - 1;
+    if (mlcuts.applyPCMMl) {
+      if (mlcuts.use2DBinning) {
+        int binsNPt = static_cast<int>(mlcuts.binsPtPCMMl->size()) - 1;
+        int binsNCent = static_cast<int>(mlcuts.binsCentPCMMl->size()) - 1;
         int binsN = binsNPt * binsNCent;
-        if (binsN * static_cast<int>(cutDirPCMMl->size()) != static_cast<int>(cutsPCMMlFlat->size())) {
-          LOG(fatal) << "Mismatch in number of bins and cuts provided for 2D ML application: binsN * cutDirPCMMl: " << binsN * static_cast<int>(cutDirPCMMl->size()) << " bins vs. cutsPCMMlFlat: " << cutsPCMMlFlat->size() << " cuts";
+        if (binsN * static_cast<int>(mlcuts.cutDirPCMMl->size()) != static_cast<int>(mlcuts.cutsPCMMlFlat->size())) {
+          LOG(fatal) << "Mismatch in number of bins and cuts provided for 2D ML application: binsN * cutDirPCMMl: " << binsN * static_cast<int>(mlcuts.cutDirPCMMl->size()) << " bins vs. cutsPCMMlFlat: " << mlcuts.cutsPCMMlFlat->size() << " cuts";
         }
-        if (binsN != static_cast<int>(onnxFileNames->size())) {
-          LOG(fatal) << "Mismatch in number of bins and ONNX files provided for 2D ML application: binsN " << binsN << " bins vs. onnxFileNames: " << onnxFileNames->size() << " ONNX files";
+        if (binsN != static_cast<int>(mlcuts.onnxFileNames->size())) {
+          LOG(fatal) << "Mismatch in number of bins and ONNX files provided for 2D ML application: binsN " << binsN << " bins vs. onnxFileNames: " << mlcuts.onnxFileNames->size() << " ONNX files";
         }
-        if (binsN != static_cast<int>(labelsBinsPCMMl->size())) {
-          LOG(fatal) << "Mismatch in number of bins and labels provided for 2D ML application: binsN:" << binsN << " bins vs. labelsBinsPCMMl: " << labelsBinsPCMMl->size() << " labels";
+        if (binsN != static_cast<int>(mlcuts.labelsBinsPCMMl->size())) {
+          LOG(fatal) << "Mismatch in number of bins and labels provided for 2D ML application: binsN:" << binsN << " bins vs. labelsBinsPCMMl: " << mlcuts.labelsBinsPCMMl->size() << " labels";
         }
-        if (static_cast<int>(cutDirPCMMl->size()) != nClassesPCMMl) {
-          LOG(fatal) << "Mismatch in number of classes and cut directions provided for 2D ML application: nClassesPCMMl: " << nClassesPCMMl << " classes vs. cutDirPCMMl: " << cutDirPCMMl->size() << " cut directions";
+        if (static_cast<int>(mlcuts.cutDirPCMMl->size()) != mlcuts.nClassesPCMMl) {
+          LOG(fatal) << "Mismatch in number of classes and cut directions provided for 2D ML application: nClassesPCMMl: " << mlcuts.nClassesPCMMl << " classes vs. cutDirPCMMl: " << mlcuts.cutDirPCMMl->size() << " cut directions";
         }
-        if (static_cast<int>(labelsCutScoresPCMMl->size()) != nClassesPCMMl) {
-          LOG(fatal) << "Mismatch in number of labels for cut scores and number of classes provided for 2D ML application: nClassesPCMMl: " << nClassesPCMMl << " classes vs. labelsCutScoresPCMMl: " << labelsCutScoresPCMMl->size() << " labels";
+        if (static_cast<int>(mlcuts.labelsCutScoresPCMMl->size()) != mlcuts.nClassesPCMMl) {
+          LOG(fatal) << "Mismatch in number of labels for cut scores and number of classes provided for 2D ML application: nClassesPCMMl: " << mlcuts.nClassesPCMMl << " classes vs. labelsCutScoresPCMMl: " << mlcuts.labelsCutScoresPCMMl->size() << " labels";
         }
-        LabeledArray<double> cutsPCMMl(cutsPCMMlFlat->data(), binsN, nClassesPCMMl, labelsBinsPCMMl, labelsCutScoresPCMMl);
-        emMlResponse.configure2D(binsPtPCMMl, binsCentPCMMl, cutsPCMMl, cutDirPCMMl, nClassesPCMMl);
+        LabeledArray<double> cutsPCMMl(mlcuts.cutsPCMMlFlat->data(), binsN, mlcuts.nClassesPCMMl, mlcuts.labelsBinsPCMMl, mlcuts.labelsCutScoresPCMMl);
+        emMlResponse.configure2D(mlcuts.binsPtPCMMl, mlcuts.binsCentPCMMl, cutsPCMMl, mlcuts.cutDirPCMMl, mlcuts.nClassesPCMMl);
       } else {
-        int binsNPt = static_cast<int>(binsPtPCMMl->size()) - 1;
-        if (binsNPt * static_cast<int>(cutDirPCMMl->size()) != static_cast<int>(cutsPCMMlFlat->size())) {
-          LOG(fatal) << "Mismatch in number of pT bins and cuts provided for ML application: binsNPt * cutDirPCMMl:" << binsNPt * cutDirPCMMl->size() << " bins vs. cutsPCMMlFlat: " << cutsPCMMlFlat->size() << " cuts";
+        int binsNPt = static_cast<int>(mlcuts.binsPtPCMMl->size()) - 1;
+        if (binsNPt * static_cast<int>(mlcuts.cutDirPCMMl->size()) != static_cast<int>(mlcuts.cutsPCMMlFlat->size())) {
+          LOG(fatal) << "Mismatch in number of pT bins and cuts provided for ML application: binsNPt * cutDirPCMMl:" << binsNPt * mlcuts.cutDirPCMMl->size() << " bins vs. cutsPCMMlFlat: " << mlcuts.cutsPCMMlFlat->size() << " cuts";
         }
-        if (binsNPt != static_cast<int>(onnxFileNames->size())) {
-          LOG(fatal) << "Mismatch in number of pT bins and ONNX files provided for ML application: binsNPt " << binsNPt << " bins vs. onnxFileNames: " << onnxFileNames->size() << " ONNX files";
+        if (binsNPt != static_cast<int>(mlcuts.onnxFileNames->size())) {
+          LOG(fatal) << "Mismatch in number of pT bins and ONNX files provided for ML application: binsNPt " << binsNPt << " bins vs. onnxFileNames: " << mlcuts.onnxFileNames->size() << " ONNX files";
         }
-        if (binsNPt != static_cast<int>(labelsBinsPCMMl->size())) {
-          LOG(fatal) << "Mismatch in number of pT bins and labels provided for ML application: binsNPt:" << binsNPt << " bins vs. labelsBinsPCMMl: " << labelsBinsPCMMl->size() << " labels";
+        if (binsNPt != static_cast<int>(mlcuts.labelsBinsPCMMl->size())) {
+          LOG(fatal) << "Mismatch in number of pT bins and labels provided for ML application: binsNPt:" << binsNPt << " bins vs. labelsBinsPCMMl: " << mlcuts.labelsBinsPCMMl->size() << " labels";
         }
-        if (nClassesPCMMl != static_cast<int>(cutDirPCMMl->size())) {
-          LOG(fatal) << "Mismatch in number of classes and cut directions provided for ML application: nClassesPCMMl: " << nClassesPCMMl << " classes vs. cutDirPCMMl: " << cutDirPCMMl->size() << " cut directions";
+        if (mlcuts.nClassesPCMMl != static_cast<int>(mlcuts.cutDirPCMMl->size())) {
+          LOG(fatal) << "Mismatch in number of classes and cut directions provided for ML application: nClassesPCMMl: " << mlcuts.nClassesPCMMl << " classes vs. cutDirPCMMl: " << mlcuts.cutDirPCMMl->size() << " cut directions";
         }
-        if (static_cast<int>(labelsCutScoresPCMMl->size()) != nClassesPCMMl) {
-          LOG(fatal) << "Mismatch in number of labels for cut scores and number of classes provided for ML application: nClassesPCMMl:" << nClassesPCMMl << " classes vs. labelsCutScoresPCMMl: " << labelsCutScoresPCMMl->size() << " labels";
+        if (static_cast<int>(mlcuts.labelsCutScoresPCMMl->size()) != mlcuts.nClassesPCMMl) {
+          LOG(fatal) << "Mismatch in number of labels for cut scores and number of classes provided for ML application: nClassesPCMMl:" << mlcuts.nClassesPCMMl << " classes vs. labelsCutScoresPCMMl: " << mlcuts.labelsCutScoresPCMMl->size() << " labels";
         }
-        LabeledArray<double> cutsPCMMl(cutsPCMMlFlat->data(), binsNPt, nClassesPCMMl, labelsBinsPCMMl, labelsCutScoresPCMMl);
-        emMlResponse.configure(binsPtPCMMl, cutsPCMMl, cutDirPCMMl, nClassesPCMMl);
+        LabeledArray<double> cutsPCMMl(mlcuts.cutsPCMMlFlat->data(), binsNPt, mlcuts.nClassesPCMMl, mlcuts.labelsBinsPCMMl, mlcuts.labelsCutScoresPCMMl);
+        emMlResponse.configure(mlcuts.binsPtPCMMl, cutsPCMMl, mlcuts.cutDirPCMMl, mlcuts.nClassesPCMMl);
       }
-      if (loadModelsFromCCDB) {
+      if (mlcuts.loadModelsFromCCDB) {
         ccdbApi.init(ccdburl);
-        emMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+        emMlResponse.setModelPathsCCDB(mlcuts.onnxFileNames, ccdbApi, mlcuts.modelPathsCCDB, mlcuts.timestampCCDB);
       } else {
-        emMlResponse.setModelPathsLocal(onnxFileNames);
+        emMlResponse.setModelPathsLocal(mlcuts.onnxFileNames);
       }
-      emMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
+      emMlResponse.cacheInputFeaturesIndices(mlcuts.namesInputFeatures);
       emMlResponse.init();
-      if (nClassesPCMMl == o2::analysis::NClassesML::kTwo) {
+      if (mlcuts.nClassesPCMMl == o2::analysis::NClassesML::kTwo) {
         registry.add("V0/hBDTBackgroundScoreBeforeCutVsPt", "BDT background score before cut vs pT; pT (GeV/c); BDT background score", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}});
         registry.add("V0/hBDTBackgroundScoreAfterCutVsPt", "BDT background score after cut vs pT; pT (GeV/c); BDT background score", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}});
         registry.add("V0/hBDTSignalScoreBeforeCutVsPt", "BDT signal score before cut vs pT; pT (GeV/c); BDT signal score", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}});
         registry.add("V0/hBDTSignalScoreAfterCutVsPt", "BDT signal score after cut vs pT; pT (GeV/c); BDT signal score", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}});
-      } else if (nClassesPCMMl == o2::analysis::NClassesML::kThree) {
+      } else if (mlcuts.nClassesPCMMl == o2::analysis::NClassesML::kThree) {
         registry.add("V0/hBDTBackgroundScoreBeforeCutVsPt", "BDT background score before cut vs pT; pT (GeV/c); BDT background score", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}});
         registry.add("V0/hBDTBackgroundScoreAfterCutVsPt", "BDT background score after cut vs pT; pT (GeV/c); BDT background score", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}});
         registry.add("V0/hBDTPrimaryPhotonScoreBeforeCutVsPt", "BDT primary photon score before cut vs pT; pT (GeV/c); BDT primary photon score", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}});
@@ -402,11 +422,11 @@ struct PhotonConversionBuilder {
       registry.add("V0/hPsiPairPropagationCompare", "Comparison of #Psi_{pair};#Psi_{pair} proper propagation; #Psi_{pair} geom. propagation", {HistType::kTH2F, {{100, 0., 1.6}, {100, 0., 1.6}}});
     }
 
-    // Make sure the deduplicationScoreWeight is between 0 and 1
-    if (deduplicationScoreWeight > 1.f) { // o2-linter: disable=magic-number (score has to be below unity)
+    // Make sure the dedup.deduplicationScoreWeight is between 0 and 1
+    if (dedup.deduplicationScoreWeight > 1.f) { // o2-linter: disable=magic-number (score has to be below unity)
       LOG(warning) << "deduplicationScoreWeight is larger than unity which is not allowed";
     }
-    if (deduplicationScoreWeight < 0.f) { // o2-linter: disable=magic-number (score has to be above zero)
+    if (dedup.deduplicationScoreWeight < 0.f) { // o2-linter: disable=magic-number (score has to be above zero)
       LOG(warning) << "deduplicationScoreWeight is smaller than zero which is not allowed";
     }
 
@@ -414,9 +434,6 @@ struct PhotonConversionBuilder {
       const AxisSpec axQ{60, 0.f, 0.3f, "q_{inv}^{true} (GeV/c)"};
       const AxisSpec axDEta{80, -1.6f, 1.6f, "#Delta#eta_{#gamma#gamma}^{true}"};
       const AxisSpec axClass{3, -0.5f, 2.5f, "0 = true, 1 = cross-leg fake, 2 = other fake"};
-      // One folder per pair fate, with the SAME histogram names inside. The post-processing then
-      // only varies the folder, and everything belonging to one fate sits together.
-      // NB: the "lost..." folders are diagnostic selections, NOT an exclusive decomposition -
       // lostByPartnerFake is a subset of lostByCrossFake, and a pair can appear in several of them.
       for (const auto& nm : {"before", "bothSurvive", "bothSurviveSameColl", "oneLost", "bothLost",
                              "lostByCrossFake", "lostByPartnerFake", "lostByOtherFake", "lostByTrue"}) {
@@ -430,33 +447,28 @@ struct PhotonConversionBuilder {
 
       registry.add("MCDedup/Photons/hFate", "fate of the true photons;0 = alive, 1 = lost (blocked), 2 = lost (no blocker);photons", kTH1F, {{3, -0.5f, 2.5f}}, true);
       registry.add("MCDedup/Photons/hBlockerClass", "blockers of a killed true photon (ENTRIES = blockers, not photons);class of the blocker;blocker entries", kTH1F, {axBlocker}, true);
-      // only meaningful for mode 0/1, where the smaller score always wins. Mode 2 compares SETS and
-      // may deliberately keep the worse-scoring candidates, so it is not filled there.
       registry.add("MCDedup/Photons/hKillMargin", "mode 0/1 only;S_{victim} - S_{winner};kills", kTH1F, {{200, 0.f, 1.f}}, true);
       registry.add("MCDedup/Photons/hVictimVsWinnerPCA", "PCA of the two;PCA_{victim} (cm);PCA_{winner} (cm)", kTH2F, {{60, 0.f, 3.f}, {60, 0.f, 3.f}}, true);
-      // mode 2 only: why exactly was this true photon not part of the winning set?
-      // x = 0 -> an equally large solution containing it existed, only the total score decided.
-      //          That is a pure ranking problem and the part that a better discriminant can win back.
-      // x > 0 -> keeping it would have cost x candidates. Structural, no arbitration can repair it.
-      registry.add("MCDedup/Photons/hLostMargin", "why the true photon lost (mode 2);cardinality deficit;#Sigma S(best set with it) - #Sigma S(winner)",
-                   kTH2F, {{5, -0.5f, 4.5f}, {100, 0.f, 2.f}}, true);
-      if (cfgDedupTruthMaps) {
+      // Reason for photon building failure
+      // x = 0 -> an equally large solution containing it existed
+      // x > 0 -> keeping it would have cost x candidates
+      registry.add("MCDedup/Photons/hLostMargin", "why the true photon lost (mode 2);cardinality deficit;#Sigma S(best set with it) - #Sigma S(winner)", kTH2F, {{5, -0.5f, 4.5f}, {100, 0.f, 2.f}}, true);
+      if (dedup.cfgDedupTruthMaps) {
         const AxisSpec axDEtaFine{640, -1.6f, 1.6f, "#Delta#eta^{true}"};
         const AxisSpec axDPhi{144, -o2::constants::math::PI, o2::constants::math::PI, "#Delta#varphi^{true} (rad)"};
         for (const auto& nm : {"before", "bothSurvive", "bothLost", "lostByPartnerFake"}) {
-          // the fine map lands in the same folder as hQ and hDEta of that fate
           registry.add((std::string("MCDedup/Pairs/") + nm + "/hMap").c_str(), "truth photon pairs", kTHnSparseF, {axDEtaFine, axDPhi, axQ}, true);
         }
       }
     }
   }
 
-  void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
+  void initCCDB(MyBCs::iterator const& bc)
   {
     if (mRunNumber == bc.runNumber()) {
       return;
     }
-
+    mRunNumber = bc.runNumber();
     // In case override, don't proceed, please - no CCDB access required
     if (d_bz_input > -990) { // o2-linter: disable=magic-number (override value)
       d_bz = d_bz_input;
@@ -465,32 +477,15 @@ struct PhotonConversionBuilder {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f)); // o2-linter: disable=magic-number (override value)
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
-      mRunNumber = bc.runNumber();
+
       return;
     }
 
     auto run3grp_timestamp = bc.timestamp();
-    o2::parameters::GRPObject* grpo = nullptr;
-    o2::parameters::GRPMagField* grpmag = nullptr;
-    if (!skipGRPOquery) {
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
-    }
-    if (grpo != nullptr) {
-      o2::base::Propagator::initFieldFromGRP(grpo);
-      // Fetch magnetic field from ccdb for current collision
-      d_bz = grpo->getNominalL3Field();
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
-    } else {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
-      if (grpmag == nullptr) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
-      }
-      o2::base::Propagator::initFieldFromGRP(grpmag);
-      // Fetch magnetic field from ccdb for current collision
-      d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
-    }
-    mRunNumber = bc.runNumber();
+    o2::base::Propagator::initFieldFromGRP(&bc.grpMagField());
+    // Fetch magnetic field from ccdb for current collision
+    d_bz = bc.grpMagField().getNominalL3Field();
+    LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
 
     if (useMatCorrType == 2) { // o2-linter: disable=magic-number (material budget correction)
       // setMatLUT only after magfield has been initalized (setMatLUT has implicit and problematic init field call if not)
@@ -503,7 +498,7 @@ struct PhotonConversionBuilder {
     mVDriftMgr.init(&ccdb->instance());
   }
 
-  void updateCCDB(aod::BCsWithTimestamps::iterator const& bc)
+  void updateCCDB(MyBCs::iterator const& bc)
   {
     auto timestamp = bc.timestamp();
 
@@ -520,19 +515,19 @@ struct PhotonConversionBuilder {
       }
     }
 
-    if (disableITSonlyTracks && isITSonlyTrack(track)) {
+    if (trackcuts.disableITSonlyTracks && isITSonlyTrack(track)) {
       return false;
     }
 
-    if (disableTPConlyTracks && isTPConlyTrack(track)) {
+    if (trackcuts.disableTPConlyTracks && isTPConlyTrack(track)) {
       return false;
     }
 
-    if (requireITShit && !track.hasITS()) {
+    if (trackcuts.requireITShit && !track.hasITS()) {
       return false;
     }
 
-    if (track.x() > maxX) {
+    if (track.x() > trackcuts.maxX) {
       return false;
     }
 
@@ -545,26 +540,26 @@ struct PhotonConversionBuilder {
     }
 
     if (track.hasTPC()) {
-      if (track.tpcNClsFound() < min_ncluster_tpc) {
+      if (track.tpcNClsFound() < trackcuts.min_ncluster_tpc) {
         return false;
       }
-      if (track.tpcNClsCrossedRows() < mincrossedrows || track.tpcChi2NCl() > maxchi2tpc) {
+      if (track.tpcNClsCrossedRows() < trackcuts.mincrossedrows || track.tpcChi2NCl() > trackcuts.maxchi2tpc) {
         return false;
       }
-      if (track.tpcFractionSharedCls() > max_frac_shared_clusters_tpc) {
+      if (track.tpcFractionSharedCls() > trackcuts.max_frac_shared_clusters_tpc) {
         return false;
       }
-      if (track.tpcNSigmaEl() < minTPCNsigmaEl || maxTPCNsigmaEl < track.tpcNSigmaEl()) {
+      if (track.tpcNSigmaEl() < trackcuts.minTPCNsigmaEl || trackcuts.maxTPCNsigmaEl < track.tpcNSigmaEl()) {
         return false;
       }
     }
 
     if (track.hasITS()) {
-      if (track.itsChi2NCl() > maxchi2its) {
+      if (track.itsChi2NCl() > trackcuts.maxchi2its) {
         return false;
       }
 
-      if (reject_v0_on_itsib) {
+      if (v0cuts.reject_v0_on_itsib) {
         auto hits_ib = std::count_if(its_ib_Requirement.second.begin(), its_ib_Requirement.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
         bool its_ob_only = hits_ib <= its_ib_Requirement.first;
         if (!its_ob_only) {
@@ -643,7 +638,7 @@ struct PhotonConversionBuilder {
       return;
     }
 
-    if (pos.pt() < min_pt_trackiu || ele.pt() < min_pt_trackiu) {
+    if (pos.pt() < trackcuts.min_pt_trackiu || ele.pt() < trackcuts.min_pt_trackiu) {
       return;
     }
 
@@ -674,7 +669,7 @@ struct PhotonConversionBuilder {
     std::array<float, 2> dcaInfo{};
 
     auto pTrack = getTrackParCov(pos);
-    if (moveTPCTracks && isTPConlyTrack(pos) && !mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, pos, pTrack)) {
+    if (trackcuts.moveTPCTracks && isTPConlyTrack(pos) && !mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, pos, pTrack)) {
       LOGP(error, "failed correction for positive tpc track");
       return;
     }
@@ -700,7 +695,7 @@ struct PhotonConversionBuilder {
     auto posdcaZ = dcaInfo[1];
 
     auto nTrack = getTrackParCov(ele);
-    if (moveTPCTracks && isTPConlyTrack(ele) && !mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, ele, nTrack)) {
+    if (trackcuts.moveTPCTracks && isTPConlyTrack(ele) && !mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, ele, nTrack)) {
       LOGP(error, "failed correction for negative tpc track");
       return;
     }
@@ -721,17 +716,17 @@ struct PhotonConversionBuilder {
     auto eledcaXY = dcaInfo[0];
     auto eledcaZ = dcaInfo[1];
 
-    if (std::fabs(posdcaXY) < dcapostopv || std::fabs(eledcaXY) < dcanegtopv) {
+    if (std::fabs(posdcaXY) < trackcuts.dcapostopv || std::fabs(eledcaXY) < trackcuts.dcanegtopv) {
       return;
     }
 
     std::array<float, 3> xyz = {0.f, 0.f, 0.f};
     Vtx_recalculationParCov(o2::base::Propagator::Instance(), pTrack, nTrack, xyz, matCorr);
     float rxy_tmp = RecoDecay::sqrtSumOfSquares(xyz[0], xyz[1]);
-    if (rxy_tmp > maxX + margin_r_tpc) {
+    if (rxy_tmp > trackcuts.maxX + v0cuts.margin_r_tpc) {
       return;
     }
-    if (rxy_tmp < std::fabs(xyz[2]) * std::tan(2 * std::atan(std::exp(-max_eta_v0))) - margin_z) {
+    if (rxy_tmp < std::fabs(xyz[2]) * std::tan(2 * std::atan(std::exp(-v0cuts.max_eta_v0))) - v0cuts.margin_z) {
       return; // RZ line cut
     }
 
@@ -812,8 +807,8 @@ struct PhotonConversionBuilder {
     KFParticle gammaKF;
     gammaKF.SetConstructMethod(2);
     gammaKF.Construct(GammaDaughters.data(), 2);
-    if (kfMassConstrain > -0.1) { // o2-linter: disable=magic-number (nonsensical default value)
-      gammaKF.SetNonlinearMassConstraint(kfMassConstrain);
+    if (v0cuts.kfMassConstrain > -0.1) { // o2-linter: disable=magic-number (nonsensical default value)
+      gammaKF.SetNonlinearMassConstraint(v0cuts.kfMassConstrain);
     }
     KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
     KFParticle KFPV(kfpVertex);
@@ -824,23 +819,23 @@ struct PhotonConversionBuilder {
 
     float cospa_kf = cpaFromKF(gammaKF_DecayVtx, KFPV);
     if (!ele.hasITS() && !pos.hasITS()) {
-      if (cospa_kf < min_v0cospa_tpconly) {
+      if (cospa_kf < v0cuts.min_v0cospa_tpconly) {
         return;
       }
     } else {
-      if (cospa_kf < min_v0cospa_its) {
+      if (cospa_kf < v0cuts.min_v0cospa_its) {
         return;
       }
     }
 
     float rxy = RecoDecay::sqrtSumOfSquares(gammaKF_DecayVtx.GetX(), gammaKF_DecayVtx.GetY());
-    if (rxy > maxX + margin_r_tpc) {
+    if (rxy > trackcuts.maxX + v0cuts.margin_r_tpc) {
       return;
     }
-    if (rxy < std::fabs(gammaKF_DecayVtx.GetZ()) * std::tan(2 * std::atan(std::exp(-max_eta_v0))) - margin_z) {
+    if (rxy < std::fabs(gammaKF_DecayVtx.GetZ()) * std::tan(2 * std::atan(std::exp(-v0cuts.max_eta_v0))) - v0cuts.margin_z) {
       return; // RZ line cut
     }
-    if (rxy < min_v0radius || max_v0radius < rxy) {
+    if (rxy < v0cuts.min_v0radius || v0cuts.max_v0radius < rxy) {
       return;
     }
 
@@ -861,28 +856,28 @@ struct PhotonConversionBuilder {
     }
 
     if (pos.hasITS() && ele.hasITS()) { // ITSonly-ITSonly, ITSTPC-ITSTPC, ITSTPC-ITSonly
-      if (rxy > std::min(pTrack.getX(), nTrack.getX()) + margin_r_its) {
+      if (rxy > std::min(pTrack.getX(), nTrack.getX()) + v0cuts.margin_r_its) {
         return;
       }
     } else if (!pos.hasITS() && ele.hasITS()) { // ITSTPC-TPC
-      if (rxy > std::min(83.f, nTrack.getX()) + margin_r_itstpc_tpc) {
+      if (rxy > std::min(83.f, nTrack.getX()) + v0cuts.margin_r_itstpc_tpc) {
         return;
       }
     } else if (pos.hasITS() && !ele.hasITS()) { // ITSTPC-TPC
-      if (rxy > std::min(pTrack.getX(), 83.f) + margin_r_itstpc_tpc) {
+      if (rxy > std::min(pTrack.getX(), 83.f) + v0cuts.margin_r_itstpc_tpc) {
         return;
       }
     } else if (!pos.hasITS() && !ele.hasITS()) { // TPC-TPC
-      if (rxy > std::min(83.f, 83.f) + margin_r_tpc) {
+      if (rxy > std::min(83.f, 83.f) + v0cuts.margin_r_tpc) {
         return;
       }
     }
 
-    if ((!pos.hasITS() || !ele.hasITS()) && rxy < max_r_req_its) { // conversion points smaller than max_r_req_its have to be detected with ITS hits.
+    if ((!pos.hasITS() || !ele.hasITS()) && rxy < v0cuts.max_r_req_its) { // conversion points smaller than v0cuts.max_r_req_its have to be detected with ITS hits.
       return;
     }
 
-    if ((!pos.hasITS() && !ele.hasITS()) && rxy < min_r_tpconly) { // TPConly tracks can detect conversion points larger than min_r_tpconly.
+    if ((!pos.hasITS() && !ele.hasITS()) && rxy < v0cuts.min_r_tpconly) { // TPConly tracks can detect conversion points larger than v0cuts.min_r_tpconly.
       return;
     }
 
@@ -900,11 +895,11 @@ struct PhotonConversionBuilder {
     // LOGF(info, "gammaKF_PV.GetPy() = %f, gammaKF_DecayVtx.GetPy() = %f, gammaKF_DecayVtx2.GetPy() = %f", gammaKF_PV.GetPy(), gammaKF_DecayVtx.GetPy(), gammaKF_DecayVtx2.GetPy());
     // LOGF(info, "gammaKF_PV.GetPz() = %f, gammaKF_DecayVtx.GetPz() = %f, gammaKF_DecayVtx2.GetPz() = %f", gammaKF_PV.GetPz(), gammaKF_DecayVtx.GetPz(), gammaKF_DecayVtx2.GetPz());
 
-    if (std::fabs(v0eta) > max_eta_v0 || v0pt < min_pt_v0) {
+    if (std::fabs(v0eta) > v0cuts.max_eta_v0 || v0pt < v0cuts.min_pt_v0) {
       return;
     }
 
-    if (isITSonlyTrack(ele) && isITSonlyTrack(pos) && v0pt > max_pt_v0_itsonly) {
+    if (isITSonlyTrack(ele) && isITSonlyTrack(pos) && v0pt > v0cuts.max_pt_v0_itsonly) {
       return;
     }
 
@@ -915,36 +910,36 @@ struct PhotonConversionBuilder {
 
     float cospaXYKF = cospaXY_KF(gammaKF_DecayVtx, KFPV);
     float cospaRZKF = cospaRZ_KF(gammaKF_DecayVtx, KFPV);
-    auto centType = static_cast<CentType>(centTypePCMMl.value);
+    auto centType = static_cast<CentType>(mlcuts.centTypePCMMl.value);
     v0photoncandidate.setPhotonCandidate(gammaKF_DecayVtx, gammaKF_PV, pos, kfp_pos_DecayVtx, ele, kfp_ele_DecayVtx, collision, cospaXYKF, cospaRZKF, cospaXYKF, psipair, phiv, centType, posdcaXY, eledcaXY, posdcaZ, eledcaZ);
 
     if (!ele.hasITS() && !pos.hasITS()) { // V0s with TPConly-TPConly
-      if (max_r_itsmft_ss < rxy && rxy < maxX + margin_r_tpc) {
-        if (v0photoncandidate.getPCA() > max_dcav0dau_tpc_inner_fc) {
+      if (v0cuts.max_r_itsmft_ss < rxy && rxy < trackcuts.maxX + v0cuts.margin_r_tpc) {
+        if (v0photoncandidate.getPCA() > v0cuts.max_dcav0dau_tpc_inner_fc) {
           return;
         }
       } else {
-        if (v0photoncandidate.getPCA() > max_dcav0dau_tpconly) {
+        if (v0photoncandidate.getPCA() > v0cuts.max_dcav0dau_tpconly) {
           return;
         }
       }
     } else { // V0s with ITS hits
-      if (rxy < max_r_req_its) {
-        if (v0photoncandidate.getPCA() > max_dcav0dau_itsibss) {
+      if (rxy < v0cuts.max_r_req_its) {
+        if (v0photoncandidate.getPCA() > v0cuts.max_dcav0dau_itsibss) {
           return;
         }
       } else {
-        if (v0photoncandidate.getPCA() > max_dcav0dau_its) {
+        if (v0photoncandidate.getPCA() > v0cuts.max_dcav0dau_its) {
           return;
         }
       }
     }
 
-    if (isITSonlyTrack(pos) && v0photoncandidate.getPosPt() > maxpt_itsonly) {
+    if (isITSonlyTrack(pos) && v0photoncandidate.getPosPt() > trackcuts.maxpt_itsonly) {
       return;
     }
 
-    if (isITSonlyTrack(ele) && v0photoncandidate.getElePt() > maxpt_itsonly) {
+    if (isITSonlyTrack(ele) && v0photoncandidate.getElePt() > trackcuts.maxpt_itsonly) {
       return;
     }
 
@@ -952,11 +947,11 @@ struct PhotonConversionBuilder {
       return;
     }
 
-    if (std::fabs(v0photoncandidate.getDcaXYToPV()) > max_dcatopv_xy_v0 || std::fabs(v0photoncandidate.getDcaZToPV()) > max_dcatopv_z_v0) {
+    if (std::fabs(v0photoncandidate.getDcaXYToPV()) > v0cuts.max_dcatopv_xy_v0 || std::fabs(v0photoncandidate.getDcaZToPV()) > v0cuts.max_dcatopv_z_v0) {
       return;
     }
 
-    if (!checkAP(v0photoncandidate.getAlpha(), v0photoncandidate.getQt(), max_alpha_ap, max_qt_ap)) { // store only photon conversions
+    if (!checkAP(v0photoncandidate.getAlpha(), v0photoncandidate.getQt(), v0cuts.max_alpha_ap, v0cuts.max_qt_ap)) { // store only photon conversions
       return;
     }
     pca_map[std::make_tuple(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex())] = v0photoncandidate.getPCA();
@@ -966,24 +961,27 @@ struct PhotonConversionBuilder {
     ROOT::Math::PxPyPzMVector veleDedup(kfp_ele_DecayVtx.GetPx(), kfp_ele_DecayVtx.GetPy(), kfp_ele_DecayVtx.GetPz(), o2::constants::physics::MassElectron);
     const auto meeSV = static_cast<float>((vposDedup + veleDedup).M());
 
-    const auto score = getScoreV0(v0photoncandidate.getCosPA(), v0photoncandidate.getPCA(), deduplicationScoreWeight);
+    const auto score = getScoreV0(v0photoncandidate.getCosPA(), v0photoncandidate.getPCA(), dedup.deduplicationScoreWeight);
     V0CandidateHelper v0Helper(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex(),
                                v0photoncandidate.getCosPA(), v0photoncandidate.getPCA(), score, meeSV);
+    v0Helper.pxAtPV = gammaKF_PV.GetPx();
+    v0Helper.pyAtPV = gammaKF_PV.GetPy();
+    v0Helper.pzAtPV = gammaKF_PV.GetPz();
     vecV0Dedup.emplace_back(v0Helper);
 
-    if (applyPCMMl) {
+    if (mlcuts.applyPCMMl) {
       bool isSelectedML = false;
       std::vector<float> mlInputFeatures = emMlResponse.getInputFeatures(v0photoncandidate, pos, ele);
-      if (use2DBinning) {
+      if (mlcuts.use2DBinning) {
         isSelectedML = emMlResponse.isSelectedMl(mlInputFeatures, v0photoncandidate.getPt(), v0photoncandidate.getCent(), outputML);
       } else {
         isSelectedML = emMlResponse.isSelectedMl(mlInputFeatures, v0photoncandidate.getPt(), outputML);
       }
       if (filltable) {
-        if (nClassesPCMMl == o2::analysis::NClassesML::kTwo) {
+        if (mlcuts.nClassesPCMMl == o2::analysis::NClassesML::kTwo) {
           registry.fill(HIST("V0/hBDTBackgroundScoreBeforeCutVsPt"), v0photoncandidate.getPt(), outputML[0]);
           registry.fill(HIST("V0/hBDTSignalScoreBeforeCutVsPt"), v0photoncandidate.getPt(), outputML[1]);
-        } else if (nClassesPCMMl == o2::analysis::NClassesML::kThree) {
+        } else if (mlcuts.nClassesPCMMl == o2::analysis::NClassesML::kThree) {
           registry.fill(HIST("V0/hBDTPrimaryPhotonScoreBeforeCutVsPt"), v0photoncandidate.getPt(), outputML[0]);
           registry.fill(HIST("V0/hBDTSecondaryPhotonScoreBeforeCutVsPt"), v0photoncandidate.getPt(), outputML[1]);
           registry.fill(HIST("V0/hBDTBackgroundScoreBeforeCutVsPt"), v0photoncandidate.getPt(), outputML[2]);
@@ -995,10 +993,10 @@ struct PhotonConversionBuilder {
         return;
       }
       if (filltable) {
-        if (nClassesPCMMl == o2::analysis::NClassesML::kTwo) {
+        if (mlcuts.nClassesPCMMl == o2::analysis::NClassesML::kTwo) {
           registry.fill(HIST("V0/hBDTBackgroundScoreAfterCutVsPt"), v0photoncandidate.getPt(), outputML[0]);
           registry.fill(HIST("V0/hBDTSignalScoreAfterCutVsPt"), v0photoncandidate.getPt(), outputML[1]);
-        } else if (nClassesPCMMl == o2::analysis::NClassesML::kThree) {
+        } else if (mlcuts.nClassesPCMMl == o2::analysis::NClassesML::kThree) {
           registry.fill(HIST("V0/hBDTPrimaryPhotonScoreAfterCutVsPt"), v0photoncandidate.getPt(), outputML[0]);
           registry.fill(HIST("V0/hBDTSecondaryPhotonScoreAfterCutVsPt"), v0photoncandidate.getPt(), outputML[1]);
           registry.fill(HIST("V0/hBDTBackgroundScoreAfterCutVsPt"), v0photoncandidate.getPt(), outputML[2]);
@@ -1095,7 +1093,7 @@ struct PhotonConversionBuilder {
 
       nv0_map[collision.globalIndex()] = 0;
 
-      const auto& bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
+      const auto& bc = collision.template foundBC_as<MyBCs>();
       initCCDB(bc);
       registry.fill(HIST("hCollisionCounter"), 1);
 
@@ -1114,7 +1112,7 @@ struct PhotonConversionBuilder {
     stored_fullv0Ids.reserve(pca_map.size()); // number of photon candidates per DF
 
     // find minimal pca
-    if (deduplicationMode == V0DeduplicationMode::Pairwise) {
+    if (dedup.deduplicationMode == V0DeduplicationMode::Pairwise) {
       for (const auto& [key, value] : pca_map) {
         auto v0Id = std::get<0>(key);
         auto collisionId = std::get<1>(key);
@@ -1169,9 +1167,8 @@ struct PhotonConversionBuilder {
       } // end of pca_map loop
       // LOGF(info, "pca_map.size() = %d", pca_map.size());
 
-    } else if (deduplicationMode == V0DeduplicationMode::KeepAll) {
-      // Keep-all: Every candidate that survived the quality cuts is stored, INCLUDING the
-      // collision duplicates.
+    } else if (dedup.deduplicationMode == V0DeduplicationMode::KeepAll) {
+      // Keep-all: Every candidate that survived the quality cuts is stored, including all duplicates
       stored_v0Ids.clear();
       stored_fullv0Ids.clear();
       nv0_map.clear();
@@ -1184,8 +1181,8 @@ struct PhotonConversionBuilder {
                 [](const auto& a, const auto& b) {
                   return std::get<1>(a) < std::get<1>(b);
                 });
-    } else if (deduplicationMode == V0DeduplicationMode::GroupMatching) {
-      const int maxEnum = std::min(dedupMaxGroupSize.value, 16); // o2-linter: disable=magic-number (subset check of photons)
+    } else if (dedup.deduplicationMode == V0DeduplicationMode::GroupMatching) {
+      const int maxEnum = std::min(dedup.dedupMaxGroupSize.value, 16); // o2-linter: disable=magic-number (subset check of photons)
       const int nCand = static_cast<int>(vecV0Dedup.size());
       stored_v0Ids.clear();
       stored_fullv0Ids.clear();
@@ -1223,8 +1220,7 @@ struct PhotonConversionBuilder {
         const int nMembers = static_cast<int>(members.size());
         std::vector<char> selected(nMembers, 0);
 
-        // Fix the order inside the group: best score first, ties by v0ID. This makes the
-        // result independent of the order in which the candidates ended up in vecV0Dedup.
+        // Fix the order inside the group: best score first
         std::sort(members.begin(), members.end(), [this](int a, int b) {
           if (vecV0Dedup[a].score != vecV0Dedup[b].score) {
             return vecV0Dedup[a].score < vecV0Dedup[b].score;
@@ -1233,10 +1229,9 @@ struct PhotonConversionBuilder {
         });
 
         if (nMembers == 1) {
-          selected[0] = 1; // no conflict -> always kept
+          selected[0] = 1;
         } else if (nMembers <= maxEnum) {
-          // Exact. Instead of comparing track IDs for every subset, each leg of the group gets
-          // a local bit number; "share a leg" is then a single bitwise AND.
+
           std::unordered_map<int, int> legBit;
           std::vector<uint64_t> legMask(nMembers, 0);
           for (int k = 0; k < nMembers; ++k) {
@@ -1248,9 +1243,7 @@ struct PhotonConversionBuilder {
           uint32_t bestMask = 0;
           int bestCount = 0;
           float bestScore = 0.f;
-          // per candidate: the best solution that CONTAINS it. Comparing that against the overall
-          // best tells afterwards whether a rejected candidate lost on cardinality (structural,
-          // no algorithm can help) or on total score in a tie (a ranking problem, i.e. fixable).
+
           std::vector<int> bestWithCount(nMembers, -1);
           std::vector<float> bestWithScore(nMembers, 0.f);
           for (uint32_t mask = 1; mask < (1u << nMembers); ++mask) {
@@ -1273,9 +1266,7 @@ struct PhotonConversionBuilder {
             if (!disjoint) {
               continue;
             }
-            // lexicographic: cardinality first, then total score. Strict comparisons mean the
-            // lowest mask wins a true tie, and since members is sorted by score those are the
-            // better candidates.
+
             if (count > bestCount || (count == bestCount && scoreSum < bestScore)) {
               bestCount = count;
               bestScore = scoreSum;
@@ -1303,8 +1294,7 @@ struct PhotonConversionBuilder {
             }
           }
         } else {
-          // Too large to enumerate: greedy by score (members is already sorted that way). This
-          // gives a maximal, not necessarily a maximum matching, so it is counted below.
+          // Too large to enumerate: greedy by score (members is already sorted that way)
           ++nGreedyFallback;
           std::vector<int> usedTracks;
           usedTracks.reserve(2 * nMembers);
@@ -1332,9 +1322,7 @@ struct PhotonConversionBuilder {
           if (diag == nullptr) {
             continue;
           }
-          // Record ALL winners that took a leg of this candidate. A cross-leg fake is typically
-          // blocked by TWO different true photons (one per leg); storing only the first would
-          // make the later MC cause-of-loss attribution depend on the loop order.
+          // all winners that took one leg
           const CandKey victimKey = std::make_tuple(static_cast<int64_t>(cand.v0ID), static_cast<int64_t>(cand.colID),
                                                     static_cast<int64_t>(cand.posID), static_cast<int64_t>(cand.eleID));
           for (int j = 0; j < nMembers; ++j) {
@@ -1414,9 +1402,46 @@ struct PhotonConversionBuilder {
       diag->stored = stored_fullv0Ids;
     }
 
+    std::set<int64_t> skimRejected;
+    if (skim.minNv0PerCollision > 0 || skim.maxMinvPairPerCollision > 0.f) {
+      const std::set<CandKey> storedSetSkim(stored_fullv0Ids.begin(), stored_fullv0Ids.end());
+      std::unordered_map<int64_t, std::vector<const V0CandidateHelper*>> candsPerColl;
+      for (const auto& c : vecV0Dedup) {
+        if (storedSetSkim.contains(std::make_tuple(static_cast<int64_t>(c.v0ID), static_cast<int64_t>(c.colID),
+                                                   static_cast<int64_t>(c.posID), static_cast<int64_t>(c.eleID)))) {
+          candsPerColl[c.colID].push_back(&c);
+        }
+      }
+      for (const auto& [colId, cands] : candsPerColl) {
+        if (skim.minNv0PerCollision > 0 && static_cast<int>(cands.size()) < skim.minNv0PerCollision) {
+          skimRejected.insert(colId);
+          continue;
+        }
+        if (skim.maxMinvPairPerCollision > 0.f) {
+          bool hasLowMPair = false;
+          for (size_t i = 0; i < cands.size() && !hasLowMPair; ++i) {
+            for (size_t j = i + 1; j < cands.size(); ++j) {
+              ROOT::Math::PxPyPzMVector v1(cands[i]->pxAtPV, cands[i]->pyAtPV, cands[i]->pzAtPV, 0.f);
+              ROOT::Math::PxPyPzMVector v2(cands[j]->pxAtPV, cands[j]->pyAtPV, cands[j]->pzAtPV, 0.f);
+              if ((v1 + v2).M() < skim.maxMinvPairPerCollision) {
+                hasLowMPair = true;
+                break;
+              }
+            }
+          }
+          if (!hasLowMPair) {
+            skimRejected.insert(colId);
+          }
+        }
+      }
+    }
+
     for (const auto& fullv0Id : stored_fullv0Ids) {
       auto v0Id = std::get<0>(fullv0Id);
-      // auto collisionId = std::get<1>(fullv0Id);
+      const auto collisionId = std::get<1>(fullv0Id);
+      if (skimRejected.contains(collisionId)) {
+        continue; // collision failed the skim - do not store its photons/legs
+      }
       // auto posId = std::get<2>(fullv0Id);
       // auto eleId = std::get<3>(fullv0Id);
       // LOGF(info, "!accept! | collision id = %d | v0id = %d , posid = %d , eleid = %d", collisionId, v0Id, posId, eleId);
@@ -1460,9 +1485,6 @@ struct PhotonConversionBuilder {
     kBothSurvive,
     kOneLost,
     kBothLost,
-    // NB: the four "lostBy..." entries are diagnostic selections, NOT an exclusive decomposition.
-    // kLostByPartnerFake is a SUBSET of kLostByCrossFake, and cross + other + true do not add up
-    // to oneLost + bothLost (a pair can lose two photons to two different blockers).
     kLostByCrossFake,
     kLostByPartnerFake,
     kLostByOtherFake,
@@ -1511,7 +1533,7 @@ struct PhotonConversionBuilder {
 
   void fillTruthPairMap(int fate, float dEta, float dPhi, float q)
   {
-    if (!cfgDedupTruthMaps) {
+    if (!dedup.cfgDedupTruthMaps) {
       return;
     }
     switch (fate) {
@@ -1558,9 +1580,6 @@ struct PhotonConversionBuilder {
       }
     }
 
-    // ---- per true photon: which photon passed and which one was removed
-    // IMPORTANT: a photon is lost only when ALL of its candidates died, so all of them are asked
-    // for blockers, not just the best one - different candidates have different opponents.
     struct PhotonFate {
       bool alive = false;
       int best = -1;                // best-score candidate, only used for the margin plots
@@ -1583,8 +1602,6 @@ struct PhotonConversionBuilder {
       }
     }
 
-    // motherId -> indices of ALL candidates that took a leg from this photon. Empty means the
-    // photon disappeared without anybody claiming a leg: then the mode cut, it did not dedup.
     std::map<int64_t, std::vector<int>> blockersOfPhoton;
     for (const auto& [mid, f] : fate) {
       if (f.alive) {
@@ -1625,9 +1642,7 @@ struct PhotonConversionBuilder {
       if (bestDeficit >= 0) {
         registry.fill(HIST("MCDedup/Photons/hLostMargin"), static_cast<float>(bestDeficit), bestExcess);
       }
-
-      // ONE entry per photon, so the photon-level survival rate is comparable between modes.
-      // hVictimBlockerClass below counts one entry per BLOCKER and a victim can have two.
+      // hVictimBlockerClass below counts one entry per blocker and a victim can have two.
       registry.fill(HIST("MCDedup/Photons/hFate"), blockers.empty() ? 2.f : 1.f);
 
       if (blockers.empty()) {
@@ -1637,9 +1652,9 @@ struct PhotonConversionBuilder {
       for (const int& w : blockers) {
         registry.fill(HIST("MCDedup/Photons/hBlockerClass"), static_cast<float>(cls[w]));
       }
-      // margin and PCA comparison relate the best candidate to its blocker - that is only the
-      // quantity that decided in mode 0/1. Mode 2 compares sets, so it is skipped there.
-      if (f.best >= 0 && deduplicationMode.value < static_cast<int>(V0DeduplicationMode::GroupMatching)) {
+      // margin and PCA comparison relation the best candidate to its blocker
+
+      if (f.best >= 0 && dedup.deduplicationMode.value < static_cast<int>(V0DeduplicationMode::GroupMatching)) {
         const int w = blockers.front();
         registry.fill(HIST("MCDedup/Photons/hKillMargin"), diag.snapshot[f.best].score - diag.snapshot[w].score);
         registry.fill(HIST("MCDedup/Photons/hVictimVsWinnerPCA"), diag.snapshot[f.best].pca, diag.snapshot[w].pca);
@@ -1690,8 +1705,7 @@ struct PhotonConversionBuilder {
             fillTruthPairMap(kBothLost, dEta, dPhi, qTrue);
           }
 
-          // Who killed them? These four flags are DIAGNOSES, not a decomposition: partnerFake is
-          // a subset of crossFake, and one pair can end up in several categories at once.
+          // Reason for photon building failure
           bool byCross = false, byPartner = false, byOther = false, byTrue = false;
           auto attribute = [&](int64_t victim, int64_t partner) {
             if (fate.at(victim).alive) {
@@ -1704,15 +1718,14 @@ struct PhotonConversionBuilder {
             for (const int& w : itB->second) {
               if (cls[w] == kV0CrossLegFake) {
                 byCross = true;
-                // partner fake = a cross-leg fake using a leg of the OTHER photon of this very
-                // pair -> the double-kill mechanism
+                // partner fake = a cross-leg fake using a leg of the other photon
                 if (motherPos[w] == partner || motherEle[w] == partner) {
                   byPartner = true;
                 }
               } else if (cls[w] == kV0OtherFake) {
                 byOther = true;
               } else if (cls[w] == kV0True) {
-                byTrue = true; // real photon against real photon: not repairable by any algorithm
+                byTrue = true; // real photon against real photon
               }
             }
           };
@@ -1736,20 +1749,20 @@ struct PhotonConversionBuilder {
     }
   }
 
-  void processRec(MyCollisions const& collisions, FilteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
+  void processRec(MyCollisions const& collisions, FilteredV0s const& v0s, MyTracksIU const& tracks, MyBCs const& bcs)
   {
     build<false, false, false>(collisions, v0s, tracks, bcs);
   }
   PROCESS_SWITCH(PhotonConversionBuilder, processRec, "process reconstructed info for data", true);
 
-  // void processRec_SWT(MyCollisionsWithSWT const& collisions, FilteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
+  // void processRec_SWT(MyCollisionsWithSWT const& collisions, FilteredV0s const& v0s, MyTracksIU const& tracks, MyBCs const& bcs)
   // {
   //   build<false, true, false>(collisions, v0s, tracks, bcs);
   // }
   // PROCESS_SWITCH(PhotonConversionBuilder, processRec_SWT, "process reconstructed info for data", false);
 
   void processMC(MyCollisionsMC const& collisions, FilteredV0s const& v0s, MyTracksIUMC const& tracks,
-                 aod::BCsWithTimestamps const& bcs, aod::McParticles const& mcparticles)
+                 MyBCs const& bcs, aod::McParticles const& mcparticles)
   {
     DedupDiag diag;
     build<true, false, false>(collisions, v0s, tracks, bcs, &diag);
@@ -1757,13 +1770,13 @@ struct PhotonConversionBuilder {
   }
   PROCESS_SWITCH(PhotonConversionBuilder, processMC, "process reconstructed info for MC", false);
 
-  void processRec_OnlyIfDielectron(soa::Join<MyCollisions, aod::EMEventsNee> const& collisions, FilteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
+  void processRec_OnlyIfDielectron(soa::Join<MyCollisions, aod::EMEventsNee> const& collisions, FilteredV0s const& v0s, MyTracksIU const& tracks, MyBCs const& bcs)
   {
     build<false, false, true>(collisions, v0s, tracks, bcs);
   }
   PROCESS_SWITCH(PhotonConversionBuilder, processRec_OnlyIfDielectron, "process reconstructed info for data", false);
 
-  // void processRec_SWT_OnlyIfDielectron(soa::Join<MyCollisionsWithSWT, aod::EMEventsNee> const& collisions, FilteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
+  // void processRec_SWT_OnlyIfDielectron(soa::Join<MyCollisionsWithSWT, aod::EMEventsNee> const& collisions, FilteredV0s const& v0s, MyTracksIU const& tracks, MyBCs const& bcs)
   // {
   //   build<false, true, true>(collisions, v0s, tracks, bcs);
   // }

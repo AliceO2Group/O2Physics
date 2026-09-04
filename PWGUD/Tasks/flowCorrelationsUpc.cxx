@@ -281,11 +281,15 @@ struct FlowCorrelationsUpc {
         return false;
       }
       // if A or C gap is requested, keep corresponding neutron class
-      if (cfgGapSide == 0 || cfgGapSide == 1) {
-        if ((cfgGapSide == 0 && neutronClass == 1) || (cfgGapSide == 1 && neutronClass == 2)) { // o2-linter: disable=magic-number (ZDC time cut)
-          // accepted
-        } else {
-          return false;
+      if (cfgGapSideMerge) {
+        // accepted
+      } else {
+        if (cfgGapSide == 0 || cfgGapSide == 1) {
+          if ((cfgGapSide == 0 && neutronClass == 1) || (cfgGapSide == 1 && neutronClass == 2)) { // o2-linter: disable=magic-number (ZDC time cut)
+            // accepted
+          } else {
+            return false;
+          }
         }
       }
     }
@@ -470,9 +474,11 @@ struct FlowCorrelationsUpc {
       double phi1 = RecoDecay::phi(momentum1);
       double eta1 = RecoDecay::eta(momentum1);
 
-      float weff1 = 1., wacc1 = 1.;
+      float weff1 = 1.;
+      if (!getEfficiencyCorrection(weff1, eta1, pt1, posZ))
+        continue;
       if (system == SameEvent) {
-        registry.fill(HIST("Trig_hist"), fSampleIndex, posZ, independent, pt1, eventWeight * weff1 * wacc1);
+        registry.fill(HIST("Trig_hist"), fSampleIndex, posZ, independent, pt1, eventWeight * weff1);
       }
 
       for (auto const& track2 : tracks2) {
@@ -495,7 +501,7 @@ struct FlowCorrelationsUpc {
         double phi2 = RecoDecay::phi(momentum2);
         double eta2 = RecoDecay::eta(momentum2);
 
-        float weff2 = 1., wacc2 = 1.;
+        float weff2 = 1.;
         if (mEfficiency) {
           weff2 = efficiencyCache[track2.filteredIndex()];
         } else {
@@ -505,7 +511,7 @@ struct FlowCorrelationsUpc {
         float deltaPhi = RecoDecay::constrainAngle(phi1 - phi2, -PIHalf);
         float deltaEta = eta1 - eta2;
 
-        float weight = eventWeight * weff1 * weff2 * wacc1 * wacc2;
+        float weight = eventWeight * weff1 * weff2;
 
         // Merging cut
         if (std::abs(deltaEta) < cfgCutMerging) {

@@ -53,6 +53,7 @@ enum CprHist {
   kRadius6,
   kRadius7,
   kRadius8,
+  kKinematic, // kinematic variable of the pair/triplet which are blocked
   kPhi1VsPhi2,
   kEta1VsEta2,
   kCprHistogramLast
@@ -64,15 +65,18 @@ struct ConfCpr : o2::framework::ConfigurableGroup {
   std::string prefix = std::string(Prefix);
   o2::framework::Configurable<bool> cutAverage{"cutAverage", true, "Apply CPR if the average deta-dphistar is below the configured values"};
   o2::framework::Configurable<bool> cutAnyRadius{"cutAnyRadius", false, "Apply CPR if the deta-dphistar is below the configured values at any radius"};
+  o2::framework::Configurable<bool> cutElipsoidal{"cutElipsoidal", true, "If true, apply CPR as episoidal cut. If false use rectangluar cut."};
   o2::framework::Configurable<bool> plotAllRadii{"plotAllRadii", true, "Plot deta-dphi distribution at all radii"};
   o2::framework::Configurable<bool> plotAverage{"plotAverage", true, "Plot average deta dphi distribution"};
   o2::framework::Configurable<bool> plotAngularCorrelation{"plotAngularCorrelation", false, "Plot angular correlation of particles (eta1 vs eta2 & phi1 vs phi2"};
+  o2::framework::Configurable<bool> plotKinematic{"plotKinematic", true, "Plot kinematic (kstar/Q3) distribution of blocked pairs/triplets"};
   o2::framework::Configurable<float> detaMax{"detaMax", 0.01f, "Maximium deta"};
   o2::framework::Configurable<float> dphistarMax{"dphistarMax", 0.01f, "Maximum dphistar"};
   o2::framework::Configurable<float> detaCenter{"detaCenter", 0.f, "Center of deta cut"};
   o2::framework::Configurable<float> dphistarCenter{"dphistarCenter", 0.f, "Center of dphistar cut"};
   o2::framework::Configurable<float> kinematicMin{"kinematicMin", -1.f, "Minimum kstar/Q3 of pair/triplet for plotting (Set to negative value to turn off the cut)"};
   o2::framework::Configurable<float> kinematicMax{"kinematicMax", -1.f, "Maximum kstar/Q3 of pair/triplet for plotting (Set to negative value to turn off the cut)"};
+  o2::framework::ConfigurableAxis binningKinematic{"binningKinematic", {100, 0, 1}, "Binning of kinematic variable of pair/triplet which are cut"};
   o2::framework::ConfigurableAxis binningDeta{"binningDeta", {{250, -0.5, 0.5}}, "deta"};
   o2::framework::ConfigurableAxis binningDphistar{"binningDphistar", {{250, -0.5, 0.5}}, "dphi"};
   o2::framework::ConfigurableAxis binningCorrelationPhi{"binningCorrelationPhi", {{720, 0, o2::constants::math::TwoPI}}, "Phi binning for correlation plot"};
@@ -84,6 +88,9 @@ struct ConfCpr : o2::framework::ConfigurableGroup {
 constexpr const char PrefixCprTrackTrack[] = "CprTrackTrack";
 constexpr const char PrefixCprTrackV0Daughter[] = "CprTrackV0Daughter";
 constexpr const char PrefixCprTrackD0Daughter[] = "CprTrackD0Daughter";
+constexpr const char PrefixCprTrackLcProton[] = "CprTrackLcProton";
+constexpr const char PrefixCprTrackLcKaon[] = "CprTrackLcKaon";
+constexpr const char PrefixCprTrackLcPion[] = "CprTrackLcPion";
 constexpr const char PrefixCprD0DaughterD0DaughterPos[] = "CprD0DaughterD0DaughterPos";
 constexpr const char PrefixCprD0DaughterD0DaughterNeg[] = "CprD0DaughterD0DaughterNeg";
 constexpr const char PrefixCprTrackResonanceDaughter[] = "CprTrackResonanceDaughter";
@@ -98,6 +105,9 @@ constexpr const char PrefixCprTrackCascadeBachelor[] = "CprTrackCascadeBachelor"
 using ConfCprTrackTrack = ConfCpr<PrefixCprTrackTrack>;
 using ConfCprTrackV0Daughter = ConfCpr<PrefixCprTrackV0Daughter>;
 using ConfCprTrackD0Daughter = ConfCpr<PrefixCprTrackD0Daughter>;
+using ConfCprTrackLcProton = ConfCpr<PrefixCprTrackLcProton>;
+using ConfCprTrackLcKaon = ConfCpr<PrefixCprTrackLcKaon>;
+using ConfCprTrackLcPion = ConfCpr<PrefixCprTrackLcPion>;
 using ConfCprD0DaugherD0DaughterPos = ConfCpr<PrefixCprD0DaughterD0DaughterPos>;
 using ConfCprD0DaugherD0DaughterNeg = ConfCpr<PrefixCprD0DaughterD0DaughterNeg>;
 using ConfCprTrackResonanceDaughter = ConfCpr<PrefixCprTrackResonanceDaughter>;
@@ -123,6 +133,12 @@ constexpr char PrefixD0D0PosSe[] = "CPR_D0D0_PosDau/SE/";
 constexpr char PrefixD0D0NegSe[] = "CPR_D0D0_NegDau/SE/";
 constexpr char PrefixD0D0PosMe[] = "CPR_D0D0_PosDau/ME/";
 constexpr char PrefixD0D0NegMe[] = "CPR_D0D0_NegDau/ME/";
+constexpr char PrefixTrackLcProtonSe[] = "CPR_TrackLc_Proton/SE/";
+constexpr char PrefixTrackLcKaonSe[] = "CPR_TrackLc_Kaon/SE/";
+constexpr char PrefixTrackLcPionSe[] = "CPR_TrackLc_Pion/SE/";
+constexpr char PrefixTrackLcProtonMe[] = "CPR_TrackLc_Proton/ME/";
+constexpr char PrefixTrackLcKaonMe[] = "CPR_TrackLc_Kaon/ME/";
+constexpr char PrefixTrackLcPionMe[] = "CPR_TrackLc_Pion/ME/";
 constexpr char PrefixV0V0PosSe[] = "CPR_V0V0_PosDau/SE/";
 constexpr char PrefixV0V0NegSe[] = "CPR_V0V0_NegDau/SE/";
 constexpr char PrefixV0V0PosMe[] = "CPR_V0V0_PosDau/ME/";
@@ -153,6 +169,7 @@ constexpr std::array<histmanager::HistInfo<CprHist>, kCprHistogramLast> HistTabl
    {kRadius6, o2::framework::HistType::kTH2F, "hRadius6", "Radius 6: #Delta #eta vs #Delta #phi*; #Delta #eta; #Delta #phi*"},
    {kRadius7, o2::framework::HistType::kTH2F, "hRadius7", "Radius 7: #Delta #eta vs #Delta #phi*; #Delta #eta; #Delta #phi*"},
    {kRadius8, o2::framework::HistType::kTH2F, "hRadius8", "Radius 8: #Delta #eta vs #Delta #phi*; #Delta #eta; #Delta #phi*"},
+   {kKinematic, o2::framework::HistType::kTH1F, "hKinematic", "Kinematic distribution of blocked pairs; kinematic Variable (GeV/c#it{c}); Entries"},
    {kPhi1VsPhi2, o2::framework::HistType::kTH2F, "hPhi1vsPhi2", "#phi_{1} vs #phi_{2}; #phi_{1}; #phi_{2}"},
    {kEta1VsEta2, o2::framework::HistType::kTH2F, "hEta1VsEta2", "#eta_{1} vs #eta_{2}; #eta_{1}; #eta_{2}"}}};
 
@@ -170,6 +187,7 @@ auto makeCprHistSpecMap(const T& confCpr)
     {kRadius6, {confCpr.binningDeta, confCpr.binningDphistar}},
     {kRadius7, {confCpr.binningDeta, confCpr.binningDphistar}},
     {kRadius8, {confCpr.binningDeta, confCpr.binningDphistar}},
+    {kKinematic, {confCpr.binningKinematic}},
     {kPhi1VsPhi2, {confCpr.binningCorrelationPhi, confCpr.binningCorrelationPhi}},
     {kEta1VsEta2, {confCpr.binningCorrelationEta, confCpr.binningCorrelationEta}},
   };
@@ -205,6 +223,7 @@ class CloseTrackRejection
 
     mCutAverage = confCpr.cutAverage.value;
     mCutAnyRadius = confCpr.cutAnyRadius.value;
+    mUseEpisoidalCut = confCpr.cutElipsoidal.value;
 
     mKinematicMin = confCpr.kinematicMin.value;
     mKinematicMax = confCpr.kinematicMax.value;
@@ -213,6 +232,7 @@ class CloseTrackRejection
     mPlotAllRadii = confCpr.plotAllRadii.value;
 
     mPlotAngularCorrelation = confCpr.plotAngularCorrelation.value;
+    mPlotKinematic = confCpr.plotKinematic.value;
 
     if (confCpr.seed.value >= 0) {
       uint64_t randomSeed = 0;
@@ -225,10 +245,14 @@ class CloseTrackRejection
       mRng = std::mt19937(randomSeed);
     }
 
-    // check if we need to apply any cut a plot is requested
+    // check if we need to apply any cut or if a plot is requested
     mIsActivated = mCutAverage || mCutAnyRadius || mPlotAverage || mPlotAllRadii;
 
     mHistogramRegistry = registry;
+
+    if (mPlotKinematic) {
+      mHistogramRegistry->add(std::string(prefix) + getHistNameV2(kKinematic, HistTable), getHistDesc(kKinematic, HistTable), getHistType(kKinematic, HistTable), {specs.at(kKinematic)});
+    }
 
     if (mPlotAverage) {
       mHistogramRegistry->add(std::string(prefix) + getHistNameV2(kAverage, HistTable), getHistDesc(kAverage, HistTable), getHistType(kAverage, HistTable), {specs.at(kAverage)});
@@ -253,12 +277,34 @@ class CloseTrackRejection
 
   void setMagField(float magField) { mMagField = magField; }
 
+  // checks if the cut is activated; if so, computes deta/dphistar for the pair,
+  // fills the "blocked" or "passed" histograms accordingly, and returns whether
+  // the pair was rejected. If the cut is not activated, does nothing and returns false.
+  // pairHistManager must expose getKinematic() (same interface PcManager::isCleanPair expects).
+  template <typename T1, typename T2, typename T3>
+  [[nodiscard]] bool isClosePair(T1 const& track1, T2 const& track2, T3 const& pairHistManager)
+  {
+    if (!mIsActivated) {
+      return false;
+    }
+
+    compute(track1, track2);
+
+    bool isClose = mUseEpisoidalCut ? isClosePairEpisoidalCut() : isClosePairRectengularCut();
+
+    if (isClose) {
+      fillBlocked(pairHistManager.getKinematic());
+    } else {
+      fillPassed(pairHistManager.getKinematic());
+    }
+
+    return isClose;
+  }
+
+ private:
   template <typename T1, typename T2>
   void compute(T1 const& track1, T2 const& track2)
   {
-    if (!mIsActivated) {
-      return;
-    }
     // reset values
     mAverageDphistar = 0.f;
     int count = 0;
@@ -271,14 +317,14 @@ class CloseTrackRejection
       swapTracks = (mSwapDist(mRng) == 1);
     }
 
-    auto const& t1 = swapTracks ? track2 : track1;
-    auto const& t2 = swapTracks ? track1 : track2;
+    auto t1 = swapTracks ? track2 : track1;
+    auto t2 = swapTracks ? track1 : track2;
 
     mDeta = t1.eta() - t2.eta();
 
     for (size_t i = 0; i < TpcRadii.size(); i++) {
-      auto phistar1 = phistar(mMagField, TpcRadii[i], mChargeAbsTrack1 * t1.signedPt(), t1.phi());
-      auto phistar2 = phistar(mMagField, TpcRadii[i], mChargeAbsTrack2 * t2.signedPt(), t2.phi());
+      auto phistar1 = phistar(mMagField, TpcRadii.at(i), mChargeAbsTrack1 * t1.signedPt(), t1.phi());
+      auto phistar2 = phistar(mMagField, TpcRadii.at(i), mChargeAbsTrack2 * t2.signedPt(), t2.phi());
       if (phistar1 && phistar2) {
         mDphistar.at(i) = RecoDecay::constrainAngle(phistar1.value() - phistar2.value(), -o2::constants::math::PI); // constrain angular difference between -pi and pi
         mDphistarMask.at(i) = true;
@@ -300,12 +346,65 @@ class CloseTrackRejection
     }
   }
 
-  void fill(float kinematic)
+  std::optional<float> phistar(float magfield, float radius, float signedPt, float phi)
   {
-    if (!mIsActivated) {
-      return;
+    double arg = 0.3 * (0.1 * magfield) * (0.01 * radius) / (2. * signedPt);
+    if (std::fabs(arg) <= 1.) {
+      double angle = phi - std::asin(arg);
+      return static_cast<float>(RecoDecay::constrainAngle(angle));
+    }
+    return std::nullopt;
+  }
+
+  [[nodiscard]] bool isClosePairEpisoidalCut() const
+  {
+    bool isCloseAverage = false;
+    bool isCloseAnyRadius = false;
+
+    if (mCutAverage) {
+      isCloseAverage = std::hypot((mAverageDphistar - mDphistarCenter) / mDphistarMax, (mDeta - mDetaCenter) / mDetaMax) < 1.f;
     }
 
+    if (mCutAnyRadius) {
+      for (size_t i = 0; i < TpcRadii.size(); i++) {
+        if (isCloseAnyRadius) {
+          break;
+        }
+        if (mDphistarMask.at(i)) {
+          isCloseAnyRadius = std::hypot((mDphistar.at(i) - mDphistarCenter) / mDphistarMax, (mDeta - mDetaCenter) / mDetaMax) < 1.f;
+        }
+      }
+    }
+    return isCloseAverage || isCloseAnyRadius;
+  }
+
+  [[nodiscard]] bool isClosePairRectengularCut() const
+  {
+    bool isCloseAverage = false;
+    bool isCloseAnyRadius = false;
+
+    if (mCutAverage) {
+      isCloseAverage = std::fabs(mAverageDphistar - mDphistarCenter) < mDphistarMax &&
+                       std::fabs(mDeta - mDetaCenter) < mDetaMax;
+    }
+
+    if (mCutAnyRadius) {
+      for (size_t i = 0; i < TpcRadii.size(); i++) {
+        if (isCloseAnyRadius) {
+          break;
+        }
+        if (mDphistarMask.at(i)) {
+          isCloseAnyRadius = std::fabs(mDphistar.at(i) - mDphistarCenter) < mDphistarMax &&
+                             std::fabs(mDeta - mDetaCenter) < mDetaMax;
+        }
+      }
+    }
+    return isCloseAverage || isCloseAnyRadius;
+  }
+
+  // fill the "normal" distributions (deta-dphistar, angular correlation) for pairs that passed the cut
+  void fillPassed(float kinematic) const
+  {
     if (mKinematicMin > 0.f && kinematic < mKinematicMin) {
       return;
     }
@@ -328,82 +427,63 @@ class CloseTrackRejection
     if (mPlotAllRadii) {
       if (mDphistarMask.at(0)) {
         mHistogramRegistry->fill(HIST(prefix) + HIST(getHistName(kRadius0, HistTable)), mDeta, mDphistar.at(0));
-      }
-      if (mDphistarMask.at(1)) {
-        mHistogramRegistry->fill(HIST(prefix) + HIST(getHistName(kRadius1, HistTable)), mDeta, mDphistar.at(1));
-      }
-      if (mDphistarMask.at(2)) {
-        mHistogramRegistry->fill(HIST(prefix) + HIST(getHistName(kRadius2, HistTable)), mDeta, mDphistar.at(2));
-      }
-      if (mDphistarMask.at(3)) {
-        mHistogramRegistry->fill(HIST(prefix) + HIST(getHistName(kRadius3, HistTable)), mDeta, mDphistar.at(3));
-      }
-      if (mDphistarMask.at(4)) {
-        mHistogramRegistry->fill(HIST(prefix) + HIST(getHistName(kRadius4, HistTable)), mDeta, mDphistar.at(4));
-      }
-      if (mDphistarMask.at(5)) {
-        mHistogramRegistry->fill(HIST(prefix) + HIST(getHistName(kRadius5, HistTable)), mDeta, mDphistar.at(5));
-      }
-      if (mDphistarMask.at(6)) {
-        mHistogramRegistry->fill(HIST(prefix) + HIST(getHistName(kRadius6, HistTable)), mDeta, mDphistar.at(6));
-      }
-      if (mDphistarMask.at(7)) {
-        mHistogramRegistry->fill(HIST(prefix) + HIST(getHistName(kRadius7, HistTable)), mDeta, mDphistar.at(7));
-      }
-      if (mDphistarMask.at(8)) {
-        mHistogramRegistry->fill(HIST(prefix) + HIST(getHistName(kRadius8, HistTable)), mDeta, mDphistar.at(8));
+        if (mDphistarMask.at(1)) {
+          mHistogramRegistry->fill(HIST(prefix) + HIST(getHistName(kRadius1, HistTable)), mDeta, mDphistar.at(1));
+        }
+        if (mDphistarMask.at(2)) {
+          mHistogramRegistry->fill(HIST(prefix) + HIST(getHistName(kRadius2, HistTable)), mDeta, mDphistar.at(2));
+        }
+        if (mDphistarMask.at(3)) {
+          mHistogramRegistry->fill(HIST(prefix) + HIST(getHistName(kRadius3, HistTable)), mDeta, mDphistar.at(3));
+        }
+        if (mDphistarMask.at(4)) {
+          mHistogramRegistry->fill(HIST(prefix) + HIST(getHistName(kRadius4, HistTable)), mDeta, mDphistar.at(4));
+        }
+        if (mDphistarMask.at(5)) {
+          mHistogramRegistry->fill(HIST(prefix) + HIST(getHistName(kRadius5, HistTable)), mDeta, mDphistar.at(5));
+        }
+        if (mDphistarMask.at(6)) {
+          mHistogramRegistry->fill(HIST(prefix) + HIST(getHistName(kRadius6, HistTable)), mDeta, mDphistar.at(6));
+        }
+        if (mDphistarMask.at(7)) {
+          mHistogramRegistry->fill(HIST(prefix) + HIST(getHistName(kRadius7, HistTable)), mDeta, mDphistar.at(7));
+        }
+        if (mDphistarMask.at(8)) {
+          mHistogramRegistry->fill(HIST(prefix) + HIST(getHistName(kRadius8, HistTable)), mDeta, mDphistar.at(8));
+        }
       }
     }
   }
 
-  [[nodiscard]] bool isClosePair() const
+  // fill the kinematic (kstar/Q3) distribution of pairs that were blocked by the CPR cut
+  void fillBlocked(float kinematic) const
   {
-    if (!mIsActivated) {
-      return false;
-    }
-    bool isCloseAverage = false;
-    bool isCloseAnyRadius = false;
-
-    if (mCutAverage) {
-      isCloseAverage = std::hypot((mAverageDphistar - mDphistarCenter) / mDphistarMax, (mDeta - mDetaCenter) / mDetaMax) < 1.f;
+    if (!mPlotKinematic) {
+      return;
     }
 
-    if (mCutAnyRadius) {
-      for (size_t i = 0; i < TpcRadii.size(); i++) {
-        if (isCloseAnyRadius) {
-          break;
-        }
-        if (mDphistarMask.at(i)) {
-          isCloseAnyRadius = std::hypot((mDphistar.at(i) - mDphistarCenter) / mDphistarMax, (mDeta - mDetaCenter) / mDetaMax) < 1.f;
-        }
-      }
+    if (mKinematicMin > 0.f && kinematic < mKinematicMin) {
+      return;
     }
-    return isCloseAverage || isCloseAnyRadius;
-  }
 
-  [[nodiscard]] bool isActivated() const { return mIsActivated; }
-
- private:
-  std::optional<float> phistar(float magfield, float radius, float signedPt, float phi)
-  {
-    double arg = 0.3 * (0.1 * magfield) * (0.01 * radius) / (2. * signedPt);
-    if (std::fabs(arg) <= 1.) {
-      double angle = phi - std::asin(arg);
-      return static_cast<float>(RecoDecay::constrainAngle(angle));
+    if (mKinematicMax > 0.f && kinematic > mKinematicMax) {
+      return;
     }
-    return std::nullopt;
+    mHistogramRegistry->fill(HIST(prefix) + HIST(getHistName(kKinematic, HistTable)), kinematic);
   }
 
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
   bool mPlotAllRadii = false;
   bool mPlotAverage = false;
   bool mPlotAngularCorrelation = false;
+  bool mPlotKinematic = false;
 
   float mKinematicMin = -1.f;
   float mKinematicMax = -1.f;
 
   bool mCutAverage = false;
   bool mCutAnyRadius = false;
+  bool mUseEpisoidalCut = true;
 
   bool mIsActivated = false;
 
@@ -446,13 +526,12 @@ class ClosePairRejectionTrackTrack
   }
 
   void setMagField(float magField) { mCtr.setMagField(magField); }
-  template <typename T1, typename T2, typename T3>
-  void setPair(T1 const& track1, T2 const& track2, T3 const& /*tracks*/) // pass track table for compatibility with other classes
+
+  template <typename T1, typename T2, typename T3, typename T4>
+  [[nodiscard]] bool isClosePair(T1 const& track1, T2 const& track2, T3 const& /*tracks*/, T4 const& pairHistManager)
   {
-    mCtr.compute(track1, track2);
+    return mCtr.isClosePair(track1, track2, pairHistManager);
   }
-  [[nodiscard]] bool isClosePair() const { return mCtr.isClosePair(); }
-  void fill(float kstar) { mCtr.fill(kstar); }
 
  private:
   CloseTrackRejection<prefix> mCtr;
@@ -479,24 +558,18 @@ class ClosePairRejectionV0V0
     mCtrNeg.setMagField(magField);
   }
 
-  template <typename T1, typename T2, typename T3>
-  void setPair(T1 const& v01, T2 const& v02, T3 const& tracks)
+  template <typename T1, typename T2, typename T3, typename T4>
+  [[nodiscard]] bool isClosePair(T1 const& v01, T2 const& v02, T3 const& tracks, T4 const& pairHistManager)
   {
     auto posDau1 = tracks.rawIteratorAt(v01.posDauId() - tracks.offset());
     auto posDau2 = tracks.rawIteratorAt(v02.posDauId() - tracks.offset());
-    mCtrPos.compute(posDau1, posDau2);
+    bool isClosePos = mCtrPos.isClosePair(posDau1, posDau2, pairHistManager);
 
     auto negDau1 = tracks.rawIteratorAt(v01.negDauId() - tracks.offset());
     auto negDau2 = tracks.rawIteratorAt(v02.negDauId() - tracks.offset());
-    mCtrNeg.compute(negDau1, negDau2);
-  }
+    bool isCloseNeg = mCtrNeg.isClosePair(negDau1, negDau2, pairHistManager);
 
-  [[nodiscard]] bool isClosePair() const { return mCtrPos.isClosePair() || mCtrNeg.isClosePair(); }
-
-  void fill(float kstar)
-  {
-    mCtrPos.fill(kstar);
-    mCtrNeg.fill(kstar);
+    return isClosePos || isCloseNeg;
   }
 
  private:
@@ -519,24 +592,66 @@ class ClosePairRejectionTrackV0 // can also be used for any particle type that h
 
   void setMagField(float magField) { mCtr.setMagField(magField); }
 
-  template <typename T1, typename T2, typename T3>
-  void setPair(T1 const& track, T2 const& v0, T3 const& trackTable)
+  template <typename T1, typename T2, typename T3, typename T4>
+  [[nodiscard]] bool isClosePair(T1 const& track, T2 const& v0, T3 const& trackTable, T4 const& pairHistManager)
   {
     if (track.sign() > 0) {
       auto posDau = trackTable.rawIteratorAt(v0.posDauId() - trackTable.offset());
-      mCtr.compute(track, posDau);
-    } else {
-      auto negDau = trackTable.rawIteratorAt(v0.negDauId() - trackTable.offset());
-      mCtr.compute(track, negDau);
+      return mCtr.isClosePair(track, posDau, pairHistManager);
     }
+    auto negDau = trackTable.rawIteratorAt(v0.negDauId() - trackTable.offset());
+    return mCtr.isClosePair(track, negDau, pairHistManager);
   }
-
-  [[nodiscard]] bool isClosePair() const { return mCtr.isClosePair(); }
-
-  void fill(float kstar) { mCtr.fill(kstar); }
 
  private:
   CloseTrackRejection<prefixTrackV0> mCtr;
+};
+
+template <auto& prefixProton, auto& prefixKaon, auto& prefixPion>
+class ClosePairRejectionTrackLc
+{
+ public:
+  template <typename T1, typename T2, typename T3>
+  void init(o2::framework::HistogramRegistry* registry,
+            std::map<CprHist, std::vector<o2::framework::AxisSpec>> const& specsProton,
+            std::map<CprHist, std::vector<o2::framework::AxisSpec>> const& specsKaon,
+            std::map<CprHist, std::vector<o2::framework::AxisSpec>> const& specsPion,
+            T1 const& confCprProton,
+            T2 const& confCprKaon,
+            T3 const& confCprPion,
+            int absChargeTrack)
+  {
+    mCtrProton.init(registry, specsProton, confCprProton, absChargeTrack, 1);
+    mCtrKaon.init(registry, specsKaon, confCprKaon, absChargeTrack, 1);
+    mCtrPion.init(registry, specsPion, confCprPion, absChargeTrack, 1);
+  }
+
+  void setMagField(float magField)
+  {
+    mCtrProton.setMagField(magField);
+    mCtrKaon.setMagField(magField);
+    mCtrPion.setMagField(magField);
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4>
+  [[nodiscard]] bool isClosePair(T1 const& track, T2 const& lc, T3 const& trackTable, T4 const& pairHistManager)
+  {
+    auto prong0 = trackTable.rawIteratorAt(lc.prong0DauId() - trackTable.offset());
+    bool isCloseProton = mCtrProton.isClosePair(track, prong0, pairHistManager);
+
+    auto prong1 = trackTable.rawIteratorAt(lc.prong1DauId() - trackTable.offset());
+    bool isCloseKaon = mCtrKaon.isClosePair(track, prong1, pairHistManager);
+
+    auto prong2 = trackTable.rawIteratorAt(lc.prong2DauId() - trackTable.offset());
+    bool isClosePion = mCtrPion.isClosePair(track, prong2, pairHistManager);
+
+    return isCloseProton || isCloseKaon || isClosePion;
+  }
+
+ private:
+  CloseTrackRejection<prefixProton> mCtrProton;
+  CloseTrackRejection<prefixKaon> mCtrKaon;
+  CloseTrackRejection<prefixPion> mCtrPion;
 };
 
 template <auto& prefixBachelor, auto& prefixV0Daughter>
@@ -561,27 +676,22 @@ class ClosePairRejectionTrackCascade
     mCtrV0Daughter.setMagField(magField);
   }
 
-  template <typename T1, typename T2, typename T3>
-  void setPair(T1 const& track, T2 const& cascade, T3 const& trackTable)
+  template <typename T1, typename T2, typename T3, typename T4>
+  [[nodiscard]] bool isClosePair(T1 const& track, T2 const& cascade, T3 const& trackTable, T4 const& pairHistManager)
   {
     auto bachelor = trackTable.rawIteratorAt(cascade.bachelorId() - trackTable.offset());
-    mCtrBachelor.compute(track, bachelor);
+    bool isCloseBachelor = mCtrBachelor.isClosePair(track, bachelor, pairHistManager);
 
+    bool isCloseV0Daughter = false;
     if (track.sign() > 0) {
       auto posDau = trackTable.rawIteratorAt(cascade.posDauId() - trackTable.offset());
-      mCtrV0Daughter.compute(track, posDau);
+      isCloseV0Daughter = mCtrV0Daughter.isClosePair(track, posDau, pairHistManager);
     } else {
       auto negDau = trackTable.rawIteratorAt(cascade.negDauId() - trackTable.offset());
-      mCtrV0Daughter.compute(track, negDau);
+      isCloseV0Daughter = mCtrV0Daughter.isClosePair(track, negDau, pairHistManager);
     }
-  }
 
-  [[nodiscard]] bool isClosePair() const { return mCtrBachelor.isClosePair() || mCtrV0Daughter.isClosePair(); }
-
-  void fill(float kstar)
-  {
-    mCtrBachelor.fill(kstar);
-    mCtrV0Daughter.fill(kstar);
+    return isCloseBachelor || isCloseV0Daughter;
   }
 
  private:
@@ -607,15 +717,12 @@ class ClosePairRejectionTrackKink
     mCtr.setMagField(magField);
   }
 
-  template <typename T1, typename T2, typename T3>
-  void setPair(T1 const& track, T2 const& kink, T3 const& trackTable)
+  template <typename T1, typename T2, typename T3, typename T4>
+  [[nodiscard]] bool isClosePair(T1 const& track, T2 const& kink, T3 const& trackTable, T4 const& pairHistManager)
   {
     auto daughter = trackTable.rawIteratorAt(kink.chaDauId() - trackTable.offset());
-    mCtr.compute(track, daughter);
+    return mCtr.isClosePair(track, daughter, pairHistManager);
   }
-
-  [[nodiscard]] bool isClosePair() const { return mCtr.isClosePair(); }
-  void fill(float kstar) { mCtr.fill(kstar); }
 
  private:
   CloseTrackRejection<prefix> mCtr;
@@ -633,13 +740,12 @@ class ClosePairRejectionMcParticleMcParticle
     mCtr.init(registry, specs, confCpr, 1, 1);
     mCtr.setMagField(confCpr.magField.value);
   }
-  template <typename T1, typename T2>
-  void setPair(T1 const& mcParticle1, T2 const& mcParticle2)
+
+  template <typename T1, typename T2, typename T3>
+  [[nodiscard]] bool isClosePair(T1 const& mcParticle1, T2 const& mcParticle2, T3 const& pairHistManager)
   {
-    mCtr.compute(mcParticle1, mcParticle2);
+    return mCtr.isClosePair(mcParticle1, mcParticle2, pairHistManager);
   }
-  [[nodiscard]] bool isClosePair() const { return mCtr.isClosePair(); }
-  void fill(float kstar) { mCtr.fill(kstar); }
 
  private:
   CloseTrackRejection<prefix> mCtr;

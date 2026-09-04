@@ -841,6 +841,8 @@ struct sigma0builder {
     bool IsSigma0 = false;
     bool IsAntiSigma0 = false;
     bool IsKStar = false;
+    bool IsLambdaStar = false;
+    bool IsAntiLambdaStar = false;
     bool IsProducedByGenerator = false;
     bool IsSterile = false;
     int MCProcess = -1;
@@ -914,8 +916,9 @@ struct sigma0builder {
     auto v02MC = v02.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
 
     // Sanity check: Is V0Pair <-> Mother assignment correct?
+    int expectedPairPDG = doLambdaStar ? 3124 : PDG_t::kSigma0;
     bool fIsSigma0 = false;
-    if ((v01MC.pdgCode() == PDG_t::kGamma) && (v01MC.pdgCodeMother() == PDG_t::kSigma0) && (v02MC.pdgCode() == PDG_t::kLambda0) && (v02MC.pdgCodeMother() == PDG_t::kSigma0) && (v01.motherMCPartId() == v02.motherMCPartId()))
+    if ((v01MC.pdgCode() == PDG_t::kGamma) && (v01MC.pdgCodeMother() == expectedPairPDG) && (v02MC.pdgCode() == PDG_t::kLambda0) && (v02MC.pdgCodeMother() == expectedPairPDG) && (v01.motherMCPartId() == v02.motherMCPartId()))
       fIsSigma0 = true;
 
     bool fIsKStar = false;
@@ -1066,11 +1069,11 @@ struct sigma0builder {
           }
         }
         // Check association correctness
-        if (fIsSigma0 && (MCinfo.V0PairPDGCode == PDG_t::kSigma0))
+        if (fIsSigma0 && (MCinfo.V0PairPDGCode == expectedPairPDG))
           histos.fill(HIST("MCQA/hSigma0MCCheck"), 1); // match
-        if (fIsSigma0 && !(MCinfo.V0PairPDGCode == PDG_t::kSigma0))
+        if (fIsSigma0 && !(MCinfo.V0PairPDGCode == expectedPairPDG))
           histos.fill(HIST("MCQA/hSigma0MCCheck"), 2); // mismatch
-        if (!fIsSigma0 && (MCinfo.V0PairPDGCode == PDG_t::kSigma0))
+        if (!fIsSigma0 && (MCinfo.V0PairPDGCode == expectedPairPDG))
           histos.fill(HIST("MCQA/hSigma0MCCheck"), 3); // mismatch
 
         // Check association correctness
@@ -1620,13 +1623,15 @@ struct sigma0builder {
 
     // Fill with properties
     GenInfo.IsPrimary = mcParticle.isPhysicalPrimary();
-    GenInfo.IsV0Lambda = mcParticle.pdgCode() == PDG_t::kLambda0;                      // 3122
-    GenInfo.IsV0AntiLambda = mcParticle.pdgCode() == PDG_t::kLambda0Bar;               //-3122
-    GenInfo.IsV0KShort = mcParticle.pdgCode() == PDG_t::kK0Short;                      // 310
-    GenInfo.IsPi0 = mcParticle.pdgCode() == PDG_t::kPi0;                               // 111;
-    GenInfo.IsSigma0 = mcParticle.pdgCode() == PDG_t::kSigma0;                         // PDG_t::kSigma0
-    GenInfo.IsAntiSigma0 = mcParticle.pdgCode() == PDG_t::kSigma0Bar;                  //-3212
-    GenInfo.IsKStar = mcParticle.pdgCode() == o2::constants::physics::Pdg::kK0Star892; // 313;
+    GenInfo.IsV0Lambda = mcParticle.pdgCode() == PDG_t::kLambda0;                                // 3122
+    GenInfo.IsV0AntiLambda = mcParticle.pdgCode() == PDG_t::kLambda0Bar;                         //-3122
+    GenInfo.IsV0KShort = std::abs(mcParticle.pdgCode()) == PDG_t::kK0Short;                      // 310
+    GenInfo.IsPi0 = mcParticle.pdgCode() == PDG_t::kPi0;                                         // 111;
+    GenInfo.IsSigma0 = mcParticle.pdgCode() == PDG_t::kSigma0;                                   // PDG_t::kSigma0
+    GenInfo.IsAntiSigma0 = mcParticle.pdgCode() == PDG_t::kSigma0Bar;                            //-3212
+    GenInfo.IsKStar = std::abs(mcParticle.pdgCode()) == o2::constants::physics::Pdg::kK0Star892; // 313;
+    GenInfo.IsLambdaStar = mcParticle.pdgCode() == 3124;                                         // 102134 (PYTHIA8)
+    GenInfo.IsAntiLambdaStar = mcParticle.pdgCode() == -3124;                                    // -102134
     GenInfo.IsProducedByGenerator = mcParticle.producedByGenerator();
     GenInfo.MCProcess = mcParticle.getProcess();
     GenInfo.MCPt = mcParticle.pt();
@@ -1637,7 +1642,7 @@ struct sigma0builder {
       GenInfo.MCCollId = mcParticle.mcCollisionId(); // save this reference, please
 
     // Checking decay mode if sigma0 or pi0 (it is easier here)
-    if (GenInfo.IsSigma0 || GenInfo.IsAntiSigma0 || GenInfo.IsPi0 || GenInfo.IsKStar) {
+    if (GenInfo.IsSigma0 || GenInfo.IsAntiSigma0 || GenInfo.IsPi0 || GenInfo.IsKStar || GenInfo.IsLambdaStar || GenInfo.IsAntiLambdaStar) {
 
       // This is a costly operation, so we do it only for pi0s and sigma0s
       auto const& daughters = mcParticle.template daughters_as<aod::McParticles>();
@@ -1647,7 +1652,7 @@ struct sigma0builder {
       auto const& GenMothersList = mcParticle.template mothers_as<aod::McParticles>();
       GenInfo.PDGCodeMother = (!GenMothersList.empty()) ? GenMothersList.front().pdgCode() : 0;
 
-      if ((GenInfo.IsSigma0 || GenInfo.IsAntiSigma0) && genSelections.doQA) {
+      if ((doLambdaStar ? (GenInfo.IsLambdaStar || GenInfo.IsAntiLambdaStar) : (GenInfo.IsSigma0 || GenInfo.IsAntiSigma0)) && genSelections.doQA) {
         histos.fill(HIST("GenQA/h2dSigma0MCSourceVsPDGMother"), GenInfo.IsProducedByGenerator, GenInfo.PDGCodeMother);
 
         // Checking decay modes and getting daughter pTs
@@ -1710,7 +1715,7 @@ struct sigma0builder {
       histos.fill(HIST("GenQA/hGenSpeciesKStar"), 0);
 
     // Checking decay mode
-    if (GenInfo.IsSigma0 || GenInfo.IsAntiSigma0) {
+    if (doLambdaStar ? (GenInfo.IsLambdaStar || GenInfo.IsAntiLambdaStar) : (GenInfo.IsSigma0 || GenInfo.IsAntiSigma0)) {
       histos.fill(HIST("GenQA/hSigma0NDau"), GenInfo.NDaughters);
       histos.fill(HIST("GenQA/h2dSigma0NDauVsProcess"), GenInfo.NDaughters, GenInfo.MCProcess);
 
@@ -1730,7 +1735,7 @@ struct sigma0builder {
       histos.fill(HIST("GenQA/h2DGenSigma0TypeVsProducedByGen"), typeIndex, genIndex);
 
       // Fill histograms
-      if (GenInfo.IsSigma0) {
+      if (doLambdaStar ? GenInfo.IsLambdaStar : GenInfo.IsSigma0) {
         histos.fill(HIST("GenQA/hGenSpecies"), 2);
         histos.fill(HIST("GenQA/hGenSigma0"), GenInfo.MCPt);
         histos.fill(HIST("GenQA/h3dGenSigma0_pTMap"), GenInfo.MCPt, GenInfo.MCDau1Pt, GenInfo.MCDau2Pt);
@@ -1739,7 +1744,7 @@ struct sigma0builder {
         if (GenInfo.IsPrimary)
           histos.fill(HIST("GenQA/hPrimarySigma0s"), 1);
       }
-      if (GenInfo.IsAntiSigma0) {
+      if (doLambdaStar ? GenInfo.IsAntiLambdaStar : GenInfo.IsAntiSigma0) {
         histos.fill(HIST("GenQA/hGenSpecies"), 3);
         histos.fill(HIST("GenQA/hGenAntiSigma0"), GenInfo.MCPt);
         histos.fill(HIST("GenQA/h3dGenASigma0_pTMap"), GenInfo.MCPt, GenInfo.MCDau1Pt, GenInfo.MCDau2Pt);
@@ -1816,9 +1821,10 @@ struct sigma0builder {
         pi0GenCollRefs(MCGenInfo.MCCollId);                                       // link to stramccollision table
       }
 
-      // Sigma0/ASigma0
-      if (fillSigma0Tables && (MCGenInfo.IsSigma0 || MCGenInfo.IsAntiSigma0)) {
-        sigma0Gens(MCGenInfo.IsSigma0, MCGenInfo.IsProducedByGenerator, MCGenInfo.MCPt, mcParticle.y());
+      // Sigma0/ASigma0 (Lambda(1520)/ALambda(1520))
+      bool fIsGenSigma0Like = doLambdaStar ? (MCGenInfo.IsLambdaStar || MCGenInfo.IsAntiLambdaStar) : (MCGenInfo.IsSigma0 || MCGenInfo.IsAntiSigma0);
+      if (fillSigma0Tables && fIsGenSigma0Like) {
+        sigma0Gens(doLambdaStar ? MCGenInfo.IsLambdaStar : MCGenInfo.IsSigma0, MCGenInfo.IsProducedByGenerator, MCGenInfo.MCPt, mcParticle.y());
         sigma0GenCollRefs(MCGenInfo.MCCollId); // link to stramccollision table
       }
 

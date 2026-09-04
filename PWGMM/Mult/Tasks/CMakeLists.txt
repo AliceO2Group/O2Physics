@@ -39,6 +39,10 @@ o2physics_add_dpl_workflow(dndeta-mft-pbpb
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(qa-reassoc-mft-pbpb
+                    SOURCES qaReassocMFTPbPb.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB
+                    COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(mft-reassociation-validation
                     SOURCES mftReassociationValidation.cxx

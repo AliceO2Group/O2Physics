@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file FlowContainer.cxx
+/// \brief Container class to store and calculate multi-particle azimuthal correlations and cumulants
+/// \author Emil Gorm Dahlbæk Nielsen <emil.gorm.nielsen@cern.ch>
+
 #include "FlowContainer.h"
 
 #include "PWGCF/GenericFramework/Core/ProfileSubset.h"
@@ -30,7 +34,8 @@
 #include <Rtypes.h>
 #include <RtypesCore.h>
 
-#include <cstdio>
+#include <fstream>
+#include <string>
 #include <vector>
 
 ClassImp(FlowContainer);
@@ -73,15 +78,15 @@ void FlowContainer::Initialize(TObjArray* inputList, const o2::framework::AxisSp
   if (nMultiBins <= 0)
     nMultiBins = multiBins.size() - 1;
   if (nMultiBins <= 0) {
-    printf("Multiplicity axis does not exist");
+    LOGF(error, "Multiplicity axis does not exist");
     return;
   }
   if (!inputList) {
-    printf("Input list not specified\n");
+    LOGF(warning, "Input list not specified");
     return;
   }
   if (inputList->GetEntries() < 1) {
-    printf("Input list empty!\n");
+    LOGF(warning, "Input list empty!");
     return;
   }
   fProf = new TProfile2D(Form("%s_CorrProfile", this->GetName()), "CorrProfile", nMultiBins, &multiBins[0], inputList->GetEntries(), 0.5, inputList->GetEntries() + 0.5);
@@ -101,11 +106,11 @@ void FlowContainer::Initialize(TObjArray* inputList, const o2::framework::AxisSp
 void FlowContainer::Initialize(TObjArray* inputList, int nMultiBins, double MultiMin, double MultiMax, int nRandom)
 {
   if (!inputList) {
-    printf("Input list not specified\n");
+    LOGF(warning, "Input list not specified");
     return;
   }
   if (inputList->GetEntries() < 1) {
-    printf("Input list empty!\n");
+    LOGF(warning, "Input list empty!");
     return;
   }
   fProf = new TProfile2D(Form("%s_CorrProfile", this->GetName()), "CorrProfile", nMultiBins, MultiMin, MultiMax, inputList->GetEntries(), 0.5, inputList->GetEntries() + 0.5);
@@ -138,7 +143,7 @@ void FlowContainer::SetXAxis(TAxis* inax)
   fXAxis = dynamic_cast<TAxis*>(inax->Clone("pTAxis"));
   bool success = CreateBinsFromAxis(fXAxis);
   if (!success)
-    printf("Something went wrong setting the x axis!\n");
+    LOGF(warning, "Something went wrong setting the x axis!");
 }
 void FlowContainer::SetXAxis()
 {
@@ -161,7 +166,7 @@ int FlowContainer::FillProfile(const char* hname, double multi, double corr, dou
     return -1;
   int yin = fProf->GetYaxis()->FindBin(hname);
   if (!yin) {
-    printf("Could not find bin %s\n", hname);
+    LOGF(info, "Could not find bin %s\n", hname);
     return -1;
   }
   fProf->Fill(multi, yin, corr, w);
@@ -176,23 +181,23 @@ void FlowContainer::OverrideProfileErrors(TProfile2D* inpf)
   int nBinsX = fProf->GetNbinsX();
   int nBinsY = fProf->GetNbinsY();
   if ((inpf->GetNbinsX() != nBinsX) || (inpf->GetNbinsY() != nBinsY)) {
-    printf("Number of bins in two profiles do not match, not doing anything\n");
+    LOGF(info, "Number of bins in two profiles do not match, not doing anything\n");
     return;
   }
   if (!inpf->GetBinSumw2()->fArray) {
-    printf("Input profile has no BinSumw2()! Returning\n");
+    LOGF(info, "Input profile has no BinSumw2()! Returning\n");
     return;
   }
   if (!fProf->GetBinSumw2()->fArray)
     fProf->Sumw2();
   double* sumw2Prof = fProf->GetSumw2()->fArray;
-  double* sumw2Targ = inpf->GetSumw2()->fArray;
+  const double* sumw2Targ = inpf->GetSumw2()->fArray;
   double* binsw2Prof = fProf->GetBinSumw2()->fArray;
-  double* binsw2Targ = inpf->GetBinSumw2()->fArray;
+  const double* binsw2Targ = inpf->GetBinSumw2()->fArray;
   double* farrProf = fProf->fArray;
   for (int ix = 1; ix <= nBinsX; ix++) {
     double xval = fProf->GetXaxis()->GetBinCenter(ix);
-    printf("Processing x-bin %i\n", ix);
+    LOGF(info, "Processing x-bin %i\n", ix);
     for (int iy = 1; iy <= nBinsY; iy++) {
       double yval = fProf->GetYaxis()->GetBinCenter(iy);
       int binno = fProf->FindBin(xval, yval);
@@ -244,34 +249,38 @@ Long64_t FlowContainer::Merge(TCollection* collist)
 
 void FlowContainer::ReadAndMerge(const char* filelist)
 {
-  FILE* flist = fopen(filelist, "r");
-  char str[150];
-  int nFiles = 0;
-  while (fscanf(flist, "%s\n", str) == 1)
-    nFiles++;
-  rewind(flist);
-  if (nFiles == 0) {
-    printf("No files to read!\n");
+  if (!filelist) {
+    LOGF(error, "File list path is null!");
     return;
   }
-  for (int i = 0; i < nFiles; i++) {
-    auto retVal = fscanf(flist, "%s\n", str);
-    (void)retVal;
-    TFile* tf = new TFile(str, "READ");
-    if (tf->IsZombie()) {
-      printf("Could not open file %s!\n", str);
-      tf->Close();
+  std::ifstream input(filelist);
+  if (!input) {
+    LOGF(error, "Could not open file list %s!", filelist);
+    return;
+  }
+
+  std::string filename;
+  bool hasFiles = false;
+  while (input >> filename) {
+    hasFiles = true;
+    TFile tf(filename.c_str(), "READ");
+    if (tf.IsZombie()) {
+      LOGF(info, "Could not open file %s!", filename.c_str());
       continue;
     }
-    PickAndMerge(tf);
-    tf->Close();
+    PickAndMerge(&tf);
+  }
+  if (input.bad()) {
+    LOGF(error, "Error reading file list %s!", filelist);
+  } else if (!hasFiles) {
+    LOGF(info, "No files to read!");
   }
 }
 void FlowContainer::PickAndMerge(TFile* tfi)
 {
   FlowContainer* lfc = dynamic_cast<FlowContainer*>(tfi->Get(this->GetName()));
   if (!lfc) {
-    printf("Could not pick up the %s from %s\n", this->GetName(), tfi->GetName());
+    LOGF(info, "Could not pick up the %s from %s", this->GetName(), tfi->GetName());
     return;
   }
   TProfile2D* spro = lfc->GetProfile();
@@ -313,13 +322,13 @@ bool FlowContainer::OverrideBinsWithZero(int xb1, int yb1, int xb2, int yb2)
 bool FlowContainer::OverrideMainWithSub(int ind, bool ExcludeChosen)
 {
   if (!fProfRand) {
-    printf("Cannot override main profile with a randomized one. Random profile array does not exist.\n");
+    LOGF(info, "Cannot override main profile with a randomized one. Random profile array does not exist.");
     return kFALSE;
   }
   if (!ExcludeChosen) {
     TProfile2D* tarprof = dynamic_cast<TProfile2D*>(fProfRand->At(ind));
     if (!tarprof) {
-      printf("Target random histogram does not exist.\n");
+      LOGF(info, "Target random histogram does not exist.");
       return kFALSE;
     }
     TString ts(fProf->GetName());
@@ -345,7 +354,7 @@ bool FlowContainer::OverrideMainWithSub(int ind, bool ExcludeChosen)
 bool FlowContainer::RandomizeProfile(int nSubsets)
 {
   if (!fProfRand) {
-    printf("Cannot randomize profile, random array does not exist.\n");
+    LOGF(info, "Cannot randomize profile, random array does not exist.");
     return kFALSE;
   }
   int l_Subsets = nSubsets ? nSubsets : fProfRand->GetEntries();
@@ -393,7 +402,7 @@ TProfile* FlowContainer::GetCorrXXVsMulti(const char* order, int l_pti)
     const char* ybinlab = Form("%s%s%s", l_name.Data(), order, ptpf);
     int ybinno = fProf->GetYaxis()->FindBin(ybinlab);
     if (ybinno < 0) {
-      printf("Could not find %s!\n", ybinlab);
+      LOGF(info, "Could not find %s!", ybinlab);
       return 0;
     }
     TProfile* rethist = dynamic_cast<TProfile*>(fProf->ProfileX("temp_prof", ybinno, ybinno));
@@ -426,7 +435,6 @@ TH1D* FlowContainer::GetCorrXXVsPt(const char* order, double lminmulti, double l
   }
   if (lmaxmulti > lminmulti)
     maxm = fProf->GetXaxis()->FindBin(lmaxmulti - 0.001);
-  ProfileSubset* rhProfSub = new ProfileSubset(*fProf);
   TString l_name("");
   Ssiz_t l_pos = 0;
   while (fIDName.Tokenize(l_name, l_pos)) {
@@ -435,20 +443,19 @@ TH1D* FlowContainer::GetCorrXXVsPt(const char* order, double lminmulti, double l
     int ybn1 = fProf->GetYaxis()->FindBin(ybl1.Data());
     int ybn2 = fProf->GetYaxis()->FindBin(ybl2.Data());
     if (fNbinsPt != (ybn2 - ybn1 + 1)) {
-      printf("fNbinsPt is not matching the num of found histograms");
+      LOGF(info, "fNbinsPt is not matching the num of found histograms");
       return nullptr;
     }
-    TProfile* profY = rhProfSub->ProfileY("profY", minm, maxm);
+    const TString temporaryTag = Form("%s_%s_%.3f_%.3f", fIDName.Data(), order, lminmulti, lmaxmulti);
+    TProfile* profY = fProf->ProfileY(Form("profY_%s", temporaryTag.Data()), minm, maxm);
     TH1D* histY = ProfToHist(profY);
-    TH1D* hist = new TH1D("temphist", "temphist", fNbinsPt, fbinsPt);
+    delete profY;
+    TH1D* hist = new TH1D(Form("temphist_%s", temporaryTag.Data()), "temphist", fNbinsPt, fbinsPt);
     for (int ibin = 1; ibin <= hist->GetNbinsX(); ibin++) {
-      TString bLabel = rhProfSub->GetYaxis()->GetBinLabel(ibin + ybn1 - 1);
-      hist->GetXaxis()->SetBinLabel(ibin, bLabel.Data());
       hist->SetBinContent(ibin, histY->GetBinContent(ibin + ybn1 - 1));
       hist->SetBinError(ibin, histY->GetBinError(ibin + ybn1 - 1));
     }
     delete histY;
-    delete rhProfSub;
     return hist;
   }
   return nullptr;
@@ -479,7 +486,7 @@ TH1D* FlowContainer::GetHistCorrXXVsPt(const char* order, double lminmulti, doub
 {
   TH1D* rethist = GetCorrXXVsPt(order, lminmulti, lmaxmulti);
   if (!rethist) {
-    printf("GetCorrXXVsPt return nullptr!");
+    LOGF(info, "GetCorrXXVsPt return nullptr!");
     return nullptr;
   }
   TProfile* refflow = GetRefFlowProfile(order, lminmulti, lmaxmulti);
@@ -890,23 +897,24 @@ TH1D* FlowContainer::GetVN8VsX(int n, bool onPt, double arg1, double arg2)
   }
   return rethist;
 }
+
 TH1D* FlowContainer::GetCNN(int n, int c, bool onPt, double arg1, double arg2)
 {
-  if (c == 8)
+  if (c == kEightParticleOrder)
     return GetCN8VsX(n, onPt, arg1, arg2);
-  if (c == 6)
+  if (c == kSixParticleOrder)
     return GetCN6VsX(n, onPt, arg1, arg2);
-  if (c == 4)
+  if (c == kFourParticleOrder)
     return GetCN4VsX(n, onPt, arg1, arg2);
   return GetCN2VsX(n, onPt, arg1, arg2);
 };
 TH1D* FlowContainer::GetVNN(int n, int c, bool onPt, double arg1, double arg2)
 {
-  if (c == 8)
+  if (c == kEightParticleOrder)
     return GetVN8VsX(n, onPt, arg1, arg2);
-  if (c == 6)
+  if (c == kSixParticleOrder)
     return GetVN6VsX(n, onPt, arg1, arg2);
-  if (c == 4)
+  if (c == kFourParticleOrder)
     return GetVN4VsX(n, onPt, arg1, arg2);
   return GetVN2VsX(n, onPt, arg1, arg2);
 };
@@ -1051,12 +1059,14 @@ double FlowContainer::CN6Error(double cor6e, double cor4, double cor4e, double c
 {
   if (!fPropagateErrors)
     return 0;
-  double inters[3];
+
+  constexpr int kCN6Terms = 3;
+  double inters[kCN6Terms];
   inters[0] = cor6e;
   inters[1] = -9 * cor2 * cor4e;
   inters[2] = (-9 * cor4 + 36 * cor2 * cor2) * cor2e;
   double sum = 0;
-  for (int i = 0; i < 3; i++)
+  for (int i = 0; i < kCN6Terms; i++)
     sum += (inters[i] * inters[i]);
   return TMath::Sqrt(sum);
 };
@@ -1070,14 +1080,15 @@ double FlowContainer::DN6Error(double d6e, double d4, double d4e, double d2,
 {
   if (!fPropagateErrors)
     return 0;
-  double inters[5];
+  constexpr int kDN6Terms = 5;
+  double inters[kDN6Terms];
   inters[0] = d6e;
   inters[1] = -6 * c2 * d4e;
   inters[2] = (-3 * c4 + 12 * c2 * c2) * d2e;
   inters[3] = -3 * d2 * c4e;
   inters[4] = (-6 * d4 + 24 * d2 * c2) * c2e;
   double sum = 0;
-  for (int i = 0; i < 5; i++)
+  for (int i = 0; i < kDN6Terms; i++)
     sum += (inters[i] * inters[i]);
   return TMath::Sqrt(sum);
 };
@@ -1126,13 +1137,14 @@ double FlowContainer::CN8Error(double cor8e, double cor6, double cor6e,
 {
   if (!fPropagateErrors)
     return 0;
-  double parts[4];
+  constexpr int kCN8Terms = 4;
+  double parts[kCN8Terms];
   parts[0] = cor8e;
   parts[1] = -16 * cor2 * cor6e;
   parts[2] = (-36 * cor4 + 144 * cor2 * cor2) * cor4e;
   parts[3] = (-16 * cor6 + 288 * cor4 * cor2 + 576 * cor2 * cor2 * cor2) * cor2e;
   double retval = 0;
-  for (int i = 0; i < 4; i++)
+  for (int i = 0; i < kCN8Terms; i++)
     retval += TMath::Power(parts[i], 2);
   return TMath::Sqrt(retval);
 };
@@ -1147,7 +1159,8 @@ double FlowContainer::DN8Error(double d8e, double d6, double d6e, double d4,
 {
   if (!fPropagateErrors)
     return 0;
-  double parts[7];
+  constexpr int kDN8Terms = 7;
+  double parts[kDN8Terms];
   parts[0] = d8e;                             // d/d8'
   parts[1] = -12 * c2 * d6e;                  // d/d6'
   parts[2] = -4 * d2 * c6e;                   // d/d6
@@ -1156,7 +1169,7 @@ double FlowContainer::DN8Error(double d8e, double d6, double d6e, double d4,
   parts[5] = (-4 * c6 + 72 * c4 * c2 - 144 * c2 * c2 * c2) * d2e;
   parts[6] = (-12 * d6 + 144 * d4 * c2 + 72 * c4 * d2 - 432 * d2 * c2 * c2) * c2e;
   double retval = 0;
-  for (int i = 0; i < 7; i++)
+  for (int i = 0; i < kDN8Terms; i++)
     retval += TMath::Power(parts[i], 2);
   return TMath::Sqrt(retval);
 };
@@ -1197,26 +1210,6 @@ void FlowContainer::SetPtRebin(int nbins, double* binedges)
 {
   fPtRebin = nbins;
   fPtRebinEdges = binedges;
-  return;
-  int fPtRebin = 0;
-  // double *lPtRebinEdges=binedges;
-  if (!fbinsPt)
-    SetXAxis();
-  for (int i = 0; i < nbins; i++)
-    if (binedges[i] < fbinsPt[0] || binedges[i] > fbinsPt[fNbinsPt - 1])
-      continue;
-    else
-      fPtRebin++;
-  if (fPtRebinEdges)
-    delete[] fPtRebinEdges;
-  fPtRebinEdges = new double[fPtRebin];
-  fPtRebin = 0;
-  for (int i = 0; i < nbins; i++)
-    if (binedges[i] < fbinsPt[0] || binedges[i] > fbinsPt[fNbinsPt])
-      continue;
-    else
-      fPtRebinEdges[fPtRebin++] = binedges[i];
-  // fPtRebin--;
 }
 void FlowContainer::SetMultiRebin(int nbins, double* binedges)
 {
