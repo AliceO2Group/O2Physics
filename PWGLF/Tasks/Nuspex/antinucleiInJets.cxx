@@ -229,7 +229,7 @@ struct AntinucleiInJets {
   TH1F* antideuteronsPerpCone = nullptr;
 
   // CCDB manager service for accessing condition data
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   // Direct interface to the CCDB API for manual data access
   o2::ccdb::CcdbApi ccdbApi;
@@ -683,7 +683,7 @@ struct AntinucleiInJets {
     }
   }
 
-  void getReweightingHistograms(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj, TString filepath)
+  void getReweightingHistograms(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj, TString const& filepath)
   {
     TList* list = ccdbObj->get<TList>(filepath.Data());
     if (!list) {
@@ -692,26 +692,26 @@ struct AntinucleiInJets {
     }
 
     // Get reweighting histograms for primary fraction
-    primaryAntiprotons = static_cast<TH1F*>(list->FindObject("weightsProton"));
-    primaryAntiLambda = static_cast<TH1F*>(list->FindObject("weightsLambda"));
-    primaryAntiSigma = static_cast<TH1F*>(list->FindObject("weightsSigma"));
-    primaryAntiXi = static_cast<TH1F*>(list->FindObject("weightsXi"));
-    primaryAntiOmega = static_cast<TH1F*>(list->FindObject("weightsOmega"));
+    primaryAntiprotons = dynamic_cast<TH1F*>(list->FindObject("weightsProton"));
+    primaryAntiLambda = dynamic_cast<TH1F*>(list->FindObject("weightsLambda"));
+    primaryAntiSigma = dynamic_cast<TH1F*>(list->FindObject("weightsSigma"));
+    primaryAntiXi = dynamic_cast<TH1F*>(list->FindObject("weightsXi"));
+    primaryAntiOmega = dynamic_cast<TH1F*>(list->FindObject("weightsOmega"));
 
     if (!primaryAntiprotons || !primaryAntiSigma || !primaryAntiLambda || !primaryAntiXi || !primaryAntiOmega) {
       LOGP(error, "Missing one or more reweighting histograms for primary fraction in CCDB list");
     }
 
     // Get reweighting histograms for antiproton efficiency
-    antiprotonsInsideJets = static_cast<TH1F*>(list->FindObject("weightsJet"));
-    antiprotonsPerpCone = static_cast<TH1F*>(list->FindObject("weightsUe"));
+    antiprotonsInsideJets = dynamic_cast<TH1F*>(list->FindObject("weightsJet"));
+    antiprotonsPerpCone = dynamic_cast<TH1F*>(list->FindObject("weightsUe"));
     if (!antiprotonsInsideJets || !antiprotonsPerpCone) {
       LOGP(error, "Missing one or more reweighting histograms for antiproton efficiency in CCDB list");
     }
 
     // Get reweighting histograms for antideuteron efficiency
-    antideuteronsInsideJets = static_cast<TH1F*>(list->FindObject("weightsAntidJet"));
-    antideuteronsPerpCone = static_cast<TH1F*>(list->FindObject("weightsAntidUe"));
+    antideuteronsInsideJets = dynamic_cast<TH1F*>(list->FindObject("weightsAntidJet"));
+    antideuteronsPerpCone = dynamic_cast<TH1F*>(list->FindObject("weightsAntidUe"));
     if (!antideuteronsInsideJets || !antideuteronsPerpCone) {
       LOGP(error, "Missing one or more reweighting histograms for antideuteron efficiency in CCDB list");
     }
@@ -1787,6 +1787,8 @@ struct AntinucleiInJets {
             break;
           case PDG_t::kSigmaBarMinus:
             registryMC.fill(HIST("sigmaBar"), particle.pt());
+            break;
+          default:
             break;
         }
       }
@@ -2994,6 +2996,8 @@ struct AntinucleiInJets {
             break;
           case -o2::constants::physics::Pdg::kHelium3:
             registryMC.fill(HIST("antihelium3_gen_syst"), particle.pt());
+            break;
+          default:
             break;
         }
       }
