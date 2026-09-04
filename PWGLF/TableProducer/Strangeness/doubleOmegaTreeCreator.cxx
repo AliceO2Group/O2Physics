@@ -49,6 +49,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
+#include <string>
 #include <vector>
 
 using namespace o2;
@@ -902,7 +903,7 @@ struct doubleOmegaTreeCreator {
         const std::array<int64_t, 3> sourceTrackIds{
           lambdaKaonSource.posTrackId(), lambdaKaonSource.negTrackId(), lambdaKaonSource.bachelorId()};
         bool sharesTrack = false;
-        for (const auto omegaTrackId : omegaTrackIds) {
+        for (const auto& omegaTrackId : omegaTrackIds) {
           if (std::find(sourceTrackIds.begin(), sourceTrackIds.end(), omegaTrackId) != sourceTrackIds.end()) {
             sharesTrack = true;
             break;
