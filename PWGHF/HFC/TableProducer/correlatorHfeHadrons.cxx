@@ -285,7 +285,6 @@ struct HfCorrelatorHfeHadrons {
     double ptElectron = -999;
     double phiElectron = -999;
     double etaElectron = -999;
-    int cntEle = 0;
     for (const auto& eTrack : electrons) {
       ptElectron = eTrack.ptTrack();
       phiElectron = eTrack.phiTrack();
@@ -387,7 +386,7 @@ struct HfCorrelatorHfeHadrons {
         entryElectronHadronPair(deltaPhi, deltaEta, ptElectron, ptHadron, eTrack.eopEl(), eTrack.m02El(), eTrack.tpcNSigmaElTrack(), eTrack.tofNSigmaElTrack(), eTrack.tpcNClsCrRowsTrack(), eTrack.tpcCrRowsRatioTrack(), eTrack.itsChi2NClTrack(), eTrack.tpcChi2NClTrack(), eTrack.dcaXYTrack(), eTrack.dcaZTrack(), hTrack.tpcNClsCrossedRows(), hTrack.tpcCrossedRowsOverFindableCls(), hTrack.itsChi2NCl(), hTrack.tpcChi2NCl(), hTrack.dcaXY(), hTrack.dcaZ(), poolBin, nElHadLSCorr, nElHadUSCorr);
 
       } // end Hadron Track loop
-      cntEle++;
+
     } // end Electron loop
   }
 
