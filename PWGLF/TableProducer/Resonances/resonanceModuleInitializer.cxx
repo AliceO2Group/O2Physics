@@ -44,6 +44,7 @@
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+
 #include <TH1.h>
 #include <THnSparse.h>
 
@@ -208,7 +209,7 @@ struct ResonanceModuleInitializer {
                                                     || (nabs(aod::mcparticle::pdgCode) == 10323)   // K1(1270)+
                                                     || (nabs(aod::mcparticle::pdgCode) == 123314)  // Xi(1820)0
                                                     || (nabs(aod::mcparticle::pdgCode) == 123324)  // Xi(1820)-
-                                                    || (nabs(aod::mcparticle::pdgCode) == 123334)    // Omega(2012)-
+                                                    || (nabs(aod::mcparticle::pdgCode) == 123334)  // Omega(2012)-
                                                     || (nabs(aod::mcparticle::pdgCode) == 2212)    // proton
                                                     || (nabs(aod::mcparticle::pdgCode) == 3122)    // Lambda0
                                                     || (nabs(aod::mcparticle::pdgCode) == 3312)    // Xi-
@@ -1783,9 +1784,9 @@ struct ResonanceDaughterInitializer {
   /// @brief Find a selected V0 and collect daughter IDs only for the optional global veto
   template <bool isMC, typename CollisionType, typename V0Type, typename TrackType>
   SelectedCandidateDaughters collectSelectedV0Daughters(CollisionType const& collision,
-                                                         V0Type const& v0s,
-                                                         TrackType const& tracks,
-                                                         bool useGlobalDaughterVeto)
+                                                        V0Type const& v0s,
+                                                        TrackType const& tracks,
+                                                        bool useGlobalDaughterVeto)
   {
     SelectedCandidateDaughters selectedCandidates{useGlobalDaughterVeto};
     for (auto const& v0 : v0s) {
@@ -1808,9 +1809,9 @@ struct ResonanceDaughterInitializer {
   /// @brief Find a selected cascade and collect daughter IDs only for the optional global veto
   template <bool isMC, typename CollisionType, typename CascType, typename TrackType>
   SelectedCandidateDaughters collectSelectedCascadeDaughters(CollisionType const& collision,
-                                                              CascType const& cascades,
-                                                              TrackType const& tracks,
-                                                              bool useGlobalDaughterVeto)
+                                                             CascType const& cascades,
+                                                             TrackType const& tracks,
+                                                             bool useGlobalDaughterVeto)
   {
     SelectedCandidateDaughters selectedCandidates{useGlobalDaughterVeto};
     for (auto const& casc : cascades) {
