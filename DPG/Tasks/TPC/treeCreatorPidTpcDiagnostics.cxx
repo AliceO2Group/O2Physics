@@ -9,13 +9,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file treeCreatorPidTpcQa.cxx
+/// \file treeCreatorPidTpcDiagnostics.cxx
 /// \brief Creates trees with PID QA variables along with variables used for NN training
 ///
 /// \author Ana Marin <ana.marin@cern.ch>
 /// \author Oleksii Lubynets <oleksii.lubynets@cern.ch>
 
-#include "treeCreatorPidTpcQa.h"
+#include "treeCreatorPidTpcDiagnostics.h"
 
 #include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/CCDB/ctpRateFetcher.h"
@@ -64,8 +64,8 @@ using namespace o2::dpg_tpcskimstablecreator;
   MACRO(He, Helium3)                \
   MACRO(Al, Alpha)
 
-struct TreeCreatorPidTpcQa {
-  Produces<o2::aod::QaPidTpc> rowPidTpcQa;
+struct TreeCreatorPidTpcDiagnostics {
+  Produces<o2::aod::PidTpcDiagnostics> rowPidTpcDiagnostics;
 
   Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply event selection: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
   Configurable<float> cutVtxZ{"cutVtxZ", 10.f, "Cut on vertex Z position [cm]"};
@@ -180,7 +180,7 @@ struct TreeCreatorPidTpcQa {
                              TrackType const& tracks)
   {
     if (mProcessedParticles == 0) {
-      rowPidTpcQa.reserve(tracks.size() * reserveRatio);
+      rowPidTpcDiagnostics.reserve(tracks.size() * reserveRatio);
     }
 
     std::string irSource{};
@@ -249,42 +249,42 @@ struct TreeCreatorPidTpcQa {
           nSigmaTof = o2::aod::pidutils::tofNSigma<ParticleId>(track);
         }
 
-        rowPidTpcQa(isGoodRctEvent, ParticleId, ft0Occ, hadronicRate, multTPC, nClNormalized, nclPID, phi, tgl, tpcInnerParam, rapidity, momentum, signed1Pt, nSigmaTpc, dedxExpected, dedxDiff, expSigma, nSigmaTof);
+        rowPidTpcDiagnostics(isGoodRctEvent, ParticleId, ft0Occ, hadronicRate, multTPC, nClNormalized, nclPID, phi, tgl, tpcInnerParam, rapidity, momentum, signed1Pt, nSigmaTpc, dedxExpected, dedxDiff, expSigma, nSigmaTof);
       } // tracksFromCollision
     } // collisions
     ++mProcessedParticles;
     if (mProcessedParticles == mEnabledParticles) {
       mProcessedParticles = 0;
       if (saveReserveQaHisto) {
-        registry.fill(HIST("hOutputRatio"), static_cast<double>((rowPidTpcQa.lastIndex() + 1)) / tracks.size());
+        registry.fill(HIST("hOutputRatio"), static_cast<double>((rowPidTpcDiagnostics.lastIndex() + 1)) / tracks.size());
       }
     }
   }
 
-#define MAKE_PROCESS_FUNCTIONS(ParticleNameShort, ParticleNameLong)                                                                                           \
-  void process##ParticleNameLong(CollisionsExtra const& collisions,                                                                                           \
-                                 soa::Join<TrackCandidates, aod::pidTPC##ParticleNameShort> const& tracks,                                                    \
-                                 aod::BCsWithTimestamps const&)                                                                                               \
-  {                                                                                                                                                           \
-    processSingleParticle<PID::ParticleNameLong, false, false>(collisions, tracks);                                                                           \
-  }                                                                                                                                                           \
-  PROCESS_SWITCH(TreeCreatorPidTpcQa, process##ParticleNameLong, Form("Process for the %s hypothesis for TPC NSigma QA", #ParticleNameLong), false);          \
-                                                                                                                                                              \
-  void processFull##ParticleNameLong(CollisionsExtra const& collisions,                                                                                       \
-                                     soa::Join<TrackCandidates, aod::pidTPCFull##ParticleNameShort> const& tracks,                                            \
-                                     aod::BCsWithTimestamps const&)                                                                                           \
-  {                                                                                                                                                           \
-    processSingleParticle<PID::ParticleNameLong, true, false>(collisions, tracks);                                                                            \
-  }                                                                                                                                                           \
-  PROCESS_SWITCH(TreeCreatorPidTpcQa, processFull##ParticleNameLong, Form("Process for the %s hypothesis for full TPC PID QA", #ParticleNameLong), false);    \
-                                                                                                                                                              \
-  void processFullWithTOF##ParticleNameLong(CollisionsExtra const& collisions,                                                                                \
-                                            soa::Join<TrackCandidates, aod::pidTPCFull##ParticleNameShort, aod::pidTOFFull##ParticleNameShort> const& tracks, \
-                                            aod::BCsWithTimestamps const&)                                                                                    \
-  {                                                                                                                                                           \
-    processSingleParticle<PID::ParticleNameLong, true, true>(collisions, tracks);                                                                             \
-  }                                                                                                                                                           \
-  PROCESS_SWITCH(TreeCreatorPidTpcQa, processFullWithTOF##ParticleNameLong, Form("Process for the %s hypothesis for full TPC PID QA with the TOF info added", #ParticleNameLong), false);
+#define MAKE_PROCESS_FUNCTIONS(ParticleNameShort, ParticleNameLong)                                                                                                 \
+  void process##ParticleNameLong(CollisionsExtra const& collisions,                                                                                                 \
+                                 soa::Join<TrackCandidates, aod::pidTPC##ParticleNameShort> const& tracks,                                                          \
+                                 aod::BCsWithTimestamps const&)                                                                                                     \
+  {                                                                                                                                                                 \
+    processSingleParticle<PID::ParticleNameLong, false, false>(collisions, tracks);                                                                                 \
+  }                                                                                                                                                                 \
+  PROCESS_SWITCH(TreeCreatorPidTpcDiagnostics, process##ParticleNameLong, Form("Process for the %s hypothesis for TPC NSigma QA", #ParticleNameLong), false);       \
+                                                                                                                                                                    \
+  void processFull##ParticleNameLong(CollisionsExtra const& collisions,                                                                                             \
+                                     soa::Join<TrackCandidates, aod::pidTPCFull##ParticleNameShort> const& tracks,                                                  \
+                                     aod::BCsWithTimestamps const&)                                                                                                 \
+  {                                                                                                                                                                 \
+    processSingleParticle<PID::ParticleNameLong, true, false>(collisions, tracks);                                                                                  \
+  }                                                                                                                                                                 \
+  PROCESS_SWITCH(TreeCreatorPidTpcDiagnostics, processFull##ParticleNameLong, Form("Process for the %s hypothesis for full TPC PID QA", #ParticleNameLong), false); \
+                                                                                                                                                                    \
+  void processFullWithTOF##ParticleNameLong(CollisionsExtra const& collisions,                                                                                      \
+                                            soa::Join<TrackCandidates, aod::pidTPCFull##ParticleNameShort, aod::pidTOFFull##ParticleNameShort> const& tracks,       \
+                                            aod::BCsWithTimestamps const&)                                                                                          \
+  {                                                                                                                                                                 \
+    processSingleParticle<PID::ParticleNameLong, true, true>(collisions, tracks);                                                                                   \
+  }                                                                                                                                                                 \
+  PROCESS_SWITCH(TreeCreatorPidTpcDiagnostics, processFullWithTOF##ParticleNameLong, Form("Process for the %s hypothesis for full TPC PID QA with the TOF info added", #ParticleNameLong), false);
 
   DO_FOR_ALL_PARTICLES(MAKE_PROCESS_FUNCTIONS)
 #undef MAKE_PROCESS_FUNCTIONS
@@ -292,6 +292,6 @@ struct TreeCreatorPidTpcQa {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<TreeCreatorPidTpcQa>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<TreeCreatorPidTpcDiagnostics>(cfgc)};
 }
 #undef DO_FOR_ALL_PARTICLES

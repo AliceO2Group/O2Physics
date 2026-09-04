@@ -9,13 +9,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file treeCreatorPidTpcQa.h
+/// \file treeCreatorPidTpcDiagnostics.h
 /// \author Ana Marin <ana.marin@cern.ch>
 /// \author Oleksii Lubynets <oleksii.lubynets@cern.ch>
 /// \brief  Creates trees with PID QA variables along with variables used for NN training
 
-#ifndef DPG_TASKS_AOTTRACK_PID_TPC_TREECREATORPIDTPCQA_H_
-#define DPG_TASKS_AOTTRACK_PID_TPC_TREECREATORPIDTPCQA_H_
+#ifndef DPG_TASKS_TPC_TREECREATORPIDTPCDIAGNOSTICS_H_
+#define DPG_TASKS_TPC_TREECREATORPIDTPCDIAGNOSTICS_H_
 
 #include "DPG/Tasks/TPC/tpcSkimsTableCreator.h"
 
@@ -24,16 +24,16 @@
 
 namespace o2::aod
 {
-namespace dpg_tpcpidqa
+namespace dpg_tpcpiddiagnostics
 {
 DECLARE_SOA_COLUMN(NSigmaTpc, nSigmaTpc, float);
 DECLARE_SOA_COLUMN(DedxExpected, dedxExpected, float);
 DECLARE_SOA_COLUMN(DedxDiff, dedxDiff, float);
 DECLARE_SOA_COLUMN(ExpSigma, expSigma, float);
 DECLARE_SOA_COLUMN(NSigmaTof, nSigmaTof, float);
-} // namespace dpg_tpcpidqa
+} // namespace dpg_tpcpiddiagnostics
 
-DECLARE_SOA_TABLE(QaPidTpc, "AOD", "QAPIDTPC",
+DECLARE_SOA_TABLE(PidTpcDiagnostics, "AOD", "PIDTPCDIAG",
                   tpcskims::IsGoodRct,
                   tpcskims::PidIndex,
                   tpcskims::Ft0Occ,
@@ -47,11 +47,11 @@ DECLARE_SOA_TABLE(QaPidTpc, "AOD", "QAPIDTPC",
                   o2::aod::track::Y,
                   o2::aod::track::P,
                   o2::aod::track::Signed1Pt,
-                  dpg_tpcpidqa::NSigmaTpc,
-                  dpg_tpcpidqa::DedxExpected,
-                  dpg_tpcpidqa::DedxDiff,
-                  dpg_tpcpidqa::ExpSigma,
-                  dpg_tpcpidqa::NSigmaTof)
+                  dpg_tpcpiddiagnostics::NSigmaTpc,
+                  dpg_tpcpiddiagnostics::DedxExpected,
+                  dpg_tpcpiddiagnostics::DedxDiff,
+                  dpg_tpcpiddiagnostics::ExpSigma,
+                  dpg_tpcpiddiagnostics::NSigmaTof)
 } // namespace o2::aod
 
-#endif // DPG_TASKS_AOTTRACK_PID_TPC_TREECREATORPIDTPCQA_H_
+#endif // DPG_TASKS_TPC_TREECREATORPIDTPCDIAGNOSTICS_H_
