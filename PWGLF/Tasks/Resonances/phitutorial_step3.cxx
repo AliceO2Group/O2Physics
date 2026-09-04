@@ -81,7 +81,7 @@ struct phitutorial_step3 {
   // PREAMBLE COMPLETE, NOW WE DO HELPER FCNS
   //**************************************//
   template <typename EventType>
-  bool eventSelection(const EventType event)
+  bool eventSelection(const EventType& event)
   {
     if (!event.sel8()) // This is required to extract good events
       return false;
@@ -90,7 +90,7 @@ struct phitutorial_step3 {
   };
   //********************************************//
   template <typename TracksType>
-  bool trackSelection(const TracksType track)
+  bool trackSelection(const TracksType& track)
   {
     if (!track.isGlobalTrack())
       return false;

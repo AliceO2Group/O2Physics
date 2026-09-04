@@ -284,7 +284,7 @@ struct f0980analysis {
   }
 
   template <typename TrackType>
-  bool selPion(const TrackType track)
+  bool selPion(const TrackType& track)
   {
     switch (selectType) {
       case 0:

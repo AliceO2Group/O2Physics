@@ -345,7 +345,7 @@ struct lambdaAnalysis {
 
   // kinematic cuts method
   template <typename trackType, typename T>
-  bool kinCuts(trackType trkPr, trackType trkKa, T p, float& alpha)
+  bool kinCuts(const trackType& trkPr, const trackType& trkKa, const T& p, float& alpha)
   {
     // initialize
     std::vector<float> kinCutsPt = static_cast<std::vector<float>>(cKinCutsPt);

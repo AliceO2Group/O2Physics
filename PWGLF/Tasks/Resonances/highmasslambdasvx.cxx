@@ -573,7 +573,7 @@ struct highmasslambdasvx {
     histos.fill(HIST("hVtxZ"), collision.posZ());
     histos.fill(HIST("hOccupancy"), occupancy);
     auto firstprimarytrack = 0;
-    for (auto track1 : tracks) {
+    for (const auto& track1 : tracks) {
       if (!selectionTrack(track1)) {
         continue;
       }
@@ -611,7 +611,7 @@ struct highmasslambdasvx {
       histos.fill(HIST("hNsigmaProtonTOF"), track1.tofNSigmaPr(), track1.pt());
       auto track1ID = track1.globalIndex();
       auto trackParCovBach = getTrackParCov(track1);
-      for (auto v0 : V0s) {
+      for (const auto& v0 : V0s) {
         if (!SelectionV0(collision, v0)) {
           continue;
         }

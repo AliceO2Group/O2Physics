@@ -438,7 +438,7 @@ struct HypKfTreeCreator {
   PROCESS_SWITCH(HypKfTreeCreator, processMC, "MC tree", false);
 
   //___________________________________________________________________________________________________________________________________________________________
-  std::vector<float> dcaTracksAll(std::vector<arr3>& posVec, TString opt = "")
+  std::vector<float> dcaTracksAll(std::vector<arr3>& posVec, const TString& opt = "")
   {
     std::vector<float> vec;
     int n = posVec.size();
@@ -450,7 +450,7 @@ struct HypKfTreeCreator {
     return vec;
   }
   template <class T>
-  std::vector<float> dcaTrackSvAll(std::vector<arr3>& posVec, T const& hypNuc, TString opt = "")
+  std::vector<float> dcaTrackSvAll(std::vector<arr3>& posVec, T const& hypNuc, const TString& opt = "")
   {
     std::vector<float> vec;
     for (size_t i = 0; i < posVec.size(); i++) {
@@ -463,14 +463,14 @@ struct HypKfTreeCreator {
   {
     return *max_element(vec.begin(), vec.end());
   }
-  float meanValue(std::vector<float> vec)
+  float meanValue(const std::vector<float>& vec)
   {
     float sum = 0;
     for (const auto& value : vec)
       sum += value;
     return sum / vec.size();
   }
-  float mean2Value(std::vector<float> vec)
+  float mean2Value(const std::vector<float>& vec)
   {
     float sum = 0;
     for (const auto& value : vec)
@@ -478,7 +478,7 @@ struct HypKfTreeCreator {
     return std::sqrt(sum / vec.size());
   }
 
-  float dcaTracks(std::vector<arr3> v, int track1, int track2, TString opt = "XY")
+  float dcaTracks(std::vector<arr3> v, int track1, int track2, const TString& opt = "XY")
   {
     if (opt == "XY")
       return RecoDecay::distanceXY(v.at(track1), v.at(track2));
@@ -488,7 +488,7 @@ struct HypKfTreeCreator {
       return RecoDecay::distance(v.at(track1), v.at(track2));
   }
   template <class T>
-  float dcaTrackSv(std::vector<arr3>& v, int track, T const& hypNuc, TString opt = "")
+  float dcaTrackSv(std::vector<arr3>& v, int track, T const& hypNuc, const TString& opt = "")
   {
     if (opt == "XY")
       return RecoDecay::distanceXY(v.at(track), decayVtx(hypNuc));

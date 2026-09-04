@@ -265,7 +265,7 @@ struct K1AnalysisMicro {
   int kK1Plus = 10323;
 
   template <bool IsResoMicrotrack, typename TrackType>
-  bool trackCut(const TrackType track)
+  bool trackCut(const TrackType& track)
   {
     if constexpr (!IsResoMicrotrack) {
       // basic track cuts

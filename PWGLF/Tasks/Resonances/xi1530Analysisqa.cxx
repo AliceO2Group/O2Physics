@@ -521,7 +521,7 @@ struct Xi1530Analysisqa {
 
   // Primary track selection for the first pion //
   template <bool IsResoMicrotrack, typename TrackType>
-  bool primaryTrackCut(const TrackType track)
+  bool primaryTrackCut(const TrackType& track)
   {
     if (std::abs(track.eta()) >= primarytrackConfig.cMaxetacut)
       return false;
@@ -568,7 +568,7 @@ struct Xi1530Analysisqa {
 
   // Primary track selection for cascades, Need to more informations for cascades //
   template <typename TracksTypeCasc>
-  bool cascprimaryTrackCut(const TracksTypeCasc track)
+  bool cascprimaryTrackCut(const TracksTypeCasc& track)
   {
     if (std::abs(track.eta()) >= primarytrackConfig.cMaxetacut)
       return false;
@@ -596,7 +596,7 @@ struct Xi1530Analysisqa {
 
   // Topological cuts for cascades
   template <typename TracksTypeCasc>
-  bool casctopCut(const TracksTypeCasc track)
+  bool casctopCut(const TracksTypeCasc& track)
   {
     // Topological cuts for V0s
     if (std::abs(track.daughDCA()) >= v0sConfig.cDCALambdaDaugtherscut)
