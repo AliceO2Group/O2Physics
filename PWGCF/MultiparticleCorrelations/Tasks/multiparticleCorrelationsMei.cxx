@@ -20,11 +20,6 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisTask.h>
-#include <Framework/DataTypes.h>
-
-using namespace std;
-// ...
 #include <Framework/runDataProcessing.h>
 
 #include <TGrid.h>
@@ -33,12 +28,10 @@ using namespace std;
 
 #include <string>
 #include <vector>
-// ...
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::constants;
-// ...
 
 // Definitions of join tables for Run 3 analysis:
 using EventSelection = soa::Join<aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs>;
@@ -51,10 +44,6 @@ using TracksRecSim = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, ao
 using TrackRecSim = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>::iterator;
 using TracksSim = aod::McParticles;
 using TrackSim = aod::McParticles::iterator;
-// ...
-
-using namespace std;
-// ...
 
 // *) Define enums:
 enum ECentralityEstimator {
