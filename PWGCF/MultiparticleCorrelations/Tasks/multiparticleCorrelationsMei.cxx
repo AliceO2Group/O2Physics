@@ -20,6 +20,8 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/DataTypes.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TGrid.h>
@@ -32,6 +34,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::constants;
+using namespace std;
 
 // Definitions of join tables for Run 3 analysis:
 using EventSelection = soa::Join<aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs>;
@@ -325,7 +328,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
         listWithRuns = reinterpret_cast<TList*>(getObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
         if (!listWithRuns) {
           // baseList->ls();
-          LOGF(fatal, "\033[1;31m%s at line %d : this crash can happen if in the output file there is no list with weights for the current run number = %s\033[0m", __FUNCTION__, __LINE__, tc.fRunNumber.Data());
+          // LOGF(fatal, "\033[1;31m%s at line %d : this crash can happen if in the output file there is no list with weights for the current run number = %s\033[0m", __FUNCTION__, __LINE__, tc.fRunNumber.Data());
         }
       }
     }
