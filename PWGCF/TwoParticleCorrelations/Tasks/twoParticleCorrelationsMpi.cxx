@@ -99,7 +99,7 @@ struct TwoParticleCorrelationsMpi {
   ;
   Configurable<int> cfgLocalEfficiency{"cfgLocalEfficiency", 0, "0 = OFF and 1 = ON for local efficiency"};
   Configurable<bool> cfgDropStepRECO{"cfgDropStepRECO", false, "choice to drop step RECO if efficiency correction is used"};
-  Configurable<int> cfgCentBinsForMC{"cfgCentBinsForMC", 0, "0 = OFF and 1 = ON for data like multiplicity/centrality bins for MC steps"};
+  Configurable<int> cfgCentBinsForMC{"cfgCentBinsForMC", 0, "0 = generated multiplicity; 1 = reconstructed multiplicity and all associated collisions; 2 = reconstructed multiplicity and first associated collision only in processMCEfficiency"};
   Configurable<uint16_t> cfgTrackBitMask{"cfgTrackBitMask", 0, "BitMask for track selection systematics; refer to the enum TrackSelectionCuts in filtering task"};
   Configurable<uint16_t> cfgMultCorrelationsMask{"cfgMultCorrelationsMask", 0, "Selection bitmask for the multiplicity correlations. This should match the filter selection cfgEstimatorBitMask."};
   Configurable<std::string> cfgMultCutFormula{"cfgMultCutFormula", "", "Multiplicity correlations cut formula. A result greater than zero results in accepted event. Parameters: [cFT0C] FT0C centrality, [mFV0A] V0A multiplicity, [mGlob] global track multiplicity, [mPV] PV track multiplicity, [cFT0M] FT0M centrality"};
@@ -290,6 +290,9 @@ struct TwoParticleCorrelationsMpi {
   {
     if (cfgUserAxis < NoUserAxis || cfgUserAxis > EventSeedAxis) {
       LOGF(fatal, "Unsupported cfgUserAxis=%d; use 0 (off), 1 (invariant mass), or 2 (event seed)", cfgUserAxis.value);
+    }
+    if (cfgCentBinsForMC < 0 || cfgCentBinsForMC > 2) {
+      LOGF(fatal, "Unsupported cfgCentBinsForMC=%d; use 0 (generated multiplicity), 1 (all reconstructed collisions), or 2 (first reconstructed collision only for efficiency)", cfgCentBinsForMC.value);
     }
     if (doprocessMCSameDerived && (doprocessSameDerived || doprocessSameDerivedMultSet)) {
       LOGF(fatal, "processMCSameDerived is mutually exclusive with the reconstructed derived same-event processes because it also fills those outputs");
@@ -1926,12 +1929,17 @@ struct TwoParticleCorrelationsMpi {
     }
 
     auto multiplicity = mcCollision.multiplicity();
+    const bool useSingleRecoCollision = cfgCentBinsForMC == 2;
     if (cfgCentBinsForMC > 0) {
       if (collisions.size() == 0) {
         return;
       }
-      for (const auto& collision : collisions) {
-        multiplicity = collision.multiplicity();
+      if (useSingleRecoCollision) {
+        multiplicity = collisions.begin().multiplicity();
+      } else {
+        for (const auto& collision : collisions) {
+          multiplicity = collision.multiplicity();
+        }
       }
     }
     // Primaries
@@ -1941,6 +1949,9 @@ struct TwoParticleCorrelationsMpi {
       }
     }
     for (const auto& collision : collisions) {
+      if (useSingleRecoCollision && collision.globalIndex() != collisions.begin().globalIndex()) {
+        continue;
+      }
       auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
       if (cfgVerbosity > 0) {
         LOGF(info, "  Reconstructed collision at vtx-z = %f", collision.posZ());
