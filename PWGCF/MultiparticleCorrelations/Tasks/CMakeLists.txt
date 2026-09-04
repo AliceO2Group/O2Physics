@@ -17,8 +17,8 @@ o2physics_add_dpl_workflow(multiparticle-correlations-ab
 o2physics_add_dpl_workflow(multiparticle-correlations-ar
                     SOURCES multiparticle-correlations-ar.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
-                    COMPONENT_NAME Analysis) // o2-linter: disable=name/o2-workflow (Common collaboration code)
-
+                    COMPONENT_NAME Analysis)
+                    
 o2physics_add_dpl_workflow(three-particle-correlations
                     SOURCES threeParticleCorrelations.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
