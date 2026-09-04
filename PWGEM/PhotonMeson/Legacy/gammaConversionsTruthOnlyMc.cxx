@@ -91,7 +91,7 @@ struct gammaConversionsTruthOnlyMc {
     }
   }
   template <typename MCGAMMA, typename MCDAUONE, typename MCDAUTWO>
-  void fillAsymmetryHistograms(MCGAMMA const& theMcConvGamma, MCDAUONE const theFirstDaughter, MCDAUTWO theSecondDaughter)
+  void fillAsymmetryHistograms(MCGAMMA const& theMcConvGamma, MCDAUONE const& theFirstDaughter, const MCDAUTWO& theSecondDaughter)
   {
     float lConversionRadius = theMcConvGamma.v0Radius();
     float lGammaMomentum = theMcConvGamma.p();
