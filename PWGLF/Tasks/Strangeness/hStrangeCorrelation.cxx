@@ -129,6 +129,7 @@ struct HStrangeCorrelation {
     Configurable<bool> selectINELgtONE{"selectINELgtONE", false, "select INEL>1 events (at least 2 charged particles in |eta| < 1)"};
     Configurable<float> zVertexCut{"zVertexCut", 10, "Cut on PV position"};
     Configurable<bool> requireAllGoodITSLayers{"requireAllGoodITSLayers", false, " require that in the event all ITS are good"};
+    Configurable<bool> rejectSameBunchPileup{"rejectSameBunchPileup", false, "reject collisions associated with the same found-by-T0 bunch crossing"};
     Configurable<bool> requireGoodTriggerTVX{"requireGoodTriggerTVX", false, " require acceptable FT0C-FT0A time difference"};
     Configurable<bool> requireGoodZvtxFT0vsPV{"requireGoodZvtxFT0vsPV", false, " require small difference between z-vertex from PV and from FT0"};
     Configurable<bool> skipUnderOverflowInTHn{"skipUnderOverflowInTHn", false, "skip under/overflow in THns"};
@@ -3227,6 +3228,10 @@ struct HStrangeCorrelation {
     if (!collision.sel8()) {
       return false;
     }
+    if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) && masterConfigurations.requireGoodTriggerTVX) {
+      // FT0 vertex (acceptable FT0C-FT0A time difference) collisions
+      return false;
+    }
     if (std::abs(collision.posZ()) > masterConfigurations.zVertexCut) {
       return false;
     }
@@ -3240,6 +3245,15 @@ struct HStrangeCorrelation {
       return false;
     }
     if (!collision.selection_bit(aod::evsel::kIsGoodITSLayersAll) && masterConfigurations.requireAllGoodITSLayers) {
+      return false;
+    }
+    if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV) && masterConfigurations.requireGoodZvtxFT0vsPV) {
+      // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference
+      // use this cut at low multiplicities with caution
+      return false;
+    }
+    if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup) && masterConfigurations.rejectSameBunchPileup) {
+      // rejects collisions which are associated with the same "found-by-T0" bunch crossing
       return false;
     }
     if (zorroMask.value != "") {
@@ -4195,6 +4209,9 @@ struct HStrangeCorrelation {
     bool bestCollisionSel8 = false;
     bool bestCollisionINELgtZERO = false;
     bool bestCollisionINELgtONE = false;
+    bool bestCollisionNoSameBunchPileup = false;
+    bool bestCollisionGoodTriggerTVX = false;
+    bool bestCollisionGoodZvtxFT0vsPV = false;
     bool isCollisionSelect = false;
     uint32_t bestCollisionTriggerPresenceMap = 0;
 
@@ -4211,6 +4228,9 @@ struct HStrangeCorrelation {
           bestCollisionVtxZ = collision.posZ();
           bestCollisionINELgtZERO = collision.isInelGt0();
           bestCollisionINELgtONE = collision.isInelGt1();
+          bestCollisionNoSameBunchPileup = collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
+          bestCollisionGoodTriggerTVX = collision.selection_bit(aod::evsel::kIsTriggerTVX);
+          bestCollisionGoodZvtxFT0vsPV = collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
         }
         if (triggerPresenceMap.size() > 0) {
           bestCollisionTriggerPresenceMap = triggerPresenceMap[collision.globalIndex()];
@@ -4260,6 +4280,15 @@ struct HStrangeCorrelation {
         return;
       }
       if (masterConfigurations.selectINELgtONE && !bestCollisionINELgtONE) {
+        return;
+      }
+      if (masterConfigurations.rejectSameBunchPileup && !bestCollisionNoSameBunchPileup) {
+        return;
+      }
+      if (masterConfigurations.requireGoodTriggerTVX && !bestCollisionGoodTriggerTVX) {
+        return;
+      }
+      if (masterConfigurations.requireGoodZvtxFT0vsPV && !bestCollisionGoodZvtxFT0vsPV) {
         return;
       }
     }
@@ -4706,6 +4735,9 @@ struct HStrangeCorrelation {
       bool genBestCollisionSel8 = false;
       bool genBestCollisionINELgtZERO = false;
       bool genBestCollisionINELgtONE = false;
+      bool genBestCollisionNoSameBunchPileup = false;
+      bool genBestCollisionGoodTriggerTVX = false;
+      bool genBestCollisionGoodZvtxFT0vsPV = false;
       bool genCollisionSelected = false;
       int genLargestNContributors = -1;
       uint32_t genBestCollisionTriggerPresenceMap = 0;
@@ -4723,6 +4755,9 @@ struct HStrangeCorrelation {
           genBestCollisionVtxZ = recCollision.posZ();
           genBestCollisionINELgtZERO = recCollision.isInelGt0();
           genBestCollisionINELgtONE = recCollision.isInelGt1();
+          genBestCollisionNoSameBunchPileup = recCollision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
+          genBestCollisionGoodTriggerTVX = recCollision.selection_bit(aod::evsel::kIsTriggerTVX);
+          genBestCollisionGoodZvtxFT0vsPV = recCollision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
         }
         if (triggerPresenceMap.size() > 0) {
           genBestCollisionTriggerPresenceMap = triggerPresenceMap[recCollision.globalIndex()];
@@ -4734,6 +4769,9 @@ struct HStrangeCorrelation {
       } else if (masterConfigurations.doGenEventSelection) {
         genEventSelected = genEventSelected && genBestCollisionSel8 && std::abs(genBestCollisionVtxZ) <= masterConfigurations.zVertexCut &&
                            genBestCollisionINELgtZERO && (!masterConfigurations.selectINELgtONE || genBestCollisionINELgtONE) &&
+                           (!masterConfigurations.rejectSameBunchPileup || genBestCollisionNoSameBunchPileup) &&
+                           (!masterConfigurations.requireGoodTriggerTVX || genBestCollisionGoodTriggerTVX) &&
+                           (!masterConfigurations.requireGoodZvtxFT0vsPV || genBestCollisionGoodZvtxFT0vsPV) &&
                            genBestCollisionMultiplicity >= axisRanges[5][0] && genBestCollisionMultiplicity <= axisRanges[5][1];
       }
 
@@ -5660,21 +5698,19 @@ struct HStrangeCorrelation {
       // recomputed from raw tracks so that this stage cannot drift away from the
       // reconstructed analysis it exists to be compared against.
       //
-      // The sets are built per reconstructed collision and a pair is required to be
-      // final within one and the same collision: the reconstructed same-event
-      // correlation only ever pairs a trigger with a V0 sitting in the same vertex,
-      // so a pair split across two reconstructed vertices of one MC collision must
-      // not count as final here either.
-      //
-      // N.B.: the reconstructed autocorrelation rejection (trigger track identical
-      // to a V0 daughter track) is deliberately not replicated. It is a no-op as
-      // soon as the trigger is required to be a physical primary, because
-      // mcTrue(IndexK0) forces the daughters to be genuine -- hence secondary --
-      // K0 decay products.
-      std::vector<std::pair<std::unordered_set<int64_t>, std::unordered_set<int64_t>>> pairLossFinalPerCollision;
+      // The stage is restricted to the best reconstructed collision and keeps the
+      // reconstructed kinematics of every matched object, so that the pair test below
+      // can also impose the reconstructed-coordinate angular range and the
+      // reconstructed autocorrelation rejection. Both are conditions the reconstructed
+      // same-event correlation imposes as well, so this Final stage is by construction
+      // the same object as PairLossK0/Comparison/Final: the truth pairs that really do
+      // end up in the reconstructed correlation.
+      PairLossTrackMap pairLossFinalTriggers;
+      PairLossV0Map pairLossFinalV0s;
       for (auto const& collision : recCollisions) {
-        std::unordered_set<int64_t> finalTriggerMcIds;
-        std::unordered_set<int64_t> finalK0McIds;
+        if (static_cast<int64_t>(collision.globalIndex()) != pairLossBestCollisionId) {
+          continue;
+        }
 
         const auto finalTriggerSlice = triggerTracks.sliceBy(collisionSliceTracks, collision.globalIndex());
         for (auto const& triggerEntry : finalTriggerSlice) {
@@ -5691,7 +5727,7 @@ struct HStrangeCorrelation {
           if (masterConfigurations.doTriggPhysicalPrimary && !triggerEntry.mcPhysicalPrimary()) {
             continue;
           }
-          finalTriggerMcIds.insert(track.mcParticleId());
+          pairLossFinalTriggers[track.mcParticleId()].push_back(makePairLossTrackInfo(track));
         }
 
         const auto finalV0Slice = associatedV0s.sliceBy(collisionSliceV0s, collision.globalIndex());
@@ -5735,34 +5771,54 @@ struct HStrangeCorrelation {
           if (!passesFinalSelection) {
             continue;
           }
-          finalK0McIds.insert(v0MC.particleIdMC());
+          pairLossFinalV0s[v0MC.particleIdMC()].push_back(PairLossV0Info{
+            .globalIndex = static_cast<int64_t>(v0.globalIndex()),
+            .positiveTrackId = static_cast<int64_t>(positiveTrack.globalIndex()),
+            .negativeTrackId = static_cast<int64_t>(negativeTrack.globalIndex()),
+            .pt = v0.pt(),
+            .eta = v0.eta(),
+            .phi = v0.phi(),
+            .radius = v0.v0radius(),
+            .cosPA = v0.v0cosPA(),
+            .dcaDaughters = v0.dcaV0daughters(),
+            .massNSigma = assocEntry.invMassNSigma(IndexK0)});
         }
-
-        pairLossFinalPerCollision.emplace_back(std::move(finalTriggerMcIds), std::move(finalK0McIds));
       }
 
-      // Object-level membership, used only for the single-particle spectra: at
-      // least one collision in which the object is fully selected. The pair
-      // histogram uses pairLossHasFinalPair() instead, which is stricter.
+      // Object-level membership, used only for the single-particle spectra: the object
+      // has a fully selected reconstructed counterpart in the best collision. The pair
+      // histogram uses pairLossHasFinalPair() instead, which is stricter: it also
+      // requires the reconstructed pair itself to fall in the reconstructed angular
+      // range and to survive the reconstructed autocorrelation rejection.
       auto pairLossHasFinalTrigger = [&](int64_t mcId) {
-        for (auto const& perCollision : pairLossFinalPerCollision) {
-          if (perCollision.first.count(mcId) > 0) {
-            return true;
-          }
-        }
-        return false;
+        return pairLossFinalTriggers.find(mcId) != pairLossFinalTriggers.end();
       };
       auto pairLossHasFinalK0 = [&](int64_t mcId) {
-        for (auto const& perCollision : pairLossFinalPerCollision) {
-          if (perCollision.second.count(mcId) > 0) {
-            return true;
-          }
-        }
-        return false;
+        return pairLossFinalV0s.find(mcId) != pairLossFinalV0s.end();
       };
       auto pairLossHasFinalPair = [&](int64_t triggerMcId, int64_t k0McId) {
-        for (auto const& perCollision : pairLossFinalPerCollision) {
-          if (perCollision.first.count(triggerMcId) > 0 && perCollision.second.count(k0McId) > 0) {
+        const auto triggerMatches = pairLossFinalTriggers.find(triggerMcId);
+        if (triggerMatches == pairLossFinalTriggers.end()) {
+          return false;
+        }
+        const auto v0Matches = pairLossFinalV0s.find(k0McId);
+        if (v0Matches == pairLossFinalV0s.end()) {
+          return false;
+        }
+        for (auto const& reconstructedTrigger : triggerMatches->second) {
+          for (auto const& reconstructedV0 : v0Matches->second) {
+            float reconstructedDeltaEta = reconstructedTrigger.eta - reconstructedV0.eta;
+            if (masterConfigurations.doMirroringInDelataEta) {
+              reconstructedDeltaEta = std::abs(reconstructedDeltaEta);
+            }
+            const float reconstructedDeltaPhi = computeDeltaPhi(reconstructedTrigger.phi, reconstructedV0.phi);
+            if (reconstructedDeltaPhi < axisRanges[0][0] || reconstructedDeltaPhi > axisRanges[0][1] ||
+                reconstructedDeltaEta < axisRanges[1][0] || reconstructedDeltaEta > axisRanges[1][1]) {
+              continue;
+            }
+            if (doAutocorrelationRejection && (reconstructedTrigger.globalIndex == reconstructedV0.positiveTrackId || reconstructedTrigger.globalIndex == reconstructedV0.negativeTrackId)) {
+              continue;
+            }
             return true;
           }
         }
@@ -5960,6 +6016,9 @@ struct HStrangeCorrelation {
     bool bestCollisionSel8 = false;
     bool bestCollisionINELgtZERO = false;
     bool bestCollisionINELgtONE = false;
+    bool bestCollisionNoSameBunchPileup = false;
+    bool bestCollisionGoodTriggerTVX = false;
+    bool bestCollisionGoodZvtxFT0vsPV = false;
     bool isCollisionSelect = false;
     int biggestNContribs = -1;
     uint32_t bestCollisionTriggerPresenceMap = 0;
@@ -5975,6 +6034,9 @@ struct HStrangeCorrelation {
           bestCollisionVtxZ = recCollision.posZ();
           bestCollisionINELgtZERO = recCollision.isInelGt0();
           bestCollisionINELgtONE = recCollision.isInelGt1();
+          bestCollisionNoSameBunchPileup = recCollision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
+          bestCollisionGoodTriggerTVX = recCollision.selection_bit(aod::evsel::kIsTriggerTVX);
+          bestCollisionGoodZvtxFT0vsPV = recCollision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
         }
         if (triggerPresenceMap.size() > 0) {
           bestCollisionTriggerPresenceMap = triggerPresenceMap[recCollision.globalIndex()];
@@ -6003,6 +6065,15 @@ struct HStrangeCorrelation {
           return;
         }
         if (masterConfigurations.selectINELgtONE && !bestCollisionINELgtONE) {
+          return;
+        }
+        if (masterConfigurations.rejectSameBunchPileup && !bestCollisionNoSameBunchPileup) {
+          return;
+        }
+        if (masterConfigurations.requireGoodTriggerTVX && !bestCollisionGoodTriggerTVX) {
+          return;
+        }
+        if (masterConfigurations.requireGoodZvtxFT0vsPV && !bestCollisionGoodZvtxFT0vsPV) {
           return;
         }
         if (bestCollisionCentpercentile > axisRanges[5][1] || bestCollisionCentpercentile < axisRanges[5][0]) {
