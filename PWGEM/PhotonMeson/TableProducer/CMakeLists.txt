@@ -60,3 +60,8 @@ o2physics_add_dpl_workflow(material-budget-weights
                     SOURCES materialBudgetWeights.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::CCDB ROOT::Hist ROOT::Core
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(event-selection-photon
+                    SOURCES eventSelection.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)

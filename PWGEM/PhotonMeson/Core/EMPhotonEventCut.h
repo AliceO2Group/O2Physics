@@ -50,8 +50,8 @@ class EMPhotonEventCut
     kNCuts
   };
 
-  const std::string getName() const { return name; }
-  const std::string getTitle() const { return title; }
+  [[nodiscard]] const std::string& getName() const { return name; }
+  [[nodiscard]] const std::string& getTitle() const { return title; }
 
   template <typename T>
   bool IsSelected(T const& collision) const

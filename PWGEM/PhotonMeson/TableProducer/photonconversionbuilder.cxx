@@ -88,7 +88,7 @@ using namespace o2::constants::physics;
 using namespace o2::pwgem::photonmeson;
 using std::array;
 
-using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
+using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::PMEvSels, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
 // using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
 using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
 using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::PcmObjects>;
