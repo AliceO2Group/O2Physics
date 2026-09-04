@@ -622,7 +622,6 @@ struct EmcalPhotonMcTask {
     std::vector<float> bestNegativeScore(clusters.size(), 0);
 
     std::vector<float> mMlInputBuffer;
-    std::vector<float> mMlOutputBuffer;
 
     std::vector<PendingConvPair> pending;
     std::vector<float> mlBatchBuffer;
@@ -731,32 +730,6 @@ struct EmcalPhotonMcTask {
           emcFlagsTagging.set(g1.globalIndex());
           emcFlagsTagging.set(g2.globalIndex());
         }
-
-        // if (mlConfig.useMlTagging.value) {
-        //   o2::analysis::em::EMCConversionCandidate candidate{
-        //     .mMinv = static_cast<float>(vMeson.M()), .mDeltaEta = deltaEta, .mDeltaR = std::hypot(deltaEta, deltaPhi), .mPhiv = phiV, .mRConv = rConv, .mTotE = (g2.e() + g1.e()), .mE2 = g2.e(), .mE1 = g1.e(), .mDeltaPhi = deltaPhi};
-        //   mMlResponse.getInputFeatures(candidate, mMlInputBuffer);
-        //   bool isTagged = mMlResponse.isSelectedMl(mMlInputBuffer, 0.f, mMlOutputBuffer);
-
-        //   const float posScore = mMlOutputBuffer[1];
-        //   const float negScore = mMlOutputBuffer[0]; // = 1 - posScore for binary classification as we use
-
-        //   for (auto idx : {g1.globalIndex(), g2.globalIndex()}) {
-        //     if (posScore > bestPositiveScore[idx]) {
-        //       bestPositiveScore[idx] = posScore;
-        //     }
-        //     if (negScore > bestNegativeScore[idx]) {
-        //       bestNegativeScore[idx] = negScore;
-        //     }
-        //   }
-
-        //   if (isTagged) {
-        //     emcFlagsMlTagging.set(g1.globalIndex());
-        //     emcFlagsMlTagging.set(g2.globalIndex());
-        //   }
-        //   registry.fill(HIST("hMlScore"), mMlOutputBuffer[1]); // positive-class score, always, tagged or not
-        //   mMlOutputBuffer.clear();
-        // }
 
         if (mlConfig.useMlTagging.value) {
           o2::analysis::em::EMCConversionCandidate candidate{
