@@ -117,6 +117,8 @@ DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int8_t);     //! Candidat
 DECLARE_SOA_COLUMN(CandidateSign, candidateSign, int8_t);           //! Candidates sign
 DECLARE_SOA_COLUMN(FlagMc, flagMc, int8_t);                         //! Main MC decay-channel flag; 0 for unmatched candidates
 DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t); //! MC-matched prong permutation; -1 for data
+DECLARE_SOA_COLUMN(HypothesisMask, hypothesisMask, uint8_t);        //! Bit 0: DeKPi selected; bit 1: PiKDe selected
+DECLARE_SOA_COLUMN(CandidateGlobalIndex, candidateGlobalIndex, int64_t); //! Input candidate index, shared by rows from the same candidate
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);               //! MC origin for reconstructed candidates
 DECLARE_SOA_COLUMN(FlagMcDecayChanRec, flagMcDecayChanRec, int8_t); //! Resonant MC decay channel for reconstructed candidates
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               //! MC origin for generated particles
@@ -158,6 +160,9 @@ DECLARE_SOA_TABLE(HfCandCdLite, "AOD", "HFCANDCDLITE",
                   full::CandidateSelFlag,
                   full::CandidateSign,
                   full::FlagMc,
+                  full::IsCandidateSwapped,
+                  full::HypothesisMask,
+                  full::CandidateGlobalIndex,
                   full::OriginMcRec,
                   full::FlagMcDecayChanRec,
                   full::CtGen,
@@ -196,6 +201,8 @@ DECLARE_SOA_TABLE(HfCandCdFull, "AOD", "HFCANDCDFULL",
                   full::CandidateSign,
                   full::FlagMc,
                   full::IsCandidateSwapped,
+                  full::HypothesisMask,
+                  full::CandidateGlobalIndex,
                   full::OriginMcRec,
                   full::FlagMcDecayChanRec,
                   full::CtGen,
@@ -535,18 +542,25 @@ struct HfTaskCd {
 
       float ctGen{-1.f}, ptGen{-1.f};
       int pdgCodeProng0{0};
+      int8_t isCandidateSwapped{-1};
       if (isTrueCd) {
         const auto& mcParticleProng0 = candidate.template prong0_as<HFTracksMc>().template mcParticle_as<CandCdMcGen>();
         pdgCodeProng0 = std::abs(mcParticleProng0.pdgCode());
+        isCandidateSwapped = static_cast<int8_t>(pdgCodeProng0 == kPiPlus);
         const auto indexMother = RecoDecay::getMother(mcParticles, mcParticleProng0, o2::constants::physics::Pdg::kCDeuteron, true);
         const auto particleMother = mcParticles.rawIteratorAt(indexMother);
         ctGen = RecoDecay::ct(std::array{particleMother.px(), particleMother.py(), particleMother.pz()}, RecoDecay::distance(std::array{particleMother.vx(), particleMother.vy(), particleMother.vz()}, std::array{mcParticleProng0.vx(), mcParticleProng0.vy(), mcParticleProng0.vz()}), o2::constants::physics::MassCDeuteron) * CmToMum;
         ptGen = particleMother.pt();
+      } else if (absFlagMc != 0) {
+        isCandidateSwapped = candidate.isCandidateSwapped();
       }
 
       if (fillCandLiteTree || fillCandFullTree) {
         const bool selDeKPi = (candidate.isSelCdToDeKPi() >= selectionFlagCd);
         const bool selPiKDe = (candidate.isSelCdToPiKDe() >= selectionFlagCd);
+        const uint8_t hypothesisMask = static_cast<uint8_t>((selDeKPi ? 0x1 : 0x0) |
+                                                            (selPiKDe ? 0x2 : 0x0));
+        const int64_t candidateGlobalIndex = candidate.globalIndex();
         auto prong0 = candidate.template prong0_as<HFTracksMc>();
         auto prong1 = candidate.template prong1_as<HFTracksMc>();
         auto prong2 = candidate.template prong2_as<HFTracksMc>();
@@ -593,7 +607,7 @@ struct HfTaskCd {
               nSigmaTpcDe, nSigmaTpcPr, nSigmaItsDe, nSigmaTofDe,
               tofBetaDe, tpcInnerParamDe, tofExpMomDe,
               candidate.ct(o2::constants::physics::MassCDeuteron) * CmToMum,
-              candFlag, candSign, candidate.flagMcMatchRec(), candidate.originMcRec(),
+              candFlag, candSign, candidate.flagMcMatchRec(), isCandidateSwapped, hypothesisMask, candidateGlobalIndex, candidate.originMcRec(),
               candidate.flagMcDecayChanRec(), ctGen, o2::hf_centrality::getCentralityColl(collision));
           }
 
@@ -608,7 +622,7 @@ struct HfTaskCd {
               tofBetaDe, tpcInnerParamDe, tofExpMomDe,
               nSigmaTpcPi, nSigmaTofPi, nSigmaTpcKa, nSigmaTofKa,
               candidate.ct(o2::constants::physics::MassCDeuteron) * CmToMum,
-              candFlag, candSign, candidate.flagMcMatchRec(), candidate.isCandidateSwapped(), candidate.originMcRec(),
+              candFlag, candSign, candidate.flagMcMatchRec(), isCandidateSwapped, hypothesisMask, candidateGlobalIndex, candidate.originMcRec(),
               candidate.flagMcDecayChanRec(), ctGen, collision.numContrib(), o2::hf_centrality::getCentralityColl(collision),
               collision.posZ(), collision.globalIndex(), timeStamp);
           }
@@ -813,6 +827,9 @@ struct HfTaskCd {
       if (fillCandLiteTree || fillCandFullTree) {
         const bool selDeKPi = (candidate.isSelCdToDeKPi() >= selectionFlagCd);
         const bool selPiKDe = (candidate.isSelCdToPiKDe() >= selectionFlagCd);
+        const uint8_t hypothesisMask = static_cast<uint8_t>((selDeKPi ? 0x1 : 0x0) |
+                                                            (selPiKDe ? 0x2 : 0x0));
+        const int64_t candidateGlobalIndex = candidate.globalIndex();
         auto prong0 = candidate.template prong0_as<TrackType>();
         auto prong1 = candidate.template prong1_as<TrackType>();
         auto prong2 = candidate.template prong2_as<TrackType>();
@@ -874,7 +891,7 @@ struct HfTaskCd {
               decayLength, cpa, chi2PCA, nSigmaTpcDe, nSigmaTpcPr, nSigmaItsDe, nSigmaTofDe,
               tofBetaDe, tpcInnerParamDe, tofExpMomDe,
               candidate.ct(o2::constants::physics::MassCDeuteron),
-              candFlag, candSign, 0, 0, -1, -1.f, cent);
+              candFlag, candSign, 0, -1, hypothesisMask, candidateGlobalIndex, 0, -1, -1.f, cent);
           }
 
           if (fillCandFullTree) {
@@ -887,7 +904,7 @@ struct HfTaskCd {
               tofBetaDe, tpcInnerParamDe, tofExpMomDe,
               nSigmaTpcPi, nSigmaTofPi, nSigmaTpcKa, nSigmaTofKa,
               candidate.ct(o2::constants::physics::MassCDeuteron),
-              candFlag, candSign, 0, -1, 0, 0, -1.f, collision.numContrib(), cent,
+              candFlag, candSign, 0, -1, hypothesisMask, candidateGlobalIndex, 0, 0, -1.f, collision.numContrib(), cent,
               collision.posZ(), collision.globalIndex(), timeStamp);
           }
         };
