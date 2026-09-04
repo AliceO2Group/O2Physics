@@ -70,6 +70,7 @@
 #include <string>
 #include <tuple>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -373,6 +374,16 @@ struct TwoParticleCorrelationsMpi {
       registry.add("multCorrelations", "Multiplicity correlations", {HistType::kTHnSparseF, multAxes});
     }
     registry.add("multiplicity", "event multiplicity", {HistType::kTH1F, {{1000, 0, 100, "/multiplicity/centrality"}}});
+    if (doprocessMCEfficiency) {
+      registry.add("mcEfficiencyDiagnostics/reconstructedTracks", "selected reconstructed tracks per collision;N_{tracks};collisions", {HistType::kTH1F, {{1001, -0.5, 1000.5}}});
+      registry.add("mcEfficiencyDiagnostics/matchedTracks", "MC-matched reconstructed tracks per collision;N_{matched};collisions", {HistType::kTH1F, {{1001, -0.5, 1000.5}}});
+      registry.add("mcEfficiencyDiagnostics/uniqueMatchedParticles", "unique matched MC particles per collision;N_{unique labels};collisions", {HistType::kTH1F, {{1001, -0.5, 1000.5}}});
+      registry.add("mcEfficiencyDiagnostics/duplicateMatchedTracks", "matched tracks beyond one per MC label;N_{matched}-N_{unique labels};collisions", {HistType::kTH1F, {{501, -0.5, 500.5}}});
+      registry.add("mcEfficiencyDiagnostics/duplicateFraction", "fraction of matched tracks sharing an MC label;(N_{matched}-N_{unique labels})/N_{matched};collisions", {HistType::kTH1F, {{101, -0.005, 1.005}}});
+      registry.add("mcEfficiencyDiagnostics/tracksPerMcParticle", "reconstructed tracks per matched MC-particle label;tracks per MC label;MC labels", {HistType::kTH1F, {{21, -0.5, 20.5}}});
+      registry.add("mcEfficiencyDiagnostics/generatedVsUniqueMatchedPrimaries", "generated versus uniquely matched physical primaries;N_{generated primary};N_{unique matched primary}", {HistType::kTH2F, {{501, -0.5, 500.5}, {501, -0.5, 500.5}}});
+      registry.add("mcEfficiencyDiagnostics/primaryTracksPerMcParticle", "reconstructed tracks per matched physical-primary label;tracks per primary MC label;MC labels", {HistType::kTH1F, {{21, -0.5, 20.5}}});
+    }
     if (eventSeedEstimatorEnabled) {
       registry.add("eventSeedEstimator", "event-level template estimator", {HistType::kTHnSparseF, {{100, 0, 100, "multiplicity"}, {100, -0.5, 99.5, "N_{trig}"}, {200, 0, 20, "Y_{near}"}, {200, 0, 20, "Y_{away}"}, {200, 0, 100, "N_{uncorrelated seeds}"}}});
       registry.add("eventSeedPairProbabilities", "summed pair probabilities", {HistType::kTH3F, {{200, 0, 200, "#Sigma P_{baseline}"}, {200, 0, 200, "#Sigma P_{near}"}, {200, 0, 200, "#Sigma P_{away}"}}});
@@ -1943,8 +1954,10 @@ struct TwoParticleCorrelationsMpi {
       }
     }
     // Primaries
+    int generatedPrimaries = 0;
     for (const auto& mcParticle : mcParticles) {
       if (mcParticle.isPhysicalPrimary() && mcParticle.sign() != 0 && !(std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), mcParticle.pdgCode()) != cfgMcTriggerPDGs->end())) {
+        ++generatedPrimaries;
         same->getTrackHistEfficiency()->Fill(CorrelationContainer::MC, mcParticle.eta(), mcParticle.pt(), getSpecies(mcParticle.pdgCode()), multiplicity, mcCollision.posZ());
       }
     }
@@ -1953,6 +1966,10 @@ struct TwoParticleCorrelationsMpi {
         continue;
       }
       auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
+      int reconstructedTracks = 0;
+      int matchedTracks = 0;
+      std::unordered_map<int64_t, int> tracksPerMcParticle;
+      std::unordered_map<int64_t, int> primaryTracksPerMcParticle;
       if (cfgVerbosity > 0) {
         LOGF(info, "  Reconstructed collision at vtx-z = %f", collision.posZ());
         LOGF(info, "  which has %d tracks", groupedTracks.size());
@@ -1962,9 +1979,13 @@ struct TwoParticleCorrelationsMpi {
         if (cfgTrackBitMask > 0 && (track.trackType() & (uint8_t)cfgTrackBitMask) != (uint8_t)cfgTrackBitMask) {
           continue;
         }
+        ++reconstructedTracks;
         if (track.has_cfMCParticle()) {
+          ++matchedTracks;
+          ++tracksPerMcParticle[track.cfMCParticleId()];
           const auto& mcParticle = track.cfMCParticle();
           if (mcParticle.isPhysicalPrimary()) {
+            ++primaryTracksPerMcParticle[track.cfMCParticleId()];
             same->getTrackHistEfficiency()->Fill(CorrelationContainer::RecoPrimaries, mcParticle.eta(), mcParticle.pt(), getSpecies(mcParticle.pdgCode()), multiplicity, mcCollision.posZ());
           }
           same->getTrackHistEfficiency()->Fill(CorrelationContainer::RecoAll, mcParticle.eta(), mcParticle.pt(), getSpecies(mcParticle.pdgCode()), multiplicity, mcCollision.posZ());
@@ -1974,6 +1995,19 @@ struct TwoParticleCorrelationsMpi {
           same->getTrackHistEfficiency()->Fill(CorrelationContainer::Fake, track.eta(), track.pt(), 0, multiplicity, mcCollision.posZ());
         }
       }
+      const int duplicateMatchedTracks = matchedTracks - static_cast<int>(tracksPerMcParticle.size());
+      registry.fill(HIST("mcEfficiencyDiagnostics/reconstructedTracks"), reconstructedTracks);
+      registry.fill(HIST("mcEfficiencyDiagnostics/matchedTracks"), matchedTracks);
+      registry.fill(HIST("mcEfficiencyDiagnostics/uniqueMatchedParticles"), tracksPerMcParticle.size());
+      registry.fill(HIST("mcEfficiencyDiagnostics/duplicateMatchedTracks"), duplicateMatchedTracks);
+      registry.fill(HIST("mcEfficiencyDiagnostics/duplicateFraction"), matchedTracks > 0 ? static_cast<float>(duplicateMatchedTracks) / matchedTracks : 0.f);
+      for (const auto& entry : tracksPerMcParticle) {
+        registry.fill(HIST("mcEfficiencyDiagnostics/tracksPerMcParticle"), entry.second);
+      }
+      for (const auto& entry : primaryTracksPerMcParticle) {
+        registry.fill(HIST("mcEfficiencyDiagnostics/primaryTracksPerMcParticle"), entry.second);
+      }
+      registry.fill(HIST("mcEfficiencyDiagnostics/generatedVsUniqueMatchedPrimaries"), generatedPrimaries, primaryTracksPerMcParticle.size());
     }
   }
   PROCESS_SWITCH(TwoParticleCorrelationsMpi, processMCEfficiency, "MC: Extract efficiencies", false);
