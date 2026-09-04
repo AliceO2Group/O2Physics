@@ -164,6 +164,10 @@ struct TreeCreatorPidTpcDiagnostics {
       mEnabledParticles += static_cast<int>(initPerParticle<ParticleId>());
     });
 
+    if (mEnabledParticles == 0) {
+      LOG(fatal) << "At least one process function should be enabled, check and retry!";
+    }
+
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setFatalWhenNull(false);
