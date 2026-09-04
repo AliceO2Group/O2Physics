@@ -20,9 +20,7 @@
 #include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGLF/Utils/collisionCuts.h"
 
-#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
-#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
@@ -47,6 +45,7 @@
 
 #include <TH1.h>
 #include <THnSparse.h>
+#include <TPDGCode.h>
 
 #include <algorithm>
 #include <array>
@@ -510,6 +509,7 @@ struct ResonanceModuleInitializer {
 
 // Keep this QA-only mapping synchronized with CollisonCuts without exposing
 // its internal selection registry.
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage) -- X-macro interface of EventSelectionFlagsMapping.def
 #define EVSEL_FLAG(enumVal, member, defaultVal, evtSelEnum, setter, getter, label, desc) \
   if (colCuts.getSelection(o2::analysis::CollisonCuts::evtSelEnum)) {                    \
     if (!collision.selection_bit(o2::aod::evsel::enumVal)) {                             \
@@ -1044,7 +1044,7 @@ struct ResonanceDaughterInitializer {
       allDaughterIds.erase(std::unique(allDaughterIds.begin(), allDaughterIds.end()), allDaughterIds.end());
     }
 
-    bool accepts(int64_t trackId) const
+    [[nodiscard]] bool accepts(int64_t trackId) const
     {
       if (!hasSelectedCandidate) {
         return false;
@@ -1888,7 +1888,7 @@ struct ResonanceDaughterInitializer {
         collectSelectedV0Daughters<isMC>(collision, v0sThisCollision, tracks, selection.useGlobalDaughterVeto);
     }
     if (selection.useCascadeCandidates &&
-        !(useEitherPairGate && !selection.useGlobalDaughterVeto && selection.v0Candidates.hasSelectedCandidate)) {
+        (!useEitherPairGate || selection.useGlobalDaughterVeto || !selection.v0Candidates.hasSelectedCandidate)) {
       auto cascadesThisCollision = cascades.sliceBy(cascPreslice, collision.collisionId());
       selection.cascadeCandidates =
         collectSelectedCascadeDaughters<isMC>(collision, cascadesThisCollision, tracks, selection.useGlobalDaughterVeto);
