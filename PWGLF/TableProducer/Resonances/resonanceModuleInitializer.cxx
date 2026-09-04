@@ -189,7 +189,7 @@ struct ResonanceModuleInitializer {
     Configurable<bool> cfgGenRCTCheckTableValidity{"cfgGenRCTCheckTableValidity", false, "GenEvent: reject MC collisions when the RCT CCDB payload is unavailable"};
     Configurable<bool> cfgGenMult05{"cfgGenMult05", true, "GenEvent: multiplicity in |eta| < 0.5"};
     Configurable<bool> cfgGenMult10{"cfgGenMult10", false, "GenEvent: multiplicity in |eta| < 1.0"};
-    Configurable<bool> cfgGenMultFT0M{"cfgGenMultFT0M", true, "GenEvent: generated charged-particle multiplicity in the FT0A + FT0C acceptance"};
+    Configurable<bool> cfgGenMultFT0M{"cfgGenMultFT0M", false, "GenEvent: generated charged-particle multiplicity in the FT0A + FT0C acceptance"};
     Configurable<bool> cfgGenMultFT0C{"cfgGenMultFT0C", false, "GenEvent: generated charged-particle multiplicity in the FT0C acceptance"};
     Configurable<bool> cfgGenMultFV0A{"cfgGenMultFV0A", false, "GenEvent: generated charged-particle multiplicity in the FV0A acceptance"};
     Configurable<bool> cfgGenMultPercentile{"cfgGenMultPercentile", true, "Use the configured FT0M, FT0C, or FV0A percentile from the MC centrality wagon"};
