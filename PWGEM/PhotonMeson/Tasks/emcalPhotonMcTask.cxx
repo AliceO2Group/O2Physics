@@ -203,10 +203,10 @@ struct EmcalPhotonMcTask {
   static constexpr float PhiVUndefined = -999.f;
   static constexpr float Epsilon = 1.e-6f;
 
-  static constexpr uint32_t kMlModelRow = 0;
-  static constexpr uint32_t kMlPositiveClassCol = 1;
+  static constexpr uint32_t MlModelRow = 0;
+  static constexpr uint32_t MlPositiveClassCol = 1;
 
-  static constexpr std::array<std::array<double, 2>, 1> defaultCutsMl{{{0.0, 0.25}}};
+  static constexpr std::array<std::array<double, 2>, 1> DefaultCutsMl{{{0.0, 0.25}}};
 
   static constexpr std::array<const char*, static_cast<size_t>(TruthClass::NClasses)> kTruthClassNames = {
     "Conversion", "GammaGammaSamePi0", "GammaGammaAnnihilation", "BSPhotonElectron",
@@ -310,16 +310,12 @@ struct EmcalPhotonMcTask {
     Configurable<bool> enableOptimization{"enableOptimization", false, "enable the MlResponse optimizations."};
     Configurable<int> nThreads{"nThreads", 1, "number of threads for the ML model"};
     Configurable<std::size_t> mlBatchFlushSize{"mlBatchFlushSize", 20000, "Flush ML batch after this many pending pairs."};
-    Configurable<std::vector<std::string>> mlInputFeatures{
-      "mlInputFeatures",
-      {"minv", "deltaEta", "deltaR", "phiv", "rConv", "totE", "e2", "e1", "deltaPhi", "harmonicEt",
-       "m021", "m022", "time1", "time2", "ncell1", "ncell2"},
-      "input feature names -- content and order must match the Python training FEATURES list"};
+    Configurable<std::vector<std::string>> mlInputFeatures{"mlInputFeatures", {"minv", "deltaEta", "deltaR", "phiv", "rConv", "totE", "e2", "e1", "deltaPhi", "harmonicEt", "m021", "m022", "time1", "time2", "ncell1", "ncell2"}, "input feature names -- content and order must match the Python training FEATURES list"};
     Configurable<std::string> mlModelPathLocal{"mlModelPathLocal", "/data/mhemmer/O2ML/code/conversion_tagging_bdt_conversion_splits_brems.onnx", "local ONNX model path"};
     Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"Users/m/mhemmer/EM/ML/"}, "Paths of models on CCDB"};
     Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"conversion_tagging_bdt_conversion_splits_brems.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
     Configurable<float> mlThreshold{"mlThreshold", 0.5f, "positive-class score threshold for tagging"};
-    Configurable<LabeledArray<double>> cutsMl{"cutsMl", {defaultCutsMl[0].data(), 1, 2, {"pT bin 0"}, {
+    Configurable<LabeledArray<double>> cutsMl{"cutsMl", {DefaultCutsMl[0].data(), 1, 2, {"pT bin 0"}, {
                                                                                                         "score photon pairs",
                                                                                                         "score conversion pairs",
                                                                                                       }},
@@ -638,7 +634,7 @@ struct EmcalPhotonMcTask {
         const float negScore = scores[i * 2 + 0];
         const float posScore = scores[i * 2 + 1];
 
-        for (auto idx : {pp.idx1, pp.idx2}) {
+        for (const auto& idx : {pp.idx1, pp.idx2}) {
           if (posScore > bestPositiveScore[idx]) {
             bestPositiveScore[idx] = posScore;
           }
@@ -646,7 +642,7 @@ struct EmcalPhotonMcTask {
             bestNegativeScore[idx] = negScore;
           }
         }
-        const bool isTagged = posScore >= mlConfig.cutsMl->get(kMlModelRow, kMlPositiveClassCol); // mirrors the CutSmaller-on-class-1 logic
+        const bool isTagged = posScore >= mlConfig.cutsMl->get(MlModelRow, MlPositiveClassCol); // mirrors the CutSmaller-on-class-1 logic
         if (isTagged) {
           emcFlagsMlTagging.set(pp.idx1);
           emcFlagsMlTagging.set(pp.idx2);
@@ -821,9 +817,9 @@ struct EmcalPhotonMcTask {
           bTruthLabel = static_cast<int8_t>(TruthClass::PhotonComptonElectronPair);
         } else if (c1.leptonOrigin == LeptonOrigin::DirectMesonDecay && c2.leptonOrigin == LeptonOrigin::DirectMesonDecay && mcCluster1.mothersIds()[0] == mcCluster2.mothersIds()[0]) { // both cluster are leptons that come from the same meson decay
           mcMother.setCursor(mcCluster1.mothersIds()[0]);
-          if (mcMother.daughtersIds().size() == 2) {
+          if (mcMother.daughtersIds().size() == 2) { // o2-linter: disable=magic-number (number of daughters)
             bTruthLabel = static_cast<int8_t>(TruthClass::ElectronPairSamePi0);
-          } else if (mcMother.daughtersIds().size() == 3) {
+          } else if (mcMother.daughtersIds().size() == 3) { // o2-linter: disable=magic-number (number of daughters)
             bTruthLabel = static_cast<int8_t>(TruthClass::DalitzDecaySiblings);
           }
         } else if (c1.leptonOrigin == LeptonOrigin::Conversion && c2.leptonOrigin == LeptonOrigin::Conversion && mcCluster1.mothersIds()[0] != mcCluster2.mothersIds()[0] && areFromSamePi0) { // both cluster are leptons that come from different conversions that come from the same meson
