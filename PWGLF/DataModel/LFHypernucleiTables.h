@@ -25,17 +25,19 @@ namespace o2::aod
 {
 namespace hyperrec
 {
-DECLARE_SOA_COLUMN(CentralityFT0A, centralityFT0A, float); // centrality with FT0A estimator
-DECLARE_SOA_COLUMN(CentralityFT0C, centralityFT0C, float); // centrality with FT0C estimator
-DECLARE_SOA_COLUMN(CentralityFT0M, centralityFT0M, float); // centrality with FT0M estimator
-DECLARE_SOA_COLUMN(PsiFT0A, psiFT0A, float);               // Psi with FT0A estimator
-DECLARE_SOA_COLUMN(MultFT0A, multFT0A, float);             // Multiplicity with FT0A estimator
-DECLARE_SOA_COLUMN(PsiFT0C, psiFT0C, float);               // Psi with FT0C estimator
-DECLARE_SOA_COLUMN(QFT0C, qFT0C, float);                   // Amplitude with FT0C estimator
-DECLARE_SOA_COLUMN(MultFT0C, multFT0C, float);             // Multiplicity with FT0C estimator
-DECLARE_SOA_COLUMN(PsiTPC, psiTPC, float);                 // Psi with TPC estimator
-DECLARE_SOA_COLUMN(MultTPC, multTPC, float);               // Multiplicity with TPC estimator
-DECLARE_SOA_COLUMN(CollisionId, collisionId, int64_t);     // CollisionID
+DECLARE_SOA_COLUMN(CentralityFT0A, centralityFT0A, float);                     // centrality with FT0A estimator
+DECLARE_SOA_COLUMN(CentralityFT0C, centralityFT0C, float);                     // centrality with FT0C estimator
+DECLARE_SOA_COLUMN(CentralityFT0M, centralityFT0M, float);                     // centrality with FT0M estimator
+DECLARE_SOA_COLUMN(TrackOccupancyInTimeRange, trackOccupancyInTimeRange, int); // Track occupancy in the time range around the collision
+DECLARE_SOA_COLUMN(Ft0cOccupancyInTimeRange, ft0cOccupancyInTimeRange, float); // FT0C occupancy in the time range around the collision
+DECLARE_SOA_COLUMN(PsiFT0A, psiFT0A, float);                                   // Psi with FT0A estimator
+DECLARE_SOA_COLUMN(MultFT0A, multFT0A, float);                                 // Multiplicity with FT0A estimator
+DECLARE_SOA_COLUMN(PsiFT0C, psiFT0C, float);                                   // Psi with FT0C estimator
+DECLARE_SOA_COLUMN(QFT0C, qFT0C, float);                                       // Amplitude with FT0C estimator
+DECLARE_SOA_COLUMN(MultFT0C, multFT0C, float);                                 // Multiplicity with FT0C estimator
+DECLARE_SOA_COLUMN(PsiTPC, psiTPC, float);                                     // Psi with TPC estimator
+DECLARE_SOA_COLUMN(MultTPC, multTPC, float);                                   // Multiplicity with TPC estimator
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);                                // Collision index
 
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t);                    // Run number
 DECLARE_SOA_COLUMN(IsMatter, isMatter, bool);                         // bool: true for matter
@@ -62,19 +64,19 @@ DECLARE_SOA_COLUMN(NTPCpidClusHe, nTPCpidClusHe, uint8_t);            // Number 
 DECLARE_SOA_COLUMN(NTPCpidClusPi, nTPCpidClusPi, uint8_t);            // Number of TPC clusters with PID information of the Pi daughter
 DECLARE_SOA_COLUMN(NTPCCrossedRowsHe, nTPCCrossedRowsHe, uint8_t);    // Number of TPC crossed rows of the He daughter
 DECLARE_SOA_COLUMN(NTPCCrossedRowsPi, nTPCCrossedRowsPi, uint8_t);    // Number of TPC crossed rows of the Pi daughter
-DECLARE_SOA_COLUMN(TPCsignalHe, tpcSignalHe, uint16_t);               // TPC signal of the He daughter
-DECLARE_SOA_COLUMN(TPCsignalPi, tpcSignalPi, uint16_t);               // TPC signal of the Pi daughter
-DECLARE_SOA_COLUMN(TPCChi2He, tpcChi2He, float);                      // TPC chi2 of the He daughter
-DECLARE_SOA_COLUMN(ITSChi2He, itsChi2He, float);                      // ITS chi2 of the He daughter
-DECLARE_SOA_COLUMN(ITSChi2Pi, itsChi2Pi, float);                      // ITS chi2 of the Pi daughter
+DECLARE_SOA_COLUMN(TpcSignalHe, tpcSignalHe, uint16_t);               // TPC signal of the He daughter
+DECLARE_SOA_COLUMN(TpcSignalPi, tpcSignalPi, uint16_t);               // TPC signal of the Pi daughter
+DECLARE_SOA_COLUMN(TpcChi2He, tpcChi2He, float);                      // TPC chi2 of the He daughter
+DECLARE_SOA_COLUMN(ItsChi2He, itsChi2He, float);                      // ITS chi2 of the He daughter
+DECLARE_SOA_COLUMN(ItsChi2Pi, itsChi2Pi, float);                      // ITS chi2 of the Pi daughter
 DECLARE_SOA_COLUMN(TrackedClSize, trackedClSize, int);                // int: zero for non-tracked candidates
 DECLARE_SOA_COLUMN(Flags, flags, uint8_t);                            // Flags for PID in tracking (bits [0, 3] for negative daughter, [4,7] for positive daughter)
-DECLARE_SOA_COLUMN(TPCmomHe, tpcMomHe, float);                        // TPC momentum of the He daughter
-DECLARE_SOA_COLUMN(TPCmomPi, tpcMomPi, float);                        // TPC momentum of the Pi daughter
-DECLARE_SOA_COLUMN(TOFMass, tofMass, float);                          // TOF mass of the candidate
-DECLARE_SOA_COLUMN(ITSclusterSizesHe, itsClusterSizesHe, uint32_t);   // ITS cluster size of the He daughter
-DECLARE_SOA_COLUMN(ITSclusterSizesPi, itsClusterSizesPi, uint32_t);   // ITS cluster size of the Pi daughter
-DECLARE_SOA_COLUMN(ITSclusterSizesHyp, itsClusterSizesHyp, uint32_t); // ITS cluster size of the Pi daughter
+DECLARE_SOA_COLUMN(TpcMomHe, tpcMomHe, float);                        // TPC momentum of the He daughter
+DECLARE_SOA_COLUMN(TpcMomPi, tpcMomPi, float);                        // TPC momentum of the Pi daughter
+DECLARE_SOA_COLUMN(TofMass, tofMass, float);                          // TOF mass of the candidate
+DECLARE_SOA_COLUMN(ItsClusterSizesHe, itsClusterSizesHe, uint32_t);   // ITS cluster size of the He daughter
+DECLARE_SOA_COLUMN(ItsClusterSizesPi, itsClusterSizesPi, uint32_t);   // ITS cluster size of the Pi daughter
+DECLARE_SOA_COLUMN(ItsClusterSizesHyp, itsClusterSizesHyp, uint32_t); // ITS cluster size of the Pi daughter
 DECLARE_SOA_COLUMN(DcaHe, dcaHe, float);                              // DCA between He daughter and V0
 DECLARE_SOA_COLUMN(DcaPi, dcaPi, float);                              // DCA between pi daughter and V0
 DECLARE_SOA_COLUMN(GenPt, genPt, float);                              // Pt of the hypertriton
@@ -95,6 +97,7 @@ DECLARE_SOA_COLUMN(IsTwoBodyDecay, isTwoBodyDecay, bool);             // bool: t
 DECLARE_SOA_TABLE(DataHypCands, "AOD", "HYPCANDS",
                   o2::soa::Index<>,
                   hyperrec::CentralityFT0A, hyperrec::CentralityFT0C, hyperrec::CentralityFT0M,
+                  hyperrec::TrackOccupancyInTimeRange, hyperrec::Ft0cOccupancyInTimeRange,
                   hyperrec::XPrimVtx, hyperrec::YPrimVtx, hyperrec::ZPrimVtx,
 
                   hyperrec::RunNumber, hyperrec::IsMatter,
@@ -103,14 +106,15 @@ DECLARE_SOA_TABLE(DataHypCands, "AOD", "HYPCANDS",
                   hyperrec::XDecVtx, hyperrec::YDecVtx, hyperrec::ZDecVtx,
                   hyperrec::DcaV0Daug, hyperrec::DcaHe, hyperrec::DcaPi,
                   hyperrec::NSigmaHe, hyperrec::NTPCclusHe, hyperrec::NTPCclusPi, hyperrec::NTPCpidClusHe, hyperrec::NTPCpidClusPi, hyperrec::NTPCCrossedRowsHe, hyperrec::NTPCCrossedRowsPi,
-                  hyperrec::TPCmomHe, hyperrec::TPCmomPi, hyperrec::TPCsignalHe, hyperrec::TPCsignalPi, hyperrec::TPCChi2He, hyperrec::ITSChi2He, hyperrec::ITSChi2Pi,
-                  hyperrec::TOFMass,
-                  hyperrec::ITSclusterSizesHe, hyperrec::ITSclusterSizesPi,
+                  hyperrec::TpcMomHe, hyperrec::TpcMomPi, hyperrec::TpcSignalHe, hyperrec::TpcSignalPi, hyperrec::TpcChi2He, hyperrec::ItsChi2He, hyperrec::ItsChi2Pi,
+                  hyperrec::TofMass,
+                  hyperrec::ItsClusterSizesHe, hyperrec::ItsClusterSizesPi,
                   hyperrec::Flags, hyperrec::TrackedClSize);
 
 DECLARE_SOA_TABLE(DataHypCandsFlow, "AOD", "HYPCANDSFLOW",
                   o2::soa::Index<>,
                   hyperrec::CentralityFT0A, hyperrec::CentralityFT0C, hyperrec::CentralityFT0M,
+                  hyperrec::TrackOccupancyInTimeRange, hyperrec::Ft0cOccupancyInTimeRange,
                   hyperrec::PsiFT0A, hyperrec::MultFT0A,
                   hyperrec::PsiFT0C, hyperrec::MultFT0C, hyperrec::QFT0C,
                   hyperrec::PsiTPC, hyperrec::MultTPC,
@@ -122,14 +126,15 @@ DECLARE_SOA_TABLE(DataHypCandsFlow, "AOD", "HYPCANDSFLOW",
                   hyperrec::XDecVtx, hyperrec::YDecVtx, hyperrec::ZDecVtx,
                   hyperrec::DcaV0Daug, hyperrec::DcaHe, hyperrec::DcaPi,
                   hyperrec::NSigmaHe, hyperrec::NTPCclusHe, hyperrec::NTPCclusPi, hyperrec::NTPCpidClusHe, hyperrec::NTPCpidClusPi, hyperrec::NTPCCrossedRowsHe, hyperrec::NTPCCrossedRowsPi,
-                  hyperrec::TPCmomHe, hyperrec::TPCmomPi, hyperrec::TPCsignalHe, hyperrec::TPCsignalPi, hyperrec::TPCChi2He, hyperrec::ITSChi2He, hyperrec::ITSChi2Pi,
-                  hyperrec::TOFMass,
-                  hyperrec::ITSclusterSizesHe, hyperrec::ITSclusterSizesPi,
+                  hyperrec::TpcMomHe, hyperrec::TpcMomPi, hyperrec::TpcSignalHe, hyperrec::TpcSignalPi, hyperrec::TpcChi2He, hyperrec::ItsChi2He, hyperrec::ItsChi2Pi,
+                  hyperrec::TofMass,
+                  hyperrec::ItsClusterSizesHe, hyperrec::ItsClusterSizesPi,
                   hyperrec::Flags, hyperrec::TrackedClSize);
 
 DECLARE_SOA_TABLE(MCHypCands, "AOD", "MCHYPCANDS",
                   o2::soa::Index<>,
                   hyperrec::CentralityFT0A, hyperrec::CentralityFT0C, hyperrec::CentralityFT0M,
+                  hyperrec::TrackOccupancyInTimeRange, hyperrec::Ft0cOccupancyInTimeRange,
                   hyperrec::XPrimVtx, hyperrec::YPrimVtx, hyperrec::ZPrimVtx,
 
                   hyperrec::RunNumber, hyperrec::IsMatter,
@@ -138,9 +143,9 @@ DECLARE_SOA_TABLE(MCHypCands, "AOD", "MCHYPCANDS",
                   hyperrec::XDecVtx, hyperrec::YDecVtx, hyperrec::ZDecVtx,
                   hyperrec::DcaV0Daug, hyperrec::DcaHe, hyperrec::DcaPi,
                   hyperrec::NSigmaHe, hyperrec::NTPCclusHe, hyperrec::NTPCclusPi, hyperrec::NTPCpidClusHe, hyperrec::NTPCpidClusPi, hyperrec::NTPCCrossedRowsHe, hyperrec::NTPCCrossedRowsPi,
-                  hyperrec::TPCmomHe, hyperrec::TPCmomPi, hyperrec::TPCsignalHe, hyperrec::TPCsignalPi, hyperrec::TPCChi2He, hyperrec::ITSChi2He, hyperrec::ITSChi2Pi,
-                  hyperrec::TOFMass,
-                  hyperrec::ITSclusterSizesHe, hyperrec::ITSclusterSizesPi,
+                  hyperrec::TpcMomHe, hyperrec::TpcMomPi, hyperrec::TpcSignalHe, hyperrec::TpcSignalPi, hyperrec::TpcChi2He, hyperrec::ItsChi2He, hyperrec::ItsChi2Pi,
+                  hyperrec::TofMass,
+                  hyperrec::ItsClusterSizesHe, hyperrec::ItsClusterSizesPi,
                   hyperrec::Flags, hyperrec::TrackedClSize,
                   hyperrec::GenPt,
                   hyperrec::GenPhi,
@@ -159,6 +164,7 @@ DECLARE_SOA_TABLE(MCHypCands, "AOD", "MCHYPCANDS",
 DECLARE_SOA_TABLE(DataHypCandsWColl, "AOD", "HYPCANDSWCOLL",
                   o2::soa::Index<>,
                   hyperrec::CollisionId, hyperrec::CentralityFT0A, hyperrec::CentralityFT0C, hyperrec::CentralityFT0M,
+                  hyperrec::TrackOccupancyInTimeRange, hyperrec::Ft0cOccupancyInTimeRange,
                   hyperrec::XPrimVtx, hyperrec::YPrimVtx, hyperrec::ZPrimVtx,
 
                   hyperrec::RunNumber, hyperrec::IsMatter,
@@ -167,9 +173,9 @@ DECLARE_SOA_TABLE(DataHypCandsWColl, "AOD", "HYPCANDSWCOLL",
                   hyperrec::XDecVtx, hyperrec::YDecVtx, hyperrec::ZDecVtx,
                   hyperrec::DcaV0Daug, hyperrec::DcaHe, hyperrec::DcaPi,
                   hyperrec::NSigmaHe, hyperrec::NTPCclusHe, hyperrec::NTPCclusPi, hyperrec::NTPCpidClusHe, hyperrec::NTPCpidClusPi, hyperrec::NTPCCrossedRowsHe, hyperrec::NTPCCrossedRowsPi,
-                  hyperrec::TPCmomHe, hyperrec::TPCmomPi, hyperrec::TPCsignalHe, hyperrec::TPCsignalPi, hyperrec::TPCChi2He, hyperrec::ITSChi2He, hyperrec::ITSChi2Pi,
-                  hyperrec::TOFMass,
-                  hyperrec::ITSclusterSizesHe, hyperrec::ITSclusterSizesPi,
+                  hyperrec::TpcMomHe, hyperrec::TpcMomPi, hyperrec::TpcSignalHe, hyperrec::TpcSignalPi, hyperrec::TpcChi2He, hyperrec::ItsChi2He, hyperrec::ItsChi2Pi,
+                  hyperrec::TofMass,
+                  hyperrec::ItsClusterSizesHe, hyperrec::ItsClusterSizesPi,
                   hyperrec::Flags, hyperrec::TrackedClSize);
 
 using DataHypCand = DataHypCands::iterator;
@@ -187,20 +193,20 @@ DECLARE_SOA_COLUMN(PhiTrit, phiTrit, float);                              // Phi
 DECLARE_SOA_COLUMN(EtaTrit, etaTrit, float);                              // Eta of the triton kink
 DECLARE_SOA_COLUMN(DcaHyperPv, dcaHyperPv, float);                        // DCA of the hypertriton to the primary vertex
 DECLARE_SOA_COLUMN(DcaTritPv, dcaTritPv, float);                          // DCA of the triton kink to the primary vertex
-DECLARE_SOA_COLUMN(DCAKinkTopo, dcaKinkTopo, float);                      // DCA of the kink topology
-DECLARE_SOA_COLUMN(ITSclusterSizesHyper, itsClusterSizesHyper, uint32_t); // ITS cluster size of the hypertriton
-DECLARE_SOA_COLUMN(ITSclusterSizesTrit, itsClusterSizesTrit, uint32_t);   // ITS cluster size of the triton kink
-DECLARE_SOA_COLUMN(PIDinTrackTrit, pidInTrackTrit, uint8_t);              // PID in track for the triton kink
+DECLARE_SOA_COLUMN(DcaKinkTopo, dcaKinkTopo, float);                      // DCA of the kink topology
+DECLARE_SOA_COLUMN(ItsClusterSizesHyper, itsClusterSizesHyper, uint32_t); // ITS cluster size of the hypertriton
+DECLARE_SOA_COLUMN(ItsClusterSizesTrit, itsClusterSizesTrit, uint32_t);   // ITS cluster size of the triton kink
+DECLARE_SOA_COLUMN(PidInTrackTrit, pidInTrackTrit, uint8_t);              // PID in track for the triton kink
 
-DECLARE_SOA_COLUMN(TPCmomTrit, tpcMomTrit, float);          // TPC momentum of the triton kink
-DECLARE_SOA_COLUMN(TPCsignalTrit, tpcSignalTrit, uint16_t); // TPC signal of the triton kink
+DECLARE_SOA_COLUMN(TpcMomTrit, tpcMomTrit, float);          // TPC momentum of the triton kink
+DECLARE_SOA_COLUMN(TpcSignalTrit, tpcSignalTrit, uint16_t); // TPC signal of the triton kink
 DECLARE_SOA_COLUMN(NSigmaTPCTrit, nSigmaTPCTrit, float);    // Number of tpc sigmas of the triton kink
 DECLARE_SOA_COLUMN(NSigmaTOFTrit, nSigmaTOFTrit, float);    // Number of tof sigmas of the triton kink
 
 // MC additional info
 DECLARE_SOA_COLUMN(GenPtTrit, genPtTrit, float);   // Pt of the triton kink
 DECLARE_SOA_COLUMN(HyperPtITS, hyperPtITS, float); // Pt of the hypertriton from ITS standalone, hypertriton tagged with MC truth
-DECLARE_SOA_COLUMN(MCMask, mcMask, bool);          // bool: true for fake triton
+DECLARE_SOA_COLUMN(McMask, mcMask, bool);          // bool: true for fake triton
 
 } // namespace hyperkink
 
@@ -210,9 +216,9 @@ DECLARE_SOA_TABLE(DataHypKinkCands, "AOD", "HYPKINKCANDS",
                   hyperrec::XDecVtx, hyperrec::YDecVtx, hyperrec::ZDecVtx,
                   hyperrec::IsMatter, hyperkink::PtHyper, hyperkink::PhiHyper, hyperkink::EtaHyper,
                   hyperkink::PtTrit, hyperkink::PhiTrit, hyperkink::EtaTrit,
-                  hyperkink::DcaHyperPv, hyperkink::DcaTritPv, hyperkink::DCAKinkTopo,
-                  hyperkink::ITSclusterSizesHyper, hyperkink::ITSclusterSizesTrit, hyperkink::PIDinTrackTrit,
-                  hyperkink::TPCmomTrit, hyperkink::TPCsignalTrit, hyperkink::NSigmaTPCTrit, hyperkink::NSigmaTOFTrit);
+                  hyperkink::DcaHyperPv, hyperkink::DcaTritPv, hyperkink::DcaKinkTopo,
+                  hyperkink::ItsClusterSizesHyper, hyperkink::ItsClusterSizesTrit, hyperkink::PidInTrackTrit,
+                  hyperkink::TpcMomTrit, hyperkink::TpcSignalTrit, hyperkink::NSigmaTPCTrit, hyperkink::NSigmaTOFTrit);
 
 DECLARE_SOA_TABLE(MCHypKinkCands, "AOD", "MCHYPKINKCANDS",
                   o2::soa::Index<>,
@@ -220,12 +226,12 @@ DECLARE_SOA_TABLE(MCHypKinkCands, "AOD", "MCHYPKINKCANDS",
                   hyperrec::XDecVtx, hyperrec::YDecVtx, hyperrec::ZDecVtx,
                   hyperrec::IsMatter, hyperkink::PtHyper, hyperkink::PhiHyper, hyperkink::EtaHyper,
                   hyperkink::PtTrit, hyperkink::PhiTrit, hyperkink::EtaTrit,
-                  hyperkink::DcaHyperPv, hyperkink::DcaTritPv, hyperkink::DCAKinkTopo,
-                  hyperkink::ITSclusterSizesHyper, hyperkink::ITSclusterSizesTrit, hyperkink::PIDinTrackTrit,
-                  hyperkink::TPCmomTrit, hyperkink::TPCsignalTrit, hyperkink::NSigmaTPCTrit, hyperkink::NSigmaTOFTrit,
+                  hyperkink::DcaHyperPv, hyperkink::DcaTritPv, hyperkink::DcaKinkTopo,
+                  hyperkink::ItsClusterSizesHyper, hyperkink::ItsClusterSizesTrit, hyperkink::PidInTrackTrit,
+                  hyperkink::TpcMomTrit, hyperkink::TpcSignalTrit, hyperkink::NSigmaTPCTrit, hyperkink::NSigmaTOFTrit,
                   hyperrec::GenXDecVtx, hyperrec::GenYDecVtx, hyperrec::GenZDecVtx,
                   hyperrec::GenPt, hyperkink::GenPtTrit,
-                  hyperrec::IsReco, hyperrec::IsSignal, hyperkink::MCMask, hyperkink::HyperPtITS,
+                  hyperrec::IsReco, hyperrec::IsSignal, hyperkink::McMask, hyperkink::HyperPtITS,
                   hyperrec::IsRecoMCCollision, hyperrec::IsSurvEvSel);
 
 } // namespace o2::aod

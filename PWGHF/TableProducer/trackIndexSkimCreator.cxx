@@ -39,6 +39,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
@@ -223,7 +224,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
 
   /// Event selection with trigger and FT0A centrality selection
   void processTrigAndCentFT0ASel(soa::Join<aod::Collisions,
-                                           aod::EvSels, aod::CentFT0As>::iterator const& collision,
+                                           aod::EvSels, aod::PVMults, aod::CentFT0As>::iterator const& collision,
                                  aod::BcFullInfos const& bcs)
   {
     selectCollision<true, false, CentralityEstimator::FT0A>(collision, bcs);
@@ -232,7 +233,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
 
   /// Event selection with trigger and FT0C centrality selection
   void processTrigAndCentFT0CSel(soa::Join<aod::Collisions,
-                                           aod::EvSels, aod::CentFT0Cs>::iterator const& collision,
+                                           aod::EvSels, aod::PVMults, aod::CentFT0Cs>::iterator const& collision,
                                  aod::BcFullInfos const& bcs)
   {
     selectCollision<true, false, CentralityEstimator::FT0C>(collision, bcs);
@@ -241,7 +242,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
 
   /// Event selection with trigger and FT0M centrality selection
   void processTrigAndCentFT0MSel(soa::Join<aod::Collisions,
-                                           aod::EvSels, aod::CentFT0Ms>::iterator const& collision,
+                                           aod::EvSels, aod::PVMults, aod::CentFT0Ms>::iterator const& collision,
                                  aod::BcFullInfos const& bcs)
   {
     selectCollision<true, false, CentralityEstimator::FT0M>(collision, bcs);
@@ -250,7 +251,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
 
   /// Event selection with trigger and FV0A centrality selection
   void processTrigAndCentFV0ASel(soa::Join<aod::Collisions,
-                                           aod::EvSels, aod::CentFV0As>::iterator const& collision,
+                                           aod::EvSels, aod::PVMults, aod::CentFV0As>::iterator const& collision,
                                  aod::BcFullInfos const& bcs)
   {
     selectCollision<true, false, CentralityEstimator::FV0A>(collision, bcs);
@@ -259,7 +260,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
 
   /// Event selection with trigger selection
   void processTrigSel(soa::Join<aod::Collisions,
-                                aod::EvSels>::iterator const& collision,
+                                aod::EvSels, aod::PVMults>::iterator const& collision,
                       aod::BcFullInfos const& bcs)
   {
     selectCollision<true, false, CentralityEstimator::None>(collision, bcs);
@@ -267,7 +268,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
   PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processTrigSel, "Use trigger selection", false);
 
   /// Event selection without trigger selection
-  void processNoTrigSel(aod::Collision const& collision,
+  void processNoTrigSel(soa::Join<aod::Collisions, aod::PVMults>::iterator const& collision,
                         aod::BcFullInfos const& bcs)
   {
     selectCollision<false, false, CentralityEstimator::None>(collision, bcs);
@@ -275,7 +276,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
   PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processNoTrigSel, "Do not use trigger selection", true);
 
   /// Event selection with UPC
-  void processUpcSel(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
+  void processUpcSel(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults>::iterator const& collision,
                      aod::BcFullInfos const& bcs,
                      aod::FT0s const& /*ft0s*/,
                      aod::FV0As const& /*fv0as*/,
@@ -2071,7 +2072,7 @@ struct HfTrackIndexSkimCreator {
   /// \param outputScores is the array of vectors with the output scores to be filled
   /// \param isSelected ia s bitmap with selection outcome
   template <bool UsePidForHfFiltersBdt>
-  void applyMlSelectionForHfFilters3Prong(std::vector<float> featuresCand, std::vector<float> featuresCandPid, std::array<std::vector<float>, kN3ProngDecaysUsedMlForHfFilters>& outputScores, auto& isSelected)
+  void applyMlSelectionForHfFilters3Prong(std::vector<float> featuresCand, const std::vector<float>& featuresCandPid, std::array<std::vector<float>, kN3ProngDecaysUsedMlForHfFilters>& outputScores, auto& isSelected)
   {
     if (isSelected == 0) {
       return;

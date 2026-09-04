@@ -48,6 +48,7 @@
 #include <algorithm>
 #include <cfloat>
 #include <cmath>
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <string>
@@ -55,10 +56,6 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-
-#include <stdint.h>
-
-// #include <math.h>
 
 struct globalDimuonFilter {
   o2::framework::Produces<o2::aod::GlobalDimuonFilters> tags;
@@ -147,14 +144,24 @@ struct globalDimuonFilter {
   // for z shift for propagation
   o2::framework::Configurable<bool> cfgApplyZShiftFromCCDB{"cfgApplyZShiftFromCCDB", false, "flag to apply z shift"};
   o2::framework::Configurable<std::string> cfgZShiftPath{"cfgZShiftPath", "Users/m/mcoquet/ZShift", "CCDB path for z shift to apply to forward tracks"};
-  o2::framework::Configurable<float> cfgManualZShift{"cfgManualZShift", 0, "manual z-shift for propagation of global muon to PV"};
+  o2::framework::Configurable<float> cfgManualXShiftMFTtop{"cfgManualXShiftMFTtop", 0, "manual x shift for propagation of global muon to PV"};
+  o2::framework::Configurable<float> cfgManualYShiftMFTtop{"cfgManualYShiftMFTtop", 0, "manual y shift for propagation of global muon to PV"};
+  o2::framework::Configurable<float> cfgManualZShiftMFTtop{"cfgManualZShiftMFTtop", 0, "manual z shift for propagation of global muon to PV"};
+  o2::framework::Configurable<float> cfgManualXShiftMFTbottom{"cfgManualXShiftMFTbottom", 0, "manual x shift for propagation of global muon to PV"};
+  o2::framework::Configurable<float> cfgManualYShiftMFTbottom{"cfgManualYShiftMFTbottom", 0, "manual y shift for propagation of global muon to PV"};
+  o2::framework::Configurable<float> cfgManualZShiftMFTbottom{"cfgManualZShiftMFTbottom", 0, "manual z shift for propagation of global muon to PV"};
 
   o2::framework::HistogramRegistry fRegistry{"output", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject, false, false};
   o2::ccdb::CcdbApi ccdbApi;
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
   int mRunNumber = 0;
   float mBz = 0;
-  float mZShift = 0;
+  float mXShiftMFTtop = 0;
+  float mYShiftMFTtop = 0;
+  float mZShiftMFTtop = 0;
+  float mXShiftMFTbottom = 0;
+  float mYShiftMFTbottom = 0;
+  float mZShiftMFTbottom = 0;
 
   void init(o2::framework::InitContext&)
   {
@@ -165,7 +172,12 @@ struct globalDimuonFilter {
     ccdbApi.init(ccdburl);
     mRunNumber = 0;
     mBz = 0;
-    mZShift = 0;
+    mXShiftMFTtop = 0;
+    mYShiftMFTtop = 0;
+    mZShiftMFTtop = 0;
+    mXShiftMFTbottom = 0;
+    mYShiftMFTbottom = 0;
+    mZShiftMFTbottom = 0;
 
     addHistograms();
   }
@@ -196,14 +208,26 @@ struct globalDimuonFilter {
       auto* zShift = ccdb->getForTimeStamp<std::vector<float>>(cfgZShiftPath, bc.timestamp());
       if (zShift != nullptr && !zShift->empty()) {
         LOGF(info, "reading z shift %f from %s", (*zShift)[0], cfgZShiftPath.value);
-        mZShift = (*zShift)[0];
+        mZShiftMFTtop = (*zShift)[0];
+        mZShiftMFTbottom = (*zShift)[0];
       } else {
         LOGF(info, "z shift is not found in ccdb path %s. set to 0 cm", cfgZShiftPath.value);
-        mZShift = 0;
+        mZShiftMFTtop = 0;
+        mZShiftMFTbottom = 0;
       }
     } else {
-      LOGF(info, "z shift is manually set to %f cm", cfgManualZShift.value);
-      mZShift = cfgManualZShift;
+      LOGF(info, "X shift for MFT top is manually set to %f cm", cfgManualXShiftMFTtop.value);
+      LOGF(info, "X shift for MFT bottom is manually set to %f cm", cfgManualXShiftMFTbottom.value);
+      LOGF(info, "Y shift for MFT top is manually set to %f cm", cfgManualYShiftMFTtop.value);
+      LOGF(info, "Y shift for MFT bottom is manually set to %f cm", cfgManualYShiftMFTbottom.value);
+      LOGF(info, "Z shift for MFT top is manually set to %f cm", cfgManualZShiftMFTtop.value);
+      LOGF(info, "Z shift for MFT bottom is manually set to %f cm", cfgManualZShiftMFTbottom.value);
+      mXShiftMFTtop = cfgManualXShiftMFTtop;
+      mYShiftMFTtop = cfgManualYShiftMFTtop;
+      mZShiftMFTtop = cfgManualZShiftMFTtop;
+      mXShiftMFTbottom = cfgManualXShiftMFTbottom;
+      mYShiftMFTbottom = cfgManualYShiftMFTbottom;
+      mZShiftMFTbottom = cfgManualZShiftMFTbottom;
     }
   }
 
@@ -245,19 +269,21 @@ struct globalDimuonFilter {
     fRegistry.add("MFTMCHMID/positive/hChi2MatchMCHMFT_Pt", "chi2 match MCH-MFT;p_{T,#mu} (GeV/c);matching #chi^{2}/ndf between MFT-MCH", o2::framework::HistType::kTH2D, {{200, 0, 10}, {100, 0.0f, 100}}, false);
     fRegistry.add("MFTMCHMID/positive/hDCAxy2D", "DCA x vs. y;DCA_{x} (cm);DCA_{y} (cm)", o2::framework::HistType::kTH2D, {{400, -1, 1}, {400, -1, +1}}, false);
     fRegistry.add("MFTMCHMID/positive/hDCAxy2DinSigma", "DCA x vs. y in sigma;DCA_{x} (#sigma);DCA_{y} (#sigma)", o2::framework::HistType::kTH2D, {{200, -10, 10}, {200, -10, +10}}, false);
-    fRegistry.add("MFTMCHMID/positive/hDCAxy", "DCAxy;DCA_{xy} (cm);", o2::framework::HistType::kTH1D, {{100, 0, 1}}, false);
+    fRegistry.add("MFTMCHMID/positive/hDCAxy", "DCAxy;DCA_{xy} (cm);", o2::framework::HistType::kTH1D, {{1000, 0, 1}}, false);
     fRegistry.add("MFTMCHMID/positive/hDCAxyinSigma", "DCAxy in sigma;DCA_{xy} (#sigma);", o2::framework::HistType::kTH1D, {{100, 0, 10}}, false);
     fRegistry.add("MFTMCHMID/positive/hLog10Chi2IP", "chi2IP;log_{10}(#chi^{2}_{IP})", o2::framework::HistType::kTH1D, {{1000, -5, 5}}, false);
     fRegistry.add("MFTMCHMID/positive/hDCAxResolutionvsPt", "DCA_{x} resolution vs. p_{T};p_{T} (GeV/c);DCA_{x} resolution (#mum);", o2::framework::HistType::kTH2D, {{100, 0, 10.f}, {500, 0, 500}}, false);
     fRegistry.add("MFTMCHMID/positive/hDCAyResolutionvsPt", "DCA_{y} resolution vs. p_{T};p_{T} (GeV/c);DCA_{y} resolution (#mum);", o2::framework::HistType::kTH2D, {{100, 0, 10.f}, {500, 0, 500}}, false);
     fRegistry.add("MFTMCHMID/positive/hDCAxyResolutionvsPt", "DCA_{xy} resolution vs. p_{T};p_{T} (GeV/c);DCA_{xy} resolution (#mum);", o2::framework::HistType::kTH2D, {{100, 0, 10.f}, {500, 0, 500}}, false);
-    fRegistry.add("MFTMCHMID/positive/hDCAx_PosZ", "DCAx vs. posZ;Z_{vtx} (cm);DCA_{x} (cm)", o2::framework::HistType::kTH2D, {{200, -10, +10}, {400, -0.2, +0.2}}, false);
-    fRegistry.add("MFTMCHMID/positive/hDCAy_PosZ", "DCAy vs. posZ;Z_{vtx} (cm);DCA_{y} (cm)", o2::framework::HistType::kTH2D, {{200, -10, +10}, {400, -0.2, +0.2}}, false);
     fRegistry.add("MFTMCHMID/positive/hDCAx_Phi", "DCAx vs. #varphi;#varphi (rad.);DCA_{x} (cm)", o2::framework::HistType::kTH2D, {{180, -M_PI, M_PI}, {400, -0.2, +0.2}}, false);
     fRegistry.add("MFTMCHMID/positive/hDCAy_Phi", "DCAy vs. #varphi;#varphi (rad.);DCA_{y} (cm)", o2::framework::HistType::kTH2D, {{180, -M_PI, M_PI}, {400, -0.2, +0.2}}, false);
+    fRegistry.add("MFTMCHMID/positive/hDCAx_PosZ_MFTtop", "DCAx vs. posZ for MFT top;Z_{vtx} (cm);DCA_{x} (cm)", o2::framework::HistType::kTH2D, {{200, -10, +10}, {400, -0.2, +0.2}}, false);
+    fRegistry.add("MFTMCHMID/positive/hDCAy_PosZ_MFTtop", "DCAy vs. posZ for MFT top;Z_{vtx} (cm);DCA_{y} (cm)", o2::framework::HistType::kTH2D, {{200, -10, +10}, {400, -0.2, +0.2}}, false);
+    fRegistry.add("MFTMCHMID/positive/hDCAx_PosZ_MFTbottom", "DCAx vs. posZ for MFT bottom;Z_{vtx} (cm);DCA_{x} (cm)", o2::framework::HistType::kTH2D, {{200, -10, +10}, {400, -0.2, +0.2}}, false);
+    fRegistry.add("MFTMCHMID/positive/hDCAy_PosZ_MFTbottom", "DCAy vs. posZ for MFT bottom;Z_{vtx} (cm);DCA_{y} (cm)", o2::framework::HistType::kTH2D, {{200, -10, +10}, {400, -0.2, +0.2}}, false);
     fRegistry.addClone("MFTMCHMID/positive/", "MFTMCHMID/negative/");
 
-    const o2::framework::AxisSpec axisMll{{0.20, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.30, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.40, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.50, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.70, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00, 1.01, 1.02, 1.03, 1.04, 1.05, 1.06, 1.07, 1.08, 1.09, 1.10, 1.11, 1.12, 1.13, 1.14, 1.15, 1.16, 1.17, 1.18, 1.19, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.10, 2.20, 2.30, 2.40, 2.50, 2.60, 2.70, 2.75, 2.80, 2.85, 2.90, 2.95, 3.00, 3.05, 3.10, 3.15, 3.20, 3.25, 3.30, 3.35, 3.40, 3.45, 3.50, 3.55, 3.60, 3.65, 3.70, 3.75, 3.80, 3.85, 3.90, 3.95, 4.00, 4.50, 5.00, 5.50, 6.00, 6.50, 7.00, 7.50, 8.00, 8.1, 8.2, 8.3, 8.4, 8.50, 8.60, 8.70, 8.80, 8.90, 9.00, 9.10, 9.20, 9.30, 9.40, 9.50, 9.60, 9.70, 9.80, 9.90, 10.00, 10.10, 10.20, 10.30, 10.40, 10.50, 10.60, 10.70, 10.80, 10.90, 11.0, 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 11.9, 12.0}, "m_{#mu#mu} (GeV/c^{2})"};
+    const o2::framework::AxisSpec axisMll{{0.20, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.30, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.40, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.50, 0.505, 0.51, 0.515, 0.52, 0.525, 0.53, 0.535, 0.54, 0.545, 0.55, 0.555, 0.56, 0.565, 0.57, 0.575, 0.58, 0.585, 0.59, 0.595, 0.60, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.70, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00, 1.01, 1.02, 1.03, 1.04, 1.05, 1.06, 1.07, 1.08, 1.09, 1.10, 1.11, 1.12, 1.13, 1.14, 1.15, 1.16, 1.17, 1.18, 1.19, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.10, 2.20, 2.30, 2.40, 2.50, 2.60, 2.70, 2.75, 2.80, 2.85, 2.90, 2.95, 3.00, 3.05, 3.10, 3.15, 3.20, 3.25, 3.30, 3.35, 3.40, 3.45, 3.50, 3.55, 3.60, 3.65, 3.70, 3.75, 3.80, 3.85, 3.90, 3.95, 4.00, 4.50, 5.00, 5.50, 6.00, 6.50, 7.00, 7.50, 8.00, 8.1, 8.2, 8.3, 8.4, 8.50, 8.60, 8.70, 8.80, 8.90, 9.00, 9.10, 9.20, 9.30, 9.40, 9.50, 9.60, 9.70, 9.80, 9.90, 10.00, 10.10, 10.20, 10.30, 10.40, 10.50, 10.60, 10.70, 10.80, 10.90, 11.0, 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 11.9, 12.0}, "m_{#mu#mu} (GeV/c^{2})"};
     const o2::framework::AxisSpec axisPtll{{0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8, 9, 10}, "p_{T,#mu#mu} (GeV/c)"};
     const o2::framework::AxisSpec axisYll{40, -4.0, -2.0, "y_{#mu#mu}"};
 
@@ -416,12 +442,12 @@ struct globalDimuonFilter {
       return false;
     }
 
-    o2::dataformats::GlobalFwdTrack propmuonAtPV_Matched = o2::aod::fwdtrackutils::propagateMuon(mchtrack, mchtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, glMuonCutGroup.matchingZ, mBz, mZShift);
+    o2::dataformats::GlobalFwdTrack propmuonAtPV_Matched = o2::aod::fwdtrackutils::propagateMuon(mchtrack, mchtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, glMuonCutGroup.matchingZ, mBz, 0.f, 0.f, 0.f);
     float etaMatchedMCHMID = propmuonAtPV_Matched.getEta();
     float phiMatchedMCHMID = propmuonAtPV_Matched.getPhi();
     phiMatchedMCHMID = RecoDecay::constrainAngle(phiMatchedMCHMID, 0, 1U);
 
-    o2::dataformats::GlobalFwdTrack propmuonAtPV = o2::aod::fwdtrackutils::propagateMuon(fwdtrack, fwdtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, glMuonCutGroup.matchingZ, mBz, mZShift);
+    o2::dataformats::GlobalFwdTrack propmuonAtPV = mfttrack.y() > 0.f ? o2::aod::fwdtrackutils::propagateMuon(fwdtrack, fwdtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, glMuonCutGroup.matchingZ, mBz, mXShiftMFTtop, mYShiftMFTtop, mZShiftMFTtop) : o2::aod::fwdtrackutils::propagateMuon(fwdtrack, fwdtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, glMuonCutGroup.matchingZ, mBz, mXShiftMFTbottom, mYShiftMFTbottom, mZShiftMFTbottom);
     pt = propmuonAtPV.getPt();
     eta = propmuonAtPV.getEta();
     phi = propmuonAtPV.getPhi();
@@ -438,7 +464,7 @@ struct globalDimuonFilter {
       return false;
     }
 
-    o2::dataformats::GlobalFwdTrack propmuonAtDCA = o2::aod::fwdtrackutils::propagateMuon(fwdtrack, fwdtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToDCA, glMuonCutGroup.matchingZ, mBz, mZShift);
+    o2::dataformats::GlobalFwdTrack propmuonAtDCA = mfttrack.y() > 0.f ? o2::aod::fwdtrackutils::propagateMuon(fwdtrack, fwdtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToDCA, glMuonCutGroup.matchingZ, mBz, mXShiftMFTtop, mYShiftMFTtop, mZShiftMFTtop) : o2::aod::fwdtrackutils::propagateMuon(fwdtrack, fwdtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToDCA, glMuonCutGroup.matchingZ, mBz, mXShiftMFTbottom, mYShiftMFTbottom, mZShiftMFTbottom);
     float dcaX = propmuonAtDCA.getX() - collision.posX();
     float dcaY = propmuonAtDCA.getY() - collision.posY();
     float dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
@@ -472,7 +498,7 @@ struct globalDimuonFilter {
     }
     float sigma_dcaXY = dcaXY / dcaXYinSigma / std::sqrt(2.f);
 
-    o2::dataformats::GlobalFwdTrack propmuonAtDCA_Matched = o2::aod::fwdtrackutils::propagateMuon(mchtrack, mchtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToDCA, glMuonCutGroup.matchingZ, mBz, mZShift);
+    o2::dataformats::GlobalFwdTrack propmuonAtDCA_Matched = o2::aod::fwdtrackutils::propagateMuon(mchtrack, mchtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToDCA, glMuonCutGroup.matchingZ, mBz, 0.f, 0.f, 0.f);
     float dcaX_Matched = propmuonAtDCA_Matched.getX() - collision.posX();
     float dcaY_Matched = propmuonAtDCA_Matched.getY() - collision.posY();
     float dcaXY_Matched = std::sqrt(dcaX_Matched * dcaX_Matched + dcaY_Matched * dcaY_Matched);
@@ -486,7 +512,7 @@ struct globalDimuonFilter {
       return false;
     }
 
-    float chi2IP = o2::aod::fwdtrackutils::getFwdChi2IP(fwdtrack, collision, mBz, mZShift);
+    float chi2IP = mfttrack.y() > 0.f ? o2::aod::fwdtrackutils::getFwdChi2IP(fwdtrack, collision, mBz, mXShiftMFTtop, mYShiftMFTtop, mZShiftMFTtop) : o2::aod::fwdtrackutils::getFwdChi2IP(fwdtrack, collision, mBz, mXShiftMFTbottom, mYShiftMFTbottom, mZShiftMFTbottom);
 
     if constexpr (fillHistograms) {
       if (fwdtrack.sign() > 0) {
@@ -512,10 +538,15 @@ struct globalDimuonFilter {
         fRegistry.fill(HIST("MFTMCHMID/positive/hDCAxResolutionvsPt"), pt, std::sqrt(cXX) * 1e+4); // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/positive/hDCAyResolutionvsPt"), pt, std::sqrt(cYY) * 1e+4); // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/positive/hDCAxyResolutionvsPt"), pt, sigma_dcaXY * 1e+4);   // convert cm to um
-        fRegistry.fill(HIST("MFTMCHMID/positive/hDCAx_PosZ"), collision.posZ(), dcaX);
-        fRegistry.fill(HIST("MFTMCHMID/positive/hDCAy_PosZ"), collision.posZ(), dcaY);
         fRegistry.fill(HIST("MFTMCHMID/positive/hDCAx_Phi"), std::atan2(yMFT, xMFT), dcaX);
         fRegistry.fill(HIST("MFTMCHMID/positive/hDCAy_Phi"), std::atan2(yMFT, xMFT), dcaY);
+        if (std::atan2(yMFT, xMFT) > 0.f) {
+          fRegistry.fill(HIST("MFTMCHMID/positive/hDCAx_PosZ_MFTtop"), collision.posZ(), dcaX);
+          fRegistry.fill(HIST("MFTMCHMID/positive/hDCAy_PosZ_MFTtop"), collision.posZ(), dcaY);
+        } else {
+          fRegistry.fill(HIST("MFTMCHMID/positive/hDCAx_PosZ_MFTbottom"), collision.posZ(), dcaX);
+          fRegistry.fill(HIST("MFTMCHMID/positive/hDCAy_PosZ_MFTbottom"), collision.posZ(), dcaY);
+        }
       } else {
         fRegistry.fill(HIST("MFTMCHMID/negative/hPt"), pt);
         fRegistry.fill(HIST("MFTMCHMID/negative/hPtResolution"), pt, relPtResolution);
@@ -539,13 +570,17 @@ struct globalDimuonFilter {
         fRegistry.fill(HIST("MFTMCHMID/negative/hDCAxResolutionvsPt"), pt, std::sqrt(cXX) * 1e+4); // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/negative/hDCAyResolutionvsPt"), pt, std::sqrt(cYY) * 1e+4); // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/negative/hDCAxyResolutionvsPt"), pt, sigma_dcaXY * 1e+4);   // convert cm to um
-        fRegistry.fill(HIST("MFTMCHMID/negative/hDCAx_PosZ"), collision.posZ(), dcaX);
-        fRegistry.fill(HIST("MFTMCHMID/negative/hDCAy_PosZ"), collision.posZ(), dcaY);
         fRegistry.fill(HIST("MFTMCHMID/negative/hDCAx_Phi"), std::atan2(yMFT, xMFT), dcaX);
         fRegistry.fill(HIST("MFTMCHMID/negative/hDCAy_Phi"), std::atan2(yMFT, xMFT), dcaY);
+        if (std::atan2(yMFT, xMFT) > 0.f) {
+          fRegistry.fill(HIST("MFTMCHMID/negative/hDCAx_PosZ_MFTtop"), collision.posZ(), dcaX);
+          fRegistry.fill(HIST("MFTMCHMID/negative/hDCAy_PosZ_MFTtop"), collision.posZ(), dcaY);
+        } else {
+          fRegistry.fill(HIST("MFTMCHMID/negative/hDCAx_PosZ_MFTbottom"), collision.posZ(), dcaX);
+          fRegistry.fill(HIST("MFTMCHMID/negative/hDCAy_PosZ_MFTbottom"), collision.posZ(), dcaY);
+        }
       }
     }
-
     return true;
   }
 
@@ -594,12 +629,12 @@ struct globalDimuonFilter {
       return false;
     }
 
-    o2::dataformats::GlobalFwdTrack propmuonAtPV_Matched = o2::aod::fwdtrackutils::propagateMuon(mchtrack, mchtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, tagMuonCutGroup.matchingZ, mBz, mZShift);
+    o2::dataformats::GlobalFwdTrack propmuonAtPV_Matched = o2::aod::fwdtrackutils::propagateMuon(mchtrack, mchtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, tagMuonCutGroup.matchingZ, mBz, 0.f, 0.f, 0.f);
     float etaMatchedMCHMID = propmuonAtPV_Matched.getEta();
     float phiMatchedMCHMID = propmuonAtPV_Matched.getPhi();
     phiMatchedMCHMID = RecoDecay::constrainAngle(phiMatchedMCHMID, 0, 1U);
 
-    o2::dataformats::GlobalFwdTrack propmuonAtPV = o2::aod::fwdtrackutils::propagateMuon(fwdtrack, fwdtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, tagMuonCutGroup.matchingZ, mBz, mZShift);
+    o2::dataformats::GlobalFwdTrack propmuonAtPV = mfttrack.y() > 0.f ? o2::aod::fwdtrackutils::propagateMuon(fwdtrack, fwdtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, tagMuonCutGroup.matchingZ, mBz, mXShiftMFTtop, mYShiftMFTtop, mZShiftMFTtop) : o2::aod::fwdtrackutils::propagateMuon(fwdtrack, fwdtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, tagMuonCutGroup.matchingZ, mBz, mXShiftMFTbottom, mYShiftMFTbottom, mZShiftMFTbottom);
     pt = propmuonAtPV.getPt();
     eta = propmuonAtPV.getEta();
     phi = propmuonAtPV.getPhi();
@@ -682,12 +717,12 @@ struct globalDimuonFilter {
       return false;
     }
 
-    o2::dataformats::GlobalFwdTrack propmuonAtPV_Matched = o2::aod::fwdtrackutils::propagateMuon(mchtrack, mchtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, probeMuonCutGroup.matchingZ, mBz, mZShift);
+    o2::dataformats::GlobalFwdTrack propmuonAtPV_Matched = o2::aod::fwdtrackutils::propagateMuon(mchtrack, mchtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, probeMuonCutGroup.matchingZ, mBz, 0.f, 0.f, 0.f);
     float etaMatchedMCHMID = propmuonAtPV_Matched.getEta();
     float phiMatchedMCHMID = propmuonAtPV_Matched.getPhi();
     phiMatchedMCHMID = RecoDecay::constrainAngle(phiMatchedMCHMID, 0, 1U);
 
-    o2::dataformats::GlobalFwdTrack propmuonAtPV = o2::aod::fwdtrackutils::propagateMuon(fwdtrack, fwdtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, probeMuonCutGroup.matchingZ, mBz, mZShift);
+    o2::dataformats::GlobalFwdTrack propmuonAtPV = mfttrack.y() > 0.f ? o2::aod::fwdtrackutils::propagateMuon(fwdtrack, fwdtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, probeMuonCutGroup.matchingZ, mBz, mXShiftMFTtop, mYShiftMFTtop, mZShiftMFTtop) : o2::aod::fwdtrackutils::propagateMuon(fwdtrack, fwdtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, probeMuonCutGroup.matchingZ, mBz, mXShiftMFTbottom, mYShiftMFTbottom, mZShiftMFTbottom);
     pt = propmuonAtPV.getPt();
     eta = propmuonAtPV.getEta();
     phi = propmuonAtPV.getPhi();
@@ -711,7 +746,7 @@ struct globalDimuonFilter {
       return false;
     }
 
-    o2::dataformats::GlobalFwdTrack propmuonAtDCA_Matched = o2::aod::fwdtrackutils::propagateMuon(mchtrack, mchtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToDCA, probeMuonCutGroup.matchingZ, mBz, mZShift);
+    o2::dataformats::GlobalFwdTrack propmuonAtDCA_Matched = o2::aod::fwdtrackutils::propagateMuon(mchtrack, mchtrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToDCA, probeMuonCutGroup.matchingZ, mBz, 0.f, 0.f, 0.f);
     float dcaX_Matched = propmuonAtDCA_Matched.getX() - collision.posX();
     float dcaY_Matched = propmuonAtDCA_Matched.getY() - collision.posY();
     float dcaXY_Matched = std::sqrt(dcaX_Matched * dcaX_Matched + dcaY_Matched * dcaY_Matched);
@@ -869,7 +904,7 @@ struct globalDimuonFilter {
       } // end end of negative muon loop
     } // end end of positive muon loop
 
-    for (const auto pos1 : posMuons) {
+    for (const auto& pos1 : posMuons) {
       auto fwdtrack1 = fwdtracks.rawIteratorAt(pos1);
       if (!isBestMatch(collision, fwdtrack1, fwdtracks, mfttracks)) {
         continue;
@@ -880,7 +915,7 @@ struct globalDimuonFilter {
       }
       ROOT::Math::PtEtaPhiMVector v1(pt1, eta1, phi1, o2::constants::physics::MassMuon);
 
-      for (const auto pos2 : posMuons) {
+      for (const auto& pos2 : posMuons) {
         auto fwdtrack2 = fwdtracks.rawIteratorAt(pos2);
         if (pos1 == pos2) {
           continue;
@@ -902,7 +937,7 @@ struct globalDimuonFilter {
       } // end end of positive muon loop
     } // end end of positive muon loop
 
-    for (const auto neg1 : negMuons) {
+    for (const auto& neg1 : negMuons) {
       auto fwdtrack1 = fwdtracks.rawIteratorAt(neg1);
       if (!isBestMatch(collision, fwdtrack1, fwdtracks, mfttracks)) {
         continue;
@@ -913,7 +948,7 @@ struct globalDimuonFilter {
       }
       ROOT::Math::PtEtaPhiMVector v1(pt1, eta1, phi1, o2::constants::physics::MassMuon);
 
-      for (const auto neg2 : negMuons) {
+      for (const auto& neg2 : negMuons) {
         auto fwdtrack2 = fwdtracks.rawIteratorAt(neg2);
         if (neg1 == neg2) {
           continue;

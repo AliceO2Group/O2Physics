@@ -582,9 +582,9 @@ struct TrackedHypertritonRecoTask {
     std::array<float, 6> xyzpxpypz{};
     trackHeliumCov.getPxPyPzGlo(pxpypz);
     trackHeliumCov.getXYZGlo(xyz);
-    for (int i = 0; i < 3; ++i) {
+    for (std::size_t i = 0; i < xyz.size(); ++i) {
       xyzpxpypz[i] = xyz[i];
-      xyzpxpypz[i + 3] = pxpypz[i] * 2;
+      xyzpxpypz[i + xyz.size()] = pxpypz[i] * 2;
     }
     std::array<float, 21> cv{};
     trackHeliumCov.getCovXYZPxPyPzGlo(cv);
@@ -690,7 +690,7 @@ struct TrackedHypertritonRecoTask {
 
     // get SV position
     const auto& secondaryVertex = fitter2Body.getPCACandidate();
-    for (int i = 0; i < 3; i++) {
+    for (std::size_t i = 0; i < v0.decayVertex.size(); i++) {
       v0.decayVertex[i] = secondaryVertex[i];
     }
     v0.chi2 = std::sqrt(fitter2Body.getChi2AtPCACandidate());
@@ -744,6 +744,7 @@ struct TrackedHypertritonRecoTask {
     flags |= static_cast<uint8_t>(piTrack.pidForTracking() & 0xf);
 
     fillCandidate(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
+                  collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(),
                   collision.posX(), collision.posY(), collision.posZ(),
                   runNumber, heTrack.sign() > 0,
                   std::hypot(v0.momHelium[0], v0.momHelium[1]), std::atan2(v0.momHelium[1], v0.momHelium[0]), RecoDecay::eta(v0.momHelium),
@@ -910,13 +911,13 @@ struct TrackedHypertritonRecoTask {
     selectCollisions(collisions, skimmedProcessing);
 
     for (const auto& trackedV0 : trackedV0s) {
-      const auto v0 = trackedV0.v0_as<aod::V0s>();
-      if (v0.collisionId() < 0 || !goodCollision[v0.collisionId()] || (skimmedProcessing && !zorroDecision[v0.collisionId()][kHe])) {
+      const auto inputV0 = trackedV0.v0_as<aod::V0s>();
+      if (inputV0.collisionId() < 0 || !goodCollision[inputV0.collisionId()] || (skimmedProcessing && !zorroDecision[inputV0.collisionId()][kHe])) {
         continue;
       }
-      const auto collision = v0.collision_as<Collisions>();
-      const auto positiveTrack = v0.posTrack_as<Tracks>();
-      const auto negativeTrack = v0.negTrack_as<Tracks>();
+      const auto collision = inputV0.collision_as<Collisions>();
+      const auto positiveTrack = inputV0.posTrack_as<Tracks>();
+      const auto negativeTrack = inputV0.negTrack_as<Tracks>();
       const float nSigmaPositive = nSigmaHe3(positiveTrack);
       const float nSigmaNegative = nSigmaHe3(negativeTrack);
       const bool positiveTrackedAsHe = positiveTrack.pidForTracking() == o2::track::PID::Helium3 || positiveTrack.pidForTracking() == o2::track::PID::Alpha;
@@ -992,13 +993,13 @@ struct TrackedHypertritonRecoTask {
     std::vector<bool> reconstructedThreeBody(mcParticles.size(), false);
 
     for (const auto& trackedV0 : trackedV0s) {
-      const auto v0 = trackedV0.v0_as<aod::V0s>();
-      if (v0.collisionId() < 0 || !goodCollision[v0.collisionId()]) {
+      const auto inputV0 = trackedV0.v0_as<aod::V0s>();
+      if (inputV0.collisionId() < 0 || !goodCollision[inputV0.collisionId()]) {
         continue;
       }
-      const auto collision = v0.collision_as<CollisionsMC>();
-      const auto positiveTrack = v0.posTrack_as<TracksMC>();
-      const auto negativeTrack = v0.negTrack_as<TracksMC>();
+      const auto collision = inputV0.collision_as<CollisionsMC>();
+      const auto positiveTrack = inputV0.posTrack_as<TracksMC>();
+      const auto negativeTrack = inputV0.negTrack_as<TracksMC>();
       const float nSigmaPositive = nSigmaHe3(positiveTrack);
       const float nSigmaNegative = nSigmaHe3(negativeTrack);
       const bool positiveTrackedAsHe = positiveTrack.pidForTracking() == o2::track::PID::Helium3 || positiveTrack.pidForTracking() == o2::track::PID::Alpha;
@@ -1137,6 +1138,8 @@ struct TrackedHypertritonRecoTask {
         float centralityFT0A = -1.f;
         float centralityFT0C = -1.f;
         float centralityFT0M = -1.f;
+        int trackOccupancyInTimeRange = -1;
+        float ft0cOccupancyInTimeRange = -1.f;
         float primaryVertexX = -1.f;
         float primaryVertexY = -1.f;
         float primaryVertexZ = -1.f;
@@ -1151,12 +1154,15 @@ struct TrackedHypertritonRecoTask {
             centralityFT0A = collision.centFT0A();
             centralityFT0C = collision.centFT0C();
             centralityFT0M = collision.centFT0M();
+            trackOccupancyInTimeRange = collision.trackOccupancyInTimeRange();
+            ft0cOccupancyInTimeRange = collision.ft0cOccupancyInTimeRange();
             primaryVertexX = collision.posX();
             primaryVertexY = collision.posY();
             primaryVertexZ = collision.posZ();
           }
         }
         mcHypCands(centralityFT0A, centralityFT0C, centralityFT0M,
+                   trackOccupancyInTimeRange, ft0cOccupancyInTimeRange,
                    primaryVertexX, primaryVertexY, primaryVertexZ,
                    runNumber, mother.pdgCode() > 0,
                    -1.f, -1.f, -1.f,

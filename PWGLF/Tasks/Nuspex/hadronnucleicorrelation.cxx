@@ -188,7 +188,7 @@ struct HadronNucleiCorrelation {
     ccdb->setFatalWhenNull(false);
 
     if (doCorrection) {
-      GetCorrection(ccdb, TString(fCorrectionPath), TString(fCorrectionHisto));
+      getCorrection(ccdb, TString(fCorrectionPath), TString(fCorrectionHisto));
     }
 
     const AxisSpec ptBinnedAxis = {pTBins, "#it{p}_{T} of #bar{p} (GeV/#it{c})"};
@@ -246,17 +246,17 @@ struct HadronNucleiCorrelation {
         const TString ptTag = Form("pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10);
         const TString ptInterval = Form("(%.1f<p_{T}^{assoc} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1));
         if (doRapidity) {
-          hEtaPhiSameEv.push_back(registry.add<TH3>(Form("hEtaPhi_%s_SE_pt%s", name.Data(), ptTag.Data()), "Raw #Delta y #Delta#phi " + ptInterval, {HistType::kTH3F, {deltaRapAxis, deltaPhiAxis, ptBinnedAxis}}));
-          hEtaPhiMixdEv.push_back(registry.add<TH3>(Form("hEtaPhi_%s_ME_pt%s", name.Data(), ptTag.Data()), "Raw #Delta y #Delta#phi " + ptInterval, {HistType::kTH3F, {deltaRapAxis, deltaPhiAxis, ptBinnedAxis}}));
+          hEtaPhiSameEv.push_back(registry.add<TH3>(Form("hEtaPhi_%s_SE_%s", name.Data(), ptTag.Data()), "Raw #Delta y #Delta#phi " + ptInterval, {HistType::kTH3F, {deltaRapAxis, deltaPhiAxis, ptBinnedAxis}}));
+          hEtaPhiMixdEv.push_back(registry.add<TH3>(Form("hEtaPhi_%s_ME_%s", name.Data(), ptTag.Data()), "Raw #Delta y #Delta#phi " + ptInterval, {HistType::kTH3F, {deltaRapAxis, deltaPhiAxis, ptBinnedAxis}}));
 
-          hCorrEtaPhiSameEv.push_back(registry.add<TH3>(Form("hCorrEtaPhi_%s_SE_pt%s", name.Data(), ptTag.Data()), "#Delta y #Delta#phi " + ptInterval, {HistType::kTH3F, {deltaRapAxis, deltaPhiAxis, ptBinnedAxis}}));
-          hCorrEtaPhiMixdEv.push_back(registry.add<TH3>(Form("hCorrEtaPhi_%s_ME_pt%s", name.Data(), ptTag.Data()), "#Delta y #Delta#phi " + ptInterval, {HistType::kTH3F, {deltaRapAxis, deltaPhiAxis, ptBinnedAxis}}));
+          hCorrEtaPhiSameEv.push_back(registry.add<TH3>(Form("hCorrEtaPhi_%s_SE_%s", name.Data(), ptTag.Data()), "#Delta y #Delta#phi " + ptInterval, {HistType::kTH3F, {deltaRapAxis, deltaPhiAxis, ptBinnedAxis}}));
+          hCorrEtaPhiMixdEv.push_back(registry.add<TH3>(Form("hCorrEtaPhi_%s_ME_%s", name.Data(), ptTag.Data()), "#Delta y #Delta#phi " + ptInterval, {HistType::kTH3F, {deltaRapAxis, deltaPhiAxis, ptBinnedAxis}}));
         } else {
-          hEtaPhiSameEv.push_back(registry.add<TH3>(Form("hEtaPhi_%s_SE_pt%s", name.Data(), ptTag.Data()), "Raw #Delta#eta#Delta#phi " + ptInterval, {HistType::kTH3F, {deltaEtaAxis, deltaPhiAxis, ptBinnedAxis}}));
-          hEtaPhiMixdEv.push_back(registry.add<TH3>(Form("hEtaPhi_%s_ME_pt%s", name.Data(), ptTag.Data()), "Raw #Delta#eta#Delta#phi " + ptInterval, {HistType::kTH3F, {deltaEtaAxis, deltaPhiAxis, ptBinnedAxis}}));
+          hEtaPhiSameEv.push_back(registry.add<TH3>(Form("hEtaPhi_%s_SE_%s", name.Data(), ptTag.Data()), "Raw #Delta#eta#Delta#phi " + ptInterval, {HistType::kTH3F, {deltaEtaAxis, deltaPhiAxis, ptBinnedAxis}}));
+          hEtaPhiMixdEv.push_back(registry.add<TH3>(Form("hEtaPhi_%s_ME_%s", name.Data(), ptTag.Data()), "Raw #Delta#eta#Delta#phi " + ptInterval, {HistType::kTH3F, {deltaEtaAxis, deltaPhiAxis, ptBinnedAxis}}));
 
-          hCorrEtaPhiSameEv.push_back(registry.add<TH3>(Form("hCorrEtaPhi_%s_SE_pt%s", name.Data(), ptTag.Data()), "#Delta#eta#Delta#phi " + ptInterval, {HistType::kTH3F, {deltaEtaAxis, deltaPhiAxis, ptBinnedAxis}}));
-          hCorrEtaPhiMixdEv.push_back(registry.add<TH3>(Form("hCorrEtaPhi_%s_ME_pt%s", name.Data(), ptTag.Data()), "#Delta#eta#Delta#phi " + ptInterval, {HistType::kTH3F, {deltaEtaAxis, deltaPhiAxis, ptBinnedAxis}}));
+          hCorrEtaPhiSameEv.push_back(registry.add<TH3>(Form("hCorrEtaPhi_%s_SE_%s", name.Data(), ptTag.Data()), "#Delta#eta#Delta#phi " + ptInterval, {HistType::kTH3F, {deltaEtaAxis, deltaPhiAxis, ptBinnedAxis}}));
+          hCorrEtaPhiMixdEv.push_back(registry.add<TH3>(Form("hCorrEtaPhi_%s_ME_%s", name.Data(), ptTag.Data()), "#Delta#eta#Delta#phi " + ptInterval, {HistType::kTH3F, {deltaEtaAxis, deltaPhiAxis, ptBinnedAxis}}));
         }
       }
     }
@@ -613,7 +613,7 @@ struct HadronNucleiCorrelation {
   }
 
   template <typename T1>
-  void fillHistogramsGen(T1 const& part0, T1 const& part1, bool ME)
+  void fillHistogramsGen(T1 const& part0, T1 const& part1, const bool ME)
   {
 
     float deltaEta = part0.eta() - part1.eta();
@@ -635,7 +635,7 @@ struct HadronNucleiCorrelation {
     } // nBinspT loop
   }
 
-  void GetCorrection(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj, const TString& filepath, const TString& histname)
+  void getCorrection(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj, const TString& filepath, const TString& histname)
   {
     auto* l = ccdbObj->get<TList>(filepath.Data());
     if (!l) {
