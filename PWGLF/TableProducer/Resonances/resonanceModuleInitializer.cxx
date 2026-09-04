@@ -92,12 +92,39 @@ struct ResonanceModuleInitializer {
   static constexpr int DetailedQARCTStage = o2::analysis::CollisonCuts::kAllpassed + 1;
   static constexpr int DetailedQAStages = DetailedQARCTStage + 1;
   static constexpr float MCVertexZMax = 10.f;
+  // PDG codes used by the persistent resonance-parent selection. Named O2/ROOT
+  // values are preferred where available; the remaining resonances are kept as
+  // local named constants because neither PDG_t nor PhysicsConstants defines them.
+  static constexpr int PdgKStar0 = o2::constants::physics::Pdg::kK0Star892;
+  static constexpr int PdgKStarCharged = o2::constants::physics::Pdg::kKPlusStar892;
+  static constexpr int PdgPhi = o2::constants::physics::Pdg::kPhi;
+  static constexpr int F0Code980 = 9010221;
+  static constexpr int F0Code1370 = 10221;
+  static constexpr int F0Code1500 = 9030221;
+  static constexpr int F0Code1710 = 10331;
+  static constexpr int F1Code1285 = 20223;
+  static constexpr int F1Code1420 = 20333;
+  static constexpr int F2PrimeCode1525 = 335;
+  static constexpr int PdgRho0 = PDG_t::kRho770_0;
+  static constexpr int PdgRhoCharged = PDG_t::kRho770Plus;
+  static constexpr int SigmaStarPlusCode = 3224;
+  static constexpr int PdgLambda1520 = o2::constants::physics::Pdg::kLambda1520_Py;
+  static constexpr int Xi1530Code = 3324;
+  static constexpr int PdgK1Plus1270 = o2::constants::physics::Pdg::kK1_1270Plus;
+  static constexpr int Xi1820NeutralCode = 123314;
+  static constexpr int Xi1820MinusCode = 123324;
+  static constexpr int Omega2012MinusCode = 123334;
+  static constexpr int PdgProton = PDG_t::kProton;
+  static constexpr int PdgLambda0 = PDG_t::kLambda0;
+  static constexpr int PdgXiMinus = PDG_t::kXiMinus;
+  static constexpr int PdgXi0 = o2::constants::physics::Pdg::kXi0;
+  static constexpr int PdgOmegaMinus = PDG_t::kOmegaMinus;
 
-  int mRunNumber = 0;                        ///< Run number for the current data
-  int multEstimator = CentralityFT0M;        ///< Centrality estimator type
-  float dBz = 0.f;                           ///< Magnetic field value
-  float centrality = 0.f;                    ///< Centrality value for the event
-  Service<o2::ccdb::BasicCCDBManager> ccdb;  ///< CCDB manager service
+  int mRunNumber = 0;                       ///< Run number for the current data
+  int multEstimator = CentralityFT0M;       ///< Centrality estimator type
+  float dBz = 0.f;                          ///< Magnetic field value
+  float centrality = 0.f;                   ///< Centrality value for the event
+  Service<o2::ccdb::BasicCCDBManager> ccdb; ///< CCDB manager service
 
   Produces<aod::ResoCollisions_001> resoCollisions;              ///< Output table for resonance collisions
   Produces<aod::ResoCollisionColls> resoCollisionColls;          ///< Optional source collision soft links
@@ -124,9 +151,8 @@ struct ResonanceModuleInitializer {
     Configurable<bool> cfgFillDetailedQA{"cfgFillDetailedQA", true, "Fill the Run 3 event-selection stage vs vertex-z vs centrality vs multiplicity THnSparse"};
     Configurable<bool> cfgBypassCCDB{"cfgBypassCCDB", true, "Bypass loading CCDB part to save CPU time and memory"}; // will be affected to b_z value.
     Configurable<std::string> cfgMultName{"cfgMultName", "FT0M", "Centrality estimator: FT0M, FT0C, FT0A, or FV0A"};
-    Configurable<int> cfgMultiplicityEstimator{
-      "cfgMultiplicityEstimator", 3,
-      "Stored multiplicity (NOT percentile): 0 -> NTracksPV, 1 -> NTracksPVeta1, 2 -> NTracksPVetaHalf, 3 -> FT0M, 4 -> FT0A, 5 -> FT0C, 6 -> FV0A"};
+    Configurable<int> cfgMultiplicityEstimator{"cfgMultiplicityEstimator", 3,
+                                               "Stored multiplicity (NOT percentile): 0 -> NTracksPV, 1 -> NTracksPVeta1, 2 -> NTracksPVetaHalf, 3 -> FT0M, 4 -> FT0A, 5 -> FT0C, 6 -> FV0A"};
     ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0., 0.01, 0.1, 1., 5., 10., 15., 20., 30., 40., 50., 60., 70., 80., 90., 100., 105.}, "Binning of the centrality axis"};
     ConfigurableAxis binsMultiplicity{"binsMultiplicity", {500, 0.f, 5000.f}, "Binning of the reconstructed multiplicity axis for detailed collision QA"};
     ConfigurableAxis cfgVtxBins{"cfgVtxBins", {400, -20.f, 20.f}, "Binning of the collision vertex-z axis for detailed QA"};
@@ -181,9 +207,9 @@ struct ResonanceModuleInitializer {
     Configurable<bool> isDaughterCheck{"isDaughterCheck", true, "Require the configured two-body decay"};
     Configurable<float> cfgRapidityCutMinGen{"cfgRapidityCutMinGen", -0.5f, "Minimum generated-particle rapidity"};
     Configurable<float> cfgRapidityCutMaxGen{"cfgRapidityCutMaxGen", 0.5f, "Maximum generated-particle rapidity"};
-    Configurable<int> pdgTruthMother{"pdgTruthMother", 3324, "Absolute PDG code of the generated mother"};
-    Configurable<int> pdgTruthDaughter1{"pdgTruthDaughter1", 3312, "Absolute PDG code of the first daughter"};
-    Configurable<int> pdgTruthDaughter2{"pdgTruthDaughter2", 211, "Absolute PDG code of the second daughter"};
+    Configurable<int> pdgTruthMother{"pdgTruthMother", static_cast<int>(Xi1530Code), "Absolute PDG code of the generated mother"};
+    Configurable<int> pdgTruthDaughter1{"pdgTruthDaughter1", static_cast<int>(PdgXiMinus), "Absolute PDG code of the first daughter"};
+    Configurable<int> pdgTruthDaughter2{"pdgTruthDaughter2", PDG_t::kPiPlus, "Absolute PDG code of the second daughter"};
     Configurable<bool> cfgDoSignalLoss{"cfgDoSignalLoss", false, "Save reference particles for mT-scaling signal-loss studies"};
   } GenCuts;
   RCTFlagsChecker genRCTChecker;
@@ -191,30 +217,30 @@ struct ResonanceModuleInitializer {
   // Keep the established ResoMCParents content compatible with the legacy
   // initializer. The additional stable-particle species are written only for
   // signal-loss studies and are filtered in fillMCParents.
-  Partition<aod::McParticles> selectedMCParticles = (nabs(aod::mcparticle::pdgCode) == 313)        // K*
-                                                    || (nabs(aod::mcparticle::pdgCode) == 323)     // K*pm
-                                                    || (nabs(aod::mcparticle::pdgCode) == 333)     // phi
-                                                    || (nabs(aod::mcparticle::pdgCode) == 9010221) // f0(980)
-                                                    || (nabs(aod::mcparticle::pdgCode) == 10221)   // f0(1370)
-                                                    || (nabs(aod::mcparticle::pdgCode) == 9030221) // f0(1500)
-                                                    || (nabs(aod::mcparticle::pdgCode) == 10331)   // f0(1710)
-                                                    || (nabs(aod::mcparticle::pdgCode) == 20223)   // f1(1285)
-                                                    || (nabs(aod::mcparticle::pdgCode) == 20333)   // f1(1420)
-                                                    || (nabs(aod::mcparticle::pdgCode) == 335)     // f1(1525)
-                                                    || (nabs(aod::mcparticle::pdgCode) == 113)     // rho(770)
-                                                    || (nabs(aod::mcparticle::pdgCode) == 213)     // rho(770)pm
-                                                    || (nabs(aod::mcparticle::pdgCode) == 3224)    // Sigma(1385)+
-                                                    || (nabs(aod::mcparticle::pdgCode) == 102134)  // Lambda(1520)
-                                                    || (nabs(aod::mcparticle::pdgCode) == 3324)    // Xi(1530)0
-                                                    || (nabs(aod::mcparticle::pdgCode) == 10323)   // K1(1270)+
-                                                    || (nabs(aod::mcparticle::pdgCode) == 123314)  // Xi(1820)0
-                                                    || (nabs(aod::mcparticle::pdgCode) == 123324)  // Xi(1820)-
-                                                    || (nabs(aod::mcparticle::pdgCode) == 123334)  // Omega(2012)-
-                                                    || (nabs(aod::mcparticle::pdgCode) == 2212)    // proton
-                                                    || (nabs(aod::mcparticle::pdgCode) == 3122)    // Lambda0
-                                                    || (nabs(aod::mcparticle::pdgCode) == 3312)    // Xi-
-                                                    || (nabs(aod::mcparticle::pdgCode) == 3322)    // Xi0
-                                                    || (nabs(aod::mcparticle::pdgCode) == 3334);   // Omega-
+  Partition<aod::McParticles> selectedMCParticles = (nabs(aod::mcparticle::pdgCode) == PdgKStar0)             // K*(892)0
+                                                    || (nabs(aod::mcparticle::pdgCode) == PdgKStarCharged)    // K*(892)+
+                                                    || (nabs(aod::mcparticle::pdgCode) == PdgPhi)             // phi(1020)
+                                                    || (nabs(aod::mcparticle::pdgCode) == F0Code980)          // f0(980)
+                                                    || (nabs(aod::mcparticle::pdgCode) == F0Code1370)         // f0(1370)
+                                                    || (nabs(aod::mcparticle::pdgCode) == F0Code1500)         // f0(1500)
+                                                    || (nabs(aod::mcparticle::pdgCode) == F0Code1710)         // f0(1710)
+                                                    || (nabs(aod::mcparticle::pdgCode) == F1Code1285)         // f1(1285)
+                                                    || (nabs(aod::mcparticle::pdgCode) == F1Code1420)         // f1(1420)
+                                                    || (nabs(aod::mcparticle::pdgCode) == F2PrimeCode1525)    // f2'(1525)
+                                                    || (nabs(aod::mcparticle::pdgCode) == PdgRho0)            // rho(770)0
+                                                    || (nabs(aod::mcparticle::pdgCode) == PdgRhoCharged)      // rho(770)+
+                                                    || (nabs(aod::mcparticle::pdgCode) == SigmaStarPlusCode)  // Sigma(1385)+
+                                                    || (nabs(aod::mcparticle::pdgCode) == PdgLambda1520)      // Lambda(1520)
+                                                    || (nabs(aod::mcparticle::pdgCode) == Xi1530Code)         // Xi(1530)0
+                                                    || (nabs(aod::mcparticle::pdgCode) == PdgK1Plus1270)      // K1(1270)+
+                                                    || (nabs(aod::mcparticle::pdgCode) == Xi1820NeutralCode)  // Xi(1820)0
+                                                    || (nabs(aod::mcparticle::pdgCode) == Xi1820MinusCode)    // Xi(1820)-
+                                                    || (nabs(aod::mcparticle::pdgCode) == Omega2012MinusCode) // Omega(2012)-
+                                                    || (nabs(aod::mcparticle::pdgCode) == PdgProton)          // proton
+                                                    || (nabs(aod::mcparticle::pdgCode) == PdgLambda0)         // Lambda0
+                                                    || (nabs(aod::mcparticle::pdgCode) == PdgXiMinus)         // Xi-
+                                                    || (nabs(aod::mcparticle::pdgCode) == PdgXi0)             // Xi0
+                                                    || (nabs(aod::mcparticle::pdgCode) == PdgOmegaMinus);     // Omega-
   Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
 
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -554,14 +580,14 @@ struct ResonanceModuleInitializer {
    *
    * @tparam MCParticlesType Type of MC-particle group
    * @param mcParticles MC particles grouped by generator collision
-   * @param centrality Generator or representative reconstructed centrality
+   * @param generatorCentrality Generator or representative reconstructed centrality
    * @param multiplicity Generator-level charged-particle multiplicity
    * @param impactParameter Generator collision impact parameter
    * @param eventType INEL/INEL>0 category
    */
   template <typename MCParticlesType>
   void fillMCGenParticles(MCParticlesType const& mcParticles,
-                          float centrality,
+                          float generatorCentrality,
                           float multiplicity,
                           float impactParameter,
                           int eventType)
@@ -599,9 +625,9 @@ struct ResonanceModuleInitializer {
       }
 
       if (mcPart.pdgCode() > 0) {
-        qaRegistry.fill(HIST("EventGen/h5ResonanceTruth"), eventType, mcPart.pt(), centrality, multiplicity, impactParameter);
+        qaRegistry.fill(HIST("EventGen/h5ResonanceTruth"), eventType, mcPart.pt(), generatorCentrality, multiplicity, impactParameter);
       } else {
-        qaRegistry.fill(HIST("EventGen/h5ResonanceTruthAnti"), eventType, mcPart.pt(), centrality, multiplicity, impactParameter);
+        qaRegistry.fill(HIST("EventGen/h5ResonanceTruthAnti"), eventType, mcPart.pt(), generatorCentrality, multiplicity, impactParameter);
       }
     }
   }
@@ -626,7 +652,7 @@ struct ResonanceModuleInitializer {
     for (auto const& mcPart : selectedParents) {
       if (!GenCuts.cfgDoSignalLoss) {
         const int absPdg = std::abs(mcPart.pdgCode());
-        if (absPdg == 2212 || absPdg == 3122 || absPdg == 3312 || absPdg == 3322 || absPdg == 3334) {
+        if (absPdg == PdgProton || absPdg == PdgLambda0 || absPdg == PdgXiMinus || absPdg == PdgXi0 || absPdg == PdgOmegaMinus) {
           continue;
         }
       }
@@ -981,6 +1007,7 @@ struct ResonanceDaughterInitializer {
   static constexpr int PairGateModeEither = 1;
   static constexpr float MomentumQuantizationScale = 1000.f;
   static constexpr std::size_t StoredMCRelationCount = 2;
+  static constexpr std::size_t MaxCandidateDaughters = 3;
 
   /// Selected-candidate state and the optional global daughter-ID veto set.
   /// By default only candidate existence is recorded and daughter reuse is
@@ -1003,7 +1030,7 @@ struct ResonanceDaughterInitializer {
     template <std::size_t DaughterCount>
     void addCandidate(std::array<int64_t, DaughterCount> const& daughterIds)
     {
-      static_assert(DaughterCount <= 3);
+      static_assert(DaughterCount <= MaxCandidateDaughters);
       allDaughterIds.insert(allDaughterIds.end(), daughterIds.begin(), daughterIds.end());
       hasSelectedCandidate = true;
     }
@@ -1359,7 +1386,9 @@ struct ResonanceDaughterInitializer {
     const std::array tpcPidMeans{TrackCuts.pidnSigmaPreSelectionMeanPion.value,
                                  TrackCuts.pidnSigmaPreSelectionMeanKaon.value,
                                  TrackCuts.pidnSigmaPreSelectionMeanProton.value};
-    if (!std::all_of(tpcPidMeans.begin(), tpcPidMeans.end(), [](float mean) { return std::isfinite(mean); })) {
+    if (!std::all_of(tpcPidMeans.begin(), tpcPidMeans.end(), [](float mean) {
+          return std::isfinite(mean);
+        })) {
       LOGF(fatal, "All TPC PID preselection means must be finite");
     }
     if (TrackCuts.cfgUseTOFPIDPreSelection.value) {
@@ -1370,7 +1399,9 @@ struct ResonanceDaughterInitializer {
       const std::array tofPidMeans{TrackCuts.pidnSigmaPreSelectionMeanTOFPion.value,
                                    TrackCuts.pidnSigmaPreSelectionMeanTOFKaon.value,
                                    TrackCuts.pidnSigmaPreSelectionMeanTOFProton.value};
-      if (!std::all_of(tofPidMeans.begin(), tofPidMeans.end(), [](float mean) { return std::isfinite(mean); })) {
+      if (!std::all_of(tofPidMeans.begin(), tofPidMeans.end(), [](float mean) {
+            return std::isfinite(mean);
+          })) {
         LOGF(fatal, "All TOF PID preselection means must be finite when TOF PID selection is enabled");
       }
     }
