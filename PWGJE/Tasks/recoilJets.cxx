@@ -218,6 +218,8 @@ struct RecoilJets {
     Configurable<float> ea60To80{"ea60To80", 0.092541f, "Rho shift for EA 60-80%"};
     Configurable<float> ea50To100{"ea50To100", 0.106569f, "Rho shift for EA 50-100%"};
     Configurable<float> ea80To100{"ea80To100", 0.0998433f, "Rho shift for EA 80-100%"};
+
+    Configurable<float> mbPart{"mbPart", 0.0f, "Rho shift for MB part. level MC"};
   } cfgRhoShift;
 
   // Auxiliary variables
@@ -772,6 +774,15 @@ struct RecoilJets {
                     Form("MC events w. TT_{Sig}: %s & #it{p}_{T} of recoil jets", centAxis.label),
                     kTH2F, {{centAxis.axis, centAxis.axisName}, jetPTcorrFinnerBin}, hist.sumw2);
       }
+
+      // Register TTRef recoil spectra with rho-shift correction
+      spectra.add("hEA_MB_Recoil_JetPt_Corr_RhoShifted_TTRef_Part",
+                  "EA_MB: recoil jet #it{p}_{T} (#rho shifted)",
+                  kTH1F, {jetPTcorrFinnerBin}, hist.sumw2);
+
+      spectra.add("hEA_MB_RhoShifted_TTRef_Part",
+                  "EA_MB: #rho shifted in events w. TT_{Ref}",
+                  kTH1F, {rho}, hist.sumw2);
     }
 
     // Jet matching analysis
@@ -1806,6 +1817,11 @@ struct RecoilJets {
 
         spectra.fill(HIST("hCentFT0C_Rho_TTRef_Part"), centFT0C, rho, weight);
         spectra.fill(HIST("hCentFT0M_Rho_TTRef_Part"), centFT0M, rho, weight);
+
+        //_____________________________________________________
+        // Fill EA-dependent rho spectra in events with TTRef with corresponding rho shift
+        const float rhoRefShifted = rho + cfgRhoShift.mbPart.value;
+        spectra.fill(HIST("hEA_MB_RhoShifted_TTRef_Part"), rhoRefShifted, weight);
       }
     }
 
@@ -1878,6 +1894,11 @@ struct RecoilJets {
           spectra.fill(HIST("hCentFT0M_DPhi_JetPt_Corr_TTRef_Part"), centFT0M, dphi, jetPtCorr, weight);
 
           if (bRecoilJet) {
+
+            // Fill EA-dependent TTRef recoil spectra using the corresponding rho shift
+            const float rhoRefShifted = rho + cfgRhoShift.mbPart.value;
+            const float jetPtCorrShifted = jetPt - rhoRefShifted * jetArea;
+            spectra.fill(HIST("hEA_MB_Recoil_JetPt_Corr_RhoShifted_TTRef_Part"), jetPtCorrShifted, weight);
 
             // EA dependence
             spectra.fill(HIST("hScaledFT0C_Recoil_JetPt_Corr_TTRef_Part"), scaledFT0C, jetPtCorr, weight);
