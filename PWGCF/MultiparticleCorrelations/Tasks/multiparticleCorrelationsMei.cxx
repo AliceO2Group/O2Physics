@@ -27,8 +27,8 @@ using namespace std;
 // ...
 #include <Framework/runDataProcessing.h>
 
-#include <TH1D.h>
 #include <TGrid.h>
+#include <TH1D.h>
 #include <TSystem.h>
 
 #include <string>
@@ -258,7 +258,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
 
     if (bFileIsInAliEn) {
       // File you want to access is in your home dir in AliEn:
-      TGrid* alien = TGrid::Connect("alien", gSystem->Getenv("USER"), "", ""); // do not forget to add #include <TGrid.h> to the preamble of your analysis task
+      const TGrid* alien = TGrid::Connect("alien", gSystem->Getenv("USER"), "", ""); // do not forget to add #include <TGrid.h> to the preamble of your analysis task
       if (!alien) {
         LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
       }
@@ -343,6 +343,12 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
 
     // Here comes the common code for all three cases, where from "listWithRuns" you fetch the desired histogram with efficiency corrections:
     // listWithRuns->ls();
+
+    if (!listWithRuns) {
+      LOGF(fatal,
+           "\033[1;31m%s: listWithRuns is null for run %s\033[0m",
+           __FUNCTION__, runNumber);
+    }
 
     hist = dynamic_cast<TH1D*>(listWithRuns->FindObject("h_invert"));
     if (!hist) {
