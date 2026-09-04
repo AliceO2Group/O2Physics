@@ -67,7 +67,6 @@
 #include <cstdint>
 #include <random>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -121,6 +120,11 @@ enum class TagDecision {
   NotTagged = 0,
   Tagged,
   NTags
+};
+
+struct PendingConvPair {
+  int64_t idx1 = 0;
+  int64_t idx2 = 0;
 };
 
 struct ClusterMcInfo {
@@ -198,6 +202,9 @@ struct EmcalPhotonMcTask {
   static constexpr float EMCALRadius = 440.f;
   static constexpr float PhiVUndefined = -999.f;
   static constexpr float Epsilon = 1.e-6f;
+
+  static constexpr uint32_t kMlModelRow = 0;
+  static constexpr uint32_t kMlPositiveClassCol = 1;
 
   static constexpr std::array<std::array<double, 2>, 1> defaultCutsMl{{{0.0, 0.25}}};
 
@@ -300,9 +307,13 @@ struct EmcalPhotonMcTask {
     std::string prefix = "mlConfig";
     Configurable<bool> useMlTagging{"useMlTagging", false, "use ML score instead of box cut for conversion tagging"};
     Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "load ML model from CCDB"};
+    Configurable<bool> enableOptimization{"enableOptimization", false, "enable the MlResponse optimizations."};
+    Configurable<int> nThreads{"nThreads", 1, "number of threads for the ML model"};
+    Configurable<std::size_t> mlBatchFlushSize{"mlBatchFlushSize", 20000, "Flush ML batch after this many pending pairs."};
     Configurable<std::vector<std::string>> mlInputFeatures{
       "mlInputFeatures",
-      {"minv", "deltaEta", "deltaR", "phiv", "rConv", "totE", "e2", "e1", "deltaPhi"},
+      {"minv", "deltaEta", "deltaR", "phiv", "rConv", "totE", "e2", "e1", "deltaPhi", "harmonicEt",
+       "m021", "m022", "time1", "time2", "ncell1", "ncell2"},
       "input feature names -- content and order must match the Python training FEATURES list"};
     Configurable<std::string> mlModelPathLocal{"mlModelPathLocal", "/data/mhemmer/O2ML/code/conversion_tagging_bdt_conversion_splits_brems.onnx", "local ONNX model path"};
     Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"Users/m/mhemmer/EM/ML/"}, "Paths of models on CCDB"};
@@ -401,7 +412,7 @@ struct EmcalPhotonMcTask {
     const AxisSpec thnAxisTagging{static_cast<int>(TagDecision::NTags), -0.5, static_cast<double>(TagDecision::NTags) - 0.5, ""};
     const AxisSpec thnAxisClasses{static_cast<int>(TruthClass::NClasses), -0.5, static_cast<double>(TruthClass::NClasses) - 0.5, ""};
 
-    const AxisSpec thnAxisM02{250, 0., 2.5, "#it{M}_{02}"};
+    const AxisSpec thnAxisM02{100, 0., 1.0, "#it{M}_{02}"};
 
     AxisSpec thnAxisCentOrMult{1, 0., 1., "Centrality/Multiplicity"}; // placeholder, overwritten in init
     if (useCent.value) {
@@ -429,55 +440,42 @@ struct EmcalPhotonMcTask {
     hTruthLabel->GetXaxis()->SetBinLabel(static_cast<int>(TruthClass::SameMesonIndirect) + 1, "SameMesonIndirect");
     hTruthLabel->GetXaxis()->SetBinLabel(static_cast<int>(TruthClass::Background) + 1, "Background");
 
-    auto hPi0BothResolvedLost = registry.add<TH1>("EMCal/hPi0BothResolvedLost", "Confusion matrix for conversion tagging", HistType::kTH1D, {{2, -0.5, 1.5}});
-    hPi0BothResolvedLost->GetXaxis()->SetBinLabel(1, "both resolved (denominator)");
-    hPi0BothResolvedLost->GetXaxis()->SetBinLabel(2, "lost to tagging");
+    // auto hConfusionMatrixConversionTagging = registry.add<TH2>("EMCal/ConfusionMatrixConversionTagging", "Confusion matrix for conversion tagging", HistType::kTH2D, {thnAxisTagging, thnAxisClasses});
+    // hConfusionMatrixConversionTagging->GetXaxis()->SetBinLabel(1, "not tagged");
+    // hConfusionMatrixConversionTagging->GetXaxis()->SetBinLabel(2, "tagged");
+    // hConfusionMatrixConversionTagging->GetYaxis()->SetBinLabel(1, "true conv.");
+    // hConfusionMatrixConversionTagging->GetYaxis()->SetBinLabel(2, "true #pi^{0}");
+    // hConfusionMatrixConversionTagging->GetYaxis()->SetBinLabel(3, "true #pi^{0} conv.");
+    // hConfusionMatrixConversionTagging->GetYaxis()->SetBinLabel(4, "background");
+    // hConfusionMatrixConversionTagging->GetYaxis()->SetBinLabel(5, "#gamma");
 
-    auto hConfusionMatrixConversionTagging = registry.add<TH2>("EMCal/ConfusionMatrixConversionTagging", "Confusion matrix for conversion tagging", HistType::kTH2D, {thnAxisTagging, thnAxisClasses});
-    hConfusionMatrixConversionTagging->GetXaxis()->SetBinLabel(1, "not tagged");
-    hConfusionMatrixConversionTagging->GetXaxis()->SetBinLabel(2, "tagged");
-
-    hConfusionMatrixConversionTagging->GetYaxis()->SetBinLabel(1, "true conv.");
-    hConfusionMatrixConversionTagging->GetYaxis()->SetBinLabel(2, "true #pi^{0}");
-    hConfusionMatrixConversionTagging->GetYaxis()->SetBinLabel(3, "true #pi^{0} conv.");
-    hConfusionMatrixConversionTagging->GetYaxis()->SetBinLabel(4, "background");
-    hConfusionMatrixConversionTagging->GetYaxis()->SetBinLabel(5, "#gamma");
-
-    registry.add<TH1>("hBSRadius", "Radius of BS photons;;counts", HistType::kTH1D, {thnAxisrConvGen});
-    registry.add<TH1>("hLeptonRadius", "Radius of leptons;;counts", HistType::kTH1D, {thnAxisrConvGen});
-    registry.add<TH1>("hConvLeptonRadius", "Radius of leptons from conversions;;counts", HistType::kTH1D, {thnAxisrConvGen});
-
-    registry.add<TH1>("Photon/M02", "M02 distribution;;counts", HistType::kTH1D, {thnAxisM02});
     auto hPhotonProcess = registry.add<TH1>("Photon/hProcess", "Production process type", HistType::kTH1D, {{kMaxMCProcess, -0.5, kMaxMCProcess - 0.5}});
     for (int i = 0; i < kMaxMCProcess; ++i) {
       hPhotonProcess->GetXaxis()->SetBinLabel(i + 1, TMCProcessName[i]);
     }
     registry.addClone("Photon/", "Electron/");
     registry.addClone("Photon/", "Positron/");
-    registry.addClone("Photon/", "BSPhoton/");
-    registry.addClone("Photon/", "MergedConv/");
-    registry.addClone("Photon/", "ConvElectron/");
-    registry.addClone("Photon/", "ConvPositron/");
-    registry.addClone("Photon/", "Other/");
-    registry.addClone("Photon/", "Lepton/");
 
-    auto hClusterType = registry.add<TH2>("hClusterType", "Truth label distribution;;Counts", HistType::kTH2D, {{8, -0.5, 7.5}, thnAxisPtRec});
-    hClusterType->GetXaxis()->SetBinLabel(1, "Photon");
-    hClusterType->GetXaxis()->SetBinLabel(2, "Electron");
-    hClusterType->GetXaxis()->SetBinLabel(3, "Positron");
-    hClusterType->GetXaxis()->SetBinLabel(4, "BSPhoton");
-    hClusterType->GetXaxis()->SetBinLabel(5, "MergedConv");
-    hClusterType->GetXaxis()->SetBinLabel(6, "Conv electron");
-    hClusterType->GetXaxis()->SetBinLabel(7, "Conv positron");
-    hClusterType->GetXaxis()->SetBinLabel(8, "Other");
+    registry.add<TH2>("Photon/Direct/M02", "M02 distribution;;counts", HistType::kTH2D, {thnAxisM02, thnAxisPtRec});
 
-    auto hBSLeptonFate = registry.add<TH1>("hBSLeptonFate", "Fate of the Bremsstrahlungsphotons mother lepton;;Counts", HistType::kTH1D, {{3, -0.5, 2.5}});
-    hBSLeptonFate->GetXaxis()->SetBinLabel(1, "dominant");
-    hBSLeptonFate->GetXaxis()->SetBinLabel(2, "non dominant");
-    hBSLeptonFate->GetXaxis()->SetBinLabel(3, "absent");
+    auto hDirectPhotonTags = registry.add<TH1>("Photon/Direct/Tagging", "Tagging distribution;;counts", HistType::kTH1D, {{3, -0.5, 2.5}});
+    hDirectPhotonTags->GetXaxis()->SetBinLabel(1, "Not tagged");
+    hDirectPhotonTags->GetXaxis()->SetBinLabel(2, "tagged simple");
+    hDirectPhotonTags->GetXaxis()->SetBinLabel(3, "tagged double");
+
+    registry.addClone("Photon/Direct/", "Photon/Decay/");
+    registry.addClone("Photon/Direct/", "Photon/Bremsstrahlung/");
+    registry.addClone("Photon/Direct/", "Photon/Annihilation/");
+    registry.addClone("Photon/Direct/", "Photon/Hadronic/");
+
+    registry.addClone("Photon/Direct/", "Lepton/Conversion/");
+    registry.addClone("Photon/Direct/", "Lepton/Compton/");
+    registry.addClone("Photon/Direct/", "Lepton/PhotoElectric/");
+    registry.addClone("Photon/Direct/", "Lepton/DeltaRay/");
+    registry.addClone("Photon/Direct/", "Lepton/DirectMesonDecay/");
 
     if (mlConfig.useMlTagging.value) {
-      registry.add<TH1>("hMlScore", "BDT score;;Counts", HistType::kTH1D, {{100, -10, 10}});
+      registry.add<TH1>("hMlScore", "BDT score;;Counts", HistType::kTH1D, {{100, 0, 1}});
     }
 
     mRandGen.seed(bkgPrescaleSeed.value);
@@ -525,7 +523,7 @@ struct EmcalPhotonMcTask {
       } else {
         mMlResponse.setModelPathsLocal({mlConfig.mlModelPathLocal.value});
       }
-      mMlResponse.init();
+      mMlResponse.init(mlConfig.enableOptimization, mlConfig.nThreads);
 
       LOG(info) << "ML conversion tagging enabled -- model: " << mlConfig.mlModelPathLocal.value
                 << ", threshold: " << mlConfig.mlThreshold.value;
@@ -607,13 +605,61 @@ struct EmcalPhotonMcTask {
     if (collisions.size() <= 0) {
       return;
     }
+
+    auto cluster1 = clusters.begin();
+    auto cluster2 = clusters.begin();
+
     std::vector<bool> wasMeassured(mcParticles.size(), false);
     EMBitFlags emcFlagsFromTrueMeson(clusters.size());
     EMBitFlags emcFlagsFromTrueMesonSameGamma(clusters.size());
     EMBitFlags emcFlagsFromTrueConversion(clusters.size());
     EMBitFlags emcFlagsTagging(clusters.size());
     EMBitFlags emcFlagsMlTagging(clusters.size());
+    EMBitFlags emcFlagsMlTaggingDoublePass(clusters.size());
     EMBitFlags emcFlags(clusters.size());
+
+    std::vector<float> bestPositiveScore(clusters.size(), 0);
+    std::vector<float> bestNegativeScore(clusters.size(), 0);
+
+    std::vector<float> mMlInputBuffer;
+    std::vector<float> mMlOutputBuffer;
+
+    std::vector<PendingConvPair> pending;
+    std::vector<float> mlBatchBuffer;
+
+    auto flushMlBatch = [&]() {
+      if (pending.empty()) {
+        return;
+      }
+      auto scores = mMlResponse.getModelOutputBatched(mlBatchBuffer, /*nModel=*/0, pending.size());
+      for (std::size_t i = 0; i < pending.size(); ++i) {
+        const auto& pp = pending[i];
+        cluster1.setCursor(pp.idx1);
+        cluster2.setCursor(pp.idx2);
+        const float negScore = scores[i * 2 + 0];
+        const float posScore = scores[i * 2 + 1];
+
+        for (auto idx : {pp.idx1, pp.idx2}) {
+          if (posScore > bestPositiveScore[idx]) {
+            bestPositiveScore[idx] = posScore;
+          }
+          if (negScore > bestNegativeScore[idx]) {
+            bestNegativeScore[idx] = negScore;
+          }
+        }
+        const bool isTagged = posScore >= mlConfig.cutsMl->get(kMlModelRow, kMlPositiveClassCol); // mirrors the CutSmaller-on-class-1 logic
+        if (isTagged) {
+          emcFlagsMlTagging.set(pp.idx1);
+          emcFlagsMlTagging.set(pp.idx2);
+        }
+        registry.fill(HIST("hMlScore"), posScore);
+
+        // --- classification/table-fill exactly as before (lines 706-806), using pp.vMeson, pp.deltaEta, pp.deltaPhi, pp.phiV, pp.harmonicET, g1, g2 ---
+      }
+      mlBatchBuffer.clear();
+      pending.clear();
+    };
+
     if (clusters.size() > 0) {
       fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds, &registry);
     }
@@ -634,6 +680,11 @@ struct EmcalPhotonMcTask {
       float centOrMult = getCentralityOrMultiplicity(collision);
 
       auto photonsEMCPerCollision = clusters.sliceBy(perCollisionEMC, collision.globalIndex());
+
+      if (mlConfig.useMlTagging.value) {
+        pending.reserve(photonsEMCPerCollision.size()); // rough upper bound
+        mlBatchBuffer.reserve(photonsEMCPerCollision.size() * mlConfig.mlInputFeatures.value.size());
+      }
 
       for (const auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(photonsEMCPerCollision, photonsEMCPerCollision))) {
         if (!(emcFlags.test(g1.globalIndex())) || !(emcFlags.test(g2.globalIndex()))) {
@@ -681,17 +732,41 @@ struct EmcalPhotonMcTask {
           emcFlagsTagging.set(g2.globalIndex());
         }
 
+        // if (mlConfig.useMlTagging.value) {
+        //   o2::analysis::em::EMCConversionCandidate candidate{
+        //     .mMinv = static_cast<float>(vMeson.M()), .mDeltaEta = deltaEta, .mDeltaR = std::hypot(deltaEta, deltaPhi), .mPhiv = phiV, .mRConv = rConv, .mTotE = (g2.e() + g1.e()), .mE2 = g2.e(), .mE1 = g1.e(), .mDeltaPhi = deltaPhi};
+        //   mMlResponse.getInputFeatures(candidate, mMlInputBuffer);
+        //   bool isTagged = mMlResponse.isSelectedMl(mMlInputBuffer, 0.f, mMlOutputBuffer);
+
+        //   const float posScore = mMlOutputBuffer[1];
+        //   const float negScore = mMlOutputBuffer[0]; // = 1 - posScore for binary classification as we use
+
+        //   for (auto idx : {g1.globalIndex(), g2.globalIndex()}) {
+        //     if (posScore > bestPositiveScore[idx]) {
+        //       bestPositiveScore[idx] = posScore;
+        //     }
+        //     if (negScore > bestNegativeScore[idx]) {
+        //       bestNegativeScore[idx] = negScore;
+        //     }
+        //   }
+
+        //   if (isTagged) {
+        //     emcFlagsMlTagging.set(g1.globalIndex());
+        //     emcFlagsMlTagging.set(g2.globalIndex());
+        //   }
+        //   registry.fill(HIST("hMlScore"), mMlOutputBuffer[1]); // positive-class score, always, tagged or not
+        //   mMlOutputBuffer.clear();
+        // }
+
         if (mlConfig.useMlTagging.value) {
           o2::analysis::em::EMCConversionCandidate candidate{
-            .mMinv = static_cast<float>(vMeson.M()), .mDeltaEta = deltaEta, .mDeltaR = std::hypot(deltaEta, deltaPhi), .mPhiv = phiV, .mRConv = rConv, .mTotE = (g2.e() + g1.e()), .mE2 = g2.e(), .mE1 = g1.e(), .mDeltaPhi = deltaPhi};
-          std::vector<float> mlInput = mMlResponse.getInputFeatures(candidate);
-          std::vector<float> mlOutput;
-          bool isTagged = mMlResponse.isSelectedMl(mlInput, 0.f, mlOutput);
-          if (isTagged) {
-            emcFlagsMlTagging.set(g1.globalIndex());
-            emcFlagsMlTagging.set(g2.globalIndex());
+            .mMinv = static_cast<float>(vMeson.M()), .mDeltaEta = deltaEta, .mDeltaR = std::hypot(deltaEta, deltaPhi), .mPhiv = phiV, .mRConv = rConv, .mTotE = (g2.e() + g1.e()), .mE2 = g2.e(), .mE1 = g1.e(), .mDeltaPhi = deltaPhi, .mHarmonicEt = harmonicET, .mM021 = g1.m02(), .mM022 = g2.m02(), .mTime1 = g1.time(), .mTime2 = g2.time(), .mNcell1 = g1.nCells(), .mNcell2 = g2.nCells()};
+          mMlResponse.getInputFeatures(candidate, mMlInputBuffer);
+          mlBatchBuffer.insert(mlBatchBuffer.end(), mMlInputBuffer.begin(), mMlInputBuffer.end());
+          pending.push_back({g1.globalIndex(), g2.globalIndex()});
+          if (pending.size() >= mlConfig.mlBatchFlushSize.value) {
+            flushMlBatch();
           }
-          registry.fill(HIST("hMlScore"), mlOutput[1]); // positive-class score, always, tagged or not
         }
 
         // set MC particle cursors to the largest cluster contributor
@@ -797,55 +872,21 @@ struct EmcalPhotonMcTask {
         }
       } // pair loop
 
-      // key: MC particle global index -> list of (cluster global index, contributor rank)
-      std::unordered_map<int, std::vector<std::pair<int64_t, size_t>>> particleToClusterContributions;
+      // Tagging part for the double pass using ML
       for (const auto& cluster : photonsEMCPerCollision) {
         if (!emcFlags.test(cluster.globalIndex())) {
           continue;
         }
-        const auto& ids = cluster.emmcparticleIds();
-        for (size_t i = 0; i < ids.size(); ++i) {
-          particleToClusterContributions[ids[i]].emplace_back(cluster.globalIndex(), i);
-        }
-      } // cluster loop
+        const float bestPos = bestPositiveScore[cluster.globalIndex()];
+        const float bestNeg = bestNegativeScore[cluster.globalIndex()];
 
-      for (const auto& cluster : photonsEMCPerCollision) {
-        if (!emcFlags.test(cluster.globalIndex())) {
-          continue;
+        // compare best positive vs best negative case. Only when the best positive is higher than the best negative actually mark this cluster as conversion
+        if (bestPos >= mlConfig.mlThreshold.value && bestPos > bestNeg) {
+          emcFlagsMlTaggingDoublePass.set(cluster.globalIndex());
         }
-        auto c1 = classifyCluster(cluster, mcCluster1, mcClusterLooper, mcClusterLooper2, mcParticles);
-
-        // NEW: bremsstrahlung sibling-fate check, mirrors the conversion one above
-        if (c1.photonOrigin == PhotonOrigin::Bremsstrahlung) {
-          // mcCluster1 is currently sitting on the bremsstrahlung photon itself
-          // (classifyCluster leaves it there for the photon branch) -- its
-          // immediate mother is the radiating lepton we want to look up.
-          if (mcCluster1.has_mothers()) {
-            const int radiatingLeptonId = mcCluster1.mothersIds()[0];
-
-            auto it = particleToClusterContributions.find(radiatingLeptonId);
-            if (it == particleToClusterContributions.end()) {
-              registry.fill(HIST("hBSLeptonFate"), 2); // radiating lepton absent from any cluster
-            } else {
-              bool isDominantSomewhere = false;
-              for (const auto& [clusterId, rank] : it->second) {
-                if (clusterId == cluster.globalIndex()) {
-                  continue; // skip itself (shouldn't normally match, but same safety as before)
-                }
-                if (rank == 0) {
-                  isDominantSomewhere = true;
-                  break;
-                }
-              }
-              registry.fill(HIST("hBSLeptonFate"), isDominantSomewhere ? 0 : 1); // 0=dominant elsewhere, 1=leakage-only
-            }
-          }
-        }
-      } // cluster loop
+      } // end of loop over cluster
     } // collision loop
 
-    std::vector<bool> photonSeen(mcParticles.size(), false);   // this decay photon has >=1 resolved cluster
-    std::vector<bool> photonTagged(mcParticles.size(), false); // >=1 of those clusters got conversion-tagged
     auto collision = collisions.begin();
 
     for (const auto& cluster : clusters) {
@@ -863,110 +904,153 @@ struct EmcalPhotonMcTask {
         continue;
       }
 
-      auto clusterMcInfo = classifyCluster(cluster, mcCluster1, mcClusterLooper, mcClusterLooper2, mcParticles);
-      if (clusterMcInfo.photonOrigin == PhotonOrigin::Bremsstrahlung) {
-        registry.fill(HIST("hBSRadius"), clusterMcInfo.radius);
-        registry.fill(HIST("BSPhoton/M02"), cluster.m02());
-        registry.fill(HIST("hClusterType"), 3, cluster.e());
-      } else if (clusterMcInfo.isMergedConv) {
-        registry.fill(HIST("MergedConv/M02"), cluster.m02());
-        registry.fill(HIST("hClusterType"), 4, cluster.e());
-      } else if (clusterMcInfo.leptonOrigin == LeptonOrigin::Conversion) {
-        registry.fill(HIST("hConvLeptonRadius"), clusterMcInfo.radius);
-        if (mcCluster1.pdgCode() == PDG_t::kElectron) {
-          registry.fill(HIST("ConvElectron/M02"), cluster.m02());
-          registry.fill(HIST("hClusterType"), 5, cluster.e());
-        } else if (mcCluster1.pdgCode() == PDG_t::kPositron) {
-          registry.fill(HIST("ConvPositron/M02"), cluster.m02());
-          registry.fill(HIST("hClusterType"), 6, cluster.e());
-        }
-      } else if (clusterMcInfo.isLepton) {
-        if (mcCluster1.pdgCode() == PDG_t::kElectron) {
-          registry.fill(HIST("Electron/M02"), cluster.m02());
-          registry.fill(HIST("hClusterType"), 1, cluster.e());
-        } else if (mcCluster1.pdgCode() == PDG_t::kPositron) {
-          registry.fill(HIST("Positron/M02"), cluster.m02());
-          registry.fill(HIST("hClusterType"), 2, cluster.e());
-        }
-        registry.fill(HIST("hLeptonRadius"), clusterMcInfo.radius);
-      } else if (clusterMcInfo.isPhoton) {
-        registry.fill(HIST("hClusterType"), 0, cluster.e());
-        registry.fill(HIST("Photon/M02"), cluster.m02());
-      } else {
-        registry.fill(HIST("hClusterType"), 7, cluster.e());
-        registry.fill(HIST("Other/M02"), cluster.m02());
+      ClusterMcInfo clusterMcInfo = classifyCluster(cluster, mcCluster1, mcClusterLooper, mcClusterLooper2, mcParticles);
+      const PhotonOrigin photonOrigin = clusterMcInfo.photonOrigin;
+      const LeptonOrigin leptonOrigin = clusterMcInfo.leptonOrigin;
+      const bool simpleTagged = !emcFlagsMlTagging.test(cluster.globalIndex());
+      const bool doubleTagged = !emcFlagsMlTaggingDoublePass.test(cluster.globalIndex());
+      const bool notTagged = !simpleTagged;
+      switch (photonOrigin) {
+        case PhotonOrigin::Direct:
+          registry.fill(HIST("Photon/Direct/M02"), cluster.m02(), cluster.pt());
+          if (notTagged) {
+            registry.fill(HIST("Photon/Direct/Tagging"), 0);
+          } else {
+            if (simpleTagged) {
+              registry.fill(HIST("Photon/Direct/Tagging"), 1);
+            }
+            if (doubleTagged) {
+              registry.fill(HIST("Photon/Direct/Tagging"), 2);
+            }
+          }
+          break;
+        case PhotonOrigin::Decay:
+          registry.fill(HIST("Photon/Decay/M02"), cluster.m02(), cluster.pt());
+          if (notTagged) {
+            registry.fill(HIST("Photon/Decay/Tagging"), 0);
+          } else {
+            if (simpleTagged) {
+              registry.fill(HIST("Photon/Decay/Tagging"), 1);
+            }
+            if (doubleTagged) {
+              registry.fill(HIST("Photon/Decay/Tagging"), 2);
+            }
+          }
+          break;
+        case PhotonOrigin::Bremsstrahlung:
+          registry.fill(HIST("Photon/Bremsstrahlung/M02"), cluster.m02(), cluster.pt());
+          if (notTagged) {
+            registry.fill(HIST("Photon/Bremsstrahlung/Tagging"), 0);
+          } else {
+            if (simpleTagged) {
+              registry.fill(HIST("Photon/Bremsstrahlung/Tagging"), 1);
+            }
+            if (doubleTagged) {
+              registry.fill(HIST("Photon/Bremsstrahlung/Tagging"), 2);
+            }
+          }
+          break;
+        case PhotonOrigin::Annihilation:
+          registry.fill(HIST("Photon/Annihilation/M02"), cluster.m02(), cluster.pt());
+          if (notTagged) {
+            registry.fill(HIST("Photon/Annihilation/Tagging"), 0);
+          } else {
+            if (simpleTagged) {
+              registry.fill(HIST("Photon/Annihilation/Tagging"), 1);
+            }
+            if (doubleTagged) {
+              registry.fill(HIST("Photon/Annihilation/Tagging"), 2);
+            }
+          }
+          break;
+        case PhotonOrigin::Hadronic:
+          registry.fill(HIST("Photon/Hadronic/M02"), cluster.m02(), cluster.pt());
+          if (notTagged) {
+            registry.fill(HIST("Photon/Hadronic/Tagging"), 0);
+          } else {
+            if (simpleTagged) {
+              registry.fill(HIST("Photon/Hadronic/Tagging"), 1);
+            }
+            if (doubleTagged) {
+              registry.fill(HIST("Photon/Hadronic/Tagging"), 2);
+            }
+          }
+          break;
+        case PhotonOrigin::Other:
+        default:
+          break;
       }
-
-      mcCluster1.setCursor(cluster.emmcparticleIds()[0]);
-      int photonid1 = o2::aod::pwgem::photonmeson::utils::mcutil::FindMotherInChain(mcCluster1, mcParticles, std::vector<int>{PDG_t::kPi0, Pdg::kEta, Pdg::kOmega, Pdg::kEtaPrime});
-      int motherId = -1;
-      if (photonid1 >= 0) {
-        mcPhoton1.setCursor(photonid1);
-        motherId = mcPhoton1.mothersIds()[0];
-
-        photonSeen[static_cast<size_t>(photonid1)] = true;
-        const bool isTagged = !emcFlagsTagging.test(cluster.globalIndex());
-        if (isTagged) {
-          photonTagged[static_cast<size_t>(photonid1)] = true;
-        }
-      }
-
-      const bool alreadyCountedForMeson = (motherId > -1 && wasMeassured[static_cast<size_t>(motherId)]);
-
-      if (mcCluster1.pdgCode() == PDG_t::kGamma) {
-        registry.fill(HIST("EMCal/ConfusionMatrixConversionTagging"), emcFlagsTagging.test(cluster.globalIndex()) ? 0 : 1, static_cast<float>(ClusterTruthClass::Photon));
-        registry.fill(HIST("Photon/hProcess"), mcCluster1.getProcess());
-      }
-      if (std::abs(mcCluster1.pdgCode()) == PDG_t::kElectron) {
-        registry.fill(HIST("Lepton/hProcess"), mcCluster1.getProcess());
-      }
-      if (!emcFlagsFromTrueConversion.test(cluster.globalIndex())) {
-        registry.fill(HIST("EMCal/ConfusionMatrixConversionTagging"), emcFlagsTagging.test(cluster.globalIndex()) ? 0 : 1, static_cast<float>(ClusterTruthClass::Conversion));
-        if (!emcFlagsFromTrueMesonSameGamma.test(cluster.globalIndex()) && !alreadyCountedForMeson) {
-          registry.fill(HIST("EMCal/ConfusionMatrixConversionTagging"), emcFlagsTagging.test(cluster.globalIndex()) ? 0 : 1, static_cast<float>(ClusterTruthClass::Pi0Conversion));
-        }
-      }
-      if (!emcFlagsFromTrueMeson.test(cluster.globalIndex()) && !alreadyCountedForMeson) {
-        registry.fill(HIST("EMCal/ConfusionMatrixConversionTagging"), emcFlagsTagging.test(cluster.globalIndex()) ? 0 : 1, static_cast<float>(ClusterTruthClass::Pi0));
-      }
-      if (emcFlagsFromTrueMeson.test(cluster.globalIndex()) && emcFlagsFromTrueConversion.test(cluster.globalIndex())) {
-        registry.fill(HIST("EMCal/ConfusionMatrixConversionTagging"), emcFlagsTagging.test(cluster.globalIndex()) ? 0 : 1, static_cast<float>(ClusterTruthClass::Background));
-      }
-      if (motherId > -1 && !wasMeassured[static_cast<size_t>(motherId)]) {
-        wasMeassured[static_cast<size_t>(motherId)] = true;
+      switch (leptonOrigin) {
+        case LeptonOrigin::Conversion:
+          registry.fill(HIST("Lepton/Conversion/M02"), cluster.m02(), cluster.pt());
+          if (notTagged) {
+            registry.fill(HIST("Lepton/Conversion/Tagging"), 0);
+          } else {
+            if (simpleTagged) {
+              registry.fill(HIST("Lepton/Conversion/Tagging"), 1);
+            }
+            if (doubleTagged) {
+              registry.fill(HIST("Lepton/Conversion/Tagging"), 2);
+            }
+          }
+          break;
+        case LeptonOrigin::Compton:
+          registry.fill(HIST("Lepton/Compton/M02"), cluster.m02(), cluster.pt());
+          if (notTagged) {
+            registry.fill(HIST("Lepton/Compton/Tagging"), 0);
+          } else {
+            if (simpleTagged) {
+              registry.fill(HIST("Lepton/Compton/Tagging"), 1);
+            }
+            if (doubleTagged) {
+              registry.fill(HIST("Lepton/Compton/Tagging"), 2);
+            }
+          }
+          break;
+        case LeptonOrigin::PhotoElectric:
+          registry.fill(HIST("Lepton/PhotoElectric/M02"), cluster.m02(), cluster.pt());
+          if (notTagged) {
+            registry.fill(HIST("Lepton/PhotoElectric/Tagging"), 0);
+          } else {
+            if (simpleTagged) {
+              registry.fill(HIST("Lepton/PhotoElectric/Tagging"), 1);
+            }
+            if (doubleTagged) {
+              registry.fill(HIST("Lepton/PhotoElectric/Tagging"), 2);
+            }
+          }
+          break;
+        case LeptonOrigin::DeltaRay:
+          registry.fill(HIST("Lepton/DeltaRay/M02"), cluster.m02(), cluster.pt());
+          if (notTagged) {
+            registry.fill(HIST("Lepton/DeltaRay/Tagging"), 0);
+          } else {
+            if (simpleTagged) {
+              registry.fill(HIST("Lepton/DeltaRay/Tagging"), 1);
+            }
+            if (doubleTagged) {
+              registry.fill(HIST("Lepton/DeltaRay/Tagging"), 2);
+            }
+          }
+          break;
+        case LeptonOrigin::DirectMesonDecay:
+          registry.fill(HIST("Lepton/DirectMesonDecay/M02"), cluster.m02(), cluster.pt());
+          if (notTagged) {
+            registry.fill(HIST("Lepton/DirectMesonDecay/Tagging"), 0);
+          } else {
+            if (simpleTagged) {
+              registry.fill(HIST("Lepton/DirectMesonDecay/Tagging"), 1);
+            }
+            if (doubleTagged) {
+              registry.fill(HIST("Lepton/DirectMesonDecay/Tagging"), 2);
+            }
+          }
+          break;
+        case LeptonOrigin::Other:
+        default:
+          break;
       }
     } // end of loop over cluster
-
-    for (const auto& mcPart : mcParticles) {
-      if (mcPart.pdgCode() != PDG_t::kPi0 && mcPart.pdgCode() != Pdg::kEta) {
-        continue;
-      }
-      if (!mcPart.producedByGenerator()) {
-        continue;
-      }
-      if (mcPart.daughtersIds().size() != 2) { // o2-linter: disable=magic-number (self explanatory and does not need extra named variable)
-        continue;
-      }
-
-      const int d0 = mcPart.daughtersIds()[0];
-      const int d1 = mcPart.daughtersIds()[1];
-      mcPhoton1.setCursor(d0);
-      mcPhoton2.setCursor(d1);
-      if (mcPhoton1.pdgCode() != PDG_t::kGamma || mcPhoton2.pdgCode() != PDG_t::kGamma) {
-        continue; // skip anything that is not pi0/eta -> γγ.
-      }
-
-      const bool bothResolved = photonSeen[static_cast<size_t>(d0)] && photonSeen[static_cast<size_t>(d1)];
-      if (!bothResolved) {
-        continue; // not in the denominator -- ceiling case, not attributable to the cut
-      }
-
-      const bool lost = photonTagged[static_cast<size_t>(d0)] || photonTagged[static_cast<size_t>(d1)];
-      registry.fill(HIST("EMCal/hPi0BothResolvedLost"), 0.0); // "denominator" bin, once per bothResolved pi0
-      if (lost) {
-        registry.fill(HIST("EMCal/hPi0BothResolvedLost"), 1.0); // "lost" bin
-      }
-    } // end of loop over mc particles
   }
   PROCESS_SWITCH(EmcalPhotonMcTask, processEmcal, "Process for pcm and emcal photons", true);
 
