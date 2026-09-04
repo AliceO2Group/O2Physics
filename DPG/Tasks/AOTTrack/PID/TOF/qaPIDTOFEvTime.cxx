@@ -167,7 +167,7 @@ struct tofPidCollisionTimeQa {
       }
 
       listEfficiency.setObject(new THashList);
-      auto makeEfficiency = [&](TString effname, TString efftitle) {
+      auto makeEfficiency = [&](const TString& effname, const TString& efftitle) {
         listEfficiency->Add(new TEfficiency(effname, efftitle + ";TOF multiplicity;Efficiency", nBinsMultiplicity, 0, rangeMultiplicity));
       };
 
