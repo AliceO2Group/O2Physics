@@ -84,7 +84,7 @@ constexpr static uint32_t gkEventFillMapWithMults = VarManager::ObjTypes::BC | V
 constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID;
 
 // Forward declarations
-void DefineHistograms(HistogramManager* histMan, TString histClasses, const char* histGroups); // defines histograms for all tasks
+void DefineHistograms(HistogramManager* histMan, const TString& histClasses, const char* histGroups); // defines histograms for all tasks
 
 struct AnalysisEnergyCorrelator {
   OutputObj<THashList> fOutputList{"output"};
@@ -1182,7 +1182,7 @@ struct AnalysisEnergyCorrelator {
 };
 
 // Histogram definitions
-void DefineHistograms(HistogramManager* histMan, TString histClasses, const char* histGroups)
+void DefineHistograms(HistogramManager* histMan, const TString& histClasses, const char* histGroups)
 {
   std::unique_ptr<TObjArray> objArray(histClasses.Tokenize(";"));
   for (Int_t iclass = 0; iclass < objArray->GetEntries(); ++iclass) {

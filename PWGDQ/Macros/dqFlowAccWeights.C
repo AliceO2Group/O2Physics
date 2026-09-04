@@ -32,7 +32,7 @@
 using namespace o2;
 using namespace std;
 
-void dqFlowAccWeights(int64_t tmin = 1546300800000, int64_t tmax = 1577833200000, std::string Period = "LHC23zzh_pass2", std::string SubDir = "d-q-event-qvector", std::string FileName = "AnalysisResults.root")
+void dqFlowAccWeights(int64_t tmin = 1546300800000, int64_t tmax = 1577833200000, const std::string& Period = "LHC23zzh_pass2", const std::string& SubDir = "d-q-event-qvector", const std::string& FileName = "AnalysisResults.root")
 {
   if (tmax < tmin) {
     LOG(fatal) << "Wrong validity syntax!";

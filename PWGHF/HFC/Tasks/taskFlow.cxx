@@ -1000,7 +1000,7 @@ struct HfTaskFlow {
   // }
 
   template <typename TCollision>
-  int64_t getMultiplicityEstimator(TCollision collision, bool isSameEvent)
+  int64_t getMultiplicityEstimator(const TCollision& collision, bool isSameEvent)
   {
     switch (configCollision.multiplicityEstimator) {
       case MultiplicityEstimators::MultNTracksPV:
@@ -1292,7 +1292,7 @@ struct HfTaskFlow {
   }
 
   template <typename TTracks>
-  double getCorrectedMultiplicity(TTracks tracks) // function to count the number of tracks in the event and fill the histogram
+  double getCorrectedMultiplicity(const TTracks& tracks) // function to count the number of tracks in the event and fill the histogram
   {
     auto trackCounter = 0;
     auto weightMultiplicity = 1.0f;
