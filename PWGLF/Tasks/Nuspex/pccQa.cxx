@@ -22,7 +22,6 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/ConfigParamSpec.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -32,6 +31,7 @@
 
 #include <TMCProcess.h>
 
+#include <cstdint>
 #include <vector>
 
 using namespace o2;

@@ -67,7 +67,6 @@
 #include <cstdlib>
 #include <numeric>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 using namespace o2;

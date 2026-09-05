@@ -20,6 +20,7 @@
 
 #include "Tools/ML/MlResponse.h"
 
+#include <cstdint>
 #include <vector>
 
 namespace o2::analysis

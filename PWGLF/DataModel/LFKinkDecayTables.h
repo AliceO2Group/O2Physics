@@ -25,6 +25,7 @@
 
 #include <array>
 #include <cmath>
+#include <cstdint>
 
 namespace o2::aod
 {
