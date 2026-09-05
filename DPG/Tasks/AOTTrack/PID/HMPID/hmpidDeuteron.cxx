@@ -9,20 +9,18 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+// \brief Analysis task for the (anti-)deuteron absorption cross section using HMPID
+// \authors rocco.liotino@cern.ch
+
 #include "tableHMPID.h"
 
 #include <Framework/AnalysisTask.h>
-#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
-#include <Framework/HistogramSpec.h>
-#include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TMath.h>
 #include <TString.h>
-
-#include <cmath>
-#include <cstdlib>
 
 using namespace o2;
 using namespace o2::framework;
@@ -44,6 +42,9 @@ struct HmpidDeuteron {
 
   Configurable<float> cutMinMomGlobalTrack{"cutMinMomGlobalTrack", 1.5f, "minimum momentum of global track"};
 
+  Configurable<float> offsetX{"offsetX", 0.696712f, "Residuals offset - X direction"};
+  Configurable<float> offsetY{"offsetY", 2.32849f, "Residuals offset - Y direction"};
+
   // Configurables for plotting
   //  Momentum
   Configurable<int> momNBins{"momNBins", 490, "Momentum bins"};
@@ -51,9 +52,9 @@ struct HmpidDeuteron {
   Configurable<float> momMax{"momMax", 5.0f, "Momentum max"};
 
   // DeltaR
-  Configurable<int> deltaRNBins{"deltaRNBins", 300, "DeltaR bins"};
+  Configurable<int> deltaRNBins{"deltaRNBins", 500, "DeltaR bins"};
   Configurable<float> deltaRMin{"deltaRMin", 0.0f, "DeltaR min"};
-  Configurable<float> deltaRMax{"deltaRMax", 30.0f, "DeltaR max"};
+  Configurable<float> deltaRMax{"deltaRMax", 50.0f, "DeltaR max"};
 
   // nSigma TPC
   Configurable<int> nSigmaTPCNBins{"nSigmaTPCNBins", 20, "nSigmaTPC bins"};
@@ -123,10 +124,14 @@ struct HmpidDeuteron {
     registryDA.add("De_Pos_momentum", "De_Pos_momentum", HistType::kTH2F, {{100, 0.0, 5.0, "#it{p}_{vtx} (GeV/#it{c})"}, {100, 0.0, 5.0, "#it{p}_{hmpid} (GeV/#it{c})"}});
 
     // nsigma plots
-    registryDA.add("nSigmaTPC_vs_momHMPID_noCut_DePos", "nSigmaTPC_vs_momHMPID_noCut_DePos", HistType::kTH2F, {axisMom, axisNsigmaTPC});
-    registryDA.add("nSigmaTOF_vs_momHMPID_noCut_DePos", "nSigmaTOF_vs_momHMPID_noCut_DePos", HistType::kTH2F, {axisMom, axisNsigmaTOF});
     registryDA.add("nSigmaTPC_vs_momHMPID_Cut_DePos", "nSigmaTPC_vs_momHMPID_Cut_DePos", HistType::kTH2F, {axisMom, axisNsigmaTPC});
     registryDA.add("nSigmaTOF_vs_momHMPID_Cut_DePos", "nSigmaTOF_vs_momHMPID_Cut_DePos", HistType::kTH2F, {axisMom, axisNsigmaTOF});
+
+    // check residuals distributions
+    registryDA.add("residualsX_Vs_momentum_Neg_8cm", "residualsX_Vs_momentum_Neg_8cm", HistType::kTH2F, {axisMom, {400, -20.0f, 20.0f, "x_{mip} - x_{track} (cm)"}});
+    registryDA.add("residualsY_Vs_momentum_Neg_8cm", "residualsY_Vs_momentum_Neg_8cm", HistType::kTH2F, {axisMom, {400, -20.0f, 20.0f, "y_{mip} - y_{track} (cm)"}});
+    registryDA.add("residualsX_Vs_momentum_Pos_8cm", "residualsX_Vs_momentum_Pos_8cm", HistType::kTH2F, {axisMom, {400, -20.0f, 20.0f, "x_{mip} - x_{track} (cm)"}});
+    registryDA.add("residualsY_Vs_momentum_Pos_8cm", "residualsY_Vs_momentum_Pos_8cm", HistType::kTH2F, {axisMom, {400, -20.0f, 20.0f, "y_{mip} - y_{track} (cm)"}});
 
     // Deuteron Neg
     registryDA.add("incomingDe_Neg_8cm", "incomingDe_Neg_8cm", HistType::kTH1F, {axisMom});
@@ -144,17 +149,15 @@ struct HmpidDeuteron {
     registryDA.add("De_Neg_Q_4cm", "De_Neg_Q_4cm", HistType::kTH2F, {axisMom, axisCharge});
     registryDA.add("De_Neg_momentum", "De_Neg_momentum", HistType::kTH2F, {{100, 0.0, 5.0, "#it{p}_{vtx} (GeV/#it{c})"}, {100, 0.0, 5.0, "#it{p}_{hmpid} (GeV/#it{c})"}});
 
-    // first step of the analysis
-    registryDA.add("residualsX_Vs_momentum", "residualsX_Vs_momentum", HistType::kTH2F, {axisMom, {400, -20.0f, 20.0f, "x_{mip} - x_{track} (cm)"}});
-    registryDA.add("residualsY_Vs_momentum", "residualsY_Vs_momentum", HistType::kTH2F, {axisMom, {400, -20.0f, 20.0f, "y_{mip} - y_{track} (cm)"}});
+    // check residuals distributions
+    registryDA.add("residualsX_Vs_momentum_Neg_4cm", "residualsX_Vs_momentum_Neg_4cm", HistType::kTH2F, {axisMom, {400, -20.0f, 20.0f, "x_{mip} - x_{track} (cm)"}});
+    registryDA.add("residualsY_Vs_momentum_Neg_4cm", "residualsY_Vs_momentum_Neg_4cm", HistType::kTH2F, {axisMom, {400, -20.0f, 20.0f, "y_{mip} - y_{track} (cm)"}});
+    registryDA.add("residualsX_Vs_momentum_Pos_4cm", "residualsX_Vs_momentum_Pos_4cm", HistType::kTH2F, {axisMom, {400, -20.0f, 20.0f, "x_{mip} - x_{track} (cm)"}});
+    registryDA.add("residualsY_Vs_momentum_Pos_4cm", "residualsY_Vs_momentum_Pos_4cm", HistType::kTH2F, {axisMom, {400, -20.0f, 20.0f, "y_{mip} - y_{track} (cm)"}});
 
     // nsigma plots
-    registryDA.add("nSigmaTPC_vs_momHMPID_noCut_DeNeg", "nSigmaTPC_vs_momHMPID_noCut_DeNeg", HistType::kTH2F, {axisMom, axisNsigmaTPC});
-    registryDA.add("nSigmaTOF_vs_momHMPID_noCut_DeNeg", "nSigmaTOF_vs_momHMPID_noCut_DeNeg", HistType::kTH2F, {axisMom, axisNsigmaTOF});
     registryDA.add("nSigmaTPC_vs_momHMPID_Cut_DeNeg", "nSigmaTPC_vs_momHMPID_Cut_DeNeg", HistType::kTH2F, {axisMom, axisNsigmaTPC});
     registryDA.add("nSigmaTOF_vs_momHMPID_Cut_DeNeg", "nSigmaTOF_vs_momHMPID_Cut_DeNeg", HistType::kTH2F, {axisMom, axisNsigmaTOF});
-
-    registryDA.add("hmpidCkovvsMom", "hmpidCkovvsMom", kTH2F, {{500, 0, 10., "#it{p} (GeV/#it{c})"}, {800, 0., 0.8, "#theta_{Ch} (rad)"}});
 
     // general plots
     registryDA.add("hEta", "hEta", kTH1F, {axisEta});
@@ -163,10 +166,6 @@ struct HmpidDeuteron {
 
     registryDA.add("hMass", "hMass", kTH1F, {axisMass});
     registryDA.add("hMass_postDeuteron", "hMass_postDeuteron", kTH1F, {axisMass});
-
-    // quality check for step distributions
-    registryDA.add("De_Pos_deltaR_precut", "De_Pos_deltaR_precut", HistType::kTH1F, {axisDeltaR});
-    registryDA.add("De_Neg_deltaR_precut", "De_Neg_deltaR_precut", HistType::kTH1F, {axisDeltaR});
 
     for (int iCh = 0; iCh < nCh; iCh++) {
       registryDA.add(Form("De_Pos_deltaR_%d", iCh), Form("De_Pos_deltaR_%d", iCh), HistType::kTH1F, {axisDeltaR});
@@ -206,7 +205,7 @@ struct HmpidDeuteron {
 
       const float dx = hmpid.xMip() - hmpid.xTrack();
       const float dy = hmpid.yMip() - hmpid.yTrack();
-      const float dr = std::hypot(dx, dy);
+      const float dr = std::hypot(dx - offsetX, dy - offsetY);
 
       const float mass =
         std::pow(nmean * momAbs * std::cos(hmpid.chAngle()), 2) -
@@ -259,31 +258,6 @@ struct HmpidDeuteron {
       }
 
       // -------------------------
-      // precut deltaR
-      // -------------------------
-      if (isPos)
-        registryDA.fill(HIST("De_Pos_deltaR_precut"), dr);
-      if (isNeg)
-        registryDA.fill(HIST("De_Neg_deltaR_precut"), dr);
-
-      // -------------------------
-      // nsigma pre-cut
-      // -------------------------
-      if (isPos) {
-        registryDA.fill(HIST("nSigmaTPC_vs_momHMPID_noCut_DePos"),
-                        momAbs, hmpid.tpcNSigmaDe());
-        registryDA.fill(HIST("nSigmaTOF_vs_momHMPID_noCut_DePos"),
-                        momAbs, hmpid.tofNSigmaDe());
-      }
-
-      if (isNeg) {
-        registryDA.fill(HIST("nSigmaTPC_vs_momHMPID_noCut_DeNeg"),
-                        momAbs, hmpid.tpcNSigmaDe());
-        registryDA.fill(HIST("nSigmaTOF_vs_momHMPID_noCut_DeNeg"),
-                        momAbs, hmpid.tofNSigmaDe());
-      }
-
-      // -------------------------
       // deuteron candidate cuts - TPC
       // -------------------------
       if (hmpid.tpcNSigmaDe() < nsigmaTPCMin ||
@@ -327,11 +301,6 @@ struct HmpidDeuteron {
       // -------------------------
       // DEUTERON CANDIDATES AFTER ALL CUTS
       // -------------------------
-
-      // -------------------------
-      // Ckov angle vs momentum
-      // -------------------------
-      registryDA.fill(HIST("hmpidCkovvsMom"), momHmpid, hmpid.chAngle());
 
       // -------------------------
       // deltaR per chamber (Pos/Neg)
@@ -391,6 +360,9 @@ struct HmpidDeuteron {
         registryDA.fill(HIST("De_Pos_Q_8cm"), momAbs, hmpid.chargeMip());
         registryDA.fill(HIST("De_Pos_deltaR_8cm"), dr);
         registryDA.fill(HIST("nSigmaTOF_vs_momHMPID_DePos_8cm"), momAbs, hmpid.tofNSigmaDe());
+
+        registryDA.fill(HIST("residualsX_Vs_momentum_Pos_8cm"), momAbs, dx);
+        registryDA.fill(HIST("residualsY_Vs_momentum_Pos_8cm"), momAbs, dy);
       }
 
       if (isNeg && chamber == abs8cm) {
@@ -400,8 +372,8 @@ struct HmpidDeuteron {
         registryDA.fill(HIST("De_Neg_deltaR_8cm"), dr);
         registryDA.fill(HIST("nSigmaTOF_vs_momHMPID_DeNeg_8cm"), momAbs, hmpid.tofNSigmaDe());
 
-        registryDA.fill(HIST("residualsX_Vs_momentum"), momAbs, dx);
-        registryDA.fill(HIST("residualsY_Vs_momentum"), momAbs, dy);
+        registryDA.fill(HIST("residualsX_Vs_momentum_Neg_8cm"), momAbs, dx);
+        registryDA.fill(HIST("residualsY_Vs_momentum_Neg_8cm"), momAbs, dy);
       }
 
       if (isPos && chamber == abs4cm) {
@@ -410,6 +382,9 @@ struct HmpidDeuteron {
         registryDA.fill(HIST("De_Pos_Q_4cm"), momAbs, hmpid.chargeMip());
         registryDA.fill(HIST("De_Pos_deltaR_4cm"), dr);
         registryDA.fill(HIST("nSigmaTOF_vs_momHMPID_DePos_4cm"), momAbs, hmpid.tofNSigmaDe());
+
+        registryDA.fill(HIST("residualsX_Vs_momentum_Pos_4cm"), momAbs, dx);
+        registryDA.fill(HIST("residualsY_Vs_momentum_Pos_4cm"), momAbs, dy);
       }
 
       if (isNeg && chamber == abs4cm) {
@@ -418,6 +393,9 @@ struct HmpidDeuteron {
         registryDA.fill(HIST("De_Neg_Q_4cm"), momAbs, hmpid.chargeMip());
         registryDA.fill(HIST("De_Neg_deltaR_4cm"), dr);
         registryDA.fill(HIST("nSigmaTOF_vs_momHMPID_DeNeg_4cm"), momAbs, hmpid.tofNSigmaDe());
+
+        registryDA.fill(HIST("residualsX_Vs_momentum_Neg_4cm"), momAbs, dx);
+        registryDA.fill(HIST("residualsY_Vs_momentum_Neg_4cm"), momAbs, dy);
       }
     } // end of loop over hmpidTable
   } // end of process
