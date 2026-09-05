@@ -43,6 +43,7 @@
 #include <TVector3.h>
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cmath> // for std::abs
 #include <cstddef>
@@ -435,8 +436,6 @@ struct lambdaspincorrderived {
     nSysTotal = (int)sysCuts.size(); // or whatever vector you fill
     LOGF(info, "sysCuts.size()=%zu  nSysTotal=%d", sysCuts.size(), nSysTotal);
     const AxisSpec thnAxisSys{nSysTotal, -0.5f, float(nSysTotal) - 0.5f, "sysId"};
-
-    histos.add("hSysIdTest", "SysId Test", HistType::kTH1D, {thnAxisSys});
 
     if (fillBasicQAHistos) {
       histos.add("hPtRadiusV0", "V0 QA;#it{p}_{T}^{V0} (GeV/#it{c});V0 decay radius (cm)", kTH2F, {{100, 0.0, 10.0}, {120, 0.0, 45.0}});
@@ -1587,7 +1586,7 @@ struct lambdaspincorrderived {
         std::vector<int> activePair;
         activePair.reserve(activeSys.size());
 
-        for (int sysId : activeSys) {
+        for (const auto& sysId : activeSys) {
           const auto& sc = sysCuts[sysId];
           if (selectionV0Sys(v02, sc)) {
             activePair.push_back(sysId);
@@ -1603,7 +1602,7 @@ struct lambdaspincorrderived {
         lambda2 = ROOT::Math::PtEtaPhiMVector(v02.lambdaPt(), v02.lambdaEta(), v02.lambdaPhi(),
                                               v02.lambdaMass());
 
-        for (int sysId : activePair) {
+        for (const auto& sysId : activePair) {
 
           if (v0.v0Status() == 0 && v02.v0Status() == 0) {
             fillHistogramsSys(0, 0, lambda, lambda2, proton, proton2, 0, 1.0, sysId);
@@ -1766,7 +1765,7 @@ struct lambdaspincorrderived {
     auto nBins = colBinning.getAllBinsCount();
     std::vector<std::deque<std::pair<int, AllTrackCandidates>>> eventPools(nBins);
 
-    for (auto& collision1 : collisions) {
+    for (const auto& collision1 : collisions) {
       const int bin = colBinning.getBin(std::make_tuple(collision1.posz(), collision1.cent()));
       if (bin < 0) {
         continue;
@@ -1783,7 +1782,7 @@ struct lambdaspincorrderived {
         continue;
       }
 
-      for (auto& [t1, t2] : soa::combinations(o2::soa::CombinationsFullIndexPolicy(poolA, poolA))) {
+      for (const auto& [t1, t2] : soa::combinations(o2::soa::CombinationsFullIndexPolicy(poolA, poolA))) {
         if (!selectionV0(t1) || !selectionV0(t2)) {
           continue;
         }
@@ -1818,7 +1817,7 @@ struct lambdaspincorrderived {
           int nRepl1 = 0;
           int nRepl2 = 0;
 
-          for (auto& tX : poolB) {
+          for (const auto& tX : poolB) {
             if (!selectionV0(tX)) {
               continue;
             }
@@ -1874,10 +1873,10 @@ struct lambdaspincorrderived {
                                  static_cast<float>(totalRepl2) * wBase);
         }
 
-        for (auto& pv : usable) {
+        for (const auto& pv : usable) {
           auto& poolB = *pv.pool;
 
-          for (auto& tX : poolB) {
+          for (const auto& tX : poolB) {
             if (!selectionV0(tX)) {
               continue;
             }
@@ -2697,9 +2696,9 @@ struct lambdaspincorrderived {
       auto collectFromBins = [&](const std::vector<int>& ptUseBins,
                                  const std::vector<int>& etaUseBins,
                                  const std::vector<int>& phiUseBins) {
-        for (int ptUse : ptUseBins) {
-          for (int etaUse : etaUseBins) {
-            for (int phiUse : phiUseBins) {
+        for (const auto& ptUse : ptUseBins) {
+          for (const auto& etaUse : etaUseBins) {
+            for (const auto& phiUse : phiUseBins) {
               const auto& vec = buffer[linearKeyR(colBin, status, ptUse, etaUse, phiUse, mB, rB,
                                                   nStat, nPt, nEta, nPhi, nM, nR)];
 
@@ -2753,9 +2752,9 @@ struct lambdaspincorrderived {
         collectNeighborBinsClamp(etaB, nEta, nN_eta, etaBinsN);
         collectNeighborBinsPhi(phiB, nPhi, nN_phi, phiBinsN);
 
-        for (int ptUse : ptBinsN) {
-          for (int etaUse : etaBinsN) {
-            for (int phiUse : phiBinsN) {
+        for (const auto& ptUse : ptBinsN) {
+          for (const auto& etaUse : etaBinsN) {
+            for (const auto& phiUse : phiBinsN) {
               if (ptUse == ptB && etaUse == etaB && phiUse == phiB)
                 continue;
 
@@ -3244,9 +3243,9 @@ struct lambdaspincorrderived {
       auto collectFromBins = [&](const std::vector<int>& ptUseBins,
                                  const std::vector<int>& etaUseBins,
                                  const std::vector<int>& phiUseBins) {
-        for (int ptUse : ptUseBins) {
-          for (int etaUse : etaUseBins) {
-            for (int phiUse : phiUseBins) {
+        for (const auto& ptUse : ptUseBins) {
+          for (const auto& etaUse : etaUseBins) {
+            for (const auto& phiUse : phiUseBins) {
               const auto& vec = buffer[linearKeyR(colBin, status, ptUse, etaUse, phiUse, mB, rB,
                                                   nStat, nPt, nEta, nPhi, nM, nR)];
 
@@ -3308,9 +3307,9 @@ struct lambdaspincorrderived {
         collectNeighborBinsClamp(etaB, nEta, nN_eta, etaBinsN);
         collectNeighborBinsPhi(phiB, nPhi, nN_phi, phiBinsN);
 
-        for (int ptUse : ptBinsN) {
-          for (int etaUse : etaBinsN) {
-            for (int phiUse : phiBinsN) {
+        for (const auto& ptUse : ptBinsN) {
+          for (const auto& etaUse : etaBinsN) {
+            for (const auto& phiUse : phiBinsN) {
               if (ptUse == ptB && etaUse == etaB && phiUse == phiB)
                 continue;
 
@@ -3511,7 +3510,7 @@ struct lambdaspincorrderived {
             auto tX = V0s.iteratorAt(static_cast<uint64_t>(m.rowIndex));
 
             bool hasCommon = false;
-            for (int sysId : commonSys) {
+            for (const auto& sysId : commonSys) {
               if (selectionV0Sys(tX, sysCuts[sysId])) {
                 hasCommon = true;
                 break;
@@ -3539,7 +3538,7 @@ struct lambdaspincorrderived {
           for (auto const& m : matches2) {
             auto tY = V0s.iteratorAt(static_cast<uint64_t>(m.rowIndex));
             bool hasCommon = false;
-            for (int sysId : commonSys) {
+            for (const auto& sysId : commonSys) {
               if (selectionV0Sys(tY, sysCuts[sysId])) {
                 hasCommon = true;
                 break;
@@ -3634,7 +3633,7 @@ struct lambdaspincorrderived {
             const int s1 = tX.v0Status();
             const int s2 = t2.v0Status();
 
-            for (int sysId : commonSys) {
+            for (const auto& sysId : commonSys) {
               if (selectionV0Sys(tX, sysCuts[sysId])) {
                 if (s1 == 0 && s2 == 1) {
                   fillHistogramsSys(0, 1, lambda, lambda2, proton, proton2, 1, meWeight, sysId, 1, 1);
@@ -3686,7 +3685,7 @@ struct lambdaspincorrderived {
             const int s1 = t1.v0Status();
             const int s2 = tY.v0Status();
 
-            for (int sysId : commonSys) {
+            for (const auto& sysId : commonSys) {
               if (selectionV0Sys(tY, sysCuts[sysId])) {
                 if (s1 == 0 && s2 == 1) {
                   fillHistogramsSys(0, 1, lambda, lambda2, proton, proton2, 1, meWeight, sysId, 2, 2);
@@ -3818,9 +3817,9 @@ struct lambdaspincorrderived {
       auto collectFromBins = [&](const std::vector<int>& ptUseBins,
                                  const std::vector<int>& etaUseBins,
                                  const std::vector<int>& phiUseBins) {
-        for (int ptUse : ptUseBins) {
-          for (int etaUse : etaUseBins) {
-            for (int phiUse : phiUseBins) {
+        for (const auto& ptUse : ptUseBins) {
+          for (const auto& etaUse : etaUseBins) {
+            for (const auto& phiUse : phiUseBins) {
               const auto& vec = buffer[linearKeyR(colBin, status, ptUse, etaUse, phiUse, mB, rB,
                                                   nStat, nPt, nEta, nPhi, nM, nR)];
 
@@ -3873,9 +3872,9 @@ struct lambdaspincorrderived {
         collectNeighborBinsClamp(etaB, nEta, nN_eta, etaBinsN);
         collectNeighborBinsPhi(phiB, nPhi, nN_phi, phiBinsN);
 
-        for (int ptUse : ptBinsN) {
-          for (int etaUse : etaBinsN) {
-            for (int phiUse : phiBinsN) {
+        for (const auto& ptUse : ptBinsN) {
+          for (const auto& etaUse : etaBinsN) {
+            for (const auto& phiUse : phiBinsN) {
               if (ptUse == ptB && etaUse == etaB && phiUse == phiB) {
                 continue;
               }
