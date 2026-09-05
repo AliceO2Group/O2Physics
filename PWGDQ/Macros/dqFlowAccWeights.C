@@ -14,6 +14,8 @@
 ///
 /// \author Chi ZHANG, CEA-Saclay, chi.zhang@cern.ch
 
+#include "PWGDQ/Tasks/tableReader_withAssoc.cxx"
+
 #include "PWGCF/GenericFramework/Core/GFWWeights.h"
 
 #include <CCDB/CcdbApi.h>
