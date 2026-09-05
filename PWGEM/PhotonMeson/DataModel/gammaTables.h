@@ -242,15 +242,55 @@ using V0Legs = V0Legs_001;
 // iterators
 using V0Leg = V0Legs::iterator;
 
+// copy of V0Legs table
+DECLARE_SOA_TABLE(V0LegsTmp, "AOD", "V0LEGTMP", //!
+                  o2::soa::Index<>, v0leg::CollisionId, v0leg::TrackId, v0leg::Sign,
+                  v0leg::Px, v0leg::Py, v0leg::Pz,
+                  track::DcaXY, track::DcaZ,
+                  track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows, track::TPCNClsShared,
+                  track::TPCChi2NCl, track::TPCInnerParam,
+                  track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaPi,
+                  track::ITSClusterSizes, track::ITSChi2NCl, track::DetectorMap,
+
+                  // dynamic column
+                  v0leg::P<v0leg::Px, v0leg::Py, v0leg::Pz>,
+                  v0leg::Pt<v0leg::Px, v0leg::Py>,
+                  v0leg::Eta<v0leg::Px, v0leg::Py, v0leg::Pz>,
+                  v0leg::Phi<v0leg::Px, v0leg::Py>,
+                  v0leg::Tgl<v0leg::Px, v0leg::Py, v0leg::Pz>,
+
+                  track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                  track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                  track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                  track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                  track::TPCFractionSharedCls<track::TPCNClsShared, track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                  track::v001::ITSClusterMap<track::ITSClusterSizes>, track::v001::ITSNCls<track::ITSClusterSizes>, track::v001::ITSNClsInnerBarrel<track::ITSClusterSizes>,
+                  track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>, track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>,
+                  v0leg::MeanClusterSizeITS<track::ITSClusterSizes>,
+                  v0leg::MeanClusterSizeITSib<track::ITSClusterSizes>,
+                  v0leg::MeanClusterSizeITSob<track::ITSClusterSizes>);
+// iterators
+using V0LegTmp = V0LegsTmp::iterator;
+
 DECLARE_SOA_TABLE_VERSIONED(V0LegsXYZ_000, "AOD", "V0LEGXYZ", 0, track::X, track::Y, track::Z);
 using V0LegsXYZ = V0LegsXYZ_000;
 // iterators
 using V0LegXYZ = V0LegsXYZ::iterator;
 
+// copy of V0Legs table
+DECLARE_SOA_TABLE(V0LegsXYZTmp, "AOD", "V0LEGXYZTMP", track::X, track::Y, track::Z);
+// iterators
+using V0LegXYZTmp = V0LegsXYZTmp::iterator;
+
 DECLARE_SOA_TABLE_VERSIONED(V0LegsDeDxMC_000, "AOD", "V0LEGDEDXMC", 0, mcpidtpc::DeDxTunedMc, o2::soa::Marker<2>);
 using V0LegsDeDxMC = V0LegsDeDxMC_000;
 // iterators
 using V0LegDeDxMC = V0LegsDeDxMC::iterator;
+
+// copy of V0Legs table
+DECLARE_SOA_TABLE_VERSIONED(V0LegsDeDxMCTmp, "AOD", "V0LEGDEDXMCTMP", 0, mcpidtpc::DeDxTunedMc, o2::soa::Marker<2>);
+// iterators
+using V0LegDeDxMCTmp = V0LegsDeDxMCTmp::iterator;
 
 namespace emevent
 {
@@ -347,6 +387,27 @@ using V0PhotonsKF = V0PhotonsKF_001;
 // iterators
 using V0PhotonKF = V0PhotonsKF::iterator;
 
+// Clone of V0PhotonKF table for intermediate processing needed for dalitz
+DECLARE_SOA_TABLE(V0PhotonsKFTmp, "AOD", "V0PHOTONKFTMP", //!
+                  o2::soa::Index<>, v0photonkf::CollisionId, v0photonkf::V0Id, v0photonkf::PosTrackId, v0photonkf::NegTrackId,
+                  v0photonkf::Vx, v0photonkf::Vy, v0photonkf::Vz,
+                  v0photonkf::Px, v0photonkf::Py, v0photonkf::Pz,
+                  v0photonkf::MGamma,
+                  v0photonkf::DCAxyToPV, v0photonkf::DCAzToPV,
+                  v0photonkf::CosPA, v0photonkf::CosPAXY, v0photonkf::CosPARZ, v0photonkf::PCA,
+                  v0photonkf::Alpha, v0photonkf::QtArm,
+                  v0photonkf::ChiSquareNDF,
+
+                  // dynamic column
+                  v0photonkf::E<v0photonkf::Px, v0photonkf::Py, v0photonkf::Pz>,
+                  v0photonkf::Pt<v0photonkf::Px, v0photonkf::Py>,
+                  v0photonkf::Eta<v0photonkf::Px, v0photonkf::Py, v0photonkf::Pz>,
+                  v0photonkf::Phi<v0photonkf::Px, v0photonkf::Py>,
+                  v0photonkf::P<v0photonkf::Px, v0photonkf::Py, v0photonkf::Pz>,
+                  v0photonkf::V0Radius<v0photonkf::Vx, v0photonkf::Vy>);
+// iterators
+using V0PhotonKFTmp = V0PhotonsKFTmp::iterator;
+
 DECLARE_SOA_TABLE(V0KFEMEventIds_000, "AOD", "V0KFEMEVENTID", v0photonkf::EMEventId);              // To be joined with V0PhotonsKF table at analysis level.
 DECLARE_SOA_TABLE_VERSIONED(V0KFEMEventIds_001, "AOD", "V0KFEMEVENTID", 1, v0photonkf::PMEventId); // To be joined with V0PhotonsKF table at analysis level.
 using V0KFEMEventIds = V0KFEMEventIds_001;
@@ -423,6 +484,39 @@ using EMPrimaryElectronsFromDalitz = EMPrimaryElectronsFromDalitz_001;
 // iterators
 using EMPrimaryElectronFromDalitz = EMPrimaryElectronsFromDalitz::iterator;
 
+// Table that is a clone of EMPrimaryELectronsFromDalitz but needed for event selection purposes
+DECLARE_SOA_TABLE(EMPrimaryElectronsFromDalitzTmp, "AOD", "EMPRIMARYELDATMP", //!
+                  o2::soa::Index<>, emprimaryelectron::CollisionId,
+                  emprimaryelectron::TrackId, emprimaryelectron::Sign,
+                  track::Pt, track::Eta, track::Phi, track::DcaXY, track::DcaZ, track::CYY, track::CZY, track::CZZ,
+                  track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows, track::TPCNClsShared,
+                  track::TPCChi2NCl, track::TPCInnerParam,
+                  track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaPi,
+                  pidtofbeta::Beta, pidtof::TOFNSigmaEl,
+                  track::ITSClusterSizes, track::ITSChi2NCl, track::TOFChi2, track::DetectorMap,
+
+                  // dynamic column
+                  track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                  track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                  track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                  track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                  track::v001::ITSClusterMap<track::ITSClusterSizes>, track::v001::ITSNCls<track::ITSClusterSizes>, track::v001::ITSNClsInnerBarrel<track::ITSClusterSizes>,
+                  track::TPCFractionSharedCls<track::TPCNClsShared, track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                  track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>, track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>,
+
+                  emprimaryelectron::Signed1Pt<track::Pt, emprimaryelectron::Sign>,
+                  emprimaryelectron::P<track::Pt, track::Eta>,
+                  emprimaryelectron::Px<track::Pt, track::Phi>,
+                  emprimaryelectron::Py<track::Pt, track::Phi>,
+                  emprimaryelectron::Pz<track::Pt, track::Eta>,
+                  emprimaryelectron::Tgl<track::Eta>,
+                  emprimaryelectron::MeanClusterSizeITS<track::ITSClusterSizes>,
+                  emprimaryelectron::MeanClusterSizeITSib<track::ITSClusterSizes>,
+                  emprimaryelectron::MeanClusterSizeITSob<track::ITSClusterSizes>);
+
+// iterators
+using EMPrimaryElectronFromDalitzTmp = EMPrimaryElectronsFromDalitzTmp::iterator;
+
 namespace emprimaryelectronda
 {
 DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent); //!
@@ -444,6 +538,12 @@ DECLARE_SOA_TABLE(V0PhotonsPhiVPsi, "AOD", "V0PHOTONPHIVPSI", //!
                   o2::soa::Index<>, v0photonsphivpsi::PhiV, v0photonsphivpsi::PsiPair);
 // iterators
 using V0PhotonsPhiVPsi = V0PhotonsPhiVPsi;
+
+// clone for temporary table
+DECLARE_SOA_TABLE(V0PhotonsPhiVPsiTmp, "AOD", "V0PHOTONPHIVTMP", //!
+                  o2::soa::Index<>, v0photonsphivpsi::PhiV, v0photonsphivpsi::PsiPair);
+// iterators
+using V0PhotonsPhiVPsiTmp = V0PhotonsPhiVPsiTmp;
 
 namespace dalitzee
 {

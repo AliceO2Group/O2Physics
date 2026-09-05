@@ -16,6 +16,11 @@ o2physics_add_dpl_workflow(photon-conversion-builder
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DCAFitter O2Physics::AnalysisCore O2Physics::MLCore KFParticle::KFParticle O2Physics::TPCDriftManager
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(photon-conversion-builder-tmptable
+                    SOURCES photonconversionbuilderTmpTable.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DCAFitter O2Physics::AnalysisCore O2Physics::MLCore KFParticle::KFParticle O2Physics::TPCDriftManager
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(create-emevent-photon
                     SOURCES createEMEventPhoton.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGJECore
@@ -43,6 +48,16 @@ o2physics_add_dpl_workflow(skimmer-phos
 
 o2physics_add_dpl_workflow(skimmer-primary-electron-from-dalitzee
                     SOURCES skimmerPrimaryElectronFromDalitzEE.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(skimmer-primary-electron-from-dalitzee-tmptable
+                    SOURCES skimmerPrimaryElectronFromDalitzEETmpTable.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(skimmer-dalitz-events
+                    SOURCES skimmerDalitzEvents.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
