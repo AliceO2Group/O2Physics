@@ -19,7 +19,6 @@
 
 #include "Common/Core/TableHelper.h"
 
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -29,7 +28,6 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
-#include <Math/Vector4D.h>
 #include <TH1.h>
 
 #include <cstdint>
