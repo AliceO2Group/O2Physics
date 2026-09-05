@@ -77,14 +77,10 @@ struct CorrReso {
 
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, true, "Use additional event cut on mult correlations")
   O2_DEFINE_CONFIGURABLE(cfgZVtxCut, float, 10.0f, "Accepted z-vertex range")
-  O2_DEFINE_CONFIGURABLE(cfgUseTransverseMomentum, bool, false, "Use transverse momentum for correlation container")
   O2_DEFINE_CONFIGURABLE(cfgQaCheck, bool, true, "Enable QA histograms for event selection")
   O2_DEFINE_CONFIGURABLE(cfgStrictTrackCounter, bool, false, "Strict track counter for multiplicity correlation cut, counts only tracks that pass all cuts and are used in the correlation")
-  O2_DEFINE_CONFIGURABLE(cfgRefpTt, bool, false, "Apply upper pT cut on reference tracks")
-  O2_DEFINE_CONFIGURABLE(cfgRefpTMax, float, 3.0f, "maximum pT for reference tracks if cfgRefpTt is true")
   O2_DEFINE_CONFIGURABLE(cfgMinMultForCorrelations, int, 0, "minimum multiplicity for correlations")
   O2_DEFINE_CONFIGURABLE(cfgMaxMultForCorrelations, int, 20, "maximum multiplicity for correlations")
-  O2_DEFINE_CONFIGURABLE(cfgRefMultiplicity, bool, false, "Use multiplicity of reference tracks for multiplicity correlation cut instead of Nch")
   Configurable<std::vector<int>> cfgRunRemoveList{"cfgRunRemoveList", std::vector<int>{-1}, "excluded run numbers"};
   O2_DEFINE_CONFIGURABLE(cfgEvSelRCTflags, std::string, "", "keep empty to disable, usage: 'CentralBarrelTracking (CBT)', 'CBT_hadronPID' ")
 
@@ -111,7 +107,6 @@ struct CorrReso {
   O2_DEFINE_CONFIGURABLE(cfgCentralityWeight, std::string, "", "CCDB path to centrality weight object")
   O2_DEFINE_CONFIGURABLE(cfgLocalEfficiency, bool, false, "Use local efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgLocalEfficiencyNch, bool, false, "Use local multiplicity dependent efficiency object");
-  O2_DEFINE_CONFIGURABLE(cfgUseEventWeights, bool, false, "Use event weights for mixed event")
   O2_DEFINE_CONFIGURABLE(cfgCentEstimator, int, 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FT0A")
 
   struct : ConfigurableGroup {
@@ -148,15 +143,14 @@ struct CorrReso {
 
   struct : ConfigurableGroup {
     O2_DEFINE_CONFIGURABLE(cfgUseOnlyTPC, bool, true, "Use only TPC PID for daughter selection")
-    O2_DEFINE_CONFIGURABLE(cfgUseAntiLambda, bool, true, "Use AntiLambda candidates for analysis")
     O2_DEFINE_CONFIGURABLE(cfgPIDUseRejection, bool, true, "True: use exclusion exclusion criteria for PID determination, false: don't use exclusion")
     O2_DEFINE_CONFIGURABLE(cfgTpcCut, float, 3.0f, "TPC N-sigma cut for pions, kaons, protons")
     O2_DEFINE_CONFIGURABLE(cfgPIDParticle, int, 0, "4 = kshort, 5 = lambda, 6 = phi, 0 for no PID")
     O2_DEFINE_CONFIGURABLE(cfgUseItsPID, bool, true, "Use ITS PID for particle identification")
     O2_DEFINE_CONFIGURABLE(cfgTofPtCut, float, 0.4f, "Minimum pt to use TOF N-sigma")
     Configurable<LabeledArray<float>> nSigmas{"nSigmas", {LongArrayFloat.front().data(), 6, 3, {"UpCut_pi", "UpCut_ka", "UpCut_pr", "LowCut_pi", "LowCut_ka", "LowCut_pr"}, {"TPC", "TOF", "ITS"}}, "Labeled array for n-sigma values for TPC, TOF, ITS for pions, kaons, protons (positive and negative)"};
-    Configurable<LabeledArray<float>> cfgResoCuts{"cfgResoCuts", {LongArrayFloat.front().data(), 12, 3, {"cos_PAs", "massMin", "massMax", "PosTrackPt", "NegTrackPt", "DCAPosToPVMin", "DCANegToPVMin", "Lifetime", "RadiusMin", "RadiusMax", "Rapidity", "ArmPodMinVal"}, {"K0", "Lambda", "Phi"}}, "Labeled array (float) for various cuts on resonances"};
-    Configurable<LabeledArray<int>> cfgResoSwitches{"cfgResoSwitches", {LongArrayInt.front().data(), 6, 3, {"UseCosPA", "NMassBins", "DCABetDaug", "UseProperLifetime", "UseV0Radius", "UseArmPodCut"}, {"K0", "Lambda", "Phi"}}, "Labeled array (int) for various cuts on resonances"};
+    Configurable<LabeledArray<float>> cfgResoCuts{"cfgResoCuts", {LongArrayFloat.front().data(), 13, 3, {"cos_PAs", "massMin", "massMax", "PosTrackPt", "NegTrackPt", "DCAPosToPVMin", "DCANegToPVMin", "Lifetime", "RadiusMin", "RadiusMax", "Rapidity", "ArmPodMinVal", "DCABetDaug"}, {"K0", "Lambda", "Phi"}}, "Labeled array (float) for various cuts on resonances"};
+    Configurable<LabeledArray<int>> cfgResoSwitches{"cfgResoSwitches", {LongArrayInt.front().data(), 6, 3, {"UseCosPA", "NMassBins", "UseDCABetDaug", "UseProperLifetime", "UseV0Radius", "UseArmPodCut"}, {"K0", "Lambda", "Phi"}}, "Labeled array (int) for various cuts on resonances"};
   } cfgPIDConfigs;
 
   Configurable<float> cfgCutFV0{"cfgCutFV0", 50., "FV0A threshold"};
@@ -178,7 +172,6 @@ struct CorrReso {
   ConfigurableAxis axisVtxMix{"axisVtxMix", {VARIABLE_WIDTH, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, "vertex axis for mixed event histograms"};
   ConfigurableAxis axisMultMix{"axisMultMix", {VARIABLE_WIDTH, 0, 10, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260}, "multiplicity / centrality axis for mixed event histograms"};
   ConfigurableAxis axisSample{"axisSample", {cfgSampleSize, 0, cfgSampleSize}, "sample axis for histograms"};
-  ConfigurableAxis axisNch{"axisNch", {VARIABLE_WIDTH, 0, 10, 50, 70, 100}, "multiplicity axis for correlation container"};
 
   ConfigurableAxis axisNsigmaTPC{"axisNsigmaTPC", {80, -5, 5}, "nsigmaTPC axis"};
   ConfigurableAxis axisNsigmaTOF{"axisNsigmaTOF", {80, -5, 5}, "nsigmaTOF axis"};
@@ -272,12 +265,13 @@ struct CorrReso {
     kRadiusMax,
     kRapidity,
     kArmPodMinVal,
+    kDCABetDaug,
     kNParticleCuts
   };
   enum ResoParticleSwitches {
     kUseCosPA = 0,
     kMassBins,
-    kDCABetDaug,
+    kUseDCABetDaug,
     kUseProperLifetime,
     kUseV0Radius,
     kUseArmPodCut,
@@ -389,12 +383,10 @@ struct CorrReso {
         registry.add("PrPlusTOF_La", "", {HistType::kTH2D, {{axisPtFiner, axisNsigmaTOF}}});
         registry.add("PiMinusTOF_La", "", {HistType::kTH2D, {{axisPtFiner, axisNsigmaTOF}}});
 
-        if (cfgPIDConfigs.cfgUseAntiLambda) {
-          registry.add("PrMinusTPC_Al", "", {HistType::kTH2D, {{axisPtFiner, axisNsigmaTPC}}});
-          registry.add("PiPlusTPC_Al", "", {HistType::kTH2D, {{axisPtFiner, axisNsigmaTPC}}});
-          registry.add("PrMinusTOF_Al", "", {HistType::kTH2D, {{axisPtFiner, axisNsigmaTOF}}});
-          registry.add("PiPlusTOF_Al", "", {HistType::kTH2D, {{axisPtFiner, axisNsigmaTOF}}});
-        }
+        registry.add("PrMinusTPC_Al", "", {HistType::kTH2D, {{axisPtFiner, axisNsigmaTPC}}});
+        registry.add("PiPlusTPC_Al", "", {HistType::kTH2D, {{axisPtFiner, axisNsigmaTPC}}});
+        registry.add("PrMinusTOF_Al", "", {HistType::kTH2D, {{axisPtFiner, axisNsigmaTOF}}});
+        registry.add("PiPlusTOF_Al", "", {HistType::kTH2D, {{axisPtFiner, axisNsigmaTOF}}});
 
         registry.add("hLambdaPhi", "", {HistType::kTH1D, {axisPhi}});
         registry.add("hLambdaEta", "", {HistType::kTH1D, {axisEta}});
@@ -759,7 +751,7 @@ struct CorrReso {
     }
 
     auto occupancy = collision.trackOccupancyInTimeRange();
-    if (cfgUseEventCuts->getData()[kUseOccupancy][kEvCut1] && (occupancy < cfgEventSelection.cfgCutOccupancyLow || occupancy > cfgEventSelection.cfgCutOccupancyHigh)) {
+    if (cfgUseEventCuts->getData()[kUseOccupancy][kEvCut1] && (occupancy > cfgEventSelection.cfgCutOccupancyLow && occupancy < cfgEventSelection.cfgCutOccupancyHigh)) {
       registry.fill(HIST("hPassedEventSelection"), kUseOccupancy);
     }
   }
@@ -806,7 +798,7 @@ struct CorrReso {
   template <typename TTrack>
   bool trackSelected(TTrack const& track)
   {
-    return ((track.tpcNClsFound() >= cfgTrackCuts.cfgCutTPCclu) && (track.tpcNClsCrossedRows() >= cfgTrackCuts.cfgCutTPCCrossedRows) && (track.itsNCls() >= cfgTrackCuts.cfgCutITSclu) && (track.tpcChi2NCl() < cfgTrackCuts.cfgCutChi2prTPCcls) && (track.dcaZ() < cfgTrackCuts.cfgCutDCAz));
+    return ((track.tpcNClsFound() >= cfgTrackCuts.cfgCutTPCclu) && (track.tpcNClsCrossedRows() >= cfgTrackCuts.cfgCutTPCCrossedRows) && (track.itsNCls() >= cfgTrackCuts.cfgCutITSclu) && (track.tpcChi2NCl() < cfgTrackCuts.cfgCutChi2prTPCcls) && (std::abs(track.dcaZ()) < cfgTrackCuts.cfgCutDCAz));
   }
 
   void loadGain(aod::BCsWithTimestamps::iterator const& bc)
@@ -917,7 +909,7 @@ struct CorrReso {
   template <typename TTrack>
   bool selectionV0Daughter(TTrack const& track, int pid)
   {
-    if (!(track.itsNCls() > cfgTrackCuts.cfgCutITSclu))
+    if (!(track.itsNCls() >= cfgTrackCuts.cfgCutITSclu))
       return false;
     if (!track.hasTPC())
       return false;
@@ -925,7 +917,7 @@ struct CorrReso {
       return false;
     if (!(track.tpcNClsCrossedRows() >= cfgTrackCuts.cfgCutTPCCrossedRows))
       return false;
-    if (!(track.dcaZ() < cfgTrackCuts.cfgCutDCAz))
+    if (!(std::abs(track.dcaZ()) < cfgTrackCuts.cfgCutDCAz))
       return false;
 
     if (cfgPIDConfigs.cfgUseOnlyTPC) {
@@ -1029,11 +1021,6 @@ struct CorrReso {
     float weightNch = 1.0f;
     for (auto const& track : tracks) {
 
-      if (cfgRefMultiplicity) {
-        if (track.pt() > cfgRefpTMax)
-          continue;
-      }
-
       if (!getEfficiencyCorrectionNch(weightNch, track.pt())) {
         continue;
       }
@@ -1056,7 +1043,7 @@ struct CorrReso {
         continue;
       }
 
-      if (!getEfficiencyCorrection(weff1, track1.eta(), track1.pt(), zvtx)) {
+      if (!getEfficiencyCorrection(weff1, track1.pt(), track1.eta(), zvtx)) {
         continue;
       }
 
@@ -1081,18 +1068,18 @@ struct CorrReso {
     if (postrack.pt() < cfgPIDConfigs.cfgResoCuts->getData()[kPosTrackPt][iK0] || negtrack.pt() < cfgPIDConfigs.cfgResoCuts->getData()[kNegTrackPt][iK0])
       return false;
     registry.fill(HIST("hK0Count"), 1.5);
-    if (mk0 < cfgPIDConfigs.cfgResoCuts->getData()[kMassMin][iK0] && mk0 > cfgPIDConfigs.cfgResoCuts->getData()[kMassMax][iK0])
+    if (mk0 < cfgPIDConfigs.cfgResoCuts->getData()[kMassMin][iK0] || mk0 > cfgPIDConfigs.cfgResoCuts->getData()[kMassMax][iK0])
       return false;
     registry.fill(HIST("hK0Count"), 2.5);
     // Rapidity correction
-    if (candidate.yK0Short() > cfgPIDConfigs.cfgResoCuts->getData()[kRapidity][iK0])
+    if (std::abs(candidate.yK0Short()) > cfgPIDConfigs.cfgResoCuts->getData()[kRapidity][iK0])
       return false;
     registry.fill(HIST("hK0Count"), 3.5);
     // DCA cuts for K0short
     if (std::abs(candidate.dcapostopv()) < cfgPIDConfigs.cfgResoCuts->getData()[kDCAPosToPVMin][iK0] || std::abs(candidate.dcanegtopv()) < cfgPIDConfigs.cfgResoCuts->getData()[kDCANegToPVMin][iK0])
       return false;
     registry.fill(HIST("hK0Count"), 4.5);
-    if (std::abs(candidate.dcaV0daughters()) > cfgPIDConfigs.cfgResoSwitches->getData()[kDCABetDaug][iK0])
+    if (cfgPIDConfigs.cfgResoSwitches->getData()[kUseDCABetDaug][iK0] && std::abs(candidate.dcaV0daughters()) > cfgPIDConfigs.cfgResoCuts->getData()[kDCABetDaug][iK0])
       return false;
     registry.fill(HIST("hK0Count"), 5.5);
     // v0 radius cuts
@@ -1100,12 +1087,12 @@ struct CorrReso {
       return false;
     registry.fill(HIST("hK0Count"), 6.5);
     // cosine pointing angle cuts
-    if (candidate.v0cosPA() < cfgPIDConfigs.cfgResoCuts->getData()[kCosPA][iK0])
+    if (cfgPIDConfigs.cfgResoSwitches->getData()[kUseCosPA][iK0] && candidate.v0cosPA() < cfgPIDConfigs.cfgResoCuts->getData()[kCosPA][iK0])
       return false;
     registry.fill(HIST("hK0Count"), 7.5);
     // Proper lifetime
     float cTauK0 = candidate.distovertotmom(posX, posY, posZ) * massK0Short;
-    if (cfgPIDConfigs.cfgResoSwitches->getData()[kUseProperLifetime][iK0] && std::abs(cTauK0) > cfgPIDConfigs.cfgResoCuts->getData()[kLifeTime][iK0])
+    if (cfgPIDConfigs.cfgResoSwitches->getData()[kUseProperLifetime][iK0] && cTauK0 > cfgPIDConfigs.cfgResoCuts->getData()[kLifeTime][iK0])
       return false;
     registry.fill(HIST("hK0Count"), 8.5);
     // ArmenterosPodolanskiCut
@@ -1156,20 +1143,22 @@ struct CorrReso {
     registry.fill(HIST("hLambdaCount"), 2.5);
 
     // Rapidity correction
-    if (candidate.yLambda() > cfgPIDConfigs.cfgResoCuts->getData()[kRapidity][iLambda])
+    if (std::abs(candidate.yLambda()) > cfgPIDConfigs.cfgResoCuts->getData()[kRapidity][iLambda])
       return false;
     registry.fill(HIST("hLambdaCount"), 3.5);
+
     // DCA cuts for lambda and antilambda
-    if (isL) {
-      if (std::abs(candidate.dcapostopv()) < cfgPIDConfigs.cfgResoCuts->getData()[kDCAPosToPVMin][iLambda] || std::abs(candidate.dcanegtopv()) < cfgPIDConfigs.cfgResoCuts->getData()[kDCANegToPVMin][iLambda])
-        return false;
+    if (isL && (std::abs(candidate.dcapostopv()) < cfgPIDConfigs.cfgResoCuts->getData()[kDCAPosToPVMin][iLambda] || std::abs(candidate.dcanegtopv()) < cfgPIDConfigs.cfgResoCuts->getData()[kDCANegToPVMin][iLambda])) {
+      isL = false;
     }
-    if (isAL) {
-      if (std::abs(candidate.dcapostopv()) < cfgPIDConfigs.cfgResoCuts->getData()[kDCANegToPVMin][iLambda] || std::abs(candidate.dcanegtopv()) < cfgPIDConfigs.cfgResoCuts->getData()[kDCAPosToPVMin][iLambda])
-        return false;
+    if (isAL && (std::abs(candidate.dcapostopv()) < cfgPIDConfigs.cfgResoCuts->getData()[kDCANegToPVMin][iLambda] || std::abs(candidate.dcanegtopv()) < cfgPIDConfigs.cfgResoCuts->getData()[kDCAPosToPVMin][iLambda])) {
+      isAL = false;
+    }
+    if (!isL && !isAL) {
+      return false;
     }
     registry.fill(HIST("hLambdaCount"), 4.5);
-    if (std::abs(candidate.dcaV0daughters()) > cfgPIDConfigs.cfgResoSwitches->getData()[kDCABetDaug][iLambda])
+    if (cfgPIDConfigs.cfgResoSwitches->getData()[kUseDCABetDaug][iLambda] && std::abs(candidate.dcaV0daughters()) > cfgPIDConfigs.cfgResoCuts->getData()[kDCABetDaug][iLambda])
       return false;
     registry.fill(HIST("hLambdaCount"), 5.5);
     // v0 radius cuts
@@ -1177,7 +1166,7 @@ struct CorrReso {
       return false;
     registry.fill(HIST("hLambdaCount"), 6.5);
     // cosine pointing angle cuts
-    if (candidate.v0cosPA() < cfgPIDConfigs.cfgResoCuts->getData()[kCosPA][iLambda])
+    if (cfgPIDConfigs.cfgResoSwitches->getData()[kUseCosPA][iLambda] && candidate.v0cosPA() < cfgPIDConfigs.cfgResoCuts->getData()[kCosPA][iLambda])
       return false;
     registry.fill(HIST("hLambdaCount"), 7.5);
     // Proper lifetime
@@ -1185,19 +1174,19 @@ struct CorrReso {
     if (cfgPIDConfigs.cfgResoSwitches->getData()[kUseProperLifetime][iLambda] && cTauLambda > cfgPIDConfigs.cfgResoCuts->getData()[kLifeTime][iLambda])
       return false;
     registry.fill(HIST("hLambdaCount"), 8.5);
+
     if (isL) {
       if (!selectionV0Daughter(postrack, kProtons) || !selectionV0Daughter(negtrack, kPions))
-        return false;
+        isL = false;
     }
     if (isAL) {
       if (!selectionV0Daughter(postrack, kPions) || !selectionV0Daughter(negtrack, kProtons))
-        return false;
+        isAL = false;
     }
-    registry.fill(HIST("hLambdaCount"), 9.5);
-
-    if (!cfgPIDConfigs.cfgUseAntiLambda && isAL) { // Reject the track if it is antilambda
+    if (!isL && !isAL) {
       return false;
     }
+    registry.fill(HIST("hLambdaCount"), 9.5);
 
     registry.fill(HIST("hLambdaPhi"), candidate.phi());
     registry.fill(HIST("hLambdaEta"), candidate.eta());
@@ -1207,7 +1196,7 @@ struct CorrReso {
       registry.fill(HIST("PiMinusTPC_La"), negtrack.pt(), negtrack.tpcNSigmaPi());
       registry.fill(HIST("PiMinusTOF_La"), negtrack.pt(), negtrack.tofNSigmaPi());
     }
-    if (cfgPIDConfigs.cfgUseAntiLambda && isAL) {
+    if (isAL) {
       registry.fill(HIST("PrMinusTPC_Al"), negtrack.pt(), negtrack.tpcNSigmaPr());
       registry.fill(HIST("PrMinusTOF_Al"), negtrack.pt(), negtrack.tofNSigmaPr());
       registry.fill(HIST("PiPlusTPC_Al"), postrack.pt(), postrack.tpcNSigmaPi());
@@ -1382,7 +1371,6 @@ struct CorrReso {
 
   void processMixedTpcFt0a(FilteredCollisions const& collisions, FilteredTracks const& tracks, aod::FT0s const&, aod::BCsWithTimestamps const&, aod::V0Datas const& V0s)
   {
-
     auto getTracksSize = [&tracks, this](FilteredCollisions::iterator const& collision) {
       auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
       auto mult = associatedTracks.size();
@@ -1427,7 +1415,7 @@ struct CorrReso {
       loadCorrection(bc.timestamp());
       float eventWeight = 1.0f;
 
-      double multiplicity = static_cast<double>(tracks.size());
+      double multiplicity = static_cast<double>(tracks1.size());
 
       if (cfgStrictTrackCounter) {
         trackCounter(tracks1, multiplicity);
