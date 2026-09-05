@@ -11,10 +11,10 @@
 //
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //   Configurable workflow for running several DQ or other PWG analyses
+// Precompiled into TableReaderWithAssocPCH
 
-// Included verbatim by the *_workflowSpec.cxx variants and precompiled into
-// TableReaderWithAssocPCH; without the guard the two collide.
-#pragma once
+#ifndef PWGDQ_TASKS_TABLEREADER_WITHASSOC_H_
+#define PWGDQ_TASKS_TABLEREADER_WITHASSOC_H_
 
 #include "PWGDQ/Core/AnalysisCompositeCut.h"
 #include "PWGDQ/Core/AnalysisCut.h"
@@ -5036,3 +5036,5 @@ void DefineHistograms(HistogramManager* histMan, const TString& histClasses, con
     }
   } // end loop over histogram classes
 }
+
+#endif // PWGDQ_TASKS_TABLEREADER_WITHASSOC_H_
