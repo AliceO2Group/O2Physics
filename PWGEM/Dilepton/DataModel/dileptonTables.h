@@ -962,6 +962,12 @@ using EMPrimaryElectronsDeDxMC = EMPrimaryElectronsDeDxMC_000;
 // iterators
 using EMPrimaryElectronDeDxMC = EMPrimaryElectronsDeDxMC::iterator;
 
+// copy of EMPrimaryElectronDeDxMC to use as intermediate step for Dalitz analysis
+DECLARE_SOA_TABLE(EMPrimaryElectronsDeDxMCTmp, "AOD", "EMPRMELDEDXMCTMP", mcpidtpc::DeDxTunedMc, o2::soa::Marker<1>);
+using EMPrimaryElectronsDeDxMCTmp = EMPrimaryElectronsDeDxMCTmp;
+// iterators
+using EMPrimaryElectronDeDxMC = EMPrimaryElectronsDeDxMC::iterator;
+
 DECLARE_SOA_TABLE(EMPrimaryElectronEMEventIds, "AOD", "PRMELMEVENTID", emprimaryelectron::EMEventId); // To be joined with EMPrimaryElectrons table at analysis level.
 // iterators
 using EMPrimaryElectronEMEventId = EMPrimaryElectronEMEventIds::iterator;

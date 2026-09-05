@@ -9,9 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file skimmerPrimaryElectronFromDalitzEE.cxx
-/// \brief write electrons for Dalitz into new table
-/// \author lgansbartl@stud.uni-frankfurt.de
+/// \file skimmerPrimaryElectronFromDalitzEETmpTable.cxx
+/// \brief write electrons for Dalitz into a temporary table that is then used for event skimming
+/// \author joshua.konig@cern.ch
 
 #include "PWGEM/PhotonMeson/TableProducer/skimmerPrimaryElectronFromDalitzEE.h"
 
@@ -24,5 +24,5 @@ WorkflowSpec defineDataProcessing(ConfigContext const& context)
   o2::pid::tof::TOFResponseImpl::metadataInfo.initMetadata(context);
 
   return WorkflowSpec{
-    adaptAnalysisTask<skimmerPrimaryElectronFromDalitzEE<o2::aod::EMPrimaryElectronsFromDalitz, o2::aod::EMPrimaryElectronsDeDxMC>>(context, TaskName{"skimmer-primary-electron-from-dalitzee"})};
+    adaptAnalysisTask<skimmerPrimaryElectronFromDalitzEE<o2::aod::EMPrimaryElectronsFromDalitzTmp, o2::aod::EMPrimaryElectronsDeDxMCTmp>>(context, TaskName{"skimmer-primary-electron-from-dalitzee-tmptable"})};
 }
