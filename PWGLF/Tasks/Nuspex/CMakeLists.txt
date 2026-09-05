@@ -202,7 +202,7 @@ o2physics_add_dpl_workflow(multiplicity-pt
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(deuteron-in-jets-trg-pt
-    SOURCES DeuteronInJetsTrgPt.cxx
+    SOURCES deuteronInJetsTrgPt.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 

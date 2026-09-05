@@ -283,7 +283,6 @@ struct DeuteronInTriggeredEvents {
     Configurable<bool> rapidityToggle{"rapidityToggle", false, "If true, use rapidity cuts"};
     Configurable<float> tpcChi2ClusMax{"tpcChi2ClusMax", 4.f, "Max TPC Chi2 per cluster"};
     Configurable<int> tpcNCrossedRowsMin{"tpcNCrossedRowsMin", 70, "Minimum number of TPC crossed rows"};
-    Configurable<float> tpcNCrossedRowsOverFindableMin{"tpcNCrossedRowsOverFindableMin", 0.8f, "Minimum ratio of crossed rows over findable clusters"};
     Configurable<int> tpcNClsMin{"tpcNClsMin", 80, "Minimum number of TPC clusters"};
     Configurable<float> tpcRigidityMin{"tpcRigidityMin", 0.5f, "Minimum TPC rigidity for tracks"};
     Configurable<LabeledArray<double>> tpcNSigmaMax{"tpcNSigmaMax", {nuclei::NSigmaTPCdefault[0], 5, 2, nuclei::names, nuclei::nSigmaConfigName}, "TPC nsigma selection for light nuclei"};
@@ -777,7 +776,6 @@ struct DeuteronInTriggeredEvents {
           track.itsNCls() < cfgTrackCut.itsNClusMin ||
           track.tpcNClsFound() < cfgTrackCut.tpcNClsMin ||
           track.tpcNClsCrossedRows() < cfgTrackCut.tpcNCrossedRowsMin ||
-          track.tpcNClsCrossedRows() < cfgTrackCut.tpcNCrossedRowsOverFindableMin * track.tpcNClsFindable() ||
           track.tpcChi2NCl() > cfgTrackCut.tpcChi2ClusMax ||
           track.itsChi2NCl() > cfgTrackCut.itsChi2ClusMax) {
         continue;
@@ -993,7 +991,7 @@ struct DeuteronInTriggeredEvents {
     }
 
     std::vector<bool> isReconstructed(particlesMC.size(), false);
-    for (auto& c : nuclei::candidates) {
+    for (auto& c : nuclei::candidates) { // o2-linter: disable=const-ref-in-for-loop (candidate is modified in loop)
       auto label = tracks.iteratorAt(c.globalIndex);
       if (label.mcParticleId() < -1 || label.mcParticleId() >= particlesMC.size()) {
         continue;
