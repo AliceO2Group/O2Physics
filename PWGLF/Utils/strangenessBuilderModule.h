@@ -49,6 +49,7 @@
 
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <numeric>
@@ -844,6 +845,30 @@ class BuilderModule
     return idx;
   }
 
+  // Feed the V-drift manager from the aod::TpcCalibCCDBObjects column when the BC table
+  // carries it, else fall back to a CCDB query. Lets migrated and un-migrated tasks share
+  // this module unchanged.
+  template <typename TBCs, typename TCollision>
+  void updateVDrift(TCollision const& collision)
+  {
+    auto const& bc = collision.template bc_as<TBCs>();
+    if constexpr (requires { bc.vdriftTgl(); }) {
+      mVDriftMgr.update(bc.vdriftTgl());
+    } else {
+      mVDriftMgr.update(bc.timestamp());
+    }
+  }
+
+  // Overload for tasks whose BC table carries the V-drift CCDB column: nothing in here
+  // needs a CCDB manager any more, so they need not own one.
+  template <typename TCollisions, typename TBCs>
+  bool initCCDB(TBCs const& bcs, TCollisions const& collisions)
+  {
+    static_assert(requires(typename TBCs::iterator bc) { bc.vdriftTgl(); }, "initCCDB without a CCDB manager needs a BC table joined with aod::TpcCalibCCDBObjects");
+    std::nullptr_t noCCDB{};
+    return initCCDB<TCollisions>(noCCDB, bcs, collisions);
+  }
+
   template <typename TCollisions, typename TCCDB, typename TBCs>
   bool initCCDB(TCCDB& ccdb, TBCs const& bcs, TCollisions const& collisions)
   {
@@ -872,8 +897,12 @@ class BuilderModule
 
     if (v0BuilderOpts.generatePhotonCandidates.value && v0BuilderOpts.moveTPCOnlyTracks.value) {
       // initialize only if needed, avoid unnecessary CCDB calls
-      mVDriftMgr.init(&ccdb->instance());
-      mVDriftMgr.update(timestamp);
+      if constexpr (requires { bc.vdriftTgl(); }) {
+        mVDriftMgr.update(bc.vdriftTgl());
+      } else {
+        mVDriftMgr.init(&ccdb->instance());
+        mVDriftMgr.update(timestamp);
+      }
     }
 
     return true;
@@ -1021,7 +1050,7 @@ class BuilderModule
             // handle TPC-only tracks properly (photon conversions)
             if (v0BuilderOpts.moveTPCOnlyTracks) {
               if (collision.has_bc()) {
-                mVDriftMgr.update(collision.template bc_as<aod::BCsWithTimestamps>().timestamp());
+                updateVDrift<TBCs>(collision);
               }
               if (isPosTPCOnly) {
                 // Nota bene: positive is TPC-only -> this entire V0 merits treatment as photon candidate
@@ -1498,7 +1527,7 @@ class BuilderModule
           continue;
         }
         if (v0BuilderOpts.generatePhotonCandidates && v0BuilderOpts.moveTPCOnlyTracks && collision.has_bc()) {
-          mVDriftMgr.update(collision.template bc_as<aod::BCsWithTimestamps>().timestamp());
+          updateVDrift<TBCs>(collision);
         }
       }
       auto const& posTrack = tracks.rawIteratorAt(v0.posTrackId);
@@ -2832,6 +2861,16 @@ class BuilderModule
       }
     }
     return returnValue;
+  }
+
+  //__________________________________________________
+  // Overload for tasks sourcing every conditions object from CCDB columns; see initCCDB above.
+  template <typename THistoRegistry, typename TCollisions, typename TMCCollisions, typename TV0s, typename TCascades, typename TTrackedCascades, typename TTracks, typename TBCs, typename TMCParticles, typename TProducts>
+  void dataProcess(THistoRegistry& histos, TCollisions const& collisions, TMCCollisions const& mccollisions, TV0s const& v0s, TCascades const& cascades, TTrackedCascades const& trackedCascades, TTracks const& tracks, TBCs const& bcs, TMCParticles const& mcParticles, TProducts& products)
+  {
+    static_assert(requires(typename TBCs::iterator bc) { bc.vdriftTgl(); }, "dataProcess without a CCDB manager needs a BC table joined with aod::TpcCalibCCDBObjects");
+    std::nullptr_t noCCDB{};
+    dataProcess(noCCDB, histos, collisions, mccollisions, v0s, cascades, trackedCascades, tracks, bcs, mcParticles, products);
   }
 
   //__________________________________________________
