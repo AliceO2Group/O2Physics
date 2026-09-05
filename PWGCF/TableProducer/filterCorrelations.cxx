@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+// o2-linter: disable=name/workflow-file (historic file contains several table-producer tasks)
 #include "PWGCF/DataModel/CorrelationsDerived.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
@@ -21,6 +22,7 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include <CCDB/BasicCCDBManager.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -35,14 +37,21 @@
 #include <MathUtils/detail/TypeTruncation.h>
 #include <ReconstructionDataFormats/PID.h>
 
+#include <TFile.h>
 #include <TH3.h>
+#include <THn.h>
 #include <TParticlePDG.h>
 
 #include <Rtypes.h>
 
 #include <algorithm>
+#include <array>
+#include <cmath>
 #include <cstdint>
 #include <experimental/type_traits> // required for is_detected
+#include <limits>
+#include <memory>
+#include <string>
 #include <type_traits>
 #include <vector>
 
@@ -58,6 +67,7 @@ using namespace o2::math_utils::detail;
 
 struct FilterCF {
   Service<o2::framework::O2DatabasePDG> pdg;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   enum TrackSelectionCuts1 : uint8_t {
     kTrackSelected = BIT(0),
@@ -103,6 +113,10 @@ struct FilterCF {
   O2_DEFINE_CONFIGURABLE(chi2peritscluster, float, 36, "maximum Chi2 / cluster for the ITS track segment")
   O2_DEFINE_CONFIGURABLE(cfgEstimatorBitMask, uint16_t, 0, "BitMask for multiplicity estimators to be included in the CFMultSet tables.");
 
+  O2_DEFINE_CONFIGURABLE(cfgEfficiencyMultiplicity, std::string, "", "Multiplicity efficiency (RecoAll / MC): CCDB path or local ROOT file with a 4D ccdb_object (eta, pT, multiplicity, z-vtx); empty disables CFCollisionsExtra output")
+  O2_DEFINE_CONFIGURABLE(cfgLocalEfficiency, int, 0, "0 = CCDB efficiency, 1 = local ROOT efficiency")
+  O2_DEFINE_CONFIGURABLE(cfgMultiplicityTrackBitMask, uint16_t, 0, "Required track-type bits for corrected multiplicity; match cfgTrackBitMask used to produce the efficiency (0 = all stored tracks)")
+
   // Filters and input definitions
   Filter collisionZVtxFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter collisionVertexTypeFilter = (cfgCollisionFlags == 0) || ((aod::collision::flags & cfgCollisionFlags) == cfgCollisionFlags);
@@ -119,6 +133,7 @@ struct FilterCF {
   HistogramRegistry registrytrackQA{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   Produces<aod::CFCollisions> outputCollisions;
+  Produces<aod::CFCollisionsExtra> outputCollisionsExtra;
   Produces<aod::CFTracks> outputTracks;
 
   Produces<aod::CFCollLabels> outputMcCollisionLabels;
@@ -135,12 +150,42 @@ struct FilterCF {
   Produces<aod::CFMultSets> outputMultSets;
   std::vector<float> multiplicities{};
 
+  // Own local histograms independently of their input file. CCDB owns its objects.
+  std::unique_ptr<THn> localMultiplicityEfficiency;
+  static constexpr int MultiplicityEfficiencyDimensions = 4;
+
   // persistent caches
   std::vector<bool> mcReconstructedCache;
   std::vector<int> mcParticleLabelsCache;
 
   void init(InitContext&)
   {
+    if (!cfgEfficiencyMultiplicity.value.empty()) {
+      if (cfgLocalEfficiency != 0 && cfgLocalEfficiency != 1) {
+        LOGF(fatal, "cfgLocalEfficiency must be 0 (CCDB) or 1 (local ROOT file)");
+      }
+      if (cfgMultiplicityTrackBitMask > std::numeric_limits<uint8_t>::max()) {
+        LOGF(fatal, "cfgMultiplicityTrackBitMask must fit the 8-bit track type");
+      }
+      if (cfgLocalEfficiency == 1) {
+        std::unique_ptr<TFile> file(TFile::Open(cfgEfficiencyMultiplicity.value.c_str(), "READ"));
+        if (!file) {
+          LOGF(fatal, "Could not open multiplicity efficiency file %s", cfgEfficiencyMultiplicity.value.c_str());
+          return;
+        }
+        if (file->IsZombie()) {
+          LOGF(fatal, "Multiplicity efficiency file %s is invalid", cfgEfficiencyMultiplicity.value.c_str());
+          return;
+        }
+        auto* efficiency = dynamic_cast<THn*>(file->Get("ccdb_object"));
+        validateMultiplicityEfficiency(efficiency);
+        localMultiplicityEfficiency.reset(static_cast<THn*>(efficiency->Clone()));
+      } else {
+        ccdb->setURL("http://alice-ccdb.cern.ch");
+        ccdb->setCaching(true);
+        ccdb->setLocalObjectValidityChecking();
+      }
+    }
     if (doprocessTrackQA) {
       registrytrackQA.add("zvtx", "Z Vertex position;  posz (cm); Events", HistType::kTH1F, {{100, -12, 12}});
       registrytrackQA.add("eta", "eta distribution;  eta; arb. units", HistType::kTH1F, {{100, -2, 2}});
@@ -156,7 +201,7 @@ struct FilterCF {
   }
 
   template <typename TCollision>
-  bool keepCollision(TCollision& collision)
+  bool keepCollision(const TCollision& collision)
   {
     bool isMultSelected = false;
     if (collision.multiplicity() >= cfgMinMultiplicity)
@@ -164,23 +209,23 @@ struct FilterCF {
 
     if (cfgTrigger == 0) {
       return true;
-    } else if (cfgTrigger == 7) {
+    } else if (cfgTrigger == 7) { // o2-linter: disable=magic-number (documented legacy trigger-selection code)
       return isMultSelected && collision.alias_bit(kINT7) && collision.sel7();
-    } else if (cfgTrigger == 8) {
+    } else if (cfgTrigger == 8) { // o2-linter: disable=magic-number (documented legacy trigger-selection code)
       return isMultSelected && collision.sel8();
-    } else if (cfgTrigger == 9) { // relevant only for Pb-Pb
+    } else if (cfgTrigger == 9) { // relevant only for Pb-Pb; o2-linter: disable=magic-number (documented legacy trigger-selection code)
       return isMultSelected && collision.sel8() && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && collision.selection_bit(aod::evsel::kIsGoodITSLayersAll);
-    } else if (cfgTrigger == 10) { // TVX trigger only (sel8 selection before April, 2024)
+    } else if (cfgTrigger == 10) { // TVX trigger only (sel8 selection before April, 2024); o2-linter: disable=magic-number (documented legacy trigger-selection code)
       return isMultSelected && collision.selection_bit(aod::evsel::kIsTriggerTVX);
-    } else if (cfgTrigger == 11) { // sel8 selection for MC
+    } else if (cfgTrigger == 11) { // sel8 selection for MC; o2-linter: disable=magic-number (documented legacy trigger-selection code)
       return isMultSelected && collision.selection_bit(aod::evsel::kIsTriggerTVX) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder);
-    } else if (cfgTrigger == 12) { // relevant only for Pb-Pb with occupancy cuts and rejection of the collisions which have other events nearby
+    } else if (cfgTrigger == 12) { // relevant only for Pb-Pb with occupancy cuts and rejection of nearby collisions; o2-linter: disable=magic-number (documented legacy trigger-selection code)
       int occupancy = collision.trackOccupancyInTimeRange();
       if (occupancy >= cfgMinOcc && occupancy < cfgMaxOcc)
         return isMultSelected && collision.sel8() && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && collision.selection_bit(aod::evsel::kNoCollInTimeRangeStandard) && collision.selection_bit(aod::evsel::kIsGoodITSLayersAll);
       else
         return false;
-    } else if (cfgTrigger == 13) { // relevant for pO/OO/NeNe --recommended by Physics Board on 27.01.2026
+    } else if (cfgTrigger == 13) { // relevant for pO/OO/NeNe, recommended by Physics Board on 27.01.2026; o2-linter: disable=magic-number (documented legacy trigger-selection code)
       return isMultSelected && collision.sel8() && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV);
     }
     return false;
@@ -193,18 +238,18 @@ struct FilterCF {
   {
     o2::aod::ITSResponse itsResponse;
 
-    if (ITSProtonselection && candidate.pt() <= 0.6 && !(itsResponse.nSigmaITS<o2::track::PID::Proton>(candidate) > nsigmaCutITSProton)) {
+    if (ITSProtonselection && candidate.pt() <= 0.6 && !(itsResponse.nSigmaITS<o2::track::PID::Proton>(candidate) > nsigmaCutITSProton)) { // o2-linter: disable=magic-number (established proton PID momentum boundary)
       return false;
     }
-    if (ITSProtonselection && candidate.pt() > 0.6 && candidate.pt() <= 0.8 && !(itsResponse.nSigmaITS<o2::track::PID::Proton>(candidate) > nsigmaCutITSProton)) {
+    if (ITSProtonselection && candidate.pt() > 0.6 && candidate.pt() <= 0.8 && !(itsResponse.nSigmaITS<o2::track::PID::Proton>(candidate) > nsigmaCutITSProton)) { // o2-linter: disable=magic-number (established proton PID momentum boundaries)
       return false;
     }
 
     if (candidate.hasTOF()) {
-      if (candidate.pt() < 0.7 && std::abs(candidate.tpcNSigmaPr()) < nsigmaCutTPCProton) {
+      if (candidate.pt() < 0.7 && std::abs(candidate.tpcNSigmaPr()) < nsigmaCutTPCProton) { // o2-linter: disable=magic-number (established proton PID momentum boundary)
         return true;
       }
-      if (candidate.p() >= 0.7 && std::abs(candidate.tpcNSigmaPr()) < nsigmaCutTPCProton && std::abs(candidate.tofNSigmaPr()) < nsigmaCutTOFProton) {
+      if (candidate.p() >= 0.7 && std::abs(candidate.tpcNSigmaPr()) < nsigmaCutTPCProton && std::abs(candidate.tofNSigmaPr()) < nsigmaCutTOFProton) { // o2-linter: disable=magic-number (established proton PID momentum boundary)
         return true;
       }
     } else {
@@ -258,7 +303,7 @@ struct FilterCF {
         }
       }
       return trackType;
-    } else if (cfgTrackSelection == 2) {
+    } else if (cfgTrackSelection == 2) { // o2-linter: disable=magic-number (documented track-selection mode)
       uint8_t trackType = 0;
       if constexpr (HasProtonPID<TTrack>::value) {
         if (track.isGlobalTrack() && (track.itsNCls() >= itsnclusters) && (track.tpcNClsCrossedRows() >= tpcncrossedrows) && selectionPIDProton(track)) {
@@ -280,6 +325,67 @@ struct FilterCF {
     return dcaXyConst + dcaXySlope / pt; // a + b/pT
   }
 
+  void validateMultiplicityEfficiency(const THn* efficiency) const
+  {
+    if (!efficiency || efficiency->GetNdimensions() != MultiplicityEfficiencyDimensions) {
+      LOGF(fatal, "Multiplicity efficiency from %s must be a 4D THn with axes (eta, pT, multiplicity, z-vtx)", cfgEfficiencyMultiplicity.value.c_str());
+    }
+  }
+
+  THn* loadMultiplicityEfficiency(uint64_t timestamp)
+  {
+    if (cfgLocalEfficiency == 1) {
+      return localMultiplicityEfficiency.get();
+    }
+    // Query each collision so the manager can refresh its cache at validity boundaries.
+    auto* efficiency = ccdb->getForTimeStamp<THnT<float>>(cfgEfficiencyMultiplicity.value, timestamp);
+    validateMultiplicityEfficiency(efficiency);
+    return efficiency;
+  }
+
+  template <bool applyDCA, typename TCollision, typename TTracks>
+  float getCorrectedMultiplicity(const TCollision& collision, const TTracks& tracks, uint64_t timestamp)
+  {
+    if (collision.multiplicityEstimator() != aod::cfmultiplicity::Tracks) {
+      LOGF(fatal, "Efficiency-corrected multiplicity requires MultiplicitySelector::processTracks, but estimator type %u was configured", static_cast<unsigned int>(collision.multiplicityEstimator()));
+    }
+    auto* efficiency = loadMultiplicityEfficiency(timestamp);
+    double correctedMultiplicity = 0.;
+    for (const auto& track : tracks) {
+      // Match the tracks written by the corresponding data/MC producer path.
+      if constexpr (applyDCA) {
+        if (std::abs(track.dcaXY()) > getMaxDCAxy(track.pt()) || std::abs(track.dcaZ()) > dcazmax) {
+          continue;
+        }
+      }
+      const auto mask = static_cast<uint8_t>(cfgMultiplicityTrackBitMask.value);
+      if (mask != 0 && (getTrackType(track) & mask) != mask) {
+        continue;
+      }
+
+      // The map contains RecoAll / MC, not inverse-efficiency weights.
+      // Keep the original estimator as the map coordinate, including for centrality.
+      const std::array<double, MultiplicityEfficiencyDimensions> values{track.eta(), track.pt(), collision.multiplicity(), collision.posZ()};
+      std::array<int, MultiplicityEfficiencyDimensions> bins{};
+      for (int axis = 0; axis < MultiplicityEfficiencyDimensions; ++axis) {
+        auto* efficiencyAxis = efficiency->GetAxis(axis);
+        bins[axis] = efficiencyAxis->FindFixBin(values[axis]);
+        if (!std::isfinite(values[axis]) || bins[axis] < 1 || bins[axis] > efficiencyAxis->GetNbins()) {
+          LOGF(fatal, "Multiplicity efficiency from %s does not cover axis %d value %g", cfgEfficiencyMultiplicity.value.c_str(), axis, values[axis]);
+        }
+      }
+      const double eff = efficiency->GetBinContent(bins.data());
+      if (!std::isfinite(eff) || eff <= 0.) {
+        LOGF(fatal, "Invalid multiplicity efficiency %g from %s at bins (%d, %d, %d, %d)", eff, cfgEfficiencyMultiplicity.value.c_str(), bins[0], bins[1], bins[2], bins[3]);
+      }
+      correctedMultiplicity += 1. / eff;
+    }
+    if (!std::isfinite(correctedMultiplicity) || correctedMultiplicity > std::numeric_limits<float>::max()) {
+      LOGF(fatal, "Corrected multiplicity cannot be represented as a float: %g", correctedMultiplicity);
+    }
+    return static_cast<float>(correctedMultiplicity);
+  }
+
   template <class T>
   using HasMultTables = decltype(std::declval<T&>().multNTracksPV());
 
@@ -299,6 +405,9 @@ struct FilterCF {
 
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     outputCollisions(bc.runNumber(), collision.posZ(), collision.multiplicity(), bc.timestamp());
+    if (!cfgEfficiencyMultiplicity.value.empty()) {
+      outputCollisionsExtra(getCorrectedMultiplicity<true>(collision, tracks, bc.timestamp()));
+    }
 
     if constexpr (std::experimental::is_detected<HasMultTables, C1>::value) {
       multiplicities.clear();
@@ -317,7 +426,7 @@ struct FilterCF {
 
     if (cfgTransientTables)
       outputCollRefs(collision.globalIndex());
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       float maxDCAxy = getMaxDCAxy(track.pt());
       if ((std::abs(track.dcaXY()) > maxDCAxy) || (std::abs(track.dcaZ()) > dcazmax)) {
         continue;
@@ -402,7 +511,7 @@ struct FilterCF {
     }
 
     // PASS 1 on collisions: check which particles are kept
-    for (auto& collision : allCollisions) {
+    for (const auto& collision : allCollisions) {
       auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
       if (cfgVerbosity > 0) {
         LOGF(info, "processMC:   Tracks for collision %d: %d | Vertex: %.1f (%d) | INT7: %d", collision.globalIndex(), groupedTracks.size(), collision.posZ(), collision.flags(), collision.sel7());
@@ -412,14 +521,14 @@ struct FilterCF {
         continue;
       }
 
-      for (auto& track : groupedTracks) {
+      for (const auto& track : groupedTracks) {
         if (track.has_mcParticle()) {
           mcReconstructedCache[track.mcParticleId()] = true;
         }
       }
     }
 
-    for (auto& mcCollision : mcCollisions) {
+    for (const auto& mcCollision : mcCollisions) {
       auto particles = allParticles.sliceBy(perMcCollision, mcCollision.globalIndex());
 
       if (cfgVerbosity > 0) {
@@ -428,7 +537,7 @@ struct FilterCF {
 
       // Store selected MC particles and MC collisions
       int multiplicity = 0;
-      for (auto& particle : particles) {
+      for (const auto& particle : particles) {
         int8_t sign = 0;
         TParticlePDG* pdgparticle = pdg->GetParticle(particle.pdgCode());
         if (pdgparticle != nullptr) {
@@ -464,7 +573,7 @@ struct FilterCF {
     }
 
     // PASS 2 on collisions: store collisions and tracks
-    for (auto& collision : allCollisions) {
+    for (const auto& collision : allCollisions) {
       auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
       if (cfgVerbosity > 0) {
         LOGF(info, "processMC:   Tracks for collision %d: %d | Vertex: %.1f (%d) | INT7: %d", collision.globalIndex(), groupedTracks.size(), collision.posZ(), collision.flags(), collision.sel7());
@@ -477,6 +586,9 @@ struct FilterCF {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       // NOTE works only when we store all MC collisions (as we do here)
       outputCollisions(bc.runNumber(), collision.posZ(), collision.multiplicity(), bc.timestamp());
+      if (!cfgEfficiencyMultiplicity.value.empty()) {
+        outputCollisionsExtra(getCorrectedMultiplicity<false>(collision, groupedTracks, bc.timestamp()));
+      }
       outputMcCollisionLabels(collision.mcCollisionId());
 
       if constexpr (std::experimental::is_detected<HasMultTables, C1>::value) {
@@ -497,7 +609,7 @@ struct FilterCF {
       if (cfgTransientTables)
         outputCollRefs(collision.globalIndex());
 
-      for (auto& track : groupedTracks) {
+      for (const auto& track : groupedTracks) {
         int mcParticleId = track.mcParticleId();
         if (mcParticleId >= 0) {
           mcParticleId = mcParticleLabelsCache[track.mcParticleId()];
@@ -552,7 +664,7 @@ struct FilterCF {
   void processMCGen(McCollisionsWithHepMC::iterator const& mcCollision, aod::McParticles const& particles)
   {
     float multiplicity = 0.0f;
-    for (auto& particle : particles) {
+    for (const auto& particle : particles) {
       if (!particle.isPhysicalPrimary() || std::abs(particle.eta()) > cfgCutMCEta || particle.pt() < cfgCutMCPt)
         continue;
       int8_t sign = 0;
@@ -617,69 +729,69 @@ struct MultiplicitySelector {
 
   void processTracks(aod::Collision const&, soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>> const& tracks)
   {
-    output(tracks.size());
+    output(tracks.size(), aod::cfmultiplicity::Tracks);
   }
   PROCESS_SWITCH(MultiplicitySelector, processTracks, "Select track count as multiplicity", false);
 
   void processFT0M(aod::CentFT0Ms const& centralities)
   {
-    for (auto& c : centralities) {
-      output(c.centFT0M());
+    for (const auto& c : centralities) {
+      output(c.centFT0M(), aod::cfmultiplicity::FT0M);
     }
   }
   PROCESS_SWITCH(MultiplicitySelector, processFT0M, "Select FT0M centrality as multiplicity", false);
 
   void processFT0C(aod::CentFT0Cs const& centralities)
   {
-    for (auto& c : centralities) {
-      output(c.centFT0C());
+    for (const auto& c : centralities) {
+      output(c.centFT0C(), aod::cfmultiplicity::FT0C);
     }
   }
   PROCESS_SWITCH(MultiplicitySelector, processFT0C, "Select FT0C centrality as multiplicity", false);
 
   void processFT0CVariant1(aod::CentFT0CVariant1s const& centralities)
   {
-    for (auto& c : centralities) {
-      output(c.centFT0CVariant1());
+    for (const auto& c : centralities) {
+      output(c.centFT0CVariant1(), aod::cfmultiplicity::FT0CVariant1);
     }
   }
   PROCESS_SWITCH(MultiplicitySelector, processFT0CVariant1, "Select FT0CVariant1 centrality as multiplicity", false);
 
   void processFT0CVariant2(aod::CentFT0CVariant2s const& centralities)
   {
-    for (auto& c : centralities) {
-      output(c.centFT0CVariant2());
+    for (const auto& c : centralities) {
+      output(c.centFT0CVariant2(), aod::cfmultiplicity::FT0CVariant2);
     }
   }
   PROCESS_SWITCH(MultiplicitySelector, processFT0CVariant2, "Select FT0CVariant2 centrality as multiplicity", false);
 
   void processFT0A(aod::CentFT0As const& centralities)
   {
-    for (auto& c : centralities) {
-      output(c.centFT0A());
+    for (const auto& c : centralities) {
+      output(c.centFT0A(), aod::cfmultiplicity::FT0A);
     }
   }
   PROCESS_SWITCH(MultiplicitySelector, processFT0A, "Select FT0A centrality as multiplicity", false);
 
   void processCentNGlobal(aod::CentNGlobals const& centralities)
   {
-    for (auto& c : centralities) {
-      output(c.centNGlobal());
+    for (const auto& c : centralities) {
+      output(c.centNGlobal(), aod::cfmultiplicity::CentNGlobal);
     }
   }
   PROCESS_SWITCH(MultiplicitySelector, processCentNGlobal, "Select CentNGlobal centrality as multiplicity", false);
 
   void processRun2V0M(aod::CentRun2V0Ms const& centralities)
   {
-    for (auto& c : centralities) {
-      output(c.centRun2V0M());
+    for (const auto& c : centralities) {
+      output(c.centRun2V0M(), aod::cfmultiplicity::Run2V0M);
     }
   }
   PROCESS_SWITCH(MultiplicitySelector, processRun2V0M, "Select V0M centrality as multiplicity", true);
 
   void processMCGen(aod::McCollision const&, aod::McParticles const& particles)
   {
-    output(particles.size());
+    output(particles.size(), aod::cfmultiplicity::MCParticles);
   }
   PROCESS_SWITCH(MultiplicitySelector, processMCGen, "Select MC particle count as multiplicity", false);
 };
