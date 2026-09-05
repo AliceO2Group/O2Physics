@@ -15,12 +15,16 @@
 #include "tableHMPID.h"
 
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TMath.h>
 #include <TString.h>
+
+#include <cmath>
 
 using namespace o2;
 using namespace o2::framework;
@@ -87,11 +91,11 @@ struct HmpidDeuteron {
   Configurable<float> massMax{"massMax", 10.0f, "Mass max"};
 
   // variables for chamber_number and HVs/PCs
-  const int rich0 = 0, rich1 = 1, rich2 = 2, rich3 = 3, rich4 = 4, rich5 = 5, rich6 = 6;
-  static const int nCh = 7;
-  const float nmean = 1.28947; // meanIdxRad(); method from param not working, using value from HMPIDBase/Param.cxx
+  static constexpr int Rich0 = 0, Rich1 = 1, Rich2 = 2, Rich3 = 3, Rich4 = 4, Rich5 = 5, Rich6 = 6;
+  static constexpr int Nch = 7;
+  static constexpr float Nmean = 1.28947; // meanIdxRad(); method from param not working, using value from HMPIDBase/Param.cxx
 
-  void init(InitContext const&)
+  void init(o2::framework::InitContext const&)
   {
 
     // Axes for histograms
@@ -120,8 +124,6 @@ struct HmpidDeuteron {
 
     registryDA.add("De_Pos_Q_8cm", "De_Pos_Q_8cm", HistType::kTH2F, {axisMom, axisCharge});
     registryDA.add("De_Pos_Q_4cm", "De_Pos_Q_4cm", HistType::kTH2F, {axisMom, axisCharge});
-
-    registryDA.add("De_Pos_momentum", "De_Pos_momentum", HistType::kTH2F, {{100, 0.0, 5.0, "#it{p}_{vtx} (GeV/#it{c})"}, {100, 0.0, 5.0, "#it{p}_{hmpid} (GeV/#it{c})"}});
 
     // nsigma plots
     registryDA.add("nSigmaTPC_vs_momHMPID_Cut_DePos", "nSigmaTPC_vs_momHMPID_Cut_DePos", HistType::kTH2F, {axisMom, axisNsigmaTPC});
@@ -166,8 +168,9 @@ struct HmpidDeuteron {
 
     registryDA.add("hMass", "hMass", kTH1F, {axisMass});
     registryDA.add("hMass_postDeuteron", "hMass_postDeuteron", kTH1F, {axisMass});
+    registryDA.add("hMass_Vs_centrality", "hMass_Vs_centrality", kTH2F, {axisMass, {100, 0.0f, 100.0f, "centrality (%)"}});
 
-    for (int iCh = 0; iCh < nCh; iCh++) {
+    for (int iCh = 0; iCh < Nch; iCh++) {
       registryDA.add(Form("De_Pos_deltaR_%d", iCh), Form("De_Pos_deltaR_%d", iCh), HistType::kTH1F, {axisDeltaR});
       registryDA.add(Form("De_Neg_deltaR_%d", iCh), Form("De_Neg_deltaR_%d", iCh), HistType::kTH1F, {axisDeltaR});
       registryDA.add(Form("hEta_%d", iCh), Form("hEta_%d", iCh), HistType::kTH1F, {axisEta});
@@ -182,20 +185,27 @@ struct HmpidDeuteron {
       // -------------------------
       // track filters
       // -------------------------
-      if (hmpid.itsNCluster() < minReqClusterITS)
+      if (hmpid.itsNCluster() < minReqClusterITS) {
         continue;
-      if (hmpid.tpcNCluster() < minTPCnClsFound)
+      }
+      if (hmpid.tpcNCluster() < minTPCnClsFound) {
         continue;
-      if (hmpid.tpcNClsCrossedRows() < minNCrossedRowsTPC)
+      }
+      if (hmpid.tpcNClsCrossedRows() < minNCrossedRowsTPC) {
         continue;
-      if (hmpid.tpcChi2() > maxChi2TPC)
+      }
+      if (hmpid.tpcChi2() > maxChi2TPC) {
         continue;
-      if (hmpid.itsChi2() > maxChi2ITS)
+      }
+      if (hmpid.itsChi2() > maxChi2ITS) {
         continue;
-      if (std::abs(hmpid.dcaXY()) > maxDCAxy)
+      }
+      if (std::abs(hmpid.dcaXY()) > maxDCAxy) {
         continue;
-      if (std::abs(hmpid.dcaZ()) > maxDCAz)
+      }
+      if (std::abs(hmpid.dcaZ()) > maxDCAz) {
         continue;
+      }
 
       // -------------------------
       // derived quantities
@@ -208,10 +218,10 @@ struct HmpidDeuteron {
       const float dr = std::hypot(dx - offsetX, dy - offsetY);
 
       const float mass =
-        std::pow(nmean * momAbs * std::cos(hmpid.chAngle()), 2) -
+        std::pow(Nmean * momAbs * std::cos(hmpid.chAngle()), 2) -
         std::pow(momAbs, 2);
 
-      const int chamber = hmpid.chamber();
+      const int chamber = static_cast<int>(hmpid.chamber());
       const bool isPos = momHmpid > 0;
       const bool isNeg = momHmpid < 0;
 
@@ -222,37 +232,39 @@ struct HmpidDeuteron {
       registryDA.fill(HIST("hPhi"), hmpid.phiTrack());
       registryDA.fill(HIST("hMomentumHmpid"), momHmpid);
 
-      if (hmpid.chAngle() > 0)
+      if (hmpid.chAngle() > 0) {
         registryDA.fill(HIST("hMass"), mass);
+        registryDA.fill(HIST("hMass_Vs_centrality"), mass, hmpid.centrality());
+      }
 
       // -------------------------
       // RICH chamber maps (0–6)
       // -------------------------
-      if (chamber == rich0) {
+      if (chamber == Rich0) {
         registryDA.fill(HIST("hEta_0"), hmpid.etaTrack());
         registryDA.fill(HIST("hPhi_0"), hmpid.phiTrack());
       }
-      if (chamber == rich1) {
+      if (chamber == Rich1) {
         registryDA.fill(HIST("hEta_1"), hmpid.etaTrack());
         registryDA.fill(HIST("hPhi_1"), hmpid.phiTrack());
       }
-      if (chamber == rich2) {
+      if (chamber == Rich2) {
         registryDA.fill(HIST("hEta_2"), hmpid.etaTrack());
         registryDA.fill(HIST("hPhi_2"), hmpid.phiTrack());
       }
-      if (chamber == rich3) {
+      if (chamber == Rich3) {
         registryDA.fill(HIST("hEta_3"), hmpid.etaTrack());
         registryDA.fill(HIST("hPhi_3"), hmpid.phiTrack());
       }
-      if (chamber == rich4) {
+      if (chamber == Rich4) {
         registryDA.fill(HIST("hEta_4"), hmpid.etaTrack());
         registryDA.fill(HIST("hPhi_4"), hmpid.phiTrack());
       }
-      if (chamber == rich5) {
+      if (chamber == Rich5) {
         registryDA.fill(HIST("hEta_5"), hmpid.etaTrack());
         registryDA.fill(HIST("hPhi_5"), hmpid.phiTrack());
       }
-      if (chamber == rich6) {
+      if (chamber == Rich6) {
         registryDA.fill(HIST("hEta_6"), hmpid.etaTrack());
         registryDA.fill(HIST("hPhi_6"), hmpid.phiTrack());
       }
@@ -261,18 +273,21 @@ struct HmpidDeuteron {
       // deuteron candidate cuts - TPC
       // -------------------------
       if (hmpid.tpcNSigmaDe() < nsigmaTPCMin ||
-          hmpid.tpcNSigmaDe() > nsigmaTPCMax)
+          hmpid.tpcNSigmaDe() > nsigmaTPCMax) {
         continue;
+      }
 
       // -------------------------
       // post TPC cut
       // -------------------------
-      if (isPos)
+      if (isPos) {
         registryDA.fill(HIST("nSigmaTPC_vs_momHMPID_Cut_DePos"),
                         momAbs, hmpid.tpcNSigmaDe());
-      if (isNeg)
+      }
+      if (isNeg) {
         registryDA.fill(HIST("nSigmaTPC_vs_momHMPID_Cut_DeNeg"),
                         momAbs, hmpid.tpcNSigmaDe());
+      }
 
       registryDA.fill(HIST("hMass_postDeuteron"), mass);
 
@@ -280,8 +295,9 @@ struct HmpidDeuteron {
       // deuteron candidate cuts - TOF
       // -------------------------
       if (hmpid.tofNSigmaDe() < nsigmaTOFMin ||
-          hmpid.tofNSigmaDe() > nsigmaTOFMax)
+          hmpid.tofNSigmaDe() > nsigmaTOFMax) {
         continue;
+      }
 
       // -------------------------
       // TOF nsigma
@@ -289,8 +305,6 @@ struct HmpidDeuteron {
       if (isPos) {
         registryDA.fill(HIST("nSigmaTOF_vs_momHMPID_Cut_DePos"),
                         momAbs, hmpid.tofNSigmaDe());
-        registryDA.fill(HIST("De_Pos_momentum"),
-                        hmpid.momentumTrack(), momAbs);
       }
 
       if (isNeg) {
@@ -305,47 +319,61 @@ struct HmpidDeuteron {
       // -------------------------
       // deltaR per chamber (Pos/Neg)
       // -------------------------
-      if (chamber == rich0) {
-        if (isPos)
+      if (chamber == Rich0) {
+        if (isPos) {
           registryDA.fill(HIST("De_Pos_deltaR_0"), dr);
-        if (isNeg)
+        }
+        if (isNeg) {
           registryDA.fill(HIST("De_Neg_deltaR_0"), dr);
+        }
       }
-      if (chamber == rich1) {
-        if (isPos)
+      if (chamber == Rich1) {
+        if (isPos) {
           registryDA.fill(HIST("De_Pos_deltaR_1"), dr);
-        if (isNeg)
+        }
+        if (isNeg) {
           registryDA.fill(HIST("De_Neg_deltaR_1"), dr);
+        }
       }
-      if (chamber == rich2) {
-        if (isPos)
+      if (chamber == Rich2) {
+        if (isPos) {
           registryDA.fill(HIST("De_Pos_deltaR_2"), dr);
-        if (isNeg)
+        }
+        if (isNeg) {
           registryDA.fill(HIST("De_Neg_deltaR_2"), dr);
+        }
       }
-      if (chamber == rich3) {
-        if (isPos)
+      if (chamber == Rich3) {
+        if (isPos) {
           registryDA.fill(HIST("De_Pos_deltaR_3"), dr);
-        if (isNeg)
+        }
+        if (isNeg) {
           registryDA.fill(HIST("De_Neg_deltaR_3"), dr);
+        }
       }
-      if (chamber == rich4) {
-        if (isPos)
+      if (chamber == Rich4) {
+        if (isPos) {
           registryDA.fill(HIST("De_Pos_deltaR_4"), dr);
-        if (isNeg)
+        }
+        if (isNeg) {
           registryDA.fill(HIST("De_Neg_deltaR_4"), dr);
+        }
       }
-      if (chamber == rich5) {
-        if (isPos)
+      if (chamber == Rich5) {
+        if (isPos) {
           registryDA.fill(HIST("De_Pos_deltaR_5"), dr);
-        if (isNeg)
+        }
+        if (isNeg) {
           registryDA.fill(HIST("De_Neg_deltaR_5"), dr);
+        }
       }
-      if (chamber == rich6) {
-        if (isPos)
+      if (chamber == Rich6) {
+        if (isPos) {
           registryDA.fill(HIST("De_Pos_deltaR_6"), dr);
-        if (isNeg)
+        }
+        if (isNeg) {
           registryDA.fill(HIST("De_Neg_deltaR_6"), dr);
+        }
       }
 
       // -------------------------
