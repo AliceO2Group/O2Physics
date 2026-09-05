@@ -19,5 +19,5 @@
 o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)
 {
   return o2::framework::WorkflowSpec{
-    adaptAnalysisTask<PhotonConversionBuilder<o2::aod::V0PhotonsKF, o2::aod::V0Legs, o2::aod::V0LegsXYZ, o2::aod::V0LegsDeDxMC, o2::aod::V0PhotonsPhiVPsi>>(context, o2::framework::TaskName{"photon-conversion-builder"})};
+    adaptAnalysisTask<PhotonConversionBuilder<o2::aod::V0PhotonsKFTmp, o2::aod::V0LegsTmp, o2::aod::V0LegsXYZTmp, o2::aod::V0LegsDeDxMCTmp, o2::aod::V0PhotonsPhiVPsiTmp>>(context, o2::framework::TaskName{"photon-conversion-builder-tmptable"})};
 }

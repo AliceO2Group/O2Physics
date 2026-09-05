@@ -135,7 +135,11 @@ struct filterEoI {
         fRegistry.fill(HIST("hEventCounter"), 8);
       }
 
-      emeoi(does_electron_exist || does_fwdmuon_exist || does_pcm_exist || does_electronda_exist);
+      if constexpr (static_cast<bool>(system & kPCM) && static_cast<bool>(system & kElectronFromDalitz)) {
+        emeoi(does_pcm_exist && does_electronda_exist);
+      } else {
+        emeoi(does_electron_exist || does_fwdmuon_exist || does_pcm_exist || does_electronda_exist);
+      }
 
     } // end of collision loop
 
@@ -171,6 +175,12 @@ struct filterEoI {
     selectEoI<sysflag>(collisions, electrons, muons, v0s, nullptr);
   }
 
+  void process_ElectronFromDalitz(aod::Collisions const& collisions, aod::EMPrimaryElectronsFromDalitz const& electronsda)
+  {
+    const uint8_t sysflag = kElectronFromDalitz;
+    selectEoI<sysflag>(collisions, nullptr, nullptr, nullptr, electronsda);
+  }
+
   void process_PCM_ElectronFromDalitz(aod::Collisions const& collisions, aod::V0PhotonsKF const& v0s, aod::EMPrimaryElectronsFromDalitz const& electronsda)
   {
     const uint8_t sysflag = kPCM | kElectronFromDalitz;
@@ -189,6 +199,7 @@ struct filterEoI {
   PROCESS_SWITCH(filterEoI, process_PCM, "create filter bit for PCM", false);
   PROCESS_SWITCH(filterEoI, process_Electron_FwdMuon, "create filter bit for Electron, FwdMuon", false);
   PROCESS_SWITCH(filterEoI, process_Electron_FwdMuon_PCM, "create filter bit for Electron, FwdMuon, PCM", false);
+  PROCESS_SWITCH(filterEoI, process_ElectronFromDalitz, "create filter bit for ElectronFromDalitz", false);
   PROCESS_SWITCH(filterEoI, process_PCM_ElectronFromDalitz, "create filter bit for PCM, ElectronFromDalitz", false);
   PROCESS_SWITCH(filterEoI, processDummy, "processDummy", true);
 };
