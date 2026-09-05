@@ -189,7 +189,7 @@ struct CorrelationTask {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   int mCachedRunNumber{-1}; // cached run number for magnetic field -- to avoid re-fetching the magnetic field for the same run, assuming that the magnetic field remains the same for the same run
-  int mCachedMagField{0}; // cached magnetic field --reduces number of calls to the CCDB
+  int mCachedMagField{0};   // cached magnetic field --reduces number of calls to the CCDB
 
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>>;
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>;
@@ -337,7 +337,7 @@ struct CorrelationTask {
 
   int getMagneticField(int runNumber, uint64_t timestamp)
   {
-    static constexpr const char* kGRPPathRun2 = "GLO/GRP/GRP"; // fixed path for now, can be made into a config
+    static constexpr const char* kGRPPathRun2 = "GLO/GRP/GRP";            // fixed path for now, can be made into a config
     static constexpr const char* kGRPPathRun3 = "GLO/Config/GRPMagField"; // fixed path for now, can be made into a config
 
     if (runNumber == mCachedRunNumber) {
