@@ -17,6 +17,7 @@
 #define PWGJE_DATAMODEL_EMCALCLUSTERDEFINITION_H_
 
 #include <string>
+#include <utility>
 
 namespace o2::aod
 {
@@ -50,7 +51,7 @@ struct EMCALClusterDefinition {
     algorithm = pAlgorithm;
     storageID = pStorageID;
     selectedCellType = pSelectedCellType;
-    name = pName;
+    name = std::move(pName);
     seedEnergy = pSeedEnergy;
     minCellEnergy = pMinCellEnergy;
     timeMin = pTimeMin;

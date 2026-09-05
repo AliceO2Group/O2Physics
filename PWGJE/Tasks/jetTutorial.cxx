@@ -335,7 +335,7 @@ struct JetTutorialTask {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
-    for (auto jet : jets) {
+    for (const auto& jet : jets) {
       registry.fill(HIST("h_jet_pt"), jet.pt());
       registry.fill(HIST("h_jet_pt_rhosub"), jet.pt() - (collision.rho() * jet.area()));
       registry.fill(HIST("h_jet_eta"), jet.eta());
@@ -349,7 +349,7 @@ struct JetTutorialTask {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
-    for (auto jet : jets) {
+    for (const auto& jet : jets) {
       registry.fill(HIST("h_jet_pt_constsub"), jet.pt());
       registry.fill(HIST("h_jet_eta"), jet.eta());
       registry.fill(HIST("h_jet_phi"), jet.phi());
@@ -362,7 +362,7 @@ struct JetTutorialTask {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
-    for (auto jet : jets) {
+    for (const auto& jet : jets) {
       registry.fill(HIST("h_jet_pt_constsub"), jet.pt());
       registry.fill(HIST("h_jet_eta"), jet.eta());
       registry.fill(HIST("h_jet_phi"), jet.phi());
