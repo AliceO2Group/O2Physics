@@ -285,6 +285,7 @@ struct TwoParticleCorrelationsMpi {
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>;
 
   using DerivedCollisions = soa::Filtered<aod::CFCollisions>;
+  using DerivedCollisionsCorrected = soa::Filtered<aod::CFCollisionsWithExtra>;
   using DerivedTracks = soa::Filtered<aod::CFTracks>;
 
   void init(o2::framework::InitContext&)
@@ -295,7 +296,15 @@ struct TwoParticleCorrelationsMpi {
     if (cfgCentBinsForMC < 0 || cfgCentBinsForMC > 2) {
       LOGF(fatal, "Unsupported cfgCentBinsForMC=%d; use 0 (generated multiplicity), 1 (all reconstructed collisions), or 2 (first reconstructed collision only for efficiency)", cfgCentBinsForMC.value);
     }
-    if (doprocessMCSameDerived && (doprocessSameDerived || doprocessSameDerivedMultSet)) {
+    const int enabledDerivedSameProcesses = doprocessSameDerived + doprocessSameDerivedCorrected + doprocessSameDerivedMultSet + doprocessSameDerivedMultSetCorrected;
+    if (enabledDerivedSameProcesses > 1) {
+      LOGF(fatal, "Only one reconstructed derived same-event process can be enabled");
+    }
+    const int enabledDerivedMixedProcesses = doprocessMixedDerived + doprocessMixedDerivedCorrected + doprocessMixedDerivedMultSet + doprocessMixedDerivedMultSetCorrected;
+    if (enabledDerivedMixedProcesses > 1) {
+      LOGF(fatal, "Only one reconstructed derived mixed-event process can be enabled");
+    }
+    if (doprocessMCSameDerived && enabledDerivedSameProcesses > 0) {
       LOGF(fatal, "processMCSameDerived is mutually exclusive with the reconstructed derived same-event processes because it also fills those outputs");
     }
     if (doprocessSameGenMC && doprocessMCSameDerived) {
@@ -351,7 +360,7 @@ struct TwoParticleCorrelationsMpi {
 
     registry.add("yields", "multiplicity/centrality vs pT vs eta", {HistType::kTH3F, {{100, 0, 100, "/multiplicity/centrality"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
     registry.add("etaphi", "multiplicity/centrality vs eta vs phi", {HistType::kTH3F, {{100, 0, 100, "multiplicity/centrality"}, {100, -2, 2, "#eta"}, {200, 0, o2::constants::math::TwoPI, "#varphi"}}});
-    if (doprocessSameDerivedMultSet) {
+    if (doprocessSameDerivedMultSet || doprocessSameDerivedMultSetCorrected) {
       if (cfgMultCorrelationsMask == 0) {
         LOGF(fatal, "cfgMultCorrelationsMask can not be 0 when MultSet process functions are in use.");
       }
@@ -568,6 +577,18 @@ struct TwoParticleCorrelationsMpi {
 
   template <class T>
   using HasMultSet = decltype(std::declval<T&>().multiplicities());
+
+  template <class T>
+  using HasCorrectedMultiplicity = decltype(std::declval<T&>().multiplicityCorrected());
+
+  template <typename TCollision>
+  static float getAnalysisMultiplicity(const TCollision& collision)
+  {
+    if constexpr (std::experimental::is_detected<HasCorrectedMultiplicity, TCollision>::value) {
+      return collision.multiplicityCorrected();
+    }
+    return collision.multiplicity();
+  }
 
   template <typename TCollision, typename TTracks>
   void fillQA(const TCollision& collision, float multiplicity, const TTracks& tracks)
@@ -1684,22 +1705,22 @@ struct TwoParticleCorrelationsMpi {
   template <class CollType, class TTracks1, class TTracks2>
   void processSameDerivedT(CollType const& collision, TTracks1 const& tracks1, TTracks2 const& tracks2, const int* trueNMPI = nullptr)
   {
-    using BinningTypeDerived = ColumnBinningPolicy<aod::collision::PosZ, aod::cfcollision::Multiplicity>;
-    BinningTypeDerived configurableBinningDerived{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
+    auto getMultiplicity = [](auto& col) { return getAnalysisMultiplicity(col); };
+    using BinningTypeDerived = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
+    BinningTypeDerived configurableBinningDerived{{getMultiplicity}, {axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
+    const auto multiplicity = getAnalysisMultiplicity(collision);
     if (cfgVerbosity > 0) {
-      LOGF(info, "processSameDerivedT: Tracks for collision: %d/%d | Vertex: %.1f | Multiplicity/Centrality: %.1f", tracks1.size(), tracks2.size(), collision.posZ(), collision.multiplicity());
+      LOGF(info, "processSameDerivedT: Tracks for collision: %d/%d | Vertex: %.1f | Multiplicity/Centrality: %.1f", tracks1.size(), tracks2.size(), collision.posZ(), multiplicity);
     }
     loadEfficiency(collision.timestamp());
     loadCcdbYieldTemplates(collision.timestamp());
-
-    const auto multiplicity = collision.multiplicity();
 
     int field = 0;
     if (cfgTwoTrackCut > 0) {
       field = getMagneticField(collision.timestamp());
     }
 
-    int bin = configurableBinningDerived.getBin({collision.posZ(), collision.multiplicity()});
+    int bin = configurableBinningDerived.getBin(std::tuple(collision.posZ(), multiplicity));
     registry.fill(HIST("eventcount_same"), bin);
     registry.fill(HIST("trackcount_same"), bin, tracks1.size());
     if constexpr (std::experimental::is_detected<HasDecay, typename TTracks1::iterator>::value) {
@@ -1762,6 +1783,12 @@ struct TwoParticleCorrelationsMpi {
   }
   PROCESS_SWITCH(TwoParticleCorrelationsMpi, processSameDerived, "Process same event on derived data", false);
 
+  void processSameDerivedCorrected(DerivedCollisionsCorrected::iterator const& collision, soa::Filtered<aod::CFTracks> const& tracks)
+  {
+    processSameDerivedT(collision, tracks, tracks);
+  }
+  PROCESS_SWITCH(TwoParticleCorrelationsMpi, processSameDerivedCorrected, "Process same event on derived data with corrected multiplicity", false);
+
   void processSameDerivedMultSet(soa::Filtered<soa::Join<aod::CFCollisions, aod::CFMultSets>>::iterator const& collision, soa::Filtered<aod::CFTracks> const& tracks)
   {
     if (!passOutlier(collision)) {
@@ -1770,6 +1797,15 @@ struct TwoParticleCorrelationsMpi {
     processSameDerivedT(collision, tracks, tracks);
   }
   PROCESS_SWITCH(TwoParticleCorrelationsMpi, processSameDerivedMultSet, "Process same event on derived data with multiplicity sets", false);
+
+  void processSameDerivedMultSetCorrected(soa::Filtered<soa::Join<aod::CFCollisions, aod::CFCollisionsExtra, aod::CFMultSets>>::iterator const& collision, soa::Filtered<aod::CFTracks> const& tracks)
+  {
+    if (!passOutlier(collision)) {
+      return;
+    }
+    processSameDerivedT(collision, tracks, tracks);
+  }
+  PROCESS_SWITCH(TwoParticleCorrelationsMpi, processSameDerivedMultSetCorrected, "Process same event on derived data with corrected multiplicity and multiplicity sets", false);
 
   using BinningTypeAOD = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentRun2V0M>;
   void processMixedAOD(AodCollisions const& collisions, AodTracks const& tracks, aod::BCsWithTimestamps const&)
@@ -1832,7 +1868,7 @@ struct TwoParticleCorrelationsMpi {
         } else {
           (void)this; // fix compile error on unused 'this' capture
         }
-        return col.multiplicity();
+        return getAnalysisMultiplicity(col);
       };
 
     using BinningTypeDerived = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
@@ -1855,7 +1891,7 @@ struct TwoParticleCorrelationsMpi {
       }
 
       if (cfgVerbosity > 0) {
-        LOGF(info, "processMixedDerived: Mixed collisions bin: %d pair: [%d, %d] %d (%.3f, %.3f), %d (%.3f, %.3f)", bin, it.isNewWindow(), it.currentWindowNeighbours(), collision1.globalIndex(), collision1.posZ(), collision1.multiplicity(), collision2.globalIndex(), collision2.posZ(), collision2.multiplicity());
+        LOGF(info, "processMixedDerived: Mixed collisions bin: %d pair: [%d, %d] %d (%.3f, %.3f), %d (%.3f, %.3f)", bin, it.isNewWindow(), it.currentWindowNeighbours(), collision1.globalIndex(), collision1.posZ(), multiplicity, collision2.globalIndex(), collision2.posZ(), getAnalysisMultiplicity(collision2));
       }
 
       bool hasEfficiencyMixed = (cfg.mEfficiencyAssociated != nullptr || cfg.mEfficiencyTrigger != nullptr);
@@ -1869,14 +1905,14 @@ struct TwoParticleCorrelationsMpi {
         if (cfgUserAxis == EventSeedAxis) {
           loadCcdbYieldTemplates(collision1.timestamp());
           if constexpr (std::is_same_v<std::remove_cvref_t<TA>, std::remove_cvref_t<TB>>) {
-            triggerEventSeed = getEventSeedUserAxisValue(collision1.multiplicity(), estimateEventSeedWithoutFilling<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, collision1.multiplicity(), collision1.posZ(), field));
+            triggerEventSeed = getEventSeedUserAxisValue(multiplicity, estimateEventSeedWithoutFilling<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, multiplicity, collision1.posZ(), field));
           } else {
             LOGF(fatal, "Event-seed user axis for mixed events requires the same trigger and associated track table so the trigger event can be estimated independently");
           }
         }
 
         if (fillRecoMixed) {
-          fillContainerEvent(mixed, collision1.multiplicity(), CorrelationContainer::kCFStepReconstructed);
+          fillContainerEvent(mixed, multiplicity, CorrelationContainer::kCFStepReconstructed);
         }
       }
 
@@ -1885,14 +1921,14 @@ struct TwoParticleCorrelationsMpi {
       registry.fill(HIST("eventcount_mixed"), bin);
       registry.fill(HIST("trackcount_mixed"), bin, tracks1.size(), tracks2.size());
       if (fillRecoMixed) {
-        fillCorrelations<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, tracks2, collision1.multiplicity(), collision1.posZ(), field, eventWeight, nullptr, nullptr, nullptr, triggerEventSeed);
+        fillCorrelations<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, tracks2, multiplicity, collision1.posZ(), field, eventWeight, nullptr, nullptr, nullptr, triggerEventSeed);
       }
 
       if (hasEfficiencyMixed) {
         if (it.isNewWindow()) {
-          fillContainerEvent(mixed, collision1.multiplicity(), CorrelationContainer::kCFStepCorrected);
+          fillContainerEvent(mixed, multiplicity, CorrelationContainer::kCFStepCorrected);
         }
-        fillCorrelations<CorrelationContainer::kCFStepCorrected>(mixed, tracks1, tracks2, collision1.multiplicity(), collision1.posZ(), field, eventWeight, nullptr, nullptr, nullptr, triggerEventSeed);
+        fillCorrelations<CorrelationContainer::kCFStepCorrected>(mixed, tracks1, tracks2, multiplicity, collision1.posZ(), field, eventWeight, nullptr, nullptr, nullptr, triggerEventSeed);
       }
     }
   }
@@ -1903,11 +1939,23 @@ struct TwoParticleCorrelationsMpi {
   }
   PROCESS_SWITCH(TwoParticleCorrelationsMpi, processMixedDerived, "Process mixed events on derived data", false);
 
+  void processMixedDerivedCorrected(DerivedCollisionsCorrected const& collisions, DerivedTracks const& tracks)
+  {
+    processMixedDerivedT(collisions, tracks);
+  }
+  PROCESS_SWITCH(TwoParticleCorrelationsMpi, processMixedDerivedCorrected, "Process mixed events on derived data with corrected multiplicity", false);
+
   void processMixedDerivedMultSet(soa::Filtered<soa::Join<aod::CFCollisions, aod::CFMultSets>> const& collisions, DerivedTracks const& tracks)
   {
     processMixedDerivedT(collisions, tracks);
   }
   PROCESS_SWITCH(TwoParticleCorrelationsMpi, processMixedDerivedMultSet, "Process mixed events on derived data with multiplicity sets", false);
+
+  void processMixedDerivedMultSetCorrected(soa::Filtered<soa::Join<aod::CFCollisions, aod::CFCollisionsExtra, aod::CFMultSets>> const& collisions, DerivedTracks const& tracks)
+  {
+    processMixedDerivedT(collisions, tracks);
+  }
+  PROCESS_SWITCH(TwoParticleCorrelationsMpi, processMixedDerivedMultSetCorrected, "Process mixed events on derived data with corrected multiplicity and multiplicity sets", false);
 
   int getSpecies(int pdgCode)
   {
@@ -2029,7 +2077,7 @@ struct TwoParticleCorrelationsMpi {
       }
     }
 
-    if (!(doprocessMCSameDerived || doprocessSameDerived || doprocessSameDerivedMultSet)) {
+    if (!(doprocessMCSameDerived || doprocessSameDerived || doprocessSameDerivedCorrected || doprocessSameDerivedMultSet || doprocessSameDerivedMultSetCorrected)) {
       if constexpr (std::experimental::is_detected<HasDecay, typename Particles1::iterator>::value) {
         fillQA(mcCollision, multiplicity, mcCollision.posZ(), mcParticles1, mcParticles2);
       } else {
