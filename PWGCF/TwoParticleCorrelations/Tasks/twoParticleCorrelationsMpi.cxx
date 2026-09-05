@@ -287,13 +287,14 @@ struct TwoParticleCorrelationsMpi {
   using DerivedCollisions = soa::Filtered<aod::CFCollisions>;
   using DerivedCollisionsCorrected = soa::Filtered<aod::CFCollisionsWithExtra>;
   using DerivedTracks = soa::Filtered<aod::CFTracks>;
+  static constexpr int McEfficiencySingleRecoCollisionMode = 2;
 
   void init(o2::framework::InitContext&)
   {
     if (cfgUserAxis < NoUserAxis || cfgUserAxis > EventSeedAxis) {
       LOGF(fatal, "Unsupported cfgUserAxis=%d; use 0 (off), 1 (invariant mass), or 2 (event seed)", cfgUserAxis.value);
     }
-    if (cfgCentBinsForMC < 0 || cfgCentBinsForMC > 2) {
+    if (cfgCentBinsForMC < 0 || cfgCentBinsForMC > McEfficiencySingleRecoCollisionMode) {
       LOGF(fatal, "Unsupported cfgCentBinsForMC=%d; use 0 (generated multiplicity), 1 (all reconstructed collisions), or 2 (first reconstructed collision only for efficiency)", cfgCentBinsForMC.value);
     }
     const int enabledDerivedSameProcesses = doprocessSameDerived + doprocessSameDerivedCorrected + doprocessSameDerivedMultSet + doprocessSameDerivedMultSetCorrected;
@@ -1705,7 +1706,7 @@ struct TwoParticleCorrelationsMpi {
   template <class CollType, class TTracks1, class TTracks2>
   void processSameDerivedT(CollType const& collision, TTracks1 const& tracks1, TTracks2 const& tracks2, const int* trueNMPI = nullptr)
   {
-    auto getMultiplicity = [](auto& col) { return getAnalysisMultiplicity(col); };
+    auto getMultiplicity = [](const auto& col) { return getAnalysisMultiplicity(col); };
     using BinningTypeDerived = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
     BinningTypeDerived configurableBinningDerived{{getMultiplicity}, {axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
     const auto multiplicity = getAnalysisMultiplicity(collision);
@@ -1860,7 +1861,7 @@ struct TwoParticleCorrelationsMpi {
   void processMixedDerivedT(CollType const& collisions, TrackTypes&&... tracks)
   {
     auto getMultiplicity =
-      [this](auto& col) {
+      [this](const auto& col) {
         if constexpr (std::experimental::is_detected<HasMultSet, CollType>::value) {
           if (!passOutlier(col)) {
             return -1.0f;
@@ -1988,7 +1989,7 @@ struct TwoParticleCorrelationsMpi {
     }
 
     auto multiplicity = mcCollision.multiplicity();
-    const bool useSingleRecoCollision = cfgCentBinsForMC == 2;
+    const bool useSingleRecoCollision = cfgCentBinsForMC == McEfficiencySingleRecoCollisionMode;
     if (cfgCentBinsForMC > 0) {
       if (collisions.size() == 0) {
         return;

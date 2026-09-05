@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+// o2-linter: disable=name/workflow-file (historic file contains several table-producer tasks)
 #include "PWGCF/DataModel/CorrelationsDerived.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
@@ -151,6 +152,7 @@ struct FilterCF {
 
   // Own local histograms independently of their input file. CCDB owns its objects.
   std::unique_ptr<THn> localMultiplicityEfficiency;
+  static constexpr int MultiplicityEfficiencyDimensions = 4;
 
   // persistent caches
   std::vector<bool> mcReconstructedCache;
@@ -167,8 +169,13 @@ struct FilterCF {
       }
       if (cfgLocalEfficiency == 1) {
         std::unique_ptr<TFile> file(TFile::Open(cfgEfficiencyMultiplicity.value.c_str(), "READ"));
-        if (!file || file->IsZombie()) {
+        if (!file) {
           LOGF(fatal, "Could not open multiplicity efficiency file %s", cfgEfficiencyMultiplicity.value.c_str());
+          return;
+        }
+        if (file->IsZombie()) {
+          LOGF(fatal, "Multiplicity efficiency file %s is invalid", cfgEfficiencyMultiplicity.value.c_str());
+          return;
         }
         auto* efficiency = dynamic_cast<THn*>(file->Get("ccdb_object"));
         validateMultiplicityEfficiency(efficiency);
@@ -194,7 +201,7 @@ struct FilterCF {
   }
 
   template <typename TCollision>
-  bool keepCollision(TCollision& collision)
+  bool keepCollision(const TCollision& collision)
   {
     bool isMultSelected = false;
     if (collision.multiplicity() >= cfgMinMultiplicity)
@@ -202,23 +209,23 @@ struct FilterCF {
 
     if (cfgTrigger == 0) {
       return true;
-    } else if (cfgTrigger == 7) {
+    } else if (cfgTrigger == 7) { // o2-linter: disable=magic-number (documented legacy trigger-selection code)
       return isMultSelected && collision.alias_bit(kINT7) && collision.sel7();
-    } else if (cfgTrigger == 8) {
+    } else if (cfgTrigger == 8) { // o2-linter: disable=magic-number (documented legacy trigger-selection code)
       return isMultSelected && collision.sel8();
-    } else if (cfgTrigger == 9) { // relevant only for Pb-Pb
+    } else if (cfgTrigger == 9) { // relevant only for Pb-Pb; o2-linter: disable=magic-number (documented legacy trigger-selection code)
       return isMultSelected && collision.sel8() && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && collision.selection_bit(aod::evsel::kIsGoodITSLayersAll);
-    } else if (cfgTrigger == 10) { // TVX trigger only (sel8 selection before April, 2024)
+    } else if (cfgTrigger == 10) { // TVX trigger only (sel8 selection before April, 2024); o2-linter: disable=magic-number (documented legacy trigger-selection code)
       return isMultSelected && collision.selection_bit(aod::evsel::kIsTriggerTVX);
-    } else if (cfgTrigger == 11) { // sel8 selection for MC
+    } else if (cfgTrigger == 11) { // sel8 selection for MC; o2-linter: disable=magic-number (documented legacy trigger-selection code)
       return isMultSelected && collision.selection_bit(aod::evsel::kIsTriggerTVX) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder);
-    } else if (cfgTrigger == 12) { // relevant only for Pb-Pb with occupancy cuts and rejection of the collisions which have other events nearby
+    } else if (cfgTrigger == 12) { // relevant only for Pb-Pb with occupancy cuts and rejection of nearby collisions; o2-linter: disable=magic-number (documented legacy trigger-selection code)
       int occupancy = collision.trackOccupancyInTimeRange();
       if (occupancy >= cfgMinOcc && occupancy < cfgMaxOcc)
         return isMultSelected && collision.sel8() && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && collision.selection_bit(aod::evsel::kNoCollInTimeRangeStandard) && collision.selection_bit(aod::evsel::kIsGoodITSLayersAll);
       else
         return false;
-    } else if (cfgTrigger == 13) { // relevant for pO/OO/NeNe --recommended by Physics Board on 27.01.2026
+    } else if (cfgTrigger == 13) { // relevant for pO/OO/NeNe, recommended by Physics Board on 27.01.2026; o2-linter: disable=magic-number (documented legacy trigger-selection code)
       return isMultSelected && collision.sel8() && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV);
     }
     return false;
@@ -231,18 +238,18 @@ struct FilterCF {
   {
     o2::aod::ITSResponse itsResponse;
 
-    if (ITSProtonselection && candidate.pt() <= 0.6 && !(itsResponse.nSigmaITS<o2::track::PID::Proton>(candidate) > nsigmaCutITSProton)) {
+    if (ITSProtonselection && candidate.pt() <= 0.6 && !(itsResponse.nSigmaITS<o2::track::PID::Proton>(candidate) > nsigmaCutITSProton)) { // o2-linter: disable=magic-number (established proton PID momentum boundary)
       return false;
     }
-    if (ITSProtonselection && candidate.pt() > 0.6 && candidate.pt() <= 0.8 && !(itsResponse.nSigmaITS<o2::track::PID::Proton>(candidate) > nsigmaCutITSProton)) {
+    if (ITSProtonselection && candidate.pt() > 0.6 && candidate.pt() <= 0.8 && !(itsResponse.nSigmaITS<o2::track::PID::Proton>(candidate) > nsigmaCutITSProton)) { // o2-linter: disable=magic-number (established proton PID momentum boundaries)
       return false;
     }
 
     if (candidate.hasTOF()) {
-      if (candidate.pt() < 0.7 && std::abs(candidate.tpcNSigmaPr()) < nsigmaCutTPCProton) {
+      if (candidate.pt() < 0.7 && std::abs(candidate.tpcNSigmaPr()) < nsigmaCutTPCProton) { // o2-linter: disable=magic-number (established proton PID momentum boundary)
         return true;
       }
-      if (candidate.p() >= 0.7 && std::abs(candidate.tpcNSigmaPr()) < nsigmaCutTPCProton && std::abs(candidate.tofNSigmaPr()) < nsigmaCutTOFProton) {
+      if (candidate.p() >= 0.7 && std::abs(candidate.tpcNSigmaPr()) < nsigmaCutTPCProton && std::abs(candidate.tofNSigmaPr()) < nsigmaCutTOFProton) { // o2-linter: disable=magic-number (established proton PID momentum boundary)
         return true;
       }
     } else {
@@ -296,7 +303,7 @@ struct FilterCF {
         }
       }
       return trackType;
-    } else if (cfgTrackSelection == 2) {
+    } else if (cfgTrackSelection == 2) { // o2-linter: disable=magic-number (documented track-selection mode)
       uint8_t trackType = 0;
       if constexpr (HasProtonPID<TTrack>::value) {
         if (track.isGlobalTrack() && (track.itsNCls() >= itsnclusters) && (track.tpcNClsCrossedRows() >= tpcncrossedrows) && selectionPIDProton(track)) {
@@ -320,7 +327,7 @@ struct FilterCF {
 
   void validateMultiplicityEfficiency(const THn* efficiency) const
   {
-    if (!efficiency || efficiency->GetNdimensions() != 4) {
+    if (!efficiency || efficiency->GetNdimensions() != MultiplicityEfficiencyDimensions) {
       LOGF(fatal, "Multiplicity efficiency from %s must be a 4D THn with axes (eta, pT, multiplicity, z-vtx)", cfgEfficiencyMultiplicity.value.c_str());
     }
   }
@@ -358,9 +365,9 @@ struct FilterCF {
 
       // The map contains RecoAll / MC, not inverse-efficiency weights.
       // Keep the original estimator as the map coordinate, including for centrality.
-      const std::array<double, 4> values{track.eta(), track.pt(), collision.multiplicity(), collision.posZ()};
-      std::array<int, 4> bins{};
-      for (int axis = 0; axis < 4; ++axis) {
+      const std::array<double, MultiplicityEfficiencyDimensions> values{track.eta(), track.pt(), collision.multiplicity(), collision.posZ()};
+      std::array<int, MultiplicityEfficiencyDimensions> bins{};
+      for (int axis = 0; axis < MultiplicityEfficiencyDimensions; ++axis) {
         auto* efficiencyAxis = efficiency->GetAxis(axis);
         bins[axis] = efficiencyAxis->FindFixBin(values[axis]);
         if (!std::isfinite(values[axis]) || bins[axis] < 1 || bins[axis] > efficiencyAxis->GetNbins()) {
@@ -419,7 +426,7 @@ struct FilterCF {
 
     if (cfgTransientTables)
       outputCollRefs(collision.globalIndex());
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       float maxDCAxy = getMaxDCAxy(track.pt());
       if ((std::abs(track.dcaXY()) > maxDCAxy) || (std::abs(track.dcaZ()) > dcazmax)) {
         continue;
@@ -504,7 +511,7 @@ struct FilterCF {
     }
 
     // PASS 1 on collisions: check which particles are kept
-    for (auto& collision : allCollisions) {
+    for (const auto& collision : allCollisions) {
       auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
       if (cfgVerbosity > 0) {
         LOGF(info, "processMC:   Tracks for collision %d: %d | Vertex: %.1f (%d) | INT7: %d", collision.globalIndex(), groupedTracks.size(), collision.posZ(), collision.flags(), collision.sel7());
@@ -514,14 +521,14 @@ struct FilterCF {
         continue;
       }
 
-      for (auto& track : groupedTracks) {
+      for (const auto& track : groupedTracks) {
         if (track.has_mcParticle()) {
           mcReconstructedCache[track.mcParticleId()] = true;
         }
       }
     }
 
-    for (auto& mcCollision : mcCollisions) {
+    for (const auto& mcCollision : mcCollisions) {
       auto particles = allParticles.sliceBy(perMcCollision, mcCollision.globalIndex());
 
       if (cfgVerbosity > 0) {
@@ -530,7 +537,7 @@ struct FilterCF {
 
       // Store selected MC particles and MC collisions
       int multiplicity = 0;
-      for (auto& particle : particles) {
+      for (const auto& particle : particles) {
         int8_t sign = 0;
         TParticlePDG* pdgparticle = pdg->GetParticle(particle.pdgCode());
         if (pdgparticle != nullptr) {
@@ -566,7 +573,7 @@ struct FilterCF {
     }
 
     // PASS 2 on collisions: store collisions and tracks
-    for (auto& collision : allCollisions) {
+    for (const auto& collision : allCollisions) {
       auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
       if (cfgVerbosity > 0) {
         LOGF(info, "processMC:   Tracks for collision %d: %d | Vertex: %.1f (%d) | INT7: %d", collision.globalIndex(), groupedTracks.size(), collision.posZ(), collision.flags(), collision.sel7());
@@ -602,7 +609,7 @@ struct FilterCF {
       if (cfgTransientTables)
         outputCollRefs(collision.globalIndex());
 
-      for (auto& track : groupedTracks) {
+      for (const auto& track : groupedTracks) {
         int mcParticleId = track.mcParticleId();
         if (mcParticleId >= 0) {
           mcParticleId = mcParticleLabelsCache[track.mcParticleId()];
@@ -657,7 +664,7 @@ struct FilterCF {
   void processMCGen(McCollisionsWithHepMC::iterator const& mcCollision, aod::McParticles const& particles)
   {
     float multiplicity = 0.0f;
-    for (auto& particle : particles) {
+    for (const auto& particle : particles) {
       if (!particle.isPhysicalPrimary() || std::abs(particle.eta()) > cfgCutMCEta || particle.pt() < cfgCutMCPt)
         continue;
       int8_t sign = 0;
@@ -728,7 +735,7 @@ struct MultiplicitySelector {
 
   void processFT0M(aod::CentFT0Ms const& centralities)
   {
-    for (auto& c : centralities) {
+    for (const auto& c : centralities) {
       output(c.centFT0M(), aod::cfmultiplicity::FT0M);
     }
   }
@@ -736,7 +743,7 @@ struct MultiplicitySelector {
 
   void processFT0C(aod::CentFT0Cs const& centralities)
   {
-    for (auto& c : centralities) {
+    for (const auto& c : centralities) {
       output(c.centFT0C(), aod::cfmultiplicity::FT0C);
     }
   }
@@ -744,7 +751,7 @@ struct MultiplicitySelector {
 
   void processFT0CVariant1(aod::CentFT0CVariant1s const& centralities)
   {
-    for (auto& c : centralities) {
+    for (const auto& c : centralities) {
       output(c.centFT0CVariant1(), aod::cfmultiplicity::FT0CVariant1);
     }
   }
@@ -752,7 +759,7 @@ struct MultiplicitySelector {
 
   void processFT0CVariant2(aod::CentFT0CVariant2s const& centralities)
   {
-    for (auto& c : centralities) {
+    for (const auto& c : centralities) {
       output(c.centFT0CVariant2(), aod::cfmultiplicity::FT0CVariant2);
     }
   }
@@ -760,7 +767,7 @@ struct MultiplicitySelector {
 
   void processFT0A(aod::CentFT0As const& centralities)
   {
-    for (auto& c : centralities) {
+    for (const auto& c : centralities) {
       output(c.centFT0A(), aod::cfmultiplicity::FT0A);
     }
   }
@@ -768,7 +775,7 @@ struct MultiplicitySelector {
 
   void processCentNGlobal(aod::CentNGlobals const& centralities)
   {
-    for (auto& c : centralities) {
+    for (const auto& c : centralities) {
       output(c.centNGlobal(), aod::cfmultiplicity::CentNGlobal);
     }
   }
@@ -776,7 +783,7 @@ struct MultiplicitySelector {
 
   void processRun2V0M(aod::CentRun2V0Ms const& centralities)
   {
-    for (auto& c : centralities) {
+    for (const auto& c : centralities) {
       output(c.centRun2V0M(), aod::cfmultiplicity::Run2V0M);
     }
   }
