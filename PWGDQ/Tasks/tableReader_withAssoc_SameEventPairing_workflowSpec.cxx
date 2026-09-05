@@ -12,7 +12,7 @@
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //   Configurable workflow for running several DQ or other PWG analyses
 
-#include "PWGDQ/Tasks/tableReader_withAssoc.cxx"
+#include "PWGDQ/Tasks/tableReader_withAssoc.h"
 
 #include <Framework/AnalysisTask.h>
 #include <Framework/runDataProcessing.h>
