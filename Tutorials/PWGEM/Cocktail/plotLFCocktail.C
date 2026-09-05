@@ -30,7 +30,7 @@ TString histLegends[nHists] = {
   "#phi#rightarrow#etae^{+}e^{-}, #phi#rightarrow#pi^{0}e^{+}e^{-}, "
   "#phi#rightarrowe^{+}e^{-}"};
 
-void loadHistos(TFile* file, TH1F* hists[], TString name_extra, int rebin,
+void loadHistos(TFile* file, TH1F* hists[], const TString& name_extra, int rebin,
                 int nEvents)
 {
   for (int i = 0; i < nHists; i++) {
@@ -42,7 +42,7 @@ void loadHistos(TFile* file, TH1F* hists[], TString name_extra, int rebin,
   }
 }
 
-void plotLFCocktail(TString filename = "AnalysisResults.root", int rebin = 1)
+void plotLFCocktail(const TString& filename = "AnalysisResults.root", int rebin = 1)
 {
 
   TFile* file = TFile::Open(filename.Data());
