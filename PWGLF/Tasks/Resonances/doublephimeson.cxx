@@ -2021,34 +2021,6 @@ struct doublephimeson {
       return std::abs(phi1.Pt() - phi2.Pt()) / sumPt;
     };
 
-    const auto absCosThetaStar =
-      [](const TLorentzVector& phi1,
-         const TLorentzVector& phi2) -> double {
-      const TLorentzVector pair = phi1 + phi2;
-
-      if (pair.E() <= 0. || pair.P() <= 0.) {
-        return -1.;
-      }
-
-      // Helicity axis: phi-phi flight direction in the laboratory.
-      const TVector3 helicityAxis = pair.Vect().Unit();
-
-      // Boost phi1 into the phi-phi rest frame.
-      TLorentzVector phi1Star = phi1;
-      phi1Star.Boost(-pair.BoostVector());
-
-      if (phi1Star.P() <= 0.) {
-        return -1.;
-      }
-
-      double cosThetaStar =
-        phi1Star.Vect().Unit().Dot(helicityAxis);
-
-      cosThetaStar = std::clamp(cosThetaStar, -1.0, 1.0);
-
-      return std::abs(cosThetaStar);
-    };
-
     const auto nKaonTOFHits =
       [](const auto& t1, const auto& t2) -> int {
       return static_cast<int>(t1.phid1TOFHit() == 1) +
