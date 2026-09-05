@@ -1205,7 +1205,7 @@ struct RadialFlowDecorr {
       LOGF(info, "Loading Eff/Fake maps from TList for all species...");
 
       auto loadEffFakeForPID = [&](PIDIdx pidType) {
-        std::string suffix = pidSuffix[pidType];
+        const std::string& suffix = pidSuffix[pidType];
         std::string hEffNumName = "h3_RecoMatchedToPrimary" + suffix;
         std::string hEffDenName = "h3_AllPrimary" + suffix;
         std::string hFakeNumSecName = "h3_RecoUnMatchedToPrimary_Secondary" + suffix;
@@ -1262,7 +1262,7 @@ struct RadialFlowDecorr {
         }
         LOGF(info, "Performing 2D Gaussian fits on PID maps from CCDB...");
         auto loadPIDMeans = [&](PIDIdx pidType) {
-          std::string suffix = pidSuffix[pidType];
+          const std::string& suffix = pidSuffix[pidType];
           std::string hName = "h3DnsigmaTpcVsTofBefCut_Cent" + suffix;
           auto* h3 = reinterpret_cast<TH3F*>(pidList->FindObject(hName.c_str()));
           if (!h3) {
@@ -1327,7 +1327,7 @@ struct RadialFlowDecorr {
 
         if (lstDataFlat) {
           for (int i = 0; i < KNsp; ++i) {
-            std::string suffix = pidSuffix[i];
+            const std::string& suffix = pidSuffix[i];
             std::string hName;
 
             if (cfgEff && cfgFlat) {
@@ -1356,7 +1356,7 @@ struct RadialFlowDecorr {
 
         if (lstMCFlat) {
           auto loadFlatForPID = [&](PIDIdx pidType) {
-            std::string suffix = pidSuffix[pidType];
+            const std::string& suffix = pidSuffix[pidType];
             std::string hFlatSrcName;
             if (cfgEff && cfgFlat) {
               hFlatSrcName = "MCReco/hEtaPhiRecoWtd" + suffix;

@@ -491,7 +491,7 @@ struct FemtoUniversePairTaskTrackNucleus {
   }
 
   template <typename CollisionType>
-  void fillCollision(CollisionType col)
+  void fillCollision(const CollisionType& col)
   {
     mixQARegistry.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({col.posZ(), col.multV0M()}));
     eventHisto.fillQA(col);
@@ -510,7 +510,7 @@ struct FemtoUniversePairTaskTrackNucleus {
   /// \param pairType describes charge of correlation pair (plus-plus (1), minus-minus (2), plus-minus (3), minus-plus (4))
   /// \param fillQA enables filling of QA histograms
   template <bool isMC, typename PartitionType, typename PartType>
-  void doSameEvent(PartitionType groupTrack, PartitionType groupNucleus, PartType parts, float magFieldTesla, int multCol, int pairType, bool /*fillQA*/)
+  void doSameEvent(const PartitionType& groupTrack, const PartitionType& groupNucleus, const PartType& parts, float magFieldTesla, int multCol, int pairType, bool /*fillQA*/)
   {
     for (const auto& part : groupTrack) {
       if (!isParticleNsigma((int8_t)1, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(part, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(part, o2::track::PID::Deuteron), part.tpcSignal())) {
@@ -680,7 +680,7 @@ struct FemtoUniversePairTaskTrackNucleus {
   /// \param multCol multiplicity of the collision
   /// \param pairType describes charge of correlation pair (plus-minus (1), plus-plus (2), minus-minus (3))
   template <bool isMC, typename PartitionType, typename PartType>
-  void doMixedEvent(PartitionType groupTrack, PartitionType groupNucleus, PartType parts, float magFieldTesla, int multCol, int pairType)
+  void doMixedEvent(const PartitionType& groupTrack, const PartitionType& groupNucleus, const PartType& parts, float magFieldTesla, int multCol, int pairType)
   {
     for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupTrack, groupNucleus))) {
 

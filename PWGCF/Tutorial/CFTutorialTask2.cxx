@@ -91,7 +91,7 @@ struct CFTutorialTask2 {
   {
     histos.fill(HIST("hZvtx"), coll.posZ());
 
-    for (auto track : inputTracks) {
+    for (const auto& track : inputTracks) {
       if (fabs(track.tpcNSigmaPr()) > ConfMinNSigmaTPCCut) { // TPCNSigmaPr is a dynamic column and it is not compatible with Filters
         continue;
       }

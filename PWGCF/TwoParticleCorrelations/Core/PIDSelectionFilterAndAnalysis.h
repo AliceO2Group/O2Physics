@@ -21,6 +21,7 @@
 
 #include <cstdint>
 #include <string>
+#include <utility>
 #include <vector>
 
 #undef INCORPORATEBAYESIANPID
@@ -53,16 +54,16 @@ class PIDSelectionConfigurable
 #else
   PIDSelectionConfigurable(std::string pidtpcel = "", std::string pidtpcmu = "", std::string pidtpcpi = "", std::string pidtpcka = "", std::string pidtpcpr = "",
                            std::string pidtofel = "", std::string pidtofmu = "", std::string pidtofpi = "", std::string pidtofka = "", std::string pidtofpr = "")
-    : mPidTpcSel_el{pidtpcel},
-      mPidTpcSel_mu{pidtpcmu},
-      mPidTpcSel_pi{pidtpcpi},
-      mPidTpcSel_ka{pidtpcka},
-      mPidTpcSel_pr{pidtpcpr},
-      mPidTofSel_el{pidtofel},
-      mPidTofSel_mu{pidtofmu},
-      mPidTofSel_pi{pidtofpi},
-      mPidTofSel_ka{pidtofka},
-      mPidTofSel_pr{pidtofpr}
+    : mPidTpcSel_el{std::move(pidtpcel)},
+      mPidTpcSel_mu{std::move(pidtpcmu)},
+      mPidTpcSel_pi{std::move(pidtpcpi)},
+      mPidTpcSel_ka{std::move(pidtpcka)},
+      mPidTpcSel_pr{std::move(pidtpcpr)},
+      mPidTofSel_el{std::move(pidtofel)},
+      mPidTofSel_mu{std::move(pidtofmu)},
+      mPidTofSel_pi{std::move(pidtofpi)},
+      mPidTofSel_ka{std::move(pidtofka)},
+      mPidTofSel_pr{std::move(pidtofpr)}
   {
   }
   PIDSelectionConfigurable(std::vector<std::string> pidtpcel, std::vector<std::string> pidtpcmu, std::vector<std::string> pidtpcpi, std::vector<std::string> pidtpcka, std::vector<std::string> pidtpcpr,

@@ -990,7 +990,7 @@ struct V0ptHadPiKaProt {
   }
 
   template <typename TTrack>
-  int getNsigmaPID(TTrack track)
+  int getNsigmaPID(const TTrack& track)
   {
     // Computing Nsigma arrays for pion, kaon, and protons
     std::array<float, 3> nSigmaTPC = {track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
@@ -1041,7 +1041,7 @@ struct V0ptHadPiKaProt {
 
   // additional multiplicity correlation based event selection cuts
   template <typename TCollision>
-  bool eventSelectedSmallion(TCollision collision, const int multTrk, const float centrality)
+  bool eventSelectedSmallion(const TCollision& collision, const int multTrk, const float centrality)
   {
     auto multNTracksPV = collision.multNTracksPV();
 
@@ -1083,7 +1083,7 @@ struct V0ptHadPiKaProt {
   }
 
   template <typename TCollision>
-  bool eventSelectionDefaultCuts(TCollision coll)
+  bool eventSelectionDefaultCuts(const TCollision& coll)
   {
     histos.fill(HIST("hEventStatData"), 0.5);
     if (!coll.sel8()) {

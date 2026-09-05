@@ -572,9 +572,9 @@ class TrackSelectionBrick : public SpecialCutBrick
   void SetMaxDcaXY(float maxDcaXY) { mMaxDcaXY = maxDcaXY; }
   void SetMaxDcaZ(float maxDcaZ) { mMaxDcaZ = maxDcaZ; }
 
-  void SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut) { mMaxDcaXYPtDep = ptDepCut; }
-  void SetRequireHitsInITSLayers(int8_t minNRequiredHits, std::set<uint8_t> requiredLayers) { mRequiredITSHits.push_back(std::make_pair(minNRequiredHits, requiredLayers)); }
-  void SetRequireNoHitsInITSLayers(std::set<uint8_t> excludedLayers) { mRequiredITSHits.push_back(std::make_pair(-1, excludedLayers)); }
+  void SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut) { mMaxDcaXYPtDep = std::move(ptDepCut); }
+  void SetRequireHitsInITSLayers(int8_t minNRequiredHits, const std::set<uint8_t>& requiredLayers) { mRequiredITSHits.push_back(std::make_pair(minNRequiredHits, requiredLayers)); }
+  void SetRequireNoHitsInITSLayers(const std::set<uint8_t>& excludedLayers) { mRequiredITSHits.push_back(std::make_pair(-1, excludedLayers)); }
   void ResetITSRequirements() { mRequiredITSHits.clear(); }
 
   void DisableNClustersTPCCheck(bool disable = true) { mCheckNClustersTPC = not disable; }

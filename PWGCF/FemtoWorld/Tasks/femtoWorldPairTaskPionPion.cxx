@@ -269,7 +269,7 @@ struct femtoWorldPairTaskPionPion {
 
   // Function to build combinations
   template <typename T1, typename T2, typename T3, typename T4>
-  void CombineParticles(T1 groupPartsOne, T1 groupPartsTwo, T2 cont, T3 parts, T4 magFieldTesla, int multCol, int sameOrMixed)
+  void CombineParticles(const T1& groupPartsOne, const T1& groupPartsTwo, T2 cont, const T3& parts, T4 magFieldTesla, int multCol, int sameOrMixed)
   {
     if (sameOrMixed == 1) {
       for (auto& [p1, p2] : combinations(groupPartsOne, groupPartsTwo)) {

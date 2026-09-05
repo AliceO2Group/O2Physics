@@ -36,7 +36,7 @@ using namespace o2::analysis::PWGCF;
 using namespace boost;
 
 /// \brief Constructor adapted to hyperloop
-TrackSelectionConfigurable::TrackSelectionConfigurable(std::vector<std::string> ttype,
+TrackSelectionConfigurable::TrackSelectionConfigurable(const std::vector<std::string>& ttype,
                                                        std::vector<std::string> nclstpc,
                                                        std::vector<std::string> nxrtpc,
                                                        std::vector<std::string> nclsits,
@@ -59,7 +59,7 @@ TrackSelectionConfigurable::TrackSelectionConfigurable(std::vector<std::string> 
     mPtRange{},
     mEtaRange{}
 {
-  auto storeCutString = [](auto& selvector, std::string selname) {
+  auto storeCutString = [](auto& selvector, const std::string& selname) {
     if (selvector.size() != 0) {
       if (selvector.size() == 1) {
         if (selvector[0].size() != 0) {
@@ -71,7 +71,7 @@ TrackSelectionConfigurable::TrackSelectionConfigurable(std::vector<std::string> 
         TString scut = selname + "{cwv{";
         bool def = true;
         bool firstvar = true;
-        for (auto cut : selvector) {
+        for (const auto& cut : selvector) {
           if (def) {
             scut += cut + ':';
             def = false;
@@ -191,7 +191,7 @@ TrackSelectionFilterAndAnalysis::TrackSelectionFilterAndAnalysis(const TrackSele
     cutString += ";";
     bool first = true;
 
-    auto appendCut = [&cutString, &first](std::string str) {
+    auto appendCut = [&cutString, &first](const std::string& str) {
       if (str.size() > 0) {
         if (first) {
           cutString += str;

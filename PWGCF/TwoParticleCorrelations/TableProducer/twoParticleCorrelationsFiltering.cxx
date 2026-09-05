@@ -118,7 +118,7 @@ struct TwoParticleCorrelationsFilter {
   {
     using namespace twopfilter;
     LOGF(TWOPFILTERLOGCOLLISIONS, "Received collision with mask 0x%016lx and %ld tracks", collision.selflags(), tracks.size());
-    auto passOptions = [](auto options, auto mask) {
+    auto passOptions = [](const auto& options, auto mask) {
       bool all = true;
       for (auto option : options) {
         all = all && ((option & mask) != 0UL);
@@ -149,7 +149,7 @@ struct TwoParticleCorrelationsFilter {
   {
     using namespace twopfilter;
     LOGF(TWOPFILTERLOGCOLLISIONS, "Received collision with mask 0x%016lx and %ld tracks", collision.selflags(), tracks.size());
-    auto passOptions = [](auto options, auto mask) {
+    auto passOptions = [](const auto& options, auto mask) {
       bool all = true;
       for (auto option : options) {
         all = all && ((option & mask) != 0UL);

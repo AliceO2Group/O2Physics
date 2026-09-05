@@ -1095,7 +1095,7 @@ struct DptDptEfficiencyAndQc {
       std::vector<std::string> cfgnames = {"cfgElectronPIDSelection", "cfgMuonPIDSelection", "cfgPionPIDSelection", "cfgKaonPIDSelection", "cfgProtonPIDSelection"};
       std::vector<uint8_t> spids = {0, 1, 2, 3, 4};
       for (uint i = 0; i < cfgnames.size(); ++i) {
-        auto includeIt = [&initContext](int spid, auto name) {
+        auto includeIt = [&initContext](int spid, const auto& name) {
           bool mUseIt = false;
           bool mExcludeIt = false;
           if (getTaskOptionValue(initContext, "dpt-dpt-filter-tracks", TString::Format("%s.mUseIt", name.c_str()).Data(), mUseIt, false) &&
@@ -1186,7 +1186,7 @@ struct DptDptEfficiencyAndQc {
       }
       /* in reverse order for proper order in results file */
       for (uint i = 0; i < ncmranges; ++i) {
-        auto initializeCEInstance = [&](auto dce, auto name, auto& registry, bool reclevel, bool genlevel) {
+        auto initializeCEInstance = [&](auto dce, const auto& name, auto& registry, bool reclevel, bool genlevel) {
           /* crete the output list for the passed centrality/multiplicity range */
           /* init the data collection instance */
           if (reclevel) {
@@ -1242,7 +1242,7 @@ struct DptDptEfficiencyAndQc {
 
   /// \brief Get the data collecting engine index corresponding to the passed collision
   template <typename FilteredCollision>
-  int getDCEindex(FilteredCollision collision)
+  int getDCEindex(const FilteredCollision& collision)
   {
     if (!useCentrality.value) {
       return 0;

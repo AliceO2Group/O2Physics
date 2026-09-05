@@ -30,7 +30,7 @@
 using namespace o2;
 
 template <typename T>
-bool process(const TString outputName, const int nevents = 100000)
+bool process(const TString& outputName, const int nevents = 100000)
 {
   class Container
   {

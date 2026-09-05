@@ -178,7 +178,7 @@ struct TwoParticleCorrelationPp {
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ>;
 
   template <typename TCollision>
-  bool isEventSelected(TCollision collision)
+  bool isEventSelected(const TCollision& collision)
   {
     if (evSel8 && !collision.sel8()) {
       return false;
@@ -269,7 +269,7 @@ struct TwoParticleCorrelationPp {
   }
 
   template <typename TTracks>
-  void fillQA(TTracks tracks, float multiplicity)
+  void fillQA(const TTracks& tracks, float multiplicity)
   {
     for (const auto& track : tracks) {
       histos.fill(HIST("yields"), multiplicity, track.pt(), track.eta());
@@ -286,7 +286,7 @@ struct TwoParticleCorrelationPp {
   }
 
   template <typename TTarget, typename TTracks>
-  void fillCorrelations(TTarget target, TTracks tracks1, TTracks tracks2, float multiplicity, float posZ, int system)
+  void fillCorrelations(TTarget target, const TTracks& tracks1, const TTracks& tracks2, float multiplicity, float posZ, int system)
   {
     for (const auto& track1 : tracks1) {
       if (isTrackCut(track1) == false) {

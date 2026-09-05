@@ -461,7 +461,7 @@ struct CorrelationTask {
   }
 
   template <typename TTarget, typename TCollision>
-  bool fillCollisionAOD(TTarget target, TCollision collision, float multiplicity)
+  bool fillCollisionAOD(TTarget target, const TCollision& collision, float multiplicity)
   {
     target->fillEvent(multiplicity, CorrelationContainer::kCFStepAll);
 

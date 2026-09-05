@@ -373,7 +373,7 @@ struct FemtoDreamPairCascadeCascade {
 
   // Mixed events
   template <bool isMC, typename CollisionType, typename PartType, typename PartitionType, typename BinningType>
-  void doMixedEvent(CollisionType const& cols, PartType const& parts, PartitionType& part1, PartitionType& part2, BinningType binPolicy)
+  void doMixedEvent(CollisionType const& cols, PartType const& parts, PartitionType& part1, PartitionType& part2, const BinningType& binPolicy)
   {
     for (auto const& [collision1, collision2] : soa::selfCombinations(binPolicy, Mixing.depth.value, -1, cols, cols)) {
       // make sure that tracks in same events are not mixed
