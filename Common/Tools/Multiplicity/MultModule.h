@@ -41,6 +41,7 @@
 #include <cstdlib>
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 //__________________________________________
@@ -429,7 +430,7 @@ class MultModule
     float mMCScalePars[6] = {0.0};
     TFormula* mMCScale = nullptr;
     explicit CalibrationInfo(std::string name)
-      : name(name),
+      : name(std::move(name)),
         mCalibrationStored(false),
         mhMultSelCalib(nullptr),
         mMCScalePars{0.0},
@@ -1250,7 +1251,7 @@ class MultModule
       mftInfo.mCalibrationStored = false;
       if (callst != nullptr) {
         LOGF(info, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
-        auto getccdb = [callst, bc](struct CalibrationInfo& estimator, const o2::framework::Configurable<std::string> generatorName) { // TODO: to consider the name inside the estimator structure
+        auto getccdb = [callst, bc](struct CalibrationInfo& estimator, const o2::framework::Configurable<std::string>& generatorName) { // TODO: to consider the name inside the estimator structure
           estimator.mhMultSelCalib = reinterpret_cast<TH1*>(callst->FindObject(TString::Format("hCalibZeq%s", estimator.name.c_str()).Data()));
           estimator.mMCScale = reinterpret_cast<TFormula*>(callst->FindObject(TString::Format("%s-%s", generatorName->c_str(), estimator.name.c_str()).Data()));
           if (estimator.mhMultSelCalib != nullptr) {

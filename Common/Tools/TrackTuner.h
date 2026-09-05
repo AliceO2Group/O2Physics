@@ -390,7 +390,7 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
         // parameter not found
         LOG(fatal) << "\"" << mapParNames[iPar] << "\" not found in the configuration string";
       }
-      std::string str = *it;
+      const std::string& str = *it;
       if (str.find('=') == std::string::npos || str.back() == '=') {
         // value of the parameter missing in the configuration string
         LOG(fatal) << "Missing value for \"" << mapParNames[iPar] << "\" in the configuration string";

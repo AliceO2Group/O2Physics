@@ -52,7 +52,7 @@ int findBin(TH1* hist, const std::string& label)
 }
 } // namespace
 
-void Zorro::populateHistRegistry(o2::framework::HistogramRegistry& histRegistry, int runNumber, std::string folderName)
+void Zorro::populateHistRegistry(o2::framework::HistogramRegistry& histRegistry, int runNumber, const std::string& folderName)
 {
   int runId{-1};
   for (size_t i{0}; i < mRunNumberHistos.size(); ++i) {
@@ -176,7 +176,7 @@ void Zorro::populateExternalHists(int runNumber, TH2* ZorroHisto, TH2* ToiHisto)
   mRunNumberHistos.push_back(runNumber);
 }
 
-std::vector<int> Zorro::initCCDB(o2::ccdb::BasicCCDBManager* ccdb, int runNumber, uint64_t timestamp, std::string tois, int bcRange)
+std::vector<int> Zorro::initCCDB(o2::ccdb::BasicCCDBManager* ccdb, int runNumber, uint64_t timestamp, const std::string& tois, int bcRange)
 {
   if (mRunNumber == runNumber) {
     return mTOIidx;
