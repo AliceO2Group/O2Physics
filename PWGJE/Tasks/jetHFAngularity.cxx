@@ -18,12 +18,12 @@
 #include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
-#include "PWGJE/DataModel/JetSubstructure.h"
 
 #include "Common/Core/RecoDecay.h"
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/ConfigContext.h>
 #include <Framework/Configurable.h>
@@ -36,6 +36,7 @@
 
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <string>
 #include <vector>
 

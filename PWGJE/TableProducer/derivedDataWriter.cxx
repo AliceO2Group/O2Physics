@@ -37,6 +37,8 @@
 #include <Framework/runDataProcessing.h>
 #include <MathUtils/detail/TypeTruncation.h>
 
+#include <Rtypes.h>
+
 #include <algorithm>
 #include <cstdint>
 #include <iterator>

@@ -34,6 +34,7 @@
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
+#include <TMCProcess.h>
 
 #include <algorithm>
 #include <cmath>
