@@ -339,6 +339,9 @@ struct FilterCF {
   template <bool applyDCA, typename TCollision, typename TTracks>
   float getCorrectedMultiplicity(const TCollision& collision, const TTracks& tracks, uint64_t timestamp)
   {
+    if (collision.multiplicityEstimator() != aod::cfmultiplicity::Tracks) {
+      LOGF(fatal, "Efficiency-corrected multiplicity requires MultiplicitySelector::processTracks, but estimator type %u was configured", static_cast<unsigned int>(collision.multiplicityEstimator()));
+    }
     auto* efficiency = loadMultiplicityEfficiency(timestamp);
     double correctedMultiplicity = 0.;
     for (const auto& track : tracks) {
@@ -719,14 +722,14 @@ struct MultiplicitySelector {
 
   void processTracks(aod::Collision const&, soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>> const& tracks)
   {
-    output(tracks.size());
+    output(tracks.size(), aod::cfmultiplicity::Tracks);
   }
   PROCESS_SWITCH(MultiplicitySelector, processTracks, "Select track count as multiplicity", false);
 
   void processFT0M(aod::CentFT0Ms const& centralities)
   {
     for (auto& c : centralities) {
-      output(c.centFT0M());
+      output(c.centFT0M(), aod::cfmultiplicity::FT0M);
     }
   }
   PROCESS_SWITCH(MultiplicitySelector, processFT0M, "Select FT0M centrality as multiplicity", false);
@@ -734,7 +737,7 @@ struct MultiplicitySelector {
   void processFT0C(aod::CentFT0Cs const& centralities)
   {
     for (auto& c : centralities) {
-      output(c.centFT0C());
+      output(c.centFT0C(), aod::cfmultiplicity::FT0C);
     }
   }
   PROCESS_SWITCH(MultiplicitySelector, processFT0C, "Select FT0C centrality as multiplicity", false);
@@ -742,7 +745,7 @@ struct MultiplicitySelector {
   void processFT0CVariant1(aod::CentFT0CVariant1s const& centralities)
   {
     for (auto& c : centralities) {
-      output(c.centFT0CVariant1());
+      output(c.centFT0CVariant1(), aod::cfmultiplicity::FT0CVariant1);
     }
   }
   PROCESS_SWITCH(MultiplicitySelector, processFT0CVariant1, "Select FT0CVariant1 centrality as multiplicity", false);
@@ -750,7 +753,7 @@ struct MultiplicitySelector {
   void processFT0CVariant2(aod::CentFT0CVariant2s const& centralities)
   {
     for (auto& c : centralities) {
-      output(c.centFT0CVariant2());
+      output(c.centFT0CVariant2(), aod::cfmultiplicity::FT0CVariant2);
     }
   }
   PROCESS_SWITCH(MultiplicitySelector, processFT0CVariant2, "Select FT0CVariant2 centrality as multiplicity", false);
@@ -758,7 +761,7 @@ struct MultiplicitySelector {
   void processFT0A(aod::CentFT0As const& centralities)
   {
     for (auto& c : centralities) {
-      output(c.centFT0A());
+      output(c.centFT0A(), aod::cfmultiplicity::FT0A);
     }
   }
   PROCESS_SWITCH(MultiplicitySelector, processFT0A, "Select FT0A centrality as multiplicity", false);
@@ -766,7 +769,7 @@ struct MultiplicitySelector {
   void processCentNGlobal(aod::CentNGlobals const& centralities)
   {
     for (auto& c : centralities) {
-      output(c.centNGlobal());
+      output(c.centNGlobal(), aod::cfmultiplicity::CentNGlobal);
     }
   }
   PROCESS_SWITCH(MultiplicitySelector, processCentNGlobal, "Select CentNGlobal centrality as multiplicity", false);
@@ -774,14 +777,14 @@ struct MultiplicitySelector {
   void processRun2V0M(aod::CentRun2V0Ms const& centralities)
   {
     for (auto& c : centralities) {
-      output(c.centRun2V0M());
+      output(c.centRun2V0M(), aod::cfmultiplicity::Run2V0M);
     }
   }
   PROCESS_SWITCH(MultiplicitySelector, processRun2V0M, "Select V0M centrality as multiplicity", true);
 
   void processMCGen(aod::McCollision const&, aod::McParticles const& particles)
   {
-    output(particles.size());
+    output(particles.size(), aod::cfmultiplicity::MCParticles);
   }
   PROCESS_SWITCH(MultiplicitySelector, processMCGen, "Select MC particle count as multiplicity", false);
 };

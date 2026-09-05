@@ -58,8 +58,20 @@ using CFMcParticle = CFMcParticles::iterator;
 namespace cfmultiplicity
 {
 DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);
-}
-DECLARE_SOA_TABLE(CFMultiplicities, "AOD", "CFMULTIPLICITY", cfmultiplicity::Multiplicity);
+DECLARE_SOA_COLUMN(Estimator, multiplicityEstimator, uint8_t); //! Source used for the multiplicity value
+enum EstimatorType : uint8_t {
+  Tracks,
+  FT0M,
+  FT0C,
+  FT0CVariant1,
+  FT0CVariant2,
+  FT0A,
+  CentNGlobal,
+  Run2V0M,
+  MCParticles,
+};
+} // namespace cfmultiplicity
+DECLARE_SOA_TABLE(CFMultiplicities, "AOD", "CFMULTIPLICITY", cfmultiplicity::Multiplicity, cfmultiplicity::Estimator);
 
 using CFMultiplicity = CFMultiplicities::iterator;
 
