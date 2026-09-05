@@ -18,6 +18,7 @@
 
 // collsion selection
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#include <Framework/Expressions.h>
 #define MAKE_COLLISION_FILTER(selection)                                                                                \
   (o2::aod::femtocollisions::posZ >= (selection).vtxZMin && o2::aod::femtocollisions::posZ <= (selection).vtxZMax) &&   \
     (o2::aod::femtocollisions::mult >= (selection).multMin && o2::aod::femtocollisions::mult <= (selection).multMax) && \
