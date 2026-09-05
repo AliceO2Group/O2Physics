@@ -2276,7 +2276,7 @@ struct doublephimeson {
         continue;
       }
       const double apt = phiPtAsymmetry(p1, p2);
-      const double absCosTheta = absCosThetaStar(p1, p2);
+      // const double absCosTheta = absCosThetaStar(p1, p2);
 
       if (pairPt > minExoticPt) {
         histos.fill(HIST("hPtCorrelation"), pairPt, ptcorr);
