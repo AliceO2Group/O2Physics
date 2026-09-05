@@ -26,6 +26,7 @@
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
 #include <DataFormatsParameters/GRPObject.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -114,6 +115,7 @@ struct CorrelationTask {
 
   O2_DEFINE_CONFIGURABLE(cfgEfficiencyTrigger, std::string, "", "CCDB path to efficiency object for trigger particles")
   O2_DEFINE_CONFIGURABLE(cfgEfficiencyAssociated, std::string, "", "CCDB path to efficiency object for associated particles")
+  O2_DEFINE_CONFIGURABLE(cfgUseRun3MagField, bool, false, "false: Run 2 GRPObject; true: Run 3 GRPMagField")
 
   O2_DEFINE_CONFIGURABLE(cfgNoMixedEvents, int, 5, "Number of mixed events per event")
   O2_DEFINE_CONFIGURABLE(cfgRejectMixedPhiProngEvents, bool, true, "Reject associated hadrons from either mixed-phi prong event")
@@ -186,6 +188,8 @@ struct CorrelationTask {
   PairCuts mPairCuts;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+  int mCachedRunNumber{-1}; // cached run number for magnetic field -- to avoid re-fetching the magnetic field for the same run, assuming that the magnetic field remains the same for the same run
+  int mCachedMagField{0};   // cached magnetic field --reduces number of calls to the CCDB
 
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>>;
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>;
@@ -331,21 +335,32 @@ struct CorrelationTask {
     ccdb->setCreatedNotAfter(now); // TODO must become global parameter from the train creation time
   }
 
-  int getMagneticField(uint64_t timestamp)
+  int getMagneticField(int runNumber, uint64_t timestamp)
   {
-    // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
-    static o2::parameters::GRPObject* grpo = nullptr;
-    // static o2::parameters::GRPMagField* grpo = nullptr;
-    if (grpo == nullptr) {
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
-      // grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", timestamp);
-      if (grpo == nullptr) {
-        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
-        return 0;
-      }
-      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
+    static constexpr const char* kGRPPathRun2 = "GLO/GRP/GRP";            // fixed path for now, can be made into a config
+    static constexpr const char* kGRPPathRun3 = "GLO/Config/GRPMagField"; // fixed path for now, can be made into a config
+
+    if (runNumber == mCachedRunNumber) {
+      return mCachedMagField;
     }
-    return grpo->getNominalL3Field();
+
+    if (cfgUseRun3MagField) {
+      auto* grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(kGRPPathRun3, timestamp);
+      if (grpmag == nullptr) {
+        LOGF(fatal, "Run 3 GRPMagField not found at %s for run %d timestamp %llu", kGRPPathRun3, runNumber, timestamp);
+      }
+      mCachedMagField = grpmag->getNominalL3Field();
+    } else {
+      auto* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(kGRPPathRun2, timestamp);
+      if (grpo == nullptr) {
+        LOGF(fatal, "Run 2 GRPObject not found at %s for run %d timestamp %llu", kGRPPathRun2, runNumber, timestamp);
+      }
+      mCachedMagField = grpo->getNominalL3Field();
+    }
+
+    mCachedRunNumber = runNumber;
+    LOGF(info, "Run %d: magnetic field %d kG", runNumber, mCachedMagField);
+    return mCachedMagField;
   }
 
   template <class p2typeIterator>
@@ -894,7 +909,7 @@ struct CorrelationTask {
     }
     registry.fill(HIST("eventcount_same"), -2);
     fillQA(collision, multiplicity, tracks);
-    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(same, tracks, tracks, multiplicity, collision.posZ(), getMagneticField(bc.timestamp()), 1.0f);
+    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(same, tracks, tracks, multiplicity, collision.posZ(), getMagneticField(bc.runNumber(), bc.timestamp()), 1.0f);
   }
   PROCESS_SWITCH(CorrelationTask, processSameAOD, "Process same event on AOD", true);
 
@@ -911,7 +926,7 @@ struct CorrelationTask {
     const auto multiplicity = collision.multiplicity();
     int field = 0;
     if (cfgTwoTrackCut > 0) {
-      field = getMagneticField(collision.timestamp());
+      field = getMagneticField(collision.runNumber(), collision.timestamp());
     }
 
     int bin = configurableBinningDerived.getBin({collision.posZ(), collision.multiplicity()});
@@ -1011,7 +1026,7 @@ struct CorrelationTask {
 
       // LOGF(info, "Tracks: %d and %d entries", tracks1.size(), tracks2.size());
 
-      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, tracks2, collision1.centRun2V0M(), collision1.posZ(), getMagneticField(bc.timestamp()), 1.0f / it.currentWindowNeighbours());
+      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, tracks2, collision1.centRun2V0M(), collision1.posZ(), getMagneticField(bc.runNumber(), bc.timestamp()), 1.0f / it.currentWindowNeighbours());
     }
   }
   PROCESS_SWITCH(CorrelationTask, processMixedAOD, "Process mixed events on AOD", false);
@@ -1045,7 +1060,7 @@ struct CorrelationTask {
       float eventWeight = 1.0f / it.currentWindowNeighbours();
       int field = 0;
       if (cfgTwoTrackCut > 0) {
-        field = getMagneticField(collision1.timestamp());
+        field = getMagneticField(collision1.runNumber(), collision1.timestamp());
       }
 
       if (cfgVerbosity > 0) {
