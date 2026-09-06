@@ -56,8 +56,10 @@
 #include <Math/MatrixRepresentationsStatic.h>
 #include <Math/SMatrix.h>
 #include <Math/SVector.h>
-#include <Math/Vector3D.h>
-#include <Math/Vector4D.h>
+#include <Math/Vector3D.h> // IWYU pragma: keep (do not replace with Math/Vector3Dfwd.h)
+#include <Math/Vector3Dfwd.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 #include <TGeoGlobalMagField.h>
 #include <TH1.h>
 #include <TH2.h>
