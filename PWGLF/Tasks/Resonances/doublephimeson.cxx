@@ -405,8 +405,8 @@ struct doublephimeson {
 
   // get kstar
   TLorentzVector trackSum, PartOneCMS, PartTwoCMS, trackRelK;
-  float getkstar(const TLorentzVector part1,
-                 const TLorentzVector part2)
+  float getkstar(const TLorentzVector& part1,
+                 const TLorentzVector& part2)
   {
     // const TLorentzVector trackSum = part1 + part2;
     trackSum = part1 + part2;
@@ -426,39 +426,37 @@ struct doublephimeson {
     return 0.5 * trackRelK.P();
   }
 
-  float deepangle2(const ROOT::Math::PtEtaPhiMVector candidate1,
-                   const ROOT::Math::PtEtaPhiMVector candidate2)
+  float deepangle2(const ROOT::Math::PtEtaPhiMVector& candidate1,
+                   const ROOT::Math::PtEtaPhiMVector& candidate2)
   {
-    double pt1, pt2, pz1, pz2, p1, p2, angle;
-    pt1 = candidate1.Pt();
-    pt2 = candidate2.Pt();
-    pz1 = candidate1.Pz();
-    pz2 = candidate2.Pz();
-    p1 = candidate1.P();
-    p2 = candidate2.P();
-    angle = TMath::ACos((pt1 * pt2 + pz1 * pz2) / (p1 * p2));
+    const double pt1 = candidate1.Pt();
+    const double pt2 = candidate2.Pt();
+    const double pz1 = candidate1.Pz();
+    const double pz2 = candidate2.Pz();
+    const double p1 = candidate1.P();
+    const double p2 = candidate2.P();
+    const double angle = TMath::ACos((pt1 * pt2 + pz1 * pz2) / (p1 * p2));
     return angle;
   }
 
-  float deepangle(const TLorentzVector candidate1,
-                  const TLorentzVector candidate2)
+  float deepangle(const TLorentzVector& candidate1,
+                  const TLorentzVector& candidate2)
   {
-    double pt1, pt2, pz1, pz2, p1, p2, angle;
-    pt1 = candidate1.Pt();
-    pt2 = candidate2.Pt();
-    pz1 = candidate1.Pz();
-    pz2 = candidate2.Pz();
-    p1 = candidate1.P();
-    p2 = candidate2.P();
-    angle = TMath::ACos((pt1 * pt2 + pz1 * pz2) / (p1 * p2));
+    const double pt1 = candidate1.Pt();
+    const double pt2 = candidate2.Pt();
+    const double pz1 = candidate1.Pz();
+    const double pz2 = candidate2.Pz();
+    const double p1 = candidate1.P();
+    const double p2 = candidate2.P();
+    const double angle = TMath::ACos((pt1 * pt2 + pz1 * pz2) / (p1 * p2));
     return angle;
   }
 
   // get cosTheta
   TLorentzVector daughterCMS;
   ROOT::Math::XYZVector threeVecDauCM, threeVecMother;
-  float getCosTheta(const TLorentzVector mother,
-                    const TLorentzVector daughter)
+  float getCosTheta(const TLorentzVector& mother,
+                    const TLorentzVector& daughter)
   {
     threeVecMother = mother.Vect();
     const float beta = mother.Beta();
@@ -574,27 +572,23 @@ struct doublephimeson {
     }
 
     if (PIDStrategy == 1000) {
-      if (TOFHit == 1 && std::sqrt(nsigmaTOF * nsigmaTOF + nsigmaTPC * nsigmaTPC) < 2.5) {
-        return true;
-      } else if (TOFHit != 1 && std::abs(nsigmaTPC) < 2.0) {
+      if ((TOFHit == 1 && std::sqrt(nsigmaTOF * nsigmaTOF + nsigmaTPC * nsigmaTPC) < 2.5) ||
+          (TOFHit != 1 && std::abs(nsigmaTPC) < 2.0)) {
         return true;
       }
     }
 
     if (PIDStrategy == 1001) {
-      if (TOFHit == 1 && std::sqrt(nsigmaTOF * nsigmaTOF + nsigmaTPC * nsigmaTPC) < 2.0) {
-        return true;
-      } else if (TOFHit != 1 && ptcand < 2.5 && std::abs(nsigmaTPC) < 2.0) {
-        return true;
-      } else if (TOFHit != 1 && ptcand >= 2.5 && nsigmaTPC > -2.0 && nsigmaTPC < 1.0) {
+      if ((TOFHit == 1 && std::sqrt(nsigmaTOF * nsigmaTOF + nsigmaTPC * nsigmaTPC) < 2.0) ||
+          (TOFHit != 1 && ptcand < 2.5 && std::abs(nsigmaTPC) < 2.0) ||
+          (TOFHit != 1 && ptcand >= 2.5 && nsigmaTPC > -2.0 && nsigmaTPC < 1.0)) {
         return true;
       }
     }
 
     if (PIDStrategy == 1002) {
-      if (TOFHit == 1 && std::sqrt(nsigmaTOF * nsigmaTOF + nsigmaTPC * nsigmaTPC) < 2.0) {
-        return true;
-      } else if (TOFHit != 1 && std::abs(nsigmaTPC) < 2.0) {
+      if ((TOFHit == 1 && std::sqrt(nsigmaTOF * nsigmaTOF + nsigmaTPC * nsigmaTPC) < 2.0) ||
+          (TOFHit != 1 && std::abs(nsigmaTPC) < 2.0)) {
         return true;
       }
     }
@@ -702,11 +696,9 @@ struct doublephimeson {
           }
         }
       } else {
-        if (TOFHit == 1 && std::sqrt(nsigmaTOF * nsigmaTOF + nsigmaTPC * nsigmaTPC) < 2.5) {
-          return true;
-        } else if (TOFHit != 1 && ptcand < 2.0 && nsigmaTPC > -2.5 && nsigmaTPC < 2.0) {
-          return true;
-        } else if (TOFHit != 1 && ptcand > 2.0 && nsigmaTPC > -2.5 && nsigmaTPC < 1.0) {
+        if ((TOFHit == 1 && std::sqrt(nsigmaTOF * nsigmaTOF + nsigmaTPC * nsigmaTPC) < 2.5) ||
+            (TOFHit != 1 && ptcand < 2.0 && nsigmaTPC > -2.5 && nsigmaTPC < 2.0) ||
+            (TOFHit != 1 && ptcand > 2.0 && nsigmaTPC > -2.5 && nsigmaTPC < 1.0)) {
           return true;
         }
       }
@@ -766,9 +758,8 @@ struct doublephimeson {
           }
         }
       } else {
-        if (TOFHit == 1 && std::sqrt(nsigmaTOF * nsigmaTOF + nsigmaTPC * nsigmaTPC) < 2.0) {
-          return true;
-        } else if (TOFHit != 1 && nsigmaTPC > -2.5 && nsigmaTPC < 1.0) {
+        if ((TOFHit == 1 && std::sqrt(nsigmaTOF * nsigmaTOF + nsigmaTPC * nsigmaTPC) < 2.0) ||
+            (TOFHit != 1 && nsigmaTPC > -2.5 && nsigmaTPC < 1.0)) {
           return true;
         }
       }
@@ -798,9 +789,8 @@ struct doublephimeson {
       } else if (ptcand >= 1.0 && ptcand < 2.0 && TOFHit == 1 && std::sqrt(nsigmaTOF * nsigmaTOF + nsigmaTPC * nsigmaTPC) < 2.5) {
         return true;
       } else if (ptcand > 2.0) {
-        if (TOFHit == 1 && std::sqrt(nsigmaTOF * nsigmaTOF + nsigmaTPC * nsigmaTPC) < 2.0) {
-          return true;
-        } else if (TOFHit != 1 && nsigmaTPC > -2.5 && nsigmaTPC < 1.0) {
+        if ((TOFHit == 1 && std::sqrt(nsigmaTOF * nsigmaTOF + nsigmaTPC * nsigmaTPC) < 2.0) ||
+            (TOFHit != 1 && nsigmaTPC > -2.5 && nsigmaTPC < 1.0)) {
           return true;
         }
       }
@@ -1099,7 +1089,7 @@ struct doublephimeson {
       return;
     }
     int phimult = 0;
-    for (auto phitrackd1 : phitracks) {
+    for (auto const& phitrackd1 : phitracks) {
       if (phitrackd1.phiMass() < minPhiMass1 || phitrackd1.phiMass() > maxPhiMass1) {
         continue;
       }
@@ -1119,7 +1109,7 @@ struct doublephimeson {
       }
       phimult = phimult + 1;
     }
-    for (auto phitrackd1 : phitracks) {
+    for (auto const& phitrackd1 : phitracks) {
       auto kaonplusd1pt = TMath::Sqrt(phitrackd1.phid1Px() * phitrackd1.phid1Px() + phitrackd1.phid1Py() * phitrackd1.phid1Py());
       auto kaonminusd1pt = TMath::Sqrt(phitrackd1.phid2Px() * phitrackd1.phid2Px() + phitrackd1.phid2Py() * phitrackd1.phid2Py());
       if (kaonplusd1pt > maxKaonPt) {
@@ -1142,7 +1132,7 @@ struct doublephimeson {
       Phid1.SetXYZM(phitrackd1.phiPx(), phitrackd1.phiPy(), phitrackd1.phiPz(), phitrackd1.phiMass());
       Phi1kaonplus.SetXYZM(phitrackd1.phid1Px(), phitrackd1.phid1Py(), phitrackd1.phid1Pz(), 0.493);
       Phi1kaonminus.SetXYZM(phitrackd1.phid2Px(), phitrackd1.phid2Py(), phitrackd1.phid2Pz(), 0.493);
-      for (auto phitrackd2 : phitracks) {
+      for (auto const& phitrackd2 : phitracks) {
         auto phid2id = phitrackd2.index();
         if (phid2id <= phid1id) {
           continue;
@@ -1235,7 +1225,7 @@ struct doublephimeson {
     }
     int phimult = 0;
 
-    for (auto phitrackd1 : phitracks) {
+    for (auto const& phitrackd1 : phitracks) {
       if (phitrackd1.phiMass() < minPhiMass1 || phitrackd1.phiMass() > maxPhiMass1) {
         continue;
       }
@@ -1255,7 +1245,7 @@ struct doublephimeson {
       }
       phimult = phimult + 1;
     }
-    for (auto phitrackd1 : phitracks) {
+    for (auto const& phitrackd1 : phitracks) {
       auto kaonplusd1pt = TMath::Sqrt(phitrackd1.phid1Px() * phitrackd1.phid1Px() + phitrackd1.phid1Py() * phitrackd1.phid1Py());
       auto kaonminusd1pt = TMath::Sqrt(phitrackd1.phid2Px() * phitrackd1.phid2Px() + phitrackd1.phid2Py() * phitrackd1.phid2Py());
 
@@ -1283,7 +1273,7 @@ struct doublephimeson {
       Phid1.SetXYZM(phitrackd1.phiPx(), phitrackd1.phiPy(), phitrackd1.phiPz(), phitrackd1.phiMass());
       Phi1kaonplus.SetXYZM(phitrackd1.phid1Px(), phitrackd1.phid1Py(), phitrackd1.phid1Pz(), 0.493);
       Phi1kaonminus.SetXYZM(phitrackd1.phid2Px(), phitrackd1.phid2Py(), phitrackd1.phid2Pz(), 0.493);
-      for (auto phitrackd2 : phitracks) {
+      for (auto const& phitrackd2 : phitracks) {
         auto phid2id = phitrackd2.index();
         if (phid2id <= phid1id) {
           continue;
@@ -1350,14 +1340,14 @@ struct doublephimeson {
       for (auto if1 = exoticresonance.begin(); if1 != exoticresonance.end(); ++if1) {
         auto i5 = std::distance(exoticresonance.begin(), if1);
 
-        auto exotic1phi1 = phiresonanced1.at(i5);
-        auto exotic1phi2 = phiresonanced2.at(i5);
-        auto exotic1 = exoticresonance.at(i5);
+        const auto& exotic1phi1 = phiresonanced1.at(i5);
+        const auto& exotic1phi2 = phiresonanced2.at(i5);
+        const auto& exotic1 = exoticresonance.at(i5);
 
-        auto exotic1kaonplus1 = kaonplus1.at(i5);
-        auto exotic1kaonminus1 = kaonminus1.at(i5);
-        auto exotic1kaonplus2 = kaonplus2.at(i5);
-        auto exotic1kaonminus2 = kaonminus2.at(i5);
+        const auto& exotic1kaonplus1 = kaonplus1.at(i5);
+        const auto& exotic1kaonminus1 = kaonminus1.at(i5);
+        const auto& exotic1kaonplus2 = kaonplus2.at(i5);
+        const auto& exotic1kaonminus2 = kaonminus2.at(i5);
         auto deltaRkaonplus1 = TMath::Sqrt(TMath::Power(exotic1kaonplus1.Phi() - exotic1kaonplus2.Phi(), 2.0) + TMath::Power(exotic1kaonplus1.Eta() - exotic1kaonplus2.Eta(), 2.0));
         auto deltaRkaonminus1 = TMath::Sqrt(TMath::Power(exotic1kaonminus1.Phi() - exotic1kaonminus2.Phi(), 2.0) + TMath::Power(exotic1kaonminus1.Eta() - exotic1kaonminus2.Eta(), 2.0));
         histos.fill(HIST("hDeltaRkaonplus"), deltaRkaonplus1);
@@ -1375,14 +1365,14 @@ struct doublephimeson {
 
         for (auto if2 = if1 + 1; if2 != exoticresonance.end(); ++if2) {
           auto i6 = std::distance(exoticresonance.begin(), if2);
-          auto exotic2phi1 = phiresonanced1.at(i6);
-          auto exotic2phi2 = phiresonanced2.at(i6);
-          auto exotic2 = exoticresonance.at(i6);
+          const auto& exotic2phi1 = phiresonanced1.at(i6);
+          const auto& exotic2phi2 = phiresonanced2.at(i6);
+          const auto& exotic2 = exoticresonance.at(i6);
 
-          auto exotic2kaonplus1 = kaonplus1.at(i6);
-          auto exotic2kaonminus1 = kaonminus1.at(i6);
-          auto exotic2kaonplus2 = kaonplus2.at(i6);
-          auto exotic2kaonminus2 = kaonminus2.at(i6);
+          const auto& exotic2kaonplus1 = kaonplus1.at(i6);
+          const auto& exotic2kaonminus1 = kaonminus1.at(i6);
+          const auto& exotic2kaonplus2 = kaonplus2.at(i6);
+          const auto& exotic2kaonminus2 = kaonminus2.at(i6);
           auto deltaRkaonplus2 = TMath::Sqrt(TMath::Power(exotic2kaonplus1.Phi() - exotic2kaonplus2.Phi(), 2.0) + TMath::Power(exotic2kaonplus1.Eta() - exotic2kaonplus2.Eta(), 2.0));
           auto deltaRkaonminus2 = TMath::Sqrt(TMath::Power(exotic2kaonminus1.Phi() - exotic2kaonminus2.Phi(), 2.0) + TMath::Power(exotic2kaonminus1.Eta() - exotic2kaonminus2.Eta(), 2.0));
 
@@ -1408,14 +1398,14 @@ struct doublephimeson {
     } else {
       for (auto if1 = exoticresonance.begin(); if1 != exoticresonance.end(); ++if1) {
         auto i5 = std::distance(exoticresonance.begin(), if1);
-        auto exotic1phi1 = phiresonanced1.at(i5);
-        auto exotic1phi2 = phiresonanced2.at(i5);
-        auto exotic1 = exoticresonance.at(i5);
+        const auto& exotic1phi1 = phiresonanced1.at(i5);
+        const auto& exotic1phi2 = phiresonanced2.at(i5);
+        const auto& exotic1 = exoticresonance.at(i5);
 
-        auto exotic1kaonplus1 = kaonplus1.at(i5);
-        auto exotic1kaonminus1 = kaonminus1.at(i5);
-        auto exotic1kaonplus2 = kaonplus2.at(i5);
-        auto exotic1kaonminus2 = kaonminus2.at(i5);
+        const auto& exotic1kaonplus1 = kaonplus1.at(i5);
+        const auto& exotic1kaonminus1 = kaonminus1.at(i5);
+        const auto& exotic1kaonplus2 = kaonplus2.at(i5);
+        const auto& exotic1kaonminus2 = kaonminus2.at(i5);
         auto deltaRkaonplus1 = TMath::Sqrt(TMath::Power(exotic1kaonplus1.Phi() - exotic1kaonplus2.Phi(), 2.0) + TMath::Power(exotic1kaonplus1.Eta() - exotic1kaonplus2.Eta(), 2.0));
         auto deltaRkaonminus1 = TMath::Sqrt(TMath::Power(exotic1kaonminus1.Phi() - exotic1kaonminus2.Phi(), 2.0) + TMath::Power(exotic1kaonminus1.Eta() - exotic1kaonminus2.Eta(), 2.0));
         auto deltam1 = TMath::Sqrt(TMath::Power(exotic1phi1.M() - 1.0192, 2.0) + TMath::Power(exotic1phi2.M() - 1.0192, 2.0));
