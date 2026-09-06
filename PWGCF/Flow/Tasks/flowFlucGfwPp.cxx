@@ -41,6 +41,7 @@
 
 #include <TF1.h>
 #include <TH1.h>
+#include <TH2.h>
 #include <TH3.h>
 #include <TNamed.h>
 #include <TObjArray.h>
@@ -118,6 +119,8 @@ struct FlowFlucGfwPp {
 
   static constexpr int EllipticQVectorHarmonic = 2;
   static constexpr int TriangularQVectorHarmonic = 3;
+  static constexpr int PtEfficiencyHistogramDimension = 1;
+  static constexpr int PtEtaEfficiencyHistogramDimension = 2;
 
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgIsMC, bool, false, "Is MC event")
@@ -240,7 +243,7 @@ struct FlowFlucGfwPp {
   Service<ccdb::BasicCCDBManager> ccdb;
 
   struct Config {
-    TH1D* mEfficiency = nullptr;
+    TH1* mEfficiency = nullptr;
     GFWWeights* mAcceptance;
     bool correctionsLoaded = false;
   } cfg;
@@ -539,7 +542,9 @@ struct FlowFlucGfwPp {
       registry.add("eventQA/before/centGlobal_centT0C", "", {HistType::kTH2D, {centAxis, centAxis}});
       registry.add("eventQA/before/centNTPV_centT0C", "", {HistType::kTH2D, {centAxis, centAxis}});
       if (cfgIsMC || doprocessMC) {
+        registry.add("MCReco/trackQA/pt_eta", "matched reconstructed primary particles;#it{p}_{T};#eta", {HistType::kTH2D, {ptAxis, etaAxis}});
         registry.add("MCGen/trackQA/phi_eta_vtxZ", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
+        registry.add("MCGen/trackQA/pt_eta", "generated primary particles;#it{p}_{T};#eta", {HistType::kTH2D, {ptAxis, etaAxis}});
         registry.add("MCGen/trackQA/nch_pt", "#it{p}_{T} vs multiplicity; N_{ch}; #it{p}_{T}", {HistType::kTH2D, {nchAxis, ptAxis}});
         registry.add("MCGen/trackQA/pt_ref", "", {HistType::kTH1D, {{100, o2::analysis::gfwflowflucpp::ptreflow, o2::analysis::gfwflowflucpp::ptrefup}}});
         registry.add("MCGen/trackQA/pt_poi", "", {HistType::kTH1D, {{100, o2::analysis::gfwflowflucpp::ptpoilow, o2::analysis::gfwflowflucpp::ptpoiup}}});
@@ -677,11 +682,14 @@ struct FlowFlucGfwPp {
       cfg.mAcceptance = ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value + runstr, timestamp);
     }
     if (!cfgEfficiency.value.empty()) {
-      cfg.mEfficiency = ccdb->getForTimeStamp<TH1D>(cfgEfficiency, timestamp);
+      cfg.mEfficiency = ccdb->getForTimeStamp<TH1>(cfgEfficiency, timestamp);
       if (cfg.mEfficiency == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram from %s", cfgEfficiency.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.value.c_str(), (void*)cfg.mEfficiency);
+      if (cfg.mEfficiency->GetDimension() != PtEfficiencyHistogramDimension && cfg.mEfficiency->GetDimension() != PtEtaEfficiencyHistogramDimension) {
+        LOGF(fatal, "Efficiency object from %s has unsupported dimension %d. Expected pT or pT-eta.", cfgEfficiency.value.c_str(), cfg.mEfficiency->GetDimension());
+      }
+      LOGF(info, "Loaded %dD efficiency histogram from %s (%p)", cfg.mEfficiency->GetDimension(), cfgEfficiency.value.c_str(), (void*)cfg.mEfficiency);
     }
     cfg.correctionsLoaded = true;
   }
@@ -699,9 +707,19 @@ struct FlowFlucGfwPp {
   double getEfficiency(TTrack track)
   {
     double eff = 1.;
-    if (cfg.mEfficiency)
-      eff = cfg.mEfficiency->GetBinContent(cfg.mEfficiency->FindBin(track.pt()));
-    if (eff == 0)
+    if (cfg.mEfficiency) {
+      if (cfg.mEfficiency->GetDimension() == PtEtaEfficiencyHistogramDimension) {
+        auto* efficiencyPtEta = dynamic_cast<TH2*>(cfg.mEfficiency);
+        if (efficiencyPtEta == nullptr) {
+          LOGF(fatal, "Loaded pT-eta efficiency object is not a TH2");
+          return -1.;
+        }
+        eff = efficiencyPtEta->GetBinContent(efficiencyPtEta->FindBin(track.pt(), track.eta()));
+      } else {
+        eff = cfg.mEfficiency->GetBinContent(cfg.mEfficiency->FindBin(track.pt()));
+      }
+    }
+    if (!std::isfinite(eff) || eff <= 0)
       return -1.;
     else
       return 1. / eff;
@@ -1265,6 +1283,7 @@ struct FlowFlucGfwPp {
 
       if (cfgFillQA) {
         fillTrackQA<kReco, kAfter>(track, vtxz);
+        registry.fill(HIST("MCReco/trackQA/pt_eta"), track.pt(), track.eta());
         registry.fill(HIST("trackQA/after/nch_pt"), multiplicity, track.pt());
         if (cfgRunByRun) {
           th1sList[run][hPhi]->Fill(track.phi());
@@ -1275,11 +1294,16 @@ struct FlowFlucGfwPp {
     } else if constexpr (framework::has_type_v<aod::mcparticle::McCollisionId, typename TTrack::all_columns>) {
       if (!track.isPhysicalPrimary() || !isStable(track.pdgCode()))
         return;
+      if (std::abs(track.eta()) > cfgEta)
+        return;
+      if (track.pt() < cfgPtmin || track.pt() > cfgPtmax)
+        return;
 
       fillGFW<kGen>(track, vtxz);
       fillAcceptedTracks(track, acceptedTracks);
       if (cfgFillQA && cfgIsMC) {
         fillTrackQA<kGen, kAfter>(track, vtxz);
+        registry.fill(HIST("MCGen/trackQA/pt_eta"), track.pt(), track.eta());
         registry.fill(HIST("MCGen/trackQA/nch_pt"), multiplicity, track.pt());
       }
     } else {

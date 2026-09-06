@@ -28,6 +28,16 @@ DECLARE_SOA_TABLE(CFMcCollisions, "AOD", "CFMCCOLLISION", //! Reduced MC collisi
                   mccollision::PosZ, cfmccollision::Multiplicity);
 using CFMcCollision = CFMcCollisions::iterator;
 
+namespace cfmccollisionextra
+{
+DECLARE_SOA_COLUMN(NMPI, nMPI, int); //! Number of multi-parton interactions from HepMC
+} // namespace cfmccollisionextra
+DECLARE_SOA_TABLE(CFMcCollisionExtras, "AOD", "CFMCCOLLEXTRA", //! Row-aligned extension of CFMcCollisions
+                  cfmccollisionextra::NMPI);
+using CFMcCollisionExtra = CFMcCollisionExtras::iterator;
+using CFMcCollisionsWithExtra = soa::Join<CFMcCollisions, CFMcCollisionExtras>;
+using CFMcCollisionWithExtra = CFMcCollisionsWithExtra::iterator;
+
 namespace cfmcparticle
 {
 DECLARE_SOA_INDEX_COLUMN(CFMcCollision, cfMcCollision); //! Index to reduced MC collision

@@ -11,6 +11,10 @@
 //
 /// \file mftMchMatcher.cxx
 /// \brief MFT-MCH matching tool for data preparation
+/// \author Andrea Ferrero <andrea.ferrero@cern.ch>
+/// \author Marice Coquet <maurice.louis.coquet@cern.ch>
+/// \author Nivendra Ramasubramanian <niv.ram@cern.ch>
+/// \author Yoshini Bailung <yoshini.bailung@cern.ch>
 
 #include "PWGDQ/Core/VarManager.h"
 
@@ -78,7 +82,7 @@ using namespace std;
 
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
 using SMatrix55Std = ROOT::Math::SMatrix<double, 5>;
-using SMatrix5 = ROOT::Math::SVector<Double_t, 5>;
+using SMatrix5 = ROOT::Math::SVector<Double_t, 5>; // o2-linter: disable=root/entity (ROOT object is needed)
 
 namespace o2::aod
 {
@@ -143,10 +147,10 @@ DECLARE_SOA_COLUMN(C1PtTglMFT, c1PtTglMFT, float);
 DECLARE_SOA_COLUMN(Chi2Glob, chi2Glob, float);
 DECLARE_SOA_COLUMN(Chi2Match, chi2Match, float);
 DECLARE_SOA_COLUMN(IsAmbig, isAmbig, bool);
-DECLARE_SOA_COLUMN(MFTMult, mftMult, int);
+DECLARE_SOA_COLUMN(MFTMult, mftMult, int); // o2-linter: disable=name/o2-column (keep temporarily)
 DECLARE_SOA_COLUMN(MatchAttempts, matchAttempts, int);
-DECLARE_SOA_COLUMN(DCAX, dcaX, float);
-DECLARE_SOA_COLUMN(DCAY, dcaY, float);
+DECLARE_SOA_COLUMN(DCAX, dcaX, float); // o2-linter: disable=name/o2-column (keep temporarily)
+DECLARE_SOA_COLUMN(DCAY, dcaY, float); // o2-linter: disable=name/o2-column (keep temporarily)
 DECLARE_SOA_COLUMN(McMaskGlob, mcMaskGlob, int);
 DECLARE_SOA_COLUMN(MatchLabel, matchLabel, int);
 DECLARE_SOA_COLUMN(IsSignal, isSignal, bool);
@@ -217,44 +221,40 @@ DECLARE_SOA_TABLE(FwdMatchMLCandidates, "AOD", "FWDMLCAND",
                   fwdmatchcandidates::IsSignal);
 } // namespace o2::aod
 
-struct mftMchMatcher {
+struct mftMchMatcher { // o2-linter: disable=name/struct (keep temporarily)
+  static constexpr int GlobalTrackTypeMax = 2;
+  static constexpr int ThetaAbsBoundaryDeg = 3;
+  static constexpr double SlopeResolutionZ = 535.;
+
   Produces<o2::aod::FwdMatchMLCandidates> fwdMatchMLCandidates;
   ////   Variables for selecting muon tracks
-  Configurable<float> fPMchLow{"cfgPMchLow", 0.0f, ""};
-  Configurable<float> fPtMchLow{"cfgPtMchLow", 0.7f, ""};
-  Configurable<float> fEtaMchLow{"cfgEtaMchLow", -4.0f, ""};
-  Configurable<float> fEtaMchUp{"cfgEtaMchUp", -2.5f, ""};
-  Configurable<float> fRabsLow{"cfgRabsLow", 17.6f, ""};
-  Configurable<float> fRabsUp{"cfgRabsUp", 89.5f, ""};
-  Configurable<float> fSigmaPdcaUp{"cfgPdcaUp", 6.f, ""};
-  Configurable<float> fTrackChi2MchUp{"cfgTrackChi2MchUp", 5.f, ""};
-  Configurable<float> fMatchingChi2MchMidUp{"cfgMatchingChi2MchMidUp", 999.f, ""};
+  Configurable<float> cfgPMchLow{"cfgPMchLow", 0.0f, ""};
+  Configurable<float> cfgPtMchLow{"cfgPtMchLow", 0.7f, ""};
+  Configurable<float> cfgRabsLow{"cfgRabsLow", 17.6f, ""};
+  Configurable<float> cfgRabsUp{"cfgRabsUp", 89.5f, ""};
+  Configurable<float> cfgPdcaUp{"cfgPdcaUp", 6.f, ""};
+  Configurable<float> cfgTrackChi2MchUp{"cfgTrackChi2MchUp", 5.f, ""};
 
   ////   Variables for selecting mft tracks
-  Configurable<float> fEtaMFTLow{"cfgEtaMFTlow", -3.6f, ""};
-  Configurable<float> fEtaMFTUp{"cfgEtaMFTup", -2.5f, ""};
-  Configurable<float> fTrackChi2MFTUp{"cfgTrackChi2MFTUp", 10.f, ""};
-  Configurable<float> fPtMFTLow{"cfgPtMFTLow", 0.1f, ""};
+  Configurable<float> cfgEtaMFTlow{"cfgEtaMFTlow", -3.6f, ""};
+  Configurable<float> cfgEtaMFTup{"cfgEtaMFTup", -2.5f, ""};
 
-  ////   Variables for matching configuration
-  Configurable<int> fMaxCandidates{"cfgMaxCandidates", 0, ""};
+  Configurable<bool> cfgKeepBestMatch{"cfgKeepBestMatch", false, "Keep only the best match global muons in the skimming"};
+  Configurable<float> cfgzMatching{"cfgzMatching", -77.5f, "Plane for MFT-MCH matching"};
 
-  Configurable<bool> fKeepBestMatch{"cfgKeepBestMatch", false, "Keep only the best match global muons in the skimming"};
-  Configurable<float> fzMatching{"cfgzMatching", -77.5f, "Plane for MFT-MCH matching"};
-
-  Configurable<float> fSamplingFraction{"cfgSamplingFraction", 1.f, "Fraction of randomly selected events to be processed"};
-  Configurable<float> fSamplingFractionTrueLeadingMatches{"cfgSamplingFractionTrueLeadingMatches", 1.f, "Fraction of randomly selected leading true matches to be processed"};
-  Configurable<float> fSamplingFractionWrongLeadingMatches{"cfgSamplingFractionWrongLeadingMatches", 1.f, "Fraction of randomly selected leading wrong matches to be processed"};
-  Configurable<float> fSamplingFractionDecayLeadingMatches{"cfgSamplingFractionDecayLeadingMatches", 1.f, "Fraction of randomly selected leading decay matches to be processed"};
-  Configurable<float> fSamplingFractionFakeLeadingMatches{"cfgSamplingFractionFakeLeadingMatches", 1.f, "Fraction of randomly selected leading fake matches to be processed"};
-  Configurable<float> fSamplingFractionTrueNonLeadingMatches{"cfgSamplingFractionTrueNonLeadingMatches", 1.f, "Fraction of randomly selected non-leading true matches to be processed"};
-  Configurable<float> fSamplingFractionWrongNonLeadingMatches{"cfgSamplingFractionWrongNonLeadingMatches", 1.f, "Fraction of randomly selected non-leading wrong matches to be processed"};
-  Configurable<float> fSamplingFractionDecayNonLeadingMatches{"cfgSamplingFractionDecayNonLeadingMatches", 1.f, "Fraction of randomly selected non-leading decay matches to be processed"};
-  Configurable<float> fSamplingFractionFakeNonLeadingMatches{"cfgSamplingFractionFakeNonLeadingMatches", 1.f, "Fraction of randomly selected non-leading fake matches to be processed"};
-  Configurable<int> fSamplingBcOddness{"cfgSamplingBcOddness", -1, "Select only events with even (0) or odd (1) global BCs"};
+  Configurable<float> cfgSamplingFraction{"cfgSamplingFraction", 1.f, "Fraction of randomly selected events to be processed"};
+  Configurable<float> cfgSamplingFractionTrueLeadingMatches{"cfgSamplingFractionTrueLeadingMatches", 1.f, "Fraction of randomly selected leading true matches to be processed"};
+  Configurable<float> cfgSamplingFractionWrongLeadingMatches{"cfgSamplingFractionWrongLeadingMatches", 1.f, "Fraction of randomly selected leading wrong matches to be processed"};
+  Configurable<float> cfgSamplingFractionDecayLeadingMatches{"cfgSamplingFractionDecayLeadingMatches", 1.f, "Fraction of randomly selected leading decay matches to be processed"};
+  Configurable<float> cfgSamplingFractionFakeLeadingMatches{"cfgSamplingFractionFakeLeadingMatches", 1.f, "Fraction of randomly selected leading fake matches to be processed"};
+  Configurable<float> cfgSamplingFractionTrueNonLeadingMatches{"cfgSamplingFractionTrueNonLeadingMatches", 1.f, "Fraction of randomly selected non-leading true matches to be processed"};
+  Configurable<float> cfgSamplingFractionWrongNonLeadingMatches{"cfgSamplingFractionWrongNonLeadingMatches", 1.f, "Fraction of randomly selected non-leading wrong matches to be processed"};
+  Configurable<float> cfgSamplingFractionDecayNonLeadingMatches{"cfgSamplingFractionDecayNonLeadingMatches", 1.f, "Fraction of randomly selected non-leading decay matches to be processed"};
+  Configurable<float> cfgSamplingFractionFakeNonLeadingMatches{"cfgSamplingFractionFakeNonLeadingMatches", 1.f, "Fraction of randomly selected non-leading fake matches to be processed"};
+  Configurable<int> cfgSamplingBcOddness{"cfgSamplingBcOddness", -1, "Select only events with even (0) or odd (1) global BCs"};
 
   ////   Variables for ccdb
-  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
@@ -314,7 +314,9 @@ struct mftMchMatcher {
     static const double relPRes = 0.0004;
     static const double slopeRes = 0.0005;
 
-    double thetaAbs = TMath::ATan(mchTrack.rAtAbsorberEnd() / 505.) * TMath::RadToDeg();
+    constexpr double AbsorberEndZ = 505.;
+    constexpr double RadToDeg = 180. / o2::constants::math::PI;
+    double thetaAbs = std::atan(mchTrack.rAtAbsorberEnd() / AbsorberEndZ) * RadToDeg;
 
     // propagate muon track to vertex
     auto trackConv = VarManager::FwdToTrackPar(mchTrack, mchTrack);
@@ -329,17 +331,17 @@ struct mftMchMatcher {
     double p = mchTrackAtVertex.p();
 
     double pDCA = mchTrack.pDca();
-    double sigmaPDCA = (thetaAbs < 3) ? sigmaPDCA23 : sigmaPDCA310;
+    double sigmaPDCA = (thetaAbs < ThetaAbsBoundaryDeg) ? sigmaPDCA23 : sigmaPDCA310;
     double nrp = nSigmaPDCA * relPRes * p;
     double pResEffect = sigmaPDCA / (1. - nrp / (1. + nrp));
-    double slopeResEffect = 535. * slopeRes * p;
-    double sigmaPDCAWithRes = TMath::Sqrt(pResEffect * pResEffect + slopeResEffect * slopeResEffect);
+    double slopeResEffect = SlopeResolutionZ * slopeRes * p;
+    double sigmaPDCAWithRes = std::sqrt(pResEffect * pResEffect + slopeResEffect * slopeResEffect);
 
     return (pDCA <= nSigmaPDCA * sigmaPDCAWithRes);
   }
 
   template <class T, class C>
-  bool IsGoodMuon(const T& mchTrack, const C& collision,
+  bool isGoodMuon(const T& mchTrack, const C& collision,
                   double chi2Cut,
                   double pCut,
                   double pTCut,
@@ -383,7 +385,7 @@ struct mftMchMatcher {
   }
 
   template <class T>
-  bool IsGoodMFT(const T& mftTrack,
+  bool isGoodMFT(const T& mftTrack,
                  double chi2Cut,
                  double pTCut,
                  std::array<double, 2> etaCut)
@@ -427,10 +429,10 @@ struct mftMchMatcher {
   void init(o2::framework::InitContext&)
   {
     // Load geometry
-    ccdbManager->setURL(ccdburl);
+    ccdbManager->setURL(ccdbUrl);
     ccdbManager->setCaching(true);
     ccdbManager->setLocalObjectValidityChecking();
-    fCCDBApi.init(ccdburl);
+    fCCDBApi.init(ccdbUrl);
     mRunNumber = 0;
 
     if (!o2::base::GeometryManager::isGeometryLoaded()) {
@@ -438,7 +440,7 @@ struct mftMchMatcher {
       ccdbManager->get<TGeoManager>(geoPath);
     }
 
-    if (fSamplingFraction < 1.0) {
+    if (cfgSamplingFraction < 1.0) {
       std::random_device rd;
       mGenerator = std::mt19937(rd());
     }
@@ -476,7 +478,7 @@ struct mftMchMatcher {
     fBestMatch.clear();
     std::unordered_map<int, std::pair<float, int>> mCandidates;
     for (const auto& muon : muons) {
-      if (static_cast<int>(muon.trackType()) < 2) {
+      if (static_cast<int>(muon.trackType()) < GlobalTrackTypeMax) {
         auto muonID = muon.matchMCHTrackId();
         auto chi2 = muon.chi2MatchMCHMFT();
         if (mCandidates.find(muonID) == mCandidates.end()) {
@@ -501,7 +503,7 @@ struct mftMchMatcher {
     // outer loop on muon tracks
     for (const auto& muonTrack : muonTracks) {
       // only consider MCH standalone or MCH-MID matches
-      if (static_cast<int>(muonTrack.trackType()) <= 2) {
+      if (static_cast<int>(muonTrack.trackType()) <= GlobalTrackTypeMax) {
         continue;
       }
 
@@ -550,6 +552,9 @@ struct mftMchMatcher {
   template <class TMCH, class TMFTs>
   bool isDecay(TMCH const& mchTrack, TMFTs const& mftTracks)
   {
+    if (!mchTrack.has_mcParticle()) {
+      return false;
+    }
     const auto& mchMcParticle = mchTrack.mcParticle();
 
     const auto& mchMotherParticles = mchMcParticle.template mothers_as<aod::McParticles>();
@@ -582,18 +587,12 @@ struct mftMchMatcher {
   {
     MuonMatchType result{kMatchTypeUndefined};
 
-    if (static_cast<int>(muonTrack.trackType()) > 2) {
+    if (static_cast<int>(muonTrack.trackType()) > GlobalTrackTypeMax) {
       return result;
     }
 
     auto const& mchTrack = muonTrack.template matchMCHTrack_as<TMUONS>();
     auto const& mftTrack = muonTrack.template matchMFTTrack_as<TMFTS>();
-
-    if (!mchTrack.has_mcParticle() || !mftTrack.has_mcParticle()) {
-      // if either the MCH or the MFT tracks are fakes (not associated to any MC particles)
-      // we consider the match as fake
-      return (isBestMatch ? kMatchTypeFakeLeading : kMatchTypeFakeNonLeading);
-    }
 
     bool isPaired = isPairedMuon(mchTrack.globalIndex(), matchablePairs);
     std::pair<int64_t, int64_t> matchPair{mchTrack.globalIndex(), mftTrack.globalIndex()};
@@ -659,9 +658,9 @@ struct mftMchMatcher {
 
     registry.get<TH1>(HIST("acceptedEvents"))->Fill(0);
     // reject a randomly selected fraction of events
-    if (fSamplingFraction < 1.0) {
+    if (cfgSamplingFraction < 1.0) {
       double rnd = mDistribution(mGenerator);
-      if (rnd > fSamplingFraction) {
+      if (rnd > cfgSamplingFraction) {
         return;
       }
     }
@@ -691,41 +690,41 @@ struct mftMchMatcher {
 
       bool isBestMatch = fBestMatch.find(muon.globalIndex()) != fBestMatch.end();
 
-      if (fKeepBestMatch && !isBestMatch) {
+      if (cfgKeepBestMatch && !isBestMatch) {
         continue;
       }
 
       const auto& collision = collisions.rawIteratorAt(muon.collisionId());
-      auto bc_coll = collision.template bc_as<TBCS>();
+      auto bcColl = collision.template bc_as<TBCS>();
 
       auto muontrack = muon.template matchMCHTrack_as<TMUONS>();
       auto mfttrack = muon.template matchMFTTrack_as<TMFTS>();
       auto const& mfttrackcov = mftCovs.rawIteratorAt(mftCovIndexes[mfttrack.globalIndex()]);
 
-      auto muonTime = muontrack.trackTime() + bc_coll.globalBC() * o2::constants::lhc::LHCBunchSpacingNS;
-      auto mftTime = mfttrack.trackTime() + bc_coll.globalBC() * o2::constants::lhc::LHCBunchSpacingNS;
+      auto muonTime = muontrack.trackTime() + bcColl.globalBC() * o2::constants::lhc::LHCBunchSpacingNS;
+      auto mftTime = mfttrack.trackTime() + bcColl.globalBC() * o2::constants::lhc::LHCBunchSpacingNS;
 
       o2::track::TrackParCovFwd mftprop = VarManager::FwdToTrackPar(mfttrack, mfttrackcov);
       o2::dataformats::GlobalFwdTrack muonprop = trackToGlobalFwd(muontrack, muontrack);
-      if (fzMatching.value < 0.) {
-        mftprop = VarManager::PropagateFwd(mfttrack, mfttrackcov, fzMatching.value);
+      if (cfgzMatching.value < 0.) {
+        mftprop = VarManager::PropagateFwd(mfttrack, mfttrackcov, cfgzMatching.value);
         muonprop = VarManager::PropagateMuon(muontrack, collision, VarManager::kToMatching);
       }
       auto muonpropCov = muonprop.getCovariances();
       auto mftpropCov = mftprop.getCovariances();
 
-      if (!IsGoodMuon(muontrack, collision, fTrackChi2MchUp, fPMchLow, fPtMchLow, {fEtaMFTLow, fEtaMFTUp}, {fRabsLow, fRabsUp}, fSigmaPdcaUp)) {
+      if (!isGoodMuon(muontrack, collision, cfgTrackChi2MchUp, cfgPMchLow, cfgPtMchLow, {cfgEtaMFTlow, cfgEtaMFTup}, {cfgRabsLow, cfgRabsUp}, cfgPdcaUp)) {
         continue;
       }
 
       // at this level we consider all the matching candidates, regardless of the MFT tracks quality
       // MFT track quality cuts should be applied only after having selected the best candidate
-      // if (!IsGoodMFT(mfttrack, fTrackChi2MFTUp, fPtMFTLow, {fEtaMFTLow, fEtaMFTUp})){
+      // if (!isGoodMFT(mfttrack, cfgTrackChi2MFTUp, cfgPtMFTLow, {cfgEtaMFTlow, cfgEtaMFTup})){
       //  continue;
       //}
 
-      bool IsAmbig = (muon.compatibleCollIds().size() != 1);
-      int MFTMult = collision.mftNtracks();
+      bool isAmbig = (muon.compatibleCollIds().size() != 1);
+      int mftMult = collision.mftNtracks();
       int matchAttempts = 0;
       auto matchAttemptsIt = matchAttemptsMap.find(muontrack.globalIndex());
       if (matchAttemptsIt == matchAttemptsMap.end()) {
@@ -753,35 +752,35 @@ struct mftMchMatcher {
       registry.get<TH1>(HIST("matchType"))->Fill(static_cast<int>(matchType));
 
       // skipp odd/even BCs if requested
-      if (fSamplingBcOddness.value >= 0 && (static_cast<int>((bc_coll.globalBC() % 2)) != fSamplingBcOddness.value)) {
+      if (cfgSamplingBcOddness.value >= 0 && (static_cast<int>((bcColl.globalBC() % 2)) != cfgSamplingBcOddness.value)) {
         continue;
       }
 
       float matchTypeSamplingFraction = 1.0;
       switch (matchType) {
         case kMatchTypeTrueLeading:
-          matchTypeSamplingFraction = fSamplingFractionTrueLeadingMatches;
+          matchTypeSamplingFraction = cfgSamplingFractionTrueLeadingMatches;
           break;
         case kMatchTypeTrueNonLeading:
-          matchTypeSamplingFraction = fSamplingFractionTrueNonLeadingMatches;
+          matchTypeSamplingFraction = cfgSamplingFractionTrueNonLeadingMatches;
           break;
         case kMatchTypeWrongLeading:
-          matchTypeSamplingFraction = fSamplingFractionWrongLeadingMatches;
+          matchTypeSamplingFraction = cfgSamplingFractionWrongLeadingMatches;
           break;
         case kMatchTypeWrongNonLeading:
-          matchTypeSamplingFraction = fSamplingFractionWrongNonLeadingMatches;
+          matchTypeSamplingFraction = cfgSamplingFractionWrongNonLeadingMatches;
           break;
         case kMatchTypeDecayLeading:
-          matchTypeSamplingFraction = fSamplingFractionDecayLeadingMatches;
+          matchTypeSamplingFraction = cfgSamplingFractionDecayLeadingMatches;
           break;
         case kMatchTypeDecayNonLeading:
-          matchTypeSamplingFraction = fSamplingFractionDecayNonLeadingMatches;
+          matchTypeSamplingFraction = cfgSamplingFractionDecayNonLeadingMatches;
           break;
         case kMatchTypeFakeLeading:
-          matchTypeSamplingFraction = fSamplingFractionFakeLeadingMatches;
+          matchTypeSamplingFraction = cfgSamplingFractionFakeLeadingMatches;
           break;
         case kMatchTypeFakeNonLeading:
-          matchTypeSamplingFraction = fSamplingFractionFakeNonLeadingMatches;
+          matchTypeSamplingFraction = cfgSamplingFractionFakeNonLeadingMatches;
           break;
         default:
           break;
@@ -851,8 +850,8 @@ struct mftMchMatcher {
         muon.chi2MatchMCHMFT(),
         muon.fwdDcaX(),
         muon.fwdDcaY(),
-        IsAmbig,
-        MFTMult,
+        isAmbig,
+        mftMult,
         matchAttempts,
         mcMaskMuon,
         mcMaskMft,
@@ -872,7 +871,7 @@ struct mftMchMatcher {
     if (bcs.size() > 0) {
       auto bc = bcs.begin();
       initCCDB(bc);
-      VarManager::SetMatchingPlane(fzMatching.value);
+      VarManager::SetMatchingPlane(cfgzMatching.value);
     }
 
     fillTable<true>(collisions, bcs, muonTracks, mftTracks, mftCovs);
@@ -889,7 +888,7 @@ struct mftMchMatcher {
     if (bcs.size() > 0) {
       auto bc = bcs.begin();
       initCCDB(bc);
-      VarManager::SetMatchingPlane(fzMatching.value);
+      VarManager::SetMatchingPlane(cfgzMatching.value);
     }
 
     fillTable<false>(collisions, bcs, muonTracks, mftTracks, mftCovs);

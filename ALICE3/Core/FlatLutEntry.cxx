@@ -25,6 +25,36 @@
 namespace o2::delphes
 {
 
+void lutEntry_t::print() const
+{
+  LOGF(info, "  nch = %f, eta = %f, pt = %f, valid = %s\n", nch, eta, pt, valid ? "true" : "false");
+  LOGF(info, "  eff = %f, eff2 = %f, itof = %f, otof = %f\n", eff, eff2, itof, otof);
+  LOGF(info, "  covm: ");
+  for (int i = 0; i < 15; ++i) {
+    LOGF(info, "%f ", covm[i]);
+  }
+  LOGF(info, "\n");
+  LOGF(info, "  eigval: ");
+  for (int i = 0; i < 5; ++i) {
+    LOGF(info, "%f ", eigval[i]);
+  }
+  LOGF(info, "\n");
+  LOGF(info, "  eigvec:\n");
+  for (int i = 0; i < 5; ++i) {
+    for (int j = 0; j < 5; ++j) {
+      LOGF(info, "%f ", eigvec[i][j]);
+    }
+    LOGF(info, "\n");
+  }
+  LOGF(info, "  eiginv:\n");
+  for (int i = 0; i < 5; ++i) {
+    for (int j = 0; j < 5; ++j) {
+      LOGF(info, "%f ", eiginv[i][j]);
+    }
+    LOGF(info, "\n");
+  }
+}
+
 float map_t::fracPositionWithinBin(float val) const
 {
   float width = (max - min) / nbins;
@@ -90,10 +120,10 @@ void FlatLutData::initialize(const lutHeader_t& header)
   mEtaBins = header.etamap.nbins;
   mPtBins = header.ptmap.nbins;
 
-  size_t headerSize = sizeof(lutHeader_t);
-  size_t numEntries = static_cast<size_t>(mNchBins) * mRadBins * mEtaBins * mPtBins;
-  size_t entriesSize = numEntries * sizeof(lutEntry_t);
-  size_t totalSize = headerSize + entriesSize;
+  const size_t headerSize = sizeof(lutHeader_t);
+  const size_t numEntries = static_cast<size_t>(mNchBins) * mRadBins * mEtaBins * mPtBins;
+  const size_t entriesSize = numEntries * sizeof(lutEntry_t);
+  const size_t totalSize = headerSize + entriesSize;
 
   mData.resize(totalSize);
   // Write header at the beginning
@@ -103,13 +133,10 @@ void FlatLutData::initialize(const lutHeader_t& header)
 
 size_t FlatLutData::getEntryOffset(int nch_bin, int rad_bin, int eta_bin, int pt_bin) const
 {
-  size_t headerSize = sizeof(lutHeader_t);
-
-  // Linear index: nch varies slowest, pt varies fastest
-  // idx = nch * (rad*eta*pt) + rad * (eta*pt) + eta * pt + pt
-  size_t linearIdx = static_cast<size_t>(nch_bin) * (mRadBins * mEtaBins * mPtBins) + static_cast<size_t>(rad_bin) * (mEtaBins * mPtBins) + static_cast<size_t>(eta_bin) * mPtBins + static_cast<size_t>(pt_bin);
-
-  return headerSize + linearIdx * sizeof(lutEntry_t);
+  static constexpr size_t headerSize = sizeof(lutHeader_t);
+  const size_t linearIdx = getEntryIndex(nch_bin, rad_bin, eta_bin, pt_bin);
+  static constexpr size_t entrySize = sizeof(lutEntry_t);
+  return headerSize + linearIdx * entrySize;
 }
 
 const lutEntry_t* FlatLutData::getEntryRef(int nch_bin, int rad_bin, int eta_bin, int pt_bin) const

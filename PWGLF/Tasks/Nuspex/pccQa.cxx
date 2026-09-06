@@ -22,6 +22,7 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/ConfigParamSpec.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -42,6 +43,8 @@ struct PccQa {
   Service<o2::framework::O2DatabasePDG> pdg;
 
   static constexpr float MaxVtxZ = 10.f;
+
+  Configurable<uint32_t> maxMult{"maxMult", 100, "max multiplicity"};
 
   void init(InitContext const&);
 
@@ -69,23 +72,45 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 
 void PccQa::init(InitContext const&)
 {
+
   histos.add("eventCounter", "", kTH1D, {{1, 0.5, 1.5}});
   const AxisSpec dcaAxis = {1000, -1., 1., "#it{DCA}_{xy}", "dca"};
   std::vector<double> ptBinEdges = {0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5, 3.0};
   const AxisSpec ptAxis{ptBinEdges, "#it{p}_{T} (GeV/#it{c})", "pt"};
 
+  const int nBinsMult = 30;
+  const AxisSpec nchAxis = {nBinsMult, 0., static_cast<double>(maxMult), "#it{N}_{ch}", "nch"};
+
   histos.add("DCAxyVsPt", "", kTH2D, {ptAxis, dcaAxis});
+  histos.add("DCAxyVsPtVsMult", "", kTH3D, {nchAxis, ptAxis, dcaAxis});
 
   if (doprocessMC) {
     histos.add("DCAxyVsPt_weighted", "", kTH2D, {ptAxis, dcaAxis});
+    histos.add("DCAxyVsPtVsMult_weighted", "", kTH3D, {nchAxis, ptAxis, dcaAxis});
+
     histos.add("prim/DCAxyVsPt", "", kTH2D, {ptAxis, dcaAxis});
+    histos.add("prim/DCAxyVsPtVsMult", "", kTH3D, {nchAxis, ptAxis, dcaAxis});
+
+    histos.add("prim/DCAxyVsPtVsMult_weighted", "", kTH3D, {nchAxis, ptAxis, dcaAxis});
     histos.add("prim/DCAxyVsPt_weighted", "", kTH2D, {ptAxis, dcaAxis});
+
     histos.add("sec/DCAxyVsPt", "", kTH2D, {ptAxis, dcaAxis});
+    histos.add("sec/DCAxyVsPtVsMult", "", kTH3D, {nchAxis, ptAxis, dcaAxis});
+
     histos.add("sec/DCAxyVsPt_weighted", "", kTH2D, {ptAxis, dcaAxis});
+    histos.add("sec/DCAxyVsPtVsMult_weighted", "", kTH3D, {nchAxis, ptAxis, dcaAxis});
+
     histos.add("sec/dec/DCAxyVsPt", "", kTH2D, {ptAxis, dcaAxis});
+    histos.add("sec/dec/DCAxyVsPtVsMult", "", kTH3D, {nchAxis, ptAxis, dcaAxis});
+
     histos.add("sec/dec/DCAxyVsPt_weighted", "", kTH2D, {ptAxis, dcaAxis});
+    histos.add("sec/dec/DCAxyVsPtVsMult_weighted", "", kTH3D, {nchAxis, ptAxis, dcaAxis});
+
     histos.add("sec/mat/DCAxyVsPt", "", kTH2D, {ptAxis, dcaAxis});
+    histos.add("sec/mat/DCAxyVsPtVsMult", "", kTH3D, {nchAxis, ptAxis, dcaAxis});
+
     histos.add("sec/mat/DCAxyVsPt_weighted", "", kTH2D, {ptAxis, dcaAxis});
+    histos.add("sec/mat/DCAxyVsPtVsMult_weighted", "", kTH3D, {nchAxis, ptAxis, dcaAxis});
   }
 }
 
@@ -95,6 +120,7 @@ void PccQa::processData(CollisionTableData::iterator const& collision, TrackTabl
 }
 void PccQa::processMC(CollisionTableMCTrue::iterator const&, TrackTableMC const& tracks, CollisionTableMC const& collisions, ParticleTableMC const&)
 {
+
   for (const auto& collision : collisions) {
     auto curTracks = tracks.sliceBy(perCollision, collision.globalIndex());
     processMeas<true>(collision, curTracks);
@@ -105,6 +131,7 @@ void PccQa::processMC(CollisionTableMCTrue::iterator const&, TrackTableMC const&
 template <bool IS_MC, typename C, typename T>
 void PccQa::processMeas(const C& collision, const T& tracks)
 {
+
   if ((std::abs(collision.posZ()) > MaxVtxZ) || !collision.sel8()) {
     return;
   }
@@ -115,6 +142,7 @@ void PccQa::processMeas(const C& collision, const T& tracks)
       continue;
     }
     histos.fill(HIST("DCAxyVsPt"), track.pt(), track.dcaXY());
+    histos.fill(HIST("DCAxyVsPtVsMult"), tracks.size(), track.pt(), track.dcaXY());
 
     if constexpr (IS_MC) {
       if (!track.has_mcParticle()) {
@@ -123,19 +151,28 @@ void PccQa::processMeas(const C& collision, const T& tracks)
       const auto& particle = track.template mcParticle_as<ParticleTableMC>();
 
       histos.fill(HIST("DCAxyVsPt_weighted"), track.pt(), track.dcaXY(), particle.pccWeight());
+      histos.fill(HIST("DCAxyVsPtVsMult_weighted"), tracks.size(), track.pt(), track.dcaXY(), particle.pccWeight());
 
       if (particle.isPhysicalPrimary()) {
         histos.fill(HIST("prim/DCAxyVsPt"), track.pt(), track.dcaXY());
         histos.fill(HIST("prim/DCAxyVsPt_weighted"), track.pt(), track.dcaXY(), particle.pccWeight());
+        histos.fill(HIST("prim/DCAxyVsPtVsMult"), tracks.size(), track.pt(), track.dcaXY());
+        histos.fill(HIST("prim/DCAxyVsPtVsMult_weighted"), tracks.size(), track.pt(), track.dcaXY(), particle.pccWeight());
       } else {
         histos.fill(HIST("sec/DCAxyVsPt"), track.pt(), track.dcaXY());
         histos.fill(HIST("sec/DCAxyVsPt_weighted"), track.pt(), track.dcaXY(), particle.pccWeight());
+        histos.fill(HIST("sec/DCAxyVsPtVsMult"), tracks.size(), track.pt(), track.dcaXY());
+        histos.fill(HIST("sec/DCAxyVsPtVsMult_weighted"), tracks.size(), track.pt(), track.dcaXY(), particle.pccWeight());
         if (particle.getProcess() == TMCProcess::kPDecay) {
           histos.fill(HIST("sec/dec/DCAxyVsPt"), track.pt(), track.dcaXY());
           histos.fill(HIST("sec/dec/DCAxyVsPt_weighted"), track.pt(), track.dcaXY(), particle.pccWeight());
+          histos.fill(HIST("sec/dec/DCAxyVsPtVsMult"), tracks.size(), track.pt(), track.dcaXY());
+          histos.fill(HIST("sec/dec/DCAxyVsPtVsMult_weighted"), tracks.size(), track.pt(), track.dcaXY(), particle.pccWeight());
         } else if (particle.getProcess() == TMCProcess::kPHInhelastic || particle.getProcess() == TMCProcess::kPHadronic || particle.getProcess() == TMCProcess::kPHElastic) {
           histos.fill(HIST("sec/mat/DCAxyVsPt"), track.pt(), track.dcaXY());
           histos.fill(HIST("sec/mat/DCAxyVsPt_weighted"), track.pt(), track.dcaXY(), particle.pccWeight());
+          histos.fill(HIST("sec/mat/DCAxyVsPtVsMult"), tracks.size(), track.pt(), track.dcaXY());
+          histos.fill(HIST("sec/mat/DCAxyVsPtVsMult_weighted"), tracks.size(), track.pt(), track.dcaXY(), particle.pccWeight());
         }
       }
     }

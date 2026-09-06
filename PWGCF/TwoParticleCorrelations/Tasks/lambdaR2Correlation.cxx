@@ -20,6 +20,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -41,13 +42,15 @@
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
+#include <TH2.h>
+#include <TH3.h>
 #include <TList.h>
 #include <TObject.h>
 #include <TPDGCode.h>
-#include <TString.h>
 
 #include <chrono>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <string_view>
@@ -120,36 +123,6 @@ DECLARE_SOA_TABLE(LambdaTracks, "AOD", "LAMBDATRACKS", o2::soa::Index<>,
                   lambdatrack::CorrFact);
 using LambdaTrack = LambdaTracks::iterator;
 
-namespace kaontrack
-{
-DECLARE_SOA_INDEX_COLUMN(LambdaCollision, lambdaCollision);
-DECLARE_SOA_COLUMN(Pt, pt, float);
-DECLARE_SOA_COLUMN(Eta, eta, float);
-DECLARE_SOA_COLUMN(Phi, phi, float);
-DECLARE_SOA_COLUMN(Rap, rap, float);
-DECLARE_SOA_COLUMN(Px, px, float);
-DECLARE_SOA_COLUMN(Py, py, float);
-DECLARE_SOA_COLUMN(Pz, pz, float);
-DECLARE_SOA_COLUMN(Mass, mass, float);
-DECLARE_SOA_COLUMN(KaonTrackId, kaonTrackId, int64_t);
-DECLARE_SOA_COLUMN(PartType, partType, int8_t);
-DECLARE_SOA_COLUMN(CorrFact, corrFact, float);
-} // namespace kaontrack
-DECLARE_SOA_TABLE(KaonTracks, "AOD", "KAONTRACKS", o2::soa::Index<>,
-                  kaontrack::LambdaCollisionId,
-                  kaontrack::Pt,
-                  kaontrack::Eta,
-                  kaontrack::Phi,
-                  kaontrack::Rap,
-                  kaontrack::Px,
-                  kaontrack::Py,
-                  kaontrack::Pz,
-                  kaontrack::Mass,
-                  kaontrack::KaonTrackId,
-                  kaontrack::PartType,
-                  kaontrack::CorrFact);
-using KaonTrack = KaonTracks::iterator;
-
 namespace lambdatrackext
 {
 DECLARE_SOA_COLUMN(LambdaSharingDaughter, lambdaSharingDaughter, bool);
@@ -162,18 +135,6 @@ DECLARE_SOA_TABLE(LambdaTracksExt, "AOD", "LAMBDATRACKSEXT",
                   lambdatrackext::TrueLambdaFlag);
 
 using LambdaTrackExt = LambdaTracksExt::iterator;
-
-namespace kaontrackext
-{
-DECLARE_SOA_COLUMN(KaonSharingLambdaDau, kaonSharingLambdaDau, bool);
-DECLARE_SOA_COLUMN(KaonSharingLambdaDauIds, kaonSharingLambdaDauIds, std::vector<int64_t>);
-DECLARE_SOA_COLUMN(TrueKaonFlag, trueKaonFlag, bool);
-} // namespace kaontrackext
-DECLARE_SOA_TABLE(KaonTracksExt, "AOD", "KAONTRACKSEXT",
-                  kaontrackext::KaonSharingLambdaDau,
-                  kaontrackext::KaonSharingLambdaDauIds,
-                  kaontrackext::TrueKaonFlag);
-using KaonTrackExt = KaonTracksExt::iterator;
 
 namespace lambdamcgentrack
 {
@@ -194,25 +155,6 @@ DECLARE_SOA_TABLE(LambdaMcGenTracks, "AOD", "LMCGENTRACKS", o2::soa::Index<>,
                   lambdatrack::PartType,
                   lambdatrack::CorrFact);
 using LambdaMcGenTrack = LambdaMcGenTracks::iterator;
-
-namespace kaonmcgentrack
-{
-DECLARE_SOA_INDEX_COLUMN(LambdaMcGenCollision, lambdaMcGenCollision);
-}
-DECLARE_SOA_TABLE(KaonMcGenTracks, "AOD", "KMCGENTRACKS", o2::soa::Index<>,
-                  kaonmcgentrack::LambdaMcGenCollisionId,
-                  kaontrack::Pt,
-                  kaontrack::Eta,
-                  kaontrack::Phi,
-                  kaontrack::Rap,
-                  kaontrack::Px,
-                  kaontrack::Py,
-                  kaontrack::Pz,
-                  kaontrack::Mass,
-                  kaontrack::KaonTrackId,
-                  kaontrack::PartType,
-                  kaontrack::CorrFact);
-using KaonMcGenTrack = KaonMcGenTracks::iterator;
 } // namespace o2::aod
 
 enum CollisionLabels {
@@ -221,29 +163,21 @@ enum CollisionLabels {
   kPassSelCol
 };
 
-enum TrackLabels {
-  kTracksBeforeHasMcParticle = 1,
+enum LambdaLabels {
+  kLambdaBeforeHasMcParticle = 1,
   kAllV0Tracks,
   kPassV0KinCuts,
   kPassV0TopoSel,
   kPassK0ShortMassRej,
   kPassV0DauTrackSel,
   kAllSelPassed,
-  kEffCorrPtCent,
-  kEffCorrPtRapCent,
-  kMatchEffCorr,
-  kNoEffCorr,
   kGenTotAccLambda,
   kGenLambdaNoDau,
 };
 
-enum KaonLabels {
-  kKaonAllChargedTracks = 1,
-  kKaonPassKinSel,
-  kKaonPassGlobalSel,
-  kKaonPassDcaSel,
-  kKaonPassElRejSel,
-  kKaonPassAllSel
+enum EffCorrType {
+  kEffCorrPtCent = 0,
+  kEffCorrPtRapCent
 };
 
 enum CentEstType {
@@ -253,19 +187,13 @@ enum CentEstType {
 
 enum ParticleType {
   kLambda = 0,
-  kAntiLambda,
-  kKaonPlus,
-  kKaonMinus
+  kAntiLambda
 };
 
 enum ParticlePairType {
   kLambdaAntiLambda = 0,
   kLambdaLambda,
   kAntiLambdaAntiLambda,
-  kLambdaKaonPlus,
-  kLambdaKaonMinus,
-  kAntiLambdaKaonPlus,
-  kAntiLambdaKaonMinus
 };
 
 enum ShareDauLambda {
@@ -283,27 +211,19 @@ enum DMCType {
   kMC
 };
 
-enum CorrHistDim {
-  OneDimCorr = 1,
-  TwoDimCorr,
-  ThreeDimCorr
-};
-
 struct LambdaTableProducer {
   // Table Producers
   Produces<aod::LambdaCollisions> lambdaCollisionTable;
   Produces<aod::LambdaTracks> lambdaTrackTable;
-  Produces<aod::KaonTracks> kaonTrackTable;
   Produces<aod::LambdaMcGenCollisions> lambdaMCGenCollisionTable;
   Produces<aod::LambdaMcGenTracks> lambdaMCGenTrackTable;
-  Produces<aod::KaonMcGenTracks> kaonMCGenTrackTable;
 
   // Centrality Axis
   ConfigurableAxis cCentBins{"cCentBins", {VARIABLE_WIDTH, 0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f}, "Variable Centrality Bins"};
 
   // Collisions
   Configurable<int> cCentEstimator{"cCentEstimator", 1, "Centrality Estimator : 0-FT0M, 1-FT0C"};
-  Configurable<float> cZVtxCut{"cZVtxCut", 10.0, "ZVtx cut"};
+  Configurable<float> cZVtxCut{"cZVtxCut", 10.0, "Z-Vtx cut"};
   Configurable<bool> cSel8Trig{"cSel8Trig", true, "Sel8 (T0A + T0C) Selection Run3"};
   Configurable<bool> cPileupReject{"cPileupReject", true, "Pileup rejection"};
   Configurable<bool> cZVtxTimeDiff{"cZVtxTimeDiff", true, "z-vtx time diff selection"};
@@ -315,21 +235,6 @@ struct LambdaTableProducer {
   Configurable<int> cMinTpcCrossedRows{"cMinTpcCrossedRows", 70, "TPC Min Crossed Rows"};
   Configurable<double> cTpcNsigmaCut{"cTpcNsigmaCut", 3.0, "TPC NSigma Selection Cut"};
   Configurable<bool> cRemoveAmbiguousTracks{"cRemoveAmbiguousTracks", false, "Remove Ambiguous Tracks"};
-
-  // Kaon Tracks
-  Configurable<float> cKaonMinPt{"cKaonMinPt", 0.3, "Kaon Min pT"};
-  Configurable<float> cKaonMaxPt{"cKaonMaxPt", 2.3, "Kaon Max pT"};
-  Configurable<float> cKaonRapCut{"cKaonRapCut", 0.5, "Kaon |y| cut"};
-  Configurable<bool> cKaonGlobalSel{"cKaonGlobalSel", true, "Global Track"};
-  Configurable<float> cKaonDcaXYCut{"cKaonDcaXYCut", 0.1, "DcaXY Cut"};
-  Configurable<float> cKaonDcaZCut{"cKaonDcaZCut", 1., "DcaXY Cut"};
-  Configurable<float> cTpcElRejCutMin{"cTpcElRejCutMin", -3., "Electron Rejection Cut Minimum"};
-  Configurable<float> cTpcElRejCutMax{"cTpcElRejCutMax", 5., "Electron Rejection Cut Maximum"};
-  Configurable<float> cKaonTpcNSigmaCut{"cKaonTpcNSigmaCut", 2, "TPC Kaon NSigma Cut"};
-  Configurable<float> cTpcRejCut{"cTpcRejCut", 2, "TPC Rej Cut"};
-  Configurable<float> cKaonTofNSigmaCut{"cKaonTofNSigmaCut", 2, "TOF Kaon NSigma Cut"};
-  Configurable<float> cTofRejCut{"cTofRejCut", 2, "TOF Rej Cut"};
-  Configurable<float> cKaonTpcPtSel{"cKaonTpcPtSel", 0.7, "Kaon TPC pT cutoff"};
 
   // V0s
   Configurable<double> cMinDcaProtonToPV{"cMinDcaProtonToPV", 0.02, "Minimum Proton DCAr to PV"};
@@ -347,15 +252,14 @@ struct LambdaTableProducer {
 
   // V0s acceptance
   Configurable<float> cLambdaMassWindow{"cLambdaMassWindow", 0.007, "Lambda Mass Window"};
-  Configurable<float> cLambdaMinPt{"cLambdaMinPt", 0.7, "Minimum Lambda pT"};
-  Configurable<float> cLambdaMaxPt{"cLambdaMaxPt", 3.7, "Minimum Lambda pT"};
+  Configurable<float> cLambdaMinPt{"cLambdaMinPt", 0.8, "Minimum Lambda pT"};
+  Configurable<float> cLambdaMaxPt{"cLambdaMaxPt", 3.8, "Maximum Lambda pT"};
   Configurable<float> cLambdaRapCut{"cLambdaRapCut", 0.5, "Lambda |rap| cut"};
   Configurable<int> cV0TypeSelection{"cV0TypeSelection", 1, "V0 Type Selection"};
 
   // Efficiency Correction
   Configurable<bool> cGetCorrectionFlag{"cGetCorrectionFlag", false, "Apply correction flag"};
   Configurable<bool> cGetEffFact{"cGetEffFact", false, "Get Efficiency Factor Flag"};
-  Configurable<bool> cGetMatchEff{"cGetMatchEff", false, "Get Matching Efficiency Flag"};
   Configurable<int> cCorrFactHist{"cCorrFactHist", 0, "Efficiency Factor Histogram"};
 
   // MC
@@ -365,7 +269,6 @@ struct LambdaTableProducer {
   // CCDB
   Configurable<std::string> cUrlCCDB{"cUrlCCDB", "http://alice-ccdb.cern.ch", "ALICE CCDB URL"};
   Configurable<std::string> cPathCCDBRecoEff{"cPathCCDBRecoEff", "Users/y/ypatley/LBF/PP/RecoEfficiency", "Path for ccdb-object for reco efficiency"};
-  Configurable<std::string> cPathCCDBMatchEff{"cPathCCDBMatchEff", "Users/y/ypatley/LBF/PP/MatchEfficiency", "Path for ccdb-object for matching efficiency"};
   Configurable<int64_t> nolaterthan{"nolaterthan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
   // Initialize CCDB Service
@@ -375,31 +278,27 @@ struct LambdaTableProducer {
   // Histogram Registry.
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  // initialize corr_factor objects
-  std::vector<std::vector<std::string>> vCorrFactStrings = {{"hEffVsPtCentLambda", "hEffVsPtCentAntiLambda", "hEffVsPtCentKaonPlus", "hEffVsPtCentKaonMinus"},
-                                                            {"hEffVsPtYCentLambda", "hEffVsPtYCentAntiLambda", "hEffVsPtYCentKaonPlus", "hEffVsPtYCentKaonMinus"}};
+  // Initialize corr_factor objects
+  std::vector<std::vector<std::string>> vCorrFactStrings = {{"hEffVsPtCentLambda", "hEffVsPtCentAntiLambda"}, {"hEffVsPtYCentLambda", "hEffVsPtYCentAntiLambda"}};
+
+  // Store correction histograms
+  struct CorrHist {
+    std::array<TH2F*, 2> vPtCentCorrHists{};
+    std::array<TH3F*, 2> vPtRapCentCorrHists{};
+  } corrHist;
 
   // Initialize Global Variables
   float cent = 0.;
   TList* ccdbObjRecoEff = nullptr;
   TList* ccdbObjMatchEff = nullptr;
-  static constexpr auto SubDir = std::array{"QA/Lambda/", "QA/AntiLambda/", "QA/KaonPlus/", "QA/KaonMinus/"};
+  static constexpr auto SubDir = std::array{"QA/Lambda/", "QA/AntiLambda/"};
 
   void init(InitContext const&)
   {
-    // Set CCDB url
-    ccdb->setURL(cUrlCCDB.value);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    ccdb->setCreatedNotAfter(nolaterthan.value);
-
-    // Get CCDB object
-    ccdbObjRecoEff = ccdb->getForTimeStamp<TList>(cPathCCDBRecoEff.value, nolaterthan.value);
-    ccdbObjMatchEff = ccdb->getForTimeStamp<TList>(cPathCCDBMatchEff.value, nolaterthan.value);
-
     // initialize axis specifications
     const AxisSpec axisCols(5, 0.5, 5.5, "");
-    const AxisSpec axisTrks(30, 0.5, 30.5, "");
+    const AxisSpec axisTrks(15, 0.5, 15.5, "");
+    const AxisSpec axisEffChecks(3, 0, 3, "");
     const AxisSpec axisCent(100, 0, 100, "Centrality(%)");
     const AxisSpec axisVarCent(cCentBins, "FT0C%");
     const AxisSpec axisMult(10, 0, 10, "N_{#Lambda}");
@@ -412,7 +311,7 @@ struct LambdaTableProducer {
     const AxisSpec axisV0Eta(48, -1.2, 1.2, "#eta");
     const AxisSpec axisV0Phi(36, 0., TwoPI, "#phi (rad)");
 
-    const AxisSpec axisRadius(200, 0, 200, "r(cm)");
+    const AxisSpec axisRadius(5000, 0, 5, "r(cm)");
     const AxisSpec axisCosPA(100, 0.99, 1.0, "cos(#theta_{PA})");
     const AxisSpec axisDcaV0PV(100, 0., 0.1, "dca (cm)");
     const AxisSpec axisDcaProngPV(5000, -50., 50., "dca (cm)");
@@ -422,29 +321,24 @@ struct LambdaTableProducer {
     const AxisSpec axisQtarm(40, 0, 0.4, "q_{T}");
 
     const AxisSpec axisDcaLambda(100, 0., cMaxDcaV0ToPV, "Dca_{V^{0}}");
-    const AxisSpec axisDcaKaon(100, -cKaonDcaXYCut, cKaonDcaXYCut, "Dca_{K}");
 
-    const AxisSpec axisITSTPCTrackPt(100, 0, 10, "p_{T} (GeV/#it{c})");
     const AxisSpec axisTrackPt(40, 0, 4, "p_{T} (GeV/#it{c})");
     const AxisSpec axisTrackDCA(200, -1, 1, "dca_{XY} (cm)");
     const AxisSpec axisMomPID(80, 0, 4, "p_{T} (GeV/#it{c})");
     const AxisSpec axisTrackNsigma(401, -10.025, 10.025, {"n#sigma"});
     const AxisSpec axisTrackdEdx(360, 20, 200, "#frac{dE}{dx}");
-    const AxisSpec axisTrackTofSignal(240, 0, 1.2, "#beta");
 
     // Create Histograms.
     // Event histograms
     histos.add("Events/h1f_collisions_info", "# of Collisions", kTH1F, {axisCols});
     histos.add("Events/h1f_collision_posZ", "V_{z}-distribution", kTH1F, {axisVz});
+    histos.add("Events/h1f_collision_cent", "Centrality distribution", kTH1F, {axisCent});
 
     // QA
-    histos.add("Tracks/h1f_tracks_info", "# of tracks", kTH1F, {axisTrks});
-    histos.add("Tracks/h1f_kaon_sel", "Kaon selection", kTH1F, {axisTrks});
+    histos.add("Tracks/h1f_lambda_info", "Lambda selection info", kTH1F, {axisTrks});
+    histos.add("Tracks/h1f_effcorr_info", "Efficiency correction info", kTH1F, {axisEffChecks});
     histos.add("Tracks/h2f_armpod_before_sel", "Armentros-Podolanski Plot", kTH2F, {axisAlpha, axisQtarm});
     histos.add("Tracks/h2f_armpod_after_sel", "Armentros-Podolanski Plot", kTH2F, {axisAlpha, axisQtarm});
-    histos.add("Tracks/h2f_itstrack_centpt", "h2f_itstrack_centpt", kTH2F, {axisVarCent, axisITSTPCTrackPt});
-    histos.add("Tracks/h2f_itstpctrack_centpt", "h2f_itstpctrack_centpt", kTH2F, {axisVarCent, axisITSTPCTrackPt});
-    histos.add("Tracks/h2f_itstpctoftrack_centpt", "h2f_itstpctoftrack_centpt", kTH2F, {axisVarCent, axisITSTPCTrackPt});
 
     // QA Lambda
     histos.add("QA/Lambda/h3f_centmasspt", "Invariant Mass", kTH3F, {axisCent, axisV0Pt, axisV0Mass});
@@ -466,24 +360,14 @@ struct LambdaTableProducer {
     histos.add("QA/Lambda/h2f_neg_prong_tpc_nsigma_pi_vs_p", "TPC n#sigma Neg Prong", kTH2F, {axisMomPID, axisTrackNsigma});
 
     // Dca analysis histogram
-    histos.add("QA/Lambda/DCA/h2f_Dca_vs_pT", "DCA vs pT", kTH2F, {axisV0Pt, axisDcaLambda});
-    histos.add("QA/KaonPlus/DCA/h2f_Dca_vs_pT", "DCA vs pT", kTH2F, {axisV0Pt, axisDcaKaon});
-
-    // QA Kaons
-    histos.add("QA/KaonPlus/hdEdX", "dE/dx vs pT", kTH2F, {axisMomPID, axisTrackdEdx});
-    histos.add("QA/KaonPlus/hTOFSignal", "#beta_{TOF} vs p_{T}", kTH2F, {axisMomPID, axisTrackTofSignal});
-    histos.add("QA/KaonPlus/hTPCNSigma", "n#sigma_{TPC} vs p_{T}", kTH2F, {axisMomPID, axisTrackNsigma});
-    histos.add("QA/KaonPlus/hTOFNSigma", "n#sigma_{TOF} vs p_{T}", kTH2F, {axisMomPID, axisTrackNsigma});
+    histos.add("QA/Lambda/DCA/h3f_Dca_vs_pT_cent", "DCA", kTH3F, {axisCent, axisV0Pt, axisDcaLambda});
 
     // MC Generated Histograms
     if (doprocessMCRecoGen || doprocessMCReco) {
       // DCA analysis
-      histos.add("QA/Lambda/DCA/h2f_Prm_Dca_vs_pT", "Primary DCA vs pT", kTH2F, {axisV0Pt, axisDcaLambda});
-      histos.add("QA/Lambda/DCA/h2f_Scd_Dca_vs_pT", "Weak Decay DCA vs pT", kTH2F, {axisV0Pt, axisDcaLambda});
-      histos.add("QA/Lambda/DCA/h2f_Mat_Dca_vs_pT", "Material DCA vs pT", kTH2F, {axisV0Pt, axisDcaLambda});
-      histos.add("QA/KaonPlus/DCA/h2f_Prm_Dca_vs_pT", "Primary DCA vs pT", kTH2F, {axisV0Pt, axisDcaKaon});
-      histos.add("QA/KaonPlus/DCA/h2f_Scd_Dca_vs_pT", "Weak Decay DCA vs pT", kTH2F, {axisV0Pt, axisDcaKaon});
-      histos.add("QA/KaonPlus/DCA/h2f_Mat_Dca_vs_pT", "Material DCA vs pT", kTH2F, {axisV0Pt, axisDcaKaon});
+      histos.add("QA/Lambda/DCA/h3f_Prm_Dca_vs_pT_cent", "Primary DCA", kTH3F, {axisCent, axisV0Pt, axisDcaLambda});
+      histos.add("QA/Lambda/DCA/h3f_Scd_Dca_vs_pT_cent", "Weak Decay DCA", kTH3F, {axisCent, axisV0Pt, axisDcaLambda});
+      histos.add("QA/Lambda/DCA/h3f_Mat_Dca_vs_pT_cent", "Material DCA", kTH3F, {axisCent, axisV0Pt, axisDcaLambda});
 
       // McGen Histos
       histos.add("McGen/h1f_collision_recgen", "# of Reco Collision Associated to One Mc Generator Collision", kTH1F, {axisMult});
@@ -497,38 +381,66 @@ struct LambdaTableProducer {
       histos.get<TH1>(HIST("Events/h1f_collisions_info"))->GetXaxis()->SetBinLabel(CollisionLabels::kTotColBeforeHasMcCollision, "kTotColBeforeHasMcCollision");
       histos.get<TH1>(HIST("McGen/h1f_collisions_info"))->GetXaxis()->SetBinLabel(CollisionLabels::kTotCol, "kTotCol");
       histos.get<TH1>(HIST("McGen/h1f_collisions_info"))->GetXaxis()->SetBinLabel(CollisionLabels::kPassSelCol, "kPassSelCol");
-      histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kTracksBeforeHasMcParticle, "kTracksBeforeHasMcParticle");
-      histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kGenTotAccLambda, "kGenTotAccLambda");
-      histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kGenLambdaNoDau, "kGenLambdaNoDau");
+      histos.get<TH1>(HIST("Tracks/h1f_lambda_info"))->GetXaxis()->SetBinLabel(LambdaLabels::kLambdaBeforeHasMcParticle, "kLambdaBeforeHasMcParticle");
+      histos.get<TH1>(HIST("Tracks/h1f_lambda_info"))->GetXaxis()->SetBinLabel(LambdaLabels::kGenTotAccLambda, "kGenTotAccLambda");
+      histos.get<TH1>(HIST("Tracks/h1f_lambda_info"))->GetXaxis()->SetBinLabel(LambdaLabels::kGenLambdaNoDau, "kGenLambdaNoDau");
     }
 
     // Clone histograms
     // QA Anti-Lambda
     histos.addClone("QA/Lambda/", "QA/AntiLambda/");
 
-    // QA KaonMinus
-    histos.addClone("QA/KaonPlus/", "QA/KaonMinus/");
-
-    // set bin labels
+    // Set bin labels
     histos.get<TH1>(HIST("Events/h1f_collisions_info"))->GetXaxis()->SetBinLabel(CollisionLabels::kTotCol, "kTotCol");
     histos.get<TH1>(HIST("Events/h1f_collisions_info"))->GetXaxis()->SetBinLabel(CollisionLabels::kPassSelCol, "kPassSelCol");
-    histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kAllV0Tracks, "kAllV0Tracks");
-    histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kPassK0ShortMassRej, "kPassK0ShortMassRej");
-    histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kPassV0DauTrackSel, "kPassV0DauTrackSel");
-    histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kPassV0KinCuts, "kPassV0KinCuts");
-    histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kPassV0TopoSel, "kPassV0TopoSel");
-    histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kAllSelPassed, "kAllSelPassed");
-    histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kEffCorrPtCent, "kEffCorrPtCent");
-    histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kEffCorrPtRapCent, "kEffCorrPtRapCent");
-    histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kMatchEffCorr, "kMatchEffCorr");
-    histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kNoEffCorr, "kNoEffCorr");
+    histos.get<TH1>(HIST("Tracks/h1f_lambda_info"))->GetXaxis()->SetBinLabel(LambdaLabels::kAllV0Tracks, "kAllV0Tracks");
+    histos.get<TH1>(HIST("Tracks/h1f_lambda_info"))->GetXaxis()->SetBinLabel(LambdaLabels::kPassK0ShortMassRej, "kPassK0ShortMassRej");
+    histos.get<TH1>(HIST("Tracks/h1f_lambda_info"))->GetXaxis()->SetBinLabel(LambdaLabels::kPassV0DauTrackSel, "kPassV0DauTrackSel");
+    histos.get<TH1>(HIST("Tracks/h1f_lambda_info"))->GetXaxis()->SetBinLabel(LambdaLabels::kPassV0KinCuts, "kPassV0KinCuts");
+    histos.get<TH1>(HIST("Tracks/h1f_lambda_info"))->GetXaxis()->SetBinLabel(LambdaLabels::kPassV0TopoSel, "kPassV0TopoSel");
+    histos.get<TH1>(HIST("Tracks/h1f_lambda_info"))->GetXaxis()->SetBinLabel(LambdaLabels::kAllSelPassed, "kAllSelPassed");
 
-    histos.get<TH1>(HIST("Tracks/h1f_kaon_sel"))->GetXaxis()->SetBinLabel(KaonLabels::kKaonAllChargedTracks, "kKaonAllChargedTracks");
-    histos.get<TH1>(HIST("Tracks/h1f_kaon_sel"))->GetXaxis()->SetBinLabel(KaonLabels::kKaonPassKinSel, "kKaonPassKinSel");
-    histos.get<TH1>(HIST("Tracks/h1f_kaon_sel"))->GetXaxis()->SetBinLabel(KaonLabels::kKaonPassGlobalSel, "kKaonPassGlobalSel");
-    histos.get<TH1>(HIST("Tracks/h1f_kaon_sel"))->GetXaxis()->SetBinLabel(KaonLabels::kKaonPassDcaSel, "kKaonPassDcaSel");
-    histos.get<TH1>(HIST("Tracks/h1f_kaon_sel"))->GetXaxis()->SetBinLabel(KaonLabels::kKaonPassElRejSel, "kKaonPassElRejSel");
-    histos.get<TH1>(HIST("Tracks/h1f_kaon_sel"))->GetXaxis()->SetBinLabel(KaonLabels::kKaonPassAllSel, "kKaonPassAllSel");
+    // Load correction factor
+    if (cGetCorrectionFlag) {
+      // Set CCDB url
+      ccdb->setURL(cUrlCCDB.value);
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
+      ccdb->setCreatedNotAfter(nolaterthan.value);
+
+      // Get CCDB object
+      ccdbObjRecoEff = ccdb->getForTimeStamp<TList>(cPathCCDBRecoEff.value, nolaterthan.value);
+
+      // Load reco eff corrections
+      loadRecoEfficiencyHistograms();
+    }
+  }
+
+  template <typename T>
+  void getCorrFactHists(T& vhists, std::vector<std::string> const& strings)
+  {
+    using HistPtr = typename T::value_type;
+    for (size_t i = 0; i < vhists.size(); ++i) {
+      auto* obj = ccdbObjRecoEff->FindObject(strings[i].c_str());
+      if (!obj) {
+        LOGF(fatal, "CCDB object %s not found!", strings[i].c_str());
+        continue;
+      }
+      vhists[i] = dynamic_cast<HistPtr>(obj->Clone());
+      if (!vhists[i]) {
+        LOGF(fatal, "CCDB object %s could not be cast!", strings[i].c_str());
+      }
+    }
+  }
+
+  // Load reco efficiency histograms
+  void loadRecoEfficiencyHistograms()
+  {
+    if (cCorrFactHist == kEffCorrPtCent) {
+      getCorrFactHists(corrHist.vPtCentCorrHists, vCorrFactStrings[kEffCorrPtCent]);
+    } else if (cCorrFactHist == kEffCorrPtRapCent) {
+      getCorrFactHists(corrHist.vPtRapCentCorrHists, vCorrFactStrings[kEffCorrPtRapCent]);
+    }
   }
 
   // Get magnetic field
@@ -570,12 +482,12 @@ struct LambdaTableProducer {
       return false;
     }
 
-    // FT0 Vz estimation
+    // Zvtx from FT0 time difference
     if (cZVtxTimeDiff && !col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
     }
 
-    // ITS 7 layers hit
+    // Hit all layers in ITS
     if (cIsGoodITSLayers && !col.selection_bit(aod::evsel::kIsGoodITSLayersAll)) {
       return false;
     }
@@ -609,7 +521,7 @@ struct LambdaTableProducer {
   }
 
   template <typename V, typename T>
-  bool selLambdaDauTracks(const V& v0, const T& postrack, const T& negtrack, ParticleType& partType)
+  bool selLambdaDauTracks(V const& v0, T const& postrack, T const& negtrack, ParticleType& partType)
   {
     // Kinematic selection
     if (postrack.pt() <= cTrackMinPt || negtrack.pt() <= cTrackMinPt || std::abs(postrack.eta()) >= cTrackEtaCut || std::abs(negtrack.eta()) >= cTrackEtaCut || postrack.tpcNClsCrossedRows() <= cMinTpcCrossedRows || negtrack.tpcNClsCrossedRows() <= cMinTpcCrossedRows) {
@@ -662,7 +574,7 @@ struct LambdaTableProducer {
       return false;
     }
 
-    histos.fill(HIST("Tracks/h1f_tracks_info"), kPassV0KinCuts);
+    histos.fill(HIST("Tracks/h1f_lambda_info"), kPassV0KinCuts);
 
     // Decay length
     float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * MassLambda0;
@@ -672,14 +584,14 @@ struct LambdaTableProducer {
       return false;
     }
 
-    histos.fill(HIST("Tracks/h1f_tracks_info"), kPassV0TopoSel);
+    histos.fill(HIST("Tracks/h1f_lambda_info"), kPassV0TopoSel);
 
     // K0s mass rejection
     if (std::abs(v0.mK0Short() - MassK0Short) <= cKshortRejMassWindow) {
       return false;
     }
 
-    histos.fill(HIST("Tracks/h1f_tracks_info"), kPassK0ShortMassRej);
+    histos.fill(HIST("Tracks/h1f_lambda_info"), kPassK0ShortMassRej);
 
     // Select Lambda / AntiLambda based on Armenteros-Podolanski
     bool lambdaFlag = false, antiLambdaFlag = false;
@@ -700,7 +612,7 @@ struct LambdaTableProducer {
       return false;
     }
 
-    histos.fill(HIST("Tracks/h1f_tracks_info"), kPassV0DauTrackSel);
+    histos.fill(HIST("Tracks/h1f_lambda_info"), kPassV0DauTrackSel);
 
     // Remove lambda with ambiguous daughters
     if (cRemoveAmbiguousTracks && hasAmbiguousDaughters(v0, tracks)) {
@@ -723,114 +635,28 @@ struct LambdaTableProducer {
     return true;
   }
 
-  template <typename T>
-  bool selKaonTrack(T const& track, float const& rap)
-  {
-    // Kinematic selection
-    if (track.pt() <= cKaonMinPt || track.pt() >= cKaonMaxPt || std::abs(rap) >= cKaonRapCut) {
-      return false;
-    }
-
-    histos.fill(HIST("Tracks/h1f_kaon_sel"), kKaonPassKinSel);
-
-    // Global track selection
-    if (cKaonGlobalSel && !track.isGlobalTrackWoDCA()) {
-      return false;
-    }
-
-    histos.fill(HIST("Tracks/h1f_kaon_sel"), kKaonPassGlobalSel);
-
-    // Dca selection
-    if (std::abs(track.dcaXY()) >= cKaonDcaXYCut || std::abs(track.dcaZ()) >= cKaonDcaZCut) {
-      return false;
-    }
-
-    histos.fill(HIST("Tracks/h1f_kaon_sel"), kKaonPassDcaSel);
-
-    // Electron rejection
-    if (std::abs(track.tpcNSigmaPi()) > cTpcRejCut && std::abs(track.tpcNSigmaKa()) > cTpcRejCut && std::abs(track.tpcNSigmaPr()) > cTpcRejCut && track.tpcNSigmaEl() > cTpcElRejCutMin && track.tpcNSigmaEl() < cTpcElRejCutMax) {
-      return false;
-    }
-
-    histos.fill(HIST("Tracks/h1f_kaon_sel"), kKaonPassElRejSel);
-
-    // Kaon PID TPC + TOF
-    if (track.hasTOF()) {
-      if (std::abs(track.tofNSigmaKa()) >= cKaonTofNSigmaCut || std::abs(track.tofNSigmaPi()) < cTofRejCut || std::abs(track.tofNSigmaPr()) < cTofRejCut || std::abs(track.tpcNSigmaKa()) >= cKaonTpcNSigmaCut) {
-        return false;
-      }
-    } else {
-      if (track.pt() >= cKaonTpcPtSel || std::abs(track.tpcNSigmaKa()) >= cKaonTpcNSigmaCut || std::abs(track.tpcNSigmaPi()) < cTpcRejCut || std::abs(track.tpcNSigmaPr()) < cTpcRejCut) {
-        return false;
-      }
-    }
-
-    histos.fill(HIST("Tracks/h1f_kaon_sel"), kKaonPassAllSel);
-
-    return true;
-  }
-
   // Correction factors
-  template <ParticleType part, typename V, typename T>
-  float getCorrectionFactors(V const& v, T const&, float const& rap)
+  template <ParticleType part, typename V>
+  float getCorrectionFactors(V const& v, float const& rap)
   {
     // Initialize efficiency factor
-    float effCorrFact = 1., matchEffFact = 1.;
+    float effCorrFact = 1.;
 
     // Get Efficiency Factor
     if (cGetEffFact) {
-      auto* objEff = ccdbObjRecoEff->FindObject(Form("%s", vCorrFactStrings[cCorrFactHist][part].c_str()));
-      // check object
-      if (!objEff) {
-        LOGF(fatal, "Reco efficiency object not found !");
+      if (cCorrFactHist == kEffCorrPtCent) {
+        histos.fill(HIST("Tracks/h1f_effcorr_info"), kEffCorrPtCent);
+        effCorrFact = corrHist.vPtCentCorrHists[part]->GetBinContent(corrHist.vPtCentCorrHists[part]->FindBin(cent, v.pt()));
+      } else if (cCorrFactHist == kEffCorrPtRapCent) {
+        histos.fill(HIST("Tracks/h1f_effcorr_info"), kEffCorrPtRapCent);
+        effCorrFact = corrHist.vPtRapCentCorrHists[part]->GetBinContent(corrHist.vPtRapCentCorrHists[part]->FindBin(cent, v.pt(), rap));
       } else {
-        TH1F* histEff = dynamic_cast<TH1F*>(objEff->Clone());
-        if (histEff->GetDimension() == TwoDimCorr) {
-          histos.fill(HIST("Tracks/h1f_tracks_info"), kEffCorrPtCent);
-          effCorrFact = histEff->GetBinContent(histEff->FindBin(cent, v.pt()));
-        } else if (histEff->GetDimension() == ThreeDimCorr) {
-          histos.fill(HIST("Tracks/h1f_tracks_info"), kEffCorrPtRapCent);
-          effCorrFact = histEff->GetBinContent(histEff->FindBin(cent, v.pt(), rap));
-        } else {
-          histos.fill(HIST("Tracks/h1f_tracks_info"), kNoEffCorr);
-          LOGF(warning, "CCDB OBJECT IS NOT A HISTOGRAM !!!");
-          effCorrFact = 1.;
-        }
-        delete histEff;
+        LOGF(warning, "CCDB OBJECT IS NOT A HISTOGRAM !!!");
       }
     }
 
-    // Get Matching Efficiency Correction
-    if (cGetMatchEff) {
-      auto* objITSTPCMatchEff = ccdbObjMatchEff->FindObject("hITSTPCMatchingEfficiency");
-      auto* objITSTPCTOFMatchEff = ccdbObjMatchEff->FindObject("hITSTPCTOFMatchingEfficiency");
-      if (!objITSTPCMatchEff || !objITSTPCTOFMatchEff) {
-        LOGF(fatal, "Matching efficiency object not found !");
-      } else {
-        TH1F* histITSTPCMatchEff = dynamic_cast<TH1F*>(objITSTPCMatchEff->Clone());
-        TH1F* histITSTPCTOFMatchEff = dynamic_cast<TH1F*>(objITSTPCTOFMatchEff->Clone());
-        // Lambda / Anti-Lambda
-        if constexpr (part == kLambda || part == kAntiLambda) {
-          auto posTrack = v.template posTrack_as<T>();
-          auto negTrack = v.template negTrack_as<T>();
-          float posTrackMatchEff = histITSTPCMatchEff->GetBinContent(histITSTPCMatchEff->FindBin(cent, posTrack.pt()));
-          float negTrackMatchEff = histITSTPCMatchEff->GetBinContent(histITSTPCMatchEff->FindBin(cent, negTrack.pt()));
-          matchEffFact = posTrackMatchEff * negTrackMatchEff;
-        }
-        // K+ /K-
-        if constexpr (part == kKaonPlus || part == kKaonMinus) {
-          float trackItsTpcMatchEff = histITSTPCMatchEff->GetBinContent(histITSTPCMatchEff->FindBin(cent, v.pt()));
-          float trackItsTpcTofMatchEff = histITSTPCTOFMatchEff->GetBinContent(histITSTPCTOFMatchEff->FindBin(cent, v.pt()));
-          matchEffFact = trackItsTpcMatchEff * trackItsTpcTofMatchEff;
-        }
-
-        histos.fill(HIST("Tracks/h1f_tracks_info"), kMatchEffCorr);
-        delete histITSTPCMatchEff;
-        delete histITSTPCTOFMatchEff;
-      }
-    }
-
-    return effCorrFact * matchEffFact;
+    // Return correction factor
+    return effCorrFact;
   }
 
   // Lambda QA
@@ -862,59 +688,22 @@ struct LambdaTableProducer {
     histos.fill(HIST(SubDir[part]) + HIST("h2f_neg_prong_tpc_nsigma_pi_vs_p"), negtrack.tpcInnerParam(), negtrack.tpcNSigmaPi());
   }
 
-  // Kaon QA
-  template <ParticleType part, typename T>
-  void fillKaonQA(T const& track)
-  {
-    histos.fill(HIST(SubDir[part]) + HIST("hdEdX"), track.pt(), track.tpcSignal());
-    histos.fill(HIST(SubDir[part]) + HIST("hTPCNSigma"), track.pt(), track.tpcNSigmaKa());
-    if (track.hasTOF()) {
-      histos.fill(HIST(SubDir[part]) + HIST("hTOFSignal"), track.pt(), track.beta());
-      histos.fill(HIST(SubDir[part]) + HIST("hTOFNSigma"), track.pt(), track.tofNSigmaKa());
-    }
-  }
-
-  // Get matching efficiency
-  template <DMCType dmc, typename T>
-  void getMatchEffHist(T const& tracks)
-  {
-    for (auto const& track : tracks) {
-      if constexpr (dmc == kMC) { // Check corresponding MC particle
-        if (!track.has_mcParticle()) {
-          continue;
-        }
-      }
-      // ITS only track
-      if (track.pt() > cTrackMinPt && std::abs(track.eta()) < cTrackEtaCut && track.hasITS() && track.isQualityTrackITS()) {
-        histos.fill(HIST("Tracks/h2f_itstrack_centpt"), cent, track.pt());
-      }
-      // ITS+TPC track
-      if (track.pt() > cTrackMinPt && std::abs(track.eta()) < cTrackEtaCut && track.hasITS() && track.hasTPC() && track.isQualityTrackITS() && track.isQualityTrackTPC()) {
-        histos.fill(HIST("Tracks/h2f_itstpctrack_centpt"), cent, track.pt());
-      }
-      // ITS+TPC+TOF track
-      if (track.pt() > cTrackMinPt && std::abs(track.eta()) < cTrackEtaCut && track.hasITS() && track.hasTPC() && track.isQualityTrackITS() && track.isQualityTrackTPC() && track.hasTOF()) {
-        histos.fill(HIST("Tracks/h2f_itstpctoftrack_centpt"), cent, track.pt());
-      }
-    }
-  }
-
   // Dca analysis
   template <ParticleType part, DMCType dmc, typename T>
   void getDcaHist(T const& track, float const& dca)
   {
     // Fill histograms
-    histos.fill(HIST(SubDir[part]) + HIST("DCA/h2f_Dca_vs_pT"), track.pt(), dca);
+    histos.fill(HIST(SubDir[part]) + HIST("DCA/h3f_Dca_vs_pT_cent"), cent, track.pt(), dca);
 
     if constexpr (dmc == kMC) {
       auto mcpart = track.mcParticle();
       if (mcpart.isPhysicalPrimary()) {
-        histos.fill(HIST(SubDir[part]) + HIST("DCA/h2f_Prm_Dca_vs_pT"), track.pt(), dca);
+        histos.fill(HIST(SubDir[part]) + HIST("DCA/h3f_Prm_Dca_vs_pT_cent"), cent, track.pt(), dca);
       } else {
         if (mcpart.getProcess() == cWeakDecayProcess) { // Weak decay
-          histos.fill(HIST(SubDir[part]) + HIST("DCA/h2f_Scd_Dca_vs_pT"), track.pt(), dca);
+          histos.fill(HIST(SubDir[part]) + HIST("DCA/h3f_Scd_Dca_vs_pT_cent"), cent, track.pt(), dca);
         } else { // Material
-          histos.fill(HIST(SubDir[part]) + HIST("DCA/h2f_Mat_Dca_vs_pT"), track.pt(), dca);
+          histos.fill(HIST(SubDir[part]) + HIST("DCA/h3f_Mat_Dca_vs_pT_cent"), cent, track.pt(), dca);
         }
       }
     }
@@ -937,6 +726,7 @@ struct LambdaTableProducer {
     // Fill Collision Histograms
     histos.fill(HIST("Events/h1f_collisions_info"), kPassSelCol);
     histos.fill(HIST("Events/h1f_collision_posZ"), collision.posZ());
+    histos.fill(HIST("Events/h1f_collision_cent"), cent);
 
     // Fill Collision Table
     float magField = getMagneticField(collision.template foundBC_as<BCsRun3>().timestamp());
@@ -954,13 +744,13 @@ struct LambdaTableProducer {
 
       // Check for corresponding MCGen Particle
       if constexpr (dmc == kMC) {
-        histos.fill(HIST("Tracks/h1f_tracks_info"), kTracksBeforeHasMcParticle);
+        histos.fill(HIST("Tracks/h1f_lambda_info"), kLambdaBeforeHasMcParticle);
         if (!v0.has_mcParticle() || !postrack.has_mcParticle() || !negtrack.has_mcParticle()) { // check corresponding MC particle
           continue;
         }
       }
 
-      histos.fill(HIST("Tracks/h1f_tracks_info"), kAllV0Tracks);
+      histos.fill(HIST("Tracks/h1f_lambda_info"), kAllV0Tracks);
       histos.fill(HIST("Tracks/h2f_armpod_before_sel"), v0.alpha(), v0.qtarm());
 
       // Select V0 as Lambda/AntiLambda
@@ -969,7 +759,7 @@ struct LambdaTableProducer {
       }
 
       // We have v0 as lambda
-      histos.fill(HIST("Tracks/h1f_tracks_info"), kAllSelPassed);
+      histos.fill(HIST("Tracks/h1f_lambda_info"), kAllSelPassed);
       histos.fill(HIST("Tracks/h2f_armpod_after_sel"), v0.alpha(), v0.qtarm());
 
       // MC matching
@@ -987,7 +777,7 @@ struct LambdaTableProducer {
       // Get Lambda mass and correction factor
       lambdaMass = (partType == kLambda) ? v0.mLambda() : v0.mAntiLambda();
       if (cGetCorrectionFlag) {
-        lambdaCorrFact = (partType == kLambda) ? getCorrectionFactors<kLambda>(v0, tracks, v0.yLambda()) : getCorrectionFactors<kAntiLambda>(v0, tracks, v0.yLambda());
+        lambdaCorrFact = (partType == kLambda) ? getCorrectionFactors<kLambda>(v0, v0.yLambda()) : getCorrectionFactors<kAntiLambda>(v0, v0.yLambda());
       }
 
       // Fill lambda qa
@@ -1008,61 +798,6 @@ struct LambdaTableProducer {
                        v0.template posTrack_as<T>().index(), v0.template negTrack_as<T>().index(), posTrackKin, negTrackKin,
                        (int8_t)partType, lambdaCorrFact);
     }
-
-    // Loop over tracks to select Kaon
-    float kaonCorrFact = 1.;
-    for (auto const& track : tracks) {
-      // Check corresponding MC particle
-      if constexpr (dmc == kMC) {
-        if (!track.has_mcParticle()) {
-          continue;
-        }
-      }
-
-      // All charged tracks
-      histos.fill(HIST("Tracks/h1f_kaon_sel"), kKaonAllChargedTracks);
-
-      // Kaon rapidity
-      std::array<float, 3> mom = {track.px(), track.py(), track.pz()};
-      float rap = RecoDecay::y(mom, MassKPlus);
-      if (!selKaonTrack(track, rap)) { // Kaon selection
-        continue;
-      }
-
-      // MC matching
-      if constexpr (dmc == kMC) {
-        auto mcpart = track.mcParticle();
-        if (cSelPrimaryParticle && !mcpart.isPhysicalPrimary()) { // Primary kaon selection
-          continue;
-        }
-
-        if (cSelTrueParticle && std::abs(mcpart.pdgCode()) != kKPlus) { // True kaon selection
-          continue;
-        }
-      }
-
-      // K+ / K-
-      if (track.sign() >= 0) {
-        getDcaHist<kKaonPlus, dmc>(track, track.dcaXY());
-        fillKaonQA<kKaonPlus>(track);
-        partType = kKaonPlus;
-      } else if (track.sign() <= 0) {
-        getDcaHist<kKaonMinus, dmc>(track, track.dcaXY());
-        fillKaonQA<kKaonMinus>(track);
-        partType = kKaonMinus;
-      } else {
-        continue;
-      }
-
-      // Get Kaon correction factor
-      if (cGetCorrectionFlag) {
-        kaonCorrFact = (partType == kKaonPlus) ? getCorrectionFactors<kKaonPlus>(track, track, rap) : getCorrectionFactors<kKaonMinus>(track, track, rap);
-      }
-
-      // Fill table
-      kaonTrackTable(lambdaCollisionTable.lastIndex(), track.pt(), track.eta(), track.phi(), rap, track.px(), track.py(), track.pz(), MassKaonCharged,
-                     track.globalIndex(), (int8_t)partType, kaonCorrFact);
-    }
   }
 
   // MC Generater Level Tables
@@ -1077,65 +812,46 @@ struct LambdaTableProducer {
 
     // Loop over MC particles
     for (auto const& mcpart : mcParticles) {
-      // Check for Primary Lambda/Anti-Lambda/K+/K-
+      // Check for Primary Lambda/Anti-Lambda
       if (mcpart.isPhysicalPrimary() && mcpart.pdgCode() == kLambda0) {
         partType = kLambda;
       } else if (mcpart.isPhysicalPrimary() && mcpart.pdgCode() == kLambda0Bar) {
         partType = kAntiLambda;
-      } else if (mcpart.isPhysicalPrimary() && mcpart.pdgCode() == kKPlus) {
-        partType = kKaonPlus;
-      } else if (mcpart.isPhysicalPrimary() && mcpart.pdgCode() == kKMinus) {
-        partType = kKaonMinus;
       } else {
         continue;
       }
 
-      // Fill Lambda Table
-      if (partType == kLambda || partType == kAntiLambda) {
-        // Kinematic selection
-        if (mcpart.pt() <= cLambdaMinPt || mcpart.pt() >= cLambdaMaxPt || std::abs(mcpart.y()) >= cLambdaRapCut) {
-          continue;
-        }
-
-        histos.fill(HIST("Tracks/h1f_tracks_info"), kGenTotAccLambda);
-
-        // get daughter track info and check for decay channel flag
-        if (!mcpart.has_daughters()) {
-          histos.fill(HIST("Tracks/h1f_tracks_info"), kGenLambdaNoDau);
-          continue;
-        }
-        auto dautracks = mcpart.template daughters_as<aod::McParticles>();
-        std::vector<int> daughterPDGs, daughterIDs;
-        for (auto const& dautrack : dautracks) {
-          daughterPDGs.push_back(dautrack.pdgCode());
-          daughterIDs.push_back(dautrack.globalIndex());
-        }
-
-        if (partType == kLambda) {
-          histos.fill(HIST("McGen/h1f_lambda_daughter_PDG"), daughterPDGs[0]);
-          histos.fill(HIST("McGen/h1f_lambda_daughter_PDG"), daughterPDGs[1]);
-          histos.fill(HIST("McGen/h1f_lambda_daughter_PDG"), mcpart.pdgCode());
-        } else {
-          histos.fill(HIST("McGen/h1f_antilambda_daughter_PDG"), daughterPDGs[0]);
-          histos.fill(HIST("McGen/h1f_antilambda_daughter_PDG"), daughterPDGs[1]);
-          histos.fill(HIST("McGen/h1f_antilambda_daughter_PDG"), mcpart.pdgCode());
-        }
-        // Fill table
-        lambdaMCGenTrackTable(lambdaMCGenCollisionTable.lastIndex(), mcpart.pt(), mcpart.eta(), mcpart.phi(), mcpart.y(), mcpart.px(), mcpart.py(), mcpart.pz(), RecoDecay::m(mcpart.p(), mcpart.e()),
-                              daughterIDs[0], daughterIDs[1], (int8_t)partType, 1.);
+      // Kinematic selection
+      if (mcpart.pt() <= cLambdaMinPt || mcpart.pt() >= cLambdaMaxPt || std::abs(mcpart.y()) >= cLambdaRapCut) {
+        continue;
       }
 
-      // Fill Kaon Table
-      if (partType == kKaonPlus || partType == kKaonMinus) {
-        // Kinematic selection
-        if (mcpart.pt() <= cKaonMinPt || mcpart.pt() >= cKaonMaxPt || std::abs(mcpart.y()) >= cKaonRapCut) {
-          continue;
-        }
+      histos.fill(HIST("Tracks/h1f_lambda_info"), kGenTotAccLambda);
 
-        // Fill table
-        kaonMCGenTrackTable(lambdaMCGenCollisionTable.lastIndex(), mcpart.pt(), mcpart.eta(), mcpart.phi(), mcpart.y(), mcpart.px(), mcpart.py(), mcpart.pz(), RecoDecay::m(mcpart.p(), mcpart.e()),
-                            mcpart.globalIndex(), (int8_t)partType, 1.);
+      // get daughter track info and check for decay channel flag
+      if (!mcpart.has_daughters()) {
+        histos.fill(HIST("Tracks/h1f_lambda_info"), kGenLambdaNoDau);
+        continue;
       }
+      auto dautracks = mcpart.template daughters_as<aod::McParticles>();
+      std::vector<int> daughterPDGs, daughterIDs;
+      for (auto const& dautrack : dautracks) {
+        daughterPDGs.push_back(dautrack.pdgCode());
+        daughterIDs.push_back(dautrack.globalIndex());
+      }
+
+      if (partType == kLambda) {
+        histos.fill(HIST("McGen/h1f_lambda_daughter_PDG"), daughterPDGs[0]);
+        histos.fill(HIST("McGen/h1f_lambda_daughter_PDG"), daughterPDGs[1]);
+        histos.fill(HIST("McGen/h1f_lambda_daughter_PDG"), mcpart.pdgCode());
+      } else {
+        histos.fill(HIST("McGen/h1f_antilambda_daughter_PDG"), daughterPDGs[0]);
+        histos.fill(HIST("McGen/h1f_antilambda_daughter_PDG"), daughterPDGs[1]);
+        histos.fill(HIST("McGen/h1f_antilambda_daughter_PDG"), mcpart.pdgCode());
+      }
+      // Fill table
+      lambdaMCGenTrackTable(lambdaMCGenCollisionTable.lastIndex(), mcpart.pt(), mcpart.eta(), mcpart.phi(), mcpart.y(), mcpart.px(), mcpart.py(), mcpart.pz(), RecoDecay::m(mcpart.p(), mcpart.e()),
+                            daughterIDs[0], daughterIDs[1], (int8_t)partType, 1.);
     }
   }
 
@@ -1166,7 +882,7 @@ struct LambdaTableProducer {
 
   // BC, Collision, tracks and V0s
   using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse>;
-  using Collisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs>;
+  using Collisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::TPCMults, aod::PVMults, aod::MultsGlobal>;
   using Tracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksExtra, aod::TracksDCA, aod::pidTPCEl, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr, aod::TOFSignal, aod::pidTOFbeta, aod::TrackCompColls>;
   using TracksMC = soa::Join<Tracks, aod::McTrackLabels>;
   using McV0Tracks = soa::Join<aod::V0Datas, aod::McV0Labels>;
@@ -1186,18 +902,6 @@ struct LambdaTableProducer {
 
   PROCESS_SWITCH(LambdaTableProducer, processData, "Process for DATA", false);
 
-  void processMatchEffData(Collisions::iterator const& collision, Tracks const& tracks)
-  {
-    // check collision
-    if (!selCollision(collision)) {
-      return;
-    }
-    // Get Matching Efficiency
-    getMatchEffHist<kData>(tracks);
-  }
-
-  PROCESS_SWITCH(LambdaTableProducer, processMatchEffData, "Process for Matching Efficieny Calculation", false);
-
   void processMCReco(soa::Join<Collisions, aod::McCollisionLabels>::iterator const& collision, aod::McCollisions const&, BCsRun3 const& bc,
                      McV0Tracks const& V0s, TracksMC const& tracks, aod::McParticles const&)
   {
@@ -1209,18 +913,6 @@ struct LambdaTableProducer {
   }
 
   PROCESS_SWITCH(LambdaTableProducer, processMCReco, "Process for McReco DATA", false);
-
-  void processMatchEffMCReco(soa::Join<Collisions, aod::McCollisionLabels>::iterator const& collision, aod::McCollisions const&, TracksMC const& tracks, aod::McParticles const&)
-  {
-    // check collision
-    if (!selCollision(collision)) {
-      return;
-    }
-    // Get Matching Efficiency
-    getMatchEffHist<kMC>(tracks);
-  }
-
-  PROCESS_SWITCH(LambdaTableProducer, processMatchEffMCReco, "Process for Matching Efficieny Calculation at MC Reconstructed Level", false);
 
   void processMCRecoGen(aod::McCollisions::iterator const& mcCollision,
                         soa::SmallGroups<soa::Join<Collisions, aod::McCollisionLabels>> const& collisions, BCsRun3 const& bc,
@@ -1236,13 +928,10 @@ struct LambdaTableProducer {
 struct LambdaTracksExtProducer {
   // Tables
   Produces<aod::LambdaTracksExt> lambdaTrackExtTable;
-  Produces<aod::KaonTracksExt> kaonTrackExtTable;
 
   // Configurables
   Configurable<bool> cAcceptAllLambda{"cAcceptAllLambda", false, "Accept all Lambda"};
   Configurable<bool> cRejAllLambdaShaDau{"cRejAllLambdaShaDau", true, "Reject all Lambda sharing daughters"};
-  Configurable<bool> cAcceptAllKaon{"cAcceptAllKaon", false, "Accept all Kaons"};
-  Configurable<bool> cRejAllKaonShaLaDau{"cRejAllKaonShaLaDau", true, "Reject all Kaons sharing Lambda daughters"};
 
   // Histogram Registry.
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -1259,20 +948,9 @@ struct LambdaTracksExtProducer {
     histos.add("h1i_totantilambda_mult", "Multiplicity", kTH1I, {axisMult});
     histos.add("h1i_lambda_mult", "Multiplicity", kTH1I, {axisMult});
     histos.add("h1i_antilambda_mult", "Multiplicity", kTH1I, {axisMult});
-
-    histos.add("h1i_totkaplus_mult", "Multiplicity", kTH1I, {axisMult});
-    histos.add("h1i_totkaminus_mult", "Multiplicity", kTH1I, {axisMult});
-    histos.add("h1i_kaplus_mult", "Multiplicity", kTH1I, {axisMult});
-    histos.add("h1i_kaminus_mult", "Multiplicity", kTH1I, {axisMult});
-
     histos.add("h2d_n2_etaphi_LaP_LaM", "#rho_{2}^{SharePair}", kTH2D, {axisDEta, axisDPhi});
     histos.add("h2d_n2_etaphi_LaP_LaP", "#rho_{2}^{SharePair}", kTH2D, {axisDEta, axisDPhi});
     histos.add("h2d_n2_etaphi_LaM_LaM", "#rho_{2}^{SharePair}", kTH2D, {axisDEta, axisDPhi});
-
-    histos.add("h2d_n2_etaphi_KaPLaP", "#rho_{2}", kTH2D, {axisDEta, axisDPhi});
-    histos.add("h2d_n2_etaphi_KaPLaM", "#rho_{2}", kTH2D, {axisDEta, axisDPhi});
-    histos.add("h2d_n2_etaphi_KaMLaP", "#rho_{2}", kTH2D, {axisDEta, axisDPhi});
-    histos.add("h2d_n2_etaphi_KaMLaM", "#rho_{2}", kTH2D, {axisDEta, axisDPhi});
   }
 
   void processDummy(aod::LambdaCollisions::iterator const&) {}
@@ -1350,75 +1028,6 @@ struct LambdaTracksExtProducer {
   }
 
   PROCESS_SWITCH(LambdaTracksExtProducer, processLambdaTrackExt, "Process for lambda track extension", false);
-
-  void processKaonTrackExt(aod::LambdaCollisions::iterator const&, aod::LambdaTracks const& lambdaTracks, aod::KaonTracks const& kaonTracks)
-  {
-    int nTotKaonPlus = 0, nTotKaonMinus = 0, nSelKaonPlus = 0, nSelKaonMinus = 0;
-
-    for (auto const& kaonTrack : kaonTracks) {
-      bool kaonSharingLambdaDauFlag = false, trueKaonFlag = false;
-      std::vector<int64_t> vKaonShareDauLambdaIndex;
-
-      if (kaonTrack.partType() == kKaonPlus) {
-        ++nTotKaonPlus;
-      } else if (kaonTrack.partType() == kKaonMinus) {
-        ++nTotKaonMinus;
-      }
-
-      for (auto const& lambdaTrack : lambdaTracks) {
-        // Removal based on shared track index
-        if (kaonTrack.kaonTrackId() == lambdaTrack.posTrackId() || kaonTrack.kaonTrackId() == lambdaTrack.negTrackId()) {
-          vKaonShareDauLambdaIndex.push_back(kaonTrack.kaonTrackId());
-          kaonSharingLambdaDauFlag = true;
-
-          // Fill Deta-Dphi Histogram
-          if (kaonTrack.partType() == kKaonPlus && lambdaTrack.partType() == kLambda) {
-            histos.fill(HIST("h2d_n2_etaphi_KaPLaP"), kaonTrack.eta() - lambdaTrack.eta(), RecoDecay::constrainAngle(kaonTrack.phi() - lambdaTrack.phi(), -PIHalf));
-          } else if (kaonTrack.partType() == kKaonPlus && lambdaTrack.partType() == kAntiLambda) {
-            histos.fill(HIST("h2d_n2_etaphi_KaPLaM"), kaonTrack.eta() - lambdaTrack.eta(), RecoDecay::constrainAngle(kaonTrack.phi() - lambdaTrack.phi(), -PIHalf));
-          } else if (kaonTrack.partType() == kKaonMinus && lambdaTrack.partType() == kLambda) {
-            histos.fill(HIST("h2d_n2_etaphi_KaMLaP"), kaonTrack.eta() - lambdaTrack.eta(), RecoDecay::constrainAngle(kaonTrack.phi() - lambdaTrack.phi(), -PIHalf));
-          } else if (kaonTrack.partType() == kKaonMinus && lambdaTrack.partType() == kAntiLambda) {
-            histos.fill(HIST("h2d_n2_etaphi_KaMLaM"), kaonTrack.eta() - lambdaTrack.eta(), RecoDecay::constrainAngle(kaonTrack.phi() - lambdaTrack.phi(), -PIHalf));
-          }
-        }
-      }
-
-      // Accept / Reject
-      trueKaonFlag = cAcceptAllKaon || (cRejAllKaonShaLaDau && !kaonSharingLambdaDauFlag);
-
-      // Multiplicity of selected kaons
-      if (trueKaonFlag) {
-        if (kaonTrack.partType() == kKaonPlus) {
-          ++nSelKaonPlus;
-        } else if (kaonTrack.partType() == kKaonMinus) {
-          ++nSelKaonMinus;
-        }
-      }
-
-      // Fill LambdaTrackExt table
-      kaonTrackExtTable(kaonSharingLambdaDauFlag, vKaonShareDauLambdaIndex, trueKaonFlag);
-    }
-
-    // Fill multiplicity histograms
-    if (nTotKaonPlus != 0) {
-      histos.fill(HIST("h1i_totkaplus_mult"), nTotKaonPlus);
-    }
-
-    if (nTotKaonMinus != 0) {
-      histos.fill(HIST("h1i_totkaminus_mult"), nTotKaonMinus);
-    }
-
-    if (nSelKaonPlus != 0) {
-      histos.fill(HIST("h1i_kaplus_mult"), nSelKaonPlus);
-    }
-
-    if (nSelKaonMinus != 0) {
-      histos.fill(HIST("h1i_kaminus_mult"), nSelKaonMinus);
-    }
-  }
-
-  PROCESS_SWITCH(LambdaTracksExtProducer, processKaonTrackExt, "Process for kaon track extension", false);
 };
 
 struct LambdaR2Correlation {
@@ -1426,20 +1035,19 @@ struct LambdaR2Correlation {
   Configurable<int> cLambdaNPtBins{"cLambdaNPtBins", 34, "N pT Bins"};
   Configurable<float> cLambdaPtMin{"cLambdaPtMin", 0.7, "Lambda pT Min"};
   Configurable<float> cLambdaPtMax{"cLambdaPtMax", 3.4, "Lambda pT Max"};
-  Configurable<int> cKaonNPtBins{"cKaonNPtBins", 20, "N pT Bins"};
-  Configurable<float> cKaonPtMin{"cKaonPtMin", 0.3, "Kaon pT Min"};
-  Configurable<float> cKaonPtMax{"cKaonPtMax", 2.2, "Kaon pT Max"};
 
   Configurable<int> cNRapBins{"cNRapBins", 10, "N Rapidity Bins"};
   Configurable<float> cMinRap{"cMinRap", -0.5, "Minimum Rapidity"};
   Configurable<float> cMaxRap{"cMaxRap", 0.5, "Maximum Rapidity"};
   Configurable<int> cNPhiBins{"cNPhiBins", 36, "N Phi Bins"};
-  Configurable<bool> cAnaPairs{"cAnaPairs", false, "Analyze pairs flag"};
+
+  // Analysis flags
+  Configurable<bool> cAnaPairs{"cAnaPairs", false, "Analyze Pairs Flag"};
   Configurable<bool> cAnaEff{"cAnaEff", false, "Analyze efficiency flag"};
 
   // Lambda Kaon femtoscopic correction
   Configurable<bool> cApplyFemtoSel{"cApplyFemtoSel", false, "Femto qinv selection"};
-  Configurable<float> cFemtoCut{"cFemtoCut", 0.02, "Kaon--Lambda Femto qinv cut"};
+  Configurable<float> cFemtoCut{"cFemtoCut", 0.1, "Femto qinv cut"};
 
   // Lambda Kaon two-track cuts
   Configurable<bool> cApplyTwoTrackCut{"cApplyTwoTrackCut", false, "Flag for two track cut"};
@@ -1491,8 +1099,6 @@ struct LambdaR2Correlation {
     const AxisSpec axisDPhi(640, -PIHalf, 3. * PIHalf, "#Delta#varphi");
     const AxisSpec axisMass(100, 1.06, 1.16, "M_{#Lambda} (GeV/#it{c}^{2})");
     const AxisSpec axisPtLambda(cLambdaNPtBins, cLambdaPtMin, cLambdaPtMax, "p_{T} (GeV/#it{c})");
-    const AxisSpec axisPtKaon(cKaonNPtBins, cKaonPtMin, cKaonPtMax, "p_{T} (GeV/#it{c})");
-    const AxisSpec axisEta(cNRapBins, cMinRap, cMaxRap, "#eta");
     const AxisSpec axisRap(cNRapBins, cMinRap, cMaxRap, "y");
     const AxisSpec axisPhi(cNPhiBins, 0., TwoPI, "#varphi (rad)");
     const AxisSpec axisRapPhi(knrapphibins, kminrapphi, kmaxrapphi, "y #varphi");
@@ -1513,16 +1119,10 @@ struct LambdaR2Correlation {
     if (cAnaEff) {
       histos.add("Reco/Efficiency/h2f_n1_centpt_LaP", "#rho_{1}^{#Lambda}", kTH2F, {axisCent, axisPtLambda});
       histos.add("Reco/Efficiency/h2f_n1_centpt_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH2F, {axisCent, axisPtLambda});
-      histos.add("Reco/Efficiency/h2f_n1_centpt_KaP", "#rho_{1}^{K^{#plus}}", kTH2F, {axisCent, axisPtKaon});
-      histos.add("Reco/Efficiency/h2f_n1_centpt_KaM", "#rho_{1}^{K^{#minus}}", kTH2F, {axisCent, axisPtKaon});
       histos.add("Reco/Efficiency/h3f_n1_centptrap_LaP", "#rho_{1}^{#Lambda}", kTH3F, {axisCent, axisPtLambda, axisRap});
       histos.add("Reco/Efficiency/h3f_n1_centptrap_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH3F, {axisCent, axisPtLambda, axisRap});
-      histos.add("Reco/Efficiency/h3f_n1_centptrap_KaP", "#rho_{1}^{K^{#plus}}", kTH3F, {axisCent, axisPtKaon, axisRap});
-      histos.add("Reco/Efficiency/h3f_n1_centptrap_KaM", "#rho_{1}^{K^{#minus}}", kTH3F, {axisCent, axisPtKaon, axisRap});
       histos.add("Reco/Efficiency/h4f_n1_centvzptrap_LaP", "#rho_{1}^{#Lambda}", kTHnSparseF, {axisCent, axisVz, axisPtLambda, axisRap});
       histos.add("Reco/Efficiency/h4f_n1_centvzptrap_LaM", "#rho_{1}^{#bar{#Lambda}}", kTHnSparseF, {axisCent, axisVz, axisPtLambda, axisRap});
-      histos.add("Reco/Efficiency/h4f_n1_centvzptrap_KaP", "#rho_{1}^{K^{#plus}}", kTHnSparseF, {axisCent, axisVz, axisPtKaon, axisRap});
-      histos.add("Reco/Efficiency/h4f_n1_centvzptrap_KaM", "#rho_{1}^{K^{#minus}}", kTHnSparseF, {axisCent, axisVz, axisPtKaon, axisRap});
     }
 
     // Single and Two Particle Densities
@@ -1531,24 +1131,16 @@ struct LambdaR2Correlation {
     histos.add("Reco/h3f_n1_centptmass_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH3F, {axisCent, axisPtLambda, axisMass});
     histos.add("Reco/h3f_n1_centptrap_LaP", "#rho_{1}^{#Lambda}", kTH3F, {axisCent, axisPtLambda, axisRap});
     histos.add("Reco/h3f_n1_centptrap_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH3F, {axisCent, axisPtLambda, axisRap});
-    histos.add("Reco/h3f_n1_centptrap_KaP", "#rho_{1}^{K^{#plus}}", kTH3F, {axisCent, axisPtKaon, axisRap});
-    histos.add("Reco/h3f_n1_centptrap_KaM", "#rho_{1}^{K^{#minus}}", kTH3F, {axisCent, axisPtKaon, axisRap});
 
     // rho1 for R2 RapPhi
     histos.add("Reco/h3f_n1_rapphi_LaP", "#rho_{1}^{#Lambda}", kTH3F, {axisCent, axisRap, axisPhi});
     histos.add("Reco/h3f_n1_rapphi_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH3F, {axisCent, axisRap, axisPhi});
-    histos.add("Reco/h3f_n1_rapphi_KaP", "#rho_{1}^{K^{#plus}}", kTH3F, {axisCent, axisRap, axisPhi});
-    histos.add("Reco/h3f_n1_rapphi_KaM", "#rho_{1}^{K^{#minus}}", kTH3F, {axisCent, axisRap, axisPhi});
 
     if (cAnaPairs) {
       // rho2 for R2 Rap1Phi1Rap2Phi2
       histos.add("Reco/h3f_n2_rapphi_LaP_LaM", "#rho_{2}^{#Lambda#bar{#Lambda}}", kTH3F, {axisCent, axisRapPhi, axisRapPhi});
       histos.add("Reco/h3f_n2_rapphi_LaP_LaP", "#rho_{2}^{#Lambda#Lambda}", kTH3F, {axisCent, axisRapPhi, axisRapPhi});
       histos.add("Reco/h3f_n2_rapphi_LaM_LaM", "#rho_{2}^{#bar{#Lambda}#bar{#Lambda}}", kTH3F, {axisCent, axisRapPhi, axisRapPhi});
-      histos.add("Reco/h3f_n2_rapphi_LaP_KaM", "#rho_{2}^{#LambdaK^{#minus}}", kTH3F, {axisCent, axisRapPhi, axisRapPhi});
-      histos.add("Reco/h3f_n2_rapphi_LaP_KaP", "#rho_{2}^{#LambdaK^{#plus}}", kTH3F, {axisCent, axisRapPhi, axisRapPhi});
-      histos.add("Reco/h3f_n2_rapphi_LaM_KaM", "#rho_{2}^{#bar{#Lambda}K^{#plus}}", kTH3F, {axisCent, axisRapPhi, axisRapPhi});
-      histos.add("Reco/h3f_n2_rapphi_LaM_KaP", "#rho_{2}^{#bar{#Lambda}K^{#minus}}", kTH3F, {axisCent, axisRapPhi, axisRapPhi});
     }
 
     // MCGen
@@ -1587,29 +1179,24 @@ struct LambdaR2Correlation {
     return (std::abs(deta) < cDEtaCut && std::abs(dphistar) < cDPhiStarCut);
   }
 
-  template <typename T, typename V>
-  bool isClosePair(V const& lambda, T const& track)
+  template <typename V>
+  bool isClosePair(V const& l1, V const& l2)
   {
     // Before
-    histos.fill(HIST("QA/TwoTrackCut/Before/h2d_n2_detadphi"), track.eta() - lambda.eta(), RecoDecay::constrainAngle(track.phi() - lambda.phi(), -PIHalf));
-
-    // Close pair flag
-    bool retFlag = false;
+    histos.fill(HIST("QA/TwoTrackCut/Before/h2d_n2_detadphi"), l1.eta() - l2.eta(), RecoDecay::constrainAngle(l1.phi() - l2.phi(), -PIHalf));
 
     // Assign kinematics
-    std::array<float, 3> trackKin = {track.pt(), track.eta(), track.phi()};
-    std::array<float, 3> lambdaPosTrackKin = {lambda.posTrackKin()[0], lambda.posTrackKin()[1], lambda.posTrackKin()[2]};
-    std::array<float, 3> lambdaNegTrackKin = {lambda.negTrackKin()[0], lambda.negTrackKin()[1], lambda.negTrackKin()[2]};
+    std::array<float, 3> posTrackKinLambda1 = {l1.posTrackKin()[0], l1.posTrackKin()[1], l1.posTrackKin()[2]};
+    std::array<float, 3> negTrackKinLambda1 = {l1.negTrackKin()[0], l1.negTrackKin()[1], l1.negTrackKin()[2]};
+    std::array<float, 3> posTrackKinLambda2 = {l2.posTrackKin()[0], l2.posTrackKin()[1], l2.posTrackKin()[2]};
+    std::array<float, 3> negTrackKinLambda2 = {l2.negTrackKin()[0], l2.negTrackKin()[1], l2.negTrackKin()[2]};
 
-    if (track.partType() == kKaonPlus) {
-      retFlag = checkClosePair(trackKin, lambdaPosTrackKin, 1, 1) || checkClosePair(trackKin, lambdaNegTrackKin, 1, -1);
-    } else if (track.partType() == kKaonMinus) {
-      retFlag = checkClosePair(trackKin, lambdaPosTrackKin, -1, 1) || checkClosePair(trackKin, lambdaNegTrackKin, -1, -1);
-    }
+    // Check close pair
+    bool retFlag = checkClosePair(posTrackKinLambda1, posTrackKinLambda2, 1, 1) && checkClosePair(negTrackKinLambda1, negTrackKinLambda2, -1, -1);
 
     // Fill QA
     if (!retFlag) { // Pair accept
-      histos.fill(HIST("QA/TwoTrackCut/After/h2d_n2_detadphi"), track.eta() - lambda.eta(), RecoDecay::constrainAngle(track.phi() - lambda.phi(), -PIHalf));
+      histos.fill(HIST("QA/TwoTrackCut/After/h2d_n2_detadphi"), l1.eta() - l2.eta(), RecoDecay::constrainAngle(l1.phi() - l2.phi(), -PIHalf));
     }
 
     // Pair reject
@@ -1641,7 +1228,7 @@ struct LambdaR2Correlation {
   void fillPairHistos(T1& p1, T2& p2)
   {
     static constexpr auto SubDirRecGen = std::array{"Reco/", "McGen/"};
-    static constexpr auto SubDirHist = std::array{"LaP_LaM", "LaP_LaP", "LaM_LaM", "LaP_KaP", "LaP_KaM", "LaM_KaP", "LaM_KaM", "KaP_KaM", "KaP_KaP", "KaM_KaM"};
+    static constexpr auto SubDirHist = std::array{"LaP_LaM", "LaP_LaP", "LaM_LaM"};
 
     const auto rapbin1 = static_cast<int>((p1.rap() - kminrap) / rapbinwidth);
     const auto rapbin2 = static_cast<int>((p2.rap() - kminrap) / rapbinwidth);
@@ -1664,7 +1251,7 @@ struct LambdaR2Correlation {
   void analyzeSingles(T const& tracks)
   {
     static constexpr auto SubDirRecGen = std::array{"Reco/", "McGen/"};
-    static constexpr auto SubDirHist = std::array{"LaP", "LaM", "KaP", "KaM"};
+    static constexpr auto SubDirHist = std::array{"LaP", "LaM"};
 
     for (auto const& track : tracks) {
       // Efficiency Plots
@@ -1675,9 +1262,7 @@ struct LambdaR2Correlation {
       }
 
       // QA Plots
-      if (part == kLambda || part == kAntiLambda) {
-        histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3f_n1_centptmass_") + HIST(SubDirHist[part]), cent, track.pt(), track.mass());
-      }
+      histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3f_n1_centptmass_") + HIST(SubDirHist[part]), cent, track.pt(), track.mass());
       histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3f_n1_centptrap_") + HIST(SubDirHist[part]), cent, track.pt(), track.rap(), track.corrFact());
 
       // Rho1 for N1RapPhi
@@ -1695,17 +1280,15 @@ struct LambdaR2Correlation {
           continue;
         }
 
-        // Lambda-Kaon close pair rejection
+        // Lambda close pair rejection
         if constexpr (rec_gen == kRec) {
-          if constexpr (partpair == kLambdaKaonPlus || partpair == kLambdaKaonMinus || partpair == kAntiLambdaKaonPlus || partpair == kAntiLambdaKaonMinus) {
-            // Close pair
-            if (cApplyTwoTrackCut && isClosePair(trk_1, trk_2)) {
-              continue;
-            }
-            // Femto selection
-            if (cApplyFemtoSel && isCloseQinv(trk_1, trk_2)) {
-              continue;
-            }
+          // Close pair
+          if (cApplyTwoTrackCut && isClosePair(trk_1, trk_2)) {
+            continue;
+          }
+          // Femto selection
+          if (cApplyFemtoSel && isCloseQinv(trk_1, trk_2)) {
+            continue;
           }
         }
 
@@ -1717,46 +1300,35 @@ struct LambdaR2Correlation {
 
   using LambdaCollisions = aod::LambdaCollisions;
   using LambdaTracks = soa::Join<aod::LambdaTracks, aod::LambdaTracksExt>;
-  using KaonTracks = soa::Join<aod::KaonTracks, aod::KaonTracksExt>;
 
   SliceCache cache;
   Partition<LambdaTracks> partLambdaTracks = (aod::lambdatrack::partType == (int8_t)kLambda) && (aod::lambdatrackext::trueLambdaFlag == true);
   Partition<LambdaTracks> partAntiLambdaTracks = (aod::lambdatrack::partType == (int8_t)kAntiLambda) && (aod::lambdatrackext::trueLambdaFlag == true);
-  Partition<KaonTracks> partKaonPlusTracks = (aod::kaontrack::partType == (int8_t)kKaonPlus) && (aod::kaontrackext::trueKaonFlag == true);
-  Partition<KaonTracks> partKaonMinusTracks = (aod::kaontrack::partType == (int8_t)kKaonMinus) && (aod::kaontrackext::trueKaonFlag == true);
 
   void processDummy(aod::LambdaCollisions::iterator const&) {}
 
   PROCESS_SWITCH(LambdaR2Correlation, processDummy, "Dummy Process", true);
 
-  void processDataReco(LambdaCollisions::iterator const& collision, LambdaTracks const&, KaonTracks const&)
+  void processDataReco(LambdaCollisions::iterator const& collision, LambdaTracks const&)
   {
     histos.fill(HIST("Event/Reco/h1f_collision_posz"), collision.posZ());
     histos.fill(HIST("Event/Reco/h1f_ft0m_mult_percentile"), collision.cent());
 
-    cent = collision.cent();
     posZ = collision.posZ();
+    cent = collision.cent();
     magField = collision.bField();
 
     auto lambdaTracks = partLambdaTracks->sliceByCached(aod::lambdatrack::lambdaCollisionId, collision.globalIndex(), cache);
     auto antiLambdaTracks = partAntiLambdaTracks->sliceByCached(aod::lambdatrack::lambdaCollisionId, collision.globalIndex(), cache);
-    auto kaonPlusTracks = partKaonPlusTracks->sliceByCached(aod::kaontrack::lambdaCollisionId, collision.globalIndex(), cache);
-    auto kaonMinusTracks = partKaonMinusTracks->sliceByCached(aod::kaontrack::lambdaCollisionId, collision.globalIndex(), cache);
 
     analyzeSingles<kLambda, kRec>(lambdaTracks);
     analyzeSingles<kAntiLambda, kRec>(antiLambdaTracks);
-    analyzeSingles<kKaonPlus, kRec>(kaonPlusTracks);
-    analyzeSingles<kKaonMinus, kRec>(kaonMinusTracks);
 
     if (cAnaPairs) {
       // Pairs Only
       analyzePairs<kLambdaAntiLambda, kRec, false>(lambdaTracks, antiLambdaTracks);
       analyzePairs<kLambdaLambda, kRec, true>(lambdaTracks, lambdaTracks);
       analyzePairs<kAntiLambdaAntiLambda, kRec, true>(antiLambdaTracks, antiLambdaTracks);
-      analyzePairs<kLambdaKaonPlus, kRec, false>(lambdaTracks, kaonPlusTracks);
-      analyzePairs<kLambdaKaonMinus, kRec, false>(lambdaTracks, kaonMinusTracks);
-      analyzePairs<kAntiLambdaKaonPlus, kRec, false>(antiLambdaTracks, kaonPlusTracks);
-      analyzePairs<kAntiLambdaKaonMinus, kRec, false>(antiLambdaTracks, kaonMinusTracks);
     }
   }
 
@@ -1764,39 +1336,29 @@ struct LambdaR2Correlation {
 
   using LambdaMcGenCollisions = aod::LambdaMcGenCollisions;
   using LambdaMcGenTracks = aod::LambdaMcGenTracks;
-  using KaonMcGenTracks = aod::KaonMcGenTracks;
 
   SliceCache cachemc;
   Partition<LambdaMcGenTracks> partMcLambdaTracks = (aod::lambdatrack::partType == (int8_t)kLambda);
   Partition<LambdaMcGenTracks> partMcAntiLambdaTracks = (aod::lambdatrack::partType == (int8_t)kAntiLambda);
-  Partition<KaonMcGenTracks> partMcKaonPlusTracks = (aod::kaontrack::partType == (int8_t)kKaonPlus);
-  Partition<KaonMcGenTracks> partMcKaonMinusTracks = (aod::kaontrack::partType == (int8_t)kKaonMinus);
 
-  void processMCGen(LambdaMcGenCollisions::iterator const& mcgencol, LambdaMcGenTracks const&, KaonMcGenTracks const&)
+  void processMCGen(LambdaMcGenCollisions::iterator const& mcgencol, LambdaMcGenTracks const&)
   {
     histos.fill(HIST("Event/McGen/h1f_collision_posz"), mcgencol.posZ());
     histos.fill(HIST("Event/McGen/h1f_ft0m_mult_percentile"), mcgencol.cent());
 
+    posZ = mcgencol.posZ();
     cent = mcgencol.cent();
 
     auto lambdaTracks = partMcLambdaTracks->sliceByCached(aod::lambdamcgentrack::lambdaMcGenCollisionId, mcgencol.globalIndex(), cache);
     auto antiLambdaTracks = partMcAntiLambdaTracks->sliceByCached(aod::lambdamcgentrack::lambdaMcGenCollisionId, mcgencol.globalIndex(), cache);
-    auto kaonPlusTracks = partMcKaonPlusTracks->sliceByCached(aod::kaonmcgentrack::lambdaMcGenCollisionId, mcgencol.globalIndex(), cache);
-    auto kaonMinusTracks = partMcKaonMinusTracks->sliceByCached(aod::kaonmcgentrack::lambdaMcGenCollisionId, mcgencol.globalIndex(), cache);
 
     analyzeSingles<kLambda, kGen>(lambdaTracks);
     analyzeSingles<kAntiLambda, kGen>(antiLambdaTracks);
-    analyzeSingles<kKaonPlus, kGen>(kaonPlusTracks);
-    analyzeSingles<kKaonMinus, kGen>(kaonMinusTracks);
 
     if (cAnaPairs) {
       analyzePairs<kLambdaAntiLambda, kGen, false>(lambdaTracks, antiLambdaTracks);
       analyzePairs<kLambdaLambda, kGen, true>(lambdaTracks, lambdaTracks);
       analyzePairs<kAntiLambdaAntiLambda, kGen, true>(antiLambdaTracks, antiLambdaTracks);
-      analyzePairs<kLambdaKaonPlus, kGen, false>(lambdaTracks, kaonPlusTracks);
-      analyzePairs<kLambdaKaonMinus, kGen, false>(lambdaTracks, kaonMinusTracks);
-      analyzePairs<kAntiLambdaKaonPlus, kGen, false>(antiLambdaTracks, kaonPlusTracks);
-      analyzePairs<kAntiLambdaKaonMinus, kGen, false>(antiLambdaTracks, kaonMinusTracks);
     }
   }
 

@@ -18,6 +18,7 @@
 
 #include "pidTOFBase.h"
 
+#include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/TableHelper.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 
@@ -31,7 +32,6 @@
 #include <Framework/Configurable.h>
 #include <Framework/InitContext.h>
 #include <Framework/Variant.h>
-#include <PID/PIDTOF.h>
 #include <ReconstructionDataFormats/PID.h>
 
 #include <TGraph.h>
@@ -302,9 +302,9 @@ struct tofPidFull {
       reserveTable(pidId, tracks.size());
     }
 
-    int lastCollisionId = -1;          // Last collision ID analysed
-    float resolution = 1.f;            // Last resolution assigned
-    for (auto const& track : tracks) { // Loop on all tracks
+    int lastCollisionId = -1;                                 // Last collision ID analysed
+    float resolution = 1.f;                                   // Last resolution assigned
+    for (auto const& track : tracks) {                        // Loop on all tracks
       if (!track.has_collision() || collisions.size() == 0) { // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
         for (auto const& pidId : mEnabledParticles) {
           makeTableEmpty(pidId);
@@ -407,8 +407,8 @@ struct tofPidFull {
     for (auto const& pidId : mEnabledParticles) {
       reserveTable(pidId, tracks.size());
     }
-    float resolution = 1.f;            // Last resolution assigned
-    for (auto const& track : tracks) { // Loop on all tracks
+    float resolution = 1.f;                                   // Last resolution assigned
+    for (auto const& track : tracks) {                        // Loop on all tracks
       if (!track.has_collision() || collisions.size() == 0) { // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
         for (auto const& pidId : mEnabledParticles) {
           makeTableEmpty(pidId);

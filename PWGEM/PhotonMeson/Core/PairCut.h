@@ -16,6 +16,9 @@
 #ifndef PWGEM_PHOTONMESON_CORE_PAIRCUT_H_
 #define PWGEM_PHOTONMESON_CORE_PAIRCUT_H_
 
+#include <array>
+#include <cmath>
+#include <cstddef>
 #include <string>
 
 class PairCut
@@ -30,19 +33,15 @@ class PairCut
     kNCuts
   };
 
-  const std::string getName() const { return name; }
-  const std::string getTitle() const { return title; }
+  [[nodiscard]] const std::string& getName() const { return name; }
+  [[nodiscard]] const std::string& getTitle() const { return title; }
 
-  static const char* mCutNames[static_cast<int>(PairCuts::kNCuts)];
+  static const std::array<std::string, static_cast<std::size_t>(PairCuts::kNCuts)> mCutNames;
 
   template <typename G1, typename G2>
   bool IsSelected(G1 const& g1, G2 const& g2) const
   {
-    if (!IsSelectedPair(g1, g2, PairCuts::kAsym)) {
-      return false;
-    }
-
-    return true;
+    return IsSelectedPair(g1, g2, PairCuts::kAsym);
   }
 
   // template <typename U1, typename U2, typename G1, typename G2>
@@ -51,7 +50,7 @@ class PairCut
   {
     switch (cut) {
       case PairCuts::kAsym: {
-        float asym = abs(g1.e() - g2.e()) / (g1.e() + g2.e());
+        float asym = std::abs(g1.e() - g2.e()) / (g1.e() + g2.e());
         // float asym = abs(g1.p() - g2.p()) / (g1.p() + g2.p());
         return mMinAsym < asym && asym < mMaxAsym;
       }

@@ -44,6 +44,7 @@
 
 #include <TF1.h>
 #include <TH1.h>
+#include <TH2.h>
 #include <TH3.h>
 #include <TNamed.h>
 #include <TObjArray.h>
@@ -78,7 +79,7 @@ struct FlowGfwNonflow {
   Configurable<int> cfgMpar{"cfgMpar", 4, "Highest order of pt-pt correlations"};
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FT0A, 4:NTPV, 5:NGlobal, 6:MFT"};
   Configurable<bool> cfgUseNch{"cfgUseNch", false, "Do correlations as function of Nch"};
-  Configurable<int> cfgUseNchCorrection{"cfgUseNchCorrection", 1, "Use correction for Nch; 0: Use size of tracks table, 1: Use efficiency-corrected Nch values, 2: Use uncorrected Nch values"};
+  Configurable<int> cfgUseNchCorrection{"cfgUseNchCorrection", 1, "Nch used on the x-axis; 0: tracks table size, 1: efficiency-corrected, 2: accepted reconstructed, 3: Reco.-gen. response-matrix corrected"};
   Configurable<bool> cfgRunByRun{"cfgRunByRun", false, "Use run-by-run NUA"};
   Configurable<bool> cfgFillQA{"cfgFillQA", false, "Fill QA histograms"};
   Configurable<bool> cfgUseCentralMoments{"cfgUseCentralMoments", true, "Use central moments in vn-pt calculations"};
@@ -86,6 +87,7 @@ struct FlowGfwNonflow {
   struct : ConfigurableGroup {
     Configurable<std::string> cfgEfficiencyPath{"cfgEfficiencyPath", "", "CCDB path to efficiency object"};
     Configurable<bool> cfgUse2DEfficiency{"cfgUse2DEfficiency", false, "Toggle the use of 2D (pt, centrality) efficiency versus centrality integrated efficiency"};
+    Configurable<std::string> cfgNchResponsePath{"cfgNchResponsePath", "", "CCDB path to TH2 response matrix (reconstructed Nch on x, generated Nch on y)"};
     Configurable<std::string> cfgAcceptancePath{"cfgAcceptancePath", "", "CCDB path to acceptance object"};
   } cfgCorrections;
   struct : ConfigurableGroup {
@@ -181,6 +183,7 @@ struct FlowGfwNonflow {
 
   struct Config {
     TH1* mEfficiency = nullptr;
+    TH2* mNchResponse = nullptr;
     std::vector<GFWWeights*> mAcceptance;
     bool correctionsLoaded = false;
   } correctionsConfig;
@@ -239,6 +242,12 @@ struct FlowGfwNonflow {
     KaonID,
     ProtonID,
     SpeciesCount
+  };
+  enum NchSelector {
+    TableSize,
+    Corrected,
+    Uncorrected,
+    ResponseMatrixCorrected
   };
 
   // Generic Framework
@@ -378,6 +387,9 @@ struct FlowGfwNonflow {
         registry.add("eventQA/before/multT0C_centT0C", "; FT0C centrality (%); multT0C", {HistType::kTH2D, {centAxis, t0cAxis}});
         registry.add("eventQA/before/occ_mult_cent", "; occupancy; N_{ch}; centrality (%)", {HistType::kTH3D, {occAxis, nchAxis, centAxis}});
       }
+    }
+    if (doprocessMCReco) {
+      registry.add("MCReco/Nch_reco_gen", "; N_{ch}^{reco}; N_{ch}^{gen}", {HistType::kTH2D, {nchAxis, nchAxis}});
     }
     registry.add("eventQA/before/centrality", "; centrality (%); Counts", {HistType::kTH1D, {centAxis}});
     registry.add("eventQA/before/multiplicity", "; N_{ch}; Counts", {HistType::kTH1D, {nchAxis}});
@@ -639,7 +651,41 @@ struct FlowGfwNonflow {
       }
       LOGF(info, "Loaded efficiency histogram from %s", cfgCorrections.cfgEfficiencyPath.value.c_str());
     }
+    if (!cfgCorrections.cfgNchResponsePath.value.empty()) {
+      correctionsConfig.mNchResponse = ccdb->getForTimeStamp<TH2D>(cfgCorrections.cfgNchResponsePath, timestamp);
+      if (correctionsConfig.mNchResponse == nullptr) {
+        LOGF(fatal, "Could not load Nch response matrix from %s", cfgCorrections.cfgNchResponsePath.value.c_str());
+      }
+      LOGF(info, "Loaded Nch response matrix from %s", cfgCorrections.cfgNchResponsePath.value.c_str());
+    } else if (cfgUseNchCorrection == NchSelector::ResponseMatrixCorrected) {
+      LOGF(fatal, "cfgUseNchCorrection=3 requires cfgNchResponsePath");
+    }
     correctionsConfig.correctionsLoaded = true;
+  }
+
+  float getResponseCorrectedNch(const unsigned int multReconstructed) const
+  {
+    if (!correctionsConfig.mNchResponse) {
+      return multReconstructed;
+    }
+    const auto* response = correctionsConfig.mNchResponse;
+    const int recoBin = response->GetXaxis()->FindFixBin(multReconstructed);
+    if (recoBin < 1 || recoBin > response->GetNbinsX()) {
+      LOGF(warn, "Reconstructed Nch %u is outside the response matrix; using the uncorrected value", multReconstructed);
+      return multReconstructed;
+    }
+    double sumWeights = 0.;
+    double sumGeneratedNch = 0.;
+    for (int genBin = 1; genBin <= response->GetNbinsY(); ++genBin) {
+      const double weight = response->GetBinContent(recoBin, genBin);
+      sumWeights += weight;
+      sumGeneratedNch += weight * response->GetYaxis()->GetBinCenter(genBin);
+    }
+    if (sumWeights <= 0.) {
+      LOGF(warn, "Response matrix has no entries for reconstructed Nch %u; using the uncorrected value", multReconstructed);
+      return multReconstructed;
+    }
+    return sumGeneratedNch / sumWeights;
   }
 
   template <typename TTrack>
@@ -677,22 +723,22 @@ struct FlowGfwNonflow {
         return -1.;
       }
       return 1. / eff;
-    } else {
-      auto* effHist = dynamic_cast<TH1D*>(correctionsConfig.mEfficiency);
-      if (!effHist) {
-        LOGF(error, "Efficiency object at %s is not a TH1D", cfgCorrections.cfgEfficiencyPath.value.c_str());
-        return -1.;
-      }
-      bin = effHist->FindBin(track.pt());
-      if (!bin) {
-        return -1.;
-      }
-      const double eff = effHist->GetBinContent(bin);
-      if (!std::isfinite(eff) || eff <= 0.) {
-        return -1.;
-      }
-      return 1. / eff;
     }
+
+    auto* effHist = dynamic_cast<TH1D*>(correctionsConfig.mEfficiency);
+    if (!effHist) {
+      LOGF(error, "Efficiency object at %s is not a TH1D", cfgCorrections.cfgEfficiencyPath.value.c_str());
+      return -1.;
+    }
+    bin = effHist->FindBin(track.pt());
+    if (!bin) {
+      return -1.;
+    }
+    const double eff = effHist->GetBinContent(bin);
+    if (!std::isfinite(eff) || eff <= 0.) {
+      return -1.;
+    }
+    return 1. / eff;
   }
 
   template <typename TCollision>
@@ -1014,7 +1060,7 @@ struct FlowGfwNonflow {
   };
 
   template <DataType dt, typename TCollision, typename TTracks>
-  void processCollision(const TCollision& collision, const TTracks& tracks, const float& centrality, const float& field)
+  void processCollision(const TCollision& collision, const TTracks& tracks, const float& centrality, const float& field, const int generatedNch = -1)
   {
     if (tracks.size() < 1) {
       return;
@@ -1037,6 +1083,11 @@ struct FlowGfwNonflow {
     for (const auto& track : tracks) {
       processTrack(track, vtxz, field, centrality, acceptedTracks);
     }
+    if constexpr (dt == Reco) {
+      if (generatedNch >= 0) {
+        registry.fill(HIST("MCReco/Nch_reco_gen"), acceptedTracks.totaluncorr, generatedNch);
+      }
+    }
     if (dt != Gen && cfgFillQA) {
       registry.fill(HIST("trackQA/after/Nch_corrected"), acceptedTracks.total);
       registry.fill(HIST("trackQA/after/Nch_uncorrected"), acceptedTracks.totaluncorr);
@@ -1044,14 +1095,17 @@ struct FlowGfwNonflow {
 
     float multiplicity = 0.f;
     switch (cfgUseNchCorrection) {
-      case 0:
+      case NchSelector::TableSize:
         multiplicity = tracks.size();
         break;
-      case 1:
+      case NchSelector::Corrected:
         multiplicity = acceptedTracks.total;
         break;
-      case 2:
+      case NchSelector::Uncorrected:
         multiplicity = acceptedTracks.totaluncorr;
+        break;
+      case NchSelector::ResponseMatrixCorrected:
+        multiplicity = (dt == Gen) ? acceptedTracks.totaluncorr : getResponseCorrectedNch(acceptedTracks.totaluncorr);
         break;
       default:
         multiplicity = tracks.size();
@@ -1155,8 +1209,10 @@ struct FlowGfwNonflow {
 
   using GFWCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs>>;
   using GFWMCCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs, aod::McCollisionLabels>;
+  using FilteredGFWMCCollisions = soa::Filtered<GFWMCCollisions>;
   using GFWTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>>;
   using GFWMCTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::McTrackLabels>>;
+  Preslice<aod::McParticles> particlesPerMcCollision = aod::mcparticle::mcCollisionId;
 
   SliceCache cache;
   Partition<GFWTracks> posTracks = aod::track::signed1Pt > 0.0f;
@@ -1221,7 +1277,7 @@ struct FlowGfwNonflow {
   }
   PROCESS_SWITCH(FlowGfwNonflow, processData, "Process analysis for non-derived data", true);
 
-  void processMCReco(GFWCollisions::iterator const& collision, aod::BCsWithTimestamps const&, GFWMCTracks const& tracks, aod::McParticles const&)
+  void processMCReco(FilteredGFWMCCollisions::iterator const& collision, aod::BCsWithTimestamps const&, GFWMCTracks const& tracks, aod::McParticles const& particles)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int run = bc.runNumber();
@@ -1265,9 +1321,16 @@ struct FlowGfwNonflow {
     if (cfgFillQA) {
       fillEventQA<After>(collision, tracks);
     }
+    unsigned int generatedNch = 0;
+    const auto particlesThisCollision = particles.sliceBy(particlesPerMcCollision, collision.mcCollisionId());
+    for (const auto& particle : particlesThisCollision) {
+      if (particle.isPhysicalPrimary() && particle.eta() > cfgKinematics.cfgEtaNch->first && particle.eta() < cfgKinematics.cfgEtaNch->second && particle.pt() > gfwMemberCache.ptlow && particle.pt() < gfwMemberCache.ptup) {
+        ++generatedNch;
+      }
+    }
     loadCorrections(bc);
     auto field = (cfgEventSelection.cfgMagField == DefaultMagneticFieldCut) ? getMagneticField(bc.timestamp()) : static_cast<int>(cfgEventSelection.cfgMagField);
-    processCollision<Reco>(collision, tracks, centrality, field);
+    processCollision<Reco>(collision, tracks, centrality, field, generatedNch);
   }
   PROCESS_SWITCH(FlowGfwNonflow, processMCReco, "Process analysis for MC reconstructed events", false);
 

@@ -115,6 +115,8 @@ DECLARE_SOA_TABLE(HfCandD0Lites, "AOD", "HFCANDD0LITE",
                   hf_cand::ImpactParameter1,
                   full::ImpactParameterNormalised0,
                   full::ImpactParameterNormalised1,
+                  hf_cand::ImpactParameterZ0,
+                  hf_cand::ImpactParameterZ1,
                   full::NSigTpcPi0,
                   full::NSigTpcKa0,
                   full::NSigTofPi0,
@@ -174,6 +176,8 @@ DECLARE_SOA_TABLE(HfCandD0Fulls, "AOD", "HFCANDD0FULL",
                   hf_cand::ImpactParameter1,
                   hf_cand::ErrorImpactParameter0,
                   hf_cand::ErrorImpactParameter1,
+                  hf_cand::ImpactParameterZ0,
+                  hf_cand::ImpactParameterZ1,
                   full::NSigTpcPi0,
                   full::NSigTpcKa0,
                   full::NSigTofPi0,
@@ -288,7 +292,7 @@ struct HfTreeCreatorD0ToKPi {
 
   template <bool ApplyMl, typename T>
   auto fillTable(const T& candidate, int candFlag, double invMass, double topoChi2,
-                 double ct, double y, double e, int8_t flagMc, int8_t flagMcDecay, int8_t origin, int8_t pdgBmother)
+                 double ct, double y, double e, int8_t flagMc, int8_t flagMcDecay, int8_t origin, int pdgBmother)
   {
     if (fillCandidateLiteTable) {
       rowCandidateLite(
@@ -303,6 +307,8 @@ struct HfTreeCreatorD0ToKPi {
         candidate.impactParameter1(),
         candidate.impactParameterNormalised0(),
         candidate.impactParameterNormalised1(),
+        candidate.impactParameterZ0(),
+        candidate.impactParameterZ1(),
         candidate.nSigTpcPi0(),
         candidate.nSigTpcKa0(),
         candidate.nSigTofPi0(),
@@ -363,6 +369,8 @@ struct HfTreeCreatorD0ToKPi {
         candidate.impactParameter1(),
         candidate.errorImpactParameter0(),
         candidate.errorImpactParameter1(),
+        candidate.impactParameterZ0(),
+        candidate.impactParameterZ1(),
         candidate.nSigTpcPi0(),
         candidate.nSigTpcKa0(),
         candidate.nSigTofPi0(),

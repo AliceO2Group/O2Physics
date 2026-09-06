@@ -17,11 +17,10 @@
 
 #include <Framework/Logger.h>
 
-#include <Rtypes.h>
+#include <array>
+#include <string>
 
-ClassImp(PHOSPhotonCut);
-
-const char* PHOSPhotonCut::mCutNames[static_cast<int>(PHOSPhotonCut::PHOSPhotonCuts::kNCuts)] = {"Energy", "Dispersion", "CPV"};
+const std::array<std::string, static_cast<int>(PHOSPhotonCut::PHOSPhotonCuts::kNCuts)> PHOSPhotonCut::mCutNames = {"Energy", "Dispersion", "CPV"};
 
 void PHOSPhotonCut::SetEnergyRange(float min, float max)
 {

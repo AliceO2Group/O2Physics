@@ -264,7 +264,7 @@ struct strangederivedbuilder {
   std::vector<uint32_t> genOmegaPlus;
 
   // create collision indices beforehand
-  std::vector<uint64_t> TrackCollIndices; // index -1: no collision
+  std::vector<uint64_t> TrackGlobalBc;
   std::vector<int> V0CollIndices;         // index -1: no collision
   std::vector<int> CascadeCollIndices;    // index -1: no collision
   std::vector<int> KFCascadeCollIndices;  // index -1: no collision
@@ -280,7 +280,7 @@ struct strangederivedbuilder {
   }
 
   template <typename VType>
-  void getCfg(o2::framework::InitContext& initContext, const std::string& name, VType& v, const std::string& task)
+  void getCfg(o2::framework::InitContext& initContext, const std::string& name, VType& v, const std::string task)
   {
     if (!o2::common::core::getTaskOptionValue(initContext, task, name, v, inheritEvtSelFromTaskVerbose)) {
       LOG(fatal) << "Could not get " << name << " from " << task << " task";
@@ -288,7 +288,7 @@ struct strangederivedbuilder {
   }
 
   template <typename TCollision>
-  bool isCollisionAccepted(TCollision collision, std::array<int, o2::aod::straselections::kNsel>& nSelected)
+  bool isCollisionAccepted(TCollision const& collision, std::array<int, o2::aod::straselections::kNsel>& nSelected)
   // check whether the collision passes our collision selections
   {
     if (requireTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
@@ -552,13 +552,13 @@ struct strangederivedbuilder {
   void populateCollisionTables(coll const& collisions, udcoll const& udCollisions, tracks const& Tracks, v0d const& V0s, cad const& Cascades, kfcad const& KFCascades, tracad const& TraCascades, bcType const& /*bcs*/)
   {
     // create collision indices beforehand
-    TrackCollIndices.clear();
+    TrackGlobalBc.clear();
     V0CollIndices.clear();
     CascadeCollIndices.clear();
     KFCascadeCollIndices.clear();
     TraCascadeCollIndices.clear();
 
-    TrackCollIndices.resize(Tracks.size(), 0);            // index -1: no collision
+    TrackGlobalBc.resize(Tracks.size(), 0);
     V0CollIndices.resize(V0s.size(), -1);                 // index -1: no collision
     CascadeCollIndices.resize(Cascades.size(), -1);       // index -1: no collision
     KFCascadeCollIndices.resize(KFCascades.size(), -1);   // index -1: no collision
@@ -645,7 +645,7 @@ struct strangederivedbuilder {
       }
 
       for (const auto& track : TrackTable_thisColl)
-        TrackCollIndices[track.globalIndex()] = bc.globalBC();
+        TrackGlobalBc[track.globalIndex()] = bc.globalBC();
 
       if (fillOnlySelectedCollisions && !isCollisionAccepted(collision, totalNbrCollisionsPerSelection)) {
         continue;
@@ -854,6 +854,7 @@ struct strangederivedbuilder {
       products.strangeMCColl(mccollision.posX(), mccollision.posY(), mccollision.posZ(),
                              mccollision.impactParameter(), mccollision.eventPlaneAngle(), mccollision.generatorsID());
       products.strangeMCMults(mccollision.multMCFT0A(), mccollision.multMCFT0C(),
+                              mccollision.multMCFV0A(), mccollision.multMCFDDA(), mccollision.multMCFDDC(),
                               mccollision.multMCNParticlesEta05(),
                               mccollision.multMCNParticlesEta08(),
                               mccollision.multMCNParticlesEta10(),
@@ -1047,7 +1048,7 @@ struct strangederivedbuilder {
                                    aod::dautrack::packing::packInInt8(tr.tpcNSigmaPr()));
           // populate daughter-level TOF information
           if (tr.hasTOF()) {
-            products.dauTrackTOFPIDs(TrackCollIndices[tr.globalIndex()], products.dauTrackExtras.lastIndex(), tr.tofSignal(), tr.tofEvTime(), tr.tofEvTimeErr(), tr.length(), tr.tofExpMom());
+            products.dauTrackTOFPIDs(TrackGlobalBc[tr.globalIndex()], products.dauTrackExtras.lastIndex(), tr.tofSignal(), tr.tofEvTime(), tr.tofEvTimeErr(), tr.length(), tr.tofExpMom());
           }
         } else {
           // populate with empty fully-compatible Nsigmas if no corresponding table available

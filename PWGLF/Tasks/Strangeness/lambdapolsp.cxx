@@ -226,10 +226,90 @@ struct lambdapolsp {
     ConfigurableAxis axiseta{"axiseta", {16, -0.8, 0.8}, "eta axis"};
   } distGrp;
 
+  struct : ConfigurableGroup {
+
+    Configurable<bool> doTopoSyst{
+      "doTopoSyst", false,
+      "Run randomized topology systematic variations"};
+
+    Configurable<int> nTopoSyst{
+      "nTopoSyst", 400,
+      "Number of randomized topological selections"};
+
+    Configurable<int> topoSystSeed{
+      "topoSystSeed", 12345,
+      "Random seed for topology systematics"};
+
+    // ----------------------------------------------------
+    // Range of the CUT VALUE that will be randomized.
+    //
+    // Set min/max to the desired systematic ranges in JSON.
+    // ----------------------------------------------------
+
+    Configurable<float> systLifeCutMin{
+      "systLifeCutMin", 20.f,
+      "Minimum value from which lifetime upper cut is sampled"};
+
+    Configurable<float> systLifeCutMax{
+      "systLifeCutMax", 20.f,
+      "Maximum value from which lifetime upper cut is sampled"};
+
+    Configurable<float> systCPACutMin{
+      "systCPACutMin", 0.9998f,
+      "Minimum value from which CPA lower cut is sampled"};
+
+    Configurable<float> systCPACutMax{
+      "systCPACutMax", 0.9998f,
+      "Maximum value from which CPA lower cut is sampled"};
+
+    Configurable<float> systDCADaughCutMin{
+      "systDCADaughCutMin", 0.2f,
+      "Minimum value from which DCA daughters upper cut is sampled"};
+
+    Configurable<float> systDCADaughCutMax{
+      "systDCADaughCutMax", 0.2f,
+      "Maximum value from which DCA daughters upper cut is sampled"};
+
+    Configurable<float> systDCAPrCutMin{
+      "systDCAPrCutMin", 0.05f,
+      "Minimum value from which proton DCA-to-PV lower cut is sampled"};
+
+    Configurable<float> systDCAPrCutMax{
+      "systDCAPrCutMax", 0.05f,
+      "Maximum value from which proton DCA-to-PV lower cut is sampled"};
+
+    Configurable<float> systDCAPiCutMin{
+      "systDCAPiCutMin", 0.05f,
+      "Minimum value from which pion DCA-to-PV lower cut is sampled"};
+
+    Configurable<float> systDCAPiCutMax{
+      "systDCAPiCutMax", 0.05f,
+      "Maximum value from which pion DCA-to-PV lower cut is sampled"};
+
+    Configurable<float> systRadiusCutMin{
+      "systRadiusCutMin", 0.8f,
+      "Minimum value from which V0 minimum-radius cut is sampled"};
+
+    Configurable<float> systRadiusCutMax{
+      "systRadiusCutMax", 4.0f,
+      "Maximum value from which V0 minimum-radius cut is sampled"};
+
+  } systGrp;
+
   RCTFlagsChecker rctChecker;
 
   SliceCache cache;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  struct TopoSystCuts {
+    float lifeMax;
+    float cpaMin;
+    float dcaDaughtersMax;
+    float dcaPrMin;
+    float dcaPiMin;
+    float radiusMin;
+  };
+  std::vector<TopoSystCuts> topoSystCuts;
 
   void init(o2::framework::InitContext&)
   {
@@ -245,7 +325,23 @@ struct lambdapolsp {
     std::vector<AxisSpec> runaxes = {thnAxisInvMass, axisGrp.configthnAxispT, axisGrp.configthnAxisPol, axisGrp.configcentAxis};
     if (needetaaxis)
       runaxes.insert(runaxes.end(), {axisGrp.configbinAxis});
-    std::vector<AxisSpec> runaxes2 = {thnAxisInvMass, axisGrp.configthnAxispT, axisGrp.configcentAxis};
+
+    AxisSpec systIDAxis{systGrp.nTopoSyst.value, -0.5, static_cast<double>(systGrp.nTopoSyst.value) - 0.5, "systID"};
+    std::vector<AxisSpec> runaxesSyst = {
+      thnAxisInvMass,
+      axisGrp.configthnAxispT,
+      axisGrp.configthnAxisPol,
+      axisGrp.configcentAxis};
+
+    if (needetaaxis) {
+      runaxesSyst.push_back(axisGrp.configbinAxis);
+    }
+
+    runaxesSyst.push_back(systIDAxis);
+
+    // if (needetaaxis)
+    // runaxes.insert(runaxes.end(), {axisGrp.configbinAxis});
+    // std::vector<AxisSpec> runaxes2 = {thnAxisInvMass, axisGrp.configthnAxispT, axisGrp.configcentAxis};
 
     if (checkwithpub) {
       if (useprofile == 2) {
@@ -486,12 +582,12 @@ struct lambdapolsp {
       histos.add("hLcosphiminuspsiAvseta", "hLcosphiminuspsiAvseta", HistType::kTH2D, {{distGrp.axiscosphiminuspsi}, {distGrp.axiseta}});
       histos.add("hLcosphiminuspsivseta", "hLcosphiminuspsivseta", HistType::kTH2D, {{distGrp.axiscosphiminuspsi}, {distGrp.axiseta}});
     }
-
+    /*
     histos.add("hSparseGenLambda", "hSparseGenLambda", HistType::kTHnSparseF, runaxes2, true);
     histos.add("hSparseGenAntiLambda", "hSparseGenAntiLambda", HistType::kTHnSparseF, runaxes2, true);
     histos.add("hSparseRecLambda", "hSparseRecLambda", HistType::kTHnSparseF, runaxes2, true);
     histos.add("hSparseRecAntiLambda", "hSparseRecAntiLambda", HistType::kTHnSparseF, runaxes2, true);
-
+    */
     if (QAgrp.isQA) {
       histos.add("hCentQxZDCA", "hCentQxZDCA", kTH2F, {{QAgrp.centfineAxis}, {QAgrp.qxZDCAxis}});
       histos.add("hCentQyZDCA", "hCentQyZDCA", kTH2F, {{QAgrp.centfineAxis}, {QAgrp.qxZDCAxis}});
@@ -535,6 +631,93 @@ struct lambdapolsp {
     }
     if (useResoRBR)
       hwgtRESO = ccdb->getForTimeStamp<TH1D>(ConfResoPath.value, cfgCcdbParam.nolaterthan.value);
+
+    if (systGrp.doTopoSyst) {
+
+      topoSystCuts.clear();
+      topoSystCuts.reserve(systGrp.nTopoSyst.value);
+
+      TRandom3 systRnd(systGrp.topoSystSeed.value);
+
+      auto drawUniform = [&](float a, float b) -> float {
+        const float lo = std::min(a, b);
+        const float hi = std::max(a, b);
+
+        if (std::abs(hi - lo) < 1.e-12f) {
+          return lo;
+        }
+
+        return systRnd.Uniform(lo, hi);
+      };
+
+      for (int i = 0; i < systGrp.nTopoSyst.value; ++i) {
+
+        TopoSystCuts cuts;
+
+        cuts.lifeMax =
+          drawUniform(systGrp.systLifeCutMin.value,
+                      systGrp.systLifeCutMax.value);
+
+        cuts.cpaMin =
+          drawUniform(systGrp.systCPACutMin.value,
+                      systGrp.systCPACutMax.value);
+
+        cuts.dcaDaughtersMax =
+          drawUniform(systGrp.systDCADaughCutMin.value,
+                      systGrp.systDCADaughCutMax.value);
+
+        cuts.dcaPrMin =
+          drawUniform(systGrp.systDCAPrCutMin.value,
+                      systGrp.systDCAPrCutMax.value);
+
+        cuts.dcaPiMin =
+          drawUniform(systGrp.systDCAPiCutMin.value,
+                      systGrp.systDCAPiCutMax.value);
+
+        cuts.radiusMin =
+          drawUniform(systGrp.systRadiusCutMin.value,
+                      systGrp.systRadiusCutMax.value);
+
+        topoSystCuts.push_back(cuts);
+
+        LOGF(info,
+             "TopoSyst %d: lifeMax=%.4f, cpaMin=%.6f, dcaDaughtersMax=%.4f, "
+             "dcaPrMin=%.4f, dcaPiMin=%.4f, radiusMin=%.4f",
+             i, cuts.lifeMax, cuts.cpaMin, cuts.dcaDaughtersMax, cuts.dcaPrMin, cuts.dcaPiMin, cuts.radiusMin);
+      }
+
+      LOGF(info,
+           "Generated %d random topology systematic combinations with seed %d",
+           systGrp.nTopoSyst.value,
+           systGrp.topoSystSeed.value);
+    }
+
+    if (systGrp.doTopoSyst) {
+
+      histos.add("hSparseLambdaPolSyst",
+                 "hSparseLambdaPolSyst",
+                 HistType::kTHnSparseF,
+                 runaxesSyst,
+                 true);
+
+      histos.add("hSparseLambdaPolwgtSyst",
+                 "hSparseLambdaPolwgtSyst",
+                 HistType::kTHnSparseF,
+                 runaxesSyst,
+                 true);
+
+      histos.add("hSparseAntiLambdaPolSyst",
+                 "hSparseAntiLambdaPolSyst",
+                 HistType::kTHnSparseF,
+                 runaxesSyst,
+                 true);
+
+      histos.add("hSparseAntiLambdaPolwgtSyst",
+                 "hSparseAntiLambdaPolwgtSyst",
+                 HistType::kTHnSparseF,
+                 runaxesSyst,
+                 true);
+    }
   }
 
   template <typename T>
@@ -547,7 +730,8 @@ struct lambdapolsp {
   }
 
   template <typename Collision, typename V0>
-  bool SelectionV0(Collision const& collision, V0 const& candidate)
+  // bool SelectionV0(Collision const& collision, V0 const& candidate)
+  bool SelectionV0(Collision const& collision, V0 const& candidate, bool applyTopoCuts = true)
   {
     if (TMath::Abs(candidate.dcav0topv()) > cMaxV0DCA) {
       return false;
@@ -565,21 +749,27 @@ struct lambdapolsp {
     if (pT < ConfV0PtMin) {
       return false;
     }
-    if (dcaDaughv0 > ConfV0DCADaughMax) {
-      return false;
+
+    if (applyTopoCuts) {
+      if (dcaDaughv0 > ConfV0DCADaughMax) {
+        return false;
+      }
+      if (cpav0 < ConfV0CPAMin) {
+        return false;
+      }
+      if (tranRad < ConfV0TranRadV0Min) {
+        return false;
+      }
+
+      if (analyzeLambda && TMath::Abs(CtauLambda) > cMaxV0LifeTime) {
+        return false;
+      }
     }
-    if (cpav0 < ConfV0CPAMin) {
-      return false;
-    }
-    if (tranRad < ConfV0TranRadV0Min) {
-      return false;
-    }
+
     if (tranRad > ConfV0TranRadV0Max) {
       return false;
     }
-    if (analyzeLambda && TMath::Abs(CtauLambda) > cMaxV0LifeTime) {
-      return false;
-    }
+
     if (analyzeK0s && TMath::Abs(CtauK0s) > cMaxV0LifeTime) {
       return false;
     }
@@ -639,7 +829,8 @@ struct lambdapolsp {
   }
 
   template <typename TV0>
-  bool isCompatible(TV0 const& v0, int pid /*0: lambda, 1: antilambda*/)
+  // bool isCompatible(TV0 const& v0, int pid /*0: lambda, 1: antilambda*/)
+  bool isCompatible(TV0 const& v0, int pid /*0: lambda, 1: antilambda*/, bool applyDcaCuts = true)
   {
     // checks if this V0 is compatible with the requested hypothesis
 
@@ -679,14 +870,82 @@ struct lambdapolsp {
       return false;
     }
 
-    if (pid == 0 && (TMath::Abs(v0.dcapostopv()) < cMinV0DCAPr || TMath::Abs(v0.dcanegtopv()) < cMinV0DCAPi)) {
-      return false;
+    if (applyDcaCuts) {
+
+      if (pid == 0 && (TMath::Abs(v0.dcapostopv()) < cMinV0DCAPr || TMath::Abs(v0.dcanegtopv()) < cMinV0DCAPi)) {
+        return false;
+      }
+      if (pid == 1 && (TMath::Abs(v0.dcapostopv()) < cMinV0DCAPi || TMath::Abs(v0.dcanegtopv()) < cMinV0DCAPr)) {
+        return false;
+      }
     }
-    if (pid == 1 && (TMath::Abs(v0.dcapostopv()) < cMinV0DCAPi || TMath::Abs(v0.dcanegtopv()) < cMinV0DCAPr)) {
+    // if we made it this far, it's good
+    return true;
+  }
+
+  template <typename Collision, typename TV0>
+  bool passesTopoSystematic(Collision const& collision,
+                            TV0 const& v0,
+                            int pid,
+                            const TopoSystCuts& cut)
+  {
+    const float dcaDaughters =
+      TMath::Abs(v0.dcaV0daughters());
+
+    const float cpa =
+      v0.v0cosPA();
+
+    const float radius =
+      v0.v0radius();
+
+    const float ctau =
+      TMath::Abs(
+        v0.distovertotmom(collision.posX(),
+                          collision.posY(),
+                          collision.posZ()) *
+        massLambda);
+
+    // randomized V0 topology cuts
+    if (dcaDaughters > cut.dcaDaughtersMax) {
       return false;
     }
 
-    // if we made it this far, it's good
+    if (cpa < cut.cpaMin) {
+      return false;
+    }
+
+    if (ctau > cut.lifeMax) {
+      return false;
+    }
+
+    if (radius < cut.radiusMin) {
+      return false;
+    }
+
+    // Lambda
+    if (pid == 0) {
+
+      if (TMath::Abs(v0.dcapostopv()) < cut.dcaPrMin) {
+        return false;
+      }
+
+      if (TMath::Abs(v0.dcanegtopv()) < cut.dcaPiMin) {
+        return false;
+      }
+    }
+
+    // AntiLambda
+    if (pid == 1) {
+
+      if (TMath::Abs(v0.dcanegtopv()) < cut.dcaPrMin) {
+        return false;
+      }
+
+      if (TMath::Abs(v0.dcapostopv()) < cut.dcaPiMin) {
+        return false;
+      }
+    }
+
     return true;
   }
 
@@ -767,7 +1026,7 @@ struct lambdapolsp {
   void fillHistograms(bool tag1, bool tag2, const ROOT::Math::PxPyPzMVector& particle,
                       const ROOT::Math::PxPyPzMVector& daughter,
                       double psiZDCC, double psiZDCA, double psiZDC, double centrality,
-                      double candmass, double candpt, float desbinvalue, double acvalue, double wgtfactor, double resowgt)
+                      double candmass, double candpt, float desbinvalue, double acvalue, double wgtfactor, double resowgt, const std::vector<int>* systIDs = nullptr, int systSpecies = 0)
   {
     TRandom3 randPhi(0);
 
@@ -936,6 +1195,100 @@ struct lambdapolsp {
         if (randGrp.useSP) {
           histos.fill(HIST("hSparseLambda_avgux"), candmass, candpt, ux, centrality);
           histos.fill(HIST("hSparseLambda_avguy"), candmass, candpt, uy, centrality);
+        }
+      }
+    }
+
+    if (systGrp.doTopoSyst &&
+        systIDs != nullptr &&
+        !systIDs->empty()) {
+
+      for (const auto isyst : *systIDs) {
+
+        // Lambda
+        if (systSpecies == 1) {
+
+          if (needetaaxis) {
+
+            histos.fill(HIST("hSparseLambdaPolSyst"),
+                        candmass,
+                        candpt,
+                        Pol,
+                        centrality,
+                        desbinvalue,
+                        static_cast<double>(isyst),
+                        wgtfactor);
+
+            histos.fill(HIST("hSparseLambdaPolwgtSyst"),
+                        candmass,
+                        candpt,
+                        Polwgt,
+                        centrality,
+                        desbinvalue,
+                        static_cast<double>(isyst),
+                        wgtfactor);
+
+          } else {
+
+            histos.fill(HIST("hSparseLambdaPolSyst"),
+                        candmass,
+                        candpt,
+                        Pol,
+                        centrality,
+                        static_cast<double>(isyst),
+                        wgtfactor);
+
+            histos.fill(HIST("hSparseLambdaPolwgtSyst"),
+                        candmass,
+                        candpt,
+                        Polwgt,
+                        centrality,
+                        static_cast<double>(isyst),
+                        wgtfactor);
+          }
+        }
+
+        // AntiLambda
+        if (systSpecies == 2) {
+
+          if (needetaaxis) {
+
+            histos.fill(HIST("hSparseAntiLambdaPolSyst"),
+                        candmass,
+                        candpt,
+                        Pol,
+                        centrality,
+                        desbinvalue,
+                        static_cast<double>(isyst),
+                        wgtfactor);
+
+            histos.fill(HIST("hSparseAntiLambdaPolwgtSyst"),
+                        candmass,
+                        candpt,
+                        Polwgt,
+                        centrality,
+                        desbinvalue,
+                        static_cast<double>(isyst),
+                        wgtfactor);
+
+          } else {
+
+            histos.fill(HIST("hSparseAntiLambdaPolSyst"),
+                        candmass,
+                        candpt,
+                        Pol,
+                        centrality,
+                        static_cast<double>(isyst),
+                        wgtfactor);
+
+            histos.fill(HIST("hSparseAntiLambdaPolwgtSyst"),
+                        candmass,
+                        candpt,
+                        Polwgt,
+                        centrality,
+                        static_cast<double>(isyst),
+                        wgtfactor);
+          }
         }
       }
     }
@@ -1355,6 +1708,9 @@ struct lambdapolsp {
           wgtvalue = 1.0;
         }
 
+        std::vector<int> lambdaSystIDs;
+        std::vector<int> antiLambdaSystIDs;
+
         if (LambdaTag) {
           Lambda = Proton + AntiPion;
           tagb = 0;
@@ -1385,7 +1741,7 @@ struct lambdapolsp {
             histos.fill(HIST("hLcosphiminuspsiAvseta"), LcosphiminuspsiA, v0.eta());
             histos.fill(HIST("hLcosphiminuspsivseta"), Lcosphiminuspsi, v0.eta());
           }
-          fillHistograms(taga, tagb, Lambda, Proton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mLambda(), v0.pt(), v0.eta(), acvalue, 1.0, resowgt);
+          fillHistograms(taga, tagb, Lambda, Proton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mLambda(), v0.pt(), v0.eta(), acvalue, 1.0, resowgt, &lambdaSystIDs, 1);
         }
 
         tagb = aLambdaTag;
@@ -1419,7 +1775,7 @@ struct lambdapolsp {
             histos.fill(HIST("hALcosphiminuspsiAvseta"), ALcosphiminuspsiA, v0.eta());
             histos.fill(HIST("hALcosphiminuspsivseta"), ALcosphiminuspsi, v0.eta());
           }
-          fillHistograms(taga, tagb, AntiLambda, AntiProton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mAntiLambda(), v0.pt(), v0.eta(), acvalue, wgtvalue, resowgt);
+          fillHistograms(taga, tagb, AntiLambda, AntiProton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mAntiLambda(), v0.pt(), v0.eta(), acvalue, wgtvalue, resowgt, &antiLambdaSystIDs, 2);
         }
       }
     }
@@ -1587,34 +1943,73 @@ struct lambdapolsp {
       if (!analyzeLambda && !analyzeK0s)
         continue;
 
-      bool LambdaTag = isCompatible(v0, 0);
-      bool aLambdaTag = isCompatible(v0, 1);
+      // bool LambdaTag = isCompatible(v0, 0);
+      // bool aLambdaTag = isCompatible(v0, 1);
+
+      bool LambdaPreSelTag = isCompatible(v0, 0, false); // for systematic
+      bool aLambdaPreSelTag = isCompatible(v0, 1, false);
+      bool LambdaTag = isCompatible(v0, 0, true); // for default
+      bool aLambdaTag = isCompatible(v0, 1, true);
 
       bool K0sTag = isCompatibleK0s(v0);
 
-      if (analyzeLambda && !LambdaTag && !aLambdaTag)
+      // if (analyzeLambda && !LambdaTag && !aLambdaTag)
+      // continue;
+      if (analyzeLambda && !LambdaPreSelTag && !aLambdaPreSelTag) {
         continue;
+      }
 
       if (analyzeK0s && !K0sTag)
         continue;
 
-      if (!SelectionV0(collision, v0)) {
-        continue;
-      }
+      // if (!SelectionV0(collision, v0)) {
+      // continue;
+      // }
+
+      bool passNominalV0 = true;
       if (analyzeLambda) {
-        if (LambdaTag) {
+        // only fixed/common cuts here
+        if (!SelectionV0(collision, v0, false)) {
+          continue;
+        }
+        // remember whether nominal topology is passed
+        passNominalV0 = SelectionV0(collision, v0, true);
+
+        LambdaTag = LambdaTag && passNominalV0;
+        aLambdaTag = aLambdaTag && passNominalV0;
+
+      } else if (analyzeK0s) {
+        // K0 analysis remains exactly nominal
+        if (!SelectionV0(collision, v0, true)) {
+          continue;
+        }
+      }
+
+      if (analyzeLambda) {
+        // if (LambdaTag) {
+        if (LambdaPreSelTag) {
           Proton = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPr);
           AntiPion = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPi);
           Lambdadummy = Proton + AntiPion;
         }
-        if (aLambdaTag) {
+        // if (aLambdaTag) {
+        if (aLambdaPreSelTag) {
           AntiProton = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPr);
           Pion = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPi);
           AntiLambdadummy = AntiProton + Pion;
         }
 
-        if (shouldReject(LambdaTag, aLambdaTag, Lambdadummy, AntiLambdadummy)) {
-          continue;
+        // if (shouldReject(LambdaTag, aLambdaTag, Lambdadummy, AntiLambdadummy)) {
+        // continue;
+        // }
+
+        if (shouldReject(LambdaTag,
+                         aLambdaTag,
+                         Lambdadummy,
+                         AntiLambdadummy)) {
+
+          LambdaTag = false;
+          aLambdaTag = false;
         }
       }
 
@@ -1626,8 +2021,44 @@ struct lambdapolsp {
         }
       }
 
-      if (TMath::Abs(v0.eta()) > 0.8)
+      if (TMath::Abs(v0.eta()) >= 0.8)
         continue;
+
+      std::vector<int> K0sSystIDs;
+      std::vector<int> lambdaSystIDs;
+      std::vector<int> antiLambdaSystIDs;
+
+      if (systGrp.doTopoSyst && analyzeLambda) {
+
+        lambdaSystIDs.reserve(systGrp.nTopoSyst.value);
+        antiLambdaSystIDs.reserve(systGrp.nTopoSyst.value);
+
+        for (int isyst = 0; isyst < systGrp.nTopoSyst.value; ++isyst) {
+
+          const auto& cuts = topoSystCuts[isyst];
+          bool passLambda = LambdaPreSelTag && passesTopoSystematic(collision, v0, 0, cuts);
+          bool passAntiLambda = aLambdaPreSelTag && passesTopoSystematic(collision, v0, 1, cuts);
+
+          // Apply the same Lambda/AntiLambda ambiguity logic
+          // separately for THIS systematic variation.
+          if (shouldReject(passLambda,
+                           passAntiLambda,
+                           Lambdadummy,
+                           AntiLambdadummy)) {
+
+            passLambda = false;
+            passAntiLambda = false;
+          }
+
+          if (passLambda) {
+            lambdaSystIDs.push_back(isyst);
+          }
+
+          if (passAntiLambda) {
+            antiLambdaSystIDs.push_back(isyst);
+          }
+        }
+      }
 
       int taga = LambdaTag;
       int tagb = aLambdaTag;
@@ -1636,7 +2067,7 @@ struct lambdapolsp {
       if (analyzeK0s && K0sTag) {
         K0s = Pion + AntiPion;
         double acvalue = 1.0;
-        fillHistograms(tagc, 0, K0s, Pion, psiZDCC, psiZDCA, psiZDC, centrality, v0.mK0Short(), v0.pt(), v0.eta(), acvalue, 1.0, resowgt);
+        fillHistograms(tagc, 0, K0s, Pion, psiZDCC, psiZDCA, psiZDC, centrality, v0.mK0Short(), v0.pt(), v0.eta(), acvalue, 1.0, resowgt, &K0sSystIDs, 1);
       }
 
       int binxwgt;
@@ -1660,7 +2091,8 @@ struct lambdapolsp {
         effwgtvalueL = 1.0;
       }
 
-      if (analyzeLambda && LambdaTag) {
+      // if (analyzeLambda && LambdaTag) {
+      if (analyzeLambda && LambdaPreSelTag && (LambdaTag || !lambdaSystIDs.empty())) {
         Lambda = Proton + AntiPion;
         tagb = 0;
         double acvalue = 1.0;
@@ -1682,11 +2114,12 @@ struct lambdapolsp {
           histos.fill(HIST("hLcosphiminuspsivseta"), Lcosphiminuspsi, v0.eta());
         }
 
-        fillHistograms(taga, tagb, Lambda, Proton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mLambda(), v0.pt(), v0.eta(), acvalue, (1. / effwgtvalueL), resowgt);
+        fillHistograms(taga, tagb, Lambda, Proton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mLambda(), v0.pt(), v0.eta(), acvalue, (1. / effwgtvalueL), resowgt, &lambdaSystIDs, 1);
       }
 
       tagb = aLambdaTag;
-      if (analyzeLambda && aLambdaTag) {
+      // if (analyzeLambda && aLambdaTag) {
+      if (analyzeLambda && aLambdaPreSelTag && (aLambdaTag || !antiLambdaSystIDs.empty())) {
         AntiLambda = AntiProton + Pion;
         taga = 0;
         double acvalue = 1.0;
@@ -1708,7 +2141,7 @@ struct lambdapolsp {
           histos.fill(HIST("hALcosphiminuspsivseta"), ALcosphiminuspsi, v0.eta());
         }
 
-        fillHistograms(taga, tagb, AntiLambda, AntiProton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mAntiLambda(), v0.pt(), v0.eta(), acvalue, wgtvalue * (1. / effwgtvalueAL), resowgt);
+        fillHistograms(taga, tagb, AntiLambda, AntiProton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mAntiLambda(), v0.pt(), v0.eta(), acvalue, wgtvalue * (1. / effwgtvalueAL), resowgt, &antiLambdaSystIDs, 2);
       }
     }
     // lastRunNumber = currentRunNumber;

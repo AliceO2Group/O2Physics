@@ -143,6 +143,7 @@ DECLARE_SOA_TABLE(MFTMults, "AOD", "MFTMULT", //! Multiplicity with MFT
 
 DECLARE_SOA_TABLE(FITExtraMults, "AOD", "FITEXTRAMULT", //! Extra information from FIT detectors
                   mult::MultFV0AOuter,
+                  mult::MultFT0AOuter,
                   mult::FT0TriggerMask);
 
 using BarrelMults = soa::Join<TrackletMults, TPCMults, PVMults>;

@@ -2892,6 +2892,8 @@ struct FemtoUniverseProducerTask {
                         aod::BCsWithTimestamps const&,
                         aod::McParticles const& mcParts)
   {
+    std::set<int> mcColIds;
+    mcColIds.clear();
     // MC Reco
     for (const auto& col : collisions) {
       auto groupedTracks = tracks.sliceBy(perCollisionTracks, col.globalIndex());
@@ -2901,12 +2903,16 @@ struct FemtoUniverseProducerTask {
       // fill the tables
       const auto colcheck = fillCollisions<true>(col, tracks);
       if (colcheck) {
+        mcColIds.insert(col.mcCollisionId());
         fillTracks<true>(groupedTracks);
         fillD0D0barMcMl<true>(col, groupedTracks, groupedD0s, mcParts);
       }
     }
     // MC Truth
     for (const auto& mccol : mccols) {
+      if (confCollMCTruthOnlyReco && !mcColIds.contains(mccol.globalIndex())) {
+        continue;
+      }
       auto groupedMCParticles = hfMcGenCands.sliceBy(mcPartPerMcColl, mccol.globalIndex());
       auto groupedCollisions = collisions.sliceBy(recoCollsPerMCColl, mccol.globalIndex());
       fillMCTruthCollisions(groupedCollisions, groupedMCParticles);                   // fills the reco collisions for mc collision

@@ -20,6 +20,7 @@
 #include "PWGCF/Femto/Core/collisionHistManager.h"
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/Core/pairBuilder.h"
+#include "PWGCF/Femto/Core/pairCleaner.h"
 #include "PWGCF/Femto/Core/pairHistManager.h"
 #include "PWGCF/Femto/Core/particleCleaner.h"
 #include "PWGCF/Femto/Core/partitions.h"
@@ -100,6 +101,7 @@ struct FemtoPairD0D0 {
   // setup pairs
   pairhistmanager::ConfPairBinning confPairBinning;
   pairhistmanager::ConfPairCuts confPairCuts;
+  paircleaner::ConfPairCleanerBinning confPairCleaner;
 
   pairbuilder::PairD0D0Builder<
     charmhadronhistmanager::PrefixD01,
@@ -162,6 +164,7 @@ struct FemtoPairD0D0 {
     std::map<pairhistmanager::PairHist, std::vector<o2::framework::AxisSpec>> pairD0D0HistSpec;
     std::map<closepairrejection::CprHist, std::vector<o2::framework::AxisSpec>> cprHistSpecPos = closepairrejection::makeCprHistSpecMap(confCprPos);
     std::map<closepairrejection::CprHist, std::vector<o2::framework::AxisSpec>> cprHistSpecNeg = closepairrejection::makeCprHistSpecMap(confCprNeg);
+    std::map<paircleaner::PairCleanerHist, std::vector<o2::framework::AxisSpec>> pairCleanerHistSpec = paircleaner::makePairCleanerHistSpecMap(confPairCleaner);
 
     if (processData) {
       colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
@@ -169,21 +172,22 @@ struct FemtoPairD0D0 {
       negDauSpec1 = trackhistmanager::makeTrackHistSpecMap(confD01NegDauBinning);
       posDauSpec2 = trackhistmanager::makeTrackHistSpecMap(confD02PosDauBinning);
       negDauSpec2 = trackhistmanager::makeTrackHistSpecMap(confD02NegDauBinning);
-      d0HistSpec1 = charmhadronhistmanager::makeD0HistSpecMap(confD0Binning1);
-      d0HistSpec2 = charmhadronhistmanager::makeD0HistSpecMap(confD0Binning2);
+      d0HistSpec1 = charmhadronhistmanager::makeCharmHadronHistSpecMap(confD0Binning1);
+      d0HistSpec2 = charmhadronhistmanager::makeCharmHadronHistSpecMap(confD0Binning2);
       pairD0D0HistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confMixing);
-      pairD0D0Builder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confD0Selection1, confD0Selection2, confD0Cleaner1, confD0Cleaner2, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, d0HistSpec1, d0HistSpec2, posDauSpec1, negDauSpec1, posDauSpec2, negDauSpec2, pairD0D0HistSpec, cprHistSpecPos, cprHistSpecNeg);
+      pairD0D0Builder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confD0Selection1, confD0Selection2, confD0Cleaner1, confD0Cleaner2, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, d0HistSpec1, d0HistSpec2, posDauSpec1, negDauSpec1, posDauSpec2, negDauSpec2, pairD0D0HistSpec, cprHistSpecPos, cprHistSpecNeg, pairCleanerHistSpec);
     } else {
       colHistSpec = colhistmanager::makeColMcHistSpecMap(confCollisionBinning);
       posDauSpec1 = trackhistmanager::makeTrackMcHistSpecMap(confD01PosDauBinning);
       negDauSpec1 = trackhistmanager::makeTrackMcHistSpecMap(confD01NegDauBinning);
       posDauSpec2 = trackhistmanager::makeTrackMcHistSpecMap(confD02PosDauBinning);
       negDauSpec2 = trackhistmanager::makeTrackMcHistSpecMap(confD02NegDauBinning);
-      d0HistSpec1 = charmhadronhistmanager::makeD0McHistSpecMap(confD0Binning1);
-      d0HistSpec2 = charmhadronhistmanager::makeD0McHistSpecMap(confD0Binning2);
+      d0HistSpec1 = charmhadronhistmanager::makeCharmHadronMcHistSpecMap(confD0Binning1);
+      d0HistSpec2 = charmhadronhistmanager::makeCharmHadronMcHistSpecMap(confD0Binning2);
       pairD0D0HistSpec = pairhistmanager::makePairMcHistSpecMap(confPairBinning, confMixing);
-      pairD0D0Builder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confD0Selection1, confD0Selection2, confD0Cleaner1, confD0Cleaner2, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, d0HistSpec1, d0HistSpec2, posDauSpec1, negDauSpec1, posDauSpec2, negDauSpec2, pairD0D0HistSpec, cprHistSpecPos, cprHistSpecNeg);
+      pairD0D0Builder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confD0Selection1, confD0Selection2, confD0Cleaner1, confD0Cleaner2, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, d0HistSpec1, d0HistSpec2, posDauSpec1, negDauSpec1, posDauSpec2, negDauSpec2, pairD0D0HistSpec, cprHistSpecPos, cprHistSpecNeg, pairCleanerHistSpec);
     }
+    hRegistry.print();
   }
 
   void processSameEvent(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoD0s const& d0s)

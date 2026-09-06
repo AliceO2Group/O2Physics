@@ -56,7 +56,6 @@
 #include <TGraph.h>
 #include <TH1.h>
 #include <TH3.h>
-#include <THashList.h>
 #include <THnSparse.h>
 #include <TProfile2D.h>
 #include <TString.h>
@@ -88,7 +87,6 @@ auto static constexpr CminCharge = 3.f;
 static constexpr int CnullInt = 0;
 static constexpr float Cnull = 0.0f;
 static constexpr int ConeInt = 1;
-static constexpr int CtwoInt = 2;
 static constexpr float Cone = 1.0f;
 
 // FV0 specific constants
@@ -112,7 +110,6 @@ static constexpr o2::track::PID::ID NpartChrg = Npart * Ncharges;
 const std::array<int, Npart> pDGs{11, 13, 211, 321, 2212};
 const std::array<int, NpartChrg> pIdSgn{11, 13, 211, 321, 2212, -11, -13, -211, -321, -2212};
 const std::array<const char*, Npart> pID{"el", "mu", "pi", "ka", "pr"};
-const std::array<const char*, NpartChrg> pIdChrg{"e^{-}", "#mu^{-}", "#pi^{+}", "K^{+}", "p", "e^{+}", "#mu^{+}", "#pi^{-}", "K^{-}", "#bar{p}"};
 static constexpr std::array<std::string, Npart> CspeciesAll{"El", "Mu", "Pi", "Ka", "Pr"};
 
 // histogram naming
@@ -221,17 +218,26 @@ enum EvtSel {
 
 struct MultE {
   static constexpr int CnoMult = 0;
-  static constexpr int CmultFT0M = 1;
-  static constexpr int CmultTPC = 2;
+  static constexpr int CmultFT0C = 1;
+  static constexpr int CmultFT0M = 2;
+  static constexpr int CmultTPC = 3;
 };
-
+/*
+template <typename C>
+concept hasFT0C = requires(C::iterator const& c) {
+  c.centFT0C();
+};
+template <typename C>
+concept hasFT0M = requires(C::iterator const& c) {
+  c.centFT0M();
+};
+*/
 struct FlattenictyPikp {
 
   HistogramRegistry registryData{"registryData", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry registryMC{"registryMC", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry registryQC{"registryQC", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
-  OutputObj<THashList> listEfficiency{"Efficiency"};
   Service<o2::framework::O2DatabasePDG> pdg{};
 
   std::vector<float> fv0AmplCorr;
@@ -241,7 +247,7 @@ struct FlattenictyPikp {
   o2::parameters::GRPMagField* grpmag = nullptr;
 
   struct : ConfigurableGroup {
-    Configurable<int> multEst{"multEst", 1, "0: without multiplicity; 1: MultFT0M; 2: MultTPC"};
+    Configurable<int> multEst{"multEst", 1, "0: without multiplicity; 1: MultFT0C; 2: MultFT0M; 3: MultTPC"};
     Configurable<bool> applyCalibGainFromCCDB{"applyCalibGainFromCCDB", false, "equalize detector amplitudes"};
     Configurable<bool> applyCalibVtxFromCCDB{"applyCalibVtxFromCCDB", false, "equalize Amp vs vtx"};
     Configurable<bool> applyCalibDeDx{"applyCalibDeDx", false, "calibration of dedx signal"};
@@ -256,6 +262,8 @@ struct FlattenictyPikp {
     Configurable<bool> fillV0Hist{"fillV0Hist", false, "fill V0 histograms"};
     Configurable<bool> fillChrgType{"fillChrgType", false, "fill histograms per charge types"};
     Configurable<bool> fillChrgTypeV0s{"fillChrgTypeV0s", false, "fill V0s histograms per charge types"};
+    Configurable<bool> fillMCRecCheck{"fillMCRecCheck", false, "fill MC rec histograms"};
+    Configurable<bool> fillMCRecDCA{"fillMCRecDCA", false, "fill MC rec DCA histograms"};
     Configurable<std::string> calibDeDxFunction{"calibDeDxFunction", "pol8", "Functional form for dEdx calibration"};
     Configurable<std::vector<float>> paramsFuncMIPposEtaP{"paramsFuncMIPposEtaP", std::vector<float>{-1.f}, "function parameters"};
     Configurable<std::vector<float>> paramsFuncMIPnegEtaP{"paramsFuncMIPnegEtaP", std::vector<float>{-1.f}, "function parameters"};
@@ -283,13 +291,14 @@ struct FlattenictyPikp {
     Configurable<float> cutVtxZ{"cutVtxZ", 10.0f, "Accepted z-vertex range"};
     Configurable<bool> zVtxCutMC{"zVtxCutMC", true, "use Zvtx cut in MC"};
     Configurable<bool> useINELCutMC{"useINELCutMC", true, "use INEL>0 cut in MC"};
-    Configurable<bool> removeNoSameBunchPileup{"removeNoSameBunchPileup", true, "Reject collisions in case of pileup with another collision in the same foundBC"};
-    Configurable<bool> requireIsGoodZvtxFT0vsPV{"requireIsGoodZvtxFT0vsPV", true, "Small difference between z-vertex from PV and from FT0"};
+    Configurable<bool> removeNoSameBunchPileup{"removeNoSameBunchPileup", false, "Reject collisions in case of pileup with another collision in the same foundBC"};
+    Configurable<bool> requireIsGoodZvtxFT0vsPV{"requireIsGoodZvtxFT0vsPV", false, "Small difference between z-vertex from PV and from FT0"};
     Configurable<bool> requireIsVertexITSTPC{"requireIsVertexITSTPC", false, "At least one ITS-TPC track (reject vertices built from ITS-only tracks)"};
     Configurable<bool> requirekIsVertexTOFmatched{"requirekIsVertexTOFmatched", false, "Require kIsVertexTOFmatched: at least one of vertex contributors is matched to TOF"};
     Configurable<bool> useMultMCmidrap{"useMultMCmidrap", true, "use generated Nch in ∣eta∣ < 0.8"};
     Configurable<bool> useInelgt0wTVX{"useInelgt0wTVX", true, "Use INEL > 0 condition with TVX trigger, i.e. FT0A and FT0C acceptance"};
     Configurable<bool> removeSplitVertex{"removeSplitVertex", true, "Remove split vertices"};
+    // Configurable<bool> customGenCent{"customGenCent", false, "Use custom generated MC centrality estimation"};
   } evtSelOpt;
 
   struct : ConfigurableGroup {
@@ -484,8 +493,9 @@ struct FlattenictyPikp {
   using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::FT0sCorrected, aod::CentFT0As, aod::CentFT0Cs>;
   using Colls = soa::Join<aod::Collisions, aod::EvSels, aod::TPCMults, aod::PVMults, aod::MultZeqs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
   using CollsGen = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::TPCMults, aod::PVMults, aod::MultZeqs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
-  using MCColls = soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::MultsExtraMC>;
-  using CollsMCExtraMult = soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::MultMCExtras, aod::McCollsExtra>;
+  using MCColls = soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::McCentFT0Cs, aod::MultsExtraMC>;
+  using CollsMCExtraMult = soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::McCentFT0Cs, aod::MultMCExtras, aod::McCollsExtra>;
+  // using CollsMCExtraMultPercentile = soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::McCentFT0Cs, aod::MultMCExtras, aod::McCollsExtra, aod::McPercentiles>;
   using CollsGenSgn = soa::SmallGroups<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::TPCMults, aod::PVMults, aod::MultZeqs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>>;
   using MyPIDTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFbeta, aod::TOFSignal, aod::pidTOFFlags>;
   using MyLabeledTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, aod::McTrackLabels>;
@@ -591,8 +601,11 @@ struct FlattenictyPikp {
 
     AxisSpec multAxis{binOpt.axisMultPerc, "multiplicity estimator"};
 
-    switch (defOpt.multEst) {
+    switch (defOpt.multEst.value) {
       case MultE::CnoMult:
+        break;
+      case MultE::CmultFT0C:
+        multAxis.name = "multFT0C";
         break;
       case MultE::CmultFT0M:
         multAxis.name = "multFT0M";
@@ -601,7 +614,7 @@ struct FlattenictyPikp {
         multAxis.name = "multTPC";
         break;
       default:
-        LOG(fatal) << "No valid option for mult estimator " << defOpt.multEst;
+        LOGF(fatal, "No valid option for mult estimator %d", defOpt.multEst.value);
     }
 
     if (trkSelOpt.rejectTrkAtTPCSector || v0SelOpt.rejectV0sAtTPCSector) {
@@ -791,6 +804,8 @@ struct FlattenictyPikp {
       registryMC.get<TH1>(HIST("Events/hEvtMcGen"))->GetXaxis()->SetBinLabel(3, "INELgt0");
       registryMC.get<TH1>(HIST("Events/hEvtMcGen"))->GetXaxis()->SetBinLabel(4, "INELgt0TVX");
       //
+      registryMC.add("Events/hNchGen", "Gen Nch; Gen Nch (|#eta|<0.8)", {kTH1F, {nChAxis}});
+      registryMC.add("Events/hNchGenCent", "Gen cent; mult", {kTH1F, {multAxis}});
       registryMC.add("Events/hNchGenVsCent", "Gen Nch vs Cent; mult; Gen Nch (|#eta|<0.8)", {kTH2F, {nChAxis, multAxis}});
       registryMC.add("Events/hVtxZRec", "MC Rec vertex z position", kTH1F, {vtxzAxis});
       registryMC.add("Events/hVtxZGen", "Generated vertex z position", kTH1F, {vtxzAxis});
@@ -859,15 +874,10 @@ struct FlattenictyPikp {
         registryMC.add({fmt::format(CEtaVsPtVsPMcRecPrimSelF.data(), CspeciesAll[i].data()).c_str(), "; #eta; #it{p}_{T} (GeV/#it{c}); #it{p} (GeV/#it{c})", {kTHnSparseF, {etaAxis, ptAxis, pAxis}}});
       }
 
-      // Hash list for efficiency
-      listEfficiency.setObject(new THashList);
       static_for<0, 1>([&](auto pidSgn) {
         bookMcHist<pidSgn, o2::track::PID::Pion>();
         bookMcHist<pidSgn, o2::track::PID::Kaon>();
         bookMcHist<pidSgn, o2::track::PID::Proton>();
-        initEfficiency<pidSgn, o2::track::PID::Pion>();
-        initEfficiency<pidSgn, o2::track::PID::Kaon>();
-        initEfficiency<pidSgn, o2::track::PID::Proton>();
       });
 
       LOG(info) << "Size of the MC histograms:";
@@ -1335,25 +1345,6 @@ struct FlattenictyPikp {
       charge = p->Charge();
     }
     return std::abs(charge) >= CminCharge;
-  }
-
-  template <typename P>
-  int countPart(P const& particles)
-  {
-    auto nCharged = 0;
-    for (auto const& particle : particles) {
-      if (!isChrgParticle(particle.pdgCode())) {
-        continue;
-      }
-      if (!particle.isPhysicalPrimary()) {
-        continue;
-      }
-      if (std::abs(particle.eta()) > trkSelOpt.trkEtaMax) {
-        continue;
-      }
-      nCharged++;
-    }
-    return nCharged;
   }
 
   template <typename P>
@@ -1933,13 +1924,36 @@ struct FlattenictyPikp {
     return iRing;
   }
 
+  template <typename C>
+  float getGenCent(C const& collision)
+  {
+    float val = -999.0;
+    switch (defOpt.multEst.value) {
+      case MultE::CnoMult:
+        return val;
+      case MultE::CmultFT0C:
+        return collision.centFT0C();
+      case MultE::CmultFT0M:
+        return collision.centFT0M();
+      default:
+        LOGF(fatal, "No valid centrality estimator: %s", defOpt.multEst.value);
+        return val;
+    }
+  }
+
   template <typename C, bool isMC = false>
   float getMult(C const& collision)
   {
     float val = -999.0;
-    switch (defOpt.multEst) {
+    switch (defOpt.multEst.value) {
       case MultE::CnoMult:
         return val;
+      case MultE::CmultFT0C:
+        if constexpr (!isMC) {
+          return collision.centFT0C();
+        } else {
+          return collision.multMCFT0C();
+        }
         break;
       case MultE::CmultFT0M:
         if constexpr (!isMC) {
@@ -1952,13 +1966,12 @@ struct FlattenictyPikp {
         if constexpr (!isMC) {
           return collision.multTPC();
         } else {
-          LOG(fatal) << "No valid multiplicity estimator: " << defOpt.multEst;
-          return val;
+          return collision.multMCNParticlesEta08();
         }
         break;
       default:
-        return collision.centFT0M();
-        break;
+        LOGF(fatal, "No valid multiplicity estimator: %s", defOpt.multEst.value);
+        return val;
     }
   }
 
@@ -2233,53 +2246,6 @@ struct FlattenictyPikp {
   }
 
   template <int pidSgn, o2::track::PID::ID id>
-  void initEfficiency()
-  {
-    static_assert(pidSgn == CnullInt || pidSgn == ConeInt);
-    static_assert(id > CnullInt && id < Npart);
-    constexpr int Cidx = id + pidSgn * Npart;
-    const TString partName = pIdChrg[Cidx];
-    auto lhash = new THashList();
-    lhash->SetName(partName);
-    listEfficiency->Add(lhash);
-
-    auto bookEff = [&](const TString& eName, const auto& h) {
-      const TAxis* axis = h->GetXaxis();
-      TString eTitle = h->GetTitle();
-      eTitle.ReplaceAll("Numerator", "").Strip(TString::kBoth);
-      eTitle = Form("%s;%s;Efficiency", eTitle.Data(), axis->GetTitle());
-      lhash->Add(new TEfficiency(eName, eTitle, axis->GetNbins(), axis->GetXbins()->GetArray()));
-    };
-
-    const int idx = id + pidSgn * Npart;
-    bookEff("hEffvsPt", hPtEffRec[idx]);
-  }
-
-  template <int pidSgn, o2::track::PID::ID id>
-  void fillEfficiency()
-  {
-    static_assert(pidSgn == CnullInt || pidSgn == ConeInt);
-    constexpr int ChistIdx = id + pidSgn * Npart;
-    const char* partName = pIdChrg[ChistIdx];
-    auto lhash = dynamic_cast<THashList*>(listEfficiency->FindObject(partName));
-    if (!lhash) {
-      LOG(warning) << "No efficiency object found for particle " << partName;
-      return;
-    }
-
-    auto fillEff = [&](const TString& eName, const auto& num, const auto& den) {
-      auto eff = dynamic_cast<TEfficiency*>(lhash->FindObject(eName));
-      if (!eff) {
-        LOG(warning) << "Cannot find TEfficiency " << eName;
-        return;
-      }
-      eff->SetTotalHistogram(*den, "f");
-      eff->SetPassedHistogram(*num, "f");
-    };
-    fillEff("hEffvsPt", hPtEffRec[ChistIdx], hPtEffGen[ChistIdx]);
-  }
-
-  template <int pidSgn, o2::track::PID::ID id>
   void fillMCRecTrack(MyLabeledPIDTracks::iterator const& track, const float mult, const float flat)
   {
     static_assert(pidSgn == CnullInt || pidSgn == ConeInt);
@@ -2400,11 +2366,32 @@ struct FlattenictyPikp {
   {
     LOGP(debug, "MC col {} has {} reco cols", mcCollision.globalIndex(), collisions.size());
     auto multMC = -1.;
-    if (evtSelOpt.useMultMCmidrap || defOpt.multEst == CtwoInt) { // use generated Nch in ∣eta∣ < 0.8
-      multMC = countPart(particles);
+    if (evtSelOpt.useMultMCmidrap) {
+      multMC = mcCollision.multMCNParticlesEta08();
     } else {
-      multMC = getMultMC(mcCollision); // using McCentFT0Ms
+      multMC = getMultMC(mcCollision);
     }
+    /*
+        cauto centMcGen = -1.;
+        if (evtSelOpt.customGenCent) {
+          if constexpr (hasFT0C<CollsGen>) {
+            centMcGen = mcCollision.mcpercft0c();
+          } else if (hasFT0M<CollsGen>) {
+            centMcGen = mcCollision.mcpercft0m();
+          }
+        } else {
+          if (defOpt.multEst == MultE::CmultFT0C) {
+            centMcGen = mcCollision.centFT0C();
+          } else if (defOpt.multEst == MultE::CmultFT0M) {
+            centMcGen = mcCollision.centFT0M();
+          } else {
+            centMcGen = -1.;
+          }
+        }
+    */
+    registryMC.fill(HIST("Events/hNchGen"), multMC);
+    registryMC.fill(HIST("Events/hNchGenCent"), getGenCent(mcCollision));
+
     const float flatMC = fillFlatMC<true>(particles);
     registryMC.fill(HIST("Events/hFlatMCGen"), flatMC);
 
@@ -2444,7 +2431,7 @@ struct FlattenictyPikp {
           fillMCGenRecEvt<pidSgn, o2::track::PID::Proton>(particle, multMC, flatMC);
         });
       }
-      if (!isGoodEvent<false>(collision)) {
+      if (!isGoodEvent<true>(collision)) {
         continue;
       }
       const float multRecGt1 = getMult(collision);
@@ -2512,38 +2499,40 @@ struct FlattenictyPikp {
         if (particle.pt() < trkSelOpt.trkPtMin) {
           continue;
         }
-        static_for<0, 1>([&](auto pidSgn) { // for checking purposes only: use gen Nch, gen Flat
-          fillMCRecTrack<pidSgn, o2::track::PID::Pion>(track, multMC, flatMC);
-          fillMCRecTrack<pidSgn, o2::track::PID::Kaon>(track, multMC, flatMC);
-          fillMCRecTrack<pidSgn, o2::track::PID::Proton>(track, multMC, flatMC);
-        });
-        static_for<0, 4>([&](auto i) {
-          constexpr int Cidx = i.value;
-          if (std::fabs(particle.pdgCode()) == pDGs[Cidx]) {
-            if (!particle.isPhysicalPrimary()) {
-              if (particle.getProcess() == CprocessIdWeak) {
-                registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyWeakAll), multRecGt1, flatRec, track.pt(), track.dcaXY());
+        if (defOpt.fillMCRecCheck) { // for checking purposes only: use gen Nch, gen Flat
+          static_for<0, 1>([&](auto pidSgn) {
+            fillMCRecTrack<pidSgn, o2::track::PID::Pion>(track, multMC, flatMC);
+            fillMCRecTrack<pidSgn, o2::track::PID::Kaon>(track, multMC, flatMC);
+            fillMCRecTrack<pidSgn, o2::track::PID::Proton>(track, multMC, flatMC);
+          });
+        }
+        if (defOpt.fillMCRecDCA) {
+          static_for<0, 4>([&](auto i) {
+            constexpr int Cidx = i.value;
+            if (std::fabs(particle.pdgCode()) == pDGs[Cidx]) {
+              if (!particle.isPhysicalPrimary()) {
+                if (particle.getProcess() == CprocessIdWeak) {
+                  registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyWeakAll), multRecGt1, flatRec, track.pt(), track.dcaXY());
+                } else {
+                  registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyMatAll), multRecGt1, flatRec, track.pt(), track.dcaXY());
+                }
               } else {
-                registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyMatAll), multRecGt1, flatRec, track.pt(), track.dcaXY());
+                registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyPrimAll), multRecGt1, flatRec, track.pt(), track.dcaXY());
+                registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CdEdxMcRecPrim), track.eta(), multRecGt1, flatRec, track.p(), track.tpcSignal());
               }
-            } else {
-              registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyPrimAll), multRecGt1, flatRec, track.pt(), track.dcaXY());
-              registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CdEdxMcRecPrim), track.eta(), multRecGt1, flatRec, track.p(), track.tpcSignal());
+              registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyAll), multRecGt1, flatRec, track.pt(), track.dcaXY());
             }
-            registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyAll), multRecGt1, flatRec, track.pt(), track.dcaXY());
-          }
-        });
+          });
+        }
         if (isGoodTrack<true>(track, magField)) {
           static_for<0, 4>([&](auto i) {
             constexpr int Cidx = i.value;
-            if (std::sqrt(std::pow(std::fabs(o2::aod::pidutils::tpcNSigma<Cidx>(track)), 2) + std::pow(std::fabs(o2::aod::pidutils::tofNSigma<Cidx>(track)), 2) < trkSelOpt.dcaNsigmaCombinedMax)) {
-              if (std::fabs(particle.pdgCode()) == pDGs[Cidx]) {
-                if (particle.isPhysicalPrimary()) {
-                  registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CdEdxMcRecPrimSel), track.eta(), multRecGt1, flatRec, track.p(), track.tpcSignal());
-                  registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CEtaVsPtVsPMcRecPrimSel), track.eta(), track.pt(), track.p());
-                  registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTeffPrimRecEvt), multRecGt1, flatRec, track.pt()); // Tracking eff. num
-                  registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTmcClosureRec), multMC, flatMC, track.pt());       // closure
-                }
+            if (std::fabs(particle.pdgCode()) == pDGs[Cidx]) {
+              if (particle.isPhysicalPrimary()) {
+                registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CdEdxMcRecPrimSel), track.eta(), multRecGt1, flatRec, track.p(), track.tpcSignal());
+                registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CEtaVsPtVsPMcRecPrimSel), track.eta(), track.pt(), track.p());
+                registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTeffPrimRecEvt), multRecGt1, flatRec, track.pt()); // Tracking eff. num
+                registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTmcClosureRec), multMC, flatMC, track.pt());       // closure
               }
             }
           });
@@ -2553,11 +2542,6 @@ struct FlattenictyPikp {
       }
       registryQC.fill(HIST("Events/hNchVsCent"), nTrk, multRecGt1);
     }
-    static_for<0, 1>([&](auto pidSgn) {
-      fillEfficiency<pidSgn, o2::track::PID::Pion>();
-      fillEfficiency<pidSgn, o2::track::PID::Kaon>();
-      fillEfficiency<pidSgn, o2::track::PID::Proton>();
-    });
 
     // Loop on generated particles (no requirement on availaability of reconstructed collision; no event selection)
     //

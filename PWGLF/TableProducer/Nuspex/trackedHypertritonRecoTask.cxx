@@ -322,6 +322,13 @@ struct TrackedHypertritonRecoTask {
     zorroEvents->GetXaxis()->SetBinLabel(2, "fTracked3Body");
     zorroEvents->GetYaxis()->SetBinLabel(1, "before sel8");
     zorroEvents->GetYaxis()->SetBinLabel(2, "after sel8");
+
+    registry.add("hTrackProtonTPCSignal", "hTrackProtonTPCSignal", HistType::kTH2F, {{100, -10.0f, 10.0f, "p/z (GeV/c)"}, {2000, 0.0f, 2000.0f, "d#it{E}/d#it{x}"}});
+    registry.add("hTrackPionTPCSignal", "hTrackPionTPCSignal", HistType::kTH2F, {{100, -10.0f, 10.0f, "p/z (GeV/c)"}, {2000, 0.0f, 2000.0f, "d#it{E}/d#it{x}"}});
+    registry.add("hTrackDeuteronTPCSignal", "hTrackDeuteronTPCSignal", HistType::kTH2F, {{100, -10.0f, 10.0f, "p/z (GeV/c)"}, {2000, 0.0f, 2000.0f, "d#it{E}/d#it{x}"}});
+    registry.add("hTrackProtonTPCSignalSelected", "hTrackProtonTPCSignalSelected", HistType::kTH2F, {{100, -10.0f, 10.0f, "p/z (GeV/c)"}, {2000, 0.0f, 2000.0f, "d#it{E}/d#it{x}"}});
+    registry.add("hTrackPionTPCSignalSelected", "hTrackPionTPCSignalSelected", HistType::kTH2F, {{100, -10.0f, 10.0f, "p/z (GeV/c)"}, {2000, 0.0f, 2000.0f, "d#it{E}/d#it{x}"}});
+    registry.add("hTrackDeuteronTPCSignalSelected", "hTrackDeuteronTPCSignalSelected", HistType::kTH2F, {{100, -10.0f, 10.0f, "p/z (GeV/c)"}, {2000, 0.0f, 2000.0f, "d#it{E}/d#it{x}"}});
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -575,14 +582,13 @@ struct TrackedHypertritonRecoTask {
     std::array<float, 6> xyzpxpypz{};
     trackHeliumCov.getPxPyPzGlo(pxpypz);
     trackHeliumCov.getXYZGlo(xyz);
-    for (int i = 0; i < 3; ++i) {
+    for (std::size_t i = 0; i < xyz.size(); ++i) {
       xyzpxpypz[i] = xyz[i];
-      xyzpxpypz[i + 3] = pxpypz[i] * 2;
+      xyzpxpypz[i + xyz.size()] = pxpypz[i] * 2;
     }
     std::array<float, 21> cv{};
     trackHeliumCov.getCovXYZPxPyPzGlo(cv);
-    KFParticle kfHelium;
-    kfHelium.Create(xyzpxpypz.data(), cv.data(), trackHelium.sign() * 2, constants::physics::MassHelium3);
+    kfpHelium.Create(xyzpxpypz.data(), cv.data(), trackHelium.sign() * 2, constants::physics::MassHelium3);
     // pion
     kfpPion = createKFParticleFromTrackParCov(trackPionCov, trackPion.sign(), constants::physics::MassPionCharged);
 
@@ -684,7 +690,7 @@ struct TrackedHypertritonRecoTask {
 
     // get SV position
     const auto& secondaryVertex = fitter2Body.getPCACandidate();
-    for (int i = 0; i < 3; i++) {
+    for (std::size_t i = 0; i < v0.decayVertex.size(); i++) {
       v0.decayVertex[i] = secondaryVertex[i];
     }
     v0.chi2 = std::sqrt(fitter2Body.getChi2AtPCACandidate());
@@ -738,6 +744,7 @@ struct TrackedHypertritonRecoTask {
     flags |= static_cast<uint8_t>(piTrack.pidForTracking() & 0xf);
 
     fillCandidate(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
+                  collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(),
                   collision.posX(), collision.posY(), collision.posZ(),
                   runNumber, heTrack.sign() > 0,
                   std::hypot(v0.momHelium[0], v0.momHelium[1]), std::atan2(v0.momHelium[1], v0.momHelium[0]), RecoDecay::eta(v0.momHelium),
@@ -802,6 +809,7 @@ struct TrackedHypertritonRecoTask {
                   candidate.daughterDCAtoSV[0], candidate.daughterDCAtoSV[1], candidate.daughterDCAtoSV[2],
                   candidate.daughterDCAtoSVaverage, candidate.cosPA, candidate.ctau,
                   candidate.tpcNsigma[0], candidate.tpcNsigma[1], candidate.tpcNsigma[2], candidate.tpcNsigma[3],
+                  candidate.tpcSignal[0], candidate.tpcSignal[1], candidate.tpcSignal[2],
                   static_cast<float>(candidate.tofNsigmaDeuteron),
                   candidate.averageITSClSize[0], candidate.averageITSClSize[1], candidate.averageITSClSize[2],
                   static_cast<int>(candidate.tpcNCl[0]), static_cast<int>(candidate.tpcNCl[1]), static_cast<int>(candidate.tpcNCl[2]),
@@ -829,6 +837,7 @@ struct TrackedHypertritonRecoTask {
                     candidate.daughterDCAtoSV[0], candidate.daughterDCAtoSV[1], candidate.daughterDCAtoSV[2],
                     candidate.daughterDCAtoSVaverage, candidate.cosPA, candidate.ctau,
                     candidate.tpcNsigma[0], candidate.tpcNsigma[1], candidate.tpcNsigma[2], candidate.tpcNsigma[3],
+                    candidate.tpcSignal[0], candidate.tpcSignal[1], candidate.tpcSignal[2],
                     static_cast<float>(candidate.tofNsigmaDeuteron),
                     candidate.averageITSClSize[0], candidate.averageITSClSize[1], candidate.averageITSClSize[2],
                     static_cast<int>(candidate.tpcNCl[0]), static_cast<int>(candidate.tpcNCl[1]), static_cast<int>(candidate.tpcNCl[2]),
@@ -847,24 +856,25 @@ struct TrackedHypertritonRecoTask {
 
   void fillGeneratedThreeBodyMCTable(ThreeBodyMCInfo const& info)
   {
-    mcVtx3BodyDatas(-1.f,
-                    -1.f, -1.f,       // mass, massV0
-                    -1.f, -1.f, -1.f, // position
-                    -1.f, -1.f, -1.f, // momentum
-                    -1.f, -1.f,       // chi2, trackedClSize
-                    -1.f, -1.f, -1.f, // proton momentum
-                    -1.f, -1.f, -1.f, // pion momentum
-                    -1.f, -1.f, -1.f, // deuteron momentum
-                    -1.f, -1.f, -1.f, // daughter x at inner update
-                    -1.f, -1.f, -1.f, // track DCAxy to PV
-                    -1.f, -1.f, -1.f, // track DCA to PV
-                    -1.f, -1.f, -1.f, // propagated track DCAxy to PV
-                    -1.f, -1.f, -1.f, // propagated track DCA to PV
-                    -1.f, -1.f, -1.f, // daughter DCA to SV
-                    -1.f, -1.f, -1.f, // average daughter DCA, cosPA, ctau
-                    -1.f, -1.f, -1.f, -1.f,
-                    -1.f,
-                    -1.f, -1.f, -1.f,
+    mcVtx3BodyDatas(-1.f,                   // sign
+                    -1.f, -1.f,             // mass, massV0
+                    -1.f, -1.f, -1.f,       // position
+                    -1.f, -1.f, -1.f,       // momentum
+                    -1.f, -1.f,             // chi2, trackedClSize
+                    -1.f, -1.f, -1.f,       // proton momentum
+                    -1.f, -1.f, -1.f,       // pion momentum
+                    -1.f, -1.f, -1.f,       // deuteron momentum
+                    -1.f, -1.f, -1.f,       // daughter x at inner update
+                    -1.f, -1.f, -1.f,       // track DCAxy to PV
+                    -1.f, -1.f, -1.f,       // track DCA to PV
+                    -1.f, -1.f, -1.f,       // propagated track DCAxy to PV
+                    -1.f, -1.f, -1.f,       // propagated track DCA to PV
+                    -1.f, -1.f, -1.f,       // daughter DCA to SV
+                    -1.f, -1.f, -1.f,       // average daughter DCA, cosPA, ctau
+                    -1.f, -1.f, -1.f, -1.f, // TPC nSigmas
+                    -1.f, 1.f, -1.f,        // TPC signals
+                    -1.f,                   // TOF nSigma deuteron
+                    -1.f, -1.f, -1.f,       // average cluster sizes
                     -1, -1, -1, std::numeric_limits<uint32_t>::max(),
                     info.genMomentum[0], info.genMomentum[1], info.genMomentum[2],
                     info.genDecayVertex[0], info.genDecayVertex[1], info.genDecayVertex[2],
@@ -874,6 +884,20 @@ struct TrackedHypertritonRecoTask {
                     0, info.motherLabel, info.motherPdgCode,
                     info.protonPdgCode, info.pionPdgCode, info.deuteronPdgCode,
                     info.isDeuteronPrimary, static_cast<int>(info.survivedEventSelection));
+  }
+
+  template <typename TTrack>
+  void fillQAHistograms(TTrack const& trackProton, TTrack const& trackPion, TTrack const& trackDeuteron, bool isSelected)
+  {
+    if (!isSelected) {
+      registry.fill(HIST("hTrackProtonTPCSignal"), trackProton.sign() * trackProton.tpcInnerParam(), trackProton.tpcSignal());
+      registry.fill(HIST("hTrackPionTPCSignal"), trackPion.sign() * trackPion.tpcInnerParam(), trackPion.tpcSignal());
+      registry.fill(HIST("hTrackDeuteronTPCSignal"), trackDeuteron.sign() * trackDeuteron.tpcInnerParam(), trackDeuteron.tpcSignal());
+    } else {
+      registry.fill(HIST("hTrackProtonTPCSignalSelected"), trackProton.sign() * trackProton.tpcInnerParam(), trackProton.tpcSignal());
+      registry.fill(HIST("hTrackPionTPCSignalSelected"), trackPion.sign() * trackPion.tpcInnerParam(), trackPion.tpcSignal());
+      registry.fill(HIST("hTrackDeuteronTPCSignalSelected"), trackDeuteron.sign() * trackDeuteron.tpcInnerParam(), trackDeuteron.tpcSignal());
+    }
   }
 
   void processData(Collisions const& collisions,
@@ -887,13 +911,13 @@ struct TrackedHypertritonRecoTask {
     selectCollisions(collisions, skimmedProcessing);
 
     for (const auto& trackedV0 : trackedV0s) {
-      const auto v0 = trackedV0.v0_as<aod::V0s>();
-      if (v0.collisionId() < 0 || !goodCollision[v0.collisionId()] || (skimmedProcessing && !zorroDecision[v0.collisionId()][kHe])) {
+      const auto inputV0 = trackedV0.v0_as<aod::V0s>();
+      if (inputV0.collisionId() < 0 || !goodCollision[inputV0.collisionId()] || (skimmedProcessing && !zorroDecision[inputV0.collisionId()][kHe])) {
         continue;
       }
-      const auto collision = v0.collision_as<Collisions>();
-      const auto positiveTrack = v0.posTrack_as<Tracks>();
-      const auto negativeTrack = v0.negTrack_as<Tracks>();
+      const auto collision = inputV0.collision_as<Collisions>();
+      const auto positiveTrack = inputV0.posTrack_as<Tracks>();
+      const auto negativeTrack = inputV0.negTrack_as<Tracks>();
       const float nSigmaPositive = nSigmaHe3(positiveTrack);
       const float nSigmaNegative = nSigmaHe3(negativeTrack);
       const bool positiveTrackedAsHe = positiveTrack.pidForTracking() == o2::track::PID::Helium3 || positiveTrack.pidForTracking() == o2::track::PID::Alpha;
@@ -932,6 +956,8 @@ struct TrackedHypertritonRecoTask {
       const auto trackProton = trackDeuteron.sign() > 0 ? trackPositive : trackNegative;
       const auto trackPion = trackDeuteron.sign() > 0 ? trackNegative : trackPositive;
 
+      fillQAHistograms(trackProton, trackPion, trackDeuteron, false);
+
       if (builder3Body.buildDecay3BodyCandidate(collision, trackProton, trackPion, trackDeuteron,
                                                 decay3Body.globalIndex(), deuteronTOFNSigma(collision, trackDeuteron), tracked3Body.itsClsSize(),
                                                 threeBody.useKFParticle, threeBody.setTopologicalConstraint,
@@ -945,6 +971,7 @@ struct TrackedHypertritonRecoTask {
           continue;
         }
 
+        fillQAHistograms(trackProton, trackPion, trackDeuteron, true);
         fillThreeBodyTables();
       }
     }
@@ -966,13 +993,13 @@ struct TrackedHypertritonRecoTask {
     std::vector<bool> reconstructedThreeBody(mcParticles.size(), false);
 
     for (const auto& trackedV0 : trackedV0s) {
-      const auto v0 = trackedV0.v0_as<aod::V0s>();
-      if (v0.collisionId() < 0 || !goodCollision[v0.collisionId()]) {
+      const auto inputV0 = trackedV0.v0_as<aod::V0s>();
+      if (inputV0.collisionId() < 0 || !goodCollision[inputV0.collisionId()]) {
         continue;
       }
-      const auto collision = v0.collision_as<CollisionsMC>();
-      const auto positiveTrack = v0.posTrack_as<TracksMC>();
-      const auto negativeTrack = v0.negTrack_as<TracksMC>();
+      const auto collision = inputV0.collision_as<CollisionsMC>();
+      const auto positiveTrack = inputV0.posTrack_as<TracksMC>();
+      const auto negativeTrack = inputV0.negTrack_as<TracksMC>();
       const float nSigmaPositive = nSigmaHe3(positiveTrack);
       const float nSigmaNegative = nSigmaHe3(negativeTrack);
       const bool positiveTrackedAsHe = positiveTrack.pidForTracking() == o2::track::PID::Helium3 || positiveTrack.pidForTracking() == o2::track::PID::Alpha;
@@ -1023,13 +1050,19 @@ struct TrackedHypertritonRecoTask {
       const auto trackDeuteron = decay3Body.track2_as<TracksMC>();
       const auto trackProton = trackDeuteron.sign() > 0 ? trackPositive : trackNegative;
       const auto trackPion = trackDeuteron.sign() > 0 ? trackNegative : trackPositive;
+
+      fillQAHistograms(trackProton, trackPion, trackDeuteron, false);
+
       if (!builder3Body.buildDecay3BodyCandidate(collision, trackProton, trackPion, trackDeuteron,
                                                  decay3Body.globalIndex(), deuteronTOFNSigmaMC(collision, trackDeuteron), tracked3Body.itsClsSize(),
                                                  threeBody.useKFParticle, threeBody.setTopologicalConstraint,
                                                  threeBody.useSelections, threeBody.useChi2Selection, threeBody.useTPCforPion,
                                                  threeBody.acceptTPCOnly, threeBody.askOnlyITSMatch, threeBody.calculateCovariance)) {
+
         continue;
       }
+
+      fillQAHistograms(trackProton, trackPion, trackDeuteron, true);
       const auto mcInfo = getThreeBodyMCInfo(trackProton, trackPion, trackDeuteron, collision, mcParticles);
       if (mcInfo.motherLabel < 0 && !mc.storeBackground) {
         continue;
@@ -1105,6 +1138,8 @@ struct TrackedHypertritonRecoTask {
         float centralityFT0A = -1.f;
         float centralityFT0C = -1.f;
         float centralityFT0M = -1.f;
+        int trackOccupancyInTimeRange = -1;
+        float ft0cOccupancyInTimeRange = -1.f;
         float primaryVertexX = -1.f;
         float primaryVertexY = -1.f;
         float primaryVertexZ = -1.f;
@@ -1119,12 +1154,15 @@ struct TrackedHypertritonRecoTask {
             centralityFT0A = collision.centFT0A();
             centralityFT0C = collision.centFT0C();
             centralityFT0M = collision.centFT0M();
+            trackOccupancyInTimeRange = collision.trackOccupancyInTimeRange();
+            ft0cOccupancyInTimeRange = collision.ft0cOccupancyInTimeRange();
             primaryVertexX = collision.posX();
             primaryVertexY = collision.posY();
             primaryVertexZ = collision.posZ();
           }
         }
         mcHypCands(centralityFT0A, centralityFT0C, centralityFT0M,
+                   trackOccupancyInTimeRange, ft0cOccupancyInTimeRange,
                    primaryVertexX, primaryVertexY, primaryVertexZ,
                    runNumber, mother.pdgCode() > 0,
                    -1.f, -1.f, -1.f,

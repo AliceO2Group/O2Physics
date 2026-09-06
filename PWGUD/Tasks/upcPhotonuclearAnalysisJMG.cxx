@@ -551,7 +551,7 @@ struct UpcPhotonuclearAnalysisJMG {
   }
 
   template <typename TTracks>
-  void fillQAUD(const TTracks tracks, float multiplicity)
+  void fillQAUD(const TTracks& tracks, float multiplicity)
   {
     for (const auto& track : tracks) {
       if (isTrackCut(track) == false) {

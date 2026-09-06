@@ -174,7 +174,7 @@ class MixingHandler : public TNamed
   virtual ~MixingHandler();
 
   // setters
-  void AddMixingVariable(int var, std::vector<float> binLims);
+  void AddMixingVariable(int var, const std::vector<float>& binLims);
   void SetPoolDepth(int16_t depth) { fPoolDepth = depth; }
 
   // getters

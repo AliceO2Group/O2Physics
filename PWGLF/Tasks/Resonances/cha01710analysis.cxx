@@ -68,7 +68,7 @@ struct Cha01710analysis {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   Configurable<std::string> cfgUrl{"cfgUrl", "http://alice-ccdb.cern.ch", "CCDB URL"};
 
@@ -269,12 +269,7 @@ struct Cha01710analysis {
   template <typename T>
   bool selectPionDaughter(T const& track)
   {
-    if (!track.hasTPC() || track.tpcNClsFound() < v0Cuts.cfgV0DaughterTPCNClsMin ||
-        track.pt() < v0Cuts.cfgV0DaughterPtMin || std::abs(track.eta()) > v0Cuts.cfgV0DaughterEtaMax ||
-        std::abs(track.tpcNSigmaPi()) > v0Cuts.cfgV0DaughterTPCNSigmaPiMax) {
-      return false;
-    }
-    return true;
+    return !(track.tpcNClsFound() < v0Cuts.cfgV0DaughterTPCNClsMin || track.pt() < v0Cuts.cfgV0DaughterPtMin || std::abs(track.eta()) > v0Cuts.cfgV0DaughterEtaMax || std::abs(track.tpcNSigmaPi()) > v0Cuts.cfgV0DaughterTPCNSigmaPiMax);
   }
 
   template <typename C, typename V>
@@ -284,7 +279,8 @@ struct Cha01710analysis {
     float ctau = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassK0Short;
     if (v0.pt() < v0Cuts.cfgV0PtMin || v0.pt() > v0Cuts.cfgV0PtMax ||
         v0.dcaV0daughters() > v0Cuts.cfgV0DcaDaughtersMax || v0.v0cosPA() < v0Cuts.cfgV0CosPAMin ||
-        v0.v0radius() < v0Cuts.cfgV0RadiusMin || std::abs(ctau) > v0Cuts.cfgV0CtauMax) {
+        v0.v0radius() < v0Cuts.cfgV0RadiusMin || std::abs(ctau) > v0Cuts.cfgV0CtauMax ||
+        std::abs(v0.dcapostopv()) < v0Cuts.cfgV0DaughterDcaPVMin || std::abs(v0.dcanegtopv()) < v0Cuts.cfgV0DaughterDcaPVMin) {
       return V0MassRegion::kReject;
     }
     if (v0Cuts.cfgRejectLambda &&
@@ -302,15 +298,12 @@ struct Cha01710analysis {
       return V0MassRegion::kReject;
     }
     float dm = std::abs(v0.mK0Short() - constants::physics::MassK0Short);
+    histos.fill(HIST("V0/hMassSelected"), v0.mK0Short(), v0.pt());
+
     if (dm < v0Cuts.cfgKsMassWindow) {
-      histos.fill(HIST("V0/hMassSelected"), v0.mK0Short(), v0.pt());
       return V0MassRegion::kSignal;
     }
-    if (dm > v0Cuts.cfgKsMassWindow) {
-      histos.fill(HIST("V0/hMassSelected"), v0.mK0Short(), v0.pt());
-      return V0MassRegion::kSideband;
-    }
-    return V0MassRegion::kReject;
+    return V0MassRegion::kSideband;
   }
 
   template <typename CollisionType, typename TracksType, typename V0Type>
@@ -354,8 +347,9 @@ struct Cha01710analysis {
 
         float relPhi = TVector2::Phi_0_2pi((mother.Phi() - eventPlaneDet) * harmonic);
         histos.fill(HIST("Pair/hMassVsK0SMass"), mother.M(), v0.mK0Short());
-        if (region != kSignal)
+        if (region != kSignal) {
           continue;
+        }
         if (track.sign() > 0) {
           histos.fill(HIST("Pair/hSignalPlus"), mother.M(), mother.Pt(), centrality, relPhi);
         } else if (track.sign() < 0) {
@@ -366,9 +360,9 @@ struct Cha01710analysis {
           randomPhi += kaon.Phi();
           auto kaonRot = ROOT::Math::PxPyPzMVector(kaon.Pt() * std::cos(randomPhi), kaon.Pt() * std::sin(randomPhi), track.pz(), o2::constants::physics::MassKaonCharged);
           auto motherRot = k0 + kaonRot;
-          if (std::abs(motherRot.Rapidity()) > cfgMotherRapidityMax)
+          if (std::abs(motherRot.Rapidity()) > cfgMotherRapidityMax) {
             continue;
-
+          }
           if (track.sign() > 0) {
             histos.fill(HIST("Pair/hRotatedPlus"), motherRot.M(), motherRot.Pt(), centrality);
           } else if (track.sign() < 0) {
@@ -384,12 +378,11 @@ struct Cha01710analysis {
     if (!selectEvent(collision)) {
       return;
     }
+    centrality = collision.centFT0M();
     if (eventCuts.cfgCentEst == kFT0M) {
       centrality = collision.centFT0M();
     } else if (eventCuts.cfgCentEst == kFT0C) {
       centrality = collision.centFT0C();
-    } else {
-      centrality = collision.centFT0M();
     }
 
     histos.fill(HIST("Event/hCentDist"), centrality);
