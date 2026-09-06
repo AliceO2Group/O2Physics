@@ -9,9 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
-//   o2::framework::Configurable workflow for running several DQ or other PWG analyses
-// Precompiled into TableReaderWithAssocPCH
+
+/// \file tableReader_withAssoc.h
+/// \author iarsene@cern.ch, i.c.arsene@fys.uio.no
+/// \brief Configurable workflow for running several DQ or other PWG analyses
+/// \note Precompiled into TableReaderWithAssocPCH
 
 #ifndef PWGDQ_TASKS_TABLEREADER_WITHASSOC_H_
 #define PWGDQ_TASKS_TABLEREADER_WITHASSOC_H_
