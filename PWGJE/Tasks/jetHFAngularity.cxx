@@ -18,12 +18,12 @@
 #include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
-#include "PWGJE/DataModel/JetSubstructure.h"
 
 #include "Common/Core/RecoDecay.h"
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/ConfigContext.h>
 #include <Framework/Configurable.h>
@@ -37,6 +37,7 @@
 
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -49,7 +50,6 @@ namespace
 constexpr int kOriginMcPrompt = 1;    // MC origin flag: prompt
 constexpr int kOriginMcNonPrompt = 2; // MC origin flag: non-prompt
 constexpr int8_t kCandSelFlagD0 = 0;
-constexpr int8_t kCandSelFlagD0bar = 1;
 } // namespace
 
 namespace o2::aod
@@ -198,10 +198,10 @@ enum BinJetCntr {
 
 /// MC-efficiency collision-counter bins (jet-matching based efficiency)
 enum BinMCColCntr {
-  All = 1,
-  ZCut = 2,
-  Matched = 3,
-  MatchedSel8ZCut = 4
+  AllMCCollisions = 1,
+  SelectedMCCollisions = 2,
+  AssociatedRecoCollisions = 3,
+  SelectedAssociatedRecoCollisions = 4
 };
 
 /// MC-efficiency jet-counter bins (jet-matching based efficiency)
@@ -516,10 +516,10 @@ struct JetHFAngularityTask {
 
     // ---- MC efficiency (jet-to-jet matching based) bin labels ----
     auto mcCollisionCounter = registry.get<TH1>(HIST("MC_CollisionCounter"));
-    mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::All, "MC collisions");
-    mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::ZCut, "MC collisions passing z cut");
-    mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::Matched, "Matched reconstructed collisions");
-    mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::MatchedSel8ZCut, "Matched collisions passing selections");
+    mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::AllMCCollisions, "All MC collisions");
+    mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::SelectedMCCollisions, "Selected MC collisions");
+    mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::AssociatedRecoCollisions, "MC-Associated reco collisions");
+    mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::SelectedAssociatedRecoCollisions, "Selected MC-Associated reco collisions");
 
     auto jetCounter = registry.get<TH1>(HIST("MC_JetCounter"));
     jetCounter->GetXaxis()->SetBinLabel(BinMCJetCntr::DetectorLevelJetInMCCollision, "Detector-level D0 jets");
@@ -610,7 +610,7 @@ struct JetHFAngularityTask {
     }
 
     for (auto const& cand : candidates) {
-      double m;
+      double m=0;
       if (candMass > 0.) {
         m = candMass;
       } else if constexpr (requires { cand.m(); }) {
@@ -985,8 +985,8 @@ struct JetHFAngularityTask {
 
   void processMCDChargedSubstructureMatched(aod::JetMcCollisions const& mccollisions,
                                               aod::JetCollisionsMCD const& collisions,
-                                              D0MCDJetsMatched const& mcdjets, // now Filtered: jetCutsPt/jetCutsR applied automatically
-                                              D0MCPJetsMatched const& mcpjets,                // MUST stay bare -- accessor target type
+                                              D0MCDJetsMatched const& mcdjets, 
+                                              D0MCPJetsMatched const& mcpjets,             
                                               D0CandidatesMCD const&,
                                               D0CandidatesMCP const&,
                                               aod::JetTracks const&,
@@ -997,29 +997,29 @@ struct JetHFAngularityTask {
 
   for (const auto& mccollision : mccollisions) {
 
-    registry.fill(HIST("MC_CollisionCounter"), getValFromBin(BinMCColCntr::All));
+    registry.fill(HIST("MC_CollisionCounter"), getValFromBin(BinMCColCntr::AllMCCollisions));
 
     if (std::abs(mccollision.posZ()) > vertexZCut) {
       continue;
     }
-    registry.fill(HIST("MC_CollisionCounter"), getValFromBin(BinMCColCntr::ZCut));
+    registry.fill(HIST("MC_CollisionCounter"), getValFromBin(BinMCColCntr::SelectedMCCollisions));
 
-    const float mcWeight = mccollision.weight();
+    //const float mcWeight = mccollision.weight();
 
     const auto collisionsPerMCCollision = collisions.sliceBy(collisionsPerMCCollisionPreslice, mccollision.globalIndex());
     for (const auto& collision : collisionsPerMCCollision) {
 
-      registry.fill(HIST("MC_CollisionCounter"), getValFromBin(BinMCColCntr::Matched));
+      registry.fill(HIST("MC_CollisionCounter"), getValFromBin(BinMCColCntr::AssociatedRecoCollisions));
 
       if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) ||
           !(std::abs(collision.posZ()) < vertexZCut)) {
         continue;
       }
-      registry.fill(HIST("MC_CollisionCounter"), getValFromBin(BinMCColCntr::MatchedSel8ZCut));
+      registry.fill(HIST("MC_CollisionCounter"), getValFromBin(BinMCColCntr::SelectedAssociatedRecoCollisions));
 
       const auto d0mcdJetsPerCollision = mcdjets.sliceBy(d0MCDJetsPerCollisionPreslice, collision.globalIndex());
       for (const auto& mcdjet : d0mcdJetsPerCollision) {
-        if (!(mcdjet.pt() > jetPtMin && mcdjet.r() == jetRBin)) {
+        if (mcdjet.pt() <= jetPtMin || mcdjet.r() != jetRBin) {
           continue;
         } 
         registry.fill(HIST("MC_JetCounter"), getValFromBin(BinMCJetCntr::DetectorLevelJetInMCCollision));
@@ -1050,8 +1050,8 @@ struct JetHFAngularityTask {
             ++nGeoMatches;
 
             const float dR = jetutilities::deltaR(mcdjet, mcpjet);
-            registry.fill(HIST("h_jet_matching_dr_mcd_allcand"), dR, mcWeight);
-            registry.fill(HIST("h_jet_pt_response_matrix_allcand"), mcdjet.pt(), mcpjet.pt(), mcWeight);
+            registry.fill(HIST("h_jet_matching_dr_mcd_allcand"), dR);
+            registry.fill(HIST("h_jet_pt_response_matrix_allcand"), mcdjet.pt(), mcpjet.pt());
 
             if (!isGeoMatched) {
               isGeoMatched = true;
@@ -1065,14 +1065,14 @@ struct JetHFAngularityTask {
               auto mcpjetCandidates = mcpjet.template candidates_as<D0CandidatesMCP>();
               matchedAngularity = computeLambda(mcpjet, mcpjetParticles, mcpjetCandidates, 1.f, 1.f); // λ_1^1
               matchedGirth = computeLambda(mcpjet, mcpjetParticles, mcpjetCandidates, 2.f, 1.f);      // λ_2^1
-              if (mcpjetCandidates.size() > 0) {
+              if (!mcpjetCandidates.empty()) {
                  auto matchedMcpD0 = mcpjet.template candidates_first_as<D0CandidatesMCP>();
                  matchedD0Pt = matchedMcpD0.pt();
               }
             }
           }
         }
-        registry.fill(HIST("h_jet_matching_ngeo_mcd"), nGeoMatches, mcWeight);
+        registry.fill(HIST("h_jet_matching_ngeo_mcd"), nGeoMatches);
 
         bool isCandMatched = false;
         int candMatchedGlobalIndex = -1;
@@ -1087,29 +1087,29 @@ struct JetHFAngularityTask {
             }
           }
         }
-        registry.fill(HIST("h_jet_matching_ncand_mcd"), nCandMatches, mcWeight);
+        registry.fill(HIST("h_jet_matching_ncand_mcd"), nCandMatches);
 
         // "Clean" match: both criteria fire AND agree on the same target jet.
         const bool isCleanMatched = isGeoMatched && isCandMatched &&
                                     (geoMatchedGlobalIndex == candMatchedGlobalIndex);
 
-        registry.fill(HIST("h_jet_matching_geo_status_mcd"), isGeoMatched ? 1.5f : 0.5f, mcWeight);
-        registry.fill(HIST("h_jet_matching_cand_status_mcd"), isCandMatched ? 1.5f : 0.5f, mcWeight);
-        registry.fill(HIST("h_jet_matching_clean_mcd"), isCleanMatched ? 1.5f : 0.5f, mcWeight);
+        registry.fill(HIST("h_jet_matching_geo_status_mcd"), isGeoMatched ? 1.5f : 0.5f);
+        registry.fill(HIST("h_jet_matching_cand_status_mcd"), isCandMatched ? 1.5f : 0.5f);
+        registry.fill(HIST("h_jet_matching_clean_mcd"), isCleanMatched ? 1.5f : 0.5f);
 
         if (isGeoMatched) {
           const bool agree = isCandMatched && (geoMatchedGlobalIndex == candMatchedGlobalIndex);
-          registry.fill(HIST("h_jet_matching_geocand_disagree_mcd"), agree ? 1.5f : 0.5f, mcWeight);
+          registry.fill(HIST("h_jet_matching_geocand_disagree_mcd"), agree ? 1.5f : 0.5f);
         }
 
         if (isCleanMatched) {
-          registry.fill(HIST("h_jet_pt_response_matrix"), mcdjet.pt(), matchedPt, mcWeight);
-          registry.fill(HIST("h_jet_matching_dr_mcd"), matchedDR, mcWeight);
+          registry.fill(HIST("h_jet_pt_response_matrix"), mcdjet.pt(), matchedPt);
+          registry.fill(HIST("h_jet_matching_dr_mcd"), matchedDR);
         }
 
-        const int8_t geoStatus = static_cast<int8_t>(isGeoMatched);
-        const int8_t candStatus = static_cast<int8_t>(isCandMatched);
-        const int8_t cleanStatus = static_cast<int8_t>(isCleanMatched);
+        const auto geoStatus = static_cast<int8_t>(isGeoMatched);
+        const auto candStatus = static_cast<int8_t>(isCandMatched);
+        const auto cleanStatus = static_cast<int8_t>(isCleanMatched);
 
         const int isCleanMatchedMCD = isCleanMatched ? 1 : 0;
 
@@ -1132,12 +1132,12 @@ struct JetHFAngularityTask {
           const bool isTrueSignal = (flagMcMatch != 0) && !isReflection;
 
           if (isReflection) {
-            registry.fill(HIST("h_d0_mass_mcd_reflection"), mcdD0cand.m(), mcWeight);
+            registry.fill(HIST("h_d0_mass_mcd_reflection"), mcdD0cand.m());
             registry.fill(HIST("hSparse_d0_mcd_reflection"),
                           mcdD0cand.m(), mcdD0cand.pt(), mcdjet.pt(), zParallelMCD, originMcd,
                           angularity, girth);
           } else if (isTrueSignal) {
-            registry.fill(HIST("h_d0_mass_mcd_signal"), mcdD0cand.m(), mcWeight);
+            registry.fill(HIST("h_d0_mass_mcd_signal"), mcdD0cand.m());
             registry.fill(HIST("hSparse_d0_mcd_calib"),
                           mcdD0cand.m(), mcdD0cand.pt(), mcdjet.pt(), zParallelMCD, originMcd,
                           angularity, girth);
@@ -1170,15 +1170,15 @@ struct JetHFAngularityTask {
 
           if (isCleanMatched) {
             if (originMcd == kOriginMcPrompt) {
-              registry.fill(HIST("h_jet_pt_response_matrix_pr"), mcdjet.pt(), matchedPt, mcWeight);
-              registry.fill(HIST("h_response_angularity_pr"), mcdjet.pt(), angularity, matchedPt, matchedAngularity, mcWeight);
-              registry.fill(HIST("h_response_girth_pr"), mcdjet.pt(), girth, matchedPt, matchedGirth, mcWeight);
-              registry.fill(HIST("h_response_d0pt_pr"), mcdjet.pt(), mcdD0cand.pt(), matchedPt, matchedD0Pt, mcWeight);
+              registry.fill(HIST("h_jet_pt_response_matrix_pr"), mcdjet.pt(), matchedPt);
+              registry.fill(HIST("h_response_angularity_pr"), mcdjet.pt(), angularity, matchedPt, matchedAngularity);
+              registry.fill(HIST("h_response_girth_pr"), mcdjet.pt(), girth, matchedPt, matchedGirth);
+              registry.fill(HIST("h_response_d0pt_pr"), mcdjet.pt(), mcdD0cand.pt(), matchedPt, matchedD0Pt);
             } else if (originMcd == kOriginMcNonPrompt) {
-              registry.fill(HIST("h_jet_pt_response_matrix_np"), mcdjet.pt(), matchedPt, mcWeight);
-              registry.fill(HIST("h_response_angularity_np"), mcdjet.pt(), angularity, matchedPt, matchedAngularity, mcWeight);
-              registry.fill(HIST("h_response_girth_np"), mcdjet.pt(), girth, matchedPt, matchedGirth, mcWeight);
-              registry.fill(HIST("h_response_d0pt_np"), mcdjet.pt(), mcdD0cand.pt(), matchedPt, matchedD0Pt, mcWeight);
+              registry.fill(HIST("h_jet_pt_response_matrix_np"), mcdjet.pt(), matchedPt);
+              registry.fill(HIST("h_response_angularity_np"), mcdjet.pt(), angularity, matchedPt, matchedAngularity);
+              registry.fill(HIST("h_response_girth_np"), mcdjet.pt(), girth, matchedPt, matchedGirth);
+              registry.fill(HIST("h_response_d0pt_np"), mcdjet.pt(), mcdD0cand.pt(), matchedPt, matchedD0Pt);
             }
           }
 
@@ -1216,7 +1216,7 @@ struct JetHFAngularityTask {
     const auto d0mcpJetsPerMCCollision = mcpjets.sliceBy(d0MCPJetsPerMCCollisionPreslice, mccollision.globalIndex());
     for (const auto& mcpjet : d0mcpJetsPerMCCollision) {
 
-      if (!(mcpjet.pt() > jetPtMin && mcpjet.r() == jetRBin)) {
+      if (mcpjet.pt() <= jetPtMin || mcpjet.r() != jetRBin) {
         continue;
       }
 
