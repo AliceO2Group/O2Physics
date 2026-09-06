@@ -28,6 +28,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 
+#include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -42,7 +43,7 @@
 #include <array>
 #include <cmath>
 #include <cstring>
-#include <memory>
+#include <ranges>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -92,7 +93,7 @@ struct SinglePhoton {
 
   Configurable<std::string> fConfigEMEventCut{"cfgEMEventCut", "minbias", "em event cut"}; // only 1 event cut per wagon
   EMPhotonEventCut fEMEventCut;
-  static constexpr std::string_view event_types[2] = {"before", "after"};
+  static constexpr std::array<std::string_view, 2> event_types = {"before", "after"};
 
   OutputObj<THashList> fOutputEvent{"Event"};
   OutputObj<THashList> fOutputPhoton{"Photon"}; // single photon
@@ -108,12 +109,6 @@ struct SinglePhoton {
     if (context.mOptions.get<bool>("processPCM")) {
       fDetNames.push_back("PCM");
     }
-    // if (context.mOptions.get<bool>("processPHOS")) {
-    //   fDetNames.push_back("PHOS");
-    // }
-    // if (context.mOptions.get<bool>("processEMC")) {
-    //   fDetNames.push_back("EMC");
-    // }
 
     DefinePCMCuts();
     DefinePHOSCuts();
@@ -122,19 +117,19 @@ struct SinglePhoton {
     TString ev_cut_name = fConfigEMEventCut.value;
     fEMEventCut = *eventcuts::GetCut(ev_cut_name.Data());
 
-    fOutputEvent.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Event")));
-    fOutputPhoton.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Photon")));
+    fOutputEvent.setObject(dynamic_cast<THashList*>(fMainList->FindObject("Event")));
+    fOutputPhoton.setObject(dynamic_cast<THashList*>(fMainList->FindObject("Photon")));
   }
 
   template <typename TCuts1>
-  void add_histograms(THashList* list_photon, const std::string detname, TCuts1 const& cuts1)
+  void add_histograms(THashList* list_photon, std::string const& detname, TCuts1 const& cuts1)
   {
     for (auto& cut1 : cuts1) {
-      std::string cutname1 = cut1.GetName();
+      std::string const& cutname1 = cut1.getName();
 
-      THashList* list_photon_subsys = reinterpret_cast<THashList*>(list_photon->FindObject(detname.data()));
+      auto* list_photon_subsys = dynamic_cast<THashList*>(list_photon->FindObject(detname.data()));
       o2::aod::pwgem::photon::histogram::AddHistClass(list_photon_subsys, cutname1.data());
-      THashList* list_photon_subsys_cut = reinterpret_cast<THashList*>(list_photon_subsys->FindObject(cutname1.data()));
+      auto* list_photon_subsys_cut = dynamic_cast<THashList*>(list_photon_subsys->FindObject(cutname1.data()));
       if (cfgDoFlow) {
         o2::aod::pwgem::photon::histogram::DefineHistograms(list_photon_subsys_cut, "singlephoton", "qvector");
       } else {
@@ -144,7 +139,7 @@ struct SinglePhoton {
     } // end of cut1 loop
   }
 
-  static constexpr std::string_view detnames[3] = {"PCM", "PHOS", "EMC"};
+  static constexpr std::array<std::string_view, 3> detnames = {"PCM", "PHOS", "EMC"};
   void addhistograms()
   {
     fMainList->SetOwner(true);
@@ -152,18 +147,18 @@ struct SinglePhoton {
 
     // create sub lists first.
     o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "Event");
-    THashList* list_ev = reinterpret_cast<THashList*>(fMainList->FindObject("Event"));
+    auto* list_ev = dynamic_cast<THashList*>(fMainList->FindObject("Event"));
 
     o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "Photon");
-    THashList* list_photon = reinterpret_cast<THashList*>(fMainList->FindObject("Photon"));
+    auto* list_photon = dynamic_cast<THashList*>(fMainList->FindObject("Photon"));
 
-    for (auto& detname : fDetNames) {
+    for (const auto& detname : fDetNames) {
       LOGF(info, "Enabled detector = %s", detname.data());
 
       o2::aod::pwgem::photon::histogram::AddHistClass(list_ev, detname.data());
-      THashList* list_ev_det = reinterpret_cast<THashList*>(list_ev->FindObject(detname.data()));
+      auto* list_ev_det = dynamic_cast<THashList*>(list_ev->FindObject(detname.data()));
       for (const auto& evtype : event_types) {
-        THashList* list_ev_det_type = reinterpret_cast<THashList*>(o2::aod::pwgem::photon::histogram::AddHistClass(list_ev_det, evtype.data()));
+        THashList* list_ev_det_type = o2::aod::pwgem::photon::histogram::AddHistClass(list_ev_det, evtype.data());
         if (cfgDoFlow) {
           o2::aod::pwgem::photon::histogram::DefineHistograms(list_ev_det_type, "Event", "qvector");
         } else {
@@ -188,55 +183,64 @@ struct SinglePhoton {
 
   void DefinePCMCuts()
   {
-    TString cutNamesStr = fConfigPCMCuts.value;
-    if (!cutNamesStr.IsNull()) {
-      std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
-      for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        const char* cutname = objArray->At(icut)->GetName();
-        LOGF(info, "add cut : %s", cutname);
-        fPCMCuts.push_back(*pcmcuts::GetCut(cutname));
-      }
+    if (fConfigPCMCuts.value.empty()) {
+      return;
+    }
+
+    std::string_view namesView(fConfigPCMCuts.value);
+
+    for (auto name : namesView | std::views::split(',')) {
+      std::string cutString(name.begin(), name.end());
+      const char* cutname = cutString.c_str();
+      LOGF(info, "add PCM cut : %s", cutname);
+      fPCMCuts.push_back(*pcmcuts::GetCut(cutname));
     }
     LOGF(info, "Number of PCM cuts = %d", fPCMCuts.size());
   }
   void DefinePHOSCuts()
   {
-    TString cutNamesStr = fConfigPHOSCuts.value;
-    if (!cutNamesStr.IsNull()) {
-      std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
-      for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        const char* cutname = objArray->At(icut)->GetName();
-        LOGF(info, "add cut : %s", cutname);
-        fPHOSCuts.push_back(*phoscuts::GetCut(cutname));
-      }
+    if (fConfigPHOSCuts.value.empty()) {
+      return;
+    }
+
+    std::string_view namesView(fConfigPHOSCuts.value);
+
+    for (auto name : namesView | std::views::split(',')) {
+      std::string cutString(name.begin(), name.end());
+      const char* cutname = cutString.c_str();
+      LOGF(info, "add PHOS cut : %s", cutname);
+      fPHOSCuts.push_back(*phoscuts::GetCut(cutname));
     }
     LOGF(info, "Number of PHOS cuts = %d", fPHOSCuts.size());
   }
 
   void DefineEMCCuts()
   {
-    TString cutNamesStr = fConfigEMCCuts.value;
-    if (!cutNamesStr.IsNull()) {
-      std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
-      for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        const char* cutname = objArray->At(icut)->GetName();
-        LOGF(info, "add cut : %s", cutname);
-        if (std::strcmp(cutname, "custom") == 0) {
-          EMCPhotonCut* custom_cut = new EMCPhotonCut(cutname, cutname);
-          custom_cut->SetMinE(EMC_minE);
-          custom_cut->SetMinNCell(EMC_minNCell);
-          custom_cut->SetM02Range(EMC_minM02, EMC_maxM02);
-          custom_cut->SetTimeRange(EMC_minTime, EMC_maxTime);
+    if (fConfigEMCCuts.value.empty()) {
+      return;
+    }
 
-          custom_cut->SetTrackMatchingEtaParams(EMC_TM_Eta->at(0), EMC_TM_Eta->at(1), EMC_TM_Eta->at(2));
-          custom_cut->SetTrackMatchingPhiParams(EMC_TM_Phi->at(0), EMC_TM_Phi->at(1), EMC_TM_Phi->at(2));
+    std::string_view namesView(fConfigEMCCuts.value);
 
-          custom_cut->SetMinEoverP(EMC_Eoverp);
-          custom_cut->SetUseExoticCut(EMC_UseExoticCut);
-          fEMCCuts.push_back(*custom_cut);
-        } else {
-          fEMCCuts.push_back(*emccuts::GetCut(cutname));
-        }
+    for (auto name : namesView | std::views::split(',')) {
+      std::string cutString(name.begin(), name.end());
+      const char* cutname = cutString.c_str();
+      LOGF(info, "add EMC cut : %s", cutname);
+      if (std::strcmp(cutname, "custom") == 0) {
+        auto* custom_cut = new EMCPhotonCut(cutname, cutname);
+        custom_cut->SetMinE(EMC_minE);
+        custom_cut->SetMinNCell(EMC_minNCell);
+        custom_cut->SetM02Range(EMC_minM02, EMC_maxM02);
+        custom_cut->SetTimeRange(EMC_minTime, EMC_maxTime);
+
+        custom_cut->SetTrackMatchingEtaParams(EMC_TM_Eta->at(0), EMC_TM_Eta->at(1), EMC_TM_Eta->at(2));
+        custom_cut->SetTrackMatchingPhiParams(EMC_TM_Phi->at(0), EMC_TM_Phi->at(1), EMC_TM_Phi->at(2));
+
+        custom_cut->SetMinEoverP(EMC_Eoverp);
+        custom_cut->SetUseExoticCut(EMC_UseExoticCut);
+        fEMCCuts.push_back(*custom_cut);
+      } else {
+        fEMCCuts.push_back(*emccuts::GetCut(cutname));
       }
     }
     LOGF(info, "Number of EMCal cuts = %d", fEMCCuts.size());
@@ -265,9 +269,9 @@ struct SinglePhoton {
   template <EMDetType photontype, typename TEvents, typename TPhotons1, typename TPreslice1, typename TCuts1, typename TV0Legs>
   void FillPhoton(TEvents const& collisions, TPhotons1 const& photons1, TPreslice1 const& perCollision1, TCuts1 const& cuts1, TV0Legs const&)
   {
-    THashList* list_ev_before = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(detnames[photontype].data())->FindObject(event_types[0].data()));
-    THashList* list_ev_after = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(detnames[photontype].data())->FindObject(event_types[1].data()));
-    THashList* list_photon_det = static_cast<THashList*>(fMainList->FindObject("Photon")->FindObject(detnames[photontype].data()));
+    auto* list_ev_before = dynamic_cast<THashList*>(fMainList->FindObject("Event")->FindObject(detnames[photontype].data())->FindObject(event_types[0].data()));
+    auto* list_ev_after = dynamic_cast<THashList*>(fMainList->FindObject("Event")->FindObject(detnames[photontype].data())->FindObject(event_types[1].data()));
+    auto* list_photon_det = dynamic_cast<THashList*>(fMainList->FindObject("Photon")->FindObject(detnames[photontype].data()));
 
     for (auto& collision : collisions) {
       if (photontype == EMDetType::kPHOS && !collision.alias_bit(triggerAliases::kTVXinPHOS)) {
@@ -277,7 +281,7 @@ struct SinglePhoton {
         continue;
       }
 
-      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      std::array<float, 3> centralities = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
@@ -297,8 +301,8 @@ struct SinglePhoton {
       } else {
         o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev_after, "", collision);
       }
-      reinterpret_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
-      reinterpret_cast<TH1F*>(list_ev_after->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
+      dynamic_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
+      dynamic_cast<TH1F*>(list_ev_after->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
       std::array<float, 2> q2ft0m = {collision.q2xft0m(), collision.q2yft0m()};
       std::array<float, 2> q2ft0a = {collision.q2xft0a(), collision.q2yft0a()};
       std::array<float, 2> q2ft0c = {collision.q2xft0c(), collision.q2yft0c()};
@@ -306,7 +310,7 @@ struct SinglePhoton {
 
       auto photons1_coll = photons1.sliceBy(perCollision1, collision.globalIndex());
       for (auto& cut : cuts1) {
-        THashList* list_photon_det_cut = static_cast<THashList*>(list_photon_det->FindObject(cut.GetName()));
+        auto* list_photon_det_cut = dynamic_cast<THashList*>(list_photon_det->FindObject(cut.getName().c_str()));
         for (auto& photon : photons1_coll) {
           if (!IsSelected<photontype>(photon, cut)) {
             continue;
@@ -316,16 +320,16 @@ struct SinglePhoton {
           }
           if (cfgDoFlow) {
             std::array<float, 2> u2_photon = {std::cos(2 * photon.phi()), std::sin(2 * photon.phi())};
-            reinterpret_cast<TH2F*>(list_photon_det_cut->FindObject("hPt_SPQ2FT0M"))->Fill(photon.pt(), RecoDecay::dotProd(u2_photon, q2ft0m));
-            reinterpret_cast<TH2F*>(list_photon_det_cut->FindObject("hPt_SPQ2FT0A"))->Fill(photon.pt(), RecoDecay::dotProd(u2_photon, q2ft0a));
-            reinterpret_cast<TH2F*>(list_photon_det_cut->FindObject("hPt_SPQ2FT0C"))->Fill(photon.pt(), RecoDecay::dotProd(u2_photon, q2ft0c));
-            // reinterpret_cast<TH2F*>(list_photon_det_cut->FindObject("hPt_SPQ2FV0A"))->Fill(photon.pt(), RecoDecay::dotProd(u2_photon, q2fv0a));
+            dynamic_cast<TH2F*>(list_photon_det_cut->FindObject("hPt_SPQ2FT0M"))->Fill(photon.pt(), RecoDecay::dotProd(u2_photon, q2ft0m));
+            dynamic_cast<TH2F*>(list_photon_det_cut->FindObject("hPt_SPQ2FT0A"))->Fill(photon.pt(), RecoDecay::dotProd(u2_photon, q2ft0a));
+            dynamic_cast<TH2F*>(list_photon_det_cut->FindObject("hPt_SPQ2FT0C"))->Fill(photon.pt(), RecoDecay::dotProd(u2_photon, q2ft0c));
+            // dynamic_cast<TH2F*>(list_photon_det_cut->FindObject("hPt_SPQ2FV0A"))->Fill(photon.pt(), RecoDecay::dotProd(u2_photon, q2fv0a));
           } else {
-            reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hPt"))->Fill(photon.pt());
+            dynamic_cast<TH1F*>(list_photon_det_cut->FindObject("hPt"))->Fill(photon.pt());
           }
 
-          reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hY"))->Fill(photon.eta());
-          reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hPhi"))->Fill(photon.phi());
+          dynamic_cast<TH1F*>(list_photon_det_cut->FindObject("hY"))->Fill(photon.eta());
+          dynamic_cast<TH1F*>(list_photon_det_cut->FindObject("hPhi"))->Fill(photon.phi());
         } // end of photon loop
       } // end of cut loop
     } // end of collision loop
@@ -356,8 +360,8 @@ struct SinglePhoton {
   PROCESS_SWITCH(SinglePhoton, processDummy, "Dummy function", true);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<SinglePhoton>(cfgc, TaskName{"single-photon"})};
+    adaptAnalysisTask<SinglePhoton>(context, TaskName{"single-photon"})};
 }

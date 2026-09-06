@@ -51,6 +51,7 @@ struct BjetCentMultTask {
   Configurable<bool> fillGeneralSVQA{"fillGeneralSVQA", true, "process of general QA for sv"};
   Configurable<bool> fillSVxyz{"fillSVxyz", true, "process of decay lenngth of xyz for sv"};
   Configurable<bool> useEventWeight{"useEventWeight", true, "Flag whether to scale histograms with the event weight"};
+  Configurable<bool> doSumw2{"doSumw2", true, "Flag whether to set Sumw2()"};
 
   // Cut configuration
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
@@ -137,86 +138,86 @@ struct BjetCentMultTask {
     AxisSpec axisPercentileMultiplicity = {110, -5., 105., "Percentile multiplicity"};
 
     if (doprocessCentMultQa) {
-      registry.add("h_amplitude_FT0A", "", {HistType::kTH1F, {{axisFT0}}});
-      registry.add("h_amplitude_FT0C", "", {HistType::kTH1F, {{axisFT0}}});
-      registry.add("h_scaled_FT0M", "", {HistType::kTH1F, {{axisMultScaledFT0M}}});
-      registry.add("h_scaled_FT0M_class", "", {HistType::kTH1F, {{axisMultScaledFT0MClass}}});
-      registry.add("h2_centrality_percentile_multiplicity", "mcd collision centrality; centrality; counts", {HistType::kTH2F, {{axisRebinnedCentrality}, {axisPercentileMultiplicity}}});
+      registry.add("h_amplitude_FT0A", "", {HistType::kTH1F, {{axisFT0}}}, doSumw2);
+      registry.add("h_amplitude_FT0C", "", {HistType::kTH1F, {{axisFT0}}}, doSumw2);
+      registry.add("h_scaled_FT0M", "", {HistType::kTH1F, {{axisMultScaledFT0M}}}, doSumw2);
+      registry.add("h_scaled_FT0M_class", "", {HistType::kTH1F, {{axisMultScaledFT0MClass}}}, doSumw2);
+      registry.add("h2_centrality_percentile_multiplicity", "mcd collision centrality; centrality; counts", {HistType::kTH2F, {{axisRebinnedCentrality}, {axisPercentileMultiplicity}}}, doSumw2);
     }
     if (doprocessSVData) {
-      registry.add("h_event_centrality", "", {HistType::kTH1F, {{axisCentrality}}});
-      registry.add("h2_jet_pt_centrality", "", {HistType::kTH2F, {{axisJetPt}, {axisCentrality}}});
-      registry.add("h2_jet_eta_centrality", "", {HistType::kTH2F, {{axisEta}, {axisCentrality}}});
-      registry.add("h2_jet_phi_centrality", "", {HistType::kTH2F, {{axisPhi}, {axisCentrality}}});
+      registry.add("h_event_centrality", "", {HistType::kTH1F, {{axisCentrality}}}, doSumw2);
+      registry.add("h2_jet_pt_centrality", "", {HistType::kTH2F, {{axisJetPt}, {axisCentrality}}}, doSumw2);
+      registry.add("h2_jet_eta_centrality", "", {HistType::kTH2F, {{axisEta}, {axisCentrality}}}, doSumw2);
+      registry.add("h2_jet_phi_centrality", "", {HistType::kTH2F, {{axisPhi}, {axisCentrality}}}, doSumw2);
       if (fillGeneralSVQA) {
-        registry.add("h2_nprongs_centrality", "", {HistType::kTH2F, {{axisNprongs}, {axisCentrality}}});
-        registry.add("hn_jet_Sxy_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxy}, {axisSigmaLxy}, {axisSxy}, {axisCentrality}}});
+        registry.add("h2_nprongs_centrality", "", {HistType::kTH2F, {{axisNprongs}, {axisCentrality}}}, doSumw2);
+        registry.add("hn_jet_Sxy_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxy}, {axisSigmaLxy}, {axisSxy}, {axisCentrality}}}, doSumw2);
         if (fillSVxyz) {
-          registry.add("hn_jet_Sxyz_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxyz}, {axisSigmaLxyz}, {axisSxyz}, {axisCentrality}}});
+          registry.add("hn_jet_Sxyz_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxyz}, {axisSigmaLxyz}, {axisSxyz}, {axisCentrality}}}, doSumw2);
         }
       }
-      registry.add("hn_jet_Sxy_N1_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisCentrality}}});
-      registry.add("hn_taggedjet_Sxy_N1_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisCentrality}}});
+      registry.add("hn_jet_Sxy_N1_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisCentrality}}}, doSumw2);
+      registry.add("hn_taggedjet_Sxy_N1_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisCentrality}}}, doSumw2);
       if (fillSVxyz) {
-        registry.add("hn_jet_Sxyz_N1_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisCentrality}}});
-        registry.add("hn_taggedjet_Sxyz_N1_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisCentrality}}});
+        registry.add("hn_jet_Sxyz_N1_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisCentrality}}}, doSumw2);
+        registry.add("hn_taggedjet_Sxyz_N1_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisCentrality}}}, doSumw2);
       }
     }
     if (doprocessRhoAreaSubSVData) {
-      registry.add("h_event_rhoareasubtracted_centrality", "", {HistType::kTH1F, {{axisCentrality}}});
-      registry.add("h2_jet_pt_rhoareasubtracted_centrality", "", {HistType::kTH2F, {{axisJetPt}, {axisCentrality}}});
-      registry.add("h2_jet_eta_rhoareasubtracted_centrality", "", {HistType::kTH2F, {{axisEta}, {axisCentrality}}});
-      registry.add("h2_jet_phi_rhoareasubtracted_centrality", "", {HistType::kTH2F, {{axisPhi}, {axisCentrality}}});
+      registry.add("h_event_rhoareasubtracted_centrality", "", {HistType::kTH1F, {{axisCentrality}}}, doSumw2);
+      registry.add("h2_jet_pt_rhoareasubtracted_centrality", "", {HistType::kTH2F, {{axisJetPt}, {axisCentrality}}}, doSumw2);
+      registry.add("h2_jet_eta_rhoareasubtracted_centrality", "", {HistType::kTH2F, {{axisEta}, {axisCentrality}}}, doSumw2);
+      registry.add("h2_jet_phi_rhoareasubtracted_centrality", "", {HistType::kTH2F, {{axisPhi}, {axisCentrality}}}, doSumw2);
       if (fillGeneralSVQA) {
-        registry.add("h2_nprongs_rhoareasubtracted_centrality", "", {HistType::kTH2F, {{axisNprongs}, {axisCentrality}}});
-        registry.add("hn_jet_Sxy_rhoareasubtracted_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxy}, {axisSigmaLxy}, {axisSxy}, {axisCentrality}}});
+        registry.add("h2_nprongs_rhoareasubtracted_centrality", "", {HistType::kTH2F, {{axisNprongs}, {axisCentrality}}}, doSumw2);
+        registry.add("hn_jet_Sxy_rhoareasubtracted_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxy}, {axisSigmaLxy}, {axisSxy}, {axisCentrality}}}, doSumw2);
         if (fillSVxyz) {
-          registry.add("hn_jet_Sxyz_rhoareasubtracted_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxyz}, {axisSigmaLxyz}, {axisSxyz}, {axisCentrality}}});
+          registry.add("hn_jet_Sxyz_rhoareasubtracted_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxyz}, {axisSigmaLxyz}, {axisSxyz}, {axisCentrality}}}, doSumw2);
         }
       }
-      registry.add("hn_jet_Sxy_N1_rhoareasubtracted_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisCentrality}}});
-      registry.add("hn_taggedjet_Sxy_N1_rhoareasubtracted_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisCentrality}}});
+      registry.add("hn_jet_Sxy_N1_rhoareasubtracted_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisCentrality}}}, doSumw2);
+      registry.add("hn_taggedjet_Sxy_N1_rhoareasubtracted_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisCentrality}}}, doSumw2);
       if (fillSVxyz) {
-        registry.add("hn_jet_Sxyz_N1_rhoareasubtracted_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisCentrality}}});
-        registry.add("hn_taggedjet_Sxyz_N1_rhoareasubtracted_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisCentrality}}});
+        registry.add("hn_jet_Sxyz_N1_rhoareasubtracted_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisCentrality}}}, doSumw2);
+        registry.add("hn_taggedjet_Sxyz_N1_rhoareasubtracted_centrality", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisCentrality}}}, doSumw2);
       }
     }
     if (doprocessSVMCD || doprocessSVMCPMCDMatched) {
       registry.add("h_event_centrality", "", {HistType::kTH1F, {{axisCentrality}}});
-      registry.add("h3_jet_pt_centrality_flavour", "", {HistType::kTH3F, {{axisJetPt}, {axisCentrality}, {axisJetFlavour}}});
-      registry.add("h3_jet_eta_centrality_flavour", "", {HistType::kTH3F, {{axisEta}, {axisCentrality}, {axisJetFlavour}}});
-      registry.add("h3_jet_phi_centrality_flavour", "", {HistType::kTH3F, {{axisPhi}, {axisCentrality}, {axisJetFlavour}}});
+      registry.add("h3_jet_pt_centrality_flavour", "", {HistType::kTH3F, {{axisJetPt}, {axisCentrality}, {axisJetFlavour}}}, doSumw2);
+      registry.add("h3_jet_eta_centrality_flavour", "", {HistType::kTH3F, {{axisEta}, {axisCentrality}, {axisJetFlavour}}}, doSumw2);
+      registry.add("h3_jet_phi_centrality_flavour", "", {HistType::kTH3F, {{axisPhi}, {axisCentrality}, {axisJetFlavour}}}, doSumw2);
       if (fillGeneralSVQA) {
-        registry.add("h3_nprongs_centrality_flavour", "", {HistType::kTH3F, {{axisNprongs}, {axisCentrality}, {axisJetFlavour}}});
-        registry.add("hn_jet_Sxy_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxy}, {axisSigmaLxy}, {axisSxy}, {axisCentrality}, {axisJetFlavour}}});
+        registry.add("h3_nprongs_centrality_flavour", "", {HistType::kTH3F, {{axisNprongs}, {axisCentrality}, {axisJetFlavour}}}, doSumw2);
+        registry.add("hn_jet_Sxy_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxy}, {axisSigmaLxy}, {axisSxy}, {axisCentrality}, {axisJetFlavour}}}, doSumw2);
         if (fillSVxyz) {
-          registry.add("hn_jet_Sxyz_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxyz}, {axisSigmaLxyz}, {axisSxyz}, {axisCentrality}, {axisJetFlavour}}});
+          registry.add("hn_jet_Sxyz_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxyz}, {axisSigmaLxyz}, {axisSxyz}, {axisCentrality}, {axisJetFlavour}}}, doSumw2);
         }
       }
-      registry.add("hn_jet_Sxy_N1_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
-      registry.add("hn_taggedjet_Sxy_N1_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
+      registry.add("hn_jet_Sxy_N1_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisCentrality}, {axisJetFlavour}}}, doSumw2);
+      registry.add("hn_taggedjet_Sxy_N1_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisCentrality}, {axisJetFlavour}}}, doSumw2);
       if (fillSVxyz) {
-        registry.add("hn_jet_Sxyz_N1_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
-        registry.add("hn_taggedjet_Sxyz_N1_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
+        registry.add("hn_jet_Sxyz_N1_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisCentrality}, {axisJetFlavour}}}, doSumw2);
+        registry.add("hn_taggedjet_Sxyz_N1_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisCentrality}, {axisJetFlavour}}}, doSumw2);
       }
     }
     if (doprocessRhoAreaSubSVMCD || doprocessRhoAreaSubSVMCPMCDMatched) {
-      registry.add("h_event_rhoareasubtracted_centrality", "", {HistType::kTH1F, {{axisCentrality}}});
-      registry.add("h3_jet_pt_rhoareasubtracted_centrality_flavour", "", {HistType::kTH3F, {{axisJetPt}, {axisCentrality}, {axisJetFlavour}}});
-      registry.add("h3_jet_eta_rhoareasubtracted_centrality_flavour", "", {HistType::kTH3F, {{axisEta}, {axisCentrality}, {axisJetFlavour}}});
-      registry.add("h3_jet_phi_rhoareasubtracted_centrality_flavour", "", {HistType::kTH3F, {{axisPhi}, {axisCentrality}, {axisJetFlavour}}});
+      registry.add("h_event_rhoareasubtracted_centrality", "", {HistType::kTH1F, {{axisCentrality}}}, doSumw2);
+      registry.add("h3_jet_pt_rhoareasubtracted_centrality_flavour", "", {HistType::kTH3F, {{axisJetPt}, {axisCentrality}, {axisJetFlavour}}}, doSumw2);
+      registry.add("h3_jet_eta_rhoareasubtracted_centrality_flavour", "", {HistType::kTH3F, {{axisEta}, {axisCentrality}, {axisJetFlavour}}}, doSumw2);
+      registry.add("h3_jet_phi_rhoareasubtracted_centrality_flavour", "", {HistType::kTH3F, {{axisPhi}, {axisCentrality}, {axisJetFlavour}}}, doSumw2);
       if (fillGeneralSVQA) {
-        registry.add("h3_nprongs_rhoareasubtracted_centrality_flavour", "", {HistType::kTH3F, {{axisNprongs}, {axisCentrality}, {axisJetFlavour}}});
-        registry.add("hn_jet_Sxy_rhoareasubtracted_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxy}, {axisSigmaLxy}, {axisSxy}, {axisCentrality}, {axisJetFlavour}}});
+        registry.add("h3_nprongs_rhoareasubtracted_centrality_flavour", "", {HistType::kTH3F, {{axisNprongs}, {axisCentrality}, {axisJetFlavour}}}, doSumw2);
+        registry.add("hn_jet_Sxy_rhoareasubtracted_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxy}, {axisSigmaLxy}, {axisSxy}, {axisCentrality}, {axisJetFlavour}}}, doSumw2);
         if (fillSVxyz) {
-          registry.add("hn_jet_Sxyz_rhoareasubtracted_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxyz}, {axisSigmaLxyz}, {axisSxyz}, {axisCentrality}, {axisJetFlavour}}});
+          registry.add("hn_jet_Sxyz_rhoareasubtracted_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxyz}, {axisSigmaLxyz}, {axisSxyz}, {axisCentrality}, {axisJetFlavour}}}, doSumw2);
         }
       }
-      registry.add("hn_jet_Sxy_N1_rhoareasubtracted_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
-      registry.add("hn_taggedjet_Sxy_N1_rhoareasubtracted_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
+      registry.add("hn_jet_Sxy_N1_rhoareasubtracted_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisCentrality}, {axisJetFlavour}}}, doSumw2);
+      registry.add("hn_taggedjet_Sxy_N1_rhoareasubtracted_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisCentrality}, {axisJetFlavour}}}, doSumw2);
       if (fillSVxyz) {
-        registry.add("hn_jet_Sxyz_N1_rhoareasubtracted_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
-        registry.add("hn_taggedjet_Sxyz_N1_rhoareasubtracted_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
+        registry.add("hn_jet_Sxyz_N1_rhoareasubtracted_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisCentrality}, {axisJetFlavour}}}, doSumw2);
+        registry.add("hn_taggedjet_Sxyz_N1_rhoareasubtracted_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisCentrality}, {axisJetFlavour}}}, doSumw2);
       }
     }
   }

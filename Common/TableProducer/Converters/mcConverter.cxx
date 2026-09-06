@@ -25,6 +25,7 @@ struct McConverter {
 
   void process(aod::StoredMcParticles_000 const& mcParticles_000)
   {
+    mcParticles_001.reserve(mcParticles_000.size());
     for (auto& p : mcParticles_000) {
 
       std::vector<int> mothers;

@@ -159,7 +159,7 @@ struct jetspectraDerivedMaker {
     return true;
   }
 
-  Preslice<aod::Track> trackPerColl = aod::track::collisionId;
+  Preslice<aod::Tracks> trackPerColl = aod::track::collisionId;
   Produces<o2::aod::JeTracks> tableTrack;
   Produces<o2::aod::JeColls> tableColl;
   using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;

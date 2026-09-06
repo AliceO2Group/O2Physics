@@ -31,6 +31,7 @@ struct eventConverter2 {
 
   void process(aod::EMEvents_001 const& collisions)
   {
+    event_002.reserve(collisions.size());
     for (const auto& collision : collisions) {
       event_002(
         collision.globalIndex(),

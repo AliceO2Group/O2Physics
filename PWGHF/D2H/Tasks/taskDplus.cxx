@@ -35,6 +35,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
@@ -100,8 +101,8 @@ struct HfTaskDplus {
   using CandDplusMcRecoWithMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec, aod::HfMlDplusToPiKPi>>;
   using CandDplusMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
 
-  using CollisionsCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs>;
-  using McRecoCollisionsCent = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs>;
+  using CollisionsCent = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms, aod::CentFT0Cs>;
+  using McRecoCollisionsCent = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults, aod::CentFT0Ms, aod::CentFT0Cs>;
 
   Filter filterDplusFlag = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi))) != static_cast<uint8_t>(0);
 
@@ -126,7 +127,7 @@ struct HfTaskDplus {
   ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {110, 0., 110.}, "axis for centrality"};
   ConfigurableAxis thnConfigAxisOccupancy{"thnConfigAxisOccupancy", {14, 0, 14000}, "axis for occupancy"};
   ConfigurableAxis thnConfigAxisIR{"thnConfigAxisIR", {5000, 0, 500}, "Interaction rate (kHz)"};
-  ConfigurableAxis thnConfigAxisPvContributors{"thnConfigAxisPvContributors", {100, 0., 100.}, "axis for PV contributors"};
+  ConfigurableAxis thnConfigAxisPvContributors{"thnConfigAxisPvContributors", {200, 0., 200.}, "axis for PV contributors"};
   ConfigurableAxis thnConfigAxisPtBHad{"thnConfigAxisPtBHad", {25, 0., 50}, "axis for pt of B hadron decayed into D candidate"};
   ConfigurableAxis thnConfigAxisFlagBHad{"thnConfigAxisFlagBHad", {5, 0., 5}, "axis for PDG of B hadron"};
   ConfigurableAxis thnConfigAxisMlScore0{"thnConfigAxisMlScore0", {100, 0., 1.}, "axis for ML output score 0"};
@@ -232,6 +233,9 @@ struct HfTaskDplus {
       }
       if (storeIR) {
         axes.push_back(thnAxisIR);
+      }
+      if (storePvContributors) {
+        axes.push_back(thnAxisPvContributors);
       }
       if (doprocessDataWithMlWithUpc || doprocessDataWithUpc) {
         axes.push_back(thnAxisGapType);
@@ -410,10 +414,16 @@ struct HfTaskDplus {
         }
       }
     } else { // Data
-      if (storeCentrality && storeOccupancy) {
+      if (storeCentrality && storeOccupancy && storePvContributors) {
+        registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality, occupancy, numPvContributors);
+      } else if (storeCentrality && storeOccupancy && !storePvContributors) {
         registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality, occupancy);
+      } else if (storeCentrality && !storeOccupancy && storePvContributors) {
+        registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality, numPvContributors);
       } else if (storeCentrality && !storeOccupancy) {
         registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality);
+      } else if (!storeCentrality && storeOccupancy && storePvContributors) {
+        registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], occupancy, numPvContributors);
       } else if (!storeCentrality && storeOccupancy) {
         registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], occupancy);
       } else if (!storeCentrality && !storeOccupancy && storePvContributors) {
@@ -559,7 +569,7 @@ struct HfTaskDplus {
           continue;
         }
 
-        if (storeCentrality || storeOccupancy) {
+        if (storeCentrality || storeOccupancy || storePvContributors) {
           auto collision = candidate.template collision_as<CollisionsCent>();
           if (storeCentrality && centEstimator != CentralityEstimator::None) {
             cent = getCentralityColl(collision, centEstimator);
@@ -771,7 +781,8 @@ struct HfTaskDplus {
         int const nAxesCent = storeCentrality ? 1 : 0; // centrality if storeCentrality
         int const nAxesOcc = storeOccupancy ? 1 : 0;   // occupancy if storeOccupancy
         int const nAxesIR = storeIR ? 1 : 0;           // IR if storeIR
-        int const nAxesTotal = NAxesBase + NAxesMl + nAxesCent + nAxesOcc + nAxesIR;
+        int const nAxesPv = storePvContributors ? 1 : 0;
+        int const nAxesTotal = NAxesBase + NAxesMl + nAxesCent + nAxesOcc + nAxesIR + nAxesPv;
 
         std::vector<double> valuesToFill;
         valuesToFill.reserve(nAxesTotal);
@@ -796,6 +807,9 @@ struct HfTaskDplus {
         }
         if (storeIR) {
           valuesToFill.push_back(ir);
+        }
+        if (storePvContributors) {
+          valuesToFill.push_back(static_cast<double>(collision.numContrib()));
         }
         valuesToFill.push_back(static_cast<double>(gap));
         valuesToFill.push_back(static_cast<double>(fitInfo.ampFT0A));
@@ -851,7 +865,7 @@ struct HfTaskDplus {
   }
   PROCESS_SWITCH(HfTaskDplus, processMcWithMl, "Process MC with ML", false);
 
-  void processDataWithUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processDataWithUpc(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                           aod::BcFullInfos const& bcs,
                           CandDplusData const& selectedDplusCandidates,
                           aod::Tracks const&,
@@ -864,7 +878,7 @@ struct HfTaskDplus {
   }
   PROCESS_SWITCH(HfTaskDplus, processDataWithUpc, "Process real data w/o ML with UPC", false);
 
-  void processDataWithMlWithUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processDataWithMlWithUpc(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                                 aod::BcFullInfos const& bcs,
                                 CandDplusDataWithMl const& selectedDplusCandidatesMl,
                                 aod::Tracks const&,

@@ -24,6 +24,7 @@ struct strastampsconverter {
 
   void process(aod::StraStamps_000 const& straStamps_000)
   {
+    straStamps_001.reserve(straStamps_000.size());
     for (auto& values : straStamps_000) {
       straStamps_001(values.runNumber(),
                      values.timestamp(),

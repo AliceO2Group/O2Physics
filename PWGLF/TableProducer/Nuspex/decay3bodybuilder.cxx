@@ -46,6 +46,7 @@
 #include <Framework/AnalysisTask.h>
 #include <Framework/Array2D.h>
 #include <Framework/BinningPolicy.h>
+#include <Framework/Concepts.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -806,7 +807,7 @@ struct decay3bodyBuilder {
           if (!doStoreMcBkg) {
             continue; // if not storing MC background, skip candidates where at least one daughter is not matched to MC particle
           } else {
-            this3BodyMCInfo.motherLabel = -5; // at least one non-matched daughter
+            this3BodyMCInfo.motherLabel = -5; // at least one of the daughters not matched to MC particle
             // fill analysis table (only McVtx3BodyDatas is filled here)
             fillAnalysisTables();
           }
@@ -937,6 +938,7 @@ struct decay3bodyBuilder {
                                    -1., -1., -1.,      // momProton
                                    -1., -1., -1.,      // momPion
                                    -1., -1., -1.,      // momDeuteron
+                                   -1., -1., -1.,      // xProton, xPion, xDeuteron
                                    -1., -1., -1.,      // trackDCAxyToPV: 0 - proton, 1 - pion, 2 - deuteron
                                    -1., -1., -1.,      // trackDCAToPV: 0 - proton, 1 - pion, 2 - deuteron
                                    -1., -1., -1.,      // trackDCAxyToPVprop: 0 - proton, 1 - pion, 2 - deuteron
@@ -945,6 +947,7 @@ struct decay3bodyBuilder {
                                    -1.,                // daughterDCAtoSVaverage
                                    -1., -1.,           // cosPA, ctau
                                    -1., -1., -1., -1., // tpcNsigma: 0 - proton, 1 - pion, 2 - deuteron, 3 - bach with pion hyp
+                                   -1., -1., -1.,      // tpcSignal:  0 - proton, 1 - pion, 2 - deuteron
                                    -1.,                // tofNsigmaDeuteron
                                    -1., -1., -1.,      // average ITS cluster sizes: proton, pion, deuteron
                                    -1., -1., -1.,      // TPCNCl: proton, pion, deuteron
@@ -1098,6 +1101,7 @@ struct decay3bodyBuilder {
                              helper.decay3body.momProton[0], helper.decay3body.momProton[1], helper.decay3body.momProton[2],
                              helper.decay3body.momPion[0], helper.decay3body.momPion[1], helper.decay3body.momPion[2],
                              helper.decay3body.momDeuteron[0], helper.decay3body.momDeuteron[1], helper.decay3body.momDeuteron[2],
+                             helper.decay3body.xProton, helper.decay3body.xPion, helper.decay3body.xDeuteron,
                              helper.decay3body.trackDCAxyToPV[0], helper.decay3body.trackDCAxyToPV[1], helper.decay3body.trackDCAxyToPV[2],             // 0 - proton, 1 - pion, 2 - deuteron
                              helper.decay3body.trackDCAToPV[0], helper.decay3body.trackDCAToPV[1], helper.decay3body.trackDCAToPV[2],                   // 0 - proton, 1 - pion, 2 - deuteron
                              helper.decay3body.trackDCAxyToPVprop[0], helper.decay3body.trackDCAxyToPVprop[1], helper.decay3body.trackDCAxyToPVprop[2], // 0 - proton, 1 - pion, 2 - deuteron
@@ -1106,6 +1110,7 @@ struct decay3bodyBuilder {
                              helper.decay3body.daughterDCAtoSVaverage,
                              helper.decay3body.cosPA, helper.decay3body.ctau,
                              helper.decay3body.tpcNsigma[0], helper.decay3body.tpcNsigma[1], helper.decay3body.tpcNsigma[2], helper.decay3body.tpcNsigma[3], // 0 - proton, 1 - pion, 2 - deuteron, 3 - bach with pion hyp
+                             helper.decay3body.tpcSignal[0], helper.decay3body.tpcSignal[1], helper.decay3body.tpcSignal[2],
                              helper.decay3body.tofNsigmaDeuteron,
                              helper.decay3body.averageITSClSize[0], helper.decay3body.averageITSClSize[1], helper.decay3body.averageITSClSize[2], // 0 - proton, 1 - pion, 2 - deuteron
                              helper.decay3body.tpcNCl[0], helper.decay3body.tpcNCl[1], helper.decay3body.tpcNCl[2],                               // 0 - proton, 1 - pion, 2 - deuteron
@@ -1113,10 +1118,10 @@ struct decay3bodyBuilder {
       registry.fill(HIST("Counters/hTableBuildingStatistics"), kVtx3BodyDatas);
     }
     if (mEnabledTables[kVtx3BodyCovs]) {
-      products.vtx3bodycovs(helper.decay3body.covProton,
-                            helper.decay3body.covPion,
-                            helper.decay3body.covDeuteron,
-                            helper.decay3body.covariance);
+      products.vtx3bodycovs(helper.decay3body.covProton.data(),
+                            helper.decay3body.covPion.data(),
+                            helper.decay3body.covDeuteron.data(),
+                            helper.decay3body.covariance.data());
       registry.fill(HIST("Counters/hTableBuildingStatistics"), kVtx3BodyCovs);
     }
     if (mEnabledTables[kMcVtx3BodyDatas]) {
@@ -1129,6 +1134,7 @@ struct decay3bodyBuilder {
                                helper.decay3body.momProton[0], helper.decay3body.momProton[1], helper.decay3body.momProton[2],
                                helper.decay3body.momPion[0], helper.decay3body.momPion[1], helper.decay3body.momPion[2],
                                helper.decay3body.momDeuteron[0], helper.decay3body.momDeuteron[1], helper.decay3body.momDeuteron[2],
+                               helper.decay3body.xProton, helper.decay3body.xPion, helper.decay3body.xDeuteron,
                                helper.decay3body.trackDCAxyToPV[0], helper.decay3body.trackDCAxyToPV[1], helper.decay3body.trackDCAxyToPV[2],             // 0 - proton, 1 - pion, 2 - deuteron
                                helper.decay3body.trackDCAToPV[0], helper.decay3body.trackDCAToPV[1], helper.decay3body.trackDCAToPV[2],                   // 0 - proton, 1 - pion, 2 - deuteron
                                helper.decay3body.trackDCAxyToPVprop[0], helper.decay3body.trackDCAxyToPVprop[1], helper.decay3body.trackDCAxyToPVprop[2], // 0 - proton, 1 - pion, 2 - deuteron
@@ -1137,6 +1143,7 @@ struct decay3bodyBuilder {
                                helper.decay3body.daughterDCAtoSVaverage,
                                helper.decay3body.cosPA, helper.decay3body.ctau,
                                helper.decay3body.tpcNsigma[0], helper.decay3body.tpcNsigma[1], helper.decay3body.tpcNsigma[2], helper.decay3body.tpcNsigma[3], // 0 - proton, 1 - pion, 2 - deuteron, 3 - bach with pion hyp
+                               helper.decay3body.tpcSignal[0], helper.decay3body.tpcSignal[1], helper.decay3body.tpcSignal[2],
                                helper.decay3body.tofNsigmaDeuteron,
                                helper.decay3body.averageITSClSize[0], helper.decay3body.averageITSClSize[1], helper.decay3body.averageITSClSize[2], // 0 - proton, 1 - pion, 2 - deuteron
                                helper.decay3body.tpcNCl[0], helper.decay3body.tpcNCl[1], helper.decay3body.tpcNCl[2],                               // 0 - proton, 1 - pion, 2 - deuteron
@@ -1200,10 +1207,11 @@ struct decay3bodyBuilder {
     // global mother ID: proton, pion, and deuteron have common mother and it's a hypertriton
 
     // first, check identity of MC daughters
-    if (std::abs(mcParticlePr.pdgCode()) != PDG_t::kProton || std::abs(mcParticleDe.pdgCode()) != o2::constants::physics::Pdg::kDeuteron || (std::abs(mcParticlePi.pdgCode()) != PDG_t::kPiPlus && std::abs(mcParticlePi.pdgCode()) != PDG_t::kMuonMinus)) {
-      return -4;
+    if (std::abs(mcParticlePr.pdgCode()) != PDG_t::kProton || (std::abs(mcParticlePi.pdgCode()) != PDG_t::kPiPlus && std::abs(mcParticlePi.pdgCode()) != PDG_t::kMuonMinus)) {
+      return -4; // at least one of the daughters has wrong identity (in this case it's either proton or pion wrong identity)
     }
-    // check if the pion track is a muon coming from a pi -> mu + vu decay, if yes, take the mother pi
+    // --> now the proton is a proton and the pion is either a pi+ or a muon
+    // check if the pion track is a muon coming from a pi -> mu + vu decay, if yes, take the mother pi, if not, fill as background
     auto mcParticlePiTmp = mcParticlePi;
     if (std::abs(mcParticlePiTmp.pdgCode()) == PDG_t::kMuonMinus) {
       bool isMuonReco = false;
@@ -1216,9 +1224,10 @@ struct decay3bodyBuilder {
       }
       // If the track is a muon but none of its mothers is a pi+, treat as wrong identity
       if (!isMuonReco) {
-        return -4;
+        return -4; // at least one of the daughters has wrong identity (in this case it's pion wrong identity)
       }
     }
+    // --> now proton and pion have correct identity
 
     // now first check if the proton and pion have the same mother and it is a Lambda
     for (const auto& motherPr : mcParticlePr.template mothers_as<aod::McParticles>()) {
@@ -1228,6 +1237,13 @@ struct decay3bodyBuilder {
         }
       }
     }
+    // --> now proton and pion have correct identity and are not from a common mother Lambda
+
+    // now check if deuteron has correct identity
+    if (std::abs(mcParticleDe.pdgCode()) != o2::constants::physics::Pdg::kDeuteron) {
+      return -4; // at least one daughter has wrong identity (in this case it's the deuteron)
+    }
+    // --> now the deuteron has correct identity
 
     // now check if all three daughters have the same mother
     int momID = -1;

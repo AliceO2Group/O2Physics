@@ -15,6 +15,7 @@
 /// \brief   Task to monitor the single particle QA, at the particle and track level, showing the tracked and the origin of particles
 ///
 
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -88,10 +89,10 @@ struct Alice3SingleParticle {
     pdg->AddParticle("triton", "triton", 2.8089218, kTRUE, 0.0, 3, "Nucleus", 1000010030);
     pdg->AddAntiParticle("anti-triton", -1000010030);
 
-    pdg->AddParticle("helium3", "helium3", 2.80839160743, kTRUE, 0.0, 6, "Nucleus", 1000020030);
+    pdg->AddParticle("helium3", "helium3", o2::constants::physics::MassHelium3, kTRUE, 0.0, 6, "Nucleus", 1000020030);
     pdg->AddAntiParticle("anti-helium3", -1000020030);
 
-    pdg->AddParticle("helium4", "helium4", 2.80839160743, kTRUE, 0.0, 6, "Nucleus", 1000020040);
+    pdg->AddParticle("helium4", "helium4", o2::constants::physics::MassAlpha, kTRUE, 0.0, 6, "Nucleus", 1000020040);
     pdg->AddAntiParticle("anti-helium4", -1000020040);
 
     const TString tit = Form("%i", PDG.value);
@@ -248,7 +249,7 @@ struct Alice3SingleParticle {
       } else {
         histos.get<TH2>(HIST("particle/PDGsSecondaries"))->Fill(pdgString, pdgCharge, 1.f);
       }
-      if (mcParticle.pdgCode() != PDG) {
+      if (PDG != 0 && mcParticle.pdgCode() != PDG) {
         continue;
       }
       if (mcParticle.y() < yMin || mcParticle.y() > yMax) {
@@ -416,7 +417,7 @@ struct Alice3SingleParticle {
           LOG(info) << "Track " << track.globalIndex() << " comes from a " << mothers[0].pdgCode() << " and is a " << mcParticle.pdgCode();
         }
       } else {
-        if (mcParticle.pdgCode() != PDG) {
+        if (PDG != 0 && mcParticle.pdgCode() != PDG) {
           continue;
         }
         histos.fill(HIST("track/Pt"), track.pt() * charge);
@@ -468,7 +469,7 @@ struct Alice3SingleParticle {
       } else {
         histos.get<TH2>(HIST("particle/PDGsSecondaries"))->Fill(pdgString, pdgCharge, 1.f);
       }
-      if (mcParticle.pdgCode() != PDG) {
+      if (PDG != 0 && mcParticle.pdgCode() != PDG) {
         continue;
       }
       if (mcParticle.y() < yMin || mcParticle.y() > yMax) {
@@ -608,7 +609,7 @@ struct Alice3SingleParticle {
       } else {
         histos.get<TH2>(HIST("particle/PDGsSecondaries"))->Fill(pdgString, pdgCharge, 1.f);
       }
-      if (mcParticle.pdgCode() != PDG) {
+      if (PDG != 0 && mcParticle.pdgCode() != PDG) {
         continue;
       }
       if (mcParticle.y() < yMin || mcParticle.y() > yMax) {
@@ -733,7 +734,7 @@ struct Alice3SingleParticle {
           LOG(info) << "Track " << track.globalIndex() << " comes from a " << mothers[0].pdgCode() << " and is a " << mcParticle.pdgCode();
         }
       } else {
-        if (mcParticle.pdgCode() != PDG) {
+        if (PDG != 0 && mcParticle.pdgCode() != PDG) {
           continue;
         }
         histos.fill(HIST("track/Pt"), track.pt() * charge);

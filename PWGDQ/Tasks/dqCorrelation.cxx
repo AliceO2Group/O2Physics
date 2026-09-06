@@ -286,7 +286,7 @@ struct DqCumulantFlow {
     float weff = 1.0, wacc = 1.0;
 
     if (dileptons.size() > 0) {
-      for (auto track : tracks) {
+      for (const auto& track : tracks) {
         trackGlobalIndexes.push_back(track.globalIndex());
       }
 
@@ -316,7 +316,7 @@ struct DqCumulantFlow {
         }
       }
 
-      for (auto dilepton : dileptons) {
+      for (const auto& dilepton : dileptons) {
         registry.fill(HIST("dimuon_mass"), dilepton.mass());
 
         VarManager::FillTrack<fgDimuonsFillMap>(dilepton, fValuesDilepton);

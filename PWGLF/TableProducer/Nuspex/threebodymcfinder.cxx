@@ -59,7 +59,7 @@ struct threebodymcfinder {
 
   Configurable<bool> requireITS{"requireITS", false, "require ITS information used in tracks"};
 
-  Preslice<aod::McParticle> perMcCollision = aod::mcparticle::mcCollisionId;
+  Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
 
   std::vector<int> d3bcollisionId;
   std::vector<int> d3bprong0Index;

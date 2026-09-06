@@ -39,7 +39,7 @@ enum class EM_HFeeType : int {
 
 //_______________________________________________________________________
 template <typename TTrack>
-int hasFakeMatchITSTPC(TTrack const& track)
+bool hasFakeMatchITSTPC(TTrack const& track)
 {
   // track and mctracklabel have to be joined.
   // bit 13 -- ITS/TPC labels are not equal
@@ -52,7 +52,7 @@ int hasFakeMatchITSTPC(TTrack const& track)
 }
 //_______________________________________________________________________
 template <typename TTrack>
-int hasFakeMatchITSTPCTOF(TTrack const&)
+bool hasFakeMatchITSTPCTOF(TTrack const&)
 {
   // track and mctracklabel have to be joined.
   return false;
@@ -64,13 +64,48 @@ int hasFakeMatchITSTPCTOF(TTrack const&)
 }
 //_______________________________________________________________________
 template <typename TTrack>
-int hasFakeMatchMFTMCH(TTrack const& track)
+bool hasFakeMatchMFTMCH(TTrack const& track)
 {
   // fwdtrack and mcfwdtracklabel have to be joined.
   if ((track.mcMask() & 1 << 7)) {
     return true;
   } else {
     return false;
+  }
+}
+//_______________________________________________________________________
+template <typename T, typename TMCParticles>
+int isFromGammaZ(T const& track, TMCParticles const& mcParticles)
+{
+  if (!track.has_mothers()) {
+    return -999;
+  }
+
+  int motherId = track.mothersIds()[0];
+  while (motherId > -1) {
+    auto mp = mcParticles.rawIteratorAt(motherId);
+    if (std::abs(mp.pdgCode()) == 23) {
+      return mp.globalIndex();
+    }
+
+    if (mp.has_mothers()) {
+      motherId = mp.mothersIds()[0];
+    } else {
+      motherId = -999;
+    }
+  }
+  return -999;
+}
+//_______________________________________________________________________
+template <typename T, typename TMCParticles>
+int isPairFromGammaZ(T const& t1, T const& t2, TMCParticles const& mcParticles)
+{
+  int id1 = isFromGammaZ(t1, mcParticles);
+  int id2 = isFromGammaZ(t2, mcParticles);
+  if ((id1 > -1 && id2 > -1) && (id1 == id2)) {
+    return id1;
+  } else {
+    return -999;
   }
 }
 //_______________________________________________________________________
@@ -127,6 +162,11 @@ bool isCharmBaryon(T const& track)
     return false;
   }
   if (std::abs(track.pdgCode()) > 1e+9) {
+    return false;
+  }
+
+  // reject diquarks
+  if (std::abs(track.pdgCode()) == 4101 || std::abs(track.pdgCode()) == 4103 || std::abs(track.pdgCode()) == 4201 || std::abs(track.pdgCode()) == 4203 || std::abs(track.pdgCode()) == 4301 || std::abs(track.pdgCode()) == 4303 || std::abs(track.pdgCode()) == 4403) {
     return false;
   }
 
@@ -190,6 +230,11 @@ bool isBeautyBaryon(T const& track)
     return false;
   }
   if (std::abs(track.pdgCode()) > 1e+9) {
+    return false;
+  }
+
+  // reject diquarks
+  if (std::abs(track.pdgCode()) == 5101 || std::abs(track.pdgCode()) == 5103 || std::abs(track.pdgCode()) == 5201 || std::abs(track.pdgCode()) == 5203 || std::abs(track.pdgCode()) == 5301 || std::abs(track.pdgCode()) == 5303 || std::abs(track.pdgCode()) == 5401 || std::abs(track.pdgCode()) == 5403 || std::abs(track.pdgCode()) == 5503) {
     return false;
   }
 

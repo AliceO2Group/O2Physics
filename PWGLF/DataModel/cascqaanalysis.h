@@ -87,7 +87,7 @@ DECLARE_SOA_COLUMN(BachHasTOF, bachhastof, int);
 DECLARE_SOA_COLUMN(PosPt, pospt, float);
 DECLARE_SOA_COLUMN(NegPt, negpt, float);
 DECLARE_SOA_COLUMN(BachPt, bachpt, float);
-DECLARE_SOA_COLUMN(McPdgCode, mcPdgCode, int);                       //! -1 unknown
+DECLARE_SOA_COLUMN(McPdgCode, mcPdgCode, int);                       //! 0 unknown/no MC association
 DECLARE_SOA_COLUMN(IsPrimary, isPrimary, int);                       //! -1 unknown, 0 not primary, 1 primary
 DECLARE_SOA_COLUMN(BachBaryonCosPA, bachBaryonCosPA, float);         //! avoid bach-baryon correlated inv mass structure in analysis
 DECLARE_SOA_COLUMN(BachBaryonDCAxyToPV, bachBaryonDCAxyToPV, float); //! avoid bach-baryon correlated inv mass structure in analysis
@@ -118,6 +118,7 @@ DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(MassLambda, masslambda, float);
+DECLARE_SOA_COLUMN(CtauLambda, ctaulambda, float);
 DECLARE_SOA_COLUMN(MassXi, massxi, float);
 DECLARE_SOA_COLUMN(MassOmega, massomega, float);
 DECLARE_SOA_COLUMN(V2CEP, v2CEP, float);
@@ -182,7 +183,7 @@ DECLARE_SOA_TABLE(CascAnalysisFull, "AOD", "CascAnalysisFull", o2::soa::Index<>,
                   cascadesflow::CosThetaStarLambdaFromOmega, cascadesflow::CosThetaStarLambdaFromXi, cascadesflow::CosThetaStarProton, mycascades::McPdgCode);
 
 DECLARE_SOA_TABLE(LambdaAnalysis, "AOD", "LambdaAnalysis", o2::soa::Index<>,
-                  cascadesflow::CentFT0C, cascadesflow::HasEventPlane, cascadesflow::HasSpectatorPlane, cascadesflow::Sign, cascadesflow::Pt, cascadesflow::Phi, cascadesflow::Eta, cascadesflow::MassLambda, cascadesflow::V0Radius, cascadesflow::DcaPosToPV, cascadesflow::DcaNegToPV, cascadesflow::V0CosPA, cascadesflow::DcaV0Daughters, cascadesflow::V2CEP, cascadesflow::PsiT0C, cascadesflow::Pzs2Lambda, cascadesflow::Cos2ThetaLambda, cascadesflow::CosThetaLambda);
+                  cascadesflow::CentFT0C, cascadesflow::HasEventPlane, cascadesflow::HasSpectatorPlane, cascadesflow::Sign, cascadesflow::Pt, cascadesflow::Phi, cascadesflow::Eta, cascadesflow::MassLambda, cascadesflow::CtauLambda, cascadesflow::V0Radius, cascadesflow::DcaPosToPV, cascadesflow::DcaNegToPV, cascadesflow::V0CosPA, cascadesflow::DcaV0Daughters, cascadesflow::V2CEP, cascadesflow::PsiT0C, cascadesflow::Pzs2Lambda, cascadesflow::Cos2ThetaLambda, cascadesflow::CosThetaLambda);
 
 namespace myMCcascades
 {

@@ -90,6 +90,7 @@ struct straevselsconverter5 {
 
   void process(soa::Join<aod::StraEvSels_004, aod::StraStamps> const& straEvSels_004)
   {
+    straEvSels_005.reserve(straEvSels_004.size());
     for (auto& values : straEvSels_004) {
       straEvSels_005(values.sel8(),
                      values.selection_raw(),

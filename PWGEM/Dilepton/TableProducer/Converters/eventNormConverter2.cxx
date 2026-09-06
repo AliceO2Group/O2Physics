@@ -33,6 +33,7 @@ struct eventNormConverter2 {
 
   void process(aod::EMEventNormInfos_001 const& collisions)
   {
+    event_002.reserve(collisions.size());
     for (const auto& collision : collisions) {
 
       int8_t posZint8 = static_cast<int8_t>(collision.posZ() * 2.f);

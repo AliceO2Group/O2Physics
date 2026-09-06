@@ -24,6 +24,7 @@ struct stracentconverter2 {
 
   void process(aod::StraCents_001 const& straCents_001)
   {
+    straCents_002.reserve(straCents_001.size());
     for (auto& values : straCents_001) {
       straCents_002(values.centFT0M(),
                     values.centFT0A(),

@@ -25,6 +25,7 @@ struct bcFlagsCreator {
 
   void process(aod::BCs const& bcTable)
   {
+    bcFlags.reserve(bcTable.size());
     for (int64_t i = 0; i < bcTable.size(); ++i) {
       bcFlags(0);
     }

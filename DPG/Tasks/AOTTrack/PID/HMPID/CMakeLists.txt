@@ -17,7 +17,7 @@ o2physics_add_dpl_workflow(hmpid-qa
 
 o2physics_add_dpl_workflow(hmpid-table-producer
     SOURCES hmpidTableProducer.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::HMPIDBase
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hmpid-deuteron

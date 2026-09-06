@@ -177,7 +177,7 @@ class TrackPropagationModule
       /// to understand whether the TrackTuner::getDcaGraphs function can be called here (input path from string/configurables)
       /// or inside the process function, to "auto-detect" the input file based on the run number
       const auto& workflows = initContext.services().template get<o2::framework::RunningWorkflowInfo const>();
-      for (const o2::framework::DeviceSpec& device : workflows.devices) { /// loop over devices
+      for (o2::framework::DeviceSpec const& device : workflows.devices) { /// loop over devices
         if (device.name == "propagation-service") {
           // loop over the options
           // to find the value of TrackTuner::autoDetectDcaCalib
@@ -208,6 +208,11 @@ class TrackPropagationModule
     registry.template add<TH2>("hDCAxyVsPtMC", "hDCAxyVsPtMC", o2::framework::HistType::kTH2F, {axisBinsDCA, cGroup.axisPtQA});
     registry.template add<TH2>("hDCAzVsPtRec", "hDCAzVsPtRec", o2::framework::HistType::kTH2F, {axisBinsDCA, cGroup.axisPtQA});
     registry.template add<TH2>("hDCAzVsPtMC", "hDCAzVsPtMC", o2::framework::HistType::kTH2F, {axisBinsDCA, cGroup.axisPtQA});
+
+    registry.template add<TH1>("hPropagation", "hPropagation", o2::framework::HistType::kTH1D, {{3, 0.f, 3.f}});
+    registry.template get<TH1>(HIST("hPropagation"))->GetXaxis()->SetBinLabel(1, "All");
+    registry.template get<TH1>(HIST("hPropagation"))->GetXaxis()->SetBinLabel(2, Form("TracksIU, x < %g cm", cGroup.minPropagationRadius.value));
+    registry.template get<TH1>(HIST("hPropagation"))->GetXaxis()->SetBinLabel(3, "Propagation OK");
   }
 
   template <bool isMc, typename TConfigurableGroup, typename TCCDBLoader, typename TCollisions, typename TTracks, typename TOutputGroup, typename THistoRegistry>
@@ -234,18 +239,24 @@ class TrackPropagationModule
       return; // suppress everything
     }
 
+    // Reserve every cursor filled in the loop below: reserve() switches the
+    // cursor to the unsafe (no bounds check) append, so a cursor filled
+    // without it pays the safe per-row append. The Par/ParExtension/DCA
+    // tables are filled in the covariance branch as well.
+    cursors.tracksParPropagated.reserve(tracks.size());
+    cursors.tracksParExtensionPropagated.reserve(tracks.size());
+    if (fillTracksDCA) {
+      cursors.tracksDCA.reserve(tracks.size());
+    }
     if (fillTracksCov) {
       cursors.tracksParCovPropagated.reserve(tracks.size());
       cursors.tracksParCovExtensionPropagated.reserve(tracks.size());
       if (fillTracksDCACov) {
         cursors.tracksDCACov.reserve(tracks.size());
       }
-    } else {
-      cursors.tracksParPropagated.reserve(tracks.size());
-      cursors.tracksParExtensionPropagated.reserve(tracks.size());
-      if (fillTracksDCA) {
-        cursors.tracksDCA.reserve(tracks.size());
-      }
+    }
+    if (cGroup.useTrackTuner.value && cGroup.fillTrackTunerTable.value) {
+      cursors.tunertable.reserve(tracks.size());
     }
 
     for (const auto& track : tracks) {
@@ -273,6 +284,7 @@ class TrackPropagationModule
       // std::array<float, 3> trackPxPyPzTuned = {0.0, 0.0, 0.0};
       double q2OverPtNew = -9999.;
       // Only propagate tracks which have passed the innermost wall of the TPC (e.g. skipping loopers etc). Others fill unpropagated.
+      registry.fill(HIST("hPropagation"), 0.5);
       if (track.trackType() == o2::aod::track::TrackIU && track.x() < cGroup.minPropagationRadius.value) {
         if (fillTracksCov) {
           if constexpr (isMc) { // checking MC and fillCovMat block begins
@@ -289,6 +301,7 @@ class TrackPropagationModule
           } // MC and fillCovMat block ends
         }
         bool isPropagationOK = true;
+        registry.fill(HIST("hPropagation"), 1.5);
 
         if (track.has_collision()) {
           auto const& collision = collisions.rawIteratorAt(track.collisionId());
@@ -310,6 +323,7 @@ class TrackPropagationModule
         }
         if (isPropagationOK) {
           trackType = o2::aod::track::Track;
+          registry.fill(HIST("hPropagation"), 2.5);
         }
         // filling some QA histograms for track tuner test purpose
         if (fillTracksCov) {

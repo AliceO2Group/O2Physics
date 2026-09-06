@@ -15,8 +15,7 @@
 @brief  CutCulator (Compute bitmask for selecting particles in the Femto Framework)
 @author Anton Riedel <anton.riedel@cern.ch>, Technical University of Munich
 """
-
-import ROOT
+import ROOT  # pylint: disable=import-error
 import argparse
 
 VALUE_DELIM = "___"
@@ -35,6 +34,21 @@ def parse_bin_label(label):
     return result
 
 
+def is_filter_histogram(bins):
+    """
+    Determine whether the parsed bins belong to a filter histogram (fixed,
+    non-selectable pre-filter values) rather than a selection/bitmask histogram.
+    Filter bins carry a "FilterName" key; selection bins carry "SelectionName".
+    """
+    for b in bins:
+        if "FilterName" in b:
+            return True
+        if "SelectionName" in b:
+            return False
+    # no parseable bins at all; treat as selection histogram (existing behavior)
+    return False
+
+
 def format_value_with_comment(b):
     """Return Value plus optional (comment=...) suffix."""
     val = b.get("Value", "")
@@ -42,6 +56,20 @@ def format_value_with_comment(b):
     if comment and comment.upper() != "X":
         return f"{val} (comment={comment})"
     return val
+
+
+def print_filter_values(bins):
+    """
+    Filters are fixed values already applied when the producer ran — there is
+    nothing to select. Just print each filter's name and value.
+    """
+    print("\n=======================================")
+    print("Filter values used in this histogram:")
+    print("=======================================\n")
+    for b in bins:
+        name = b.get("FilterName", "unknown")
+        value = b.get("FilterValue", "")
+        print(f"  {name}: {value}")
 
 
 def ask_user_selection(group):
@@ -188,7 +216,8 @@ def main(rootfile_path, tdir_path="femto-producer"):
     print(f"\nUsing histogram: {hname}")
     print(f"Histogram contains {nbins} bins.\n")
 
-    # parse all bins, ignoring the last 2 special bins
+    # parse all bins, ignoring the last 2 special bins ("All analyzed"/"All passed",
+    # present on both selection and filter histograms)
     bins = []
     for i in range(1, nbins - 2 + 1):
         label = hist.GetXaxis().GetBinLabel(i)
@@ -197,6 +226,16 @@ def main(rootfile_path, tdir_path="femto-producer"):
         bdict = parse_bin_label(label)
         bdict["_bin_index"] = i
         bins.append(bdict)
+
+    if not bins:
+        print("No parseable bins found in this histogram.")
+        return
+
+    # filter histograms carry fixed, already-applied values — nothing to select,
+    # so just print them and skip the interactive/bitmask machinery entirely
+    if is_filter_histogram(bins):
+        print_filter_values(bins)
+        return
 
     # group by SelectionName
     groups = {}

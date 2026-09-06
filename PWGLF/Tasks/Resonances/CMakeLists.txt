@@ -24,6 +24,11 @@ o2physics_add_dpl_workflow(cksspinalignder
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(phiflowder
+    SOURCES phiflowder.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(k892analysis
     SOURCES k892analysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -94,8 +99,8 @@ o2physics_add_dpl_workflow(lambda1520spherocityanalysis
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(delta-analysis
-    SOURCES deltaanalysis.cxx
+o2physics_add_dpl_workflow(deltaanalysis
+    SOURCES deltaAnalysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
@@ -119,8 +124,8 @@ o2physics_add_dpl_workflow(chargedkstaranalysis
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(lambda1520-pbpb
-    SOURCES lambda1520_PbPb.cxx
+o2physics_add_dpl_workflow(lambda1520pbpb
+    SOURCES lambda1520pbpb.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
@@ -309,6 +314,11 @@ o2physics_add_dpl_workflow(k892hadronphoton
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(k892hadronphotonbkg
+    SOURCES k892hadronphotonBkg.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(chk892li
     SOURCES chk892LI.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -317,4 +327,9 @@ o2physics_add_dpl_workflow(chk892li
 o2physics_add_dpl_workflow(lambda1520-analysis-po
     SOURCES lambda1520analysispo.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(cha01710analysis
+    SOURCES cha01710analysis.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)

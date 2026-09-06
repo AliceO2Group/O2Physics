@@ -76,17 +76,13 @@ struct propagationServiceV2 {
   o2::common::StandardCCDBLoaderConfigurables standardCCDBLoaderConfigurables;
   o2::common::StandardCCDBLoader ccdbLoader;
 
-  // Declarative CCDB path overrides (replace grpmagPath / mVtxPath in StandardCCDBLoaderConfigurables)
-  // Option names: "ccdb:fGRPMagField" and "ccdb:fMeanVertex" respectively.
-  o2::framework::ConfigurableCCDBPath<o2::aod::ccdbGlo::GRPMagField> grpmagPath;
-  o2::framework::ConfigurableCCDBPath<o2::aod::ccdbGlo::MeanVertex> mVtxPath;
-
   // boilerplate: strangeness builder stuff
   o2::pwglf::strangenessbuilder::products products;
   o2::pwglf::strangenessbuilder::coreConfigurables baseOpts;
   o2::pwglf::strangenessbuilder::v0Configurables v0BuilderOpts;
   o2::pwglf::strangenessbuilder::cascadeConfigurables cascadeBuilderOpts;
   o2::pwglf::strangenessbuilder::preSelectOpts preSelectOpts;
+  o2::pwglf::strangenessbuilder::eventSelectOpts eventSelectOpts;
   o2::pwglf::strangenessbuilder::BuilderModule strangenessBuilderModule;
 
   // the track tuner object -> needs to be here as it inherits from ConfigurableGroup (+ has its own copy of ccdbApi)
@@ -111,28 +107,31 @@ struct propagationServiceV2 {
 
     // task-specific
     trackPropagation.init(trackPropagationConfigurables, trackTunerObj, histos, initContext);
-    strangenessBuilderModule.init(baseOpts, v0BuilderOpts, cascadeBuilderOpts, preSelectOpts, histos, initContext);
+    strangenessBuilderModule.init(baseOpts, v0BuilderOpts, cascadeBuilderOpts, preSelectOpts, eventSelectOpts, histos, initContext);
   }
 
-  // Load MatLUT once (needs rectifyPtrFromFile, kept manual), set B-field per run from
-  // GRPMagField CCDB column, and refresh mMeanVtx pointer every call (pointer into current
-  // BC table, valid only for the duration of this process() invocation).
+  // Load MatLUT once (needs rectifyPtrFromFile, kept manual), set B-field and mean vertex
+  // once per run from GRPMagField/MeanVertex CCDB columns.
   template <typename TBC>
   void initCCDB(TBC const& bc0)
   {
+    if (ccdbLoader.runNumber != bc0.runNumber()) {
+      LOG(info) << "Setting B-field to current " << bc0.grpMagField().getL3Current() << " A for run " << bc0.runNumber() << " from GRPMagField CCDB column";
+      o2::base::Propagator::initFieldFromGRP(&bc0.grpMagField());
+      ccdbLoader.mMeanVtx = &bc0.meanVertex();
+      ccdbLoader.runNumber = bc0.runNumber();
+    } else {
+      // Verify the CCDB column buffer has not been replaced mid-run.
+      // The deserialised pointer must be stable for the lifetime of a run.
+      if (&bc0.meanVertex() != ccdbLoader.mMeanVtx) {
+        LOG(fatal) << "MeanVertex CCDB column pointer changed within run " << bc0.runNumber() << " — unexpected buffer replacement";
+      }
+    }
     if (!ccdbLoader.lut) {
       LOG(info) << "Loading material look-up table for run: " << bc0.runNumber();
       ccdbLoader.lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(
         ccdb->template getForRun<o2::base::MatLayerCylSet>(standardCCDBLoaderConfigurables.lutPath.value, bc0.runNumber()));
       o2::base::Propagator::Instance()->setMatLUT(ccdbLoader.lut);
-    }
-    // Always refresh: pointer into current BC table, invalidated after process() returns
-    ccdbLoader.mMeanVtx = &bc0.meanVertex();
-    if (ccdbLoader.runNumber != bc0.runNumber()) {
-      const auto& grpmag = bc0.grpMagField(); // from declarative CCDB column
-      LOG(info) << "Setting B-field to current " << grpmag.getL3Current() << " A for run " << bc0.runNumber() << " from GRPMagField CCDB column";
-      o2::base::Propagator::initFieldFromGRP(&grpmag);
-      ccdbLoader.runNumber = bc0.runNumber();
     }
   }
 

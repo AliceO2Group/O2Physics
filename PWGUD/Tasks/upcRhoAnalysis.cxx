@@ -206,8 +206,8 @@ struct UpcRhoAnalysis {
   Configurable<bool> requireTof{"requireTof", false, "require TOF signal?"};
   Configurable<bool> useRecoFlag{"useRecoFlag", false, "use UPC/STD reconstruction flag for event selection?"};
   Configurable<int> cutRecoFlag{"cutRecoFlag", 1, "0 = std mode, 1 = upc mode"};
-  Configurable<bool> useRctFlag{"useRctFlag", false, "use RCT flags for event selection?"};
-  Configurable<int> cutRctFlag{"cutRctFlag", 0, "0 = off, 1 = CBT, 2 = CBT+ZDC, 3 = CBThadron, 4 = CBThadron+ZDC"};
+  Configurable<bool> useRctFlag{"useRctFlag", true, "use RCT flags for event selection?"};
+  Configurable<int> cutRctFlag{"cutRctFlag", 1, "0 = off, 1 = CBT, 2 = CBT+ZDC, 3 = CBThadron, 4 = CBThadron+ZDC"};
 
   Configurable<bool> selectRuns{"selectRuns", false, "select runs?"};
   Configurable<std::vector<int>> selectedRuns{"selectedRuns", {544013, 544028, 544032, 544091, 544095, 544098, 544116, 544121, 544122, 544123, 544124, 544184, 544185, 544389, 544390, 544391, 544392, 544451, 544454, 544474, 544475, 544476, 544477, 544490, 544491, 544492, 544508, 544510, 544511, 544512, 544514, 544515, 544518, 544548, 544549, 544550, 544551, 544564, 544565, 544567, 544568, 544580, 544582, 544583, 544585, 544614, 544640, 544652, 544653, 544672, 544674, 544692, 544693, 544694, 544696, 544739, 544742, 544754, 544767, 544794, 544795, 544797, 544813, 544868, 544886, 544887, 544896, 544913, 544914, 544917, 544931, 544947, 544961, 544963, 544964, 544968, 544992, 545009, 545044, 545047, 545063, 545064, 545066, 545185, 545210, 545223, 545249, 545291, 545294, 545295, 545296, 545312}, "list of selected runs"};
@@ -257,7 +257,7 @@ struct UpcRhoAnalysis {
   void init(o2::framework::InitContext& context)
   {
     if (context.mOptions.get<bool>("processSGdata") || context.mOptions.get<bool>("processDGdata")) {
-      // QA //
+      // QA
       // collisions
       rQC.add("QC/collisions/all/hPosXY", ";vertex #it{x} (cm);vertex #it{y} (cm);counts", kTH2D, {{2000, -0.1, 0.1}, {2000, -0.1, 0.1}});
       rQC.add("QC/collisions/all/hPosZ", ";vertex #it{z} (cm);counts", kTH1D, {{400, -20.0, 20.0}});
@@ -276,6 +276,7 @@ struct UpcRhoAnalysis {
       rQC.add("QC/collisions/all/hTimeFDDA", ";FDDA time (ns);counts", kTH1D, {{400, -5.0, 35.0}});
       rQC.add("QC/collisions/all/hTimeFDDC", ";FDDC time (ns);counts", kTH1D, {{400, -5.0, 35.0}});
       rQC.add("QC/collisions/all/hOccupancyInTime", ";occupancy in time;counts", kTH1D, {{1100, 0.0, 1100.0}});
+      rQC.add("QC/collisions/hNumContribVsPVTracks", ";number of track.isPVContributor() per collision;collision.numContrib();counts", kTH2D, {{101, -0.5, 100.5}, {101, -0.5, 100.5}});
       // events with selected rho candidates
       rQC.addClone("QC/collisions/all/", "QC/collisions/trackSelections/");
       rQC.addClone("QC/collisions/all/", "QC/collisions/systemSelections/");
@@ -291,9 +292,13 @@ struct UpcRhoAnalysis {
         rQC.get<TH2>(HIST("QC/collisions/hSelectionCounterPerRun"))->GetYaxis()->SetBinLabel(i + 1, std::to_string(runNumbers[i]).c_str());
       // tracks
       rQC.add("QC/tracks/all/hTpcNSigmaPi", ";TPC #it{n#sigma}(#pi);counts", kTH1D, {nSigmaAxis});
+      rQC.add("QC/tracks/all/hPtVsEtaVsTpcNSigmaPi", ";TPC #it{n#sigma}(#pi);#it{p}_{T} (GeV/#it{c});#it{#eta}", kTH3D, {{100, -10.0, 10.0}, {200, 0.0, 4.0}, {18, -0.9, 0.9}});
       rQC.add("QC/tracks/all/hTpcNSigmaEl", ";TPC #it{n#sigma}(e);counts", kTH1D, {nSigmaAxis});
+      rQC.add("QC/tracks/all/hPtVsEtaVsTpcNSigmaEl", ";TPC #it{n#sigma}(e);#it{p}_{T} (GeV/#it{c});#it{#eta}", kTH3D, {{100, -10.0, 10.0}, {200, 0.0, 4.0}, {18, -0.9, 0.9}});
       rQC.add("QC/tracks/all/hTpcNSigmaKa", ";TPC #it{n#sigma}(K);counts", kTH1D, {nSigmaAxis});
+      rQC.add("QC/tracks/all/hPtVsEtaVsTpcNSigmaKa", ";TPC #it{n#sigma}(K);#it{p}_{T} (GeV/#it{c});#it{#eta}", kTH3D, {{100, -10.0, 10.0}, {200, 0.0, 4.0}, {18, -0.9, 0.9}});
       rQC.add("QC/tracks/all/hTpcNSigmaPr", ";TPC #it{n#sigma}(p);counts", kTH1D, {nSigmaAxis});
+      rQC.add("QC/tracks/all/hPtVsEtaVsTpcNSigmaPr", ";TPC #it{n#sigma}(p);#it{p}_{T} (GeV/#it{c});#it{#eta}", kTH3D, {{100, -10.0, 10.0}, {200, 0.0, 4.0}, {18, -0.9, 0.9}});
       rQC.add("QC/tracks/all/hDcaXYZ", ";track #it{DCA}_{z} (cm);track #it{DCA}_{xy} (cm);counts", kTH2D, {{1000, -5.0, 5.0}, {400, -2.0, 2.0}});
       rQC.add("QC/tracks/all/hItsNCls", ";ITS #it{N}_{cls};counts", kTH1D, {{9, -0.5, 8.5}});
       rQC.add("QC/tracks/all/hItsChi2NCl", ";ITS #it{#chi}^{2}/#it{N}_{cls};counts", kTH1D, {{150, 0.0, 15.0}});
@@ -351,6 +356,7 @@ struct UpcRhoAnalysis {
       rSystem.add("system/all/unlike-sign/hM", ";#it{m} (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
       rSystem.add("system/all/unlike-sign/hRecoSettingVsM", ";#it{m} (GeV/#it{c}^{2});reco setting;counts", kTH2D, {mAxis, {2, -0.5, 1.5}});
       rSystem.add("system/all/unlike-sign/hPt", ";#it{p}_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+      rSystem.add("system/all/unlike-sign/hPtReweighting", ";#it{p}_{T} (GeV/#it{c});counts", kTH1D, {{40, 0.0, 0.2}});
       rSystem.add("system/all/unlike-sign/hPt2", ";#it{p}_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
       rSystem.add("system/all/unlike-sign/hPtVsM", ";#it{m} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
       rSystem.add("system/all/unlike-sign/hPt2VsM", ";#it{m} (GeV/#it{c}^{2});#it{p}_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH2D, {mAxis, pt2Axis});
@@ -470,9 +476,13 @@ struct UpcRhoAnalysis {
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hEta"), eta(track.px(), track.py(), track.pz()));
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hPhi"), phi(track.px(), track.py()));
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTpcNSigmaPi"), track.tpcNSigmaPi());
+    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hPtVsEtaVsTpcNSigmaPi"), track.tpcNSigmaPi(), track.pt(), eta(track.px(), track.py(), track.pz()));
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTpcNSigmaEl"), track.tpcNSigmaEl());
+    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hPtVsEtaVsTpcNSigmaEl"), track.tpcNSigmaEl(), track.pt(), eta(track.px(), track.py(), track.pz()));
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTpcNSigmaKa"), track.tpcNSigmaKa());
+    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hPtVsEtaVsTpcNSigmaKa"), track.tpcNSigmaKa(), track.pt(), eta(track.px(), track.py(), track.pz()));
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTpcNSigmaPr"), track.tpcNSigmaPr());
+    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hPtVsEtaVsTpcNSigmaPr"), track.tpcNSigmaPr(), track.pt(), eta(track.px(), track.py(), track.pz()));
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hDcaXYZ"), track.dcaZ(), track.dcaXY());
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hItsNCls"), track.itsNCls());
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hItsChi2NCl"), track.itsChi2NCl());
@@ -498,6 +508,7 @@ struct UpcRhoAnalysis {
     if (cuts == 0) {
       rSystem.fill(HIST("system/") + HIST(AppliedSelections[cuts]) + HIST(ChargeLabel[charge]) + HIST("hM"), mass);
       rSystem.fill(HIST("system/") + HIST(AppliedSelections[cuts]) + HIST(ChargeLabel[charge]) + HIST("hPt"), pt);
+      rSystem.fill(HIST("system/") + HIST(AppliedSelections[cuts]) + HIST(ChargeLabel[charge]) + HIST("hPtReweighting"), pt);
       rSystem.fill(HIST("system/") + HIST(AppliedSelections[cuts]) + HIST(ChargeLabel[charge]) + HIST("hPt2"), pt * pt);
       rSystem.fill(HIST("system/") + HIST(AppliedSelections[cuts]) + HIST(ChargeLabel[charge]) + HIST("hPtVsM"), mass, pt);
       rSystem.fill(HIST("system/") + HIST(AppliedSelections[cuts]) + HIST(ChargeLabel[charge]) + HIST("hPt2VsM"), mass, pt * pt);
@@ -510,6 +521,7 @@ struct UpcRhoAnalysis {
     } else {
       rSystem.fill(HIST("system/") + HIST("selected/") + HIST(NeutronClass[neutronClass]) + HIST(ChargeLabel[charge]) + HIST("hM"), mass);
       rSystem.fill(HIST("system/") + HIST("selected/") + HIST(NeutronClass[neutronClass]) + HIST(ChargeLabel[charge]) + HIST("hPt"), pt);
+      rSystem.fill(HIST("system/") + HIST("selected/") + HIST(NeutronClass[neutronClass]) + HIST(ChargeLabel[charge]) + HIST("hPtReweighting"), pt);
       rSystem.fill(HIST("system/") + HIST("selected/") + HIST(NeutronClass[neutronClass]) + HIST(ChargeLabel[charge]) + HIST("hPt2"), pt * pt);
       rSystem.fill(HIST("system/") + HIST("selected/") + HIST(NeutronClass[neutronClass]) + HIST(ChargeLabel[charge]) + HIST("hPtVsM"), mass, pt);
       rSystem.fill(HIST("system/") + HIST("selected/") + HIST(NeutronClass[neutronClass]) + HIST(ChargeLabel[charge]) + HIST("hPt2VsM"), mass, pt * pt);
@@ -816,6 +828,14 @@ struct UpcRhoAnalysis {
     // check if the collision run number is contained within the selectedRuns vector
     if (selectRuns && getRunIndex(collision.runNumber(), selectedRuns) == 0)
       return;
+
+    // check the number of PV tracks and the number of PV contrubutors
+    int nPVTracks = 0;
+    for (const auto& track : tracks) {
+      if (track.isPVContributor())
+        nPVTracks++;
+    }
+    rQC.fill(HIST("QC/collisions/hNumContribVsPVTracks"), nPVTracks, collision.numContrib());
 
     fillCollisionQcHistos<0>(collision);           // fill QC histograms before cuts
     if (!collisionPassesCuts(collision, runIndex)) // apply collision cuts

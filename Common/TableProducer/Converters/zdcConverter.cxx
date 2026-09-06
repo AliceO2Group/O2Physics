@@ -30,6 +30,7 @@ struct zdcConverter {
 
   void process(aod::Zdcs_000 const& zdcLegacy, aod::BCs const&)
   {
+    Zdcs_001.reserve(zdcLegacy.size());
     for (auto& zdcData : zdcLegacy) {
       // Get legacy information, please
       auto bc = zdcData.bc();

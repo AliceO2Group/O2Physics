@@ -10,7 +10,7 @@
 # or submit itself to any jurisdiction.
 
 o2physics_add_dpl_workflow(meanpt-fluctuations
-                    SOURCES MeanptFluctuations.cxx
+                    SOURCES meanptFluctuations.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
 
@@ -82,4 +82,9 @@ o2physics_add_dpl_workflow(radial-flow-decorr
 o2physics_add_dpl_workflow(net-prot-cumulants
                     SOURCES netprotcumulants.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(strongly-intensive-corr
+  		    SOURCES stronglyIntensiveCorr.cxx
+  		    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)

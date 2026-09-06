@@ -67,7 +67,7 @@ struct cascademcfinder {
   Configurable<bool> doQA{"doQA", true, "do qa plots"};
 
   // For manual sliceBy
-  Preslice<aod::McParticle> perMcCollision = aod::mcparticle::mcCollisionId;
+  Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
 
   std::vector<int> casccollisionId;
   std::vector<int> cascv0Index;

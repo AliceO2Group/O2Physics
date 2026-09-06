@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file timestampModule.h
+/// \brief Timestamp module
+/// \author ALICE
+
 #ifndef COMMON_TOOLS_TIMESTAMPMODULE_H_
 #define COMMON_TOOLS_TIMESTAMPMODULE_H_
 
@@ -32,12 +36,11 @@ namespace timestamp
 {
 
 // timestamp configurables
-struct timestampConfigurables : o2::framework::ConfigurableGroup {
+struct TimestampConfigurables : o2::framework::ConfigurableGroup {
   std::string prefix = "timestamp";
   o2::framework::Configurable<bool> verbose{"verbose", false, "verbose mode"};
   o2::framework::Configurable<bool> fatalOnInvalidTimestamp{"fatalOnInvalidTimestamp", false, "Generate fatal error for invalid timestamps"};
-  o2::framework::Configurable<std::string> rct_path{"rct-path", "RCT/Info/RunInformation", "path to the ccdb RCT objects for the SOR timestamps"};
-  o2::framework::Configurable<std::string> orbit_reset_path{"orbit-reset-path", "CTP/Calib/OrbitReset", "path to the ccdb orbit-reset objects"};
+  o2::framework::Configurable<std::string> orbitResetPath{"orbit-reset-path", "CTP/Calib/OrbitReset", "path to the ccdb orbit-reset objects"};                                                             // o2-linter: disable=name/configurable (temporary fix)
   o2::framework::Configurable<int> isRun2MC{"isRun2MC", -1, "Running mode: enable only for Run 2 MC. Timestamps are set to SOR timestamp. Default: -1 (autoset from metadata) 0 (Standard) 1 (Run 2 MC)"}; // o2-linter: disable=name/configurable (temporary fix)
 };
 
@@ -57,7 +60,7 @@ class TimestampModule
     orbitResetTimestamp = 0;
   };
 
-  o2::common::timestamp::timestampConfigurables timestampOpts;
+  o2::common::timestamp::TimestampConfigurables timestampOpts;
 
   // objects necessary during processing
   std::map<int, int64_t> mapRunToOrbitReset;                      /// Cache of orbit reset timestamps
@@ -104,22 +107,24 @@ class TimestampModule
 
         // clear cache to prevent interference with orbit reset queries from other code
         // FIXME this should not have been a problem, to be investigated
-        ccdb->clearCache(timestampOpts.orbit_reset_path.value.data());
+        ccdb->clearCache(timestampOpts.orbitResetPath.value.data());
 
-        const bool isUnanchoredRun3MC = runNumber >= 300000 && runNumber < 500000;
+        const int maxRunNumberUnanchored = 499999;
+        const int minRunNumberUnanchored = 300000;
+        const bool isUnanchoredRun3MC = runNumber >= minRunNumberUnanchored && runNumber <= maxRunNumberUnanchored;
         if (timestampOpts.isRun2MC.value == 1 || isUnanchoredRun3MC) {
           // isRun2MC: bc/orbit distributions are not simulated in Run2 MC. All bcs are set to 0.
           // isUnanchoredRun3MC: assuming orbit-reset is done in the beginning of each run
           // Setting orbit-reset timestamp to start-of-run timestamp
-          orbitResetTimestamp = sorTimestamp * 1000; // from ms to us
-        } else if (runNumber < 300000) {             // Run 2
+          orbitResetTimestamp = sorTimestamp * 1000;     // from ms to us
+        } else if (runNumber < minRunNumberUnanchored) { // Run 2
           LOGF(debug, "Getting orbit-reset timestamp using start-of-run timestamp from CCDB");
-          auto ctp = ccdb->template getSpecific<std::vector<int64_t>>(timestampOpts.orbit_reset_path.value.data(), sorTimestamp);
+          auto ctp = ccdb->template getSpecific<std::vector<int64_t>>(timestampOpts.orbitResetPath.value.data(), sorTimestamp);
           orbitResetTimestamp = (*ctp)[0];
         } else {
           // sometimes orbit is reset after SOR. Using EOR timestamps for orbitReset query is more reliable
           LOGF(debug, "Getting orbit-reset timestamp using end-of-run timestamp from CCDB");
-          auto ctp = ccdb->template getSpecific<std::vector<int64_t>>(timestampOpts.orbit_reset_path.value.data(), eorTimestamp / 2 + sorTimestamp / 2);
+          auto ctp = ccdb->template getSpecific<std::vector<int64_t>>(timestampOpts.orbitResetPath.value.data(), eorTimestamp / 2 + sorTimestamp / 2);
           orbitResetTimestamp = (*ctp)[0];
         }
 
@@ -136,7 +141,7 @@ class TimestampModule
       if (timestampOpts.verbose) {
         LOGF(info, "Orbit-reset timestamp for run number %i found: %llu us", runNumber, orbitResetTimestamp);
       }
-      int64_t timestamp{(orbitResetTimestamp + int64_t(bc.globalBC() * o2::constants::lhc::LHCBunchSpacingNS * 1e-3)) / 1000}; // us -> ms
+      int64_t timestamp{(orbitResetTimestamp + static_cast<int64_t>(bc.globalBC() * o2::constants::lhc::LHCBunchSpacingNS * 1e-3)) / 1000}; // us -> ms
       if (timestamp < runDuration.first || timestamp > runDuration.second) {
         if (timestampOpts.fatalOnInvalidTimestamp.value) {
           LOGF(fatal, "Timestamp %llu us is out of run duration [%llu, %llu] ms", timestamp, runDuration.first, runDuration.second);

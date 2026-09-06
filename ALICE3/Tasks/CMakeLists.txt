@@ -39,6 +39,11 @@ o2physics_add_dpl_workflow(alice3-dilepton
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(alice3-prefilterdilepton
+                    SOURCES alice3-prefilterdilepton.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(alice3-taskcorrelationddbar
                     SOURCES alice3-taskcorrelationDDbar.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -75,7 +80,7 @@ o2physics_add_dpl_workflow(alice3strangeness
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(alice3-dq-efficiency
-                    SOURCES alice3-dq-efficiency.cxx
+                    SOURCES alice3DqEfficiency.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGDQCore
                     COMPONENT_NAME Analysis)
 

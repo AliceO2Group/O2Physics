@@ -58,10 +58,10 @@
     int nsize = 0;                                                       \
     int ncls = 0;                                                        \
     for (int il = v1; il < v2; il++) {                                   \
-      nsize += track.itsClsSizeInLayer(il);                              \
-      if (nsize > 0) {                                                   \
+      if (track.itsClsSizeInLayer(il) > 0) {                             \
         ncls++;                                                          \
       }                                                                  \
+      nsize += track.itsClsSizeInLayer(il);                              \
     }                                                                    \
     inputFeature = static_cast<float>(nsize) / static_cast<float>(ncls); \
     break;                                                               \
@@ -73,10 +73,10 @@
     int nsize = 0;                                                                                                   \
     int ncls = 0;                                                                                                    \
     for (int il = v1; il < v2; il++) {                                                                               \
-      nsize += track.itsClsSizeInLayer(il);                                                                          \
-      if (nsize > 0) {                                                                                               \
+      if (track.itsClsSizeInLayer(il) > 0) {                                                                         \
         ncls++;                                                                                                      \
       }                                                                                                              \
+      nsize += track.itsClsSizeInLayer(il);                                                                          \
     }                                                                                                                \
     inputFeature = static_cast<float>(nsize) / static_cast<float>(ncls) * std::cos(std::atan(trackParCov.getTgl())); \
     break;                                                                                                           \
@@ -105,16 +105,6 @@
   case static_cast<uint8_t>(InputFeaturesO2Track::FEATURE): { \
     inputFeature = sqrt(track.GETTER());                      \
     break;                                                    \
-  }
-
-// Check if the index of mCachedIndices (index associated to a FEATURE)
-// matches the entry in EnumInputFeatures associated to this FEATURE
-// if so, the inputFeatures vector is filled with the FEATURE's value
-// by calling the corresponding GETTER1 from track and multiplying with cos(atan(GETTER2))
-#define CHECK_AND_FILL_O2_TRACK_COS(FEATURE, GETTER1, GETTER2)             \
-  case static_cast<uint8_t>(InputFeaturesO2Track::FEATURE): {              \
-    inputFeature = track.GETTER1() * std::cos(std::atan(track.GETTER2())); \
-    break;                                                                 \
   }
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
@@ -343,7 +333,6 @@ class MlResponseO2Track : public MlResponse<TypeOutputScore>
 #undef CHECK_AND_FILL_O2_TRACK_MEAN_ITSCLUSTER_SIZE
 #undef CHECK_AND_FILL_O2_TRACK_MEAN_ITSCLUSTER_SIZE_COS
 #undef CHECK_AND_FILL_O2_TRACK_SQRT
-#undef CHECK_AND_FILL_O2_TRACK_COS
 #undef CHECK_AND_FILL_O2_TRACK_TPCTOF
 #undef CHECK_AND_FILL_O2_TRACK_RELDIFF
 #undef CHECK_AND_FILL_DIELECTRON_COLLISION

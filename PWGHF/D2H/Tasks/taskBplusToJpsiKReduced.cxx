@@ -24,6 +24,7 @@
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsPid.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelectorPID.h"
 
 #include <CCDB/CcdbApi.h>
@@ -141,7 +142,6 @@ DECLARE_SOA_TABLE(HfRedCandBpLites, "AOD", "HFREDCANDBPLITE", //! Table with som
                   hf_cand_bplustojpsik_lite::PtJpsi,
                   hf_cand_bplustojpsik_lite::ImpactParameterJpsiDauPos,
                   hf_cand_bplustojpsik_lite::ImpactParameterJpsiDauNeg,
-                  hf_cand_bplustojpsik_lite::ImpactParameterLfTrack0,
                   // Jpsi daughter features
                   hf_cand_bplustojpsik_lite::ItsNClsJpsiDauPos,
                   hf_cand_bplustojpsik_lite::TpcNClsCrossedRowsJpsiDauPos,
@@ -155,6 +155,7 @@ DECLARE_SOA_TABLE(HfRedCandBpLites, "AOD", "HFREDCANDBPLITE", //! Table with som
                   hf_cand_bplustojpsik_lite::AbsEtaJpsiDauNeg,
                   // kaon features
                   hf_cand_bplustojpsik_lite::PtBach,
+                  hf_cand_bplustojpsik_lite::ImpactParameterLfTrack0,
                   hf_cand_bplustojpsik_lite::ItsNClsLfTrack0,
                   hf_cand_bplustojpsik_lite::TpcNClsCrossedRowsLfTrack0,
                   hf_cand_bplustojpsik_lite::ItsChi2NClLfTrack0,
@@ -207,6 +208,7 @@ struct HfTaskBplusToJpsiKReduced {
   Configurable<bool> fillBackground{"fillBackground", false, "Flag to enable filling of background histograms/sparses/tree (only MC)"};
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
+  Configurable<bool> useJpsiPdgMass{"useJpsiPdgMass", true, "Whether to use J/Psi PDG mass for B+ candidate mass evaluation or to use the invariant mass of the two prongs"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_bplus_to_jpsi_k::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_bplus_to_jpsi_k::Cuts[0], hf_cuts_bplus_to_jpsi_k::NBinsPt, hf_cuts_bplus_to_jpsi_k::NCutVars, hf_cuts_bplus_to_jpsi_k::labelsPt, hf_cuts_bplus_to_jpsi_k::labelsCutVar}, "B+ candidate selection per pT bin"};
@@ -339,11 +341,13 @@ struct HfTaskBplusToJpsiKReduced {
                 aod::HfRedBach0Tracks const&)
   {
     auto ptCandBplus = candidate.pt();
-    auto invMassBplus = HfHelper::invMassBplusToJpsiK(candidate);
+    auto invMassBplus = HfHelper::invMassBplusToJpsiK(candidate, useJpsiPdgMass);
     auto candJpsi = candidate.template jpsi_as<aod::HfRedJpsis>();
     auto candKa = candidate.template bachKa_as<aod::HfRedBach0Tracks>();
-    auto ptJpsi = candidate.ptProng0();
-    auto invMassJpsi = candJpsi.m();
+    auto const pVecMu0 = candidate.pVectorProng0();
+    auto const pVecMu1 = candidate.pVectorProng1();
+    auto ptJpsi = RecoDecay::pt(pVecMu0, pVecMu1);
+    auto invMassJpsi = RecoDecay::m(std::array{pVecMu0, pVecMu1}, std::array{o2::constants::physics::MassMuonPlus, o2::constants::physics::MassMuonMinus});
     uint8_t statusBplus = 0;
 
     int8_t flagMcMatchRec{0}, flagMcDecayChanRec{0}, flagWrongCollision{0};
@@ -352,11 +356,11 @@ struct HfTaskBplusToJpsiKReduced {
       flagMcMatchRec = candidate.flagMcMatchRec();
       flagMcDecayChanRec = candidate.flagMcDecayChanRec();
       flagWrongCollision = candidate.flagWrongCollision();
-      isSignal = std::abs(flagMcMatchRec) == o2::hf_decay::hf_cand_beauty::BplusToJpsiK;
+      isSignal = std::abs(flagMcMatchRec) == o2::hf_decay::hf_cand_beauty::BplusToJpsiKToMuMuK;
     }
 
     SETBIT(statusBplus, SelectionStep::RecoSkims);
-    if (HfHelper::selectionBplusToJpsiKTopol(candidate, cuts, binsPt)) {
+    if (HfHelper::selectionBplusToJpsiKTopol(candidate, cuts, binsPt, useJpsiPdgMass)) {
       SETBIT(statusBplus, SelectionStep::RecoTopol);
     } else if (selectionFlagBplus >= BIT(SelectionStep::RecoTopol) * 2 - 1) {
       return;
@@ -391,17 +395,17 @@ struct HfTaskBplusToJpsiKReduced {
     }
 
     registry.fill(HIST("hMass"), invMassBplus, ptCandBplus);
-    registry.fill(HIST("hMassJpsi"), invMassJpsi, candidate.ptProng0());
-    registry.fill(HIST("hd0K"), candidate.impactParameter1(), candidate.ptProng1());
+    registry.fill(HIST("hMassJpsi"), invMassJpsi, ptJpsi);
+    registry.fill(HIST("hd0K"), candidate.impactParameter2(), candidate.ptProng2());
     if constexpr (DoMc) {
       if (isSignal) {
         registry.fill(HIST("hMassRecSig"), invMassBplus, ptCandBplus);
-        registry.fill(HIST("hMassJpsiRecSig"), invMassJpsi, candidate.ptProng0());
-        registry.fill(HIST("hd0KRecSig"), candidate.impactParameter1(), candidate.ptProng1());
+        registry.fill(HIST("hMassJpsiRecSig"), invMassJpsi, ptJpsi);
+        registry.fill(HIST("hd0KRecSig"), candidate.impactParameter2(), candidate.ptProng2());
       } else if (fillBackground) {
         registry.fill(HIST("hMassRecBg"), invMassBplus, ptCandBplus);
-        registry.fill(HIST("hMassJpsiRecBg"), invMassJpsi, candidate.ptProng0());
-        registry.fill(HIST("hd0KRecBg"), candidate.impactParameter1(), candidate.ptProng1());
+        registry.fill(HIST("hMassJpsiRecBg"), invMassJpsi, ptJpsi);
+        registry.fill(HIST("hd0KRecBg"), candidate.impactParameter2(), candidate.ptProng2());
       }
     }
 
@@ -436,7 +440,6 @@ struct HfTaskBplusToJpsiKReduced {
         ptJpsi,
         candidate.impactParameter0(),
         candidate.impactParameter1(),
-        candidate.impactParameter2(),
         candJpsi.itsNClsDauPos(),
         candJpsi.tpcNClsCrossedRowsDauPos(),
         candJpsi.itsChi2NClDauPos(),
@@ -448,7 +451,8 @@ struct HfTaskBplusToJpsiKReduced {
         candJpsi.tpcChi2NClDauNeg(),
         absEta(candJpsi.tglDauNeg()),
         // kaon features
-        candidate.ptProng1(),
+        candidate.ptProng2(),
+        candidate.impactParameter2(),
         candKa.itsNCls(),
         candKa.tpcNClsCrossedRows(),
         candKa.itsChi2NCl(),

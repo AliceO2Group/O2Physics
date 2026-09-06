@@ -13,6 +13,7 @@
 #define PWGLF_UTILS_NUCLEIUTILS_H_
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/PID/PIDTOF.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponseITS.h"
 
@@ -24,7 +25,6 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/Logger.h>
 #include <MathUtils/BetheBlochAleph.h>
-#include <PID/PIDTOF.h>
 #include <ReconstructionDataFormats/PID.h>
 
 #include <TH1.h>
@@ -122,6 +122,8 @@ struct SlimCandidate {
   uint64_t mcProcess = TMCProcess::kPNoProcess;
   float nsigmaTpc = -999.f;
   float nsigmaTof = -999.f;
+  float vx = -999.f; // production vertex x coordinate
+  float vy = -999.f;
 };
 
 enum Species {
@@ -305,15 +307,21 @@ enum evSel {
   kIsGoodZvtxFT0vsPV,
   kIsGoodITSLayersAll,
   kIsEPtriggered,
+  kNoCollInRofStandard,
+  kNoHighMultCollInPrevRof,
+  kNoCollInTimeRangeStandard,
   kNevSels
 };
 
 static const std::vector<std::string> eventSelectionTitle{"Event selections"};
-static const std::vector<std::string> eventSelectionLabels{"TVX", "Z vtx", "TF border", "ITS ROF border", "No same-bunch pile-up", "kIsGoodZvtxFT0vsPV", "isGoodITSLayersAll", "isEPtriggered"};
+static const std::vector<std::string> eventSelectionLabels{"TVX", "Z vtx", "TF border", "ITS ROF border", "No same-bunch pile-up", "kIsGoodZvtxFT0vsPV", "isGoodITSLayersAll", "isEPtriggered", "No collision in ROF standard", "No high-multiplicity collision in previous ROF", "No collision in time range standard"};
 
-constexpr int EvSelDefault[8][1]{
+constexpr int EvSelDefault[evSel::kNevSels][1]{
   {1},
   {1},
+  {0},
+  {0},
+  {0},
   {0},
   {0},
   {0},
@@ -321,9 +329,23 @@ constexpr int EvSelDefault[8][1]{
   {0},
   {0}};
 
-template <typename Tcollision> // move to nucleiUtils
-bool eventSelection(const Tcollision& collision, o2::framework::HistogramRegistry& registry, o2::framework::LabeledArray<int> eventSelections, const float cutVertex)
+template <typename Tcollision>
+bool eventSelection(const Tcollision& collision, o2::framework::HistogramRegistry& registry, o2::framework::LabeledArray<int> eventSelections, const float cutVertex, uint32_t& selectionFlag)
 {
+  selectionFlag = 0;
+  bool isSelected = true;
+  auto checkCut = [&](int selIndex, bool pass) {
+    if (pass) {
+      selectionFlag |= (1u << selIndex);
+    }
+    if (eventSelections.get(selIndex) && !pass) {
+      isSelected = false;
+    }
+    if (isSelected) {
+      registry.fill(HIST("hEventSelections"), selIndex + 1);
+    }
+  };
+
   if (!registry.contains(HIST("hVtxZBefore"))) {
     registry.add("hVtxZBefore", "Vertex distribution in Z before selections;Z (cm)", {o2::framework::HistType::kTH1F, {{400, -20.0, 20.0}}});
   }
@@ -336,53 +358,32 @@ bool eventSelection(const Tcollision& collision, o2::framework::HistogramRegistr
   registry.fill(HIST("hEventSelections"), 0);
   registry.fill(HIST("hVtxZBefore"), collision.posZ());
 
-  if (eventSelections.get(evSel::kTVX) && !collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
-    return false;
-  }
-  registry.fill(HIST("hEventSelections"), evSel::kTVX + 1);
+  checkCut(evSel::kTVX, collision.selection_bit(o2::aod::evsel::kIsTriggerTVX));
+  checkCut(evSel::kZvtx, std::abs(collision.posZ()) <= cutVertex);
+  checkCut(evSel::kTFborder, collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder));
+  checkCut(evSel::kITSROFborder, collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder));
+  checkCut(evSel::kNoSameBunchPileup, collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup));
+  checkCut(evSel::kIsGoodZvtxFT0vsPV, collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV));
+  checkCut(evSel::kIsGoodITSLayersAll, collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll));
 
-  if (eventSelections.get(evSel::kZvtx) && std::abs(collision.posZ()) > cutVertex) {
-    return false;
+  if constexpr (requires { collision.triggereventep(); }) {
+    checkCut(evSel::kIsEPtriggered, collision.triggereventep());
   }
-  registry.fill(HIST("hEventSelections"), evSel::kZvtx + 1);
 
-  if (eventSelections.get(evSel::kTFborder) && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-    return false;
-  }
-  registry.fill(HIST("hEventSelections"), evSel::kTFborder + 1);
+  checkCut(evSel::kNoCollInRofStandard, collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard));
+  checkCut(evSel::kNoHighMultCollInPrevRof, collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof));
+  checkCut(evSel::kNoCollInTimeRangeStandard, collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard));
 
-  if (eventSelections.get(evSel::kITSROFborder) && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
-    return false;
-  }
-  registry.fill(HIST("hEventSelections"), evSel::kITSROFborder + 1);
-
-  if (eventSelections.get(evSel::kNoSameBunchPileup) && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
-    return false;
-  }
-  registry.fill(HIST("hEventSelections"), evSel::kNoSameBunchPileup + 1);
-
-  if (eventSelections.get(evSel::kIsGoodZvtxFT0vsPV) && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
-    return false;
-  }
-  registry.fill(HIST("hEventSelections"), evSel::kIsGoodZvtxFT0vsPV + 1);
-
-  if (eventSelections.get(evSel::kIsGoodITSLayersAll) && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
-    return false;
-  }
-  registry.fill(HIST("hEventSelections"), evSel::kIsGoodITSLayersAll + 1);
-
-  if constexpr (
-    requires {
-      collision.triggereventep();
-    }) {
-    if (eventSelections.get(evSel::kIsEPtriggered) && !collision.triggereventep()) {
-      return false;
-    }
-    registry.fill(HIST("hEventSelections"), evSel::kIsEPtriggered + 1);
-  }
   registry.fill(HIST("hVtxZ"), collision.posZ());
 
-  return true;
+  return isSelected;
+}
+
+template <typename Tcollision>
+bool eventSelection(const Tcollision& collision, o2::framework::HistogramRegistry& registry, o2::framework::LabeledArray<int> eventSelections, const float cutVertex)
+{
+  uint32_t dummyFlag = 0;
+  return eventSelection(collision, registry, eventSelections, cutVertex, dummyFlag);
 }
 
 /**
@@ -396,10 +397,10 @@ float getCentrality(Tcollision const& collision, const int centralityEstimator, 
     hFailCentrality->Fill(0.);
   }
   if constexpr (!o2::aod::HasCentrality<Tcollision>) { // requires aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs
-    return -1.f;
     if (hFailCentrality) {
       hFailCentrality->Fill(1.);
     }
+    return -1.f;
   }
   if (centralityEstimator == centDetectors::kFV0A) {
     return collision.centFV0A();
@@ -441,8 +442,8 @@ void createHistogramRegistryNucleus(o2::framework::HistogramRegistry& registry)
   registry.add(fmt::format("{}/hPtReconstructed", cNames[index]).c_str(), (fmt::format("{} - reconstructed variables;", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); Counts")).c_str(), o2::framework::HistType::kTH1F, {{400, -10.0f, 10.0f}});
   registry.add(fmt::format("{}/h2PtVsCentralityReconstructed", cNames[index]).c_str(), (fmt::format("{} - reconstructed variables;", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); CentralityFT0C (%)")).c_str(), o2::framework::HistType::kTH2F, {{400, -10.0f, 10.0f}, {20, 0.0f, 100.0f}});
   registry.add(fmt::format("{}/h3PhiVsEtaVsCentralityReconstructed", cNames[index]).c_str(), (fmt::format("{} - reconstructed variables;", cNames[index]) + std::string("#phi (radians); #eta; CentralityFT0C (%)")).c_str(), o2::framework::HistType::kTH3F, {{40, 0, o2::constants::math::TwoPI}, {40, -1.0f, 1.f}, {20, 0.0f, 100.0f}});
-  registry.add(fmt::format("{}/h3DCAxyVsPtVsCentrality", cNames[index]).c_str(), (fmt::format(";", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); DCA_{xy} (cm); CentralityFT0C (%)")).c_str(), o2::framework::HistType::kTH3F, {{400, -10.0f, 10.0f}, {200, -0.5f, 0.5f}, {20, 0.0f, 100.0f}});
-  registry.add(fmt::format("{}/h3DCAzVsPtVsCentrality", cNames[index]).c_str(), (fmt::format("{};", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); DCA_{z} (cm); CentralityFT0C (%)")).c_str(), o2::framework::HistType::kTH3F, {{400, -10.0f, 10.0f}, {200, -0.5f, 0.5f}, {20, 0.0f, 100.0f}});
+  registry.add(fmt::format("{}/h3DCAxyVsPtVsCentrality", cNames[index]).c_str(), (fmt::format(";", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); DCA_{xy} (cm); CentralityFT0C (%)")).c_str(), o2::framework::HistType::kTH3F, {{400, -10.0f, 10.0f}, {400, -0.1f, 0.1f}, {20, 0.0f, 100.0f}});
+  registry.add(fmt::format("{}/h3DCAzVsPtVsCentrality", cNames[index]).c_str(), (fmt::format("{};", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); DCA_{z} (cm); CentralityFT0C (%)")).c_str(), o2::framework::HistType::kTH3F, {{400, -10.0f, 10.0f}, {400, -0.1f, 0.1f}, {20, 0.0f, 100.0f}});
   registry.add(fmt::format("{}/h3NsigmaTPC_preselectionVsCentrality", cNames[index]).c_str(), (fmt::format("Nsigma{} TPC distribution;", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c});") + fmt::format("n#sigma_{{TPC}}({}); CentralityFT0C (%)", cNames[index])).c_str(), o2::framework::HistType::kTH3F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {20, 0.0f, 100.0f}});
   registry.add(fmt::format("{}/h3NsigmaTPCVsCentrality", cNames[index]).c_str(), (fmt::format("Nsigma{} TPC distribution;", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c});") + fmt::format("n#sigma_{{TPC}}({}); Centrality FT0C (%)", cNames[index])).c_str(), o2::framework::HistType::kTH3F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}, {20, 0.0f, 100.0f}});
   registry.add(fmt::format("{}/h3NsigmaITS_preselectionVsCentrality", cNames[index]).c_str(), (fmt::format("Nsigma{} ITS distribution;", cNames[index]) + std::string("signed #it{p}_{T} / |#it{Z}| (GeV/#it{c});") + fmt::format("n#sigma_{{ITS}}({}); Centrality FT0C (%)", cNames[index])).c_str(), o2::framework::HistType::kTH3F, {{50, -5.0f, 5.0f}, {120, -3.0f, 3.0f}, {20, 0.0f, 100.0f}});
@@ -609,11 +610,11 @@ class PidManager
   }
 
  private:
-  float mTpcBetheBlochParams[6];
+  float mTpcBetheBlochParams[6] = {-999.f, -999.f, -999.f, -999.f, -999.f, -999.f};
   bool mUseTpcCentralCalibration = true; // this just becomes a check for the null pointer in the parameters
   o2::aod::ITSResponse mResponseITS;
   float mMomScaling[2]{1., 0.};
-  int mSpecies;
+  int mSpecies = -1;
 };
 
 } // namespace nuclei

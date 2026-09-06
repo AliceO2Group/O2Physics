@@ -21,6 +21,7 @@
 
 #include "Common/Core/CollisionTypeHelper.h"
 #include "Common/Core/MetadataHelper.h"
+#include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/PID/PIDTOFParamService.h"
 #include "Common/Core/TableHelper.h"
 #include "Common/DataModel/EventSelection.h"
@@ -40,7 +41,6 @@
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <PID/PIDTOF.h>
 #include <ReconstructionDataFormats/PID.h>
 #include <TOFBase/EventTimeMaker.h>
 
@@ -334,7 +334,7 @@ struct tofEventTime {
   ///
   /// Process function to prepare the event for each track on Run 2 data
   void processRun2(aod::Tracks const& tracks,
-                   aod::Collisions const&,
+                   aod::Collisions const& collisions,
                    aod::BCsWithTimestamps const& bcs)
   {
     if (!enableTableTOFEvTime) {
@@ -345,8 +345,8 @@ struct tofEventTime {
     tableEvTime.reserve(tracks.size());
     tableFlags.reserve(tracks.size());
 
-    for (auto const& t : tracks) { // Loop on collisions
-      if (!t.has_collision()) {    // Track was not assigned, cannot compute event time
+    for (auto const& t : tracks) {                        // Loop on collisions
+      if (!t.has_collision() || collisions.size() == 0) { // Track was not assigned, cannot compute event time
         tableFlags(0);
         tableEvTime(0.f, 999.f);
         continue;
@@ -365,7 +365,7 @@ struct tofEventTime {
   using ResponseImplementationEvTime = o2::pid::tof::ExpTimes<Run3TrksWtof::iterator, pid>;
   void processRun3(Run3TrksWtof const& tracks,
                    aod::FT0s const&,
-                   EvTimeCollisionsFT0 const&,
+                   EvTimeCollisionsFT0 const& collisions,
                    aod::BCsWithTimestamps const& bcs)
   {
     if (!enableTableTOFEvTime) {
@@ -399,9 +399,9 @@ struct tofEventTime {
     LOG(debug) << "Running on " << CollisionSystemType::getCollisionSystemName(tofResponse->cfgCollisionType()) << " mComputeEvTimeWithTOF " << mComputeEvTimeWithTOF.value << " mComputeEvTimeWithFT0 " << mComputeEvTimeWithFT0.value;
 
     if (mComputeEvTimeWithTOF == 1 && mComputeEvTimeWithFT0 == 1) {
-      int lastCollisionId = -1;                                                                                       // Last collision ID analysed
-      for (auto const& t : tracks) {                                                                                  // Loop on collisions
-        if (!t.has_collision() || ((sel8TOFEvTime.value == true) && !t.collision_as<EvTimeCollisionsFT0>().sel8())) { // Track was not assigned, cannot compute event time or event did not pass the event selection
+      int lastCollisionId = -1;                                                                                                                 // Last collision ID analysed
+      for (auto const& t : tracks) {                                                                                                            // Loop on collisions
+        if (!t.has_collision() || collisions.size() == 0 || ((sel8TOFEvTime.value == true) && !t.collision_as<EvTimeCollisionsFT0>().sel8())) { // Track was not assigned, cannot compute event time or event did not pass the event selection
           tableFlags(0);
           tableEvTime(0.f, 999.f);
           if (enableTableEvTimeTOFOnly) {
@@ -475,9 +475,9 @@ struct tofEventTime {
         }
       }
     } else if (mComputeEvTimeWithTOF == 1 && mComputeEvTimeWithFT0 == 0) {
-      int lastCollisionId = -1;                                                                                    // Last collision ID analysed
-      for (auto const& t : tracks) {                                                                               // Loop on collisions
-        if (!t.has_collision() || ((sel8TOFEvTime.value == true) && !t.collision_as<EvTimeCollisions>().sel8())) { // Track was not assigned, cannot compute event time or event did not pass the event selection
+      int lastCollisionId = -1;                                                                                                              // Last collision ID analysed
+      for (auto const& t : tracks) {                                                                                                         // Loop on collisions
+        if (!t.has_collision() || collisions.size() == 0 || ((sel8TOFEvTime.value == true) && !t.collision_as<EvTimeCollisions>().sel8())) { // Track was not assigned, cannot compute event time or event did not pass the event selection
           tableFlags(0);
           tableEvTime(0.f, 999.f);
           if (enableTableEvTimeTOFOnly) {
@@ -522,7 +522,7 @@ struct tofEventTime {
         if (enableTableEvTimeTOFOnly) {
           tableEvTimeTOFOnly((uint8_t)0, 0.f, 0.f, -1);
         }
-        if (!t.has_collision()) { // Track was not assigned, cannot compute event time
+        if (!t.has_collision() || collisions.size() == 0) { // Track was not assigned, cannot compute event time
           tableFlags(0);
           tableEvTime(0.f, 999.f);
           continue;
@@ -881,7 +881,7 @@ struct tofPidMerge {
   template <o2::track::PID::ID pid>
   using ResponseImplementation = o2::pid::tof::ExpTimes<Run3TrksWtofWevTime::iterator, pid>;
   void processRun3(Run3TrksWtofWevTime const& tracks,
-                   aod::Collisions const&,
+                   aod::Collisions const& collisions,
                    aod::BCsWithTimestamps const& bcs)
   {
     constexpr auto responseEl = ResponseImplementation<PID::Electron>();
@@ -906,8 +906,8 @@ struct tofPidMerge {
 
     float resolution = 1.f; // Last resolution assigned
     float nsigma = 0;
-    for (auto const& trk : tracks) { // Loop on all tracks
-      if (!trk.has_collision()) {    // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
+    for (auto const& trk : tracks) {                        // Loop on all tracks
+      if (!trk.has_collision() || collisions.size() == 0) { // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
         for (auto const& pidId : mEnabledParticles) {
           makeTableEmpty(pidId, false);
         }
@@ -1043,7 +1043,7 @@ struct tofPidMerge {
   template <o2::track::PID::ID pid>
   using ResponseImplementationRun2 = o2::pid::tof::ExpTimes<Run2TrksWtofWevTime::iterator, pid>;
   void processRun2(Run2TrksWtofWevTime const& tracks,
-                   aod::Collisions const&,
+                   aod::Collisions const& collisions,
                    aod::BCsWithTimestamps const& bcs)
   {
     constexpr auto responseEl = ResponseImplementationRun2<PID::Electron>();
@@ -1068,8 +1068,8 @@ struct tofPidMerge {
 
     float resolution = 1.f; // Last resolution assigned
     float nsigma = 0;
-    for (auto const& trk : tracks) { // Loop on all tracks
-      if (!trk.has_collision()) {    // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
+    for (auto const& trk : tracks) {                        // Loop on all tracks
+      if (!trk.has_collision() || collisions.size() == 0) { // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
         for (auto const& pidId : mEnabledParticles) {
           makeTableEmpty(pidId, false);
         }

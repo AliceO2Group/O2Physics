@@ -163,7 +163,7 @@ class MlResponse
   {
     setAvailableInputFeatures();
     for (const auto& inputFeature : cfgInputFeatures) {
-      if (mAvailableInputFeatures.count(inputFeature)) {
+      if (mAvailableInputFeatures.contains(inputFeature)) {
         mCachedIndices.emplace_back(mAvailableInputFeatures[inputFeature]);
       } else {
         LOG(fatal) << "Input feature " << inputFeature << " not available! Please check your configurables.";
@@ -180,6 +180,14 @@ class MlResponse
   {
     if (nModel < 0 || static_cast<std::size_t>(nModel) >= mModels.size()) {
       LOG(fatal) << "Model index " << nModel << " is out of range! The number of initialised models is " << mModels.size() << ". Please check your configurables.";
+    }
+
+    const int numInputNodes = mModels[nModel].getNumInputNodes();
+    const int numInputFeatures = static_cast<int>(input.size());
+
+    // Check that the number of input nodes in the model is equal to the number of input features, except for the case where the model input is dynamic (numInputNodes == -1)
+    if (numInputNodes != numInputFeatures && numInputNodes >= 0) {
+      LOG(fatal) << "Number of input nodes in the model " << mPaths[nModel] << " is different from the number of input features to be tested (" << numInputNodes << " vs " << numInputFeatures << ")";
     }
 
     TypeOutputScore* outputPtr = mModels[nModel].template evalModel<TypeOutputScore>(input);
@@ -271,18 +279,18 @@ class MlResponse
   std::vector<o2::ml::OnnxModel> mModels;                 // OnnxModel objects, one for each bin
   uint8_t mNModels = 1;                                   // number of bins
   uint8_t mNClasses = 3;                                  // number of model classes
-  std::vector<double> mBinsLimits = {};                   // bin limits of the variable (e.g. pT) used to select which model to use
-  std::vector<double> mBinsLimitsVar2 = {};               // bin limits of a second variable (e.g. multiplicity) used to select which model to use (not used in this base class)
-  std::vector<std::string> mPaths = {""};                 // paths to the models, one for each bin
-  std::vector<int> mCutDir = {};                          // direction of the cuts on the model scores (no cut is also supported)
-  o2::framework::LabeledArray<double> mCuts = {};         // array of cut values to apply on the model scores
+  std::vector<double> mBinsLimits;                        // bin limits of the variable (e.g. pT) used to select which model to use
+  std::vector<double> mBinsLimitsVar2;                    // bin limits of a second variable (e.g. multiplicity) used to select which model to use (not used in this base class)
+  std::vector<std::string> mPaths;                        // paths to the models, one for each bin
+  std::vector<int> mCutDir;                               // direction of the cuts on the model scores (no cut is also supported)
+  o2::framework::LabeledArray<double> mCuts;              // array of cut values to apply on the model scores
   std::map<std::string, uint8_t> mAvailableInputFeatures; // map of available input features
   std::vector<uint8_t> mCachedIndices;                    // vector of index correspondance between configurables and available input features
   uint8_t mNVar1Bins = 1;                                 // number of bins of the first variable (e.g. pT) used to select which model to use
   uint8_t mNVar2Bins = 1;                                 // number of bins of the second variable (e.g. multiplicity) used to select which model to use
   bool mUse2DBinning = false;                             // switch to enable/disable 2D binning
 
-  virtual void setAvailableInputFeatures() { return; } // method to fill the map of available input features
+  virtual void setAvailableInputFeatures() {} // method to fill the map of available input features
 
  private:
   /// Finds matching bin in mBinsLimits

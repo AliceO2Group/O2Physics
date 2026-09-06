@@ -43,11 +43,13 @@ DECLARE_SOA_COLUMN(Eta, eta, float);
 namespace collision_extra_corr
 {
 DECLARE_SOA_COLUMN(SelEv, selEv, bool);
+DECLARE_SOA_COLUMN(ThirdDecimalTruePosZ, thirdDecimalTruePosZ, int);
 DECLARE_SOA_COLUMN(TrigEv, trigEv, bool);
+DECLARE_SOA_COLUMN(PtMax, ptMax, float);
 DECLARE_SOA_COLUMN(NGlobalTracks, nGlobalTracks, int);
 } // namespace collision_extra_corr
 DECLARE_SOA_TABLE(CollisionsExtraCorr, "AOD", "COLLISIONSEXTRACORR",
-                  collision_extra_corr::SelEv, collision_extra_corr::TrigEv, collision_extra_corr::NGlobalTracks);
+                  collision_extra_corr::SelEv, collision_extra_corr::ThirdDecimalTruePosZ, collision_extra_corr::TrigEv, collision_extra_corr::PtMax, collision_extra_corr::NGlobalTracks);
 
 // trigger
 namespace trigger
@@ -83,12 +85,12 @@ using Pipm = Pipms::iterator;
 namespace photon_pcm
 {
 DECLARE_SOA_INDEX_COLUMN_FULL(V0PhotonKF, v0PhotonKF, int, V0PhotonsKF, "");
-DECLARE_SOA_COLUMN(PosTrackId, posTrackId, int);
-DECLARE_SOA_COLUMN(NegTrackId, negTrackId, int);
+DECLARE_SOA_INDEX_COLUMN_FULL(PosJetTrack, posJetTrack, int, JetTracks, "_pos");
+DECLARE_SOA_INDEX_COLUMN_FULL(NegJetTrack, negJetTrack, int, JetTracks, "_neg");
 } // namespace photon_pcm
 DECLARE_SOA_TABLE(PhotonPCMs, "AOD", "PHOTONPCMS",
                   o2::soa::Index<>, corr_particle::JetCollisionId, photon_pcm::V0PhotonKFId,
-                  photon_pcm::PosTrackId, photon_pcm::NegTrackId,
+                  photon_pcm::PosJetTrackId, photon_pcm::NegJetTrackId,
                   corr_particle::Pt, corr_particle::Phi, corr_particle::Eta);
 using PhotonPCM = PhotonPCMs::iterator;
 
@@ -97,15 +99,15 @@ namespace photon_pcm_pair
 {
 DECLARE_SOA_INDEX_COLUMN_FULL(V0PhotonKF1, v0PhotonKF1, int, V0PhotonsKF, "_1");
 DECLARE_SOA_INDEX_COLUMN_FULL(V0PhotonKF2, v0PhotonKF2, int, V0PhotonsKF, "_2");
-DECLARE_SOA_COLUMN(PosTrack1Id, posTrack1Id, int);
-DECLARE_SOA_COLUMN(NegTrack1Id, negTrack1Id, int);
-DECLARE_SOA_COLUMN(PosTrack2Id, posTrack2Id, int);
-DECLARE_SOA_COLUMN(NegTrack2Id, negTrack2Id, int);
+DECLARE_SOA_INDEX_COLUMN_FULL(PosJetTrack1, posJetTrack1, int, JetTracks, "_pos1");
+DECLARE_SOA_INDEX_COLUMN_FULL(NegJetTrack1, negJetTrack1, int, JetTracks, "_neg1");
+DECLARE_SOA_INDEX_COLUMN_FULL(PosJetTrack2, posJetTrack2, int, JetTracks, "_pos2");
+DECLARE_SOA_INDEX_COLUMN_FULL(NegJetTrack2, negJetTrack2, int, JetTracks, "_neg2");
 DECLARE_SOA_COLUMN(Mgg, mgg, float);
 } // namespace photon_pcm_pair
 DECLARE_SOA_TABLE(PhotonPCMPairs, "AOD", "PHOTONPCMPAIRS",
                   o2::soa::Index<>, corr_particle::JetCollisionId, photon_pcm_pair::V0PhotonKF1Id, photon_pcm_pair::V0PhotonKF2Id,
-                  photon_pcm_pair::PosTrack1Id, photon_pcm_pair::NegTrack1Id, photon_pcm_pair::PosTrack2Id, photon_pcm_pair::NegTrack2Id,
+                  photon_pcm_pair::PosJetTrack1Id, photon_pcm_pair::NegJetTrack1Id, photon_pcm_pair::PosJetTrack2Id, photon_pcm_pair::NegJetTrack2Id,
                   corr_particle::Pt, corr_particle::Phi, corr_particle::Eta, photon_pcm_pair::Mgg);
 using PhotonPCMPair = PhotonPCMPairs::iterator;
 
@@ -114,11 +116,13 @@ using PhotonPCMPair = PhotonPCMPairs::iterator;
 // mcCollision extension
 namespace mc_collision_extra_corr
 {
+DECLARE_SOA_COLUMN(ThirdDecimalTruePosZ, thirdDecimalTruePosZ, int);
 DECLARE_SOA_COLUMN(TrigEv, trigEv, bool);
+DECLARE_SOA_COLUMN(PtMax, ptMax, float);
 DECLARE_SOA_COLUMN(NChargedInEtaRange, nChargedInEtaRange, int);
 } // namespace mc_collision_extra_corr
 DECLARE_SOA_TABLE(McCollisionsExtraCorr, "AOD", "MCCOLLISIONSEXTRACORR",
-                  mc_collision_extra_corr::TrigEv, mc_collision_extra_corr::NChargedInEtaRange);
+                  mc_collision_extra_corr::ThirdDecimalTruePosZ, mc_collision_extra_corr::TrigEv, mc_collision_extra_corr::PtMax, mc_collision_extra_corr::NChargedInEtaRange);
 
 // trigger
 namespace trigger_particle

@@ -124,11 +124,11 @@ T getCompatibleBCs(aod::AmbiguousMFTTrack const& atrack, aod::Collision const& c
   }
 
   if (bcIt != bcs.end() && maxBCId >= minBCId) {
-    T slice{{bcs.asArrowTable()->Slice(minBCId, maxBCId - minBCId + 1)}, (uint64_t)minBCId};
+    auto slice = bcs.rawSlice(minBCId, maxBCId - minBCId + 1);
     bcs.copyIndexBindings(slice);
     return slice;
   } else {
-    T slice{{bcs.asArrowTable()->Slice(minBCId, maxBCId - minBCId)}, (uint64_t)minBCId};
+    auto slice = bcs.rawSlice(minBCId, maxBCId - minBCId);
     bcs.copyIndexBindings(slice);
     return slice;
   }
@@ -141,17 +141,9 @@ T getCompatibleBCs(aod::MFTTracks::iterator const& track, aod::Collision const& 
   // define firstBC and lastBC (globalBC of beginning and end of the range, when no shift is applied)
 
   auto bcIt = collOrig.bc_as<T>();
-  // auto timstp = bcIt.timestamp();
 
   int64_t firstBC = bcIt.globalBC() + (track.trackTime() - track.trackTimeRes()) / o2::constants::lhc::LHCBunchSpacingNS;
   int64_t lastBC = firstBC + 2 * track.trackTimeRes() / o2::constants::lhc::LHCBunchSpacingNS + 1; // to have a delta = 198 BC
-
-  // printf(">>>>>>>>>>>>>>>>>>>>>>>>>>> last-first %lld\n", lastBC-firstBC);
-
-  // int collTimeResInBC = collOrig.collisionTimeRes()/o2::constants::lhc::LHCBunchSpacingNS;
-
-  // int64_t collFirstBC = bcIt.globalBC() + (collOrig.collisionTime() - collOrig.collisionTimeRes())/o2::constants::lhc::LHCBunchSpacingNS;
-  // int64_t collLastBC = collFirstBC + 2*collOrig.collisionTimeRes()/o2::constants::lhc::LHCBunchSpacingNS +1;
 
   int64_t minBCId = bcIt.globalIndex();
 
@@ -195,9 +187,7 @@ T getCompatibleBCs(aod::MFTTracks::iterator const& track, aod::Collision const& 
       {
         // means that the slice of compatible BCs is empty
 
-        T slice{{bcs.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
-        // bcs.copyIndexBindings(slice); REMOVED IT BECAUSE I DON'T KNOW WHAT IT DOES HERE
-        return slice; // returns an empty slice
+        return bcs.emptySlice();
       }
     }
   }
@@ -209,9 +199,7 @@ T getCompatibleBCs(aod::MFTTracks::iterator const& track, aod::Collision const& 
     if (bcIt != bcs.end() && ((int64_t)bcIt.globalBC() > (int64_t)lastBC + deltaBC)) {
       // check the following element
 
-      T slice{{bcs.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
-      // bcs.copyIndexBindings(slice); REMOVED IT BECAUSE I DON'T KNOW WHAT IT DOES HERE
-      return slice; // returns an empty slice
+      return bcs.emptySlice();
     }
   }
 
@@ -222,15 +210,10 @@ T getCompatibleBCs(aod::MFTTracks::iterator const& track, aod::Collision const& 
   }
 
   if (maxBCId < minBCId) {
-    if (bcIt == bcs.end()) {
-      printf("at the end of the bcs iterator %d\n", 1);
-    }
-    T slice{{bcs.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
-    // bcs.copyIndexBindings(slice); REMOVED IT BECAUSE I DON'T KNOW WHAT IT DOES HERE
-    return slice; // returns an empty slice
+    return bcs.emptySlice();
   }
 
-  T slice{{bcs.asArrowTable()->Slice(minBCId, maxBCId - minBCId + 1)}, (uint64_t)minBCId};
+  auto slice = bcs.rawSlice(minBCId, maxBCId - minBCId + 1);
   bcs.copyIndexBindings(slice);
   return slice;
 }

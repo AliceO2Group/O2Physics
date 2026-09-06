@@ -21,6 +21,7 @@
 
 #include "Common/Core/RecoDecay.h"
 
+#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
 #include <FT0Base/Geometry.h> // o2::ft0::Geometry
 #include <Framework/ASoA.h>
@@ -35,9 +36,10 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TH3.h>
 #include <TRandom3.h>
-#include <TString.h>
 
+#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -264,7 +266,7 @@ struct FlowLongRangeCorrUpc {
   }
 
   template <typename TTrack>
-  bool trackSelected(TTrack track)
+  bool trackSelected(const TTrack& track)
   {
     if (track.pt() < cfgPtCutMin || track.pt() > cfgPtCutMax) {
       return false;
@@ -332,7 +334,7 @@ struct FlowLongRangeCorrUpc {
   }
 
   template <typename TTracks>
-  double trackCounter(TTracks tracks, float posZ)
+  double trackCounter(const TTracks& tracks, float posZ)
   {
     float weff1 = 1;
     double nTracksRaw = 0.;
@@ -355,7 +357,7 @@ struct FlowLongRangeCorrUpc {
   }
 
   template <typename TCollision, typename TTracks>
-  void fillYield(TCollision collision, TTracks tracks) // function to fill the yield and etaphi histograms.
+  void fillYield(const TCollision& collision, const TTracks& tracks) // function to fill the yield and etaphi histograms.
   {
     float weff1 = 1;
     float vtxz = collision.posZ();
@@ -383,7 +385,7 @@ struct FlowLongRangeCorrUpc {
   }
 
   template <CorrelationContainer::CFStep step, typename TTracks>
-  void fillCorrelationsTPCFT0(TTracks tracks1, aod::UDCollisionFITBits const& fitBits, float posZ, int system, int corType) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
+  void fillCorrelationsTPCFT0(const TTracks& tracks1, aod::UDCollisionFITBits const& fitBits, float posZ, int system, int corType) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
     if (fitBits.size() > 1) {
       LOGF(fatal, "fillCorrelationsTPCFT0(): fitBits.size() = %d (expected 0 or 1)", fitBits.size());

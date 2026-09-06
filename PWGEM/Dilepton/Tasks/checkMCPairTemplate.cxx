@@ -17,6 +17,7 @@
 #include "PWGEM/Dilepton/Core/DielectronCut.h"
 #include "PWGEM/Dilepton/Core/DimuonCut.h"
 #include "PWGEM/Dilepton/Core/EMEventCut.h"
+#include "PWGEM/Dilepton/DataModel/EvSelFlags.h"
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 #include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
 #include "PWGEM/Dilepton/Utils/EventHistograms.h"
@@ -454,6 +455,7 @@ struct checkMCPairTemplate {
     fRegistry.addClone("Generated/ccbar/c2l_c2l/", "Generated/bbbar/b2c2l_b2l_diffb/"); // LS
     fRegistry.addClone("Generated/ccbar/c2l_c2l/", "Generated/bbbar/b2cc2l_b2c2l/");
     fRegistry.addClone("Generated/ccbar/c2l_c2l/", "Generated/bbbar/b2cc2l_b2cc2l/");
+    fRegistry.addClone("Generated/ccbar/c2l_c2l/", "Generated/bbbar/b2cc2ll/");
 
     // for charmed hadrons // create 28 combinations
     static constexpr std::string_view charmed_mesons[] = {"Dplus", "D0", "Dsplus"}; // 411, 421, 431
@@ -848,7 +850,7 @@ struct checkMCPairTemplate {
     fDielectronCut.ApplyPhiV(dielectroncuts.cfg_apply_phiv);
     fDielectronCut.SetMindEtadPhi(dielectroncuts.cfg_apply_detadphi, false, dielectroncuts.cfg_min_deta, dielectroncuts.cfg_min_dphi);
     fDielectronCut.SetPairOpAng(dielectroncuts.cfg_min_opang, dielectroncuts.cfg_max_opang);
-    fDielectronCut.SetRequireDifferentSides(dielectroncuts.cfg_require_diff_sides);
+    // fDielectronCut.SetRequireDifferentSides(dielectroncuts.cfg_require_diff_sides);
 
     // for track
     fDielectronCut.SetTrackPtRange(dielectroncuts.cfg_min_pt_track, dielectroncuts.cfg_max_pt_track);
@@ -1998,7 +2000,7 @@ struct checkMCPairTemplate {
           return false;
         }
       }
-      if (!cut.IsSelectedPair(t1, t2, d_bz, 0.0)) {
+      if (!cut.IsSelectedPair(t1, t2)) {
         return false;
       }
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
@@ -2518,6 +2520,9 @@ struct checkMCPairTemplate {
         case static_cast<int>(EM_HFeeType::kBCCe_BCCe):
           fillGenHistograms<21>(sign1, sign2, mp1.pdgCode(), mp2.pdgCode(), v12.M(), v12.Pt(), weight); // b2cc2l_b2cc2l
           break;
+        case static_cast<int>(EM_HFeeType::kBCCee):
+          fillGenHistograms<22>(sign1, sign2, mp1.pdgCode(), mp2.pdgCode(), v12.M(), v12.Pt(), weight); // b2cc2ll
+          break;
         default:
           break;
       }
@@ -2753,7 +2758,7 @@ struct checkMCPairTemplate {
     }
 
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-      if (!cut.template IsSelectedPair<is_wo_acc>(t1, t2, d_bz, 0.0)) {
+      if (!cut.template IsSelectedPair<is_wo_acc>(t1, t2)) {
         return false;
       }
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {

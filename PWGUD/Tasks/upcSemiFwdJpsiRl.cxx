@@ -32,8 +32,9 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include <Math/Vector4D.h>
-#include <Math/VectorUtil.h>
+#include <Math/GenVector/VectorUtil.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 #include <TRandom3.h>
 
 #include <cmath>
@@ -336,7 +337,7 @@ struct UpcSemiFwdJpsiRl {
   }
 
   // azimuth anisotropy phi
-  void computePhiAnis(LorentzVec p1, LorentzVec p2, int sign1, float& phiAverage, float& phiCharge)
+  void computePhiAnis(const LorentzVec& p1, const LorentzVec& p2, int sign1, float& phiAverage, float& phiCharge)
   {
     auto tSum = p1 + p2;
     float halfUnity = 0.5;

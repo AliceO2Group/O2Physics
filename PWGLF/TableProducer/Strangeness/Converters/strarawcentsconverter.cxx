@@ -26,12 +26,14 @@ struct strarawcentsconverter {
 
   void process000to001(aod::StraRawCents_000 const& straRawCents_000)
   {
+    straRawCents_001.reserve(straRawCents_000.size());
     for (auto& values : straRawCents_000) {
       straRawCents_001(values.multFT0A(), values.multFT0C(), values.multFV0A(), values.multNTracksPVeta1(), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     }
   }
   void process002to003(aod::StraRawCents_002 const& straRawCents_002)
   {
+    straRawCents_003.reserve(straRawCents_002.size());
     for (auto& values : straRawCents_002) {
       straRawCents_003(values.multFT0A(),
                        values.multFT0C(),

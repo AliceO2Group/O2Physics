@@ -331,7 +331,7 @@ struct strangenessderivedbinnedinfo {
     histos.print();
   }
 
-  template <typename TCollision> // TCollision should be of the type: soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>::iterator or so
+  template <typename TCollision> // TCollision should be of the type: soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps>::iterator or so
   void initCCDB(TCollision const& collision)
   {
     if (mRunNumber == collision.runNumber()) {
@@ -769,7 +769,7 @@ struct strangenessderivedbinnedinfo {
 
   // ______________________________________________________
   // Real data processing - no MC subscription
-  void process(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>::iterator const& collision, V0Candidates const& fullV0s, CascadeCandidates const& fullCascades, DauTracks const&)
+  void process(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps>::iterator const& collision, V0Candidates const& fullV0s, CascadeCandidates const& fullCascades, DauTracks const&)
   {
     // Fire up CCDB
     if (cfgSkimmedProcessing) {

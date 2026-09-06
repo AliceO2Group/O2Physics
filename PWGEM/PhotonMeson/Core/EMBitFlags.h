@@ -33,11 +33,11 @@ class EMBitFlags
   explicit EMBitFlags(std::size_t nBits = 0);
 
   /// \brief get number of stored bits
-  std::size_t size() const;
+  [[nodiscard]] std::size_t size() const;
 
   /// \brief check bit i
   /// \param i index of bit that should be checked
-  bool test(std::size_t i) const;
+  [[nodiscard]] bool test(std::size_t i) const;
 
   /// \brief set bit i
   /// \param i index of bit which value should be set

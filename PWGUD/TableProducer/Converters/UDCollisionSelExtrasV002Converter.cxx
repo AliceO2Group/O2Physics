@@ -41,6 +41,7 @@ struct UDCollisionSelExtrasV002Converter {
 
   void processV000ToV002(o2::aod::UDCollisionSelExtras_000 const& collisions)
   {
+    udCollisionSelExtras_002.reserve(collisions.size());
 
     for (const auto& collision : collisions) {
 
@@ -65,6 +66,7 @@ struct UDCollisionSelExtrasV002Converter {
 
   void processV001ToV002(o2::aod::UDCollisionSelExtras_001 const& collisions)
   {
+    udCollisionSelExtras_002.reserve(collisions.size());
 
     for (const auto& collision : collisions) {
 

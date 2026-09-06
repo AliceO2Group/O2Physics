@@ -31,6 +31,7 @@ struct eventCentConverter1 {
 
   void process(aod::EMEventsCent_000 const& collisions)
   {
+    cent_001.reserve(collisions.size());
     for (const auto& collision : collisions) {
       cent_001(
         collision.centFT0M(),

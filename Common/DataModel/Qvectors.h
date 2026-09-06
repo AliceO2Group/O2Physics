@@ -201,7 +201,7 @@ DECLARE_SOA_COLUMN(EseRedQFV0A, eseRedQFV0A, float);
 } // namespace ese_qvec
 
 DECLARE_SOA_TABLE(EseQvectors, "AOD", "ESEQVECTORDEVS", //! Table with all Qvectors.
-                  qvec::Cent, ese_qvec::IsCalibrated, ese_qvec::EseQvecRe, ese_qvec::EseQvecIm, ese_qvec::EseQvecAmp);
+                  qvec::Cent, ese_qvec::IsCalibrated, ese_qvec::EseQvecRe, ese_qvec::EseQvecIm, qvec::QvecAmp);
 using Qvector = Qvectors::iterator;
 
 DECLARE_SOA_TABLE(EseQvecFT0Cs, "AOD", "ESEQVECFT0C", ese_qvec::IsCalibrated, ese_qvec::EseQvecFT0CRe, ese_qvec::EseQvecFT0CIm, qvec::SumAmplFT0C);

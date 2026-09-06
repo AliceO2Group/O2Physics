@@ -37,11 +37,10 @@
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
+#include <GPU/GPUROOTCartesianFwd.h>
 #include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/TrackParametrizationWithError.h>
 #include <ReconstructionDataFormats/Vertex.h>
-
-#include <GPUROOTCartesianFwd.h>
 
 #include <array>
 #include <cstddef>

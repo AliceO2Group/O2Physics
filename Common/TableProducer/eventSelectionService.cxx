@@ -9,15 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file eventSelectionTester.cxx
+/// \file eventSelectionService.cxx
 /// \brief unified, self-configuring event selection task
 /// \author ALICE
-
-//===============================================================
-//
-// Unified, self-configuring event selection task
-//
-//===============================================================
 
 #include "Common/Core/MetadataHelper.h"
 #include "Common/DataModel/EventSelection.h"
@@ -50,14 +44,14 @@ using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Run3MatchedToBCSparse>;
 using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra>;
 using FullTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
 
-struct eventselectionRun2 {
-  o2::common::timestamp::timestampConfigurables timestampConfigurables;
+struct EventselectionRun2 { // o2-linter: disable=name/workflow-file (exception due to metadata-driven topology)
+  o2::common::timestamp::TimestampConfigurables timestampConfigurables;
   o2::common::timestamp::TimestampModule timestampMod;
 
-  o2::common::eventselection::bcselConfigurables bcselOpts;
+  o2::common::eventselection::BcselConfigurables bcselOpts;
   o2::common::eventselection::BcSelectionModule bcselmodule;
 
-  o2::common::eventselection::evselConfigurables evselOpts;
+  o2::common::eventselection::EvselConfigurables evselOpts;
   o2::common::eventselection::EventSelectionModule evselmodule;
 
   Produces<aod::Timestamps> timestampTable; /// Table with SOR timestamps produced by the task
@@ -75,7 +69,7 @@ struct eventselectionRun2 {
 
   // buffering intermediate results for passing
   std::vector<uint64_t> timestamps;
-  std::vector<o2::common::eventselection::bcselEntry> bcselsbuffer;
+  std::vector<o2::common::eventselection::BcselEntry> bcselsbuffer;
 
   // auxiliary
   Partition<FullTracks> tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
@@ -109,17 +103,17 @@ struct eventselectionRun2 {
   }
 };
 
-struct eventselectionRun3 {
-  o2::common::timestamp::timestampConfigurables timestampConfigurables;
+struct EventselectionRun3 { // o2-linter: disable=name/workflow-file (exception due to metadata-driven topology)
+  o2::common::timestamp::TimestampConfigurables timestampConfigurables;
   o2::common::timestamp::TimestampModule timestampMod;
 
-  o2::common::eventselection::bcselConfigurables bcselOpts;
+  o2::common::eventselection::BcselConfigurables bcselOpts;
   o2::common::eventselection::BcSelectionModule bcselmodule;
 
-  o2::common::eventselection::evselConfigurables evselOpts;
+  o2::common::eventselection::EvselConfigurables evselOpts;
   o2::common::eventselection::EventSelectionModule evselmodule;
 
-  o2::common::eventselection::lumiConfigurables lumiOpts;
+  o2::common::eventselection::LumiConfigurables lumiOpts;
   o2::common::eventselection::LumiModule lumimodule;
 
   Produces<aod::Timestamps> timestampTable; /// Table with SOR timestamps produced by the task
@@ -138,7 +132,7 @@ struct eventselectionRun3 {
   // the best: have readable cursors
   // this: a stopgap solution to avoid spawning yet another device
   std::vector<uint64_t> timestamps;
-  std::vector<o2::common::eventselection::bcselEntry> bcselsbuffer;
+  std::vector<o2::common::eventselection::BcselEntry> bcselsbuffer;
 
   // auxiliary
   Partition<FullTracksIU> pvTracks = ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor));
@@ -173,7 +167,7 @@ struct eventselectionRun3 {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) // o2-linter: disable=o2-workflow-options (metadata-driven topology selection)
 {
   // Parse the metadata for later too
   metadataInfo.initMetadata(cfgc);
@@ -191,18 +185,18 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     LOGF(warn, "Metadata info missing or incomplete. Make sure --aod-file is provided at the end of the last workflow and that the AO2D has metadata stored.");
     LOGF(warn, "Initializing with Run 3 data as default. Please note you will not be able to change settings manually.");
     LOGF(warn, "You should instead make sure the metadata is read in correctly.");
-    return WorkflowSpec{adaptAnalysisTask<eventselectionRun3>(cfgc)};
+    return WorkflowSpec{adaptAnalysisTask<EventselectionRun3>(cfgc)};
   } else {
     LOGF(info, "Metadata successfully read in. Is this Run 3? %i - will self-configure.", isRun3);
     if (isRun3) {
-      return WorkflowSpec{adaptAnalysisTask<eventselectionRun3>(cfgc)};
+      return WorkflowSpec{adaptAnalysisTask<EventselectionRun3>(cfgc)};
     } else {
       LOGF(warn, "******************************************************************");
       LOGF(warn, " Event selection service self-configuring for Run 2.");
       LOGF(warn, " WARNING: THIS HAS NOT BEEN VALIDATED YET, USE WITH CAUTION");
       LOGF(warn, " If this fails, please use event-selection-service-run2 instead.");
       LOGF(warn, "******************************************************************");
-      return WorkflowSpec{adaptAnalysisTask<eventselectionRun2>(cfgc)};
+      return WorkflowSpec{adaptAnalysisTask<EventselectionRun2>(cfgc)};
     }
   }
   throw std::runtime_error("Unsupported run type / problem when configuring event selection!");

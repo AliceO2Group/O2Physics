@@ -24,6 +24,7 @@ struct straevselsconverter2rawcents3 {
 
   void process(aod::StraEvSels_003 const& straEvSels_003)
   {
+    straRawCents_004.reserve(straEvSels_003.size());
     for (auto& values : straEvSels_003) {
       straRawCents_004(values.multFT0A(),
                        values.multFT0C(),

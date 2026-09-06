@@ -27,6 +27,7 @@ struct caloLabelConverter {
   {
     std::vector<float> amplitude = {0};
     std::vector<int32_t> particleId = {0};
+    McCaloLabels_001.reserve(mccalolabelTable.size());
     for (auto& mccalolabel : mccalolabelTable) {
       particleId[0] = mccalolabel.mcParticleId();
       // Repopulate new table

@@ -69,6 +69,10 @@ struct HfCandidateSelectorDstarToD0Pi {
   Configurable<std::vector<double>> binsPtDstar{"binsPtDstar", std::vector<double>{hf_cuts_dstar_to_d0_pi::vecBinsPt}, "pT bin limits for Dstar"};
   Configurable<LabeledArray<double>> cutsDstar{"cutsDstar", {hf_cuts_dstar_to_d0_pi::Cuts[0], hf_cuts_dstar_to_d0_pi::NBinsPt, hf_cuts_dstar_to_d0_pi::NCutVars, hf_cuts_dstar_to_d0_pi::labelsPt, hf_cuts_dstar_to_d0_pi::labelsCutVar}, "Dstar candidate selection per pT bin"};
 
+  // Single-track DCA selections
+  Configurable<LabeledArray<double>> cutsSingleTrack{"cutsSingleTrack", {hf_cuts_single_track::CutsTrack[0], hf_cuts_single_track::NBinsPtTrack, hf_cuts_single_track::NCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections"};
+  Configurable<std::vector<double>> binsPtTrack{"binsPtTrack", std::vector<double>{hf_cuts_single_track::vecBinsPtTrack}, "track pT bin limits for DCA pT-dependent cut"};
+
   // common Configurable
   // TPC PID
   Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Minimum track pT for TPC PID"};
@@ -168,6 +172,17 @@ struct HfCandidateSelectorDstarToD0Pi {
     }
   }
 
+  /// Single-track cuts
+  /// \param candidate is the Dstar candidate
+  /// \return true if all the prongs pass the selections
+  template <typename T1>
+  bool isSelectedCandidateProngDca(const T1& candidate)
+  {
+    // Applied only on D0 tracks, to mimic the skimming selections
+    return (isSelectedTrackDca(binsPtTrack, cutsSingleTrack, candidate.ptProng0(), candidate.impactParameter0(), candidate.impactParameterZ0()) &&
+            isSelectedTrackDca(binsPtTrack, cutsSingleTrack, candidate.ptProng1(), candidate.impactParameter1(), candidate.impactParameterZ1()));
+  }
+
   /// Conjugate-independent topological cuts on D0
   /// @brief Topological selection on D0 candidate from Dstar
   /// @tparam T table iterator type of the candidate
@@ -179,6 +194,10 @@ struct HfCandidateSelectorDstarToD0Pi {
     auto candpT = candidate.ptD0();
     auto binPt = findBin(binsPtD0, candpT);
     if (binPt == -1) {
+      return false;
+    }
+
+    if (!isSelectedCandidateProngDca(candidate)) {
       return false;
     }
 
@@ -357,7 +376,6 @@ struct HfCandidateSelectorDstarToD0Pi {
   void process(TracksSel const&,
                HfFullDstarCandidate const& rowsDstarCand)
   {
-    // LOG(info) << "selector called";
     for (const auto& candDstar : rowsDstarCand) {
       // final selection flag: false - rejected, true - accepted
       bool statusDstar = false, statusD0Flag = false, statusTopol = false, statusCand = false, statusPID = false;

@@ -224,7 +224,7 @@ struct SGCandProducer {
 
   // function to process reconstructed data
   template <typename TCol>
-  void processReco(std::string histdir, TCol const& collision, BCs const& bcs,
+  void processReco(const std::string& histdir, TCol const& collision, BCs const& bcs,
                    TCs const& tracks, FWs const& fwdtracks,
                    aod::FV0As const& fv0as, aod::FT0s const& ft0s, aod::FDDs const& fdds)
   {

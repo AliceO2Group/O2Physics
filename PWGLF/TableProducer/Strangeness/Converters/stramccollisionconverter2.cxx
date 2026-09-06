@@ -32,6 +32,7 @@ struct stramccollisionconverter2 {
 
   void process(aod::StraMCCollisions_001 const& straMCcoll)
   {
+    straMCCollisions_002.reserve(straMCcoll.size());
     for (auto& mccollision : straMCcoll) {
       straMCCollisions_002(mccollision.posX(), mccollision.posY(), mccollision.posZ(),
                            mccollision.impactParameter(), mccollision.eventPlaneAngle(), 0);

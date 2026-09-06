@@ -181,7 +181,7 @@ o2physics_add_dpl_workflow(strangenessderivedbinnedinfo
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(lambdatwopartpolarization
+o2physics_add_dpl_workflow(lambda-two-part-polarization
     SOURCES lambdaTwoPartPolarization.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
@@ -199,4 +199,9 @@ o2physics_add_dpl_workflow(strange-casc-track
 o2physics_add_dpl_workflow(zdccalderived
     SOURCES zdccalderived.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(forwardlambdakzeroanalysis
+    SOURCES forwardlambdakzeroanalysis.cxx
+    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2::GlobalTracking O2::DCAFitter
     COMPONENT_NAME Analysis)

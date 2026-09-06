@@ -136,6 +136,7 @@ struct Kstar0analysis {
     Configurable<float> pidnSigmaPreSelectionCut{"pidnSigmaPreSelectionCut", 4.0f, "pidnSigma Cut for pre-selection of tracks"};
     Configurable<bool> cByPassTOF{"cByPassTOF", false, "By pass TOF PID selection"};                       // By pass TOF PID selection
     Configurable<int> cPIDcutType{"cPIDcutType", 2, "cPIDcutType = 1 for square cut, 2 for circular cut"}; // By pass TOF PID selection
+    Configurable<bool> ispTdepPID{"ispTdepPID", false, "enable pT dependent PID"};
 
     // Kaon
     Configurable<std::vector<float>> kaonTPCPIDpTintv{"kaonTPCPIDpTintv", {0.5f}, "pT intervals for Kaon TPC PID cuts"};
@@ -598,6 +599,24 @@ struct Kstar0analysis {
   }
 
   template <typename T>
+  bool selectionPIDPion(const T& candidate)
+  {
+    auto vPionTPCPIDcuts = configPID.pionTPCPIDcuts.value;
+    auto vPionTPCTOFCombinedPIDcuts = configPID.pionTPCTOFCombinedPIDcuts.value;
+
+    if (!configPID.cByPassTOF && candidate.hasTOF() && (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < (vPionTPCTOFCombinedPIDcuts[0] * vPionTPCTOFCombinedPIDcuts[0])) {
+      return true;
+    }
+    if (!configPID.cByPassTOF && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < vPionTPCPIDcuts[0]) {
+      return true;
+    }
+    if (configPID.cByPassTOF && std::abs(candidate.tpcNSigmaPi()) < vPionTPCPIDcuts[0]) {
+      return true;
+    }
+    return false;
+  }
+
+  template <typename T>
   bool ptDependentPidKaon(const T& candidate)
   {
     auto vKaonTPCPIDpTintv = configPID.kaonTPCPIDpTintv.value;
@@ -666,6 +685,24 @@ struct Kstar0analysis {
       }
     }
 
+    return false;
+  }
+
+  template <typename T>
+  bool selectionPIDKaon(const T& candidate)
+  {
+    auto vKaonTPCPIDcuts = configPID.kaonTPCPIDcuts.value;
+    auto vKaonTPCTOFCombinedPIDcuts = configPID.kaonTPCTOFCombinedPIDcuts.value;
+
+    if (!configPID.cByPassTOF && candidate.hasTOF() && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < (vKaonTPCTOFCombinedPIDcuts[0] * vKaonTPCTOFCombinedPIDcuts[0])) {
+      return true;
+    }
+    if (!configPID.cByPassTOF && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < vKaonTPCPIDcuts[0]) {
+      return true;
+    }
+    if (configPID.cByPassTOF && std::abs(candidate.tpcNSigmaKa()) < vKaonTPCPIDcuts[0]) {
+      return true;
+    }
     return false;
   }
 
@@ -786,7 +823,10 @@ struct Kstar0analysis {
       if (crejectProton && rejectProton(trk2)) // to remove proton contamination from the kaon track
         continue;
 
-      if (!ptDependentPidPion(trk1) || !ptDependentPidKaon(trk2))
+      if (configPID.ispTdepPID && (!ptDependentPidPion(trk1) || !ptDependentPidKaon(trk2)))
+        continue;
+
+      if (!configPID.ispTdepPID && (!selectionPIDPion(trk1) || !selectionPIDKaon(trk2)))
         continue;
 
       //// QA plots after the selection
@@ -1312,22 +1352,6 @@ struct Kstar0analysis {
         // ===== K(892) ======
         // =========================
         if (std::abs(part.pdgCode()) == Pdg::kK0Star892) {
-
-          std::vector<int> daughterPDGs;
-          if (part.has_daughters()) {
-            auto daughter01 = mcParticles.rawIteratorAt(part.daughtersIds()[0] - mcParticles.offset());
-            auto daughter02 = mcParticles.rawIteratorAt(part.daughtersIds()[1] - mcParticles.offset());
-            daughterPDGs = {daughter01.pdgCode(), daughter02.pdgCode()};
-          } else {
-            daughterPDGs = {-1, -1};
-          }
-
-          bool pass1 = std::abs(daughterPDGs[0]) == kKPlus || std::abs(daughterPDGs[1]) == kKPlus;   // At least one decay to Kaon
-          bool pass2 = std::abs(daughterPDGs[0]) == kPiPlus || std::abs(daughterPDGs[1]) == kPiPlus; // At least one decay to Pion
-
-          // Checking if we have both decay products
-          if (!pass1 || !pass2)
-            continue;
 
           if (part.pdgCode() > 0)
             histos.fill(HIST("Result/SignalLoss/GenTruek892pt_den"), part.pt(), centrality);
