@@ -229,7 +229,7 @@ constexpr uint64_t xiStarTopoSelMask(XiStarTopoSelBit bit)
 // -----------------------------------------------------------------------------
 namespace redxistarkevent
 {
-DECLARE_SOA_COLUMN(FT0MPercentile, ft0MPercentile, float); //! FT0M multiplicity percentile (%)
+DECLARE_SOA_COLUMN(FT0MPercentile, fT0MPercentile, float); //! FT0M multiplicity percentile (%)
 DECLARE_SOA_COLUMN(Bz, bz, float);                         //! nominal L3 magnetic field along z (T)
 } // namespace redxistarkevent
 
@@ -335,9 +335,9 @@ DECLARE_SOA_COLUMN(Pz, pz, float);
 DECLARE_SOA_COLUMN(TrackIndex, trackIndex, int64_t);
 DECLARE_SOA_COLUMN(SelectionBits, selectionBits, uint8_t);
 
-DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, uint8_t);
-DECLARE_SOA_COLUMN(TPCNSigmaKa, tpcNSigmaKa, float);
-DECLARE_SOA_COLUMN(TOFNSigmaKa, tofNSigmaKa, float);
+DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tPCNClsCrossedRows, uint8_t);
+DECLARE_SOA_COLUMN(TPCNSigmaKa, tPCNSigmaKa, float);
+DECLARE_SOA_COLUMN(TOFNSigmaKa, tOFNSigmaKa, float);
 DECLARE_SOA_COLUMN(HasTOF, hasTOF, bool);
 
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float px, float py) -> float {
