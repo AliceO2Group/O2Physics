@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 //
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
-//   Configurable workflow for running several DQ or other PWG analyses
+//   o2::framework::Configurable workflow for running several DQ or other PWG analyses
 // Precompiled into TableReaderWithAssocPCH
 
 #ifndef PWGDQ_TASKS_TABLEREADER_WITHASSOC_H_
@@ -79,14 +79,6 @@
 #include <variant>
 #include <vector>
 
-using std::string;
-
-using namespace o2;
-using namespace o2::framework;
-using namespace o2::framework::expressions;
-using namespace o2::aod;
-using namespace o2::common::core;
-
 // Some definitions
 namespace o2::aod
 {
@@ -97,10 +89,10 @@ DECLARE_SOA_BITMAP_COLUMN(IsEventSelected, isEventSelected, 8);                 
 DECLARE_SOA_BITMAP_COLUMN(IsBarrelSelected, isBarrelSelected, 32);                   //! Barrel track decisions
 DECLARE_SOA_COLUMN(BarrelAmbiguityInBunch, barrelAmbiguityInBunch, int8_t);          //! Barrel track in-bunch ambiguity
 DECLARE_SOA_COLUMN(BarrelAmbiguityOutOfBunch, barrelAmbiguityOutOfBunch, int8_t);    //! Barrel track out of bunch ambiguity
-DECLARE_SOA_BITMAP_COLUMN(IsMuonSelected, isMuonSelected, 32);                       //! Muon track decisions (joinable to ReducedMuonsAssoc)
+DECLARE_SOA_BITMAP_COLUMN(IsMuonSelected, isMuonSelected, 32);                       //! Muon track decisions (joinable to o2::aod::ReducedMuonsAssoc)
 DECLARE_SOA_COLUMN(MuonAmbiguityInBunch, muonAmbiguityInBunch, int8_t);              //! Muon track in-bunch ambiguity
 DECLARE_SOA_COLUMN(MuonAmbiguityOutOfBunch, muonAmbiguityOutOfBunch, int8_t);        //! Muon track out of bunch ambiguity
-DECLARE_SOA_BITMAP_COLUMN(IsBarrelSelectedPrefilter, isBarrelSelectedPrefilter, 32); //! Barrel prefilter decisions (joinable to ReducedTracksAssoc)
+DECLARE_SOA_BITMAP_COLUMN(IsBarrelSelectedPrefilter, isBarrelSelectedPrefilter, 32); //! Barrel prefilter decisions (joinable to o2::aod::ReducedTracksAssoc)
 // Bcandidate columns for ML analysis of B->Jpsi+K
 DECLARE_SOA_COLUMN(RunNumber, runNumber, uint64_t);
 DECLARE_SOA_COLUMN(EventIdx, eventIdx, uint64_t);
@@ -190,11 +182,11 @@ DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);
 
 DECLARE_SOA_TABLE(EventCuts, "AOD", "DQANAEVCUTSA", dqanalysisflags::IsEventSelected);                                                            //!  joinable to ReducedEvents
 DECLARE_SOA_TABLE(MixingHashes, "AOD", "DQANAMIXHASHA", dqanalysisflags::MixingHash);                                                             //!  joinable to ReducedEvents
-DECLARE_SOA_TABLE(BarrelTrackCuts, "AOD", "DQANATRKCUTSA", dqanalysisflags::IsBarrelSelected);                                                    //!  joinable to ReducedTracksAssoc
+DECLARE_SOA_TABLE(BarrelTrackCuts, "AOD", "DQANATRKCUTSA", dqanalysisflags::IsBarrelSelected);                                                    //!  joinable to o2::aod::ReducedTracksAssoc
 DECLARE_SOA_TABLE(BarrelAmbiguities, "AOD", "DQBARRELAMBA", dqanalysisflags::BarrelAmbiguityInBunch, dqanalysisflags::BarrelAmbiguityOutOfBunch); //!  joinable to ReducedBarrelTracks
-DECLARE_SOA_TABLE(MuonTrackCuts, "AOD", "DQANAMUONCUTSA", dqanalysisflags::IsMuonSelected);                                                       //!  joinable to ReducedMuonsAssoc
+DECLARE_SOA_TABLE(MuonTrackCuts, "AOD", "DQANAMUONCUTSA", dqanalysisflags::IsMuonSelected);                                                       //!  joinable to o2::aod::ReducedMuonsAssoc
 DECLARE_SOA_TABLE(MuonAmbiguities, "AOD", "DQMUONAMBA", dqanalysisflags::MuonAmbiguityInBunch, dqanalysisflags::MuonAmbiguityOutOfBunch);         //!  joinable to ReducedMuonTracks
-DECLARE_SOA_TABLE(Prefilter, "AOD", "DQPREFILTERA", dqanalysisflags::IsBarrelSelectedPrefilter);                                                  //!  joinable to ReducedTracksAssoc
+DECLARE_SOA_TABLE(Prefilter, "AOD", "DQPREFILTERA", dqanalysisflags::IsBarrelSelectedPrefilter);                                                  //!  joinable to o2::aod::ReducedTracksAssoc
 DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONSA",
                   dqanalysisflags::RunNumber, dqanalysisflags::EventIdx, dqanalysisflags::EventTimestamp,
                   dqanalysisflags::massBcandidate, dqanalysisflags::MassDileptonCandidate, dqanalysisflags::deltamassBcandidate, dqanalysisflags::pTBcandidate, dqanalysisflags::EtaBcandidate, dqanalysisflags::PhiBcandidate, dqanalysisflags::RapBcandidate,
@@ -223,46 +215,46 @@ DECLARE_SOA_TABLE(JPsieeCandidates, "AOD", "DQPSEUDOPROPER",
 } // namespace o2::aod
 
 // Declarations of various short names
-using MyEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
-using MyEventsBasic = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended>;
-using MyEventsMultExtraNoQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
-using MyEventsMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra, aod::ReducedEventsMergingTable>;
-using MyEventsMultExtraQVector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra>;
-using MyEventsZdc = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedZdcs>;
-using MyEventsMultExtraZdc = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedZdcs>;
-using MyEventsMultExtraZdcFit = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedZdcs, aod::ReducedFITs>;
-using MyEventsSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts>;
-using MyEventsMultExtraSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::EventCuts>;
-using MyEventsVtxCovSelectedMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
-using MyEventsHashSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes>;
-using MyEventsVtxCov = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov>;
-using MyEventsVtxCovSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts>;
-using MyEventsVtxCovSelectedInfo = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsInfo>;
-using MyEventsVtxCovSelectedQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra>;
-using MyEventsVtxCovSelectedQvectorWithHash = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra, aod::MixingHashes>;
-using MyEventsVtxCovZdcFitSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::ReducedZdcs, aod::ReducedFITs, aod::EventCuts>;
-using MyEventsVtxCovZdcFitSelectedMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::ReducedZdcs, aod::ReducedFITs, aod::EventCuts, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
-using MyEventsQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvector>;
-using MyEventsHashSelectedQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvector>;
-using MyEventsQvectorCentr = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
-using MyEventsQvectorCentrMerge = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedEventsMergingTable>;
-using MyEventsQvectorCentrSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::EventCuts>;
-using MyEventsHashSelectedQvectorCentr = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
+using MyEvents = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll>;
+using MyEventsBasic = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended>;
+using MyEventsMultExtraNoQvector = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll>;
+using MyEventsMultExtra = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll, o2::aod::ReducedEventsQvectorCentr, o2::aod::ReducedEventsQvectorCentrExtra, o2::aod::ReducedEventsMergingTable>;
+using MyEventsMultExtraQVector = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll, o2::aod::ReducedEventsQvectorCentr, o2::aod::ReducedEventsQvectorCentrExtra>;
+using MyEventsZdc = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedZdcs>;
+using MyEventsMultExtraZdc = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll, o2::aod::ReducedZdcs>;
+using MyEventsMultExtraZdcFit = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll, o2::aod::ReducedZdcs, o2::aod::ReducedFITs>;
+using MyEventsSelected = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::EventCuts>;
+using MyEventsMultExtraSelected = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll, o2::aod::EventCuts>;
+using MyEventsVtxCovSelectedMultExtra = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsVtxCov, o2::aod::EventCuts, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll>;
+using MyEventsHashSelected = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::EventCuts, o2::aod::MixingHashes>;
+using MyEventsVtxCov = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsVtxCov>;
+using MyEventsVtxCovSelected = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsVtxCov, o2::aod::EventCuts>;
+using MyEventsVtxCovSelectedInfo = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsVtxCov, o2::aod::EventCuts, o2::aod::ReducedEventsInfo>;
+using MyEventsVtxCovSelectedQvector = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll, o2::aod::ReducedEventsVtxCov, o2::aod::EventCuts, o2::aod::ReducedEventsQvectorCentr, o2::aod::ReducedEventsQvectorCentrExtra>;
+using MyEventsVtxCovSelectedQvectorWithHash = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll, o2::aod::ReducedEventsVtxCov, o2::aod::EventCuts, o2::aod::ReducedEventsQvectorCentr, o2::aod::ReducedEventsQvectorCentrExtra, o2::aod::MixingHashes>;
+using MyEventsVtxCovZdcFitSelected = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsVtxCov, o2::aod::ReducedZdcs, o2::aod::ReducedFITs, o2::aod::EventCuts>;
+using MyEventsVtxCovZdcFitSelectedMultExtra = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsVtxCov, o2::aod::ReducedZdcs, o2::aod::ReducedFITs, o2::aod::EventCuts, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll>;
+using MyEventsQvector = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsQvector>;
+using MyEventsHashSelectedQvector = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::EventCuts, o2::aod::MixingHashes, o2::aod::ReducedEventsQvector>;
+using MyEventsQvectorCentr = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsQvectorCentr, o2::aod::ReducedEventsQvectorCentrExtra, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll>;
+using MyEventsQvectorCentrMerge = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsQvectorCentr, o2::aod::ReducedEventsQvectorCentrExtra, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll, o2::aod::ReducedEventsMergingTable>;
+using MyEventsQvectorCentrSelected = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsQvectorCentr, o2::aod::ReducedEventsQvectorCentrExtra, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll, o2::aod::EventCuts>;
+using MyEventsHashSelectedQvectorCentr = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::EventCuts, o2::aod::MixingHashes, o2::aod::ReducedEventsQvectorCentr, o2::aod::ReducedEventsQvectorCentrExtra, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll>;
 
-using MyBarrelTracks = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID>;
-using MyBarrelTracksWithAmbiguities = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::BarrelAmbiguities>;
-using MyBarrelTracksWithCov = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID>;
-using MyBarrelTracksWithCovWithAmbiguities = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::BarrelAmbiguities>;
-using MyBarrelTracksWithCovWithAmbiguitiesWithColl = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::BarrelAmbiguities, aod::ReducedTracksBarrelInfo>;
-using MyBarrelTracksWithEMCal = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::ReducedTracksBarrelEMCal>;
-using MyBarrelTracksWithCovWithEMCal = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::ReducedTracksBarrelEMCal>;
-using MyDielectronCandidates = soa::Join<aod::Dielectrons, aod::DielectronsExtra, aod::DielectronsAll>;
-using MyDitrackCandidates = soa::Join<aod::Ditracks, aod::DitracksExtra>;
-using MyDimuonCandidates = soa::Join<aod::Dimuons, aod::DimuonsExtra>;
-using MyMuonTracks = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra>;
-using MyMuonTracksWithCov = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsCov>;
-using MyMuonTracksWithCovWithAmbiguities = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsCov, aod::MuonAmbiguities>;
-using MyMuonTracksSelectedWithColl = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsInfo, aod::MuonTrackCuts>;
+using MyBarrelTracks = o2::soa::Join<o2::aod::ReducedTracks, o2::aod::ReducedTracksBarrel, o2::aod::ReducedTracksBarrelPID>;
+using MyBarrelTracksWithAmbiguities = o2::soa::Join<o2::aod::ReducedTracks, o2::aod::ReducedTracksBarrel, o2::aod::ReducedTracksBarrelPID, o2::aod::BarrelAmbiguities>;
+using MyBarrelTracksWithCov = o2::soa::Join<o2::aod::ReducedTracks, o2::aod::ReducedTracksBarrel, o2::aod::ReducedTracksBarrelCov, o2::aod::ReducedTracksBarrelPID>;
+using MyBarrelTracksWithCovWithAmbiguities = o2::soa::Join<o2::aod::ReducedTracks, o2::aod::ReducedTracksBarrel, o2::aod::ReducedTracksBarrelCov, o2::aod::ReducedTracksBarrelPID, o2::aod::BarrelAmbiguities>;
+using MyBarrelTracksWithCovWithAmbiguitiesWithColl = o2::soa::Join<o2::aod::ReducedTracks, o2::aod::ReducedTracksBarrel, o2::aod::ReducedTracksBarrelCov, o2::aod::ReducedTracksBarrelPID, o2::aod::BarrelAmbiguities, o2::aod::ReducedTracksBarrelInfo>;
+using MyBarrelTracksWithEMCal = o2::soa::Join<o2::aod::ReducedTracks, o2::aod::ReducedTracksBarrel, o2::aod::ReducedTracksBarrelPID, o2::aod::ReducedTracksBarrelEMCal>;
+using MyBarrelTracksWithCovWithEMCal = o2::soa::Join<o2::aod::ReducedTracks, o2::aod::ReducedTracksBarrel, o2::aod::ReducedTracksBarrelCov, o2::aod::ReducedTracksBarrelPID, o2::aod::ReducedTracksBarrelEMCal>;
+using MyDielectronCandidates = o2::soa::Join<o2::aod::Dielectrons, o2::aod::DielectronsExtra, o2::aod::DielectronsAll>;
+using MyDitrackCandidates = o2::soa::Join<o2::aod::Ditracks, o2::aod::DitracksExtra>;
+using MyDimuonCandidates = o2::soa::Join<o2::aod::Dimuons, o2::aod::DimuonsExtra>;
+using MyMuonTracks = o2::soa::Join<o2::aod::ReducedMuons, o2::aod::ReducedMuonsExtra>;
+using MyMuonTracksWithCov = o2::soa::Join<o2::aod::ReducedMuons, o2::aod::ReducedMuonsExtra, o2::aod::ReducedMuonsCov>;
+using MyMuonTracksWithCovWithAmbiguities = o2::soa::Join<o2::aod::ReducedMuons, o2::aod::ReducedMuonsExtra, o2::aod::ReducedMuonsCov, o2::aod::MuonAmbiguities>;
+using MyMuonTracksSelectedWithColl = o2::soa::Join<o2::aod::ReducedMuons, o2::aod::ReducedMuonsExtra, o2::aod::ReducedMuonsInfo, o2::aod::MuonTrackCuts>;
 
 // bit maps used for the Fill functions of the VarManager
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
@@ -318,40 +310,40 @@ void PrintBitMap(TMap map, int nbits)
 // Analysis task that produces event decisions (analysis cut, in bunch pileup and split collision check) and the Hash table used in event mixing
 struct AnalysisEventSelection {
 
-  Produces<aod::EventCuts> eventSel;
-  Produces<aod::MixingHashes> hash;
-  Produces<aod::StoredReducedEvents> JetEvents;
-  OutputObj<THashList> fOutputList{"output"};
+  o2::framework::Produces<o2::aod::EventCuts> eventSel;
+  o2::framework::Produces<o2::aod::MixingHashes> hash;
+  o2::framework::Produces<o2::aod::StoredReducedEvents> JetEvents;
+  o2::framework::OutputObj<THashList> fOutputList{"output"};
 
   // TODO: Provide the mixing variables and binning directly via configurables (e.g. vectors of float)
-  Configurable<std::string> fConfigMixingVariables{"cfgMixingVars", "", "Mixing configs separated by a comma, default no mixing"};
-  Configurable<std::string> fConfigMixingVariablesJson{"cfgMixingVarsJSON", "", "Mixing configs in JSON format"};
-  Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
-  Configurable<std::string> fConfigEventCutsJSON{"cfgEventCutsJSON", "", "Additional event cuts specified in JSON format"};
-  Configurable<std::string> fConfigAddEventHistogram{"cfgAddEventHistogram", "", "Comma separated list of histograms"};
-  Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Add event histograms defined via JSON formatting (see HistogramsLibrary)"};
-  Configurable<bool> fConfigQA{"cfgQA", true, "If true, QA histograms will be created and filled"};
+  o2::framework::Configurable<std::string> fConfigMixingVariables{"cfgMixingVars", "", "Mixing configs separated by a comma, default no mixing"};
+  o2::framework::Configurable<std::string> fConfigMixingVariablesJson{"cfgMixingVarsJSON", "", "Mixing configs in JSON format"};
+  o2::framework::Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
+  o2::framework::Configurable<std::string> fConfigEventCutsJSON{"cfgEventCutsJSON", "", "Additional event cuts specified in JSON format"};
+  o2::framework::Configurable<std::string> fConfigAddEventHistogram{"cfgAddEventHistogram", "", "Comma separated list of histograms"};
+  o2::framework::Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Add event histograms defined via JSON formatting (see HistogramsLibrary)"};
+  o2::framework::Configurable<bool> fConfigQA{"cfgQA", true, "If true, QA histograms will be created and filled"};
 
-  Configurable<int> fConfigITSROFrameStartBorderMargin{"cfgITSROFrameStartBorderMargin", -1, "Number of bcs at the start of ITS RO Frame border. Take from CCDB if -1"};
-  Configurable<int> fConfigITSROFrameEndBorderMargin{"cfgITSROFrameEndBorderMargin", -1, "Number of bcs at the end of ITS RO Frame border. Take from CCDB if -1"};
+  o2::framework::Configurable<int> fConfigITSROFrameStartBorderMargin{"cfgITSROFrameStartBorderMargin", -1, "Number of bcs at the start of ITS RO Frame border. Take from CCDB if -1"};
+  o2::framework::Configurable<int> fConfigITSROFrameEndBorderMargin{"cfgITSROFrameEndBorderMargin", -1, "Number of bcs at the end of ITS RO Frame border. Take from CCDB if -1"};
 
-  Configurable<float> fConfigSplitCollisionsDeltaZ{"cfgSplitCollisionsDeltaZ", 1.0, "maximum delta-z (cm) between two collisions to consider them as split candidates"};
-  Configurable<unsigned int> fConfigSplitCollisionsDeltaBC{"cfgSplitCollisionsDeltaBC", 100, "maximum delta-BC between two collisions to consider them as split candidates; do not apply if value is negative"};
-  Configurable<bool> fConfigCheckSplitCollisions{"cfgCheckSplitCollisions", false, "If true, run the split collision check and fill histograms"};
+  o2::framework::Configurable<float> fConfigSplitCollisionsDeltaZ{"cfgSplitCollisionsDeltaZ", 1.0, "maximum delta-z (cm) between two collisions to consider them as split candidates"};
+  o2::framework::Configurable<unsigned int> fConfigSplitCollisionsDeltaBC{"cfgSplitCollisionsDeltaBC", 100, "maximum delta-BC between two collisions to consider them as split candidates; do not apply if value is negative"};
+  o2::framework::Configurable<bool> fConfigCheckSplitCollisions{"cfgCheckSplitCollisions", false, "If true, run the split collision check and fill histograms"};
 
-  Configurable<bool> fConfigRunZorro{"cfgRunZorro", false, "Enable event selection with zorro [WARNING: under debug, do not enable!]"};
-  Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
-  Configurable<bool> fConfigFetchInteractionRate{"cfgFetchInteractionRate", false, "Fetch event-wise interaction rate from the CCDB"};
-  Configurable<std::string> fConfigIRSource{"cfgIRSource", "ZNC hadronic", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
+  o2::framework::Configurable<bool> fConfigRunZorro{"cfgRunZorro", false, "Enable event selection with zorro [WARNING: under debug, do not enable!]"};
+  o2::framework::Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  o2::framework::Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  o2::framework::Configurable<bool> fConfigFetchInteractionRate{"cfgFetchInteractionRate", false, "Fetch event-wise interaction rate from the CCDB"};
+  o2::framework::Configurable<std::string> fConfigIRSource{"cfgIRSource", "ZNC hadronic", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
 
   HistogramManager* fHistMan = nullptr;
   MixingHandler* fMixHandler = nullptr;
   AnalysisCompositeCut* fEventCut = nullptr;
 
-  Service<o2::ccdb::BasicCCDBManager> fCCDB{};
+  o2::framework::Service<o2::ccdb::BasicCCDBManager> fCCDB{};
   o2::ccdb::CcdbApi fCCDBApi;
-  ctpRateFetcher rateFetcher;
+  o2::ctpRateFetcher rateFetcher;
 
   std::map<int64_t, bool> fSelMap;                     // key: reduced event global index, value: event selection decision
   std::map<uint64_t, std::vector<int64_t>> fBCCollMap; // key: global BC, value: vector of reduced event global indices
@@ -378,7 +370,7 @@ struct AnalysisEventSelection {
     fEventCut = new AnalysisCompositeCut(true);
     TString eventCutStr = fConfigEventCuts.value;
     if (eventCutStr != "") {
-      AnalysisCut* cut = dqcuts::GetAnalysisCut(eventCutStr.Data());
+      AnalysisCut* cut = o2::aod::dqcuts::GetAnalysisCut(eventCutStr.Data());
       if (cut != nullptr) {
         fEventCut->AddCut(cut);
       }
@@ -386,7 +378,7 @@ struct AnalysisEventSelection {
     // Additional cuts via JSON
     TString eventCutJSONStr = fConfigEventCutsJSON.value;
     if (eventCutJSONStr != "") {
-      std::vector<AnalysisCut*> jsonCuts = dqcuts::GetCutsFromJSON(eventCutJSONStr.Data());
+      std::vector<AnalysisCut*> jsonCuts = o2::aod::dqcuts::GetCutsFromJSON(eventCutJSONStr.Data());
       for (auto const& cutIt : jsonCuts) {
         fEventCut->AddCut(cutIt);
       }
@@ -403,7 +395,7 @@ struct AnalysisEventSelection {
         DefineHistograms(fHistMan, "SameBunchCorrelations;OutOfBunchCorrelations;", "");
       }
       // Additional histograms via JSON
-      dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str());
+      o2::aod::dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str());
       VarManager::SetUseVars(fHistMan->GetUsedVars());
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
@@ -416,11 +408,11 @@ struct AnalysisEventSelection {
       fMixHandler->Init();
       if (objArray->GetEntries() > 0) {
         for (int iVar = 0; iVar < objArray->GetEntries(); ++iVar) {
-          dqmixing::SetUpMixing(fMixHandler, objArray->At(iVar)->GetName());
+          o2::aod::dqmixing::SetUpMixing(fMixHandler, objArray->At(iVar)->GetName());
         }
       }
       if (mixVarsJsonString != "") {
-        dqmixing::SetUpMixingFromJSON(fMixHandler, mixVarsJsonString.Data());
+        o2::aod::dqmixing::SetUpMixingFromJSON(fMixHandler, mixVarsJsonString.Data());
       }
     }
 
@@ -662,32 +654,32 @@ struct AnalysisEventSelection {
   PROCESS_SWITCH(AnalysisEventSelection, processDummy, "Dummy function", true);
 };
 
-// Produces a table with barrel track decisions (joinable to the ReducedTracksAssociations)
+// o2::framework::Produces a table with barrel track decisions (joinable to the ReducedTracksAssociations)
 // Here one should add all the track cuts needed through the workflow (e.g. cuts for same-even pairing, electron prefiltering, track for dilepton-track correlations)
 struct AnalysisTrackSelection {
-  Produces<aod::BarrelTrackCuts> trackSel;
-  Produces<aod::BarrelAmbiguities> trackAmbiguities;
-  OutputObj<THashList> fOutputList{"output"};
+  o2::framework::Produces<o2::aod::BarrelTrackCuts> trackSel;
+  o2::framework::Produces<o2::aod::BarrelAmbiguities> trackAmbiguities;
+  o2::framework::OutputObj<THashList> fOutputList{"output"};
 
-  Configurable<std::string> fConfigCuts{"cfgTrackCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
-  Configurable<std::string> fConfigCutsJSON{"cfgBarrelTrackCutsJSON", "", "Additional list of barrel track cuts in JSON format"};
-  Configurable<std::string> fConfigAddTrackHistogram{"cfgAddTrackHistogram", "", "Comma separated list of histograms"};
-  Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
-  Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
-  Configurable<bool> fConfigPublishAmbiguity{"cfgPublishAmbiguity", true, "If true, publish ambiguity table and fill QA histograms"};
+  o2::framework::Configurable<std::string> fConfigCuts{"cfgTrackCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
+  o2::framework::Configurable<std::string> fConfigCutsJSON{"cfgBarrelTrackCutsJSON", "", "Additional list of barrel track cuts in JSON format"};
+  o2::framework::Configurable<std::string> fConfigAddTrackHistogram{"cfgAddTrackHistogram", "", "Comma separated list of histograms"};
+  o2::framework::Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
+  o2::framework::Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
+  o2::framework::Configurable<bool> fConfigPublishAmbiguity{"cfgPublishAmbiguity", true, "If true, publish ambiguity table and fill QA histograms"};
 
-  Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/z/zhxiong/TPCPID/PostCalib", "base path to the ccdb object"};
-  Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  o2::framework::Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  o2::framework::Configurable<std::string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/z/zhxiong/TPCPID/PostCalib", "base path to the ccdb object"};
+  o2::framework::Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
-  Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas"};
-  Configurable<int> fConfigTPCpostCalibType{"cfgTPCpostCalibType", 1, "1: (TPCncls,pIN,eta) calibration typically for pp, 2: (eta,nPV,nLong,tLong) calibration typically for PbPb"};
-  Configurable<bool> fConfigTPCuseInterpolatedCalib{"cfgTPCpostCalibUseInterpolation", true, "If true, use interpolated calibration values (default: true)"};
-  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  o2::framework::Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas"};
+  o2::framework::Configurable<int> fConfigTPCpostCalibType{"cfgTPCpostCalibType", 1, "1: (TPCncls,pIN,eta) calibration typically for pp, 2: (eta,nPV,nLong,tLong) calibration typically for PbPb"};
+  o2::framework::Configurable<bool> fConfigTPCuseInterpolatedCalib{"cfgTPCpostCalibUseInterpolation", true, "If true, use interpolated calibration values (default: true)"};
+  o2::framework::Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   // Track related options
-  Configurable<bool> fPropTrack{"cfgPropTrack", true, "Propgate tracks to associated collision to recalculate DCA and momentum vector"};
+  o2::framework::Configurable<bool> fPropTrack{"cfgPropTrack", true, "Propgate tracks to associated collision to recalculate DCA and momentum vector"};
 
-  Service<o2::ccdb::BasicCCDBManager> fCCDB{};
+  o2::framework::Service<o2::ccdb::BasicCCDBManager> fCCDB{};
   o2::ccdb::CcdbApi fCCDBApi;
 
   HistogramManager* fHistMan = nullptr;
@@ -710,13 +702,13 @@ struct AnalysisTrackSelection {
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fTrackCuts.push_back(dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fTrackCuts.push_back(o2::aod::dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
       }
     }
     // Extra cuts via JSON
     TString addTrackCutsStr = fConfigCutsJSON.value;
     if (addTrackCutsStr != "") {
-      std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
+      std::vector<AnalysisCut*> addTrackCuts = o2::aod::dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
       for (auto const& t : addTrackCuts) {
         fTrackCuts.push_back(static_cast<AnalysisCompositeCut*>(t));
       }
@@ -738,9 +730,9 @@ struct AnalysisTrackSelection {
         histDirNames += "TrackBarrel_AmbiguityInBunch;TrackBarrel_AmbiguityOutOfBunch;";
       }
 
-      DefineHistograms(fHistMan, histDirNames.Data(), fConfigAddTrackHistogram.value.data()); // define all histograms
-      dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str());  // ad-hoc histograms via JSON
-      VarManager::SetUseVars(fHistMan->GetUsedVars());                                        // provide the list of required variables so that VarManager knows what to fill
+      DefineHistograms(fHistMan, histDirNames.Data(), fConfigAddTrackHistogram.value.data());         // define all histograms
+      o2::aod::dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON
+      VarManager::SetUseVars(fHistMan->GetUsedVars());                                                // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
 
@@ -752,7 +744,7 @@ struct AnalysisTrackSelection {
   }
 
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TTracks>
-  void runTrackSelection(ReducedTracksAssoc const& assocs, TEvents const& events, TTracks const& tracks)
+  void runTrackSelection(o2::aod::ReducedTracksAssoc const& assocs, TEvents const& events, TTracks const& tracks)
   {
     fNAssocsInBunch.clear();
     fNAssocsOutOfBunch.clear();
@@ -818,7 +810,7 @@ struct AnalysisTrackSelection {
       //   tracks without a matched cluster keep the sentinel values set by ResetValues
       if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackEMCal)) {
         if (track.has_matchedEMCalCluster()) {
-          auto cluster = track.template matchedEMCalCluster_as<aod::ReducedEMCals>();
+          auto cluster = track.template matchedEMCalCluster_as<o2::aod::ReducedEMCals>();
           VarManager::FillTrackEMCal(cluster, track.p(), track.emcalMatchDeltaEta(), track.emcalMatchDeltaPhi());
         }
       }
@@ -905,23 +897,23 @@ struct AnalysisTrackSelection {
 
   } // end runTrackSelection()
 
-  void processSkimmed(ReducedTracksAssoc const& assocs, MyEventsSelected const& events, MyBarrelTracks const& tracks)
+  void processSkimmed(o2::aod::ReducedTracksAssoc const& assocs, MyEventsSelected const& events, MyBarrelTracks const& tracks)
   {
     runTrackSelection<gkEventFillMap, gkTrackFillMap>(assocs, events, tracks);
   }
-  void processSkimmedWithMultExtra(ReducedTracksAssoc const& assocs, MyEventsMultExtraSelected const& events, MyBarrelTracks const& tracks)
+  void processSkimmedWithMultExtra(o2::aod::ReducedTracksAssoc const& assocs, MyEventsMultExtraSelected const& events, MyBarrelTracks const& tracks)
   {
     runTrackSelection<gkEventFillMapWithMultExtra, gkTrackFillMap>(assocs, events, tracks);
   }
-  void processSkimmedWithCov(ReducedTracksAssoc const& assocs, MyEventsVtxCovSelected const& events, MyBarrelTracksWithCov const& tracks)
+  void processSkimmedWithCov(o2::aod::ReducedTracksAssoc const& assocs, MyEventsVtxCovSelected const& events, MyBarrelTracksWithCov const& tracks)
   {
     runTrackSelection<gkEventFillMapWithCov, gkTrackFillMapWithCov>(assocs, events, tracks);
   }
-  void processSkimmedWithEMCal(ReducedTracksAssoc const& assocs, MyEventsSelected const& events, MyBarrelTracksWithEMCal const& tracks, aod::ReducedEMCals const& /*emcals*/)
+  void processSkimmedWithEMCal(o2::aod::ReducedTracksAssoc const& assocs, MyEventsSelected const& events, MyBarrelTracksWithEMCal const& tracks, o2::aod::ReducedEMCals const& /*emcals*/)
   {
     runTrackSelection<gkEventFillMap, gkTrackFillMapWithEMCal>(assocs, events, tracks);
   }
-  void processSkimmedWithCovWithEMCal(ReducedTracksAssoc const& assocs, MyEventsVtxCovSelected const& events, MyBarrelTracksWithCovWithEMCal const& tracks, aod::ReducedEMCals const& /*emcals*/)
+  void processSkimmedWithCovWithEMCal(o2::aod::ReducedTracksAssoc const& assocs, MyEventsVtxCovSelected const& events, MyBarrelTracksWithCovWithEMCal const& tracks, o2::aod::ReducedEMCals const& /*emcals*/)
   {
     runTrackSelection<gkEventFillMapWithCov, gkTrackFillMapWithCovWithEMCal>(assocs, events, tracks);
   }
@@ -938,26 +930,26 @@ struct AnalysisTrackSelection {
   PROCESS_SWITCH(AnalysisTrackSelection, processDummy, "Dummy function", true);
 };
 
-// Produces a table with muon decisions (joinable to the ReducedMuonsAssociations)
+// o2::framework::Produces a table with muon decisions (joinable to the ReducedMuonsAssociations)
 // Here one should add all the track cuts needed through the workflow (e.g. cuts for same-event pairing, track for dilepton-track correlations)
 struct AnalysisMuonSelection {
-  Produces<aod::MuonTrackCuts> muonSel;
-  Produces<aod::MuonAmbiguities> muonAmbiguities;
-  OutputObj<THashList> fOutputList{"output"};
+  o2::framework::Produces<o2::aod::MuonTrackCuts> muonSel;
+  o2::framework::Produces<o2::aod::MuonAmbiguities> muonAmbiguities;
+  o2::framework::OutputObj<THashList> fOutputList{"output"};
 
-  Configurable<std::string> fConfigCuts{"cfgMuonCuts", "muonQualityCuts", "Comma separated list of muon cuts"};
-  Configurable<std::string> fConfigCutsJSON{"cfgMuonCutsJSON", "", "Additional list of muon cuts in JSON format"};
-  Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
-  Configurable<std::string> fConfigAddMuonHistogram{"cfgAddMuonHistogram", "", "Comma separated list of histograms"};
-  Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
-  Configurable<bool> fConfigPublishAmbiguity{"cfgPublishAmbiguity", true, "If true, publish ambiguity table and fill QA histograms"};
+  o2::framework::Configurable<std::string> fConfigCuts{"cfgMuonCuts", "muonQualityCuts", "Comma separated list of muon cuts"};
+  o2::framework::Configurable<std::string> fConfigCutsJSON{"cfgMuonCutsJSON", "", "Additional list of muon cuts in JSON format"};
+  o2::framework::Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
+  o2::framework::Configurable<std::string> fConfigAddMuonHistogram{"cfgAddMuonHistogram", "", "Comma separated list of histograms"};
+  o2::framework::Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
+  o2::framework::Configurable<bool> fConfigPublishAmbiguity{"cfgPublishAmbiguity", true, "If true, publish ambiguity table and fill QA histograms"};
 
-  Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
-  Configurable<std::string> fConfigGeoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  o2::framework::Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  o2::framework::Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  o2::framework::Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  o2::framework::Configurable<std::string> fConfigGeoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
 
-  Service<o2::ccdb::BasicCCDBManager> fCCDB{};
+  o2::framework::Service<o2::ccdb::BasicCCDBManager> fCCDB{};
 
   HistogramManager* fHistMan = nullptr;
   std::vector<AnalysisCompositeCut*> fMuonCuts;
@@ -979,13 +971,13 @@ struct AnalysisMuonSelection {
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fMuonCuts.push_back(dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fMuonCuts.push_back(o2::aod::dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
       }
     }
     // extra cuts from JSON
     TString addCutsStr = fConfigCutsJSON.value;
     if (addCutsStr != "") {
-      std::vector<AnalysisCut*> addCuts = dqcuts::GetCutsFromJSON(addCutsStr.Data());
+      std::vector<AnalysisCut*> addCuts = o2::aod::dqcuts::GetCutsFromJSON(addCutsStr.Data());
       for (auto const& t : addCuts) {
         fMuonCuts.push_back(static_cast<AnalysisCompositeCut*>(t));
       }
@@ -1007,9 +999,9 @@ struct AnalysisMuonSelection {
         histDirNames += "TrackMuon_AmbiguityInBunch;TrackMuon_AmbiguityOutOfBunch;";
       }
 
-      DefineHistograms(fHistMan, histDirNames.Data(), fConfigAddMuonHistogram.value.data()); // define all histograms
-      dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON
-      VarManager::SetUseVars(fHistMan->GetUsedVars());                                       // provide the list of required variables so that VarManager knows what to fill
+      DefineHistograms(fHistMan, histDirNames.Data(), fConfigAddMuonHistogram.value.data());          // define all histograms
+      o2::aod::dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON
+      VarManager::SetUseVars(fHistMan->GetUsedVars());                                                // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
 
@@ -1023,7 +1015,7 @@ struct AnalysisMuonSelection {
   }
 
   template <uint32_t TEventFillMap, uint32_t TMuonFillMap, typename TEvents, typename TMuons>
-  void runMuonSelection(ReducedMuonsAssoc const& assocs, TEvents const& events, TMuons const& muons)
+  void runMuonSelection(o2::aod::ReducedMuonsAssoc const& assocs, TEvents const& events, TMuons const& muons)
   {
     fNAssocsInBunch.clear();
     fNAssocsOutOfBunch.clear();
@@ -1134,7 +1126,7 @@ struct AnalysisMuonSelection {
     }
   }
 
-  void processSkimmed(ReducedMuonsAssoc const& assocs, MyEventsVtxCovSelected const& events, MyMuonTracksWithCov const& muons)
+  void processSkimmed(o2::aod::ReducedMuonsAssoc const& assocs, MyEventsVtxCovSelected const& events, MyMuonTracksWithCov const& muons)
   {
     runMuonSelection<gkEventFillMapWithCov, gkMuonFillMapWithCov>(assocs, events, muons);
   }
@@ -1152,12 +1144,12 @@ struct AnalysisMuonSelection {
 //  with the sample of tracks to be used in downstream analysis (fConfigTrackCuts). If a pair is found to pass
 //  the pair prefilter cut (cfgPrefilterPairCut), the analysis track is tagged to be removed from analysis.
 struct AnalysisPrefilterSelection {
-  Produces<aod::Prefilter> prefilter; // joinable with ReducedTracksAssoc
+  o2::framework::Produces<o2::aod::Prefilter> prefilter; // joinable with o2::aod::ReducedTracksAssoc
 
   // Configurables
-  Configurable<std::string> fConfigPrefilterTrackCut{"cfgPrefilterTrackCut", "", "Prefilter track cut"};
-  Configurable<std::string> fConfigPrefilterPairCut{"cfgPrefilterPairCut", "", "Prefilter pair cut"};
-  Configurable<std::string> fConfigTrackCuts{"cfgTrackCuts", "", "Track cuts for which to run the prefilter"};
+  o2::framework::Configurable<std::string> fConfigPrefilterTrackCut{"cfgPrefilterTrackCut", "", "Prefilter track cut"};
+  o2::framework::Configurable<std::string> fConfigPrefilterPairCut{"cfgPrefilterPairCut", "", "Prefilter pair cut"};
+  o2::framework::Configurable<std::string> fConfigTrackCuts{"cfgTrackCuts", "", "Track cuts for which to run the prefilter"};
 
   // TODO: Add prefilter pair cut via JSON
 
@@ -1166,7 +1158,7 @@ struct AnalysisPrefilterSelection {
   uint32_t fPrefilterMask = 0;
   int fPrefilterCutBit = -1;
 
-  Preslice<aod::ReducedTracksAssoc> trackAssocsPerCollision = aod::reducedtrack_association::reducedeventId;
+  o2::framework::Preslice<o2::aod::ReducedTracksAssoc> trackAssocsPerCollision = o2::aod::reducedtrack_association::reducedeventId;
 
   void init(o2::framework::InitContext& context)
   {
@@ -1200,14 +1192,14 @@ struct AnalysisPrefilterSelection {
     if (runPrefilter) {
       // get the list of cuts that were computed in the barrel track-selection task and create a bit mask
       //  to mark just the ones we want to apply a prefilter on
-      string trackCuts;
-      getTaskOptionValue<string>(context, "analysis-track-selection", "cfgTrackCuts", trackCuts, false);
+      std::string trackCuts;
+      o2::common::core::getTaskOptionValue<std::string>(context, "analysis-track-selection", "cfgTrackCuts", trackCuts, false);
       TString allTrackCutsStr = trackCuts;
       // check also the cuts added via JSON and add them to the string of cuts
-      getTaskOptionValue<string>(context, "analysis-track-selection", "cfgBarrelTrackCutsJSON", trackCuts, false);
+      o2::common::core::getTaskOptionValue<std::string>(context, "analysis-track-selection", "cfgBarrelTrackCutsJSON", trackCuts, false);
       TString addTrackCutsStr = trackCuts;
       if (addTrackCutsStr != "") {
-        std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
+        std::vector<AnalysisCut*> addTrackCuts = o2::aod::dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
         for (auto const& t : addTrackCuts) {
           allTrackCutsStr += Form(",%s", t->GetName());
         }
@@ -1233,7 +1225,7 @@ struct AnalysisPrefilterSelection {
       fPairCut = new AnalysisCompositeCut(true);
       TString pairCutStr = fConfigPrefilterPairCut.value;
       if (!pairCutStr.IsNull()) {
-        fPairCut = dqcuts::GetCompositeCut(pairCutStr.Data());
+        fPairCut = o2::aod::dqcuts::GetCompositeCut(pairCutStr.Data());
       }
     }
     if (fPrefilterMask == static_cast<uint32_t>(0) || fPrefilterCutBit < 0) {
@@ -1246,7 +1238,7 @@ struct AnalysisPrefilterSelection {
   }
 
   template <uint32_t TTrackFillMap, typename TTracks>
-  void runPrefilter(soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts> const& assocs, TTracks const& /*tracks*/)
+  void runPrefilter(o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts> const& assocs, TTracks const& /*tracks*/)
   {
     if (fPrefilterCutBit < 0 || fPrefilterMask == 0) {
       return;
@@ -1287,7 +1279,7 @@ struct AnalysisPrefilterSelection {
     } // end loop over combinations
   }
 
-  void processBarrelSkimmed(MyEventsBasic const& events, soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts> const& assocs, MyBarrelTracks const& tracks)
+  void processBarrelSkimmed(MyEventsBasic const& events, o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts> const& assocs, MyBarrelTracks const& tracks)
   {
     fPrefilterMap.clear();
 
@@ -1336,100 +1328,100 @@ struct AnalysisPrefilterSelection {
 // The task implements also process functions for running event mixing
 struct AnalysisSameEventPairing {
 
-  Produces<aod::Dielectrons> dielectronList;
-  Produces<aod::Dimuons> dimuonList;
-  Produces<aod::ElectronMuons> electronmuonList;
-  Produces<aod::DielectronsExtra> dielectronsExtraList;
-  Produces<aod::DielectronsInfo> dielectronInfoList;
-  Produces<aod::DimuonsExtra> dimuonsExtraList;
-  Produces<aod::DielectronsAll> dielectronAllList;
-  Produces<aod::DielectronsMls> dielectronMlList;
-  Produces<aod::DimuonsAll> dimuonAllList;
-  Produces<aod::DileptonFlow> dileptonFlowList;
-  Produces<aod::DileptonsInfo> dileptonInfoList;
-  Produces<aod::JPsieeCandidates> PromptNonPromptSepTable;
-  Produces<aod::DileptonPolarization> dileptonPolarList;
-  Produces<aod::DileptonsEventInfo> dileptonEventInfoList;
-  Produces<aod::DileptonsMiniTree> dileptonMiniTree;
+  o2::framework::Produces<o2::aod::Dielectrons> dielectronList;
+  o2::framework::Produces<o2::aod::Dimuons> dimuonList;
+  o2::framework::Produces<o2::aod::ElectronMuons> electronmuonList;
+  o2::framework::Produces<o2::aod::DielectronsExtra> dielectronsExtraList;
+  o2::framework::Produces<o2::aod::DielectronsInfo> dielectronInfoList;
+  o2::framework::Produces<o2::aod::DimuonsExtra> dimuonsExtraList;
+  o2::framework::Produces<o2::aod::DielectronsAll> dielectronAllList;
+  o2::framework::Produces<o2::aod::DielectronsMls> dielectronMlList;
+  o2::framework::Produces<o2::aod::DimuonsAll> dimuonAllList;
+  o2::framework::Produces<o2::aod::DileptonFlow> dileptonFlowList;
+  o2::framework::Produces<o2::aod::DileptonsInfo> dileptonInfoList;
+  o2::framework::Produces<o2::aod::JPsieeCandidates> PromptNonPromptSepTable;
+  o2::framework::Produces<o2::aod::DileptonPolarization> dileptonPolarList;
+  o2::framework::Produces<o2::aod::DileptonsEventInfo> dileptonEventInfoList;
+  o2::framework::Produces<o2::aod::DileptonsMiniTree> dileptonMiniTree;
 
   o2::base::MatLayerCylSet* fLUT = nullptr;
   TH1D* ResoFlowSP = nullptr;
   TH1D* ResoFlowEP = nullptr;
   int fCurrentRun = -1; // needed to detect if the run changed and trigger update of calibrations etc.
 
-  OutputObj<THashList> fOutputList{"output"};
+  o2::framework::OutputObj<THashList> fOutputList{"output"};
 
-  struct : ConfigurableGroup {
-    Configurable<std::string> track{"cfgTrackCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
-    Configurable<std::string> muon{"cfgMuonCuts", "", "Comma separated list of muon cuts"};
-    Configurable<std::string> pair{"cfgPairCuts", "", "Comma separated list of pair cuts"};
-    Configurable<std::string> qVector{"cfgQvectorTrackCut", "", "Track cut of Q-vector, enable this if you want to remove the auto-correlation in TPC"};
-    Configurable<bool> event{"cfgRemoveCollSplittingCandidates", false, "If true, remove collision splitting candidates as determined by the event selection task upstream"};
+  struct : o2::framework::ConfigurableGroup {
+    o2::framework::Configurable<std::string> track{"cfgTrackCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
+    o2::framework::Configurable<std::string> muon{"cfgMuonCuts", "", "Comma separated list of muon cuts"};
+    o2::framework::Configurable<std::string> pair{"cfgPairCuts", "", "Comma separated list of pair cuts"};
+    o2::framework::Configurable<std::string> qVector{"cfgQvectorTrackCut", "", "Track cut of Q-vector, enable this if you want to remove the auto-correlation in TPC"};
+    o2::framework::Configurable<bool> event{"cfgRemoveCollSplittingCandidates", false, "If true, remove collision splitting candidates as determined by the event selection task upstream"};
     // TODO: Add pair cuts via JSON
   } fConfigCuts;
 
-  Configurable<int> fConfigMixingDepth{"cfgMixingDepth", 100, "Number of Events stored for event mixing"};
-  Configurable<std::string> fConfigMixingVariables{"cfgMixingVars", "", "Mixing configs separated by a comma, default no mixing"};
-  Configurable<std::string> fConfigMixingVariablesJson{"cfgMixingVarsJSON", "", "Mixing configs in JSON format"};
-  Configurable<bool> fConfigRunMixingAcrossTFs{"cfgRunMixingAcrossTFs", false, "If true, run event mixing using the MixingHandler which accumulates events across multiple TFs"};
-  // Configurable<std::string> fConfigAddEventMixingHistogram{"cfgAddEventMixingHistogram", "", "Comma separated list of histograms"};
-  Configurable<std::string> fConfigAddSEPHistogram{"cfgAddSEPHistogram", "", "Comma separated list of histograms"};
-  Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
-  Configurable<bool> fConfigQA{"cfgQA", true, "If true, fill output histograms"};
-  Configurable<bool> fConfigAmbiguousMuonHistograms{"cfgAmbiguousMuonHistograms", true, "If true, fill ambiguous histograms"};
+  o2::framework::Configurable<int> fConfigMixingDepth{"cfgMixingDepth", 100, "Number of Events stored for event mixing"};
+  o2::framework::Configurable<std::string> fConfigMixingVariables{"cfgMixingVars", "", "Mixing configs separated by a comma, default no mixing"};
+  o2::framework::Configurable<std::string> fConfigMixingVariablesJson{"cfgMixingVarsJSON", "", "Mixing configs in JSON format"};
+  o2::framework::Configurable<bool> fConfigRunMixingAcrossTFs{"cfgRunMixingAcrossTFs", false, "If true, run event mixing using the MixingHandler which accumulates events across multiple TFs"};
+  // o2::framework::Configurable<std::string> fConfigAddEventMixingHistogram{"cfgAddEventMixingHistogram", "", "Comma separated list of histograms"};
+  o2::framework::Configurable<std::string> fConfigAddSEPHistogram{"cfgAddSEPHistogram", "", "Comma separated list of histograms"};
+  o2::framework::Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
+  o2::framework::Configurable<bool> fConfigQA{"cfgQA", true, "If true, fill output histograms"};
+  o2::framework::Configurable<bool> fConfigAmbiguousMuonHistograms{"cfgAmbiguousMuonHistograms", true, "If true, fill ambiguous histograms"};
 
   // option for TR pair fill
-  Configurable<bool> fConfigTRPairs{"cfgFillTRPairs", false, "If true, fill Track rotation pairs"};
-  Configurable<int> fConfigNRotations{"cfgNRotations", 3, "Number of rotations for event plane preserving track rotation method, only 1 or 3 are supported"};
+  o2::framework::Configurable<bool> fConfigTRPairs{"cfgFillTRPairs", false, "If true, fill Track rotation pairs"};
+  o2::framework::Configurable<int> fConfigNRotations{"cfgNRotations", 3, "Number of rotations for event plane preserving track rotation method, only 1 or 3 are supported"};
 
-  struct : ConfigurableGroup {
-    Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-    Configurable<std::string> grpMagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-    Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
-    Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
-    Configurable<std::string> GrpLhcIfPath{"grplhcif", "GLO/Config/GRPLHCIF", "Path on the CCDB for the GRPLHCIF object"};
-    Configurable<std::string> efficiencyPath{"effHistPath", "Users/z/zhxiong/efficiency", "Path on the CCDB for the efficiency histograms"};
-    Configurable<std::string> flowPath{"flowPath", "Users/y/yiping/FlowResolution", "Path to the flow resolution object"};
-    Configurable<std::string> phiPath{"phiPath", "Users/h/hxiaoyu/TrackPhi/LHC23", "Path to load phi distribution for track rotation"};
+  struct : o2::framework::ConfigurableGroup {
+    o2::framework::Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+    o2::framework::Configurable<std::string> grpMagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+    o2::framework::Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+    o2::framework::Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+    o2::framework::Configurable<std::string> GrpLhcIfPath{"grplhcif", "GLO/Config/GRPLHCIF", "Path on the CCDB for the GRPLHCIF object"};
+    o2::framework::Configurable<std::string> efficiencyPath{"effHistPath", "Users/z/zhxiong/efficiency", "Path on the CCDB for the efficiency histograms"};
+    o2::framework::Configurable<std::string> flowPath{"flowPath", "Users/y/yiping/FlowResolution", "Path to the flow resolution object"};
+    o2::framework::Configurable<std::string> phiPath{"phiPath", "Users/h/hxiaoyu/TrackPhi/LHC23", "Path to load phi distribution for track rotation"};
   } fConfigCCDB;
 
-  struct : ConfigurableGroup {
-    Configurable<bool> useRemoteField{"cfgUseRemoteField", false, "Chose whether to fetch the magnetic field from ccdb or set it manually"};
-    Configurable<float> magField{"cfgMagField", 5.0f, "Manually set magnetic field"};
-    Configurable<bool> flatTables{"cfgFlatTables", false, "Produce a single flat tables with all relevant information of the pairs and single tracks"};
-    Configurable<bool> polarTables{"cfgPolarTables", false, "Produce tables with dilepton polarization information"};
-    Configurable<bool> useKFVertexing{"cfgUseKFVertexing", false, "Use KF Particle for secondary vertex reconstruction (DCAFitter is used by default)"};
-    Configurable<bool> useAbsDCA{"cfgUseAbsDCA", false, "Use absolute DCA minimization instead of chi^2 minimization in secondary vertexing"};
-    Configurable<bool> propToPCA{"cfgPropToPCA", false, "Propagate tracks to secondary vertex"};
-    Configurable<bool> corrFullGeo{"cfgCorrFullGeo", false, "Use full geometry to correct for MCS effects in track propagation"};
-    Configurable<bool> noCorr{"cfgNoCorrFwdProp", false, "Do not correct for MCS effects in track propagation"};
-    Configurable<std::string> collisionSystem{"syst", "pp", "Collision system, pp or PbPb"};
-    Configurable<float> centerMassEnergy{"energy", 13600, "Center of mass energy in GeV"};
-    Configurable<bool> propTrack{"cfgPropTrack", true, "Propgate tracks to associated collision to recalculate DCA and momentum vector"};
-    Configurable<bool> useRemoteCollisionInfo{"cfgUseRemoteCollisionInfo", false, "Use remote collision information from CCDB"};
-    Configurable<bool> useEfficiencyWeighting{"cfgUseEfficiencyWeighting", false, "Apply efficiency weighting to the pairs from CCDB"};
-    Configurable<int> efficiencyType{"cfgEfficiencyType", 0, "Type of efficiency to apply from CCDB: 0 no efficiency, 1 pt-cent-costhetastar"};
-    Configurable<bool> useFlowReso{"cfgUseFlowReso", false, "Use remote flow information from CCDB"};
-    Configurable<bool> usePhiDistribution{"cfgUsePhiDistribution", false, "Use phi distribution to correct track rotation"};
+  struct : o2::framework::ConfigurableGroup {
+    o2::framework::Configurable<bool> useRemoteField{"cfgUseRemoteField", false, "Chose whether to fetch the magnetic field from ccdb or set it manually"};
+    o2::framework::Configurable<float> magField{"cfgMagField", 5.0f, "Manually set magnetic field"};
+    o2::framework::Configurable<bool> flatTables{"cfgFlatTables", false, "Produce a single flat tables with all relevant information of the pairs and single tracks"};
+    o2::framework::Configurable<bool> polarTables{"cfgPolarTables", false, "Produce tables with dilepton polarization information"};
+    o2::framework::Configurable<bool> useKFVertexing{"cfgUseKFVertexing", false, "Use KF Particle for secondary vertex reconstruction (DCAFitter is used by default)"};
+    o2::framework::Configurable<bool> useAbsDCA{"cfgUseAbsDCA", false, "Use absolute DCA minimization instead of chi^2 minimization in secondary vertexing"};
+    o2::framework::Configurable<bool> propToPCA{"cfgPropToPCA", false, "Propagate tracks to secondary vertex"};
+    o2::framework::Configurable<bool> corrFullGeo{"cfgCorrFullGeo", false, "Use full geometry to correct for MCS effects in track propagation"};
+    o2::framework::Configurable<bool> noCorr{"cfgNoCorrFwdProp", false, "Do not correct for MCS effects in track propagation"};
+    o2::framework::Configurable<std::string> collisionSystem{"syst", "pp", "Collision system, pp or PbPb"};
+    o2::framework::Configurable<float> centerMassEnergy{"energy", 13600, "Center of mass energy in GeV"};
+    o2::framework::Configurable<bool> propTrack{"cfgPropTrack", true, "Propgate tracks to associated collision to recalculate DCA and momentum vector"};
+    o2::framework::Configurable<bool> useRemoteCollisionInfo{"cfgUseRemoteCollisionInfo", false, "Use remote collision information from CCDB"};
+    o2::framework::Configurable<bool> useEfficiencyWeighting{"cfgUseEfficiencyWeighting", false, "Apply efficiency weighting to the pairs from CCDB"};
+    o2::framework::Configurable<int> efficiencyType{"cfgEfficiencyType", 0, "Type of efficiency to apply from CCDB: 0 no efficiency, 1 pt-cent-costhetastar"};
+    o2::framework::Configurable<bool> useFlowReso{"cfgUseFlowReso", false, "Use remote flow information from CCDB"};
+    o2::framework::Configurable<bool> usePhiDistribution{"cfgUsePhiDistribution", false, "Use phi distribution to correct track rotation"};
   } fConfigOptions;
-  struct : ConfigurableGroup {
-    Configurable<bool> applyBDT{"applyBDT", false, "Flag to apply ML selections"};
-    Configurable<std::string> fConfigBdtCutsJSON{"fConfigBdtCutsJSON", "", "Additional list of BDT cuts in JSON format"};
+  struct : o2::framework::ConfigurableGroup {
+    o2::framework::Configurable<bool> applyBDT{"applyBDT", false, "Flag to apply ML selections"};
+    o2::framework::Configurable<std::string> fConfigBdtCutsJSON{"fConfigBdtCutsJSON", "", "Additional list of BDT cuts in JSON format"};
 
-    Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"Users/j/jseo/ML/PbPbPsi/default/"}, "Paths of models on CCDB"};
-    Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
-    Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
+    o2::framework::Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"Users/j/jseo/ML/PbPbPsi/default/"}, "Paths of models on CCDB"};
+    o2::framework::Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
+    o2::framework::Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
   } fConfigML;
-  struct : ConfigurableGroup {
-    Configurable<bool> fConfigMiniTree{"useMiniTree.cfgMiniTree", false, "Produce a single flat table with minimal information for analysis"};
-    Configurable<float> fConfigMiniTreeMinMass{"useMiniTree.cfgMiniTreeMinMass", 2, "Min. mass cut for minitree"};
-    Configurable<float> fConfigMiniTreeMaxMass{"useMiniTree.cfgMiniTreeMaxMass", 5, "Max. mass cut for minitree"};
+  struct : o2::framework::ConfigurableGroup {
+    o2::framework::Configurable<bool> fConfigMiniTree{"useMiniTree.cfgMiniTree", false, "Produce a single flat table with minimal information for analysis"};
+    o2::framework::Configurable<float> fConfigMiniTreeMinMass{"useMiniTree.cfgMiniTreeMinMass", 2, "Min. mass cut for minitree"};
+    o2::framework::Configurable<float> fConfigMiniTreeMaxMass{"useMiniTree.cfgMiniTreeMaxMass", 5, "Max. mass cut for minitree"};
   } useMiniTree;
 
-  Service<o2::ccdb::BasicCCDBManager> fCCDB{};
+  o2::framework::Service<o2::ccdb::BasicCCDBManager> fCCDB{};
   o2::ccdb::CcdbApi fCCDBApi;
 
-  Filter filterEventSelected = aod::dqanalysisflags::isEventSelected > static_cast<uint8_t>(0);
+  o2::framework::expressions::Filter filterEventSelected = o2::aod::dqanalysisflags::isEventSelected > static_cast<uint8_t>(0);
 
   HistogramManager* fHistMan = nullptr;
   MixingHandler fMixingHandler;
@@ -1461,10 +1453,10 @@ struct AnalysisSameEventPairing {
   bool fEnableBarrelMuonHistos = false;
   bool fEnableBarrelMuonMixingHistos = false;
 
-  NoBinningPolicy<aod::dqanalysisflags::MixingHash> hashBin;
+  o2::framework::NoBinningPolicy<o2::aod::dqanalysisflags::MixingHash> hashBin;
 
-  Preslice<soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter>> trackAssocsPerCollision = aod::reducedtrack_association::reducedeventId;
-  Preslice<soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts>> muonAssocsPerCollision = aod::reducedtrack_association::reducedeventId;
+  o2::framework::Preslice<o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts, o2::aod::Prefilter>> trackAssocsPerCollision = o2::aod::reducedtrack_association::reducedeventId;
+  o2::framework::Preslice<o2::soa::Join<o2::aod::ReducedMuonsAssoc, o2::aod::MuonTrackCuts>> muonAssocsPerCollision = o2::aod::reducedtrack_association::reducedeventId;
 
   void init(o2::framework::InitContext& context)
   {
@@ -1505,7 +1497,7 @@ struct AnalysisSameEventPairing {
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fPairCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fPairCuts.push_back(*o2::aod::dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
       }
     }
 
@@ -1534,8 +1526,8 @@ struct AnalysisSameEventPairing {
 
       auto config = o2::aod::dqmlcuts::GetBdtScoreCutsAndConfigFromJSON(fConfigML.fConfigBdtCutsJSON.value.c_str());
 
-      if (std::holds_alternative<dqmlcuts::BinaryBdtScoreConfig>(config)) {
-        auto& cfg = std::get<dqmlcuts::BinaryBdtScoreConfig>(config);
+      if (std::holds_alternative<o2::aod::dqmlcuts::BinaryBdtScoreConfig>(config)) {
+        auto& cfg = std::get<o2::aod::dqmlcuts::BinaryBdtScoreConfig>(config);
         binsMl = cfg.binsMl;
         nClassesMl = 1;
         cutsMl = cfg.cutsMl;
@@ -1547,7 +1539,7 @@ struct AnalysisSameEventPairing {
         fDQMlResponse.setCentType(cfg.centType);
         LOG(info) << "Using BDT cuts for binary classification";
       } else {
-        auto& cfg = std::get<dqmlcuts::MultiClassBdtScoreConfig>(config);
+        auto& cfg = std::get<o2::aod::dqmlcuts::MultiClassBdtScoreConfig>(config);
         binsMl = cfg.binsMl;
         nClassesMl = 3;
         cutsMl = cfg.cutsMl;
@@ -1572,14 +1564,14 @@ struct AnalysisSameEventPairing {
     }
 
     // get the barrel track selection cuts
-    string tempCuts;
-    getTaskOptionValue<string>(context, "analysis-track-selection", "cfgTrackCuts", tempCuts, false);
+    std::string tempCuts;
+    o2::common::core::getTaskOptionValue<std::string>(context, "analysis-track-selection", "cfgTrackCuts", tempCuts, false);
     TString tempCutsStr = tempCuts;
     // check also the cuts added via JSON and add them to the string of cuts
-    getTaskOptionValue<string>(context, "analysis-track-selection", "cfgBarrelTrackCutsJSON", tempCuts, false);
+    o2::common::core::getTaskOptionValue<std::string>(context, "analysis-track-selection", "cfgBarrelTrackCutsJSON", tempCuts, false);
     TString addTrackCutsStr = tempCuts;
     if (addTrackCutsStr != "") {
-      std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
+      std::vector<AnalysisCut*> addTrackCuts = o2::aod::dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
       for (auto const& t : addTrackCuts) {
         tempCutsStr += Form(",%s", t->GetName());
       }
@@ -1638,13 +1630,13 @@ struct AnalysisSameEventPairing {
     }
 
     // get the muon track selection cuts
-    getTaskOptionValue<string>(context, "analysis-muon-selection", "cfgMuonCuts", tempCuts, false);
+    o2::common::core::getTaskOptionValue<std::string>(context, "analysis-muon-selection", "cfgMuonCuts", tempCuts, false);
     tempCutsStr = tempCuts;
     // check also the cuts added via JSON and add them to the string of cuts
-    getTaskOptionValue<string>(context, "analysis-muon-selection", "cfgMuonCutsJSON", tempCuts, false);
+    o2::common::core::getTaskOptionValue<std::string>(context, "analysis-muon-selection", "cfgMuonCutsJSON", tempCuts, false);
     TString addMuonCutsStr = tempCuts;
     if (addMuonCutsStr != "") {
-      std::vector<AnalysisCut*> addMuonCuts = dqcuts::GetCutsFromJSON(addMuonCutsStr.Data());
+      std::vector<AnalysisCut*> addMuonCuts = o2::aod::dqcuts::GetCutsFromJSON(addMuonCutsStr.Data());
       for (auto const& t : addMuonCuts) {
         tempCutsStr += Form(",%s", t->GetName());
       }
@@ -1727,12 +1719,12 @@ struct AnalysisSameEventPairing {
         // fMixingHandler = new MixingHandler("mixingHandler", "mixing handler");
         if (objArray->GetEntries() > 0) {
           for (int iVar = 0; iVar < objArray->GetEntries(); ++iVar) {
-            dqmixing::SetUpMixing(&fMixingHandler, objArray->At(iVar)->GetName());
+            o2::aod::dqmixing::SetUpMixing(&fMixingHandler, objArray->At(iVar)->GetName());
           }
         }
       }
       if (mixVarsJsonString != "") {
-        dqmixing::SetUpMixingFromJSON(&fMixingHandler, mixVarsJsonString.Data());
+        o2::aod::dqmixing::SetUpMixingFromJSON(&fMixingHandler, mixVarsJsonString.Data());
       }
       fMixingHandler.SetPoolDepth(fConfigMixingDepth);
       fMixingHandler.Init();
@@ -1819,8 +1811,8 @@ struct AnalysisSameEventPairing {
       if (fEnableBarrelMixingHistos) {
         DefineHistograms(fHistMan, "PairingMEQA", "mixedevent-pairing"); // histograms for QA of the pairing
       }
-      dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON
-      VarManager::SetUseVars(fHistMan->GetUsedVars());                                       // provide the list of required variables so that VarManager knows what to fill
+      o2::aod::dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON
+      VarManager::SetUseVars(fHistMan->GetUsedVars());                                                // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
   }
@@ -1859,7 +1851,7 @@ struct AnalysisSameEventPairing {
       }
     }
 
-    std::map<string, string> metadataRCT, header;
+    std::map<std::string, std::string> metadataRCT, header;
     header = fCCDBApi.retrieveHeaders(Form("RCT/Info/RunInformation/%i", runNumber), metadataRCT, -1);
     uint64_t sor = std::atol(header["SOR"].c_str());
     uint64_t eor = std::atol(header["EOR"].c_str());
@@ -1901,7 +1893,7 @@ struct AnalysisSameEventPairing {
 
   // Template function to run same event pairing (barrel-barrel, muon-muon, barrel-muon)
   template <bool TTwoProngFitter, int TPairType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TTrackAssocs, typename TTracks>
-  void runSameEventPairing(TEvents const& events, Preslice<TTrackAssocs>& preslice, TTrackAssocs const& assocs, TTracks const& /*tracks*/)
+  void runSameEventPairing(TEvents const& events, o2::framework::Preslice<TTrackAssocs>& preslice, TTrackAssocs const& assocs, TTracks const& /*tracks*/)
   {
     if (events.size() > 0) { // Additional protection to avoid crashing of events.begin().runNumber()
       if (fCurrentRun != events.begin().runNumber()) {
@@ -2745,7 +2737,7 @@ struct AnalysisSameEventPairing {
 
   // barrel-barrel and muon-muon event mixing
   template <int TPairType, uint32_t TEventFillMap, typename TEvents, typename TAssocs, typename TTracks>
-  void runSameSideMixing(TEvents& events, TAssocs const& assocs, TTracks const& tracks, Preslice<TAssocs>& preSlice)
+  void runSameSideMixing(TEvents& events, TAssocs const& assocs, TTracks const& tracks, o2::framework::Preslice<TAssocs>& preSlice)
   {
     if (ResoFlowSP == nullptr || ResoFlowEP == nullptr) {
       LOG(info) << "Flow resolution objects not set, flow will not be filled for mixed events";
@@ -2780,7 +2772,7 @@ struct AnalysisSameEventPairing {
   }
 
   template <bool TTwoProngFitter, int TPairType, uint32_t TEventFillMap, uint32_t TTrackFillMap, uint32_t TMuonFillMap, typename TEvents, typename TTrackAssocs, typename TTracks, typename TMuonAssocs, typename TMuons>
-  void runEmuSameEventPairing(TEvents const& events, Preslice<TTrackAssocs>& preslice1, TTrackAssocs const& assocs1, TTracks const& /*tracks1*/, Preslice<TMuonAssocs>& preslice2, TMuonAssocs const& assocs2, TMuons const& /*tracks2*/)
+  void runEmuSameEventPairing(TEvents const& events, o2::framework::Preslice<TTrackAssocs>& preslice1, TTrackAssocs const& assocs1, TTracks const& /*tracks1*/, o2::framework::Preslice<TMuonAssocs>& preslice2, TMuonAssocs const& assocs2, TMuons const& /*tracks2*/)
   {
     if (events.size() > 0) {
       if (fCurrentRun != events.begin().runNumber()) {
@@ -2822,7 +2814,7 @@ struct AnalysisSameEventPairing {
       }
 
       // Custom combination policy
-      for (auto const& [a1, a2] : o2::soa::combinations(soa::CombinationsFullIndexPolicy(groupedAssocs1, groupedAssocs2))) {
+      for (auto const& [a1, a2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(groupedAssocs1, groupedAssocs2))) {
         if (!(a1.isBarrelSelected_raw() & a1.isBarrelSelectedPrefilter_raw() & fTrackFilterMask)) {
           continue;
         }
@@ -2978,8 +2970,8 @@ struct AnalysisSameEventPairing {
   }
 
   template <uint32_t TEventFillMap, typename TEvents, typename TTrackAssocs, typename TTracks, typename TMuonAssocs, typename TMuons>
-  void runEmuSameSideMixing(TEvents& events, Preslice<TTrackAssocs>& preslice1, TTrackAssocs const& assocs1, TTracks const& tracks1,
-                            Preslice<TMuonAssocs>& preslice2, TMuonAssocs const& assocs2, TMuons const& tracks2)
+  void runEmuSameSideMixing(TEvents& events, o2::framework::Preslice<TTrackAssocs>& preslice1, TTrackAssocs const& assocs1, TTracks const& tracks1,
+                            o2::framework::Preslice<TMuonAssocs>& preslice2, TMuonAssocs const& assocs2, TMuons const& tracks2)
   {
     events.bindExternalIndices(&assocs1);
     events.bindExternalIndices(&assocs2);
@@ -3005,8 +2997,8 @@ struct AnalysisSameEventPairing {
   }
 
   void processAllSkimmed(MyEventsVtxCovSelected const& events,
-                         soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs, MyBarrelTracksWithCovWithAmbiguities const& barrelTracks,
-                         soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
+                         o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts, o2::aod::Prefilter> const& barrelAssocs, MyBarrelTracksWithCovWithAmbiguities const& barrelTracks,
+                         o2::soa::Join<o2::aod::ReducedMuonsAssoc, o2::aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
   {
     runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithCov, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
     runSameEventPairing<true, VarManager::kDecayToMuMu, gkEventFillMapWithCov, gkMuonFillMapWithCov>(events, muonAssocsPerCollision, muonAssocs, muons);
@@ -3014,120 +3006,120 @@ struct AnalysisSameEventPairing {
   }
 
   void processBarrelOnlySkimmed(MyEventsVtxCovSelected const& events,
-                                soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
+                                o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts, o2::aod::Prefilter> const& barrelAssocs,
                                 MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
   {
     runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithCov, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
   }
 
   void processBarrelOnlySkimmedFlow(MyEventsVtxCovSelectedQvector const& events,
-                                    soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
+                                    o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts, o2::aod::Prefilter> const& barrelAssocs,
                                     MyBarrelTracksWithAmbiguities const& barrelTracks)
   {
     runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithMultExtraWithQVector, gkTrackFillMap>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
   }
 
   void processBarrelOnlySkimmedNoCov(MyEventsSelected const& events,
-                                     soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
+                                     o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts, o2::aod::Prefilter> const& barrelAssocs,
                                      MyBarrelTracksWithAmbiguities const& barrelTracks)
   {
     runSameEventPairing<false, VarManager::kDecayToEE, gkEventFillMap, gkTrackFillMap>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
   }
 
   void processBarrelOnlySkimmedNoCovWithMultExtra(MyEventsMultExtraSelected const& events,
-                                                  soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
+                                                  o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts, o2::aod::Prefilter> const& barrelAssocs,
                                                   MyBarrelTracksWithAmbiguities const& barrelTracks)
   {
     runSameEventPairing<false, VarManager::kDecayToEE, gkEventFillMapWithMultExtra, gkTrackFillMap>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
   }
 
   void processBarrelOnlyWithCollSkimmed(MyEventsVtxCovSelectedInfo const& events,
-                                        soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
+                                        o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts, o2::aod::Prefilter> const& barrelAssocs,
                                         MyBarrelTracksWithCovWithAmbiguitiesWithColl const& barrelTracks)
   {
     runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithCov, gkTrackFillMapWithCovWithColl>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
   }
 
   void processBarrelOnlyWithQvectorCentrSkimmedNoCov(MyEventsQvectorCentrSelected const& events,
-                                                     soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
+                                                     o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts, o2::aod::Prefilter> const& barrelAssocs,
                                                      MyBarrelTracksWithAmbiguities const& barrelTracks)
   {
     runSameEventPairing<false, VarManager::kDecayToEE, gkEventFillMapWithQvectorCentr, gkTrackFillMap>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
   }
 
   void processBarrelOnlyWithQvectorCentrSkimmed(MyEventsQvectorCentrSelected const& events,
-                                                soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
+                                                o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts, o2::aod::Prefilter> const& barrelAssocs,
                                                 MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
   {
     runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithQvectorCentr, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
   }
 
   void processMuonOnlySkimmed(MyEventsVtxCovSelected const& events,
-                              soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
+                              o2::soa::Join<o2::aod::ReducedMuonsAssoc, o2::aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
   {
     runSameEventPairing<true, VarManager::kDecayToMuMu, gkEventFillMapWithCov, gkMuonFillMapWithCov>(events, muonAssocsPerCollision, muonAssocs, muons);
   }
 
   void processMuonOnlySkimmedMultExtra(MyEventsVtxCovSelectedMultExtra const& events,
-                                       soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
+                                       o2::soa::Join<o2::aod::ReducedMuonsAssoc, o2::aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
   {
     runSameEventPairing<true, VarManager::kDecayToMuMu, gkEventFillMapWithMultExtra, gkMuonFillMapWithCov>(events, muonAssocsPerCollision, muonAssocs, muons);
   }
 
   void processMuonOnlySkimmedFlow(MyEventsQvectorCentrSelected const& events,
-                                  soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
+                                  o2::soa::Join<o2::aod::ReducedMuonsAssoc, o2::aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
   {
     runSameEventPairing<true, VarManager::kDecayToMuMu, gkEventFillMapWithMultExtraWithQVector, gkMuonFillMapWithCov>(events, muonAssocsPerCollision, muonAssocs, muons);
   }
 
   void processElectronMuonSkimmed(MyEventsVtxCovSelected const& events,
-                                  soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs, MyBarrelTracksWithCovWithAmbiguities const& barrelTracks,
-                                  soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
+                                  o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts, o2::aod::Prefilter> const& barrelAssocs, MyBarrelTracksWithCovWithAmbiguities const& barrelTracks,
+                                  o2::soa::Join<o2::aod::ReducedMuonsAssoc, o2::aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
   {
     runEmuSameEventPairing<true, VarManager::kElectronMuon, gkEventFillMapWithCov, gkTrackFillMapWithCov, gkMuonFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, muonAssocsPerCollision, muonAssocs, muons);
   }
 
-  void processMixingAllSkimmed(soa::Filtered<MyEventsHashSelected>& events, // o2-linter: disable=const-ref-in-process
-                               soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& trackAssocs, MyBarrelTracksWithCov const& tracks,
-                               soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
+  void processMixingAllSkimmed(o2::soa::Filtered<MyEventsHashSelected>& events, // o2-linter: disable=const-ref-in-process
+                               o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts, o2::aod::Prefilter> const& trackAssocs, MyBarrelTracksWithCov const& tracks,
+                               o2::soa::Join<o2::aod::ReducedMuonsAssoc, o2::aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
   {
     runSameSideMixing<pairTypeEE, gkEventFillMap>(events, trackAssocs, tracks, trackAssocsPerCollision);
     runSameSideMixing<pairTypeMuMu, gkEventFillMap>(events, muonAssocs, muons, muonAssocsPerCollision);
   }
 
-  void processMixingBarrelSkimmed(soa::Filtered<MyEventsHashSelected>& events, // o2-linter: disable=const-ref-in-process
-                                  soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& trackAssocs, aod::ReducedTracks const& tracks)
+  void processMixingBarrelSkimmed(o2::soa::Filtered<MyEventsHashSelected>& events, // o2-linter: disable=const-ref-in-process
+                                  o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts, o2::aod::Prefilter> const& trackAssocs, o2::aod::ReducedTracks const& tracks)
   {
     runSameSideMixing<pairTypeEE, gkEventFillMap>(events, trackAssocs, tracks, trackAssocsPerCollision);
   }
 
-  void processMixingBarrelSkimmedFlow(soa::Filtered<MyEventsVtxCovSelectedQvectorWithHash>& events, // o2-linter: disable=const-ref-in-process
-                                      soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& trackAssocs, aod::ReducedTracks const& tracks)
+  void processMixingBarrelSkimmedFlow(o2::soa::Filtered<MyEventsVtxCovSelectedQvectorWithHash>& events, // o2-linter: disable=const-ref-in-process
+                                      o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts, o2::aod::Prefilter> const& trackAssocs, o2::aod::ReducedTracks const& tracks)
   {
     runSameSideMixing<pairTypeEE, gkEventFillMapWithMultExtraWithQVector>(events, trackAssocs, tracks, trackAssocsPerCollision);
   }
 
-  void processMixingBarrelWithQvectorCentrSkimmedNoCov(soa::Filtered<MyEventsHashSelectedQvectorCentr>& events, // o2-linter: disable=const-ref-in-process
-                                                       soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& trackAssocs, MyBarrelTracksWithAmbiguities const& tracks)
+  void processMixingBarrelWithQvectorCentrSkimmedNoCov(o2::soa::Filtered<MyEventsHashSelectedQvectorCentr>& events, // o2-linter: disable=const-ref-in-process
+                                                       o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts, o2::aod::Prefilter> const& trackAssocs, MyBarrelTracksWithAmbiguities const& tracks)
   {
     runSameSideMixing<pairTypeEE, gkEventFillMapWithQvectorCentr>(events, trackAssocs, tracks, trackAssocsPerCollision);
   }
 
-  void processMixingMuonSkimmed(soa::Filtered<MyEventsHashSelected>& events, // o2-linter: disable=const-ref-in-process
-                                soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
+  void processMixingMuonSkimmed(o2::soa::Filtered<MyEventsHashSelected>& events, // o2-linter: disable=const-ref-in-process
+                                o2::soa::Join<o2::aod::ReducedMuonsAssoc, o2::aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
   {
     runSameSideMixing<pairTypeMuMu, gkEventFillMap>(events, muonAssocs, muons, muonAssocsPerCollision);
   }
 
-  void processMixingMuonSkimmedFlow(soa::Filtered<MyEventsHashSelectedQvectorCentr>& events, // o2-linter: disable=const-ref-in-process
-                                    soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
+  void processMixingMuonSkimmedFlow(o2::soa::Filtered<MyEventsHashSelectedQvectorCentr>& events, // o2-linter: disable=const-ref-in-process
+                                    o2::soa::Join<o2::aod::ReducedMuonsAssoc, o2::aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
   {
     runSameSideMixing<pairTypeMuMu, gkEventFillMapWithMultExtraWithQVector>(events, muonAssocs, muons, muonAssocsPerCollision);
   }
 
-  void processMixingElectronMuonSkimmed(soa::Filtered<MyEventsHashSelected>& events, // o2-linter: disable=const-ref-in-process
-                                        soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs, aod::ReducedTracks const& barrelTracks,
-                                        soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
+  void processMixingElectronMuonSkimmed(o2::soa::Filtered<MyEventsHashSelected>& events, // o2-linter: disable=const-ref-in-process
+                                        o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts, o2::aod::Prefilter> const& barrelAssocs, o2::aod::ReducedTracks const& barrelTracks,
+                                        o2::soa::Join<o2::aod::ReducedMuonsAssoc, o2::aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
   {
     runEmuSameSideMixing<gkEventFillMap>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, muonAssocsPerCollision, muonAssocs, muons);
   }
@@ -3162,53 +3154,53 @@ struct AnalysisSameEventPairing {
 // Run pairing for resonance with legs fulfilling separate cuts (asymmetric decay channel)
 struct AnalysisAsymmetricPairing {
 
-  Produces<aod::Ditracks> ditrackList;
-  Produces<aod::DitracksExtra> ditrackExtraList;
+  o2::framework::Produces<o2::aod::Ditracks> ditrackList;
+  o2::framework::Produces<o2::aod::DitracksExtra> ditrackExtraList;
 
   o2::base::MatLayerCylSet* fLUT = nullptr;
   int fCurrentRun = -1; // needed to detect if the run changed and trigger update of calibrations etc.
 
   // Output objects
-  OutputObj<THashList> fOutputList{"output"};
+  o2::framework::OutputObj<THashList> fOutputList{"output"};
 
   // Configurables
-  Configurable<std::string> fConfigLegCuts{"cfgLegCuts", "", "<leg-A-1>:<leg-B-1>[:<leg-C-1>],[<leg-A-2>:<leg-B-2>[:<leg-C-1>],...]"};
-  Configurable<uint32_t> fConfigLegAFilterMask{"cfgLegAFilterMask", 0, "Filter mask corresponding to cuts in track-selection"};
-  Configurable<uint32_t> fConfigLegBFilterMask{"cfgLegBFilterMask", 0, "Filter mask corresponding to cuts in track-selection"};
-  Configurable<uint32_t> fConfigLegCFilterMask{"cfgLegCFilterMask", 0, "Filter mask corresponding to cuts in track-selection"};
-  Configurable<std::string> fConfigCommonTrackCuts{"cfgCommonTrackCuts", "", "Comma separated list of cuts to be applied to all legs"};
-  Configurable<std::string> fConfigPairCuts{"cfgPairCuts", "", "Comma separated list of pair cuts"};
-  Configurable<std::string> fConfigPairCutsJSON{"cfgPairCutsJSON", "", "Additional list of pair cuts in JSON format"};
-  Configurable<bool> fConfigRemoveCollSplittingCandidates{"cfgRemoveCollSplittingCandidates", false, "If true, remove collision splitting candidates as determined by the event selection task upstream"};
-  Configurable<bool> fConfigSkipAmbiguousIdCombinations{"cfgSkipAmbiguousIdCombinations", true, "Choose whether to skip pairs/triples which pass a stricter combination of cuts, e.g. KKPi triplets for D+ -> KPiPi"};
+  o2::framework::Configurable<std::string> fConfigLegCuts{"cfgLegCuts", "", "<leg-A-1>:<leg-B-1>[:<leg-C-1>],[<leg-A-2>:<leg-B-2>[:<leg-C-1>],...]"};
+  o2::framework::Configurable<uint32_t> fConfigLegAFilterMask{"cfgLegAFilterMask", 0, "o2::framework::expressions::Filter mask corresponding to cuts in track-selection"};
+  o2::framework::Configurable<uint32_t> fConfigLegBFilterMask{"cfgLegBFilterMask", 0, "o2::framework::expressions::Filter mask corresponding to cuts in track-selection"};
+  o2::framework::Configurable<uint32_t> fConfigLegCFilterMask{"cfgLegCFilterMask", 0, "o2::framework::expressions::Filter mask corresponding to cuts in track-selection"};
+  o2::framework::Configurable<std::string> fConfigCommonTrackCuts{"cfgCommonTrackCuts", "", "Comma separated list of cuts to be applied to all legs"};
+  o2::framework::Configurable<std::string> fConfigPairCuts{"cfgPairCuts", "", "Comma separated list of pair cuts"};
+  o2::framework::Configurable<std::string> fConfigPairCutsJSON{"cfgPairCutsJSON", "", "Additional list of pair cuts in JSON format"};
+  o2::framework::Configurable<bool> fConfigRemoveCollSplittingCandidates{"cfgRemoveCollSplittingCandidates", false, "If true, remove collision splitting candidates as determined by the event selection task upstream"};
+  o2::framework::Configurable<bool> fConfigSkipAmbiguousIdCombinations{"cfgSkipAmbiguousIdCombinations", true, "Choose whether to skip pairs/triples which pass a stricter combination of cuts, e.g. KKPi triplets for D+ -> KPiPi"};
 
-  Configurable<std::string> fConfigHistogramSubgroups{"cfgAsymmetricPairingHistogramsSubgroups", "barrel,vertexing", "Comma separated list of asymmetric-pairing histogram subgroups"};
-  Configurable<bool> fConfigSameSignHistograms{"cfgSameSignHistograms", false, "Include same sign pair histograms for 2-prong decays"};
-  Configurable<bool> fConfigAmbiguousHistograms{"cfgAmbiguousHistograms", false, "Include separate histograms for pairs/triplets with ambiguous tracks"};
-  Configurable<bool> fConfigReflectedHistograms{"cfgReflectedHistograms", false, "Include separate histograms for pairs which are reflections of previously counted pairs"};
-  Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
+  o2::framework::Configurable<std::string> fConfigHistogramSubgroups{"cfgAsymmetricPairingHistogramsSubgroups", "barrel,vertexing", "Comma separated list of asymmetric-pairing histogram subgroups"};
+  o2::framework::Configurable<bool> fConfigSameSignHistograms{"cfgSameSignHistograms", false, "Include same sign pair histograms for 2-prong decays"};
+  o2::framework::Configurable<bool> fConfigAmbiguousHistograms{"cfgAmbiguousHistograms", false, "Include separate histograms for pairs/triplets with ambiguous tracks"};
+  o2::framework::Configurable<bool> fConfigReflectedHistograms{"cfgReflectedHistograms", false, "Include separate histograms for pairs which are reflections of previously counted pairs"};
+  o2::framework::Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
 
-  Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> fConfigGRPMagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<bool> fConfigUseRemoteField{"cfgUseRemoteField", false, "Choose whether to fetch the magnetic field from ccdb or set it manually"};
-  Configurable<float> fConfigMagField{"cfgMagField", 5.0f, "Manually set magnetic field"};
+  o2::framework::Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  o2::framework::Configurable<std::string> fConfigGRPMagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  o2::framework::Configurable<bool> fConfigUseRemoteField{"cfgUseRemoteField", false, "Choose whether to fetch the magnetic field from ccdb or set it manually"};
+  o2::framework::Configurable<float> fConfigMagField{"cfgMagField", 5.0f, "Manually set magnetic field"};
 
-  Configurable<bool> fConfigUseKFVertexing{"cfgUseKFVertexing", false, "Use KF Particle for secondary vertex reconstruction (DCAFitter is used by default)"};
-  Configurable<bool> fConfigUseAbsDCA{"cfgUseAbsDCA", false, "Use absolute DCA minimization instead of chi^2 minimization in secondary vertexing"};
-  Configurable<bool> fConfigPropToPCA{"cfgPropToPCA", false, "Propagate tracks to secondary vertex"};
-  Configurable<std::string> fConfigLutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
-  Configurable<bool> fConfigFetchInteractionRate{"cfgFetchInteractionRate", false, "Fetch event-wise interaction rate from the CCDB"};
-  Configurable<std::string> fConfigIRSource{"cfgIRSource", "ZNC hadronic", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
+  o2::framework::Configurable<bool> fConfigUseKFVertexing{"cfgUseKFVertexing", false, "Use KF Particle for secondary vertex reconstruction (DCAFitter is used by default)"};
+  o2::framework::Configurable<bool> fConfigUseAbsDCA{"cfgUseAbsDCA", false, "Use absolute DCA minimization instead of chi^2 minimization in secondary vertexing"};
+  o2::framework::Configurable<bool> fConfigPropToPCA{"cfgPropToPCA", false, "Propagate tracks to secondary vertex"};
+  o2::framework::Configurable<std::string> fConfigLutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+  o2::framework::Configurable<bool> fConfigFetchInteractionRate{"cfgFetchInteractionRate", false, "Fetch event-wise interaction rate from the CCDB"};
+  o2::framework::Configurable<std::string> fConfigIRSource{"cfgIRSource", "ZNC hadronic", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
 
-  Service<o2::ccdb::BasicCCDBManager> fCCDB{};
-  ctpRateFetcher rateFetcher;
+  o2::framework::Service<o2::ccdb::BasicCCDBManager> fCCDB{};
+  o2::ctpRateFetcher rateFetcher;
 
   HistogramManager* fHistMan = nullptr;
 
   std::vector<AnalysisCompositeCut*> fPairCuts;
   int fNPairHistPrefixes = 0;
 
-  // Filter masks to find legs in BarrelTrackCuts table
+  // o2::framework::expressions::Filter masks to find legs in BarrelTrackCuts table
   uint32_t fLegAFilterMask = 0;
   uint32_t fLegBFilterMask = 0;
   uint32_t fLegCFilterMask = 0;
@@ -3216,7 +3208,7 @@ struct AnalysisAsymmetricPairing {
   std::map<int, uint32_t> fConstructedLegAFilterMasksMap;
   std::map<int, uint32_t> fConstructedLegBFilterMasksMap;
   std::map<int, uint32_t> fConstructedLegCFilterMasksMap;
-  // Filter map for common track cuts
+  // o2::framework::expressions::Filter map for common track cuts
   uint32_t fCommonTrackCutMask = 0;
   // Map tracking which common track cut the track cuts correspond to
   std::map<int, uint32_t> fCommonTrackCutFilterMasks;
@@ -3229,12 +3221,12 @@ struct AnalysisAsymmetricPairing {
   std::vector<TString> fPairCutNames;
   std::vector<TString> fCommonCutNames;
 
-  Preslice<soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts>> trackAssocsPerCollision = aod::reducedtrack_association::reducedeventId;
+  o2::framework::Preslice<o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts>> trackAssocsPerCollision = o2::aod::reducedtrack_association::reducedeventId;
 
   // Partitions for triplets and asymmetric pairs
-  Partition<soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts>> legACandidateAssocs = (o2::aod::dqanalysisflags::isBarrelSelected & fConfigLegAFilterMask) > static_cast<uint32_t>(0);
-  Partition<soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts>> legBCandidateAssocs = (o2::aod::dqanalysisflags::isBarrelSelected & fConfigLegBFilterMask) > static_cast<uint32_t>(0);
-  Partition<soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts>> legCCandidateAssocs = (o2::aod::dqanalysisflags::isBarrelSelected & fConfigLegCFilterMask) > static_cast<uint32_t>(0);
+  o2::framework::Partition<o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts>> legACandidateAssocs = (o2::aod::dqanalysisflags::isBarrelSelected & fConfigLegAFilterMask) > static_cast<uint32_t>(0);
+  o2::framework::Partition<o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts>> legBCandidateAssocs = (o2::aod::dqanalysisflags::isBarrelSelected & fConfigLegBFilterMask) > static_cast<uint32_t>(0);
+  o2::framework::Partition<o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts>> legCCandidateAssocs = (o2::aod::dqanalysisflags::isBarrelSelected & fConfigLegCFilterMask) > static_cast<uint32_t>(0);
 
   // Map to track how many times a pair of tracks has been encountered
   std::map<std::pair<int32_t, int32_t>, int8_t> fPairCount;
@@ -3259,13 +3251,13 @@ struct AnalysisAsymmetricPairing {
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fPairCuts.push_back(dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fPairCuts.push_back(o2::aod::dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
       }
     }
     // Extra pair cuts via JSON
     TString addPairCutsStr = fConfigPairCutsJSON.value;
     if (addPairCutsStr != "") {
-      std::vector<AnalysisCut*> addPairCuts = dqcuts::GetCutsFromJSON(addPairCutsStr.Data());
+      std::vector<AnalysisCut*> addPairCuts = o2::aod::dqcuts::GetCutsFromJSON(addPairCutsStr.Data());
       for (auto const& t : addPairCuts) {
         fPairCuts.push_back(static_cast<AnalysisCompositeCut*>(t));
         cutNamesStr += Form(",%s", t->GetName());
@@ -3277,14 +3269,14 @@ struct AnalysisAsymmetricPairing {
       fPairCutNames.push_back(objArrayPairCuts->At(j)->GetName());
     }
     // Get the barrel track selection cuts
-    string tempCuts;
-    getTaskOptionValue<string>(context, "analysis-track-selection", "cfgTrackCuts", tempCuts, false);
+    std::string tempCuts;
+    o2::common::core::getTaskOptionValue<std::string>(context, "analysis-track-selection", "cfgTrackCuts", tempCuts, false);
     TString tempCutsStr = tempCuts;
     // check also the cuts added via JSON and add them to the string of cuts
-    getTaskOptionValue<string>(context, "analysis-track-selection", "cfgBarrelTrackCutsJSON", tempCuts, false);
+    o2::common::core::getTaskOptionValue<std::string>(context, "analysis-track-selection", "cfgBarrelTrackCutsJSON", tempCuts, false);
     TString addTrackCutsStr = tempCuts;
     if (addTrackCutsStr != "") {
-      std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
+      std::vector<AnalysisCut*> addTrackCuts = o2::aod::dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
       for (auto const& t : addTrackCuts) {
         tempCutsStr += Form(",%s", t->GetName());
       }
@@ -3466,8 +3458,8 @@ struct AnalysisAsymmetricPairing {
     fLUT = o2::base::MatLayerCylSet::rectifyPtrFromFile(fCCDB->get<o2::base::MatLayerCylSet>(fConfigLutPath));
     VarManager::SetupMatLUTFwdDCAFitter(fLUT);
 
-    dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON
-    VarManager::SetUseVars(fHistMan->GetUsedVars());                                       // provide the list of required variables so that VarManager knows what to fill
+    o2::aod::dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON
+    VarManager::SetUseVars(fHistMan->GetUsedVars());                                                // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
   }
 
@@ -3513,7 +3505,7 @@ struct AnalysisAsymmetricPairing {
 
   // Template function to run same event pairing with asymmetric pairs (e.g. kaon-pion)
   template <bool TTwoProngFitter, int TPairType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TTrackAssocs, typename TTracks>
-  void runAsymmetricPairing(TEvents const& events, Preslice<TTrackAssocs>& preslice, TTrackAssocs const& /*assocs*/, TTracks const& /*tracks*/)
+  void runAsymmetricPairing(TEvents const& events, o2::framework::Preslice<TTrackAssocs>& preslice, TTrackAssocs const& /*assocs*/, TTracks const& /*tracks*/)
   {
     fPairCount.clear();
 
@@ -3570,7 +3562,7 @@ struct AnalysisAsymmetricPairing {
         continue;
       }
 
-      for (auto const& [a1, a2] : combinations(soa::CombinationsFullIndexPolicy(groupedLegAAssocs, groupedLegBAssocs))) {
+      for (auto const& [a1, a2] : combinations(o2::soa::CombinationsFullIndexPolicy(groupedLegAAssocs, groupedLegBAssocs))) {
 
         auto twoTrackFilter = static_cast<uint32_t>(0);
         uint32_t twoTrackCommonFilter = static_cast<uint32_t>(0);
@@ -3719,7 +3711,7 @@ struct AnalysisAsymmetricPairing {
 
   // Template function to run same event triplets (e.g. D+->K-pi+pi+)
   template <bool TThreeProngFitter, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TTrackAssocs, typename TTracks>
-  void runThreeProng(TEvents const& events, Preslice<TTrackAssocs>& preslice, TTrackAssocs const& /*assocs*/, TTracks const& tracks, VarManager::PairCandidateType tripletType)
+  void runThreeProng(TEvents const& events, o2::framework::Preslice<TTrackAssocs>& preslice, TTrackAssocs const& /*assocs*/, TTracks const& tracks, VarManager::PairCandidateType tripletType)
   {
     if (events.size() > 0) { // Additional protection to avoid crashing of events.begin().runNumber()
       if (fCurrentRun != events.begin().runNumber()) {
@@ -3754,7 +3746,7 @@ struct AnalysisAsymmetricPairing {
 
       // Based on triplet type, make suitable combinations of the partitions
       if (tripletType == VarManager::kTripleCandidateToPKPi) {
-        for (auto const& [a1, a2, a3] : combinations(soa::CombinationsFullIndexPolicy(groupedLegAAssocs, groupedLegBAssocs, groupedLegCAssocs))) {
+        for (auto const& [a1, a2, a3] : combinations(o2::soa::CombinationsFullIndexPolicy(groupedLegAAssocs, groupedLegBAssocs, groupedLegCAssocs))) {
           readTriplet<TThreeProngFitter, TEventFillMap, TTrackFillMap>(a1, a2, a3, tracks, event, tripletType);
         }
       } else if (tripletType == VarManager::kTripleCandidateToKPiPi) {
@@ -3871,35 +3863,35 @@ struct AnalysisAsymmetricPairing {
   }
 
   void processKaonPionSkimmed(MyEventsVtxCovZdcFitSelected const& events,
-                              soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts> const& barrelAssocs,
+                              o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts> const& barrelAssocs,
                               MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
   {
     runAsymmetricPairing<true, VarManager::kDecayToKPi, gkEventFillMapWithCovZdcFit, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
   }
 
   void processKaonPionSkimmedMultExtra(MyEventsVtxCovZdcFitSelectedMultExtra const& events,
-                                       soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts> const& barrelAssocs,
+                                       o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts> const& barrelAssocs,
                                        MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
   {
     runAsymmetricPairing<true, VarManager::kDecayToKPi, gkEventFillMapWithCovZdcFitMultExtra, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
   }
 
   void processKaonPionPionSkimmed(MyEventsVtxCovZdcFitSelected const& events,
-                                  soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts> const& barrelAssocs,
+                                  o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts> const& barrelAssocs,
                                   MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
   {
     runThreeProng<true, gkEventFillMapWithCovZdcFit, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, VarManager::kTripleCandidateToKPiPi);
   }
 
   void processKaonPionPionSkimmedMultExtra(MyEventsVtxCovZdcFitSelectedMultExtra const& events,
-                                           soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts> const& barrelAssocs,
+                                           o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts> const& barrelAssocs,
                                            MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
   {
     runThreeProng<true, gkEventFillMapWithCovZdcFitMultExtra, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, VarManager::kTripleCandidateToKPiPi);
   }
 
   void processProtonKaonPionSkimmed(MyEventsVtxCovZdcFitSelected const& events,
-                                    soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts> const& barrelAssocs,
+                                    o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts> const& barrelAssocs,
                                     MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
   {
     runThreeProng<true, gkEventFillMapWithCovZdcFit, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, VarManager::kTripleCandidateToPKPi);
@@ -3922,40 +3914,40 @@ struct AnalysisAsymmetricPairing {
 // Dileptons produced with all the selection cuts specified in the same-event pairing task are combined with the
 //   tracks passing the fConfigTrackCut cut. The dileptons cuts from the same-event pairing task are auto-detected
 struct AnalysisDileptonTrack {
-  Produces<aod::BmesonCandidates> BmesonsTable;
-  Produces<aod::JPsiMuonCandidates> DileptonTrackTable;
-  OutputObj<THashList> fOutputList{"output"};
+  o2::framework::Produces<o2::aod::BmesonCandidates> BmesonsTable;
+  o2::framework::Produces<o2::aod::JPsiMuonCandidates> DileptonTrackTable;
+  o2::framework::OutputObj<THashList> fOutputList{"output"};
 
-  Configurable<std::string> fConfigTrackCuts{"cfgTrackCuts", "kaonPID", "Comma separated list of cuts for the track to be correlated with the dileptons"};
-  Configurable<float> fConfigDileptonLowMass{"cfgDileptonLowMass", 2.8, "Low mass cut for the dileptons used in analysis"};
-  Configurable<float> fConfigDileptonHighMass{"cfgDileptonHighMass", 3.2, "High mass cut for the dileptons used in analysis"};
-  Configurable<float> fConfigDileptonLowpTCut{"cfgDileptonLowpTCut", 0.0, "Low pT cut for dileptons used in the triplet vertexing"};
-  Configurable<float> fConfigDileptonHighpTCut{"cfgDileptonHighpTCut", 1E5, "High pT cut for dileptons used in the triplet vertexing"};
-  Configurable<float> fConfigDileptonRapCutAbs{"cfgDileptonRapCutAbs", 1.0, "Rap cut for dileptons used in the triplet vertexing"};
-  Configurable<float> fConfigDileptonLxyCut{"cfgDileptonLxyCut", 0.0, "Lxy cut for dileptons used in the triplet vertexing"};
-  Configurable<float> fConfigDileptonTauxyCut{"cfgDileptonTauxyCut", -10000, "Tauxy cut for dileptons used to select the non-prompt Jpsi"};
-  Configurable<bool> fConfigUseKFVertexing{"cfgUseKFVertexing", false, "Use KF Particle for secondary vertex reconstruction (DCAFitter is used by default)"};
+  o2::framework::Configurable<std::string> fConfigTrackCuts{"cfgTrackCuts", "kaonPID", "Comma separated list of cuts for the track to be correlated with the dileptons"};
+  o2::framework::Configurable<float> fConfigDileptonLowMass{"cfgDileptonLowMass", 2.8, "Low mass cut for the dileptons used in analysis"};
+  o2::framework::Configurable<float> fConfigDileptonHighMass{"cfgDileptonHighMass", 3.2, "High mass cut for the dileptons used in analysis"};
+  o2::framework::Configurable<float> fConfigDileptonLowpTCut{"cfgDileptonLowpTCut", 0.0, "Low pT cut for dileptons used in the triplet vertexing"};
+  o2::framework::Configurable<float> fConfigDileptonHighpTCut{"cfgDileptonHighpTCut", 1E5, "High pT cut for dileptons used in the triplet vertexing"};
+  o2::framework::Configurable<float> fConfigDileptonRapCutAbs{"cfgDileptonRapCutAbs", 1.0, "Rap cut for dileptons used in the triplet vertexing"};
+  o2::framework::Configurable<float> fConfigDileptonLxyCut{"cfgDileptonLxyCut", 0.0, "Lxy cut for dileptons used in the triplet vertexing"};
+  o2::framework::Configurable<float> fConfigDileptonTauxyCut{"cfgDileptonTauxyCut", -10000, "Tauxy cut for dileptons used to select the non-prompt Jpsi"};
+  o2::framework::Configurable<bool> fConfigUseKFVertexing{"cfgUseKFVertexing", false, "Use KF Particle for secondary vertex reconstruction (DCAFitter is used by default)"};
 
-  Configurable<std::string> fConfigHistogramSubgroups{"cfgDileptonTrackHistogramsSubgroups", "invmass,vertexing", "Comma separated list of dilepton-track histogram subgroups"};
-  Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
-  Configurable<int> fConfigMixingDepth{"cfgMixingDepth", 5, "Event mixing pool depth"};
+  o2::framework::Configurable<std::string> fConfigHistogramSubgroups{"cfgDileptonTrackHistogramsSubgroups", "invmass,vertexing", "Comma separated list of dilepton-track histogram subgroups"};
+  o2::framework::Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
+  o2::framework::Configurable<int> fConfigMixingDepth{"cfgMixingDepth", 5, "Event mixing pool depth"};
 
-  Configurable<bool> fConfigUseRemoteField{"cfgUseRemoteField", false, "Chose whether to fetch the magnetic field from ccdb or set it manually"};
-  Configurable<std::string> fConfigGRPmagPath{"cfgGrpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<float> fConfigMagField{"cfgMagField", 5.0f, "Manually set magnetic field"};
+  o2::framework::Configurable<bool> fConfigUseRemoteField{"cfgUseRemoteField", false, "Chose whether to fetch the magnetic field from ccdb or set it manually"};
+  o2::framework::Configurable<std::string> fConfigGRPmagPath{"cfgGrpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  o2::framework::Configurable<float> fConfigMagField{"cfgMagField", 5.0f, "Manually set magnetic field"};
 
-  Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
-  Configurable<std::string> fConfigGeoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
-  Configurable<bool> fConfigUseRapcut{"cfgUseMCRapcut", false, "Use Rap cut for dileptons used in the triplet vertexing"};
-  Configurable<bool> fConfigEnergycorrelator{"cfgEnergycorrelator", false, "Add some hist for energy correlator study"};
-  Configurable<bool> fConfigApplyMassEC{"cfgApplyMassEC", false, "Apply fit mass for sideband for the energy correlator study"};
-  Configurable<std::vector<float>> fConfigFitmassEC{"cfgTFitmassEC", std::vector<float>{-0.541438, 2.8, 3.2}, "parameter from the fit fuction and fit range"};
-  Configurable<std::vector<float>> fConfigTransRange{"cfgTransRange", std::vector<float>{0.333333, 0.666667}, "Transverse region for the energy correlstor analysis"};
+  o2::framework::Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  o2::framework::Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  o2::framework::Configurable<std::string> fConfigGeoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  o2::framework::Configurable<bool> fConfigUseRapcut{"cfgUseMCRapcut", false, "Use Rap cut for dileptons used in the triplet vertexing"};
+  o2::framework::Configurable<bool> fConfigEnergycorrelator{"cfgEnergycorrelator", false, "Add some hist for energy correlator study"};
+  o2::framework::Configurable<bool> fConfigApplyMassEC{"cfgApplyMassEC", false, "Apply fit mass for sideband for the energy correlator study"};
+  o2::framework::Configurable<std::vector<float>> fConfigFitmassEC{"cfgTFitmassEC", std::vector<float>{-0.541438, 2.8, 3.2}, "parameter from the fit fuction and fit range"};
+  o2::framework::Configurable<std::vector<float>> fConfigTransRange{"cfgTransRange", std::vector<float>{0.333333, 0.666667}, "Transverse region for the energy correlstor analysis"};
 
-  Configurable<bool> fConfigApplyEfficiency{"cfgApplyEfficiency", false, "If true, apply efficiency correction for the energy correlator study"};
-  Configurable<bool> fConfigApplyEfficiencyME{"cfgApplyEfficiencyME", false, "If true, apply efficiency correction for the energy correlator study"};
-  Configurable<std::string> fConfigAccCCDBPath{"AccCCDBPath", "Users/y/yalin/pptest/test2", "Path of the efficiency corrections"};
+  o2::framework::Configurable<bool> fConfigApplyEfficiency{"cfgApplyEfficiency", false, "If true, apply efficiency correction for the energy correlator study"};
+  o2::framework::Configurable<bool> fConfigApplyEfficiencyME{"cfgApplyEfficiencyME", false, "If true, apply efficiency correction for the energy correlator study"};
+  o2::framework::Configurable<std::string> fConfigAccCCDBPath{"AccCCDBPath", "Users/y/yalin/pptest/test2", "Path of the efficiency corrections"};
 
   int fCurrentRun = -1; // needed to detect if the run changed and trigger update of calibrations etc.
   int fNCuts = 0;       // number of dilepton leg cuts
@@ -3971,13 +3963,13 @@ struct AnalysisDileptonTrack {
   std::vector<TString> fPairCutNames;
   std::vector<TString> fCommonPairCutNames;
 
-  Service<o2::ccdb::BasicCCDBManager> fCCDB{};
+  o2::framework::Service<o2::ccdb::BasicCCDBManager> fCCDB{};
 
   // TODO: The filter expressions seem to always use the default value of configurables, not the values from the actual configuration file
-  Filter eventFilter = aod::dqanalysisflags::isEventSelected > static_cast<uint8_t>(0);
-  Filter dileptonFilter = aod::reducedpair::pt > fConfigDileptonLowpTCut&& aod::reducedpair::pt<fConfigDileptonHighpTCut && aod::reducedpair::mass> fConfigDileptonLowMass&& aod::reducedpair::mass<fConfigDileptonHighMass && aod::reducedpair::sign == 0 && aod::reducedpair::lxy> fConfigDileptonLxyCut&& aod::reducedpair::tauxy > fConfigDileptonTauxyCut;
-  Filter filterBarrel = aod::dqanalysisflags::isBarrelSelected > static_cast<uint32_t>(0);
-  Filter filterMuon = aod::dqanalysisflags::isMuonSelected > static_cast<uint32_t>(0);
+  o2::framework::expressions::Filter eventFilter = o2::aod::dqanalysisflags::isEventSelected > static_cast<uint8_t>(0);
+  o2::framework::expressions::Filter dileptonFilter = o2::aod::reducedpair::pt > fConfigDileptonLowpTCut&& o2::aod::reducedpair::pt<fConfigDileptonHighpTCut && o2::aod::reducedpair::mass> fConfigDileptonLowMass&& o2::aod::reducedpair::mass<fConfigDileptonHighMass && o2::aod::reducedpair::sign == 0 && o2::aod::reducedpair::lxy> fConfigDileptonLxyCut&& o2::aod::reducedpair::tauxy > fConfigDileptonTauxyCut;
+  o2::framework::expressions::Filter filterBarrel = o2::aod::dqanalysisflags::isBarrelSelected > static_cast<uint32_t>(0);
+  o2::framework::expressions::Filter filterMuon = o2::aod::dqanalysisflags::isMuonSelected > static_cast<uint32_t>(0);
 
   constexpr static uint32_t fgDileptonFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::Pair; // fill map
 
@@ -3986,7 +3978,7 @@ struct AnalysisDileptonTrack {
   float* fValuesHadron = nullptr;
   HistogramManager* fHistMan = nullptr;
 
-  NoBinningPolicy<aod::dqanalysisflags::MixingHash> fHashBin;
+  o2::framework::NoBinningPolicy<o2::aod::dqanalysisflags::MixingHash> fHashBin;
 
   TF1* fMassBkg = nullptr;
 
@@ -4027,11 +4019,11 @@ struct AnalysisDileptonTrack {
       // Get the list of single track and muon cuts computed in the dedicated tasks upstream
       // We need this to know the order in which they were computed, and also to make sure that in this task we do not ask
       //   for cuts which were not computed (in which case this will trigger a fatal)
-      string cfgTrackSelection_TrackCuts;
+      std::string cfgTrackSelection_TrackCuts;
       if (isBarrel || isBarrelAsymmetric) {
-        getTaskOptionValue<string>(context, "analysis-track-selection", "cfgTrackCuts", cfgTrackSelection_TrackCuts, false);
+        o2::common::core::getTaskOptionValue<std::string>(context, "analysis-track-selection", "cfgTrackCuts", cfgTrackSelection_TrackCuts, false);
       } else {
-        getTaskOptionValue<string>(context, "analysis-muon-selection", "cfgMuonCuts", cfgTrackSelection_TrackCuts, false);
+        o2::common::core::getTaskOptionValue<std::string>(context, "analysis-muon-selection", "cfgMuonCuts", cfgTrackSelection_TrackCuts, false);
       }
 
       TObjArray* cfgTrackSelection_objArrayTrackCuts = nullptr;
@@ -4040,15 +4032,15 @@ struct AnalysisDileptonTrack {
       }
       // get also the list of cuts specified via the JSON parameters
       if (isBarrel || isBarrelAsymmetric) {
-        getTaskOptionValue<string>(context, "analysis-track-selection", "cfgBarrelTrackCutsJSON", cfgTrackSelection_TrackCuts, false);
+        o2::common::core::getTaskOptionValue<std::string>(context, "analysis-track-selection", "cfgBarrelTrackCutsJSON", cfgTrackSelection_TrackCuts, false);
       } else {
-        getTaskOptionValue<string>(context, "analysis-muon-selection", "cfgMuonCutsJSON", cfgTrackSelection_TrackCuts, false);
+        o2::common::core::getTaskOptionValue<std::string>(context, "analysis-muon-selection", "cfgMuonCutsJSON", cfgTrackSelection_TrackCuts, false);
       }
       if (!cfgTrackSelection_TrackCuts.empty()) {
         if (cfgTrackSelection_objArrayTrackCuts == nullptr) {
           cfgTrackSelection_objArrayTrackCuts = new TObjArray();
         }
-        std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(cfgTrackSelection_TrackCuts.data());
+        std::vector<AnalysisCut*> addTrackCuts = o2::aod::dqcuts::GetCutsFromJSON(cfgTrackSelection_TrackCuts.data());
         for (auto const& t : addTrackCuts) {
           auto tempObjStr = new TObjString(t->GetName());
           cfgTrackSelection_objArrayTrackCuts->Add(tempObjStr);
@@ -4085,20 +4077,20 @@ struct AnalysisDileptonTrack {
       // NOTE: The track/muon cuts in analysis-same-event-pairing are used to select electrons/muons to build dielectrons/dimuons
       // NOTE: The cfgPairCuts in analysis-same-event-pairing are used to apply an additional selection on top of the already produced dileptons
       //        but this is only used for histograms, not for the produced dilepton tables
-      string cfgPairing_TrackCuts;
-      string cfgPairing_PairCuts;
-      string cfgPairing_PairCutsJSON;
-      string cfgPairing_CommonTrackCuts;
+      std::string cfgPairing_TrackCuts;
+      std::string cfgPairing_PairCuts;
+      std::string cfgPairing_PairCutsJSON;
+      std::string cfgPairing_CommonTrackCuts;
       if (isBarrel) {
-        getTaskOptionValue<string>(context, "analysis-same-event-pairing", "cfgTrackCuts", cfgPairing_TrackCuts, false);
-        getTaskOptionValue<string>(context, "analysis-same-event-pairing", "cfgPairCuts", cfgPairing_PairCuts, false);
+        o2::common::core::getTaskOptionValue<std::string>(context, "analysis-same-event-pairing", "cfgTrackCuts", cfgPairing_TrackCuts, false);
+        o2::common::core::getTaskOptionValue<std::string>(context, "analysis-same-event-pairing", "cfgPairCuts", cfgPairing_PairCuts, false);
       } else if (isMuon) {
-        getTaskOptionValue<string>(context, "analysis-same-event-pairing", "cfgMuonCuts", cfgPairing_TrackCuts, false);
-        getTaskOptionValue<string>(context, "analysis-same-event-pairing", "cfgPairCuts", cfgPairing_PairCuts, false);
+        o2::common::core::getTaskOptionValue<std::string>(context, "analysis-same-event-pairing", "cfgMuonCuts", cfgPairing_TrackCuts, false);
+        o2::common::core::getTaskOptionValue<std::string>(context, "analysis-same-event-pairing", "cfgPairCuts", cfgPairing_PairCuts, false);
       } else if (isBarrelAsymmetric) {
-        getTaskOptionValue<string>(context, "analysis-asymmetric-pairing", "cfgLegCuts", cfgPairing_TrackCuts, false);
-        getTaskOptionValue<string>(context, "analysis-asymmetric-pairing", "cfgPairCuts", cfgPairing_PairCuts, false);
-        getTaskOptionValue<string>(context, "analysis-asymmetric-pairing", "cfgCommonTrackCuts", cfgPairing_CommonTrackCuts, false);
+        o2::common::core::getTaskOptionValue<std::string>(context, "analysis-asymmetric-pairing", "cfgLegCuts", cfgPairing_TrackCuts, false);
+        o2::common::core::getTaskOptionValue<std::string>(context, "analysis-asymmetric-pairing", "cfgPairCuts", cfgPairing_PairCuts, false);
+        o2::common::core::getTaskOptionValue<std::string>(context, "analysis-asymmetric-pairing", "cfgCommonTrackCuts", cfgPairing_CommonTrackCuts, false);
       }
       if (cfgPairing_TrackCuts.empty()) {
         LOG(fatal) << "There are no dilepton cuts specified in the upstream in the same-event-pairing or asymmetric-pairing";
@@ -4120,10 +4112,10 @@ struct AnalysisDileptonTrack {
       } // end if (common cuts)
       // Get also the pair cuts specified via the JSON parameters
       if (isBarrelAsymmetric) {
-        getTaskOptionValue<string>(context, "analysis-asymmetric-pairing", "cfgPairCutsJSON", cfgPairing_PairCutsJSON, false);
+        o2::common::core::getTaskOptionValue<std::string>(context, "analysis-asymmetric-pairing", "cfgPairCutsJSON", cfgPairing_PairCutsJSON, false);
         TString addPairCutsStr = cfgPairing_PairCutsJSON;
         if (addPairCutsStr != "") {
-          std::vector<AnalysisCut*> addPairCuts = dqcuts::GetCutsFromJSON(addPairCutsStr.Data());
+          std::vector<AnalysisCut*> addPairCuts = o2::aod::dqcuts::GetCutsFromJSON(addPairCutsStr.Data());
           for (auto const& t : addPairCuts) {
             cfgPairing_PairCuts += Form(",%s", t->GetName());
           }
@@ -4207,7 +4199,7 @@ struct AnalysisDileptonTrack {
       } // end loop over pair leg track cuts
     }
 
-    dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON
+    o2::aod::dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON
 
     VarManager::SetUseVars(fHistMan->GetUsedVars());
     fOutputList.setObject(fHistMan->GetMainHistogramList());
@@ -4468,13 +4460,13 @@ struct AnalysisDileptonTrack {
     }
   }
 
-  Preslice<aod::ReducedTracksAssoc> trackAssocsPerCollision = aod::reducedtrack_association::reducedeventId;
-  Preslice<MyDielectronCandidates> dielectronsPerCollision = aod::reducedpair::reducedeventId;
-  Preslice<MyDitrackCandidates> ditracksPerCollision = aod::reducedpair::reducedeventId;
+  o2::framework::Preslice<o2::aod::ReducedTracksAssoc> trackAssocsPerCollision = o2::aod::reducedtrack_association::reducedeventId;
+  o2::framework::Preslice<MyDielectronCandidates> dielectronsPerCollision = o2::aod::reducedpair::reducedeventId;
+  o2::framework::Preslice<MyDitrackCandidates> ditracksPerCollision = o2::aod::reducedpair::reducedeventId;
 
-  void processBarrelSkimmed(soa::Filtered<MyEventsVtxCovSelected> const& events,
-                            soa::Filtered<soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts>> const& assocs,
-                            MyBarrelTracksWithCov const& tracks, soa::Filtered<MyDielectronCandidates> const& dileptons)
+  void processBarrelSkimmed(o2::soa::Filtered<MyEventsVtxCovSelected> const& events,
+                            o2::soa::Filtered<o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts>> const& assocs,
+                            MyBarrelTracksWithCov const& tracks, o2::soa::Filtered<MyDielectronCandidates> const& dileptons)
   {
     // set up KF or DCAfitter
     if (events.size() == 0) {
@@ -4494,9 +4486,9 @@ struct AnalysisDileptonTrack {
     }
   }
 
-  void processDstarToD0Pi(soa::Filtered<MyEventsVtxCovZdcFitSelected> const& events,
-                          soa::Filtered<soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts>> const& assocs,
-                          MyBarrelTracksWithCov const& tracks, soa::Filtered<MyDitrackCandidates> const& ditracks)
+  void processDstarToD0Pi(o2::soa::Filtered<MyEventsVtxCovZdcFitSelected> const& events,
+                          o2::soa::Filtered<o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts>> const& assocs,
+                          MyBarrelTracksWithCov const& tracks, o2::soa::Filtered<MyDitrackCandidates> const& ditracks)
   {
     // set up KF or DCAfitter
     if (events.size() == 0) {
@@ -4513,12 +4505,12 @@ struct AnalysisDileptonTrack {
     }
   }
 
-  Preslice<aod::ReducedMuonsAssoc> muonAssocsPerCollision = aod::reducedtrack_association::reducedeventId;
-  Preslice<MyDimuonCandidates> dimuonsPerCollision = aod::reducedpair::reducedeventId;
+  o2::framework::Preslice<o2::aod::ReducedMuonsAssoc> muonAssocsPerCollision = o2::aod::reducedtrack_association::reducedeventId;
+  o2::framework::Preslice<MyDimuonCandidates> dimuonsPerCollision = o2::aod::reducedpair::reducedeventId;
 
-  void processMuonSkimmed(soa::Filtered<MyEventsVtxCovSelected> const& events,
-                          soa::Filtered<soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts>> const& assocs,
-                          MyMuonTracksWithCov const& tracks, soa::Filtered<MyDimuonCandidates> const& dileptons)
+  void processMuonSkimmed(o2::soa::Filtered<MyEventsVtxCovSelected> const& events,
+                          o2::soa::Filtered<o2::soa::Join<o2::aod::ReducedMuonsAssoc, o2::aod::MuonTrackCuts>> const& assocs,
+                          MyMuonTracksWithCov const& tracks, o2::soa::Filtered<MyDimuonCandidates> const& dileptons)
   {
     // set up KF or DCAfitter
     if (events.size() == 0) {
@@ -4535,9 +4527,9 @@ struct AnalysisDileptonTrack {
     }
   }
 
-  void processBarrelMixedEvent(soa::Filtered<MyEventsHashSelected>& events, // o2-linter: disable=const-ref-in-process
-                               soa::Filtered<soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts>> const& assocs,
-                               MyBarrelTracksWithCov const& tracks, soa::Filtered<MyDielectronCandidates> const& dileptons)
+  void processBarrelMixedEvent(o2::soa::Filtered<MyEventsHashSelected>& events, // o2-linter: disable=const-ref-in-process
+                               o2::soa::Filtered<o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts>> const& assocs,
+                               MyBarrelTracksWithCov const& tracks, o2::soa::Filtered<MyDielectronCandidates> const& dileptons)
   {
     if (events.size() == 0) {
       return;
@@ -4637,9 +4629,9 @@ struct AnalysisDileptonTrack {
     } // end event loop
   }
 
-  void processMuonMixedEvent(soa::Filtered<MyEventsHashSelected>& events, // o2-linter: disable=const-ref-in-process
-                             soa::Filtered<soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts>> const& assocs,
-                             MyMuonTracksWithCov const&, soa::Filtered<MyDimuonCandidates> const& dileptons)
+  void processMuonMixedEvent(o2::soa::Filtered<MyEventsHashSelected>& events, // o2-linter: disable=const-ref-in-process
+                             o2::soa::Filtered<o2::soa::Join<o2::aod::ReducedMuonsAssoc, o2::aod::MuonTrackCuts>> const& assocs,
+                             MyMuonTracksWithCov const&, o2::soa::Filtered<MyDimuonCandidates> const& dileptons)
   {
     if (events.size() == 0) {
       return;
@@ -4696,22 +4688,22 @@ struct AnalysisDileptonTrack {
 };
 
 struct AnalysisDileptonTrackTrack {
-  OutputObj<THashList> fOutputList{"output"};
+  o2::framework::OutputObj<THashList> fOutputList{"output"};
 
-  Configurable<std::string> fConfigTrackCut1{"cfgTrackCut1", "pionPIDCut1", "track1 cut"}; // used for select the tracks from SelectedTracks
-  Configurable<std::string> fConfigTrackCut2{"cfgTrackCut2", "pionPIDCut2", "track2 cut"}; // used for select the tracks from SelectedTracks
-  Configurable<std::string> fConfigDileptonCut{"cfgDiLeptonCut", "pairJpsi2", "Dilepton cut"};
-  Configurable<std::string> fConfigQuadrupletCuts{"cfgQuadrupletCuts", "pairX3872Cut1", "Comma separated list of Dilepton-Track-Track cut"};
-  Configurable<std::string> fConfigAddDileptonHistogram{"cfgAddDileptonHistogram", "barrel", "Comma separated list of histograms"};
-  Configurable<std::string> fConfigAddQuadrupletHistogram{"cfgAddQuadrupletHistogram", "xtojpsipipi", "Comma separated list of histograms"};
+  o2::framework::Configurable<std::string> fConfigTrackCut1{"cfgTrackCut1", "pionPIDCut1", "track1 cut"}; // used for select the tracks from SelectedTracks
+  o2::framework::Configurable<std::string> fConfigTrackCut2{"cfgTrackCut2", "pionPIDCut2", "track2 cut"}; // used for select the tracks from SelectedTracks
+  o2::framework::Configurable<std::string> fConfigDileptonCut{"cfgDiLeptonCut", "pairJpsi2", "Dilepton cut"};
+  o2::framework::Configurable<std::string> fConfigQuadrupletCuts{"cfgQuadrupletCuts", "pairX3872Cut1", "Comma separated list of Dilepton-Track-Track cut"};
+  o2::framework::Configurable<std::string> fConfigAddDileptonHistogram{"cfgAddDileptonHistogram", "barrel", "Comma separated list of histograms"};
+  o2::framework::Configurable<std::string> fConfigAddQuadrupletHistogram{"cfgAddQuadrupletHistogram", "xtojpsipipi", "Comma separated list of histograms"};
 
-  Configurable<bool> fConfigSetupFourProngFitter{"cfgSetupFourProngFitter", false, "Use DCA for secondary vertex reconstruction (DCAFitter is used by default)"};
-  Configurable<bool> fConfigUseKFVertexing{"cfgUseKFVertexing", false, "Use KF Particle for secondary vertex reconstruction (DCAFitter is used by default)"};
-  Configurable<bool> fConfigUseRemoteField{"cfgUseRemoteField", false, "Chose whether to fetch the magnetic field from ccdb or set it manually"};
-  Configurable<std::string> fConfigGRPmagPath{"cfgGrpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<float> fConfigMagField{"cfgMagField", 5.0f, "Manually set magnetic field"};
+  o2::framework::Configurable<bool> fConfigSetupFourProngFitter{"cfgSetupFourProngFitter", false, "Use DCA for secondary vertex reconstruction (DCAFitter is used by default)"};
+  o2::framework::Configurable<bool> fConfigUseKFVertexing{"cfgUseKFVertexing", false, "Use KF Particle for secondary vertex reconstruction (DCAFitter is used by default)"};
+  o2::framework::Configurable<bool> fConfigUseRemoteField{"cfgUseRemoteField", false, "Chose whether to fetch the magnetic field from ccdb or set it manually"};
+  o2::framework::Configurable<std::string> fConfigGRPmagPath{"cfgGrpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  o2::framework::Configurable<float> fConfigMagField{"cfgMagField", 5.0f, "Manually set magnetic field"};
 
-  Produces<aod::DileptonTrackTrackCandidates> DileptonTrackTrackTable;
+  o2::framework::Produces<o2::aod::DileptonTrackTrackCandidates> DileptonTrackTrackTable;
 
   int fCurrentRun = -1; // needed to detect if the run changed and trigger update of calibrations etc.
   // uint32_t fTrackCutBitMap; // track cut bit mask to be used in the selection of tracks associated with dileptons
@@ -4723,11 +4715,11 @@ struct AnalysisDileptonTrackTrack {
   std::vector<TString> fQuadrupletCutNames;
   std::vector<AnalysisCompositeCut> fQuadrupletCuts;
 
-  Service<o2::ccdb::BasicCCDBManager> fCCDB{};
+  o2::framework::Service<o2::ccdb::BasicCCDBManager> fCCDB{};
 
-  Filter eventFilter = aod::dqanalysisflags::isEventSelected > static_cast<uint8_t>(0);
-  Filter dileptonFilter = aod::reducedpair::sign == 0;
-  Filter filterBarrelTrackSelected = aod::dqanalysisflags::isBarrelSelected > static_cast<uint32_t>(0);
+  o2::framework::expressions::Filter eventFilter = o2::aod::dqanalysisflags::isEventSelected > static_cast<uint8_t>(0);
+  o2::framework::expressions::Filter dileptonFilter = o2::aod::reducedpair::sign == 0;
+  o2::framework::expressions::Filter filterBarrelTrackSelected = o2::aod::dqanalysisflags::isBarrelSelected > static_cast<uint32_t>(0);
 
   constexpr static uint32_t fgDileptonFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::Pair; // fill map
 
@@ -4758,13 +4750,13 @@ struct AnalysisDileptonTrackTrack {
       fIsSameTrackCut = true;
     }
     TString configDileptonCutNamesStr = fConfigDileptonCut.value;
-    fDileptonCut = *dqcuts::GetCompositeCut(configDileptonCutNamesStr.Data());
+    fDileptonCut = *o2::aod::dqcuts::GetCompositeCut(configDileptonCutNamesStr.Data());
     TString configQuadruletCutNamesStr = fConfigQuadrupletCuts.value;
     std::unique_ptr<TObjArray> objArray(configQuadruletCutNamesStr.Tokenize(","));
     for (Int_t icut = 0; icut < objArray->GetEntries(); ++icut) {
       TString cutName = objArray->At(icut)->GetName();
       fQuadrupletCutNames.push_back(cutName);
-      fQuadrupletCuts.push_back(*dqcuts::GetCompositeCut(cutName.Data()));
+      fQuadrupletCuts.push_back(*o2::aod::dqcuts::GetCompositeCut(cutName.Data()));
     }
 
     if (!context.mOptions.get<bool>("processDummy")) {
@@ -4917,13 +4909,13 @@ struct AnalysisDileptonTrackTrack {
     }
   }
 
-  Preslice<aod::ReducedTracksAssoc> trackAssocsPerCollision = aod::reducedtrack_association::reducedeventId;
-  Preslice<MyDielectronCandidates> dielectronsPerCollision = aod::reducedpair::reducedeventId;
-  Preslice<MyDitrackCandidates> ditracksPerCollision = aod::reducedpair::reducedeventId;
+  o2::framework::Preslice<o2::aod::ReducedTracksAssoc> trackAssocsPerCollision = o2::aod::reducedtrack_association::reducedeventId;
+  o2::framework::Preslice<MyDielectronCandidates> dielectronsPerCollision = o2::aod::reducedpair::reducedeventId;
+  o2::framework::Preslice<MyDitrackCandidates> ditracksPerCollision = o2::aod::reducedpair::reducedeventId;
 
-  void processJpsiPiPi(soa::Filtered<MyEventsVtxCovSelected> const& events,
-                       soa::Filtered<soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts>> const& assocs,
-                       MyBarrelTracksWithCov const& tracks, soa::Filtered<MyDielectronCandidates> const& dileptons)
+  void processJpsiPiPi(o2::soa::Filtered<MyEventsVtxCovSelected> const& events,
+                       o2::soa::Filtered<o2::soa::Join<o2::aod::ReducedTracksAssoc, o2::aod::BarrelTrackCuts>> const& assocs,
+                       MyBarrelTracksWithCov const& tracks, o2::soa::Filtered<MyDielectronCandidates> const& dileptons)
   {
     if (events.size() == 0) {
       return;
@@ -4963,76 +4955,76 @@ void DefineHistograms(HistogramManager* histMan, const TString& histClasses, con
     TString histName = histGroups;
     // NOTE: The level of detail for histogramming can be controlled via configurables
     if (classStr.Contains("Event")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "event", histName);
+      o2::aod::dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "event", histName);
     }
 
     if (classStr.Contains("SameBunchCorrelations") || classStr.Contains("OutOfBunchCorrelations")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "two-collisions", histName);
+      o2::aod::dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "two-collisions", histName);
     }
 
     if (classStr.Contains("Track") && !classStr.Contains("Pairs")) {
       if (classStr.Contains("Barrel")) {
-        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", histName);
+        o2::aod::dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", histName);
         if (classStr.Contains("PIDCalibElectron")) {
-          dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "postcalib_electron");
+          o2::aod::dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "postcalib_electron");
         }
         if (classStr.Contains("PIDCalibPion")) {
-          dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "postcalib_pion");
+          o2::aod::dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "postcalib_pion");
         }
         if (classStr.Contains("PIDCalibProton")) {
-          dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "postcalib_proton");
+          o2::aod::dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "postcalib_proton");
         }
         if (classStr.Contains("Ambiguity")) {
-          dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "ambiguity");
+          o2::aod::dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "ambiguity");
         }
       }
       if (classStr.Contains("Muon")) {
-        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", histName);
+        o2::aod::dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", histName);
       }
     }
 
     if (classStr.Contains("Pairs")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair", histName);
+      o2::aod::dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair", histName);
     }
 
     if (classStr.Contains("Pairing")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "event", histName);
+      o2::aod::dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "event", histName);
     }
 
     if (classStr.Contains("Triplets")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair", histName);
+      o2::aod::dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair", histName);
     }
 
     if (classStr.Contains("DileptonsSelected")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair", "barrel,vertexing");
+      o2::aod::dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair", "barrel,vertexing");
     }
 
     if (classStr.Contains("DileptonTrack") && !classStr.Contains("ME")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-track", histName);
+      o2::aod::dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-track", histName);
     }
 
     if (classStr.Contains("DileptonTrackME")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-track", "dilepton-hadron-array-correlation");
+      o2::aod::dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-track", "dilepton-hadron-array-correlation");
     }
 
     if (classStr.Contains("DileptonTrackECME")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-track", "energy-correlator");
+      o2::aod::dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-track", "energy-correlator");
     }
 
     if (classStr.Contains("HadronsSelected")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", histName);
+      o2::aod::dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", histName);
     }
 
     if (classStr.Contains("DileptonHadronInvMass")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-hadron-mass");
+      o2::aod::dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-hadron-mass");
     }
 
     if (classStr.Contains("DileptonHadronCorrelation")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-hadron-correlation");
+      o2::aod::dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-hadron-correlation");
     }
 
     if (classStr.Contains("Quadruplet")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-dihadron", histName);
+      o2::aod::dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-dihadron", histName);
     }
   } // end loop over histogram classes
 }
