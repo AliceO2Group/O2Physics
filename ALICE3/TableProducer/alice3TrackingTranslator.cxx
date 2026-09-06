@@ -27,7 +27,6 @@
 #include <Framework/Configurable.h>
 #include <Framework/DataTypes.h>
 #include <Framework/HistogramRegistry.h>
-#include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
@@ -46,7 +45,6 @@
 #include <Rtypes.h>
 #include <RtypesCore.h>
 
-#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
