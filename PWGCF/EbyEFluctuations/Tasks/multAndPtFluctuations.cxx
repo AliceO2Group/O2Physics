@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file  multandptFluctuations.cxx
+/// \file  multAndPtFluctuations.cxx
 /// \brief Calculate multiplicity and transverse momentum fluctuations using strongly intensive observables
 /// \author Omama Rubza
 #include "Common/CCDB/EventSelectionParams.h"
@@ -38,7 +38,7 @@ using namespace o2::framework;
 using namespace o2::aod;
 using namespace o2::framework::expressions;
 
-struct MultandptFluctuations {
+struct MultAndPtFluctuations {
 
   // ------ Histogram binning
 
@@ -232,5 +232,5 @@ struct MultandptFluctuations {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<MultandptFluctuations>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<MultAndPtFluctuations>(cfgc)};
 }
