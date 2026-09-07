@@ -297,11 +297,11 @@ struct TwoParticleCorrelationsMpi {
     if (cfgCentBinsForMC < 0 || cfgCentBinsForMC > McEfficiencySingleRecoCollisionMode) {
       LOGF(fatal, "Unsupported cfgCentBinsForMC=%d; use 0 (generated multiplicity), 1 (all reconstructed collisions), or 2 (first reconstructed collision only for efficiency)", cfgCentBinsForMC.value);
     }
-    const int enabledDerivedSameProcesses = doprocessSameDerived + doprocessSameDerivedCorrected + doprocessSameDerivedMultSet + doprocessSameDerivedMultSetCorrected;
+    const int enabledDerivedSameProcesses = static_cast<int>(doprocessSameDerived) + static_cast<int>(doprocessSameDerivedCorrected) + static_cast<int>(doprocessSameDerivedMultSet) + static_cast<int>(doprocessSameDerivedMultSetCorrected);
     if (enabledDerivedSameProcesses > 1) {
       LOGF(fatal, "Only one reconstructed derived same-event process can be enabled");
     }
-    const int enabledDerivedMixedProcesses = doprocessMixedDerived + doprocessMixedDerivedCorrected + doprocessMixedDerivedMultSet + doprocessMixedDerivedMultSetCorrected;
+    const int enabledDerivedMixedProcesses = static_cast<int>(doprocessMixedDerived) + static_cast<int>(doprocessMixedDerivedCorrected) + static_cast<int>(doprocessMixedDerivedMultSet) + static_cast<int>(doprocessMixedDerivedMultSetCorrected);
     if (enabledDerivedMixedProcesses > 1) {
       LOGF(fatal, "Only one reconstructed derived mixed-event process can be enabled");
     }
@@ -1341,7 +1341,7 @@ struct TwoParticleCorrelationsMpi {
     std::vector<PendingSeedPairFill> discardedPairFills;
     discardedTriggerFills.reserve(tracks.size());
     discardedPairFills.reserve(tracks.size() * tracks.size());
-    fillCorrelations<step>(target, tracks, tracks, multiplicity, posZ, magField, 1.0f, &estimate, &discardedTriggerFills, &discardedPairFills, -1.f, false, false);
+    fillCorrelations<step>(std::move(target), tracks, tracks, multiplicity, posZ, magField, 1.0f, &estimate, &discardedTriggerFills, &discardedPairFills, -1.f, false, false);
     finalizeEventSeedEstimate(estimate);
     return estimate.nuncSeeds();
   }

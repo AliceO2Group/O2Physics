@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// o2-linter: disable=name/workflow-file (historic file contains several table-producer tasks)
+// o2-linter: disable=name/workflow-file (file contains several table-producer tasks)
 #include "PWGCF/DataModel/CorrelationsDerived.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
@@ -22,6 +22,7 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include "CommonConstants/MathConstants.h"
 #include <CCDB/BasicCCDBManager.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -55,19 +56,19 @@
 #include <type_traits>
 #include <vector>
 
-#include <math.h>
-
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::math_utils::detail;
 
-#define FLOAT_PRECISION 0xFFFFFFF0
-#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
+constexpr std::uint32_t kFloatPrecision = 0xFFFFFFF0u;
+// clang-format off
+#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME { #NAME, (DEFAULT), (HELP) } // NOLINT(bugprone-macro-parentheses)
+// clang-format on
 
 struct FilterCF {
-  Service<o2::framework::O2DatabasePDG> pdg;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::framework::O2DatabasePDG> pdg{};
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   enum TrackSelectionCuts1 : uint8_t {
     kTrackSelected = BIT(0),
@@ -83,39 +84,39 @@ struct FilterCF {
   };
 
   // Configuration
-  O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 7.0f, "Accepted z-vertex range")
-  O2_DEFINE_CONFIGURABLE(cfgCutPt, float, 0.5f, "Minimal pT for tracks")
-  O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
-  O2_DEFINE_CONFIGURABLE(cfgCutMCPt, float, 0.5f, "Minimal pT for particles")
-  O2_DEFINE_CONFIGURABLE(cfgCutMCEta, float, 0.8f, "Eta range for particles")
-  O2_DEFINE_CONFIGURABLE(cfgVerbosity, int, 1, "Verbosity level (0 = major, 1 = per collision)")
-  O2_DEFINE_CONFIGURABLE(cfgTrigger, int, 7, "Trigger choice: (0 = none, 7 = sel7, 8 = sel8, 9 = sel8 + kNoSameBunchPileup + kIsGoodZvtxFT0vsPV, 10 = sel8 before April, 2024, 11 = sel8 for MC, 12 = sel8 with low occupancy cut, 13 = sel8 + kNoSameBunchPileup + kIsGoodITSLayersAll -- for OO/NeNe) ")
-  O2_DEFINE_CONFIGURABLE(cfgMinOcc, int, 0, "minimum occupancy selection")
-  O2_DEFINE_CONFIGURABLE(cfgMaxOcc, int, 3000, "maximum occupancy selection")
-  O2_DEFINE_CONFIGURABLE(cfgCollisionFlags, uint16_t, aod::collision::CollisionFlagsRun2::Run2VertexerTracks, "Request collision flags if non-zero (0 = off, 1 = Run2VertexerTracks)")
-  O2_DEFINE_CONFIGURABLE(cfgTransientTables, bool, false, "Output transient tables for collision and track IDs to enable successive filtering tasks")
-  O2_DEFINE_CONFIGURABLE(cfgTrackSelection, int, 0, "Type of track selection (0 = Run 2/3 without systematics | 1 = Run 3 with systematics |  2 = Run 3 with proton pid selection)")
-  O2_DEFINE_CONFIGURABLE(cfgMinMultiplicity, float, -1, "Minimum multiplicity considered for filtering (if value positive)")
-  O2_DEFINE_CONFIGURABLE(cfgMcSpecialPDGs, std::vector<int>, {}, "Special MC PDG codes to include in the MC primary particle output (additional to charged particles). Empty = charged particles only.") // needed for some neutral particles
-  O2_DEFINE_CONFIGURABLE(nsigmaCutTPCProton, float, 3, "proton nsigma TPC")
-  O2_DEFINE_CONFIGURABLE(nsigmaCutTOFProton, float, 3, "proton nsigma TOF")
-  O2_DEFINE_CONFIGURABLE(ITSProtonselection, bool, false, "flag for ITS proton nsigma selection")
-  O2_DEFINE_CONFIGURABLE(nsigmaCutITSProton, float, 3, "proton nsigma ITS")
-  O2_DEFINE_CONFIGURABLE(dcaxymax, float, 999.f, "maximum dcaxy of tracks")
-  O2_DEFINE_CONFIGURABLE(dcazmax, float, 999.f, "maximum dcaz of tracks")
-  O2_DEFINE_CONFIGURABLE(enablePtDepDCAxy, bool, false, "Enable pT-dependent DCAxy cut: |DCAxy| < a + b/pT")
-  O2_DEFINE_CONFIGURABLE(dcaXyConst, float, 0.004f, "Constant term 'a' for pT-dependent DCAxy cut: |DCAxy| < a + b/pT (cm)")
-  O2_DEFINE_CONFIGURABLE(dcaXySlope, float, 0.013f, "Slope term 'b' for pT-dependent DCAxy cut: |DCAxy| < a + b/pT (cm x GeV/c)")
-  O2_DEFINE_CONFIGURABLE(itsnclusters, int, 5, "minimum number of ITS clusters for tracks")
-  O2_DEFINE_CONFIGURABLE(tpcncrossedrows, int, 80, "minimum number of TPC crossed rows for tracks")
-  O2_DEFINE_CONFIGURABLE(tpcnclusters, int, 50, "minimum number of TPC clusters found")
-  O2_DEFINE_CONFIGURABLE(chi2pertpccluster, float, 2.5, "maximum Chi2 / cluster for the TPC track segment")
-  O2_DEFINE_CONFIGURABLE(chi2peritscluster, float, 36, "maximum Chi2 / cluster for the ITS track segment")
+  O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 7.0f, "Accepted z-vertex range");
+  O2_DEFINE_CONFIGURABLE(cfgCutPt, float, 0.5f, "Minimal pT for tracks");
+  O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks");
+  O2_DEFINE_CONFIGURABLE(cfgCutMCPt, float, 0.5f, "Minimal pT for particles");
+  O2_DEFINE_CONFIGURABLE(cfgCutMCEta, float, 0.8f, "Eta range for particles");
+  O2_DEFINE_CONFIGURABLE(cfgVerbosity, int, 1, "Verbosity level (0 = major, 1 = per collision)");
+  O2_DEFINE_CONFIGURABLE(cfgTrigger, int, 7, "Trigger choice: (0 = none, 7 = sel7, 8 = sel8, 9 = sel8 + kNoSameBunchPileup + kIsGoodZvtxFT0vsPV, 10 = sel8 before April, 2024, 11 = sel8 for MC, 12 = sel8 with low occupancy cut, 13 = sel8 + kNoSameBunchPileup + kIsGoodITSLayersAll -- for OO/NeNe) ");
+  O2_DEFINE_CONFIGURABLE(cfgMinOcc, int, 0, "minimum occupancy selection");
+  O2_DEFINE_CONFIGURABLE(cfgMaxOcc, int, 3000, "maximum occupancy selection");
+  O2_DEFINE_CONFIGURABLE(cfgCollisionFlags, uint16_t, aod::collision::CollisionFlagsRun2::Run2VertexerTracks, "Request collision flags if non-zero (0 = off, 1 = Run2VertexerTracks)");
+  O2_DEFINE_CONFIGURABLE(cfgTransientTables, bool, false, "Output transient tables for collision and track IDs to enable successive filtering tasks");
+  O2_DEFINE_CONFIGURABLE(cfgTrackSelection, int, 0, "Type of track selection (0 = Run 2/3 without systematics | 1 = Run 3 with systematics |  2 = Run 3 with proton pid selection)");
+  O2_DEFINE_CONFIGURABLE(cfgMinMultiplicity, float, -1, "Minimum multiplicity considered for filtering (if value positive)");
+  O2_DEFINE_CONFIGURABLE(cfgMcSpecialPDGs, std::vector<int>, std::vector<int>{}, "Special MC PDG codes to include in the MC primary particle output (additional to charged particles). Empty = charged particles only."); // needed for some neutral particles
+  O2_DEFINE_CONFIGURABLE(nsigmaCutTPCProton, float, 3, "proton nsigma TPC");
+  O2_DEFINE_CONFIGURABLE(nsigmaCutTOFProton, float, 3, "proton nsigma TOF");
+  O2_DEFINE_CONFIGURABLE(ITSProtonselection, bool, false, "flag for ITS proton nsigma selection");
+  O2_DEFINE_CONFIGURABLE(nsigmaCutITSProton, float, 3, "proton nsigma ITS");
+  O2_DEFINE_CONFIGURABLE(dcaxymax, float, 999.f, "maximum dcaxy of tracks");
+  O2_DEFINE_CONFIGURABLE(dcazmax, float, 999.f, "maximum dcaz of tracks");
+  O2_DEFINE_CONFIGURABLE(enablePtDepDCAxy, bool, false, "Enable pT-dependent DCAxy cut: |DCAxy| < a + b/pT");
+  O2_DEFINE_CONFIGURABLE(dcaXyConst, float, 0.004f, "Constant term 'a' for pT-dependent DCAxy cut: |DCAxy| < a + b/pT (cm)");
+  O2_DEFINE_CONFIGURABLE(dcaXySlope, float, 0.013f, "Slope term 'b' for pT-dependent DCAxy cut: |DCAxy| < a + b/pT (cm x GeV/c)");
+  O2_DEFINE_CONFIGURABLE(itsnclusters, int, 5, "minimum number of ITS clusters for tracks");
+  O2_DEFINE_CONFIGURABLE(tpcncrossedrows, int, 80, "minimum number of TPC crossed rows for tracks");
+  O2_DEFINE_CONFIGURABLE(tpcnclusters, int, 50, "minimum number of TPC clusters found");
+  O2_DEFINE_CONFIGURABLE(chi2pertpccluster, float, 2.5, "maximum Chi2 / cluster for the TPC track segment");
+  O2_DEFINE_CONFIGURABLE(chi2peritscluster, float, 36, "maximum Chi2 / cluster for the ITS track segment");
   O2_DEFINE_CONFIGURABLE(cfgEstimatorBitMask, uint16_t, 0, "BitMask for multiplicity estimators to be included in the CFMultSet tables.");
 
-  O2_DEFINE_CONFIGURABLE(cfgEfficiencyMultiplicity, std::string, "", "Multiplicity efficiency (RecoAll / MC): CCDB path or local ROOT file with a 4D ccdb_object (eta, pT, multiplicity, z-vtx); empty disables CFCollisionsExtra output")
-  O2_DEFINE_CONFIGURABLE(cfgLocalEfficiency, int, 0, "0 = CCDB efficiency, 1 = local ROOT efficiency")
-  O2_DEFINE_CONFIGURABLE(cfgMultiplicityTrackBitMask, uint16_t, 0, "Required track-type bits for corrected multiplicity; match cfgTrackBitMask used to produce the efficiency (0 = all stored tracks)")
+  O2_DEFINE_CONFIGURABLE(cfgEfficiencyMultiplicity, std::string, "", "Multiplicity efficiency (RecoAll / MC): CCDB path or local ROOT file with a 4D ccdb_object (eta, pT, multiplicity, z-vtx); empty disables CFCollisionsExtra output");
+  O2_DEFINE_CONFIGURABLE(cfgLocalEfficiency, int, 0, "0 = CCDB efficiency, 1 = local ROOT efficiency");
+  O2_DEFINE_CONFIGURABLE(cfgMultiplicityTrackBitMask, uint16_t, 0, "Required track-type bits for corrected multiplicity; match cfgTrackBitMask used to produce the efficiency (0 = all stored tracks)");
 
   // Filters and input definitions
   Filter collisionZVtxFilter = nabs(aod::collision::posZ) < cfgCutVertex;
@@ -128,7 +129,7 @@ struct FilterCF {
   Filter mcCollisionFilter = nabs(aod::mccollision::posZ) < cfgCutVertex;
 
   OutputObj<TH3F> yields{TH3F("yields", "centrality vs pT vs eta", 100, 0, 100, 40, 0, 20, 100, -2, 2)};
-  OutputObj<TH3F> etaphi{TH3F("etaphi", "centrality vs eta vs phi", 100, 0, 100, 100, -2, 2, 200, 0, 2 * M_PI)};
+  OutputObj<TH3F> etaphi{TH3F("etaphi", "centrality vs eta vs phi", 100, 0, 100, 100, -2, 2, 200, 0, o2::constants::math::TwoPI)};
 
   HistogramRegistry registrytrackQA{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
@@ -148,7 +149,7 @@ struct FilterCF {
   Produces<aod::CFMcParticleRefs> outputMcParticleRefs;
 
   Produces<aod::CFMultSets> outputMultSets;
-  std::vector<float> multiplicities{};
+  std::vector<float> multiplicities;
 
   // Own local histograms independently of their input file. CCDB owns its objects.
   std::unique_ptr<THn> localMultiplicityEfficiency;
@@ -179,7 +180,7 @@ struct FilterCF {
         }
         auto* efficiency = dynamic_cast<THn*>(file->Get("ccdb_object"));
         validateMultiplicityEfficiency(efficiency);
-        localMultiplicityEfficiency.reset(static_cast<THn*>(efficiency->Clone()));
+        localMultiplicityEfficiency.reset(dynamic_cast<THn*>(efficiency->Clone()));
       } else {
         ccdb->setURL("http://alice-ccdb.cern.ch");
         ccdb->setCaching(true);
@@ -204,28 +205,35 @@ struct FilterCF {
   bool keepCollision(const TCollision& collision)
   {
     bool isMultSelected = false;
-    if (collision.multiplicity() >= cfgMinMultiplicity)
+    if (collision.multiplicity() >= cfgMinMultiplicity) {
       isMultSelected = true;
-
+    }
     if (cfgTrigger == 0) {
       return true;
-    } else if (cfgTrigger == 7) { // o2-linter: disable=magic-number (documented legacy trigger-selection code)
+    }
+    if (cfgTrigger == 7) { // o2-linter: disable=magic-number (documented legacy trigger-selection code)
       return isMultSelected && collision.alias_bit(kINT7) && collision.sel7();
-    } else if (cfgTrigger == 8) { // o2-linter: disable=magic-number (documented legacy trigger-selection code)
+    }
+    if (cfgTrigger == 8) { // o2-linter: disable=magic-number (documented legacy trigger-selection code)
       return isMultSelected && collision.sel8();
-    } else if (cfgTrigger == 9) { // relevant only for Pb-Pb; o2-linter: disable=magic-number (documented legacy trigger-selection code)
+    }
+    if (cfgTrigger == 9) { // relevant only for Pb-Pb; o2-linter: disable=magic-number (documented legacy trigger-selection code)
       return isMultSelected && collision.sel8() && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && collision.selection_bit(aod::evsel::kIsGoodITSLayersAll);
-    } else if (cfgTrigger == 10) { // TVX trigger only (sel8 selection before April, 2024); o2-linter: disable=magic-number (documented legacy trigger-selection code)
+    }
+    if (cfgTrigger == 10) { // TVX trigger only (sel8 selection before April, 2024); o2-linter: disable=magic-number (documented legacy trigger-selection code)
       return isMultSelected && collision.selection_bit(aod::evsel::kIsTriggerTVX);
-    } else if (cfgTrigger == 11) { // sel8 selection for MC; o2-linter: disable=magic-number (documented legacy trigger-selection code)
+    }
+    if (cfgTrigger == 11) { // sel8 selection for MC; o2-linter: disable=magic-number (documented legacy trigger-selection code)
       return isMultSelected && collision.selection_bit(aod::evsel::kIsTriggerTVX) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder);
-    } else if (cfgTrigger == 12) { // relevant only for Pb-Pb with occupancy cuts and rejection of nearby collisions; o2-linter: disable=magic-number (documented legacy trigger-selection code)
+    }
+    if (cfgTrigger == 12) { // relevant only for Pb-Pb with occupancy cuts and rejection of nearby collisions; o2-linter: disable=magic-number (documented legacy trigger-selection code)
       int occupancy = collision.trackOccupancyInTimeRange();
-      if (occupancy >= cfgMinOcc && occupancy < cfgMaxOcc)
+      if (occupancy >= cfgMinOcc && occupancy < cfgMaxOcc) {
         return isMultSelected && collision.sel8() && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && collision.selection_bit(aod::evsel::kNoCollInTimeRangeStandard) && collision.selection_bit(aod::evsel::kIsGoodITSLayersAll);
-      else
-        return false;
-    } else if (cfgTrigger == 13) { // relevant for pO/OO/NeNe, recommended by Physics Board on 27.01.2026; o2-linter: disable=magic-number (documented legacy trigger-selection code)
+      }
+      return false;
+    }
+    if (cfgTrigger == 13) { // relevant for pO/OO/NeNe, recommended by Physics Board on 27.01.2026; o2-linter: disable=magic-number (documented legacy trigger-selection code)
       return isMultSelected && collision.sel8() && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV);
     }
     return false;
@@ -278,11 +286,13 @@ struct FilterCF {
     if (cfgTrackSelection == 0) {
       if (track.isGlobalTrack()) {
         return 1;
-      } else if (track.isGlobalTrackSDD()) {
+      }
+      if (track.isGlobalTrackSDD()) {
         return 2;
       }
       return 0;
-    } else if (cfgTrackSelection == 1) {
+    }
+    if (cfgTrackSelection == 1) {
       uint8_t trackType = 0;
       if (track.isGlobalTrack()) {
         trackType |= kTrackSelected;
@@ -303,7 +313,8 @@ struct FilterCF {
         }
       }
       return trackType;
-    } else if (cfgTrackSelection == 2) { // o2-linter: disable=magic-number (documented track-selection mode)
+    }
+    if (cfgTrackSelection == 2) { // o2-linter: disable=magic-number (documented track-selection mode)
       uint8_t trackType = 0;
       if constexpr (HasProtonPID<TTrack>::value) {
         if (track.isGlobalTrack() && (track.itsNCls() >= itsnclusters) && (track.tpcNClsCrossedRows() >= tpcncrossedrows) && selectionPIDProton(track)) {
@@ -411,21 +422,27 @@ struct FilterCF {
 
     if constexpr (std::experimental::is_detected<HasMultTables, C1>::value) {
       multiplicities.clear();
-      if (cfgEstimatorBitMask & aod::cfmultset::CentFT0C)
+      if (cfgEstimatorBitMask & aod::cfmultset::CentFT0C) {
         multiplicities.push_back(collision.centFT0C());
-      if (cfgEstimatorBitMask & aod::cfmultset::MultFV0A)
+      }
+      if (cfgEstimatorBitMask & aod::cfmultset::MultFV0A) {
         multiplicities.push_back(collision.multFV0A());
-      if (cfgEstimatorBitMask & aod::cfmultset::MultNTracksPV)
+      }
+      if (cfgEstimatorBitMask & aod::cfmultset::MultNTracksPV) {
         multiplicities.push_back(collision.multNTracksPV());
-      if (cfgEstimatorBitMask & aod::cfmultset::MultNTracksGlobal)
+      }
+      if (cfgEstimatorBitMask & aod::cfmultset::MultNTracksGlobal) {
         multiplicities.push_back(collision.multNTracksGlobal());
-      if (cfgEstimatorBitMask & aod::cfmultset::CentFT0M)
+      }
+      if (cfgEstimatorBitMask & aod::cfmultset::CentFT0M) {
         multiplicities.push_back(collision.centFT0M());
+      }
       outputMultSets(multiplicities);
     }
 
-    if (cfgTransientTables)
+    if (cfgTransientTables) {
       outputCollRefs(collision.globalIndex());
+    }
     for (const auto& track : tracks) {
       float maxDCAxy = getMaxDCAxy(track.pt());
       if ((std::abs(track.dcaXY()) > maxDCAxy) || (std::abs(track.dcaZ()) > dcazmax)) {
@@ -433,8 +450,9 @@ struct FilterCF {
       }
 
       outputTracks(outputCollisions.lastIndex(), track.pt(), track.eta(), track.phi(), track.sign(), getTrackType(track));
-      if (cfgTransientTables)
+      if (cfgTransientTables) {
         outputTrackRefs(collision.globalIndex(), track.globalIndex());
+      }
 
       yields->Fill(collision.multiplicity(), track.pt(), track.eta());
       etaphi->Fill(collision.multiplicity(), track.eta(), track.phi());
@@ -480,10 +498,12 @@ struct FilterCF {
       registrytrackQA.fill(HIST("tpcxrows"), track.tpcNClsCrossedRows());
       registrytrackQA.fill(HIST("tpcnclst"), track.tpcNClsFound());
       registrytrackQA.fill(HIST("itsnclst"), track.itsNCls());
-      if (track.tpcNClsFound() > 0)
+      if (track.tpcNClsFound() > 0) {
         registrytrackQA.fill(HIST("chi2tpc"), track.tpcChi2NCl());
-      if (track.itsNCls() > 0)
+      }
+      if (track.itsNCls() > 0) {
         registrytrackQA.fill(HIST("chi2its"), track.itsChi2NCl());
+      }
     }
   }
   PROCESS_SWITCH(FilterCF, processTrackQA, "Process track QA", false);
@@ -541,7 +561,7 @@ struct FilterCF {
         int8_t sign = 0;
         TParticlePDG* pdgparticle = pdg->GetParticle(particle.pdgCode());
         if (pdgparticle != nullptr) {
-          sign = (pdgparticle->Charge() > 0) ? 1.0 : ((pdgparticle->Charge() < 0) ? -1.0 : 0.0);
+          sign = (pdgparticle->Charge() > 0) ? 1 : ((pdgparticle->Charge() < 0) ? -1 : 0);
         }
 
         bool special = !cfgMcSpecialPDGs->empty() && std::find(cfgMcSpecialPDGs->begin(), cfgMcSpecialPDGs->end(), particle.pdgCode()) != cfgMcSpecialPDGs->end();
@@ -559,10 +579,11 @@ struct FilterCF {
           }
 
           // NOTE using "outputMcCollisions.lastIndex()+1" here to allow filling of outputMcCollisions *after* the loop
-          outputMcParticles(outputMcCollisions.lastIndex() + 1, truncateFloatFraction(particle.pt(), FLOAT_PRECISION), truncateFloatFraction(particle.eta(), FLOAT_PRECISION),
-                            truncateFloatFraction(particle.phi(), FLOAT_PRECISION), sign, particle.pdgCode(), flags);
-          if (cfgTransientTables)
+          outputMcParticles(outputMcCollisions.lastIndex() + 1, truncateFloatFraction(particle.pt(), kFloatPrecision), truncateFloatFraction(particle.eta(), kFloatPrecision),
+                            truncateFloatFraction(particle.phi(), kFloatPrecision), sign, particle.pdgCode(), flags);
+          if (cfgTransientTables) {
             outputMcParticleRefs(outputMcCollisions.lastIndex() + 1, particle.globalIndex());
+          }
 
           // relabeling array
           mcParticleLabelsCache[particle.globalIndex()] = outputMcParticles.lastIndex();
@@ -593,21 +614,27 @@ struct FilterCF {
 
       if constexpr (std::experimental::is_detected<HasMultTables, C1>::value) {
         multiplicities.clear();
-        if (cfgEstimatorBitMask & aod::cfmultset::CentFT0C)
+        if (cfgEstimatorBitMask & aod::cfmultset::CentFT0C) {
           multiplicities.push_back(collision.centFT0C());
-        if (cfgEstimatorBitMask & aod::cfmultset::MultFV0A)
+        }
+        if (cfgEstimatorBitMask & aod::cfmultset::MultFV0A) {
           multiplicities.push_back(collision.multFV0A());
-        if (cfgEstimatorBitMask & aod::cfmultset::MultNTracksPV)
+        }
+        if (cfgEstimatorBitMask & aod::cfmultset::MultNTracksPV) {
           multiplicities.push_back(collision.multNTracksPV());
-        if (cfgEstimatorBitMask & aod::cfmultset::MultNTracksGlobal)
+        }
+        if (cfgEstimatorBitMask & aod::cfmultset::MultNTracksGlobal) {
           multiplicities.push_back(collision.multNTracksGlobal());
-        if (cfgEstimatorBitMask & aod::cfmultset::CentFT0M)
+        }
+        if (cfgEstimatorBitMask & aod::cfmultset::CentFT0M) {
           multiplicities.push_back(collision.centFT0M());
+        }
         outputMultSets(multiplicities);
       }
 
-      if (cfgTransientTables)
+      if (cfgTransientTables) {
         outputCollRefs(collision.globalIndex());
+      }
 
       for (const auto& track : groupedTracks) {
         int mcParticleId = track.mcParticleId();
@@ -619,8 +646,9 @@ struct FilterCF {
         }
         outputTracks(outputCollisions.lastIndex(), truncateFloatFraction(track.pt()), truncateFloatFraction(track.eta()), truncateFloatFraction(track.phi()), track.sign(), getTrackType(track));
         outputTrackLabels(mcParticleId);
-        if (cfgTransientTables)
+        if (cfgTransientTables) {
           outputTrackRefs(collision.globalIndex(), track.globalIndex());
+        }
 
         yields->Fill(collision.multiplicity(), track.pt(), track.eta());
         etaphi->Fill(collision.multiplicity(), track.eta(), track.phi());
@@ -665,15 +693,19 @@ struct FilterCF {
   {
     float multiplicity = 0.0f;
     for (const auto& particle : particles) {
-      if (!particle.isPhysicalPrimary() || std::abs(particle.eta()) > cfgCutMCEta || particle.pt() < cfgCutMCPt)
+      if (!particle.isPhysicalPrimary() || std::abs(particle.eta()) > cfgCutMCEta || particle.pt() < cfgCutMCPt) {
         continue;
+      }
       int8_t sign = 0;
-      if (TParticlePDG* pdgparticle = pdg->GetParticle(particle.pdgCode()))
-        if ((sign = pdgparticle->Charge()) != 0)
+      if (TParticlePDG* pdgparticle = pdg->GetParticle(particle.pdgCode())) {
+        sign = static_cast<int>(pdgparticle->Charge());
+        if (sign != 0) {
           multiplicity += 1.0f;
-      outputMcParticles(outputMcCollisions.lastIndex() + 1, truncateFloatFraction(particle.pt(), FLOAT_PRECISION),
-                        truncateFloatFraction(particle.eta(), FLOAT_PRECISION),
-                        truncateFloatFraction(particle.phi(), FLOAT_PRECISION),
+        }
+      }
+      outputMcParticles(outputMcCollisions.lastIndex() + 1, truncateFloatFraction(particle.pt(), kFloatPrecision),
+                        truncateFloatFraction(particle.eta(), kFloatPrecision),
+                        truncateFloatFraction(particle.phi(), kFloatPrecision),
                         sign, particle.pdgCode(), particle.flags());
     }
     outputMcCollisions(mcCollision.posZ(), multiplicity);
@@ -685,8 +717,8 @@ struct FilterCF {
 struct MultiplicitySelector {
   Produces<aod::CFMultiplicities> output;
 
-  O2_DEFINE_CONFIGURABLE(cfgCutPt, float, 0.5f, "Minimal pT for tracks")
-  O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
+  O2_DEFINE_CONFIGURABLE(cfgCutPt, float, 0.5f, "Minimal pT for tracks");
+  O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks");
 
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt);
   Filter trackSelection = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true);
