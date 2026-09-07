@@ -84,6 +84,7 @@ struct HStrangeCorrelationFilter {
   Configurable<std::string> zorroMask{"zorroMask", "", "zorro trigger class to select on (empty: none)"};
   Configurable<float> nSigmaNearXiMassCenter{"nSigmaNearXiMassCenter", 0, "for Oemga analysis only, to check if candidate mass is around Xi"};
   Configurable<bool> rejectAmbiguousTracks{"rejectAmbiguousTracks", false, "reject tracks compatible with more than one collision (requires track-to-collision-associator with fillTableOfCollIdsPerTrack)"};
+  Configurable<bool> rejectAmbiguousAssoc{"rejectAmbiguousAssoc", false, "reject V0/cascade candidates having at least one ambiguous daughter track"};
 
   // used for event selections in Pb-Pb
   Configurable<int> cfgCutOccupancyHigh{"cfgCutOccupancyHigh", 3000, "High cut on TPC occupancy"};
@@ -214,8 +215,8 @@ struct HStrangeCorrelationFilter {
   // using CascadesLinkedTagged = soa::Join<aod::CascadesLinked, aod::CascTags>;
   using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackCompColls>;
   using FullTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackCompColls>;
-  using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::TracksDCA>;
-  using DauTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::TracksDCA, aod::McTrackLabels>;
+  using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::TracksDCA, aod::TrackCompColls>;
+  using DauTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::TracksDCA, aod::McTrackLabels, aod::TrackCompColls>;
   // using IDTracks= soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::TOFSignal>; // prepared for Bayesian PID
   using IDTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::TOFSignal, aod::TracksDCA>;
   using IDTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::TOFSignal, aod::TracksDCA, aod::McTrackLabels>;
@@ -302,6 +303,9 @@ struct HStrangeCorrelationFilter {
       histos.add("h3dMassLambda", "h3dMassLambda", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisLambdaMass, axesConfigurations.axisMult});
       histos.add("h3dMassAntiLambda", "h3dMassAntiLambda", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisLambdaMass, axesConfigurations.axisMult});
     }
+    if (rejectAmbiguousAssoc && (doprocessV0s || doprocessV0sMC)) {
+      histos.add("hAmbiguousV0Pt", "hAmbiguousV0Pt", kTH1F, {axesConfigurations.axisPtQA});
+    }
     if (rejectAmbiguousTracks && (doprocessTriggers || doprocessTriggersMC)) {
       histos.add("hAmbiguousTriggerPt", "hAmbiguousTriggerPt", kTH1F, {axesConfigurations.axisPtQA});
     }
@@ -310,6 +314,9 @@ struct HStrangeCorrelationFilter {
       histos.add("h3dMassXiPlus", "h3dMassXiPlus", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisXiMass, axesConfigurations.axisMult});
       histos.add("h3dMassOmegaMinus", "h3dMassOmegaMinus", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisOmegaMass, axesConfigurations.axisMult});
       histos.add("h3dMassOmegaPlus", "h3dMassOmegaPlus", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisOmegaMass, axesConfigurations.axisMult});
+    }
+    if (rejectAmbiguousAssoc && (doprocessCascades || doprocessCascadesMC)) {
+      histos.add("hAmbiguousCascadePt", "hAmbiguousCascadePt", kTH1F, {axesConfigurations.axisPtQA});
     }
   }
 
@@ -839,6 +846,10 @@ struct HStrangeCorrelationFilter {
       if (trackSelections.requireClusterInITS && (posdau.itsNCls() < trackSelections.minITSClustersForDaughterTracks || negdau.itsNCls() < trackSelections.minITSClustersForDaughterTracks)) {
         continue;
       }
+      if (rejectAmbiguousAssoc && (isAmbiguousTrack(posdau) || isAmbiguousTrack(negdau))) {
+        histos.fill(HIST("hAmbiguousV0Pt"), v0.pt());
+        continue;
+      }
 
       float dcaDauCutForK0s = v0Selection.dcaDaugToPVForK0s == 0 ? v0Selection.dcaMesonToPV : v0Selection.dcaDaugToPVForK0s;
       bool isGoodK0Short = (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short < v0Selection.lifetimecutK0S &&
@@ -972,6 +983,10 @@ struct HStrangeCorrelationFilter {
         continue;
       }
       if (trackSelections.requireClusterInITS && (posdau.itsNCls() < trackSelections.minITSClustersForDaughterTracks || negdau.itsNCls() < trackSelections.minITSClustersForDaughterTracks)) {
+        continue;
+      }
+      if (rejectAmbiguousAssoc && (isAmbiguousTrack(posdau) || isAmbiguousTrack(negdau))) {
+        histos.fill(HIST("hAmbiguousV0Pt"), v0.pt());
         continue;
       }
 
@@ -1126,6 +1141,10 @@ struct HStrangeCorrelationFilter {
         continue;
       }
       if (negTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+        continue;
+      }
+      if (rejectAmbiguousAssoc && (isAmbiguousTrack(bachTrackCast) || isAmbiguousTrack(posTrackCast) || isAmbiguousTrack(negTrackCast))) {
+        histos.fill(HIST("hAmbiguousCascadePt"), casc.pt());
         continue;
       }
       if (!doPPAnalysis && !cascadeSelectedPbPb(casc, collision.posX(), collision.posY(), collision.posZ())) {
@@ -1295,6 +1314,10 @@ struct HStrangeCorrelationFilter {
         continue;
       }
       if (negTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
+        continue;
+      }
+      if (rejectAmbiguousAssoc && (isAmbiguousTrack(bachTrackCast) || isAmbiguousTrack(posTrackCast) || isAmbiguousTrack(negTrackCast))) {
+        histos.fill(HIST("hAmbiguousCascadePt"), casc.pt());
         continue;
       }
       if (!doPPAnalysis && !cascadeSelectedPbPb(casc, collision.posX(), collision.posY(), collision.posZ())) {
