@@ -167,7 +167,7 @@ struct PhotonConversionBuilder {
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
 
   // Operation and minimisation criteria
-  Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
+  Configurable<double> confBz{"confBz", -999, "bz field, -999 is automatic"};
   Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
   Configurable<int> modeTrackPropagation{"modeTrackPropagation", 0, "0: use real track propagation, including material, 1: use fast approximation using only geometry, 2: Use real track propagation and make comparison to fast propagation (only for debugging and testing)"};
   Configurable<float> propV0LegsRadius{"propV0LegsRadius", 60.f, "Radius to which the V0 legs are propagated to calculate psipair and phiV"};
@@ -264,7 +264,8 @@ struct PhotonConversionBuilder {
   o2::ccdb::CcdbApi ccdbApi;
 
   int mRunNumber{};
-  float d_bz{};
+  uint64_t timestamp{};
+  float mBz{};
   float maxSnp{};  // max sine phi for propagation
   float maxStep{}; // max step size (cm) for propagation
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
@@ -309,7 +310,7 @@ struct PhotonConversionBuilder {
   void init(InitContext&)
   {
     mRunNumber = 0;
-    d_bz = 0;
+    mBz = 0;
     maxSnp = 0.85f;  // could be changed later
     maxStep = 2.00f; // could be changed later
 
@@ -326,6 +327,8 @@ struct PhotonConversionBuilder {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
+    mVDriftMgr.init(&ccdb->instance());
+
     switch (useMatCorrType) {
       case MatCorrType::TGeo:
         LOGF(info, "TGeo correction requested, loading geometry");
@@ -469,40 +472,51 @@ struct PhotonConversionBuilder {
       return;
     }
     mRunNumber = bc.runNumber();
+    timestamp = bc.timestamp();
     // In case override, don't proceed, please - no CCDB access required
-    if (d_bz_input > -990) { // o2-linter: disable=magic-number (override value)
-      d_bz = d_bz_input;
+    if (confBz > -990) { // o2-linter: disable=magic-number (override value)
+      mBz = confBz;
       o2::parameters::GRPMagField grpmag;
-      if (std::fabs(d_bz) > 1e-5) {                   // o2-linter: disable=magic-number (override value)
-        grpmag.setL3Current(30000.f / (d_bz / 5.0f)); // o2-linter: disable=magic-number (override value)
+      if (std::fabs(mBz) > 1e-5) {                   // o2-linter: disable=magic-number (override value)
+        grpmag.setL3Current(30000.f / (mBz / 5.0f)); // o2-linter: disable=magic-number (override value)
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
 
       return;
     }
 
-    auto run3grp_timestamp = bc.timestamp();
     o2::base::Propagator::initFieldFromGRP(&bc.grpMagField());
     // Fetch magnetic field from ccdb for current collision
-    d_bz = bc.grpMagField().getNominalL3Field();
-    LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+    mBz = bc.grpMagField().getNominalL3Field();
+    LOG(info) << "Retrieved GRP for timestamp " << timestamp << " with magnetic field of " << mBz << " kZG";
 
     if (useMatCorrType == 2) { // o2-linter: disable=magic-number (material budget correction)
       // setMatLUT only after magfield has been initalized (setMatLUT has implicit and problematic init field call if not)
       o2::base::Propagator::Instance()->setMatLUT(lut);
     }
-    /// Set magnetic field for KF vertexing
-    const float magneticField = o2::base::Propagator::Instance()->getNominalBz();
-    KFParticle::SetField(magneticField);
-
-    mVDriftMgr.init(&ccdb->instance());
+    KFParticle::SetField(mBz);
   }
 
   void updateCCDB(MyBCs::iterator const& bc)
   {
-    auto timestamp = bc.timestamp();
-
+    // First check the timestamp for vdrift which depends on the timestamp and not the run number
+    if (timestamp == bc.timestamp()) {
+      return;
+    }
+    timestamp = bc.timestamp();
     mVDriftMgr.update(timestamp);
+
+    // Now check the run number for magnetic field which should only change for different runs but never within a run
+    if (mRunNumber == bc.runNumber() || confBz > -990) {
+      return;
+    }
+    mRunNumber = bc.runNumber();
+
+    o2::base::Propagator::initFieldFromGRP(&bc.grpMagField());
+    // Fetch magnetic field from ccdb for current collision
+    mBz = bc.grpMagField().getNominalL3Field();
+    LOG(info) << "Retrieved GRP for run " << mRunNumber << " with magnetic field of " << mBz << " kZG";
+    KFParticle::SetField(mBz);
   }
 
   std::pair<int8_t, std::set<uint8_t>> its_ib_Requirement = {0, {0, 1, 2}}; // no hit on 3 ITS ib layers.
@@ -679,7 +693,7 @@ struct PhotonConversionBuilder {
       collision.posY(),
       collision.posZ()};
     if (modeTrackPropagation != TrackPropMode::kProper) {
-      dcaInfo = CalculateDCAFast(pTrackC, vtxPrim, d_bz);
+      dcaInfo = CalculateDCAFast(pTrackC, vtxPrim, mBz);
     }
     pTrackC.setPID(o2::track::PID::Electron);
 
@@ -701,7 +715,7 @@ struct PhotonConversionBuilder {
     }
     auto nTrackC = nTrack;
     if (modeTrackPropagation != TrackPropMode::kProper) {
-      dcaInfo = CalculateDCAFast(nTrackC, vtxPrim, d_bz);
+      dcaInfo = CalculateDCAFast(nTrackC, vtxPrim, mBz);
     }
     nTrackC.setPID(o2::track::PID::Electron);
 
@@ -739,8 +753,8 @@ struct PhotonConversionBuilder {
     // Hence, it is only an approximation but much faster
     if (modeTrackPropagation != TrackPropMode::kProper) {
 
-      o2::track::TrackAuxPar helixPosEle(nTrack, d_bz);
-      o2::track::TrackAuxPar helixPosPos(pTrack, d_bz);
+      o2::track::TrackAuxPar helixPosEle(nTrack, mBz);
+      o2::track::TrackAuxPar helixPosPos(pTrack, mBz);
 
       float diffX = helixPosEle.xC - helixPosPos.xC;
       float diffY = helixPosEle.yC - helixPosPos.yC;
@@ -748,12 +762,12 @@ struct PhotonConversionBuilder {
 
       // Electron
       float arcLenghtEle = helixPosEle.rC * 0.9 > propV0LegsRadius ? std::asin(propV0LegsRadius / helixPosEle.rC) * helixPosEle.rC : o2::constants::math::PI / 2.2 * helixPosEle.rC; // This assumes that the photon momentum vector is a tangent of the circle // o2-linter: disable=magic-number (geometrical assumption for propagation)
-      auto propTrackEle = getPropMomentumFromTrackHelix(arcLenghtEle, ele, helixPosEle, d_bz / 10., phiHelix - ele.phi());
+      auto propTrackEle = getPropMomentumFromTrackHelix(arcLenghtEle, ele, helixPosEle, mBz / 10., phiHelix - ele.phi());
       // Positron
       float arcLenghtPos = helixPosPos.rC * 0.9 > propV0LegsRadius ? std::asin(propV0LegsRadius / helixPosPos.rC) * helixPosPos.rC : o2::constants::math::PI / 2.2 * helixPosPos.rC; // This assumes that the photon momentum vector is a tangent of the circle // o2-linter: disable=magic-number (geometrical assumption for propagation)
-      auto propTrackPos = getPropMomentumFromTrackHelix(arcLenghtPos, pos, helixPosPos, d_bz / 10., phiHelix - pos.phi());
+      auto propTrackPos = getPropMomentumFromTrackHelix(arcLenghtPos, pos, helixPosPos, mBz / 10., phiHelix - pos.phi());
 
-      phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(propTrackPos[0], propTrackPos[1], propTrackPos[2], propTrackEle[0], propTrackEle[1], propTrackEle[2], pos.sign(), ele.sign(), d_bz);
+      phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(propTrackPos[0], propTrackPos[1], propTrackPos[2], propTrackEle[0], propTrackEle[1], propTrackEle[2], pos.sign(), ele.sign(), mBz);
       psipair = o2::aod::pwgem::dilepton::utils::pairutil::getPsiPair(propTrackPos[0], propTrackPos[1], propTrackPos[2], propTrackEle[0], propTrackEle[1], propTrackEle[2]);
 
       // Store values for later comparison
@@ -782,7 +796,7 @@ struct PhotonConversionBuilder {
         if (pPropagatedSuccess && nPropagatedSuccess) {
           KFPTrack kfp_track_posProp = createKFPTrackFromTrackParCov(pTrackProp, pos.sign(), pos.tpcNClsFound(), pos.tpcChi2NCl());
           KFPTrack kfp_track_eleProp = createKFPTrackFromTrackParCov(nTrackProp, ele.sign(), ele.tpcNClsFound(), ele.tpcChi2NCl());
-          phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(kfp_track_posProp.GetPx(), kfp_track_posProp.GetPy(), kfp_track_posProp.GetPz(), kfp_track_eleProp.GetPx(), kfp_track_eleProp.GetPy(), kfp_track_eleProp.GetPz(), pos.sign(), ele.sign(), d_bz);
+          phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(kfp_track_posProp.GetPx(), kfp_track_posProp.GetPy(), kfp_track_posProp.GetPz(), kfp_track_eleProp.GetPx(), kfp_track_eleProp.GetPy(), kfp_track_eleProp.GetPz(), pos.sign(), ele.sign(), mBz);
           psipair = o2::aod::pwgem::dilepton::utils::pairutil::getPsiPair(kfp_track_posProp.GetPx(), kfp_track_posProp.GetPy(), kfp_track_posProp.GetPz(), kfp_track_eleProp.GetPx(), kfp_track_eleProp.GetPy(), kfp_track_eleProp.GetPz());
           break;
         }
@@ -1072,8 +1086,16 @@ struct PhotonConversionBuilder {
   std::unordered_map<int64_t, int> nv0_map;                                     // map collisionId -> nv0
 
   template <bool isMC, bool isTriggerAnalysis, bool enableFilter, typename TCollisions, typename TV0s, typename TTracks, typename TBCs>
-  void build(TCollisions const& collisions, TV0s const& v0s, TTracks const& tracks, TBCs const&, DedupDiag* diag = nullptr)
+  void build(TCollisions const& collisions, TV0s const& v0s, TTracks const& tracks, TBCs const& bcs, DedupDiag* diag = nullptr)
   {
+
+    if (bcs.size() <= 0 || collisions.size() <= 0) {
+      // no events in the AO2D
+      return;
+    }
+    const auto firstBc = bcs.begin();
+    initCCDB(firstBc);
+
     for (const auto& collision : collisions) {
       if constexpr (isMC) {
         if (!collision.has_mcCollision()) {
@@ -1085,19 +1107,11 @@ struct PhotonConversionBuilder {
         continue;
       }
 
-      // if constexpr (isTriggerAnalysis) {
-      //   if (collision.triggerMask_raw() == 0) {
-      //     continue;
-      //   }
-      // }
-
       nv0_map[collision.globalIndex()] = 0;
 
       const auto& bc = collision.template foundBC_as<MyBCs>();
-      initCCDB(bc);
+      updateCCDB(bc);
       registry.fill(HIST("hCollisionCounter"), 1);
-
-      updateCCDB(bc); // delay update until is needed
 
       vecV0Dedup.reserve(30000); // rough estimate for number of V0s per DF
       const auto& v0s_per_coll = v0s.sliceBy(perCollision, collision.globalIndex());
