@@ -101,7 +101,6 @@ struct HfTaskD0 {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits"};
   Configurable<int> centEstimator{"centEstimator", 0, "Centrality estimation (None: 0, FT0C: 2, FT0M: 3)"};
   Configurable<bool> fillEventStatus{"fillEventStatus", false, "Use generated centrality in hSparseAcc and append reco-event status (requires storeCentrality)"};
-  Configurable<int> centEstimatorGen{"centEstimatorGen", 2, "Generated centrality for signal loss (FT0C: 2, FT0M: 3); use the calibrated OO estimator"};
   Configurable<int> occEstimator{"occEstimator", 0, "Occupancy estimation (None: 0, ITS: 1, FT0C: 2)"};
   Configurable<bool> storeCentrality{"storeCentrality", false, "Flag to store centrality information"};
   Configurable<bool> storeOccupancyAndIR{"storeOccupancyAndIR", false, "Flag to store occupancy information and interaction rate"};
@@ -353,8 +352,8 @@ struct HfTaskD0 {
         if (!storeCentrality) {
           LOGP(fatal, "fillEventStatus requires storeCentrality=true.");
         }
-        if (centEstimatorGen != CentralityEstimator::FT0C && centEstimatorGen != CentralityEstimator::FT0M) {
-          LOGP(fatal, "centEstimatorGen must be FT0C (2) or FT0M (3).");
+        if (centEstimator != CentralityEstimator::FT0C && centEstimator != CentralityEstimator::FT0M) {
+          LOGP(fatal, "centEstimator must be FT0C (2) or FT0M (3).");
         }
         axesAcc.emplace_back(3, -0.5, 2.5, "Reco event status (0: no reco, 1: none selected, 2: selected)");
       }
@@ -1343,7 +1342,7 @@ struct HfTaskD0 {
           const auto eventEntry = recoEventStatus.find(mcCollision.globalIndex());
           eventStatus = eventEntry == recoEventStatus.end() ? NoRecoCollision : eventEntry->second;
           // Replace the existing centrality coordinate, including zero-reco events.
-          cent = centEstimatorGen == CentralityEstimator::FT0C ? mcCollision.centFT0C() : mcCollision.centFT0M();
+          cent = centEstimator == CentralityEstimator::FT0C ? mcCollision.centFT0C() : mcCollision.centFT0M();
         }
         const auto fillGeneratedSparse = [&](auto... coordinates) {
           if (fillEventStatus) {
