@@ -144,6 +144,79 @@ class OnnxModel
     evalModel<T>(inputTensors, output);
   }
 
+  // Evaluate model and retrieve the FULL set of output tensors (e.g. multi-head models such as GNNs).
+  // Unlike evalModel(), which returns only the last output tensor as a raw pointer, this
+  // copies every output tensor's data into an owned vector, sized from that tensor's own shape.
+  template <typename T>
+  std::vector<std::vector<T>> evalModelFull(std::vector<Ort::Value>& input)
+  {
+    std::vector<std::vector<T>> results;
+    try {
+      const Ort::RunOptions runOptions;
+      std::vector<const char*> inputNamesChar(mInputNames.size(), nullptr);
+      std::transform(std::begin(mInputNames), std::end(mInputNames), std::begin(inputNamesChar),
+                     [&](const std::string& str) { return str.c_str(); });
+
+      std::vector<const char*> outputNamesChar(mOutputNames.size(), nullptr);
+      std::transform(std::begin(mOutputNames), std::end(mOutputNames), std::begin(outputNamesChar),
+                     [&](const std::string& str) { return str.c_str(); });
+
+      auto outputTensors = mSession->Run(runOptions, inputNamesChar.data(), input.data(), input.size(), outputNamesChar.data(), outputNamesChar.size());
+      if (outputTensors.size() != mOutputNames.size()) {
+        LOG(fatal) << "Number of output tensors: " << outputTensors.size() << " does not agree with the model specified size: " << mOutputNames.size();
+      }
+
+      results.reserve(outputTensors.size());
+      for (auto& tensor : outputTensors) {
+        const std::size_t nElements = tensor.GetTensorTypeAndShapeInfo().GetElementCount();
+        const T* data = tensor.GetTensorData<T>();
+        results.emplace_back(data, data + nElements);
+      }
+    } catch (const Ort::Exception& exception) {
+      LOG(error) << "Error running model inference: " << exception.what();
+    }
+    return results;
+  }
+
+  // Flat-vector input overload, mirrors evalModel(std::vector<T>&)
+  template <typename T>
+  std::vector<std::vector<T>> evalModelFull(std::vector<T>& input)
+  {
+    const int64_t size = input.size();
+    assert(size % mInputShapes[0][1] == 0);
+    std::vector<int64_t> inputShape{size / mInputShapes[0][1], mInputShapes[0][1]};
+    std::vector<Ort::Value> inputTensors;
+    Ort::MemoryInfo memInfo = Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
+    inputTensors.emplace_back(Ort::Value::CreateTensor<T>(memInfo, input.data(), size, inputShape.data(), inputShape.size()));
+    return evalModelFull<T>(inputTensors);
+  }
+
+  // 2D-vector input overload, mirrors evalModel(std::vector<std::vector<T>>&)
+  template <typename T>
+  std::vector<std::vector<T>> evalModelFull(std::vector<std::vector<T>>& input)
+  {
+    std::vector<Ort::Value> inputTensors;
+    Ort::MemoryInfo memInfo = Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
+
+    for (std::size_t iinput = 0; iinput < input.size(); iinput++) {
+      [[maybe_unused]] int totalSize = 1;
+      int64_t size = input[iinput].size();
+      for (std::size_t idim = 1; idim < mInputShapes[iinput].size(); idim++) {
+        totalSize *= mInputShapes[iinput][idim];
+      }
+      assert(size % totalSize == 0);
+
+      std::vector<int64_t> inputShape{static_cast<int64_t>(size / totalSize)};
+      for (std::size_t idim = 1; idim < mInputShapes[iinput].size(); idim++) {
+        inputShape.push_back(mInputShapes[iinput][idim]);
+      }
+
+      inputTensors.emplace_back(Ort::Value::CreateTensor<T>(memInfo, input[iinput].data(), size, inputShape.data(), inputShape.size()));
+    }
+
+    return evalModelFull<T>(inputTensors);
+  }
+
   // Reset session
   void resetSession()
   {
