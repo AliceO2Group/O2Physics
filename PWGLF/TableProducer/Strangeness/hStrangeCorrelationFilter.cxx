@@ -25,6 +25,7 @@
 #include "Common/Core/Zorro.h"
 #include "Common/Core/ZorroSummary.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
@@ -82,6 +83,7 @@ struct HStrangeCorrelationFilter {
   Configurable<float> strangedEdxNSigmaTight{"strangedEdxNSigmaTight", 3, "Nsigmas for strange decay daughters"};
   Configurable<std::string> zorroMask{"zorroMask", "", "zorro trigger class to select on (empty: none)"};
   Configurable<float> nSigmaNearXiMassCenter{"nSigmaNearXiMassCenter", 0, "for Oemga analysis only, to check if candidate mass is around Xi"};
+  Configurable<bool> rejectAmbiguousTracks{"rejectAmbiguousTracks", false, "reject tracks compatible with more than one collision (requires track-to-collision-associator with fillTableOfCollIdsPerTrack)"};
 
   // used for event selections in Pb-Pb
   Configurable<int> cfgCutOccupancyHigh{"cfgCutOccupancyHigh", 3000, "High cut on TPC occupancy"};
@@ -210,8 +212,8 @@ struct HStrangeCorrelationFilter {
 
   // using V0LinkedTagged = soa::Join<aod::V0sLinked, aod::V0Tags>;
   // using CascadesLinkedTagged = soa::Join<aod::CascadesLinked, aod::CascTags>;
-  using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
-  using FullTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>;
+  using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackCompColls>;
+  using FullTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackCompColls>;
   using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::TracksDCA>;
   using DauTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::TracksDCA, aod::McTrackLabels>;
   // using IDTracks= soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::TOFSignal>; // prepared for Bayesian PID
@@ -299,6 +301,9 @@ struct HStrangeCorrelationFilter {
       histos.add("h3dMassK0Short", "h3dMassK0Short", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisK0ShortMass, axesConfigurations.axisMult});
       histos.add("h3dMassLambda", "h3dMassLambda", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisLambdaMass, axesConfigurations.axisMult});
       histos.add("h3dMassAntiLambda", "h3dMassAntiLambda", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisLambdaMass, axesConfigurations.axisMult});
+    }
+    if (rejectAmbiguousTracks && (doprocessTriggers || doprocessTriggersMC)) {
+      histos.add("hAmbiguousTriggerPt", "hAmbiguousTriggerPt", kTH1F, {axesConfigurations.axisPtQA});
     }
     if (doprocessCascades || doprocessCascadesMC) {
       histos.add("h3dMassXiMinus", "h3dMassXiMinus", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisXiMass, axesConfigurations.axisMult});
@@ -408,6 +413,20 @@ struct HStrangeCorrelationFilter {
       return false;
     }
     return true;
+  }
+
+  // ambiguous track check: the track is compatible with more than one collision,
+  // or with a collision different from the one it is assigned to (see PWGCF/TableProducer/dptDptFilter.cxx)
+  template <class TTrack>
+  bool isAmbiguousTrack(TTrack const& track)
+  {
+    if (track.compatibleCollIds().size() == 0) {
+      return false; // no collision association information: not ambiguous
+    }
+    if (track.compatibleCollIds().size() == 1) {
+      return track.collisionId() != track.compatibleCollIds()[0];
+    }
+    return true; // associated to more than one collision
   }
 
   // reco-level trigger quality checks (N.B.: DCA is filtered, not selected)
@@ -593,6 +612,10 @@ struct HStrangeCorrelationFilter {
       if (!isValidTrigger(track)) {
         continue;
       }
+      if (rejectAmbiguousTracks && isAmbiguousTrack(track)) {
+        histos.fill(HIST("hAmbiguousTriggerPt"), track.pt());
+        continue;
+      }
       TriggCandidate thisTrigg{};
       thisTrigg.pt = track.pt();
       thisTrigg.trackId = track.globalIndex();
@@ -632,6 +655,10 @@ struct HStrangeCorrelationFilter {
     int leadingId = -1;
     for (auto const& track : tracks) {
       if (!isValidTrigger(track)) {
+        continue;
+      }
+      if (rejectAmbiguousTracks && isAmbiguousTrack(track)) {
+        histos.fill(HIST("hAmbiguousTriggerPt"), track.pt());
         continue;
       }
       TriggCandidate thisTrigg{};
