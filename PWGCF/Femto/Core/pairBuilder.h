@@ -202,8 +202,8 @@ class PairTrackTrackBuilder
     }
   }
 
-  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
-  void processMixedEvent(T1 const& cols, T2& trackTable, T3& partition1, T4& partition2, T5& cache, T6& binsVtxMult, T7& binsVtxCent, T8& binsVtxMultCent)
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
+  void processMixedEvent(T1 const& cols, T2& trackTable, T3& partition1, T4& partition2, T5& cache, T6& binsVtxMult, T7& binsVtxCent, T8& binsVtxMultCent, T9& binsVtxCentEventPlaneAngle)
   {
 
     if (mSameSpecies) {
@@ -216,6 +216,13 @@ class PairTrackTrackBuilder
           break;
         case static_cast<int>(pairhistmanager::kVtxMultCent):
           pairprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, trackTable, cache, binsVtxMultCent, mMixingDepth, mPairHistManagerMe, mCprMe, mPcMe);
+          break;
+        case static_cast<int>(pairhistmanager::kVtxCentEventPlaneAngle):
+          if constexpr (utils::HasEventShape<T1>) {
+            pairprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, trackTable, cache, binsVtxCentEventPlaneAngle, mMixingDepth, mPairHistManagerMe, mCprMe, mPcMe);
+          } else {
+            LOG(fatal) << "Mixing policy kVtxCentEventPlaneAngle requires a collision table with event-shape columns. Breaking...";
+          }
           break;
         default:
           LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
@@ -231,14 +238,21 @@ class PairTrackTrackBuilder
         case static_cast<int>(pairhistmanager::kVtxMultCent):
           pairprocesshelpers::processMixedEvent<mode>(cols, partition1, partition2, trackTable, cache, binsVtxMultCent, mMixingDepth, mPairHistManagerMe, mCprMe, mPcMe);
           break;
+        case static_cast<int>(pairhistmanager::kVtxCentEventPlaneAngle):
+          if constexpr (utils::HasEventShape<T1>) {
+            pairprocesshelpers::processMixedEvent<mode>(cols, partition1, partition2, trackTable, cache, binsVtxCentEventPlaneAngle, mMixingDepth, mPairHistManagerMe, mCprMe, mPcMe);
+          } else {
+            LOG(fatal) << "Mixing policy kVtxCentEventPlaneAngle requires a collision table with event-shape columns. Breaking...";
+          }
+          break;
         default:
           LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
       }
     }
   }
 
-  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12>
-  void processMixedEvent(T1 const& cols, T2 const& mcCols, T3& trackTable, T4& partition1, T5& partition2, T6 const& mcParticles, T7 const& mcMothers, T8 const& mcPartonicMothers, T9& cache, T10& binsVtxMult, T11& binsVtxCent, T12& binsVtxMultCent)
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12, typename T13>
+  void processMixedEvent(T1 const& cols, T2 const& mcCols, T3& trackTable, T4& partition1, T5& partition2, T6 const& mcParticles, T7 const& mcMothers, T8 const& mcPartonicMothers, T9& cache, T10& binsVtxMult, T11& binsVtxCent, T12& binsVtxMultCent, T13& binsVtxCentEventPlaneAngle)
   {
     if (mSameSpecies) {
       switch (mMixingPolicy) {
@@ -250,6 +264,13 @@ class PairTrackTrackBuilder
           break;
         case static_cast<int>(pairhistmanager::kVtxMultCent):
           pairprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMultCent, mMixingDepth, mPairHistManagerMe, mTrackCleaner1, mTrackCleaner1, mCprMe, mPcMe);
+          break;
+        case static_cast<int>(pairhistmanager::kVtxCentEventPlaneAngle):
+          if constexpr (utils::HasEventShape<T1>) {
+            pairprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxCentEventPlaneAngle, mMixingDepth, mPairHistManagerMe, mTrackCleaner1, mTrackCleaner1, mCprMe, mPcMe);
+          } else {
+            LOG(fatal) << "Mixing policy kVtxCentEventPlaneAngle requires a collision table with event-shape columns. Breaking...";
+          }
           break;
         default:
           LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
@@ -264,6 +285,13 @@ class PairTrackTrackBuilder
           break;
         case static_cast<int>(pairhistmanager::kVtxMultCent):
           pairprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition2, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMultCent, mMixingDepth, mPairHistManagerMe, mTrackCleaner1, mTrackCleaner2, mCprMe, mPcMe);
+          break;
+        case static_cast<int>(pairhistmanager::kVtxCentEventPlaneAngle):
+          if constexpr (utils::HasEventShape<T1>) {
+            pairprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition2, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxCentEventPlaneAngle, mMixingDepth, mPairHistManagerMe, mTrackCleaner1, mTrackCleaner2, mCprMe, mPcMe);
+          } else {
+            LOG(fatal) << "Mixing policy kVtxCentEventPlaneAngle requires a collision table with event-shape columns. Breaking...";
+          }
           break;
         default:
           LOG(fatal) << "Invalid binning policiy specifed. Breaking...";

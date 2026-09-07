@@ -30,6 +30,7 @@
 #include <cstdint>
 #include <limits>
 #include <optional>
+#include <type_traits>
 #include <unordered_map>
 
 namespace o2::analysis::femto
@@ -154,10 +155,14 @@ concept HasQvectors = requires(T col) {
 };
 
 template <typename T>
-concept HasEventShape = requires(T col) {
-  col.qvec();
-  col.eventPlaneAngle();
+concept HasEventShapeRow = requires(T row) {
+  row.qvec();
+  row.eventPlaneAngle();
 };
+
+/// accepts either a row/iterator or a table (Filtered<Join<...>> etc.)
+template <typename T>
+concept HasEventShape = HasEventShapeRow<std::decay_t<T>> || (requires { typename std::decay_t<T>::iterator; } && HasEventShapeRow<typename std::decay_t<T>::iterator>);
 
 /// Recalculate pT for Kinks (Sigmas) using kinematic constraints
 inline float calcPtnew(float pxMother, float pyMother, float pzMother, float pxDaughter, float pyDaughter, float pzDaughter)

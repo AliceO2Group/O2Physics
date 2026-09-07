@@ -156,6 +156,10 @@ enum PairHist {
   kQside,
   kQlong,
   kQoutQsideQlong,
+
+  // event shape enginerring
+  kQoutQsideQlongEventPlaneAngleQvector,
+
   kPairHistogramLast
 };
 
@@ -163,6 +167,7 @@ enum MixingPolicy {
   kVtxMult,
   kVtxCent,
   kVtxMultCent,
+  kVtxCentEventPlaneAngle,
   kMixingPolicyLast
 };
 
@@ -172,6 +177,7 @@ struct ConfMixing : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis multBins{"multBins", {o2::framework::VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f}, "Mixing bins - multiplicity"};
   o2::framework::ConfigurableAxis centBins{"centBins", {o2::framework::VARIABLE_WIDTH, 0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f}, "Mixing bins - centrality"};
   o2::framework::ConfigurableAxis vtxBins{"vtxBins", {o2::framework::VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
+  o2::framework::ConfigurableAxis eventPlaneAngle{"eventPlaneAngle", {10, 0.f, 1.f * o2::constants::math::TwoPI}, "Mixing bins - event plane angle"};
   o2::framework::Configurable<int> depth{"depth", 5, "Number of events for mixing"};
   o2::framework::Configurable<int> policy{"policy", 0, "Binning policy for mixing (alywas in combination with z-vertex) -> 0: multiplicity, -> 1: centrality, -> 2: both"};
   o2::framework::Configurable<bool> sameSpecies{"sameSpecies", false, "Enable if particle 1 and particle 2 are the same"};
@@ -228,6 +234,9 @@ struct ConfPairBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis qout{"qout", {{300, -1.5f, 1.5f}}, "q_{out} (GeV/c) in LCMS"};
   o2::framework::ConfigurableAxis qside{"qside", {{300, -1.5f, 1.5f}}, "q_{side} (GeV/c) in LCMS"};
   o2::framework::ConfigurableAxis qlong{"qlong", {{300, -1.5f, 1.5f}}, "q_{long} (GeV/c) in LCMS"};
+  o2::framework::Configurable<bool> plotEventShape{"plotEventShape", false, "(Reco/Mc) Enable 5D (q_out, q_side, q_long, event plane anglke, qvector) histogram"};
+  o2::framework::ConfigurableAxis eventPlaneAngle{"eventPlaneAngle", {{10, 0.f, 1.f * o2::constants::math::TwoPI}}, "event plane angle"};
+  o2::framework::ConfigurableAxis qvector{"qvector", {{o2::framework::VARIABLE_WIDTH, 0.50f, 68.50f, 100.50f, 126.50f, 151.50f, 176.50f, 203.50f, 232.50f, 269.50f, 322.50f, 833.50f}}, "qvector"};
   o2::framework::Configurable<bool> plotSH{"plotSH", false, "(Reco) Enable spherical-harmonics decomposition of the pair momentum-difference vector"};
   o2::framework::Configurable<int> shLMax{"shLMax", 2, "Maximum l for SH decomposition (0..5). FemtoUniverse hard-codes 1."};
   o2::framework::Configurable<int> shFrame{"shFrame", 1, "SH reference frame/variable: 0=LCMS non-identical (k*), 1=LCMS identical (qinv, FemtoUniverse default), 2=PRF (q_PRF, matches FemtoUniverse isIdenPRF=true)"};
@@ -354,6 +363,7 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
       {kTrueQoutVsQout, o2::framework::HistType::kTH2F, "hTrueQoutVsQout", "q_{out,True} vs q_{out}; q_{out,True} (GeV/#it{c}); q_{out} (GeV/#it{c})"},
       {kTrueQsideVsQside, o2::framework::HistType::kTH2F, "hTrueQsideVsQside", "q_{side,True} vs q_{side}; q_{side,True} (GeV/#it{c}); q_{side} (GeV/#it{c})"},
       {kTrueQlongVsQlong, o2::framework::HistType::kTH2F, "hTrueQlongVsQlong", "q_{long,True} vs q_{long}; q_{long,True} (GeV/#it{c}); q_{long} (GeV/#it{c})"},
+      {kQoutQsideQlongEventPlaneAngleQvector, o2::framework::HistType::kTHnSparseF, "hQoutQsideQlongEventPlaneAngleQvector", "Event shape enginering; q_{out} (GeV/#it{c}); q_{side} (GeV/#it{c}); q_{long} (GeV/#it{c}); #varphi_{EP}; q-vector;"},
     }};
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -403,7 +413,8 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
     {kQout, {(confAnalysis).qout}},                                                                                                                                                                                                          \
     {kQside, {(confAnalysis).qside}},                                                                                                                                                                                                        \
     {kQlong, {(confAnalysis).qlong}},                                                                                                                                                                                                        \
-    {kQoutQsideQlong, {(confAnalysis).qout, (confAnalysis).qside, (confAnalysis).qlong}},
+    {kQoutQsideQlong, {(confAnalysis).qout, (confAnalysis).qside, (confAnalysis).qlong}},                                                                                                                                                    \
+    {kQoutQsideQlongEventPlaneAngleQvector, {(confAnalysis).qout, (confAnalysis).qside, (confAnalysis).qlong, (confAnalysis).eventPlaneAngle, (confAnalysis).qvector}},
 
 // mixing-qa entries are independent of reco vs mc-truth status — both the reco
 // analysis path and the pure mc-truth path need them whenever kSe/kMe is set
@@ -578,6 +589,7 @@ class PairHistManager
     mPlotDalitz = ConfPairBinning.plotDalitz.value;
     mPlotDeltaEtaDeltaPhi = ConfPairBinning.plotDeltaEtaDeltaPhi.value;
     mPlotBertschPratt = ConfPairBinning.plotBertschPratt.value;
+    mPlotEventShape = ConfPairBinning.plotEventShape.value;
 
     mPlotSH = ConfPairBinning.plotSH.value;
     mShUseCent = ConfPairBinning.shUseCent.value;
@@ -658,81 +670,10 @@ class PairHistManager
     mAbsCharge2 = std::abs(chargeAbsParticle2);
   }
 
-  template <typename T1, typename T2, typename T3>
-  void setPair(T1 const& particle1, T2 const& particle2, T3 const& trackTable)
-  {
-    // if one of the particles has a mass getter (like lambda), we cache the value for the filling later
-    // otherwise set it to the pdg mass
-    if constexpr (utils::HasMass<T1>) {
-      mRecoMass1 = particle1.mass();
-    } else {
-      mRecoMass1 = mPdgMass1;
-    }
-    if constexpr (utils::HasMass<T2>) {
-      mRecoMass2 = particle2.mass();
-    } else {
-      mRecoMass2 = mPdgMass2;
-    }
-
-    // get mass for 4-vectors
-    double mass1 = 0.f;
-    double mass2 = 0.f;
-    if (mUsePdgMass) {
-      mass1 = mPdgMass1;
-      mass2 = mPdgMass2;
-    } else {
-      mass1 = mRecoMass1;
-      mass2 = mRecoMass2;
-    }
-
-    // pt in track table is calculated from 1/signedPt from the original track table
-    // in case of He with Z=2, we have to rescale the pt with the absolute charge
-    mParticle1 = ROOT::Math::PtEtaPhiMVector(mAbsCharge1 * particle1.pt(), particle1.eta(), particle1.phi(), mass1);
-    mParticle2 = ROOT::Math::PtEtaPhiMVector(mAbsCharge2 * particle2.pt(), particle2.eta(), particle2.phi(), mass2);
-
-    // set kT
-    mKt = getKt(mParticle1, mParticle2);
-
-    // set mT
-    mMt = getMt(mParticle1, mParticle2);
-
-    // set Minv
-    mMassInv = getMinv(mParticle1, mParticle2);
-
-    // set kstar
-    mKstar = getKstar(mParticle1, mParticle2);
-
-    if (mPlotBertschPratt) {
-      std::tie(mQout, mQside, mQlong) = computeBertschPrattLCMS(mParticle1, mParticle2);
-    }
-
-    if (mPlotSH) {
-      std::tie(mShKv, mShOut, mShSide, mShLong) = computeShKinematics(mParticle1, mParticle2);
-    }
-
-    if (mPlotDeltaEtaDeltaPhi) {
-      mDeltaEta = particle1.eta() - particle2.eta();
-      mDeltaPhi = RecoDecay::constrainAngle(particle1.phi() - particle2.phi(), -o2::constants::math::PIHalf);
-    }
-
-    if (mPlotDalitz) {
-      if constexpr (modes::isEqual(particleType1, modes::Particle::kTrack) && (modes::isEqual(particleType2, modes::Particle::kV0) || modes::isEqual(particleType2, modes::Particle::kTwoTrackResonance) || modes::isEqual(particleType2, modes::Particle::kCharmHadron)) &&
-                    requires(T2 p) { p.posDauId(); p.negDauId(); }) {
-        auto posDaughter = trackTable.rawIteratorAt(particle2.posDauId() - trackTable.offset());
-        auto negDaughter = trackTable.rawIteratorAt(particle2.negDauId() - trackTable.offset());
-        ROOT::Math::PtEtaPhiMVector posDau4v = ROOT::Math::PtEtaPhiMVector(posDaughter.pt(), posDaughter.eta(), posDaughter.phi(), mPdgMassPosDau2);
-        ROOT::Math::PtEtaPhiMVector negDau4v = ROOT::Math::PtEtaPhiMVector(negDaughter.pt(), negDaughter.eta(), negDaughter.phi(), mPdgMassNegDau2);
-        mMassTot2 = (mParticle1 + posDau4v + negDau4v).M2();
-        mMass12 = (mParticle1 + posDau4v).M2();
-        mMass13 = (mParticle1 + negDau4v).M2();
-      }
-    }
-  }
-
   template <typename T1, typename T2, typename T3, typename T4>
   void setPair(T1 const& particle1, T2 const& particle2, T3 const& trackTable, T4 const& col)
   {
-    setPair(particle1, particle2, trackTable);
+    setPairKinematics(particle1, particle2, trackTable, col);
     mMult = col.mult();
     mCent = col.cent();
   }
@@ -740,7 +681,7 @@ class PairHistManager
   template <typename T1, typename T2, typename T3, typename T4, typename T5>
   void setPair(T1 const& particle1, T2 const& particle2, T3 const& trackTable, T4 const& col1, T5 const& col2)
   {
-    setPair(particle1, particle2, trackTable);
+    setPairKinematics(particle1, particle2, trackTable, col1);
     mMult = 0.5f * (col1.mult() + col2.mult()); // if mixing with multiplicity, should be in the same mixing bin
     mCent = 0.5f * (col1.cent() + col2.cent()); // if mixing with centrality, should be in the same mixing bin
   }
@@ -1047,6 +988,11 @@ class PairHistManager
       mHistogramRegistry->add(analysisDir + getHistNameV2(kQlong, HistTable), getHistDesc(kQlong, HistTable), getHistType(kQlong, HistTable), {Specs.at(kQlong)});
       mHistogramRegistry->add(analysisDir + getHistNameV2(kQoutQsideQlong, HistTable), getHistDesc(kQoutQsideQlong, HistTable), getHistType(kQoutQsideQlong, HistTable), {Specs.at(kQoutQsideQlong)});
     }
+
+    if (mPlotEventShape) {
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kQoutQsideQlongEventPlaneAngleQvector, HistTable), getHistDesc(kQoutQsideQlongEventPlaneAngleQvector, HistTable), getHistType(kQoutQsideQlongEventPlaneAngleQvector, HistTable), {Specs.at(kQoutQsideQlongEventPlaneAngleQvector)});
+    }
+
     if (mPlotSH) {
       const int nJM = (mShLMax + 1) * (mShLMax + 1);
       const int nCent = static_cast<int>(mShCentEdges.size()) - 1; // n edges -> n - 1 bins
@@ -1225,6 +1171,89 @@ class PairHistManager
     }
   }
 
+  template <typename T1, typename T2, typename T3, typename T4>
+  void setPairKinematics(T1 const& particle1, T2 const& particle2, T3 const& trackTable, T4 const& col)
+  {
+    // if one of the particles has a mass getter (like lambda), we cache the value for the filling later
+    // otherwise set it to the pdg mass
+    if constexpr (utils::HasMass<T1>) {
+      mRecoMass1 = particle1.mass();
+    } else {
+      mRecoMass1 = mPdgMass1;
+    }
+    if constexpr (utils::HasMass<T2>) {
+      mRecoMass2 = particle2.mass();
+    } else {
+      mRecoMass2 = mPdgMass2;
+    }
+
+    // get mass for 4-vectors
+    double mass1 = 0.f;
+    double mass2 = 0.f;
+    if (mUsePdgMass) {
+      mass1 = mPdgMass1;
+      mass2 = mPdgMass2;
+    } else {
+      mass1 = mRecoMass1;
+      mass2 = mRecoMass2;
+    }
+
+    // pt in track table is calculated from 1/signedPt from the original track table
+    // in case of He with Z=2, we have to rescale the pt with the absolute charge
+    mParticle1 = ROOT::Math::PtEtaPhiMVector(mAbsCharge1 * particle1.pt(), particle1.eta(), particle1.phi(), mass1);
+    mParticle2 = ROOT::Math::PtEtaPhiMVector(mAbsCharge2 * particle2.pt(), particle2.eta(), particle2.phi(), mass2);
+
+    // set kT
+    mKt = getKt(mParticle1, mParticle2);
+
+    // set mT
+    mMt = getMt(mParticle1, mParticle2);
+
+    // set Minv
+    mMassInv = getMinv(mParticle1, mParticle2);
+
+    // set kstar
+    mKstar = getKstar(mParticle1, mParticle2);
+
+    if (mPlotBertschPratt) {
+      std::tie(mQout, mQside, mQlong) = computeBertschPrattLCMS(mParticle1, mParticle2);
+    }
+
+    if (mPlotEventShape) {
+      if (!mPlotBertschPratt) {
+        std::tie(mQout, mQside, mQlong) = computeBertschPrattLCMS(mParticle1, mParticle2);
+      }
+      if constexpr (utils::HasEventShape<T4>) {
+        mPairPhiFromEventPlaneAngle = getPairPhiFromEventPlaneAngle(mParticle1, mParticle2, col);
+        mQvector = col.qvec();
+      } else {
+        LOG(fatal) << "plotEventShape is enabled but the collision table has no event-shape columns. Breaking...";
+      }
+    }
+
+    if (mPlotSH) {
+      std::tie(mShKv, mShOut, mShSide, mShLong) = computeShKinematics(mParticle1, mParticle2);
+    }
+
+    if (mPlotDeltaEtaDeltaPhi) {
+      mDeltaEta = particle1.eta() - particle2.eta();
+      mDeltaPhi = RecoDecay::constrainAngle(particle1.phi() - particle2.phi(), -o2::constants::math::PIHalf);
+    }
+
+    if (mPlotDalitz) {
+      if constexpr (modes::isEqual(particleType1, modes::Particle::kTrack) && (modes::isEqual(particleType2, modes::Particle::kV0) || modes::isEqual(particleType2, modes::Particle::kTwoTrackResonance) || modes::isEqual(particleType2, modes::Particle::kCharmHadron)) &&
+                    requires(T2 p) { p.posDauId(); p.negDauId(); }) {
+        auto posDaughter = trackTable.rawIteratorAt(particle2.posDauId() - trackTable.offset());
+        auto negDaughter = trackTable.rawIteratorAt(particle2.negDauId() - trackTable.offset());
+        ROOT::Math::PtEtaPhiMVector posDau4v = ROOT::Math::PtEtaPhiMVector(posDaughter.pt(), posDaughter.eta(), posDaughter.phi(), mPdgMassPosDau2);
+        ROOT::Math::PtEtaPhiMVector negDau4v = ROOT::Math::PtEtaPhiMVector(negDaughter.pt(), negDaughter.eta(), negDaughter.phi(), mPdgMassNegDau2);
+        mMassTot2 = (mParticle1 + posDau4v + negDau4v).M2();
+        mMass12 = (mParticle1 + posDau4v).M2();
+        mMass13 = (mParticle1 + negDau4v).M2();
+      }
+    }
+  }
+
   void fillAnalysis()
   {
     if (mPlot1d) {
@@ -1326,6 +1355,9 @@ class PairHistManager
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQside, HistTable)), mQside);
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQlong, HistTable)), mQlong);
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQoutQsideQlong, HistTable)), mQout, mQside, mQlong);
+    }
+    if (mPlotEventShape) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQoutQsideQlongEventPlaneAngleQvector, HistTable)), mQout, mQside, mQlong, mPairPhiFromEventPlaneAngle, mQvector);
     }
     if (mPlotSH) {
       const float shCentValue = mShUseCent ? mCent : mMult;
@@ -1611,6 +1643,14 @@ class PairHistManager
             static_cast<float>(fDKOut), static_cast<float>(fDKSide), static_cast<float>(fDKLong)};
   }
 
+  template <typename T1>
+  float getPairPhiFromEventPlaneAngle(const ROOT::Math::PtEtaPhiMVector& part1, const ROOT::Math::PtEtaPhiMVector& part2, const T1& col)
+  {
+    const ROOT::Math::PtEtaPhiMVector trackSum = part1 + part2;
+    float phi = RecoDecay::constrainAngle(trackSum.Phi() - col.eventPlaneAngle());
+    return phi;
+  }
+
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
   bool mUsePdgMass = true;
   double mPdgMass1 = 0.;
@@ -1702,12 +1742,17 @@ class PairHistManager
 
   bool mPlotBertschPratt = false;
 
+  bool mPlotEventShape = false;
+
   float mQout = 0.f;
   float mQside = 0.f;
   float mQlong = 0.f;
 
   float mDeltaEta = 0.f;
   float mDeltaPhi = 0.f;
+
+  float mQvector = 0.f;
+  float mPairPhiFromEventPlaneAngle = 0.f;
 
   // Spherical harmonics
   bool mPlotSH = false;
