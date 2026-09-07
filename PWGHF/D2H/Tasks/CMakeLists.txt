@@ -98,7 +98,7 @@ o2physics_add_dpl_workflow(task-dstar-to-d0-pi
                     SOURCES taskDstarToD0Pi.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
-                    
+
 o2physics_add_dpl_workflow(task-flattenicity-dlc
                     SOURCES taskFlattenicityDLc.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::SGCutParHolder O2Physics::EventFilteringUtils
