@@ -88,6 +88,7 @@ class multGlauberNBDFitter : public TNamed
   // Interface to get funtions if asked to
   TF1* GetNBD();
   TF1* GetGlauberNBD();
+  TF1* GetTrentoNBD();
 
   // Helper
   bool InitializeNpNc();

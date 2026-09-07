@@ -104,6 +104,7 @@ multGlauberNBDFitter::~multGlauberNBDFitter()
 
 void multGlauberNBDFitter::InitGlauberNBD(const float mu, const float k, const float f, const float norm)
 {
+  fNBDFitterMode = NBDFitterMode::Glauber;
   fGlauberNBD = new TF1("fGlauberNBD", this, &multGlauberNBDFitter::GlauberProbDistrib,
                         0, 50000, 5, "multGlauberNBDFitter", "GlauberProbDistrib");
   fGlauberNBD->SetParameter(Index(FitPar::mu), mu);
@@ -120,16 +121,20 @@ void multGlauberNBDFitter::InitGlauberNBD(const float mu, const float k, const f
 
 void multGlauberNBDFitter::InitTrentoNBD(const float mu, const float k, const float norm)
 {
+  fNBDFitterMode = NBDFitterMode::Trento;
   fGlauberNBD = nullptr;
   fTrentoNBD = new TF1("fTrentoNBD", this, &multGlauberNBDFitter::TrentoProbDistrib,
                        0, 50000, 5, "multGlauberNBDFitter", "TrentoProbDistrib");
   fTrentoNBD->SetParameter(Index(FitPar::mu), mu);
   fTrentoNBD->SetParameter(Index(FitPar::k), k);
   fTrentoNBD->SetParameter(Index(FitPar::norm), norm);
+  fTrentoNBD->FixParameter(Index(FitPar::dMu), 0);
 
   fTrentoNBD->SetParName(Index(FitPar::mu), "mu");
   fTrentoNBD->SetParName(Index(FitPar::k), "k");
+  fTrentoNBD->SetParName(Index(FitPar::f), "f");
   fTrentoNBD->SetParName(Index(FitPar::norm), "norm");
+  fTrentoNBD->SetParName(Index(FitPar::dMu), "dMu/dNanc");
 }
 
 //______________________________________________________
@@ -139,22 +144,22 @@ double multGlauberNBDFitter::GlauberProbDistrib(const double* x, const double* p
   double lMultValue = x[0];
   double lProbability = 0.0;
   ffChanged = true;
-  const double lAlmost0 = 1.e-13;
+  static constexpr double Almost0 = 1.e-13;
   // Comment this line in order to make the code evaluate Nancestor all the time
-  if (std::abs(fCurrentf - par[2]) < lAlmost0) {
+  if (std::abs(fCurrentf - par[Index(FitPar::f)]) < Almost0) {
     ffChanged = false;
   }
 
   //______________________________________________________
   // Recalculate the ancestor distribution in case f changed
   if (ffChanged) {
-    fCurrentf = par[2];
+    fCurrentf = par[Index(FitPar::f)];
     fhNanc->Reset();
 
     for (int ibin = 0; ibin < fNNpNcPairs; ibin++) {
-      double lOption0 = static_cast<int>(fNpart[ibin] * par[2] + fNcoll[ibin] * (1.0 - par[2]));
-      double lOption1 = std::floor(fNpart[ibin] * par[2] + fNcoll[ibin] * (1.0 - par[2]) + 0.5);
-      double lOption2 = (fNpart[ibin] * par[2] + fNcoll[ibin] * (1.0 - par[2]));
+      double lOption0 = static_cast<int>(fNpart[ibin] * par[Index(FitPar::f)] + fNcoll[ibin] * (1.0 - par[Index(FitPar::f)]));
+      double lOption1 = std::floor(fNpart[ibin] * par[Index(FitPar::f)] + fNcoll[ibin] * (1.0 - par[Index(FitPar::f)]) + 0.5);
+      double lOption2 = (fNpart[ibin] * par[Index(FitPar::f)] + fNcoll[ibin] * (1.0 - par[Index(FitPar::f)]));
       if (fAncestorMode == AncestorMode::Truncated) {
         fhNanc->Fill(lOption0, fContent[ibin]);
       }
@@ -178,11 +183,10 @@ double multGlauberNBDFitter::GlauberProbDistrib(const double* x, const double* p
   for (long iNanc = lStartBin; iNanc < fhNanc->GetNbinsX() + 1; ++iNanc) {
     double lNancestors = fhNanc->GetBinCenter(iNanc);
     double lNancestorCount = fhNanc->GetBinContent(iNanc);
-    // if(lNancestorCount<1e-12&&lNancestors>10) break;
 
     // allow for variable mu in case requested
-    double lThisMu = lNancestors * (par[0] + par[4] * lNancestors);
-    double lThisk = lNancestors * par[1];
+    double lThisMu = lNancestors * (par[Index(FitPar::mu)] + par[Index(FitPar::dMu)] * lNancestors);
+    double lThisk = lNancestors * par[Index(FitPar::k)];
     double lpval = std::pow(1.0 + lThisMu / lThisk, -1);
     fNBD->SetParameter(Index(NBDPar::k), lThisk);
     fNBD->SetParameter(Index(NBDPar::p), lpval);
@@ -195,7 +199,7 @@ double multGlauberNBDFitter::GlauberProbDistrib(const double* x, const double* p
     lProbability += lNancestorCount * lMult;
   }
   //______________________________________________________
-  return par[3] * lProbability;
+  return par[Index(FitPar::norm)] * lProbability;
 }
 
 double multGlauberNBDFitter::TrentoProbDistrib(const double* x, const double* par)
@@ -207,8 +211,8 @@ double multGlauberNBDFitter::TrentoProbDistrib(const double* x, const double* pa
   // Actually ealuate function
   for (long iNSrc = 1; iNSrc < fhNSources->GetNbinsX() + 1; ++iNSrc) {
     double lNsources = fhNSources->GetBinCenter(iNSrc);
-    double lThisMu = lNsources * par[0];
-    double lThisk = lNsources * par[1];
+    double lThisMu = lNsources * par[Index(FitPar::mu)];
+    double lThisk = lNsources * par[Index(FitPar::k)];
     double lpval = std::pow(1 + lThisMu / lThisk, -1);
     fNBD->SetParameter(Index(NBDPar::k), lThisk);
     fNBD->SetParameter(Index(NBDPar::p), lpval);
@@ -216,7 +220,7 @@ double multGlauberNBDFitter::TrentoProbDistrib(const double* x, const double* pa
     lProbability += fhNSources->GetBinContent(fhNSources->FindBin(iNSrc)) * lMult;
   }
   //______________________________________________________
-  return par[3] * lProbability;
+  return par[Index(FitPar::norm)] * lProbability;
 }
 
 //________________________________________________________________
@@ -267,10 +271,20 @@ TF1* multGlauberNBDFitter::GetGlauberNBD()
   return fGlauberNBD;
 }
 
+TF1* multGlauberNBDFitter::GetTrentoNBD()
+{
+  return fTrentoNBD;
+}
+
 //________________________________________________________________
 void multGlauberNBDFitter::SetFitRange(const double lMin, const double lMax)
 {
-  fGlauberNBD->SetRange(lMin, lMax);
+  if (fGlauberNBD) {
+    fGlauberNBD->SetRange(lMin, lMax);
+  }
+  if (fTrentoNBD) {
+    fTrentoNBD->SetRange(lMin, lMax);
+  }
 }
 
 //________________________________________________________________
@@ -304,9 +318,11 @@ bool multGlauberNBDFitter::DoFit()
   bool lReturnValue = false;
   switch (fNBDFitterMode) {
     case NBDFitterMode::Glauber:
+      LOG(info) << "Doing Glauber fit!!";
       lReturnValue = DoGlauberFit();
       break;
     case NBDFitterMode::Trento:
+      LOG(info) << "Doing Trento fit!!";
       lReturnValue = DoTrentoFit();
       break;
 
@@ -317,7 +333,7 @@ bool multGlauberNBDFitter::DoFit()
   timer->Stop();
   double lTotalTime = timer->RealTime();
   if (lReturnValue) {
-    LOG(info) << "---> Fitting succeeded took " << lTotalTime << " seconds";
+    LOG(info) << "---> Fitting succeeded after " << lTotalTime << " seconds";
   } else {
     LOG(info) << "---> Fitting failed after " << lTotalTime << " seconds";
   }
@@ -434,11 +450,11 @@ void multGlauberNBDFitter::CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCol
 
   LOG(info) << "Acquiring values from the fit function...";
 
-  fMu = fGlauberNBD->GetParameter(0);
-  fk = fGlauberNBD->GetParameter(1);
-  ff = fGlauberNBD->GetParameter(2);
-  fnorm = fGlauberNBD->GetParameter(3);
-  fdMu = fGlauberNBD->GetParameter(4);
+  fMu = fGlauberNBD->GetParameter(Index(FitPar::mu));
+  fk = fGlauberNBD->GetParameter(Index(FitPar::k));
+  ff = fGlauberNBD->GetParameter(Index(FitPar::f));
+  fnorm = fGlauberNBD->GetParameter(Index(FitPar::norm));
+  fdMu = fGlauberNBD->GetParameter(Index(FitPar::dMu));
 
   LOG(info) << "Please inspect now: ";
   LOG(info) << "Glauber NBD mu ............: " << fMu;
