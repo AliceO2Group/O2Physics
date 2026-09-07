@@ -12,19 +12,6 @@
 /// \brief Analysis of D0/Lambda_c yield as a function of flattenicity
 /// \author Laszlo Gyulai, laszlo.gyulai@cern.ch
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoA.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/HistogramSpec.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponseTOF.h"
-#include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
@@ -35,7 +22,19 @@
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
 
-#include "CCDB/BasicCCDBManager.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/runDataProcessing.h>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -46,18 +45,18 @@ using namespace o2::hf_evsel;
 
 namespace
 {
-  enum CandTypeSel {
-    SigD0 = 0,      // Signal D0
-    SigD0bar,       // Signal D0bar
-    ReflectedD0,    // Reflected D0
-    ReflectedD0bar, // Reflected D0bar
-    PureSigD0,      // Signal D0 exclude Reflected D0bar
-    PureSigD0bar    // Signal D0bar exclude Reflected D0
-  };
+enum CandTypeSel {
+  SigD0 = 0,      // Signal D0
+  SigD0bar,       // Signal D0bar
+  ReflectedD0,    // Reflected D0
+  ReflectedD0bar, // Reflected D0bar
+  PureSigD0,      // Signal D0 exclude Reflected D0bar
+  PureSigD0bar    // Signal D0bar exclude Reflected D0
+};
 }
 
-static const int nCellsFV0=48; 
-static const int CinnerFV0=32; 
+static const int nCellsFV0 = 48;
+static const int CinnerFV0 = 32;
 std::array<float, nCellsFV0> rhoLatticeFV0{0};
 std::array<float, nCellsFV0> fv0AmplitudeWoCalib{0};
 float calib[48] = {1.01697, 1.122, 1.03854, 1.108, 1.11634, 1.14971, 1.19321, 1.06866, 0.954675, 0.952695, 0.969853, 0.957557, 0.989784, 1.01549, 1.02182, 0.976005, 1.01865, 1.06871, 1.06264, 1.02969, 1.07378, 1.06622, 1.15057, 1.0433, 0.83654, 0.847178, 0.890027, 0.920814, 0.888271, 1.04662, 0.8869, 0.856348, 0.863181, 0.906312, 0.902166, 1.00122, 1.03303, 0.887866, 0.892437, 0.906278, 0.884976, 0.864251, 0.917221, 1.10618, 1.04028, 0.893184, 0.915734, 0.892676};
@@ -90,7 +89,6 @@ struct FlattenicityDLc {
   using LcCandidates = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>;
   using LcCandidatesMc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>>;
 
-
   Filter filterD0 = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK))) != static_cast<uint8_t>(0);
   Filter filterLc = aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc;
 
@@ -114,7 +112,7 @@ struct FlattenicityDLc {
   ConfigurableAxis thnConfigAxisGenPtB{"thnConfigAxisGenPtB", {1000, 0, 100}, "Gen Pt B"};
   ConfigurableAxis thnConfigAxisMassLc{"thnConfigAxisMassLc", {300, 1.98, 2.58}, ""};
   ConfigurableAxis thnConfigAxisCanType{"thnConfigAxisCanType", {5, 0., 5.}, ""};
-  
+
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   void init(InitContext const&)
@@ -214,7 +212,7 @@ struct FlattenicityDLc {
 
       registry.add("Data/Lc/hLcVsPtVsFlat", "THn for Reconstructed Lambdac candidates for data", HistType::kTHnSparseF, axesLcData);
     }
-    
+
     if (doprocessMCD0) {
       registry.add("MC/D0/hPtGenSig", "2-prong candidates (matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
       registry.add("MC/D0/hPtVsYRecSigRecoHFFlag", "2-prong candidates (RecoHFFlag - matched);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{360, 0., 36.}, {100, -5., 5.}}});
@@ -301,9 +299,8 @@ struct FlattenicityDLc {
       registry.add("MC/D0/hMassVsPtVsFlatVsYVsD0Type", "Thn for D0 candidates", HistType::kTHnSparseD, axesD0);
       registry.add("MC/D0/hD0Gen", "Thn for generated D0 from charm and beauty", HistType::kTHnSparseD, axesD0Gen);
     }
-    
-    if(doprocessMCLc)
-    {
+
+    if (doprocessMCLc) {
       registry.add("MC/Lc/hPtGenSig", "3-prong candidates (matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
       registry.add("MC/Lc/hMassRecSig", "3-prong candidates (matched);inv. mass (p K #pi) (GeV/#it{c}^{2});", {HistType::kTH1F, {{600, 1.98, 2.58}}});
       registry.add("MC/Lc/hMassVsPtRecSig", "3-prong candidates (matched);inv. mass (p K #pi) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{600, 1.98, 2.58}, {vbins}}});
@@ -422,47 +419,47 @@ struct FlattenicityDLc {
     ccdb->setLocalObjectValidityChecking();
   }
 
-  void processData(Collisions const& collisions, 
-    D0Candidates const&, 
-    LcCandidates const& selectedLcCandidates,
-    aod::TracksWExtra const&, 
-    aod::BcFullInfos const& bcs, 
-    aod::FV0As const&, 
-    TracksWPid const& tracks)
+  void processData(Collisions const& collisions,
+                   D0Candidates const&,
+                   LcCandidates const& selectedLcCandidates,
+                   aod::TracksWExtra const&,
+                   aod::BcFullInfos const& bcs,
+                   aod::FV0As const&,
+                   TracksWPid const& tracks)
   {
     runAnalysisData(collisions, selectedD0Candidates, selectedLcCandidates, bcs, tracks);
   }
   PROCESS_SWITCH(FlattenicityDLc, processData, "Process data", false);
 
   void processMCD0(D0CandidatesMc const&,
-    soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles2prong,
-    TracksSelQuality const& tracks,
-    CollisionsWithMcLabels const& collisions,
-    aod::McCollisions const& mcCollisions,
-    aod::FV0As const&,
-    aod::BcFullInfos const& bcs)
+                   soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles2prong,
+                   TracksSelQuality const& tracks,
+                   CollisionsWithMcLabels const& collisions,
+                   aod::McCollisions const& mcCollisions,
+                   aod::FV0As const&,
+                   aod::BcFullInfos const& bcs)
   {
     runAnalysisMCD0<aod::hf_cand::VertexerType::DCAFitter>(selectedD0CandidatesMc, mcParticles2prong, tracks, collisions, mcCollisions, bcs);
   }
   PROCESS_SWITCH(FlattenicityDLc, processMCD0, "Process MC D0 with DCAFitter", true);
 
   void processMCLc(soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles3prong,
-    TracksSelQuality const& tracks,
-    CollisionsWithMcLabels const& collisions,
-    aod::McCollisions const& mcCollisions,
-    aod::FV0As const&,
-    LcCandidatesMc const& selectedLcCandidatesMc, 
-    aod::BcFullInfos const& bcs)
+                   TracksSelQuality const& tracks,
+                   CollisionsWithMcLabels const& collisions,
+                   aod::McCollisions const& mcCollisions,
+                   aod::FV0As const&,
+                   LcCandidatesMc const& selectedLcCandidatesMc,
+                   aod::BcFullInfos const& bcs)
   {
     runAnalysisMCLc<aod::hf_cand::VertexerType::DCAFitter>(selectedLcCandidatesMc, mcParticles3prong, tracks, collisions, mcCollisions, bcs);
   }
   PROCESS_SWITCH(FlattenicityDLc, processMCLc, "Process MC Lc with DCAFitter", true);
 
   template <typename CollType, typename CandTypeD0, typename CandTypeLc, typename BCsType>
-  void runAnalysisData(CollType const& collisions, 
-                       CandTypeD0 const& candidatesD0, 
-                       CandTypeLc const& candidatesLc, 
-                       BCsType const& bcs, 
+  void runAnalysisData(CollType const& collisions,
+                       CandTypeD0 const& candidatesD0,
+                       CandTypeLc const& candidatesLc,
+                       BCsType const& bcs,
                        TracksWPid const& tracks)
   {
     for (const auto& collision : collisions) {
@@ -476,10 +473,10 @@ struct FlattenicityDLc {
 
       const float flat = fillFlat<true>(collision, 0);
       const float flat_calibrated = fillFlat<true>(collision, 1);
-    
+
       const auto thisCollId = collision.globalIndex();
-      
-      //D0
+
+      // D0
       const auto& groupedD0Candidates = candidatesD0.sliceBy(candD0PerCollision, thisCollId);
       for (const auto& candidate : groupedD0Candidates) {
         if (yCandRecoMax >= 0. && std::abs(HfHelper::yD0(candidate)) > yCandRecoMax) {
@@ -537,7 +534,7 @@ struct FlattenicityDLc {
         }
       }
 
-      //Lc
+      // Lc
       const auto& groupedLcCandidates = candidatesLc.sliceBy(candLcPerCollision, thisCollId);
 
       for (const auto& candidate : groupedLcCandidates) {
@@ -556,7 +553,7 @@ struct FlattenicityDLc {
         const auto chi2PCA = candidate.chi2PCA();
         const auto cpa = candidate.cpa();
         const auto cpaXY = candidate.cpaXY();
-        
+
         if (candidate.isSelLcToPKPi() >= selectionFlagLc) {
           registry.fill(HIST("Data/Lc/hMass"), HfHelper::invMassLcToPKPi(candidate));
           registry.fill(HIST("Data/Lc/hMassVsPt"), HfHelper::invMassLcToPKPi(candidate), pt);
@@ -595,16 +592,16 @@ struct FlattenicityDLc {
         registry.fill(HIST("Data/Lc/hImpParErrProng1VsPt"), candidate.errorImpactParameter1(), pt);
         registry.fill(HIST("Data/Lc/hImpParErrProng2VsPt"), candidate.errorImpactParameter2(), pt);
         registry.fill(HIST("Data/Lc/hDecLenErrVsPt"), candidate.errorDecayLength(), pt);
-        
+
         auto fillTHnData = [&](bool isPKPi) {
           const auto massLc = isPKPi ? HfHelper::invMassLcToPKPi(candidate) : HfHelper::invMassLcToPiKP(candidate);
           std::vector<double> valuesToFill;
           valuesToFill.reserve(registry.get<THnSparse>(HIST("Data/Lc/hLcVsPtVsFlat"))->GetNdimensions());
           valuesToFill.insert(valuesToFill.end(), {massLc, pt, flat});
-            
+
           registry.get<THnSparse>(HIST("Data/Lc/hLcVsPtVsFlat"))->Fill(valuesToFill.data());
         };
-  
+
         if (candidate.isSelLcToPKPi() >= selectionFlagLc) {
           fillTHnData(true);
         }
@@ -617,13 +614,13 @@ struct FlattenicityDLc {
 
   template <int ReconstructionType, typename CandTypeD0, typename CollType, typename BCsType>
   void runAnalysisMCD0(CandTypeD0 const& candidatesD0,
-                 soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles2prong,
-                 TracksSelQuality const&,
-                 CollType const& collisions,
-                 aod::McCollisions const&,
-                 BCsType const&)
+                       soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles2prong,
+                       TracksSelQuality const&,
+                       CollType const& collisions,
+                       aod::McCollisions const&,
+                       BCsType const&)
   {
-    //MC rec.
+    // MC rec.
     for (const auto& candidate : candidatesD0) {
       if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         continue;
@@ -640,15 +637,15 @@ struct FlattenicityDLc {
       float massD0{0.f}, massD0bar{0.f};
       massD0 = HfHelper::invMassD0ToPiK(candidate);
       massD0bar = HfHelper::invMassD0barToKPi(candidate);
-      
+
       auto trackPos = candidate.template prong0_as<TracksSelQuality>();
       auto trackNeg = candidate.template prong1_as<TracksSelQuality>();
       if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
         auto indexMother = RecoDecay::getMother(mcParticles2prong, trackPos.template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>(), o2::constants::physics::Pdg::kD0, true);
         auto particleMother = mcParticles2prong.rawIteratorAt(indexMother);
-        auto ptGen = particleMother.pt();                                                 
-        auto yGen = RecoDecay::y(particleMother.pVector(), o2::constants::physics::MassD0); 
-        registry.fill(HIST("MC/D0/hPtGenSig"), ptGen);                                  
+        auto ptGen = particleMother.pt();
+        auto yGen = RecoDecay::y(particleMother.pVector(), o2::constants::physics::MassD0);
+        registry.fill(HIST("MC/D0/hPtGenSig"), ptGen);
         auto ptRec = candidate.pt();
         auto yRec = HfHelper::yD0(candidate);
         if (candidate.isRecoHfFlag() >= selectionFlagHf) {
@@ -804,7 +801,7 @@ struct FlattenicityDLc {
         if (yCandGenMax >= 0. && std::abs(RecoDecay::y(particle.pVector(), o2::constants::physics::MassD0)) > yCandGenMax) {
           continue;
         }
-        
+
         float flat{-1.f};
         const auto& recoCollsPerMcColl = collisions.sliceBy(colPerMcCollision, particle.mcCollision().globalIndex());
         for (const auto& recCol : recoCollsPerMcColl) {
@@ -816,7 +813,7 @@ struct FlattenicityDLc {
         auto yGen = RecoDecay::y(particle.pVector(), o2::constants::physics::MassD0);
         registry.fill(HIST("MC/D0/hPtGen"), ptGen);
         registry.fill(HIST("MC/D0/hPtVsYGen"), ptGen, yGen);
-                
+
         if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("MC/D0/hPtGenPrompt"), ptGen);
           registry.fill(HIST("MC/D0/hYGenPrompt"), yGen);
@@ -836,20 +833,20 @@ struct FlattenicityDLc {
 
   template <int ReconstructionType, typename CandTypeLc, typename CollType, typename BCsType>
   void runAnalysisMCLc(CandTypeLc const& candidatesLc,
-                 soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles3prong,
-                 TracksSelQuality const&,
-                 CollType const& collisions,
-                 aod::McCollisions const&,
-                 BCsType const&)
+                       soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles3prong,
+                       TracksSelQuality const&,
+                       CollType const& collisions,
+                       aod::McCollisions const&,
+                       BCsType const&)
   {
-   for (const auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       // MC Rec.
       const auto thisCollId = collision.globalIndex();
       const auto& groupedLcCandidates = candidatesLc.sliceBy(candLcPerCollision, thisCollId);
 
       const float flat = fillFlat<true>(collision, 0);
       const float flat_calibrated = fillFlat<true>(collision, 1);
-  
+
       for (const auto& candidate : groupedLcCandidates) {
         if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
           continue;
@@ -857,14 +854,14 @@ struct FlattenicityDLc {
         if (yCandRecoMax >= 0. && std::abs(HfHelper::yLc(candidate)) > yCandRecoMax) {
           continue;
         }
-  
+
         if (std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
           const auto& mcParticleProng0 = candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>();
           const auto pdgCodeProng0 = std::abs(mcParticleProng0.pdgCode());
           const auto indexMother = RecoDecay::getMother(mcParticles3prong, mcParticleProng0, o2::constants::physics::Pdg::kLambdaCPlus, true);
           const auto particleMother = mcParticles3prong.rawIteratorAt(indexMother);
           registry.fill(HIST("MC/Lc/hPtGenSig"), particleMother.pt());
-  
+
           const auto pt = candidate.pt();
           const auto ptProng0 = candidate.ptProng0();
           const auto ptProng1 = candidate.ptProng1();
@@ -971,7 +968,7 @@ struct FlattenicityDLc {
             registry.fill(HIST("MC/Lc/hImpParErrProng2VsPtRecSigNonPrompt"), candidate.errorImpactParameter2(), candidate.pt());
             registry.fill(HIST("MC/Lc/hDecLenErrVsPtRecSigNonPrompt"), candidate.errorDecayLength(), candidate.pt());
           }
- 
+
           if ((candidate.isSelLcToPKPi() >= selectionFlagLc) && pdgCodeProng0 == kProton) {
             const auto massLc = HfHelper::invMassLcToPKPi(candidate);
             std::vector<double> valuesToFill;
@@ -1003,7 +1000,7 @@ struct FlattenicityDLc {
         for (const auto& recCol : recoCollsPerMcColl) {
           flat = fillFlat<false>(recCol, 0);
         }
-        
+
         const auto ptGen = particle.pt();
         const auto originType = particle.originMcGen();
         float ptGenB = -1.;
@@ -1020,7 +1017,7 @@ struct FlattenicityDLc {
           ptGenB = -1.;
           std::vector<double> valuesToFill{ptGen, flat, ptGenB, static_cast<double>(originType)};
           registry.get<THnSparse>(HIST("MC/Lc/hnLcVarsGen"))->Fill(valuesToFill.data());
-          
+
           registry.fill(HIST("MC/Lc/hPtGenPrompt"), particle.pt());
           registry.fill(HIST("MC/Lc/hEtaGenPrompt"), particle.eta());
           registry.fill(HIST("MC/Lc/hYGenPrompt"), RecoDecay::y(particle.pVector(), o2::constants::physics::MassLambdaCPlus));
@@ -1032,7 +1029,7 @@ struct FlattenicityDLc {
           ptGenB = mcParticles3prong.rawIteratorAt(particle.idxBhadMotherPart()).pt();
           std::vector<double> valuesToFill{ptGen, flat, ptGenB, static_cast<double>(originType)};
           registry.get<THnSparse>(HIST("MC/Lc/hnLcVarsGen"))->Fill(valuesToFill.data());
-          
+
           registry.fill(HIST("MC/Lc/hPtGenNonPrompt"), particle.pt());
           registry.fill(HIST("MC/Lc/hEtaGenNonPrompt"), particle.eta());
           registry.fill(HIST("MC/Lc/hYGenNonPrompt"), RecoDecay::y(particle.pVector(), o2::constants::physics::MassLambdaCPlus));
@@ -1075,8 +1072,10 @@ struct FlattenicityDLc {
         }
         float flattenicityFV0 = calcFlatenicity(rhoLatticeFV0);
         if constexpr (fillHist) {
-          if(ifCalib) registry.fill(HIST("Flattenicity_calibrated"), 1-flattenicityFV0);
-          else registry.fill(HIST("Flattenicity"), 1-flattenicityFV0);
+          if (ifCalib)
+            registry.fill(HIST("Flattenicity_calibrated"), 1 - flattenicityFV0);
+          else
+            registry.fill(HIST("Flattenicity"), 1 - flattenicityFV0);
         }
         return 1. - flattenicityFV0;
       } else {
@@ -1086,7 +1085,6 @@ struct FlattenicityDLc {
       return 9999;
     }
   }
-
 
   template <typename T, std::size_t S>
   float calcFlatenicity(std::array<T, S> const& signals)
@@ -1123,7 +1121,6 @@ struct FlattenicityDLc {
     }
     return flat;
   }
-
 
   int getFV0IndexPhi(int i_ch)
   {
