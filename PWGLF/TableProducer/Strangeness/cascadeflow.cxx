@@ -425,10 +425,8 @@ struct cascadeFlow {
     //   return false;
     //  }
 
-    if (isFillHisto)
-      histos.fill(HIST("hNEvents"), 8.5);
-
     if (isFillHisto) {
+      histos.fill(HIST("hNEvents"), 8.5);
       histos.fill(HIST("hEventNchCorrelation"), collision.multNTracksPVeta1(), collision.multNTracksGlobal());
       histos.fill(HIST("hEventPVcontributorsVsCentrality"), collision.centFT0C(), collision.multNTracksPVeta1());
       histos.fill(HIST("hEventGlobalTracksVsCentrality"), collision.centFT0C(), collision.multNTracksGlobal());
@@ -568,13 +566,12 @@ struct cascadeFlow {
 
   int currentRunNumber = -999;
   int lastRunNumber = -999;
-  TProfile3D* shiftprofile;
-  TProfile3D* shiftprofileFT0C;
-  TProfile3D* shiftprofileFV0A;
-  TProfile3D* shiftprofileFT0A;
-  TProfile3D* shiftprofileTPCL;
-  TProfile3D* shiftprofileTPCR;
-  std::string fullCCDBShiftCorrPath;
+  TProfile3D* shiftprofile = nullptr;
+  TProfile3D* shiftprofileFT0C = nullptr;
+  TProfile3D* shiftprofileFV0A = nullptr;
+  TProfile3D* shiftprofileFT0A = nullptr;
+  TProfile3D* shiftprofileTPCL = nullptr;
+  TProfile3D* shiftprofileTPCR = nullptr;
   std::string fullCCDBShiftCorrPathFT0C;
   std::string fullCCDBShiftCorrPathFV0A;
   std::string fullCCDBShiftCorrPathFT0A;
@@ -640,16 +637,16 @@ struct cascadeFlow {
   }
 
   // objects to use for acceptance correction
-  TH2F* hAcceptanceXi;
-  TH2F* hAcceptanceOmega;
-  TH2F* hAcceptanceLambda;
-  TH2F* hAcceptancePrimaryLambda;
+  TH2F* hAcceptanceXi = nullptr;
+  TH2F* hAcceptanceOmega = nullptr;
+  TH2F* hAcceptanceLambda = nullptr;
+  TH2F* hAcceptancePrimaryLambda = nullptr;
 
   // objects to use for resolution correction
-  TH1F* hReso;
+  TH1F* hReso = nullptr;
 
   // objects to use for centrality weight
-  TH1F* hCentWeight;
+  TH1F* hCentWeight = nullptr;
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry histosMCGen{"histosMCGen", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
@@ -1480,7 +1477,7 @@ struct cascadeFlow {
       // polarization variables
       double masses[2]{o2::constants::physics::MassXiMinus, o2::constants::physics::MassOmegaMinus};
       ROOT::Math::PxPyPzMVector cascadeVector[2], lambdaVector, protonVector;
-      float cosThetaStarLambda[2], cosThetaStarProton;
+      double cosThetaStarLambda[2], cosThetaStarProton;
 
       double massLambda = casc.mLambda();
       if (fillingConfigs.isFillNominalMass)
@@ -1805,7 +1802,7 @@ struct cascadeFlow {
       // polarization variables
       double masses[nParticles]{o2::constants::physics::MassXiMinus, o2::constants::physics::MassOmegaMinus};
       ROOT::Math::PxPyPzMVector cascadeVector[nParticles], lambdaVector, protonVector;
-      float cosThetaStarLambda[nParticles], cosThetaStarProton;
+      double cosThetaStarLambda[nParticles], cosThetaStarProton;
 
       double massLambda = casc.mLambda();
       if (fillingConfigs.isFillNominalMass)
@@ -2134,7 +2131,6 @@ struct cascadeFlow {
       centWeight = hCentWeight->GetBinContent(centBin);
     }
 
-    std::vector<float> bdtScore[nParticles];
     for (auto const& v0 : V0s) {
 
       /// Add some minimal cuts for single track variables (min number of TPC clusters)
