@@ -83,7 +83,7 @@ inline double getPdgMass(int pdgCode)
 {
   // use this function instead of TDatabasePDG to return masses defined in the PhysicsConstants.h header
   // this approach saves a lot of memory and important partilces like deuteron are missing in TDatabasePDG anyway
-  double mass = 0.f;
+  double mass = 0.;
   // add new particles if necessary here
   switch (std::abs(pdgCode)) {
     case kPiPlus:
@@ -102,10 +102,10 @@ inline double getPdgMass(int pdgCode)
       mass = o2::constants::physics::MassPhi;
       break;
     case kRho770_0:
-      mass = 775.26; // not defined in O2?
+      mass = 0.77526; // not defined in O2?
       break;
     case kRho770Plus:
-      mass = 775.11; // not defined in O2?
+      mass = 0.77511; // not defined in O2?
       break;
     case o2::constants::physics::Pdg::kK0Star892:
       mass = o2::constants::physics::MassK0Star892;
@@ -138,7 +138,7 @@ inline double getPdgMass(int pdgCode)
       mass = o2::constants::physics::MassOmegaMinus;
       break;
     default:
-      LOG(warn) << "PDG code is not suppored. Return 0...";
+      LOG(warn) << "PDG code " << pdgCode << " is not suppored. Return 0... ";
   }
   return mass;
 }
