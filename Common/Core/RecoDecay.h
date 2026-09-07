@@ -569,6 +569,7 @@ struct RecoDecay {
   /// \param acceptAntiParticles  switch to accept the antiparticle of the expected mother
   /// \param sign  antiparticle indicator of the found mother w.r.t. pdgMother; 1 if particle, -1 if antiparticle, 0 if mother not found
   /// \param depthMax  maximum decay tree level to check; Mothers up to this level will be considered. If -1, all levels are considered.
+  /// \param searchUpToQuark switch to stop searching for mothers when a quark or boson is found
   /// \return index of the mother particle if found, -1 otherwise
   template <bool acceptFlavourOscillation = false, typename T>
   static int getMother(const T& particlesMC,
@@ -576,7 +577,8 @@ struct RecoDecay {
                        int pdgMother,
                        bool acceptAntiParticles = false,
                        int8_t* sign = nullptr,
-                       int8_t depthMax = -1)
+                       int8_t depthMax = -1,
+                       const bool searchUpToQuark = true)
   {
     int8_t sgn = 0;           // 1 if the expected mother is particle, -1 if antiparticle (w.r.t. pdgMother)
     int indexMother = -1;     // index of the final matched mother, if found
@@ -597,13 +599,18 @@ struct RecoDecay {
       for (auto iPart : arrayIds[-stage]) { // check all the particles that were the mothers at the previous stage, o2-linter: disable=const-ref-in-for-loop (int elements)
         auto particleMother = particlesMC.rawIteratorAt(iPart - particlesMC.offset());
         if (particleMother.has_mothers()) {
-          for (auto iMother = particleMother.mothersIds().front(); iMother <= particleMother.mothersIds().back(); ++iMother) { // loop over the mother particles of the analysed particle
-            if (std::find(arrayIdsStage.begin(), arrayIdsStage.end(), iMother) != arrayIdsStage.end()) {                       // if a mother is still present in the vector, do not check it again
+          // If searchUpToQuark is false we only take the first mother (since decay products only have one mother)
+          auto lastMotherIdxToCheck = searchUpToQuark ? particleMother.mothersIds().back() : particleMother.mothersIds().front();
+          for (auto iMother = particleMother.mothersIds().front(); iMother <= lastMotherIdxToCheck; ++iMother) { // loop over the mother particles of the analysed particle
+            if (std::find(arrayIdsStage.begin(), arrayIdsStage.end(), iMother) != arrayIdsStage.end()) {         // if a mother is still present in the vector, do not check it again
               continue;
             }
             auto mother = particlesMC.rawIteratorAt(iMother - particlesMC.offset());
             // Check mother's PDG code.
             auto pdgParticleIMother = mother.pdgCode(); // PDG code of the mother
+            if (!searchUpToQuark && (std::abs(pdgParticleIMother) <= PdgQuarkMax || (std::abs(pdgParticleIMother) >= PdgBosonMin && std::abs(pdgParticleIMother) <= PdgBosonMax))) {
+              continue;
+            }
             // printf("getMother: ");
             // for (int i = stage; i < 0; i++) // Indent to make the tree look nice.
             //   printf(" ");
