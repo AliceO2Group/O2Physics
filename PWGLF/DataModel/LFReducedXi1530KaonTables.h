@@ -233,7 +233,7 @@ DECLARE_SOA_COLUMN(FT0MPercentile, fT0MPercentile, float); //! FT0M multiplicity
 DECLARE_SOA_COLUMN(Bz, bz, float);                         //! nominal L3 magnetic field along z (T)
 } // namespace redxistarkevent
 
-DECLARE_SOA_TABLE(RedXiStarKEvents, "AOD", "REDXSTKEVENT",
+DECLARE_SOA_TABLE(RedXiStarKEvents, "AOD", "REDXISTARKEVENT",
                   o2::soa::Index<>,
                   collision::PosZ,
                   collision::NumContrib,
