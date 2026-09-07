@@ -297,13 +297,13 @@ struct EmcalMcTask {
 
   // One templated fill function instead of 9 copy-pasted blocks
   template <const int type, o2::soa::is_iterator TCluster, o2::soa::is_iterator TMC>
-  void fillClusterHistos(HistogramRegistry& registry, TCluster const& clu, TMC const& mcPart, float centOrMult)
+  void fillClusterHistos(HistogramRegistry& histRegistry, TCluster const& clu, TMC const& mcPart, float centOrMult)
   {
     static constexpr std::string_view subDir = kSubDirs[type];
 
-    registry.fill(HIST(subDir) + HIST("hM02"), clu.m02(), clu.e(), centOrMult);
-    registry.fill(HIST(subDir) + HIST("hEtaRel"), clu.eta() - mcPart.eta(), clu.e(), centOrMult);
-    registry.fill(HIST(subDir) + HIST("hPhiRel"), clu.phi() - mcPart.phi(), clu.e(), centOrMult);
+    histRegistry.fill(HIST(subDir) + HIST("hM02"), clu.m02(), clu.e(), centOrMult);
+    histRegistry.fill(HIST(subDir) + HIST("hEtaRel"), clu.eta() - mcPart.eta(), clu.e(), centOrMult);
+    histRegistry.fill(HIST(subDir) + HIST("hPhiRel"), clu.phi() - mcPart.phi(), clu.e(), centOrMult);
   }
 
   // PCM-EMCal same event
