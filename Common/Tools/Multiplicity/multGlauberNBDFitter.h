@@ -122,7 +122,7 @@ class multGlauberNBDFitter : public TNamed
 
   void SetFitRange(const double lMin, const double lMax);
   void SetFitOptions(const TString& lOpt);
-  void SetFitNpx(const long lNpx);
+  void SetFitNpx(const int64_t lNpx);
 
   // For ancestor mode 2
   double ContinuousNBD(const double n, const double mu, const double k);
@@ -158,9 +158,9 @@ class multGlauberNBDFitter : public TNamed
   // Buffer for (Npart, Ncoll) pairs in memory
   double* fNpart;
   double* fNcoll;
-  long* fContent;
-  long fNNpNcPairs; // number of pairs to use
-  long fMaxNpNcPairs;
+  int64_t* fContent;
+  int64_t fNNpNcPairs; // number of pairs to use
+  int64_t fMaxNpNcPairs;
 
   // The actual output: mu, k, f, norm
   double fMu;
@@ -170,7 +170,7 @@ class multGlauberNBDFitter : public TNamed
   double fnorm;
 
   TString fFitOptions;
-  long fFitNpx;
+  int64_t fFitNpx;
 
   ClassDefOverride(multGlauberNBDFitter, 1);
 };

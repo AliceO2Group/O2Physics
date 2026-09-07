@@ -81,7 +81,7 @@ multGlauberNBDFitter::multGlauberNBDFitter(const char* name, const char* title) 
   // Named constructor
   fNpart = new double[fMaxNpNcPairs];
   fNcoll = new double[fMaxNpNcPairs];
-  fContent = new long[fMaxNpNcPairs];
+  fContent = new int64_t[fMaxNpNcPairs];
 
   // NBD
   fNBD->SetNpx(45000);
@@ -180,7 +180,7 @@ double multGlauberNBDFitter::GlauberProbDistrib(const double* x, const double* p
   //______________________________________________________
   // Actually evaluate function
   int lStartBin = fhNanc->FindBin(0.0) + 1;
-  for (long iNanc = lStartBin; iNanc < fhNanc->GetNbinsX() + 1; ++iNanc) {
+  for (int64_t iNanc = lStartBin; iNanc < fhNanc->GetNbinsX() + 1; ++iNanc) {
     double lNancestors = fhNanc->GetBinCenter(iNanc);
     double lNancestorCount = fhNanc->GetBinContent(iNanc);
 
@@ -209,7 +209,7 @@ double multGlauberNBDFitter::TrentoProbDistrib(const double* x, const double* pa
   double lProbability = 0.0;
   //______________________________________________________
   // Actually ealuate function
-  for (long iNSrc = 1; iNSrc < fhNSources->GetNbinsX() + 1; ++iNSrc) {
+  for (int64_t iNSrc = 1; iNSrc < fhNSources->GetNbinsX() + 1; ++iNSrc) {
     double lNsources = fhNSources->GetBinCenter(iNSrc);
     double lThisMu = lNsources * par[Index(FitPar::mu)];
     double lThisk = lNsources * par[Index(FitPar::k)];
@@ -294,7 +294,7 @@ void multGlauberNBDFitter::SetFitOptions(const TString& lOpt)
 }
 
 //________________________________________________________________
-void multGlauberNBDFitter::SetFitNpx(const long lNpx)
+void multGlauberNBDFitter::SetFitNpx(const int64_t lNpx)
 {
   fFitNpx = lNpx;
 }
@@ -400,7 +400,7 @@ bool multGlauberNBDFitter::InitializeNpNc()
         if (fhNpNc->GetBinContent(fhNpNc->FindBin(xbin, ybin)) != 0) {
           fNpart[fNNpNcPairs] = xbin;
           fNcoll[fNNpNcPairs] = ybin;
-          fContent[fNNpNcPairs] = static_cast<long>(fhNpNc->GetBinContent(fhNpNc->FindBin(xbin, ybin)));
+          fContent[fNNpNcPairs] = static_cast<int64_t>(fhNpNc->GetBinContent(fhNpNc->FindBin(xbin, ybin)));
           fNNpNcPairs++;
         }
       }
@@ -431,12 +431,12 @@ double multGlauberNBDFitter::ContinuousNBD(const double n, const double mu, cons
   if (n + k > NumStabilityThreshold) {
     // log method for handling large numbers
     F = std::lgamma(n + k) - std::lgamma(n + 1.) - std::lgamma(k);
-    f = n * std::log(mu / k) - (n + k) * std::log(1.0 + mu / k);
+    f = n * std::log(mu / k) - (n + k) * std::log1p(mu / k);
     F = F + f;
     F = std::exp(F);
   } else {
     F = std::tgamma(n + k) / (std::tgamma(n + 1.) * std::tgamma(k));
-    f = n * std::log(mu / k) - (n + k) * std::log(1.0 + mu / k);
+    f = n * std::log(mu / k) - (n + k) * std::log1p(mu / k);
     f = std::exp(f);
     F *= f;
   }
@@ -529,7 +529,7 @@ void multGlauberNBDFitter::CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCol
       }
     }
 
-    for (long lMultValue = 1; lMultValue < lHiRange; lMultValue++) {
+    for (int64_t lMultValue = 1; lMultValue < lHiRange; lMultValue++) {
       double lNancestorCount = fContent[ibin];
       double lThisMu = lNancestors * fMu;
       double lThisk = lNancestors * fk;
