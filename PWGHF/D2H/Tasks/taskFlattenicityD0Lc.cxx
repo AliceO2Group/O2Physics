@@ -36,6 +36,8 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/runDataProcessing.h>
 
+#include <map>
+
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::framework;
@@ -60,6 +62,7 @@ static const int CinnerFV0 = 32;
 std::array<float, nCellsFV0> rhoLatticeFV0{0};
 std::array<float, nCellsFV0> fv0AmplitudeWoCalib{0};
 float calib[48] = {1.01697, 1.122, 1.03854, 1.108, 1.11634, 1.14971, 1.19321, 1.06866, 0.954675, 0.952695, 0.969853, 0.957557, 0.989784, 1.01549, 1.02182, 0.976005, 1.01865, 1.06871, 1.06264, 1.02969, 1.07378, 1.06622, 1.15057, 1.0433, 0.83654, 0.847178, 0.890027, 0.920814, 0.888271, 1.04662, 0.8869, 0.856348, 0.863181, 0.906312, 0.902166, 1.00122, 1.03303, 0.887866, 0.892437, 0.906278, 0.884976, 0.864251, 0.917221, 1.10618, 1.04028, 0.893184, 0.915734, 0.892676};
+std::map<int, int> ChannelsToRings = {{0,0},{1,1},{2,2},{3,3},{4,7},{5,6},{6,5},{7,4},{8,8},{9,9},{10,10},{11,11},{12,15},{13,14},{14,13},{15,12},{16,16},{17,17},{18,18},{19,19},{20,23},{21,22},{22,21},{23,20},{24,24},{25,25},{26,26},{27,27},{28,31},{29,30},{30,29},{31,28},{32,32},{33,34},{34,36},{35,38},{36,47},{37,45},{38,43},{39,41},{40,33},{41,35},{42,37},{43,39},{44,46},{45,44},{46,42},{47,40}}; 
 
 struct HfTaskFlattenicityD0Lc {
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
@@ -429,7 +432,7 @@ struct HfTaskFlattenicityD0Lc {
   {
     runAnalysisData(collisions, selectedD0Candidates, selectedLcCandidates, bcs, tracks);
   }
-  PROCESS_SWITCH(FlattenicityD0Lc, processData, "Process data", false);
+  PROCESS_SWITCH(HfTaskFlattenicityD0Lc, processData, "Process data", true);
 
   void processMCD0(D0CandidatesMc const&,
                    soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles2prong,
@@ -441,7 +444,7 @@ struct HfTaskFlattenicityD0Lc {
   {
     runAnalysisMCD0<aod::hf_cand::VertexerType::DCAFitter>(selectedD0CandidatesMc, mcParticles2prong, tracks, collisions, mcCollisions, bcs);
   }
-  PROCESS_SWITCH(FlattenicityD0Lc, processMCD0, "Process MC D0 with DCAFitter", true);
+  PROCESS_SWITCH(HfTaskFlattenicityD0Lc, processMCD0, "Process MC D0 with DCAFitter", false);
 
   void processMCLc(soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles3prong,
                    TracksSelQuality const& tracks,
@@ -453,7 +456,7 @@ struct HfTaskFlattenicityD0Lc {
   {
     runAnalysisMCLc<aod::hf_cand::VertexerType::DCAFitter>(selectedLcCandidatesMc, mcParticles3prong, tracks, collisions, mcCollisions, bcs);
   }
-  PROCESS_SWITCH(FlattenicityD0Lc, processMCLc, "Process MC Lc with DCAFitter", true);
+  PROCESS_SWITCH(HfTaskFlattenicityD0Lc, processMCLc, "Process MC Lc with DCAFitter", false);
 
   template <typename CollType, typename CandTypeD0, typename CandTypeLc, typename BCsType>
   void runAnalysisData(CollType const& collisions,
@@ -1055,7 +1058,7 @@ struct HfTaskFlattenicityD0Lc {
         for (std::size_t ich = 0; ich < fv0.channel().size(); ich++) {
           float amplCh = fv0.amplitude()[ich];
           int chv0 = fv0.channel()[ich];
-          int chv0phi = getFV0IndexPhi(chv0);
+          int chv0phi = ChannelsToRings.at(chv0);
           if (amplCh > 0.0) {
             if (chv0phi > 0.0) {
               fv0AmplitudeWoCalib[chv0phi] = amplCh;
@@ -1121,105 +1124,9 @@ struct HfTaskFlattenicityD0Lc {
     }
     return flat;
   }
-
-  int getFV0IndexPhi(int i_ch)
-  {
-    int iRing = -1;
-
-    if (i_ch >= 0 && i_ch < 8) {
-      if (i_ch < 4) {
-        iRing = i_ch;
-      } else {
-        if (i_ch == 7) {
-          iRing = 4;
-        } else if (i_ch == 6) {
-          iRing = 5;
-        } else if (i_ch == 5) {
-          iRing = 6;
-        } else if (i_ch == 4) {
-          iRing = 7;
-        }
-      }
-    } else if (i_ch >= 8 && i_ch < 16) {
-      if (i_ch < 12) {
-        iRing = i_ch;
-      } else {
-        if (i_ch == 15) {
-          iRing = 12;
-        } else if (i_ch == 14) {
-          iRing = 13;
-        } else if (i_ch == 13) {
-          iRing = 14;
-        } else if (i_ch == 12) {
-          iRing = 15;
-        }
-      }
-    } else if (i_ch >= 16 && i_ch < 24) {
-      if (i_ch < 20) {
-        iRing = i_ch;
-      } else {
-        if (i_ch == 23) {
-          iRing = 20;
-        } else if (i_ch == 22) {
-          iRing = 21;
-        } else if (i_ch == 21) {
-          iRing = 22;
-        } else if (i_ch == 20) {
-          iRing = 23;
-        }
-      }
-    } else if (i_ch >= 24 && i_ch < 32) {
-      if (i_ch < 28) {
-        iRing = i_ch;
-      } else {
-        if (i_ch == 31) {
-          iRing = 28;
-        } else if (i_ch == 30) {
-          iRing = 29;
-        } else if (i_ch == 29) {
-          iRing = 30;
-        } else if (i_ch == 28) {
-          iRing = 31;
-        }
-      }
-    } else if (i_ch == 32) {
-      iRing = 32;
-    } else if (i_ch == 40) {
-      iRing = 33;
-    } else if (i_ch == 33) {
-      iRing = 34;
-    } else if (i_ch == 41) {
-      iRing = 35;
-    } else if (i_ch == 34) {
-      iRing = 36;
-    } else if (i_ch == 42) {
-      iRing = 37;
-    } else if (i_ch == 35) {
-      iRing = 38;
-    } else if (i_ch == 43) {
-      iRing = 39;
-    } else if (i_ch == 47) {
-      iRing = 40;
-    } else if (i_ch == 39) {
-      iRing = 41;
-    } else if (i_ch == 46) {
-      iRing = 42;
-    } else if (i_ch == 38) {
-      iRing = 43;
-    } else if (i_ch == 45) {
-      iRing = 44;
-    } else if (i_ch == 37) {
-      iRing = 45;
-    } else if (i_ch == 44) {
-      iRing = 46;
-    } else if (i_ch == 36) {
-      iRing = 47;
-    }
-    return iRing;
-  }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<FlattenicityD0Lc>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfTaskFlattenicityD0Lc>(cfgc)};
 }
