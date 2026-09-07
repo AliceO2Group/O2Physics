@@ -248,7 +248,7 @@ void o2::aod::dqmixing::SetUpMixingFromJSON(MixingHandler* mh, const char* json)
     const auto& lims = obj["LimsHashing"];
     std::vector<float> limits;
     limits.reserve(lims.Size());
-    for (auto& v : lims.GetArray()) {
+    for (const auto& v : lims.GetArray()) {
       limits.push_back(v.GetFloat());
     }
 
