@@ -2628,7 +2628,7 @@ struct HadNucleiFemto {
         hadHyperRegistry.fill(HIST("hCandidatePairMultiplicityME"), acceptedPairs, partner.centrality);
       }
     }
-    for (const auto acceptedPairs : currentCandidatePairCounts) {
+    for (const auto& acceptedPairs : currentCandidatePairCounts) {
       hadHyperRegistry.fill(HIST("hCandidatePairMultiplicityME"), acceptedPairs, currentEvent.centrality);
     }
   }
