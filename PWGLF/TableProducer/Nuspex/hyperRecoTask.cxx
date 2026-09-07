@@ -914,7 +914,8 @@ struct HyperRecoTask {
     for (const auto& hypCand : hyperCandidates) {
       auto collision = collisions.rawIteratorAt(hypCand.collisionID);
       float trackedHypClSize = !trackedClSize.empty() ? trackedClSize[hypCand.v0ID] : 0;
-      outputDataTableWithCollID(hypCand.collisionID, collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
+      outputDataTableWithCollID(hypCand.collisionID, hypCand.heTrackID, hypCand.piTrackID,
+                                collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
                                 collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(),
                                 collision.posX(), collision.posY(), collision.posZ(),
                                 mRunNumber, hypCand.isMatter,
@@ -952,7 +953,8 @@ struct HyperRecoTask {
         continue;
       int chargeFactor = -1 + 2 * (hypCand.pdgCode > 0);
       float trackedHypClSize = !trackedClSize.empty() ? trackedClSize[hypCand.v0ID] : 0;
-      outputMCTable(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
+      outputMCTable(hypCand.collisionID, hypCand.heTrackID, hypCand.piTrackID,
+                    collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
                     collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(),
                     collision.posX(), collision.posY(), collision.posZ(),
                     mRunNumber, hypCand.isMatter,
@@ -1036,7 +1038,8 @@ struct HyperRecoTask {
         ft0cOccupancyInTimeRange = recoCollision.ft0cOccupancyInTimeRange();
       }
 
-      outputMCTable(centFT0A, centFT0C, centFT0M,
+      outputMCTable(-1, -1, -1,
+                    centFT0A, centFT0C, centFT0M,
                     trackOccupancyInTimeRange, ft0cOccupancyInTimeRange,
                     primVtx[0], primVtx[1], primVtx[2],
                     mRunNumber, 0,
