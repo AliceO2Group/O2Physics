@@ -150,15 +150,15 @@ constexpr int cutDir[nCutScores] = {CutSmaller, CutNot}; // CutSmaller selects v
 auto vecCutDir = std::vector<int>{cutDir, cutDir + nCutScores};
 
 // default values for the cuts
-constexpr double cuts[nBinsPt][nCutScores] = { // background, signal
-  {0., 0.9},
-  {0., 0.9},
-  {0., 0.9},
-  {0., 0.9},
-  {0., 0.9},
-  {0., 0.9},
-  {0., 0.9},
-  {0., 0.9}};
+constexpr double cuts[nBinsPt][nCutScores] = {// background, signal
+                                              {0., 0.9},
+                                              {0., 0.9},
+                                              {0., 0.9},
+                                              {0., 0.9},
+                                              {0., 0.9},
+                                              {0., 0.9},
+                                              {0., 0.9},
+                                              {0., 0.9}};
 
 // row labels
 static const std::vector<std::string> labelsPt = {
@@ -2253,23 +2253,6 @@ struct cascadeFlow {
       histos.fill(HIST("hLambdaPhi"), v0.phi());
       histos.fill(HIST("hlambdaminuspsiT0C"), lambdaminuspsiT0C);
 
-      if (fillingConfigs.isFillTHNLambda) {
-        if (fillingConfigs.isFillTHN_V2)
-          histos.get<THn>(HIST("hLambdaV2"))->Fill(collisionCentrality, chargeIndex, v0.pt(), v0.mLambda(), v2CEP);
-        if (fillingConfigs.isFillTHN_Pz) {
-          //          histos.get<THn>(HIST("hLambdaPzs2"))->Fill(collisionCentrality, chargeIndex, v0.pt(), v0.mLambda(), pzs2Lambda);
-          histos.get<THn>(HIST("hLambdaPzs2"))->Fill(collisionCentrality, chargeIndex, v0.pt(), v0.mLambda(), pzs2Lambda, centWeight);
-        }
-        if (fillingConfigs.isFillTHN_Acc)
-          histos.get<THn>(HIST("hLambdaCos2Theta"))->Fill(collisionCentrality, chargeIndex, v0.eta(), v0.pt(), v0.mLambda(), cos2ThetaLambda);
-      }
-      if (fillingConfigs.isFillTHNLambda_PzVsPsi) {
-        if (fillingConfigs.isFillTHN_Pz)
-          histos.get<THn>(HIST("hLambdaPzVsPsi"))->Fill(collisionCentrality, chargeIndex, v0.pt(), v0.mLambda(), cosThetaLambda, 2 * lambdaminuspsiT0C, centWeight);
-        if (fillingConfigs.isFillTHN_Acc)
-          histos.get<THn>(HIST("hLambdaCos2ThetaVsPsi"))->Fill(collisionCentrality, chargeIndex, v0.eta(), v0.pt(), v0.mLambda(), cos2ThetaLambda, 2 * lambdaminuspsiT0C);
-      }
-
       double invMassLambda = 0;
       if (chargeIndex == 0)
         invMassLambda = v0.mLambda();
@@ -2277,6 +2260,23 @@ struct cascadeFlow {
         invMassLambda = v0.mAntiLambda();
       else
         invMassLambda = v0.mLambda();
+
+      if (fillingConfigs.isFillTHNLambda) {
+        if (fillingConfigs.isFillTHN_V2)
+          histos.get<THn>(HIST("hLambdaV2"))->Fill(collisionCentrality, chargeIndex, v0.pt(), invMassLambda, v2CEP);
+        if (fillingConfigs.isFillTHN_Pz) {
+          //          histos.get<THn>(HIST("hLambdaPzs2"))->Fill(collisionCentrality, chargeIndex, v0.pt(), invMassLambda, pzs2Lambda);
+          histos.get<THn>(HIST("hLambdaPzs2"))->Fill(collisionCentrality, chargeIndex, v0.pt(), invMassLambda, pzs2Lambda, centWeight);
+        }
+        if (fillingConfigs.isFillTHN_Acc)
+          histos.get<THn>(HIST("hLambdaCos2Theta"))->Fill(collisionCentrality, chargeIndex, v0.eta(), v0.pt(), invMassLambda, cos2ThetaLambda);
+      }
+      if (fillingConfigs.isFillTHNLambda_PzVsPsi) {
+        if (fillingConfigs.isFillTHN_Pz)
+          histos.get<THn>(HIST("hLambdaPzVsPsi"))->Fill(collisionCentrality, chargeIndex, v0.pt(), invMassLambda, cosThetaLambda, 2 * lambdaminuspsiT0C, centWeight);
+        if (fillingConfigs.isFillTHN_Acc)
+          histos.get<THn>(HIST("hLambdaCos2ThetaVsPsi"))->Fill(collisionCentrality, chargeIndex, v0.eta(), v0.pt(), invMassLambda, cos2ThetaLambda, 2 * lambdaminuspsiT0C);
+      }
 
       // mass selection
       if (invMassLambda < V0Configs.MinMassLambdaInTree || invMassLambda > V0Configs.MaxMassLambdaInTree)
