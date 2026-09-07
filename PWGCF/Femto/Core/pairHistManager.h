@@ -155,10 +155,10 @@ enum PairHist {
   kQout,
   kQside,
   kQlong,
-  kQoutQsideQlong,
+  kQoutVsQsideVsQlong,
 
   // event shape enginerring
-  kQoutQsideQlongEventPlaneAngleQvector,
+  kQoutVsQsideVsQlongVsMtVsCentVsEventPlaneAngleVsQvector,
 
   kPairHistogramLast
 };
@@ -359,11 +359,11 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
       {kQout, o2::framework::HistType::kTH1F, "hQout", "q_{out} in LCMS; q_{out} (GeV/#it{c}); Entries"},
       {kQside, o2::framework::HistType::kTH1F, "hQside", "q_{side} in LCMS; q_{side} (GeV/#it{c}); Entries"},
       {kQlong, o2::framework::HistType::kTH1F, "hQlong", "q_{long} in LCMS; q_{long} (GeV/#it{c}); Entries"},
-      {kQoutQsideQlong, o2::framework::HistType::kTH3F, "hQoutQsideQlong", "Bertsch-Pratt 3D; q_{out} (GeV/#it{c}); q_{side} (GeV/#it{c}); q_{long} (GeV/#it{c})"},
+      {kQoutVsQsideVsQlong, o2::framework::HistType::kTH3F, "hQoutQsideQlong", "Bertsch-Pratt 3D; q_{out} (GeV/#it{c}); q_{side} (GeV/#it{c}); q_{long} (GeV/#it{c})"},
       {kTrueQoutVsQout, o2::framework::HistType::kTH2F, "hTrueQoutVsQout", "q_{out,True} vs q_{out}; q_{out,True} (GeV/#it{c}); q_{out} (GeV/#it{c})"},
       {kTrueQsideVsQside, o2::framework::HistType::kTH2F, "hTrueQsideVsQside", "q_{side,True} vs q_{side}; q_{side,True} (GeV/#it{c}); q_{side} (GeV/#it{c})"},
       {kTrueQlongVsQlong, o2::framework::HistType::kTH2F, "hTrueQlongVsQlong", "q_{long,True} vs q_{long}; q_{long,True} (GeV/#it{c}); q_{long} (GeV/#it{c})"},
-      {kQoutQsideQlongEventPlaneAngleQvector, o2::framework::HistType::kTHnSparseF, "hQoutQsideQlongEventPlaneAngleQvector", "Event shape enginering; q_{out} (GeV/#it{c}); q_{side} (GeV/#it{c}); q_{long} (GeV/#it{c}); #varphi_{EP}; q-vector;"},
+      {kQoutVsQsideVsQlongVsMtVsCentVsEventPlaneAngleVsQvector, o2::framework::HistType::kTHnSparseF, "hQoutQsideQlongEventPlaneAngleQvector", "Event shape enginering; q_{out} (GeV/#it{c}); q_{side} (GeV/#it{c}); q_{long} (GeV/#it{c}); #varphi_{EP}; q-vector;"},
     }};
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -413,8 +413,8 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
     {kQout, {(confAnalysis).qout}},                                                                                                                                                                                                          \
     {kQside, {(confAnalysis).qside}},                                                                                                                                                                                                        \
     {kQlong, {(confAnalysis).qlong}},                                                                                                                                                                                                        \
-    {kQoutQsideQlong, {(confAnalysis).qout, (confAnalysis).qside, (confAnalysis).qlong}},                                                                                                                                                    \
-    {kQoutQsideQlongEventPlaneAngleQvector, {(confAnalysis).qout, (confAnalysis).qside, (confAnalysis).qlong, (confAnalysis).eventPlaneAngle, (confAnalysis).qvector}},
+    {kQoutVsQsideVsQlong, {(confAnalysis).qout, (confAnalysis).qside, (confAnalysis).qlong}},                                                                                                                                                \
+    {kQoutVsQsideVsQlongVsMtVsCentVsEventPlaneAngleVsQvector, {(confAnalysis).qout, (confAnalysis).qside, (confAnalysis).qlong, (confAnalysis).mt, (confAnalysis).centrality, (confAnalysis).eventPlaneAngle, (confAnalysis).qvector}},
 
 // mixing-qa entries are independent of reco vs mc-truth status — both the reco
 // analysis path and the pure mc-truth path need them whenever kSe/kMe is set
@@ -986,11 +986,11 @@ class PairHistManager
       mHistogramRegistry->add(analysisDir + getHistNameV2(kQout, HistTable), getHistDesc(kQout, HistTable), getHistType(kQout, HistTable), {Specs.at(kQout)});
       mHistogramRegistry->add(analysisDir + getHistNameV2(kQside, HistTable), getHistDesc(kQside, HistTable), getHistType(kQside, HistTable), {Specs.at(kQside)});
       mHistogramRegistry->add(analysisDir + getHistNameV2(kQlong, HistTable), getHistDesc(kQlong, HistTable), getHistType(kQlong, HistTable), {Specs.at(kQlong)});
-      mHistogramRegistry->add(analysisDir + getHistNameV2(kQoutQsideQlong, HistTable), getHistDesc(kQoutQsideQlong, HistTable), getHistType(kQoutQsideQlong, HistTable), {Specs.at(kQoutQsideQlong)});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kQoutVsQsideVsQlong, HistTable), getHistDesc(kQoutVsQsideVsQlong, HistTable), getHistType(kQoutVsQsideVsQlong, HistTable), {Specs.at(kQoutVsQsideVsQlong)});
     }
 
     if (mPlotEventShape) {
-      mHistogramRegistry->add(analysisDir + getHistNameV2(kQoutQsideQlongEventPlaneAngleQvector, HistTable), getHistDesc(kQoutQsideQlongEventPlaneAngleQvector, HistTable), getHistType(kQoutQsideQlongEventPlaneAngleQvector, HistTable), {Specs.at(kQoutQsideQlongEventPlaneAngleQvector)});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kQoutVsQsideVsQlongVsMtVsCentVsEventPlaneAngleVsQvector, HistTable), getHistDesc(kQoutVsQsideVsQlongVsMtVsCentVsEventPlaneAngleVsQvector, HistTable), getHistType(kQoutVsQsideVsQlongVsMtVsCentVsEventPlaneAngleVsQvector, HistTable), {Specs.at(kQoutVsQsideVsQlongVsMtVsCentVsEventPlaneAngleVsQvector)});
     }
 
     if (mPlotSH) {
@@ -1354,10 +1354,10 @@ class PairHistManager
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQout, HistTable)), mQout);
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQside, HistTable)), mQside);
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQlong, HistTable)), mQlong);
-      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQoutQsideQlong, HistTable)), mQout, mQside, mQlong);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQoutVsQsideVsQlong, HistTable)), mQout, mQside, mQlong);
     }
     if (mPlotEventShape) {
-      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQoutQsideQlongEventPlaneAngleQvector, HistTable)), mQout, mQside, mQlong, mPairPhiFromEventPlaneAngle, mQvector);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQoutVsQsideVsQlongVsMtVsCentVsEventPlaneAngleVsQvector, HistTable)), mQout, mQside, mQlong, mMt, mCent, mPairPhiFromEventPlaneAngle, mQvector);
     }
     if (mPlotSH) {
       const float shCentValue = mShUseCent ? mCent : mMult;
