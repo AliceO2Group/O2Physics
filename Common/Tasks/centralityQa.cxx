@@ -12,7 +12,7 @@
 ///
 /// \file centralityQa.cxx
 /// \brief This task does dedicated centrality QA
-/// \author ALICE
+/// \author ALICE Collaboration
 ///
 
 #include "Common/CCDB/EventSelectionParams.h"
