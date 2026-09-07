@@ -298,6 +298,7 @@ struct lambdaspincorrelation {
     std::vector<int> positiveIndex = {};
     std::vector<int> negativeIndex = {};
     std::vector<float> dcaBetweenDaughter = {};
+    std::vector<float> dcaV0ToPV = {};
     int numbV0 = 0;
     // LOGF(info, "event collisions: (%d)", collision.index());
     auto centrality = collision.centFT0C();
@@ -355,6 +356,7 @@ struct lambdaspincorrelation {
           positiveIndex.push_back(postrack1.globalIndex());
           negativeIndex.push_back(negtrack1.globalIndex());
           v0Cospa.push_back(v0.v0cosPA());
+          dcaV0ToPV.push_back(std::abs(v0.dcav0topv()));
           v0Radius.push_back(v0.v0radius());
           dcaPositive.push_back(std::abs(v0.dcapostopv()));
           dcaNegative.push_back(std::abs(v0.dcanegtopv()));
@@ -391,7 +393,7 @@ struct lambdaspincorrelation {
           lambdaDummy = lambdaMother.at(i5);
           protonDummy = protonDaughter.at(i5);
           pionDummy = pionDaughter.at(i5);
-          lambdaPair(indexEvent, v0Status.at(i5), doubleStatus.at(i5), v0Cospa.at(i5), v0Radius.at(i5), dcaPositive.at(i5), dcaNegative.at(i5), dcaBetweenDaughter.at(i5), lambdaDummy.Pt(), lambdaDummy.Eta(), lambdaDummy.Phi(), lambdaDummy.M(), protonDummy.Pt(), protonDummy.Eta(), protonDummy.Phi(), positiveIndex.at(i5), negativeIndex.at(i5));
+          lambdaPair(indexEvent, v0Status.at(i5), doubleStatus.at(i5), v0Cospa.at(i5), v0Radius.at(i5), dcaPositive.at(i5), dcaNegative.at(i5), dcaBetweenDaughter.at(i5), lambdaDummy.Pt(), lambdaDummy.Eta(), lambdaDummy.Phi(), lambdaDummy.M(), protonDummy.Pt(), protonDummy.Eta(), protonDummy.Phi(), positiveIndex.at(i5), negativeIndex.at(i5), dcaV0ToPV.at(i5));
         }
       }
     }
@@ -410,6 +412,7 @@ struct lambdaspincorrelation {
     std::vector<int> positiveIndex = {};
     std::vector<int> negativeIndex = {};
     std::vector<float> dcaBetweenDaughter = {};
+    std::vector<float> dcaV0ToPV = {};
     int numbV0 = 0;
     // LOGF(info, "event collisions: (%d)", collision.index());
     auto centrality = collision.centFT0C();
@@ -470,6 +473,7 @@ struct lambdaspincorrelation {
           dcaPositive.push_back(std::abs(v0.dcapostopv()));
           dcaNegative.push_back(std::abs(v0.dcanegtopv()));
           dcaBetweenDaughter.push_back(std::abs(v0.dcaV0daughters()));
+          dcaV0ToPV.push_back(std::abs(v0.dcav0topv()));
           if (lambdaTag) {
             v0Status.push_back(0);
             proton = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), o2::constants::physics::MassProton);
@@ -502,7 +506,7 @@ struct lambdaspincorrelation {
           lambdaDummy = lambdaMother.at(i5);
           protonDummy = protonDaughter.at(i5);
           pionDummy = pionDaughter.at(i5);
-          lambdaPairmc(indexEvent, v0Status.at(i5), doubleStatus.at(i5), v0Cospa.at(i5), v0Radius.at(i5), dcaPositive.at(i5), dcaNegative.at(i5), dcaBetweenDaughter.at(i5), lambdaDummy.Pt(), lambdaDummy.Eta(), lambdaDummy.Phi(), lambdaDummy.M(), protonDummy.Pt(), protonDummy.Eta(), protonDummy.Phi(), positiveIndex.at(i5), negativeIndex.at(i5));
+          lambdaPairmc(indexEvent, v0Status.at(i5), doubleStatus.at(i5), v0Cospa.at(i5), v0Radius.at(i5), dcaPositive.at(i5), dcaNegative.at(i5), dcaBetweenDaughter.at(i5), lambdaDummy.Pt(), lambdaDummy.Eta(), lambdaDummy.Phi(), lambdaDummy.M(), protonDummy.Pt(), protonDummy.Eta(), protonDummy.Phi(), positiveIndex.at(i5), negativeIndex.at(i5), dcaV0ToPV.at(i5));
         }
       }
     }
@@ -530,6 +534,7 @@ struct lambdaspincorrelation {
         std::vector<int> positiveIndex = {};
         std::vector<int> negativeIndex = {};
         std::vector<float> dcaBetweenDaughter = {};
+        std::vector<float> dcaV0ToPV = {};
         int numbV0 = 0;
 
         auto centrality = collision.centFT0C();
@@ -610,6 +615,7 @@ struct lambdaspincorrelation {
               negativeIndex.push_back(negtrack1.globalIndex());
 
               v0Cospa.push_back(v0.v0cosPA());
+              dcaV0ToPV.push_back(std::abs(v0.dcav0topv()));
               v0Radius.push_back(v0.v0radius());
               dcaPositive.push_back(std::abs(v0.dcapostopv()));
               dcaNegative.push_back(std::abs(v0.dcanegtopv()));
@@ -695,7 +701,8 @@ struct lambdaspincorrelation {
                            protonDummy.Eta(),
                            protonDummy.Phi(),
                            positiveIndex.at(i5),
-                           negativeIndex.at(i5));
+                           negativeIndex.at(i5),
+                           dcaV0ToPV.at(i5));
             }
           }
         }

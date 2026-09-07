@@ -192,7 +192,7 @@ o2::track::TrackParCov getTrackParCovFromKFP(const KFParticle& kfParticle, const
 /// @param kfp KFParticle
 /// @param PV KFParticle primary vertex
 /// @return cpa
-float cpaFromKF(KFParticle kfp, KFParticle PV)
+float cpaFromKF(const KFParticle& kfp, const KFParticle& PV)
 {
   float xVtxP{}, yVtxP{}, zVtxP{}, xVtxS{}, yVtxS{}, zVtxS{}, px{}, py{}, pz{};
 
@@ -216,7 +216,7 @@ float cpaFromKF(KFParticle kfp, KFParticle PV)
 /// @param kfp KFParticle
 /// @param PV KFParticle primary vertex
 /// @return cpa in xy
-float cpaXYFromKF(KFParticle kfp, KFParticle PV)
+float cpaXYFromKF(const KFParticle& kfp, const KFParticle& PV)
 {
   float xVtxP{}, yVtxP{}, xVtxS{}, yVtxS{}, px{}, py{};
 
@@ -243,7 +243,7 @@ float cpaXYFromKF(KFParticle kfp, KFParticle PV)
 /// @param kfpprong1 KFParticele Prong 1
 /// @param pdgdb Service PDG data base
 /// @return cos theta star
-float cosThetaStarFromKF(int iProng, int pdgvtx, int pdgprong0, int pdgprong1, KFParticle kfpprong0, KFParticle kfpprong1, const o2::framework::Service<o2::framework::O2DatabasePDG>& pdgdb)
+float cosThetaStarFromKF(int iProng, int pdgvtx, int pdgprong0, int pdgprong1, const KFParticle& kfpprong0, const KFParticle& kfpprong1, const o2::framework::Service<o2::framework::O2DatabasePDG>& pdgdb)
 {
   float px0{}, py0{}, pz0{}, px1{}, py1{}, pz1{};
 
@@ -269,7 +269,7 @@ float cosThetaStarFromKF(int iProng, int pdgvtx, int pdgprong0, int pdgprong1, K
 /// @param kfpParticle KFParticle
 /// @param Vertex KFParticle vertex
 /// @return impact parameter
-float impParXYFromKF(KFParticle kfpParticle, KFParticle Vertex)
+float impParXYFromKF(const KFParticle& kfpParticle, const KFParticle& Vertex)
 {
   float xVtxP{}, yVtxP{}, zVtxP{}, xVtxS{}, yVtxS{}, zVtxS{}, px{}, py{}, pz{};
 
@@ -293,7 +293,7 @@ float impParXYFromKF(KFParticle kfpParticle, KFParticle Vertex)
 /// @param kfpParticle KFParticle
 /// @param PV KFParticle primary vertex
 /// @return l/delta l
-float ldlFromKF(KFParticle kfpParticle, KFParticle PV)
+float ldlFromKF(const KFParticle& kfpParticle, const KFParticle& PV)
 {
   const float dxParticle = PV.GetX() - kfpParticle.GetX();
   const float dyParticle = PV.GetY() - kfpParticle.GetY();
@@ -312,7 +312,7 @@ float ldlFromKF(KFParticle kfpParticle, KFParticle PV)
 /// @param kfpParticle KFParticle
 /// @param PV KFParticle primary vertex
 /// @return l/delta l in xy plane
-float ldlXYFromKF(KFParticle kfpParticle, KFParticle PV)
+float ldlXYFromKF(const KFParticle& kfpParticle, const KFParticle& PV)
 {
   const float dxParticle = PV.GetX() - kfpParticle.GetX();
   const float dyParticle = PV.GetY() - kfpParticle.GetY();
@@ -354,7 +354,7 @@ std::array<float, 3> kfCalculateProngMomentumInSecondaryVertex(KFParticle track,
 /// @param track1 KFParticle first track (must be passed as a copy)
 /// @param track2 KFParticle second track (must be passed as a copy)
 /// @return DCA [cm] in the PCA
-float kfCalculateDistanceBetweenParticles(KFParticle track1, KFParticle track2)
+float kfCalculateDistanceBetweenParticles(const KFParticle& track1, const KFParticle& track2)
 {
   float dS[2];
   float dsdr[4][6];
@@ -373,7 +373,7 @@ float kfCalculateDistanceBetweenParticles(KFParticle track1, KFParticle track2)
 /// @param track1 KFParticle first track (must be passed as a copy)
 /// @param track2 KFParticle second track (must be passed as a copy)
 /// @return chi2 in PCA
-float kfCalculateChi2geoBetweenParticles(KFParticle track1, KFParticle track2)
+float kfCalculateChi2geoBetweenParticles(const KFParticle& track1, const KFParticle& track2)
 {
   KFParticle kfPair;
   const KFParticle* kfDaughters[2] = {&track1, &track2};

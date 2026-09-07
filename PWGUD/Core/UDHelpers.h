@@ -130,7 +130,7 @@ T compatibleBCs(B const& bc, uint64_t const& meanBC, int const& deltaBC, T const
   // check [min,max]BC to overlap with [bcs.iteratorAt([0,bcs.size() - 1])
   if (maxBC < bcs.iteratorAt(0).globalBC() || minBC > bcs.iteratorAt(bcs.size() - 1).globalBC()) {
     LOGF(debug, "<compatibleBCs> No overlap of [%d, %d] and [%d, %d]", minBC, maxBC, bcs.iteratorAt(0).globalBC(), bcs.iteratorAt(bcs.size() - 1).globalBC());
-    return T{{bcs.asArrowTable()->Slice(0, 0)}, static_cast<uint64_t>(0)};
+    return bcs.emptySlice();
   }
 
   // find slice of BCs table with BC in [minBC, maxBC]
@@ -164,7 +164,7 @@ T compatibleBCs(B const& bc, uint64_t const& meanBC, int const& deltaBC, T const
   }
 
   // create bc slice
-  T bcslice{{bcs.asArrowTable()->Slice(minBCId, maxBCId - minBCId + 1)}, static_cast<uint64_t>(minBCId)};
+  auto bcslice = bcs.rawSlice(minBCId, maxBCId);
   bcs.copyIndexBindings(bcslice);
   LOGF(debug, "  size of slice %d", bcslice.size());
   return bcslice;
@@ -179,7 +179,7 @@ T compatibleBCs(C const& collision, int ndt, T const& bcs, int nMinBCs = 7)
 
   // return if collisions has no associated BC
   if (!collision.has_foundBC() || ndt < 0) {
-    return T{{bcs.asArrowTable()->Slice(0, 0)}, static_cast<uint64_t>(0)};
+    return bcs.emptySlice();
   }
 
   // get associated BC
@@ -220,7 +220,7 @@ T MCcompatibleBCs(F const& collision, int const& ndt, T const& bcs, int const& n
   // return if collisions has no associated BC
   if (!collision.has_foundBC()) {
     LOGF(debug, "Collision %i - no BC found!", collision.globalIndex());
-    return T{{bcs.asArrowTable()->Slice(0, 0)}, static_cast<uint64_t>(0)};
+    return bcs.emptySlice();
   }
 
   // get associated BC
@@ -243,7 +243,7 @@ T MCcompatibleBCs(F const& collision, int const& ndt, T const& bcs, int const& n
 // function to check if track provides good PID information
 // Checks the nSigma for any particle assumption to be within limits.
 template <typename TC>
-bool hasGoodPID(DGCutparHolder diffCuts, TC track)
+bool hasGoodPID(const DGCutparHolder& diffCuts, TC track)
 {
   // El, Mu, Pi, Ka, and Pr are considered
   // at least one nSigma must be within set limits
@@ -891,7 +891,7 @@ bool cleanCalo(T const& bc, o2::aod::Calos& calos, std::vector<float>& /*lims*/,
 // -----------------------------------------------------------------------------
 // check if all tracks come from same MCCollision
 template <typename T>
-int64_t sameMCCollision(T tracks, o2::aod::McCollisions, o2::aod::McParticles)
+int64_t sameMCCollision(T tracks, const o2::aod::McCollisions&, const o2::aod::McParticles&)
 {
   int64_t colID = -1;
   for (auto const& track : tracks) {

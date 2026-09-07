@@ -77,6 +77,12 @@ enum class DileptonPrefilterBitDerived : int {
   kSplitOrMergedTrackULS = 3, // reject split or marged tracks in ULS pairs based on momentum deta-dphi at PV
 };
 
+enum class MatCorrType : int {
+  kNone = 0,
+  kTGeo = 1,
+  kLUT = 2
+};
+
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
 using SMatrix5 = ROOT::Math::SVector<double, 5>;
 

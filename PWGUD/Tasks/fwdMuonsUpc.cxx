@@ -20,7 +20,7 @@
 
 #include "Common/Core/RecoDecay.h"
 
-#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -32,11 +32,13 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include <Math/Vector4D.h>
-#include <Math/VectorUtil.h>
+#include <Math/GenVector/VectorUtil.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 #include <TPDGCode.h>
 #include <TRandom3.h>
 
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -377,7 +379,7 @@ struct FwdMuonsUpc {
   }
 
   // function to compute phi for azimuth anisotropy
-  void computePhiAnis(ROOT::Math::PxPyPzMVector p1, ROOT::Math::PxPyPzMVector p2, int sign1, float& phiAverage, float& phiCharge)
+  void computePhiAnis(const ROOT::Math::PxPyPzMVector& p1, const ROOT::Math::PxPyPzMVector& p2, int sign1, float& phiAverage, float& phiCharge)
   {
     ROOT::Math::PxPyPzMVector tSum, tDiffAv, tDiffCh;
     tSum = p1 + p2;

@@ -23,6 +23,7 @@
 
 #include <CommonConstants/PhysicsConstants.h>
 
+#include <array>
 #include <cstdint>
 #include <vector>
 

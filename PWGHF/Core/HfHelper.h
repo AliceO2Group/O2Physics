@@ -272,6 +272,30 @@ struct HfHelper {
   }
 
   template <typename T>
+  static auto massKFirstPiPairDsToKKPi(const T& candidate)
+  {
+    return RecoDecay::m(std::array{candidate.pVectorProng0(), candidate.pVectorProng2()}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
+  }
+
+  template <typename T>
+  static auto massKFirstPiPairDsToPiKK(const T& candidate)
+  {
+    return RecoDecay::m(std::array{candidate.pVectorProng0(), candidate.pVectorProng2()}, std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus});
+  }
+
+  template <typename T>
+  static auto massKSecondPiPairDsToKKPi(const T& candidate)
+  {
+    return RecoDecay::m(std::array{candidate.pVectorProng1(), candidate.pVectorProng2()}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
+  }
+
+  template <typename T>
+  static auto massKSecondPiPairDsToPiKK(const T& candidate)
+  {
+    return RecoDecay::m(std::array{candidate.pVectorProng0(), candidate.pVectorProng1()}, std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus});
+  }
+
+  template <typename T>
   static auto deltaMassPhiDsToKKPi(const T& candidate)
   {
     return std::abs(massKKPairDsToKKPi(candidate) - o2::constants::physics::MassPhi);
@@ -1025,14 +1049,14 @@ struct HfHelper {
     }
 
     // d0 of K*0 daughters
-    if (std::abs(candB0.impactParameter2()) < cuts->get(binPt, "d0 K*0") ||
-        std::abs(candB0.impactParameter3()) < cuts->get(binPt, "d0 K*0")) {
+    if (std::abs(candB0.impactParameter2()) < cuts->get(binPt, "d0 K*0 daughters") ||
+        std::abs(candB0.impactParameter3()) < cuts->get(binPt, "d0 K*0 daughters")) {
       return false;
     }
 
     // d0 of J/Psi
-    if (std::abs(candB0.impactParameter0()) < cuts->get(binPt, "d0 J/Psi") ||
-        std::abs(candB0.impactParameter1()) < cuts->get(binPt, "d0 J/Psi")) {
+    if (std::abs(candB0.impactParameter0()) < cuts->get(binPt, "d0 J/Psi daughters") ||
+        std::abs(candB0.impactParameter1()) < cuts->get(binPt, "d0 J/Psi daughters")) {
       return false;
     }
 

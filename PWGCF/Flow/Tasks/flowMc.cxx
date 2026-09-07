@@ -68,7 +68,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::rctsel;
 
-#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
+#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, (DEFAULT), (HELP)}; // NOLINT(bugprone-macro-parentheses)
 
 struct FlowMc {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -84,10 +84,10 @@ struct FlowMc {
   O2_DEFINE_CONFIGURABLE(cfgCutPtRefMax, float, 3.0f, "Maximal pT for ref tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMin, float, 0.2f, "Minimal pT for poi tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMax, float, 10.0f, "Maximal pT for poi tracks")
-  O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 50.0f, "minimum TPC clusters")
-  O2_DEFINE_CONFIGURABLE(cfgCutITSclu, float, 5.0f, "minimum ITS clusters")
+  O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, int, 50, "minimum TPC clusters")
+  O2_DEFINE_CONFIGURABLE(cfgCutITSclu, int, 5, "minimum ITS clusters")
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5f, "max chi2 per TPC clusters")
-  O2_DEFINE_CONFIGURABLE(cfgCutTPCcrossedrows, float, 70.0f, "minimum TPC crossed rows")
+  O2_DEFINE_CONFIGURABLE(cfgCutTPCcrossedrows, int, 70, "minimum TPC crossed rows")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAxy, float, 0.2f, "DCAxy cut for tracks")
   O2_DEFINE_CONFIGURABLE(cfgDCAxyNSigma, float, 7, "Cut on number of sigma deviations from expected DCA in the transverse direction");
   O2_DEFINE_CONFIGURABLE(cfgDCAxyFunction, std::string, "(0.0015+0.005/(x^1.1))", "Functional form of pt-dependent DCAxy cut");
@@ -165,10 +165,10 @@ struct FlowMc {
   bool correctionsLoaded = false;
 
   std::vector<TF1*> funcEff;
-  TH1D* hFindPtBin;
-  TF1* funcV2;
-  TF1* funcV3;
-  TF1* funcV4;
+  TH1D* hFindPtBin = nullptr;
+  TF1* funcV2 = nullptr;
+  TF1* funcV3 = nullptr;
+  TF1* funcV4 = nullptr;
   enum GoodITSLayersFlag {
     kITSLayersAll,
     kITSLayer0123,
@@ -177,7 +177,7 @@ struct FlowMc {
   };
 
   // Connect to ccdb
-  Service<ccdb::BasicCCDBManager> ccdb;
+  Service<ccdb::BasicCCDBManager> ccdb{};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
   OutputObj<GFWWeights> fWeights{GFWWeights("weights")};
@@ -185,7 +185,7 @@ struct FlowMc {
   OutputObj<FlowContainer> fFCReco{FlowContainer("FlowContainerReco")};
   GFW* fGFWTrue = new GFW();
   GFW* fGFWReco = new GFW();
-  TAxis* fPtAxis;
+  TAxis* fPtAxis = nullptr;
   std::vector<GFW::CorrConfig> corrconfigsTruth;
   std::vector<GFW::CorrConfig> corrconfigsReco;
   TRandom3* fRndm = new TRandom3(0);
@@ -195,7 +195,7 @@ struct FlowMc {
   double mMinSeconds{-1.};
   std::unordered_map<int, TH2*> gHadronicRate;
   ctpRateFetcher mRateFetcher;
-  TH2* gCurrentHadronicRate;
+  TH2* gCurrentHadronicRate = nullptr;
   RCTFlagsChecker rctChecker{"CBT"};
 
   void init(InitContext&)
@@ -218,6 +218,7 @@ struct FlowMc {
     // pT histograms
     histos.add<TH1>("hImpactParameter", "hImpactParameter", HistType::kTH1D, {axisB});
     histos.add<TH2>("hNchVsImpactParameter", "hNchVsImpactParameter", HistType::kTH2D, {axisB, axisNch});
+    histos.add<TH2>("hNchRecoVsNchGen", "hNchRecoVsNchGen; Recoconstucted Nch; Genenerated Nch", HistType::kTH2D, {axisNch, axisNch});
     histos.add<TH1>("hEventPlaneAngle", "hEventPlaneAngle", HistType::kTH1D, {axisPhi});
     histos.add<TH2>("hPtVsPhiGenerated", "hPtVsPhiGenerated", HistType::kTH2D, {axisPhi, axisPt});
     histos.add<TH2>("hPtVsPhiGlobal", "hPtVsPhiGlobal", HistType::kTH2D, {axisPhi, axisPt});
@@ -270,7 +271,7 @@ struct FlowMc {
 
     o2::framework::AxisSpec axis = axisPt;
     int nPtBins = axis.binEdges.size() - 1;
-    double* ptBins = &(axis.binEdges)[0];
+    double* ptBins = axis.binEdges.data();
     fPtAxis = new TAxis(nPtBins, ptBins);
 
     if (cfgOutputNUAWeights) {
@@ -279,13 +280,15 @@ struct FlowMc {
     }
 
     if (cfgFlowCumulantEnabled) {
-      TObjArray* oba = new TObjArray();
+      auto oba = new TObjArray();
       oba->Add(new TNamed("ChFull22", "ChFull22"));
-      for (auto i = 0; i < fPtAxis->GetNbins(); i++)
+      for (auto i = 0; i < fPtAxis->GetNbins(); i++) {
         oba->Add(new TNamed(Form("ChFull22_pt_%i", i + 1), "ChFull22_pTDiff"));
+      }
       oba->Add(new TNamed("Ch10Gap22", "Ch10Gap22"));
-      for (auto i = 0; i < fPtAxis->GetNbins(); i++)
+      for (auto i = 0; i < fPtAxis->GetNbins(); i++) {
         oba->Add(new TNamed(Form("Ch10Gap22_pt_%i", i + 1), "Ch10Gap22_pTDiff"));
+      }
       fFCTrue->SetName("FlowContainerTrue");
       fFCTrue->SetXAxis(fPtAxis);
       fFCTrue->Initialize(oba, axisCentrality, cfgFlowCumulantNbootstrap);
@@ -338,8 +341,9 @@ struct FlowMc {
     }
     myTrackSel.SetMinNClustersTPC(cfgCutTPCclu);
     myTrackSel.SetMinNCrossedRowsTPC(cfgCutTPCcrossedrows);
-    if (cfgEnableITSCuts)
+    if (cfgEnableITSCuts) {
       myTrackSel.SetMinNClustersITS(cfgCutITSclu);
+    }
     if (!cfgCutDCAzPtDepEnabled) {
       myTrackSel.SetMaxDcaZ(cfgCutDCAz);
     } else {
@@ -349,7 +353,7 @@ struct FlowMc {
     }
     if (cfgTrackDensityCorrUse) {
       std::vector<double> pTEffBins = {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.4, 1.8, 2.2, 2.6, 3.0};
-      hFindPtBin = new TH1D("hFindPtBin", "hFindPtBin", pTEffBins.size() - 1, &pTEffBins[0]);
+      hFindPtBin = new TH1D("hFindPtBin", "hFindPtBin", pTEffBins.size() - 1, pTEffBins.data());
       funcEff.resize(pTEffBins.size() - 1);
       // LHC24g3 Eff
       std::vector<double> f1p0 = cfgTrackDensityP0;
@@ -366,27 +370,29 @@ struct FlowMc {
       funcV4->SetParameters(0.008845, 0.000259668, -3.24435e-06, 4.54837e-08, -6.01825e-10);
     }
     if (!cfgEvSelRCTflags.value.empty()) {
-      rctChecker.init(cfgEvSelRCTflags.value.c_str()); // override initialzation
+      rctChecker.init(cfgEvSelRCTflags.value); // override initialzation
     }
   }
 
   void loadCorrections(uint64_t timestamp)
   {
-    if (correctionsLoaded)
+    if (correctionsLoaded) {
       return;
-    if (cfgFlowAcceptance.value.empty() == false) {
-      mAcceptance = ccdb->getForTimeStamp<GFWWeights>(cfgFlowAcceptance, timestamp);
-      if (mAcceptance)
-        LOGF(info, "Loaded acceptance weights from %s (%p)", cfgFlowAcceptance.value.c_str(), (void*)mAcceptance);
-      else
-        LOGF(warning, "Could not load acceptance weights from %s (%p)", cfgFlowAcceptance.value.c_str(), (void*)mAcceptance);
     }
-    if (cfgFlowEfficiency.value.empty() == false) {
+    if (!cfgFlowAcceptance.value.empty()) {
+      mAcceptance = ccdb->getForTimeStamp<GFWWeights>(cfgFlowAcceptance, timestamp);
+      if (mAcceptance) {
+        LOGF(info, "Loaded acceptance weights from %s (%p)", cfgFlowAcceptance.value.c_str(), static_cast<void*>(mAcceptance));
+      } else {
+        LOGF(warning, "Could not load acceptance weights from %s (%p)", cfgFlowAcceptance.value.c_str(), static_cast<void*>(mAcceptance));
+      }
+    }
+    if (!cfgFlowEfficiency.value.empty()) {
       mEfficiency = ccdb->getForTimeStamp<TH1D>(cfgFlowEfficiency, timestamp);
       if (mEfficiency == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgFlowEfficiency.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgFlowEfficiency.value.c_str(), (void*)mEfficiency);
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgFlowEfficiency.value.c_str(), static_cast<void*>(mEfficiency));
     }
     correctionsLoaded = true;
   }
@@ -394,61 +400,69 @@ struct FlowMc {
   bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, float phi, float eta, float pt, float vtxz)
   {
     float eff = 1.;
-    if (mEfficiency)
+    if (mEfficiency) {
       eff = mEfficiency->GetBinContent(mEfficiency->FindBin(pt));
-    else
+    } else {
       eff = 1.0;
-    if (eff == 0)
+    }
+    if (eff == 0) {
       return false;
+    }
     weight_nue = 1. / eff;
-    if (mAcceptance)
+    if (mAcceptance) {
       weight_nua = mAcceptance->getNUA(phi, eta, vtxz);
-    else
+    } else {
       weight_nua = 1;
+    }
     return true;
   }
 
   void fillFC(GFW* fGFW, bool isMCTruth, const GFW::CorrConfig& corrconf, const double& cent, const double& rndm)
   {
-    double dnx, val;
+    double dnx = 0, val = 0;
     dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
     if (!corrconf.pTDif) {
-      if (dnx == 0)
+      if (dnx == 0) {
         return;
+      }
       val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
       if (std::fabs(val) < 1) {
-        if (isMCTruth)
+        if (isMCTruth) {
           fFCTrue->FillProfile(corrconf.Head.c_str(), cent, val, dnx, rndm);
-        else
+        } else {
           fFCReco->FillProfile(corrconf.Head.c_str(), cent, val, dnx, rndm);
+        }
       }
       return;
     }
     for (auto i = 1; i <= fPtAxis->GetNbins(); i++) {
       dnx = fGFW->Calculate(corrconf, i - 1, kTRUE).real();
-      if (dnx == 0)
+      if (dnx == 0) {
         continue;
+      }
       val = fGFW->Calculate(corrconf, i - 1, kFALSE).real() / dnx;
       if (std::fabs(val) < 1) {
-        if (isMCTruth)
+        if (isMCTruth) {
           fFCTrue->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), cent, val, dnx, rndm);
-        else
+        } else {
           fFCReco->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), cent, val, dnx, rndm);
+        }
       }
     }
-    return;
   }
 
   void loadCentVsIPTruth(uint64_t timestamp)
   {
-    if (centVsIPTruthLoaded)
+    if (centVsIPTruthLoaded) {
       return;
-    if (cfgCentVsIPTruth.value.empty() == false) {
+    }
+    if (!cfgCentVsIPTruth.value.empty()) {
       mCentVsIPTruth = ccdb->getForTimeStamp<TH1D>(cfgCentVsIPTruth, timestamp);
-      if (mCentVsIPTruth)
-        LOGF(info, "Loaded CentVsIPTruth weights from %s (%p)", cfgCentVsIPTruth.value.c_str(), (void*)mCentVsIPTruth);
-      else
+      if (mCentVsIPTruth) {
+        LOGF(info, "Loaded CentVsIPTruth weights from %s (%p)", cfgCentVsIPTruth.value.c_str(), static_cast<void*>(mCentVsIPTruth));
+      } else {
         LOGF(fatal, "Failed to load CentVsIPTruth weights from %s", cfgCentVsIPTruth.value.c_str());
+      }
 
       centVsIPTruthLoaded = true;
     } else {
@@ -462,7 +476,7 @@ struct FlowMc {
       return;
     }
     mRunNumber = bc.runNumber();
-    if (gHadronicRate.find(mRunNumber) == gHadronicRate.end()) {
+    if (!gHadronicRate.contains(mRunNumber)) {
       auto runDuration = ccdb->getRunDuration(mRunNumber);
       mSOR = runDuration.first;
       mMinSeconds = std::floor(mSOR * 1.e-3);                /// round tsSOR to the highest integer lower than tsSOR
@@ -474,7 +488,7 @@ struct FlowMc {
   }
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision)
+  bool eventSelected(const TCollision& collision)
   {
     if (std::fabs(collision.posZ()) > cfgCutVertex) {
       return 0;
@@ -484,11 +498,13 @@ struct FlowMc {
     }
     if (cfgOccupancyEnabled) {
       auto occupancy = collision.trackOccupancyInTimeRange();
-      if (occupancy < cfgOccupancyMin || occupancy > cfgOccupancyMax)
+      if (occupancy < cfgOccupancyMin || occupancy > cfgOccupancyMax) {
         return 0;
+      }
     }
-    if (!cfgEvSelRCTflags.value.empty() && !rctChecker(*collision))
+    if (!cfgEvSelRCTflags.value.empty() && !rctChecker(*collision)) {
       return 0;
+    }
     if (cfgRecoEvkNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       // rejects collisions which are associated with the same "found-by-T0" bunch crossing
       // https://indico.cern.ch/event/1396220/#1-event-selection-with-its-rof
@@ -497,12 +513,15 @@ struct FlowMc {
     if (cfgRecoEvkIsGoodITSLayers) {
       // from Jan 9 2025 AOT meeting
       // cut time intervals with dead ITS staves
-      if (cfgRecoEvkIsGoodITSLayersFlag == kITSLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))
+      if (cfgRecoEvkIsGoodITSLayersFlag == kITSLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
         return 0;
-      if (cfgRecoEvkIsGoodITSLayersFlag == kITSLayer0123 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123))
+      }
+      if (cfgRecoEvkIsGoodITSLayersFlag == kITSLayer0123 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123)) {
         return 0;
-      if (cfgRecoEvkIsGoodITSLayersFlag == kITSLayer3 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer3))
+      }
+      if (cfgRecoEvkIsGoodITSLayersFlag == kITSLayer3 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer3)) {
         return 0;
+      }
     }
     if (cfgRecoEvSelkIsGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference
@@ -531,7 +550,7 @@ struct FlowMc {
   }
 
   template <typename TTrack>
-  bool trackSelected(TTrack track)
+  bool trackSelected(const TTrack& track)
   {
     if (cfgCutDCAzPtDepEnabled && (std::fabs(track.dcaZ()) > fPtDepDCAz->Eval(track.pt()))) {
       return false;
@@ -549,6 +568,7 @@ struct FlowMc {
 
     int64_t nCh = 0;
     int64_t nChGlobal = 0;
+    int64_t nChGen = 0;
     float centrality = 0;
     float lRandom = fRndm->Rndm();
     float weff = 1.;
@@ -559,8 +579,9 @@ struct FlowMc {
       initHadronicRate(bc);
       double hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; //
       double seconds = bc.timestamp() * 1.e-3 - mMinSeconds;
-      if (cfgIRCutEnabled && (hadronicRate < cfgIRMin || hadronicRate > cfgIRMax)) // cut on hadronic rate
+      if (cfgIRCutEnabled && (hadronicRate < cfgIRMin || hadronicRate > cfgIRMax)) { // cut on hadronic rate
         return;
+      }
       gCurrentHadronicRate->Fill(seconds, hadronicRate);
     }
 
@@ -573,8 +594,9 @@ struct FlowMc {
         }
         histos.fill(HIST("RecoEventCounter"), 1.5);
         for (auto const& collision : collisions) {
-          if (!eventSelected(collision))
+          if (!eventSelected(collision)) {
             return;
+          }
         }
         histos.fill(HIST("RecoEventCounter"), 2.5);
       }
@@ -600,12 +622,16 @@ struct FlowMc {
       double q4x = 0, q4y = 0;
       for (auto const& mcParticle : mcParticles) {
         int pdgCode = std::abs(mcParticle.pdgCode());
-        if (pdgCode != PDG_t::kElectron && pdgCode != PDG_t::kMuonMinus && pdgCode != PDG_t::kPiPlus && pdgCode != kKPlus && pdgCode != PDG_t::kProton)
+        if (pdgCode != PDG_t::kElectron && pdgCode != PDG_t::kMuonMinus && pdgCode != PDG_t::kPiPlus && pdgCode != kKPlus && pdgCode != PDG_t::kProton) {
           continue;
-        if (!mcParticle.isPhysicalPrimary())
+        }
+        if (!mcParticle.isPhysicalPrimary()) {
           continue;
-        if (std::fabs(mcParticle.eta()) > cfgCutEta) // main acceptance
+        }
+        if (std::fabs(mcParticle.eta()) > cfgCutEta) { // main acceptance
           continue;
+        }
+        nChGen++;
         if (mcParticle.has_tracks()) {
           auto const& tracks = mcParticle.tracks_as<FilteredTracks>();
           for (auto const& track : tracks) {
@@ -632,6 +658,10 @@ struct FlowMc {
           }
         }
       }
+      if (nChGlobal > 0 && nChGen > 0) {
+        // fill only when Nch is not zero
+        histos.fill(HIST("hNchRecoVsNchGen"), nChGlobal, nChGen);
+      }
       if (cfgTrackDensityCorrUse && cfgFlowCumulantEnabled) {
         psi2Est = std::atan2(q2y, q2x) / 2.;
         psi3Est = std::atan2(q3y, q3x) / 3.;
@@ -648,18 +678,21 @@ struct FlowMc {
         if (cfgK0Lambda0Enabled) {
           extraPDGType = (pdgCode != PDG_t::kK0Short && pdgCode != PDG_t::kLambda0);
         }
-        if (extraPDGType && pdgCode != PDG_t::kElectron && pdgCode != PDG_t::kMuonMinus && pdgCode != PDG_t::kPiPlus && pdgCode != kKPlus && pdgCode != PDG_t::kProton)
+        if (extraPDGType && pdgCode != PDG_t::kElectron && pdgCode != PDG_t::kMuonMinus && pdgCode != PDG_t::kPiPlus && pdgCode != kKPlus && pdgCode != PDG_t::kProton) {
           continue;
+        }
 
         bool isPhysicalPrimary = mcParticle.isPhysicalPrimary();
         const int producedByDecay = 4;
         bool isSecondary = (mcParticle.has_mothers() && mcParticle.getProcess() == producedByDecay);
         bool isAcceptedSecondary = (cfgAcceptSecondaries) ? isSecondary : false;
-        if (!isPhysicalPrimary && !isAcceptedSecondary)
+        if (!isPhysicalPrimary && !isAcceptedSecondary) {
           continue;
+        }
 
-        if (std::fabs(mcParticle.eta()) > cfgCutEta) // main acceptance
+        if (std::fabs(mcParticle.eta()) > cfgCutEta) { // main acceptance
           continue;
+        }
 
         float deltaPhi = mcParticle.phi() - mcCollision.eventPlaneAngle();
         deltaPhi = RecoDecay::constrainAngle(deltaPhi);
@@ -668,26 +701,34 @@ struct FlowMc {
         histos.fill(HIST("hPtNchGenerated"), mcParticle.pt(), nChGlobal);
         histos.fill(HIST("hPtMCGen"), mcParticle.pt());
         histos.fill(HIST("hEtaPtVtxzMCGen"), mcParticle.eta(), mcParticle.pt(), vtxz);
-        if (pdgCode == PDG_t::kPiPlus)
+        if (pdgCode == PDG_t::kPiPlus) {
           histos.fill(HIST("hPtNchGeneratedPion"), mcParticle.pt(), nChGlobal);
-        if (pdgCode == PDG_t::kKPlus)
+        }
+        if (pdgCode == PDG_t::kKPlus) {
           histos.fill(HIST("hPtNchGeneratedKaon"), mcParticle.pt(), nChGlobal);
-        if (pdgCode == PDG_t::kProton)
+        }
+        if (pdgCode == PDG_t::kProton) {
           histos.fill(HIST("hPtNchGeneratedProton"), mcParticle.pt(), nChGlobal);
-        if (pdgCode == PDG_t::kK0Short)
+        }
+        if (pdgCode == PDG_t::kK0Short) {
           histos.fill(HIST("hPtNchGeneratedK0"), mcParticle.pt(), nChGlobal);
-        if (pdgCode == PDG_t::kLambda0)
+        }
+        if (pdgCode == PDG_t::kLambda0) {
           histos.fill(HIST("hPtNchGeneratedLambda"), mcParticle.pt(), nChGlobal);
+        }
         if (mcParticle.has_daughters()) {
           for (const auto& d : mcParticle.template daughters_as<FilteredMcParticles>()) {
             if (std::abs(d.pdgCode()) == PDG_t::kPiPlus) {
-              if (pdgCode == PDG_t::kK0Short)
+              if (pdgCode == PDG_t::kK0Short) {
                 histos.fill(HIST("hPtNchGeneratedK0Pions"), d.pt(), nChGlobal);
-              if (pdgCode == PDG_t::kLambda0)
+              }
+              if (pdgCode == PDG_t::kLambda0) {
                 histos.fill(HIST("hPtNchGeneratedLambdaPions"), d.pt(), nChGlobal);
+              }
             }
-            if (pdgCode == PDG_t::kLambda0 && std::abs(d.pdgCode()) == PDG_t::kProton)
+            if (pdgCode == PDG_t::kLambda0 && std::abs(d.pdgCode()) == PDG_t::kProton) {
               histos.fill(HIST("hPtNchGeneratedLambdaProtons"), d.pt(), nChGlobal);
+            }
           }
         }
         nCh++;
@@ -731,10 +772,12 @@ struct FlowMc {
         }
         bool withinPtRef = (cfgCutPtRefMin < mcParticle.pt()) && (mcParticle.pt() < cfgCutPtRefMax); // within RF pT range
         bool withinPtPOI = (cfgCutPtPOIMin < mcParticle.pt()) && (mcParticle.pt() < cfgCutPtPOIMax); // within POI pT range
-        if (cfgOutputNUAWeights && withinPtRef)
+        if (cfgOutputNUAWeights && withinPtRef) {
           fWeights->fill(mcParticle.phi(), mcParticle.eta(), vtxz, mcParticle.pt(), 0, 0);
-        if (!setCurrentParticleWeights(weff, wacc, mcParticle.phi(), mcParticle.eta(), mcParticle.pt(), vtxz))
+        }
+        if (!setCurrentParticleWeights(weff, wacc, mcParticle.phi(), mcParticle.eta(), mcParticle.pt(), vtxz)) {
           continue;
+        }
         if (cfgTrackDensityCorrUse && cfgFlowCumulantEnabled && withinPtRef) {
           double fphi = v2 * std::cos(2 * (mcParticle.phi() - psi2Est)) + v3 * std::cos(3 * (mcParticle.phi() - psi3Est)) + v4 * std::cos(4 * (mcParticle.phi() - psi4Est));
           fphi = (1 + 2 * fphi);
@@ -750,20 +793,26 @@ struct FlowMc {
         }
 
         if (cfgFlowCumulantEnabled) {
-          if (withinPtRef)
+          if (withinPtRef) {
             fGFWTrue->Fill(mcParticle.eta(), fPtAxis->FindBin(mcParticle.pt()) - 1, mcParticle.phi(), wacc * weff, 1);
-          if (withinPtPOI)
+          }
+          if (withinPtPOI) {
             fGFWTrue->Fill(mcParticle.eta(), fPtAxis->FindBin(mcParticle.pt()) - 1, mcParticle.phi(), wacc * weff, 2);
-          if (withinPtPOI && withinPtRef)
+          }
+          if (withinPtPOI && withinPtRef) {
             fGFWTrue->Fill(mcParticle.eta(), fPtAxis->FindBin(mcParticle.pt()) - 1, mcParticle.phi(), wacc * weff, 4);
+          }
 
           if (validGlobal) {
-            if (withinPtRef)
+            if (withinPtRef) {
               fGFWReco->Fill(mcParticle.eta(), fPtAxis->FindBin(mcParticle.pt()) - 1, mcParticle.phi(), wacc * weff, 1);
-            if (withinPtPOI)
+            }
+            if (withinPtPOI) {
               fGFWReco->Fill(mcParticle.eta(), fPtAxis->FindBin(mcParticle.pt()) - 1, mcParticle.phi(), wacc * weff, 2);
-            if (withinPtPOI && withinPtRef)
+            }
+            if (withinPtPOI && withinPtRef) {
               fGFWReco->Fill(mcParticle.eta(), fPtAxis->FindBin(mcParticle.pt()) - 1, mcParticle.phi(), wacc * weff, 4);
+            }
           }
         }
 
@@ -784,21 +833,27 @@ struct FlowMc {
           histos.fill(HIST("hPtNchGlobal"), mcParticle.pt(), nChGlobal);
           histos.fill(HIST("hPtMCGlobal"), mcParticle.pt());
           histos.fill(HIST("hEtaPtVtxzMCGlobal"), mcParticle.eta(), mcParticle.pt(), vtxz);
-          if (pdgCode == PDG_t::kPiPlus)
+          if (pdgCode == PDG_t::kPiPlus) {
             histos.fill(HIST("hPtNchGlobalPion"), mcParticle.pt(), nChGlobal);
-          if (pdgCode == PDG_t::kKPlus)
+          }
+          if (pdgCode == PDG_t::kKPlus) {
             histos.fill(HIST("hPtNchGlobalKaon"), mcParticle.pt(), nChGlobal);
-          if (pdgCode == PDG_t::kProton)
+          }
+          if (pdgCode == PDG_t::kProton) {
             histos.fill(HIST("hPtNchGlobalProton"), mcParticle.pt(), nChGlobal);
-          if (pdgCode == PDG_t::kK0Short)
+          }
+          if (pdgCode == PDG_t::kK0Short) {
             histos.fill(HIST("hPtNchGlobalK0"), mcParticle.pt(), nChGlobal);
-          if (pdgCode == PDG_t::kLambda0)
+          }
+          if (pdgCode == PDG_t::kLambda0) {
             histos.fill(HIST("hPtNchGlobalLambda"), mcParticle.pt(), nChGlobal);
-          if (!cfgRequireTOF || (cfgRequireTOF && validTOFTrack)) {
+          }
+          if (!cfgRequireTOF || validTOFTrack) {
             if (mcParticle.has_mothers()) {
               for (const auto& m : mcParticle.template mothers_as<FilteredMcParticles>()) {
-                if (!m.isPhysicalPrimary())
+                if (!m.isPhysicalPrimary()) {
                   continue;
+                }
                 if (pdgCode == PDG_t::kPiPlus) {
                   if (m.pdgCode() == PDG_t::kK0Short) {
                     histos.fill(HIST("hPtNchGlobalK0Pions"), mcParticle.pt(), nChGlobal);

@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file svPoolCreator.h
+/// \brief Time-compatible secondary-vertex track-pair and triplet pools
+/// \author ALICE Collaboration
+
 #ifndef PWGLF_UTILS_SVPOOLCREATOR_H_
 #define PWGLF_UTILS_SVPOOLCREATOR_H_
 
@@ -32,6 +36,7 @@
 using CollBracket = o2::math_utils::Bracket<int>;
 
 constexpr uint64_t bOffsetMax = 241; // track compatibility can never go beyond 6 mus (ITS)
+constexpr int NChargeSigns = 2;
 
 struct TrackCand {
   int Idxtr;
@@ -41,6 +46,13 @@ struct TrackCand {
 struct SVCand {
   int tr0Idx;
   int tr1Idx;
+  CollBracket collBracket{};
+};
+
+struct SVCand3 {
+  int tr0Idx;
+  int tr1Idx;
+  int tr2Idx;
   CollBracket collBracket{};
 };
 
@@ -61,7 +73,7 @@ class svPoolCreator
 
   void clearPools()
   {
-    for (auto& pool : trackCandPool) {
+    for (auto& pool : trackCandPool) { // o2-linter: disable=const-ref-in-for-loop (The pool is cleared in place.)
       pool.clear();
     }
     tmap.clear();
@@ -200,15 +212,15 @@ class svPoolCreator
   template <typename C>
   std::vector<SVCand>& getSVCandPool(const C& collisions, bool combineLikeSign = false)
   {
-    gsl::span<std::vector<TrackCand>> track0Pool{trackCandPool.data(), 2};
-    gsl::span<std::vector<TrackCand>> track1Pool{trackCandPool.data() + 2, 2};
-    std::array<std::vector<int>, 2> mVtxTrack0{}; // 1st pos. and neg. track of the kink pool for each vertex
+    gsl::span<std::vector<TrackCand>> track0Pool{trackCandPool.data(), NChargeSigns};
+    gsl::span<std::vector<TrackCand>> track1Pool{trackCandPool.data() + NChargeSigns, NChargeSigns};
+    std::array<std::vector<int>, NChargeSigns> mVtxTrack0{}; // 1st pos. and neg. track of the kink pool for each vertex
 
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < NChargeSigns; i++) {
       mVtxTrack0[i].clear();
       mVtxTrack0[i].resize(collisions.size(), -1);
     }
-    for (int iCharge = 0; iCharge < 2; iCharge++) {
+    for (int iCharge = 0; iCharge < NChargeSigns; iCharge++) {
       auto& vtxFirstT = mVtxTrack0[iCharge];
       const auto& signTrack0Pool = track0Pool[iCharge];
       for (unsigned i = 0; i < signTrack0Pool.size(); i++) {
@@ -269,6 +281,110 @@ class svPoolCreator
   std::array<std::vector<TrackCand>, 4> trackCandPool; // Sorting: dau0 pos, dau0 neg, dau1 pos, dau1 neg
   std::vector<SVCand> svCandPool;                      // index of the two tracks in the track table
   TrackCand trForpool;
+};
+
+/// Build time-compatible three-track combinations by joining two svPoolCreator
+/// pools on a common first prong. The class deliberately only handles
+/// combinatorics; the caller remains responsible for fitting and physics
+/// selections.
+class svPoolCreator3Body
+{
+ public:
+  svPoolCreator3Body() = default;
+  svPoolCreator3Body(int track0Pdg, int track1Pdg, int track2Pdg)
+    : track0Pdg(track0Pdg),
+      track1Pdg(track1Pdg),
+      track2Pdg(track2Pdg),
+      pool01(track0Pdg, track1Pdg),
+      pool02(track0Pdg, track2Pdg)
+  {
+  }
+
+  void setPDGs(int pdg0, int pdg1, int pdg2)
+  {
+    track0Pdg = pdg0;
+    track1Pdg = pdg1;
+    track2Pdg = pdg2;
+    pool01.setPDGs(track0Pdg, track1Pdg);
+    pool02.setPDGs(track0Pdg, track2Pdg);
+  }
+
+  void clearPools()
+  {
+    pool01.clearPools();
+    pool02.clearPools();
+    svCandPool.clear();
+  }
+
+  void setTimeMargin(float timeMargin)
+  {
+    pool01.setTimeMargin(timeMargin);
+    pool02.setTimeMargin(timeMargin);
+  }
+
+  void setSkipAmbiTracks()
+  {
+    pool01.setSkipAmbiTracks();
+    pool02.setSkipAmbiTracks();
+  }
+
+  template <typename C, typename BC>
+  void fillBC2Coll(const C& collisions, BC const& bcs)
+  {
+    pool01.fillBC2Coll(collisions, bcs);
+    pool02.fillBC2Coll(collisions, bcs);
+  }
+
+  template <typename T, typename C, typename AT, typename BC>
+  void appendTrackCand(const T& trackCand, const C& collisions, int pdgHypo, const AT& ambiTracks, BC const& bcs)
+  {
+    if (pdgHypo == track0Pdg) {
+      pool01.appendTrackCand(trackCand, collisions, pdgHypo, ambiTracks, bcs);
+      pool02.appendTrackCand(trackCand, collisions, pdgHypo, ambiTracks, bcs);
+    } else if (pdgHypo == track1Pdg) {
+      pool01.appendTrackCand(trackCand, collisions, pdgHypo, ambiTracks, bcs);
+    } else if (pdgHypo == track2Pdg) {
+      pool02.appendTrackCand(trackCand, collisions, pdgHypo, ambiTracks, bcs);
+    } else {
+      LOGP(debug, "Wrong PDG hypothesis for three-body pool");
+    }
+  }
+
+  template <typename C>
+  std::vector<SVCand3>& getSVCandPool(const C& collisions, bool combineLikeSign01 = false, bool combineLikeSign02 = false)
+  {
+    auto& candidates01 = pool01.getSVCandPool(collisions, combineLikeSign01);
+    auto& candidates02 = pool02.getSVCandPool(collisions, combineLikeSign02);
+    std::unordered_multimap<int, const SVCand*> candidates02ByTrack0;
+    candidates02ByTrack0.reserve(candidates02.size());
+    for (const auto& candidate02 : candidates02) {
+      candidates02ByTrack0.emplace(candidate02.tr0Idx, &candidate02);
+    }
+
+    for (const auto& candidate01 : candidates01) {
+      const auto [begin, end] = candidates02ByTrack0.equal_range(candidate01.tr0Idx);
+      for (auto candidate02It = begin; candidate02It != end; ++candidate02It) {
+        const auto& candidate02 = *candidate02It->second;
+        if (candidate01.tr1Idx == candidate02.tr1Idx ||
+            candidate01.collBracket.isOutside(candidate02.collBracket)) {
+          continue;
+        }
+        svCandPool.emplace_back(SVCand3{candidate01.tr0Idx,
+                                        candidate01.tr1Idx,
+                                        candidate02.tr1Idx,
+                                        candidate01.collBracket.getOverlap(candidate02.collBracket)});
+      }
+    }
+    return svCandPool;
+  }
+
+ private:
+  int track0Pdg = 0;
+  int track1Pdg = 0;
+  int track2Pdg = 0;
+  svPoolCreator pool01;
+  svPoolCreator pool02;
+  std::vector<SVCand3> svCandPool;
 };
 
 #endif // PWGLF_UTILS_SVPOOLCREATOR_H_

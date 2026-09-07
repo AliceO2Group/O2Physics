@@ -45,6 +45,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <numeric>
 #include <vector>
 
 using namespace o2;
@@ -68,6 +69,7 @@ struct HfTaskSigmac {
   Configurable<bool> addMassDiffAbsLambdaCToSigmacSparse{"addMassDiffAbsLambdaCToSigmacSparse", false, "enable the filling of |M(pkpi, piKp) - M(LambdaC)| in the Σc0,++ THnSparse"};
   Configurable<float> deltaMassSigmacRecoMax{"deltaMassSigmacRecoMax", 1000, "Maximum allowed value for Sigmac deltaMass. Conceived to reduce the output size (i.e. reject background above a certain threshold)"};
   Configurable<float> ptMinSc{"ptMinSc", -1.f, "Minimum accepted value for SigmaC-hadron pt (GeV/c)"};
+  Configurable<bool> trackingInfo4SoftPiOnly{"trackingInfo4SoftPiOnly", false, "Flag to enable the storage of tracking info about the soft pion only"};
 
   bool isMc{};
   bool storeTrackProp{};
@@ -577,7 +579,13 @@ struct HfTaskSigmac {
                 const auto& trackLcProng0 = candidateLc.template prong0_as<TRK>();
                 const auto& trackLcProng1 = candidateLc.template prong1_as<TRK>();
                 const auto& trackLcProng2 = candidateLc.template prong2_as<TRK>();
-                getTrackingInfo(std::vector{trackLcProng0, trackLcProng1, trackLcProng2, trackSoftPi}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                if (trackingInfo4SoftPiOnly) {
+                  /// soft pion info only
+                  getTrackingInfo(std::vector{trackSoftPi}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                } else {
+                  /// info from soft pion and also Lc daughters
+                  getTrackingInfo(std::vector{trackLcProng0, trackLcProng1, trackLcProng2, trackSoftPi}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                }
               }
               if (addSoftPiDcaToSigmacSparse) {
                 /// dcaXY,Z of soft pion track stored
@@ -744,7 +752,13 @@ struct HfTaskSigmac {
                 const auto& trackLcProng0 = candidateLc.template prong0_as<TRK>();
                 const auto& trackLcProng1 = candidateLc.template prong1_as<TRK>();
                 const auto& trackLcProng2 = candidateLc.template prong2_as<TRK>();
-                getTrackingInfo(std::vector{trackLcProng0, trackLcProng1, trackLcProng2, trackSoftPi}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                if (trackingInfo4SoftPiOnly) {
+                  /// soft pion info only
+                  getTrackingInfo(std::vector{trackSoftPi}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                } else {
+                  /// info from soft pion and also Lc daughters
+                  getTrackingInfo(std::vector{trackLcProng0, trackLcProng1, trackLcProng2, trackSoftPi}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                }
               }
               if (addSoftPiDcaToSigmacSparse) {
                 /// dcaXY,Z of soft pion track stored
@@ -1300,7 +1314,13 @@ struct HfTaskSigmac {
                 const auto& trackLcProng1 = candidateLc.template prong1_as<TRK>();
                 const auto& trackLcProng2 = candidateLc.template prong2_as<TRK>();
                 const auto& trackSoftPi = candSc.template prong1_as<TRK>();
-                getTrackingInfo(std::vector{trackLcProng0, trackLcProng1, trackLcProng2, trackSoftPi}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                if (trackingInfo4SoftPiOnly) {
+                  /// soft pion info only
+                  getTrackingInfo(std::vector{trackSoftPi}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                } else {
+                  /// info from soft pion and also Lc daughters
+                  getTrackingInfo(std::vector{trackLcProng0, trackLcProng1, trackLcProng2, trackSoftPi}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                }
               }
               if (addSoftPiDcaToSigmacSparse) {
                 /// dcaXY,Z of soft pion track stored
@@ -1469,7 +1489,13 @@ struct HfTaskSigmac {
                 const auto& trackLcProng1 = candidateLc.template prong1_as<TRK>();
                 const auto& trackLcProng2 = candidateLc.template prong2_as<TRK>();
                 const auto& trackSoftPi = candSc.template prong1_as<TRK>();
-                getTrackingInfo(std::vector{trackLcProng0, trackLcProng1, trackLcProng2, trackSoftPi}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                if (trackingInfo4SoftPiOnly) {
+                  /// soft pion info only
+                  getTrackingInfo(std::vector{trackSoftPi}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                } else {
+                  /// info from soft pion and also Lc daughters
+                  getTrackingInfo(std::vector{trackLcProng0, trackLcProng1, trackLcProng2, trackSoftPi}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                }
               }
               if (addSoftPiDcaToSigmacSparse) {
                 /// dcaXY,Z of soft pion track stored
@@ -1675,7 +1701,13 @@ struct HfTaskSigmac {
                 const auto& trackLcProng1 = candidateLc.template prong1_as<TRK>();
                 const auto& trackLcProng2 = candidateLc.template prong2_as<TRK>();
                 const auto& trackSoftPi = candSc.template prong1_as<TRK>();
-                getTrackingInfo(std::vector{trackLcProng0, trackLcProng1, trackLcProng2, trackSoftPi}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                if (trackingInfo4SoftPiOnly) {
+                  /// soft pion info only
+                  getTrackingInfo(std::vector{trackSoftPi}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                } else {
+                  /// info from soft pion and also Lc daughters
+                  getTrackingInfo(std::vector{trackLcProng0, trackLcProng1, trackLcProng2, trackSoftPi}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                }
               }
               if (addSoftPiDcaToSigmacSparse) {
                 /// dcaXY,Z of soft pion track stored
@@ -1842,7 +1874,13 @@ struct HfTaskSigmac {
                 const auto& trackLcProng1 = candidateLc.template prong1_as<TRK>();
                 const auto& trackLcProng2 = candidateLc.template prong2_as<TRK>();
                 const auto& trackSoftPi = candSc.template prong1_as<TRK>();
-                getTrackingInfo(std::vector{trackLcProng0, trackLcProng1, trackLcProng2, trackSoftPi}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                if (trackingInfo4SoftPiOnly) {
+                  /// soft pion info only
+                  getTrackingInfo(std::vector{trackSoftPi}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                } else {
+                  /// info from soft pion and also Lc daughters
+                  getTrackingInfo(std::vector{trackLcProng0, trackLcProng1, trackLcProng2, trackSoftPi}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+                }
               }
               if (addSoftPiDcaToSigmacSparse) {
                 /// dcaXY,Z of soft pion track stored

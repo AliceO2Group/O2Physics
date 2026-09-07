@@ -45,12 +45,14 @@
 #include <Framework/runDataProcessing.h>
 
 #include <TComplex.h>
+#include <TH3.h>
 #include <THn.h>
 #include <TProfile3D.h>
 
 #include <RtypesCore.h>
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <cstddef>
@@ -72,8 +74,13 @@ using MyCollisionsMC = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, a
 using MyTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>;
 
 struct JEPFlowAnalysis {
+  enum Q2selMethod {
+    kNosel = 0,
+    kHsel,
+    kHistsel
+  };
 
-  Service<o2::framework::O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg{};
 
   HistogramRegistry epFlowHistograms{"EPFlow", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   EventPlaneHelper helperEP;
@@ -81,7 +88,7 @@ struct JEPFlowAnalysis {
   o2::fv0::Geometry* fv0geom = nullptr;
   FlowJHistManager histManager;
   bool debug = kFALSE;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   o2::ccdb::CcdbApi ccdbApi;
 
   struct : ConfigurableGroup {
@@ -134,13 +141,22 @@ struct JEPFlowAnalysis {
   Configurable<std::string> cfgShiftPath{"cfgShiftPath", "Users/j/junlee/Qvector/QvecCalib/Shift", "Path for Shift"};
   Configurable<float> cfgVertexZ{"cfgVertexZ", 10.0, "Maximum vertex Z selection"};
 
-  Configurable<bool> cfgq2analysis{"cfgq2analysis", false, "ese analysis flag"};
+  Configurable<int> cfgq2analysis{"cfgq2analysis", 0, "ese analysis selection mode"};
   Configurable<std::vector<float>> cfgMultq2SelBin{"cfgMultq2SelBin", {0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 100}, ""};
   Configurable<std::vector<float>> cfgMultq2high{"cfgMultq2high", {}, ""};
   Configurable<std::vector<float>> cfgMultq2low{"cfgMultq2low", {}, ""};
+  Configurable<float> cfgQ2SelFrac{"cfgQ2SelFrac", 0.5, "ese analysis q2 selection with cfgq2analysis=2"};
 
   Configurable<int> cfgJetSubEvtSel{"cfgJetSubEvtSel", 0, "0: none, 1: Ratio, 2: relative ratio"};
   Configurable<std::vector<float>> cfgJetSubEvlSelVar{"cfgJetSubEvlSelVar", {}, ""};
+
+  Configurable<std::string> cfgQselHistPath{"cfgQselHistPath", "", "CCDB path for q2 histogram"};
+  Configurable<bool> cfgEventQAonly{"cfgEventQAonly", false, "event loop only"};
+
+  Configurable<bool> cfgSelEvtTwoHP{"cfgSelEvtTwoHP", false, "event selection with two high pT"};
+  Configurable<float> cfgHighPtSel{"cfgHighPtSel", 5.0, "pT threshold with cfgSelEvtTwoHP"};
+  Configurable<float> cfgTwoLPAngle{"cfgTwoLPAngle", 0.5, "azimuthal difference between two LP"};
+  Configurable<float> cfgEtaBalancing{"cfgEtaBalancing", 0.5, "pseudorapidity difference between two LP"};
 
   Configurable<std::string> cfgDetName{"cfgDetName", "FT0C", "The name of detector to be analyzed"};
   Configurable<std::string> cfgRefAName{"cfgRefAName", "TPCPos", "The name of detector for reference A"};
@@ -164,32 +180,44 @@ struct JEPFlowAnalysis {
 
   Filter trackFilter = (aod::track::pt > cfgTrackCuts.cfgPtMin) && (nabs(aod::track::eta) < cfgTrackCuts.cfgEtaMax);
 
-  int detId;
-  int refAId;
-  int refBId;
-  int harmInd;
+  int detId = 0;
+  int refAId = 4;
+  int refBId = 5;
+  int harmInd = 0;
 
   int currentRunNumber = -999;
   int lastRunNumber = -999;
 
-  float cent;
+  float cent = -1.;
 
   float minQvecAmp = 1e-5;
   float minChg = 0.1;
-  float q2Mag;
+  float q2Mag = -1.;
 
-  float activity;
-  float qOvecM;
-  float highestPt;
-  float hPtPhi;
+  float activity = -1.;
+  float qOvecM = -1.;
 
-  std::vector<TProfile3D*> shiftprofile{};
+  float leadingPt = -1.;
+  float leadingPhi = -999.;
+  float leadingEta = -999.;
+
+  float subleadingPt = -1.;
+  float subleadingPhi = -999.;
+  float subleadingEta = -999.;
+
+  std::vector<TProfile3D*> shiftprofile;
   std::string fullCCDBShiftCorrPath;
 
   THn* effMap = nullptr;
+  TH3F* q2Map = nullptr;
+  float q2selHigh = 100.;
+  float q2selLow = 0.;
 
-  std::vector<float> ft0RelGainConst{};
-  std::vector<float> fv0RelGainConst{};
+  int nHighPt = 0;
+  int minnHighPt = 2;
+
+  std::vector<float> ft0RelGainConst;
+  std::vector<float> fv0RelGainConst;
 
   bool q2sel(float q2, bool isHigh)
   {
@@ -199,19 +227,20 @@ struct JEPFlowAnalysis {
     if (idx < 0) {
       idx = 0;
     }
+
     if (isHigh) {
       if (idx >= static_cast<int>(cfgMultq2high->size())) {
         idx = cfgMultq2high->size() - 1;
       }
       float sel = cfgMultq2high->at(idx);
       return q2 > sel;
-    } else {
-      if (idx >= static_cast<int>(cfgMultq2low->size())) {
-        idx = cfgMultq2low->size() - 1;
-      }
-      float sel = cfgMultq2low->at(idx);
-      return q2 < sel;
     }
+
+    if (idx >= static_cast<int>(cfgMultq2low->size())) {
+      idx = cfgMultq2low->size() - 1;
+    }
+    float sel = cfgMultq2low->at(idx);
+    return q2 < sel;
   }
 
   template <typename T>
@@ -219,54 +248,68 @@ struct JEPFlowAnalysis {
   {
     if (name.value == "FT0C") {
       return 0;
-    } else if (name.value == "FT0A") {
-      return 1;
-    } else if (name.value == "FT0M") {
-      return 2;
-    } else if (name.value == "FV0A") {
-      return 3;
-    } else if (name.value == "TPCPos") {
-      return 4;
-    } else if (name.value == "TPCNeg") {
-      return 5;
-    } else if (name.value == "TPCTot") {
-      return 6;
-    } else {
-      return 0;
     }
+    if (name.value == "FT0A") {
+      return 1;
+    }
+    if (name.value == "FT0M") {
+      return 2;
+    }
+    if (name.value == "FV0A") {
+      return 3;
+    }
+    if (name.value == "TPCPos") {
+      return 4;
+    }
+    if (name.value == "TPCNeg") {
+      return 5;
+    }
+    if (name.value == "TPCTot") {
+      return 6;
+    }
+    return 0;
   }
 
   template <typename Col>
   bool eventSel(const Col& coll)
   {
-    if (std::abs(coll.posZ()) > cfgVertexZ)
+    if (std::abs(coll.posZ()) > cfgVertexZ) {
       return false;
+    }
+
     switch (cfgEvtSel) {
       case 0: // Sel8
-        if (!coll.sel8())
+        if (!coll.sel8()) {
           return false;
+        }
         break;
       case 1: // PbPb standard
-        if (!coll.sel8() || !coll.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !coll.selection_bit(aod::evsel::kNoSameBunchPileup))
+        if (!coll.sel8() || !coll.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !coll.selection_bit(aod::evsel::kNoSameBunchPileup)) {
           return false;
+        }
         break;
       case 2: // PbPb with pileup
         if (!coll.sel8() || !coll.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) ||
-            !coll.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !coll.selection_bit(aod::evsel::kNoSameBunchPileup))
+            !coll.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !coll.selection_bit(aod::evsel::kNoSameBunchPileup)) {
           return false;
+        }
         break;
       case 3: // Small systems (OO, NeNe, pp)
-        if (!coll.sel8() || !coll.selection_bit(aod::evsel::kNoSameBunchPileup))
+        if (!coll.sel8() || !coll.selection_bit(aod::evsel::kNoSameBunchPileup)) {
           return false;
+        }
         break;
+
+      default:
+        return false;
     }
     // Check occupancy
-    if (coll.trackOccupancyInTimeRange() > cfgMaxOccupancy || coll.trackOccupancyInTimeRange() < cfgMinOccupancy)
+    if (coll.trackOccupancyInTimeRange() > cfgMaxOccupancy || coll.trackOccupancyInTimeRange() < cfgMinOccupancy) {
       return false;
-
-    if (rctCut.requireRCTFlagChecker && !rctChecker(coll))
+    }
+    if (rctCut.requireRCTFlagChecker && !rctChecker(coll)) {
       return false;
-
+    }
     return true;
   }
 
@@ -344,9 +387,9 @@ struct JEPFlowAnalysis {
   template <typename Col, typename Trk>
   void fillvn(const Col& coll, const Trk& tracks)
   {
-    float eps[3] = {0.};
-    float qx_shifted[3] = {0.};
-    float qy_shifted[3] = {0.};
+    std::array<float, 3> eps{};
+    std::array<float, 3> qx_shifted{};
+    std::array<float, 3> qy_shifted{};
 
     for (int i = 0; i < cfgnMode; i++) {       // loop over different harmonic orders
       harmInd = cfgnTotalSystem * 4 * (i) + 3; // harmonic index to access corresponding Q-vector as all Q-vectors are in same vector
@@ -399,6 +442,61 @@ struct JEPFlowAnalysis {
 
       q2Mag = std::sqrt(std::pow(qx_shifted[0], 2) + std::pow(qy_shifted[0], 2));
 
+      if (cfgq2analysis == kHistsel) {
+        q2selHigh = q2Map->GetBinContent(q2Map->GetXaxis()->FindBin(i + 2), q2Map->GetYaxis()->FindBin(cent), q2Map->GetZaxis()->FindBin(cfgQ2SelFrac));
+        q2selLow = q2Map->GetBinContent(q2Map->GetXaxis()->FindBin(i + 2), q2Map->GetYaxis()->FindBin(cent), q2Map->GetZaxis()->FindBin(1. - cfgQ2SelFrac));
+      }
+
+      if (i == 0) {
+        leadingPt = 0.0;
+        leadingPhi = 0.0;
+        leadingEta = 0.0;
+
+        subleadingPt = 0.0;
+        subleadingPhi = 0.0;
+        subleadingEta = 0.0;
+
+        nHighPt = 0;
+      }
+
+      if (cfgSelEvtTwoHP && i == 0) {
+        for (const auto& track : tracks) {
+          if (cfgTrkSelFlag && trackSel(track) != 0) {
+            continue;
+          }
+
+          if (leadingPt < track.pt()) {
+            subleadingPt = leadingPt;
+            subleadingPhi = leadingPhi;
+            subleadingEta = leadingEta;
+
+            leadingPt = track.pt();
+            leadingPhi = track.phi();
+            leadingEta = track.eta();
+          } else if (track.pt() > subleadingPt) {
+            subleadingPt = track.pt();
+            subleadingPhi = track.phi();
+            subleadingEta = track.eta();
+          }
+
+          if (track.pt() > cfgHighPtSel) {
+            nHighPt++;
+          }
+        }
+      }
+
+      if (cfgSelEvtTwoHP && nHighPt < minnHighPt) {
+        continue;
+      }
+
+      if (cfgSelEvtTwoHP && std::abs(RecoDecay::constrainAngle(leadingPhi - subleadingPhi, 0) - constants::math::PI) > cfgTwoLPAngle) {
+        continue;
+      }
+
+      if (cfgSelEvtTwoHP && std::abs(leadingEta + subleadingEta) > cfgEtaBalancing) {
+        continue;
+      }
+
       epFlowHistograms.fill(HIST("EpDet"), i + 2, cent, eps[0]);
       epFlowHistograms.fill(HIST("EpRefA"), i + 2, cent, eps[1]);
       epFlowHistograms.fill(HIST("EpRefB"), i + 2, cent, eps[2]);
@@ -416,7 +514,13 @@ struct JEPFlowAnalysis {
       epFlowHistograms.fill(HIST("EpResQvecRefARefBxx"), i + 2, cent, qx_shifted[1] * qx_shifted[2] + qy_shifted[1] * qy_shifted[2]);
       epFlowHistograms.fill(HIST("EpResQvecRefARefBxy"), i + 2, cent, qx_shifted[2] * qy_shifted[1] - qx_shifted[1] * qy_shifted[2]);
 
-      if (cfgq2analysis) {
+      if (cfgJetSubEvtSel) {
+        epFlowHistograms.fill(HIST("EpResQvecEvslDetRefAxx"), i + 2, cent, qx_shifted[0] * qx_shifted[1] + qy_shifted[0] * qy_shifted[1]);
+        epFlowHistograms.fill(HIST("EpResQvecEvslDetRefBxx"), i + 2, cent, qx_shifted[0] * qx_shifted[2] + qy_shifted[0] * qy_shifted[2]);
+        epFlowHistograms.fill(HIST("EpResQvecEvslRefARefBxx"), i + 2, cent, qx_shifted[1] * qx_shifted[2] + qy_shifted[1] * qy_shifted[2]);
+      }
+
+      if (cfgq2analysis == kHsel) {
         if (q2sel(q2Mag, true)) {
           epFlowHistograms.fill(HIST("EpResQvecDetRefAxx_q2high"), i + 2, cent, qx_shifted[0] * qx_shifted[1] + qy_shifted[0] * qy_shifted[1]);
           epFlowHistograms.fill(HIST("EpResQvecDetRefBxx_q2high"), i + 2, cent, qx_shifted[0] * qx_shifted[2] + qy_shifted[0] * qy_shifted[2]);
@@ -426,17 +530,28 @@ struct JEPFlowAnalysis {
           epFlowHistograms.fill(HIST("EpResQvecDetRefBxx_q2low"), i + 2, cent, qx_shifted[0] * qx_shifted[2] + qy_shifted[0] * qy_shifted[2]);
           epFlowHistograms.fill(HIST("EpResQvecRefARefBxx_q2low"), i + 2, cent, qx_shifted[1] * qx_shifted[2] + qy_shifted[1] * qy_shifted[2]);
         }
+      } else if (cfgq2analysis == kHistsel) {
+        if (q2Mag > q2selHigh) {
+          epFlowHistograms.fill(HIST("EpResQvecDetRefAxx_q2high"), i + 2, cent, qx_shifted[0] * qx_shifted[1] + qy_shifted[0] * qy_shifted[1]);
+          epFlowHistograms.fill(HIST("EpResQvecDetRefBxx_q2high"), i + 2, cent, qx_shifted[0] * qx_shifted[2] + qy_shifted[0] * qy_shifted[2]);
+          epFlowHistograms.fill(HIST("EpResQvecRefARefBxx_q2high"), i + 2, cent, qx_shifted[1] * qx_shifted[2] + qy_shifted[1] * qy_shifted[2]);
+        } else if (q2Mag < q2selLow) {
+          epFlowHistograms.fill(HIST("EpResQvecDetRefAxx_q2low"), i + 2, cent, qx_shifted[0] * qx_shifted[1] + qy_shifted[0] * qy_shifted[1]);
+          epFlowHistograms.fill(HIST("EpResQvecDetRefBxx_q2low"), i + 2, cent, qx_shifted[0] * qx_shifted[2] + qy_shifted[0] * qy_shifted[2]);
+          epFlowHistograms.fill(HIST("EpResQvecRefARefBxx_q2low"), i + 2, cent, qx_shifted[1] * qx_shifted[2] + qy_shifted[1] * qy_shifted[2]);
+        }
       }
 
-      highestPt = 0.0;
-      hPtPhi = 0.0;
-      for (const auto& track : tracks) {
-        if (cfgTrkSelFlag && trackSel(track))
-          continue;
+      if (cfgEventQAonly) {
+        continue;
+      }
 
-        if (highestPt < track.pt()) {
-          highestPt = track.pt();
-          hPtPhi = track.phi();
+      leadingPt = 0.0;
+      leadingPhi = 0.0;
+      leadingEta = 0.0;
+      for (const auto& track : tracks) {
+        if (cfgTrkSelFlag && trackSel(track) != 0) {
+          continue;
         }
 
         if (cfgEffCor) {
@@ -452,36 +567,42 @@ struct JEPFlowAnalysis {
         epFlowHistograms.fill(HIST("SPvnxx"), i + 2, cent, track.pt(), track.eta(), (std::cos(track.phi() * static_cast<float>(i + 2)) * qx_shifted[0] + std::sin(track.phi() * static_cast<float>(i + 2)) * qy_shifted[0]), weight);
         epFlowHistograms.fill(HIST("SPvnxy"), i + 2, cent, track.pt(), track.eta(), (std::sin(track.phi() * static_cast<float>(i + 2)) * qx_shifted[0] - std::cos(track.phi() * static_cast<float>(i + 2)) * qy_shifted[0]), weight);
 
-        if (cfgq2analysis) {
+        if (cfgq2analysis == kHsel) {
           if (q2sel(q2Mag, true)) {
             epFlowHistograms.fill(HIST("SPvnxx_q2high"), i + 2, cent, track.pt(), track.eta(), (std::cos(track.phi() * static_cast<float>(i + 2)) * qx_shifted[0] + std::sin(track.phi() * static_cast<float>(i + 2)) * qy_shifted[0]), weight);
           } else if (q2sel(q2Mag, false)) {
             epFlowHistograms.fill(HIST("SPvnxx_q2low"), i + 2, cent, track.pt(), track.eta(), (std::cos(track.phi() * static_cast<float>(i + 2)) * qx_shifted[0] + std::sin(track.phi() * static_cast<float>(i + 2)) * qy_shifted[0]), weight);
           }
+        } else if (cfgq2analysis == kHistsel) {
+          if (q2Mag > q2selHigh) {
+            epFlowHistograms.fill(HIST("SPvnxx_q2high"), i + 2, cent, track.pt(), track.eta(), (std::cos(track.phi() * static_cast<float>(i + 2)) * qx_shifted[0] + std::sin(track.phi() * static_cast<float>(i + 2)) * qy_shifted[0]), weight);
+          } else if (q2Mag < q2selLow) {
+            epFlowHistograms.fill(HIST("SPvnxx_q2low"), i + 2, cent, track.pt(), track.eta(), (std::cos(track.phi() * static_cast<float>(i + 2)) * qx_shifted[0] + std::sin(track.phi() * static_cast<float>(i + 2)) * qy_shifted[0]), weight);
+          }
         }
       }
       if (i == 0) { // second harmonic only
-        epFlowHistograms.fill(HIST("hQoverM"), cent, highestPt, qOvecM);
-        epFlowHistograms.fill(HIST("hActivity"), cent, highestPt, activity);
+        epFlowHistograms.fill(HIST("hQoverM"), cent, leadingPt, qOvecM);
+        epFlowHistograms.fill(HIST("hActivity"), cent, leadingPt, activity);
 
         epFlowHistograms.fill(HIST("hQoverM2M"), cent, coll.qvecAmp()[detId], qOvecM);
         epFlowHistograms.fill(HIST("hQoverM2Q2"), cent, q2Mag, qOvecM);
 
-        epFlowHistograms.fill(HIST("hQoverMdphi"), cent, RecoDecay::constrainAngle(hPtPhi - eps[0], -constants::math::PI), qOvecM);
-        epFlowHistograms.fill(HIST("hActivitydphi"), cent, RecoDecay::constrainAngle(hPtPhi - eps[0], -constants::math::PI), activity);
+        epFlowHistograms.fill(HIST("hQoverMdphi"), cent, RecoDecay::constrainAngle(leadingPhi - eps[0], -constants::math::PI), qOvecM);
+        epFlowHistograms.fill(HIST("hActivitydphi"), cent, RecoDecay::constrainAngle(leadingPhi - eps[0], -constants::math::PI), leadingPt, activity);
       }
     }
   }
 
   double getEfficiencyCorrection(THn* eff, float eta, float pt, float multiplicity, float posZ)
   {
-    int effVars[4];
+    std::array<int, 4> effVars{};
     effVars[0] = eff->GetAxis(0)->FindBin(eta);
     effVars[1] = eff->GetAxis(1)->FindBin(pt);
     effVars[2] = eff->GetAxis(2)->FindBin(multiplicity);
     effVars[3] = eff->GetAxis(3)->FindBin(posZ);
 
-    return eff->GetBinContent(effVars);
+    return eff->GetBinContent(effVars.data());
   }
 
   void init(InitContext const&)
@@ -540,7 +661,7 @@ struct JEPFlowAnalysis {
     epFlowHistograms.add("hQoverM2Q2", "", {HistType::kTH3F, {axisCent, axisQ2, axisAmpR}});
 
     epFlowHistograms.add("hActivity", "", {HistType::kTH3F, {axisCent, axisPt, axisActR}});
-    epFlowHistograms.add("hActivitydphi", "", {HistType::kTH3F, {axisCent, axisEvtPl, axisActR}});
+    epFlowHistograms.add("hActivitydphi", "", {HistType::kTHnSparseF, {axisCent, axisEvtPl, axisPt, axisActR}});
 
     epFlowHistograms.add("vncos", "", {HistType::kTHnSparseF, {axisMod, axisCent, axisPt, axisCos}});
     epFlowHistograms.add("vnsin", "", {HistType::kTHnSparseF, {axisMod, axisCent, axisPt, axisCos}});
@@ -551,7 +672,12 @@ struct JEPFlowAnalysis {
     epFlowHistograms.add("EpResQvecDetRefBxy", "", {HistType::kTH3F, {axisMod, axisCent, axisQvec}});
     epFlowHistograms.add("EpResQvecRefARefBxx", "", {HistType::kTH3F, {axisMod, axisCent, axisQvec}});
     epFlowHistograms.add("EpResQvecRefARefBxy", "", {HistType::kTH3F, {axisMod, axisCent, axisQvec}});
-    if (cfgq2analysis) {
+
+    epFlowHistograms.add("EpResQvecEvslDetRefAxx", "", {HistType::kTH3F, {axisMod, axisCent, axisQvec}});
+    epFlowHistograms.add("EpResQvecEvslDetRefBxx", "", {HistType::kTH3F, {axisMod, axisCent, axisQvec}});
+    epFlowHistograms.add("EpResQvecEvslRefARefBxx", "", {HistType::kTH3F, {axisMod, axisCent, axisQvec}});
+
+    if (cfgq2analysis != 0) {
       epFlowHistograms.add("EpResQvecDetRefAxx_q2high", "", {HistType::kTH3F, {axisMod, axisCent, axisQvec}});
       epFlowHistograms.add("EpResQvecDetRefBxx_q2high", "", {HistType::kTH3F, {axisMod, axisCent, axisQvec}});
       epFlowHistograms.add("EpResQvecRefARefBxx_q2high", "", {HistType::kTH3F, {axisMod, axisCent, axisQvec}});
@@ -562,7 +688,7 @@ struct JEPFlowAnalysis {
 
     epFlowHistograms.add("SPvnxx", "", {HistType::kTHnSparseF, {axisMod, axisCent, axisPt, axisEta, axisQvec}});
     epFlowHistograms.add("SPvnxy", "", {HistType::kTHnSparseF, {axisMod, axisCent, axisPt, axisEta, axisQvec}});
-    if (cfgq2analysis) {
+    if (cfgq2analysis != 0) {
       epFlowHistograms.add("SPvnxx_q2high", "", {HistType::kTHnSparseF, {axisMod, axisCent, axisPt, axisEta, axisQvec}});
       epFlowHistograms.add("SPvnxx_q2low", "", {HistType::kTHnSparseF, {axisMod, axisCent, axisPt, axisEta, axisQvec}});
     }
@@ -578,8 +704,9 @@ struct JEPFlowAnalysis {
   void processDefault(MyCollisions::iterator const& coll, soa::Filtered<MyTracks> const& tracks, aod::BCsWithTimestamps const&, aod::FT0s const&)
   {
     if (cfgAddEvtSel) {
-      if (!eventSel(coll))
+      if (!eventSel(coll)) {
         return;
+      }
     }
 
     if (cfgEffCor) {
@@ -631,6 +758,16 @@ struct JEPFlowAnalysis {
       }
     }
 
+    if (cfgq2analysis == kHistsel) {
+      auto bc = coll.bc_as<aod::BCsWithTimestamps>();
+      currentRunNumber = bc.runNumber();
+      if (currentRunNumber != lastRunNumber) {
+        std::string fullPath;
+        fullPath = cfgQselHistPath;
+        q2Map = ccdb->getForTimeStamp<TH3F>(cfgQselHistPath, bc.timestamp());
+      }
+    }
+
     cent = coll.cent();
     epFlowHistograms.fill(HIST("hCentrality"), cent);
     epFlowHistograms.fill(HIST("hVertex"), coll.posZ());
@@ -651,23 +788,26 @@ struct JEPFlowAnalysis {
       }
     }
 
-    if (coll.qvecAmp()[detId] < minQvecAmp || coll.qvecAmp()[refAId] < minQvecAmp || coll.qvecAmp()[refBId] < minQvecAmp)
+    if (coll.qvecAmp()[detId] < minQvecAmp || coll.qvecAmp()[refAId] < minQvecAmp || coll.qvecAmp()[refBId] < minQvecAmp) {
       return;
+    }
 
     qOvecM = calcFT0CRawQVecMag(coll, 2) / coll.qvecAmp()[detId]; // second order
     activity = calcFT0CLocalActivity(coll);
 
-    if (cfgJetSubEvtSel & 1) {
+    epFlowHistograms.fill(HIST("hQoverMCnt"), cent, qOvecM);
+    epFlowHistograms.fill(HIST("hActivityCnt"), cent, activity);
+
+    if ((cfgJetSubEvtSel & 1) != 0) {
       if (cfgJetSubEvlSelVar->at(0) < qOvecM) {
         return;
       }
     }
-    if (cfgJetSubEvtSel & 2) {
+    if ((cfgJetSubEvtSel & 2) != 0) {
       if (cfgJetSubEvlSelVar->at(1) < activity) {
         return;
       }
     }
-
     fillvn(coll, tracks);
   }
   PROCESS_SWITCH(JEPFlowAnalysis, processDefault, "default process", true);
@@ -679,11 +819,12 @@ struct JEPFlowAnalysis {
     }
 
     if (cfgAddEvtSel) {
-      if (!eventSel(coll))
+      if (!eventSel(coll)) {
         return;
+      }
     }
 
-    float cent = coll.centFT0C();
+    cent = coll.centFT0C();
 
     if (cfgEffCor) {
       auto bc = coll.bc_as<aod::BCsWithTimestamps>();
@@ -699,7 +840,7 @@ struct JEPFlowAnalysis {
         continue;
       }
 
-      if (trackSel(trk)) {
+      if (trackSel(trk) != 0) {
         continue;
       }
 
@@ -714,8 +855,9 @@ struct JEPFlowAnalysis {
 
   void processMCGen(MyCollisionsMC::iterator const& coll, aod::McParticles const& mcParticles, aod::McCollisions const&)
   {
-    if (!coll.has_mcCollision())
+    if (!coll.has_mcCollision()) {
       return;
+    }
     const auto mcColl = coll.mcCollision();
 
     if (cfgAddEvtSel) {
@@ -724,11 +866,12 @@ struct JEPFlowAnalysis {
       }
     }
 
-    float cent = coll.centFT0C();
+    cent = coll.centFT0C();
 
     for (const auto& mcParticle : mcParticles) {
-      if (std::abs(mcParticle.eta()) > cfgTrackCuts.cfgEtaMax)
+      if (std::abs(mcParticle.eta()) > cfgTrackCuts.cfgEtaMax) {
         continue;
+      }
 
       auto p = pdg->GetParticle(mcParticle.pdgCode());
       if (p != nullptr) {
@@ -737,8 +880,9 @@ struct JEPFlowAnalysis {
         }
       }
 
-      if (!mcParticle.isPhysicalPrimary())
+      if (!mcParticle.isPhysicalPrimary()) {
         continue;
+      }
 
       epFlowHistograms.fill(HIST("MC/hPartGen"), cent, mcColl.posZ(), mcParticle.eta(), mcParticle.phi(), mcParticle.pt());
     }

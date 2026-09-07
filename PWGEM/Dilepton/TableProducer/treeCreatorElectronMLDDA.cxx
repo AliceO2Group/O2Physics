@@ -21,6 +21,7 @@
 #include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/CollisionTypeHelper.h"
+#include "Common/Core/PID/PIDTOFParamService.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/trackUtilities.h"
@@ -45,15 +46,13 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
-#include <PID/PIDTOFParamService.h>
+#include <GPU/GPUROOTCartesianFwd.h>
 #include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/PID.h>
 #include <ReconstructionDataFormats/Track.h>
 #include <ReconstructionDataFormats/TrackLTIntegral.h>
 
 #include <TMath.h>
-
-#include <GPUROOTCartesianFwd.h>
 
 #include <array>
 #include <cmath>

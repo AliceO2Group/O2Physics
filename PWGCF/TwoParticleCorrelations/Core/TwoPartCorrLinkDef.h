@@ -50,5 +50,6 @@
 #pragma link C++ class o2::analysis::PWGCF::EventSelectionFilterAndAnalysis::PileUpRejBrick + ;
 #pragma link C++ class o2::analysis::PWGCF::EventSelectionFilterAndAnalysis + ;
 #pragma link C++ class o2::analysis::PWGCF::FilterAndAnalysisFramework + ;
+#pragma link C++ class DihadronContainer + ;
 
 #endif // PWGCF_TWOPARTICLECORRELATIONS_CORE_TWOPARTCORRLINKDEF_H_

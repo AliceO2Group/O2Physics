@@ -74,6 +74,41 @@ bool hasFakeMatchMFTMCH(TTrack const& track)
   }
 }
 //_______________________________________________________________________
+template <typename T, typename TMCParticles>
+int isFromGammaZ(T const& track, TMCParticles const& mcParticles)
+{
+  if (!track.has_mothers()) {
+    return -999;
+  }
+
+  int motherId = track.mothersIds()[0];
+  while (motherId > -1) {
+    auto mp = mcParticles.rawIteratorAt(motherId);
+    if (std::abs(mp.pdgCode()) == 23) {
+      return mp.globalIndex();
+    }
+
+    if (mp.has_mothers()) {
+      motherId = mp.mothersIds()[0];
+    } else {
+      motherId = -999;
+    }
+  }
+  return -999;
+}
+//_______________________________________________________________________
+template <typename T, typename TMCParticles>
+int isPairFromGammaZ(T const& t1, T const& t2, TMCParticles const& mcParticles)
+{
+  int id1 = isFromGammaZ(t1, mcParticles);
+  int id2 = isFromGammaZ(t2, mcParticles);
+  if ((id1 > -1 && id2 > -1) && (id1 == id2)) {
+    return id1;
+  } else {
+    return -999;
+  }
+}
+//_______________________________________________________________________
 template <typename T>
 bool isCharmonia(T const& track)
 {

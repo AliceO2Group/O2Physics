@@ -24,6 +24,7 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
+#include "PWGHF/Utils/utilsAnalysis.h"
 
 #include "Common/Core/TrackSelectorPID.h"
 #include "Common/DataModel/PIDResponseCombined.h"
@@ -108,6 +109,8 @@ struct HfCandidateSelectorLc {
   Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"ModelHandler_onnx_LcToPKPi.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
+  // Mass Cut for trigger analysis
+  Configurable<bool> useTriggerMassCut{"useTriggerMassCut", false, "Flag to enable parametrize pT differential mass cut for triggered data"};
 
   o2::analysis::HfMlResponseLcToPKPi<float, aod::hf_cand::VertexerType::DCAFitter> hfMlResponseDCA;
   o2::analysis::HfMlResponseLcToPKPi<float, aod::hf_cand::VertexerType::KfParticle> hfMlResponseKF;
@@ -117,6 +120,7 @@ struct HfCandidateSelectorLc {
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
   TrackSelectorPr selectorProton;
+  HfTrigger3ProngCuts hfTriggerCuts;
 
   using TracksSel = soa::Join<aod::TracksWExtra,
                               aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr>;
@@ -324,6 +328,10 @@ struct HfCandidateSelectorLc {
 
       // cut on Lc->pKpi, piKp mass values
       if (std::abs(massLc - o2::constants::physics::MassLambdaCPlus) > cuts->get(pTBin, "m")) {
+        return false;
+      }
+
+      if (useTriggerMassCut && !isCandidateInMassRange(massLc, o2::constants::physics::MassLambdaCPlus, candpT, hfTriggerCuts)) {
         return false;
       }
 

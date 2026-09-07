@@ -112,6 +112,7 @@ std::array<std::shared_ptr<TH1>, nParticles> hPtItsTpcPrm;
 std::array<std::shared_ptr<TH1>, nParticles> hPtTrkItsTpcPrm;
 std::array<std::shared_ptr<TH2>, nParticles> hDeltaPtVsPtTrkItsTpcPrm;
 std::array<std::shared_ptr<TH2>, nParticles> hPtGenVsPtTrkItsTpcPrm;
+std::array<std::shared_ptr<TH2>, nParticles> hPtGenVsPIDTrkItsTpcPrm;
 std::array<std::shared_ptr<TH1>, nParticles> hPtItsTpcTofPrm;
 std::array<std::shared_ptr<TH1>, nParticles> hPtTrkItsTpcTofPrm;
 std::array<std::shared_ptr<TH1>, nParticles> hPtGeneratedPrm;
@@ -327,6 +328,7 @@ struct QaEfficiency {
     const AxisSpec axisPhi{phiBins, "#it{#varphi} (rad)"};
     const AxisSpec axisRadius{radiusBins, "Radius (cm)"};
     const AxisSpec axisOcc{occBins, "Occupancy"};
+    const AxisSpec axisPIDFlag{16, -0.5, 15.5, "PID flag (top 4 bits)"};
 
     const char* partName = particleName(pdgSign, id);
     LOG(info) << "Preparing histograms for particle: " << partName << " pdgSign " << pdgSign;
@@ -380,6 +382,7 @@ struct QaEfficiency {
     hPtTrkItsTpcPrm[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/prm/trk/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (reco primaries) " + tagPt, kTH1D, {axisPt});
     hDeltaPtVsPtTrkItsTpcPrm[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/prm/generated_vs_reco_delta", PDGs[histogramIndex]), "Abs(Gen - Reco) pT vs Gen pT (primaries) " + tagPt, kTH2D, {axisPt, axisPt});
     hPtGenVsPtTrkItsTpcPrm[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/prm/generated_vs_reco", PDGs[histogramIndex]), "Reco pT vs Gen pT (primaries) " + tagPt, kTH2D, {axisPt, axisPt});
+    hPtGenVsPIDTrkItsTpcPrm[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/prm/generated_vs_reco_pid_tracking", PDGs[histogramIndex]), "PID for tracking vs Gen pT (primaries) " + tagPt, kTH2D, {axisPt, axisPIDFlag});
     hPtItsTpcTofPrm[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/prm/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks (primaries) " + tagPt, kTH1D, {axisPt});
     hPtTrkItsTpcTofPrm[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/prm/trk/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks (reco primaries) " + tagPt, kTH1D, {axisPt});
     hPtGeneratedPrm[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/prm/generated", PDGs[histogramIndex]), "Generated (primaries) " + tagPt, kTH1D, {axisPt});
@@ -497,7 +500,7 @@ struct QaEfficiency {
     subList->SetName(partName);
     listEfficiencyMC->Add(subList);
 
-    auto makeEfficiency = [&](const TString effname, auto h) { // 1D efficiencies
+    auto makeEfficiency = [&](const TString& effname, const auto& h) { // 1D efficiencies
       LOG(debug) << " Making 1D TEfficiency " << effname << " from " << h->GetName();
       const TAxis* axis = h->GetXaxis();
       TString efftitle = h->GetTitle();
@@ -560,7 +563,7 @@ struct QaEfficiency {
     makeEfficiency("ITS-TPC_vsPhi_Prm_Trk", hPhiTrkItsTpcPrm[histogramIndex]);
     makeEfficiency("ITS-TPC-TOF_vsPhi_Prm", hPhiItsTpcTofPrm[histogramIndex]);
 
-    auto makeEfficiency2D = [&](const TString effname, auto h) { // 2D efficiencies
+    auto makeEfficiency2D = [&](const TString& effname, const auto& h) { // 2D efficiencies
       LOG(debug) << " Making 2D TEfficiency " << effname << " from " << h->GetName();
       const TAxis* axisX = h->GetXaxis();
       const TAxis* axisY = h->GetYaxis();
@@ -895,7 +898,7 @@ struct QaEfficiency {
     listEfficiencyData.setObject(new THashList);
     if (makeEff) {
       LOG(debug) << "Making TEfficiency for Data";
-      auto makeEfficiency = [&](TString effname, TString efftitle, auto templateHisto, TEfficiency*& eff) {
+      auto makeEfficiency = [&](const TString& effname, const TString& efftitle, auto templateHisto, TEfficiency*& eff) {
         TAxis* axis = histos.get<TH1>(templateHisto)->GetXaxis();
         if (axis->IsVariableBinSize()) {
           eff = new TEfficiency(effname, efftitle, axis->GetNbins(), axis->GetXbins()->GetArray());
@@ -924,7 +927,7 @@ struct QaEfficiency {
                      "TPC-TOF M.E. in data " + tagPhi + ";#it{#varphi} (rad);Efficiency", HIST("Data/pos/phi/its_tpc_tof"),
                      effTPCTOFMatchingVsPhi);
 
-      auto makeEfficiency2D = [&](TString effname, TString efftitle, auto templateHistoX, auto templateHistoY, TEfficiency*& eff) {
+      auto makeEfficiency2D = [&](const TString& effname, const TString& efftitle, auto templateHistoX, auto templateHistoY, TEfficiency*& eff) {
         TAxis* axisX = histos.get<TH1>(templateHistoX)->GetXaxis();
         TAxis* axisY = histos.get<TH1>(templateHistoY)->GetYaxis();
         if (axisX->IsVariableBinSize() || axisY->IsVariableBinSize()) {
@@ -1162,6 +1165,7 @@ struct QaEfficiency {
         hPtTrkItsTpcPrm[histogramIndex]->Fill(track.pt());
         hDeltaPtVsPtTrkItsTpcPrm[histogramIndex]->Fill(mcParticle.pt(), abs(track.pt() - mcParticle.pt()));
         hPtGenVsPtTrkItsTpcPrm[histogramIndex]->Fill(mcParticle.pt(), track.pt());
+        hPtGenVsPIDTrkItsTpcPrm[histogramIndex]->Fill(mcParticle.pt(), track.pidForTracking());
         hEtaItsTpcPrm[histogramIndex]->Fill(mcParticle.eta());
         hEtaTrkItsTpcPrm[histogramIndex]->Fill(track.eta());
         hPhiItsTpcPrm[histogramIndex]->Fill(mcParticle.phi());
@@ -1362,7 +1366,7 @@ struct QaEfficiency {
     }
 
     // Filling 1D efficiencies
-    auto doFillEfficiency = [&](const TString effname, auto num, auto den) {
+    auto doFillEfficiency = [&](const TString& effname, const auto& num, const auto& den) {
       TEfficiency* eff = static_cast<TEfficiency*>(subList->FindObject(effname));
       if (!eff) {
         LOG(warning) << "Cannot find TEfficiency " << effname;
@@ -1432,7 +1436,7 @@ struct QaEfficiency {
     }
 
     // Filling 2D efficiencies
-    auto fillEfficiency2D = [&](const TString effname, auto num, auto den) {
+    auto fillEfficiency2D = [&](const TString& effname, const auto& num, const auto& den) {
       TEfficiency* eff = static_cast<TEfficiency*>(subList->FindObject(effname));
       if (!eff) {
         LOG(warning) << "Cannot find TEfficiency " << effname;

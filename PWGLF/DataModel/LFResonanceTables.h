@@ -34,9 +34,11 @@
 
 #include <Framework/AnalysisDataModel.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <limits>
 
 namespace o2::aod
 {
@@ -45,7 +47,7 @@ namespace resocollision
 {
 enum {
   kECbegin = 0,
-  kINEL = 1,
+  kINEL,
   kINEL10,
   kINELg0,
   kINELg010,
@@ -65,6 +67,7 @@ enum {
 };
 DECLARE_SOA_INDEX_COLUMN_FULL(Collision, collision, int, Collisions, "_Col"); //!
 DECLARE_SOA_COLUMN(Cent, cent, float);                                        //! Centrality (Multiplicity) percentile (Default: FT0M)
+DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);                        //! Configurable reconstructed multiplicity estimator
 DECLARE_SOA_COLUMN(Spherocity, spherocity, float);                            //! Spherocity of the event
 DECLARE_SOA_COLUMN(EvtPl, evtPl, float);                                      //! Second harmonic event plane
 DECLARE_SOA_COLUMN(EvtPlResAB, evtPlResAB, float);                            //! Second harmonic event plane resolution of A-B sub events
@@ -79,10 +82,37 @@ DECLARE_SOA_COLUMN(IsTriggerTVX, isTriggerTVX, bool);         //! TriggerTVX
 DECLARE_SOA_COLUMN(IsInSel8, isInSel8, bool);                 //! InSel8
 DECLARE_SOA_COLUMN(IsInAfterAllCuts, isInAfterAllCuts, bool); //! InAfterAllCuts
 DECLARE_SOA_COLUMN(ImpactParameter, impactParameter, float);  //! ImpactParameter
-DECLARE_SOA_COLUMN(MCMultiplicity, mcMultiplicity, float);    //! MC Multiplicity
+DECLARE_SOA_COLUMN(MCMultiplicity, mcMultiplicity, float);    //! MC Multiplicity, o2-linter: disable=name/o2-column (pre-existing public column name kept for schema and API compatibility)
 
 } // namespace resocollision
-DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOLLISION",
+
+// Legacy version-0 companion schema. Its canonical fIndexCollisions column
+// enables GroupSlicer association to aod::Collisions, but also makes the table
+// dependent on that source parent. The modular initializer therefore writes
+// the scalar-only version 001 declared below instead.
+namespace resocollisiongroup
+{
+DECLARE_SOA_INDEX_COLUMN_FULL_CUSTOM(OriginalCollision, originalCollision, int, Collisions, "Collisions", ""); //!
+} // namespace resocollisiongroup
+
+// Scalar-only original-collision mapping for standalone modular output. Unlike
+// resocollisiongroup::OriginalCollisionId above, this column carries no index
+// target metadata and therefore does not require the source Collisions table
+// to be present while merging the derived AO2D.
+namespace resocollisiongroup001
+{
+DECLARE_SOA_COLUMN(OriginalCollisionId, originalCollisionId, int); //! Original aod::Collision row number
+} // namespace resocollisiongroup001
+
+// Optional soft link from a positional ResoMCCollisions_001 row to its source
+// generator collision. It is filled only when the source AO2D is retained as
+// a linked-derived-data parent.
+namespace resomccollision
+{
+DECLARE_SOA_INDEX_COLUMN_FULL_CUSTOM(OriginalMcCollision, originalMcCollision, int, McCollisions, "McCollisions", "_MC"); //!
+} // namespace resomccollision
+
+DECLARE_SOA_TABLE(ResoCollisions_000, "AOD", "RESOCOLLISION",
                   o2::soa::Index<>,
                   o2::aod::mult::MultNTracksPV,
                   o2::aod::mult::MultNTracksPVeta1,
@@ -93,11 +123,38 @@ DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOLLISION",
                   resocollision::Cent,
                   resocollision::BMagField,
                   resocollision::IsRecINELgt0);
+
+// Version 001 stores one configurable multiplicity estimator instead of three
+// fixed PV-track multiplicities. The producer configuration determines which
+// reconstructed estimator is persisted in the common float payload.
+DECLARE_SOA_TABLE_VERSIONED(ResoCollisions_001, "AOD", "RESOCOLLISION", 1,
+                            o2::soa::Index<>,
+                            resocollision::Multiplicity,
+                            collision::PosX,
+                            collision::PosY,
+                            collision::PosZ,
+                            resocollision::Cent,
+                            resocollision::BMagField,
+                            resocollision::IsRecINELgt0);
+
+// Keep the established generic collision-table alias on version 000. The
+// modular producer and its consumers request version 001 explicitly.
+using ResoCollisions = ResoCollisions_000;
 using ResoCollision = ResoCollisions::iterator;
 
 DECLARE_SOA_TABLE(ResoCollisionColls, "AOD", "RESOCOLLISIONCOL",
                   resocollision::CollisionId);
 using ResoCollisionColl = ResoCollisionColls::iterator;
+
+DECLARE_SOA_TABLE(ResoCollisionGroups, "AOD", "RESOCOLLGROUP",
+                  resocollisiongroup::OriginalCollisionId);
+using ResoCollisionGroup = ResoCollisionGroups::iterator;
+
+// Version 001 replaces the hard relation to the source Collisions table with
+// a scalar row number. The legacy version-0 schema remains unchanged.
+DECLARE_SOA_TABLE_VERSIONED(ResoCollisionGroups_001, "AOD", "RESOCOLLGROUP", 1,
+                            resocollisiongroup001::OriginalCollisionId);
+using ResoCollisionGroup_001 = ResoCollisionGroups_001::iterator;
 
 DECLARE_SOA_TABLE(ResoMCCollisions, "AOD", "RESOMCCOLLISION",
                   o2::soa::Index<>,
@@ -109,6 +166,20 @@ DECLARE_SOA_TABLE(ResoMCCollisions, "AOD", "RESOMCCOLLISION",
                   resocollision::ImpactParameter,
                   resocollision::MCMultiplicity);
 using ResoMCCollision = ResoMCCollisions::iterator;
+
+// Version 001 deliberately persists generator-collision properties only.
+// Reconstructed event-selection decisions remain available only in legacy
+// version-0 output and must not be mixed into this generator-level payload.
+DECLARE_SOA_TABLE_VERSIONED(ResoMCCollisions_001, "AOD", "RESOMCCOLLISION", 1,
+                            o2::soa::Index<>,
+                            resocollision::IsVtxIn10,
+                            resocollision::IsINELgt0,
+                            resocollision::ImpactParameter,
+                            resocollision::MCMultiplicity);
+
+DECLARE_SOA_TABLE(ResoMCCollisionIds, "AOD", "RESOMCCOLLID",
+                  resomccollision::OriginalMcCollisionId);
+using ResoMCCollisionId = ResoMCCollisionIds::iterator;
 
 DECLARE_SOA_TABLE(ResoSpheroCollisions, "AOD", "RESOSPHEROCOLLISION",
                   o2::soa::Index<>,
@@ -163,32 +234,53 @@ struct ResoTrackFlags {
     return (flags & mask) == mask;
   }
 };
+// These macros build framework expression nodes and cannot be replaced by
+// ordinary constexpr functions without changing their public DSL API.
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define requireTrackFlag(mask) ((o2::aod::resodaughter::trackFlags & o2::aod::resodaughter::mask) == o2::aod::resodaughter::mask)
 
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define requirePassedITSRefit() requireTrackFlag(ResoTrackFlags::kPassedITSRefit)
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define requirePassedTPCRefit() requireTrackFlag(ResoTrackFlags::kPassedTPCRefit)
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define requireGlobalTrack() requireTrackFlag(ResoTrackFlags::kIsGlobalTrack)
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define requireGlobalTrackWoDCA() requireTrackFlag(ResoTrackFlags::kIsGlobalTrackWoDCA)
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define requirePrimaryTrack() requireTrackFlag(ResoTrackFlags::kIsPrimaryTrack)
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define requirePVContributor() requireTrackFlag(ResoTrackFlags::kIsPVContributor)
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define requireHasTOF() requireTrackFlag(ResoTrackFlags::kHasTOF)
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define requireSign() requireTrackFlag(ResoTrackFlags::kSign)
 
-#define DECLARE_DYN_TRKSEL_COLUMN(name, getter, mask) \
-  DECLARE_SOA_DYNAMIC_COLUMN(name, getter, [](ResoTrackFlags::flagtype flags) -> bool { return ResoTrackFlags::checkFlag(flags, mask); });
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define DECLARE_DYN_TRKSEL_COLUMN(_Name_, _Getter_, _Mask_) \
+  DECLARE_SOA_DYNAMIC_COLUMN(_Name_, _Getter_, [](ResoTrackFlags::flagtype flags) -> bool { return ResoTrackFlags::checkFlag(flags, _Mask_); });
 
+// Keep the default foreign-key target on the legacy ResoCollisions_000 alias.
+// Modular v001 consumers use resoCollisionId() as the scalar row reference and
+// explicitly call resoCollision_as<T>() only when the parent row must be
+// dereferenced, with T equal to the exact bound v001 table type (plain
+// aod::ResoCollisions_001 or its analysis Join). The version-equivalence
+// declaration below permits binding the same physical index column to v001.
 DECLARE_SOA_INDEX_COLUMN(ResoCollision, resoCollision);
 DECLARE_SOA_INDEX_COLUMN(ResoCollisionDF, resoCollisionDF);
-DECLARE_SOA_INDEX_COLUMN_FULL(Track, track, int, Tracks, "_Trk");                 //!
-DECLARE_SOA_INDEX_COLUMN_FULL(V0, v0, int, V0s, "_V0");                           //!
-DECLARE_SOA_INDEX_COLUMN_FULL(Cascade, cascade, int, Cascades, "_Cas");           //!
-DECLARE_SOA_COLUMN(Pt, pt, float);                                                //! p_t (GeV/c)
-DECLARE_SOA_COLUMN(Px, px, float);                                                //! p_x (GeV/c)
-DECLARE_SOA_COLUMN(Py, py, float);                                                //! p_y (GeV/c)
-DECLARE_SOA_COLUMN(Pz, pz, float);                                                //! p_z (GeV/c)
-DECLARE_SOA_COLUMN(PartType, partType, uint8_t);                                  //! Type of the particle, according to resodaughter::ParticleType
-DECLARE_SOA_COLUMN(TempFitVar, tempFitVar, float);                                //! Observable for the template fitting (Track: DCA_xy, V0: CPA)
-DECLARE_SOA_COLUMN(Indices, indices, int[2]);                                     //! Field for the track indices to remove auto-correlations
+DECLARE_SOA_INDEX_COLUMN_FULL(Track, track, int, Tracks, "_Trk");       //! Soft link to the original track
+DECLARE_SOA_INDEX_COLUMN_FULL(V0, v0, int, V0s, "_V0");                 //! Soft link to the original V0
+DECLARE_SOA_INDEX_COLUMN_FULL(Cascade, cascade, int, Cascades, "_Cas"); //! Soft link to the original cascade
+DECLARE_SOA_COLUMN(Pt, pt, float);                                      //! p_t (GeV/c)
+DECLARE_SOA_COLUMN(Px, px, float);                                      //! p_x (GeV/c)
+DECLARE_SOA_COLUMN(Py, py, float);                                      //! p_y (GeV/c)
+DECLARE_SOA_COLUMN(Pz, pz, float);                                      //! p_z (GeV/c)
+DECLARE_SOA_COLUMN(PartType, partType, uint8_t);                        //! Type of the particle, according to resodaughter::ParticleType
+DECLARE_SOA_COLUMN(TempFitVar, tempFitVar, float);                      //! Observable for the template fitting (Track: DCA_xy, V0: CPA)
+// Fixed-size C arrays are part of the existing persistent AOD schema.
+// NOLINTNEXTLINE(modernize-avoid-c-arrays)
+DECLARE_SOA_COLUMN(Indices, indices, int[2]); //! Field for the track indices to remove auto-correlations
+// NOLINTNEXTLINE(modernize-avoid-c-arrays)
 DECLARE_SOA_COLUMN(CascadeIndices, cascadeIndices, int[3]);                       //! Field for the track indices to remove auto-correlations (ordered: positive, negative, bachelor)
 DECLARE_SOA_COLUMN(TpcNClsCrossedRows, tpcNClsCrossedRows, uint8_t);              //! Number of TPC crossed rows
 DECLARE_SOA_COLUMN(TpcNClsFound, tpcNClsFound, uint8_t);                          //! Number of TPC clusters found
@@ -215,8 +307,8 @@ DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);                                
 DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);                                  //! Y position of the decay vertex
 DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);                                  //! Z position of the decay vertex
 DECLARE_SOA_COLUMN(Alpha, alpha, float);                                          //! Alpha of the decay vertex
-DECLARE_SOA_COLUMN(QtArm, qtarm, float);                                          //! Armenteros Qt of the decay vertex
-DECLARE_SOA_COLUMN(TpcSignal10, tpcSignal10, int16_t);                            //! TPC signal of the track x10
+DECLARE_SOA_COLUMN(QtArm, qtarm, float);                                          //! Armenteros Qt of the decay vertex, o2-linter: disable=name/o2-column (pre-existing public column name kept for schema and API compatibility)
+DECLARE_SOA_COLUMN(TpcSignal10, tpcSignal10, int16_t);                            //! TPC signal of the track x100 (public column name retained for compatibility)
 DECLARE_SOA_COLUMN(DaughterTPCNSigmaPosPi10, daughterTPCNSigmaPosPi10, int8_t);   //! TPC PID x10 of the positive daughter as Pion
 DECLARE_SOA_COLUMN(DaughterTPCNSigmaPosKa10, daughterTPCNSigmaPosKa10, int8_t);   //! TPC PID x10 of the positive daughter as Kaon
 DECLARE_SOA_COLUMN(DaughterTPCNSigmaPosPr10, daughterTPCNSigmaPosPr10, int8_t);   //! TPC PID x10 of the positive daughter as Proton
@@ -250,9 +342,10 @@ DECLARE_SOA_COLUMN(DaughterPDG1, daughterPDG1, int); //! PDG code of the first D
 DECLARE_SOA_COLUMN(DaughterPDG2, daughterPDG2, int); //! PDG code of the second Daughter particle
 DECLARE_SOA_COLUMN(DaughterID1, daughterID1, int);   //! Id of the first Daughter particle
 DECLARE_SOA_COLUMN(DaughterID2, daughterID2, int);   //! Id of the second Daughter particle
-DECLARE_SOA_COLUMN(SiblingIds, siblingIds, int[2]);  //! Index of the particles with the same mother
-DECLARE_SOA_COLUMN(BachTrkID, bachTrkID, int);       //! Id of the bach track from cascade
-DECLARE_SOA_COLUMN(V0ID, v0ID, int);                 //! Id of the V0 from cascade
+// NOLINTNEXTLINE(modernize-avoid-c-arrays) -- persistent fixed-size AOD column
+DECLARE_SOA_COLUMN(SiblingIds, siblingIds, int[2]); //! Index of the particles with the same mother
+DECLARE_SOA_COLUMN(BachTrkID, bachTrkID, int);      //! Id of the bach track from cascade
+DECLARE_SOA_COLUMN(V0ID, v0ID, int);                //! Id of the V0 from cascade
 // Dynamic columns
 // DCA_xy x10,000
 DECLARE_SOA_DYNAMIC_COLUMN(DcaXY, dcaXY,
@@ -309,7 +402,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(DaughterTOFNSigmaBachKa, daughterTOFNSigmaBachKa,
                            [](int8_t daughterTOFNSigmaBachKa10) { return (float)daughterTOFNSigmaBachKa10 / 10.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(DaughterTOFNSigmaBachPr, daughterTOFNSigmaBachPr,
                            [](int8_t daughterTOFNSigmaBachPr10) { return (float)daughterTOFNSigmaBachPr10 / 10.f; });
-// TPC signal x10
+// TPC signal x100
 DECLARE_SOA_DYNAMIC_COLUMN(TpcSignal, tpcSignal,
                            [](int16_t tpcSignal10) { return (float)tpcSignal10 / 100.f; });
 // pT, Eta, Phi
@@ -358,6 +451,10 @@ namespace resomicrodaughter
 
 /// @brief Save TPC & TOF nSigma info with 8-bit variable
 struct PidNSigma {
+  static constexpr double MinNSigma = 1.5;
+  static constexpr double NSigmaStep = 0.2;
+  static constexpr uint8_t MaxNSigmaCode = 10;
+
   uint8_t flag;
 
   /// @brief Constructor: Convert TPC & TOF values and save
@@ -372,29 +469,34 @@ struct PidNSigma {
   static uint8_t encodeNSigma(float nSigma)
   {
     const float x = std::abs(nSigma);
-    if (x <= 1.5)
+    if (x <= MinNSigma) {
       return 0; // Return 0 when absolute nSigma is smaller than 1.5
-    float t = (x - 1.5) / 0.2;
+    }
+    float t = (x - MinNSigma) / NSigmaStep;
     int encoded = static_cast<int>(std::ceil(t)); // (1.5,1.7]->1, ..., (3.3,3.5]->10
-    if (encoded < 1)
+    if (encoded < 1) {
       encoded = 1;
-    if (encoded > 10)
-      encoded = 10;
+    }
+    if (encoded > MaxNSigmaCode) {
+      encoded = MaxNSigmaCode;
+    }
     return static_cast<uint8_t>(encoded);
   }
 
   /// @brief Decode 0~10 value to original 1.5~3.5 sigma range
   static float decodeNSigma(uint8_t encoded)
   {
-    if (encoded == 0)
-      return 1.5;
-    if (encoded > 10)
-      encoded = 10;
-    return 1.5 + static_cast<float>(encoded) * 0.2;
+    if (encoded == 0) {
+      return MinNSigma;
+    }
+    if (encoded > MaxNSigmaCode) {
+      encoded = MaxNSigmaCode;
+    }
+    return MinNSigma + static_cast<float>(encoded) * NSigmaStep;
   }
 
   /// @brief Check if TOF info is available
-  bool hasTOF() const
+  [[nodiscard]] bool hasTOF() const
   {
     return (flag & 0x0F) != 0x0F; // Check if lower 4 bits are not all 1
   }
@@ -430,12 +532,16 @@ DECLARE_SOA_DYNAMIC_COLUMN(HasTOF, hasTOF,
 
 /// @brief DCAxy & DCAz selection flag
 struct ResoMicroTrackSelFlag {
+  static constexpr double DCAEncodingStep = 0.1;
+  static constexpr uint8_t MaxRegularDCAFlag = 14;
+  static constexpr uint8_t OverflowDCAFlag = 15;
+
   uint8_t flag; // Flag for DCAxy & DCAz selection (8-bit variable)
 
   /// @brief Default constructor
   ResoMicroTrackSelFlag()
+    : flag(0x00)
   {
-    flag = 0x00;
   }
 
   /// @brief Constructor: Convert DCAxy/DCAz and save (default 1~15 values)
@@ -450,13 +556,16 @@ struct ResoMicroTrackSelFlag {
   static uint8_t encodeDCA(float DCA)
   {
     float x = std::fabs(DCA);
-    if (x < 0.1)
+    if (x < DCAEncodingStep) {
       return 0;
-    int encoded = static_cast<int>(std::ceil((x - 0.1) / 0.1)); // (0.1, 0.2] -> 1, ..., (1.4, 1.5] -> 14
-    if (encoded < 1)
+    }
+    int encoded = static_cast<int>(std::ceil((x - DCAEncodingStep) / DCAEncodingStep)); // (0.1, 0.2] -> 1, ..., (1.4, 1.5] -> 14
+    if (encoded < 1) {
       encoded = 1;
-    if (encoded > 14)
-      encoded = 15;
+    }
+    if (encoded > MaxRegularDCAFlag) {
+      encoded = OverflowDCAFlag;
+    }
     return static_cast<uint8_t>(encoded);
   }
 
@@ -467,13 +576,13 @@ struct ResoMicroTrackSelFlag {
   }
 
   /// @brief Get DCAxy value
-  uint8_t getDCAxyFlag() const
+  [[nodiscard]] uint8_t getDCAxyFlag() const
   {
     return (flag >> 4) & 0x0F; // Extract upper 4 bits
   }
 
   /// @brief Get DCAz value
-  uint8_t getDCAzFlag() const
+  [[nodiscard]] uint8_t getDCAzFlag() const
   {
     return flag & 0x0F; // Extract lower 4 bits
   }
@@ -506,6 +615,353 @@ struct ResoMicroTrackSelFlag {
 
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float px, float py) -> float { return RecoDecay::sqrtSumOfSquares(px, py); });
 } // namespace resomicrodaughter
+
+// Version 001 uses signed, lower-inclusive PID bins and keeps the DCAxy/DCAz
+// pT-dependent selection results independently from the quantised DCA values.
+namespace resomicrodaughter001
+{
+// Keep the original row number as a scalar for standalone pair comparisons.
+// The separate typed relation remains available to legacy version-0 users.
+DECLARE_SOA_COLUMN(TrackId, trackId, int); //! Original track row number for pair-level comparisons
+
+/// @brief Compact signed TPC/TOF n-sigma values into two four-bit fields.
+/// The upper bit of each field stores the sign. Magnitudes 1..6 represent
+/// lower-inclusive 0.25-sigma-wide bins [2.0, 2.25), ..., [3.25, 3.5), while
+/// magnitude 0 is |n-sigma| < 2 and magnitude 7 is |n-sigma| >= 3.5. Overflow
+/// decodes to signed infinity, while code 8 is reserved for invalid values and
+/// decodes to NaN. Missing TOF information is also carried independently by
+/// resodaughter::TrackFlags::kHasTOF.
+struct PidNSigma {
+  static constexpr float MinFineNSigma = 2.f;
+  static constexpr float Step = 0.25f;
+  static constexpr float MaxNSigma = 3.5f;
+  static constexpr uint8_t SignMask = 0x08;
+  static constexpr uint8_t MagnitudeMask = 0x07;
+  static constexpr uint8_t MaxRegularCode = 6;
+  static constexpr uint8_t AboveRangeCode = 7;
+  static constexpr uint8_t InvalidCode = SignMask;
+
+  uint8_t flag;
+
+  PidNSigma(float tpcNSigma, float tofNSigma, bool hasTOF)
+  {
+    const uint8_t tpcEncoded = encodeNSigma(tpcNSigma);
+    const uint8_t tofEncoded = hasTOF ? encodeNSigma(tofNSigma) : InvalidCode;
+    flag = (tpcEncoded << 4) | tofEncoded;
+  }
+
+  static uint8_t encodeNSigma(float nSigma)
+  {
+    if (!std::isfinite(nSigma)) {
+      return InvalidCode;
+    }
+    const float value = std::abs(nSigma);
+    if (value < MinFineNSigma) {
+      return 0;
+    }
+    uint8_t magnitude = AboveRangeCode;
+    if (value < MaxNSigma) {
+      const int encoded = 1 + static_cast<int>(std::floor((value - MinFineNSigma) / Step));
+      magnitude = static_cast<uint8_t>(std::clamp(encoded, 1, static_cast<int>(MaxRegularCode)));
+    }
+    const uint8_t sign = std::signbit(nSigma) ? SignMask : 0;
+    return static_cast<uint8_t>(sign | magnitude);
+  }
+
+  static float decodeNSigma(uint8_t encoded)
+  {
+    const uint8_t code = encoded & 0x0F;
+    if (code == InvalidCode) {
+      return NAN;
+    }
+    const uint8_t magnitude = code & MagnitudeMask;
+    if (magnitude == 0) {
+      return 0.f;
+    }
+    const float value = magnitude == AboveRangeCode
+                          ? std::numeric_limits<float>::infinity()
+                          : MinFineNSigma + static_cast<float>(magnitude - 1) * Step;
+    return (code & SignMask) != 0 ? -value : value;
+  }
+
+  static float getTPCNSigma(uint8_t encoded)
+  {
+    return decodeNSigma((encoded >> 4) & 0x0F);
+  }
+
+  static float getTOFNSigma(uint8_t encoded, bool hasTOF)
+  {
+    return hasTOF ? decodeNSigma(encoded & 0x0F) : NAN;
+  }
+
+  operator uint8_t() const { return flag; }
+};
+
+/// @brief Store two pT-dependent DCA pass bits and two three-bit DCA values.
+/// Bits 7 and 6 store the DCAxy and DCAz pass results, respectively. Bits 5..3
+/// and 2..0 store |DCAxy| and |DCAz| in lower-inclusive 0.025 cm bins from 0
+/// to 0.15 cm. Code 6 represents overflow and code 7 an invalid value.
+struct DCAEncoding {
+  static constexpr float MaxDCA = 0.15f;
+  static constexpr float Step = 0.025f;
+  static constexpr float InverseStep = 40.f;
+  static constexpr uint8_t MaxRegularCode = 5;
+  static constexpr uint8_t AboveRangeCode = 6;
+  static constexpr uint8_t InvalidCode = 7;
+  static constexpr uint8_t PassedPtDependentDCAxyMask = 0x80;
+  static constexpr uint8_t PassedPtDependentDCAzMask = 0x40;
+  static constexpr uint8_t DCAxyMask = 0x38;
+  static constexpr uint8_t DCAzMask = 0x07;
+  static constexpr uint8_t DCAxyShift = 3;
+
+  uint8_t flag = 0;
+
+  DCAEncoding() = default;
+  DCAEncoding(float dcaXY, float dcaZ, bool passedPtDependentDCAxy, bool passedPtDependentDCAz)
+    : flag(static_cast<uint8_t>((passedPtDependentDCAxy ? PassedPtDependentDCAxyMask : 0) |
+                                (passedPtDependentDCAz ? PassedPtDependentDCAzMask : 0) |
+                                (encodeDCA(dcaXY) << DCAxyShift) |
+                                encodeDCA(dcaZ)))
+  {
+  }
+
+  static uint8_t encodeDCA(float dca)
+  {
+    const float value = std::abs(dca);
+    if (!std::isfinite(value)) {
+      return InvalidCode;
+    }
+    if (value >= MaxDCA) {
+      return AboveRangeCode;
+    }
+    const int encoded = static_cast<int>(std::floor(value * InverseStep));
+    return static_cast<uint8_t>(std::clamp(encoded, 0, static_cast<int>(MaxRegularCode)));
+  }
+
+  static float decodeDCA(uint8_t encoded)
+  {
+    const uint8_t code = encoded & DCAzMask;
+    if (code == InvalidCode) {
+      return NAN;
+    }
+    return code == AboveRangeCode ? MaxDCA : static_cast<float>(code) * Step;
+  }
+
+  static float decodeDCAxy(uint8_t encoded)
+  {
+    return decodeDCA((encoded & DCAxyMask) >> DCAxyShift);
+  }
+
+  static float decodeDCAz(uint8_t encoded)
+  {
+    return decodeDCA(encoded & DCAzMask);
+  }
+
+  static bool testPtDependentDCAxy(uint8_t encoded)
+  {
+    return (encoded & PassedPtDependentDCAxyMask) != 0;
+  }
+
+  static bool testPtDependentDCAz(uint8_t encoded)
+  {
+    return (encoded & PassedPtDependentDCAzMask) != 0;
+  }
+
+  operator uint8_t() const { return flag; }
+};
+
+DECLARE_SOA_COLUMN(TrackSelectionFlags, trackSelectionFlags, uint8_t); //! Packed DCA selection and absolute DCAxy/DCAz values
+DECLARE_SOA_DYNAMIC_COLUMN(TpcNSigmaPi, tpcNSigmaPi,
+                           [](uint8_t pidNSigmaPiFlag) { return PidNSigma::getTPCNSigma(pidNSigmaPiFlag); });
+DECLARE_SOA_DYNAMIC_COLUMN(TpcNSigmaKa, tpcNSigmaKa,
+                           [](uint8_t pidNSigmaKaFlag) { return PidNSigma::getTPCNSigma(pidNSigmaKaFlag); });
+DECLARE_SOA_DYNAMIC_COLUMN(TpcNSigmaPr, tpcNSigmaPr,
+                           [](uint8_t pidNSigmaPrFlag) { return PidNSigma::getTPCNSigma(pidNSigmaPrFlag); });
+DECLARE_SOA_DYNAMIC_COLUMN(TofNSigmaPi, tofNSigmaPi,
+                           [](uint8_t pidNSigmaPiFlag, uint8_t trackFlags) -> float {
+                             const bool hasTOF = resodaughter::ResoTrackFlags::checkFlag(trackFlags, resodaughter::ResoTrackFlags::kHasTOF);
+                             return PidNSigma::getTOFNSigma(pidNSigmaPiFlag, hasTOF);
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(TofNSigmaKa, tofNSigmaKa,
+                           [](uint8_t pidNSigmaKaFlag, uint8_t trackFlags) -> float {
+                             const bool hasTOF = resodaughter::ResoTrackFlags::checkFlag(trackFlags, resodaughter::ResoTrackFlags::kHasTOF);
+                             return PidNSigma::getTOFNSigma(pidNSigmaKaFlag, hasTOF);
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(TofNSigmaPr, tofNSigmaPr,
+                           [](uint8_t pidNSigmaPrFlag, uint8_t trackFlags) -> float {
+                             const bool hasTOF = resodaughter::ResoTrackFlags::checkFlag(trackFlags, resodaughter::ResoTrackFlags::kHasTOF);
+                             return PidNSigma::getTOFNSigma(pidNSigmaPrFlag, hasTOF);
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(DcaXY, dcaXY,
+                           [](uint8_t trackSelectionFlags) { return DCAEncoding::decodeDCAxy(trackSelectionFlags); });
+DECLARE_SOA_DYNAMIC_COLUMN(DcaZ, dcaZ,
+                           [](uint8_t trackSelectionFlags) { return DCAEncoding::decodeDCAz(trackSelectionFlags); });
+DECLARE_SOA_DYNAMIC_COLUMN(PassedPtDependentDCAxy, passedPtDependentDCAxy,
+                           [](uint8_t trackSelectionFlags) { return DCAEncoding::testPtDependentDCAxy(trackSelectionFlags); });
+DECLARE_SOA_DYNAMIC_COLUMN(PassedPtDependentDCAz, passedPtDependentDCAz,
+                           [](uint8_t trackSelectionFlags) { return DCAEncoding::testPtDependentDCAz(trackSelectionFlags); });
+} // namespace resomicrodaughter001
+
+// Ultra-micro track representation.  The momentum components are quantised
+// to 1 MeV/c and only one (pion/kaon/proton) PID flag is retained.
+namespace resoultramicrodaughter
+{
+/// @brief Compact absolute TPC/TOF n-sigma values for one configured species.
+/// Code 0 represents |n-sigma| < 1.5. Codes 1..14 represent lower-inclusive
+/// 0.25-sigma-wide bins [1.5, 1.75), ..., [4.75, 5.0) and decode to their
+/// lower edges. Code 15 represents |n-sigma| >= 5. Missing TOF information
+/// is carried independently by resodaughter::TrackFlags::kHasTOF.
+struct PidNSigma {
+  static constexpr float MinFineNSigma = 1.5f;
+  static constexpr float Step = 0.25f;
+  static constexpr float MaxNSigma = 5.f;
+  static constexpr uint8_t MaxRegularCode = 14;
+  static constexpr uint8_t AboveRangeCode = 15;
+
+  uint8_t flag;
+
+  PidNSigma(float tpcNSigma, float tofNSigma, bool hasTOF)
+  {
+    const uint8_t tpcEncoded = encodeNSigma(tpcNSigma);
+    const uint8_t tofEncoded = hasTOF && std::isfinite(tofNSigma) ? encodeNSigma(tofNSigma) : AboveRangeCode;
+    flag = (tpcEncoded << 4) | tofEncoded;
+  }
+
+  static uint8_t encodeNSigma(float nSigma)
+  {
+    const float value = std::abs(nSigma);
+    if (!std::isfinite(value)) {
+      return AboveRangeCode;
+    }
+    if (value < MinFineNSigma) {
+      return 0;
+    }
+    if (value >= MaxNSigma) {
+      return AboveRangeCode;
+    }
+    const int encoded = 1 + static_cast<int>(std::floor((value - MinFineNSigma) / Step));
+    return static_cast<uint8_t>(std::clamp(encoded, 1, static_cast<int>(MaxRegularCode)));
+  }
+
+  static float decodeNSigma(uint8_t encoded)
+  {
+    const uint8_t code = encoded & 0x0F;
+    if (code == 0) {
+      return 0.f;
+    }
+    return code == AboveRangeCode ? MaxNSigma : MinFineNSigma + static_cast<float>(code - 1) * Step;
+  }
+
+  static float getTPCNSigma(uint8_t encoded)
+  {
+    return decodeNSigma((encoded >> 4) & 0x0F);
+  }
+
+  static float getTOFNSigma(uint8_t encoded, bool hasTOF)
+  {
+    return hasTOF ? decodeNSigma(encoded & 0x0F) : NAN;
+  }
+
+  operator uint8_t() const { return flag; }
+};
+
+/// @brief Compact absolute DCAxy/DCAz values into two four-bit fields.
+/// Codes 0..14 represent lower-inclusive 0.01 cm-wide bins [0.00, 0.01),
+/// ..., [0.14, 0.15) cm and decode to their lower edges. Code 15 directly
+/// represents |DCA| >= 0.15 cm and decodes to the 0.15 cm marker; no additional
+/// tight-DCA or overflow flag is stored.
+struct DCAEncoding {
+  static constexpr float MaxDCA = 0.15f;
+  static constexpr float Step = 0.01f;
+  static constexpr uint8_t MaxRegularCode = 14;
+  static constexpr uint8_t AboveRangeCode = 15;
+
+  uint8_t flag = 0;
+
+  DCAEncoding() = default;
+  DCAEncoding(float dcaXY, float dcaZ)
+    : flag(static_cast<uint8_t>((encodeDCA(dcaXY) << 4) | encodeDCA(dcaZ)))
+  {
+  }
+
+  static bool isValid(float dca)
+  {
+    return std::isfinite(dca);
+  }
+
+  static uint8_t encodeDCA(float dca)
+  {
+    const float value = std::abs(dca);
+    if (!std::isfinite(value)) {
+      return AboveRangeCode;
+    }
+    if (value >= MaxDCA) {
+      return AboveRangeCode;
+    }
+    const int encoded = static_cast<int>(std::floor(value / Step));
+    return static_cast<uint8_t>(std::clamp(encoded, 0, static_cast<int>(MaxRegularCode)));
+  }
+
+  static float decodeDCA(uint8_t encoded)
+  {
+    const uint8_t code = encoded & 0x0F;
+    return code == AboveRangeCode ? MaxDCA : static_cast<float>(code) * Step;
+  }
+
+  static float decodeDCAxy(uint8_t encoded)
+  {
+    return decodeDCA((encoded >> 4) & 0x0F);
+  }
+
+  static float decodeDCAz(uint8_t encoded)
+  {
+    return decodeDCA(encoded & 0x0F);
+  }
+
+  operator uint8_t() const { return flag; }
+};
+
+DECLARE_SOA_COLUMN(PidNSigmaFlag, pidNSigmaFlag, uint8_t);             //! TPC/TOF PID flag for the configured species
+DECLARE_SOA_COLUMN(TrackSelectionFlags, trackSelectionFlags, uint8_t); //! Packed absolute DCAxy/DCAz values
+DECLARE_SOA_COLUMN(Px1000, px1000, int16_t);                           //! p_x x 1000 (GeV/c)
+DECLARE_SOA_COLUMN(Py1000, py1000, int16_t);                           //! p_y x 1000 (GeV/c)
+DECLARE_SOA_COLUMN(Pz1000, pz1000, int16_t);                           //! p_z x 1000 (GeV/c)
+
+DECLARE_SOA_DYNAMIC_COLUMN(Px, px,
+                           [](int16_t px1000) { return static_cast<float>(px1000) / 1000.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(Py, py,
+                           [](int16_t py1000) { return static_cast<float>(py1000) / 1000.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz,
+                           [](int16_t pz1000) { return static_cast<float>(pz1000) / 1000.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,
+                           [](int16_t px1000, int16_t py1000) {
+                             const float px = static_cast<float>(px1000) / 1000.f;
+                             const float py = static_cast<float>(py1000) / 1000.f;
+                             return RecoDecay::sqrtSumOfSquares(px, py);
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta,
+                           [](int16_t px1000, int16_t py1000, int16_t pz1000) {
+                             return RecoDecay::eta(std::array{static_cast<float>(px1000) / 1000.f,
+                                                              static_cast<float>(py1000) / 1000.f,
+                                                              static_cast<float>(pz1000) / 1000.f});
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi,
+                           [](int16_t px1000, int16_t py1000) {
+                             return RecoDecay::phi(static_cast<float>(px1000) / 1000.f,
+                                                   static_cast<float>(py1000) / 1000.f);
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(TpcNSigma, tpcNSigma,
+                           [](uint8_t pidNSigmaFlag) { return PidNSigma::getTPCNSigma(pidNSigmaFlag); });
+DECLARE_SOA_DYNAMIC_COLUMN(TofNSigma, tofNSigma,
+                           [](uint8_t pidNSigmaFlag, uint8_t trackFlags) -> float {
+                             const bool hasTOF = resodaughter::ResoTrackFlags::checkFlag(trackFlags, resodaughter::ResoTrackFlags::kHasTOF);
+                             return PidNSigma::getTOFNSigma(pidNSigmaFlag, hasTOF);
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(DcaXY, dcaXY,
+                           [](uint8_t trackSelectionFlags) { return DCAEncoding::decodeDCAxy(trackSelectionFlags); });
+DECLARE_SOA_DYNAMIC_COLUMN(DcaZ, dcaZ,
+                           [](uint8_t trackSelectionFlags) { return DCAEncoding::decodeDCAz(trackSelectionFlags); });
+} // namespace resoultramicrodaughter
 
 DECLARE_SOA_TABLE(ResoTracks, "AOD", "RESOTRACK",
                   o2::soa::Index<>,
@@ -578,9 +1034,82 @@ DECLARE_SOA_TABLE(ResoMicroTracks, "AOD", "RESOMICROTRACK",
                   resodaughter::Sign<resodaughter::TrackFlags>);
 using ResoMicroTrack = ResoMicroTracks::iterator;
 
+// Keep ResoMicroTracks as the version-0 API for existing producers and
+// consumers. Version-1 users must request ResoMicroTracks_001 explicitly.
+DECLARE_SOA_TABLE_VERSIONED(ResoMicroTracks_001, "AOD", "RESOMICROTRACK", 1,
+                            o2::soa::Index<>,
+                            resodaughter::ResoCollisionId,
+                            resomicrodaughter001::TrackId,
+                            resodaughter::Px,
+                            resodaughter::Py,
+                            resodaughter::Pz,
+                            resomicrodaughter::PidNSigmaPiFlag,
+                            resomicrodaughter::PidNSigmaKaFlag,
+                            resomicrodaughter::PidNSigmaPrFlag,
+                            resomicrodaughter001::TrackSelectionFlags,
+                            resodaughter::TrackFlags,
+                            // Dynamic columns
+                            resomicrodaughter::Pt<resodaughter::Px, resodaughter::Py>,
+                            resodaughter::Eta<resodaughter::Px, resodaughter::Py, resodaughter::Pz>,
+                            resodaughter::Phi<resodaughter::Px, resodaughter::Py>,
+                            resomicrodaughter001::TpcNSigmaPi<resomicrodaughter::PidNSigmaPiFlag>,
+                            resomicrodaughter001::TpcNSigmaKa<resomicrodaughter::PidNSigmaKaFlag>,
+                            resomicrodaughter001::TpcNSigmaPr<resomicrodaughter::PidNSigmaPrFlag>,
+                            resomicrodaughter001::TofNSigmaPi<resomicrodaughter::PidNSigmaPiFlag, resodaughter::TrackFlags>,
+                            resomicrodaughter001::TofNSigmaKa<resomicrodaughter::PidNSigmaKaFlag, resodaughter::TrackFlags>,
+                            resomicrodaughter001::TofNSigmaPr<resomicrodaughter::PidNSigmaPrFlag, resodaughter::TrackFlags>,
+                            resomicrodaughter001::DcaXY<resomicrodaughter001::TrackSelectionFlags>,
+                            resomicrodaughter001::DcaZ<resomicrodaughter001::TrackSelectionFlags>,
+                            resomicrodaughter001::PassedPtDependentDCAxy<resomicrodaughter001::TrackSelectionFlags>,
+                            resomicrodaughter001::PassedPtDependentDCAz<resomicrodaughter001::TrackSelectionFlags>,
+                            resodaughter::PassedITSRefit<resodaughter::TrackFlags>,
+                            resodaughter::PassedTPCRefit<resodaughter::TrackFlags>,
+                            resodaughter::IsGlobalTrackWoDCA<resodaughter::TrackFlags>,
+                            resodaughter::IsGlobalTrack<resodaughter::TrackFlags>,
+                            resodaughter::IsPrimaryTrack<resodaughter::TrackFlags>,
+                            resodaughter::IsPVContributor<resodaughter::TrackFlags>,
+                            resodaughter::HasTOF<resodaughter::TrackFlags>,
+                            resodaughter::Sign<resodaughter::TrackFlags>);
+// Positional soft-link side table retained for ResoMicroTracks version 000.
+// Version 001 stores the same row number as a scalar and should be consumed
+// without joining this side table, since both columns expose trackId().
 DECLARE_SOA_TABLE(ResoMicroTrackTracks, "AOD", "RESOMICROTRACKTRACK",
                   resodaughter::TrackId);
 using ResoMicroTrackTrack = ResoMicroTrackTracks::iterator;
+
+DECLARE_SOA_TABLE(ResoUltraMicroTracks, "AOD", "RESOULTRAMTRK",
+                  o2::soa::Index<>,
+                  resodaughter::ResoCollisionId,
+                  resoultramicrodaughter::Px1000,
+                  resoultramicrodaughter::Py1000,
+                  resoultramicrodaughter::Pz1000,
+                  resoultramicrodaughter::PidNSigmaFlag,
+                  resoultramicrodaughter::TrackSelectionFlags,
+                  resodaughter::TrackFlags,
+                  // Dynamic columns
+                  resoultramicrodaughter::Px<resoultramicrodaughter::Px1000>,
+                  resoultramicrodaughter::Py<resoultramicrodaughter::Py1000>,
+                  resoultramicrodaughter::Pz<resoultramicrodaughter::Pz1000>,
+                  resoultramicrodaughter::Pt<resoultramicrodaughter::Px1000, resoultramicrodaughter::Py1000>,
+                  resoultramicrodaughter::Eta<resoultramicrodaughter::Px1000, resoultramicrodaughter::Py1000, resoultramicrodaughter::Pz1000>,
+                  resoultramicrodaughter::Phi<resoultramicrodaughter::Px1000, resoultramicrodaughter::Py1000>,
+                  resoultramicrodaughter::TpcNSigma<resoultramicrodaughter::PidNSigmaFlag>,
+                  resoultramicrodaughter::TofNSigma<resoultramicrodaughter::PidNSigmaFlag, resodaughter::TrackFlags>,
+                  resoultramicrodaughter::DcaXY<resoultramicrodaughter::TrackSelectionFlags>,
+                  resoultramicrodaughter::DcaZ<resoultramicrodaughter::TrackSelectionFlags>,
+                  resodaughter::PassedITSRefit<resodaughter::TrackFlags>,
+                  resodaughter::PassedTPCRefit<resodaughter::TrackFlags>,
+                  resodaughter::IsGlobalTrackWoDCA<resodaughter::TrackFlags>,
+                  resodaughter::IsGlobalTrack<resodaughter::TrackFlags>,
+                  resodaughter::IsPrimaryTrack<resodaughter::TrackFlags>,
+                  resodaughter::IsPVContributor<resodaughter::TrackFlags>,
+                  resodaughter::HasTOF<resodaughter::TrackFlags>,
+                  resodaughter::Sign<resodaughter::TrackFlags>);
+using ResoUltraMicroTrack = ResoUltraMicroTracks::iterator;
+
+DECLARE_SOA_TABLE(ResoUltraMicroTrackTracks, "AOD", "RESOULTRAMTRKID",
+                  resodaughter::TrackId);
+using ResoUltraMicroTrackTrack = ResoUltraMicroTrackTracks::iterator;
 
 // For DF mixing study
 DECLARE_SOA_TABLE(ResoTrackDFs, "AOD", "RESOTRACKDF",
@@ -832,6 +1361,17 @@ DECLARE_SOA_TABLE(ResoMCTracks, "AOD", "RESOMCTRACK",
                   resodaughter::ProducedByGenerator);
 using ResoMCTrack = ResoMCTracks::iterator;
 
+// Positional MC extension for ResoMicroTracks_001. One row must be written for
+// every ResoMicroTracks_001 row, including tracks without an MC particle label.
+DECLARE_SOA_TABLE_VERSIONED(ResoMCMicroTracks_001, "AOD", "RESOMCMICROTRACK", 1,
+                            mcparticle::PdgCode,
+                            resodaughter::MotherId,
+                            resodaughter::MotherPDG,
+                            resodaughter::SiblingIds,
+                            resodaughter::IsPhysicalPrimary,
+                            resodaughter::ProducedByGenerator);
+using ResoMCMicroTrack = ResoMCMicroTracks_001::iterator;
+
 DECLARE_SOA_TABLE(ResoMCV0s, "AOD", "RESOMCV0",
                   mcparticle::PdgCode,
                   resodaughter::MotherId,
@@ -881,6 +1421,34 @@ DECLARE_SOA_TABLE(ResoMCParents, "AOD", "RESOMCPARENT",
                   resodaughter::Phi<resodaughter::Px, resodaughter::Py>);
 using ResoMCParent = ResoMCParents::iterator;
 
+// Module-specific parent rows keep the source MC-particle row number as a
+// scalar. This avoids a hard relation to McParticles in standalone derived
+// AO2D while preserving the legacy ResoMCParents schema and typed API.
+namespace resomcparent001
+{
+DECLARE_SOA_COLUMN(OriginalMcParticleId, originalMcParticleId, int); //! Original aod::McParticle row number
+} // namespace resomcparent001
+
+DECLARE_SOA_TABLE_VERSIONED(ResoMCParents_001, "AOD", "RESOMCPARENT", 1,
+                            o2::soa::Index<>,
+                            resodaughter::ResoCollisionId,
+                            resomcparent001::OriginalMcParticleId,
+                            mcparticle::PdgCode,
+                            resodaughter::DaughterPDG1,
+                            resodaughter::DaughterPDG2,
+                            resodaughter::IsPhysicalPrimary,
+                            resodaughter::ProducedByGenerator,
+                            resodaughter::Pt,
+                            resodaughter::Px,
+                            resodaughter::Py,
+                            resodaughter::Pz,
+                            mcparticle::Y,
+                            mcparticle::E,
+                            mcparticle::StatusCode,
+                            resodaughter::Eta<resodaughter::Px, resodaughter::Py, resodaughter::Pz>,
+                            resodaughter::Phi<resodaughter::Px, resodaughter::Py>);
+using ResoMCParent_001 = ResoMCParents_001::iterator;
+
 using Reso2TracksExt = soa::Join<aod::FullTracks, aod::TracksDCA>; // without Extra
 using Reso2TracksMC = soa::Join<aod::FullTracks, McTrackLabels>;
 using Reso2TracksPID = soa::Join<aod::FullTracks, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
@@ -899,4 +1467,11 @@ using ResoCascadesCandidatesMC = soa::Join<ResoCascadesCandidates, aod::McCascLa
 using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
 
 } // namespace o2::aod
+
+namespace o2::soa
+{
+// Preserve the legacy v000 default target while allowing an explicitly typed
+// resoCollision_as<T>() binding to the exact v001 parent in modular analyses.
+DECLARE_EQUIVALENT_FOR_INDEX(aod::ResoCollisions_000, aod::ResoCollisions_001);
+} // namespace o2::soa
 #endif // PWGLF_DATAMODEL_LFRESONANCETABLES_H_

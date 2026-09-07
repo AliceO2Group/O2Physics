@@ -13,17 +13,15 @@
 
 #include "PWGDQ/Core/VarManager.h"
 
-#include <TArrayF.h>
-#include <TMathBase.h>
 #include <TNamed.h>
 
 #include <Rtypes.h>
-#include <RtypesCore.h>
 
+#include <algorithm>
+#include <cstddef>
+#include <iterator>
 #include <vector>
 using namespace std;
-
-ClassImp(MixingHandler);
 
 //_________________________________________________________________________
 MixingHandler::MixingHandler() : TNamed(),
@@ -60,7 +58,7 @@ MixingHandler::~MixingHandler()
 }
 
 //_________________________________________________________________________
-void MixingHandler::AddMixingVariable(int var, std::vector<float> binLims)
+void MixingHandler::AddMixingVariable(int var, const std::vector<float>& binLims)
 {
   fVariables[var] = fVariableLimits.size();
   fVariableLimits.push_back(binLims);

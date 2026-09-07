@@ -34,6 +34,11 @@ o2physics_add_dpl_workflow(femto-cascade-qa
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(femto-mc-particle-qa
+          SOURCES femtoMcParticleQa.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(femto-pair-track-track
 	  SOURCES femtoPairTrackTrack.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
@@ -41,6 +46,21 @@ o2physics_add_dpl_workflow(femto-pair-track-track
 
 o2physics_add_dpl_workflow(femto-pair-track-v0
 	  SOURCES femtoPairTrackV0.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femto-pair-track-charm-hadron
+	  SOURCES femtoPairTrackCharmHadron.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femto-pair-d0-d0
+	  SOURCES femtoPairD0D0.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femto-charm-hadron-qa
+	  SOURCES femtoCharmHadronQa.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
@@ -66,6 +86,11 @@ o2physics_add_dpl_workflow(femto-pair-track-kink
 
 o2physics_add_dpl_workflow(femto-pair-v0-v0
 	  SOURCES femtoPairV0V0.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femto-pair-mc-particle-mc-particle
+          SOURCES femtoPairMcParticleMcParticle.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 

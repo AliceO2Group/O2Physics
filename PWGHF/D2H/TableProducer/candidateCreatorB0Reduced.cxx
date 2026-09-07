@@ -225,7 +225,8 @@ struct HfCandidateCreatorB0Reduced {
                             pVecSoftPion[0], pVecSoftPion[1], pVecSoftPion[2],
                             pVecBachPion[0], pVecBachPion[1], pVecBachPion[2],
                             dcaD.getY(), dcaSoftPion.getY(), dcaBachPion.getY(),
-                            std::sqrt(dcaD.getSigmaY2()), std::sqrt(dcaSoftPion.getSigmaY2()), std::sqrt(dcaBachPion.getSigmaY2()));
+                            std::sqrt(dcaD.getSigmaY2()), std::sqrt(dcaSoftPion.getSigmaY2()), std::sqrt(dcaBachPion.getSigmaY2()),
+                            candD.xSecondaryVertex(), candD.ySecondaryVertex(), candD.zSecondaryVertex());
 
         rowCandidateProngsDStar(candD.globalIndex(), trackBachPion.globalIndex(), trackSoftPion.globalIndex());
 
@@ -327,7 +328,8 @@ struct HfCandidateCreatorB0Reduced {
                          pVecD[0], pVecD[1], pVecD[2],
                          pVecPion[0], pVecPion[1], pVecPion[2],
                          dcaD.getY(), dcaPion.getY(),
-                         std::sqrt(dcaD.getSigmaY2()), std::sqrt(dcaPion.getSigmaY2()));
+                         std::sqrt(dcaD.getSigmaY2()), std::sqrt(dcaPion.getSigmaY2()),
+                         candD.xSecondaryVertex(), candD.ySecondaryVertex(), candD.zSecondaryVertex());
 
         rowCandidateProngs(candD.globalIndex(), trackPion.globalIndex());
 

@@ -161,8 +161,8 @@ struct skimmerPrimaryElectronQC {
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
   o2::analysis::MlResponseO2Track<float> mlResponseSingleTrack;
 
-  int mRunNumber;
-  float d_bz;
+  int mRunNumber{0};
+  float d_bz{0};
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
@@ -288,9 +288,9 @@ struct skimmerPrimaryElectronQC {
         cutsMlArr[i][0] = 0.0;
         cutsMlArr[i][1] = cutsMl.value[i];
       }
-      o2::framework::LabeledArray<double> cutsMl = {cutsMlArr[0], nBinsMl, nClassesMl, labelsBins, labelsClasses};
+      o2::framework::LabeledArray<double> cutsMltmp = {cutsMlArr[0], nBinsMl, nClassesMl, labelsBins, labelsClasses};
 
-      mlResponseSingleTrack.configure(binsMl.value, cutsMl, cutDirMl, nClassesMl);
+      mlResponseSingleTrack.configure(binsMl.value, cutsMltmp, cutDirMl, nClassesMl);
       if (loadModelsFromCCDB) {
         ccdbApi.init(ccdburl);
         mlResponseSingleTrack.setModelPathsCCDB(onnxFileNames.value, ccdbApi, onnxPathsCCDB.value, bc.timestamp());
@@ -724,7 +724,7 @@ struct skimmerPrimaryElectronQC {
         continue;
       }
 
-      if (collision.swtaliastmp_raw() == 0) {
+      if (collision.triggerMask_raw() == 0) {
         continue;
       }
 

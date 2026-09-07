@@ -15,6 +15,8 @@
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN
 
 #include "PWGHF/ALICE3/Core/DecayChannelsLegacy.h"
+#include "PWGHF/ALICE3/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/ALICE3/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/AliasTables.h"

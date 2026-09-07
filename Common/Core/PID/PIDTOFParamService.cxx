@@ -20,6 +20,7 @@
 
 #include "Common/Core/CollisionTypeHelper.h"
 #include "Common/Core/MetadataHelper.h"
+#include "Common/Core/PID/PIDTOF.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
@@ -30,7 +31,6 @@
 #include <Framework/ServiceHandle.h>
 #include <Framework/ServiceSpec.h>
 #include <Framework/TypeIdHelpers.h>
-#include <PID/PIDTOF.h>
 
 #include <TGraph.h>
 
@@ -80,7 +80,7 @@ void o2::pid::tof::TOFResponseImpl::initSetup(o2::ccdb::BasicCCDBManager* ccdb,
     LOG(fatal) << "CCDB manager is not set, cannot initialize TOFResponseImpl";
   }
   inheritFromBaseTask(initContext, task); // Gets the configuration parameters from the base task (tof-signal)
-  mCcdb = ccdb;                     // Set the CCDB manager
+  mCcdb = ccdb;                           // Set the CCDB manager
   mCcdb->setURL(mUrl);
   mCcdb->setTimestamp(mTimestamp);
   mCcdb->setCaching(true);
@@ -180,9 +180,10 @@ void o2::pid::tof::TOFResponseImpl::initSetup(o2::ccdb::BasicCCDBManager* ccdb,
       LOG(info) << "Initializing the time shift for " << (isPositive ? "positive" : "negative")
                 << " from ccdb '" << nameShift << "' and timestamp " << mTimestamp
                 << " and pass '" << mReconstructionPass << "'";
+      bool fatalWhenNull = mCcdb->getFatalWhenNull();
       mCcdb->setFatalWhenNull(false);
       parameters.setTimeShiftParameters(mCcdb->getSpecific<TGraph>(nameShift, mTimestamp, metadata), isPositive);
-      mCcdb->setFatalWhenNull(true);
+      mCcdb->setFatalWhenNull(fatalWhenNull);
     }
     LOG(info) << " test getTimeShift at 0 " << (isPositive ? "pos" : "neg") << ": "
               << parameters.getTimeShift(0, isPositive);
@@ -269,9 +270,10 @@ void o2::pid::tof::TOFResponseImpl::processSetup(const int runNumber, const int6
     LOG(info) << "Updating the time shift for " << (isPositive ? "positive" : "negative")
               << " from ccdb '" << nameShift << "' and timestamp " << mTimestamp
               << " and pass '" << mReconstructionPass << "'";
+    bool fatalWhenNull = mCcdb->getFatalWhenNull();
     mCcdb->setFatalWhenNull(false);
     parameters.setTimeShiftParameters(mCcdb->getSpecific<TGraph>(nameShift, mTimestamp, metadata), isPositive);
-    mCcdb->setFatalWhenNull(true);
+    mCcdb->setFatalWhenNull(fatalWhenNull);
     LOG(info) << " test getTimeShift at 0 " << (isPositive ? "pos" : "neg") << ": "
               << parameters.getTimeShift(0, isPositive);
   };

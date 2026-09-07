@@ -17,6 +17,8 @@
 
 #include <Framework/Logger.h>
 
+#include <sys/types.h>
+
 #include <Rtypes.h>
 
 #include <cstdint>

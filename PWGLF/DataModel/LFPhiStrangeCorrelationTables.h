@@ -140,6 +140,39 @@ DECLARE_SOA_TABLE(K0sReducedCandidatesMcReco, "AOD", "K0SCANDMCRECO",
                   lf_selection_k0s_reduced::Phi,
                   lf_selection_k0s_reduced::InMassRegion<lf_selection_k0s_reduced::M>);
 
+namespace lf_selection_xi_reduced
+{
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);
+
+DECLARE_SOA_COLUMN(M, m, float);
+DECLARE_SOA_COLUMN(Pt, pt, float);
+DECLARE_SOA_COLUMN(Y, y, float);
+DECLARE_SOA_COLUMN(Phi, phi, float);
+
+DECLARE_SOA_DYNAMIC_COLUMN(InMassRegion, inMassRegion,
+                           [](float m, float minM, float maxM) -> bool {
+                             return (m >= minM && m <= maxM);
+                           });
+} // namespace lf_selection_xi_reduced
+
+DECLARE_SOA_TABLE(XiReducedCandidatesData, "AOD", "XICANDDATA",
+                  soa::Index<>,
+                  lf_selection_xi_reduced::CollisionId,
+                  lf_selection_xi_reduced::M,
+                  lf_selection_xi_reduced::Pt,
+                  lf_selection_xi_reduced::Y,
+                  lf_selection_xi_reduced::Phi,
+                  lf_selection_xi_reduced::InMassRegion<lf_selection_xi_reduced::M>);
+
+DECLARE_SOA_TABLE(XiReducedCandidatesMcReco, "AOD", "XICANDMCRECO",
+                  soa::Index<>,
+                  lf_selection_xi_reduced::CollisionId,
+                  lf_selection_xi_reduced::M,
+                  lf_selection_xi_reduced::Pt,
+                  lf_selection_xi_reduced::Y,
+                  lf_selection_xi_reduced::Phi,
+                  lf_selection_xi_reduced::InMassRegion<lf_selection_xi_reduced::M>);
+
 namespace lf_selection_pion_track
 {
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);
