@@ -6610,11 +6610,11 @@ void VarManager::FillSingleDileptonCharmHadron(Cand const& candidate, H hfHelper
     values[kBdtCharmHadron] = static_cast<float>(bdtScoreCharmHad);
   }
   if constexpr (partType == kDplusToPiKPi) {
-	values[kMassCharmHadron] = hfHelper.invMassDplusToPiKPi(candidate);
-	values[kPtCharmHadron] = candidate.pt();
-	values[kPhiCharmHadron] = candidate.phi();
-	values[kRapCharmHadron] = hfHelper.yDplus(candidate);
-	values[kBdtCharmHadron] = static_cast<float>(bdtScoreCharmHad);
+    values[kMassCharmHadron] = hfHelper.invMassDplusToPiKPi(candidate);
+    values[kPtCharmHadron] = candidate.pt();
+    values[kPhiCharmHadron] = candidate.phi();
+    values[kRapCharmHadron] = hfHelper.yDplus(candidate);
+    values[kBdtCharmHadron] = static_cast<float>(bdtScoreCharmHad);
   }
 }
 

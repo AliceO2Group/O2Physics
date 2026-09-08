@@ -311,7 +311,7 @@ struct tableMakerJpsiHf {
           }
         }
 
-        std::array<float, 3> scores_dplus = {999., -999., -999.}; //Dplus
+        std::array<float, 3> scores_dplus = {999., -999., -999.}; // Dplus
         if constexpr (withBdt && TDmeson == DmesonType::Dplus) {
           if (dmeson.mlProbDplusToPiKPi().size() == 3) {
             for (auto iScore{0u}; iScore < dmeson.mlProbDplusToPiKPi().size(); ++iScore) {
