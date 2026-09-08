@@ -68,8 +68,15 @@ constexpr int McBitPR = 2;
 constexpr int McBitEL = 3;
 constexpr int McBitDE = 4;
 
-#define BITSET(mask, ithBit) ((mask) |= (1 << (ithBit)))  // avoid name bitset as std::bitset is already there
-#define BITCHECK(mask, ithBit) ((mask) & (1 << (ithBit))) // bit check will return int value, not bool, use BITCHECK != 0 in Analysi
+constexpr void BITSET(int& mask, int ithBit)
+{
+  mask |= (1 << ithBit);
+}
+
+constexpr bool BITCHECK(int mask, int ithBit)
+{
+  return (mask & (1 << ithBit)) != 0;
+}
 
 enum PidEnum {
   kCh = 0,
@@ -1014,28 +1021,20 @@ struct NchCumulantsId {
   {
     switch (pidMode) {
       case kPi:
-        if (std::fabs(track.tpcNSigmaPi()) < nSigmaTPC &&
-            std::fabs(track.tofNSigmaPi()) < nSigmaTOF) {
-          return true;
-        }
-        break;
+        return std::fabs(track.tpcNSigmaPi()) < nSigmaTPC &&
+               std::fabs(track.tofNSigmaPi()) < nSigmaTOF;
+
       case kKa:
-        if (std::fabs(track.tpcNSigmaKa()) < nSigmaTPC &&
-            std::fabs(track.tofNSigmaKa()) < nSigmaTOF) {
-          return true;
-        }
-        break;
+        return std::fabs(track.tpcNSigmaKa()) < nSigmaTPC &&
+               std::fabs(track.tofNSigmaKa()) < nSigmaTOF;
+
       case kPr:
-        if (std::fabs(track.tpcNSigmaPr()) < nSigmaTPC &&
-            std::fabs(track.tofNSigmaPr()) < nSigmaTOF) {
-          return true;
-        }
-        break;
+        return std::fabs(track.tpcNSigmaPr()) < nSigmaTPC &&
+               std::fabs(track.tofNSigmaPr()) < nSigmaTOF;
+
       default:
         return false;
-        break;
     }
-    return false;
   }
 
   template <int pidMode, typename T>
@@ -1043,25 +1042,23 @@ struct NchCumulantsId {
   {
     switch (pidMode) {
       case kPi:
-        if (std::pow(track.tpcNSigmaPi() / nSigmaTPC, 2) + std::pow(track.tofNSigmaPi() / nSigmaTOF, 2) < 1.0) {
-          return true;
-        }
-        break;
+        return std::pow(track.tpcNSigmaPi() / nSigmaTPC, 2) +
+                 std::pow(track.tofNSigmaPi() / nSigmaTOF, 2) <
+               1.0;
+
       case kKa:
-        if (std::pow(track.tpcNSigmaKa() / nSigmaTPC, 2) + std::pow(track.tofNSigmaKa() / nSigmaTOF, 2) < 1.0) {
-          return true;
-        }
-        break;
+        return std::pow(track.tpcNSigmaKa() / nSigmaTPC, 2) +
+                 std::pow(track.tofNSigmaKa() / nSigmaTOF, 2) <
+               1.0;
+
       case kPr:
-        if (std::pow(track.tpcNSigmaPr() / nSigmaTPC, 2) + std::pow(track.tofNSigmaPr() / nSigmaTOF, 2) < 1.0) {
-          return true;
-        }
-        break;
+        return std::pow(track.tpcNSigmaPr() / nSigmaTPC, 2) +
+                 std::pow(track.tofNSigmaPr() / nSigmaTOF, 2) <
+               1.0;
+
       default:
         return false;
-        break;
     }
-    return false;
   }
 
   template <int pidMode, typename T>
@@ -1202,13 +1199,10 @@ struct NchCumulantsId {
   template <typename T>
   bool selTrackForId(const T& track)
   {
-    if (cfgIdElRejLowNSigma < track.tpcNSigmaEl() && track.tpcNSigmaEl() < cfgIdElRejHighNSigma &&
-        std::fabs(track.tpcNSigmaPi()) > cfgIdPiRejNSigma &&
-        std::fabs(track.tpcNSigmaKa()) > cfgIdKaRejNSigma &&
-        std::fabs(track.tpcNSigmaPr()) > cfgIdPrRejNSigma) {
-      return false;
-    }
-    return true;
+    return !(cfgIdElRejLowNSigma < track.tpcNSigmaEl() && track.tpcNSigmaEl() < cfgIdElRejHighNSigma &&
+             std::fabs(track.tpcNSigmaPi()) > cfgIdPiRejNSigma &&
+             std::fabs(track.tpcNSigmaKa()) > cfgIdKaRejNSigma &&
+             std::fabs(track.tpcNSigmaPr()) > cfgIdPrRejNSigma);
   }
 
   // Pion
