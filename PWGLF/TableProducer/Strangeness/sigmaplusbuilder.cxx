@@ -28,9 +28,13 @@
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/Propagator.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/PID.h>
 #include <ReconstructionDataFormats/Track.h>
@@ -98,7 +102,7 @@ struct Sigmaplusbuilder {
   Produces<aod::SigmaPlusCands> sigmaPlusCands;
   Produces<aod::SigmaPlusCandsMC> sigmaPlusCandsMC;
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   o2::vertexing::DCAFitterN<2> fitter;
   int mRunNumber = 0;
   float mBz = 0;
@@ -400,8 +404,8 @@ struct Sigmaplusbuilder {
         }
         fillPhotonStep(5);
 
-        std::array<float, 3> pNeg;
-        std::array<float, 3> pPos;
+        std::array<float, 3> pNeg{};
+        std::array<float, 3> pPos{};
         fitter.getTrack(0).getPxPyPzGlo(pNeg);
         fitter.getTrack(1).getPxPyPzGlo(pPos);
         std::array<float, 3> pGamma{pNeg[0] + pPos[0], pNeg[1] + pPos[1], pNeg[2] + pPos[2]};
@@ -746,8 +750,8 @@ struct Sigmaplusbuilder {
     std::array<float, 3> nHat = normalize3(flightVec);
     float flightDistance = std::sqrt(dot3(flightVec, flightVec));
 
-    std::array<float, 3> pProton;
-    std::array<float, 3> pGamma1;
+    std::array<float, 3> pProton{};
+    std::array<float, 3> pGamma1{};
     fitter.getTrack(0).getPxPyPzGlo(pProton);
     fitter.getTrack(1).getPxPyPzGlo(pGamma1);
 
