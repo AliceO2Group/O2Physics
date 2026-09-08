@@ -97,6 +97,9 @@ DECLARE_SOA_COLUMN(TPCNSigmaPr, tpcNSigmaPr, float);         //! nsigma proton o
 DECLARE_SOA_COLUMN(TPCNSigmaPi, tpcNSigmaPi, float);         //! nsigma pion of TPC PID of the pion daughter
 DECLARE_SOA_COLUMN(TPCNSigmaDe, tpcNSigmaDe, float);         //! nsigma deuteron of TPC PID of the bachelor daughter
 DECLARE_SOA_COLUMN(TPCNSigmaPiBach, tpcNSigmaPiBach, float); //! nsigma pion of TPC PID of the bachelor daughter
+DECLARE_SOA_COLUMN(TPCSignalPr, tpcSignalPr, float);         //! TPC signal of proton daughter
+DECLARE_SOA_COLUMN(TPCSignalPi, tpcSignalPi, float);         //! TPC signal of pion daughter
+DECLARE_SOA_COLUMN(TPCSignalDe, tpcSignalDe, float);         //! TPC signal of deuteron daughter
 DECLARE_SOA_COLUMN(TOFNSigmaDe, tofNSigmaDe, float);         //! nsigma deuteron of TOF PID of the bachelor daughter
 DECLARE_SOA_COLUMN(PIDTrackingDe, pidTrackingDe, uint32_t);  //! PID during tracking of bachelor daughter
 
@@ -231,6 +234,7 @@ DECLARE_SOA_TABLE(Vtx3BodyDatas, "AOD", "VTX3BODYDATA", //!
                   vtx3body::DCAVtxToDaughtersAv,
                   vtx3body::CosPA, vtx3body::Ct,
                   vtx3body::TPCNSigmaPr, vtx3body::TPCNSigmaPi, vtx3body::TPCNSigmaDe, vtx3body::TPCNSigmaPiBach,
+                  vtx3body::TPCSignalPr, vtx3body::TPCSignalPi, vtx3body::TPCSignalDe,
                   vtx3body::TOFNSigmaDe,
                   vtx3body::ITSClSizePr, vtx3body::ITSClSizePi, vtx3body::ITSClSizeDe,
                   vtx3body::TPCNClTrackPr, vtx3body::TPCNClTrackPi, vtx3body::TPCNClTrackDe,
@@ -288,6 +292,7 @@ DECLARE_SOA_TABLE(McVtx3BodyDatas, "AOD", "MC3BODYDATA", //!
                   vtx3body::DCAVtxToDaughtersAv,
                   vtx3body::CosPA, vtx3body::Ct,
                   vtx3body::TPCNSigmaPr, vtx3body::TPCNSigmaPi, vtx3body::TPCNSigmaDe, vtx3body::TPCNSigmaPiBach,
+                  vtx3body::TPCSignalPr, vtx3body::TPCSignalPi, vtx3body::TPCSignalDe,
                   vtx3body::TOFNSigmaDe,
                   vtx3body::ITSClSizePr, vtx3body::ITSClSizePi, vtx3body::ITSClSizeDe,
                   vtx3body::TPCNClTrackPr, vtx3body::TPCNClTrackPi, vtx3body::TPCNClTrackDe,

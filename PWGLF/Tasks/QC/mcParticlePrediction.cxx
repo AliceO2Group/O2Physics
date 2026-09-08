@@ -55,74 +55,70 @@ using namespace o2::framework;
 using namespace o2::pwglf;
 
 // Particles
-static const std::vector<std::string> parameterNames{"Enable", "SelectPrimaries"};
-static constexpr int nParameters = 2;
-static const int defaultParticles[PIDExtended::NIDsTot][nParameters]{{0, 1},  //  Electron
-                                                                     {0, 1},  //  Muon
-                                                                     {0, 1},  //  Pion
-                                                                     {0, 1},  //  Kaon
-                                                                     {0, 1},  //  Proton
-                                                                     {0, 1},  //  Deuteron
-                                                                     {0, 1},  //  Triton
-                                                                     {0, 1},  //  Helium3
-                                                                     {0, 1},  //  Alpha
-                                                                     {0, 1},  //  PI0
-                                                                     {0, 1},  //  Photon
-                                                                     {1, 1},  //  K0
-                                                                     {0, 1},  //  Lambda
-                                                                     {0, 1},  //  HyperTriton
-                                                                     {0, 1},  //  Hyperhydrog4
-                                                                     {0, 1},  //  XiMinus
-                                                                     {0, 1},  //  OmegaMinus
-                                                                     {0, 1},  //  HyperHelium4
-                                                                     {0, 1},  //  HyperHelium5
-                                                                     {0, 1},  //  Positron
-                                                                     {0, 1},  //  MuonPlus
-                                                                     {0, 1},  //  PionMinus
-                                                                     {0, 1},  //  KaonMinus
-                                                                     {0, 1},  //  AntiProton
-                                                                     {0, 1},  //  AntiDeuteron
-                                                                     {0, 1},  //  AntiTriton
-                                                                     {0, 1},  //  AntiHelium3
-                                                                     {0, 1},  //  AntiAlpha
-                                                                     {0, 1},  //  AntiLambda
-                                                                     {0, 1},  //  AntiHyperTriton
-                                                                     {0, 1},  //  AntiHyperhydrog4
-                                                                     {0, 1},  //  XiPlus
-                                                                     {0, 1},  //  OmegaPlus
-                                                                     {0, 1},  //  AntiHyperHelium4
-                                                                     {0, 1},  //  AntiHyperHelium5
-                                                                     {0, 1},  //  Neutron
-                                                                     {0, 1},  //  AntiNeutron
-                                                                     {0, 0},  //  Phi
-                                                                     {0, 1},  //  BZero
-                                                                     {0, 1},  //  BPlus
-                                                                     {0, 1},  //  BS
-                                                                     {0, 1},  //  D0
-                                                                     {0, 1},  //  DPlus
-                                                                     {0, 1},  //  DS
-                                                                     {0, 1},  //  DStar
-                                                                     {0, 1},  //  ChiC1
-                                                                     {0, 1},  //  JPsi
-                                                                     {0, 1},  //  LambdaB0
-                                                                     {0, 1},  //  LambdaCPlus
-                                                                     {0, 1},  //  OmegaC0
-                                                                     {0, 1},  //  SigmaC0
-                                                                     {0, 1},  //  SigmaCPlusPlus
-                                                                     {0, 1},  //  X3872
-                                                                     {0, 1},  //  Xi0
-                                                                     {0, 1},  //  XiB0
-                                                                     {0, 1},  //  XiCCPlusPlus
-                                                                     {0, 1},  //  XiCPlus
-                                                                     {0, 1},  //  XiC0
-                                                                     {0, 0},  //  Kstar
-                                                                     {0, 0},  //  KstarPM
-                                                                     {0, 1},  //  Kshort
-                                                                     {0, 0},  //  Xi1530
-                                                                     {0, 0}}; //  Lambda1520
-bool enabledParticlesArray[PIDExtended::NIDsTot];
-bool selectPrimariesArray[PIDExtended::NIDsTot];
-
+static constexpr std::array<std::array<int, 2>, PIDExtended::NIDsTot>
+  defaultParticles{{{0, 1},   //  Electron
+                    {0, 1},   //  Muon
+                    {0, 1},   //  Pion
+                    {0, 1},   //  Kaon
+                    {0, 1},   //  Proton
+                    {0, 1},   //  Deuteron
+                    {0, 1},   //  Triton
+                    {0, 1},   //  Helium3
+                    {0, 1},   //  Alpha
+                    {0, 1},   //  PI0
+                    {0, 1},   //  Photon
+                    {1, 1},   //  K0
+                    {0, 1},   //  Lambda
+                    {0, 1},   //  HyperTriton
+                    {0, 1},   //  Hyperhydrog4
+                    {0, 1},   //  XiMinus
+                    {0, 1},   //  OmegaMinus
+                    {0, 1},   //  HyperHelium4
+                    {0, 1},   //  HyperHelium5
+                    {0, 1},   //  Positron
+                    {0, 1},   //  MuonPlus
+                    {0, 1},   //  PionMinus
+                    {0, 1},   //  KaonMinus
+                    {0, 1},   //  AntiProton
+                    {0, 1},   //  AntiDeuteron
+                    {0, 1},   //  AntiTriton
+                    {0, 1},   //  AntiHelium3
+                    {0, 1},   //  AntiAlpha
+                    {0, 1},   //  AntiLambda
+                    {0, 1},   //  AntiHyperTriton
+                    {0, 1},   //  AntiHyperhydrog4
+                    {0, 1},   //  XiPlus
+                    {0, 1},   //  OmegaPlus
+                    {0, 1},   //  AntiHyperHelium4
+                    {0, 1},   //  AntiHyperHelium5
+                    {0, 1},   //  Neutron
+                    {0, 1},   //  AntiNeutron
+                    {0, 0},   //  Phi
+                    {0, 1},   //  BZero
+                    {0, 1},   //  BPlus
+                    {0, 1},   //  BS
+                    {0, 1},   //  D0
+                    {0, 1},   //  DPlus
+                    {0, 1},   //  DS
+                    {0, 1},   //  DStar
+                    {0, 1},   //  ChiC1
+                    {0, 1},   //  JPsi
+                    {0, 1},   //  LambdaB0
+                    {0, 1},   //  LambdaCPlus
+                    {0, 1},   //  OmegaC0
+                    {0, 1},   //  SigmaC0
+                    {0, 1},   //  SigmaCPlusPlus
+                    {0, 1},   //  X3872
+                    {0, 1},   //  Xi0
+                    {0, 1},   //  XiB0
+                    {0, 1},   //  XiCCPlusPlus
+                    {0, 1},   //  XiCPlus
+                    {0, 1},   //  XiC0
+                    {0, 0},   //  Kstar
+                    {0, 0},   //  KstarPM
+                    {0, 1},   //  Kshort
+                    {0, 0},   //  Xi1530
+                    {0, 0}}}; //  Lambda1520
 // Estimators
 struct Estimators {
   typedef int estID;
@@ -148,26 +144,26 @@ struct Estimators {
   static constexpr estID ImpactParameter = 19; // (Run2 V0M)
   static constexpr estID nEstimators = 20;
 
-  static constexpr const char* estimatorNames[nEstimators] = {"FT0A",
-                                                              "FT0C",
-                                                              "FT0AC",
-                                                              "FV0A",
-                                                              "FDDA",
-                                                              "FDDC",
-                                                              "FDDAC",
-                                                              "ZNA",
-                                                              "ZNC",
-                                                              "ZEM1",
-                                                              "ZEM2",
-                                                              "ZPA",
-                                                              "ZPC",
-                                                              "ITSIB",
-                                                              "ETA05",
-                                                              "ETA08",
-                                                              "V0A",
-                                                              "V0C",
-                                                              "V0AC",
-                                                              "ImpactParameter"};
+  static constexpr std::array<const char*, nEstimators> estimatorNames{"FT0A",
+                                                                       "FT0C",
+                                                                       "FT0AC",
+                                                                       "FV0A",
+                                                                       "FDDA",
+                                                                       "FDDC",
+                                                                       "FDDAC",
+                                                                       "ZNA",
+                                                                       "ZNC",
+                                                                       "ZEM1",
+                                                                       "ZEM2",
+                                                                       "ZPA",
+                                                                       "ZPC",
+                                                                       "ITSIB",
+                                                                       "ETA05",
+                                                                       "ETA08",
+                                                                       "V0A",
+                                                                       "V0C",
+                                                                       "V0AC",
+                                                                       "ImpactParameter"};
   static std::vector<std::string> arrayNames()
   {
     static std::vector<std::string> names;
@@ -180,48 +176,27 @@ struct Estimators {
     return names;
   }
 };
-bool enabledEstimatorsArray[Estimators::nEstimators];
-static const int defaultEstimators[Estimators::nEstimators][nParameters]{{0},  // FT0A
-                                                                         {0},  // FT0C
-                                                                         {1},  // FT0AC
-                                                                         {0},  // FV0A
-                                                                         {0},  // FDDA
-                                                                         {0},  // FDDC
-                                                                         {0},  // FDDAC
-                                                                         {0},  // ZNA
-                                                                         {0},  // ZNC
-                                                                         {0},  // ZEM1
-                                                                         {0},  // ZEM2
-                                                                         {0},  // ZPA
-                                                                         {0},  // ZPC
-                                                                         {0},  // ITSIB
-                                                                         {0},  // ETA05
-                                                                         {0},  // ETA08
-                                                                         {0},  // V0A (Run2)
-                                                                         {0},  // V0C (Run2)
-                                                                         {0},  // V0AC (Run2 V0M)
-                                                                         {0}}; // ImpactParamter
-
-// Histograms
-std::array<std::shared_ptr<TH1>, Estimators::nEstimators> hestimators;
-std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsVsITS;
-std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsVsETA05;
-std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsVsETA08;
-std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsVsImpactParameter;
-std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvGenVsReco;
-std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvGenVsReco_BCMC;
-std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvGenVsRecoITS;
-std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvRecoVsITS;
-std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvRecoVsRecoITS;
-std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvRecoVsRecoITS_BCMC;
-std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvRecoVsFT0A;
-std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvRecoVsBCId;
-std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvVsBCId;
-std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hvertexPosZ;
-std::array<std::array<std::shared_ptr<TH2>, PIDExtended::NIDsTot>, Estimators::nEstimators> hpt;
-std::array<std::array<std::shared_ptr<TH2>, PIDExtended::NIDsTot>, Estimators::nEstimators> hy;
-std::array<std::array<std::shared_ptr<TH2>, PIDExtended::NIDsTot>, Estimators::nEstimators> heta;
-std::array<std::array<std::shared_ptr<TH1>, PIDExtended::NIDsTot>, Estimators::nEstimators> hyield;
+static constexpr std::array<std::array<int, 1>, Estimators::nEstimators>
+  defaultEstimators{{{0},   // FT0A
+                     {0},   // FT0C
+                     {1},   // FT0AC
+                     {0},   // FV0A
+                     {0},   // FDDA
+                     {0},   // FDDC
+                     {0},   // FDDAC
+                     {0},   // ZNA
+                     {0},   // ZNC
+                     {0},   // ZEM1
+                     {0},   // ZEM2
+                     {0},   // ZPA
+                     {0},   // ZPC
+                     {0},   // ITSIB
+                     {0},   // ETA05
+                     {0},   // ETA08
+                     {0},   // V0A (Run2)
+                     {0},   // V0C (Run2)
+                     {0},   // V0AC (Run2 V0M)
+                     {0}}}; // ImpactParamter
 
 struct McParticlePrediction {
 
@@ -232,6 +207,29 @@ struct McParticlePrediction {
   HistogramRegistry histosPt{"HistosPt", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry histosEta{"HistosEta", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry histosY{"HistosY", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  std::array<bool, PIDExtended::NIDsTot> enabledParticlesArray{false};
+  std::array<bool, PIDExtended::NIDsTot> selectPrimariesArray{false};
+  std::array<bool, Estimators::nEstimators> enabledEstimatorsArray{false};
+  std::array<std::shared_ptr<TH1>, Estimators::nEstimators> hestimators;
+  std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsVsITS;
+  std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsVsETA05;
+  std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsVsETA08;
+  std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsVsImpactParameter;
+  std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvGenVsReco;
+  std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvGenVsReco_BCMC;
+  std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvGenVsRecoITS;
+  std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvRecoVsITS;
+  std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvRecoVsRecoITS;
+  std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvRecoVsRecoITS_BCMC;
+  std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvRecoVsFT0A;
+  std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvRecoVsBCId;
+  std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvVsBCId;
+  std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hvertexPosZ;
+  std::array<std::array<std::shared_ptr<TH2>, PIDExtended::NIDsTot>, Estimators::nEstimators> hpt;
+  std::array<std::array<std::shared_ptr<TH2>, PIDExtended::NIDsTot>, Estimators::nEstimators> hy;
+  std::array<std::array<std::shared_ptr<TH2>, PIDExtended::NIDsTot>, Estimators::nEstimators> heta;
+  std::array<std::array<std::shared_ptr<TH1>, PIDExtended::NIDsTot>, Estimators::nEstimators> hyield;
 
   struct : ConfigurableGroup {
     std::string prefix = "Binning"; // JSON group name
@@ -253,10 +251,10 @@ struct McParticlePrediction {
   } cfgPrediction;
 
   Configurable<LabeledArray<int>> enabledSpecies{"enabledSpecies",
-                                                 {defaultParticles[0], PIDExtended::NIDsTot, nParameters, PIDExtended::arrayNames(), parameterNames},
+                                                 {defaultParticles.front().data(), PIDExtended::NIDsTot, defaultParticles[0].size(), PIDExtended::arrayNames(), {"Enable", "SelectPrimaries"}},
                                                  "Particles enabled"};
   Configurable<LabeledArray<int>> enabledEstimators{"enabledEstimators",
-                                                    {defaultEstimators[0], Estimators::nEstimators, nParameters, Estimators::arrayNames(), parameterNames},
+                                                    {defaultEstimators.front().data(), Estimators::nEstimators, defaultEstimators[0].size(), Estimators::arrayNames(), {"Enable"}},
                                                     "Estimators enabled"};
   Configurable<bool> selectInelGt0{"selectInelGt0", true, "Select only inelastic events"};
   Configurable<bool> selectPrimariesForMultiplicity{"selectPrimariesForMultiplicity", true, "Select only primary particles for multiplicity computation"};
@@ -278,8 +276,8 @@ struct McParticlePrediction {
   Configurable<bool> enableVsImpactParameterHistograms{"enableVsImpactParameterHistograms", true, "Enables the correlation between impact parameter and other estimators"};
   Configurable<float> chargetolerance{"chargetolerance", 1e-3, "Tolerance to consider a particle as charged based on its charge"};
 
-  Service<o2::framework::O2DatabasePDG> pdgDB;
-  o2::pwglf::ParticleCounter<o2::framework::O2DatabasePDG> mCounter;
+  Service<o2::framework::O2DatabasePDG> pdgDB{};
+  o2::pwglf::ParticleCounter<o2::framework::O2DatabasePDG> mCounter{};
 
   void init(o2::framework::InitContext&)
   {
@@ -499,7 +497,7 @@ struct McParticlePrediction {
 
   std::array<float, Estimators::nEstimators> genMult(const auto& mcCollision, const auto& mcParticles)
   {
-    std::array<float, Estimators::nEstimators> nMult;
+    std::array<float, Estimators::nEstimators> nMult = {0};
     if (enabledEstimatorsArray[Estimators::FT0A] || enabledEstimatorsArray[Estimators::FT0AC]) {
       nMult[Estimators::FT0A] = mCounter.countFT0A(mcParticles);
     }
@@ -814,7 +812,7 @@ struct McParticlePrediction {
 
     const std::array<float, Estimators::nEstimators>& nMult = genMult(mcCollision, particlesInCollision);
 
-    float nMultReco[Estimators::nEstimators];
+    std::array<float, Estimators::nEstimators> nMultReco = {0};
     nMultReco[Estimators::FT0A] = collision.multFT0A();
     nMultReco[Estimators::FT0C] = collision.multFT0C();
     nMultReco[Estimators::FT0AC] = collision.multFT0M();
@@ -826,7 +824,7 @@ struct McParticlePrediction {
     nMultReco[Estimators::ZNC] = collision.multZNC();
     nMultReco[Estimators::ITSIB] = collision.multNTracksPV();
 
-    float nMultRecoMCBC[Estimators::nEstimators] = {0};
+    std::array<float, Estimators::nEstimators> nMultRecoMCBC = {0};
     if (mcBC.has_ft0()) {
       const auto& ft0 = mcBC.ft0();
       for (const auto& amplitude : ft0.amplitudeA()) {

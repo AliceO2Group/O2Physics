@@ -31,6 +31,7 @@
 #include "Common/DataModel/EventSelection.h"
 
 #include <CommonConstants/MathConstants.h>
+#include <Framework/ASoA.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -48,16 +49,14 @@
 #include <THashList.h>
 #include <TString.h>
 
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
-#include <cstring>
 #include <memory>
 #include <string>
 #include <string_view>
 #include <vector>
-
-#include <math.h>
 
 using namespace o2;
 using namespace o2::aod;
@@ -89,7 +88,7 @@ struct TagAndProbe {
 
   Configurable<std::string> fConfigEMEventCut{"cfgEMEventCut", "minbias", "em event cut"}; // only 1 event cut per wagon
   EMPhotonEventCut fEMEventCut;
-  static constexpr std::string_view event_types[2] = {"before", "after"};
+  static constexpr std::array<std::string_view, 2> event_types = {"before", "after"};
 
   OutputObj<THashList> fOutputEvent{"Event"};
   OutputObj<THashList> fOutputPair{"Pair"}; // 2-photon pair
@@ -126,48 +125,49 @@ struct TagAndProbe {
     TString ev_cut_name = fConfigEMEventCut.value;
     fEMEventCut = *eventcuts::GetCut(ev_cut_name.Data());
 
-    fOutputEvent.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Event")));
-    fOutputPair.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Pair")));
+    fOutputEvent.setObject(dynamic_cast<THashList*>(fMainList->FindObject("Event")));
+    fOutputPair.setObject(dynamic_cast<THashList*>(fMainList->FindObject("Pair")));
   }
 
   template <typename TTagCut, typename TProbeCuts, typename TPairCuts>
-  void add_pair_histograms(THashList* list_pair, const std::string pairname, TTagCut const& tagcut, TProbeCuts const& probecuts, TPairCuts const& paircuts)
+  void add_pair_histograms(THashList* list_pair, const std::string& pairname, TTagCut const& tagcut, TProbeCuts const& probecuts, TPairCuts const& paircuts)
   {
-    std::string cutname1 = tagcut.getName();
+    const std::string& cutname1 = tagcut.getName();
     for (auto& cut2 : probecuts) {
-      std::string cutname2 = cut2.getName();
-      std::string photon_cut_name = cutname1 + "_" + cutname2;
+      const std::string& cutname2 = cut2.getName();
+      std::string photon_cut_name = cutname1;
+      photon_cut_name.append("_").append(cutname2);
       THashList* list_pair_subsys_photoncut = o2::aod::pwgem::photon::histogram::AddHistClass(list_pair, photon_cut_name.data());
 
       for (auto& cut3 : paircuts) {
-        std::string pair_cut_name = cut3.getName();
+        std::string const& pair_cut_name = cut3.getName();
         o2::aod::pwgem::photon::histogram::AddHistClass(list_pair_subsys_photoncut, pair_cut_name.data());
-        THashList* list_pair_subsys_paircut = reinterpret_cast<THashList*>(list_pair_subsys_photoncut->FindObject(pair_cut_name.data()));
+        auto* list_pair_subsys_paircut = dynamic_cast<THashList*>(list_pair_subsys_photoncut->FindObject(pair_cut_name.data()));
         o2::aod::pwgem::photon::histogram::DefineHistograms(list_pair_subsys_paircut, "tag_and_probe", pairname.data());
       } // end of cut3 loop pair cut
     } // end of cut2 loop
   }
 
-  static constexpr std::string_view pairnames[6] = {"PCMPCM", "PHOSPHOS", "EMCEMC", "PCMPHOS", "PCMEMC", "PHOSEMC"};
+  static constexpr std::array<std::string_view, 6> pairnames = {"PCMPCM", "PHOSPHOS", "EMCEMC", "PCMPHOS", "PCMEMC", "PHOSEMC"};
   void addhistograms()
   {
     fMainList->SetOwner(true);
     fMainList->SetName("fMainList");
 
     o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "Event");
-    THashList* list_ev = reinterpret_cast<THashList*>(fMainList->FindObject("Event"));
+    auto* list_ev = dynamic_cast<THashList*>(fMainList->FindObject("Event"));
 
     o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "Pair");
-    THashList* list_pair = reinterpret_cast<THashList*>(fMainList->FindObject("Pair"));
+    auto* list_pair = dynamic_cast<THashList*>(fMainList->FindObject("Pair"));
 
     // create sub lists first.
 
-    for (auto& pairname : fPairNames) {
+    for (const auto& pairname : fPairNames) {
       LOGF(info, "Enabled pairs = %s", pairname.data());
 
-      THashList* list_ev_pair = reinterpret_cast<THashList*>(o2::aod::pwgem::photon::histogram::AddHistClass(list_ev, pairname.data()));
+      THashList* list_ev_pair = o2::aod::pwgem::photon::histogram::AddHistClass(list_ev, pairname.data());
       for (const auto& evtype : event_types) {
-        THashList* list_ev_type = reinterpret_cast<THashList*>(o2::aod::pwgem::photon::histogram::AddHistClass(list_ev_pair, evtype.data()));
+        THashList* list_ev_type = o2::aod::pwgem::photon::histogram::AddHistClass(list_ev_pair, evtype.data());
         o2::aod::pwgem::photon::histogram::DefineHistograms(list_ev_type, "Event", evtype.data());
       }
 
@@ -254,12 +254,12 @@ struct TagAndProbe {
   template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2, typename TTagCut, typename TProbeCuts, typename TPairCuts, typename TLegs>
   void SameEventPairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TTagCut const& tagcut, TProbeCuts const& probecuts, TPairCuts const& paircuts, TLegs const& /*legs*/)
   {
-    THashList* list_ev_pair_before = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject(event_types[0].data()));
-    THashList* list_ev_pair_after = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject(event_types[1].data()));
-    THashList* list_pair_ss = static_cast<THashList*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data()));
+    auto* list_ev_pair_before = dynamic_cast<THashList*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject(event_types[0].data()));
+    auto* list_ev_pair_after = dynamic_cast<THashList*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject(event_types[1].data()));
+    auto* list_pair_ss = dynamic_cast<THashList*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data()));
 
     for (auto& collision : collisions) {
-      const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      const std::array<float, 3> centralities = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
@@ -276,8 +276,8 @@ struct TagAndProbe {
         continue;
       }
       o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev_pair_after, "", collision);
-      reinterpret_cast<TH1F*>(list_ev_pair_before->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
-      reinterpret_cast<TH1F*>(list_ev_pair_after->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
+      dynamic_cast<TH1F*>(list_ev_pair_before->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
+      dynamic_cast<TH1F*>(list_ev_pair_after->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
 
       auto photons1_coll = photons1.sliceBy(perCollision1, collision.globalIndex());
       auto photons2_coll = photons2.sliceBy(perCollision2, collision.globalIndex());
@@ -315,7 +315,7 @@ struct TagAndProbe {
               if (abs(v12.Rapidity()) > maxY) {
                 continue;
               }
-              reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", tagcut.getName().c_str(), probecut.getName().c_str()))->FindObject(paircut.getName().c_str())->FindObject("hMggPt_Probe_Same"))->Fill(v12.M(), v2.Pt());
+              dynamic_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", tagcut.getName().c_str(), probecut.getName().c_str()))->FindObject(paircut.getName().c_str())->FindObject("hMggPt_Probe_Same"))->Fill(v12.M(), v2.Pt());
 
               if constexpr (pairtype == PairType::kPCMPCM) {
                 if (!probecut.template IsSelected<decltype(g2), TLegs>(g2)) {
@@ -331,7 +331,7 @@ struct TagAndProbe {
                 }
               }
 
-              reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", tagcut.getName().c_str(), probecut.getName().c_str()))->FindObject(paircut.getName().c_str())->FindObject("hMggPt_PassingProbe_Same"))->Fill(v12.M(), v2.Pt());
+              dynamic_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", tagcut.getName().c_str(), probecut.getName().c_str()))->FindObject(paircut.getName().c_str())->FindObject("hMggPt_PassingProbe_Same"))->Fill(v12.M(), v2.Pt());
 
               if constexpr (pairtype == PairType::kEMCEMC) {
                 RotationBackground<aod::SkimEMCClusters>(v12, v1, v2, photons2_coll, g1.globalIndex(), g2.globalIndex(), probecut, paircut);
@@ -356,12 +356,12 @@ struct TagAndProbe {
   template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2, typename TTagCut, typename TProbeCuts, typename TPairCuts, typename TLegs, typename TMixedBinning>
   void MixedEventPairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TTagCut const& tagcut, TProbeCuts const& probecuts, TPairCuts const& paircuts, TLegs const& /*legs*/, TMixedBinning const& colBinning)
   {
-    THashList* list_pair_ss = static_cast<THashList*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data()));
+    auto* list_pair_ss = dynamic_cast<THashList*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data()));
 
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, ndepth, -1, collisions, collisions)) { // internally, CombinationsStrictlyUpperIndexPolicy(collisions, collisions) is called.
 
-      const float centralities1[3] = {collision1.centFT0M(), collision1.centFT0A(), collision1.centFT0C()};
-      const float centralities2[3] = {collision2.centFT0M(), collision2.centFT0A(), collision2.centFT0C()};
+      const std::array<float, 3> centralities1 = {collision1.centFT0M(), collision1.centFT0A(), collision1.centFT0C()};
+      const std::array<float, 3> centralities2 = {collision2.centFT0M(), collision2.centFT0A(), collision2.centFT0C()};
 
       if (centralities1[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities1[cfgCentEstimator]) {
         continue;
@@ -406,7 +406,7 @@ struct TagAndProbe {
               if (abs(v12.Rapidity()) > maxY) {
                 continue;
               }
-              reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", tagcut.getName().c_str(), probecut.getName().c_str()))->FindObject(paircut.getName().c_str())->FindObject("hMggPt_Probe_Mixed"))->Fill(v12.M(), v2.Pt());
+              dynamic_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", tagcut.getName().c_str(), probecut.getName().c_str()))->FindObject(paircut.getName().c_str())->FindObject("hMggPt_Probe_Mixed"))->Fill(v12.M(), v2.Pt());
 
               if constexpr (pairtype == PairType::kPCMPCM) {
                 if (!probecut.template IsSelected<decltype(g2), TLegs>(g2)) {
@@ -422,7 +422,7 @@ struct TagAndProbe {
                 }
               }
 
-              reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", tagcut.getName().c_str(), probecut.getName().c_str()))->FindObject(paircut.getName().c_str())->FindObject("hMggPt_PassingProbe_Mixed"))->Fill(v12.M(), v2.Pt());
+              dynamic_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", tagcut.getName().c_str(), probecut.getName().c_str()))->FindObject(paircut.getName().c_str())->FindObject("hMggPt_PassingProbe_Mixed"))->Fill(v12.M(), v2.Pt());
 
             } // end of probe cut loop
           } // end of pair cut loop
@@ -484,10 +484,10 @@ struct TagAndProbe {
       // LOG(info) << "openingAngle2_2 = " << openingAngle2_2;
 
       if (openingAngle1 > minOpenAngle) {
-        reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject("EMCEMC")->FindObject(Form("%s_%s", cut.getName().c_str(), cut.getName().c_str()))->FindObject(paircut.getName().c_str())->FindObject("hMggPt_Same_RotatedBkg"))->Fill(mother1.M(), mother1.Pt());
+        dynamic_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject("EMCEMC")->FindObject(Form("%s_%s", cut.getName().c_str(), cut.getName().c_str()))->FindObject(paircut.getName().c_str())->FindObject("hMggPt_Same_RotatedBkg"))->Fill(mother1.M(), mother1.Pt());
       }
       if (openingAngle2 > minOpenAngle) {
-        reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject("EMCEMC")->FindObject(Form("%s_%s", cut.getName().c_str(), cut.getName().c_str()))->FindObject(paircut.getName().c_str())->FindObject("hMggPt_Same_RotatedBkg"))->Fill(mother2.M(), mother2.Pt());
+        dynamic_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject("EMCEMC")->FindObject(Form("%s_%s", cut.getName().c_str(), cut.getName().c_str()))->FindObject(paircut.getName().c_str())->FindObject("hMggPt_Same_RotatedBkg"))->Fill(mother2.M(), mother2.Pt());
       }
     }
   }
@@ -529,8 +529,8 @@ struct TagAndProbe {
   PROCESS_SWITCH(TagAndProbe, processDummy, "Dummy function", true);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<TagAndProbe>(cfgc, TaskName{"tag-and-probe"})};
+    adaptAnalysisTask<TagAndProbe>(context, TaskName{"tag-and-probe"})};
 }

@@ -725,8 +725,8 @@ class KinkBuilder
 
 struct ConfKinkTablesDerivedToDerived : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("KinkTables");
-  o2::framework::Configurable<int> limitSigma{"limitSigma", 1, "At least this many sigmas need to be in the collision"};
-  o2::framework::Configurable<int> limitSigmaPlus{"limitSigmaPlus", 0, "At least this many sigma pluses need to be in the collision"};
+  o2::framework::Configurable<int> limitSigma{"limitSigma", 1, "Require at least this many Sigmas in the collision. Set to 0 to skip Sigmas entirely (not written to output)."};
+  o2::framework::Configurable<int> limitSigmaPlus{"limitSigmaPlus", 0, "Require at least this many SigmaPlus in the collision. Set to 0 to skip SigmaPlus entirely (not written to output)."};
 };
 
 struct KinkBuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {

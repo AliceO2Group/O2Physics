@@ -1687,6 +1687,9 @@ DECLARE_SOA_TABLE(HfCandLbMcGen, "AOD", "HFCANDLBMCGEN", //!
 // specific B0 candidate properties
 namespace hf_cand_b0
 {
+DECLARE_SOA_COLUMN(XSecondaryVertexD, xSecondaryVertexD, float);
+DECLARE_SOA_COLUMN(YSecondaryVertexD, ySecondaryVertexD, float);
+DECLARE_SOA_COLUMN(ZSecondaryVertexD, zSecondaryVertexD, float);
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfCand3Prong, "_0");    // D index
 DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterProduct, impactParameterProduct, // Impact parameter product for B0 -> J/Psi K*0
                            [](float pxJpsiDauPos, float pyJpsiDauPos, float pzJpsiDauPos, float pxJpsiDauNeg, float pyJpsiDauNeg, float pzJpsiDauNeg, float pxLfTrack0, float pyLfTrack0, float pzLfTrack0, float pxLfTrack1, float pyLfTrack1, float pzLfTrack1, float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS) -> float {
@@ -1698,6 +1701,22 @@ DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterProductJpsi, impactParameterProductJps
                            [](float dcaDauPos, float dcaDauNeg) -> float { return dcaDauPos * dcaDauNeg; });
 DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterProductK0Star, impactParameterProductK0Star, // K*0 impact parameter product for B0 -> J/Psi K*0
                            [](float dcaLfTrack0, float dcaLfTrack1) -> float { return dcaLfTrack0 * dcaLfTrack1; });
+DECLARE_SOA_DYNAMIC_COLUMN(CpaDToPv, cpaDToPv, //!
+                           [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz) -> float { return RecoDecay::cpa(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}, std::array{px, py, pz}); });
+DECLARE_SOA_DYNAMIC_COLUMN(CpaDToPvXY, cpaDToPvXY, //!
+                           [](float xVtxP, float yVtxP, float xVtxS, float yVtxS, float px, float py) -> float { return RecoDecay::cpaXY(std::array{xVtxP, yVtxP}, std::array{xVtxS, yVtxS}, std::array{px, py}); });
+DECLARE_SOA_DYNAMIC_COLUMN(CpaDToB, cpaDToB, //!
+                           [](float xVtxB, float yVtxB, float zVtxB, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz) -> float { return RecoDecay::cpa(std::array{xVtxB, yVtxB, zVtxB}, std::array{xVtxS, yVtxS, zVtxS}, std::array{px, py, pz}); });
+DECLARE_SOA_DYNAMIC_COLUMN(CpaDToBXY, cpaDToBXY, //!
+                           [](float xVtxB, float yVtxB, float xVtxS, float yVtxS, float px, float py) -> float { return RecoDecay::cpaXY(std::array{xVtxB, yVtxB}, std::array{xVtxS, yVtxS}, std::array{px, py}); });
+DECLARE_SOA_DYNAMIC_COLUMN(DecayLengthDToPv, decayLengthDToPv, //!
+                           [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS) -> float { return RecoDecay::distance(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}); });
+DECLARE_SOA_DYNAMIC_COLUMN(DecayLengthDToPvXY, decayLengthDToPvXY, //!
+                           [](float xVtxP, float yVtxP, float xVtxS, float yVtxS) -> float { return RecoDecay::distanceXY(std::array{xVtxP, yVtxP}, std::array{xVtxS, yVtxS}); });
+DECLARE_SOA_DYNAMIC_COLUMN(DecayLengthDToB, decayLengthDToB, //!
+                           [](float xVtxB, float yVtxB, float zVtxB, float xVtxS, float yVtxS, float zVtxS) -> float { return RecoDecay::distance(std::array{xVtxB, yVtxB, zVtxB}, std::array{xVtxS, yVtxS, zVtxS}); });
+DECLARE_SOA_DYNAMIC_COLUMN(DecayLengthDToBXY, decayLengthDToBXY, //!
+                           [](float xVtxB, float yVtxB, float xVtxS, float yVtxS) -> float { return RecoDecay::distanceXY(std::array{xVtxB, yVtxB}, std::array{xVtxS, yVtxS}); });
 
 enum DecayTypeMc : uint8_t { B0ToDplusPiToPiKPiPi = 0,
                              B0ToDsPiToKKPiPi,
@@ -1718,7 +1737,17 @@ DECLARE_SOA_TABLE(HfCandB0Base, "AOD", "HFCANDB0BASE",
                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
                   hf_cand::ImpactParameter0, hf_cand::ImpactParameter1,
                   hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1,
+                  // D meson decay vertex position
+                  hf_cand_b0::XSecondaryVertexD, hf_cand_b0::YSecondaryVertexD, hf_cand_b0::ZSecondaryVertexD,
                   /* dynamic columns */
+                  hf_cand_b0::CpaDToPv<collision::PosX, collision::PosY, collision::PosZ, hf_cand_b0::XSecondaryVertexD, hf_cand_b0::YSecondaryVertexD, hf_cand_b0::ZSecondaryVertexD, hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0>,
+                  hf_cand_b0::CpaDToPvXY<collision::PosX, collision::PosY, hf_cand_b0::XSecondaryVertexD, hf_cand_b0::YSecondaryVertexD, hf_cand::PxProng0, hf_cand::PyProng0>,
+                  hf_cand_b0::CpaDToB<hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex, hf_cand_b0::XSecondaryVertexD, hf_cand_b0::YSecondaryVertexD, hf_cand_b0::ZSecondaryVertexD, hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0>,
+                  hf_cand_b0::CpaDToBXY<hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand_b0::XSecondaryVertexD, hf_cand_b0::YSecondaryVertexD, hf_cand::PxProng0, hf_cand::PyProng0>,
+                  hf_cand_b0::DecayLengthDToPv<collision::PosX, collision::PosY, collision::PosZ, hf_cand_b0::XSecondaryVertexD, hf_cand_b0::YSecondaryVertexD, hf_cand_b0::ZSecondaryVertexD>,
+                  hf_cand_b0::DecayLengthDToPvXY<collision::PosX, collision::PosY, hf_cand_b0::XSecondaryVertexD, hf_cand_b0::YSecondaryVertexD>,
+                  hf_cand_b0::DecayLengthDToB<hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex, hf_cand_b0::XSecondaryVertexD, hf_cand_b0::YSecondaryVertexD, hf_cand_b0::ZSecondaryVertexD>,
+                  hf_cand_b0::DecayLengthDToBXY<hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand_b0::XSecondaryVertexD, hf_cand_b0::YSecondaryVertexD>,
                   hf_cand_2prong::M<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
                   hf_cand_2prong::M2<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
                   hf_cand_2prong::ImpactParameterProduct<hf_cand::ImpactParameter0, hf_cand::ImpactParameter1>,
@@ -1755,7 +1784,17 @@ DECLARE_SOA_TABLE(HfCandB0DStar, "AOD", "HFCANDB0DSTAR",
                   hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2,
                   hf_cand::ImpactParameter0, hf_cand::ImpactParameter1, hf_cand::ImpactParameter2,
                   hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1, hf_cand::ErrorImpactParameter2,
+                  // D meson decay vertex position
+                  hf_cand_b0::XSecondaryVertexD, hf_cand_b0::YSecondaryVertexD, hf_cand_b0::ZSecondaryVertexD,
                   /* dynamic columns */
+                  hf_cand_b0::CpaDToPv<collision::PosX, collision::PosY, collision::PosZ, hf_cand_b0::XSecondaryVertexD, hf_cand_b0::YSecondaryVertexD, hf_cand_b0::ZSecondaryVertexD, hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0>,
+                  hf_cand_b0::CpaDToPvXY<collision::PosX, collision::PosY, hf_cand_b0::XSecondaryVertexD, hf_cand_b0::YSecondaryVertexD, hf_cand::PxProng0, hf_cand::PyProng0>,
+                  hf_cand_b0::CpaDToB<hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex, hf_cand_b0::XSecondaryVertexD, hf_cand_b0::YSecondaryVertexD, hf_cand_b0::ZSecondaryVertexD, hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0>,
+                  hf_cand_b0::CpaDToBXY<hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand_b0::XSecondaryVertexD, hf_cand_b0::YSecondaryVertexD, hf_cand::PxProng0, hf_cand::PyProng0>,
+                  hf_cand_b0::DecayLengthDToPv<collision::PosX, collision::PosY, collision::PosZ, hf_cand_b0::XSecondaryVertexD, hf_cand_b0::YSecondaryVertexD, hf_cand_b0::ZSecondaryVertexD>,
+                  hf_cand_b0::DecayLengthDToPvXY<collision::PosX, collision::PosY, hf_cand_b0::XSecondaryVertexD, hf_cand_b0::YSecondaryVertexD>,
+                  hf_cand_b0::DecayLengthDToB<hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex, hf_cand_b0::XSecondaryVertexD, hf_cand_b0::YSecondaryVertexD, hf_cand_b0::ZSecondaryVertexD>,
+                  hf_cand_b0::DecayLengthDToBXY<hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand_b0::XSecondaryVertexD, hf_cand_b0::YSecondaryVertexD>,
                   hf_cand_3prong::M<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2>,
                   hf_cand_3prong::M2<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2>,
                   hf_cand_2prong::ImpactParameterProduct<hf_cand::ImpactParameter0, hf_cand::ImpactParameter2>,

@@ -69,6 +69,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -85,9 +86,38 @@ using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, a
 using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::FT0Mults>;
 using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::TOFSignal, aod::TOFEvTime>;
 using TrackCandidatesMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::TOFSignal, aod::TOFEvTime, aod::McTrackLabels>;
+using McCollisionMults = soa::Join<aod::McCollisions, aod::MultMCExtras>;
+using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::Mults>;
 
 namespace
 {
+
+std::shared_ptr<TH1> hEvtMC;
+std::shared_ptr<TH1> hImpactParamGen;
+std::shared_ptr<TH1> hImpactParamReco;
+std::shared_ptr<TH1> hRecoCentrality;
+std::shared_ptr<TH1> hImpactParamGenOneReco;
+std::shared_ptr<TH1> hGenOneRecoCentrality;
+std::shared_ptr<TH2> hGenEventsNchEta05;
+std::shared_ptr<TH2> hGenEventsNchEta08;
+std::shared_ptr<TH2> hRecoCentralityColvsMultiplicityRecoEta05;
+std::shared_ptr<TH2> hRecoCentralityColvsMultiplicityRecoEta08;
+std::shared_ptr<TH2> hRecoCentralityColvsMultiplicityFT0C;
+std::shared_ptr<TH2> hRecoCentralityColvsImpactParamReco;
+std::shared_ptr<TH2> hGenCentralityColvsMultiplicityGenEta05;
+std::shared_ptr<TH2> hGenCentralityColvsMultiplicityGenEta08;
+std::shared_ptr<TH2> hGenCentralityColvsMultiplicityFT0C;
+std::shared_ptr<TH2> hGenCentralityColvsImpactParamGen;
+std::shared_ptr<TH1> hGenLi4BeforeEvtSel;
+std::shared_ptr<TH2> hGenLi4vsImpactParameterBeforeEvtSel;
+std::shared_ptr<TH2> hGenLi4vsMultiplicityGenEta05BeforeEvtSel;
+std::shared_ptr<TH2> hGenLi4vsMultiplicityGenEta08BeforeEvtSel;
+std::shared_ptr<TH2> hGenLi4vsMultiplicityFT0CBeforeEvtSel;
+std::shared_ptr<TH1> hGenLi4AfterSel;
+std::shared_ptr<TH2> hGenLi4vsImpactParameterAfterSel;
+std::shared_ptr<TH2> hGenLi4vsMultiplicityGenEta05AfterSel;
+std::shared_ptr<TH2> hGenLi4vsMultiplicityGenEta08AfterSel;
+std::shared_ptr<TH2> hGenLi4vsMultiplicityFT0CAfterSel;
 
 constexpr int Li4PDG = o2::constants::physics::Pdg::kLithium4;
 constexpr int H3LPDG = o2::constants::physics::Pdg::kHyperTriton;
@@ -172,6 +202,28 @@ constexpr std::array<double, 3> kHePidTrkPtParamsHeDefault = {0.3101, -0.1759, 0
 constexpr std::array<double, 3> kHePidTrkPParamsHeDefault = {0., 0., 0.};
 
 } // namespace
+
+struct CollisionInfo {
+  int64_t collisionID = -1;
+  uint32_t selectionFlags = 0;
+  float posZ = -999.f;
+  int numContributors = -1;
+  float centFT0C = -999.f;
+  int multFT0C = -1;
+  float occupancy = -999.f;
+
+  template <typename Collision>
+  void fillFromCollision(const Collision& collision, uint32_t collisionSelectionFlag)
+  {
+    collisionID = collision.globalIndex();
+    selectionFlags = collisionSelectionFlag;
+    posZ = collision.posZ();
+    numContributors = collision.numContrib();
+    centFT0C = collision.centFT0C();
+    multFT0C = collision.multFT0C();
+    occupancy = collision.trackOccupancyInTimeRange();
+  }
+};
 
 struct He3HadCandidate {
 
@@ -349,6 +401,8 @@ struct he3HadronFemto {
   o2::aod::ITSResponse mResponseITS;
 
   std::vector<bool> mGoodCollisions;
+  std::vector<int> mMcCollisionIdToRecoCollisionId;
+  std::vector<uint32_t> mCollisionSelectionFlags;
   std::vector<SVCand> mTrackPairs;
   o2::vertexing::DCAFitterN<2> mFitter;
   svPoolCreator mSvPoolCreator{He3PDG, ProtonPDG};
@@ -367,39 +421,12 @@ struct he3HadronFemto {
       {"hVtxZ", "Vertex distribution in Z;Z (cm)", {HistType::kTH1F, {{400, -20.0, 20.0}}}},
       {"hCentralityFT0A", ";Centrality FT0A (%)", {HistType::kTH1F, {{100, 0, 100.0}}}},
       {"hCentralityFT0C", ";Centrality FT0C (%)", {HistType::kTH1F, {{100, 0, 100.0}}}},
-      {"hNcontributor", "Number of primary vertex contributor", {HistType::kTH1F, {{2000, 0.0f, 2000.0f}}}},
+      {"hNcontributor", "Number of primary vertex contributor", {HistType::kTH1F, {{200, 0.0f, 2000.0f}}}},
       {"hTrackSel", "Accepted tracks", {HistType::kTH1F, {{Selections::kAll, -0.5, static_cast<double>(Selections::kAll) - 0.5}}}},
       {"hEmptyPool", "svPoolCreator did not find track pairs false/true", {HistType::kTH1F, {{2, -0.5, 1.5}}}},
       {"hhe3HadInvMass", "; M(^{3}He + p) (GeV/#it{c}^{2})", {HistType::kTH1F, {{300, 3.74f, 4.34f}}}},
       {"hhe3HadKstar", "; #it{k}* (GeV/#it{c})", {HistType::kTH1F, {{300, 0.f, 0.8f}}}},
       {"hKstarRecVsKstarGen", "; #it{k}*_{gen} (GeV/#it{c}); #it{k}*_{rec} (GeV/#it{c})", {HistType::kTH2F, {{400, 0.f, 0.8f}, {400, 0.f, 0.8f}}}},
-
-      {"He3/hDCAxyHe3", "^{3}He;DCA_{xy} (cm)", {HistType::kTH1F, {{200, -0.5f, 0.5f}}}},
-      {"He3/hDCAzHe3", "^{3}He;DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
-      {"He3/hNClsHe3ITS", "^{3}He;N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
-      {"He3/hChi2NClHe3ITS", "^{3}He;Chi2_{ITS} Ncluster", {HistType::kTH1F, {{100, 0, 100.0f}}}},
-      {"He3/hHe3Pt", "^{3}He; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
-      {"He3/h2dEdxHe3candidates", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
-      {"He3/h2NsigmaHe3ITS", "NsigmaHe3 ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS}(^{3}He); Centrality FT0C (%)", {HistType::kTH3F, {{100, -5.0f, 5.0f}, {120, -3.0f, 3.0f}, {100, 0.0f, 100.0f}}}},
-      {"He3/h2NsigmaHe3ITS_preselection", "NsigmaHe3 ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS}(^{3}He); Centrality FT0C (%)", {HistType::kTH3F, {{50, -5.0f, 5.0f}, {120, -3.0f, 3.0f}, {100, 0.0f, 100.0f}}}},
-      {"He3/h2NsigmaHe3TPC", "NsigmaHe3 TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(^{3}He); Centrality FT0C (%)", {HistType::kTH3F, {{100, -5.0f, 5.0f}, {200, -5.0f, 5.0f}, {100, 0.0f, 100.0f}}}},
-      {"He3/h2NsigmaHe3TPC_preselection", "NsigmaHe3 TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(^{3}He); Centrality FT0C (%)", {HistType::kTH3F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {100, 0.0f, 100.0f}}}},
-
-      {"Had/hDCAxyHad", "had;DCA_{xy} (cm)", {HistType::kTH1F, {{200, -0.5f, 0.5f}}}},
-      {"Had/hDCAzHad", "had;DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
-      {"Had/hNClsHadITS", "had;N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
-      {"Had/hChi2NClHadITS", "had;Chi2_{ITS} Ncluster", {HistType::kTH1F, {{100, 0, 100.0f}}}},
-      {"Had/hHadronPt", "had; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
-      {"Had/h2NsigmaHadronITS", "NsigmaHadron ITS distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{ITS}(had); Centrality FT0C (%)", {HistType::kTH3F, {{200, -5.0f, 5.0f}, {200, -5.0f, 5.0f}, {100, 0.0f, 100.0f}}}},
-      {"Had/h2NsigmaHadronITS_preselection", "NsigmaHadron ITS distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS}(had); Centrality FT0C (%)", {HistType::kTH3F, {{200, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {100, 0.0f, 100.0f}}}},
-      {"Had/h2NsigmaHadronTPC", "NsigmaHadron TPC distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(had); Centrality FT0C (%)", {HistType::kTH3F, {{200, -5.0f, 5.0f}, {200, -5.0f, 5.0f}, {100, 0.0f, 100.0f}}}},
-      {"Had/h2NsigmaHadronTPC_preselection", "NsigmaHadron TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(had); Centrality FT0C (%)", {HistType::kTH3F, {{200, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {100, 0.0f, 100.0f}}}},
-      {"Had/h2NsigmaHadronTPC_mcBackground", "NsigmaHadron TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(had); Centrality FT0C (%)", {HistType::kTH3F, {{200, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {100, 0.0f, 100.0f}}}},
-      {"Had/h2NsigmaHadronTPC_mcSignal", "NsigmaHadron TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(had); Centrality FT0C (%)", {HistType::kTH3F, {{200, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {100, 0.0f, 100.0f}}}},
-      {"Had/h2NsigmaHadronTOF", "NsigmaHadron TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(had); Centrality FT0C (%)", {HistType::kTH3F, {{200, -5.0f, 5.0f}, {200, -5.0f, 5.0f}, {100, 0.0f, 100.0f}}}},
-      {"Had/h2NsigmaHadronTOF_preselection", "NsigmaHadron TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(had); Centrality FT0C (%)", {HistType::kTH3F, {{200, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {100, 0.0f, 100.0f}}}},
-      {"Had/h2NsigmaHadronTOF_mcBackground", "NsigmaHadron TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(had); Centrality FT0C (%)", {HistType::kTH3F, {{200, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {100, 0.0f, 100.0f}}}},
-      {"Had/h2NsigmaHadronTOF_mcSignal", "NsigmaHadron TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(had); Centrality FT0C (%)", {HistType::kTH3F, {{200, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {100, 0.0f, 100.0f}}}},
     },
     OutputObjHandlingPolicy::AnalysisObject,
     false,
@@ -431,8 +458,8 @@ struct he3HadronFemto {
     }
 
     mQaRegistry.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(1, "All");
-    for (int iSel = 1; iSel < nuclei::evSel::kNevSels + 1; iSel++) {
-      mQaRegistry.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(iSel + 1, nuclei::eventSelectionLabels[iSel].c_str());
+    for (int iSel = 0; iSel < nuclei::evSel::kNevSels + 2; iSel++) {
+      mQaRegistry.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(iSel + 2, nuclei::eventSelectionLabels[iSel].c_str());
     }
 
     const int nBetheBlochParameters = 5;
@@ -485,6 +512,79 @@ struct he3HadronFemto {
 
     mQaRegistry.get<TH1>(HIST("hEmptyPool"))->GetXaxis()->SetBinLabel(1, "False");
     mQaRegistry.get<TH1>(HIST("hEmptyPool"))->GetXaxis()->SetBinLabel(2, "True");
+
+    if (doprocessSameEvent || doprocessMixedEvent || doprocessMC || doprocessPurity || doprocessPurityMc) {
+      mQaRegistry.add<TH1>("He3/hDCAxyHe3", "^{3}He;DCA_{xy} (cm)", HistType::kTH1F, {{200, -0.5f, 0.5f}});
+      mQaRegistry.add<TH1>("He3/hDCAzHe3", "^{3}He;DCA_{z} (cm)", HistType::kTH1F, {{200, -1.0f, 1.0f}});
+      mQaRegistry.add<TH1>("He3/hNClsHe3ITS", "^{3}He;N_{ITS} Cluster", HistType::kTH1F, {{20, -10.0f, 10.0f}});
+      mQaRegistry.add<TH1>("He3/hChi2NClHe3ITS", "^{3}He;Chi2_{ITS} Ncluster", HistType::kTH1F, {{100, 0, 100.0f}});
+      mQaRegistry.add<TH1>("He3/hHe3Pt", "^{3}He; #it{p}_{T} (GeV/#it{c})", HistType::kTH1F, {{240, -6.0f, 6.0f}});
+      mQaRegistry.add<TH2>("He3/h2dEdxHe3candidates", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}});
+      mQaRegistry.add<TH3>("He3/h2NsigmaHe3ITS", "NsigmaHe3 ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS}(^{3}He); Centrality FT0C (%)", HistType::kTH3F, {{100, -5.0f, 5.0f}, {120, -3.0f, 3.0f}, {100, 0.0f, 100.0f}});
+      mQaRegistry.add<TH3>("He3/h2NsigmaHe3ITS_preselection", "NsigmaHe3 ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS}(^{3}He); Centrality FT0C (%)", HistType::kTH3F, {{50, -5.0f, 5.0f}, {120, -3.0f, 3.0f}, {100, 0.0f, 100.0f}});
+      mQaRegistry.add<TH3>("He3/h2NsigmaHe3TPC", "NsigmaHe3 TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(^{3}He); Centrality FT0C (%)", HistType::kTH3F, {{100, -5.0f, 5.0f}, {100, -5.0f, 5.0f}, {100, 0.0f, 100.0f}});
+      mQaRegistry.add<TH3>("He3/h2NsigmaHe3TPC_preselection", "NsigmaHe3 TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(^{3}He); Centrality FT0C (%)", HistType::kTH3F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {100, 0.0f, 100.0f}});
+
+      mQaRegistry.add<TH1>("Had/hDCAxyHad", "had;DCA_{xy} (cm)", HistType::kTH1F, {{200, -0.5f, 0.5f}});
+      mQaRegistry.add<TH1>("Had/hDCAzHad", "had;DCA_{z} (cm)", HistType::kTH1F, {{200, -1.0f, 1.0f}});
+      mQaRegistry.add<TH1>("Had/hNClsHadITS", "had;N_{ITS} Cluster", HistType::kTH1F, {{20, -10.0f, 10.0f}});
+      mQaRegistry.add<TH1>("Had/hChi2NClHadITS", "had;Chi2_{ITS} Ncluster", HistType::kTH1F, {{100, 0, 100.0f}});
+      mQaRegistry.add<TH1>("Had/hHadronPt", "had; #it{p}_{T} (GeV/#it{c})", HistType::kTH1F, {{120, -3.0f, 3.0f}});
+      mQaRegistry.add<TH3>("Had/h2NsigmaHadronITS", "NsigmaHadron ITS distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{ITS}(had); Centrality FT0C (%)", HistType::kTH3F, {{200, -5.0f, 5.0f}, {100, -5.0f, 5.0f}, {100, 0.0f, 100.0f}});
+      mQaRegistry.add<TH3>("Had/h2NsigmaHadronITS_preselection", "NsigmaHadron ITS distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS}(had); Centrality FT0C (%)", HistType::kTH3F, {{200, -5.0f, 5.0f}, {120, -3.0f, 3.0f}, {100, 0.0f, 100.0f}});
+      mQaRegistry.add<TH3>("Had/h2NsigmaHadronTPC", "NsigmaHadron TPC distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(had); Centrality FT0C (%)", HistType::kTH3F, {{200, -5.0f, 5.0f}, {100, -5.0f, 5.0f}, {100, 0.0f, 100.0f}});
+      mQaRegistry.add<TH3>("Had/h2NsigmaHadronTPC_preselection", "NsigmaHadron TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(had); Centrality FT0C (%)", HistType::kTH3F, {{200, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {100, 0.0f, 100.0f}});
+      mQaRegistry.add<TH3>("Had/h2NsigmaHadronTOF", "NsigmaHadron TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(had); Centrality FT0C (%)", HistType::kTH3F, {{200, -5.0f, 5.0f}, {100, -5.0f, 5.0f}, {100, 0.0f, 100.0f}});
+      mQaRegistry.add<TH3>("Had/h2NsigmaHadronTOF_preselection", "NsigmaHadron TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(had); Centrality FT0C (%)", HistType::kTH3F, {{200, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {100, 0.0f, 100.0f}});
+
+      if (doprocessPurityMc) {
+        mQaRegistry.add<TH3>("Had/h2NsigmaHadronTPC_mcBackground", "NsigmaHadron TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(had); Centrality FT0C (%)", HistType::kTH3F, {{200, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {100, 0.0f, 100.0f}});
+        mQaRegistry.add<TH3>("Had/h2NsigmaHadronTPC_mcSignal", "NsigmaHadron TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(had); Centrality FT0C (%)", HistType::kTH3F, {{200, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {100, 0.0f, 100.0f}});
+        mQaRegistry.add<TH3>("Had/h2NsigmaHadronTOF_mcBackground", "NsigmaHadron TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(had); Centrality FT0C (%)", HistType::kTH3F, {{200, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {100, 0.0f, 100.0f}});
+        mQaRegistry.add<TH3>("Had/h2NsigmaHadronTOF_mcSignal", "NsigmaHadron TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(had); Centrality FT0C (%)", HistType::kTH3F, {{200, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {100, 0.0f, 100.0f}});
+      }
+    }
+
+    if (doprocessEventLossMC) {
+      hEvtMC = mQaRegistry.add<TH1>("EventLoss/hEvtMC", ";; ", HistType::kTH1D, {{3, -0.5, 2.5}});
+      hEvtMC->GetXaxis()->SetBinLabel(1, "All gen evts");
+      hEvtMC->GetXaxis()->SetBinLabel(2, "Gen evts with al least one reconstructed");
+      hEvtMC->GetXaxis()->SetBinLabel(3, "Gen evts with no reconstructed collisions");
+
+      hGenEventsNchEta05 = mQaRegistry.add<TH2>("EventLoss/hGenEventsNchEta05", ";;", HistType::kTH2D, {{400, 0.0f, 4000.0f}, {2, -0.5f, 1.5f}});
+      hGenEventsNchEta05->GetYaxis()->SetBinLabel(1, "All gen. events");
+      hGenEventsNchEta05->GetYaxis()->SetBinLabel(2, "Gen evts with at least 1 rec. collisions");
+      hGenEventsNchEta08 = mQaRegistry.add<TH2>("EventLoss/hGenEventsNchEta08", ";;", HistType::kTH2D, {{400, 0.0f, 4000.0f}, {2, -0.5f, 1.5f}});
+      hGenEventsNchEta08->GetYaxis()->SetBinLabel(1, "All gen. events");
+      hGenEventsNchEta08->GetYaxis()->SetBinLabel(2, "Gen evts with at least 1 rec. collisions");
+
+      hImpactParamGen = mQaRegistry.add<TH1>("EventLoss/hImpactParamGen", "Impact parameter of generated MC events; Impact Parameter (b); Counts", HistType::kTH1D, {{200, 0.0f, 20.0f}});
+      hImpactParamReco = mQaRegistry.add<TH1>("EventLoss/hImpactParamReco", "Impact parameter of generated MC events with at least one rec. evt; Impact Parameter (b); Counts", HistType::kTH1D, {{200, 0.0f, 20.0f}});
+      hRecoCentrality = mQaRegistry.add<TH1>("EventLoss/hRecoCentrality", "Centrality distribution of reconstructed MC events passed the event selection; Centrality FT0C (%); Counts", HistType::kTH1D, {{100, 0.0f, 100.0f}});
+      hRecoCentralityColvsMultiplicityRecoEta05 = mQaRegistry.add<TH2>("EventLoss/hRecoCentralityColvsMultiplicityRecoEta05", "; Centrality FT0C (%); Multiplicity #eta <0.5", HistType::kTH2D, {{100, 0.0f, 100.0f}, {400, 0.0f, 4000.0f}});
+      hRecoCentralityColvsMultiplicityRecoEta08 = mQaRegistry.add<TH2>("EventLoss/hRecoCentralityColvsMultiplicityRecoEta08", "; Centrality FT0C (%); Multiplicity #eta <0.8", HistType::kTH2D, {{100, 0.0f, 100.0f}, {400, 0.0f, 4000.0f}});
+      hRecoCentralityColvsMultiplicityFT0C = mQaRegistry.add<TH2>("EventLoss/hRecoCentralityColvsMultiplicityFT0C", "; Centrality FT0C (%); FT0C multiplicity", HistType::kTH2D, {{100, 0.0f, 100.0f}, {500, 0.0f, 3000.0f}});
+      hRecoCentralityColvsImpactParamReco = mQaRegistry.add<TH2>("EventLoss/hRecoCentralityColvsImpactParamReco", "; Centrality FT0C (%); Impact Parameter (b)", HistType::kTH2D, {{100, 0.0f, 100.0f}, {200, 0.0f, 20.0f}});
+
+      hImpactParamGenOneReco = mQaRegistry.add<TH1>("EventLoss/hImpactParamGenOneReco", "Impact parameter of generated MC events with at least one rec. evt and passed the event selection; Impact Parameter (b); Counts", HistType::kTH1D, {{200, 0.0f, 20.0f}});
+      hGenOneRecoCentrality = mQaRegistry.add<TH1>("EventLoss/hGenOneRecoCentrality", "Centrality distribution of generated MC events with at least one rec. evt and passed the event selection; Centrality FT0C (%); Counts", HistType::kTH1D, {{100, 0.0f, 100.0f}});
+      hGenCentralityColvsMultiplicityGenEta05 = mQaRegistry.add<TH2>("EventLoss/hGenCentralityColvsMultiplicityGenEta05", "; Centrality FT0C (%); Multiplicity #eta <0.5", HistType::kTH2D, {{100, 0.0f, 100.0f}, {400, 0.0f, 4000.0f}});
+      hGenCentralityColvsMultiplicityGenEta08 = mQaRegistry.add<TH2>("EventLoss/hGenCentralityColvsMultiplicityGenEta08", "; Centrality FT0C (%); Multiplicity #eta <0.8", HistType::kTH2D, {{100, 0.0f, 100.0f}, {400, 0.0f, 4000.0f}});
+      hGenCentralityColvsMultiplicityFT0C = mQaRegistry.add<TH2>("EventLoss/hGenCentralityColvsMultiplicityFT0C", "; Centrality FT0C (%); FT0C multiplicity", HistType::kTH2D, {{100, 0.0f, 100.0f}, {500, 0.0f, 3000.0f}});
+      hGenCentralityColvsImpactParamGen = mQaRegistry.add<TH2>("EventLoss/hGenCentralityColvsImpactParamGen", "; Centrality FT0C (%); Impact Parameter (b)", HistType::kTH2D, {{100, 0.0f, 100.0f}, {200, 0.0f, 20.0f}});
+
+      hGenLi4BeforeEvtSel = mQaRegistry.add<TH1>("EventLoss/hGenLi4BeforeEvtSel", "Li4 generated #it{p}_{T} distribution in all gen evt; #it{p}_{T} (GeV/#it{c}); Counts", HistType::kTH1D, {{240, 0.0f, 12.0f}});
+      hGenLi4vsImpactParameterBeforeEvtSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsImpactParameterBeforeEvtSel", "; #it{p}_{T} (GeV/#it{c}); Impact Parameter (b)", HistType::kTH2D, {{240, 0.0f, 12.0f}, {200, 0.0f, 20.0f}});
+      hGenLi4vsMultiplicityGenEta05BeforeEvtSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsMultiplicityGenEta05BeforeEvtSel", "; #it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.5", HistType::kTH2D, {{240, 0.0f, 12.0f}, {400, 0.0f, 4000.0f}});
+      hGenLi4vsMultiplicityGenEta08BeforeEvtSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsMultiplicityGenEta08BeforeEvtSel", "; #it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.8", HistType::kTH2D, {{240, 0.0f, 12.0f}, {400, 0.0f, 4000.0f}});
+      hGenLi4vsMultiplicityFT0CBeforeEvtSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsMultiplicityFT0CBeforeEvtSel", "; #it{p}_{T} (GeV/#it{c}); FT0C multiplicity", HistType::kTH2D, {{240, 0.0f, 12.0f}, {500, 0.0f, 3000.0f}});
+
+      hGenLi4AfterSel = mQaRegistry.add<TH1>("EventLoss/hGenLi4AfterSel", "Li4 generated #it{p}_{T} distribution in gen. evts with at least one rec. evt; #it{p}_{T} (GeV/#it{c}); Counts", HistType::kTH1D, {{240, 0.0f, 12.0f}});
+      hGenLi4vsImpactParameterAfterSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsImpactParameterAfterSel", "; #it{p}_{T} (GeV/#it{c}); Impact Parameter (b)", HistType::kTH2D, {{240, 0.0f, 12.0f}, {200, 0.0f, 20.0f}});
+      hGenLi4vsMultiplicityGenEta05AfterSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsMultiplicityGenEta05AfterSel", "; #it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.5", HistType::kTH2D, {{240, 0.0f, 12.0f}, {400, 0.0f, 4000.0f}});
+      hGenLi4vsMultiplicityGenEta08AfterSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsMultiplicityGenEta08AfterSel", "; #it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.8", HistType::kTH2D, {{240, 0.0f, 12.0f}, {400, 0.0f, 4000.0f}});
+      hGenLi4vsMultiplicityFT0CAfterSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsMultiplicityFT0CAfterSel", "; #it{p}_{T} (GeV/#it{c}); FT0C multiplicity", HistType::kTH2D, {{240, 0.0f, 12.0f}, {500, 0.0f, 3000.0f}});
+    }
   }
 
   void initCCDB(const aod::BCsWithTimestamps::iterator& bc)
@@ -529,16 +629,22 @@ struct he3HadronFemto {
   // ==================================================================================================================
 
   template <bool isMC, typename Tcollision>
-  bool selectCollision(const Tcollision& collision, const aod::BCsWithTimestamps&)
+  bool selectCollision(const Tcollision& collision, const aod::BCsWithTimestamps&, uint32_t& collisionSelectionFlag)
   {
     mQaRegistry.fill(HIST("hEvents"), 0);
+    if constexpr (isMC) {
+      if (collision.has_mcCollision()) {
+        mMcCollisionIdToRecoCollisionId[collision.mcCollisionId()] = collision.globalIndex();
+      }
+    }
 
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
-    if (!nuclei::eventSelection(collision, mQaRegistry, settingEventSelections, cutSettings.settingCutVertex)) {
+    if (!nuclei::eventSelection(collision, mQaRegistry, settingEventSelections, cutSettings.settingCutVertex, collisionSelectionFlag)) {
       return false;
     }
+
     if (settingSkimmedProcessing) {
       bool zorroSelected = mZorro.isSelected(collision.template bc_as<aod::BCsWithTimestamps>().globalBC());
       if (zorroSelected) {
@@ -977,8 +1083,7 @@ struct he3HadronFemto {
     }
   }
 
-  template <typename Tcoll>
-  void fillTable(const He3HadCandidate& he3Hadcand, const Tcoll& collision, bool isMC = false)
+  void fillTable(const He3HadCandidate& he3Hadcand, const CollisionInfo& collisionInfo, bool isMC = false)
   {
     outputDataTable(
       he3Hadcand.recoPtHe3(), he3Hadcand.recoEtaHe3(), he3Hadcand.recoPhiHe3(),
@@ -1000,8 +1105,9 @@ struct he3HadronFemto {
         he3Hadcand.l4PtMC, he3Hadcand.l4MassMC, he3Hadcand.flags);
     }
     outputMultiplicityTable(
-      collision.globalIndex(), collision.posZ(), collision.numContrib(),
-      collision.centFT0C(), collision.multFT0C());
+      collisionInfo.collisionID, collisionInfo.selectionFlags, collisionInfo.posZ,
+      collisionInfo.numContributors, collisionInfo.centFT0C, collisionInfo.multFT0C,
+      collisionInfo.occupancy);
     outputQaTable(
       he3Hadcand.trackIDHe3, he3Hadcand.trackIDHad, he3Hadcand.massTOFHe3,
       he3Hadcand.pidtrkHad, he3Hadcand.sharedClustersHad);
@@ -1052,7 +1158,9 @@ struct he3HadronFemto {
       }
       fillHistograms(he3Hadcand);
       auto collision = collisions.rawIteratorAt(he3Hadcand.collisionID);
-      fillTable(he3Hadcand, collision, /*isMC*/ false);
+      CollisionInfo collisionInfo;
+      collisionInfo.fillFromCollision(collision, mCollisionSelectionFlags[he3Hadcand.collisionID]);
+      fillTable(he3Hadcand, collisionInfo, /*isMC*/ false);
     }
   }
 
@@ -1146,8 +1254,15 @@ struct he3HadronFemto {
         He3HadCandidate he3Hadcand;
         fillCandidateInfoMC(mcHe3, mcHad, he3Hadcand);
         fillMotherInfoMC(mcHe3, mcHad, mcParticle, he3Hadcand);
-        auto collision = collisions.rawIteratorAt(he3Hadcand.collisionID);
-        fillTable(he3Hadcand, collision, /*isMC*/ true);
+
+        const auto mcCollisionId = mcParticle.mcCollisionId();
+        const auto collisionId = mMcCollisionIdToRecoCollisionId[mcCollisionId];
+        CollisionInfo collisionInfo;
+        if (collisionId >= 0) {
+          auto collision = collisions.rawIteratorAt(collisionId);
+          collisionInfo.fillFromCollision(collision, mCollisionSelectionFlags[collisionId]);
+        }
+        fillTable(he3Hadcand, collisionInfo, /*isMC*/ true);
       }
     }
   }
@@ -1158,16 +1273,20 @@ struct he3HadronFemto {
   {
     mGoodCollisions.clear();
     mGoodCollisions.resize(collisions.size(), false);
+    mCollisionSelectionFlags.clear();
+    mCollisionSelectionFlags.resize(collisions.size(), 0);
 
     for (const auto& collision : collisions) {
 
       mTrackPairs.clear();
 
-      if (!selectCollision</*isMC*/ false>(collision, bcs)) {
+      uint32_t collisionSelectionFlag = 0;
+      if (!selectCollision</*isMC*/ false>(collision, bcs, collisionSelectionFlag)) {
         continue;
       }
 
       mGoodCollisions[collision.globalIndex()] = true;
+      mCollisionSelectionFlags[collision.globalIndex()] = collisionSelectionFlag;
       const uint64_t collIdx = collision.globalIndex();
       auto trackTableThisCollision = tracks.sliceBy(mPerCol, collIdx);
       trackTableThisCollision.bindExternalIndices(&tracks);
@@ -1183,15 +1302,21 @@ struct he3HadronFemto {
   }
   PROCESS_SWITCH(he3HadronFemto, processSameEvent, "Process Same event", false);
 
-  void processMixedEvent(const CollisionsFull& collisions, const TrackCandidates& tracks)
+  void processMixedEvent(const CollisionsFull& collisions, const aod::BCsWithTimestamps& bcs, const TrackCandidates& tracks)
   {
     LOG(debug) << "Processing mixed event";
     mTrackPairs.clear();
+    mCollisionSelectionFlags.clear();
+    mCollisionSelectionFlags.resize(collisions.size(), 0);
 
     for (const auto& [c1, tracks1, c2, tracks2] : mPair) {
-      if (!c1.sel8() || !c2.sel8()) {
+      uint32_t collisionSelectionFlag1 = 0;
+      uint32_t collisionSelectionFlag2 = 0;
+      if (!selectCollision</*isMC*/ false>(c1, bcs, collisionSelectionFlag1) || !selectCollision</*isMC*/ false>(c2, bcs, collisionSelectionFlag2)) {
         continue;
       }
+      mCollisionSelectionFlags[c1.globalIndex()] = collisionSelectionFlag1;
+      mCollisionSelectionFlags[c2.globalIndex()] = collisionSelectionFlag2;
 
       mQaRegistry.fill(HIST("hNcontributor"), c1.numContrib());
       mQaRegistry.fill(HIST("hVtxZ"), c1.posZ());
@@ -1204,20 +1329,26 @@ struct he3HadronFemto {
   }
   PROCESS_SWITCH(he3HadronFemto, processMixedEvent, "Process Mixed event", false);
 
-  void processMC(const CollisionsFullMC& collisions, const aod::BCsWithTimestamps& bcs, const TrackCandidatesMC& tracks, const aod::McParticles& mcParticles)
+  void processMC(const CollisionsFullMC& collisions, const aod::McCollisions& mcCollisions, const aod::BCsWithTimestamps& bcs, const TrackCandidatesMC& tracks, const aod::McParticles& mcParticles)
   {
     std::vector<unsigned int> filledMothers;
 
     mGoodCollisions.clear();
     mGoodCollisions.resize(collisions.size(), false);
+    mMcCollisionIdToRecoCollisionId.clear();
+    mMcCollisionIdToRecoCollisionId.resize(mcCollisions.size(), -1);
+    mCollisionSelectionFlags.clear();
+    mCollisionSelectionFlags.resize(collisions.size(), 0);
 
     for (const auto& collision : collisions) {
 
       mTrackPairs.clear();
 
-      if (!selectCollision</*isMC*/ true>(collision, bcs)) {
+      uint32_t collisionSelectionFlag = 0;
+      if (!selectCollision</*isMC*/ true>(collision, bcs, collisionSelectionFlag)) {
         continue;
       }
+      mCollisionSelectionFlags[collision.globalIndex()] = collisionSelectionFlag;
 
       const uint64_t collIdx = collision.globalIndex();
       mGoodCollisions[collIdx] = true;
@@ -1296,9 +1427,11 @@ struct he3HadronFemto {
           fillMotherInfoMC(mctrackHe3, mctrackHad, motherParticle, he3Hadcand);
           filledMothers.push_back(motherParticle.globalIndex());
         }
-
         fillHistograms(he3Hadcand, /*isMc*/ true);
-        fillTable(he3Hadcand, collision, /*isMC*/ true);
+
+        CollisionInfo collisionInfo;
+        collisionInfo.fillFromCollision(collision, collisionSelectionFlag);
+        fillTable(he3Hadcand, collisionInfo, /*isMC*/ true);
       }
     }
 
@@ -1308,8 +1441,10 @@ struct he3HadronFemto {
 
   void processPurity(const CollisionsFull::iterator& collision, const TrackCandidates& tracks, const aod::BCsWithTimestamps& bcs)
   {
-    if (!selectCollision</*isMC*/ false>(collision, bcs))
+    uint32_t collisionSelectionFlag = 0; // dummy, purity study does not fill a tree
+    if (!selectCollision</*isMC*/ false>(collision, bcs, collisionSelectionFlag)) {
       return;
+    }
 
     for (const auto& track : tracks) {
 
@@ -1362,7 +1497,8 @@ struct he3HadronFemto {
 
   void processPurityMc(const CollisionsFullMC::iterator& collision, const TrackCandidatesMC& tracks, const aod::BCsWithTimestamps& bcs, const aod::McParticles& /*mcParticles*/, const aod::McTrackLabels& /*mcTrackLabels*/)
   {
-    if (!selectCollision</*isMC*/ false>(collision, bcs)) {
+    uint32_t collisionSelectionFlag = 0; // dummy, purity study does not fill a tree
+    if (!selectCollision</*isMC*/ false>(collision, bcs, collisionSelectionFlag)) {
       return;
     }
 
@@ -1420,6 +1556,110 @@ struct he3HadronFemto {
     }
   }
   PROCESS_SWITCH(he3HadronFemto, processPurityMc, "Process for purity studies mc", false);
+
+  void processEventLossMC(McCollisionMults::iterator const& mcCollision, soa::SmallGroups<EventCandidatesMC> const& collisions, aod::BCsWithTimestamps const& bcs, aod::McParticles const& mcParticles)
+  {
+    if (std::abs(mcCollision.posZ()) > cutSettings.settingCutVertex) {
+      return;
+    }
+
+    //////////// Event loss estimation via impact parameter and multiplicity by MCFT0C
+    hEvtMC->Fill(0);
+    hImpactParamGen->Fill(mcCollision.impactParameter());
+    hGenEventsNchEta05->Fill(mcCollision.multMCNParticlesEta05(), 0);
+    hGenEventsNchEta08->Fill(mcCollision.multMCNParticlesEta08(), 0);
+
+    if (collisions.size() == 0) {
+      hEvtMC->Fill(2);
+    }
+
+    bool atLeastOneRecoEvt = false;
+    auto centralityFT0C = -999.;
+    int biggestNContribs = -1;
+
+    for (const auto& col : collisions) {
+
+      uint32_t collisionSelectionFlag = 0;
+      // isMC == true only fills the collision vectors, which are not used in this workflow
+      if (!selectCollision</*isMC*/ false>(col, bcs, collisionSelectionFlag)) {
+        continue;
+      }
+
+      // In case of multiple reconstructed collisions associated to the same generated one, only consider the one with the biggest number of contributors
+      if (biggestNContribs < col.numContrib()) {
+        biggestNContribs = col.numContrib();
+        centralityFT0C = col.centFT0C();
+      }
+
+      atLeastOneRecoEvt = true;
+      hImpactParamReco->Fill(mcCollision.impactParameter());
+      hRecoCentrality->Fill(col.centFT0C());
+      hRecoCentralityColvsMultiplicityRecoEta05->Fill(col.centFT0C(), mcCollision.multMCNParticlesEta05());
+      hRecoCentralityColvsMultiplicityRecoEta08->Fill(col.centFT0C(), mcCollision.multMCNParticlesEta08());
+      hRecoCentralityColvsMultiplicityFT0C->Fill(col.centFT0C(), mcCollision.multMCFT0C());
+      hRecoCentralityColvsImpactParamReco->Fill(col.centFT0C(), mcCollision.impactParameter());
+    }
+
+    if (atLeastOneRecoEvt) {
+      hEvtMC->Fill(1);
+      hGenEventsNchEta05->Fill(mcCollision.multMCNParticlesEta05(), 1);
+      hGenEventsNchEta08->Fill(mcCollision.multMCNParticlesEta08(), 1);
+      hImpactParamGenOneReco->Fill(mcCollision.impactParameter());
+      hGenOneRecoCentrality->Fill(centralityFT0C);
+      hGenCentralityColvsMultiplicityGenEta05->Fill(centralityFT0C, mcCollision.multMCNParticlesEta05());
+      hGenCentralityColvsMultiplicityGenEta08->Fill(centralityFT0C, mcCollision.multMCNParticlesEta08());
+      hGenCentralityColvsMultiplicityFT0C->Fill(centralityFT0C, mcCollision.multMCFT0C());
+      hGenCentralityColvsImpactParamGen->Fill(centralityFT0C, mcCollision.impactParameter());
+    }
+
+    // Construct the Li4 (He3 + hadron) 4-vector from generated daughters by PDG
+    ROOT::Math::PxPyPzMVector daughHe3, daughHad, mother;
+    const double hadMass = settingHadPDGCode == PDG_t::kPiPlus ? o2::constants::physics::MassPiPlus : o2::constants::physics::MassProton;
+
+    for (const auto& genParticle : mcParticles) {
+      if (std::abs(genParticle.y()) > 1)
+        continue;
+      if (std::abs(genParticle.pdgCode()) != Li4PDG)
+        continue;
+
+      auto daughters = genParticle.daughters_as<aod::McParticles>();
+
+      bool dauHe3 = false, dauHad = false;
+      int he3Sign = 0, hadSign = 0;
+
+      for (const auto& daughter : daughters) {
+        if (std::abs(daughter.pdgCode()) == He3PDG) {
+          dauHe3 = true;
+          he3Sign = daughter.pdgCode() > 0 ? 1 : -1;
+          daughHe3 = ROOT::Math::PxPyPzMVector(daughter.px(), daughter.py(), daughter.pz(), o2::constants::physics::MassHelium3);
+        } else if (std::abs(daughter.pdgCode()) == settingHadPDGCode) {
+          dauHad = true;
+          hadSign = daughter.pdgCode() > 0 ? 1 : -1;
+          daughHad = ROOT::Math::PxPyPzMVector(daughter.px(), daughter.py(), daughter.pz(), hadMass);
+        }
+      }
+      // Only keep the charge combination consistent with a genuine Li4 decay
+      if (!dauHe3 || !dauHad || (he3Sign * hadSign) < 0)
+        continue;
+
+      mother = daughHe3 + daughHad;
+
+      hGenLi4BeforeEvtSel->Fill(mother.pt());
+      hGenLi4vsImpactParameterBeforeEvtSel->Fill(mother.pt(), mcCollision.impactParameter());
+      hGenLi4vsMultiplicityGenEta05BeforeEvtSel->Fill(mother.pt(), mcCollision.multMCNParticlesEta05());
+      hGenLi4vsMultiplicityGenEta08BeforeEvtSel->Fill(mother.pt(), mcCollision.multMCNParticlesEta08());
+      hGenLi4vsMultiplicityFT0CBeforeEvtSel->Fill(mother.pt(), mcCollision.multMCFT0C());
+
+      if (atLeastOneRecoEvt) {
+        hGenLi4AfterSel->Fill(mother.pt());
+        hGenLi4vsImpactParameterAfterSel->Fill(mother.pt(), mcCollision.impactParameter());
+        hGenLi4vsMultiplicityGenEta05AfterSel->Fill(mother.pt(), mcCollision.multMCNParticlesEta05());
+        hGenLi4vsMultiplicityGenEta08AfterSel->Fill(mother.pt(), mcCollision.multMCNParticlesEta08());
+        hGenLi4vsMultiplicityFT0CAfterSel->Fill(mother.pt(), mcCollision.multMCFT0C());
+      }
+    }
+  }
+  PROCESS_SWITCH(he3HadronFemto, processEventLossMC, "Event loss analysis", false);
 };
 
 WorkflowSpec defineDataProcessing(const ConfigContext& cfgc)

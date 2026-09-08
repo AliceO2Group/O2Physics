@@ -360,6 +360,7 @@ struct PidFlowPtCorr {
     ConfigurableAxis cfgaxisAbundancePr{"cfgaxisAbundancePr", {100, 0, 50}, "axis for Abundance Pr"};
 
     Configurable<bool> cfgOutPutAbundanceDis{"cfgOutPutAbundanceDis", false, "out put hists for pid particle Abundance QA"};
+    Configurable<bool> cfgOutputAbundanceYields{"cfgOutputAbundanceYields", false, "Output detector-PID abundance yields for pion, kaon, proton, and unidentified"};
   } particleAbundanceOpts;
 
   ConfigurableAxis cfgaxisVertex{"cfgaxisVertex", {20, -10, 10}, "vertex axis for histograms"};
@@ -511,8 +512,10 @@ struct PidFlowPtCorr {
     kPidRespPion = 0,
     kPidRespKaon,
     kPidRespProton,
-    kPidRespUnidentified,
-    kPidRespNRecoBins
+    kPidRespOther,
+    kPidRespNTrueBins,
+    kPidRespUnidentified = kPidRespOther,
+    kPidRespNRecoBins = kPidRespNTrueBins
   };
 
   // graphs for NUE / NUA
@@ -659,6 +662,16 @@ struct PidFlowPtCorr {
       // hist for Pr eff
       registry.add("correction/hPtCentMcRecPr", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
       registry.add("correction/hPtCentMcGenPr", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+      // Charged-track reconstruction efficiency split by MC true species.
+      // Detector PID is deliberately not used for these numerators.
+      registry.add("correction/hPtCentMcRecTruePi", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+      registry.add("correction/hPtCentMcRecTrueKa", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+      registry.add("correction/hPtCentMcRecTruePr", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+      registry.add("correction/hPtCentMcRecTrueOther", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+      registry.add("correction/hPtCentMcGenTruePi", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+      registry.add("correction/hPtCentMcGenTrueKa", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+      registry.add("correction/hPtCentMcGenTruePr", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+      registry.add("correction/hPtCentMcGenTrueOther", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
     } // cfgoutputMC
 
     if (switchsOpts.cfgOutPutMC1D.value) {
@@ -705,6 +718,12 @@ struct PidFlowPtCorr {
       registry.add("abundance/hNumOfPiEventCount", "", {HistType::kTH1D, {particleAbundanceOpts.cfgaxisAbundancePi}});
       registry.add("abundance/hNumOfKaEventCount", "", {HistType::kTH1D, {particleAbundanceOpts.cfgaxisAbundanceKa}});
       registry.add("abundance/hNumOfPrEventCount", "", {HistType::kTH1D, {particleAbundanceOpts.cfgaxisAbundancePr}});
+    }
+    if (particleAbundanceOpts.cfgOutputAbundanceYields.value) {
+      registry.add("abundance/hPtCentDataPi", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+      registry.add("abundance/hPtCentDataKa", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+      registry.add("abundance/hPtCentDataPr", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+      registry.add("abundance/hPtCentDataUnidentified", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
     }
 
     // set bin label for hEventCount
@@ -802,8 +821,8 @@ struct PidFlowPtCorr {
     // end set bin label for eventcount
 
     if (switchsOpts.cfgAddPidResponseMatrixHistograms.value) {
-      registry.add("pidResponseMatrix/hPidResponseMatrix", "PID response matrix;true PID;reconstructed PID", {HistType::kTH2D, {{3, -0.5, 2.5}, {4, -0.5, 3.5}}});
-      registry.add("pidResponseMatrix/hPidResponseMatrixRecPtCent", "PID response matrix vs reconstructed pT and centrality;true PID;reconstructed PID;p_{T}^{rec} (GeV/#it{c});Centrality (%)", {HistType::kTHnSparseF, {{3, -0.5, 2.5}, {4, -0.5, 3.5}, cfgaxisPt, axisMultiplicity}});
+      registry.add("pidResponseMatrix/hPidResponseMatrix", "PID response matrix;true PID;reconstructed PID", {HistType::kTH2D, {{4, -0.5, 3.5}, {4, -0.5, 3.5}}});
+      registry.add("pidResponseMatrix/hPidResponseMatrixRecPtCent", "PID response matrix vs reconstructed pT and centrality;true PID;reconstructed PID;p_{T}^{rec} (GeV/#it{c});Centrality (%)", {HistType::kTHnSparseF, {{4, -0.5, 3.5}, {4, -0.5, 3.5}, cfgaxisPt, axisMultiplicity}});
 
       auto setPidResponseLabels = [](TAxis* axis, bool includeUnidentified) {
         axis->SetBinLabel(kPidRespPion + 1, "Pion");
@@ -811,6 +830,8 @@ struct PidFlowPtCorr {
         axis->SetBinLabel(kPidRespProton + 1, "Proton");
         if (includeUnidentified) {
           axis->SetBinLabel(kPidRespUnidentified + 1, "Unidentified");
+        } else {
+          axis->SetBinLabel(kPidRespOther + 1, "Other");
         }
       };
       setPidResponseLabels(registry.get<TH2>(HIST("pidResponseMatrix/hPidResponseMatrix"))->GetXaxis(), false);
@@ -1018,8 +1039,8 @@ struct PidFlowPtCorr {
     // pushback
     // Data
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP08 {2} refN08 {-2}", "Ref08Gap22", false)); // 0
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN {2 2} refP {-2 -2}", "Ref0Gap24", false));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN {2} refP {-2}", "Ref0Gap22", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("reffull {2 2 -2 -2}", "RefFull24", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("reffull {2 -2}", "RefFull22", false));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP08 {3} refN08 {-3}", "Ref08Gap32", false));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP08 {3 3} refN08 {-3 -3}", "Ref08Gap34", false));
 
@@ -1029,12 +1050,12 @@ struct PidFlowPtCorr {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaP08 {2} refN08 {-2}", "Kaon08gap22b", false));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN08 {2} refP08 {-2}", "Prot08gap22a", false));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrP08 {2} refN08 {-2}", "Prot08gap22b", false)); // 10
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN refN | olPiN {2 2} refP {-2 -2}", "Pion0gap24a", false));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiP refP | olPiP {2 2} refN {-2 -2}", "Pion0gap24b", false));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN refN | olKaN {2 2} refP {-2 -2}", "Kaon0gap24a", false));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaP refP | olKaP {2 2} refN {-2 -2}", "Kaon0gap24b", false));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN refN | olPrN {2 2} refP {-2 -2}", "Prot0gap24a", false)); // 15
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrP refP | olPrP {2 2} refN {-2 -2}", "Prot0gap24b", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN reffull | olPiN {2 2 -2 -2}", "PionFull24a", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiP reffull | olPiP {2 2 -2 -2}", "PionFull24b", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN reffull | olKaN {2 2 -2 -2}", "KaonFull24a", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaP reffull | olKaP {2 2 -2 -2}", "KaonFull24b", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN reffull | olPrN {2 2 -2 -2}", "ProtFull24a", false)); // 15
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrP reffull | olPrP {2 2 -2 -2}", "ProtFull24b", false));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN08 {3} refP08 {-3}", "Pion08gap32a", false));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiP08 {3} refN08 {-3}", "Pion08gap32b", false));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN08 {3} refP08 {-3}", "Kaon08gap32a", false));
@@ -1055,20 +1076,20 @@ struct PidFlowPtCorr {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN08 {3} poiKaP08 {-3}", "KaKa08gap33", false));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN08 {3} poiPrP08 {-3}", "PrPr08gap33", false));
 
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN {2} refP {-2}", "Pion0gap22a", false)); // 35
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiP {2} refN {-2}", "Pion0gap22b", false));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN {2} refP {-2}", "Kaon0gap22a", false));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaP {2} refN {-2}", "Kaon0gap22b", false));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN {2} refP {-2}", "Prot0gap22a", false));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrP {2} refN {-2}", "Prot0gap22b", false)); // 40
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN reffull | olPiN {2 -2}", "PionFull22a", false)); // 35
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiP reffull | olPiP {2 -2}", "PionFull22b", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN reffull | olKaN {2 -2}", "KaonFull22a", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaP reffull | olKaP {2 -2}", "KaonFull22b", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN reffull | olPrN {2 -2}", "ProtFull22a", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrP reffull | olPrP {2 -2}", "ProtFull22b", false)); // 40
 
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiUnidentifiedN08 {2} refP08 {-2}", "Unidentified08gap22a", false)); // 41
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiUnidentifiedP08 {2} refN08 {-2}", "Unidentified08gap22b", false));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiUnidentifiedN refN | olUnidentifiedN {2 2} refP {-2 -2}", "Unidentified0gap24a", false));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiUnidentifiedP refP | olUnidentifiedP {2 2} refN {-2 -2}", "Unidentified0gap24b", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiUnidentifiedN reffull | olUnidentifiedN {2 2 -2 -2}", "UnidentifiedFull24a", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiUnidentifiedP reffull | olUnidentifiedP {2 2 -2 -2}", "UnidentifiedFull24b", false));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiUnidentifiedN08 {2} poiUnidentifiedP08 {-2}", "UnidentifiedPure08gap22", false));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiUnidentifiedN {2} refP {-2}", "Unidentified0gap22a", false));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiUnidentifiedP {2} refN {-2}", "Unidentified0gap22b", false)); // 47
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiUnidentifiedN reffull | olUnidentifiedN {2 -2}", "UnidentifiedFull22a", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiUnidentifiedP reffull | olUnidentifiedP {2 -2}", "UnidentifiedFull22b", false)); // 47
 
     if (corrconfigs.size() != corrConfigIndex::kCount) {
       LOGF(fatal, "Correlation index table expects %zu configurations, but %zu were created", static_cast<std::size_t>(corrConfigIndex::kCount), corrconfigs.size());
@@ -1401,7 +1422,7 @@ struct PidFlowPtCorr {
       case PDG_t::kProton:
         return kPidRespProton;
       default:
-        return -1;
+        return kPidRespOther;
     }
   }
 
@@ -1417,6 +1438,12 @@ struct PidFlowPtCorr {
       default:
         return kPidRespUnidentified;
     }
+  }
+
+  template <typename McParticle>
+  int getTrueSpeciesBin(McParticle const& particle)
+  {
+    return getPidResponseTrueBin(particle.pdgCode());
   }
 
   // pid util function
@@ -2716,6 +2743,17 @@ struct PidFlowPtCorr {
       // Unified PID logic (configurable)
       // ------------------------------
       int pid = getPidConfigurable(track);
+      if (particleAbundanceOpts.cfgOutputAbundanceYields.value && withinPtRefGlobal) {
+        if (pid == MyParticleType::kPion) {
+          registry.fill(HIST("abundance/hPtCentDataPi"), track.pt(), cent);
+        } else if (pid == MyParticleType::kKaon) {
+          registry.fill(HIST("abundance/hPtCentDataKa"), track.pt(), cent);
+        } else if (pid == MyParticleType::kProton) {
+          registry.fill(HIST("abundance/hPtCentDataPr"), track.pt(), cent);
+        } else {
+          registry.fill(HIST("abundance/hPtCentDataUnidentified"), track.pt(), cent);
+        }
+      }
       if (pid == -1 && withinPtRefGlobal) {
         // Unidentified tracks have no PID-specific correction. Reuse exactly
         // the charged NUA/NUE (including the optional local-density factor).
@@ -3363,7 +3401,7 @@ struct PidFlowPtCorr {
 
       float weight = 1.f;
       setParticleNUEWeight(weight, track, cent, pid);
-      const std::size_t index = static_cast<std::size_t>(pid - MyParticleType::kPion);
+      const auto index = static_cast<std::size_t>(pid - MyParticleType::kPion);
       const double particleWeight = weight;
       const double weight2 = particleWeight * particleWeight;
       const double pt = track.pt();
@@ -3710,8 +3748,8 @@ struct PidFlowPtCorr {
   PROCESS_SWITCH(PidFlowPtCorr, processMCClosure, "Run truth-level MC flow closure", false);
 
   /**
-   * @brief this function is used to fill THn hist for NUA correction and for NUE correction
-   * @details hist THn: (runNumberIDX, phi, eta, Vz), note that different runNumber will be put in the same hist
+   * @brief Fill THnSparse histograms used to derive NUA weights
+   * @details Histograms use (runNumberIDX, phi, eta, Vz, pT); cfgUseNUAWithPt enables NUE weighting before filling
    *
    * @param collision
    * @param tracks
@@ -3741,6 +3779,10 @@ struct PidFlowPtCorr {
       return;
     }
     // end collision cut
+
+    if (switchsOpts.cfgUseNUAWithPt.value) {
+      loadCorrections(bc.timestamp());
+    }
 
     // loop the vector, find the place to put (phi eta Vz)
     // if the run number is new, create one
@@ -3778,24 +3820,32 @@ struct PidFlowPtCorr {
 
       // fill the THn
       if (isWithinRefPtRange(track.pt())) {
-        registry.fill(HIST("correction/hRunNumberPhiEtaVertex"), matchedPosition, track.phi(), track.eta(), collision.posZ(), track.pt());
+        float weightNUE = 1.f;
+        if (switchsOpts.cfgUseNUAWithPt.value) {
+          setParticleNUEWeight(weightNUE, track, cent);
+        }
+        registry.fill(HIST("correction/hRunNumberPhiEtaVertex"), matchedPosition, track.phi(), track.eta(), collision.posZ(), track.pt(), weightNUE);
       }
 
       int pid = this->getPidConfigurable(track);
       if (!isWithinPOIPtRange(pid, track.pt())) {
         continue;
       }
+      float weightNUEPid = 1.f;
+      if (switchsOpts.cfgUseNUAWithPt.value) {
+        setParticleNUEWeight(weightNUEPid, track, cent, pid);
+      }
       switch (pid) {
         case MyParticleType::kPion:
-          registry.fill(HIST("correction/hRunNumberPhiEtaVertexPion"), matchedPosition, track.phi(), track.eta(), collision.posZ(), track.pt());
+          registry.fill(HIST("correction/hRunNumberPhiEtaVertexPion"), matchedPosition, track.phi(), track.eta(), collision.posZ(), track.pt(), weightNUEPid);
           break;
 
         case MyParticleType::kKaon:
-          registry.fill(HIST("correction/hRunNumberPhiEtaVertexKaon"), matchedPosition, track.phi(), track.eta(), collision.posZ(), track.pt());
+          registry.fill(HIST("correction/hRunNumberPhiEtaVertexKaon"), matchedPosition, track.phi(), track.eta(), collision.posZ(), track.pt(), weightNUEPid);
           break;
 
         case MyParticleType::kProton:
-          registry.fill(HIST("correction/hRunNumberPhiEtaVertexProton"), matchedPosition, track.phi(), track.eta(), collision.posZ(), track.pt());
+          registry.fill(HIST("correction/hRunNumberPhiEtaVertexProton"), matchedPosition, track.phi(), track.eta(), collision.posZ(), track.pt(), weightNUEPid);
           break;
 
         default:
@@ -4031,9 +4081,6 @@ struct PidFlowPtCorr {
       }
 
       const int truePidBin = getPidResponseTrueBin(mcParticle.pdgCode());
-      if (truePidBin < 0) {
-        continue;
-      }
       const int recoPidBin = getPidResponseRecoBin(getPidConfigurable(track));
 
       registry.fill(HIST("pidResponseMatrix/hPidResponseMatrix"), truePidBin, recoPidBin);
@@ -4096,6 +4143,21 @@ struct PidFlowPtCorr {
           if (track.hasITS() && track.hasTPC() && trackSelected4ITS(track) && trackSelected4TPC(track)) {
             // graph for all particles
             registry.fill(HIST("correction/hPtCentMcRec"), track.pt(), cent);
+
+            switch (getTrueSpeciesBin(mcParticle)) {
+              case kPidRespPion:
+                registry.fill(HIST("correction/hPtCentMcRecTruePi"), track.pt(), cent);
+                break;
+              case kPidRespKaon:
+                registry.fill(HIST("correction/hPtCentMcRecTrueKa"), track.pt(), cent);
+                break;
+              case kPidRespProton:
+                registry.fill(HIST("correction/hPtCentMcRecTruePr"), track.pt(), cent);
+                break;
+              default:
+                registry.fill(HIST("correction/hPtCentMcRecTrueOther"), track.pt(), cent);
+                break;
+            }
 
             // ------------------------------
             // Unified PID logic (configurable)
@@ -4178,6 +4240,21 @@ struct PidFlowPtCorr {
         if (particleSelected(mcParticle) && mcParticle.isPhysicalPrimary()) {
           // graph for all particles
           registry.fill(HIST("correction/hPtCentMcGen"), mcParticle.pt(), cent);
+
+          switch (getTrueSpeciesBin(mcParticle)) {
+            case kPidRespPion:
+              registry.fill(HIST("correction/hPtCentMcGenTruePi"), mcParticle.pt(), cent);
+              break;
+            case kPidRespKaon:
+              registry.fill(HIST("correction/hPtCentMcGenTrueKa"), mcParticle.pt(), cent);
+              break;
+            case kPidRespProton:
+              registry.fill(HIST("correction/hPtCentMcGenTruePr"), mcParticle.pt(), cent);
+              break;
+            default:
+              registry.fill(HIST("correction/hPtCentMcGenTrueOther"), mcParticle.pt(), cent);
+              break;
+          }
 
           // identify particle and fill graph
           if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus) {

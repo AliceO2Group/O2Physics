@@ -1892,11 +1892,31 @@ class BuilderModule
             if (mcParticle.has_daughters()) {
               auto const& daughters = mcParticle.template daughters_as<aod::McParticles>();
 
+              // For the K0s (main channel of interest):
+              // K0s --> pi+ pi- (69.20%)
+              // K0s --> pi0 pi0 (30.69%)
+              // For the Lambda (main channel of interest):
+              // Lambda --> p pi- (64.1%)
+              // Lambda --> n pi0 (35.9%)
               for (const auto& dau : daughters) {
                 if (dau.getProcess() != TMCProcess::kPDecay)
                   continue;
 
+                // proton, neutron, pi+, e+, pi0
                 if (dau.pdgCode() > 0) {
+                  // special treatment of Lambda --> neutron pi0 (both PDG codes > 0)
+                  //                  and K0s --> pi0 pi0 (both PDG codes > 0)
+                  // take neutron as positive daughter and pi0 as negative daughter
+                  // if the first daughter was the pi0 (already assigned as positive),
+                  // then transfer the information to the negative and fill the information
+                  // of the positive daughter with those of the neutrons
+                  if (thisInfo.pdgCodePositive > -1 && thisInfo.pdgCodePositive == PDG_t::kPi0) {
+                    thisInfo.pdgCodeNegative = thisInfo.pdgCodePositive;
+                    thisInfo.processNegative = thisInfo.processPositive;
+                    thisInfo.negP[0] = thisInfo.posP[0];
+                    thisInfo.negP[1] = thisInfo.posP[1];
+                    thisInfo.negP[2] = thisInfo.posP[2];
+                  }
                   thisInfo.pdgCodePositive = dau.pdgCode();
                   thisInfo.processPositive = dau.getProcess();
                   thisInfo.posP[0] = dau.px();
@@ -1906,6 +1926,7 @@ class BuilderModule
                   thisInfo.xyz[1] = dau.vy();
                   thisInfo.xyz[2] = dau.vz();
                 }
+                // antiproton, antineutron, pi-, e- (pi0 cannot have negative PDG code)
                 if (dau.pdgCode() < 0) {
                   thisInfo.pdgCodeNegative = dau.pdgCode();
                   thisInfo.processNegative = dau.getProcess();
@@ -2442,7 +2463,16 @@ class BuilderModule
                   if (dau.getProcess() != TMCProcess::kPDecay) // check whether the daughter comes from a decay
                     continue;
 
-                  if (std::abs(dau.pdgCode()) == PDG_t::kPiPlus || std::abs(dau.pdgCode()) == PDG_t::kKPlus) {
+                  // Dominant decay channels for charged Xi and Omega are:
+                  // Xi- --> Lambda pi- ; Xi+ --> Lambda pi+ (99.887%) --> recover information of all daughters
+                  // Omega- --> Lambda K- ; Omega+ --> Lambda K+ (67.7%) --> recover information of all daughters
+                  // Omega- --> Xi0 pi- ; Omega+ --> Xi0 pi+ (24.3%) --> recover information of only Xi0 and pions
+                  // Omega- --> Xi- pi0 ; Omega+ --> Xi+ pi0 (8.55%) --> recover information of only Xi and pions
+                  //
+                  // For the Lambda (main channel of interest):
+                  // Lambda --> p pi- (64.1%)
+                  // Lambda --> n pi0 (35.9%)
+                  if (std::abs(dau.pdgCode()) == PDG_t::kPiPlus || std::abs(dau.pdgCode()) == PDG_t::kPi0 || std::abs(dau.pdgCode()) == PDG_t::kKPlus) {
                     thisCascInfo.pdgCodeBachelor = dau.pdgCode();
                     thisCascInfo.bachP[0] = dau.px();
                     thisCascInfo.bachP[1] = dau.py();
@@ -2452,6 +2482,7 @@ class BuilderModule
                     thisCascInfo.xyz[2] = dau.vz();
                     thisCascInfo.mcParticleBachelor = dau.globalIndex();
                   }
+                  // Treatment of Lambda --> p pi ; Lambda --> n pi
                   if (std::abs(dau.pdgCode()) == PDG_t::kLambda0) {
                     thisCascInfo.pdgCodeV0 = dau.pdgCode();
 
@@ -2459,7 +2490,21 @@ class BuilderModule
                       if (v0Dau.getProcess() != TMCProcess::kPDecay)
                         continue;
 
+                      // proton, neutron, pi+, pi0
                       if (v0Dau.pdgCode() > 0) {
+                        // special treatment of Lambda --> neutron pi0 (both PDG codes > 0)
+                        // take neutron as positive daughter and pi0 as negative daughter
+                        // if the first daughter was the pi0 (already assigned as positive),
+                        // then transfer the information to the negative and fill the information
+                        // of the positive daughter with those of the neutrons
+                        if (thisCascInfo.pdgCodePositive > -1 && thisCascInfo.pdgCodePositive == PDG_t::kPi0) {
+                          thisCascInfo.pdgCodeNegative = thisCascInfo.pdgCodePositive;
+                          thisCascInfo.processNegative = thisCascInfo.processPositive;
+                          thisCascInfo.negP[0] = thisCascInfo.posP[0];
+                          thisCascInfo.negP[1] = thisCascInfo.posP[1];
+                          thisCascInfo.negP[2] = thisCascInfo.posP[2];
+                          thisCascInfo.mcParticleNegative = thisCascInfo.mcParticlePositive;
+                        }
                         thisCascInfo.pdgCodePositive = v0Dau.pdgCode();
                         thisCascInfo.processPositive = v0Dau.getProcess();
                         thisCascInfo.posP[0] = v0Dau.px();
@@ -2470,6 +2515,7 @@ class BuilderModule
                         thisCascInfo.lxyz[2] = v0Dau.vz();
                         thisCascInfo.mcParticlePositive = v0Dau.globalIndex();
                       }
+                      // antiproton, antineutron, pi- (pi0 cannot have negative PDG code)
                       if (v0Dau.pdgCode() < 0) {
                         thisCascInfo.pdgCodeNegative = v0Dau.pdgCode();
                         thisCascInfo.processNegative = v0Dau.getProcess();
@@ -2477,6 +2523,37 @@ class BuilderModule
                         thisCascInfo.negP[1] = v0Dau.py();
                         thisCascInfo.negP[2] = v0Dau.pz();
                         thisCascInfo.mcParticleNegative = v0Dau.globalIndex();
+                      }
+                    }
+                  }
+                  // Special treatment of Xi0 and Xi from Omega --> Xi0 pi ; Omega --> Xi pi0
+                  if (std::abs(dau.pdgCode()) == PDG_t::kXiMinus || std::abs(dau.pdgCode()) == o2::constants::physics::Pdg::kXi0) {
+                    thisCascInfo.pdgCodeV0 = dau.pdgCode();
+
+                    for (const auto& xiDau : dau.template daughters_as<aod::McParticles>()) {
+                      if (xiDau.getProcess() != TMCProcess::kPDecay)
+                        continue;
+
+                      // always put the Lambda in the positive
+                      if (std::abs(xiDau.pdgCode()) == PDG_t::kLambda0) {
+                        thisCascInfo.pdgCodePositive = xiDau.pdgCode();
+                        thisCascInfo.processPositive = xiDau.getProcess();
+                        thisCascInfo.posP[0] = xiDau.px();
+                        thisCascInfo.posP[1] = xiDau.py();
+                        thisCascInfo.posP[2] = xiDau.pz();
+                        thisCascInfo.lxyz[0] = xiDau.vx();
+                        thisCascInfo.lxyz[1] = xiDau.vy();
+                        thisCascInfo.lxyz[2] = xiDau.vz();
+                        thisCascInfo.mcParticlePositive = xiDau.globalIndex();
+                      }
+                      // always put the bachelor or the photon or the pi0 in the negative
+                      if (std::abs(xiDau.pdgCode()) == PDG_t::kPiPlus || std::abs(xiDau.pdgCode()) == PDG_t::kPi0 || std::abs(xiDau.pdgCode()) == PDG_t::kGamma) {
+                        thisCascInfo.pdgCodeNegative = xiDau.pdgCode();
+                        thisCascInfo.processNegative = xiDau.getProcess();
+                        thisCascInfo.negP[0] = xiDau.px();
+                        thisCascInfo.negP[1] = xiDau.py();
+                        thisCascInfo.negP[2] = xiDau.pz();
+                        thisCascInfo.mcParticleNegative = xiDau.globalIndex();
                       }
                     }
                   }

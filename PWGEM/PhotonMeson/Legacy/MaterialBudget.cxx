@@ -26,6 +26,7 @@
 
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -122,11 +123,11 @@ struct MaterialBudget {
 
   HistogramRegistry registry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
-  static constexpr std::string_view ItsClsNames[] = {
+  static constexpr std::array<std::string_view, 8> ItsClsNames{
     "ITSCls0", "ITSCls1", "ITSCls2", "ITSCls3",
     "ITSCls4", "ITSCls5", "ITSCls6", "ITSCls7"};
 
-  static constexpr std::string_view EventTypes[2] = {"before/", "after/"};
+  static constexpr std::array<std::string_view, 2> EventTypes{"before/", "after/"};
 
   Configurable<bool> cfgPlotBremsstrahlung{"cfgPlotBremsstrahlung", false, "produce plots to study Bremsstrahlung"};
   Configurable<bool> cfgPlotResolution{"cfgPlotResolution", false, "produce plots to study resolution"};
@@ -136,7 +137,6 @@ struct MaterialBudget {
   Configurable<bool> cfgPlotMBCollisions{"cfgPlotMBCollisions", false, "produce plots to study material distribution if collision association is wrong"};
 
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0}, ""};
-  const AxisSpec axisPt{binsPt, "#it{p}_{T} [GeV/c]"};
 
   EMPhotonEventCut fEMEventCut;
   struct : ConfigurableGroup {
@@ -317,7 +317,7 @@ struct MaterialBudget {
 
   void addhistograms()
   {
-
+    const AxisSpec axisPt{binsPt, "#it{p}_{T} [GeV/c]"};
     auto hCollisionCounter = registry.add<TH1>("Event/before/hCollisionCounter", "collision counter;;Number of events", kTH1F, {{10, 0.5, 10.5}}, false);
     hCollisionCounter->GetXaxis()->SetBinLabel(1, "all");
     hCollisionCounter->GetXaxis()->SetBinLabel(2, "No TF border");
@@ -608,43 +608,59 @@ struct MaterialBudget {
   template <int N>
   void fillITSClsNeg(HistogramRegistry& reg, float value)
   {
-    if constexpr (N == 0) // o2-linter: disable=magic-number (just numbers for ITS cluster)
+    if constexpr (N == 0) { // o2-linter: disable=magic-number (just numbers for ITS cluster)
       reg.fill(HIST("ITSHits/Neg/ITSCls0"), value);
-    if constexpr (N == 1) // o2-linter: disable=magic-number (just numbers for ITS cluster)
+    }
+    if constexpr (N == 1) { // o2-linter: disable=magic-number (just numbers for ITS cluster)
       reg.fill(HIST("ITSHits/Neg/ITSCls1"), value);
-    if constexpr (N == 2) // o2-linter: disable=magic-number (just numbers for ITS cluster)
+    }
+    if constexpr (N == 2) { // o2-linter: disable=magic-number (just numbers for ITS cluster)
       reg.fill(HIST("ITSHits/Neg/ITSCls2"), value);
-    if constexpr (N == 3) // o2-linter: disable=magic-number (just numbers for ITS cluster)
+    }
+    if constexpr (N == 3) { // o2-linter: disable=magic-number (just numbers for ITS cluster)
       reg.fill(HIST("ITSHits/Neg/ITSCls3"), value);
-    if constexpr (N == 4) // o2-linter: disable=magic-number (just numbers for ITS cluster)
+    }
+    if constexpr (N == 4) { // o2-linter: disable=magic-number (just numbers for ITS cluster)
       reg.fill(HIST("ITSHits/Neg/ITSCls4"), value);
-    if constexpr (N == 5) // o2-linter: disable=magic-number (just numbers for ITS cluster)
+    }
+    if constexpr (N == 5) { // o2-linter: disable=magic-number (just numbers for ITS cluster)
       reg.fill(HIST("ITSHits/Neg/ITSCls5"), value);
-    if constexpr (N == 6) // o2-linter: disable=magic-number (just numbers for ITS cluster)
+    }
+    if constexpr (N == 6) { // o2-linter: disable=magic-number (just numbers for ITS cluster)
       reg.fill(HIST("ITSHits/Neg/ITSCls6"), value);
-    if constexpr (N == 7) // o2-linter: disable=magic-number (just numbers for ITS cluster)
+    }
+    if constexpr (N == 7) { // o2-linter: disable=magic-number (just numbers for ITS cluster)
       reg.fill(HIST("ITSHits/Neg/ITSCls7"), value);
+    }
   }
 
   template <int N>
   void fillITSClsPos(HistogramRegistry& reg, float value)
   {
-    if constexpr (N == 0) // o2-linter: disable=magic-number (just numbers for ITS cluster)
+    if constexpr (N == 0) { // o2-linter: disable=magic-number (just numbers for ITS cluster)
       reg.fill(HIST("ITSHits/Pos/ITSCls0"), value);
-    if constexpr (N == 1) // o2-linter: disable=magic-number (just numbers for ITS cluster)
+    }
+    if constexpr (N == 1) { // o2-linter: disable=magic-number (just numbers for ITS cluster)
       reg.fill(HIST("ITSHits/Pos/ITSCls1"), value);
-    if constexpr (N == 2) // o2-linter: disable=magic-number (just numbers for ITS cluster)
+    }
+    if constexpr (N == 2) { // o2-linter: disable=magic-number (just numbers for ITS cluster)
       reg.fill(HIST("ITSHits/Pos/ITSCls2"), value);
-    if constexpr (N == 3) // o2-linter: disable=magic-number (just numbers for ITS cluster)
+    }
+    if constexpr (N == 3) { // o2-linter: disable=magic-number (just numbers for ITS cluster)
       reg.fill(HIST("ITSHits/Pos/ITSCls3"), value);
-    if constexpr (N == 4) // o2-linter: disable=magic-number (just numbers for ITS cluster)
+    }
+    if constexpr (N == 4) { // o2-linter: disable=magic-number (just numbers for ITS cluster)
       reg.fill(HIST("ITSHits/Pos/ITSCls4"), value);
-    if constexpr (N == 5) // o2-linter: disable=magic-number (just numbers for ITS cluster)
+    }
+    if constexpr (N == 5) { // o2-linter: disable=magic-number (just numbers for ITS cluster)
       reg.fill(HIST("ITSHits/Pos/ITSCls5"), value);
-    if constexpr (N == 6) // o2-linter: disable=magic-number (just numbers for ITS cluster)
+    }
+    if constexpr (N == 6) { // o2-linter: disable=magic-number (just numbers for ITS cluster)
       reg.fill(HIST("ITSHits/Pos/ITSCls6"), value);
-    if constexpr (N == 7) // o2-linter: disable=magic-number (just numbers for ITS cluster)
+    }
+    if constexpr (N == 7) { // o2-linter: disable=magic-number (just numbers for ITS cluster)
       reg.fill(HIST("ITSHits/Pos/ITSCls7"), value);
+    }
   }
 
   template <typename TV0s>
@@ -847,7 +863,7 @@ struct MaterialBudget {
   {
 
     for (const auto& collision : collisions) {
-      const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      const std::array<float, 3> centralities = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
@@ -983,24 +999,33 @@ struct MaterialBudget {
     if (pdgNeg == kElectron && pdgPos == kPositron) {
       return 1;
     }
-    if (pdgNeg == kElectron && pdgPos == kPiPlus)
+    if (pdgNeg == kElectron && pdgPos == kPiPlus) {
       return 2;
-    if (pdgNeg == kPiMinus && pdgPos == kPositron)
+    }
+    if (pdgNeg == kPiMinus && pdgPos == kPositron) {
       return 3;
-    if (pdgNeg == kKMinus && pdgPos == kPositron)
+    }
+    if (pdgNeg == kKMinus && pdgPos == kPositron) {
       return 4;
-    if (pdgNeg == kElectron && pdgPos == kKPlus)
+    }
+    if (pdgNeg == kElectron && pdgPos == kKPlus) {
       return 5;
-    if (pdgNeg == kProtonBar && pdgPos == kProton)
+    }
+    if (pdgNeg == kProtonBar && pdgPos == kProton) {
       return 6;
-    if (pdgNeg == kKMinus && pdgPos == kKPlus)
+    }
+    if (pdgNeg == kKMinus && pdgPos == kKPlus) {
       return 7;
-    if (pdgNeg == kPiMinus && pdgPos == kProton)
+    }
+    if (pdgNeg == kPiMinus && pdgPos == kProton) {
       return 8;
-    if (pdgNeg == kProtonBar && pdgPos == kPiPlus)
+    }
+    if (pdgNeg == kProtonBar && pdgPos == kPiPlus) {
       return 9;
-    if (pdgNeg == kMuonMinus && pdgPos == kMuonPlus)
+    }
+    if (pdgNeg == kMuonMinus && pdgPos == kMuonPlus) {
       return 10;
+    }
     return 11;
   }
 
@@ -1017,7 +1042,7 @@ struct MaterialBudget {
   {
     for (const auto& collision : filteredCollisions) {
 
-      const float centralities[3] = {
+      const std::array<float, 3> centralities = {
         collision.centFT0M(),
         collision.centFT0A(),
         collision.centFT0C()};
@@ -1235,7 +1260,6 @@ struct MaterialBudget {
 
       registry.fill(HIST("Bremsstrahlung/relativeResoPtWOBrems"), trk.pt(), trk.pt() * std::sqrt(trk.c1Pt21Pt2()));
 
-      bool isFirst = true;
       for (const auto& dId : mc.daughtersIds()) {
         if (dId < 0 || dId >= mcparticles.size()) {
           continue;
@@ -1259,9 +1283,7 @@ struct MaterialBudget {
         registry.fill(HIST("Bremsstrahlung/EnergyLossXY"), daughter.vx(), daughter.vy());
         registry.fill(HIST("Bremsstrahlung/EnergyLossXYWeigh"), daughter.vx(), daughter.vy(), daughter.e());
 
-        if (isFirst) {
-          registry.fill(HIST("Bremsstrahlung/relativeResoPtWBrems"), trk.pt(), trk.pt() * std::sqrt(trk.c1Pt21Pt2()));
-        }
+        registry.fill(HIST("Bremsstrahlung/relativeResoPtWBrems"), trk.pt(), trk.pt() * std::sqrt(trk.c1Pt21Pt2()));
 
         registry.fill(HIST("Bremsstrahlung/Sigma1PtVsR"), r, trk.sigma1Pt());
 
@@ -1279,7 +1301,6 @@ struct MaterialBudget {
       }
 
       registry.fill(HIST("Bremsstrahlung/NBrem"), nBrem);
-      isFirst = false;
     }
   }
 
@@ -1289,8 +1310,8 @@ struct MaterialBudget {
   PROCESS_SWITCH(MaterialBudget, processBremsstrahlung, "process material budget", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<MaterialBudget>(cfgc)};
+    adaptAnalysisTask<MaterialBudget>(context)};
 }

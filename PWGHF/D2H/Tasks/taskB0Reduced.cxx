@@ -10,13 +10,16 @@
 // or submit itself to any jurisdiction.
 
 /// \file taskB0Reduced.cxx
-/// \brief B0 → D- π+ → (π- K+ π-) π+ analysis task
+/// \brief B0 → D-/D*- π+ → (π- K+ π-) π+ analysis task
 ///
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
+/// \author Fabrizio Chinu <fabrizio.chinu@cern.ch>, Universita and INFN Torino
+/// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Polytechnic University of Turin and INFN
 
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
+#include "PWGHF/D2H/Utils/utilsFlow.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -38,6 +41,7 @@
 #include <Rtypes.h>
 
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <numeric>
 #include <string>
@@ -47,6 +51,7 @@ using namespace o2::aod;
 using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::analysis::hf_flow_utils;
 
 namespace o2::aod
 {
@@ -90,11 +95,19 @@ DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);        
 DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float);             //! Normalised transverse decay length of candidate
 DECLARE_SOA_COLUMN(DecayLengthD, decayLengthD, float);                                   //! Decay length of D-meson daughter candidate (cm)
 DECLARE_SOA_COLUMN(DecayLengthXYD, decayLengthXYD, float);                               //! Transverse decay length of D-meson daughter candidate (cm)
+DECLARE_SOA_COLUMN(DecayLengthDToB, decayLengthDToB, float);                             //! Decay length of D-meson daughter candidate from B decay vertex (cm)
+DECLARE_SOA_COLUMN(DecayLengthXYDToB, decayLengthXYDToB, float);                         //! Transverse decay length of D-meson daughter candidate from B decay vertex (cm)
 DECLARE_SOA_COLUMN(ImpactParameterD, impactParameterD, float);                           //! Impact parameter product of D-meson daughter candidate
 DECLARE_SOA_COLUMN(ImpactParameterBach, impactParameterBach, float);                     //! Impact parameter product of bachelor pion
 DECLARE_SOA_COLUMN(ImpactParameterProduct, impactParameterProduct, float);               //! Impact parameter product of daughters
 DECLARE_SOA_COLUMN(Cpa, cpa, float);                                                     //! Cosine pointing angle of candidate
 DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);                                                 //! Cosine pointing angle of candidate in transverse plane
+DECLARE_SOA_COLUMN(CpaD, cpaD, float);                                                   //! Cosine pointing angle of D candidate to PV
+DECLARE_SOA_COLUMN(CpaDXY, cpaDXY, float);                                               //! Cosine pointing angle of D candidate to PV in transverse plane
+DECLARE_SOA_COLUMN(CpaDToB, cpaDToB, float);                                             //! Cosine pointing angle of D candidate to B decay vertex
+DECLARE_SOA_COLUMN(CpaDToBXY, cpaDToBXY, float);                                         //! Cosine pointing angle of D candidate to B decay vertex in transverse plane
+DECLARE_SOA_COLUMN(ScalarProd, scalarProd, float);                                       //! Scalar product of B candidate
+DECLARE_SOA_COLUMN(Centrality, centrality, float);                                       //! Centrality of the collision
 DECLARE_SOA_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, float);                   //! Maximum normalized difference between measured and expected impact parameter of candidate prongs
 DECLARE_SOA_COLUMN(MlScoreSig, mlScoreSig, float);                                       //! ML score for signal class
 DECLARE_SOA_COLUMN(FlagWrongCollision, flagWrongCollision, int8_t);                      //! Flag for association with wrong collision
@@ -118,11 +131,19 @@ DECLARE_SOA_TABLE(HfRedCandB0Lites, "AOD", "HFREDCANDB0LITE", //! Table with som
                   hf_cand_b0_lite::MaxNormalisedDeltaIP,
                   hf_cand_b0_lite::MlScoreSig,
                   hf_sel_candidate_b0::IsSelB0ToDPi,
+                  hf_cand_b0_lite::ScalarProd,
+                  hf_cand_b0_lite::Centrality,
                   // D meson features
                   hf_cand_b0_lite::MD,
                   hf_cand_b0_lite::PtD,
                   hf_cand_b0_lite::DecayLengthD,
                   hf_cand_b0_lite::DecayLengthXYD,
+                  hf_cand_b0_lite::DecayLengthDToB,
+                  hf_cand_b0_lite::DecayLengthXYDToB,
+                  hf_cand_b0_lite::CpaD,
+                  hf_cand_b0_lite::CpaDXY,
+                  hf_cand_b0_lite::CpaDToB,
+                  hf_cand_b0_lite::CpaDToBXY,
                   hf_cand_b0_lite::ImpactParameterD,
                   hf_cand_b0_lite::PtDmesProngMin,
                   hf_cand_b0_lite::AbsEtaDmesProngMin,
@@ -189,7 +210,12 @@ struct HfTaskB0Reduced {
   Configurable<bool> fillBackground{"fillBackground", false, "Flag to enable filling of background histograms/sparses/tree (only MC)"};
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
+  Configurable<int> centralityEstimator{"centralityEstimator", 1, "Centrality estimator (FT0M: 0, FT0C: 1)"};
+  Configurable<int> harmonic{"harmonic", 2, "harmonic number"};
+  Configurable<int> qVecDetector{"qVecDetector", 3, "Detector for Q vector estimation (FT0M: 1, FT0A: 2, FT0C: 3, TPC Pos: 4, TPC Neg: 5, TPC Tot: 6)"};
 
+  using CollisionsWithCents = soa::Join<aod::HfRedCollisions, aod::HfRedCollCents>;
+  using CollisionsWithCentsQvecs = soa::Join<aod::HfRedCollisions, aod::HfRedCollCents, aod::HfRedQvectors>;
   using TracksBachPions = soa::Join<HfRedTracks, HfRedTracksPid>;
   using CandsDplus = soa::Join<HfRed3Prongs, HfRedPidDau0s, HfRedPidDau1s, HfRedPidDau2s>;
   using CandsDstar = soa::Join<HfRed2Prongs, HfRedPidDau0s, HfRedPidDau1s, HfRedSoftPiPid>;
@@ -201,8 +227,8 @@ struct HfTaskB0Reduced {
 
   void init(InitContext&)
   {
-    std::array<bool, 6> processFuncData{doprocessDataDplusPi, doprocessDataDplusPiWithDmesMl, doprocessDataDplusPiWithB0Ml,
-                                        doprocessDataDstarPi, doprocessDataDstarPiWithDmesMl};
+    std::array<bool, 8> processFuncData{doprocessDataDplusPi, doprocessDataDplusPiWithDmesMl, doprocessDataDplusPiWithDmesMlScalarProd, doprocessDataDplusPiWithB0Ml, doprocessDataDplusPiWithB0MlScalarProd,
+                                        doprocessDataDstarPi, doprocessDataDstarPiWithDmesMl, doprocessDataDstarPiWithDmesMlScalarProd};
     if ((std::accumulate(processFuncData.begin(), processFuncData.end(), 0)) > 1) {
       LOGP(fatal, "Only one process function for data can be enabled at a time.");
     }
@@ -229,10 +255,9 @@ struct HfTaskB0Reduced {
     const AxisSpec axisPtPi{100, 0.f, 10.f};
     const AxisSpec axisPtSoftPi{100, 0.f, 1.f};
 
-    std::array<bool, 9> processFuncDplusPi = {doprocessDataDplusPi, doprocessDataDplusPiWithDmesMl, doprocessDataDplusPiWithB0Ml,
-                                              doprocessMcDplusPi, doprocessMcDplusPiWithDecayTypeCheck, doprocessMcDplusPiWithDmesMl,
-                                              doprocessMcDplusPiWithDmesMlAndDecayTypeCheck, doprocessMcDplusPiWithB0Ml,
-                                              doprocessMcDplusPiWithB0MlAndDecayTypeCheck};
+    std::array<bool, 11> processFuncDplusPi = {doprocessDataDplusPi, doprocessDataDplusPiWithDmesMl, doprocessDataDplusPiWithDmesMlScalarProd, doprocessDataDplusPiWithB0Ml, doprocessDataDplusPiWithB0MlScalarProd,
+                                               doprocessMcDplusPi, doprocessMcDplusPiWithDecayTypeCheck, doprocessMcDplusPiWithDmesMl, doprocessMcDplusPiWithDmesMlAndDecayTypeCheck,
+                                               doprocessMcDplusPiWithB0Ml, doprocessMcDplusPiWithB0MlAndDecayTypeCheck};
     const AxisSpec axisMass = ((std::accumulate(processFuncDplusPi.begin(), processFuncDplusPi.end(), 0)) > 0) ? axisMassDminus : axisMassDeltaMassDStar;
     std::string dMesSpecie;
     if ((std::accumulate(processFuncDplusPi.begin(), processFuncDplusPi.end(), 0)) > 0) {
@@ -241,7 +266,8 @@ struct HfTaskB0Reduced {
       dMesSpecie += "D^{0}#pi^{#minus}";
     }
 
-    if (doprocessDataDplusPi || doprocessDataDplusPiWithDmesMl || doprocessDataDplusPiWithB0Ml || doprocessDataDstarPi || doprocessDataDstarPiWithDmesMl) {
+    if (doprocessDataDplusPi || doprocessDataDplusPiWithDmesMl || doprocessDataDplusPiWithB0Ml || doprocessDataDstarPi || doprocessDataDstarPiWithDmesMl ||
+        doprocessDataDplusPiWithDmesMlScalarProd || doprocessDataDplusPiWithB0MlScalarProd || doprocessDataDstarPiWithDmesMlScalarProd) {
       if (fillHistograms) {
         registry.add("hMass", "B^{0} candidates;#it{p}_{T}(B^{0}) (GeV/#it{c});#it{M} (D#pi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPtB0, axisMassB0}});
         registry.add("hDecLength", "B^{0} candidates;#it{p}_{T}(B^{0}) (GeV/#it{c});B^{0} candidate decay length (cm);entries", {HistType::kTH2F, {axisPtB0, axisDecayLength}});
@@ -271,19 +297,19 @@ struct HfTaskB0Reduced {
           registry.add("hDcaProng2", "B^{0} candidates;#it{p}_{T}(B^{0}) (GeV/#it{c});prong 2 (#pi^{#plus}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {axisPtB0, axisDca}});
         }
         // ML scores of D- daughter
-        if (doprocessDataDplusPiWithDmesMl || doprocessDataDstarPiWithDmesMl) {
+        if (doprocessDataDplusPiWithDmesMl || doprocessDataDplusPiWithDmesMlScalarProd || doprocessDataDstarPiWithDmesMl || doprocessDataDstarPiWithDmesMlScalarProd) {
           registry.add("hMlScoreBkgD", Form("B^{0} candidates;#it{p}_{T}(%s) (GeV/#it{c});prong0, %s ML background score;entries", dMesSpecie.c_str(), dMesSpecie.c_str()), {HistType::kTH2F, {axisPtDminus, axisMlScore}});
           registry.add("hMlScorePromptD", Form("B^{0} candidates;#it{p}_{T}(%s) (GeV/#it{c});prong0, %s ML prompt score;entries", dMesSpecie.c_str(), dMesSpecie.c_str()), {HistType::kTH2F, {axisPtDminus, axisMlScore}});
           registry.add("hMlScoreNonPromptD", Form("B^{0} candidates;#it{p}_{T}(%s) (GeV/#it{c});prong0, %s ML nonprompt score;entries", dMesSpecie.c_str(), dMesSpecie.c_str()), {HistType::kTH2F, {axisPtDminus, axisMlScore}});
         }
 
         // ML scores of B0 candidate
-        if (doprocessDataDplusPiWithB0Ml) {
+        if (doprocessDataDplusPiWithB0Ml || doprocessDataDplusPiWithB0MlScalarProd) {
           registry.add("hMlScoreSigB0", "B^{0} candidates;#it{p}_{T}(B^{0}) (GeV/#it{c});prong0, B^{0} ML signal score;entries", {HistType::kTH2F, {axisPtB0, axisMlScore}});
         }
       }
       if (fillSparses) {
-        if (!(doprocessDataDplusPiWithDmesMl || doprocessDataDplusPiWithB0Ml || doprocessDataDstarPiWithDmesMl)) {
+        if (!(doprocessDataDplusPiWithDmesMl || doprocessDataDplusPiWithDmesMlScalarProd || doprocessDataDplusPiWithB0Ml || doprocessDataDplusPiWithB0MlScalarProd || doprocessDataDstarPiWithDmesMl || doprocessDataDstarPiWithDmesMlScalarProd)) {
           if ((std::accumulate(processFuncDplusPi.begin(), processFuncDplusPi.end(), 0)) > 0) {
             registry.add("hMassPtCutVars", "B^{0} candidates;#it{M} (D#pi) (GeV/#it{c}^{2});#it{p}_{T}(B^{0}) (GeV/#it{c});B^{0} candidate decay length (cm);B^{0} candidate norm. decay length XY (cm);B^{0} candidate impact parameter product (cm);B^{0} candidate cos(#vartheta_{P});#it{M} (K#pi) (GeV/#it{c}^{2});#it{p}_{T}(%s) (GeV/#it{c});%s candidate decay length (cm);%s candidate cos(#vartheta_{P})", {HistType::kTHnSparseF, {axisMassB0, axisPtB0, axisDecayLength, axisNormDecayLength, axisImpParProd, axisCosp, axisMass, axisPtDminus, axisDecayLength, axisCosp}});
           } else {
@@ -444,10 +470,13 @@ struct HfTaskB0Reduced {
   /// \param withDecayTypeCheck is the flag to enable MC with decay type check
   /// \param withDmesMl is the flag to enable the filling with ML scores for the D- daughter
   /// \param withB0Ml is the flag to enable the filling with ML scores for the B0 candidate
+  /// \param withScalarProd is the flag to enable the filling with scalar product
+  /// \param collision is the collision
   /// \param candidate is the B0 candidate
   /// \param candidatesD is the table with D- candidates
-  template <bool DoMc, bool WithDecayTypeCheck, bool WithDmesMl, typename Cand, typename CandsDmes, typename SoftPions>
-  void fillCandDStarPi(Cand const& candidate,
+  template <bool DoMc, bool WithDecayTypeCheck, bool WithDmesMl, bool WithScalarProd, typename Collision, typename Cand, typename CandsDmes, typename SoftPions>
+  void fillCandDStarPi(Collision const& collision,
+                       Cand const& candidate,
                        SoftPions const& softPions,
                        CandsDmes const&)
   {
@@ -588,10 +617,17 @@ struct HfTaskB0Reduced {
         float prong0MlScorePrompt = -1.;
         float prong0MlScoreNonprompt = -1.;
         float const candidateMlScoreSig = -1;
+        float scalarProd = -1;
         if constexpr (WithDmesMl) {
           prong0MlScoreBkg = candidate.prong0MlScoreBkg();
           prong0MlScorePrompt = candidate.prong0MlScorePrompt();
           prong0MlScoreNonprompt = candidate.prong0MlScoreNonprompt();
+        }
+        if constexpr (WithScalarProd) {
+          auto qVecs = getQvec(collision, qVecDetector.value);
+          float xQVec = qVecs[0];
+          float yQVec = qVecs[1];
+          scalarProd = std::cos(harmonic * candidate.phi()) * xQVec + std::sin(harmonic * candidate.phi()) * yQVec;
         }
         auto prongBachPi = candidate.template prongBachPi_as<TracksBachPions>();
 
@@ -618,11 +654,19 @@ struct HfTaskB0Reduced {
           candidate.maxNormalisedDeltaIP(),
           candidateMlScoreSig,
           candidate.isSelB0ToDPi(),
+          scalarProd,
+          centralityEstimator == 0 ? collision.centFT0M() : collision.centFT0C(),
           // D-meson features
           invMassD,
           ptD,
-          decLenD,
-          decLenXyD,
+          candidate.decayLengthDToPv(),
+          candidate.decayLengthDToPvXY(),
+          candidate.decayLengthDToB(),
+          candidate.decayLengthDToBXY(),
+          candidate.cpaDToPv(),
+          candidate.cpaDToPvXY(),
+          candidate.cpaDToB(),
+          candidate.cpaDToBXY(),
           candidate.impactParameter0(),
           candD.ptProngMin(),
           candD.absEtaProngMin(),
@@ -682,10 +726,13 @@ struct HfTaskB0Reduced {
   /// \param withDecayTypeCheck is the flag to enable MC with decay type check
   /// \param withDmesMl is the flag to enable the filling with ML scores for the D- daughter
   /// \param withB0Ml is the flag to enable the filling with ML scores for the B0 candidate
+  /// \param withScalarProd is the flag to enable the filling with scalar product
+  /// \param collision is the collision
   /// \param candidate is the B0 candidate
   /// \param candidatesD is the table with D- candidates
-  template <bool DoMc, bool WithDecayTypeCheck, bool WithDmesMl, bool WithB0Ml, typename Cand, typename CandsDmes>
-  void fillCand(Cand const& candidate,
+  template <bool DoMc, bool WithDecayTypeCheck, bool WithDmesMl, bool WithB0Ml, bool WithScalarProd, typename Collision, typename Cand, typename CandsDmes>
+  void fillCand(Collision const& collision,
+                Cand const& candidate,
                 CandsDmes const&)
   {
     auto ptCandB0 = candidate.pt();
@@ -842,6 +889,7 @@ struct HfTaskB0Reduced {
         float prong0MlScorePrompt = -1.;
         float prong0MlScoreNonprompt = -1.;
         float candidateMlScoreSig = -1;
+        float scalarProd = -1;
         if constexpr (WithDmesMl) {
           prong0MlScoreBkg = candidate.prong0MlScoreBkg();
           prong0MlScorePrompt = candidate.prong0MlScorePrompt();
@@ -849,6 +897,12 @@ struct HfTaskB0Reduced {
         }
         if constexpr (WithB0Ml) {
           candidateMlScoreSig = candidate.mlProbB0ToDPi();
+        }
+        if constexpr (WithScalarProd) {
+          auto qVecs = getQvec(collision, qVecDetector.value);
+          float xQVec = qVecs[0];
+          float yQVec = qVecs[1];
+          scalarProd = std::cos(harmonic * candidate.phi()) * xQVec + std::sin(harmonic * candidate.phi()) * yQVec;
         }
         auto prong1 = candidate.template prong1_as<TracksBachPions>();
 
@@ -875,11 +929,19 @@ struct HfTaskB0Reduced {
           candidate.maxNormalisedDeltaIP(),
           candidateMlScoreSig,
           candidate.isSelB0ToDPi(),
+          scalarProd,
+          centralityEstimator == 0 ? collision.centFT0M() : collision.centFT0C(),
           // D-meson features
           invMassD,
           ptD,
-          decLenD,
-          decLenXyD,
+          candidate.decayLengthDToPv(),
+          candidate.decayLengthDToPvXY(),
+          candidate.decayLengthDToB(),
+          candidate.decayLengthDToBXY(),
+          candidate.cpaDToPv(),
+          candidate.cpaDToPvXY(),
+          candidate.cpaDToB(),
+          candidate.cpaDToBXY(),
           candidate.impactParameter0(),
           candD.ptProngMin(),
           candD.absEtaProngMin(),
@@ -973,7 +1035,8 @@ struct HfTaskB0Reduced {
   }
 
   // Process functions
-  void processDataDplusPi(soa::Filtered<soa::Join<aod::HfRedCandB0, aod::HfSelB0ToDPi>> const& candidates,
+  void processDataDplusPi(CollisionsWithCents const& collisions,
+                          soa::Filtered<soa::Join<aod::HfRedCandB0, aod::HfSelB0ToDPi>> const& candidates,
                           CandsDplus const& candidatesD,
                           TracksBachPions const&)
   {
@@ -981,12 +1044,13 @@ struct HfTaskB0Reduced {
       if (yCandRecoMax >= 0. && std::abs(HfHelper::yB0(candidate)) > yCandRecoMax) {
         continue;
       }
-      fillCand<false, false, false, false>(candidate, candidatesD);
+      fillCand<false, false, false, false, false>(collisions.rawIteratorAt(candidate.collisionId()), candidate, candidatesD);
     } // candidate loop
   } // processDataDplusPi
   PROCESS_SWITCH(HfTaskB0Reduced, processDataDplusPi, "Process data without ML scores for B0 and Dplus daughter", true);
 
-  void processDataDplusPiWithDmesMl(soa::Filtered<soa::Join<aod::HfRedCandB0, aod::HfRedB0DpMls, aod::HfSelB0ToDPi>> const& candidates,
+  void processDataDplusPiWithDmesMl(CollisionsWithCents const& collisions,
+                                    soa::Filtered<soa::Join<aod::HfRedCandB0, aod::HfRedB0DpMls, aod::HfSelB0ToDPi>> const& candidates,
                                     CandsDplus const& candidatesD,
                                     TracksBachPions const&)
   {
@@ -994,12 +1058,27 @@ struct HfTaskB0Reduced {
       if (yCandRecoMax >= 0. && std::abs(HfHelper::yB0(candidate)) > yCandRecoMax) {
         continue;
       }
-      fillCand<false, false, true, false>(candidate, candidatesD);
+      fillCand<false, false, true, false, false>(collisions.rawIteratorAt(candidate.collisionId()), candidate, candidatesD);
     } // candidate loop
   } // processDataDplusPiWithDmesMl
   PROCESS_SWITCH(HfTaskB0Reduced, processDataDplusPiWithDmesMl, "Process data with(out) ML scores for Dplus daughter (B0)", false);
 
-  void processDataDplusPiWithB0Ml(soa::Filtered<soa::Join<aod::HfRedCandB0, aod::HfMlB0ToDPi, aod::HfSelB0ToDPi>> const& candidates,
+  void processDataDplusPiWithDmesMlScalarProd(CollisionsWithCentsQvecs const& collisions,
+                                              soa::Filtered<soa::Join<aod::HfRedCandB0, aod::HfRedB0DpMls, aod::HfSelB0ToDPi>> const& candidates,
+                                              CandsDplus const& candidatesD,
+                                              TracksBachPions const&)
+  {
+    for (const auto& candidate : candidates) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yB0(candidate)) > yCandRecoMax) {
+        continue;
+      }
+      fillCand<false, false, true, false, true>(collisions.rawIteratorAt(candidate.collisionId()), candidate, candidatesD);
+    } // candidate loop
+  } // processDataDplusPiWithDmesMlScalarProd
+  PROCESS_SWITCH(HfTaskB0Reduced, processDataDplusPiWithDmesMlScalarProd, "Process data with(out) ML scores for Dplus daughter (B0) and scalar products", false);
+
+  void processDataDplusPiWithB0Ml(CollisionsWithCents const& collisions,
+                                  soa::Filtered<soa::Join<aod::HfRedCandB0, aod::HfMlB0ToDPi, aod::HfSelB0ToDPi>> const& candidates,
                                   CandsDplus const& candidatesD,
                                   TracksBachPions const&)
   {
@@ -1007,13 +1086,27 @@ struct HfTaskB0Reduced {
       if (yCandRecoMax >= 0. && std::abs(HfHelper::yB0(candidate)) > yCandRecoMax) {
         continue;
       }
-      fillCand<false, false, false, true>(candidate, candidatesD);
+      fillCand<false, false, false, true, false>(collisions.rawIteratorAt(candidate.collisionId()), candidate, candidatesD);
     } // candidate loop
   } // processDataDplusPiWithB0Ml
   PROCESS_SWITCH(HfTaskB0Reduced, processDataDplusPiWithB0Ml, "Process data with(out) ML scores for B0 (Dplus daughter)", false);
 
-  // Process functions
-  void processDataDstarPi(soa::Filtered<soa::Join<aod::HfRedCandB0DStar, aod::HfSelB0ToDPi>> const& candidates,
+  void processDataDplusPiWithB0MlScalarProd(CollisionsWithCentsQvecs const& collisions,
+                                            soa::Filtered<soa::Join<aod::HfRedCandB0, aod::HfMlB0ToDPi, aod::HfSelB0ToDPi>> const& candidates,
+                                            CandsDplus const& candidatesD,
+                                            TracksBachPions const&)
+  {
+    for (const auto& candidate : candidates) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yB0(candidate)) > yCandRecoMax) {
+        continue;
+      }
+      fillCand<false, false, false, true, true>(collisions.rawIteratorAt(candidate.collisionId()), candidate, candidatesD);
+    } // candidate loop
+  } // processDataDplusPiWithB0MlScalarProd
+  PROCESS_SWITCH(HfTaskB0Reduced, processDataDplusPiWithB0MlScalarProd, "Process data with(out) ML scores for B0 (Dplus daughter) and scalar products", false);
+
+  void processDataDstarPi(CollisionsWithCents const& collisions,
+                          soa::Filtered<soa::Join<aod::HfRedCandB0DStar, aod::HfSelB0ToDPi>> const& candidates,
                           CandsDstar const& candidatesD,
                           TracksSoftPions const& softPions,
                           TracksBachPions const&)
@@ -1022,12 +1115,13 @@ struct HfTaskB0Reduced {
       if (yCandRecoMax >= 0. && std::abs(HfHelper::yB0(candidate)) > yCandRecoMax) {
         continue;
       }
-      fillCandDStarPi<false, false, false>(candidate, softPions, candidatesD);
+      fillCandDStarPi<false, false, false, false>(collisions.rawIteratorAt(candidate.collisionId()), candidate, softPions, candidatesD);
     } // candidate loop
   } // processDataDstarPi
   PROCESS_SWITCH(HfTaskB0Reduced, processDataDstarPi, "Process data without ML scores for B0 and Dstar daughter", false);
 
-  void processDataDstarPiWithDmesMl(soa::Filtered<soa::Join<aod::HfRedCandB0DStar, aod::HfRedB0DpMls, aod::HfSelB0ToDPi>> const& candidates,
+  void processDataDstarPiWithDmesMl(CollisionsWithCents const& collisions,
+                                    soa::Filtered<soa::Join<aod::HfRedCandB0DStar, aod::HfRedB0DpMls, aod::HfSelB0ToDPi>> const& candidates,
                                     CandsDstar const& candidatesD,
                                     TracksSoftPions const& softPions,
                                     TracksBachPions const&)
@@ -1036,12 +1130,28 @@ struct HfTaskB0Reduced {
       if (yCandRecoMax >= 0. && std::abs(HfHelper::yB0(candidate)) > yCandRecoMax) {
         continue;
       }
-      fillCandDStarPi<false, false, true>(candidate, softPions, candidatesD);
+      fillCandDStarPi<false, false, true, false>(collisions.rawIteratorAt(candidate.collisionId()), candidate, softPions, candidatesD);
     } // candidate loop
   } // processDataDstarPiWithDmesMl
   PROCESS_SWITCH(HfTaskB0Reduced, processDataDstarPiWithDmesMl, "Process data with(out) ML scores for Dstar daughter (B0)", false);
 
-  void processMcDplusPi(soa::Filtered<soa::Join<aod::HfRedCandB0, aod::HfSelB0ToDPi, aod::HfMcRecRedB0s>> const& candidates,
+  void processDataDstarPiWithDmesMlScalarProd(CollisionsWithCentsQvecs const& collisions,
+                                              soa::Filtered<soa::Join<aod::HfRedCandB0DStar, aod::HfRedB0DpMls, aod::HfSelB0ToDPi>> const& candidates,
+                                              CandsDstar const& candidatesD,
+                                              TracksSoftPions const& softPions,
+                                              TracksBachPions const&)
+  {
+    for (const auto& candidate : candidates) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yB0(candidate)) > yCandRecoMax) {
+        continue;
+      }
+      fillCandDStarPi<false, false, true, true>(collisions.rawIteratorAt(candidate.collisionId()), candidate, softPions, candidatesD);
+    } // candidate loop
+  } // processDataDstarPiWithDmesMlScalarProd
+  PROCESS_SWITCH(HfTaskB0Reduced, processDataDstarPiWithDmesMlScalarProd, "Process data with(out) ML scores for Dstar daughter (B0) and scalar products", false);
+
+  void processMcDplusPi(CollisionsWithCents const& collisions,
+                        soa::Filtered<soa::Join<aod::HfRedCandB0, aod::HfSelB0ToDPi, aod::HfMcRecRedB0s>> const& candidates,
                         aod::HfMcGenRedB0s const& mcParticles,
                         CandsDplus const& candidatesD,
                         TracksBachPions const&)
@@ -1051,7 +1161,7 @@ struct HfTaskB0Reduced {
       if (yCandRecoMax >= 0. && std::abs(HfHelper::yB0(candidate)) > yCandRecoMax) {
         continue;
       }
-      fillCand<true, false, false, false>(candidate, candidatesD);
+      fillCand<true, false, false, false, false>(collisions.rawIteratorAt(candidate.collisionId()), candidate, candidatesD);
     } // rec
 
     // MC gen. level
@@ -1061,7 +1171,8 @@ struct HfTaskB0Reduced {
   } // processMcDplusPi
   PROCESS_SWITCH(HfTaskB0Reduced, processMcDplusPi, "Process MC without ML scores for B0 and Dplus daughter", false);
 
-  void processMcDplusPiWithDecayTypeCheck(soa::Filtered<soa::Join<aod::HfRedCandB0, aod::HfSelB0ToDPi, aod::HfMcRecRedB0s, aod::HfMcCheckB0s>> const& candidates,
+  void processMcDplusPiWithDecayTypeCheck(CollisionsWithCents const& collisions,
+                                          soa::Filtered<soa::Join<aod::HfRedCandB0, aod::HfSelB0ToDPi, aod::HfMcRecRedB0s, aod::HfMcCheckB0s>> const& candidates,
                                           aod::HfMcGenRedB0s const& mcParticles,
                                           CandsDplus const& candidatesD,
                                           TracksBachPions const&)
@@ -1071,7 +1182,7 @@ struct HfTaskB0Reduced {
       if (yCandRecoMax >= 0. && std::abs(HfHelper::yB0(candidate)) > yCandRecoMax) {
         continue;
       }
-      fillCand<true, true, false, false>(candidate, candidatesD);
+      fillCand<true, true, false, false, false>(collisions.rawIteratorAt(candidate.collisionId()), candidate, candidatesD);
     } // rec
 
     // MC gen. level
@@ -1081,7 +1192,8 @@ struct HfTaskB0Reduced {
   } // processMcDplusPi
   PROCESS_SWITCH(HfTaskB0Reduced, processMcDplusPiWithDecayTypeCheck, "Process MC with decay type check and without ML scores for B0 and Dplus daughter", false);
 
-  void processMcDplusPiWithDmesMl(soa::Filtered<soa::Join<aod::HfRedCandB0, aod::HfRedB0DpMls, aod::HfSelB0ToDPi, aod::HfMcRecRedB0s>> const& candidates,
+  void processMcDplusPiWithDmesMl(CollisionsWithCents const& collisions,
+                                  soa::Filtered<soa::Join<aod::HfRedCandB0, aod::HfRedB0DpMls, aod::HfSelB0ToDPi, aod::HfMcRecRedB0s>> const& candidates,
                                   aod::HfMcGenRedB0s const& mcParticles,
                                   CandsDplus const& candidatesD,
                                   TracksBachPions const&)
@@ -1091,7 +1203,7 @@ struct HfTaskB0Reduced {
       if (yCandRecoMax >= 0. && std::abs(HfHelper::yB0(candidate)) > yCandRecoMax) {
         continue;
       }
-      fillCand<true, false, true, false>(candidate, candidatesD);
+      fillCand<true, false, true, false, false>(collisions.rawIteratorAt(candidate.collisionId()), candidate, candidatesD);
     } // rec
 
     // MC gen. level
@@ -1101,7 +1213,8 @@ struct HfTaskB0Reduced {
   } // processMcDplusPiWithDmesMl
   PROCESS_SWITCH(HfTaskB0Reduced, processMcDplusPiWithDmesMl, "Process MC with(out) ML scores for Dplus daughter (B0)", false);
 
-  void processMcDplusPiWithDmesMlAndDecayTypeCheck(soa::Filtered<soa::Join<aod::HfRedCandB0, aod::HfRedB0DpMls, aod::HfSelB0ToDPi, aod::HfMcRecRedB0s, aod::HfMcCheckB0s>> const& candidates,
+  void processMcDplusPiWithDmesMlAndDecayTypeCheck(CollisionsWithCents const& collisions,
+                                                   soa::Filtered<soa::Join<aod::HfRedCandB0, aod::HfRedB0DpMls, aod::HfSelB0ToDPi, aod::HfMcRecRedB0s, aod::HfMcCheckB0s>> const& candidates,
                                                    aod::HfMcGenRedB0s const& mcParticles,
                                                    CandsDplus const& candidatesD,
                                                    TracksBachPions const&)
@@ -1111,7 +1224,7 @@ struct HfTaskB0Reduced {
       if (yCandRecoMax >= 0. && std::abs(HfHelper::yB0(candidate)) > yCandRecoMax) {
         continue;
       }
-      fillCand<true, true, true, false>(candidate, candidatesD);
+      fillCand<true, true, true, false, false>(collisions.rawIteratorAt(candidate.collisionId()), candidate, candidatesD);
     } // rec
 
     // MC gen. level
@@ -1121,7 +1234,8 @@ struct HfTaskB0Reduced {
   } // processMcDplusPi
   PROCESS_SWITCH(HfTaskB0Reduced, processMcDplusPiWithDmesMlAndDecayTypeCheck, "Process MC with decay type check and with(out) ML scores for B0 (Dplus daughter)", false);
 
-  void processMcDplusPiWithB0Ml(soa::Filtered<soa::Join<aod::HfRedCandB0, aod::HfMlB0ToDPi, aod::HfSelB0ToDPi, aod::HfMcRecRedB0s>> const& candidates,
+  void processMcDplusPiWithB0Ml(CollisionsWithCents const& collisions,
+                                soa::Filtered<soa::Join<aod::HfRedCandB0, aod::HfMlB0ToDPi, aod::HfSelB0ToDPi, aod::HfMcRecRedB0s>> const& candidates,
                                 aod::HfMcGenRedB0s const& mcParticles,
                                 CandsDplus const& candidatesD,
                                 TracksBachPions const&)
@@ -1131,7 +1245,7 @@ struct HfTaskB0Reduced {
       if (yCandRecoMax >= 0. && std::abs(HfHelper::yB0(candidate)) > yCandRecoMax) {
         continue;
       }
-      fillCand<true, false, false, true>(candidate, candidatesD);
+      fillCand<true, false, false, true, false>(collisions.rawIteratorAt(candidate.collisionId()), candidate, candidatesD);
     } // rec
 
     // MC gen. level
@@ -1141,7 +1255,8 @@ struct HfTaskB0Reduced {
   } // processMcDplusPiWithB0Ml
   PROCESS_SWITCH(HfTaskB0Reduced, processMcDplusPiWithB0Ml, "Process MC with(out) ML scores for B0 (Dplus daughter)", false);
 
-  void processMcDplusPiWithB0MlAndDecayTypeCheck(soa::Filtered<soa::Join<aod::HfRedCandB0, aod::HfMlB0ToDPi, aod::HfSelB0ToDPi, aod::HfMcRecRedB0s, aod::HfMcCheckB0s>> const& candidates,
+  void processMcDplusPiWithB0MlAndDecayTypeCheck(CollisionsWithCents const& collisions,
+                                                 soa::Filtered<soa::Join<aod::HfRedCandB0, aod::HfMlB0ToDPi, aod::HfSelB0ToDPi, aod::HfMcRecRedB0s, aod::HfMcCheckB0s>> const& candidates,
                                                  aod::HfMcGenRedB0s const& mcParticles,
                                                  CandsDplus const& candidatesD,
                                                  TracksBachPions const&)
@@ -1151,7 +1266,7 @@ struct HfTaskB0Reduced {
       if (yCandRecoMax >= 0. && std::abs(HfHelper::yB0(candidate)) > yCandRecoMax) {
         continue;
       }
-      fillCand<true, true, false, true>(candidate, candidatesD);
+      fillCand<true, true, false, true, false>(collisions.rawIteratorAt(candidate.collisionId()), candidate, candidatesD);
     } // rec
 
     // MC gen. level
@@ -1161,7 +1276,8 @@ struct HfTaskB0Reduced {
   } // processMcDplusPi
   PROCESS_SWITCH(HfTaskB0Reduced, processMcDplusPiWithB0MlAndDecayTypeCheck, "Process MC with decay type check and with(out) ML scores for B0 (Dplus daughter)", false);
 
-  void processMcDstarPi(soa::Filtered<soa::Join<aod::HfRedCandB0DStar, aod::HfSelB0ToDPi, aod::HfMcRecRedB0s>> const& candidates,
+  void processMcDstarPi(CollisionsWithCents const& collisions,
+                        soa::Filtered<soa::Join<aod::HfRedCandB0DStar, aod::HfSelB0ToDPi, aod::HfMcRecRedB0s>> const& candidates,
                         aod::HfMcGenRedB0s const& mcParticles,
                         CandsDstar const& candidatesD,
                         TracksSoftPions const& softPions,
@@ -1172,7 +1288,7 @@ struct HfTaskB0Reduced {
       if (yCandRecoMax >= 0. && std::abs(HfHelper::yB0(candidate)) > yCandRecoMax) {
         continue;
       }
-      fillCandDStarPi<true, false, false>(candidate, softPions, candidatesD);
+      fillCandDStarPi<true, false, false, false>(collisions.rawIteratorAt(candidate.collisionId()), candidate, softPions, candidatesD);
     } // rec
 
     // MC gen. level
@@ -1182,7 +1298,8 @@ struct HfTaskB0Reduced {
   } // processMcDstarPi
   PROCESS_SWITCH(HfTaskB0Reduced, processMcDstarPi, "Process MC without ML scores for B0 and Dstar daughter", false);
 
-  void processMcDstarPiWithDmesMl(soa::Filtered<soa::Join<aod::HfRedCandB0DStar, aod::HfRedB0DpMls, aod::HfSelB0ToDPi, aod::HfMcRecRedB0s>> const& candidates,
+  void processMcDstarPiWithDmesMl(CollisionsWithCents const& collisions,
+                                  soa::Filtered<soa::Join<aod::HfRedCandB0DStar, aod::HfRedB0DpMls, aod::HfSelB0ToDPi, aod::HfMcRecRedB0s>> const& candidates,
                                   aod::HfMcGenRedB0s const& mcParticles,
                                   CandsDstar const& candidatesD,
                                   TracksSoftPions const& softPions,
@@ -1193,7 +1310,7 @@ struct HfTaskB0Reduced {
       if (yCandRecoMax >= 0. && std::abs(HfHelper::yB0(candidate)) > yCandRecoMax) {
         continue;
       }
-      fillCandDStarPi<true, false, true>(candidate, softPions, candidatesD);
+      fillCandDStarPi<true, false, true, false>(collisions.rawIteratorAt(candidate.collisionId()), candidate, softPions, candidatesD);
     } // rec
 
     // MC gen. level

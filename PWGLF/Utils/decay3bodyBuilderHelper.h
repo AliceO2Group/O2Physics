@@ -54,6 +54,9 @@ struct decay3bodyCandidate {
   std::array<float, 3> momProton{};
   std::array<float, 3> momPion{};
   std::array<float, 3> momDeuteron{};
+  std::array<float, 3> tpcInnerMomProton{};
+  std::array<float, 3> tpcInnerMomPion{};
+  std::array<float, 3> tpcInnerMomDeuteron{};
   std::array<float, 3> posProton{};
   std::array<float, 3> posPion{};
   std::array<float, 3> posDeuteron{};
@@ -65,6 +68,7 @@ struct decay3bodyCandidate {
   std::array<float, 3> trackDCAxyToPVprop{}; // 0 - proton, 1 - pion, 2 - deuteron
   std::array<float, 3> trackDCAToPVprop{};   // 0 - proton, 1 - pion, 2 - deuteron
   std::array<float, 4> tpcNsigma{};          // 0 - proton, 1 - pion, 2 - deuteron, 3 - bach with pion hyp
+  std::array<float, 3> tpcSignal{};          // 0 - proton, 1 - pion, 2 - deuteron
   double tofNsigmaDeuteron{};
   std::array<float, 3> averageITSClSize{}; // 0 - proton, 1 - pion, 2 - deuteron
   std::array<float, 3> tpcNCl{};           // 0 - proton, 1 - pion, 2 - deuteron
@@ -498,6 +502,9 @@ class decay3bodyBuilderHelper
     decay3body.tpcNsigma[1] = trackPion.tpcNSigmaPi();
     decay3body.tpcNsigma[2] = trackDeuteron.tpcNSigmaDe();
     decay3body.tpcNsigma[3] = trackDeuteron.tpcNSigmaPi();
+    decay3body.tpcSignal[0] = trackProton.tpcSignal();
+    decay3body.tpcSignal[1] = trackPion.tpcSignal();
+    decay3body.tpcSignal[2] = trackDeuteron.tpcSignal();
     // recalculated bachelor TOF PID
     decay3body.tofNsigmaDeuteron = tofNsigmaDeuteron;
 

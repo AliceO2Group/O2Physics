@@ -1552,7 +1552,7 @@ struct FemtoUniversePairTaskTrackD0 {
         continue;
       }
 
-      trackHistoPartTrack.fillQA<false, true>(part);
+      trackHistoPartTrack.fillQA<false, false>(part);
       if (std::abs(ConfTrack.confPDGCodeTrack) == PDG_t::kProton) {
         qaRegistry.fill(HIST("PurityQA/nSigmaFullTPCPr"), part.p(), part.tpcFullNSigmaPr());
         qaRegistry.fill(HIST("PurityQA/nSigmaFullTOFPr"), part.p(), part.tofFullNSigmaPr());

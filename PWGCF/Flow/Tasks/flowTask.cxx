@@ -1478,7 +1478,7 @@ struct FlowTask {
       registry.fill(HIST("hMeanPt"), independent, ptSum / weffEvent, weffEvent);
     }
     if (weffEventWithinGap08)
-      registry.fill(HIST("hMeanPtWithinGap08"), independent, ptSum_Gap08 / weffEventWithinGap08, 1.0);
+      registry.fill(HIST("hMeanPtWithinGap08"), independent, ptSum_Gap08 / weffEventWithinGap08, cfgUserIO.cfgUserPtVnEvWeightEnabled ? weffEventWithinGap08 : 1.);
     if (weffEventWithinGap08)
       bootstrapArray[sampleIndex][kMeanPtWithinGap08]->Fill(independent, ptSum_Gap08 / weffEventWithinGap08, 1.0);
     // c22_gap8 * pt_withGap8
@@ -1583,7 +1583,7 @@ struct FlowTask {
     }
 
     if (count_Gap08 > 0)
-      registry.fill(HIST("hMeanPtWithinGap08_MC"), independent, ptSum_Gap08 / count_Gap08, 1.0);
+      registry.fill(HIST("hMeanPtWithinGap08_MC"), independent, ptSum_Gap08 / count_Gap08, cfgUserIO.cfgUserPtVnEvWeightEnabled ? count_Gap08 : 1.);
     int sampleIndex = static_cast<int>(cfgNbootstrap * lRandom);
     if (count_Gap08 > 0)
       bootstrapArray[sampleIndex][kMeanPtWithinGap08_MC]->Fill(independent, ptSum_Gap08 / count_Gap08, 1.0);

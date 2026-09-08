@@ -112,10 +112,10 @@ DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);                             //! T
 DECLARE_SOA_COLUMN(MD, mD, float);                                         //! Invariant mass of D0
 DECLARE_SOA_COLUMN(MDbar, mDbar, float);                                   //! Invariant mass of D0bar
 DECLARE_SOA_COLUMN(MlScoreBkgD0, mlScoreBkgD0, float);                     //! ML background score for D0 selection
-DECLARE_SOA_COLUMN(MlScoreNonPromptD0, mlScoreNonPromptD0, float);         //! ML prompt score for D0 selection
+DECLARE_SOA_COLUMN(MlScoreNonPromptD0, mlScoreNonPromptD0, float);         //! ML non-prompt score for D0 selection
 DECLARE_SOA_COLUMN(MlScorePromptD0, mlScorePromptD0, float);               //! ML prompt score for D0 selection
 DECLARE_SOA_COLUMN(MlScoreBkgD0bar, mlScoreBkgD0bar, float);               //! ML background score for D0 selection
-DECLARE_SOA_COLUMN(MlScoreNonPromptD0bar, mlScoreNonPromptD0bar, float);   //! ML prompt score for D0 selection
+DECLARE_SOA_COLUMN(MlScoreNonPromptD0bar, mlScoreNonPromptD0bar, float);   //! ML non-prompt score for D0 selection
 DECLARE_SOA_COLUMN(MlScorePromptD0bar, mlScorePromptD0bar, float);         //! ML prompt score for D0 selection
 DECLARE_SOA_COLUMN(SignalStatus, signalStatus, int);                       //! Tag for D0,D0bar
 DECLARE_SOA_COLUMN(PoolBin, poolBin, int);                                 //! Pool Bin for the MixedEvent
@@ -129,12 +129,12 @@ DECLARE_SOA_COLUMN(IsPrompt, isPrompt, bool);                              //! U
 DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);            //! Used in MC-Rec, primary associated particles
 
 enum ParticleTypeData {
-  D0Only = 1,        // Identified as D0
-  D0barOnly,         // Identified as D0bar
-  D0D0barBoth,       // Identified as both D0 and D0bar
-  D0OnlySoftPi = 11, // Identified as D0 with soft pion
-  D0barOnlySoftPi,   // Identified as D0bar with soft pion
-  D0D0barBothSoftPi  // Identified as both D0 and D0bar with soft pion
+  D0Only = 1,            // Identified as D0
+  D0barOnly = 2,         // Identified as D0bar
+  D0D0barBoth = 3,       // Identified as both D0 and D0bar
+  D0OnlySoftPi = 11,     // Identified as D0 with soft pion
+  D0barOnlySoftPi = 12,  // Identified as D0bar with soft pion
+  D0D0barBothSoftPi = 13 // Identified as both D0 and D0bar with soft pion
 };
 
 enum ParticleTypeMcRec {
@@ -180,8 +180,10 @@ DECLARE_SOA_TABLE(D0CandRecoInfo, "AOD", "D0CANDRECOINFO", //! Ds candidates Rec
                   aod::hf_correlation_d0_hadron::MDbar,
                   aod::hf_correlation_d0_hadron::PtD,
                   aod::hf_correlation_d0_hadron::MlScoreBkgD0,
+                  aod::hf_correlation_d0_hadron::MlScoreNonPromptD0,
                   aod::hf_correlation_d0_hadron::MlScorePromptD0,
                   aod::hf_correlation_d0_hadron::MlScoreBkgD0bar,
+                  aod::hf_correlation_d0_hadron::MlScoreNonPromptD0bar,
                   aod::hf_correlation_d0_hadron::MlScorePromptD0bar);
 
 DECLARE_SOA_TABLE(D0CandGenInfo, "AOD", "D0CANDGENOINFO", //! Ds candidates Generated Information

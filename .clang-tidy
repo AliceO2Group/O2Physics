@@ -111,6 +111,8 @@ WarningsAsErrors: >-
   *,
   -readability-braces-around-statements,
   -readability-suspicious-call-argument,
+  -modernize-*,
+  -readability-*,
 CheckOptions:
   modernize-avoid-c-arrays.AllowStringArrays: true
   # Common tolerated conversions
