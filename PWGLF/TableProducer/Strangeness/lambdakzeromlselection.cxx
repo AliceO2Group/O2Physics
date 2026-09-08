@@ -210,19 +210,19 @@ struct lambdakzeromlselection {
 
     // calculate classifier output
     if (PredictLambda) {
-      float* LambdaProbability = lambda_bdt.evalModel(inputFeatures);
+      const std::vector<float> LambdaProbability = lambda_bdt.evalModel(inputFeatures);
       lambdaMLSelections(LambdaProbability[1]);
     }
     if (PredictGamma) {
-      float* GammaProbability = gamma_bdt.evalModel(inputFeatures);
+      const std::vector<float> GammaProbability = gamma_bdt.evalModel(inputFeatures);
       gammaMLSelections(GammaProbability[1]);
     }
     if (PredictAntiLambda) {
-      float* AntiLambdaProbability = antilambda_bdt.evalModel(inputFeatures);
+      const std::vector<float> AntiLambdaProbability = antilambda_bdt.evalModel(inputFeatures);
       antiLambdaMLSelections(AntiLambdaProbability[1]);
     }
     if (PredictKZeroShort) {
-      float* KZeroShortProbability = kzeroshort_bdt.evalModel(inputFeatures);
+      const std::vector<float> KZeroShortProbability = kzeroshort_bdt.evalModel(inputFeatures);
       kzeroShortMLSelections(KZeroShortProbability[1]);
     }
   }

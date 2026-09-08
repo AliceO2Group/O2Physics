@@ -46,6 +46,7 @@
 #include <TRandom.h>
 #include <TString.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -510,6 +511,7 @@ class pidTPCModule
     float duration_network = 0;
 
     std::vector<float> track_properties(track_prop_size);
+    std::vector<float> output_network; // output buffer, allocation is reused for all mass hypotheses
     uint64_t counter_track_props = 0;
     int loop_counter = 0;
 
@@ -601,14 +603,13 @@ class pidTPCModule
       }
 
       auto start_network_eval = std::chrono::high_resolution_clock::now();
-      float* output_network = network.evalModel(track_properties);
+      network.evalModel(track_properties, output_network);
       auto stop_network_eval = std::chrono::high_resolution_clock::now();
       duration_network += std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_eval - start_network_eval).count();
-      for (uint64_t k = 0; k < prediction_size; k += output_dimensions) {
-        for (int l = 0; l < output_dimensions; l++) {
-          network_prediction[k + l + prediction_size * loop_counter] = output_network[k + l];
-        }
+      if (output_network.size() != prediction_size) {
+        LOG(fatal) << "Network output size (" << output_network.size() << ") does not match the expected prediction size (" << prediction_size << ")";
       }
+      std::copy(output_network.begin(), output_network.end(), network_prediction.begin() + prediction_size * loop_counter);
 
       counter_track_props = 0;
       loop_counter += 1;
