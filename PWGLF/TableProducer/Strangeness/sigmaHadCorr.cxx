@@ -708,7 +708,7 @@ struct SigmaHadCorr {
   }
   PROCESS_SWITCH(SigmaHadCorr, processMixedEvent, "Process Mixed event", false);
 
-  void processSameEventMC(CollisionsFullMC const& collisions, aod::KinkCands const& kinkCands, TracksFullMC const& tracks, aod::McParticles const& mcParticles)
+  void processSameEventMC(CollisionsFullMC const& collisions, aod::KinkCands const& kinkCands, TracksFullMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const&)
   {
     for (auto const& collision : collisions) {
 
@@ -825,7 +825,7 @@ struct SigmaHadCorr {
   }
   PROCESS_SWITCH(SigmaHadCorr, processSameEventMC, "Process Same event MC", false);
 
-  void processMixedEventMC(const CollisionsFullMC& collisions, const aod::KinkCands& kinkCands, const TracksFullMC& tracks, const aod::McParticles& mcParticles)
+  void processMixedEventMC(const CollisionsFullMC& collisions, const aod::KinkCands& kinkCands, const TracksFullMC& tracks, const aod::McParticles& mcParticles, aod::McCollisions const&)
   {
     if (useMultNTracksPV.value) {
       for (auto const& [collision1, collision2] :
