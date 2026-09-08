@@ -93,7 +93,7 @@ void pidSelector::Print()
 // angleCut
 angleCut::angleCut(std::pair<std::string, std::string> rnames, double angleMin, double angleMax)
 {
-  fRnames = rnames;
+  fRnames = std::move(rnames);
   fAngleMin = angleMin;
   fAngleMax = angleMax;
 }
@@ -982,7 +982,7 @@ void decayTree::Print()
   }
 }
 
-resonance* decayTree::getResonance(std::string name)
+resonance* decayTree::getResonance(const std::string& name)
 {
   for (const auto& res : fResonances) {
     if (res->name() == name) {

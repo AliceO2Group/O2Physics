@@ -56,6 +56,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -79,6 +80,9 @@ using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisi
 namespace
 {
 constexpr double betheBlochDefault[1][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
+constexpr double UseCCDBMagneticFieldThreshold = -990.;
+constexpr float MaxAbsVertexZ = 10.f;
+constexpr int NumBetheBlochParameters = 5;
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 static const std::vector<std::string> particleName{"He3"};
 std::shared_ptr<TH1> hEvents;
@@ -139,8 +143,8 @@ struct hyperCandidate {
   float genEta() const { return std::asinh(gMom[2] / genPt()); }
 
   int v0ID = -1;
-  int heTrackID;
-  int piTrackID;
+  int heTrackID = -1;
+  int piTrackID = -1;
   float dcaV0dau = -10;
   float cosPA = -10;
   float nSigmaHe3 = -10;
@@ -148,12 +152,12 @@ struct hyperCandidate {
   float piDCAXY = -10;
   float momHe3TPC = -10.f;
   float momPiTPC = -10.f;
-  std::array<float, 3> momHe3;
-  std::array<float, 3> momPi;
-  std::array<float, 3> decVtx;
-  std::array<float, 3> gMom;
-  std::array<float, 3> gMomHe3;
-  std::array<float, 3> gDecVtx;
+  std::array<float, 3> momHe3{};
+  std::array<float, 3> momPi{};
+  std::array<float, 3> decVtx{};
+  std::array<float, 3> gMom{};
+  std::array<float, 3> gMomHe3{};
+  std::array<float, 3> gDecVtx{};
   uint16_t tpcSignalHe3 = 0u;
   uint16_t tpcSignalPi = 0u;
   float tpcChi2He3 = 0.f;
@@ -183,7 +187,7 @@ struct hyperCandidate {
   uint8_t flags = 0u;             // flags for dughter particles
 };
 
-struct hyperRecoTask {
+struct HyperRecoTask {
 
   Produces<aod::DataHypCands> outputDataTable;
   Produces<aod::DataHypCandsFlow> outputDataTableWithFlow;
@@ -194,19 +198,19 @@ struct hyperRecoTask {
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   // PDG codes
-  Configurable<int> hyperPdg{"hyperPDG", 1010010030, "PDG code of the hyper-mother (could be 3LamH or 4LamH)"};
-  Configurable<int> heDauPdg{"heDauPDG", 1000020030, "PDG code of the helium (could be 3He or 4He)"};
+  Configurable<int> hyperPdg{"hyperPdg", 1010010030, "PDG code of the hyper-mother (could be 3LamH or 4LamH)"};
+  Configurable<int> heDauPdg{"heDauPdg", 1000020030, "PDG code of the helium (could be 3He or 4He)"};
   Configurable<int> piDauPdg{"piDauPdg", 211, "PDG code of pion"};
 
   // Selection criteria
-  Configurable<double> v0cospacut{"hypcospa", 0.95, "V0 CosPA"};
-  Configurable<float> masswidth{"hypmasswidth", 0.06, "Mass width (GeV/c^2)"};
-  Configurable<float> dcaToPvPion{"dcapvPi", 0., "DCA to PV pion"};
-  Configurable<float> dcaToPvHe{"dcapvHe", 0., "DCA to PV helium"};
-  Configurable<float> dcav0dau{"hypdcaDau", 1.0, "DCA V0 Daughters"};
+  Configurable<double> v0CosPaCut{"v0CosPaCut", 0.95, "V0 CosPA"};
+  Configurable<float> massWidth{"massWidth", 0.06, "Mass width (GeV/c^2)"};
+  Configurable<float> dcaToPvPion{"dcaToPvPion", 0., "DCA to PV pion"};
+  Configurable<float> dcaToPvHe{"dcaToPvHe", 0., "DCA to PV helium"};
+  Configurable<float> dcaV0Dau{"dcaV0Dau", 1.0, "DCA V0 Daughters"};
   Configurable<float> ptMin{"ptMin", 0.5, "Minimum pT of the hypercandidate"};
-  Configurable<float> TPCRigidityMinHe{"TPCRigidityMinHe", 0.2, "Minimum rigidity of the helium candidate"};
-  Configurable<float> etaMax{"eta", 1., "eta daughter"};
+  Configurable<float> tpcRigidityMinHe{"tpcRigidityMinHe", 0.2, "Minimum rigidity of the helium candidate"};
+  Configurable<float> etaMax{"etaMax", 1., "eta daughter"};
   Configurable<float> nSigmaMaxHe{"nSigmaMaxHe", 5, "helium dEdx cut (n sigma)"};
   Configurable<float> nTPCClusMinHe{"nTPCClusMinHe", 70, "helium NTPC clusters cut"};
   Configurable<float> nTPCClusMinPi{"nTPCClusMinPi", -1., "pion NTPC clusters cut"};
@@ -237,8 +241,8 @@ struct hyperRecoTask {
   Configurable<bool> cfgEvSelkIsGoodZvtxFT0vsPV{"cfgEvSelkIsGoodZvtxFT0vsPV", false, "Verifies the consistency between the primary vertex z position from tracking and the z position of the PV from FT0 timing"};
 
   // CCDB options
-  Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
-  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<double> dBzInput{"dBzInput", -999, "bz field, -999 is automatic"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
@@ -273,9 +277,9 @@ struct hyperRecoTask {
 
   HistogramRegistry qaRegistry{"QA", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  int mRunNumber;
-  float d_bz;
-  std::array<float, 6> mBBparamsHe;
+  int mRunNumber = -1;
+  float d_bz = 0.f;
+  std::array<float, 6> mBBparamsHe{};
 
   void init(InitContext const&)
   {
@@ -284,7 +288,7 @@ struct hyperRecoTask {
     mRunNumber = 0;
     d_bz = 0;
 
-    ccdb->setURL(ccdburl);
+    ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
@@ -408,12 +412,12 @@ struct hyperRecoTask {
     o2::parameters::GRPMagField* grpmag = 0x0;
     if (grpo) {
       o2::base::Propagator::initFieldFromGRP(grpo);
-      if (d_bz_input < -990) {
+      if (dBzInput < UseCCDBMagneticFieldThreshold) {
         // Fetch magnetic field from ccdb for current collision
         d_bz = grpo->getNominalL3Field();
         LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
       } else {
-        d_bz = d_bz_input;
+        d_bz = dBzInput;
       }
     } else {
       grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
@@ -421,22 +425,22 @@ struct hyperRecoTask {
         LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
       }
       o2::base::Propagator::initFieldFromGRP(grpmag);
-      if (d_bz_input < -990) {
+      if (dBzInput < UseCCDBMagneticFieldThreshold) {
         // Fetch magnetic field from ccdb for current collision
         d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
         LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
       } else {
-        d_bz = d_bz_input;
+        d_bz = dBzInput;
       }
     }
     if (!pidPath.value.empty()) {
       auto he3pid = ccdb->getForTimeStamp<std::array<float, 6>>(pidPath.value + "_He3", run3grp_timestamp);
       std::copy(he3pid->begin(), he3pid->end(), mBBparamsHe.begin());
     } else {
-      for (int i = 0; i < 5; i++) {
+      for (int i = 0; i < NumBetheBlochParameters; i++) {
         mBBparamsHe[i] = cfgBetheBlochParams->get("He3", Form("p%i", i));
       }
-      mBBparamsHe[5] = cfgBetheBlochParams->get("He3", "resolution");
+      mBBparamsHe[NumBetheBlochParameters] = cfgBetheBlochParams->get("He3", "resolution");
     }
     fitter.setBz(d_bz);
     mRunNumber = bc.runNumber();
@@ -479,7 +483,7 @@ struct hyperRecoTask {
 
       hEvents->Fill(1.);
 
-      if (std::abs(collision.posZ()) > 10) {
+      if (std::abs(collision.posZ()) > MaxAbsVertexZ) {
         continue;
       }
       hEvents->Fill(2.);
@@ -524,7 +528,7 @@ struct hyperRecoTask {
 
       hEvents->Fill(1.);
 
-      if (std::abs(collision.posZ()) > 10) {
+      if (std::abs(collision.posZ()) > MaxAbsVertexZ) {
         continue;
       }
       hEvents->Fill(2.);
@@ -573,7 +577,7 @@ struct hyperRecoTask {
     hypCand.clusterSizeITSPi = piTrack.itsClusterSizes();
     bool heliumPID = heTrack.pidForTracking() == o2::track::PID::Helium3 || heTrack.pidForTracking() == o2::track::PID::Alpha;
     hypCand.momHe3TPC = (heliumPID && cfgCompensatePIDinTracking) ? heTrack.tpcInnerParam() / 2 : heTrack.tpcInnerParam();
-    if (hypCand.momHe3TPC < TPCRigidityMinHe)
+    if (hypCand.momHe3TPC < tpcRigidityMinHe)
       return;
     hypCand.momPiTPC = piTrack.tpcInnerParam();
     hDeDxTot->Fill(hypCand.momHe3TPC * heTrack.sign(), heTrack.tpcSignal());
@@ -599,7 +603,7 @@ struct hyperRecoTask {
     hePropTrack.getPxPyPzGlo(hypCand.momHe3);
     piPropTrack.getPxPyPzGlo(hypCand.momPi);
     // the momentum has to be multiplied by 2 (charge)
-    for (int i = 0; i < 3; i++) {
+    for (std::size_t i = 0; i < hypCand.momHe3.size(); i++) {
       hypCand.momHe3[i] *= 2;
     }
     float heP2 = hypCand.momHe3[0] * hypCand.momHe3[0] + hypCand.momHe3[1] * hypCand.momHe3[1] + hypCand.momHe3[2] * hypCand.momHe3[2];
@@ -609,9 +613,9 @@ struct hyperRecoTask {
     float piE = std::sqrt(piP2 + piMass * piMass);
     float h3lE = he3E + piE;
     float h4lE = he4E + piE;
-    std::array<float, 3> hypMom;
+    std::array<float, 3> hypMom{};
     const auto& vtx = fitter.getPCACandidate();
-    for (int i = 0; i < 3; i++) {
+    for (std::size_t i = 0; i < hypCand.decVtx.size(); i++) {
       hypCand.decVtx[i] = vtx[i];
       hypMom[i] = hypCand.momHe3[i] + hypCand.momPi[i];
     }
@@ -621,9 +625,9 @@ struct hyperRecoTask {
     float massH3L = std::sqrt(h3lE * h3lE - hypMom[0] * hypMom[0] - hypMom[1] * hypMom[1] - hypMom[2] * hypMom[2]);
     float massH4L = std::sqrt(h4lE * h4lE - hypMom[0] * hypMom[0] - hypMom[1] * hypMom[1] - hypMom[2] * hypMom[2]);
     bool isHypMass = false;
-    if (massH3L > o2::constants::physics::MassHyperTriton - masswidth && massH3L < o2::constants::physics::MassHyperTriton + masswidth)
+    if (massH3L > o2::constants::physics::MassHyperTriton - massWidth && massH3L < o2::constants::physics::MassHyperTriton + massWidth)
       isHypMass = true;
-    if (massH4L > o2::constants::physics::MassHyperhydrog4 - masswidth && massH4L < o2::constants::physics::MassHyperhydrog4 + masswidth)
+    if (massH4L > o2::constants::physics::MassHyperhydrog4 - massWidth && massH4L < o2::constants::physics::MassHyperhydrog4 + massWidth)
       isHypMass = true;
     if (!isHypMass)
       return;
@@ -636,7 +640,7 @@ struct hyperRecoTask {
     }
 
     hypCand.dcaV0dau = std::sqrt(fitter.getChi2AtPCACandidate());
-    if (hypCand.dcaV0dau > dcav0dau) {
+    if (hypCand.dcaV0dau > dcaV0Dau) {
       return;
     }
 
@@ -658,13 +662,13 @@ struct hyperRecoTask {
       return;
     }
 
-    if (cosPAmax < v0cospacut) {
+    if (cosPAmax < v0CosPaCut) {
       return;
     }
 
     auto collision = collisions.rawIteratorAt(collIDmax);
     std::array<float, 3> primVtx = {collision.posX(), collision.posY(), collision.posZ()};
-    for (int i = 0; i < 3; i++) {
+    for (std::size_t i = 0; i < hypCand.decVtx.size(); i++) {
       hypCand.decVtx[i] = hypCand.decVtx[i] - primVtx[i];
     }
 
@@ -783,7 +787,7 @@ struct hyperRecoTask {
   }
   void fillMCinfo(aod::McTrackLabels const& trackLabels, aod::McParticles const&)
   {
-    for (auto& hypCand : hyperCandidates) {
+    for (auto& hypCand : hyperCandidates) { // o2-linter: disable=const-ref-in-for-loop (candidate is enriched with MC information in this loop)
       auto mcLabHe = trackLabels.rawIteratorAt(hypCand.heTrackID);
       auto mcLabPi = trackLabels.rawIteratorAt(hypCand.piTrackID);
 
@@ -804,13 +808,13 @@ struct hyperRecoTask {
               auto secVtx = std::array<float, 3>{mcTrackHe.vx(), mcTrackHe.vy(), mcTrackHe.vz()};
               hypCand.gMom = std::array<float, 3>{heMother.px(), heMother.py(), heMother.pz()};
               hypCand.gMomHe3 = std::array<float, 3>{mcTrackHe.px(), mcTrackHe.py(), mcTrackHe.pz()};
-              for (int i = 0; i < 3; i++) {
+              for (std::size_t i = 0; i < hypCand.gDecVtx.size(); i++) {
                 hypCand.gDecVtx[i] = secVtx[i] - primVtx[i];
               }
               hypCand.isSignal = true;
               hypCand.isFakeHeOnITSLayer = mcLabHe.mcMask() & 0x7F; // check if any of the first 7 bits is set
               hypCand.pdgCode = heMother.pdgCode();
-              hypCand.isRecoMCCollision = recoCollisionIds[heMother.mcCollisionId()] > 0;
+              hypCand.isRecoMCCollision = recoCollisionIds[heMother.mcCollisionId()] >= 0;
               hypCand.isSurvEvSelection = isSurvEvSelCollision[heMother.mcCollisionId()];
               filledMothers.push_back(heMother.globalIndex());
             }
@@ -829,7 +833,7 @@ struct hyperRecoTask {
     }
     processData(collisions, V0s, tracks, ambiTracks, bcs);
   }
-  PROCESS_SWITCH(hyperRecoTask, processDataTracked, "Data analysis wit tracked V0s information", false);
+  PROCESS_SWITCH(HyperRecoTask, processDataTracked, "Data analysis wit tracked V0s information", false);
 
   void processData(CollisionsFull const& collisions, aod::V0s const& V0s, TracksFull const& tracks, aod::AmbiguousTracks const& ambiTracks, aod::BCsWithTimestamps const& bcs)
   {
@@ -844,6 +848,7 @@ struct hyperRecoTask {
       auto collision = collisions.rawIteratorAt(hypCand.collisionID);
       float trackedHypClSize = !trackedClSize.empty() ? trackedClSize[hypCand.v0ID] : 0;
       outputDataTable(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
+                      collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(),
                       collision.posX(), collision.posY(), collision.posZ(),
                       mRunNumber, hypCand.isMatter,
                       hypCand.recoPtHe3(), hypCand.recoPhiHe3(), hypCand.recoEtaHe3(),
@@ -858,7 +863,7 @@ struct hyperRecoTask {
                       hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, trackedHypClSize);
     }
   }
-  PROCESS_SWITCH(hyperRecoTask, processData, "Data analysis", true);
+  PROCESS_SWITCH(HyperRecoTask, processData, "Data analysis", true);
 
   void processDataWithFlow(CollisionsFullWithFlow const& collisions, aod::V0s const& V0s, TracksFull const& tracks, aod::AmbiguousTracks const& ambiTracks, aod::BCsWithTimestamps const& bcs)
   {
@@ -877,6 +882,7 @@ struct hyperRecoTask {
       }
       float trackedHypClSize = !trackedClSize.empty() ? trackedClSize[hypCand.v0ID] : 0;
       outputDataTableWithFlow(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
+                              collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(),
                               collision.psiFT0A(), collision.multFT0A(),
                               collision.psiFT0C(), collision.multFT0C(), collision.qFT0C(),
                               collision.psiTPC(), collision.multTPC(),
@@ -894,7 +900,7 @@ struct hyperRecoTask {
                               hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, trackedHypClSize);
     }
   }
-  PROCESS_SWITCH(hyperRecoTask, processDataWithFlow, "Data analysis with flow", false);
+  PROCESS_SWITCH(HyperRecoTask, processDataWithFlow, "Data analysis with flow", false);
 
   void processDataWithCollID(CollisionsFull const& collisions, aod::V0s const& V0s, TracksFull const& tracks, aod::AmbiguousTracks const& ambiTracks, aod::BCsWithTimestamps const& bcs)
   {
@@ -909,6 +915,7 @@ struct hyperRecoTask {
       auto collision = collisions.rawIteratorAt(hypCand.collisionID);
       float trackedHypClSize = !trackedClSize.empty() ? trackedClSize[hypCand.v0ID] : 0;
       outputDataTableWithCollID(hypCand.collisionID, collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
+                                collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(),
                                 collision.posX(), collision.posY(), collision.posZ(),
                                 mRunNumber, hypCand.isMatter,
                                 hypCand.recoPtHe3(), hypCand.recoPhiHe3(), hypCand.recoEtaHe3(),
@@ -923,7 +930,7 @@ struct hyperRecoTask {
                                 hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, trackedHypClSize);
     }
   }
-  PROCESS_SWITCH(hyperRecoTask, processDataWithCollID, "Data analysis with collision ID", false);
+  PROCESS_SWITCH(HyperRecoTask, processDataWithCollID, "Data analysis with collision ID", false);
 
   void processMC(CollisionsFullMC const& collisions, aod::McCollisions const& mcCollisions, aod::V0s const& V0s, TracksFull const& tracks, aod::AmbiguousTracks const& ambiTracks, aod::BCsWithTimestamps const& bcs, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
   {
@@ -946,6 +953,7 @@ struct hyperRecoTask {
       int chargeFactor = -1 + 2 * (hypCand.pdgCode > 0);
       float trackedHypClSize = !trackedClSize.empty() ? trackedClSize[hypCand.v0ID] : 0;
       outputMCTable(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
+                    collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(),
                     collision.posX(), collision.posY(), collision.posZ(),
                     mRunNumber, hypCand.isMatter,
                     hypCand.recoPtHe3(), hypCand.recoPhiHe3(), hypCand.recoEtaHe3(),
@@ -1004,10 +1012,10 @@ struct hyperRecoTask {
       }
       hyperCandidate hypCand;
       hypCand.pdgCode = mcPart.pdgCode();
-      hypCand.isRecoMCCollision = recoCollisionIds[mcPart.mcCollisionId()] > 0;
+      hypCand.isRecoMCCollision = recoCollisionIds[mcPart.mcCollisionId()] >= 0;
       hypCand.isSurvEvSelection = isSurvEvSelCollision[mcPart.mcCollisionId()];
       int chargeFactor = -1 + 2 * (hypCand.pdgCode > 0);
-      for (int i = 0; i < 3; i++) {
+      for (std::size_t i = 0; i < hypCand.gDecVtx.size(); i++) {
         hypCand.gDecVtx[i] = (isHeFound ? secVtx[i] : lastDaugVtx[i]) - primVtx[i];
         hypCand.gMom[i] = momMother[i];
         hypCand.gMomHe3[i] = momHe3[i];
@@ -1017,15 +1025,20 @@ struct hyperRecoTask {
       hypCand.isSignal = true;
 
       float centFT0A = -1, centFT0C = -1, centFT0M = -1;
+      int trackOccupancyInTimeRange = -1;
+      float ft0cOccupancyInTimeRange = -1.f;
       if (hypCand.isRecoMCCollision) {
         auto recoCollision = collisions.rawIteratorAt(recoCollisionIds[mcPart.mcCollisionId()]);
         centFT0A = recoCollision.centFT0A();
         centFT0C = recoCollision.centFT0C();
         centFT0M = recoCollision.centFT0M();
+        trackOccupancyInTimeRange = recoCollision.trackOccupancyInTimeRange();
+        ft0cOccupancyInTimeRange = recoCollision.ft0cOccupancyInTimeRange();
       }
 
       outputMCTable(centFT0A, centFT0C, centFT0M,
-                    -1, -1, -1,
+                    trackOccupancyInTimeRange, ft0cOccupancyInTimeRange,
+                    primVtx[0], primVtx[1], primVtx[2],
                     mRunNumber, 0,
                     -1, -1, -1,
                     -1, -1, -1,
@@ -1039,7 +1052,7 @@ struct hyperRecoTask {
                     hypCand.isReco, -1, hypCand.isSignal, hypCand.isRecoMCCollision, hypCand.isSurvEvSelection, isHeFound, mcProcess);
     }
   }
-  PROCESS_SWITCH(hyperRecoTask, processMC, "MC analysis", false);
+  PROCESS_SWITCH(HyperRecoTask, processMC, "MC analysis", false);
 
   void processMCTracked(CollisionsFullMC const& collisions, aod::McCollisions const& mcCollisions, aod::V0s const& V0s, aod::TrackedV0s const& tV0s, TracksFull const& tracks, aod::AmbiguousTracks const& ambiTracks, aod::BCsWithTimestamps const& bcs, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
   {
@@ -1050,7 +1063,7 @@ struct hyperRecoTask {
     }
     processMC(collisions, mcCollisions, V0s, tracks, ambiTracks, bcs, trackLabelsMC, particlesMC);
   }
-  PROCESS_SWITCH(hyperRecoTask, processMCTracked, "MC analysis with tracked V0s", false);
+  PROCESS_SWITCH(HyperRecoTask, processMCTracked, "MC analysis with tracked V0s", false);
 
   template <typename CollType>
   bool passEvtSel(const CollType& collision)
@@ -1058,7 +1071,7 @@ struct hyperRecoTask {
     if (!collision.sel8())
       return false;
 
-    if ((std::abs(collision.posZ())) > 10)
+    if ((std::abs(collision.posZ())) > MaxAbsVertexZ)
       return false;
 
     if (cfgEvSelkNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup))
@@ -1072,7 +1085,7 @@ struct hyperRecoTask {
 
   void processEventLossMC(McCollisionMults::iterator const& mcCollision, soa::SmallGroups<EventCandidatesMC> const& collisions, aod::McParticles const& GenParticles)
   {
-    if (std::abs(mcCollision.posZ()) > 10) {
+    if (std::abs(mcCollision.posZ()) > MaxAbsVertexZ) {
       return;
     }
 
@@ -1175,12 +1188,12 @@ struct hyperRecoTask {
       }
     }
   }
-  PROCESS_SWITCH(hyperRecoTask, processEventLossMC, "Event loss analysis", false);
+  PROCESS_SWITCH(HyperRecoTask, processEventLossMC, "Event loss analysis", false);
 };
 
 WorkflowSpec
   defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<hyperRecoTask>(cfgc)};
+    adaptAnalysisTask<HyperRecoTask>(cfgc)};
 }

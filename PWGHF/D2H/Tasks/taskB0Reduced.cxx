@@ -227,8 +227,8 @@ struct HfTaskB0Reduced {
 
   void init(InitContext&)
   {
-    std::array<bool, 6> processFuncData{doprocessDataDplusPi, doprocessDataDplusPiWithDmesMl, doprocessDataDplusPiWithB0Ml,
-                                        doprocessDataDstarPi, doprocessDataDstarPiWithDmesMl};
+    std::array<bool, 8> processFuncData{doprocessDataDplusPi, doprocessDataDplusPiWithDmesMl, doprocessDataDplusPiWithDmesMlScalarProd, doprocessDataDplusPiWithB0Ml, doprocessDataDplusPiWithB0MlScalarProd,
+                                        doprocessDataDstarPi, doprocessDataDstarPiWithDmesMl, doprocessDataDstarPiWithDmesMlScalarProd};
     if ((std::accumulate(processFuncData.begin(), processFuncData.end(), 0)) > 1) {
       LOGP(fatal, "Only one process function for data can be enabled at a time.");
     }
@@ -255,10 +255,9 @@ struct HfTaskB0Reduced {
     const AxisSpec axisPtPi{100, 0.f, 10.f};
     const AxisSpec axisPtSoftPi{100, 0.f, 1.f};
 
-    std::array<bool, 9> processFuncDplusPi = {doprocessDataDplusPi, doprocessDataDplusPiWithDmesMl, doprocessDataDplusPiWithB0Ml,
-                                              doprocessMcDplusPi, doprocessMcDplusPiWithDecayTypeCheck, doprocessMcDplusPiWithDmesMl,
-                                              doprocessMcDplusPiWithDmesMlAndDecayTypeCheck, doprocessMcDplusPiWithB0Ml,
-                                              doprocessMcDplusPiWithB0MlAndDecayTypeCheck};
+    std::array<bool, 11> processFuncDplusPi = {doprocessDataDplusPi, doprocessDataDplusPiWithDmesMl, doprocessDataDplusPiWithDmesMlScalarProd, doprocessDataDplusPiWithB0Ml, doprocessDataDplusPiWithB0MlScalarProd,
+                                               doprocessMcDplusPi, doprocessMcDplusPiWithDecayTypeCheck, doprocessMcDplusPiWithDmesMl, doprocessMcDplusPiWithDmesMlAndDecayTypeCheck,
+                                               doprocessMcDplusPiWithB0Ml, doprocessMcDplusPiWithB0MlAndDecayTypeCheck};
     const AxisSpec axisMass = ((std::accumulate(processFuncDplusPi.begin(), processFuncDplusPi.end(), 0)) > 0) ? axisMassDminus : axisMassDeltaMassDStar;
     std::string dMesSpecie;
     if ((std::accumulate(processFuncDplusPi.begin(), processFuncDplusPi.end(), 0)) > 0) {
@@ -267,7 +266,8 @@ struct HfTaskB0Reduced {
       dMesSpecie += "D^{0}#pi^{#minus}";
     }
 
-    if (doprocessDataDplusPi || doprocessDataDplusPiWithDmesMl || doprocessDataDplusPiWithB0Ml || doprocessDataDstarPi || doprocessDataDstarPiWithDmesMl) {
+    if (doprocessDataDplusPi || doprocessDataDplusPiWithDmesMl || doprocessDataDplusPiWithB0Ml || doprocessDataDstarPi || doprocessDataDstarPiWithDmesMl ||
+        doprocessDataDplusPiWithDmesMlScalarProd || doprocessDataDplusPiWithB0MlScalarProd || doprocessDataDstarPiWithDmesMlScalarProd) {
       if (fillHistograms) {
         registry.add("hMass", "B^{0} candidates;#it{p}_{T}(B^{0}) (GeV/#it{c});#it{M} (D#pi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPtB0, axisMassB0}});
         registry.add("hDecLength", "B^{0} candidates;#it{p}_{T}(B^{0}) (GeV/#it{c});B^{0} candidate decay length (cm);entries", {HistType::kTH2F, {axisPtB0, axisDecayLength}});
@@ -297,19 +297,19 @@ struct HfTaskB0Reduced {
           registry.add("hDcaProng2", "B^{0} candidates;#it{p}_{T}(B^{0}) (GeV/#it{c});prong 2 (#pi^{#plus}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {axisPtB0, axisDca}});
         }
         // ML scores of D- daughter
-        if (doprocessDataDplusPiWithDmesMl || doprocessDataDstarPiWithDmesMl) {
+        if (doprocessDataDplusPiWithDmesMl || doprocessDataDplusPiWithDmesMlScalarProd || doprocessDataDstarPiWithDmesMl || doprocessDataDstarPiWithDmesMlScalarProd) {
           registry.add("hMlScoreBkgD", Form("B^{0} candidates;#it{p}_{T}(%s) (GeV/#it{c});prong0, %s ML background score;entries", dMesSpecie.c_str(), dMesSpecie.c_str()), {HistType::kTH2F, {axisPtDminus, axisMlScore}});
           registry.add("hMlScorePromptD", Form("B^{0} candidates;#it{p}_{T}(%s) (GeV/#it{c});prong0, %s ML prompt score;entries", dMesSpecie.c_str(), dMesSpecie.c_str()), {HistType::kTH2F, {axisPtDminus, axisMlScore}});
           registry.add("hMlScoreNonPromptD", Form("B^{0} candidates;#it{p}_{T}(%s) (GeV/#it{c});prong0, %s ML nonprompt score;entries", dMesSpecie.c_str(), dMesSpecie.c_str()), {HistType::kTH2F, {axisPtDminus, axisMlScore}});
         }
 
         // ML scores of B0 candidate
-        if (doprocessDataDplusPiWithB0Ml) {
+        if (doprocessDataDplusPiWithB0Ml || doprocessDataDplusPiWithB0MlScalarProd) {
           registry.add("hMlScoreSigB0", "B^{0} candidates;#it{p}_{T}(B^{0}) (GeV/#it{c});prong0, B^{0} ML signal score;entries", {HistType::kTH2F, {axisPtB0, axisMlScore}});
         }
       }
       if (fillSparses) {
-        if (!(doprocessDataDplusPiWithDmesMl || doprocessDataDplusPiWithB0Ml || doprocessDataDstarPiWithDmesMl)) {
+        if (!(doprocessDataDplusPiWithDmesMl || doprocessDataDplusPiWithDmesMlScalarProd || doprocessDataDplusPiWithB0Ml || doprocessDataDplusPiWithB0MlScalarProd || doprocessDataDstarPiWithDmesMl || doprocessDataDstarPiWithDmesMlScalarProd)) {
           if ((std::accumulate(processFuncDplusPi.begin(), processFuncDplusPi.end(), 0)) > 0) {
             registry.add("hMassPtCutVars", "B^{0} candidates;#it{M} (D#pi) (GeV/#it{c}^{2});#it{p}_{T}(B^{0}) (GeV/#it{c});B^{0} candidate decay length (cm);B^{0} candidate norm. decay length XY (cm);B^{0} candidate impact parameter product (cm);B^{0} candidate cos(#vartheta_{P});#it{M} (K#pi) (GeV/#it{c}^{2});#it{p}_{T}(%s) (GeV/#it{c});%s candidate decay length (cm);%s candidate cos(#vartheta_{P})", {HistType::kTHnSparseF, {axisMassB0, axisPtB0, axisDecayLength, axisNormDecayLength, axisImpParProd, axisCosp, axisMass, axisPtDminus, axisDecayLength, axisCosp}});
           } else {

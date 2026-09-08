@@ -88,6 +88,7 @@ struct MeanptFluctuations {
   Configurable<bool> cfgEvSelkNoTimeFrameBorder{"cfgEvSelkNoTimeFrameBorder", true, "TimeFrame border event selection cut"};
   Configurable<bool> cfgEvSelUseGoodZvtxFT0vsPV{"cfgEvSelUseGoodZvtxFT0vsPV", true, "GoodZvertex and FT0 vs PV cut"};
   Configurable<int> cfgCentralityEstimator{"cfgCentralityEstimator", 1, "Centrlaity estimatore choice: 1-->FT0C, 2-->FT0A; 3-->FT0M, 4-->FV0A"};
+  Configurable<bool> cfgUseParticlePDGsInProcessMcReco{"cfgUseParticlePDGsInProcessMcReco", true, "Check partcile PDG codes in reco"};
 
   // pT dep DCAxy and DCAz cuts
   Configurable<bool> cfgUsePtDepDCAxy{"cfgUsePtDepDCAxy", true, "Use pt-dependent DCAxy cut"};
@@ -224,6 +225,7 @@ struct MeanptFluctuations {
     histos.add("AnalysisProfiles/Prof_skew_t1", "", {HistType::kTProfile2D, {centAxis, multAxis}});
     histos.add("AnalysisProfiles/Prof_kurt_t1", "", {HistType::kTProfile2D, {centAxis, multAxis}});
     histos.add("AnalysisProfiles/Hist2D_Nch_centrality", "", {HistType::kTH2D, {centAxis, multAxis}});
+    histos.add("AnalysisProfiles/Hist2D_Ngen_centrality", "", {HistType::kTH2D, {centAxis, multAxis}});
     histos.add("AnalysisProfiles/Hist2D_meanpt_centrality", "", {HistType::kTH2D, {centAxis, meanpTAxis}});
 
     // Analysis Profiles for error (reconstructed data)
@@ -349,7 +351,7 @@ struct MeanptFluctuations {
   } //! end init function
 
   template <typename TCollision>
-  bool eventSelected(TCollision const& collision, const int& multTrk, const float& centrality)
+  bool eventSelected(TCollision const& collision, const int multTrk, const float centrality)
   {
     if (collision.alias_bit(kTVXinTRD)) {
       // TRD triggered
@@ -658,6 +660,54 @@ struct MeanptFluctuations {
       return; // this generated event was never reconstructed at all
     }
 
+    histos.fill(HIST("MCGenerated/hMC"), 6.5);
+
+    std::vector<int64_t> selectedEvents(collisions.size());
+    int nevts = 0;
+
+    for (const auto& collision : collisions) {
+      if (!collision.sel8() || std::abs(collision.mcCollision().posZ()) > cfgCutVertex) {
+        continue;
+      }
+      if (cfgUseGoodITSLayerAllCut && !(collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))) {
+        continue;
+      }
+      if (cfgEvSelkNoSameBunchPileup && !(collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))) {
+        continue;
+      }
+      if (cfgEvSelkNoITSROFrameBorder && !(collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
+      if (cfgEvSelkNoTimeFrameBorder && !(collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))) {
+        continue;
+      }
+      if (cfgEvSelUseGoodZvtxFT0vsPV && !(collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))) {
+        continue;
+      }
+
+      auto rectrackspart = tracks.sliceBy(perCollision, collision.globalIndex());
+      auto cent = collision.centFT0C();
+
+      fillMultCorrPlotsBeforeSel(collision, rectrackspart);
+
+      if (cfgUseSmallIonAdditionalEventCutInMC && !eventSelectedSmallion(collision, rectrackspart.size(), cent)) {
+        continue;
+      }
+
+      if (cfgUseSmallIonAdditionalEventCutInMC) {
+        fillMultCorrPlotsAfterSel(collision, rectrackspart);
+      }
+
+      selectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
+    }
+    selectedEvents.resize(nevts);
+    const auto evtReconstructedAndSelected = std::find(selectedEvents.begin(), selectedEvents.end(), mcCollision.globalIndex()) != selectedEvents.end();
+
+    if (!evtReconstructedAndSelected) { // Check that the event is reconstructed and that the reconstructed events pass the selection
+      return;
+    }
+    histos.fill(HIST("MCGenerated/hMC"), 7.5);
+
     auto bestColl = collisions.begin();
     bool foundValidColl = false;
     for (auto const& coll : collisions) {
@@ -669,38 +719,12 @@ struct MeanptFluctuations {
     if (!foundValidColl) {
       return;
     }
+    histos.fill(HIST("MCGenerated/hMC"), 8.5);
 
     if (!bestColl.has_mcCollision()) {
       return;
     }
-    histos.fill(HIST("MCGenerated/hMC"), 6.5);
-
-    if (std::abs(bestColl.posZ()) >= cfgCutVertex) {
-      return;
-    }
-    if (!eventSelectionDefaultCuts(bestColl)) {
-      return;
-    }
-    histos.fill(HIST("MCGenerated/hMC"), 7.5);
-
-    auto tracksThisCollision = tracks.sliceBy(perCollision, bestColl.globalIndex());
-
-    fillMultCorrPlotsBeforeSel(bestColl, tracksThisCollision);
-
-    const auto centralityFT0C = bestColl.centFT0C();
-    if (cfgUse22sEventCut && !eventSelected(bestColl, tracksThisCollision.size(), centralityFT0C)) {
-      return;
-    }
-    if (cfgUseSmallIonAdditionalEventCut && !eventSelectedSmallion(bestColl, tracksThisCollision.size(), centralityFT0C)) {
-      return;
-    }
-
-    if (cfgUseSmallIonAdditionalEventCut) {
-      fillMultCorrPlotsAfterSel(bestColl, tracksThisCollision);
-    }
-
-    histos.fill(HIST("MCGenerated/hMC"), 8.5);
-    histos.fill(HIST("hZvtx_after_sel"), bestColl.posZ());
+    histos.fill(HIST("MCGenerated/hMC"), 9.5);
 
     double cent = 0.0;
     int centChoiceFT0C = 1;
@@ -718,16 +742,15 @@ struct MeanptFluctuations {
     }
 
     histos.fill(HIST("hCentrality"), cent);
+    histos.fill(HIST("hZvtx_after_sel"), bestColl.posZ());
 
+    auto tracksThisCollision = tracks.sliceBy(perCollision, bestColl.globalIndex());
     histos.fill(HIST("Hist2D_globalTracks_PVTracks"), bestColl.multNTracksPV(), tracksThisCollision.size());
-    histos.fill(HIST("Hist2D_cent_nch"), tracksThisCollision.size(), centralityFT0C);
+    histos.fill(HIST("Hist2D_cent_nch"), tracksThisCollision.size(), cent);
 
     // Calculating generated no of particles for the collision event
     double noGen = 0.0;
-    // Slice particles belonging only to this MC collision
-    auto particlesThisEvent = mcParticles.sliceBy(perMcCollision, mcCollision.globalIndex());
-
-    for (const auto& mcParticle : particlesThisEvent) {
+    for (const auto& mcParticle : mcParticles) {
       if (!mcParticle.has_mcCollision()) {
         continue;
       }
@@ -754,7 +777,6 @@ struct MeanptFluctuations {
     // variables
     double pTsum = 0.0;
     double nN = 0.0;
-
     float q1 = 0.0;
     float q2 = 0.0;
     float q3 = 0.0;
@@ -773,6 +795,21 @@ struct MeanptFluctuations {
       auto particle = track.mcParticle();
       if (!particle.has_mcCollision()) {
         continue;
+      }
+
+      if (particle.mcCollisionId() != mcCollision.globalIndex()) { // reject tracks whose true particle belongs to a DIFFERENT generated collision (pileup contamination in bestColl)
+        continue;
+      }
+
+      if (cfgUseParticlePDGsInProcessMcReco) {
+        auto pdgPart = std::abs(particle.pdgCode());
+        if (pdgPart != PDG_t::kPiPlus &&
+            pdgPart != PDG_t::kKPlus &&
+            pdgPart != PDG_t::kProton &&
+            pdgPart != PDG_t::kElectron &&
+            pdgPart != PDG_t::kMuonMinus) {
+          continue; // skip this track
+        }
       }
 
       if (!track.isPVContributor()) {
@@ -848,6 +885,7 @@ struct MeanptFluctuations {
       histos.get<TProfile2D>(HIST("AnalysisProfilesV2/Prof_var_t1"))->Fill(noGen, nCh, varianceTerm1);
       histos.get<TProfile2D>(HIST("AnalysisProfilesV2/Prof_skew_t1"))->Fill(noGen, nCh, skewnessTerm1);
       histos.get<TProfile2D>(HIST("AnalysisProfilesV2/Prof_kurt_t1"))->Fill(noGen, nCh, kurtosisTerm1);
+      histos.fill(HIST("AnalysisProfiles/Hist2D_Ngen_centrality"), cent, noGen);
 
       // selecting subsample and filling profiles
       float lRandom = fRndm->Rndm();

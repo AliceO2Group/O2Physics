@@ -246,7 +246,7 @@ struct tableMakerMuonMchTrkEfficiency {
 
   /// extrapolate tracks to a given r value (spherical coordinates)
   ///   to mimic the (x,y) position in a given chamber
-  void extrapolate(TLorentzVector vec, int ich, double& x, double& y)
+  void extrapolate(const TLorentzVector& vec, int ich, double& x, double& y)
   { // i = 0..9
     double zposCh[10] = {5, 5, 7, 7, 10, 10, 12.5, 12.5, 14.5, 14.5};
     double theta = vec.Theta();
@@ -396,7 +396,7 @@ struct tableMakerMuonMchTrkEfficiency {
 
   /// Event selection
   template <uint32_t TEventFillMap, typename TEvent>
-  void runEventSelection(TEvent event)
+  void runEventSelection(const TEvent& event)
   {
     VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
     VarManager::FillEvent<TEventFillMap>(event); // extract event information and place it in the fValues array

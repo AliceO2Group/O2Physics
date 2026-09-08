@@ -55,13 +55,14 @@ struct Alice3Lepton {
     kCe = 0,
     kBe = 1,
     kBCe = 2,
-    kPPi0 = 4,
+    kPPi0 = 3,
+    kHFE = 4,
   };
 
   Service<o2::framework::O2DatabasePDG> inspdg;
 
   Configurable<int> pdg{"pdg", 11, "pdg code for analysis. dielectron:11, dimuon:13"};
-  Configurable<int> requireHFE{"requireHFE", -1, "-1: no selection, 0: charm, 1: direct beauty, 2: beauty->charm->e, 3: HFE, 4: promptPi0"};
+  Configurable<int> requireHFE{"requireHFE", -1, "-1: no selection, 0: charm, 1: direct beauty, 2: beauty->charm->e, 3: promptPi0, 4: HFE"};
   Configurable<float> ptMin{"ptMin", 0.f, "Lower limit in pT"};
   Configurable<float> ptMax{"ptMax", 5.f, "Upper limit in pT"};
   Configurable<float> etaMin{"etaMin", -5.f, "Lower limit in eta"};
@@ -92,7 +93,7 @@ struct Alice3Lepton {
     const AxisSpec axisTrackLengthOuterTOF{300, 0., 300., "Track length (cm)"};
     const AxisSpec axisEta{1000, -5, 5, "#it{#eta}"};
     const AxisSpec axisDCAxysigma{1000, -20, 20, "DCA_{xy} (#sigma)"};
-    const AxisSpec axisDCAxy{1000, -1000, 1000, "DCA_{xy} (#micro m)"};
+    const AxisSpec axisDCAxy{1200, -300, 300, "DCA_{xy} (#micro m)"};
     const AxisSpec axisPhi{360, 0, TMath::TwoPi(), "#it{#varphi} (rad.)"};
     const AxisSpec axisProdx{2000, -100, 100, "Prod. Vertex X (cm)"};
     const AxisSpec axisPrody{2000, -100, 100, "Prod. Vertex Y (cm)"};
@@ -162,8 +163,9 @@ struct Alice3Lepton {
   template <typename TMCParticle1, typename TMCParticles>
   int IsHF(TMCParticle1 const& p1, TMCParticles const& mcparticles)
   {
-    if (!p1.has_mothers())
+    if (!p1.has_mothers()) {
       return HFType::kUndef;
+    }
 
     int motherid_p1 = p1.mothersIds()[0];
     if (motherid_p1 > -1) {
@@ -285,15 +287,12 @@ struct Alice3Lepton {
           continue;
         }
       }
-      if (std::abs(mcParticle.pdgCode()) != pdg) {
-        continue;
-      }
       if (requireHFE > -1) {
         int typehfe = IsHF(mcParticle, mcParticles);
-        if (requireHFE < 3 && typehfe != requireHFE) {
+        if (requireHFE < HFType::kHFE && typehfe != requireHFE) {
           continue;
         }
-        if (requireHFE == 3 && typehfe == HFType::kUndef) {
+        if (requireHFE == HFType::kHFE && (typehfe == HFType::kUndef || typehfe == kPPi0)) {
           continue;
         }
       }
@@ -431,10 +430,10 @@ struct Alice3Lepton {
           }
           if (requireHFE > -1) {
             int typehfe = IsHF(mcParticle, mcParticles);
-            if (requireHFE < 3 && typehfe != requireHFE) {
+            if (requireHFE < HFType::kHFE && typehfe != requireHFE) {
               continue;
             }
-            if (requireHFE == 3 && typehfe == HFType::kUndef) {
+            if (requireHFE == HFType::kHFE && (typehfe == HFType::kUndef || typehfe == kPPi0)) {
               continue;
             }
           }
@@ -528,7 +527,8 @@ struct Alice3Dilepton {
   SliceCache cache_rec;
 
   Configurable<int> pdg{"pdg", 11, "pdg code for analysis. dielectron:11, dimuon:13"};
-  Configurable<bool> requireHFEid{"requireHFEid", true, "Require HFE identification for both leptons"};
+  Configurable<bool> requireHFEid{"requireHFEid", true, "Require HFE identification"};
+  Configurable<bool> contamination{"contamination", false, "Fill only pairs with one misidentifixed electrons"};
   Configurable<float> ptMin{"ptMin", 0.f, "Lower limit in pT"};
   Configurable<float> ptMax{"ptMax", 5.f, "Upper limit in pT"};
   Configurable<float> etaMin{"etaMin", -5.f, "Lower limit in eta"};
@@ -629,13 +629,40 @@ struct Alice3Dilepton {
     }
   }
 
+  template <typename TTrack, typename TMCParticles>
+  bool IsHF(TTrack const& track, TMCParticles const& mcparticles)
+  {
+    if (!track.has_mcParticle()) {
+      return false;
+    }
+    const auto p1 = track.template mcParticle_as<aod::McParticles>();
+    if (!p1.has_mothers()) {
+      return false;
+    }
+    int motherId = p1.mothersIds()[0];
+    while (motherId > -1) {
+      auto mp = mcparticles.rawIteratorAt(motherId);
+      if (((500 < std::abs(mp.pdgCode()) && std::abs(mp.pdgCode()) < 599) || (5000 < std::abs(mp.pdgCode()) && std::abs(mp.pdgCode()) < 5999)) || ((400 < std::abs(mp.pdgCode()) && std::abs(mp.pdgCode()) < 499) || (4000 < std::abs(mp.pdgCode()) && std::abs(mp.pdgCode()) < 4999))) {
+        return true;
+      }
+      if (mp.has_mothers()) {
+        motherId = mp.mothersIds()[0];
+      } else {
+        motherId = -999;
+      }
+    }
+    return false;
+  }
+
   template <typename TMCParticle1, typename TMCParticle2, typename TMCParticles>
   int IsSameMother(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcparticles)
   {
-    if (!p1.has_mothers())
+    if (!p1.has_mothers()) {
       return -1;
-    if (!p2.has_mothers())
+    }
+    if (!p2.has_mothers()) {
       return -1;
+    }
 
     int motherid1 = p1.mothersIds()[0];
     auto mother1 = mcparticles.iteratorAt(motherid1);
@@ -645,10 +672,12 @@ struct Alice3Dilepton {
     auto mother2 = mcparticles.iteratorAt(motherid2);
     int mother2_pdg = mother2.pdgCode();
 
-    if (motherid1 != motherid2)
+    if (motherid1 != motherid2) {
       return -1;
-    if (mother1_pdg != mother2_pdg)
+    }
+    if (mother1_pdg != mother2_pdg) {
       return -1;
+    }
 
     if (std::abs(mother1_pdg) != PDG_t::kGamma                        // photon
         && std::abs(mother1_pdg) != PDG_t::kPi0                       // pi0
@@ -674,10 +703,12 @@ struct Alice3Dilepton {
     // 1. b->e- and bbar->e+ (different b and bbar)
     // 2. b->c->e+ and bbar->cbar->e- (different b and bbar)
     // 3. b->c->e+ and b->e- (1 same b (or bbar))
-    if (!p1.has_mothers())
+    if (!p1.has_mothers()) {
       return HFllType::kUndef;
-    if (!p2.has_mothers())
+    }
+    if (!p2.has_mothers()) {
       return HFllType::kUndef;
+    }
 
     int motherid_p1 = p1.mothersIds()[0];
     int motherid_p2 = p2.mothersIds()[0];
@@ -727,10 +758,12 @@ struct Alice3Dilepton {
   {
     // in total, 1 case for LS pairs
     // 4. b->c->e+ and bbar->e+
-    if (!p1.has_mothers())
+    if (!p1.has_mothers()) {
       return HFllType::kUndef;
-    if (!p2.has_mothers())
+    }
+    if (!p2.has_mothers()) {
       return HFllType::kUndef;
+    }
 
     int motherid_p1 = p1.mothersIds()[0];
     int motherid_p2 = p2.mothersIds()[0];
@@ -788,12 +821,26 @@ struct Alice3Dilepton {
   }
 
   template <bool isWithSmearing, PairType pairtype, typename TTracks>
-  void FillPairRecAll(TTracks const& tracks1, TTracks const& tracks2)
+  void FillPairRecAll(TTracks const& tracks1, TTracks const& tracks2, const aod::McParticles& mcParticles)
   {
     if constexpr (pairtype == PairType::kULS) {
       for (const auto& [t1, t2] : combinations(soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
         if (!IsInAcceptance<isWithSmearing>(t1) || !IsInAcceptance<isWithSmearing>(t2)) {
           continue;
+        }
+        if (contamination) {
+          if (t1.has_mcParticle() && t2.has_mcParticle()) {
+            auto mct1 = t1.template mcParticle_as<aod::McParticles>();
+            auto mct2 = t2.template mcParticle_as<aod::McParticles>();
+            if (std::abs(mct1.pdgCode()) == pdg && std::abs(mct2.pdgCode()) == pdg) {
+              continue;
+            }
+          }
+        }
+        if (requireHFEid) {
+          if (!IsHF(t1, mcParticles) && !IsHF(t2, mcParticles)) {
+            continue;
+          }
         }
         float pair_dca_xy = 999.f;
         ROOT::Math::PtEtaPhiMVector v12 = buildPairDCA<isWithSmearing>(t1, t2, pair_dca_xy);
@@ -810,6 +857,20 @@ struct Alice3Dilepton {
       for (const auto& [t1, t2] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(tracks1, tracks2))) {
         if (!IsInAcceptance<isWithSmearing>(t1) || !IsInAcceptance<isWithSmearing>(t2)) {
           continue;
+        }
+        if (contamination) {
+          if (t1.has_mcParticle() && t2.has_mcParticle()) {
+            auto mct1 = t1.template mcParticle_as<aod::McParticles>();
+            auto mct2 = t2.template mcParticle_as<aod::McParticles>();
+            if (std::abs(mct1.pdgCode()) == pdg && std::abs(mct2.pdgCode()) == pdg) {
+              continue;
+            }
+          }
+        }
+        if (requireHFEid) {
+          if (!IsHF(t1, mcParticles) && !IsHF(t2, mcParticles)) {
+            continue;
+          }
         }
         float pair_dca_xy = 999.f;
         ROOT::Math::PtEtaPhiMVector v12 = buildPairDCA<isWithSmearing>(t1, t2, pair_dca_xy);
@@ -1084,7 +1145,7 @@ struct Alice3Dilepton {
 
   void processRecAll(MyFilteredAlice3Collision const& collisions,
                      MyFilteredTracksMC const&,
-                     const aod::McParticles&)
+                     const aod::McParticles& mcParticles)
   {
     for (const auto& collision : collisions) {
       registry.fill(HIST("Reconstructed/Event/VtxZ"), collision.posZ());
@@ -1125,9 +1186,9 @@ struct Alice3Dilepton {
         registry.fill(HIST("Reconstructed/Track/Pre"), track.isTrackPrefilter());
       }
 
-      FillPairRecAll<false, PairType::kULS>(negTracks_coll, posTracks_coll);
-      FillPairRecAll<false, PairType::kLSpp>(posTracks_coll, posTracks_coll);
-      FillPairRecAll<false, PairType::kLSnn>(negTracks_coll, negTracks_coll);
+      FillPairRecAll<false, PairType::kULS>(negTracks_coll, posTracks_coll, mcParticles);
+      FillPairRecAll<false, PairType::kLSpp>(posTracks_coll, posTracks_coll, mcParticles);
+      FillPairRecAll<false, PairType::kLSnn>(negTracks_coll, negTracks_coll, mcParticles);
 
     } // end of collision loop
   } // end of processRec
@@ -1150,7 +1211,7 @@ struct Alice3Dilepton {
 
   void processRecAllWithSmearing(MyFilteredAlice3Collision const& collisions,
                                  MyFilteredTracksWithSmearing const&,
-                                 const aod::McParticles&)
+                                 const aod::McParticles& mcParticles)
   {
     for (const auto& collision : collisions) {
       registry.fill(HIST("Reconstructed/Event/VtxZ"), collision.posZ());
@@ -1191,9 +1252,9 @@ struct Alice3Dilepton {
         registry.fill(HIST("Reconstructed/Track/Pre"), track.isTrackPrefilter());
       }
 
-      FillPairRecAll<true, PairType::kULS>(negTracks_coll, posTracks_coll);
-      FillPairRecAll<true, PairType::kLSpp>(posTracks_coll, posTracks_coll);
-      FillPairRecAll<true, PairType::kLSnn>(negTracks_coll, negTracks_coll);
+      FillPairRecAll<true, PairType::kULS>(negTracks_coll, posTracks_coll, mcParticles);
+      FillPairRecAll<true, PairType::kLSpp>(posTracks_coll, posTracks_coll, mcParticles);
+      FillPairRecAll<true, PairType::kLSnn>(negTracks_coll, negTracks_coll, mcParticles);
 
     } // end of collision loop
   } // end of processRec

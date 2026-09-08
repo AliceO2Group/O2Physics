@@ -262,7 +262,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   template <bool FillSparses, bool FillTables, typename TPair, typename TTrigCand, typename TBinningType>
   void fillSameEvent(TPair const& pair,
                      TTrigCand const& trigCand,
-                     TBinningType binPolicy)
+                     const TBinningType& binPolicy)
   {
     auto collision = pair.template hfcRedCorrColl_as<o2::aod::HfcRedCorrColls>();
     if (collision.centrality() < centralityMin || collision.centrality() > centralityMax) {
@@ -311,7 +311,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   /// \param binPolicy is the binning policy for the correlation
   template <bool FillSparses, bool FillTables, typename TPairs, typename TBinningType>
   void fillMixedEvent(TPairs const& pairs,
-                      TBinningType binPolicy)
+                      const TBinningType& binPolicy)
   {
     for (const auto& [trigColl, trigCands, assocColl, assocTracks] : pairs) {
       if (trigCands.size() == 0 || assocTracks.size() == 0) {
@@ -423,7 +423,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   void doCorrelationsMixedEvent(const TCollision& collisions,
                                 const TTrigCand& trigCands,
                                 const TTrackAssoc& assocTracks,
-                                TBinningType binPolicy)
+                                const TBinningType& binPolicy)
   {
     auto tracksTuple = std::make_tuple(trigCands, assocTracks);
 

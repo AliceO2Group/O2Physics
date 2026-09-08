@@ -43,7 +43,6 @@
 #include <TAxis.h>
 #include <TH1.h>
 #include <TH2.h>
-#include <TH3.h>
 
 #include <array>
 #include <cmath>

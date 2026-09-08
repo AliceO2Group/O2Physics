@@ -30,6 +30,7 @@
 #include <cstdint>
 #include <limits>
 #include <optional>
+#include <type_traits>
 #include <unordered_map>
 
 namespace o2::analysis::femto
@@ -83,7 +84,7 @@ inline double getPdgMass(int pdgCode)
 {
   // use this function instead of TDatabasePDG to return masses defined in the PhysicsConstants.h header
   // this approach saves a lot of memory and important partilces like deuteron are missing in TDatabasePDG anyway
-  double mass = 0.f;
+  double mass = 0.;
   // add new particles if necessary here
   switch (std::abs(pdgCode)) {
     case kPiPlus:
@@ -102,10 +103,10 @@ inline double getPdgMass(int pdgCode)
       mass = o2::constants::physics::MassPhi;
       break;
     case kRho770_0:
-      mass = 775.26; // not defined in O2?
+      mass = 0.77526; // not defined in O2?
       break;
     case kRho770Plus:
-      mass = 775.11; // not defined in O2?
+      mass = 0.77511; // not defined in O2?
       break;
     case o2::constants::physics::Pdg::kK0Star892:
       mass = o2::constants::physics::MassK0Star892;
@@ -138,7 +139,7 @@ inline double getPdgMass(int pdgCode)
       mass = o2::constants::physics::MassOmegaMinus;
       break;
     default:
-      LOG(warn) << "PDG code is not suppored. Return 0...";
+      LOG(warn) << "PDG code " << pdgCode << " is not suppored. Return 0... ";
   }
   return mass;
 }
@@ -154,10 +155,14 @@ concept HasQvectors = requires(T col) {
 };
 
 template <typename T>
-concept HasEventShape = requires(T col) {
-  col.qvec();
-  col.eventPlaneAngle();
+concept HasEventShapeRow = requires(T row) {
+  row.qvec();
+  row.eventPlaneAngle();
 };
+
+/// accepts either a row/iterator or a table (Filtered<Join<...>> etc.)
+template <typename T>
+concept HasEventShape = HasEventShapeRow<std::decay_t<T>> || (requires { typename std::decay_t<T>::iterator; } && HasEventShapeRow<typename std::decay_t<T>::iterator>);
 
 /// Recalculate pT for Kinks (Sigmas) using kinematic constraints
 inline float calcPtnew(float pxMother, float pyMother, float pzMother, float pxDaughter, float pyDaughter, float pzDaughter)
