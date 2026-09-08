@@ -20,6 +20,7 @@
 #include "PWGCF/Femto/Core/charmHadronHistManager.h"
 #include "PWGCF/Femto/Core/closePairRejection.h"
 #include "PWGCF/Femto/Core/collisionHistManager.h"
+#include "PWGCF/Femto/Core/femtoUtils.h"
 #include "PWGCF/Femto/Core/kinkHistManager.h"
 #include "PWGCF/Femto/Core/mcParticleHistManager.h"
 #include "PWGCF/Femto/Core/modes.h"
