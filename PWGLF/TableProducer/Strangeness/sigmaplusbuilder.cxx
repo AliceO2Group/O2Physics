@@ -320,12 +320,12 @@ struct Sigmaplusbuilder {
   // photon (electron/positron conversion pair) candidate
   template <typename TTrack>
   struct PhotonCand {
-    float x, y, z;
-    float px, py, pz;
-    float mGamma;
-    float alpha;
-    float qtarm;
-    float radius;
+    float x = 0.f, y = 0.f, z = 0.f;
+    float px = 0.f, py = 0.f, pz = 0.f;
+    float mGamma = 0.f;
+    float alpha = 0.f;
+    float qtarm = 0.f;
+    float radius = 0.f;
     TTrack negTrack;
     TTrack posTrack;
   };

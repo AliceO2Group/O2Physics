@@ -98,7 +98,6 @@ struct SigmaHadCand {
 
 struct SigmaHadCorr {
 
-  std::vector<SigmaHadCand> sigmaHadCandidates;        // Vector to store Sigma-hadron candidates
   Produces<aod::SigmaProtonCands> outputDataTable;     // Output table for Sigma-hadron candidates
   Produces<aod::SigmaProtonMCCands> outputDataTableMC; // Output table for Sigma-hadron candidates in MC
   Produces<aod::SlimKinkCandsMC> outputKinkCandsMC;    // Single-Sigma-level MC truth record, filled before hadron pairing
@@ -499,8 +498,9 @@ struct SigmaHadCorr {
   }
 
   template <bool IsMC, typename Ttrack, typename Tcollision>
-  void fillTreeAndHistograms(aod::KinkCands const& kinkCands, Ttrack const& tracksDauSigma, Ttrack const& tracks, Tcollision const& collision)
+  std::vector<SigmaHadCand> fillTreeAndHistograms(aod::KinkCands const& kinkCands, Ttrack const& tracksDauSigma, Ttrack const& tracks, Tcollision const& collision)
   {
+    std::vector<SigmaHadCand> sigmaHadCandidates;
     for (const auto& sigmaCand : kinkCands) {
       auto kinkDauTrack = tracksDauSigma.rawIteratorAt(sigmaCand.trackDaugId());
       if (!selectSigma(sigmaCand, kinkDauTrack)) {
@@ -612,20 +612,20 @@ struct SigmaHadCorr {
         sigmaHadCandidates.push_back(candidate);
       }
     }
+    return sigmaHadCandidates;
   }
 
   void processSameEvent(CollisionsFull const& collisions, aod::KinkCands const& kinkCands, TracksFull const& tracks)
   {
     for (auto const& collision : collisions) {
 
-      sigmaHadCandidates.clear();
       auto kinkCandsC = kinkCands.sliceBy(kinkCandsPerCollisionPreslice, collision.globalIndex());
       auto tracksC = tracks.sliceBy(tracksPerCollisionPreslice, collision.globalIndex());
       if (std::abs(collision.posZ()) > cutZVertex || !collision.sel8()) {
         continue;
       }
       rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
-      fillTreeAndHistograms<false>(kinkCandsC, tracks, tracksC, collision);
+      auto sigmaHadCandidates = fillTreeAndHistograms<false>(kinkCandsC, tracks, tracksC, collision);
       if (fillOutputTree) {
         // Fill output table
         for (const auto& candidate : sigmaHadCandidates) {
@@ -663,14 +663,13 @@ struct SigmaHadCorr {
            selfCombinations(BinningTypeMultNTracksPV{{cfgVtxBins, cfgMultBins}, true}, nEvtMixingBkg, -1, collisions, collisions)) {
         if (collision1.index() == collision2.index())
           continue;
-        sigmaHadCandidates.clear();
         if (std::abs(collision1.posZ()) > cutZVertex || !collision1.sel8())
           continue;
         if (std::abs(collision2.posZ()) > cutZVertex || !collision2.sel8())
           continue;
         auto kinkCandsC1 = kinkCands.sliceBy(kinkCandsPerCollisionPreslice, collision1.globalIndex());
         auto tracksC2 = tracks.sliceBy(tracksPerCollisionPreslice, collision2.globalIndex());
-        fillTreeAndHistograms<false>(kinkCandsC1, tracks, tracksC2, collision1);
+        auto sigmaHadCandidates = fillTreeAndHistograms<false>(kinkCandsC1, tracks, tracksC2, collision1);
         if (fillOutputTree) {
           for (const auto& candidate : sigmaHadCandidates) {
             outputDataTable(candidate.sigmaCharge, candidate.sigmaPx, candidate.sigmaPy, candidate.sigmaPz,
@@ -686,14 +685,13 @@ struct SigmaHadCorr {
            selfCombinations(BinningTypeNumContrib{{cfgVtxBins, cfgMultBins}, true}, nEvtMixingBkg, -1, collisions, collisions)) {
         if (collision1.index() == collision2.index())
           continue;
-        sigmaHadCandidates.clear();
         if (std::abs(collision1.posZ()) > cutZVertex || !collision1.sel8())
           continue;
         if (std::abs(collision2.posZ()) > cutZVertex || !collision2.sel8())
           continue;
         auto kinkCandsC1 = kinkCands.sliceBy(kinkCandsPerCollisionPreslice, collision1.globalIndex());
         auto tracksC2 = tracks.sliceBy(tracksPerCollisionPreslice, collision2.globalIndex());
-        fillTreeAndHistograms<false>(kinkCandsC1, tracks, tracksC2, collision1);
+        auto sigmaHadCandidates = fillTreeAndHistograms<false>(kinkCandsC1, tracks, tracksC2, collision1);
         if (fillOutputTree) {
           for (const auto& candidate : sigmaHadCandidates) {
             outputDataTable(candidate.sigmaCharge, candidate.sigmaPx, candidate.sigmaPy, candidate.sigmaPz,
@@ -712,7 +710,6 @@ struct SigmaHadCorr {
   {
     for (auto const& collision : collisions) {
 
-      sigmaHadCandidates.clear();
       auto kinkCandsC = kinkCands.sliceBy(kinkCandsPerCollisionPreslice, collision.globalIndex());
       auto tracksC = tracks.sliceBy(tracksMCPerCollisionPreslice, collision.globalIndex());
 
@@ -720,7 +717,7 @@ struct SigmaHadCorr {
         continue;
       }
       rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
-      fillTreeAndHistograms<true>(kinkCandsC, tracks, tracksC, collision);
+      auto sigmaHadCandidates = fillTreeAndHistograms<true>(kinkCandsC, tracks, tracksC, collision);
       for (const auto& candidate : sigmaHadCandidates) {
         auto mcLabelSigma = tracks.rawIteratorAt(candidate.sigmaID);
         auto mcLabelSigmaDau = tracks.rawIteratorAt(candidate.kinkDauID);
@@ -832,14 +829,13 @@ struct SigmaHadCorr {
            selfCombinations(BinningTypeMultNTracksPV{{cfgVtxBins, cfgMultBins}, true}, nEvtMixingBkg, -1, collisions, collisions)) {
         if (collision1.index() == collision2.index())
           continue;
-        sigmaHadCandidates.clear();
         if (std::abs(collision1.posZ()) > cutZVertex || !collision1.sel8())
           continue;
         if (std::abs(collision2.posZ()) > cutZVertex || !collision2.sel8())
           continue;
         auto kinkCandsC1 = kinkCands.sliceBy(kinkCandsPerCollisionPreslice, collision1.globalIndex());
         auto tracksC2 = tracks.sliceBy(tracksPerCollisionPreslice, collision2.globalIndex());
-        fillTreeAndHistograms<true>(kinkCandsC1, tracks, tracksC2, collision1);
+        auto sigmaHadCandidates = fillTreeAndHistograms<true>(kinkCandsC1, tracks, tracksC2, collision1);
         for (const auto& candidate : sigmaHadCandidates) {
           auto mcLabelSigma = tracks.rawIteratorAt(candidate.sigmaID);
           auto mcLabelSigmaDau = tracks.rawIteratorAt(candidate.kinkDauID);
@@ -881,14 +877,13 @@ struct SigmaHadCorr {
            selfCombinations(BinningTypeNumContrib{{cfgVtxBins, cfgMultBins}, true}, nEvtMixingBkg, -1, collisions, collisions)) {
         if (collision1.index() == collision2.index())
           continue;
-        sigmaHadCandidates.clear();
         if (std::abs(collision1.posZ()) > cutZVertex || !collision1.sel8())
           continue;
         if (std::abs(collision2.posZ()) > cutZVertex || !collision2.sel8())
           continue;
         auto kinkCandsC1 = kinkCands.sliceBy(kinkCandsPerCollisionPreslice, collision1.globalIndex());
         auto tracksC2 = tracks.sliceBy(tracksPerCollisionPreslice, collision2.globalIndex());
-        fillTreeAndHistograms<true>(kinkCandsC1, tracks, tracksC2, collision1);
+        auto sigmaHadCandidates = fillTreeAndHistograms<true>(kinkCandsC1, tracks, tracksC2, collision1);
         for (const auto& candidate : sigmaHadCandidates) {
           auto mcLabelSigma = tracks.rawIteratorAt(candidate.sigmaID);
           auto mcLabelSigmaDau = tracks.rawIteratorAt(candidate.kinkDauID);
