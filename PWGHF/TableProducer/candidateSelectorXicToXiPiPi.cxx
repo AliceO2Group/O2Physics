@@ -567,7 +567,7 @@ struct HfCandidateSelectorXicToXiPiPi {
 
       // ITS track quality selection on pions from charm baryon
       if ((!isSelectedTrackItsQuality(trackPi0, nClustersItsMin, itsChi2PerClusterMax) || trackPi0.itsNClsInnerBarrel() < nClustersItsInnBarrMin) ||
-          (!isSelectedTrackItsQuality(trackPi0, nClustersItsMin, itsChi2PerClusterMax) || trackPi1.itsNClsInnerBarrel() < nClustersItsInnBarrMin)) {
+          (!isSelectedTrackItsQuality(trackPi1, nClustersItsMin, itsChi2PerClusterMax) || trackPi1.itsNClsInnerBarrel() < nClustersItsInnBarrMin)) {
         return false;
       }
       if constexpr (IsMc) {
