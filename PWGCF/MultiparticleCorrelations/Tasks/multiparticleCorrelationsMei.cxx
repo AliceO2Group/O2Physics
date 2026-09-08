@@ -19,15 +19,30 @@
 #include "Common/DataModel/TrackSelectionTables.h" // needed for aod::TracksDCA table
 
 #include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/DataTypes.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TCollection.h>
+#include <TFile.h>
 #include <TGrid.h>
-#include <TH1D.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TIterator.h>
+#include <TList.h>
+#include <TObject.h>
+#include <TString.h>
 #include <TSystem.h>
 
+#include <Rtypes.h>
+
+#include <cstddef>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -116,7 +131,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
                              OutputObjSourceType::OutputObjSource};
 
   // *) CCDB:
-  Service<ccdb::BasicCCDBManager> ccdb; // support for offline callibration data base, not needed for the time being...
+  Service<ccdb::BasicCCDBManager> ccdb{}; // support for offline callibration data base, not needed for the time being...
 
   // *) Define configurables:
   Configurable<int> centralityEstimator{"centralityEstimator", 0, "centrality estimator: 0=FT0C, 1=FT0M, 2=FV0A, 3=NTPV"};
@@ -202,7 +217,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
     if (0 == list->GetEntries()) {
-      return NULL;
+      return nullptr;
     }
 
     // The object is in the current base list:
@@ -212,26 +227,27 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     }
 
     // Otherwise, search for the object recursively in the nested lists:
-    TObject* objectIter; // iterator object in the loop below
+    TObject* objectIter = nullptr; // iterator object in the loop below
     TIter next(list);
     while ((objectIter = next())) // double round braces are to silence the warnings
     {
-      if (TString(objectIter->ClassName()).EqualTo("TList")) {
-        objectFinal = getObjectFromList(reinterpret_cast<TList*>(objectIter), objectName);
-        if (objectFinal)
+      if (auto* subList = dynamic_cast<TList*>(objectIter)) {
+        objectFinal = getObjectFromList(subList, objectName);
+        if (objectFinal) {
           return objectFinal;
+        }
       }
     } // while(objectIter = next())
 
-    return NULL;
+    return nullptr;
   } // TObject* getObjectFromList(TList *list, char *objectName)
 
   TH1D* getHistogramWithWeights(const char* filePath, const char* runNumber)
   {
     // *) Return value:
-    TH1D* hist = NULL;
-    TList* baseList = NULL;     // base top-level list in the TFile, e.g. named "ccdb_object"
-    TList* listWithRuns = NULL; // nested list with run-wise TList's holding run-specific weights
+    TH1D* hist = nullptr;
+    TList* baseList = nullptr;     // base top-level list in the TFile, e.g. named "ccdb_object"
+    TList* listWithRuns = nullptr; // nested list with run-wise TList's holding run-specific weights
 
     // *) Determine from filePath if the file is on a local machine, or in home dir AliEn, or in CCDB:
     //    Algorithm: If filePath begins with "/alice/cern.ch/" then it's in the home dir AliEn;
@@ -240,7 +256,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     bool bFileIsInAliEn = false;
     bool bFileIsInCCDB = false;
 
-    std::string path(cfFileWithWeights);
+    std::string path(filePath);
 
     if (path.starts_with("/alice/cern.ch/")) {
       bFileIsInAliEn = true;
@@ -266,11 +282,11 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
 
       // Finally, from the top-level TList, get the desired nested TList => the technical problem here is that it can be nested at any level,
       // for that there is a helper utility function getObjectFromList(...) , see its implementation further below
-      listWithRuns = reinterpret_cast<TList*>(getObjectFromList(baseList, runNumber));
+      listWithRuns = dynamic_cast<TList*>(getObjectFromList(baseList, runNumber));
       if (!listWithRuns) {
         TString runNumberWithLeadingZeroes = "000";
         runNumberWithLeadingZeroes += runNumber; // another try, with "000" prepended to run number
-        listWithRuns = reinterpret_cast<TList*>(getObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
+        listWithRuns = dynamic_cast<TList*>(getObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
         if (!listWithRuns) {
           LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
         }
@@ -288,11 +304,11 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
         LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
       }
 
-      listWithRuns = reinterpret_cast<TList*>(getObjectFromList(baseList, runNumber));
+      listWithRuns = dynamic_cast<TList*>(getObjectFromList(baseList, runNumber));
       if (!listWithRuns) {
         TString runNumberWithLeadingZeroes = "000";
         runNumberWithLeadingZeroes += runNumber; // another try, with "000" prepended to run number
-        listWithRuns = reinterpret_cast<TList*>(getObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
+        listWithRuns = dynamic_cast<TList*>(getObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
         if (!listWithRuns) {
           LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
         }
@@ -321,11 +337,11 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
         LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
       }
 
-      listWithRuns = reinterpret_cast<TList*>(getObjectFromList(baseList, runNumber));
+      listWithRuns = dynamic_cast<TList*>(getObjectFromList(baseList, runNumber));
       if (!listWithRuns) {
         TString runNumberWithLeadingZeroes = "000";
         runNumberWithLeadingZeroes += runNumber; // another try, with "000" prepended to run number
-        listWithRuns = reinterpret_cast<TList*>(getObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
+        listWithRuns = dynamic_cast<TList*>(getObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
         if (!listWithRuns) {
           // baseList->ls();
           // LOGF(fatal, "\033[1;31m%s at line %d : this crash can happen if in the output file there is no list with weights for the current run number = %s\033[0m", __FUNCTION__, __LINE__, tc.fRunNumber.Data());
@@ -346,9 +362,9 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     if (!hist) {
       LOGF(fatal, "%s: histogram 'hist1' not found in run list", __FUNCTION__);
     }
-    hist->SetDirectory(0);
+    hist->SetDirectory(nullptr);
     auto histClone = dynamic_cast<TH1D*>(hist->Clone());
-    histClone->SetDirectory(0);
+    histClone->SetDirectory(nullptr);
 
     delete baseList; // release back the memory
 
@@ -398,6 +414,9 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       case ENTPV:
         thisCent = collision.centNTPV();
         break;
+      default:
+        LOG(warning) << "Unknown centrality estimator. Using FT0C as default.";
+        break; // thisCent is already FT0C
     }
 
     auto thisRefMult = collision.multTPC(); // use auto to determine the type
@@ -417,6 +436,9 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       case EMultNTracksPV:
         thisRefMult = collision.multNTracksPV();
         break;
+      default:
+        LOG(warning) << "Unknown multiplicity. Using multTPC as default.";
+        break; // thisRefMult is already multTPC
     }
 
     if constexpr (rs == ERec || rs == ERecAndSim) {
@@ -551,6 +573,9 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       case ENTPV:
         thisCent = collision.centNTPV();
         break;
+      default:
+        LOG(warning) << "Unknown centrality estimator. Using FT0C as default.";
+        break; // thisCent is already FT0C
     }
     if constexpr (rs == ERecAndSim || rs == ESim) {
       if (!collision.has_mcCollision()) {
@@ -621,7 +646,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     tc.fDryRun = cfDryRun;
 
     // *) Book base list:
-    TList* temp = new TList();
+    auto* temp = new TList();
     temp->SetOwner(true);
     fBaseList.setObject(temp);
 

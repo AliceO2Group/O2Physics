@@ -54,7 +54,14 @@ enum class InputFeaturesEMCConversion : uint8_t {
   totE,
   e2,
   e1,
-  deltaPhi
+  deltaPhi,
+  harmonicEt,
+  m021,
+  m022,
+  time1,
+  time2,
+  ncell1,
+  ncell2
 };
 
 template <typename TypeOutputScore = float>
@@ -65,9 +72,9 @@ class EmMlResponseEMCConversion : public MlResponse<TypeOutputScore>
   virtual ~EmMlResponseEMCConversion() = default;
 
   template <o2::analysis::em::IsEmcConversionCandidate TCandidate>
-  std::vector<float> getInputFeatures(TCandidate const& candidate)
+  void getInputFeatures(TCandidate const& candidate, std::vector<float>& inputFeatures)
   {
-    std::vector<float> inputFeatures;
+    inputFeatures.clear();
     for (const auto& idx : MlResponse<TypeOutputScore>::mCachedIndices) {
       switch (idx) {
         CHECK_AND_FILL_VEC_EMC_CONV(minv)
@@ -79,9 +86,15 @@ class EmMlResponseEMCConversion : public MlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_EMC_CONV(e2)
         CHECK_AND_FILL_VEC_EMC_CONV(e1)
         CHECK_AND_FILL_VEC_EMC_CONV(deltaPhi)
+        CHECK_AND_FILL_VEC_EMC_CONV(harmonicEt)
+        CHECK_AND_FILL_VEC_EMC_CONV(m021)
+        CHECK_AND_FILL_VEC_EMC_CONV(m022)
+        CHECK_AND_FILL_VEC_EMC_CONV(time1)
+        CHECK_AND_FILL_VEC_EMC_CONV(time2)
+        CHECK_AND_FILL_VEC_EMC_CONV(ncell1)
+        CHECK_AND_FILL_VEC_EMC_CONV(ncell2)
       }
     }
-    return inputFeatures;
   }
 
  protected:
@@ -90,7 +103,10 @@ class EmMlResponseEMCConversion : public MlResponse<TypeOutputScore>
     MlResponse<TypeOutputScore>::mAvailableInputFeatures = {
       FILL_MAP_EMC_CONV(minv), FILL_MAP_EMC_CONV(deltaEta), FILL_MAP_EMC_CONV(deltaR),
       FILL_MAP_EMC_CONV(phiv), FILL_MAP_EMC_CONV(rConv), FILL_MAP_EMC_CONV(totE),
-      FILL_MAP_EMC_CONV(e2), FILL_MAP_EMC_CONV(e1), FILL_MAP_EMC_CONV(deltaPhi)};
+      FILL_MAP_EMC_CONV(e2), FILL_MAP_EMC_CONV(e1), FILL_MAP_EMC_CONV(deltaPhi),
+      FILL_MAP_EMC_CONV(harmonicEt), FILL_MAP_EMC_CONV(m021), FILL_MAP_EMC_CONV(m022),
+      FILL_MAP_EMC_CONV(time1), FILL_MAP_EMC_CONV(time2), FILL_MAP_EMC_CONV(ncell1),
+      FILL_MAP_EMC_CONV(ncell2)};
   }
 };
 

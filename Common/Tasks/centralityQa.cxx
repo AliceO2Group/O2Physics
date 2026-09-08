@@ -12,7 +12,7 @@
 ///
 /// \file centralityQa.cxx
 /// \brief This task does dedicated centrality QA
-/// \author ALICE
+/// \author ALICE Collaboration
 ///
 
 #include "Common/CCDB/EventSelectionParams.h"
@@ -962,7 +962,7 @@ struct CentralityQa {
   {
     for (auto const& col : collisions) {
       if (!isCollisionAccepted(col)) {
-        return;
+        continue;
       }
 
       Estimator ft0m = initEstimator(col, "FT0");
@@ -1018,7 +1018,7 @@ struct CentralityQa {
   {
     for (auto const& col : collisions) {
       if (!isCollisionAccepted(col)) {
-        return;
+        continue;
       }
 
       Estimator ft0a = initEstimator(col, "FT0A");
@@ -1074,7 +1074,7 @@ struct CentralityQa {
   {
     for (auto const& col : collisions) {
       if (!isCollisionAccepted(col)) {
-        return;
+        continue;
       }
 
       Estimator ft0c = initEstimator(col, "FT0C");
@@ -1130,7 +1130,7 @@ struct CentralityQa {
   {
     for (auto const& col : collisions) {
       if (!isCollisionAccepted(col)) {
-        return;
+        continue;
       }
 
       Estimator ft0cVar1 = initEstimator(col, "FT0CVariant1");
@@ -1186,7 +1186,7 @@ struct CentralityQa {
   {
     for (auto const& col : collisions) {
       if (!isCollisionAccepted(col)) {
-        return;
+        continue;
       }
 
       Estimator ft0cVar2 = initEstimator(col, "FT0CVariant2");
@@ -1242,7 +1242,7 @@ struct CentralityQa {
   {
     for (auto const& col : collisions) {
       if (!isCollisionAccepted(col)) {
-        return;
+        continue;
       }
 
       Estimator fddm = initEstimator(col, "FDDM");
@@ -1298,7 +1298,7 @@ struct CentralityQa {
   {
     for (auto const& col : collisions) {
       if (!isCollisionAccepted(col)) {
-        return;
+        continue;
       }
 
       Estimator ntpv = initEstimator(col, "NTPV");
@@ -1353,7 +1353,7 @@ struct CentralityQa {
   {
     for (auto const& col : collisions) {
       if (!isCollisionAccepted(col)) {
-        return;
+        continue;
       }
 
       Estimator nGlo = initEstimator(col, "nGlo");
@@ -1409,7 +1409,7 @@ struct CentralityQa {
   {
     for (auto const& col : collisions) {
       if (!isCollisionAccepted(col)) {
-        return;
+        continue;
       }
 
       Estimator mft = initEstimator(col, "MFT");
