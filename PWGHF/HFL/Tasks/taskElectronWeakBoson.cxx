@@ -655,24 +655,24 @@ struct HfTaskElectronWeakBoson {
         continue;
       }
       if (applyTrackSys) {
-	 if (track.tpcNClsCrossedRows() < nclcrossTpcMin) {
-	   continue;
-	 }
-	 if (std::abs(track.dcaXY()) > dcaxyMax) {
-	   continue;
-	 }
-	 if (track.itsChi2NCl() > chi2ItsMax) {
-	   continue;
-	 }
-	 if (track.tpcChi2NCl() > chi2TpcMax) {
-	   continue;
-         }
-         if (track.tpcNClsFound() < nclTpcMin) {
-           continue;
-         }
-         if (track.itsNCls() < nclItsMin) {
-           continue;
-         }
+        if (track.tpcNClsCrossedRows() < nclcrossTpcMin) {
+          continue;
+        }
+        if (std::abs(track.dcaXY()) > dcaxyMax) {
+          continue;
+        }
+        if (track.itsChi2NCl() > chi2ItsMax) {
+          continue;
+        }
+        if (track.tpcChi2NCl() > chi2TpcMax) {
+          continue;
+        }
+        if (track.tpcNClsFound() < nclTpcMin) {
+          continue;
+        }
+        if (track.itsNCls() < nclItsMin) {
+          continue;
+        }
       }
       registry.fill(HIST("hEta"), track.eta());
       registry.fill(HIST("hITSchi2"), track.itsChi2NCl());
