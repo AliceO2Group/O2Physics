@@ -1442,11 +1442,11 @@ DECLARE_SOA_TABLE(RedJpDmDmDau2s, "AOD", "REDJPDMDMDAU2", //!
                   jpsidmescorr::NumSigmaTpcTofPiProng2<jpsidmescorr::NumSigmaTpcPiProng2, jpsidmescorr::NumSigmaTofPiProng2>,
                   jpsidmescorr::NumSigmaTpcTofKaProng2<jpsidmescorr::NumSigmaTpcKaProng2, jpsidmescorr::NumSigmaTofKaProng2>);
 
-//General table for Dmeson mass
+// General table for Dmeson mass
 DECLARE_SOA_TABLE(RedJpDmDmesMasss, "AOD", "REDJPDMDMESMASS", //???
                   jpsidmescorr::MassDmes);
 
-//Special table for D0 mass: particle and antiparticle separated
+// Special table for D0 mass: particle and antiparticle separated
 DECLARE_SOA_TABLE(RedJpDmD0Masss, "AOD", "REDJPDMD0MASS", //!
                   jpsidmescorr::MassD0,
                   jpsidmescorr::MassD0bar);
