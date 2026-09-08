@@ -229,11 +229,16 @@ class MlResponse
       LOG(fatal) << "Number of input nodes in the model " << mPaths[nModel] << " differs from features per row (" << numInputNodes << " vs " << featuresPerRow << ")";
     }
 
-    TypeOutputScore* outputPtr = mModels[nModel].template evalModel<TypeOutputScore>(input);
-    if (outputPtr == nullptr) {
-      LOG(fatal) << "Batched model evaluation failed for model " << mPaths[nModel];
+    std::vector<TypeOutputScore> output = mModels[nModel].template evalModel<TypeOutputScore>(input);
+    const std::size_t expectedOutputSize = nRows * mNClasses;
+    if (output.size() < expectedOutputSize) {
+      LOG(fatal) << "Model " << mPaths[nModel] << " returned " << output.size() << " scores, but " << expectedOutputSize << " scores are expected for " << nRows << " rows and " << static_cast<int>(mNClasses) << " classes. Please check your configurables.";
     }
-    return std::vector<TypeOutputScore>{outputPtr, outputPtr + nRows * mNClasses};
+    if (output.size() > expectedOutputSize) {
+      // keep only the first scores (e.g. batched probabilities of a multi-output model)
+      output.resize(expectedOutputSize);
+    }
+    return output;
   }
 
   /// ML selections
