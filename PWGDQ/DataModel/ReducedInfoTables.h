@@ -1338,32 +1338,44 @@ DECLARE_SOA_COLUMN(DeltaY, deltaY, float);                                      
 DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);                                         //!
 DECLARE_SOA_COLUMN(NumItsClsDmesProng0, numItsClsDmesProng0, int);                     //!
 DECLARE_SOA_COLUMN(NumItsClsDmesProng1, numItsClsDmesProng1, int);                     //!
+DECLARE_SOA_COLUMN(NumItsClsDmesProng2, numItsClsDmesProng2, int);                     //!
 DECLARE_SOA_COLUMN(NumTpcCrossedRowsDmesProng0, numTpcCrossedRowsDmesProng0, int);     //!
 DECLARE_SOA_COLUMN(NumTpcCrossedRowsDmesProng1, numTpcCrossedRowsDmesProng1, int);     //!
+DECLARE_SOA_COLUMN(NumTpcCrossedRowsDmesProng2, numTpcCrossedRowsDmesProng2, int);     //!
 DECLARE_SOA_COLUMN(EtaDmesProng0, etaDmesProng0, float);                               //!
 DECLARE_SOA_COLUMN(EtaDmesProng1, etaDmesProng1, float);                               //!
+DECLARE_SOA_COLUMN(EtaDmesProng2, etaDmesProng2, float);                               //!
 DECLARE_SOA_COLUMN(PtDmesProng0, ptDmesProng0, float);                                 //!
 DECLARE_SOA_COLUMN(PtDmesProng1, ptDmesProng1, float);                                 //!
+DECLARE_SOA_COLUMN(PtDmesProng2, ptDmesProng2, float);                                 //!
 DECLARE_SOA_COLUMN(MinNumItsClsDmesProng, minNumItsClsDmesProng, int);                 //!
 DECLARE_SOA_COLUMN(MinNumTpcCrossedRowsDmesProng, minNumTpcCrossedRowsDmesProng, int); //!
 DECLARE_SOA_COLUMN(MinAbsEtaDmesProng, minAbsEtaDmesProng, float);                     //!
 DECLARE_SOA_COLUMN(MinPtDmesProng, minPtDmesProng, float);                             //!
 DECLARE_SOA_COLUMN(NumSigmaTpcPiProng0, numSigmaTpcPiProng0, float);                   //!
 DECLARE_SOA_COLUMN(NumSigmaTpcPiProng1, numSigmaTpcPiProng1, float);                   //!
+DECLARE_SOA_COLUMN(NumSigmaTpcPiProng2, numSigmaTpcPiProng2, float);                   //!
 DECLARE_SOA_COLUMN(NumSigmaTofPiProng0, numSigmaTofPiProng0, float);                   //!
 DECLARE_SOA_COLUMN(NumSigmaTofPiProng1, numSigmaTofPiProng1, float);                   //!
+DECLARE_SOA_COLUMN(NumSigmaTofPiProng2, numSigmaTofPiProng2, float);                   //!
 DECLARE_SOA_COLUMN(NumSigmaTpcKaProng0, numSigmaTpcKaProng0, float);                   //!
 DECLARE_SOA_COLUMN(NumSigmaTpcKaProng1, numSigmaTpcKaProng1, float);                   //!
+DECLARE_SOA_COLUMN(NumSigmaTpcKaProng2, numSigmaTpcKaProng2, float);                   //!
 DECLARE_SOA_COLUMN(NumSigmaTofKaProng0, numSigmaTofKaProng0, float);                   //!
 DECLARE_SOA_COLUMN(NumSigmaTofKaProng1, numSigmaTofKaProng1, float);                   //!
+DECLARE_SOA_COLUMN(NumSigmaTofKaProng2, numSigmaTofKaProng2, float);                   //!
 DECLARE_SOA_DYNAMIC_COLUMN(NumSigmaTpcTofPiProng0, numSigmaTpcTofPiProng0,             //!
                            [](float tpcNSigmaPi0, float tofNSigmaPi0) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPi0, tofNSigmaPi0); });
 DECLARE_SOA_DYNAMIC_COLUMN(NumSigmaTpcTofPiProng1, numSigmaTpcTofPiProng1, //!
                            [](float tpcNSigmaPi1, float tofNSigmaPi1) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPi1, tofNSigmaPi1); });
+DECLARE_SOA_DYNAMIC_COLUMN(NumSigmaTpcTofPiProng2, numSigmaTpcTofPiProng2, //!
+                           [](float tpcNSigmaPi2, float tofNSigmaPi2) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPi2, tofNSigmaPi2); });
 DECLARE_SOA_DYNAMIC_COLUMN(NumSigmaTpcTofKaProng0, numSigmaTpcTofKaProng0, //!
                            [](float tpcNSigmaKa0, float tofNSigmaKa0) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaKa0, tofNSigmaKa0); });
 DECLARE_SOA_DYNAMIC_COLUMN(NumSigmaTpcTofKaProng1, numSigmaTpcTofKaProng1, //!
                            [](float tpcNSigmaKa1, float tofNSigmaKa1) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaKa1, tofNSigmaKa1); });
+DECLARE_SOA_DYNAMIC_COLUMN(NumSigmaTpcTofKaProng2, numSigmaTpcTofKaProng2, //!
+                           [](float tpcNSigmaKa2, float tofNSigmaKa2) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaKa2, tofNSigmaKa2); });
 } // namespace jpsidmescorr
 
 DECLARE_SOA_TABLE(RedJpDmDileptons, "AOD", "REDJPDMDILEPTON", //!
@@ -1418,6 +1430,23 @@ DECLARE_SOA_TABLE(RedJpDmDmDau1s, "AOD", "REDJPDMDMDAU1", //!
                   jpsidmescorr::NumSigmaTpcTofPiProng1<jpsidmescorr::NumSigmaTpcPiProng1, jpsidmescorr::NumSigmaTofPiProng1>,
                   jpsidmescorr::NumSigmaTpcTofKaProng1<jpsidmescorr::NumSigmaTpcKaProng1, jpsidmescorr::NumSigmaTofKaProng1>);
 
+DECLARE_SOA_TABLE(RedJpDmDmDau2s, "AOD", "REDJPDMDMDAU2", //!
+                  jpsidmescorr::PtDmesProng2,
+                  jpsidmescorr::EtaDmesProng2,
+                  jpsidmescorr::NumItsClsDmesProng2,
+                  jpsidmescorr::NumTpcCrossedRowsDmesProng2,
+                  jpsidmescorr::NumSigmaTpcPiProng2,
+                  jpsidmescorr::NumSigmaTofPiProng2,
+                  jpsidmescorr::NumSigmaTpcKaProng2,
+                  jpsidmescorr::NumSigmaTofKaProng2,
+                  jpsidmescorr::NumSigmaTpcTofPiProng2<jpsidmescorr::NumSigmaTpcPiProng2, jpsidmescorr::NumSigmaTofPiProng2>,
+                  jpsidmescorr::NumSigmaTpcTofKaProng2<jpsidmescorr::NumSigmaTpcKaProng2, jpsidmescorr::NumSigmaTofKaProng2>);
+
+//General table for Dmeson mass
+DECLARE_SOA_TABLE(RedJpDmDmesMasss, "AOD", "REDJPDMDMESMASS", //???
+                  jpsidmescorr::MassDmes);
+
+//Special table for D0 mass: particle and antiparticle separated
 DECLARE_SOA_TABLE(RedJpDmD0Masss, "AOD", "REDJPDMD0MASS", //!
                   jpsidmescorr::MassD0,
                   jpsidmescorr::MassD0bar);
@@ -1429,6 +1458,11 @@ DECLARE_SOA_TABLE(RedJpDmDmesBdts, "AOD", "REDJPDMDMESBDT", //!
                   jpsidmescorr::BdtBkgMassHypo1,
                   jpsidmescorr::BdtPromptMassHypo1,
                   jpsidmescorr::BdtNonpromptMassHypo1);
+
+DECLARE_SOA_TABLE(RedJpDmDplusBdts, "AOD", "REDJPDMDPLUSBDT",
+                  jpsidmescorr::BdtBkgMassHypo0,
+                  jpsidmescorr::BdtPromptMassHypo0,
+                  jpsidmescorr::BdtNonpromptMassHypo0);
 
 DECLARE_SOA_TABLE(RedDleptDmesAll, "AOD", "RTDILPTDMESALL", //!
                   reducedpair::Mass,
