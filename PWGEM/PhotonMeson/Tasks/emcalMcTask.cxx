@@ -341,9 +341,9 @@ struct EmcalMcTask {
 
         if (std::abs(mcPhoton1.pdgCode()) == PDG_t::kGamma) {
           fillClusterHistos<o2::em::emcal::mc::ParticleType::kPhoton>(photonEMC, mcPhoton1, centOrMult);
-        } else if (std::abs(mcPhoton1.pdgCode()) == PDG_t::kElectron) {
+        } else if (mcPhoton1.pdgCode() == PDG_t::kElectron) {
           fillClusterHistos<o2::em::emcal::mc::ParticleType::kElectron>(photonEMC, mcPhoton1, centOrMult);
-        } else if (mcPhoton1.pdgCode() == -PDG_t::kElectron) {
+        } else if (mcPhoton1.pdgCode() == PDG_t::kPositron) {
           fillClusterHistos<o2::em::emcal::mc::ParticleType::kPositron>(photonEMC, mcPhoton1, centOrMult);
         } else if (std::abs(mcPhoton1.pdgCode()) == PDG_t::kPi0) {
           fillClusterHistos<o2::em::emcal::mc::ParticleType::kPi0>(photonEMC, mcPhoton1, centOrMult);
