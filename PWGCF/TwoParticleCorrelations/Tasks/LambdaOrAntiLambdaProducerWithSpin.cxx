@@ -20,7 +20,7 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 
-#include "CommonConstants/PhysicsConstants.h"
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
