@@ -620,7 +620,7 @@ struct JetDerivedDataProducerTask {
   void processClusters(aod::Collision const&, aod::EMCALClusters const& clusters, aod::EMCALClusterCells const& cells, aod::Calos const&, aod::EMCALMatchedTracks const& matchedTracks, soa::Join<aod::Tracks, aod::TracksExtra> const&)
   {
 
-    for (auto cluster : clusters) {
+    for (const auto& cluster : clusters) {
 
       auto const clusterCells = cells.sliceBy(preslices.perClusterCells, cluster.globalIndex());
 

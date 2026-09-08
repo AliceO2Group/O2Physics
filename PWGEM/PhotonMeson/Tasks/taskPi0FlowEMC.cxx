@@ -173,7 +173,9 @@ struct TaskPi0FlowEMC {
     Configurable<bool> cfgEMCUseTM{"cfgEMCUseTM", false, "flag to use EMCal track matching cut or not"};
     Configurable<bool> emcUseSecondaryTM{"emcUseSecondaryTM", false, "flag to use EMCal secondary track matching cut or not"};
     Configurable<bool> cfgEnableQA{"cfgEnableQA", false, "flag to turn QA plots on/off"};
-    Configurable<bool> separateEMCalDCal{"separateEMCalDCal", false, "flag to only pair EMCal with EMCal and DCal with DCal clusters"};
+    Configurable<bool> useEMCal{"useEMCal", false, "flag to use EMCal clusters"};
+    Configurable<bool> useDCal{"useDCal", false, "flag to use DCal clusters"};
+    Configurable<bool> useCrosspairs{"useCrosspairs", true, "flag to allow pairing of EMCal with DCal clusters. If this is set, useEMCal and useDCal are ignored!"};
   } emccuts;
 
   V0PhotonCut fV0PhotonCut;
@@ -245,6 +247,8 @@ struct TaskPi0FlowEMC {
     Configurable<bool> cfgApplySPresolution{"cfgApplySPresolution", false, "Apply resolution correction"};
     Configurable<bool> doEMCalCalib{"doEMCalCalib", false, "Produce output for EMCal calibration"};
     Configurable<bool> cfgEnableNonLin{"cfgEnableNonLin", false, "flag to turn extra non linear energy calibration on/off"};
+    Configurable<float> cfgEmcalEffRadius{"cfgEmcalEffRadius", 430.f, "effective EMCal radius (cm) used for mixed-event vertex-swap correction"};
+    Configurable<bool> cfgCorrectMixedVtxEta{"cfgCorrectMixedVtxEta", true, "re-project cluster2 eta onto collision1's vertex in mixed event"};
   } correctionConfig;
 
   SliceCache cache;
@@ -253,8 +257,8 @@ struct TaskPi0FlowEMC {
   int runNow = 0;
   int runBefore = -1;
 
-  static constexpr float MaxPhiEMCal = 3.5f;
-  static constexpr uint16_t MaxPhiEMCalUint = static_cast<uint16_t>(INT16_MAX); // Maximum value currently useable for partitions for some weird reason, but luckily enough
+  static constexpr float MaxPhiEMCal = 3.9f;                                 // exatly the middle between EMCal and DCal
+  static constexpr uint16_t MaxPhiEMCalUint = static_cast<uint16_t>(39000u); // exatly the middle between EMCal and DCal but as uint16_t that is used for storing phi values in derived data
 
   // Filter clusterFilter = aod::skimmedcluster::time >= emccuts.cfgEMCminTime && aod::skimmedcluster::time <= emccuts.cfgEMCmaxTime && aod::skimmedcluster::m02 >= emccuts.cfgEMCminM02 && aod::skimmedcluster::m02 <= emccuts.cfgEMCmaxM02 && aod::skimmedcluster::e >= emccuts.cfgEMCminE;
   Filter collisionFilter = (nabs(aod::collision::posZ) <= eventcuts.cfgZvtxMax) && (aod::evsel::ft0cOccupancyInTimeRange <= eventcuts.cfgFT0COccupancyMax) && (aod::evsel::ft0cOccupancyInTimeRange >= eventcuts.cfgFT0COccupancyMin);
@@ -524,6 +528,18 @@ struct TaskPi0FlowEMC {
     static constexpr std::array<std::string_view, 3> HistTypes = {"hSparsePi0", "hSparseBkgRot", "hSparseBkgMix"};
     registry.fill(HIST(FlowHistTypes[histType]), mass, pt, cent, sp);
     registry.fill(HIST(HistTypes[histType]), mass, pt, cent);
+  }
+
+  /// \brief eta a cluster would have if its own vertex vzOld is swapped for vzNew,
+  /// assuming a nominal cylindrical EMCal surface at transverse radius emcalR (cm).
+  /// phi is untouched: transverse vertex spread is negligible next to emcalR.
+  /// \param etaOld old eta value
+  /// \param vzOld old primary vertex z position
+  /// \param vzNew new primary vertex z position
+  /// \param emcalR radius of the EMCal
+  static float correctEtaForVertexShift(float etaOld, float vzOld, float vzNew, float emcalR)
+  {
+    return std::asinh(std::sinh(etaOld) + (vzOld - vzNew) / emcalR);
   }
 
   /// Get the centrality
@@ -1093,7 +1109,6 @@ struct TaskPi0FlowEMC {
     fEMCCut.AreSelectedRunning(flags, clusters, matchedPrims, matchedSeconds, &registry);
 
     for (const auto& collision : collisions) {
-
       if (!isFullEventSelected(collision, true)) {
         continue;
       }
@@ -1121,10 +1136,13 @@ struct TaskPi0FlowEMC {
           registry.fill(HIST("clusterQA/hClusterEtaPhiAfter"), photon.phi(), photon.eta()); // after cuts
         }
       }
-      if (emccuts.separateEMCalDCal.value) {
+      if (emccuts.useEMCal.value && !emccuts.useCrosspairs.value) {
         runPairingLoop(collision, emcalPhotonsPerCollision, emcalPhotonsPerCollision, flags, flags);
+      }
+      if (emccuts.useDCal.value && !emccuts.useCrosspairs.value) {
         runPairingLoop(collision, dcalPhotonsPerCollision, dcalPhotonsPerCollision, flags, flags);
-      } else {
+      }
+      if (emccuts.useCrosspairs.value) {
         runPairingLoop(collision, photonsPerCollision, photonsPerCollision, flags, flags);
       }
       if (rotationConfig.cfgDoRotation.value) {
@@ -1181,8 +1199,11 @@ struct TaskPi0FlowEMC {
         if (!(flags.test(g1.globalIndex())) || !(flags.test(g2.globalIndex()))) {
           continue;
         }
-        if (emccuts.separateEMCalDCal.value && isEMCalRegion(g1.phi()) != isEMCalRegion(g2.phi())) {
-          continue; // only pair EMCal-EMCal or DCal-DCal
+        if (emccuts.useEMCal.value && !emccuts.useCrosspairs.value && (!isEMCalRegion(g1.phi()) || !isEMCalRegion(g2.phi()))) {
+          continue;
+        }
+        if (emccuts.useDCal.value && !emccuts.useCrosspairs.value && (isEMCalRegion(g1.phi()) || isEMCalRegion(g2.phi()))) {
+          continue;
         }
 
         // Cut edge clusters away, similar to rotation method to ensure same acceptance is used
@@ -1195,7 +1216,13 @@ struct TaskPi0FlowEMC {
           }
         }
         ROOT::Math::PtEtaPhiMVector v1(g1.corrPt(), g1.eta(), g1.phi(), 0.);
-        ROOT::Math::PtEtaPhiMVector v2(g2.corrPt(), g2.eta(), g2.phi(), 0.);
+
+        // changing the eta position of cluster 2 from collision 2 to match the z-vertex position of collision 1
+        float eta2 = g2.eta();
+        if (correctionConfig.cfgCorrectMixedVtxEta.value) {
+          eta2 = correctEtaForVertexShift(g2.eta(), c2.posZ(), c1.posZ(), correctionConfig.cfgEmcalEffRadius.value);
+        }
+        ROOT::Math::PtEtaPhiMVector v2(g2.corrPt(), eta2, g2.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
 
         float dTheta = v1.Theta() - v2.Theta();

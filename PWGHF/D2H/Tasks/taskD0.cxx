@@ -26,12 +26,14 @@
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
 #include "PWGHF/Utils/utilsUpcHf.h"
+#include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGUD/Core/UPCHelpers.h"
 
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
@@ -57,6 +59,7 @@
 #include <cstdint>
 #include <numeric>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 using namespace o2;
@@ -81,6 +84,12 @@ enum CandTypeSel {
 };
 } // namespace
 struct HfTaskD0 {
+  enum RecoEventStatus {
+    NoRecoCollision = 0,
+    NoSelectedRecoCollision,
+    SelectedRecoCollision
+  };
+
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
   Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
@@ -91,6 +100,7 @@ struct HfTaskD0 {
   Configurable<int> selectionPid{"selectionPid", 1, "Selection Flag for reco PID candidates"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits"};
   Configurable<int> centEstimator{"centEstimator", 0, "Centrality estimation (None: 0, FT0C: 2, FT0M: 3)"};
+  Configurable<bool> fillEventStatus{"fillEventStatus", false, "Use generated centrality in hSparseAcc and append reco-event status (requires storeCentrality)"};
   Configurable<int> occEstimator{"occEstimator", 0, "Occupancy estimation (None: 0, ITS: 1, FT0C: 2)"};
   Configurable<bool> storeCentrality{"storeCentrality", false, "Flag to store centrality information"};
   Configurable<bool> storeOccupancyAndIR{"storeOccupancyAndIR", false, "Flag to store occupancy information and interaction rate"};
@@ -120,10 +130,11 @@ struct HfTaskD0 {
   using D0CandidatesMlKF = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0, aod::HfCand2ProngKF>>;
   using D0CandidatesMlMcKF = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0, aod::HfCand2ProngKF, aod::HfCand2ProngMcRec>>;
 
-  using Collisions = soa::Join<aod::Collisions, aod::EvSels>;
-  using CollisionsCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs>;
-  using CollisionsWithMcLabels = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
-  using CollisionsWithMcLabelsCent = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs>;
+  using Collisions = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults>;
+  using CollisionsCent = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms, aod::CentFT0Cs>;
+  using CollisionsWithMcLabels = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults>;
+  using CollisionsWithMcLabelsCent = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults, aod::CentFT0Ms, aod::CentFT0Cs>;
+  using McCollisionsWithCentrality = soa::Join<aod::McCollisions, aod::McCentFT0Cs, aod::McCentFT0Ms>;
   using TracksSelQuality = soa::Join<aod::TracksExtra, aod::TracksWMc>;
   using TracksWPid = soa::Join<o2::aod::FullTracks, aod::TracksDCA, o2::aod::TrackSelection, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr>;
   // using TracksWithExtra = o2::soa::Join<o2::aod::FullTracks, o2::aod::TrackSelection>;
@@ -330,13 +341,22 @@ struct HfTaskD0 {
       std::vector<AxisSpec> axesAcc = {thnAxisGenPtD, thnAxisGenPtB, thnAxisY, thnAxisOrigin, thnAxisNumPvContr};
 
       if (storeCentrality) {
-        axesAcc.push_back(thnAxisCent);
+        axesAcc.emplace_back(thnConfigAxisCent, fillEventStatus ? "Generated centrality (%)" : "Centrality");
       }
       // interaction rate only store in Data and MC Reco. Level
       if (storeOccupancyAndIR) {
         axesAcc.push_back(thnAxisOccupancy);
       }
 
+      if (fillEventStatus) {
+        if (!storeCentrality) {
+          LOGP(fatal, "fillEventStatus requires storeCentrality=true.");
+        }
+        if (centEstimator != CentralityEstimator::FT0C && centEstimator != CentralityEstimator::FT0M) {
+          LOGP(fatal, "centEstimator must be FT0C (2) or FT0M (3).");
+        }
+        axesAcc.emplace_back(3, -0.5, 2.5, "Reco event status (0: no reco, 1: none selected, 2: selected)");
+      }
       registry.add("hSparseAcc", "Thn for generated D0 from charm and beauty", HistType::kTHnSparseD, axesAcc);
       registry.get<THnSparse>(HIST("hSparseAcc"))->Sumw2();
     }
@@ -483,7 +503,11 @@ struct HfTaskD0 {
     registry.add("QAtracks/hDCAxy_GapC", "Gap C; DCA xy", {HistType::kTH1F, {{400, -2, 2.}}});
     registry.add("QAtracks/hDCAz_GapC", "Gap C; DCA z", {HistType::kTH1F, {{400, -4, 4.}}});
 
-    hfEvSel.addHistograms(registry);
+    if (fillEventStatus && (doprocessMcWithDCAFitterN || doprocessMcWithDCAFitterNCent || doprocessMcWithKFParticle || doprocessMcWithDCAFitterNMl || doprocessMcWithDCAFitterNMlCent || doprocessMcWithKFParticleMl)) {
+      hfEvSel.init(registry);
+    } else {
+      hfEvSel.addHistograms(registry);
+    }
 
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
@@ -969,7 +993,7 @@ struct HfTaskD0 {
                  soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                  TracksSelQuality const&,
                  CollType const& collisions,
-                 aod::McCollisions const&,
+                 McCollisionsWithCentrality const&,
                  BCsType const&)
   {
     // MC rec.
@@ -1254,7 +1278,31 @@ struct HfTaskD0 {
         }
       }
     }
-    // MC gen.
+    // Classify reco associations once per collision, not once per generated particle.
+    // The task's hfEvSel.* configuration must match the candidate creator's cuts.
+    std::unordered_map<int64_t, int> recoEventStatus;
+    if (fillEventStatus) {
+      for (const auto& collision : collisions) {
+        if (!collision.has_mcCollision()) {
+          continue;
+        }
+        float unusedCentrality{-1.f};
+        const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None, BCsType>(collision, unusedCentrality, ccdb, registry);
+        bool selected = rejectionMask == 0;
+        if constexpr (std::is_same_v<CollType, CollisionsWithMcLabelsCent>) {
+          if (centEstimator != CentralityEstimator::None) {
+            const auto recoCentrality = getCentralityColl(collision, centEstimator);
+            selected = selected && recoCentrality >= hfEvSel.centralityMin && recoCentrality <= hfEvSel.centralityMax;
+          }
+        }
+        auto& status = recoEventStatus[collision.mcCollisionId()];
+        const int currentStatus = selected ? SelectedRecoCollision : NoSelectedRecoCollision;
+        status = std::max(status, currentStatus);
+      }
+    }
+
+    // MC gen. Each particle is filled once, even for split or unreconstructed events.
+    // Upstream event rejection can clear flagMcMatchGen: this is not an unfiltered truth sample.
     for (const auto& particle : mcParticles) {
       if (std::abs(particle.flagMcMatchGen()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
         if (yCandGenMax >= 0. && std::abs(RecoDecay::y(particle.pVector(), o2::constants::physics::MassD0)) > yCandGenMax) {
@@ -1265,6 +1313,8 @@ struct HfTaskD0 {
         auto yGen = RecoDecay::y(particle.pVector(), o2::constants::physics::MassD0);
         registry.fill(HIST("hPtGen"), ptGen);
         registry.fill(HIST("hPtVsYGen"), ptGen, yGen);
+
+        int eventStatus = NoRecoCollision;
 
         unsigned maxNumContrib = 0;
         float cent{-1.f};
@@ -1287,18 +1337,33 @@ struct HfTaskD0 {
           }
         }
 
+        if (fillEventStatus) {
+          const auto mcCollision = particle.template mcCollision_as<McCollisionsWithCentrality>();
+          const auto eventEntry = recoEventStatus.find(mcCollision.globalIndex());
+          eventStatus = eventEntry == recoEventStatus.end() ? NoRecoCollision : eventEntry->second;
+          // Replace the existing centrality coordinate, including zero-reco events.
+          cent = centEstimator == CentralityEstimator::FT0C ? mcCollision.centFT0C() : mcCollision.centFT0M();
+        }
+        const auto fillGeneratedSparse = [&](auto... coordinates) {
+          if (fillEventStatus) {
+            registry.fill(HIST("hSparseAcc"), coordinates..., eventStatus);
+          } else {
+            registry.fill(HIST("hSparseAcc"), coordinates...);
+          }
+        };
+
         if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("hPtGenPrompt"), ptGen);
           registry.fill(HIST("hYGenPrompt"), yGen);
           registry.fill(HIST("hPtVsYGenPrompt"), ptGen, yGen);
           if (storeCentrality && storeOccupancyAndIR) {
-            registry.fill(HIST("hSparseAcc"), ptGen, ptGenB, yGen, 1, maxNumContrib, cent, occ);
+            fillGeneratedSparse(ptGen, ptGenB, yGen, 1, maxNumContrib, cent, occ);
           } else if (storeCentrality && !storeOccupancyAndIR) {
-            registry.fill(HIST("hSparseAcc"), ptGen, ptGenB, yGen, 1, maxNumContrib, cent);
+            fillGeneratedSparse(ptGen, ptGenB, yGen, 1, maxNumContrib, cent);
           } else if (!storeCentrality && storeOccupancyAndIR) {
-            registry.fill(HIST("hSparseAcc"), ptGen, ptGenB, yGen, 1, maxNumContrib, occ);
+            fillGeneratedSparse(ptGen, ptGenB, yGen, 1, maxNumContrib, occ);
           } else {
-            registry.fill(HIST("hSparseAcc"), ptGen, ptGenB, yGen, 1, maxNumContrib);
+            fillGeneratedSparse(ptGen, ptGenB, yGen, 1, maxNumContrib);
           }
         } else {
           ptGenB = mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
@@ -1306,13 +1371,13 @@ struct HfTaskD0 {
           registry.fill(HIST("hYGenNonPrompt"), yGen);
           registry.fill(HIST("hPtVsYGenNonPrompt"), ptGen, yGen);
           if (storeCentrality && storeOccupancyAndIR) {
-            registry.fill(HIST("hSparseAcc"), ptGen, ptGenB, yGen, 2, maxNumContrib, cent, occ);
+            fillGeneratedSparse(ptGen, ptGenB, yGen, 2, maxNumContrib, cent, occ);
           } else if (storeCentrality && !storeOccupancyAndIR) {
-            registry.fill(HIST("hSparseAcc"), ptGen, ptGenB, yGen, 2, maxNumContrib, cent);
+            fillGeneratedSparse(ptGen, ptGenB, yGen, 2, maxNumContrib, cent);
           } else if (!storeCentrality && storeOccupancyAndIR) {
-            registry.fill(HIST("hSparseAcc"), ptGen, ptGenB, yGen, 2, maxNumContrib, occ);
+            fillGeneratedSparse(ptGen, ptGenB, yGen, 2, maxNumContrib, occ);
           } else {
-            registry.fill(HIST("hSparseAcc"), ptGen, ptGenB, yGen, 2, maxNumContrib);
+            fillGeneratedSparse(ptGen, ptGenB, yGen, 2, maxNumContrib);
           }
         }
         registry.fill(HIST("hEtaGen"), particle.eta());
@@ -1324,7 +1389,7 @@ struct HfTaskD0 {
                                soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                                TracksSelQuality const& tracks,
                                CollisionsWithMcLabels const& collisions,
-                               aod::McCollisions const& mcCollisions,
+                               McCollisionsWithCentrality const& mcCollisions,
                                aod::BcFullInfos const& bcs)
   {
     processMc<aod::hf_cand::VertexerType::DCAFitter, false>(selectedD0CandidatesMc, mcParticles, tracks, collisions, mcCollisions, bcs);
@@ -1335,7 +1400,7 @@ struct HfTaskD0 {
                                    soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                                    TracksSelQuality const& tracks,
                                    CollisionsWithMcLabelsCent const& collisions,
-                                   aod::McCollisions const& mcCollisions,
+                                   McCollisionsWithCentrality const& mcCollisions,
                                    aod::BcFullInfos const& bcs)
   {
     processMc<aod::hf_cand::VertexerType::DCAFitter, false>(selectedD0CandidatesMc, mcParticles, tracks, collisions, mcCollisions, bcs);
@@ -1346,7 +1411,7 @@ struct HfTaskD0 {
                                soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                                TracksSelQuality const& tracks,
                                CollisionsWithMcLabels const& collisions,
-                               aod::McCollisions const& mcCollisions,
+                               McCollisionsWithCentrality const& mcCollisions,
                                aod::BcFullInfos const& bcs)
   {
     processMc<aod::hf_cand::VertexerType::KfParticle, false>(selectedD0CandidatesMcKF, mcParticles, tracks, collisions, mcCollisions, bcs);
@@ -1358,7 +1423,7 @@ struct HfTaskD0 {
                                  soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                                  TracksSelQuality const& tracks,
                                  CollisionsWithMcLabels const& collisions,
-                                 aod::McCollisions const& mcCollisions,
+                                 McCollisionsWithCentrality const& mcCollisions,
                                  aod::BcFullInfos const& bcs)
   {
     processMc<aod::hf_cand::VertexerType::DCAFitter, true>(selectedD0CandidatesMlMc, mcParticles, tracks, collisions, mcCollisions, bcs);
@@ -1369,7 +1434,7 @@ struct HfTaskD0 {
                                      soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                                      TracksSelQuality const& tracks,
                                      CollisionsWithMcLabelsCent const& collisions,
-                                     aod::McCollisions const& mcCollisions,
+                                     McCollisionsWithCentrality const& mcCollisions,
                                      aod::BcFullInfos const& bcs)
   {
     processMc<aod::hf_cand::VertexerType::DCAFitter, true>(selectedD0CandidatesMlMc, mcParticles, tracks, collisions, mcCollisions, bcs);
@@ -1380,7 +1445,7 @@ struct HfTaskD0 {
                                  soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                                  TracksSelQuality const& tracks,
                                  CollisionsWithMcLabels const& collisions,
-                                 aod::McCollisions const& mcCollisions,
+                                 McCollisionsWithCentrality const& mcCollisions,
                                  aod::BcFullInfos const& bcs)
   {
     processMc<aod::hf_cand::VertexerType::KfParticle, true>(selectedD0CandidatesMlMcKF, mcParticles, tracks, collisions, mcCollisions, bcs);
@@ -1388,7 +1453,7 @@ struct HfTaskD0 {
   PROCESS_SWITCH(HfTaskD0, processMcWithKFParticleMl, "Process MC with KFParticle and ML selections", false);
   // TODO: add the processMcWithKFParticleMlCent
 
-  void processDataWithDCAFitterNWithUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processDataWithDCAFitterNWithUpc(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                                         aod::BcFullInfos const& bcs,
                                         D0Candidates const&,
                                         aod::TracksWExtra const&,
@@ -1403,7 +1468,7 @@ struct HfTaskD0 {
   }
   PROCESS_SWITCH(HfTaskD0, processDataWithDCAFitterNWithUpc, "Process real data with DCAFitterN w/o ML with UPC", false);
 
-  void processDataWithDCAFitterNMlWithUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processDataWithDCAFitterNMlWithUpc(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                                           aod::BcFullInfos const& bcs,
                                           D0CandidatesMl const&,
                                           aod::TracksWExtra const&,

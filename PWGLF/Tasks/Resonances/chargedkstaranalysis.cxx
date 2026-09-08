@@ -99,6 +99,7 @@ struct Chargedkstaranalysis {
   Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
   bool currentIsGen = false;
   bool mcClosure = false;
+  bool sigLossDen = false;
   struct : ConfigurableGroup {
     ConfigurableAxis cfgvtxbins{"cfgvtxbins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
     ConfigurableAxis cfgmultbins{"cfgmultbins", {VARIABLE_WIDTH, 0., 1., 5., 10., 30., 50., 70., 100., 110.}, "Mixing bins - multiplicity"};
@@ -584,9 +585,9 @@ struct Chargedkstaranalysis {
         histosMc.add("h3ChaKstarInvMassDSMcGen", "h3ChaKstarInvMassDSMcGen", kTHnSparseF, {centAxis, ptAxis, invMassAxisReso, thnAxisPOL}, true);
         histosMc.add("h3ChaKstarInvMassDSMcRec", "h3ChaKstarInvMassDSMcRec", kTHnSparseF, {centAxis, ptAxis, invMassAxisReso, thnAxisPOL}, true);
         histosMc.add("h3ChaKstarInvMassDSMcRecClosure", "h3ChaKstarInvMassDSMcRecClosure", kTHnSparseF, {centAxis, ptAxis, invMassAxisReso, thnAxisPOL}, true);
+        histosMc.add("sigLoss_den_pri_threeD", "sigLoss_den_pri_threeD", kTHnSparseF, {centAxis, ptAxis, thnAxisPOL}, true);
 
         if (mcCfgs.doBkgMc) {
-          histosMc.add("h3ChaKstarInvMassRotMcGen", "h3ChaKstarInvMassRotMcGen", kTHnSparseF, {centAxis, ptAxis, invMassAxisReso, thnAxisPOL}, true);
           histosMc.add("h3ChaKstarInvMassRotMcRec", "h3ChaKstarInvMassRotMcRec", kTHnSparseF, {centAxis, ptAxis, invMassAxisReso, thnAxisPOL}, true);
           histosMc.add("h3ChaKstarInvMassRotMcRecClosure", "h3ChaKstarInvMassRotMcRecClosure", kTHnSparseF, {centAxis, ptAxis, invMassAxisReso, thnAxisPOL}, true);
         }
@@ -844,9 +845,11 @@ struct Chargedkstaranalysis {
 
     // 2. MC Generated Path
     if (currentIsGen) {
-      if (isRot) {
-        histosMc.fill(HIST("h3ChaKstarInvMassRotMcGen"), multiplicity, mother.Pt(), mother.M(), cosTheta);
+      if (sigLossDen) {
+        // Fill ONLY the Signal Loss Denominator 3D Histograms
+        histosMc.fill(HIST("sigLoss_den_pri_threeD"), multiplicity, mother.Pt(), cosTheta);
       } else {
+        // Fill standard 4D MC Gen Histograms
         histosMc.fill(HIST("h3ChaKstarInvMassDSMcGen"), multiplicity, mother.Pt(), mother.M(), cosTheta);
       }
       return;
@@ -867,7 +870,6 @@ struct Chargedkstaranalysis {
       }
     }
   }
-
   template <typename T>
   void fillInvMass(const T& mother, float multiplicity, const T& daughter1, const T& daughter2, bool isMix)
   {
@@ -914,7 +916,7 @@ struct Chargedkstaranalysis {
     auto phiCS = std::atan2(yAxisCS.Dot(v1CM), xAxisCS.Dot(v1CM));
     phiCS = RecoDecay::constrainAngle(phiCS, 0.0);
 
-    bool doRotation = !doprocessMC || mcCfgs.doBkgMc;
+    bool doRotation = !doprocessMC || (!currentIsGen && mcCfgs.doBkgMc);
     // if (std::abs(mother.Rapidity()) < config.rapidityMotherData) {
     if (helicityCfgs.activateHelicityFrame) {
       // helicityVec = mother.Vect(); // 3 vector of mother in COM frame
@@ -1453,10 +1455,10 @@ struct Chargedkstaranalysis {
       const float lCentrality = getCentrality(coll);
       refCentByMcId.emplace(mcid, lCentrality);
     }
-
+    currentIsGen = true;
+    sigLossDen = false;
     // Calculating the generated Kstar
     for (const auto& part : mcParticles) {
-      currentIsGen = true;
       if (!part.has_mcCollision()) {
         continue;
       }
@@ -1547,9 +1549,102 @@ struct Chargedkstaranalysis {
         }
       }
     }
+    sigLossDen = true;
+    // To calculate the denominator -> To check the all the events have chk892
+    for (auto const& part : mcParticles) {
+      if (!part.has_mcCollision()) {
+        continue;
+      }
+      if (std::abs(part.pdgCode()) != kKstarPlus) {
+        continue;
+      }
+      if (std::abs(part.y()) > kstarCutCfgs.cKstarMaxRap) {
+        continue;
+      }
+
+      const auto mcid = part.mcCollisionId();
+      if (!refClassIds.contains(mcid)) {
+        continue;
+      }
+
+      auto iter = refCentByMcId.find(mcid);
+      if (iter == refCentByMcId.end()) {
+        continue;
+      }
+
+      const float lCentrality = iter->second;
+
+      histos.fill(HIST("Correction/sigLoss_den"), part.pt(), lCentrality);
+      if (part.vt() == 0) {
+        histos.fill(HIST("Correction/sigLoss_den_pri"), part.pt(), lCentrality);
+      }
+      LorentzVectorSetXYZM lResoSecondary, lDecayDaughter_bach, lResoKstar, lDaughterRot;
+      lResoKstar = LorentzVectorSetXYZM(part.px(), part.py(), part.pz(), MassKPlusStar892);
+      const int pionWanted = (part.pdgCode() > 0) ? +kPiPlus : -kPiPlus;
+      bool hasRightPion = false;
+      bool hasK0sToPipi = false;
+      for (const auto& d1 : part.template daughters_as<aod::McParticles>()) {
+        const int pdg1 = d1.pdgCode();
+        if (pdg1 == pionWanted) {
+          lDecayDaughter_bach = LorentzVectorSetXYZM(d1.px(), d1.py(), d1.pz(), MassPionCharged);
+          if (helicityCfgs.genKinematicsChecks) {
+            if (lDecayDaughter_bach.pt() <= trackCutCfgs.cMinPtcut || std::abs(lDecayDaughter_bach.eta()) >= trackCutCfgs.cMaxEtacut) {
+              continue;
+            }
+          }
+          hasRightPion = true;
+        } else if (std::abs(pdg1) == kPDGK0) {
+          for (const auto& d2 : d1.template daughters_as<aod::McParticles>()) {
+            if (std::abs(d2.pdgCode()) == kPDGK0s) {
+              if (helicityCfgs.genKinematicsChecks) {
+                if (d2.pt() <= secondaryCutsCfgs.cSecondaryPtMin || std::abs(d2.eta()) >= secondaryCutsCfgs.cSecondaryRapidityMax) {
+                  continue;
+                }
+              }
+              bool seenPip = false, seenPim = false;
+              for (const auto& d3 : d2.template daughters_as<aod::McParticles>()) {
+                if (d3.pdgCode() == +kPiPlus) {
+                  if (helicityCfgs.genKinematicsChecks) {
+                    if (d3.pt() <= trackCutCfgs.cMinPtcut || std::abs(d3.eta()) >= trackCutCfgs.cMaxEtacut) {
+                      continue;
+                    }
+                  }
+                  seenPip = true;
+                } else if (d3.pdgCode() == -kPiPlus) {
+                  if (helicityCfgs.genKinematicsChecks) {
+                    if (d3.pt() <= trackCutCfgs.cMinPtcut || std::abs(d3.eta()) >= trackCutCfgs.cMaxEtacut) {
+                      continue;
+                    }
+                  }
+                  seenPim = true;
+                }
+              }
+              if (seenPip && seenPim) {
+                lResoSecondary = LorentzVectorSetXYZM(d2.px(), d2.py(), d2.pz(), MassK0Short);
+                hasK0sToPipi = true;
+                break;
+              }
+            }
+          }
+        }
+        if (hasRightPion && hasK0sToPipi) {
+          break;
+        }
+      }
+
+      if (!(hasRightPion && hasK0sToPipi)) {
+        continue;
+      }
+      if (helicityCfgs.cCosWithKShot) {
+        fillInvMass(lResoKstar, lCentrality, lResoSecondary, lDecayDaughter_bach, eventCutCfgs.confIsMix);
+      } else {
+        fillInvMass(lResoKstar, lCentrality, lDecayDaughter_bach, lResoSecondary, eventCutCfgs.confIsMix);
+      }
+    }
+
+    currentIsGen = false;
     // To store the recoKstar
     for (const auto& v0 : v0s) {
-      currentIsGen = false;
       auto coll = v0.template collision_as<MCEventCandidates>();
 
       if (!coll.has_mcCollision()) {
@@ -1689,35 +1784,6 @@ struct Chargedkstaranalysis {
       histos.fill(HIST("Correction/sigLoss_num"), part.pt(), lCentrality);
       if (part.vt() == 0) {
         histos.fill(HIST("Correction/sigLoss_num_pri"), part.pt(), lCentrality);
-      }
-    }
-    // To calculate the denominator -> To check the all the events have chk892
-    for (auto const& part : mcParticles) {
-      if (!part.has_mcCollision()) {
-        continue;
-      }
-      if (std::abs(part.pdgCode()) != kKstarPlus) {
-        continue;
-      }
-      if (std::abs(part.y()) > kstarCutCfgs.cKstarMaxRap) {
-        continue;
-      }
-
-      const auto mcid = part.mcCollisionId();
-      if (!refClassIds.contains(mcid)) {
-        continue;
-      }
-
-      auto iter = refCentByMcId.find(mcid);
-      if (iter == refCentByMcId.end()) {
-        continue;
-      }
-
-      const float lCentrality = iter->second;
-
-      histos.fill(HIST("Correction/sigLoss_den"), part.pt(), lCentrality);
-      if (part.vt() == 0) {
-        histos.fill(HIST("Correction/sigLoss_den_pri"), part.pt(), lCentrality);
       }
     }
     // To calculate the event fraction correction

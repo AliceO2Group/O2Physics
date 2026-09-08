@@ -811,6 +811,7 @@ struct cascadeFlow {
       invMassLambda = v0.mAntiLambda();
     else
       invMassLambda = v0.mLambda();
+    double ctauLambda = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * o2::constants::physics::MassLambda0;
     analysisLambdaSample(coll.centFT0C(),
                          hasEventPlane,
                          hasSpectatorPlane,
@@ -819,6 +820,7 @@ struct cascadeFlow {
                          v0.phi(),
                          v0.eta(),
                          invMassLambda,
+                         ctauLambda,
                          v0.v0radius(),
                          v0.dcapostopv(),
                          v0.dcanegtopv(),

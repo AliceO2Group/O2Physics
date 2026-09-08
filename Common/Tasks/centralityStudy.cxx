@@ -126,6 +126,7 @@ struct CentralityStudy {
     std::string prefix = "evsel";
     Configurable<bool> applySel8{"applySel8", true, "0 - no, 1 - yes"};
     Configurable<bool> applyVtxZ{"applyVtxZ", true, "0 - no, 1 - yes"};
+    Configurable<bool> requireINELgtZERO{"requireINELgtZERO", true, "0 no, 1 - yes"};
     Configurable<bool> selectUPCcollisions{"selectUPCcollisions", false, "select collisions tagged with UPC flag"};
     Configurable<bool> rejectITSROFBorder{"rejectITSROFBorder", true, "reject events at ITS ROF border"};
     Configurable<bool> rejectTFBorder{"rejectTFBorder", true, "reject events at TF border"};
@@ -146,7 +147,7 @@ struct CentralityStudy {
   } evsel;
 
   // _______________________________________
-  // BC Selection
+  // BC Selections
   struct : ConfigurableGroup {
     std::string prefix = "bcsel";
     Configurable<bool> rejectZNAC{"rejectZNAC", false, "reject if !(kIsBBZNA && kIsBBZNC)"};
@@ -220,7 +221,7 @@ struct CentralityStudy {
   ConfigurableAxis axisMultITSTPC{"axisMultITSTPC", {200, 0, 6000}, "Number of ITSTPC matched tracks"};
 
   // For centrality studies if requested
-  ConfigurableAxis axisCentrality{"axisCentrality", {100, 0, 100}, "FT0C percentile"};
+  ConfigurableAxis axisCentrality{"axisCentrality", {100, 0, 100}, "FT0C percentile (%)"};
   ConfigurableAxis axisImpactParameter{"axisImpactParameter", {200, 0.0f, 20.0f}, "b (fm)"};
   ConfigurableAxis axisPVChi2{"axisPVChi2", {300, 0, 30}, "FT0C percentile"};
   ConfigurableAxis axisDeltaTime{"axisDeltaTime", {300, 0, 300}, "#Delta time"};
@@ -535,7 +536,8 @@ struct CentralityStudy {
       getHist<TH1>(histPath + "hCollisionSelection")->GetXaxis()->SetBinLabel(15, "rejectCollInTimeRangeNarrow");
       getHist<TH1>(histPath + "hCollisionSelection")->GetXaxis()->SetBinLabel(16, "em/upc rejection");
       getHist<TH1>(histPath + "hCollisionSelection")->GetXaxis()->SetBinLabel(17, "isFlangeEvent");
-      getHist<TH1>(histPath + "hCollisionSelection")->GetXaxis()->SetBinLabel(18, "bcsel");
+      getHist<TH1>(histPath + "hCollisionSelection")->GetXaxis()->SetBinLabel(18, "INEL>0");
+      getHist<TH1>(histPath + "hCollisionSelection")->GetXaxis()->SetBinLabel(19, "bcsel");
 
       histPointers.insert({histPath + "hFT0C_Collisions", histos.add((histPath + "hFT0C_Collisions").c_str(), "hFT0C_Collisions", {kTH1D, {{axisMultUltraFineFT0C}}})});
       histPointers.insert({histPath + "hFT0A_Collisions", histos.add((histPath + "hFT0A_Collisions").c_str(), "hFT0A_Collisions", {kTH1D, {{axisMultUltraFineFT0A}}})});
@@ -733,24 +735,25 @@ struct CentralityStudy {
       multNTracksGlobal = -1.0f;
       mftNtracks = -1.0f;
       multNTracksPV = -1.0f;
-
-      if (hVtxZFV0A->Interpolate(collision.multPVz()) > epsilon) {
-        multFV0A = hVtxZFV0A->Interpolate(0.0) * collision.multFV0A() / hVtxZFV0A->Interpolate(collision.multPVz());
-      }
-      if (hVtxZFT0A->Interpolate(collision.multPVz()) > epsilon) {
-        multFT0A = hVtxZFT0A->Interpolate(0.0) * collision.multFT0A() / hVtxZFT0A->Interpolate(collision.multPVz());
-      }
-      if (hVtxZFT0C->Interpolate(collision.multPVz()) > epsilon) {
-        multFT0C = hVtxZFT0C->Interpolate(0.0) * collision.multFT0C() / hVtxZFT0C->Interpolate(collision.multPVz());
-      }
-      if (hVtxZNGlobals->Interpolate(collision.multPVz()) > epsilon) {
-        multNTracksGlobal = hVtxZNGlobals->Interpolate(0.0) * collision.multNTracksGlobal() / hVtxZNGlobals->Interpolate(collision.multPVz());
-      }
-      if (hVtxZMFT->Interpolate(collision.multPVz()) > epsilon) {
-        mftNtracks = hVtxZMFT->Interpolate(0.0) * collision.mftNtracks() / hVtxZMFT->Interpolate(collision.multPVz());
-      }
-      if (hVtxZNTracks->Interpolate(collision.multPVz()) > epsilon) {
-        multNTracksPV = hVtxZNTracks->Interpolate(0.0) * collision.multNTracksPV() / hVtxZNTracks->Interpolate(collision.multPVz());
+      if (std::abs(collision.multPVz()) < evsel.maxVtxZ) {
+        if (hVtxZFV0A && hVtxZFV0A->Interpolate(collision.multPVz()) > epsilon) {
+          multFV0A = hVtxZFV0A->Interpolate(0.0) * collision.multFV0A() / hVtxZFV0A->Interpolate(collision.multPVz());
+        }
+        if (hVtxZFT0A && hVtxZFT0A->Interpolate(collision.multPVz()) > epsilon) {
+          multFT0A = hVtxZFT0A->Interpolate(0.0) * collision.multFT0A() / hVtxZFT0A->Interpolate(collision.multPVz());
+        }
+        if (hVtxZFT0C && hVtxZFT0C->Interpolate(collision.multPVz()) > epsilon) {
+          multFT0C = hVtxZFT0C->Interpolate(0.0) * collision.multFT0C() / hVtxZFT0C->Interpolate(collision.multPVz());
+        }
+        if (hVtxZNGlobals && hVtxZNGlobals->Interpolate(collision.multPVz()) > epsilon) {
+          multNTracksGlobal = hVtxZNGlobals->Interpolate(0.0) * collision.multNTracksGlobal() / hVtxZNGlobals->Interpolate(collision.multPVz());
+        }
+        if (hVtxZMFT && hVtxZMFT->Interpolate(collision.multPVz()) > epsilon) {
+          mftNtracks = hVtxZMFT->Interpolate(0.0) * collision.mftNtracks() / hVtxZMFT->Interpolate(collision.multPVz());
+        }
+        if (hVtxZNTracks && hVtxZNTracks->Interpolate(collision.multPVz()) > epsilon) {
+          multNTracksPV = hVtxZNTracks->Interpolate(0.0) * collision.multNTracksPV() / hVtxZNTracks->Interpolate(collision.multPVz());
+        }
       }
     }
 
@@ -765,13 +768,14 @@ struct CentralityStudy {
     bool passRejectITSinROFpileupStrict = !(evsel.rejectITSinROFpileupStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict));
     bool passSelectUPCcollisions = !(evsel.selectUPCcollisions && collision.flags() < 1);
     bool passRejectCollInTimeRangeNarrow = !(evsel.rejectCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow));
+    bool passINELgtZERO = !(evsel.requireINELgtZERO && !collision.isInelGt0());
 
     // _______________________________________________________
     // sidestep vertex-Z rejection for vertex-Z profile histograms
     if (studies.doRunByRunHistograms) {
       if (passRejectITSROFBorder && passRejectTFBorder && passRequireIsVertexITSTPC && passRequireIsGoodZvtxFT0VsPV &&
           passRequireIsVertexTOFmatched && passRequireIsVertexTRDmatched && passRejectSameBunchPileup && passRejectITSinROFpileupStandard && passRejectITSinROFpileupStrict &&
-          passSelectUPCcollisions && passRejectCollInTimeRangeNarrow) {
+          passSelectUPCcollisions && passRejectCollInTimeRangeNarrow && passINELgtZERO) {
         getHist<TProfile>(histPath + "hFT0CvsPVz_Collisions")->Fill(collision.multPVz(), multFT0C * scale.factorFT0C);
         getHist<TProfile>(histPath + "hFT0CvsPVz_Collisions")->Fill(collision.multPVz(), multFT0C * scale.factorFT0C);
         getHist<TProfile>(histPath + "hFT0AvsPVz_Collisions")->Fill(collision.multPVz(), multFT0A * scale.factorFT0C);
@@ -926,6 +930,14 @@ struct CentralityStudy {
       getHist<TH1>(histPath + "hCollisionSelection")->Fill(16);
     }
 
+    if (!passINELgtZERO) {
+      return;
+    }
+    histos.fill(HIST("hCollisionSelection"), 17 /* is INEL > 0 */);
+    if (studies.doRunByRunHistograms) {
+      getHist<TH1>(histPath + "hCollisionSelection")->Fill(17);
+    }
+
     if (evsel.applyBcSel) {
       if constexpr (requires { collision.has_multBC(); }) {
         if (collision.has_multBC()) {
@@ -944,9 +956,9 @@ struct CentralityStudy {
       }
     }
 
-    histos.fill(HIST("hCollisionSelection"), 17 /* bc selections */);
+    histos.fill(HIST("hCollisionSelection"), 18 /* bc selections */);
     if (studies.doRunByRunHistograms) {
-      getHist<TH1>(histPath + "hCollisionSelection")->Fill(17);
+      getHist<TH1>(histPath + "hCollisionSelection")->Fill(18);
     }
 
     // if we got here, we also finally fill the FT0C histogram, please

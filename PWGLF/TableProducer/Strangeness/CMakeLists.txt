@@ -51,13 +51,13 @@ o2physics_add_dpl_workflow(cascderivedqaanalysis
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(hstrangecorrelationfilter
+o2physics_add_dpl_workflow(hstrangecorrelationfilter # o2-linter: disable=name/o2-workflow (Keep historical workflow name for backward compatibility.)
     SOURCES hStrangeCorrelationFilter.cxx
     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(double-casc-tree-creator
-    SOURCES doubleCascTreeCreator.cxx
+o2physics_add_dpl_workflow(double-omega-tree-creator
+    SOURCES doubleOmegaTreeCreator.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
@@ -81,7 +81,7 @@ o2physics_add_dpl_workflow(lambdakzerospawner
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(sigmaminus-task
+o2physics_add_dpl_workflow(sigmaminus-task # o2-linter: disable=name/o2-workflow (Keep historical workflow name for backward compatibility.)
     SOURCES sigmaminustask.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
@@ -111,7 +111,7 @@ o2physics_add_dpl_workflow(strangenessbuilder
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle O2Physics::TPCDriftManager O2Physics::MLCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(v0-selector
+o2physics_add_dpl_workflow(v0-selector # o2-linter: disable=name/o2-workflow (Keep historical workflow name for backward compatibility.)
     SOURCES v0selector.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
@@ -121,18 +121,18 @@ o2physics_add_dpl_workflow(v0qaanalysis
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(lambdalambdatable
+o2physics_add_dpl_workflow(lambdalambdatable # o2-linter: disable=name/o2-workflow (Keep historical workflow name for backward compatibility.)
     SOURCES LambdaLambdatable.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsVertexing
     COMPONENT_NAME Analysis)
 
 # ML selection
-o2physics_add_dpl_workflow(lambdakzeromlselectiontreecreator
+o2physics_add_dpl_workflow(lambdakzeromlselectiontreecreator # o2-linter: disable=name/o2-workflow (Keep historical workflow name for backward compatibility.)
     SOURCES lambdakzeroMLSelectionTreeCreator.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(cascademlselectiontreecreator
+o2physics_add_dpl_workflow(cascademlselectiontreecreator # o2-linter: disable=name/o2-workflow (Keep historical workflow name for backward compatibility.)
     SOURCES cascadeMLSelectionTreeCreator.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
@@ -152,12 +152,12 @@ o2physics_add_dpl_workflow(sigma0builder
     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2Physics::AnalysisCore O2Physics::MLCore O2Physics::AnalysisCCDB
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(lambdajetpolarizationbuilder
+o2physics_add_dpl_workflow(lambdajetpolarizationbuilder # o2-linter: disable=name/o2-workflow (Keep historical workflow name for backward compatibility.)
     SOURCES lambdaJetpolarizationbuilder.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(lambdajetpolarizationions
+o2physics_add_dpl_workflow(lambdajetpolarizationions # o2-linter: disable=name/o2-workflow (Keep historical workflow name for backward compatibility.)
     SOURCES lambdaJetPolarizationIons.cxx
     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet O2Physics::AnalysisCCDB
     COMPONENT_NAME Analysis)
@@ -172,7 +172,7 @@ o2physics_add_dpl_workflow(lambdaspincorrelation
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(sigmahadcorr
+o2physics_add_dpl_workflow(sigmahadcorr # o2-linter: disable=name/o2-workflow (Keep historical workflow name for backward compatibility.)
     SOURCES sigmaHadCorr.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
@@ -186,5 +186,10 @@ endif()
 
 o2physics_add_dpl_workflow(phi-strange-correlator
     SOURCES phiStrangeCorrelator.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(strangeness-mc-centrality
+    SOURCES strangenessMcCentrality.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
