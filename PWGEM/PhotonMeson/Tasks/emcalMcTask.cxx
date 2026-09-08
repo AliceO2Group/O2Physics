@@ -133,7 +133,7 @@ struct EmcalMcTask {
 
   SliceCache cache;
 
-  using EMCalPhotons = soa::Join<aod::EMCEMEventIds, aod::MinClusters, aod::EMEMCClusterMCLabels>;
+  using EMCalPhotons = soa::Join<aod::EMCEMEventIds, aod::MinClusters, aod::EMEMCClusterMCLabels_001>;
 
   using Colls = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMMCEventLabels, aod::EmMagFields>;
 
@@ -299,11 +299,11 @@ struct EmcalMcTask {
   template <const int type, o2::soa::is_iterator TCluster, o2::soa::is_iterator TMC>
   void fillClusterHistos(TCluster const& cluster, TMC const& mcPart, float centOrMult)
   {
-    static constexpr std::string_view subDir = kSubDirs[type];
+    static constexpr std::string_view SubDir = kSubDirs[type];
 
-    registry.fill(HIST(subDir) + HIST("hM02"), cluster.m02(), cluster.e(), centOrMult);
-    registry.fill(HIST(subDir) + HIST("hEtaRel"), cluster.eta() - mcPart.eta(), cluster.e(), centOrMult);
-    registry.fill(HIST(subDir) + HIST("hPhiRel"), cluster.phi() - mcPart.phi(), cluster.e(), centOrMult);
+    registry.fill(HIST(SubDir) + HIST("hM02"), cluster.m02(), cluster.e(), centOrMult);
+    registry.fill(HIST(SubDir) + HIST("hEtaRel"), cluster.eta() - mcPart.eta(), cluster.e(), centOrMult);
+    registry.fill(HIST(SubDir) + HIST("hPhiRel"), cluster.phi() - mcPart.phi(), cluster.e(), centOrMult);
   }
 
   // PCM-EMCal same event
