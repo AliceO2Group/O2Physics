@@ -2247,7 +2247,7 @@ struct LambdaProtonBalanceFunction {
       // ─────────────────────────────────────────────────────────────────
 
       // FIX-4: ProtonCounts_byPID_Check — protons only (sign > 0 guard added)
-      if (passDCA && trk.sign() > 0) {
+      if (trk.sign() > 0) {
         const float pt = trk.pt();
         const float nsTPC = std::abs(trk.tpcNSigmaPr());
 
