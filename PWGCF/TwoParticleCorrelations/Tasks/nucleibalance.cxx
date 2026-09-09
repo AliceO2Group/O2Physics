@@ -2091,7 +2091,7 @@ struct Lambdastarproxy {
     // THnSparse for invariant-mass analysis (mass, pT, multiplicity/centrality)
     if (lstarEnableSparse.value != 0) {
 
-            histos.add(
+      histos.add(
         "hLambdaStarProxyVsFullPKMixedSparse",
         "d-selected mixed-event pairs: full-p proton hypothesis vs (d/2)K proxy;"
         "M_{(d/2)K} (GeV/c^{2});"
@@ -3340,7 +3340,7 @@ struct Lambdastarproxy {
           }
         }
     }
-  }
+    }
 
     // --- MIXED-EVENT: current kaons + previous-event real protons ---
     // This fills the standard pK mixed-event background.
@@ -3418,7 +3418,6 @@ struct Lambdastarproxy {
         }
       }
     }
-
 
     // --- MIXED-EVENT: current proxies + previous-event kaons ---
     // This fills the deuteron-proxy mixed-event background.
@@ -3504,7 +3503,6 @@ struct Lambdastarproxy {
               continue;
             }
 
-
             // ----------------------------------------------------------
             // Full-momentum proton hypothesis for the SAME d-selected
             // track.
@@ -3537,7 +3535,6 @@ struct Lambdastarproxy {
                 pzTotFullPK,
                 massFullPK);
 
-
             if (lstarEnableSparse.value != 0) {
 
               // Standard mixed-event proxy spectrum.
@@ -3550,7 +3547,6 @@ struct Lambdastarproxy {
                 mass,
                 ptPair,
                 eventMult);
-
 
               // Mixed-event 2D map.
               //
