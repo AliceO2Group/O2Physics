@@ -49,6 +49,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include <math.h>
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -112,8 +114,8 @@ DECLARE_SOA_COLUMN(TrackTPCNCls, tracktpcncls, float);                 //! The t
 DECLARE_SOA_COLUMN(TrackTPCNCrossedRows, tracktpcncrossedrows, float); //! The track TPC NCrossedRows
 // DECLARE_SOA_COLUMN(TrackTPCNSigmaPi, tracktpcnsigmapi, float);                 //! The track TPC nSigma Pi
 // DECLARE_SOA_COLUMN(TrackTOFNSigmaPi, tracktofnsigmapi, float);                 //! The track TOF nSigma Pi
-DECLARE_SOA_COLUMN(TrackOrigin, trk_origin, int);                      //! The track origin label for GNN track origin predictions
-DECLARE_SOA_COLUMN(TrackVtxIndex, trk_vtx_index, int);                 //! The track vertex index for GNN vertex predictions
+DECLARE_SOA_COLUMN(TrackOrigin, trk_origin, int);      //! The track origin label for GNN track origin predictions
+DECLARE_SOA_COLUMN(TrackVtxIndex, trk_vtx_index, int); //! The track vertex index for GNN vertex predictions
 // DECLARE_SOA_COLUMN(DCATrackJet, dcatrackjet, float);                              //! The distance between track and jet, unfortunately it cannot be calculated in O2
 } // namespace trackInfo
 

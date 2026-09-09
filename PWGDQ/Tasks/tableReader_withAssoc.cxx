@@ -234,7 +234,7 @@ using MyEventsMultExtraZdcFit = soa::Join<aod::ReducedEvents, aod::ReducedEvents
 using MyEventsSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts>;
 using MyEventsMultExtraSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::EventCuts>;
 using MyEventsVtxCovSelectedMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
-using MyEventsHashSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes>;
+using MyEventsHashSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::MixingHashes>;
 using MyEventsVtxCov = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov>;
 using MyEventsVtxCovSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts>;
 using MyEventsVtxCovSelectedInfo = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsInfo>;
@@ -4377,7 +4377,7 @@ struct AnalysisDileptonTrack {
             Effweight_rec = Effweight_rec * Effdilepton * Effhadron * Masswindow;
           }
           std::vector<float> fTransRange = fConfigTransRange;
-          VarManager::FillEnergyCorrelatorTriple(lepton1, lepton2, track, fValuesHadron, fTransRange[0], fTransRange[1], fConfigApplyMassEC, fMassBkg->GetRandom(), 1. / Effweight_rec);
+          VarManager::FillEnergyCorrelatorTriple<VarManager::kDecayToEE, TEventFillMap, TTrackFillMap>(event, lepton1, lepton2, track, fValuesHadron, fTransRange[0], fTransRange[1], fConfigApplyMassEC, fMassBkg->GetRandom(), 1. / Effweight_rec);
 
           // table to be written out for ML analysis
           BmesonsTable(event.runNumber(), event.globalIndex(), event.timestamp(), fValuesHadron[VarManager::kPairMass], dilepton.mass(), fValuesHadron[VarManager::kDeltaMass], fValuesHadron[VarManager::kPairPt], fValuesHadron[VarManager::kPairEta], fValuesHadron[VarManager::kPairPhi], fValuesHadron[VarManager::kPairRap],
@@ -4616,7 +4616,7 @@ struct AnalysisDileptonTrack {
             }
           }
           std::vector<float> fTransRange = fConfigTransRange;
-          VarManager::FillEnergyCorrelatorTriple(lepton1, lepton2, track, dqtablereader_helpers::varValues(), fTransRange[0], fTransRange[1], fConfigApplyMassEC, fMassBkg->GetRandom(), 1. / Effweight_rec);
+          VarManager::FillEnergyCorrelatorTriple<VarManager::kDecayToEE, gkEventFillMapWithCov, gkTrackFillMapWithCov>(event1, lepton1, lepton2, track, dqtablereader_helpers::varValues(), fTransRange[0], fTransRange[1], fConfigApplyMassEC, fMassBkg->GetRandom(), 1. / Effweight_rec);
 
           // loop over dilepton leg cuts and track cuts and fill histograms separately for each combination
           for (int icut = 0; icut < fNCuts; icut++) {

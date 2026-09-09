@@ -138,8 +138,8 @@ bool UDFSParser::isNumber(std::string s)
 }
 
 // -----------------------------------------------------------------------------
-std::string UDFSParser::trim(std::string str,
-                             std::string whitespace = " \t")
+std::string UDFSParser::trim(const std::string& str,
+                             const std::string& whitespace = " \t")
 {
   const auto strBegin = str.find_first_not_of(whitespace);
   if (strBegin == std::string::npos)

@@ -154,7 +154,7 @@ struct qaEventTrackLite {
       ///
       return initBBok ? mMip * o2::common::BetheBlochAleph(x[0] / par[0], mBetheBlockAleph[0], mBetheBlockAleph[1], mBetheBlockAleph[2], mBetheBlockAleph[3], mBetheBlockAleph[4]) * std::pow(par[1], mChargeFactor) : 0.;
     }
-    void setUpBetheBlockAleph(std::string str_case)
+    void setUpBetheBlockAleph(const std::string& str_case)
     {
       if (str_case.find("LHC22c") != std::string::npos) {
         // From A. Kalteyer (2022 Jul 18)
@@ -418,7 +418,7 @@ struct qaEventTrackLite {
     histos.fill(HIST("Tracks/TPC/dEdxvsP"), p, track.tpcSignal());
     histos.fill(HIST("Tracks/TPC/dEdxvsPvsEta"), p, track.eta(), track.tpcSignal());
     if (betheBlock.initBBok) {
-      auto tpcdEdxRes = [&](TF1 func) { return track.tpcSignal() - func.Eval(p); };
+      auto tpcdEdxRes = [&](const TF1& func) { return track.tpcSignal() - func.Eval(p); };
       if (b_tpcResProton) {
         histos.fill(HIST("Tracks/TPC/dEdxvsPproton"), p, tpcdEdxRes(funcBBproton));
         histos.fill(HIST("Tracks/TPC/dEdxvsPprotonvsEta"), p, track.eta(), tpcdEdxRes(funcBBproton));

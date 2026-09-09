@@ -2721,9 +2721,13 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kDeltaPhi_TPC"] = kDeltaPhi_TPC;
   fgVarNamesMap["kDeltaPhi_FT0A"] = kDeltaPhi_FT0A;
   fgVarNamesMap["kDeltaPhi_FT0C"] = kDeltaPhi_FT0C;
+  fgVarNamesMap["kDeltaPhi_Random"] = kDeltaPhi_Random;
+  fgVarNamesMap["kDeltaPhi_MC"] = kDeltaPhi_MC;
   fgVarNamesMap["kCos2DeltaPhi_TPC"] = kCos2DeltaPhi_TPC;
   fgVarNamesMap["kCos2DeltaPhi_FT0A"] = kCos2DeltaPhi_FT0A;
   fgVarNamesMap["kCos2DeltaPhi_FT0C"] = kCos2DeltaPhi_FT0C;
+  fgVarNamesMap["kCos2DeltaPhi_Random"] = kCos2DeltaPhi_Random;
+  fgVarNamesMap["kCos2DeltaPhi_MC"] = kCos2DeltaPhi_MC;
   fgVarNamesMap["kDeltaPhiME_TPC"] = kDeltaPhiME_TPC;
   fgVarNamesMap["kDeltaPhiME_FT0A"] = kDeltaPhiME_FT0A;
   fgVarNamesMap["kDeltaPhiME_FT0C"] = kDeltaPhiME_FT0C;

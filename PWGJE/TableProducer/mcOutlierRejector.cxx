@@ -69,7 +69,7 @@ struct McOutlierRejectorTask {
     if (selectionObjects.size() != 0) {
       float selectionObjectPt = 0.0;
       if constexpr (std::is_same_v<std::decay_t<T>, aod::JetTracksMCD> || std::is_same_v<std::decay_t<T>, aod::JetParticles>) {
-        for (auto selectionObject : selectionObjects) {
+        for (const auto& selectionObject : selectionObjects) {
           selectionObjectPt = selectionObject.pt();
           // may be slow - could save only MC particle then check difference only for tracks IDd as outliers?
           if constexpr (std::is_same_v<std::decay_t<T>, aod::JetTracksMCD>) { // tracks

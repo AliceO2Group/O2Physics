@@ -281,11 +281,15 @@ struct FlowCorrelationsUpc {
         return false;
       }
       // if A or C gap is requested, keep corresponding neutron class
-      if (cfgGapSide == 0 || cfgGapSide == 1) {
-        if ((cfgGapSide == 0 && neutronClass == 1) || (cfgGapSide == 1 && neutronClass == 2)) { // o2-linter: disable=magic-number (ZDC time cut)
-          // accepted
-        } else {
-          return false;
+      if (cfgGapSideMerge) {
+        // accepted
+      } else {
+        if (cfgGapSide == 0 || cfgGapSide == 1) {
+          if ((cfgGapSide == 0 && neutronClass == 1) || (cfgGapSide == 1 && neutronClass == 2)) { // o2-linter: disable=magic-number (ZDC time cut)
+            // accepted
+          } else {
+            return false;
+          }
         }
       }
     }

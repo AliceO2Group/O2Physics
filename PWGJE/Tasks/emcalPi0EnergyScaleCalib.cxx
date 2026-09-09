@@ -178,8 +178,8 @@ struct Photon {
 };
 
 struct Meson {
-  Meson(Photon p1, Photon p2) : pgamma1(p1),
-                                pgamma2(p2)
+  Meson(const Photon& p1, const Photon& p2) : pgamma1(p1),
+                                              pgamma2(p2)
   {
     pMeson = p1.photon + p2.photon;
   }
