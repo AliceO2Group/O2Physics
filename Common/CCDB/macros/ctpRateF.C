@@ -29,12 +29,12 @@
 
 struct ctpRateFetcher {
   ctpRateFetcher() = default;
-  double fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, std::string sourceName);
+  double fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, const std::string& sourceName);
   void getCTPconfig(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber);
   void getCTPscalers(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber);
   void getLHCIFdata(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber);
   double fetchCTPratesInputs(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, int input);
-  double fetchCTPratesClasses(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, std::string className, int inputType = 1);
+  double fetchCTPratesClasses(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, const std::string& className, int inputType = 1);
   double pileUpCorrection(double rate);
 
   int mRunNumber = -1;
@@ -104,7 +104,7 @@ double ctpRateFetcher::fetchCTPratesInputs(o2::ccdb::BasicCCDBManager* ccdb, uin
     return -1.;
   }
 }
-double ctpRateFetcher::fetchCTPratesClasses(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, std::string className, int inputType)
+double ctpRateFetcher::fetchCTPratesClasses(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, const std::string& className, int inputType)
 {
   getCTPscalers(ccdb, timeStamp, runNumber);
   getCTPconfig(ccdb, timeStamp, runNumber);
@@ -125,7 +125,7 @@ double ctpRateFetcher::fetchCTPratesClasses(o2::ccdb::BasicCCDBManager* ccdb, ui
   getLHCIFdata(ccdb, timeStamp, runNumber);
   return pileUpCorrection(rate.second);
 }
-double ctpRateFetcher::fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, std::string sourceName)
+double ctpRateFetcher::fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, const std::string& sourceName)
 {
   if (sourceName.find("ZNC") != std::string::npos) {
     if (runNumber < 544448) {

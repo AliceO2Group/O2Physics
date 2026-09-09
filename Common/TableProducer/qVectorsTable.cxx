@@ -390,7 +390,7 @@ struct QVectorsTable {
   }
 
   template <typename TrackType>
-  bool selTrack(const TrackType track)
+  bool selTrack(const TrackType& track)
   {
     if (track.pt() < cfgMinPtOnTPC)
       return false;
