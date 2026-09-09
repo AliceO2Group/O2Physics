@@ -417,15 +417,8 @@ struct cascadeFlow {
       return false;
     }
 
-    if (isFillHisto)
+    if (isFillHisto){
       histos.fill(HIST("hNEvents"), 7.5);
-
-    // TVX in TRD
-    //  if (isNoTVXinTRD && collision.alias_bit(kTVXinTRD)){
-    //   return false;
-    //  }
-
-    if (isFillHisto) {
       histos.fill(HIST("hNEvents"), 8.5);
       histos.fill(HIST("hEventNchCorrelation"), collision.multNTracksPVeta1(), collision.multNTracksGlobal());
       histos.fill(HIST("hEventPVcontributorsVsCentrality"), collision.centFT0C(), collision.multNTracksPVeta1());
@@ -566,7 +559,6 @@ struct cascadeFlow {
 
   int currentRunNumber = -999;
   int lastRunNumber = -999;
-  TProfile3D* shiftprofile = nullptr;
   TProfile3D* shiftprofileFT0C = nullptr;
   TProfile3D* shiftprofileFV0A = nullptr;
   TProfile3D* shiftprofileFT0A = nullptr;
@@ -1229,8 +1221,8 @@ struct cascadeFlow {
         continue;
       }
 
-      float sigmaRangeXi[2]{getNsigmaMass(cascadev2::Xi, casc.pt(), sideBandStart), getNsigmaMass(cascadev2::Xi, casc.pt(), sideBandEnd)};
-      float sigmaRangeOmega[2]{getNsigmaMass(cascadev2::Omega, casc.pt(), sideBandStart), getNsigmaMass(cascadev2::Omega, casc.pt(), sideBandEnd)};
+      const float sigmaRangeXi[2]{getNsigmaMass(cascadev2::Xi, casc.pt(), sideBandStart), getNsigmaMass(cascadev2::Xi, casc.pt(), sideBandEnd)};
+      const float sigmaRangeOmega[2]{getNsigmaMass(cascadev2::Omega, casc.pt(), sideBandStart), getNsigmaMass(cascadev2::Omega, casc.pt(), sideBandEnd)};
 
       if ((std::abs(casc.mXi() - constants::physics::MassXiMinus) < sigmaRangeXi[0] ||
            std::abs(casc.mXi() - constants::physics::MassXiMinus) > sigmaRangeXi[1]) &&
