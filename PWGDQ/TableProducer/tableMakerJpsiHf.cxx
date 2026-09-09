@@ -15,7 +15,6 @@
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
 #include "PWGDQ/Core/AnalysisCompositeCut.h"
-#include "PWGDQ/Core/AnalysisCut.h"
 #include "PWGDQ/Core/CutsLibrary.h"
 #include "PWGDQ/Core/HistogramManager.h"
 #include "PWGDQ/Core/HistogramsLibrary.h"
@@ -320,7 +319,7 @@ struct tableMakerJpsiHf {
           }
         }
 
-        double rapDmeson;
+        double rapDmeson = -999.;
         if constexpr (TDmeson == DmesonType::D0) {
           rapDmeson = hfHelper.yD0(dmeson);
         } else if constexpr (TDmeson == DmesonType::Dplus) {
@@ -390,7 +389,7 @@ struct tableMakerJpsiHf {
           isDmesonFilled = true;
         }
 
-        double rapDmeson;
+        double rapDmeson = -999.;
         if constexpr (TDmeson == DmesonType::D0) {
           rapDmeson = hfHelper.yD0(dmeson);
         } else if constexpr (TDmeson == DmesonType::Dplus) {
