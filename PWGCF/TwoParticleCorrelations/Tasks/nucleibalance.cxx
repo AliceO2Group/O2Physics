@@ -2974,8 +2974,6 @@ struct Lambdastarproxy {
               "hTOFNsigmaDeVsPrForSelectedDeuteron"),
             nsTOFDe,
             nsTOFPrAsProxy);
-        }
-        if (hasTofDe) {
           histos.fill(HIST("hTPCvsTOFNsigma_D"), nsTPCDe, nsTOFDe);
         }
         if constexpr (requires { trkD.beta(); }) {
