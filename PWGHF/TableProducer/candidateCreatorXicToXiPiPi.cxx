@@ -589,6 +589,9 @@ struct HfCandidateCreatorXicToXiPiPi {
       auto trackCharmBachelor0 = rowTrackIndexXicPlus.prong0_as<TracksWCovExtraPidPrPi>();
       auto trackCharmBachelor1 = rowTrackIndexXicPlus.prong1_as<TracksWCovExtraPidPrPi>();
 
+      // sign of charm baryon
+      int8_t const signXic = casc.sign() < 0 ? +1 : -1;
+
       // if enabled, apply selections of software trigger
       float pPiFromLambda{}, pPrFromLambda{}, nSigTpcBachelorPi{}, nSigTofBachelorPi{}, nSigTpcPiFromLambda{}, nSigTofPiFromLambda{}, nSigTpcPrFromLambda{}, nSigTofPrFromLambda{};
       if (softTrigCuts.applySoftwareTrigSelections) {
@@ -717,9 +720,6 @@ struct HfCandidateCreatorXicToXiPiPi {
       }
 
       //---------------------calculate physical parameters of XicPlus candidate----------------------
-      // sign of charm baryon
-      int8_t const signXic = casc.sign() < 0 ? +1 : -1;
-
       // transport XicPlus daughters to XicPlus decay vertex (secondary vertex)
       float secondaryVertex[3] = {0.};
       secondaryVertex[0] = kfXicPlus.GetX();
