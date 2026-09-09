@@ -14,13 +14,8 @@
 /// \author Eisha Rani
 /// \since September 2026
 
-<<<<<<< HEAD
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
-=======
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
->>>>>>> 7f5327f44 (Run-1 calibration task for FT0 flattenicity)
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CommonConstants/MathConstants.h>
@@ -36,12 +31,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
-<<<<<<< HEAD
-#include <string>
-#include <vector>
-=======
 #include <cstddef>
->>>>>>> 7f5327f44 (Run-1 calibration task for FT0 flattenicity)
 
 using namespace o2;
 using namespace o2::framework;
