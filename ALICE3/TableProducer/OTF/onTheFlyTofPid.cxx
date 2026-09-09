@@ -33,6 +33,7 @@
 #include "Common/Core/trackUtilities.h"
 
 #include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DetectorsBase/Propagator.h>
 #include <Framework/AnalysisDataModel.h>
@@ -56,6 +57,7 @@
 #include <TRandom3.h>
 #include <TString.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdlib>

@@ -15,7 +15,6 @@
 /// \since August 2026
 
 #include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CommonConstants/MathConstants.h>
@@ -31,6 +30,8 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <string>
 #include <vector>
 

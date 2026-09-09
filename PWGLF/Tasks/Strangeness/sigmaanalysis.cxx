@@ -351,6 +351,19 @@ struct sigmaanalysis {
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(19, "Below min IR");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(20, "Above max IR");
 
+    //
+    if (doprocessAnalysedCollisions) {
+      histos.add("hEventPreSelection", "hEventPreSelection", kTH1D, {{8, -0.5f, +7.5f}});
+      histos.get<TH1>(HIST("hEventPreSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
+      histos.get<TH1>(HIST("hEventPreSelection"))->GetXaxis()->SetBinLabel(2, "kIsTriggerTVX");
+      histos.get<TH1>(HIST("hEventPreSelection"))->GetXaxis()->SetBinLabel(3, "kNoITSROFrameBorder");
+      histos.get<TH1>(HIST("hEventPreSelection"))->GetXaxis()->SetBinLabel(4, "kNoTimeFrameBorder");
+      histos.get<TH1>(HIST("hEventPreSelection"))->GetXaxis()->SetBinLabel(5, "posZ cut");
+      histos.get<TH1>(HIST("hEventPreSelection"))->GetXaxis()->SetBinLabel(6, "kNoSameBunchPileup");
+      histos.get<TH1>(HIST("hEventPreSelection"))->GetXaxis()->SetBinLabel(7, "RCT flags");
+      histos.get<TH1>(HIST("hEventPreSelection"))->GetXaxis()->SetBinLabel(8, "Preselected collisions");
+    }
+
     if (fGetIR) {
       histos.add("GeneralQA/hRunNumberNegativeIR", "", kTH1D, {{1, 0., 1.}});
       histos.add("GeneralQA/hInteractionRate", "hInteractionRate", kTH1D, {axisIRBinning});
@@ -1873,6 +1886,23 @@ struct sigmaanalysis {
     }
   }
 
+  // ______________________________________________________
+  // Simulated processing in Run 2 (subscribes to MC information too)
+  void processAnalysedCollisions(aod::StraSelections const& straSelections)
+  {
+    for (auto const& straSelection : straSelections) {
+      // Event selection criteria
+      histos.get<TH1>(HIST("hEventPreSelection"))->AddBinContent(1, straSelection.totalNbrOfCollisions() /* all collisions */);
+      histos.get<TH1>(HIST("hEventPreSelection"))->AddBinContent(2, straSelection.totalIsTriggerTVXCollisions() /* preselected IsTriggerTVX collisions */);
+      histos.get<TH1>(HIST("hEventPreSelection"))->AddBinContent(3, straSelection.totalNoITSROFBorderCollisions() /* + preselected NoITSROF collisions */);
+      histos.get<TH1>(HIST("hEventPreSelection"))->AddBinContent(4, straSelection.totalNoTFBorderCollisions() /* + preselected NoTF collisions */);
+      histos.get<TH1>(HIST("hEventPreSelection"))->AddBinContent(5, straSelection.totalIsGoodZvtxCollisions() /* + preselected |Zvtx| < X cm collisions */);
+      histos.get<TH1>(HIST("hEventPreSelection"))->AddBinContent(6, straSelection.totalNoSBPileupCollisions() /* + preselected NoSameBunchPileup collisions */);
+      histos.get<TH1>(HIST("hEventPreSelection"))->AddBinContent(7, straSelection.totalIsGoodRCTCollisions() /* + preselected Good RCT collisions */);
+      histos.get<TH1>(HIST("hEventPreSelection"))->AddBinContent(8, straSelection.totalNbrOfSelCollisions() /* total number of preselected collisions */);
+    }
+  }
+
   void processRealData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps> const& collisions, Sigma0s const& fullSigma0s)
   {
     analyzeRecoeSigma0s(collisions, fullSigma0s);
@@ -1925,6 +1955,7 @@ struct sigmaanalysis {
   PROCESS_SWITCH(sigmaanalysis, processPi0RealData, "Do real data analysis for pi0 QA", false);
   PROCESS_SWITCH(sigmaanalysis, processPi0MonteCarlo, "Do Monte-Carlo-based analysis for pi0 QA", false);
   PROCESS_SWITCH(sigmaanalysis, processPi0GeneratedRun3, "process MC generated Run 3 for pi0 QA", false);
+  PROCESS_SWITCH(sigmaanalysis, processAnalysedCollisions, "process filtered events for bookkeeping", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
