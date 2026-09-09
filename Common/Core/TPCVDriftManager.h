@@ -115,7 +115,7 @@ class TPCVDriftManager
     float dTime = tTB - trackExtra.trackTime();
     float dDrift = dTime * mTPCVDriftNS;
     float dDriftErr = tTBErr * mTPCVDriftNS;
-    if (dDriftErr < 0.f || dDrift > 250.f) { // we cannot move a track outside the drift volume
+    if (dDriftErr < 0.f || dDrift > mMaxDriftCm) { // we cannot move a track outside the drift volume
       if (mOutside < mWarningLimit) {
         LOGP(warn, "Skipping correction outside of tpc volume with dDrift={} +- {}", dDrift, dDriftErr);
         const auto trackBC = trackExtra.template collision_as<Collisions>().template foundBC_as<BCs>().globalBC();
@@ -157,6 +157,7 @@ class TPCVDriftManager
   o2::ccdb::BasicCCDBManager* mCCDB{};  // reference to initialized ccdb manager
 
   static constexpr unsigned int mWarningLimit{10};
+  static constexpr float mMaxDriftCm{250.f}; // TPC drift volume half-length in cm
 
   // Counters
   unsigned int mCalls{0};       // total number of calls
