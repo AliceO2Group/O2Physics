@@ -131,7 +131,8 @@ class TPCVDriftManager
     }
 
     // impose new Z coordinate
-    track.setZ(track.getZ() + ((track.getTgl() < 0.) ? -dDrift : dDrift));
+    const auto sides = (trackExtra.flags() & (o2::aod::track::TrackFlags::TPCSideA | o2::aod::track::TrackFlags::TPCSideC));
+    track.setZ(track.getZ() + (sides == o2::aod::track::TrackFlags::TPCSideC ? -dDrift : (sides == o2::aod::track::TrackFlags::TPCSideA ? dDrift : 0)));
     if constexpr (std::is_base_of_v<o2::track::TrackParCov, Track>) {
       track.setCov(track.getSigmaZ2() + dDriftErr * dDriftErr, o2::track::kSigZ2);
     }
