@@ -28,6 +28,8 @@
 #include <memory>
 #include <unordered_set>
 #include <vector>
+#include <algorithm>
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;
