@@ -86,6 +86,11 @@ o2physics_add_dpl_workflow(jet-taggerhf
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(jet-gnn-inference
+                    SOURCES jetGnnInference.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2Physics::MLCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(estimator-rho
                     SOURCES rhoEstimator.cxx
                     REUSE_FROM JetDataModelPCH
