@@ -133,6 +133,7 @@ struct TaskPi0FlowEMC {
   ConfigurableAxis thnConfigAxisCosDeltaPhi{"thnConfigAxisCosDeltaPhi", {8, -1., 1.}, "cos(delta phi) axis for the current event"};
   ConfigurableAxis thnConfigAxisM02{"thnConfigAxisM02", {200, 0., 5.}, "M02 axis for the EMCal cluster"};
   ConfigurableAxis thnConfigAxisEnergyCalib{"thnConfigAxisEnergyCalib", {200, 0., 20.}, "energy axis for the emcal clusters for the calibration process"};
+  ConfigurableAxis thConfigAxisEtaPhiAngle{"thConfigAxisEtaPhiAngle", {180, -o2::constants::math::PI, o2::constants::math::PI}, "atan2(#Delta#eta,#Delta#varphi) axis (deg)"};
 
   EMPhotonEventCut fEMEventCut;
   struct : ConfigurableGroup {
@@ -417,6 +418,7 @@ struct TaskPi0FlowEMC {
     const AxisSpec thnAxisMixingVtx{mixingConfig.cfgVtxBins, "#it{z} (cm)"};
     const AxisSpec thnAxisMixingCent{mixingConfig.cfgCentBins, "Centrality (%)"};
     const AxisSpec thnAxisMixingEP{mixingConfig.cfgEPBins, Form("cos(%d#varphi)", harmonic.value)};
+    const AxisSpec thAxisEtaPhiAngle{thConfigAxisEtaPhiAngle, "atan2(#Delta#eta,#Delta#varphi) (rad)"};
 
     if (!doprocessM02) {
       registry.add("hSparsePi0Flow", "<v_n> vs m_{inv} vs p_T vs cent for same event", HistType::kTProfile3D, {thnAxisInvMass, thnAxisPt, thnAxisCent});
@@ -470,6 +472,8 @@ struct TaskPi0FlowEMC {
       registry.add("mesonQA/hInvMassPtMixed", "Histo for inv pair mass vs pt for mixed event", HistType::kTH2D, {thnAxisInvMass, thnAxisPt});
       registry.add("mesonQA/hTanThetaPhiMixed", "Histo for identification of conversion cluster for mixed event", HistType::kTH2D, {thnAxisInvMass, thAxisTanThetaPhi});
       registry.add("mesonQA/hAlphaPtMixed", "Histo of meson asymmetry vs pT for mixed event", HistType::kTH2D, {thAxisAlpha, thnAxisPt});
+      registry.add("mesonQA/hEtaPhiAngleMassCent", "atan2(#Delta#eta,#Delta#varphi) vs m_{inv} vs cent, same event", HistType::kTH3D, {thAxisEtaPhiAngle, thnAxisInvMass, thnAxisCent});
+      registry.add("mesonQA/hEtaPhiAngleMassCentMixed", "atan2(#Delta#eta,#Delta#varphi) vs m_{inv} vs cent, mixed event", HistType::kTH3D, {thAxisEtaPhiAngle, thnAxisInvMass, thnAxisCent});
     }
 
     if (correctionConfig.doEMCalCalib.value) {
@@ -1066,6 +1070,7 @@ struct TaskPi0FlowEMC {
 
       float dTheta = v1.Theta() - v2.Theta();
       float dPhi = v1.Phi() - v2.Phi();
+      float dEta = v1.Eta() - v2.Eta();
       float openingAngle = std::acos(v1.Vect().Dot(v2.Vect()) / (v1.P() * v2.P()));
 
       registry.fill(HIST("hMesonCuts"), 1);
@@ -1088,6 +1093,7 @@ struct TaskPi0FlowEMC {
         registry.fill(HIST("mesonQA/hInvMassPt"), vMeson.M(), vMeson.Pt());
         registry.fill(HIST("mesonQA/hTanThetaPhi"), vMeson.M(), getAngleDegree(std::atan(dTheta / dPhi)));
         registry.fill(HIST("mesonQA/hAlphaPt"), (v1.E() - v2.E()) / (v1.E() + v2.E()), vMeson.Pt());
+        registry.fill(HIST("mesonQA/hEtaPhiAngleMassCent"), RecoDecay::constrainAngle(std::atan2(dEta, dPhi), -o2::constants::math::PI), vMeson.M(), getCentrality(collision));
       }
       if (mesonConfig.enableTanThetadPhi.value && mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
         registry.fill(HIST("hMesonCuts"), 5);
@@ -1227,6 +1233,7 @@ struct TaskPi0FlowEMC {
 
         float dTheta = v1.Theta() - v2.Theta();
         float dPhi = v1.Phi() - v2.Phi();
+        float dEta = v1.Eta() - eta2;
         float openingAngle = std::acos(v1.Vect().Dot(v2.Vect()) / (v1.P() * v2.P()));
 
         registry.fill(HIST("hMesonCutsMixed"), 1);
@@ -1246,6 +1253,7 @@ struct TaskPi0FlowEMC {
           registry.fill(HIST("mesonQA/hInvMassPtMixed"), vMeson.M(), vMeson.Pt());
           registry.fill(HIST("mesonQA/hTanThetaPhiMixed"), vMeson.M(), getAngleDegree(std::atan(dTheta / dPhi)));
           registry.fill(HIST("mesonQA/hAlphaPtMixed"), (v1.E() - v2.E()) / (v1.E() + v2.E()), vMeson.Pt());
+          registry.fill(HIST("mesonQA/hEtaPhiAngleMassCentMixed"), RecoDecay::constrainAngle(std::atan2(dEta, dPhi), -o2::constants::math::PI), vMeson.M(), getCentrality(c1));
         }
         if (mesonConfig.enableTanThetadPhi.value && mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
           registry.fill(HIST("hMesonCutsMixed"), 5);
