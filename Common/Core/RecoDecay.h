@@ -736,6 +736,7 @@ struct RecoDecay {
   /// \param nPiToMu  number of pion prongs decayed to a muon
   /// \param nKaToPi  number of kaon prongs decayed to a pion
   /// \param nInteractionsWithMaterial  number of daughter particles that interacted with material
+  /// \param searchUpToQuark  switch to search for the decay up to the quark level
   /// \return index of the mother particle if the mother and daughters are correct, -1 otherwise
   template <bool acceptFlavourOscillation = false, bool checkProcess = false, bool acceptIncompleteReco = false, bool acceptTrackDecay = false, bool acceptTrackIntWithMaterial = false, std::size_t N, typename T, typename U>
   static int getMatchedMCRec(const T& particlesMC,
@@ -747,7 +748,8 @@ struct RecoDecay {
                              int depthMax = 1,
                              int8_t* nPiToMu = nullptr,
                              int8_t* nKaToPi = nullptr,
-                             int8_t* nInteractionsWithMaterial = nullptr)
+                             int8_t* nInteractionsWithMaterial = nullptr,
+                             bool searchUpToQuark = true)
   {
     // Printf("MC Rec: Expected mother PDG: %d", pdgMother);
     int8_t coefFlavourOscillation = 1;         // 1 if no B0(s) flavour oscillation occured, -1 else
@@ -822,7 +824,7 @@ struct RecoDecay {
       if (iProng == 0) {
         // Get the mother index and its sign.
         // PDG code of the first daughter's mother determines whether the expected mother is a particle or antiparticle.
-        indexMother = getMother(particlesMC, particleI, pdgMother, acceptAntiParticles, &sgn, depthMax);
+        indexMother = getMother(particlesMC, particleI, pdgMother, acceptAntiParticles, &sgn, depthMax, searchUpToQuark);
         // Check whether mother was found.
         if (indexMother <= -1) {
           // Printf("MC Rec: Rejected: bad mother index or PDG");
