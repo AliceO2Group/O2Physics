@@ -150,15 +150,15 @@ constexpr int cutDir[nCutScores] = {CutSmaller, CutNot}; // CutSmaller selects v
 auto vecCutDir = std::vector<int>{cutDir, cutDir + nCutScores};
 
 // default values for the cuts
-constexpr double cuts[nBinsPt][nCutScores] = {// background, signal
-                                              {0., 0.9},
-                                              {0., 0.9},
-                                              {0., 0.9},
-                                              {0., 0.9},
-                                              {0., 0.9},
-                                              {0., 0.9},
-                                              {0., 0.9},
-                                              {0., 0.9}};
+constexpr double cuts[nBinsPt][nCutScores] = { // background, signal
+  {0., 0.9},
+  {0., 0.9},
+  {0., 0.9},
+  {0., 0.9},
+  {0., 0.9},
+  {0., 0.9},
+  {0., 0.9},
+  {0., 0.9}};
 
 // row labels
 static const std::vector<std::string> labelsPt = {
