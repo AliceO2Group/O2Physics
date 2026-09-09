@@ -75,8 +75,8 @@ struct LongrangecorrDerived {
   SGSelector sgSelector;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   TrackSelection myTrackFilter;
-  Service<o2::framework::O2DatabasePDG> pdg;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::framework::O2DatabasePDG> pdg{};
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   struct : ConfigurableGroup {
     Configurable<int> cfgNmixedevent{"cfgNmixedevent", 5, "how many events are mixed"};
@@ -298,8 +298,8 @@ struct LongrangecorrDerived {
                                                         TrackSelection::GlobalTrackRun3DCAxyCut::Default);
     myTrackFilter.SetPtRange(cfgSel.cfgPtCutMin, cfgSel.cfgPtCutMax);
     myTrackFilter.SetEtaRange(-cfgSel.cfgEtaCut, cfgSel.cfgEtaCut);
-    myTrackFilter.SetMinNCrossedRowsTPC(cfgSel.cfgTpcMinNCrossedRows);
-    myTrackFilter.SetMinNClustersTPC(cfgSel.cfgTpcMinNclsFound);
+    myTrackFilter.SetMinNCrossedRowsTPC(static_cast<int>(cfgSel.cfgTpcMinNCrossedRows));
+    myTrackFilter.SetMinNClustersTPC(static_cast<int>(cfgSel.cfgTpcMinNclsFound));
     myTrackFilter.SetMaxChi2PerClusterTPC(cfgSel.cfgTpcMaxChi2PerCluster);
     myTrackFilter.SetMaxDcaZ(cfgSel.cfgTpcMaxDcaZ);
     myTrackFilter.print();
@@ -515,7 +515,7 @@ struct LongrangecorrDerived {
   template <CorrelationContainer::CFStep step, typename TTarget, typename TTriggers, typename TAssocs>
   void fillCorrHist(TTarget target, TTriggers const& triggers, TAssocs const& assocs, bool mixing, float vz, float multiplicity, float eventWeight)
   {
-    int fSampleIndex = gRandom->Uniform(0, cfgSel.cfgSampleSize);
+    int fSampleIndex = static_cast<int>(gRandom->Uniform(0, cfgSel.cfgSampleSize));
     for (auto const& triggerTrack : triggers) {
       auto trigAmpl = 1.0f;
       auto trkeff = 1.0f;
