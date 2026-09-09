@@ -417,7 +417,7 @@ struct cascadeFlow {
       return false;
     }
 
-    if (isFillHisto){
+    if (isFillHisto) {
       histos.fill(HIST("hNEvents"), 7.5);
       histos.fill(HIST("hNEvents"), 8.5);
       histos.fill(HIST("hEventNchCorrelation"), collision.multNTracksPVeta1(), collision.multNTracksGlobal());
@@ -1393,7 +1393,7 @@ struct cascadeFlow {
       bool isCascCandidate = 0;
       isCascCandidate = IsCascAccepted(casc, negExtra, posExtra, bachExtra, counter);
       histos.fill(HIST("hCascade"), counter);
-      histos.fill(HIST("hCascadeDauSel"), (int)isCascCandidate);
+      histos.fill(HIST("hCascadeDauSel"), static_cast<int>(isCascCandidate));
       if (!isCascCandidate)
         continue;
 
@@ -1724,7 +1724,7 @@ struct cascadeFlow {
       bool isCascCandidate = 0;
       isCascCandidate = IsCascAccepted(casc, negExtra, posExtra, bachExtra, counter);
       histos.fill(HIST("hCascade"), counter);
-      histos.fill(HIST("hCascadeDauSel"), (int)isCascCandidate);
+      histos.fill(HIST("hCascadeDauSel"), static_cast<int>(isCascCandidate));
       if (!isCascCandidate)
         continue;
 
@@ -2170,11 +2170,11 @@ struct cascadeFlow {
           histos.fill(HIST("hLambdaCandidate"), 3);
           continue; // in case of ambiguity between Lambda and AntiLambda, I skip the particle; checked to be zero in range 1.105 - 1.125
         }
-        if (v0.mLambda() > V0Configs.MinMassLambda && v0.mLambda() < V0Configs.MaxMassLambda)
+        if (v0.mLambda() > V0Configs.MinMassLambda && v0.mLambda() < V0Configs.MaxMassLambda) {
           chargeIndex = 0;
-        else if (v0.mAntiLambda() > V0Configs.MinMassLambda && v0.mAntiLambda() < V0Configs.MaxMassLambda)
+        } else if (v0.mAntiLambda() > V0Configs.MinMassLambda && v0.mAntiLambda() < V0Configs.MaxMassLambda) {
           chargeIndex = 1;
-        else {
+        } else {
           chargeIndex = 2; // these are bkg candidates
           histos.fill(HIST("hLambdaCandidate"), 4);
         }
@@ -2199,7 +2199,7 @@ struct cascadeFlow {
       if (fillingConfigs.isFillNominalMass)
         massLambda = o2::constants::physics::MassLambda;
 
-      float cosThetaStarProton[nCharges];
+      double cosThetaStarProton[nCharges] = {0};
       ROOT::Math::PxPyPzMVector lambdaVector, protonVector[nCharges];
       lambdaVector.SetCoordinates(v0.px(), v0.py(), v0.pz(), massLambda);
       ROOT::Math::Boost lambdaBoost{lambdaVector.BoostToCM()};
@@ -2380,7 +2380,7 @@ struct cascadeFlow {
       bool isCascCandidate = 0;
       isCascCandidate = IsCascAccepted(casc, negExtra, posExtra, bachExtra, counter);
       histos.fill(HIST("hCascade"), counter);
-      histos.fill(HIST("hCascadeDauSel"), (int)isCascCandidate);
+      histos.fill(HIST("hCascadeDauSel"), static_cast<int>(isCascCandidate));
       if (!isCascCandidate)
         continue;
 
@@ -2539,7 +2539,7 @@ struct cascadeFlow {
       bool isCascCandidate = 0;
       isCascCandidate = IsCascAccepted(casc, negExtra, posExtra, bachExtra, counter);
       histos.fill(HIST("hCascade"), counter);
-      histos.fill(HIST("hCascadeDauSel"), (int)isCascCandidate);
+      histos.fill(HIST("hCascadeDauSel"), static_cast<int>(isCascCandidate));
       if (!isCascCandidate)
         continue;
 
