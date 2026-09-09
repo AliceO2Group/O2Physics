@@ -269,7 +269,7 @@ struct HadronNucleiCorrelation {
     }
     registry.add("hMult", "multiplicity", {HistType::kTH1D, {{200, 0.f, 200.f, "N_{ch}"}}});
 
-    if (doQA) {
+    if (doQA && (doprocessSameEvent || doprocessSameEventEvSel || doprocessMC)) {
       // Track QA
       registryQa.add("QA/hVtxZ_trk", "#it{z}_{vtx}", {HistType::kTH1D, {{150, -15.f, 15.f, "#it{z}_{vtx} (cm)"}}});
       registryQa.add("QA/hTPCnClusters", "N TPC Clusters; N TPC Clusters", {HistType::kTH1D, {{200, 0.f, 200.f}}});
@@ -428,8 +428,10 @@ struct HadronNucleiCorrelation {
       registry.addClone("Generated/hQADeuterons", "Generated/hQAAntiDeuterons");
 
       const AxisSpec ptAxisGen = {100, 0.f, 10.f, "#it{p}_{T} GeV/#it{c}"};
-      registry.add("Generated/hDeuteronsVsPt", "hDeuteronsVsPt;", {HistType::kTH1D, {ptAxisGen}});
-      registry.add("Generated/hAntiDeuteronsVsPt", "hAntiDeuteronsVsPt;", {HistType::kTH1D, {ptAxisGen}});
+      registry.add("Generated/hDeuteronsVsPt", "hDeuteronsVsPt", {HistType::kTH1D, {ptAxisGen}});
+      registry.add("Generated/hAntiDeuteronsVsPt", "hAntiDeuteronsVsPt", {HistType::kTH1D, {ptAxisGen}});
+      registry.add("Generated/hProtonsVsPt", "hProtonsVsPt", {HistType::kTH1D, {ptAxisGen}});
+      registry.add("Generated/hAntiProtonsVsPt", "hAntiProtonsVsPt", {HistType::kTH1D, {ptAxisGen}});
     }
   }
 
@@ -1843,6 +1845,12 @@ struct HadronNucleiCorrelation {
           case -PDG_t::kProton:
             registry.fill(HIST("Generated/hQAAntiProtons"), binPosition);
             return true;
+          case o2::constants::physics::Pdg::kNeutron:
+            registry.fill(HIST("Generated/hQANeutrons"), binPosition);
+            return true;
+          case -o2::constants::physics::Pdg::kNeutron:
+            registry.fill(HIST("Generated/hQAAntiNeutrons"), binPosition);
+            return true;
           case o2::constants::physics::Pdg::kDeuteron:
             registry.fill(HIST("Generated/hQADeuterons"), binPosition);
             return true;
@@ -1864,6 +1872,12 @@ struct HadronNucleiCorrelation {
 
       if (std::abs(particle.y()) < yRap) {
         switch (particle.pdgCode()) {
+          case o2::constants::physics::Pdg::kProton:
+            registry.fill(HIST("Generated/hProtonsVsPt"), particle.pt());
+            break;
+          case -o2::constants::physics::Pdg::kProton:
+            registry.fill(HIST("Generated/hAntiProtonsVsPt"), particle.pt());
+            break;
           case o2::constants::physics::Pdg::kDeuteron:
             registry.fill(HIST("Generated/hDeuteronsVsPt"), particle.pt());
             break;
