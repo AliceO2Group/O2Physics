@@ -940,8 +940,8 @@ struct HfCorrelatorDMesonPairs {
       auto etaCandidate1 = candidate1.eta();
       float const massD0Cand1 = HfHelper::invMassD0ToPiK(candidate1);
       float const massD0barCand1 = HfHelper::invMassD0barToKPi(candidate1);
-      auto prong0Cand1 = candidate1.template prong0_as<TracksData>();
-      auto prong1Cand1 = candidate1.template prong1_as<TracksData>();
+      auto prong0Cand1 = candidate1.template prong0_as<aod::Tracks>();
+      auto prong1Cand1 = candidate1.template prong1_as<aod::Tracks>();
 
       if (std::abs(HfHelper::yD0(candidate1)) > yCandMax) {
         continue;
