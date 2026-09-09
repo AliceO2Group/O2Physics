@@ -100,7 +100,7 @@ struct EMCALClusterDefinition {
   {
     return algorithm;
   }
-  [[nodiscard]] std::string toString() const
+  [[nodiscard]] const std::string& toString() const
   {
     return name;
   }
