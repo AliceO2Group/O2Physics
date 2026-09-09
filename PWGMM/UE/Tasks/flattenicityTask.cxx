@@ -23,10 +23,9 @@
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/runDataProcessing.h>
-
-#include <TPDGCode.h>
 
 #include <algorithm>
 #include <array>
@@ -49,7 +48,8 @@ using CollisionsWithSelection =
 
 struct FlattenicityTask {
 
-  Service<o2::framework::O2DatabasePDG> pdg;
+  // NOLINTNEXTLINE(misc-include-cleaner) - Service<> is provided by Framework/AnalysisTask.h; there is no separate standalone header for it in this O2 version.
+  Service<o2::framework::O2DatabasePDG> pdg{};
 
   // ========================================================================
   // FT0 geometry
@@ -123,10 +123,12 @@ struct FlattenicityTask {
   bool isChargedParticle(int pdgCode)
   {
     const auto* pdgParticle = pdg->GetParticle(pdgCode);
-    if (!pdgParticle)
+    if (!pdgParticle) {
       return false;
-    if (std::abs(pdgParticle->Charge()) < ChargeEpsilon)
+    }
+    if (std::abs(pdgParticle->Charge()) < ChargeEpsilon) {
       return false;
+    }
     return true;
   }
 
@@ -137,13 +139,16 @@ struct FlattenicityTask {
   float computeRho(const std::array<float, N>& counts)
   {
     float total = 0.0f;
-    for (std::size_t i = 0; i < N; ++i)
+    for (std::size_t i = 0; i < N; ++i) {
       total += counts[i];
-    if (total <= 0.0f)
+    }
+    if (total <= 0.0f) {
       return -1.0f;
+    }
     const float mean = total / static_cast<float>(N);
-    if (mean <= 0.0f)
+    if (mean <= 0.0f) {
       return -1.0f;
+    }
     float sumSq = 0.0f;
     for (std::size_t i = 0; i < N; ++i) {
       const float diff = counts[i] - mean;
@@ -156,8 +161,9 @@ struct FlattenicityTask {
   float computeFlattenicity(const std::array<float, N>& counts)
   {
     const float rho = computeRho(counts);
-    if (rho < 0.0f)
+    if (rho < 0.0f) {
       return -1.0f;
+    }
     return 1.0f - rho;
   }
 
@@ -166,14 +172,16 @@ struct FlattenicityTask {
   // ========================================================================
   int getFT0ASector(int channel)
   {
-    if (channel < 0 || channel >= NchA)
+    if (channel < 0 || channel >= NchA) {
       return -1;
+    }
     return channel / ChannelsPerSector;
   }
   int getFT0CSector(int channel)
   {
-    if (channel < 0 || channel >= NchC)
+    if (channel < 0 || channel >= NchC) {
       return -1;
+    }
     return channel / ChannelsPerSector;
   }
 
@@ -184,8 +192,9 @@ struct FlattenicityTask {
   {
     const bool inFT0A = (eta > FT0AEtaMin && eta < FT0AEtaMax);
     const bool inFT0C = (eta > FT0CEtaMin && eta < FT0CEtaMax);
-    if (!inFT0A && !inFT0C)
+    if (!inFT0A && !inFT0C) {
       return -1;
+    }
     isFT0A = inFT0A;
 
     // Wrap phi into [0, 2pi) using the O2-standard helper - avoids the
@@ -201,12 +210,11 @@ struct FlattenicityTask {
       int etaBin = static_cast<int>(std::floor((eta - FT0AEtaMin) / etaWidth));
       etaBin = std::max(0, std::min(etaBin, NEtaA - 1));
       return etaBin * NPhiSectors + phiBin;
-    } else {
-      const float etaWidth = (FT0CEtaMax - FT0CEtaMin) / static_cast<float>(NEtaC);
-      int etaBin = static_cast<int>(std::floor((eta - FT0CEtaMin) / etaWidth));
-      etaBin = std::max(0, std::min(etaBin, NEtaC - 1));
-      return NchA + etaBin * NPhiSectors + phiBin;
     }
+    const float etaWidth = (FT0CEtaMax - FT0CEtaMin) / static_cast<float>(NEtaC);
+    int etaBin = static_cast<int>(std::floor((eta - FT0CEtaMin) / etaWidth));
+    etaBin = std::max(0, std::min(etaBin, NEtaC - 1));
+    return NchA + etaBin * NPhiSectors + phiBin;
   }
 
   // ========================================================================
@@ -241,12 +249,14 @@ struct FlattenicityTask {
     }
     const float rhoA = computeRho(countsA);
     const float rhoC = computeRho(countsC);
-    if (rhoA < 0.0f || rhoC < 0.0f)
+    if (rhoA < 0.0f || rhoC < 0.0f) {
       return false;
+    }
     flattenicityAverage = 1.0f - 0.5f * (rhoA + rhoC);
     const float rhoCombined = computeRho(countsCombined);
-    if (rhoCombined < 0.0f)
+    if (rhoCombined < 0.0f) {
       return false;
+    }
     flattenicityCombined = 1.0f - rhoCombined;
     return true;
   }
@@ -256,8 +266,9 @@ struct FlattenicityTask {
   // ========================================================================
   void processMC(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
-    if (std::abs(mcCollision.posZ()) > cfgVzMax)
+    if (std::abs(mcCollision.posZ()) > cfgVzMax) {
       return;
+    }
     // Combined 208-cell truth grid (cells 0..NchA-1 = FT0A-like, NchA..NCell-1
     // = FT0C-like) AND the two separate sub-arrays, filled in parallel, so we
     // can compute BOTH truth definitions - average and combined - the same
@@ -269,26 +280,33 @@ struct FlattenicityTask {
     bool hasFT0A = false, hasFT0C = false;
 
     for (const auto& particle : mcParticles) {
-      if ((particle.flags() & NPhysicalPrimaryBit) == 0)
+      if ((particle.flags() & NPhysicalPrimaryBit) == 0) {
         continue;
-      if (!isChargedParticle(particle.pdgCode()))
+      }
+      if (!isChargedParticle(particle.pdgCode())) {
         continue;
-      if (particle.pt() <= cfgPtMin)
+      }
+      if (particle.pt() <= cfgPtMin) {
         continue; // Antonio: require pT > 0
-      if (std::abs(particle.eta()) < cfgEtaMax)
+      }
+      if (std::abs(particle.eta()) < cfgEtaMax) {
         ++nChINEL;
+      }
 
       const bool inFT0A = (particle.eta() > FT0AEtaMin && particle.eta() < FT0AEtaMax);
       const bool inFT0C = (particle.eta() > FT0CEtaMin && particle.eta() < FT0CEtaMax);
-      if (inFT0A)
+      if (inFT0A) {
         hasFT0A = true;
-      if (inFT0C)
+      }
+      if (inFT0C) {
         hasFT0C = true;
+      }
 
       bool isFT0A = false;
       const int cellId = assignToFT0Cell(particle.eta(), particle.phi(), isFT0A);
-      if (cellId < 0 || cellId >= NCell)
+      if (cellId < 0 || cellId >= NCell) {
         continue;
+      }
       truthCounts[cellId] += 1.0f;
       if (isFT0A) {
         truthCountsA[cellId] += 1.0f;
@@ -297,21 +315,24 @@ struct FlattenicityTask {
       }
 
       histos.fill(HIST("Truth/hCellOccupancy"), cellId);
-      if (isFT0A)
+      if (isFT0A) {
         histos.fill(HIST("Truth/hCellOccupancyFT0A"), cellId);
-      else
+      } else {
         histos.fill(HIST("Truth/hCellOccupancyFT0C"), cellId - NchA);
+      }
     }
 
-    if (nChINEL == 0)
+    if (nChINEL == 0) {
       return;
+    }
     histos.fill(HIST("QA/hEvents"), 1);
     histos.fill(HIST("QA/hNchINEL"), nChINEL);
 
     // Require activity on BOTH sides of the detector (Antonio's instruction),
     // for MC truth exactly as already required on the reco side.
-    if (!hasFT0A || !hasFT0C)
+    if (!hasFT0A || !hasFT0C) {
       return;
+    }
     histos.fill(HIST("QA/hEvents"), 2);
 
     // Definition 1: average of two separately-normalized rho's (mirrors the
@@ -343,22 +364,28 @@ struct FlattenicityTask {
                    aod::FT0s const& ft0s,
                    FullTracks const& tracks)
   {
-    if (cfgApplySel8 && !collision.sel8())
+    if (cfgApplySel8 && !collision.sel8()) {
       return;
-    if (std::abs(collision.posZ()) > cfgVzMax)
+    }
+    if (std::abs(collision.posZ()) > cfgVzMax) {
       return;
+    }
 
     int nChINEL = 0;
     for (const auto& track : tracks) {
-      if (track.collisionId() != collision.globalIndex())
+      if (track.collisionId() != collision.globalIndex()) {
         continue;
-      if (track.pt() <= cfgPtMin)
+      }
+      if (track.pt() <= cfgPtMin) {
         continue;
-      if (std::abs(track.eta()) < cfgEtaMax)
+      }
+      if (std::abs(track.eta()) < cfgEtaMax) {
         ++nChINEL;
+      }
     }
-    if (nChINEL == 0)
+    if (nChINEL == 0) {
       return;
+    }
 
     histos.fill(HIST("QA/hEvents"), 3);
     histos.fill(HIST("QA/hNchINEL"), nChINEL);
@@ -372,12 +399,14 @@ struct FlattenicityTask {
         break;
       }
     }
-    if (!foundFT0)
+    if (!foundFT0) {
       return;
+    }
 
     float flattenicityAverage = -1.0f, flattenicityCombined = -1.0f, sumFT0M = 0.0f;
-    if (!computeFT0Flattenicities(ft0, flattenicityAverage, flattenicityCombined, sumFT0M))
+    if (!computeFT0Flattenicities(ft0, flattenicityAverage, flattenicityCombined, sumFT0M)) {
       return;
+    }
 
     histos.fill(HIST("Reco/hFT0Mraw"), sumFT0M);
     histos.fill(HIST("Reco/hFT0Mraw_fine"), sumFT0M);
