@@ -420,7 +420,7 @@ struct tableMakerMuonMchTrkEfficiency {
     for (int i = 0; i < ncuts; i++)
       nselmuons.push_back(0);
 
-    //rowCandidateBase.reserve(tracksMuon.size());
+    // rowCandidateBase.reserve(tracksMuon.size());
     for (auto& muon : tracksMuon) {
 
       VarManager::FillTrack<TMuonFillMap>(muon);
@@ -486,8 +486,8 @@ struct tableMakerMuonMchTrkEfficiency {
     for (int i = 0; i < ncuts; i++)
       nselmuons.push_back(0);
 
-    //rowCandidateBase.reserve(tracksMuon.size());
-    //rowCandidateGen.reserve(tracksMuon.size());
+    // rowCandidateBase.reserve(tracksMuon.size());
+    // rowCandidateGen.reserve(tracksMuon.size());
     for (auto& muon : tracksMuon) {
       ///
       /// First compute MC matched quantities using either the DQ skimmed or the Framework data models
