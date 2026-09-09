@@ -3884,6 +3884,13 @@ struct AnalysisAsymmetricPairing {
     runAsymmetricPairing<true, VarManager::kDecayToKPi, gkEventFillMapWithCovZdcFitMultExtra, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
   }
 
+  void processProtonPairSkimmed(MyEventsVtxCovZdcFitSelected const& events,
+                                soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts> const& barrelAssocs,
+                                MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
+  {
+    runAsymmetricPairing<false, VarManager::kDecayToPrPr, gkEventFillMapWithCovZdcFit, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
+  }
+
   void processKaonPionPionSkimmed(MyEventsVtxCovZdcFitSelected const& events,
                                   soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts> const& barrelAssocs,
                                   MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
@@ -3911,6 +3918,7 @@ struct AnalysisAsymmetricPairing {
   }
 
   PROCESS_SWITCH(AnalysisAsymmetricPairing, processKaonPionSkimmed, "Run kaon pion pairing, with skimmed tracks", false);
+  PROCESS_SWITCH(AnalysisAsymmetricPairing, processProtonPairSkimmed, "Run proton anti-proton pairing, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisAsymmetricPairing, processKaonPionPionSkimmed, "Run kaon pion pion triplets, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisAsymmetricPairing, processKaonPionSkimmedMultExtra, "Run kaon pion pairing, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisAsymmetricPairing, processKaonPionPionSkimmedMultExtra, "Run kaon pion pion triplets, with skimmed tracks", false);
