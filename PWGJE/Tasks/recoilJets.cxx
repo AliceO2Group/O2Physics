@@ -203,20 +203,23 @@ struct RecoilJets {
 
     ConfigurableAxis axisPtTrackEff{"axisPtTrackEff", {VARIABLE_WIDTH, 0.0, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 12.0, 15.0, 20.0, 25.0, 30.0, 40.0, 50.0, 70.0, 100.0}, "#it{p}_{T} (GeV/#it{c})"};
 
-    ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, -5.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 100.0, 105.0}, "Centrality (%)"};
+    ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, -5.0, 0.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 100.0, 105.0}, "Centrality (%)"};
   } hist;
 
   // ---------- Rho-shift settings ----------
   struct RhoShift : ConfigurableGroup {
     std::string prefix = "rhoShiftTTRef";
 
-    Configurable<float> mb{"mb", 0.283998f, "Rho shift for MB"};
-    Configurable<float> ea0To20{"ea0To20", 0.199249f, "Rho shift for EA 0-20%"};
-    Configurable<float> ea0To10{"ea0To10", 0.186661f, "Rho shift for EA 0-10%"};
-    Configurable<float> ea20To40{"ea20To40", 0.137945f, "Rho shift for EA 20-40%"};
-    Configurable<float> ea60To80{"ea60To80", 0.0962535f, "Rho shift for EA 60-80%"};
-    Configurable<float> ea50To100{"ea50To100", 0.106919f, "Rho shift for EA 50-100%"};
-    Configurable<float> ea80To100{"ea80To100", 0.0871301f, "Rho shift for EA 80-100%"};
+    // Values from train 747883
+    Configurable<float> mb{"mb", 0.286292f, "Rho shift for MB"};
+    Configurable<float> ea0To20{"ea0To20", 0.189813f, "Rho shift for EA 0-20%"};
+    Configurable<float> ea0To10{"ea0To10", 0.180575f, "Rho shift for EA 0-10%"};
+    Configurable<float> ea20To40{"ea20To40", 0.131103f, "Rho shift for EA 20-40%"};
+    Configurable<float> ea60To80{"ea60To80", 0.092541f, "Rho shift for EA 60-80%"};
+    Configurable<float> ea50To100{"ea50To100", 0.106569f, "Rho shift for EA 50-100%"};
+    Configurable<float> ea80To100{"ea80To100", 0.0998433f, "Rho shift for EA 80-100%"};
+
+    Configurable<float> mbPart{"mbPart", 0.0f, "Rho shift for MB part. level MC"};
   } cfgRhoShift;
 
   // Auxiliary variables
@@ -576,6 +579,10 @@ struct RecoilJets {
                     kTH2F, {{centAxis.axis, centAxis.axisName}, scaledFT0M}, hist.sumw2);
       }
 
+      spectra.add("hCentFT0C_ScaledFT0C",
+                  "Correlation of CentFT0C vs. scaled FT0C",
+                  kTH2F, {{hist.axisCentrality, nameCentralityAxis}, scaledFT0C}, hist.sumw2);
+
       // Register TTRef recoil spectra with rho-shift correction.
       for (const auto& ea : eaRhoShifts) {
         spectra.add(Form("h%s_Recoil_JetPt_Corr_RhoShifted_TTRef", ea.label),
@@ -767,6 +774,15 @@ struct RecoilJets {
                     Form("MC events w. TT_{Sig}: %s & #it{p}_{T} of recoil jets", centAxis.label),
                     kTH2F, {{centAxis.axis, centAxis.axisName}, jetPTcorrFinnerBin}, hist.sumw2);
       }
+
+      // Register TTRef recoil spectra with rho-shift correction
+      spectra.add("hEA_MB_Recoil_JetPt_Corr_RhoShifted_TTRef_Part",
+                  "EA_MB: recoil jet #it{p}_{T} (#rho shifted)",
+                  kTH1F, {jetPTcorrFinnerBin}, hist.sumw2);
+
+      spectra.add("hEA_MB_RhoShifted_TTRef_Part",
+                  "EA_MB: #rho shifted in events w. TT_{Ref}",
+                  kTH1F, {rho}, hist.sumw2);
     }
 
     // Jet matching analysis
@@ -1360,6 +1376,9 @@ struct RecoilJets {
     spectra.fill(HIST("hCentFT0C_FT0MStar"), centFT0C, scaledFT0M, weight);
     spectra.fill(HIST("hCentFT0M_FT0MStar"), centFT0M, scaledFT0M, weight);
 
+    // Correlation: centrality FT0C vs scaled FT0C
+    spectra.fill(HIST("hCentFT0C_ScaledFT0C"), centFT0C, ft0Metrics.multFT0C, weight);
+
     // Z vertex position vs EA / centrality
     spectra.fill(HIST("hScaledFT0C_vertexZ"), scaledFT0C, vertexZ, weight);
     spectra.fill(HIST("hScaledFT0M_vertexZ"), scaledFT0M, vertexZ, weight);
@@ -1798,6 +1817,11 @@ struct RecoilJets {
 
         spectra.fill(HIST("hCentFT0C_Rho_TTRef_Part"), centFT0C, rho, weight);
         spectra.fill(HIST("hCentFT0M_Rho_TTRef_Part"), centFT0M, rho, weight);
+
+        //_____________________________________________________
+        // Fill EA-dependent rho spectra in events with TTRef with corresponding rho shift
+        const float rhoRefShifted = rho + cfgRhoShift.mbPart.value;
+        spectra.fill(HIST("hEA_MB_RhoShifted_TTRef_Part"), rhoRefShifted, weight);
       }
     }
 
@@ -1870,6 +1894,11 @@ struct RecoilJets {
           spectra.fill(HIST("hCentFT0M_DPhi_JetPt_Corr_TTRef_Part"), centFT0M, dphi, jetPtCorr, weight);
 
           if (bRecoilJet) {
+
+            // Fill EA-dependent TTRef recoil spectra using the corresponding rho shift
+            const float rhoRefShifted = rho + cfgRhoShift.mbPart.value;
+            const float jetPtCorrShifted = jetPt - rhoRefShifted * jetArea;
+            spectra.fill(HIST("hEA_MB_Recoil_JetPt_Corr_RhoShifted_TTRef_Part"), jetPtCorrShifted, weight);
 
             // EA dependence
             spectra.fill(HIST("hScaledFT0C_Recoil_JetPt_Corr_TTRef_Part"), scaledFT0C, jetPtCorr, weight);

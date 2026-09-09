@@ -68,12 +68,12 @@ class MCSignal : public TNamed
  public:
   MCSignal();
   MCSignal(int nProngs, const char* name = "", const char* title = ""); // NOLINT
-  MCSignal(const char* name, const char* title, std::vector<MCProng> prongs, std::vector<int8_t> commonAncestors, bool excludeCommonAncestor = false);
+  MCSignal(const char* name, const char* title, const std::vector<MCProng>& prongs, std::vector<int8_t> commonAncestors, bool excludeCommonAncestor = false);
   MCSignal(const MCSignal& c) = default;
   ~MCSignal() override = default;
 
   void SetProngs(std::vector<MCProng> prongs, std::vector<int8_t> commonAncestors);
-  void AddProng(MCProng prong, int8_t commonAncestor = -1);
+  void AddProng(const MCProng& prong, int8_t commonAncestor = -1);
   void SetDecayChannelIsExclusive(int nProngs, bool option = true)
   {
     fDecayChannelIsExclusive = option;

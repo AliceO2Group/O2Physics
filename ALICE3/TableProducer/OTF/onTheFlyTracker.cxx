@@ -531,7 +531,9 @@ struct OnTheFlyTracker {
         getHist<TH1>(histPath + "hVtxTrials")->GetXaxis()->SetBinLabel(2, "Succeeded");
       }
 
-      if (enableSecondarySmearing) {
+      if (enableSecondarySmearing ||
+          fastPrimaryTrackerSettings.fastTrackPrimaries ||
+          fastPrimaryTrackerSettings.fastTrackShortLivedParticles) {
         fastTracker.emplace_back(std::make_unique<o2::fastsim::FastTracker>());
         fastTracker[icfg]->SetMagneticField(mMagneticField);
         fastTracker[icfg]->SetApplyZacceptance(fastTrackerSettings.applyZacceptance);

@@ -49,6 +49,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
+#include <string>
 #include <vector>
 
 using namespace o2;
@@ -158,6 +159,7 @@ struct doubleOmegaTreeCreator {
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Skimmed dataset processing"};
+  Configurable<bool> cfgApplyEventSelection{"cfgApplyEventSelection", true, "Apply the standard collision event selection"};
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrLUT), "Material correction for the raw V0/cascade fits"};
 
@@ -188,6 +190,7 @@ struct doubleOmegaTreeCreator {
   Configurable<float> mXiWindow{"mXiWindow", 0.02f, "Xi mass window used by the cascade compatibility mode"};
   Configurable<float> mOmegaWindow{"mOmegaWindow", 0.01f, "Omega mass window"};
   Configurable<float> mLambdaWindow{"mLambdaWindow", 0.01f, "Lambda mass window"};
+  Configurable<float> maxDoubleOmegaMass{"maxDoubleOmegaMass", 3.6f, "Maximum double-Omega invariant mass (GeV/c^2)"};
   Configurable<float> minCosPAOmega{"minCosPAOmega", -1.f, "Minimum Omega cosPA relative to the double-Omega decay vertex"};
   Configurable<float> minCosPADirectLambda{"minCosPADirectLambda", -1.f, "Minimum direct-Lambda cosPA relative to the double-Omega decay vertex"};
   Configurable<float> minCosPADoubleOmega{"minCosPADoubleOmega", -1.f, "Minimum double-Omega cosPA relative to the primary vertex"};
@@ -586,16 +589,17 @@ struct doubleOmegaTreeCreator {
     cand.dcaZDirectLambdaToPV = dcaDirectLambda[1];
     cand.dcaXYDirectKaonToPV = dcaDirectKaon[0];
     cand.dcaZDirectKaonToPV = dcaDirectKaon[1];
+    cand.mass = std::sqrt(std::max(0.f, massSquared));
     if (cand.cosPAOmega < minCosPAOmega ||
         cand.cosPADirectLambda < minCosPADirectLambda ||
         cand.cosPADoubleOmega < minCosPADoubleOmega ||
         std::hypot(decayVertex[0], decayVertex[1]) < minDoubleOmegaDecayRadius ||
         std::abs(cand.dcaXYOmegaToPV) < dcaOmegaToPV ||
         std::abs(cand.dcaXYDirectLambdaToPV) < dcaDirectLambdaToPV ||
-        std::abs(cand.dcaXYDirectKaonToPV) < dcaKaonToPV) {
+        std::abs(cand.dcaXYDirectKaonToPV) < dcaKaonToPV ||
+        cand.mass > maxDoubleOmegaMass) {
       return false;
     }
-    cand.mass = std::sqrt(std::max(0.f, massSquared));
     cand.massOmega = omega.massOmega;
     cand.massXi = omega.massXi;
     return true;
@@ -899,7 +903,7 @@ struct doubleOmegaTreeCreator {
         const std::array<int64_t, 3> sourceTrackIds{
           lambdaKaonSource.posTrackId(), lambdaKaonSource.negTrackId(), lambdaKaonSource.bachelorId()};
         bool sharesTrack = false;
-        for (const auto omegaTrackId : omegaTrackIds) {
+        for (const auto& omegaTrackId : omegaTrackIds) {
           if (std::find(sourceTrackIds.begin(), sourceTrackIds.end(), omegaTrackId) != sourceTrackIds.end()) {
             sharesTrack = true;
             break;
@@ -932,10 +936,11 @@ struct doubleOmegaTreeCreator {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
-    if (!collision.sel8() ||
-        std::abs(collision.posZ()) > zVtxMax ||
-        !collision.selection_bit(aod::evsel::kNoITSROFrameBorder) ||
-        !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+    if (cfgApplyEventSelection &&
+        (!collision.sel8() ||
+         std::abs(collision.posZ()) > zVtxMax ||
+         !collision.selection_bit(aod::evsel::kNoITSROFrameBorder) ||
+         !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
       return false;
     }
     if (cfgSkimmedProcessing) {

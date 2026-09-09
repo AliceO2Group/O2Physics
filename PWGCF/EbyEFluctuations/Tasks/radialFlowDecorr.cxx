@@ -82,6 +82,7 @@ struct RadialFlowDecorr {
   static constexpr int KNEtaMax = 2 * static_cast<int>(KMaxAbsEtaCut / KFinestEtaBinWidth + 0.5f) + 1;
 
   static constexpr float KFloatEpsilon = 1e-6f;
+  static constexpr float KEtaEdgeTolerance = 1e-3f; // slack for cfgCutEta being an integer multiple of the bin width
   static constexpr float KBinOffset = 0.5f;
   static constexpr float KPhiMin = 0.f;
   static constexpr int KNbinsZvtx = 240;
@@ -146,8 +147,7 @@ struct RadialFlowDecorr {
   // Observable eta binning, filled at init(): index 0 = full-range reference bin.
   std::vector<float> etaLw;
   std::vector<float> etaUp;
-  int nEta = 9; // active eta-bin count (set in init())
-
+  int nEta = 9;        // active eta-bin count (set in init())
   int nBoot = 0;       // active bootstrap samples (set in init())
   bool doBoot = false; // bootstrap active for this run (base data fluc only)
 
@@ -537,17 +537,7 @@ struct RadialFlowDecorr {
   }
 
   // Per-event two- and three-particle pT correlators (standard method) from the
-  // power sums, following Jia/Zhang/Bhatta (arXiv:2112.03397), Eqs. 2-3, in the
-  // sumpmwk[m][k] = Sum(w^k p^m), sumwk[k] = Sum(w^k) convention.
-  //
-  // The denominators D2 = 1 - tau1 and D3 = 1 - 3 tau1 + 2 tau2 are weighted
-  // counts of distinct ordered pairs/triples, so for positive weights they are
-  // >= 0 and vanish exactly when the bin holds fewer than 2 (resp. 3) particles.
-  // c2/c3 are returned only when their denominator exceeds KFloatEpsilon (>=2 /
-  // >=3 particles); the epsilon floor also rejects the boundary case where
-  // rounding could leave a tiny +/- denominator instead of exactly zero.
-  // Otherwise that field stays NaN, so callers guarding fills with
-  // std::isfinite() simply skip the observable for that bin.
+  // power sums, following arXiv:2112.03397, Eqs. 2-3.
   struct C2C3Result {
     double c2 = std::numeric_limits<double>::quiet_NaN();
     double c3 = std::numeric_limits<double>::quiet_NaN();
@@ -955,8 +945,7 @@ struct RadialFlowDecorr {
     // ---- run type: MC is pinned to the reference binning, DATA is configurable ----
     // cfgEtaBinWidth exists only to vary the DATA measurement. MC (efficiency,
     // closure) always uses 0.2-wide bins so its mean and fluctuation passes stay
-    // mutually consistent and reproducible. MC and DATA are separate jobs here and
-    // never need different binnings at once.
+    // mutually consistent and reproducible.
     const bool isMcRun = (cfgRunGetEff || cfgRunGetMCFlat || cfgRunMCMean || cfgRunMCFluc);
     const bool isDataRun = (cfgRunGetDataFlat || cfgRunDataMean || cfgRunDataFluc);
     if (isMcRun && isDataRun) {
@@ -968,11 +957,6 @@ struct RadialFlowDecorr {
     const float effEtaBinWidth = isMcRun ? mcEtaBinWidth : static_cast<float>(cfgEtaBinWidth);
 
     // ---- observable eta binning (width = effEtaBinWidth) --------------------------
-    // Narrow bins tile [-cfgCutEta, +cfgCutEta] with fixed width effEtaBinWidth;
-    // index 0 is the full-range reference bin. The mirror-pair subevent step
-    // (ietaC = nEta - ietaA) assumes eta = 0 is a bin edge and the tiling is
-    // symmetric about it, which holds iff cfgCutEta / effEtaBinWidth is an integer
-    // -> even bin count. Enforced below.
     {
       const float halfEta = cfgCutEta;
       const float width = effEtaBinWidth;
@@ -980,7 +964,7 @@ struct RadialFlowDecorr {
         LOGF(fatal, "eta bin width must be > 0 (got %.3f)", width);
       }
       const int nHalf = static_cast<int>(std::lround(halfEta / width));
-      if (nHalf < 1 || std::abs(nHalf * width - halfEta) > 1e-3f) {
+      if (nHalf < 1 || std::abs(nHalf * width - halfEta) > KEtaEdgeTolerance) {
         LOGF(fatal,
              "cfgCutEta=%.3f is not an integer multiple of the eta bin width=%.3f; "
              "eta=0 must be a bin edge for mirror pairing.",

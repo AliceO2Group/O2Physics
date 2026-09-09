@@ -76,6 +76,7 @@ struct HfTaskElectronWeakBoson {
 
   Configurable<float> vtxZ{"vtxZ", 10.f, ""};
 
+  Configurable<bool> applyTrackSys{"applyTrackSys", false, "apply additional track cuts for systematic study"};
   Configurable<float> etaTrMin{"etaTrMin", -1.0f, "minimun track eta"};
   Configurable<float> etaTrMax{"etaTrMax", 1.0f, "maximum track eta"};
   Configurable<float> etaEmcMax{"etaEmcMax", 0.6f, "maximum track eta"};
@@ -173,7 +174,7 @@ struct HfTaskElectronWeakBoson {
   using SelectedClusters = o2::aod::EMCALClusters;
   // PbPb
   // using TrackEle = o2::soa::Join<o2::aod::Tracks, o2::aod::FullTracks, o2::aod::TracksExtra, o2::aod::TracksDCA, o2::aod::TrackSelection, o2::aod::pidTPCFullEl>;
-  using TrackEle = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::FullTracks, o2::aod::TracksExtra, o2::aod::TracksDCA, o2::aod::TrackSelection, o2::aod::pidTPCFullEl>;
+  using TrackEle = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::FullTracks, o2::aod::TracksExtra, o2::aod::TracksDCA, o2::aod::TrackSelection, o2::aod::pidTPCFullEl, o2::aod::pidTPCFullPi>;
 
   // pp
   // using TrackEle = o2::soa::Filtered<o2::soa::Join<o2::aod::Tracks, o2::aod::FullTracks, o2::aod::TracksDCA, o2::aod::TrackSelection, o2::aod::pidTPCEl, o2::aod::pidTOFEl>>;
@@ -201,6 +202,7 @@ struct HfTaskElectronWeakBoson {
   ConfigurableAxis confaxisIsoEnergy{"confaxisIsoEnergy", {255, 0, 2.0}, "E_{iso}"};
   ConfigurableAxis confaxisIsoMomentum{"confaxisIsoMomentum", {255, 0, 2.0}, "p_{iso}"};
   ConfigurableAxis confaxisIsoTrack{"confaxisIsoTrack", {25, -0.5, 24.5}, "Isolation Track"};
+  ConfigurableAxis confaxisDedxTrack{"confaxisDedxTrack", {200, -10, 10}, "dEdx"};
   ConfigurableAxis confaxisInvMassZgamma{"confaxisInvMassZgamma", {150, 0, 150}, "M_{ee} (GeV/c^{2})"};
   ConfigurableAxis confaxisInvMassZ{"confaxisInvMassZ", {130, 20, 150}, "M_{ee} (GeV/c^{2})"};
   ConfigurableAxis confaxisZfrag{"confaxisZfrag", {200, 0, 2.0}, "p_{T,h}/p_{T,Z}"};
@@ -259,7 +261,7 @@ struct HfTaskElectronWeakBoson {
     const AxisSpec axisNsigma{100, -5, 5, "N#sigma"};
     const AxisSpec axisNsigmaZneg{100, -5, 5, "N#sigma_{pos}"};
     const AxisSpec axisNsigmaZpos{100, -5, 5, "N#sigma_{neg}"};
-    const AxisSpec axisDedx{150, 0, 150, "dEdx"};
+    const AxisSpec axisDedx{confaxisDedxTrack, "dEdx"};
     const AxisSpec axisE{nBinsE, 0, binEmax, "Energy"};
     const AxisSpec axisM02{100, 0, 1, "M02"};
     const AxisSpec axisM02neg{100, 0, 1, "M02(neg)"};
@@ -343,7 +345,7 @@ struct HfTaskElectronWeakBoson {
     registry.add("hTHnTrMatch", "Track EMC Match", HistType::kTHnSparseF, {axisPt, axisdPhi, axisdEta});
 
     // Z-hadron correlation histograms
-    registry.add("hZHadronDphi", "Z-hadron #Delta#phi correlation", HistType::kTHnSparseF, {axisCentrality, axisSign, axisPtZ, axisDPhiZh, axisDEtaZh, axisZfrag, axisPtHadron});
+    registry.add("hZHadronDphi", "Z-hadron #Delta#phi correlation", HistType::kTHnSparseF, {axisCentrality, axisSign, axisPtZ, axisDPhiZh, axisDEtaZh, axisZfrag, axisPtHadron, axisDedx});
     registry.add("hZptSpectrum", "Z boson p_{T} spectrum", kTH2F, {{axisSign}, {axisPtZ}});
 
     // hisotgram for EMCal trigger
@@ -646,28 +648,32 @@ struct HfTaskElectronWeakBoson {
     // track loop
     for (const auto& track : tracks) {
 
+      if (!track.isGlobalTrackWoPtEta()) {
+        continue;
+      }
       if (std::abs(track.eta()) > etaTrMax) {
         continue;
       }
-      if (track.tpcNClsCrossedRows() < nclcrossTpcMin) {
-        continue;
+      if (applyTrackSys) {
+        if (track.tpcNClsCrossedRows() < nclcrossTpcMin) {
+          continue;
+        }
+        if (std::abs(track.dcaXY()) > dcaxyMax) {
+          continue;
+        }
+        if (track.itsChi2NCl() > chi2ItsMax) {
+          continue;
+        }
+        if (track.tpcChi2NCl() > chi2TpcMax) {
+          continue;
+        }
+        if (track.tpcNClsFound() < nclTpcMin) {
+          continue;
+        }
+        if (track.itsNCls() < nclItsMin) {
+          continue;
+        }
       }
-      if (std::abs(track.dcaXY()) > dcaxyMax) {
-        continue;
-      }
-      if (track.itsChi2NCl() > chi2ItsMax) {
-        continue;
-      }
-      if (track.tpcChi2NCl() > chi2TpcMax) {
-        continue;
-      }
-      if (track.tpcNClsFound() < nclTpcMin) {
-        continue;
-      }
-      if (track.itsNCls() < nclItsMin) {
-        continue;
-      }
-
       registry.fill(HIST("hEta"), track.eta());
       registry.fill(HIST("hITSchi2"), track.itsChi2NCl());
       registry.fill(HIST("hTPCchi2"), track.tpcChi2NCl());
@@ -694,7 +700,7 @@ struct HfTaskElectronWeakBoson {
           eop,
           isoEnergy,
           isoMomentum,
-          track.tpcNSigmaEl(),
+          track.tpcNSigmaPi() * track.sign(),
           m02,
           trackCount,
           track.tpcNClsCrossedRows(),
@@ -873,7 +879,7 @@ struct HfTaskElectronWeakBoson {
           double const deltaPhi = RecoDecay::constrainAngle(trackAss.phi - zBoson.phi, -o2::constants::math::PIHalf);
           double const ptRatio = trackAss.pt / zBoson.pt;
           double const deltaEta = zBoson.eta - trackAss.eta;
-          registry.fill(HIST("hZHadronDphi"), centrality, zBoson.charge, zBoson.pt, deltaPhi, deltaEta, ptRatio, trackAss.pt);
+          registry.fill(HIST("hZHadronDphi"), centrality, zBoson.charge, zBoson.pt, deltaPhi, deltaEta, ptRatio, trackAss.pt, trackAss.dedxTrk);
         }
       }
     } // end of Z-hadron correlation

@@ -68,6 +68,18 @@ using namespace constants::math;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, (DEFAULT), (HELP)}; // NOLINT(bugprone-macro-parentheses)
 
+template <typename T, typename P>
+auto readMatrix(Array2D<T> const& mat, P& array)
+{
+  for (auto i = 0; i < static_cast<int>(mat.rows); ++i) {
+    for (auto j = 0; j < static_cast<int>(mat.cols); ++j) {
+      array[i][j] = mat(i, j);
+    }
+  }
+
+  return;
+}
+
 static constexpr std::array<std::array<float, 3>, 20> LongArrayFloat = {{{{1.1, 2.1, 3.1}}, {{1.2, 2.2, 3.2}}, {{1.3, 2.3, 3.3}}, {{-1.1, -2.1, -3.1}}, {{-1.2, -2.2, -3.2}}, {{-1.3, -2.3, -3.3}}, {{1.1, 1.1, 1.1}}, {{1.2, 1.2, 1.2}}, {{1.3, 1.3, 1.3}}, {{-1.1, -1.1, -1.1}}, {{-1.2, -1.2, -1.2}}, {{-1.3, -1.3, -1.3}}, {{1.1, 1.1, 1.1}}, {{1.2, 1.2, 1.2}}, {{1.3, 1.3, 1.3}}, {{-1.1, -1.1, -1.1}}, {{-1.2, -1.2, -1.2}}, {{-1.3, -1.3, -1.3}}, {{1.1, 1.1, 1.1}}, {{1.2, 1.2, 1.2}}}};
 static constexpr std::array<std::array<int, 3>, 20> LongArrayInt = {{{{1, 2, 3}}, {{1, 2, 3}}, {{1, 2, 3}}, {{0, 0, 0}}, {{0, 0, 0}}, {{0, 0, 0}}, {{1, 1, 1}}, {{1, 1, 1}}, {{1, 1, 1}}, {{0, 0, 0}}, {{0, 0, 0}}, {{0, 0, 0}}, {{1, 1, 1}}, {{1, 1, 1}}, {{1, 1, 1}}, {{0, 0, 0}}, {{0, 0, 0}}, {{0, 0, 0}}, {{1, 1, 1}}, {{1, 1, 1}}}};
 
@@ -77,14 +89,10 @@ struct CorrReso {
 
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, true, "Use additional event cut on mult correlations")
   O2_DEFINE_CONFIGURABLE(cfgZVtxCut, float, 10.0f, "Accepted z-vertex range")
-  O2_DEFINE_CONFIGURABLE(cfgUseTransverseMomentum, bool, false, "Use transverse momentum for correlation container")
   O2_DEFINE_CONFIGURABLE(cfgQaCheck, bool, true, "Enable QA histograms for event selection")
   O2_DEFINE_CONFIGURABLE(cfgStrictTrackCounter, bool, false, "Strict track counter for multiplicity correlation cut, counts only tracks that pass all cuts and are used in the correlation")
-  O2_DEFINE_CONFIGURABLE(cfgRefpTt, bool, false, "Apply upper pT cut on reference tracks")
-  O2_DEFINE_CONFIGURABLE(cfgRefpTMax, float, 3.0f, "maximum pT for reference tracks if cfgRefpTt is true")
   O2_DEFINE_CONFIGURABLE(cfgMinMultForCorrelations, int, 0, "minimum multiplicity for correlations")
   O2_DEFINE_CONFIGURABLE(cfgMaxMultForCorrelations, int, 20, "maximum multiplicity for correlations")
-  O2_DEFINE_CONFIGURABLE(cfgRefMultiplicity, bool, false, "Use multiplicity of reference tracks for multiplicity correlation cut instead of Nch")
   Configurable<std::vector<int>> cfgRunRemoveList{"cfgRunRemoveList", std::vector<int>{-1}, "excluded run numbers"};
   O2_DEFINE_CONFIGURABLE(cfgEvSelRCTflags, std::string, "", "keep empty to disable, usage: 'CentralBarrelTracking (CBT)', 'CBT_hadronPID' ")
 
@@ -111,7 +119,6 @@ struct CorrReso {
   O2_DEFINE_CONFIGURABLE(cfgCentralityWeight, std::string, "", "CCDB path to centrality weight object")
   O2_DEFINE_CONFIGURABLE(cfgLocalEfficiency, bool, false, "Use local efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgLocalEfficiencyNch, bool, false, "Use local multiplicity dependent efficiency object");
-  O2_DEFINE_CONFIGURABLE(cfgUseEventWeights, bool, false, "Use event weights for mixed event")
   O2_DEFINE_CONFIGURABLE(cfgCentEstimator, int, 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FT0A")
 
   struct : ConfigurableGroup {
@@ -148,15 +155,14 @@ struct CorrReso {
 
   struct : ConfigurableGroup {
     O2_DEFINE_CONFIGURABLE(cfgUseOnlyTPC, bool, true, "Use only TPC PID for daughter selection")
-    O2_DEFINE_CONFIGURABLE(cfgUseAntiLambda, bool, true, "Use AntiLambda candidates for analysis")
     O2_DEFINE_CONFIGURABLE(cfgPIDUseRejection, bool, true, "True: use exclusion exclusion criteria for PID determination, false: don't use exclusion")
     O2_DEFINE_CONFIGURABLE(cfgTpcCut, float, 3.0f, "TPC N-sigma cut for pions, kaons, protons")
     O2_DEFINE_CONFIGURABLE(cfgPIDParticle, int, 0, "4 = kshort, 5 = lambda, 6 = phi, 0 for no PID")
     O2_DEFINE_CONFIGURABLE(cfgUseItsPID, bool, true, "Use ITS PID for particle identification")
     O2_DEFINE_CONFIGURABLE(cfgTofPtCut, float, 0.4f, "Minimum pt to use TOF N-sigma")
     Configurable<LabeledArray<float>> nSigmas{"nSigmas", {LongArrayFloat.front().data(), 6, 3, {"UpCut_pi", "UpCut_ka", "UpCut_pr", "LowCut_pi", "LowCut_ka", "LowCut_pr"}, {"TPC", "TOF", "ITS"}}, "Labeled array for n-sigma values for TPC, TOF, ITS for pions, kaons, protons (positive and negative)"};
-    Configurable<LabeledArray<float>> cfgResoCuts{"cfgResoCuts", {LongArrayFloat.front().data(), 12, 3, {"cos_PAs", "massMin", "massMax", "PosTrackPt", "NegTrackPt", "DCAPosToPVMin", "DCANegToPVMin", "Lifetime", "RadiusMin", "RadiusMax", "Rapidity", "ArmPodMinVal"}, {"K0", "Lambda", "Phi"}}, "Labeled array (float) for various cuts on resonances"};
-    Configurable<LabeledArray<int>> cfgResoSwitches{"cfgResoSwitches", {LongArrayInt.front().data(), 6, 3, {"UseCosPA", "NMassBins", "DCABetDaug", "UseProperLifetime", "UseV0Radius", "UseArmPodCut"}, {"K0", "Lambda", "Phi"}}, "Labeled array (int) for various cuts on resonances"};
+    Configurable<LabeledArray<float>> cfgResoCuts{"cfgResoCuts", {LongArrayFloat.front().data(), 13, 3, {"cos_PAs", "massMin", "massMax", "PosTrackPt", "NegTrackPt", "DCAPosToPVMin", "DCANegToPVMin", "Lifetime", "RadiusMin", "RadiusMax", "Rapidity", "ArmPodMinVal", "DCABetDaug"}, {"K0", "Lambda", "Phi"}}, "Labeled array (float) for various cuts on resonances"};
+    Configurable<LabeledArray<int>> cfgResoSwitches{"cfgResoSwitches", {LongArrayInt.front().data(), 6, 3, {"UseCosPA", "NMassBins", "UseDCABetDaug", "UseProperLifetime", "UseV0Radius", "UseArmPodCut"}, {"K0", "Lambda", "Phi"}}, "Labeled array (int) for various cuts on resonances"};
   } cfgPIDConfigs;
 
   Configurable<float> cfgCutFV0{"cfgCutFV0", 50., "FV0A threshold"};
@@ -178,7 +184,6 @@ struct CorrReso {
   ConfigurableAxis axisVtxMix{"axisVtxMix", {VARIABLE_WIDTH, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, "vertex axis for mixed event histograms"};
   ConfigurableAxis axisMultMix{"axisMultMix", {VARIABLE_WIDTH, 0, 10, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260}, "multiplicity / centrality axis for mixed event histograms"};
   ConfigurableAxis axisSample{"axisSample", {cfgSampleSize, 0, cfgSampleSize}, "sample axis for histograms"};
-  ConfigurableAxis axisNch{"axisNch", {VARIABLE_WIDTH, 0, 10, 50, 70, 100}, "multiplicity axis for correlation container"};
 
   ConfigurableAxis axisNsigmaTPC{"axisNsigmaTPC", {80, -5, 5}, "nsigmaTPC axis"};
   ConfigurableAxis axisNsigmaTOF{"axisNsigmaTOF", {80, -5, 5}, "nsigmaTOF axis"};
@@ -221,6 +226,12 @@ struct CorrReso {
   OutputObj<CorrelationContainer> mixedTpcFt0c{"mixedEvent_TPC_FT0C"};
 
   HistogramRegistry registry{"registry"};
+
+  // For Labelled array value containers
+  std::array<std::array<float, 3>, 13> resoCutVals{};
+  std::array<std::array<int, 3>, 6> resoSwitchVals{};
+  std::array<std::array<int, 1>, 14> eventCuts{};
+  std::array<std::array<float, 3>, 6> nSigmaVals{};
 
   // define global variables
   TRandom3* gRandom = new TRandom3();
@@ -272,12 +283,13 @@ struct CorrReso {
     kRadiusMax,
     kRapidity,
     kArmPodMinVal,
+    kDCABetDaug,
     kNParticleCuts
   };
   enum ResoParticleSwitches {
     kUseCosPA = 0,
     kMassBins,
-    kDCABetDaug,
+    kUseDCABetDaug,
     kUseProperLifetime,
     kUseV0Radius,
     kUseArmPodCut,
@@ -337,26 +349,31 @@ struct CorrReso {
       return;
     }
 
+    readMatrix(cfgPIDConfigs.cfgResoCuts->getData(), resoCutVals);
+    readMatrix(cfgPIDConfigs.cfgResoSwitches->getData(), resoSwitchVals);
+    readMatrix(cfgUseEventCuts->getData(), eventCuts);
+    readMatrix(cfgPIDConfigs.nSigmas->getData(), nSigmaVals);
+
     // Creating mass axis depending on particle - 4 = kshort, 5 = lambda, 6 = phi
     AxisSpec axisInvMass = {10, 0, 1, "mass"};
     if (cfgPIDConfigs.cfgPIDParticle == kK0) {
-      const auto bins = cfgPIDConfigs.cfgResoSwitches->getData()[kMassBins][iK0];
-      const auto min = cfgPIDConfigs.cfgResoCuts->getData()[kMassMin][iK0];
-      const auto max = cfgPIDConfigs.cfgResoCuts->getData()[kMassMax][iK0];
+      const auto bins = resoSwitchVals[kMassBins][iK0];
+      const auto min = resoCutVals[kMassMin][iK0];
+      const auto max = resoCutVals[kMassMax][iK0];
 
       axisInvMass = {bins, min, max, "M_{#pi^{+}#pi^{-}} (GeV/c^{2})"};
     }
     if (cfgPIDConfigs.cfgPIDParticle == kLambda) {
-      const auto bins = cfgPIDConfigs.cfgResoSwitches->getData()[kMassBins][iLambda];
-      const auto min = cfgPIDConfigs.cfgResoCuts->getData()[kMassMin][iLambda];
-      const auto max = cfgPIDConfigs.cfgResoCuts->getData()[kMassMax][iLambda];
+      const auto bins = resoSwitchVals[kMassBins][iLambda];
+      const auto min = resoCutVals[kMassMin][iLambda];
+      const auto max = resoCutVals[kMassMax][iLambda];
 
       axisInvMass = {bins, min, max, "M_{p#pi} (GeV/c^{2})"};
     }
     if (cfgPIDConfigs.cfgPIDParticle == kPhi) {
-      const auto bins = cfgPIDConfigs.cfgResoSwitches->getData()[kMassBins][iPhi];
-      const auto min = cfgPIDConfigs.cfgResoCuts->getData()[kMassMin][iPhi];
-      const auto max = cfgPIDConfigs.cfgResoCuts->getData()[kMassMax][iPhi];
+      const auto bins = resoSwitchVals[kMassBins][iPhi];
+      const auto min = resoCutVals[kMassMin][iPhi];
+      const auto max = resoCutVals[kMassMax][iPhi];
 
       axisInvMass = {bins, min, max, "M_{K^{+}K^{-}} (GeV/c^{2})"};
     }
@@ -389,12 +406,10 @@ struct CorrReso {
         registry.add("PrPlusTOF_La", "", {HistType::kTH2D, {{axisPtFiner, axisNsigmaTOF}}});
         registry.add("PiMinusTOF_La", "", {HistType::kTH2D, {{axisPtFiner, axisNsigmaTOF}}});
 
-        if (cfgPIDConfigs.cfgUseAntiLambda) {
-          registry.add("PrMinusTPC_Al", "", {HistType::kTH2D, {{axisPtFiner, axisNsigmaTPC}}});
-          registry.add("PiPlusTPC_Al", "", {HistType::kTH2D, {{axisPtFiner, axisNsigmaTPC}}});
-          registry.add("PrMinusTOF_Al", "", {HistType::kTH2D, {{axisPtFiner, axisNsigmaTOF}}});
-          registry.add("PiPlusTOF_Al", "", {HistType::kTH2D, {{axisPtFiner, axisNsigmaTOF}}});
-        }
+        registry.add("PrMinusTPC_Al", "", {HistType::kTH2D, {{axisPtFiner, axisNsigmaTPC}}});
+        registry.add("PiPlusTPC_Al", "", {HistType::kTH2D, {{axisPtFiner, axisNsigmaTPC}}});
+        registry.add("PrMinusTOF_Al", "", {HistType::kTH2D, {{axisPtFiner, axisNsigmaTOF}}});
+        registry.add("PiPlusTOF_Al", "", {HistType::kTH2D, {{axisPtFiner, axisNsigmaTOF}}});
 
         registry.add("hLambdaPhi", "", {HistType::kTH1D, {axisPhi}});
         registry.add("hLambdaEta", "", {HistType::kTH1D, {axisEta}});
@@ -450,7 +465,7 @@ struct CorrReso {
     }
 
     // Multiplicity correlation cuts
-    if (cfgUseEventCuts->getData()[kUseMultCorrCut][kEvCut1] != 0) {
+    if (eventCuts[kUseMultCorrCut][kEvCut1] != 0) {
       cfgFuncParas.multT0CCutPars = cfgFuncParas.cfgMultT0CCutPars;
       cfgFuncParas.multPVT0CCutPars = cfgFuncParas.cfgMultPVT0CCutPars;
       cfgFuncParas.multGlobalPVCutPars = cfgFuncParas.cfgMultGlobalPVCutPars;
@@ -475,7 +490,7 @@ struct CorrReso {
       cfgFuncParas.fMultMultV0ACutHigh = new TF1("fMultMultV0ACutHigh", cfgFuncParas.cfgMultMultV0AHighCutFunction->c_str(), 0, 4000);
       cfgFuncParas.fMultMultV0ACutHigh->SetParameters(cfgFuncParas.multMultV0ACutPars.data());
     }
-    if (cfgUseEventCuts->getData()[kUseT0AV0ACut][kEvCut1] != 0) {
+    if (eventCuts[kUseT0AV0ACut][kEvCut1] != 0) {
       cfgFuncParas.fT0AV0AMean = new TF1("fT0AV0AMean", "[0]+[1]*x", 0, 200000);
       cfgFuncParas.fT0AV0AMean->SetParameters(-1601.0581, 9.417652e-01);
       cfgFuncParas.fT0AV0ASigma = new TF1("fT0AV0ASigma", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 200000);
@@ -584,13 +599,15 @@ struct CorrReso {
   bool eventRct(TCollision const& collision, const bool fillCounter)
   {
     if (!rctChecker(collision)) {
-      if (fillCounter)
+      if (fillCounter) {
         registry.fill(HIST("hEventCountRct"), 0.5);
+      }
 
       return 0;
     }
-    if (fillCounter)
+    if (fillCounter) {
       registry.fill(HIST("hEventCountRct"), 1.5);
+    }
 
     return 1;
   }
@@ -598,118 +615,127 @@ struct CorrReso {
   template <typename TCollision>
   bool eventSelected(TCollision const& collision, const int mult, const bool fillCounter)
   {
-    if (cfgUseEventCuts->getData()[kUseNoTimeFrameBorder][kEvCut1] && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+    if (eventCuts[kUseNoTimeFrameBorder][kEvCut1] && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       return 0;
     }
-    if (fillCounter && cfgUseEventCuts->getData()[kUseNoTimeFrameBorder][kEvCut1])
+    if (fillCounter && eventCuts[kUseNoTimeFrameBorder][kEvCut1]) {
       registry.fill(HIST("hEventCount"), kUseNoTimeFrameBorder);
-
-    if (cfgUseEventCuts->getData()[kUseNoITSROFrameBorder][kEvCut1] && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+    }
+    if (eventCuts[kUseNoITSROFrameBorder][kEvCut1] && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       return 0;
     }
-    if (fillCounter && cfgUseEventCuts->getData()[kUseNoITSROFrameBorder][kEvCut1])
+    if (fillCounter && eventCuts[kUseNoITSROFrameBorder][kEvCut1]) {
       registry.fill(HIST("hEventCount"), kUseNoITSROFrameBorder);
-
-    if (cfgUseEventCuts->getData()[kUseNoSameBunchPileup][kEvCut1] && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+    }
+    if (eventCuts[kUseNoSameBunchPileup][kEvCut1] && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       // rejects collisions which are associated with the same "found-by-T0" bunch crossing
       // https://indico.cern.ch/event/1396220/#1-event-selection-with-its-rof
       return 0;
     }
-    if (fillCounter && cfgUseEventCuts->getData()[kUseNoSameBunchPileup][kEvCut1])
+    if (fillCounter && eventCuts[kUseNoSameBunchPileup][kEvCut1]) {
       registry.fill(HIST("hEventCount"), kUseNoSameBunchPileup);
-
-    if (cfgUseEventCuts->getData()[kUseGoodZvtxFT0vsPV][kEvCut1] && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    }
+    if (eventCuts[kUseGoodZvtxFT0vsPV][kEvCut1] && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference
       // use this cut at low multiplicities with caution
       return 0;
     }
-    if (fillCounter && cfgUseEventCuts->getData()[kUseGoodZvtxFT0vsPV][kEvCut1])
+    if (fillCounter && eventCuts[kUseGoodZvtxFT0vsPV][kEvCut1]) {
       registry.fill(HIST("hEventCount"), kUseGoodZvtxFT0vsPV);
-
-    if (cfgUseEventCuts->getData()[kUseNoCollInTimeRangeStandard][kEvCut1] && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+    }
+    if (eventCuts[kUseNoCollInTimeRangeStandard][kEvCut1] && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       // no collisions in specified time range
       return 0;
     }
 
-    if (fillCounter && cfgUseEventCuts->getData()[kUseNoCollInTimeRangeStandard][kEvCut1])
+    if (fillCounter && eventCuts[kUseNoCollInTimeRangeStandard][kEvCut1]) {
       registry.fill(HIST("hEventCount"), kUseNoCollInTimeRangeStandard);
-
-    if (cfgUseEventCuts->getData()[kUseGoodITSLayersAll][kEvCut1] && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+    }
+    if (eventCuts[kUseGoodITSLayersAll][kEvCut1] && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
       // from Jan 9 2025 AOT meeting
       // cut time intervals with dead ITS staves
       return 0;
     }
 
-    if (fillCounter && cfgUseEventCuts->getData()[kUseGoodITSLayersAll][kEvCut1])
+    if (fillCounter && eventCuts[kUseGoodITSLayersAll][kEvCut1]) {
       registry.fill(HIST("hEventCount"), kUseGoodITSLayersAll);
-
-    if (cfgUseEventCuts->getData()[kUseGoodITSLayer0123][kEvCut1] && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123)) {
+    }
+    if (eventCuts[kUseGoodITSLayer0123][kEvCut1] && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123)) {
       return 0;
     }
-    if (fillCounter && cfgUseEventCuts->getData()[kUseGoodITSLayer0123][kEvCut1])
+    if (fillCounter && eventCuts[kUseGoodITSLayer0123][kEvCut1]) {
       registry.fill(HIST("hEventCount"), kUseGoodITSLayer0123);
-
-    if (cfgUseEventCuts->getData()[kUseNoCollInRofStandard][kEvCut1] && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+    }
+    if (eventCuts[kUseNoCollInRofStandard][kEvCut1] && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
       // no other collisions in this Readout Frame with per-collision multiplicity above threshold
       return 0;
     }
 
-    if (fillCounter && cfgUseEventCuts->getData()[kUseNoCollInRofStandard][kEvCut1])
+    if (fillCounter && eventCuts[kUseNoCollInRofStandard][kEvCut1]) {
       registry.fill(HIST("hEventCount"), kUseNoCollInRofStandard);
-
-    if (cfgUseEventCuts->getData()[kUseNoHighMultCollInPrevRof][kEvCut1] && !collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+    }
+    if (eventCuts[kUseNoHighMultCollInPrevRof][kEvCut1] && !collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
       // veto an event if FT0C amplitude in previous ITS ROF is above threshold
       return 0;
     }
-    if (fillCounter && cfgUseEventCuts->getData()[kUseNoHighMultCollInPrevRof][kEvCut1])
+    if (fillCounter && eventCuts[kUseNoHighMultCollInPrevRof][kEvCut1]) {
       registry.fill(HIST("hEventCount"), kUseNoHighMultCollInPrevRof);
-
+    }
     auto multNTracksPV = collision.multNTracksPV();
     auto occupancy = collision.trackOccupancyInTimeRange();
 
-    if (cfgUseEventCuts->getData()[kUseOccupancy][kEvCut1] && (occupancy < cfgEventSelection.cfgCutOccupancyLow || occupancy > cfgEventSelection.cfgCutOccupancyHigh)) {
+    if (eventCuts[kUseOccupancy][kEvCut1] && (occupancy < cfgEventSelection.cfgCutOccupancyLow || occupancy > cfgEventSelection.cfgCutOccupancyHigh)) {
       return 0;
     }
-    if (fillCounter && cfgUseEventCuts->getData()[kUseOccupancy][kEvCut1])
+    if (fillCounter && eventCuts[kUseOccupancy][kEvCut1]) {
       registry.fill(HIST("hEventCount"), kUseOccupancy);
-
-    if (cfgUseEventCuts->getData()[kUseMultCorrCut][kEvCut1]) {
+    }
+    if (eventCuts[kUseMultCorrCut][kEvCut1]) {
       float cent = getCentrality(collision);
       if (cfgFuncParas.cfgMultPVT0CCutEnabled) {
-        if (multNTracksPV < cfgFuncParas.fMultPVT0CCutLow->Eval(cent))
+        if (multNTracksPV < cfgFuncParas.fMultPVT0CCutLow->Eval(cent)) {
           return 0;
-        if (multNTracksPV > cfgFuncParas.fMultPVT0CCutHigh->Eval(cent))
+        }
+        if (multNTracksPV > cfgFuncParas.fMultPVT0CCutHigh->Eval(cent)) {
           return 0;
+        }
       }
       if (cfgFuncParas.cfgMultT0CCutEnabled) {
-        if (mult < cfgFuncParas.fMultT0CCutLow->Eval(cent))
+        if (mult < cfgFuncParas.fMultT0CCutLow->Eval(cent)) {
           return 0;
-        if (mult > cfgFuncParas.fMultT0CCutHigh->Eval(cent))
+        }
+        if (mult > cfgFuncParas.fMultT0CCutHigh->Eval(cent)) {
           return 0;
+        }
       }
       if (cfgFuncParas.cfgMultGlobalPVCutEnabled) {
-        if (mult < cfgFuncParas.fMultGlobalPVCutLow->Eval(multNTracksPV))
+        if (mult < cfgFuncParas.fMultGlobalPVCutLow->Eval(multNTracksPV)) {
           return 0;
-        if (mult > cfgFuncParas.fMultGlobalPVCutHigh->Eval(multNTracksPV))
+        }
+        if (mult > cfgFuncParas.fMultGlobalPVCutHigh->Eval(multNTracksPV)) {
           return 0;
+        }
       }
       if (cfgFuncParas.cfgMultMultV0ACutEnabled) {
-        if (collision.multFV0A() < cfgFuncParas.fMultMultV0ACutLow->Eval(mult))
+        if (collision.multFV0A() < cfgFuncParas.fMultMultV0ACutLow->Eval(mult)) {
           return 0;
-        if (collision.multFV0A() > cfgFuncParas.fMultMultV0ACutHigh->Eval(mult))
+        }
+        if (collision.multFV0A() > cfgFuncParas.fMultMultV0ACutHigh->Eval(mult)) {
           return 0;
+        }
       }
     }
 
-    if (fillCounter && cfgUseEventCuts->getData()[kUseMultCorrCut][kEvCut1])
+    if (fillCounter && eventCuts[kUseMultCorrCut][kEvCut1]) {
       registry.fill(HIST("hEventCount"), kUseMultCorrCut);
-
+    }
     // V0A T0A 5 sigma cut
-    if (cfgUseEventCuts->getData()[kUseT0AV0ACut][kEvCut1] && (std::fabs(collision.multFV0A() - cfgFuncParas.fT0AV0AMean->Eval(collision.multFT0A())) > cfgFuncParas.cfgV0AT0Acut * cfgFuncParas.fT0AV0ASigma->Eval(collision.multFT0A())))
+    if (eventCuts[kUseT0AV0ACut][kEvCut1] && (std::fabs(collision.multFV0A() - cfgFuncParas.fT0AV0AMean->Eval(collision.multFT0A())) > cfgFuncParas.cfgV0AT0Acut * cfgFuncParas.fT0AV0ASigma->Eval(collision.multFT0A()))) {
       return 0;
-    if (fillCounter && cfgUseEventCuts->getData()[kUseT0AV0ACut][kEvCut1])
+    }
+    if (fillCounter && eventCuts[kUseT0AV0ACut][kEvCut1]) {
       registry.fill(HIST("hEventCount"), kUseT0AV0ACut);
-
+    }
     return 1;
   }
 
@@ -759,7 +785,7 @@ struct CorrReso {
     }
 
     auto occupancy = collision.trackOccupancyInTimeRange();
-    if (cfgUseEventCuts->getData()[kUseOccupancy][kEvCut1] && (occupancy < cfgEventSelection.cfgCutOccupancyLow || occupancy > cfgEventSelection.cfgCutOccupancyHigh)) {
+    if (eventCuts[kUseOccupancy][kEvCut1] && (occupancy > cfgEventSelection.cfgCutOccupancyLow && occupancy < cfgEventSelection.cfgCutOccupancyHigh)) {
       registry.fill(HIST("hPassedEventSelection"), kUseOccupancy);
     }
   }
@@ -806,7 +832,7 @@ struct CorrReso {
   template <typename TTrack>
   bool trackSelected(TTrack const& track)
   {
-    return ((track.tpcNClsFound() >= cfgTrackCuts.cfgCutTPCclu) && (track.tpcNClsCrossedRows() >= cfgTrackCuts.cfgCutTPCCrossedRows) && (track.itsNCls() >= cfgTrackCuts.cfgCutITSclu) && (track.tpcChi2NCl() < cfgTrackCuts.cfgCutChi2prTPCcls) && (track.dcaZ() < cfgTrackCuts.cfgCutDCAz));
+    return ((track.tpcNClsFound() >= cfgTrackCuts.cfgCutTPCclu) && (track.tpcNClsCrossedRows() >= cfgTrackCuts.cfgCutTPCCrossedRows) && (track.itsNCls() >= cfgTrackCuts.cfgCutITSclu) && (track.tpcChi2NCl() < cfgTrackCuts.cfgCutChi2prTPCcls) && (std::abs(track.dcaZ()) < cfgTrackCuts.cfgCutDCAz));
   }
 
   void loadGain(aod::BCsWithTimestamps::iterator const& bc)
@@ -841,8 +867,9 @@ struct CorrReso {
       id = ft0.channelC()[iCh];
       id = id + Ft0IndexA;
       ampl = ft0.amplitudeC()[iCh];
-      if (system == SameEvent)
+      if (system == SameEvent) {
         registry.fill(HIST("FT0Amp"), id, ampl);
+      }
       ampl = ampl / cstFT0RelGain[id];
       if (system == SameEvent) {
         registry.fill(HIST("FT0AmpCorrect"), id, ampl);
@@ -850,8 +877,9 @@ struct CorrReso {
     } else if (fitType == kFT0A) {
       id = ft0.channelA()[iCh];
       ampl = ft0.amplitudeA()[iCh];
-      if (system == SameEvent)
+      if (system == SameEvent) {
         registry.fill(HIST("FT0Amp"), id, ampl);
+      }
       ampl = ampl / cstFT0RelGain[id];
       if (system == SameEvent) {
         registry.fill(HIST("FT0AmpCorrect"), id, ampl);
@@ -876,13 +904,13 @@ struct CorrReso {
     bool isPion = false;
     bool isKaon = false;
     bool isProton = false;
-    bool isDetectedPion = nSigmaToUse[iPionUp] < cfgPIDConfigs.nSigmas->getData()[iPionUp][kIndexDetector] && nSigmaToUse[iPionUp] > cfgPIDConfigs.nSigmas->getData()[iPionLow][kIndexDetector];
-    bool isDetectedKaon = nSigmaToUse[iKaonUp] < cfgPIDConfigs.nSigmas->getData()[iKaonUp][kIndexDetector] && nSigmaToUse[iKaonUp] > cfgPIDConfigs.nSigmas->getData()[iKaonLow][kIndexDetector];
-    bool isDetectedProton = nSigmaToUse[iProtonUp] < cfgPIDConfigs.nSigmas->getData()[iProtonUp][kIndexDetector] && nSigmaToUse[iProtonUp] > cfgPIDConfigs.nSigmas->getData()[iProtonLow][kIndexDetector];
+    bool isDetectedPion = nSigmaToUse[iPionUp] < nSigmaVals[iPionUp][kIndexDetector] && nSigmaToUse[iPionUp] > nSigmaVals[iPionLow][kIndexDetector];
+    bool isDetectedKaon = nSigmaToUse[iKaonUp] < nSigmaVals[iKaonUp][kIndexDetector] && nSigmaToUse[iKaonUp] > nSigmaVals[iKaonLow][kIndexDetector];
+    bool isDetectedProton = nSigmaToUse[iProtonUp] < nSigmaVals[iProtonUp][kIndexDetector] && nSigmaToUse[iProtonUp] > nSigmaVals[iProtonLow][kIndexDetector];
 
-    bool isTofPion = nSigmaTOF[iPionUp] < cfgPIDConfigs.nSigmas->getData()[iPionUp][kTOF] && nSigmaTOF[iPionUp] > cfgPIDConfigs.nSigmas->getData()[iPionLow][kTOF];
-    bool isTofKaon = nSigmaTOF[iKaonUp] < cfgPIDConfigs.nSigmas->getData()[iKaonUp][kTOF] && nSigmaTOF[iKaonUp] > cfgPIDConfigs.nSigmas->getData()[iKaonLow][kTOF];
-    bool isTofProton = nSigmaTOF[iProtonUp] < cfgPIDConfigs.nSigmas->getData()[iProtonUp][kTOF] && nSigmaTOF[iProtonUp] > cfgPIDConfigs.nSigmas->getData()[iProtonLow][kTOF];
+    bool isTofPion = nSigmaTOF[iPionUp] < nSigmaVals[iPionUp][kTOF] && nSigmaTOF[iPionUp] > nSigmaVals[iPionLow][kTOF];
+    bool isTofKaon = nSigmaTOF[iKaonUp] < nSigmaVals[iKaonUp][kTOF] && nSigmaTOF[iKaonUp] > nSigmaVals[iKaonLow][kTOF];
+    bool isTofProton = nSigmaTOF[iProtonUp] < nSigmaVals[iProtonUp][kTOF] && nSigmaTOF[iProtonUp] > nSigmaVals[iProtonLow][kTOF];
 
     if (track.pt() > cfgPIDConfigs.cfgTofPtCut && !track.hasTOF()) {
       return -1;
@@ -917,29 +945,38 @@ struct CorrReso {
   template <typename TTrack>
   bool selectionV0Daughter(TTrack const& track, int pid)
   {
-    if (!(track.itsNCls() > cfgTrackCuts.cfgCutITSclu))
+    if (!(track.itsNCls() >= cfgTrackCuts.cfgCutITSclu)) {
       return false;
-    if (!track.hasTPC())
+    }
+    if (!track.hasTPC()) {
       return false;
-    if (!(track.tpcNClsFound() >= cfgTrackCuts.cfgCutTPCclu))
+    }
+    if (!(track.tpcNClsFound() >= cfgTrackCuts.cfgCutTPCclu)) {
       return false;
-    if (!(track.tpcNClsCrossedRows() >= cfgTrackCuts.cfgCutTPCCrossedRows))
+    }
+    if (!(track.tpcNClsCrossedRows() >= cfgTrackCuts.cfgCutTPCCrossedRows)) {
       return false;
-    if (!(track.dcaZ() < cfgTrackCuts.cfgCutDCAz))
+    }
+    if (!(std::abs(track.dcaZ()) < cfgTrackCuts.cfgCutDCAz)) {
       return false;
+    }
 
     if (cfgPIDConfigs.cfgUseOnlyTPC) {
-      if (pid == kPions && std::abs(track.tpcNSigmaPi()) > cfgPIDConfigs.cfgTpcCut)
+      if (pid == kPions && std::abs(track.tpcNSigmaPi()) > cfgPIDConfigs.cfgTpcCut) {
         return false;
-      if (pid == kKaons && std::abs(track.tpcNSigmaKa()) > cfgPIDConfigs.cfgTpcCut)
+      }
+      if (pid == kKaons && std::abs(track.tpcNSigmaKa()) > cfgPIDConfigs.cfgTpcCut) {
         return false;
-      if (pid == kProtons && std::abs(track.tpcNSigmaPr()) > cfgPIDConfigs.cfgTpcCut)
+      }
+      if (pid == kProtons && std::abs(track.tpcNSigmaPr()) > cfgPIDConfigs.cfgTpcCut) {
         return false;
+      }
     } else {
       int partIndex = getNsigmaPID(track);
       int pidIndex = partIndex; // 1 = pion, 2 = kaon, 3 = proton
-      if (pidIndex != pid)
+      if (pidIndex != pid) {
         return false;
+      }
     }
 
     return true;
@@ -997,8 +1034,9 @@ struct CorrReso {
     } else {
       effNch = 1.0;
     }
-    if (effNch == 0)
+    if (effNch == 0) {
       return false;
+    }
     weightNch = 1. / effNch;
     return true;
   }
@@ -1016,8 +1054,9 @@ struct CorrReso {
     } else {
       eff = 1.0;
     }
-    if (eff == 0)
+    if (eff == 0) {
       return false;
+    }
     weight = 1. / eff;
     return true;
   }
@@ -1028,11 +1067,6 @@ struct CorrReso {
     double nTracksCorrected = 0;
     float weightNch = 1.0f;
     for (auto const& track : tracks) {
-
-      if (cfgRefMultiplicity) {
-        if (track.pt() > cfgRefpTMax)
-          continue;
-      }
 
       if (!getEfficiencyCorrectionNch(weightNch, track.pt())) {
         continue;
@@ -1056,7 +1090,7 @@ struct CorrReso {
         continue;
       }
 
-      if (!getEfficiencyCorrection(weff1, track1.eta(), track1.pt(), zvtx)) {
+      if (!getEfficiencyCorrection(weff1, track1.pt(), track1.eta(), zvtx)) {
         continue;
       }
 
@@ -1078,43 +1112,53 @@ struct CorrReso {
     auto negtrack = candidate.template negTrack_as<FilteredTracks>();
 
     registry.fill(HIST("hK0Count"), 0.5);
-    if (postrack.pt() < cfgPIDConfigs.cfgResoCuts->getData()[kPosTrackPt][iK0] || negtrack.pt() < cfgPIDConfigs.cfgResoCuts->getData()[kNegTrackPt][iK0])
+    if (postrack.pt() < resoCutVals[kPosTrackPt][iK0] || negtrack.pt() < resoCutVals[kNegTrackPt][iK0]) {
       return false;
+    }
     registry.fill(HIST("hK0Count"), 1.5);
-    if (mk0 < cfgPIDConfigs.cfgResoCuts->getData()[kMassMin][iK0] && mk0 > cfgPIDConfigs.cfgResoCuts->getData()[kMassMax][iK0])
+    if (mk0 < resoCutVals[kMassMin][iK0] || mk0 > resoCutVals[kMassMax][iK0]) {
       return false;
+    }
     registry.fill(HIST("hK0Count"), 2.5);
     // Rapidity correction
-    if (candidate.yK0Short() > cfgPIDConfigs.cfgResoCuts->getData()[kRapidity][iK0])
+    if (std::abs(candidate.yK0Short()) > resoCutVals[kRapidity][iK0]) {
       return false;
+    }
     registry.fill(HIST("hK0Count"), 3.5);
     // DCA cuts for K0short
-    if (std::abs(candidate.dcapostopv()) < cfgPIDConfigs.cfgResoCuts->getData()[kDCAPosToPVMin][iK0] || std::abs(candidate.dcanegtopv()) < cfgPIDConfigs.cfgResoCuts->getData()[kDCANegToPVMin][iK0])
+    if (std::abs(candidate.dcapostopv()) < resoCutVals[kDCAPosToPVMin][iK0] || std::abs(candidate.dcanegtopv()) < resoCutVals[kDCANegToPVMin][iK0]) {
       return false;
+    }
     registry.fill(HIST("hK0Count"), 4.5);
-    if (std::abs(candidate.dcaV0daughters()) > cfgPIDConfigs.cfgResoSwitches->getData()[kDCABetDaug][iK0])
+    if (resoSwitchVals[kUseDCABetDaug][iK0] && std::abs(candidate.dcaV0daughters()) > resoCutVals[kDCABetDaug][iK0]) {
       return false;
+    }
     registry.fill(HIST("hK0Count"), 5.5);
     // v0 radius cuts
-    if (cfgPIDConfigs.cfgResoSwitches->getData()[kUseV0Radius][iK0] && (candidate.v0radius() < cfgPIDConfigs.cfgResoCuts->getData()[kRadiusMin][iK0] || candidate.v0radius() > cfgPIDConfigs.cfgResoCuts->getData()[kRadiusMax][iK0]))
+    if (resoSwitchVals[kUseV0Radius][iK0] && (candidate.v0radius() < resoCutVals[kRadiusMin][iK0] || candidate.v0radius() > resoCutVals[kRadiusMax][iK0])) {
       return false;
+    }
     registry.fill(HIST("hK0Count"), 6.5);
     // cosine pointing angle cuts
-    if (candidate.v0cosPA() < cfgPIDConfigs.cfgResoCuts->getData()[kCosPA][iK0])
+    if (resoSwitchVals[kUseCosPA][iK0] && candidate.v0cosPA() < resoCutVals[kCosPA][iK0]) {
       return false;
+    }
     registry.fill(HIST("hK0Count"), 7.5);
     // Proper lifetime
     float cTauK0 = candidate.distovertotmom(posX, posY, posZ) * massK0Short;
-    if (cfgPIDConfigs.cfgResoSwitches->getData()[kUseProperLifetime][iK0] && std::abs(cTauK0) > cfgPIDConfigs.cfgResoCuts->getData()[kLifeTime][iK0])
+    if (resoSwitchVals[kUseProperLifetime][iK0] && cTauK0 > resoCutVals[kLifeTime][iK0]) {
       return false;
+    }
     registry.fill(HIST("hK0Count"), 8.5);
     // ArmenterosPodolanskiCut
-    if (cfgPIDConfigs.cfgResoSwitches->getData()[kUseArmPodCut][iK0] && (candidate.qtarm() / std::abs(candidate.alpha())) < cfgPIDConfigs.cfgResoCuts->getData()[kArmPodMinVal][iK0])
+    if (resoSwitchVals[kUseArmPodCut][iK0] && (candidate.qtarm() / std::abs(candidate.alpha())) < resoCutVals[kArmPodMinVal][iK0]) {
       return false;
+    }
     registry.fill(HIST("hK0Count"), 9.5);
     // Selection on V0 daughters
-    if (!selectionV0Daughter(postrack, kPions) || !selectionV0Daughter(negtrack, kPions))
+    if (!selectionV0Daughter(postrack, kPions) || !selectionV0Daughter(negtrack, kPions)) {
       return false;
+    }
     registry.fill(HIST("hK0Count"), 10.5);
 
     registry.fill(HIST("hK0Phi"), candidate.phi());
@@ -1141,14 +1185,16 @@ struct CorrReso {
     auto negtrack = candidate.template negTrack_as<FilteredTracks>();
 
     registry.fill(HIST("hLambdaCount"), 0.5);
-    if (postrack.pt() < cfgPIDConfigs.cfgResoCuts->getData()[kPosTrackPt][iLambda] || negtrack.pt() < cfgPIDConfigs.cfgResoCuts->getData()[kNegTrackPt][iLambda])
+    if (postrack.pt() < resoCutVals[kPosTrackPt][iLambda] || negtrack.pt() < resoCutVals[kNegTrackPt][iLambda]) {
       return false;
-
+    }
     registry.fill(HIST("hLambdaCount"), 1.5);
-    if (mlambda > cfgPIDConfigs.cfgResoCuts->getData()[kMassMin][iLambda] && mlambda < cfgPIDConfigs.cfgResoCuts->getData()[kMassMax][iLambda])
+    if (mlambda > resoCutVals[kMassMin][iLambda] && mlambda < resoCutVals[kMassMax][iLambda]) {
       isL = true;
-    if (mantilambda > cfgPIDConfigs.cfgResoCuts->getData()[kMassMin][iLambda] && mantilambda < cfgPIDConfigs.cfgResoCuts->getData()[kMassMax][iLambda])
+    }
+    if (mantilambda > resoCutVals[kMassMin][iLambda] && mantilambda < resoCutVals[kMassMax][iLambda]) {
       isAL = true;
+    }
 
     if (!isL && !isAL) {
       return false;
@@ -1156,48 +1202,57 @@ struct CorrReso {
     registry.fill(HIST("hLambdaCount"), 2.5);
 
     // Rapidity correction
-    if (candidate.yLambda() > cfgPIDConfigs.cfgResoCuts->getData()[kRapidity][iLambda])
+    if (std::abs(candidate.yLambda()) > resoCutVals[kRapidity][iLambda]) {
       return false;
-    registry.fill(HIST("hLambdaCount"), 3.5);
-    // DCA cuts for lambda and antilambda
-    if (isL) {
-      if (std::abs(candidate.dcapostopv()) < cfgPIDConfigs.cfgResoCuts->getData()[kDCAPosToPVMin][iLambda] || std::abs(candidate.dcanegtopv()) < cfgPIDConfigs.cfgResoCuts->getData()[kDCANegToPVMin][iLambda])
-        return false;
     }
-    if (isAL) {
-      if (std::abs(candidate.dcapostopv()) < cfgPIDConfigs.cfgResoCuts->getData()[kDCANegToPVMin][iLambda] || std::abs(candidate.dcanegtopv()) < cfgPIDConfigs.cfgResoCuts->getData()[kDCAPosToPVMin][iLambda])
-        return false;
+    registry.fill(HIST("hLambdaCount"), 3.5);
+
+    // DCA cuts for lambda and antilambda
+    if (isL && (std::abs(candidate.dcapostopv()) < resoCutVals[kDCAPosToPVMin][iLambda] || std::abs(candidate.dcanegtopv()) < resoCutVals[kDCANegToPVMin][iLambda])) {
+      isL = false;
+    }
+    if (isAL && (std::abs(candidate.dcapostopv()) < resoCutVals[kDCANegToPVMin][iLambda] || std::abs(candidate.dcanegtopv()) < resoCutVals[kDCAPosToPVMin][iLambda])) {
+      isAL = false;
+    }
+    if (!isL && !isAL) {
+      return false;
     }
     registry.fill(HIST("hLambdaCount"), 4.5);
-    if (std::abs(candidate.dcaV0daughters()) > cfgPIDConfigs.cfgResoSwitches->getData()[kDCABetDaug][iLambda])
+    if (resoSwitchVals[kUseDCABetDaug][iLambda] && std::abs(candidate.dcaV0daughters()) > resoCutVals[kDCABetDaug][iLambda]) {
       return false;
+    }
     registry.fill(HIST("hLambdaCount"), 5.5);
     // v0 radius cuts
-    if (cfgPIDConfigs.cfgResoSwitches->getData()[kUseV0Radius][iLambda] && (candidate.v0radius() < cfgPIDConfigs.cfgResoCuts->getData()[kRadiusMin][iLambda] || candidate.v0radius() > cfgPIDConfigs.cfgResoCuts->getData()[kRadiusMax][iLambda]))
+    if (resoSwitchVals[kUseV0Radius][iLambda] && (candidate.v0radius() < resoCutVals[kRadiusMin][iLambda] || candidate.v0radius() > resoCutVals[kRadiusMax][iLambda])) {
       return false;
+    }
     registry.fill(HIST("hLambdaCount"), 6.5);
     // cosine pointing angle cuts
-    if (candidate.v0cosPA() < cfgPIDConfigs.cfgResoCuts->getData()[kCosPA][iLambda])
+    if (resoSwitchVals[kUseCosPA][iLambda] && candidate.v0cosPA() < resoCutVals[kCosPA][iLambda]) {
       return false;
+    }
     registry.fill(HIST("hLambdaCount"), 7.5);
     // Proper lifetime
     float cTauLambda = candidate.distovertotmom(posX, posY, posZ) * massLambda;
-    if (cfgPIDConfigs.cfgResoSwitches->getData()[kUseProperLifetime][iLambda] && cTauLambda > cfgPIDConfigs.cfgResoCuts->getData()[kLifeTime][iLambda])
+    if (resoSwitchVals[kUseProperLifetime][iLambda] && cTauLambda > resoCutVals[kLifeTime][iLambda]) {
       return false;
+    }
     registry.fill(HIST("hLambdaCount"), 8.5);
+
     if (isL) {
-      if (!selectionV0Daughter(postrack, kProtons) || !selectionV0Daughter(negtrack, kPions))
-        return false;
+      if (!selectionV0Daughter(postrack, kProtons) || !selectionV0Daughter(negtrack, kPions)) {
+        isL = false;
+      }
     }
     if (isAL) {
-      if (!selectionV0Daughter(postrack, kPions) || !selectionV0Daughter(negtrack, kProtons))
-        return false;
+      if (!selectionV0Daughter(postrack, kPions) || !selectionV0Daughter(negtrack, kProtons)) {
+        isAL = false;
+      }
     }
-    registry.fill(HIST("hLambdaCount"), 9.5);
-
-    if (!cfgPIDConfigs.cfgUseAntiLambda && isAL) { // Reject the track if it is antilambda
+    if (!isL && !isAL) {
       return false;
     }
+    registry.fill(HIST("hLambdaCount"), 9.5);
 
     registry.fill(HIST("hLambdaPhi"), candidate.phi());
     registry.fill(HIST("hLambdaEta"), candidate.eta());
@@ -1207,7 +1262,7 @@ struct CorrReso {
       registry.fill(HIST("PiMinusTPC_La"), negtrack.pt(), negtrack.tpcNSigmaPi());
       registry.fill(HIST("PiMinusTOF_La"), negtrack.pt(), negtrack.tofNSigmaPi());
     }
-    if (cfgPIDConfigs.cfgUseAntiLambda && isAL) {
+    if (isAL) {
       registry.fill(HIST("PrMinusTPC_Al"), negtrack.pt(), negtrack.tpcNSigmaPr());
       registry.fill(HIST("PrMinusTOF_Al"), negtrack.pt(), negtrack.tofNSigmaPr());
       registry.fill(HIST("PiPlusTPC_Al"), postrack.pt(), postrack.tpcNSigmaPi());
@@ -1229,15 +1284,17 @@ struct CorrReso {
 
       // 4 = kshort, 5 = lambda, 6 = phi
       if (cfgPIDConfigs.cfgPIDParticle == kK0) {
-        if (!isSelectedK0(track1, posZ, posY, posX))
+        if (!isSelectedK0(track1, posZ, posY, posX)) {
           continue; // Reject if called for K0 but V0 is not K0
+        }
 
         resoMass = track1.mK0Short();
       }
 
       if (cfgPIDConfigs.cfgPIDParticle == kLambda) {
-        if (!isSelectedLambda(track1, posZ, posY, posX))
+        if (!isSelectedLambda(track1, posZ, posY, posX)) {
           continue; // Reject if called for Lambda but V0 is not lambda
+        }
 
         resoMass = track1.mLambda();
       }
@@ -1325,13 +1382,15 @@ struct CorrReso {
       eventSelectedIndividually(collision);
     }
 
-    if (!collision.sel8())
+    if (!collision.sel8()) {
       return;
+    }
 
     registry.fill(HIST("hEventCount"), kAfterSel8);
 
-    if (!eventRct(collision, true))
+    if (!eventRct(collision, true)) {
       return;
+    }
 
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
 
@@ -1341,11 +1400,13 @@ struct CorrReso {
         return;
     }
 
-    if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), true))
+    if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), true)) {
       return;
+    }
 
-    if (!collision.has_foundFT0())
+    if (!collision.has_foundFT0()) {
       return;
+    }
 
     loadAlignParam(bc.timestamp());
     loadGain(bc);
@@ -1360,8 +1421,9 @@ struct CorrReso {
 
     double multiplicity = static_cast<double>(tracks.size());
 
-    if (cfgQaCheck)
+    if (cfgQaCheck) {
       registry.fill(HIST("Nch"), multiplicity);
+    }
 
     if (cfgStrictTrackCounter) {
       trackCounter(tracks, multiplicity);
@@ -1382,7 +1444,6 @@ struct CorrReso {
 
   void processMixedTpcFt0a(FilteredCollisions const& collisions, FilteredTracks const& tracks, aod::FT0s const&, aod::BCsWithTimestamps const&, aod::V0Datas const& V0s)
   {
-
     auto getTracksSize = [&tracks, this](FilteredCollisions::iterator const& collision) {
       auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
       auto mult = associatedTracks.size();
@@ -1398,36 +1459,42 @@ struct CorrReso {
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
       auto& [collision1, v0s1, collision2, tracks2] = *it;
 
-      if (!collision1.sel8() || !collision2.sel8())
+      if (!collision1.sel8() || !collision2.sel8()) {
         continue;
+      }
 
-      if (!eventRct(collision1, false) || !eventRct(collision2, false))
+      if (!eventRct(collision1, false) || !eventRct(collision2, false)) {
         continue;
+      }
 
       auto tracks1 = tracks.sliceByCached(o2::aod::track::collisionId, collision1.globalIndex(), this->cache);
 
-      if (cfgUseAdditionalEventCut && !eventSelected(collision1, tracks1.size(), false))
+      if (cfgUseAdditionalEventCut && !eventSelected(collision1, tracks1.size(), false)) {
         continue;
-      if (cfgUseAdditionalEventCut && !eventSelected(collision2, tracks2.size(), false))
+      }
+      if (cfgUseAdditionalEventCut && !eventSelected(collision2, tracks2.size(), false)) {
         continue;
+      }
 
-      if (!(collision1.has_foundFT0() && collision2.has_foundFT0()))
+      if (!(collision1.has_foundFT0() && collision2.has_foundFT0())) {
         continue;
+      }
 
       registry.fill(HIST("eventcount"), MixedEvent); // fill the mixed event in the 3 bin
 
       auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
       int currentRunNumber = bc.runNumber();
       if (!cfgRunRemoveList.value.empty()) {
-        if (!isGoodRun(currentRunNumber)) // Rejects runs if bad run number
+        if (!isGoodRun(currentRunNumber)) { // Rejects runs if bad run number
           continue;
+        }
       }
 
       loadAlignParam(bc.timestamp());
       loadCorrection(bc.timestamp());
       float eventWeight = 1.0f;
 
-      double multiplicity = static_cast<double>(tracks.size());
+      double multiplicity = static_cast<double>(tracks1.size());
 
       if (cfgStrictTrackCounter) {
         trackCounter(tracks1, multiplicity);
@@ -1451,25 +1518,30 @@ struct CorrReso {
       eventSelectedIndividually(collision);
     }
 
-    if (!collision.sel8())
+    if (!collision.sel8()) {
       return;
+    }
 
     registry.fill(HIST("hEventCount"), kAfterSel8);
 
-    if (!eventRct(collision, true))
+    if (!eventRct(collision, true)) {
       return;
+    }
 
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int currentRunNumber = bc.runNumber();
     if (!cfgRunRemoveList.value.empty()) {
-      if (!isGoodRun(currentRunNumber)) // Rejects runs if bad run number
+      if (!isGoodRun(currentRunNumber)) { // Rejects runs if bad run number
         return;
+      }
     }
 
-    if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), true))
+    if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), true)) {
       return;
-    if (!collision.has_foundFT0())
+    }
+    if (!collision.has_foundFT0()) {
       return;
+    }
     loadAlignParam(bc.timestamp());
     loadGain(bc);
     loadCorrection(bc.timestamp());
@@ -1482,8 +1554,9 @@ struct CorrReso {
 
     double multiplicity = static_cast<double>(tracks.size());
 
-    if (cfgQaCheck)
+    if (cfgQaCheck) {
       registry.fill(HIST("Nch"), multiplicity);
+    }
 
     if (cfgStrictTrackCounter) {
       trackCounter(tracks, multiplicity);
@@ -1518,29 +1591,35 @@ struct CorrReso {
     Pair<FilteredCollisions, aod::V0Datas, FilteredTracks, MixedBinning> pairs{binningOnVtxAndMult, cfgMinMixEventNum, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
       auto& [collision1, v0s1, collision2, tracks2] = *it;
-      if (!collision1.sel8() || !collision2.sel8())
+      if (!collision1.sel8() || !collision2.sel8()) {
         continue;
+      }
 
-      if (!eventRct(collision1, false) || !eventRct(collision2, false))
+      if (!eventRct(collision1, false) || !eventRct(collision2, false)) {
         continue;
+      }
 
       auto tracks1 = tracks.sliceByCached(o2::aod::track::collisionId, collision1.globalIndex(), this->cache);
 
-      if (cfgUseAdditionalEventCut && !eventSelected(collision1, tracks1.size(), false))
+      if (cfgUseAdditionalEventCut && !eventSelected(collision1, tracks1.size(), false)) {
         continue;
+      }
 
-      if (cfgUseAdditionalEventCut && !eventSelected(collision2, tracks2.size(), false))
+      if (cfgUseAdditionalEventCut && !eventSelected(collision2, tracks2.size(), false)) {
         continue;
+      }
 
-      if (!(collision1.has_foundFT0() && collision2.has_foundFT0()))
+      if (!(collision1.has_foundFT0() && collision2.has_foundFT0())) {
         continue;
+      }
 
       registry.fill(HIST("eventcount"), MixedEvent); // fill the mixed event in the 3 bin
       auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
       int currentRunNumber = bc.runNumber();
       if (!cfgRunRemoveList.value.empty()) {
-        if (!isGoodRun(currentRunNumber)) // Rejects runs if bad run number
+        if (!isGoodRun(currentRunNumber)) { // Rejects runs if bad run number
           continue;
+        }
       }
       loadAlignParam(bc.timestamp());
       loadCorrection(bc.timestamp());

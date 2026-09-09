@@ -143,6 +143,8 @@ struct forwardlambdakzeroanalysis {
     Configurable<bool> requireNoCollInTimeRangeNarrow{"requireNoCollInTimeRangeNarrow", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 2 microseconds (Run 3 only)"};
     Configurable<bool> requireNoCollInROFStd{"requireNoCollInROFStd", false, "reject collisions corrupted by the cannibalism, with other collisions within the same ITS ROF with mult. above a certain threshold (Run 3 only)"};
     Configurable<bool> requireNoCollInROFStrict{"requireNoCollInROFStrict", false, "reject collisions corrupted by the cannibalism, with other collisions within the same ITS ROF (Run 3 only)"};
+    Configurable<bool> requireNoHighMultCollInPrevRof{"requireNoHighMultCollInPrevRof", false, "reject collisions if previous ROF has high multiplicity (Run 3 only)"};
+    Configurable<bool> requireIsGoodITSLayersAll{"requireIsGoodITSLayersAll", false, "require that the number of inactive chips on all ITS layers is below the maximum allowed values"};
     Configurable<bool> requireINEL0{"requireINEL0", true, "require INEL>0 event selection"};
     Configurable<bool> requireINEL1{"requireINEL1", false, "require INEL>1 event selection"};
 
@@ -160,6 +162,15 @@ struct forwardlambdakzeroanalysis {
   } eventSelections;
 
   static constexpr float DefaultLifetimeCuts[1][3] = {{20., 30., 20.}};
+
+  // Armenteros-Podolanski elliptic band: inner and outer ellipse half-axes, in units of the ideal
+  // two-body ones. The alpha and qT axes are scaled independently, so the band can be made much
+  // wider in alpha than in qT (the resolution smears the two very differently, in particular for
+  // Lambda, whose ideal alpha half-width is only ~0.18). A zero inner scale means "no inner ellipse".
+  // Columns: alphaScaleMin, qtScaleMin, alphaScaleMax, qtScaleMax
+  static constexpr float DefaultArmPodBand[3][4] = {{0.60, 0.60, 1.15, 1.35},  // K0Short
+                                                    {0.00, 0.00, 2.00, 1.50},  // Lambda
+                                                    {0.00, 0.00, 1.30, 1.30}}; // D0
 
   struct : ConfigurableGroup {
     std::string prefix = "v0Selections"; // JSON group name
@@ -198,6 +209,27 @@ struct forwardlambdakzeroanalysis {
     // Additional selection on the AP plot (exclusive for K0Short)
     // original equation: lArmPt*5>TMath::Abs(lArmAlpha)
     Configurable<float> armPodCut{"armPodCut", 5.0f, "pT * (cut) > |alpha|, AP cut. Negative: no cut"};
+    Configurable<float> minQt{"minQt", -1, "Min Arm. Qt. Negative value means not cut"};
+    Configurable<float> maxQt{"maxQt", 1e+09, "Max Arm Qt."};
+    Configurable<float> minAlpha{"minAlpha", -1e+09, "Min Arm. Alpha."};
+    Configurable<float> maxAlpha{"maxAlpha", 1e+09, "Max Arm Alpha."};
+
+    // Armenteros-Podolanski elliptic band: keeps only the two-body decay arc of a given species.
+    // A decay M -> pos + neg populates the ellipse
+    //   ((alpha - alphaCenter) / alphaHalfWidth)^2 + (qT / qStar)^2 = 1
+    // with, in the mother rest frame, qStar the daughter momentum (= maximum qT),
+    //   alphaCenter = (E*_pos - E*_neg) / M   and   alphaHalfWidth = 2 qStar / (beta M).
+    // The band is the crescent between two ellipses concentric with that one, each with its two
+    // half-axes scaled independently (the reconstructed distribution is smeared much more along
+    // alpha than along qT, so a single scale factor for both axes does not describe it):
+    //   qT_up (alpha) = qtScaleMax * qStar * sqrt(1 - ((alpha - alphaCenter) / (alphaScaleMax * alphaHalfWidth))^2)
+    //   qT_low(alpha) = qtScaleMin * qStar * sqrt(1 - ((alpha - alphaCenter) / (alphaScaleMin * alphaHalfWidth))^2)
+    // (square roots set to zero where their argument is negative). A candidate is kept if it lies
+    // inside the outer ellipse and outside the inner one; setting an inner scale to zero drops the
+    // inner ellipse altogether, i.e. keeps the whole filled outer ellipse.
+    Configurable<bool> useArmPodBand{"useArmPodBand", false, "Select the Armenteros-Podolanski arc with an elliptic band (per-species)"};
+    Configurable<bool> armPodBandUseBeta{"armPodBandUseBeta", true, "Scale the alpha half-width by 1/beta of the candidate (exact ellipse). If false, use the beta -> 1 limit"};
+    Configurable<LabeledArray<float>> armPodBand{"armPodBand", {DefaultArmPodBand[0], 3, 4, {"K0Short", "Lambda", "D0"}, {"alphaScaleMin", "qtScaleMin", "alphaScaleMax", "qtScaleMax"}}, "Arm.-Pod. band: inner and outer ellipse half-axes, in units of the ideal ones"};
 
     // Track quality
     Configurable<int> minMFTclusters{"minMFTclusters", -1, "minimum MFT clusters"};
@@ -424,6 +456,10 @@ struct forwardlambdakzeroanalysis {
                               selD0PseudoLifetimeMin,
                               selD0PseudoLifetimeMax,
                               selK0ShortArmenteros,
+                              selLambdaArmenteros,
+                              selAntiLambdaArmenteros,
+                              selD0Armenteros,
+                              selAntiD0Armenteros,
                               selPosGoodMFTTrack,
                               selNegGoodMFTTrack,
                               selConsiderK0Short,    // for mc tagging
@@ -497,6 +533,7 @@ struct forwardlambdakzeroanalysis {
     BITSET(maskLambdaSpecific, selLambdaPseudoLifetimeMax);
     BITSET(maskLambdaSpecific, selConsiderLambda);
     BITSET(maskLambdaSpecific, selK0ShortMassRejection);
+    BITSET(maskLambdaSpecific, selLambdaArmenteros);
     // Mask for specifically selecting AntiLambda
     maskAntiLambdaSpecific = 0;
     BITSET(maskAntiLambdaSpecific, selLambdaRapidityMin);
@@ -506,6 +543,7 @@ struct forwardlambdakzeroanalysis {
     BITSET(maskAntiLambdaSpecific, selLambdaPseudoLifetimeMax);
     BITSET(maskAntiLambdaSpecific, selConsiderAntiLambda);
     BITSET(maskAntiLambdaSpecific, selK0ShortMassRejection);
+    BITSET(maskAntiLambdaSpecific, selAntiLambdaArmenteros);
     // Mask for specifically selecting D0
     maskD0Specific = 0;
     BITSET(maskD0Specific, selD0RapidityMin);
@@ -515,6 +553,7 @@ struct forwardlambdakzeroanalysis {
     BITSET(maskD0Specific, selD0PseudoLifetimeMax);
     BITSET(maskD0Specific, selConsiderD0);
     BITSET(maskD0Specific, selK0ShortMassRejection);
+    BITSET(maskD0Specific, selD0Armenteros);
     BITSET(maskD0Specific, selLambdaMassRejection);
     // Mask for specifically selecting D0
     maskAntiD0Specific = 0;
@@ -525,6 +564,7 @@ struct forwardlambdakzeroanalysis {
     BITSET(maskAntiD0Specific, selD0PseudoLifetimeMax);
     BITSET(maskAntiD0Specific, selConsiderAntiD0);
     BITSET(maskAntiD0Specific, selK0ShortMassRejection);
+    BITSET(maskAntiD0Specific, selAntiD0Armenteros);
     BITSET(maskAntiD0Specific, selLambdaMassRejection);
 
     // ask for specific TPC/TOF PID selections
@@ -553,7 +593,7 @@ struct forwardlambdakzeroanalysis {
     rctFlagsChecker.init(rctConfigurations.cfgRCTLabel.value, rctConfigurations.cfgCheckZDC, rctConfigurations.cfgTreatLimitedAcceptanceAsBad);
 
     // Event Counters
-    histos.add("hEventSelection", "hEventSelection", kTH1D, {{23, -0.5f, +22.5f}});
+    histos.add("hEventSelection", "hEventSelection", kTH1D, {{25, -0.5f, +24.5f}});
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(3, "kIsTriggerTVX");
@@ -570,13 +610,15 @@ struct forwardlambdakzeroanalysis {
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(14, "kNoCollInTimeRangeNarrow");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(15, "kNoCollInRofStd");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(16, "kNoCollInRofStrict");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(17, "INEL>0");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(18, "INEL>1");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(19, "Below min occup.");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(20, "Above max occup.");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(21, "Below min IR");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(22, "Above max IR");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(23, "RCT flags");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(17, "kNoHighMultCollInPrevRof");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(18, "kIsGoodITSLayersAll");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(19, "INEL>0");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(20, "INEL>1");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(21, "Below min occup.");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(22, "Above max occup.");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(23, "Below min IR");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(24, "Above max IR");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(25, "RCT flags");
 
     histos.add("hEventCentrality", "hEventCentrality", kTH1D, {axisConfigurations.axisCentralityFine});
     histos.add("hCentralityVsNch", "hCentralityVsNch", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisNch});
@@ -637,7 +679,11 @@ struct forwardlambdakzeroanalysis {
     hSelectionV0s->GetXaxis()->SetBinLabel(selLambdaPseudoLifetimeMax + 2, "#Lambda pseudo-time max");
     hSelectionV0s->GetXaxis()->SetBinLabel(selD0PseudoLifetimeMin + 2, "D^{0} pseudo-time min");
     hSelectionV0s->GetXaxis()->SetBinLabel(selD0PseudoLifetimeMax + 2, "D^{0} pseudo-time max");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selK0ShortArmenteros + 2, "Arm. pod. cut");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selK0ShortArmenteros + 2, "K^{0}_{S} Arm. pod. cut");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selLambdaArmenteros + 2, "#Lambda Arm. pod. cut");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selAntiLambdaArmenteros + 2, "#bar{#Lambda} Arm. pod. cut");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selD0Armenteros + 2, "D^{0} Arm. pod. cut");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selAntiD0Armenteros + 2, "#bar{D}^{0} Arm. pod. cut");
     hSelectionV0s->GetXaxis()->SetBinLabel(selPosGoodMFTTrack + 2, "Pos. good MFT track");
     hSelectionV0s->GetXaxis()->SetBinLabel(selNegGoodMFTTrack + 2, "Neg. good MFT track");
     hSelectionV0s->GetXaxis()->SetBinLabel(selConsiderK0Short + 2, "True K^{0}_{S}");
@@ -1195,6 +1241,50 @@ struct forwardlambdakzeroanalysis {
     fitter.setBz(magField);
   }
 
+  // Ideal Armenteros-Podolanski ellipse of a two-body decay hypothesis: centre and half-axes
+  struct ArmenterosEllipse {
+    float alphaCenter;    // (E*_pos - E*_neg) / M, vanishes for symmetric decays
+    float alphaHalfWidth; // 2 qStar / (beta M)
+    float qStar;          // daughter momentum in the mother rest frame = maximum qT
+  };
+
+  ArmenterosEllipse armenterosEllipse(float pTot, float massMother, float massPositive, float massNegative)
+  {
+    const float energyPositive = (massMother * massMother + massPositive * massPositive - massNegative * massNegative) / (2.f * massMother);
+    const float qStar = std::sqrt(std::max(0.f, energyPositive * energyPositive - massPositive * massPositive));
+    float alphaHalfWidth = 2.f * qStar / massMother; // beta -> 1 limit
+    if (v0Selections.armPodBandUseBeta && pTot > 1e-3f) {
+      alphaHalfWidth *= std::hypot(pTot, massMother) / pTot; // 1 / beta of the candidate
+    }
+    return ArmenterosEllipse{2.f * energyPositive / massMother - 1.f, alphaHalfWidth, qStar};
+  }
+
+  // Normalised distance to the centre of the ideal ellipse, measured with its two half-axes scaled
+  // independently: 1 on the scaled ellipse itself, smaller inside it, larger outside it.
+  float armenterosDistance(ArmenterosEllipse const& ellipse, float alphaArm, float qtArm, float alphaScale, float qtScale)
+  {
+    return std::hypot((alphaArm - ellipse.alphaCenter) / (alphaScale * ellipse.alphaHalfWidth), qtArm / (qtScale * ellipse.qStar));
+  }
+
+  // Crescent-shaped band around the two-body decay arc in the Armenteros-Podolanski plane
+  template <typename TV0>
+  bool passesArmenterosBand(TV0 const& v0, float massMother, float massPositive, float massNegative, const char* species)
+  {
+    if (!v0Selections.useArmPodBand) {
+      return true;
+    }
+    const ArmenterosEllipse ellipse = armenterosEllipse(v0.pTot, massMother, massPositive, massNegative);
+    if (armenterosDistance(ellipse, v0.AlphaArm, v0.QtArm, v0Selections.armPodBand->get(species, "alphaScaleMax"), v0Selections.armPodBand->get(species, "qtScaleMax")) > 1.f) {
+      return false; // outside the outer ellipse
+    }
+    const float alphaScaleMin = v0Selections.armPodBand->get(species, "alphaScaleMin");
+    const float qtScaleMin = v0Selections.armPodBand->get(species, "qtScaleMin");
+    if (alphaScaleMin < 1e-4f || qtScaleMin < 1e-4f) {
+      return true; // no inner ellipse requested: the whole outer ellipse is kept
+    }
+    return armenterosDistance(ellipse, v0.AlphaArm, v0.QtArm, alphaScaleMin, qtScaleMin) > 1.f;
+  }
+
   template <typename TV0>
   uint64_t computeReconstructionBitmap(TV0 const& v0, float rapK0s, float rapLambda, float rapD0)
   // precalculate this information so that a check is one mask operation, not many
@@ -1337,8 +1427,25 @@ struct forwardlambdakzeroanalysis {
 
     //
     // armenteros
-    if (v0Selections.armPodCut < 1e-4 || v0.QtArm * v0Selections.armPodCut > std::abs(v0.AlphaArm)) {
+    // legacy K0Short "V" cut, plus an optional box and the optional elliptic band around the decay arc
+    const bool armPodVCut = (v0Selections.armPodCut < 1e-4 || v0.QtArm * v0Selections.armPodCut > std::abs(v0.AlphaArm));
+    const bool armPodBox = (v0.QtArm > v0Selections.minQt && v0.QtArm < v0Selections.maxQt &&
+                            v0.AlphaArm > v0Selections.minAlpha && v0.AlphaArm < v0Selections.maxAlpha);
+    if (armPodVCut && armPodBox &&
+        passesArmenterosBand(v0, o2::constants::physics::MassK0Short, o2::constants::physics::MassPiPlus, o2::constants::physics::MassPiMinus, "K0Short")) {
       BITSET(bitMap, selK0ShortArmenteros);
+    }
+    if (armPodBox && passesArmenterosBand(v0, o2::constants::physics::MassLambda0, o2::constants::physics::MassProton, o2::constants::physics::MassPiMinus, "Lambda")) {
+      BITSET(bitMap, selLambdaArmenteros);
+    }
+    if (armPodBox && passesArmenterosBand(v0, o2::constants::physics::MassLambda0, o2::constants::physics::MassPiPlus, o2::constants::physics::MassProtonBar, "Lambda")) {
+      BITSET(bitMap, selAntiLambdaArmenteros);
+    }
+    if (armPodBox && passesArmenterosBand(v0, o2::constants::physics::MassD0, o2::constants::physics::MassKPlus, o2::constants::physics::MassPiMinus, "D0")) {
+      BITSET(bitMap, selD0Armenteros);
+    }
+    if (armPodBox && passesArmenterosBand(v0, o2::constants::physics::MassD0, o2::constants::physics::MassPiPlus, o2::constants::physics::MassKMinus, "D0")) {
+      BITSET(bitMap, selAntiD0Armenteros);
     }
 
     return bitMap;
@@ -1972,18 +2079,32 @@ struct forwardlambdakzeroanalysis {
       histos.fill(HIST("hEventSelection"), 15 /* No other collision within the same ITS ROF */);
     }
 
+    if (eventSelections.requireNoHighMultCollInPrevRof && !collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+      return false;
+    }
+    if (fillHists) {
+      histos.fill(HIST("hEventSelection"), 16 /* veto an event if FT0C amplitude in previous ITS ROF is above threshold */);
+    }
+
+    if (eventSelections.requireIsGoodITSLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      return false;
+    }
+    if (fillHists) {
+      histos.fill(HIST("hEventSelection"), 17 /* numbers of inactive chips on all ITS layers are below maximum allowed values */);
+    }
+
     if (eventSelections.requireINEL0 && collision.multNTracksPVeta1() < 1) {
       return false;
     }
     if (fillHists) {
-      histos.fill(HIST("hEventSelection"), 16 /* INEL > 0 */);
+      histos.fill(HIST("hEventSelection"), 18 /* INEL > 0 */);
     }
 
     if (eventSelections.requireINEL1 && collision.multNTracksPVeta1() < 2) {
       return false;
     }
     if (fillHists) {
-      histos.fill(HIST("hEventSelection"), 17 /* INEL > 1 */);
+      histos.fill(HIST("hEventSelection"), 19 /* INEL > 1 */);
     }
 
     float collisionOccupancy = eventSelections.useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
@@ -1991,14 +2112,14 @@ struct forwardlambdakzeroanalysis {
       return false;
     }
     if (fillHists) {
-      histos.fill(HIST("hEventSelection"), 18 /* Below min occupancy */);
+      histos.fill(HIST("hEventSelection"), 20 /* Below min occupancy */);
     }
 
     if (eventSelections.maxOccupancy >= 0 && collisionOccupancy > eventSelections.maxOccupancy) {
       return false;
     }
     if (fillHists) {
-      histos.fill(HIST("hEventSelection"), 19 /* Above max occupancy */);
+      histos.fill(HIST("hEventSelection"), 21 /* Above max occupancy */);
     }
 
     // Fetch interaction rate only if required (in order to limit ccdb calls)
@@ -2008,21 +2129,21 @@ struct forwardlambdakzeroanalysis {
       return false;
     }
     if (fillHists) {
-      histos.fill(HIST("hEventSelection"), 20 /* Below min IR */);
+      histos.fill(HIST("hEventSelection"), 22 /* Below min IR */);
     }
 
     if (eventSelections.maxIR >= 0 && interactionRate > eventSelections.maxIR) {
       return false;
     }
     if (fillHists) {
-      histos.fill(HIST("hEventSelection"), 21 /* Above max IR */);
+      histos.fill(HIST("hEventSelection"), 23 /* Above max IR */);
     }
 
     if (!rctConfigurations.cfgRCTLabel.value.empty() && !rctFlagsChecker(collision)) {
       return false;
     }
     if (fillHists) {
-      histos.fill(HIST("hEventSelection"), 22 /* Pass CBT condition */);
+      histos.fill(HIST("hEventSelection"), 24 /* Pass CBT condition */);
     }
     return true;
   }

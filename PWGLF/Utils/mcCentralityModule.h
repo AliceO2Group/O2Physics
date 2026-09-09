@@ -564,7 +564,7 @@ struct BuilderModule {
 
           LOGF(info, "Calibration for %s estimator -> Data centrality bin %g-%g%%\n", estimator.Data(), centralityBins[irev - 1], centralityBins[irev]);
           LOGF(info, "Calibration for %s estimator -> MC multiplicity range %g-%g\n", estimator.Data(), projMC->GetBinLowEdge(startBinMc), projMC->GetBinLowEdge(endBinMc + 1));
-          LOGF(info, "Calibration for %s estimator -> <PV> data = %.4f Vs <PV> MC = %.4f\n", estimator.Data(), meanMult_Data, meanMult_MC);
+          LOGF(info, "Calibration for %s estimator -> <PV> data = %.4f Vs <PV> MC = %.4f (MC/Data = %.4f%%)\n", estimator.Data(), meanMult_Data, meanMult_MC, (meanMult_MC - meanMult_Data) * 100 / meanMult_Data);
           LOGF(info, "Calibration for %s estimator -> N entries Data = %g Vs N entries MC = %g\n", estimator.Data(), projData->Integral(), projMC->Integral());
           for (int ibin = 1; ibin <= h1dCalib->GetNbinsX(); ibin++) {
             if (ibin <= endBinMc && ibin >= startBinMc) {
