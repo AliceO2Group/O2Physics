@@ -25,11 +25,11 @@
 #include <Framework/AnalysisTask.h>
 #include <Framework/runDataProcessing.h>
 
+#include <algorithm>
 #include <memory>
+#include <string>
 #include <unordered_set>
 #include <vector>
-#include <algorithm>
-#include <string>
 
 using namespace o2;
 using namespace o2::framework;
