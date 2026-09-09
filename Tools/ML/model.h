@@ -77,6 +77,7 @@ class OnnxModel
           LOG(fatal) << "Shape of tensor " << i << " does not agree with model specification! Output: " << printShape(outputTensors[i].GetTensorTypeAndShapeInfo().GetShape()) << " model: " << printShape(mOutputShapes[i]);
         }
       }
+      // TODO: isn't outputTensors freed after exiting this function thus making the returned pointer pointing to garbage memory resulting in undefined beaviour?
       T* outputValues = outputTensors.back().GetTensorMutableData<T>();
       return outputValues;
     } catch (const Ort::Exception& exception) {
