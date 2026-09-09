@@ -305,7 +305,7 @@ struct CentralityQa {
 
     if (doprocessRun3 || doprocessRun3MonteCarlo) {
       for (int iEst = 0; iEst < NEstimators; ++iEst) {
-        Estimator& est = estimators[iEst];
+        const Estimator& est = estimators[iEst];
         if (!est.doStudy) {
           continue;
         }
@@ -741,44 +741,44 @@ struct CentralityQa {
 
       if (!loopOverMcCollisionsForMcHist) {
         const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
-        std::vector<float> centrality;
-        centrality.resize(NEstimators, CentralityNotFound);
+        std::vector<float> cent;
+        cent.resize(NEstimators, CentralityNotFound);
 
-        centrality[FV0A] = estimators[FV0A].getCentrality(col.multFV0A(), col.centFV0A());
-        centrality[FT0M] = estimators[FT0M].getCentrality(col.multFT0M(), col.centFT0M());
-        centrality[FT0MAnchorCol] = estimators[FT0MAnchorCol].getCentrality(col.multFT0M(), col.centFT0MAnchorCol());
-        centrality[FT0MAnchorBC] = estimators[FT0MAnchorBC].getCentrality(col.multFT0M(), col.centFT0MAnchorBC());
-        centrality[FT0MOuterA] = estimators[FT0MOuterA].getCentrality(col.multFT0AOuter() + col.multFT0C(), col.centFT0MOuterA());
-        centrality[FT0A] = estimators[FT0A].getCentrality(col.multFT0A(), col.centFT0A());
-        centrality[FT0C] = estimators[FT0C].getCentrality(col.multFT0C(), col.centFT0C());
-        centrality[FT0CVar1] = estimators[FT0CVar1].getCentrality(col.multFT0C(), col.centFT0CVariant1());
-        centrality[FT0CVar2] = estimators[FT0CVar2].getCentrality(col.multFT0C(), col.centFT0CVariant2());
-        centrality[FDDM] = estimators[FDDM].getCentrality(col.multFDDM(), col.centFDDM());
-        centrality[NTPV] = estimators[NTPV].getCentrality(col.multNTracksPV(), col.centNTPV());
+        cent[FV0A] = estimators[FV0A].getCentrality(col.multFV0A(), col.centFV0A());
+        cent[FT0M] = estimators[FT0M].getCentrality(col.multFT0M(), col.centFT0M());
+        cent[FT0MAnchorCol] = estimators[FT0MAnchorCol].getCentrality(col.multFT0M(), col.centFT0MAnchorCol());
+        cent[FT0MAnchorBC] = estimators[FT0MAnchorBC].getCentrality(col.multFT0M(), col.centFT0MAnchorBC());
+        cent[FT0MOuterA] = estimators[FT0MOuterA].getCentrality(col.multFT0AOuter() + col.multFT0C(), col.centFT0MOuterA());
+        cent[FT0A] = estimators[FT0A].getCentrality(col.multFT0A(), col.centFT0A());
+        cent[FT0C] = estimators[FT0C].getCentrality(col.multFT0C(), col.centFT0C());
+        cent[FT0CVar1] = estimators[FT0CVar1].getCentrality(col.multFT0C(), col.centFT0CVariant1());
+        cent[FT0CVar2] = estimators[FT0CVar2].getCentrality(col.multFT0C(), col.centFT0CVariant2());
+        cent[FDDM] = estimators[FDDM].getCentrality(col.multFDDM(), col.centFDDM());
+        cent[NTPV] = estimators[NTPV].getCentrality(col.multNTracksPV(), col.centNTPV());
 
-        fillEstimatorMonteCarloHistos(mcCol, estimators[FV0A], mcCol.multMCFV0A(), centrality[FV0A], col.multNTracksPVetaHalf());
-        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0M], mcCol.multMCFT0A() + mcCol.multMCFT0C(), centrality[FT0M], col.multNTracksPVetaHalf());
-        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0MAnchorCol], mcCol.multMCFT0A() + mcCol.multMCFT0C(), centrality[FT0MAnchorCol], col.multNTracksPVetaHalf());
-        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0MAnchorBC], mcCol.multMCFT0A() + mcCol.multMCFT0C(), centrality[FT0MAnchorBC], col.multNTracksPVetaHalf());
-        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0MOuterA], mcCol.multMCFT0A() + mcCol.multMCFT0C(), centrality[FT0MOuterA], col.multNTracksPVetaHalf());
-        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0A], mcCol.multMCFT0A(), centrality[FT0A], col.multNTracksPVetaHalf());
-        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0C], mcCol.multMCFT0C(), centrality[FT0C], col.multNTracksPVetaHalf());
-        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0CVar1], mcCol.multMCFT0C(), centrality[FT0CVar1], col.multNTracksPVetaHalf());
-        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0CVar2], mcCol.multMCFT0C(), centrality[FT0CVar2], col.multNTracksPVetaHalf());
-        fillEstimatorMonteCarloHistos(mcCol, estimators[FDDM], mcCol.multMCFDDA() + mcCol.multMCFDDC(), centrality[FDDM], col.multNTracksPVetaHalf());
-        fillEstimatorMonteCarloHistos(mcCol, estimators[NTPV], mcCol.multMCNParticlesEta08(), centrality[NTPV], col.multNTracksPVetaHalf());
-        fillEstimatorMonteCarloHistos(mcCol, estimators[NGlobal], mcCol.multMCNParticlesEta08(), centrality[NGlobal], col.multNTracksPVetaHalf());
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FV0A], mcCol.multMCFV0A(), cent[FV0A], col.multNTracksPVetaHalf());
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0M], mcCol.multMCFT0A() + mcCol.multMCFT0C(), cent[FT0M], col.multNTracksPVetaHalf());
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0MAnchorCol], mcCol.multMCFT0A() + mcCol.multMCFT0C(), cent[FT0MAnchorCol], col.multNTracksPVetaHalf());
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0MAnchorBC], mcCol.multMCFT0A() + mcCol.multMCFT0C(), cent[FT0MAnchorBC], col.multNTracksPVetaHalf());
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0MOuterA], mcCol.multMCFT0A() + mcCol.multMCFT0C(), cent[FT0MOuterA], col.multNTracksPVetaHalf());
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0A], mcCol.multMCFT0A(), cent[FT0A], col.multNTracksPVetaHalf());
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0C], mcCol.multMCFT0C(), cent[FT0C], col.multNTracksPVetaHalf());
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0CVar1], mcCol.multMCFT0C(), cent[FT0CVar1], col.multNTracksPVetaHalf());
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0CVar2], mcCol.multMCFT0C(), cent[FT0CVar2], col.multNTracksPVetaHalf());
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FDDM], mcCol.multMCFDDA() + mcCol.multMCFDDC(), cent[FDDM], col.multNTracksPVetaHalf());
+        fillEstimatorMonteCarloHistos(mcCol, estimators[NTPV], mcCol.multMCNParticlesEta08(), cent[NTPV], col.multNTracksPVetaHalf());
+        fillEstimatorMonteCarloHistos(mcCol, estimators[NGlobal], mcCol.multMCNParticlesEta08(), cent[NGlobal], col.multNTracksPVetaHalf());
 
         if (nGlobals.size() > 0) {
           const auto& multCentNGlo = nGlobals.rawIteratorAt(col.globalIndex());
-          centrality[NGlobal] = estimators[NGlobal].getCentrality(multCentNGlo.multNTracksGlobal(), multCentNGlo.centNGlobal());
-          fillEstimatorMonteCarloHistos(mcCol, estimators[NGlobal], mcCol.multMCNParticlesEta08(), centrality[NGlobal], col.multNTracksPVetaHalf());
+          cent[NGlobal] = estimators[NGlobal].getCentrality(multCentNGlo.multNTracksGlobal(), multCentNGlo.centNGlobal());
+          fillEstimatorMonteCarloHistos(mcCol, estimators[NGlobal], mcCol.multMCNParticlesEta08(), cent[NGlobal], col.multNTracksPVetaHalf());
         }
 
         if (nMFTs.size() > 0) {
           const auto& multCentNMFT = nMFTs.rawIteratorAt(col.globalIndex());
-          centrality[MFT] = estimators[MFT].getCentrality(multCentNMFT.mftNtracks(), multCentNMFT.centMFT());
-          // fillEstimatorMonteCarloHistos(mcCol, estimators[MFT], mcCol.multMCMFT(), centrality[MFT], col.multNTracksPVetaHalf()); // FIXME: uncomment when MC MFT mult is added in aod::MultMCExtras
+          cent[MFT] = estimators[MFT].getCentrality(multCentNMFT.mftNtracks(), multCentNMFT.centMFT());
+          // fillEstimatorMonteCarloHistos(mcCol, estimators[MFT], mcCol.multMCMFT(), cent[MFT], col.multNTracksPVetaHalf()); // FIXME: uncomment when MC MFT mult is added in aod::MultMCExtras
         }
       }
     }
@@ -793,8 +793,8 @@ struct CentralityQa {
         // If so, we consider it
         int biggestNContribs = -1;
         int nContribsInEta05 = -1;
-        std::vector<float> centrality;
-        centrality.resize(NEstimators, CentralityNotFound);
+        std::vector<float> cent;
+        cent.resize(NEstimators, CentralityNotFound);
 
         for (auto const& col : groupedCollisions) {
           if (!isCollisionAccepted(col)) {
@@ -825,17 +825,17 @@ struct CentralityQa {
           if (biggestNContribs < col.multPVTotalContributors()) {
             biggestNContribs = col.multPVTotalContributors();
             nContribsInEta05 = col.multNTracksPVetaHalf();
-            centrality[FV0A] = recoColCentFV0A;
-            centrality[FT0M] = recoColCentFT0M;
-            centrality[FT0MAnchorCol] = recoColCentFT0MAnchorCol;
-            centrality[FT0MAnchorBC] = recoColCentFT0MAnchorBC;
-            centrality[FT0MOuterA] = recoColCentFT0MOuterA;
-            centrality[FT0A] = recoColCentFT0A;
-            centrality[FT0C] = recoColCentFT0C;
-            centrality[FT0CVar1] = recoColCentFT0CVar1;
-            centrality[FT0CVar2] = recoColCentFT0CVar2;
-            centrality[FDDM] = recoColCentFDDM;
-            centrality[NTPV] = recoColCentNTPV;
+            cent[FV0A] = recoColCentFV0A;
+            cent[FT0M] = recoColCentFT0M;
+            cent[FT0MAnchorCol] = recoColCentFT0MAnchorCol;
+            cent[FT0MAnchorBC] = recoColCentFT0MAnchorBC;
+            cent[FT0MOuterA] = recoColCentFT0MOuterA;
+            cent[FT0A] = recoColCentFT0A;
+            cent[FT0C] = recoColCentFT0C;
+            cent[FT0CVar1] = recoColCentFT0CVar1;
+            cent[FT0CVar2] = recoColCentFT0CVar2;
+            cent[FDDM] = recoColCentFDDM;
+            cent[NTPV] = recoColCentNTPV;
           }
         }
 
@@ -847,7 +847,7 @@ struct CentralityQa {
             if (biggestNContribs < col.multPVTotalContributors()) {
               biggestNContribs = col.multPVTotalContributors();
               nContribsInEta05 = col.multNTracksPVetaHalf();
-              centrality[NGlobal] = recoColCentNGlo;
+              cent[NGlobal] = recoColCentNGlo;
             }
           }
         }
@@ -860,24 +860,24 @@ struct CentralityQa {
             if (biggestNContribs < col.multPVTotalContributors()) {
               biggestNContribs = col.multPVTotalContributors();
               nContribsInEta05 = col.multNTracksPVetaHalf();
-              centrality[MFT] = recoColCentNMFT;
+              cent[MFT] = recoColCentNMFT;
             }
           }
         }
 
-        fillEstimatorMonteCarloHistos(mcCol, estimators[FV0A], mcCol.multMCFV0A(), centrality[FV0A], nContribsInEta05);
-        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0M], mcCol.multMCFT0A() + mcCol.multMCFT0C(), centrality[FT0M], nContribsInEta05);
-        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0MAnchorCol], mcCol.multMCFT0A() + mcCol.multMCFT0C(), centrality[FT0MAnchorCol], nContribsInEta05);
-        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0MAnchorBC], mcCol.multMCFT0A() + mcCol.multMCFT0C(), centrality[FT0MAnchorBC], nContribsInEta05);
-        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0MOuterA], mcCol.multMCFT0A() + mcCol.multMCFT0C(), centrality[FT0MOuterA], nContribsInEta05);
-        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0A], mcCol.multMCFT0A(), centrality[FT0A], nContribsInEta05);
-        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0C], mcCol.multMCFT0C(), centrality[FT0C], nContribsInEta05);
-        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0CVar1], mcCol.multMCFT0C(), centrality[FT0CVar1], nContribsInEta05);
-        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0CVar2], mcCol.multMCFT0C(), centrality[FT0CVar2], nContribsInEta05);
-        fillEstimatorMonteCarloHistos(mcCol, estimators[FDDM], mcCol.multMCFDDA() + mcCol.multMCFDDC(), centrality[FDDM], nContribsInEta05);
-        fillEstimatorMonteCarloHistos(mcCol, estimators[NTPV], mcCol.multMCNParticlesEta08(), centrality[NTPV], nContribsInEta05);
-        fillEstimatorMonteCarloHistos(mcCol, estimators[NGlobal], mcCol.multMCNParticlesEta08(), centrality[NGlobal], nContribsInEta05);
-        // fillEstimatorMonteCarloHistos(mcCol, estimators[MFT], mcCol.multMCMFT(), centrality[MFT], nContribsInEta05); // FIXME: uncomment when MC MFT mult is added in aod::MultMCExtras
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FV0A], mcCol.multMCFV0A(), cent[FV0A], nContribsInEta05);
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0M], mcCol.multMCFT0A() + mcCol.multMCFT0C(), cent[FT0M], nContribsInEta05);
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0MAnchorCol], mcCol.multMCFT0A() + mcCol.multMCFT0C(), cent[FT0MAnchorCol], nContribsInEta05);
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0MAnchorBC], mcCol.multMCFT0A() + mcCol.multMCFT0C(), cent[FT0MAnchorBC], nContribsInEta05);
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0MOuterA], mcCol.multMCFT0A() + mcCol.multMCFT0C(), cent[FT0MOuterA], nContribsInEta05);
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0A], mcCol.multMCFT0A(), cent[FT0A], nContribsInEta05);
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0C], mcCol.multMCFT0C(), cent[FT0C], nContribsInEta05);
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0CVar1], mcCol.multMCFT0C(), cent[FT0CVar1], nContribsInEta05);
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0CVar2], mcCol.multMCFT0C(), cent[FT0CVar2], nContribsInEta05);
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FDDM], mcCol.multMCFDDA() + mcCol.multMCFDDC(), cent[FDDM], nContribsInEta05);
+        fillEstimatorMonteCarloHistos(mcCol, estimators[NTPV], mcCol.multMCNParticlesEta08(), cent[NTPV], nContribsInEta05);
+        fillEstimatorMonteCarloHistos(mcCol, estimators[NGlobal], mcCol.multMCNParticlesEta08(), cent[NGlobal], nContribsInEta05);
+        // fillEstimatorMonteCarloHistos(mcCol, estimators[MFT], mcCol.multMCMFT(), cent[MFT], nContribsInEta05); // FIXME: uncomment when MC MFT mult is added in aod::MultMCExtras
       }
     }
   }
