@@ -58,34 +58,24 @@ using CFMcParticle = CFMcParticles::iterator;
 namespace cfmultiplicity
 {
 DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);
-DECLARE_SOA_COLUMN(MultiplicityEstimator, multiplicityEstimator, uint8_t); //! Source used for the multiplicity value
-enum EstimatorType : uint8_t {
-  Tracks,
-  FT0M,
-  FT0C,
-  FT0CVariant1,
-  FT0CVariant2,
-  FT0A,
-  CentNGlobal,
-  Run2V0M,
-  MCParticles,
-};
+DECLARE_SOA_COLUMN(IsTrackMultiplicity, isTrackMultiplicity, bool); //! Whether MultiplicitySelector::processTracks produced the multiplicity
 } // namespace cfmultiplicity
-DECLARE_SOA_TABLE(CFMultiplicities, "AOD", "CFMULTIPLICITY", cfmultiplicity::Multiplicity, cfmultiplicity::MultiplicityEstimator);
+DECLARE_SOA_TABLE(CFMultiplicities, "AOD", "CFMULTIPLICITY", cfmultiplicity::Multiplicity, cfmultiplicity::IsTrackMultiplicity);
 
 using CFMultiplicity = CFMultiplicities::iterator;
 
 namespace cfcollision
 {
-DECLARE_SOA_INDEX_COLUMN(CFMcCollision, cfMcCollision); //! Index to reduced MC collision; o2-linter: disable=name/o2-column (preserve the established derived-table API)
-DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);  //! Centrality/multiplicity value
+DECLARE_SOA_INDEX_COLUMN(CFMcCollision, cfMcCollision);         //! Index to reduced MC collision; o2-linter: disable=name/o2-column (preserve the established derived-table API)
+DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);          //! Centrality/multiplicity value
+DECLARE_SOA_COLUMN(BestRecoCollision, bestRecoCollision, bool); //! Whether this is the best reconstructed collision for the associated MC collision (largest number of contributors)
 } // namespace cfcollision
 DECLARE_SOA_TABLE(CFCollisions, "AOD", "CFCOLLISION", //! Reduced collision table
                   o2::soa::Index<>,
                   bc::RunNumber, collision::PosZ,
                   cfcollision::Multiplicity, timestamp::Timestamp);
 DECLARE_SOA_TABLE(CFCollLabels, "AOD", "CFCOLLLABEL", //! Labels for reduced collision table
-                  cfcollision::CFMcCollisionId);
+                  cfcollision::CFMcCollisionId, cfcollision::BestRecoCollision);
 using CFCollision = CFCollisions::iterator;
 using CFCollLabel = CFCollLabels::iterator;
 using CFCollisionsWithLabel = soa::Join<CFCollisions, CFCollLabels>;
@@ -136,7 +126,6 @@ enum MultiplicityEstimators : uint8_t {
   MultNTracksGlobal = 0x8,
   CentFT0M = 0x10,
 };
-
 inline constexpr uint32_t NMultiplicityEstimators = __builtin_ctz(CentFT0M) + 1;
 
 } // namespace cfmultset

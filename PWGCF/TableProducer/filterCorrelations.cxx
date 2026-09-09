@@ -153,6 +153,7 @@ struct FilterCF {
 
   // Own local histograms independently of their input file. CCDB owns its objects.
   std::unique_ptr<THn> localMultiplicityEfficiency;
+  THn* mEfficiency = nullptr;
   static constexpr int MultiplicityEfficiencyDimensions = 4;
 
   // persistent caches
@@ -179,7 +180,10 @@ struct FilterCF {
           return;
         }
         auto* efficiency = dynamic_cast<THn*>(file->Get("ccdb_object"));
-        validateMultiplicityEfficiency(efficiency);
+        if (!efficiency || efficiency->GetNdimensions() != MultiplicityEfficiencyDimensions) {
+          LOGF(fatal, "Multiplicity efficiency from %s must be a 4D THn with axes (eta, pT, multiplicity, z-vtx)", cfgEfficiencyMultiplicity.value.c_str());
+          return;
+        }
         localMultiplicityEfficiency.reset(dynamic_cast<THn*>(efficiency->Clone()));
       } else {
         ccdb->setURL("http://alice-ccdb.cern.ch");
@@ -336,65 +340,67 @@ struct FilterCF {
     return dcaXyConst + dcaXySlope / pt; // a + b/pT
   }
 
-  void validateMultiplicityEfficiency(const THn* efficiency) const
-  {
-    if (!efficiency || efficiency->GetNdimensions() != MultiplicityEfficiencyDimensions) {
-      LOGF(fatal, "Multiplicity efficiency from %s must be a 4D THn with axes (eta, pT, multiplicity, z-vtx)", cfgEfficiencyMultiplicity.value.c_str());
-    }
-  }
-
   THn* loadMultiplicityEfficiency(uint64_t timestamp)
   {
     if (cfgLocalEfficiency == 1) {
       return localMultiplicityEfficiency.get();
     }
-    // Query each collision so the manager can refresh its cache at validity boundaries.
-    auto* efficiency = ccdb->getForTimeStamp<THnT<float>>(cfgEfficiencyMultiplicity.value, timestamp);
-    validateMultiplicityEfficiency(efficiency);
-    return efficiency;
+    if (!mEfficiency || !ccdb->isCachedObjectValid(cfgEfficiencyMultiplicity.value, timestamp)) {
+      mEfficiency = ccdb->getForTimeStamp<THnT<float>>(cfgEfficiencyMultiplicity.value, timestamp);
+    }
+    if (!mEfficiency || mEfficiency->GetNdimensions() != MultiplicityEfficiencyDimensions) {
+      LOGF(fatal, "Multiplicity efficiency from %s must be a 4D THn with axes (eta, pT, multiplicity, z-vtx)", cfgEfficiencyMultiplicity.value.c_str());
+    }
+    return mEfficiency;
   }
 
-  template <bool applyDCA, typename TCollision, typename TTracks>
+  template <typename TCollision, typename TTracks>
   float getCorrectedMultiplicity(const TCollision& collision, const TTracks& tracks, uint64_t timestamp)
   {
-    if (collision.multiplicityEstimator() != aod::cfmultiplicity::Tracks) {
-      LOGF(fatal, "Efficiency-corrected multiplicity requires MultiplicitySelector::processTracks, but estimator type %u was configured", static_cast<unsigned int>(collision.multiplicityEstimator()));
+    if (!collision.isTrackMultiplicity()) {
+      LOGF(fatal, "Efficiency-corrected multiplicity requires MultiplicitySelector::processTracks");
     }
     auto* efficiency = loadMultiplicityEfficiency(timestamp);
     double correctedMultiplicity = 0.;
+    size_t skippedTracks = 0;
     for (const auto& track : tracks) {
       // Match the tracks written by the corresponding data/MC producer path.
-      if constexpr (applyDCA) {
-        if (std::abs(track.dcaXY()) > getMaxDCAxy(track.pt()) || std::abs(track.dcaZ()) > dcazmax) {
-          continue;
-        }
-      }
-      const auto mask = static_cast<uint8_t>(cfgMultiplicityTrackBitMask.value);
-      if (mask != 0 && (getTrackType(track) & mask) != mask) {
+      if (!isTrackSelected(track, true)) {
         continue;
       }
-
       // The map contains RecoAll / MC, not inverse-efficiency weights.
       // Keep the original estimator as the map coordinate, including for centrality.
       const std::array<double, MultiplicityEfficiencyDimensions> values{track.eta(), track.pt(), collision.multiplicity(), collision.posZ()};
-      std::array<int, MultiplicityEfficiencyDimensions> bins{};
-      for (int axis = 0; axis < MultiplicityEfficiencyDimensions; ++axis) {
-        auto* efficiencyAxis = efficiency->GetAxis(axis);
-        bins[axis] = efficiencyAxis->FindFixBin(values[axis]);
-        if (!std::isfinite(values[axis]) || bins[axis] < 1 || bins[axis] > efficiencyAxis->GetNbins()) {
-          LOGF(fatal, "Multiplicity efficiency from %s does not cover axis %d value %g", cfgEfficiencyMultiplicity.value.c_str(), axis, values[axis]);
-        }
-      }
-      const double eff = efficiency->GetBinContent(bins.data());
+      const double eff = efficiency->GetBinContent(efficiency->GetBin(values.data()));
       if (!std::isfinite(eff) || eff <= 0.) {
-        LOGF(fatal, "Invalid multiplicity efficiency %g from %s at bins (%d, %d, %d, %d)", eff, cfgEfficiencyMultiplicity.value.c_str(), bins[0], bins[1], bins[2], bins[3]);
+        ++skippedTracks;
+        continue;
       }
       correctedMultiplicity += 1. / eff;
+    }
+    if (cfgVerbosity > 0 && skippedTracks > 0) {
+      LOGF(warning, "Skipped %zu tracks with invalid efficiency while correcting collision %lld", skippedTracks, static_cast<int64_t>(collision.globalIndex()));
     }
     if (!std::isfinite(correctedMultiplicity) || correctedMultiplicity > std::numeric_limits<float>::max()) {
       LOGF(fatal, "Corrected multiplicity cannot be represented as a float: %g", correctedMultiplicity);
     }
     return static_cast<float>(correctedMultiplicity);
+  }
+
+  template <typename TTrack>
+  bool isTrackSelected(const TTrack& track, bool checkTrackBitMask = false)
+  {
+    const float maxDCAxy = getMaxDCAxy(track.pt());
+    if (std::abs(track.dcaXY()) > maxDCAxy || std::abs(track.dcaZ()) > dcazmax) {
+      return false;
+    }
+    if (checkTrackBitMask) {
+      const auto mask = static_cast<uint8_t>(cfgMultiplicityTrackBitMask.value);
+      if (mask != 0 && (getTrackType(track) & mask) != mask) {
+        return false;
+      }
+    }
+    return true;
   }
 
   template <class T>
@@ -417,7 +423,7 @@ struct FilterCF {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     outputCollisions(bc.runNumber(), collision.posZ(), collision.multiplicity(), bc.timestamp());
     if (!cfgEfficiencyMultiplicity.value.empty()) {
-      outputCollisionsExtra(getCorrectedMultiplicity<true>(collision, tracks, bc.timestamp()));
+      outputCollisionsExtra(getCorrectedMultiplicity(collision, tracks, bc.timestamp()));
     }
 
     if constexpr (std::experimental::is_detected<HasMultTables, C1>::value) {
@@ -444,8 +450,7 @@ struct FilterCF {
       outputCollRefs(collision.globalIndex());
     }
     for (const auto& track : tracks) {
-      float maxDCAxy = getMaxDCAxy(track.pt());
-      if ((std::abs(track.dcaXY()) > maxDCAxy) || (std::abs(track.dcaZ()) > dcazmax)) {
+      if (!isTrackSelected(track)) {
         continue;
       }
 
@@ -487,8 +492,7 @@ struct FilterCF {
       if (!track.isGlobalTrack()) {
         continue; // trackQA for global tracks only
       }
-      float maxDCAxy = getMaxDCAxy(track.pt());
-      if ((std::abs(track.dcaXY()) > maxDCAxy) || (std::abs(track.dcaZ()) > dcazmax)) {
+      if (!isTrackSelected(track)) {
         continue;
       }
       registrytrackQA.fill(HIST("eta"), track.eta());
@@ -530,6 +534,9 @@ struct FilterCF {
       mcParticleLabelsCache.push_back(-1);
     }
 
+    std::vector<int64_t> bestRecoCollisionIndices(mcCollisions.size(), -1);
+    std::vector<int> bestRecoCollisionNContrib(mcCollisions.size(), -1);
+
     // PASS 1 on collisions: check which particles are kept
     for (const auto& collision : allCollisions) {
       auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
@@ -539,6 +546,12 @@ struct FilterCF {
 
       if (!keepCollision(collision)) {
         continue;
+      }
+
+      const auto mcCollisionId = collision.mcCollisionId();
+      if (mcCollisionId >= 0 && mcCollisionId < static_cast<int64_t>(bestRecoCollisionIndices.size()) && collision.numContrib() > bestRecoCollisionNContrib[mcCollisionId]) {
+        bestRecoCollisionNContrib[mcCollisionId] = collision.numContrib();
+        bestRecoCollisionIndices[mcCollisionId] = collision.globalIndex();
       }
 
       for (const auto& track : groupedTracks) {
@@ -608,9 +621,12 @@ struct FilterCF {
       // NOTE works only when we store all MC collisions (as we do here)
       outputCollisions(bc.runNumber(), collision.posZ(), collision.multiplicity(), bc.timestamp());
       if (!cfgEfficiencyMultiplicity.value.empty()) {
-        outputCollisionsExtra(getCorrectedMultiplicity<false>(collision, groupedTracks, bc.timestamp()));
+        outputCollisionsExtra(getCorrectedMultiplicity(collision, groupedTracks, bc.timestamp()));
       }
-      outputMcCollisionLabels(collision.mcCollisionId());
+
+      const auto mcCollisionId = collision.mcCollisionId();
+      const bool bestRecoCollision = mcCollisionId >= 0 && mcCollisionId < static_cast<int64_t>(bestRecoCollisionIndices.size()) && bestRecoCollisionIndices[mcCollisionId] == collision.globalIndex();
+      outputMcCollisionLabels(mcCollisionId, bestRecoCollision);
 
       if constexpr (std::experimental::is_detected<HasMultTables, C1>::value) {
         multiplicities.clear();
@@ -662,7 +678,7 @@ struct FilterCF {
   using McCollisionsWithHepMC = soa::Join<aod::McCollisions, aod::HepMCXSections>;
   void processMC(McCollisionsWithHepMC const& mcCollisions, aod::McParticles const& allParticles,
                  soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CFMultiplicities> const& allCollisions,
-                 soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TrackSelection>> const& tracks,
+                 soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection>> const& tracks,
                  aod::BCsWithTimestamps const& bcs)
   {
     processMCT(mcCollisions, allParticles, allCollisions, tracks, bcs);
@@ -681,7 +697,7 @@ struct FilterCF {
 
   void processMCMults(McCollisionsWithHepMC const& mcCollisions, aod::McParticles const& allParticles,
                       soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CFMultiplicities, aod::CentFT0Cs, aod::PVMults, aod::FV0Mults, aod::MultsGlobal> const& allCollisions,
-                      soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TrackSelection>> const& tracks,
+                      soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection>> const& tracks,
                       aod::BCsWithTimestamps const& bcs)
   {
     processMCT(mcCollisions, allParticles, allCollisions, tracks, bcs);
@@ -761,14 +777,14 @@ struct MultiplicitySelector {
 
   void processTracks(aod::Collision const&, soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>> const& tracks)
   {
-    output(tracks.size(), aod::cfmultiplicity::Tracks);
+    output(tracks.size(), true);
   }
   PROCESS_SWITCH(MultiplicitySelector, processTracks, "Select track count as multiplicity", false);
 
   void processFT0M(aod::CentFT0Ms const& centralities)
   {
     for (const auto& c : centralities) {
-      output(c.centFT0M(), aod::cfmultiplicity::FT0M);
+      output(c.centFT0M(), false);
     }
   }
   PROCESS_SWITCH(MultiplicitySelector, processFT0M, "Select FT0M centrality as multiplicity", false);
@@ -776,7 +792,7 @@ struct MultiplicitySelector {
   void processFT0C(aod::CentFT0Cs const& centralities)
   {
     for (const auto& c : centralities) {
-      output(c.centFT0C(), aod::cfmultiplicity::FT0C);
+      output(c.centFT0C(), false);
     }
   }
   PROCESS_SWITCH(MultiplicitySelector, processFT0C, "Select FT0C centrality as multiplicity", false);
@@ -784,7 +800,7 @@ struct MultiplicitySelector {
   void processFT0CVariant1(aod::CentFT0CVariant1s const& centralities)
   {
     for (const auto& c : centralities) {
-      output(c.centFT0CVariant1(), aod::cfmultiplicity::FT0CVariant1);
+      output(c.centFT0CVariant1(), false);
     }
   }
   PROCESS_SWITCH(MultiplicitySelector, processFT0CVariant1, "Select FT0CVariant1 centrality as multiplicity", false);
@@ -792,7 +808,7 @@ struct MultiplicitySelector {
   void processFT0CVariant2(aod::CentFT0CVariant2s const& centralities)
   {
     for (const auto& c : centralities) {
-      output(c.centFT0CVariant2(), aod::cfmultiplicity::FT0CVariant2);
+      output(c.centFT0CVariant2(), false);
     }
   }
   PROCESS_SWITCH(MultiplicitySelector, processFT0CVariant2, "Select FT0CVariant2 centrality as multiplicity", false);
@@ -800,7 +816,7 @@ struct MultiplicitySelector {
   void processFT0A(aod::CentFT0As const& centralities)
   {
     for (const auto& c : centralities) {
-      output(c.centFT0A(), aod::cfmultiplicity::FT0A);
+      output(c.centFT0A(), false);
     }
   }
   PROCESS_SWITCH(MultiplicitySelector, processFT0A, "Select FT0A centrality as multiplicity", false);
@@ -808,7 +824,7 @@ struct MultiplicitySelector {
   void processCentNGlobal(aod::CentNGlobals const& centralities)
   {
     for (const auto& c : centralities) {
-      output(c.centNGlobal(), aod::cfmultiplicity::CentNGlobal);
+      output(c.centNGlobal(), false);
     }
   }
   PROCESS_SWITCH(MultiplicitySelector, processCentNGlobal, "Select CentNGlobal centrality as multiplicity", false);
@@ -816,14 +832,14 @@ struct MultiplicitySelector {
   void processRun2V0M(aod::CentRun2V0Ms const& centralities)
   {
     for (const auto& c : centralities) {
-      output(c.centRun2V0M(), aod::cfmultiplicity::Run2V0M);
+      output(c.centRun2V0M(), false);
     }
   }
   PROCESS_SWITCH(MultiplicitySelector, processRun2V0M, "Select V0M centrality as multiplicity", true);
 
   void processMCGen(aod::McCollision const&, aod::McParticles const& particles)
   {
-    output(particles.size(), aod::cfmultiplicity::MCParticles);
+    output(particles.size(), false);
   }
   PROCESS_SWITCH(MultiplicitySelector, processMCGen, "Select MC particle count as multiplicity", false);
 };
