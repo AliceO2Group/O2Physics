@@ -120,6 +120,7 @@ struct HfCandidateCreatorXicToXiPiPi {
     Configurable<float> minDecayLength{"minDecayLength", 0.015, "Minimum decay length (computed with DCAFitter)"};
     Configurable<float> minCosPA{"minCosPA", 0.9, "Minimum coine of pointing angle (computed with DCAFitter)"};
     Configurable<float> maxChi2Pca{"maxChi2Pca", 3., "Maximum chi2 PCA (computed with DCAFitter)"};
+    Configurable<float> maxNsigmaXiDaus{"maxNsigmaXiDaus", 3., "Maximum PID Nsigma values for Xi daughters (both TPC and TOF)"};
   } softTrigCuts;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
@@ -231,9 +232,26 @@ struct HfCandidateCreatorXicToXiPiPi {
   /// \param pVecCascade is the cascade momentum vector
   /// \param trackParBachelor is the array with two bachelor track parametrisations
   /// \param collision is the collision containing the candidate
+  /// \param nSigTpcBachelorPi is the TPC n-sigma for the Xi bachelor track with pion hypothesis
+  /// \param nSigTofBachelorPi is the TOF n-sigma for the Xi bachelor track with pion hypothesis
+  /// \param nSigTpcPiFromLambda is the TPC n-sigma for the pion track from the Lambda decay with pion hypothesis
+  /// \param nSigTofPiFromLambda is the TOF n-sigma for the pion track from the Lambda decay with pion hypothesis
+  /// \param nSigTpcPrFromLambda is the TPC n-sigma for the proton track from the Lambda decay with proton hypothesis
+  /// \param nSigTofPrFromLambda is the TOF n-sigma for the proton track from the Lambda decay with proton hypothesis
+  /// \return true if the candidate passes the software trigger selections, otherwise false
   template <typename TTrackParCov, typename Coll>
-  bool isSelectedXicSoftwareTriggers(std::array<float, 3> const& pVecCascade, std::array<TTrackParCov, 2> const& trackParBachelor, Coll const& collision)
+  bool isSelectedXicSoftwareTriggers(std::array<float, 3> const& pVecCascade, std::array<TTrackParCov, 2> const& trackParBachelor, Coll const& collision, float nSigTpcBachelorPi, float nSigTofBachelorPi, float nSigTpcPiFromLambda, float nSigTofPiFromLambda, float nSigTpcPrFromLambda, float nSigTofPrFromLambda, bool hasTofBachelorPi, bool hasTofPiFromLambda, bool hasTofPrFromLambda)
   {
+    if (std::abs(nSigTpcBachelorPi) < softTrigCuts.maxNsigmaXiDaus || (hasTofBachelorPi && std::abs(nSigTofBachelorPi) < softTrigCuts.maxNsigmaXiDaus)) {
+      return false;
+    }
+    if (std::abs(nSigTpcPiFromLambda) < softTrigCuts.maxNsigmaXiDaus || (hasTofPiFromLambda && std::abs(nSigTofPiFromLambda) < softTrigCuts.maxNsigmaXiDaus)) {
+      return false;
+    }
+    if (std::abs(nSigTpcPrFromLambda) < softTrigCuts.maxNsigmaXiDaus || (hasTofPrFromLambda && std::abs(nSigTofPrFromLambda) < softTrigCuts.maxNsigmaXiDaus)) {
+      return false;
+    }
+
     int nCand{0};
     try {
       nCand = df2Prong.process(trackParBachelor[0], trackParBachelor[1]);
@@ -349,13 +367,42 @@ struct HfCandidateCreatorXicToXiPiPi {
       trackCasc.setAbsCharge(1);
       trackCasc.setPID(o2::track::PID::XiMinus);
 
+      //----------------------------calculate physical properties-----------------------
+      // Charge of charm baryon
+      int8_t const signXic = casc.sign() < 0 ? +1 : -1;
+
       //----------------------------fit SV and create XicPlus track------------------
       auto trackParCovCharmBachelor0 = getTrackParCov(trackCharmBachelor0);
       auto trackParCovCharmBachelor1 = getTrackParCov(trackCharmBachelor1);
 
       // if enabled, apply selections of software trigger
+      float pPiFromLambda{}, pPrFromLambda{}, nSigTpcBachelorPi{}, nSigTofBachelorPi{}, nSigTpcPiFromLambda{}, nSigTofPiFromLambda{}, nSigTpcPrFromLambda{}, nSigTofPrFromLambda{};
       if (softTrigCuts.applySoftwareTrigSelections) {
-        if (!isSelectedXicSoftwareTriggers(pVecCasc, std::array{trackParCovCharmBachelor0, trackParCovCharmBachelor1}, collision)) {
+        // get PID information already here
+        auto trackPionFromXi = casc.bachelor_as<TracksWCovDcaPidPrPi>();
+        auto trackPosLambdaDaughter = casc.posTrack_as<TracksWCovDcaPidPrPi>();
+        auto trackNegLambdaDaughter = casc.negTrack_as<TracksWCovDcaPidPrPi>();
+        nSigTpcBachelorPi = trackPionFromXi.tpcNSigmaPi();
+        nSigTofBachelorPi = trackPionFromXi.tofNSigmaPi();
+        bool hasTofBachelorPi = trackPionFromXi.hasTOF();
+        bool hasTofPiFromLambda = false;
+        bool hasTofPrFromLambda = false;
+        if (signXic == +1) {
+          pPiFromLambda = trackNegLambdaDaughter.p();
+          nSigTpcPiFromLambda = trackNegLambdaDaughter.tpcNSigmaPi();
+          nSigTofPiFromLambda = trackNegLambdaDaughter.tofNSigmaPi();
+          pPrFromLambda = trackPosLambdaDaughter.p();
+          nSigTpcPrFromLambda = trackPosLambdaDaughter.tpcNSigmaPr();
+          nSigTofPrFromLambda = trackPosLambdaDaughter.tofNSigmaPr();
+        } else {
+          pPiFromLambda = trackPosLambdaDaughter.p();
+          nSigTpcPiFromLambda = trackPosLambdaDaughter.tpcNSigmaPi();
+          nSigTofPiFromLambda = trackPosLambdaDaughter.tofNSigmaPi();
+          pPrFromLambda = trackNegLambdaDaughter.p();
+          nSigTpcPrFromLambda = trackNegLambdaDaughter.tpcNSigmaPr();
+          nSigTofPrFromLambda = trackNegLambdaDaughter.tofNSigmaPr();
+        }
+        if (!isSelectedXicSoftwareTriggers(pVecCasc, std::array{trackParCovCharmBachelor0, trackParCovCharmBachelor1}, collision, nSigTpcBachelorPi, nSigTofBachelorPi, nSigTpcPiFromLambda, nSigTofPiFromLambda, nSigTpcPrFromLambda, nSigTofPrFromLambda)) {
           continue;
         }
       }
@@ -370,10 +417,6 @@ struct HfCandidateCreatorXicToXiPiPi {
         continue;
       }
       registry.fill(HIST("hCandCounter"), VertexFit);
-
-      //----------------------------calculate physical properties-----------------------
-      // Charge of charm baryon
-      int8_t const signXic = casc.sign() < 0 ? +1 : -1;
 
       // get SV properties
       const auto& secondaryVertex = df.getPCACandidate();
@@ -436,28 +479,29 @@ struct HfCandidateCreatorXicToXiPiPi {
       float const nSigTofPiFromXicPlus0 = trackCharmBachelor0.tofNSigmaPi();
       float const nSigTpcPiFromXicPlus1 = trackCharmBachelor1.tpcNSigmaPi();
       float const nSigTofPiFromXicPlus1 = trackCharmBachelor1.tofNSigmaPi();
-      // Bachelor pion
-      auto trackPionFromXi = casc.bachelor_as<TracksWCovDcaPidPrPi>();
-      float const nSigTpcBachelorPi = trackPionFromXi.tpcNSigmaPi();
-      float const nSigTofBachelorPi = trackPionFromXi.tofNSigmaPi();
-      // Lambda daughters
-      auto trackPosLambdaDaughter = casc.posTrack_as<TracksWCovDcaPidPrPi>();
-      auto trackNegLambdaDaughter = casc.negTrack_as<TracksWCovDcaPidPrPi>();
-      float pPiFromLambda{}, pPrFromLambda{}, nSigTpcPiFromLambda{}, nSigTofPiFromLambda{}, nSigTpcPrFromLambda{}, nSigTofPrFromLambda{};
-      if (signXic == +1) {
-        pPiFromLambda = trackNegLambdaDaughter.p();
-        nSigTpcPiFromLambda = trackNegLambdaDaughter.tpcNSigmaPi();
-        nSigTofPiFromLambda = trackNegLambdaDaughter.tofNSigmaPi();
-        pPrFromLambda = trackPosLambdaDaughter.p();
-        nSigTpcPrFromLambda = trackPosLambdaDaughter.tpcNSigmaPr();
-        nSigTofPrFromLambda = trackPosLambdaDaughter.tofNSigmaPr();
-      } else {
-        pPiFromLambda = trackPosLambdaDaughter.p();
-        nSigTpcPiFromLambda = trackPosLambdaDaughter.tpcNSigmaPi();
-        nSigTofPiFromLambda = trackPosLambdaDaughter.tofNSigmaPi();
-        pPrFromLambda = trackNegLambdaDaughter.p();
-        nSigTpcPrFromLambda = trackNegLambdaDaughter.tpcNSigmaPr();
-        nSigTofPrFromLambda = trackNegLambdaDaughter.tofNSigmaPr();
+      if (!softTrigCuts.applySoftwareTrigSelections) {
+        // Bachelor pion
+        auto trackPionFromXi = casc.bachelor_as<TracksWCovDcaPidPrPi>();
+        nSigTpcBachelorPi = trackPionFromXi.tpcNSigmaPi();
+        nSigTofBachelorPi = trackPionFromXi.tofNSigmaPi();
+        // Lambda daughters
+        auto trackPosLambdaDaughter = casc.posTrack_as<TracksWCovDcaPidPrPi>();
+        auto trackNegLambdaDaughter = casc.negTrack_as<TracksWCovDcaPidPrPi>();
+        if (signXic == +1) {
+          pPiFromLambda = trackNegLambdaDaughter.p();
+          nSigTpcPiFromLambda = trackNegLambdaDaughter.tpcNSigmaPi();
+          nSigTofPiFromLambda = trackNegLambdaDaughter.tofNSigmaPi();
+          pPrFromLambda = trackPosLambdaDaughter.p();
+          nSigTpcPrFromLambda = trackPosLambdaDaughter.tpcNSigmaPr();
+          nSigTofPrFromLambda = trackPosLambdaDaughter.tofNSigmaPr();
+        } else {
+          pPiFromLambda = trackPosLambdaDaughter.p();
+          nSigTpcPiFromLambda = trackPosLambdaDaughter.tpcNSigmaPi();
+          nSigTofPiFromLambda = trackPosLambdaDaughter.tofNSigmaPi();
+          pPrFromLambda = trackNegLambdaDaughter.p();
+          nSigTpcPrFromLambda = trackNegLambdaDaughter.tpcNSigmaPr();
+          nSigTofPrFromLambda = trackNegLambdaDaughter.tofNSigmaPr();
+        }
       }
 
       //--------------------------------------------fill histograms----------------------------------------------------------------
@@ -546,11 +590,40 @@ struct HfCandidateCreatorXicToXiPiPi {
       auto trackCharmBachelor1 = rowTrackIndexXicPlus.prong1_as<TracksWCovExtraPidPrPi>();
 
       // if enabled, apply selections of software trigger
+      float pPiFromLambda{}, pPrFromLambda{}, nSigTpcBachelorPi{}, nSigTofBachelorPi{}, nSigTpcPiFromLambda{}, nSigTofPiFromLambda{}, nSigTpcPrFromLambda{}, nSigTofPrFromLambda{};
       if (softTrigCuts.applySoftwareTrigSelections) {
+        // get PID information already here
+        auto trackPionFromXi = casc.bachelor_as<TracksWCovDcaPidPrPi>();
+        auto trackPosLambdaDaughter = casc.posTrack_as<TracksWCovDcaPidPrPi>();
+        auto trackNegLambdaDaughter = casc.negTrack_as<TracksWCovDcaPidPrPi>();
+        nSigTpcBachelorPi = trackPionFromXi.tpcNSigmaPi();
+        nSigTofBachelorPi = trackPionFromXi.tofNSigmaPi();
+        bool hasTofBachelorPi = trackPionFromXi.hasTOF();
+        bool hasTofPiFromLambda = false;
+        bool hasTofPrFromLambda = false;
+        if (signXic == +1) {
+          pPiFromLambda = trackNegLambdaDaughter.p();
+          nSigTpcPiFromLambda = trackNegLambdaDaughter.tpcNSigmaPi();
+          nSigTofPiFromLambda = trackNegLambdaDaughter.tofNSigmaPi();
+          hasTofPiFromLambda = trackNegLambdaDaughter.hasTOF();
+          pPrFromLambda = trackPosLambdaDaughter.p();
+          nSigTpcPrFromLambda = trackPosLambdaDaughter.tpcNSigmaPr();
+          nSigTofPrFromLambda = trackPosLambdaDaughter.tofNSigmaPr();
+          hasTofPrFromLambda = trackPosLambdaDaughter.hasTOF();
+        } else {
+          pPiFromLambda = trackPosLambdaDaughter.p();
+          nSigTpcPiFromLambda = trackPosLambdaDaughter.tpcNSigmaPi();
+          nSigTofPiFromLambda = trackPosLambdaDaughter.tofNSigmaPi();
+          hasTofPiFromLambda = trackPosLambdaDaughter.hasTOF();
+          pPrFromLambda = trackNegLambdaDaughter.p();
+          nSigTpcPrFromLambda = trackNegLambdaDaughter.tpcNSigmaPr();
+          nSigTofPrFromLambda = trackNegLambdaDaughter.tofNSigmaPr();
+          hasTofPrFromLambda = trackNegLambdaDaughter.hasTOF();
+        }
         auto trackParCovCharmBachelor0 = getTrackParCov(trackCharmBachelor0);
         auto trackParCovCharmBachelor1 = getTrackParCov(trackCharmBachelor1);
         std::array<float, 3> const pVecCasc = {casc.px(), casc.py(), casc.pz()};
-        if (!isSelectedXicSoftwareTriggers(pVecCasc, std::array{trackParCovCharmBachelor0, trackParCovCharmBachelor1}, collision)) {
+        if (!isSelectedXicSoftwareTriggers(pVecCasc, std::array{trackParCovCharmBachelor0, trackParCovCharmBachelor1}, collision, nSigTpcBachelorPi, nSigTofBachelorPi, nSigTpcPiFromLambda, nSigTofPiFromLambda, nSigTpcPrFromLambda, nSigTofPrFromLambda, hasTofBachelorPi, hasTofPiFromLambda, hasTofPrFromLambda)) {
           continue;
         }
       }
@@ -730,28 +803,33 @@ struct HfCandidateCreatorXicToXiPiPi {
       float const nSigTofPiFromXicPlus0 = trackCharmBachelor0.tofNSigmaPi();
       float const nSigTpcPiFromXicPlus1 = trackCharmBachelor1.tpcNSigmaPi();
       float const nSigTofPiFromXicPlus1 = trackCharmBachelor1.tofNSigmaPi();
-      // Bachelor pion
-      auto trackPionFromXi = casc.bachelor_as<TracksWCovExtraPidPrPi>();
-      float const nSigTpcBachelorPi = trackPionFromXi.tpcNSigmaPi();
-      float const nSigTofBachelorPi = trackPionFromXi.tofNSigmaPi();
-      // Lambda daughters
-      auto trackPosLambdaDaughter = casc.posTrack_as<TracksWCovExtraPidPrPi>();
-      auto trackNegLambdaDaughter = casc.negTrack_as<TracksWCovExtraPidPrPi>();
-      float pPiFromLambda{}, pPrFromLambda{}, nSigTpcPiFromLambda{}, nSigTofPiFromLambda{}, nSigTpcPrFromLambda{}, nSigTofPrFromLambda{};
-      if (signXic == +1) {
-        pPiFromLambda = trackNegLambdaDaughter.p();
-        nSigTpcPiFromLambda = trackNegLambdaDaughter.tpcNSigmaPi();
-        nSigTofPiFromLambda = trackNegLambdaDaughter.tofNSigmaPi();
-        pPrFromLambda = trackPosLambdaDaughter.p();
-        nSigTpcPrFromLambda = trackPosLambdaDaughter.tpcNSigmaPr();
-        nSigTofPrFromLambda = trackPosLambdaDaughter.tofNSigmaPr();
-      } else {
-        pPiFromLambda = trackPosLambdaDaughter.p();
-        nSigTpcPiFromLambda = trackPosLambdaDaughter.tpcNSigmaPi();
-        nSigTofPiFromLambda = trackPosLambdaDaughter.tofNSigmaPi();
-        pPrFromLambda = trackNegLambdaDaughter.p();
-        nSigTpcPrFromLambda = trackNegLambdaDaughter.tpcNSigmaPr();
-        nSigTofPrFromLambda = trackNegLambdaDaughter.tofNSigmaPr();
+      if (!softTrigCuts.applySoftwareTrigSelections) {
+        // Bachelor pion
+        auto trackPionFromXi = casc.bachelor_as<TracksWCovDcaPidPrPi>();
+        nSigTpcBachelorPi = trackPionFromXi.tpcNSigmaPi();
+        nSigTofBachelorPi = trackPionFromXi.tofNSigmaPi();
+        // Lambda daughters
+        auto trackPosLambdaDaughter = casc.posTrack_as<TracksWCovDcaPidPrPi>();
+        auto trackNegLambdaDaughter = casc.negTrack_as<TracksWCovDcaPidPrPi>();
+        if (signXic == +1) {
+          pPiFromLambda = trackNegLambdaDaughter.p();
+          nSigTpcPiFromLambda = trackNegLambdaDaughter.tpcNSigmaPi();
+          nSigTofPiFromLambda = trackNegLambdaDaughter.tofNSigmaPi();
+          hasTofPiFromLambda = trackNegLambdaDaughter.hasTOF();
+          pPrFromLambda = trackPosLambdaDaughter.p();
+          nSigTpcPrFromLambda = trackPosLambdaDaughter.tpcNSigmaPr();
+          nSigTofPrFromLambda = trackPosLambdaDaughter.tofNSigmaPr();
+          hasTofPrFromLambda = trackPosLambdaDaughter.hasTOF();
+        } else {
+          pPiFromLambda = trackPosLambdaDaughter.p();
+          nSigTpcPiFromLambda = trackPosLambdaDaughter.tpcNSigmaPi();
+          nSigTofPiFromLambda = trackPosLambdaDaughter.tofNSigmaPi();
+          hasTofPiFromLambda = trackPosLambdaDaughter.hasTOF();
+          pPrFromLambda = trackNegLambdaDaughter.p();
+          nSigTpcPrFromLambda = trackNegLambdaDaughter.tpcNSigmaPr();
+          nSigTofPrFromLambda = trackNegLambdaDaughter.tofNSigmaPr();
+          hasTofPrFromLambda = trackNegLambdaDaughter.hasTOF();
+        }
       }
 
       //-------------------------------fill histograms--------------------------------------------
