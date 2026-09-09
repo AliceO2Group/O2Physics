@@ -80,7 +80,8 @@ class TripletTrackTrackTrackBuilder
             typename T14,
             typename T15,
             typename T16,
-            typename T17>
+            typename T17,
+            typename T18>
   void init(o2::framework::HistogramRegistry* registry,
             T1 const& confCollisionBinning,
             T2 const& confTrackSelection1,
@@ -98,21 +99,23 @@ class TripletTrackTrackTrackBuilder
             std::map<T14, std::vector<o2::framework::AxisSpec>> const& trackHistSpec2,
             std::map<T15, std::vector<o2::framework::AxisSpec>> const& trackHistSpec3,
             std::map<T16, std::vector<o2::framework::AxisSpec>> const& pairHistSpec,
-            std::map<T17, std::vector<o2::framework::AxisSpec>> const& cprHistSpec)
+            std::map<T17, std::vector<o2::framework::AxisSpec>> const& cprHistSpec,
+            std::map<T18, std::vector<o2::framework::AxisSpec>> const& tripletCleanerHistSpec)
   {
     // check if correlate the same tracks or not
     mTrack1Track2Track3AreSameSpecies = confMixing.particle123AreSameSpecies.value;
     mTrack1Track2AreSameSpecies = confMixing.particle12AreSameSpecies.value;
 
     if (mTrack1Track2Track3AreSameSpecies && mTrack1Track2AreSameSpecies) {
-      LOG(fatal) << "Option Track 1&2 are identical and Option Track 1&2&3 are identical is activated. Breaking...";
+      LOG(fatal) << "Option Track 1&2 are identical and Option Track 1&2&3 are identical are activated. Breaking...";
     }
 
     mColHistManager.template init<modeSe>(registry, colHistSpec, confCollisionBinning);
     mTripletHistManagerSe.template init<modeSe>(registry, pairHistSpec, confTripletBinning, confTripletCuts, confMixing);
     mTripletHistManagerMe.template init<modeMe>(registry, pairHistSpec, confTripletBinning, confTripletCuts, confMixing);
 
-    mTc.template init<modeSe>(confTripletCuts);
+    mTcSe.template init<modeSe>(registry, tripletCleanerHistSpec, confTripletCuts);
+    mTcMe.template init<modeMe>(registry, tripletCleanerHistSpec, confTripletCuts);
 
     if (mTrack1Track2Track3AreSameSpecies) {
       // Track1 & Track2 & Track3 are the same particle species
@@ -196,7 +199,7 @@ class TripletTrackTrackTrackBuilder
       if (mMixIdenticalParticles) {
         tripletOrder = static_cast<tripletprocesshelpers::TripletOrder>(mDist(mRng));
       }
-      tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackTable, col, mTrackHistManager1, mTripletHistManagerSe, mCtrSe, mTc, tripletOrder);
+      tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackTable, col, mTrackHistManager1, mTripletHistManagerSe, mCtrSe, mTcSe, tripletOrder);
     } else if (mTrack1Track2AreSameSpecies) {
       auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       auto trackSlice3 = partition3->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
@@ -208,7 +211,7 @@ class TripletTrackTrackTrackBuilder
       if (mMixIdenticalParticles) {
         tripletOrder = static_cast<tripletprocesshelpers::TripletOrder>(mDist(mRng));
       }
-      tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice3, trackTable, col, mTrackHistManager1, mTrackHistManager3, mTripletHistManagerSe, mCtrSe, mTc, tripletOrder);
+      tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice3, trackTable, col, mTrackHistManager1, mTrackHistManager3, mTripletHistManagerSe, mCtrSe, mTcSe, tripletOrder);
     } else {
       auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
@@ -218,7 +221,7 @@ class TripletTrackTrackTrackBuilder
       }
       mColHistManager.template fill<mode>(col);
       mCtrSe.setMagField(col.magField());
-      tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, trackSlice3, trackTable, col, mTrackHistManager1, mTrackHistManager2, mTrackHistManager3, mTripletHistManagerSe, mCtrSe, mTc);
+      tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, trackSlice3, trackTable, col, mTrackHistManager1, mTrackHistManager2, mTrackHistManager3, mTripletHistManagerSe, mCtrSe, mTcSe);
     }
   }
 
@@ -237,7 +240,7 @@ class TripletTrackTrackTrackBuilder
       if (mMixIdenticalParticles) {
         tripletOrder = static_cast<tripletprocesshelpers::TripletOrder>(mDist(mRng));
       }
-      tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mTripletHistManagerSe, mCleaner1, mCtrSe, mTc, tripletOrder);
+      tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mTripletHistManagerSe, mCleaner1, mCtrSe, mTcSe, tripletOrder);
     } else if (mTrack1Track2AreSameSpecies) {
       auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       auto trackSlice3 = partition3->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
@@ -249,7 +252,7 @@ class TripletTrackTrackTrackBuilder
       if (mMixIdenticalParticles) {
         tripletOrder = static_cast<tripletprocesshelpers::TripletOrder>(mDist(mRng));
       }
-      tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice3, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mTrackHistManager3, mTripletHistManagerSe, mCleaner1, mCleaner3, mCtrSe, mTc, tripletOrder);
+      tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice3, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mTrackHistManager3, mTripletHistManagerSe, mCleaner1, mCleaner3, mCtrSe, mTcSe, tripletOrder);
     } else {
       auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
@@ -259,7 +262,7 @@ class TripletTrackTrackTrackBuilder
       }
       mColHistManager.template fill<mode>(col, mcCols);
       mCtrSe.setMagField(col.magField());
-      tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, trackSlice3, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mTrackHistManager2, mTrackHistManager3, mTripletHistManagerSe, mCleaner1, mCleaner2, mCleaner3, mCtrSe, mTc);
+      tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, trackSlice3, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mTrackHistManager2, mTrackHistManager3, mTripletHistManagerSe, mCleaner1, mCleaner2, mCleaner3, mCtrSe, mTcSe);
     }
   }
 
@@ -270,13 +273,13 @@ class TripletTrackTrackTrackBuilder
     if (mTrack1Track2Track3AreSameSpecies) {
       switch (mMixingPolicy) {
         case static_cast<int>(pairhistmanager::kVtxMult):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, partition1, trackTable, cache, binsVtxMult, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, partition1, trackTable, cache, binsVtxMult, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTcMe);
           break;
         case static_cast<int>(pairhistmanager::kVtxCent):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, partition1, trackTable, cache, binsVtxCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, partition1, trackTable, cache, binsVtxCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTcMe);
           break;
         case static_cast<int>(pairhistmanager::kVtxMultCent):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, partition1, trackTable, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, partition1, trackTable, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTcMe);
           break;
         default:
           LOG(fatal) << "Invalid binning policy specifed. Breaking...";
@@ -284,13 +287,13 @@ class TripletTrackTrackTrackBuilder
     } else if (mTrack1Track2AreSameSpecies) {
       switch (mMixingPolicy) {
         case static_cast<int>(pairhistmanager::kVtxMult):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, partition3, trackTable, cache, binsVtxMult, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, partition3, trackTable, cache, binsVtxMult, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTcMe);
           break;
         case static_cast<int>(pairhistmanager::kVtxCent):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, partition3, trackTable, cache, binsVtxCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, partition3, trackTable, cache, binsVtxCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTcMe);
           break;
         case static_cast<int>(pairhistmanager::kVtxMultCent):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, partition3, trackTable, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, partition3, trackTable, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTcMe);
           break;
         default:
           LOG(fatal) << "Invalid binning policy specifed. Breaking...";
@@ -298,13 +301,13 @@ class TripletTrackTrackTrackBuilder
     } else {
       switch (mMixingPolicy) {
         case static_cast<int>(pairhistmanager::kVtxMult):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition2, partition3, trackTable, cache, binsVtxMult, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition2, partition3, trackTable, cache, binsVtxMult, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTcMe);
           break;
         case static_cast<int>(pairhistmanager::kVtxCent):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition2, partition3, trackTable, cache, binsVtxCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition2, partition3, trackTable, cache, binsVtxCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTcMe);
           break;
         case static_cast<int>(pairhistmanager::kVtxMultCent):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition2, partition3, trackTable, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition2, partition3, trackTable, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTcMe);
           break;
         default:
           LOG(fatal) << "Invalid binning policy specifed. Breaking...";
@@ -319,13 +322,13 @@ class TripletTrackTrackTrackBuilder
     if (mTrack1Track2Track3AreSameSpecies) {
       switch (mMixingPolicy) {
         case static_cast<int>(pairhistmanager::kVtxMult):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, partition1, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMult, mMixingDepth, mTripletHistManagerMe, mCleaner1, mCleaner1, mCleaner1, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, partition1, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMult, mMixingDepth, mTripletHistManagerMe, mCleaner1, mCleaner1, mCleaner1, mCtrMe, mTcMe);
           break;
         case static_cast<int>(pairhistmanager::kVtxCent):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, partition1, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxCent, mMixingDepth, mTripletHistManagerMe, mCleaner1, mCleaner1, mCleaner1, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, partition1, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxCent, mMixingDepth, mTripletHistManagerMe, mCleaner1, mCleaner1, mCleaner1, mCtrMe, mTcMe);
           break;
         case static_cast<int>(pairhistmanager::kVtxMultCent):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, partition1, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCleaner1, mCleaner1, mCleaner1, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, partition1, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCleaner1, mCleaner1, mCleaner1, mCtrMe, mTcMe);
           break;
         default:
           LOG(fatal) << "Invalid binning policy specifed. Breaking...";
@@ -333,13 +336,13 @@ class TripletTrackTrackTrackBuilder
     } else if (mTrack1Track2AreSameSpecies) {
       switch (mMixingPolicy) {
         case static_cast<int>(pairhistmanager::kVtxMult):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMult, mMixingDepth, mTripletHistManagerMe, mCleaner1, mCleaner1, mCleaner3, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMult, mMixingDepth, mTripletHistManagerMe, mCleaner1, mCleaner1, mCleaner3, mCtrMe, mTcMe);
           break;
         case static_cast<int>(pairhistmanager::kVtxCent):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxCent, mMixingDepth, mTripletHistManagerMe, mCleaner1, mCleaner1, mCleaner3, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxCent, mMixingDepth, mTripletHistManagerMe, mCleaner1, mCleaner1, mCleaner3, mCtrMe, mTcMe);
           break;
         case static_cast<int>(pairhistmanager::kVtxMultCent):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCleaner1, mCleaner1, mCleaner3, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCleaner1, mCleaner1, mCleaner3, mCtrMe, mTcMe);
           break;
         default:
           LOG(fatal) << "Invalid binning policy specifed. Breaking...";
@@ -347,13 +350,13 @@ class TripletTrackTrackTrackBuilder
     } else {
       switch (mMixingPolicy) {
         case static_cast<int>(pairhistmanager::kVtxMult):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition2, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMult, mMixingDepth, mTripletHistManagerMe, mCleaner1, mCleaner2, mCleaner3, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition2, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMult, mMixingDepth, mTripletHistManagerMe, mCleaner1, mCleaner2, mCleaner3, mCtrMe, mTcMe);
           break;
         case static_cast<int>(pairhistmanager::kVtxCent):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition2, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxCent, mMixingDepth, mTripletHistManagerMe, mCleaner1, mCleaner2, mCleaner3, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition2, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxCent, mMixingDepth, mTripletHistManagerMe, mCleaner1, mCleaner2, mCleaner3, mCtrMe, mTcMe);
           break;
         case static_cast<int>(pairhistmanager::kVtxMultCent):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition2, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCleaner1, mCleaner2, mCleaner3, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition2, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCleaner1, mCleaner2, mCleaner3, mCtrMe, mTcMe);
           break;
         default:
           LOG(fatal) << "Invalid binning policy specifed. Breaking...";
@@ -374,7 +377,8 @@ class TripletTrackTrackTrackBuilder
 
   closetripletrejection::CloseTripletRejectionTrackTrackTrack<prefixCtrSeTrack1Track2, prefixCtrSeTrack2Track3, prefixCtrSeTrack1Track3> mCtrSe;
   closetripletrejection::CloseTripletRejectionTrackTrackTrack<prefixCtrMeTrack1Track2, prefixCtrMeTrack2Track3, prefixCtrMeTrack1Track3> mCtrMe;
-  tripletcleaner::TrackTrackTrackTripletCleaner mTc;
+  tripletcleaner::TrackTrackTrackTripletCleaner<tripletcleaner::PrefixTripletCleanerTrackTrackTrackSe> mTcSe;
+  tripletcleaner::TrackTrackTrackTripletCleaner<tripletcleaner::PrefixTripletCleanerTrackTrackTrackMe> mTcMe;
   triplethistmanager::MixingPolicy mMixingPolicy = triplethistmanager::MixingPolicy::kVtxMult;
   bool mTrack1Track2Track3AreSameSpecies = false;
   bool mTrack1Track2AreSameSpecies = false;
@@ -424,7 +428,8 @@ class TripletTrackTrackV0Builder
             typename T16,
             typename T17,
             typename T18,
-            typename T19>
+            typename T19,
+            typename T20>
   void init(o2::framework::HistogramRegistry* registry,
             T1 const& confCollisionBinning,
             T2 const& confTrackSelection1,
@@ -444,7 +449,8 @@ class TripletTrackTrackV0Builder
             std::map<T16, std::vector<o2::framework::AxisSpec>> const& posDauhistSpec,
             std::map<T17, std::vector<o2::framework::AxisSpec>> const& negDauhistSpec,
             std::map<T18, std::vector<o2::framework::AxisSpec>> const& tripletHistSpec,
-            std::map<T19, std::vector<o2::framework::AxisSpec>> const& ctrHistSpec)
+            std::map<T19, std::vector<o2::framework::AxisSpec>> const& ctrHistSpec,
+            std::map<T20, std::vector<o2::framework::AxisSpec>> const& tripletCleanerHistSpec)
   {
     // check if correlate the same tracks or not
     mTrack1Track2AreSameSpecies = confMixing.particle12AreSameSpecies.value;
@@ -453,7 +459,8 @@ class TripletTrackTrackV0Builder
     mTripletHistManagerSe.template init<modeSe>(registry, tripletHistSpec, confTripletBinning, confTripletCuts, confMixing);
     mTripletHistManagerMe.template init<modeMe>(registry, tripletHistSpec, confTripletBinning, confTripletCuts, confMixing);
 
-    mTc.template init<modeSe>(confTripletCuts);
+    mTcSe.template init<modeSe>(registry, tripletCleanerHistSpec, confTripletCuts);
+    mTcMe.template init<modeMe>(registry, tripletCleanerHistSpec, confTripletCuts);
 
     mV0Cleaner.init(confV0Cleaner);
 
@@ -521,7 +528,7 @@ class TripletTrackTrackV0Builder
       if (mMixIdenticalParticles) {
         tripletOrder = static_cast<tripletprocesshelpers::TripletOrder>(mDist(mRng));
       }
-      tripletprocesshelpers::processSameEvent<mode>(trackSlice1, v0Slice, trackTable, col, mTrackHistManager1, mV0HistManager, mTripletHistManagerSe, mCtrSe, mTc, tripletOrder);
+      tripletprocesshelpers::processSameEvent<mode>(trackSlice1, v0Slice, trackTable, col, mTrackHistManager1, mV0HistManager, mTripletHistManagerSe, mCtrSe, mTcSe, tripletOrder);
     } else {
       auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
@@ -531,7 +538,7 @@ class TripletTrackTrackV0Builder
       }
       mColHistManager.template fill<mode>(col);
       mCtrSe.setMagField(col.magField());
-      tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, v0Slice, trackTable, col, mTrackHistManager1, mTrackHistManager2, mV0HistManager, mTripletHistManagerSe, mCtrSe, mTc);
+      tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, v0Slice, trackTable, col, mTrackHistManager1, mTrackHistManager2, mV0HistManager, mTripletHistManagerSe, mCtrSe, mTcSe);
     }
   }
 
@@ -551,7 +558,7 @@ class TripletTrackTrackV0Builder
       if (mMixIdenticalParticles) {
         tripletOrder = static_cast<tripletprocesshelpers::TripletOrder>(mDist(mRng));
       }
-      tripletprocesshelpers::processSameEvent<mode>(trackSlice1, v0Slice, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mV0HistManager, mTripletHistManagerSe, mCleaner1, mV0Cleaner, mCtrSe, mTc, tripletOrder);
+      tripletprocesshelpers::processSameEvent<mode>(trackSlice1, v0Slice, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mV0HistManager, mTripletHistManagerSe, mCleaner1, mV0Cleaner, mCtrSe, mTcSe, tripletOrder);
     } else {
       auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
@@ -561,7 +568,7 @@ class TripletTrackTrackV0Builder
       }
       mColHistManager.template fill<mode>(col, mcCols);
       mCtrSe.setMagField(col.magField());
-      tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, v0Slice, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mTrackHistManager2, mV0HistManager, mTripletHistManagerSe, mCleaner1, mCleaner2, mV0Cleaner, mCtrSe, mTc);
+      tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, v0Slice, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mTrackHistManager2, mV0HistManager, mTripletHistManagerSe, mCleaner1, mCleaner2, mV0Cleaner, mCtrSe, mTcSe);
     }
   }
 
@@ -572,13 +579,13 @@ class TripletTrackTrackV0Builder
     if (mTrack1Track2AreSameSpecies) {
       switch (mMixingPolicy) {
         case static_cast<int>(pairhistmanager::kVtxMult):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, partition3, trackTable, cache, binsVtxMult, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, partition3, trackTable, cache, binsVtxMult, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTcMe);
           break;
         case static_cast<int>(pairhistmanager::kVtxCent):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, partition3, trackTable, cache, binsVtxCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, partition3, trackTable, cache, binsVtxCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTcMe);
           break;
         case static_cast<int>(pairhistmanager::kVtxMultCent):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, partition3, trackTable, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, partition3, trackTable, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTcMe);
           break;
         default:
           LOG(fatal) << "Invalid binning policy specifed. Breaking...";
@@ -586,13 +593,13 @@ class TripletTrackTrackV0Builder
     } else {
       switch (mMixingPolicy) {
         case static_cast<int>(pairhistmanager::kVtxMult):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition2, partition3, trackTable, cache, binsVtxMult, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition2, partition3, trackTable, cache, binsVtxMult, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTcMe);
           break;
         case static_cast<int>(pairhistmanager::kVtxCent):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition2, partition3, trackTable, cache, binsVtxCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition2, partition3, trackTable, cache, binsVtxCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTcMe);
           break;
         case static_cast<int>(pairhistmanager::kVtxMultCent):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition2, partition3, trackTable, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition2, partition3, trackTable, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTcMe);
           break;
         default:
           LOG(fatal) << "Invalid binning policy specifed. Breaking...";
@@ -607,13 +614,13 @@ class TripletTrackTrackV0Builder
     if (mTrack1Track2AreSameSpecies) {
       switch (mMixingPolicy) {
         case static_cast<int>(pairhistmanager::kVtxMult):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMult, mMixingDepth, mTripletHistManagerMe, mCleaner1, mCleaner1, mV0Cleaner, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMult, mMixingDepth, mTripletHistManagerMe, mCleaner1, mCleaner1, mV0Cleaner, mCtrMe, mTcMe);
           break;
         case static_cast<int>(pairhistmanager::kVtxCent):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxCent, mMixingDepth, mTripletHistManagerMe, mCleaner1, mCleaner1, mV0Cleaner, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxCent, mMixingDepth, mTripletHistManagerMe, mCleaner1, mCleaner1, mV0Cleaner, mCtrMe, mTcMe);
           break;
         case static_cast<int>(pairhistmanager::kVtxMultCent):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCleaner1, mCleaner1, mV0Cleaner, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCleaner1, mCleaner1, mV0Cleaner, mCtrMe, mTcMe);
           break;
         default:
           LOG(fatal) << "Invalid binning policy specifed. Breaking...";
@@ -621,13 +628,13 @@ class TripletTrackTrackV0Builder
     } else {
       switch (mMixingPolicy) {
         case static_cast<int>(pairhistmanager::kVtxMult):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition2, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMult, mMixingDepth, mTripletHistManagerMe, mCleaner1, mCleaner2, mV0Cleaner, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition2, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMult, mMixingDepth, mTripletHistManagerMe, mCleaner1, mCleaner2, mV0Cleaner, mCtrMe, mTcMe);
           break;
         case static_cast<int>(pairhistmanager::kVtxCent):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition2, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxCent, mMixingDepth, mTripletHistManagerMe, mCleaner1, mCleaner2, mV0Cleaner, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition2, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxCent, mMixingDepth, mTripletHistManagerMe, mCleaner1, mCleaner2, mV0Cleaner, mCtrMe, mTcMe);
           break;
         case static_cast<int>(pairhistmanager::kVtxMultCent):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition2, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCleaner1, mCleaner2, mV0Cleaner, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition2, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCleaner1, mCleaner2, mV0Cleaner, mCtrMe, mTcMe);
           break;
         default:
           LOG(fatal) << "Invalid binning policy specifed. Breaking...";
@@ -648,7 +655,8 @@ class TripletTrackTrackV0Builder
 
   closetripletrejection::CloseTripletRejectionTrackTrackV0<prefixCtrSeTrack1Track2, prefixCtrSeTrack1V0, prefixCtrSeTrack2V0> mCtrSe;
   closetripletrejection::CloseTripletRejectionTrackTrackV0<prefixCtrMeTrack1Track2, prefixCtrMeTrack1V0, prefixCtrMeTrack2V0> mCtrMe;
-  tripletcleaner::TrackTrackV0TripletCleaner mTc;
+  tripletcleaner::TrackTrackV0TripletCleaner<tripletcleaner::PrefixTripletCleanerTrackTrackV0Se> mTcSe;
+  tripletcleaner::TrackTrackV0TripletCleaner<tripletcleaner::PrefixTripletCleanerTrackTrackV0Me> mTcMe;
   triplethistmanager::MixingPolicy mMixingPolicy = triplethistmanager::MixingPolicy::kVtxMult;
   bool mTrack1Track2AreSameSpecies = false;
   int mMixingDepth = 5;
@@ -707,7 +715,8 @@ class TripletTrackTrackCascadeBuilder
             typename T21,
             typename T22,
             typename T23,
-            typename T24>
+            typename T24,
+            typename T25>
 
   void init(o2::framework::HistogramRegistry* registry,
             T1 const& confCollisionBinning,
@@ -733,7 +742,8 @@ class TripletTrackTrackCascadeBuilder
             std::map<T21, std::vector<o2::framework::AxisSpec>> const& tripletHistSpec,
             std::map<T22, std::vector<o2::framework::AxisSpec>> const& cprHistSpecBachelor,
             std::map<T23, std::vector<o2::framework::AxisSpec>> const& cprHistSpecV0Daughter,
-            std::map<T24, std::vector<o2::framework::AxisSpec>> const& ctrHistSpec)
+            std::map<T24, std::vector<o2::framework::AxisSpec>> const& ctrHistSpec,
+            std::map<T25, std::vector<o2::framework::AxisSpec>> const& tripletCleanerHistSpec)
   {
     // check if correlate the same tracks or not
     mTrack1Track2AreSameSpecies = confMixing.particle12AreSameSpecies.value;
@@ -741,7 +751,8 @@ class TripletTrackTrackCascadeBuilder
     mTripletHistManagerSe.template init<modeSe>(registry, tripletHistSpec, confTripletBinning, confTripletCuts, confMixing);
     mTripletHistManagerMe.template init<modeMe>(registry, tripletHistSpec, confTripletBinning, confTripletCuts, confMixing);
 
-    mTc.template init<modeSe>(confTripletCuts);
+    mTcSe.template init<modeSe>(registry, tripletCleanerHistSpec, confTripletCuts);
+    mTcMe.template init<modeMe>(registry, tripletCleanerHistSpec, confTripletCuts);
 
     mCascadeCleaner.init(confCascadeCleaner);
     if (mTrack1Track2AreSameSpecies) {
@@ -805,7 +816,7 @@ class TripletTrackTrackCascadeBuilder
       if (mMixIdenticalParticles) {
         tripletOrder = static_cast<tripletprocesshelpers::TripletOrder>(mDist(mRng));
       }
-      tripletprocesshelpers::processSameEvent<mode>(trackSlice1, cascadeSlice, trackTable, col, mTrackHistManager1, mCascadeHistManager, mTripletHistManagerSe, mCtrSe, mTc, tripletOrder);
+      tripletprocesshelpers::processSameEvent<mode>(trackSlice1, cascadeSlice, trackTable, col, mTrackHistManager1, mCascadeHistManager, mTripletHistManagerSe, mCtrSe, mTcSe, tripletOrder);
     } else {
       auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
@@ -815,7 +826,7 @@ class TripletTrackTrackCascadeBuilder
       }
       mColHistManager.template fill<mode>(col);
       mCtrSe.setMagField(col.magField());
-      tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, cascadeSlice, trackTable, col, mTrackHistManager1, mTrackHistManager2, mCascadeHistManager, mTripletHistManagerSe, mCtrSe, mTc);
+      tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, cascadeSlice, trackTable, col, mTrackHistManager1, mTrackHistManager2, mCascadeHistManager, mTripletHistManagerSe, mCtrSe, mTcSe);
     }
   }
 
@@ -835,7 +846,7 @@ class TripletTrackTrackCascadeBuilder
       if (mMixIdenticalParticles) {
         tripletOrder = static_cast<tripletprocesshelpers::TripletOrder>(mDist(mRng));
       }
-      tripletprocesshelpers::processSameEvent<mode>(trackSlice1, cascadeSlice, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mCascadeHistManager, mTripletHistManagerSe, mTrackCleaner1, mCascadeCleaner, mCtrSe, mTc, tripletOrder);
+      tripletprocesshelpers::processSameEvent<mode>(trackSlice1, cascadeSlice, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mCascadeHistManager, mTripletHistManagerSe, mTrackCleaner1, mCascadeCleaner, mCtrSe, mTcSe, tripletOrder);
     } else {
       auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
@@ -845,7 +856,7 @@ class TripletTrackTrackCascadeBuilder
       }
       mColHistManager.template fill<mode>(col, mcCols);
       mCtrSe.setMagField(col.magField());
-      tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, cascadeSlice, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mTrackHistManager2, mCascadeHistManager, mTripletHistManagerSe, mTrackCleaner1, mTrackCleaner2, mCascadeCleaner, mCtrSe, mTc);
+      tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, cascadeSlice, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mTrackHistManager2, mCascadeHistManager, mTripletHistManagerSe, mTrackCleaner1, mTrackCleaner2, mCascadeCleaner, mCtrSe, mTcSe);
     }
   }
 
@@ -856,14 +867,13 @@ class TripletTrackTrackCascadeBuilder
     if (mTrack1Track2AreSameSpecies) {
       switch (mMixingPolicy) {
         case static_cast<int>(pairhistmanager::kVtxMult):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, partition3, trackTable, cache, binsVtxMult, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
-
+          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, partition3, trackTable, cache, binsVtxMult, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTcMe);
           break;
         case static_cast<int>(pairhistmanager::kVtxCent):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, partition3, trackTable, cache, binsVtxCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, partition3, trackTable, cache, binsVtxCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTcMe);
           break;
         case static_cast<int>(pairhistmanager::kVtxMultCent):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, partition3, trackTable, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, partition3, trackTable, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTcMe);
           break;
         default:
           LOG(fatal) << "Invalid binning policy specifed. Breaking...";
@@ -871,13 +881,13 @@ class TripletTrackTrackCascadeBuilder
     } else {
       switch (mMixingPolicy) {
         case static_cast<int>(pairhistmanager::kVtxMult):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition2, partition3, trackTable, cache, binsVtxMult, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition2, partition3, trackTable, cache, binsVtxMult, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTcMe);
           break;
         case static_cast<int>(pairhistmanager::kVtxCent):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition2, partition3, trackTable, cache, binsVtxCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition2, partition3, trackTable, cache, binsVtxCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTcMe);
           break;
         case static_cast<int>(pairhistmanager::kVtxMultCent):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition2, partition3, trackTable, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, partition1, partition2, partition3, trackTable, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mCtrMe, mTcMe);
           break;
         default:
           LOG(fatal) << "Invalid binning policy specifed. Breaking...";
@@ -892,13 +902,13 @@ class TripletTrackTrackCascadeBuilder
     if (mTrack1Track2AreSameSpecies) {
       switch (mMixingPolicy) {
         case static_cast<int>(pairhistmanager::kVtxMult):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMult, mMixingDepth, mTripletHistManagerMe, mTrackCleaner1, mTrackCleaner1, mCascadeCleaner, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMult, mMixingDepth, mTripletHistManagerMe, mTrackCleaner1, mTrackCleaner1, mCascadeCleaner, mCtrMe, mTcMe);
           break;
         case static_cast<int>(pairhistmanager::kVtxCent):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxCent, mMixingDepth, mTripletHistManagerMe, mTrackCleaner1, mTrackCleaner1, mCascadeCleaner, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxCent, mMixingDepth, mTripletHistManagerMe, mTrackCleaner1, mTrackCleaner1, mCascadeCleaner, mCtrMe, mTcMe);
           break;
         case static_cast<int>(pairhistmanager::kVtxMultCent):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mTrackCleaner1, mTrackCleaner1, mCascadeCleaner, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mTrackCleaner1, mTrackCleaner1, mCascadeCleaner, mCtrMe, mTcMe);
           break;
         default:
           LOG(fatal) << "Invalid binning policy specifed. Breaking...";
@@ -906,13 +916,13 @@ class TripletTrackTrackCascadeBuilder
     } else {
       switch (mMixingPolicy) {
         case static_cast<int>(pairhistmanager::kVtxMult):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition2, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMult, mMixingDepth, mTripletHistManagerMe, mTrackCleaner1, mTrackCleaner2, mCascadeCleaner, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition2, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMult, mMixingDepth, mTripletHistManagerMe, mTrackCleaner1, mTrackCleaner2, mCascadeCleaner, mCtrMe, mTcMe);
           break;
         case static_cast<int>(pairhistmanager::kVtxCent):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition2, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxCent, mMixingDepth, mTripletHistManagerMe, mTrackCleaner1, mTrackCleaner2, mCascadeCleaner, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition2, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxCent, mMixingDepth, mTripletHistManagerMe, mTrackCleaner1, mTrackCleaner2, mCascadeCleaner, mCtrMe, mTcMe);
           break;
         case static_cast<int>(pairhistmanager::kVtxMultCent):
-          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition2, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mTrackCleaner1, mTrackCleaner2, mCascadeCleaner, mCtrMe, mTc);
+          tripletprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition2, partition3, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMultCent, mMixingDepth, mTripletHistManagerMe, mTrackCleaner1, mTrackCleaner2, mCascadeCleaner, mCtrMe, mTcMe);
           break;
         default:
           LOG(fatal) << "Invalid binning policy specifed. Breaking...";
@@ -933,7 +943,8 @@ class TripletTrackTrackCascadeBuilder
 
   closetripletrejection::CloseTripletRejectionTrackTrackCascade<prefixCtrTrack1Track2Se, prefixCprBachelorTrack1Se, prefixCprV0DaughterTrack1Se, prefixCprBachelorTrack2Se, prefixCprV0DaughterTrack2Se> mCtrSe;
   closetripletrejection::CloseTripletRejectionTrackTrackCascade<prefixCtrTrack1Track2Me, prefixCprBachelorTrack1Me, prefixCprV0DaughterTrack1Me, prefixCprBachelorTrack2Me, prefixCprV0DaughterTrack2Me> mCtrMe;
-  tripletcleaner::TrackTrackCascadeTripletCleaner mTc;
+  tripletcleaner::TrackTrackCascadeTripletCleaner<tripletcleaner::PrefixTripletCleanerTrackTrackCascadeSe> mTcSe;
+  tripletcleaner::TrackTrackCascadeTripletCleaner<tripletcleaner::PrefixTripletCleanerTrackTrackCascadeMe> mTcMe;
   triplethistmanager::MixingPolicy mMixingPolicy = triplethistmanager::MixingPolicy::kVtxMult;
   bool mTrack1Track2AreSameSpecies = false;
   int mMixingDepth = 5;

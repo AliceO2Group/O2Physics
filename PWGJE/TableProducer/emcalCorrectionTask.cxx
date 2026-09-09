@@ -265,8 +265,7 @@ struct EmcalCorrectionTask {
     mClusterFactories.setExoticCellDiffTime(exoticCellDiffTime);
     mClusterFactories.setExoticCellMinAmplitude(exoticCellMinAmplitude);
     mClusterFactories.setExoticCellInCrossMinAmplitude(exoticCellInCrossMinAmplitude);
-    // TODO: Fix setUseWeightExotic in the O2 code to use bool as argument not float!
-    mClusterFactories.setUseWeightExotic(static_cast<float>(useWeightExotic));
+    mClusterFactories.setUseWeightExotic(useWeightExotic);
     for (const auto& clusterDefinition : mClusterDefinitions) {
       mClusterizers.emplace_back(std::make_unique<o2::emcal::Clusterizer<o2::emcal::Cell>>(clusterDefinition.timeDiff, clusterDefinition.timeMin, clusterDefinition.timeMax, clusterDefinition.gradientCut, clusterDefinition.doGradientCut, clusterDefinition.seedEnergy, clusterDefinition.minCellEnergy));
       LOG(info) << "Cluster definition initialized: " << clusterDefinition.toString();

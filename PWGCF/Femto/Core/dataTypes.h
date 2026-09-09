@@ -67,6 +67,9 @@ using CharmHadronType = uint16_t;
 using QvecDetectorType = uint8_t;
 using QvecHarmonicType = uint8_t;
 
+// datatype for kinematic variable
+using KinematicVariableType = uint8_t;
+
 } // namespace o2::analysis::femto::datatypes
 
 #endif // PWGCF_FEMTO_CORE_DATATYPES_H_

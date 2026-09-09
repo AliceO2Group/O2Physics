@@ -18,6 +18,7 @@
 #include "PWGCF/Femto/Core/collisionBuilder.h"
 #include "PWGCF/Femto/Core/collisionHistManager.h"
 #include "PWGCF/Femto/Core/modes.h"
+#include "PWGCF/Femto/Core/pairCleaner.h"
 #include "PWGCF/Femto/Core/particleCleaner.h"
 #include "PWGCF/Femto/Core/partitions.h"
 #include "PWGCF/Femto/Core/trackBuilder.h"
@@ -93,6 +94,7 @@ struct FemtoTripletTrackTrackTrack {
   // setup triplets
   triplethistmanager::ConfTripletBinning confTripletBinning;
   triplethistmanager::ConfTripletCuts confTripletCuts;
+  paircleaner::ConfPairCleanerBinning confTripletCleanerBinning;
 
   closetripletrejection::ConfCtrTrackTrackTrack confCtr;
 
@@ -146,6 +148,7 @@ struct FemtoTripletTrackTrackTrack {
     std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> trackHistSpec3;
     std::map<triplethistmanager::TripletHist, std::vector<o2::framework::AxisSpec>> tripletHistSpec;
     std::map<closepairrejection::CprHist, std::vector<o2::framework::AxisSpec>> ctrHistSpec = closepairrejection::makeCprHistSpecMap(confCtr);
+    std::map<paircleaner::PairCleanerHist, std::vector<o2::framework::AxisSpec>> tripletCleanerHistSpec = paircleaner::makePairCleanerHistSpecMap(confTripletCleanerBinning);
 
     if (processData) {
       colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
@@ -153,14 +156,14 @@ struct FemtoTripletTrackTrackTrack {
       trackHistSpec2 = trackhistmanager::makeTrackHistSpecMap(confTrackBinning2);
       trackHistSpec3 = trackhistmanager::makeTrackHistSpecMap(confTrackBinning3);
       tripletHistSpec = triplethistmanager::makeTripletHistSpecMap(confTripletBinning, confMixing);
-      tripletTrackTrackTrackBuilder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confTrackSelections3, confTrackCleaner1, confTrackCleaner2, confTrackCleaner3, confCtr, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, trackHistSpec3, tripletHistSpec, ctrHistSpec);
+      tripletTrackTrackTrackBuilder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confTrackSelections3, confTrackCleaner1, confTrackCleaner2, confTrackCleaner3, confCtr, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, trackHistSpec3, tripletHistSpec, ctrHistSpec, tripletCleanerHistSpec);
     } else {
       colHistSpec = colhistmanager::makeColMcHistSpecMap(confCollisionBinning);
       trackHistSpec1 = trackhistmanager::makeTrackMcHistSpecMap(confTrackBinning1);
       trackHistSpec2 = trackhistmanager::makeTrackMcHistSpecMap(confTrackBinning2);
       trackHistSpec3 = trackhistmanager::makeTrackMcHistSpecMap(confTrackBinning3);
       tripletHistSpec = triplethistmanager::makeTripletMcHistSpecMap(confTripletBinning, confMixing);
-      tripletTrackTrackTrackBuilder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confTrackSelections3, confTrackCleaner1, confTrackCleaner2, confTrackCleaner3, confCtr, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, trackHistSpec3, tripletHistSpec, ctrHistSpec);
+      tripletTrackTrackTrackBuilder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confTrackSelections3, confTrackCleaner1, confTrackCleaner2, confTrackCleaner3, confCtr, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, trackHistSpec3, tripletHistSpec, ctrHistSpec, tripletCleanerHistSpec);
     }
     hRegistry.print();
   };

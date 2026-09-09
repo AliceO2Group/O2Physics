@@ -41,7 +41,6 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
-#include <map>
 #include <string>
 #include <vector>
 
@@ -123,7 +122,7 @@ struct Alice3Multicharm {
   } selVals;
 
   struct : ConfigurableGroup {
-    std::string prefix = "selVals";
+    std::string prefix = "selFlags";
     Configurable<bool> applyXiMinDCAxy{"applyXiMinDCAxy", false, "Apply |DCAxy| > [0]+[1]/pT"};
     Configurable<bool> applyXiMinDCAz{"applyXiMinDCAz", false, "Apply |DCAz| > [0]+[1]/pT"};
     Configurable<bool> applyXiMinRadius{"applyXiMinRadius", false, "Apply min radius"};

@@ -711,7 +711,7 @@ struct UDQC {
       return;
     }
 
-    for (auto fv0 : fv0s) {
+    for (const auto& fv0 : fv0s) {
       registry.get<TH1>(HIST("FV0/hV0A"))->Fill(fv0.time());
       // side A
       for (size_t ind = 0; ind < fv0.channel().size(); ind++) {
@@ -738,7 +738,7 @@ struct UDQC {
         registry.get<TH1>(HIST("FT0/hT0AC"))->Fill(collision.t0AC());
       }
     }
-    for (auto ft0 : ft0s) {
+    for (const auto& ft0 : ft0s) {
       registry.get<TH1>(HIST("FT0/hT0A"))->Fill(ft0.timeA());
       registry.get<TH1>(HIST("FT0/hT0C"))->Fill(ft0.timeC());
 
@@ -760,7 +760,7 @@ struct UDQC {
   {
     // LOGF(debug, "<FDDSignals> %d", fdds.size());
 
-    for (auto fdd : fdds) {
+    for (const auto& fdd : fdds) {
 
       registry.get<TH1>(HIST("FDD/hFDDA"))->Fill(fdd.timeA());
       registry.get<TH1>(HIST("FDD/hFDDC"))->Fill(fdd.timeC());

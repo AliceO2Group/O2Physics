@@ -234,7 +234,7 @@ using MyEventsMultExtraZdcFit = soa::Join<aod::ReducedEvents, aod::ReducedEvents
 using MyEventsSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts>;
 using MyEventsMultExtraSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::EventCuts>;
 using MyEventsVtxCovSelectedMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
-using MyEventsHashSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes>;
+using MyEventsHashSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::MixingHashes>;
 using MyEventsVtxCov = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov>;
 using MyEventsVtxCovSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts>;
 using MyEventsVtxCovSelectedInfo = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsInfo>;
@@ -1380,7 +1380,7 @@ struct AnalysisSameEventPairing {
 
   // option for TR pair fill
   Configurable<bool> fConfigTRPairs{"cfgFillTRPairs", false, "If true, fill Track rotation pairs"};
-  Configurable<int> fConfigNRotations{"cfgNRotations", 20, "Number of rotations for track rotation method"};
+  Configurable<int> fConfigNRotations{"cfgNRotations", 3, "Number of rotations for event plane preserving track rotation method, only 1 or 3 are supported"};
 
   struct : ConfigurableGroup {
     Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -2449,14 +2449,26 @@ struct AnalysisSameEventPairing {
                   }
                 }
                 if (sign1 * sign2 < 0) {
-                  for (int i = 0; i < fConfigNRotations.value; i++) {
-                    VarManager::FillPairRotation<TPairType, TTrackFillMap>(t1, t2);
+                  if (fConfigNRotations.value == 1) {
+                    VarManager::FillPairRotation<TPairType, TTrackFillMap>(t1, t2, fConfigNRotations.value);
                     if constexpr (TPairType == VarManager::kDecayToEE) {
                       fHistMan->FillHistClass(Form("PairsBarrelTRPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
                       if (isAmbiExtra) {
                         fHistMan->FillHistClass(Form("PairsBarrelTRPM_ambiguousextra_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
                       }
                     }
+                  } else if (fConfigNRotations.value == 3) {
+                    for (int irot = 1; irot <= fConfigNRotations.value; irot++) {
+                      VarManager::FillPairRotation<TPairType, TTrackFillMap>(t1, t2, irot);
+                      if constexpr (TPairType == VarManager::kDecayToEE) {
+                        fHistMan->FillHistClass(Form("PairsBarrelTRPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                        if (isAmbiExtra) {
+                          fHistMan->FillHistClass(Form("PairsBarrelTRPM_ambiguousextra_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                        }
+                      }
+                    }
+                  } else {
+                    LOGF(fatal, "Unsupported number of rotations: %d, only 1 and 3 are supported", fConfigNRotations.value);
                   }
                 }
               }
@@ -4365,7 +4377,7 @@ struct AnalysisDileptonTrack {
             Effweight_rec = Effweight_rec * Effdilepton * Effhadron * Masswindow;
           }
           std::vector<float> fTransRange = fConfigTransRange;
-          VarManager::FillEnergyCorrelatorTriple(lepton1, lepton2, track, fValuesHadron, fTransRange[0], fTransRange[1], fConfigApplyMassEC, fMassBkg->GetRandom(), 1. / Effweight_rec);
+          VarManager::FillEnergyCorrelatorTriple<VarManager::kDecayToEE, TEventFillMap, TTrackFillMap>(event, lepton1, lepton2, track, fValuesHadron, fTransRange[0], fTransRange[1], fConfigApplyMassEC, fMassBkg->GetRandom(), 1. / Effweight_rec);
 
           // table to be written out for ML analysis
           BmesonsTable(event.runNumber(), event.globalIndex(), event.timestamp(), fValuesHadron[VarManager::kPairMass], dilepton.mass(), fValuesHadron[VarManager::kDeltaMass], fValuesHadron[VarManager::kPairPt], fValuesHadron[VarManager::kPairEta], fValuesHadron[VarManager::kPairPhi], fValuesHadron[VarManager::kPairRap],
@@ -4604,7 +4616,7 @@ struct AnalysisDileptonTrack {
             }
           }
           std::vector<float> fTransRange = fConfigTransRange;
-          VarManager::FillEnergyCorrelatorTriple(lepton1, lepton2, track, dqtablereader_helpers::varValues(), fTransRange[0], fTransRange[1], fConfigApplyMassEC, fMassBkg->GetRandom(), 1. / Effweight_rec);
+          VarManager::FillEnergyCorrelatorTriple<VarManager::kDecayToEE, gkEventFillMapWithCov, gkTrackFillMapWithCov>(event1, lepton1, lepton2, track, dqtablereader_helpers::varValues(), fTransRange[0], fTransRange[1], fConfigApplyMassEC, fMassBkg->GetRandom(), 1. / Effweight_rec);
 
           // loop over dilepton leg cuts and track cuts and fill histograms separately for each combination
           for (int icut = 0; icut < fNCuts; icut++) {

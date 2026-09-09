@@ -44,7 +44,7 @@ namespace o2::analysis::femto::triplethistmanager
 enum TripletHist {
   // standard 1D
   kQ3,
-  kMt, // averate mt of all pairs in the triplet
+  kMt, // average mt of all pairs in the triplet
   // kstar betweeen single particles
   kKstar12,
   kKstar13,
@@ -130,6 +130,7 @@ struct ConfTripletBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis mass2{"mass2", {{100, 0, 2}}, "Mass binning for particle 2 (if particle has mass getter, otherwise PDG mass)"};
   o2::framework::ConfigurableAxis mass3{"mass3", {{100, 0, 2}}, "Mass binning for particle 3 (if particle has mass getter, otherwise PDG mass)"};
   o2::framework::Configurable<int> transverseMassType{"transverseMassType", static_cast<int>(modes::TransverseMassType::kAveragePdgMass), "Type of transverse mass (0-> Average Pdg Mass, 1-> Reduced Pdg Mass, 2-> Mt from combined 4 vector)"};
+  o2::framework::Configurable<int> kinematicVariable{"kinematicVariable", static_cast<int>(modes::KinematicVariable::kQ3), "Type of kinematic variable (2->mT, 3->Q3) for PC and CPR plots"};
 };
 
 struct ConfTripletCuts : o2::framework::ConfigurableGroup {
@@ -268,6 +269,7 @@ class TripletHistManager
 
     // transverse mass type
     mMtType = static_cast<modes::TransverseMassType>(ConfTripletBinning.transverseMassType.value);
+    mKinematicVariable = static_cast<modes::KinematicVariable>(ConfTripletBinning.kinematicVariable.value);
 
     // values for cuts
     mQ3Min = ConfTripletCuts.q3Min.value;
@@ -437,7 +439,20 @@ class TripletHistManager
     }
   }
 
-  float getQ3() const { return mQ3; }
+  float getKinematic() const
+  {
+    switch (mKinematicVariable) {
+      case modes::KinematicVariable::kMt:
+        return mMt;
+        break;
+      case modes::KinematicVariable::kQ3:
+        return mQ3;
+        break;
+      default:
+        LOG(fatal) << "Invalid kinematic Variable, breaking...";
+    }
+    return mQ3;
+  }
 
   template <typename T1, typename T2, typename T3>
   void trackParticlesPerEvent(T1 const& particle1, T2 const& particle2, T3 const& particle3)
@@ -513,7 +528,7 @@ class TripletHistManager
     auto q23 = getqij(p2, p3);
     auto q31 = getqij(p3, p1);
     double q = q12.M2() + q23.M2() + q31.M2();
-    return static_cast<float>(std::sqrt(-q));
+    return static_cast<float>(std::sqrt(std::max(0.0, -q)));
   }
 
   float getKstar(ROOT::Math::PtEtaPhiMVector const& part1, ROOT::Math::PtEtaPhiMVector const& part2)
@@ -695,6 +710,7 @@ class TripletHistManager
   double mPdgMass3 = 0.;
 
   modes::TransverseMassType mMtType = modes::TransverseMassType::kAveragePdgMass;
+  modes::KinematicVariable mKinematicVariable = modes::KinematicVariable::kQ3;
 
   int mAbsCharge1 = 1;
   int mAbsCharge2 = 1;
