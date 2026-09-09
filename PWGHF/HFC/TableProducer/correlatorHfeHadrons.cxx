@@ -298,9 +298,7 @@ struct HfCorrelatorHfeHadrons {
       double etaHadron = -999;
       double phiHadron = -999;
       // EMCal electron
-      if (eTrack.isEmcal() && requireEmcal) {
-        acceptElectron = true;
-      } else if (!eTrack.isEmcal() && !requireEmcal) {
+      if (eTrack.isEmcal() == requireEmcal) {
         acceptElectron = true;
       }
 
