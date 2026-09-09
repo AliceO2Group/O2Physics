@@ -3067,6 +3067,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (nameStr == "muonEtaCut") {
+    cut->AddCut(GetAnalysisCut("muonEtaCut"));
+    return cut;
+  }
+
   if (nameStr == "muonMinimalCuts") {
     cut->AddCut(GetAnalysisCut("muonMinimalCuts"));
     return cut;
@@ -6555,6 +6560,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (nameStr == "MCHStandalone") {
     cut->AddCut(VarManager::kMuonTrackType, 3.5, 4.5);
+    return cut;
+  }
+
+  if (nameStr == "muonEtaCut") {
+    cut->AddCut(VarManager::kEta, -4.0, -2.5);
     return cut;
   }
 
