@@ -596,7 +596,7 @@ struct HfCandidateCreatorXicToXiPiPi {
       int8_t const signXic = casc.sign() < 0 ? +1 : -1;
 
       // if enabled, apply selections of software trigger
-      float pPiFromLambda{}, pPrFromLambda{}, pPionFromXi{}, nSigTpcBachelorPi{}, nSigTofBachelorPi{}, nSigTpcPiFromLambda{}, nSigTofPiFromLambda{}, nSigTpcPrFromLambda{}, nSigTofPrFromLambda{};
+      float pPiFromLambda{}, pPrFromLambda{}, pPionFromXi{}, ptPionFromXi{}, nSigTpcBachelorPi{}, nSigTofBachelorPi{}, nSigTpcPiFromLambda{}, nSigTofPiFromLambda{}, nSigTpcPrFromLambda{}, nSigTofPrFromLambda{};
       if (softTrigCuts.applySoftwareTrigSelections) {
         // get PID information already here
         auto trackPionFromXi = casc.bachelor_as<TracksWCovExtraPidPrPi>();
@@ -822,20 +822,16 @@ struct HfCandidateCreatorXicToXiPiPi {
           pPiFromLambda = trackNegLambdaDaughter.p();
           nSigTpcPiFromLambda = trackNegLambdaDaughter.tpcNSigmaPi();
           nSigTofPiFromLambda = trackNegLambdaDaughter.tofNSigmaPi();
-          hasTofPiFromLambda = trackNegLambdaDaughter.hasTOF();
           pPrFromLambda = trackPosLambdaDaughter.p();
           nSigTpcPrFromLambda = trackPosLambdaDaughter.tpcNSigmaPr();
           nSigTofPrFromLambda = trackPosLambdaDaughter.tofNSigmaPr();
-          hasTofPrFromLambda = trackPosLambdaDaughter.hasTOF();
         } else {
           pPiFromLambda = trackPosLambdaDaughter.p();
           nSigTpcPiFromLambda = trackPosLambdaDaughter.tpcNSigmaPi();
           nSigTofPiFromLambda = trackPosLambdaDaughter.tofNSigmaPi();
-          hasTofPiFromLambda = trackPosLambdaDaughter.hasTOF();
           pPrFromLambda = trackNegLambdaDaughter.p();
           nSigTpcPrFromLambda = trackNegLambdaDaughter.tpcNSigmaPr();
           nSigTofPrFromLambda = trackNegLambdaDaughter.tofNSigmaPr();
-          hasTofPrFromLambda = trackNegLambdaDaughter.hasTOF();
         }
       }
 
