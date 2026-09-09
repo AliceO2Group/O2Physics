@@ -57,6 +57,8 @@
 #include <utility>
 #include <vector>
 
+#include <math.h>
+
 struct globalDimuonFilter {
   o2::framework::Produces<o2::aod::GlobalDimuonFilters> tags;
 

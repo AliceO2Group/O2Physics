@@ -29,6 +29,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 #include <math.h>
@@ -41,7 +42,7 @@ JetBkgSubUtils::JetBkgSubUtils(float jetBkgR_out, float bkgEtaMin_out, float bkg
                                                                                                                                                                                                                                                           constSubAlpha(constSubAlpha_out),
                                                                                                                                                                                                                                                           constSubRMax(constSubRMax_out),
                                                                                                                                                                                                                                                           nHardReject(nHardReject_out),
-                                                                                                                                                                                                                                                          ghostAreaSpec(ghostAreaSpec_out)
+                                                                                                                                                                                                                                                          ghostAreaSpec(std::move(ghostAreaSpec_out))
 
 {
 }
@@ -162,11 +163,11 @@ std::vector<fastjet::PseudoJet> JetBkgSubUtils::doJetConstSub(std::vector<fastje
   return constituentSub(jets);
 }
 
-double JetBkgSubUtils::getMd(fastjet::PseudoJet jet) const
+double JetBkgSubUtils::getMd(const fastjet::PseudoJet& jet) const
 {
   // Refere to https://arxiv.org/abs/1211.2811 for the rhoM caclulation
   double sum(0);
-  for (auto constituent : jet.constituents()) {
+  for (const auto& constituent : jet.constituents()) {
     sum += TMath::Sqrt(constituent.m() * constituent.m() + constituent.pt() * constituent.pt()) - constituent.pt();
   }
 

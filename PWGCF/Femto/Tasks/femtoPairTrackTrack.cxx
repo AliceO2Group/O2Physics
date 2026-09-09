@@ -26,6 +26,7 @@
 #include "PWGCF/Femto/Core/trackHistManager.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
+#include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -53,6 +54,11 @@ struct FemtoPairTrackTrack {
   using FemtoCollisionsWithLabel = o2::soa::Join<FemtoCollisions, o2::aod::FColLabels>;
   using FilteredFemtoCollisionsWithLabel = o2::soa::Filtered<FemtoCollisionsWithLabel>;
   using FilteredFemtoCollisionWithLabel = FilteredFemtoCollisionsWithLabel::iterator;
+
+  // collision table with event shape, same filter as standard collisions
+  using FemtoCollisionsWithEventShape = o2::soa::Join<FemtoCollisions, o2::aod::FColShapes>;
+  using FilteredFemtoCollisionsWithEventShape = o2::soa::Filtered<FemtoCollisionsWithEventShape>;
+  using FilteredFemtoCollisionWithEventShape = FilteredFemtoCollisionsWithEventShape::iterator;
 
   using FemtoTracks = o2::soa::Join<o2::aod::FTracks, o2::aod::FTrackMasks>;
 
@@ -111,19 +117,22 @@ struct FemtoPairTrackTrack {
   std::vector<double> defaultVtxBins{10, -10, 10};
   std::vector<double> defaultMultBins{50, 0, 200};
   std::vector<double> defaultCentBins{10, 0, 100};
+  std::vector<double> defaultEventPlaneAngleBins{10, 0, o2::constants::math::TwoPI};
   o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult> mixBinsVtxMult{{defaultVtxBins, defaultMultBins}, true};
   o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Cent> mixBinsVtxCent{{defaultVtxBins, defaultCentBins}, true};
   o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult, o2::aod::femtocollisions::Cent> mixBinsVtxMultCent{{defaultVtxBins, defaultMultBins, defaultCentBins}, true};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Cent, o2::aod::femtocollisions::EventPlaneAngle> mixBinsVtxCentEventPlaneAngle{{defaultVtxBins, defaultCentBins, defaultEventPlaneAngleBins}, true};
   pairhistmanager::ConfMixing confMixing;
 
   o2::framework::HistogramRegistry hRegistry{"FemtoTrackTrack", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
 
   void init(o2::framework::InitContext&)
   {
-    if ((static_cast<int>(doprocessSameEvent) + static_cast<int>(doprocessSameEventWithMass) + static_cast<int>(doprocessSameEventMc)) > 1 || (static_cast<int>(doprocessMixedEvent) + static_cast<int>(doprocessMixedEventWithMass) + static_cast<int>(doprocessMixedEventMc)) > 1) {
+    if ((static_cast<int>(doprocessSameEvent) + static_cast<int>(doprocessSameEventWithMass) + static_cast<int>(doprocessSameEventWithEventShape) + static_cast<int>(doprocessSameEventMc)) > 1 ||
+        (static_cast<int>(doprocessMixedEvent) + static_cast<int>(doprocessMixedEventWithMass) + static_cast<int>(doprocessMixedEventWithEventShape) + static_cast<int>(doprocessMixedEventMc)) > 1) {
       LOG(fatal) << "More than 1 same or mixed event process function is activated. Breaking...";
     }
-    bool processData = doprocessSameEvent || doprocessMixedEvent || doprocessSameEventWithMass || doprocessMixedEventWithMass;
+    bool processData = doprocessSameEvent || doprocessMixedEvent || doprocessSameEventWithMass || doprocessMixedEventWithMass || doprocessSameEventWithEventShape || doprocessMixedEventWithEventShape;
     bool processMc = doprocessSameEventMc || doprocessMixedEventMc;
     if (processData && processMc) {
       LOG(fatal) << "Both data and mc processing is activated. Breaking...";
@@ -134,6 +143,7 @@ struct FemtoPairTrackTrack {
     mixBinsVtxMult = {{confMixing.vtxBins.value, confMixing.multBins.value}, true};
     mixBinsVtxCent = {{confMixing.vtxBins.value, confMixing.centBins.value}, true};
     mixBinsVtxMultCent = {{confMixing.vtxBins.value, confMixing.multBins.value, confMixing.centBins.value}, true};
+    mixBinsVtxCentEventPlaneAngle = {{confMixing.vtxBins.value, confMixing.centBins.value, confMixing.eventPlaneAngle.value}, true};
 
     // setup histogram specs
     std::map<colhistmanager::ColHist, std::vector<o2::framework::AxisSpec>> colHistSpec;
@@ -171,6 +181,12 @@ struct FemtoPairTrackTrack {
   }
   PROCESS_SWITCH(FemtoPairTrackTrack, processSameEventWithMass, "Enable processing same event processing (with track masses)", false);
 
+  void processSameEventWithEventShape(FilteredFemtoCollisionWithEventShape const& col, FemtoTracks const& tracks)
+  {
+    pairTrackTrackBuilder.processSameEvent<modes::Mode::kSe_Reco>(col, tracks, trackPartition1, trackPartition2, cache);
+  }
+  PROCESS_SWITCH(FemtoPairTrackTrack, processSameEventWithEventShape, "Enable processing same event processing with event shape information", false);
+
   void processSameEventMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoMcParticlesWithLabel const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
     pairTrackTrackBuilder.processSameEvent<modes::Mode::kSe_Reco_Mc>(col, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, mcParticles, mcMothers, mcPartonicMothers, cache);
@@ -179,19 +195,25 @@ struct FemtoPairTrackTrack {
 
   void processMixedEvent(FilteredFemtoCollisions const& cols, FemtoTracks const& tracks)
   {
-    pairTrackTrackBuilder.processMixedEvent<modes::Mode::kMe_Reco>(cols, tracks, trackPartition1, trackPartition2, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+    pairTrackTrackBuilder.processMixedEvent<modes::Mode::kMe_Reco>(cols, tracks, trackPartition1, trackPartition2, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent, mixBinsVtxCentEventPlaneAngle);
   }
   PROCESS_SWITCH(FemtoPairTrackTrack, processMixedEvent, "Enable processing mixed event processing", true);
 
   void processMixedEventWithMass(FilteredFemtoCollisions const& cols, FemtoTracksWithMass const& tracks)
   {
-    pairTrackTrackBuilder.processMixedEvent<modes::Mode::kMe_Reco>(cols, tracks, trackWithMassPartition1, trackWithMassPartition2, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+    pairTrackTrackBuilder.processMixedEvent<modes::Mode::kMe_Reco>(cols, tracks, trackWithMassPartition1, trackWithMassPartition2, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent, mixBinsVtxCentEventPlaneAngle);
   }
   PROCESS_SWITCH(FemtoPairTrackTrack, processMixedEventWithMass, "Enable processing mixed event processing (with track masses)", false);
 
+  void processMixedEventWithEventShape(FilteredFemtoCollisionsWithEventShape const& cols, FemtoTracks const& tracks)
+  {
+    pairTrackTrackBuilder.processMixedEvent<modes::Mode::kMe_Reco>(cols, tracks, trackPartition1, trackPartition2, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent, mixBinsVtxCentEventPlaneAngle);
+  }
+  PROCESS_SWITCH(FemtoPairTrackTrack, processMixedEventWithEventShape, "Enable processing mixed event processing with event shape information", false);
+
   void processMixedEventMc(FilteredFemtoCollisionsWithLabel const& cols, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoMcParticlesWithLabel const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
-    pairTrackTrackBuilder.processMixedEvent<modes::Mode::kMe_Reco_Mc>(cols, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, mcParticles, mcMothers, mcPartonicMothers, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+    pairTrackTrackBuilder.processMixedEvent<modes::Mode::kMe_Reco_Mc>(cols, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, mcParticles, mcMothers, mcPartonicMothers, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent, mixBinsVtxCentEventPlaneAngle);
   }
   PROCESS_SWITCH(FemtoPairTrackTrack, processMixedEventMc, "Enable processing mixed event processing", false);
 };

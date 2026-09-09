@@ -698,7 +698,7 @@ struct JetD0AngSubstructure {
             typename JetTableMCP,
             typename CandidatesMCD,
             typename CandidatesMCP>
-  void analyseMonteCarlo(MCPJetsPerMCCollissionPreslice jetmcpreslice,
+  void analyseMonteCarlo(const MCPJetsPerMCCollissionPreslice& jetmcpreslice,
                          aod::JetMcCollisions const& mccollisions,
                          aod::JetCollisionsMCD const& collisions,
                          JetTableMCD const& /*mcdjets*/,

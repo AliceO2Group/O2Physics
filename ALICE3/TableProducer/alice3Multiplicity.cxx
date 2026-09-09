@@ -31,8 +31,6 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TH1.h>
-
 #include <cmath>
 #include <cstdlib>
 

@@ -64,7 +64,7 @@ void dqFlowAccWeights(int64_t tmin = 1546300800000, int64_t tmax = 1577833200000
   if (!ccdbHost.empty()) {
     LOGP(info, "Storing alignment object on {}/{}", ccdbHost, objectPath);
     o2::ccdb::CcdbApi api;
-    map<string, string> metadata; // can be empty
+    std::map<std::string, std::string> metadata; // can be empty
     metadata.insert(std::pair{"comment", Form("Acceptance weights for %s", Period.c_str())});
     api.init(ccdbHost.c_str());
     try {

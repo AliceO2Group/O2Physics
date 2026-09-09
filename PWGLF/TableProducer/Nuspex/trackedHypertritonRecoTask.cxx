@@ -1028,7 +1028,8 @@ struct TrackedHypertritonRecoTask {
         continue;
       }
       buildTwoBody(heTrack, piTrack, collision, trackedV0.itsClsSize(), [&](auto... values) {
-        mcHypCands(values...,
+        mcHypCands(collision.globalIndex(), heTrack.globalIndex(), piTrack.globalIndex(),
+                   values...,
                    mcInfo.genPt, mcInfo.genPhi, mcInfo.genEta, mcInfo.genPtHe3,
                    mcInfo.genDecayVertex[0], mcInfo.genDecayVertex[1], mcInfo.genDecayVertex[2],
                    true, mcInfo.fakeHeITSLayerMap, mcInfo.isSignal,
@@ -1161,7 +1162,8 @@ struct TrackedHypertritonRecoTask {
             primaryVertexZ = collision.posZ();
           }
         }
-        mcHypCands(centralityFT0A, centralityFT0C, centralityFT0M,
+        mcHypCands(-1, -1, -1,
+                   centralityFT0A, centralityFT0C, centralityFT0M,
                    trackOccupancyInTimeRange, ft0cOccupancyInTimeRange,
                    primaryVertexX, primaryVertexY, primaryVertexZ,
                    runNumber, mother.pdgCode() > 0,
