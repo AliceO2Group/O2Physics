@@ -3339,7 +3339,7 @@ struct Lambdastarproxy {
             }
           }
         }
-    }
+      }
     }
 
     // --- MIXED-EVENT: current kaons + previous-event real protons ---
