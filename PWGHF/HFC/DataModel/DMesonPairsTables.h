@@ -125,16 +125,16 @@ DECLARE_SOA_COLUMN(TimestampHad, timestampHad, int64_t); //! Timestamp of the as
 } // namespace hf_correlation_d_meson_had
 
 // Definition of the D meson table for D-had correlations. Contains the info needed at Data level.
-#define DECLARE_DMESON_ME_TABLE(_cand_number_, _marker_value_, _description_)              \
-  DECLARE_SOA_TABLE(_cand_number_, "AOD", _description_, o2::soa::Marker<_marker_value_>,            \
-                     hf_correlation_d_meson_had::PtD,                                                \
-                     hf_correlation_d_meson_had::EtaD,                                               \
-                     hf_correlation_d_meson_had::PhiD,                                               \
-                     hf_correlation_d_meson_had::MD,                                                 \
-                     hf_correlation_d_meson_had::DType,                                              \
-                     hf_correlation_d_meson_had::PoolBinD,                                           \
-                     hf_correlation_d_meson_had::GIndexColD,                                         \
-                     hf_correlation_d_meson_had::TimestampD);
+#define DECLARE_DMESON_ME_TABLE(_cand_number_, _marker_value_, _description_)             \
+  DECLARE_SOA_TABLE(_cand_number_, "AOD", _description_, o2::soa::Marker<_marker_value_>, \
+                    hf_correlation_d_meson_had::PtD,                                      \
+                    hf_correlation_d_meson_had::EtaD,                                     \
+                    hf_correlation_d_meson_had::PhiD,                                     \
+                    hf_correlation_d_meson_had::MD,                                       \
+                    hf_correlation_d_meson_had::DType,                                    \
+                    hf_correlation_d_meson_had::PoolBinD,                                 \
+                    hf_correlation_d_meson_had::GIndexColD,                               \
+                    hf_correlation_d_meson_had::TimestampD);
 
 DECLARE_DMESON_ME_TABLE(DMesonInfoCand1, 1, "DMESCAND1"); //! D0 cand 1 info for event mixing
 DECLARE_DMESON_ME_TABLE(DMesonInfoCand2, 2, "DMESCAND2"); //! D0 cand 2 info for event mixing
