@@ -43,6 +43,7 @@
 #include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 
@@ -55,13 +56,13 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Concepts.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <MathUtils/Utils.h>
 
 #include <TH1.h>
 #include <TH2.h>
@@ -69,6 +70,7 @@
 
 #include <array>
 #include <cmath>
+#include <ranges> // for the concept std::ranges::contiguous_range
 #include <span>
 #include <string>
 #include <string_view>
@@ -84,7 +86,7 @@ using namespace o2::aod::pwgem::photon;
 using namespace o2::aod::pwgem::photonmeson::utils::mcutil;
 using namespace o2::aod::pwgem::dilepton::utils::mcutil;
 
-using MyCollisions = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000>;
+using MyCollisions = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, o2::aod::EmMagFields>;
 using MyCollision = MyCollisions::iterator;
 
 using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
@@ -94,7 +96,7 @@ using MyV0PhotonsML = soa::Join<MyV0Photons, aod::V0PhotonsPhiVPsi>;
 using MyV0PhotonML = MyV0PhotonsML::iterator;
 
 // MC Joins
-using MyCollisionsMC = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMMCEventLabels>;
+using MyCollisionsMC = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMMCEventLabels, o2::aod::EmMagFields>;
 using MyCollisionMC = MyCollisionsMC::iterator;
 
 using MyMCCollisions = soa::Join<aod::EMMCEvents, aod::BinnedGenPts>;
@@ -111,9 +113,6 @@ struct PCMQC {
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
 
   EMPhotonEventCut fEMEventCut;
@@ -180,6 +179,7 @@ struct PCMQC {
   struct : ConfigurableGroup {
     std::string prefix = "qaSettings_group";
     Configurable<bool> cfgDoPtDependentLossQA{"cfgDoPtDependentLossQA", false, "fill the cut variables vs. pT before AND after the V0 selection - the after/before ratio shows which candidates the cuts remove"};
+    Configurable<bool> cfgDoKappaAnalysis{"cfgDoKappaAnalysis", false, "fill histograms with kappa vs pT vs cent."};
   } qaSettingsGroup;
 
   // PCM ML inference
@@ -258,45 +258,28 @@ struct PCMQC {
     ccdb->setFatalWhenNull(false);
   }
 
-  template <typename TCollision>
+  template <o2::soa::is_iterator TCollision>
   void initCCDB(TCollision const& collision)
   {
     if (mRunNumber == collision.runNumber()) {
       return;
     }
+    mRunNumber = collision.runNumber();
 
     // In case override, don't proceed, please - no CCDB access required
-    if (d_bz_input > -990) { // o2-linter: disable=magic-number (dummy value to indicate override)
+    if (d_bz_input > -990) { // o2-linter: disable=magic-number (override value)
       d_bz = d_bz_input;
       o2::parameters::GRPMagField grpmag;
-      if (std::fabs(d_bz) > 1e-5) {                   // o2-linter: disable=magic-number (dummy value to indicate override)
-        grpmag.setL3Current(30000.f / (d_bz / 5.0f)); // o2-linter: disable=magic-number (dummy value to indicate override)
+      if (std::fabs(d_bz) > 1e-5) {                   // o2-linter: disable=magic-number (override value)
+        grpmag.setL3Current(30000.f / (d_bz / 5.0f)); // o2-linter: disable=magic-number (override value)
       }
-      mRunNumber = collision.runNumber();
       return;
     }
 
-    auto run3grp_timestamp = collision.timestamp();
-    o2::parameters::GRPObject* grpo = nullptr;
-    o2::parameters::GRPMagField* grpmag = nullptr;
-    if (!skipGRPOquery) {
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
-    }
-    if (grpo) {
-      // Fetch magnetic field from ccdb for current collision
-      d_bz = grpo->getNominalL3Field();
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
-    } else {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
-      if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
-      }
-      // Fetch magnetic field from ccdb for current collision
-      d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
-    }
+    // Fetch magnetic field from ccdb for current collision
+    d_bz = collision.grpMagField().getNominalL3Field();
+    LOG(info) << "Retrieved GRP for timestamp " << collision.timestamp() << " with magnetic field of " << d_bz << " kZG";
     fV0PhotonCut.SetD_Bz(d_bz);
-    mRunNumber = collision.runNumber();
   }
 
   void addhistograms()
@@ -573,6 +556,19 @@ struct PCMQC {
         fRegistry.addClone("RecoQA/LegQuality/survived/", "RecoQA/LegQuality/lost/");
       }
     }
+
+    if (qaSettingsGroup.cfgDoKappaAnalysis.value) {
+      if (doprocessQC || doprocessQCML) {
+        fRegistry.add("Kappa/Rec", ";#Kappa;#it{p}_{T} (GeV/#it{c});cent (%)", kTH3D, {{200, -10.f, 10.f}, {100, 0., 10.}, {20, 0., 100.}}, true);
+      }
+      if (doprocessPCMQCMC || doprocessPCMQCMCML) {
+        fRegistry.add("Kappa/MC/v0", "v0 ee pairs;#Kappa;#it{p}_{T} (GeV/#it{c});cent (%)", kTH3D, {{200, -10.f, 10.f}, {100, 0., 10.}, {20, 0., 100.}}, true);
+        fRegistry.add("Kappa/MC/ee", "ee pairs not from v0;#Kappa;#it{p}_{T} (GeV/#it{c});cent (%)", kTH3D, {{200, -10.f, 10.f}, {100, 0., 10.}, {20, 0., 100.}}, true);
+        fRegistry.add("Kappa/MC/pie", "pion + e pairs;#Kappa;#it{p}_{T} (GeV/#it{c});cent (%)", kTH3D, {{200, -10.f, 10.f}, {100, 0., 10.}, {20, 0., 100.}}, true);
+        fRegistry.add("Kappa/MC/pipi", "pion pion pairs;#Kappa;#it{p}_{T} (GeV/#it{c});cent (%)", kTH3D, {{200, -10.f, 10.f}, {100, 0., 10.}, {20, 0., 100.}}, true);
+        fRegistry.add("Kappa/MC/other", "other pairs;#Kappa;#it{p}_{T} (GeV/#it{c});cent (%)", kTH3D, {{200, -10.f, 10.f}, {100, 0., 10.}, {20, 0., 100.}}, true);
+      }
+    }
   }
 
   void DefineEMEventCut()
@@ -648,7 +644,7 @@ struct PCMQC {
     }
   }
 
-  template <const int ev_id, typename TCollision>
+  template <const int ev_id, o2::soa::is_iterator TCollision>
   void fillEventInfo(TCollision const& collision, const float /*weight*/ = 1.f)
   {
     fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 1.0);
@@ -688,7 +684,7 @@ struct PCMQC {
     fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hMultFT0MvsMultNTracksPV"), collision.multFT0A() + collision.multFT0C(), collision.multNTracksPV());
   }
 
-  template <typename TV0>
+  template <o2::soa::is_iterator TV0>
   void fillV0Info(TV0 const& v0)
   {
     fRegistry.fill(HIST("V0/hPt"), v0.pt());
@@ -717,7 +713,7 @@ struct PCMQC {
     fRegistry.fill(HIST("V0/hKFChi2vsZ"), v0.vz(), v0.chiSquareNDF());
 
     float phi_cp = std::atan2(v0.vy(), v0.vx());
-    o2::math_utils::bringTo02Pi(phi_cp);
+    RecoDecay::constrainAngle(phi_cp);
     float eta_cp = std::atanh(v0.vz() / std::sqrt(std::pow(v0.vx(), 2) + std::pow(v0.vy(), 2) + std::pow(v0.vz(), 2)));
     fRegistry.fill(HIST("V0/hsConvPoint"), v0.v0radius(), phi_cp, eta_cp);
 
@@ -744,7 +740,7 @@ struct PCMQC {
     }
   }
 
-  template <typename TLeg>
+  template <o2::soa::is_iterator TLeg>
   void fillV0LegInfo(TLeg const& leg)
   {
     fRegistry.fill(HIST("V0Leg/hPt"), leg.pt());
@@ -769,7 +765,7 @@ struct PCMQC {
     fRegistry.fill(HIST("V0Leg/hTPCNsigmaElVsEta"), leg.eta(), leg.tpcNSigmaEl());
   }
 
-  template <const int ev_id, typename TV0>
+  template <const int ev_id, o2::soa::is_iterator TV0>
   void fillLossQAInfo(TV0 const& v0)
   {
     if (!qaSettingsGroup.cfgDoPtDependentLossQA) {
@@ -782,7 +778,7 @@ struct PCMQC {
     fRegistry.fill(HIST("V0/LossQA/") + HIST(event_types[ev_id]) + HIST("hMeeVsPt"), v0.pt(), v0.mGamma());
   }
 
-  template <typename TV0>
+  template <o2::soa::is_iterator TV0>
   void fillMaterialBudgetInfo(TV0 const& v0)
   {
     if (materialBudgetSettingsGroup.cfgDoMaterialDistribution) {
@@ -806,16 +802,57 @@ struct PCMQC {
     }
   }
 
-  Preslice<MyV0Photons> perCollisionV0 = aod::v0photonkf::pmeventId;
-  Preslice<MyV0PhotonsML> perCollisionV0ML = aod::v0photonkf::pmeventId;
+  //_______________________________________________________________________
+  template <o2::soa::is_iterator TLeg>
+  void fillKappaRec(TLeg const& pos, TLeg const& ele, const float pt, const float cent)
+  {
+    if (!qaSettingsGroup.cfgDoKappaAnalysis.value) {
+      return;
+    }
+    const float kappa = getV0Kappa(pos, ele);
+    fRegistry.fill(HIST("Kappa/Rec"), kappa, pt, cent);
+  }
+
+  //_______________________________________________________________________
+  template <o2::soa::is_iterator TLeg, o2::soa::is_iterator TMCParticle>
+  void fillKappaMC(TLeg const& pos, TLeg const& ele, TMCParticle const& posmc, TMCParticle const& elemc, const int photonid, const float pt, const float cent)
+  {
+    if (!qaSettingsGroup.cfgDoKappaAnalysis.value) {
+      return;
+    }
+
+    const float kappa = getV0Kappa(pos, ele);
+
+    const int pdgPos = std::abs(posmc.pdgCode());
+    const int pdgEle = std::abs(elemc.pdgCode());
+
+    const bool posIsElectron = (pdgPos == PDG_t::kElectron);
+    const bool eleIsElectron = (pdgEle == PDG_t::kElectron);
+    const bool posIsPion = (pdgPos == PDG_t::kPiPlus);
+    const bool eleIsPion = (pdgEle == PDG_t::kPiPlus);
+
+    if (photonid > 0) {
+      fRegistry.fill(HIST("Kappa/MC/v0"), kappa, pt, cent);
+    } else if (posIsElectron && eleIsElectron) {
+      fRegistry.fill(HIST("Kappa/MC/ee"), kappa, pt, cent);
+    } else if ((posIsPion && eleIsElectron) || (posIsElectron && eleIsPion)) {
+      fRegistry.fill(HIST("Kappa/MC/pie"), kappa, pt, cent);
+    } else if (posIsPion && eleIsPion) {
+      fRegistry.fill(HIST("Kappa/MC/pipi"), kappa, pt, cent);
+    } else {
+      fRegistry.fill(HIST("Kappa/MC/other"), kappa, pt, cent);
+    }
+  }
+
+  Preslice<aod::V0KFEMEventIds> perCollisionV0 = aod::v0photonkf::pmeventId;
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
   Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
   Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin <= o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
   using FilteredMyCollisionsMC = soa::Filtered<MyCollisionsMC>; // same filters, they act column-wise
 
-  template <typename TV0Photon, typename TPerCollision>
-  void process(FilteredMyCollisions const& collisions, TV0Photon const& v0photons, aod::V0Legs const&, TPerCollision const& perCollision)
+  template <o2::soa::is_table TV0Photon>
+  void processRec(FilteredMyCollisions const& collisions, TV0Photon const& v0photons, aod::V0Legs const&)
   {
     for (const auto& collision : collisions) {
       initCCDB(collision);
@@ -834,7 +871,7 @@ struct PCMQC {
 
       fV0PhotonCut.SetCentrality(centralities[cfgCentEstimator]);
       int nv0 = 0;
-      auto v0photons_coll = v0photons.sliceBy(perCollision, collision.globalIndex());
+      auto v0photons_coll = v0photons.sliceBy(perCollisionV0, collision.globalIndex());
       for (const auto& v0 : v0photons_coll) {
         auto pos = v0.template posTrack_as<aod::V0Legs>();
         auto ele = v0.template negTrack_as<aod::V0Legs>();
@@ -844,6 +881,7 @@ struct PCMQC {
         }
         fillLossQAInfo<1>(v0);
         fillV0Info(v0);
+        fillKappaRec(pos, ele, v0.pt(), centralities[cfgCentEstimator]);
         fillMaterialBudgetInfo(v0);
         for (const auto& leg : {pos, ele}) {
           fillV0LegInfo(leg);
@@ -859,15 +897,15 @@ struct PCMQC {
   }
   void processQC(FilteredMyCollisions const& collisions, MyV0Photons const& v0photons, aod::V0Legs const& v0legs)
   {
-    process(collisions, v0photons, v0legs, perCollisionV0);
+    processRec(collisions, v0photons, v0legs);
   } // end of process
 
   void processQCML(FilteredMyCollisions const& collisions, MyV0PhotonsML const& v0photonsML, aod::V0Legs const& v0legs)
   {
-    process(collisions, v0photonsML, v0legs, perCollisionV0ML);
+    processRec(collisions, v0photonsML, v0legs);
   } // end of ML process
 
-  template <int mctype, typename TV0, typename TMCV0, typename TMCLeg>
+  template <int mctype, o2::soa::is_iterator TV0, o2::soa::is_iterator TMCV0, o2::soa::is_iterator TMCLeg>
   void fillV0InfoMC(TV0 const& v0, TMCV0 const& mcphoton, TMCLeg const& mcleg)
   {
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hPt"), v0.pt());
@@ -917,7 +955,7 @@ struct PCMQC {
     }
 
     float phi_cp = std::atan2(v0.vy(), v0.vx());
-    o2::math_utils::bringTo02Pi(phi_cp);
+    RecoDecay::constrainAngle(phi_cp);
     float eta_cp = std::atanh(v0.vz() / std::sqrt(std::pow(v0.vx(), 2) + std::pow(v0.vy(), 2) + std::pow(v0.vz(), 2)));
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hsConvPoint"), v0.v0radius(), phi_cp, eta_cp);
 
@@ -943,7 +981,7 @@ struct PCMQC {
     }
   }
 
-  template <int mctype, typename TLeg>
+  template <int mctype, o2::soa::is_iterator TLeg>
   void fillV0LegInfoMC(TLeg const& leg)
   {
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hPt"), leg.pt());
@@ -975,8 +1013,8 @@ struct PCMQC {
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hRxyGen_DeltaPhi"), std::sqrt(std::pow(mcleg.vx(), 2) + std::pow(mcleg.vy(), 2)), leg.phi() - mcleg.phi());
   }
 
-  template <typename TV0Photons, typename TPerCollision>
-  void processMC(FilteredMyCollisionsMC const& collisions, TV0Photons const& v0photons, aod::EMMCParticles const& mcparticles, MyMCV0Legs const&, aod::EMMCEvents const&, TPerCollision const& percollision)
+  template <o2::soa::is_table TV0Photons>
+  void processMC(FilteredMyCollisionsMC const& collisions, TV0Photons const& v0photons, aod::EMMCParticles const& mcparticles, MyMCV0Legs const&, aod::EMMCEvents const&)
   {
     for (const auto& collision : collisions) {
       initCCDB(collision);
@@ -994,7 +1032,7 @@ struct PCMQC {
       fRegistry.fill(HIST("Event/after/hCollisionCounter"), 10.0);  // accepted
 
       fV0PhotonCut.SetCentrality(centralities[cfgCentEstimator]); // set centrality for BDT response
-      auto v0photons_coll = v0photons.sliceBy(percollision, collision.globalIndex());
+      auto v0photons_coll = v0photons.sliceBy(perCollisionV0, collision.globalIndex());
       int ng_primary = 0, ng_wd = 0, ng_hs = 0, nee_pi0 = 0, nee_eta = 0;
       for (const auto& v0 : v0photons_coll) {
         auto pos = v0.template posTrack_as<MyMCV0Legs>();
@@ -1020,6 +1058,9 @@ struct PCMQC {
         int photonid = FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 22, mcparticles);
         int pi0id = FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 111, mcparticles); // pi0 dalitz decay
         int etaid = FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 221, mcparticles); // eta dalitz decay
+
+        fillKappaMC(pos, ele, posmc, elemc, photonid, v0.pt(), centralities[cfgCentEstimator]);
+
         if (photonid < 0 && pi0id < 0 && etaid < 0) {
           continue;
         }
@@ -1100,15 +1141,15 @@ struct PCMQC {
 
   void processPCMQCMC(FilteredMyCollisionsMC const& collisions, MyV0Photons const& v0photons, aod::EMMCParticles const& mcparticles, MyMCV0Legs const& mcv0legs, aod::EMMCEvents const& mcevents)
   {
-    processMC(collisions, v0photons, mcparticles, mcv0legs, mcevents, perCollisionV0);
+    processMC(collisions, v0photons, mcparticles, mcv0legs, mcevents);
   } // end of MC QC process
 
   void processPCMQCMCML(FilteredMyCollisionsMC const& collisions, MyV0PhotonsML const& v0photonsML, aod::EMMCParticles const& mcparticles, MyMCV0Legs const& mcv0legs, aod::EMMCEvents const& mcevents)
   {
-    processMC(collisions, v0photonsML, mcparticles, mcv0legs, mcevents, perCollisionV0ML);
+    processMC(collisions, v0photonsML, mcparticles, mcv0legs, mcevents);
   } // end of MC QC process with ML cuts
 
-  template <typename TBinnedData>
+  template <std::ranges::contiguous_range TBinnedData>
   void fillBinnedData(TBinnedData const& binned_data, const float weight = 1.f)
   {
     int xbin = 0, ybin = 0, zbin = 0;
@@ -1166,7 +1207,7 @@ struct PCMQC {
         auto daughter = mcparticles.iteratorAt(mctrack.daughtersIds()[0]); // choose ele or pos.
         float rxy_gen_e = std::sqrt(std::pow(daughter.vx(), 2) + std::pow(daughter.vy(), 2));
         float phi_cp = std::atan2(daughter.vy(), daughter.vx());
-        o2::math_utils::bringTo02Pi(phi_cp);
+        RecoDecay::constrainAngle(phi_cp);
         float eta_cp = std::atanh(daughter.vz() / std::sqrt(std::pow(daughter.vx(), 2) + std::pow(daughter.vy(), 2) + std::pow(daughter.vz(), 2)));
 
         fRegistry.fill(HIST("Generated/hR_ConversionPhoton_wideR"), rxy_gen_e);
@@ -1190,7 +1231,7 @@ struct PCMQC {
     } // end of collision loop
   }
 
-  template <bool survived, typename TTrack>
+  template <bool survived, o2::soa::is_iterator TTrack>
   void fillLegQualityRecoQA(TTrack const& track)
   {
     if constexpr (survived) {
