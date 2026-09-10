@@ -228,7 +228,7 @@ struct TrackedHypertritonRecoTask {
     bool isSignal = false;
     bool isRecoMCCollision = false;
     bool survivedEventSelection = false;
-    uint8_t fakeHeITSLayerMap = 0;
+    uint8_t fakeHeITSLayerMap{};
     int motherLabel = -1;
     int statusCode = 0;
   };
