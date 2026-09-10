@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file dgTwoTrackCandProducer.cxx
+/// \file upcCandProducerBarrel.cxx
 /// \brief Compact two-track double-gap candidate table producer for exclusive diffraction and UPC studies.
 /// Requires: event selection, propagation, TPC PID and TOF PID services
 /// \author Nazar Burmasov (JINR), Evgeny Kryshen (JINR)
@@ -115,7 +115,7 @@ namespace o2::aod::upc_cand_prod_bar
 {
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t);
 DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);
-DECLARE_SOA_COLUMN(TFId, tfId, uint32_t);
+DECLARE_SOA_COLUMN(TfId, tfId, uint32_t);
 DECLARE_SOA_COLUMN(Timestamp, timestamp, uint64_t);
 DECLARE_SOA_COLUMN(PosX, posX, float);
 DECLARE_SOA_COLUMN(PosY, posY, float);
@@ -145,7 +145,7 @@ namespace o2::aod
 DECLARE_SOA_TABLE(UPCBarrelCands, "AOD", "UPCBARRELCANDS",
                   upc_cand_prod_bar::RunNumber,
                   upc_cand_prod_bar::GlobalBC,
-                  upc_cand_prod_bar::TFId,
+                  upc_cand_prod_bar::TfId,
                   upc_cand_prod_bar::Timestamp,
                   upc_cand_prod_bar::PosX,
                   upc_cand_prod_bar::PosY,
