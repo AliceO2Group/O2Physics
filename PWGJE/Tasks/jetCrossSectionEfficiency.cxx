@@ -90,34 +90,67 @@ struct JetCrossSectionEfficiency {
     SplitOkCheckFirstAssocCollOnly // 2
   };
 
-  static constexpr float configSwitchLow = -98.0f;
-  static constexpr float configSwitchHigh = 9998.0f;
-  static constexpr float kBrokenPtHardSentinel = 1.0f;
+  static constexpr float ConfigSwitchLow = -98.0f;
+  static constexpr float ConfigSwitchHigh = 9998.0f;
+  static constexpr float BrokenPtHardSentinel = 1.0f;
 
   // CollRecoFirst: reco collision required first; BC bits read from the reco-coll EvSels.
-  static constexpr int kBinCRF_Inel = 1;
-  static constexpr int kBinCRF_RctPass = 2;
-  static constexpr int kBinCRF_HasColl = 3;
-  static constexpr int kBinCRF_Zreco = 4;
-  static constexpr int kBinCRF_NoSplit = 5;
-  static constexpr int kBinCRF_TVX = 6;
-  static constexpr int kBinCRF_TFB = 7;
-  static constexpr int kBinCRF_ROFB = 8;
-  static constexpr int kBinCRF_SBP = 9;
-  static constexpr int kBinCRF_N = 9;
+  enum BinCollRecoFirst {
+    CollRecoFirstInel = 1,
+    CollRecoFirstRct,
+    CollRecoFirstHasCollision,
+    CollRecoFirstVertexZ,
+    CollRecoFirstNoSplit,
+    CollRecoFirstTvx,
+    CollRecoFirstNoTimeFrameBorder,
+    CollRecoFirstNoItsRofBorder,
+    CollRecoFirstNoSameBunchPileup,
+    CollRecoFirstNBins = CollRecoFirstNoSameBunchPileup
+  };
 
   // BcBitsFirst: BC bits read from the MC truth BC; SBP from a Preslice count
   // (exactly one MC collision per truth BC) so it works before requiring reco.
-  static constexpr int kBinBBF_Inel = 1;
-  static constexpr int kBinBBF_RctPass = 2;
-  static constexpr int kBinBBF_TVX = 3;
-  static constexpr int kBinBBF_TFB = 4;
-  static constexpr int kBinBBF_ROFB = 5;
-  static constexpr int kBinBBF_TruthSBP = 6;
-  static constexpr int kBinBBF_HasColl = 7;
-  static constexpr int kBinBBF_Zreco = 8;
-  static constexpr int kBinBBF_NoSplit = 9;
-  static constexpr int kBinBBF_N = 9;
+  enum BinBcBitsFirst {
+    BcBitsFirstInel = 1,
+    BcBitsFirstRct,
+    BcBitsFirstTvx,
+    BcBitsFirstNoTimeFrameBorder,
+    BcBitsFirstNoItsRofBorder,
+    BcBitsFirstNoSameBunchPileupTruth,
+    BcBitsFirstHasCollision,
+    BcBitsFirstVertexZ,
+    BcBitsFirstNoSplit,
+    BcBitsFirstNBins = BcBitsFirstNoSplit
+  };
+
+  enum EventSelectionPreset {
+    PresetSelTvx = 0,
+    PresetSelMc,
+    PresetSelMcFull,
+    PresetSel8,
+    PresetSel8Full,
+    PresetInvalid
+  };
+
+  static EventSelectionPreset getEventSelectionPreset(const std::string& preset)
+  {
+    if (preset == "selTVX") {
+      return PresetSelTvx;
+    }
+    if (preset == "selMC") {
+      return PresetSelMc;
+    }
+    if (preset == "selMCFull") {
+      return PresetSelMcFull;
+    }
+    if (preset == "sel8") {
+      return PresetSel8;
+    }
+    if (preset == "sel8Full") {
+      return PresetSel8Full;
+    }
+    return PresetInvalid;
+  }
 
   Preslice<aod::JetMcCollisions> mcCollsPerBC = aod::jmccollision::bcId;
 
@@ -130,93 +163,99 @@ struct JetCrossSectionEfficiency {
     rctChecker.init(static_cast<std::string>(rctSelectionsLabel));
     rctMask = rctChecker.value();
 
-    const std::string es = eventSelections;
-    if (es == "selTVX") {
-      applyTFB = false;
-      applyROFB = false;
-      applySBP = false;
-    } else if (es == "selMC") {
-      applyTFB = true;
-      applyROFB = false;
-      applySBP = false;
-    } else if (es == "selMCFull") {
-      applyTFB = true;
-      applyROFB = false;
-      applySBP = true;
-    } else if (es == "sel8") {
-      applyTFB = true;
-      applyROFB = true;
-      applySBP = false;
-    } else if (es == "sel8Full") {
-      applyTFB = true;
-      applyROFB = true;
-      applySBP = true;
-    } else {
-      LOGF(fatal, "Configurable eventSelections=%s not supported; use selTVX, selMC, selMCFull, sel8, or sel8Full", es.c_str());
+    switch (getEventSelectionPreset(static_cast<std::string>(eventSelections))) {
+      case PresetSelTvx:
+        applyTFB = false;
+        applyROFB = false;
+        applySBP = false;
+        break;
+      case PresetSelMc:
+        applyTFB = true;
+        applyROFB = false;
+        applySBP = false;
+        break;
+      case PresetSelMcFull:
+        applyTFB = true;
+        applyROFB = false;
+        applySBP = true;
+        break;
+      case PresetSel8:
+        applyTFB = true;
+        applyROFB = true;
+        applySBP = false;
+        break;
+      case PresetSel8Full:
+        applyTFB = true;
+        applyROFB = true;
+        applySBP = true;
+        break;
+      default:
+        LOGF(fatal, "Configurable eventSelections=%s not supported; use selTVX, selMC, selMCFull, sel8, or sel8Full", static_cast<std::string>(eventSelections).c_str());
+        break;
     }
 
     AxisSpec jetPtAxis = {200, 0., jetPtMax, "#it{p}_{T} (GeV/#it{c})"};
 
     if (doprocessCrossSectionEfficiency) {
-      AxisSpec axCRF = {kBinCRF_N, 0.5, static_cast<double>(kBinCRF_N) + 0.5, "event selection (CollRecoFirst)"};
+      AxisSpec axisSelectionCollRecoFirst = {CollRecoFirstNBins, 0.5, static_cast<double>(CollRecoFirstNBins) + 0.5, "event selection (CollRecoFirst)"};
       registry.add("h2_jet_pt_part_eventselection_collRecoFirst",
                    "part jet pT vs event selection (CollRecoFirst);#it{p}_{T,jet}^{part} (GeV/#it{c});event selection;counts",
-                   {HistType::kTH2F, {jetPtAxis, axCRF}});
-      auto hCRF2 = registry.get<TH2>(HIST("h2_jet_pt_part_eventselection_collRecoFirst"));
-      hCRF2->GetYaxis()->SetBinLabel(kBinCRF_Inel, "INEL");
-      hCRF2->GetYaxis()->SetBinLabel(kBinCRF_RctPass, "+RCT_pass");
-      hCRF2->GetYaxis()->SetBinLabel(kBinCRF_HasColl, "+hasRecoColl");
-      hCRF2->GetYaxis()->SetBinLabel(kBinCRF_Zreco, "+|zReco|<10");
-      hCRF2->GetYaxis()->SetBinLabel(kBinCRF_NoSplit, "+noSplit");
-      hCRF2->GetYaxis()->SetBinLabel(kBinCRF_TVX, "+kTVX");
-      hCRF2->GetYaxis()->SetBinLabel(kBinCRF_TFB, "+kNoTFB");
-      hCRF2->GetYaxis()->SetBinLabel(kBinCRF_ROFB, "+kNoITSROFB");
-      hCRF2->GetYaxis()->SetBinLabel(kBinCRF_SBP, "+kNoSBP");
+                   {HistType::kTH2F, {jetPtAxis, axisSelectionCollRecoFirst}});
+      auto hJetPtCollRecoFirst = registry.get<TH2>(HIST("h2_jet_pt_part_eventselection_collRecoFirst"));
+      hJetPtCollRecoFirst->GetYaxis()->SetBinLabel(CollRecoFirstInel, "INEL");
+      hJetPtCollRecoFirst->GetYaxis()->SetBinLabel(CollRecoFirstRct, "+RCT_pass");
+      hJetPtCollRecoFirst->GetYaxis()->SetBinLabel(CollRecoFirstHasCollision, "+hasRecoColl");
+      hJetPtCollRecoFirst->GetYaxis()->SetBinLabel(CollRecoFirstVertexZ, "+|zReco|<10");
+      hJetPtCollRecoFirst->GetYaxis()->SetBinLabel(CollRecoFirstNoSplit, "+noSplit");
+      hJetPtCollRecoFirst->GetYaxis()->SetBinLabel(CollRecoFirstTvx, "+kTVX");
+      hJetPtCollRecoFirst->GetYaxis()->SetBinLabel(CollRecoFirstNoTimeFrameBorder, "+kNoTFB");
+      hJetPtCollRecoFirst->GetYaxis()->SetBinLabel(CollRecoFirstNoItsRofBorder, "+kNoITSROFB");
+      hJetPtCollRecoFirst->GetYaxis()->SetBinLabel(CollRecoFirstNoSameBunchPileup, "+kNoSBP");
 
       registry.add("h_mccollisions_eventselection_collRecoFirst",
                    "number of mc events vs event selection (CollRecoFirst);event selection;entries",
-                   {HistType::kTH1F, {{kBinCRF_N, 0.5, static_cast<double>(kBinCRF_N) + 0.5}}});
-      auto hCRF1 = registry.get<TH1>(HIST("h_mccollisions_eventselection_collRecoFirst"));
-      hCRF1->GetXaxis()->SetBinLabel(kBinCRF_Inel, "INEL");
-      hCRF1->GetXaxis()->SetBinLabel(kBinCRF_RctPass, "+RCT_pass");
-      hCRF1->GetXaxis()->SetBinLabel(kBinCRF_HasColl, "+hasRecoColl");
-      hCRF1->GetXaxis()->SetBinLabel(kBinCRF_Zreco, "+|zReco|<10");
-      hCRF1->GetXaxis()->SetBinLabel(kBinCRF_NoSplit, "+noSplit");
-      hCRF1->GetXaxis()->SetBinLabel(kBinCRF_TVX, "+kTVX");
-      hCRF1->GetXaxis()->SetBinLabel(kBinCRF_TFB, "+kNoTFB");
-      hCRF1->GetXaxis()->SetBinLabel(kBinCRF_ROFB, "+kNoITSROFB");
-      hCRF1->GetXaxis()->SetBinLabel(kBinCRF_SBP, "+kNoSBP");
+                   {HistType::kTH1F, {{CollRecoFirstNBins, 0.5, static_cast<double>(CollRecoFirstNBins) + 0.5}}});
+      auto hMcCollisionsCollRecoFirst = registry.get<TH1>(HIST("h_mccollisions_eventselection_collRecoFirst"));
+      hMcCollisionsCollRecoFirst->GetXaxis()->SetBinLabel(CollRecoFirstInel, "INEL");
+      hMcCollisionsCollRecoFirst->GetXaxis()->SetBinLabel(CollRecoFirstRct, "+RCT_pass");
+      hMcCollisionsCollRecoFirst->GetXaxis()->SetBinLabel(CollRecoFirstHasCollision, "+hasRecoColl");
+      hMcCollisionsCollRecoFirst->GetXaxis()->SetBinLabel(CollRecoFirstVertexZ, "+|zReco|<10");
+      hMcCollisionsCollRecoFirst->GetXaxis()->SetBinLabel(CollRecoFirstNoSplit, "+noSplit");
+      hMcCollisionsCollRecoFirst->GetXaxis()->SetBinLabel(CollRecoFirstTvx, "+kTVX");
+      hMcCollisionsCollRecoFirst->GetXaxis()->SetBinLabel(CollRecoFirstNoTimeFrameBorder, "+kNoTFB");
+      hMcCollisionsCollRecoFirst->GetXaxis()->SetBinLabel(CollRecoFirstNoItsRofBorder, "+kNoITSROFB");
+      hMcCollisionsCollRecoFirst->GetXaxis()->SetBinLabel(CollRecoFirstNoSameBunchPileup, "+kNoSBP");
     }
 
     if (doprocessCrossSectionEfficiencyBcBitsFirst) {
-      AxisSpec axBBF = {kBinBBF_N, 0.5, static_cast<double>(kBinBBF_N) + 0.5, "event selection (BcBitsFirst)"};
+      AxisSpec axisSelectionBcBitsFirst = {BcBitsFirstNBins, 0.5, static_cast<double>(BcBitsFirstNBins) + 0.5, "event selection (BcBitsFirst)"};
       registry.add("h2_jet_pt_part_eventselection_bcBitsFirst",
                    "part jet pT vs event selection (BcBitsFirst);#it{p}_{T,jet}^{part} (GeV/#it{c});event selection;counts",
-                   {HistType::kTH2F, {jetPtAxis, axBBF}});
-      auto hBBF2 = registry.get<TH2>(HIST("h2_jet_pt_part_eventselection_bcBitsFirst"));
-      hBBF2->GetYaxis()->SetBinLabel(kBinBBF_Inel, "INEL");
-      hBBF2->GetYaxis()->SetBinLabel(kBinBBF_RctPass, "+RCT_pass");
-      hBBF2->GetYaxis()->SetBinLabel(kBinBBF_TVX, "+kTVX(truth)");
-      hBBF2->GetYaxis()->SetBinLabel(kBinBBF_TFB, "+kNoTFB(truth)");
-      hBBF2->GetYaxis()->SetBinLabel(kBinBBF_ROFB, "+kNoITSROFB(truth)");
-      hBBF2->GetYaxis()->SetBinLabel(kBinBBF_TruthSBP, "+kNoSBP(truth)");
-      hBBF2->GetYaxis()->SetBinLabel(kBinBBF_HasColl, "+hasColl");
-      hBBF2->GetYaxis()->SetBinLabel(kBinBBF_Zreco, "+|zReco|<10");
-      hBBF2->GetYaxis()->SetBinLabel(kBinBBF_NoSplit, "+noSplit");
+                   {HistType::kTH2F, {jetPtAxis, axisSelectionBcBitsFirst}});
+      auto hJetPtBcBitsFirst = registry.get<TH2>(HIST("h2_jet_pt_part_eventselection_bcBitsFirst"));
+      hJetPtBcBitsFirst->GetYaxis()->SetBinLabel(BcBitsFirstInel, "INEL");
+      hJetPtBcBitsFirst->GetYaxis()->SetBinLabel(BcBitsFirstRct, "+RCT_pass");
+      hJetPtBcBitsFirst->GetYaxis()->SetBinLabel(BcBitsFirstTvx, "+kTVX(truth)");
+      hJetPtBcBitsFirst->GetYaxis()->SetBinLabel(BcBitsFirstNoTimeFrameBorder, "+kNoTFB(truth)");
+      hJetPtBcBitsFirst->GetYaxis()->SetBinLabel(BcBitsFirstNoItsRofBorder, "+kNoITSROFB(truth)");
+      hJetPtBcBitsFirst->GetYaxis()->SetBinLabel(BcBitsFirstNoSameBunchPileupTruth, "+kNoSBP(truth)");
+      hJetPtBcBitsFirst->GetYaxis()->SetBinLabel(BcBitsFirstHasCollision, "+hasColl");
+      hJetPtBcBitsFirst->GetYaxis()->SetBinLabel(BcBitsFirstVertexZ, "+|zReco|<10");
+      hJetPtBcBitsFirst->GetYaxis()->SetBinLabel(BcBitsFirstNoSplit, "+noSplit");
 
       registry.add("h_mccollisions_eventselection_bcBitsFirst",
                    "number of mc events vs event selection (BcBitsFirst);event selection;entries",
-                   {HistType::kTH1F, {{kBinBBF_N, 0.5, static_cast<double>(kBinBBF_N) + 0.5}}});
-      auto hBBF1 = registry.get<TH1>(HIST("h_mccollisions_eventselection_bcBitsFirst"));
-      hBBF1->GetXaxis()->SetBinLabel(kBinBBF_Inel, "INEL");
-      hBBF1->GetXaxis()->SetBinLabel(kBinBBF_RctPass, "+RCT_pass");
-      hBBF1->GetXaxis()->SetBinLabel(kBinBBF_TVX, "+kTVX(truth)");
-      hBBF1->GetXaxis()->SetBinLabel(kBinBBF_TFB, "+kNoTFB(truth)");
-      hBBF1->GetXaxis()->SetBinLabel(kBinBBF_ROFB, "+kNoITSROFB(truth)");
-      hBBF1->GetXaxis()->SetBinLabel(kBinBBF_TruthSBP, "+kNoSBP(truth)");
-      hBBF1->GetXaxis()->SetBinLabel(kBinBBF_HasColl, "+hasColl");
-      hBBF1->GetXaxis()->SetBinLabel(kBinBBF_Zreco, "+|zReco|<10");
-      hBBF1->GetXaxis()->SetBinLabel(kBinBBF_NoSplit, "+noSplit");
+                   {HistType::kTH1F, {{BcBitsFirstNBins, 0.5, static_cast<double>(BcBitsFirstNBins) + 0.5}}});
+      auto hMcCollisionsBcBitsFirst = registry.get<TH1>(HIST("h_mccollisions_eventselection_bcBitsFirst"));
+      hMcCollisionsBcBitsFirst->GetXaxis()->SetBinLabel(BcBitsFirstInel, "INEL");
+      hMcCollisionsBcBitsFirst->GetXaxis()->SetBinLabel(BcBitsFirstRct, "+RCT_pass");
+      hMcCollisionsBcBitsFirst->GetXaxis()->SetBinLabel(BcBitsFirstTvx, "+kTVX(truth)");
+      hMcCollisionsBcBitsFirst->GetXaxis()->SetBinLabel(BcBitsFirstNoTimeFrameBorder, "+kNoTFB(truth)");
+      hMcCollisionsBcBitsFirst->GetXaxis()->SetBinLabel(BcBitsFirstNoItsRofBorder, "+kNoITSROFB(truth)");
+      hMcCollisionsBcBitsFirst->GetXaxis()->SetBinLabel(BcBitsFirstNoSameBunchPileupTruth, "+kNoSBP(truth)");
+      hMcCollisionsBcBitsFirst->GetXaxis()->SetBinLabel(BcBitsFirstHasCollision, "+hasColl");
+      hMcCollisionsBcBitsFirst->GetXaxis()->SetBinLabel(BcBitsFirstVertexZ, "+|zReco|<10");
+      hMcCollisionsBcBitsFirst->GetXaxis()->SetBinLabel(BcBitsFirstNoSplit, "+noSplit");
     }
   }
 
@@ -225,7 +264,7 @@ struct JetCrossSectionEfficiency {
   {
     float ptHardFromMc = ptHardCalcMethodSwitch;
     float storedPtHard = mccollision.ptHard();
-    if (storedPtHard > kBrokenPtHardSentinel && storedPtHard < ptHardCalcMethodSwitch) {
+    if (storedPtHard > BrokenPtHardSentinel && storedPtHard < ptHardCalcMethodSwitch) {
       ptHardFromMc = storedPtHard;
     }
     float weight = mccollision.weight();
@@ -237,13 +276,13 @@ struct JetCrossSectionEfficiency {
   template <typename TTracks, typename TJets>
   bool isAcceptedJet(TJets const& jet)
   {
-    if (jetAreaFractionMin > configSwitchLow) {
+    if (jetAreaFractionMin > ConfigSwitchLow) {
       if (jet.area() < jetAreaFractionMin * o2::constants::math::PI * (jet.r() / 100.0) * (jet.r() / 100.0)) {
         return false;
       }
     }
-    bool checkConstituentMinPt = (leadingConstituentPtMinMCP > configSwitchLow);
-    bool checkConstituentMaxPt = (leadingConstituentPtMaxMCP < configSwitchHigh);
+    bool checkConstituentMinPt = (leadingConstituentPtMinMCP > ConfigSwitchLow);
+    bool checkConstituentMaxPt = (leadingConstituentPtMaxMCP < ConfigSwitchHigh);
     bool checkConstituentPt = checkConstituentMinPt || checkConstituentMaxPt;
 
     if (checkConstituentPt) {
@@ -303,17 +342,17 @@ struct JetCrossSectionEfficiency {
     }
 
     bool passesRct = applyRCT ? (mccollision.bc_as<aod::JBCs>().rct_raw() & rctMask) == 0 : true;
-    bool pass[kBinCRF_N + 1] = {false, true, passesRct, hasRecoColl, passesZvtxCutReco,
-                                hasRecoColl && noSplitPass, passesTVX,
-                                applyTFB ? passesNoTFB : true,
-                                applyROFB ? passesNoITSROFB : true,
-                                applySBP ? passesNoSBP : true};
+    bool pass[CollRecoFirstNBins + 1] = {false, true, passesRct, hasRecoColl, passesZvtxCutReco,
+                                         hasRecoColl && noSplitPass, passesTVX,
+                                         applyTFB ? passesNoTFB : true,
+                                         applyROFB ? passesNoITSROFB : true,
+                                         applySBP ? passesNoSBP : true};
 
     // Unified weight handling: MB MC -> weight=1 (no-op), JJ MC -> per-event sigma fraction.
     float weight = mccollision.weight();
 
     int sMax = 0;
-    for (int s = kBinCRF_Inel; s <= kBinCRF_N; ++s) {
+    for (int s = CollRecoFirstInel; s <= CollRecoFirstNBins; ++s) {
       if (!pass[s])
         break;
       registry.fill(HIST("h_mccollisions_eventselection_collRecoFirst"), static_cast<double>(s), weight);
@@ -334,7 +373,7 @@ struct JetCrossSectionEfficiency {
           !isAcceptedJet<aod::JetParticles>(jet)) {
         continue;
       }
-      for (int s = kBinCRF_Inel; s <= sMax; ++s) {
+      for (int s = CollRecoFirstInel; s <= sMax; ++s) {
         registry.fill(HIST("h2_jet_pt_part_eventselection_collRecoFirst"), jet.pt(), static_cast<double>(s), weight);
       }
     }
@@ -379,16 +418,16 @@ struct JetCrossSectionEfficiency {
     bool noSplitPass = (acceptSplitCollisions == NonSplitOnly) ? (collisions.size() == 1) : true;
 
     bool passesRct = applyRCT ? (truthBC.rct_raw() & rctMask) == 0 : true;
-    bool pass[kBinBBF_N + 1] = {false, true, passesRct, passesTVXTruth,
-                                applyTFB ? passesNoTFBTruth : true,
-                                applyROFB ? passesNoITSROFBTruth : true,
-                                applySBP ? truthNoSBP : true,
-                                hasRecoColl, passesZvtxCutReco, hasRecoColl && noSplitPass};
+    bool pass[BcBitsFirstNBins + 1] = {false, true, passesRct, passesTVXTruth,
+                                       applyTFB ? passesNoTFBTruth : true,
+                                       applyROFB ? passesNoITSROFBTruth : true,
+                                       applySBP ? truthNoSBP : true,
+                                       hasRecoColl, passesZvtxCutReco, hasRecoColl && noSplitPass};
 
     float weight = mccollision.weight();
 
     int sMax = 0;
-    for (int s = kBinBBF_Inel; s <= kBinBBF_N; ++s) {
+    for (int s = BcBitsFirstInel; s <= BcBitsFirstNBins; ++s) {
       if (!pass[s])
         break;
       registry.fill(HIST("h_mccollisions_eventselection_bcBitsFirst"), static_cast<double>(s), weight);
@@ -409,7 +448,7 @@ struct JetCrossSectionEfficiency {
           !isAcceptedJet<aod::JetParticles>(jet)) {
         continue;
       }
-      for (int s = kBinBBF_Inel; s <= sMax; ++s) {
+      for (int s = BcBitsFirstInel; s <= sMax; ++s) {
         registry.fill(HIST("h2_jet_pt_part_eventselection_bcBitsFirst"), jet.pt(), static_cast<double>(s), weight);
       }
     }

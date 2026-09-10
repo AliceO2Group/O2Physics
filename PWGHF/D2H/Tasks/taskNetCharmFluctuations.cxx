@@ -22,6 +22,7 @@
 
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <Framework/ASoA.h>
@@ -130,7 +131,7 @@ using CandD0Data = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfCand2Prong0
 using CandD0McRec = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfCand2Prong0PidPi, aod::HfCand2Prong1PidPi, aod::HfCand2Prong0PidKa, aod::HfCand2Prong1PidKa, aod::HfCand2ProngKF, aod::HfSelD0, aod::HfCand2ProngMcRec>>;
 using CandDplusData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfCand3Prong0PidPi, aod::HfCand3Prong1PidPi, aod::HfCand3Prong2PidPi, aod::HfCand3Prong0PidKa, aod::HfCand3Prong1PidKa, aod::HfCand3Prong2PidKa, aod::HfSelDplusToPiKPi>>;
 using CandDplusMcRec = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfCand3Prong0PidPi, aod::HfCand3Prong1PidPi, aod::HfCand3Prong2PidPi, aod::HfCand3Prong0PidKa, aod::HfCand3Prong1PidKa, aod::HfCand3Prong2PidKa, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec>>;
-using CollData = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFT0As>;
+using CollData = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFT0As>;
 
 struct HfTaskNetCharmFluctuations {
   Produces<aod::EyeFlucCharmD0Cands> outD0Cand;

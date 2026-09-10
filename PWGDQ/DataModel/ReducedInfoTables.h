@@ -886,6 +886,7 @@ DECLARE_SOA_COLUMN(CosThetaRM, costhetaRM, float);             //! Cosine in the
 DECLARE_SOA_COLUMN(CosThetaStarTPC, costhetaStarTPC, float);   //! global polarization, event plane reconstructed from TPC tracks
 DECLARE_SOA_COLUMN(CosThetaStarFT0A, costhetaStarFT0A, float); //! global polarization, event plane reconstructed from FT0A tracks
 DECLARE_SOA_COLUMN(CosThetaStarFT0C, costhetaStarFT0C, float); //! global polarization, event plane reconstructed from FT0C tracks
+DECLARE_SOA_COLUMN(CosThetaStarRandom, costhetaStarRandom, float); //! global polarization, event plane reconstructed from random tracks
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px,                             //!
                            [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //!
@@ -1044,11 +1045,12 @@ DECLARE_SOA_TABLE(DileptonsMiniTreeRec, "AOD", "RTDILMTREEREC", //!
                   dilepton_track_index::Pt2, dilepton_track_index::Eta2, dilepton_track_index::Phi2);
 
 DECLARE_SOA_TABLE(DileptonsPolarization, "AOD", "RTDILPOLAR", //!
+                  reducedpair::Mass, reducedpair::Pt, reducedpair::Eta, reducedpair::Sign, reducedpair::FilterMap,
                   reducedpair::CosThetaHE, reducedpair::PhiHE, reducedpair::PhiTildeHE,
                   reducedpair::CosThetaCS, reducedpair::PhiCS, reducedpair::PhiTildeCS,
                   reducedpair::CosThetaPP, reducedpair::PhiPP, reducedpair::PhiTildePP,
                   reducedpair::CosThetaRM,
-                  reducedpair::CosThetaStarTPC, reducedpair::CosThetaStarFT0A, reducedpair::CosThetaStarFT0C);
+                  reducedpair::CosThetaStarTPC, reducedpair::CosThetaStarFT0A, reducedpair::CosThetaStarFT0C, reducedpair::CosThetaStarRandom);
 
 DECLARE_SOA_TABLE(DileptonsEventInfo, "AOD", "RTDILEVENTINFO", //!
                   cent::CentFT0C, collision::PosZ, collision::NumContrib, reducedevent::Psi2Random, reducedevent::Psi2A, reducedevent::Psi2B, reducedevent::Psi2C);

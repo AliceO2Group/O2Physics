@@ -189,6 +189,9 @@ struct lambdapolsp {
     ConfigurableAxis nuasignAxis{"nuaSignAxis", {2, -1.5f, 1.5f}, "charge sign"};
     ConfigurableAxis nuaphiAxis{"nuaPhiAxis", {72, 0.f, static_cast<float>(TMath::TwoPi())}, "#varphi"};
     Configurable<std::string> ConfNUA{"ConfNUA", "Users/p/prottay/My/Object/NUAwgtschk", "Path to NUA"};
+
+    Configurable<bool> fillnominal{"fillnominal", true, "flag to fill default histograms"};
+    Configurable<bool> filldefwithsyst{"filldefwithsyst", true, "flag to fill default histograms in syst"};
   } QAgrp;
 
   struct : ConfigurableGroup {
@@ -1087,118 +1090,119 @@ struct lambdapolsp {
     }
     //////////////////////////////
 
-    // Fill histograms using constructed names
-    if (tag2) {
-      if (needetaaxis) {
-        if (usesubdet) {
-          histos.fill(HIST("hSparseAntiLambdaCosPsiA"), candmass, candpt, (TMath::Cos(GetPhiInRange(psiZDCA))), centrality, desbinvalue, wgtfactor);
-          histos.fill(HIST("hSparseAntiLambdaCosPsiC"), candmass, candpt, (TMath::Cos(GetPhiInRange(psiZDCC))), centrality, desbinvalue, wgtfactor);
-          histos.fill(HIST("hSparseAntiLambdaSinPsiA"), candmass, candpt, (TMath::Sin(GetPhiInRange(psiZDCA))), centrality, desbinvalue, wgtfactor);
-          histos.fill(HIST("hSparseAntiLambdaSinPsiC"), candmass, candpt, (TMath::Sin(GetPhiInRange(psiZDCC))), centrality, desbinvalue, wgtfactor);
+    if (QAgrp.fillnominal) {
+      // Fill histograms using constructed names
+      if (tag2) {
+        if (needetaaxis) {
+          if (usesubdet) {
+            histos.fill(HIST("hSparseAntiLambdaCosPsiA"), candmass, candpt, (TMath::Cos(GetPhiInRange(psiZDCA))), centrality, desbinvalue, wgtfactor);
+            histos.fill(HIST("hSparseAntiLambdaCosPsiC"), candmass, candpt, (TMath::Cos(GetPhiInRange(psiZDCC))), centrality, desbinvalue, wgtfactor);
+            histos.fill(HIST("hSparseAntiLambdaSinPsiA"), candmass, candpt, (TMath::Sin(GetPhiInRange(psiZDCA))), centrality, desbinvalue, wgtfactor);
+            histos.fill(HIST("hSparseAntiLambdaSinPsiC"), candmass, candpt, (TMath::Sin(GetPhiInRange(psiZDCC))), centrality, desbinvalue, wgtfactor);
+          }
+          histos.fill(HIST("hSparseAntiLambdaCosPsi"), candmass, candpt, (TMath::Cos(GetPhiInRange(psiZDC))), centrality, desbinvalue, wgtfactor);
+          histos.fill(HIST("hSparseAntiLambdaSinPsi"), candmass, candpt, (TMath::Sin(GetPhiInRange(psiZDC))), centrality, desbinvalue, wgtfactor);
+          if (usesubdet) {
+            histos.fill(HIST("hSparseAntiLambdaPolA"), candmass, candpt, PolA, centrality, desbinvalue, wgtfactor);
+            histos.fill(HIST("hSparseAntiLambdaPolC"), candmass, candpt, PolC, centrality, desbinvalue, wgtfactor);
+            histos.fill(HIST("hSparseAntiLambdaPolAwgt"), candmass, candpt, PolAwgt, centrality, desbinvalue, wgtfactor);
+            histos.fill(HIST("hSparseAntiLambdaPolCwgt"), candmass, candpt, PolCwgt, centrality, desbinvalue, wgtfactor);
+          }
+          histos.fill(HIST("hSparseAntiLambdaPol"), candmass, candpt, Pol, centrality, desbinvalue, wgtfactor);
+          histos.fill(HIST("hSparseAntiLambdaPolwgt"), candmass, candpt, Polwgt, centrality, desbinvalue, wgtfactor);
+          histos.fill(HIST("hSparseAntiLambda_corr1a"), candmass, candpt, sinPhiStar, centrality, desbinvalue, wgtfactor);
+          histos.fill(HIST("hSparseAntiLambda_corr1b"), candmass, candpt, cosPhiStar, centrality, desbinvalue, wgtfactor);
+          // histos.fill(HIST("hSparseAntiLambda_corr1c"), candmass, candpt, phiphiStar, centrality, desbinvalue, wgtfactor);
+          histos.fill(HIST("hSparseAntiLambda_corr2a"), candmass, candpt, sinThetaStar, centrality, desbinvalue, wgtfactor);
+          // histos.fill(HIST("hSparseAntiLambda_corr2b"), candmass, candpt, sinThetaStarcosphiphiStar, centrality, desbinvalue, wgtfactor);
+          if (randGrp.useSP) {
+            histos.fill(HIST("hSparseAntiLambda_avgux"), candmass, candpt, ux, centrality);
+            histos.fill(HIST("hSparseAntiLambda_avguy"), candmass, candpt, uy, centrality);
+          }
+        } else {
+          if (usesubdet) {
+            histos.fill(HIST("hSparseAntiLambdaCosPsiA"), candmass, candpt, (TMath::Cos(GetPhiInRange(psiZDCA))), centrality, wgtfactor);
+            histos.fill(HIST("hSparseAntiLambdaCosPsiC"), candmass, candpt, (TMath::Cos(GetPhiInRange(psiZDCC))), centrality, wgtfactor);
+            histos.fill(HIST("hSparseAntiLambdaSinPsiA"), candmass, candpt, (TMath::Sin(GetPhiInRange(psiZDCA))), centrality, wgtfactor);
+            histos.fill(HIST("hSparseAntiLambdaSinPsiC"), candmass, candpt, (TMath::Sin(GetPhiInRange(psiZDCC))), centrality, wgtfactor);
+          }
+          histos.fill(HIST("hSparseAntiLambdaCosPsi"), candmass, candpt, (TMath::Cos(GetPhiInRange(psiZDC))), centrality, wgtfactor);
+          histos.fill(HIST("hSparseAntiLambdaSinPsi"), candmass, candpt, (TMath::Sin(GetPhiInRange(psiZDC))), centrality, wgtfactor);
+          if (usesubdet) {
+            histos.fill(HIST("hSparseAntiLambdaPolA"), candmass, candpt, PolA, centrality, wgtfactor);
+            histos.fill(HIST("hSparseAntiLambdaPolC"), candmass, candpt, PolC, centrality, wgtfactor);
+            histos.fill(HIST("hSparseAntiLambdaPolAwgt"), candmass, candpt, PolAwgt, centrality, wgtfactor);
+            histos.fill(HIST("hSparseAntiLambdaPolCwgt"), candmass, candpt, PolCwgt, centrality, wgtfactor);
+          }
+          histos.fill(HIST("hSparseAntiLambdaPol"), candmass, candpt, Pol, centrality, wgtfactor);
+          histos.fill(HIST("hSparseAntiLambdaPolwgt"), candmass, candpt, Polwgt, centrality, wgtfactor);
+          histos.fill(HIST("hSparseAntiLambda_corr1a"), candmass, candpt, sinPhiStar, centrality, wgtfactor);
+          histos.fill(HIST("hSparseAntiLambda_corr1b"), candmass, candpt, cosPhiStar, centrality, wgtfactor);
+          // histos.fill(HIST("hSparseAntiLambda_corr1c"), candmass, candpt, phiphiStar, centrality, wgtfactor);
+          histos.fill(HIST("hSparseAntiLambda_corr2a"), candmass, candpt, sinThetaStar, centrality, wgtfactor);
+          // histos.fill(HIST("hSparseAntiLambda_corr2b"), candmass, candpt, sinThetaStarcosphiphiStar, centrality, wgtfactor);
+          if (randGrp.useSP) {
+            histos.fill(HIST("hSparseAntiLambda_avgux"), candmass, candpt, ux, centrality);
+            histos.fill(HIST("hSparseAntiLambda_avguy"), candmass, candpt, uy, centrality);
+          }
         }
-        histos.fill(HIST("hSparseAntiLambdaCosPsi"), candmass, candpt, (TMath::Cos(GetPhiInRange(psiZDC))), centrality, desbinvalue, wgtfactor);
-        histos.fill(HIST("hSparseAntiLambdaSinPsi"), candmass, candpt, (TMath::Sin(GetPhiInRange(psiZDC))), centrality, desbinvalue, wgtfactor);
-        if (usesubdet) {
-          histos.fill(HIST("hSparseAntiLambdaPolA"), candmass, candpt, PolA, centrality, desbinvalue, wgtfactor);
-          histos.fill(HIST("hSparseAntiLambdaPolC"), candmass, candpt, PolC, centrality, desbinvalue, wgtfactor);
-          histos.fill(HIST("hSparseAntiLambdaPolAwgt"), candmass, candpt, PolAwgt, centrality, desbinvalue, wgtfactor);
-          histos.fill(HIST("hSparseAntiLambdaPolCwgt"), candmass, candpt, PolCwgt, centrality, desbinvalue, wgtfactor);
-        }
-        histos.fill(HIST("hSparseAntiLambdaPol"), candmass, candpt, Pol, centrality, desbinvalue, wgtfactor);
-        histos.fill(HIST("hSparseAntiLambdaPolwgt"), candmass, candpt, Polwgt, centrality, desbinvalue, wgtfactor);
-        histos.fill(HIST("hSparseAntiLambda_corr1a"), candmass, candpt, sinPhiStar, centrality, desbinvalue, wgtfactor);
-        histos.fill(HIST("hSparseAntiLambda_corr1b"), candmass, candpt, cosPhiStar, centrality, desbinvalue, wgtfactor);
-        // histos.fill(HIST("hSparseAntiLambda_corr1c"), candmass, candpt, phiphiStar, centrality, desbinvalue, wgtfactor);
-        histos.fill(HIST("hSparseAntiLambda_corr2a"), candmass, candpt, sinThetaStar, centrality, desbinvalue, wgtfactor);
-        // histos.fill(HIST("hSparseAntiLambda_corr2b"), candmass, candpt, sinThetaStarcosphiphiStar, centrality, desbinvalue, wgtfactor);
-        if (randGrp.useSP) {
-          histos.fill(HIST("hSparseAntiLambda_avgux"), candmass, candpt, ux, centrality);
-          histos.fill(HIST("hSparseAntiLambda_avguy"), candmass, candpt, uy, centrality);
-        }
-      } else {
-        if (usesubdet) {
-          histos.fill(HIST("hSparseAntiLambdaCosPsiA"), candmass, candpt, (TMath::Cos(GetPhiInRange(psiZDCA))), centrality, wgtfactor);
-          histos.fill(HIST("hSparseAntiLambdaCosPsiC"), candmass, candpt, (TMath::Cos(GetPhiInRange(psiZDCC))), centrality, wgtfactor);
-          histos.fill(HIST("hSparseAntiLambdaSinPsiA"), candmass, candpt, (TMath::Sin(GetPhiInRange(psiZDCA))), centrality, wgtfactor);
-          histos.fill(HIST("hSparseAntiLambdaSinPsiC"), candmass, candpt, (TMath::Sin(GetPhiInRange(psiZDCC))), centrality, wgtfactor);
-        }
-        histos.fill(HIST("hSparseAntiLambdaCosPsi"), candmass, candpt, (TMath::Cos(GetPhiInRange(psiZDC))), centrality, wgtfactor);
-        histos.fill(HIST("hSparseAntiLambdaSinPsi"), candmass, candpt, (TMath::Sin(GetPhiInRange(psiZDC))), centrality, wgtfactor);
-        if (usesubdet) {
-          histos.fill(HIST("hSparseAntiLambdaPolA"), candmass, candpt, PolA, centrality, wgtfactor);
-          histos.fill(HIST("hSparseAntiLambdaPolC"), candmass, candpt, PolC, centrality, wgtfactor);
-          histos.fill(HIST("hSparseAntiLambdaPolAwgt"), candmass, candpt, PolAwgt, centrality, wgtfactor);
-          histos.fill(HIST("hSparseAntiLambdaPolCwgt"), candmass, candpt, PolCwgt, centrality, wgtfactor);
-        }
-        histos.fill(HIST("hSparseAntiLambdaPol"), candmass, candpt, Pol, centrality, wgtfactor);
-        histos.fill(HIST("hSparseAntiLambdaPolwgt"), candmass, candpt, Polwgt, centrality, wgtfactor);
-        histos.fill(HIST("hSparseAntiLambda_corr1a"), candmass, candpt, sinPhiStar, centrality, wgtfactor);
-        histos.fill(HIST("hSparseAntiLambda_corr1b"), candmass, candpt, cosPhiStar, centrality, wgtfactor);
-        // histos.fill(HIST("hSparseAntiLambda_corr1c"), candmass, candpt, phiphiStar, centrality, wgtfactor);
-        histos.fill(HIST("hSparseAntiLambda_corr2a"), candmass, candpt, sinThetaStar, centrality, wgtfactor);
-        // histos.fill(HIST("hSparseAntiLambda_corr2b"), candmass, candpt, sinThetaStarcosphiphiStar, centrality, wgtfactor);
-        if (randGrp.useSP) {
-          histos.fill(HIST("hSparseAntiLambda_avgux"), candmass, candpt, ux, centrality);
-          histos.fill(HIST("hSparseAntiLambda_avguy"), candmass, candpt, uy, centrality);
+      }
+      if (tag1) {
+        if (needetaaxis) {
+          if (usesubdet) {
+            histos.fill(HIST("hSparseLambdaCosPsiA"), candmass, candpt, (TMath::Cos(GetPhiInRange(psiZDCA))), centrality, desbinvalue, wgtfactor);
+            histos.fill(HIST("hSparseLambdaCosPsiC"), candmass, candpt, (TMath::Cos(GetPhiInRange(psiZDCC))), centrality, desbinvalue, wgtfactor);
+            histos.fill(HIST("hSparseLambdaSinPsiA"), candmass, candpt, (TMath::Sin(GetPhiInRange(psiZDCA))), centrality, desbinvalue, wgtfactor);
+            histos.fill(HIST("hSparseLambdaSinPsiC"), candmass, candpt, (TMath::Sin(GetPhiInRange(psiZDCC))), centrality, desbinvalue, wgtfactor);
+          }
+          histos.fill(HIST("hSparseLambdaCosPsi"), candmass, candpt, (TMath::Cos(GetPhiInRange(psiZDC))), centrality, desbinvalue, wgtfactor);
+          histos.fill(HIST("hSparseLambdaSinPsi"), candmass, candpt, (TMath::Sin(GetPhiInRange(psiZDC))), centrality, desbinvalue, wgtfactor);
+          if (usesubdet) {
+            histos.fill(HIST("hSparseLambdaPolA"), candmass, candpt, PolA, centrality, desbinvalue, wgtfactor);
+            histos.fill(HIST("hSparseLambdaPolC"), candmass, candpt, PolC, centrality, desbinvalue, wgtfactor);
+            histos.fill(HIST("hSparseLambdaPolAwgt"), candmass, candpt, PolAwgt, centrality, desbinvalue, wgtfactor);
+            histos.fill(HIST("hSparseLambdaPolCwgt"), candmass, candpt, PolCwgt, centrality, desbinvalue, wgtfactor);
+          }
+          histos.fill(HIST("hSparseLambdaPol"), candmass, candpt, Pol, centrality, desbinvalue, wgtfactor);
+          histos.fill(HIST("hSparseLambdaPolwgt"), candmass, candpt, Polwgt, centrality, desbinvalue, wgtfactor);
+          histos.fill(HIST("hSparseLambda_corr1a"), candmass, candpt, sinPhiStar, centrality, desbinvalue, wgtfactor);
+          histos.fill(HIST("hSparseLambda_corr1b"), candmass, candpt, cosPhiStar, centrality, desbinvalue, wgtfactor);
+          // histos.fill(HIST("hSparseLambda_corr1c"), candmass, candpt, phiphiStar, centrality, desbinvalue, wgtfactor);
+          histos.fill(HIST("hSparseLambda_corr2a"), candmass, candpt, sinThetaStar, centrality, desbinvalue, wgtfactor);
+          // histos.fill(HIST("hSparseLambda_corr2b"), candmass, candpt, sinThetaStarcosphiphiStar, centrality, desbinvalue, wgtfactor);
+          if (randGrp.useSP) {
+            histos.fill(HIST("hSparseLambda_avgux"), candmass, candpt, ux, centrality);
+            histos.fill(HIST("hSparseLambda_avguy"), candmass, candpt, uy, centrality);
+          }
+        } else {
+          if (usesubdet) {
+            histos.fill(HIST("hSparseLambdaCosPsiA"), candmass, candpt, (TMath::Cos(GetPhiInRange(psiZDCA))), centrality, wgtfactor);
+            histos.fill(HIST("hSparseLambdaCosPsiC"), candmass, candpt, (TMath::Cos(GetPhiInRange(psiZDCC))), centrality, wgtfactor);
+            histos.fill(HIST("hSparseLambdaSinPsiA"), candmass, candpt, (TMath::Sin(GetPhiInRange(psiZDCA))), centrality, wgtfactor);
+            histos.fill(HIST("hSparseLambdaSinPsiC"), candmass, candpt, (TMath::Sin(GetPhiInRange(psiZDCC))), centrality, wgtfactor);
+          }
+          histos.fill(HIST("hSparseLambdaCosPsi"), candmass, candpt, (TMath::Cos(GetPhiInRange(psiZDC))), centrality, wgtfactor);
+          histos.fill(HIST("hSparseLambdaSinPsi"), candmass, candpt, (TMath::Sin(GetPhiInRange(psiZDC))), centrality, wgtfactor);
+          if (usesubdet) {
+            histos.fill(HIST("hSparseLambdaPolA"), candmass, candpt, PolA, centrality, wgtfactor);
+            histos.fill(HIST("hSparseLambdaPolC"), candmass, candpt, PolC, centrality, wgtfactor);
+            histos.fill(HIST("hSparseLambdaPolAwgt"), candmass, candpt, PolAwgt, centrality, wgtfactor);
+            histos.fill(HIST("hSparseLambdaPolCwgt"), candmass, candpt, PolCwgt, centrality, wgtfactor);
+          }
+          histos.fill(HIST("hSparseLambdaPol"), candmass, candpt, Pol, centrality, wgtfactor);
+          histos.fill(HIST("hSparseLambdaPolwgt"), candmass, candpt, Polwgt, centrality, wgtfactor);
+          histos.fill(HIST("hSparseLambda_corr1a"), candmass, candpt, sinPhiStar, centrality, wgtfactor);
+          histos.fill(HIST("hSparseLambda_corr1b"), candmass, candpt, cosPhiStar, centrality, wgtfactor);
+          // histos.fill(HIST("hSparseLambda_corr1c"), candmass, candpt, phiphiStar, centrality, wgtfactor);
+          histos.fill(HIST("hSparseLambda_corr2a"), candmass, candpt, sinThetaStar, centrality, wgtfactor);
+          // histos.fill(HIST("hSparseLambda_corr2b"), candmass, candpt, sinThetaStarcosphiphiStar, centrality, wgtfactor);
+          if (randGrp.useSP) {
+            histos.fill(HIST("hSparseLambda_avgux"), candmass, candpt, ux, centrality);
+            histos.fill(HIST("hSparseLambda_avguy"), candmass, candpt, uy, centrality);
+          }
         }
       }
     }
-    if (tag1) {
-      if (needetaaxis) {
-        if (usesubdet) {
-          histos.fill(HIST("hSparseLambdaCosPsiA"), candmass, candpt, (TMath::Cos(GetPhiInRange(psiZDCA))), centrality, desbinvalue, wgtfactor);
-          histos.fill(HIST("hSparseLambdaCosPsiC"), candmass, candpt, (TMath::Cos(GetPhiInRange(psiZDCC))), centrality, desbinvalue, wgtfactor);
-          histos.fill(HIST("hSparseLambdaSinPsiA"), candmass, candpt, (TMath::Sin(GetPhiInRange(psiZDCA))), centrality, desbinvalue, wgtfactor);
-          histos.fill(HIST("hSparseLambdaSinPsiC"), candmass, candpt, (TMath::Sin(GetPhiInRange(psiZDCC))), centrality, desbinvalue, wgtfactor);
-        }
-        histos.fill(HIST("hSparseLambdaCosPsi"), candmass, candpt, (TMath::Cos(GetPhiInRange(psiZDC))), centrality, desbinvalue, wgtfactor);
-        histos.fill(HIST("hSparseLambdaSinPsi"), candmass, candpt, (TMath::Sin(GetPhiInRange(psiZDC))), centrality, desbinvalue, wgtfactor);
-        if (usesubdet) {
-          histos.fill(HIST("hSparseLambdaPolA"), candmass, candpt, PolA, centrality, desbinvalue, wgtfactor);
-          histos.fill(HIST("hSparseLambdaPolC"), candmass, candpt, PolC, centrality, desbinvalue, wgtfactor);
-          histos.fill(HIST("hSparseLambdaPolAwgt"), candmass, candpt, PolAwgt, centrality, desbinvalue, wgtfactor);
-          histos.fill(HIST("hSparseLambdaPolCwgt"), candmass, candpt, PolCwgt, centrality, desbinvalue, wgtfactor);
-        }
-        histos.fill(HIST("hSparseLambdaPol"), candmass, candpt, Pol, centrality, desbinvalue, wgtfactor);
-        histos.fill(HIST("hSparseLambdaPolwgt"), candmass, candpt, Polwgt, centrality, desbinvalue, wgtfactor);
-        histos.fill(HIST("hSparseLambda_corr1a"), candmass, candpt, sinPhiStar, centrality, desbinvalue, wgtfactor);
-        histos.fill(HIST("hSparseLambda_corr1b"), candmass, candpt, cosPhiStar, centrality, desbinvalue, wgtfactor);
-        // histos.fill(HIST("hSparseLambda_corr1c"), candmass, candpt, phiphiStar, centrality, desbinvalue, wgtfactor);
-        histos.fill(HIST("hSparseLambda_corr2a"), candmass, candpt, sinThetaStar, centrality, desbinvalue, wgtfactor);
-        // histos.fill(HIST("hSparseLambda_corr2b"), candmass, candpt, sinThetaStarcosphiphiStar, centrality, desbinvalue, wgtfactor);
-        if (randGrp.useSP) {
-          histos.fill(HIST("hSparseLambda_avgux"), candmass, candpt, ux, centrality);
-          histos.fill(HIST("hSparseLambda_avguy"), candmass, candpt, uy, centrality);
-        }
-      } else {
-        if (usesubdet) {
-          histos.fill(HIST("hSparseLambdaCosPsiA"), candmass, candpt, (TMath::Cos(GetPhiInRange(psiZDCA))), centrality, wgtfactor);
-          histos.fill(HIST("hSparseLambdaCosPsiC"), candmass, candpt, (TMath::Cos(GetPhiInRange(psiZDCC))), centrality, wgtfactor);
-          histos.fill(HIST("hSparseLambdaSinPsiA"), candmass, candpt, (TMath::Sin(GetPhiInRange(psiZDCA))), centrality, wgtfactor);
-          histos.fill(HIST("hSparseLambdaSinPsiC"), candmass, candpt, (TMath::Sin(GetPhiInRange(psiZDCC))), centrality, wgtfactor);
-        }
-        histos.fill(HIST("hSparseLambdaCosPsi"), candmass, candpt, (TMath::Cos(GetPhiInRange(psiZDC))), centrality, wgtfactor);
-        histos.fill(HIST("hSparseLambdaSinPsi"), candmass, candpt, (TMath::Sin(GetPhiInRange(psiZDC))), centrality, wgtfactor);
-        if (usesubdet) {
-          histos.fill(HIST("hSparseLambdaPolA"), candmass, candpt, PolA, centrality, wgtfactor);
-          histos.fill(HIST("hSparseLambdaPolC"), candmass, candpt, PolC, centrality, wgtfactor);
-          histos.fill(HIST("hSparseLambdaPolAwgt"), candmass, candpt, PolAwgt, centrality, wgtfactor);
-          histos.fill(HIST("hSparseLambdaPolCwgt"), candmass, candpt, PolCwgt, centrality, wgtfactor);
-        }
-        histos.fill(HIST("hSparseLambdaPol"), candmass, candpt, Pol, centrality, wgtfactor);
-        histos.fill(HIST("hSparseLambdaPolwgt"), candmass, candpt, Polwgt, centrality, wgtfactor);
-        histos.fill(HIST("hSparseLambda_corr1a"), candmass, candpt, sinPhiStar, centrality, wgtfactor);
-        histos.fill(HIST("hSparseLambda_corr1b"), candmass, candpt, cosPhiStar, centrality, wgtfactor);
-        // histos.fill(HIST("hSparseLambda_corr1c"), candmass, candpt, phiphiStar, centrality, wgtfactor);
-        histos.fill(HIST("hSparseLambda_corr2a"), candmass, candpt, sinThetaStar, centrality, wgtfactor);
-        // histos.fill(HIST("hSparseLambda_corr2b"), candmass, candpt, sinThetaStarcosphiphiStar, centrality, wgtfactor);
-        if (randGrp.useSP) {
-          histos.fill(HIST("hSparseLambda_avgux"), candmass, candpt, ux, centrality);
-          histos.fill(HIST("hSparseLambda_avguy"), candmass, candpt, uy, centrality);
-        }
-      }
-    }
-
     if (systGrp.doTopoSyst &&
         systIDs != nullptr &&
         !systIDs->empty()) {
@@ -1227,6 +1231,10 @@ struct lambdapolsp {
                         desbinvalue,
                         static_cast<double>(isyst),
                         wgtfactor);
+            if (QAgrp.filldefwithsyst) {
+              histos.fill(HIST("hSparseLambdaPol"), candmass, candpt, Pol, centrality, desbinvalue, wgtfactor);
+              histos.fill(HIST("hSparseLambdaPolwgt"), candmass, candpt, Polwgt, centrality, desbinvalue, wgtfactor);
+            }
 
           } else {
 
@@ -1245,6 +1253,11 @@ struct lambdapolsp {
                         centrality,
                         static_cast<double>(isyst),
                         wgtfactor);
+
+            if (QAgrp.filldefwithsyst) {
+              histos.fill(HIST("hSparseLambdaPol"), candmass, candpt, Pol, centrality, wgtfactor);
+              histos.fill(HIST("hSparseLambdaPolwgt"), candmass, candpt, Polwgt, centrality, wgtfactor);
+            }
           }
         }
 
@@ -1270,6 +1283,10 @@ struct lambdapolsp {
                         desbinvalue,
                         static_cast<double>(isyst),
                         wgtfactor);
+            if (QAgrp.filldefwithsyst) {
+              histos.fill(HIST("hSparseAntiLambdaPol"), candmass, candpt, Pol, centrality, desbinvalue, wgtfactor);
+              histos.fill(HIST("hSparseAntiLambdaPolwgt"), candmass, candpt, Polwgt, centrality, desbinvalue, wgtfactor);
+            }
 
           } else {
 
@@ -1288,6 +1305,11 @@ struct lambdapolsp {
                         centrality,
                         static_cast<double>(isyst),
                         wgtfactor);
+
+            if (QAgrp.filldefwithsyst) {
+              histos.fill(HIST("hSparseAntiLambdaPol"), candmass, candpt, Pol, centrality, wgtfactor);
+              histos.fill(HIST("hSparseAntiLambdaPolwgt"), candmass, candpt, Polwgt, centrality, wgtfactor);
+            }
           }
         }
       }

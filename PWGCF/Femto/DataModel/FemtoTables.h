@@ -1158,6 +1158,10 @@ DECLARE_SOA_COLUMN(Mask, mask, o2::analysis::femto::datatypes::CharmHadronMaskTy
 // daughter links: row indices into the femto track table
 DECLARE_SOA_INDEX_COLUMN_FULL(PosDau, posDau, int32_t, FTracks, "_PosDau"); //! + prong (pion in D0)
 DECLARE_SOA_INDEX_COLUMN_FULL(NegDau, negDau, int32_t, FTracks, "_NegDau"); //! - prong (kaon in D0)
+// daughter links, 3-prong: row indices into the femto track table.
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0Dau, prong0Dau, int32_t, FTracks, "_Prong0Dau"); //! prong 0 (proton in Lc -> p K pi)
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1Dau, prong1Dau, int32_t, FTracks, "_Prong1Dau"); //! prong 1 (kaon, opposite sign to the mother)
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong2Dau, prong2Dau, int32_t, FTracks, "_Prong2Dau"); //! prong 2 (pion in Lc -> p K pi)
 
 // QA/debug columns
 DECLARE_SOA_COLUMN(Cpa, cpa, float);
@@ -1166,6 +1170,12 @@ DECLARE_SOA_COLUMN(DecayLength, decayLength, float);
 DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);
 DECLARE_SOA_COLUMN(ImpactParameterProduct, impactParameterProduct, float); //! d0*d0 of the two prongs
 DECLARE_SOA_COLUMN(CosThetaStar, cosThetaStar, float);
+// QA/debug columns, 3-prong only
+DECLARE_SOA_COLUMN(Chi2PCA, chi2PCA, float);                                     //! sum of distances of the secondary vertex to its prongs
+DECLARE_SOA_COLUMN(ImpactParameterProngSqSum, impactParameterProngSqSum, float); //! sum of squared prong impact parameters, 3-prong analogue of d0*d0
+DECLARE_SOA_COLUMN(ImpactParameter0, impactParameter0, float);                   //! impact parameter of prong 0
+DECLARE_SOA_COLUMN(ImpactParameter1, impactParameter1, float);                   //! impact parameter of prong 1
+DECLARE_SOA_COLUMN(ImpactParameter2, impactParameter2, float);                   //! impact parameter of prong 2
 // ML BDT scores: [0] background, [1] prompt (D0 from c), [2] non-prompt (D0 from b decay)
 DECLARE_SOA_COLUMN(MlProbD0Bkg, mlProbD0Bkg, float);                   //! D0 hypothesis: background score
 DECLARE_SOA_COLUMN(MlProbD0Prompt, mlProbD0Prompt, float);             //! D0 hypothesis: prompt score
@@ -1175,6 +1185,17 @@ DECLARE_SOA_COLUMN(MlProbD0barPrompt, mlProbD0barPrompt, float);       //! D0bar
 DECLARE_SOA_COLUMN(MlProbD0barNonPrompt, mlProbD0barNonPrompt, float); //! D0bar hypothesis: non-prompt
 DECLARE_SOA_COLUMN(IsSelD0, isSelD0, int8_t);                          //! PWGHF selection flag
 DECLARE_SOA_COLUMN(IsSelD0bar, isSelD0bar, int8_t);                    //! PWGHF selection flag
+// ML BDT scores for Lc, both mass hypotheses: [0] background, [1] prompt, [2] non-prompt
+DECLARE_SOA_COLUMN(MlProbLcToPKPiBkg, mlProbLcToPKPiBkg, float);             //! Lc -> p K pi hypothesis: background score
+DECLARE_SOA_COLUMN(MlProbLcToPKPiPrompt, mlProbLcToPKPiPrompt, float);       //! Lc -> p K pi hypothesis: prompt score
+DECLARE_SOA_COLUMN(MlProbLcToPKPiNonPrompt, mlProbLcToPKPiNonPrompt, float); //! Lc -> p K pi hypothesis: non-prompt score
+DECLARE_SOA_COLUMN(MlProbLcToPiKPBkg, mlProbLcToPiKPBkg, float);             //! Lc -> pi K p hypothesis: background score
+DECLARE_SOA_COLUMN(MlProbLcToPiKPPrompt, mlProbLcToPiKPPrompt, float);       //! Lc -> pi K p hypothesis: prompt score
+DECLARE_SOA_COLUMN(MlProbLcToPiKPNonPrompt, mlProbLcToPiKPNonPrompt, float); //! Lc -> pi K p hypothesis: non-prompt score
+DECLARE_SOA_COLUMN(IsSelLcToPKPi, isSelLcToPKPi, int8_t);                    //! PWGHF selection flag
+DECLARE_SOA_COLUMN(IsSelLcToPiKP, isSelLcToPiKP, int8_t);                    //! PWGHF selection flag
+// mass under the competing hypothesis, following the MassK0short-in-lambda-table pattern
+DECLARE_SOA_COLUMN(MassCompetingHypothesis, massCompetingHypothesis, float); //! Lc mass under the hypothesis that was not accepted
 } // namespace femtocharmhadrons
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FD0s_001, "FD0", 1, //! femto D0/D0bar (kinematics only)
@@ -1217,6 +1238,52 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FD0Extras_001, "FD0EXTRA", 1, //! femto D0 QA
                                    femtocharmhadrons::IsSelD0, // raw PWGHF selection flags
                                    femtocharmhadrons::IsSelD0bar);
 using FD0Extras = FD0Extras_001;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLcs_001, "FLC", 1, //! femto Lc/Lcbar (kinematics only)
+                                   o2::soa::Index<>,
+                                   femtobase::stored::FColId,
+                                   femtobase::stored::SignedPt, //! sign encodes Lc(+)/Lcbar(-)
+                                   femtobase::stored::Eta,
+                                   femtobase::stored::Phi,
+                                   femtobase::stored::Mass, //! mass of the accepted hypothesis
+                                   femtocharmhadrons::Prong0DauId,
+                                   femtocharmhadrons::Prong1DauId,
+                                   femtocharmhadrons::Prong2DauId,
+                                   femtobase::dynamic::Sign<femtobase::stored::SignedPt>,
+                                   femtobase::dynamic::Pt<femtobase::stored::SignedPt>,
+                                   femtobase::dynamic::P<femtobase::stored::SignedPt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Px<femtobase::stored::SignedPt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Py<femtobase::stored::SignedPt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Pz<femtobase::stored::SignedPt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Theta<femtobase::stored::Eta>);
+using FLcs = FLcs_001;
+using StoredFLcs = StoredFLcs_001;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLcMasks_001, "FLCMASK", 1, //! femto Lc selection bitmask
+                                   femtocharmhadrons::Mask);
+using FLcMasks = FLcMasks_001;
+using StoredFLcMasks = StoredFLcMasks_001;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLcExtras_001, "FLCEXTRA", 1, //! femto Lc QA / debug
+                                   femtocharmhadrons::Cpa,
+                                   femtocharmhadrons::CpaXY,
+                                   femtocharmhadrons::DecayLength,
+                                   femtocharmhadrons::DecayLengthXY,
+                                   femtocharmhadrons::Chi2PCA,
+                                   femtocharmhadrons::ImpactParameterProngSqSum,
+                                   femtocharmhadrons::ImpactParameter0,
+                                   femtocharmhadrons::ImpactParameter1,
+                                   femtocharmhadrons::ImpactParameter2,
+                                   femtocharmhadrons::MassCompetingHypothesis,
+                                   femtocharmhadrons::MlProbLcToPKPiBkg,
+                                   femtocharmhadrons::MlProbLcToPKPiPrompt,
+                                   femtocharmhadrons::MlProbLcToPKPiNonPrompt,
+                                   femtocharmhadrons::MlProbLcToPiKPBkg,
+                                   femtocharmhadrons::MlProbLcToPiKPPrompt,
+                                   femtocharmhadrons::MlProbLcToPiKPNonPrompt,
+                                   femtocharmhadrons::IsSelLcToPKPi, // raw PWGHF selection flags
+                                   femtocharmhadrons::IsSelLcToPiKP);
+using FLcExtras = FLcExtras_001;
 
 // tables for monte carlo
 namespace femtomccollisions
@@ -1302,6 +1369,8 @@ DECLARE_SOA_TABLE(FLambdaLabels, "AOD", "FLAMBDALABEL", femtolabels::FMcParticle
 DECLARE_SOA_TABLE(FK0shortLabels, "AOD", "FK0SHORTLABEL", femtolabels::FMcParticleId);
 
 DECLARE_SOA_TABLE(FD0Labels, "AOD", "FD0LABEL", femtolabels::FMcParticleId);
+
+DECLARE_SOA_TABLE(FLcLabels, "AOD", "FLCLABEL", femtolabels::FMcParticleId);
 
 DECLARE_SOA_TABLE(FSigmaLabels, "AOD", "FSIGMALABEL", femtolabels::FMcParticleId);
 

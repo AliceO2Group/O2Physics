@@ -224,7 +224,7 @@ struct MCGeneratorStudies {
   }
 
   template <typename TMCParticle, typename TMCParticles>
-  bool isGammaGammaDecay(TMCParticle mcParticle, TMCParticles mcParticles)
+  bool isGammaGammaDecay(const TMCParticle& mcParticle, const TMCParticles& mcParticles)
   {
     auto daughtersIds = mcParticle.daughtersIds();
     if (daughtersIds.size() != 2)
@@ -237,7 +237,7 @@ struct MCGeneratorStudies {
   }
 
   template <typename TMCParticle, typename TMCParticles>
-  bool isAccepted(TMCParticle mcParticle, TMCParticles mcParticles)
+  bool isAccepted(const TMCParticle& mcParticle, const TMCParticles& mcParticles)
   {
     auto daughtersIds = mcParticle.daughtersIds();
     if (daughtersIds.size() != 2)

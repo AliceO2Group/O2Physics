@@ -35,13 +35,15 @@ DECLARE_SOA_INDEX_COLUMN_FULL(XiCCPion, xiCCPion, int, Tracks, "_PiXiCC");
 
 DECLARE_SOA_COLUMN(XicMass, xicMass, float);
 DECLARE_SOA_COLUMN(XiccMass, xiccMass, float);
-DECLARE_SOA_COLUMN(LUTConfigId, lutConfigId, int); //! Index for LUT configuration
+DECLARE_SOA_COLUMN(LutConfigId, lutConfigId, int); //! Index for LUT configuration
 
 // kine vars
 DECLARE_SOA_COLUMN(XiccPt, xiccPt, float);
 DECLARE_SOA_COLUMN(XiccEta, xiccEta, float);
 DECLARE_SOA_COLUMN(XicPt, xicPt, float);
 DECLARE_SOA_COLUMN(XicEta, xicEta, float);
+DECLARE_SOA_COLUMN(XiPt, xiPt, float);
+DECLARE_SOA_COLUMN(XiEta, xiEta, float);
 
 // topo vars
 DECLARE_SOA_COLUMN(XiDCAz, xiDCAz, float);
@@ -91,7 +93,8 @@ DECLARE_SOA_TABLE(MCharmCores, "AOD", "MCharmCores",
                   otfmulticharm::XicPt,
                   otfmulticharm::XicEta,
                   otfmulticharm::XicDauDCA,
-
+                  otfmulticharm::XiPt,
+                  otfmulticharm::XiEta,
                   otfmulticharm::XiDCAxy,
                   otfmulticharm::XiDCAz,
                   otfmulticharm::XicDCAxy,
@@ -114,7 +117,7 @@ DECLARE_SOA_TABLE(MCharmCores, "AOD", "MCharmCores",
                   otfmulticharm::Pi1cPt,
                   otfmulticharm::Pi2cPt,
                   otfmulticharm::PiccPt,
-                  otfmulticharm::LUTConfigId);
+                  otfmulticharm::LutConfigId);
 
 } // namespace o2::aod
 

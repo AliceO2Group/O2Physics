@@ -192,7 +192,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
   using FilteredMcColisions = soa::Filtered<soa::Join<aod::FDCollisions, FDColMasks, aod::FDMCCollLabels>>;
   using FilteredMcColision = FilteredMcColisions::iterator;
 
-  using FilteredFDMcParts = soa::Filtered<soa::Join<aod::FDParticles, aod::FDParticlesIndex, aod::FDExtParticles, aod::FDMCLabels, aod::FDExtMCLabels>>;
+  using FilteredFDMcParts = soa::Filtered<soa::Join<aod::FDParticles, aod::FDParticlesIndex, aod::FDExtParticles, aod::FDTrkTimeStamp, aod::FDMCLabels, aod::FDExtMCLabels>>;
   using FilteredFDMcPart = FilteredFDMcParts::iterator;
 
   using FilteredFDParticles = soa::Filtered<soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDParticlesIndex, aod::FDTrkTimeStamp>>;
@@ -1145,6 +1145,10 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       if ((col.bitmaskTrackOne() & bitMask) != bitMask || (col.bitmaskTrackTwo() & bitMask) != bitMask) {
         continue;
       }
+      if (fillTableWithCharm.value && sliceMcCharmHad.size() == 0) {
+        continue;
+      }
+      fillTables<true, DecayChannel::LcToPKPi>(col, sliceMcTrk1, sliceMcCharmHad);
       doSameEvent<true, DecayChannel::LcToPKPi, FilteredCharmMcCand3Prongs>(sliceMcCharmHad, sliceMcTrk1, parts, col);
     }
     if (mixSetting.doMixEvent) {
@@ -1186,6 +1190,10 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       if ((col.bitmaskTrackOne() & bitMask) != bitMask || (col.bitmaskTrackTwo() & bitMask) != bitMask) {
         continue;
       }
+      if (fillTableWithCharm.value && sliceMcCharmHad.size() == 0) {
+        continue;
+      }
+      fillTables<true, DecayChannel::DplusToPiKPi>(col, sliceMcTrk1, sliceMcCharmHad);
       doSameEvent<true, DecayChannel::DplusToPiKPi, FilteredCharmMcCand3Prongs>(sliceMcCharmHad, sliceMcTrk1, parts, col);
     }
     if (mixSetting.doMixEvent) {
@@ -1227,6 +1235,10 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       if ((col.bitmaskTrackOne() & bitMask) != bitMask || (col.bitmaskTrackTwo() & bitMask) != bitMask) {
         continue;
       }
+      if (fillTableWithCharm.value && sliceMcCharmHad.size() == 0) {
+        continue;
+      }
+      fillTables<true, DecayChannel::D0ToPiK>(col, sliceMcTrk1, sliceMcCharmHad);
       doSameEvent<true, DecayChannel::D0ToPiK, FilteredCharmMcCand2Prongs>(sliceMcCharmHad, sliceMcTrk1, parts, col);
     }
     if (mixSetting.doMixEvent) {
@@ -1268,6 +1280,10 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       if ((col.bitmaskTrackOne() & bitMask) != bitMask || (col.bitmaskTrackTwo() & bitMask) != bitMask) {
         continue;
       }
+      if (fillTableWithCharm.value && sliceMcCharmHad.size() == 0) {
+        continue;
+      }
+      fillTables<true, DecayChannel::DstarToD0Pi>(col, sliceMcTrk1, sliceMcCharmHad);
       doSameEvent<true, DecayChannel::DstarToD0Pi, FilteredCharmMcCandDstars>(sliceMcCharmHad, sliceMcTrk1, parts, col);
     }
     if (mixSetting.doMixEvent) {
@@ -1309,6 +1325,10 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       if ((col.bitmaskTrackOne() & bitMask) != bitMask || (col.bitmaskTrackTwo() & bitMask) != bitMask) {
         continue;
       }
+      if (fillTableWithCharm.value && sliceMcCharmHad.size() == 0) {
+        continue;
+      }
+      fillTables<true, DecayChannel::XicToXiPiPi>(col, sliceMcTrk1, sliceMcCharmHad);
       doSameEvent<true, DecayChannel::XicToXiPiPi, FilteredCharmMcCand3ProngsXic>(sliceMcCharmHad, sliceMcTrk1, parts, col);
     }
     if (mixSetting.doMixEvent) {

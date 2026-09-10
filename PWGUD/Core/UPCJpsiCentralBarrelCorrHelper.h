@@ -213,7 +213,7 @@ float* correlation(TLorentzVector* lv1, TLorentzVector* lv2, TLorentzVector* lv)
   return q;
 }
 
-double DeltaPhi(TLorentzVector lv1, TLorentzVector lv2)
+double DeltaPhi(const TLorentzVector& lv1, const TLorentzVector& lv2)
 {
   TLorentzVector lv_sum = lv1 + lv2;
   TLorentzVector lv_diff = lv1 - lv2;
@@ -223,7 +223,7 @@ double DeltaPhi(TLorentzVector lv1, TLorentzVector lv2)
   return dp;
 }
 
-double DeltaPhiRandom(TLorentzVector lv1, TLorentzVector lv2)
+double DeltaPhiRandom(const TLorentzVector& lv1, const TLorentzVector& lv2)
 {
   std::vector<int> indices = {0, 1};
   unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();

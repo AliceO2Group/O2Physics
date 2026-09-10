@@ -14,6 +14,7 @@
 /// \author marvin.hemmer@cern.ch
 /// dependencies: emcal-correction-task
 
+#include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/GammaTablesRedux.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/emcalHistoDefinitions.h"
@@ -311,19 +312,19 @@ struct SkimmerGammaCalo {
     }
   }
 
-  void processRec(soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>::iterator const& collision, aod::EMCALClusters const& emcclusters, aod::EMCALClusterCells const& emcclustercells, aod::EMCALMatchedTracks const& emcmatchedtracks, aod::FullTracks const& tracks)
+  void processRec(soa::Join<aod::Collisions, aod::EvSels, aod::PMEvSels>::iterator const& collision, aod::EMCALClusters const& emcclusters, aod::EMCALClusterCells const& emcclustercells, aod::EMCALMatchedTracks const& emcmatchedtracks, aod::FullTracks const& tracks)
   {
     runAnalysis(collision, emcclusters, emcclustercells, emcmatchedtracks, tracks);
   }
   PROCESS_SWITCH(SkimmerGammaCalo, processRec, "process only reconstructed info", true);
 
-  void processRecWithSecondaries(soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>::iterator const& collision, aod::EMCALClusters const& emcclusters, aod::EMCALClusterCells const& emcclustercells, aod::EMCALMatchedTracks const& emcmatchedtracks, aod::FullTracks const& tracks, aod::EMCMatchSecs const& emcmatchedsecondaries)
+  void processRecWithSecondaries(soa::Join<aod::Collisions, aod::EvSels, aod::PMEvSels>::iterator const& collision, aod::EMCALClusters const& emcclusters, aod::EMCALClusterCells const& emcclustercells, aod::EMCALMatchedTracks const& emcmatchedtracks, aod::FullTracks const& tracks, aod::EMCMatchSecs const& emcmatchedsecondaries)
   {
     runAnalysis(collision, emcclusters, emcclustercells, emcmatchedtracks, tracks, emcmatchedsecondaries);
   }
   PROCESS_SWITCH(SkimmerGammaCalo, processRecWithSecondaries, "process reconstructed info with secondary track matching.", false);
 
-  void processRecMC(soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>::iterator const& collision,
+  void processRecMC(soa::Join<aod::Collisions, aod::EvSels, aod::PMEvSels>::iterator const& collision,
                     soa::Join<aod::EMCALClusters, aod::EMCALMCClusters> const& emcclusters,
                     aod::EMCALClusterCells const& emcclustercells, aod::EMCALMatchedTracks const& emcmatchedtracks,
                     aod::FullTracks const& tracks)
@@ -332,7 +333,7 @@ struct SkimmerGammaCalo {
   }
   PROCESS_SWITCH(SkimmerGammaCalo, processRecMC, "process reconstructed info + MC labels at once", false);
 
-  void processRecMCWithSecondaries(soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>::iterator const& collision,
+  void processRecMCWithSecondaries(soa::Join<aod::Collisions, aod::EvSels, aod::PMEvSels>::iterator const& collision,
                                    soa::Join<aod::EMCALClusters, aod::EMCALMCClusters> const& emcclusters,
                                    aod::EMCALClusterCells const& emcclustercells, aod::EMCALMatchedTracks const& emcmatchedtracks,
                                    aod::FullTracks const& tracks, aod::EMCMatchSecs const& emcmatchedsecondaries)

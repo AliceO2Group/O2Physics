@@ -37,17 +37,18 @@ class EMBitFlags
 
   /// \brief check bit i
   /// \param i index of bit that should be checked
+  /// \return false if the bit was set before
   [[nodiscard]] bool test(std::size_t i) const;
 
-  /// \brief set bit i
+  /// \brief set bit i to false
   /// \param i index of bit which value should be set
   void set(std::size_t i);
 
-  /// \brief reset bit i
+  /// \brief reset bit i to true
   /// \param i index of bit which value should be reset
   void reset(std::size_t i);
 
-  /// \brief resetting all flags to false
+  /// \brief resetting all flags to true
   void clear();
 
   /// \brief reserve space in the underlying storage for nBits bits

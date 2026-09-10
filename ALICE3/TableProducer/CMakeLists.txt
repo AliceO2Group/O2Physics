@@ -26,6 +26,11 @@ o2physics_add_dpl_workflow(alice3-centrality
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(alice3-multiplicity
+                    SOURCES alice3Multiplicity.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(alice3-decaypreselector
                     SOURCES alice3-decaypreselector.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
