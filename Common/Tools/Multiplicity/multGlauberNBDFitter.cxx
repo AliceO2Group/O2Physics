@@ -128,7 +128,6 @@ void multGlauberNBDFitter::InitTrentoNBD(const float mu, const float k, const fl
   fTrentoNBD->SetParameter(Index(FitPar::mu), mu);
   fTrentoNBD->SetParameter(Index(FitPar::k), k);
   fTrentoNBD->SetParameter(Index(FitPar::norm), norm);
-  fTrentoNBD->FixParameter(Index(FitPar::dMu), 0);
 
   fTrentoNBD->SetParName(Index(FitPar::mu), "mu");
   fTrentoNBD->SetParName(Index(FitPar::k), "k");
@@ -217,7 +216,7 @@ double multGlauberNBDFitter::TrentoProbDistrib(const double* x, const double* pa
     fNBD->SetParameter(Index(NBDPar::k), lThisk);
     fNBD->SetParameter(Index(NBDPar::p), lpval);
     double lMult = fNBD->Eval(lMultValue);
-    lProbability += fhNSources->GetBinContent(fhNSources->FindBin(iNSrc)) * lMult;
+    lProbability += fhNSources->GetBinContent(iNSrc) * lMult;
   }
   //______________________________________________________
   return par[Index(FitPar::norm)] * lProbability;
