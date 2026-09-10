@@ -10,8 +10,8 @@
 // or submit itself to any jurisdiction.
 //
 
-/// \file HadNucleiFemtoDcaPurity.cxx
-/// \brief Nuclei-hadron femtoscopy task with DCA-fraction and purity inputs
+/// \file HadNucleiFemto.cxx
+/// \brief Analysis task for Nuclei-Hadron femto analysis
 /// \author CMY
 /// \date 2025-04-10
 
