@@ -52,9 +52,9 @@
 #include <cmath>
 #include <cstdint>
 #include <cstring>
+#include <limits>
 #include <memory>
 #include <string>
-#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -67,15 +67,14 @@ struct RadialFlowDecorr {
 
   // --- fixed constants ---------------------------------------------------------
   static constexpr int KnFt0cCell = 96;
-  static constexpr int KIntM = 3; // pT-moment order used in the sums
-  static constexpr int KIntK = 3; // weight-power order used in the sums
+  static constexpr int KIntM = 4; // pT-moment order used in the sums (need m up to 3 for c3)
+  static constexpr int KIntK = 4; // weight-power order used in the sums (need k up to 3 for c3)
 
-  // KNEtaMax sizes every fixed-length eta array. The *active* count nEta is a
-  // runtime value: 17 for the 0.1-wide observable binning (16 bins + the index-0
-  // full-range reference bin), 9 for the 0.2-wide binning (8 bins + reference).
-  static constexpr int KNEtaMax = 17;
+  static constexpr int KNEtaHalfBinsMax = 8;                // 0.8 / 0.1: finest (DATA) bins per side
+  static constexpr int KNEtaMax = 2 * KNEtaHalfBinsMax + 1; // + index-0 full-range reference bin
 
   static constexpr float KFloatEpsilon = 1e-6f;
+  static constexpr float KEtaEdgeTolerance = 1e-3f; // slack for cfgCutEta being an integer multiple of the bin width
   static constexpr float KBinOffset = 0.5f;
   static constexpr float KPhiMin = 0.f;
   static constexpr int KNbinsZvtx = 240;
@@ -115,32 +114,32 @@ struct RadialFlowDecorr {
     kpp = 4
   };
 
-  // Systematic-variation selector. Base is the main measurement; the others each
-  // read their own DataMean object for the correlation step and run at 0.2.
+  // Systematic-variation selector for DATA. Base is the main measurement; each
+  // variation reads its own DataMean object (systSuffix) for the correlation step.
+  // kSystEtaBinning additionally changes the eta bin width via cfgEtaBinWidth.
   enum ESystType {
     kSystBase = 0,
     kSystDCA,
     kSystEff,
     kSystFlat,
-    kSystNEta,
     kSystNITS,
     kSystNTPC,
     kSystPileup,
     kSystVz,
+    kSystEtaBinning,
     kNSystType
   };
   // Suffix appended to the DataMean CCDB path per systematic (Base -> no suffix).
   inline static const std::vector<std::string> systSuffix = {
-    "", "_systDCA", "_systEff", "_systFlat", "_systNEta",
-    "_systNITS", "_systNTPC", "_systPileup", "_systVz"};
+    "", "_systDCA", "_systEff", "_systFlat",
+    "_systNITS", "_systNTPC", "_systPileup", "_systVz", "_systEtaBinning"};
 
   static constexpr float KinvalidCentrality = -1.0f;
 
   // Observable eta binning, filled at init(): index 0 = full-range reference bin.
   std::vector<float> etaLw;
   std::vector<float> etaUp;
-  int nEta = 9; // active eta-bin count (set in init())
-
+  int nEta = 9;        // active eta-bin count (set in init())
   int nBoot = 0;       // active bootstrap samples (set in init())
   bool doBoot = false; // bootstrap active for this run (base data fluc only)
 
@@ -148,7 +147,6 @@ struct RadialFlowDecorr {
   Configurable<float> cfgVtxZCut{"cfgVtxZCut", 10.f, "|z_{vtx}| acceptance (cm): collision filter + explicit event/particle vertex checks"};
   Configurable<float> cfgPtMin{"cfgPtMin", 0.2f, "min pT for observables"};
   Configurable<float> cfgPtMax{"cfgPtMax", 5.0f, "max pT for observables"};
-  Configurable<float> cfgEtaCut{"cfgEtaCut", 0.8f, "|eta| cut"};
   Configurable<float> cfgCutTracKDcaMaxZ{"cfgCutTracKDcaMaxZ", 2.0f, "Maximum DcaZ"};
   Configurable<float> cfgCutTracKDcaMaxXY{"cfgCutTracKDcaMaxXY", 0.2f, "Maximum DcaXY"};
 
@@ -169,7 +167,7 @@ struct RadialFlowDecorr {
   Configurable<float> cfgCutPtLower{"cfgCutPtLower", 0.2f, "Lower pT cut (track selection)"};
   Configurable<float> cfgCutPtUpper{"cfgCutPtUpper", 10.0f, "Higher pT cut (track selection)"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "absolute Eta cut"};
-  Configurable<int> cfgMinTracksPerEtaBin{"cfgMinTracksPerEtaBin", 2, "Min weighted-track sum required in every narrow eta bin (systNEta; 0 = disabled)"};
+  Configurable<float> cfgEtaBinWidth{"cfgEtaBinWidth", 0.1f, "DATA only: width of each narrow observable eta bin (eta units); cfgCutEta must be an integer multiple so eta=0 is a bin edge. MC is pinned to 0.2."};
   Configurable<int> cfgCentralityChoice{"cfgCentralityChoice", 1, "Which centrality estimator? 1-->FT0C, 2-->FT0M, 3-->FDDM, 4-->FV0A"};
   Configurable<bool> cfgEvSelNoSameBunchPileup{"cfgEvSelNoSameBunchPileup", true, "Pileup removal"};
   Configurable<bool> cfgUseGoodITSLayerAllCut{"cfgUseGoodITSLayerAllCut", true, "Remove time interval with dead ITS zone"};
@@ -187,7 +185,7 @@ struct RadialFlowDecorr {
   Configurable<int> cfgNchOMax{"cfgNchOMax", 800, "Max Nch range for OO collisions"};
 
   Configurable<int> cfgSys{"cfgSys", 1, "Which collision system? 1-->PbPb, 2-->NeNe, 3-->OO, 4-->pp"};
-  Configurable<int> cfgSystType{"cfgSystType", 0, "Systematic variation: 0=Base,1=systDCA,2=systEff,3=systFlat,4=systNEta,5=systNITS,6=systNTPC,7=systPileup,8=systVz"};
+  Configurable<int> cfgSystType{"cfgSystType", 0, "Systematic variation: 0=Base,1=systDCA,2=systEff,3=systFlat,4=systNEta,5=systNITS,6=systNTPC,7=systPileup,8=systVz,9=systEtaBinning"};
   Configurable<int> cfgNBootstrap{"cfgNBootstrap", 30, "Number of Poisson bootstrap samples (base data run only)"};
   Configurable<int> cfgBootstrapSeed{"cfgBootstrapSeed", 0, "TRandom3 seed for bootstrap (0 = machine-random per job)"};
 
@@ -271,12 +269,22 @@ struct RadialFlowDecorr {
 
   // --- bootstrap replica storage (base data fluc only) -------------------------
   struct BootstrapHists {
+    std::array<std::shared_ptr<TProfile>, KMaxBoot> amplFT0ACent{};
+    std::array<std::shared_ptr<TProfile>, KMaxBoot> amplFT0AMult{};
+    std::array<std::shared_ptr<TProfile>, KMaxBoot> amplFT0CCent{};
+    std::array<std::shared_ptr<TProfile>, KMaxBoot> amplFT0CMult{};
+    std::array<std::shared_ptr<TProfile2D>, KMaxBoot> multCent{};
+    std::array<std::shared_ptr<TProfile2D>, KMaxBoot> multMult{};
     std::array<std::shared_ptr<TProfile2D>, KMaxBoot> meanpTCent{};
     std::array<std::shared_ptr<TProfile2D>, KMaxBoot> meanpTMult{};
     std::array<std::shared_ptr<TProfile2D>, KMaxBoot> c2Cent{};
     std::array<std::shared_ptr<TProfile2D>, KMaxBoot> c2Mult{};
+    std::array<std::shared_ptr<TProfile2D>, KMaxBoot> c3Cent{};
+    std::array<std::shared_ptr<TProfile2D>, KMaxBoot> c3Mult{};
     std::array<std::shared_ptr<TProfile2D>, KMaxBoot> c2SubCent{};
     std::array<std::shared_ptr<TProfile2D>, KMaxBoot> c2SubMult{};
+    std::array<std::shared_ptr<TProfile2D>, KMaxBoot> c3SubCent{};
+    std::array<std::shared_ptr<TProfile2D>, KMaxBoot> c3SubMult{};
     std::array<std::shared_ptr<TProfile2D>, KMaxBoot> covCent{};
     std::array<std::shared_ptr<TProfile2D>, KMaxBoot> covMult{};
     std::array<std::shared_ptr<TProfile2D>, KMaxBoot> covFT0ACent{};
@@ -284,7 +292,9 @@ struct RadialFlowDecorr {
     std::array<std::shared_ptr<TProfile2D>, KMaxBoot> covFT0CCent{};
     std::array<std::shared_ptr<TProfile2D>, KMaxBoot> covFT0CMult{};
     std::array<std::shared_ptr<TProfile3D>, KMaxBoot> c2Sub2D{};
+    std::array<std::shared_ptr<TProfile3D>, KMaxBoot> c3Sub2D{};
     std::array<std::shared_ptr<TProfile3D>, KMaxBoot> gapSum2D{};
+    std::array<std::shared_ptr<TProfile3D>, KMaxBoot> c3GapSum2D{};
     std::array<std::shared_ptr<TProfile3D>, KMaxBoot> cov2D{};
     std::array<std::shared_ptr<TProfile3D>, KMaxBoot> covFT0A2D{};
     std::array<std::shared_ptr<TProfile3D>, KMaxBoot> covFT0C2D{};
@@ -347,37 +357,6 @@ struct RadialFlowDecorr {
         return false;
       }
       histos.fill(HIST("hEvtCount"), 8.5);
-    }
-    return true;
-  }
-
-  // Minimum weighted-track requirement in every narrow eta bin (systNEta). Loops
-  // only over the active bins [1, nEta); the array is sized to KNEtaMax.
-  template <std::size_t NetaT, std::size_t NkT>
-  bool hasMinTracksInAllEtaBins(const std::array<std::array<double, NkT>, NetaT>& sw)
-  {
-    const int minTracks = cfgMinTracksPerEtaBin;
-    if (minTracks <= 0) {
-      return true;
-    }
-    for (int ieta = 1; ieta < nEta; ++ieta) {
-      if (sw[ieta][1] < static_cast<double>(minTracks)) {
-        return false;
-      }
-    }
-    return true;
-  }
-  template <std::size_t NetaT>
-  bool hasMinTracksInAllEtaBins(const std::array<double, NetaT>& sw)
-  {
-    const int minTracks = cfgMinTracksPerEtaBin;
-    if (minTracks <= 0) {
-      return true;
-    }
-    for (int ieta = 1; ieta < nEta; ++ieta) {
-      if (sw[ieta] < static_cast<double>(minTracks)) {
-        return false;
-      }
     }
     return true;
   }
@@ -555,36 +534,49 @@ struct RadialFlowDecorr {
     LOGF(info, "Loaded FT0 alignment for timestamp %llu", timestamp);
   }
 
-  // Two-particle pT correlator from the per-event power sums.
+  // Per-event two- and three-particle pT correlators (standard method) from the
+  // power sums, following arXiv:2112.03397, Eqs. 2-3.
+  struct C2C3Result {
+    double c2 = std::numeric_limits<double>::quiet_NaN();
+    double c3 = std::numeric_limits<double>::quiet_NaN();
+  };
+
   template <int M, int K>
-  std::pair<float, float> calculateMeanAndC2FromSums(const std::array<std::array<double, K>, M>& sumpmwk, const std::array<double, K>& sumwk, float referenceMeanPt) const
+  C2C3Result calculateC2C3FromSums(const std::array<std::array<double, K>, M>& sumpmwk, const std::array<double, K>& sumwk, float referenceMeanPt) const
   {
-    if (sumwk[1] == 0.) {
-      return {0.f, 0.f};
+    C2C3Result r;
+    const double s1 = sumwk[1];
+    if (s1 <= 0.) {
+      return r;
+    }
+    const double refpt = referenceMeanPt;
+    const double p11 = sumpmwk[1][1] / s1;
+    const double p1Bar1 = p11 - refpt;
+
+    // --- c2: needs >=2 particles (D2 = 1 - tau1 > eps) ---
+    const double tau1 = sumwk[2] / (s1 * s1);
+    const double denom2 = 1. - tau1;
+    if (denom2 > KFloatEpsilon) {
+      const double p12 = sumpmwk[1][2] / sumwk[2];
+      const double p22 = sumpmwk[2][2] / sumwk[2];
+      const double p2Bar2 = p22 - 2.0 * p12 * refpt + refpt * refpt;
+      r.c2 = (p1Bar1 * p1Bar1 - tau1 * p2Bar2) / denom2;
     }
 
-    double tau1 = sumwk[2] / (sumwk[1] * sumwk[1]);
-    double denom2 = 1. - tau1;
-
-    if (std::abs(denom2) < KFloatEpsilon) {
-      double pmk11safe = sumpmwk[1][1] / sumwk[1];
-      return {static_cast<float>(pmk11safe), 0.f};
+    // --- c3: needs >=3 particles (D3 = 1 - 3 tau1 + 2 tau2 > eps) ---
+    const double tau2 = sumwk[3] / (s1 * s1 * s1);
+    const double denom3 = 1. - 3.0 * tau1 + 2.0 * tau2;
+    if (denom3 > KFloatEpsilon) {
+      const double p12 = sumpmwk[1][2] / sumwk[2];
+      const double p22 = sumpmwk[2][2] / sumwk[2];
+      const double p13 = sumpmwk[1][3] / sumwk[3];
+      const double p23 = sumpmwk[2][3] / sumwk[3];
+      const double p33 = sumpmwk[3][3] / sumwk[3];
+      const double p2Bar2 = p22 - 2.0 * p12 * refpt + refpt * refpt;
+      const double p3Bar3 = p33 - 3.0 * p23 * refpt + 3.0 * p13 * refpt * refpt - refpt * refpt * refpt;
+      r.c3 = (p1Bar1 * p1Bar1 * p1Bar1 - 3.0 * tau1 * p2Bar2 * p1Bar1 + 2.0 * tau2 * p3Bar3) / denom3;
     }
-
-    double pmk11 = sumpmwk[1][1] / sumwk[1];
-    double pmk12 = (sumwk[2] != 0.f) ? sumpmwk[1][2] / sumwk[2] : 0.f;
-    double pmk22 = (sumwk[2] != 0.f) ? sumpmwk[2][2] / sumwk[2] : 0.f;
-
-    float calculatedMeanPt = pmk11;
-
-    double p1kBar1 = pmk11 - referenceMeanPt;
-    double p2kBar2 = pmk22 - 2.0f * pmk12 * referenceMeanPt + referenceMeanPt * referenceMeanPt;
-
-    double p1kBar1sq = p1kBar1 * p1kBar1;
-    double numerator2 = p1kBar1sq - (tau1 * p2kBar2);
-
-    float twopcorr = numerator2 / denom2;
-    return {calculatedMeanPt, twopcorr};
+    return r;
   }
 
   // ===========================================================================
@@ -742,12 +734,19 @@ struct RadialFlowDecorr {
     histos.add<TProfile2D>("MCGen/Prof_CovFT0A_Mult_etabin", ";mult;eta", kTProfile2D, {{nChAxis}, {etaBinAxis}});
     histos.add<TProfile2D>("MCGen/Prof_CovFT0C_Mult_etabin", ";mult;eta", kTProfile2D, {{nChAxis}, {etaBinAxis}});
 
+    histos.add<TProfile2D>("MCGen/Prof_C3_Cent_etabin", ";cent;eta", kTProfile2D, {{centAxis1Per}, {etaBinAxis}});
+    histos.add<TProfile2D>("MCGen/Prof_C3_Mult_etabin", ";mult;eta", kTProfile2D, {{nChAxis}, {etaBinAxis}});
+    histos.add<TProfile2D>("MCGen/Prof_C3Sub_Cent_etabin", ";cent;eta", kTProfile2D, {{centAxis1Per}, {etaBinAxis}});
+    histos.add<TProfile2D>("MCGen/Prof_C3Sub_Mult_etabin", ";mult;eta", kTProfile2D, {{nChAxis}, {etaBinAxis}});
+
     histos.add("MCGen/hEtaPhiReco", ";vz;sign;pt;eta;phi", kTHnSparseF, {{vzAxis}, {chgAxis}, {pTAxis}, {etaFlatAxis}, {phiAxis}});
     histos.add("MCGen/hEtaPhiRecoEffWtd", ";vz;sign;pt;eta;phi", kTHnSparseF, {{vzAxis}, {chgAxis}, {pTAxis}, {etaFlatAxis}, {phiAxis}});
     histos.add("MCGen/hEtaPhiRecoWtd", ";vz;sign;pt;eta;phi", kTHnSparseF, {{vzAxis}, {chgAxis}, {pTAxis}, {etaFlatAxis}, {phiAxis}});
 
     histos.add<TProfile3D>("MCGen/Prof_C2Sub2D_Cent_etaA_etaC", ";cent;etaA;etaC", kTProfile3D, {{centAxis1Per}, {etaAxis}, {etaAxis}});
     histos.add<TProfile3D>("MCGen/Prof_GapSum2D", ";cent;gap;sum", kTProfile3D, {{centAxis1Per}, {gapAxis}, {sumAxis}});
+    histos.add<TProfile3D>("MCGen/Prof_C3Sub2D_Cent_etaA_etaC", ";cent;etaA;etaC", kTProfile3D, {{centAxis1Per}, {etaAxis}, {etaAxis}});
+    histos.add<TProfile3D>("MCGen/Prof_C3GapSum2D", ";cent;gap;sum", kTProfile3D, {{centAxis1Per}, {gapAxis}, {sumAxis}});
     histos.add<TProfile3D>("MCGen/Prof_Cov2D_Cent_etaA_etaC", ";cent;etaA;etaC", kTProfile3D, {{centAxis1Per}, {etaAxis}, {etaAxis}});
     histos.add<TProfile3D>("MCGen/Prof_CovFT0A2D_Cent_etaA_etaC", ";cent;etaA;etaC", kTProfile3D, {{centAxis1Per}, {etaAxis}, {etaAxis}});
     histos.add<TProfile3D>("MCGen/Prof_CovFT0C2D_Cent_etaA_etaC", ";cent;etaA;etaC", kTProfile3D, {{centAxis1Per}, {etaAxis}, {etaAxis}});
@@ -808,12 +807,19 @@ struct RadialFlowDecorr {
     histos.add<TProfile2D>("Prof_CovFT0C_Cent_etabin", ";Centrality;#eta-bin", kTProfile2D, {{centAxis1Per}, {etaBinAxis}});
     histos.add<TProfile2D>("Prof_CovFT0C_Mult_etabin", ";N_{PV};#eta-bin", kTProfile2D, {{nChAxis}, {etaBinAxis}});
 
+    histos.add<TProfile2D>("Prof_C3_Cent_etabin", ";cent;#eta-bin", kTProfile2D, {{centAxis1Per}, {etaBinAxis}});
+    histos.add<TProfile2D>("Prof_C3_Mult_etabin", ";N_{PV};#eta-bin", kTProfile2D, {{nChAxis}, {etaBinAxis}});
+    histos.add<TProfile2D>("Prof_C3Sub_Cent_etabin", ";Centrality;#eta-bin", kTProfile2D, {{centAxis1Per}, {etaBinAxis}});
+    histos.add<TProfile2D>("Prof_C3Sub_Mult_etabin", ";N_{PV};#eta-bin", kTProfile2D, {{nChAxis}, {etaBinAxis}});
+
     histos.add("hEtaPhiReco", ";vz;sign;pt;eta;phi", kTHnSparseF, {{vzAxis}, {chgAxis}, {pTAxis}, {etaFlatAxis}, {phiAxis}});
     histos.add("hEtaPhiRecoEffWtd", ";vz;sign;pt;eta;phi", kTHnSparseF, {{vzAxis}, {chgAxis}, {pTAxis}, {etaFlatAxis}, {phiAxis}});
     histos.add("hEtaPhiRecoWtd", ";vz;sign;pt;eta;phi", kTHnSparseF, {{vzAxis}, {chgAxis}, {pTAxis}, {etaFlatAxis}, {phiAxis}});
 
     histos.add<TProfile3D>("Prof_C2Sub2D_Cent_etaA_etaC", ";cent;#eta_{A};#eta_{C}", kTProfile3D, {{centAxis1Per}, {etaAxis}, {etaAxis}});
     histos.add<TProfile3D>("Prof_GapSum2D", ";cent;#Delta#eta (Gap);#Sigma#eta/2 (Sum)", kTProfile3D, {{centAxis1Per}, {gapAxis}, {sumAxis}});
+    histos.add<TProfile3D>("Prof_C3Sub2D_Cent_etaA_etaC", ";cent;#eta_{A};#eta_{C}", kTProfile3D, {{centAxis1Per}, {etaAxis}, {etaAxis}});
+    histos.add<TProfile3D>("Prof_C3GapSum2D", ";cent;#Delta#eta (Gap);#Sigma#eta/2 (Sum)", kTProfile3D, {{centAxis1Per}, {gapAxis}, {sumAxis}});
     histos.add<TProfile3D>("Prof_Cov2D_Cent_etaA_etaC", ";cent;#eta_{A};#eta_{C}", kTProfile3D, {{centAxis1Per}, {etaAxis}, {etaAxis}});
     histos.add<TProfile3D>("Prof_CovFT0A2D_Cent_etaA_etaC", ";cent;#eta_{A};#eta_{C}", kTProfile3D, {{centAxis1Per}, {etaAxis}, {etaAxis}});
     histos.add<TProfile3D>("Prof_CovFT0C2D_Cent_etaA_etaC", ";cent;#eta_{A};#eta_{C}", kTProfile3D, {{centAxis1Per}, {etaAxis}, {etaAxis}});
@@ -825,12 +831,22 @@ struct RadialFlowDecorr {
   void declareBootstrapHists()
   {
     for (int s = 0; s < nBoot; ++s) {
+      bs.multCent[s] = histos.add<TProfile2D>(Form("Bootstrap/Prof_Mult_Cent_etabin_sample%d", s), ";cent;#eta-bin", kTProfile2D, {{centAxis1Per}, {etaBinAxis}});
+      bs.multMult[s] = histos.add<TProfile2D>(Form("Bootstrap/Prof_Mult_Mult_etabin_sample%d", s), ";N_{PV};#eta-bin", kTProfile2D, {{nChAxis}, {etaBinAxis}});
+      bs.amplFT0ACent[s] = histos.add<TProfile>(Form("Bootstrap/Prof_AmplFT0A_Cent_sample%d", s), ";cent;AmplitudeA", kTProfile, {centAxis1Per});
+      bs.amplFT0AMult[s] = histos.add<TProfile>(Form("Bootstrap/Prof_AmplFT0A_Mult_sample%d", s), ";N_{PV};AmplitudeA", kTProfile, {nChAxis});
+      bs.amplFT0CCent[s] = histos.add<TProfile>(Form("Bootstrap/Prof_AmplFT0C_Cent_sample%d", s), ";cent;AmplitudeC", kTProfile, {centAxis1Per});
+      bs.amplFT0CMult[s] = histos.add<TProfile>(Form("Bootstrap/Prof_AmplFT0C_Mult_sample%d", s), ";N_{PV};AmplitudeC", kTProfile, {nChAxis});
       bs.meanpTCent[s] = histos.add<TProfile2D>(Form("Bootstrap/Prof_MeanpT_Cent_etabin_sample%d", s), ";cent;#eta-bin", kTProfile2D, {{centAxis1Per}, {etaBinAxis}});
       bs.meanpTMult[s] = histos.add<TProfile2D>(Form("Bootstrap/Prof_MeanpT_Mult_etabin_sample%d", s), ";N_{PV};#eta-bin", kTProfile2D, {{nChAxis}, {etaBinAxis}});
       bs.c2Cent[s] = histos.add<TProfile2D>(Form("Bootstrap/Prof_C2_Cent_etabin_sample%d", s), ";cent;#eta-bin", kTProfile2D, {{centAxis1Per}, {etaBinAxis}});
       bs.c2Mult[s] = histos.add<TProfile2D>(Form("Bootstrap/Prof_C2_Mult_etabin_sample%d", s), ";N_{PV};#eta-bin", kTProfile2D, {{nChAxis}, {etaBinAxis}});
       bs.c2SubCent[s] = histos.add<TProfile2D>(Form("Bootstrap/Prof_C2Sub_Cent_etabin_sample%d", s), ";cent;#eta-bin", kTProfile2D, {{centAxis1Per}, {etaBinAxis}});
       bs.c2SubMult[s] = histos.add<TProfile2D>(Form("Bootstrap/Prof_C2Sub_Mult_etabin_sample%d", s), ";N_{PV};#eta-bin", kTProfile2D, {{nChAxis}, {etaBinAxis}});
+      bs.c3Cent[s] = histos.add<TProfile2D>(Form("Bootstrap/Prof_C3_Cent_etabin_sample%d", s), ";cent;#eta-bin", kTProfile2D, {{centAxis1Per}, {etaBinAxis}});
+      bs.c3Mult[s] = histos.add<TProfile2D>(Form("Bootstrap/Prof_C3_Mult_etabin_sample%d", s), ";N_{PV};#eta-bin", kTProfile2D, {{nChAxis}, {etaBinAxis}});
+      bs.c3SubCent[s] = histos.add<TProfile2D>(Form("Bootstrap/Prof_C3Sub_Cent_etabin_sample%d", s), ";cent;#eta-bin", kTProfile2D, {{centAxis1Per}, {etaBinAxis}});
+      bs.c3SubMult[s] = histos.add<TProfile2D>(Form("Bootstrap/Prof_C3Sub_Mult_etabin_sample%d", s), ";N_{PV};#eta-bin", kTProfile2D, {{nChAxis}, {etaBinAxis}});
       bs.covCent[s] = histos.add<TProfile2D>(Form("Bootstrap/Prof_Cov_Cent_etabin_sample%d", s), ";cent;#eta-bin", kTProfile2D, {{centAxis1Per}, {etaBinAxis}});
       bs.covMult[s] = histos.add<TProfile2D>(Form("Bootstrap/Prof_Cov_Mult_etabin_sample%d", s), ";N_{PV};#eta-bin", kTProfile2D, {{nChAxis}, {etaBinAxis}});
       bs.covFT0ACent[s] = histos.add<TProfile2D>(Form("Bootstrap/Prof_CovFT0A_Cent_etabin_sample%d", s), ";cent;#eta-bin", kTProfile2D, {{centAxis1Per}, {etaBinAxis}});
@@ -839,6 +855,8 @@ struct RadialFlowDecorr {
       bs.covFT0CMult[s] = histos.add<TProfile2D>(Form("Bootstrap/Prof_CovFT0C_Mult_etabin_sample%d", s), ";N_{PV};#eta-bin", kTProfile2D, {{nChAxis}, {etaBinAxis}});
       bs.c2Sub2D[s] = histos.add<TProfile3D>(Form("Bootstrap/Prof_C2Sub2D_Cent_etaA_etaC_sample%d", s), ";cent;#eta_{A};#eta_{C}", kTProfile3D, {{centAxis1Per}, {etaAxis}, {etaAxis}});
       bs.gapSum2D[s] = histos.add<TProfile3D>(Form("Bootstrap/Prof_GapSum2D_sample%d", s), ";cent;gap;sum", kTProfile3D, {{centAxis1Per}, {gapAxis}, {sumAxis}});
+      bs.c3Sub2D[s] = histos.add<TProfile3D>(Form("Bootstrap/Prof_C3Sub2D_Cent_etaA_etaC_sample%d", s), ";cent;#eta_{A};#eta_{C}", kTProfile3D, {{centAxis1Per}, {etaAxis}, {etaAxis}});
+      bs.c3GapSum2D[s] = histos.add<TProfile3D>(Form("Bootstrap/Prof_C3GapSum2D_sample%d", s), ";cent;gap;sum", kTProfile3D, {{centAxis1Per}, {gapAxis}, {sumAxis}});
       bs.cov2D[s] = histos.add<TProfile3D>(Form("Bootstrap/Prof_Cov2D_Cent_etaA_etaC_sample%d", s), ";cent;#eta_{A};#eta_{C}", kTProfile3D, {{centAxis1Per}, {etaAxis}, {etaAxis}});
       bs.covFT0A2D[s] = histos.add<TProfile3D>(Form("Bootstrap/Prof_CovFT0A2D_Cent_etaA_etaC_sample%d", s), ";cent;#eta_{A};#eta_{C}", kTProfile3D, {{centAxis1Per}, {etaAxis}, {etaAxis}});
       bs.covFT0C2D[s] = histos.add<TProfile3D>(Form("Bootstrap/Prof_CovFT0C2D_Cent_etaA_etaC_sample%d", s), ";cent;#eta_{A};#eta_{C}", kTProfile3D, {{centAxis1Per}, {etaAxis}, {etaAxis}});
@@ -928,14 +946,38 @@ struct RadialFlowDecorr {
       nChAxis2 = {cfgNchOMax, KBinOffset, cfgNchOMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
     }
 
-    // ---- observable eta binning: 0.1 for the base data run, 0.2 otherwise ----
+    // ---- run type: MC is pinned to the reference binning, DATA is configurable ----
+    // cfgEtaBinWidth exists only to vary the DATA measurement. MC (efficiency,
+    // closure) always uses 0.2-wide bins so its mean and fluctuation passes stay
+    // mutually consistent and reproducible.
+    const bool isMcRun = (cfgRunGetEff || cfgRunGetMCFlat || cfgRunMCMean || cfgRunMCFluc);
     const bool isDataRun = (cfgRunGetDataFlat || cfgRunDataMean || cfgRunDataFluc);
-    const bool useFineBinning = isDataRun && (cfgSystType == kSystBase);
+    if (isMcRun && isDataRun) {
+      LOGF(fatal,
+           "MC and DATA process switches are both enabled in one job: MC binning is "
+           "pinned to 0.2 while DATA uses cfgEtaBinWidth. Run them as separate jobs.");
+    }
+    const float mcEtaBinWidth = 0.2f;
+    const float effEtaBinWidth = isMcRun ? mcEtaBinWidth : static_cast<float>(cfgEtaBinWidth);
+
+    // ---- observable eta binning (width = effEtaBinWidth) --------------------------
     {
-      const float lo = -cfgCutEta;
-      const float hi = cfgCutEta;
-      const float width = useFineBinning ? 0.1f : 0.2f;
-      const int nbins = static_cast<int>(std::lround((hi - lo) / width));
+      const float halfEta = cfgCutEta;
+      const float width = effEtaBinWidth;
+      if (width <= 0.f) {
+        LOGF(fatal, "eta bin width must be > 0 (got %.3f)", width);
+      }
+      const int nHalf = static_cast<int>(std::lround(halfEta / width));
+      if (nHalf < 1 || std::abs(nHalf * width - halfEta) > KEtaEdgeTolerance) {
+        LOGF(fatal,
+             "cfgCutEta=%.3f is not an integer multiple of the eta bin width=%.3f; "
+             "eta=0 must be a bin edge for mirror pairing.",
+             halfEta, width);
+      }
+      const int nbins = 2 * nHalf; // even -> symmetric about eta = 0
+      const float lo = -halfEta;
+      const float hi = halfEta;
+
       etaLw.clear();
       etaUp.clear();
       etaLw.push_back(lo); // index 0: full-range reference bin
@@ -946,7 +988,7 @@ struct RadialFlowDecorr {
       }
       nEta = nbins + 1;
       if (nEta > KNEtaMax) {
-        LOGF(fatal, "nEta=%d exceeds KNEtaMax=%d", nEta, KNEtaMax);
+        LOGF(fatal, "nEta=%d exceeds KNEtaMax=%d (raise the cap or widen the eta bin width)", nEta, KNEtaMax);
       }
 
       std::vector<double> obsEdges;
@@ -957,7 +999,8 @@ struct RadialFlowDecorr {
       }
       etaAxis = AxisSpec{obsEdges, "#eta"};
       etaBinAxis = AxisSpec{nEta + 1, -0.5, static_cast<double>(nEta) + 0.5, "#eta bin Number"};
-      LOGF(info, "Observable eta binning: %d bins of width %.2f (+ reference), nEta=%d", nbins, width, nEta);
+      LOGF(info, "Observable eta binning (%s): %d bins of width %.2f over |eta|<%.2f (+ reference), nEta=%d",
+           isMcRun ? "MC pinned" : "DATA", nbins, width, halfEta, nEta);
     }
 
     // bootstrap active only for the base data fluctuation pass
@@ -1138,6 +1181,15 @@ struct RadialFlowDecorr {
         loadProfileFromList(lstMCMean, "pmeanMultTru_nch_etabin", state.pmeanMultTruNchEtabinStep2);
         loadProfileFromList(lstMCMean, "pmeanMultReco_nch_etabin", state.pmeanMultRecoNchEtabinStep2);
         loadProfileFromList(lstMCMean, "pmeanMultRecoEffcorr_nch_etabin", state.pmeanMultRecoEffcorrNchEtabinStep2);
+        // MC is pinned to 0.2-wide bins; guard against a stale MC-mean object built
+        // at a different width (its y-axis would then not have nEta+1 bins).
+        if (state.pmeanTruNchEtabinStep2 &&
+            state.pmeanTruNchEtabinStep2->GetYaxis()->GetNbins() != nEta + 1) {
+          LOGF(fatal,
+               "MC Mean eta binning mismatch: loaded profile has %d y-bins, this job "
+               "expects nEta+1=%d. Rebuild the MC-mean pass at the current binning.",
+               state.pmeanTruNchEtabinStep2->GetYaxis()->GetNbins(), nEta + 1);
+        }
       } else {
         LOGF(error, "Could not retrieve TList for MC Mean from: %s", pathMCMean.c_str());
       }
@@ -1155,6 +1207,17 @@ struct RadialFlowDecorr {
         loadProfileFromList(lstDataMean, "pmeanFT0Cmultpv", state.pmeanFT0CmultpvStep2);
         loadProfileFromList(lstDataMean, "pmean_nch_etabin", state.pmeanNchEtabinStep2);
         loadProfileFromList(lstDataMean, "pmeanMult_nch_etabin", state.pmeanMultNchEtabinStep2);
+        // The DataMean and DataFluc passes must share cfgEtaBinWidth, else the
+        // (ibx, ieta+1) read in processDataFluc maps a fluc bin index onto a
+        // different physical eta slice, silently. The mean profile y-axis has
+        // nEta+1 bins by construction (etaBinAxis).
+        if (state.pmeanNchEtabinStep2 &&
+            state.pmeanNchEtabinStep2->GetYaxis()->GetNbins() != nEta + 1) {
+          LOGF(fatal,
+               "Data Mean eta binning mismatch: loaded profile has %d y-bins, this job "
+               "expects nEta+1=%d -> DataMean and DataFluc used different cfgEtaBinWidth.",
+               state.pmeanNchEtabinStep2->GetYaxis()->GetNbins(), nEta + 1);
+        }
       } else {
         LOGF(error, "Could not retrieve TList for Data Mean from: %s", meanPath.c_str());
       }
@@ -1393,10 +1456,6 @@ struct RadialFlowDecorr {
       histos.fill(HIST("hEtaPhiRecoEffWtd"), vz, sign, pt, eta, phi, (1.0 - fake) / eff);
     }
 
-    if (!hasMinTracksInAllEtaBins(sumWiTruth) || !hasMinTracksInAllEtaBins(sumWiReco)) {
-      return;
-    }
-
     // subevent mean-pT maps
     for (int ietaA = 0; ietaA < nEta; ++ietaA) {
       for (int ietaC = 0; ietaC < nEta; ++ietaC) {
@@ -1476,9 +1535,9 @@ struct RadialFlowDecorr {
     std::array<std::array<std::array<double, KIntK>, KIntM>, KNEtaMax> sumPmwkRecoEffCor{};
     std::array<std::array<double, KIntK>, KNEtaMax> sumWkRecoEffCor{};
 
-    std::array<double, KNEtaMax> meanTru{}, c2Tru{};
-    std::array<double, KNEtaMax> meanReco{}, c2Reco{};
-    std::array<double, KNEtaMax> meanRecoEffCor{}, c2RecoEffCor{};
+    std::array<double, KNEtaMax> meanTru{}, c2Tru{}, c3Tru{};
+    std::array<double, KNEtaMax> meanReco{}, c2Reco{}, c3Reco{};
+    std::array<double, KNEtaMax> meanRecoEffCor{}, c2RecoEffCor{}, c3RecoEffCor{};
 
     std::array<double, KNEtaMax> meanTruMult{}, meanRecoMult{}, meanRecoEffCorMult{};
     std::array<double, KNEtaMax> p1kBarTru{}, p1kBarReco{}, p1kBarRecoEffCor{};
@@ -1577,10 +1636,6 @@ struct RadialFlowDecorr {
       histos.fill(HIST("hEtaPhiRecoEffWtd"), vz, sign, pt, eta, phi, (1.0 - fake) / eff);
     }
 
-    if (!hasMinTracksInAllEtaBins(sumWkTru) || !hasMinTracksInAllEtaBins(sumWkReco)) {
-      return;
-    }
-
     for (int ieta = 0; ieta < nEta; ++ieta) {
       const int ibx = state.pmeanTruNchEtabinStep2->GetXaxis()->FindBin(multPV);
       const int iby = ieta + 1;
@@ -1597,34 +1652,50 @@ struct RadialFlowDecorr {
       float mmMultReco = state.pmeanMultRecoNchEtabinStep2->GetBinContent(ibx, iby);
       float mmMultRecoEffCor = state.pmeanMultRecoEffcorrNchEtabinStep2->GetBinContent(ibx, iby);
 
-      if (std::isfinite(mmptTru)) {
-        std::tie(meanTru[ieta], c2Tru[ieta]) = calculateMeanAndC2FromSums<KIntM, KIntK>(sumPmwkTru[ieta], sumWkTru[ieta], mmptTru);
-      }
-      if (std::isfinite(mmptReco)) {
-        std::tie(meanReco[ieta], c2Reco[ieta]) = calculateMeanAndC2FromSums<KIntM, KIntK>(sumPmwkReco[ieta], sumWkReco[ieta], mmptReco);
-      }
-      if (std::isfinite(mmptRecoEffCor)) {
-        std::tie(meanRecoEffCor[ieta], c2RecoEffCor[ieta]) = calculateMeanAndC2FromSums<KIntM, KIntK>(sumPmwkRecoEffCor[ieta], sumWkRecoEffCor[ieta], mmptRecoEffCor);
-      }
+      // covariance requires both bins populated: gate each multiplicity deviation on
+      // the same >=1-track condition as the mean, so cov skips unless both bins qualify
+      p1kBarTruMult[ieta] = (sumWkTru[ieta][1] >= 1.0) ? (meanTruMult[ieta] - mmMultTru) : std::numeric_limits<double>::quiet_NaN();
+      p1kBarRecoMult[ieta] = (sumWkReco[ieta][1] >= 1.0) ? (meanRecoMult[ieta] - mmMultReco) : std::numeric_limits<double>::quiet_NaN();
+      p1kBarRecoEffCorMult[ieta] = (sumWkRecoEffCor[ieta][1] >= 1.0) ? (meanRecoEffCorMult[ieta] - mmMultRecoEffCor) : std::numeric_limits<double>::quiet_NaN();
 
-      if (mmptTru != 0.0f) {
-        p1kBarTru[ieta] = meanTru[ieta] - mmptTru;
+      // truth
+      meanTru[ieta] = (sumWkTru[ieta][1] >= 1.0) ? (sumPmwkTru[ieta][1][1] / sumWkTru[ieta][1]) : std::numeric_limits<double>::quiet_NaN();
+      c2Tru[ieta] = std::numeric_limits<double>::quiet_NaN();
+      c3Tru[ieta] = std::numeric_limits<double>::quiet_NaN();
+      p1kBarTru[ieta] = std::numeric_limits<double>::quiet_NaN();
+      if (std::isfinite(mmptTru) && mmptTru != 0) {
+        const auto corr = calculateC2C3FromSums<KIntM, KIntK>(sumPmwkTru[ieta], sumWkTru[ieta], mmptTru);
+        c2Tru[ieta] = corr.c2;
+        c3Tru[ieta] = corr.c3;
+        if (std::isfinite(meanTru[ieta])) {
+          p1kBarTru[ieta] = meanTru[ieta] - mmptTru;
+        }
       }
-      if (mmptReco != 0.0f) {
-        p1kBarReco[ieta] = meanReco[ieta] - mmptReco;
+      // reco
+      meanReco[ieta] = (sumWkReco[ieta][1] >= 1.0) ? (sumPmwkReco[ieta][1][1] / sumWkReco[ieta][1]) : std::numeric_limits<double>::quiet_NaN();
+      c2Reco[ieta] = std::numeric_limits<double>::quiet_NaN();
+      c3Reco[ieta] = std::numeric_limits<double>::quiet_NaN();
+      p1kBarReco[ieta] = std::numeric_limits<double>::quiet_NaN();
+      if (std::isfinite(mmptReco) && mmptReco != 0) {
+        const auto corr = calculateC2C3FromSums<KIntM, KIntK>(sumPmwkReco[ieta], sumWkReco[ieta], mmptReco);
+        c2Reco[ieta] = corr.c2;
+        c3Reco[ieta] = corr.c3;
+        if (std::isfinite(meanReco[ieta])) {
+          p1kBarReco[ieta] = meanReco[ieta] - mmptReco;
+        }
       }
-      if (mmptRecoEffCor != 0.0f) {
-        p1kBarRecoEffCor[ieta] = meanRecoEffCor[ieta] - mmptRecoEffCor;
-      }
-
-      if (mmMultTru != 0.0f) {
-        p1kBarTruMult[ieta] = meanTruMult[ieta] - mmMultTru;
-      }
-      if (mmMultReco != 0.0f) {
-        p1kBarRecoMult[ieta] = meanRecoMult[ieta] - mmMultReco;
-      }
-      if (mmMultRecoEffCor != 0.0f) {
-        p1kBarRecoEffCorMult[ieta] = meanRecoEffCorMult[ieta] - mmMultRecoEffCor;
+      // reco, efficiency-corrected
+      meanRecoEffCor[ieta] = (sumWkRecoEffCor[ieta][1] >= 1.0) ? (sumPmwkRecoEffCor[ieta][1][1] / sumWkRecoEffCor[ieta][1]) : std::numeric_limits<double>::quiet_NaN();
+      c2RecoEffCor[ieta] = std::numeric_limits<double>::quiet_NaN();
+      c3RecoEffCor[ieta] = std::numeric_limits<double>::quiet_NaN();
+      p1kBarRecoEffCor[ieta] = std::numeric_limits<double>::quiet_NaN();
+      if (std::isfinite(mmptRecoEffCor) && mmptRecoEffCor != 0) {
+        const auto corr = calculateC2C3FromSums<KIntM, KIntK>(sumPmwkRecoEffCor[ieta], sumWkRecoEffCor[ieta], mmptRecoEffCor);
+        c2RecoEffCor[ieta] = corr.c2;
+        c3RecoEffCor[ieta] = corr.c3;
+        if (std::isfinite(meanRecoEffCor[ieta])) {
+          p1kBarRecoEffCor[ieta] = meanRecoEffCor[ieta] - mmptRecoEffCor;
+        }
       }
     }
 
@@ -1674,6 +1745,10 @@ struct RadialFlowDecorr {
         histos.fill(HIST("MCGen/Prof_C2_Cent_etabin"), cent, ieta, c2Tru[ieta]);
         histos.fill(HIST("MCGen/Prof_C2_Mult_etabin"), multPV, ieta, c2Tru[ieta]);
       }
+      if (std::isfinite(c3Tru[ieta])) {
+        histos.fill(HIST("MCGen/Prof_C3_Cent_etabin"), cent, ieta, c3Tru[ieta]);
+        histos.fill(HIST("MCGen/Prof_C3_Mult_etabin"), multPV, ieta, c3Tru[ieta]);
+      }
       if (std::isfinite(meanReco[ieta])) {
         histos.fill(HIST("MCReco/Prof_MeanpT_Cent_etabin"), cent, ieta, meanReco[ieta]);
         histos.fill(HIST("MCReco/Prof_MeanpT_Mult_etabin"), multPV, ieta, meanReco[ieta]);
@@ -1682,6 +1757,10 @@ struct RadialFlowDecorr {
         histos.fill(HIST("MCReco/Prof_C2_Cent_etabin"), cent, ieta, c2Reco[ieta]);
         histos.fill(HIST("MCReco/Prof_C2_Mult_etabin"), multPV, ieta, c2Reco[ieta]);
       }
+      if (std::isfinite(c3Reco[ieta])) {
+        histos.fill(HIST("MCReco/Prof_C3_Cent_etabin"), cent, ieta, c3Reco[ieta]);
+        histos.fill(HIST("MCReco/Prof_C3_Mult_etabin"), multPV, ieta, c3Reco[ieta]);
+      }
       if (std::isfinite(meanRecoEffCor[ieta])) {
         histos.fill(HIST("MCRecoEffCorr/Prof_MeanpT_Cent_etabin"), cent, ieta, meanRecoEffCor[ieta]);
         histos.fill(HIST("MCRecoEffCorr/Prof_MeanpT_Mult_etabin"), multPV, ieta, meanRecoEffCor[ieta]);
@@ -1689,6 +1768,10 @@ struct RadialFlowDecorr {
       if (std::isfinite(c2RecoEffCor[ieta])) {
         histos.fill(HIST("MCRecoEffCorr/Prof_C2_Cent_etabin"), cent, ieta, c2RecoEffCor[ieta]);
         histos.fill(HIST("MCRecoEffCorr/Prof_C2_Mult_etabin"), multPV, ieta, c2RecoEffCor[ieta]);
+      }
+      if (std::isfinite(c3RecoEffCor[ieta])) {
+        histos.fill(HIST("MCRecoEffCorr/Prof_C3_Cent_etabin"), cent, ieta, c3RecoEffCor[ieta]);
+        histos.fill(HIST("MCRecoEffCorr/Prof_C3_Mult_etabin"), multPV, ieta, c3RecoEffCor[ieta]);
       }
     }
 
@@ -1699,6 +1782,13 @@ struct RadialFlowDecorr {
       float c2SubTru = p1kBarTru[ietaA] * p1kBarTru[ietaC];
       float c2SubReco = p1kBarReco[ietaA] * p1kBarReco[ietaC];
       float c2SubRecoEffCor = p1kBarRecoEffCor[ietaA] * p1kBarRecoEffCor[ietaC];
+
+      float c3SubTruA = c2Tru[ietaA] * p1kBarTru[ietaC]; // 2 from A, 1 from C
+      float c3SubTruC = c2Tru[ietaC] * p1kBarTru[ietaA]; // 2 from C, 1 from A
+      float c3SubRecoA = c2Reco[ietaA] * p1kBarReco[ietaC];
+      float c3SubRecoC = c2Reco[ietaC] * p1kBarReco[ietaA];
+      float c3SubRecoEffCorA = c2RecoEffCor[ietaA] * p1kBarRecoEffCor[ietaC];
+      float c3SubRecoEffCorC = c2RecoEffCor[ietaC] * p1kBarRecoEffCor[ietaA];
 
       float covTru = p1kBarTruMult[ietaA] * p1kBarTru[ietaC];
       float covReco = p1kBarRecoMult[ietaA] * p1kBarReco[ietaC];
@@ -1715,6 +1805,30 @@ struct RadialFlowDecorr {
       if (std::isfinite(c2SubRecoEffCor)) {
         histos.fill(HIST("MCRecoEffCorr/Prof_C2Sub_Cent_etabin"), cent, ietaA, c2SubRecoEffCor);
         histos.fill(HIST("MCRecoEffCorr/Prof_C2Sub_Mult_etabin"), multPV, ietaA, c2SubRecoEffCor);
+      }
+      if (std::isfinite(c3SubTruA)) {
+        histos.fill(HIST("MCGen/Prof_C3Sub_Cent_etabin"), cent, ietaA, c3SubTruA);
+        histos.fill(HIST("MCGen/Prof_C3Sub_Mult_etabin"), multPV, ietaA, c3SubTruA);
+      }
+      if (std::isfinite(c3SubTruC)) {
+        histos.fill(HIST("MCGen/Prof_C3Sub_Cent_etabin"), cent, ietaC, c3SubTruC);
+        histos.fill(HIST("MCGen/Prof_C3Sub_Mult_etabin"), multPV, ietaC, c3SubTruC);
+      }
+      if (std::isfinite(c3SubRecoA)) {
+        histos.fill(HIST("MCReco/Prof_C3Sub_Cent_etabin"), cent, ietaA, c3SubRecoA);
+        histos.fill(HIST("MCReco/Prof_C3Sub_Mult_etabin"), multPV, ietaA, c3SubRecoA);
+      }
+      if (std::isfinite(c3SubRecoC)) {
+        histos.fill(HIST("MCReco/Prof_C3Sub_Cent_etabin"), cent, ietaC, c3SubRecoC);
+        histos.fill(HIST("MCReco/Prof_C3Sub_Mult_etabin"), multPV, ietaC, c3SubRecoC);
+      }
+      if (std::isfinite(c3SubRecoEffCorA)) {
+        histos.fill(HIST("MCRecoEffCorr/Prof_C3Sub_Cent_etabin"), cent, ietaA, c3SubRecoEffCorA);
+        histos.fill(HIST("MCRecoEffCorr/Prof_C3Sub_Mult_etabin"), multPV, ietaA, c3SubRecoEffCorA);
+      }
+      if (std::isfinite(c3SubRecoEffCorC)) {
+        histos.fill(HIST("MCRecoEffCorr/Prof_C3Sub_Cent_etabin"), cent, ietaC, c3SubRecoEffCorC);
+        histos.fill(HIST("MCRecoEffCorr/Prof_C3Sub_Mult_etabin"), multPV, ietaC, c3SubRecoEffCorC);
       }
       if (std::isfinite(covTru)) {
         histos.fill(HIST("MCGen/Prof_Cov_Cent_etabin"), cent, ietaA, covTru);
@@ -1777,6 +1891,10 @@ struct RadialFlowDecorr {
         float c2SubReco = (ietaA == ietaC) ? static_cast<float>(c2Reco[ietaA]) : p1kBarReco[ietaA] * p1kBarReco[ietaC];
         float c2SubRecoEffCor = (ietaA == ietaC) ? static_cast<float>(c2RecoEffCor[ietaA]) : p1kBarRecoEffCor[ietaA] * p1kBarRecoEffCor[ietaC];
 
+        float c3Sub2DTru = (ietaA == ietaC) ? static_cast<float>(c3Tru[ietaA]) : c2Tru[ietaA] * p1kBarTru[ietaC]; // diag: within-bin c3; off-diag: 2 from A, 1 from C
+        float c3Sub2DReco = (ietaA == ietaC) ? static_cast<float>(c3Reco[ietaA]) : c2Reco[ietaA] * p1kBarReco[ietaC];
+        float c3Sub2DRecoEffCor = (ietaA == ietaC) ? static_cast<float>(c3RecoEffCor[ietaA]) : c2RecoEffCor[ietaA] * p1kBarRecoEffCor[ietaC];
+
         float covTru = p1kBarTruMult[ietaA] * p1kBarTru[ietaC];
         float covReco = p1kBarRecoMult[ietaA] * p1kBarReco[ietaC];
         float covRecoEffCor = p1kBarRecoEffCorMult[ietaA] * p1kBarRecoEffCor[ietaC];
@@ -1800,6 +1918,19 @@ struct RadialFlowDecorr {
         if (std::isfinite(c2SubRecoEffCor)) {
           histos.fill(HIST("MCRecoEffCorr/Prof_C2Sub2D_Cent_etaA_etaC"), cent, etaValA, etaValB, c2SubRecoEffCor);
           histos.fill(HIST("MCRecoEffCorr/Prof_GapSum2D"), cent, gap, sum, c2SubRecoEffCor);
+        }
+
+        if (std::isfinite(c3Sub2DTru)) {
+          histos.fill(HIST("MCGen/Prof_C3Sub2D_Cent_etaA_etaC"), cent, etaValA, etaValB, c3Sub2DTru);
+          histos.fill(HIST("MCGen/Prof_C3GapSum2D"), cent, gap, sum, c3Sub2DTru);
+        }
+        if (std::isfinite(c3Sub2DReco)) {
+          histos.fill(HIST("MCReco/Prof_C3Sub2D_Cent_etaA_etaC"), cent, etaValA, etaValB, c3Sub2DReco);
+          histos.fill(HIST("MCReco/Prof_C3GapSum2D"), cent, gap, sum, c3Sub2DReco);
+        }
+        if (std::isfinite(c3Sub2DRecoEffCor)) {
+          histos.fill(HIST("MCRecoEffCorr/Prof_C3Sub2D_Cent_etaA_etaC"), cent, etaValA, etaValB, c3Sub2DRecoEffCor);
+          histos.fill(HIST("MCRecoEffCorr/Prof_C3GapSum2D"), cent, gap, sum, c3Sub2DRecoEffCor);
         }
 
         if (std::isfinite(covTru)) {
@@ -1986,10 +2117,6 @@ struct RadialFlowDecorr {
       }
     }
 
-    if (!hasMinTracksInAllEtaBins(sumWi)) {
-      return;
-    }
-
     if (sumWi[0] >= 1.0f) {
       histos.fill(HIST("Prof_Cent_Nchrec"), cent, sumWi[0]);
       histos.fill(HIST("Prof_Mult_Nchrec"), coll.multNTracksPV(), sumWi[0]);
@@ -2081,8 +2208,40 @@ struct RadialFlowDecorr {
 
     std::array<std::array<std::array<double, KIntK>, KIntM>, KNEtaMax> sumpmwk{};
     std::array<std::array<double, KIntK>, KNEtaMax> sumwk{};
-    std::array<double, KNEtaMax> mean{}, c2{}, p1kBar{};
+    std::array<double, KNEtaMax> mean{}, c2{}, c3{}, p1kBar{};
     std::array<double, KNEtaMax> meanMult{}, p1kBarMult{};
+
+    // --- Poisson bootstrap: one weight per sample per event ---
+    std::array<double, KMaxBoot> poisW{};
+    if (doBoot) {
+      for (int s = 0; s < nBoot; ++s) {
+        poisW[s] = rng.Poisson(1.0);
+      }
+    }
+    auto fillBS1D = [&](std::array<std::shared_ptr<TProfile>, KMaxBoot>& arr, double x, double val) {
+      if (!doBoot) {
+        return;
+      }
+      for (int s = 0; s < nBoot; ++s) {
+        arr[s]->Fill(x, val, poisW[s]);
+      }
+    };
+    auto fillBS2D = [&](std::array<std::shared_ptr<TProfile2D>, KMaxBoot>& arr, double x, double y, double val) {
+      if (!doBoot) {
+        return;
+      }
+      for (int s = 0; s < nBoot; ++s) {
+        arr[s]->Fill(x, y, val, poisW[s]);
+      }
+    };
+    auto fillBS3D = [&](std::array<std::shared_ptr<TProfile3D>, KMaxBoot>& arr, double x, double y, double z, double val) {
+      if (!doBoot) {
+        return;
+      }
+      for (int s = 0; s < nBoot; ++s) {
+        arr[s]->Fill(x, y, z, val, poisW[s]);
+      }
+    };
 
     float vz = coll.posZ();
 
@@ -2125,10 +2284,6 @@ struct RadialFlowDecorr {
       }
     }
 
-    if (!hasMinTracksInAllEtaBins(sumwk)) {
-      return;
-    }
-
     double amplFT0A = 0, amplFT0C = 0;
     if (coll.has_foundFT0()) {
       const auto& ft0 = coll.foundFT0();
@@ -2139,6 +2294,11 @@ struct RadialFlowDecorr {
         amplFT0C += ft0.amplitudeC()[iCh];
       }
     }
+    fillBS1D(bs.amplFT0ACent, cent, amplFT0A);
+    fillBS1D(bs.amplFT0AMult, coll.multNTracksPV(), amplFT0A);
+    fillBS1D(bs.amplFT0CCent, cent, amplFT0C);
+    fillBS1D(bs.amplFT0CMult, coll.multNTracksPV(), amplFT0C);
+
     double p1kBarFt0A = amplFT0A - state.pmeanFT0AmultpvStep2->GetBinContent(state.pmeanFT0AmultpvStep2->GetXaxis()->FindBin(coll.multNTracksPV()));
     double p1kBarFt0C = amplFT0C - state.pmeanFT0CmultpvStep2->GetBinContent(state.pmeanFT0CmultpvStep2->GetXaxis()->FindBin(coll.multNTracksPV()));
 
@@ -2149,42 +2309,35 @@ struct RadialFlowDecorr {
       float mmpt = state.pmeanNchEtabinStep2->GetBinContent(ibx, iby);
       float mmMult = state.pmeanMultNchEtabinStep2->GetBinContent(ibx, iby);
 
-      mean[ieta] = sumpmwk[ieta][1][1] / sumwk[ieta][1];
       meanMult[ieta] = sumwk[ieta][1];
+      // covariance requires both bins populated: gate the multiplicity deviation on
+      // the same >=1-track condition as the mean, so cov skips unless both bins qualify
+      p1kBarMult[ieta] = (sumwk[ieta][1] >= 1.0) ? (meanMult[ieta] - mmMult) : std::numeric_limits<double>::quiet_NaN();
 
+      // mean pT of the bin: valid only with >=1 (weighted) track
+      mean[ieta] = (sumwk[ieta][1] >= 1.0) ? (sumpmwk[ieta][1][1] / sumwk[ieta][1]) : std::numeric_limits<double>::quiet_NaN();
+
+      // c2 (>=2 tracks), c3 (>=3 tracks) and the pT deviation need a usable reference
+      c2[ieta] = std::numeric_limits<double>::quiet_NaN();
+      c3[ieta] = std::numeric_limits<double>::quiet_NaN();
+      p1kBar[ieta] = std::numeric_limits<double>::quiet_NaN();
       if (std::isfinite(mmpt) && mmpt != 0) {
-        std::tie(mean[ieta], c2[ieta]) = calculateMeanAndC2FromSums<KIntM, KIntK>(sumpmwk[ieta], sumwk[ieta], mmpt);
-        p1kBar[ieta] = mean[ieta] - mmpt;
-      }
-      p1kBarMult[ieta] = meanMult[ieta] - mmMult;
-    }
-
-    // --- Poisson bootstrap: one weight per sample per event ---
-    std::array<double, KMaxBoot> poisW{};
-    if (doBoot) {
-      for (int s = 0; s < nBoot; ++s) {
-        poisW[s] = rng.Poisson(1.0);
+        const auto corr = calculateC2C3FromSums<KIntM, KIntK>(sumpmwk[ieta], sumwk[ieta], mmpt);
+        c2[ieta] = corr.c2;
+        c3[ieta] = corr.c3;
+        if (std::isfinite(mean[ieta])) {
+          p1kBar[ieta] = mean[ieta] - mmpt;
+        }
       }
     }
-    auto fillBS2D = [&](std::array<std::shared_ptr<TProfile2D>, KMaxBoot>& arr, double x, double y, double val) {
-      if (!doBoot) {
-        return;
-      }
-      for (int s = 0; s < nBoot; ++s) {
-        arr[s]->Fill(x, y, val, poisW[s]);
-      }
-    };
-    auto fillBS3D = [&](std::array<std::shared_ptr<TProfile3D>, KMaxBoot>& arr, double x, double y, double z, double val) {
-      if (!doBoot) {
-        return;
-      }
-      for (int s = 0; s < nBoot; ++s) {
-        arr[s]->Fill(x, y, z, val, poisW[s]);
-      }
-    };
 
     // meanpT & C2 vs eta bin
     for (int ieta = 0; ieta < nEta; ++ieta) {
+      if (std::isfinite(meanMult[ieta])) {
+        fillBS2D(bs.multCent, cent, ieta, meanMult[ieta]);
+        fillBS2D(bs.multMult, coll.multNTracksPV(), ieta, meanMult[ieta]);
+      }
+
       if (std::isfinite(mean[ieta])) {
         histos.fill(HIST("Prof_MeanpT_Cent_etabin"), cent, ieta, mean[ieta]);
         histos.fill(HIST("Prof_MeanpT_Mult_etabin"), coll.multNTracksPV(), ieta, mean[ieta]);
@@ -2197,12 +2350,20 @@ struct RadialFlowDecorr {
         fillBS2D(bs.c2Cent, cent, ieta, c2[ieta]);
         fillBS2D(bs.c2Mult, coll.multNTracksPV(), ieta, c2[ieta]);
       }
+      if (std::isfinite(c3[ieta])) {
+        histos.fill(HIST("Prof_C3_Cent_etabin"), cent, ieta, c3[ieta]);
+        histos.fill(HIST("Prof_C3_Mult_etabin"), coll.multNTracksPV(), ieta, c3[ieta]);
+        fillBS2D(bs.c3Cent, cent, ieta, c3[ieta]);
+        fillBS2D(bs.c3Mult, coll.multNTracksPV(), ieta, c3[ieta]);
+      }
     }
 
     // mirror-pair subevent (C2Sub) & covariances vs eta bin
     for (int ietaA = 1; ietaA <= (nEta - 1) / 2; ++ietaA) {
       int ietaC = nEta - ietaA;
       float c2Sub = p1kBar[ietaA] * p1kBar[ietaC];
+      float c3SubA = c2[ietaA] * p1kBar[ietaC]; // 2 particles from A, 1 from C
+      float c3SubC = c2[ietaC] * p1kBar[ietaA]; // 2 particles from C, 1 from A
       float covAC = p1kBarMult[ietaA] * p1kBar[ietaC];
       float covCA = p1kBar[ietaA] * p1kBarMult[ietaC];
 
@@ -2211,6 +2372,18 @@ struct RadialFlowDecorr {
         histos.fill(HIST("Prof_C2Sub_Mult_etabin"), coll.multNTracksPV(), ietaA, c2Sub);
         fillBS2D(bs.c2SubCent, cent, ietaA, c2Sub);
         fillBS2D(bs.c2SubMult, coll.multNTracksPV(), ietaA, c2Sub);
+      }
+      if (std::isfinite(c3SubA)) {
+        histos.fill(HIST("Prof_C3Sub_Cent_etabin"), cent, ietaA, c3SubA);
+        histos.fill(HIST("Prof_C3Sub_Mult_etabin"), coll.multNTracksPV(), ietaA, c3SubA);
+        fillBS2D(bs.c3SubCent, cent, ietaA, c3SubA);
+        fillBS2D(bs.c3SubMult, coll.multNTracksPV(), ietaA, c3SubA);
+      }
+      if (std::isfinite(c3SubC)) {
+        histos.fill(HIST("Prof_C3Sub_Cent_etabin"), cent, ietaC, c3SubC);
+        histos.fill(HIST("Prof_C3Sub_Mult_etabin"), coll.multNTracksPV(), ietaC, c3SubC);
+        fillBS2D(bs.c3SubCent, cent, ietaC, c3SubC);
+        fillBS2D(bs.c3SubMult, coll.multNTracksPV(), ietaC, c3SubC);
       }
       if (std::isfinite(covAC)) {
         histos.fill(HIST("Prof_Cov_Cent_etabin"), cent, ietaA, covAC);
@@ -2253,6 +2426,7 @@ struct RadialFlowDecorr {
         float sum = (etaValA + etaValB);
 
         float c2Sub = (ietaA == ietaC) ? static_cast<float>(c2[ietaA]) : p1kBar[ietaA] * p1kBar[ietaC];
+        float c3Sub2D = (ietaA == ietaC) ? static_cast<float>(c3[ietaA]) : c2[ietaA] * p1kBar[ietaC]; // diag: within-bin c3; off-diag: 2 from A, 1 from C
         float cov = p1kBarMult[ietaA] * p1kBar[ietaC];
         float covFT0A = p1kBarFt0A * p1kBar[ietaC];
         float covFT0C = p1kBarFt0C * p1kBar[ietaA];
@@ -2262,6 +2436,12 @@ struct RadialFlowDecorr {
           histos.fill(HIST("Prof_GapSum2D"), cent, gap, sum, c2Sub);
           fillBS3D(bs.c2Sub2D, cent, etaValA, etaValB, c2Sub);
           fillBS3D(bs.gapSum2D, cent, gap, sum, c2Sub);
+        }
+        if (std::isfinite(c3Sub2D)) {
+          histos.fill(HIST("Prof_C3Sub2D_Cent_etaA_etaC"), cent, etaValA, etaValB, c3Sub2D);
+          histos.fill(HIST("Prof_C3GapSum2D"), cent, gap, sum, c3Sub2D);
+          fillBS3D(bs.c3Sub2D, cent, etaValA, etaValB, c3Sub2D);
+          fillBS3D(bs.c3GapSum2D, cent, gap, sum, c3Sub2D);
         }
         if (std::isfinite(cov)) {
           histos.fill(HIST("Prof_Cov2D_Cent_etaA_etaC"), cent, etaValA, etaValB, cov);
