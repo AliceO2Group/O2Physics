@@ -1842,13 +1842,13 @@ struct HadronNucleiCorrelation {
           case PDG_t::kProton:
             registry.fill(HIST("Generated/hQAProtons"), binPosition);
             return true;
-          case -PDG_t::kProton:
+          case PDG_t::kProtonBar:
             registry.fill(HIST("Generated/hQAAntiProtons"), binPosition);
             return true;
-          case o2::constants::physics::Pdg::kNeutron:
+          case PDG_t::kNeutron:
             registry.fill(HIST("Generated/hQANeutrons"), binPosition);
             return true;
-          case -o2::constants::physics::Pdg::kNeutron:
+          case PDG_t::kNeutronBar:
             registry.fill(HIST("Generated/hQAAntiNeutrons"), binPosition);
             return true;
           case o2::constants::physics::Pdg::kDeuteron:
