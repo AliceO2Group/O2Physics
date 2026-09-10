@@ -227,12 +227,9 @@ struct decay3bodyBuilder {
     float genPhi;
     float genEta;
     float genRapidity;
-    float genMomProton;
-    float genMomPion;
-    float genMomDeuteron;
-    float genPtProton;
-    float genPtPion;
-    float genPtDeuteron;
+    std::array<float, 3> genMomProton{0.f};
+    std::array<float, 3> genMomPion{0.f};
+    std::array<float, 3> genMomDeuteron{0.f};
     bool isReco;
     int motherLabel;
     int motherPdgCode;
@@ -822,12 +819,9 @@ struct decay3bodyBuilder {
           this3BodyMCInfo.daughterPiPdgCode = mcTrackPion.pdgCode();
           this3BodyMCInfo.daughterDePdgCode = mcTrackDeuteron.pdgCode();
           this3BodyMCInfo.isDeuteronPrimary = mcTrackDeuteron.isPhysicalPrimary();
-          this3BodyMCInfo.genMomProton = mcTrackProton.p();
-          this3BodyMCInfo.genMomPion = mcTrackPion.p();
-          this3BodyMCInfo.genMomDeuteron = mcTrackDeuteron.p();
-          this3BodyMCInfo.genPtProton = mcTrackProton.pt();
-          this3BodyMCInfo.genPtPion = mcTrackPion.pt();
-          this3BodyMCInfo.genPtDeuteron = mcTrackDeuteron.pt();
+          this3BodyMCInfo.genMomProton = {mcTrackProton.px(), mcTrackProton.py(), mcTrackProton.pz()};
+          this3BodyMCInfo.genMomPion = {mcTrackPion.px(), mcTrackPion.py(), mcTrackPion.pz()};
+          this3BodyMCInfo.genMomDeuteron = {mcTrackDeuteron.px(), mcTrackDeuteron.py(), mcTrackDeuteron.pz()};
 
           // daughters are matched to MC, now we check if reco mother is true H3L/Anti-H3l and decayed via three-body decay
           this3BodyMCInfo.motherLabel = checkH3LTruth(mcTrackProton, mcTrackPion, mcTrackDeuteron); // returns global index of mother if true H3L/Anti-H3L mother decaying via three-body decay, otherwise negative value for background
@@ -905,17 +899,14 @@ struct decay3bodyBuilder {
           // get daughters
           for (const auto& mcparticleDaughter : mcparticle.template daughters_as<aod::McParticles>()) {
             if (std::abs(mcparticleDaughter.pdgCode()) == PDG_t::kProton) { // proton
-              this3BodyMCInfo.genMomProton = mcparticleDaughter.p();
-              this3BodyMCInfo.genPtProton = mcparticleDaughter.pt();
+              this3BodyMCInfo.genMomProton = {mcparticleDaughter.px(), mcparticleDaughter.py(), mcparticleDaughter.pz()};
               this3BodyMCInfo.daughterPrPdgCode = mcparticleDaughter.pdgCode();
               this3BodyMCInfo.genDecVtx = {mcparticleDaughter.vx(), mcparticleDaughter.vy(), mcparticleDaughter.vz()};
             } else if (std::abs(mcparticleDaughter.pdgCode()) == PDG_t::kPiPlus) { // pion
-              this3BodyMCInfo.genMomPion = mcparticleDaughter.p();
-              this3BodyMCInfo.genPtPion = mcparticleDaughter.pt();
+              this3BodyMCInfo.genMomPion = {mcparticleDaughter.px(), mcparticleDaughter.py(), mcparticleDaughter.pz()};
               this3BodyMCInfo.daughterPiPdgCode = mcparticleDaughter.pdgCode();
             } else if (std::abs(mcparticleDaughter.pdgCode()) == o2::constants::physics::Pdg::kDeuteron) { // deuteron
-              this3BodyMCInfo.genMomDeuteron = mcparticleDaughter.p();
-              this3BodyMCInfo.genPtDeuteron = mcparticleDaughter.pt();
+              this3BodyMCInfo.genMomDeuteron = {mcparticleDaughter.px(), mcparticleDaughter.py(), mcparticleDaughter.pz()};
               this3BodyMCInfo.daughterDePdgCode = mcparticleDaughter.pdgCode();
               this3BodyMCInfo.isDeuteronPrimary = mcparticleDaughter.isPhysicalPrimary();
             }
@@ -957,8 +948,9 @@ struct decay3bodyBuilder {
                                    this3BodyMCInfo.genDecVtx[0], this3BodyMCInfo.genDecVtx[1], this3BodyMCInfo.genDecVtx[2],
                                    this3BodyMCInfo.genCt,
                                    mcparticle.phi(), mcparticle.eta(), mcparticle.y(),
-                                   this3BodyMCInfo.genMomProton, this3BodyMCInfo.genMomPion, this3BodyMCInfo.genMomDeuteron,
-                                   this3BodyMCInfo.genPtProton, this3BodyMCInfo.genPtPion, this3BodyMCInfo.genPtDeuteron,
+                                   this3BodyMCInfo.genMomProton[0], this3BodyMCInfo.genMomProton[1], this3BodyMCInfo.genMomProton[2],
+                                   this3BodyMCInfo.genMomPion[0], this3BodyMCInfo.genMomPion[1], this3BodyMCInfo.genMomPion[2],
+                                   this3BodyMCInfo.genMomDeuteron[0], this3BodyMCInfo.genMomDeuteron[1], this3BodyMCInfo.genMomDeuteron[2],
                                    this3BodyMCInfo.isReco,
                                    mcparticle.globalIndex(), // motherLabel
                                    mcparticle.pdgCode(),     // motherPdgCode
@@ -1153,8 +1145,9 @@ struct decay3bodyBuilder {
                                this3BodyMCInfo.genDecVtx[0], this3BodyMCInfo.genDecVtx[1], this3BodyMCInfo.genDecVtx[2],
                                this3BodyMCInfo.genCt,
                                this3BodyMCInfo.genPhi, this3BodyMCInfo.genEta, this3BodyMCInfo.genRapidity,
-                               this3BodyMCInfo.genMomProton, this3BodyMCInfo.genMomPion, this3BodyMCInfo.genMomDeuteron,
-                               this3BodyMCInfo.genPtProton, this3BodyMCInfo.genPtPion, this3BodyMCInfo.genPtDeuteron,
+                               this3BodyMCInfo.genMomProton[0], this3BodyMCInfo.genMomProton[1], this3BodyMCInfo.genMomProton[2],
+                               this3BodyMCInfo.genMomPion[0], this3BodyMCInfo.genMomPion[1], this3BodyMCInfo.genMomPion[2],
+                               this3BodyMCInfo.genMomDeuteron[0], this3BodyMCInfo.genMomDeuteron[1], this3BodyMCInfo.genMomDeuteron[2],
                                this3BodyMCInfo.isReco,
                                this3BodyMCInfo.motherLabel,
                                this3BodyMCInfo.motherPdgCode,
@@ -1280,8 +1273,9 @@ struct decay3bodyBuilder {
     mcInfo.genDecVtx[0] = -1., mcInfo.genDecVtx[1] = -1., mcInfo.genDecVtx[2] = -1.;
     mcInfo.genCt = -1.;
     mcInfo.genPhi = -1., mcInfo.genEta = -1., mcInfo.genRapidity = -1.;
-    mcInfo.genMomProton = -1., mcInfo.genMomPion = -1., mcInfo.genMomDeuteron = -1.;
-    mcInfo.genPtProton = -1., mcInfo.genPtPion = -1., mcInfo.genPtDeuteron = -1.;
+    mcInfo.genMomProton[0] = -1., mcInfo.genMomProton[1] = -1., mcInfo.genMomProton[2] = -1.;
+    mcInfo.genMomPion[0] = -1., mcInfo.genMomPion[1] = -1., mcInfo.genMomPion[2] = -1.;
+    mcInfo.genMomDeuteron[0] = -1., mcInfo.genMomDeuteron[1] = -1., mcInfo.genMomDeuteron[2] = -1.;
     mcInfo.isReco = false;
     mcInfo.motherPdgCode = 0;
     mcInfo.daughterPrPdgCode = -1, mcInfo.daughterPiPdgCode = -1, mcInfo.daughterDePdgCode = -1;
