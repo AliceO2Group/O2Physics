@@ -1509,7 +1509,7 @@ struct TrackEfficiency {
 
   void processQcCheck(aod::JetMcCollisions::iterator const& mcCollision,
                       soa::SmallGroups<aod::JetCollisionsMCD> const& collisions, // smallgroups gives only the collisions associated to the current mccollision, thanks to the mccollisionlabel pre-integrated in jetcollisionsmcd
-                      soa::Join<aod::JetTracksMCD, aod::JTrackExtras, aod::JTrackPIs> const& jetTracks,
+                      soa::Filtered<soa::Join<aod::JetTracksMCD, aod::JTrackExtras, aod::JTrackPIs>> const& jetTracks,
                       soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA> const&,
                       JetParticlesWithOriginal const& jMcParticles)
   {
