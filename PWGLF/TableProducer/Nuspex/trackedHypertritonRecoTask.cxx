@@ -779,7 +779,7 @@ struct TrackedHypertritonRecoTask {
   }
 
   template <class TTracksTo, typename TTracked3body>
-  std::array<float, 2> getItsTrackDCAToSV(TTracked3body tracked3Body)
+  std::array<float, 2> getItsTrackDCAToSV(TTracked3body const& tracked3Body)
   {
     const auto itsTrack = tracked3Body.template itsTrack_as<TTracksTo>();
     auto itsTrackParCov = getTrackParCov(itsTrack);
