@@ -80,3 +80,8 @@ o2physics_add_dpl_workflow(upc-cand-producer-semi-fwd
         SOURCES upcCandProducerSemiFwd.cxx
         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::UPCCutparHolder O2::GlobalTracking
         COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(upc-cand-producer-barrel
+                           SOURCES upcCandProducerBarrel.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2::CCDB O2::DataFormatsParameters O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
