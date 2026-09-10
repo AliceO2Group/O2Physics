@@ -13,6 +13,8 @@
 /// \brief Analysis of phi resonance using THnSparse histograms.
 /// \author Veronika Barbasova (veronika.barbasova@cern.ch)
 
+#include "PWGLF/DataModel/mcCentrality.h"
+#include "PWGLF/Utils/inelGt.h"
 #include "PWGLF/Utils/rsnOutput.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
@@ -100,8 +102,8 @@ struct PhianalysisTHnSparse {
     Configurable<bool> tpcPidOnly{"tpcPidOnly", false, "Use TPC only for PID."};
     Configurable<float> combinedNSigma{"combinedNSigma", 3.0f, "Cut: Maximal value of NSigma for combined TPC and TOF NSigma cut."};
     Configurable<float> ptTOFThreshold{"ptTOFThreshold", 0.5f, "Cut: Minimal value of tracks pt for using TOF PID."};
-    Configurable<int> tpcNClsFound{"tpcNClsFound", 155, "Cut: Minimal value of found TPC clusters"};
-    Configurable<int> tpcNClsCrossedRows{"tpcNClsCrossedRows", 155, "Cut: Minimal value of crossed rows in TPC"};
+    Configurable<int> tpcNClsFound{"tpcNClsFound", 0, "Cut: Minimal value of found TPC clusters"};
+    Configurable<int> tpcNClsCrossedRows{"tpcNClsCrossedRows", 0, "Cut: Minimal value of crossed rows in TPC"};
     Configurable<bool> globalTrack{"globalTrack", false, "Use isGlobalTrack track selection."};
     Configurable<bool> primaryTrack{"primaryTrack", false, "Use isPrimaryTrack track selection."};
     Configurable<bool> pvContributor{"pvContributor", false, "Use isPVContributor track selection."};
@@ -233,7 +235,7 @@ struct PhianalysisTHnSparse {
 
     pointPair = new double[static_cast<int>(o2::analysis::rsn::PairAxisType::unknown)];
     rsnOutput = new o2::analysis::rsn::OutputSparse();
-    rsnOutput->init(sparseAxes, allAxes, sysAxes, allAxesSys, static_cast<bool>(produce.produceMC), mixingType, static_cast<bool>(produce.produceLikesign), static_cast<bool>(produce.produceRotational), &registry);
+    rsnOutput->init(sparseAxes, allAxes, sysAxes, allAxesSys, static_cast<bool>(produce.produceMC), mixingType, static_cast<bool>(produce.produceLikesign), static_cast<bool>(produce.produceRotational), static_cast<bool>(eventCuts.inelGt0), &registry);
 
     // Print summary of configuration
     LOGF(info, "=== PhianalysisTHnSparse configuration summary ===");
@@ -281,14 +283,14 @@ struct PhianalysisTHnSparse {
     registry.add("QA/Event/hSelection", "Event selection statistics", kTH1D, {{11, 0.0f, 11.0f}});
     auto hEvent = registry.get<TH1>(HIST("QA/Event/hSelection"));
     hEvent->GetXaxis()->SetBinLabel(1, "all events");
-    hEvent->GetXaxis()->SetBinLabel(2, "isTriggerTVX");
-    hEvent->GetXaxis()->SetBinLabel(3, "noTimeFrameBorder");
-    hEvent->GetXaxis()->SetBinLabel(4, "noITSROFrameBorder");
-    hEvent->GetXaxis()->SetBinLabel(5, "sel8");
-    hEvent->GetXaxis()->SetBinLabel(6, "IsVertexITSTPC");
-    hEvent->GetXaxis()->SetBinLabel(7, "noSameBunchPileup");
-    hEvent->GetXaxis()->SetBinLabel(8, "IsGoodZvtxFT0vsPV");
-    hEvent->GetXaxis()->SetBinLabel(9, Form("|V_{z}| < %0.0f cm", static_cast<float>(eventCuts.vzCut)));
+    hEvent->GetXaxis()->SetBinLabel(2, Form("|V_{z}| < %0.0f cm", static_cast<float>(eventCuts.vzCut)));
+    hEvent->GetXaxis()->SetBinLabel(3, "isTriggerTVX");
+    hEvent->GetXaxis()->SetBinLabel(4, "noTimeFrameBorder");
+    hEvent->GetXaxis()->SetBinLabel(5, "noITSROFrameBorder");
+    hEvent->GetXaxis()->SetBinLabel(6, "sel8");
+    hEvent->GetXaxis()->SetBinLabel(7, "IsVertexITSTPC");
+    hEvent->GetXaxis()->SetBinLabel(8, "noSameBunchPileup");
+    hEvent->GetXaxis()->SetBinLabel(9, "IsGoodZvtxFT0vsPV");
     hEvent->GetXaxis()->SetBinLabel(10, "INEL");
     hEvent->GetXaxis()->SetBinLabel(11, "INEL>0");
     hEvent->SetMinimum(0.1);
@@ -349,66 +351,6 @@ struct PhianalysisTHnSparse {
     registry.add("QA/PID/hTOFBetaP", "TOF #beta vs p of charged particles", kTH2F, {pQAaxis, betaQAaxis});
     registry.add("QA/PID/hTOFBetaPK", "TOF #beta vs p of K^{+} and K^{-}", kTH2F, {pQAaxis, betaQAaxis});
 
-    // ------------------------- MC QA -------------------------
-    if (static_cast<bool>(produce.produceMC)) {
-      // Rec
-      registry.add("QAMC/Rec/hSelection", "MC Rec True Event statistics", kTH1F, {{2, 0.0f, 2.0f}});
-      auto hMCEventTruth = registry.get<TH1>(HIST("QAMC/Rec/hSelection"));
-      hMCEventTruth->GetXaxis()->SetBinLabel(1, "Full MC Rec event statistics");
-      hMCEventTruth->GetXaxis()->SetBinLabel(2, "MC Rec events passing event selection");
-      hMCEventTruth->SetMinimum(0.1);
-
-      // Gen
-      registry.add("QAMC/Gen/hSelection", "MC Gen Event statistics", kTH1F, {{3, 0.0f, 3.0f}});
-      auto hMCEventGen = registry.get<TH1>(HIST("QAMC/Gen/hSelection"));
-      hMCEventGen->GetXaxis()->SetBinLabel(1, "Generated collisions");
-      hMCEventGen->GetXaxis()->SetBinLabel(2, "Generated collisions with at least one reconstructed collision");
-      hMCEventGen->GetXaxis()->SetBinLabel(3, "Generated collisions passing event selection");
-      hMCEventGen->SetMinimum(0.1);
-
-      // Factors
-      registry.add("QAMC/Factors/hGenEvents", "Generated events", HistType::kTH2F, {nchQAAxis, {4, 0, 4}});
-      auto hGenEvents = registry.get<TH2>(HIST("QAMC/Factors/hGenEvents"));
-      hGenEvents->GetYaxis()->SetBinLabel(1, "All generated events");
-      hGenEvents->GetYaxis()->SetBinLabel(2, "All reconstructed events");
-      hGenEvents->GetYaxis()->SetBinLabel(3, "Generated events with at least one reconstructed event");
-      hGenEvents->GetYaxis()->SetBinLabel(4, "Generated events passing event selection");
-
-      registry.add("QAMC/Factors/hRecEvents", "Reconstructed events", HistType::kTH2F, {centQAAxis, {2, 0, 2}});
-      auto hRecEvents = registry.get<TH2>(HIST("QAMC/Factors/hRecEvents"));
-      hRecEvents->GetYaxis()->SetBinLabel(1, "All reconstructed events");
-      hRecEvents->GetYaxis()->SetBinLabel(2, "Passing event selection");
-
-      registry.add("QAMC/Factors/hGenALORESelEvents", "Centrality vs. Multiplicity of Generated Events with at least one reconstructed event passing event selection", kTH2F, {centQAAxis, nchQAAxis});
-      registry.add("QAMC/Factors/hGenEventsCentNch", "Event centrality vs MC multiplicity", kTH2F, {centQAAxis, nchQAAxis});
-      registry.add("QAMC/Factors/hNrecInGen", "Number of collisions in MC", kTH1F, {{10, -0.5, 9.5}});
-
-      registry.add("QAMC/Factors/hGenPhi", "Generated #Phi", kTH3D, {nchQAAxis, centQAAxis, ptAxis});
-      registry.add("QAMC/Factors/hGenALOREPhi", "Generated #Phi in collisions with at least one reconstructed collision", kTH3F, {nchQAAxis, centQAAxis, ptAxis});
-      registry.add("QAMC/Factors/hRecPhi", "Reconstructed #Phi", kTH2F, {centQAAxis, ptAxis});
-
-      // Resolution
-      registry.add("QAMC/Resolution/h2ResolutionVz", "Resolution of collision V_{z}", kTH2F, {vzaxis, axisResolutionVz});
-      auto hResVz = registry.get<TH2>(HIST("QAMC/Resolution/h2ResolutionVz"));
-      hResVz->GetXaxis()->SetTitle("V_{z}^{rec} (cm)");
-      hResVz->GetYaxis()->SetTitle("#DeltaV_{z} = V_{z}^{rec} - V_{z}^{gen} (cm)");
-
-      registry.add("QAMC/Resolution/h2ResolutionPt", "Resolution of charged particles p_{T}", kTH2F, {ptQAAxis, axisResolutionPt});
-      auto hResPt = registry.get<TH2>(HIST("QAMC/Resolution/h2ResolutionPt"));
-      hResPt->GetXaxis()->SetTitle("p_{T}^{rec} (GeV/c)");
-      hResPt->GetYaxis()->SetTitle("#Deltap_{T} = p_{T}^{rec} - p_{T}^{gen} (GeV/c)");
-
-      registry.add("QAMC/Resolution/h2ResolutionPtPhi", "p_{T} resolution vs p_{T}^{rec}", kTH2F, {ptQAAxis, axisResolutionPtPhi});
-      auto hResPtPhi = registry.get<TH2>(HIST("QAMC/Resolution/h2ResolutionPtPhi"));
-      hResPtPhi->GetXaxis()->SetTitle("p_{T}^{rec} (GeV/c)");
-      hResPtPhi->GetYaxis()->SetTitle("#Deltap_{T} = p_{T}^{rec} - p_{T}^{gen} (GeV/c)");
-
-      registry.add("QAMC/Resolution/h2MassResolution", "Mass resolution vs p_{T}^{rec}", kTH2F, {ptQAAxis, axisResolutionMass});
-      auto hResMass = registry.get<TH2>(HIST("QAMC/Resolution/h2MassResolution"));
-      hResMass->GetXaxis()->SetTitle("p_{T}^{rec} (GeV/c)");
-      hResMass->GetYaxis()->SetTitle("#Deltam = m^{gen}_{KK} - m^{rec}_{KK} (GeV/c^{2})");
-    }
-
     // ----------------------- Phi candidate QA -----------------------
     registry.add("QA/Phi/hRapidity", "Rapidity distribution of #Phi candidates", kTH3F, {ptQAAxis, multQAAxis, rapidityQAaxis});
     registry.add("QA/Phi/hEta", "Pseudorapidity distribution of #Phi candidates", kTH3F, {ptQAAxis, multQAAxis, etaQAaxis});
@@ -452,6 +394,124 @@ struct PhianalysisTHnSparse {
 
       registry.add("QA/Mixing/hdPhideta", "Mixing background: Azimuthal distribution (#Delta#phi) vs #eta", kTH2F, {dEtaQAaxis, dPhiQAaxis});
     }
+
+    // ------------------------- MC QA -------------------------
+    if (static_cast<bool>(produce.produceMC)) {
+      // Rec
+      registry.add("QAMC/Rec/hSelection", "MC Rec True Event statistics", kTH1F, {{3, 0.0f, 3.0f}});
+      auto hMCEventTruth = registry.get<TH1>(HIST("QAMC/Rec/hSelection"));
+      hMCEventTruth->GetXaxis()->SetBinLabel(1, "all Rec"); // All reconstructed events
+      hMCEventTruth->GetXaxis()->SetBinLabel(2, "INEL");    // All reconstructed events passing event selection cuts
+      hMCEventTruth->GetXaxis()->SetBinLabel(3, "INEL>0");  // All reconstructed events passing event selection cuts and INEL>0 cut
+      hMCEventTruth->SetMinimum(0.1);
+
+      // Gen
+      registry.add("QAMC/Gen/hSelection", "MC Gen Event statistics", kTH1F, {{4, 0.0f, 4.0f}});
+      auto hMCEventGen = registry.get<TH1>(HIST("QAMC/Gen/hSelection"));
+      hMCEventGen->GetXaxis()->SetBinLabel(1, "all");    // All generated events
+      hMCEventGen->GetXaxis()->SetBinLabel(2, "ALORE");  // All generated events with at least one reconstructed event
+      hMCEventGen->GetXaxis()->SetBinLabel(3, "INEL");   // All generated events passing event selection cuts
+      hMCEventGen->GetXaxis()->SetBinLabel(4, "INEL>0"); // All generated events passing event selection cuts and INEL>0 cut
+      hMCEventGen->SetMinimum(0.1);
+
+      // Factors
+      registry.add("QAMC/Factors/hGenEvents", "Generated events", HistType::kTH2F, {nchQAAxis, {5, 0, 5}});
+      auto hGenEvents = registry.get<TH2>(HIST("QAMC/Factors/hGenEvents"));
+      hGenEvents->GetYaxis()->SetBinLabel(1, "all Gen");
+      hGenEvents->GetYaxis()->SetBinLabel(2, "all Rec");
+      hGenEvents->GetYaxis()->SetBinLabel(3, "ALORE");
+      hGenEvents->GetYaxis()->SetBinLabel(4, "INEL");
+      hGenEvents->GetYaxis()->SetBinLabel(5, "INEL>0");
+
+      registry.add("QAMC/Factors/hRecEvents", "Reconstructed events", HistType::kTH2F, {centQAAxis, {3, 0, 3}});
+      auto hRecEvents = registry.get<TH2>(HIST("QAMC/Factors/hRecEvents"));
+      hRecEvents->GetYaxis()->SetBinLabel(1, "all Rec");
+      hRecEvents->GetYaxis()->SetBinLabel(2, "INEL");
+      hRecEvents->GetYaxis()->SetBinLabel(3, "INEL>0");
+
+      registry.add("QAMC/Factors/hGenALORESelEvents", "Centrality vs. Multiplicity of Generated Events with at least one reconstructed event passing event selection", kTH2F, {centQAAxis, nchQAAxis});
+      registry.add("QAMC/Factors/hGenALORESelEventsInelGt0", "Centrality vs. Multiplicity of Generated Events with at least one reconstructed event passing event selection and INEL>0 cut", kTH2F, {centQAAxis, nchQAAxis});
+      registry.add("QAMC/Factors/hGenEventsCentNch", "Event centrality vs MC multiplicity", kTH2F, {centQAAxis, nchQAAxis});
+      registry.add("QAMC/Factors/hNrecInGen", "Number of collisions in MC", kTH1F, {{4, -0.5, 3.5}});
+
+      registry.add("QAMC/Factors/hGenPhi", "Generated #Phi", kTH3D, {nchQAAxis, centQAAxis, ptAxis});
+      registry.add("QAMC/Factors/hGenALOREPhi", "Generated #Phi in collisions with at least one reconstructed collision", kTH3F, {nchQAAxis, centQAAxis, ptAxis});
+      registry.add("QAMC/Factors/hGenALOREPhiInelGt0", "Generated #Phi in collisions with at least one reconstructed collision passing INEL>0 cut", kTH3F, {nchQAAxis, centQAAxis, ptAxis});
+      registry.add("QAMC/Factors/hRecPhi", "Reconstructed #Phi", kTH2F, {centQAAxis, ptAxis});
+      registry.add("QAMC/Factors/hRecPhiINELgt0", "Reconstructed #Phi in INEL>0 events", kTH2F, {centQAAxis, ptAxis});
+
+      // ----------------------- MC Corrections -----------------------
+
+      registry.add("QAMC/Gen/hNEvents", "Number of MC Gen Events", kTH1F, {{6, 0.0f, 6.0f}});
+      auto hNEventsGen = registry.get<TH1>(HIST("QAMC/Gen/hNEvents"));
+      hNEventsGen->GetXaxis()->SetBinLabel(1, "all");          // All generated events
+      hNEventsGen->GetXaxis()->SetBinLabel(2, "V_z cut");      // Generated events passing Vz cut
+      hNEventsGen->GetXaxis()->SetBinLabel(3, "INEL");         // Generated events passing INEL cut
+      hNEventsGen->GetXaxis()->SetBinLabel(4, "INEL>0");       // Passing INELgt0 cut --> EL numerator for INEL>0
+      hNEventsGen->GetXaxis()->SetBinLabel(5, "ALORE INEL");   // Passing ALORE INEL cut
+      hNEventsGen->GetXaxis()->SetBinLabel(6, "ALORE INEL>0"); // Passing ALORE INEL>0 cut
+      hNEventsGen->SetMinimum(0.1);
+
+      registry.add("QAMC/Gen/hNEventsCent", "Generated events", HistType::kTH2F, {centQAAxis, {6, 0, 6}});
+      auto hNEventsGenCent = registry.get<TH2>(HIST("QAMC/Gen/hNEventsCent"));
+      hNEventsGenCent->GetYaxis()->SetBinLabel(1, "all");
+      hNEventsGenCent->GetYaxis()->SetBinLabel(2, "V_z cut");
+      hNEventsGenCent->GetYaxis()->SetBinLabel(3, "INEL");
+      hNEventsGenCent->GetYaxis()->SetBinLabel(4, "INEL>0");
+      hNEventsGenCent->GetYaxis()->SetBinLabel(5, "ALORE INEL");
+      hNEventsGenCent->GetYaxis()->SetBinLabel(6, "ALORE INEL>0");
+
+      registry.add("QAMC/Rec/hNEvents", "Number of MC Rec Events", kTH1F, {{3, 0.0f, 3.0f}});
+      auto hNEventsRec = registry.get<TH1>(HIST("QAMC/Rec/hNEvents"));
+      hNEventsRec->GetXaxis()->SetBinLabel(1, "all");    // All reconstructed events from generated events passing Vz cut
+      hNEventsRec->GetXaxis()->SetBinLabel(2, "INEL");   // Reconstructed events passing event selection
+      hNEventsRec->GetXaxis()->SetBinLabel(3, "INEL>0"); // Reconstructed events passing INEL>0 cut
+
+      registry.add("QAMC/Rec/hNEventsCent", "Reconstructed events", HistType::kTH2F, {centQAAxis, {3, 0, 3}});
+      auto hNEventsRecCent = registry.get<TH2>(HIST("QAMC/Rec/hNEventsCent"));
+      hNEventsRecCent->GetYaxis()->SetBinLabel(1, "all");
+      hNEventsRecCent->GetYaxis()->SetBinLabel(2, "INEL");
+      hNEventsRecCent->GetYaxis()->SetBinLabel(3, "INEL>0");
+
+      registry.add("QAMC/Gen/hNPhiPt", "Generated #Phi", kTH2D, {ptAxis, {6, 0, 6}});
+      auto hNPhiGenPt = registry.get<TH2>(HIST("QAMC/Gen/hNPhiPt"));
+      hNPhiGenPt->GetYaxis()->SetBinLabel(1, "all INEL");        // All generated #Phi in Gen Events passing Vz cut INEL
+      hNPhiGenPt->GetYaxis()->SetBinLabel(2, "all INEL>0");      // All generated #Phi in Gen Events passing Vz cut INEL>0
+      hNPhiGenPt->GetYaxis()->SetBinLabel(3, "ALORE INEL");      // All generated #Phi in Gen Events with ALORE passing Vz cut INEL
+      hNPhiGenPt->GetYaxis()->SetBinLabel(4, "ALORE INEL>0");    // All generated #Phi in Gen Events with ALORE passing Vz cut INEL>0
+      hNPhiGenPt->GetYaxis()->SetBinLabel(5, "Rec True INEL");   // All reconstructed #Phi in Rec Events passing Vz cut INEL
+      hNPhiGenPt->GetYaxis()->SetBinLabel(6, "Rec True INEL>0"); // All reconstructed #Phi in Rec Events passing Vz cut INEL>0
+
+      registry.add("QAMC/Gen/hNPhiPtCent", "Generated #Phi", kTH3D, {ptAxis, centQAAxis, {6, 0, 6}});
+      auto hNPhiGenPtCent = registry.get<TH3>(HIST("QAMC/Gen/hNPhiPtCent"));
+      hNPhiGenPtCent->GetZaxis()->SetBinLabel(1, "all INEL");
+      hNPhiGenPtCent->GetZaxis()->SetBinLabel(2, "all INEL>0");
+      hNPhiGenPtCent->GetZaxis()->SetBinLabel(3, "ALORE INEL");
+      hNPhiGenPtCent->GetZaxis()->SetBinLabel(4, "ALORE INEL>0");
+      hNPhiGenPtCent->GetZaxis()->SetBinLabel(5, "Rec True INEL");
+      hNPhiGenPtCent->GetZaxis()->SetBinLabel(6, "Rec True INEL>0");
+
+      // Resolution
+      registry.add("QAMC/Resolution/h2ResolutionVz", "Resolution of collision V_{z}", kTH2F, {vzaxis, axisResolutionVz});
+      auto hResVz = registry.get<TH2>(HIST("QAMC/Resolution/h2ResolutionVz"));
+      hResVz->GetXaxis()->SetTitle("V_{z}^{rec} (cm)");
+      hResVz->GetYaxis()->SetTitle("#DeltaV_{z} = V_{z}^{rec} - V_{z}^{gen} (cm)");
+
+      registry.add("QAMC/Resolution/h2ResolutionPt", "Resolution of charged particles p_{T}", kTH2F, {ptQAAxis, axisResolutionPt});
+      auto hResPt = registry.get<TH2>(HIST("QAMC/Resolution/h2ResolutionPt"));
+      hResPt->GetXaxis()->SetTitle("p_{T}^{rec} (GeV/c)");
+      hResPt->GetYaxis()->SetTitle("#Deltap_{T} = p_{T}^{rec} - p_{T}^{gen} (GeV/c)");
+
+      registry.add("QAMC/Resolution/h2ResolutionPtPhi", "p_{T} resolution vs p_{T}^{rec}", kTH2F, {ptQAAxis, axisResolutionPtPhi});
+      auto hResPtPhi = registry.get<TH2>(HIST("QAMC/Resolution/h2ResolutionPtPhi"));
+      hResPtPhi->GetXaxis()->SetTitle("p_{T}^{rec} (GeV/c)");
+      hResPtPhi->GetYaxis()->SetTitle("#Deltap_{T} = p_{T}^{rec} - p_{T}^{gen} (GeV/c)");
+
+      registry.add("QAMC/Resolution/h2MassResolution", "Mass resolution vs p_{T}^{rec}", kTH2F, {ptQAAxis, axisResolutionMass});
+      auto hResMass = registry.get<TH2>(HIST("QAMC/Resolution/h2MassResolution"));
+      hResMass->GetXaxis()->SetTitle("p_{T}^{rec} (GeV/c)");
+      hResMass->GetYaxis()->SetTitle("#Deltam = m^{gen}_{KK} - m^{rec}_{KK} (GeV/c^{2})");
+    }
   }
   template <typename T>
   bool selectedEvent(const T& collision)
@@ -460,74 +520,64 @@ struct PhianalysisTHnSparse {
       registry.fill(HIST("QA/Event/hSelection"), 0.5); // all events
     }
 
+    if (std::abs(collision.posZ()) > static_cast<float>(eventCuts.vzCut)) {
+      return false;
+    }
+    if (dataQA) {
+      registry.fill(HIST("QA/Event/hSelection"), 1.5); // events passing V_{z} cut
+    }
+
     if (static_cast<bool>(eventCuts.isTriggerTVX) && !collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
       return false;
     }
     if (dataQA) {
-      registry.fill(HIST("QA/Event/hSelection"), 1.5); // events passing trigger TVX cut
+      registry.fill(HIST("QA/Event/hSelection"), 2.5); // events passing trigger TVX cut
     }
 
     if (static_cast<bool>(eventCuts.noTimeFrameBorder) && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       return false;
     }
     if (dataQA) {
-      registry.fill(HIST("QA/Event/hSelection"), 2.5); // events passing no time frame border cut
+      registry.fill(HIST("QA/Event/hSelection"), 3.5); // events passing no time frame border cut
     }
 
     if (static_cast<bool>(eventCuts.noITSROFrameBorder) && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       return false;
     }
     if (dataQA) {
-      registry.fill(HIST("QA/Event/hSelection"), 3.5); // events passing no ITS RO frame border cut
+      registry.fill(HIST("QA/Event/hSelection"), 4.5); // events passing no ITS RO frame border cut
     }
 
     if (static_cast<bool>(eventCuts.sel8) && !collision.sel8()) {
       return false;
     }
     if (dataQA) {
-      registry.fill(HIST("QA/Event/hSelection"), 4.5); // events passing sel8 cut (contains all the previous cuts)
+      registry.fill(HIST("QA/Event/hSelection"), 5.5); // events passing sel8 cut (contains all the previous cuts)
     }
 
     if (static_cast<bool>(eventCuts.isVertexITSTPC) && !collision.selection_bit(aod::evsel::kIsVertexITSTPC)) {
       return false;
     }
     if (dataQA) {
-      registry.fill(HIST("QA/Event/hSelection"), 5.5); // events passing IsVertexITSTPC cut
+      registry.fill(HIST("QA/Event/hSelection"), 6.5); // events passing IsVertexITSTPC cut
     }
 
     if (static_cast<bool>(eventCuts.noSameBunchPileup) && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
     if (dataQA) {
-      registry.fill(HIST("QA/Event/hSelection"), 6.5); // events passing no same bunch pileup cut
+      registry.fill(HIST("QA/Event/hSelection"), 7.5); // events passing no same bunch pileup cut
     }
 
     if (static_cast<bool>(eventCuts.isGoodZvtxFT0vsPV) && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
     }
     if (dataQA) {
-      registry.fill(HIST("QA/Event/hSelection"), 7.5); // events passing IsGoodZvtxFT0vsPV cut
-    }
-
-    if (std::abs(collision.posZ()) > static_cast<float>(eventCuts.vzCut)) {
-      return false;
-    }
-    if (dataQA) {
-      registry.fill(HIST("QA/Event/hSelection"), 8.5); // events passing V_{z} cut
+      registry.fill(HIST("QA/Event/hSelection"), 8.5); // events passing IsGoodZvtxFT0vsPV cut
     }
 
     if (dataQA) {
       registry.fill(HIST("QA/Event/hSelection"), 9.5); // INEL
-    }
-
-    if (static_cast<bool>(eventCuts.inelGt0) && !collision.isInelGt0()) {
-      return false;
-    }
-    if (dataQA) {
-      registry.fill(HIST("QA/Event/hSelection"), 10.5); // events passing INEL>0 cut
-      registry.fill(HIST("QA/Event/hVtxZ"), collision.posZ());
-      registry.fill(HIST("QA/Event/hMult"), getMultiplicity(collision));
-      registry.fill(HIST("QA/Event/hCent"), getCentrality(collision));
     }
 
     return true;
@@ -692,6 +742,13 @@ struct PhianalysisTHnSparse {
     if (!selected) {
       return;
     }
+    if (static_cast<bool>(eventCuts.inelGt0) && !collision.isInelGt0()) {
+      return;
+    }
+    registry.fill(HIST("QA/Event/hSelection"), 10.5); // events passing INEL>0 cut
+    registry.fill(HIST("QA/Event/hVtxZ"), collision.posZ());
+    registry.fill(HIST("QA/Event/hMult"), getMultiplicity(collision));
+    registry.fill(HIST("QA/Event/hCent"), getCentrality(collision));
 
     double centrality = getCentrality(collision);
 
@@ -755,6 +812,10 @@ struct PhianalysisTHnSparse {
     if (!selectedEvent(collision)) {
       return;
     }
+    bool inelGt0 = false;
+    if (collision.isInelGt0()) {
+      inelGt0 = true;
+    }
 
     for (const auto& [track1, track2] : combinations(o2::soa::CombinationsFullIndexPolicy(posDaughters, negDaughters))) {
 
@@ -789,6 +850,9 @@ struct PhianalysisTHnSparse {
                                 0,
                                 0);
       rsnOutput->fillUnlikepm(pointPair);
+      if (inelGt0 && static_cast<bool>(eventCuts.inelGt0)) {
+        rsnOutput->fillUnlikepmInelgt0(pointPair);
+      }
 
       if (static_cast<bool>(produce.produceRotational)) {
 
@@ -1000,7 +1064,7 @@ struct PhianalysisTHnSparse {
   }
   PROCESS_SWITCH(PhianalysisTHnSparse, processData, "Process Event for Data", true);
 
-  void processTrue(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
+  void processTrue(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const& /*mcParticles*/, soa::Join<aod::McCollisions, aod::McCentFT0Ms> const& /*mcCollisions*/)
   {
     if (!static_cast<bool>(produce.produceMC)) {
       return;
@@ -1012,9 +1076,17 @@ struct PhianalysisTHnSparse {
     if (!selectedEvent(collision)) {
       return;
     }
+    bool isINELgt0 = false;
+    if (collision.isInelGt0()) {
+      isINELgt0 = true;
+    }
 
     registry.fill(HIST("QAMC/Rec/hSelection"), 1.5);
     registry.fill(HIST("QAMC/Factors/hRecEvents"), getCentrality(collision), 1.5);
+    if (isINELgt0) {
+      registry.fill(HIST("QAMC/Rec/hSelection"), 2.5);
+      registry.fill(HIST("QAMC/Factors/hRecEvents"), getCentrality(collision), 2.5);
+    }
 
     auto posDaughtersMC = positiveMC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto negDaughtersMC = negativeMC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -1023,7 +1095,8 @@ struct PhianalysisTHnSparse {
       return;
     }
 
-    auto mcCollision = collision.mcCollision();
+    const auto& mcCollision = collision.mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>();
+
     registry.fill(HIST("QAMC/Resolution/h2ResolutionVz"), collision.posZ(), (collision.posZ() - mcCollision.posZ()));
 
     for (const auto& track : tracks) {
@@ -1035,17 +1108,11 @@ struct PhianalysisTHnSparse {
 
     for (const auto& [track1, track2] : combinations(o2::soa::CombinationsFullIndexPolicy(posDaughtersMC, negDaughtersMC))) {
 
-      if (!track1.has_mcParticle()) {
-        continue;
-      }
-      if (!track2.has_mcParticle()) {
+      if (!track1.has_mcParticle() || !track2.has_mcParticle()) {
         continue;
       }
 
-      if (!selectedTrack(track1, true)) {
-        continue;
-      }
-      if (!selectedTrack(track2, false)) {
+      if (!selectedTrack(track1, true) || !selectedTrack(track2, false)) {
         continue;
       }
 
@@ -1105,6 +1172,9 @@ struct PhianalysisTHnSparse {
           registry.fill(HIST("QAMC/Resolution/h2MassResolution"), mother.Pt(), (motherGen.M() - mother.M()));
 
           rsnOutput->fillUnlikeTrueRec(pointPair);
+          if (isINELgt0 && static_cast<bool>(eventCuts.inelGt0)) {
+            rsnOutput->fillUnlikeTrueRecInelgt0(pointPair);
+          }
 
           pointPair = fillPointPair(motherGen.M(),
                                     motherGen.Pt(),
@@ -1120,8 +1190,15 @@ struct PhianalysisTHnSparse {
                                     0);
 
           rsnOutput->fillUnlikeTrueGen(pointPair);
-
           registry.fill(HIST("QAMC/Factors/hRecPhi"), getCentrality(collision), motherGen.Pt());
+          registry.fill(HIST("QAMC/Gen/hNPhiPt"), mothertrack1.pt(), 4.5);
+          registry.fill(HIST("QAMC/Gen/hNPhiPtCent"), mothertrack1.pt(), mcCollision.centFT0M(), 4.5);
+          if (isINELgt0 && static_cast<bool>(eventCuts.inelGt0)) {
+            rsnOutput->fillUnlikeTrueGenInelgt0(pointPair);
+            registry.fill(HIST("QAMC/Factors/hRecPhiINELgt0"), getCentrality(collision), motherGen.Pt());
+            registry.fill(HIST("QAMC/Gen/hNPhiPt"), mothertrack1.pt(), 5.5);
+            registry.fill(HIST("QAMC/Gen/hNPhiPtCent"), mothertrack1.pt(), mcCollision.centFT0M(), 5.5);
+          }
 
           n++;
         }
@@ -1149,11 +1226,16 @@ struct PhianalysisTHnSparse {
     bool hasSelectedCollision = false;
     float centrality = 100.5f;
     float multiplicity = 0.f;
+    bool isInelGt0 = false;
 
     for (const auto& collision : collisions) {
       registry.fill(HIST("QAMC/Factors/hGenEvents"), mcCollision.multMCNParticlesEta05(), 1.5);
       if (!selectedEvent(collision)) {
         continue;
+      }
+
+      if (collision.isInelGt0()) {
+        isInelGt0 = true;
       }
 
       if (collision.numContrib() > nContributors) {
@@ -1205,10 +1287,14 @@ struct PhianalysisTHnSparse {
     if (!hasSelectedCollision) {
       return;
     }
-
     registry.fill(HIST("QAMC/Gen/hSelection"), 2.5);
     registry.fill(HIST("QAMC/Factors/hGenEvents"), mcCollision.multMCNParticlesEta05(), 3.5);
     registry.fill(HIST("QAMC/Factors/hGenALORESelEvents"), centrality, mcCollision.multMCNParticlesEta05());
+    if (isInelGt0) {
+      registry.fill(HIST("QAMC/Gen/hSelection"), 3.5);
+      registry.fill(HIST("QAMC/Factors/hGenEvents"), mcCollision.multMCNParticlesEta05(), 4.5);
+      registry.fill(HIST("QAMC/Factors/hGenALORESelEventsInelGt0"), centrality, mcCollision.multMCNParticlesEta05());
+    }
 
     // Generated Phi mesons in selected collisions
     for (const auto& mcParticle : mcParticles) {
@@ -1255,12 +1341,14 @@ struct PhianalysisTHnSparse {
                                   0);
 
         rsnOutput->fillUnlikeGen(pointPair);
-
         registry.fill(HIST("QAMC/Factors/hGenALOREPhi"), mcCollision.multMCNParticlesEta05(), centrality, mother.Pt());
+        if (isInelGt0) {
+          rsnOutput->fillUnlikeGenInelgt0(pointPair);
+          registry.fill(HIST("QAMC/Factors/hGenALOREPhiInelGt0"), mcCollision.multMCNParticlesEta05(), centrality, mother.Pt());
+        }
       }
     }
   }
-
   PROCESS_SWITCH(PhianalysisTHnSparse, processGen, "Process MC Generated.", false);
 
   void processMixed(EventCandidates const& collisions, TrackCandidates const& tracks)
@@ -1280,6 +1368,9 @@ struct PhianalysisTHnSparse {
     if (mixingType == rsn::MixingType::ce) {
       for (const auto& [c1, tracks1, c2, tracks2] : pairVzCe) {
         if (!selectedEvent(c1) || !selectedEvent(c2)) {
+          continue;
+        }
+        if (static_cast<bool>(eventCuts.inelGt0) && (!c1.isInelGt0() || !c2.isInelGt0())) {
           continue;
         }
 
@@ -1360,6 +1451,9 @@ struct PhianalysisTHnSparse {
         if (!selectedEvent(c1) || !selectedEvent(c2)) {
           continue;
         }
+        if (static_cast<bool>(eventCuts.inelGt0) && (!c1.isInelGt0() || !c2.isInelGt0())) {
+          continue;
+        }
 
         auto posDaughtersc1 = positive->sliceByCached(aod::track::collisionId, c1.globalIndex(), cache);
         auto posDaughtersc2 = positive->sliceByCached(aod::track::collisionId, c2.globalIndex(), cache);
@@ -1434,7 +1528,145 @@ struct PhianalysisTHnSparse {
     }
   }
   PROCESS_SWITCH(PhianalysisTHnSparse, processMixed, "Process Mixing Event.", false);
+
+  void processCorr(soa::Join<aod::McCollisions, aod::McCentFT0Ms>::iterator const& mcCollision, aod::McParticles const& mcParticles,
+                   soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::PVMults>> const& collisions,
+                   soa::Join<aod::BCsWithTimestamps, aod::BcSels> const&)
+  {
+    if (!static_cast<bool>(produce.produceMC)) {
+      return;
+    }
+
+    registry.fill(HIST("QAMC/Gen/hNEvents"), 0.5);
+    registry.fill(HIST("QAMC/Gen/hNEventsCent"), mcCollision.centFT0M(), 0.5);
+
+    if (std::abs(mcCollision.posZ()) > static_cast<float>(eventCuts.vzCut)) {
+      return;
+    }
+    registry.fill(HIST("QAMC/Gen/hNEvents"), 1.5);
+    registry.fill(HIST("QAMC/Gen/hNEventsCent"), mcCollision.centFT0M(), 1.5);
+
+    registry.fill(HIST("QAMC/Gen/hNEvents"), 2.5);
+    registry.fill(HIST("QAMC/Gen/hNEventsCent"), mcCollision.centFT0M(), 2.5);
+
+    bool isINELgt0 = false;
+    if (pwglf::isINELgtNmc(mcParticles, 0, pdg)) {
+      isINELgt0 = true;
+      registry.fill(HIST("QAMC/Gen/hNEvents"), 3.5);
+      registry.fill(HIST("QAMC/Gen/hNEventsCent"), mcCollision.centFT0M(), 3.5); // Event Loss Denominator
+    }
+
+    for (const auto& mcParticle : mcParticles) {
+
+      if (std::abs(mcParticle.y()) > static_cast<float>(trackCuts.rapidity)) {
+        continue;
+      }
+
+      if (mcParticle.pdgCode() == motherPDG) {
+        auto daughters = mcParticle.daughters_as<aod::McParticles>();
+        if (daughters.size() != dauSize) {
+          continue;
+        }
+
+        auto daup = false;
+        auto daun = false;
+
+        for (const auto& dau : daughters) {
+          if (dau.pdgCode() == daughterPosPDG) {
+            daup = true;
+            d1 = ROOT::Math::PxPyPzMVector(dau.px(), dau.py(), dau.pz(), massPos);
+          } else if (dau.pdgCode() == -daughterNegPDG) {
+            daun = true;
+            d2 = ROOT::Math::PxPyPzMVector(dau.px(), dau.py(), dau.pz(), massNeg);
+          }
+        }
+        if (!daup || !daun) {
+          continue;
+        }
+        registry.fill(HIST("QAMC/Gen/hNPhiPt"), mcParticle.pt(), 0.5);
+        registry.fill(HIST("QAMC/Gen/hNPhiPtCent"), mcParticle.pt(), mcCollision.centFT0M(), 0.5);
+        if (isINELgt0) {
+          registry.fill(HIST("QAMC/Gen/hNPhiPt"), mcParticle.pt(), 1.5);
+          registry.fill(HIST("QAMC/Gen/hNPhiPtCent"), mcParticle.pt(), mcCollision.centFT0M(), 1.5); // Signal Loss Denominator
+        }
+      }
+    }
+
+    int nRecoInelColl = 0;
+    int nRecoInelGt0Coll = 0;
+    for (const auto& collision : collisions) {
+
+      registry.fill(HIST("QAMC/Rec/hNEvents"), 0.5);
+      registry.fill(HIST("QAMC/Rec/hNEventsCent"), mcCollision.centFT0M(), 0.5);
+
+      if (!selectedEvent(collision)) {
+        continue;
+      }
+
+      nRecoInelColl++;
+      registry.fill(HIST("QAMC/Rec/hNEvents"), 1.5);
+      registry.fill(HIST("QAMC/Rec/hNEventsCent"), mcCollision.centFT0M(), 1.5);
+
+      if (collision.isInelGt0()) {
+        nRecoInelGt0Coll++;
+        registry.fill(HIST("QAMC/Rec/hNEvents"), 2.5);
+        registry.fill(HIST("QAMC/Rec/hNEventsCent"), mcCollision.centFT0M(), 2.5);
+      }
+    }
+
+    if (nRecoInelColl < 1) { // At least one reconstructed event/collision
+      return;
+    }
+
+    registry.fill(HIST("QAMC/Gen/hNEvents"), 4.5);
+    registry.fill(HIST("QAMC/Gen/hNEventsCent"), mcCollision.centFT0M(), 4.5);
+
+    if (nRecoInelGt0Coll > 0) {
+      registry.fill(HIST("QAMC/Gen/hNEvents"), 5.5);
+      registry.fill(HIST("QAMC/Gen/hNEventsCent"), mcCollision.centFT0M(), 5.5); // Event Loss Numerator
+    }
+
+    for (const auto& mcParticle : mcParticles) {
+
+      if (std::abs(mcParticle.y()) > static_cast<float>(trackCuts.rapidity)) {
+        continue;
+      }
+
+      if (mcParticle.pdgCode() == motherPDG) {
+
+        auto daughters = mcParticle.daughters_as<aod::McParticles>();
+        if (daughters.size() != dauSize) {
+          continue;
+        }
+
+        auto daup = false;
+        auto daun = false;
+
+        for (const auto& dau : daughters) {
+          if (dau.pdgCode() == daughterPosPDG) {
+            daup = true;
+            d1 = ROOT::Math::PxPyPzMVector(dau.px(), dau.py(), dau.pz(), massPos);
+          } else if (dau.pdgCode() == -daughterNegPDG) {
+            daun = true;
+            d2 = ROOT::Math::PxPyPzMVector(dau.px(), dau.py(), dau.pz(), massNeg);
+          }
+        }
+        if (!daup || !daun) {
+          continue;
+        }
+
+        registry.fill(HIST("QAMC/Gen/hNPhiPt"), mcParticle.pt(), 2.5);
+        registry.fill(HIST("QAMC/Gen/hNPhiPtCent"), mcParticle.pt(), mcCollision.centFT0M(), 2.5);
+        if (nRecoInelGt0Coll > 0) {
+          registry.fill(HIST("QAMC/Gen/hNPhiPt"), mcParticle.pt(), 3.5);
+          registry.fill(HIST("QAMC/Gen/hNPhiPtCent"), mcParticle.pt(), mcCollision.centFT0M(), 3.5); // Signal Loss Numerator
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(PhianalysisTHnSparse, processCorr, "Process to calculate corrections.", false);
 };
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{

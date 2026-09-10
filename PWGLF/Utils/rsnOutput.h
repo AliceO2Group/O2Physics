@@ -45,11 +45,16 @@ enum class TrackType {
 enum class PairType {
   unlikepm,
   unlikemp,
+  unlikepmInelgt0,
+  unlikempInelgt0,
   likepp,
   likemm,
   unliketruerec,
+  unliketruerecInelgt0,
   unliketruegen,
+  unliketruegenInelgt0,
   unlikegen,
+  unlikegenInelgt0,
   mixingpm,
   mixingmp,
   rotationz,
@@ -111,7 +116,7 @@ class Output
  public:
   virtual ~Output() = default;
 
-  virtual void init(std::vector<std::string> const& sparseAxes, std::vector<o2::framework::AxisSpec> const& allAxes, std::vector<std::string> const& sysAxes, std::vector<o2::framework::AxisSpec> const& allAxes_sys, bool /*produceTrue*/, MixingType /*eventMixing*/, bool /*produceLikesign*/, bool /*produceRotational*/, o2::framework::HistogramRegistry* registry)
+  virtual void init(std::vector<std::string> const& sparseAxes, std::vector<o2::framework::AxisSpec> const& allAxes, std::vector<std::string> const& sysAxes, std::vector<o2::framework::AxisSpec> const& allAxes_sys, bool /*produceTrue*/, MixingType /*eventMixing*/, bool /*produceLikesign*/, bool /*produceRotational*/, bool /*produceInelgt0*/, o2::framework::HistogramRegistry* registry)
   {
     mHistogramRegistry = registry;
     if (mHistogramRegistry == nullptr) {
@@ -210,11 +215,16 @@ class Output
 
   virtual void fillUnlikepm(double* point) = 0;
   virtual void fillUnlikemp(double* point) = 0;
+  virtual void fillUnlikepmInelgt0(double* point) = 0;
+  virtual void fillUnlikempInelgt0(double* point) = 0;
   virtual void fillLikepp(double* point) = 0;
   virtual void fillLikemm(double* point) = 0;
   virtual void fillUnlikeTrueRec(double* point) = 0;
   virtual void fillUnlikeTrueGen(double* point) = 0;
   virtual void fillUnlikeGen(double* point) = 0;
+  virtual void fillUnlikeTrueRecInelgt0(double* point) = 0;
+  virtual void fillUnlikeTrueGenInelgt0(double* point) = 0;
+  virtual void fillUnlikeGenInelgt0(double* point) = 0;
   virtual void fillMixingpm(double* point) = 0;
   virtual void fillMixingmp(double* point) = 0;
   virtual void fillRotationZ(double* point) = 0;
@@ -273,11 +283,15 @@ class Output
 class OutputSparse : public Output
 {
  public:
-  void init(std::vector<std::string> const& sparseAxes, std::vector<o2::framework::AxisSpec> const& allAxes, std::vector<std::string> const& sysAxes, std::vector<o2::framework::AxisSpec> const& allAxes_sys, bool produceTrue, MixingType eventMixing, bool produceLikesign, bool produceRotational, o2::framework::HistogramRegistry* registry) override
+  void init(std::vector<std::string> const& sparseAxes, std::vector<o2::framework::AxisSpec> const& allAxes, std::vector<std::string> const& sysAxes, std::vector<o2::framework::AxisSpec> const& allAxes_sys, bool produceTrue, MixingType eventMixing, bool produceLikesign, bool produceRotational, bool produceInelgt0, o2::framework::HistogramRegistry* registry) override
   {
-    Output::init(sparseAxes, allAxes, sysAxes, allAxes_sys, produceTrue, eventMixing, produceLikesign, produceRotational, registry);
+    Output::init(sparseAxes, allAxes, sysAxes, allAxes_sys, produceTrue, eventMixing, produceLikesign, produceRotational, produceInelgt0, registry);
 
     mHistogramRegistry->add("unlikepm", "Unlike pm", *mPairHisto);
+    mHistogramRegistry->add("unlikemp", "Unlike mp", *mPairHisto);
+    if (produceInelgt0)
+      mHistogramRegistry->add("unlikepmInelgt0", "Unlike pm (INEL>0)", *mPairHisto);
+    mHistogramRegistry->add("unlikempInelgt0", "Unlike mp (INEL>0)", *mPairHisto);
     if (produceLikesign) {
       mHistogramRegistry->add("likepp", "Like PP", *mPairHisto);
       mHistogramRegistry->add("likemm", "Like MM", *mPairHisto);
@@ -285,7 +299,10 @@ class OutputSparse : public Output
     if (produceTrue) {
       mHistogramRegistry->add("unliketruerec", "Unlike True (Rec)", *mPairHisto);
       mHistogramRegistry->add("unliketruegen", "Unlike True (Gen)", *mPairHisto);
+      mHistogramRegistry->add("unliketruerecInelgt0", "Unlike True (Rec) (INEL>0)", *mPairHisto);
+      mHistogramRegistry->add("unliketruegenInelgt0", "Unlike True (Gen) (INEL>0)", *mPairHisto);
       mHistogramRegistry->add("unlikegen", "Unlike Gen", *mPairHisto);
+      mHistogramRegistry->add("unlikegenInelgt0", "Unlike Gen (INEL>0)", *mPairHisto);
     }
     if (eventMixing != MixingType::none) {
       mHistogramRegistry->add("mixingpm", "Event Mixing pm", *mPairHisto);
@@ -333,6 +350,21 @@ class OutputSparse : public Output
         break;
       case PairType::unliketruegen:
         fillUnlikeTrueGen(point);
+        break;
+      case PairType::unlikepmInelgt0:
+        fillUnlikepmInelgt0(point);
+        break;
+      case PairType::unlikempInelgt0:
+        fillUnlikempInelgt0(point);
+        break;
+      case PairType::unliketruerecInelgt0:
+        fillUnlikeTrueRecInelgt0(point);
+        break;
+      case PairType::unliketruegenInelgt0:
+        fillUnlikeTrueGenInelgt0(point);
+        break;
+      case PairType::unlikegenInelgt0:
+        fillUnlikeGenInelgt0(point);
         break;
       case PairType::mixingpm:
         fillMixingpm(point);
@@ -382,6 +414,27 @@ class OutputSparse : public Output
   {
     fillSparse(HIST("unlikegen"), point);
   }
+  void fillUnlikepmInelgt0(double* point) override
+  {
+    fillSparse(HIST("unlikepmInelgt0"), point);
+  }
+  void fillUnlikempInelgt0(double* point) override
+  {
+    fillSparse(HIST("unlikempInelgt0"), point);
+  }
+  void fillUnlikeTrueRecInelgt0(double* point) override
+  {
+    fillSparse(HIST("unliketruerecInelgt0"), point);
+  }
+  void fillUnlikeTrueGenInelgt0(double* point) override
+  {
+    fillSparse(HIST("unliketruegenInelgt0"), point);
+  }
+  void fillUnlikeGenInelgt0(double* point) override
+  {
+    fillSparse(HIST("unlikegenInelgt0"), point);
+  }
+
   void fillMixingpm(double* point) override
   {
     fillSparse(HIST("mixingpm"), point);
