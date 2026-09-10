@@ -33,6 +33,7 @@
 
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
@@ -40,11 +41,11 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
 
-#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
@@ -639,15 +640,15 @@ struct xi1530kaoncorrelation {
   template <typename TXiStar, typename TKaon>
   float getKstar(TXiStar const& xiStar, TKaon const& kaon) const
   {
-    const double m1 = static_cast<double>(xiStar.mass());
-    const double m2 = static_cast<double>(kKaonMass);
+    const auto m1 = static_cast<double>(xiStar.mass());
+    const auto m2 = static_cast<double>(kKaonMass);
 
-    const double p1x = static_cast<double>(xiStar.px());
-    const double p1y = static_cast<double>(xiStar.py());
-    const double p1z = static_cast<double>(xiStar.pz());
-    const double p2x = static_cast<double>(kaon.px());
-    const double p2y = static_cast<double>(kaon.py());
-    const double p2z = static_cast<double>(kaon.pz());
+    const auto p1x = static_cast<double>(xiStar.px());
+    const auto p1y = static_cast<double>(xiStar.py());
+    const auto p1z = static_cast<double>(xiStar.pz());
+    const auto p2x = static_cast<double>(kaon.px());
+    const auto p2y = static_cast<double>(kaon.py());
+    const auto p2z = static_cast<double>(kaon.pz());
 
     const double e1 = std::sqrt(p1x * p1x + p1y * p1y + p1z * p1z + m1 * m1);
     const double e2 = std::sqrt(p2x * p2x + p2y * p2y + p2z * p2z + m2 * m2);
@@ -691,9 +692,14 @@ struct xi1530kaoncorrelation {
 
     float sum = 0.f;
     int n = 0;
-    for (float radiusCm = cprRadiusMinCm.value;
-         radiusCm <= cprRadiusMaxCm.value + 0.5f * cprRadiusStepCm.value;
-         radiusCm += cprRadiusStepCm.value) {
+
+    const auto nRadiusSteps = static_cast<int>(
+      (cprRadiusMaxCm.value - cprRadiusMinCm.value) / cprRadiusStepCm.value + 0.5f);
+
+    for (int iRadius = 0; iRadius <= nRadiusSteps; ++iRadius) {
+      const auto radiusCm = cprRadiusMinCm.value +
+                            static_cast<float>(iRadius) * cprRadiusStepCm.value;
+
       const float arg = 0.3f * static_cast<float>(charge) * bz * radiusCm * 0.01f / (2.f * pt);
       if (std::abs(arg) < 1.f) {
         sum += phi - std::asin(arg);
@@ -755,7 +761,7 @@ struct xi1530kaoncorrelation {
     }
     histos.fill(HIST("hPairCounterSE"), 4.f);
 
-    const float channel = static_cast<float>(xiStar.channel());
+    const auto channel = static_cast<float>(xiStar.channel());
     const float mt = getPairMt(xiStar, kaon);
 
     // Getter spelling is fT0MPercentile(), exactly as declared in the data model.
@@ -797,7 +803,7 @@ struct xi1530kaoncorrelation {
     }
     histos.fill(HIST("hPairCounterME"), 3.f);
 
-    const float channel = static_cast<float>(xiStar.channel());
+    const auto channel = static_cast<float>(xiStar.channel());
     const float mt = getPairMt(xiStar, kaon);
 
     histos.fill(HIST("MEPairs"), kstar, xiStar.mass(), xiStar.pt(), collision1.fT0MPercentile(), channel);
