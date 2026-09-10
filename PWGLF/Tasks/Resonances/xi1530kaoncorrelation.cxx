@@ -1004,9 +1004,10 @@ struct xi1530kaoncorrelation {
   // Xi*(event A) is paired with K(event B) using z-vertex, FT0M percentile and
   // Bz mixing bins.  No cross-event shared-track cleaning is applied for now.
   // ---------------------------------------------------------------------------
-  void processMixedEvent(aod::RedXiStarKEvents& collisions,
-                         aod::XiStarCandidates& xiStars,
-                         aod::KaonCandidates& kaons)
+  void processMixedEvent(aod::RedXiStarKEvents const& collisions,
+                         aod::XiStarCandidates const& xiStars,
+                         aod::KaonCandidates const& kaons)
+
   {
     for (auto const& [collision1, collision2] : selfCombinations(mixingBinning, nEvtMixing, -1, collisions, collisions)) {
       if (collision1.globalIndex() == collision2.globalIndex()) {
