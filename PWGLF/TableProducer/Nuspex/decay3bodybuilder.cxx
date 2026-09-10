@@ -1342,7 +1342,7 @@ struct decay3bodyBuilder {
     auto yAxis = registry.get<TH2>(HIST("Mixing/hDecay3BodyRadiusPhi"))->GetYaxis();
 
     for (const auto& decay3body : decay3bodys) {
-      int bin_Radius, bin_Phi;
+      int bin_Radius{}, bin_Phi{};
       if (decay3bodyBuilderOpts.useKFParticle) {
         bin_Radius = xAxis->FindBin(decay3body.radiusKF());
         bin_Phi = yAxis->FindBin(decay3body.phiKF());
