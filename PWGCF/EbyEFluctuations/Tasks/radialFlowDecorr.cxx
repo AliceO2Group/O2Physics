@@ -277,6 +277,12 @@ struct RadialFlowDecorr {
 
   // --- bootstrap replica storage (base data fluc only) -------------------------
   struct BootstrapHists {
+    std::array<std::shared_ptr<TProfile>, KMaxBoot> amplFT0ACent{};
+    std::array<std::shared_ptr<TProfile>, KMaxBoot> amplFT0AMult{};
+    std::array<std::shared_ptr<TProfile>, KMaxBoot> amplFT0CCent{};
+    std::array<std::shared_ptr<TProfile>, KMaxBoot> amplFT0CMult{};
+    std::array<std::shared_ptr<TProfile2D>, KMaxBoot> multCent{};
+    std::array<std::shared_ptr<TProfile2D>, KMaxBoot> multMult{};
     std::array<std::shared_ptr<TProfile2D>, KMaxBoot> meanpTCent{};
     std::array<std::shared_ptr<TProfile2D>, KMaxBoot> meanpTMult{};
     std::array<std::shared_ptr<TProfile2D>, KMaxBoot> c2Cent{};
@@ -833,6 +839,12 @@ struct RadialFlowDecorr {
   void declareBootstrapHists()
   {
     for (int s = 0; s < nBoot; ++s) {
+      bs.multCent[s] = histos.add<TProfile2D>(Form("Bootstrap/Prof_Mult_Cent_etabin_sample%d", s), ";cent;#eta-bin", kTProfile2D, {{centAxis1Per}, {etaBinAxis}});
+      bs.multMult[s] = histos.add<TProfile2D>(Form("Bootstrap/Prof_Mult_Mult_etabin_sample%d", s), ";N_{PV};#eta-bin", kTProfile2D, {{nChAxis}, {etaBinAxis}});
+      bs.amplFT0ACent[s] = histos.add<TProfile>(Form("Bootstrap/Prof_AmplFT0A_Cent_sample%d", s), ";cent;AmplitudeA", kTProfile, {centAxis1Per});
+      bs.amplFT0AMult[s] = histos.add<TProfile>(Form("Bootstrap/Prof_AmplFT0A_Mult_sample%d", s), ";N_{PV};AmplitudeA", kTProfile, {nChAxis});
+      bs.amplFT0CCent[s] = histos.add<TProfile>(Form("Bootstrap/Prof_AmplFT0C_Cent_sample%d", s), ";cent;AmplitudeC", kTProfile, {centAxis1Per});
+      bs.amplFT0CMult[s] = histos.add<TProfile>(Form("Bootstrap/Prof_AmplFT0C_Mult_sample%d", s), ";N_{PV};AmplitudeC", kTProfile, {nChAxis});
       bs.meanpTCent[s] = histos.add<TProfile2D>(Form("Bootstrap/Prof_MeanpT_Cent_etabin_sample%d", s), ";cent;#eta-bin", kTProfile2D, {{centAxis1Per}, {etaBinAxis}});
       bs.meanpTMult[s] = histos.add<TProfile2D>(Form("Bootstrap/Prof_MeanpT_Mult_etabin_sample%d", s), ";N_{PV};#eta-bin", kTProfile2D, {{nChAxis}, {etaBinAxis}});
       bs.c2Cent[s] = histos.add<TProfile2D>(Form("Bootstrap/Prof_C2_Cent_etabin_sample%d", s), ";cent;#eta-bin", kTProfile2D, {{centAxis1Per}, {etaBinAxis}});
@@ -2207,6 +2219,32 @@ struct RadialFlowDecorr {
     std::array<double, KNEtaMax> mean{}, c2{}, c3{}, p1kBar{};
     std::array<double, KNEtaMax> meanMult{}, p1kBarMult{};
 
+    // --- Poisson bootstrap: one weight per sample per event ---
+    std::array<double, KMaxBoot> poisW{};
+    if (doBoot) {
+      for (int s = 0; s < nBoot; ++s) {
+        poisW[s] = rng.Poisson(1.0);
+      }
+    }
+    auto fillBS1D = [&](std::array<std::shared_ptr<TProfile>, KMaxBoot>& arr, double x, double val) {
+      if (!doBoot)
+        return;
+      for (int s = 0; s < nBoot; ++s)
+        arr[s]->Fill(x, val, poisW[s]);
+    };
+    auto fillBS2D = [&](std::array<std::shared_ptr<TProfile2D>, KMaxBoot>& arr, double x, double y, double val) {
+      if (!doBoot)
+        return;
+      for (int s = 0; s < nBoot; ++s)
+        arr[s]->Fill(x, y, val, poisW[s]);
+    };
+    auto fillBS3D = [&](std::array<std::shared_ptr<TProfile3D>, KMaxBoot>& arr, double x, double y, double z, double val) {
+      if (!doBoot)
+        return;
+      for (int s = 0; s < nBoot; ++s)
+        arr[s]->Fill(x, y, z, val, poisW[s]);
+    };
+
     float vz = coll.posZ();
 
     for (const auto& track : tracks) {
@@ -2258,6 +2296,11 @@ struct RadialFlowDecorr {
         amplFT0C += ft0.amplitudeC()[iCh];
       }
     }
+    fillBS1D(bs.amplFT0ACent, cent, amplFT0A);
+    fillBS1D(bs.amplFT0AMult, coll.multNTracksPV(), amplFT0A);
+    fillBS1D(bs.amplFT0CCent, cent, amplFT0C);
+    fillBS1D(bs.amplFT0CMult, coll.multNTracksPV(), amplFT0C);
+
     double p1kBarFt0A = amplFT0A - state.pmeanFT0AmultpvStep2->GetBinContent(state.pmeanFT0AmultpvStep2->GetXaxis()->FindBin(coll.multNTracksPV()));
     double p1kBarFt0C = amplFT0C - state.pmeanFT0CmultpvStep2->GetBinContent(state.pmeanFT0CmultpvStep2->GetXaxis()->FindBin(coll.multNTracksPV()));
 
@@ -2290,32 +2333,13 @@ struct RadialFlowDecorr {
       }
     }
 
-    // --- Poisson bootstrap: one weight per sample per event ---
-    std::array<double, KMaxBoot> poisW{};
-    if (doBoot) {
-      for (int s = 0; s < nBoot; ++s) {
-        poisW[s] = rng.Poisson(1.0);
-      }
-    }
-    auto fillBS2D = [&](std::array<std::shared_ptr<TProfile2D>, KMaxBoot>& arr, double x, double y, double val) {
-      if (!doBoot) {
-        return;
-      }
-      for (int s = 0; s < nBoot; ++s) {
-        arr[s]->Fill(x, y, val, poisW[s]);
-      }
-    };
-    auto fillBS3D = [&](std::array<std::shared_ptr<TProfile3D>, KMaxBoot>& arr, double x, double y, double z, double val) {
-      if (!doBoot) {
-        return;
-      }
-      for (int s = 0; s < nBoot; ++s) {
-        arr[s]->Fill(x, y, z, val, poisW[s]);
-      }
-    };
-
     // meanpT & C2 vs eta bin
     for (int ieta = 0; ieta < nEta; ++ieta) {
+      if (std::isfinite(meanMult[ieta])) {
+        fillBS2D(bs.multCent, cent, ieta, meanMult[ieta]);
+        fillBS2D(bs.multMult, coll.multNTracksPV(), ieta, meanMult[ieta]);
+      }
+
       if (std::isfinite(mean[ieta])) {
         histos.fill(HIST("Prof_MeanpT_Cent_etabin"), cent, ieta, mean[ieta]);
         histos.fill(HIST("Prof_MeanpT_Mult_etabin"), coll.multNTracksPV(), ieta, mean[ieta]);
