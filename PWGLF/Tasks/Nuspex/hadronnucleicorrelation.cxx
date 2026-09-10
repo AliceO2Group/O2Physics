@@ -1872,10 +1872,10 @@ struct HadronNucleiCorrelation {
 
       if (std::abs(particle.y()) < yRap) {
         switch (particle.pdgCode()) {
-          case o2::constants::physics::Pdg::kProton:
+          case PDG_t::kProton:
             registry.fill(HIST("Generated/hProtonsVsPt"), particle.pt());
             break;
-          case -o2::constants::physics::Pdg::kProton:
+          case -PDG_t::kProton:
             registry.fill(HIST("Generated/hAntiProtonsVsPt"), particle.pt());
             break;
           case o2::constants::physics::Pdg::kDeuteron:
