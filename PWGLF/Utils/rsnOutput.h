@@ -289,9 +289,10 @@ class OutputSparse : public Output
 
     mHistogramRegistry->add("unlikepm", "Unlike pm", *mPairHisto);
     mHistogramRegistry->add("unlikemp", "Unlike mp", *mPairHisto);
-    if (produceInelgt0)
+    if (produceInelgt0) {
       mHistogramRegistry->add("unlikepmInelgt0", "Unlike pm (INEL>0)", *mPairHisto);
-    mHistogramRegistry->add("unlikempInelgt0", "Unlike mp (INEL>0)", *mPairHisto);
+      mHistogramRegistry->add("unlikempInelgt0", "Unlike mp (INEL>0)", *mPairHisto);
+    }
     if (produceLikesign) {
       mHistogramRegistry->add("likepp", "Like PP", *mPairHisto);
       mHistogramRegistry->add("likemm", "Like MM", *mPairHisto);
