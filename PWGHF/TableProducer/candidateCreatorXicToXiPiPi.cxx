@@ -237,10 +237,25 @@ struct HfCandidateCreatorXicToXiPiPi {
   /// \param nSigTofPiFromLambda is the TOF n-sigma for the pion track from the Lambda decay with pion hypothesis
   /// \param nSigTpcPrFromLambda is the TPC n-sigma for the proton track from the Lambda decay with proton hypothesis
   /// \param nSigTofPrFromLambda is the TOF n-sigma for the proton track from the Lambda decay with proton hypothesis
+  /// \param hasTofBachelorPi is true if the Xi bachelor track has TOF information, otherwise false
+  /// \param hasTofPiFromLambda is true if the pion track from the Lambda decay has TOF information, otherwise false
+  /// \param hasTofPrFromLambda is true if the proton track from the Lambda decay has TOF information, otherwise false
+  /// \param nClsTpc is the array with the number of TPC clusters for each track
+  /// \param nCrossedRowsTpc is the array with the number of crossed rows in the TPC for each track
+  /// \param crossedRowsOverFindableClsTpc is the array with the ratio of crossed rows over findable clusters in the TPC for each track
   /// \return true if the candidate passes the software trigger selections, otherwise false
   template <typename TTrackParCov, typename Coll>
-  bool isSelectedXicSoftwareTriggers(std::array<float, 3> const& pVecCascade, std::array<TTrackParCov, 2> const& trackParBachelor, Coll const& collision, float nSigTpcBachelorPi, float nSigTofBachelorPi, float nSigTpcPiFromLambda, float nSigTofPiFromLambda, float nSigTpcPrFromLambda, float nSigTofPrFromLambda, bool hasTofBachelorPi, bool hasTofPiFromLambda, bool hasTofPrFromLambda)
+  bool isSelectedXicSoftwareTriggers(std::array<float, 3> const& pVecCascade, std::array<TTrackParCov, 2> const& trackParBachelor, Coll const& collision, float nSigTpcBachelorPi, float nSigTofBachelorPi, float nSigTpcPiFromLambda, float nSigTofPiFromLambda, float nSigTpcPrFromLambda, float nSigTofPrFromLambda, bool hasTofBachelorPi, bool hasTofPiFromLambda, bool hasTofPrFromLambda, std::array<int16_t, 3>& nClsTpc, std::array<int16_t, 3>& nCrossedRowsTpc, std::array<float, 3>& crossedRowsOverFindableClsTpc)
   {
+    constexpr int16_t numClsTpcMin = 70;
+    constexpr int16_t numCrossedRowsTpcMin = 70;
+    constexpr float crossedRowsOverFindableClsTpcMin = 0.8f;
+    for (int iTrack{0}; iTrack < 3; ++iTrack) {
+      if (nClsTpc[iTrack] < numClsTpcMin || nCrossedRowsTpc[iTrack] < numCrossedRowsTpcMin || crossedRowsOverFindableClsTpc[iTrack] < crossedRowsOverFindableClsTpcMin) {
+        return false;
+      }
+    }
+
     if (std::abs(nSigTpcBachelorPi) < softTrigCuts.maxNsigmaXiDaus || (hasTofBachelorPi && std::abs(nSigTofBachelorPi) < softTrigCuts.maxNsigmaXiDaus)) {
       return false;
     }
@@ -378,9 +393,9 @@ struct HfCandidateCreatorXicToXiPiPi {
       float pPiFromLambda{}, pPrFromLambda{}, pPionFromXi{}, ptPionFromXi{}, nSigTpcBachelorPi{}, nSigTofBachelorPi{}, nSigTpcPiFromLambda{}, nSigTofPiFromLambda{}, nSigTpcPrFromLambda{}, nSigTofPrFromLambda{};
       if (softTrigCuts.applySoftwareTrigSelections) {
         // get PID information already here
-        auto trackPionFromXi = casc.bachelor_as<TracksWCovExtraPidPrPi>();
-        auto trackPosLambdaDaughter = casc.posTrack_as<TracksWCovExtraPidPrPi>();
-        auto trackNegLambdaDaughter = casc.negTrack_as<TracksWCovExtraPidPrPi>();
+        auto const& trackPionFromXi = casc.bachelor_as<TracksWCovExtraPidPrPi>();
+        auto const& trackPosLambdaDaughter = casc.posTrack_as<TracksWCovExtraPidPrPi>();
+        auto const& trackNegLambdaDaughter = casc.negTrack_as<TracksWCovExtraPidPrPi>();
         nSigTpcBachelorPi = trackPionFromXi.tpcNSigmaPi();
         nSigTofBachelorPi = trackPionFromXi.tofNSigmaPi();
         pPionFromXi = trackPionFromXi.p();
@@ -403,7 +418,10 @@ struct HfCandidateCreatorXicToXiPiPi {
           nSigTpcPrFromLambda = trackNegLambdaDaughter.tpcNSigmaPr();
           nSigTofPrFromLambda = trackNegLambdaDaughter.tofNSigmaPr();
         }
-        if (!isSelectedXicSoftwareTriggers(pVecCasc, std::array{trackParCovCharmBachelor0, trackParCovCharmBachelor1}, collision, nSigTpcBachelorPi, nSigTofBachelorPi, nSigTpcPiFromLambda, nSigTofPiFromLambda, nSigTpcPrFromLambda, nSigTofPrFromLambda, hasTofBachelorPi, hasTofPiFromLambda, hasTofPrFromLambda)) {
+        std::array<int16_t, 3> const nClsTpc = {trackPionFromXi.tpcNClsFound(), trackPosLambdaDaughter.tpcNClsFound(), trackNegLambdaDaughter.tpcNClsFound()};
+        std::array<int16_t, 3> const nCrossedRowsTpc = {trackPionFromXi.tpcNClsCrossedRows(), trackPosLambdaDaughter.tpcNClsCrossedRows(), trackNegLambdaDaughter.tpcNClsCrossedRows()};
+        std::array<float, 3> const crossedRowsOverFindableClsTpc = {trackPionFromXi.tpcCrossedRowsOverFindableCls(), trackPosLambdaDaughter.tpcCrossedRowsOverFindableCls(), trackNegLambdaDaughter.tpcCrossedRowsOverFindableCls()};
+        if (!isSelectedXicSoftwareTriggers(pVecCasc, std::array{trackParCovCharmBachelor0, trackParCovCharmBachelor1}, collision, nSigTpcBachelorPi, nSigTofBachelorPi, nSigTpcPiFromLambda, nSigTofPiFromLambda, nSigTpcPrFromLambda, nSigTofPrFromLambda, hasTofBachelorPi, hasTofPiFromLambda, hasTofPrFromLambda, nClsTpc, nCrossedRowsTpc, crossedRowsOverFindableClsTpc)) {
           continue;
         }
       }
@@ -589,8 +607,8 @@ struct HfCandidateCreatorXicToXiPiPi {
       }
       auto casc = cascAodElement.kfCascData_as<KFCascFull>();
 
-      auto trackCharmBachelor0 = rowTrackIndexXicPlus.prong0_as<TracksWCovExtraPidPrPi>();
-      auto trackCharmBachelor1 = rowTrackIndexXicPlus.prong1_as<TracksWCovExtraPidPrPi>();
+      auto const& trackCharmBachelor0 = rowTrackIndexXicPlus.prong0_as<TracksWCovExtraPidPrPi>();
+      auto const& trackCharmBachelor1 = rowTrackIndexXicPlus.prong1_as<TracksWCovExtraPidPrPi>();
 
       // sign of charm baryon
       int8_t const signXic = casc.sign() < 0 ? +1 : -1;
@@ -599,9 +617,9 @@ struct HfCandidateCreatorXicToXiPiPi {
       float pPiFromLambda{}, pPrFromLambda{}, pPionFromXi{}, ptPionFromXi{}, nSigTpcBachelorPi{}, nSigTofBachelorPi{}, nSigTpcPiFromLambda{}, nSigTofPiFromLambda{}, nSigTpcPrFromLambda{}, nSigTofPrFromLambda{};
       if (softTrigCuts.applySoftwareTrigSelections) {
         // get PID information already here
-        auto trackPionFromXi = casc.bachelor_as<TracksWCovExtraPidPrPi>();
-        auto trackPosLambdaDaughter = casc.posTrack_as<TracksWCovExtraPidPrPi>();
-        auto trackNegLambdaDaughter = casc.negTrack_as<TracksWCovExtraPidPrPi>();
+        auto const& trackPionFromXi = casc.bachelor_as<TracksWCovExtraPidPrPi>();
+        auto const& trackPosLambdaDaughter = casc.posTrack_as<TracksWCovExtraPidPrPi>();
+        auto const& trackNegLambdaDaughter = casc.negTrack_as<TracksWCovExtraPidPrPi>();
         nSigTpcBachelorPi = trackPionFromXi.tpcNSigmaPi();
         nSigTofBachelorPi = trackPionFromXi.tofNSigmaPi();
         pPionFromXi = trackPionFromXi.p();
@@ -631,7 +649,10 @@ struct HfCandidateCreatorXicToXiPiPi {
         auto trackParCovCharmBachelor0 = getTrackParCov(trackCharmBachelor0);
         auto trackParCovCharmBachelor1 = getTrackParCov(trackCharmBachelor1);
         std::array<float, 3> const pVecCasc = {casc.px(), casc.py(), casc.pz()};
-        if (!isSelectedXicSoftwareTriggers(pVecCasc, std::array{trackParCovCharmBachelor0, trackParCovCharmBachelor1}, collision, nSigTpcBachelorPi, nSigTofBachelorPi, nSigTpcPiFromLambda, nSigTofPiFromLambda, nSigTpcPrFromLambda, nSigTofPrFromLambda, hasTofBachelorPi, hasTofPiFromLambda, hasTofPrFromLambda)) {
+        std::array<int16_t, 3> const nClsTpc = {trackPionFromXi.tpcNClsFound(), trackPosLambdaDaughter.tpcNClsFound(), trackNegLambdaDaughter.tpcNClsFound()};
+        std::array<int16_t, 3> const nCrossedRowsTpc = {trackPionFromXi.tpcNClsCrossedRows(), trackPosLambdaDaughter.tpcNClsCrossedRows(), trackNegLambdaDaughter.tpcNClsCrossedRows()};
+        std::array<float, 3> const crossedRowsOverFindableClsTpc = {trackPionFromXi.tpcCrossedRowsOverFindableCls(), trackPosLambdaDaughter.tpcCrossedRowsOverFindableCls(), trackNegLambdaDaughter.tpcCrossedRowsOverFindableCls()};
+        if (!isSelectedXicSoftwareTriggers(pVecCasc, std::array{trackParCovCharmBachelor0, trackParCovCharmBachelor1}, collision, nSigTpcBachelorPi, nSigTofBachelorPi, nSigTpcPiFromLambda, nSigTofPiFromLambda, nSigTpcPrFromLambda, nSigTofPrFromLambda, hasTofBachelorPi, hasTofPiFromLambda, hasTofPrFromLambda, nClsTpc, nCrossedRowsTpc, crossedRowsOverFindableClsTpc)) {
           continue;
         }
       }
