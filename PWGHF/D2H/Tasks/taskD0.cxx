@@ -1320,7 +1320,7 @@ struct HfTaskD0 {
         float cent{-1.f};
         float occ{-1.f};
         if constexpr (std::is_same_v<CollType, CollisionsWithMcLabelsCent>) {
-          const auto& recoCollsPerMcCollCent = collisions.sliceBy(colPerMcCollisionCent, particle.mcCollision().globalIndex());
+          const auto& recoCollsPerMcCollCent = collisions.sliceBy(colPerMcCollisionCent, particle.mcCollisionId());
           for (const auto& recCol : recoCollsPerMcCollCent) {
             maxNumContrib = recCol.numContrib() > maxNumContrib ? recCol.numContrib() : maxNumContrib;
           }
@@ -1331,7 +1331,7 @@ struct HfTaskD0 {
             occ = o2::hf_occupancy::getOccupancyGenColl(recoCollsPerMcCollCent, occEstimator);
           }
         } else {
-          const auto& recoCollsPerMcColl = collisions.sliceBy(colPerMcCollision, particle.mcCollision().globalIndex());
+          const auto& recoCollsPerMcColl = collisions.sliceBy(colPerMcCollision, particle.mcCollisionId());
           for (const auto& recCol : recoCollsPerMcColl) {
             maxNumContrib = recCol.numContrib() > maxNumContrib ? recCol.numContrib() : maxNumContrib;
           }
