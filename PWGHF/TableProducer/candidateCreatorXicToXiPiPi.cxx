@@ -247,11 +247,12 @@ struct HfCandidateCreatorXicToXiPiPi {
   template <typename TTrackParCov, typename Coll>
   bool isSelectedXicSoftwareTriggers(std::array<float, 3> const& pVecCascade, std::array<TTrackParCov, 2> const& trackParBachelor, Coll const& collision, float nSigTpcBachelorPi, float nSigTofBachelorPi, float nSigTpcPiFromLambda, float nSigTofPiFromLambda, float nSigTpcPrFromLambda, float nSigTofPrFromLambda, bool hasTofBachelorPi, bool hasTofPiFromLambda, bool hasTofPrFromLambda, std::array<int16_t, 3>& nClsTpc, std::array<int16_t, 3>& nCrossedRowsTpc, std::array<float, 3>& crossedRowsOverFindableClsTpc)
   {
-    constexpr int16_t numClsTpcMin = 70;
-    constexpr int16_t numCrossedRowsTpcMin = 70;
-    constexpr float crossedRowsOverFindableClsTpcMin = 0.8f;
-    for (int iTrack{0}; iTrack < 3; ++iTrack) {
-      if (nClsTpc[iTrack] < numClsTpcMin || nCrossedRowsTpc[iTrack] < numCrossedRowsTpcMin || crossedRowsOverFindableClsTpc[iTrack] < crossedRowsOverFindableClsTpcMin) {
+    constexpr int16_t NumClsTpcMin = 70;
+    constexpr int16_t NumCrossedRowsTpcMin = 70;
+    constexpr float CrossedRowsOverFindableClsTpcMin = 0.8f;
+    constexpr int NumTracks = 3;
+    for (int iTrack{0}; iTrack < NumTracks; ++iTrack) {
+      if (nClsTpc[iTrack] < NumClsTpcMin || nCrossedRowsTpc[iTrack] < NumCrossedRowsTpcMin || crossedRowsOverFindableClsTpc[iTrack] < CrossedRowsOverFindableClsTpcMin) {
         return false;
       }
     }
