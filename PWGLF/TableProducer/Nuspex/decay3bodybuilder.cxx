@@ -732,7 +732,7 @@ struct decay3bodyBuilder {
       float tofNSigmaDeuteron{};
       if constexpr (!soa::is_table<TBCs>) { // running over derived data
         tofNSigmaDeuteron = trackDeuteron.tofNSigmaDe();
-      } else {    // running over AO2Ds
+      } else {                                       // running over AO2Ds
         if constexpr (soa::is_table<TMCParticles>) { // running over MC (track table with labels)
           tofNSigmaDeuteron = getTOFnSigma<true /*isMC*/, TCollisions>(mRespParamsV3, collision, trackDeuteron);
         } else { // running over real data
