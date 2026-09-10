@@ -75,7 +75,11 @@ struct zdc2stagecalibration {
   Configurable<std::string> confGainPath{"confGainPath", "", "CCDB path to the run-wise stage-1 gain map"};
   Configurable<bool> useSpatialCalib{"useSpatialCalib", false, "use ZDC spatial calibration"};
   Configurable<std::string> confSpatialPath{"confSpatialPath", "", "CCDB path to ZDC spatial calibration"};
+  Configurable<bool> deriveSpatialCalib{"deriveSpatialCalib", false, "store spatial regression moments after gain correction"};
 
+  Configurable<int> cfgSpatialCalibBins{
+    "cfgSpatialCalibBins", 30,
+    "number of bins per cross coordinate for spatial calibration"};
   struct : ConfigurableGroup {
     Configurable<bool> requireRCTFlagChecker{"requireRCTFlagChecker", true, "Check event quality in run condition table"};
     Configurable<std::string> cfgEvtRCTFlagCheckerLabel{"cfgEvtRCTFlagCheckerLabel", "CBT", "Evt sel: RCT flag checker label"};
@@ -98,11 +102,12 @@ struct zdc2stagecalibration {
     const int nTimeBins = static_cast<int>(std::ceil(cfgMaxRunHours.value * 60.f / cfgTimeSliceMinutes.value));
     AxisSpec timeAxis = {nTimeBins, 0.0, cfgMaxRunHours.value, "time from SOR (h)"};
     AxisSpec towerAxis = {4, 0.0, 4.0, "tower"};
-    AxisSpec crossCoordAxis = {2, 0.0, 2.0, "coordinate"};
-    AxisSpec ratioAxis = {240, 0.0, 2.4, "#Sigma tower/common"};
     AxisSpec crossAxis = {120, -1.0, 1.0, "cross asymmetry"};
     AxisSpec momentAxis = {15, 0.0, 15.0, "regression moment"};
+    AxisSpec spatialCalibAxis = {cfgSpatialCalibBins.value, -1.0, 1.0, "cross asymmetry"};
     AxisSpec phiAxis = {72, -3.14159265358979323846, 3.14159265358979323846, "#phi"};
+    AxisSpec crossCoordAxis = {2, 0.0, 2.0, "coordinate"};
+    AxisSpec ratioAxis = {240, 0.0, 2.4, "#Sigma tower/common"};
 
     histos.add("hEvtSelInfo", "hEvtSelInfo", kTH1F, {{10, 0.0, 10.0}});
     auto hEvtSelInfo = histos.get<TH1>(HIST("hEvtSelInfo"));
@@ -145,6 +150,8 @@ struct zdc2stagecalibration {
     // Stage-1 correction input. For each time bin the first 10 y bins contain sum(T_i*T_j), the next 4 contain sum(C*T_i), and the last contains the event count.
     histos.add("GainCalibration/hGainMomentsZNA", "ZNA linear-regression moments;time from SOR (h);moment index", kTH2D, {timeAxis, momentAxis});
     histos.add("GainCalibration/hGainMomentsZNC", "ZNC linear-regression moments;time from SOR (h);moment index", kTH2D, {timeAxis, momentAxis});
+    histos.add("SpatialCalibration/hSpatialMomentsZNA", "ZNA spatial regression moments;X cross;Y cross;moment index", kTH3D, {spatialCalibAxis, spatialCalibAxis, momentAxis});
+    histos.add("SpatialCalibration/hSpatialMomentsZNC", "ZNC spatial regression moments;X cross;Y cross;moment index", kTH3D, {spatialCalibAxis, spatialCalibAxis, momentAxis});
 
     ccdb->setURL(cfgCcdbParam.cfgURL);
     ccdb->setCaching(true);
@@ -364,6 +371,37 @@ struct zdc2stagecalibration {
     const double crossLookupYA = (znaCorr[2] - znaCorr[1]) / (znaCorr[2] + znaCorr[1]);
     const double crossLookupXC = (zncCorr[3] - zncCorr[0]) / (zncCorr[3] + zncCorr[0]);
     const double crossLookupYC = (zncCorr[2] - zncCorr[1]) / (zncCorr[2] + zncCorr[1]);
+    if (calibrationStage.value == 2 && useGainCallib.value && deriveSpatialCalib.value && !useSpatialCalib.value) {
+
+      std::array<double, 15> spatialMomentsA{};
+      std::array<double, 15> spatialMomentsC{};
+
+      int moment = 0;
+
+      for (int i = 0; i < 4; ++i) {
+        for (int j = i; j < 4; ++j) {
+          spatialMomentsA[moment] = znaCorr[i] * znaCorr[j];
+          spatialMomentsC[moment] = zncCorr[i] * zncCorr[j];
+          ++moment;
+        }
+      }
+
+      for (int i = 0; i < 4; ++i) {
+        spatialMomentsA[10 + i] =
+          static_cast<double>(znaEnergycommon) * znaCorr[i];
+
+        spatialMomentsC[10 + i] =
+          static_cast<double>(zncEnergycommon) * zncCorr[i];
+      }
+
+      spatialMomentsA[14] = 1.0;
+      spatialMomentsC[14] = 1.0;
+
+      for (int i = 0; i < 15; ++i) {
+        histos.fill(HIST("SpatialCalibration/hSpatialMomentsZNA"), crossLookupXA, crossLookupYA, i + 0.5, spatialMomentsA[i]);
+        histos.fill(HIST("SpatialCalibration/hSpatialMomentsZNC"), crossLookupXC, crossLookupYC, i + 0.5, spatialMomentsC[i]);
+      }
+    }
 
     bool spatialOK = true;
     if (calibrationStage.value == 2 && useSpatialCalib.value) {
