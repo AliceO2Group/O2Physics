@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file upcCandProducerBarrel.cxx
-/// \brief Compact two-track double-gap candidate table producer for exclusive diffraction and UPC studies.
+/// \brief Compact candidate table producer for diffraction and UPC studies.
 /// Requires: event selection, propagation, TPC PID and TOF PID services
 /// \author Nazar Burmasov (JINR), Evgeny Kryshen (JINR)
 
@@ -185,7 +185,7 @@ struct UpcCandProducerBarrel {
   int tfEndBorder = 0;
   std::bitset<NBCsPerOrbit> collidingBCs;
 
-  Configurable<size_t> candidateTrackCount{"candidateTrackCount", 2, "Required N tracks in selected collisions"};
+  Configurable<int> nTracks{"nTracks", 2, "Required N tracks in selected collisions"};
   Configurable<float> maxAbsEta{"maxAbsEta", 0.8f, "Maximum |eta| of selected tracks"};
   Configurable<float> minPt{"minPt", 0.2f, "Minimum pT of selected tracks (GeV/c)"};
   Configurable<int> vetoBCWindow{"vetoBCWindow", 0, "FIT veto half-window in BC; <0 disables"};
@@ -252,7 +252,6 @@ struct UpcCandProducerBarrel {
     std::vector<uint8_t> tfPassesRCT;
     std::vector<size_t> localTFIndex;
     localTFIndex.reserve(bcs.size());
-    const auto bcOffset = bcs.begin().globalIndex();
     for (const auto& bc : bcs) {
       const auto tfID = static_cast<uint32_t>((static_cast<int64_t>(bc.globalBC()) - bcSOR) / nBCsPerTF);
       if (tfIDs.empty() || tfID != tfIDs.back()) {
@@ -330,12 +329,12 @@ struct UpcCandProducerBarrel {
     }
 
     for (const auto& collision : collisions) {
-      if (collision.numContrib() != candidateTrackCount || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !rctChecker(collision)) {
+      if (collision.numContrib() != nTracks || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !rctChecker(collision)) {
         continue;
       }
       auto bc = collision.bc_as<BCsWithSels>();
       auto gbc = bc.globalBC();
-      const auto iTF = localTFIndex[bc.globalIndex() - bcOffset];
+      const auto iTF = localTFIndex[bc.globalIndex()];
       const int64_t bcInTF = (static_cast<int64_t>(gbc) - bcSOR) % nBCsPerTF;
       const auto distFT0 = minDistanceFT0[iTF][bcInTF];
       const auto distFV0 = minDistanceFV0[iTF][bcInTF];
@@ -370,7 +369,7 @@ struct UpcCandProducerBarrel {
         nClusters.push_back(track.tpcNClsFound());
         sign.push_back(track.sign());
       }
-      if (px.size() != candidateTrackCount) {
+      if (px.size() != static_cast<size_t>(nTracks)) {
         continue;
       }
       selectedCandidates(bc.runNumber(), gbc, tfIDs[iTF], bc.timestamp(), collision.posX(), collision.posY(), collision.posZ(),
