@@ -3103,6 +3103,24 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (nameStr == "muonLowPt1p5_MchMidmatching") {
+    cut->AddCut(GetAnalysisCut("muonLowPt1p5"));
+    cut->AddCut(GetAnalysisCut("matchedMchMid"));
+    return cut;
+  }
+
+  if (nameStr == "muonLowPt1p7_MchMidmatching") {
+    cut->AddCut(GetAnalysisCut("muonLowPt1p7"));
+    cut->AddCut(GetAnalysisCut("matchedMchMid"));
+    return cut;
+  }
+
+  if (nameStr == "muonLowPt6_MchMidmatching") {
+    cut->AddCut(GetAnalysisCut("muonLowPt6"));
+    cut->AddCut(GetAnalysisCut("matchedMchMid"));
+    return cut;
+  }
+
   if (nameStr == "muonLowPt10SigmaPDCA") {
     cut->AddCut(GetAnalysisCut("muonLowPt"));
     cut->AddCut(GetAnalysisCut("muonQualityCuts10SigmaPDCA"));
@@ -3163,6 +3181,18 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
   if (nameStr == "muonLowPt6") {
     cut->AddCut(GetAnalysisCut("muonLowPt6"));
+    cut->AddCut(GetAnalysisCut("muonQualityCuts"));
+    return cut;
+  }
+
+  if (nameStr == "muonLowPt1p5") {
+    cut->AddCut(GetAnalysisCut("muonLowPt1p5"));
+    cut->AddCut(GetAnalysisCut("muonQualityCuts"));
+    return cut;
+  }
+
+  if (nameStr == "muonLowPt1p7") {
+    cut->AddCut(GetAnalysisCut("muonLowPt1p7"));
     cut->AddCut(GetAnalysisCut("muonQualityCuts"));
     return cut;
   }
@@ -6647,6 +6677,16 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (nameStr == "muonLowPt6") {
     cut->AddCut(VarManager::kPt, 2.0, 1000.0);
+    return cut;
+  }
+
+  if (nameStr == "muonLowPt1p5") {
+    cut->AddCut(VarManager::kPt, 1.5, 1000.0);
+    return cut;
+  }
+
+  if (nameStr == "muonLowPt1p7") {
+    cut->AddCut(VarManager::kPt, 1.7, 1000.0);
     return cut;
   }
 
