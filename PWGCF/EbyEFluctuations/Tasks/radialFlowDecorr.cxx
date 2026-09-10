@@ -55,7 +55,6 @@
 #include <limits>
 #include <memory>
 #include <string>
-#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -71,15 +70,8 @@ struct RadialFlowDecorr {
   static constexpr int KIntM = 4; // pT-moment order used in the sums (need m up to 3 for c3)
   static constexpr int KIntK = 4; // weight-power order used in the sums (need k up to 3 for c3)
 
-  // KNEtaMax caps every fixed-length eta array. The *active* count nEta is set in
-  // init() from the effective bin width: nEta = 2*(cfgCutEta/width) + 1 (narrow bins
-  // + the index-0 full-range reference bin). DATA uses width 0.1 and MC 0.2, so 0.1
-  // is the finer of the two and sets the bound; for the widest supported |eta|
-  // acceptance KMaxAbsEtaCut that gives KNEtaMax = 2*(0.8/0.1)+1 = 17 (9 at 0.2, 5 at
-  // 0.4). init() fatals if a chosen (cfgCutEta, width) would need more than KNEtaMax.
-  static constexpr float KFinestEtaBinWidth = 0.1f; // finest narrow-bin width (DATA); MC uses 0.2
-  static constexpr float KMaxAbsEtaCut = 0.8f;      // widest |eta| the fixed-length arrays are sized for
-  static constexpr int KNEtaMax = 2 * static_cast<int>(KMaxAbsEtaCut / KFinestEtaBinWidth + 0.5f) + 1;
+  static constexpr int KNEtaHalfBinsMax = 8;                // 0.8 / 0.1: finest (DATA) bins per side
+  static constexpr int KNEtaMax = 2 * KNEtaHalfBinsMax + 1; // + index-0 full-range reference bin
 
   static constexpr float KFloatEpsilon = 1e-6f;
   static constexpr float KEtaEdgeTolerance = 1e-3f; // slack for cfgCutEta being an integer multiple of the bin width
@@ -2227,22 +2219,28 @@ struct RadialFlowDecorr {
       }
     }
     auto fillBS1D = [&](std::array<std::shared_ptr<TProfile>, KMaxBoot>& arr, double x, double val) {
-      if (!doBoot)
+      if (!doBoot) {
         return;
-      for (int s = 0; s < nBoot; ++s)
+      }
+      for (int s = 0; s < nBoot; ++s) {
         arr[s]->Fill(x, val, poisW[s]);
+      }
     };
     auto fillBS2D = [&](std::array<std::shared_ptr<TProfile2D>, KMaxBoot>& arr, double x, double y, double val) {
-      if (!doBoot)
+      if (!doBoot) {
         return;
-      for (int s = 0; s < nBoot; ++s)
+      }
+      for (int s = 0; s < nBoot; ++s) {
         arr[s]->Fill(x, y, val, poisW[s]);
+      }
     };
     auto fillBS3D = [&](std::array<std::shared_ptr<TProfile3D>, KMaxBoot>& arr, double x, double y, double z, double val) {
-      if (!doBoot)
+      if (!doBoot) {
         return;
-      for (int s = 0; s < nBoot; ++s)
+      }
+      for (int s = 0; s < nBoot; ++s) {
         arr[s]->Fill(x, y, z, val, poisW[s]);
+      }
     };
 
     float vz = coll.posZ();
