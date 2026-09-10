@@ -26,13 +26,17 @@
 #include <DataFormatsFIT/Triggers.h>
 #include <DataFormatsParameters/AggregatedRunInfo.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
 
+#include <Rtypes.h>
 #include <TH1.h>
 #include <TH2.h>
 
@@ -173,7 +177,7 @@ DECLARE_SOA_TABLE(UPCBarrelCands, "AOD", "UPCBARRELCANDS",
 struct UpcCandProducerBarrel {
   Produces<aod::UPCBarrelCands> selectedCandidates;
   HistogramRegistry registry{"registry", {}};
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   int cachedRunNumber = -1;
   int64_t bcSOR = 0;
