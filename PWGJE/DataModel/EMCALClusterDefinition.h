@@ -16,13 +16,14 @@
 #ifndef PWGJE_DATAMODEL_EMCALCLUSTERDEFINITION_H_
 #define PWGJE_DATAMODEL_EMCALCLUSTERDEFINITION_H_
 
+#include <cstdint>
 #include <string>
 #include <utility>
 
 namespace o2::aod
 {
-enum class ClusterAlgorithm_t {
-  kV1,
+enum class ClusterAlgorithm : uint8_t {
+  kV1 = 0,
   kV3
 };
 /// \struct EMCALClusterDefinition
@@ -30,7 +31,7 @@ enum class ClusterAlgorithm_t {
 /// The cluster definition contains information about the used algorithm, seed threshold,
 /// cell energy, gradient as well as timing cut
 struct EMCALClusterDefinition {
-  ClusterAlgorithm_t algorithm;
+  ClusterAlgorithm algorithm{ClusterAlgorithm::kV3};
   int storageID = -1;                // integer ID used to store cluster definition in a flat table
   int selectedCellType = 1;          // EMCal cell type (CURRENTLY NOT USED TO AVOID MULTIPLE CELL LOOPS)
   std::string name = "kUndefined";   // name of the cluster definition
@@ -46,23 +47,11 @@ struct EMCALClusterDefinition {
   // default constructor
   EMCALClusterDefinition() = default;
   // constructor
-  EMCALClusterDefinition(ClusterAlgorithm_t pAlgorithm, int pStorageID, int pSelectedCellType, std::string pName, double pSeedEnergy, double pMinCellEnergy, double pTimeMin, double pTimeMax, double ptimeDiff, bool pDoGradientCut, double pGradientCut, bool precalcShowerShape5x5)
+  EMCALClusterDefinition(ClusterAlgorithm pAlgorithm, int pStorageID, int pSelectedCellType, std::string pName, double pSeedEnergy, double pMinCellEnergy, double pTimeMin, double pTimeMax, double ptimeDiff, bool pDoGradientCut, double pGradientCut, bool precalcShowerShape5x5) : algorithm(pAlgorithm), storageID(pStorageID), selectedCellType(pSelectedCellType), name(std::move(pName)), seedEnergy(pSeedEnergy), minCellEnergy(pMinCellEnergy), timeMin(pTimeMin), timeMax(pTimeMax), timeDiff(ptimeDiff), doGradientCut(pDoGradientCut), gradientCut(pGradientCut), recalcShowerShape5x5(precalcShowerShape5x5)
   {
-    algorithm = pAlgorithm;
-    storageID = pStorageID;
-    selectedCellType = pSelectedCellType;
-    name = std::move(pName);
-    seedEnergy = pSeedEnergy;
-    minCellEnergy = pMinCellEnergy;
-    timeMin = pTimeMin;
-    timeMax = pTimeMax;
-    timeDiff = ptimeDiff;
-    doGradientCut = pDoGradientCut;
-    gradientCut = pGradientCut;
-    recalcShowerShape5x5 = precalcShowerShape5x5;
   }
 
-  // implement comparison operators for int std::string and ClusterAlgorithm_t
+  // implement comparison operators for int std::string and ClusterAlgorithm
   bool operator==(const EMCALClusterDefinition& rhs) const
   {
     return (algorithm == rhs.algorithm && storageID == rhs.storageID && name == rhs.name && seedEnergy == rhs.seedEnergy && minCellEnergy == rhs.minCellEnergy && timeMin == rhs.timeMin && timeMax == rhs.timeMax && timeDiff == rhs.timeDiff && gradientCut == rhs.gradientCut && doGradientCut == rhs.doGradientCut && recalcShowerShape5x5 == rhs.recalcShowerShape5x5);
@@ -87,11 +76,11 @@ struct EMCALClusterDefinition {
   {
     return !(name == rhs);
   }
-  bool operator==(const ClusterAlgorithm_t rhs) const
+  bool operator==(const ClusterAlgorithm rhs) const
   {
     return (algorithm == rhs);
   }
-  bool operator!=(const ClusterAlgorithm_t rhs) const
+  bool operator!=(const ClusterAlgorithm rhs) const
   {
     return !(algorithm == rhs);
   }
@@ -107,11 +96,11 @@ struct EMCALClusterDefinition {
     return name;
   }
 
-  operator ClusterAlgorithm_t() const
+  operator ClusterAlgorithm() const
   {
     return algorithm;
   }
-  std::string toString() const
+  [[nodiscard]] const std::string& toString() const
   {
     return name;
   }
