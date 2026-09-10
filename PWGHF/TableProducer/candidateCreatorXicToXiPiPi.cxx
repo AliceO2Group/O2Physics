@@ -245,7 +245,7 @@ struct HfCandidateCreatorXicToXiPiPi {
   /// \param crossedRowsOverFindableClsTpc is the array with the ratio of crossed rows over findable clusters in the TPC for each track
   /// \return true if the candidate passes the software trigger selections, otherwise false
   template <typename TTrackParCov, typename Coll>
-  bool isSelectedXicSoftwareTriggers(std::array<float, 3> const& pVecCascade, std::array<TTrackParCov, 2> const& trackParBachelor, Coll const& collision, float nSigTpcBachelorPi, float nSigTofBachelorPi, float nSigTpcPiFromLambda, float nSigTofPiFromLambda, float nSigTpcPrFromLambda, float nSigTofPrFromLambda, bool hasTofBachelorPi, bool hasTofPiFromLambda, bool hasTofPrFromLambda, std::array<int16_t, 3>& nClsTpc, std::array<int16_t, 3>& nCrossedRowsTpc, std::array<float, 3>& crossedRowsOverFindableClsTpc)
+  bool isSelectedXicSoftwareTriggers(std::array<float, 3> const& pVecCascade, std::array<TTrackParCov, 2> const& trackParBachelor, Coll const& collision, float nSigTpcBachelorPi, float nSigTofBachelorPi, float nSigTpcPiFromLambda, float nSigTofPiFromLambda, float nSigTpcPrFromLambda, float nSigTofPrFromLambda, bool hasTofBachelorPi, bool hasTofPiFromLambda, bool hasTofPrFromLambda, const std::array<int16_t, 3>& nClsTpc, const std::array<int16_t, 3>& nCrossedRowsTpc, const std::array<float, 3>& crossedRowsOverFindableClsTpc)
   {
     constexpr int16_t NumClsTpcMin = 70;
     constexpr int16_t NumCrossedRowsTpcMin = 70;
