@@ -521,7 +521,7 @@ struct decay3bodyBuilder {
     }
     o2::base::Propagator::initFieldFromGRP(grpmag);
     // Fetch magnetic field from ccdb for current collision
-    auto d_bz = o2::base::Propagator::Instance()->getNominalBz();
+    d_bz = o2::base::Propagator::Instance()->getNominalBz();
     LOG(info) << "Retrieved GRP for timestamp " << timestamp << " with magnetic field of " << d_bz << " kG";
 
     // set magnetic field value for DCA fitter
@@ -732,7 +732,7 @@ struct decay3bodyBuilder {
       float tofNSigmaDeuteron{};
       if constexpr (!soa::is_table<TBCs>) { // running over derived data
         tofNSigmaDeuteron = trackDeuteron.tofNSigmaDe();
-      } else if constexpr (soa::is_table<TBCs>) {    // running over AO2Ds
+      } else {    // running over AO2Ds
         if constexpr (soa::is_table<TMCParticles>) { // running over MC (track table with labels)
           tofNSigmaDeuteron = getTOFnSigma<true /*isMC*/, TCollisions>(mRespParamsV3, collision, trackDeuteron);
         } else { // running over real data
