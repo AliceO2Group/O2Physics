@@ -10,8 +10,8 @@
 // or submit itself to any jurisdiction.
 //
 
-/// \file HadNucleiFemto.cxx
-/// \brief Analysis task for Nuclei-Hadron femto analysis
+/// \file HadNucleiFemtoDcaPurity.cxx
+/// \brief Nuclei-hadron femtoscopy task with DCA-fraction and purity inputs
 /// \author CMY
 /// \date 2025-04-10
 
@@ -57,6 +57,9 @@
 #include <Math/GenVector/LorentzVector.h>
 #include <Math/GenVector/PxPyPzM4D.h>
 #include <TH1.h>
+#include <TH3.h>
+#include <THnSparse.h>
+#include <TMCProcess.h>
 #include <TPDGCode.h>
 #include <TString.h>
 
@@ -98,6 +101,16 @@ constexpr int DeuteronPDG = o2::constants::physics::Pdg::kDeuteron;
 constexpr int TritonPDG = o2::constants::physics::Pdg::kTriton;
 constexpr int He3PDG = o2::constants::physics::Pdg::kHelium3;
 constexpr int HyperTritonPDG = o2::constants::physics::Pdg::kHyperTriton;
+constexpr int Lithium4PDG = o2::constants::physics::Pdg::kLithium4;
+// Store an exact integer PDG code in sparse histograms as
+// sign * (high * kMotherPdgChunkBase + low). Splitting the code avoids the
+// loss of integer precision that a single float coordinate has near 10^9.
+constexpr int MotherPdgChunkBase = 10000; // o2-linter: disable=pdg/explicit-code (encoding base, not a PDG code)
+constexpr int MotherPdgHighMax = 120000;  // o2-linter: disable=pdg/explicit-code (encoding-axis limit, not a PDG code)
+constexpr int HadronDcaFitBins = 2400; // 0.002 cm/bin in [-2.4, 2.4] cm
+constexpr float HadronDcaFitAxisMax = 2.4f;
+constexpr int NucleusDcaFitBins = 2000; // 0.001 cm/bin in [-1, 1] cm
+constexpr float NucleusDcaFitAxisMax = 1.f;
 constexpr float He3TPCChi2NClMin = 0.5f;
 using PairLorentzVector = ROOT::Math::LorentzVector<ROOT::Math::PxPyPzM4D<double>>;
 
@@ -106,6 +119,48 @@ enum Selections {
   kTrackCuts,
   kPID,
   kAll
+};
+
+enum DcaOrigin {
+  kPrimary = 0,
+  kWeakDecay,
+  kMaterial,
+  kNDcaOrigins
+};
+
+enum CollisionAssociation {
+  kCorrectCollision = 0,
+  kWrongCollision,
+  kNCollisionAssociations
+};
+
+// The base DCA origin stays primary/weak/material. This independent parent
+// axis permits optional feed-down splits without changing the base templates.
+enum ParentCategory {
+  kNoSpecialParent = 0,
+  kLambdaParent,
+  kSigmaParent,
+  kK0ShortParent,
+  kK0LongParent,
+  kChargedKaonParent,
+  kHypertritonParent,
+  kLithium4Parent,
+  kOtherDecayParent,
+  kMissingDecayParent,
+  kNParentCategories
+};
+
+enum PurityCategory {
+  kAllSelected = 0,
+  kCorrectSpecies,
+  kMisidentifiedSpecies,
+  kNoMCLabel,
+  kCorrectCollisionSpecies,
+  kWrongCollisionSpecies,
+  kCorrectPrimary,
+  kCorrectWeakDecay,
+  kCorrectMaterial,
+  kNPurityCategories
 };
 
 } // namespace
@@ -356,6 +411,14 @@ struct HadNucleiFemto {
 
   struct : o2::framework::ConfigurableGroup {
     // cppcheck-suppress unusedStructMember
+    std::string prefix{"fractionPurity"};
+    Configurable<float> settingHadronDcaFitAbsMax{"settingHadronDcaFitAbsMax", 2.4f, "Maximum absolute pion DCAxy and DCAz stored for the fraction fit"};
+    Configurable<float> settingNucleusDcaFitAbsMax{"settingNucleusDcaFitAbsMax", 1.0f, "Maximum absolute nucleus DCAxy and DCAz stored for the fraction fit"};
+    Configurable<bool> settingRequireRecoMCCollisionMatch{"settingRequireRecoMCCollisionMatch", true, "For the base DCA templates, require the truth particle to belong to the reconstructed collision MC label; detailed templates always store both association classes"};
+  } fractionPurity;
+
+  struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
     std::string prefix{"hypertriton"};
     // Hypertriton-specific cuts
     Configurable<float> settingHypMassMin{"settingHypMassMin", 2.94f, "Minimum hypertriton invariant mass"};
@@ -600,6 +663,40 @@ struct HadNucleiFemto {
      {"MC/hPtNuRecVsGen", "Reconstructed versus generated signed nucleus pT;generated pT (GeV/c);reconstructed pT (GeV/c)", {HistType::kTH2F, {{280, -7.f, 7.f}, {280, -7.f, 7.f}}}},
      {"MC/hPtHadRecVsGen", "Reconstructed versus generated signed pion pT;generated pT (GeV/c);reconstructed pT (GeV/c)", {HistType::kTH2F, {{280, -7.f, 7.f}, {280, -7.f, 7.f}}}},
 
+     // Base inputs for Giorgio-style offline DCA fits. The origin axis is:
+     // 0 primary, 1 weak decay, 2 material (every non-primary, non-decay process).
+     {"fraction/hDcaDataHad", "Pion DCA-fit input;signed reconstructed p_{T} (GeV/c);DCA_{xy} (cm);DCA_{z} (cm);centrality", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {40, 0.f, 100.f}}}},
+     {"fraction/hDcaDataNu", "Nucleus DCA-fit input;signed physical reconstructed p_{T} (GeV/c);DCA_{xy} (cm);DCA_{z} (cm);centrality", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {NucleusDcaFitBins, -NucleusDcaFitAxisMax, NucleusDcaFitAxisMax}, {NucleusDcaFitBins, -NucleusDcaFitAxisMax, NucleusDcaFitAxisMax}, {40, 0.f, 100.f}}}},
+     {"fraction/hDcaTemplateHad", "Truth pion DCA templates;signed reconstructed p_{T} (GeV/c);DCA_{xy} (cm);DCA_{z} (cm);centrality;origin", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {40, 0.f, 100.f}, {kNDcaOrigins, -0.5f, static_cast<float>(kNDcaOrigins) - 0.5f}}}},
+     {"fraction/hDcaTemplateNu", "Truth nucleus DCA templates;signed physical reconstructed p_{T} (GeV/c);DCA_{xy} (cm);DCA_{z} (cm);centrality;origin", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {NucleusDcaFitBins, -NucleusDcaFitAxisMax, NucleusDcaFitAxisMax}, {NucleusDcaFitBins, -NucleusDcaFitAxisMax, NucleusDcaFitAxisMax}, {40, 0.f, 100.f}, {kNDcaOrigins, -0.5f, static_cast<float>(kNDcaOrigins) - 0.5f}}}},
+
+     // DCA shapes of selected candidates that are not the requested truth
+     // species. They are kept separate from primary/weak/material so that
+     // their normalisation can be fixed or constrained by the PID purity.
+     {"fraction/hDcaMisidentifiedHad", "Misidentified pion candidates;signed reconstructed p_{T} (GeV/c);DCA_{xy} (cm);DCA_{z} (cm);centrality;collision association", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {40, 0.f, 100.f}, {kNCollisionAssociations, -0.5f, static_cast<float>(kNCollisionAssociations) - 0.5f}}}},
+     {"fraction/hDcaMisidentifiedNu", "Misidentified nucleus candidates;signed physical reconstructed p_{T} (GeV/c);DCA_{xy} (cm);DCA_{z} (cm);centrality;collision association", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {NucleusDcaFitBins, -NucleusDcaFitAxisMax, NucleusDcaFitAxisMax}, {NucleusDcaFitBins, -NucleusDcaFitAxisMax, NucleusDcaFitAxisMax}, {40, 0.f, 100.f}, {kNCollisionAssociations, -0.5f, static_cast<float>(kNCollisionAssociations) - 0.5f}}}},
+     {"fraction/hDcaNoMCLabelHad", "Selected pion candidates without an MC label;signed reconstructed p_{T} (GeV/c);DCA_{xy} (cm);DCA_{z} (cm);centrality", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {40, 0.f, 100.f}}}},
+     {"fraction/hDcaNoMCLabelNu", "Selected nucleus candidates without an MC label;signed physical reconstructed p_{T} (GeV/c);DCA_{xy} (cm);DCA_{z} (cm);centrality", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {NucleusDcaFitBins, -NucleusDcaFitAxisMax, NucleusDcaFitAxisMax}, {NucleusDcaFitBins, -NucleusDcaFitAxisMax, NucleusDcaFitAxisMax}, {40, 0.f, 100.f}}}},
+
+     // Superset templates for optional offline refinements. They retain the
+     // same base origin plus collision association, direct-parent category,
+     // and the particle production radius. Projecting away the extra axes
+     // recovers the base shapes; selecting them enables species-specific fits.
+     {"fraction/hDcaTemplateDetailHad", "Detailed truth pion DCA templates;signed reconstructed p_{T} (GeV/c);DCA_{xy} (cm);DCA_{z} (cm);centrality;origin;collision association;parent category;production R_{xy} (cm)", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {40, 0.f, 100.f}, {kNDcaOrigins, -0.5f, static_cast<float>(kNDcaOrigins) - 0.5f}, {kNCollisionAssociations, -0.5f, static_cast<float>(kNCollisionAssociations) - 0.5f}, {kNParentCategories, -0.5f, static_cast<float>(kNParentCategories) - 0.5f}, {200, 0.f, 100.f}}}},
+     {"fraction/hDcaTemplateDetailNu", "Detailed truth nucleus DCA templates;signed physical reconstructed p_{T} (GeV/c);DCA_{xy} (cm);DCA_{z} (cm);centrality;origin;collision association;parent category;production R_{xy} (cm)", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {NucleusDcaFitBins, -NucleusDcaFitAxisMax, NucleusDcaFitAxisMax}, {NucleusDcaFitBins, -NucleusDcaFitAxisMax, NucleusDcaFitAxisMax}, {40, 0.f, 100.f}, {kNDcaOrigins, -0.5f, static_cast<float>(kNDcaOrigins) - 0.5f}, {kNCollisionAssociations, -0.5f, static_cast<float>(kNCollisionAssociations) - 0.5f}, {kNParentCategories, -0.5f, static_cast<float>(kNParentCategories) - 0.5f}, {200, 0.f, 100.f}}}},
+
+     // Mother-resolved templates. There is one entry per direct mother (or a
+     // single zero-code entry when no mother is stored). Reconstruct the exact
+     // PDG code offline as sign * (PDG high * 10000 + PDG low).
+     {"fraction/hDcaMotherPdgHad", "Pion DCA by exact direct-mother PDG; signed reconstructed p_{T} (GeV/c);DCA_{xy} (cm);DCA_{z} (cm);centrality;origin;collision association;mother PDG sign;mother PDG high;mother PDG low", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {40, 0.f, 100.f}, {kNDcaOrigins, -0.5f, static_cast<float>(kNDcaOrigins) - 0.5f}, {kNCollisionAssociations, -0.5f, static_cast<float>(kNCollisionAssociations) - 0.5f}, {3, -1.5f, 1.5f}, {MotherPdgHighMax + 1, -0.5f, static_cast<float>(MotherPdgHighMax) + 0.5f}, {MotherPdgChunkBase, -0.5f, static_cast<float>(MotherPdgChunkBase) - 0.5f}}}},
+     {"fraction/hDcaMotherPdgNu", "Nucleus DCA by exact direct-mother PDG; signed physical reconstructed p_{T} (GeV/c);DCA_{xy} (cm);DCA_{z} (cm);centrality;origin;collision association;mother PDG sign;mother PDG high;mother PDG low", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {NucleusDcaFitBins, -NucleusDcaFitAxisMax, NucleusDcaFitAxisMax}, {NucleusDcaFitBins, -NucleusDcaFitAxisMax, NucleusDcaFitAxisMax}, {40, 0.f, 100.f}, {kNDcaOrigins, -0.5f, static_cast<float>(kNDcaOrigins) - 0.5f}, {kNCollisionAssociations, -0.5f, static_cast<float>(kNCollisionAssociations) - 0.5f}, {3, -1.5f, 1.5f}, {MotherPdgHighMax + 1, -0.5f, static_cast<float>(MotherPdgHighMax) + 0.5f}, {MotherPdgChunkBase, -0.5f, static_cast<float>(MotherPdgChunkBase) - 0.5f}}}},
+
+     // Hierarchical MC truth purity counters: all = correct species + mis-ID
+     // + no label; correct species = correct collision + wrong collision;
+     // correct collision = primary + weak + material.
+     {"purityMC/hHadron", "Selected pion truth composition;signed reconstructed p_{T} (GeV/c);category;centrality", {HistType::kTH3F, {{280, -7.f, 7.f}, {kNPurityCategories, -0.5f, static_cast<float>(kNPurityCategories) - 0.5f}, {40, 0.f, 100.f}}}},
+     {"purityMC/hNucleus", "Selected nucleus truth composition;signed physical reconstructed p_{T} (GeV/c);category;centrality", {HistType::kTH3F, {{280, -7.f, 7.f}, {kNPurityCategories, -0.5f, static_cast<float>(kNPurityCategories) - 0.5f}, {40, 0.f, 100.f}}}},
+
      // dE/dx
      {"h2dEdxNucandidates", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
      {"h2dEdxHadcandidates", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
@@ -733,6 +830,64 @@ struct HadNucleiFemto {
     const std::array<std::string, 4> mixedEventLabels = {"All collisions", "Event selection", "Mixing pool", "Mixed combinations"};
     for (size_t i = 0; i < mixedEventLabels.size(); i++) {
       mQaRegistry.get<TH1>(HIST("hMixedEventSelections"))->GetXaxis()->SetBinLabel(i + 1, mixedEventLabels[i].c_str());
+    }
+
+    const std::array<const char*, kNDcaOrigins> originLabels = {"Primary", "WeakDecay", "Material"};
+    const std::array<const char*, kNCollisionAssociations> collisionLabels = {"CorrectCollision", "WrongCollision"};
+    const std::array<const char*, kNParentCategories> parentLabels = {"NoSpecialParent", "Lambda", "Sigma", "K0Short", "K0Long", "ChargedKaon", "Hypertriton", "Lithium4", "OtherDecay", "MissingDecayMother"};
+    const std::array<const char*, kNPurityCategories> purityLabels = {"AllSelected", "CorrectSpecies", "MisidentifiedSpecies", "NoMCLabel", "CorrectCollisionSpecies", "WrongCollisionSpecies", "CorrectPrimary", "CorrectWeakDecay", "CorrectMaterial"};
+
+    const auto baseDcaHad = mQaRegistry.get<THnSparse>(HIST("fraction/hDcaTemplateHad"));
+    const auto baseDcaNu = mQaRegistry.get<THnSparse>(HIST("fraction/hDcaTemplateNu"));
+    const std::array<THnSparse*, 2> baseDcaHistograms = {baseDcaHad.get(), baseDcaNu.get()};
+    for (const auto& histogram : baseDcaHistograms) {
+      for (int i = 0; i < kNDcaOrigins; ++i) {
+        histogram->GetAxis(4)->SetBinLabel(i + 1, originLabels[i]);
+      }
+    }
+    const auto misidentifiedDcaHad = mQaRegistry.get<THnSparse>(HIST("fraction/hDcaMisidentifiedHad"));
+    const auto misidentifiedDcaNu = mQaRegistry.get<THnSparse>(HIST("fraction/hDcaMisidentifiedNu"));
+    const std::array<THnSparse*, 2> misidentifiedDcaHistograms = {misidentifiedDcaHad.get(), misidentifiedDcaNu.get()};
+    for (const auto& histogram : misidentifiedDcaHistograms) {
+      for (int i = 0; i < kNCollisionAssociations; ++i) {
+        histogram->GetAxis(4)->SetBinLabel(i + 1, collisionLabels[i]);
+      }
+    }
+    const auto detailedDcaHad = mQaRegistry.get<THnSparse>(HIST("fraction/hDcaTemplateDetailHad"));
+    const auto detailedDcaNu = mQaRegistry.get<THnSparse>(HIST("fraction/hDcaTemplateDetailNu"));
+    const std::array<THnSparse*, 2> detailedDcaHistograms = {detailedDcaHad.get(), detailedDcaNu.get()};
+    for (const auto& histogram : detailedDcaHistograms) {
+      for (int i = 0; i < kNDcaOrigins; ++i) {
+        histogram->GetAxis(4)->SetBinLabel(i + 1, originLabels[i]);
+      }
+      for (int i = 0; i < kNCollisionAssociations; ++i) {
+        histogram->GetAxis(5)->SetBinLabel(i + 1, collisionLabels[i]);
+      }
+      for (int i = 0; i < kNParentCategories; ++i) {
+        histogram->GetAxis(6)->SetBinLabel(i + 1, parentLabels[i]);
+      }
+    }
+    const auto motherPdgHad = mQaRegistry.get<THnSparse>(HIST("fraction/hDcaMotherPdgHad"));
+    const auto motherPdgNu = mQaRegistry.get<THnSparse>(HIST("fraction/hDcaMotherPdgNu"));
+    const std::array<THnSparse*, 2> motherPdgHistograms = {motherPdgHad.get(), motherPdgNu.get()};
+    for (const auto& histogram : motherPdgHistograms) {
+      for (int i = 0; i < kNDcaOrigins; ++i) {
+        histogram->GetAxis(4)->SetBinLabel(i + 1, originLabels[i]);
+      }
+      for (int i = 0; i < kNCollisionAssociations; ++i) {
+        histogram->GetAxis(5)->SetBinLabel(i + 1, collisionLabels[i]);
+      }
+      histogram->GetAxis(6)->SetBinLabel(1, "Negative");
+      histogram->GetAxis(6)->SetBinLabel(2, "NoMother");
+      histogram->GetAxis(6)->SetBinLabel(3, "Positive");
+    }
+    const auto purityHad = mQaRegistry.get<TH3>(HIST("purityMC/hHadron"));
+    const auto purityNu = mQaRegistry.get<TH3>(HIST("purityMC/hNucleus"));
+    const std::array<TH3*, 2> purityHistograms = {purityHad.get(), purityNu.get()};
+    for (const auto& histogram : purityHistograms) {
+      for (int i = 0; i < kNPurityCategories; ++i) {
+        histogram->GetYaxis()->SetBinLabel(i + 1, purityLabels[i]);
+      }
     }
   }
 
@@ -1052,6 +1207,60 @@ struct HadNucleiFemto {
     }
     LOG(info) << "invalid nucleus PDG code";
     return false;
+  }
+
+  // DCA-template inputs must retain the tails. These predicates reproduce the
+  // nominal track-quality selections while deliberately omitting only DCA.
+  template <typename Ttrack>
+  bool selectPionTrackForDcaFit(const Ttrack& candidate) const
+  {
+    const float absPt = std::abs(candidate.pt());
+    return std::abs(candidate.eta()) <= trackCut.settingCutEta.value &&
+           absPt >= hadronPid.settingHadptMin.value &&
+           absPt <= hadronPid.settingHadptMax.value &&
+           candidate.itsNClsInnerBarrel() >= hadronPid.settingPionITSInnerBarrelMin.value &&
+           candidate.itsNCls() >= hadronPid.settingPionITSNClsMin.value &&
+           candidate.tpcNClsFound() >= hadronPid.settingPionTPCNClsFoundMin.value &&
+           candidate.tpcNClsCrossedRows() >= hadronPid.settingPionTPCCrossedRowsMin.value;
+  }
+
+  template <typename Ttrack>
+  bool selectTritonTrackForDcaFit(const Ttrack& candidate) const
+  {
+    constexpr float maxAbsEta = 0.8f;
+    constexpr int minTPCCrossedRows = 70;
+    constexpr float maxTPCChi2NCl = 5.f;
+    constexpr float maxTPCFractionSharedCls = 0.3f;
+    constexpr int minITSNCls = 5;
+    constexpr float maxITSChi2NCl = 10.f;
+    return std::abs(candidate.eta()) < maxAbsEta &&
+           candidate.tpcNClsCrossedRows() >= minTPCCrossedRows &&
+           candidate.tpcChi2NCl() < maxTPCChi2NCl &&
+           candidate.tpcFractionSharedCls() < maxTPCFractionSharedCls &&
+           candidate.itsNCls() >= minITSNCls &&
+           candidate.itsChi2NCl() < maxITSChi2NCl;
+  }
+
+  template <typename Ttrack>
+  bool selectHadronTrackForDcaFit(const Ttrack& candidate)
+  {
+    if (species.settingHadPDGCode.value == static_cast<int>(PDG_t::kPiPlus)) {
+      return selectPionTrackForDcaFit(candidate);
+    }
+    // The fraction feature is intended for pion-nucleus configurations. Keep
+    // the nominal selection for other supported hadrons instead of silently
+    // changing their established cuts.
+    return selectTrackHadron(candidate);
+  }
+
+  template <typename Ttrack>
+  bool selectNucleusTrackForDcaFit(const Ttrack& candidate)
+  {
+    if (useTritonNucleus()) {
+      return selectTritonTrackForDcaFit(candidate);
+    }
+    // The deuteron and helium-3 track-quality predicates contain no DCA cut.
+    return selectTrackNu(candidate);
   }
 
   void fillNucleusTrackSelection(const Selections selection)
@@ -1616,6 +1825,128 @@ struct HadNucleiFemto {
       return selectionPIDDe(candidate);
     }
     return false;
+  }
+
+  template <typename Ttrack>
+  bool selectionPIDDeForDcaFit(const Ttrack& candidate)
+  {
+    const float absPt = std::abs(candidate.pt());
+    const float absTPCInnerParam = std::abs(candidate.tpcInnerParam());
+    if (absTPCInnerParam < deuteronPid.settingCutPinMinDe.value ||
+        absPt < deuteronPid.settingCutDeptMin.value ||
+        absPt > deuteronPid.settingCutDeptMax.value) {
+      return false;
+    }
+
+    const float tpcNSigmaDe = output.settingUseBBcomputeDeNsigma.value ? computeNSigmaDe(candidate) : candidate.tpcNSigmaDe();
+    if (absTPCInnerParam > deuteronPid.settingCutPinMinTOFITSDe.value) {
+      if (!candidate.hasTOF()) {
+        return false;
+      }
+      const float tofNSigmaDe = candidate.tofNSigmaDe();
+      const float combinedNSigma = std::hypot(tpcNSigmaDe, tofNSigmaDe);
+      if (combinedNSigma > deuteronPid.settingCutNsigmaTOFTPCDe.value) {
+        return false;
+      }
+      return !deuteronPid.settingReqSingleNsig.value ||
+             (std::abs(tpcNSigmaDe) <= deuteronPid.settingCutNsigmaTOFTPCDe.value &&
+              std::abs(tofNSigmaDe) <= deuteronPid.settingCutNsigmaTOFTPCDe.value);
+    }
+
+    if (std::abs(tpcNSigmaDe) > deuteronPid.settingCutNsigmaTPCDe.value) {
+      return false;
+    }
+    o2::aod::ITSResponse itsResponse;
+    const float itsNSigmaDe = itsResponse.nSigmaITS<o2::track::PID::Deuteron>(candidate.itsClusterSizes(), candidate.p(), candidate.eta());
+    return std::abs(itsNSigmaDe) <= deuteronPid.settingCutNsigmaITSDe.value;
+  }
+
+  template <typename Ttrack>
+  bool selectionPIDNuForDcaFit(const Ttrack& candidate)
+  {
+    if (useDeuteronNucleus()) {
+      return selectionPIDDeForDcaFit(candidate);
+    }
+    // The helium-3 and triton PID predicates do not contain DCA selections.
+    return selectionPIDNu(candidate);
+  }
+
+  template <typename Ttrack>
+  float signedPhysicalPt(const Ttrack& track, bool isNucleus) const
+  {
+    const float chargeFactor = isNucleus ? nucleusChargeFactor() : 1.f;
+    return track.sign() * chargeFactor * std::abs(track.pt());
+  }
+
+  template <typename Tparticle>
+  int classifyDcaOrigin(const Tparticle& particle) const
+  {
+    if (particle.isPhysicalPrimary()) {
+      return kPrimary;
+    }
+    if (particle.getProcess() == TMCProcess::kPDecay) {
+      return kWeakDecay;
+    }
+    // Following the DCA-template convention used by Giorgio: after excluding
+    // physical primaries and decay daughters, every remaining transport
+    // process is treated as a secondary produced in detector material.
+    return kMaterial;
+  }
+
+  int purityOriginCategory(int origin) const
+  {
+    switch (origin) {
+      case kPrimary:
+        return kCorrectPrimary;
+      case kWeakDecay:
+        return kCorrectWeakDecay;
+      case kMaterial:
+        return kCorrectMaterial;
+      default:
+        // classifyDcaOrigin deliberately has only the three Giorgio classes.
+        return kCorrectMaterial;
+    }
+  }
+
+  template <typename Tparticle>
+  int classifyParentCategory(const Tparticle& particle, int origin) const
+  {
+    if (!particle.has_mothers()) {
+      return origin == kWeakDecay ? kMissingDecayParent : kNoSpecialParent;
+    }
+
+    const int fallbackCategory = origin == kWeakDecay ? kOtherDecayParent : kNoSpecialParent;
+    for (const auto& mother : particle.template mothers_as<aod::McParticles>()) {
+      const int motherPdg = std::abs(mother.pdgCode());
+
+      // Keep the nuclear feed-down parents identifiable for all origin labels.
+      if (motherPdg == HyperTritonPDG) {
+        return kHypertritonParent;
+      }
+      if (motherPdg == Lithium4PDG) {
+        return kLithium4Parent;
+      }
+
+      if (origin != kWeakDecay) {
+        continue;
+      }
+      if (motherPdg == PDG_t::kLambda0) {
+        return kLambdaParent;
+      }
+      if (motherPdg == PDG_t::kSigmaMinus || motherPdg == PDG_t::kSigma0 || motherPdg == PDG_t::kSigmaPlus) {
+        return kSigmaParent;
+      }
+      if (motherPdg == PDG_t::kK0Short) {
+        return kK0ShortParent;
+      }
+      if (motherPdg == PDG_t::kK0Long) {
+        return kK0LongParent;
+      }
+      if (motherPdg == PDG_t::kKPlus) {
+        return kChargedKaonParent;
+      }
+    }
+    return fallbackCategory;
   }
 
   template <typename Ttrack>
@@ -2881,6 +3212,229 @@ struct HadNucleiFemto {
     }
   }
   PROCESS_SWITCH(HadNucleiFemto, processMixedEvent, "Process Mixed event", false);
+
+  // Produce the data distributions fitted offline with the MC templates. All
+  // nominal quality and PID selections are applied; only DCA is relaxed.
+  void processDcaFractionData(const CollisionsFull& collisions, const TrackCandidates& tracks, const aod::BCsWithTimestamps& bcs)
+  {
+    for (const auto& collision : collisions) {
+      if (!selectCollision</*isMC*/ false>(collision, bcs)) {
+        continue;
+      }
+
+      const uint64_t collIdx = collision.globalIndex();
+      auto tracksThisCollision = tracks.sliceBy(mPerCol, collIdx);
+      tracksThisCollision.bindExternalIndices(&tracks);
+      for (const auto& track : tracksThisCollision) {
+        if (selectHadronTrackForDcaFit(track) && selectionPIDHadron(track) &&
+            std::abs(track.dcaXY()) <= fractionPurity.settingHadronDcaFitAbsMax.value &&
+            std::abs(track.dcaZ()) <= fractionPurity.settingHadronDcaFitAbsMax.value) {
+          mQaRegistry.fill(HIST("fraction/hDcaDataHad"), signedPhysicalPt(track, false), track.dcaXY(), track.dcaZ(), collision.centFT0C());
+        }
+
+        if (selectNucleusTrackForDcaFit(track) && selectionPIDNuForDcaFit(track) &&
+            std::abs(track.dcaXY()) <= fractionPurity.settingNucleusDcaFitAbsMax.value &&
+            std::abs(track.dcaZ()) <= fractionPurity.settingNucleusDcaFitAbsMax.value) {
+          mQaRegistry.fill(HIST("fraction/hDcaDataNu"), signedPhysicalPt(track, true), track.dcaXY(), track.dcaZ(), collision.centFT0C());
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(HadNucleiFemto, processDcaFractionData, "Produce data DCA-fraction fit inputs", false);
+
+  template <typename Ttrack, typename Tparticle, typename Tcollision>
+  bool truthBelongsToRecoCollision(const Ttrack&, const Tparticle& particle, const Tcollision& collision) const
+  {
+    return collision.has_mcCollision() && particle.mcCollisionId() == collision.mcCollisionId();
+  }
+
+  template <typename Ttrack>
+  void fillMCDcaMisidentified(const Ttrack& track, float centrality, bool isNucleus, bool matchesRecoCollision)
+  {
+    const float signedPt = signedPhysicalPt(track, isNucleus);
+    const float collisionAssociation = matchesRecoCollision ? static_cast<float>(kCorrectCollision) : static_cast<float>(kWrongCollision);
+    if (isNucleus) {
+      mQaRegistry.fill(HIST("fraction/hDcaMisidentifiedNu"), signedPt, track.dcaXY(), track.dcaZ(), centrality, collisionAssociation);
+    } else {
+      mQaRegistry.fill(HIST("fraction/hDcaMisidentifiedHad"), signedPt, track.dcaXY(), track.dcaZ(), centrality, collisionAssociation);
+    }
+  }
+
+  template <typename Ttrack>
+  void fillMCDcaNoLabel(const Ttrack& track, float centrality, bool isNucleus)
+  {
+    const float signedPt = signedPhysicalPt(track, isNucleus);
+    if (isNucleus) {
+      mQaRegistry.fill(HIST("fraction/hDcaNoMCLabelNu"), signedPt, track.dcaXY(), track.dcaZ(), centrality);
+    } else {
+      mQaRegistry.fill(HIST("fraction/hDcaNoMCLabelHad"), signedPt, track.dcaXY(), track.dcaZ(), centrality);
+    }
+  }
+
+  template <typename Ttrack, typename Tparticle>
+  void fillMCDcaTemplate(const Ttrack& track, const Tparticle& particle, float centrality, bool isNucleus, bool matchesRecoCollision)
+  {
+    const int origin = classifyDcaOrigin(particle);
+    const int collisionAssociation = matchesRecoCollision ? kCorrectCollision : kWrongCollision;
+    const int parentCategory = classifyParentCategory(particle, origin);
+    const float productionRadius = std::hypot(particle.vx(), particle.vy());
+    const float signedPt = signedPhysicalPt(track, isNucleus);
+
+    // The detailed histogram is always filled for a truth-PDG-matched track,
+    // including wrong-collision associations, so tighter choices can be made
+    // offline without rerunning the table producer.
+    if (isNucleus) {
+      mQaRegistry.fill(HIST("fraction/hDcaTemplateDetailNu"), signedPt, track.dcaXY(), track.dcaZ(), centrality, static_cast<float>(origin), static_cast<float>(collisionAssociation), static_cast<float>(parentCategory), productionRadius);
+    } else {
+      mQaRegistry.fill(HIST("fraction/hDcaTemplateDetailHad"), signedPt, track.dcaXY(), track.dcaZ(), centrality, static_cast<float>(origin), static_cast<float>(collisionAssociation), static_cast<float>(parentCategory), productionRadius);
+    }
+
+    const auto fillMotherPdg = [&](int motherPdg) {
+      const int motherSign = (motherPdg > 0) - (motherPdg < 0);
+      const int absoluteMotherPdg = std::abs(motherPdg);
+      const int motherPdgHigh = absoluteMotherPdg / MotherPdgChunkBase;
+      const int motherPdgLow = absoluteMotherPdg % MotherPdgChunkBase;
+      if (motherPdgHigh > MotherPdgHighMax) {
+        LOG(warning) << "Direct-mother PDG " << motherPdg << " exceeds the configured exact-PDG histogram range";
+        return;
+      }
+      if (isNucleus) {
+        mQaRegistry.fill(HIST("fraction/hDcaMotherPdgNu"), signedPt, track.dcaXY(), track.dcaZ(), centrality, static_cast<float>(origin), static_cast<float>(collisionAssociation), static_cast<float>(motherSign), static_cast<float>(motherPdgHigh), static_cast<float>(motherPdgLow));
+      } else {
+        mQaRegistry.fill(HIST("fraction/hDcaMotherPdgHad"), signedPt, track.dcaXY(), track.dcaZ(), centrality, static_cast<float>(origin), static_cast<float>(collisionAssociation), static_cast<float>(motherSign), static_cast<float>(motherPdgHigh), static_cast<float>(motherPdgLow));
+      }
+    };
+
+    if (particle.has_mothers()) {
+      for (const auto& mother : particle.template mothers_as<aod::McParticles>()) {
+        fillMotherPdg(mother.pdgCode());
+      }
+    } else {
+      fillMotherPdg(0);
+    }
+
+    // This is the stable three-component Giorgio template. The collision-match
+    // configurable preserves the previous strict/relaxed behavior.
+    if (fractionPurity.settingRequireRecoMCCollisionMatch.value && !matchesRecoCollision) {
+      return;
+    }
+    if (isNucleus) {
+      mQaRegistry.fill(HIST("fraction/hDcaTemplateNu"), signedPt, track.dcaXY(), track.dcaZ(), centrality, static_cast<float>(origin));
+    } else {
+      mQaRegistry.fill(HIST("fraction/hDcaTemplateHad"), signedPt, track.dcaXY(), track.dcaZ(), centrality, static_cast<float>(origin));
+    }
+  }
+
+  template <typename Ttrack, typename Tparticle>
+  void fillMCPurityComposition(const Ttrack& track, const Tparticle& particle, float centrality, bool isNucleus, bool correctSpecies, bool matchesRecoCollision)
+  {
+    const float signedPt = signedPhysicalPt(track, isNucleus);
+    const auto fillCategory = [&](int category) {
+      if (isNucleus) {
+        mQaRegistry.fill(HIST("purityMC/hNucleus"), signedPt, static_cast<float>(category), centrality);
+      } else {
+        mQaRegistry.fill(HIST("purityMC/hHadron"), signedPt, static_cast<float>(category), centrality);
+      }
+    };
+    fillCategory(kAllSelected);
+    if (!correctSpecies) {
+      fillCategory(kMisidentifiedSpecies);
+      return;
+    }
+    fillCategory(kCorrectSpecies);
+    if (!matchesRecoCollision) {
+      fillCategory(kWrongCollisionSpecies);
+      return;
+    }
+    fillCategory(kCorrectCollisionSpecies);
+    const int origin = classifyDcaOrigin(particle);
+    fillCategory(purityOriginCategory(origin));
+  }
+
+  template <typename Ttrack>
+  void fillMCNoLabelPurity(const Ttrack& track, float centrality, bool isNucleus)
+  {
+    const float signedPt = signedPhysicalPt(track, isNucleus);
+    if (isNucleus) {
+      mQaRegistry.fill(HIST("purityMC/hNucleus"), signedPt, static_cast<float>(kAllSelected), centrality);
+      mQaRegistry.fill(HIST("purityMC/hNucleus"), signedPt, static_cast<float>(kNoMCLabel), centrality);
+    } else {
+      mQaRegistry.fill(HIST("purityMC/hHadron"), signedPt, static_cast<float>(kAllSelected), centrality);
+      mQaRegistry.fill(HIST("purityMC/hHadron"), signedPt, static_cast<float>(kNoMCLabel), centrality);
+    }
+  }
+
+  // MC DCA templates use the relaxed-DCA selection. MC purity uses the full
+  // nominal candidate selection, including its DCA requirement.
+  void processDcaFractionPurityMC(const CollisionsFullMC& collisions, const TrackCandidatesMC& tracks, const aod::McParticles&, const aod::BCsWithTimestamps& bcs)
+  {
+    for (const auto& collision : collisions) {
+      if (!selectCollision</*isMC*/ true>(collision, bcs)) {
+        continue;
+      }
+
+      const uint64_t collIdx = collision.globalIndex();
+      auto tracksThisCollision = tracks.sliceBy(mPerColMC, collIdx);
+      tracksThisCollision.bindExternalIndices(&tracks);
+      for (const auto& track : tracksThisCollision) {
+        const bool selectedHadronForFraction = selectHadronTrackForDcaFit(track) && selectionPIDHadron(track) &&
+                                               std::abs(track.dcaXY()) <= fractionPurity.settingHadronDcaFitAbsMax.value &&
+                                               std::abs(track.dcaZ()) <= fractionPurity.settingHadronDcaFitAbsMax.value;
+        const bool selectedNucleusForFraction = selectNucleusTrackForDcaFit(track) && selectionPIDNuForDcaFit(track) &&
+                                                std::abs(track.dcaXY()) <= fractionPurity.settingNucleusDcaFitAbsMax.value &&
+                                                std::abs(track.dcaZ()) <= fractionPurity.settingNucleusDcaFitAbsMax.value;
+
+        const bool selectedHadronForPurity = selectTrackHadron(track) && selectionPIDHadron(track);
+        const bool selectedNucleusForPurity = selectTrackNu(track) && selectionPIDNu(track);
+
+        if (!track.has_mcParticle()) {
+          if (selectedHadronForFraction) {
+            fillMCDcaNoLabel(track, collision.centFT0C(), false);
+          }
+          if (selectedNucleusForFraction) {
+            fillMCDcaNoLabel(track, collision.centFT0C(), true);
+          }
+          if (selectedHadronForPurity) {
+            fillMCNoLabelPurity(track, collision.centFT0C(), false);
+          }
+          if (selectedNucleusForPurity) {
+            fillMCNoLabelPurity(track, collision.centFT0C(), true);
+          }
+          continue;
+        }
+
+        const auto particle = track.template mcParticle_as<aod::McParticles>();
+        const bool matchesRecoCollision = truthBelongsToRecoCollision(track, particle, collision);
+        const int expectedHadronPdg = track.sign() >= 0 ? std::abs(species.settingHadPDGCode.value) : -std::abs(species.settingHadPDGCode.value);
+        const int expectedNucleusPdg = track.sign() >= 0 ? std::abs(species.settingNuPDGCode.value) : -std::abs(species.settingNuPDGCode.value);
+        const bool correctHadronSpecies = particle.pdgCode() == expectedHadronPdg;
+        const bool correctNucleusSpecies = particle.pdgCode() == expectedNucleusPdg;
+
+        if (selectedHadronForPurity) {
+          fillMCPurityComposition(track, particle, collision.centFT0C(), false, correctHadronSpecies, matchesRecoCollision);
+        }
+        if (selectedNucleusForPurity) {
+          fillMCPurityComposition(track, particle, collision.centFT0C(), true, correctNucleusSpecies, matchesRecoCollision);
+        }
+
+        if (selectedHadronForFraction) {
+          if (correctHadronSpecies) {
+            fillMCDcaTemplate(track, particle, collision.centFT0C(), false, matchesRecoCollision);
+          } else {
+            fillMCDcaMisidentified(track, collision.centFT0C(), false, matchesRecoCollision);
+          }
+        }
+        if (selectedNucleusForFraction) {
+          if (correctNucleusSpecies) {
+            fillMCDcaTemplate(track, particle, collision.centFT0C(), true, matchesRecoCollision);
+          } else {
+            fillMCDcaMisidentified(track, collision.centFT0C(), true, matchesRecoCollision);
+          }
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(HadNucleiFemto, processDcaFractionPurityMC, "Produce MC DCA templates and truth-purity counters", false);
 
   void processPurity(const CollisionsFull& collisions, const TrackCandidates& tracks, const aod::BCsWithTimestamps& bcs)
   {
