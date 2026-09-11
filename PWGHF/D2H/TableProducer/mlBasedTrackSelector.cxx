@@ -56,14 +56,17 @@
 #include <ReconstructionDataFormats/Track.h>
 #include <ReconstructionDataFormats/Vertex.h>
 
+#include <TH1.h>
+
 #include <Rtypes.h>
 
 #include <algorithm>
 #include <array>
 #include <chrono>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
-#include <numeric>
+#include <iterator>
 #include <string>
 #include <vector>
 
@@ -115,9 +118,10 @@ constexpr int NProngs = 3;    // prongs of the candidates built here
 constexpr int NMassHypos = 2; // mass hypotheses per channel, i.e. the two orderings of the same-sign pair
 
 /// Whether each prong is a kaon, per channel and mass hypothesis.
-constexpr bool IsKaonProng[NChannels3Prong][NMassHypos][NProngs] = {
-  {{false, true, false}, {false, true, false}},
-  {{true, true, false}, {false, true, true}}};
+constexpr std::array<std::array<std::array<bool, NProngs>, NMassHypos>, NChannels3Prong> IsKaonProng{{
+  {{{{false, true, false}}, {{false, true, false}}}},
+  {{{{true, true, false}}, {{false, true, true}}}},
+}};
 
 constexpr double PtMaxModel = 1.e10;
 
@@ -180,8 +184,8 @@ struct HfTrackSelectorTagSelCollisions {
 
   void init(InitContext const&)
   {
-    const std::array<int, 7> doProcess = {doprocessTrigAndCentFT0ASel, doprocessTrigAndCentFT0CSel, doprocessTrigAndCentFT0MSel, doprocessTrigAndCentFV0ASel, doprocessTrigSel, doprocessNoTrigSel, doprocessUpcSel};
-    if (std::accumulate(doProcess.begin(), doProcess.end(), 0) != 1) {
+    const std::array<bool, 7> doProcess = {doprocessTrigAndCentFT0ASel, doprocessTrigAndCentFT0CSel, doprocessTrigAndCentFT0MSel, doprocessTrigAndCentFV0ASel, doprocessTrigSel, doprocessNoTrigSel, doprocessUpcSel};
+    if (std::count(doProcess.begin(), doProcess.end(), true) != 1) {
       LOGP(fatal, "One and only one process function for collision selection can be enabled at a time!");
     }
 
@@ -420,8 +424,8 @@ struct HfTrackSelectorTagSelTracks {
       LOGF(fatal, "ml-based-track-selector is for test only, please do not use for analysis. If you are aware of what you are doing, set testAcknowledgement to true in the configuration.");
     }
 
-    const std::array<int, 2> doProcess = {doprocessTracks, doprocessTracksWithCentFT0C};
-    if (std::accumulate(doProcess.begin(), doProcess.end(), 0) != 1) {
+    const std::array<bool, 2> doProcess = {doprocessTracks, doprocessTracksWithCentFT0C};
+    if (std::count(doProcess.begin(), doProcess.end(), true) != 1) {
       LOGP(fatal, "One and only one process function of HfTrackSelectorTagSelTracks can be enabled at a time!");
     }
 
@@ -985,7 +989,7 @@ struct HfMlBasedTrackSelector {
       const double minMass = cut3Prong[iChannel].get(binPt, 0u);
       const double maxMass = cut3Prong[iChannel].get(binPt, 1u);
       if (minMass >= 0. && maxMass > 0.) {
-        double massHypos[2] = {0., 0.};
+        std::array<double, 2> massHypos = {0., 0.};
         const std::array arrMom{pVecTrack0, pVecTrack1, pVecTrack2};
         const double min2 = minMass * minMass;
         const double max2 = maxMass * maxMass;
@@ -1100,7 +1104,7 @@ struct HfMlBasedTrackSelector {
                       const int64_t globalIndex0, const int64_t globalIndex1, const int64_t globalIndex2)
   {
     uint32_t isSelected3ProngCand = BIT(NChannels3Prong) - 1;
-    std::array<int, NChannels3Prong> whichHypo3Prong;
+    std::array<int, NChannels3Prong> whichHypo3Prong{};
     whichHypo3Prong.fill(BIT(NMassHypos) - 1); // all mass hypotheses alive
 
     applyMlRoleSelection(isIdentifiedPid0, isIdentifiedPid1, isIdentifiedPid2, whichHypo3Prong, isSelected3ProngCand);
