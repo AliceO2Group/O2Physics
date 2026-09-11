@@ -2892,7 +2892,7 @@ struct derivedlambdakzeroanalysis {
       histos.fill(HIST("hCentralityVsMultMC"), centrality, mcCollision.multMCNParticlesEta05());
       histos.fill(HIST("hCentralityVsPVzMC"), centrality, mcCollision.posZ());
       histos.fill(HIST("hEventPVzMC"), mcCollision.posZ());
-      
+
       if (doEventMCQA) {
         histos.fill(HIST("hMultFT0MVsMultMC"), multFT0M, mcCollision.multMCNParticlesEta05());
         histos.fill(HIST("hMultFT0CVsMultMC"), multFT0C, mcCollision.multMCNParticlesEta05());
