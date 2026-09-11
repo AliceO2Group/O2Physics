@@ -202,10 +202,10 @@ struct BuilderModule {
   std::vector<std::shared_ptr<TProfile>> hCalibPVMC;
 
   int nEnabledTables = 0;
-  int mRunNumber;
+  int mRunNumber = 0;
 
   // TAxis
-  int nCentBins;
+  int nCentBins = 0;
   std::vector<double> centralityBins;
 
   // Registers the on-the-fly-calibration QA histograms for one estimator (no-op unless recalibrateCentrality
@@ -733,4 +733,4 @@ struct BuilderModule {
 } // namespace pwglf
 } // namespace o2
 
-#endif // PWGLF_UTILS_MCCENTRALITYMODULE_
+#endif  // PWGLF_UTILS_MCCENTRALITYMODULE_H_
