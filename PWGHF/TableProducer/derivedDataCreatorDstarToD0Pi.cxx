@@ -255,7 +255,7 @@ struct HfDerivedDataCreatorDstarToD0Pi {
       int pdgBhadMotherPart = 0;
       for (const auto& candidate : candidatesThisColl) {
         if constexpr (IsMl) {
-          if (!TESTBIT(candidate.isSelDstarToD0Pi(), aod::SelectionStep::RecoMl)) {
+          if (!candidate.isSelDstarToD0Pi()) {
             continue;
           }
         }
