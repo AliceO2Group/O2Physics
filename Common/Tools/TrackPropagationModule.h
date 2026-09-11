@@ -22,6 +22,7 @@
 #include "Common/Tools/TrackTuner.h"
 
 #include <CommonConstants/GeomConstants.h>
+#include <DataFormatsCalibration/MeanVertexObject.h>
 #include <DetectorsBase/Propagator.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -31,13 +32,13 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/Logger.h>
-#include <Framework/RunningWorkflowInfo.h>
 #include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/TrackParametrization.h>
 #include <ReconstructionDataFormats/TrackParametrizationWithError.h>
 
 #include <TH1.h>
 #include <TH2.h>
+#include <TList.h>
 
 #include <array>
 #include <cmath>
@@ -109,7 +110,9 @@ class TrackPropagationModule
   bool autoDetectDcaCalib = false; // track tuner setting
 
   template <typename TConfigurableGroup, typename TInitContext, typename THistoRegistry>
-  void init(TConfigurableGroup const& cGroup, TrackTuner& trackTunerObj, THistoRegistry& registry, TInitContext& initContext)
+  /// \param calibFromCCDBColumns the task supplies the TrackTuner calibrations from the
+  ///        aod::TrackTunerCCDBObjects columns, so nothing is fetched from CCDB here.
+  void init(TConfigurableGroup const& cGroup, TrackTuner& trackTunerObj, THistoRegistry& registry, TInitContext& initContext, bool calibFromCCDBColumns = false)
   {
     // Checking if the tables are requested in the workflow and enabling them
     fillTracks = o2::common::core::isTableRequiredInWorkflow(initContext, "Tracks");
@@ -176,23 +179,31 @@ class TrackPropagationModule
       /// read the track tuner instance configurations,
       /// to understand whether the TrackTuner::getDcaGraphs function can be called here (input path from string/configurables)
       /// or inside the process function, to "auto-detect" the input file based on the run number
-      const auto& workflows = initContext.services().template get<o2::framework::RunningWorkflowInfo const>();
-      for (o2::framework::DeviceSpec const& device : workflows.devices) { /// loop over devices
-        if (device.name == "propagation-service") {
-          // loop over the options
-          // to find the value of TrackTuner::autoDetectDcaCalib
-          for (const auto& option : device.options) { /// loop over options
-            if (option.name == "trackTuner.autoDetectDcaCalib") {
-              // found it!
-              autoDetectDcaCalib = option.defaultValue.get<bool>();
-              break;
-            }
-          } /// end loop over options
+      // Read the option off the device we are actually running in. This used to search
+      // the workflow for a device literally named "propagation-service", which silently
+      // matched nothing in any other task (propagation-service-v2, -run2, ...), leaving
+      // autoDetectDcaCalib at its default no matter how the task was configured.
+      o2::framework::DeviceSpec const& device = initContext.services().template get<o2::framework::DeviceSpec const>();
+      for (const auto& option : device.options) { /// loop over options
+        if (option.name == "trackTuner.autoDetectDcaCalib") {
+          // found it!
+          autoDetectDcaCalib = option.defaultValue.get<bool>();
           break;
         }
-      } /// end loop over devices
+      } /// end loop over options
       LOG(info) << "[TrackPropagationModule]  trackTuner.autoDetectDcaCalib it's equal to " << autoDetectDcaCalib;
-      if (!autoDetectDcaCalib) {
+      if (calibFromCCDBColumns && trackTunerObj.isInputFileFromCCDB) {
+        // The column is the single source of truth for the path: its default carries the
+        // per-period mapping and it is overridden through "ccdb:fTrackTunerDca". Silently
+        // preferring one of two path settings is how calibrations diverge unnoticed, so a
+        // leftover trackTuner.pathInputFile is an error rather than a shadowed value.
+        if (!trackTunerObj.pathInputFile.empty()) {
+          LOG(fatal) << "[TrackPropagationModule] trackTuner.pathInputFile is set to '" << trackTunerObj.pathInputFile
+                     << "' while the TrackTuner calibrations are taken from the aod::TrackTunerCCDBObjects columns. "
+                     << "Set the path through the \"ccdb:fTrackTunerDca\" option instead, or unset trackTuner.pathInputFile.";
+        }
+        LOG(info) << "[TrackPropagationModule]  TrackTuner calibrations come from CCDB columns; graphs retrieved in the process function";
+      } else if (!autoDetectDcaCalib) {
         LOG(info) << "[TrackPropagationModule]  retrieve the graphs already (we are in propagationService::Init() function)";
         trackTunerObj.getDcaGraphs();
       } else {
@@ -215,24 +226,50 @@ class TrackPropagationModule
     registry.template get<TH1>(HIST("hPropagation"))->GetXaxis()->SetBinLabel(3, "Propagation OK");
   }
 
+  /// Legacy overload for callers still holding a StandardCCDBLoader; forwards the two
+  /// run-scoped values actually used. Prefer the overload below, which lets the caller
+  /// source them from CCDB columns instead of a CCDB query.
   template <bool isMc, typename TConfigurableGroup, typename TCCDBLoader, typename TCollisions, typename TTracks, typename TOutputGroup, typename THistoRegistry>
   void fillTrackTables(TConfigurableGroup const& cGroup, TrackTuner& trackTunerObj, TCCDBLoader const& ccdbLoader, TCollisions const& collisions, TTracks const& tracks, TOutputGroup& cursors, THistoRegistry& registry)
+  {
+    fillTrackTables<isMc>(cGroup, trackTunerObj, ccdbLoader.runNumber, ccdbLoader.mMeanVtx, collisions, tracks, cursors, registry);
+  }
+
+  /// Takes the run-scoped conditions it actually needs (run number for the TrackTuner
+  /// path, mean vertex for the DCA reference) rather than a CCDB loader object, so that
+  /// callers are free to source them from CCDB columns instead of a CCDB query.
+  template <bool isMc, typename TConfigurableGroup, typename TCollisions, typename TTracks, typename TOutputGroup, typename THistoRegistry>
+  void fillTrackTables(TConfigurableGroup const& cGroup, TrackTuner& trackTunerObj, int currentRunNumber, o2::dataformats::MeanVertexObject const* meanVtx, TCollisions const& collisions, TTracks const& tracks, TOutputGroup& cursors, THistoRegistry& registry)
+  {
+    fillTrackTables<isMc>(cGroup, trackTunerObj, currentRunNumber, meanVtx, nullptr, nullptr, collisions, tracks, cursors, registry);
+  }
+
+  /// As above, plus the TrackTuner calibration lists taken from the
+  /// aod::TrackTunerCCDBObjects columns. When they are given, the run-range table that
+  /// getPathInputFileAutomaticFromCCDB() would have walked has already been applied by
+  /// the CCDB fetcher, so no CCDB query happens here at all.
+  template <bool isMc, typename TConfigurableGroup, typename TCollisions, typename TTracks, typename TOutputGroup, typename THistoRegistry>
+  void fillTrackTables(TConfigurableGroup const& cGroup, TrackTuner& trackTunerObj, int currentRunNumber, o2::dataformats::MeanVertexObject const* meanVtx, TList* dcaCalib, TList* qOverPtCalib, TCollisions const& collisions, TTracks const& tracks, TOutputGroup& cursors, THistoRegistry& registry)
   {
 
     /// retrieve the TrackTuner calibration graphs *if not done yet*
     /// i.e. if autodetect is required
-    if (cGroup.useTrackTuner.value && autoDetectDcaCalib && !trackTunerObj.areGraphsConfigured) {
+    if (cGroup.useTrackTuner.value && !trackTunerObj.areGraphsConfigured && (autoDetectDcaCalib || dcaCalib != nullptr)) {
 
-      /// get the run number from the ccdb loader, already initialized
-      const int runNumber = ccdbLoader.runNumber;
-      trackTunerObj.setRunNumber(runNumber);
+      trackTunerObj.setRunNumber(currentRunNumber);
 
-      /// setup the "auto-detected" path based on the run number
-      trackTunerObj.getPathInputFileAutomaticFromCCDB();
-      trackTunedTracks->SetTitle(trackTunerObj.outputString.c_str());
+      if (dcaCalib != nullptr) {
+        /// the path was resolved by the CCDB fetcher from the column's run-range mapping
+        trackTunedTracks->SetTitle(trackTunerObj.outputString.c_str());
+        trackTunerObj.getDcaGraphs(dcaCalib, qOverPtCalib);
+      } else {
+        /// setup the "auto-detected" path based on the run number
+        trackTunerObj.getPathInputFileAutomaticFromCCDB();
+        trackTunedTracks->SetTitle(trackTunerObj.outputString.c_str());
 
-      /// now that the path is ok, retrieve the graphs
-      trackTunerObj.getDcaGraphs();
+        /// now that the path is ok, retrieve the graphs
+        trackTunerObj.getDcaGraphs();
+      }
     }
 
     if (!fillTracks) {
@@ -314,11 +351,11 @@ class TrackPropagationModule
           }
         } else {
           if (fillTracksCov) {
-            mVtx.setPos({ccdbLoader.mMeanVtx->getX(), ccdbLoader.mMeanVtx->getY(), ccdbLoader.mMeanVtx->getZ()});
-            mVtx.setCov(ccdbLoader.mMeanVtx->getSigmaX() * ccdbLoader.mMeanVtx->getSigmaX(), 0.0f, ccdbLoader.mMeanVtx->getSigmaY() * ccdbLoader.mMeanVtx->getSigmaY(), 0.0f, 0.0f, ccdbLoader.mMeanVtx->getSigmaZ() * ccdbLoader.mMeanVtx->getSigmaZ());
+            mVtx.setPos({meanVtx->getX(), meanVtx->getY(), meanVtx->getZ()});
+            mVtx.setCov(meanVtx->getSigmaX() * meanVtx->getSigmaX(), 0.0f, meanVtx->getSigmaY() * meanVtx->getSigmaY(), 0.0f, 0.0f, meanVtx->getSigmaZ() * meanVtx->getSigmaZ());
             isPropagationOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, mTrackParCov, 2.f, matCorr, &mDcaInfoCov);
           } else {
-            isPropagationOK = o2::base::Propagator::Instance()->propagateToDCABxByBz({ccdbLoader.mMeanVtx->getX(), ccdbLoader.mMeanVtx->getY(), ccdbLoader.mMeanVtx->getZ()}, mTrackPar, 2.f, matCorr, &mDcaInfo);
+            isPropagationOK = o2::base::Propagator::Instance()->propagateToDCABxByBz({meanVtx->getX(), meanVtx->getY(), meanVtx->getZ()}, mTrackPar, 2.f, matCorr, &mDcaInfo);
           }
         }
         if (isPropagationOK) {
