@@ -445,7 +445,7 @@ struct BuilderModule {
           double meanMult_MC = -1;
           double diffMultDataVsMC = 1e+09;
           int endBinMc = startBinMc;
-          for (int j = startBinMc-1; j >= 1; j--) {
+          for (int j = startBinMc - 1; j >= 1; j--) {
             // Loop over MC bins
             TH1D* projMC = h2dMultRecoVsMultGen_MC->ProjectionY("", j, startBinMc);
             int nEntries = projMC->Integral();
@@ -518,7 +518,7 @@ struct BuilderModule {
           double meanMult_MC = -1;
           double diffMultDataVsMC = 1e+09;
           int endBinMc = h1dCalib->GetNbinsX();
-          for (int j = startBinMc+1; j <= h1dCalib->GetNbinsX(); j++) {
+          for (int j = startBinMc + 1; j <= h1dCalib->GetNbinsX(); j++) {
             // Loop over MC bins
             TH1D* projMC = h2dMultRecoVsMultGen_MC->ProjectionY("", startBinMc, j);
             int nEntries = projMC->Integral();
