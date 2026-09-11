@@ -149,7 +149,6 @@ struct Dilepton {
   o2::framework::ConfigurableAxis ConfPolarizationQuadMomBins{"ConfPolarizationQuadMomBins", {15, -0.5, 1}, "quadrupole moment bins for polarization analysis"}; // quardrupole moment <(3 x cos^2(theta) -1)/2>
 
   o2::framework::Configurable<int> cfgNumBootstrapSamples{"cfgNumBootstrapSamples", 1, "Number of Bootstrap Samples"};
-  
 
   EMEventCut fEMEventCut;
   struct : o2::framework::ConfigurableGroup {
@@ -570,7 +569,7 @@ struct Dilepton {
       LOGF(info, "h2sp_resolution.GetBinContent(40, 1) = %f", h2sp_resolution->GetBinContent(40, 1));
     }
 
-    if(flowcorrectionGroup.cfgApplyWeightNUA){
+    if (flowcorrectionGroup.cfgApplyWeightNUA) {
       auto list_nua = ccdb->getForTimeStamp<TList>(flowcorrectionGroup.nuaPath, collision.timestamp());
       h3nua_weights.push_back(reinterpret_cast<TH3D*>(list_nua->FindObject("weights_uls_NUA")));
       LOGF(info, "h3nua_weights.at(0)->GetBinContent(5, 5, 5) = %f", h3nua_weights.at(0)->GetBinContent(5, 5, 5));
@@ -903,8 +902,8 @@ struct Dilepton {
   }
 
   float getNUAweight(const int type_int, const float phi, const float eta, const float zVtx)
-  { 
-    if (h3nua_weights.at(type_int) == nullptr){
+  {
+    if (h3nua_weights.at(type_int) == nullptr) {
       return 1.f;
     }
     int binId_phi = h3nua_weights.at(type_int)->GetXaxis()->FindBin(phi);
@@ -1092,8 +1091,8 @@ struct Dilepton {
 
       if constexpr (ev_id == 0) {
         // LOGF(info, "collision.centFT0C() = %f, collision.trackOccupancyInTimeRange() = %d, getSPresolution = %f", collision.centFT0C(), collision.trackOccupancyInTimeRange(), getSPresolution(collision.centFT0C(), collision.trackOccupancyInTimeRange()));
-        if(flowcorrectionGroup.cfgApplyWeightNUA){
-          weight *= 1./getNUAweight(t1.sign() * t2.sign() < 0 ? 0 : (t1.sign() > 0 && t2.sign() > 0 ? 1 : 2), v12.Phi(), v12.Eta(), collision.posZ());
+        if (flowcorrectionGroup.cfgApplyWeightNUA) {
+          weight *= 1. / getNUAweight(t1.sign() * t2.sign() < 0 ? 0 : (t1.sign() > 0 && t2.sign() > 0 ? 1 : 2), v12.Phi(), v12.Eta(), collision.posZ());
         }
 
         float sp = RecoDecay::dotProd(std::array<float, 2>{static_cast<float>(std::cos(nmod * v12.Phi())), static_cast<float>(std::sin(nmod * v12.Phi()))}, qvectors[nmod][cfgQvecEstimator]) / getSPresolution(collision.centFT0C(), collision.trackOccupancyInTimeRange());
