@@ -30,6 +30,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Tools/ML/MlResponse.h"
@@ -235,7 +236,7 @@ struct HfTrackSelectorTagSelCollisions {
 
   /// Event selection with trigger and FT0A centrality selection
   void processTrigAndCentFT0ASel(soa::Join<aod::Collisions,
-                                           aod::EvSels, aod::CentFT0As>::iterator const& collision,
+                                           aod::EvSels, aod::PVMults, aod::CentFT0As>::iterator const& collision,
                                  aod::BcFullInfos const& bcs)
   {
     selectCollision<true, false, CentralityEstimator::FT0A>(collision, bcs);
@@ -244,7 +245,7 @@ struct HfTrackSelectorTagSelCollisions {
 
   /// Event selection with trigger and FT0C centrality selection
   void processTrigAndCentFT0CSel(soa::Join<aod::Collisions,
-                                           aod::EvSels, aod::CentFT0Cs>::iterator const& collision,
+                                           aod::EvSels, aod::PVMults, aod::CentFT0Cs>::iterator const& collision,
                                  aod::BcFullInfos const& bcs)
   {
     selectCollision<true, false, CentralityEstimator::FT0C>(collision, bcs);
@@ -253,7 +254,7 @@ struct HfTrackSelectorTagSelCollisions {
 
   /// Event selection with trigger and FT0M centrality selection
   void processTrigAndCentFT0MSel(soa::Join<aod::Collisions,
-                                           aod::EvSels, aod::CentFT0Ms>::iterator const& collision,
+                                           aod::EvSels, aod::PVMults, aod::CentFT0Ms>::iterator const& collision,
                                  aod::BcFullInfos const& bcs)
   {
     selectCollision<true, false, CentralityEstimator::FT0M>(collision, bcs);
@@ -262,7 +263,7 @@ struct HfTrackSelectorTagSelCollisions {
 
   /// Event selection with trigger and FV0A centrality selection
   void processTrigAndCentFV0ASel(soa::Join<aod::Collisions,
-                                           aod::EvSels, aod::CentFV0As>::iterator const& collision,
+                                           aod::EvSels, aod::PVMults, aod::CentFV0As>::iterator const& collision,
                                  aod::BcFullInfos const& bcs)
   {
     selectCollision<true, false, CentralityEstimator::FV0A>(collision, bcs);
@@ -271,7 +272,7 @@ struct HfTrackSelectorTagSelCollisions {
 
   /// Event selection with trigger selection
   void processTrigSel(soa::Join<aod::Collisions,
-                                aod::EvSels>::iterator const& collision,
+                                aod::EvSels, aod::PVMults>::iterator const& collision,
                       aod::BcFullInfos const& bcs)
   {
     selectCollision<true, false, CentralityEstimator::None>(collision, bcs);
@@ -279,7 +280,7 @@ struct HfTrackSelectorTagSelCollisions {
   PROCESS_SWITCH(HfTrackSelectorTagSelCollisions, processTrigSel, "Use trigger selection", false);
 
   /// Event selection without trigger selection
-  void processNoTrigSel(aod::Collision const& collision,
+  void processNoTrigSel(soa::Join<aod::Collisions, aod::PVMults>::iterator const& collision,
                         aod::BcFullInfos const& bcs)
   {
     selectCollision<false, false, CentralityEstimator::None>(collision, bcs);
@@ -287,7 +288,7 @@ struct HfTrackSelectorTagSelCollisions {
   PROCESS_SWITCH(HfTrackSelectorTagSelCollisions, processNoTrigSel, "Do not use trigger selection", true);
 
   /// Event selection with UPC
-  void processUpcSel(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
+  void processUpcSel(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults>::iterator const& collision,
                      aod::BcFullInfos const& bcs,
                      aod::FT0s const& /*ft0s*/,
                      aod::FV0As const& /*fv0as*/,
@@ -457,7 +458,7 @@ struct HfTrackSelectorTagSelTracks {
       registry.add("hScorePionDs", "D_{s}^{#plus} pion-class score;#it{p}_{T}^{track} (GeV/#it{c});score;entries", {HistType::kTH2D, {axisPtProng, axisScore}});
       registry.add("hScoreKaonDs", "D_{s}^{#plus} kaon-class score;#it{p}_{T}^{track} (GeV/#it{c});score;entries", {HistType::kTH2D, {axisPtProng, axisScore}});
       // seconds, accumulated over the run via Fill(bin, weight); per-call cost = bin / hPtQuality entries
-      auto hTiming = registry.add<TH1>("hTiming", "CPU of the ML track selection;;seconds", {HistType::kTH1D, {{NTrackTimingSteps, -0.5f, NTrackTimingSteps - 0.5f}}});
+      auto hTiming = registry.add<TH1>("hTiming", "CPU of the ML track selection;;seconds", {HistType::kTH1D, {{NTrackTimingSteps, -0.5f, static_cast<float>(NTrackTimingSteps) - 0.5f}}});
       hTiming->GetXaxis()->SetBinLabel(TrackTimeTotal + 1, "track loop total");
       hTiming->GetXaxis()->SetBinLabel(TrackTimeFeatures + 1, "features");
       hTiming->GetXaxis()->SetBinLabel(TrackTimeModelDplus + 1, "D+ model");
@@ -701,7 +702,7 @@ struct HfTrackSelectorTagSelTracks {
 };
 
 /// Pre-selection of 3-prong secondary vertices
-struct HfTrackSelector {
+struct HfMlBasedTrackSelector {
   Produces<aod::Hf3Prongs> rowTrackIndexProng3;
 
   struct : ConfigurableGroup {
@@ -752,9 +753,9 @@ struct HfTrackSelector {
   /// One track of the collision under study, already propagated to that collision's PV.
   struct HfProngCandidate {
     o2::track::TrackParCov parCov;
-    std::array<float, 3> pVec;
-    uint32_t mask;       ///< aod::HfSelTrack::isIdentifiedPid
-    int64_t globalIndex; ///< index in the track table, written to the skim
+    std::array<float, 3> pVec{};
+    uint32_t mask{};       ///< aod::HfSelTrack::isIdentifiedPid
+    int64_t globalIndex{}; ///< index in the track table, written to the skim
   };
 
   /// Cache of propagated tracks for one collision, split by charge.
@@ -837,13 +838,13 @@ struct HfTrackSelector {
       const AxisSpec axisNumCands{1000, -0.5f, 999.5f, "Number of candidates"};
       registry.add("hNTracks", "Number of selected tracks;# of selected tracks;entries", {HistType::kTH1D, {axisNumTracks}});
       // seconds and raw counts, accumulated over the run via Fill(bin, weight)
-      auto hTiming = registry.add<TH1>("hTiming", "CPU inside the triple loop;;seconds", {HistType::kTH1D, {{NTimingSteps, -0.5f, NTimingSteps - 0.5f}}});
+      auto hTiming = registry.add<TH1>("hTiming", "CPU inside the triple loop;;seconds", {HistType::kTH1D, {{NTimingSteps, -0.5f, static_cast<float>(NTimingSteps) - 0.5f}}});
       hTiming->GetXaxis()->SetBinLabel(TimeLoopTotal + 1, "triple loop total");
       hTiming->GetXaxis()->SetBinLabel(TimeFit2Prong + 1, "2-prong vertex fit");
       hTiming->GetXaxis()->SetBinLabel(TimeFit3Prong + 1, "3-prong vertex fit");
       hTiming->GetXaxis()->SetBinLabel(TimeCacheFill + 1, "prong cache fill");
       hTiming->GetXaxis()->SetBinLabel(TimeCachePropagate + 1, "cache re-propagation");
-      auto hLoopCounters = registry.add<TH1>("hLoopCounters", "Triple loop stages;;entries", {HistType::kTH1D, {{NLoopCounters, -0.5f, NLoopCounters - 0.5f}}});
+      auto hLoopCounters = registry.add<TH1>("hLoopCounters", "Triple loop stages;;entries", {HistType::kTH1D, {{NLoopCounters, -0.5f, static_cast<float>(NLoopCounters) - 0.5f}}});
       hLoopCounters->GetXaxis()->SetBinLabel(CountPairsSeen + 1, "pairs seen");
       hLoopCounters->GetXaxis()->SetBinLabel(CountPairsCandidateOk + 1, "pairs passing ML roles");
       hLoopCounters->GetXaxis()->SetBinLabel(CountFit2Prong + 1, "2-prong fits");
@@ -1332,13 +1333,13 @@ struct HfTrackSelector {
       }
     }
   }
-  PROCESS_SWITCH(HfTrackSelector, process3Prongs, "Process 3-prong skim", true);
+  PROCESS_SWITCH(HfMlBasedTrackSelector, process3Prongs, "Process 3-prong skim", true);
 
   void processNo3Prongs(SelectedCollisions const&)
   {
     // dummy
   }
-  PROCESS_SWITCH(HfTrackSelector, processNo3Prongs, "Do not process 3-prongs", false);
+  PROCESS_SWITCH(HfMlBasedTrackSelector, processNo3Prongs, "Do not process 3-prongs", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
@@ -1346,6 +1347,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   WorkflowSpec workflow{};
   workflow.push_back(adaptAnalysisTask<HfTrackSelectorTagSelCollisions>(cfgc));
   workflow.push_back(adaptAnalysisTask<HfTrackSelectorTagSelTracks>(cfgc));
-  workflow.push_back(adaptAnalysisTask<HfTrackSelector>(cfgc));
+  workflow.push_back(adaptAnalysisTask<HfMlBasedTrackSelector>(cfgc));
   return workflow;
 }
