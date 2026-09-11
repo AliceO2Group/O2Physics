@@ -119,7 +119,7 @@ struct HfTaskFlattenicityD0Lc {
   ConfigurableAxis thnConfigAxisMassLc{"thnConfigAxisMassLc", {300, 1.98, 2.58}, ""};
   ConfigurableAxis thnConfigAxisCanType{"thnConfigAxisCanType", {5, 0., 5.}, ""};
 
-  HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
   {
