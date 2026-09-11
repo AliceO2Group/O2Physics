@@ -28,6 +28,8 @@
 
 #include <Rtypes.h>
 
+#include <cstdint>
+
 class multGlauberNBDFitter : public TNamed
 {
  public:
