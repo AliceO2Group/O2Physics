@@ -49,6 +49,7 @@
 #include <Rtypes.h>
 
 #include <cmath>
+#include <utility>
 
 ClassImp(multGlauberNBDFitter);
 
