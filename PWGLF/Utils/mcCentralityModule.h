@@ -733,4 +733,4 @@ struct BuilderModule {
 } // namespace pwglf
 } // namespace o2
 
-#endif  // PWGLF_UTILS_MCCENTRALITYMODULE_H_
+#endif // PWGLF_UTILS_MCCENTRALITYMODULE_H_
