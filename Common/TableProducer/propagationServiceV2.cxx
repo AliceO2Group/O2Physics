@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file propagationServiceV2.cxx
-/// \brief V2: GRPMagField and MeanVertexObject sourced from aod::GloCCDBObjects declarative CCDB table.
+/// \brief V2: GRPMagField, MeanVertexObject and the material LUT sourced from declarative CCDB tables.
 /// \author ALICE
 
 //===============================================================
@@ -28,12 +28,11 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/GloCCDBObjects.h"
 #include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/Tools/StandardCCDBLoader.h"
+#include "Common/DataModel/TpcCCDBObjects.h"
+#include "Common/DataModel/TrackTunerCCDBObjects.h"
 #include "Common/Tools/TrackPropagationModule.h"
 #include "Common/Tools/TrackTuner.h"
 
-#include <CCDB/BasicCCDBManager.h>
-#include <DetectorsBase/MatLayerCylSet.h>
 #include <DetectorsBase/Propagator.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
@@ -66,15 +65,27 @@ using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra>;
 using TracksExtraWithPID = soa::Join<aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa, aod::pidTPCFullHe>;
 
 struct propagationServiceV2 {
-  // Service<BasicCCDBManager> kept for MatLUT (rectifyPtrFromFile) and
-  // strangenessBuilderModule (V-drift via ccdb->instance()).
-  // GRPMagField and MeanVertex are sourced from CCDB columns instead.
-  o2::framework::Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  // No CCDB client of any kind: GRPMagField, MeanVertex, the material LUT and the TPC
+  // drift correction all arrive as declarative CCDB columns.
+  // NB: TrackTuner still holds its own CcdbApi for the DCA calibration files when
+  // useTrackTuner is enabled; its path is derived from the run number, which a CCDB
+  // column cannot express today.
 
-  // propagation stuff — ccdbLoader used only for lut + mMeanVtx (set from column) + runNumber
-  o2::common::StandardCCDBLoaderConfigurables standardCCDBLoaderConfigurables;
-  o2::common::StandardCCDBLoader ccdbLoader;
+  // Keep every CCDB path user-overridable, as ccdb.lutPath / ccdb.grpmagPath /
+  // ccdb.mVtxPath were before the migration. The option name and default are derived
+  // from the column itself ("ccdb:fMatLUT" and friends), so they cannot drift from the
+  // declaration the way the old per-task Configurables did. Declaring them is enough —
+  // the accessors stay bc.matLUT() / bc.grpMagField() / bc.meanVertex().
+  o2::framework::ConfigurableCCDBPath<aod::ccdbGlo::MatLUT> matLUTPath;
+  o2::framework::ConfigurableCCDBPath<aod::ccdbGlo::GRPMagField> grpMagFieldPath;
+  o2::framework::ConfigurableCCDBPath<aod::ccdbGlo::MeanVertex> meanVertexPath;
+
+  // Everything this task needs is read straight off the CCDB columns at the point of
+  // use; no StandardCCDBLoader, and no CCDB query of its own. The single piece of
+  // retained state is the run number, needed only to avoid re-installing the magnetic
+  // field: that one is not a lookup but global state in the Propagator /
+  // TGeoGlobalMagField singletons, and installing it rebuilds or rescales the field map.
+  int mRunNumber = -1;
 
   // boilerplate: strangeness builder stuff
   o2::pwglf::strangenessbuilder::products products;
@@ -93,46 +104,32 @@ struct propagationServiceV2 {
   o2::common::TrackPropagationConfigurables trackPropagationConfigurables;
   o2::common::TrackPropagationModule trackPropagation;
 
-  using BCsWithCCDB = soa::Join<aod::BCsWithTimestamps, aod::GloCCDBObjects>;
+  using BCsWithCCDB = soa::Join<aod::BCsWithTimestamps, aod::GloCCDBObjects, aod::GeomCCDBObjects, aod::TpcCalibCCDBObjects, aod::TrackTunerCCDBObjects>;
 
   // registry
   HistogramRegistry histos{"histos"};
 
   void init(o2::framework::InitContext& initContext)
   {
-    // Only needed for MatLUT fetch and strangenessBuilderModule V-drift
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    ccdb->setURL(ccdburl.value);
-
     // task-specific
-    trackPropagation.init(trackPropagationConfigurables, trackTunerObj, histos, initContext);
+    trackPropagation.init(trackPropagationConfigurables, trackTunerObj, histos, initContext, /*calibFromCCDBColumns=*/true);
     strangenessBuilderModule.init(baseOpts, v0BuilderOpts, cascadeBuilderOpts, preSelectOpts, eventSelectOpts, histos, initContext);
   }
 
-  // Load MatLUT once (needs rectifyPtrFromFile, kept manual), set B-field and mean vertex
-  // once per run from GRPMagField/MeanVertex CCDB columns.
+  /// Install into the Propagator the two things which are global state rather than
+  /// values: the magnetic field and the material LUT.
   template <typename TBC>
-  void initCCDB(TBC const& bc0)
+  void initPropagator(TBC const& bc0)
   {
-    if (ccdbLoader.runNumber != bc0.runNumber()) {
+    if (mRunNumber != bc0.runNumber()) {
       LOG(info) << "Setting B-field to current " << bc0.grpMagField().getL3Current() << " A for run " << bc0.runNumber() << " from GRPMagField CCDB column";
       o2::base::Propagator::initFieldFromGRP(&bc0.grpMagField());
-      ccdbLoader.mMeanVtx = &bc0.meanVertex();
-      ccdbLoader.runNumber = bc0.runNumber();
-    } else {
-      // Verify the CCDB column buffer has not been replaced mid-run.
-      // The deserialised pointer must be stable for the lifetime of a run.
-      if (&bc0.meanVertex() != ccdbLoader.mMeanVtx) {
-        LOG(fatal) << "MeanVertex CCDB column pointer changed within run " << bc0.runNumber() << " — unexpected buffer replacement";
-      }
+      mRunNumber = bc0.runNumber();
     }
-    if (!ccdbLoader.lut) {
-      LOG(info) << "Loading material look-up table for run: " << bc0.runNumber();
-      ccdbLoader.lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(
-        ccdb->template getForRun<o2::base::MatLayerCylSet>(standardCCDBLoaderConfigurables.lutPath.value, bc0.runNumber()));
-      o2::base::Propagator::Instance()->setMatLUT(ccdbLoader.lut);
-    }
+    // A pointer store, so it costs nothing to redo every timeframe — and doing so
+    // means a relocated column buffer is picked up for free instead of dangling.
+    // The column's finaliser has already run MatLayerCylSet::rectifyPtrFromFile.
+    o2::base::Propagator::Instance()->setMatLUT(&bc0.matLUT());
   }
 
   void processRealData(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtIU const& tracks, BCsWithCCDB const& bcs)
@@ -140,9 +137,10 @@ struct propagationServiceV2 {
     if (bcs.size() == 0) {
       return;
     }
-    initCCDB(bcs.begin());
-    trackPropagation.fillTrackTables<false>(trackPropagationConfigurables, trackTunerObj, ccdbLoader, collisions, tracks, trackPropagationProducts, histos);
-    strangenessBuilderModule.dataProcess(ccdb, histos, collisions, static_cast<TObject*>(nullptr), v0s, cascades, trackedCascades, tracks, bcs, static_cast<TObject*>(nullptr), products);
+    auto bc0 = bcs.begin();
+    initPropagator(bc0);
+    trackPropagation.fillTrackTables<false>(trackPropagationConfigurables, trackTunerObj, bc0.runNumber(), &bc0.meanVertex(), &bc0.trackTunerDca(), &bc0.trackTunerQOverPt(), collisions, tracks, trackPropagationProducts, histos);
+    strangenessBuilderModule.dataProcess(histos, collisions, static_cast<TObject*>(nullptr), v0s, cascades, trackedCascades, tracks, bcs, static_cast<TObject*>(nullptr), products);
   }
 
   void processMonteCarlo(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mccollisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtLabeledIU const& tracks, BCsWithCCDB const& bcs, aod::McParticles const& mcParticles)
@@ -150,9 +148,10 @@ struct propagationServiceV2 {
     if (bcs.size() == 0) {
       return;
     }
-    initCCDB(bcs.begin());
-    trackPropagation.fillTrackTables<true>(trackPropagationConfigurables, trackTunerObj, ccdbLoader, collisions, tracks, trackPropagationProducts, histos);
-    strangenessBuilderModule.dataProcess(ccdb, histos, collisions, mccollisions, v0s, cascades, trackedCascades, tracks, bcs, mcParticles, products);
+    auto bc0 = bcs.begin();
+    initPropagator(bc0);
+    trackPropagation.fillTrackTables<true>(trackPropagationConfigurables, trackTunerObj, bc0.runNumber(), &bc0.meanVertex(), &bc0.trackTunerDca(), &bc0.trackTunerQOverPt(), collisions, tracks, trackPropagationProducts, histos);
+    strangenessBuilderModule.dataProcess(histos, collisions, mccollisions, v0s, cascades, trackedCascades, tracks, bcs, mcParticles, products);
   }
 
   void processRealDataWithPID(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtIUWithPID const& tracks, BCsWithCCDB const& bcs)
@@ -160,9 +159,10 @@ struct propagationServiceV2 {
     if (bcs.size() == 0) {
       return;
     }
-    initCCDB(bcs.begin());
-    trackPropagation.fillTrackTables<false>(trackPropagationConfigurables, trackTunerObj, ccdbLoader, collisions, tracks, trackPropagationProducts, histos);
-    strangenessBuilderModule.dataProcess(ccdb, histos, collisions, static_cast<TObject*>(nullptr), v0s, cascades, trackedCascades, tracks, bcs, static_cast<TObject*>(nullptr), products);
+    auto bc0 = bcs.begin();
+    initPropagator(bc0);
+    trackPropagation.fillTrackTables<false>(trackPropagationConfigurables, trackTunerObj, bc0.runNumber(), &bc0.meanVertex(), &bc0.trackTunerDca(), &bc0.trackTunerQOverPt(), collisions, tracks, trackPropagationProducts, histos);
+    strangenessBuilderModule.dataProcess(histos, collisions, static_cast<TObject*>(nullptr), v0s, cascades, trackedCascades, tracks, bcs, static_cast<TObject*>(nullptr), products);
   }
 
   void processMonteCarloWithPID(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mccollisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtLabeledIUWithPID const& tracks, BCsWithCCDB const& bcs, aod::McParticles const& mcParticles)
@@ -170,9 +170,10 @@ struct propagationServiceV2 {
     if (bcs.size() == 0) {
       return;
     }
-    initCCDB(bcs.begin());
-    trackPropagation.fillTrackTables<true>(trackPropagationConfigurables, trackTunerObj, ccdbLoader, collisions, tracks, trackPropagationProducts, histos);
-    strangenessBuilderModule.dataProcess(ccdb, histos, collisions, mccollisions, v0s, cascades, trackedCascades, tracks, bcs, mcParticles, products);
+    auto bc0 = bcs.begin();
+    initPropagator(bc0);
+    trackPropagation.fillTrackTables<true>(trackPropagationConfigurables, trackTunerObj, bc0.runNumber(), &bc0.meanVertex(), &bc0.trackTunerDca(), &bc0.trackTunerQOverPt(), collisions, tracks, trackPropagationProducts, histos);
+    strangenessBuilderModule.dataProcess(histos, collisions, mccollisions, v0s, cascades, trackedCascades, tracks, bcs, mcParticles, products);
   }
 
   PROCESS_SWITCH(propagationServiceV2, processRealData, "process real data", true);
