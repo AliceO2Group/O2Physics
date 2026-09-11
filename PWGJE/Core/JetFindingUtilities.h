@@ -137,13 +137,18 @@ template <typename T, typename U>
 void analyseTracksMultipleCandidates(std::vector<fastjet::PseudoJet>& inputParticles, T const& tracks, int trackSelection, U const& candidates)
 {
   for (auto& track : tracks) {
+    bool isSelected = true;
     if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
       continue;
     }
     for (auto& candidate : candidates) {
       if (jetcandidateutilities::isDaughterTrack(track, candidate)) {
-        continue;
+        isSelected = false;
+        break;
       }
+    }
+    if (!isSelected) {
+      continue;
     }
     fastjetutilities::fillTracks(track, inputParticles, track.globalIndex());
   }
@@ -376,18 +381,24 @@ void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, const std
         }
       }
     }
+    bool isSelected = true;
     if constexpr (jetv0utilities::isV0McTable<U>()) { // note that for V0s the candidate table is given to this function, not a single candidate
       if (candidate != nullptr) {
         for (auto const& cand : (*candidate)) {
           if (cand.mcParticleId() == particle.globalIndex()) {
-            continue;
+            isSelected = false;
+            break;
           }
           auto v0Particle = cand.template mcParticle_as<T>();
           if (jetcandidateutilities::isDaughterParticle(v0Particle, particle.globalIndex())) {
-            continue;
+            isSelected = false;
+            break;
           }
         }
       }
+    }
+    if (!isSelected) {
+      continue;
     }
     fastjetutilities::fillTracks(particle, inputParticles, particle.globalIndex(), JetConstituentStatus::track, pdgParticle->Mass());
   }
