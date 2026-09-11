@@ -265,7 +265,7 @@ inline V0TruthClass classifyV0Truth(TTrack const& pos, TTrack const& ele, TMCPar
 template <o2::soa::is_iterator TLeg>
 float getV0Kappa(TLeg const& pos, TLeg const& ele)
 {
-  float kappa = (std::fabs(pos.tpcNSigmaEl()) + std::fabs(ele.tpcNSigmaEl())) / 2.f + (2.f * pos.tpcNSigmaEl() + ele.tpcNSigmaEl());
+  float kappa = (std::fabs(pos.tpcNSigmaEl()) + std::fabs(ele.tpcNSigmaEl())) / 2.f + (2.f * (pos.tpcNSigmaEl() + ele.tpcNSigmaEl()));
   return kappa;
 }
 
