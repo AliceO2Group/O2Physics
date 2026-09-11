@@ -47,6 +47,7 @@
 
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <numeric>
 #include <string>
 #include <vector> // std::vector
