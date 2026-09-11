@@ -43,7 +43,7 @@ inline bool checkAP(const float alpha, const float qt, const float alpha_max = 0
   return (ellipse < 1.0);
 }
 //_______________________________________________________________________
-inline float v0_alpha(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
+inline float v0Alpha(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
 {
   float momTot = RecoDecay::p(pxpos + pxneg, pypos + pyneg, pzpos + pzneg);
   float lQlNeg = RecoDecay::dotProd(std::array{pxneg, pyneg, pzneg}, std::array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg}) / momTot;
@@ -51,7 +51,7 @@ inline float v0_alpha(float pxpos, float pypos, float pzpos, float pxneg, float 
   return (lQlPos - lQlNeg) / (lQlPos + lQlNeg); // longitudinal momentum asymmetry of v0
 }
 //_______________________________________________________________________
-inline float v0_qt(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
+inline float v0Qt(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
 {
   float momTot = RecoDecay::p2(pxpos + pxneg, pypos + pyneg, pzpos + pzneg);
   float dp = RecoDecay::dotProd(std::array{pxneg, pyneg, pzneg}, std::array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg});
@@ -260,6 +260,13 @@ inline V0TruthClass classifyV0Truth(TTrack const& pos, TTrack const& ele, TMCPar
     return kV0CrossLegFake;
   }
   return kV0OtherFake;
+}
+
+template <o2::soa::is_iterator TLeg>
+float getV0Kappa(TLeg const& pos, TLeg const& ele)
+{
+  float kappa = (std::fabs(pos.tpcNSigmaEl()) + std::fabs(ele.tpcNSigmaEl())) / 2.f + (2.f * (pos.tpcNSigmaEl() + ele.tpcNSigmaEl()));
+  return kappa;
 }
 
 #endif // PWGEM_PHOTONMESON_UTILS_PCMUTILITIES_H_
