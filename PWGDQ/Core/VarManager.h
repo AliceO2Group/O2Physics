@@ -1214,7 +1214,8 @@ class VarManager : public TObject
   enum DileptonCharmHadronTypes {
     kJPsi = 0,
     kD0ToPiK,
-    kD0barToKPi
+    kD0barToKPi,
+    kDplusToPiKPi
   };
 
   enum EventFilters {
@@ -6657,6 +6658,13 @@ void VarManager::FillSingleDileptonCharmHadron(Cand const& candidate, H hfHelper
     values[kPtCharmHadron] = candidate.pt();
     values[kPhiCharmHadron] = candidate.phi();
     values[kRapCharmHadron] = hfHelper.yD0(candidate);
+    values[kBdtCharmHadron] = static_cast<float>(bdtScoreCharmHad);
+  }
+  if constexpr (partType == kDplusToPiKPi) {
+    values[kMassCharmHadron] = hfHelper.invMassDplusToPiKPi(candidate);
+    values[kPtCharmHadron] = candidate.pt();
+    values[kPhiCharmHadron] = candidate.phi();
+    values[kRapCharmHadron] = hfHelper.yDplus(candidate);
     values[kBdtCharmHadron] = static_cast<float>(bdtScoreCharmHad);
   }
 }

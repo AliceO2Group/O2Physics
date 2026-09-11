@@ -309,7 +309,7 @@ class pidTPCModule
     o2::common::core::enableFlagIfTableRequired(context, "DEdxsCorrected", pidTPCopts.savedEdxsCorrected);
 
     // Checking the tables are requested in the workflow and enabling them
-    auto enableFlag = [&](const std::string particle, o2::framework::Configurable<int>& flag) {
+    auto enableFlag = [&](const std::string& particle, o2::framework::Configurable<int>& flag) {
       o2::common::core::enableFlagIfTableRequired(context, "pidTPC" + particle, flag);
     };
     enableFlag("FullEl", pidTPCopts.pidFullEl);

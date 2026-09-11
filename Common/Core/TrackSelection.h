@@ -249,8 +249,8 @@ class TrackSelection
   void SetMaxDcaXY(float maxDcaXY);
   void SetMaxDcaZ(float maxDcaZ);
   void SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut);
-  void SetRequireHitsInITSLayers(int8_t minNRequiredHits, std::set<uint8_t> requiredLayers);
-  void SetRequireNoHitsInITSLayers(std::set<uint8_t> excludedLayers);
+  void SetRequireHitsInITSLayers(int8_t minNRequiredHits, const std::set<uint8_t>& requiredLayers);
+  void SetRequireNoHitsInITSLayers(const std::set<uint8_t>& excludedLayers);
   /// @brief Reset ITS requirements
   void ResetITSRequirements() { mRequiredITSHits.clear(); }
   void SetMaxTPCFractionSharedCls(float maxTPCFractionSharedCls);

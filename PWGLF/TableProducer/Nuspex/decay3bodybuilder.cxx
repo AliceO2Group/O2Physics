@@ -75,7 +75,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-o2::common::core::MetadataHelper metadataInfo;
+o2::common::core::MetadataHelper metadataInfo{};
 
 static constexpr int nParameters = 1;
 static const std::vector<std::string> tableNames{
@@ -220,34 +220,31 @@ struct decay3bodyBuilder {
 
   // Helper struct to contain MC information prior to filling
   struct mc3Bodyinfo {
-    int label;
-    std::array<float, 3> genDecVtx{0.f};
-    std::array<float, 3> genMomentum{0.f};
-    float genCt;
-    float genPhi;
-    float genEta;
-    float genRapidity;
-    float genMomProton;
-    float genMomPion;
-    float genMomDeuteron;
-    float genPtProton;
-    float genPtPion;
-    float genPtDeuteron;
-    bool isReco;
-    int motherLabel;
-    int motherPdgCode;
-    int daughterPrPdgCode;
-    int daughterPiPdgCode;
-    int daughterDePdgCode;
-    bool isDeuteronPrimary;
-    bool survivedEventSel;
+    int label = -1;
+    std::array<float, 3> genDecVtx{-1.f, -1.f, -1.f};
+    std::array<float, 3> genMomentum{-1.f, -1.f, -1.f};
+    float genCt = -1.f;
+    float genPhi = -1.f;
+    float genEta = -1.f;
+    float genRapidity = -1.f;
+    std::array<float, 3> genMomProton{-1.f, -1.f, -1.f};
+    std::array<float, 3> genMomPion{-1.f, -1.f, -1.f};
+    std::array<float, 3> genMomDeuteron{-1.f, -1.f, -1.f};
+    bool isReco = false;
+    int motherLabel = -1;
+    int motherPdgCode = -1;
+    int daughterPrPdgCode = -1;
+    int daughterPiPdgCode = -1;
+    int daughterDePdgCode = -1;
+    bool isDeuteronPrimary = false;
+    bool survivedEventSel = false;
   };
   mc3Bodyinfo this3BodyMCInfo;
 
   // CCDB and magnetic field
-  int mRunNumber;
-  float d_bz;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  int mRunNumber = 0;
+  float d_bz = 0.f;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   std::unordered_map<int, float> ccdbCache; // Maps runNumber -> d_bz
   o2::base::MatLayerCylSet* lut = nullptr;
@@ -382,7 +379,7 @@ struct decay3bodyBuilder {
 
     // list enabled tables
     for (int i = 0; i < nTables; i++) {
-      if (mEnabledTables[i]) {
+      if (mEnabledTables[i] != 0) {
         LOGF(info, " -~> Table enabled: %s", tableNames[i]);
       }
     }
@@ -436,26 +433,26 @@ struct decay3bodyBuilder {
       }
     }
 
-    if (mEnabledTables[kVtx3BodyDatas] && mEnabledTables[kMcVtx3BodyDatas]) {
+    if (mEnabledTables[kVtx3BodyDatas] != 0 && mEnabledTables[kMcVtx3BodyDatas] != 0) {
       LOG(fatal) << "Tables Vtx3BodyDatas and McVtx3BodyDatas cannot both be enabled at the same time. Choose one!";
     }
 
     // Add histograms separately for different process functions
-    if (doprocessRealData == true || doprocessMonteCarlo == true) {
+    if (doprocessRealData || doprocessMonteCarlo) {
       auto hEventCounter = registry.add<TH1>("Counters/hEventCounter", "hEventCounter", HistType::kTH1D, {{2, 0.0f, 2.0f}});
       hEventCounter->GetXaxis()->SetBinLabel(1, "all");
       hEventCounter->GetXaxis()->SetBinLabel(2, "selected");
       hEventCounter->LabelsOption("v");
     }
 
-    if (doprocessMonteCarlo == true) {
+    if (doprocessMonteCarlo) {
       auto hMcEventCounter = registry.add<TH1>("Counters/hMcEventCounter", "hMcEventCounter", HistType::kTH1D, {{2, 0.0f, 2.0f}});
       hMcEventCounter->GetXaxis()->SetBinLabel(1, "all");
       hMcEventCounter->GetXaxis()->SetBinLabel(2, "reconstructed");
       hMcEventCounter->LabelsOption("v");
     }
 
-    if (doprocessRealData == true || doprocessRealDataReduced == true || doprocessMonteCarlo == true) {
+    if (doprocessRealData || doprocessRealDataReduced || doprocessMonteCarlo) {
       if (doTrackQA) { // histograms for all daughter tracks of (selected) 3body candidates
         registry.add("QA/Tracks/hTrackProtonTPCNcls", "hTrackProtonTPCNcls", HistType::kTH1F, {{152, 0, 152, "# TPC clusters"}});
         registry.add("QA/Tracks/hTrackPionTPCNcls", "hTrackPionTPCNcls", HistType::kTH1F, {{152, 0, 152, "# TPC clusters"}});
@@ -485,7 +482,7 @@ struct decay3bodyBuilder {
       }
     }
 
-    if (doprocessRealDataReduced3bodyMixing == true) {
+    if (doprocessRealDataReduced3bodyMixing) {
       auto h3bodyCombinationCounter = registry.add<TH1>("Mixing/h3bodyCombinationCounter", "h3bodyCombinationCounter", HistType::kTH1D, {{4, 0.0f, 4.0f}});
       h3bodyCombinationCounter->GetXaxis()->SetBinLabel(1, "total");
       h3bodyCombinationCounter->GetXaxis()->SetBinLabel(2, "not same collision");
@@ -516,7 +513,7 @@ struct decay3bodyBuilder {
     }
 
     auto timestamp = bc.timestamp();
-    o2::parameters::GRPMagField* grpmag = 0x0;
+    o2::parameters::GRPMagField* grpmag = nullptr;
     ccdb->clearCache(ccdbConfigurations.grpmagPath);
     grpmag = ccdb->getSpecific<o2::parameters::GRPMagField>(ccdbConfigurations.grpmagPath, timestamp);
     if (!grpmag) {
@@ -524,7 +521,7 @@ struct decay3bodyBuilder {
     }
     o2::base::Propagator::initFieldFromGRP(grpmag);
     // Fetch magnetic field from ccdb for current collision
-    auto d_bz = o2::base::Propagator::Instance()->getNominalBz();
+    d_bz = o2::base::Propagator::Instance()->getNominalBz();
     LOG(info) << "Retrieved GRP for timestamp " << timestamp << " with magnetic field of " << d_bz << " kG";
 
     // set magnetic field value for DCA fitter
@@ -553,9 +550,9 @@ struct decay3bodyBuilder {
 
   float getMagFieldFromRunNumber(int runNumber)
   {
-    float magField;
+    float magField{};
     // Check if the CCDB data for this run is already cached
-    if (ccdbCache.find(runNumber) != ccdbCache.end()) {
+    if (ccdbCache.contains(runNumber)) {
       LOG(debug) << "CCDB data already cached for run " << runNumber;
       magField = ccdbCache[runNumber];
       // if not, retrieve it from CCDB
@@ -732,10 +729,10 @@ struct decay3bodyBuilder {
       auto trackPion = protonSign > 0 ? trackNeg : trackPos;
 
       // get deuteron TOF PID
-      float tofNSigmaDeuteron;
+      float tofNSigmaDeuteron{};
       if constexpr (!soa::is_table<TBCs>) { // running over derived data
         tofNSigmaDeuteron = trackDeuteron.tofNSigmaDe();
-      } else if constexpr (soa::is_table<TBCs>) {    // running over AO2Ds
+      } else {                                       // running over AO2Ds
         if constexpr (soa::is_table<TMCParticles>) { // running over MC (track table with labels)
           tofNSigmaDeuteron = getTOFnSigma<true /*isMC*/, TCollisions>(mRespParamsV3, collision, trackDeuteron);
         } else { // running over real data
@@ -806,11 +803,10 @@ struct decay3bodyBuilder {
         if (!trackProton.has_mcParticle() || !trackPion.has_mcParticle() || !trackDeuteron.has_mcParticle()) {
           if (!doStoreMcBkg) {
             continue; // if not storing MC background, skip candidates where at least one daughter is not matched to MC particle
-          } else {
-            this3BodyMCInfo.motherLabel = -5; // at least one of the daughters not matched to MC particle
-            // fill analysis table (only McVtx3BodyDatas is filled here)
-            fillAnalysisTables();
           }
+          this3BodyMCInfo.motherLabel = -5; // at least one of the daughters not matched to MC particle
+          // fill analysis table (only McVtx3BodyDatas is filled here)
+          fillAnalysisTables();
         } else { // all daughters are matched to MC particles, get their MC info
           // get MC daughter particles
           auto mcTrackProton = trackProton.template mcParticle_as<aod::McParticles>();
@@ -822,12 +818,9 @@ struct decay3bodyBuilder {
           this3BodyMCInfo.daughterPiPdgCode = mcTrackPion.pdgCode();
           this3BodyMCInfo.daughterDePdgCode = mcTrackDeuteron.pdgCode();
           this3BodyMCInfo.isDeuteronPrimary = mcTrackDeuteron.isPhysicalPrimary();
-          this3BodyMCInfo.genMomProton = mcTrackProton.p();
-          this3BodyMCInfo.genMomPion = mcTrackPion.p();
-          this3BodyMCInfo.genMomDeuteron = mcTrackDeuteron.p();
-          this3BodyMCInfo.genPtProton = mcTrackProton.pt();
-          this3BodyMCInfo.genPtPion = mcTrackPion.pt();
-          this3BodyMCInfo.genPtDeuteron = mcTrackDeuteron.pt();
+          this3BodyMCInfo.genMomProton = {mcTrackProton.px(), mcTrackProton.py(), mcTrackProton.pz()};
+          this3BodyMCInfo.genMomPion = {mcTrackPion.px(), mcTrackPion.py(), mcTrackPion.pz()};
+          this3BodyMCInfo.genMomDeuteron = {mcTrackDeuteron.px(), mcTrackDeuteron.py(), mcTrackDeuteron.pz()};
 
           // daughters are matched to MC, now we check if reco mother is true H3L/Anti-H3l and decayed via three-body decay
           this3BodyMCInfo.motherLabel = checkH3LTruth(mcTrackProton, mcTrackPion, mcTrackDeuteron); // returns global index of mother if true H3L/Anti-H3L mother decaying via three-body decay, otherwise negative value for background
@@ -886,18 +879,24 @@ struct decay3bodyBuilder {
         bool haveProton = false, havePion = false, haveDeuteron = false;
         bool haveAntiProton = false, haveAntiPion = false, haveAntiDeuteron = false;
         for (const auto& mcparticleDaughter : mcparticle.template daughters_as<TMCParticles>()) {
-          if (mcparticleDaughter.pdgCode() == PDG_t::kProton)
+          if (mcparticleDaughter.pdgCode() == PDG_t::kProton) {
             haveProton = true;
-          if (mcparticleDaughter.pdgCode() == PDG_t::kProtonBar)
+          }
+          if (mcparticleDaughter.pdgCode() == PDG_t::kProtonBar) {
             haveAntiProton = true;
-          if (mcparticleDaughter.pdgCode() == PDG_t::kPiPlus)
+          }
+          if (mcparticleDaughter.pdgCode() == PDG_t::kPiPlus) {
             havePion = true;
-          if (mcparticleDaughter.pdgCode() == PDG_t::kPiMinus)
+          }
+          if (mcparticleDaughter.pdgCode() == PDG_t::kPiMinus) {
             haveAntiPion = true;
-          if (mcparticleDaughter.pdgCode() == o2::constants::physics::Pdg::kDeuteron)
+          }
+          if (mcparticleDaughter.pdgCode() == o2::constants::physics::Pdg::kDeuteron) {
             haveDeuteron = true;
-          if (mcparticleDaughter.pdgCode() == -o2::constants::physics::Pdg::kDeuteron)
+          }
+          if (mcparticleDaughter.pdgCode() == -o2::constants::physics::Pdg::kDeuteron) {
             haveAntiDeuteron = true;
+          }
         }
 
         // check if hypertriton decayed via 3-body decay and is particle or anti-particle
@@ -905,17 +904,14 @@ struct decay3bodyBuilder {
           // get daughters
           for (const auto& mcparticleDaughter : mcparticle.template daughters_as<aod::McParticles>()) {
             if (std::abs(mcparticleDaughter.pdgCode()) == PDG_t::kProton) { // proton
-              this3BodyMCInfo.genMomProton = mcparticleDaughter.p();
-              this3BodyMCInfo.genPtProton = mcparticleDaughter.pt();
+              this3BodyMCInfo.genMomProton = {mcparticleDaughter.px(), mcparticleDaughter.py(), mcparticleDaughter.pz()};
               this3BodyMCInfo.daughterPrPdgCode = mcparticleDaughter.pdgCode();
               this3BodyMCInfo.genDecVtx = {mcparticleDaughter.vx(), mcparticleDaughter.vy(), mcparticleDaughter.vz()};
             } else if (std::abs(mcparticleDaughter.pdgCode()) == PDG_t::kPiPlus) { // pion
-              this3BodyMCInfo.genMomPion = mcparticleDaughter.p();
-              this3BodyMCInfo.genPtPion = mcparticleDaughter.pt();
+              this3BodyMCInfo.genMomPion = {mcparticleDaughter.px(), mcparticleDaughter.py(), mcparticleDaughter.pz()};
               this3BodyMCInfo.daughterPiPdgCode = mcparticleDaughter.pdgCode();
             } else if (std::abs(mcparticleDaughter.pdgCode()) == o2::constants::physics::Pdg::kDeuteron) { // deuteron
-              this3BodyMCInfo.genMomDeuteron = mcparticleDaughter.p();
-              this3BodyMCInfo.genPtDeuteron = mcparticleDaughter.pt();
+              this3BodyMCInfo.genMomDeuteron = {mcparticleDaughter.px(), mcparticleDaughter.py(), mcparticleDaughter.pz()};
               this3BodyMCInfo.daughterDePdgCode = mcparticleDaughter.pdgCode();
               this3BodyMCInfo.isDeuteronPrimary = mcparticleDaughter.isPhysicalPrimary();
             }
@@ -957,8 +953,9 @@ struct decay3bodyBuilder {
                                    this3BodyMCInfo.genDecVtx[0], this3BodyMCInfo.genDecVtx[1], this3BodyMCInfo.genDecVtx[2],
                                    this3BodyMCInfo.genCt,
                                    mcparticle.phi(), mcparticle.eta(), mcparticle.y(),
-                                   this3BodyMCInfo.genMomProton, this3BodyMCInfo.genMomPion, this3BodyMCInfo.genMomDeuteron,
-                                   this3BodyMCInfo.genPtProton, this3BodyMCInfo.genPtPion, this3BodyMCInfo.genPtDeuteron,
+                                   this3BodyMCInfo.genMomProton[0], this3BodyMCInfo.genMomProton[1], this3BodyMCInfo.genMomProton[2],
+                                   this3BodyMCInfo.genMomPion[0], this3BodyMCInfo.genMomPion[1], this3BodyMCInfo.genMomPion[2],
+                                   this3BodyMCInfo.genMomDeuteron[0], this3BodyMCInfo.genMomDeuteron[1], this3BodyMCInfo.genMomDeuteron[2],
                                    this3BodyMCInfo.isReco,
                                    mcparticle.globalIndex(), // motherLabel
                                    mcparticle.pdgCode(),     // motherPdgCode
@@ -1085,13 +1082,13 @@ struct decay3bodyBuilder {
   void fillAnalysisTables()
   {
     // generate analysis tables
-    if (mEnabledTables[kDecay3BodyIndices]) {
+    if (mEnabledTables[kDecay3BodyIndices] != 0) {
       products.decay3bodyindices(helper.decay3body.decay3bodyID,
                                  helper.decay3body.protonID, helper.decay3body.pionID, helper.decay3body.deuteronID,
                                  helper.decay3body.collisionID);
       registry.fill(HIST("Counters/hTableBuildingStatistics"), kDecay3BodyIndices);
     }
-    if (mEnabledTables[kVtx3BodyDatas]) {
+    if (mEnabledTables[kVtx3BodyDatas] != 0) {
       products.vtx3bodydatas(helper.decay3body.sign,
                              helper.decay3body.mass, helper.decay3body.massV0,
                              helper.decay3body.position[0], helper.decay3body.position[1], helper.decay3body.position[2],
@@ -1117,14 +1114,14 @@ struct decay3bodyBuilder {
                              helper.decay3body.pidForTrackingDeuteron);
       registry.fill(HIST("Counters/hTableBuildingStatistics"), kVtx3BodyDatas);
     }
-    if (mEnabledTables[kVtx3BodyCovs]) {
+    if (mEnabledTables[kVtx3BodyCovs] != 0) {
       products.vtx3bodycovs(helper.decay3body.covProton.data(),
                             helper.decay3body.covPion.data(),
                             helper.decay3body.covDeuteron.data(),
                             helper.decay3body.covariance.data());
       registry.fill(HIST("Counters/hTableBuildingStatistics"), kVtx3BodyCovs);
     }
-    if (mEnabledTables[kMcVtx3BodyDatas]) {
+    if (mEnabledTables[kMcVtx3BodyDatas] != 0) {
       products.mcvtx3bodydatas(helper.decay3body.sign,
                                helper.decay3body.mass, helper.decay3body.massV0,
                                helper.decay3body.position[0], helper.decay3body.position[1], helper.decay3body.position[2],
@@ -1153,8 +1150,9 @@ struct decay3bodyBuilder {
                                this3BodyMCInfo.genDecVtx[0], this3BodyMCInfo.genDecVtx[1], this3BodyMCInfo.genDecVtx[2],
                                this3BodyMCInfo.genCt,
                                this3BodyMCInfo.genPhi, this3BodyMCInfo.genEta, this3BodyMCInfo.genRapidity,
-                               this3BodyMCInfo.genMomProton, this3BodyMCInfo.genMomPion, this3BodyMCInfo.genMomDeuteron,
-                               this3BodyMCInfo.genPtProton, this3BodyMCInfo.genPtPion, this3BodyMCInfo.genPtDeuteron,
+                               this3BodyMCInfo.genMomProton[0], this3BodyMCInfo.genMomProton[1], this3BodyMCInfo.genMomProton[2],
+                               this3BodyMCInfo.genMomPion[0], this3BodyMCInfo.genMomPion[1], this3BodyMCInfo.genMomPion[2],
+                               this3BodyMCInfo.genMomDeuteron[0], this3BodyMCInfo.genMomDeuteron[1], this3BodyMCInfo.genMomDeuteron[2],
                                this3BodyMCInfo.isReco,
                                this3BodyMCInfo.motherLabel,
                                this3BodyMCInfo.motherPdgCode,
@@ -1189,9 +1187,8 @@ struct decay3bodyBuilder {
       // fill analysis tables with built candidate
       fillAnalysisTables();
       return;
-    } else {
-      return;
     }
+    return;
   }
 
   // ______________________________________________________________
@@ -1266,9 +1263,8 @@ struct decay3bodyBuilder {
     // check if the common mother is a hypertriton
     if (std::abs(momPdgCode) == o2::constants::physics::Pdg::kHyperTriton) {
       return momID;
-    } else {
-      return -1; // common mother found but not a hypertriton
     }
+    return -1; // common mother found but not a hypertriton
   }
 
   // ______________________________________________________________
@@ -1280,8 +1276,9 @@ struct decay3bodyBuilder {
     mcInfo.genDecVtx[0] = -1., mcInfo.genDecVtx[1] = -1., mcInfo.genDecVtx[2] = -1.;
     mcInfo.genCt = -1.;
     mcInfo.genPhi = -1., mcInfo.genEta = -1., mcInfo.genRapidity = -1.;
-    mcInfo.genMomProton = -1., mcInfo.genMomPion = -1., mcInfo.genMomDeuteron = -1.;
-    mcInfo.genPtProton = -1., mcInfo.genPtPion = -1., mcInfo.genPtDeuteron = -1.;
+    mcInfo.genMomProton[0] = -1., mcInfo.genMomProton[1] = -1., mcInfo.genMomProton[2] = -1.;
+    mcInfo.genMomPion[0] = -1., mcInfo.genMomPion[1] = -1., mcInfo.genMomPion[2] = -1.;
+    mcInfo.genMomDeuteron[0] = -1., mcInfo.genMomDeuteron[1] = -1., mcInfo.genMomDeuteron[2] = -1.;
     mcInfo.isReco = false;
     mcInfo.motherPdgCode = 0;
     mcInfo.daughterPrPdgCode = -1, mcInfo.daughterPiPdgCode = -1, mcInfo.daughterDePdgCode = -1;
@@ -1345,7 +1342,7 @@ struct decay3bodyBuilder {
     auto yAxis = registry.get<TH2>(HIST("Mixing/hDecay3BodyRadiusPhi"))->GetYaxis();
 
     for (const auto& decay3body : decay3bodys) {
-      int bin_Radius, bin_Phi;
+      int bin_Radius{}, bin_Phi{};
       if (decay3bodyBuilderOpts.useKFParticle) {
         bin_Radius = xAxis->FindBin(decay3body.radiusKF());
         bin_Phi = yAxis->FindBin(decay3body.phiKF());

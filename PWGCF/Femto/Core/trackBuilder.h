@@ -134,7 +134,7 @@ struct ConfTrackSelection : public o2::framework::ConfigurableGroup {
   std::string prefix = Prefix; // Unique prefix based on the template argument
   // configuration parameters
   o2::framework::Configurable<int> pdgCodeAbs{"pdgCodeAbs", 2212, "Absolute value of PDG code. Set sign of charge to -1 for antiparticle."};
-  o2::framework::Configurable<int> chargeAbs{"chargeAbs", 1, "Absolute value of charge (e.g. 1 for most tracks, 2 for He3). Set sign of charge to -1 for antiparticle"};
+  o2::framework::Configurable<int> chargeAbs{"chargeAbs", 1, "Absolute value of charge (e.g. 1 for most tracks, 2 for He3)"};
   o2::framework::Configurable<int> chargeSign{"chargeSign", 1, "Track charge sign: +1 for positive, -1 for negative, 0 for both"};
   // filters for kinematics
   o2::framework::Configurable<float> ptMin{"ptMin", 0.0f, "Minimum pT (GeV/c)"};
@@ -917,6 +917,41 @@ class TrackBuilderDerivedToDerived
 
     const int64_t idx = trackProducts.producedTracks.lastIndex();
     indexMap.emplace(track.globalIndex(), idx);
+    return idx;
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12>
+  void processTracksWithMc(T1& col, T2& /*trackTable*/, T3& partitionTrack1, T4& partitionTrack2, T5& cache,
+                           T6& newTrackTable, T7& newCollisionTable,
+                           T8& mcBuilder, T9 const& mcCols, T10 const& mcParticles, T11 const& mcMothers, T12 const& mcPartonicMothers, auto& mcProducts)
+  {
+    if (mLimitTrack1 > 0) {
+      auto trackSlice1 = partitionTrack1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+      for (auto const& track : trackSlice1) {
+        this->fillTrackWithMcLabel(track, newTrackTable, newCollisionTable, mcBuilder, mcCols, mcParticles, mcMothers, mcPartonicMothers, mcProducts);
+      }
+    }
+    if (mLimitTrack2 > 0) {
+      auto trackSlice2 = partitionTrack2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+      for (auto const& track : trackSlice2) {
+        this->fillTrackWithMcLabel(track, newTrackTable, newCollisionTable, mcBuilder, mcCols, mcParticles, mcMothers, mcPartonicMothers, mcProducts);
+      }
+    }
+  }
+
+  /// Same as fillTrack, but writes the matching FTrackLabels row. The indexMap
+  /// lookup happens first, so a track selected by both partitions produces
+  /// exactly one track row and exactly one label row.
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
+  int64_t fillTrackWithMcLabel(T1 const& track, T2& trackProducts, T3& collisionProducts,
+                               T4& mcBuilder, T5 const& mcCols, T6 const& mcParticles, T7 const& mcMothers, T8 const& mcPartonicMothers, T9& mcProducts)
+  {
+    auto index = utils::getIndex(track.globalIndex(), indexMap);
+    if (index) {
+      return index.value();
+    }
+    const int64_t idx = this->fillTrack(track, trackProducts, collisionProducts);
+    mcBuilder.fillTrackWithLabel(track, mcCols, mcParticles, mcMothers, mcPartonicMothers, mcProducts);
     return idx;
   }
 

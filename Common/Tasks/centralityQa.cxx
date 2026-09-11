@@ -38,6 +38,8 @@
 
 #include <TFormula.h>
 #include <TH1.h>
+#include <TH2.h>
+#include <TProfile.h>
 #include <TString.h>
 
 #include <array>
@@ -45,24 +47,28 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
+#include <map>
+#include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 
+using CentRun3 = soa::Join<aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs, aod::CentFT0CVariant1s, aod::CentFT0CVariant2s, aod::CentFT0MAnchorCols, aod::CentFT0MAnchorBCs, aod::CentFT0MOuterAs, aod::FITExtraMults, aod::CentNTPVs>;
+using BCsWithMatching = soa::Join<aod::BCs, aod::Run3MatchedToBCSparse>;
+
 struct CentralityQa {
   HistogramRegistry histos{"histos"};
+  std::map<std::string, HistPtr> histPointers;
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
   std::bitset<o2::constants::lhc::LHCMaxBunches> collidingBunch;
 
-  bool isRun2 = false;
-  bool isMC = false;
   int runNumber{};
   uint64_t startOfRunTimestamp{};
   TList* hCentralityObjects = nullptr;
 
-  Configurable<int> nBins{"nBins", 1050, "number of bins"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {1000, 0, 1000}, "Multiplicity"};
   ConfigurableAxis axisMultiplicityPV{"axisMultiplicityPV", {1000, 0, 1000}, "Multiplicity PV"};
   ConfigurableAxis axisChannelAmplitude{"axisChannelAmplitude", {5000, 0, 5000}, "Channel Amplitude"};
@@ -130,6 +136,23 @@ struct CentralityQa {
   } bcsel;
 
   struct : ConfigurableGroup {
+    std::string prefix = "studies";
+    Configurable<bool> fv0a{"fv0a", true, "Enable centrality QA for fv0a"};
+    Configurable<bool> ft0m{"ft0m", true, "Enable centrality QA for ft0m"};
+    Configurable<bool> ft0mOuterA{"ft0mOuterA", true, "Enable centrality QA for ft0m"};
+    Configurable<bool> ft0mAnchorCol{"ft0mAnchorCol", true, "Enable centrality QA for ft0m"};
+    Configurable<bool> ft0mAnchorBc{"ft0mAnchorBc", true, "Enable centrality QA for ft0m"};
+    Configurable<bool> ft0a{"ft0a", false, "Enable centrality QA for ft0a"};
+    Configurable<bool> ft0c{"ft0c", true, "Enable centrality QA for ft0c"};
+    Configurable<bool> ft0cVar1{"ft0cVar1", false, "Enable centrality QA for ft0cVar1"};
+    Configurable<bool> ft0cVar2{"ft0cVar2", false, "Enable centrality QA for ft0cVar2"};
+    Configurable<bool> fddm{"fddm", false, "Enable centrality QA for fddm"};
+    Configurable<bool> ntpv{"ntpv", false, "Enable centrality QA for ntpv"};
+    Configurable<bool> nGlo{"nGlo", true, "Enable centrality QA for nGlo"};
+    Configurable<bool> mft{"mft", true, "Enable centrality QA for mft"};
+  } studies;
+
+  struct : ConfigurableGroup {
     std::string prefix = "centrality";
     Configurable<bool> useCustomCalibration{"useCustomCalibration", false, "override the centrality from the central calibration with a different calibration provided in pathCentrality"};
     Configurable<std::string> ccdbURL{"ccdbURL", "http://alice-ccdb.cern.ch", "ccdb url"};
@@ -137,22 +160,40 @@ struct CentralityQa {
     Configurable<std::string> generator{"generator", "", "E.g. PYTHIA"};
   } centrality;
 
+  enum EstimatorIndex { FV0A,
+                        FT0M,
+                        FT0MAnchorCol,
+                        FT0MAnchorBC,
+                        FT0MOuterA,
+                        FT0A,
+                        FT0C,
+                        FT0CVar1,
+                        FT0CVar2,
+                        FDDM,
+                        NTPV,
+                        NGlobal,
+                        MFT,
+                        NEstimators };
+
   static constexpr int NSuperCalibPars = 6;
   static constexpr float CentralityNotFound = 105.f;
 
   struct Estimator {
     CentralityQa* outer = nullptr;
-    std::string name;
+    bool doStudy = false;
+    std::string estName;
+    std::string histName;
     std::array<float, NSuperCalibPars> mcScalePars{};
     TH1* hCentrality = nullptr;
     TFormula* mcScale = nullptr;
-    explicit Estimator(CentralityQa* o, std::string s) : outer(o), name(std::move(s)) {}
+    Estimator() = default;
+    explicit Estimator(CentralityQa* o, bool b, std::string s0, std::string s1) : outer(o), doStudy(b), estName(std::move(s0)), histName(std::move(s1)) {}
     float getCentrality(const float mult, const float centTable)
     {
       if (outer->centrality.useCustomCalibration) {
         float lMult = mult;
-        if (outer->isMC && outer->hCentralityObjects != nullptr) {
-          mcScale = dynamic_cast<TFormula*>(outer->hCentralityObjects->FindObject(TString::Format("%s-%s", outer->centrality.generator.value.c_str(), name.c_str()).Data()));
+        if (outer->doprocessRun3MonteCarlo && outer->hCentralityObjects != nullptr) {
+          mcScale = dynamic_cast<TFormula*>(outer->hCentralityObjects->FindObject(TString::Format("%s-%s", outer->centrality.generator.value.c_str(), estName.c_str()).Data()));
           if (!mcScale) {
             return CentralityNotFound;
           }
@@ -175,17 +216,61 @@ struct CentralityQa {
       }
       return centTable;
     }
+    template <typename TCollision>
+    void configure(const TCollision& col)
+    {
+      if (!outer->centrality.useCustomCalibration) {
+        return;
+      }
+
+      if (!col.has_foundBC()) {
+        return;
+      }
+
+      const auto& bc = col.template foundBC_as<BCsWithMatching>();
+      if (bc.runNumber() != outer->runNumber) {
+        outer->runNumber = bc.runNumber();
+        LOGF(info, "Acquiring centrality calibration for run %i", outer->runNumber);
+        outer->hCentralityObjects = outer->ccdb->getForRun<TList>(outer->centrality.pathCentrality, outer->runNumber);
+        if (!outer->hCentralityObjects) {
+          LOGF(info, "No centrality calibration list found for run %i", outer->runNumber);
+        }
+      }
+
+      if (!outer->hCentralityObjects) {
+        hCentrality = nullptr;
+        return;
+      }
+
+      hCentrality = dynamic_cast<TH1*>(outer->hCentralityObjects->FindObject(Form("hCalibZeq%s", estName.c_str())));
+      if (!hCentrality) {
+        LOGF(debug, "Calibration missing for %s", estName.c_str());
+      } else {
+        LOGF(debug, "Calibration loaded for %s", estName.c_str());
+      }
+    }
   };
 
-  PresliceUnsorted<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::MultsExtra, aod::CentFV0As>> perMcCollisionFV0A = aod::mccollisionlabel::mcCollisionId;
-  PresliceUnsorted<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::MultsExtra, aod::CentFT0Ms>> perMcCollisionFT0M = aod::mccollisionlabel::mcCollisionId;
-  PresliceUnsorted<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::MultsExtra, aod::CentFT0As>> perMcCollisionFT0A = aod::mccollisionlabel::mcCollisionId;
-  PresliceUnsorted<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::MultsExtra, aod::CentFT0Cs>> perMcCollisionFT0C = aod::mccollisionlabel::mcCollisionId;
-  PresliceUnsorted<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::MultsExtra, aod::CentFT0CVariant1s>> perMcCollisionFT0CVar1 = aod::mccollisionlabel::mcCollisionId;
-  PresliceUnsorted<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::MultsExtra, aod::CentFT0CVariant2s>> perMcCollisionFT0CVar2 = aod::mccollisionlabel::mcCollisionId;
-  PresliceUnsorted<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::MultsExtra, aod::CentFDDMs>> perMcCollisionFDDM = aod::mccollisionlabel::mcCollisionId;
+  std::vector<Estimator> estimators;
+  Estimator initEstimator(const bool doStudy, const std::string& estName, const std::string& histName)
+  {
+    return Estimator(this, doStudy, estName, histName);
+  }
+
+  template <typename... Args>
+  void insertHist(const std::string& name, const std::string& title, HistType type, const std::vector<AxisSpec>& axes)
+  {
+    histPointers[name] = histos.add(name.c_str(), title.c_str(), type, axes);
+  }
+
+  template <typename T>
+  std::shared_ptr<T>& getHist(const std::string& name)
+  {
+    return std::get<std::shared_ptr<T>>(histPointers[name]);
+  }
+
+  PresliceUnsorted<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::MultsExtra, CentRun3>> perMcCollision = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::MultsExtra, aod::CentNGlobals>> perMcCollisionNGlobal = aod::mccollisionlabel::mcCollisionId;
-  PresliceUnsorted<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::MultsExtra, aod::CentNTPVs>> perMcCollisionNTPV = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::CentMFTs>> perMcCollisionMFT = aod::mccollisionlabel::mcCollisionId;
 
   void init(o2::framework::InitContext& /*initContext*/)
@@ -194,356 +279,249 @@ struct CentralityQa {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    isRun2 = doprocessRun2PP ||
-             doprocessRun2PPb ||
-             doprocessRun2PbPb;
+    estimators.resize(NEstimators);
+    estimators[FV0A] = initEstimator(studies.fv0a.value, "FV0", "FV0A");
+    estimators[FT0M] = initEstimator(studies.ft0m.value, "FT0", "FT0M");
+    estimators[FT0MAnchorCol] = initEstimator(studies.ft0mAnchorCol.value, "FT0MAnchorCol", "FT0MAnchorCol");
+    estimators[FT0MAnchorBC] = initEstimator(studies.ft0mAnchorBc.value, "FT0MAnchorBc", "FT0MAnchorBc");
+    estimators[FT0MOuterA] = initEstimator(studies.ft0mOuterA.value, "FT0MOuterA", "FT0MOuterA");
+    estimators[FT0A] = initEstimator(studies.ft0a.value, "FT0A", "FT0A");
+    estimators[FT0C] = initEstimator(studies.ft0c.value, "FT0C", "FT0C");
+    estimators[FT0CVar1] = initEstimator(studies.ft0cVar1.value, "FT0CVariant1", "FT0CVariant1");
+    estimators[FT0CVar2] = initEstimator(studies.ft0cVar2.value, "FT0CVariant2", "FT0CVariant2");
+    estimators[FDDM] = initEstimator(studies.fddm.value, "FDDM", "FDDM");
+    estimators[NTPV] = initEstimator(studies.ntpv.value, "NTracksPV", "NTPV");
+    estimators[NGlobal] = initEstimator(studies.nGlo.value, "NGlobal", "NGlobal");
+    estimators[MFT] = initEstimator(studies.mft.value, "MFT", "MFT");
 
-    isMC = doprocessMonteCarloRun3_FV0A ||
-           doprocessMonteCarloRun3_FT0M ||
-           doprocessMonteCarloRun3_FT0A ||
-           doprocessMonteCarloRun3_FT0C ||
-           doprocessMonteCarloRun3_FT0CVar1 ||
-           doprocessMonteCarloRun3_FT0CVar2 ||
-           doprocessMonteCarloRun3_MFT ||
-           doprocessMonteCarloRun3_NGlobal ||
-           doprocessMonteCarloRun3_NTPV ||
-           doprocessMonteCarloRun3_FT0MAnchorCol ||
-           doprocessMonteCarloRun3_FT0MAnchorBC;
+    if (doprocessRun2) {
+      insertHist("hCentRun2V0M", ";V0M centrality (%)", kTH1D, {axisCentrality});
+      insertHist("hCentRun2V0A", ";V0A centrality (%)", kTH1D, {axisCentrality});
+      insertHist("hCentRun2SPDTks", ";SPD tracklet centrality (%)", kTH1D, {axisCentrality});
+      insertHist("hCentRun2SPDCls", ";SPD cluster centrality (%)", kTH1D, {axisCentrality});
+      insertHist("hCentRun2CL0", ";CL0 centrality (%)", kTH1D, {axisCentrality});
+      insertHist("hCentRun2CL1", ";CL1 centrality (%)", kTH1D, {axisCentrality});
+    }
 
-    if (isRun2) {
-      histos.add("hCentRun2V0M", ";V0M centrality (%)", kTH1D, {{nBins, 0, 105.}});
-      histos.add("hCentRun2V0A", ";V0A centrality (%)", kTH1D, {{nBins, 0, 105.}});
-      histos.add("hCentRun2SPDTks", ";SPD tracklet centrality (%)", kTH1D, {{nBins, 0, 105.}});
-      histos.add("hCentRun2SPDCls", ";SPD cluster centrality (%)", kTH1D, {{nBins, 0, 105.}});
-      histos.add("hCentRun2CL0", ";CL0 centrality (%)", kTH1D, {{nBins, 0, 105.}});
-      histos.add("hCentRun2CL1", ";CL1 centrality (%)", kTH1D, {{nBins, 0, 105.}});
-    } else {
-      histos.add("hCentFV0A", ";FV0A centrality (%)", kTH1D, {{nBins, 0, 105.}});
-      histos.add("hCentFT0M", ";FT0M centrality (%)", kTH1D, {{nBins, 0, 105.}});
-      histos.add("hCentFT0MOuterA", ";FT0M centrality (%)", kTH1D, {{nBins, 0, 105.}});
-      histos.add("hCentFT0A", ";FT0A centrality (%)", kTH1D, {{nBins, 0, 105.}});
-      histos.add("hCentFT0C", ";FT0C centrality (%)", kTH1D, {{nBins, 0, 105.}});
-      histos.add("hCentFT0CVar1", ";FT0CVar1 centrality (%)", kTH1D, {{nBins, 0, 105.}});
-      histos.add("hCentFT0CVar2", ";FT0CVar2 centrality (%)", kTH1D, {{nBins, 0, 105.}});
-      histos.add("hCentFDDM", ";FDDM centrality (%)", kTH1D, {{nBins, 0, 105.}});
-      histos.add("hCentNTPV", ";NTPV centrality (%)", kTH1D, {{nBins, 0, 105.}});
-      histos.add("hCentNGlobal", ";NGlobal centrality (%)", kTH1D, {{nBins, 0, 105.}});
-      histos.add("hCentMFT", ";MFT centrality (%)", kTH1D, {{nBins, 0, 105.}});
-      histos.add("hCentFT0MAnchorCols", ";FT0MAnchorCols centrality (%)", kTH1D, {{nBins, 0, 105.}});
-      histos.add("hCentFT0MAnchorBCs", ";FT0MAnchorBCs centrality (%)", kTH1D, {{nBins, 0, 105.}});
-
-      // profiles of midrapidity multiplicity density
-      histos.add("hCentProfileFV0A", ";FV0A centrality (%)", kTProfile, {{nBins, 0, 105.}});
-      histos.add("hCentProfileFT0M", ";FT0M centrality (%)", kTProfile, {{nBins, 0, 105.}});
-      histos.add("hCentProfileFT0MOuterA", ";FT0M centrality (%)", kTProfile, {{nBins, 0, 105.}});
-      histos.add("hCentProfileFT0A", ";FT0A centrality (%)", kTProfile, {{nBins, 0, 105.}});
-      histos.add("hCentProfileFT0C", ";FT0C centrality (%)", kTProfile, {{nBins, 0, 105.}});
-      histos.add("hCentProfileFT0CVar1", ";FT0CVar1 centrality (%)", kTProfile, {{nBins, 0, 105.}});
-      histos.add("hCentProfileFT0CVar2", ";FT0CVar2 centrality (%)", kTProfile, {{nBins, 0, 105.}});
-      histos.add("hCentProfileFDDM", ";FDDM centrality (%)", kTProfile, {{nBins, 0, 105.}});
-      histos.add("hCentProfileNTPV", ";NTPV centrality (%)", kTProfile, {{nBins, 0, 105.}});
-      histos.add("hCentProfileNGlobal", ";NGlobal centrality (%)", kTProfile, {{nBins, 0, 105.}});
-      histos.add("hCentProfileMFT", ";MFT centrality (%)", kTProfile, {{nBins, 0, 105.}});
-      histos.add("hCentProfileFT0MAnchorCols", ";FT0MAnchorCols centrality (%)", kTProfile, {{nBins, 0, 105.}});
-      histos.add("hCentProfileFT0MAnchorBCs", ";FT0MAnchorBCs centrality (%)", kTProfile, {{nBins, 0, 105.}});
-
-      histos.add("hMultEta05VsCentFV0A", ";FV0A centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
-      histos.add("hMultEta05VsCentFT0M", ";FT0M centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
-      histos.add("hMultEta05VsCentFT0MOuterA", ";FT0M centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
-      histos.add("hMultEta05VsCentFT0A", ";FT0A centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
-      histos.add("hMultEta05VsCentFT0C", ";FT0C centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
-      histos.add("hMultEta05VsCentFT0CVar1", ";FT0CVar1 centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
-      histos.add("hMultEta05VsCentFT0CVar2", ";FT0CVar2 centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
-      histos.add("hMultEta05VsCentFDDM", ";FDDM centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
-      histos.add("hMultEta05VsCentNTPV", ";NTPV centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
-      histos.add("hMultEta05VsCentNGlobal", ";NGlobal centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
-      histos.add("hMultEta05VsCentMFT", ";MFT centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
-      histos.add("hMultEta05VsCentFT0MAnchorCols", ";FT0MAnchorCols centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
-      histos.add("hMultEta05VsCentFT0MAnchorBCs", ";FT0MAnchorBCs centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
-
-      if (isMC) {
-        histos.add("hMultEta05VsGenMultFV0A", ";Multiplicity FV0A; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
-        histos.add("hMultEta05VsGenMultFT0M", ";Multiplicity FT0M; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
-        histos.add("hMultEta05VsGenMultFT0MAnchorCols", ";Multiplicity FT0MAnchorCols; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
-        histos.add("hMultEta05VsGenMultFT0MAnchorBCs", ";Multiplicity FT0MAnchorBCs; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
-        histos.add("hMultEta05VsGenMultFT0A", ";Multiplicity FT0A; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
-        histos.add("hMultEta05VsGenMultFT0C", ";Multiplicity FT0C; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
-        histos.add("hMultEta05VsGenMultFT0CVar1", ";Multiplicity FT0CVar1; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
-        histos.add("hMultEta05VsGenMultFT0CVar2", ";Multiplicity FT0CVar2; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
-        histos.add("hMultEta05VsGenMultFDDM", ";Multiplicity FDDM; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
-        histos.add("hMultEta05VsGenMultNTPV", ";Multiplicity NTPV; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
-        histos.add("hMultEta05VsGenMultNGlobal", ";Multiplicity NGlobal; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
-        histos.add("hMultEta05VsGenMultMFT", ";Multiplicity MFT; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
-
-        histos.add("hGenMultEta05VsCentralityFV0A", ";FV0A Centrality (%); Generated multiplicity (|#it{#eta}| < 0.5)", kTH2D, {axisCentrality, axisMultiplicityPV});
-        histos.add("hGenMultEta05VsCentralityFT0M", ";FT0M Centrality (%); Generated multiplicity (|#it{#eta}| < 0.5)", kTH2D, {axisCentrality, axisMultiplicityPV});
-        histos.add("hGenMultEta05VsCentralityFT0A", ";FT0A Centrality (%); Generated multiplicity (|#it{#eta}| < 0.5)", kTH2D, {axisCentrality, axisMultiplicityPV});
-        histos.add("hGenMultEta05VsCentralityFT0C", ";FT0C Centrality (%); Generated multiplicity (|#it{#eta}| < 0.5)", kTH2D, {axisCentrality, axisMultiplicityPV});
-        histos.add("hGenMultEta05VsCentralityFT0CVar1", ";FT0CVar1 Centrality (%); Generated multiplicity (|#it{#eta}| < 0.5)", kTH2D, {axisCentrality, axisMultiplicityPV});
-        histos.add("hGenMultEta05VsCentralityFT0CVar2", ";FT0CVar2 Centrality (%); Generated multiplicity (|#it{#eta}| < 0.5)", kTH2D, {axisCentrality, axisMultiplicityPV});
-        histos.add("hGenMultEta05VsCentralityFDDM", ";FDDM Centrality (%); Generated multiplicity (|#it{#eta}| < 0.5)", kTH2D, {axisCentrality, axisMultiplicityPV});
-        histos.add("hGenMultEta05VsCentralityNTPV", ";NTPV Centrality (%); Generated multiplicity (|#it{#eta}| < 0.5)", kTH2D, {axisCentrality, axisMultiplicityPV});
-        histos.add("hGenMultEta05VsCentralityNGlobal", ";NGlobal Centrality (%); Generated multiplicity (|#it{#eta}| < 0.5)", kTH2D, {axisCentrality, axisMultiplicityPV});
-        histos.add("hGenMultEta05VsCentralityMFT", ";MFT Centrality (%); Generated multiplicity (|#it{#eta}| < 0.5)", kTH2D, {axisCentrality, axisMultiplicityPV});
-
-        histos.add("hGenMultVsCentralityFV0A", ";FV0A Centrality (%); Generated multiplicity FV0A", kTH2D, {axisCentrality, axisMultiplicityPV});
-        histos.add("hGenMultVsCentralityFT0M", ";FT0M Centrality (%); Generated multiplicity FT0M", kTH2D, {axisCentrality, axisMultiplicityPV});
-        histos.add("hGenMultVsCentralityFT0A", ";FT0A Centrality (%); Generated multiplicity FT0A", kTH2D, {axisCentrality, axisMultiplicityPV});
-        histos.add("hGenMultVsCentralityFT0C", ";FT0C Centrality (%); Generated multiplicity FT0C", kTH2D, {axisCentrality, axisMultiplicityPV});
-        histos.add("hGenMultVsCentralityFT0CVar1", ";FT0CVar1 Centrality (%); Generated multiplicity FT0C", kTH2D, {axisCentrality, axisMultiplicityPV});
-        histos.add("hGenMultVsCentralityFT0CVar2", ";FT0CVar2 Centrality (%); Generated multiplicity FT0C", kTH2D, {axisCentrality, axisMultiplicityPV});
-        histos.add("hGenMultVsCentralityFDDM", ";FDDM Centrality (%); Generated multiplicity FDDM", kTH2D, {axisCentrality, axisMultiplicityPV});
-        histos.add("hGenMultVsCentralityNTPV", ";NTPV Centrality (%); Generated multiplicity NTPV", kTH2D, {axisCentrality, axisMultiplicityPV});
-        histos.add("hGenMultVsCentralityNGlobal", ";NGlobal Centrality (%); Generated multiplicity global tracks", kTH2D, {axisCentrality, axisMultiplicityPV});
-        histos.add("hGenMultVsCentralityMFT", ";MFT Centrality (%); Generated multiplicity MFT", kTH2D, {axisCentrality, axisMultiplicityPV});
+    if (doprocessRun3 || doprocessRun3MonteCarlo) {
+      for (int iEst = 0; iEst < NEstimators; ++iEst) {
+        const Estimator& est = estimators[iEst];
+        if (!est.doStudy) {
+          continue;
+        }
+        insertHist("hCent" + est.histName, ";" + est.histName + " centrality (%)", kTH1D, {axisCentrality});
+        insertHist("hCentProfile" + est.histName, ";" + est.histName + " centrality (%)", kTProfile, {axisCentrality});
+        insertHist("hMultEta05VsCent" + est.histName, ";" + est.histName + " Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisCentrality, axisMultiplicityPV});
+        if (doprocessRun3MonteCarlo) {
+          insertHist("hMultEta05VsGenMult" + est.histName, ";Multiplicity " + est.histName + ";Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
+          insertHist("hGenMultEta05VsCentrality" + est.histName, ";" + est.histName + " Centrality (%); Generated multiplicity (|#it{#eta}| < 0.5)", kTH2D, {axisCentrality, axisMultiplicityPV});
+          insertHist("hGenMultVsCentrality" + est.histName, ";" + est.histName + " Centrality (%); Generated multiplicity " + est.estName, kTH2D, {axisCentrality, axisMultiplicityPV});
+        }
       }
     }
 
     if (doprocessBunchCrossings) {
-      histos.add("hBCSelection", "hBCSelection", kTH1D, {{20, -0.5, 19.5f}});
-      histos.get<TH1>(HIST("hBCSelection"))->GetXaxis()->SetBinLabel(1, "All BCs");
-      histos.get<TH1>(HIST("hBCSelection"))->GetXaxis()->SetBinLabel(2, "Colliding BCs");
-      histos.get<TH1>(HIST("hBCSelection"))->GetXaxis()->SetBinLabel(3, "TVX");
-      histos.get<TH1>(HIST("hBCSelection"))->GetXaxis()->SetBinLabel(4, "FV0OrA");
-      histos.get<TH1>(HIST("hBCSelection"))->GetXaxis()->SetBinLabel(5, "FT0PosZ");
-      histos.get<TH1>(HIST("hBCSelection"))->GetXaxis()->SetBinLabel(6, "BB with FT0");
-      histos.get<TH1>(HIST("hBCSelection"))->GetXaxis()->SetBinLabel(7, "zdc rej");
-      histos.get<TH1>(HIST("hBCSelection"))->GetXaxis()->SetBinLabel(8, "isFlangeEvent");
-      histos.add("hAmpVsChFT0A", "hAmpVsChFT0A;Channel; Amplitude", kTH2D, {{96, -0.5, 95.5}, axisChannelAmplitude});
-      histos.add("hAmpVsChFT0C", "hAmpVsChFT0C;Channel; Amplitude", kTH2D, {{112, -0.5, 111.5}, axisChannelAmplitude});
+      insertHist("hBCSelection", "hBCSelection", kTH1D, {{20, -0.5, 19.5f}});
+      getHist<TH1>("hBCSelection")->GetXaxis()->SetBinLabel(1, "All BCs");
+      getHist<TH1>("hBCSelection")->GetXaxis()->SetBinLabel(2, "Colliding BCs");
+      getHist<TH1>("hBCSelection")->GetXaxis()->SetBinLabel(3, "TVX");
+      getHist<TH1>("hBCSelection")->GetXaxis()->SetBinLabel(4, "FV0OrA");
+      getHist<TH1>("hBCSelection")->GetXaxis()->SetBinLabel(5, "FT0PosZ");
+      getHist<TH1>("hBCSelection")->GetXaxis()->SetBinLabel(6, "BB with FT0");
+      getHist<TH1>("hBCSelection")->GetXaxis()->SetBinLabel(7, "zdc rej");
+      getHist<TH1>("hBCSelection")->GetXaxis()->SetBinLabel(8, "isFlangeEvent");
+      insertHist("hAmpVsChFT0A", "hAmpVsChFT0A;Channel; Amplitude", kTH2D, {{96, -0.5, 95.5}, axisChannelAmplitude});
+      insertHist("hAmpVsChFT0C", "hAmpVsChFT0C;Channel; Amplitude", kTH2D, {{112, -0.5, 111.5}, axisChannelAmplitude});
     }
 
     histos.print();
   }
 
   template <typename TCollision>
-  Estimator initEstimator(const TCollision& col, const std::string& name)
-  {
-    Estimator est(this, name);
-    if (centrality.useCustomCalibration) {
-      if (!col.has_foundBC()) {
-        return est;
-      }
-
-      const auto bc = col.template foundBC_as<aod::BCs>();
-      if (bc.runNumber() != runNumber) {
-        runNumber = bc.runNumber();
-        LOGF(info, "Acquiring centrality calibration for run %i", runNumber);
-        hCentralityObjects = ccdb->getForRun<TList>(centrality.pathCentrality, runNumber);
-        if (!hCentralityObjects) {
-          LOGF(info, "No centrality calibration list found for run %i", runNumber);
-        }
-      }
-
-      if (!hCentralityObjects) {
-        est.hCentrality = nullptr;
-        return est;
-      }
-
-      est.hCentrality = dynamic_cast<TH1*>(hCentralityObjects->FindObject(Form("hCalibZeq%s", est.name.c_str())));
-      if (!est.hCentrality) {
-        LOGF(debug, "Calibration missing for %s", est.name.c_str());
-      } else {
-        LOGF(debug, "Calibration loaded for %s", est.name.c_str());
-      }
-    }
-
-    return est;
-  }
-
-  template <typename TCollision>
   bool isCollisionAccepted(TCollision const& collision)
   // check whether the collision passes our collision selections
   {
-    if constexpr (
-      requires { collision.centFV0A(); } ||
-      requires { collision.centFT0M(); } ||
-      requires { collision.centFT0A(); } ||
-      requires { collision.centFT0C(); } ||
-      requires { collision.centFT0CVariant1(); } ||
-      requires { collision.centFT0CVariant2(); } ||
-      requires { collision.centFT0MOuterA(); } ||
-      requires { collision.centFDDM(); } ||
-      requires { collision.centNTPV(); } ||
-      requires { collision.centNGlobal(); } ||
-      requires { collision.centMFT(); } ||
-      requires { collision.centFT0MAnchorCol(); } ||
-      requires { collision.centFT0MAnchorBC(); }) { // check if we are in Run 3
-      if (eventSelections.requireSel8 && !collision.sel8()) {
+    if (eventSelections.requireSel8 && !collision.sel8()) {
+      return false;
+    }
+
+    if (eventSelections.requireTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
+      return false;
+    }
+
+    if (eventSelections.rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+      return false;
+    }
+
+    if (eventSelections.rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+      return false;
+    }
+
+    if (std::abs(collision.posZ()) > eventSelections.maxZVtxPosition) {
+      return false;
+    }
+
+    if (eventSelections.requireIsBBT0A && !collision.selection_bit(aod::evsel::kIsBBT0A)) {
+      return false;
+    }
+
+    if (eventSelections.requireIsBBT0C && !collision.selection_bit(aod::evsel::kIsBBT0C)) {
+      return false;
+    }
+
+    if (eventSelections.requireIsVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+      return false;
+    }
+
+    if (eventSelections.requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      return false;
+    }
+
+    if (eventSelections.requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
+      return false;
+    }
+
+    if (eventSelections.requireIsVertexTRDmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
+      return false;
+    }
+
+    if (eventSelections.rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      return false;
+    }
+
+    if (eventSelections.requireNoCollInTimeRangeStd && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+      return false;
+    }
+
+    if (eventSelections.requireNoCollInTimeRangeStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
+      return false;
+    }
+
+    if (eventSelections.requireNoCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
+      return false;
+    }
+
+    if (eventSelections.requireNoCollInROFStd && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+      return false;
+    }
+
+    if (eventSelections.requireNoCollInROFStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
+      return false;
+    }
+
+    static constexpr int OneTrackInEta1 = 1;
+    if (eventSelections.requireINEL0 && collision.multNTracksPVeta1() < OneTrackInEta1) {
+      return false;
+    }
+
+    static constexpr int TwoTracksInEta1 = 2;
+    if (eventSelections.requireINEL1 && collision.multNTracksPVeta1() < TwoTracksInEta1) {
+      return false;
+    }
+
+    float collisionOccupancy = eventSelections.useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
+    if (eventSelections.minOccupancy >= 0 && collisionOccupancy < eventSelections.minOccupancy) {
+      return false;
+    }
+
+    if (eventSelections.maxOccupancy >= 0 && collisionOccupancy > eventSelections.maxOccupancy) {
+      return false;
+    }
+
+    if constexpr (requires { collision.has_mcCollision(); }) { // check if we are in MC
+      if (!collision.has_mcCollision()) {
         return false;
       }
 
-      if (eventSelections.requireTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
+      const auto& mcCollision = collision.template mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
+      const auto& recoBC = collision.template bc_as<BCsWithMatching>();
+      const auto& foundBC = collision.template foundBC_as<BCsWithMatching>();
+      const auto& mcBC = mcCollision.template bc_as<BCsWithMatching>();
+
+      // Check that the BC in data and MC is the same
+      if (eventSelections.rejectMismatchedBCs && recoBC.globalBC() != mcBC.globalBC()) {
         return false;
       }
-
-      if (eventSelections.rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+      if (eventSelections.rejectMismatchedFoundBCs && foundBC.globalBC() != mcBC.globalBC()) {
         return false;
       }
+    }
 
-      if (eventSelections.rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-        return false;
-      }
+    return true;
+  }
 
-      if (std::abs(collision.posZ()) > eventSelections.maxZVtxPosition) {
-        return false;
-      }
+  template <typename TCollision>
+  bool isCollisionAcceptedRun2(TCollision const& collision)
+  // check whether the collision passes our collision selections
+  {
+    if (eventSelections.requireSel8 && !collision.sel8()) {
+      return false;
+    }
 
-      if (eventSelections.requireIsBBT0A && !collision.selection_bit(aod::evsel::kIsBBT0A)) {
-        return false;
-      }
+    if (eventSelections.requireSel7 && !collision.sel7()) {
+      return false;
+    }
 
-      if (eventSelections.requireIsBBT0C && !collision.selection_bit(aod::evsel::kIsBBT0C)) {
-        return false;
-      }
+    if (eventSelections.requireINT7 && !collision.alias_bit(kINT7)) {
+      return false;
+    }
 
-      if (eventSelections.requireIsVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
-        return false;
-      }
+    if (eventSelections.requireTriggerTVX && !collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+      return false;
+    }
 
-      if (eventSelections.requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
-        return false;
-      }
+    if (eventSelections.rejectIncompleteDAQ && !collision.selection_bit(o2::aod::evsel::kNoIncompleteDAQ)) {
+      return false;
+    }
 
-      if (eventSelections.requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
-        return false;
-      }
+    if (std::abs(collision.posZ()) > eventSelections.maxZVtxPosition) {
+      return false;
+    }
 
-      if (eventSelections.requireIsVertexTRDmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
-        return false;
-      }
+    if (eventSelections.requireConsistentSPDAndTrackVtx && !collision.selection_bit(o2::aod::evsel::kNoInconsistentVtx)) {
+      return false;
+    }
 
-      if (eventSelections.rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
-        return false;
-      }
+    if (eventSelections.rejectPileupFromSPD && !collision.selection_bit(o2::aod::evsel::kNoPileupFromSPD)) {
+      return false;
+    }
 
-      if (eventSelections.requireNoCollInTimeRangeStd && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
-        return false;
-      }
+    if (eventSelections.rejectV0PFPileup && !collision.selection_bit(o2::aod::evsel::kNoV0PFPileup)) {
+      return false;
+    }
 
-      if (eventSelections.requireNoCollInTimeRangeStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
-        return false;
-      }
+    if (eventSelections.rejectPileupInMultBins && !collision.selection_bit(o2::aod::evsel::kNoPileupInMultBins)) {
+      return false;
+    }
 
-      if (eventSelections.requireNoCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
-        return false;
-      }
+    if (eventSelections.rejectPileupMV && !collision.selection_bit(o2::aod::evsel::kNoPileupMV)) {
+      return false;
+    }
 
-      if (eventSelections.requireNoCollInROFStd && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
-        return false;
-      }
+    if (eventSelections.rejectTPCPileup && !collision.selection_bit(o2::aod::evsel::kNoPileupTPC)) {
+      return false;
+    }
 
-      if (eventSelections.requireNoCollInROFStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
-        return false;
-      }
+    if (eventSelections.requireNoV0MOnVsOffPileup && !collision.selection_bit(o2::aod::evsel::kNoV0MOnVsOfPileup)) {
+      return false;
+    }
 
-      static constexpr int OneTrackInEta1 = 1;
-      if (eventSelections.requireINEL0 && collision.multNTracksPVeta1() < OneTrackInEta1) {
-        return false;
-      }
+    if (eventSelections.requireNoSPDOnVsOffPileup && !collision.selection_bit(o2::aod::evsel::kNoSPDOnVsOfPileup)) {
+      return false;
+    }
 
-      static constexpr int TwoTracksInEta1 = 2;
-      if (eventSelections.requireINEL1 && collision.multNTracksPVeta1() < TwoTracksInEta1) {
-        return false;
-      }
+    if (eventSelections.requireNoSPDClsVsTklBG && !collision.selection_bit(o2::aod::evsel::kNoSPDClsVsTklBG)) {
+      return false;
+    }
 
-      float collisionOccupancy = eventSelections.useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
-      if (eventSelections.minOccupancy >= 0 && collisionOccupancy < eventSelections.minOccupancy) {
-        return false;
-      }
+    static constexpr int OneTrackInEta1 = 1;
+    if (eventSelections.requireINEL0 && collision.multNTracksPVeta1() < OneTrackInEta1) {
+      return false;
+    }
 
-      if (eventSelections.maxOccupancy >= 0 && collisionOccupancy > eventSelections.maxOccupancy) {
-        return false;
-      }
-
-      if constexpr (requires { collision.has_mcCollision(); }) { // check if we are in MC
-        if (!collision.has_mcCollision()) {
-          return false;
-        }
-
-        const auto& mcCollision = collision.template mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
-        const auto& recoBC = collision.template bc_as<soa::Join<aod::BCs, aod::Run3MatchedToBCSparse>>();
-        const auto& foundBC = collision.template foundBC_as<soa::Join<aod::BCs, aod::Run3MatchedToBCSparse>>();
-        const auto& mcBC = mcCollision.template bc_as<soa::Join<aod::BCs, aod::Run3MatchedToBCSparse>>();
-
-        // Check that the BC in data and MC is the same
-        if (eventSelections.rejectMismatchedBCs && recoBC.globalBC() != mcBC.globalBC()) {
-          return false;
-        }
-        if (eventSelections.rejectMismatchedFoundBCs && foundBC.globalBC() != mcBC.globalBC()) {
-          return false;
-        }
-      }
-    } else { // we are in Run 2
-      if (eventSelections.requireSel8 && !collision.sel8()) {
-        return false;
-      }
-
-      if (eventSelections.requireSel7 && !collision.sel7()) {
-        return false;
-      }
-
-      if (eventSelections.requireINT7 && !collision.alias_bit(kINT7)) {
-        return false;
-      }
-
-      if (eventSelections.requireTriggerTVX && !collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
-        return false;
-      }
-
-      if (eventSelections.rejectIncompleteDAQ && !collision.selection_bit(o2::aod::evsel::kNoIncompleteDAQ)) {
-        return false;
-      }
-
-      if (std::abs(collision.posZ()) > eventSelections.maxZVtxPosition) {
-        return false;
-      }
-
-      if (eventSelections.requireConsistentSPDAndTrackVtx && !collision.selection_bit(o2::aod::evsel::kNoInconsistentVtx)) {
-        return false;
-      }
-
-      if (eventSelections.rejectPileupFromSPD && !collision.selection_bit(o2::aod::evsel::kNoPileupFromSPD)) {
-        return false;
-      }
-
-      if (eventSelections.rejectV0PFPileup && !collision.selection_bit(o2::aod::evsel::kNoV0PFPileup)) {
-        return false;
-      }
-
-      if (eventSelections.rejectPileupInMultBins && !collision.selection_bit(o2::aod::evsel::kNoPileupInMultBins)) {
-        return false;
-      }
-
-      if (eventSelections.rejectPileupMV && !collision.selection_bit(o2::aod::evsel::kNoPileupMV)) {
-        return false;
-      }
-
-      if (eventSelections.rejectTPCPileup && !collision.selection_bit(o2::aod::evsel::kNoPileupTPC)) {
-        return false;
-      }
-
-      if (eventSelections.requireNoV0MOnVsOffPileup && !collision.selection_bit(o2::aod::evsel::kNoV0MOnVsOfPileup)) {
-        return false;
-      }
-
-      if (eventSelections.requireNoSPDOnVsOffPileup && !collision.selection_bit(o2::aod::evsel::kNoSPDOnVsOfPileup)) {
-        return false;
-      }
-
-      if (eventSelections.requireNoSPDClsVsTklBG && !collision.selection_bit(o2::aod::evsel::kNoSPDClsVsTklBG)) {
-        return false;
-      }
-
-      static constexpr int OneTrackInEta1 = 1;
-      if (eventSelections.requireINEL0 && collision.multNTracksPVeta1() < OneTrackInEta1) {
-        return false;
-      }
-
-      static constexpr int TwoTracksInEta1 = 2;
-      if (eventSelections.requireINEL1 && collision.multNTracksPVeta1() < TwoTracksInEta1) {
-        return false;
-      }
+    static constexpr int TwoTracksInEta1 = 2;
+    if (eventSelections.requireINEL1 && collision.multNTracksPVeta1() < TwoTracksInEta1) {
+      return false;
     }
 
     return true;
@@ -649,854 +627,260 @@ struct CentralityQa {
     return true;
   }
 
-  void processRun2PP(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2SPDTrks, aod::CentRun2SPDClss, aod::Mults>::iterator const& col)
+  template <typename TCollision>
+  void fillEstimatorHistos(const TCollision& col, Estimator est, const float mult, const float refCent)
   {
-    if (!isCollisionAccepted(col)) {
+    if (!est.doStudy) {
+      return;
+    }
+
+    est.configure(col);
+    const auto cent = est.getCentrality(mult, refCent);
+    LOGF(debug, "cent%s=%.0f", est.histName.c_str(), cent);
+    getHist<TH1>("hCent" + est.histName)->Fill(cent);
+    getHist<TH2>("hMultEta05VsCent" + est.histName)->Fill(cent, col.multNTracksPVetaHalf());
+    getHist<TProfile>("hCentProfile" + est.histName)->Fill(cent, col.multNTracksPVetaHalf());
+  }
+
+  template <typename TMcCollision>
+  void fillEstimatorMonteCarloHistos(const TMcCollision& mcCol, const Estimator& est, const float multMC, const float cent, const float nPVContribsInEta05)
+  {
+    if (!est.doStudy) {
+      return;
+    }
+
+    getHist<TH2>("hMultEta05VsGenMult" + est.histName)->Fill(multMC, nPVContribsInEta05);
+    getHist<TH2>("hGenMultEta05VsCentrality" + est.histName)->Fill(cent, mcCol.multMCNParticlesEta05());
+    getHist<TH2>("hGenMultVsCentrality" + est.histName)->Fill(cent, multMC);
+  }
+
+  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2V0As, aod::CentRun2SPDTrks, aod::CentRun2SPDClss, aod::CentRun2CL0s, aod::CentRun2CL1s, aod::Mults>::iterator const& col)
+  {
+    if (!isCollisionAcceptedRun2(col)) {
       return;
     }
     LOGF(debug, "centV0M=%.0f", col.centRun2V0M());
     LOGF(debug, "centSPDTracklets=%.0f", col.centRun2SPDTracklets());
     LOGF(debug, "centSPDClusters=%.0f", col.centRun2SPDClusters());
-    // fill centrality histos
-    histos.fill(HIST("hCentRun2V0M"), col.centRun2V0M());
-    histos.fill(HIST("hCentRun2SPDTks"), col.centRun2SPDTracklets());
-    histos.fill(HIST("hCentRun2SPDCls"), col.centRun2SPDClusters());
-  }
-  PROCESS_SWITCH(CentralityQa, processRun2PP, "Process with Run2 SPD clusters centrality/multiplicity estimation", false);
-
-  void processRun2PbPb(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2SPDTrks, aod::CentRun2CL0s, aod::CentRun2CL1s, aod::Mults>::iterator const& col)
-  {
-    if (!isCollisionAccepted(col)) {
-      return;
-    }
-    LOGF(debug, "centV0M=%.0f", col.centRun2V0M());
-    LOGF(debug, "centSPDTracklets=%.0f", col.centRun2SPDTracklets());
     LOGF(debug, "centCL0=%.0f", col.centRun2CL0());
     LOGF(debug, "centCL1=%.0f", col.centRun2CL1());
-    // fill centrality histos
-    histos.fill(HIST("hCentRun2V0M"), col.centRun2V0M());
-    histos.fill(HIST("hCentRun2SPDTks"), col.centRun2SPDTracklets());
-    histos.fill(HIST("hCentRun2CL0"), col.centRun2CL0());
-    histos.fill(HIST("hCentRun2CL1"), col.centRun2CL1());
-  }
-  PROCESS_SWITCH(CentralityQa, processRun2PbPb, "Process with Run2 CL0 and CL1 multiplicities centrality/multiplicity  estimation", false);
-
-  void processRun2PPb(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0As, aod::Mults>::iterator const& col)
-  {
-    if (!isCollisionAccepted(col)) {
-      return;
-    }
     LOGF(debug, "centV0A=%.0f", col.centRun2V0A());
-    // fill centrality histos
-    histos.fill(HIST("hCentRun2V0A"), col.centRun2V0A());
-  }
-  PROCESS_SWITCH(CentralityQa, processRun2PPb, "Process with Run2 V0A multiplicitY centrality/multiplicity  estimation", false);
 
-  void processRun3_FV0A(soa::Join<aod::Collisions, aod::EvSels, aod::MultsRun3, aod::CentFV0As>::iterator const& col, aod::BCs const&)
+    getHist<TH1>("hCentRun2V0M")->Fill(col.centRun2V0M());
+    getHist<TH1>("hCentRun2SPDTks")->Fill(col.centRun2SPDTracklets());
+    getHist<TH1>("hCentRun2SPDCls")->Fill(col.centRun2SPDClusters());
+    getHist<TH1>("hCentRun2CL0")->Fill(col.centRun2CL0());
+    getHist<TH1>("hCentRun2CL1")->Fill(col.centRun2CL1());
+    getHist<TH1>("hCentRun2V0A")->Fill(col.centRun2V0A());
+  }
+
+  void processRun3(soa::Join<aod::Collisions, aod::EvSels, aod::MultsRun3, CentRun3>::iterator const& col,
+                   soa::Join<aod::MultsGlobal, aod::CentNGlobals> const& nGlobals,
+                   soa::Join<aod::MFTMults, aod::CentMFTs> const& nMFTs,
+                   BCsWithMatching const&)
   {
     if (!isCollisionAccepted(col)) {
       return;
     }
 
-    Estimator fv0a = initEstimator(col, "FV0");
-    const float centFV0A = fv0a.getCentrality(col.multFV0A(), col.centFV0A());
+    fillEstimatorHistos(col, estimators[FV0A], col.multFV0A(), col.centFV0A());
+    fillEstimatorHistos(col, estimators[FT0M], col.multFT0M(), col.centFT0M());
+    fillEstimatorHistos(col, estimators[FT0MAnchorCol], col.multFT0M(), col.centFT0MAnchorCol());
+    fillEstimatorHistos(col, estimators[FT0MAnchorBC], col.multFT0M(), col.centFT0MAnchorBC());
+    fillEstimatorHistos(col, estimators[FT0MOuterA], col.multFT0AOuter() + col.multFT0C(), col.centFT0MOuterA());
+    fillEstimatorHistos(col, estimators[FT0A], col.multFT0A(), col.centFT0A());
+    fillEstimatorHistos(col, estimators[FT0C], col.multFT0C(), col.centFT0C());
+    fillEstimatorHistos(col, estimators[FT0CVar1], col.multFT0C(), col.centFT0CVariant1());
+    fillEstimatorHistos(col, estimators[FT0CVar2], col.multFT0C(), col.centFT0CVariant2());
+    fillEstimatorHistos(col, estimators[FDDM], col.multFDDM(), col.centFDDM());
+    fillEstimatorHistos(col, estimators[NTPV], col.multNTracksPV(), col.centNTPV());
 
-    LOGF(debug, "centFV0A=%.0f", centFV0A);
-    histos.fill(HIST("hCentFV0A"), centFV0A);
-    histos.fill(HIST("hCentProfileFV0A"), centFV0A, col.multNTracksPVetaHalf());
-    histos.fill(HIST("hMultEta05VsCentFV0A"), centFV0A, col.multNTracksPVetaHalf());
-  }
-  PROCESS_SWITCH(CentralityQa, processRun3_FV0A, "Process with Run 3 FV0A estimator", false);
-
-  void processRun3_FT0M(soa::Join<aod::Collisions, aod::EvSels, aod::MultsRun3, aod::CentFT0Ms>::iterator const& col, aod::BCs const&)
-  {
-    if (!isCollisionAccepted(col)) {
-      return;
+    if (nGlobals.size() > 0) {
+      const auto& multCentNGlo = nGlobals.rawIteratorAt(col.globalIndex());
+      fillEstimatorHistos(col, estimators[NGlobal], multCentNGlo.multNTracksGlobal(), multCentNGlo.centNGlobal());
     }
 
-    Estimator ft0m = initEstimator(col, "FT0");
-    const float centFT0M = ft0m.getCentrality(col.multFT0M(), col.centFT0M());
-
-    LOGF(debug, "centFT0M=%.0f", centFT0M);
-    histos.fill(HIST("hCentFT0M"), centFT0M);
-    histos.fill(HIST("hCentProfileFT0M"), centFT0M, col.multNTracksPVetaHalf());
-    histos.fill(HIST("hMultEta05VsCentFT0M"), centFT0M, col.multNTracksPVetaHalf());
-  }
-  PROCESS_SWITCH(CentralityQa, processRun3_FT0M, "Process with Run 3 FT0M estimator", false);
-
-  void processRun3_FT0MOuterA(soa::Join<aod::Collisions, aod::EvSels, aod::MultsRun3, aod::FITExtraMults, aod::CentFT0MOuterAs>::iterator const& col, aod::BCs const&)
-  {
-    if (!isCollisionAccepted(col)) {
-      return;
+    if (nMFTs.size() > 0) {
+      const auto& multCentNMFT = nMFTs.rawIteratorAt(col.globalIndex());
+      fillEstimatorHistos(col, estimators[MFT], multCentNMFT.mftNtracks(), multCentNMFT.centMFT());
     }
-
-    Estimator ft0mOuterA = initEstimator(col, "FT0MOuterA");
-    const float centFT0MOuterA = ft0mOuterA.getCentrality(col.multFT0AOuter() + col.multFT0C(), col.centFT0MOuterA());
-
-    LOGF(debug, "centFT0MOuterA=%.0f", centFT0MOuterA);
-    histos.fill(HIST("hCentFT0MOuterA"), centFT0MOuterA);
-    histos.fill(HIST("hCentProfileFT0MOuterA"), centFT0MOuterA, col.multNTracksPVetaHalf());
-    histos.fill(HIST("hMultEta05VsCentFT0MOuterA"), centFT0MOuterA, col.multNTracksPVetaHalf());
   }
-  PROCESS_SWITCH(CentralityQa, processRun3_FT0MOuterA, "Process with Run 3 FT0M estimator", false);
 
-  void processRun3_FT0A(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0As>::iterator const& col)
+  void processRun3MonteCarlo(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::MultsExtra, CentRun3> const& collisions,
+                             soa::Join<aod::MultsGlobal, aod::CentNGlobals> const& nGlobals,
+                             soa::Join<aod::MFTMults, aod::CentMFTs> const& nMFTs,
+                             soa::Join<aod::McCollisions, aod::MultMCExtras> const& mcCollisions,
+                             BCsWithMatching const& /*bcs*/)
   {
-    if (!isCollisionAccepted(col)) {
-      return;
-    }
-
-    Estimator ft0a = initEstimator(col, "FT0A");
-    const float centFT0A = ft0a.getCentrality(col.multFT0A(), col.centFT0A());
-
-    LOGF(debug, "centFT0A=%.0f", centFT0A);
-    histos.fill(HIST("hCentFT0A"), centFT0A);
-    histos.fill(HIST("hCentProfileFT0A"), centFT0A, col.multNTracksPVetaHalf());
-    histos.fill(HIST("hMultEta05VsCentFT0A"), centFT0A, col.multNTracksPVetaHalf());
-  }
-  PROCESS_SWITCH(CentralityQa, processRun3_FT0A, "Process with Run 3 FT0A estimator", false);
-
-  void processRun3_FT0C(soa::Join<aod::Collisions, aod::EvSels, aod::MultsRun3, aod::CentFT0Cs>::iterator const& col, aod::BCs const&)
-  {
-    if (!isCollisionAccepted(col)) {
-      return;
-    }
-
-    Estimator ft0c = initEstimator(col, "FT0C");
-    const float centFT0C = ft0c.getCentrality(col.multFT0C(), col.centFT0C());
-
-    LOGF(debug, "centFT0C=%.0f", centFT0C);
-    histos.fill(HIST("hCentFT0C"), centFT0C);
-    histos.fill(HIST("hCentProfileFT0C"), centFT0C, col.multNTracksPVetaHalf());
-    histos.fill(HIST("hMultEta05VsCentFT0C"), centFT0C, col.multNTracksPVetaHalf());
-  }
-  PROCESS_SWITCH(CentralityQa, processRun3_FT0C, "Process with Run 3 FT0C estimator", false);
-
-  void processRun3_FT0CVar1(soa::Join<aod::Collisions, aod::EvSels, aod::MultsRun3, aod::CentFT0CVariant1s>::iterator const& col, aod::BCs const&)
-  {
-    if (!isCollisionAccepted(col)) {
-      return;
-    }
-
-    Estimator ft0cVar1 = initEstimator(col, "FT0CVariant1");
-    const float centFT0Cvar1 = ft0cVar1.getCentrality(col.multFT0C(), col.centFT0CVariant1());
-
-    LOGF(debug, "centFT0Cvar1=%.0f", centFT0Cvar1);
-    histos.fill(HIST("hCentFT0CVar1"), centFT0Cvar1);
-    histos.fill(HIST("hCentProfileFT0CVar1"), centFT0Cvar1, col.multNTracksPVetaHalf());
-    histos.fill(HIST("hMultEta05VsCentFT0CVar1"), centFT0Cvar1, col.multNTracksPVetaHalf());
-  }
-  PROCESS_SWITCH(CentralityQa, processRun3_FT0CVar1, "Process with Run 3 FT0CVar1 estimator", false);
-
-  void processRun3_FT0CVar2(soa::Join<aod::Collisions, aod::EvSels, aod::MultsRun3, aod::CentFT0CVariant2s>::iterator const& col, aod::BCs const&)
-  {
-    if (!isCollisionAccepted(col)) {
-      return;
-    }
-
-    Estimator ft0cVar2 = initEstimator(col, "FT0CVariant2");
-    const float centFT0Cvar2 = ft0cVar2.getCentrality(col.multFT0C(), col.centFT0CVariant2());
-
-    LOGF(debug, "centFT0Cvar2=%.0f", centFT0Cvar2);
-    histos.fill(HIST("hCentFT0CVar2"), centFT0Cvar2);
-    histos.fill(HIST("hCentProfileFT0CVar2"), centFT0Cvar2, col.multNTracksPVetaHalf());
-    histos.fill(HIST("hMultEta05VsCentFT0CVar2"), centFT0Cvar2, col.multNTracksPVetaHalf());
-  }
-  PROCESS_SWITCH(CentralityQa, processRun3_FT0CVar2, "Process with Run 3 FT0CVar2 estimator", false);
-
-  void processRun3_FDDM(soa::Join<aod::Collisions, aod::EvSels, aod::MultsRun3, aod::CentFDDMs>::iterator const& col, aod::BCs const&)
-  {
-    if (!isCollisionAccepted(col)) {
-      return;
-    }
-
-    Estimator fddm = initEstimator(col, "FDDM");
-    const float centFDDM = fddm.getCentrality(col.multFDDM(), col.centFDDM());
-
-    LOGF(debug, "centFDDM=%.0f", centFDDM);
-    histos.fill(HIST("hCentFDDM"), centFDDM);
-    histos.fill(HIST("hCentProfileFDDM"), centFDDM, col.multNTracksPVetaHalf());
-    histos.fill(HIST("hMultEta05VsCentFDDM"), centFDDM, col.multNTracksPVetaHalf());
-  }
-  PROCESS_SWITCH(CentralityQa, processRun3_FDDM, "Process with Run 3 FDDM estimator", false);
-
-  void processRun3_NTPV(soa::Join<aod::Collisions, aod::EvSels, aod::MultsRun3, aod::CentNTPVs>::iterator const& col, aod::BCs const&)
-  {
-    if (!isCollisionAccepted(col)) {
-      return;
-    }
-
-    Estimator ntpv = initEstimator(col, "NTPV");
-    const float centNTPV = ntpv.getCentrality(col.multNTracksPV(), col.centNTPV());
-
-    LOGF(debug, "centNTPV=%.0f", centNTPV);
-    histos.fill(HIST("hCentNTPV"), centNTPV);
-    histos.fill(HIST("hCentProfileNTPV"), centNTPV, col.multNTracksPVetaHalf());
-    histos.fill(HIST("hMultEta05VsCentNTPV"), centNTPV, col.multNTracksPVetaHalf());
-  }
-  PROCESS_SWITCH(CentralityQa, processRun3_NTPV, "Process with Run 3 NTPV estimator", false);
-
-  void processRun3_NGlobal(soa::Join<aod::Collisions, aod::EvSels, aod::MultsRun3, aod::MultsGlobal, aod::CentNGlobals>::iterator const& col, aod::BCs const&)
-  {
-    if (!isCollisionAccepted(col)) {
-      return;
-    }
-
-    Estimator nGlo = initEstimator(col, "nGlo");
-    const float centNGlo = nGlo.getCentrality(col.multNTracksGlobal(), col.centNGlobal());
-
-    LOGF(debug, "centNGlo=%.0f", centNGlo);
-    histos.fill(HIST("hCentNGlobal"), centNGlo);
-    histos.fill(HIST("hCentProfileNGlobal"), centNGlo, col.multNTracksPVetaHalf());
-    histos.fill(HIST("hMultEta05VsCentNGlobal"), centNGlo, col.multNTracksPVetaHalf());
-  }
-  PROCESS_SWITCH(CentralityQa, processRun3_NGlobal, "Process with Run 3 NGlobal estimator", false);
-
-  void processRun3_MFT(soa::Join<aod::Collisions, aod::EvSels, aod::MultsRun3, aod::MFTMults, aod::CentMFTs>::iterator const& col, aod::BCs const&)
-  {
-    if (!isCollisionAccepted(col)) {
-      return;
-    }
-
-    Estimator mft = initEstimator(col, "MFT");
-    const float centMFT = mft.getCentrality(col.mftNtracks(), col.centMFT());
-
-    LOGF(debug, "centMFT=%.0f", centMFT);
-    histos.fill(HIST("hCentMFT"), centMFT);
-    histos.fill(HIST("hCentProfileMFT"), centMFT, col.multNTracksPVetaHalf());
-    histos.fill(HIST("hMultEta05VsCentMFT"), centMFT, col.multNTracksPVetaHalf());
-  }
-  PROCESS_SWITCH(CentralityQa, processRun3_MFT, "Process with Run 3 MFT estimator", false);
-
-  void processRun3_FT0MAnchorCol(soa::Join<aod::Collisions, aod::EvSels, aod::MultsRun3, aod::CentFT0MAnchorCols>::iterator const& col)
-  {
-    if (!isCollisionAccepted(col)) {
-      return;
-    }
-
-    Estimator ft0mAnchorCol = initEstimator(col, "FT0MAnchorCol");
-    const float centFT0MAnchorCol = ft0mAnchorCol.getCentrality(col.multFT0M(), col.centFT0MAnchorCol());
-
-    LOGF(debug, "centFT0MAnchorCol=%.0f", centFT0MAnchorCol);
-    histos.fill(HIST("hCentFT0MAnchorCols"), centFT0MAnchorCol);
-    histos.fill(HIST("hCentProfileFT0MAnchorCols"), centFT0MAnchorCol, col.multNTracksPVetaHalf());
-    histos.fill(HIST("hMultEta05VsCentFT0MAnchorCols"), centFT0MAnchorCol, col.multNTracksPVetaHalf());
-  }
-  PROCESS_SWITCH(CentralityQa, processRun3_FT0MAnchorCol, "Process with Run 3 FT0MAnchorCol estimator", false);
-
-  void processRun3_FT0MAnchorBC(soa::Join<aod::Collisions, aod::EvSels, aod::MultsRun3, aod::CentFT0MAnchorBCs>::iterator const& col)
-  {
-    if (!isCollisionAccepted(col)) {
-      return;
-    }
-
-    Estimator ft0mAnchorBc = initEstimator(col, "FT0MAnchorBc");
-    const float centFT0MAnchorBc = ft0mAnchorBc.getCentrality(col.multFT0M(), col.centFT0MAnchorBC());
-
-    LOGF(debug, "centFT0MAnchorBc=%.0f", centFT0MAnchorBc);
-    histos.fill(HIST("hCentFT0MAnchorBCs"), centFT0MAnchorBc);
-    histos.fill(HIST("hCentProfileFT0MAnchorBCs"), centFT0MAnchorBc, col.multNTracksPVetaHalf());
-    histos.fill(HIST("hMultEta05VsCentFT0MAnchorBCs"), centFT0MAnchorBc, col.multNTracksPVetaHalf());
-  }
-  PROCESS_SWITCH(CentralityQa, processRun3_FT0MAnchorBC, "Process with Run 3 FT0MAnchorBC estimator", false);
-
-  void processMonteCarloRun3_FV0A(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::MultsExtra, aod::CentFV0As> const& collisions,
-                                  soa::Join<aod::McCollisions, aod::MultMCExtras> const& mcCollisions,
-                                  soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
-  {
-    for (auto const& col : collisions) {
+    for (const auto& col : collisions) {
       if (!isCollisionAccepted(col)) {
         continue;
       }
 
-      Estimator fv0a = initEstimator(col, "FV0");
-      const float centFV0A = fv0a.getCentrality(col.multFV0A(), col.centFV0A());
+      fillEstimatorHistos(col, estimators[FV0A], col.multFV0A(), col.centFV0A());
+      fillEstimatorHistos(col, estimators[FT0M], col.multFT0M(), col.centFT0M());
+      fillEstimatorHistos(col, estimators[FT0MAnchorCol], col.multFT0M(), col.centFT0MAnchorCol());
+      fillEstimatorHistos(col, estimators[FT0MAnchorBC], col.multFT0M(), col.centFT0MAnchorBC());
+      fillEstimatorHistos(col, estimators[FT0MOuterA], col.multFT0AOuter() + col.multFT0C(), col.centFT0MOuterA());
+      fillEstimatorHistos(col, estimators[FT0A], col.multFT0A(), col.centFT0A());
+      fillEstimatorHistos(col, estimators[FT0C], col.multFT0C(), col.centFT0C());
+      fillEstimatorHistos(col, estimators[FT0CVar1], col.multFT0C(), col.centFT0CVariant1());
+      fillEstimatorHistos(col, estimators[FT0CVar2], col.multFT0C(), col.centFT0CVariant2());
+      fillEstimatorHistos(col, estimators[FDDM], col.multFDDM(), col.centFDDM());
+      fillEstimatorHistos(col, estimators[NTPV], col.multNTracksPV(), col.centNTPV());
 
-      LOGF(debug, "centFV0A=%.0f", centFV0A);
-      histos.fill(HIST("hCentFV0A"), centFV0A);
-      histos.fill(HIST("hCentProfileFV0A"), centFV0A, col.multNTracksPVetaHalf());
-      histos.fill(HIST("hMultEta05VsCentFV0A"), centFV0A, col.multNTracksPVetaHalf());
+      if (nGlobals.size() > 0) {
+        const auto& multCentNGlo = nGlobals.rawIteratorAt(col.globalIndex());
+        fillEstimatorHistos(col, estimators[NGlobal], multCentNGlo.multNTracksGlobal(), multCentNGlo.centNGlobal());
+      }
+
+      if (nMFTs.size() > 0) {
+        const auto& multCentNMFT = nMFTs.rawIteratorAt(col.globalIndex());
+        fillEstimatorHistos(col, estimators[MFT], multCentNMFT.mftNtracks(), multCentNMFT.centMFT());
+      }
+
       if (!loopOverMcCollisionsForMcHist) {
         const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
-        histos.fill(HIST("hMultEta05VsGenMultFV0A"), mcCol.multMCFV0A(), col.multNTracksPVetaHalf());
-        histos.fill(HIST("hGenMultEta05VsCentralityFV0A"), centFV0A, mcCol.multMCNParticlesEta05());
-        histos.fill(HIST("hGenMultVsCentralityFV0A"), centFV0A, mcCol.multMCFV0A());
+        std::vector<float> cent;
+        cent.resize(NEstimators, CentralityNotFound);
+
+        cent[FV0A] = estimators[FV0A].getCentrality(col.multFV0A(), col.centFV0A());
+        cent[FT0M] = estimators[FT0M].getCentrality(col.multFT0M(), col.centFT0M());
+        cent[FT0MAnchorCol] = estimators[FT0MAnchorCol].getCentrality(col.multFT0M(), col.centFT0MAnchorCol());
+        cent[FT0MAnchorBC] = estimators[FT0MAnchorBC].getCentrality(col.multFT0M(), col.centFT0MAnchorBC());
+        cent[FT0MOuterA] = estimators[FT0MOuterA].getCentrality(col.multFT0AOuter() + col.multFT0C(), col.centFT0MOuterA());
+        cent[FT0A] = estimators[FT0A].getCentrality(col.multFT0A(), col.centFT0A());
+        cent[FT0C] = estimators[FT0C].getCentrality(col.multFT0C(), col.centFT0C());
+        cent[FT0CVar1] = estimators[FT0CVar1].getCentrality(col.multFT0C(), col.centFT0CVariant1());
+        cent[FT0CVar2] = estimators[FT0CVar2].getCentrality(col.multFT0C(), col.centFT0CVariant2());
+        cent[FDDM] = estimators[FDDM].getCentrality(col.multFDDM(), col.centFDDM());
+        cent[NTPV] = estimators[NTPV].getCentrality(col.multNTracksPV(), col.centNTPV());
+
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FV0A], mcCol.multMCFV0A(), cent[FV0A], col.multNTracksPVetaHalf());
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0M], mcCol.multMCFT0A() + mcCol.multMCFT0C(), cent[FT0M], col.multNTracksPVetaHalf());
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0MAnchorCol], mcCol.multMCFT0A() + mcCol.multMCFT0C(), cent[FT0MAnchorCol], col.multNTracksPVetaHalf());
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0MAnchorBC], mcCol.multMCFT0A() + mcCol.multMCFT0C(), cent[FT0MAnchorBC], col.multNTracksPVetaHalf());
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0MOuterA], mcCol.multMCFT0A() + mcCol.multMCFT0C(), cent[FT0MOuterA], col.multNTracksPVetaHalf());
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0A], mcCol.multMCFT0A(), cent[FT0A], col.multNTracksPVetaHalf());
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0C], mcCol.multMCFT0C(), cent[FT0C], col.multNTracksPVetaHalf());
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0CVar1], mcCol.multMCFT0C(), cent[FT0CVar1], col.multNTracksPVetaHalf());
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0CVar2], mcCol.multMCFT0C(), cent[FT0CVar2], col.multNTracksPVetaHalf());
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FDDM], mcCol.multMCFDDA() + mcCol.multMCFDDC(), cent[FDDM], col.multNTracksPVetaHalf());
+        fillEstimatorMonteCarloHistos(mcCol, estimators[NTPV], mcCol.multMCNParticlesEta08(), cent[NTPV], col.multNTracksPVetaHalf());
+        fillEstimatorMonteCarloHistos(mcCol, estimators[NGlobal], mcCol.multMCNParticlesEta08(), cent[NGlobal], col.multNTracksPVetaHalf());
+
+        if (nGlobals.size() > 0) {
+          const auto& multCentNGlo = nGlobals.rawIteratorAt(col.globalIndex());
+          cent[NGlobal] = estimators[NGlobal].getCentrality(multCentNGlo.multNTracksGlobal(), multCentNGlo.centNGlobal());
+          fillEstimatorMonteCarloHistos(mcCol, estimators[NGlobal], mcCol.multMCNParticlesEta08(), cent[NGlobal], col.multNTracksPVetaHalf());
+        }
+
+        if (nMFTs.size() > 0) {
+          const auto& multCentNMFT = nMFTs.rawIteratorAt(col.globalIndex());
+          cent[MFT] = estimators[MFT].getCentrality(multCentNMFT.mftNtracks(), multCentNMFT.centMFT());
+          // fillEstimatorMonteCarloHistos(mcCol, estimators[MFT], mcCol.multMCMFT(), cent[MFT], col.multNTracksPVetaHalf()); // FIXME: uncomment when MC MFT mult is added in aod::MultMCExtras
+        }
       }
     }
 
     if (loopOverMcCollisionsForMcHist) {
-      for (auto const& mcCol : mcCollisions) {
-        auto groupedCollisions = collisions.sliceBy(perMcCollisionFV0A, mcCol.globalIndex());
+      for (const auto& mcCol : mcCollisions) {
+        auto groupedCollisions = collisions.sliceBy(perMcCollision, mcCol.globalIndex());
+        auto groupedCollisionsNGlobal = collisions.sliceBy(perMcCollisionNGlobal, mcCol.globalIndex());
+        auto groupedCollisionsMFT = collisions.sliceBy(perMcCollisionMFT, mcCol.globalIndex());
 
         // Check if there is at least one of the reconstructed collisions associated to this MC collision
         // If so, we consider it
         int biggestNContribs = -1;
         int nContribsInEta05 = -1;
-        float centrality = 100.5f;
+        std::vector<float> cent;
+        cent.resize(NEstimators, CentralityNotFound);
+
         for (auto const& col : groupedCollisions) {
           if (!isCollisionAccepted(col)) {
             continue;
           }
 
-          Estimator fv0a = initEstimator(col, "FV0");
-          const float centFV0A = fv0a.getCentrality(col.multFV0A(), col.centFV0A());
+          for (int iEst = 0; iEst < NEstimators; ++iEst) {
+            if (iEst == NGlobal || iEst == MFT) {
+              continue;
+            }
+            estimators[iEst].configure(col);
+          }
 
+          const float recoColCentFV0A = estimators[FV0A].getCentrality(col.multFV0A(), col.centFV0A());
+          const float recoColCentFT0M = estimators[FT0M].getCentrality(col.multFT0M(), col.centFT0M());
+          const float recoColCentFT0MAnchorCol = estimators[FT0MAnchorCol].getCentrality(col.multFT0M(), col.centFT0MAnchorCol());
+          const float recoColCentFT0MAnchorBC = estimators[FT0MAnchorBC].getCentrality(col.multFT0M(), col.centFT0MAnchorBC());
+          const float recoColCentFT0MOuterA = estimators[FT0MOuterA].getCentrality(col.multFT0AOuter() + col.multFT0C(), col.centFT0MOuterA());
+          const float recoColCentFT0A = estimators[FT0A].getCentrality(col.multFT0A(), col.centFT0A());
+          const float recoColCentFT0C = estimators[FT0C].getCentrality(col.multFT0C(), col.centFT0C());
+          const float recoColCentFT0CVar1 = estimators[FT0CVar1].getCentrality(col.multFT0C(), col.centFT0CVariant1());
+          const float recoColCentFT0CVar2 = estimators[FT0CVar2].getCentrality(col.multFT0C(), col.centFT0CVariant2());
+          const float recoColCentFDDM = estimators[FDDM].getCentrality(col.multFDDM(), col.centFDDM());
+          const float recoColCentNTPV = estimators[NTPV].getCentrality(col.multNTracksPV(), col.centNTPV());
+
+          // One McCollision can be reconstructed multiple times
+          // Use centrality from reconstructed collision with most PV contributors
           if (biggestNContribs < col.multPVTotalContributors()) {
             biggestNContribs = col.multPVTotalContributors();
             nContribsInEta05 = col.multNTracksPVetaHalf();
-            centrality = centFV0A;
+            cent[FV0A] = recoColCentFV0A;
+            cent[FT0M] = recoColCentFT0M;
+            cent[FT0MAnchorCol] = recoColCentFT0MAnchorCol;
+            cent[FT0MAnchorBC] = recoColCentFT0MAnchorBC;
+            cent[FT0MOuterA] = recoColCentFT0MOuterA;
+            cent[FT0A] = recoColCentFT0A;
+            cent[FT0C] = recoColCentFT0C;
+            cent[FT0CVar1] = recoColCentFT0CVar1;
+            cent[FT0CVar2] = recoColCentFT0CVar2;
+            cent[FDDM] = recoColCentFDDM;
+            cent[NTPV] = recoColCentNTPV;
           }
         }
 
-        histos.fill(HIST("hMultEta05VsGenMultFV0A"), mcCol.multMCFV0A(), nContribsInEta05);
-        histos.fill(HIST("hGenMultEta05VsCentralityFV0A"), centrality, mcCol.multMCNParticlesEta05());
-        histos.fill(HIST("hGenMultVsCentralityFV0A"), centrality, mcCol.multMCFV0A());
-      }
-    }
-  }
-  PROCESS_SWITCH(CentralityQa, processMonteCarloRun3_FV0A, "Process with Run 3 FV0A estimator", false);
-
-  void processMonteCarloRun3_FT0M(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::MultsExtra, aod::CentFT0Ms> const& collisions,
-                                  soa::Join<aod::McCollisions, aod::MultMCExtras> const& mcCollisions,
-                                  soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
-  {
-    for (auto const& col : collisions) {
-      if (!isCollisionAccepted(col)) {
-        continue;
-      }
-
-      Estimator ft0m = initEstimator(col, "FT0");
-      const float centFT0M = ft0m.getCentrality(col.multFT0M(), col.centFT0M());
-
-      LOGF(debug, "centFT0M=%.0f", centFT0M);
-      histos.fill(HIST("hCentFT0M"), centFT0M);
-      histos.fill(HIST("hCentProfileFT0M"), centFT0M, col.multNTracksPVetaHalf());
-      histos.fill(HIST("hMultEta05VsCentFT0M"), centFT0M, col.multNTracksPVetaHalf());
-      if (!loopOverMcCollisionsForMcHist) {
-        const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
-        histos.fill(HIST("hMultEta05VsGenMultFT0M"), mcCol.multMCFT0A() + mcCol.multMCFT0C(), col.multNTracksPVetaHalf());
-        histos.fill(HIST("hGenMultEta05VsCentralityFT0M"), centFT0M, mcCol.multMCNParticlesEta05());
-        histos.fill(HIST("hGenMultVsCentralityFT0M"), centFT0M, mcCol.multMCFT0A() + mcCol.multMCFT0C());
-      }
-    }
-
-    if (loopOverMcCollisionsForMcHist) {
-      for (auto const& mcCol : mcCollisions) {
-        auto groupedCollisions = collisions.sliceBy(perMcCollisionFT0M, mcCol.globalIndex());
-
-        // Check if there is at least one of the reconstructed collisions associated to this MC collision
-        // If so, we consider it
-        int biggestNContribs = -1;
-        int nContribsInEta05 = -1;
-        float centrality = 100.5f;
-        for (auto const& col : groupedCollisions) {
-          if (!isCollisionAccepted(col)) {
-            continue;
-          }
-
-          Estimator ft0m = initEstimator(col, "FT0");
-          const float centFT0M = ft0m.getCentrality(col.multFT0M(), col.centFT0M());
-
-          if (biggestNContribs < col.multPVTotalContributors()) {
-            biggestNContribs = col.multPVTotalContributors();
-            nContribsInEta05 = col.multNTracksPVetaHalf();
-            centrality = centFT0M;
+        if (nGlobals.size() > 0 && studies.nGlo.value) {
+          for (auto const& col : groupedCollisionsNGlobal) {
+            estimators[NGlobal].configure(col);
+            const auto& multCentNGlo = nGlobals.rawIteratorAt(col.globalIndex());
+            const float recoColCentNGlo = estimators[NGlobal].getCentrality(multCentNGlo.multNTracksGlobal(), multCentNGlo.centNGlobal());
+            if (biggestNContribs < col.multPVTotalContributors()) {
+              biggestNContribs = col.multPVTotalContributors();
+              nContribsInEta05 = col.multNTracksPVetaHalf();
+              cent[NGlobal] = recoColCentNGlo;
+            }
           }
         }
 
-        histos.fill(HIST("hMultEta05VsGenMultFT0M"), mcCol.multMCFT0A() + mcCol.multMCFT0C(), nContribsInEta05);
-        histos.fill(HIST("hGenMultEta05VsCentralityFT0M"), centrality, mcCol.multMCNParticlesEta05());
-        histos.fill(HIST("hGenMultVsCentralityFT0M"), centrality, mcCol.multMCFT0A() + mcCol.multMCFT0C());
-      }
-    }
-  }
-  PROCESS_SWITCH(CentralityQa, processMonteCarloRun3_FT0M, "Process with Run 3 FT0M estimator", false);
-
-  void processMonteCarloRun3_FT0A(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::MultsExtra, aod::CentFT0As> const& collisions,
-                                  soa::Join<aod::McCollisions, aod::MultMCExtras> const& mcCollisions,
-                                  soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
-  {
-    for (auto const& col : collisions) {
-      if (!isCollisionAccepted(col)) {
-        continue;
-      }
-
-      Estimator ft0a = initEstimator(col, "FT0A");
-      const float centFT0A = ft0a.getCentrality(col.multFT0A(), col.centFT0A());
-
-      LOGF(debug, "centFT0M=%.0f", centFT0A);
-      histos.fill(HIST("hCentFT0A"), centFT0A);
-      histos.fill(HIST("hCentProfileFT0A"), centFT0A, col.multNTracksPVetaHalf());
-      histos.fill(HIST("hMultEta05VsCentFT0A"), centFT0A, col.multNTracksPVetaHalf());
-      if (!loopOverMcCollisionsForMcHist) {
-        const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
-        histos.fill(HIST("hMultEta05VsGenMultFT0A"), mcCol.multMCFT0A(), col.multNTracksPVetaHalf());
-        histos.fill(HIST("hGenMultEta05VsCentralityFT0A"), centFT0A, mcCol.multMCNParticlesEta05());
-        histos.fill(HIST("hGenMultVsCentralityFT0A"), centFT0A, mcCol.multMCFT0A());
-      }
-    }
-
-    if (loopOverMcCollisionsForMcHist) {
-      for (auto const& mcCol : mcCollisions) {
-        auto groupedCollisions = collisions.sliceBy(perMcCollisionFT0A, mcCol.globalIndex());
-
-        // Check if there is at least one of the reconstructed collisions associated to this MC collision
-        // If so, we consider it
-        int biggestNContribs = -1;
-        int nContribsInEta05 = -1;
-        float centrality = 100.5f;
-        for (auto const& col : groupedCollisions) {
-          if (!isCollisionAccepted(col)) {
-            continue;
-          }
-
-          Estimator ft0a = initEstimator(col, "FT0A");
-          const float centFT0A = ft0a.getCentrality(col.multFT0A(), col.centFT0A());
-
-          if (biggestNContribs < col.multPVTotalContributors()) {
-            biggestNContribs = col.multPVTotalContributors();
-            nContribsInEta05 = col.multNTracksPVetaHalf();
-            centrality = centFT0A;
+        if (nMFTs.size() > 0 && studies.mft.value) {
+          for (auto const& col : groupedCollisionsMFT) {
+            estimators[MFT].configure(col);
+            const auto& multCentNMFT = nMFTs.rawIteratorAt(col.globalIndex());
+            const float recoColCentNMFT = estimators[MFT].getCentrality(multCentNMFT.mftNtracks(), multCentNMFT.centMFT());
+            if (biggestNContribs < col.multPVTotalContributors()) {
+              biggestNContribs = col.multPVTotalContributors();
+              nContribsInEta05 = col.multNTracksPVetaHalf();
+              cent[MFT] = recoColCentNMFT;
+            }
           }
         }
 
-        histos.fill(HIST("hMultEta05VsGenMultFT0A"), mcCol.multMCFT0A(), nContribsInEta05);
-        histos.fill(HIST("hGenMultEta05VsCentralityFT0A"), centrality, mcCol.multMCNParticlesEta05());
-        histos.fill(HIST("hGenMultVsCentralityFT0A"), centrality, mcCol.multMCFT0A());
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FV0A], mcCol.multMCFV0A(), cent[FV0A], nContribsInEta05);
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0M], mcCol.multMCFT0A() + mcCol.multMCFT0C(), cent[FT0M], nContribsInEta05);
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0MAnchorCol], mcCol.multMCFT0A() + mcCol.multMCFT0C(), cent[FT0MAnchorCol], nContribsInEta05);
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0MAnchorBC], mcCol.multMCFT0A() + mcCol.multMCFT0C(), cent[FT0MAnchorBC], nContribsInEta05);
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0MOuterA], mcCol.multMCFT0A() + mcCol.multMCFT0C(), cent[FT0MOuterA], nContribsInEta05);
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0A], mcCol.multMCFT0A(), cent[FT0A], nContribsInEta05);
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0C], mcCol.multMCFT0C(), cent[FT0C], nContribsInEta05);
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0CVar1], mcCol.multMCFT0C(), cent[FT0CVar1], nContribsInEta05);
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FT0CVar2], mcCol.multMCFT0C(), cent[FT0CVar2], nContribsInEta05);
+        fillEstimatorMonteCarloHistos(mcCol, estimators[FDDM], mcCol.multMCFDDA() + mcCol.multMCFDDC(), cent[FDDM], nContribsInEta05);
+        fillEstimatorMonteCarloHistos(mcCol, estimators[NTPV], mcCol.multMCNParticlesEta08(), cent[NTPV], nContribsInEta05);
+        fillEstimatorMonteCarloHistos(mcCol, estimators[NGlobal], mcCol.multMCNParticlesEta08(), cent[NGlobal], nContribsInEta05);
+        // fillEstimatorMonteCarloHistos(mcCol, estimators[MFT], mcCol.multMCMFT(), cent[MFT], nContribsInEta05); // FIXME: uncomment when MC MFT mult is added in aod::MultMCExtras
       }
     }
   }
-  PROCESS_SWITCH(CentralityQa, processMonteCarloRun3_FT0A, "Process with Run 3 FT0A estimator", false);
-
-  void processMonteCarloRun3_FT0C(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::MultsExtra, aod::CentFT0Cs> const& collisions,
-                                  soa::Join<aod::McCollisions, aod::MultMCExtras> const& mcCollisions,
-                                  soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
-  {
-    for (auto const& col : collisions) {
-      if (!isCollisionAccepted(col)) {
-        continue;
-      }
-
-      Estimator ft0c = initEstimator(col, "FT0C");
-      const float centFT0C = ft0c.getCentrality(col.multFT0C(), col.centFT0C());
-
-      LOGF(debug, "centFT0C=%.0f", centFT0C);
-      histos.fill(HIST("hCentFT0C"), centFT0C);
-      histos.fill(HIST("hCentProfileFT0C"), centFT0C, col.multNTracksPVetaHalf());
-      histos.fill(HIST("hMultEta05VsCentFT0C"), centFT0C, col.multNTracksPVetaHalf());
-      if (!loopOverMcCollisionsForMcHist) {
-        const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
-        histos.fill(HIST("hMultEta05VsGenMultFT0C"), mcCol.multMCFT0C(), col.multNTracksPVetaHalf());
-        histos.fill(HIST("hGenMultEta05VsCentralityFT0C"), centFT0C, mcCol.multMCNParticlesEta05());
-        histos.fill(HIST("hGenMultVsCentralityFT0C"), centFT0C, mcCol.multMCFT0C());
-      }
-    }
-
-    if (loopOverMcCollisionsForMcHist) {
-      for (auto const& mcCol : mcCollisions) {
-        auto groupedCollisions = collisions.sliceBy(perMcCollisionFT0C, mcCol.globalIndex());
-
-        // Check if there is at least one of the reconstructed collisions associated to this MC collision
-        // If so, we consider it
-        int biggestNContribs = -1;
-        int nContribsInEta05 = -1;
-        float centrality = 100.5f;
-        for (auto const& col : groupedCollisions) {
-          if (!isCollisionAccepted(col)) {
-            continue;
-          }
-
-          Estimator ft0c = initEstimator(col, "FT0C");
-          const float centFT0C = ft0c.getCentrality(col.multFT0C(), col.centFT0C());
-
-          if (biggestNContribs < col.multPVTotalContributors()) {
-            biggestNContribs = col.multPVTotalContributors();
-            nContribsInEta05 = col.multNTracksPVetaHalf();
-            centrality = centFT0C;
-          }
-        }
-
-        histos.fill(HIST("hMultEta05VsGenMultFT0C"), mcCol.multMCFT0C(), nContribsInEta05);
-        histos.fill(HIST("hGenMultEta05VsCentralityFT0C"), centrality, mcCol.multMCNParticlesEta05());
-        histos.fill(HIST("hGenMultVsCentralityFT0C"), centrality, mcCol.multMCFT0C());
-      }
-    }
-  }
-  PROCESS_SWITCH(CentralityQa, processMonteCarloRun3_FT0C, "Process with Run 3 FT0C estimator", false);
-
-  void processMonteCarloRun3_FT0CVar1(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::MultsExtra, aod::CentFT0CVariant1s> const& collisions,
-                                      soa::Join<aod::McCollisions, aod::MultMCExtras> const& mcCollisions,
-                                      soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
-  {
-    for (auto const& col : collisions) {
-      if (!isCollisionAccepted(col)) {
-        continue;
-      }
-
-      Estimator ft0cVar1 = initEstimator(col, "FT0CVariant1");
-      const float centFT0Cvar1 = ft0cVar1.getCentrality(col.multFT0C(), col.centFT0CVariant1());
-
-      LOGF(debug, "centFT0Cvar1=%.0f", centFT0Cvar1);
-      histos.fill(HIST("hCentFT0CVar1"), centFT0Cvar1);
-      histos.fill(HIST("hCentProfileFT0CVar1"), centFT0Cvar1, col.multNTracksPVetaHalf());
-      histos.fill(HIST("hMultEta05VsCentFT0CVar1"), centFT0Cvar1, col.multNTracksPVetaHalf());
-      if (!loopOverMcCollisionsForMcHist) {
-        const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
-        histos.fill(HIST("hMultEta05VsGenMultFT0CVar1"), mcCol.multMCFT0C(), col.multNTracksPVetaHalf());
-        histos.fill(HIST("hGenMultEta05VsCentralityFT0CVar1"), centFT0Cvar1, mcCol.multMCNParticlesEta05());
-        histos.fill(HIST("hGenMultVsCentralityFT0CVar1"), centFT0Cvar1, mcCol.multMCFT0C());
-      }
-    }
-
-    if (loopOverMcCollisionsForMcHist) {
-      for (auto const& mcCol : mcCollisions) {
-        auto groupedCollisions = collisions.sliceBy(perMcCollisionFT0CVar1, mcCol.globalIndex());
-
-        // Check if there is at least one of the reconstructed collisions associated to this MC collision
-        // If so, we consider it
-        int biggestNContribs = -1;
-        int nContribsInEta05 = -1;
-        float centrality = 100.5f;
-        for (auto const& col : groupedCollisions) {
-          if (!isCollisionAccepted(col)) {
-            continue;
-          }
-
-          Estimator ft0cVar1 = initEstimator(col, "FT0CVariant1");
-          const float centFT0Cvar1 = ft0cVar1.getCentrality(col.multFT0C(), col.centFT0CVariant1());
-
-          if (biggestNContribs < col.multPVTotalContributors()) {
-            biggestNContribs = col.multPVTotalContributors();
-            nContribsInEta05 = col.multNTracksPVetaHalf();
-            centrality = centFT0Cvar1;
-          }
-        }
-
-        histos.fill(HIST("hMultEta05VsGenMultFT0CVar1"), mcCol.multMCFT0C(), nContribsInEta05);
-        histos.fill(HIST("hGenMultEta05VsCentralityFT0CVar1"), centrality, mcCol.multMCNParticlesEta05());
-        histos.fill(HIST("hGenMultVsCentralityFT0CVar1"), centrality, mcCol.multMCFT0C());
-      }
-    }
-  }
-  PROCESS_SWITCH(CentralityQa, processMonteCarloRun3_FT0CVar1, "Process with Run 3 FT0CVar1 estimator", false);
-
-  void processMonteCarloRun3_FT0CVar2(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::MultsExtra, aod::CentFT0CVariant2s> const& collisions,
-                                      soa::Join<aod::McCollisions, aod::MultMCExtras> const& mcCollisions,
-                                      soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
-  {
-    for (auto const& col : collisions) {
-      if (!isCollisionAccepted(col)) {
-        continue;
-      }
-
-      Estimator ft0cVar2 = initEstimator(col, "FT0CVariant2");
-      const float centFT0Cvar2 = ft0cVar2.getCentrality(col.multFT0C(), col.centFT0CVariant2());
-
-      LOGF(debug, "centFT0Cvar2=%.0f", centFT0Cvar2);
-      histos.fill(HIST("hCentFT0CVar2"), centFT0Cvar2);
-      histos.fill(HIST("hCentProfileFT0CVar2"), centFT0Cvar2, col.multNTracksPVetaHalf());
-      histos.fill(HIST("hMultEta05VsCentFT0CVar2"), centFT0Cvar2, col.multNTracksPVetaHalf());
-      if (!loopOverMcCollisionsForMcHist) {
-        const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
-        histos.fill(HIST("hMultEta05VsGenMultFT0CVar2"), mcCol.multMCFT0C(), col.multNTracksPVetaHalf());
-        histos.fill(HIST("hGenMultEta05VsCentralityFT0CVar2"), centFT0Cvar2, mcCol.multMCNParticlesEta05());
-        histos.fill(HIST("hGenMultVsCentralityFT0CVar2"), centFT0Cvar2, mcCol.multMCFT0C());
-      }
-    }
-
-    if (loopOverMcCollisionsForMcHist) {
-      for (auto const& mcCol : mcCollisions) {
-        auto groupedCollisions = collisions.sliceBy(perMcCollisionFT0CVar2, mcCol.globalIndex());
-
-        // Check if there is at least one of the reconstructed collisions associated to this MC collision
-        // If so, we consider it
-        int biggestNContribs = -1;
-        int nContribsInEta05 = -1;
-        float centrality = 100.5f;
-        for (auto const& col : groupedCollisions) {
-          if (!isCollisionAccepted(col)) {
-            continue;
-          }
-
-          Estimator ft0cVar2 = initEstimator(col, "FT0CVariant2");
-          const float centFT0Cvar2 = ft0cVar2.getCentrality(col.multFT0C(), col.centFT0CVariant2());
-
-          if (biggestNContribs < col.multPVTotalContributors()) {
-            biggestNContribs = col.multPVTotalContributors();
-            nContribsInEta05 = col.multNTracksPVetaHalf();
-            centrality = centFT0Cvar2;
-          }
-        }
-
-        histos.fill(HIST("hMultEta05VsGenMultFT0CVar2"), mcCol.multMCFT0C(), nContribsInEta05);
-        histos.fill(HIST("hGenMultEta05VsCentralityFT0CVar2"), centrality, mcCol.multMCNParticlesEta05());
-        histos.fill(HIST("hGenMultVsCentralityFT0CVar2"), centrality, mcCol.multMCFT0C());
-      }
-    }
-  }
-  PROCESS_SWITCH(CentralityQa, processMonteCarloRun3_FT0CVar2, "Process with Run 3 FT0CVar2 estimator", false);
-
-  void processMonteCarloRun3_FDDM(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::MultsExtra, aod::CentFDDMs> const& collisions,
-                                  soa::Join<aod::McCollisions, aod::MultMCExtras> const& mcCollisions,
-                                  soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
-  {
-    for (auto const& col : collisions) {
-      if (!isCollisionAccepted(col)) {
-        continue;
-      }
-
-      Estimator fddm = initEstimator(col, "FDDM");
-      const float centFDDM = fddm.getCentrality(col.multFDDM(), col.centFDDM());
-
-      LOGF(debug, "centFDDM=%.0f", centFDDM);
-      histos.fill(HIST("hCentFDDM"), centFDDM);
-      histos.fill(HIST("hCentProfileFDDM"), centFDDM, col.multNTracksPVetaHalf());
-      histos.fill(HIST("hMultEta05VsCentFDDM"), centFDDM, col.multNTracksPVetaHalf());
-      if (!loopOverMcCollisionsForMcHist) {
-        const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
-        histos.fill(HIST("hMultEta05VsGenMultFDDM"), mcCol.multMCFDDA() + mcCol.multMCFDDC(), col.multNTracksPVetaHalf());
-        histos.fill(HIST("hGenMultEta05VsCentralityFDDM"), centFDDM, mcCol.multMCNParticlesEta05());
-        histos.fill(HIST("hGenMultVsCentralityFDDM"), centFDDM, mcCol.multMCFDDA() + mcCol.multMCFDDC());
-      }
-    }
-
-    if (loopOverMcCollisionsForMcHist) {
-      for (auto const& mcCol : mcCollisions) {
-        auto groupedCollisions = collisions.sliceBy(perMcCollisionFDDM, mcCol.globalIndex());
-
-        // Check if there is at least one of the reconstructed collisions associated to this MC collision
-        // If so, we consider it
-        int biggestNContribs = -1;
-        int nContribsInEta05 = -1;
-        float centrality = 100.5f;
-        for (auto const& col : groupedCollisions) {
-          if (!isCollisionAccepted(col)) {
-            continue;
-          }
-
-          Estimator fddm = initEstimator(col, "FDDM");
-          const float centFDDM = fddm.getCentrality(col.multFDDM(), col.centFDDM());
-
-          if (biggestNContribs < col.multPVTotalContributors()) {
-            biggestNContribs = col.multPVTotalContributors();
-            nContribsInEta05 = col.multNTracksPVetaHalf();
-            centrality = centFDDM;
-          }
-        }
-
-        histos.fill(HIST("hMultEta05VsGenMultFDDM"), mcCol.multMCFDDA() + mcCol.multMCFDDC(), nContribsInEta05);
-        histos.fill(HIST("hGenMultEta05VsCentralityFDDM"), centrality, mcCol.multMCNParticlesEta05());
-        histos.fill(HIST("hGenMultVsCentralityFDDM"), centrality, mcCol.multMCFDDA() + mcCol.multMCFDDC());
-      }
-    }
-  }
-  PROCESS_SWITCH(CentralityQa, processMonteCarloRun3_FDDM, "Process with Run 3 FDDM estimator", false);
-
-  void processMonteCarloRun3_NTPV(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::MultsExtra, aod::CentNTPVs> const& collisions,
-                                  soa::Join<aod::McCollisions, aod::MultMCExtras> const& mcCollisions,
-                                  soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
-  {
-    for (auto const& col : collisions) {
-      if (!isCollisionAccepted(col)) {
-        continue;
-      }
-
-      Estimator ntpv = initEstimator(col, "NTPV");
-      const float centNTPV = ntpv.getCentrality(col.multNTracksPV(), col.centNTPV());
-
-      histos.fill(HIST("hCentNTPV"), centNTPV);
-      histos.fill(HIST("hCentProfileNTPV"), centNTPV, col.multNTracksPVetaHalf());
-      histos.fill(HIST("hMultEta05VsCentNTPV"), centNTPV, col.multNTracksPVetaHalf());
-      if (!loopOverMcCollisionsForMcHist) {
-        const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
-        histos.fill(HIST("hMultEta05VsGenMultNTPV"), mcCol.multMCNParticlesEta08(), col.multNTracksPVetaHalf());
-        histos.fill(HIST("hGenMultEta05VsCentralityNTPV"), centNTPV, mcCol.multMCNParticlesEta05());
-        histos.fill(HIST("hGenMultVsCentralityNTPV"), centNTPV, mcCol.multMCNParticlesEta08());
-      }
-    }
-
-    if (loopOverMcCollisionsForMcHist) {
-      for (auto const& mcCol : mcCollisions) {
-        auto groupedCollisions = collisions.sliceBy(perMcCollisionNTPV, mcCol.globalIndex());
-
-        // Check if there is at least one of the reconstructed collisions associated to this MC collision
-        // If so, we consider it
-        int biggestNContribs = -1;
-        int nContribsInEta05 = -1;
-        float centrality = 100.5f;
-        for (auto const& col : groupedCollisions) {
-          if (!isCollisionAccepted(col)) {
-            continue;
-          }
-
-          Estimator ntpv = initEstimator(col, "NTPV");
-          const float centNTPV = ntpv.getCentrality(col.multNTracksPV(), col.centNTPV());
-
-          if (biggestNContribs < col.multPVTotalContributors()) {
-            biggestNContribs = col.multPVTotalContributors();
-            nContribsInEta05 = col.multNTracksPVetaHalf();
-            centrality = centNTPV;
-          }
-        }
-
-        histos.fill(HIST("hMultEta05VsGenMultNTPV"), mcCol.multMCNParticlesEta08(), nContribsInEta05);
-        histos.fill(HIST("hGenMultEta05VsCentralityNTPV"), centrality, mcCol.multMCNParticlesEta05());
-        histos.fill(HIST("hGenMultVsCentralityNTPV"), centrality, mcCol.multMCNParticlesEta08());
-      }
-    }
-  }
-  PROCESS_SWITCH(CentralityQa, processMonteCarloRun3_NTPV, "Process with Run 3 NTPV estimator", false);
-
-  void processMonteCarloRun3_NGlobal(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::MultsGlobal, aod::MultsExtra, aod::CentNGlobals> const& collisions,
-                                     soa::Join<aod::McCollisions, aod::MultMCExtras> const& mcCollisions,
-                                     soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
-  {
-    for (auto const& col : collisions) {
-      if (!isCollisionAccepted(col)) {
-        continue;
-      }
-
-      Estimator nGlo = initEstimator(col, "nGlo");
-      const float centNGlo = nGlo.getCentrality(col.multNTracksGlobal(), col.centNGlobal());
-
-      LOGF(debug, "centNGlo=%.0f", centNGlo);
-      histos.fill(HIST("hCentNGlobal"), centNGlo);
-      histos.fill(HIST("hCentProfileNGlobal"), centNGlo, col.multNTracksPVetaHalf());
-      histos.fill(HIST("hMultEta05VsCentNGlobal"), centNGlo, col.multNTracksPVetaHalf());
-      if (!loopOverMcCollisionsForMcHist) {
-        const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
-        histos.fill(HIST("hMultEta05VsGenMultNGlobal"), mcCol.multMCNParticlesEta08(), col.multNTracksPVetaHalf());
-        histos.fill(HIST("hGenMultEta05VsCentralityNGlobal"), centNGlo, mcCol.multMCNParticlesEta05());
-        histos.fill(HIST("hGenMultVsCentralityNGlobal"), centNGlo, mcCol.multMCNParticlesEta08());
-      }
-    }
-
-    if (loopOverMcCollisionsForMcHist) {
-      for (auto const& mcCol : mcCollisions) {
-        auto groupedCollisions = collisions.sliceBy(perMcCollisionNGlobal, mcCol.globalIndex());
-
-        // Check if there is at least one of the reconstructed collisions associated to this MC collision
-        // If so, we consider it
-        int biggestNContribs = -1;
-        int nContribsInEta05 = -1;
-        float centrality = 100.5f;
-        for (auto const& col : groupedCollisions) {
-          if (!isCollisionAccepted(col)) {
-            continue;
-          }
-
-          Estimator nGlo = initEstimator(col, "nGlo");
-          const float centNGlo = nGlo.getCentrality(col.multNTracksGlobal(), col.centNGlobal());
-
-          if (biggestNContribs < col.multPVTotalContributors()) {
-            biggestNContribs = col.multPVTotalContributors();
-            nContribsInEta05 = col.multNTracksPVetaHalf();
-            centrality = centNGlo;
-          }
-        }
-
-        histos.fill(HIST("hMultEta05VsGenMultNGlobal"), mcCol.multMCNParticlesEta08(), nContribsInEta05);
-        histos.fill(HIST("hGenMultEta05VsCentralityNGlobal"), centrality, mcCol.multMCNParticlesEta05());
-        histos.fill(HIST("hGenMultVsCentralityNGlobal"), centrality, mcCol.multMCNParticlesEta08());
-      }
-    }
-  }
-  PROCESS_SWITCH(CentralityQa, processMonteCarloRun3_NGlobal, "Process with Run 3 NGlobal estimator", false);
-
-  void processMonteCarloRun3_MFT(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::CentMFTs> const& collisions,
-                                 soa::Join<aod::McCollisions, aod::MultMCExtras> const& mcCollisions,
-                                 soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
-  {
-    for (auto const& col : collisions) {
-      if (!isCollisionAccepted(col)) {
-        continue;
-      }
-
-      Estimator mft = initEstimator(col, "MFT");
-      const float centMFT = mft.getCentrality(col.mftNtracks(), col.centMFT());
-
-      LOGF(debug, "centMFT=%.0f", centMFT);
-      histos.fill(HIST("hCentMFT"), centMFT);
-      histos.fill(HIST("hCentProfileMFT"), centMFT, col.multNTracksPVetaHalf());
-      histos.fill(HIST("hMultEta05VsCentMFT"), centMFT, col.multNTracksPVetaHalf());
-      if (!loopOverMcCollisionsForMcHist) {
-        const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
-        // histos.fill(HIST("hMultEta05VsGenMultMFT"), mcCol.multMCMFT(), col.multNTracksPVetaHalf()); // FIXME: uncomment when MC MFT mult is added in aod::MultMCExtras
-        histos.fill(HIST("hGenMultEta05VsCentralityMFT"), centMFT, mcCol.multMCNParticlesEta05());
-        // histos.fill(HIST("hGenMultVsCentralityMFT"), centMFT, mcCol.multMCMFT()); // FIXME: uncomment when MC MFT mult is added in aod::MultMCExtras
-      }
-    }
-
-    if (loopOverMcCollisionsForMcHist) {
-      for (auto const& mcCol : mcCollisions) {
-        auto groupedCollisions = collisions.sliceBy(perMcCollisionMFT, mcCol.globalIndex());
-
-        // Check if there is at least one of the reconstructed collisions associated to this MC collision
-        // If so, we consider it
-        int biggestNContribs = -1;
-        // int nContribsInEta05 = -1;
-        float centrality = 100.5f;
-        for (auto const& col : groupedCollisions) {
-          if (!isCollisionAccepted(col)) {
-            continue;
-          }
-
-          Estimator mft = initEstimator(col, "MFT");
-          const float centMFT = mft.getCentrality(col.mftNtracks(), col.centMFT());
-
-          if (biggestNContribs < col.multPVTotalContributors()) {
-            biggestNContribs = col.multPVTotalContributors();
-            // nContribsInEta05 = col.multNTracksPVetaHalf();
-            centrality = centMFT;
-          }
-        }
-
-        // histos.fill(HIST("hMultEta05VsGenMultMFT"), mcCol.multMCMFT(), nContribsInEta05); // FIXME: uncomment when MC MFT mult is added in aod::MultMCExtras
-        histos.fill(HIST("hGenMultEta05VsCentralityMFT"), centrality, mcCol.multMCNParticlesEta05());
-        // histos.fill(HIST("hGenMultVsCentralityMFT"), col.centMFT(), mcCol.multMCMFT()); // FIXME: uncomment when MC MFT mult is added in aod::MultMCExtras
-      }
-    }
-  }
-  PROCESS_SWITCH(CentralityQa, processMonteCarloRun3_MFT, "Process with Run 3 MFT estimator", false);
-
-  void processMonteCarloRun3_FT0MAnchorCol(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::CentFT0MAnchorCols>::iterator const& col,
-                                           soa::Join<aod::McCollisions, aod::MultMCExtras> const& /*mcCollisions*/,
-                                           soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
-  {
-    if (!isCollisionAccepted(col)) {
-      return;
-    }
-
-    const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
-    Estimator ft0mAnchorCol = initEstimator(col, "FT0MAnchorCol");
-    const float centFT0MAnchorCol = ft0mAnchorCol.getCentrality(col.multFT0M(), col.centFT0MAnchorCol());
-
-    LOGF(debug, "centFT0MAnchorCol=%.0f", centFT0MAnchorCol);
-    histos.fill(HIST("hCentFT0MAnchorCols"), centFT0MAnchorCol);
-    histos.fill(HIST("hCentProfileFT0MAnchorCols"), centFT0MAnchorCol, col.multNTracksPVetaHalf());
-    histos.fill(HIST("hMultEta05VsCentFT0MAnchorCols"), centFT0MAnchorCol, col.multNTracksPVetaHalf());
-    histos.fill(HIST("hMultEta05VsGenMultFT0MAnchorCols"), mcCol.multMCFT0A() + mcCol.multMCFT0C(), col.multNTracksPVetaHalf());
-  }
-  PROCESS_SWITCH(CentralityQa, processMonteCarloRun3_FT0MAnchorCol, "Process with Run 3 FT0MAnchorCol estimator", false);
-
-  void processMonteCarloRun3_FT0MAnchorBC(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::CentFT0MAnchorBCs>::iterator const& col,
-                                          soa::Join<aod::McCollisions, aod::MultMCExtras> const& /*mcCollisions*/,
-                                          soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
-  {
-    if (!isCollisionAccepted(col)) {
-      return;
-    }
-    const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
-    Estimator ft0mAnchorBc = initEstimator(col, "FT0MAnchorBc");
-    const float centFT0MAnchorBc = ft0mAnchorBc.getCentrality(col.multFT0M(), col.centFT0MAnchorBC());
-
-    LOGF(debug, "centFT0MAnchorBc=%.0f", centFT0MAnchorBc);
-    histos.fill(HIST("hCentFT0MAnchorBCs"), centFT0MAnchorBc);
-    histos.fill(HIST("hCentProfileFT0MAnchorBCs"), centFT0MAnchorBc, col.multNTracksPVetaHalf());
-    histos.fill(HIST("hMultEta05VsCentFT0MAnchorBCs"), centFT0MAnchorBc, col.multNTracksPVetaHalf());
-    histos.fill(HIST("hMultEta05VsGenMultFT0MAnchorBCs"), mcCol.multMCFT0A() + mcCol.multMCFT0C(), col.multNTracksPVetaHalf());
-  }
-  PROCESS_SWITCH(CentralityQa, processMonteCarloRun3_FT0MAnchorBC, "Process with Run 3 FT0MAnchorBC estimator", false);
 
   using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
   void processBunchCrossings(soa::Join<BCsWithRun3Matchings, aod::BCFlags, aod::BcSels>::iterator const& bc, aod::FT0s const&, aod::FV0As const&)
@@ -1516,6 +900,10 @@ struct CentralityQa {
       }
     }
   }
+
+  PROCESS_SWITCH(CentralityQa, processRun2, "Process with Run 2 V0A", false);
+  PROCESS_SWITCH(CentralityQa, processRun3, "Process with Run 3", true);
+  PROCESS_SWITCH(CentralityQa, processRun3MonteCarlo, "Process with Run 3 with MC", false);
   PROCESS_SWITCH(CentralityQa, processBunchCrossings, "Process with Run 3 BC table", false);
 };
 
