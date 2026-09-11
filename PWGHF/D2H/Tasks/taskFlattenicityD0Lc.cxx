@@ -129,7 +129,7 @@ struct HfTaskFlattenicityD0Lc {
     registry.add("Flattenicity", "Number of events; 1-#rho; Counter", {kTH1F, {{100, 0, 1}}});
     registry.add("Flattenicity_calibrated", "Number of events; 1-#rho; Counter", {kTH1F, {{100, 0, 1}}});
 
-    auto vbins = (std::vector<double>)binsPt;
+    auto vbins = binsPt.value;
 
     const AxisSpec thnAxisMass{thnConfigAxisMass, "inv. mass (#pi K) (GeV/#it{c}^{2})"};
     const AxisSpec thnAxisPt{thnConfigAxisPt, "#it{p}_{T} (GeV/#it{c})"};
