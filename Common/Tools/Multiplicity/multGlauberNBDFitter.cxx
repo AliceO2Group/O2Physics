@@ -49,7 +49,7 @@
 #include <Rtypes.h>
 
 #include <cmath>
-#include <utility>
+#include <cstdint>
 
 ClassImp(multGlauberNBDFitter);
 
@@ -290,7 +290,7 @@ void multGlauberNBDFitter::SetFitRange(const double lMin, const double lMax)
 //________________________________________________________________
 void multGlauberNBDFitter::SetFitOptions(const TString& lOpt)
 {
-  fFitOptions = std::move(lOpt);
+  fFitOptions = lOpt;
 }
 
 //________________________________________________________________
