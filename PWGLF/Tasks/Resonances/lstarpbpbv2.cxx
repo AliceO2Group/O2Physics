@@ -420,7 +420,7 @@ struct lstarpbpbv2 {
     histos.fill(HIST("ResFT0CFT0ASP"), centrality, QFT0C * QFT0A * TMath::Cos(2.0 * (psiFT0C - psiFT0A)));
     histos.fill(HIST("ResFT0ATPCSP"), centrality, QTPC * QFT0A * TMath::Cos(2.0 * (psiTPC - psiFT0A)));
 
-    for (auto track1 : tracks) {
+    for (const auto& track1 : tracks) {
       if (!selectionTrack(track1)) {
         continue;
       }
@@ -431,7 +431,7 @@ struct lstarpbpbv2 {
       }
       track1kaon = true;
 
-      for (auto track2 : tracks) {
+      for (const auto& track2 : tracks) {
         if (!selectionTrack(track2)) {
           continue;
         }

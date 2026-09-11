@@ -198,7 +198,7 @@ struct DaughterParticle {
   std::array<float, nBetheParams> betheParams;
   std::array<float, nTrkSettings> trkSettings;
   bool active;
-  DaughterParticle(std::string name_, int pdgCode_, double mass_, int charge_, LabeledArray<double> bethe, LabeledArray<double> settings) : name(name_), pdgCode(pdgCode_), charge(charge_), mass(mass_), active(false)
+  DaughterParticle(const std::string& name_, int pdgCode_, double mass_, int charge_, const LabeledArray<double>& bethe, const LabeledArray<double>& settings) : name(name_), pdgCode(pdgCode_), charge(charge_), mass(mass_), active(false)
   {
     for (unsigned int i = 0; i < betheParams.size(); i++) {
       betheParams[i] = bethe.get(name, i);
@@ -220,19 +220,19 @@ struct HyperNucleus {
   bool active, savePrimary;
   std::vector<int> daughters, daughterTrackSigns, v0DaughterVec;
   std::vector<float> primSettings;
-  HyperNucleus(std::string name_, int pdgCode_, bool active_, std::vector<int> daughters_, std::vector<int> daughterTrackSigns_, std::vector<int> v0DaughterVec_, LabeledArray<double> primSettings_) : pdgCode(pdgCode_), active(active_), savePrimary(active_)
+  HyperNucleus(const std::string& name_, int pdgCode_, bool active_, const std::vector<int>& daughters_, const std::vector<int>& daughterTrackSigns_, const std::vector<int>& v0DaughterVec_, const LabeledArray<double>& primSettings_) : pdgCode(pdgCode_), active(active_), savePrimary(active_)
   {
-    init(name_, daughters_, daughterTrackSigns_, v0DaughterVec_);
+    init(std::move(name_), std::move(daughters_), std::move(daughterTrackSigns_), std::move(v0DaughterVec_));
     for (unsigned int i = 0; i < nSelPrim; i++) {
       primSettings.push_back(primSettings_.get(name, i));
     }
   }
-  HyperNucleus(std::string name_, int pdgCode_, bool active_, int hypDaughter, std::vector<int> daughters_, std::vector<int> daughterTrackSigns_) : pdgCode(pdgCode_), active(active_), savePrimary(active_)
+  HyperNucleus(const std::string& name_, int pdgCode_, bool active_, int hypDaughter, const std::vector<int>& daughters_, const std::vector<int>& daughterTrackSigns_) : pdgCode(pdgCode_), active(active_), savePrimary(active_)
   {
     daughters.push_back(hypDaughter);
-    init(name_, daughters_, daughterTrackSigns_);
+    init(std::move(name_), std::move(daughters_), std::move(daughterTrackSigns_));
   }
-  void init(std::string name_, std::vector<int> daughters_, std::vector<int> daughterTrackSigns_, std::vector<int> v0DaughterVec_ = {})
+  void init(const std::string& name_, const std::vector<int>& daughters_, const std::vector<int>& daughterTrackSigns_, const std::vector<int>& v0DaughterVec_ = {})
   {
     name = TString(name_);
     for (const int& d : daughters_)
@@ -265,8 +265,8 @@ struct DaughterKf {
   float dcaToPv, dcaToPvXY, dcaToPvZ, tpcNsigma, tpcNsigmaNLP, tpcNsigmaNHP;
   bool active;
   std::vector<float> vtx;
-  DaughterKf(int species_, int64_t daughterTrackId_, int sign_, std::vector<float> vtx_, float tpcNsigma_, float tpcNsigmaNLP_, float tpcNsigmaNHP_) : daughterTrackId(daughterTrackId_), id(uniqueId++), species(species_), sign(sign_), hypNucId(-1), tpcNsigma(tpcNsigma_), tpcNsigmaNLP(tpcNsigmaNLP_), tpcNsigmaNHP(tpcNsigmaNHP_), vtx(vtx_) {}
-  void addKfp(KFParticle daughterKfp_)
+  DaughterKf(int species_, int64_t daughterTrackId_, int sign_, std::vector<float> vtx_, float tpcNsigma_, float tpcNsigmaNLP_, float tpcNsigmaNHP_) : daughterTrackId(daughterTrackId_), id(uniqueId++), species(species_), sign(sign_), hypNucId(-1), tpcNsigma(tpcNsigma_), tpcNsigmaNLP(tpcNsigmaNLP_), tpcNsigmaNHP(tpcNsigmaNHP_), vtx(std::move(vtx_)) {}
+  void addKfp(const KFParticle& daughterKfp_)
   {
     daughterKfp = daughterKfp_;
     dcaToPvXY = daughterKfp.GetDistanceFromVertexXY(&vtx[0]);
@@ -290,7 +290,7 @@ struct HyperNucCandidate {
   bool mcTrue, isPhysPrimary, isPrimaryCandidate, isSecondaryCandidate, isUsedSecondary;
   int64_t mcParticleId;
   int tableId;
-  HyperNucCandidate(int species_, HyperNucCandidate* hypNucDaughter_, std::vector<DaughterKf*> daughters_) : species(species_), hypNucDaughter(hypNucDaughter_), devToPvXY(-999), dcaToPvXY(-999), dcaToPvZ(-999), dcaToVtxXY(-999), dcaToVtxZ(-999), chi2(-999), itsMeanClsSize(-1), mcTrue(false), isPhysPrimary(false), isPrimaryCandidate(false), isSecondaryCandidate(false), isUsedSecondary(false), mcParticleId(-1), tableId(-1)
+  HyperNucCandidate(int species_, HyperNucCandidate* hypNucDaughter_, const std::vector<DaughterKf*>& daughters_) : species(species_), hypNucDaughter(hypNucDaughter_), devToPvXY(-999), dcaToPvXY(-999), dcaToPvZ(-999), dcaToVtxXY(-999), dcaToVtxZ(-999), chi2(-999), itsMeanClsSize(-1), mcTrue(false), isPhysPrimary(false), isPrimaryCandidate(false), isSecondaryCandidate(false), isUsedSecondary(false), mcParticleId(-1), tableId(-1)
   {
     for (const auto& d : daughters_)
       daughters.push_back(d);
@@ -402,7 +402,7 @@ struct HyperNucCandidate {
     }
     return calcSubDaughterMass(daughters.at(d1)->daughterKfp, hypNucDaughter->daughters.at(d2)->daughterKfp);
   }
-  float calcSubDaughterMass(KFParticle d1, KFParticle d2)
+  float calcSubDaughterMass(const KFParticle& d1, const KFParticle& d2)
   {
     KFParticle subDaughter;
     subDaughter.SetConstructMethod(2);
@@ -475,7 +475,7 @@ struct DaughterCombinations {
   int nVecs, nCombinations;
   bool end;
   std::vector<int> nonV0daughters;
-  DaughterCombinations(std::vector<std::vector<DaughterKf>*>& vecs, std::vector<int> nonV0daughters_) : nVecs(0), nCombinations(1), end(false), nonV0daughters(nonV0daughters_)
+  DaughterCombinations(std::vector<std::vector<DaughterKf>*>& vecs, std::vector<int> nonV0daughters_) : nVecs(0), nCombinations(1), end(false), nonV0daughters(std::move(nonV0daughters_))
   {
     for (const auto& vec : vecs) {
       nVecs++;
@@ -1311,7 +1311,7 @@ struct HypKfRecoTask {
   }
   //----------------------------------------------------------------------------------------------------------------
 
-  int getHypDaughterVec(unsigned int cascade, LabeledArray<std::string> cfg)
+  int getHypDaughterVec(unsigned int cascade, const LabeledArray<std::string>& cfg)
   {
     std::string daughter = cfg.get(cascade, 0u);
     if (std::find(hyperNucNames.begin(), hyperNucNames.end(), daughter) == hyperNucNames.end())
@@ -1319,7 +1319,7 @@ struct HypKfRecoTask {
     return std::find(hyperNucNames.begin(), hyperNucNames.end(), daughter) - hyperNucNames.begin();
   }
   //----------------------------------------------------------------------------------------------------------------
-  std::vector<int> getDaughterVec(unsigned int hypNuc, LabeledArray<std::string> cfg)
+  std::vector<int> getDaughterVec(unsigned int hypNuc, const LabeledArray<std::string>& cfg)
   {
     std::vector<int> vec;
     for (unsigned int i = kD1; i <= kD4; i++) {
@@ -1332,7 +1332,7 @@ struct HypKfRecoTask {
   }
   //----------------------------------------------------------------------------------------------------------------
 
-  std::vector<int> getDaughterSignVec(unsigned int hypNuc, LabeledArray<std::string> cfg)
+  std::vector<int> getDaughterSignVec(unsigned int hypNuc, const LabeledArray<std::string>& cfg)
   {
     std::vector<int> vec;
     std::string signs = cfg.get(hypNuc, "daughterSigns");
@@ -1345,7 +1345,7 @@ struct HypKfRecoTask {
     return vec;
   }
   //----------------------------------------------------------------------------------------------------------------
-  std::vector<int> getV0DaughterVec(unsigned int hypNuc, LabeledArray<std::string> cfg)
+  std::vector<int> getV0DaughterVec(unsigned int hypNuc, const LabeledArray<std::string>& cfg)
   {
     std::vector<int> vec;
     std::string v0ds = cfg.get(hypNuc, "useV0for");

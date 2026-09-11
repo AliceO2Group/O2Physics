@@ -38,6 +38,7 @@
 #include <cmath>
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 using namespace o2;
@@ -107,7 +108,7 @@ struct straCents {
     float mMCScalePars[6] = {0.0};
     TFormula* mMCScale = nullptr;
     explicit CalibrationInfo(std::string name)
-      : name(name),
+      : name(std::move(name)),
         mCalibrationStored(false),
         mhMultSelCalib(nullptr),
         mMCScalePars{0.0},
@@ -216,7 +217,7 @@ struct straCents {
   }
 
   template <typename TCollision>
-  void initCCDB(TCollision collision)
+  void initCCDB(const TCollision& collision)
   {
     if (mRunNumber == collision.runNumber()) {
       return;
@@ -348,7 +349,7 @@ struct straCents {
         }
       } else {
         // we are in Run 3
-        auto getccdb = [lCalibObjects_Centrality, collision](struct CalibrationInfo& estimator, const Configurable<std::string> generatorName, const Configurable<bool> notCrashOnNull) { // TODO: to consider the name inside the estimator structure
+        auto getccdb = [lCalibObjects_Centrality, collision](struct CalibrationInfo& estimator, const Configurable<std::string>& generatorName, const Configurable<bool>& notCrashOnNull) { // TODO: to consider the name inside the estimator structure
           estimator.mhMultSelCalib = reinterpret_cast<TH1*>(lCalibObjects_Centrality->FindObject(TString::Format("hCalibZeq%s", estimator.name.c_str()).Data()));
           estimator.mMCScale = reinterpret_cast<TFormula*>(lCalibObjects_Centrality->FindObject(TString::Format("%s-%s", generatorName->c_str(), estimator.name.c_str()).Data()));
           if (estimator.mhMultSelCalib != nullptr) {

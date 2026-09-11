@@ -299,7 +299,7 @@ struct Cascqaanalysis {
   }
 
   template <typename TMcParticles>
-  uint16_t getGenNchInFT0Mregion(TMcParticles particles)
+  uint16_t getGenNchInFT0Mregion(const TMcParticles& particles)
   {
     // Particle counting in FITFT0: -3.3<η<-2.1; 3.5<η<4.9
     uint16_t nchFT0 = 0;
@@ -323,7 +323,7 @@ struct Cascqaanalysis {
   }
 
   template <typename TMcParticles>
-  uint16_t getGenNchInFV0Aregion(TMcParticles particles)
+  uint16_t getGenNchInFV0Aregion(const TMcParticles& particles)
   {
     // Particle counting in FV0A: 2.2<η<5.1
     uint16_t nchFV0A = 0;

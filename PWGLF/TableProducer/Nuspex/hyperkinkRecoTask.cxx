@@ -1162,7 +1162,7 @@ struct HyperkinkQa {
 
   // QA for mother track selection
   template <typename TTrack>
-  bool motherTrackCheck(const TTrack& track, const std::shared_ptr<TH1> hist)
+  bool motherTrackCheck(const TTrack& track, const std::shared_ptr<TH1>& hist)
   {
     hist->Fill(1);
 
@@ -1206,7 +1206,7 @@ struct HyperkinkQa {
 
   // qa for daughter track selection
   template <typename TTrack>
-  bool daughterTrackCheck(const TTrack& track, const std::shared_ptr<TH1> hist, float tpcNSigma)
+  bool daughterTrackCheck(const TTrack& track, const std::shared_ptr<TH1>& hist, float tpcNSigma)
   {
     hist->Fill(1);
 

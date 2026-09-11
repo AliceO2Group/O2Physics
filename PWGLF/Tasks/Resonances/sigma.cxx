@@ -286,7 +286,7 @@ struct sigma {
     rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
     rEventSelection.fill(HIST("hmult"), multiplicity);
 
-    for (auto track1 : tracks) {
+    for (const auto& track1 : tracks) {
 
       if (QAbefore) {
         histos.fill(HIST("hNsigmaPionTPC_before"), track1.tpcNSigmaPi());

@@ -264,7 +264,7 @@ struct doublephitable {
       hProcessedEvents->Fill(2.5);
       auto posThisColl = posTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       auto negThisColl = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-      for (auto track1 : posThisColl) {
+      for (const auto& track1 : posThisColl) {
         // track selection
         if (!selectionTrack(track1)) {
           continue;
@@ -283,7 +283,7 @@ struct doublephitable {
           qaRegistry.fill(HIST("hNsigmaPtkaonTOF"), track1.tofNSigmaKa(), track1.pt());
         }
         auto track1ID = track1.globalIndex();
-        for (auto track2 : negThisColl) {
+        for (const auto& track2 : negThisColl) {
           auto track2ID = track2.globalIndex();
           if (track2ID == track1ID) {
             continue;
@@ -600,7 +600,7 @@ struct doublephitable {
     selectedNeg.reserve(negThisColl.size());
     selectedPosITS.reserve(posThisColl.size());
     selectedNegITS.reserve(negThisColl.size());
-    for (auto track : posThisColl) {
+    for (const auto& track : posThisColl) {
       if (!selectionTrack(track)) {
         continue;
       }
@@ -622,7 +622,7 @@ struct doublephitable {
       }
     }
 
-    for (auto track : negThisColl) {
+    for (const auto& track : negThisColl) {
       if (!selectionTrack(track)) {
         continue;
       }

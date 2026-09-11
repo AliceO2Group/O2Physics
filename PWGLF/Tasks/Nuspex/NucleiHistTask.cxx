@@ -583,7 +583,7 @@ struct NucleiHistTask {
     if (!isEventSelected(event))
       return;
 
-    for (auto track : tracks) { // start loop over all tracks
+    for (const auto& track : tracks) { // start loop over all tracks
 
       histTrackcuts_data_spectra->AddBinContent(1);
       if (event_selection_sel8 && !event.sel8())
@@ -665,7 +665,7 @@ struct NucleiHistTask {
       auto par = (std::vector<float>)parShiftPt;
       Particle_Tpc_nSigma_shift->SetParameters(par[0], par[1], par[2], par[3], par[4], par[5]);
     }
-    for (auto track : tracks) {
+    for (const auto& track : tracks) {
 
       float TPCnSigma_particle = -100;
       float TOFnSigma_particle = -100;
@@ -886,7 +886,7 @@ struct NucleiHistTask {
     if (!event_selection_sel8)
       spectra_reg.fill(HIST("histCentrality"), event.centFT0C());
 
-    for (auto track : tracks) {
+    for (const auto& track : tracks) {
       if ((event_selection_sel8 && !event.sel8()) || (enable_Centrality_cut_global && (event.centFT0C() < minCentrality) && (event.centFT0C() > maxCentrality)))
         continue;
 

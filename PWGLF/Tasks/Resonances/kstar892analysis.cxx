@@ -331,7 +331,7 @@ struct kstar892analysis {
   float massPi = MassPionCharged;
 
   template <typename TrackType>
-  bool trackCut(const TrackType track)
+  bool trackCut(const TrackType& track)
   {
     // TPC
     if (track.tpcNClsFound() < cfgTPCcluster)

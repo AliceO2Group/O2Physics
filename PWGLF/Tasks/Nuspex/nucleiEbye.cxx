@@ -189,7 +189,7 @@ struct nucleiEbye {
     return true;
   }
 
-  void fillHistoN(std::shared_ptr<THnSparse> hFull, std::shared_ptr<TH2> const& hTmp, int const subsample, int const centrality)
+  void fillHistoN(const std::shared_ptr<THnSparse>& hFull, std::shared_ptr<TH2> const& hTmp, int const subsample, int const centrality)
   {
     for (int iEta{1}; iEta < hTmp->GetNbinsX() + 1; ++iEta) {
       for (int iPt{1}; iPt < hTmp->GetNbinsY() + 1; ++iPt) {
@@ -202,7 +202,7 @@ struct nucleiEbye {
     }
   }
 
-  void fillHistoN(std::shared_ptr<THnSparse> hFull, std::shared_ptr<TH2> const& hTmpA, std::shared_ptr<TH2> const& hTmpB, int const subsample, int const centrality)
+  void fillHistoN(const std::shared_ptr<THnSparse>& hFull, std::shared_ptr<TH2> const& hTmpA, std::shared_ptr<TH2> const& hTmpB, int const subsample, int const centrality)
   {
     for (int iEta{1}; iEta < hTmpA->GetNbinsX() + 1; ++iEta) {
       auto eta = hTmpA->GetXaxis()->GetBinCenter(iEta);
