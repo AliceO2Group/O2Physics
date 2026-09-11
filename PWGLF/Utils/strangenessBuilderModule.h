@@ -336,7 +336,7 @@ struct coreConfigurables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> refitWithMaterialCorrection{"refitWithMaterialCorrection", false, "do refit after material corrections were applied"};
 
   // enable old convariance matrix calculation until this has been fully tested
-  o2::framework::Configurable<bool> useOldCovMatrixCalculation{"useOldCovMatrixCalculation", true, "Use old covariance matrix calculation?"};
+  o2::framework::Configurable<bool> useOldModeDCAFitter{"useOldModeDCAFitter", true, "Use old mode for DCA fitter?"};
 };
 
 // strangenessBuilder: V0 building options
@@ -828,7 +828,7 @@ class BuilderModule
     straHelper.fitter.setRefitWithMatCorr(baseOpts.refitWithMaterialCorrection.value);
 
     // set option to enabled the old mode
-    straHelper.fitter.setOldMode(baseOpts.useOldCovMatrixCalculation.value);
+    straHelper.fitter.setOldMode(baseOpts.useOldModeDCAFitter.value);
 
     // Initialise the RCTFlagsChecker
     if (eventSelectOpts.cfgApplyRCTrequirement) {
