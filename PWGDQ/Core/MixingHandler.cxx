@@ -62,6 +62,8 @@ void MixingHandler::AddMixingVariable(int var, const std::vector<float>& binLims
 {
   fVariables[var] = fVariableLimits.size();
   fVariableLimits.push_back(binLims);
+  // FillEvent() only fills variables marked as used
+  VarManager::SetUseVariable(var);
 }
 
 /*
@@ -125,6 +127,8 @@ int MixingHandler::FindEventCategory(float* values)
 
   // loop over the variables and find out in which bin the value of the variable for the event is located
   std::vector<int> bin;
+  // number of bins per variable in the iteration order of fVariables (fVariableLimits is in insertion order)
+  std::vector<int> nBins;
   for (auto [var, pos] : fVariables) {
     // check that the value is within limits, if not return -1 to exclude the event from mixing
     size_t binValue = std::distance(fVariableLimits[pos].begin(), std::upper_bound(fVariableLimits[pos].begin(), fVariableLimits[pos].end(), values[var]));
@@ -132,6 +136,7 @@ int MixingHandler::FindEventCategory(float* values)
       return -1; // all variables must be inside limits
     }
     bin.push_back(binValue - 1);
+    nBins.push_back(fVariableLimits[pos].size() - 1);
   }
 
   // Hash the bin values to define a unique category
@@ -149,7 +154,7 @@ int MixingHandler::FindEventCategory(float* values)
       if (iv2 == iv1) {
         tempCategory *= bin[iv2];
       } else {
-        tempCategory *= (fVariableLimits[iv2].size() - 1);
+        tempCategory *= nBins[iv2];
       }
     }
     category += tempCategory;
@@ -167,15 +172,40 @@ int MixingHandler::GetBinFromCategory(VarManager::Variables var, int category) c
     return -1;
   }
 
-  // Search for the position of the variable "var" in the internal variable list of the handler
-  int ivar = fVariables.at(var);
+  // number of bins and position of var in the iteration order of fVariables, as used by FindEventCategory()
+  std::vector<int> nBins;
+  int ivar = -1;
+  for (auto [v, pos] : fVariables) {
+    if (v == var) {
+      ivar = static_cast<int>(nBins.size());
+    }
+    nBins.push_back(fVariableLimits[pos].size() - 1);
+  }
+  if (ivar < 0) {
+    return -1;
+  }
 
   // extract the bin position in variable "var" from the category
   int norm = 1;
-  for (int i = fVariables.size() - 1; i > ivar; --i) {
-    norm *= (fVariableLimits[i].size() - 1);
+  for (size_t i = nBins.size() - 1; i > static_cast<size_t>(ivar); --i) {
+    norm *= nBins[i];
   }
   int truncatedCategory = category - (category % norm);
   truncatedCategory /= norm;
-  return truncatedCategory % (fVariableLimits[ivar].size() - 1);
+  return truncatedCategory % nBins[ivar];
+}
+
+//_________________________________________________________________________
+void MixingHandler::SetCategoryBinCenters(int category, float* values) const
+{
+  //
+  // set the mixing variables to the bin centers of this category (used for the leftover mixing)
+  //
+  for (auto [var, pos] : fVariables) {
+    int bin = GetBinFromCategory(static_cast<VarManager::Variables>(var), category);
+    if (bin < 0) {
+      continue;
+    }
+    values[var] = 0.5 * (fVariableLimits[pos][bin] + fVariableLimits[pos][bin + 1]);
+  }
 }
