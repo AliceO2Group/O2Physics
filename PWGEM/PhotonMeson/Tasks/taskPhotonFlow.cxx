@@ -31,15 +31,12 @@
 #include <EMCALBase/GeometryBase.h>
 #include <EMCALCalib/BadChannelMap.h>
 #include <Framework/ASoA.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/BinningPolicy.h>
 #include <Framework/Concepts.h>
 #include <Framework/Configurable.h>
 #include <Framework/Expressions.h>
-#include <Framework/GroupedCombinations.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
@@ -53,6 +50,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <format>
 #include <string>
 #include <utility>
 #include <vector>
@@ -348,7 +346,7 @@ struct TaskPhotonFlow {
 
     const AxisSpec thnAxisPt{thnConfigAxisPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec thnAxisCent{thnConfigAxisCent, "Centrality (%)"};
-    const AxisSpec thnAxisCosDeltaPhi{thnConfigAxisCosDeltaPhi, Form("cos(%d(#varphi - #Psi_{sub}))", harmonic.value)};
+    const AxisSpec thnAxisCosDeltaPhi{thnConfigAxisCosDeltaPhi, std::format("cos({}(#varphi - #Psi_{{sub}}))", harmonic.value)};
     const AxisSpec thnAxisM02{thnConfigAxisM02, "M_{02}"};
     const AxisSpec thnAxisKappa{thnConfigAxisKappa, "#Kappa"};
     const AxisSpec thAxisClusterEnergy{thnConfigAxisPt, "#it{E} (GeV)"};
