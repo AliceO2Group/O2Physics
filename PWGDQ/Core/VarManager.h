@@ -1921,20 +1921,6 @@ void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* val
     values[kTgl] = propmuon.getTgl();
     values[kPhi] = propmuon.getPhi();
 
-    // Redo propagation only for muon tracks
-    // propagation of MFT tracks alredy done in fwdtrack-extention task
-    if (static_cast<int>(muon.trackType()) > 2) {
-      o2::dataformats::GlobalFwdTrack propmuonAtDCA = PropagateMuon(muon, collision, kToDCA);
-      o2::dataformats::GlobalFwdTrack propmuonAtRabs = PropagateMuon(muon, collision, kToRabs);
-      float dcaX = (propmuonAtDCA.getX() - collision.posX());
-      float dcaY = (propmuonAtDCA.getY() - collision.posY());
-      values[kMuonDCAx] = dcaX;
-      values[kMuonDCAy] = dcaY;
-      double xAbs = propmuonAtRabs.getX();
-      double yAbs = propmuonAtRabs.getY();
-      values[kMuonRAtAbsorberEnd] = std::sqrt(xAbs * xAbs + yAbs * yAbs);
-    }
-
     const SMatrix55& cov = propmuon.getCovariances();
     values[kMuonCXX] = cov(0, 0);
     values[kMuonCXY] = cov(1, 0);
@@ -3483,6 +3469,8 @@ void VarManager::FillTrackCollision(T const& track, C const& collision, float* v
     float dcaX = (propmuonAtDCA.getX() - collision.posX());
     float dcaY = (propmuonAtDCA.getY() - collision.posY());
     float dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
+    values[kMuonDCAx] = dcaX;
+    values[kMuonDCAy] = dcaY;
     values[kMuonPDca] = track.p() * dcaXY;
   }
 }
