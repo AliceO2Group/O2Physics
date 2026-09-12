@@ -22,6 +22,7 @@
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EseTable.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -78,7 +79,7 @@ struct JetSpectraEseTask {
   Configurable<float> vertexZCut{"vertexZCut", 10.0, "vertex z cut"};
   // Configurable<double> leadingTrackPtCut{"leadingTrackPtCut", 5.0, "leading jet pT cut"};
   Configurable<double> jetAreaFractionMin{"jetAreaFractionMin", -99, "used to make a cut on the jet areas"};
-  Configurable<std::string> cfgCentrality{"cfgCentrality", "FT0M", "Centrality estimator: FT0C, FT0M, or FT0CVariant1"};
+  Configurable<std::string> cfgCentrality{"cfgCentrality", "FT0C", "Centrality estimator: FT0C, FT0M, or FT0CVariant1"};
   Configurable<bool> cfgisPbPb{"cfgisPbPb", false, "Flag for using MC centrality in PbPb"};
   Configurable<bool> cfgbkgSubMC{"cfgbkgSubMC", true, "Flag for MC background subtraction"};
   Configurable<bool> cfgUseMCEventWeights{"cfgUseMCEventWeights", false, "Flag for using MC event weights"};
@@ -148,6 +149,7 @@ struct JetSpectraEseTask {
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "number of events mixed in ME process"};
   ConfigurableAxis binsCentrality{"binsCentrality", {VARIABLE_WIDTH, 0.0, 10., 30., 50, 70., 100.}, "Mixing bins - centrality"};
   ConfigurableAxis binsZVtx{"binsZVtx", {VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f}, "Mixing bins - z-vertex"};
+  ConfigurableAxis amplitudeAxis{"amplitudeAxis", {5000, 0, 5000}, "Amplitude"};
 
   Configurable<bool> applyRCTSelections{"applyRCTSelections", true, "apply RCT selections"};
   Configurable<bool> skipMBGapEvents{"skipMBGapEvents", false, "flag to choose to reject min. bias gap events"};
@@ -526,6 +528,8 @@ struct JetSpectraEseTask {
       registry.addClone("eventQA/hPsi2FT0C", "eventQA/hEPTwistV2");
 
       registry.add("eventQA/h3Centq2FT0Cq2FT0A", ";Centrality;#it{q}_{2}^{FT0C};#it{q}_{2}^{FT0A}", {HistType::kTH3F, {{centAxis}, {250, 0, 35}, {250, 0, 35}}});
+
+      registry.add("eventQA/h2FT0AchannelAmplitude", ";channelID;amplitude", {HistType::kTH2F, {{100, 0, 100}, {amplitudeAxis}}});
     }
     if (doprocessESEBackground) {
       LOGF(info, "JetSpectraEseTask::init() - Background Process");
@@ -982,9 +986,12 @@ struct JetSpectraEseTask {
   }
   PROCESS_SWITCH(JetSpectraEseTask, processESEDataChargedMixed, "process ese mixed collisions", false);
 
-  void processESEEPData(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::Qvectors, aod::QPercentileFT0Cs>::iterator const& collision,
+  using OgCol = soa::Join<aod::Collisions, aod::EvSels>;
+  void processESEEPData(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::Qvectors, aod::QPercentileFT0Cs, aod::JCollisionPIs>::iterator const& collision,
                         soa::Filtered<aod::ChargedJets> const&,
-                        aod::JetTracks const&)
+                        aod::JetTracks const&,
+                        OgCol const&,
+                        aod::FT0s const&)
   {
 
     if (!isVertexSelected(collision)) {
@@ -1001,6 +1008,10 @@ struct JetSpectraEseTask {
 
     [[maybe_unused]] const auto psi{procEP<PsiFillerEP>(collision)};
     detCorrelation(collision);
+    auto originalCollision =
+      collision.collision_as<OgCol>();
+
+    ft0Amplitude(collision, originalCollision);
   }
   PROCESS_SWITCH(JetSpectraEseTask, processESEEPData, "process ese collisions for filling EP and EPR", false);
 
@@ -1503,6 +1514,27 @@ struct JetSpectraEseTask {
         return registry.get<TH1>(HIST("rhoPhiFitEvents/event_4"));
       default:
         return nullptr;
+    }
+  }
+
+  template <typename JetCol, typename OriginalCol>
+  void ft0Amplitude(const JetCol& coll, const OriginalCol& originalColl)
+  {
+    if (!originalColl.has_foundFT0()) {
+      return;
+    }
+
+    auto ft0 = originalColl.foundFT0();
+    auto centrality = getCentrality(coll);
+
+    if (cfgSelCentrality && !isCentralitySelected(centrality)) {
+      return;
+    }
+
+    for (std::size_t iChA = 0; iChA < ft0.channelA().size(); ++iChA) {
+      float ampl = ft0.amplitudeA()[iChA];
+      int ft0AchId = ft0.channelA()[iChA];
+      registry.fill(HIST("eventQA/h2FT0AchannelAmplitude"), ft0AchId, ampl);
     }
   }
 
