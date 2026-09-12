@@ -1741,11 +1741,11 @@ struct AnalysisSameEventPairing {
     }
 
     if (fConfigRunMixingAcrossTFs) {
-      if (fConfigMixingDepth.value < 2) {
-        LOGF(fatal, "cfgMixingDepth must be at least 2");
+      if (fConfigMixingDepth.value < MixingHandler::MinPoolDepth) {
+        LOGF(fatal, "cfgMixingDepth must be at least %d", MixingHandler::MinPoolDepth);
       }
-      if (fNCutsBarrel > 32) {
-        LOGF(fatal, "Across-TF mixing supports at most 32 barrel track-cut bits, got %d", fNCutsBarrel);
+      if (fNCutsBarrel > MixingHandler::NMaxCuts) {
+        LOGF(fatal, "Across-TF mixing supports at most %d barrel track-cut bits, got %d", MixingHandler::NMaxCuts, fNCutsBarrel);
       }
       TString mixVarsString = fConfigMixingVariables.value;
       TString mixVarsJsonString = fConfigMixingVariablesJson.value;
@@ -2011,8 +2011,8 @@ struct AnalysisSameEventPairing {
   // Mix the events left in the pools (end of stream or run change), with the mixing variables set to the category bin centers
   void runLeftoverMixing()
   {
-    for (auto& [category, pool] : fMixingHandler.GetPools()) {
-      const uint32_t mixingMask = pool.GetMixingMask(2);
+    for (auto& [category, pool] : fMixingHandler.GetPools()) { // o2-linter: disable=const-ref-in-for-loop (the pools are modified)
+      const uint32_t mixingMask = pool.GetMixingMask(MixingHandler::MinPoolDepth);
       if (!mixingMask) {
         continue;
       }

@@ -34,6 +34,11 @@ class MixingHandler : public TNamed
 {
 
  public:
+  // number of track cuts which fit in the 32-bit filtering masks
+  static constexpr int NMaxCuts = 32;
+  // smallest pool depth for which a mixed pair can be built
+  static constexpr int16_t MinPoolDepth = 2;
+
   // Struct to define track properties relevant for mixing and few utility functions
   struct MixingTrack {
     float pt;
@@ -184,16 +189,16 @@ class MixingHandler : public TNamed
     // bit mask of the cuts for which at least poolDepth events are in the pool
     uint32_t GetMixingMask(int16_t poolDepth) const
     {
-      std::array<int16_t, 32> counts = {0};
+      std::array<int16_t, NMaxCuts> counts = {0};
       for (auto const& event : events) {
-        for (int icut = 0; icut < 32; ++icut) {
+        for (int icut = 0; icut < NMaxCuts; ++icut) {
           if (event.filteringMask & (static_cast<uint32_t>(1) << icut)) {
             counts[icut]++;
           }
         }
       }
       uint32_t fullMask = 0;
-      for (int icut = 0; icut < 32; ++icut) {
+      for (int icut = 0; icut < NMaxCuts; ++icut) {
         if (counts[icut] >= poolDepth) {
           fullMask |= static_cast<uint32_t>(1) << icut;
         }
