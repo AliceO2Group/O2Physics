@@ -118,7 +118,7 @@ class VarManager : public TObject
     RapidityGapFilter = BIT(21),
     Fit = BIT(22),
     ReducedFit = BIT(23),
-    ReducedEventSpherocity = BIT(24),  // Achu-Changes
+    ReducedEventSpherocity = BIT(24),
     Track = BIT(0),
     TrackCov = BIT(1),
     TrackExtra = BIT(2),
@@ -284,7 +284,7 @@ class VarManager : public TObject
     kMultNTracksITSTPC,
     kMultNTracksPVeta1,
     kMultNTracksPVetaHalf,
-    kSpherocity,         // transverse spherocity
+    kSpherocity,           // transverse spherocity
     kSpherocityPtWeighted, // pT-weighted transverse spherocity
     kTrackOccupancyInTimeRange,
     kFT0COccupancyInTimeRange,
@@ -1442,10 +1442,8 @@ class VarManager : public TObject
     return RecoDecay::constrainAngle(psi1 - psi2, -o2::constants::math::PI / harmonic, harmonic);
   }
 
-  // Spherocity function declaration--Start
   template <typename T>
-  static float CalculateSpherocity(T const & tracks, float ptMin = 0.15, float ptMax = 10.0, float etaMin = -0.8, float etaMax = 0.8, int minMult = 10, bool usePtWeight = false);
-  //------------------------------------End
+  static float CalculateSpherocity(T const& tracks, float ptMin = 0.15, float ptMax = 10.0, float etaMin = -0.8, float etaMax = 0.8, int minMult = 10, bool usePtWeight = false);
 
   template <typename T, typename T1>
   static o2::dataformats::VertexBase RecalculatePrimaryVertex(T const& track0, T const& track1, const T1& collision);
@@ -8011,11 +8009,8 @@ void VarManager::FillTripletVertexingALICE3(C const& collision, T const& t1, T c
   }
 }
 template <typename T>
-float VarManager::CalculateSpherocity(T const& tracks, float ptMin, float ptMax, float etaMin, float etaMax, int minMult, bool usePtWeight) 
+float VarManager::CalculateSpherocity(T const& tracks, float ptMin, float ptMax, float etaMin, float etaMax, int minMult, bool usePtWeight)
 {
-  LOGF(info, "    >>> CalculateSpherocity CALLED: ptMin=%.2f, ptMax=%.2f, etaMin=%.2f, etaMax=%.2f, minMult=%d, usePtWeight=%s",
-    ptMin, ptMax, etaMin, etaMax, minMult, usePtWeight ? "true" : "false");
-  
   std::vector<float> pxNorm;
   std::vector<float> pyNorm;
   std::vector<float> ptValues;
@@ -8026,10 +8021,12 @@ float VarManager::CalculateSpherocity(T const& tracks, float ptMin, float ptMax,
   for (const auto& track : tracks) {
     float pt = track.pt();
     float eta = track.eta();
-    
-    if (pt < ptMin || pt > ptMax) continue;
-    if (eta < etaMin || eta > etaMax) continue;
-    
+
+    if (pt < ptMin || pt > ptMax)
+      continue;
+    if (eta < etaMin || eta > etaMax)
+      continue;
+
     float px = track.px();
     float py = track.py();
 
@@ -8048,8 +8045,8 @@ float VarManager::CalculateSpherocity(T const& tracks, float ptMin, float ptMax,
     return -1.0f;
   }
 
-  // Minimize over azimuthal angle
-  float spherocity = 5.0f; //float prevSpherocity = 5.0f; const float convergenceThreshold = 1e-4f;
+  // Minimize over azimuthal angle, hence nSteps = 360 for 1 degree steps
+  float spherocity = 5.0f;
   const int nSteps = 360;
 
   for (int iStep = 0; iStep < nSteps; iStep++) {
@@ -8061,9 +8058,8 @@ float VarManager::CalculateSpherocity(T const& tracks, float ptMin, float ptMax,
     float denominator = 0.0f;
 
     for (int iTrk = 0; iTrk < nTracks; iTrk++) {
-      // Cross product magnitude: |p_T x n| = |px*ny - py*nx|
-      float crossProduct = std::abs(pxNorm[iTrk] * ny - pyNorm[iTrk] * nx);
-      
+      float crossProduct = std::abs(pxNorm[iTrk] * ny - pyNorm[iTrk] * nx); // Cross product magnitude: |p_T x n| = |px*ny - py*nx|
+
       if (usePtWeight) {
         numerator += ptValues[iTrk] * crossProduct;
         denominator += ptValues[iTrk];
@@ -8077,16 +8073,10 @@ float VarManager::CalculateSpherocity(T const& tracks, float ptMin, float ptMax,
     if (sph < spherocity) {
       spherocity = sph;
     }
-    // // Early exit if converged
-    // if (iStep > 10 && std::abs(spherocity - prevSpherocity) < convergenceThreshold) {
-    //   break;
-    // }
-    // prevSpherocity = spherocity;
   }
 
   spherocity *= (M_PI * M_PI / 4.0f);
   return spherocity;
 }
-
 
 #endif // PWGDQ_CORE_VARMANAGER_H_

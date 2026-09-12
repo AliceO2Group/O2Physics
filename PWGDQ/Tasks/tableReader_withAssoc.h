@@ -217,24 +217,24 @@ DECLARE_SOA_TABLE(JPsieeCandidates, "AOD", "DQPSEUDOPROPER",
 } // namespace o2::aod
 
 // Declarations of various short names
-using MyEvents = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll>;
-using MyEventsBasic = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended>;
-using MyEventsMultExtraNoQvector = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll>;
-using MyEventsMultExtra = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll, o2::aod::ReducedEventsQvectorCentr, o2::aod::ReducedEventsQvectorCentrExtra, o2::aod::ReducedEventsMergingTable>;
-using MyEventsMultExtraQVector = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll, o2::aod::ReducedEventsQvectorCentr, o2::aod::ReducedEventsQvectorCentrExtra>;
-using MyEventsZdc = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedZdcs>;
-using MyEventsMultExtraZdc = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll, o2::aod::ReducedZdcs>;
-using MyEventsMultExtraZdcFit = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll, o2::aod::ReducedZdcs, o2::aod::ReducedFITs>;
-using MyEventsSelected = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::EventCuts>;
-using MyEventsMultExtraSelected = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll, o2::aod::EventCuts>;
-using MyEventsVtxCovSelectedMultExtra = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsVtxCov, o2::aod::EventCuts, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll>;
-using MyEventsHashSelected = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsVtxCov, o2::aod::EventCuts, o2::aod::MixingHashes>;
-using MyEventsVtxCov = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsVtxCov>;
-using MyEventsVtxCovSelected = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsVtxCov, o2::aod::EventCuts>;
-using MyEventsVtxCovSelectedInfo = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsVtxCov, o2::aod::EventCuts, o2::aod::ReducedEventsInfo>;
-using MyEventsVtxCovSelectedQvector = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll, o2::aod::ReducedEventsVtxCov, o2::aod::EventCuts, o2::aod::ReducedEventsQvectorCentr, o2::aod::ReducedEventsQvectorCentrExtra>;
-using MyEventsVtxCovSelectedQvectorWithHash = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll, o2::aod::ReducedEventsVtxCov, o2::aod::EventCuts, o2::aod::ReducedEventsQvectorCentr, o2::aod::ReducedEventsQvectorCentrExtra, o2::aod::MixingHashes>;
-using MyEventsVtxCovZdcFitSelected = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsVtxCov, o2::aod::ReducedZdcs, o2::aod::ReducedFITs, o2::aod::EventCuts>;
+using MyEvents = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll, o2::aod::ReducedEventsSpherocity>;
+using MyEventsBasic = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsSpherocity>;
+using MyEventsMultExtraNoQvector = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll, o2::aod::ReducedEventsSpherocity>;
+using MyEventsMultExtra = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll, o2::aod::ReducedEventsQvectorCentr, o2::aod::ReducedEventsQvectorCentrExtra, o2::aod::ReducedEventsMergingTable, o2::aod::ReducedEventsSpherocity>;
+using MyEventsMultExtraQVector = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll, o2::aod::ReducedEventsQvectorCentr, o2::aod::ReducedEventsQvectorCentrExtra, o2::aod::ReducedEventsSpherocity>;
+using MyEventsZdc = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedZdcs, o2::aod::ReducedEventsSpherocity>;
+using MyEventsMultExtraZdc = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll, o2::aod::ReducedZdcs, o2::aod::ReducedEventsSpherocity>;
+using MyEventsMultExtraZdcFit = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll, o2::aod::ReducedZdcs, o2::aod::ReducedFITs, o2::aod::ReducedEventsSpherocity>;
+using MyEventsSelected = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::EventCuts, o2::aod::ReducedEventsSpherocity>;
+using MyEventsMultExtraSelected = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll, o2::aod::EventCuts, o2::aod::ReducedEventsSpherocity>;
+using MyEventsVtxCovSelectedMultExtra = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsVtxCov, o2::aod::EventCuts, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll, o2::aod::ReducedEventsSpherocity>;
+using MyEventsHashSelected = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsVtxCov, o2::aod::EventCuts, o2::aod::MixingHashes, o2::aod::ReducedEventsSpherocity>;
+using MyEventsVtxCov = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsVtxCov, o2::aod::ReducedEventsSpherocity>;
+using MyEventsVtxCovSelected = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsVtxCov, o2::aod::EventCuts, o2::aod::ReducedEventsSpherocity>;
+using MyEventsVtxCovSelectedInfo = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsVtxCov, o2::aod::EventCuts, o2::aod::ReducedEventsInfo, o2::aod::ReducedEventsSpherocity>;
+using MyEventsVtxCovSelectedQvector = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll, o2::aod::ReducedEventsVtxCov, o2::aod::EventCuts, o2::aod::ReducedEventsQvectorCentr, o2::aod::ReducedEventsQvectorCentrExtra, o2::aod::ReducedEventsSpherocity>;
+using MyEventsVtxCovSelectedQvectorWithHash = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll, o2::aod::ReducedEventsVtxCov, o2::aod::EventCuts, o2::aod::ReducedEventsQvectorCentr, o2::aod::ReducedEventsQvectorCentrExtra, o2::aod::MixingHashes, o2::aod::ReducedEventsSpherocity>;
+using MyEventsVtxCovZdcFitSelected = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsVtxCov, o2::aod::ReducedZdcs, o2::aod::ReducedFITs, o2::aod::EventCuts, o2::aod::ReducedEventsSpherocity>;
 using MyEventsVtxCovZdcFitSelectedMultExtra = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsVtxCov, o2::aod::ReducedZdcs, o2::aod::ReducedFITs, o2::aod::EventCuts, o2::aod::ReducedEventsMultPV, o2::aod::ReducedEventsMultAll>;
 using MyEventsQvector = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::ReducedEventsQvector>;
 using MyEventsHashSelectedQvector = o2::soa::Join<o2::aod::ReducedEvents, o2::aod::ReducedEventsExtended, o2::aod::EventCuts, o2::aod::MixingHashes, o2::aod::ReducedEventsQvector>;
@@ -259,12 +259,12 @@ using MyMuonTracksWithCovWithAmbiguities = o2::soa::Join<o2::aod::ReducedMuons, 
 using MyMuonTracksSelectedWithColl = o2::soa::Join<o2::aod::ReducedMuons, o2::aod::ReducedMuonsExtra, o2::aod::ReducedMuonsInfo, o2::aod::MuonTrackCuts>;
 
 // bit maps used for the Fill functions of the VarManager
-constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
-constexpr static uint32_t gkEventFillMapWithZdc = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ReducedZdc;
-constexpr static uint32_t gkEventFillMapWithCov = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov;
+constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventSpherocity;
+constexpr static uint32_t gkEventFillMapWithZdc = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ReducedZdc | VarManager::ObjTypes::ReducedEventSpherocity;
+constexpr static uint32_t gkEventFillMapWithCov = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ObjTypes::ReducedEventSpherocity;
 // constexpr static uint32_t gkEventFillMapWithCovFlow = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ObjTypes::ReducedEventQvector;
-constexpr static uint32_t gkEventFillMapWithCovZdcFit = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ReducedZdc | VarManager::ReducedFit;
-constexpr static uint32_t gkEventFillMapWithMultExtra = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventMultExtra;
+constexpr static uint32_t gkEventFillMapWithCovZdcFit = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ReducedZdc | VarManager::ReducedFit | VarManager::ObjTypes::ReducedEventSpherocity;
+constexpr static uint32_t gkEventFillMapWithMultExtra = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventMultExtra | VarManager::ObjTypes::ReducedEventSpherocity;
 // New fillmap
 constexpr static uint32_t gkEventFillMapWithMultExtraWithQVector = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventMultExtra | VarManager::ObjTypes::CollisionQvect;
 // constexpr static uint32_t gkEventFillMapWithMultExtraWithQVector = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventMultExtra | VarManager::ObjTypes::ReducedEventQvector;
@@ -322,7 +322,7 @@ struct AnalysisEventSelection {
   o2::framework::Configurable<std::string> fConfigMixingVariablesJson{"cfgMixingVarsJSON", "", "Mixing configs in JSON format"};
   o2::framework::Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
   o2::framework::Configurable<std::string> fConfigEventCutsJSON{"cfgEventCutsJSON", "", "Additional event cuts specified in JSON format"};
-  o2::framework::Configurable<std::string> fConfigAddEventHistogram{"cfgAddEventHistogram", "", "Comma separated list of histograms"};
+  o2::framework::Configurable<std::string> fConfigAddEventHistogram{"cfgAddEventHistogram", "spherocity", "Comma separated list of histograms"};
   o2::framework::Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Add event histograms defined via JSON formatting (see HistogramsLibrary)"};
   o2::framework::Configurable<bool> fConfigQA{"cfgQA", true, "If true, QA histograms will be created and filled"};
 
@@ -454,6 +454,12 @@ struct AnalysisEventSelection {
       // Get the instantaneous IR from the CCDB
       if (fConfigFetchInteractionRate.value) {
         VarManager::fgValues[VarManager::kInteractionRate] = rateFetcher.fetch(fCCDB.service, event.timestamp(), fCurrentRun, fConfigIRSource.value, true) / 1000.; // kHz
+      }
+
+      // Fill spherocity if available
+      if constexpr ((TEventFillMap & VarManager::ObjTypes::ReducedEventSpherocity) > 0) {
+        VarManager::fgValues[VarManager::kSpherocity] = event.spherocity();
+        VarManager::fgValues[VarManager::kSpherocityPtWeighted] = event.spherocityPtWeighted();
       }
 
       bool decision = false;

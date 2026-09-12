@@ -121,6 +121,26 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     if (subGroupStr.Contains("randomplane")) {
       hm->AddHistogram(histClass, "random plane angle", "random Psi", false, 100, -TMath::Pi() / 2, TMath::Pi() / 2, VarManager::kRandomPsi2);
     }
+    if (subGroupStr.Contains("spherocity")) {
+      hm->AddHistogram(histClass, "Spherocity", "Transverse Spherocity", false, 100, 0.0, 1.0, VarManager::kSpherocity);
+      hm->AddHistogram(histClass, "SpherocityPtWeighted", "pT-weighted Spherocity", false, 100, 0.0, 1.0, VarManager::kSpherocityPtWeighted); // Spherocity vs event properties
+      hm->AddHistogram(histClass, "Spherocity_VtxZ", "Spherocity vs Vtx Z", false, 100, 0.0, 1.0, VarManager::kSpherocity, 60, -15.0, 15.0, VarManager::kVtxZ);
+      hm->AddHistogram(histClass, "MultITSTPC_VtxZ", "MultITSTPC vs Vtx Z", false, 200, 0.0, 200.0, VarManager::kMultNTracksITSTPC, 60, -15.0, 15.0, VarManager::kVtxZ);
+      hm->AddHistogram(histClass, "Spherocity_VtxNContrib", "Spherocity vs Vtx n contributors", false, 100, 0.0, 1.0, VarManager::kSpherocity, 100, 0.0, 100.0, VarManager::kVtxNcontrib);
+      hm->AddHistogram(histClass, "MultITSTPC_VtxNContrib", "MultITSTPC vs Vtx n contributors", false, 200, 0.0, 200.0, VarManager::kMultNTracksITSTPC, 100, 0.0, 100.0, VarManager::kVtxNcontrib);
+      hm->AddHistogram(histClass, "Spherocity_MultITS", "Spherocity vs ITS only Multiplicity", false, 100, 0.0, 1.0, VarManager::kSpherocity, 250, 0.0, 250.0, VarManager::kMultNTracksITSOnly);
+      hm->AddHistogram(histClass, "Spherocity_MultTPC", "Spherocity vs TPC only Multiplicity", false, 100, 0.0, 1.0, VarManager::kSpherocity, 250, 0.0, 5000.0, VarManager::kMultTPC);
+      hm->AddHistogram(histClass, "Spherocity_MultITSTPC", "Spherocity vs ITS-TPC Multiplicity", false, 100, 0.0, 1.0, VarManager::kSpherocity, 250, 0.0, 250.0, VarManager::kMultNTracksITSTPC);
+      hm->AddHistogram(histClass, "Spherocity_CentFT0C", "Spherocity vs Centrality FT0C", false, 100, 0.0, 1.0, VarManager::kSpherocity, 20, 0.0, 100.0, VarManager::kCentFT0C);
+      hm->AddHistogram(histClass, "SpherocityPtWeighted_CentFT0C", "pT-weighted Spherocity vs Centrality FT0C", false, 100, 0.0, 1.0, VarManager::kSpherocityPtWeighted, 20, 0.0, 100.0, VarManager::kCentFT0C);
+      hm->AddHistogram(histClass, "Spherocity_CentFT0C_3D", "Spherocity vs Centrality vs Mult", false, 50, 0.0, 1.0, VarManager::kSpherocity, 20, 0.0, 100.0, VarManager::kCentFT0C, 100, 0.0, 50000.0, VarManager::kMultTPC);
+
+      if (subGroupStr.Contains("mySpheroCent")) {
+        hm->AddHistogram(histClass, "Spherocity_CentFT0C", "Spherocity vs Centrality FT0C", false, 100, 0.0, 1.0, VarManager::kSpherocity, 20, 0.0, 100.0, VarManager::kCentFT0C);
+        hm->AddHistogram(histClass, "SpherocityPtWeighted_CentFT0C", "pT-weighted Spherocity vs Centrality FT0C", false, 100, 0.0, 1.0, VarManager::kSpherocityPtWeighted, 20, 0.0, 100.0, VarManager::kCentFT0C);
+        hm->AddHistogram(histClass, "Spherocity_CentFT0C_3D", "Spherocity vs Centrality vs Mult", false, 50, 0.0, 1.0, VarManager::kSpherocity, 20, 0.0, 100.0, VarManager::kCentFT0C, 100, 0.0, 50000.0, VarManager::kMultTPC);
+      }
+    }
     if (subGroupStr.Contains("mult")) {
       if (subGroupStr.Contains("pp")) {
         hm->AddHistogram(histClass, "MultTPC", "MultTPC", false, 250, 0.0, 500.0, VarManager::kMultTPC);
@@ -1632,6 +1652,15 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "Mass_Pt", "", false, 750, 0.0, 15.0, VarManager::kMass, 120, 0.0, 30.0, VarManager::kPt);
       hm->AddHistogram(histClass, "Mass_Rapidity", "", false, 750, 0.0, 15.0, VarManager::kMass, 150, 2.5, 4.0, VarManager::kRap);
       hm->AddHistogram(histClass, "Mass_Phi", "", false, 750, 0.0, 15.0, VarManager::kMass, 180, constants::math::PI, 2 * constants::math::PI, VarManager::kPhi);
+      hm->AddHistogram(histClass, "Mass", "", false, 750, 0.0, 5.0, VarManager::kMass);
+      if (subGroupStr.Contains("dimuon-spherocity")) {
+        hm->AddHistogram(histClass, "Spherocity", "Transverse Spherocity", false, 100, 0.0, 1.0, VarManager::kSpherocity);
+        hm->AddHistogram(histClass, "SpherocityPtWeighted", "pT-weighted Spherocity", false, 100, 0.0, 1.0, VarManager::kSpherocityPtWeighted);
+        hm->AddHistogram(histClass, "Mass_Spherocity", "", false, 750, 0.0, 5.0, VarManager::kMass, 100, 0.0, 1.0, VarManager::kSpherocity);
+        hm->AddHistogram(histClass, "Mass_SpherocityPtWeighted", "", false, 750, 0.0, 5.0, VarManager::kMass, 100, 0.0, 1.0, VarManager::kSpherocityPtWeighted);
+        hm->AddHistogram(histClass, "Mass_Pt_Spherocity", "", false, 750, 0.0, 5.0, VarManager::kMass, 120, 0.0, 30.0, VarManager::kPt, 100, 0.0, 1.0, VarManager::kSpherocity);
+        hm->AddHistogram(histClass, "Mass_Pt_SpherocityPtWeighted", "", false, 200, 0.0, 5.0, VarManager::kMass, 30, 0.0, 30.0, VarManager::kPt, 50, 0.0, 1.0, VarManager::kSpherocityPtWeighted);
+      }
       if (subGroupStr.Contains("dimuon-tag-and-probe")) {
         hm->AddHistogram(histClass, "Mass_PtProbe", "mass vs probe pT", false, 750, 0.0, 15.0, VarManager::kMass, 120, 0.0, 30.0, VarManager::kPt2);    // Warning: in the tag-and-probe task t2 is always the probe
         hm->AddHistogram(histClass, "Mass_EtaProbe", "mass vs probe eta", false, 750, 0.0, 15.0, VarManager::kMass, 120, 0.0, 30.0, VarManager::kEta2); // Warning: in the tag-and-probe task t2 is always the probe

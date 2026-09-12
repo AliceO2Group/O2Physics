@@ -69,8 +69,8 @@ DECLARE_SOA_COLUMN(NTPCoccupMeanTimeShortA, nTPCoccupMeanTimeShortA, float);    
 DECLARE_SOA_COLUMN(NTPCoccupMeanTimeShortC, nTPCoccupMeanTimeShortC, float);                                 //!  TPC pileup mean time on C side (short time range)
 DECLARE_SOA_COLUMN(NTPCoccupMedianTimeShortA, nTPCoccupMedianTimeShortA, float);                             //!  TPC pileup median time on A side (short time range)
 DECLARE_SOA_COLUMN(NTPCoccupMedianTimeShortC, nTPCoccupMedianTimeShortC, float);                             //!  TPC pileup median time on C side (short time range)
-DECLARE_SOA_COLUMN(Spherocity, spherocity, float);                                                           //! transverse spherocity
-DECLARE_SOA_COLUMN(SpherocityPtWeighted, spherocityPtWeighted, float);                                       //! pT-weighted transverse spherocity// namespace reducedevent
+DECLARE_SOA_COLUMN(Spherocity, spherocity, float);                                                           //!  transverse spherocity
+DECLARE_SOA_COLUMN(SpherocityPtWeighted, spherocityPtWeighted, float);                                       //!  pT-weighted transverse spherocity
 DECLARE_SOA_COLUMN(DCAzBimodalityCoefficient, dcazBimodalityCoefficient, float);                             //!  Bimodality coefficient of the DCAz distribution of the tracks in the event
 DECLARE_SOA_COLUMN(DCAzBimodalityCoefficientBinned, dcazBimodalityCoefficientBinned, float);                 //!  Bimodality coefficient of the DCAz distribution of the tracks in the event, binned
 DECLARE_SOA_COLUMN(DCAzBimodalityCoefficientBinnedTrimmed1, dcazBimodalityCoefficientBinnedTrimmed1, float); //!  Bimodality coefficient of the DCAz distribution of the tracks in the event, binned and trimmed 1
@@ -179,23 +179,11 @@ DECLARE_SOA_TABLE_VERSIONED(ReducedEventsExtended_001, "AOD", "REEXTENDED", 1, /
                             mult::MultFDDA, mult::MultFDDC, mult::MultZNA, mult::MultZNC, mult::MultTracklets, mult::MultNTracksPV,
                             cent::CentFT0C, cent::CentFT0A, cent::CentFT0M);
 
-DECLARE_SOA_TABLE_VERSIONED(ReducedEventsExtended_002, "AOD", "REEXTENDED", 2, //!  Extended event information
-                            bc::GlobalBC, evsel::Alias, evsel::Selection, timestamp::Timestamp, cent::CentRun2V0M,
-                            mult::MultTPC, mult::MultFV0A, mult::MultFV0C, mult::MultFT0A, mult::MultFT0C,
-                            mult::MultFDDA, mult::MultFDDC, mult::MultZNA, mult::MultZNC, mult::MultTracklets, mult::MultNTracksPV,
-                            cent::CentFT0C, cent::CentFT0A, cent::CentFT0M,
-                            reducedevent::Spherocity,
-                            reducedevent::SpherocityPtWeighted);
-
 using ReducedEventsExtended = ReducedEventsExtended_001;
-// using ReducedEventsExtended = ReducedEventsExtended_002;
 
-// // In ReducedInfoTables.h, add this after the ReducedEventsExtended declaration
-// DECLARE_SOA_TABLE(ReducedEventsSpherocity, "AOD", "RESPHEROCITY",
-//                   reducedevent::Spherocity,
-//                   reducedevent::SpherocityPtWeighted);
-
-// using ReducedEventSphero = ReducedEventsSpherocity::iterator;
+DECLARE_SOA_TABLE(ReducedEventsSpherocity, "AOD", "RESPHEROCITY",
+                  reducedevent::Spherocity,
+                  reducedevent::SpherocityPtWeighted);
 
 DECLARE_SOA_TABLE(ReducedEventsMultPV_000, "AOD", "REMULTPV", //!  Multiplicity information for primary vertex
                   mult::MultNTracksHasITS, mult::MultNTracksHasTPC, mult::MultNTracksHasTOF, mult::MultNTracksHasTRD,
