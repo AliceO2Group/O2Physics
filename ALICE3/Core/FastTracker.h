@@ -33,9 +33,7 @@
 #include <string>
 #include <vector>
 
-namespace o2
-{
-namespace fastsim
+namespace o2::fastsim
 {
 
 // +-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+
@@ -59,11 +57,11 @@ class FastTracker
   /// \param phiStart Start angle of the dead region (in radians)
   /// \param phiEnd End angle of the dead region (in radians)
   void addDeadPhiRegionInLayer(const std::string& layerName, float phiStart, float phiEnd);
-  DetLayer getLayer(const int layer) const { return layers[layer]; }
-  std::vector<DetLayer> getLayers() const { return layers; }
-  int getLayerIndex(const std::string& name) const;
-  size_t getNLayers() const { return layers.size(); }
-  bool isLayerInert(const int layer) const { return layers[layer].isInert(); }
+  [[nodiscard]] DetLayer getLayer(const int layer) const { return layers[layer]; }
+  [[nodiscard]] std::vector<DetLayer> getLayers() const { return layers; }
+  [[nodiscard]] int getLayerIndex(const std::string& name) const;
+  [[nodiscard]] size_t getNLayers() const { return layers.size(); }
+  [[nodiscard]] bool isLayerInert(const int layer) const { return layers[layer].isInert(); }
   void clearLayers() { layers.clear(); }
   void setRadiationLength(const std::string& layerName, float x0) { layers[getLayerIndex(layerName)].setRadiationLength(x0); }
   void setRadius(const std::string& layerName, float r) { layers[getLayerIndex(layerName)].setRadius(r); }
@@ -126,17 +124,17 @@ class FastTracker
   void setApplyEffCorrection(bool b) { mApplyEffCorrection = b; }
 
   // Getters for the last track
-  int getNIntercepts() const { return nIntercepts; }
-  int getNSiliconPoints() const { return nSiliconPoints; }
-  int getNGasPoints() const { return nGasPoints; }
-  float getGoodHitProb(int layer) const
+  [[nodiscard]] int getNIntercepts() const { return nIntercepts; }
+  [[nodiscard]] int getNSiliconPoints() const { return nSiliconPoints; }
+  [[nodiscard]] int getNGasPoints() const { return nGasPoints; }
+  [[nodiscard]] float getGoodHitProb(int layer) const
   {
     return (layer >= 0 && static_cast<size_t>(layer) < goodHitProbability.size()) ? goodHitProbability[layer] : 0.0f;
   }
-  std::size_t getNHits() const { return hits.size(); }
-  float getHitX(const int i) const { return hits[i][0]; }
-  float getHitY(const int i) const { return hits[i][1]; }
-  float getHitZ(const int i) const { return hits[i][2]; }
+  [[nodiscard]] std::size_t getNHits() const { return hits.size(); }
+  [[nodiscard]] float getHitX(const int i) const { return hits[i][0]; }
+  [[nodiscard]] float getHitY(const int i) const { return hits[i][1]; }
+  [[nodiscard]] float getHitZ(const int i) const { return hits[i][2]; }
   uint64_t getCovMatOK() const { return covMatOK; }
   uint64_t getCovMatNotOK() const { return covMatNotOK; }
 
@@ -152,8 +150,8 @@ class FastTracker
   bool mApplyEffCorrection = true;      /// Apply correction for hit efficiency
   int mVerboseLevel = 0;                /// 0: not verbose, >0 more verbose
   const float mCrossSectionMinB = 8;    /// Minimum bias Cross section for event under study (PbPb MinBias ~ 8 Barns)
-  int dNdEtaCent = 2200;                /// dN/deta e.g. at centrality 0-5% (for 5 TeV PbPb)
-  int dNdEtaMinB = 1;                   /// dN/deta for minimum bias events
+  float dNdEtaCent = 2200.f;            /// dN/deta e.g. at centrality 0-5% (for 5 TeV PbPb)
+  float dNdEtaMinB = 1.f;               /// dN/deta for minimum bias events
   float integrationTime = 0.02f;        /// Integration time in ms
   float magneticField = 20.f;           /// Magnetic field in kiloGauss (5 = 0.5T, 20 = 2T, etc)
   float covMatFactor = 0.99f;           /// covmat off-diagonal factor to use for covmat fix (negative: no factor)
@@ -181,7 +179,6 @@ class FastTracker
 
 // +-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+
 
-} // namespace fastsim
-} // namespace o2
+} // namespace o2::fastsim
 
 #endif // ALICE3_CORE_FASTTRACKER_H_
