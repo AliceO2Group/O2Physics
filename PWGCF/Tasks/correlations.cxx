@@ -105,6 +105,7 @@ struct CorrelationTask {
   O2_DEFINE_CONFIGURABLE(cfgLocalEfficiency, int, 0, "0 = OFF and 1 = ON for local efficiency");
   O2_DEFINE_CONFIGURABLE(cfgDropStepRECO, bool, false, "choice to drop step RECO if efficiency correction is used")
   O2_DEFINE_CONFIGURABLE(cfgCentBinsForMC, int, 0, "0 = OFF and 1 = ON for data like multiplicity/centrality bins for MC steps");
+  O2_DEFINE_CONFIGURABLE(cfgRequireRecoCollision, int, 1, "0 = all generated collisions; 1 = only generated collisions with exactly 1 reconstructed collision; 2 = select reconstructed collision with largest number of contributors per generated collision")
   O2_DEFINE_CONFIGURABLE(cfgTrackBitMask, uint16_t, 0, "BitMask for track selection systematics; refer to the enum TrackSelectionCuts in filtering task");
   O2_DEFINE_CONFIGURABLE(cfgMultCorrelationsMask, uint16_t, 0, "Selection bitmask for the multiplicity correlations. This should match the filter selection cfgEstimatorBitMask.")
   O2_DEFINE_CONFIGURABLE(cfgMultCutFormula, std::string, "", "Multiplicity correlations cut formula. A result greater than zero results in accepted event. Parameters: [cFT0C] FT0C centrality, [mFV0A] V0A multiplicity, [mGlob] global track multiplicity, [mPV] PV track multiplicity, [cFT0M] FT0M centrality")
@@ -193,8 +194,17 @@ struct CorrelationTask {
   using DerivedCollisions = soa::Filtered<aod::CFCollisions>;
   using DerivedTracks = soa::Filtered<aod::CFTracks>;
 
+  enum RecoCollisionSelection {
+    AllGeneratedCollisions = 0,
+    RequireOneRecoCollision,
+    RequireBestRecoCollision
+  };
+
   void init(o2::framework::InitContext&)
   {
+    if (cfgRequireRecoCollision < 0 || cfgRequireRecoCollision > RecoCollisionSelection::RequireBestRecoCollision) {
+      LOGF(fatal, "Unsupported cfgRequireRecoCollision=%d; use 0 (no reco. collision required), 1 (exactly one reco. collision required), 2 (at least one. reco, and best reco. collision selected)", cfgRequireRecoCollision.value);
+    }
     if (doprocessSame2ProngDerivedML || doprocessSame2Prong2ProngML || doprocessMixed2ProngDerivedML || doprocessMixed2Prong2ProngML || doprocessMCEfficiency2ProngML || doprocessMCReflection2ProngML) {
       if (cfgPtDepMLbkg->empty() || cfgPtCentDepMLbkgSel->empty())
         LOGF(fatal, "cfgPtDepMLbkg or cfgPtCentDepMLbkgSel can not be empty when ML 2-prong selections are used.");
@@ -1211,13 +1221,30 @@ struct CorrelationTask {
       LOGF(info, "MC collision at vtx-z = %f with %d mc particles and %d reconstructed collisions", mcCollision.posZ(), mcParticles.size(), collisions.size());
     }
 
+    // Select reconstructed collisions as specified by cfgRequireRecoCollision
     auto multiplicity = mcCollision.multiplicity();
-    if (cfgCentBinsForMC > 0) {
+    if (cfgRequireRecoCollision > 0) {
       if (collisions.size() == 0) {
         return;
       }
-      for (const auto& collision : collisions) {
-        multiplicity = collision.multiplicity();
+      if (cfgRequireRecoCollision == RecoCollisionSelection::RequireOneRecoCollision) { // cfgRequireRecoCollision == 1
+        if (collisions.size() != 1) {
+          return;
+        }
+        multiplicity = collisions.begin().multiplicity();
+      }
+      if (cfgRequireRecoCollision == RecoCollisionSelection::RequireBestRecoCollision) { // cfgRequireRecoCollision == 2
+        bool foundBestCollision = false;
+        for (const auto& collision : collisions) {
+          if (collision.bestRecoCollision()) {
+            multiplicity = collision.multiplicity();
+            foundBestCollision = true;
+            break;
+          }
+        }
+        if (!foundBestCollision) {
+          return;
+        }
       }
     }
     // Primaries
@@ -1226,7 +1253,11 @@ struct CorrelationTask {
         same->getTrackHistEfficiency()->Fill(CorrelationContainer::MC, mcParticle.eta(), mcParticle.pt(), getSpecies(mcParticle.pdgCode()), multiplicity, mcCollision.posZ());
       }
     }
+    const bool useBestCollision = cfgRequireRecoCollision == RecoCollisionSelection::AllGeneratedCollisions || cfgRequireRecoCollision == RecoCollisionSelection::RequireBestRecoCollision; // For cfgRequireRecoCollision == 0 still need to reject split vertices
     for (const auto& collision : collisions) {
+      if (useBestCollision && !collision.bestRecoCollision()) {
+        continue;
+      }
       auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
       if (cfgVerbosity > 0) {
         LOGF(info, "  Reconstructed collision at vtx-z = %f", collision.posZ());

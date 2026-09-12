@@ -58,9 +58,8 @@ using CFMcParticle = CFMcParticles::iterator;
 namespace cfmultiplicity
 {
 DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);
-DECLARE_SOA_COLUMN(IsTrackMultiplicity, isTrackMultiplicity, bool); //! Whether MultiplicitySelector::processTracks produced the multiplicity
 } // namespace cfmultiplicity
-DECLARE_SOA_TABLE(CFMultiplicities, "AOD", "CFMULTIPLICITY", cfmultiplicity::Multiplicity, cfmultiplicity::IsTrackMultiplicity);
+DECLARE_SOA_TABLE(CFMultiplicities, "AOD", "CFMULTIPLICITY", cfmultiplicity::Multiplicity);
 
 using CFMultiplicity = CFMultiplicities::iterator;
 

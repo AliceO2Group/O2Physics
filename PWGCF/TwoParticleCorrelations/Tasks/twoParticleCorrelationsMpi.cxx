@@ -70,7 +70,6 @@
 #include <string>
 #include <tuple>
 #include <type_traits>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -101,7 +100,6 @@ struct TwoParticleCorrelationsMpi {
   Configurable<int> cfgLocalEfficiency{"cfgLocalEfficiency", 0, "0 = OFF and 1 = ON for local efficiency"};
   Configurable<bool> cfgDropStepRECO{"cfgDropStepRECO", false, "choice to drop step RECO if efficiency correction is used"};
   Configurable<int> cfgCentBinsForMC{"cfgCentBinsForMC", 0, "0 = generated multiplicity; 1 = reconstructed multiplicity and all associated collisions"};
-  Configurable<int> cfgRequireRecoCollision{"cfgRequireRecoCollision", 1, "0 = all generated collisions; 1 = only generated collisions with exactly 1 reconstructed collision; 2 = select reconstructed collision with largest number of contributors per generated collision"};
   Configurable<uint16_t> cfgTrackBitMask{"cfgTrackBitMask", 0, "BitMask for track selection systematics; refer to the enum TrackSelectionCuts in filtering task"};
   Configurable<uint16_t> cfgMultCorrelationsMask{"cfgMultCorrelationsMask", 0, "Selection bitmask for the multiplicity correlations. This should match the filter selection cfgEstimatorBitMask."};
   Configurable<std::string> cfgMultCutFormula{"cfgMultCutFormula", "", "Multiplicity correlations cut formula. A result greater than zero results in accepted event. Parameters: [cFT0C] FT0C centrality, [mFV0A] V0A multiplicity, [mGlob] global track multiplicity, [mPV] PV track multiplicity, [cFT0M] FT0M centrality"};
@@ -290,7 +288,6 @@ struct TwoParticleCorrelationsMpi {
   using DerivedCollisionsMultSet = soa::Filtered<soa::Join<aod::CFCollisions, aod::CFMultSets>>;
   using DerivedCollisionsMultSetCorrected = soa::Filtered<soa::Join<aod::CFCollisions, aod::CFCollisionsExtra, aod::CFMultSets>>;
   using DerivedTracks = soa::Filtered<aod::CFTracks>;
-  static constexpr int RequireRecoCollisionBestMode = 2;
 
   void init(o2::framework::InitContext&)
   {
@@ -299,9 +296,6 @@ struct TwoParticleCorrelationsMpi {
     }
     if (cfgCentBinsForMC < 0 || cfgCentBinsForMC > 1) {
       LOGF(fatal, "Unsupported cfgCentBinsForMC=%d; use 0 (generated multiplicity), 1 (reconstructed multiplicity and all associated collisions)", cfgCentBinsForMC.value);
-    }
-    if (cfgRequireRecoCollision < 0 || cfgRequireRecoCollision > RequireRecoCollisionBestMode) {
-      LOGF(fatal, "Unsupported cfgRequireRecoCollision=%d; use 0 (no reco. collision required), 1 (exactly one reco. collision required), 2 (at least one. reco, and best reco. collision selected)", cfgRequireRecoCollision.value);
     }
     const int enabledDerivedSameProcesses = static_cast<int>(doprocessSameDerived) + static_cast<int>(doprocessSameDerivedCorrected) + static_cast<int>(doprocessSameDerivedMultSet) + static_cast<int>(doprocessSameDerivedMultSetCorrected);
     if (enabledDerivedSameProcesses > 1) {
@@ -390,16 +384,6 @@ struct TwoParticleCorrelationsMpi {
       registry.add("multCorrelations", "Multiplicity correlations", {HistType::kTHnSparseF, multAxes});
     }
     registry.add("multiplicity", "event multiplicity", {HistType::kTH1F, {{100, 0, 100, "/multiplicity/centrality"}}});
-    if (doprocessMCEfficiency) {
-      registry.add("mcEfficiencyDiagnostics/reconstructedTracks", "selected reconstructed tracks per collision;N_{tracks};collisions", {HistType::kTH1F, {{1001, -0.5, 1000.5}}});
-      registry.add("mcEfficiencyDiagnostics/matchedTracks", "MC-matched reconstructed tracks per collision;N_{matched};collisions", {HistType::kTH1F, {{1001, -0.5, 1000.5}}});
-      registry.add("mcEfficiencyDiagnostics/uniqueMatchedParticles", "unique matched MC particles per collision;N_{unique labels};collisions", {HistType::kTH1F, {{1001, -0.5, 1000.5}}});
-      registry.add("mcEfficiencyDiagnostics/duplicateMatchedTracks", "matched tracks beyond one per MC label;N_{matched}-N_{unique labels};collisions", {HistType::kTH1F, {{501, -0.5, 500.5}}});
-      registry.add("mcEfficiencyDiagnostics/duplicateFraction", "fraction of matched tracks sharing an MC label;(N_{matched}-N_{unique labels})/N_{matched};collisions", {HistType::kTH1F, {{101, -0.005, 1.005}}});
-      registry.add("mcEfficiencyDiagnostics/tracksPerMcParticle", "reconstructed tracks per matched MC-particle label;tracks per MC label;MC labels", {HistType::kTH1F, {{21, -0.5, 20.5}}});
-      registry.add("mcEfficiencyDiagnostics/generatedVsUniqueMatchedPrimaries", "generated versus uniquely matched physical primaries;N_{generated primary};N_{unique matched primary}", {HistType::kTH2F, {{501, -0.5, 500.5}, {501, -0.5, 500.5}}});
-      registry.add("mcEfficiencyDiagnostics/primaryTracksPerMcParticle", "reconstructed tracks per matched physical-primary label;tracks per primary MC label;MC labels", {HistType::kTH1F, {{21, -0.5, 20.5}}});
-    }
     if (eventSeedEstimatorEnabled) {
       registry.add("eventSeedEstimator", "event-level template estimator", {HistType::kTHnSparseF, {{100, 0, 100, "multiplicity"}, {100, -0.5, 99.5, "N_{trig}"}, {200, 0, 20, "Y_{near}"}, {200, 0, 20, "Y_{away}"}, {200, 0, 100, "N_{uncorrelated seeds}"}}});
       registry.add("eventSeedPairProbabilities", "summed pair probabilities", {HistType::kTH3F, {{200, 0, 200, "#Sigma P_{baseline}"}, {200, 0, 200, "#Sigma P_{near}"}, {200, 0, 200, "#Sigma P_{away}"}}});
@@ -1958,121 +1942,6 @@ struct TwoParticleCorrelationsMpi {
     processMixedDerivedT(collisions, tracks);
   }
   PROCESS_SWITCH(TwoParticleCorrelationsMpi, processMixedDerivedMultSetCorrected, "Process mixed events on derived data with corrected multiplicity and multiplicity sets", false);
-
-  int getSpecies(int pdgCode)
-  {
-    switch (pdgCode) {
-      case 211: // pion
-      case -211:
-        return 0;
-      case 321: // Kaon
-      case -321:
-        return 1;
-      case 2212: // proton
-      case -2212:
-        return 2;
-      default:
-        break;
-    }
-    if (std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), pdgCode) != cfgMcTriggerPDGs->end()) {
-      return 4;
-    }
-    // The efficiency histogram is hardcoded to contain 5 species. Anything special will have the 4th slot.
-    return 3;
-  }
-
-  // NOTE SmallGroups includes soa::Filtered always
-  Preslice<aod::CFTracksWithLabel> perCollision = aod::cftrack::cfCollisionId;
-  void processMCEfficiency(soa::Filtered<aod::CFMcCollisions>::iterator const& mcCollision, aod::CFMcParticles const& mcParticles, soa::SmallGroups<aod::CFCollisionsWithLabel> const& collisions, aod::CFTracksWithLabel const& tracks)
-  {
-    if (cfgVerbosity > 0) {
-      LOGF(info, "MC collision at vtx-z = %f with %d mc particles and %d reconstructed collisions", mcCollision.posZ(), mcParticles.size(), collisions.size());
-    }
-
-    // Select reconstructed collisions as specified by cfgRequireRecoCollision
-    auto multiplicity = mcCollision.multiplicity();
-    if (cfgRequireRecoCollision > 0) {
-      if (collisions.size() == 0) {
-        return;
-      }
-      if (cfgRequireRecoCollision == 1) {
-        if (collisions.size() != 1) {
-          return;
-        }
-        multiplicity = collisions.begin().multiplicity();
-      } else { // cfgRequireRecoCollision == 2
-        bool foundBestCollision = false;
-        for (const auto& collision : collisions) {
-          if (collision.bestRecoCollision()) {
-            multiplicity = collision.multiplicity();
-            foundBestCollision = true;
-            break;
-          }
-        }
-        if (!foundBestCollision) {
-          return;
-        }
-      }
-    }
-    // Primaries
-    int generatedPrimaries = 0;
-    for (const auto& mcParticle : mcParticles) {
-      if (mcParticle.isPhysicalPrimary() && mcParticle.sign() != 0 && std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), mcParticle.pdgCode()) == cfgMcTriggerPDGs->end()) {
-        ++generatedPrimaries;
-        same->getTrackHistEfficiency()->Fill(CorrelationContainer::MC, mcParticle.eta(), mcParticle.pt(), getSpecies(mcParticle.pdgCode()), multiplicity, mcCollision.posZ());
-      }
-    }
-    const bool useBestCollision = cfgRequireRecoCollision == 0 || cfgRequireRecoCollision == RequireRecoCollisionBestMode; // For cfgRequireRecoCollision == 0 still need to reject split vertices
-    for (const auto& collision : collisions) {
-      if (useBestCollision && !collision.bestRecoCollision()) {
-        continue;
-      }
-      auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
-      int reconstructedTracks = 0;
-      int matchedTracks = 0;
-      std::unordered_map<int64_t, int> tracksPerMcParticle;
-      std::unordered_map<int64_t, int> primaryTracksPerMcParticle;
-      if (cfgVerbosity > 0) {
-        LOGF(info, "  Reconstructed collision at vtx-z = %f", collision.posZ());
-        LOGF(info, "  which has %d tracks", groupedTracks.size());
-      }
-
-      for (const auto& track : groupedTracks) {
-        if (cfgTrackBitMask > 0 && (track.trackType() & (uint8_t)cfgTrackBitMask) != (uint8_t)cfgTrackBitMask) {
-          continue;
-        }
-        ++reconstructedTracks;
-        if (track.has_cfMCParticle()) {
-          ++matchedTracks;
-          ++tracksPerMcParticle[track.cfMCParticleId()];
-          const auto& mcParticle = track.cfMCParticle();
-          if (mcParticle.isPhysicalPrimary()) {
-            ++primaryTracksPerMcParticle[track.cfMCParticleId()];
-            same->getTrackHistEfficiency()->Fill(CorrelationContainer::RecoPrimaries, mcParticle.eta(), mcParticle.pt(), getSpecies(mcParticle.pdgCode()), multiplicity, mcCollision.posZ());
-          }
-          same->getTrackHistEfficiency()->Fill(CorrelationContainer::RecoAll, mcParticle.eta(), mcParticle.pt(), getSpecies(mcParticle.pdgCode()), multiplicity, mcCollision.posZ());
-          // LOGF(info, "Filled track %d", track.globalIndex());
-        } else {
-          // fake track
-          same->getTrackHistEfficiency()->Fill(CorrelationContainer::Fake, track.eta(), track.pt(), 0, multiplicity, mcCollision.posZ());
-        }
-      }
-      const int duplicateMatchedTracks = matchedTracks - static_cast<int>(tracksPerMcParticle.size());
-      registry.fill(HIST("mcEfficiencyDiagnostics/reconstructedTracks"), reconstructedTracks);
-      registry.fill(HIST("mcEfficiencyDiagnostics/matchedTracks"), matchedTracks);
-      registry.fill(HIST("mcEfficiencyDiagnostics/uniqueMatchedParticles"), tracksPerMcParticle.size());
-      registry.fill(HIST("mcEfficiencyDiagnostics/duplicateMatchedTracks"), duplicateMatchedTracks);
-      registry.fill(HIST("mcEfficiencyDiagnostics/duplicateFraction"), matchedTracks > 0 ? static_cast<float>(duplicateMatchedTracks) / matchedTracks : 0.f);
-      for (const auto& entry : tracksPerMcParticle) {
-        registry.fill(HIST("mcEfficiencyDiagnostics/tracksPerMcParticle"), entry.second);
-      }
-      for (const auto& entry : primaryTracksPerMcParticle) {
-        registry.fill(HIST("mcEfficiencyDiagnostics/primaryTracksPerMcParticle"), entry.second);
-      }
-      registry.fill(HIST("mcEfficiencyDiagnostics/generatedVsUniqueMatchedPrimaries"), generatedPrimaries, primaryTracksPerMcParticle.size());
-    }
-  }
-  PROCESS_SWITCH(TwoParticleCorrelationsMpi, processMCEfficiency, "MC: Extract efficiencies", false);
 
   template <class McCollision, class Particles1, class Particles2>
   void processMCSameDerivedT(McCollision const& mcCollision, Particles1 const& mcParticles1, Particles2 const& mcParticles2, soa::SmallGroups<aod::CFCollisionsWithLabel> const& collisions)
