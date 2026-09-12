@@ -1305,7 +1305,7 @@ struct TwoParticleCorrelationsMpi {
     std::vector<PendingSeedPairFill> discardedPairFills;
     discardedTriggerFills.reserve(tracks.size());
     discardedPairFills.reserve(tracks.size() * tracks.size());
-    fillCorrelations<step>(target, tracks, tracks, multiplicity, posZ, magField, 1.0f, &estimate, &discardedTriggerFills, &discardedPairFills, -1.f, false, false);
+    fillCorrelations<step>(std::move(target), tracks, tracks, multiplicity, posZ, magField, 1.0f, &estimate, &discardedTriggerFills, &discardedPairFills, -1.f, false, false);
     finalizeEventSeedEstimate(estimate);
     return estimate.nuncSeeds();
   }

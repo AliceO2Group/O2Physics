@@ -132,7 +132,7 @@ FlowPtContainer::FlowPtContainer(const char* name, const char* title) : TNamed(n
                                                                         arr(),
                                                                         warr(),
                                                                         subevents() {}
-void FlowPtContainer::initialise(const o2::framework::AxisSpec axis, const int& maxOrder, const GFWCorrConfigs& configs, const int& nsub)
+void FlowPtContainer::initialise(const o2::framework::AxisSpec& axis, const int& maxOrder, const GFWCorrConfigs& configs, const int& nsub)
 {
   arr.resize(3 * 3 * 3 * 3);
   warr.resize(3 * 3 * 3 * 3);
@@ -406,7 +406,7 @@ void FlowPtContainer::initialise(int nbinsx, double xlow, double xhigh, const in
   }
   LOGF(info, "Container %s initialized with m = %i\n", this->GetName(), mpar);
 };
-void FlowPtContainer::initialiseSubevent(const o2::framework::AxisSpec axis, const int& maxOrder, const int& nsubev, const int& nsub)
+void FlowPtContainer::initialiseSubevent(const o2::framework::AxisSpec& axis, const int& maxOrder, const int& nsubev, const int& nsub)
 {
   if (nsubev < 1) {
     LOGF(fatal, "Need at least one subevent");

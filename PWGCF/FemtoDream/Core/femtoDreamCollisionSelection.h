@@ -31,6 +31,7 @@
 #include <cstddef>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace o2::analysis::femtoDream
@@ -420,7 +421,7 @@ class FemtoDreamCollisionSelection
   // add a param : bool doFillHisto ?
   int myqnBin(float centrality, float centMax, bool doFillCent, std::vector<float> qnBinSeparator, float qn, const int numQnBins, float centBinWidth = 1.f)
   {
-    auto twoDSeparator = getQnBinSeparator2D(qnBinSeparator, numQnBins);
+    auto twoDSeparator = getQnBinSeparator2D(std::move(qnBinSeparator), numQnBins);
     if (twoDSeparator.empty() || twoDSeparator[0][0] == -999.) {
       LOGP(warning, "ConfQnBinSeparator not set, using default fallback!");
       return -999; // safe fallback

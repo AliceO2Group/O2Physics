@@ -148,7 +148,7 @@ struct FemtoUniversePairTaskTrackTrackMcTruth {
   }
 
   template <typename CollisionType>
-  void fillCollision(CollisionType col)
+  void fillCollision(const CollisionType& col)
   {
     mixQaRegistry.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({col.posZ(), col.multNtr()}));
     eventHisto.fillQA(col);
@@ -165,7 +165,7 @@ struct FemtoUniversePairTaskTrackTrackMcTruth {
   /// @param magFieldTesla magnetic field of the collision
   /// @param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType, typename PartType>
-  void doSameEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartType parts, float /*magFieldTesla*/, int multCol)
+  void doSameEvent(const PartitionType& groupPartsOne, const PartitionType& groupPartsTwo, const PartType& parts, float /*magFieldTesla*/, int multCol)
   {
     bool swpart = fNeventsProcessed % 2;
     fNeventsProcessed++;
@@ -257,7 +257,7 @@ struct FemtoUniversePairTaskTrackTrackMcTruth {
   /// \param magFieldTesla magnetic field of the collision
   /// \param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType, typename PartType>
-  void doMixedEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartType /*parts*/, float /*magFieldTesla*/, int multCol)
+  void doMixedEvent(const PartitionType& groupPartsOne, const PartitionType& groupPartsTwo, const PartType& /*parts*/, float /*magFieldTesla*/, int multCol)
   {
     bool swpart = fNeventsProcessed % 2;
     fNeventsProcessed++;

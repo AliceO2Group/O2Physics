@@ -470,7 +470,7 @@ struct LongrangeCorrelation {
   }
 
   template <typename TTrack>
-  int getTrackPID(TTrack track)
+  int getTrackPID(const TTrack& track)
   {
     // Computing Nsigma arrays for pion, kaon, and protons
     std::array<float, 3> nSigmaTPC = {track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};

@@ -70,7 +70,7 @@ class FemtoUniverseFemtoContainer
   /// \param kTAxis axis object for the kT axis
   /// \param mTAxis axis object for the mT axis
   template <typename T>
-  void initBase(std::string folderName, std::string femtoObs, T femtoObsAxis, T multAxis, T kTAxis, T mTAxis, T multAxis3D, T mTAxis3D, bool use3dplots)
+  void initBase(const std::string& folderName, const std::string& femtoObs, T femtoObsAxis, T multAxis, T kTAxis, T mTAxis, T multAxis3D, T mTAxis3D, bool use3dplots)
   {
     kHistogramRegistry->add((folderName + "/relPairDist").c_str(), ("; " + femtoObs + "; Entries").c_str(), o2::framework::HistType::kTH1F, {femtoObsAxis});
     kHistogramRegistry->add((folderName + "/relPairkT").c_str(), "; #it{k}_{T} (GeV/#it{c}); Entries", o2::framework::HistType::kTH1F, {kTAxis});
@@ -93,7 +93,7 @@ class FemtoUniverseFemtoContainer
   /// \param folderName Name of the directory in the output file (no suffix for reconstructed data/ Monte Carlo; "_MC" for Monte Carlo Truth)
   /// \param femtoObsAxis axis object for the femto observable axis
   template <typename T>
-  void initMC(std::string folderName, std::string femtoObs, T femtoObsAxis, T multAxis, T mTAxis)
+  void initMC(const std::string& folderName, const std::string& femtoObs, T femtoObsAxis, T multAxis, T mTAxis)
   {
     kHistogramRegistry->add((folderName + "/relPairDist_ReconNoFake").c_str(), ("; " + femtoObs + "; Entries").c_str(), o2::framework::HistType::kTH1F, {femtoObsAxis});
     kHistogramRegistry->add((folderName + "/relPairkstarmT_ReconNoFake").c_str(), ("; " + femtoObs + "; #it{m}_{T} (GeV/#it{c}^{2})").c_str(), o2::framework::HistType::kTH2F, {femtoObsAxis, mTAxis});

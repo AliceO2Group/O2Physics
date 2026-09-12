@@ -75,7 +75,7 @@ class FemtoUniverse3DContainer
   /// \param use3dplots Flag to fill 3D plots
   /// \param isiden Identical or non-identical particle pair
   template <typename T>
-  void initBase(std::string folderName, std::string femtoObs1D, std::string femtoObsKout, std::string femtoObsKside, std::string femtoObsKlong, T femtoObsAxis1D, T femtoObsAxisOut, T femtoObsAxisSide, T femtoObsAxisLong, T multAxis, T kTAxis, T mTAxis, T multAxis3D, T mTAxis3D, bool use3dplots, bool isiden)
+  void initBase(const std::string& folderName, const std::string& femtoObs1D, const std::string& femtoObsKout, const std::string& femtoObsKside, const std::string& femtoObsKlong, T femtoObsAxis1D, T femtoObsAxisOut, T femtoObsAxisSide, T femtoObsAxisLong, T multAxis, T kTAxis, T mTAxis, T multAxis3D, T mTAxis3D, bool use3dplots, bool isiden)
   {
     mHistogramRegistry->add((folderName + "/relPairMom3D").c_str(), ("; " + femtoObsKout + "; " + femtoObsKside + "; " + femtoObsKlong).c_str(), o2::framework::HistType::kTH3F, {femtoObsAxisOut, femtoObsAxisSide, femtoObsAxisLong});
     mHistogramRegistry->add((folderName + "/relPairMomOut").c_str(), ("; " + femtoObsKout + "; Entries").c_str(), o2::framework::HistType::kTH1F, {femtoObsAxisOut});

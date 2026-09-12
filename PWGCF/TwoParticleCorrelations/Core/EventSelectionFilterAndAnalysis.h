@@ -25,6 +25,7 @@
 
 #include <cstdint>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace o2
@@ -47,10 +48,10 @@ class EventSelectionConfigurable
                              std::string trigsel = "",
                              std::string zvtxsel = "",
                              std::string pileuprej = "")
-    : mBFiledSel(bfieldsel), mMultSel{multsel}, mTriggerSel{trigsel}, mZVertexSel{zvtxsel}, mPileUpRejection{pileuprej}
+    : mBFiledSel(std::move(bfieldsel)), mMultSel{std::move(multsel)}, mTriggerSel{std::move(trigsel)}, mZVertexSel{std::move(zvtxsel)}, mPileUpRejection{std::move(pileuprej)}
   {
   }
-  EventSelectionConfigurable(std::vector<std::string> bfieldsel,
+  EventSelectionConfigurable(const std::vector<std::string>& bfieldsel,
                              std::vector<std::string> multsel,
                              std::vector<std::string> trigsel,
                              std::vector<std::string> zvtxsel,

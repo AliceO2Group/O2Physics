@@ -128,7 +128,7 @@ struct FillFlagsTable {
   void processData(soa::Join<aod::Tracks, aod::pidTPCPi, aod::pidTOFPi, aod::pidTPCPr, aod::pidTOFPr, aod::pidTPCKa, aod::pidTOFKa, aod::pidTPCEl, aod::TracksExtra, aod::TracksDCA> const& tracks)
   {
     int8_t etabin, phibin, binNpid;
-    for (auto track : tracks) {
+    for (const auto& track : tracks) {
       etabin = (track.eta() + 0.8) * 15; // 15= 24/1.6
       phibin = 36 * track.phi() / (2 * constants::math::PI);
       if ((etabin < 0) || (etabin >= 24) || (phibin < 0) || (phibin >= 36)) {
@@ -181,7 +181,7 @@ struct FillFlagsTable {
   void processMC(soa::Join<aod::Tracks, aod::pidTPCPi, aod::pidTOFPi, aod::pidTPCPr, aod::pidTOFPr, aod::pidTPCKa, aod::pidTOFKa, aod::pidTPCEl, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& recotracks, aod::McParticles const& gentracks)
   {
     int8_t etabin, phibin, binNpid;
-    for (auto track : recotracks) {
+    for (const auto& track : recotracks) {
       if (track.has_mcParticle()) {
         etabin = (track.eta() + 0.8) * 15; // 15= 24/1.6
         phibin = 36 * track.phi() / (2 * constants::math::PI);
@@ -257,7 +257,7 @@ struct FillFlagsTable {
       }
       ftable(binNpid);
     }
-    for (auto track : gentracks) {
+    for (const auto& track : gentracks) {
       switch (abs(track.pdgCode())) {
         case 211:
           histos.fill(HIST("genptpi"), track.pt());
@@ -399,14 +399,14 @@ struct r2p24id {
     if ((iftrack2 && ((mult1 < 1) || (mult2 < 1))) || ((!iftrack2) && (mult1 < 2))) // Reject Collisions without sufficient particles
       return;
 
-    for (auto track1 : tracks) {
+    for (const auto& track1 : tracks) {
       histos.fill(HIST("h1d_n1_phi"), track1.phi());
       histos.fill(HIST("h1d_n1_eta"), track1.eta());
       histos.fill(HIST("h1d_n1_pt"), track1.pt());
     }
     histos.fill(HIST("h1i_n1_multPM"), mult1 + mult2);
 
-    for (auto track1 : tracks1) {
+    for (const auto& track1 : tracks1) {
       //---Single Particle Distribution (particle1)----------------------------------------
       sign1 = (track1.sign() + 1) / 2;
       hist.h1d_1p[0][sign1]->Fill(track1.pt(), 1.0 / (2.0 * constants::math::PI * track1.pt())); // h1d_n1_pt*1
@@ -415,7 +415,7 @@ struct r2p24id {
       //-----------------------------------------------------------------------
     }
     if (iftrack2) {
-      for (auto track2 : tracks2) {
+      for (const auto& track2 : tracks2) {
         //---Single Particle Distribution (particle2)----------------------------------------
         sign2 = (track2.sign() + 1) / 2;
         hist.h1d_1p[1][sign2]->Fill(track2.pt(), 1.0 / (2.0 * constants::math::PI * track2.pt())); // h1d_n1_pt*2
@@ -424,12 +424,12 @@ struct r2p24id {
         //-----------------------------------------------------------------------
       }
     }
-    for (auto track1 : tracks1) {
+    for (const auto& track1 : tracks1) {
       sign1 = (track1.sign() + 1) / 2;
       etabin1 = (track1.eta() + 0.8) * 15; // 15= 24/1.6
       phibin1 = 36 * track1.phi() / (2 * constants::math::PI);
 
-      for (auto track2 : tracks2) {
+      for (const auto& track2 : tracks2) {
 
         if (track1.index() == track2.index())
           continue;

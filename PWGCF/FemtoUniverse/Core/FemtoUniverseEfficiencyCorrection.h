@@ -70,7 +70,7 @@ class EfficiencyCorrection
   {
   }
 
-  auto init(framework::HistogramRegistry* registry, std::vector<framework::AxisSpec> axisSpecs) -> void
+  auto init(framework::HistogramRegistry* registry, const std::vector<framework::AxisSpec>& axisSpecs) -> void
   {
     shouldFillHistograms = config->confEffCorFillHist;
     shouldSetMultToConst = config->confEffCorSetMultToConst;

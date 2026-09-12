@@ -2309,7 +2309,7 @@ struct RobustFluctuationObservables {
   } // end of processRobustFluctuationObservables()
 
   // shortcut function to fill 2D histograms
-  void fillHistForThisCut(string cutName, int multNTracksPV, int multTrk, int nTracksGlobalAccepted, double multT0A, double multT0C, double multV0A, double /*t0cCentr*/, int bc)
+  void fillHistForThisCut(const string& cutName, int multNTracksPV, int multTrk, int nTracksGlobalAccepted, double multT0A, double multT0C, double multV0A, double /*t0cCentr*/, int bc)
   {
     // registry.get<TH1>(HIST("eta"))->Fill(track.eta());
     // arrPointers[histId][cutId]->Fill(xval, yval, weight);
@@ -2348,7 +2348,7 @@ struct RobustFluctuationObservables {
     // }
   }
 
-  void fillPtHistos(string strTrackType, float pt, int charge, float w, bool noTF, bool noROF)
+  void fillPtHistos(const string& strTrackType, float pt, int charge, float w, bool noTF, bool noROF)
   {
     fillPtHistosThisCut(strTrackType, "allBC", pt, charge, w);
 
@@ -2369,7 +2369,7 @@ struct RobustFluctuationObservables {
       fillPtHistosThisCut(strTrackType, "noTFandROFborder", pt, charge, w);
   }
 
-  void fillPtHistosThisCut(string strTrackType, string strEvSelType, float pt, int charge, float w)
+  void fillPtHistosThisCut(const string& strTrackType, const string& strEvSelType, float pt, int charge, float w)
   {
     string strPre = strTrackType + "/" + strEvSelType;
 

@@ -618,7 +618,7 @@ struct FlowGfwEse {
   }
 
   template <typename TTrack>
-  double getAcceptance(TTrack track, const double& vtxz)
+  double getAcceptance(const TTrack& track, const double& vtxz)
   {
     double wacc = 1;
     if (cfg.mAcceptance)
@@ -627,7 +627,7 @@ struct FlowGfwEse {
   }
 
   template <typename TTrack>
-  double getEfficiency(TTrack track)
+  double getEfficiency(const TTrack& track)
   {
     double eff = 1.;
     if (cfg.mEfficiency)
@@ -639,7 +639,7 @@ struct FlowGfwEse {
   }
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision, const int& multTrk, const float& centrality, const int& run)
+  bool eventSelected(const TCollision& collision, const int& multTrk, const float& centrality, const int& run)
   {
     if (cfgTVXinTRD) {
       if (collision.alias_bit(kTVXinTRD)) {
@@ -742,7 +742,7 @@ struct FlowGfwEse {
   }
 
   template <typename TTrack>
-  bool trackSelected(TTrack track)
+  bool trackSelected(const TTrack& track)
   {
     if (cfgDCAxyNSigma && (std::fabs(track.dcaXY()) > fPtDepDCAxy->Eval(track.pt())))
       return false;
@@ -755,7 +755,7 @@ struct FlowGfwEse {
   };
 
   template <typename TTrack>
-  void fillWeights(const TTrack track, const double vtxz, const int& run)
+  void fillWeights(const TTrack& track, const double vtxz, const int& run)
   {
     if (cfgRunByRun)
       th3sList[run][hNUAref]->Fill(track.phi(), track.eta(), vtxz);
@@ -850,7 +850,7 @@ struct FlowGfwEse {
   };
 
   template <DataType dt, typename TCollision, typename TTracks>
-  void processCollision(TCollision collision, TTracks tracks, const XAxis& xaxis, const int& run)
+  void processCollision(const TCollision& collision, const TTracks& tracks, const XAxis& xaxis, const int& run)
   {
     if (tracks.size() < 1)
       return;
@@ -950,7 +950,7 @@ struct FlowGfwEse {
   }
 
   template <typename TTrack>
-  void fillAcceptedTracks(TTrack track, AcceptedTracks& acceptedTracks)
+  void fillAcceptedTracks(const TTrack& track, AcceptedTracks& acceptedTracks)
   {
     if (posRegionIndex >= 0 && track.eta() > o2::analysis::gfwflowese::regions.GetEtaMin()[posRegionIndex] && track.eta() < o2::analysis::gfwflowese::regions.GetEtaMax()[posRegionIndex])
       ++acceptedTracks.nPos;
@@ -1038,7 +1038,7 @@ struct FlowGfwEse {
   }
 
   template <DataType dt, typename TTrack>
-  inline void fillGFW(TTrack track, const double& vtxz, DensityCorr densitycorrections)
+  inline void fillGFW(const TTrack& track, const double& vtxz, DensityCorr densitycorrections)
   {
     bool withinPtRef = (track.pt() > o2::analysis::gfwflowese::ptreflow && track.pt() < o2::analysis::gfwflowese::ptrefup);
     bool withinPtPOI = (track.pt() > o2::analysis::gfwflowese::ptpoilow && track.pt() < o2::analysis::gfwflowese::ptpoiup);
@@ -1070,7 +1070,7 @@ struct FlowGfwEse {
   }
 
   template <DataType dt, typename TTrack>
-  inline void fillPtSums(TTrack track)
+  inline void fillPtSums(const TTrack& track)
   {
     double weff = (dt == kGen) ? 1. : getEfficiency(track);
     if (weff < 0)
@@ -1081,7 +1081,7 @@ struct FlowGfwEse {
   }
 
   template <DataType dt, QAFillTime ft, typename TTrack>
-  inline void fillTrackQA(TTrack track, const float vtxz)
+  inline void fillTrackQA(const TTrack& track, const float vtxz)
   {
     if constexpr (dt == kGen) {
       registry.fill(HIST("MCGen/trackQA/phi_eta_vtxZ"), track.phi(), track.eta(), vtxz);
@@ -1106,7 +1106,7 @@ struct FlowGfwEse {
   }
 
   template <typename TCollision>
-  float getCentrality(TCollision collision)
+  float getCentrality(const TCollision& collision)
   {
     switch (cfgCentEstimator) {
       case kCentFT0C:
@@ -1129,7 +1129,7 @@ struct FlowGfwEse {
   }
 
   template <QAFillTime ft, typename TCollision>
-  inline void fillEventQA(TCollision collision, XAxis xaxis)
+  inline void fillEventQA(const TCollision& collision, XAxis xaxis)
   {
     if constexpr (framework::has_type_v<aod::cent::CentFT0C, typename TCollision::all_columns>) {
       registry.fill(HIST("eventQA/") + HIST(FillTimeName[ft]) + HIST("globalTracks_centT0C"), collision.centFT0C(), xaxis.multiplicity);

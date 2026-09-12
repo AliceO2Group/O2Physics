@@ -49,11 +49,11 @@ class FlowPtContainer : public TNamed
   explicit FlowPtContainer(const char* name);
   ~FlowPtContainer();
   FlowPtContainer(const char* name, const char* title);
-  void initialise(const o2::framework::AxisSpec axis, const int& maxOrder, const o2::analysis::genericframework::GFWCorrConfigs& configs, const int& nsub = 10);
+  void initialise(const o2::framework::AxisSpec& axis, const int& maxOrder, const o2::analysis::genericframework::GFWCorrConfigs& configs, const int& nsub = 10);
   void initialise(int nbinsx, double* xbins, const int& maxOrder, const o2::analysis::genericframework::GFWCorrConfigs& configs, const int& nsub = 10);
   void initialise(int nbinsx, double xlow, double xhigh, const int& maxOrder, const o2::analysis::genericframework::GFWCorrConfigs& configs, const int& nsub = 10);
   // initial pt-pt correlations with two subevents
-  void initialiseSubevent(const o2::framework::AxisSpec axis, const int& maxOrder, const int& nsubev = 2, const int& nsub = 10);
+  void initialiseSubevent(const o2::framework::AxisSpec& axis, const int& maxOrder, const int& nsubev = 2, const int& nsub = 10);
   void initialiseSubevent(int nbinsx, double* xbins, const int& maxOrder, const int& nsubev = 2, const int& nsub = 10);
   void initialiseSubevent(int nbinsx, double xlow, double xhigh, const int& maxOrder, const int& nsubev = 2, const int& nsub = 10);
   void fill(const double& w, const double& pt);

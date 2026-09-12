@@ -262,7 +262,7 @@ struct femtoDreamPairTaskTrackCascade {
   }
 
   template <typename PartType>
-  bool checkChildCuts(PartType posChild, PartType negChild, PartType bachChild)
+  bool checkChildCuts(const PartType& posChild, const PartType& negChild, const PartType& bachChild)
   {
 
     bool passCuts = true;
@@ -375,7 +375,7 @@ struct femtoDreamPairTaskTrackCascade {
   PROCESS_SWITCH(femtoDreamPairTaskTrackCascade, processSameEventMC, "Enable processing same event with Monte Carlo", false);
 
   template <bool isMC, typename CollisionType, typename PartType, typename PartitionType, typename BinningType>
-  void doMixedEvent(CollisionType const& cols, PartType const& parts, PartitionType& part1, PartitionType& part2, BinningType policy)
+  void doMixedEvent(CollisionType const& cols, PartType const& parts, PartitionType& part1, PartitionType& part2, const BinningType& policy)
   {
     // Partition<CollisionType> PartitionMaskedCol = ncheckbit(aod::femtodreamcollision::bitmaskTrackOne, BitMask) && ncheckbit(aod::femtodreamcollision::bitmaskTrackTwo, BitMask);// && aod::femtodreamcollision::downsample == true;
     // PartitionMaskedCol.bindTable(cols);

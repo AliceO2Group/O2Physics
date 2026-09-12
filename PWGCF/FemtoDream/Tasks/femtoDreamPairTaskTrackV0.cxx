@@ -388,7 +388,7 @@ struct femtoDreamPairTaskTrackV0 {
   PROCESS_SWITCH(femtoDreamPairTaskTrackV0, processSameEventMCMasked, "Enable processing same event MC with masks", false);
 
   template <bool isMC, typename CollisionType, typename PartType, typename PartitionType, typename BinningType>
-  void doMixedEvent_Masked(CollisionType const& cols, PartType const& parts, PartitionType& part1, PartitionType& part2, BinningType policy)
+  void doMixedEvent_Masked(CollisionType const& cols, PartType const& parts, PartitionType& part1, PartitionType& part2, const BinningType& policy)
   {
 
     if (Option.MixEventWithPairs.value) {

@@ -356,8 +356,8 @@ struct FemtoCorrelations {
     if (_fill3dCF && multBin > SEhistos_3D.size())
       LOGF(fatal, "multBin value passed to the mixTracks function exceeds the configured number of Cent. bins (3D)");
 
-    for (auto ii : tracks1) {
-      for (auto iii : tracks2) {
+    for (const auto& ii : tracks1) {
+      for (const auto& iii : tracks2) {
 
         Pair->SetPair(ii, iii);
         float pair_kT = Pair->GetKt();
