@@ -45,6 +45,7 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Concepts.h>
 #include <Framework/Configurable.h>
 #include <Framework/Expressions.h>
 #include <Framework/HistogramRegistry.h>
@@ -96,8 +97,10 @@ enum CellScaleMode {
 struct EmcalCorrectionTask {
   Produces<o2::aod::EMCALClusters> clusters;
   Produces<o2::aod::EMCALMCClusters> mcclusters;
+  Produces<o2::aod::Dispersions> dispersions;
   Produces<o2::aod::EMCALAmbiguousClusters> clustersAmbiguous;
   Produces<o2::aod::EMCALAmbiguousMCClusters> mcclustersAmbiguous;
+  Produces<o2::aod::AmbigousDispersions> ambigousDispersions;
   Produces<o2::aod::EMCALClusterCells> clustercells; // cells belonging to given cluster
   Produces<o2::aod::EMCALAmbiguousClusterCells> clustercellsambiguous;
   Produces<o2::aod::EMCALMatchedTracks> matchedTracks;
@@ -387,6 +390,10 @@ struct EmcalCorrectionTask {
       }
     }
 
+    auto hClusters = mHistManager.add<TH1>("hClusters", "hClusters", O2HistType::kTH1D, {{2, -0.5, 1.5}});
+    hClusters->GetXaxis()->SetBinLabel(1, "all clusters");
+    hClusters->GetXaxis()->SetBinLabel(2, "cross boundary cluster");
+
     // For some runs, LG cells require an extra time shift of 2 * 8.8ns due to problems in the time calibration
     // Affected run ranges (inclusive) are initialised here (min,max)
     mExtraTimeShiftRunRanges.emplace_back(535365, 535645); // LHC23g-LHC23h
@@ -422,7 +429,9 @@ struct EmcalCorrectionTask {
   {
     LOG(debug) << "Starting process full.";
     clusters.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
+    dispersions.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
     clustersAmbiguous.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
+    ambigousDispersions.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
     clustercells.reserve(MaxCellsPerClusterPerDFPerClusterizer * mClusterizers.size());
     clustercellsambiguous.reserve(MaxCellsPerAmbClusterPerDFPerClusterizer * mClusterizers.size());
 
@@ -529,7 +538,7 @@ struct EmcalCorrectionTask {
 
               // Store the clusters in the table where a matching collision could
               // be identified.
-              fillClusterTable<CollEventSels::filtered_iterator>(col, vertexPos, iClusterizer, cellIndicesBC, &indexMapPair, &trackGlobalIndex);
+              fillClusterTable<CollEventSels::filtered_iterator>(col, vertexPos, iClusterizer, cellIndicesBC, cells, &indexMapPair, &trackGlobalIndex, nullptr, nullptr);
             } else {
               mHistManager.fill(HIST("hBCMatchErrors"), 2);
             }
@@ -582,7 +591,9 @@ struct EmcalCorrectionTask {
     LOG(debug) << "Starting process full.";
 
     clusters.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
+    dispersions.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
     clustersAmbiguous.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
+    ambigousDispersions.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
     clustercells.reserve(MaxCellsPerClusterPerDFPerClusterizer * mClusterizers.size());
     clustercellsambiguous.reserve(MaxCellsPerAmbClusterPerDFPerClusterizer * mClusterizers.size());
 
@@ -694,7 +705,7 @@ struct EmcalCorrectionTask {
 
               // Store the clusters in the table where a matching collision could
               // be identified.
-              fillClusterTable<CollEventSels::filtered_iterator>(col, vertexPos, iClusterizer, cellIndicesBC, &indexMapPair, &trackGlobalIndex, &indexMapPairSecondary, &secondaryGlobalIndex);
+              fillClusterTable<CollEventSels::filtered_iterator>(col, vertexPos, iClusterizer, cellIndicesBC, cells, &indexMapPair, &trackGlobalIndex, &indexMapPairSecondary, &secondaryGlobalIndex);
             } else {
               mHistManager.fill(HIST("hBCMatchErrors"), 2);
             }
@@ -748,8 +759,10 @@ struct EmcalCorrectionTask {
 
     clusters.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
     mcclusters.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
+    dispersions.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
     clustersAmbiguous.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
     mcclustersAmbiguous.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
+    ambigousDispersions.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
     clustercells.reserve(MaxCellsPerClusterPerDFPerClusterizer * mClusterizers.size());
     clustercellsambiguous.reserve(MaxCellsPerAmbClusterPerDFPerClusterizer * mClusterizers.size());
 
@@ -891,7 +904,7 @@ struct EmcalCorrectionTask {
 
               // Store the clusters in the table where a matching collision could
               // be identified.
-              fillClusterTable<CollEventSels::filtered_iterator>(col, vertexPos, iClusterizer, cellIndicesBC, &indexMapPair, &trackGlobalIndex);
+              fillClusterTable<CollEventSels::filtered_iterator>(col, vertexPos, iClusterizer, cellIndicesBC, cells, &indexMapPair, &trackGlobalIndex);
             } else {
               mHistManager.fill(HIST("hBCMatchErrors"), 2);
             }
@@ -943,8 +956,10 @@ struct EmcalCorrectionTask {
 
     clusters.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
     mcclusters.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
+    dispersions.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
     clustersAmbiguous.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
     mcclustersAmbiguous.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
+    ambigousDispersions.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
     clustercells.reserve(MaxCellsPerClusterPerDFPerClusterizer * mClusterizers.size());
     clustercellsambiguous.reserve(MaxCellsPerAmbClusterPerDFPerClusterizer * mClusterizers.size());
 
@@ -1088,7 +1103,7 @@ struct EmcalCorrectionTask {
 
               // Store the clusters in the table where a matching collision could
               // be identified.
-              fillClusterTable<CollEventSels::filtered_iterator>(col, vertexPos, iClusterizer, cellIndicesBC, &indexMapPair, &trackGlobalIndex, &indexMapPairSecondary, &secondaryGlobalIndex);
+              fillClusterTable<CollEventSels::filtered_iterator>(col, vertexPos, iClusterizer, cellIndicesBC, cells, &indexMapPair, &trackGlobalIndex, &indexMapPairSecondary, &secondaryGlobalIndex);
             } else {
               mHistManager.fill(HIST("hBCMatchErrors"), 2);
             }
@@ -1139,7 +1154,9 @@ struct EmcalCorrectionTask {
     LOG(debug) << "Starting process standalone.";
 
     clusters.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
+    dispersions.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
     clustersAmbiguous.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
+    ambigousDispersions.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
     clustercells.reserve(MaxCellsPerClusterPerDFPerClusterizer * mClusterizers.size());
     clustercellsambiguous.reserve(MaxCellsPerAmbClusterPerDFPerClusterizer * mClusterizers.size());
 
@@ -1234,7 +1251,7 @@ struct EmcalCorrectionTask {
 
             // Store the clusters in the table where a matching collision could
             // be identified.
-            fillClusterTable<aod::Collision>(col, vertexPos, iClusterizer, cellIndicesBC);
+            fillClusterTable<aod::Collision>(col, vertexPos, iClusterizer, cellIndicesBC, cells);
           }
         } else { // ambiguous
           // LOG(warning) << "No vertex found for event. Assuming (0,0,0).";
@@ -1303,12 +1320,11 @@ struct EmcalCorrectionTask {
     LOG(debug) << "Converted to analysis clusters.";
   }
 
-  template <typename Collision>
-  void fillClusterTable(Collision const& col, math_utils::Point3D<float> const& vertexPos, size_t iClusterizer, const gsl::span<int64_t> cellIndicesBC, MatchResult* indexMapPair = nullptr, const std::vector<int64_t>* trackGlobalIndex = nullptr, MatchResult* indexMapPairSecondaries = nullptr, const std::vector<int64_t>* secondariesGlobalIndex = nullptr)
+  template <o2::soa::is_iterator Collision, o2::soa::is_table Cells>
+  void fillClusterTable(Collision const& col, math_utils::Point3D<float> const& vertexPos, size_t iClusterizer, const gsl::span<int64_t> cellIndicesBC, Cells const& cells, MatchResult* indexMapPair = nullptr, const std::vector<int64_t>* trackGlobalIndex = nullptr, MatchResult* indexMapPairSecondaries = nullptr, const std::vector<int64_t>* secondariesGlobalIndex = nullptr)
   {
     // get the clusterType once
     const auto clusterType = static_cast<int>(mClusterDefinitions[iClusterizer]);
-
     int cellindex = -1;
     unsigned int iCluster = 0;
     float energy = 0.f;
@@ -1341,16 +1357,40 @@ struct EmcalCorrectionTask {
                cluster.getClusterTime(), cluster.getIsExotic(),
                cluster.getDistanceToBadChannel(), cluster.getNExMax(),
                clusterType);
+      dispersions(cluster.getDispersion());
       ++nCluster;
+      mHistManager.fill(HIST("hClusters"), 0);
       if (!mClusterLabels.empty()) {
         mcclusters(mClusterLabels[iCluster].getLabels(), mClusterLabels[iCluster].getEnergyFractions());
       }
       // loop over cells in cluster and save to table
+      bool hasLargeDispersion = cluster.getDispersion() > 8;
+      if (hasLargeDispersion) {
+        mHistManager.fill(HIST("hClusters"), 1);
+        LOG(info) << "Found cluster with large dispersion = " << cluster.getDispersion() << "\t M02 = " << cluster.getM02() << "\t NCells = " << cluster.getNCells();
+      }
       for (int ncell = 0; ncell < cluster.getNCells(); ncell++) {
         cellindex = cluster.getCellIndex(ncell);
         LOG(debug) << "trying to find cell index " << cellindex << " in map";
         if (cellIndicesBC[cellindex] >= 0) {
           clustercells(clusters.lastIndex(), cellIndicesBC[cellindex]);
+          auto cellGlobalIndex = cellIndicesBC[cellindex];
+
+          if (hasLargeDispersion) {
+            auto theCell = cells.rawIteratorAt(cellGlobalIndex);
+            auto towerId = theCell.cellNumber();
+
+            auto [nSupMod, nModule, nIphi, nIeta] = geometry->GetCellIndex(towerId);
+            auto [iphiLocal, ietaLocal] = geometry->GetCellPhiEtaIndexInSModule(nSupMod, nModule, nIphi, nIeta);
+            auto [rowGlobal, colGlobal] = geometry->GlobalRowColFromIndex(towerId);
+
+            LOG(info) << "  Cell globalIndex = " << cellGlobalIndex
+                      << " towerId = " << towerId
+                      << " SM = " << nSupMod
+                      << " local(eta, phi) = (" << ietaLocal << ", " << iphiLocal << ")"
+                      << " global(eta, phi) = (" << colGlobal << ", " << rowGlobal << ")"
+                      << " E = " << theCell.amplitude();
+          }
           ++nCells;
         }
       } // end of cells of cluser loop
@@ -1426,6 +1466,7 @@ struct EmcalCorrectionTask {
         cluster.getM20(), cluster.getNCells(), cluster.getClusterTime(),
         cluster.getIsExotic(), cluster.getDistanceToBadChannel(),
         cluster.getNExMax(), static_cast<int>(mClusterDefinitions.at(iClusterizer)));
+      ambigousDispersions(cluster.getDispersion());
       ++nClusterAmb;
       if (!mClusterLabels.empty()) {
         mcclustersAmbiguous(mClusterLabels[iCluster].getLabels(), mClusterLabels[iCluster].getEnergyFractions());
