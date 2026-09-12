@@ -532,12 +532,12 @@ struct OnTheFlyTracker {
           fastPrimaryTrackerSettings.fastTrackPrimaries ||
           fastPrimaryTrackerSettings.fastTrackShortLivedParticles) {
         fastTracker.emplace_back(std::make_unique<o2::fastsim::FastTracker>());
-        fastTracker[icfg]->SetMagneticField(mMagneticField);
-        fastTracker[icfg]->SetApplyZacceptance(fastTrackerSettings.applyZacceptance);
-        fastTracker[icfg]->SetApplyMSCorrection(fastTrackerSettings.applyMSCorrection);
-        fastTracker[icfg]->SetApplyElossCorrection(fastTrackerSettings.applyElossCorrection);
-        fastTracker[icfg]->AddGenericDetector(mGeoContainer.getEntry(icfg), ccdb.operator->());
-        fastTracker[icfg]->Print(); // print fastTracker settings
+        fastTracker[icfg]->setMagneticField(mMagneticField);
+        fastTracker[icfg]->setApplyZacceptance(fastTrackerSettings.applyZacceptance);
+        fastTracker[icfg]->setApplyMSCorrection(fastTrackerSettings.applyMSCorrection);
+        fastTracker[icfg]->setApplyElossCorrection(fastTrackerSettings.applyElossCorrection);
+        fastTracker[icfg]->addGenericDetector(mGeoContainer.getEntry(icfg), ccdb.operator->());
+        fastTracker[icfg]->print(); // print fastTracker settings
 
         if (cascadeDecaySettings.doXiQA) {
           insertHist(histPath + "hXiBuilding", "hXiBuilding", kTH1F, {{10, -0.5f, 9.5f}});
@@ -1031,9 +1031,9 @@ struct OnTheFlyTracker {
       nSiliconHitsCascadeProngs[i] = 0;
       nTPCHitsCascadeProngs[i] = 0;
       if (enableSecondarySmearing) {
-        nHitsCascadeProngs[i] = fastTracker[icfg]->FastTrack(xiDaughterTrackParCovsPerfect[i], xiDaughterTrackParCovsTracked[i], dNdEta);
-        nSiliconHitsCascadeProngs[i] = fastTracker[icfg]->GetNSiliconPoints();
-        nTPCHitsCascadeProngs[i] = fastTracker[icfg]->GetNGasPoints();
+        nHitsCascadeProngs[i] = fastTracker[icfg]->fastTrack(xiDaughterTrackParCovsPerfect[i], xiDaughterTrackParCovsTracked[i], dNdEta);
+        nSiliconHitsCascadeProngs[i] = fastTracker[icfg]->getNSiliconPoints();
+        nTPCHitsCascadeProngs[i] = fastTracker[icfg]->getNGasPoints();
 
         if (nHitsCascadeProngs[i] < 0 && cascadeDecaySettings.doXiQA) { // QA
           getHist<TH1>(histPath + "hFastTrackerQA")->Fill(o2::math_utils::abs(nHitsCascadeProngs[i]));
@@ -1053,8 +1053,8 @@ struct OnTheFlyTracker {
         }
         isReco[i] = true;
 
-        for (uint32_t ih = 0; ih < fastTracker[icfg]->GetNHits() && cascadeDecaySettings.doXiQA; ih++) {
-          getHist<TH2>(histPath + "hFastTrackerHits")->Fill(fastTracker[icfg]->GetHitZ(ih), std::hypot(fastTracker[icfg]->GetHitX(ih), fastTracker[icfg]->GetHitY(ih)));
+        for (uint32_t ih = 0; ih < fastTracker[icfg]->getNHits() && cascadeDecaySettings.doXiQA; ih++) {
+          getHist<TH2>(histPath + "hFastTrackerHits")->Fill(fastTracker[icfg]->getHitZ(ih), std::hypot(fastTracker[icfg]->getHitX(ih), fastTracker[icfg]->getHitY(ih)));
         }
       } else {
         isReco[i] = true;
@@ -1219,8 +1219,8 @@ struct OnTheFlyTracker {
           if (cascadeDecaySettings.trackXi) {
             // optionally, add the points in the layers before the decay of the Xi
             // will back-track the perfect MC cascade to relevant layers, find hit, smear and add to smeared cascade
-            for (int i = fastTracker[icfg]->GetLayers().size() - 1; i >= 0; --i) {
-              o2::fastsim::DetLayer layer = fastTracker[icfg]->GetLayer(i);
+            for (int i = fastTracker[icfg]->getLayers().size() - 1; i >= 0; --i) {
+              o2::fastsim::DetLayer layer = fastTracker[icfg]->getLayer(i);
               if (layer.isInert()) {
                 continue; // Not an active tracking layer
               }
@@ -1294,7 +1294,7 @@ struct OnTheFlyTracker {
     if (isReco[0] && ((cascadeDecaySettings.doKinkReco == 1 && tryKinkReco) || cascadeDecaySettings.doKinkReco == 2)) { // mode 1 or 2
       o2::track::TrackParCov trackedCascade;
       const o2::track::TrackParCov& trackedBach = xiDaughterTrackParCovsTracked[0];
-      const int nCascHits = fastTracker[icfg]->FastTrack(perfectCascadeTrack, trackedCascade, dNdEta, xiDecayRadius2D);
+      const int nCascHits = fastTracker[icfg]->fastTrack(perfectCascadeTrack, trackedCascade, dNdEta, xiDecayRadius2D);
       reconstructedCascade = fastTrackerSettings.minSiliconHitsForKinkReco < nCascHits;
       if (reconstructedCascade) {
         std::array<float, 3> pCasc{};
@@ -1519,9 +1519,9 @@ struct OnTheFlyTracker {
       nV0SiliconHits[i] = 0;
       nV0TPCHits[i] = 0;
       if (enableSecondarySmearing) {
-        nV0Hits[i] = fastTracker[icfg]->FastTrack(v0DaughterTrackParCovsPerfect[i], v0DaughterTrackParCovsTracked[i], dNdEta);
-        nV0SiliconHits[i] = fastTracker[icfg]->GetNSiliconPoints();
-        nV0TPCHits[i] = fastTracker[icfg]->GetNGasPoints();
+        nV0Hits[i] = fastTracker[icfg]->fastTrack(v0DaughterTrackParCovsPerfect[i], v0DaughterTrackParCovsTracked[i], dNdEta);
+        nV0SiliconHits[i] = fastTracker[icfg]->getNSiliconPoints();
+        nV0TPCHits[i] = fastTracker[icfg]->getNGasPoints();
 
         if (nV0SiliconHits[i] >= fastTrackerSettings.minSiliconHits ||
             (nV0SiliconHits[i] >= fastTrackerSettings.minSiliconHitsIfTPCUsed &&
@@ -1535,8 +1535,8 @@ struct OnTheFlyTracker {
           if (nV0Hits[i] < 0) {
             fillHist<TH1>(Form("V0Building_Configuration_%i/hFastTrackerQA", icfg), o2::math_utils::abs(nV0Hits[i]));
           }
-          for (uint32_t ih = 0; ih < fastTracker[icfg]->GetNHits(); ih++) {
-            fillHist<TH2>(Form("V0Building_Configuration_%i/hFastTrackerHits", icfg), fastTracker[icfg]->GetHitZ(ih), std::hypot(fastTracker[icfg]->GetHitX(ih), fastTracker[icfg]->GetHitY(ih)));
+          for (uint32_t ih = 0; ih < fastTracker[icfg]->getNHits(); ih++) {
+            fillHist<TH2>(Form("V0Building_Configuration_%i/hFastTrackerHits", icfg), fastTracker[icfg]->getHitZ(ih), std::hypot(fastTracker[icfg]->getHitX(ih), fastTracker[icfg]->getHitY(ih)));
           }
         }
       } else {
@@ -1955,7 +1955,7 @@ struct OnTheFlyTracker {
           o2::track::TrackParCov perfectTrackParCov = o2::upgrade::convertMCParticleToO2Track(mcParticle, pdgDB);
           perfectTrackParCov.setPID(pdgCodeToPID(mcParticle.pdgCode()));
           computeBremsstrahlungLoss(icfg, mcParticle, perfectTrackParCov);
-          nTrkHits = fastTracker[icfg]->FastTrack(perfectTrackParCov, trackParCov, dNdEta);
+          nTrkHits = fastTracker[icfg]->fastTrack(perfectTrackParCov, trackParCov, dNdEta);
           if (nTrkHits < fastPrimaryTrackerSettings.minSiliconHits) {
             reconstructed = false;
           }
@@ -1965,7 +1965,7 @@ struct OnTheFlyTracker {
           computeBremsstrahlungLoss(icfg, mcParticle, perfectTrackParCov);
           const std::array<float, 3> decayVtx = decayer.generateDecayVertex(mcParticle, pdgDB);
           const float decayRadius2D = std::hypot(decayVtx[0], decayVtx[1]);
-          nTrkHits = fastTracker[icfg]->FastTrack(perfectTrackParCov, trackParCov, dNdEta, decayRadius2D);
+          nTrkHits = fastTracker[icfg]->fastTrack(perfectTrackParCov, trackParCov, dNdEta, decayRadius2D);
           if (nTrkHits < fastPrimaryTrackerSettings.minSiliconHits) {
             reconstructed = false;
           }
@@ -2085,8 +2085,8 @@ struct OnTheFlyTracker {
 
     // do bookkeeping of fastTracker tracking
     if (enableSecondarySmearing) {
-      histos.fill(HIST("hCovMatOK"), 0.0f, fastTracker[icfg]->GetCovMatNotOK());
-      histos.fill(HIST("hCovMatOK"), 1.0f, fastTracker[icfg]->GetCovMatOK());
+      histos.fill(HIST("hCovMatOK"), 0.0f, fastTracker[icfg]->getCovMatNotOK());
+      histos.fill(HIST("hCovMatOK"), 1.0f, fastTracker[icfg]->getCovMatOK());
     }
     if (doExtraQA) {
       histos.fill(HIST("hRecoVsSimMultiplicity"), multiplicityCounter, recoPrimaries.size());
@@ -2184,7 +2184,7 @@ struct OnTheFlyTracker {
         o2::track::TrackParCov perfectTrackParCov = o2::upgrade::convertMCParticleToO2Track(mcParticle, pdgDB);
         perfectTrackParCov.setPID(pdgCodeToPID(mcParticle.pdgCode()));
         computeBremsstrahlungLoss(icfg, mcParticle, perfectTrackParCov);
-        nTrkHits = fastTracker[icfg]->FastTrack(perfectTrackParCov, trackParCov, dNdEta, mcParticle.decayRadius());
+        nTrkHits = fastTracker[icfg]->fastTrack(perfectTrackParCov, trackParCov, dNdEta, mcParticle.decayRadius());
         getHist<TH2>(histPath + "h2dGenShortLivedParticleRadius")->Fill(mcParticle.decayRadius(), perfectTrackParCov.getPt());
         getHist<TH2>(histPath + "h2dGenRadiusIniVsDecay")->Fill(std::hypot(perfectTrackParCov.getX(), perfectTrackParCov.getY()), mcParticle.decayRadius());
         if (nTrkHits < fastPrimaryTrackerSettings.minSiliconHits) {
@@ -2201,7 +2201,7 @@ struct OnTheFlyTracker {
         o2::upgrade::convertMCParticleToO2Track(mcParticle, perfectTrackParCov, pdgDB);
         computeBremsstrahlungLoss(icfg, mcParticle, perfectTrackParCov);
         perfectTrackParCov.setPID(pdgCodeToPID(mcParticle.pdgCode()));
-        nTrkHits = fastTracker[icfg]->FastTrack(perfectTrackParCov, trackParCov, dNdEta);
+        nTrkHits = fastTracker[icfg]->fastTrack(perfectTrackParCov, trackParCov, dNdEta);
         reconstructed = nTrkHits >= fastTrackerSettings.minSiliconHits;
       }
 

@@ -9,6 +9,12 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file FastTracker.h
+/// \brief On the fly implementation of DelphesO2 solveTrack
+/// \author David Dobrigkeit Chinellato
+/// \author Nicolò Jacazio
+/// \author Jesper Karlsson Gumprecht
+
 #ifndef ALICE3_CORE_FASTTRACKER_H_
 #define ALICE3_CORE_FASTTRACKER_H_
 
@@ -27,9 +33,7 @@
 #include <string>
 #include <vector>
 
-namespace o2
-{
-namespace fastsim
+namespace o2::fastsim
 {
 
 // +-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+
@@ -46,30 +50,30 @@ class FastTracker
   virtual ~FastTracker() {}
 
   // Layer and layer configuration
-  DetLayer* AddLayer(const TString& name, float r, float z, float x0, float xrho, float resRPhi = 0.0f, float resZ = 0.0f, float eff = 0.0f, int type = 0);
+  DetLayer* addLayer(const TString& name, float r, float z, float x0, float xrho, float resRPhi = 0.0f, float resZ = 0.0f, float eff = 0.0f, int type = 0);
 
   /// Add a dead region in phi for a specific layer
   /// \param layerName Name of the layer to modify
   /// \param phiStart Start angle of the dead region (in radians)
   /// \param phiEnd End angle of the dead region (in radians)
   void addDeadPhiRegionInLayer(const std::string& layerName, float phiStart, float phiEnd);
-  DetLayer GetLayer(const int layer) const { return layers[layer]; }
-  std::vector<DetLayer> GetLayers() const { return layers; }
-  int GetLayerIndex(const std::string& name) const;
-  size_t GetNLayers() const { return layers.size(); }
-  bool IsLayerInert(const int layer) const { return layers[layer].isInert(); }
-  void ClearLayers() { layers.clear(); }
-  void SetRadiationLength(const std::string& layerName, float x0) { layers[GetLayerIndex(layerName)].setRadiationLength(x0); }
-  void SetRadius(const std::string& layerName, float r) { layers[GetLayerIndex(layerName)].setRadius(r); }
-  void SetResolutionRPhi(const std::string& layerName, float resRPhi) { layers[GetLayerIndex(layerName)].setResolutionRPhi(resRPhi); }
-  void SetResolutionZ(const std::string& layerName, float resZ) { layers[GetLayerIndex(layerName)].setResolutionZ(resZ); }
-  void SetResolution(const std::string& layerName, float resRPhi, float resZ)
+  [[nodiscard]] DetLayer getLayer(const int layer) const { return layers[layer]; }
+  [[nodiscard]] std::vector<DetLayer> getLayers() const { return layers; }
+  [[nodiscard]] int getLayerIndex(const std::string& name) const;
+  [[nodiscard]] size_t getNLayers() const { return layers.size(); }
+  [[nodiscard]] bool isLayerInert(const int layer) const { return layers[layer].isInert(); }
+  void clearLayers() { layers.clear(); }
+  void setRadiationLength(const std::string& layerName, float x0) { layers[getLayerIndex(layerName)].setRadiationLength(x0); }
+  void setRadius(const std::string& layerName, float r) { layers[getLayerIndex(layerName)].setRadius(r); }
+  void setResolutionRPhi(const std::string& layerName, float resRPhi) { layers[getLayerIndex(layerName)].setResolutionRPhi(resRPhi); }
+  void setResolutionZ(const std::string& layerName, float resZ) { layers[getLayerIndex(layerName)].setResolutionZ(resZ); }
+  void setResolution(const std::string& layerName, float resRPhi, float resZ)
   {
-    SetResolutionRPhi(layerName, resRPhi);
-    SetResolutionZ(layerName, resZ);
+    setResolutionRPhi(layerName, resRPhi);
+    setResolutionZ(layerName, resZ);
   }
 
-  void AddTPC(float phiResMean, float zResMean);
+  void addTPC(float phiResMean, float zResMean);
 
   /**
    * @brief Adds a generic detector configuration from the specified file.
@@ -80,9 +84,9 @@ class FastTracker
    *
    * @param configMap Configuration map describing the detector.
    */
-  void AddGenericDetector(const o2::fastsim::GeometryEntry& configMap, o2::ccdb::BasicCCDBManager* ccdbManager = nullptr);
+  void addGenericDetector(const o2::fastsim::GeometryEntry& configMap, o2::ccdb::BasicCCDBManager* ccdbManager = nullptr);
 
-  void Print();
+  void print();
 
   /**
    * @brief Performs fast tracking on the input track parameters.
@@ -95,44 +99,44 @@ class FastTracker
    * @param nch Charged particle multiplicity (used for hit density calculations).
    * @return int i.e. number of intercepts (implementation-defined).
    */
-  int FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackParCov& outputTrack, const float nch, const float maxRadius = 100.f);
+  int fastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackParCov& outputTrack, const float nch, const float maxRadius = 100.f);
 
   // For efficiency calculation
-  float Dist(float z, float radius);
-  float OneEventHitDensity(float multiplicity, float radius);
-  float IntegratedHitDensity(float multiplicity, float radius);
-  float UpcHitDensity(float radius);
-  float HitDensity(float radius);
-  float ProbGoodChiSqHit(float radius, float searchRadiusRPhi, float searchRadiusZ);
+  float dist(float z, float radius);
+  float oneEventHitDensity(float multiplicity, float radius);
+  float integratedHitDensity(float multiplicity, float radius);
+  float upcHitDensity(float radius);
+  float hitDensity(float radius);
+  float probGoodChiSqHit(float radius, float searchRadiusRPhi, float searchRadiusZ);
 
   // Setters and getters for configuration
-  void SetIntegrationTime(float t) { integrationTime = t; }
-  void SetMaxRadiusOfSlowDetectors(float r) { maxRadiusSlowDet = r; }
-  void SetAvgRapidity(float y) { avgRapidity = y; }
-  void SetdNdEtaCent(int d) { dNdEtaCent = d; }
-  void SetLhcUPCscale(float s) { lhcUPCScale = s; }
-  void SetBField(float b) { magneticField = b; }
-  void SetMinRadTrack(float r) { fMinRadTrack = r; }
-  void SetMagneticField(float b) { magneticField = b; }
-  void SetApplyZacceptance(bool b) { mApplyZacceptance = b; }
-  void SetApplyMSCorrection(bool b) { mApplyMSCorrection = b; }
-  void SetApplyElossCorrection(bool b) { mApplyElossCorrection = b; }
-  void SetApplyEffCorrection(bool b) { mApplyEffCorrection = b; }
+  void setIntegrationTime(float t) { integrationTime = t; }
+  void setMaxRadiusOfSlowDetectors(float r) { maxRadiusSlowDet = r; }
+  void setAvgRapidity(float y) { avgRapidity = y; }
+  void setdNdEtaCent(int d) { dNdEtaCent = d; }
+  void setLhcUPCscale(float s) { lhcUPCScale = s; }
+  void setBField(float b) { magneticField = b; }
+  void setMinRadTrack(float r) { fMinRadTrack = r; }
+  void setMagneticField(float b) { magneticField = b; }
+  void setApplyZacceptance(bool b) { mApplyZacceptance = b; }
+  void setApplyMSCorrection(bool b) { mApplyMSCorrection = b; }
+  void setApplyElossCorrection(bool b) { mApplyElossCorrection = b; }
+  void setApplyEffCorrection(bool b) { mApplyEffCorrection = b; }
 
   // Getters for the last track
-  int GetNIntercepts() const { return nIntercepts; }
-  int GetNSiliconPoints() const { return nSiliconPoints; }
-  int GetNGasPoints() const { return nGasPoints; }
-  float GetGoodHitProb(int layer) const
+  [[nodiscard]] int getNIntercepts() const { return nIntercepts; }
+  [[nodiscard]] int getNSiliconPoints() const { return nSiliconPoints; }
+  [[nodiscard]] int getNGasPoints() const { return nGasPoints; }
+  [[nodiscard]] float getGoodHitProb(int layer) const
   {
     return (layer >= 0 && static_cast<size_t>(layer) < goodHitProbability.size()) ? goodHitProbability[layer] : 0.0f;
   }
-  std::size_t GetNHits() const { return hits.size(); }
-  float GetHitX(const int i) const { return hits[i][0]; }
-  float GetHitY(const int i) const { return hits[i][1]; }
-  float GetHitZ(const int i) const { return hits[i][2]; }
-  uint64_t GetCovMatOK() const { return covMatOK; }
-  uint64_t GetCovMatNotOK() const { return covMatNotOK; }
+  [[nodiscard]] std::size_t getNHits() const { return hits.size(); }
+  [[nodiscard]] float getHitX(const int i) const { return hits[i][0]; }
+  [[nodiscard]] float getHitY(const int i) const { return hits[i][1]; }
+  [[nodiscard]] float getHitZ(const int i) const { return hits[i][2]; }
+  uint64_t getCovMatOK() const { return covMatOK; }
+  uint64_t getCovMatNotOK() const { return covMatNotOK; }
 
  private:
   // Definition of detector layers
@@ -146,8 +150,8 @@ class FastTracker
   bool mApplyEffCorrection = true;      /// Apply correction for hit efficiency
   int mVerboseLevel = 0;                /// 0: not verbose, >0 more verbose
   const float mCrossSectionMinB = 8;    /// Minimum bias Cross section for event under study (PbPb MinBias ~ 8 Barns)
-  int dNdEtaCent = 2200;                /// dN/deta e.g. at centrality 0-5% (for 5 TeV PbPb)
-  int dNdEtaMinB = 1;                   /// dN/deta for minimum bias events
+  float dNdEtaCent = 2200.f;            /// dN/deta e.g. at centrality 0-5% (for 5 TeV PbPb)
+  float dNdEtaMinB = 1.f;               /// dN/deta for minimum bias events
   float integrationTime = 0.02f;        /// Integration time in ms
   float magneticField = 20.f;           /// Magnetic field in kiloGauss (5 = 0.5T, 20 = 2T, etc)
   float covMatFactor = 0.99f;           /// covmat off-diagonal factor to use for covmat fix (negative: no factor)
@@ -175,7 +179,6 @@ class FastTracker
 
 // +-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+
 
-} // namespace fastsim
-} // namespace o2
+} // namespace o2::fastsim
 
 #endif // ALICE3_CORE_FASTTRACKER_H_
