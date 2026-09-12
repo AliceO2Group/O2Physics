@@ -1449,8 +1449,6 @@ class VarManager : public TObject
   template <typename T, typename C>
   static o2::track::TrackParCovFwd PropagateFwd(const T& track, const C& cov, float z);
   template <uint32_t fillMap, typename T, typename C>
-  static void FillMuonPDca(const T& muon, const C& collision, float* values = nullptr);
-  template <uint32_t fillMap, typename T, typename C>
   static void FillPropagateMuon(const T& muon, const C& collision, float* values = nullptr);
   template <typename T>
   static void FillBC(T const& bc, float* values = nullptr);
@@ -1877,25 +1875,6 @@ o2::track::TrackParCovFwd VarManager::PropagateFwd(const T& track, const C& cov,
   o2::track::TrackParCovFwd fwdtrack = FwdToTrackPar(track, cov);
   fwdtrack.propagateToZhelix(z, fgMagField);
   return fwdtrack;
-}
-
-template <uint32_t fillMap, typename T, typename C>
-void VarManager::FillMuonPDca(const T& muon, const C& collision, float* values)
-{
-  if (!values) {
-    values = fgValues;
-  }
-
-  if constexpr ((fillMap & MuonCov) > 0 || (fillMap & ReducedMuonCov) > 0) {
-
-    o2::dataformats::GlobalFwdTrack propmuon = PropagateMuon(muon, collision);
-    o2::dataformats::GlobalFwdTrack propmuonAtDCA = PropagateMuon(muon, collision, kToDCA);
-
-    float dcaX = (propmuonAtDCA.getX() - collision.posX());
-    float dcaY = (propmuonAtDCA.getY() - collision.posY());
-    float dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
-    values[kMuonPDca] = muon.p() * dcaXY;
-  }
 }
 
 template <uint32_t fillMap, typename T, typename C>
