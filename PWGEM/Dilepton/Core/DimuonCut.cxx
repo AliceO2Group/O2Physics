@@ -20,6 +20,7 @@
 #include <Rtypes.h>
 
 #include <functional>
+#include <utility>
 #include <vector>
 
 ClassImp(DimuonCut);
@@ -98,7 +99,7 @@ void DimuonCut::SetMatchingChi2MCHMFT(float min, float max)
 }
 void DimuonCut::SetMaxMatchingChi2MCHMFTPtDep(std::function<float(float)> PtDepCut)
 {
-  mMaxMatchingChi2MCHMFTPtDep = PtDepCut;
+  mMaxMatchingChi2MCHMFTPtDep = std::move(PtDepCut);
   LOG(info) << "Dimuon Cut, set matching chi2 MFT-MCH range: " << mMaxMatchingChi2MCHMFTPtDep(0.5);
 }
 void DimuonCut::SetMaxDiffMatchingChi2MCHMFT(float diff)
@@ -143,13 +144,13 @@ void DimuonCut::EnableTTCA(const bool flag)
 }
 void DimuonCut::SetMaxPDCARabsDep(std::function<float(float)> RabsDepCut)
 {
-  mMaxPDCARabsDep = RabsDepCut;
+  mMaxPDCARabsDep = std::move(RabsDepCut);
   LOG(info) << "Dimuon Cut, set max pDCA as a function of Rabs: " << mMaxPDCARabsDep(10.0);
 }
 void DimuonCut::SetMFTHitMap(bool flag, std::vector<int> hitMap)
 {
   mApplyMFTHitMap = flag;
-  mRequiredMFTDisks = hitMap;
+  mRequiredMFTDisks = std::move(hitMap);
   if (mApplyMFTHitMap) {
     for (const auto& iDisk : mRequiredMFTDisks) {
       LOG(info) << "Dimuon Cut, require MFT hit on Disk: " << iDisk;
