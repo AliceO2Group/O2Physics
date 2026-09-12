@@ -419,8 +419,8 @@ struct filterf1proton {
     return true;
   }
 
-  float getkstar(const ROOT::Math::PtEtaPhiMVector part1,
-                 const ROOT::Math::PtEtaPhiMVector part2)
+  float getkstar(const ROOT::Math::PtEtaPhiMVector& part1,
+                 const ROOT::Math::PtEtaPhiMVector& part2)
   {
     const ROOT::Math::PtEtaPhiMVector trackSum = part1 + part2;
     const float beta = trackSum.Beta();
@@ -439,7 +439,7 @@ struct filterf1proton {
     return 0.5 * trackRelK.P();
   }
 
-  std::vector<double> setValuesBB(o2::ccdb::CcdbApi& ccdbApi, aod::BCsWithTimestamps::iterator const& bunchCrossing, const std::string ccdbPath)
+  std::vector<double> setValuesBB(o2::ccdb::CcdbApi& ccdbApi, aod::BCsWithTimestamps::iterator const& bunchCrossing, const std::string& ccdbPath)
   {
     std::map<std::string, std::string> metadata;
     auto h = ccdbApi.retrieveFromTFileAny<TH1F>(ccdbPath, metadata, bunchCrossing.timestamp());

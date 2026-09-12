@@ -1087,7 +1087,7 @@ struct CFFilterAll {
   }
 
   template <typename T>
-  bool checkTrack(T const& track, std::string trackName)
+  bool checkTrack(T const& track, const std::string& trackName)
   {
     if (track.pt() < TrackSelections.momentum->get(trackName.c_str(), "PtMin")) {
       return false;
@@ -1135,7 +1135,7 @@ struct CFFilterAll {
   }
 
   template <typename T>
-  bool checkTrackPid(T const& track, std::string trackName)
+  bool checkTrackPid(T const& track, const std::string& trackName)
   {
     float momentum = -99;
 
@@ -1236,8 +1236,8 @@ struct CFFilterAll {
     return true;
   }
 
-  float getkstar(const ROOT::Math::PtEtaPhiMVector part1,
-                 const ROOT::Math::PtEtaPhiMVector part2)
+  float getkstar(const ROOT::Math::PtEtaPhiMVector& part1,
+                 const ROOT::Math::PtEtaPhiMVector& part2)
   {
     const ROOT::Math::PtEtaPhiMVector trackSum = part1 + part2;
     const float beta = trackSum.Beta();
@@ -1257,7 +1257,7 @@ struct CFFilterAll {
   }
 
   ROOT::Math::PxPyPzEVector
-    getqij(const ROOT::Math::PtEtaPhiMVector parti, const ROOT::Math::PtEtaPhiMVector partj)
+    getqij(const ROOT::Math::PtEtaPhiMVector& parti, const ROOT::Math::PtEtaPhiMVector& partj)
   {
     ROOT::Math::PxPyPzEVector vecparti(parti);
     ROOT::Math::PxPyPzEVector vecpartj(partj);
@@ -1266,7 +1266,7 @@ struct CFFilterAll {
     float scaling = trackDifference.Dot(trackSum) / trackSum.Dot(trackSum);
     return trackDifference - scaling * trackSum;
   }
-  float getQ3(const ROOT::Math::PtEtaPhiMVector part1, const ROOT::Math::PtEtaPhiMVector part2, const ROOT::Math::PtEtaPhiMVector part3)
+  float getQ3(const ROOT::Math::PtEtaPhiMVector& part1, const ROOT::Math::PtEtaPhiMVector& part2, const ROOT::Math::PtEtaPhiMVector& part3)
   {
     ROOT::Math::PxPyPzEVector q12 = getqij(part1, part2);
     ROOT::Math::PxPyPzEVector q23 = getqij(part2, part3);

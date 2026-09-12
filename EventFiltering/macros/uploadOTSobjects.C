@@ -39,7 +39,7 @@
 
 constexpr uint32_t chunkSize = 1000000;
 
-void uploadOTSobjects(std::string inputList, std::string passName, bool useAlien, bool chunkedProcessing = true)
+void uploadOTSobjects(std::string inputList, const std::string& passName, bool useAlien, bool chunkedProcessing = true)
 {
   const std::string kBaseCCDBPath = "EventFiltering/Zorro/";
   std::string baseCCDBpath = passName.empty() ? kBaseCCDBPath : kBaseCCDBPath + passName + "/";
