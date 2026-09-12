@@ -374,7 +374,7 @@ int FastTracker::fastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
       ok = inputTrack.correctForMaterial(layers[il].getRadiationLength(), 0, applyAngularCorrection);
     }
     if (ok && mApplyElossCorrection && layers[il].getDensity() > 0) { // correct in small steps
-    for (int ise = xrhosteps; ise > 0; --ise) {
+      for (int ise = xrhosteps; ise > 0; --ise) {
         ok = inputTrack.correctForMaterial(0, -layers[il].getDensity() / xrhosteps, applyAngularCorrection);
         if (!ok) {
           break;
@@ -467,9 +467,9 @@ int FastTracker::fastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
 
     // towards adding cluster: move to track alpha
     float alpha = inwardTrack.getAlpha();
-    std::array<float, 3> xyz1 = { std::cos(alpha) * spacePoint[0] + std::sin(alpha) * spacePoint[1],
-                                  -std::sin(alpha) * spacePoint[0] + std::cos(alpha) * spacePoint[1],
-                                  spacePoint[2]};
+    std::array<float, 3> xyz1 = {std::cos(alpha) * spacePoint[0] + std::sin(alpha) * spacePoint[1],
+                                 -std::sin(alpha) * spacePoint[0] + std::cos(alpha) * spacePoint[1],
+                                 spacePoint[2]};
 
     if (!inwardTrack.propagateTo(xyz1[0], magneticField)) {
       continue;
@@ -492,7 +492,7 @@ int FastTracker::fastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
       }
     }
     if (mApplyElossCorrection && layers[il].getDensity() > 0) {
-      for (int ise = xrhosteps; ise > 0; --ise) {  // correct in small steps
+      for (int ise = xrhosteps; ise > 0; --ise) { // correct in small steps
         if (!inputTrack.correctForMaterial(0, layers[il].getDensity() / xrhosteps, applyAngularCorrection)) {
           return -7;
         }
@@ -646,6 +646,6 @@ int FastTracker::fastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
 }
 // +-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+
 
-} //namespace o2::fastsim
+} // namespace o2::fastsim
 
 ClassImp(o2::fastsim::FastTracker);
