@@ -78,7 +78,7 @@
 /PWGUD @alibuild @amatyja @rolavick
 /PWGJE @alibuild @nzardosh @fjonasALICE @jaimenorman @mhemmer-cern
 /Tools/PIDML @alibuild @saganatt
-/Tools/ML @alibuild @fcatalan92 @fmazzasc
+/Tools/ML @alibuild @fcatalan92 @fmazzasc @ChSonnabend
 /Tutorials/PWGCF @alibuild @jgrosseo @victor-gonzalez @zchochul
 /Tutorials/PWGDQ @alibuild @iarsene @mcoquet642 @XiaozhiBai @mguilbau
 /Tutorials/PWGEM @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu
