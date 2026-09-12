@@ -3449,7 +3449,7 @@ void VarManager::FillTrackCollision(T const& track, C const& collision, float* v
     float dcaX = 999.f;
     float dcaY = 999.f;
     if (static_cast<int>(track.trackType()) <= 2) {
-      // Global muons: helix DCA w.r.t. the associated collision
+      // Global / MCH-MID: helix DCA only (for globals, kMuonPDca is filled from the matched MCH in skimMuons)
       float xShift = 0.f;
       float yShift = 0.f;
       float zShift = 0.f;
@@ -3460,17 +3460,16 @@ void VarManager::FillTrackCollision(T const& track, C const& collision, float* v
       dcaX = static_cast<float>(dca[0]);
       dcaY = static_cast<float>(dca[1]);
     } else {
-      // MCH / standalone: DCA from MCH extrapolation
+      // MCH standalone: DCA and pDCA from MCH extrapolation
       o2::dataformats::GlobalFwdTrack propmuonAtDCA = PropagateMuon(track, collision, kToDCA);
       dcaX = propmuonAtDCA.getX() - collision.posX();
       dcaY = propmuonAtDCA.getY() - collision.posY();
       float dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
       values[kMuonPDca] = track.p() * dcaXY;
     }
-    
+
     values[kMuonDCAx] = dcaX;
     values[kMuonDCAy] = dcaY;
-    
   }
 }
 

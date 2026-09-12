@@ -1688,24 +1688,30 @@ struct TableMaker {
       //       So if a muon is associated to multiple collisions, depending on the selections,
       //       it may be accepted for some associations and rejected for other
       if (static_cast<int>(muon.trackType()) > 2 && fConfigVariousOptions.fPropMuon) {
-          VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
+        VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
       }
       // recalculate pDca / DCA and global muon kinematics
-      if (static_cast<int>(muon.trackType()) < 2 && fConfigVariousOptions.fRefitGlobalMuon) {
+      // kMuonPDca is always taken from MCH (standalone or the MCH matched to a global)
+      if (static_cast<int>(muon.trackType()) < 2) {
         auto muontrack = muon.template matchMCHTrack_as<TMuons>();
-        if (muontrack.eta() < fConfigVariousOptions.fMuonMatchEtaMin || muontrack.eta() > fConfigVariousOptions.fMuonMatchEtaMax) {
-          continue;
-        }
-        auto mfttrack = muon.template matchMFTTrack_as<MFTTracks>();
         VarManager::FillTrackCollision<TMuonFillMap>(muontrack, collision);
-        // NOTE: the MFT track originally associated to the MUON track is currently used in the global muon refit
-        //       Should MUON - MFT time ambiguities be taken into account ?
-        // Helix DCA is filled from the refitted parameters inside FillGlobalMuonRefit(Cov)
-        if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
-          auto const& mfttrackcov = mfCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
-          VarManager::FillGlobalMuonRefitCov<TMuonFillMap, TMFTFillMap>(muontrack, mfttrack, collision, mfttrackcov);
+        if (fConfigVariousOptions.fRefitGlobalMuon) {
+          if (muontrack.eta() < fConfigVariousOptions.fMuonMatchEtaMin || muontrack.eta() > fConfigVariousOptions.fMuonMatchEtaMax) {
+            continue;
+          }
+          auto mfttrack = muon.template matchMFTTrack_as<MFTTracks>();
+          // NOTE: the MFT track originally associated to the MUON track is currently used in the global muon refit
+          //       Should MUON - MFT time ambiguities be taken into account ?
+          // Helix DCA (kMuonDCAx/y) is filled from the refitted parameters inside FillGlobalMuonRefit(Cov)
+          if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
+            auto const& mfttrackcov = mfCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
+            VarManager::FillGlobalMuonRefitCov<TMuonFillMap, TMFTFillMap>(muontrack, mfttrack, collision, mfttrackcov);
+          } else {
+            VarManager::FillGlobalMuonRefit<TMuonFillMap>(muontrack, mfttrack, collision);
+          }
         } else {
-          VarManager::FillGlobalMuonRefit<TMuonFillMap>(muontrack, mfttrack, collision);
+          // Helix DCA of the global track; leaves kMuonPDca from the matched MCH above
+          VarManager::FillTrackCollision<TMuonFillMap>(muon, collision);
         }
       } else {
         VarManager::FillTrackCollision<TMuonFillMap>(muon, collision);
@@ -1784,20 +1790,27 @@ struct TableMaker {
 
       VarManager::FillTrack<TMuonFillMap>(muon);
       if (static_cast<int>(muon.trackType()) > 2 && fConfigVariousOptions.fPropMuon) {
-          VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
+        VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
       }
       // recalculate pDca / DCA and global muon kinematics
+      // kMuonPDca is always taken from MCH (standalone or the MCH matched to a global)
       int globalClusters = muon.nClusters();
-      if (static_cast<int>(muon.trackType()) < 2 && fConfigVariousOptions.fRefitGlobalMuon) {
+      if (static_cast<int>(muon.trackType()) < 2) {
         auto muontrack = muon.template matchMCHTrack_as<TMuons>();
-        auto mfttrack = muon.template matchMFTTrack_as<MFTTracks>();
-        globalClusters += mfttrack.nClusters();
         VarManager::FillTrackCollision<TMuonFillMap>(muontrack, collision);
-        if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
-          auto const& mfttrackcov = mfCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
-          VarManager::FillGlobalMuonRefitCov<TMuonFillMap, TMFTFillMap>(muontrack, mfttrack, collision, mfttrackcov);
+        if (fConfigVariousOptions.fRefitGlobalMuon) {
+          auto mfttrack = muon.template matchMFTTrack_as<MFTTracks>();
+          globalClusters += mfttrack.nClusters();
+          // Helix DCA (kMuonDCAx/y) is filled from the refitted parameters inside FillGlobalMuonRefit(Cov)
+          if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
+            auto const& mfttrackcov = mfCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
+            VarManager::FillGlobalMuonRefitCov<TMuonFillMap, TMFTFillMap>(muontrack, mfttrack, collision, mfttrackcov);
+          } else {
+            VarManager::FillGlobalMuonRefit<TMuonFillMap>(muontrack, mfttrack, collision);
+          }
         } else {
-          VarManager::FillGlobalMuonRefit<TMuonFillMap>(muontrack, mfttrack, collision);
+          // Helix DCA of the global track; leaves kMuonPDca from the matched MCH above
+          VarManager::FillTrackCollision<TMuonFillMap>(muon, collision);
         }
       } else {
         VarManager::FillTrackCollision<TMuonFillMap>(muon, collision);
