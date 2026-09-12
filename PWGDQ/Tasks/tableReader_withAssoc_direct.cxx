@@ -494,6 +494,16 @@ struct AnalysisEventSelection {
       VarManager::FillBC(bc);
       VarManager::FillEvent<TEventFillMap>(event);
 
+      // the hash table is joined to the events by row order, so publish one row per event before any event selection
+      if (fMixHandler != nullptr) {
+        int hh = fMixHandler->FindEventCategory(VarManager::fgValues);
+        // events outside the mixing limits (-1) get a distinct negative hash so that they are not mixed with each other
+        if (hh < 0) {
+          hh = -1 - static_cast<int>(event.globalIndex());
+        }
+        hash(hh);
+      }
+
       bool decision = false;
       if (fConfigQA) {
         fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
@@ -532,10 +542,6 @@ struct AnalysisEventSelection {
       } else {
         auto& evIndices = fBCCollMap[bc.globalBC()];
         evIndices.push_back(event.globalIndex());
-      }
-      if (fMixHandler != nullptr) {
-        int hh = fMixHandler->FindEventCategory(VarManager::fgValues);
-        hash(hh);
       }
     }
   }

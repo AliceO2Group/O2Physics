@@ -23,6 +23,7 @@
 
 #include <Rtypes.h>
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <iostream>
@@ -33,17 +34,30 @@ class MixingHandler : public TNamed
 {
 
  public:
+  // number of track cuts which fit in the 32-bit filtering masks
+  static constexpr int NMaxCuts = 32;
+  // smallest pool depth for which a mixed pair can be built
+  static constexpr int16_t MinPoolDepth = 2;
+
   // Struct to define track properties relevant for mixing and few utility functions
   struct MixingTrack {
     float pt;
     float eta;
     float phi;
     uint32_t filteringFlags;
+    // globalIndex is unique only within a dataframe, so the dataframe sequence is part of the track identity
+    uint64_t dataFrameSequence = 0;
+    uint64_t trackGlobalIndex = 0;
+    bool IsSamePhysicalTrack(const MixingTrack& other) const
+    {
+      return dataFrameSequence == other.dataFrameSequence && trackGlobalIndex == other.trackGlobalIndex;
+    }
     // Clear a bit once the track was used in mixing for that bit for the required pool depth.
     void ClearBit(uint32_t mask) { filteringFlags &= ~mask; }
     void Print() const
     {
-      std::cout << "pt: " << pt << ", eta: " << eta << ", phi: " << phi << ", filteringFlags: " << filteringFlags << std::endl;
+      std::cout << "pt: " << pt << ", eta: " << eta << ", phi: " << phi << ", filteringFlags: " << filteringFlags
+                << ", dataframe: " << dataFrameSequence << ", track: " << trackGlobalIndex << std::endl;
     }
   };
 
@@ -70,6 +84,19 @@ class MixingHandler : public TNamed
     }
     // Clear bits in the filtering mask.
     void ClearFilteringMask(uint32_t mask) { filteringMask &= ~mask; }
+    // clear the cut bits from all tracks and the filtering mask; remove tracks with no active bits left
+    void ClearBits(uint32_t mask)
+    {
+      for (auto& track : tracks1) {
+        track.ClearBit(mask);
+      }
+      tracks1.erase(std::remove_if(tracks1.begin(), tracks1.end(), [](auto const& track) { return track.filteringFlags == 0; }), tracks1.end());
+      for (auto& track : tracks2) {
+        track.ClearBit(mask);
+      }
+      tracks2.erase(std::remove_if(tracks2.begin(), tracks2.end(), [](auto const& track) { return track.filteringFlags == 0; }), tracks2.end());
+      ClearFilteringMask(mask);
+    }
     // 1) increment the counters for a given track cut bit mask and if the counters reached the pool depth,
     // 2) clear the corresponding bit in the tracks filtering flags to exclude them from further mixing
     // 3) for each track, if there are no more active bits in the filtering mask, then remove the track from the event
@@ -157,6 +184,35 @@ class MixingHandler : public TNamed
       CleanPool();
       events.push_back(event);
     }
+    // fixed-block mixing: AddEvent() until GetMixingMask() reports full cuts, mix, then ClearBits()
+    void AddEvent(const MixingEvent& event) { events.push_back(event); }
+    // bit mask of the cuts for which at least poolDepth events are in the pool
+    uint32_t GetMixingMask(int16_t poolDepth) const
+    {
+      std::array<int16_t, NMaxCuts> counts = {0};
+      for (auto const& event : events) {
+        for (int icut = 0; icut < NMaxCuts; ++icut) {
+          if (event.filteringMask & (static_cast<uint32_t>(1) << icut)) {
+            counts[icut]++;
+          }
+        }
+      }
+      uint32_t fullMask = 0;
+      for (int icut = 0; icut < NMaxCuts; ++icut) {
+        if (counts[icut] >= poolDepth) {
+          fullMask |= static_cast<uint32_t>(1) << icut;
+        }
+      }
+      return fullMask;
+    }
+    // clear the given cut bits from all events in the pool and remove the events with no tracks left
+    void ClearBits(uint32_t mask)
+    {
+      for (auto& event : events) {
+        event.ClearBits(mask);
+      }
+      CleanPool();
+    }
     // getter for the events in the pool
     const std::vector<MixingEvent>& GetEvents() const { return events; }
 
@@ -176,17 +232,22 @@ class MixingHandler : public TNamed
   // setters
   void AddMixingVariable(int var, const std::vector<float>& binLims);
   void SetPoolDepth(int16_t depth) { fPoolDepth = depth; }
+  // remove all pools (e.g. at a run change)
+  void ClearPools() { fPools.clear(); }
 
   // getters
   // int GetNMixingVariables() const { return fVariables.size(); }
   // int GetMixingVariable(VarManager::Variables var); // returns the position in the internal varible list of the handler. Useful for checks, mostly
   // std::vector<float> GetMixingVariableLimits(VarManager::Variables var);
   MixingPool& GetPool(int category) { return fPools[category]; }
+  std::map<int, MixingPool>& GetPools() { return fPools; }
   int16_t GetPoolDepth() const { return fPoolDepth; }
 
   void Init();
   int FindEventCategory(float* values);
   int GetBinFromCategory(VarManager::Variables var, int category) const;
+  // set the mixing variables to the bin centers of the given category
+  void SetCategoryBinCenters(int category, float* values) const;
 
  private:
   MixingHandler(const MixingHandler& handler);
