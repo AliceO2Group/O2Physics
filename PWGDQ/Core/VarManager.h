@@ -1835,11 +1835,7 @@ o2::dataformats::GlobalFwdTrack VarManager::PropagateMuon(const T& muon, const C
   o2::track::TrackParCovFwd fwdtrack = o2::aod::fwdtrackutils::getTrackParCovFwd3DShift(muon, xShift, yShift, zShift, muon);
   o2::dataformats::GlobalFwdTrack propmuon;
   if (static_cast<int>(muon.trackType()) > 2) {
-    o2::dataformats::GlobalFwdTrack track;
-    track.setParameters(fwdtrack.getParameters());
-    track.setZ(fwdtrack.getZ());
-    track.setCovariances(fwdtrack.getCovariances());
-    auto mchTrack = mMatching.FwdtoMCH(track);
+    auto mchTrack = mMatching.FwdtoMCH(fwdtrack);
 
     if (endPoint == kToVertex) {
       o2::mch::TrackExtrap::extrapToVertex(mchTrack, collision.posX(), collision.posY(), collision.posZ(), collision.covXX(), collision.covYY());
@@ -1854,17 +1850,12 @@ o2::dataformats::GlobalFwdTrack VarManager::PropagateMuon(const T& muon, const C
       o2::mch::TrackExtrap::extrapToVertexWithoutBranson(mchTrack, fgzMatching);
     }
 
-    auto proptrack = mMatching.MCHtoFwd(mchTrack);
-    propmuon.setParameters(proptrack.getParameters());
-    propmuon.setZ(proptrack.getZ());
-    propmuon.setCovariances(proptrack.getCovariances());
+    propmuon = mMatching.MCHtoFwd(mchTrack);
 
   } else if (static_cast<int>(muon.trackType()) < 2) {
     std::array<double, 3> dcaInfOrig{999.f, 999.f, 999.f};
     fwdtrack.propagateToDCAhelix(fgMagField, {collision.posX(), collision.posY(), collision.posZ()}, dcaInfOrig);
-    propmuon.setParameters(fwdtrack.getParameters());
-    propmuon.setZ(fwdtrack.getZ());
-    propmuon.setCovariances(fwdtrack.getCovariances());
+    propmuon = fwdtrack;
   }
   return propmuon;
 }
@@ -1936,6 +1927,7 @@ void VarManager::FillGlobalMuonRefit(T1 const& muontrack, T2 const& mfttrack, co
     double pz = propmuon.getP() * std::cos(o2::constants::math::PIHalf - std::atan(mfttrack.tgl()));
     double pt = std::sqrt(std::pow(px, 2) + std::pow(py, 2));
     auto mftprop = o2::aod::fwdtrackutils::getTrackParCovFwd3DShift(mfttrack, xShift, yShift, zShift);
+    mftprop.setInvQPt(static_cast<double>(muontrack.sign()) / pt);
     values[kX] = mftprop.getX();
     values[kY] = mftprop.getY();
     values[kZ] = mftprop.getZ();
@@ -1944,6 +1936,12 @@ void VarManager::FillGlobalMuonRefit(T1 const& muontrack, T2 const& mfttrack, co
     values[kPz] = pz;
     values[kEta] = mftprop.getEta();
     values[kPhi] = mftprop.getPhi();
+
+    // Helix DCA of the refitted global track w.r.t. the associated collision
+    std::array<double, 3> dca{999., 999., 999.};
+    mftprop.propagateToDCAhelix(fgMagField, {collision.posX(), collision.posY(), collision.posZ()}, dca);
+    values[kMuonDCAx] = static_cast<float>(dca[0]);
+    values[kMuonDCAy] = static_cast<float>(dca[1]);
   }
 }
 
@@ -1971,6 +1969,12 @@ void VarManager::FillGlobalMuonRefitCov(T1 const& muontrack, T2 const& mfttrack,
       values[kPz] = globalRefit.getPz();
       values[kEta] = globalRefit.getEta();
       values[kPhi] = globalRefit.getPhi();
+
+      // Helix DCA of the covariance-refitted global track w.r.t. the associated collision
+      std::array<double, 3> dca{999., 999., 999.};
+      globalRefit.propagateToDCAhelix(fgMagField, {collision.posX(), collision.posY(), collision.posZ()}, dca);
+      values[kMuonDCAx] = static_cast<float>(dca[0]);
+      values[kMuonDCAy] = static_cast<float>(dca[1]);
     }
   }
 }
@@ -3442,15 +3446,31 @@ void VarManager::FillTrackCollision(T const& track, C const& collision, float* v
     }
   }
   if constexpr ((fillMap & MuonCov) > 0 || (fillMap & MuonCovRealign) > 0 || (fillMap & ReducedMuonCov) > 0) {
-
-    o2::dataformats::GlobalFwdTrack propmuonAtDCA = PropagateMuon(track, collision, kToDCA);
-
-    float dcaX = (propmuonAtDCA.getX() - collision.posX());
-    float dcaY = (propmuonAtDCA.getY() - collision.posY());
-    float dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
+    float dcaX = 999.f;
+    float dcaY = 999.f;
+    if (static_cast<int>(track.trackType()) <= 2) {
+      // Global muons: helix DCA w.r.t. the associated collision
+      float xShift = 0.f;
+      float yShift = 0.f;
+      float zShift = 0.f;
+      GetFwdShiftForY(track.y(), xShift, yShift, zShift);
+      o2::track::TrackParCovFwd fwdtrack = o2::aod::fwdtrackutils::getTrackParCovFwd3DShift(track, xShift, yShift, zShift, track);
+      std::array<double, 3> dca{999., 999., 999.};
+      fwdtrack.propagateToDCAhelix(fgMagField, {collision.posX(), collision.posY(), collision.posZ()}, dca);
+      dcaX = static_cast<float>(dca[0]);
+      dcaY = static_cast<float>(dca[1]);
+    } else {
+      // MCH / standalone: DCA from MCH extrapolation
+      o2::dataformats::GlobalFwdTrack propmuonAtDCA = PropagateMuon(track, collision, kToDCA);
+      dcaX = propmuonAtDCA.getX() - collision.posX();
+      dcaY = propmuonAtDCA.getY() - collision.posY();
+      float dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
+      values[kMuonPDca] = track.p() * dcaXY;
+    }
+    
     values[kMuonDCAx] = dcaX;
     values[kMuonDCAy] = dcaY;
-    values[kMuonPDca] = track.p() * dcaXY;
+    
   }
 }
 

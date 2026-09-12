@@ -1133,10 +1133,10 @@ struct TableMakerMC {
       VarManager::FillTrack<TMuonFillMap>(muon);
       // NOTE: If a muon is associated to multiple collisions, depending on the selections,
       //       it may be accepted for some associations and rejected for other
-      if (fConfigVariousOptions.fPropMuon) {
-        VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
+      if (static_cast<int>(muon.trackType()) > 2 && fConfigVariousOptions.fPropMuon) {
+          VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
       }
-      // recalculte pDca and global muon kinematics
+      // recalculate pDca / DCA and global muon kinematics
       if (static_cast<int>(muon.trackType()) < 2 && fConfigVariousOptions.fRefitGlobalMuon) {
         auto muontrack = muon.template matchMCHTrack_as<TMuons>();
         if (muontrack.eta() < fConfigVariousOptions.fMuonMatchEtaMin || muontrack.eta() > fConfigVariousOptions.fMuonMatchEtaMax) {
@@ -1262,10 +1262,10 @@ struct TableMakerMC {
       }
 
       VarManager::FillTrack<TMuonFillMap>(muon);
-      if (fConfigVariousOptions.fPropMuon) {
+      if (static_cast<int>(muon.trackType()) > 2 && fConfigVariousOptions.fPropMuon) {
         VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
       }
-      // recalculte pDca and global muon kinematics
+      // recalculate pDca / DCA and global muon kinematics
       int globalClusters = muon.nClusters();
       if (static_cast<int>(muon.trackType()) < 2 && fConfigVariousOptions.fRefitGlobalMuon) {
         auto muontrack = muon.template matchMCHTrack_as<TMuons>();

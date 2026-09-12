@@ -1687,10 +1687,10 @@ struct TableMaker {
       // NOTE: Muons are propagated to the current associated collisions.
       //       So if a muon is associated to multiple collisions, depending on the selections,
       //       it may be accepted for some associations and rejected for other
-      if (fConfigVariousOptions.fPropMuon) {
-        VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
+      if (static_cast<int>(muon.trackType()) > 2 && fConfigVariousOptions.fPropMuon) {
+          VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
       }
-      // recalculate pDca and global muon kinematics
+      // recalculate pDca / DCA and global muon kinematics
       if (static_cast<int>(muon.trackType()) < 2 && fConfigVariousOptions.fRefitGlobalMuon) {
         auto muontrack = muon.template matchMCHTrack_as<TMuons>();
         if (muontrack.eta() < fConfigVariousOptions.fMuonMatchEtaMin || muontrack.eta() > fConfigVariousOptions.fMuonMatchEtaMax) {
@@ -1700,6 +1700,7 @@ struct TableMaker {
         VarManager::FillTrackCollision<TMuonFillMap>(muontrack, collision);
         // NOTE: the MFT track originally associated to the MUON track is currently used in the global muon refit
         //       Should MUON - MFT time ambiguities be taken into account ?
+        // Helix DCA is filled from the refitted parameters inside FillGlobalMuonRefit(Cov)
         if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
           auto const& mfttrackcov = mfCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
           VarManager::FillGlobalMuonRefitCov<TMuonFillMap, TMFTFillMap>(muontrack, mfttrack, collision, mfttrackcov);
@@ -1782,10 +1783,10 @@ struct TableMaker {
       }
 
       VarManager::FillTrack<TMuonFillMap>(muon);
-      if (fConfigVariousOptions.fPropMuon) {
-        VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
+      if (static_cast<int>(muon.trackType()) > 2 && fConfigVariousOptions.fPropMuon) {
+          VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
       }
-      // recalculte pDca and global muon kinematics
+      // recalculate pDca / DCA and global muon kinematics
       int globalClusters = muon.nClusters();
       if (static_cast<int>(muon.trackType()) < 2 && fConfigVariousOptions.fRefitGlobalMuon) {
         auto muontrack = muon.template matchMCHTrack_as<TMuons>();
