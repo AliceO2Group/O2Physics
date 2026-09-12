@@ -115,7 +115,7 @@ class TPCVDriftManager
     float dTime = tTB - trackExtra.trackTime();
     float dDrift = dTime * mTPCVDriftNS;
     float dDriftErr = tTBErr * mTPCVDriftNS;
-    if (dDriftErr < 0.f || dDrift > 250.f) { // we cannot move a track outside the drift volume
+    if (dDriftErr < 0.f || dDrift > mMaxDriftCm) { // we cannot move a track outside the drift volume
       if (mOutside < mWarningLimit) {
         LOGP(warn, "Skipping correction outside of tpc volume with dDrift={} +- {}", dDrift, dDriftErr);
         const auto trackBC = trackExtra.template collision_as<Collisions>().template foundBC_as<BCs>().globalBC();
@@ -131,7 +131,49 @@ class TPCVDriftManager
     }
 
     // impose new Z coordinate
-    track.setZ(track.getZ() + ((track.getTgl() < 0.) ? -dDrift : dDrift));
+    const auto sides = (trackExtra.flags() & (o2::aod::track::TrackFlags::TPCSideA | o2::aod::track::TrackFlags::TPCSideC));
+    float zShift = 0.f;
+    if (sides == o2::aod::track::TrackFlags::TPCSideA) {
+      zShift = dDrift;
+    } else if (sides == o2::aod::track::TrackFlags::TPCSideC) {
+      zShift = -dDrift;
+    } else if (sides == 0) {
+      // Fallback for datasets produced before the TPC side flags were introduced (Feb. 2026).
+      o2::aod::track::extensions::TPCTimeErrEncoding tEnc;
+      tEnc.encoding.timeErr = trackExtra.trackTimeRes();
+      const float dFwd = tEnc.getDeltaTFwd();
+      const float dBwd = tEnc.getDeltaTBwd();
+      // Equal, small forward/backward margins mean the track is bounded on both ends,
+      // i.e. it crosses the CE: it cannot be moved and is already corrected elsewhere.
+      const bool crossesCE = (dFwd == dBwd) && (dFwd < mMaxCECrossingDeltaTNS);
+      if (!crossesCE) {
+        const bool zPositive = track.getZ() > 0.f;
+        const bool tglPositive = track.getTgl() > 0.f;
+        int side = 0; // +1 = A, -1 = C, 0 = undetermined -> leave uncorrected
+        if (zPositive == tglPositive) {
+          // Consistent sign: the track converges to Z=0 at the beamline by construction.
+          side = tglPositive ? 1 : -1;
+        } else if (dBwd == 0.f && dFwd > 0.f) {
+          // Bounded backward at the CE with room forward: no clusters on the opposite
+          // side, so trust the measured Z rather than the (here inverted) tgl.
+          side = zPositive ? 1 : -1;
+        } else if (dBwd > 0.f) {
+          // Large tgl track bounded at the readout side instead: trust tgl.
+          side = tglPositive ? 1 : -1;
+        }
+        // else: degenerate case, track touches both CE and readout -> cannot be deduced/moved.
+        // (in practice unreachable here: dFwd==dBwd==0 would already satisfy crossesCE above,
+        // since dFwd/dBwd are always >= 0; kept explicit to mirror the reference logic 1:1.)
+
+        if (side > 0) {
+          zShift = dDrift;
+        } else if (side < 0) {
+          zShift = -dDrift;
+        }
+      }
+    }
+    // else: track has clusters on both sides (crossed the CE) and is already corrected elsewhere
+    track.setZ(track.getZ() + zShift);
     if constexpr (std::is_base_of_v<o2::track::TrackParCov, Track>) {
       track.setCov(track.getSigmaZ2() + dDriftErr * dDriftErr, o2::track::kSigZ2);
     }
@@ -156,6 +198,8 @@ class TPCVDriftManager
   o2::ccdb::BasicCCDBManager* mCCDB{};  // reference to initialized ccdb manager
 
   static constexpr unsigned int mWarningLimit{10};
+  static constexpr float mMaxDriftCm{250.f};             // TPC drift volume half-length in cm
+  static constexpr float mMaxCECrossingDeltaTNS{1000.f}; // ~1 us, ballpark forward/backward time margin of a CE-crossing track
 
   // Counters
   unsigned int mCalls{0};       // total number of calls
