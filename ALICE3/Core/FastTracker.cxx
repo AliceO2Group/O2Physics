@@ -561,9 +561,8 @@ int FastTracker::fastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
     covMat[ii] = outputTrack.getCov()[ii];
   }
 
-  // std::array<std::array<double, o2::track::kNParams>, o2::track::kNParams> fcovm{}; // double precision is needed for regularisation
+  std::array<std::array<double, o2::track::kNParams>, o2::track::kNParams> fcovm{}; // double precision is needed for regularisation
   TMatrixDSym m(o2::track::kNParams);
-  double fcovm[o2::track::kNParams][o2::track::kNParams];
   for (int ii = 0, k = 0; ii < o2::track::kNParams; ++ii) {
     for (int jj = 0; jj < ii + 1; ++jj, ++k) {
       fcovm[ii][jj] = covMat[k];
