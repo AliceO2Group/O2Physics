@@ -157,10 +157,13 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
   Configurable<std::vector<float>> cfIpBins{"cfIpBins", {100, 0., 20.}, "Impact parameters hist: nIPBins, ipMin, ipMax"};
 
   // Cuts
-  Configurable<bool> cfVertexZSwitch{"cfVertexZSwitch", false, "switch to apply vertex z position cut"};
-  Configurable<std::vector<float>> cfVertexZ{"cfVertexZ", {-10, 10.}, "vertex z position range: {min, max}[cm], with convention: min <= Vz < max"};
-  Configurable<bool> cfPtSwitch{"cfPtSwitch", false, "switch to apply pt cut"};
-  Configurable<std::vector<float>> cfPt{"cfPt", {0.2, 5.}, "pt cut range: {min, max}, with convention: min <= Vz < max"};
+  // event level cuts
+  Configurable<bool> cfEventCutSwitch{"cfEventCutSwitch", false, "switch to apply vertex z position cut"};
+  Configurable<std::vector<float>> cfVertexZCutRange{"cfVertexZCutRange", {-10, 10.}, "vertex z position range: {min, max}[cm], with convention: min <= Vz < max"};
+
+  // particle level cuts
+  Configurable<bool> cfPtCutSwitch{"cfPtCutSwitch", false, "switch to apply pt cut"};
+  Configurable<std::vector<float>> cfPtCutRange{"cfPtCutRange", {0.2, 5.}, "pt cut range: {min, max}, with convention: min <= Vz < max"};
 
   // misc
   Configurable<double> sigmaInel{"sigmaInel", 7.71, "inelastic cross section in mb"};
@@ -377,20 +380,20 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
   bool eventCuts(T1 const& collision)
   {
     if constexpr (rs == ERec || rs == ERecAndSim) {
-      if (cfVertexZSwitch) // Vertex Z cuts for Rec
+      if (cfEventCutSwitch) // event level cuts for Rec
       {
-        if (collision.posZ() > cfVertexZ.value[1] || collision.posZ() < cfVertexZ.value[0]) {
+        if (collision.posZ() > cfVertexZCutRange.value[1] || collision.posZ() < cfVertexZCutRange.value[0]) {
           return false;
-        }
-        if constexpr (rs == ERecAndSim) // Vertex Z cuts for Sim
+        } // vertex z cut
+        if constexpr (rs == ERecAndSim) // event level cuts for Sim
         {
           if (!collision.has_mcCollision()) {
             return false;
           }
           auto mcCollision = collision.mcCollision(); // corresponding MC truth simulated particle
-          if (mcCollision.posZ() > cfVertexZ.value[1] || mcCollision.posZ() < cfVertexZ.value[0]) {
+          if (mcCollision.posZ() > cfVertexZCutRange.value[1] || mcCollision.posZ() < cfVertexZCutRange.value[0]) {
             return false;
-          }
+          } // vertex z cut
         }
       }
     }
@@ -493,12 +496,12 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
   }
 
   template <ERecSim rs, typename T>
-  bool particlECuts(T const& track)
+  bool particleCuts(T const& track)
   {
     if constexpr (rs == ERec || rs == ERecAndSim) {
-      if (cfPtSwitch) // Vertex Z cuts for Rec
+      if (cfPtCutSwitch) // Vertex Z cuts for Rec
       {
-        if (track.pt() < cfPt.value[0] || track.pt() > cfPt.value[1]) {
+        if (track.pt() < cfPtCutRange.value[0] || track.pt() > cfPtCutRange.value[1]) {
           return false;
         }
         if constexpr (rs == ERecAndSim) // Vertex Z cuts for Sim
@@ -507,7 +510,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
             return false;
           }
           auto mcParticle = track.mcParticle(); // corresponding MC truth simulated particle
-          if (mcParticle.pt() < cfPt.value[0] || mcParticle.pt() > cfPt.value[1]) {
+          if (mcParticle.pt() < cfPtCutRange.value[0] || mcParticle.pt() > cfPtCutRange.value[1]) {
             return false;
           }
         }
@@ -605,7 +608,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
 
     // Fill Event Hist
     eventHistFill<rs, ENoCuts>(collision, tracks);
-    if (eventCuts<rs>(collision)) {
+    if (cfEventCutSwitch && eventCuts<rs>(collision)) {
       eventHistFill<rs, EWithCuts>(collision, tracks);
     }
 
@@ -627,7 +630,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       track = tracks.iteratorAt(i);
       // Fill reconstructed ...:
       particleHistFill<rs, ENoCuts>(track);
-      if (eventCuts<rs>(collision) && particlECuts<rs>(track)) {
+      if (cfPtCutSwitch && cfEventCutSwitch && eventCuts<rs>(collision) && particleCuts<rs>(track)) {
         particleHistFill<rs, EWithCuts>(track);
       }
     } // end of for (int64_t i = 0; i < tracks.size(); i++) {
@@ -702,7 +705,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       pc.fParticleHistograms[EHistEta][ERec][ENoCuts]->SetColors(kRed, -1, kRed);
       pc.fParticleHistogramsList->Add(pc.fParticleHistograms[EHistEta][ERec][ENoCuts]);
 
-      if (cfPtSwitch) {
+      if (cfPtCutSwitch) {
         pc.fParticleHistograms[EHistPt][ERec][EWithCuts] = new TH1F("[EHistPt][ERec][EWithCuts]", "pt distribution for reconstructed particles after cuts", nBinsPt, minPt, maxPt);
         pc.fParticleHistograms[EHistPt][ERec][EWithCuts]->GetXaxis()->SetTitle("p_{T}");
         pc.fParticleHistograms[EHistPt][ERec][EWithCuts]->SetColors(kGreen, -1, kGreen);
@@ -736,7 +739,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       pc.fParticleHistograms[EHistEta][ESim][ENoCuts]->SetColors(kRed, -1, kRed);
       pc.fParticleHistogramsList->Add(pc.fParticleHistograms[EHistEta][ESim][ENoCuts]);
 
-      if (cfPtSwitch) {
+      if (cfPtCutSwitch) {
         pc.fParticleHistograms[EHistPt][ESim][EWithCuts] = new TH1F("[EHistPt][ESim][EWithCuts]", "pt distribution for simulated particles after cuts", nBinsPt, minPt, maxPt);
         pc.fParticleHistograms[EHistPt][ESim][EWithCuts]->GetXaxis()->SetTitle("p_{T}");
         pc.fParticleHistograms[EHistPt][ESim][EWithCuts]->SetColors(kGreen, -1, kGreen);
@@ -831,7 +834,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       ec.fEventHistograms[EHistVertexZ][ERec][ENoCuts]->SetColors(kRed, -1, kRed);
       ec.fEventHistogramsList->Add(ec.fEventHistograms[EHistVertexZ][ERec][ENoCuts]);
 
-      if (cfVertexZSwitch) {
+      if (cfEventCutSwitch) {
         ec.fEventHistograms[EHistCentrality][ERec][EWithCuts] = new TH1F("[EHistCentrality][ERec][EWithCuts]", "Centrality (reconstructed) after cuts", nBinsCent, minCent, maxCent);
         ec.fEventHistograms[EHistCentrality][ERec][EWithCuts]->GetXaxis()->SetTitle("Centrality");
         ec.fEventHistograms[EHistCentrality][ERec][EWithCuts]->SetColors(kGreen, -1, kGreen);
@@ -895,7 +898,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       ec.fEventHistograms[EHistImpactParameter][ESim][ENoCuts]->SetColors(kRed, -1, kRed);
       ec.fEventHistogramsList->Add(ec.fEventHistograms[EHistImpactParameter][ESim][ENoCuts]);
 
-      if (cfVertexZSwitch) {
+      if (cfEventCutSwitch) {
         ec.fEventHistograms[EHistCentrality][ESim][EWithCuts] = new TH1F("[EHistCentrality][ESim][EWithCuts]", "Centrality (simulated) after cuts", nBinsCent, minCent, maxCent);
         ec.fEventHistograms[EHistCentrality][ESim][EWithCuts]->GetXaxis()->SetTitle("Centrality");
         ec.fEventHistograms[EHistCentrality][ESim][EWithCuts]->SetColors(kGreen, -1, kGreen);
