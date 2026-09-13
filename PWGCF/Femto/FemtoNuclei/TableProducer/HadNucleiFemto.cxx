@@ -107,7 +107,7 @@ constexpr int Lithium4PDG = o2::constants::physics::Pdg::kLithium4;
 // loss of integer precision that a single float coordinate has near 10^9.
 constexpr int MotherPdgChunkBase = 10000; // o2-linter: disable=pdg/explicit-code (encoding base, not a PDG code)
 constexpr int MotherPdgHighMax = 120000;  // o2-linter: disable=pdg/explicit-code (encoding-axis limit, not a PDG code)
-constexpr int HadronDcaFitBins = 2400; // 0.002 cm/bin in [-2.4, 2.4] cm
+constexpr int HadronDcaFitBins = 2400;    // 0.002 cm/bin in [-2.4, 2.4] cm
 constexpr float HadronDcaFitAxisMax = 2.4f;
 constexpr int NucleusDcaFitBins = 2000; // 0.001 cm/bin in [-1, 1] cm
 constexpr float NucleusDcaFitAxisMax = 1.f;
