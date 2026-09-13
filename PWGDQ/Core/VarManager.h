@@ -79,7 +79,6 @@
 #include <complex>
 #include <cstdint>
 #include <map>
-#include <numbers>
 #include <tuple>
 #include <utility>
 #include <vector>
