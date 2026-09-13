@@ -178,7 +178,7 @@ struct UDTutorial05 {
 
       registry.fill(HIST("hTracks"), tracks.size());
 
-      for (auto t : tracks) {
+      for (const auto& t : tracks) {
         // Apply good track selection criteria
         if (!trackselector(t, parameters))
           continue;
@@ -205,7 +205,7 @@ struct UDTutorial05 {
       registry.fill(HIST("hTracksPions"), onlyPionTracks.size());
       //_____________________________________
       // Adding all onlypiontracks
-      for (auto pion : onlyPionTracks) {
+      for (const auto& pion : onlyPionTracks) {
         p += pion;
       }
 

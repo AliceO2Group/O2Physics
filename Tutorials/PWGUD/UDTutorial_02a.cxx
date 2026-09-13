@@ -129,7 +129,7 @@ struct UDTutorial02a {
 
     // check PID of tracks, use nSigmaTPC
     // cut on track pT
-    for (auto trk : PVContributors) {
+    for (const auto& trk : PVContributors) {
       if (trk.tpcNSigmaPi() < -3. || trk.tpcNSigmaPi() > 3.) {
         if (verbose) {
           LOGF(info, "<UDTutorials02> Candidate rejected: nSigmaTPC pion is %f", trk.tpcNSigmaPi());
@@ -148,7 +148,7 @@ struct UDTutorial02a {
     TParticlePDG* pion = pdg->GetParticle(211);
     TLorentzVector lvtmp;
     auto ivm = TLorentzVector(0., 0., 0., 0.);
-    for (auto trk : PVContributors) {
+    for (const auto& trk : PVContributors) {
       lvtmp.SetXYZM(trk.px(), trk.py(), trk.pz(), pion->Mass());
       ivm += lvtmp;
     }
@@ -166,7 +166,7 @@ struct UDTutorial02a {
       LOGF(info, "<UDTutorials02> Candidate accepted!");
     }
     registry.get<TH2>(HIST("dgcandidates/IVMptsys"))->Fill(ivm.M(), ivm.Perp());
-    for (auto trk : PVContributors) {
+    for (const auto& trk : PVContributors) {
       registry.get<TH2>(HIST("dgcandidates/IVMpttrk"))->Fill(ivm.M(), trk.pt());
 
       // fill nSigma histograms

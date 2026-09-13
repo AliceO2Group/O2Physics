@@ -63,7 +63,7 @@ struct resonances_tutorial {
 
   // MC particle selection
   template <typename ParticleType>
-  bool ptCut(const ParticleType resoParents)
+  bool ptCut(const ParticleType& resoParents)
   {
     // basic pt cuts
     if (std::abs(resoParents.pt()) < cMinPtcut)
