@@ -170,7 +170,7 @@ struct StrangeCascTrack {
   }
   // checks general selection criteria for collisions
   template <typename TEvent>
-  bool isValidEvent(TEvent collision, bool fillHists)
+  bool isValidEvent(const TEvent& collision, bool fillHists)
   {
     bool passedAllSels = true;
     //* inel>0 cut
@@ -238,7 +238,7 @@ struct StrangeCascTrack {
   }
   // checks cascade pt
   template <typename TCascade>
-  bool isValidPt(TCascade cascade, TString particle, int Type)
+  bool isValidPt(const TCascade& cascade, const TString& particle, int Type)
   {
     bool passedSel = true;
     double ptMin = 0.0;
@@ -265,7 +265,7 @@ struct StrangeCascTrack {
   }
   // checks general selection criteria for cascades
   template <typename TEvent, typename TCascade, typename TStdCascade>
-  std::array<bool, 9> isValidCasc(TEvent collision, TCascade cascade, TStdCascade stdcasc, TString particle)
+  std::array<bool, 9> isValidCasc(const TEvent& collision, const TCascade& cascade, const TStdCascade& stdcasc, const TString& particle)
   {
     bool passedAllSels = true;
     // cascade rapidity
@@ -342,7 +342,7 @@ struct StrangeCascTrack {
   }
   // checks TPC PID of dau tracks
   template <typename TCascade>
-  bool passesTPC(TCascade cascade, TString particle)
+  bool passesTPC(const TCascade& cascade, const TString& particle)
   {
     bool passedSel = true;
     const auto& posTrack = cascade.template posTrackExtra_as<DauTracks>();
@@ -375,7 +375,7 @@ struct StrangeCascTrack {
   }
   // checks TOF PID of dau tracks
   template <typename TCascade>
-  bool passesTOF(TCascade cascade, TString particle)
+  bool passesTOF(const TCascade& cascade, const TString& particle)
   {
     bool passedSel = true;
     if (particle == "Xi")
@@ -386,7 +386,7 @@ struct StrangeCascTrack {
   }
   // checks whether gen cascade corresponds to PDG code
   template <typename TCascade>
-  bool isValidPDG(TCascade cascade, TString particle)
+  bool isValidPDG(const TCascade& cascade, const TString& particle)
   {
     if (particle == "Xi" && std::abs(cascade.pdgCode()) == PDG_t::kXiMinus)
       return true;
@@ -396,7 +396,7 @@ struct StrangeCascTrack {
   }
   // checks whether rec cascade is a truth primary xi or omega
   template <typename TCascade>
-  bool isMCTruth(const TCascade& cascade, TString particle)
+  bool isMCTruth(const TCascade& cascade, const TString& particle)
   {
     if constexpr (requires { cascade.has_cascMCCore(); }) { // safety check: discard rec cascade without gen reference
       auto cascmccore = cascade.template cascMCCore_as<DerMCGenCascades>();
@@ -413,7 +413,7 @@ struct StrangeCascTrack {
 
   // applies selections for and fills histograms
   template <typename TEvent, typename TCasc>
-  void analyseCascade(TEvent collision, TCasc cascade)
+  void analyseCascade(const TEvent& collision, TCasc cascade)
   {
     if constexpr (requires { cascade.topologyChi2(); }) {
       if (!cascade.has_standardCascade())

@@ -1246,7 +1246,7 @@ struct TableMaker {
     } // end if constexpr (TMuonFillMap)
   } // end fullSkimming()
 
-  void DefineHistograms(TString histClasses)
+  void DefineHistograms(const TString& histClasses)
   {
     std::unique_ptr<TObjArray> objArray(histClasses.Tokenize(";"));
     for (Int_t iclass = 0; iclass < objArray->GetEntries(); ++iclass) {

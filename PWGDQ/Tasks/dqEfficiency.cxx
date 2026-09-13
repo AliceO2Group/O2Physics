@@ -95,7 +95,7 @@ constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::ReducedMuon | Va
 constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::ReducedMuonExtra | VarManager::ObjTypes::ReducedMuonCov;
 constexpr static uint32_t gkParticleMCFillMap = VarManager::ObjTypes::ParticleMC;
 
-void DefineHistograms(HistogramManager* histMan, TString histClasses);
+void DefineHistograms(HistogramManager* histMan, const TString& histClasses);
 
 struct AnalysisEventSelection {
   Produces<aod::EventCuts> eventSel;
@@ -1197,12 +1197,12 @@ struct AnalysisDileptonTrack {
     std::vector<int> trackGlobalIndexes;
 
     if (dileptons.size() > 0) {
-      for (auto track : tracks) {
+      for (const auto& track : tracks) {
         trackGlobalIndexes.push_back(track.globalIndex());
         // std::cout << track.index() << " " << track.globalIndex() << std::endl;
       }
     }
-    for (auto dilepton : dileptons) {
+    for (const auto& dilepton : dileptons) {
 
       int indexLepton1 = dilepton.index0Id();
       int indexLepton2 = dilepton.index1Id();
@@ -1504,14 +1504,14 @@ struct AnalysisDileptonTrackTrack {
     std::vector<int> trackGlobalIndexes;
 
     if (dileptons.size() > 0) {
-      for (auto track : tracks) {
+      for (const auto& track : tracks) {
         trackGlobalIndexes.push_back(track.globalIndex());
         // std::cout << track.index() << " " << track.globalIndex() << std::endl;
       }
     }
 
     // loop over dileptons
-    for (auto dilepton : dileptons) {
+    for (const auto& dilepton : dileptons) {
       VarManager::FillTrack<fgDileptonFillMap>(dilepton, fValuesQuadruplet);
 
       // apply the dilepton cut
@@ -1665,7 +1665,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<AnalysisDileptonTrackTrack>(cfgc)};
 }
 
-void DefineHistograms(HistogramManager* histMan, TString histClasses)
+void DefineHistograms(HistogramManager* histMan, const TString& histClasses)
 {
   //
   // Define here the histograms for all the classes required in analysis.

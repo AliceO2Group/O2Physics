@@ -38,6 +38,7 @@
 #include <memory>
 #include <string>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 #include <math.h>
@@ -136,13 +137,18 @@ template <typename T, typename U>
 void analyseTracksMultipleCandidates(std::vector<fastjet::PseudoJet>& inputParticles, T const& tracks, int trackSelection, U const& candidates)
 {
   for (auto& track : tracks) {
+    bool isSelected = true;
     if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
       continue;
     }
     for (auto& candidate : candidates) {
       if (jetcandidateutilities::isDaughterTrack(track, candidate)) {
-        continue;
+        isSelected = false;
+        break;
       }
+    }
+    if (!isSelected) {
+      continue;
     }
     fastjetutilities::fillTracks(track, inputParticles, track.globalIndex());
   }
@@ -278,9 +284,9 @@ bool analyseV0s(std::vector<fastjet::PseudoJet>& inputParticles, T const& v0s, f
  * @param doHFJetFinding set whether only jets containing a HF candidate are saved
  */
 template <typename T, typename U, typename V>
-void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputParticles, float jetPtMin, float jetPtMax, std::vector<double> jetRadius, float jetAreaFractionMin, T const& collision, U& jetsTable, V& constituentsTable, std::shared_ptr<THn> thnSparseJet, bool fillThnSparse, bool doCandidateJetFinding = false)
+void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputParticles, float jetPtMin, float jetPtMax, std::vector<double> jetRadius, float jetAreaFractionMin, T const& collision, U& jetsTable, V& constituentsTable, const std::shared_ptr<THn>& thnSparseJet, bool fillThnSparse, bool doCandidateJetFinding = false)
 {
-  auto jetRValues = static_cast<std::vector<double>>(jetRadius);
+  auto jetRValues = static_cast<std::vector<double>>(std::move(jetRadius));
   jetFinder.jetPtMin = jetPtMin;
   jetFinder.jetPtMax = jetPtMax;
   for (auto R : jetRValues) {
@@ -375,18 +381,24 @@ void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, const std
         }
       }
     }
+    bool isSelected = true;
     if constexpr (jetv0utilities::isV0McTable<U>()) { // note that for V0s the candidate table is given to this function, not a single candidate
       if (candidate != nullptr) {
         for (auto const& cand : (*candidate)) {
           if (cand.mcParticleId() == particle.globalIndex()) {
-            continue;
+            isSelected = false;
+            break;
           }
           auto v0Particle = cand.template mcParticle_as<T>();
           if (jetcandidateutilities::isDaughterParticle(v0Particle, particle.globalIndex())) {
-            continue;
+            isSelected = false;
+            break;
           }
         }
       }
+    }
+    if (!isSelected) {
+      continue;
     }
     fastjetutilities::fillTracks(particle, inputParticles, particle.globalIndex(), JetConstituentStatus::track, pdgParticle->Mass());
   }

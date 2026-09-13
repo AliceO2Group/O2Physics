@@ -401,7 +401,7 @@ struct tofPidQaDynamic {
     int evtimeflag = 0;
 
     if constexpr (fillHistograms) {
-      for (auto t : tracks) {
+      for (const auto& t : tracks) {
         if (!t.hasTOF()) { // Skipping tracks without TOF
           continue;
         }
@@ -554,7 +554,7 @@ struct tofPidQaDynamic {
     tofResponse->processSetup(collision.bc_as<o2::aod::BCsWithTimestamps>());
 
     isEventSelected<true>(collision, tracks);
-    for (auto t : tracks) {
+    for (const auto& t : tracks) {
       isTrackSelected<true>(collision, t);
     }
   }
@@ -568,7 +568,7 @@ struct tofPidQaDynamic {
       return;
     }
 
-    for (auto t : tracks) {
+    for (const auto& t : tracks) {
       if (!isTrackSelected<false>(collision, t)) {
         continue;
       }

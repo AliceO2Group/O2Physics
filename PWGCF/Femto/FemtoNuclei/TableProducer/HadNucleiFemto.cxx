@@ -78,8 +78,12 @@ using namespace o2::framework::expressions;
 using std::array;
 
 using CollBracket = o2::math_utils::Bracket<int>;
+using HyperCandidates = aod::DataHypCandsWColl;
+using HyperCandidatesMC = aod::MCHypCands;
 using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::FT0Mults>;
 using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs, aod::FT0Mults>;
+using HadHyperCollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::FT0Mults>;
+using HadHyperCollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::FT0Mults>;
 using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::TOFSignal, aod::TOFEvTime>;
 using TrackCandidatesMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::TOFSignal, aod::TOFEvTime, aod::McTrackLabels>;
 
@@ -93,6 +97,7 @@ constexpr std::array<float, 9> tmpRadiiTPC{{85.f, 105.f, 125.f, 145.f, 165.f, 18
 constexpr int DeuteronPDG = o2::constants::physics::Pdg::kDeuteron;
 constexpr int TritonPDG = o2::constants::physics::Pdg::kTriton;
 constexpr int He3PDG = o2::constants::physics::Pdg::kHelium3;
+constexpr int HyperTritonPDG = o2::constants::physics::Pdg::kHyperTriton;
 constexpr float He3TPCChi2NClMin = 0.5f;
 using PairLorentzVector = ROOT::Math::LorentzVector<ROOT::Math::PxPyPzM4D<double>>;
 
@@ -229,7 +234,8 @@ struct HadNucleiFemto {
 
   Produces<aod::HadronNucleiTable> mOutputDataTable;
   Produces<aod::HadronNucleiTableMC> mOutputMCTable;
-  Produces<aod::HadronHyperTable> mOutputHyperDataTable;
+  Produces<aod::HadronHyperTable> mOutputHadHyperDataTable;
+  Produces<aod::HadronHyperTableMC> mOutputHadHyperMCTable;
   Produces<aod::HadronNucleiMult> mOutputMultiplicityTable;
 
   struct : o2::framework::ConfigurableGroup {
@@ -352,9 +358,132 @@ struct HadNucleiFemto {
     // cppcheck-suppress unusedStructMember
     std::string prefix{"hypertriton"};
     // Hypertriton-specific cuts
-    Configurable<float> settingCutTPCChi2He{"settingCutTPCChi2He", 0.0f, "Minimum tpcChi2He for Hyper He3"};
-    Configurable<float> settingCutAverClsSizeHe{"settingCutAverClsSizeHe", 0.0f, "Minimum averClusSizeHe for Hyper He3"};
+    Configurable<float> settingHypMassMin{"settingHypMassMin", 2.94f, "Minimum hypertriton invariant mass"};
+    Configurable<float> settingHypMassMax{"settingHypMassMax", 3.10f, "Maximum hypertriton invariant mass"};
   } hypertriton;
+
+  struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
+    std::string prefix{"hadHyper"};
+    Configurable<bool> enableMixing{"enableMixing", true, "Build mixed-event pion-hypertriton pairs"};
+    Configurable<float> maxOutputKstar{"maxOutputKstar", -1.f, "Maximum pair k* (GeV/c); negative saves all selected pairs"};
+  } hadHyper;
+
+  HistogramRegistry hadHyperRegistry{
+    "hadHyperRegistry",
+    {{"hSE", "Raw same-event pairs;k*;Entries", {HistType::kTH1D, {{300, 0., 3.}}}},
+     {"hME", "Raw mixed-event pairs;k*;Entries", {HistType::kTH1D, {{300, 0., 3.}}}},
+     {"hMass", "Unique selected candidates;mass He3-pi;Entries", {HistType::kTH1D, {{160, 2.94, 3.10}}}},
+     {"hSelfPairs", "Rejected daughter reuse;reason (0=He3,1=pion,2=truth);k*", {HistType::kTH2F, {{3, -0.5, 2.5}, {300, 0., 3.}}}},
+     {"hSameEventSelfPairs", "Same-event rejected daughter reuse;reason (0=He3,1=pion,2=truth);k*", {HistType::kTH2F, {{3, -0.5, 2.5}, {300, 0., 3.}}}},
+     {"hCandidatePairMultiplicitySE", "Accepted same-event hadron pairs per hypertriton candidate;pairs;centrality", {HistType::kTH2F, {{200, -0.5, 199.5}, {10, 0., 100.}}}},
+     {"hCandidatePairMultiplicityME", "Accepted mixed-event hadron pairs per hypertriton candidate;pairs;centrality", {HistType::kTH2F, {{200, -0.5, 199.5}, {10, 0., 100.}}}},
+     {"hMixEventDeltaPosZVsCent", "Mixed-event #Delta z_{vtx} vs hypertriton centrality;hypertriton CentFT0C;#Delta z_{vtx}", {HistType::kTH2F, {{100, 0., 100.}, {120, -30., 30.}}}},
+     {"hMixEventDeltaCentFT0CVsCent", "Mixed-event #Delta CentFT0C vs hypertriton centrality;hypertriton CentFT0C;#Delta CentFT0C", {HistType::kTH2F, {{100, 0., 100.}, {200, -100., 100.}}}},
+     {"hMixingDepth", "Available partner events;events;anchor events", {HistType::kTH1F, {{101, -0.5, 100.5}}}},
+     {"hPoolFlow", "Mixing pool selection;0=selected,1=in range;events", {HistType::kTH1F, {{2, -0.5, 1.5}}}},
+     {"hClosePairBeforePV", "Hadron-hypertriton PV close-pair QA before rejection;#Delta#eta;#Delta#varphi", {HistType::kTH2F, {{200, -0.1, 0.1}, {200, -0.1, 0.1}}}},
+     {"hClosePairAfterPV", "Hadron-hypertriton PV close-pair QA after rejection;#Delta#eta;#Delta#varphi", {HistType::kTH2F, {{200, -0.1, 0.1}, {200, -0.1, 0.1}}}},
+     {"hDaughterHeTPC", "He3 daughter QA per candidate;TPC rigidity;TPC signal", {HistType::kTH2F, {{100, 0., 10.}, {300, 0., 1500.}}}},
+     {"hDaughterPiTPC", "Pion daughter QA per candidate;TPC rigidity;TPC signal", {HistType::kTH2F, {{100, 0., 10.}, {300, 0., 1500.}}}},
+     {"hHadronTPC", "Pair hadron QA per selected track;TPC rigidity;TPC signal", {HistType::kTH2F, {{100, 0., 10.}, {300, 0., 1500.}}}},
+     {"MC/hKstarRecVsGenHyperReco", "Hadron-hypertriton k* response for reconstructed true hypertritons;generated k* (GeV/#it{c});reconstructed k* (GeV/#it{c})", {HistType::kTH2F, {{300, 0., 3.}, {300, 0., 3.}}}},
+     {"MC/hKstarResolutionHyperReco", "Hadron-hypertriton k* resolution for reconstructed true hypertritons;reconstructed k* (GeV/#it{c});k*_{reco}-k*_{gen} (GeV/#it{c})", {HistType::kTH2F, {{300, 0., 3.}, {200, -0.2, 0.2}}}},
+     {"MC/hPrimaryHadronVsKstarDen", "Truth-matched selected hadron denominator;k* (GeV/#it{c});Entries", {HistType::kTH1D, {{300, 0., 3.}}}},
+     {"MC/hPrimaryHadronVsKstarNum", "Physical-primary selected hadron numerator;k* (GeV/#it{c});Entries", {HistType::kTH1D, {{300, 0., 3.}}}},
+     {"MC/hPrimaryHadronVsCentDen", "Truth-matched selected hadron denominator;hypertriton CentFT0C;Entries", {HistType::kTH1D, {{100, 0., 100.}}}},
+     {"MC/hPrimaryHadronVsCentNum", "Physical-primary selected hadron numerator;hypertriton CentFT0C;Entries", {HistType::kTH1D, {{100, 0., 100.}}}}}};
+
+  // Tuple order follows the column blocks in HadronNucleiTables.h.
+  using HadHyperTrackInfo = std::tuple<float, float, float, int8_t, float, uint8_t, uint8_t, float, uint32_t, float, bool, float, float, float, float, float, float>;
+  using HadHyperEventInfo = std::tuple<int32_t, float, float, float, float, int, float, uint16_t, float, float, float, float>;
+  using HadHyperCandidateInfo = std::tuple<bool, float, float, float, float, float, float, float, float, float, float, float, uint8_t, uint8_t, float, float, uint16_t, uint16_t, float, float, float, uint32_t, uint32_t, float, float, float>;
+  using HadHyperDataInfo = decltype(std::tuple_cat(std::declval<std::tuple<bool, int>>(),
+                                                   std::declval<HadHyperEventInfo>(),
+                                                   std::declval<HadHyperCandidateInfo>(),
+                                                   std::declval<HadHyperTrackInfo>()));
+  using HadHyperMCInfo = std::tuple<float, float, float, float, float, float, bool, bool, bool, bool, bool, int16_t,
+                                    float, bool, bool, float, float, float, float, float, float, bool, int16_t,
+                                    bool, bool, bool, bool, bool>;
+
+  struct HadHyperParticleTruth {
+    int64_t particleId{-1};
+    int64_t collisionId{-1};
+    int32_t pdgCode{0};
+    float pt{-1.f};
+    float eta{-999.f};
+    float phi{-999.f};
+    bool isPhysicalPrimary{false};
+    int16_t statusCode{0};
+    int16_t process{0};
+    std::array<float, 3> momentum{0.f, 0.f, 0.f};
+  };
+
+  struct HadHyperCandidate {
+    HadHyperCandidateInfo info{};
+    HadHyperParticleTruth hyperTruth{};
+    HadHyperParticleTruth heTruth{};
+    HadHyperParticleTruth decayPionTruth{};
+    int64_t sourceCandidateId{-1};
+    int64_t heTrackId{-1};
+    int64_t pionTrackId{-1};
+    int16_t statusCode{0};
+    bool isReco{true};
+    bool isSignal{false};
+    bool isRecoMCCollision{false};
+    bool isSurvEvSel{false};
+    bool isTwoBodyDecay{false};
+    uint8_t isFakeHeOnITSLayer{0u};
+    float genPt{-1.f};
+    float genEta{-1.f};
+    float genPhi{-1.f};
+    float genPtHe3{-1.f};
+    std::array<float, 3> genDecVtx{-1.f, -1.f, -1.f};
+    std::array<float, 3> momentum{};
+    std::array<float, 3> genMomentum{};
+    float mass{0.f};
+    float etaHe{0.f};
+    float phiHe{0.f};
+    float etaPi{0.f};
+    float phiPi{0.f};
+    bool isMatter{false};
+
+    float pt() const { return std::hypot(momentum[0], momentum[1]); }
+    float eta() const
+    {
+      const float transverseMomentum = pt();
+      return transverseMomentum > 0.f ? std::asinh(momentum[2] / transverseMomentum) : 999.f;
+    }
+    float phi() const { return std::atan2(momentum[1], momentum[0]); }
+    int8_t sign() const { return isMatter ? 1 : -1; }
+  };
+
+  struct HadHyperHadron {
+    HadHyperTrackInfo info{};
+    HadHyperParticleTruth truth{};
+    std::vector<int64_t> motherIds;
+    int64_t sourceId{-1};
+    std::array<float, 3> momentum{};
+    float tpcInnerParam{0.f};
+    float tpcSignal{0.f};
+    float etaValue{0.f};
+    float phiValue{0.f};
+    int8_t signValue{0};
+
+    float pt() const { return std::hypot(momentum[0], momentum[1]); }
+    float eta() const { return etaValue; }
+    float phi() const { return phiValue; }
+    int8_t sign() const { return signValue; }
+  };
+
+  struct HadHyperEvent {
+    HadHyperEventInfo info{};
+    int64_t mcCollisionId{-1};
+    bool hasMCCollision{false};
+    float centrality{0.f};
+    std::vector<HadHyperCandidate> candidates;
+    std::vector<HadHyperHadron> hadrons;
+  };
 
   struct : o2::framework::ConfigurableGroup {
     // cppcheck-suppress unusedStructMember
@@ -399,7 +528,8 @@ struct HadNucleiFemto {
 
   Preslice<TrackCandidates> mPerCol = aod::track::collisionId;
   Preslice<TrackCandidatesMC> mPerColMC = aod::track::collisionId;
-  PresliceUnsorted<o2::aod::DataHypCandsWColl> hypPerCol = o2::aod::hyperrec::collisionId;
+  PresliceUnsorted<HyperCandidates> hypPerCol = o2::aod::hyperrec::collisionId;
+  PresliceUnsorted<HyperCandidatesMC> hypPerColMC = o2::aod::hyperrec::collisionId;
 
   // binning for EM background
   ConfigurableAxis axisVertex{"axisVertex", {30, -10, 10}, "Binning for vtxz"};
@@ -410,10 +540,13 @@ struct HadNucleiFemto {
   float mMassHad{0.f};
   std::vector<bool> mGoodCollisions;
   std::vector<SVCand> mTrackPairs;
-  std::vector<SVCand> mTrackHypPairs;
   std::unordered_map<int, std::deque<BufferedCollision>> mMixingPools;
+  std::unordered_map<int, std::deque<HadHyperEvent>> mHyperMixingPools;
+  std::unordered_map<int, std::deque<HadHyperEvent>> mHyperMCMixingPools;
   int64_t mNextMixedEventId{0};
   int mMixingRunNumber{-1};
+  int mHyperMixingRunNumber{-1};
+  int mHyperMCMixingRunNumber{-1};
   o2::vertexing::DCAFitterN<2> mFitter;
 
   int mRunNumber{0};
@@ -535,6 +668,16 @@ struct HadNucleiFemto {
 
   void init(o2::framework::InitContext&)
   {
+    const bool processHyperPairs = doprocessHyper || doprocessMCHyper;
+    if (processHyperPairs && hadHyper.maxOutputKstar.value == 0.f) {
+      LOG(fatal) << "Hadron-hypertriton mode requires a nonzero output k* range";
+    }
+    if (processHyperPairs && hadHyper.enableMixing.value && eventMixing.settingNoMixedEvents.value <= 0) {
+      LOG(fatal) << "Hadron-hypertriton mixed-event mode requires enabled mixing and positive mixing depth";
+    }
+    if (processHyperPairs && hypertriton.settingHypMassMin.value >= hypertriton.settingHypMassMax.value) {
+      LOG(fatal) << "Hadron-hypertriton mode requires settingHypMassMin < settingHypMassMax";
+    }
     constexpr int closePairRadiusModePv = 0;
     constexpr int closePairRadiusModeSpecificTpc = 2;
     if (CPR.settingEnableClosePairRejection.value) {
@@ -1048,6 +1191,33 @@ struct HadNucleiFemto {
     return isRejected;
   }
 
+  bool isCloseHadHyperPairAtPV(const HadHyperCandidate& candidate, const HadHyperHadron& hadron, bool fillQA)
+  {
+    if (!CPR.settingEnableClosePairRejection.value) {
+      return false;
+    }
+    constexpr int closePairRadiusModePv = 0;
+    if (CPR.settingClosePairRadiusMode.value != closePairRadiusModePv) {
+      return false;
+    }
+    if (candidate.sign() != hadron.sign()) {
+      return false;
+    }
+
+    const float deltaEta = candidate.eta() - hadron.eta();
+    const float deltaPhi = wrapDeltaPhi(candidate.phi() - hadron.phi());
+    if (fillQA) {
+      hadHyperRegistry.fill(HIST("hClosePairBeforePV"), deltaEta, deltaPhi);
+    }
+    const bool isRejected = std::pow(deltaPhi, 2.f) / std::pow(CPR.settingClosePairDeltaPhiMax.value, 2.f) +
+                              std::pow(deltaEta, 2.f) / std::pow(CPR.settingClosePairDeltaEtaMax.value, 2.f) <
+                            1.f;
+    if (fillQA && !isRejected) {
+      hadHyperRegistry.fill(HIST("hClosePairAfterPV"), deltaEta, deltaPhi);
+    }
+    return isRejected;
+  }
+
   template <typename Ttrack>
   bool selectionPIDProton(const Ttrack& candidate)
   {
@@ -1491,37 +1661,32 @@ struct HadNucleiFemto {
     return -10.f;
   }
 
-  float averageClusterSizeCosl(uint32_t itsClusterSizes, float eta)
+  template <typename Tcandidate>
+  float computeHyperCandidateMass(const Tcandidate& candidate) const
   {
-    float average = 0;
-    int nclusters = 0;
-    const float cosl = 1. / std::cosh(eta);
-    const int nlayerITS = 7;
+    const std::array<float, 3> heMomentum{
+      candidate.ptHe3() * std::cos(candidate.phiHe3()),
+      candidate.ptHe3() * std::sin(candidate.phiHe3()),
+      candidate.ptHe3() * std::sinh(candidate.etaHe3())};
+    const std::array<float, 3> pionMomentum{
+      candidate.ptPi() * std::cos(candidate.phiPi()),
+      candidate.ptPi() * std::sin(candidate.phiPi()),
+      candidate.ptPi() * std::sinh(candidate.etaPi())};
+    return RecoDecay::m(std::array{heMomentum, pionMomentum},
+                        std::array{static_cast<float>(o2::constants::physics::MassHelium3),
+                                   static_cast<float>(o2::constants::physics::MassPiPlus)});
+  }
 
-    for (int layer = 0; layer < nlayerITS; layer++) {
-      if (((itsClusterSizes >> (layer * 4)) & 0xf) != 0u) {
-        nclusters++;
-        average += (itsClusterSizes >> (layer * 4)) & 0xf;
-      }
-    }
-    if (nclusters == 0) {
-      return 0;
-    }
-    return average * cosl / nclusters;
-  };
-
-  bool selectionPIDHyper(const aod::DataHypCandsWColl::iterator& V0Hyper)
+  template <typename Tcandidate>
+  bool selectHyperCandidate(const Tcandidate& candidate)
   {
-    mQaRegistry.fill(HIST("hHe3P_preselected"), V0Hyper.tpcMomHe());
-    float averClusSizeHe = averageClusterSizeCosl(V0Hyper.itsClusterSizesHe(), V0Hyper.etaHe3());
-    if (averClusSizeHe <= hypertriton.settingCutAverClsSizeHe) {
+    mQaRegistry.fill(HIST("hHe3P_preselected"), candidate.tpcMomHe());
+    const float mass = computeHyperCandidateMass(candidate);
+    if (!std::isfinite(mass) || mass < hypertriton.settingHypMassMin || mass > hypertriton.settingHypMassMax) {
       return false;
     }
-    if (V0Hyper.tpcChi2He() <= hypertriton.settingCutTPCChi2He) {
-      return false;
-    }
-    mQaRegistry.fill(HIST("hHe3P"), V0Hyper.tpcMomHe());
-    mQaRegistry.fill(HIST("hHe3TPCnsigma"), V0Hyper.ptHe3(), V0Hyper.nSigmaHe());
+    mQaRegistry.fill(HIST("hHe3P"), candidate.tpcMomHe());
+    mQaRegistry.fill(HIST("hHe3TPCnsigma"), candidate.ptHe3(), candidate.nSigmaHe());
 
     return true;
   }
@@ -1693,71 +1858,6 @@ struct HadNucleiFemto {
   }
 
   template <typename Ttrack>
-  void fillCandidateInfoHyper(const aod::DataHypCandsWColl::iterator& V0Hyper, const Ttrack& trackHad, HadNucandidate& hadHypercand, bool isMixedEvent)
-  {
-    hadHypercand.collisionID = V0Hyper.collisionId();
-    // get hypertriton information
-    // constexpr double mHe3 = o2::constants::physics::MassHelium3;
-    // constexpr double mPi  = o2::constants::physics::MassPiPlus;
-    //  --- He3
-    float pxHe3 = V0Hyper.ptHe3() * std::cos(V0Hyper.phiHe3());
-    float pyHe3 = V0Hyper.ptHe3() * std::sin(V0Hyper.phiHe3());
-    float pzHe3 = V0Hyper.ptHe3() * std::sinh(V0Hyper.etaHe3());
-    // float pHe3  = V0Hyper.ptHe3() * std::cosh(V0Hyper.etaHe3());
-    // float enHe3 = std::sqrt(pHe3 * pHe3 + mHe3 * mHe3);
-    //  --- pi
-    float pxPi = V0Hyper.ptPi() * std::cos(V0Hyper.phiPi());
-    float pyPi = V0Hyper.ptPi() * std::sin(V0Hyper.phiPi());
-    float pzPi = V0Hyper.ptPi() * std::sinh(V0Hyper.etaPi());
-    // float pPi  = V0Hyper.ptPi() * std::cosh(V0Hyper.etaPi());
-    // float enPi = std::sqrt(pPi * pPi + mPi * mPi);
-    //  --- hypertriton
-    float px = pxHe3 + pxPi;
-    float py = pyHe3 + pyPi;
-    float pz = pzHe3 + pzPi;
-    hadHypercand.momNu = std::array{px, py, pz};
-    hadHypercand.momHad = std::array{trackHad.px(), trackHad.py(), trackHad.pz()};
-
-    float invMass = 0;
-    invMass = RecoDecay::m(std::array<std::array<float, 3>, 2>{hadHypercand.momNu, hadHypercand.momHad}, std::array<float, 2>{static_cast<float>(o2::constants::physics::MassHelium3), mMassHad});
-
-    hadHypercand.signHad = trackHad.sign();
-    if (V0Hyper.isMatter()) {
-      hadHypercand.signNu = 1;
-    } else {
-      hadHypercand.signNu = -1;
-    }
-    hadHypercand.etaHe3 = V0Hyper.etaHe3();
-    hadHypercand.ptHe3 = V0Hyper.ptHe3();
-    hadHypercand.dcaxyHad = trackHad.dcaXY();
-    hadHypercand.dcazHad = trackHad.dcaZ();
-    hadHypercand.tpcSignalHad = trackHad.tpcSignal();
-    hadHypercand.tpcSignalNu = V0Hyper.tpcSignalHe();
-    hadHypercand.momHadTPC = trackHad.tpcInnerParam();
-    hadHypercand.nSigmaHad = getHadronTPCNSigma(trackHad);
-    hadHypercand.nSigmaNu = V0Hyper.nSigmaHe();
-    hadHypercand.chi2TPCHad = trackHad.tpcChi2NCl();
-    hadHypercand.chi2TPCNu = V0Hyper.tpcChi2He();
-    hadHypercand.pidTrkHad = trackHad.pidForTracking();
-    hadHypercand.itsClSizeHad = trackHad.itsClusterSizes();
-    hadHypercand.itsClSizeNu = V0Hyper.itsClusterSizesHe();
-    hadHypercand.nClsItsHad = trackHad.itsNCls();
-    hadHypercand.sharedClustersHad = trackHad.tpcNClsShared();
-
-    hadHypercand.isBkgUS = hadHypercand.signNu * trackHad.sign() < 0;
-    hadHypercand.isBkgEM = isMixedEvent;
-    hadHypercand.invMass = invMass;
-
-    hadHypercand.trackIDHad = trackHad.globalIndex();
-
-    if (trackHad.hasTOF()) {
-      float beta = o2::pid::tof::Beta::GetBeta(trackHad);
-      beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
-      hadHypercand.massTOFHad = trackHad.tpcInnerParam() * std::sqrt(1.f / (beta * beta) - 1.f);
-    }
-  }
-
-  template <typename Ttrack>
   void pairTracksSameEvent(const Ttrack& tracks, float /*cent*/)
   {
     // LOG(info) << "Number of tracks: " << tracks.size();
@@ -1821,38 +1921,6 @@ struct HadNucleiFemto {
       }
       if (hasStoredPair) {
         fillNucleusPairFlow(2);
-      }
-    }
-  }
-
-  template <typename Ttrack, typename Thypers>
-  void pairTracksSameEventHyper(const Ttrack& hadTracks, const Thypers& V0Hypers)
-  {
-    for (const auto& V0Hyper : V0Hypers) {
-      if (!selectionPIDHyper(V0Hyper)) {
-        continue;
-      }
-      for (const auto& hadTrack : hadTracks) {
-
-        mQaRegistry.fill(HIST("hTrackSel"), Selections::kNoCuts);
-
-        if (!selectTrackHadron(hadTrack)) {
-          continue;
-        }
-        mQaRegistry.fill(HIST("hTrackSel"), Selections::kTrackCuts);
-
-        if (!selectionPIDHadron(hadTrack)) {
-          continue;
-        }
-        mQaRegistry.fill(HIST("hTrackSel"), Selections::kPID);
-
-        SVCand pair;
-        pair.tr0Idx = V0Hyper.globalIndex();
-        pair.tr1Idx = hadTrack.globalIndex();
-        const int collIdx = V0Hyper.collisionId();
-        CollBracket collBracket{collIdx, collIdx};
-        pair.collBracket = collBracket;
-        mTrackHypPairs.push_back(pair);
       }
     }
   }
@@ -2085,45 +2153,6 @@ struct HadNucleiFemto {
     mQaRegistry.fill(HIST("MC/hPtHadRecVsGen"), signedPtHadMC, hadNucand.recoPtHad());
   }
 
-  template <typename Tcoll>
-  void fillTableHyper(const HadNucandidate& hadNucand, const Tcoll& collision)
-  {
-    mOutputHyperDataTable(
-      hadNucand.recoPtNu(),
-      hadNucand.recoEtaNu(),
-      hadNucand.ptHe3,
-      hadNucand.etaHe3,
-      hadNucand.recoPhiNu(),
-      hadNucand.recoPtHad(),
-      hadNucand.recoEtaHad(),
-      hadNucand.recoPhiHad(),
-      hadNucand.dcaxyHad,
-      hadNucand.dcazHad,
-      hadNucand.tpcSignalHad,
-      hadNucand.tpcSignalNu,
-      hadNucand.momHadTPC,
-      hadNucand.nSigmaHad,
-      hadNucand.nSigmaNu,
-      hadNucand.chi2TPCHad,
-      hadNucand.chi2TPCNu,
-      hadNucand.massTOFHad,
-      hadNucand.pidTrkHad,
-      hadNucand.itsClSizeHad,
-      hadNucand.itsClSizeNu,
-      hadNucand.sharedClustersHad,
-      hadNucand.trackIDHad,
-      hadNucand.isBkgUS,
-      hadNucand.isBkgEM);
-    if (output.settingFillMultiplicity) {
-      mOutputMultiplicityTable(
-        collision.globalIndex(),
-        collision.posZ(),
-        collision.numContrib(),
-        collision.centFT0C(),
-        collision.multFT0C());
-    }
-  }
-
   void fillHistograms(const HadNucandidate& hadNucand)
   {
     mQaRegistry.fill(HIST("hNuPt"), hadNucand.recoPtNu());
@@ -2217,33 +2246,449 @@ struct HadNucleiFemto {
     }
   }
 
-  template <typename Tcollisions, typename Ttracks>
-  void fillPairsHyper(const Tcollisions& collisions, const Ttracks& hadTracks, const o2::aod::DataHypCandsWColl& V0Hypers, const bool isMixedEvent)
+  template <typename Ttrack>
+  HadHyperTrackInfo makeHadHyperTrackInfo(const Ttrack& track)
   {
-    for (const auto& trackPair : mTrackHypPairs) {
+    constexpr float InvalidPID = -999.f;
+    return {track.pt(), track.eta(), track.phi(), static_cast<int8_t>(track.sign()),
+            track.dcaXY(), track.tpcNClsCrossedRows(), track.tpcNClsPID(), track.tpcChi2NCl(),
+            track.itsClusterSizes(), track.itsChi2NCl(), track.hasTOF(),
+            track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
+            track.hasTOF() ? track.tofNSigmaPi() : InvalidPID,
+            track.hasTOF() ? track.tofNSigmaKa() : InvalidPID,
+            track.hasTOF() ? track.tofNSigmaPr() : InvalidPID};
+  }
 
-      auto v0hyper = V0Hypers.rawIteratorAt(trackPair.tr0Idx);
-      auto hadTrack = hadTracks.rawIteratorAt(trackPair.tr1Idx);
-      // auto collBracket = trackPair.collBracket;
+  template <typename Tcollision>
+  HadHyperEventInfo makeHadHyperEventInfo(const Tcollision& collision)
+  {
+    const auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+    return {bc.runNumber(), collision.posZ(), collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
+            collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(),
+            static_cast<uint16_t>(collision.numContrib()), collision.multFT0C(),
+            collision.posX(), collision.posY(), collision.posZ()};
+  }
 
-      HadNucandidate hadNucand;
-      fillCandidateInfoHyper(v0hyper, hadTrack, hadNucand, isMixedEvent);
+  template <typename Tparticle>
+  HadHyperParticleTruth makeHadHyperParticleTruth(const Tparticle& particle)
+  {
+    return {particle.globalIndex(), particle.mcCollisionId(), particle.pdgCode(), particle.pt(), particle.eta(), particle.phi(), particle.isPhysicalPrimary(), static_cast<int16_t>(particle.statusCode()), static_cast<int16_t>(particle.getProcess()), {particle.px(), particle.py(), particle.pz()}};
+  }
 
-      mQaRegistry.fill(HIST("hNuPt"), hadNucand.recoPtNu());
-      mQaRegistry.fill(HIST("hHadPt"), hadNucand.recoPtHad());
-      mQaRegistry.fill(HIST("hNuEta"), hadNucand.recoEtaNu());
-      mQaRegistry.fill(HIST("hHadEta"), hadNucand.recoEtaHad());
-      mQaRegistry.fill(HIST("hNuPhi"), hadNucand.recoPhiNu());
-      mQaRegistry.fill(HIST("hHadPhi"), hadNucand.recoPhiHad());
-      mQaRegistry.fill(HIST("hNuHadtInvMass"), hadNucand.invMass);
-      mQaRegistry.fill(HIST("hNClsHadITS"), hadNucand.nClsItsHad);
-      mQaRegistry.fill(HIST("hisBkgEM"), hadNucand.isBkgEM);
-
-      auto collision = collisions.rawIteratorAt(hadNucand.collisionID);
-
-      if (output.settingFillTable) {
-        fillTableHyper(hadNucand, collision);
+  template <bool isMC, typename Ttrack>
+  HadHyperHadron makeHadHyperHadron(const Ttrack& track)
+  {
+    HadHyperHadron hadron{makeHadHyperTrackInfo(track), {}, {}, track.globalIndex(), {track.px(), track.py(), track.pz()}, track.tpcInnerParam(), track.tpcSignal(), track.eta(), track.phi(), static_cast<int8_t>(track.sign())};
+    if constexpr (isMC) {
+      if (track.has_mcParticle()) {
+        const auto particle = track.template mcParticle_as<aod::McParticles>();
+        hadron.truth = makeHadHyperParticleTruth(particle);
+        if (particle.has_mothers()) {
+          for (const auto& mother : particle.template mothers_as<aod::McParticles>()) {
+            hadron.motherIds.push_back(mother.globalIndex());
+          }
+        }
       }
+    }
+    return hadron;
+  }
+
+  template <bool isMC, typename Tcandidate, typename Ttracks>
+  HadHyperCandidate makeHadHyperCandidate(const Tcandidate& candidate, const Ttracks& tracks)
+  {
+    const auto he = tracks.rawIteratorAt(candidate.heTrackId() - tracks.offset());
+    const auto pion = tracks.rawIteratorAt(candidate.piTrackId() - tracks.offset());
+    const std::array<float, 3> heMomentum{
+      candidate.ptHe3() * std::cos(candidate.phiHe3()),
+      candidate.ptHe3() * std::sin(candidate.phiHe3()),
+      candidate.ptHe3() * std::sinh(candidate.etaHe3())};
+    const std::array<float, 3> pionMomentum{
+      candidate.ptPi() * std::cos(candidate.phiPi()),
+      candidate.ptPi() * std::sin(candidate.phiPi()),
+      candidate.ptPi() * std::sinh(candidate.etaPi())};
+    HadHyperCandidate result;
+    for (size_t i = 0; i < result.momentum.size(); ++i) {
+      result.momentum[i] = heMomentum[i] + pionMomentum[i];
+    }
+    result.mass = computeHyperCandidateMass(candidate);
+    result.heTrackId = candidate.heTrackId();
+    result.pionTrackId = candidate.piTrackId();
+    result.sourceCandidateId = candidate.globalIndex();
+    result.etaHe = candidate.etaHe3();
+    result.phiHe = candidate.phiHe3();
+    result.etaPi = candidate.etaPi();
+    result.phiPi = candidate.phiPi();
+    result.isMatter = candidate.isMatter();
+    if constexpr (isMC) {
+      if (he.has_mcParticle()) {
+        result.heTruth = makeHadHyperParticleTruth(he.template mcParticle_as<aod::McParticles>());
+      }
+      if (pion.has_mcParticle()) {
+        result.decayPionTruth = makeHadHyperParticleTruth(pion.template mcParticle_as<aod::McParticles>());
+      }
+      if (he.has_mcParticle() && pion.has_mcParticle()) {
+        const auto heParticle = he.template mcParticle_as<aod::McParticles>();
+        const auto pionParticle = pion.template mcParticle_as<aod::McParticles>();
+        if (heParticle.has_mothers() && pionParticle.has_mothers()) {
+          for (const auto& heMother : heParticle.template mothers_as<aod::McParticles>()) {
+            for (const auto& pionMother : pionParticle.template mothers_as<aod::McParticles>()) {
+              if (heMother.globalIndex() == pionMother.globalIndex() &&
+                  std::abs(heMother.pdgCode()) == HyperTritonPDG) {
+                result.hyperTruth = makeHadHyperParticleTruth(heMother);
+              }
+            }
+          }
+        }
+      }
+    }
+    result.info = {candidate.isMatter(),
+                   candidate.ptHe3(), candidate.etaHe3(), candidate.phiHe3(),
+                   candidate.ptPi(), candidate.etaPi(), candidate.phiPi(),
+                   candidate.dcaV0Daug(), candidate.dcaHe(), candidate.dcaPi(),
+                   candidate.nSigmaHe(), candidate.tofMass(),
+                   candidate.nTPCCrossedRowsHe(), candidate.nTPCCrossedRowsPi(),
+                   candidate.tpcMomHe(), candidate.tpcMomPi(),
+                   candidate.tpcSignalHe(), candidate.tpcSignalPi(),
+                   candidate.tpcChi2He(), candidate.itsChi2He(), candidate.itsChi2Pi(),
+                   candidate.itsClusterSizesHe(), candidate.itsClusterSizesPi(),
+                   candidate.xDecVtx(), candidate.yDecVtx(), candidate.zDecVtx()};
+    if constexpr (isMC) {
+      result.statusCode = static_cast<int16_t>(candidate.statusCode());
+      result.isReco = candidate.isReco();
+      result.isSignal = candidate.isSignal();
+      result.isRecoMCCollision = candidate.isRecoMCCollision();
+      result.isSurvEvSel = candidate.isSurvEvSel();
+      result.isTwoBodyDecay = candidate.isTwoBodyDecay();
+      result.isFakeHeOnITSLayer = candidate.isFakeHeOnITSLayer();
+      result.genPt = candidate.genPt();
+      result.genEta = candidate.genEta();
+      result.genPhi = candidate.genPhi();
+      result.genPtHe3 = candidate.genPtHe3();
+      result.genDecVtx = {candidate.genXDecVtx(), candidate.genYDecVtx(), candidate.genZDecVtx()};
+      const float absGenPt = std::abs(candidate.genPt());
+      result.genMomentum = {absGenPt * std::cos(candidate.genPhi()),
+                            absGenPt * std::sin(candidate.genPhi()),
+                            absGenPt * std::sinh(candidate.genEta())};
+    }
+    hadHyperRegistry.fill(HIST("hMass"), result.mass);
+    hadHyperRegistry.fill(HIST("hDaughterHeTPC"), he.tpcInnerParam(), he.tpcSignal());
+    hadHyperRegistry.fill(HIST("hDaughterPiTPC"), pion.tpcInnerParam(), pion.tpcSignal());
+    return result;
+  }
+
+  HadHyperDataInfo makeHadHyperDataInfo(const HadHyperCandidate& candidate, const HadHyperHadron& hadron,
+                                        const HadHyperEvent& hyperEvent, const HadHyperEvent& hadronEvent,
+                                        bool mixed, int mixingDepth)
+  {
+    (void)hadronEvent;
+    return std::tuple_cat(std::make_tuple(mixed, mixingDepth),
+                          hyperEvent.info, candidate.info,
+                          hadron.info);
+  }
+
+  bool hasTruthMother(const HadHyperHadron& hadron, int64_t motherId) const
+  {
+    return motherId >= 0 && std::find(hadron.motherIds.begin(), hadron.motherIds.end(), motherId) != hadron.motherIds.end();
+  }
+
+  bool isHadHyperTruthSelfCorrelation(const HadHyperCandidate& candidate, const HadHyperHadron& hadron) const
+  {
+    return hadron.truth.particleId >= 0 &&
+           (hadron.truth.particleId == candidate.heTruth.particleId ||
+            hadron.truth.particleId == candidate.decayPionTruth.particleId ||
+            hasTruthMother(hadron, candidate.hyperTruth.particleId));
+  }
+
+  HadHyperMCInfo makeHadHyperMCInfo(const HadHyperCandidate& candidate, const HadHyperHadron& hadron,
+                                    const HadHyperEvent& hyperEvent, const HadHyperEvent& hadronEvent) const
+  {
+    const bool sameMCCollision = candidate.hyperTruth.collisionId >= 0 &&
+                                 hadron.truth.collisionId == candidate.hyperTruth.collisionId;
+    const bool matchesHypRecoMCCollision = hyperEvent.hasMCCollision &&
+                                           candidate.hyperTruth.collisionId == hyperEvent.mcCollisionId;
+    const bool matchesPairRecoMCCollision = hadronEvent.hasMCCollision &&
+                                            hadron.truth.collisionId == hadronEvent.mcCollisionId;
+    const bool isTruthSelfCorrelation = isHadHyperTruthSelfCorrelation(candidate, hadron);
+    const bool isTruePrimaryHadHyperPair = candidate.isSignal &&
+                                           std::abs(candidate.hyperTruth.pdgCode) == HyperTritonPDG &&
+                                           std::abs(hadron.truth.pdgCode) == std::abs(species.settingHadPDGCode.value) &&
+                                           hadron.truth.isPhysicalPrimary && sameMCCollision && !isTruthSelfCorrelation;
+    return {candidate.genPt, candidate.genEta, candidate.genPhi,
+            candidate.genDecVtx[0], candidate.genDecVtx[1], candidate.genDecVtx[2],
+            candidate.isReco, candidate.isSignal,
+            candidate.isRecoMCCollision, candidate.isSurvEvSel, candidate.isTwoBodyDecay, candidate.statusCode,
+            candidate.heTruth.pt, candidate.heTruth.isPhysicalPrimary,
+            candidate.decayPionTruth.isPhysicalPrimary,
+            std::get<0>(hadron.info), std::get<1>(hadron.info), std::get<2>(hadron.info),
+            hadron.truth.pt, hadron.truth.eta, hadron.truth.phi, hadron.truth.isPhysicalPrimary,
+            hadron.truth.process,
+            sameMCCollision, matchesHypRecoMCCollision, matchesPairRecoMCCollision,
+            isTruthSelfCorrelation, isTruePrimaryHadHyperPair};
+  }
+
+  void fillHadHyperMCQA(const HadHyperCandidate& candidate, const HadHyperHadron& hadron,
+                        const HadHyperEvent& hyperEvent, float kstar)
+  {
+    if (!candidate.isReco || !candidate.isSignal ||
+        std::abs(candidate.hyperTruth.pdgCode) != HyperTritonPDG) {
+      return;
+    }
+
+    const bool isSelectedHadronSpecies = std::abs(hadron.truth.pdgCode) == std::abs(species.settingHadPDGCode.value);
+    if (!isSelectedHadronSpecies) {
+      return;
+    }
+
+    const float kstarMC = computePairKstar(hadron.truth.momentum, configuredHadronMass(),
+                                           candidate.genMomentum, o2::constants::physics::MassHyperTriton);
+    if (std::isfinite(kstarMC)) {
+      hadHyperRegistry.fill(HIST("MC/hKstarRecVsGenHyperReco"), kstarMC, kstar);
+      hadHyperRegistry.fill(HIST("MC/hKstarResolutionHyperReco"), kstar, kstar - kstarMC);
+    }
+
+    hadHyperRegistry.fill(HIST("MC/hPrimaryHadronVsKstarDen"), kstar);
+    hadHyperRegistry.fill(HIST("MC/hPrimaryHadronVsCentDen"), hyperEvent.centrality);
+    if (hadron.truth.isPhysicalPrimary) {
+      hadHyperRegistry.fill(HIST("MC/hPrimaryHadronVsKstarNum"), kstar);
+      hadHyperRegistry.fill(HIST("MC/hPrimaryHadronVsCentNum"), hyperEvent.centrality);
+    }
+  }
+
+  template <bool isMC>
+  bool fillHadHyperPair(const HadHyperCandidate& candidate, const HadHyperHadron& hadron,
+                        const HadHyperEvent& hyperEvent, const HadHyperEvent& hadronEvent,
+                        bool mixed, int mixingDepth)
+  {
+    const float kstar = computePairKstar(hadron.momentum, configuredHadronMass(),
+                                         candidate.momentum, o2::constants::physics::MassHyperTriton);
+    // All source indices here belong to the same timeframe. Also clean mixed
+    // pairs in case LF reassigned a daughter to a different collision.
+    if (hadron.sourceId == candidate.heTrackId || hadron.sourceId == candidate.pionTrackId) {
+      const int reason = hadron.sourceId == candidate.heTrackId ? 0 : 1;
+      hadHyperRegistry.fill(HIST("hSelfPairs"), reason, kstar);
+      if (!mixed) {
+        hadHyperRegistry.fill(HIST("hSameEventSelfPairs"), reason, kstar);
+      }
+      return false;
+    }
+    if constexpr (isMC) {
+      if (isHadHyperTruthSelfCorrelation(candidate, hadron)) {
+        hadHyperRegistry.fill(HIST("hSelfPairs"), 2, kstar);
+        if (!mixed) {
+          hadHyperRegistry.fill(HIST("hSameEventSelfPairs"), 2, kstar);
+        }
+        return false;
+      }
+    }
+    const bool unlikeSign = candidate.sign() * hadron.sign() < 0;
+    if (!eventMixing.settingSaveUSandLS && unlikeSign != eventMixing.settingEnableBkgUS.value) {
+      return false;
+    }
+    if (!std::isfinite(kstar)) {
+      return false;
+    }
+    if (isCloseHadHyperPairAtPV(candidate, hadron, /*fillQA*/ true)) {
+      return false;
+    }
+    if (mixed) {
+      hadHyperRegistry.fill(HIST("hME"), kstar);
+    } else {
+      hadHyperRegistry.fill(HIST("hSE"), kstar);
+    }
+
+    if constexpr (isMC) {
+      fillHadHyperMCQA(candidate, hadron, hyperEvent, kstar);
+    }
+
+    if (!output.settingFillTable || (hadHyper.maxOutputKstar.value > 0.f && kstar >= hadHyper.maxOutputKstar.value)) {
+      return true;
+    }
+    const auto dataInfo = makeHadHyperDataInfo(candidate, hadron, hyperEvent, hadronEvent, mixed, mixingDepth);
+    if constexpr (isMC) {
+      std::apply([this](const auto&... columns) { mOutputHadHyperMCTable(columns...); },
+                 std::tuple_cat(dataInfo, makeHadHyperMCInfo(candidate, hadron, hyperEvent, hadronEvent)));
+    } else {
+      std::apply([this](const auto&... columns) { mOutputHadHyperDataTable(columns...); }, dataInfo);
+    }
+    return true;
+  }
+
+  template <typename Ttracks>
+  bool hasValidHyperDaughterIndices(const Ttracks& tracks, int64_t heTrackId, int64_t pionTrackId) const
+  {
+    const auto first = static_cast<int64_t>(tracks.offset());
+    const auto last = first + static_cast<int64_t>(tracks.size());
+    return heTrackId >= first && heTrackId < last && pionTrackId >= first && pionTrackId < last;
+  }
+
+  template <bool isMC, typename Ttracks>
+  void collectHyperHadronTracks(HadHyperEvent& event, const Ttracks& eventTracks)
+  {
+    for (const auto& track : eventTracks) {
+      if (!selectTrackHadron(track) || !selectionPIDHadron(track)) {
+        continue;
+      }
+      event.hadrons.push_back(makeHadHyperHadron<isMC>(track));
+      hadHyperRegistry.fill(HIST("hHadronTPC"), track.tpcInnerParam(), track.tpcSignal());
+    }
+  }
+
+  template <bool isMC, typename Tcandidates, typename Ttracks>
+  void collectHyperCandidates(HadHyperEvent& event, const Tcandidates& eventCandidates, const Ttracks& tracks)
+  {
+    for (const auto& candidate : eventCandidates) {
+      if constexpr (isMC) {
+        if (!candidate.isReco()) {
+          continue;
+        }
+      }
+      if (!hasValidHyperDaughterIndices(tracks, candidate.heTrackId(), candidate.piTrackId())) {
+        if constexpr (isMC) {
+          continue;
+        } else {
+          LOG(fatal) << "Hypertriton daughter indices must reference the input Tracks table";
+        }
+      }
+      if (!selectHyperCandidate(candidate)) {
+        continue;
+      }
+      event.candidates.push_back(makeHadHyperCandidate<isMC>(candidate, tracks));
+    }
+  }
+
+  template <bool isMC, typename Tcollision, typename Ttracks, typename Tcandidates>
+  HadHyperEvent buildHyperEvent(const Tcollision& collision, const Ttracks& tracks, const Tcandidates& candidates)
+  {
+    HadHyperEvent event;
+    event.info = makeHadHyperEventInfo(collision);
+    event.centrality = collision.centFT0C();
+    if constexpr (isMC) {
+      event.hasMCCollision = collision.has_mcCollision();
+      event.mcCollisionId = collision.has_mcCollision() ? collision.mcCollisionId() : -1;
+    }
+
+    if constexpr (isMC) {
+      const auto eventTracks = tracks.sliceBy(mPerColMC, collision.globalIndex());
+      collectHyperHadronTracks<isMC>(event, eventTracks);
+
+      const auto eventCandidates = candidates.sliceBy(hypPerColMC, collision.globalIndex());
+      collectHyperCandidates<isMC>(event, eventCandidates, tracks);
+    } else {
+      const auto eventTracks = tracks.sliceBy(mPerCol, collision.globalIndex());
+      collectHyperHadronTracks<isMC>(event, eventTracks);
+
+      const auto eventCandidates = candidates.sliceBy(hypPerCol, collision.globalIndex());
+      collectHyperCandidates<isMC>(event, eventCandidates, tracks);
+    }
+
+    return event;
+  }
+
+  template <bool isMC>
+  void fillSameEventHyperPairs(const HadHyperEvent& event)
+  {
+    for (const auto& candidate : event.candidates) {
+      int acceptedPairs = 0;
+      for (const auto& hadron : event.hadrons) {
+        if (fillHadHyperPair<isMC>(candidate, hadron, event, event, false, 0)) {
+          ++acceptedPairs;
+        }
+      }
+      hadHyperRegistry.fill(HIST("hCandidatePairMultiplicitySE"), acceptedPairs, event.centrality);
+    }
+  }
+
+  template <bool isMC>
+  void fillMixedEventHyperPairs(const HadHyperEvent& currentEvent, const std::deque<HadHyperEvent>& pool)
+  {
+    const int depth = static_cast<int>(pool.size());
+    hadHyperRegistry.fill(HIST("hMixingDepth"), depth);
+    std::vector<int> currentCandidatePairCounts(currentEvent.candidates.size(), 0);
+    for (const auto& partner : pool) {
+      const float currentPosZ = std::get<1>(currentEvent.info);
+      const float partnerPosZ = std::get<1>(partner.info);
+      hadHyperRegistry.fill(HIST("hMixEventDeltaPosZVsCent"), currentEvent.centrality, currentPosZ - partnerPosZ);
+      hadHyperRegistry.fill(HIST("hMixEventDeltaCentFT0CVsCent"), currentEvent.centrality, currentEvent.centrality - partner.centrality);
+      size_t candidateIndex = 0;
+      for (const auto& candidate : currentEvent.candidates) {
+        for (const auto& hadron : partner.hadrons) {
+          if (fillHadHyperPair<isMC>(candidate, hadron, currentEvent, partner, true, depth)) {
+            ++currentCandidatePairCounts[candidateIndex];
+          }
+        }
+        ++candidateIndex;
+      }
+      for (const auto& candidate : partner.candidates) {
+        int acceptedPairs = 0;
+        for (const auto& hadron : currentEvent.hadrons) {
+          if (fillHadHyperPair<isMC>(candidate, hadron, partner, currentEvent, true, depth)) {
+            ++acceptedPairs;
+          }
+        }
+        hadHyperRegistry.fill(HIST("hCandidatePairMultiplicityME"), acceptedPairs, partner.centrality);
+      }
+    }
+    for (const auto& acceptedPairs : currentCandidatePairCounts) {
+      hadHyperRegistry.fill(HIST("hCandidatePairMultiplicityME"), acceptedPairs, currentEvent.centrality);
+    }
+  }
+
+  void storeHyperEventInPool(std::deque<HadHyperEvent>& pool, HadHyperEvent&& event)
+  {
+    const int requestedMixingDepth = eventMixing.settingNoMixedEvents.value;
+    if (requestedMixingDepth <= 0) {
+      return;
+    }
+    const auto mixingDepth = static_cast<size_t>(requestedMixingDepth);
+    if (pool.size() >= mixingDepth) {
+      pool.pop_front();
+    }
+    pool.push_back(std::move(event));
+  }
+
+  template <bool isMC, typename Tcollisions, typename Ttracks, typename Tcandidates>
+  void processHyperPairs(const Tcollisions& collisions, const Ttracks& tracks, const Tcandidates& candidates,
+                         const aod::BCsWithTimestamps& bcs,
+                         std::unordered_map<int, std::deque<HadHyperEvent>>& mixingPools,
+                         int& mixingRunNumber)
+  {
+    const BinningType configuredBinningPolicy{{axisVertex, axisCentrality}, true};
+    for (const auto& collision : collisions) {
+      if (!selectCollision<isMC>(collision, bcs)) {
+        continue;
+      }
+      if constexpr (isMC) {
+        if (mc.settingRequireRecoMCCollisionMatch.value && !collision.has_mcCollision()) {
+          continue;
+        }
+      }
+
+      hadHyperRegistry.fill(HIST("hPoolFlow"), 0);
+      int poolBin = -1;
+      if (hadHyper.enableMixing.value) {
+        poolBin = configuredBinningPolicy.getBin(std::make_tuple(collision.posZ(), collision.centFT0C()));
+        if (poolBin < 0) {
+          continue;
+        }
+        hadHyperRegistry.fill(HIST("hPoolFlow"), 1);
+      }
+
+      auto event = buildHyperEvent<isMC>(collision, tracks, candidates);
+      fillSameEventHyperPairs<isMC>(event);
+
+      if (!hadHyper.enableMixing.value) {
+        continue;
+      }
+
+      const auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      if (mixingRunNumber != bc.runNumber()) {
+        mixingPools.clear();
+        mixingRunNumber = bc.runNumber();
+      }
+
+      auto& pool = mixingPools[poolBin];
+      fillMixedEventHyperPairs<isMC>(event, pool);
+      storeHyperEventInPool(pool, std::move(event));
     }
   }
 
@@ -2330,8 +2775,6 @@ struct HadNucleiFemto {
   }
   PROCESS_SWITCH(HadNucleiFemto, processMC, "Process reconstructed MC same-event pairs", false);
 
-  // ==================================================================================================================
-
   void processSameEvent(const CollisionsFull& collisions, const TrackCandidates& tracks, const aod::BCsWithTimestamps& bcs)
   {
     mGoodCollisions.clear();
@@ -2360,38 +2803,6 @@ struct HadNucleiFemto {
     }
   }
   PROCESS_SWITCH(HadNucleiFemto, processSameEvent, "Process Same event", false);
-
-  void processSameEventHyper(const CollisionsFull& collisions, const TrackCandidates& hadtracks, o2::aod::DataHypCandsWColl const& V0Hypers, const aod::BCsWithTimestamps& bcs)
-  {
-    mGoodCollisions.clear();
-    mGoodCollisions.resize(collisions.size(), false);
-    // LOG(info) << "Number of hyperCandidates read = " << V0Hypers.size();
-
-    for (const auto& collision : collisions) {
-
-      mTrackHypPairs.clear();
-
-      if (!selectCollision</*isMC*/ false>(collision, bcs)) {
-        continue;
-      }
-
-      mGoodCollisions[collision.globalIndex()] = true;
-      const uint64_t collIdx = collision.globalIndex();
-      auto trackTableThisCollision = hadtracks.sliceBy(mPerCol, collIdx);
-      auto hypdTableThisCollision = V0Hypers.sliceBy(hypPerCol, collIdx);
-      trackTableThisCollision.bindExternalIndices(&hadtracks);
-      hypdTableThisCollision.bindExternalIndices(&V0Hypers);
-
-      pairTracksSameEventHyper(trackTableThisCollision, hypdTableThisCollision);
-
-      if (mTrackHypPairs.empty()) {
-        continue;
-      }
-
-      fillPairsHyper(collisions, hadtracks, V0Hypers, /*isMixedEvent*/ false);
-    }
-  }
-  PROCESS_SWITCH(HadNucleiFemto, processSameEventHyper, "Process Same event", false);
 
   void processMixedEvent(const CollisionsFull& collisions, const TrackCandidates& tracks, const aod::BCsWithTimestamps&)
   {
@@ -2582,6 +2993,20 @@ struct HadNucleiFemto {
     }
   }
   PROCESS_SWITCH(HadNucleiFemto, processPurity, "Process for hadron and nucleus purity QA", false);
+
+  void processHyper(const HadHyperCollisionsFull& collisions, const TrackCandidates& tracks,
+                    const HyperCandidates& candidates, const aod::BCsWithTimestamps& bcs)
+  {
+    processHyperPairs</*isMC*/ false>(collisions, tracks, candidates, bcs, mHyperMixingPools, mHyperMixingRunNumber);
+  }
+  PROCESS_SWITCH(HadNucleiFemto, processHyper, "Process same-event and mixed-event hadron-hypertriton pairs", false);
+
+  void processMCHyper(const HadHyperCollisionsFullMC& collisions, const TrackCandidatesMC& tracks,
+                      const HyperCandidatesMC& candidates, const aod::McParticles&, const aod::BCsWithTimestamps& bcs)
+  {
+    processHyperPairs</*isMC*/ true>(collisions, tracks, candidates, bcs, mHyperMCMixingPools, mHyperMCMixingRunNumber);
+  }
+  PROCESS_SWITCH(HadNucleiFemto, processMCHyper, "Process MC same-event and mixed-event hadron-hypertriton pairs", false);
 };
 
 WorkflowSpec defineDataProcessing(const ConfigContext& cfgc)

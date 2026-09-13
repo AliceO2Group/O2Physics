@@ -779,8 +779,8 @@ struct DetectorOccupancyQaTask {
       if (!col.selection_bit(kNoITSROFrameBorder))
         continue;
 
-      std::vector<int> vCollsAssocToGivenColl = vCollsInTimeWin[colIndex];
-      std::vector<float> vCollsTimeDeltaWrtGivenColl = vTimeDeltaForColls[colIndex];
+      const std::vector<int>& vCollsAssocToGivenColl = vCollsInTimeWin[colIndex];
+      const std::vector<float>& vCollsTimeDeltaWrtGivenColl = vTimeDeltaForColls[colIndex];
 
       LOGP(debug, "  >> vCollsAssocToGivenColl.size={}", vCollsAssocToGivenColl.size());
 

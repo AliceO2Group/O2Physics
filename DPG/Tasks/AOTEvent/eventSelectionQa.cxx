@@ -1415,7 +1415,7 @@ struct EventSelectionQaTask {
         bool isVertexUPC = flags & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode; // is vertex with UPC settings
 
         // the second collision in ROF
-        std::vector<int> vAssocToSameROF = vCollsInSameITSROF[colIndex];
+        const std::vector<int>& vAssocToSameROF = vCollsInSameITSROF[colIndex];
         int thisColIndex = vAssocToSameROF[0];
         float vZassoc = vCollVz[thisColIndex];               // vZ of the second collision in the same ROF
         float nPVassoc = vTracksITS567perColl[thisColIndex]; // n PV tracks of the second collision in the same ROF

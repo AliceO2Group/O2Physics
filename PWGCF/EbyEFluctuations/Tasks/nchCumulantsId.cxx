@@ -68,8 +68,15 @@ constexpr int McBitPR = 2;
 constexpr int McBitEL = 3;
 constexpr int McBitDE = 4;
 
-#define BITSET(mask, ithBit) ((mask) |= (1 << (ithBit)))  // avoid name bitset as std::bitset is already there
-#define BITCHECK(mask, ithBit) ((mask) & (1 << (ithBit))) // bit check will return int value, not bool, use BITCHECK != 0 in Analysi
+constexpr void BITSET(int& mask, int ithBit)
+{
+  mask |= (1 << ithBit);
+}
+
+constexpr bool BITCHECK(int mask, int ithBit)
+{
+  return (mask & (1 << ithBit)) != 0;
+}
 
 enum PidEnum {
   kCh = 0,
@@ -212,6 +219,10 @@ struct NchCumulantsId {
     ConfigurableAxis subSampleAxis{"subSampleAxis", {10, 0., 10.}, "Subsample"};
     TRandom3* fRandom = new TRandom3(0); // Random number generator for subsampling
     int currentSubsample = 0;
+    Configurable<float> cfgCutPtMinKa{"cfgCutPtMinKa", 0.30, "min pT for kaon eff-correction inclusion"};
+    Configurable<float> cfgCutPtMaxKa{"cfgCutPtMaxKa", 1.20, "max pT for kaon eff-correction inclusion (purity cutoff)"};
+    Configurable<float> cfgCutPtMinPr{"cfgCutPtMinPr", 0.40, "min pT for proton eff-correction inclusion"};
+    Configurable<float> cfgCutPtMaxPr{"cfgCutPtMaxPr", 1.50, "max pT for proton eff-correction inclusion (purity cutoff)"};
   } cfgEventSelection;
 
   // Configurables for particle Identification
@@ -297,9 +308,11 @@ struct NchCumulantsId {
     double q4 = 0.;
   };
 
+  static constexpr float KmaxWeight = 10.0f; // secondary safeguard for pr and kaon eff fix
+
   inline void fillEffPower(EffPowerSums& p, float weight)
   {
-    if (weight <= 0.f) {
+    if (weight <= 0.f || weight > KmaxWeight) {
       return;
     }
 
@@ -1008,28 +1021,20 @@ struct NchCumulantsId {
   {
     switch (pidMode) {
       case kPi:
-        if (std::fabs(track.tpcNSigmaPi()) < nSigmaTPC &&
-            std::fabs(track.tofNSigmaPi()) < nSigmaTOF) {
-          return true;
-        }
-        break;
+        return std::fabs(track.tpcNSigmaPi()) < nSigmaTPC &&
+               std::fabs(track.tofNSigmaPi()) < nSigmaTOF;
+
       case kKa:
-        if (std::fabs(track.tpcNSigmaKa()) < nSigmaTPC &&
-            std::fabs(track.tofNSigmaKa()) < nSigmaTOF) {
-          return true;
-        }
-        break;
+        return std::fabs(track.tpcNSigmaKa()) < nSigmaTPC &&
+               std::fabs(track.tofNSigmaKa()) < nSigmaTOF;
+
       case kPr:
-        if (std::fabs(track.tpcNSigmaPr()) < nSigmaTPC &&
-            std::fabs(track.tofNSigmaPr()) < nSigmaTOF) {
-          return true;
-        }
-        break;
+        return std::fabs(track.tpcNSigmaPr()) < nSigmaTPC &&
+               std::fabs(track.tofNSigmaPr()) < nSigmaTOF;
+
       default:
         return false;
-        break;
     }
-    return false;
   }
 
   template <int pidMode, typename T>
@@ -1037,25 +1042,23 @@ struct NchCumulantsId {
   {
     switch (pidMode) {
       case kPi:
-        if (std::pow(track.tpcNSigmaPi() / nSigmaTPC, 2) + std::pow(track.tofNSigmaPi() / nSigmaTOF, 2) < 1.0) {
-          return true;
-        }
-        break;
+        return std::pow(track.tpcNSigmaPi() / nSigmaTPC, 2) +
+                 std::pow(track.tofNSigmaPi() / nSigmaTOF, 2) <
+               1.0;
+
       case kKa:
-        if (std::pow(track.tpcNSigmaKa() / nSigmaTPC, 2) + std::pow(track.tofNSigmaKa() / nSigmaTOF, 2) < 1.0) {
-          return true;
-        }
-        break;
+        return std::pow(track.tpcNSigmaKa() / nSigmaTPC, 2) +
+                 std::pow(track.tofNSigmaKa() / nSigmaTOF, 2) <
+               1.0;
+
       case kPr:
-        if (std::pow(track.tpcNSigmaPr() / nSigmaTPC, 2) + std::pow(track.tofNSigmaPr() / nSigmaTOF, 2) < 1.0) {
-          return true;
-        }
-        break;
+        return std::pow(track.tpcNSigmaPr() / nSigmaTPC, 2) +
+                 std::pow(track.tofNSigmaPr() / nSigmaTOF, 2) <
+               1.0;
+
       default:
         return false;
-        break;
     }
-    return false;
   }
 
   template <int pidMode, typename T>
@@ -1196,13 +1199,10 @@ struct NchCumulantsId {
   template <typename T>
   bool selTrackForId(const T& track)
   {
-    if (cfgIdElRejLowNSigma < track.tpcNSigmaEl() && track.tpcNSigmaEl() < cfgIdElRejHighNSigma &&
-        std::fabs(track.tpcNSigmaPi()) > cfgIdPiRejNSigma &&
-        std::fabs(track.tpcNSigmaKa()) > cfgIdKaRejNSigma &&
-        std::fabs(track.tpcNSigmaPr()) > cfgIdPrRejNSigma) {
-      return false;
-    }
-    return true;
+    return !(cfgIdElRejLowNSigma < track.tpcNSigmaEl() && track.tpcNSigmaEl() < cfgIdElRejHighNSigma &&
+             std::fabs(track.tpcNSigmaPi()) > cfgIdPiRejNSigma &&
+             std::fabs(track.tpcNSigmaKa()) > cfgIdKaRejNSigma &&
+             std::fabs(track.tpcNSigmaPr()) > cfgIdPrRejNSigma);
   }
 
   // Pion
@@ -1999,19 +1999,27 @@ struct NchCumulantsId {
           fillGenTrackQA<genAnalysisDir, kPi, kNeg>(genAnalysis, mcTrack);
         } else if (pdg == kKPlus) {
           // fillGenTrackQA<genAnalysisDir, kKa>(genAnalysis, mcTrack);
-          nKaGen++;
+          if (mcTrack.pt() >= cfgEventSelection.cfgCutPtMinKa && mcTrack.pt() <= cfgEventSelection.cfgCutPtMaxKa) {
+            nKaGen++;
+          }
           fillGenTrackQA<genAnalysisDir, kKa, kPos>(genAnalysis, mcTrack);
         } else if (pdg == kKMinus) {
           // fillGenTrackQA<genAnalysisDir, kKa>(genAnalysis, mcTrack);
-          nAKaGen++;
+          if (mcTrack.pt() >= cfgEventSelection.cfgCutPtMinKa && mcTrack.pt() <= cfgEventSelection.cfgCutPtMaxKa) {
+            nAKaGen++;
+          }
           fillGenTrackQA<genAnalysisDir, kKa, kNeg>(genAnalysis, mcTrack);
         } else if (pdg == kProton) {
           // fillGenTrackQA<genAnalysisDir, kPr>(genAnalysis, mcTrack);
-          nPrGen++;
+          if (mcTrack.pt() >= cfgEventSelection.cfgCutPtMinPr && mcTrack.pt() <= cfgEventSelection.cfgCutPtMaxPr) {
+            nPrGen++;
+          }
           fillGenTrackQA<genAnalysisDir, kPr, kPos>(genAnalysis, mcTrack);
         } else if (pdg == kProtonBar) {
           // fillGenTrackQA<genAnalysisDir, kPr>(genAnalysis, mcTrack);
-          nAPrGen++;
+          if (mcTrack.pt() >= cfgEventSelection.cfgCutPtMinPr && mcTrack.pt() <= cfgEventSelection.cfgCutPtMaxPr) {
+            nAPrGen++;
+          }
           fillGenTrackQA<genAnalysisDir, kPr, kNeg>(genAnalysis, mcTrack);
         }
 
@@ -2176,15 +2184,19 @@ struct NchCumulantsId {
           }
         } else if (trackIsKaon) {
           if (track.sign() > 0) {
-            nKaRec += hPtEtaForEffCorrection[kKa][kPos]->GetBinContent(ptEtaBin);
             fillRecoTrackQA<recoAnalysisDir, kKa, kPos>(recoAnalysis, track);
-            float weight = hPtEtaForEffCorrection[kKa][kPos]->GetBinContent(ptEtaBin);
-            fillEffPower(kapPow, weight);
+            if (track.pt() >= cfgEventSelection.cfgCutPtMinKa && track.pt() <= cfgEventSelection.cfgCutPtMaxKa) {
+              nKaRec += hPtEtaForEffCorrection[kKa][kPos]->GetBinContent(ptEtaBin);
+              float weight = hPtEtaForEffCorrection[kKa][kPos]->GetBinContent(ptEtaBin);
+              fillEffPower(kapPow, weight);
+            }
           } else if (track.sign() < 0) {
-            nAKaRec += hPtEtaForEffCorrection[kKa][kNeg]->GetBinContent(ptEtaBin);
             fillRecoTrackQA<recoAnalysisDir, kKa, kNeg>(recoAnalysis, track);
-            float weight = hPtEtaForEffCorrection[kKa][kNeg]->GetBinContent(ptEtaBin);
-            fillEffPower(kamPow, weight);
+            if (track.pt() >= cfgEventSelection.cfgCutPtMinKa && track.pt() <= cfgEventSelection.cfgCutPtMaxKa) {
+              nAKaRec += hPtEtaForEffCorrection[kKa][kNeg]->GetBinContent(ptEtaBin);
+              float weight = hPtEtaForEffCorrection[kKa][kNeg]->GetBinContent(ptEtaBin);
+              fillEffPower(kamPow, weight);
+            }
           }
           // PID band QA for kaons
           if (idMethodKa == kTPCidentified) {
@@ -2195,15 +2207,19 @@ struct NchCumulantsId {
           }
         } else if (trackIsProton) {
           if (track.sign() > 0) {
-            nPrRec += hPtEtaForEffCorrection[kPr][kPos]->GetBinContent(ptEtaBin);
             fillRecoTrackQA<recoAnalysisDir, kPr, kPos>(recoAnalysis, track);
-            float weight = hPtEtaForEffCorrection[kPr][kPos]->GetBinContent(ptEtaBin);
-            fillEffPower(prPow, weight);
+            if (track.pt() >= cfgEventSelection.cfgCutPtMinPr && track.pt() <= cfgEventSelection.cfgCutPtMaxPr) {
+              nPrRec += hPtEtaForEffCorrection[kPr][kPos]->GetBinContent(ptEtaBin);
+              float weight = hPtEtaForEffCorrection[kPr][kPos]->GetBinContent(ptEtaBin);
+              fillEffPower(prPow, weight);
+            }
           } else if (track.sign() < 0) {
-            nAPrRec += hPtEtaForEffCorrection[kPr][kNeg]->GetBinContent(ptEtaBin);
             fillRecoTrackQA<recoAnalysisDir, kPr, kNeg>(recoAnalysis, track);
-            float weight = hPtEtaForEffCorrection[kPr][kNeg]->GetBinContent(ptEtaBin);
-            fillEffPower(aprPow, weight);
+            if (track.pt() >= cfgEventSelection.cfgCutPtMinPr && track.pt() <= cfgEventSelection.cfgCutPtMaxPr) {
+              nAPrRec += hPtEtaForEffCorrection[kPr][kNeg]->GetBinContent(ptEtaBin);
+              float weight = hPtEtaForEffCorrection[kPr][kNeg]->GetBinContent(ptEtaBin);
+              fillEffPower(aprPow, weight);
+            }
           }
           // PID band QA for protons
           if (idMethodPr == kTPCidentified) {

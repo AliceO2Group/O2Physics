@@ -22,7 +22,6 @@
 #include "PWGLF/Utils/inelGt.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
-#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/Centrality.h"
@@ -37,7 +36,6 @@
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
-#include <Framework/DataTypes.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
@@ -49,10 +47,8 @@
 #include <ReconstructionDataFormats/PID.h>
 
 #include <TH1.h>
-#include <TH2.h>
 #include <TH3.h>
 #include <TMCProcess.h>
-#include <TPDGCode.h>
 #include <TString.h>
 
 #include <array>

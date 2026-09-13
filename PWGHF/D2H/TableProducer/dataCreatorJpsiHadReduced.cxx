@@ -66,6 +66,8 @@
 #include <TH2.h>
 #include <TPDGCode.h>
 
+#include <Rtypes.h>
+
 #include <algorithm>
 #include <array>
 #include <cmath>
