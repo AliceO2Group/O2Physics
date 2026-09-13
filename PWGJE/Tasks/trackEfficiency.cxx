@@ -131,7 +131,7 @@ struct TrackEfficiency {
       }
     } else {
       const auto& aodTrack = jetTrack.template track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>>();
-      if (effSystMinNCrossedRowsTPCUseAlternateCut && (aodTrack.tpcNClsCrossedRows() < 120 - 5. / aodTrack.pt())) {
+      if (effSystMinNCrossedRowsTPCUseAlternateCut && (aodTrack.tpcNClsCrossedRows() < 120 - 5. / aodTrack.pt())) { // o2-linter: disable=magic-number (TPC nCrossedRows calculation)
         return false;
       }
       if (customTrackSelection.IsSelected(aodTrack)) {
@@ -1634,11 +1634,11 @@ struct TrackEfficiency {
       }
 
       auto collTracks = jetTracks.sliceBy(tracksPerJCollision, collision.globalIndex());
-      int ntrack_nonassociatedtrack = 0;
-      int ntrack_associatedtrack_nonprimary = 0;
-      int ntrack_associatedtrack_primary = 0;
-      int ntrack_associatedtrack_split_nonprimary = 0;
-      int ntrack_associatedtrack_split_primary = 0;
+      int nTrackNonassociatedTrack = 0;
+      int nTrackAssociatedTrackNonprimary = 0;
+      int nTrackAssociatedTrackPrimary = 0;
+      int nTrackAssociatedTrackSplitNonprimary = 0;
+      int nTrackAssociatedTrackSplitPrimary = 0;
       for (auto const& track : collTracks) {
         registry.fill(HIST("hTrackCutsCounts"), 0.5);
 
@@ -1648,7 +1648,7 @@ struct TrackEfficiency {
         registry.fill(HIST("hTrackCutsCounts"), 1.5);
 
         if (!track.has_mcParticle()) {
-          ntrack_nonassociatedtrack += 1;
+          nTrackNonassociatedTrack += 1;
 
           registry.fill(HIST("h3_track_pt_track_eta_track_phi_nonassociatedtrack"), track.pt(), track.eta(), track.phi());
 
@@ -1659,7 +1659,7 @@ struct TrackEfficiency {
 
         auto jMcParticleFromTrack = track.mcParticle_as<JetParticlesWithOriginal>();
         if (!jMcParticleFromTrack.isPhysicalPrimary()) {
-          ntrack_associatedtrack_nonprimary += 1;
+          nTrackAssociatedTrackNonprimary += 1;
 
           registry.fill(HIST("h3_track_pt_track_eta_track_phi_associatedtrack_nonprimary"), track.pt(), track.eta(), track.phi());
           registry.fill(HIST("h3_particle_pt_particle_eta_particle_phi_associatedtrack_nonprimary"), jMcParticleFromTrack.pt(), jMcParticleFromTrack.eta(), jMcParticleFromTrack.phi());
@@ -1668,7 +1668,7 @@ struct TrackEfficiency {
           registry.fill(HIST("h3_particle_pt_high_particle_eta_particle_phi_associatedtrack_nonprimary"), jMcParticleFromTrack.pt(), jMcParticleFromTrack.eta(), jMcParticleFromTrack.phi());
 
           if (std::find(seenMcParticlesVector.begin(), seenMcParticlesVector.end(), jMcParticleFromTrack.globalIndex()) != seenMcParticlesVector.end()) {
-            ntrack_associatedtrack_split_nonprimary += 1;
+            nTrackAssociatedTrackSplitNonprimary += 1;
 
             registry.fill(HIST("h3_track_pt_track_eta_track_phi_associatedtrack_split_nonprimary"), track.pt(), track.eta(), track.phi());
             registry.fill(HIST("h3_particle_pt_particle_eta_particle_phi_associatedtrack_split_nonprimary"), jMcParticleFromTrack.pt(), jMcParticleFromTrack.eta(), jMcParticleFromTrack.phi());
@@ -1684,7 +1684,7 @@ struct TrackEfficiency {
 
         registry.fill(HIST("hTrackCutsCounts"), 3.5);
 
-        ntrack_associatedtrack_primary += 1;
+        nTrackAssociatedTrackPrimary += 1;
         registry.fill(HIST("h3_track_pt_track_eta_track_phi_associatedtrack_primary"), track.pt(), track.eta(), track.phi());
         registry.fill(HIST("h3_particle_pt_particle_eta_particle_phi_associatedtrack_primary"), jMcParticleFromTrack.pt(), jMcParticleFromTrack.eta(), jMcParticleFromTrack.phi());
         registry.fill(HIST("h2_particle_pt_track_pt_residual_associatedtrack_primary"), jMcParticleFromTrack.pt(), (jMcParticleFromTrack.pt() - track.pt()) / jMcParticleFromTrack.pt());
@@ -1694,7 +1694,7 @@ struct TrackEfficiency {
         registry.fill(HIST("h2_particle_pt_high_track_pt_high_residual_associatedtrack_primary"), jMcParticleFromTrack.pt(), (jMcParticleFromTrack.pt() - track.pt()) / jMcParticleFromTrack.pt());
 
         if (std::find(seenMcParticlesVector.begin(), seenMcParticlesVector.end(), jMcParticleFromTrack.globalIndex()) != seenMcParticlesVector.end()) {
-          ntrack_associatedtrack_split_primary += 1;
+          nTrackAssociatedTrackSplitPrimary += 1;
           registry.fill(HIST("h3_track_pt_track_eta_track_phi_associatedtrack_split_primary"), track.pt(), track.eta(), track.phi());
           registry.fill(HIST("h3_particle_pt_particle_eta_particle_phi_associatedtrack_split_primary"), jMcParticleFromTrack.pt(), jMcParticleFromTrack.eta(), jMcParticleFromTrack.phi());
 
@@ -1708,11 +1708,11 @@ struct TrackEfficiency {
           registry.fill(HIST("hTrackCutsCounts"), 4.5);
         }
       }
-      registry.fill(HIST("h_ntrack_nonassociatedtrack"), ntrack_nonassociatedtrack);
-      registry.fill(HIST("h_ntrack_associatedtrack_nonprimary"), ntrack_associatedtrack_nonprimary);
-      registry.fill(HIST("h_ntrack_associatedtrack_split_nonprimary"), ntrack_associatedtrack_split_nonprimary);
-      registry.fill(HIST("h_ntrack_associatedtrack_primary"), ntrack_associatedtrack_primary);
-      registry.fill(HIST("h_ntrack_associatedtrack_split_primary"), ntrack_associatedtrack_split_primary);
+      registry.fill(HIST("h_ntrack_nonassociatedtrack"), nTrackNonassociatedTrack);
+      registry.fill(HIST("h_ntrack_associatedtrack_nonprimary"), nTrackAssociatedTrackNonprimary);
+      registry.fill(HIST("h_ntrack_associatedtrack_split_nonprimary"), nTrackAssociatedTrackSplitNonprimary);
+      registry.fill(HIST("h_ntrack_associatedtrack_primary"), nTrackAssociatedTrackPrimary);
+      registry.fill(HIST("h_ntrack_associatedtrack_split_primary"), nTrackAssociatedTrackSplitPrimary);
     }
   }
   PROCESS_SWITCH(TrackEfficiency, processQcCheck, "Histograms for QC checks", false);
