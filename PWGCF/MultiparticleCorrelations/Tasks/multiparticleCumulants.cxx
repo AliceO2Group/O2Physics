@@ -874,14 +874,14 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     // Book Q-vector arrays:
     for (int h = 0; h < mcc.MaxHarmonic; h++) {
       for (int p = 0; p < mcc.MaxPower; p++) {
-          mcc.fQvectorBefore[h][p] = TComplex(0., 0.);
-          mcc.fQvectorAfter[h][p] = TComplex(0., 0.);
+        mcc.fQvectorBefore[h][p] = TComplex(0., 0.);
+        mcc.fQvectorAfter[h][p] = TComplex(0., 0.);
 
-          for (int n = 0; n < NumEtaGap; n++) {
-            mcc.fQvectorBeforeA[n][h][p] = TComplex(0., 0.);
-            mcc.fQvectorBeforeB[n][h][p] = TComplex(0., 0.);
-            mcc.fQvectorAfterA[n][h][p] = TComplex(0., 0.);
-            mcc.fQvectorAfterB[n][h][p] = TComplex(0., 0.);
+        for (int n = 0; n < NumEtaGap; n++) {
+          mcc.fQvectorBeforeA[n][h][p] = TComplex(0., 0.);
+          mcc.fQvectorBeforeB[n][h][p] = TComplex(0., 0.);
+          mcc.fQvectorAfterA[n][h][p] = TComplex(0., 0.);
+          mcc.fQvectorAfterB[n][h][p] = TComplex(0., 0.);
         }
       }
     }
@@ -1285,8 +1285,6 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
       // LOGF(info, "Transverse momentum: %f", track.pt());
 
       if constexpr (rs == eRec || rs == eRecAndSim) {
-
-
 
         // Fill track histograms before cut:
         pc.fParticleHistograms[ePt][eRec][eBefore]->Fill(track.pt());
