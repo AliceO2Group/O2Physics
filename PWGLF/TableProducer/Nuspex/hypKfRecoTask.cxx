@@ -20,6 +20,7 @@
 #include "PWGLF/DataModel/LFHypernucleiKfTables.h"
 #include "PWGLF/DataModel/LFPIDTOFGenericTables.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/MetadataHelper.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
@@ -262,10 +263,10 @@ struct DaughterKf {
   int64_t daughterTrackId;
   int id, species, sign, hypNucId;
   KFParticle daughterKfp;
-  float dcaToPv, dcaToPvXY, dcaToPvZ, tpcNsigma, tpcNsigmaNLP, tpcNsigmaNHP;
+  float dcaToPv, dcaToPvXY, dcaToPvZ, tpcNsigma, itsNsigma;
   bool active;
   std::vector<float> vtx;
-  DaughterKf(int species_, int64_t daughterTrackId_, int sign_, std::vector<float> vtx_, float tpcNsigma_, float tpcNsigmaNLP_, float tpcNsigmaNHP_) : daughterTrackId(daughterTrackId_), id(uniqueId++), species(species_), sign(sign_), hypNucId(-1), tpcNsigma(tpcNsigma_), tpcNsigmaNLP(tpcNsigmaNLP_), tpcNsigmaNHP(tpcNsigmaNHP_), vtx(std::move(vtx_)) {}
+  DaughterKf(int species_, int64_t daughterTrackId_, int sign_, std::vector<float> vtx_, float tpcNsigma_, float itsNsigma_) : daughterTrackId(daughterTrackId_), id(uniqueId++), species(species_), sign(sign_), hypNucId(-1), tpcNsigma(tpcNsigma_), itsNsigma(itsNsigma_), vtx(std::move(vtx_)) {}
   void addKfp(const KFParticle& daughterKfp_)
   {
     daughterKfp = daughterKfp_;
@@ -593,7 +594,7 @@ struct HypKfRecoTask {
 
     // define histogram axes
     const AxisSpec axisMagField{10, -10., 10., "magnetic field"};
-    const AxisSpec axisNev{3, 0., 3., "Number of events"};
+    const AxisSpec axisNev{5, 0., 5., "Number of events"};
     const AxisSpec axisRigidity{4000, -10., 10., "#it{p}^{TPC}/#it{z}"};
     const AxisSpec axisdEdx{2000, 0, 2000, "d#it{E}/d#it{x}"};
     const AxisSpec axisInvMass{1000, 1, 6, "inv mass"};
@@ -644,12 +645,8 @@ struct HypKfRecoTask {
         const float itsNsigma = getITSnSigma(track, daughterParticles.at(i));
         if (daughterParticles.at(i).trkSettings[kMaxITSnSigma] >= 0 && std::abs(itsNsigma) > daughterParticles.at(i).trkSettings[kMaxITSnSigma])
           continue;
-        float tpcNsigmaNlp = NoVal;
-        if (daughterParticles.at(i).name == "alpha") {
-          tpcNsigmaNlp = getTPCnSigma(track, daughterParticles.at(i - 1));
-        }
         filldedx(track, i);
-        foundDaughterKfs.at(i).push_back(DaughterKf(i, track.globalIndex(), track.sign(), primVtx, tpcNsigma, tpcNsigmaNlp, itsNsigma));
+        foundDaughterKfs.at(i).push_back(DaughterKf(i, track.globalIndex(), track.sign(), primVtx, tpcNsigma, itsNsigma));
       }
     } // track loop
   }
@@ -906,9 +903,9 @@ struct HypKfRecoTask {
             if (!trackIndices.getIndex(daughter->species, daughterTrackId, trackTableId)) {
               const auto& track = tracks.rawIteratorAt(daughterTrackId);
               outputTrackTable(
-                daughter->species * track.sign(), track.pt(), track.eta(), track.phi(), daughter->dcaToPvXY, daughter->dcaToPvZ, track.tpcNClsFound(), track.tpcChi2NCl(),
-                track.itsClusterSizes(), track.itsChi2NCl(), getRigidity(track), track.tpcSignal(), daughter->tpcNsigma, daughter->tpcNsigmaNHP, daughter->tpcNsigmaNLP,
-                getMass2(track), track.isPVContributor());
+                daughter->species * track.sign(), track.pt(), track.eta(), track.phi(), daughter->dcaToPvXY, daughter->dcaToPvZ, track.tpcChi2NCl(),
+                track.itsClusterSizes(), track.itsChi2NCl(), getRigidity(track), track.tpcSignal(), track.tpcNClsFound(), track.tpcNClsPID(),
+                track.tpcNClsCrossedRows(), daughter->tpcNsigma, daughter->itsNsigma, track.pidForTracking(), getMass2(track), track.isPVContributor());
               trackTableId = outputTrackTable.lastIndex();
               trackIndices.add(daughter->species, daughterTrackId, trackTableId);
             }
@@ -1006,7 +1003,8 @@ struct HypKfRecoTask {
       initCollision(collision);
       if (!collision.has_mcCollision() || !mcCollInfos.at(collision.mcCollisionId()).passedEvSel)
         continue;
-
+      if (!collPassedEvSel)
+        continue;
       const uint64_t collIdx = collision.globalIndex();
       auto tracksByColl = tracksColl.sliceBy(perCollision, collIdx);
       auto v0TableThisCollision = V0s.sliceBy(perCollisionV0, collIdx);
@@ -1107,12 +1105,34 @@ struct HypKfRecoTask {
     trackIndices.clear();
     collHasCandidate = false;
     collHasMcTrueCandidate = false;
+    collPassedEvSel = true;
     histos.fill(HIST("histMagField"), dBz);
     histos.fill(HIST("histNev"), 0.5);
-    collPassedEvSel = collision.sel8() && std::abs(collision.posZ()) < cfgVtxCutZ;
-    occupancy = collision.trackOccupancyInTimeRange();
+    if (!collision.sel8()) {
+      collPassedEvSel = false;
+    }
     if (collPassedEvSel) {
       histos.fill(HIST("histNev"), 1.5);
+    }
+    if (std::abs(collision.posZ()) > cfgVtxCutZ) {
+      collPassedEvSel = false;
+    }
+    if (collPassedEvSel) {
+      histos.fill(HIST("histNev"), 2.5);
+    }
+    if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+      collPassedEvSel = false;
+    }
+    if (collPassedEvSel) {
+      histos.fill(HIST("histNev"), 3.5);
+    }
+    if (!collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      collPassedEvSel = false;
+    }
+
+    occupancy = collision.trackOccupancyInTimeRange();
+    if (collPassedEvSel) {
+      histos.fill(HIST("histNev"), 4.5);
       histos.fill(HIST("histVtxZ"), collision.posZ());
       histos.fill(HIST("histCentFT0A"), collision.centFT0A());
       histos.fill(HIST("histCentFT0C"), collision.centFT0C());
