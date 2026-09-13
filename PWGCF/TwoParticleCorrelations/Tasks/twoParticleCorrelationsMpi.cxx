@@ -39,7 +39,6 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/O2DatabasePDGPlugin.h>
-#include <Framework/StepTHn.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TDirectory.h>
