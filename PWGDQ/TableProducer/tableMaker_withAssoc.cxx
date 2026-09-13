@@ -290,7 +290,6 @@ struct TableMaker {
     Configurable<std::string> fConfigGrpMagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
     Configurable<std::string> fFwdShiftPath{"fwdShiftPath", "Users/m/mcoquet/ZShift", "CCDB path for the shift to apply to forward tracks: 1 (z), 3 (x,y,z), or 10 (x,y,z,slopeX,slopeY for top then bottom; slopes unused)"};
     Configurable<bool> fUseRemoteFwdShift{"cfgUseRemoteFwdShift", false, "Enable getting the forward track shift from ccdb"};
-    Configurable<float> fManualZShift{"cfgManualZShift", 0.f, "Manual value for the Zshift for muons."};
     Configurable<std::string> fConfigGrpMagPathRun2{"grpmagPathRun2", "GLO/GRP/GRP", "CCDB path of the GRPObject (Usage for Run 2)"};
   } fConfigCCDB;
 
@@ -1692,7 +1691,7 @@ struct TableMaker {
       }
       // recalculate pDca / DCA and global muon kinematics
       // kMuonPDca is always taken from MCH (standalone or the MCH matched to a global)
-      if (static_cast<int>(muon.trackType()) < 2) {
+      if (static_cast<int>(muon.trackType()) <= 2) {
         auto muontrack = muon.template matchMCHTrack_as<TMuons>();
         VarManager::FillTrackCollision<TMuonFillMap>(muontrack, collision);
         if (fConfigVariousOptions.fRefitGlobalMuon) {
@@ -1700,8 +1699,6 @@ struct TableMaker {
             continue;
           }
           auto mfttrack = muon.template matchMFTTrack_as<MFTTracks>();
-          // NOTE: the MFT track originally associated to the MUON track is currently used in the global muon refit
-          //       Should MUON - MFT time ambiguities be taken into account ?
           // Helix DCA (kMuonDCAx/y) is filled from the refitted parameters inside FillGlobalMuonRefit(Cov)
           if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
             auto const& mfttrackcov = mfCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
@@ -1795,7 +1792,7 @@ struct TableMaker {
       // recalculate pDca / DCA and global muon kinematics
       // kMuonPDca is always taken from MCH (standalone or the MCH matched to a global)
       int globalClusters = muon.nClusters();
-      if (static_cast<int>(muon.trackType()) < 2) {
+      if (static_cast<int>(muon.trackType()) <= 2) {
         auto muontrack = muon.template matchMCHTrack_as<TMuons>();
         VarManager::FillTrackCollision<TMuonFillMap>(muontrack, collision);
         if (fConfigVariousOptions.fRefitGlobalMuon) {
@@ -1894,8 +1891,6 @@ struct TableMaker {
           } else {
             LOG(fatal) << "Unexpected number of shift values from CCDB: " << fFwdShift->size() << ", expected 1 (z), 3 (x, y, z) or 10 (top/bottom x,y,z + slopes)";
           }
-        } else {
-          VarManager::SetZShift(fConfigCCDB.fManualZShift.value);
         }
         if (fConfigHistOutput.fConfigFillBcStat) {
           mLHCIFdata = fCCDB->getSpecific<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", bcs.begin().timestamp());

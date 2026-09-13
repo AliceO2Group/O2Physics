@@ -234,9 +234,6 @@ struct TableMakerMC {
     Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
     Configurable<std::string> fGeoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
     Configurable<std::string> fGrpMagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-    Configurable<std::string> fZShiftPath{"zShiftPath", "Users/m/mcoquet/ZShift", "CCDB path for z shift to apply to forward tracks"};
-    Configurable<bool> fUseRemoteZShift{"cfgUseRemoteZShift", false, "Enable getting Zshift from ccdb"};
-    Configurable<float> fManualZShift{"cfgManualZShift", 0.f, "Manual value for the Zshift for muons."};
     Configurable<std::string> fGrpMagPathRun2{"grpmagPathRun2", "GLO/GRP/GRP", "CCDB path of the GRPObject (Usage for Run 2)"};
     Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   } fConfigCCDB;
@@ -1138,7 +1135,7 @@ struct TableMakerMC {
       }
       // recalculate pDca / DCA and global muon kinematics
       // kMuonPDca is always taken from MCH (standalone or the MCH matched to a global)
-      if (static_cast<int>(muon.trackType()) < 2) {
+      if (static_cast<int>(muon.trackType()) <= 2) {
         auto muontrack = muon.template matchMCHTrack_as<TMuons>();
         VarManager::FillTrackCollision<TMuonFillMap>(muontrack, collision);
         if (fConfigVariousOptions.fRefitGlobalMuon) {
@@ -1275,7 +1272,7 @@ struct TableMakerMC {
       // recalculate pDca / DCA and global muon kinematics
       // kMuonPDca is always taken from MCH (standalone or the MCH matched to a global)
       int globalClusters = muon.nClusters();
-      if (static_cast<int>(muon.trackType()) < 2) {
+      if (static_cast<int>(muon.trackType()) <= 2) {
         auto muontrack = muon.template matchMCHTrack_as<TMuons>();
         VarManager::FillTrackCollision<TMuonFillMap>(muontrack, collision);
         if (fConfigVariousOptions.fRefitGlobalMuon) {
@@ -1336,16 +1333,6 @@ struct TableMakerMC {
         if (fGrpMag != nullptr) {
           o2::base::Propagator::initFieldFromGRP(fGrpMag);
           VarManager::SetMagneticField(fGrpMag->getNominalL3Field());
-        }
-        if (fConfigCCDB.fUseRemoteZShift) {
-          auto* fZShift = fCCDB->getForTimeStamp<std::vector<float>>(fConfigCCDB.fZShiftPath, bcs.begin().timestamp());
-          if (fZShift != nullptr && !fZShift->empty()) {
-            VarManager::SetZShift((*fZShift)[0]);
-          } else {
-            LOG(fatal) << "Could not retrieve Z-shift value from CCDB";
-          }
-        } else {
-          VarManager::SetZShift(fConfigCCDB.fManualZShift.value);
         }
         if (fConfigVariousOptions.fPropMuon) {
           VarManager::SetupMuonMagField();
