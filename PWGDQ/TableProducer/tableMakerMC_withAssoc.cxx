@@ -577,10 +577,10 @@ struct TableMakerMC {
       /*if ((std::abs(mctrack.pdgCode())>400 && std::abs(mctrack.pdgCode())<599) ||
           (std::abs(mctrack.pdgCode())>4000 && std::abs(mctrack.pdgCode())<5999) ||
           (mcflags > 0)) {
-        LOG(info) << ">>>>>>>>>>>>>>>>>>>>>>> track idx / pdg / process / status code / HEPMC status / primary : "
+        LOG(info) << ">>>>>>>>>>>>>>>>>>>>>> track idx / pdg / process / status code / HEPMC status / primary : "
                   << mctrack.globalIndex() << " / " << mctrack.pdgCode() << " / "
                   << mctrack.getProcess() << " / " << mctrack.getGenStatusCode() << " / " << mctrack.getHepMCStatusCode() << " / " << mctrack.isPhysicalPrimary();
-        LOG(info) << ">>>>>>>>>>>>>>>>>>>>>>> track bitmap: ";
+        LOG(info) << ">>>>>>>>>>>>>>>>>>>>>> track bitmap: ";
         PrintBitMap(mcflags, 16);
         if (mctrack.has_mothers()) {
           for (const auto& m : mctrack.mothersIds()) {
