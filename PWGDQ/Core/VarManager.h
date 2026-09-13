@@ -79,7 +79,6 @@
 #include <complex>
 #include <cstdint>
 #include <map>
-#include <numbers>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -3351,9 +3350,7 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kMuonChi2MatchMCHMFT] = track.chi2MatchMCHMFT();
     values[kMuonMatchScoreMCHMFT] = track.matchScoreMCHMFT();
     values[kMuonTrackType] = track.trackType();
-    values[kMuonDCAx] = track.sign() * (track.pDca() / std::numbers::sqrt2 / track.p());
-    values[kMuonDCAy] = values[kMuonDCAx];
-    if constexpr ((fillMap & MuonDca) > 0) {
+    if constexpr ((fillMap & ReducedMuonExtra) > 0) {
       values[kMuonDCAx] = track.fwdDcaX();
       values[kMuonDCAy] = track.fwdDcaY();
     }
@@ -4024,7 +4021,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
       }
     }
   }
-  if constexpr ((pairType == kDecayToMuMu) && ((fillMap & Muon) > 0 || (fillMap & ReducedMuon) > 0)) {
+  if constexpr ((pairType == kDecayToMuMu) && ((fillMap & ReducedMuonExtra) > 0)) {
     if (fgUsedVars[kQuadDCAabsXY]) {
       double dca1X = t1.fwdDcaX();
       double dca1Y = t1.fwdDcaY();
