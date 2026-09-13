@@ -144,7 +144,7 @@ template <typename TMap>
 void PrintBitMap(TMap map, int nbits)
 {
   for (int i = 0; i < nbits; i++) {
-    cout << ((map & (TMap(1) << i)) > 0 ? "1" : "0");
+    LOG(info) << ((map & (TMap(1) << i)) > 0 ? "1" : "0");
   }
 }
 */
@@ -577,17 +577,16 @@ struct TableMakerMC {
       /*if ((std::abs(mctrack.pdgCode())>400 && std::abs(mctrack.pdgCode())<599) ||
           (std::abs(mctrack.pdgCode())>4000 && std::abs(mctrack.pdgCode())<5999) ||
           (mcflags > 0)) {
-        cout << ">>>>>>>>>>>>>>>>>>>>>>> track idx / pdg / process / status code / HEPMC status / primary : "
-             << mctrack.globalIndex() << " / " << mctrack.pdgCode() << " / "
-             << mctrack.getProcess() << " / " << mctrack.getGenStatusCode() << " / " << mctrack.getHepMCStatusCode() << " / " << mctrack.isPhysicalPrimary() << endl;
-        cout << ">>>>>>>>>>>>>>>>>>>>>>> track bitmap: ";
+        LOG(info) << ">>>>>>>>>>>>>>>>>>>>>>> track idx / pdg / process / status code / HEPMC status / primary : "
+                  << mctrack.globalIndex() << " / " << mctrack.pdgCode() << " / "
+                  << mctrack.getProcess() << " / " << mctrack.getGenStatusCode() << " / " << mctrack.getHepMCStatusCode() << " / " << mctrack.isPhysicalPrimary();
+        LOG(info) << ">>>>>>>>>>>>>>>>>>>>>>> track bitmap: ";
         PrintBitMap(mcflags, 16);
-        cout << endl;
         if (mctrack.has_mothers()) {
           for (const auto& m : mctrack.mothersIds()) {
             if (m < mcTracks.size()) { // protect against bad mother indices
               auto aMother = mcTracks.rawIteratorAt(m);
-              cout << "<<<<<< mother idx / pdg: " << m << " / " << aMother.pdgCode() << endl;
+              LOG(info) << "<<<<<< mother idx / pdg: " << m << " / " << aMother.pdgCode();
             }
           }
         }
@@ -597,7 +596,7 @@ struct TableMakerMC {
 
             if (d < mcTracks.size()) { // protect against bad daughter indices
               auto aDaughter = mcTracks.rawIteratorAt(d);
-              cout << "<<<<<< daughter idx / pdg: " << d << " / " << aDaughter.pdgCode() << endl;
+              LOG(info) << "<<<<<< daughter idx / pdg: " << d << " / " << aDaughter.pdgCode();
             }
           }
         }

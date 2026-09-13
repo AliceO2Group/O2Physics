@@ -1557,7 +1557,7 @@ struct TableMaker {
           float deltaR2 = deltaEta * deltaEta + deltaPhi * deltaPhi;
           auto existing = fTrackEMCalMatchMap.find(match.trackId());
           if (existing == fTrackEMCalMatchMap.end() || deltaR2 < existing->second.deltaR2) {
-            fTrackEMCalMatchMap[match.trackId()] = EMCalMatch{static_cast<int32_t>(outTables.emcal.lastIndex()), deltaEta, deltaPhi, deltaR2};
+            fTrackEMCalMatchMap[match.trackId()] = EMCalMatch{.clusterIdx = static_cast<int32_t>(outTables.emcal.lastIndex()), .deltaEta = deltaEta, .deltaPhi = deltaPhi, .deltaR2 = deltaR2};
           }
         }
       } // end loop over clusters
