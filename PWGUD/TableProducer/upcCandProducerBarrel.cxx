@@ -26,6 +26,7 @@
 #include <DataFormatsFIT/Triggers.h>
 #include <DataFormatsParameters/AggregatedRunInfo.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
+#include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -39,14 +40,15 @@
 #include <TH1.h>
 #include <TH2.h>
 
-#include <Rtypes.h>
-
 #include <algorithm>
 #include <bitset>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
 #include <vector>
 
 using namespace o2;
@@ -59,19 +61,37 @@ constexpr int NBCsPerOrbit = o2::constants::lhc::LHCMaxBunches;
 constexpr int MaxStoredDistance = 15;
 constexpr float MaxFITTime = 30.f;
 
+constexpr int NoSignalMCRef = -1;
+constexpr int NoRecoCollision = -1;
+constexpr int MultipleRecoTracks = -2;
+
+constexpr uint16_t MCTrackFakeMask = 1u << 15;
+
+enum MCParticleFlag : uint8_t {
+  kNoFlags = 0,
+  kPhysicalPrimary = 1u << 0,           // generated physical primary
+  kHasRecoTrack = 1u << 1,              // has at least one non-fake reconstructed track
+  kHighMultiplicityCollision = 1u << 2, // matched track belongs to a collision with extra contributors
+  kHasPVContributor = 1u << 3,          // has a track contributing to the PV
+  kHasAmbiguousTrack = 1u << 4          // has an ambiguous track
+};
+
+using SignalRef = std::pair<int32_t, int16_t>;
 using DistanceMap = std::vector<std::vector<uint32_t>>;
 
 DistanceMap buildMinimumDistanceMap(std::vector<uint32_t> const& tfIDs,
                                     int64_t bcSOR, int64_t nBCsPerTF,
-                                    std::vector<int64_t>& activeBCs, uint32_t maxDistance)
+                                    std::vector<int64_t>& activeBCs, uint32_t maxDistance,
+                                    bool skipFirstExactMatch = false)
 {
   const uint32_t overflowDistance = maxDistance + 1;
   DistanceMap distances(tfIDs.size(), std::vector<uint32_t>(nBCsPerTF, overflowDistance));
   if (activeBCs.empty()) {
     return distances;
   }
+  // Keep duplicate BCs so collisions at the same BC have distance zero
   std::sort(activeBCs.begin(), activeBCs.end());
-  activeBCs.erase(std::unique(activeBCs.begin(), activeBCs.end()), activeBCs.end());
+  // The forward-only cursor makes the scan linear after sorting
   size_t nextIndex = 0;
   for (size_t iTF = 0; iTF < tfIDs.size(); ++iTF) {
     const int64_t tfStartBC = bcSOR + tfIDs[iTF] * nBCsPerTF;
@@ -80,9 +100,14 @@ DistanceMap buildMinimumDistanceMap(std::vector<uint32_t> const& tfIDs,
       while (nextIndex < activeBCs.size() && activeBCs[nextIndex] < currentBC) {
         ++nextIndex;
       }
+      size_t rightIndex = nextIndex;
+      // MC maps contain the queried collision itself, so skip one exact self-match
+      if (skipFirstExactMatch && rightIndex < activeBCs.size() && activeBCs[rightIndex] == currentBC) {
+        ++rightIndex;
+      }
       int64_t distance = overflowDistance;
-      if (nextIndex < activeBCs.size()) {
-        distance = std::min(distance, activeBCs[nextIndex] - currentBC);
+      if (rightIndex < activeBCs.size()) {
+        distance = std::min(distance, activeBCs[rightIndex] - currentBC);
       }
       if (nextIndex > 0) {
         distance = std::min(distance, currentBC - activeBCs[nextIndex - 1]);
@@ -143,6 +168,13 @@ DECLARE_SOA_COLUMN(Sign, sign, std::vector<int8_t>);
 DECLARE_SOA_COLUMN(MinimumDistanceFT0, minimumDistanceFT0, int8_t);
 DECLARE_SOA_COLUMN(MinimumDistanceFV0, minimumDistanceFV0, int8_t);
 DECLARE_SOA_COLUMN(MinimumDistanceFDD, minimumDistanceFDD, int8_t);
+DECLARE_SOA_COLUMN(Pdg, pdg, std::vector<int32_t>);
+DECLARE_SOA_COLUMN(MinimumDistanceMCCol, minimumDistanceMCCol, int8_t);
+DECLARE_SOA_COLUMN(RecoFlags, recoFlags, std::vector<uint8_t>);               // See MCParticleFlag for the bit definitions
+DECLARE_SOA_COLUMN(RecoCollisionIds, recoCollisionIds, std::vector<int32_t>); // -1: no collision, -2: multiple tracks
+DECLARE_SOA_COLUMN(ParticleIds, particleIds, std::vector<int16_t>);
+DECLARE_SOA_COLUMN(Mult, mult, int32_t);      // number of physical-primary MC particles in the collision
+DECLARE_SOA_COLUMN(IsSignal, isSignal, bool); // whether the collision belongs to the configured signal source
 } // namespace o2::aod::upc_cand_prod_bar
 
 namespace o2::aod
@@ -173,10 +205,39 @@ DECLARE_SOA_TABLE(UPCBarrelCands, "AOD", "UPCBARRELCANDS",
                   upc_cand_prod_bar::MinimumDistanceFT0,
                   upc_cand_prod_bar::MinimumDistanceFV0,
                   upc_cand_prod_bar::MinimumDistanceFDD);
+
+DECLARE_SOA_TABLE(UPCBarrelMcColls, "AOD", "UPCBMCCOLL",
+                  upc_cand_prod_bar::TfId,
+                  upc_cand_prod_bar::GlobalBC,
+                  upc_cand_prod_bar::PosX,
+                  upc_cand_prod_bar::PosY,
+                  upc_cand_prod_bar::PosZ,
+                  upc_cand_prod_bar::Px,
+                  upc_cand_prod_bar::Py,
+                  upc_cand_prod_bar::Pz,
+                  upc_cand_prod_bar::Pdg,
+                  upc_cand_prod_bar::Mult,
+                  upc_cand_prod_bar::MinimumDistanceMCCol,
+                  upc_cand_prod_bar::RecoFlags,
+                  upc_cand_prod_bar::RecoCollisionIds,
+                  upc_cand_prod_bar::IsSignal);
+
+namespace upc_cand_prod_bar
+{
+// Array index into UPCBarrelMcColls
+DECLARE_SOA_ARRAY_INDEX_COLUMN_FULL_CUSTOM(McCollision, mcCollision, int32_t, UPCBarrelMcColls, "UPCBMCColls", "");
+} // namespace upc_cand_prod_bar
+
+// Both IDs are -1 if the track has no valid stored signal reference
+DECLARE_SOA_TABLE(UPCBarrelMCLabels, "AOD", "UPCBMCLABEL",
+                  upc_cand_prod_bar::McCollisionIds,
+                  upc_cand_prod_bar::ParticleIds);
 } // namespace o2::aod
 
 struct UpcCandProducerBarrel {
   Produces<aod::UPCBarrelCands> selectedCandidates;
+  Produces<aod::UPCBarrelMcColls> selectedMCCollisions;
+  Produces<aod::UPCBarrelMCLabels> selectedCandidateMCLabels;
   HistogramRegistry registry{"registry", {}};
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
@@ -197,13 +258,21 @@ struct UpcCandProducerBarrel {
   Configurable<int> vetoFT0{"vetoFT0", 1, "FT0 veto: 0=off, 1=on"};
   Configurable<int> vetoFV0{"vetoFV0", 0, "FV0 veto: 0=off, 1=on"};
   Configurable<int> vetoFDD{"vetoFDD", 0, "FDD veto: 0=off, 1=on"};
+  Configurable<int> signalSourceId{"signalSourceId", 1, "MC source ID stored as embedded signal"};
 
   using CollisionsWithSels = soa::Join<aod::Collisions, aod::EvSels>;
   using BCsWithSels = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
   using TracksWithPID = soa::Join<aod::Tracks, aod::TracksExtra,
                                   aod::pidTPCEl, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,
                                   aod::pidTOFEl, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
+  using TracksWithPIDMC = soa::Join<aod::Tracks, aod::TracksExtra,
+                                    aod::pidTPCEl, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,
+                                    aod::pidTOFEl, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr,
+                                    aod::McTrackLabels>;
   Preslice<TracksWithPID> tracksPerCollision = aod::track::collisionId;
+  Preslice<TracksWithPIDMC> mcTracksPerCollision = aod::track::collisionId;
+  PresliceUnsorted<TracksWithPIDMC> tracksPerMCParticle = aod::mctracklabel::mcParticleId;
+  Preslice<aod::McParticles> particlesPerMCCollision = aod::mcparticle::mcCollisionId;
 
   RCTFlagsChecker rctChecker{kFDDBad, kFT0Bad, kFV0Bad, kITSBad, kITSLimAccMCRepr, kTPCBadTracking, kTPCLimAccMCRepr, kTPCBadPID, kTOFBad, kTOFLimAccMCRepr, kCcdbObjectLoaded};
 
@@ -250,13 +319,19 @@ struct UpcCandProducerBarrel {
     cachedRunNumber = runNumber;
   }
 
-  void process(CollisionsWithSels const& collisions, TracksWithPID const& tracks, BCsWithSels const& bcs, aod::FT0s const& ft0s, aod::FV0As const& fv0s, aod::FDDs const& fdds)
+  template <bool isMC, typename CollisionsT, typename TracksT, typename PresliceT>
+  void processImpl(CollisionsT const& collisions, TracksT const& tracks, PresliceT const& tracksPerColl,
+                   BCsWithSels const& bcs, aod::FT0s const& ft0s, aod::FV0As const& fv0s,
+                   aod::FDDs const& fdds, aod::McCollisions const* mcCollisions = nullptr,
+                   aod::McParticles const* mcParticles = nullptr,
+                   aod::AmbiguousTracks const* ambiguousTracks = nullptr)
   {
     updateRunInfo(bcs.begin().runNumber());
     std::vector<uint32_t> tfIDs;
     std::vector<uint8_t> tfPassesRCT;
     std::vector<size_t> localTFIndex;
     localTFIndex.reserve(bcs.size());
+    // Cache the local TF slot for each BC row for collision and MC lookups
     for (const auto& bc : bcs) {
       const auto tfID = static_cast<uint32_t>((static_cast<int64_t>(bc.globalBC()) - bcSOR) / nBCsPerTF);
       if (tfIDs.empty() || tfID != tfIDs.back()) {
@@ -267,12 +342,84 @@ struct UpcCandProducerBarrel {
     }
     registry.fill(HIST("hProcessedTFs"), 0.5, static_cast<double>(tfIDs.size()));
 
+    std::unordered_map<int64_t, SignalRef> signalParticleRefs;
+    if constexpr (isMC) {
+      std::unordered_set<int64_t> ambiguousTrackIds;
+      ambiguousTrackIds.reserve(ambiguousTracks->size());
+      for (const auto& ambiguousTrack : *ambiguousTracks) {
+        ambiguousTrackIds.insert(ambiguousTrack.trackId());
+      }
+
+      std::vector<int64_t> bcsWithMCCollision;
+      bcsWithMCCollision.reserve(mcCollisions->size());
+      // Use collisions from every source and retain same-BC pile-up
+      for (const auto& mcCollision : *mcCollisions) {
+        bcsWithMCCollision.push_back(static_cast<int64_t>(mcCollision.template bc_as<BCsWithSels>().globalBC()));
+      }
+      const auto minDistanceMC = buildMinimumDistanceMap(tfIDs, bcSOR, nBCsPerTF, bcsWithMCCollision, MaxStoredDistance, true);
+
+      for (const auto& mcCollision : *mcCollisions) {
+        const auto bc = mcCollision.template bc_as<BCsWithSels>();
+        const auto globalBC = bc.globalBC();
+        const auto iTF = localTFIndex[bc.globalIndex()];
+        const auto bcInTF = (static_cast<int64_t>(globalBC) - bcSOR) % nBCsPerTF;
+        const auto particles = mcParticles->sliceBy(particlesPerMCCollision, mcCollision.globalIndex());
+        const bool isSignal = mcCollision.getSourceId() == signalSourceId.value;
+
+        std::vector<float> px, py, pz;
+        std::vector<int32_t> pdg, recoCollisionIds;
+        std::vector<uint8_t> recoFlags;
+        int32_t mult = 0;
+        // Output rows follow input MC collisions, making this the compact collision label
+        const auto newMCCollisionId = static_cast<int32_t>(selectedMCCollisions.lastIndex() + 1);
+        for (const auto& particle : particles) {
+          mult += particle.isPhysicalPrimary();
+          // Background rows keep only collision metadata and physical-primary multiplicity
+          if (!isSignal) {
+            continue;
+          }
+          const auto newMCParticleId = static_cast<int16_t>(pdg.size());
+          px.push_back(particle.px());
+          py.push_back(particle.py());
+          pz.push_back(particle.pz());
+          pdg.push_back(particle.pdgCode());
+
+          uint8_t flags = particle.isPhysicalPrimary() ? kPhysicalPrimary : kNoFlags;
+          int32_t recoCollisionId = NoRecoCollision;
+          int nRecoTracks = 0;
+          // Inspect only reconstructed tracks matched to this signal particle
+          for (const auto& track : tracks.sliceBy(tracksPerMCParticle, particle.globalIndex())) {
+            if ((track.mcMask() & MCTrackFakeMask) != 0u) {
+              continue;
+            }
+            ++nRecoTracks;
+            flags |= kHasRecoTrack;
+            flags |= track.isPVContributor() ? kHasPVContributor : kNoFlags;
+            flags |= ambiguousTrackIds.contains(track.globalIndex()) ? kHasAmbiguousTrack : kNoFlags;
+            if (track.has_collision()) {
+              recoCollisionId = track.collisionId();
+              flags |= collisions.iteratorAt(recoCollisionId).numContrib() > nTracks ? kHighMultiplicityCollision : kNoFlags;
+            }
+          }
+          // A single collision label is meaningful only for exactly one reconstructed track
+          if (nRecoTracks > 1) {
+            recoCollisionId = MultipleRecoTracks;
+          }
+          recoFlags.push_back(flags);
+          recoCollisionIds.push_back(recoCollisionId);
+          // Remap original particle IDs to output index for candidate labels
+          signalParticleRefs.emplace(particle.globalIndex(), SignalRef{newMCCollisionId, newMCParticleId});
+        }
+        selectedMCCollisions(tfIDs[iTF], globalBC, mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
+                             px, py, pz, pdg, mult, minDistanceMC[iTF][bcInTF],
+                             recoFlags, recoCollisionIds, isSignal);
+      }
+    }
+
     auto hTVX = registry.get<TH1>(HIST("hTVX"));
     auto hTVXRCT = registry.get<TH1>(HIST("hTVXRCT"));
 
-    std::vector<int64_t> bcsWithFT0;
-    std::vector<int64_t> bcsWithFV0;
-    std::vector<int64_t> bcsWithFDD;
+    std::vector<int64_t> bcsWithFT0, bcsWithFV0, bcsWithFDD;
     bcsWithFT0.reserve(ft0s.size());
     bcsWithFV0.reserve(fv0s.size());
     bcsWithFDD.reserve(fdds.size());
@@ -284,7 +431,7 @@ struct UpcCandProducerBarrel {
       if (ft0.timeA() < MaxFITTime || ft0.timeC() < MaxFITTime) {
         bcsWithFT0.push_back(gbc);
       }
-      if (!collidingBCs[bcInOrbit] || !TESTBIT(ft0.triggerMask(), o2::fit::Triggers::bitVertex)) {
+      if (!collidingBCs[bcInOrbit] || !(ft0.triggerMask() & (1U << o2::fit::Triggers::bitVertex))) {
         continue;
       }
       hTVX->Fill(bcInOrbit);
@@ -337,7 +484,7 @@ struct UpcCandProducerBarrel {
       if (collision.numContrib() != nTracks || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !rctChecker(collision)) {
         continue;
       }
-      auto bc = collision.bc_as<BCsWithSels>();
+      auto bc = collision.template bc_as<BCsWithSels>();
       auto gbc = bc.globalBC();
       const auto iTF = localTFIndex[bc.globalIndex()];
       const int64_t bcInTF = (static_cast<int64_t>(gbc) - bcSOR) % nBCsPerTF;
@@ -354,7 +501,9 @@ struct UpcCandProducerBarrel {
       std::vector<uint8_t> itsClusterMap;
       std::vector<uint8_t> nClusters;
       std::vector<int8_t> sign;
-      for (const auto& track : tracks.sliceBy(tracksPerCollision, collision.globalIndex())) {
+      std::vector<int32_t> newMCCollisionIds;
+      std::vector<int16_t> newParticleIds;
+      for (const auto& track : tracks.sliceBy(tracksPerColl, collision.globalIndex())) {
         if (!track.isPVContributor() || !track.hasITS() || !track.hasTPC() || std::abs(track.eta()) > maxAbsEta.value || track.pt() < minPt.value) {
           continue;
         }
@@ -373,6 +522,17 @@ struct UpcCandProducerBarrel {
         itsClusterMap.push_back(track.itsClusterMap());
         nClusters.push_back(track.tpcNClsFound());
         sign.push_back(track.sign());
+        if constexpr (isMC) {
+          // Fake, background, and unmatched particles keep the -1 label
+          SignalRef label{NoSignalMCRef, NoSignalMCRef};
+          if (track.has_mcParticle() && (track.mcMask() & MCTrackFakeMask) == 0u) {
+            if (const auto ref = signalParticleRefs.find(track.mcParticleId()); ref != signalParticleRefs.end()) {
+              label = ref->second;
+            }
+          }
+          newMCCollisionIds.push_back(label.first);
+          newParticleIds.push_back(label.second);
+        }
       }
       if (px.size() != static_cast<size_t>(nTracks)) {
         continue;
@@ -383,8 +543,28 @@ struct UpcCandProducerBarrel {
                          std::min<uint32_t>(distFT0, MaxStoredDistance + 1),
                          std::min<uint32_t>(distFV0, MaxStoredDistance + 1),
                          std::min<uint32_t>(distFDD, MaxStoredDistance + 1));
+      if constexpr (isMC) {
+        selectedCandidateMCLabels(newMCCollisionIds, newParticleIds);
+      }
     }
   }
+
+  void processData(CollisionsWithSels const& collisions, TracksWithPID const& tracks, BCsWithSels const& bcs,
+                   aod::FT0s const& ft0s, aod::FV0As const& fv0s, aod::FDDs const& fdds)
+  {
+    processImpl<false>(collisions, tracks, tracksPerCollision, bcs, ft0s, fv0s, fdds);
+  }
+  PROCESS_SWITCH(UpcCandProducerBarrel, processData, "Process reconstructed data", true);
+
+  void processMC(CollisionsWithSels const& collisions, TracksWithPIDMC const& tracks, BCsWithSels const& bcs,
+                 aod::FT0s const& ft0s, aod::FV0As const& fv0s, aod::FDDs const& fdds,
+                 aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles,
+                 aod::AmbiguousTracks const& ambiguousTracks)
+  {
+    processImpl<true>(collisions, tracks, mcTracksPerCollision, bcs, ft0s, fv0s, fdds,
+                      &mcCollisions, &mcParticles, &ambiguousTracks);
+  }
+  PROCESS_SWITCH(UpcCandProducerBarrel, processMC, "Process reconstructed MC and write compact MC truth", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& context) { return WorkflowSpec{adaptAnalysisTask<UpcCandProducerBarrel>(context)}; }
