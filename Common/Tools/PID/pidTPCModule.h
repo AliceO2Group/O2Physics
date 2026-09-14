@@ -469,6 +469,18 @@ class pidTPCModule
        {"3", 8, 3},
        {"4", 9, 4}}};
 
+    enum IndexNnFeature : int {
+      IdxTpcInnerParam = 0,
+      IdxTgl,
+      IdxSigned1Pt,
+      IdxMass,
+      IdxMultiplicity,
+      IdxNClusters,
+      IdxFt0cOcc,
+      IdxHadronicRate,
+      IdxModPhi
+    };
+
     std::vector<float> networkPrediction;
 
     const auto startNetworkTotal = std::chrono::high_resolution_clock::now();
@@ -586,50 +598,50 @@ class pidTPCModule
             continue;
           }
         }
-        trackProperties[counterTrackProps] = trk.tpcInnerParam();
-        trackProperties[counterTrackProps + 1] = trk.tgl();
-        trackProperties[counterTrackProps + 2] = trk.signed1Pt();
-        trackProperties[counterTrackProps + 3] = o2::track::pid_constants::sMasses[j];
-        trackProperties[counterTrackProps + 4] = (trk.has_collision() && mults.size() > 0) ? mults[trk.collisionId()] / MultiplicityNorm : 1.;
-        trackProperties[counterTrackProps + 5] = std::sqrt(nNclNormalization / trk.tpcNClsFound());
+        trackProperties[counterTrackProps + IdxTpcInnerParam] = trk.tpcInnerParam();
+        trackProperties[counterTrackProps + IdxTgl] = trk.tgl();
+        trackProperties[counterTrackProps + IdxSigned1Pt] = trk.signed1Pt();
+        trackProperties[counterTrackProps + IdxMass] = o2::track::pid_constants::sMasses[j];
+        trackProperties[counterTrackProps + IdxMultiplicity] = (trk.has_collision() && mults.size() > 0) ? mults[trk.collisionId()] / MultiplicityNorm : 1.;
+        trackProperties[counterTrackProps + IdxNClusters] = std::sqrt(nNclNormalization / trk.tpcNClsFound());
         if (inputDimensions == ExpectedInputDimensionsNNV2 && networkVersion == NetworkVersionV2) {
-          trackProperties[counterTrackProps + 6] = (trk.has_collision() && mults.size() > 0) ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / Ft0cOccupancyNorm : 1.;
+          trackProperties[counterTrackProps + IdxFt0cOcc] = (trk.has_collision() && mults.size() > 0) ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / Ft0cOccupancyNorm : 1.;
         }
         if (inputDimensions == ExpectedInputDimensionsNNV3 && networkVersion == NetworkVersionV3) {
-          trackProperties[counterTrackProps + 6] = (trk.has_collision() && mults.size() > 0) ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / Ft0cOccupancyNorm : 1.;
+          trackProperties[counterTrackProps + IdxFt0cOcc] = (trk.has_collision() && mults.size() > 0) ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / Ft0cOccupancyNorm : 1.;
           if (trk.has_collision() && mults.size() > 0) {
             if (collsys == CollisionSystemType::kCollSyspp) {
-              trackProperties[counterTrackProps + 7] = hadronicRateForCollision[trk.collisionId()] / HadronicRateNormPp;
+              trackProperties[counterTrackProps + IdxHadronicRate] = hadronicRateForCollision[trk.collisionId()] / HadronicRateNormPp;
             } else {
-              trackProperties[counterTrackProps + 7] = hadronicRateForCollision[trk.collisionId()] / HadronicRateNormAa;
+              trackProperties[counterTrackProps + IdxHadronicRate] = hadronicRateForCollision[trk.collisionId()] / HadronicRateNormAa;
             }
           } else {
             // asign Hadronic Rate at beginning of run  if track does not belong to a collision
             if (collsys == CollisionSystemType::kCollSyspp) {
-              trackProperties[counterTrackProps + 7] = hadronicRateBegin / HadronicRateNormPp;
+              trackProperties[counterTrackProps + IdxHadronicRate] = hadronicRateBegin / HadronicRateNormPp;
             } else {
-              trackProperties[counterTrackProps + 7] = hadronicRateBegin / HadronicRateNormAa;
+              trackProperties[counterTrackProps + IdxHadronicRate] = hadronicRateBegin / HadronicRateNormAa;
             }
           }
         }
 
         if (inputDimensions == ExpectedInputDimensionsNNV4 && networkVersion == NetworkVersionV4) {
-          trackProperties[counterTrackProps + 6] = (trk.has_collision() && mults.size() > 0) ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / Ft0cOccupancyNorm : 1.;
+          trackProperties[counterTrackProps + IdxFt0cOcc] = (trk.has_collision() && mults.size() > 0) ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / Ft0cOccupancyNorm : 1.;
           if (trk.has_collision() && mults.size() > 0) {
             if (collsys == CollisionSystemType::kCollSyspp) {
-              trackProperties[counterTrackProps + 7] = hadronicRateForCollision[trk.collisionId()] / HadronicRateNormPp;
+              trackProperties[counterTrackProps + IdxHadronicRate] = hadronicRateForCollision[trk.collisionId()] / HadronicRateNormPp;
             } else {
-              trackProperties[counterTrackProps + 7] = hadronicRateForCollision[trk.collisionId()] / HadronicRateNormAa;
+              trackProperties[counterTrackProps + IdxHadronicRate] = hadronicRateForCollision[trk.collisionId()] / HadronicRateNormAa;
             }
           } else {
             // asign Hadronic Rate at beginning of run  if track does not belong to a collision
             if (collsys == CollisionSystemType::kCollSyspp) {
-              trackProperties[counterTrackProps + 7] = hadronicRateBegin / HadronicRateNormPp;
+              trackProperties[counterTrackProps + IdxHadronicRate] = hadronicRateBegin / HadronicRateNormPp;
             } else {
-              trackProperties[counterTrackProps + 7] = hadronicRateBegin / HadronicRateNormAa;
+              trackProperties[counterTrackProps + IdxHadronicRate] = hadronicRateBegin / HadronicRateNormAa;
             }
           }
-          trackProperties[counterTrackProps + 8] = std::fmod(std::fmod(trk.phi(), o2::constants::math::TwoPI) + o2::constants::math::TwoPI, o2::constants::math::TwoPI / NumberOfTpcSectors);
+          trackProperties[counterTrackProps + IdxModPhi] = std::fmod(std::fmod(trk.phi(), o2::constants::math::TwoPI) + o2::constants::math::TwoPI, o2::constants::math::TwoPI / NumberOfTpcSectors);
         }
         counterTrackProps += inputDimensions;
       }
