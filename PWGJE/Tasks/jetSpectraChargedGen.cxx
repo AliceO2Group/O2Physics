@@ -157,9 +157,9 @@ struct JetSpectraChargedGen {
     float angularity = 0.0f;
     for (const auto& constituent : jet.template tracks_as<aod::JetParticles>()) {
       registry.fill(HIST("h2_jet_pt_part_track_pt_part"), jet.pt(), constituent.pt(), weight);
-      angularity += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, constituent), alpha);
+      angularity += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, constituent) / (jet.r() / 100.f), alpha);
     }
-    angularity /= (jet.pt() * (jet.r() / 100.0f));
+    angularity /= std::pow(jet.pt(), kappa);
     registry.fill(HIST("h2_jet_pt_jet_angularity_part"), jet.pt(), angularity, weight);
   }
 

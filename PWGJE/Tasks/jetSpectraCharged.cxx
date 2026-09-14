@@ -510,9 +510,9 @@ struct JetSpectraCharged {
     float angularity = 0.;
     for (const auto& constituent : jet.template tracks_as<aod::JetTracks>()) {
       registry.fill(HIST("h2_jet_pt_track_pt"), jet.pt(), constituent.pt(), weight);
-      angularity += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, constituent), alpha);
+      angularity += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, constituent) / (jet.r() / 100.f), alpha);
     }
-    angularity /= (jet.pt() * (jet.r() / 100.f));
+    angularity /= std::pow(jet.pt(), kappa);
     registry.fill(HIST("h2_jet_pt_jet_angularity"), jet.pt(), angularity, weight);
   }
 
@@ -542,9 +542,9 @@ struct JetSpectraCharged {
     float angularity = 0.;
     for (const auto& constituent : jet.template tracks_as<aod::JetTracks>()) {
       registry.fill(HIST("h2_jet_pt_track_pt_rhoareasubtracted"), jetcorrpt, constituent.pt(), weight);
-      angularity += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, constituent), alpha);
+      angularity += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, constituent) / (jet.r() / 100.f), alpha);
     }
-    angularity /= (jet.pt() * (jet.r() / 100.f));
+    angularity /= std::pow(jet.pt(), kappa);
     registry.fill(HIST("h2_jet_pt_jet_angularity_rhoareasubtracted"), jetcorrpt, angularity, weight);
   }
 
@@ -566,9 +566,9 @@ struct JetSpectraCharged {
     float angularity = 0.;
     for (const auto& constituent : jet.template tracks_as<aod::JetParticles>()) {
       registry.fill(HIST("h2_jet_pt_part_track_pt_part"), jet.pt(), constituent.pt(), weight);
-      angularity += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, constituent), alpha);
+      angularity += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, constituent) / (jet.r() / 100.f), alpha);
     }
-    angularity /= (jet.pt() * (jet.r() / 100.f));
+    angularity /= std::pow(jet.pt(), kappa);
     registry.fill(HIST("h2_jet_pt_jet_angularity_part"), jet.pt(), angularity, weight);
   }
 
@@ -621,9 +621,9 @@ struct JetSpectraCharged {
             double dpt = jetMCD.pt() - jetMCP.pt();
             float angularityMcd = 0.;
             for (const auto& constituent : jetMCD.template tracks_as<aod::JetTracks>()) {
-              angularityMcd += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jetMCD, constituent), alpha);
+              angularityMcd += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jetMCD, constituent) / (jetMCD.r() / 100.f), alpha);
             }
-            angularityMcd /= (jetMCD.pt() * (jetMCD.r() / 100.f));
+            angularityMcd /= std::pow(jetMCD.pt(), kappa);
             if (jetfindingutilities::isInEtaAcceptance(jetMCD, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
               registry.fill(HIST("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_mcdetaconstraint"), jetMCD.pt(), jetMCP.pt(), weight);
               if (jetfindingutilities::isInEtaAcceptance(jetMCP, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -660,9 +660,9 @@ struct JetSpectraCharged {
             double dpt = jetMCD.pt() - jetMCP.pt();
             float angularityMcd = 0.;
             for (const auto& constituent : jetMCD.template tracks_as<aod::JetTracks>()) {
-              angularityMcd += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jetMCD, constituent), alpha);
+              angularityMcd += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jetMCD, constituent) / (jetMCD.r() / 100.f), alpha);
             }
-            angularityMcd /= (jetMCD.pt() * (jetMCD.r() / 100.f));
+            angularityMcd /= std::pow(jetMCD.pt(), kappa);
             if (jetfindingutilities::isInEtaAcceptance(jetMCD, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
               registry.fill(HIST("h2_jet_pt_mcd_jet_pt_mcp_matchedpt_mcdetaconstraint"), jetMCD.pt(), jetMCP.pt(), weight);
               if (jetfindingutilities::isInEtaAcceptance(jetMCP, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -699,9 +699,9 @@ struct JetSpectraCharged {
             double dpt = jetMCD.pt() - jetMCP.pt();
             float angularityMcd = 0.;
             for (const auto& constituent : jetMCD.template tracks_as<aod::JetTracks>()) {
-              angularityMcd += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jetMCD, constituent), alpha);
+              angularityMcd += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jetMCD, constituent) / (jetMCD.r() / 100.f), alpha);
             }
-            angularityMcd /= (jetMCD.pt() * (jetMCD.r() / 100.f));
+            angularityMcd /= std::pow(jetMCD.pt(), kappa);
             if (jetfindingutilities::isInEtaAcceptance(jetMCD, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
               registry.fill(HIST("h2_jet_pt_mcd_jet_pt_mcp_matchedgeopt_mcdetaconstraint"), jetMCD.pt(), jetMCP.pt(), weight);
               if (jetfindingutilities::isInEtaAcceptance(jetMCP, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -743,7 +743,7 @@ struct JetSpectraCharged {
           double dcorrpt = corrBasejetpt - corrTagjetpt;
           float angularityMcd = 0.;
           for (const auto& constituent : jetMCD.template tracks_as<aod::JetTracks>()) {
-            angularityMcd += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jetMCD, constituent), alpha);
+            angularityMcd += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jetMCD, constituent) / (jetMCD.r() / 100.f), alpha);
           }
           angularityMcd /= (corrBasejetpt * (jetMCD.r() / 100.f));
           if (jetfindingutilities::isInEtaAcceptance(jetMCD, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {

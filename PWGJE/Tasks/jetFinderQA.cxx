@@ -558,9 +558,9 @@ struct JetFinderQATask {
       registry.fill(HIST("h3_jet_r_jet_pt_track_pt"), jet.r() / 100.0, jet.pt(), constituent.pt(), weight);
       registry.fill(HIST("h3_jet_r_jet_pt_track_eta"), jet.r() / 100.0, jet.pt(), constituent.eta(), weight);
       registry.fill(HIST("h3_jet_r_jet_pt_track_phi"), jet.r() / 100.0, jet.pt(), constituent.phi(), weight);
-      angularity += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, constituent), alpha);
+      angularity += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, constituent) / (jet.r() / 100.f), alpha);
     }
-    angularity /= (jet.pt() * (jet.r() / 100.f));
+    angularity /= std::pow(jet.pt(), kappa);
     registry.fill(HIST("h3_jet_r_jet_pt_jet_angularity"), jet.r() / 100.0, jet.pt(), angularity, weight);
   }
 
@@ -656,9 +656,9 @@ struct JetFinderQATask {
       registry.fill(HIST("h3_jet_r_part_jet_pt_part_track_pt_part"), jet.r() / 100.0, jet.pt(), constituent.pt(), weight);
       registry.fill(HIST("h3_jet_r_part_jet_pt_part_track_eta_part"), jet.r() / 100.0, jet.pt(), constituent.eta(), weight);
       registry.fill(HIST("h3_jet_r_part_jet_pt_part_track_phi_part"), jet.r() / 100.0, jet.pt(), constituent.phi(), weight);
-      angularity += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, constituent), alpha);
+      angularity += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, constituent) / (jet.r() / 100.f), alpha);
     }
-    angularity /= (jet.pt() * (jet.r() / 100.f));
+    angularity /= std::pow(jet.pt(), kappa);
     registry.fill(HIST("h3_jet_r_part_jet_pt_part_jet_angularity_part"), jet.r() / 100.0, jet.pt(), angularity, weight);
   }
 
@@ -687,9 +687,9 @@ struct JetFinderQATask {
           if (constituent.pt() > leadingTrackPtTag) {
             leadingTrackPtTag = constituent.pt();
           }
-          angularityTag += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jetTag, constituent), alpha);
+          angularityTag += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jetTag, constituent) / (jetTag.r() / 100.f), alpha);
         }
-        angularityTag /= (jetTag.pt() * (jetTag.r() / 100.f));
+        angularityTag /= std::pow(jetTag.pt(), kappa);
         registry.fill(HIST("h3_jet_r_jet_pt_tag_leadingtrack_pt_diff_matchedgeo"), jetBase.r() / 100.0, jetTag.pt(), (leadingTrackPtTag - leadingTrackPtBase) / leadingTrackPtTag, weight);
         registry.fill(HIST("h3_jet_r_jet_pt_tag_leadingtrack_fraction_diff_matchedgeo"), jetBase.r() / 100.0, jetTag.pt(), (leadingTrackPtTag / jetTag.pt()) - (leadingTrackPtBase / jetBase.pt()), weight);
         registry.fill(HIST("h3_jet_r_jet_pt_tag_angularity_matchedgeo"), jetBase.r() / 100.0, jetTag.pt(), angularityTag, weight);
@@ -729,9 +729,9 @@ struct JetFinderQATask {
           if (constituent.pt() > leadingTrackPtTag) {
             leadingTrackPtTag = constituent.pt();
           }
-          angularityTag += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jetTag, constituent), alpha);
+          angularityTag += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jetTag, constituent) / (jetTag.r() / 100.f), alpha);
         }
-        angularityTag /= (jetTag.pt() * (jetTag.r() / 100.f));
+        angularityTag /= std::pow(jetTag.pt(), kappa);
         registry.fill(HIST("h3_jet_r_jet_pt_tag_leadingtrack_pt_diff_matchedpt"), jetBase.r() / 100.0, jetTag.pt(), (leadingTrackPtTag - leadingTrackPtBase) / leadingTrackPtTag, weight);
         registry.fill(HIST("h3_jet_r_jet_pt_tag_leadingtrack_fraction_diff_matchedpt"), jetBase.r() / 100.0, jetTag.pt(), (leadingTrackPtTag / jetTag.pt()) - (leadingTrackPtBase / jetBase.pt()), weight);
         registry.fill(HIST("h3_jet_r_jet_pt_tag_angularity_matchedpt"), jetBase.r() / 100.0, jetTag.pt(), angularityTag, weight);
@@ -769,9 +769,9 @@ struct JetFinderQATask {
             if (constituent.pt() > leadingTrackPtTag) {
               leadingTrackPtTag = constituent.pt();
             }
-            angularityTag += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jetTag, constituent), alpha);
+            angularityTag += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jetTag, constituent) / (jetTag.r() / 100.f), alpha);
           }
-          angularityTag /= (jetTag.pt() * (jetTag.r() / 100.f));
+          angularityTag /= std::pow(jetTag.pt(), kappa);
           registry.fill(HIST("h3_jet_r_jet_pt_tag_leadingtrack_pt_diff_matchedgeopt"), jetBase.r() / 100.0, jetTag.pt(), (leadingTrackPtTag - leadingTrackPtBase) / leadingTrackPtTag, weight);
           registry.fill(HIST("h3_jet_r_jet_pt_tag_leadingtrack_fraction_diff_matchedgeopt"), jetBase.r() / 100.0, jetTag.pt(), (leadingTrackPtTag / jetTag.pt()) - (leadingTrackPtBase / jetBase.pt()), weight);
           registry.fill(HIST("h3_jet_r_jet_pt_tag_angularity_matchedgeopt"), jetBase.r() / 100.0, jetTag.pt(), angularityTag, weight);
@@ -1080,9 +1080,9 @@ struct JetFinderQATask {
         if (constituent.pt() > leadingTrackPtBase) {
           leadingTrackPtBase = constituent.pt();
         }
-        angularity += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, constituent), alpha);
+        angularity += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, constituent) / (jet.r() / 100.f), alpha);
       }
-      angularity /= (jet.pt() * (jet.r() / 100.f));
+      angularity /= std::pow(jet.pt(), kappa);
       fillMatchedHistograms<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetsMatchedToChargedEventWiseSubtractedJets>::iterator, soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents, aod::ChargedEventWiseSubtractedJetsMatchedToChargedJets>>(jet, leadingTrackPtBase, angularity);
     }
   }
@@ -1205,9 +1205,9 @@ struct JetFinderQATask {
         if (constituent.pt() > leadingTrackPtBase) {
           leadingTrackPtBase = constituent.pt();
         }
-        angularity += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(mcdjet, constituent), alpha);
+        angularity += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(mcdjet, constituent) / (mcdjet.r() / 100.f), alpha);
       }
-      angularity /= (mcdjet.pt() * (mcdjet.r() / 100.f));
+      angularity /= std::pow(mcdjet.pt(), kappa);
       fillMatchedHistograms<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>::iterator, soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>>(mcdjet, leadingTrackPtBase, angularity, 1., collision.mcCollision().ptHard());
     }
   }
@@ -1238,9 +1238,9 @@ struct JetFinderQATask {
         if (constituent.pt() > leadingTrackPtBase) {
           leadingTrackPtBase = constituent.pt();
         }
-        angularity += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(mcdjet, constituent), alpha);
+        angularity += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(mcdjet, constituent) / (mcdjet.r() / 100.f), alpha);
       }
-      angularity /= (mcdjet.pt() * (mcdjet.r() / 100.f));
+      angularity /= std::pow(mcdjet.pt(), kappa);
       fillMatchedHistograms<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>::iterator, soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>>(mcdjet, leadingTrackPtBase, angularity, collision.weight(), collision.mcCollision().ptHard());
     }
   }

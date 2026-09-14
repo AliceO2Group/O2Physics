@@ -246,9 +246,9 @@ struct JetTutorialTask {
       registry.fill(HIST("h_jet_ntracks"), jet.tracksIds().size());
       double angularity = 0.0;
       for (auto& jetConstituent : jet.tracks_as<aod::JetTracks>()) {
-        angularity += std::pow(jetConstituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, jetConstituent), alpha);
+        angularity += std::pow(jetConstituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, jetConstituent) / (jet.r() / 100.f), alpha);
       }
-      angularity /= (jet.pt() * (jet.r() / 100.f));
+      angularity /= std::pow(jet.pt(), kappa);
       registry.fill(HIST("h_jet_angularity"), angularity);
     }
   }
@@ -274,14 +274,14 @@ struct JetTutorialTask {
       registry.fill(HIST("h_full_jet_nclusters"), jet.clustersIds().size());
       double angularity = 0.0;
       for (auto& jetConstituent : jet.tracks_as<aod::JetTracks>()) {
-        angularity += std::pow(jetConstituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, jetConstituent), alpha);
+        angularity += std::pow(jetConstituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, jetConstituent) / (jet.r() / 100.f), alpha);
       }
 
       for (auto& jetCluster : jet.clusters_as<aod::JetClusters>()) {
-        angularity += std::pow(jetCluster.energy(), kappa) * std::pow(jetutilities::deltaR(jet, jetCluster), alpha);
+        angularity += std::pow(jetCluster.energy(), kappa) * std::pow(jetutilities::deltaR(jet, jetCluster) / (jet.r() / 100.f), alpha);
       }
 
-      registry.fill(HIST("h_full_jet_angularity"), angularity / (jet.pt() * round(jet.r() * 100.0f)));
+      registry.fill(HIST("h_full_jet_angularity"), angularity / std::pow(jet.pt(), kappa));
     }
   }
   PROCESS_SWITCH(JetTutorialTask, processDataSubstructureFull, "full jet substructure", false);
@@ -291,9 +291,9 @@ struct JetTutorialTask {
     for (auto& jet : jets) {
       double angularity = 0.0;
       for (auto& jetConstituent : jet.tracks_as<aod::JetParticles>()) {
-        angularity += std::pow(jetConstituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, jetConstituent), alpha);
+        angularity += std::pow(jetConstituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, jetConstituent) / (jet.r() / 100.f), alpha);
       }
-      angularity /= (jet.pt() * (jet.r() / 100.f));
+      angularity /= std::pow(jet.pt(), kappa);
       registry.fill(HIST("h_part_jet_angularity"), angularity, mcCollision.weight());
     }
   }
@@ -369,9 +369,9 @@ struct JetTutorialTask {
       registry.fill(HIST("h_jet_ntracks"), jet.tracksIds().size());
       double angularity = 0.0;
       for (auto& jetConstituent : jet.tracks_as<aod::JetTracksSub>()) {
-        angularity += std::pow(jetConstituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, jetConstituent), alpha);
+        angularity += std::pow(jetConstituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, jetConstituent) / (jet.r() / 100.f), alpha);
       }
-      angularity /= (jet.pt() * (jet.r() / 100.f));
+      angularity /= std::pow(jet.pt(), kappa);
       registry.fill(HIST("h_jet_angularity_constsub"), angularity);
     }
   }
