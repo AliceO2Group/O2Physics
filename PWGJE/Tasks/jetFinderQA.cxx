@@ -471,9 +471,9 @@ struct JetFinderQATask {
   Filter eventCuts = (nabs(aod::jcollision::posZ) < vertexZCut &&
                       ((checkCentFT0M ? aod::jcollision::centFT0M : aod::jcollision::centFT0C) >= centralityMin) &&
                       ((checkCentFT0M ? aod::jcollision::centFT0M : aod::jcollision::centFT0C) < centralityMax));
-  PresliceUnsorted<soa::Filtered<aod::JetCollisionsMCD>> collisionsPerMCPCollision = aod::jmccollisionlb::mcCollisionId;
-  PresliceUnsorted<soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs>> mcCollisionsPerMCPCollision = aod::jmccollision::mcCollisionId;
-  Preslice<aod::JetParticles> particlesPerMCPCollision = aod::jmcparticle::mcCollisionId;
+  PresliceUnsorted<soa::Filtered<aod::JetCollisionsMCD>> CollisionsPerMCPCollision = aod::jmccollisionlb::mcCollisionId;
+  PresliceUnsorted<soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs>> McCollisionsPerMCPCollision = aod::jmccollision::mcCollisionId;
+  Preslice<aod::JetParticles> ParticlesPerMCPCollision = aod::jmcparticle::mcCollisionId;
 
   template <typename T, typename U>
   bool isAcceptedJet(U const& jet)
