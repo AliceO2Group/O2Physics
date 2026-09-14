@@ -24,6 +24,7 @@
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/CollisionTypeHelper.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TableHelper.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseTPC.h"
@@ -616,7 +617,7 @@ class pidTPCModule
           if (nnVersion == NNVersionWithModPhiEntrance) {
             phi += pidTPCopts.phiEntranceCoeff1 * LightSpeedDm2PS * 0.5 * pidTPCopts.phiEntranceCoeff2 * trk.signed1Pt();
           }
-          trackProperties[counterTrackProps + IdxModPhi] = std::fmod(std::fmod(phi, o2::constants::math::TwoPI) + o2::constants::math::TwoPI, o2::constants::math::TwoPI / o2::constants::math::NSectors);
+          trackProperties[counterTrackProps + IdxModPhi] = RecoDecay::constrainAngle(phi, 0.f, o2::constants::math::NSectors);
         }
         counterTrackProps += inputDimensions;
       }
