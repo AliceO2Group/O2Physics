@@ -521,7 +521,7 @@ struct JetDerivedDataWriter {
         std::copy(amplitudesFT0CSpan.begin(), amplitudesFT0CSpan.end(), std::back_inserter(amplitudesFT0C));
         std::copy(amplitudesFDDASpan.begin(), amplitudesFDDASpan.end(), std::back_inserter(amplitudesFDDA));
         std::copy(amplitudesFDDCSpan.begin(), amplitudesFDDCSpan.end(), std::back_inserter(amplitudesFDDC));
-        products.storedJCollisionUPCsTable(amplitudesFV0, amplitudesFT0A, amplitudesFT0C, amplitudesFDDA, amplitudesFDDC);
+        products.storedJCollisionUPCsTable(amplitudesFV0, amplitudesFT0A, amplitudesFT0C, amplitudesFDDA, amplitudesFDDC, collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC());
       }
     }
   }
