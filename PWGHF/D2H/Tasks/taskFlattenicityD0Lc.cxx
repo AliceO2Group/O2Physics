@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
+/// \file taskFlattenicityD0Lc.cxx
 /// \brief Analysis of D0/Lambda_c yield as a function of flattenicity
 /// \author Laszlo Gyulai, laszlo.gyulai@cern.ch
 
@@ -61,11 +62,11 @@ enum CandTypeSel {
 } // namespace
 
 static const int nCellsFV0 = 48;
-static const int CinnerFV0 = 32;
+static const int nInnerCellsFV0 = 32;
 std::array<float, nCellsFV0> rhoLatticeFV0{};
 std::array<float, nCellsFV0> fv0AmplitudeWoCalib{};
 std::array<float, nCellsFV0> calib = {1.01697, 1.122, 1.03854, 1.108, 1.11634, 1.14971, 1.19321, 1.06866, 0.954675, 0.952695, 0.969853, 0.957557, 0.989784, 1.01549, 1.02182, 0.976005, 1.01865, 1.06871, 1.06264, 1.02969, 1.07378, 1.06622, 1.15057, 1.0433, 0.83654, 0.847178, 0.890027, 0.920814, 0.888271, 1.04662, 0.8869, 0.856348, 0.863181, 0.906312, 0.902166, 1.00122, 1.03303, 0.887866, 0.892437, 0.906278, 0.884976, 0.864251, 0.917221, 1.10618, 1.04028, 0.893184, 0.915734, 0.892676};
-std::map<int, int> ChannelsToRings = {{0, 0}, {1, 1}, {2, 2}, {3, 3}, {4, 7}, {5, 6}, {6, 5}, {7, 4}, {8, 8}, {9, 9}, {10, 10}, {11, 11}, {12, 15}, {13, 14}, {14, 13}, {15, 12}, {16, 16}, {17, 17}, {18, 18}, {19, 19}, {20, 23}, {21, 22}, {22, 21}, {23, 20}, {24, 24}, {25, 25}, {26, 26}, {27, 27}, {28, 31}, {29, 30}, {30, 29}, {31, 28}, {32, 32}, {33, 34}, {34, 36}, {35, 38}, {36, 47}, {37, 45}, {38, 43}, {39, 41}, {40, 33}, {41, 35}, {42, 37}, {43, 39}, {44, 46}, {45, 44}, {46, 42}, {47, 40}};
+std::map<int, int> channelsToRings = {{0, 0}, {1, 1}, {2, 2}, {3, 3}, {4, 7}, {5, 6}, {6, 5}, {7, 4}, {8, 8}, {9, 9}, {10, 10}, {11, 11}, {12, 15}, {13, 14}, {14, 13}, {15, 12}, {16, 16}, {17, 17}, {18, 18}, {19, 19}, {20, 23}, {21, 22}, {22, 21}, {23, 20}, {24, 24}, {25, 25}, {26, 26}, {27, 27}, {28, 31}, {29, 30}, {30, 29}, {31, 28}, {32, 32}, {33, 34}, {34, 36}, {35, 38}, {36, 47}, {37, 45}, {38, 43}, {39, 41}, {40, 33}, {41, 35}, {42, 37}, {43, 39}, {44, 46}, {45, 44}, {46, 42}, {47, 40}};
 
 struct HfTaskFlattenicityD0Lc {
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
@@ -478,7 +479,7 @@ struct HfTaskFlattenicityD0Lc {
       }
 
       const float flat = fillFlat<true>(collision, 0);
-      const float flat_calibrated = fillFlat<true>(collision, 1);
+      const float flatCalibrated = fillFlat<true>(collision, 1);
 
       const auto thisCollId = collision.globalIndex();
 
@@ -638,7 +639,7 @@ struct HfTaskFlattenicityD0Lc {
       auto collision = candidate.template collision_as<CollType>();
 
       const float flat = fillFlat<false>(collision, 0);
-      const float flat_calibrated = fillFlat<false>(collision, 1);
+      const float flatCalibrated = fillFlat<false>(collision, 1);
 
       float massD0{0.f}, massD0bar{0.f};
       massD0 = HfHelper::invMassD0ToPiK(candidate);
@@ -851,7 +852,7 @@ struct HfTaskFlattenicityD0Lc {
       const auto& groupedLcCandidates = candidatesLc.sliceBy(candLcPerCollision, thisCollId);
 
       const float flat = fillFlat<true>(collision, 0);
-      const float flat_calibrated = fillFlat<true>(collision, 1);
+      const float flatCalibrated = fillFlat<true>(collision, 1);
 
       for (const auto& candidate : groupedLcCandidates) {
         if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
@@ -1061,14 +1062,14 @@ struct HfTaskFlattenicityD0Lc {
         for (std::size_t ich = 0; ich < fv0.channel().size(); ich++) {
           float amplCh = fv0.amplitude()[ich];
           int chv0 = fv0.channel()[ich];
-          int chv0phi = ChannelsToRings.at(chv0);
+          int chv0phi = channelsToRings.at(chv0);
           if (amplCh > 0.0) {
             if (chv0phi > 0.0) {
               fv0AmplitudeWoCalib[chv0phi] = amplCh;
               if (ifCalib) {
                 amplCh *= calib[chv0phi];
               }
-              if (chv0 < CinnerFV0) {
+              if (chv0 < nInnerCellsFV0) {
                 rhoLatticeFV0[chv0phi] += amplCh;
               } else {
                 rhoLatticeFV0[chv0phi] += amplCh / 2.;
@@ -1100,11 +1101,9 @@ struct HfTaskFlattenicityD0Lc {
     int entries = signals.size();
     float flat{-1};
     float mRho{0};
-    float mRho_debug{0};
     for (int iCell = 0; iCell < entries; ++iCell) {
       if (signals[iCell] > 0.0) {
         mRho += 1.0 * signals[iCell];
-        mRho_debug += 1.0 * signals[iCell];
       }
     }
     mRho /= (1.0 * entries);
