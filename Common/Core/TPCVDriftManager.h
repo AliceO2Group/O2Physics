@@ -14,6 +14,8 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/LHCConstants.h>
+#include <CommonUtils/ConfigurableParam.h>
+#include <CommonUtils/ConfigurableParamHelper.h>
 #include <DataFormatsTPC/VDriftCorrFact.h>
 #include <Framework/DataTypes.h>
 #include <Framework/Logger.h>
@@ -25,6 +27,15 @@
 
 namespace o2::aod::common
 {
+
+struct TPCVDriftManagerParam : public o2::conf::ConfigurableParamHelper<TPCVDriftManagerParam> {
+  // Use the TPC side flags (with legacy-data fallback) instead of the tgl-sign-based correction.
+  // Off by default so that existing analyses see no change in results until this is explicitly
+  // enabled for testing.
+  bool useSideBasedCorrection = false;
+
+  O2ParamDef(TPCVDriftManagerParam, "TPCVDriftManager");
+};
 
 // Thin wrapper for vdrift ccdb queries should partially mirror VDriftHelper class.
 // Allows to move TPC standalone tracks under the assumption of a different
@@ -131,48 +142,53 @@ class TPCVDriftManager
     }
 
     // impose new Z coordinate
-    const auto sides = (trackExtra.flags() & (o2::aod::track::TrackFlags::TPCSideA | o2::aod::track::TrackFlags::TPCSideC));
     float zShift = 0.f;
-    if (sides == o2::aod::track::TrackFlags::TPCSideA) {
-      zShift = dDrift;
-    } else if (sides == o2::aod::track::TrackFlags::TPCSideC) {
-      zShift = -dDrift;
-    } else if (sides == 0) {
-      // Fallback for datasets produced before the TPC side flags were introduced (Feb. 2026).
-      o2::aod::track::extensions::TPCTimeErrEncoding tEnc;
-      tEnc.encoding.timeErr = trackExtra.trackTimeRes();
-      const float dFwd = tEnc.getDeltaTFwd();
-      const float dBwd = tEnc.getDeltaTBwd();
-      // Equal, small forward/backward margins mean the track is bounded on both ends,
-      // i.e. it crosses the CE: it cannot be moved and is already corrected elsewhere.
-      const bool crossesCE = (dFwd == dBwd) && (dFwd < mMaxCECrossingDeltaTNS);
-      if (!crossesCE) {
-        const bool zPositive = track.getZ() > 0.f;
-        const bool tglPositive = track.getTgl() > 0.f;
-        int side = 0; // +1 = A, -1 = C, 0 = undetermined -> leave uncorrected
-        if (zPositive == tglPositive) {
-          // Consistent sign: the track converges to Z=0 at the beamline by construction.
-          side = tglPositive ? 1 : -1;
-        } else if (dBwd == 0.f && dFwd > 0.f) {
-          // Bounded backward at the CE with room forward: no clusters on the opposite
-          // side, so trust the measured Z rather than the (here inverted) tgl.
-          side = zPositive ? 1 : -1;
-        } else if (dBwd > 0.f) {
-          // Large tgl track bounded at the readout side instead: trust tgl.
-          side = tglPositive ? 1 : -1;
-        }
-        // else: degenerate case, track touches both CE and readout -> cannot be deduced/moved.
-        // (in practice unreachable here: dFwd==dBwd==0 would already satisfy crossesCE above,
-        // since dFwd/dBwd are always >= 0; kept explicit to mirror the reference logic 1:1.)
+    if (!TPCVDriftManagerParam::Instance().useSideBasedCorrection) {
+      // Legacy behaviour (default): infer the side from tgl alone.
+      zShift = (track.getTgl() < 0.f) ? -dDrift : dDrift;
+    } else {
+      const auto sides = (trackExtra.flags() & (o2::aod::track::TrackFlags::TPCSideA | o2::aod::track::TrackFlags::TPCSideC));
+      if (sides == o2::aod::track::TrackFlags::TPCSideA) {
+        zShift = dDrift;
+      } else if (sides == o2::aod::track::TrackFlags::TPCSideC) {
+        zShift = -dDrift;
+      } else if (sides == 0) {
+        // Fallback for datasets produced before the TPC side flags were introduced (Feb. 2026).
+        o2::aod::track::extensions::TPCTimeErrEncoding tEnc;
+        tEnc.encoding.timeErr = trackExtra.trackTimeRes();
+        const float dFwd = tEnc.getDeltaTFwd();
+        const float dBwd = tEnc.getDeltaTBwd();
+        // Equal, small forward/backward margins mean the track is bounded on both ends,
+        // i.e. it crosses the CE: it cannot be moved and is already corrected elsewhere.
+        const bool crossesCE = (dFwd == dBwd) && (dFwd < mMaxCECrossingDeltaTNS);
+        if (!crossesCE) {
+          const bool zPositive = track.getZ() > 0.f;
+          const bool tglPositive = track.getTgl() > 0.f;
+          int side = 0; // +1 = A, -1 = C, 0 = undetermined -> leave uncorrected
+          if (zPositive == tglPositive) {
+            // Consistent sign: the track converges to Z=0 at the beamline by construction.
+            side = tglPositive ? 1 : -1;
+          } else if (dBwd == 0.f && dFwd > 0.f) {
+            // Bounded backward at the CE with room forward: no clusters on the opposite
+            // side, so trust the measured Z rather than the (here inverted) tgl.
+            side = zPositive ? 1 : -1;
+          } else if (dBwd > 0.f) {
+            // Large tgl track bounded at the readout side instead: trust tgl.
+            side = tglPositive ? 1 : -1;
+          }
+          // else: degenerate case, track touches both CE and readout -> cannot be deduced/moved.
+          // (in practice unreachable here: dFwd==dBwd==0 would already satisfy crossesCE above,
+          // since dFwd/dBwd are always >= 0; kept explicit to mirror the reference logic 1:1.)
 
-        if (side > 0) {
-          zShift = dDrift;
-        } else if (side < 0) {
-          zShift = -dDrift;
+          if (side > 0) {
+            zShift = dDrift;
+          } else if (side < 0) {
+            zShift = -dDrift;
+          }
         }
       }
+      // else: track has clusters on both sides (crossed the CE) and is already corrected elsewhere
     }
-    // else: track has clusters on both sides (crossed the CE) and is already corrected elsewhere
     track.setZ(track.getZ() + zShift);
     if constexpr (std::is_base_of_v<o2::track::TrackParCov, Track>) {
       track.setCov(track.getSigmaZ2() + dDriftErr * dDriftErr, o2::track::kSigZ2);
