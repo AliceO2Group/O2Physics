@@ -47,6 +47,7 @@
 #include <TRandom.h>
 #include <TString.h>
 
+#include <array>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -55,6 +56,7 @@
 #include <memory>
 #include <ratio>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <math.h>
@@ -454,6 +456,19 @@ class pidTPCModule
     constexpr double Ft0cOccupancyNorm = 60000.;
     constexpr int NumberOfTpcSectors = 18;
 
+    struct NNVersionEntry {
+      std::string_view versionName{};
+      int numberOfFeatures{};
+      int versionNumber{};
+    };
+
+    constexpr std::array<NNVersionEntry, 5> nnVersionsDictionary{
+      {{"", 6, 1},
+       {"1", 6, 1},
+       {"2", 7, 2},
+       {"3", 8, 3},
+       {"4", 9, 4}}};
+
     std::vector<float> networkPrediction;
 
     const auto startNetworkTotal = std::chrono::high_resolution_clock::now();
@@ -512,6 +527,17 @@ class pidTPCModule
     const int outputDimensions = network.getNumOutputNodes();
     const uint64_t trackPropSize = inputDimensions * size;
     const uint64_t predictionSize = outputDimensions * size;
+
+    int nnVersion{0};
+    for (const auto& nnVersionEntry : nnVersionsDictionary) {
+      if (networkVersion == nnVersionEntry.versionName && inputDimensions == nnVersionEntry.numberOfFeatures) {
+        nnVersion = nnVersionEntry.versionNumber;
+        break;
+      }
+    }
+    if (nnVersion == 0) {
+      LOG(fatal) << "createNetworkPrediction(): networkVersion '" << networkVersion << "' and number of features " << inputDimensions << " are not compatible according to nnVersionsDictionary";
+    }
 
     networkPrediction = std::vector<float>(predictionSize * NParticleTypes); // For each mass hypotheses
     const float nNclNormalization = response->GetNClNormalization();
