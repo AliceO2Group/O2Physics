@@ -102,6 +102,8 @@ struct TwoParticleCorrelationsMpi {
   Configurable<float> cfgCutVertex{"cfgCutVertex", 7.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutPt{"cfgCutPt", 0.5f, "Minimal pT for tracks"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
+  Configurable<std::pair<float, float>> cfgFlowPtRef{"cfgFlowPtRef", {0.5f, 3.0f}, "Minimum and maximum pT for reference flow particles"};
+  Configurable<std::pair<float, float>> cfgFlowPtPOI{"cfgFlowPtPOI", {0.5f, 10.0f}, "Minimum and maximum pT for particles of interest in flow correlations"};
 
   Configurable<int> cfgPtOrder{"cfgPtOrder", 1, "Only consider pairs for which pT,1 < pT,2 (0 = OFF, 1 = ON)"};
   Configurable<int> cfgTriggerCharge{"cfgTriggerCharge", 0, "Select on charge of trigger particle: 0 = all; 1 = positive; -1 = negative"};
@@ -608,6 +610,17 @@ struct TwoParticleCorrelationsMpi {
 
     // Generic Framework init
     AxisSpec ptAxisSpec = axisPtTrigger;
+    const auto validateFlowPtRange = [&ptAxisSpec](const std::pair<float, float>& range, const char* name) {
+      if (!std::isfinite(range.first) || !std::isfinite(range.second) || range.first >= range.second) {
+        LOGF(fatal, "%s must define a finite, increasing pT range; received {%g, %g}", name, range.first, range.second);
+      }
+      if (range.first < ptAxisSpec.binEdges.front() || range.second > ptAxisSpec.binEdges.back()) {
+        LOGF(fatal, "%s={%g, %g} must be contained in axisPtTrigger={%g, %g}",
+             name, range.first, range.second, ptAxisSpec.binEdges.front(), ptAxisSpec.binEdges.back());
+      }
+    };
+    validateFlowPtRange(cfgFlowPtRef.value, "cfgFlowPtRef");
+    validateFlowPtRange(cfgFlowPtPOI.value, "cfgFlowPtPOI");
     const int nPtBins = static_cast<int>(ptAxisSpec.binEdges.size()) - 1;
     fPtAxis = std::make_unique<TAxis>(nPtBins, ptAxisSpec.binEdges.data());
     if (cfgRegions->GetSize() < 0) {
@@ -849,9 +862,9 @@ struct TwoParticleCorrelationsMpi {
   template <DataType dt, typename TTrack>
   inline void fillGFW(const TTrack& track, const float& centMult, const double& posZ)
   {
-    const bool withinPtRef = track.pt() > fPtAxis->GetXmin() && track.pt() < fPtAxis->GetXmax();
-    const bool withinPtPOI = withinPtRef;
-    if (!withinPtPOI && !withinPtRef) {
+    const bool withinPtRef = track.pt() > cfgFlowPtRef->first && track.pt() < cfgFlowPtRef->second;
+    const bool withinPtPOI = track.pt() > cfgFlowPtPOI->first && track.pt() < cfgFlowPtPOI->second;
+    if (!withinPtRef && !withinPtPOI) {
       return;
     }
     double wacc = 1.;
@@ -866,14 +879,15 @@ struct TwoParticleCorrelationsMpi {
       return;
     }
     const double weight = weff * wacc;
+    const int ptBin = fPtAxis->FindBin(track.pt()) - 1;
     if (withinPtRef) {
-      fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), weight, ReferenceMask);
+      fGFW->Fill(track.eta(), ptBin, track.phi(), weight, ReferenceMask);
     }
     if (withinPtPOI) {
-      fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), weight, PoiMask);
+      fGFW->Fill(track.eta(), ptBin, track.phi(), weight, PoiMask);
     }
     if (withinPtRef && withinPtPOI) {
-      fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), weight, OverlapMask);
+      fGFW->Fill(track.eta(), ptBin, track.phi(), weight, OverlapMask);
     }
   }
 
