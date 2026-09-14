@@ -22,11 +22,11 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Multiplicity.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
@@ -263,9 +263,9 @@ struct NucleitpcPbPb {
   ConfigurableAxis axisDCA{"axisDCA", {400, -10., 10.}, "DCA axis"};
   ConfigurableAxis particleAntiAxis{"particleAntiAxis", {2, -0.5, 1.5}, "Particle/Anti-particle"}; // 0 = particle, 1 = anti-particle
   ConfigurableAxis decayTypeAxis{"decayTypeAxis", {3, -0.5, 2.5}, "Decay type"};                   // 0 = primary, 1 = from decay, 2 = material
-    ConfigurableAxis axisMultMC{"axisMultMC", {500, 0., 5000.}, "N_{ch}^{gen} in |#eta| < 0.5"};
-    ConfigurableAxis speciesAxis{"speciesAxis", {NParticles, -0.5, NParticles - 0.5}, "species index"};
-    ConfigurableAxis axisImpactPar{"axisImpactPar", {200, 0., 20.}, "impact parameter #it{b} (fm)"};
+  ConfigurableAxis axisMultMC{"axisMultMC", {500, 0., 5000.}, "N_{ch}^{gen} in |#eta| < 0.5"};
+  ConfigurableAxis speciesAxis{"speciesAxis", {NParticles, -0.5, NParticles - 0.5}, "species index"};
+  ConfigurableAxis axisImpactPar{"axisImpactPar", {200, 0., 20.}, "impact parameter #it{b} (fm)"};
 
   // ---- CCDB -------------------------------------------------------------------
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -812,7 +812,6 @@ struct NucleitpcPbPb {
             }
           }
         }
-
 
         if (!info.passedEvSelVtZ)
           continue;
