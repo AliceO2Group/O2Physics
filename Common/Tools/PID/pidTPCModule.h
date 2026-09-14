@@ -481,6 +481,10 @@ class pidTPCModule
       IdxModPhi
     };
 
+    constexpr int OldestNNVersionWithFt0c{2};
+    constexpr int OldestNNVersionWithHadronicRate{3};
+    constexpr int OldestNNVersionWithModPhi{4};
+
     std::vector<float> networkPrediction;
 
     const auto startNetworkTotal = std::chrono::high_resolution_clock::now();
@@ -551,6 +555,8 @@ class pidTPCModule
       LOG(fatal) << "createNetworkPrediction(): networkVersion '" << networkVersion << "' and number of features " << inputDimensions << " are not compatible according to nnVersionsDictionary";
     }
 
+    const int hadronicRateNorm = collsys == CollisionSystemType::kCollSyspp ? HadronicRateNormPp : HadronicRateNormAa;
+
     networkPrediction = std::vector<float>(predictionSize * NParticleTypes); // For each mass hypotheses
     const float nNclNormalization = response->GetNClNormalization();
     float durationNetwork = 0;
@@ -581,13 +587,6 @@ class pidTPCModule
 
     // Filling a std::vector<float> to be evaluated by the network
     // Evaluation on single tracks brings huge overhead: Thus evaluation is done on one large vector
-
-    constexpr int ExpectedInputDimensionsNNV2 = 7;
-    constexpr int ExpectedInputDimensionsNNV3 = 8;
-    constexpr int ExpectedInputDimensionsNNV4 = 9;
-    constexpr auto NetworkVersionV2 = "2";
-    constexpr auto NetworkVersionV3 = "3";
-    constexpr auto NetworkVersionV4 = "4";
     for (int j = 0; j < NParticleTypes; j++) { // Loop over particle number for which network correction is used
       for (auto const& trk : tracks) {
         if (!trk.hasTPC()) {
@@ -598,49 +597,21 @@ class pidTPCModule
             continue;
           }
         }
+        const bool isGoodTrack = trk.has_collision() && mults.size() > 0;
         trackProperties[counterTrackProps + IdxTpcInnerParam] = trk.tpcInnerParam();
         trackProperties[counterTrackProps + IdxTgl] = trk.tgl();
         trackProperties[counterTrackProps + IdxSigned1Pt] = trk.signed1Pt();
         trackProperties[counterTrackProps + IdxMass] = o2::track::pid_constants::sMasses[j];
-        trackProperties[counterTrackProps + IdxMultiplicity] = (trk.has_collision() && mults.size() > 0) ? mults[trk.collisionId()] / MultiplicityNorm : 1.;
+        trackProperties[counterTrackProps + IdxMultiplicity] = isGoodTrack ? mults[trk.collisionId()] / MultiplicityNorm : 1.;
         trackProperties[counterTrackProps + IdxNClusters] = std::sqrt(nNclNormalization / trk.tpcNClsFound());
-        if (inputDimensions == ExpectedInputDimensionsNNV2 && networkVersion == NetworkVersionV2) {
-          trackProperties[counterTrackProps + IdxFt0cOcc] = (trk.has_collision() && mults.size() > 0) ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / Ft0cOccupancyNorm : 1.;
+        if (nnVersion >= OldestNNVersionWithFt0c) {
+          trackProperties[counterTrackProps + IdxFt0cOcc] = isGoodTrack ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / Ft0cOccupancyNorm : 1.;
         }
-        if (inputDimensions == ExpectedInputDimensionsNNV3 && networkVersion == NetworkVersionV3) {
-          trackProperties[counterTrackProps + IdxFt0cOcc] = (trk.has_collision() && mults.size() > 0) ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / Ft0cOccupancyNorm : 1.;
-          if (trk.has_collision() && mults.size() > 0) {
-            if (collsys == CollisionSystemType::kCollSyspp) {
-              trackProperties[counterTrackProps + IdxHadronicRate] = hadronicRateForCollision[trk.collisionId()] / HadronicRateNormPp;
-            } else {
-              trackProperties[counterTrackProps + IdxHadronicRate] = hadronicRateForCollision[trk.collisionId()] / HadronicRateNormAa;
-            }
-          } else {
-            // asign Hadronic Rate at beginning of run  if track does not belong to a collision
-            if (collsys == CollisionSystemType::kCollSyspp) {
-              trackProperties[counterTrackProps + IdxHadronicRate] = hadronicRateBegin / HadronicRateNormPp;
-            } else {
-              trackProperties[counterTrackProps + IdxHadronicRate] = hadronicRateBegin / HadronicRateNormAa;
-            }
-          }
+        if (nnVersion >= OldestNNVersionWithHadronicRate) {
+          const float hadronicRate = isGoodTrack ? hadronicRateForCollision[trk.collisionId()] : hadronicRateBegin;
+          trackProperties[counterTrackProps + IdxHadronicRate] = hadronicRate / hadronicRateNorm;
         }
-
-        if (inputDimensions == ExpectedInputDimensionsNNV4 && networkVersion == NetworkVersionV4) {
-          trackProperties[counterTrackProps + IdxFt0cOcc] = (trk.has_collision() && mults.size() > 0) ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / Ft0cOccupancyNorm : 1.;
-          if (trk.has_collision() && mults.size() > 0) {
-            if (collsys == CollisionSystemType::kCollSyspp) {
-              trackProperties[counterTrackProps + IdxHadronicRate] = hadronicRateForCollision[trk.collisionId()] / HadronicRateNormPp;
-            } else {
-              trackProperties[counterTrackProps + IdxHadronicRate] = hadronicRateForCollision[trk.collisionId()] / HadronicRateNormAa;
-            }
-          } else {
-            // asign Hadronic Rate at beginning of run  if track does not belong to a collision
-            if (collsys == CollisionSystemType::kCollSyspp) {
-              trackProperties[counterTrackProps + IdxHadronicRate] = hadronicRateBegin / HadronicRateNormPp;
-            } else {
-              trackProperties[counterTrackProps + IdxHadronicRate] = hadronicRateBegin / HadronicRateNormAa;
-            }
-          }
+        if (nnVersion >= OldestNNVersionWithModPhi) {
           trackProperties[counterTrackProps + IdxModPhi] = std::fmod(std::fmod(trk.phi(), o2::constants::math::TwoPI) + o2::constants::math::TwoPI, o2::constants::math::TwoPI / NumberOfTpcSectors);
         }
         counterTrackProps += inputDimensions;
