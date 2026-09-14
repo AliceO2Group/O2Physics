@@ -22,6 +22,7 @@
 
 #include "Common/Core/RecoDecay.h"
 
+#include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
@@ -31,8 +32,6 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TMath.h>
-#include <TMathBase.h>
 #include <TRandom3.h>
 
 #include <algorithm>
@@ -41,8 +40,6 @@
 #include <string>
 #include <type_traits>
 #include <vector>
-
-#include <math.h>
 
 using namespace o2;
 using namespace o2::framework;
