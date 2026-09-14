@@ -738,9 +738,9 @@ struct JetSpectraCharged {
           continue;
         }
         if (jetMCD.r() == round(selectedJetsRadius * 100.0f)) {
-          double corrTagjetpt = jetMCP.pt() - (mcrho * jetMCP.area());
-          double corrBasejetpt = jetMCD.pt() - (rho * jetMCD.area());
-          double dcorrpt = corrBasejetpt - corrTagjetpt;
+          float corrTagjetpt = jetMCP.pt() - (mcrho * jetMCP.area());
+          float corrBasejetpt = jetMCD.pt() - (rho * jetMCD.area());
+          float dcorrpt = corrBasejetpt - corrTagjetpt;
           float angularityMcd = 0.;
           for (const auto& constituent : jetMCD.template tracks_as<aod::JetTracks>()) {
             angularityMcd += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jetMCD, constituent) / (jetMCD.r() / 100.f), alpha);
