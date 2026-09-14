@@ -446,9 +446,9 @@ class pidTPCModule
   std::vector<float> createNetworkPrediction(TCCDB& ccdb, soa::Join<aod::Collisions, aod::EvSels> const& collisions, M const& mults, T const& tracks, B const& bcs, const size_t size)
   {
 
-    std::vector<float> network_prediction;
+    std::vector<float> networkPrediction;
 
-    auto start_network_total = std::chrono::high_resolution_clock::now();
+    auto startNetworkTotal = std::chrono::high_resolution_clock::now();
     if (pidTPCopts.autofetchNetworks) {
       const auto& bc = bcs.begin();
       // Initialise correct TPC response object before NN setup (for NCl normalisation)
@@ -500,18 +500,18 @@ class pidTPCModule
     }
 
     // Defining some network parameters
-    int input_dimensions = network.getNumInputNodes();
-    int output_dimensions = network.getNumOutputNodes();
-    const uint64_t track_prop_size = input_dimensions * size;
-    const uint64_t prediction_size = output_dimensions * size;
+    int inputDimensions = network.getNumInputNodes();
+    int outputDimensions = network.getNumOutputNodes();
+    const uint64_t track_prop_size = inputDimensions * size;
+    const uint64_t prediction_size = outputDimensions * size;
 
-    network_prediction = std::vector<float>(prediction_size * 9); // For each mass hypotheses
+    networkPrediction = std::vector<float>(prediction_size * 9); // For each mass hypotheses
     const float nNclNormalization = response->GetNClNormalization();
-    float duration_network = 0;
+    float durationNetwork = 0;
 
-    std::vector<float> track_properties(track_prop_size);
-    uint64_t counter_track_props = 0;
-    int loop_counter = 0;
+    std::vector<float> trackProperties(track_prop_size);
+    uint64_t counterTrackProps = 0;
+    int loopCounter = 0;
 
     // To load the Hadronic rate once for each collision
     float hadronicRateBegin = 0.;
@@ -552,74 +552,74 @@ class pidTPCModule
             continue;
           }
         }
-        track_properties[counter_track_props] = trk.tpcInnerParam();
-        track_properties[counter_track_props + 1] = trk.tgl();
-        track_properties[counter_track_props + 2] = trk.signed1Pt();
-        track_properties[counter_track_props + 3] = o2::track::pid_constants::sMasses[j];
-        track_properties[counter_track_props + 4] = (trk.has_collision() && mults.size() > 0) ? mults[trk.collisionId()] / 11000. : 1.;
-        track_properties[counter_track_props + 5] = std::sqrt(nNclNormalization / trk.tpcNClsFound());
-        if (input_dimensions == ExpectedInputDimensionsNNV2 && networkVersion == NetworkVersionV2) {
-          track_properties[counter_track_props + 6] = (trk.has_collision() && mults.size() > 0) ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / 60000. : 1.;
+        trackProperties[counterTrackProps] = trk.tpcInnerParam();
+        trackProperties[counterTrackProps + 1] = trk.tgl();
+        trackProperties[counterTrackProps + 2] = trk.signed1Pt();
+        trackProperties[counterTrackProps + 3] = o2::track::pid_constants::sMasses[j];
+        trackProperties[counterTrackProps + 4] = (trk.has_collision() && mults.size() > 0) ? mults[trk.collisionId()] / 11000. : 1.;
+        trackProperties[counterTrackProps + 5] = std::sqrt(nNclNormalization / trk.tpcNClsFound());
+        if (inputDimensions == ExpectedInputDimensionsNNV2 && networkVersion == NetworkVersionV2) {
+          trackProperties[counterTrackProps + 6] = (trk.has_collision() && mults.size() > 0) ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / 60000. : 1.;
         }
-        if (input_dimensions == ExpectedInputDimensionsNNV3 && networkVersion == NetworkVersionV3) {
-          track_properties[counter_track_props + 6] = (trk.has_collision() && mults.size() > 0) ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / 60000. : 1.;
+        if (inputDimensions == ExpectedInputDimensionsNNV3 && networkVersion == NetworkVersionV3) {
+          trackProperties[counterTrackProps + 6] = (trk.has_collision() && mults.size() > 0) ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / 60000. : 1.;
           if (trk.has_collision() && mults.size() > 0) {
             if (collsys == CollisionSystemType::kCollSyspp) {
-              track_properties[counter_track_props + 7] = hadronicRateForCollision[trk.collisionId()] / 1500.;
+              trackProperties[counterTrackProps + 7] = hadronicRateForCollision[trk.collisionId()] / 1500.;
             } else {
-              track_properties[counter_track_props + 7] = hadronicRateForCollision[trk.collisionId()] / 50.;
+              trackProperties[counterTrackProps + 7] = hadronicRateForCollision[trk.collisionId()] / 50.;
             }
           } else {
             // asign Hadronic Rate at beginning of run  if track does not belong to a collision
             if (collsys == CollisionSystemType::kCollSyspp) {
-              track_properties[counter_track_props + 7] = hadronicRateBegin / 1500.;
+              trackProperties[counterTrackProps + 7] = hadronicRateBegin / 1500.;
             } else {
-              track_properties[counter_track_props + 7] = hadronicRateBegin / 50.;
+              trackProperties[counterTrackProps + 7] = hadronicRateBegin / 50.;
             }
           }
         }
 
-        if (input_dimensions == ExpectedInputDimensionsNNV4 && networkVersion == NetworkVersionV4) {
-          track_properties[counter_track_props + 6] = (trk.has_collision() && mults.size() > 0) ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / 60000. : 1.;
+        if (inputDimensions == ExpectedInputDimensionsNNV4 && networkVersion == NetworkVersionV4) {
+          trackProperties[counterTrackProps + 6] = (trk.has_collision() && mults.size() > 0) ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / 60000. : 1.;
           if (trk.has_collision() && mults.size() > 0) {
             if (collsys == CollisionSystemType::kCollSyspp) {
-              track_properties[counter_track_props + 7] = hadronicRateForCollision[trk.collisionId()] / 1500.;
+              trackProperties[counterTrackProps + 7] = hadronicRateForCollision[trk.collisionId()] / 1500.;
             } else {
-              track_properties[counter_track_props + 7] = hadronicRateForCollision[trk.collisionId()] / 50.;
+              trackProperties[counterTrackProps + 7] = hadronicRateForCollision[trk.collisionId()] / 50.;
             }
           } else {
             // asign Hadronic Rate at beginning of run  if track does not belong to a collision
             if (collsys == CollisionSystemType::kCollSyspp) {
-              track_properties[counter_track_props + 7] = hadronicRateBegin / 1500.;
+              trackProperties[counterTrackProps + 7] = hadronicRateBegin / 1500.;
             } else {
-              track_properties[counter_track_props + 7] = hadronicRateBegin / 50.;
+              trackProperties[counterTrackProps + 7] = hadronicRateBegin / 50.;
             }
           }
-          track_properties[counter_track_props + 8] = std::fmod(std::fmod(trk.phi(), 2 * M_PI) + 2 * M_PI, M_PI / 9.0);
+          trackProperties[counterTrackProps + 8] = std::fmod(std::fmod(trk.phi(), 2 * M_PI) + 2 * M_PI, M_PI / 9.0);
         }
-        counter_track_props += input_dimensions;
+        counterTrackProps += inputDimensions;
       }
 
-      auto start_network_eval = std::chrono::high_resolution_clock::now();
-      float* output_network = network.evalModel(track_properties);
-      auto stop_network_eval = std::chrono::high_resolution_clock::now();
-      duration_network += std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_eval - start_network_eval).count();
-      for (uint64_t k = 0; k < prediction_size; k += output_dimensions) {
-        for (int l = 0; l < output_dimensions; l++) {
-          network_prediction[k + l + prediction_size * loop_counter] = output_network[k + l];
+      auto startNetworkEval = std::chrono::high_resolution_clock::now();
+      float* outputNetwork = network.evalModel(trackProperties);
+      auto stopNetworkEval = std::chrono::high_resolution_clock::now();
+      durationNetwork += std::chrono::duration<float, std::ratio<1, 1000000000>>(stopNetworkEval - startNetworkEval).count();
+      for (uint64_t k = 0; k < prediction_size; k += outputDimensions) {
+        for (int l = 0; l < outputDimensions; l++) {
+          networkPrediction[k + l + prediction_size * loopCounter] = outputNetwork[k + l];
         }
       }
 
-      counter_track_props = 0;
-      loop_counter += 1;
+      counterTrackProps = 0;
+      loopCounter += 1;
     }
-    track_properties.clear();
+    trackProperties.clear();
 
-    auto stop_network_total = std::chrono::high_resolution_clock::now();
-    LOG(debug) << "Neural Network for the TPC PID response correction: Time per track (eval ONNX): " << duration_network / (size * 9) << "ns ; Total time (eval ONNX): " << duration_network / 1000000000 << " s";
-    LOG(debug) << "Neural Network for the TPC PID response correction: Time per track (eval + overhead): " << std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_total - start_network_total).count() / (size * 9) << "ns ; Total time (eval + overhead): " << std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_total - start_network_total).count() / 1000000000 << " s";
+    auto stopNetworkTotal = std::chrono::high_resolution_clock::now();
+    LOG(debug) << "Neural Network for the TPC PID response correction: Time per track (eval ONNX): " << durationNetwork / (size * 9) << "ns ; Total time (eval ONNX): " << durationNetwork / 1000000000 << " s";
+    LOG(debug) << "Neural Network for the TPC PID response correction: Time per track (eval + overhead): " << std::chrono::duration<float, std::ratio<1, 1000000000>>(stopNetworkTotal - startNetworkTotal).count() / (size * 9) << "ns ; Total time (eval + overhead): " << std::chrono::duration<float, std::ratio<1, 1000000000>>(stopNetworkTotal - startNetworkTotal).count() / 1000000000 << " s";
 
-    return network_prediction;
+    return networkPrediction;
   }
 
   //__________________________________________________
