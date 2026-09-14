@@ -459,7 +459,6 @@ class pidTPCModule
     constexpr double HadronicRateNormPp = 1500.;
     constexpr double HadronicRateNormAa = 50.;
     constexpr double Ft0cOccupancyNorm = 60000.;
-    constexpr int NumberOfTpcSectors = 18;
     constexpr float LightSpeedDm2PS = o2::constants::physics::LightSpeedCm2PS / 10.f;
 
     struct NNVersionEntry {
@@ -617,7 +616,7 @@ class pidTPCModule
           if (nnVersion == NNVersionWithModPhiEntrance) {
             phi += pidTPCopts.phiEntranceCoeff1 * LightSpeedDm2PS * 0.5 * pidTPCopts.phiEntranceCoeff2 * trk.signed1Pt();
           }
-          trackProperties[counterTrackProps + IdxModPhi] = std::fmod(std::fmod(phi, o2::constants::math::TwoPI) + o2::constants::math::TwoPI, o2::constants::math::TwoPI / NumberOfTpcSectors);
+          trackProperties[counterTrackProps + IdxModPhi] = std::fmod(std::fmod(phi, o2::constants::math::TwoPI) + o2::constants::math::TwoPI, o2::constants::math::TwoPI / o2::constants::math::NSectors);
         }
         counterTrackProps += inputDimensions;
       }
@@ -633,7 +632,7 @@ class pidTPCModule
       }
 
       counterTrackProps = 0;
-      loopCounter += 1;
+      ++loopCounter;
     }
     trackProperties.clear();
 
