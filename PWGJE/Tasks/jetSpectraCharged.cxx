@@ -745,7 +745,7 @@ struct JetSpectraCharged {
           for (const auto& constituent : jetMCD.template tracks_as<aod::JetTracks>()) {
             angularityMcd += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jetMCD, constituent) / (jetMCD.r() / 100.f), alpha);
           }
-          angularityMcd /= (corrBasejetpt * (jetMCD.r() / 100.f));
+          angularityMcd /= std::pow(corrBasejetpt, kappa);
           if (jetfindingutilities::isInEtaAcceptance(jetMCD, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
             registry.fill(HIST("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_rhoareasubtracted_mcdetaconstraint"), corrBasejetpt, corrTagjetpt, weight);
             if (jetfindingutilities::isInEtaAcceptance(jetMCP, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
