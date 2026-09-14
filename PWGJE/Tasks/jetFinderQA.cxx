@@ -1138,9 +1138,9 @@ struct JetFinderQATask {
     if (!isAcceptedJet<aod::JetParticles>(jet)) {
       return;
     }
-    auto mcCollision = mcCollisions.sliceBy(mcCollisionsPerMCPCollision, jet.mcCollisionId());
+    auto mcCollision = mcCollisions.sliceBy(McCollisionsPerMCPCollision, jet.mcCollisionId());
     if (checkMcCollisionIsMatched) {
-      auto collisionspermcpjet = collisions.sliceBy(collisionsPerMCPCollision, jet.mcCollisionId());
+      auto collisionspermcpjet = collisions.sliceBy(CollisionsPerMCPCollision, jet.mcCollisionId());
       if (collisionspermcpjet.size() >= 1 && jetderiveddatautilities::selectCollision(collisionspermcpjet.begin(), eventSelectionBits)) {
         fillMCPHistograms(jet, 1., mcCollision.begin().ptHard());
       }
@@ -1158,7 +1158,7 @@ struct JetFinderQATask {
     if (!isAcceptedJet<aod::JetParticles>(jet)) {
       return;
     }
-    auto mcCollision = mcCollisions.sliceBy(mcCollisionsPerMCPCollision, jet.mcCollisionId());
+    auto mcCollision = mcCollisions.sliceBy(McCollisionsPerMCPCollision, jet.mcCollisionId());
     if (mcCollision.size() == 1) {
       for (int N = 1; N < 21; N++) {
         if (jet.pt() < N * 0.25 * mcCollision.begin().ptHard() && jet.r() == round(selectedJetsRadius * 100.0f)) {
@@ -1166,7 +1166,7 @@ struct JetFinderQATask {
         }
       }
       if (checkMcCollisionIsMatched) {
-        auto collisionspermcpjet = collisions.sliceBy(collisionsPerMCPCollision, jet.mcCollisionId());
+        auto collisionspermcpjet = collisions.sliceBy(CollisionsPerMCPCollision, jet.mcCollisionId());
         if (collisionspermcpjet.size() >= 1 && jetderiveddatautilities::selectCollision(collisionspermcpjet.begin(), eventSelectionBits)) {
           fillMCPHistograms(jet, mcCollision.begin().weight(), mcCollision.begin().ptHard());
         }
@@ -1586,7 +1586,7 @@ struct JetFinderQATask {
 
     int nParticlesPrimary = 0;
     if (collision.has_mcCollision()) {
-      auto particleMcCollision = mcparticles.sliceBy(particlesPerMCPCollision, collision.mcCollisionId());
+      auto particleMcCollision = mcparticles.sliceBy(ParticlesPerMCPCollision, collision.mcCollisionId());
       for (auto const& mcparticle : particleMcCollision) {
         registry.fill(HIST("h_particle_pdgcode"), mcparticle.pdgCode(), eventWeight);
         registry.fill(HIST("h_particle_genstatuscode"), mcparticle.getGenStatusCode(), eventWeight);
