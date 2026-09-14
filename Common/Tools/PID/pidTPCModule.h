@@ -31,6 +31,7 @@
 #include "Tools/ML/model.h"
 
 #include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -142,6 +143,9 @@ struct pidTPCConfigurables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> useNetworkAl{"useNetworkAl", 1, {"Switch for applying neural network on the alpha mass hypothesis (if network enabled) (set to 0 to disable)"}};
   o2::framework::Configurable<float> networkBetaGammaCutoff{"networkBetaGammaCutoff", 0.45, {"Lower value of beta-gamma to override the NN application"}};
   o2::framework::Configurable<std::string> cfgPathGrpLhcIf{"ccdb-path-grplhcif", "GLO/Config/GRPLHCIF", "Path on the CCDB for the GRPLHCIF object"};
+
+  o2::framework::Configurable<float> phiEntranceCoeff1{"phiEntranceCoeff1", 1.026f, "phiEntrance = phi + phiEntranceCoeff1 * LightSpeedDm2PS * 0.5 * phiEntranceCoeff2 * 1/pT[GeV/c]"};
+  o2::framework::Configurable<float> phiEntranceCoeff2{"phiEntranceCoeff2", 85.f, "phiEntrance = phi + phiEntranceCoeff1 * LightSpeedDm2PS * 0.5 * phiEntranceCoeff2 * 1/pT[GeV/c]"};
 };
 
 // helper getter - FIXME should be separate
@@ -456,6 +460,7 @@ class pidTPCModule
     constexpr double HadronicRateNormAa = 50.;
     constexpr double Ft0cOccupancyNorm = 60000.;
     constexpr int NumberOfTpcSectors = 18;
+    constexpr float LightSpeedDm2PS = o2::constants::physics::LightSpeedCm2PS / 10.f;
 
     struct NNVersionEntry {
       std::string_view versionName{};
@@ -463,12 +468,13 @@ class pidTPCModule
       int versionNumber{};
     };
 
-    constexpr std::array<NNVersionEntry, 5> nnVersionsDictionary{
+    constexpr std::array<NNVersionEntry, 6> nnVersionsDictionary{
       {{"", 6, 1},
        {"1", 6, 1},
        {"2", 7, 2},
        {"3", 8, 3},
-       {"4", 9, 4}}};
+       {"4", 9, 4},
+       {"5", 9, 5}}};
 
     enum IndexNnFeature : int {
       IdxTpcInnerParam = 0,
@@ -485,6 +491,7 @@ class pidTPCModule
     constexpr int OldestNNVersionWithFt0c{2};
     constexpr int OldestNNVersionWithHadronicRate{3};
     constexpr int OldestNNVersionWithModPhi{4};
+    constexpr int NNVersionWithModPhiEntrance{5};
 
     std::vector<float> networkPrediction;
 
@@ -606,7 +613,11 @@ class pidTPCModule
           trackProperties[counterTrackProps + IdxHadronicRate] = hadronicRate / hadronicRateNorm;
         }
         if (nnVersion >= OldestNNVersionWithModPhi) {
-          trackProperties[counterTrackProps + IdxModPhi] = std::fmod(std::fmod(trk.phi(), o2::constants::math::TwoPI) + o2::constants::math::TwoPI, o2::constants::math::TwoPI / NumberOfTpcSectors);
+          float phi = trk.phi();
+          if (nnVersion == NNVersionWithModPhiEntrance) {
+            phi += pidTPCopts.phiEntranceCoeff1 * LightSpeedDm2PS * 0.5 * pidTPCopts.phiEntranceCoeff2 * trk.signed1Pt();
+          }
+          trackProperties[counterTrackProps + IdxModPhi] = std::fmod(std::fmod(phi, o2::constants::math::TwoPI) + o2::constants::math::TwoPI, o2::constants::math::TwoPI / NumberOfTpcSectors);
         }
         counterTrackProps += inputDimensions;
       }
