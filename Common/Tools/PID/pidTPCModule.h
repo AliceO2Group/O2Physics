@@ -448,7 +448,7 @@ class pidTPCModule
 
     std::vector<float> networkPrediction;
 
-    auto startNetworkTotal = std::chrono::high_resolution_clock::now();
+    const auto startNetworkTotal = std::chrono::high_resolution_clock::now();
     if (pidTPCopts.autofetchNetworks) {
       const auto& bc = bcs.begin();
       // Initialise correct TPC response object before NN setup (for NCl normalisation)
@@ -486,7 +486,7 @@ class pidTPCModule
 
       if (bc.timestamp() < network.getValidityFrom() || bc.timestamp() > network.getValidityUntil()) { // fetches network only if the runnumbers change
         LOG(info) << "Fetching network for timestamp: " << bc.timestamp();
-        bool retrieveSuccess = ccdb->getCCDBAccessor().retrieveBlob(pidTPCopts.networkPathCCDB.value, ".", metadata, bc.timestamp(), false, pidTPCopts.networkPathLocally.value, "", "", &headers);
+        const bool retrieveSuccess = ccdb->getCCDBAccessor().retrieveBlob(pidTPCopts.networkPathCCDB.value, ".", metadata, bc.timestamp(), false, pidTPCopts.networkPathLocally.value, "", "", &headers);
         networkVersion = headers["NN-Version"];
         if (retrieveSuccess) {
           network.initModel(pidTPCopts.networkPathLocally.value, pidTPCopts.enableNetworkOptimizations.value, pidTPCopts.networkSetNumThreads.value, strtoul(headers["Valid-From"].c_str(), NULL, 0), strtoul(headers["Valid-Until"].c_str(), NULL, 0));
@@ -500,16 +500,16 @@ class pidTPCModule
     }
 
     // Defining some network parameters
-    int inputDimensions = network.getNumInputNodes();
-    int outputDimensions = network.getNumOutputNodes();
-    const uint64_t track_prop_size = inputDimensions * size;
-    const uint64_t prediction_size = outputDimensions * size;
+    const int inputDimensions = network.getNumInputNodes();
+    const int outputDimensions = network.getNumOutputNodes();
+    const uint64_t trackPropSize = inputDimensions * size;
+    const uint64_t predictionSize = outputDimensions * size;
 
-    networkPrediction = std::vector<float>(prediction_size * 9); // For each mass hypotheses
+    networkPrediction = std::vector<float>(predictionSize * 9); // For each mass hypotheses
     const float nNclNormalization = response->GetNClNormalization();
     float durationNetwork = 0;
 
-    std::vector<float> trackProperties(track_prop_size);
+    std::vector<float> trackProperties(trackPropSize);
     uint64_t counterTrackProps = 0;
     int loopCounter = 0;
 
@@ -600,13 +600,13 @@ class pidTPCModule
         counterTrackProps += inputDimensions;
       }
 
-      auto startNetworkEval = std::chrono::high_resolution_clock::now();
-      float* outputNetwork = network.evalModel(trackProperties);
-      auto stopNetworkEval = std::chrono::high_resolution_clock::now();
+      const auto startNetworkEval = std::chrono::high_resolution_clock::now();
+      const float* const outputNetwork = network.evalModel(trackProperties);
+      const auto stopNetworkEval = std::chrono::high_resolution_clock::now();
       durationNetwork += std::chrono::duration<float, std::ratio<1, 1000000000>>(stopNetworkEval - startNetworkEval).count();
-      for (uint64_t k = 0; k < prediction_size; k += outputDimensions) {
+      for (uint64_t k = 0; k < predictionSize; k += outputDimensions) {
         for (int l = 0; l < outputDimensions; l++) {
-          networkPrediction[k + l + prediction_size * loopCounter] = outputNetwork[k + l];
+          networkPrediction[k + l + predictionSize * loopCounter] = outputNetwork[k + l];
         }
       }
 
@@ -615,7 +615,7 @@ class pidTPCModule
     }
     trackProperties.clear();
 
-    auto stopNetworkTotal = std::chrono::high_resolution_clock::now();
+    const auto stopNetworkTotal = std::chrono::high_resolution_clock::now();
     LOG(debug) << "Neural Network for the TPC PID response correction: Time per track (eval ONNX): " << durationNetwork / (size * 9) << "ns ; Total time (eval ONNX): " << durationNetwork / 1000000000 << " s";
     LOG(debug) << "Neural Network for the TPC PID response correction: Time per track (eval + overhead): " << std::chrono::duration<float, std::ratio<1, 1000000000>>(stopNetworkTotal - startNetworkTotal).count() / (size * 9) << "ns ; Total time (eval + overhead): " << std::chrono::duration<float, std::ratio<1, 1000000000>>(stopNetworkTotal - startNetworkTotal).count() / 1000000000 << " s";
 
