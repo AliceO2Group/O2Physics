@@ -450,6 +450,7 @@ class pidTPCModule
   {
     constexpr int NParticleTypes = 9;
     constexpr double OneToKilo = 1.e-3;
+    constexpr int NanoToOne = 1000000000;
     constexpr double MultiplicityNorm = 11000.;
     constexpr double HadronicRateNormPp = 1500.;
     constexpr double HadronicRateNormAa = 50.;
@@ -566,28 +567,21 @@ class pidTPCModule
     int loopCounter = 0;
 
     // To load the Hadronic rate once for each collision
-    float hadronicRateBegin = 0.;
     std::vector<float> hadronicRateForCollision(collisions.size(), 0.0f);
-    size_t i = 0;
+    size_t iCollision = 0;
     for (const auto& collision : collisions) {
       const auto& bc = collision.template bc_as<B>();
       if (irSource.compare("") != 0) {
-        hadronicRateForCollision[i] = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource) * OneToKilo;
-      } else {
-        hadronicRateForCollision[i] = 0.0f;
+        hadronicRateForCollision[iCollision] = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource) * OneToKilo;
       }
-      i++;
+      ++iCollision;
     }
-    auto bc = bcs.begin();
-    if (irSource.compare("") != 0) {
-      hadronicRateBegin = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource) * OneToKilo;
-    } else {
-      hadronicRateBegin = 0.0f;
-    }
+    const auto bc = bcs.begin();
+    const float hadronicRateBegin = irSource.compare("") != 0 ? mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource) * OneToKilo : 0.f;
 
     // Filling a std::vector<float> to be evaluated by the network
     // Evaluation on single tracks brings huge overhead: Thus evaluation is done on one large vector
-    for (int j = 0; j < NParticleTypes; j++) { // Loop over particle number for which network correction is used
+    for (int jParticleType = 0; jParticleType < NParticleTypes; ++jParticleType) { // Loop over particle number for which network correction is used
       for (auto const& trk : tracks) {
         if (!trk.hasTPC()) {
           continue;
@@ -601,7 +595,7 @@ class pidTPCModule
         trackProperties[counterTrackProps + IdxTpcInnerParam] = trk.tpcInnerParam();
         trackProperties[counterTrackProps + IdxTgl] = trk.tgl();
         trackProperties[counterTrackProps + IdxSigned1Pt] = trk.signed1Pt();
-        trackProperties[counterTrackProps + IdxMass] = o2::track::pid_constants::sMasses[j];
+        trackProperties[counterTrackProps + IdxMass] = o2::track::pid_constants::sMasses[jParticleType];
         trackProperties[counterTrackProps + IdxMultiplicity] = isGoodTrack ? mults[trk.collisionId()] / MultiplicityNorm : 1.;
         trackProperties[counterTrackProps + IdxNClusters] = std::sqrt(nNclNormalization / trk.tpcNClsFound());
         if (nnVersion >= OldestNNVersionWithFt0c) {
@@ -620,10 +614,10 @@ class pidTPCModule
       const auto startNetworkEval = std::chrono::high_resolution_clock::now();
       const float* const outputNetwork = network.evalModel(trackProperties);
       const auto stopNetworkEval = std::chrono::high_resolution_clock::now();
-      durationNetwork += std::chrono::duration<float, std::ratio<1, 1000000000>>(stopNetworkEval - startNetworkEval).count();
-      for (uint64_t k = 0; k < predictionSize; k += outputDimensions) {
-        for (int l = 0; l < outputDimensions; l++) {
-          networkPrediction[k + l + predictionSize * loopCounter] = outputNetwork[k + l];
+      durationNetwork += std::chrono::duration<float, std::ratio<1, NanoToOne>>(stopNetworkEval - startNetworkEval).count();
+      for (uint64_t kPrediction = 0; kPrediction < predictionSize; kPrediction += outputDimensions) {
+        for (int lOutputDim = 0; lOutputDim < outputDimensions; ++lOutputDim) {
+          networkPrediction[kPrediction + lOutputDim + predictionSize * loopCounter] = outputNetwork[kPrediction + lOutputDim];
         }
       }
 
@@ -633,8 +627,8 @@ class pidTPCModule
     trackProperties.clear();
 
     const auto stopNetworkTotal = std::chrono::high_resolution_clock::now();
-    LOG(debug) << "Neural Network for the TPC PID response correction: Time per track (eval ONNX): " << durationNetwork / (size * NParticleTypes) << "ns ; Total time (eval ONNX): " << durationNetwork / 1000000000 << " s";
-    LOG(debug) << "Neural Network for the TPC PID response correction: Time per track (eval + overhead): " << std::chrono::duration<float, std::ratio<1, 1000000000>>(stopNetworkTotal - startNetworkTotal).count() / (size * NParticleTypes) << "ns ; Total time (eval + overhead): " << std::chrono::duration<float, std::ratio<1, 1000000000>>(stopNetworkTotal - startNetworkTotal).count() / 1000000000 << " s";
+    LOG(debug) << "Neural Network for the TPC PID response correction: Time per track (eval ONNX): " << durationNetwork / (size * NParticleTypes) << "ns ; Total time (eval ONNX): " << durationNetwork / NanoToOne << " s";
+    LOG(debug) << "Neural Network for the TPC PID response correction: Time per track (eval + overhead): " << std::chrono::duration<float, std::ratio<1, NanoToOne>>(stopNetworkTotal - startNetworkTotal).count() / (size * NParticleTypes) << "ns ; Total time (eval + overhead): " << std::chrono::duration<float, std::ratio<1, NanoToOne>>(stopNetworkTotal - startNetworkTotal).count() / NanoToOne << " s";
 
     return networkPrediction;
   }
