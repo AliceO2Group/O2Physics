@@ -56,6 +56,8 @@ def main(config):
         cfg = json.load(fil)
 
     zero_eff_unc = cfg.get("zero_eff_unc", False)
+    effp_shift_nsigma = cfg.get("effp_shift_nsigma", 0.0)
+    effnp_shift_nsigma = cfg.get("effnp_shift_nsigma", 0.0)
 
     hist_rawy, hist_effp, hist_effnp = ([] for _ in range(3))
     for filename_rawy, filename_eff in zip(cfg["rawyields"]["inputfiles"], cfg["efficiencies"]["inputfiles"]):
@@ -78,8 +80,10 @@ def main(config):
             sys.exit(f"\33[31mFatal error: Histogram with efficiency for nonprompt \"{hist_effnp}\" is absent. Exit.\33[0m")
         hist_effp[-1].SetDirectory(0)
         hist_effnp[-1].SetDirectory(0)
-        if zero_eff_unc:
-            for i_bin in range(1, hist_effp[-1].GetNbinsX() + 1):
+        for i_bin in range(1, hist_effp[-1].GetNbinsX() + 1):
+            hist_effp[-1].SetBinContent(i_bin, hist_effp[-1].GetBinContent(i_bin) + effp_shift_nsigma*hist_effp[-1].GetBinError(i_bin))
+            hist_effnp[-1].SetBinContent(i_bin, hist_effnp[-1].GetBinContent(i_bin) + effnp_shift_nsigma*hist_effnp[-1].GetBinError(i_bin))
+            if zero_eff_unc:
                 hist_effp[-1].SetBinError(i_bin, 0.0)
                 hist_effnp[-1].SetBinError(i_bin, 0.0)
         infile_eff.Close()
