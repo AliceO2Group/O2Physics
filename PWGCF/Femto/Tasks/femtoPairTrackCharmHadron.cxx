@@ -20,6 +20,7 @@
 #include "PWGCF/Femto/Core/collisionHistManager.h"
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/Core/pairBuilder.h"
+#include "PWGCF/Femto/Core/pairCleaner.h"
 #include "PWGCF/Femto/Core/pairHistManager.h"
 #include "PWGCF/Femto/Core/particleCleaner.h"
 #include "PWGCF/Femto/Core/partitions.h"
@@ -116,6 +117,7 @@ struct FemtoPairTrackCharmHadron {
   // setup pairs
   pairhistmanager::ConfPairBinning confPairBinning;
   pairhistmanager::ConfPairCuts confPairCuts;
+  paircleaner::ConfPairCleanerBinning confPairCleaner;
 
   pairbuilder::PairTrackD0Builder<
     trackhistmanager::PrefixTrack1,
@@ -194,6 +196,8 @@ struct FemtoPairTrackCharmHadron {
     std::map<pairhistmanager::PairHist, std::vector<o2::framework::AxisSpec>> pairTrackD0HistSpec;
     std::map<pairhistmanager::PairHist, std::vector<o2::framework::AxisSpec>> pairTrackLcHistSpec;
     std::map<closepairrejection::CprHist, std::vector<o2::framework::AxisSpec>> cprHistSpec = closepairrejection::makeCprHistSpecMap(confCpr);
+    std::map<closepairrejection::CprHist, std::vector<o2::framework::AxisSpec>> cprHistSpecLc = closepairrejection::makeCprHistSpecMap(confCprLcProton);
+    std::map<paircleaner::PairCleanerHist, std::vector<o2::framework::AxisSpec>> pairCleanerHistSpec = paircleaner::makePairCleanerHistSpecMap(confPairCleaner);
 
     if (processData) {
       colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
@@ -203,7 +207,7 @@ struct FemtoPairTrackCharmHadron {
         negDauSpec = trackhistmanager::makeTrackHistSpecMap(confNegDauBinning);
         d0HistSpec = charmhadronhistmanager::makeCharmHadronHistSpecMap(confD0Binning);
         pairTrackD0HistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confMixing);
-        pairTrackD0Builder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confTrackSelection, confTrackCleaner, d0Selection, confD0Cleaner, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, d0HistSpec, posDauSpec, negDauSpec, pairTrackD0HistSpec, cprHistSpec);
+        pairTrackD0Builder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confTrackSelection, confTrackCleaner, d0Selection, confD0Cleaner, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, d0HistSpec, posDauSpec, negDauSpec, pairTrackD0HistSpec, cprHistSpec, pairCleanerHistSpec);
       }
       if (processLc) {
         protonDauSpec = trackhistmanager::makeTrackHistSpecMap(confProtonDauBinning);
@@ -211,7 +215,7 @@ struct FemtoPairTrackCharmHadron {
         pionDauSpec = trackhistmanager::makeTrackHistSpecMap(confPionDauBinning);
         lcHistSpec = charmhadronhistmanager::makeCharmHadronHistSpecMap(confLcBinning);
         pairTrackLcHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confMixing);
-        pairTrackLcBuilder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confTrackSelection, confTrackCleaner, lcSelection, confLcCleaner, confCprLcProton, confCprLcKaon, confCprLcPion, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, lcHistSpec, protonDauSpec, kaonDauSpec, pionDauSpec, pairTrackLcHistSpec, cprHistSpec);
+        pairTrackLcBuilder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confTrackSelection, confTrackCleaner, lcSelection, confLcCleaner, confCprLcProton, confCprLcKaon, confCprLcPion, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, lcHistSpec, protonDauSpec, kaonDauSpec, pionDauSpec, pairTrackLcHistSpec, cprHistSpecLc, pairCleanerHistSpec);
       }
     } else {
       colHistSpec = colhistmanager::makeColMcHistSpecMap(confCollisionBinning);
@@ -221,7 +225,7 @@ struct FemtoPairTrackCharmHadron {
         negDauSpec = trackhistmanager::makeTrackMcHistSpecMap(confNegDauBinning);
         d0HistSpec = charmhadronhistmanager::makeCharmHadronMcHistSpecMap(confD0Binning);
         pairTrackD0HistSpec = pairhistmanager::makePairMcHistSpecMap(confPairBinning, confMixing);
-        pairTrackD0Builder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confTrackSelection, confTrackCleaner, d0Selection, confD0Cleaner, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, d0HistSpec, posDauSpec, negDauSpec, pairTrackD0HistSpec, cprHistSpec);
+        pairTrackD0Builder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confTrackSelection, confTrackCleaner, d0Selection, confD0Cleaner, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, d0HistSpec, posDauSpec, negDauSpec, pairTrackD0HistSpec, cprHistSpec, pairCleanerHistSpec);
       }
       if (processLcMc) {
         protonDauSpec = trackhistmanager::makeTrackMcHistSpecMap(confProtonDauBinning);
@@ -229,7 +233,7 @@ struct FemtoPairTrackCharmHadron {
         pionDauSpec = trackhistmanager::makeTrackMcHistSpecMap(confPionDauBinning);
         lcHistSpec = charmhadronhistmanager::makeCharmHadronMcHistSpecMap(confLcBinning);
         pairTrackLcHistSpec = pairhistmanager::makePairMcHistSpecMap(confPairBinning, confMixing);
-        pairTrackLcBuilder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confTrackSelection, confTrackCleaner, lcSelection, confLcCleaner, confCprLcProton, confCprLcKaon, confCprLcPion, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, lcHistSpec, protonDauSpec, kaonDauSpec, pionDauSpec, pairTrackLcHistSpec, cprHistSpec);
+        pairTrackLcBuilder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confTrackSelection, confTrackCleaner, lcSelection, confLcCleaner, confCprLcProton, confCprLcKaon, confCprLcPion, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, lcHistSpec, protonDauSpec, kaonDauSpec, pionDauSpec, pairTrackLcHistSpec, cprHistSpecLc, pairCleanerHistSpec);
       }
     }
 

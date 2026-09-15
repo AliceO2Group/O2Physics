@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdlib>
+#include <utility>
 #include <vector>
 
 const int numDGPIDCutParameters = 9;
@@ -124,7 +125,7 @@ struct DGAnaparHolder {
                  std::vector<int> unlikeCharges = {0},
                  std::vector<int> likeCharges = {-2, 2},
                  std::vector<int> DGPIDs = {211, 211},
-                 std::vector<float> DGPIDCutValues = {}) : mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mMinRgtrwTOF{minrgtrwTOF}, mMaxDCAxy{maxDCAxy}, mMaxDCAz{maxDCAz}, mdBCMin{dBCMin}, mdBCMax{dBCMax}, mFITvetoes{FITvetoes}, mITSOnlyTracks{ITSonlyTracks}, mMinNClTPC{minNClTPC}, mMaxNClTPC{maxNClTPC}, mMinChi2NClTPC{minChi2NClTPC}, mMaxChi2NClTPC{maxChi2NClTPC}, mMinpt{minpt}, mMaxpt{maxpt}, mMineta{mineta}, mMaxeta{maxeta}, mMinAlpha{minalpha}, mMaxAlpha{maxalpha}, mMinptsys{minptsys}, mMaxptsys{maxptsys}, mNCombine{nCombine}, mNetCharges{netCharges}, mUnlikeCharges{unlikeCharges}, mLikeCharges{likeCharges}, mDGPIDs{DGPIDs}, mDGPIDCutValues{DGPIDCutValues}
+                 std::vector<float> DGPIDCutValues = {}) : mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mMinRgtrwTOF{minrgtrwTOF}, mMaxDCAxy{maxDCAxy}, mMaxDCAz{maxDCAz}, mdBCMin{dBCMin}, mdBCMax{dBCMax}, mFITvetoes{std::move(FITvetoes)}, mITSOnlyTracks{ITSonlyTracks}, mMinNClTPC{minNClTPC}, mMaxNClTPC{maxNClTPC}, mMinChi2NClTPC{minChi2NClTPC}, mMaxChi2NClTPC{maxChi2NClTPC}, mMinpt{minpt}, mMaxpt{maxpt}, mMineta{mineta}, mMaxeta{maxeta}, mMinAlpha{minalpha}, mMaxAlpha{maxalpha}, mMinptsys{minptsys}, mMaxptsys{maxptsys}, mNCombine{nCombine}, mNetCharges{std::move(netCharges)}, mUnlikeCharges{std::move(unlikeCharges)}, mLikeCharges{std::move(likeCharges)}, mDGPIDs{std::move(DGPIDs)}, mDGPIDCutValues{std::move(DGPIDCutValues)}
   {
     if (mdBCMin < -16) {
       mdBCMin = -16;
@@ -148,7 +149,7 @@ struct DGAnaparHolder {
   void SetMinRgtrwTOF(float);
   void SetmaxDCA(float, float);
   void SetdBC(int, int);
-  void SetFITvetoes(std::vector<int>);
+  void SetFITvetoes(const std::vector<int>&);
   void SetITSOnlyTracks(bool);
   void SetNClTPC(int, int);
   void SetChi2NClTPC(float, float);
@@ -239,7 +240,7 @@ struct DGParticle {
  public:
   DGParticle();
   template <typename TTrack>
-  DGParticle(TDatabasePDG* pdg, DGAnaparHolder anaPars, TTrack const& tracks, std::vector<int> comb)
+  DGParticle(TDatabasePDG* pdg, const DGAnaparHolder& anaPars, TTrack const& tracks, const std::vector<int>& comb)
   {
     // compute invariant mass
     TLorentzVector lvtmp;
@@ -284,12 +285,12 @@ struct DGPIDSelector {
   ~DGPIDSelector();
 
   // setters
-  void init(DGAnaparHolder anaPars);
+  void init(const DGAnaparHolder& anaPars);
 
   // getters
   void Print();
   template <typename TTrack>
-  bool isGoodCombination(std::vector<int> comb, TTrack const& tracks, std::vector<int> acceptedCharges)
+  bool isGoodCombination(const std::vector<int>& comb, TTrack const& tracks, std::vector<int> acceptedCharges)
   {
     // compute net charge of track combination
     int netCharge = 0.;

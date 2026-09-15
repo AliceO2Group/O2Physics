@@ -320,7 +320,7 @@ struct K892analysis {
   double massPi = MassPionCharged;
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision, const float& centrality)
+  bool eventSelected(const TCollision& collision, const float& centrality)
   {
     // if (collision.alias_bit(kTVXinTRD)) {
     //   // TRD triggered
@@ -342,7 +342,7 @@ struct K892analysis {
   }
 
   template <typename TrackType>
-  bool trackCut(const TrackType track)
+  bool trackCut(const TrackType& track)
   {
     // basic track cuts
     if (std::abs(track.pt()) < cMinPtcut)

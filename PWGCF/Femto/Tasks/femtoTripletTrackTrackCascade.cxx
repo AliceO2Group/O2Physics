@@ -20,6 +20,7 @@
 #include "PWGCF/Femto/Core/collisionBuilder.h"
 #include "PWGCF/Femto/Core/collisionHistManager.h"
 #include "PWGCF/Femto/Core/modes.h"
+#include "PWGCF/Femto/Core/pairCleaner.h"
 #include "PWGCF/Femto/Core/particleCleaner.h"
 #include "PWGCF/Femto/Core/partitions.h"
 #include "PWGCF/Femto/Core/trackBuilder.h"
@@ -117,6 +118,7 @@ struct FemtoTripletTrackTrackCascade {
   // setup triplets
   triplethistmanager::ConfTripletBinning confTripletBinning;
   triplethistmanager::ConfTripletCuts confTripletCuts;
+  paircleaner::ConfPairCleanerBinning confTripletCleanerBinning;
 
   closetripletrejection::ConfCtrTrackTrackTrack confCtr;
 
@@ -217,6 +219,7 @@ struct FemtoTripletTrackTrackCascade {
     std::map<closepairrejection::CprHist, std::vector<o2::framework::AxisSpec>> cprHistSpecBachelor = closepairrejection::makeCprHistSpecMap(confCprBachelor);
     std::map<closepairrejection::CprHist, std::vector<o2::framework::AxisSpec>> cprHistSpecV0Daughter = closepairrejection::makeCprHistSpecMap(confCprV0Daughter);
     std::map<closepairrejection::CprHist, std::vector<o2::framework::AxisSpec>> ctrHistSpec = closepairrejection::makeCprHistSpecMap(confCtr);
+    std::map<paircleaner::PairCleanerHist, std::vector<o2::framework::AxisSpec>> tripletCleanerHistSpec = paircleaner::makePairCleanerHistSpecMap(confTripletCleanerBinning);
 
     if (processData) {
       colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
@@ -229,10 +232,10 @@ struct FemtoTripletTrackTrackCascade {
 
       if (processXi) {
         xiHistSpec = cascadehistmanager::makeCascadeHistSpecMap(confXiBinning);
-        tripletTrackTrackXiBuilder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confTrackCleaner1, confTrackCleaner2, confCtr, confXiSelection, confXiCleaner, confCprBachelor, confCprV0Daughter, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, xiHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, tripletTrackTrackCascadeHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter, ctrHistSpec);
+        tripletTrackTrackXiBuilder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confTrackCleaner1, confTrackCleaner2, confCtr, confXiSelection, confXiCleaner, confCprBachelor, confCprV0Daughter, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, xiHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, tripletTrackTrackCascadeHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter, ctrHistSpec, tripletCleanerHistSpec);
       } else {
         omegaHistSpec = cascadehistmanager::makeCascadeHistSpecMap(confOmegaBinning);
-        tripletTrackTrackOmegaBuilder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confTrackCleaner1, confTrackCleaner2, confCtr, confOmegaSelection, confOmegaCleaner, confCprBachelor, confCprV0Daughter, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, omegaHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, tripletTrackTrackCascadeHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter, ctrHistSpec);
+        tripletTrackTrackOmegaBuilder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confTrackCleaner1, confTrackCleaner2, confCtr, confOmegaSelection, confOmegaCleaner, confCprBachelor, confCprV0Daughter, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, omegaHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, tripletTrackTrackCascadeHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter, ctrHistSpec, tripletCleanerHistSpec);
       }
     } else {
       colHistSpec = colhistmanager::makeColMcHistSpecMap(confCollisionBinning);
@@ -244,10 +247,10 @@ struct FemtoTripletTrackTrackCascade {
       tripletTrackTrackCascadeHistSpec = triplethistmanager::makeTripletMcHistSpecMap(confTripletBinning, confMixing);
       if (processXi) {
         xiHistSpec = cascadehistmanager::makeCascadeMcHistSpecMap(confXiBinning);
-        tripletTrackTrackXiBuilder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confTrackCleaner1, confTrackCleaner2, confCtr, confXiSelection, confXiCleaner, confCprBachelor, confCprV0Daughter, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, xiHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, tripletTrackTrackCascadeHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter, ctrHistSpec);
+        tripletTrackTrackXiBuilder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confTrackCleaner1, confTrackCleaner2, confCtr, confXiSelection, confXiCleaner, confCprBachelor, confCprV0Daughter, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, xiHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, tripletTrackTrackCascadeHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter, ctrHistSpec, tripletCleanerHistSpec);
       } else {
         omegaHistSpec = cascadehistmanager::makeCascadeMcHistSpecMap(confOmegaBinning);
-        tripletTrackTrackOmegaBuilder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confTrackCleaner1, confTrackCleaner2, confCtr, confOmegaSelection, confOmegaCleaner, confCprBachelor, confCprV0Daughter, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, omegaHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, tripletTrackTrackCascadeHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter, ctrHistSpec);
+        tripletTrackTrackOmegaBuilder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confTrackCleaner1, confTrackCleaner2, confCtr, confOmegaSelection, confOmegaCleaner, confCprBachelor, confCprV0Daughter, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, omegaHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, tripletTrackTrackCascadeHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter, ctrHistSpec, tripletCleanerHistSpec);
       }
     }
     hRegistry.print();

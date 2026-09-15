@@ -21,6 +21,7 @@
 
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
@@ -52,7 +53,7 @@ using namespace o2::framework::expressions;
 using namespace o2::constants;
 using namespace o2::hf_evsel;
 using namespace o2::hf_centrality;
-using CollisionEvSels = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
+using CollisionEvSels = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::PVMults>;
 using BcEvSelIt = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels>::iterator;
 using SelectedClusters = o2::soa::Filtered<o2::soa::Join<o2::aod::EMCALClusters, o2::aod::EMCALMCClusters>>;
 

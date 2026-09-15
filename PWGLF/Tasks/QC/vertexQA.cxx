@@ -45,7 +45,7 @@ namespace
 {
 constexpr double LHCRFFreq = 400.789e6;
 constexpr double LHCBunchSpacingNS = 10 * 1.e9 / LHCRFFreq;
-double deltaTimeColl(BCcoll const bccoll1, BCcoll const bccoll2)
+double deltaTimeColl(BCcoll const& bccoll1, BCcoll const& bccoll2)
 {
   auto coll1 = std::get<aod::Collision>(bccoll1);
   auto coll2 = std::get<aod::Collision>(bccoll2);
@@ -271,7 +271,7 @@ struct vertexQA {
 
     std::vector<int64_t> jumps{0ll};
     int64_t lastBC = bcs.rawIteratorAt(0).globalBC();
-    for (auto bc : bcs) {
+    for (const auto& bc : bcs) {
       if (bc.globalBC() - lastBC > 3564 * 32) { // 32 orbits
         jumps.push_back(bc.globalIndex());
         lastBC = bc.globalBC();
@@ -279,7 +279,7 @@ struct vertexQA {
     }
     uint64_t jumpsSentinel{1};
     std::vector<int64_t> collisionsIndices{0ll};
-    for (auto col : collisions) {
+    for (const auto& col : collisions) {
       if (jumpsSentinel == jumps.size()) {
         break;
       }

@@ -60,18 +60,7 @@ void processSameEvent(T1 const& SliceParticle,
 
   for (auto const& [p1, p2, p3] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(SliceParticle, SliceParticle, SliceParticle))) {
 
-    // check if triplet is clean
-    if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable)) {
-      continue;
-    }
-
-    // check if triplet is close
-    CtrManager.setTriplet(p1, p2, p3, TrackTable);
-    if (CtrManager.isCloseTriplet()) {
-      continue;
-    }
-
-    // Randomize pair order if enabled
+    // Randomize triplet order if enabled, then compute the kinematic (Q3) for this triplet
     switch (tripletOrder) {
       case kOrder123:
         TripletHistManager.setTriplet(p1, p2, p3, Collision);
@@ -90,8 +79,15 @@ void processSameEvent(T1 const& SliceParticle,
         break;
     }
 
-    // fill deta-dphi histograms with q3 cutoff
-    CtrManager.fill(TripletHistManager.getQ3());
+    // check if triplet is clean
+    if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable, TripletHistManager)) {
+      continue;
+    }
+
+    // check if triplet is close; fills deta-dphi/kinematic histograms internally
+    if (CtrManager.isCloseTriplet(p1, p2, p3, TrackTable, TripletHistManager)) {
+      continue;
+    }
 
     // if triplet cuts are configured check them before filling
     if (TripletHistManager.checkTripletCuts()) {
@@ -130,18 +126,7 @@ void processSameEvent(T1 const& SliceParticle1, // 1&2 have same species
   for (auto const& p3 : SliceParticle3) {
     for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(SliceParticle1, SliceParticle1))) {
 
-      // check if triplet is clean
-      if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable)) {
-        continue;
-      }
-
-      // check if triplet is close
-      CtrManager.setTriplet(p1, p2, p3, TrackTable);
-      if (CtrManager.isCloseTriplet()) {
-        continue;
-      }
-
-      // Randomize triplet order if enabled
+      // Randomize triplet order if enabled, then compute the kinematic (Q3) for this triplet
       // only kOrder123 and kOrder213 are meaningful here since particle 1 & 2 are the same species
       switch (tripletOrder) {
         case kOrder213:
@@ -153,8 +138,15 @@ void processSameEvent(T1 const& SliceParticle1, // 1&2 have same species
           break;
       }
 
-      // fill deta-dphi histograms with q3 cutoff
-      CtrManager.fill(TripletHistManager.getQ3());
+      // check if triplet is clean
+      if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable, TripletHistManager)) {
+        continue;
+      }
+
+      // check if triplet is close; fills deta-dphi/kinematic histograms internally
+      if (CtrManager.isCloseTriplet(p1, p2, p3, TrackTable, TripletHistManager)) {
+        continue;
+      }
 
       // if triplet cuts are configured check them before filling
       if (TripletHistManager.checkTripletCuts()) {
@@ -206,21 +198,18 @@ void processSameEvent(T1 const& SliceParticle1,
 
   for (auto const& [p1, p2, p3] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(SliceParticle1, SliceParticle2, SliceParticle3))) {
 
-    // check if triplet is clean
-    if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable)) {
-      continue;
-    }
-
-    // check if triplet is close
-    CtrManager.setTriplet(p1, p2, p3, TrackTable);
-    if (CtrManager.isCloseTriplet()) {
-      continue;
-    }
-
+    // compute the kinematic (Q3) for this triplet
     TripletHistManager.setTriplet(p1, p2, p3, Collision);
 
-    // fill deta-dphi histograms with q3 cutoff
-    CtrManager.fill(TripletHistManager.getQ3());
+    // check if triplet is clean
+    if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable, TripletHistManager)) {
+      continue;
+    }
+
+    // check if triplet is close; fills deta-dphi/kinematic histograms internally
+    if (CtrManager.isCloseTriplet(p1, p2, p3, TrackTable, TripletHistManager)) {
+      continue;
+    }
 
     // if triplet cuts are configured check them before filling
     if (TripletHistManager.checkTripletCuts()) {
@@ -276,16 +265,8 @@ void processSameEvent(T1 const& SliceParticle,
         !Cleaner.isClean(p3, mcParticles, mcMothers, mcPartonicMothers)) {
       continue;
     }
-    // check if triplet is clean
-    if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable, mcParticles, mcPartonicMothers)) {
-      continue;
-    }
-    // check if triplet is close
-    CtrManager.setTriplet(p1, p2, p3, TrackTable);
-    if (CtrManager.isCloseTriplet()) {
-      continue;
-    }
-    // Randomize triplet order if enabled
+
+    // Randomize triplet order if enabled, then compute the kinematic (Q3) for this triplet
     switch (tripletOrder) {
       case kOrder123:
         TripletHistManager.setTripletMc(p1, p2, p3, mcParticles, Collision, mcCollisions);
@@ -303,8 +284,17 @@ void processSameEvent(T1 const& SliceParticle,
         TripletHistManager.setTripletMc(p1, p2, p3, mcParticles, Collision, mcCollisions);
         break;
     }
-    // fill deta-dphi histograms with q3 cutoff
-    CtrManager.fill(TripletHistManager.getQ3());
+
+    // check if triplet is clean
+    if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable, mcParticles, mcPartonicMothers, TripletHistManager)) {
+      continue;
+    }
+
+    // check if triplet is close; fills deta-dphi/kinematic histograms internally
+    if (CtrManager.isCloseTriplet(p1, p2, p3, TrackTable, TripletHistManager)) {
+      continue;
+    }
+
     // if triplet cuts are configured check them before filling
     if (TripletHistManager.checkTripletCuts()) {
       TripletHistManager.template fill<mode>();
@@ -359,16 +349,8 @@ void processSameEvent(T1 const& SliceParticle1,
           !Cleaner3.isClean(p3, mcParticles, mcMothers, mcPartonicMothers)) {
         continue;
       }
-      // check if triplet is clean
-      if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable, mcParticles, mcPartonicMothers)) {
-        continue;
-      }
-      // check if triplet is close
-      CtrManager.setTriplet(p1, p2, p3, TrackTable);
-      if (CtrManager.isCloseTriplet()) {
-        continue;
-      }
-      // Randomize triplet order if enabled
+
+      // Randomize triplet order if enabled, then compute the kinematic (Q3) for this triplet
       // only kOrder123 and kOrder213 are meaningful here since particle 1 & 2 are the same species
       switch (tripletOrder) {
         case kOrder213:
@@ -379,8 +361,17 @@ void processSameEvent(T1 const& SliceParticle1,
           TripletHistManager.setTripletMc(p1, p2, p3, mcParticles, Collision, mcCollisions);
           break;
       }
-      // fill deta-dphi histograms with q3 cutoff
-      CtrManager.fill(TripletHistManager.getQ3());
+
+      // check if triplet is clean
+      if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable, mcParticles, mcPartonicMothers, TripletHistManager)) {
+        continue;
+      }
+
+      // check if triplet is close; fills deta-dphi/kinematic histograms internally
+      if (CtrManager.isCloseTriplet(p1, p2, p3, TrackTable, TripletHistManager)) {
+        continue;
+      }
+
       // if triplet cuts are configured check them before filling
       if (TripletHistManager.checkTripletCuts()) {
         TripletHistManager.template fill<mode>();
@@ -460,18 +451,20 @@ void processSameEvent(T1 const& SliceParticle1,
         !Cleaner3.isClean(p3, mcParticles, mcMothers, mcPartonicMothers)) {
       continue;
     }
-    // check if triplet is clean
-    if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable, mcParticles, mcPartonicMothers)) {
-      continue;
-    }
-    // check if triplet is close
-    CtrManager.setTriplet(p1, p2, p3, TrackTable);
-    if (CtrManager.isCloseTriplet()) {
-      continue;
-    }
+
+    // compute the kinematic (Q3) for this triplet
     TripletHistManager.setTripletMc(p1, p2, p3, mcParticles, Collision, mcCollisions);
-    // fill deta-dphi histograms with q3 cutoff
-    CtrManager.fill(TripletHistManager.getQ3());
+
+    // check if triplet is clean
+    if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable, mcParticles, mcPartonicMothers, TripletHistManager)) {
+      continue;
+    }
+
+    // check if triplet is close; fills deta-dphi/kinematic histograms internally
+    if (CtrManager.isCloseTriplet(p1, p2, p3, TrackTable, TripletHistManager)) {
+      continue;
+    }
+
     // if triplet cuts are configured check them before filling
     if (TripletHistManager.checkTripletCuts()) {
       TripletHistManager.template fill<mode>();
@@ -562,18 +555,19 @@ void processMixedEvent(T1 const& Collisions,
     TripletHistManager.fillMixingQaMe(collision1, collision2, collision3);
 
     for (auto const& [p1, p2, p3] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(*sliceParticle1, *sliceParticle2, sliceParticle3))) {
-      // pair cleaning
-      if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable)) {
-        continue;
-      }
-      // Close pair rejection
-      CtrManager.setTriplet(p1, p2, p3, TrackTable);
-      if (CtrManager.isCloseTriplet()) {
+
+      // compute the kinematic (Q3) for this triplet
+      TripletHistManager.setTriplet(p1, p2, p3, collision1, collision2, collision3);
+
+      // triplet cleaning
+      if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable, TripletHistManager)) {
         continue;
       }
 
-      TripletHistManager.setTriplet(p1, p2, p3, collision1, collision2, collision3);
-      CtrManager.fill(TripletHistManager.getQ3());
+      // Close triplet rejection; fills deta-dphi/kinematic histograms internally
+      if (CtrManager.isCloseTriplet(p1, p2, p3, TrackTable, TripletHistManager)) {
+        continue;
+      }
 
       if (TripletHistManager.checkTripletCuts()) {
         hasValidTriplet = true;
@@ -690,24 +684,26 @@ void processMixedEvent(T1 const& Collisions,
     TripletHistManager.fillMixingQaMe(collision1, collision2, collision3);
 
     for (auto const& [p1, p2, p3] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(*sliceParticle1, *sliceParticle2, sliceParticle3))) {
+
       // particle cleaning
       if (!Cleaner1.isClean(p1, mcParticles, mcMothers, mcPartonicMothers) ||
           !Cleaner2.isClean(p2, mcParticles, mcMothers, mcPartonicMothers) ||
           !Cleaner3.isClean(p3, mcParticles, mcMothers, mcPartonicMothers)) {
         continue;
       }
-      // pair cleaning
-      if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable, mcParticles, mcPartonicMothers)) {
-        continue;
-      }
-      // Close pair rejection
-      CtrManager.setTriplet(p1, p2, p3, TrackTable);
-      if (CtrManager.isCloseTriplet()) {
+
+      // compute the kinematic (Q3) for this triplet
+      TripletHistManager.setTripletMc(p1, p2, p3, mcParticles, collision1, collision2, collision3, mcCollisions);
+
+      // triplet cleaning
+      if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable, mcParticles, mcPartonicMothers, TripletHistManager)) {
         continue;
       }
 
-      TripletHistManager.setTripletMc(p1, p2, p3, mcParticles, collision1, collision2, collision3, mcCollisions);
-      CtrManager.fill(TripletHistManager.getQ3());
+      // Close triplet rejection; fills deta-dphi/kinematic histograms internally
+      if (CtrManager.isCloseTriplet(p1, p2, p3, TrackTable, TripletHistManager)) {
+        continue;
+      }
 
       if (TripletHistManager.checkTripletCuts()) {
         hasValidTriplet = true;

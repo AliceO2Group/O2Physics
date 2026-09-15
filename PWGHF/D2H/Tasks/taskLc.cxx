@@ -32,6 +32,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
@@ -85,12 +86,12 @@ struct HfTaskLc {
   SliceCache cache;
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
-  using Collisions = soa::Join<aod::Collisions, aod::EvSels>;
-  using CollisionsMc = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
-  using CollisionsWithFT0C = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
-  using CollisionsMcWithFT0C = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs>;
-  using CollisionsWithFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
-  using CollisionsMcWithFT0M = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Ms>;
+  using Collisions = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults>;
+  using CollisionsMc = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults>;
+  using CollisionsWithFT0C = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs>;
+  using CollisionsMcWithFT0C = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults, aod::CentFT0Cs>;
+  using CollisionsWithFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms>;
+  using CollisionsMcWithFT0M = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults, aod::CentFT0Ms>;
 
   using LcCandidates = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>;
   using LcCandidatesMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfMlLcToPKPi>>;

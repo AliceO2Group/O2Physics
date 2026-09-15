@@ -88,7 +88,7 @@ O2ORIGIN("TMP");
 struct OnTheFlyDecayer {
   Produces<aod::McCollisions_001> tableMcCollisions;
   Produces<aod::StoredMcParticles_001> tableMcParticles;
-  Produces<aod::OTFDecayerBits> tableOTFDecayerBits;
+  Produces<aod::OTFParticleExtras> tableOTFParticleExtras;
 
   o2::upgrade::Decayer decayer;
   Service<o2::framework::O2DatabasePDG> pdgDB{};
@@ -152,7 +152,7 @@ struct OnTheFlyDecayer {
       }
 
       particle.setBitOff(o2::upgrade::DecayerBits::IsAlive);
-      std::vector<o2::upgrade::OTFParticle> decayStack = decayer.decayParticle(pdgDB, particle);
+      std::vector<o2::upgrade::OTFParticle> decayStack = decayer.decayParticle(particle, pdgDB);
       if (decayStack.empty()) {
         continue;
       }
@@ -172,6 +172,7 @@ struct OnTheFlyDecayer {
         trackLength = o2::upgrade::computeTrackLength(o2track, decayRadius, magneticField);
       }
 
+      particle.setDecayRadius(std::hypot(decayer.getSecondaryVertexX(), decayer.getSecondaryVertexY()));
       const float trackTimeNS = trackLength / trackVelocity * PicoToNano;
       particle.setIndicesDaughter(particlesInDataframe - indexOffset + allParticles.size(), particlesInDataframe - indexOffset + allParticles.size() + (decayStack.size() - 1));
       for (auto& daughter : decayStack) {
@@ -220,7 +221,7 @@ struct OnTheFlyDecayer {
         histos.fill(HIST("hNaNBookkeeping"), 0);
       }
 
-      tableOTFDecayerBits(otfParticle.getBitsValue());
+      tableOTFParticleExtras(otfParticle.getBitsValue(), otfParticle.decayRadius());
       tableMcParticles(tableMcCollisions.lastIndex(), otfParticle.pdgCode(), otfParticle.statusCode(), otfParticle.flags(),
                        otfParticle.getMotherSpan(), otfParticle.getDaughters().data(), otfParticle.weight(),
                        otfParticle.px(), otfParticle.py(), otfParticle.pz(), otfParticle.e(),

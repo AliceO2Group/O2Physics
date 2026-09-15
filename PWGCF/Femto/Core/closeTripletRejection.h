@@ -27,7 +27,12 @@
 namespace o2::analysis::femto::closetripletrejection
 {
 constexpr const char PrefixCtrTrackTrackTrack[] = "CtrTrackTrackTrack";
+constexpr const char PrefixCtrTrackTrackV0[] = "CtrTrackTrackV0";
+constexpr const char PrefixCtrTrackTrackCascade[] = "CtrTrackTrackCascade";
+
 using ConfCtrTrackTrackTrack = closepairrejection::ConfCpr<PrefixCtrTrackTrackTrack>;
+using ConfCtrTrackTrackV0 = closepairrejection::ConfCpr<PrefixCtrTrackTrackV0>;
+using ConfCtrTrackTrackCascade = closepairrejection::ConfCpr<PrefixCtrTrackTrackCascade>;
 
 // directory names
 constexpr char PrefixTrack1Track2Se[] = "CPR_Track1Track2/SE/";
@@ -85,23 +90,17 @@ class CloseTripletRejectionTrackTrackTrack
     mCtrTrack23.setMagField(magField);
     mCtrTrack13.setMagField(magField);
   }
-  template <typename T1, typename T2, typename T3, typename T4>
-  void setTriplet(T1 const& track1, T2 const& track2, T3 const& track3, T4 const& trackTable)
-  {
-    mCtrTrack12.setPair(track1, track2, trackTable);
-    mCtrTrack23.setPair(track2, track3, trackTable);
-    mCtrTrack13.setPair(track1, track3, trackTable);
-  }
-  [[nodiscard]] bool isCloseTriplet() const
-  {
-    return mCtrTrack12.isClosePair() || mCtrTrack23.isClosePair() || mCtrTrack13.isClosePair();
-  }
 
-  void fill(float q3)
+  // checks all three constituent pairs of the triplet; fills the deta-dphi/kinematic
+  // histograms of each pair internally and returns whether the triplet is rejected.
+  // tripletHistManager must expose getKinematic() (same interface CloseTrackRejection expects).
+  template <typename T1, typename T2, typename T3, typename T4, typename T5>
+  [[nodiscard]] bool isCloseTriplet(T1 const& track1, T2 const& track2, T3 const& track3, T4 const& trackTable, T5 const& tripletHistManager)
   {
-    mCtrTrack12.fill(q3);
-    mCtrTrack23.fill(q3);
-    mCtrTrack13.fill(q3);
+    bool isClose12 = mCtrTrack12.isClosePair(track1, track2, trackTable, tripletHistManager);
+    bool isClose23 = mCtrTrack23.isClosePair(track2, track3, trackTable, tripletHistManager);
+    bool isClose13 = mCtrTrack13.isClosePair(track1, track3, trackTable, tripletHistManager);
+    return isClose12 || isClose23 || isClose13;
   }
 
  private:
@@ -137,23 +136,16 @@ class CloseTripletRejectionTrackTrackV0
     mCtrTrack1V0.setMagField(magField);
     mCtrTrack2V0.setMagField(magField);
   }
-  template <typename T1, typename T2, typename T3, typename T4>
-  void setTriplet(T1 const& track1, T2 const& track2, T3 const& v0, T4 const& trackTable)
-  {
-    mCtrTrack12.setPair(track1, track2, trackTable);
-    mCtrTrack1V0.setPair(track1, v0, trackTable);
-    mCtrTrack2V0.setPair(track2, v0, trackTable);
-  }
-  [[nodiscard]] bool isCloseTriplet() const
-  {
-    return mCtrTrack12.isClosePair() || mCtrTrack1V0.isClosePair() || mCtrTrack2V0.isClosePair();
-  }
 
-  void fill(float q3)
+  // checks track1-track2, track1-v0 and track2-v0; fills the deta-dphi/kinematic
+  // histograms of each pair internally and returns whether the triplet is rejected.
+  template <typename T1, typename T2, typename T3, typename T4, typename T5>
+  [[nodiscard]] bool isCloseTriplet(T1 const& track1, T2 const& track2, T3 const& v0, T4 const& trackTable, T5 const& tripletHistManager)
   {
-    mCtrTrack12.fill(q3);
-    mCtrTrack1V0.fill(q3);
-    mCtrTrack2V0.fill(q3);
+    bool isClose12 = mCtrTrack12.isClosePair(track1, track2, trackTable, tripletHistManager);
+    bool isClose1V0 = mCtrTrack1V0.isClosePair(track1, v0, trackTable, tripletHistManager);
+    bool isClose2V0 = mCtrTrack2V0.isClosePair(track2, v0, trackTable, tripletHistManager);
+    return isClose12 || isClose1V0 || isClose2V0;
   }
 
  private:
@@ -195,23 +187,16 @@ class CloseTripletRejectionTrackTrackCascade
     mCtrTrack1Cascade.setMagField(magField);
     mCtrTrack2Cascade.setMagField(magField);
   }
-  template <typename T1, typename T2, typename T3, typename T4>
-  void setTriplet(T1 const& track1, T2 const& track2, T3 const& cascade, T4 const& trackTable)
-  {
-    mCtrTrack12.setPair(track1, track2, trackTable);
-    mCtrTrack1Cascade.setPair(track1, cascade, trackTable);
-    mCtrTrack2Cascade.setPair(track2, cascade, trackTable);
-  }
-  [[nodiscard]] bool isCloseTriplet() const
-  {
-    return mCtrTrack12.isClosePair() || mCtrTrack1Cascade.isClosePair() || mCtrTrack2Cascade.isClosePair();
-  }
 
-  void fill(float q3)
+  // checks track1-track2, track1-cascade and track2-cascade; fills the deta-dphi/kinematic
+  // histograms of each pair internally and returns whether the triplet is rejected.
+  template <typename T1, typename T2, typename T3, typename T4, typename T5>
+  [[nodiscard]] bool isCloseTriplet(T1 const& track1, T2 const& track2, T3 const& cascade, T4 const& trackTable, T5 const& tripletHistManager)
   {
-    mCtrTrack12.fill(q3);
-    mCtrTrack1Cascade.fill(q3);
-    mCtrTrack2Cascade.fill(q3);
+    bool isClose12 = mCtrTrack12.isClosePair(track1, track2, trackTable, tripletHistManager);
+    bool isClose1Cascade = mCtrTrack1Cascade.isClosePair(track1, cascade, trackTable, tripletHistManager);
+    bool isClose2Cascade = mCtrTrack2Cascade.isClosePair(track2, cascade, trackTable, tripletHistManager);
+    return isClose12 || isClose1Cascade || isClose2Cascade;
   }
 
  private:

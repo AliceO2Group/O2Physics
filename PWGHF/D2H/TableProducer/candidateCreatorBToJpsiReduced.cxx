@@ -36,7 +36,6 @@
 #include <Framework/WorkflowSpec.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
-#include <ReconstructionDataFormats/Track.h>
 #include <ReconstructionDataFormats/TrackParametrizationWithError.h>
 
 #include <TH1.h>

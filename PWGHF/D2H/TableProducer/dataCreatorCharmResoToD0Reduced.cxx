@@ -28,6 +28,7 @@
 #include "Common/Core/ZorroSummary.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -133,7 +134,7 @@ struct HfDataCreatorCharmResoToD0Reduced {
   using TracksIUWithPIDAndMC = soa::Join<TracksIUWithPID, aod::McTrackLabels>;
   // Collisions MC
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
-  using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
+  using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels>;
 
   Filter filterSelectD0Candidates = (aod::hf_sel_candidate_d0::isSelD0 >= cfgDmesCuts.selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= cfgDmesCuts.selectionFlagD0Bar);
 
@@ -193,7 +194,7 @@ struct HfDataCreatorCharmResoToD0Reduced {
   // Process functions
   // No ML
   // Data
-  void processD0V0(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processD0V0(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                    CandsD0Filtered const& candsD0,
                    aod::V0s const& v0s,
                    TracksIUWithPID const& tracksIU,
@@ -221,14 +222,14 @@ struct HfDataCreatorCharmResoToD0Reduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsD0.sliceBy(candsD0PerCollision, thisCollId);
       auto v0sThisColl = v0s.sliceBy(candsV0PerCollision, thisCollId);
-      runDataCreation<false, false, DMesonType::D0, PairingType::V0Only, aod::BCsWithTimestamps, soa::Join<aod::Collisions, aod::EvSels>>(collision, candsDThisColl, v0sThisColl, nullptr, tracksIU, tracksIU, nullptr, hfRejMap, bz, pdg, registry, matCorr, fitter, cfgDmesCuts, cfgSingleTrackCuts, cfgV0Cuts, cfgGammaCuts, cfgQaPlots, rejectPairsWithCommonDaughter, hfReducedCollision, hfCandD2Pr, hfCandV0, dummyTable, dummyTable, dummyTable, dummyTable);
+      runDataCreation<false, false, DMesonType::D0, PairingType::V0Only, aod::BCsWithTimestamps, soa::Join<aod::Collisions, aod::EvSels, aod::PVMults>>(collision, candsDThisColl, v0sThisColl, nullptr, tracksIU, tracksIU, nullptr, hfRejMap, bz, pdg, registry, matCorr, fitter, cfgDmesCuts, cfgSingleTrackCuts, cfgV0Cuts, cfgGammaCuts, cfgQaPlots, rejectPairsWithCommonDaughter, hfReducedCollision, hfCandD2Pr, hfCandV0, dummyTable, dummyTable, dummyTable, dummyTable);
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoToD0Reduced, processD0V0, "Process D0 candidates paired with V0s", false);
 
-  void processD0Track(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processD0Track(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                       CandsD0Filtered const& candsD0,
                       aod::TrackAssoc const& trackIndices,
                       TracksWithPID const& tracks,
@@ -256,14 +257,14 @@ struct HfDataCreatorCharmResoToD0Reduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsD0.sliceBy(candsD0PerCollision, thisCollId);
       auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-      runDataCreation<false, false, DMesonType::D0, PairingType::TrackOnly, aod::BCsWithTimestamps, soa::Join<aod::Collisions, aod::EvSels>>(collision, candsDThisColl, nullptr, trackIdsThisColl, tracks, tracks, nullptr, hfRejMap, bz, pdg, registry, matCorr, fitter, cfgDmesCuts, cfgSingleTrackCuts, cfgV0Cuts, cfgGammaCuts, cfgQaPlots, rejectPairsWithCommonDaughter, hfReducedCollision, hfCandD2Pr, dummyTable, hfTrackNoParam, dummyTable, dummyTable, dummyTable);
+      runDataCreation<false, false, DMesonType::D0, PairingType::TrackOnly, aod::BCsWithTimestamps, soa::Join<aod::Collisions, aod::EvSels, aod::PVMults>>(collision, candsDThisColl, nullptr, trackIdsThisColl, tracks, tracks, nullptr, hfRejMap, bz, pdg, registry, matCorr, fitter, cfgDmesCuts, cfgSingleTrackCuts, cfgV0Cuts, cfgGammaCuts, cfgQaPlots, rejectPairsWithCommonDaughter, hfReducedCollision, hfCandD2Pr, dummyTable, hfTrackNoParam, dummyTable, dummyTable, dummyTable);
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoToD0Reduced, processD0Track, "Process D0 candidates paired with Tracks", false);
 
-  void processD0V0AndTrack(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processD0V0AndTrack(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                            CandsD0Filtered const& candsD0,
                            aod::V0s const& v0s,
                            aod::TrackAssoc const& trackIndices,
@@ -294,7 +295,7 @@ struct HfDataCreatorCharmResoToD0Reduced {
       auto candsDThisColl = candsD0.sliceBy(candsD0PerCollision, thisCollId);
       auto v0sThisColl = v0s.sliceBy(candsV0PerCollision, thisCollId);
       auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-      runDataCreation<false, false, DMesonType::D0, PairingType::V0AndTrack, aod::BCsWithTimestamps, soa::Join<aod::Collisions, aod::EvSels>>(collision, candsDThisColl, v0sThisColl, trackIdsThisColl, tracks, tracksIU, nullptr, hfRejMap, bz, pdg, registry, matCorr, fitter, cfgDmesCuts, cfgSingleTrackCuts, cfgV0Cuts, cfgGammaCuts, cfgQaPlots, rejectPairsWithCommonDaughter, hfReducedCollision, hfCandD2Pr, hfCandV0, hfTrackNoParam, dummyTable, dummyTable, dummyTable);
+      runDataCreation<false, false, DMesonType::D0, PairingType::V0AndTrack, aod::BCsWithTimestamps, soa::Join<aod::Collisions, aod::EvSels, aod::PVMults>>(collision, candsDThisColl, v0sThisColl, trackIdsThisColl, tracks, tracksIU, nullptr, hfRejMap, bz, pdg, registry, matCorr, fitter, cfgDmesCuts, cfgSingleTrackCuts, cfgV0Cuts, cfgGammaCuts, cfgQaPlots, rejectPairsWithCommonDaughter, hfReducedCollision, hfCandD2Pr, hfCandV0, hfTrackNoParam, dummyTable, dummyTable, dummyTable);
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -303,7 +304,7 @@ struct HfDataCreatorCharmResoToD0Reduced {
 
   // ML
   // Data
-  void processD0V0WithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processD0V0WithMl(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                          CandsD0FilteredWithMl const& candsD0,
                          aod::V0s const& v0s,
                          TracksIUWithPID const& tracksIU,
@@ -331,14 +332,14 @@ struct HfDataCreatorCharmResoToD0Reduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsD0.sliceBy(candsD0PerCollisionWithMl, thisCollId);
       auto v0sThisColl = v0s.sliceBy(candsV0PerCollision, thisCollId);
-      runDataCreation<true, false, DMesonType::D0, PairingType::V0Only, aod::BCsWithTimestamps, soa::Join<aod::Collisions, aod::EvSels>>(collision, candsDThisColl, v0sThisColl, nullptr, tracksIU, tracksIU, nullptr, hfRejMap, bz, pdg, registry, matCorr, fitter, cfgDmesCuts, cfgSingleTrackCuts, cfgV0Cuts, cfgGammaCuts, cfgQaPlots, rejectPairsWithCommonDaughter, hfReducedCollision, hfCandD2Pr, hfCandV0, dummyTable, dummyTable, dummyTable, hfCandD2PrMl);
+      runDataCreation<true, false, DMesonType::D0, PairingType::V0Only, aod::BCsWithTimestamps, soa::Join<aod::Collisions, aod::EvSels, aod::PVMults>>(collision, candsDThisColl, v0sThisColl, nullptr, tracksIU, tracksIU, nullptr, hfRejMap, bz, pdg, registry, matCorr, fitter, cfgDmesCuts, cfgSingleTrackCuts, cfgV0Cuts, cfgGammaCuts, cfgQaPlots, rejectPairsWithCommonDaughter, hfReducedCollision, hfCandD2Pr, hfCandV0, dummyTable, dummyTable, dummyTable, hfCandD2PrMl);
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoToD0Reduced, processD0V0WithMl, "Process D0 candidates paired with V0s with ML info", false);
 
-  void processD0GammaWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processD0GammaWithMl(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                             CandsD0FilteredWithMl const& candsD0,
                             aod::V0s const& v0s,
                             TracksIUWithElPID const& tracksIU,
@@ -366,14 +367,14 @@ struct HfDataCreatorCharmResoToD0Reduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsD0.sliceBy(candsD0PerCollisionWithMl, thisCollId);
       auto v0sThisColl = v0s.sliceBy(candsV0PerCollision, thisCollId);
-      runDataCreation<true, false, DMesonType::D0, PairingType::GammaOnly, aod::BCsWithTimestamps, soa::Join<aod::Collisions, aod::EvSels>>(collision, candsDThisColl, v0sThisColl, nullptr, tracksIU, tracksIU, nullptr, hfRejMap, bz, pdg, registry, matCorr, fitter, cfgDmesCuts, cfgSingleTrackCuts, cfgV0Cuts, cfgGammaCuts, cfgQaPlots, rejectPairsWithCommonDaughter, hfReducedCollision, hfCandD2Pr, hfCandV0, dummyTable, dummyTable, dummyTable, hfCandD2PrMl, &vDriftMgr);
+      runDataCreation<true, false, DMesonType::D0, PairingType::GammaOnly, aod::BCsWithTimestamps, soa::Join<aod::Collisions, aod::EvSels, aod::PVMults>>(collision, candsDThisColl, v0sThisColl, nullptr, tracksIU, tracksIU, nullptr, hfRejMap, bz, pdg, registry, matCorr, fitter, cfgDmesCuts, cfgSingleTrackCuts, cfgV0Cuts, cfgGammaCuts, cfgQaPlots, rejectPairsWithCommonDaughter, hfReducedCollision, hfCandD2Pr, hfCandV0, dummyTable, dummyTable, dummyTable, hfCandD2PrMl, &vDriftMgr);
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoToD0Reduced, processD0GammaWithMl, "Process D0 candidates paired with gammas with ML info", false);
 
-  void processD0TrackWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processD0TrackWithMl(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                             CandsD0FilteredWithMl const& candsD0,
                             aod::TrackAssoc const& trackIndices,
                             TracksWithPID const& tracks,
@@ -401,14 +402,14 @@ struct HfDataCreatorCharmResoToD0Reduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsD0.sliceBy(candsD0PerCollisionWithMl, thisCollId);
       auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-      runDataCreation<true, false, DMesonType::D0, PairingType::TrackOnly, aod::BCsWithTimestamps, soa::Join<aod::Collisions, aod::EvSels>>(collision, candsDThisColl, nullptr, trackIdsThisColl, tracks, tracks, nullptr, hfRejMap, bz, pdg, registry, matCorr, fitter, cfgDmesCuts, cfgSingleTrackCuts, cfgV0Cuts, cfgGammaCuts, cfgQaPlots, rejectPairsWithCommonDaughter, hfReducedCollision, hfCandD2Pr, dummyTable, hfTrackNoParam, dummyTable, dummyTable, hfCandD2PrMl);
+      runDataCreation<true, false, DMesonType::D0, PairingType::TrackOnly, aod::BCsWithTimestamps, soa::Join<aod::Collisions, aod::EvSels, aod::PVMults>>(collision, candsDThisColl, nullptr, trackIdsThisColl, tracks, tracks, nullptr, hfRejMap, bz, pdg, registry, matCorr, fitter, cfgDmesCuts, cfgSingleTrackCuts, cfgV0Cuts, cfgGammaCuts, cfgQaPlots, rejectPairsWithCommonDaughter, hfReducedCollision, hfCandD2Pr, dummyTable, hfTrackNoParam, dummyTable, dummyTable, hfCandD2PrMl);
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoToD0Reduced, processD0TrackWithMl, "Process D0 candidates paired with Tracks with ML info", false);
 
-  void processD0V0AndTrackWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processD0V0AndTrackWithMl(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                                  CandsD0FilteredWithMl const& candsD0,
                                  aod::V0s const& v0s,
                                  aod::TrackAssoc const& trackIndices,
@@ -439,7 +440,7 @@ struct HfDataCreatorCharmResoToD0Reduced {
       auto candsDThisColl = candsD0.sliceBy(candsD0PerCollisionWithMl, thisCollId);
       auto v0sThisColl = v0s.sliceBy(candsV0PerCollision, thisCollId);
       auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-      runDataCreation<true, false, DMesonType::D0, PairingType::V0AndTrack, aod::BCsWithTimestamps, soa::Join<aod::Collisions, aod::EvSels>>(collision, candsDThisColl, v0sThisColl, trackIdsThisColl, tracks, tracksIU, nullptr, hfRejMap, bz, pdg, registry, matCorr, fitter, cfgDmesCuts, cfgSingleTrackCuts, cfgV0Cuts, cfgGammaCuts, cfgQaPlots, rejectPairsWithCommonDaughter, hfReducedCollision, hfCandD2Pr, hfCandV0, hfTrackNoParam, dummyTable, dummyTable, hfCandD2PrMl);
+      runDataCreation<true, false, DMesonType::D0, PairingType::V0AndTrack, aod::BCsWithTimestamps, soa::Join<aod::Collisions, aod::EvSels, aod::PVMults>>(collision, candsDThisColl, v0sThisColl, trackIdsThisColl, tracks, tracksIU, nullptr, hfRejMap, bz, pdg, registry, matCorr, fitter, cfgDmesCuts, cfgSingleTrackCuts, cfgV0Cuts, cfgGammaCuts, cfgQaPlots, rejectPairsWithCommonDaughter, hfReducedCollision, hfCandD2Pr, hfCandV0, hfTrackNoParam, dummyTable, dummyTable, hfCandD2PrMl);
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -448,7 +449,7 @@ struct HfDataCreatorCharmResoToD0Reduced {
 
   // MC
   // No ML
-  void processD0V0MC(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processD0V0MC(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                      CandsD0FilteredWithMc const& candsD0,
                      aod::V0s const& v0s,
                      TracksIUWithPIDAndMC const& tracksIU,
@@ -479,7 +480,7 @@ struct HfDataCreatorCharmResoToD0Reduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsD0.sliceBy(candsD0PerCollision, thisCollId);
       auto v0sThisColl = v0s.sliceBy(candsV0PerCollision, thisCollId);
-      runDataCreation<false, true, DMesonType::D0, PairingType::V0Only, aod::BCsWithTimestamps, soa::Join<aod::Collisions, aod::EvSels>>(collision, candsDThisColl, v0sThisColl, nullptr, tracksIU, tracksIU, particlesMc, hfRejMap, bz, pdg, registry, matCorr, fitter, cfgDmesCuts, cfgSingleTrackCuts, cfgV0Cuts, cfgGammaCuts, cfgQaPlots, rejectPairsWithCommonDaughter, hfReducedCollision, hfCandD2Pr, hfCandV0, dummyTable, rowHf2PrV0McRecReduced, dummyTable, dummyTable);
+      runDataCreation<false, true, DMesonType::D0, PairingType::V0Only, aod::BCsWithTimestamps, soa::Join<aod::Collisions, aod::EvSels, aod::PVMults>>(collision, candsDThisColl, v0sThisColl, nullptr, tracksIU, tracksIU, particlesMc, hfRejMap, bz, pdg, registry, matCorr, fitter, cfgDmesCuts, cfgSingleTrackCuts, cfgV0Cuts, cfgGammaCuts, cfgQaPlots, rejectPairsWithCommonDaughter, hfReducedCollision, hfCandD2Pr, hfCandV0, dummyTable, rowHf2PrV0McRecReduced, dummyTable, dummyTable);
     }
     runMcGen<DMesonType::D0, PairingType::V0Only>(particlesMc, mcParticlesPerMcCollision, collInfos, colPerMcCollision, mcCollisions, hfEvSelMc, rejectCollisionsWithBadEvSel, registry, pdg, rowHfResoMcGenReduced, bcs);
     // handle normalization by the right number of collisions
@@ -487,7 +488,7 @@ struct HfDataCreatorCharmResoToD0Reduced {
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoToD0Reduced, processD0V0MC, "Process D0 candidates paired with V0s with MC matching", false);
 
-  void processD0TrackMC(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processD0TrackMC(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                         CandsD0FilteredWithMc const& candsD0,
                         TracksWithPIDAndMC const& tracks,
                         aod::TrackAssoc const& trackIndices,
@@ -518,7 +519,7 @@ struct HfDataCreatorCharmResoToD0Reduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsD0.sliceBy(candsD0PerCollision, thisCollId);
       auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-      runDataCreation<false, true, DMesonType::D0, PairingType::TrackOnly, aod::BCsWithTimestamps, soa::Join<aod::Collisions, aod::EvSels>>(collision, candsDThisColl, nullptr, trackIdsThisColl, tracks, tracks, particlesMc, hfRejMap, bz, pdg, registry, matCorr, fitter, cfgDmesCuts, cfgSingleTrackCuts, cfgV0Cuts, cfgGammaCuts, cfgQaPlots, rejectPairsWithCommonDaughter, hfReducedCollision, hfCandD2Pr, dummyTable, hfTrackNoParam, dummyTable, rowHf2PrTrkMcRecReduced, dummyTable);
+      runDataCreation<false, true, DMesonType::D0, PairingType::TrackOnly, aod::BCsWithTimestamps, soa::Join<aod::Collisions, aod::EvSels, aod::PVMults>>(collision, candsDThisColl, nullptr, trackIdsThisColl, tracks, tracks, particlesMc, hfRejMap, bz, pdg, registry, matCorr, fitter, cfgDmesCuts, cfgSingleTrackCuts, cfgV0Cuts, cfgGammaCuts, cfgQaPlots, rejectPairsWithCommonDaughter, hfReducedCollision, hfCandD2Pr, dummyTable, hfTrackNoParam, dummyTable, rowHf2PrTrkMcRecReduced, dummyTable);
     }
     runMcGen<DMesonType::D0, PairingType::TrackOnly>(particlesMc, mcParticlesPerMcCollision, collInfos, colPerMcCollision, mcCollisions, hfEvSelMc, rejectCollisionsWithBadEvSel, registry, pdg, rowHfResoMcGenReduced, bcs);
     // handle normalization by the right number of collisions
@@ -526,7 +527,7 @@ struct HfDataCreatorCharmResoToD0Reduced {
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoToD0Reduced, processD0TrackMC, "Process D0 candidates paired with tracks with MC matching", false);
 
-  void processD0V0AndTrackMC(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processD0V0AndTrackMC(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                              CandsD0FilteredWithMc const& candsD0,
                              aod::V0s const& v0s,
                              aod::TrackAssoc const& trackIndices,
@@ -560,7 +561,7 @@ struct HfDataCreatorCharmResoToD0Reduced {
       auto candsDThisColl = candsD0.sliceBy(candsD0PerCollision, thisCollId);
       auto v0sThisColl = v0s.sliceBy(candsV0PerCollision, thisCollId);
       auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-      runDataCreation<false, true, DMesonType::D0, PairingType::V0AndTrack, aod::BCsWithTimestamps, soa::Join<aod::Collisions, aod::EvSels>>(collision, candsDThisColl, v0sThisColl, trackIdsThisColl, tracks, tracksIU, particlesMc, hfRejMap, bz, pdg, registry, matCorr, fitter, cfgDmesCuts, cfgSingleTrackCuts, cfgV0Cuts, cfgGammaCuts, cfgQaPlots, rejectPairsWithCommonDaughter, hfReducedCollision, hfCandD2Pr, hfCandV0, hfTrackNoParam, rowHf2PrV0McRecReduced, rowHf2PrTrkMcRecReduced, dummyTable);
+      runDataCreation<false, true, DMesonType::D0, PairingType::V0AndTrack, aod::BCsWithTimestamps, soa::Join<aod::Collisions, aod::EvSels, aod::PVMults>>(collision, candsDThisColl, v0sThisColl, trackIdsThisColl, tracks, tracksIU, particlesMc, hfRejMap, bz, pdg, registry, matCorr, fitter, cfgDmesCuts, cfgSingleTrackCuts, cfgV0Cuts, cfgGammaCuts, cfgQaPlots, rejectPairsWithCommonDaughter, hfReducedCollision, hfCandD2Pr, hfCandV0, hfTrackNoParam, rowHf2PrV0McRecReduced, rowHf2PrTrkMcRecReduced, dummyTable);
     }
     runMcGen<DMesonType::D0, PairingType::V0AndTrack>(particlesMc, mcParticlesPerMcCollision, collInfos, colPerMcCollision, mcCollisions, hfEvSelMc, rejectCollisionsWithBadEvSel, registry, pdg, rowHfResoMcGenReduced, bcs);
     // handle normalization by the right number of collisions
@@ -569,7 +570,7 @@ struct HfDataCreatorCharmResoToD0Reduced {
   PROCESS_SWITCH(HfDataCreatorCharmResoToD0Reduced, processD0V0AndTrackMC, "Process D0 candidates paired with V0s and tracks with MC matching", false);
 
   // ML
-  void processD0V0MCWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processD0V0MCWithMl(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                            CandsD0FilteredWithMlAndMc const& candsD0,
                            aod::V0s const& v0s,
                            TracksIUWithPIDAndMC const& tracksIU,
@@ -600,7 +601,7 @@ struct HfDataCreatorCharmResoToD0Reduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsD0.sliceBy(candsD0PerCollisionWithMl, thisCollId);
       auto v0sThisColl = v0s.sliceBy(candsV0PerCollision, thisCollId);
-      runDataCreation<true, true, DMesonType::D0, PairingType::V0Only, aod::BCsWithTimestamps, soa::Join<aod::Collisions, aod::EvSels>>(collision, candsDThisColl, v0sThisColl, nullptr, tracksIU, tracksIU, particlesMc, hfRejMap, bz, pdg, registry, matCorr, fitter, cfgDmesCuts, cfgSingleTrackCuts, cfgV0Cuts, cfgGammaCuts, cfgQaPlots, rejectPairsWithCommonDaughter, hfReducedCollision, hfCandD2Pr, hfCandV0, dummyTable, rowHf2PrV0McRecReduced, dummyTable, hfCandD2PrMl);
+      runDataCreation<true, true, DMesonType::D0, PairingType::V0Only, aod::BCsWithTimestamps, soa::Join<aod::Collisions, aod::EvSels, aod::PVMults>>(collision, candsDThisColl, v0sThisColl, nullptr, tracksIU, tracksIU, particlesMc, hfRejMap, bz, pdg, registry, matCorr, fitter, cfgDmesCuts, cfgSingleTrackCuts, cfgV0Cuts, cfgGammaCuts, cfgQaPlots, rejectPairsWithCommonDaughter, hfReducedCollision, hfCandD2Pr, hfCandV0, dummyTable, rowHf2PrV0McRecReduced, dummyTable, hfCandD2PrMl);
     }
     runMcGen<DMesonType::D0, PairingType::V0Only>(particlesMc, mcParticlesPerMcCollision, collInfos, colPerMcCollision, mcCollisions, hfEvSelMc, rejectCollisionsWithBadEvSel, registry, pdg, rowHfResoMcGenReduced, bcs);
     // handle normalization by the right number of collisions
@@ -608,7 +609,7 @@ struct HfDataCreatorCharmResoToD0Reduced {
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoToD0Reduced, processD0V0MCWithMl, "Process D0 candidates paired with V0s with MC matching and with ML info", false);
 
-  void processD0TrackMCWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processD0TrackMCWithMl(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                               CandsD0FilteredWithMlAndMc const& candsD0,
                               TracksWithPIDAndMC const& tracks,
                               aod::TrackAssoc const& trackIndices,
@@ -639,7 +640,7 @@ struct HfDataCreatorCharmResoToD0Reduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsD0.sliceBy(candsD0PerCollisionWithMl, thisCollId);
       auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-      runDataCreation<true, true, DMesonType::D0, PairingType::TrackOnly, aod::BCsWithTimestamps, soa::Join<aod::Collisions, aod::EvSels>>(collision, candsDThisColl, nullptr, trackIdsThisColl, tracks, tracks, particlesMc, hfRejMap, bz, pdg, registry, matCorr, fitter, cfgDmesCuts, cfgSingleTrackCuts, cfgV0Cuts, cfgGammaCuts, cfgQaPlots, rejectPairsWithCommonDaughter, hfReducedCollision, hfCandD2Pr, dummyTable, hfTrackNoParam, dummyTable, rowHf2PrTrkMcRecReduced, hfCandD2PrMl);
+      runDataCreation<true, true, DMesonType::D0, PairingType::TrackOnly, aod::BCsWithTimestamps, soa::Join<aod::Collisions, aod::EvSels, aod::PVMults>>(collision, candsDThisColl, nullptr, trackIdsThisColl, tracks, tracks, particlesMc, hfRejMap, bz, pdg, registry, matCorr, fitter, cfgDmesCuts, cfgSingleTrackCuts, cfgV0Cuts, cfgGammaCuts, cfgQaPlots, rejectPairsWithCommonDaughter, hfReducedCollision, hfCandD2Pr, dummyTable, hfTrackNoParam, dummyTable, rowHf2PrTrkMcRecReduced, hfCandD2PrMl);
     }
     runMcGen<DMesonType::D0, PairingType::TrackOnly>(particlesMc, mcParticlesPerMcCollision, collInfos, colPerMcCollision, mcCollisions, hfEvSelMc, rejectCollisionsWithBadEvSel, registry, pdg, rowHfResoMcGenReduced, bcs);
     // handle normalization by the right number of collisions
@@ -647,7 +648,7 @@ struct HfDataCreatorCharmResoToD0Reduced {
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoToD0Reduced, processD0TrackMCWithMl, "Process D0 candidates paired with tracks with MC matching and with ML info", false);
 
-  void processD0V0AndTrackMCWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processD0V0AndTrackMCWithMl(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                                    CandsD0FilteredWithMlAndMc const& candsD0,
                                    aod::V0s const& v0s,
                                    aod::TrackAssoc const& trackIndices,
@@ -680,7 +681,7 @@ struct HfDataCreatorCharmResoToD0Reduced {
       auto candsDThisColl = candsD0.sliceBy(candsD0PerCollisionWithMl, thisCollId);
       auto v0sThisColl = v0s.sliceBy(candsV0PerCollision, thisCollId);
       auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-      runDataCreation<true, true, DMesonType::D0, PairingType::V0AndTrack, aod::BCsWithTimestamps, soa::Join<aod::Collisions, aod::EvSels>>(collision, candsDThisColl, v0sThisColl, trackIdsThisColl, tracks, tracksIU, particlesMc, hfRejMap, bz, pdg, registry, matCorr, fitter, cfgDmesCuts, cfgSingleTrackCuts, cfgV0Cuts, cfgGammaCuts, cfgQaPlots, rejectPairsWithCommonDaughter, hfReducedCollision, hfCandD2Pr, hfCandV0, hfTrackNoParam, rowHf2PrV0McRecReduced, rowHf2PrTrkMcRecReduced, hfCandD2PrMl);
+      runDataCreation<true, true, DMesonType::D0, PairingType::V0AndTrack, aod::BCsWithTimestamps, soa::Join<aod::Collisions, aod::EvSels, aod::PVMults>>(collision, candsDThisColl, v0sThisColl, trackIdsThisColl, tracks, tracksIU, particlesMc, hfRejMap, bz, pdg, registry, matCorr, fitter, cfgDmesCuts, cfgSingleTrackCuts, cfgV0Cuts, cfgGammaCuts, cfgQaPlots, rejectPairsWithCommonDaughter, hfReducedCollision, hfCandD2Pr, hfCandV0, hfTrackNoParam, rowHf2PrV0McRecReduced, rowHf2PrTrkMcRecReduced, hfCandD2PrMl);
     }
     runMcGen<DMesonType::D0, PairingType::V0AndTrack>(particlesMc, mcParticlesPerMcCollision, collInfos, colPerMcCollision, mcCollisions, hfEvSelMc, rejectCollisionsWithBadEvSel, registry, pdg, rowHfResoMcGenReduced, bcs);
     // handle normalization by the right number of collisions

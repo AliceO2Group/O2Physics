@@ -379,7 +379,7 @@ struct FwdMuonsUpc {
   }
 
   // function to compute phi for azimuth anisotropy
-  void computePhiAnis(ROOT::Math::PxPyPzMVector p1, ROOT::Math::PxPyPzMVector p2, int sign1, float& phiAverage, float& phiCharge)
+  void computePhiAnis(const ROOT::Math::PxPyPzMVector& p1, const ROOT::Math::PxPyPzMVector& p2, int sign1, float& phiAverage, float& phiCharge)
   {
     ROOT::Math::PxPyPzMVector tSum, tDiffAv, tDiffCh;
     tSum = p1 + p2;

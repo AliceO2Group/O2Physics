@@ -1202,7 +1202,7 @@ struct ExclusiveRhoTo4Pi {
   PROCESS_SWITCH(ExclusiveRhoTo4Pi, processEventCounterMC, "MC Event Counter Function", false);
   PROCESS_SWITCH(ExclusiveRhoTo4Pi, processTrackCounterMC, "MC Track Counter Function", false);
 
-  double collinSoperPhi(PxPyPzMVector twoPionVector, PxPyPzMVector fourPionVector)
+  double collinSoperPhi(const PxPyPzMVector& twoPionVector, const PxPyPzMVector& fourPionVector)
   {
     PxPyPzEVector pProjCM(0., 0., -momentumBeam, halfSqrtSnn * 208); // projectile
     PxPyPzEVector pTargCM(0., 0., momentumBeam, halfSqrtSnn * 208);  // target
@@ -1219,7 +1219,7 @@ struct ExclusiveRhoTo4Pi {
     return phi;
   }
 
-  double collinSoperCosTheta(PxPyPzMVector twoPionVector, PxPyPzMVector fourPionVector)
+  double collinSoperCosTheta(const PxPyPzMVector& twoPionVector, const PxPyPzMVector& fourPionVector)
   {
     PxPyPzEVector pProjCM(0., 0., -momentumBeam, halfSqrtSnn * 208); // projectile
     PxPyPzEVector pTargCM(0., 0., momentumBeam, halfSqrtSnn * 208);  // target

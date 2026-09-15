@@ -50,7 +50,7 @@ struct ExclusiveTwoProtons {
   // defining histograms using histogram registry
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
   //_____________________________________________________________________________
-  Double_t CosThetaHelicityFrame(TLorentzVector posDaughter, TLorentzVector negDaughter, TLorentzVector mother)
+  Double_t CosThetaHelicityFrame(const TLorentzVector& posDaughter, const TLorentzVector& negDaughter, const TLorentzVector& mother)
   {
 
     Double_t HalfSqrtSnn = 2680.;
@@ -77,7 +77,7 @@ struct ExclusiveTwoProtons {
     return CosThetaHE;
   }
   //------------------------------------------------------------------------------------------------------
-  Double_t PhiHelicityFrame(TLorentzVector posDaughter, TLorentzVector negDaughter, TLorentzVector mother)
+  Double_t PhiHelicityFrame(const TLorentzVector& posDaughter, const TLorentzVector& negDaughter, const TLorentzVector& mother)
   {
 
     // Half of the energy per pair of the colliding nucleons.
@@ -190,7 +190,7 @@ struct ExclusiveTwoProtons {
     std::vector<decltype(tracks.begin())> rawProtonTracks;
     std::vector<decltype(tracks.begin())> rawProtonTracksTOF;
 
-    for (auto trk : tracks) {
+    for (const auto& trk : tracks) {
       if (!trk.isPVContributor()) {
         continue;
       }

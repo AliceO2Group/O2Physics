@@ -1661,31 +1661,18 @@ struct QaMatching {
                                 std::sqrt(collision.covYY()));
   }
 
-  o2::dataformats::GlobalFwdTrack propagateToVertexMft(o2::dataformats::GlobalFwdTrack muon,
-                                                       const float vx, const float vy, const float vz,
-                                                       const float covVx, const float covVy)
-  {
-    o2::dataformats::GlobalFwdTrack propmuon;
-    auto geoMan = o2::base::GeometryManager::meanMaterialBudget(muon.getX(), muon.getY(), muon.getZ(), vx, vy, vz);
-    auto x2x0 = static_cast<float>(geoMan.meanX2X0);
-    muon.propagateToVtxhelixWithMCS(vz, {vx, vy}, {covVx, covVy}, mBzAtMftCenter, x2x0);
-    propmuon.setParameters(muon.getParameters());
-    propmuon.setZ(muon.getZ());
-    propmuon.setCovariances(muon.getCovariances());
-
-    return propmuon;
-  }
-
   template <class TMFT, class C>
   o2::dataformats::GlobalFwdTrack propagateToVertexMft(const TMFT& muon,
                                                        const C& collision)
   {
-    return propagateToVertexMft(fwdToTrackPar(muon),
-                                collision.posX(),
-                                collision.posY(),
-                                collision.posZ(),
-                                std::sqrt(collision.covXX()),
-                                std::sqrt(collision.covYY()));
+    auto fwdTrackProp = fwdtrackutils::propagateTrackParCovFwd(fwdToTrackPar(muon),
+                                                               0,
+                                                               collision,
+                                                               fwdtrackutils::propagationPoint::kToVertex,
+                                                               0,
+                                                               mBzAtMftCenter);
+
+    return fwdTrackProp;
   }
 
   template <typename TMCH, typename TMFT, class C>
@@ -1701,11 +1688,14 @@ struct QaMatching {
                                          mftTrack.z(),
                                          0, 0);
 
-    auto fwdTrackProp = fwdtrackutils::refitGlobalMuonCov(mExtrap.MCHtoFwd(mchTrackAtMFT), fwdToTrackPar(mftTrack));
+    auto fwdTrackRefit = fwdtrackutils::refitGlobalMuonCov(mExtrap.MCHtoFwd(mchTrackAtMFT), fwdToTrackPar(mftTrack));
 
-    auto geoMan = o2::base::GeometryManager::meanMaterialBudget(fwdTrackProp.getX(), fwdTrackProp.getY(), fwdTrackProp.getZ(), collision.posX(), collision.posY(), collision.posZ());
-    auto x2x0 = static_cast<float>(geoMan.meanX2X0);
-    fwdTrackProp.propagateToVtxhelixWithMCS(collision.posZ(), {collision.posX(), collision.posY()}, {collision.covXX(), collision.covYY()}, mBzAtMftCenter, x2x0);
+    auto fwdTrackProp = fwdtrackutils::propagateTrackParCovFwd(fwdTrackRefit,
+                                                               0,
+                                                               collision,
+                                                               fwdtrackutils::propagationPoint::kToVertex,
+                                                               0,
+                                                               mBzAtMftCenter);
 
     return fwdTrackProp;
   }

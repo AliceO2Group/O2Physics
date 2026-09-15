@@ -963,7 +963,7 @@ struct kstarInOO {
   } // TrackSlicingMC
 
   template <typename JetType>
-  double DistinguishJets(const JetType& jets, ROOT::Math::PxPyPzMVector& lResonance)
+  double DistinguishJets(const JetType& jets, const ROOT::Math::PxPyPzMVector& lResonance)
   {
     if (cDebugLevel > 0) {
       LOG(info) << "Found multiple jets to the same phi.";
@@ -1176,7 +1176,7 @@ struct kstarInOO {
 
     bool HasJets = false;
     int nJets = 0;
-    for (auto chargedjet : chargedjets) {
+    for (const auto& chargedjet : chargedjets) {
       if (std::abs(chargedjet.eta()) > (cfgJetMaxEta - cfgJetdR)) {
         continue;
       }
@@ -1263,7 +1263,7 @@ struct kstarInOO {
 
     bool HasJets = false;
     int nJets = 0;
-    for (auto mcdjet : mcdjets) {
+    for (const auto& mcdjet : mcdjets) {
       if (std::abs(mcdjet.eta()) > cfgJetMaxEta - cfgJetdR) {
         continue;
       }
