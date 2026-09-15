@@ -74,9 +74,9 @@
 #include <cstdint>
 #include <cstdlib>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
-#include <memory>
 
 using namespace o2;
 using namespace o2::framework;
