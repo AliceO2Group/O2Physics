@@ -97,5 +97,8 @@
     "output": {
         "directory": ".",
         "file": "CutVarDplus_pp13TeV_MB.root"
-    }
+    },
+    "zero_eff_unc": false,
+    "effp_shift_nsigma": 0,
+    "effnp_shift_nsigma": 0
 }
