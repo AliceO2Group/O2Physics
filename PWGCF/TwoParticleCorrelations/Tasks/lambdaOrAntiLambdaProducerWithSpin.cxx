@@ -8,10 +8,10 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-///
-/// \brief Step2 of the  LambdaOrAntiLambdaProducerWithSpin.cxx
-/// \author Akash Raj (akash.raj.john.babu@cern.ch)
 
+/// \file lambdaOrAntiLambdaProducerWithSpin.cxx
+/// \brief Produces Lambda and anti-Lambda candidates and analyzes their spin correlations
+/// \author Akash Raj (akash.raj.john.babu@cern.ch)
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
@@ -20,10 +20,13 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 
-#include <CommonConstants/PhysicsConstants.h>
+#include "CommonConstants/PhysicsConstants.h"
 #include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/Expressions.h>
@@ -31,16 +34,14 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
-#include <Framework/ASoAHelpers.h>
-#include <Framework/AnalysisHelpers.h>
-
-#include <TH1.h>
-#include <TPDGCode.h>
-#include <TString.h>
 
 #include <Math/GenVector/Boost.h>
 #include <Math/Vector4D.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
+#include <TH1.h>
+#include <TPDGCode.h>
+#include <TString.h>
 
 #include <cmath>
 #include <cstdint>
@@ -429,7 +430,7 @@ struct LambdaOrAntiLambdaProducerWithSpin {
     // rLambdaOrAntiLambda.add("Candidate/hPt", "V0 p_{T};p_{T} (GeV/c);entries", HistType::kTH1F, {{200, 0.f, 10.f}});
     rLambdaOrAntiLambda.add("Candidate/hPt", "V0 p_{T};p_{T} (GeV/c);entries", HistType::kTH1F, {axisLambdaAntiLambdaPt});
     rLambdaOrAntiLambda.add("Candidate/hEta", "V0 pseudorapidity;#eta;entries", HistType::kTH1F, {{100, -2.f, 2.f}});
-    rLambdaOrAntiLambda.add("Candidate/hPhi", "V0 azimuth;#varphi;entries", HistType::kTH1F, {{72, 0.f, 2.f * M_PI}});
+    rLambdaOrAntiLambda.add("Candidate/hPhi", "V0 azimuth;#varphi;entries", HistType::kTH1F, {{72, 0.f, o2::constants::math::TwoPI}});
     rLambdaOrAntiLambda.add("Candidate/hRapidity", "V0 rapidity;y;entries", HistType::kTH1F, {{100, -2.f, 2.f}});
     rLambdaOrAntiLambda.add("Candidate/hMass", "Reconstructed invariant mass;m_{p#pi} (GeV/c^{2});entries", HistType::kTH1F, {axisInvariantMass});
     rLambdaOrAntiLambda.add("Candidate/hMassVsPt",
@@ -453,7 +454,7 @@ struct LambdaOrAntiLambdaProducerWithSpin {
     rLambdaOrAntiLambda.add("Proton/hPz", "Proton/antiproton p_{z};p_{z} (GeV/c);entries", HistType::kTH1F, {{200, -10.f, 10.f}});
     rLambdaOrAntiLambda.add("Proton/hPt", "Proton/antiproton p_{T};p_{T} (GeV/c);entries", HistType::kTH1F, {{200, 0.f, 5.f}});
     rLambdaOrAntiLambda.add("Proton/hEta", "Proton/antiproton pseudorapidity;#eta;entries", HistType::kTH1F, {{100, -2.f, 2.f}});
-    rLambdaOrAntiLambda.add("Proton/hPhi", "Proton/antiproton azimuth;#varphi;entries", HistType::kTH1F, {{72, 0.f, 2.f * M_PI}});
+    rLambdaOrAntiLambda.add("Proton/hPhi", "Proton/antiproton azimuth;#varphi;entries", HistType::kTH1F, {{72, 0.f, o2::constants::math::TwoPI}});
     rLambdaOrAntiLambda.add("Proton/hDcaToPV", "Proton/antiproton DCA to PV;DCA (cm);entries", HistType::kTH1F, {{200, 0.f, 10.f}});
 
     // Pion
@@ -464,7 +465,7 @@ struct LambdaOrAntiLambdaProducerWithSpin {
     rLambdaOrAntiLambda.add("Pion/hPz", "Pion p_{z};p_{z} (GeV/c);entries", HistType::kTH1F, {{200, -10.f, 10.f}});
     rLambdaOrAntiLambda.add("Pion/hPt", "Pion p_{T};p_{T} (GeV/c);entries", HistType::kTH1F, {{200, 0.f, 5.f}});
     rLambdaOrAntiLambda.add("Pion/hEta", "Pion pseudorapidity;#eta;entries", HistType::kTH1F, {{100, -2.f, 2.f}});
-    rLambdaOrAntiLambda.add("Pion/hPhi", "Pion azimuth;#varphi;entries", HistType::kTH1F, {{72, 0.f, 2.f * M_PI}});
+    rLambdaOrAntiLambda.add("Pion/hPhi", "Pion azimuth;#varphi;entries", HistType::kTH1F, {{72, 0.f, o2::constants::math::TwoPI}});
     rLambdaOrAntiLambda.add("Pion/hDcaToPV", "Pion DCA to PV;DCA (cm);entries", HistType::kTH1F, {{200, 0.f, 10.f}});
 
     // Armenteros-Podolanski
@@ -1299,7 +1300,7 @@ struct LambdaAntiLambdaEfficiencyPlots {
     const auto particlesFromThisMcCollision = allMcParticles.sliceBy(mcParticlesPerMcCollision, selectedMcEvent.mcCollisionId());
 
     // Reconstructed-collision-opportunity weight
-    const float weight = static_cast<float>(selectedMcEvent.nSel8Collisions());
+    const auto weight = static_cast<float>(selectedMcEvent.nSel8Collisions());
 
     for (const auto& particle : particlesFromThisMcCollision) {
 
@@ -1485,12 +1486,12 @@ struct LambdaAntiLambdaPairAnalysis {
   HistogramRegistry rSpinAnalysis{"SpinPairAnalysis", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   // defining Axis for histograms
   ConfigurableAxis axisDeltaEta{"axisDeltaEta", {100, -2.f, 2.f}, "#Delta#eta axis"};
-  ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -M_PI, M_PI}, "#Delta#phi axis"};
+  ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -o2::constants::math::PI, o2::constants::math::PI}, "#Delta#phi axis"};
   ConfigurableAxis axisDeltaPt{"axisDeltaPt", {400, -10.f, 10.f}, "#Delta#p_{T} axis"};
 
   ConfigurableAxis axisPt{"axisPt", {200, 0.f, 10.f}, "transverse-momentum axis"};
   ConfigurableAxis axisEta{"axisEta", {100, -2.f, 2.f}, "#eta axis"};
-  ConfigurableAxis axisPhi{"axisPhi", {72, 0, 2 * M_PI}, "#phi axis"};
+  ConfigurableAxis axisPhi{"axisPhi", {72, 0, o2::constants::math::TwoPI}, "#phi axis"};
 
   ConfigurableAxis axisInvariantMass{"axisInvariantMass", {100, 1.08f, 1.2f}, "Invariant-mass axis"};
   ConfigurableAxis axisDeltaMass{"axisDeltaMass", {100, -0.12f, 0.12f}, "Invariant-mass axis"};
@@ -1673,24 +1674,23 @@ struct LambdaAntiLambdaPairAnalysis {
     return protonStar;
   }
 
-  float CosTheta(ROOT::Math::PxPyPzMVector proton1, ROOT::Math::PxPyPzMVector proton2)
+  float cosTheta(ROOT::Math::PxPyPzMVector const& proton1,
+                 ROOT::Math::PxPyPzMVector const& proton2)
   {
-    float numerator = (proton1.Px() * proton2.Px() + proton1.Py() * proton2.Py() + proton1.Pz() * proton2.Pz());
-    float denominator = (proton1.P() * proton2.P());
-    float cosTheta;
+    const float numerator = proton1.Px() * proton2.Px() + proton1.Py() * proton2.Py() + proton1.Pz() * proton2.Pz();
+    const float denominator = proton1.P() * proton2.P();
+
     if (denominator == 0.f) {
-      cosTheta = -2;
-    } else {
-      cosTheta = numerator / denominator;
+      return -2.f;
     }
-    return cosTheta;
+    return numerator / denominator;
   }
 
   template <typename Candidate1, typename Candidate2>
   bool isKinematicallyCompatible(Candidate1 const& candidate1, Candidate2 const& candidate2)
   {
     const float deltaPt = std::abs(candidate1.pt() - candidate2.pt());
-    const float deltaPhi = std::abs(std::remainder(candidate1.phi() - candidate2.phi(), 2.f * M_PI));
+    const float deltaPhi = std::abs(std::remainder(candidate1.phi() - candidate2.phi(), o2::constants::math::TwoPI));
     const float deltaRapidity = std::abs(candidate1.rapidity() - candidate2.rapidity());
 
     return deltaPt < compatibilityDeltaPt &&
@@ -1703,7 +1703,7 @@ struct LambdaAntiLambdaPairAnalysis {
   {
     const float deltaRapidity = std::abs(candidate1.rapidity() - candidate2.rapidity());
 
-    const float deltaPhi = std::abs(std::remainder(candidate1.phi() - candidate2.phi(), 2.f * static_cast<float>(M_PI)));
+    const float deltaPhi = std::abs(std::remainder(candidate1.phi() - candidate2.phi(), o2::constants::math::TwoPI));
 
     return deltaRapidity < sameEventShortRangePairMaxDeltaRapidity &&
            deltaPhi < sameEventShortRangePairMaxDeltaPhi;
@@ -1725,8 +1725,8 @@ struct LambdaAntiLambdaPairAnalysis {
       // Boost the antiproton into the anti-Lambda rest frame.
       const auto antiProtonStar = daughterInParentRestFrame(antiLambda.px(), antiLambda.py(), antiLambda.pz(), antiLambda.mass(), antiLambda.protonPx(), antiLambda.protonPy(), antiLambda.protonPz(), o2::constants::physics::MassProton);
 
-      const float cosDeltaThetaStar = CosTheta(protonStar, antiProtonStar);
-      const float deltaPhi = std::remainder(lambda.phi() - antiLambda.phi(), 2.f * M_PI);
+      const float cosDeltaThetaStar = cosTheta(protonStar, antiProtonStar);
+      const float deltaPhi = std::remainder(lambda.phi() - antiLambda.phi(), o2::constants::math::TwoPI);
       // Invalid result returned by cosTheta().
       if (cosDeltaThetaStar < -1.f) {
         continue;
@@ -1786,8 +1786,8 @@ struct LambdaAntiLambdaPairAnalysis {
       // Boost the antiproton into the anti-Lambda rest frame.
       const auto protonStar2 = daughterInParentRestFrame(lambda2.px(), lambda2.py(), lambda2.pz(), lambda2.mass(), lambda2.protonPx(), lambda2.protonPy(), lambda2.protonPz(), o2::constants::physics::MassProton);
 
-      const float cosDeltaThetaStar = CosTheta(protonStar1, protonStar2);
-      const float deltaPhi = std::remainder(lambda1.phi() - lambda2.phi(), 2.f * M_PI);
+      const float cosDeltaThetaStar = cosTheta(protonStar1, protonStar2);
+      const float deltaPhi = std::remainder(lambda1.phi() - lambda2.phi(), o2::constants::math::TwoPI);
       // Invalid result returned by cosTheta().
       if (cosDeltaThetaStar < -1.f) {
         continue;
@@ -1847,8 +1847,8 @@ struct LambdaAntiLambdaPairAnalysis {
       // Boost the antiproton into the anti-Lambda rest frame.
       const auto antiProtonStar2 = daughterInParentRestFrame(antilambda2.px(), antilambda2.py(), antilambda2.pz(), antilambda2.mass(), antilambda2.protonPx(), antilambda2.protonPy(), antilambda2.protonPz(), o2::constants::physics::MassProton);
 
-      const float cosDeltaThetaStar = CosTheta(antiProtonStar1, antiProtonStar2);
-      const float deltaPhi = std::remainder(antilambda1.phi() - antilambda2.phi(), 2.f * M_PI);
+      const float cosDeltaThetaStar = cosTheta(antiProtonStar1, antiProtonStar2);
+      const float deltaPhi = std::remainder(antilambda1.phi() - antilambda2.phi(), o2::constants::math::TwoPI);
       // Invalid result returned by cosTheta().
       if (cosDeltaThetaStar < -1.f) {
         continue;
@@ -1907,8 +1907,8 @@ struct LambdaAntiLambdaPairAnalysis {
       // Boost the antiproton into the anti-Lambda rest frame.
       const auto antiProtonStar = daughterInParentRestFrame(antiLambda.px(), antiLambda.py(), antiLambda.pz(), antiLambda.mass(), antiLambda.protonPx(), antiLambda.protonPy(), antiLambda.protonPz(), o2::constants::physics::MassProton);
 
-      const float cosDeltaThetaStar = CosTheta(protonStar, antiProtonStar);
-      const float deltaPhi = std::remainder(lambda.phi() - antiLambda.phi(), 2.f * M_PI);
+      const float cosDeltaThetaStar = cosTheta(protonStar, antiProtonStar);
+      const float deltaPhi = std::remainder(lambda.phi() - antiLambda.phi(), o2::constants::math::TwoPI);
       // Invalid result returned by cosTheta().
       if (cosDeltaThetaStar < -1.f) {
         continue;
@@ -1952,8 +1952,8 @@ struct LambdaAntiLambdaPairAnalysis {
       // Boost the antiproton into the anti-Lambda rest frame.
       const auto antiProtonStar = daughterInParentRestFrame(antiLambda.px(), antiLambda.py(), antiLambda.pz(), antiLambda.mass(), antiLambda.protonPx(), antiLambda.protonPy(), antiLambda.protonPz(), o2::constants::physics::MassProton);
 
-      const float cosDeltaThetaStar = CosTheta(protonStar, antiProtonStar);
-      const float deltaPhi = std::remainder(lambda.phi() - antiLambda.phi(), 2.f * M_PI);
+      const float cosDeltaThetaStar = cosTheta(protonStar, antiProtonStar);
+      const float deltaPhi = std::remainder(lambda.phi() - antiLambda.phi(), o2::constants::math::TwoPI);
       // Invalid result returned by cosTheta().
       if (cosDeltaThetaStar < -1.f) {
         continue;
@@ -1997,8 +1997,8 @@ struct LambdaAntiLambdaPairAnalysis {
       // Boost the antiproton into the anti-Lambda rest frame.
       const auto antiProtonStar = daughterInParentRestFrame(lambda2.px(), lambda2.py(), lambda2.pz(), lambda2.mass(), lambda2.protonPx(), lambda2.protonPy(), lambda2.protonPz(), o2::constants::physics::MassProton);
 
-      const float cosDeltaThetaStar = CosTheta(protonStar, antiProtonStar);
-      const float deltaPhi = std::remainder(lambda1.phi() - lambda2.phi(), 2.f * M_PI);
+      const float cosDeltaThetaStar = cosTheta(protonStar, antiProtonStar);
+      const float deltaPhi = std::remainder(lambda1.phi() - lambda2.phi(), o2::constants::math::TwoPI);
       // Invalid result returned by cosTheta().
       if (cosDeltaThetaStar < -1.f) {
         continue;
@@ -2042,8 +2042,8 @@ struct LambdaAntiLambdaPairAnalysis {
       // Boost the antiproton into the anti-Lambda rest frame.
       const auto antiProtonStar = daughterInParentRestFrame(antiLambda2.px(), antiLambda2.py(), antiLambda2.pz(), antiLambda2.mass(), antiLambda2.protonPx(), antiLambda2.protonPy(), antiLambda2.protonPz(), o2::constants::physics::MassProton);
 
-      const float cosDeltaThetaStar = CosTheta(protonStar, antiProtonStar);
-      const float deltaPhi = std::remainder(antiLambda1.phi() - antiLambda2.phi(), 2.f * M_PI);
+      const float cosDeltaThetaStar = cosTheta(protonStar, antiProtonStar);
+      const float deltaPhi = std::remainder(antiLambda1.phi() - antiLambda2.phi(), o2::constants::math::TwoPI);
       // Invalid result returned by cosTheta().
       if (cosDeltaThetaStar < -1.f) {
         continue;
@@ -2090,7 +2090,7 @@ struct LambdaAntiLambdaPairAnalysis {
 
   void process(CollisionsWithMultiplicity const& collisions, FilteredLambdas const& lambdas, FilteredAntiLambdas const& antiLambdas)
   {
-    static constexpr int minimumSameSpeciesCandidates = 2;
+    static constexpr int MinimumSameSpeciesCandidates = 2;
 
     for (auto const& collision : collisions) {
 
@@ -2103,12 +2103,12 @@ struct LambdaAntiLambdaPairAnalysis {
       }
 
       // Lambda–Lambda requires at least two Lambdas.
-      if (lambdasThisCollision.size() >= minimumSameSpeciesCandidates) {
+      if (lambdasThisCollision.size() >= MinimumSameSpeciesCandidates) {
         fillLambdaLambdaSameEvent(lambdasThisCollision);
       }
 
       // Anti-Lambda–anti-Lambda requires at least two anti-Lambdas.
-      if (antiLambdasThisCollision.size() >= minimumSameSpeciesCandidates) {
+      if (antiLambdasThisCollision.size() >= MinimumSameSpeciesCandidates) {
         fillAntiLambdaAntiLambdaSameEvent(antiLambdasThisCollision);
       }
     }
