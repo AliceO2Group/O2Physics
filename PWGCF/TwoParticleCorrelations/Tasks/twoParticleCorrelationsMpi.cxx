@@ -316,7 +316,7 @@ struct TwoParticleCorrelationsMpi {
   OutputObj<FlowContainer> fFCGen{"FlowContainer_gen"};
   OutputObj<FlowPtContainer> fFCptGen{"FlowPtContainer_gen"};
   std::unique_ptr<GFW> fGFW{std::make_unique<GFW>()};
-  std::unique_ptr<TAxis> fPtAxis{};
+  std::unique_ptr<TAxis> fPtAxis;
   std::unique_ptr<TRandom3> fRndm{std::make_unique<TRandom3>()};
   std::vector<GFW::CorrConfig> mCorrConfigs;
   std::shared_ptr<TH3> mAcceptanceWeights;
@@ -725,7 +725,7 @@ struct TwoParticleCorrelationsMpi {
 
   void addConfigObjectsToObjArray(TObjArray* profiles, const std::vector<GFW::CorrConfig>& configs, const bool addSeedClasses)
   {
-    profiles->SetOwner(kTRUE);
+    profiles->SetOwner(true);
     for (const auto& config : configs) {
       if (config.pTDif) {
         const std::string suffix = "_ptDiff";
@@ -765,11 +765,11 @@ struct TwoParticleCorrelationsMpi {
 
     for (std::size_t configIndex = 0; configIndex < mCorrConfigs.size(); ++configIndex) {
       if (!mCorrConfigs.at(configIndex).pTDif) {
-        const auto dnx = fGFW->Calculate(mCorrConfigs.at(configIndex), 0, kTRUE).real();
+        const auto dnx = fGFW->Calculate(mCorrConfigs.at(configIndex), 0, true).real();
         if (dnx == 0) {
           continue;
         }
-        const auto val = fGFW->Calculate(mCorrConfigs.at(configIndex), 0, kFALSE).real() / dnx;
+        const auto val = fGFW->Calculate(mCorrConfigs.at(configIndex), 0, false).real() / dnx;
         if (std::abs(val) < 1) {
           fillFlowProfile(mCorrConfigs.at(configIndex).Head, val, cfgEventWeight.cfgUseMultiplicityFlowWeights ? dnx : 1.0);
           flowPtContainer->fillVnPtProfiles(centMult, val, dnx, randomNumber, cfgCorrConfig->GetpTCorrMasks()[configIndex]);
@@ -777,11 +777,11 @@ struct TwoParticleCorrelationsMpi {
         continue;
       }
       for (int i = 1; i <= fPtAxis->GetNbins(); i++) {
-        const auto dnx = fGFW->Calculate(mCorrConfigs.at(configIndex), i - 1, kTRUE).real();
+        const auto dnx = fGFW->Calculate(mCorrConfigs.at(configIndex), i - 1, true).real();
         if (dnx == 0) {
           continue;
         }
-        const auto val = fGFW->Calculate(mCorrConfigs.at(configIndex), i - 1, kFALSE).real() / dnx;
+        const auto val = fGFW->Calculate(mCorrConfigs.at(configIndex), i - 1, false).real() / dnx;
         if (std::abs(val) < 1) {
           const std::string profileName = Form("%s_pt_%i", mCorrConfigs.at(configIndex).Head.c_str(), i);
           fillFlowProfile(profileName, val, cfgEventWeight.cfgUseMultiplicityFlowWeights ? dnx : 1.0);
