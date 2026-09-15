@@ -53,24 +53,18 @@ class CutVarMinimiser:
         unc_eff_prompt=None,
         unc_eff_nonprompt=None,
     ):
-        inputs = (
-            raw_yields,
-            eff_prompt,
-            eff_nonprompt,
-            unc_raw_yields,
-            unc_eff_prompt,
-            unc_eff_nonprompt,
-        )
-
-        if all(value is None for value in inputs):
+        if raw_yields is None:
             raw_yields = np.zeros(0)
+        if eff_prompt is None:
             eff_prompt = np.zeros(0)
+        if eff_nonprompt is None:
             eff_nonprompt = np.zeros(0)
+        if unc_raw_yields is None:
             unc_raw_yields = np.zeros(0)
+        if unc_eff_prompt is None:
             unc_eff_prompt = np.zeros(0)
+        if unc_eff_nonprompt is None:
             unc_eff_nonprompt = np.zeros(0)
-        elif any(value is None for value in inputs):
-            raise ValueError("Either all input arrays or none must be provided.")
 
         self.raw_yields = raw_yields
         self.eff_prompt = eff_prompt
