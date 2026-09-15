@@ -9,12 +9,18 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file GFW.cxx
+/// \brief Initialize regions and calculate n-particle correlations
+/// \author Emil Gorm Nielsen, NBI, emil.gorm.nielsen@cern.ch
+
 #include "GFW.h"
 
 #include "PWGCF/GenericFramework/Core/GFWPowerArray.h"
 
+#include <Framework/Logger.h>
+
 #include <complex>
-#include <cstdio>
+#include <cstddef>
 #include <string>
 #include <utility>
 #include <vector>
@@ -22,9 +28,19 @@
 using std::complex;
 using std::pair;
 using std::string;
-using std::vector;
+
+namespace
+{
+constexpr std::size_t TwoParticleOrder = 2;
+constexpr std::size_t ThreeParticleOrder = 3;
+} // namespace
 
 GFW::GFW() : fInitialized(false) {}
+
+void GFW::Region::PrintStructure()
+{
+  LOGF(info, "%s: eta [%f.. %f].", rName.c_str(), EtaMin, EtaMax);
+}
 
 GFW::~GFW()
 {
@@ -34,15 +50,15 @@ GFW::~GFW()
 void GFW::AddRegion(const string& refName, double lEtaMin, double lEtaMax, int lNpT, int BitMask)
 {
   if (lNpT < 1) {
-    printf("Number of pT bins cannot be less than 1! Not adding anything.\n");
+    LOGF(warning, "Number of pT bins cannot be less than 1! Not adding anything.");
     return;
   }
   if (lEtaMin >= lEtaMax) {
-    printf("Eta min. cannot be more than eta max! Not adding...\n");
+    LOGF(warning, "Eta min. cannot be more than eta max! Not adding...");
     return;
   }
   if (refName == "") {
-    printf("Region must have a name!\n");
+    LOGF(warning, "Region must have a name!");
     return;
   }
   Region lOneRegion;
@@ -56,23 +72,26 @@ void GFW::AddRegion(const string& refName, double lEtaMin, double lEtaMax, int l
   lOneRegion.BitMask = BitMask;   // Bit mask
   AddRegion(lOneRegion);
 };
-void GFW::AddRegion(const string& refName, const vector<int>& lNparVec, double lEtaMin, double lEtaMax, int lNpT, int BitMask)
+void GFW::AddRegion(string refName, std::vector<int> lNparVec, double lEtaMin, double lEtaMax, int lNpT, int BitMask)
 {
-  AddRegion(std::move(refName), lEtaMin, lEtaMax, lNpT, BitMask);
+  const auto oldSize = fRegions.size();
+  AddRegion(refName, lEtaMin, lEtaMax, lNpT, BitMask);
+  if (fRegions.size() == oldSize)
+    return;
   (fRegions.end() - 1)->Nhar = static_cast<int>(lNparVec.size());
   (fRegions.end() - 1)->NparVec = lNparVec;
   (fRegions.end() - 1)->powsDefined = true;
 };
 void GFW::AddRegion(string refName, int lNhar, int lNpar, double lEtaMin, double lEtaMax, int lNpT, int BitMask)
 {
-  vector<int> tVec = {};
+  std::vector<int> tVec = {};
   for (int i = 0; i < lNhar; i++)
     tVec.push_back(lNpar);
   AddRegion(std::move(refName), tVec, lEtaMin, lEtaMax, lNpT, BitMask);
 };
 void GFW::AddRegion(string refName, int lNhar, int* lNparVec, double lEtaMin, double lEtaMax, int lNpT, int BitMask)
 {
-  vector<int> tVec = {};
+  std::vector<int> tVec = {};
   for (int i = 0; i < lNhar; i++)
     tVec.push_back(lNparVec[i]);
   AddRegion(std::move(refName), tVec, lEtaMin, lEtaMax, lNpT, BitMask);
@@ -84,14 +103,13 @@ int GFW::CreateRegions()
   fCumulants.clear();
   InitializePowerArrays();
   if (fRegions.size() < 1) {
-    printf("No regions set. Skipping...\n");
+    LOGF(warning, "No regions set. Skipping...");
     return 0;
   }
   int nRegions = 0;
   for (auto pItr = fRegions.begin(); pItr != fRegions.end(); pItr++) {
-    GFWCumulant* lCumulant = new GFWCumulant();
-    lCumulant->CreateComplexVectorArrayVarPower(pItr->Nhar, pItr->NparVec, pItr->NpT);
-    fCumulants.push_back(*lCumulant);
+    fCumulants.emplace_back();
+    fCumulants.back().CreateComplexVectorArrayVarPower(pItr->Nhar, pItr->NparVec, pItr->NpT);
     ++nRegions;
   }
   if (nRegions)
@@ -114,22 +132,24 @@ complex<double> GFW::TwoRec(int n1, int n2, int p1, int p2, int ptbin, GFWCumula
   complex<double> formula = part1 * part2 - part3;
   return formula;
 };
-complex<double> GFW::RecursiveCorr(GFWCumulant* qpoi, GFWCumulant* qref, GFWCumulant* qol, int ptbin, vector<int>& hars)
+complex<double> GFW::RecursiveCorr(GFWCumulant* qpoi, GFWCumulant* qref, GFWCumulant* qol, int ptbin, std::vector<int>& hars)
 {
-  vector<int> pows;
+  std::vector<int> pows;
   for (int i = 0; i < static_cast<int>(hars.size()); i++)
     pows.push_back(1);
   return RecursiveCorr(qpoi, qref, qol, ptbin, hars, pows);
 };
 
-complex<double> GFW::RecursiveCorr(GFWCumulant* qpoi, GFWCumulant* qref, GFWCumulant* qol, int ptbin, vector<int>& hars, vector<int>& pows)
+complex<double> GFW::RecursiveCorr(GFWCumulant* qpoi, GFWCumulant* qref, GFWCumulant* qol, int ptbin, std::vector<int>& hars, std::vector<int>& pows)
 {
+  if (hars.empty() || pows.empty())
+    return complex<double>(0, 0);
   if ((pows.at(0) != 1) && qol)
     qpoi = qol; // if the power of POI is not unity, then always use overlap (if defined).
   // Only valid for 1 particle of interest though!
-  if (hars.size() < 2)
+  if (hars.size() < TwoParticleOrder)
     return qpoi->Vec(hars.at(0), pows.at(0), ptbin);
-  if (hars.size() < 3)
+  if (hars.size() < ThreeParticleOrder)
     return TwoRec(hars.at(0), hars.at(1), pows.at(0), pows.at(1), ptbin, qpoi, qref, qol);
   int harlast = hars.at(hars.size() - 1);
   int powlast = pows.at(pows.size() - 1);
@@ -141,7 +161,7 @@ complex<double> GFW::RecursiveCorr(GFWCumulant* qpoi, GFWCumulant* qref, GFWCumu
   for (int i = harSize - 1; i >= 0; i--) {
     // checking if current configuration is a permutation of the next one.
     // Need to have more than 2 harmonics though, otherwise it doesn't make sense.
-    if (i > 2) {                                                          // only makes sense when we have more than two harmonics remaining
+    if (i > static_cast<int>(TwoParticleOrder)) {                         // only makes sense when we have more than two harmonics remaining
       if (hars.at(i) == hars.at(i - 1) && pows.at(i) == pows.at(i - 1)) { // if it is a permutation, then increase degeneracy and continue;
         lDegeneracy++;
         continue;
@@ -181,30 +201,30 @@ GFW::CorrConfig GFW::GetCorrelatorConfig(string config, string head, bool ptdif)
   // Then make sure we don't have any double-spaces:
   while (s_index(config, "  ") > -1)
     s_replace_all(config, "  ", " ");
-  vector<int> regs;
-  vector<int> hars;
+  std::vector<int> regs;
+  std::vector<int> hars;
   int sz1 = 0;
   int szend = 0;
   string ts, ts2;
   CorrConfig ReturnConfig;
   // Fetch region descriptor
   if (!s_tokenize(config, ts, szend, "{")) {
-    printf("Could not find any harmonics!\n");
+    LOGF(warning, "Could not find any harmonics!");
     return ReturnConfig;
   }
   szend = 0;
   int counter = 0;
   while (s_tokenize(config, ts, szend, "{")) {
     counter++;
-    ReturnConfig.Regs.push_back(vector<int>{});
-    ReturnConfig.Hars.push_back(vector<int>{});
+    ReturnConfig.Regs.push_back(std::vector<int>{});
+    ReturnConfig.Hars.push_back(std::vector<int>{});
     ReturnConfig.Overlap.push_back(-1); // initially, assume no overlap
     // Check if there's a particular pT bin I should be using here. If so, store it (otherwise, it's bin 0)
     int ptbin = -1;
     int sz2 = 0;
     if (s_contains(ts, "(")) {
       if (!s_contains(ts, ")")) {
-        printf("Missing \")\" in the configurator. Returning...\n");
+        LOGF(warning, "Missing \")\" in the configurator. Returning...");
         return ReturnConfig;
       }
       sz2 = s_index(ts, "(");
@@ -231,7 +251,7 @@ GFW::CorrConfig GFW::GetCorrelatorConfig(string config, string head, bool ptdif)
       if (ts2 == " " || ts2 == "")
         continue;
       if (ind < 0) {
-        printf("Could not find region named %s!\n", ts2.c_str());
+        LOGF(warning, "Could not find region named %s!", ts2.c_str());
         break;
       }
       if (!isOverlap)
@@ -253,7 +273,7 @@ GFW::CorrConfig GFW::GetCorrelatorConfig(string config, string head, bool ptdif)
   return ReturnConfig;
 };
 
-complex<double> GFW::Calculate(int poi, int ref, vector<int> hars, int ptbin)
+complex<double> GFW::Calculate(int poi, int ref, std::vector<int> hars, int ptbin)
 {
   GFWCumulant* qref = &fCumulants.at(ref);
   GFWCumulant* qpoi = &fCumulants.at(poi);
@@ -305,13 +325,13 @@ complex<double> GFW::Calculate(CorrConfig corconf, int ptbin, bool SetHarmsToZer
   }
   return retval;
 };
-vector<pair<int, vector<int>>> GFW::GetHarmonicsSingleConfig(const CorrConfig& incfg)
+std::vector<pair<int, std::vector<int>>> GFW::GetHarmonicsSingleConfig(const CorrConfig& incfg)
 {
-  vector<pair<int, vector<int>>> retPair;
+  std::vector<pair<int, std::vector<int>>> retPair;
   for (int iR = 0; iR < static_cast<int>(incfg.Regs.size()); iR++) {
     if (static_cast<int>(incfg.Regs[iR].size()) > 1) {
-      retPair.push_back(make_pair(incfg.Regs[iR][0], vector<int>{incfg.Hars[iR][0]})); // If we have a PoI, then it comes with the first harmonic
-      retPair.push_back(make_pair(incfg.Regs[iR][1], incfg.Hars[iR]));                 // Then the second is ref. with full harmonics
+      retPair.push_back(make_pair(incfg.Regs[iR][0], std::vector<int>{incfg.Hars[iR][0]})); // If we have a PoI, then it comes with the first harmonic
+      retPair.push_back(make_pair(incfg.Regs[iR][1], incfg.Hars[iR]));                      // Then the second is ref. with full harmonics
     } else {
       retPair.push_back(make_pair(incfg.Regs[iR][0], incfg.Hars[iR])); // Otherwise, it's only ref with all harmonics
     }
@@ -322,7 +342,7 @@ vector<pair<int, vector<int>>> GFW::GetHarmonicsSingleConfig(const CorrConfig& i
 };
 void GFW::InitializePowerArrays()
 {
-  vector<vector<vector<int>>> harSets(static_cast<int>(fRegions.size()));
+  std::vector<std::vector<std::vector<int>>> harSets(static_cast<int>(fRegions.size()));
   for (const CorrConfig& lConf : fListOfCFGs) {
     auto HarPerReg = GetHarmonicsSingleConfig(lConf);
     for (const auto& oneHar : HarPerReg)
@@ -332,13 +352,13 @@ void GFW::InitializePowerArrays()
   for (int i = 0; i < static_cast<int>(harSets.size()); i++) {
     if (fRegions[i].powsDefined)
       continue; // Only do if powers have not been externally defined
-    vector<int> powerArray = GFWPowerArray::GetPowerArray(harSets[i]);
+    std::vector<int> powerArray = GFWPowerArray::GetPowerArray(harSets[i]);
     fRegions[i].Nhar = static_cast<int>(powerArray.size());
     fRegions[i].NparVec = powerArray;
     fRegions[i].powsDefined = true;
   }
 };
-complex<double> GFW::Calculate(int poi, vector<int> hars)
+complex<double> GFW::Calculate(int poi, std::vector<int> hars)
 {
   GFWCumulant* qpoi = &fCumulants.at(poi);
   return RecursiveCorr(qpoi, qpoi, qpoi, 0, hars);

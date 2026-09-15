@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file GFW.h/.cxx
+/// \file GFW.h
 /// \brief Class steers the initialization and calculation of n-particle correlations. Uses recursive function, all terms are calculated only once.
 /// \author Emil Gorm Nielsen (ack. V. Vislavicius), NBI, emil.gorm.nielsen@cern.ch
 
@@ -19,7 +19,6 @@
 #include "GFWCumulant.h"
 
 #include <complex>
-#include <cstdio>
 #include <string>
 #include <utility>
 #include <vector>
@@ -39,7 +38,7 @@ class GFW
     {
       return EtaMin < a.EtaMin;
     };
-    void PrintStructure() { printf("%s: eta [%f.. %f].", rName.c_str(), EtaMin, EtaMax); }
+    void PrintStructure();
   };
   struct CorrConfig {
     std::vector<std::vector<int>> Regs{};
@@ -50,6 +49,8 @@ class GFW
     std::string Head = "";
   };
   GFW();
+  GFW(const GFW&) = delete;
+  GFW& operator=(const GFW&) = delete;
   ~GFW();
   std::vector<Region> fRegions;
   std::vector<GFWCumulant> fCumulants;
