@@ -51,7 +51,6 @@
 
 #include <algorithm>
 #include <array>
-#include <chrono>
 #include <cmath>
 #include <concepts>
 #include <cstddef>
@@ -628,7 +627,9 @@ struct ConfigSelection {
   std::array<std::array<double, NEs<Selection>>, NEs<ParticleSpecies>> maxAbsNSigmaPid{};
 };
 
-std::optional<aod::mini_track::Code::type> encode(const ConfigSelection& configSelection, const bool isPvContributor, const double itsNCls, const double itsChi2NCls, const double tpcNCls, const double tpcChi2NCls, const double tpcNCrossedRows, const double tpcNClsSharedRatio, const std::array<double, NEs<DcaAxis>>& absNSigmaDca, const double pt, const double eta, const std::int32_t sign, const ParticleSpeciesAll particleSpeciesAll, const double absNSigmaPid) noexcept
+template <ParticleSpeciesAll ParticleSpeciesAllValue>
+  requires IsValidEnumValue<ParticleSpeciesAllValue>
+std::optional<aod::mini_track::Code::type> encode(const ConfigSelection& configSelection, const bool isPvContributor, const double itsNCls, const double itsChi2NCls, const double tpcNCls, const double tpcChi2NCls, const double tpcNCrossedRows, const double tpcNClsSharedRatio, const std::array<double, NEs<DcaAxis>>& absNSigmaDca, const double pt, const double eta, const std::int32_t sign, const double absNSigmaPid) noexcept
 {
   if (!std::isfinite(pt) || !std::isfinite(eta) || pt < RangePt[toI(RangeEdge::Min)] || RangePt[toI(RangeEdge::Max)] <= pt || eta < RangeEta[toI(RangeEdge::Min)] || RangeEta[toI(RangeEdge::Max)] <= eta) {
     return std::nullopt;
@@ -687,12 +688,12 @@ std::optional<aod::mini_track::Code::type> encode(const ConfigSelection& configS
   codeSpan *= NBinsEta;
   code += (sign > 0 ? toI(ChargeSpecies::Plus) : toI(ChargeSpecies::Minus)) * codeSpan;
   codeSpan *= NEs<ChargeSpecies>;
-  code += toI(particleSpeciesAll) * codeSpan;
+  code += toI(ParticleSpeciesAllValue) * codeSpan;
   codeSpan *= NEs<ParticleSpeciesAll>;
-  if (particleSpeciesAll != ParticleSpeciesAll::All) {
+  if constexpr (ParticleSpeciesAllValue != ParticleSpeciesAll::All) {
     // clang-format v20.1.3
     // clang-format off
-    const std::int32_t statePid{GetState.template operator()<RangeEdge::Max>(absNSigmaPid, configSelection.maxAbsNSigmaPid[toI(getValue<ParticleSpecies>(particleSpeciesAll))])};
+    const std::int32_t statePid{GetState.template operator()<RangeEdge::Max>(absNSigmaPid, configSelection.maxAbsNSigmaPid[toI(getValue<ParticleSpecies>(ParticleSpeciesAllValue))])};
     // clang-format on
     if (statePid < 0) {
       return std::nullopt;
@@ -707,7 +708,9 @@ namespace mini_mc_particle_codec
 {
 static_assert(static_cast<std::uint64_t>(mini_track_codec::NBinsPt) * mini_track_codec::NBinsEta * NEs<ChargeSpecies> * NEs<ParticleSpecies> <= static_cast<std::uint64_t>(std::numeric_limits<aod::mini_mc_particle::Code::type>::max()) + 1);
 
-std::optional<aod::mini_mc_particle::Code::type> encode(const double pt, const double eta, const std::int32_t sign, const ParticleSpecies particleSpecies) noexcept
+template <ParticleSpecies ParticleSpeciesValue>
+  requires IsValidEnumValue<ParticleSpeciesValue>
+std::optional<aod::mini_mc_particle::Code::type> encode(const double pt, const double eta, const std::int32_t sign) noexcept
 {
   if (!std::isfinite(pt) || !std::isfinite(eta) || pt < mini_track_codec::RangePt[toI(RangeEdge::Min)] || mini_track_codec::RangePt[toI(RangeEdge::Max)] <= pt || eta < mini_track_codec::RangeEta[toI(RangeEdge::Min)] || mini_track_codec::RangeEta[toI(RangeEdge::Max)] <= eta) {
     return std::nullopt;
@@ -729,7 +732,7 @@ std::optional<aod::mini_mc_particle::Code::type> encode(const double pt, const d
   codeSpan *= mini_track_codec::NBinsEta;
   code += (sign > 0 ? toI(ChargeSpecies::Plus) : toI(ChargeSpecies::Minus)) * codeSpan;
   codeSpan *= NEs<ChargeSpecies>;
-  code += toI(particleSpecies) * codeSpan;
+  code += toI(ParticleSpeciesValue) * codeSpan;
   return code;
 }
 } // namespace mini_mc_particle_codec
@@ -919,9 +922,9 @@ struct PartNumFluc {
 
   struct : ConfigurableGroup {
     std::string prefix{"cgCcdb"};
-    Configurable<std::string> cfgCcdbUrl{"cfgCcdbUrl", "http://ccdb-test.cern.ch:8080", "Url of CCDB"};
-    Configurable<std::string> cfgCcdbPath{"cfgCcdbPath", "Users/f/fasi/test", "Path in CCDB"};
-    Configurable<std::int64_t> cfgCcdbTimestampLatest{"cfgCcdbTimestampLatest", std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now()).time_since_epoch().count(), "Latest timestamp in CCDB"};
+    Configurable<std::string> cfgUrl{"cfgUrl", "http://ccdb-test.cern.ch:8080", "Url of CCDB"};
+    Configurable<std::string> cfgPath{"cfgPath", "Users/f/fasi/test", "Path in CCDB"};
+    Configurable<std::int64_t> cfgTimestampLatest{"cfgTimestampLatest", -1, "Latest timestamp in CCDB"};
   } cgCcdb{};
 
   struct : ConfigurableGroup {
@@ -948,12 +951,12 @@ struct PartNumFluc {
     Configurable<bool> cfgFlagRejectionRunBadMc{"cfgFlagRejectionRunBadMc", false, "MC bad run rejection flag"};
     Configurable<std::string> cfgLabelFlagsRct{"cfgLabelFlagsRct", "CBT_hadronPID", "RCT flags label"};
     Configurable<LabeledArray<std::int32_t>> cfgFlagsRct{"cfgFlagsRct", {std::array<std::int32_t, 3>{0, 1, 1}.data(), 3, {"ZDC", "Acceptance", "Table"}}, "RCT flags"};
-    Configurable<std::uint64_t> cfgBitsSelectionEvent{"cfgBitsSelectionEvent", std::uint64_t{0b00000000000001000000000000000000000000000000000000}, "Event selection bits"};
-    Configurable<bool> cfgFlagInelEvent{"cfgFlagInelEvent", true, "Flag of requiring inelastic event"};
-    Configurable<bool> cfgFlagInelEventMc{"cfgFlagInelEventMc", false, "Flag of requiring inelastic MC event"};
+    Configurable<std::uint64_t> cfgBitsSelection{"cfgBitsSelection", std::uint64_t{0b00000000000001000000000000000000000000000000000000}, "Event selection bits"};
+    Configurable<bool> cfgFlagInel{"cfgFlagInel", true, "Flag of requiring INEL > 0"};
+    Configurable<bool> cfgFlagInelMc{"cfgFlagInelMc", true, "Flag of requiring MC INEL > 0"};
     Configurable<double> cfgCutMaxAbsVz{"cfgCutMaxAbsVz", 8., "Maximum absolute z-vertex position (cm)"};
     Configurable<double> cfgCutMaxAbsVzMc{"cfgCutMaxAbsVzMc", 8., "Maximum absolute MC z-vertex position (cm)"};
-    Configurable<std::int32_t> cfgCutMaxOccupancy{"cfgCutMaxOccupancy", 0, "Maximum occupancy"};
+    Configurable<std::int32_t> cfgCutMaxOccupancy{"cfgCutMaxOccupancy", -1, "Maximum occupancy"};
     Configurable<std::int32_t> cfgCutMinDeviationNPvContributors{"cfgCutMinDeviationNPvContributors", -4, "Minimum nPvContributors deviation from nGlobalTracks"};
     Configurable<std::int32_t> cfgIndexDefinitionCentrality{"cfgIndexDefinitionCentrality", 2, "Centrality definition index"};
     Configurable<bool> cfgFlagDefinitionCentralitySameQa{"cfgFlagDefinitionCentralitySameQa", false, "Flag of using the same centrality definition for QA"};
@@ -963,7 +966,7 @@ struct PartNumFluc {
     Configurable<std::int32_t> cfgNSubgroups{"cfgNSubgroups", 20, "Number of subgroups in fluctuation calculation"};
     Configurable<double> cfgFactorStorageMiniTable{"cfgFactorStorageMiniTable", 1., "Mini table storage inverse probability factor"};
     Configurable<bool> cfgFlagSingleCollisionMc{"cfgFlagSingleCollisionMc", false, "Flag of requiring exactly single collision of MC collision"};
-    Configurable<bool> cfgFlagMcCollisionVz{"cfgFlagMcCollisionVz", false, "Flag of using z-vertex position of MC collision"};
+    Configurable<bool> cfgFlagMcCollisionVz{"cfgFlagMcCollisionVz", true, "Flag of using z-vertex position of MC collision"};
   } cgEvent{};
 
   struct : ConfigurableGroup {
@@ -1138,12 +1141,12 @@ struct PartNumFluc {
 
     rctFlagsChecker.init(cgEvent.cfgLabelFlagsRct.value, static_cast<bool>(cgEvent.cfgFlagsRct.value.get("ZDC")), static_cast<bool>(cgEvent.cfgFlagsRct.value.get("Acceptance")), static_cast<bool>(cgEvent.cfgFlagsRct.value.get("Table")));
 
-    ccdb->setURL(cgCcdb.cfgCcdbUrl.value);
+    ccdb->setURL(cgCcdb.cfgUrl.value);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(true);
-    if (cgCcdb.cfgCcdbTimestampLatest.value >= 0) {
-      ccdb->setCreatedNotAfter(cgCcdb.cfgCcdbTimestampLatest.value);
+    if (cgCcdb.cfgTimestampLatest.value >= 0) {
+      ccdb->setCreatedNotAfter(cgCcdb.cfgTimestampLatest.value);
     }
 
     readCcdb<true>();
@@ -1188,11 +1191,11 @@ struct PartNumFluc {
       LOG(info) << "Enabling RCT flag: table";
     }
 
-    if ((cgEvent.cfgBitsSelectionEvent.value & ((std::uint64_t{1} << aod::evsel::EventSelectionFlags::kNsel) - 1)) == 0) {
+    if ((cgEvent.cfgBitsSelection.value & ((std::uint64_t{1} << aod::evsel::EventSelectionFlags::kNsel) - 1)) == 0) {
       LOG(info) << "No event selection bit enabled.";
     } else {
       for (std::int32_t const& iBit : std::views::iota(0, aod::evsel::EventSelectionFlags::kNsel)) {
-        if (static_cast<bool>((cgEvent.cfgBitsSelectionEvent.value >> iBit) & 1)) {
+        if (static_cast<bool>((cgEvent.cfgBitsSelection.value >> iBit) & 1)) {
           LOG(info) << "Enabling event selection bit: " << aod::evsel::selectionLabels[iBit];
         }
       }
@@ -1212,7 +1215,7 @@ struct PartNumFluc {
 
     hrCounter.add("hNEvents", ";;No. of Events", {HistType::kTH1D, {{NEs<EventSelection> + aod::evsel::EventSelectionFlags::kNsel, -0.5, static_cast<double>(NEs<EventSelection> + aod::evsel::EventSelectionFlags::kNsel) - 0.5, "Selection"}}});
     if (doProcessMc.value) {
-      hrCounter.add("hNMcEvents", ";;No. of MC Events", {HistType::kTH1D, {{NEs<McEventSelection>, -0.5, static_cast<double>(NEs<McEventSelection>) - 0.5, "Selection"}}});
+      hrCounter.add("hNEventsMc", ";;No. of MC Events", {HistType::kTH1D, {{NEs<McEventSelection>, -0.5, static_cast<double>(NEs<McEventSelection>) - 0.5, "Selection"}}});
     }
 
     if (cgAnalysis.cfgFlagQaRun.value) {
@@ -1397,6 +1400,8 @@ struct PartNumFluc {
         const double maxAbsVz{std::ceil(cgEvent.cfgFlagMcCollisionVz.value ? cgEvent.cfgCutMaxAbsVzMc.value : cgEvent.cfgCutMaxAbsVz.value)};
         const AxisSpec asCentrality{20, 0., 100., "Centrality (%)"};
 
+        hrQaMc.add("hNCollisionsPerMcCollision", "", {HistType::kTH1D, {{20, -0.5, 19.5, "No. of collisions per MC collision"}}});
+        hrQaMc.add("hCentralityNTracksPerMcParticle", "", {HistType::kTHnSparseF, {asCentrality, {20, -0.5, 19.5, "No. of tracks per MC particle"}}});
         hrQaMc.add("hCentralityVzMcDeltaVz", "", {HistType::kTHnSparseF, {asCentrality, {static_cast<std::int32_t>(maxAbsVz) * 20, -maxAbsVz, maxAbsVz, "#it{V}_{#it{z}}^{Gen} (cm)"}, {200, -0.2, 0.2, "#it{V}_{#it{z}}^{Rec}#minus#it{V}_{#it{z}}^{Gen} (cm)"}}});
         hrQaMc.add("hCentralityPtMcEtaMcDeltaPt", "", {HistType::kTHnSparseF, {asCentrality, {200, 0., 2., "#it{p}_{T}^{Gen} (GeV/#it{c})"}, {24, -1.2, 1.2, "#it{#eta}_{Gen}"}, {320, -0.8, 0.8, "#it{p}_{T}^{Rec}#minus#it{p}_{T}^{Gen} (GeV/#it{c})"}}});
         hrQaMc.add("hCentralityPtMcEtaMcDeltaEta", "", {HistType::kTHnSparseF, {asCentrality, {20, 0., 2., "#it{p}_{T}^{Gen} (GeV/#it{c})"}, {240, -1.2, 1.2, "#it{#eta}_{Gen}"}, {160, -0.4, 0.4, "#it{#eta}_{Rec}#minus#it{#eta}_{Gen}"}}});
@@ -1507,7 +1512,7 @@ struct PartNumFluc {
   void readCcdb()
   {
     if constexpr (DoInit) {
-      holderCcdb.lCcdb = ccdb->get<TList>(cgCcdb.cfgCcdbPath.value);
+      holderCcdb.lCcdb = ccdb->get<TList>(cgCcdb.cfgPath.value);
       if (!holderCcdb.lCcdb || holderCcdb.lCcdb->IsA() != TList::Class()) {
         LOG(fatal) << "Invalid CCDB object!";
       }
@@ -1602,7 +1607,7 @@ struct PartNumFluc {
 
         for (std::int32_t const& iPidStrategy : std::views::iota(0, NEs<PidStrategy>)) {
           for (std::int32_t const& iChargeSpecies : std::views::iota(0, NEs<ChargeSpecies>)) {
-            const std::string name{std::format("hsVzCentralityPtEtaEfficiency{}{}{}_runGroup{}", getName<PidStrategy>(iPidStrategy), getName<ParticleSpecies>(iParticleSpecies), getName<ChargeSpecies>(iChargeSpecies), runGroupIndex)};
+            const std::string name{std::format("hVzCentralityPtEtaEfficiency{}{}{}_runGroup{}", getName<PidStrategy>(iPidStrategy), getName<ParticleSpecies>(iParticleSpecies), getName<ChargeSpecies>(iChargeSpecies), runGroupIndex)};
             const THnBase*& histogram{holderCcdb.hsVzCentralityPtEtaEfficiency[iPidStrategy][iParticleSpecies][iChargeSpecies]};
             histogram = dynamic_cast<const THnBase*>(lRunGroup->FindObject(name.c_str()));
             if (!histogram || histogram->GetNdimensions() != HolderCcdb::NDimensionsEfficiency) {
@@ -2010,11 +2015,6 @@ struct PartNumFluc {
         return signTrack;
       }
     }(holderMcParticle.charge, holderTrack.sign)};
-    if constexpr (DataModeValue == DataMode::McMcParticle) {
-      if (chargeSign == 0) {
-        return;
-      }
-    }
 
     const auto fillByChargeSpecies{
       [this]<ChargeSpecies ChargeSpeciesValue>
@@ -2149,11 +2149,6 @@ struct PartNumFluc {
         return signTrack;
       }
     }(holderMcParticle.charge, holderTrack.sign)};
-    if constexpr (DataModeValue == DataMode::McMcParticle) {
-      if (chargeSign == 0) {
-        return;
-      }
-    }
 
     const bool doUseMcParticleMomentum{[](const bool flagMcParticleMomentum) constexpr -> bool {
       if constexpr (DataModeValue == DataMode::McMcParticle) {
@@ -2311,158 +2306,8 @@ struct PartNumFluc {
     return true;
   }
 
-  template <ParticleNumber ParticleNumberValue, typename MPs, typename Ts>
-    requires IsValidEnumValue<ParticleNumberValue>
-  void fillMiniTableMc(const MPs& mcParticles, const Ts& tracks, const bool isGoodNPvContributors)
-  {
-    if (!static_cast<bool>(cgAnalysis.cfgFlagsStorageMiniTable.value.get(toI(ParticleNumberValue)))) {
-      return;
-    }
-
-    const std::optional<aod::mini_collision::Code::type> codeCollision{mini_collision_codec::encode(cgEvent.cfgFlagMcCollisionVz.value ? holderMcEvent.vz : holderEvent.vz, holderEvent.centrality, isGoodNPvContributors)};
-    if (!codeCollision.has_value()) {
-      return;
-    }
-
-    miniCollision(*codeCollision);
-
-    for (const auto& mcParticle : mcParticles) {
-      initMcParticle(mcParticle);
-
-      if (mcParticle.isPhysicalPrimary()) {
-        const auto fillByParticleSpecies{
-          [this]<ParticleSpecies ParticleSpeciesValue>
-            requires IsValidEnumValue<ParticleSpeciesValue> && (getValue<ParticleSpeciesAll>(ParticleNumberValue) == ParticleSpeciesAll::All || getValue<ParticleSpeciesAll>(ParticleNumberValue) == getValue<ParticleSpeciesAll>(ParticleSpeciesValue))
-          () -> bool {
-            if (!isGoodMomentum<getValue<ParticleSpeciesAll>(ParticleSpeciesValue)>(true) || (holderMcParticle.charge > 0 ? !isPid<getValue<ParticleSpeciesAll>(ParticleSpeciesValue), ChargeSpecies::Plus>() : !isPid<getValue<ParticleSpeciesAll>(ParticleSpeciesValue), ChargeSpecies::Minus>())) {
-              return false;
-            }
-
-            const std::optional<aod::mini_mc_particle::Code::type> codeMcParticle{mini_mc_particle_codec::encode(holderMcParticle.pt, holderMcParticle.eta, holderMcParticle.charge, ParticleSpeciesValue)};
-            if (codeMcParticle.has_value()) {
-              miniMcParticle(miniCollision.lastIndex(), *codeMcParticle);
-            }
-            return true;
-          }};
-
-        if constexpr (ParticleNumberValue == ParticleNumber::Charge) {
-          if (!fillByParticleSpecies.template operator()<ParticleSpecies::Pion>() && !fillByParticleSpecies.template operator()<ParticleSpecies::Kaon>()) {
-            fillByParticleSpecies.template operator()<ParticleSpecies::Proton>();
-          }
-        } else {
-          fillByParticleSpecies.template operator()<getValue<ParticleSpecies>(getValue<ParticleSpeciesAll>(ParticleNumberValue))>();
-        }
-      }
-
-      if (!cgTrack.cfgFlagMcParticlePhysicalPrimary.value || mcParticle.isPhysicalPrimary()) {
-        const auto& tracksMatched{tracks.sliceBy(presliceTracksPerMcParticle, mcParticle.globalIndex())};
-        for (const auto& track : tracksMatched) {
-          if (!setTrack<true>(track) || !(cgTrack.cfgCutMinTpcChi2NCls.value < track.tpcChi2NCl()) || !(track.tpcCrossedRowsOverFindableCls() > cgTrack.cfgCutMinTpcNCrossedRowsRatio.value)) {
-            continue;
-          }
-
-          const auto fillByParticleSpeciesAll{
-            [this, &track]<ParticleSpeciesAll ParticleSpeciesAllValue>
-              requires IsValidEnumValue<ParticleSpeciesAllValue> && (ParticleSpeciesAllValue != ParticleSpeciesAll::All)
-            () -> bool {
-              const bool doUseMcParticleMomentum{cgTrack.cfgFlagMcParticleMomentum.value};
-              if (!isGoodMomentum<ParticleSpeciesAllValue>(doUseMcParticleMomentum) || (holderTrack.sign > 0 ? !isPid<ParticleSpeciesAllValue, ChargeSpecies::Plus>() : !isPid<ParticleSpeciesAllValue, ChargeSpecies::Minus>())) {
-                return false;
-              }
-
-              constexpr std::int32_t ParticleSpeciesIndex{toI(getValue<ParticleSpecies>(ParticleSpeciesAllValue))};
-              const double pt{doUseMcParticleMomentum ? holderMcParticle.pt : holderTrack.pt};
-              const bool doUseTofPid{pt >= cgTrack.cfgThresholdsPtTofPid.value.get(ParticleSpeciesIndex)};
-              if (!(doUseTofPid ? isPid<getValue<PidStrategyAll>(PidStrategy::TpcTof), ParticleSpeciesAllValue, Selection::Loose>(cgTrack.cfgFlagRejectionOthers.value) : isPid<getValue<PidStrategyAll>(PidStrategy::Tpc), ParticleSpeciesAllValue, Selection::Loose>(cgTrack.cfgFlagRejectionOthers.value))) {
-                return false;
-              }
-
-              const std::optional<aod::mini_track::Code::type> codeTrack{mini_track_codec::encode(*configSelection, track.isPVContributor(), track.itsNCls(), track.itsChi2NCl(), track.tpcNClsFound(), track.tpcChi2NCl(), track.tpcNClsCrossedRows(), track.tpcFractionSharedCls(), {getAbsNSigmaDca<DcaAxis::Xy>(), getAbsNSigmaDca<DcaAxis::Z>()}, pt, doUseMcParticleMomentum ? holderMcParticle.eta : holderTrack.eta, holderTrack.sign, ParticleSpeciesAllValue, doUseTofPid ? std::abs(holderTrack.getNSigmaPidCombined(ParticleSpeciesIndex)) : std::abs(holderTrack.nSigmaPid[toI(Detector::Tpc)][ParticleSpeciesIndex]))};
-              if (codeTrack.has_value()) {
-                miniTrack(miniCollision.lastIndex(), *codeTrack);
-              }
-              return true;
-            }};
-
-          if constexpr (ParticleNumberValue == ParticleNumber::Charge) {
-            if (!fillByParticleSpeciesAll.template operator()<ParticleSpeciesAll::Pion>() && !fillByParticleSpeciesAll.template operator()<ParticleSpeciesAll::Kaon>()) {
-              fillByParticleSpeciesAll.template operator()<ParticleSpeciesAll::Proton>();
-            }
-          } else {
-            fillByParticleSpeciesAll.template operator()<getValue<ParticleSpeciesAll>(ParticleNumberValue)>();
-          }
-        }
-      }
-    }
-  }
-
-  template <ParticleNumber ParticleNumberValue, typename T>
-    requires IsValidEnumValue<ParticleNumberValue>
-  void fillMiniTableRaw(const T& tracks, const bool isGoodNPvContributors)
-  {
-    if (!static_cast<bool>(cgAnalysis.cfgFlagsStorageMiniTable.value.get(toI(ParticleNumberValue)))) {
-      return;
-    }
-
-    const std::optional<aod::mini_collision::Code::type> codeCollision{mini_collision_codec::encode(holderEvent.vz, holderEvent.centrality, isGoodNPvContributors)};
-    if (!codeCollision.has_value()) {
-      return;
-    }
-
-    miniCollision(*codeCollision);
-
-    for (const auto& track : tracks) {
-      if (!setTrack<true>(track) || !(cgTrack.cfgCutMinTpcChi2NCls.value < track.tpcChi2NCl()) || !(track.tpcCrossedRowsOverFindableCls() > cgTrack.cfgCutMinTpcNCrossedRowsRatio.value)) {
-        continue;
-      }
-
-      const auto fill{
-        [this, &track](const ParticleSpeciesAll particleSpeciesAll, const double absNSigmaPid) -> void {
-          const std::optional<aod::mini_track::Code::type> codeTrack{mini_track_codec::encode(*configSelection, track.isPVContributor(), track.itsNCls(), track.itsChi2NCl(), track.tpcNClsFound(), track.tpcChi2NCl(), track.tpcNClsCrossedRows(), track.tpcFractionSharedCls(), {getAbsNSigmaDca<DcaAxis::Xy>(), getAbsNSigmaDca<DcaAxis::Z>()}, holderTrack.pt, holderTrack.eta, holderTrack.sign, particleSpeciesAll, absNSigmaPid)};
-          if (codeTrack.has_value()) {
-            miniTrack(miniCollision.lastIndex(), *codeTrack);
-          }
-        }};
-      const auto fillByParticleSpeciesAll{
-        [this, &fill]<ParticleSpeciesAll ParticleSpeciesAllValue>
-          requires IsValidEnumValue<ParticleSpeciesAllValue>
-        () -> bool {
-          if constexpr (ParticleSpeciesAllValue == ParticleSpeciesAll::All) {
-            if (!isGoodMomentum<getValue<ParticleSpeciesAll>(ParticleNumberValue)>(false)) {
-              return false;
-            }
-
-            fill(ParticleSpeciesAll::All, 0.);
-          } else {
-            if (!isGoodMomentum<ParticleSpeciesAllValue>(false)) {
-              return false;
-            }
-
-            constexpr std::int32_t ParticleSpeciesIndex{toI(getValue<ParticleSpecies>(ParticleSpeciesAllValue))};
-            const bool doUseTofPid{holderTrack.pt >= cgTrack.cfgThresholdsPtTofPid.value.get(ParticleSpeciesIndex)};
-            if (!(doUseTofPid ? isPid<getValue<PidStrategyAll>(PidStrategy::TpcTof), ParticleSpeciesAllValue, Selection::Loose>(cgTrack.cfgFlagRejectionOthers.value) : isPid<getValue<PidStrategyAll>(PidStrategy::Tpc), ParticleSpeciesAllValue, Selection::Loose>(cgTrack.cfgFlagRejectionOthers.value))) {
-              return false;
-            }
-
-            fill(ParticleSpeciesAllValue, doUseTofPid ? std::abs(holderTrack.getNSigmaPidCombined(ParticleSpeciesIndex)) : std::abs(holderTrack.nSigmaPid[toI(Detector::Tpc)][ParticleSpeciesIndex]));
-          }
-          return true;
-        }};
-
-      if constexpr (ParticleNumberValue == ParticleNumber::Charge) {
-        if (!fillByParticleSpeciesAll.template operator()<ParticleSpeciesAll::Pion>() && !fillByParticleSpeciesAll.template operator()<ParticleSpeciesAll::Kaon>() && !fillByParticleSpeciesAll.template operator()<ParticleSpeciesAll::Proton>()) {
-          fillByParticleSpeciesAll.template operator()<ParticleSpeciesAll::All>();
-        }
-      } else {
-        if (!fillByParticleSpeciesAll.template operator()<getValue<ParticleSpeciesAll>(ParticleNumberValue)>()) {
-          fillByParticleSpeciesAll.template operator()<ParticleSpeciesAll::All>();
-        }
-      }
-    }
-  }
-
   template <typename MP>
-  void initMcParticle(const MP& mcParticle)
+  bool initMcParticle(const MP& mcParticle)
   {
     holderMcParticle.clear();
     holderMcParticle.pdgCode = mcParticle.pdgCode();
@@ -2478,8 +2323,15 @@ struct PartNumFluc {
           break;
       }
     }
+
+    if (holderMcParticle.charge == 0) {
+      return false;
+    }
+
     holderMcParticle.pt = mcParticle.pt();
     holderMcParticle.eta = mcParticle.eta();
+
+    return true;
   }
 
   template <bool DoInitEvent, typename T>
@@ -2551,6 +2403,160 @@ struct PartNumFluc {
     return true;
   }
 
+  template <ParticleNumber ParticleNumberValue, typename MPs, typename Ts>
+    requires IsValidEnumValue<ParticleNumberValue>
+  void fillMiniTableMc(const MPs& mcParticles, const Ts& tracks, const bool isGoodNPvContributors)
+  {
+    if (!static_cast<bool>(cgAnalysis.cfgFlagsStorageMiniTable.value.get(toI(ParticleNumberValue)))) {
+      return;
+    }
+
+    const std::optional<aod::mini_collision::Code::type> codeCollision{mini_collision_codec::encode(cgEvent.cfgFlagMcCollisionVz.value ? holderMcEvent.vz : holderEvent.vz, holderEvent.centrality, isGoodNPvContributors)};
+    if (!codeCollision.has_value()) {
+      return;
+    }
+
+    miniCollision(*codeCollision);
+
+    for (const auto& mcParticle : mcParticles) {
+      if (!initMcParticle(mcParticle)) {
+        continue;
+      }
+
+      if (mcParticle.isPhysicalPrimary()) {
+        const auto fillByParticleSpecies{
+          [this]<ParticleSpecies ParticleSpeciesValue>
+            requires IsValidEnumValue<ParticleSpeciesValue> && (getValue<ParticleSpeciesAll>(ParticleNumberValue) == ParticleSpeciesAll::All || getValue<ParticleSpeciesAll>(ParticleNumberValue) == getValue<ParticleSpeciesAll>(ParticleSpeciesValue))
+          () -> bool {
+            if (!isGoodMomentum<getValue<ParticleSpeciesAll>(ParticleSpeciesValue)>(true) || (holderMcParticle.charge > 0 ? !isPid<getValue<ParticleSpeciesAll>(ParticleSpeciesValue), ChargeSpecies::Plus>() : !isPid<getValue<ParticleSpeciesAll>(ParticleSpeciesValue), ChargeSpecies::Minus>())) {
+              return false;
+            }
+
+            const std::optional<aod::mini_mc_particle::Code::type> codeMcParticle{mini_mc_particle_codec::encode<ParticleSpeciesValue>(holderMcParticle.pt, holderMcParticle.eta, holderMcParticle.charge)};
+            if (codeMcParticle.has_value()) {
+              miniMcParticle(miniCollision.lastIndex(), *codeMcParticle);
+            }
+            return true;
+          }};
+
+        if constexpr (ParticleNumberValue == ParticleNumber::Charge) {
+          if (!fillByParticleSpecies.template operator()<ParticleSpecies::Pion>() && !fillByParticleSpecies.template operator()<ParticleSpecies::Kaon>()) {
+            fillByParticleSpecies.template operator()<ParticleSpecies::Proton>();
+          }
+        } else {
+          fillByParticleSpecies.template operator()<getValue<ParticleSpecies>(getValue<ParticleSpeciesAll>(ParticleNumberValue))>();
+        }
+      }
+
+      if (!cgTrack.cfgFlagMcParticlePhysicalPrimary.value || mcParticle.isPhysicalPrimary()) {
+        const auto& tracksMatched{tracks.sliceBy(presliceTracksPerMcParticle, mcParticle.globalIndex())};
+        for (const auto& track : tracksMatched) {
+          if (!setTrack<true>(track) || !(cgTrack.cfgCutMinTpcChi2NCls.value < track.tpcChi2NCl()) || !(track.tpcCrossedRowsOverFindableCls() > cgTrack.cfgCutMinTpcNCrossedRowsRatio.value)) {
+            continue;
+          }
+
+          const auto fillByParticleSpeciesAll{
+            [this, &track]<ParticleSpeciesAll ParticleSpeciesAllValue>
+              requires IsValidEnumValue<ParticleSpeciesAllValue> && (ParticleSpeciesAllValue != ParticleSpeciesAll::All)
+            () -> bool {
+              const bool doUseMcParticleMomentum{cgTrack.cfgFlagMcParticleMomentum.value};
+              if (!isGoodMomentum<ParticleSpeciesAllValue>(doUseMcParticleMomentum) || (holderTrack.sign > 0 ? !isPid<ParticleSpeciesAllValue, ChargeSpecies::Plus>() : !isPid<ParticleSpeciesAllValue, ChargeSpecies::Minus>())) {
+                return false;
+              }
+
+              constexpr std::int32_t ParticleSpeciesIndex{toI(getValue<ParticleSpecies>(ParticleSpeciesAllValue))};
+              const double pt{doUseMcParticleMomentum ? holderMcParticle.pt : holderTrack.pt};
+              const bool doUseTofPid{pt >= cgTrack.cfgThresholdsPtTofPid.value.get(ParticleSpeciesIndex)};
+              if (!(doUseTofPid ? isPid<getValue<PidStrategyAll>(PidStrategy::TpcTof), ParticleSpeciesAllValue, Selection::Loose>(cgTrack.cfgFlagRejectionOthers.value) : isPid<getValue<PidStrategyAll>(PidStrategy::Tpc), ParticleSpeciesAllValue, Selection::Loose>(cgTrack.cfgFlagRejectionOthers.value))) {
+                return false;
+              }
+
+              const std::optional<aod::mini_track::Code::type> codeTrack{mini_track_codec::encode<ParticleSpeciesAllValue>(*configSelection, track.isPVContributor(), track.itsNCls(), track.itsChi2NCl(), track.tpcNClsFound(), track.tpcChi2NCl(), track.tpcNClsCrossedRows(), track.tpcFractionSharedCls(), {getAbsNSigmaDca<DcaAxis::Xy>(), getAbsNSigmaDca<DcaAxis::Z>()}, pt, doUseMcParticleMomentum ? holderMcParticle.eta : holderTrack.eta, holderTrack.sign, doUseTofPid ? std::abs(holderTrack.getNSigmaPidCombined(ParticleSpeciesIndex)) : std::abs(holderTrack.nSigmaPid[toI(Detector::Tpc)][ParticleSpeciesIndex]))};
+              if (codeTrack.has_value()) {
+                miniTrack(miniCollision.lastIndex(), *codeTrack);
+              }
+              return true;
+            }};
+
+          if constexpr (ParticleNumberValue == ParticleNumber::Charge) {
+            if (!fillByParticleSpeciesAll.template operator()<ParticleSpeciesAll::Pion>() && !fillByParticleSpeciesAll.template operator()<ParticleSpeciesAll::Kaon>()) {
+              fillByParticleSpeciesAll.template operator()<ParticleSpeciesAll::Proton>();
+            }
+          } else {
+            fillByParticleSpeciesAll.template operator()<getValue<ParticleSpeciesAll>(ParticleNumberValue)>();
+          }
+        }
+      }
+    }
+  }
+
+  template <ParticleNumber ParticleNumberValue, typename T>
+    requires IsValidEnumValue<ParticleNumberValue>
+  void fillMiniTableRaw(const T& tracks, const bool isGoodNPvContributors)
+  {
+    if (!static_cast<bool>(cgAnalysis.cfgFlagsStorageMiniTable.value.get(toI(ParticleNumberValue)))) {
+      return;
+    }
+
+    const std::optional<aod::mini_collision::Code::type> codeCollision{mini_collision_codec::encode(holderEvent.vz, holderEvent.centrality, isGoodNPvContributors)};
+    if (!codeCollision.has_value()) {
+      return;
+    }
+
+    miniCollision(*codeCollision);
+
+    for (const auto& track : tracks) {
+      if (!setTrack<true>(track) || !(cgTrack.cfgCutMinTpcChi2NCls.value < track.tpcChi2NCl()) || !(track.tpcCrossedRowsOverFindableCls() > cgTrack.cfgCutMinTpcNCrossedRowsRatio.value)) {
+        continue;
+      }
+
+      const auto fill{
+        [this, &track]<ParticleSpeciesAll ParticleSpeciesAllValue>
+          requires IsValidEnumValue<ParticleSpeciesAllValue>
+        (const double absNSigmaPid) -> void {
+          const std::optional<aod::mini_track::Code::type> codeTrack{mini_track_codec::encode<ParticleSpeciesAllValue>(*configSelection, track.isPVContributor(), track.itsNCls(), track.itsChi2NCl(), track.tpcNClsFound(), track.tpcChi2NCl(), track.tpcNClsCrossedRows(), track.tpcFractionSharedCls(), {getAbsNSigmaDca<DcaAxis::Xy>(), getAbsNSigmaDca<DcaAxis::Z>()}, holderTrack.pt, holderTrack.eta, holderTrack.sign, absNSigmaPid)};
+          if (codeTrack.has_value()) {
+            miniTrack(miniCollision.lastIndex(), *codeTrack);
+          }
+        }};
+      const auto fillByParticleSpeciesAll{
+        [this, &fill]<ParticleSpeciesAll ParticleSpeciesAllValue>
+          requires IsValidEnumValue<ParticleSpeciesAllValue>
+        () -> bool {
+          if constexpr (ParticleSpeciesAllValue == ParticleSpeciesAll::All) {
+            if (!isGoodMomentum<getValue<ParticleSpeciesAll>(ParticleNumberValue)>(false)) {
+              return false;
+            }
+
+            fill.template operator()<ParticleSpeciesAll::All>(0.);
+          } else {
+            if (!isGoodMomentum<ParticleSpeciesAllValue>(false)) {
+              return false;
+            }
+
+            constexpr std::int32_t ParticleSpeciesIndex{toI(getValue<ParticleSpecies>(ParticleSpeciesAllValue))};
+            const bool doUseTofPid{holderTrack.pt >= cgTrack.cfgThresholdsPtTofPid.value.get(ParticleSpeciesIndex)};
+            if (!(doUseTofPid ? isPid<getValue<PidStrategyAll>(PidStrategy::TpcTof), ParticleSpeciesAllValue, Selection::Loose>(cgTrack.cfgFlagRejectionOthers.value) : isPid<getValue<PidStrategyAll>(PidStrategy::Tpc), ParticleSpeciesAllValue, Selection::Loose>(cgTrack.cfgFlagRejectionOthers.value))) {
+              return false;
+            }
+
+            fill.template operator()<ParticleSpeciesAllValue>(doUseTofPid ? std::abs(holderTrack.getNSigmaPidCombined(ParticleSpeciesIndex)) : std::abs(holderTrack.nSigmaPid[toI(Detector::Tpc)][ParticleSpeciesIndex]));
+          }
+          return true;
+        }};
+
+      if constexpr (ParticleNumberValue == ParticleNumber::Charge) {
+        if (!fillByParticleSpeciesAll.template operator()<ParticleSpeciesAll::Pion>() && !fillByParticleSpeciesAll.template operator()<ParticleSpeciesAll::Kaon>() && !fillByParticleSpeciesAll.template operator()<ParticleSpeciesAll::Proton>()) {
+          fillByParticleSpeciesAll.template operator()<ParticleSpeciesAll::All>();
+        }
+      } else {
+        if (!fillByParticleSpeciesAll.template operator()<getValue<ParticleSpeciesAll>(ParticleNumberValue)>()) {
+          fillByParticleSpeciesAll.template operator()<ParticleSpeciesAll::All>();
+        }
+      }
+    }
+  }
+
   template <typename MC>
   McEventSelection initMcEvent(const MC& mcCollision)
   {
@@ -2559,18 +2565,22 @@ struct PartNumFluc {
 
     const auto fillMcEventSelection{
       [this](const McEventSelection selection) -> McEventSelection {
-        hrCounter.fill(C_CS("hNMcEvents"), toI(selection));
+        hrCounter.fill(C_CS("hNEventsMc"), toI(selection));
         return selection;
       }};
 
     fillMcEventSelection(McEventSelection::All);
 
-    if (cgEvent.cfgFlagInelEventMc.value && !mcCollision.isInelGt0()) {
+    if (cgEvent.cfgFlagInelMc.value && !mcCollision.isInelGt0()) {
       return fillMcEventSelection(McEventSelection::Inel);
     }
 
     if (!(std::abs(holderMcEvent.vz) < cgEvent.cfgCutMaxAbsVzMc.value)) {
       return fillMcEventSelection(McEventSelection::Vz);
+    }
+
+    if (cgAnalysis.cfgFlagQaMc.value) {
+      hrQaMc.fill(C_CS("hNCollisionsPerMcCollision"), mcCollision.numRecoCollision());
     }
 
     if (cgEvent.cfgFlagSingleCollisionMc.value && mcCollision.numRecoCollision() != 1) {
@@ -2636,12 +2646,12 @@ struct PartNumFluc {
       return fillEventSelection(EventSelection::Rct);
     }
 
-    if (cgEvent.cfgFlagInelEvent.value && !collision.isInelGt0()) {
+    if (cgEvent.cfgFlagInel.value && !collision.isInelGt0()) {
       return fillEventSelection(EventSelection::Inel);
     }
 
     for (std::int32_t const& iBit : std::views::iota(0, aod::evsel::EventSelectionFlags::kNsel)) {
-      if (((cgEvent.cfgBitsSelectionEvent.value >> iBit) & 1) && !collision.selection_bit(iBit)) {
+      if (((cgEvent.cfgBitsSelection.value >> iBit) & 1) && !collision.selection_bit(iBit)) {
         return fillEventSelection(EventSelection::Bits, NEs<EventSelection> + iBit);
       }
     }
@@ -2659,7 +2669,7 @@ struct PartNumFluc {
       return fillEventSelection(EventSelection::Vz);
     }
 
-    if (cgEvent.cfgCutMaxOccupancy.value > 0) {
+    if (cgEvent.cfgCutMaxOccupancy.value >= 0) {
       const std::int32_t occupancy{collision.trackOccupancyInTimeRange()};
       if (occupancy < 0 || occupancy >= cgEvent.cfgCutMaxOccupancy.value) {
         return fillEventSelection(EventSelection::Occupancy);
@@ -2735,8 +2745,7 @@ struct PartNumFluc {
 
   void processMc(const soa::Filtered<aod::JoinedMcCollisions>::iterator& mcCollision, const aod::McParticles& mcParticles, const soa::SmallGroups<aod::JoinedCollisionsWithMc>& collisions, const soa::Filtered<aod::JoinedTracksWithMc>& tracksUngrouped, const aod::BCsWithTimestamps&)
   {
-    const McEventSelection mcEventSelection{initMcEvent(mcCollision)};
-    if (mcEventSelection != McEventSelection::Good) {
+    if (initMcEvent(mcCollision) != McEventSelection::Good) {
       return;
     }
 
@@ -2771,7 +2780,15 @@ struct PartNumFluc {
         }
 
         for (const auto& mcParticle : mcParticles) {
-          initMcParticle(mcParticle);
+          if (!initMcParticle(mcParticle)) {
+            continue;
+          }
+
+          const auto& tracksMatched{tracks.sliceBy(presliceTracksPerMcParticle, mcParticle.globalIndex())};
+
+          if (cgAnalysis.cfgFlagQaMc.value && (!cgTrack.cfgFlagMcParticlePhysicalPrimary.value || mcParticle.isPhysicalPrimary())) {
+            hrQaMc.fill(C_CS("hCentralityNTracksPerMcParticle"), holderEvent.centralityCalibration, tracksMatched.size());
+          }
 
           if (mcParticle.isPhysicalPrimary()) {
             if (doCalculationYield) {
@@ -2787,7 +2804,6 @@ struct PartNumFluc {
             }
           }
 
-          const auto& tracksMatched{tracks.sliceBy(presliceTracksPerMcParticle, mcParticle.globalIndex())};
           for (const auto& track : tracksMatched) {
             if (!initTrack<false>(track)) {
               continue;
