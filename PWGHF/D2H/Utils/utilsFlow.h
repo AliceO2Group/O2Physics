@@ -12,6 +12,7 @@
 /// \file utilsFlow.h
 /// \brief Utilities for flow analyses
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
+/// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Polytechnic University of Turin and INFN
 
 #ifndef PWGHF_D2H_UTILS_UTILSFLOW_H_
 #define PWGHF_D2H_UTILS_UTILSFLOW_H_
@@ -20,16 +21,16 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
-#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
-#include <Framework/AnalysisTask.h>
 #include <Framework/Logger.h>
 
 #include <array>
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <string>
 
-namespace o2::analysis
-{
-namespace hf_flow_utils
+namespace o2::analysis::hf_flow_utils
 {
 enum QvecEstimator { FV0A = 0,
                      FT0M,
@@ -67,7 +68,7 @@ class HfQVectorResoHelper
   }
 
   /// Get pointer to the full array
-  const std::array<float, 100>* getResoValues() const { return mResoValues; }
+  [[nodiscard]] const std::array<float, 100>* getResoValues() const { return mResoValues; }
 
   /// Direct array access with simple float return type
   float operator[](size_t index) const
@@ -339,8 +340,6 @@ std::array<float, 3> getEseQvec(TCollision const& collision, const int qvecEst)
   }
   return std::array<float, 3>{-999.f, -999.f, -999.f};
 }
-
-} // namespace hf_flow_utils
-} // namespace o2::analysis
+} // namespace o2::analysis::hf_flow_utils
 
 #endif // PWGHF_D2H_UTILS_UTILSFLOW_H_
