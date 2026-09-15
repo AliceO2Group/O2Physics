@@ -293,56 +293,56 @@ def main(config):
             hist_bin_title = f"bin # {ipt+1}; {pt_axis_title}#in ({pt_min}; {pt_max})"
 
             hist_bin_title_rawy = hist_bin_title if is_draw_title[PlotType.Rawy] else ""
-            canv_rawy, histos_rawy, leg_r = minimiser.plot_result(f"_pt_{pt_min}_to_{pt_max}", hist_bin_title_rawy)
+            canv_rawy, histos_rawy, _leg_r = minimiser.plot_result(f"_pt_{pt_min}_to_{pt_max}", hist_bin_title_rawy)
             output.cd()
             if is_save_to_root_file[ObjectToSave.Canvas]:
                 canv_rawy.Write()
             if is_save_to_root_file[ObjectToSave.RawYield]:
-                for _, hist in histos_rawy.items():
+                for _, hist in histos_rawy.values():
                     hist.Write()
             if is_save_canvas_as_macro[PlotType.Rawy]:
                 canv_rawy.SaveAs(f"canv_rawy_{ipt+1}.C")
 
             hist_bin_title_unc = hist_bin_title if is_draw_title[PlotType.Unc] else ""
-            canv_unc, histos_unc, leg_unc = minimiser.plot_uncertainties(f"_pt_{pt_min}_to_{pt_max}", hist_bin_title_unc)
+            canv_unc, histos_unc, _leg_unc = minimiser.plot_uncertainties(f"_pt_{pt_min}_to_{pt_max}", hist_bin_title_unc)
             output.cd()
             if is_save_to_root_file[ObjectToSave.Canvas]:
                 canv_unc.Write()
             if is_save_to_root_file[ObjectToSave.Uncertainty]:
-                for _, hist in histos_unc.items():
+                for _, hist in histos_unc.values():
                     hist.Write()
             if is_save_canvas_as_macro[PlotType.Unc]:
                 canv_unc.SaveAs(f"canv_unc_{ipt+1}.C")
 
             hist_bin_title_rel_unc = hist_bin_title if is_draw_title[PlotType.RelUnc] else ""
-            canv_rel_unc, histos_rel_unc, leg_rel_unc = minimiser.plot_relative_uncertainties(f"_pt_{pt_min}_to_{pt_max}", hist_bin_title_rel_unc)
+            canv_rel_unc, histos_rel_unc, _leg_rel_unc = minimiser.plot_relative_uncertainties(f"_pt_{pt_min}_to_{pt_max}", hist_bin_title_rel_unc)
             output.cd()
             if is_save_to_root_file[ObjectToSave.Canvas]:
                 canv_rel_unc.Write()
             if is_save_to_root_file[ObjectToSave.Uncertainty]:
-                for _, hist in histos_rel_unc.items():
+                for _, hist in histos_rel_unc.values():
                     hist.Write()
             if is_save_canvas_as_macro[PlotType.RelUnc]:
                 canv_rel_unc.SaveAs(f"canv_rel_unc_{ipt+1}.C")
 
             hist_bin_title_eff = hist_bin_title if is_draw_title[PlotType.Eff] else ""
-            canv_eff, histos_eff, leg_e = minimiser.plot_efficiencies(f"_pt_{pt_min}_to_{pt_max}", hist_bin_title_eff)
+            canv_eff, histos_eff, _leg_e = minimiser.plot_efficiencies(f"_pt_{pt_min}_to_{pt_max}", hist_bin_title_eff)
             output.cd()
             if is_save_to_root_file[ObjectToSave.Canvas]:
                 canv_eff.Write()
             if is_save_to_root_file[ObjectToSave.Efficiency]:
-                for _, hist in histos_eff.items():
+                for _, hist in histos_eff.values():
                     hist.Write()
             if is_save_canvas_as_macro[PlotType.Eff]:
                 canv_eff.SaveAs(f"canv_eff_{ipt+1}.C")
 
             hist_bin_title_frac = hist_bin_title if is_draw_title[PlotType.Frac] else ""
-            canv_frac, histos_frac, leg_f = minimiser.plot_fractions(f"_pt_{pt_min}_to_{pt_max}", hist_bin_title_frac)
+            canv_frac, histos_frac, _leg_f = minimiser.plot_fractions(f"_pt_{pt_min}_to_{pt_max}", hist_bin_title_frac)
             output.cd()
             if is_save_to_root_file[ObjectToSave.Canvas]:
                 canv_frac.Write()
             if is_save_to_root_file[ObjectToSave.Fraction]:
-                for _, hist in histos_frac.items():
+                for _, hist in histos_frac.values():
                     hist.Write()
             if is_save_canvas_as_macro[PlotType.Frac]:
                 canv_frac.SaveAs(f"canv_frac_{ipt+1}.C")

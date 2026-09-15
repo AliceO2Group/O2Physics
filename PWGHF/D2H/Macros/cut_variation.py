@@ -46,13 +46,32 @@ class CutVarMinimiser:
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        raw_yields=np.zeros(0),
-        eff_prompt=np.zeros(0),
-        eff_nonprompt=np.zeros(0),
-        unc_raw_yields=np.zeros(0),
-        unc_eff_prompt=np.zeros(0),
-        unc_eff_nonprompt=np.zeros(0),
+        raw_yields=None,
+        eff_prompt=None,
+        eff_nonprompt=None,
+        unc_raw_yields=None,
+        unc_eff_prompt=None,
+        unc_eff_nonprompt=None,
     ):
+        inputs = (
+            raw_yields,
+            eff_prompt,
+            eff_nonprompt,
+            unc_raw_yields,
+            unc_eff_prompt,
+            unc_eff_nonprompt,
+        )
+
+        if all(value is None for value in inputs):
+            raw_yields = np.zeros(0)
+            eff_prompt = np.zeros(0)
+            eff_nonprompt = np.zeros(0)
+            unc_raw_yields = np.zeros(0)
+            unc_eff_prompt = np.zeros(0)
+            unc_eff_nonprompt = np.zeros(0)
+        elif any(value is None for value in inputs):
+            raise ValueError("Either all input arrays or none must be provided.")
+
         self.raw_yields = raw_yields
         self.eff_prompt = eff_prompt
         self.eff_nonprompt = eff_nonprompt
