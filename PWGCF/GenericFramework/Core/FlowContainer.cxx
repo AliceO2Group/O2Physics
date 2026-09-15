@@ -1237,5 +1237,5 @@ double* FlowContainer::GetMultiRebin(int& nbins)
   double* retBins = new double[fMultiRebin + 1];
   for (int i = 0; i <= nbins; i++)
     retBins[i] = fMultiRebinEdges[i];
-  return fMultiRebinEdges;
+  return retBins;
 }
