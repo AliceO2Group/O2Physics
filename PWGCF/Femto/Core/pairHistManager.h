@@ -179,7 +179,7 @@ struct ConfMixing : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis vtxBins{"vtxBins", {o2::framework::VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
   o2::framework::ConfigurableAxis eventPlaneAngle{"eventPlaneAngle", {10, 0.f, 1.f * o2::constants::math::TwoPI}, "Mixing bins - event plane angle"};
   o2::framework::Configurable<int> depth{"depth", 5, "Number of events for mixing"};
-  o2::framework::Configurable<int> policy{"policy", 0, "Binning policy for mixing (alywas in combination with z-vertex) -> 0: multiplicity, -> 1: centrality, -> 2: both"};
+  o2::framework::Configurable<int> policy{"policy", 0, "Binning policy for mixing (alywas in combination with z-vertex) -> 0: multiplicity, -> 1: centrality, -> 2: multiplicity and centrality, -> 3: centrality and event plane angle"};
   o2::framework::Configurable<bool> sameSpecies{"sameSpecies", false, "Enable if particle 1 and particle 2 are the same"};
   o2::framework::Configurable<int> seed{"seed", -1, "Seed to randomize particle 1 and particle 2 (if they are identical). Set to negative value to deactivate. Set to 0 to generate unique seed in time."};
   o2::framework::Configurable<bool> enablePairCorrelationQa{"enablePairCorrelationQa", true, "Enable pair-level correlation QA (same-event + mixed-event)"};
@@ -234,7 +234,7 @@ struct ConfPairBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis qout{"qout", {{300, -1.5f, 1.5f}}, "q_{out} (GeV/c) in LCMS"};
   o2::framework::ConfigurableAxis qside{"qside", {{300, -1.5f, 1.5f}}, "q_{side} (GeV/c) in LCMS"};
   o2::framework::ConfigurableAxis qlong{"qlong", {{300, -1.5f, 1.5f}}, "q_{long} (GeV/c) in LCMS"};
-  o2::framework::Configurable<bool> plotEventShape{"plotEventShape", false, "(Reco/Mc) Enable 5D (q_out, q_side, q_long, event plane anglke, qvector) histogram"};
+  o2::framework::Configurable<bool> plotEventShape{"plotEventShape", false, "(Reco/Mc) Enable 7D (q_out, q_side, q_long, mt, centrality event plane angle, qvector) histogram"};
   o2::framework::ConfigurableAxis eventPlaneAngle{"eventPlaneAngle", {{10, 0.f, 1.f * o2::constants::math::TwoPI}}, "event plane angle"};
   o2::framework::ConfigurableAxis qvector{"qvector", {{o2::framework::VARIABLE_WIDTH, 0.50f, 68.50f, 100.50f, 126.50f, 151.50f, 176.50f, 203.50f, 232.50f, 269.50f, 322.50f, 833.50f}}, "qvector"};
   o2::framework::Configurable<bool> plotSH{"plotSH", false, "(Reco) Enable spherical-harmonics decomposition of the pair momentum-difference vector"};
