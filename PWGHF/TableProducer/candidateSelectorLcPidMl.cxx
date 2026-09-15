@@ -307,12 +307,12 @@ struct HfCandidateSelectorLcPidMl {
         std::vector<double> inputFeaturesD{trackParPos1.getPt(), trackPos1.dcaXY(), trackPos1.dcaZ(), trackParNeg.getPt(), trackNeg.dcaXY(), trackNeg.dcaZ(), trackParPos2.getPt(), trackPos2.dcaXY(), trackPos2.dcaZ()};
         float scores[3] = {-1.f, -1.f, -1.f};
         if (dataTypeML == 1) {
-          auto* scoresRaw = model.evalModel(inputFeaturesF);
+          const auto scoresRaw = model.evalModel(inputFeaturesF);
           for (int iScore = 0; iScore < 3; ++iScore) {
             scores[iScore] = scoresRaw[iScore];
           }
         } else if (dataTypeML == 11) {
-          auto* scoresRaw = model.evalModel(inputFeaturesD);
+          const auto scoresRaw = model.evalModel(inputFeaturesD);
           for (int iScore = 0; iScore < 3; ++iScore) {
             scores[iScore] = scoresRaw[iScore];
           }
