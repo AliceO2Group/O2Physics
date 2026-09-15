@@ -285,9 +285,10 @@ struct FlowGenericFramework {
   } cfg;
 
   // Define output
-  OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};
-  OutputObj<FlowPtContainer> fFCpt{FlowPtContainer("FlowPtContainer")};
-  OutputObj<FlowContainer> fFCgen{FlowContainer("FlowContainer_gen")};
+  OutputObj<FlowContainer> fFC{"FlowContainer"};
+  OutputObj<FlowPtContainer> fFCpt{"FlowPtContainer"};
+  OutputObj<FlowContainer> fFCgen{"FlowContainer_gen"};
+  OutputObj<FlowPtContainer> fFCptGen{"FlowPtContainer_gen"};
   HistogramRegistry registry{"registry"};
   HistogramRegistry registryQA{"registryQA"};
 
@@ -874,23 +875,31 @@ struct FlowGenericFramework {
     addConfigObjectsToObjArray(oba, corrconfigsV02);
     addConfigObjectsToObjArray(oba, corrconfigsV0);
 
-    if (doprocessData || doprocessRun2 || doprocessMCReco) {
-      fFC->SetName("FlowContainer");
+    if (doprocessData || doprocessRun2 || doprocessMCReco || doprocessMC) {
+      fFC.setObject(new FlowContainer("FlowContainer"));
       fFC->SetXAxis(fPtAxis);
       fFC->Initialize(oba, multAxis, cfgNbootstrap);
+
+      fFCpt.setObject(new FlowPtContainer("FlowPtContainer"));
+      fFCpt->setEventWeight(cfgEventWeight.cfgUsePtCorrWeights ? eventweight::TupleWeight : eventweight::UnityWeight);
+      fFCpt->setUseCentralMoments(cfgUseCentralMoments);
+      fFCpt->setUseGapMethod(cfgUseGapMethod);
+      fFCpt->initialise(multAxis, cfgMpar, gfwMemberCache.configs, cfgNbootstrap);
+      fFCpt->initialiseSubevent(multAxis, cfgMpar, gfwMemberCache.etagapsPtPt.size(), cfgNbootstrap);
     }
-    if (doprocessMCGen || doprocessOnTheFly) {
-      fFCgen->SetName("FlowContainer_gen");
+    if (doprocessMCGen || doprocessOnTheFly || doprocessMC) {
+      fFCgen.setObject(new FlowContainer("FlowContainer_gen"));
       fFCgen->SetXAxis(fPtAxis);
       fFCgen->Initialize(oba, multAxis, cfgNbootstrap);
+
+      fFCptGen.setObject(new FlowPtContainer("FlowPtContainer_gen"));
+      fFCptGen->setEventWeight(cfgEventWeight.cfgUsePtCorrWeights ? eventweight::TupleWeight : eventweight::UnityWeight);
+      fFCptGen->setUseCentralMoments(cfgUseCentralMoments);
+      fFCptGen->setUseGapMethod(cfgUseGapMethod);
+      fFCptGen->initialise(multAxis, cfgMpar, gfwMemberCache.configs, cfgNbootstrap);
+      fFCptGen->initialiseSubevent(multAxis, cfgMpar, gfwMemberCache.etagapsPtPt.size(), cfgNbootstrap);
     }
     delete oba;
-    fFCpt->setEventWeight(cfgEventWeight.cfgUsePtCorrWeights ? eventweight::TupleWeight : eventweight::UnityWeight);
-    fFCpt->setUseCentralMoments(cfgUseCentralMoments);
-    fFCpt->setUseGapMethod(cfgUseGapMethod);
-    fFCpt->initialise(multAxis, cfgMpar, gfwMemberCache.configs, cfgNbootstrap);
-    fFCpt->initialiseSubevent(multAxis, cfgMpar, gfwMemberCache.etagapsPtPt.size(), cfgNbootstrap);
-
     fPtDepDCAxy = new TF1("ptDepDCAxy", Form("[0]*%s", cfgTrackCuts.cfgDCAxyPtDep->c_str()), 0.001, 100);
     fPtDepDCAxy->SetParameter(0, cfgTrackCuts.cfgDCAxyNSigma / 7.);
     LOGF(info, "DCAxy pt-dependence function: %s", Form("[0]*%s", cfgTrackCuts.cfgDCAxyPtDep->c_str()));
@@ -1596,14 +1605,17 @@ struct FlowGenericFramework {
   template <DataType dt>
   void fillOutputContainers(const float& centmult, const double& rndm)
   {
-    fFCpt->calculateCorrelations();
-    fFCpt->calculateSubeventCorrelations();
-    fFCpt->fillPtProfiles(centmult, rndm);
-    fFCpt->fillSubeventPtProfiles(centmult, rndm);
-    fFCpt->fillCMProfiles(centmult, rndm);
-    fFCpt->fillCMSubeventProfiles(centmult, rndm);
+    auto& flowContainer = (dt == Gen) ? fFCgen : fFC;
+    auto& flowPtContainer = (dt == Gen) ? fFCptGen : fFCpt;
+
+    flowPtContainer->calculateCorrelations();
+    flowPtContainer->calculateSubeventCorrelations();
+    flowPtContainer->fillPtProfiles(centmult, rndm);
+    flowPtContainer->fillSubeventPtProfiles(centmult, rndm);
+    flowPtContainer->fillCMProfiles(centmult, rndm);
+    flowPtContainer->fillCMSubeventProfiles(centmult, rndm);
     if (!cfgUseGapMethod) {
-      fFCpt->fillVnPtStdProfiles(centmult, rndm);
+      flowPtContainer->fillVnPtStdProfiles(centmult, rndm);
     }
 
     for (uint l_ind = 0; l_ind < corrconfigs.size(); ++l_ind) {
@@ -1617,9 +1629,9 @@ struct FlowGenericFramework {
           if (corrconfigs.at(l_ind).Head.find("3pcW") != std::string::npos && cfgEventWeight.cfgUseMultiplicityFractionWeights) {
             dnx *= histosNpt[FractionV02][ChargedID]->Integral();
           }
-          (dt == Gen) ? fFCgen->FillProfile(corrconfigs.at(l_ind).Head.c_str(), centmult, val, cfgEventWeight.cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm) : fFC->FillProfile(corrconfigs.at(l_ind).Head.c_str(), centmult, val, cfgEventWeight.cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm);
+          flowContainer->FillProfile(corrconfigs.at(l_ind).Head.c_str(), centmult, val, cfgEventWeight.cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm);
           if (cfgUseGapMethod) {
-            fFCpt->fillVnPtProfiles(centmult, val, dnx, rndm, gfwMemberCache.configs.GetpTCorrMasks()[l_ind]);
+            flowPtContainer->fillVnPtProfiles(centmult, val, dnx, rndm, gfwMemberCache.configs.GetpTCorrMasks()[l_ind]);
           }
         }
         continue;
@@ -1631,7 +1643,7 @@ struct FlowGenericFramework {
         }
         auto val = fGFW->Calculate(corrconfigs.at(l_ind), i - 1, kFALSE).real() / dnx;
         if (std::abs(val) < 1) {
-          (dt == Gen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigs.at(l_ind).Head.c_str(), i), centmult, val, cfgEventWeight.cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigs.at(l_ind).Head.c_str(), i), centmult, val, cfgEventWeight.cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm);
+          flowContainer->FillProfile(Form("%s_pt_%i", corrconfigs.at(l_ind).Head.c_str(), i), centmult, val, cfgEventWeight.cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm);
         }
       }
     }
@@ -1660,7 +1672,7 @@ struct FlowGenericFramework {
             if (cfgEventWeight.cfgUseMultiplicityFractionWeights) {
               dnx *= dnsV02[l_ind];
             }
-            (dt == Gen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centmult, val * nptV02[l_ind]->GetBinContent(i) / dnsV02[l_ind], cfgEventWeight.cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centmult, val * nptV02[l_ind]->GetBinContent(i) / dnsV02[l_ind], cfgEventWeight.cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm);
+            flowContainer->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centmult, val * nptV02[l_ind]->GetBinContent(i) / dnsV02[l_ind], cfgEventWeight.cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm);
           }
         }
       }
@@ -1686,7 +1698,7 @@ struct FlowGenericFramework {
           if (cfgEventWeight.cfgUseMultiplicityFractionWeights) {
             profileWeight *= dnsV0[l_ind];
           }
-          (dt == Gen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, mpt * nptV0[l_ind]->GetBinContent(i) / dnsV0[l_ind], cfgEventWeight.cfgUsePtCorrWeights ? profileWeight : 1.0, rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, mpt * nptV0[l_ind]->GetBinContent(i) / dnsV0[l_ind], cfgEventWeight.cfgUsePtCorrWeights ? profileWeight : 1.0, rndm);
+          flowContainer->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, mpt * nptV0[l_ind]->GetBinContent(i) / dnsV0[l_ind], cfgEventWeight.cfgUsePtCorrWeights ? profileWeight : 1.0, rndm);
         }
       }
     }
@@ -1695,6 +1707,8 @@ struct FlowGenericFramework {
   template <DataType dt>
   void fillResonanceOutput(FractionSetup setup, const float& centmult, const double& rndm)
   {
+    auto& flowContainer = (dt == Gen) ? fFCgen : fFC;
+
     if (setup == FractionV02) {
       if (histosNpt[FractionV02][ChargedID]->Integral() <= 0) {
         return;
@@ -1750,7 +1764,7 @@ struct FlowGenericFramework {
             if (cfgEventWeight.cfgUseMultiplicityFractionWeights) {
               dnx *= dns[l_ind - 4];
             }
-            (dt == Gen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centmult, val * histosResoNpt[FractionV02][l_ind - 4]->GetBinContent(i) / dns[l_ind - 4], cfgEventWeight.cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centmult, val * histosResoNpt[FractionV02][l_ind - 4]->GetBinContent(i) / dns[l_ind - 4], cfgEventWeight.cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm);
+            flowContainer->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centmult, val * histosResoNpt[FractionV02][l_ind - 4]->GetBinContent(i) / dns[l_ind - 4], cfgEventWeight.cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm);
           }
         }
       }
@@ -1835,7 +1849,7 @@ struct FlowGenericFramework {
           }
           const double value = mpt * histosResoNpt[FractionV0][l_ind - 4]->GetBinContent(i) / dns[l_ind - 4];
           const double weight = cfgEventWeight.cfgUsePtCorrWeights ? profileWeight : 1.0;
-          (dt == Gen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, value, weight, rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, value, weight, rndm);
+          flowContainer->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, value, weight, rndm);
         }
       }
     }
@@ -2793,6 +2807,30 @@ struct FlowGenericFramework {
     processCollision<Reco>(collision, tracks, v0s, centrality, field, run);
   }
   PROCESS_SWITCH(FlowGenericFramework, processData, "Process analysis for non-derived data", true);
+
+  void processMC(soa::Filtered<aod::McCollisions>::iterator const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs>> const& collisions, aod::McParticles const& particles, aod::BCsWithTimestamps const&, GFWMCTracks const& tracks, aod::V0Datas const& v0s)
+  {
+    if (collisions.size() != 1) {
+      return;
+    }
+    int run = 0;
+    float centrality = -1;
+    for (const auto& collision : collisions) {
+      centrality = getCentrality(collision);
+    }
+    processCollision<Gen>(mcCollision, particles, v0s, centrality, -999, run);
+
+    for (const auto& collision : collisions) {
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      run = bc.runNumber();
+      if (run != lastRun) {
+        lastRun = run;
+      }
+      auto field = (cfgEventSelection.cfgMagField == DefaultMagneticFieldCut) ? getMagneticField(bc.timestamp()) : static_cast<int>(cfgEventSelection.cfgMagField);
+      processCollision<Reco>(collision, tracks, v0s, centrality, field, run);
+    }
+  }
+  PROCESS_SWITCH(FlowGenericFramework, processMC, "Process analysis for MC reconstructed and generated events simultaneously", false);
 
   void processMCReco(GFWCollisions::iterator const& collision, aod::BCsWithTimestamps const&, GFWMCTracks const& tracks, aod::McParticles const&, aod::V0Datas const& v0s)
   {
