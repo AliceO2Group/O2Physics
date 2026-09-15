@@ -9,10 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-/// \file jetCorrelationDMeson.cxx
-
+/// \file jetCorrelationDmeson.cxx
 /// \brief Task for analysing D-meson (D0, D*) triggered jet events
-
 /// \author Matthew Ockleton matthew.ockleton@cern.ch, University of Liverpool
 /// \author Mokshi Vaid  mokshi.vaid@cern.ch, University of Jammu
 
@@ -48,37 +46,37 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-namespace hf2Prong = o2::hf_decay::hf_cand_2prong;
-namespace hfDstar = o2::hf_decay::hf_cand_dstar;
+namespace hf_2prong = o2::hf_decay::hf_cand_2prong;
+namespace hf_dstar = o2::hf_decay::hf_cand_dstar;
 
 namespace o2::aod
 {
 
-namespace dcollisionInfo
+namespace d_collision_info
 {
 DECLARE_SOA_COLUMN(PosZ, posZ, float);
-} // namespace dcollisionInfo
+} // namespace d_collision_info
 
 DECLARE_SOA_TABLE(CollisionTables, "AOD", "COLLINFOTABLE",
                   o2::soa::Index<>,
-                  dcollisionInfo::PosZ);
+                  d_collision_info::PosZ);
 
 DECLARE_SOA_TABLE(McCollisionTables, "AOD", "MCCOLLINFOTABLE",
                   o2::soa::Index<>,
-                  dcollisionInfo::PosZ);
+                  d_collision_info::PosZ);
 
 DECLARE_SOA_TABLE(MatchCollTables, "AOD", "MATCHCOLLTABLE",
                   o2::soa::Index<>,
-                  dcollisionInfo::PosZ);
+                  d_collision_info::PosZ);
 
-namespace collisionInfo
+namespace collision_info
 {
 DECLARE_SOA_INDEX_COLUMN_CUSTOM(CollisionTable, collisionTable, "COLLINFOTABLES");
 DECLARE_SOA_INDEX_COLUMN_CUSTOM(McCollisionTable, mcCollisionTable, "MCCOLLINFOTABLES");
 DECLARE_SOA_INDEX_COLUMN_CUSTOM(MatchCollTable, matchCollTable, "MATCHCOLLTABLES");
-} // namespace collisionInfo
+} // namespace collision_info
 
-namespace dInfo
+namespace d_info
 {
 DECLARE_SOA_COLUMN(DPromptBDT, dPromptBDT, float);
 DECLARE_SOA_COLUMN(DNonPromptBDT, dNonPromptBDT, float);
@@ -92,48 +90,48 @@ DECLARE_SOA_COLUMN(DY, dY, float);
 DECLARE_SOA_COLUMN(DMcOrigin, dMcOrigin, float);
 DECLARE_SOA_COLUMN(DCategory, dCategory, int);
 DECLARE_SOA_COLUMN(DDecayChannel, dDecayChannel, int8_t);
-} // namespace dInfo
+} // namespace d_info
 
 DECLARE_SOA_TABLE(DTables, "AOD", "DTABLE",
                   o2::soa::Index<>,
-                  collisionInfo::CollisionTableId,
-                  dInfo::DPromptBDT,
-                  dInfo::DNonPromptBDT,
-                  dInfo::DBkgBDT,
-                  dInfo::DM,
-                  dInfo::DDeltaM,
-                  dInfo::DPt,
-                  dInfo::DEta,
-                  dInfo::DPhi,
-                  dInfo::DY);
+                  collision_info::CollisionTableId,
+                  d_info::DPromptBDT,
+                  d_info::DNonPromptBDT,
+                  d_info::DBkgBDT,
+                  d_info::DM,
+                  d_info::DDeltaM,
+                  d_info::DPt,
+                  d_info::DEta,
+                  d_info::DPhi,
+                  d_info::DY);
 
 // MC-detector level: shared table, category column
 DECLARE_SOA_TABLE(DMcDTables, "AOD", "DMCDTABLE",
                   o2::soa::Index<>,
-                  collisionInfo::McCollisionTableId,
-                  dInfo::DPromptBDT,
-                  dInfo::DNonPromptBDT,
-                  dInfo::DBkgBDT,
-                  dInfo::DM,
-                  dInfo::DDeltaM,
-                  dInfo::DPt,
-                  dInfo::DEta,
-                  dInfo::DPhi,
-                  dInfo::DY,
-                  dInfo::DCategory);
+                  collision_info::CollisionTableId,
+                  d_info::DPromptBDT,
+                  d_info::DNonPromptBDT,
+                  d_info::DBkgBDT,
+                  d_info::DM,
+                  d_info::DDeltaM,
+                  d_info::DPt,
+                  d_info::DEta,
+                  d_info::DPhi,
+                  d_info::DY,
+                  d_info::DCategory);
 
 // MC-particle level
 DECLARE_SOA_TABLE(DMcPTables, "AOD", "DMCPTABLE",
                   o2::soa::Index<>,
-                  collisionInfo::McCollisionTableId,
-                  dInfo::DMcOrigin,
-                  dInfo::DPt,
-                  dInfo::DEta,
-                  dInfo::DPhi,
-                  dInfo::DY,
-                  dInfo::DDecayChannel);
+                  collision_info::McCollisionTableId,
+                  d_info::DMcOrigin,
+                  d_info::DPt,
+                  d_info::DEta,
+                  d_info::DPhi,
+                  d_info::DY,
+                  d_info::DDecayChannel);
 
-namespace jetInfo
+namespace jet_info
 {
 // Shared D-meson table indices (were D0Table/DstarTable etc. separately)
 DECLARE_SOA_INDEX_COLUMN(DTable, dTable);
@@ -149,46 +147,46 @@ DECLARE_SOA_COLUMN(PJetPhi, pJetPhi, float);
 // D-jet
 DECLARE_SOA_COLUMN(DJetDeltaPhi, dJetDeltaPhi, float);
 DECLARE_SOA_COLUMN(DJetDeltaPhiP, dJetDeltaPhiP, float);
-} // namespace jetInfo
+} // namespace jet_info
 
 DECLARE_SOA_TABLE_STAGED(JetTables, "JETTABLE",
                          o2::soa::Index<>,
-                         collisionInfo::CollisionTableId,
-                         jetInfo::DTableId,
-                         jetInfo::JetPt,
-                         jetInfo::JetEta,
-                         jetInfo::JetPhi,
-                         jetInfo::DJetDeltaPhi);
+                         collision_info::CollisionTableId,
+                         jet_info::DTableId,
+                         jet_info::JetPt,
+                         jet_info::JetEta,
+                         jet_info::JetPhi,
+                         jet_info::DJetDeltaPhi);
 
 DECLARE_SOA_TABLE_STAGED(JetMcDTables, "JETMCDTABLE",
                          o2::soa::Index<>,
-                         collisionInfo::CollisionTableId,
-                         jetInfo::DMcDTableId,
-                         jetInfo::JetPt,
-                         jetInfo::JetEta,
-                         jetInfo::JetPhi,
-                         jetInfo::DJetDeltaPhi);
+                         collision_info::CollisionTableId,
+                         jet_info::DMcDTableId,
+                         jet_info::JetPt,
+                         jet_info::JetEta,
+                         jet_info::JetPhi,
+                         jet_info::DJetDeltaPhi);
 
 DECLARE_SOA_TABLE_STAGED(JetMcPTables, "JETMCPTABLE",
                          o2::soa::Index<>,
-                         collisionInfo::McCollisionTableId,
-                         jetInfo::DMcPTableId,
-                         jetInfo::JetPt,
-                         jetInfo::JetEta,
-                         jetInfo::JetPhi,
-                         jetInfo::DJetDeltaPhiP);
+                         collision_info::McCollisionTableId,
+                         jet_info::DMcPTableId,
+                         jet_info::JetPt,
+                         jet_info::JetEta,
+                         jet_info::JetPhi,
+                         jet_info::DJetDeltaPhiP);
 
 DECLARE_SOA_TABLE_STAGED(JetMatchedTables, "JETMATCHEDTABLE",
                          o2::soa::Index<>,
-                         collisionInfo::MatchCollTableId,
-                         jetInfo::JetPt,
-                         jetInfo::JetEta,
-                         jetInfo::JetPhi,
-                         jetInfo::PJetPt,
-                         jetInfo::PJetEta,
-                         jetInfo::PJetPhi,
-                         jetInfo::DJetDeltaPhi,
-                         jetInfo::DJetDeltaPhiP);
+                         collision_info::MatchCollTableId,
+                         jet_info::JetPt,
+                         jet_info::JetEta,
+                         jet_info::JetPhi,
+                         jet_info::PJetPt,
+                         jet_info::PJetEta,
+                         jet_info::PJetPhi,
+                         jet_info::DJetDeltaPhi,
+                         jet_info::DJetDeltaPhiP);
 
 } // namespace o2::aod
 
@@ -331,25 +329,25 @@ struct JetCorrelationDmeson {
   {
     int category = DCategory::Undefined;
     if constexpr (std::is_same_v<U, aod::CandidatesD0MCD>) {
-      if ((std::abs(dDecayChannel) == hf2Prong::DecayChannelMain::D0ToPiK) && (matchedFrom != 0) && (selectedAs == matchedFrom)) {
+      if ((std::abs(dDecayChannel) == hf_2prong::DecayChannelMain::D0ToPiK) && (matchedFrom != 0) && (selectedAs == matchedFrom)) {
         category = DCategory::Signal;
-      } else if ((std::abs(dDecayChannel) == hf2Prong::DecayChannelMain::D0ToPiK) && (matchedFrom != 0) && (selectedAs == -1 * matchedFrom)) {
+      } else if ((std::abs(dDecayChannel) == hf_2prong::DecayChannelMain::D0ToPiK) && (matchedFrom != 0) && (selectedAs == -1 * matchedFrom)) {
         category = DCategory::Reflection;
-      } else if (std::abs(dDecayChannel) == hf2Prong::DecayChannelMain::D0ToPiKPi0) {
+      } else if (std::abs(dDecayChannel) == hf_2prong::DecayChannelMain::D0ToPiKPi0) {
         category = DCategory::CorrBkg1;
-      } else if (std::abs(dDecayChannel) == hf2Prong::DecayChannelMain::D0ToPiPi) {
+      } else if (std::abs(dDecayChannel) == hf_2prong::DecayChannelMain::D0ToPiPi) {
         category = DCategory::CorrBkg2;
-      } else if (std::abs(dDecayChannel) == hf2Prong::DecayChannelMain::D0ToPiPiPi0) {
+      } else if (std::abs(dDecayChannel) == hf_2prong::DecayChannelMain::D0ToPiPiPi0) {
         category = DCategory::CorrBkg3;
-      } else if (std::abs(dDecayChannel) == hf2Prong::DecayChannelMain::D0ToKK) {
+      } else if (std::abs(dDecayChannel) == hf_2prong::DecayChannelMain::D0ToKK) {
         category = DCategory::CorrBkg4;
       }
     } else if constexpr (std::is_same_v<U, aod::CandidatesDstarMCD>) {
-      if ((std::abs(dDecayChannel) == hfDstar::DecayChannelMain::DstarToPiKPi) && (matchedFrom != 0) && (selectedAs == matchedFrom)) {
+      if ((std::abs(dDecayChannel) == hf_dstar::DecayChannelMain::DstarToPiKPi) && (matchedFrom != 0) && (selectedAs == matchedFrom)) {
         category = DCategory::DstarSignal;
-      } else if ((std::abs(dDecayChannel) == hfDstar::DecayChannelMain::DstarToPiKPi) && (matchedFrom != 0) && (selectedAs == -1 * matchedFrom)) {
+      } else if ((std::abs(dDecayChannel) == hf_dstar::DecayChannelMain::DstarToPiKPi) && (matchedFrom != 0) && (selectedAs == -1 * matchedFrom)) {
         category = DCategory::DstarReflection;
-      } else if (std::abs(dDecayChannel) == hfDstar::DecayChannelMain::DstarToPiKPiPi0) {
+      } else if (std::abs(dDecayChannel) == hf_dstar::DecayChannelMain::DstarToPiKPiPi0) {
         category = DCategory::DstarCorrBkg;
       }
     }
@@ -391,7 +389,7 @@ struct JetCorrelationDmeson {
           continue;
         }
         float dPhi = RecoDecay::constrainAngle(jet.phi() - dCandidate.phi(), -o2::constants::math::PI);
-        if (std::abs(dPhi - o2::constants::math::PI) > (o2::constants::math::PI / 2)) {
+        if (std::abs(dPhi - o2::constants::math::PI) > o2::constants::math::PIHalf) {
           continue;
         }
         fillJetHistograms(jet, dPhi);
@@ -471,7 +469,7 @@ struct JetCorrelationDmeson {
           continue;
         }
         float dPhi = RecoDecay::constrainAngle(jet.phi() - dCandidate.phi(), -o2::constants::math::PI);
-        if (std::abs(dPhi - o2::constants::math::PI) > (o2::constants::math::PI / 2)) {
+        if (std::abs(dPhi - o2::constants::math::PI) > o2::constants::math::PIHalf) {
           continue;
         }
         fillJetHistograms(jet, dPhi);
@@ -526,7 +524,7 @@ struct JetCorrelationDmeson {
           continue;
         }
         float dPhi = RecoDecay::constrainAngle(jet.phi() - dMcPCandidate.phi(), -o2::constants::math::PI);
-        if (std::abs(dPhi - o2::constants::math::PI) > (o2::constants::math::PI / 2)) {
+        if (std::abs(dPhi - o2::constants::math::PI) > o2::constants::math::PIHalf) {
           continue;
         }
         fillJetHistograms(jet, dPhi);
@@ -574,7 +572,7 @@ struct JetCorrelationDmeson {
           continue;
         }
         float dPhiD = RecoDecay::constrainAngle(McDJet.phi() - dCandidate.phi(), -o2::constants::math::PI);
-        if (std::abs(dPhiD - o2::constants::math::PI) > (o2::constants::math::PI / 2)) {
+        if (std::abs(dPhiD - o2::constants::math::PI) > o2::constants::math::PIHalf) {
           continue;
         }
         if (McDJet.has_matchedJetGeo()) {
