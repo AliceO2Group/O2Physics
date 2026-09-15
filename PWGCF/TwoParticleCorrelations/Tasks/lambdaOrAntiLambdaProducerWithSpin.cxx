@@ -11,7 +11,7 @@
 ///
 /// \brief Step2 of the  LambdaOrAntiLambdaProducerWithSpin.cxx
 /// \author Akash Raj (akash.raj.john.babu@cern.ch)
-/// \author Yash Patley <yash.patley@cern.ch>
+
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
@@ -21,6 +21,7 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 
 #include <CommonConstants/PhysicsConstants.h>
+#include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
@@ -30,9 +31,16 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisHelpers.h>
+
+#include <TH1.h>
+#include <TPDGCode.h>
+#include <TString.h>
 
 #include <Math/GenVector/Boost.h>
 #include <Math/Vector4D.h>
+#include <Math/Vector4Dfwd.h>
 
 #include <cmath>
 #include <cstdint>
