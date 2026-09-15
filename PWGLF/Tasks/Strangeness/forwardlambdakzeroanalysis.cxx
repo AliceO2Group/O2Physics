@@ -35,18 +35,18 @@
 #include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
-#include <DetectorsBase/MatLayerCylSet.h>
-#include <DetectorsBase/Propagator.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/FwdDCAFitterN.h>
 #include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -59,14 +59,14 @@
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/TrackFwd.h>
 
-#include <Math/SVector.h>
-#include <Math/SMatrix.h>
 #include <Math/MatrixRepresentationsStatic.h>
+#include <Math/SMatrix.h>
+#include <Math/SVector.h>
 #include <TH1.h>
 #include <TH2.h>
+#include <TObject.h>
 #include <TPDGCode.h>
 #include <TVector3.h>
-#include <TObject.h>
 
 #include <algorithm>
 #include <array>
@@ -102,12 +102,12 @@ enum CentEstimator {
 };
 
 enum Mode { kDefault = 0, // same event pairs
-            kEvtMixing, // event mixing
-            kNModes};
-           
+            kEvtMixing,   // event mixing
+            kNModes };
+
 static constexpr int nModesConst = 2;
-static const std::vector<std::string> modePrefixes{  
-  "", // Default : no prefix
+static const std::vector<std::string> modePrefixes{
+  "",          // Default : no prefix
   "EvtMixing/" // Event mixing
 };
 
@@ -273,7 +273,7 @@ struct forwardlambdakzeroanalysis {
   } ccdbConfigurations;
 
   o2::ccdb::CcdbApi ccdbApi;
-  Service<o2::ccdb::BasicCCDBManager> ccdb {};
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   ctpRateFetcher rateFetcher;
   int mRunNumber = 0;
   float magField = 0.;
@@ -749,126 +749,126 @@ struct forwardlambdakzeroanalysis {
 
       // histograms versus mass
       if (analyseK0Short) {
-        insertHist(modePrefixes[iMode] +  "h2dNbrOfK0ShortVsCentrality", "h2dNbrOfK0ShortVsCentrality", kTH2D, {axisConfigurations.axisCentrality, {10, -0.5f, 9.5f}});
-        insertHist(modePrefixes[iMode] +  "h3dMassK0Short", "h3dMassK0Short", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisK0Mass});
+        insertHist(modePrefixes[iMode] + "h2dNbrOfK0ShortVsCentrality", "h2dNbrOfK0ShortVsCentrality", kTH2D, {axisConfigurations.axisCentrality, {10, -0.5f, 9.5f}});
+        insertHist(modePrefixes[iMode] + "h3dMassK0Short", "h3dMassK0Short", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisK0Mass});
         if (doUPCanalysis) {
           // Non-UPC info
-          insertHist(modePrefixes[iMode] +  "h3dMassK0ShortHadronic", "h3dMassK0ShortHadronic", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisK0Mass});
+          insertHist(modePrefixes[iMode] + "h3dMassK0ShortHadronic", "h3dMassK0ShortHadronic", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisK0Mass});
           // UPC info
-          insertHist(modePrefixes[iMode] +  "h3dMassK0ShortSGA", "h3dMassK0ShortSGA", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisK0Mass});
-          insertHist(modePrefixes[iMode] +  "h3dMassK0ShortSGC", "h3dMassK0ShortSGC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisK0Mass});
-          insertHist(modePrefixes[iMode] +  "h3dMassK0ShortDG", "h3dMassK0ShortDG", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisK0Mass});
+          insertHist(modePrefixes[iMode] + "h3dMassK0ShortSGA", "h3dMassK0ShortSGA", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisK0Mass});
+          insertHist(modePrefixes[iMode] + "h3dMassK0ShortSGC", "h3dMassK0ShortSGC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisK0Mass});
+          insertHist(modePrefixes[iMode] + "h3dMassK0ShortDG", "h3dMassK0ShortDG", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisK0Mass});
         }
       }
       if (analyseLambda) {
-        insertHist(modePrefixes[iMode] +  "h2dNbrOfLambdaVsCentrality", "h2dNbrOfLambdaVsCentrality", kTH2D, {axisConfigurations.axisCentrality, {10, -0.5f, 9.5f}});
-        insertHist(modePrefixes[iMode] +  "h3dMassLambda", "h3dMassLambda", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+        insertHist(modePrefixes[iMode] + "h2dNbrOfLambdaVsCentrality", "h2dNbrOfLambdaVsCentrality", kTH2D, {axisConfigurations.axisCentrality, {10, -0.5f, 9.5f}});
+        insertHist(modePrefixes[iMode] + "h3dMassLambda", "h3dMassLambda", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
         if (doUPCanalysis) {
           // Non-UPC info
-          insertHist(modePrefixes[iMode] +  "h3dMassLambdaHadronic", "h3dMassLambdaHadronic", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+          insertHist(modePrefixes[iMode] + "h3dMassLambdaHadronic", "h3dMassLambdaHadronic", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
           // UPC info
-          insertHist(modePrefixes[iMode] +  "h3dMassLambdaSGA", "h3dMassLambdaSGA", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
-          insertHist(modePrefixes[iMode] +  "h3dMassLambdaSGC", "h3dMassLambdaSGC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
-          insertHist(modePrefixes[iMode] +  "h3dMassLambdaDG", "h3dMassLambdaDG", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+          insertHist(modePrefixes[iMode] + "h3dMassLambdaSGA", "h3dMassLambdaSGA", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+          insertHist(modePrefixes[iMode] + "h3dMassLambdaSGC", "h3dMassLambdaSGC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+          insertHist(modePrefixes[iMode] + "h3dMassLambdaDG", "h3dMassLambdaDG", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
         }
       }
       if (analyseAntiLambda) {
-        insertHist(modePrefixes[iMode] +  "h2dNbrOfAntiLambdaVsCentrality", "h2dNbrOfAntiLambdaVsCentrality", kTH2D, {axisConfigurations.axisCentrality, {10, -0.5f, 9.5f}});
-        insertHist(modePrefixes[iMode] +  "h3dMassAntiLambda", "h3dMassAntiLambda", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+        insertHist(modePrefixes[iMode] + "h2dNbrOfAntiLambdaVsCentrality", "h2dNbrOfAntiLambdaVsCentrality", kTH2D, {axisConfigurations.axisCentrality, {10, -0.5f, 9.5f}});
+        insertHist(modePrefixes[iMode] + "h3dMassAntiLambda", "h3dMassAntiLambda", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
         if (doUPCanalysis) {
           // Non-UPC info
-          insertHist(modePrefixes[iMode] +  "h3dMassAntiLambdaHadronic", "h3dMassAntiLambdaHadronic", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+          insertHist(modePrefixes[iMode] + "h3dMassAntiLambdaHadronic", "h3dMassAntiLambdaHadronic", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
           // UPC info
-          insertHist(modePrefixes[iMode] +  "h3dMassAntiLambdaSGA", "h3dMassAntiLambdaSGA", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
-          insertHist(modePrefixes[iMode] +  "h3dMassAntiLambdaSGC", "h3dMassAntiLambdaSGC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
-          insertHist(modePrefixes[iMode] +  "h3dMassAntiLambdaDG", "h3dMassAntiLambdaDG", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+          insertHist(modePrefixes[iMode] + "h3dMassAntiLambdaSGA", "h3dMassAntiLambdaSGA", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+          insertHist(modePrefixes[iMode] + "h3dMassAntiLambdaSGC", "h3dMassAntiLambdaSGC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+          insertHist(modePrefixes[iMode] + "h3dMassAntiLambdaDG", "h3dMassAntiLambdaDG", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
         }
       }
       if (analyseD0) {
-        insertHist(modePrefixes[iMode] +  "h2dNbrOfD0VsCentrality", "h2dNbrOfD0VsCentrality", kTH2D, {axisConfigurations.axisCentrality, {10, -0.5f, 9.5f}});
-        insertHist(modePrefixes[iMode] +  "h3dMassD0", "h3dMassD0", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisD0Mass});
+        insertHist(modePrefixes[iMode] + "h2dNbrOfD0VsCentrality", "h2dNbrOfD0VsCentrality", kTH2D, {axisConfigurations.axisCentrality, {10, -0.5f, 9.5f}});
+        insertHist(modePrefixes[iMode] + "h3dMassD0", "h3dMassD0", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisD0Mass});
         if (doUPCanalysis) {
           // Non-UPC info
-          insertHist(modePrefixes[iMode] +  "h3dMassD0Hadronic", "h3dMassD0Hadronic", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisD0Mass});
+          insertHist(modePrefixes[iMode] + "h3dMassD0Hadronic", "h3dMassD0Hadronic", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisD0Mass});
           // UPC info
-          insertHist(modePrefixes[iMode] +  "h3dMassD0SGA", "h3dMassD0SGA", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisD0Mass});
-          insertHist(modePrefixes[iMode] +  "h3dMassD0SGC", "h3dMassD0SGC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisD0Mass});
-          insertHist(modePrefixes[iMode] +  "h3dMassD0DG", "h3dMassD0DG", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisD0Mass});
+          insertHist(modePrefixes[iMode] + "h3dMassD0SGA", "h3dMassD0SGA", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisD0Mass});
+          insertHist(modePrefixes[iMode] + "h3dMassD0SGC", "h3dMassD0SGC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisD0Mass});
+          insertHist(modePrefixes[iMode] + "h3dMassD0DG", "h3dMassD0DG", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisD0Mass});
         }
       }
       if (analyseAntiD0) {
-        insertHist(modePrefixes[iMode] +  "h2dNbrOfAntiD0VsCentrality", "h2dNbrOfAntiD0VsCentrality", kTH2D, {axisConfigurations.axisCentrality, {10, -0.5f, 9.5f}});
-        insertHist(modePrefixes[iMode] +  "h3dMassAntiD0", "h3dMassAntiD0", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisD0Mass});
+        insertHist(modePrefixes[iMode] + "h2dNbrOfAntiD0VsCentrality", "h2dNbrOfAntiD0VsCentrality", kTH2D, {axisConfigurations.axisCentrality, {10, -0.5f, 9.5f}});
+        insertHist(modePrefixes[iMode] + "h3dMassAntiD0", "h3dMassAntiD0", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisD0Mass});
         if (doUPCanalysis) {
           // Non-UPC info
-          insertHist(modePrefixes[iMode] +  "h3dMassAntiD0Hadronic", "h3dMassAntiLambdaHadronic", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisD0Mass});
+          insertHist(modePrefixes[iMode] + "h3dMassAntiD0Hadronic", "h3dMassAntiLambdaHadronic", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisD0Mass});
           // UPC info
-          insertHist(modePrefixes[iMode] +  "h3dMassAntiD0SGA", "h3dMassAntiD0SGA", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisD0Mass});
-          insertHist(modePrefixes[iMode] +  "h3dMassAntiD0SGC", "h3dMassAntiD0SGC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisD0Mass});
-          insertHist(modePrefixes[iMode] +  "h3dMassAntiD0DG", "h3dMassAntiD0DG", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisD0Mass});
+          insertHist(modePrefixes[iMode] + "h3dMassAntiD0SGA", "h3dMassAntiD0SGA", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisD0Mass});
+          insertHist(modePrefixes[iMode] + "h3dMassAntiD0SGC", "h3dMassAntiD0SGC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisD0Mass});
+          insertHist(modePrefixes[iMode] + "h3dMassAntiD0DG", "h3dMassAntiD0DG", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisD0Mass});
         }
       }
 
       if (analyseLambda && calculateFeeddownMatrix && doprocessMonteCarlo && iMode == kDefault) {
-        insertHist(modePrefixes[iMode] +  "h3dLambdaFeeddown", "h3dLambdaFeeddown", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisPtXi});
-        insertHist(modePrefixes[iMode] +  "h3dLambdaFeeddownFromXi0", "h3dLambdaFeeddownFromXi0", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisPtXi});
+        insertHist(modePrefixes[iMode] + "h3dLambdaFeeddown", "h3dLambdaFeeddown", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisPtXi});
+        insertHist(modePrefixes[iMode] + "h3dLambdaFeeddownFromXi0", "h3dLambdaFeeddownFromXi0", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisPtXi});
       }
       if (analyseAntiLambda && calculateFeeddownMatrix && doprocessMonteCarlo && iMode == kDefault) {
-        insertHist(modePrefixes[iMode] +  "h3dAntiLambdaFeeddown", "h3dAntiLambdaFeeddown", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisPtXi});
-        insertHist(modePrefixes[iMode] +  "h3dAntiLambdaFeeddownFromXi0", "h3dAntiLambdaFeeddownFromXi0", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisPtXi});
+        insertHist(modePrefixes[iMode] + "h3dAntiLambdaFeeddown", "h3dAntiLambdaFeeddown", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisPtXi});
+        insertHist(modePrefixes[iMode] + "h3dAntiLambdaFeeddownFromXi0", "h3dAntiLambdaFeeddownFromXi0", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisPtXi});
       }
 
       if (analyseK0Short)
-        insertHist(modePrefixes[iMode] +  "hMassK0Short", "hMassK0Short", kTH1D, {axisConfigurations.axisK0Mass});
+        insertHist(modePrefixes[iMode] + "hMassK0Short", "hMassK0Short", kTH1D, {axisConfigurations.axisK0Mass});
       if (analyseLambda)
-        insertHist(modePrefixes[iMode] +  "hMassLambda", "hMassLambda", kTH1D, {axisConfigurations.axisLambdaMass});
+        insertHist(modePrefixes[iMode] + "hMassLambda", "hMassLambda", kTH1D, {axisConfigurations.axisLambdaMass});
       if (analyseAntiLambda)
-        insertHist(modePrefixes[iMode] +  "hMassAntiLambda", "hMassAntiLambda", kTH1D, {axisConfigurations.axisLambdaMass});
+        insertHist(modePrefixes[iMode] + "hMassAntiLambda", "hMassAntiLambda", kTH1D, {axisConfigurations.axisLambdaMass});
       if (analyseD0)
-        insertHist(modePrefixes[iMode] +  "hMassD0", "hMassD0", kTH1D, {axisConfigurations.axisD0Mass});
+        insertHist(modePrefixes[iMode] + "hMassD0", "hMassD0", kTH1D, {axisConfigurations.axisD0Mass});
       if (analyseAntiD0)
-        insertHist(modePrefixes[iMode] +  "hMassAntiD0", "hMassAntiD0", kTH1D, {axisConfigurations.axisD0Mass});
+        insertHist(modePrefixes[iMode] + "hMassAntiD0", "hMassAntiD0", kTH1D, {axisConfigurations.axisD0Mass});
 
       if (doPlainTopoQA) {
         // All candidates received
-        insertHist(modePrefixes[iMode] +  "hPosDCAToPVxy", "hPosDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
-        insertHist(modePrefixes[iMode] +  "hNegDCAToPVxy", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
-        insertHist(modePrefixes[iMode] +  "hPosDCAToPVz", "hPosDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
-        insertHist(modePrefixes[iMode] +  "hNegDCAToPVz", "hNegDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
-        insertHist(modePrefixes[iMode] +  "hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
-        insertHist(modePrefixes[iMode] +  "hCosPA", "hCosPA", kTH1D, {axisConfigurations.axisCosPA});
-        insertHist(modePrefixes[iMode] +  "hOpeningAngle", "hOpeningAngle", kTH1D, {axisConfigurations.axisOpeningAngle});
-        insertHist(modePrefixes[iMode] +  "hV0Radius", "hV0Radius", kTH1D, {axisConfigurations.axisV0Radius});
-        insertHist(modePrefixes[iMode] +  "hV0Z", "hV0Z", kTH1D, {axisConfigurations.axisV0Z});
-        insertHist(modePrefixes[iMode] +  "hV0Rapidity", "hV0Rapidity", kTH1D, {axisConfigurations.axisV0Rapidity});
-        insertHist(modePrefixes[iMode] +  "hV0LifetimeK0s", "hV0LifetimeK0s", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
-        insertHist(modePrefixes[iMode] +  "hV0LifetimeLambda", "hV0LifetimeLambda", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
-        insertHist(modePrefixes[iMode] +  "hV0LifetimeD0", "hV0LifetimeD0", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
-        insertHist(modePrefixes[iMode] +  "hV0PseudoLifetimeK0s", "hV0PseudoLifetimeK0s", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
-        insertHist(modePrefixes[iMode] +  "hV0PseudoLifetimeLambda", "hV0PseudoLifetimeLambda", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
-        insertHist(modePrefixes[iMode] +  "hV0PseudoLifetimeD0", "hV0PseudoLifetimeD0", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
-        insertHist(modePrefixes[iMode] +  "hV0InvMassK0s", "hV0InvMassK0s", kTH1D, {axisConfigurations.axisK0Mass});
-        insertHist(modePrefixes[iMode] +  "hV0InvMassLambda", "hV0InvMassLambda", kTH1D, {axisConfigurations.axisLambdaMass});
-        insertHist(modePrefixes[iMode] +  "hV0InvMassAntiLambda", "hV0InvMassAntiLambda", kTH1D, {axisConfigurations.axisLambdaMass});
-        insertHist(modePrefixes[iMode] +  "hV0InvMassD0", "hV0InvMassD0", kTH1D, {axisConfigurations.axisD0Mass});
-        insertHist(modePrefixes[iMode] +  "hV0InvMassAntiD0", "hV0InvMassAntiD0", kTH1D, {axisConfigurations.axisD0Mass});
+        insertHist(modePrefixes[iMode] + "hPosDCAToPVxy", "hPosDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
+        insertHist(modePrefixes[iMode] + "hNegDCAToPVxy", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
+        insertHist(modePrefixes[iMode] + "hPosDCAToPVz", "hPosDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
+        insertHist(modePrefixes[iMode] + "hNegDCAToPVz", "hNegDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
+        insertHist(modePrefixes[iMode] + "hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
+        insertHist(modePrefixes[iMode] + "hCosPA", "hCosPA", kTH1D, {axisConfigurations.axisCosPA});
+        insertHist(modePrefixes[iMode] + "hOpeningAngle", "hOpeningAngle", kTH1D, {axisConfigurations.axisOpeningAngle});
+        insertHist(modePrefixes[iMode] + "hV0Radius", "hV0Radius", kTH1D, {axisConfigurations.axisV0Radius});
+        insertHist(modePrefixes[iMode] + "hV0Z", "hV0Z", kTH1D, {axisConfigurations.axisV0Z});
+        insertHist(modePrefixes[iMode] + "hV0Rapidity", "hV0Rapidity", kTH1D, {axisConfigurations.axisV0Rapidity});
+        insertHist(modePrefixes[iMode] + "hV0LifetimeK0s", "hV0LifetimeK0s", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
+        insertHist(modePrefixes[iMode] + "hV0LifetimeLambda", "hV0LifetimeLambda", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
+        insertHist(modePrefixes[iMode] + "hV0LifetimeD0", "hV0LifetimeD0", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
+        insertHist(modePrefixes[iMode] + "hV0PseudoLifetimeK0s", "hV0PseudoLifetimeK0s", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
+        insertHist(modePrefixes[iMode] + "hV0PseudoLifetimeLambda", "hV0PseudoLifetimeLambda", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
+        insertHist(modePrefixes[iMode] + "hV0PseudoLifetimeD0", "hV0PseudoLifetimeD0", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
+        insertHist(modePrefixes[iMode] + "hV0InvMassK0s", "hV0InvMassK0s", kTH1D, {axisConfigurations.axisK0Mass});
+        insertHist(modePrefixes[iMode] + "hV0InvMassLambda", "hV0InvMassLambda", kTH1D, {axisConfigurations.axisLambdaMass});
+        insertHist(modePrefixes[iMode] + "hV0InvMassAntiLambda", "hV0InvMassAntiLambda", kTH1D, {axisConfigurations.axisLambdaMass});
+        insertHist(modePrefixes[iMode] + "hV0InvMassD0", "hV0InvMassD0", kTH1D, {axisConfigurations.axisD0Mass});
+        insertHist(modePrefixes[iMode] + "hV0InvMassAntiD0", "hV0InvMassAntiD0", kTH1D, {axisConfigurations.axisD0Mass});
         if (doCompleteTopoQA) {
-          insertHist(modePrefixes[iMode] +  "hV0InvMassK0sVsLambda", "hV0InvMassK0sVsLambda", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisLambdaMass});
-          insertHist(modePrefixes[iMode] +  "hV0InvMassK0sVsAntiLambda", "hV0InvMassK0sVsAntiLambda", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisLambdaMass});
-          insertHist(modePrefixes[iMode] +  "hV0InvMassK0sVsD0", "hV0InvMassK0sVsD0", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisD0Mass});
-          insertHist(modePrefixes[iMode] +  "hV0InvMassK0sVsAntiD0", "hV0InvMassK0sVsAntiD0", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisD0Mass});
-          insertHist(modePrefixes[iMode] +  "hV0InvMassLambdaVsD0", "hV0InvMassLambdaVsD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
-          insertHist(modePrefixes[iMode] +  "hV0InvMassAntiLambdaVsD0", "hV0InvMassAntiLambdaVsD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
-          insertHist(modePrefixes[iMode] +  "hV0InvMassLambdaVsAntiD0", "hV0InvMassLambdaVsAntiD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
-          insertHist(modePrefixes[iMode] +  "hV0InvMassAntiLambdaVsAntiD0", "hV0InvMassAntiLambdaVsAntiD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
+          insertHist(modePrefixes[iMode] + "hV0InvMassK0sVsLambda", "hV0InvMassK0sVsLambda", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisLambdaMass});
+          insertHist(modePrefixes[iMode] + "hV0InvMassK0sVsAntiLambda", "hV0InvMassK0sVsAntiLambda", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisLambdaMass});
+          insertHist(modePrefixes[iMode] + "hV0InvMassK0sVsD0", "hV0InvMassK0sVsD0", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisD0Mass});
+          insertHist(modePrefixes[iMode] + "hV0InvMassK0sVsAntiD0", "hV0InvMassK0sVsAntiD0", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisD0Mass});
+          insertHist(modePrefixes[iMode] + "hV0InvMassLambdaVsD0", "hV0InvMassLambdaVsD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
+          insertHist(modePrefixes[iMode] + "hV0InvMassAntiLambdaVsD0", "hV0InvMassAntiLambdaVsD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
+          insertHist(modePrefixes[iMode] + "hV0InvMassLambdaVsAntiD0", "hV0InvMassLambdaVsAntiD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
+          insertHist(modePrefixes[iMode] + "hV0InvMassAntiLambdaVsAntiD0", "hV0InvMassAntiLambdaVsAntiD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
         }
 
-        insertHist(modePrefixes[iMode] +  "hPositiveMFTcls", "hPositiveMFTcls", kTH1D, {axisConfigurations.axisMFTclus});
-        insertHist(modePrefixes[iMode] +  "hNegativeMFTcls", "hNegativeMFTcls", kTH1D, {axisConfigurations.axisMFTclus});
-        insertHist(modePrefixes[iMode] +  "hPositiveMFTchi2PerNcls", "hPositiveMFTchi2PerNcls", kTH1D, {axisConfigurations.axisMFTchi2NDF});
-        insertHist(modePrefixes[iMode] +  "hNegativeMFTchi2PerNcls", "hNegativeMFTchi2PerNcls", kTH1D, {axisConfigurations.axisMFTchi2NDF});
-        insertHist(modePrefixes[iMode] +  "hPositiveMFTchi2", "hPositiveMFTchi2", kTH1D, {axisConfigurations.axisMFTchi2});
-        insertHist(modePrefixes[iMode] +  "hNegativeMFTchi2", "hNegativeMFTchi2", kTH1D, {axisConfigurations.axisMFTchi2});
+        insertHist(modePrefixes[iMode] + "hPositiveMFTcls", "hPositiveMFTcls", kTH1D, {axisConfigurations.axisMFTclus});
+        insertHist(modePrefixes[iMode] + "hNegativeMFTcls", "hNegativeMFTcls", kTH1D, {axisConfigurations.axisMFTclus});
+        insertHist(modePrefixes[iMode] + "hPositiveMFTchi2PerNcls", "hPositiveMFTchi2PerNcls", kTH1D, {axisConfigurations.axisMFTchi2NDF});
+        insertHist(modePrefixes[iMode] + "hNegativeMFTchi2PerNcls", "hNegativeMFTchi2PerNcls", kTH1D, {axisConfigurations.axisMFTchi2NDF});
+        insertHist(modePrefixes[iMode] + "hPositiveMFTchi2", "hPositiveMFTchi2", kTH1D, {axisConfigurations.axisMFTchi2});
+        insertHist(modePrefixes[iMode] + "hNegativeMFTchi2", "hNegativeMFTchi2", kTH1D, {axisConfigurations.axisMFTchi2});
         if (doprocessMonteCarlo && iMode == kDefault) {
           insertHist(modePrefixes[iMode] + "hPositivePtResolution", "hPositivePtResolution", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisPtResol});
           insertHist(modePrefixes[iMode] + "hNegativePtResolution", "hNegativePtResolution", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisPtResol});
@@ -884,40 +884,40 @@ struct forwardlambdakzeroanalysis {
           insertHist(modePrefixes[iMode] + "hV0PzResolution", "hV0PzResolution", kTH2D, {axisConfigurations.axisPz, axisConfigurations.axisPzResol});
         }
         if (analyseK0Short) {
-          insertHist(modePrefixes[iMode] +  "K0Short/hPosDCAToPVxy", "hPosDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
-          insertHist(modePrefixes[iMode] +  "K0Short/hNegDCAToPVxy", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVz});
-          insertHist(modePrefixes[iMode] +  "K0Short/hPosDCAToPVz", "hPosDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVxy});
-          insertHist(modePrefixes[iMode] +  "K0Short/hNegDCAToPVz", "hNegDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
-          insertHist(modePrefixes[iMode] +  "K0Short/hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
-          insertHist(modePrefixes[iMode] +  "K0Short/hCosPA", "hCosPA", kTH1D, {axisConfigurations.axisCosPA});
-          insertHist(modePrefixes[iMode] +  "K0Short/hOpeningAngle", "hOpeningAngle", kTH1D, {axisConfigurations.axisOpeningAngle});
-          insertHist(modePrefixes[iMode] +  "K0Short/hV0Radius", "hV0Radius", kTH1D, {axisConfigurations.axisV0Radius});
-          insertHist(modePrefixes[iMode] +  "K0Short/hV0Z", "hV0Z", kTH1D, {axisConfigurations.axisV0Z});
-          insertHist(modePrefixes[iMode] +  "K0Short/hV0Rapidity", "hV0Rapidity", kTH1D, {axisConfigurations.axisV0Rapidity});
-          insertHist(modePrefixes[iMode] +  "K0Short/hV0LifetimeK0s", "hV0LifetimeK0s", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
-          insertHist(modePrefixes[iMode] +  "K0Short/hV0LifetimeLambda", "hV0LifetimeLambda", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
-          insertHist(modePrefixes[iMode] +  "K0Short/hV0LifetimeD0", "hV0LifetimeD0", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
-          insertHist(modePrefixes[iMode] +  "K0Short/hV0PseudoLifetimeK0s", "hV0PseudoLifetimeK0s", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
-          insertHist(modePrefixes[iMode] +  "K0Short/hV0PseudoLifetimeLambda", "hV0PseudoLifetimeLambda", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
-          insertHist(modePrefixes[iMode] +  "K0Short/hV0PseudoLifetimeD0", "hV0PseudoLifetimeD0", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
-          insertHist(modePrefixes[iMode] +  "K0Short/hV0InvMassK0s", "hV0InvMassK0s", kTH1D, {axisConfigurations.axisK0Mass});
-          insertHist(modePrefixes[iMode] +  "K0Short/hV0InvMassLambda", "hV0InvMassLambda", kTH1D, {axisConfigurations.axisLambdaMass});
-          insertHist(modePrefixes[iMode] +  "K0Short/hV0InvMassAntiLambda", "hV0InvMassAntiLambda", kTH1D, {axisConfigurations.axisLambdaMass});
-          insertHist(modePrefixes[iMode] +  "K0Short/hV0InvMassD0", "hV0InvMassD0", kTH1D, {axisConfigurations.axisD0Mass});
-          insertHist(modePrefixes[iMode] +  "K0Short/hV0InvMassAntiD0", "hV0InvMassAntiD0", kTH1D, {axisConfigurations.axisD0Mass});
+          insertHist(modePrefixes[iMode] + "K0Short/hPosDCAToPVxy", "hPosDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
+          insertHist(modePrefixes[iMode] + "K0Short/hNegDCAToPVxy", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVz});
+          insertHist(modePrefixes[iMode] + "K0Short/hPosDCAToPVz", "hPosDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVxy});
+          insertHist(modePrefixes[iMode] + "K0Short/hNegDCAToPVz", "hNegDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
+          insertHist(modePrefixes[iMode] + "K0Short/hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
+          insertHist(modePrefixes[iMode] + "K0Short/hCosPA", "hCosPA", kTH1D, {axisConfigurations.axisCosPA});
+          insertHist(modePrefixes[iMode] + "K0Short/hOpeningAngle", "hOpeningAngle", kTH1D, {axisConfigurations.axisOpeningAngle});
+          insertHist(modePrefixes[iMode] + "K0Short/hV0Radius", "hV0Radius", kTH1D, {axisConfigurations.axisV0Radius});
+          insertHist(modePrefixes[iMode] + "K0Short/hV0Z", "hV0Z", kTH1D, {axisConfigurations.axisV0Z});
+          insertHist(modePrefixes[iMode] + "K0Short/hV0Rapidity", "hV0Rapidity", kTH1D, {axisConfigurations.axisV0Rapidity});
+          insertHist(modePrefixes[iMode] + "K0Short/hV0LifetimeK0s", "hV0LifetimeK0s", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
+          insertHist(modePrefixes[iMode] + "K0Short/hV0LifetimeLambda", "hV0LifetimeLambda", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
+          insertHist(modePrefixes[iMode] + "K0Short/hV0LifetimeD0", "hV0LifetimeD0", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
+          insertHist(modePrefixes[iMode] + "K0Short/hV0PseudoLifetimeK0s", "hV0PseudoLifetimeK0s", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
+          insertHist(modePrefixes[iMode] + "K0Short/hV0PseudoLifetimeLambda", "hV0PseudoLifetimeLambda", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
+          insertHist(modePrefixes[iMode] + "K0Short/hV0PseudoLifetimeD0", "hV0PseudoLifetimeD0", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
+          insertHist(modePrefixes[iMode] + "K0Short/hV0InvMassK0s", "hV0InvMassK0s", kTH1D, {axisConfigurations.axisK0Mass});
+          insertHist(modePrefixes[iMode] + "K0Short/hV0InvMassLambda", "hV0InvMassLambda", kTH1D, {axisConfigurations.axisLambdaMass});
+          insertHist(modePrefixes[iMode] + "K0Short/hV0InvMassAntiLambda", "hV0InvMassAntiLambda", kTH1D, {axisConfigurations.axisLambdaMass});
+          insertHist(modePrefixes[iMode] + "K0Short/hV0InvMassD0", "hV0InvMassD0", kTH1D, {axisConfigurations.axisD0Mass});
+          insertHist(modePrefixes[iMode] + "K0Short/hV0InvMassAntiD0", "hV0InvMassAntiD0", kTH1D, {axisConfigurations.axisD0Mass});
           if (doCompleteTopoQA) {
-            insertHist(modePrefixes[iMode] +  "K0Short/hV0InvMassK0sVsLambda", "hV0InvMassK0sVsLambda", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisLambdaMass});
-            insertHist(modePrefixes[iMode] +  "K0Short/hV0InvMassK0sVsAntiLambda", "hV0InvMassK0sVsAntiLambda", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisLambdaMass});
-            insertHist(modePrefixes[iMode] +  "K0Short/hV0InvMassK0sVsD0", "hV0InvMassK0sVsD0", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisD0Mass});
-            insertHist(modePrefixes[iMode] +  "K0Short/hV0InvMassK0sVsAntiD0", "hV0InvMassK0sVsAntiD0", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisD0Mass});
+            insertHist(modePrefixes[iMode] + "K0Short/hV0InvMassK0sVsLambda", "hV0InvMassK0sVsLambda", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisLambdaMass});
+            insertHist(modePrefixes[iMode] + "K0Short/hV0InvMassK0sVsAntiLambda", "hV0InvMassK0sVsAntiLambda", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisLambdaMass});
+            insertHist(modePrefixes[iMode] + "K0Short/hV0InvMassK0sVsD0", "hV0InvMassK0sVsD0", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisD0Mass});
+            insertHist(modePrefixes[iMode] + "K0Short/hV0InvMassK0sVsAntiD0", "hV0InvMassK0sVsAntiD0", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisD0Mass});
           }
 
-          insertHist(modePrefixes[iMode] +  "K0Short/hPositiveMFTcls", "hPositiveMFTcls", kTH1D, {axisConfigurations.axisMFTclus});
-          insertHist(modePrefixes[iMode] +  "K0Short/hNegativeMFTcls", "hNegativeMFTcls", kTH1D, {axisConfigurations.axisMFTclus});
-          insertHist(modePrefixes[iMode] +  "K0Short/hPositiveMFTchi2PerNcls", "hPositiveMFTchi2PerNcls", kTH1D, {axisConfigurations.axisMFTchi2NDF});
-          insertHist(modePrefixes[iMode] +  "K0Short/hNegativeMFTchi2PerNcls", "hNegativeMFTchi2PerNcls", kTH1D, {axisConfigurations.axisMFTchi2NDF});
-          insertHist(modePrefixes[iMode] +  "K0Short/hPositiveMFTchi2", "hPositiveMFTchi2", kTH1D, {axisConfigurations.axisMFTchi2});
-          insertHist(modePrefixes[iMode] +  "K0Short/hNegativeMFTchi2", "hNegativeMFTchi2", kTH1D, {axisConfigurations.axisMFTchi2});
+          insertHist(modePrefixes[iMode] + "K0Short/hPositiveMFTcls", "hPositiveMFTcls", kTH1D, {axisConfigurations.axisMFTclus});
+          insertHist(modePrefixes[iMode] + "K0Short/hNegativeMFTcls", "hNegativeMFTcls", kTH1D, {axisConfigurations.axisMFTclus});
+          insertHist(modePrefixes[iMode] + "K0Short/hPositiveMFTchi2PerNcls", "hPositiveMFTchi2PerNcls", kTH1D, {axisConfigurations.axisMFTchi2NDF});
+          insertHist(modePrefixes[iMode] + "K0Short/hNegativeMFTchi2PerNcls", "hNegativeMFTchi2PerNcls", kTH1D, {axisConfigurations.axisMFTchi2NDF});
+          insertHist(modePrefixes[iMode] + "K0Short/hPositiveMFTchi2", "hPositiveMFTchi2", kTH1D, {axisConfigurations.axisMFTchi2});
+          insertHist(modePrefixes[iMode] + "K0Short/hNegativeMFTchi2", "hNegativeMFTchi2", kTH1D, {axisConfigurations.axisMFTchi2});
           if (doprocessMonteCarlo && iMode == kDefault) {
             insertHist(modePrefixes[iMode] + "K0Short/hPositivePtResolution", "hPositivePtResolution", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisPtResol});
             insertHist(modePrefixes[iMode] + "K0Short/hNegativePtResolution", "hNegativePtResolution", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisPtResol});
@@ -934,39 +934,39 @@ struct forwardlambdakzeroanalysis {
           }
         }
         if (analyseLambda) {
-          insertHist(modePrefixes[iMode] +  "Lambda/hPosDCAToPVxy", "hPosDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
-          insertHist(modePrefixes[iMode] +  "Lambda/hNegDCAToPVxy", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVz});
-          insertHist(modePrefixes[iMode] +  "Lambda/hPosDCAToPVz", "hPosDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVxy});
-          insertHist(modePrefixes[iMode] +  "Lambda/hNegDCAToPVz", "hNegDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
-          insertHist(modePrefixes[iMode] +  "Lambda/hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
-          insertHist(modePrefixes[iMode] +  "Lambda/hCosPA", "hCosPA", kTH1D, {axisConfigurations.axisCosPA});
-          insertHist(modePrefixes[iMode] +  "Lambda/hOpeningAngle", "hOpeningAngle", kTH1D, {axisConfigurations.axisOpeningAngle});
-          insertHist(modePrefixes[iMode] +  "Lambda/hV0Radius", "hV0Radius", kTH1D, {axisConfigurations.axisV0Radius});
-          insertHist(modePrefixes[iMode] +  "Lambda/hV0Z", "hV0Z", kTH1D, {axisConfigurations.axisV0Z});
-          insertHist(modePrefixes[iMode] +  "Lambda/hV0Rapidity", "hV0Rapidity", kTH1D, {axisConfigurations.axisV0Rapidity});
-          insertHist(modePrefixes[iMode] +  "Lambda/hV0LifetimeK0s", "hV0LifetimeK0s", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
-          insertHist(modePrefixes[iMode] +  "Lambda/hV0LifetimeLambda", "hV0LifetimeLambda", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
-          insertHist(modePrefixes[iMode] +  "Lambda/hV0LifetimeD0", "hV0LifetimeD0", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
-          insertHist(modePrefixes[iMode] +  "Lambda/hV0PseudoLifetimeK0s", "hV0PseudoLifetimeK0s", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
-          insertHist(modePrefixes[iMode] +  "Lambda/hV0PseudoLifetimeLambda", "hV0PseudoLifetimeLambda", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
-          insertHist(modePrefixes[iMode] +  "Lambda/hV0PseudoLifetimeD0", "hV0PseudoLifetimeD0", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
-          insertHist(modePrefixes[iMode] +  "Lambda/hV0InvMassK0s", "hV0InvMassK0s", kTH1D, {axisConfigurations.axisK0Mass});
-          insertHist(modePrefixes[iMode] +  "Lambda/hV0InvMassLambda", "hV0InvMassLambda", kTH1D, {axisConfigurations.axisLambdaMass});
-          insertHist(modePrefixes[iMode] +  "Lambda/hV0InvMassAntiLambda", "hV0InvMassAntiLambda", kTH1D, {axisConfigurations.axisLambdaMass});
-          insertHist(modePrefixes[iMode] +  "Lambda/hV0InvMassD0", "hV0InvMassD0", kTH1D, {axisConfigurations.axisD0Mass});
-          insertHist(modePrefixes[iMode] +  "Lambda/hV0InvMassAntiD0", "hV0InvMassAntiD0", kTH1D, {axisConfigurations.axisD0Mass});
+          insertHist(modePrefixes[iMode] + "Lambda/hPosDCAToPVxy", "hPosDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
+          insertHist(modePrefixes[iMode] + "Lambda/hNegDCAToPVxy", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVz});
+          insertHist(modePrefixes[iMode] + "Lambda/hPosDCAToPVz", "hPosDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVxy});
+          insertHist(modePrefixes[iMode] + "Lambda/hNegDCAToPVz", "hNegDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
+          insertHist(modePrefixes[iMode] + "Lambda/hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
+          insertHist(modePrefixes[iMode] + "Lambda/hCosPA", "hCosPA", kTH1D, {axisConfigurations.axisCosPA});
+          insertHist(modePrefixes[iMode] + "Lambda/hOpeningAngle", "hOpeningAngle", kTH1D, {axisConfigurations.axisOpeningAngle});
+          insertHist(modePrefixes[iMode] + "Lambda/hV0Radius", "hV0Radius", kTH1D, {axisConfigurations.axisV0Radius});
+          insertHist(modePrefixes[iMode] + "Lambda/hV0Z", "hV0Z", kTH1D, {axisConfigurations.axisV0Z});
+          insertHist(modePrefixes[iMode] + "Lambda/hV0Rapidity", "hV0Rapidity", kTH1D, {axisConfigurations.axisV0Rapidity});
+          insertHist(modePrefixes[iMode] + "Lambda/hV0LifetimeK0s", "hV0LifetimeK0s", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
+          insertHist(modePrefixes[iMode] + "Lambda/hV0LifetimeLambda", "hV0LifetimeLambda", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
+          insertHist(modePrefixes[iMode] + "Lambda/hV0LifetimeD0", "hV0LifetimeD0", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
+          insertHist(modePrefixes[iMode] + "Lambda/hV0PseudoLifetimeK0s", "hV0PseudoLifetimeK0s", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
+          insertHist(modePrefixes[iMode] + "Lambda/hV0PseudoLifetimeLambda", "hV0PseudoLifetimeLambda", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
+          insertHist(modePrefixes[iMode] + "Lambda/hV0PseudoLifetimeD0", "hV0PseudoLifetimeD0", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
+          insertHist(modePrefixes[iMode] + "Lambda/hV0InvMassK0s", "hV0InvMassK0s", kTH1D, {axisConfigurations.axisK0Mass});
+          insertHist(modePrefixes[iMode] + "Lambda/hV0InvMassLambda", "hV0InvMassLambda", kTH1D, {axisConfigurations.axisLambdaMass});
+          insertHist(modePrefixes[iMode] + "Lambda/hV0InvMassAntiLambda", "hV0InvMassAntiLambda", kTH1D, {axisConfigurations.axisLambdaMass});
+          insertHist(modePrefixes[iMode] + "Lambda/hV0InvMassD0", "hV0InvMassD0", kTH1D, {axisConfigurations.axisD0Mass});
+          insertHist(modePrefixes[iMode] + "Lambda/hV0InvMassAntiD0", "hV0InvMassAntiD0", kTH1D, {axisConfigurations.axisD0Mass});
           if (doCompleteTopoQA) {
-            insertHist(modePrefixes[iMode] +  "Lambda/hV0InvMassK0sVsLambda", "hV0InvMassK0sVsLambda", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisLambdaMass});
-            insertHist(modePrefixes[iMode] +  "Lambda/hV0InvMassLambdaVsD0", "hV0InvMassLambdaVsD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
-            insertHist(modePrefixes[iMode] +  "Lambda/hV0InvMassLambdaVsAntiD0", "hV0InvMassLambdaVsAntiD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
+            insertHist(modePrefixes[iMode] + "Lambda/hV0InvMassK0sVsLambda", "hV0InvMassK0sVsLambda", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisLambdaMass});
+            insertHist(modePrefixes[iMode] + "Lambda/hV0InvMassLambdaVsD0", "hV0InvMassLambdaVsD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
+            insertHist(modePrefixes[iMode] + "Lambda/hV0InvMassLambdaVsAntiD0", "hV0InvMassLambdaVsAntiD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
           }
 
-          insertHist(modePrefixes[iMode] +  "Lambda/hPositiveMFTcls", "hPositiveMFTcls", kTH1D, {axisConfigurations.axisMFTclus});
-          insertHist(modePrefixes[iMode] +  "Lambda/hNegativeMFTcls", "hNegativeMFTcls", kTH1D, {axisConfigurations.axisMFTclus});
-          insertHist(modePrefixes[iMode] +  "Lambda/hPositiveMFTchi2PerNcls", "hPositiveMFTchi2PerNcls", kTH1D, {axisConfigurations.axisMFTchi2NDF});
-          insertHist(modePrefixes[iMode] +  "Lambda/hNegativeMFTchi2PerNcls", "hNegativeMFTchi2PerNcls", kTH1D, {axisConfigurations.axisMFTchi2NDF});
-          insertHist(modePrefixes[iMode] +  "Lambda/hPositiveMFTchi2", "hPositiveMFTchi2", kTH1D, {axisConfigurations.axisMFTchi2});
-          insertHist(modePrefixes[iMode] +  "Lambda/hNegativeMFTchi2", "hNegativeMFTchi2", kTH1D, {axisConfigurations.axisMFTchi2});
+          insertHist(modePrefixes[iMode] + "Lambda/hPositiveMFTcls", "hPositiveMFTcls", kTH1D, {axisConfigurations.axisMFTclus});
+          insertHist(modePrefixes[iMode] + "Lambda/hNegativeMFTcls", "hNegativeMFTcls", kTH1D, {axisConfigurations.axisMFTclus});
+          insertHist(modePrefixes[iMode] + "Lambda/hPositiveMFTchi2PerNcls", "hPositiveMFTchi2PerNcls", kTH1D, {axisConfigurations.axisMFTchi2NDF});
+          insertHist(modePrefixes[iMode] + "Lambda/hNegativeMFTchi2PerNcls", "hNegativeMFTchi2PerNcls", kTH1D, {axisConfigurations.axisMFTchi2NDF});
+          insertHist(modePrefixes[iMode] + "Lambda/hPositiveMFTchi2", "hPositiveMFTchi2", kTH1D, {axisConfigurations.axisMFTchi2});
+          insertHist(modePrefixes[iMode] + "Lambda/hNegativeMFTchi2", "hNegativeMFTchi2", kTH1D, {axisConfigurations.axisMFTchi2});
           if (doprocessMonteCarlo && iMode == kDefault) {
             insertHist(modePrefixes[iMode] + "Lambda/hPositivePtResolution", "hPositivePtResolution", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisPtResol});
             insertHist(modePrefixes[iMode] + "Lambda/hNegativePtResolution", "hNegativePtResolution", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisPtResol});
@@ -983,39 +983,39 @@ struct forwardlambdakzeroanalysis {
           }
         }
         if (analyseAntiLambda) {
-          insertHist(modePrefixes[iMode] +  "AntiLambda/hPosDCAToPVxy", "hPosDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
-          insertHist(modePrefixes[iMode] +  "AntiLambda/hNegDCAToPVxy", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVz});
-          insertHist(modePrefixes[iMode] +  "AntiLambda/hPosDCAToPVz", "hPosDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVxy});
-          insertHist(modePrefixes[iMode] +  "AntiLambda/hNegDCAToPVz", "hNegDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
-          insertHist(modePrefixes[iMode] +  "AntiLambda/hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
-          insertHist(modePrefixes[iMode] +  "AntiLambda/hCosPA", "hCosPA", kTH1D, {axisConfigurations.axisCosPA});
-          insertHist(modePrefixes[iMode] +  "AntiLambda/hOpeningAngle", "hOpeningAngle", kTH1D, {axisConfigurations.axisOpeningAngle});
-          insertHist(modePrefixes[iMode] +  "AntiLambda/hV0Radius", "hV0Radius", kTH1D, {axisConfigurations.axisV0Radius});
-          insertHist(modePrefixes[iMode] +  "AntiLambda/hV0Z", "hV0Z", kTH1D, {axisConfigurations.axisV0Z});
-          insertHist(modePrefixes[iMode] +  "AntiLambda/hV0Rapidity", "hV0Rapidity", kTH1D, {axisConfigurations.axisV0Rapidity});
-          insertHist(modePrefixes[iMode] +  "AntiLambda/hV0LifetimeK0s", "hV0LifetimeK0s", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
-          insertHist(modePrefixes[iMode] +  "AntiLambda/hV0LifetimeLambda", "hV0LifetimeLambda", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
-          insertHist(modePrefixes[iMode] +  "AntiLambda/hV0LifetimeD0", "hV0LifetimeD0", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
-          insertHist(modePrefixes[iMode] +  "AntiLambda/hV0PseudoLifetimeK0s", "hV0PseudoLifetimeK0s", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
-          insertHist(modePrefixes[iMode] +  "AntiLambda/hV0PseudoLifetimeLambda", "hV0PseudoLifetimeLambda", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
-          insertHist(modePrefixes[iMode] +  "AntiLambda/hV0PseudoLifetimeD0", "hV0PseudoLifetimeD0", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
-          insertHist(modePrefixes[iMode] +  "AntiLambda/hV0InvMassK0s", "hV0InvMassK0s", kTH1D, {axisConfigurations.axisK0Mass});
-          insertHist(modePrefixes[iMode] +  "AntiLambda/hV0InvMassLambda", "hV0InvMassLambda", kTH1D, {axisConfigurations.axisLambdaMass});
-          insertHist(modePrefixes[iMode] +  "AntiLambda/hV0InvMassAntiLambda", "hV0InvMassAntiLambda", kTH1D, {axisConfigurations.axisLambdaMass});
-          insertHist(modePrefixes[iMode] +  "AntiLambda/hV0InvMassD0", "hV0InvMassD0", kTH1D, {axisConfigurations.axisD0Mass});
-          insertHist(modePrefixes[iMode] +  "AntiLambda/hV0InvMassAntiD0", "hV0InvMassAntiD0", kTH1D, {axisConfigurations.axisD0Mass});
+          insertHist(modePrefixes[iMode] + "AntiLambda/hPosDCAToPVxy", "hPosDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
+          insertHist(modePrefixes[iMode] + "AntiLambda/hNegDCAToPVxy", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVz});
+          insertHist(modePrefixes[iMode] + "AntiLambda/hPosDCAToPVz", "hPosDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVxy});
+          insertHist(modePrefixes[iMode] + "AntiLambda/hNegDCAToPVz", "hNegDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
+          insertHist(modePrefixes[iMode] + "AntiLambda/hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
+          insertHist(modePrefixes[iMode] + "AntiLambda/hCosPA", "hCosPA", kTH1D, {axisConfigurations.axisCosPA});
+          insertHist(modePrefixes[iMode] + "AntiLambda/hOpeningAngle", "hOpeningAngle", kTH1D, {axisConfigurations.axisOpeningAngle});
+          insertHist(modePrefixes[iMode] + "AntiLambda/hV0Radius", "hV0Radius", kTH1D, {axisConfigurations.axisV0Radius});
+          insertHist(modePrefixes[iMode] + "AntiLambda/hV0Z", "hV0Z", kTH1D, {axisConfigurations.axisV0Z});
+          insertHist(modePrefixes[iMode] + "AntiLambda/hV0Rapidity", "hV0Rapidity", kTH1D, {axisConfigurations.axisV0Rapidity});
+          insertHist(modePrefixes[iMode] + "AntiLambda/hV0LifetimeK0s", "hV0LifetimeK0s", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
+          insertHist(modePrefixes[iMode] + "AntiLambda/hV0LifetimeLambda", "hV0LifetimeLambda", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
+          insertHist(modePrefixes[iMode] + "AntiLambda/hV0LifetimeD0", "hV0LifetimeD0", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
+          insertHist(modePrefixes[iMode] + "AntiLambda/hV0PseudoLifetimeK0s", "hV0PseudoLifetimeK0s", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
+          insertHist(modePrefixes[iMode] + "AntiLambda/hV0PseudoLifetimeLambda", "hV0PseudoLifetimeLambda", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
+          insertHist(modePrefixes[iMode] + "AntiLambda/hV0PseudoLifetimeD0", "hV0PseudoLifetimeD0", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
+          insertHist(modePrefixes[iMode] + "AntiLambda/hV0InvMassK0s", "hV0InvMassK0s", kTH1D, {axisConfigurations.axisK0Mass});
+          insertHist(modePrefixes[iMode] + "AntiLambda/hV0InvMassLambda", "hV0InvMassLambda", kTH1D, {axisConfigurations.axisLambdaMass});
+          insertHist(modePrefixes[iMode] + "AntiLambda/hV0InvMassAntiLambda", "hV0InvMassAntiLambda", kTH1D, {axisConfigurations.axisLambdaMass});
+          insertHist(modePrefixes[iMode] + "AntiLambda/hV0InvMassD0", "hV0InvMassD0", kTH1D, {axisConfigurations.axisD0Mass});
+          insertHist(modePrefixes[iMode] + "AntiLambda/hV0InvMassAntiD0", "hV0InvMassAntiD0", kTH1D, {axisConfigurations.axisD0Mass});
           if (doCompleteTopoQA) {
-            insertHist(modePrefixes[iMode] +  "AntiLambda/hV0InvMassK0sVsAntiLambda", "hV0InvMassK0sVsAntiLambda", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisLambdaMass});
-            insertHist(modePrefixes[iMode] +  "AntiLambda/hV0InvMassAntiLambdaVsD0", "hV0InvMassAntiLambdaVsD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
-            insertHist(modePrefixes[iMode] +  "AntiLambda/hV0InvMassAntiLambdaVsAntiD0", "hV0InvMassAntiLambdaVsAntiD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
+            insertHist(modePrefixes[iMode] + "AntiLambda/hV0InvMassK0sVsAntiLambda", "hV0InvMassK0sVsAntiLambda", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisLambdaMass});
+            insertHist(modePrefixes[iMode] + "AntiLambda/hV0InvMassAntiLambdaVsD0", "hV0InvMassAntiLambdaVsD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
+            insertHist(modePrefixes[iMode] + "AntiLambda/hV0InvMassAntiLambdaVsAntiD0", "hV0InvMassAntiLambdaVsAntiD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
           }
 
-          insertHist(modePrefixes[iMode] +  "AntiLambda/hPositiveMFTcls", "hPositiveMFTcls", kTH1D, {axisConfigurations.axisMFTclus});
-          insertHist(modePrefixes[iMode] +  "AntiLambda/hNegativeMFTcls", "hNegativeMFTcls", kTH1D, {axisConfigurations.axisMFTclus});
-          insertHist(modePrefixes[iMode] +  "AntiLambda/hPositiveMFTchi2PerNcls", "hPositiveMFTchi2PerNcls", kTH1D, {axisConfigurations.axisMFTchi2NDF});
-          insertHist(modePrefixes[iMode] +  "AntiLambda/hNegativeMFTchi2PerNcls", "hNegativeMFTchi2PerNcls", kTH1D, {axisConfigurations.axisMFTchi2NDF});
-          insertHist(modePrefixes[iMode] +  "AntiLambda/hPositiveMFTchi2", "hPositiveMFTchi2", kTH1D, {axisConfigurations.axisMFTchi2});
-          insertHist(modePrefixes[iMode] +  "AntiLambda/hNegativeMFTchi2", "hNegativeMFTchi2", kTH1D, {axisConfigurations.axisMFTchi2});
+          insertHist(modePrefixes[iMode] + "AntiLambda/hPositiveMFTcls", "hPositiveMFTcls", kTH1D, {axisConfigurations.axisMFTclus});
+          insertHist(modePrefixes[iMode] + "AntiLambda/hNegativeMFTcls", "hNegativeMFTcls", kTH1D, {axisConfigurations.axisMFTclus});
+          insertHist(modePrefixes[iMode] + "AntiLambda/hPositiveMFTchi2PerNcls", "hPositiveMFTchi2PerNcls", kTH1D, {axisConfigurations.axisMFTchi2NDF});
+          insertHist(modePrefixes[iMode] + "AntiLambda/hNegativeMFTchi2PerNcls", "hNegativeMFTchi2PerNcls", kTH1D, {axisConfigurations.axisMFTchi2NDF});
+          insertHist(modePrefixes[iMode] + "AntiLambda/hPositiveMFTchi2", "hPositiveMFTchi2", kTH1D, {axisConfigurations.axisMFTchi2});
+          insertHist(modePrefixes[iMode] + "AntiLambda/hNegativeMFTchi2", "hNegativeMFTchi2", kTH1D, {axisConfigurations.axisMFTchi2});
           if (doprocessMonteCarlo && iMode == kDefault) {
             insertHist(modePrefixes[iMode] + "AntiLambda/hPositivePtResolution", "hPositivePtResolution", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisPtResol});
             insertHist(modePrefixes[iMode] + "AntiLambda/hNegativePtResolution", "hNegativePtResolution", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisPtResol});
@@ -1032,39 +1032,39 @@ struct forwardlambdakzeroanalysis {
           }
         }
         if (analyseD0) {
-          insertHist(modePrefixes[iMode] +  "D0/hPosDCAToPVxy", "hPosDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
-          insertHist(modePrefixes[iMode] +  "D0/hNegDCAToPVxy", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVz});
-          insertHist(modePrefixes[iMode] +  "D0/hPosDCAToPVz", "hPosDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVxy});
-          insertHist(modePrefixes[iMode] +  "D0/hNegDCAToPVz", "hNegDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
-          insertHist(modePrefixes[iMode] +  "D0/hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
-          insertHist(modePrefixes[iMode] +  "D0/hCosPA", "hCosPA", kTH1D, {axisConfigurations.axisCosPA});
-          insertHist(modePrefixes[iMode] +  "D0/hOpeningAngle", "hOpeningAngle", kTH1D, {axisConfigurations.axisOpeningAngle});
-          insertHist(modePrefixes[iMode] +  "D0/hV0Radius", "hV0Radius", kTH1D, {axisConfigurations.axisV0Radius});
-          insertHist(modePrefixes[iMode] +  "D0/hV0Z", "hV0Z", kTH1D, {axisConfigurations.axisV0Z});
-          insertHist(modePrefixes[iMode] +  "D0/hV0Rapidity", "hV0Rapidity", kTH1D, {axisConfigurations.axisV0Rapidity});
-          insertHist(modePrefixes[iMode] +  "D0/hV0LifetimeK0s", "hV0LifetimeK0s", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
-          insertHist(modePrefixes[iMode] +  "D0/hV0LifetimeLambda", "hV0LifetimeLambda", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
-          insertHist(modePrefixes[iMode] +  "D0/hV0LifetimeD0", "hV0LifetimeD0", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
-          insertHist(modePrefixes[iMode] +  "D0/hV0PseudoLifetimeK0s", "hV0PseudoLifetimeK0s", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
-          insertHist(modePrefixes[iMode] +  "D0/hV0PseudoLifetimeLambda", "hV0PseudoLifetimeLambda", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
-          insertHist(modePrefixes[iMode] +  "D0/hV0PseudoLifetimeD0", "hV0PseudoLifetimeD0", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
-          insertHist(modePrefixes[iMode] +  "D0/hV0InvMassK0s", "hV0InvMassK0s", kTH1D, {axisConfigurations.axisK0Mass});
-          insertHist(modePrefixes[iMode] +  "D0/hV0InvMassLambda", "hV0InvMassLambda", kTH1D, {axisConfigurations.axisLambdaMass});
-          insertHist(modePrefixes[iMode] +  "D0/hV0InvMassAntiLambda", "hV0InvMassAntiLambda", kTH1D, {axisConfigurations.axisLambdaMass});
-          insertHist(modePrefixes[iMode] +  "D0/hV0InvMassD0", "hV0InvMassD0", kTH1D, {axisConfigurations.axisD0Mass});
-          insertHist(modePrefixes[iMode] +  "D0/hV0InvMassAntiD0", "hV0InvMassAntiD0", kTH1D, {axisConfigurations.axisD0Mass});
+          insertHist(modePrefixes[iMode] + "D0/hPosDCAToPVxy", "hPosDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
+          insertHist(modePrefixes[iMode] + "D0/hNegDCAToPVxy", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVz});
+          insertHist(modePrefixes[iMode] + "D0/hPosDCAToPVz", "hPosDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVxy});
+          insertHist(modePrefixes[iMode] + "D0/hNegDCAToPVz", "hNegDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
+          insertHist(modePrefixes[iMode] + "D0/hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
+          insertHist(modePrefixes[iMode] + "D0/hCosPA", "hCosPA", kTH1D, {axisConfigurations.axisCosPA});
+          insertHist(modePrefixes[iMode] + "D0/hOpeningAngle", "hOpeningAngle", kTH1D, {axisConfigurations.axisOpeningAngle});
+          insertHist(modePrefixes[iMode] + "D0/hV0Radius", "hV0Radius", kTH1D, {axisConfigurations.axisV0Radius});
+          insertHist(modePrefixes[iMode] + "D0/hV0Z", "hV0Z", kTH1D, {axisConfigurations.axisV0Z});
+          insertHist(modePrefixes[iMode] + "D0/hV0Rapidity", "hV0Rapidity", kTH1D, {axisConfigurations.axisV0Rapidity});
+          insertHist(modePrefixes[iMode] + "D0/hV0LifetimeK0s", "hV0LifetimeK0s", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
+          insertHist(modePrefixes[iMode] + "D0/hV0LifetimeLambda", "hV0LifetimeLambda", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
+          insertHist(modePrefixes[iMode] + "D0/hV0LifetimeD0", "hV0LifetimeD0", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
+          insertHist(modePrefixes[iMode] + "D0/hV0PseudoLifetimeK0s", "hV0PseudoLifetimeK0s", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
+          insertHist(modePrefixes[iMode] + "D0/hV0PseudoLifetimeLambda", "hV0PseudoLifetimeLambda", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
+          insertHist(modePrefixes[iMode] + "D0/hV0PseudoLifetimeD0", "hV0PseudoLifetimeD0", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
+          insertHist(modePrefixes[iMode] + "D0/hV0InvMassK0s", "hV0InvMassK0s", kTH1D, {axisConfigurations.axisK0Mass});
+          insertHist(modePrefixes[iMode] + "D0/hV0InvMassLambda", "hV0InvMassLambda", kTH1D, {axisConfigurations.axisLambdaMass});
+          insertHist(modePrefixes[iMode] + "D0/hV0InvMassAntiLambda", "hV0InvMassAntiLambda", kTH1D, {axisConfigurations.axisLambdaMass});
+          insertHist(modePrefixes[iMode] + "D0/hV0InvMassD0", "hV0InvMassD0", kTH1D, {axisConfigurations.axisD0Mass});
+          insertHist(modePrefixes[iMode] + "D0/hV0InvMassAntiD0", "hV0InvMassAntiD0", kTH1D, {axisConfigurations.axisD0Mass});
           if (doCompleteTopoQA) {
-            insertHist(modePrefixes[iMode] +  "D0/hV0InvMassK0sVsD0", "hV0InvMassK0sVsD0", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisD0Mass});
-            insertHist(modePrefixes[iMode] +  "D0/hV0InvMassLambdaVsD0", "hV0InvMassLambdaVsD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
-            insertHist(modePrefixes[iMode] +  "D0/hV0InvMassAntiLambdaVsD0", "hV0InvMassAntiLambdaVsD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
+            insertHist(modePrefixes[iMode] + "D0/hV0InvMassK0sVsD0", "hV0InvMassK0sVsD0", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisD0Mass});
+            insertHist(modePrefixes[iMode] + "D0/hV0InvMassLambdaVsD0", "hV0InvMassLambdaVsD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
+            insertHist(modePrefixes[iMode] + "D0/hV0InvMassAntiLambdaVsD0", "hV0InvMassAntiLambdaVsD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
           }
 
-          insertHist(modePrefixes[iMode] +  "D0/hPositiveMFTcls", "hPositiveMFTcls", kTH1D, {axisConfigurations.axisMFTclus});
-          insertHist(modePrefixes[iMode] +  "D0/hNegativeMFTcls", "hNegativeMFTcls", kTH1D, {axisConfigurations.axisMFTclus});
-          insertHist(modePrefixes[iMode] +  "D0/hPositiveMFTchi2PerNcls", "hPositiveMFTchi2PerNcls", kTH1D, {axisConfigurations.axisMFTchi2NDF});
-          insertHist(modePrefixes[iMode] +  "D0/hNegativeMFTchi2PerNcls", "hNegativeMFTchi2PerNcls", kTH1D, {axisConfigurations.axisMFTchi2NDF});
-          insertHist(modePrefixes[iMode] +  "D0/hPositiveMFTchi2", "hPositiveMFTchi2", kTH1D, {axisConfigurations.axisMFTchi2});
-          insertHist(modePrefixes[iMode] +  "D0/hNegativeMFTchi2", "hNegativeMFTchi2", kTH1D, {axisConfigurations.axisMFTchi2});
+          insertHist(modePrefixes[iMode] + "D0/hPositiveMFTcls", "hPositiveMFTcls", kTH1D, {axisConfigurations.axisMFTclus});
+          insertHist(modePrefixes[iMode] + "D0/hNegativeMFTcls", "hNegativeMFTcls", kTH1D, {axisConfigurations.axisMFTclus});
+          insertHist(modePrefixes[iMode] + "D0/hPositiveMFTchi2PerNcls", "hPositiveMFTchi2PerNcls", kTH1D, {axisConfigurations.axisMFTchi2NDF});
+          insertHist(modePrefixes[iMode] + "D0/hNegativeMFTchi2PerNcls", "hNegativeMFTchi2PerNcls", kTH1D, {axisConfigurations.axisMFTchi2NDF});
+          insertHist(modePrefixes[iMode] + "D0/hPositiveMFTchi2", "hPositiveMFTchi2", kTH1D, {axisConfigurations.axisMFTchi2});
+          insertHist(modePrefixes[iMode] + "D0/hNegativeMFTchi2", "hNegativeMFTchi2", kTH1D, {axisConfigurations.axisMFTchi2});
           if (doprocessMonteCarlo && iMode == kDefault) {
             insertHist(modePrefixes[iMode] + "D0/hPositivePtResolution", "hPositivePtResolution", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisPtResol});
             insertHist(modePrefixes[iMode] + "D0/hNegativePtResolution", "hNegativePtResolution", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisPtResol});
@@ -1081,31 +1081,31 @@ struct forwardlambdakzeroanalysis {
           }
         }
         if (analyseAntiD0) {
-          insertHist(modePrefixes[iMode] +  "AntiD0/hPosDCAToPVxy", "hPosDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
-          insertHist(modePrefixes[iMode] +  "AntiD0/hNegDCAToPVxy", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVz});
-          insertHist(modePrefixes[iMode] +  "AntiD0/hPosDCAToPVz", "hPosDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVxy});
-          insertHist(modePrefixes[iMode] +  "AntiD0/hNegDCAToPVz", "hNegDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
-          insertHist(modePrefixes[iMode] +  "AntiD0/hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
-          insertHist(modePrefixes[iMode] +  "AntiD0/hCosPA", "hCosPA", kTH1D, {axisConfigurations.axisCosPA});
-          insertHist(modePrefixes[iMode] +  "AntiD0/hOpeningAngle", "hOpeningAngle", kTH1D, {axisConfigurations.axisOpeningAngle});
-          insertHist(modePrefixes[iMode] +  "AntiD0/hV0Radius", "hV0Radius", kTH1D, {axisConfigurations.axisV0Radius});
-          insertHist(modePrefixes[iMode] +  "AntiD0/hV0Z", "hV0Z", kTH1D, {axisConfigurations.axisV0Z});
-          insertHist(modePrefixes[iMode] +  "AntiD0/hV0Rapidity", "hV0Rapidity", kTH1D, {axisConfigurations.axisV0Rapidity});
-          insertHist(modePrefixes[iMode] +  "AntiD0/hV0LifetimeK0s", "hV0LifetimeK0s", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
-          insertHist(modePrefixes[iMode] +  "AntiD0/hV0LifetimeLambda", "hV0LifetimeLambda", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
-          insertHist(modePrefixes[iMode] +  "AntiD0/hV0LifetimeD0", "hV0LifetimeD0", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
-          insertHist(modePrefixes[iMode] +  "AntiD0/hV0PseudoLifetimeK0s", "hV0PseudoLifetimeK0s", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
-          insertHist(modePrefixes[iMode] +  "AntiD0/hV0PseudoLifetimeLambda", "hV0PseudoLifetimeLambda", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
-          insertHist(modePrefixes[iMode] +  "AntiD0/hV0PseudoLifetimeD0", "hV0PseudoLifetimeD0", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
-          insertHist(modePrefixes[iMode] +  "AntiD0/hV0InvMassK0s", "hV0InvMassK0s", kTH1D, {axisConfigurations.axisK0Mass});
-          insertHist(modePrefixes[iMode] +  "AntiD0/hV0InvMassLambda", "hV0InvMassLambda", kTH1D, {axisConfigurations.axisLambdaMass});
-          insertHist(modePrefixes[iMode] +  "AntiD0/hV0InvMassAntiLambda", "hV0InvMassAntiLambda", kTH1D, {axisConfigurations.axisLambdaMass});
-          insertHist(modePrefixes[iMode] +  "AntiD0/hV0InvMassD0", "hV0InvMassD0", kTH1D, {axisConfigurations.axisD0Mass});
-          insertHist(modePrefixes[iMode] +  "AntiD0/hV0InvMassAntiD0", "hV0InvMassAntiD0", kTH1D, {axisConfigurations.axisD0Mass});
+          insertHist(modePrefixes[iMode] + "AntiD0/hPosDCAToPVxy", "hPosDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
+          insertHist(modePrefixes[iMode] + "AntiD0/hNegDCAToPVxy", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVz});
+          insertHist(modePrefixes[iMode] + "AntiD0/hPosDCAToPVz", "hPosDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVxy});
+          insertHist(modePrefixes[iMode] + "AntiD0/hNegDCAToPVz", "hNegDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
+          insertHist(modePrefixes[iMode] + "AntiD0/hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
+          insertHist(modePrefixes[iMode] + "AntiD0/hCosPA", "hCosPA", kTH1D, {axisConfigurations.axisCosPA});
+          insertHist(modePrefixes[iMode] + "AntiD0/hOpeningAngle", "hOpeningAngle", kTH1D, {axisConfigurations.axisOpeningAngle});
+          insertHist(modePrefixes[iMode] + "AntiD0/hV0Radius", "hV0Radius", kTH1D, {axisConfigurations.axisV0Radius});
+          insertHist(modePrefixes[iMode] + "AntiD0/hV0Z", "hV0Z", kTH1D, {axisConfigurations.axisV0Z});
+          insertHist(modePrefixes[iMode] + "AntiD0/hV0Rapidity", "hV0Rapidity", kTH1D, {axisConfigurations.axisV0Rapidity});
+          insertHist(modePrefixes[iMode] + "AntiD0/hV0LifetimeK0s", "hV0LifetimeK0s", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
+          insertHist(modePrefixes[iMode] + "AntiD0/hV0LifetimeLambda", "hV0LifetimeLambda", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
+          insertHist(modePrefixes[iMode] + "AntiD0/hV0LifetimeD0", "hV0LifetimeD0", kTH1D, {axisConfigurations.axisV0ProperLifeTime});
+          insertHist(modePrefixes[iMode] + "AntiD0/hV0PseudoLifetimeK0s", "hV0PseudoLifetimeK0s", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
+          insertHist(modePrefixes[iMode] + "AntiD0/hV0PseudoLifetimeLambda", "hV0PseudoLifetimeLambda", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
+          insertHist(modePrefixes[iMode] + "AntiD0/hV0PseudoLifetimeD0", "hV0PseudoLifetimeD0", kTH1D, {axisConfigurations.axisV0PseudoProperLifeTime});
+          insertHist(modePrefixes[iMode] + "AntiD0/hV0InvMassK0s", "hV0InvMassK0s", kTH1D, {axisConfigurations.axisK0Mass});
+          insertHist(modePrefixes[iMode] + "AntiD0/hV0InvMassLambda", "hV0InvMassLambda", kTH1D, {axisConfigurations.axisLambdaMass});
+          insertHist(modePrefixes[iMode] + "AntiD0/hV0InvMassAntiLambda", "hV0InvMassAntiLambda", kTH1D, {axisConfigurations.axisLambdaMass});
+          insertHist(modePrefixes[iMode] + "AntiD0/hV0InvMassD0", "hV0InvMassD0", kTH1D, {axisConfigurations.axisD0Mass});
+          insertHist(modePrefixes[iMode] + "AntiD0/hV0InvMassAntiD0", "hV0InvMassAntiD0", kTH1D, {axisConfigurations.axisD0Mass});
           if (doCompleteTopoQA) {
-            insertHist(modePrefixes[iMode] +  "AntiD0/hV0InvMassK0sVsAntiD0", "hV0InvMassK0sVsAntiD0", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisD0Mass});
-            insertHist(modePrefixes[iMode] +  "AntiD0/hV0InvMassLambdaVsAntiD0", "hV0InvMassLambdaVsAntiD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
-            insertHist(modePrefixes[iMode] +  "AntiD0/hV0InvMassAntiLambdaVsAntiD0", "hV0InvMassAntiLambdaVsAntiD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
+            insertHist(modePrefixes[iMode] + "AntiD0/hV0InvMassK0sVsAntiD0", "hV0InvMassK0sVsAntiD0", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisD0Mass});
+            insertHist(modePrefixes[iMode] + "AntiD0/hV0InvMassLambdaVsAntiD0", "hV0InvMassLambdaVsAntiD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
+            insertHist(modePrefixes[iMode] + "AntiD0/hV0InvMassAntiLambdaVsAntiD0", "hV0InvMassAntiLambdaVsAntiD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
           }
 
           insertHist(modePrefixes[iMode] + "AntiD0/hPositiveMFTcls", "hPositiveMFTcls", kTH1D, {axisConfigurations.axisMFTclus});
@@ -1132,11 +1132,10 @@ struct forwardlambdakzeroanalysis {
       }
 
       // Check if doing the right thing in AP space please
-      insertHist(modePrefixes[iMode] +  "GeneralQA/h2dArmenterosAll", "h2dArmenterosAll", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
-      insertHist(modePrefixes[iMode] +  "GeneralQA/h2dArmenterosK0sSelected", "h2dArmenterosK0sSelected", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
-      insertHist(modePrefixes[iMode] +  "GeneralQA/h2dArmenterosLambdaSelected", "h2dArmenterosLambdaSelected", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
-      insertHist(modePrefixes[iMode] +  "GeneralQA/h2dArmenterosD0Selected", "h2dArmenterosD0Selected", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
-
+      insertHist(modePrefixes[iMode] + "GeneralQA/h2dArmenterosAll", "h2dArmenterosAll", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
+      insertHist(modePrefixes[iMode] + "GeneralQA/h2dArmenterosK0sSelected", "h2dArmenterosK0sSelected", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
+      insertHist(modePrefixes[iMode] + "GeneralQA/h2dArmenterosLambdaSelected", "h2dArmenterosLambdaSelected", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
+      insertHist(modePrefixes[iMode] + "GeneralQA/h2dArmenterosD0Selected", "h2dArmenterosD0Selected", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
     }
 
     // Creation of histograms: MC generated
@@ -1294,7 +1293,7 @@ struct forwardlambdakzeroanalysis {
 
   // Ideal Armenteros-Podolanski ellipse of a two-body decay hypothesis: centre and half-axes
   struct ArmenterosEllipse {
-    float alphaCenter;   // (E*_pos - E*_neg) / M, vanishes for symmetric decays
+    float alphaCenter;    // (E*_pos - E*_neg) / M, vanishes for symmetric decays
     float alphaHalfWidth; // 2 qStar / (beta M)
     float qStar;          // daughter momentum in the mother rest frame = maximum qT
   };
@@ -1359,20 +1358,20 @@ struct forwardlambdakzeroanalysis {
       BITSET(bitMap, selZmax);
     }
     // DCA proton and pion to PV for Lambda and AntiLambda decay hypotheses
-    if ((!v0Selections.rejectFailedPropagation || std::fabs(v0.dcaPosToPVxy) < o2::track::DefaultDCA) &&  
+    if ((!v0Selections.rejectFailedPropagation || std::fabs(v0.dcaPosToPVxy) < o2::track::DefaultDCA) &&
         std::fabs(v0.dcaPosToPVxy) > v0Selections.dcaPosToPVxy) {
       BITSET(bitMap, selDCAPosToPVxy);
     }
-    if ((!v0Selections.rejectFailedPropagation || std::fabs(v0.dcaNegToPVxy) < o2::track::DefaultDCA) &&  
+    if ((!v0Selections.rejectFailedPropagation || std::fabs(v0.dcaNegToPVxy) < o2::track::DefaultDCA) &&
         std::fabs(v0.dcaNegToPVxy) > v0Selections.dcaNegToPVxy) {
       BITSET(bitMap, selDCANegToPVxy);
     }
     // DCA proton and pion to PV for Lambda and AntiLambda decay hypotheses
-    if ((!v0Selections.rejectFailedPropagation || std::fabs(v0.dcaPosToPVz) < o2::track::DefaultDCA) &&  
+    if ((!v0Selections.rejectFailedPropagation || std::fabs(v0.dcaPosToPVz) < o2::track::DefaultDCA) &&
         std::fabs(v0.dcaPosToPVz) > v0Selections.dcaPosToPVz) {
       BITSET(bitMap, selDCAPosToPVz);
     }
-    if ((!v0Selections.rejectFailedPropagation || std::fabs(v0.dcaNegToPVz) < o2::track::DefaultDCA) &&  
+    if ((!v0Selections.rejectFailedPropagation || std::fabs(v0.dcaNegToPVz) < o2::track::DefaultDCA) &&
         std::fabs(v0.dcaNegToPVz) > v0Selections.dcaNegToPVz) {
       BITSET(bitMap, selDCANegToPVz);
     }
@@ -1622,18 +1621,18 @@ struct forwardlambdakzeroanalysis {
       getHist<TH1>(modePrefixes[iMode] + "hPositiveMFTchi2")->Fill(v0.posChi2);
       getHist<TH1>(modePrefixes[iMode] + "hNegativeMFTchi2")->Fill(v0.negChi2);
       if (doprocessMonteCarlo && iMode == kDefault) {
-        getHist<TH2>(modePrefixes[iMode] + "hPositivePtResolution")->Fill(v0.positivePtMc(), (v0.positivePtMc() - v0.positivePt())/v0.positivePtMc());
-        getHist<TH2>(modePrefixes[iMode] + "hNegativePtResolution")->Fill(v0.negativePtMc(), (v0.negativePtMc() - v0.negativePt())/v0.negativePtMc());
-        getHist<TH2>(modePrefixes[iMode] + "hPositivePzResolution")->Fill(v0.positivePzMc(), (v0.positivePzMc() - v0.positivePz())/v0.positivePzMc());
-        getHist<TH2>(modePrefixes[iMode] + "hNegativePzResolution")->Fill(v0.negativePzMc(), (v0.negativePzMc() - v0.negativePz())/v0.negativePzMc());
+        getHist<TH2>(modePrefixes[iMode] + "hPositivePtResolution")->Fill(v0.positivePtMc(), (v0.positivePtMc() - v0.positivePt()) / v0.positivePtMc());
+        getHist<TH2>(modePrefixes[iMode] + "hNegativePtResolution")->Fill(v0.negativePtMc(), (v0.negativePtMc() - v0.negativePt()) / v0.negativePtMc());
+        getHist<TH2>(modePrefixes[iMode] + "hPositivePzResolution")->Fill(v0.positivePzMc(), (v0.positivePzMc() - v0.positivePz()) / v0.positivePzMc());
+        getHist<TH2>(modePrefixes[iMode] + "hNegativePzResolution")->Fill(v0.negativePzMc(), (v0.negativePzMc() - v0.negativePz()) / v0.negativePzMc());
 
         getHist<TH2>(modePrefixes[iMode] + "hV0XDiff")->Fill(v0.xMc, (v0.xMc - v0.X));
         getHist<TH2>(modePrefixes[iMode] + "hV0YDiff")->Fill(v0.yMc, (v0.yMc - v0.Y));
         getHist<TH2>(modePrefixes[iMode] + "hV0ZDiff")->Fill(v0.zMc, (v0.zMc - v0.Z));
-        getHist<TH2>(modePrefixes[iMode] + "hV0RadiusDiff")->Fill(v0.RadiusMc, (v0.RadiusMc - v0.Radius)/v0.RadiusMc);
-        getHist<TH2>(modePrefixes[iMode] + "hV0DistZDiff")->Fill(v0.ZdistMc, (v0.ZdistMc - v0.Zdist)/v0.ZdistMc);
-        getHist<TH2>(modePrefixes[iMode] + "hV0PtResolution")->Fill(v0.pTMc, (v0.pTMc - v0.pT)/v0.pTMc);
-        getHist<TH2>(modePrefixes[iMode] + "hV0PzResolution")->Fill(v0.pZMc, (v0.pZMc - v0.pZ)/v0.pZMc);
+        getHist<TH2>(modePrefixes[iMode] + "hV0RadiusDiff")->Fill(v0.RadiusMc, (v0.RadiusMc - v0.Radius) / v0.RadiusMc);
+        getHist<TH2>(modePrefixes[iMode] + "hV0DistZDiff")->Fill(v0.ZdistMc, (v0.ZdistMc - v0.Zdist) / v0.ZdistMc);
+        getHist<TH2>(modePrefixes[iMode] + "hV0PtResolution")->Fill(v0.pTMc, (v0.pTMc - v0.pT) / v0.pTMc);
+        getHist<TH2>(modePrefixes[iMode] + "hV0PzResolution")->Fill(v0.pZMc, (v0.pZMc - v0.pZ) / v0.pZMc);
       }
     }
 
@@ -1699,18 +1698,18 @@ struct forwardlambdakzeroanalysis {
         getHist<TH1>(modePrefixes[iMode] + "K0Short/hPositiveMFTchi2")->Fill(v0.posChi2);
         getHist<TH1>(modePrefixes[iMode] + "K0Short/hNegativeMFTchi2")->Fill(v0.negChi2);
         if (doprocessMonteCarlo && iMode == kDefault) {
-          getHist<TH2>(modePrefixes[iMode] + "K0Short/hPositivePtResolution")->Fill(v0.positivePtMc(), (v0.positivePtMc() - v0.positivePt())/v0.positivePtMc());
-          getHist<TH2>(modePrefixes[iMode] + "K0Short/hNegativePtResolution")->Fill(v0.negativePtMc(), (v0.negativePtMc() - v0.negativePt())/v0.negativePtMc());
-          getHist<TH2>(modePrefixes[iMode] + "K0Short/hPositivePzResolution")->Fill(v0.positivePzMc(), (v0.positivePzMc() - v0.positivePz())/v0.positivePzMc());
-          getHist<TH2>(modePrefixes[iMode] + "K0Short/hNegativePzResolution")->Fill(v0.negativePzMc(), (v0.negativePzMc() - v0.negativePz())/v0.negativePzMc());
+          getHist<TH2>(modePrefixes[iMode] + "K0Short/hPositivePtResolution")->Fill(v0.positivePtMc(), (v0.positivePtMc() - v0.positivePt()) / v0.positivePtMc());
+          getHist<TH2>(modePrefixes[iMode] + "K0Short/hNegativePtResolution")->Fill(v0.negativePtMc(), (v0.negativePtMc() - v0.negativePt()) / v0.negativePtMc());
+          getHist<TH2>(modePrefixes[iMode] + "K0Short/hPositivePzResolution")->Fill(v0.positivePzMc(), (v0.positivePzMc() - v0.positivePz()) / v0.positivePzMc());
+          getHist<TH2>(modePrefixes[iMode] + "K0Short/hNegativePzResolution")->Fill(v0.negativePzMc(), (v0.negativePzMc() - v0.negativePz()) / v0.negativePzMc());
 
           getHist<TH2>(modePrefixes[iMode] + "K0Short/hV0XDiff")->Fill(v0.xMc, (v0.xMc - v0.X));
           getHist<TH2>(modePrefixes[iMode] + "K0Short/hV0YDiff")->Fill(v0.yMc, (v0.yMc - v0.Y));
           getHist<TH2>(modePrefixes[iMode] + "K0Short/hV0ZDiff")->Fill(v0.zMc, (v0.zMc - v0.Z));
-          getHist<TH2>(modePrefixes[iMode] + "K0Short/hV0RadiusDiff")->Fill(v0.RadiusMc, (v0.RadiusMc - v0.Radius)/v0.RadiusMc);
-          getHist<TH2>(modePrefixes[iMode] + "K0Short/hV0DistZDiff")->Fill(v0.ZdistMc, (v0.ZdistMc - v0.Zdist)/v0.ZdistMc);
-          getHist<TH2>(modePrefixes[iMode] + "K0Short/hV0PtResolution")->Fill(v0.pTMc, (v0.pTMc - v0.pT)/v0.pTMc);
-          getHist<TH2>(modePrefixes[iMode] + "K0Short/hV0PzResolution")->Fill(v0.pZMc, (v0.pZMc - v0.pZ)/v0.pZMc);
+          getHist<TH2>(modePrefixes[iMode] + "K0Short/hV0RadiusDiff")->Fill(v0.RadiusMc, (v0.RadiusMc - v0.Radius) / v0.RadiusMc);
+          getHist<TH2>(modePrefixes[iMode] + "K0Short/hV0DistZDiff")->Fill(v0.ZdistMc, (v0.ZdistMc - v0.Zdist) / v0.ZdistMc);
+          getHist<TH2>(modePrefixes[iMode] + "K0Short/hV0PtResolution")->Fill(v0.pTMc, (v0.pTMc - v0.pT) / v0.pTMc);
+          getHist<TH2>(modePrefixes[iMode] + "K0Short/hV0PzResolution")->Fill(v0.pZMc, (v0.pZMc - v0.pZ) / v0.pZMc);
         }
       }
       nK0Shorts++;
@@ -1765,18 +1764,18 @@ struct forwardlambdakzeroanalysis {
         getHist<TH1>(modePrefixes[iMode] + "Lambda/hPositiveMFTchi2")->Fill(v0.posChi2);
         getHist<TH1>(modePrefixes[iMode] + "Lambda/hNegativeMFTchi2")->Fill(v0.negChi2);
         if (doprocessMonteCarlo && iMode == kDefault) {
-          getHist<TH2>(modePrefixes[iMode] + "Lambda/hPositivePtResolution")->Fill(v0.positivePtMc(), (v0.positivePtMc() - v0.positivePt())/v0.positivePtMc());
-          getHist<TH2>(modePrefixes[iMode] + "Lambda/hNegativePtResolution")->Fill(v0.negativePtMc(), (v0.negativePtMc() - v0.negativePt())/v0.negativePtMc());
-          getHist<TH2>(modePrefixes[iMode] + "Lambda/hPositivePzResolution")->Fill(v0.positivePzMc(), (v0.positivePzMc() - v0.positivePz())/v0.positivePzMc());
-          getHist<TH2>(modePrefixes[iMode] + "Lambda/hNegativePzResolution")->Fill(v0.negativePzMc(), (v0.negativePzMc() - v0.negativePz())/v0.negativePzMc());
+          getHist<TH2>(modePrefixes[iMode] + "Lambda/hPositivePtResolution")->Fill(v0.positivePtMc(), (v0.positivePtMc() - v0.positivePt()) / v0.positivePtMc());
+          getHist<TH2>(modePrefixes[iMode] + "Lambda/hNegativePtResolution")->Fill(v0.negativePtMc(), (v0.negativePtMc() - v0.negativePt()) / v0.negativePtMc());
+          getHist<TH2>(modePrefixes[iMode] + "Lambda/hPositivePzResolution")->Fill(v0.positivePzMc(), (v0.positivePzMc() - v0.positivePz()) / v0.positivePzMc());
+          getHist<TH2>(modePrefixes[iMode] + "Lambda/hNegativePzResolution")->Fill(v0.negativePzMc(), (v0.negativePzMc() - v0.negativePz()) / v0.negativePzMc());
 
           getHist<TH2>(modePrefixes[iMode] + "Lambda/hV0XDiff")->Fill(v0.xMc, (v0.xMc - v0.X));
           getHist<TH2>(modePrefixes[iMode] + "Lambda/hV0YDiff")->Fill(v0.yMc, (v0.yMc - v0.Y));
           getHist<TH2>(modePrefixes[iMode] + "Lambda/hV0ZDiff")->Fill(v0.zMc, (v0.zMc - v0.Z));
-          getHist<TH2>(modePrefixes[iMode] + "Lambda/hV0RadiusDiff")->Fill(v0.RadiusMc, (v0.RadiusMc - v0.Radius)/v0.RadiusMc);
-          getHist<TH2>(modePrefixes[iMode] + "Lambda/hV0DistZDiff")->Fill(v0.ZdistMc, (v0.ZdistMc - v0.Zdist)/v0.ZdistMc);
-          getHist<TH2>(modePrefixes[iMode] + "Lambda/hV0PtResolution")->Fill(v0.pTMc, (v0.pTMc - v0.pT)/v0.pTMc);
-          getHist<TH2>(modePrefixes[iMode] + "Lambda/hV0PzResolution")->Fill(v0.pZMc, (v0.pZMc - v0.pZ)/v0.pZMc);
+          getHist<TH2>(modePrefixes[iMode] + "Lambda/hV0RadiusDiff")->Fill(v0.RadiusMc, (v0.RadiusMc - v0.Radius) / v0.RadiusMc);
+          getHist<TH2>(modePrefixes[iMode] + "Lambda/hV0DistZDiff")->Fill(v0.ZdistMc, (v0.ZdistMc - v0.Zdist) / v0.ZdistMc);
+          getHist<TH2>(modePrefixes[iMode] + "Lambda/hV0PtResolution")->Fill(v0.pTMc, (v0.pTMc - v0.pT) / v0.pTMc);
+          getHist<TH2>(modePrefixes[iMode] + "Lambda/hV0PzResolution")->Fill(v0.pZMc, (v0.pZMc - v0.pZ) / v0.pZMc);
         }
       }
       nLambdas++;
@@ -1831,18 +1830,18 @@ struct forwardlambdakzeroanalysis {
         getHist<TH1>(modePrefixes[iMode] + "AntiLambda/hPositiveMFTchi2")->Fill(v0.posChi2);
         getHist<TH1>(modePrefixes[iMode] + "AntiLambda/hNegativeMFTchi2")->Fill(v0.negChi2);
         if (doprocessMonteCarlo && iMode == kDefault) {
-          getHist<TH2>(modePrefixes[iMode] + "AntiLambda/hPositivePtResolution")->Fill(v0.positivePtMc(), (v0.positivePtMc() - v0.positivePt())/v0.positivePtMc());
-          getHist<TH2>(modePrefixes[iMode] + "AntiLambda/hNegativePtResolution")->Fill(v0.negativePtMc(), (v0.negativePtMc() - v0.negativePt())/v0.negativePtMc());
-          getHist<TH2>(modePrefixes[iMode] + "AntiLambda/hPositivePzResolution")->Fill(v0.positivePzMc(), (v0.positivePzMc() - v0.positivePz())/v0.positivePzMc());
-          getHist<TH2>(modePrefixes[iMode] + "AntiLambda/hNegativePzResolution")->Fill(v0.negativePzMc(), (v0.negativePzMc() - v0.negativePz())/v0.negativePzMc());
+          getHist<TH2>(modePrefixes[iMode] + "AntiLambda/hPositivePtResolution")->Fill(v0.positivePtMc(), (v0.positivePtMc() - v0.positivePt()) / v0.positivePtMc());
+          getHist<TH2>(modePrefixes[iMode] + "AntiLambda/hNegativePtResolution")->Fill(v0.negativePtMc(), (v0.negativePtMc() - v0.negativePt()) / v0.negativePtMc());
+          getHist<TH2>(modePrefixes[iMode] + "AntiLambda/hPositivePzResolution")->Fill(v0.positivePzMc(), (v0.positivePzMc() - v0.positivePz()) / v0.positivePzMc());
+          getHist<TH2>(modePrefixes[iMode] + "AntiLambda/hNegativePzResolution")->Fill(v0.negativePzMc(), (v0.negativePzMc() - v0.negativePz()) / v0.negativePzMc());
 
           getHist<TH2>(modePrefixes[iMode] + "AntiLambda/hV0XDiff")->Fill(v0.xMc, (v0.xMc - v0.X));
           getHist<TH2>(modePrefixes[iMode] + "AntiLambda/hV0YDiff")->Fill(v0.yMc, (v0.yMc - v0.Y));
           getHist<TH2>(modePrefixes[iMode] + "AntiLambda/hV0ZDiff")->Fill(v0.zMc, (v0.zMc - v0.Z));
-          getHist<TH2>(modePrefixes[iMode] + "AntiLambda/hV0RadiusDiff")->Fill(v0.RadiusMc, (v0.RadiusMc - v0.Radius)/v0.RadiusMc);
-          getHist<TH2>(modePrefixes[iMode] + "AntiLambda/hV0DistZDiff")->Fill(v0.ZdistMc, (v0.ZdistMc - v0.Zdist)/v0.Zdist);
-          getHist<TH2>(modePrefixes[iMode] + "AntiLambda/hV0PtResolution")->Fill(v0.pTMc, (v0.pTMc - v0.pT)/v0.pTMc);
-          getHist<TH2>(modePrefixes[iMode] + "AntiLambda/hV0PzResolution")->Fill(v0.pZMc, (v0.pZMc - v0.pZ)/v0.pZMc);
+          getHist<TH2>(modePrefixes[iMode] + "AntiLambda/hV0RadiusDiff")->Fill(v0.RadiusMc, (v0.RadiusMc - v0.Radius) / v0.RadiusMc);
+          getHist<TH2>(modePrefixes[iMode] + "AntiLambda/hV0DistZDiff")->Fill(v0.ZdistMc, (v0.ZdistMc - v0.Zdist) / v0.Zdist);
+          getHist<TH2>(modePrefixes[iMode] + "AntiLambda/hV0PtResolution")->Fill(v0.pTMc, (v0.pTMc - v0.pT) / v0.pTMc);
+          getHist<TH2>(modePrefixes[iMode] + "AntiLambda/hV0PzResolution")->Fill(v0.pZMc, (v0.pZMc - v0.pZ) / v0.pZMc);
         }
       }
       nAntiLambdas++;
@@ -1897,18 +1896,18 @@ struct forwardlambdakzeroanalysis {
         getHist<TH1>(modePrefixes[iMode] + "D0/hPositiveMFTchi2")->Fill(v0.posChi2);
         getHist<TH1>(modePrefixes[iMode] + "D0/hNegativeMFTchi2")->Fill(v0.negChi2);
         if (doprocessMonteCarlo && iMode == kDefault) {
-          getHist<TH2>(modePrefixes[iMode] + "D0/hPositivePtResolution")->Fill(v0.positivePtMc(), (v0.positivePtMc() - v0.positivePt())/v0.positivePtMc());
-          getHist<TH2>(modePrefixes[iMode] + "D0/hNegativePtResolution")->Fill(v0.negativePtMc(), (v0.negativePtMc() - v0.negativePt())/v0.negativePtMc());
-          getHist<TH2>(modePrefixes[iMode] + "D0/hPositivePzResolution")->Fill(v0.positivePzMc(), (v0.positivePzMc() - v0.positivePz())/v0.positivePzMc());
-          getHist<TH2>(modePrefixes[iMode] + "D0/hNegativePzResolution")->Fill(v0.negativePzMc(), (v0.negativePzMc() - v0.negativePz())/v0.negativePzMc());
+          getHist<TH2>(modePrefixes[iMode] + "D0/hPositivePtResolution")->Fill(v0.positivePtMc(), (v0.positivePtMc() - v0.positivePt()) / v0.positivePtMc());
+          getHist<TH2>(modePrefixes[iMode] + "D0/hNegativePtResolution")->Fill(v0.negativePtMc(), (v0.negativePtMc() - v0.negativePt()) / v0.negativePtMc());
+          getHist<TH2>(modePrefixes[iMode] + "D0/hPositivePzResolution")->Fill(v0.positivePzMc(), (v0.positivePzMc() - v0.positivePz()) / v0.positivePzMc());
+          getHist<TH2>(modePrefixes[iMode] + "D0/hNegativePzResolution")->Fill(v0.negativePzMc(), (v0.negativePzMc() - v0.negativePz()) / v0.negativePzMc());
 
           getHist<TH2>(modePrefixes[iMode] + "D0/hV0XDiff")->Fill(v0.xMc, (v0.xMc - v0.X));
           getHist<TH2>(modePrefixes[iMode] + "D0/hV0YDiff")->Fill(v0.yMc, (v0.yMc - v0.Y));
           getHist<TH2>(modePrefixes[iMode] + "D0/hV0ZDiff")->Fill(v0.zMc, (v0.zMc - v0.Z));
-          getHist<TH2>(modePrefixes[iMode] + "D0/hV0RadiusDiff")->Fill(v0.RadiusMc, (v0.RadiusMc - v0.Radius)/v0.RadiusMc);
-          getHist<TH2>(modePrefixes[iMode] + "D0/hV0DistZDiff")->Fill(v0.ZdistMc, (v0.ZdistMc - v0.Zdist)/v0.ZdistMc);
-          getHist<TH2>(modePrefixes[iMode] + "D0/hV0PtResolution")->Fill(v0.pTMc, (v0.pTMc - v0.pT)/v0.pTMc);
-          getHist<TH2>(modePrefixes[iMode] + "D0/hV0PzResolution")->Fill(v0.pZMc, (v0.pZMc - v0.pZ)/v0.pZMc);
+          getHist<TH2>(modePrefixes[iMode] + "D0/hV0RadiusDiff")->Fill(v0.RadiusMc, (v0.RadiusMc - v0.Radius) / v0.RadiusMc);
+          getHist<TH2>(modePrefixes[iMode] + "D0/hV0DistZDiff")->Fill(v0.ZdistMc, (v0.ZdistMc - v0.Zdist) / v0.ZdistMc);
+          getHist<TH2>(modePrefixes[iMode] + "D0/hV0PtResolution")->Fill(v0.pTMc, (v0.pTMc - v0.pT) / v0.pTMc);
+          getHist<TH2>(modePrefixes[iMode] + "D0/hV0PzResolution")->Fill(v0.pZMc, (v0.pZMc - v0.pZ) / v0.pZMc);
         }
       }
       nD0s++;
@@ -1963,18 +1962,18 @@ struct forwardlambdakzeroanalysis {
         getHist<TH1>(modePrefixes[iMode] + "AntiD0/hPositiveMFTchi2")->Fill(v0.posChi2);
         getHist<TH1>(modePrefixes[iMode] + "AntiD0/hNegativeMFTchi2")->Fill(v0.negChi2);
         if (doprocessMonteCarlo && iMode == kDefault) {
-          getHist<TH2>(modePrefixes[iMode] + "AntiD0/hPositivePtResolution")->Fill(v0.positivePtMc(), (v0.positivePtMc() - v0.positivePt())/v0.positivePtMc());
-          getHist<TH2>(modePrefixes[iMode] + "AntiD0/hNegativePtResolution")->Fill(v0.negativePtMc(), (v0.negativePtMc() - v0.negativePt())/v0.negativePtMc());
-          getHist<TH2>(modePrefixes[iMode] + "AntiD0/hPositivePzResolution")->Fill(v0.positivePzMc(), (v0.positivePzMc() - v0.positivePz())/v0.positivePzMc());
-          getHist<TH2>(modePrefixes[iMode] + "AntiD0/hNegativePzResolution")->Fill(v0.negativePzMc(), (v0.negativePzMc() - v0.negativePz())/v0.negativePzMc());
+          getHist<TH2>(modePrefixes[iMode] + "AntiD0/hPositivePtResolution")->Fill(v0.positivePtMc(), (v0.positivePtMc() - v0.positivePt()) / v0.positivePtMc());
+          getHist<TH2>(modePrefixes[iMode] + "AntiD0/hNegativePtResolution")->Fill(v0.negativePtMc(), (v0.negativePtMc() - v0.negativePt()) / v0.negativePtMc());
+          getHist<TH2>(modePrefixes[iMode] + "AntiD0/hPositivePzResolution")->Fill(v0.positivePzMc(), (v0.positivePzMc() - v0.positivePz()) / v0.positivePzMc());
+          getHist<TH2>(modePrefixes[iMode] + "AntiD0/hNegativePzResolution")->Fill(v0.negativePzMc(), (v0.negativePzMc() - v0.negativePz()) / v0.negativePzMc());
 
           getHist<TH2>(modePrefixes[iMode] + "AntiD0/hV0XDiff")->Fill(v0.xMc, (v0.xMc - v0.X));
           getHist<TH2>(modePrefixes[iMode] + "AntiD0/hV0YDiff")->Fill(v0.yMc, (v0.yMc - v0.Y));
           getHist<TH2>(modePrefixes[iMode] + "AntiD0/hV0ZDiff")->Fill(v0.zMc, (v0.zMc - v0.Z));
-          getHist<TH2>(modePrefixes[iMode] + "AntiD0/hV0RadiusDiff")->Fill(v0.RadiusMc, (v0.RadiusMc - v0.Radius)/v0.RadiusMc);
-          getHist<TH2>(modePrefixes[iMode] + "AntiD0/hV0DistZDiff")->Fill(v0.ZdistMc, (v0.ZdistMc - v0.Zdist)/v0.ZdistMc);
-          getHist<TH2>(modePrefixes[iMode] + "AntiD0/hV0PtResolution")->Fill(v0.pTMc, (v0.pTMc - v0.pT)/v0.pTMc);
-          getHist<TH2>(modePrefixes[iMode] + "AntiD0/hV0PzResolution")->Fill(v0.pZMc, (v0.pZMc - v0.pZ)/v0.pZMc);
+          getHist<TH2>(modePrefixes[iMode] + "AntiD0/hV0RadiusDiff")->Fill(v0.RadiusMc, (v0.RadiusMc - v0.Radius) / v0.RadiusMc);
+          getHist<TH2>(modePrefixes[iMode] + "AntiD0/hV0DistZDiff")->Fill(v0.ZdistMc, (v0.ZdistMc - v0.Zdist) / v0.ZdistMc);
+          getHist<TH2>(modePrefixes[iMode] + "AntiD0/hV0PtResolution")->Fill(v0.pTMc, (v0.pTMc - v0.pT) / v0.pTMc);
+          getHist<TH2>(modePrefixes[iMode] + "AntiD0/hV0PzResolution")->Fill(v0.pZMc, (v0.pZMc - v0.pZ) / v0.pZMc);
         }
       }
       nAntiD0s++;
@@ -2394,7 +2393,7 @@ struct forwardlambdakzeroanalysis {
     dca[0] = o2::track::DefaultDCA;
     dca[1] = o2::track::DefaultDCA;
     dca[2] = o2::track::DefaultDCA;
-    
+
     // propagate track to vertex including MCS effects if material budget included, simple propagation to Z otherwise
     float x2x0 = 0;
     auto mb = lut->getMatBudget(t.getX(), t.getY(), t.getZ(), collision.posX(), collision.posY(), collision.posZ());
@@ -2740,8 +2739,8 @@ struct forwardlambdakzeroanalysis {
     }
 
     if (eventMixingConfigurations.doEventMixing) {
-       for (const auto& [coll1, coll2] : selfCombinations(bkgColBinning, eventMixingConfigurations.nEventMixing, -1,
-                                                          collisions, collisions)) {
+      for (const auto& [coll1, coll2] : selfCombinations(bkgColBinning, eventMixingConfigurations.nEventMixing, -1,
+                                                         collisions, collisions)) {
         if (coll1.globalIndex() == coll2.globalIndex())
           continue;
 
@@ -2803,7 +2802,7 @@ struct forwardlambdakzeroanalysis {
   // ______________________________________________________
   // Simulated processing (subscribes to MC information too)
   template <typename TCollisions, typename TMCCollisions, typename TMFTTracks, typename TTracks, typename TBCs, typename TMCParticles>
-  void analyzeRecoedV0sInMonteCarlo(TCollisions const& collisions, TMCCollisions const& mcCollisions,TMFTTracks const& mftTracks, TTracks const& besttracks, TBCs const& bcs, TMCParticles const& mcParticles)
+  void analyzeRecoedV0sInMonteCarlo(TCollisions const& collisions, TMCCollisions const& mcCollisions, TMFTTracks const& mftTracks, TTracks const& besttracks, TBCs const& bcs, TMCParticles const& mcParticles)
   {
     for (auto const& collision : collisions) {
       // Fire up CCDB
