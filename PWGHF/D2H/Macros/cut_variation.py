@@ -8,12 +8,14 @@ Module for the (non-)prompt fraction calculation with the cut-variation method
 """
 
 import sys
+from enum import IntEnum, auto
 
 import numpy as np  # pylint: disable=import-error
 import ROOT  # pylint: disable=import-error
-from enum import IntEnum, auto
+
 sys.path.insert(0, '..')
 from style_formatter import set_global_style, set_object_style
+
 
 class MinimisationStatus(IntEnum):
     Undefined = 0

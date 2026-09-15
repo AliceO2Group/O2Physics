@@ -11,13 +11,13 @@ import argparse
 import json
 import os
 import sys
+from enum import IntEnum, auto
 
 import numpy as np  # pylint: disable=import-error
 import ROOT  # pylint: disable=import-error
-from enum import IntEnum, auto
+
 sys.path.insert(0, '..')
-from cut_variation import CutVarMinimiser
-from cut_variation import MinimisationStatus
+from cut_variation import CutVarMinimiser, MinimisationStatus
 from style_formatter import set_object_style
 
 # pylint: disable=no-member,too-many-locals,too-many-statements
@@ -252,9 +252,9 @@ def main(config):
                 print("\0\33[33mWARNING! main(): the raw yield uncertainties vector is not monotonous. Check the input for stability.\0\33[0m")
                 print(f"raw yield uncertainties vector elements = {unc_rawy}\n")
             if not (np.all(effp[1:] > effp[:-1]) or np.all(effp[1:] < effp[:-1])):
-                sys.exit(f"\33[31mFatal error: the prompt efficiency vector is not monotonous. Check the input. Exit.\33[0m")
+                sys.exit("\33[31mFatal error: the prompt efficiency vector is not monotonous. Check the input. Exit.\33[0m")
             if not (np.all(effnp[1:] > effnp[:-1]) or np.all(effnp[1:] < effnp[:-1])):
-                sys.exit(f"\33[31mFatal error: the nonprompt efficiency vector is not monotonous. Check the input. Exit.\33[0m")
+                sys.exit("\33[31mFatal error: the nonprompt efficiency vector is not monotonous. Check the input. Exit.\33[0m")
 
         minimiser = CutVarMinimiser(rawy, effp, effnp, unc_rawy, unc_effp, unc_effnp)
         status = minimiser.minimise_system(cfg["minimisation"]["correlated"])
