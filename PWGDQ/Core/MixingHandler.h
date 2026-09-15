@@ -33,17 +33,31 @@ class MixingHandler : public TNamed
 {
 
  public:
+  // number of track cuts which fit in the 32-bit filtering masks
+  static constexpr int NMaxCuts = 32;
+
   // Struct to define track properties relevant for mixing and few utility functions
   struct MixingTrack {
     float pt;
     float eta;
     float phi;
     uint32_t filteringFlags;
+    // globalIndex is unique only within a dataframe, so the dataframe sequence is part of the track identity
+    uint64_t dataFrameSequence = 0;
+    uint64_t trackGlobalIndex = 0;
+    // electric charge of the track; 0 means "not set" and disables the charge dependent pair variables
+    int8_t sign = 0;
+    bool IsSamePhysicalTrack(const MixingTrack& other) const
+    {
+      return dataFrameSequence == other.dataFrameSequence && trackGlobalIndex == other.trackGlobalIndex;
+    }
     // Clear a bit once the track was used in mixing for that bit for the required pool depth.
     void ClearBit(uint32_t mask) { filteringFlags &= ~mask; }
     void Print() const
     {
-      std::cout << "pt: " << pt << ", eta: " << eta << ", phi: " << phi << ", filteringFlags: " << filteringFlags << std::endl;
+      std::cout << "pt: " << pt << ", eta: " << eta << ", phi: " << phi << ", sign: " << static_cast<int>(sign)
+                << ", filteringFlags: " << filteringFlags
+                << ", dataframe: " << dataFrameSequence << ", track: " << trackGlobalIndex << std::endl;
     }
   };
 
@@ -157,6 +171,17 @@ class MixingHandler : public TNamed
       CleanPool();
       events.push_back(event);
     }
+    // Same, but the stored events are aged only for the cuts in agingMask. Passing the filtering mask of the
+    // incoming event ages an event only for the cuts for which a mixed pair was actually produced, so that the
+    // pool depth is a number of mixed partners and not a number of arrivals.
+    void UpdatePool(const MixingEvent& event, int16_t poolDepth, uint32_t agingMask)
+    {
+      for (auto& poolEvent : events) {
+        poolEvent.IncrementCounters(agingMask, poolDepth);
+      }
+      CleanPool();
+      events.push_back(event);
+    }
     // getter for the events in the pool
     const std::vector<MixingEvent>& GetEvents() const { return events; }
 
@@ -176,6 +201,8 @@ class MixingHandler : public TNamed
   // setters
   void AddMixingVariable(int var, const std::vector<float>& binLims);
   void SetPoolDepth(int16_t depth) { fPoolDepth = depth; }
+  // remove all pools (e.g. at a run change)
+  void ClearPools() { fPools.clear(); }
 
   // getters
   // int GetNMixingVariables() const { return fVariables.size(); }
