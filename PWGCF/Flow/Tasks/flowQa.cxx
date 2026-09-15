@@ -494,7 +494,7 @@ struct FlowQa {
   }
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision)
+  bool eventSelected(const TCollision& collision)
   {
     registry.fill(HIST("hEventCountSpecific"), 0.5);
     if (cfgEvSelkNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
@@ -546,7 +546,7 @@ struct FlowQa {
   }
 
   template <typename TCollision>
-  void eventCounterQA(TCollision collision)
+  void eventCounterQA(const TCollision& collision)
   {
     registry.fill(HIST("hEventCountTentative"), 0.5);
     // Regradless of the event selection, fill the event counter histograms
@@ -568,7 +568,7 @@ struct FlowQa {
   }
 
   template <typename TTrack>
-  bool trackSelected(TTrack track)
+  bool trackSelected(const TTrack& track)
   {
     // track type selection
     bool passTrackTypeSelection = false;

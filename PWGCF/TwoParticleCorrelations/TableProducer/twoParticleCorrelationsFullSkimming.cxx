@@ -66,7 +66,7 @@ PWGCF::FilterAndAnalysisFramework* fFilterFramework = nullptr;
 
 using namespace cfskim;
 
-void setEventCutsLabels(std::shared_ptr<TH1> h)
+void setEventCutsLabels(const std::shared_ptr<TH1>& h)
 {
   using namespace aod::run2;
 
@@ -98,7 +98,7 @@ void setEventCutsLabels(std::shared_ptr<TH1> h)
   }
 }
 
-void reportEventCuts(std::shared_ptr<TH1> h, uint32_t eventcuts)
+void reportEventCuts(const std::shared_ptr<TH1>& h, uint32_t eventcuts)
 {
   using namespace aod::run2;
   auto entries = h->GetEntries();
@@ -127,7 +127,7 @@ struct TwoParticleCorrelationsSkimming {
   int bfield = 0;
   HistogramRegistry historeg;
 
-  int getMagneticField(std::string ccdbpath, uint64_t timestamp)
+  int getMagneticField(const std::string& ccdbpath, uint64_t timestamp)
   {
     // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
     static o2::parameters::GRPObject* grpo = nullptr;

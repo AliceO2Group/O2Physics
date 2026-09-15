@@ -118,14 +118,16 @@ struct FemtoCorrelationsMC {
   using FilteredTracks = soa::Join<aod::SingleTrackSels, aod::SingleTrkMCs, aod::SinglePIDPrs, aod::SinglePIDDes>;
   // using FilteredTracks = soa::Join<aod::SingleTrackSels, aod::SingleTrkMCs, aod::SinglePIDPis, aod::SinglePIDKas, aod::SinglePIDPrs, aod::SinglePIDDes, aod::SinglePIDTrs, aod::SinglePIDHes>;
 
-  typedef std::shared_ptr<soa::Filtered<FilteredTracks>::iterator> trkType;
-  typedef std::shared_ptr<soa::Filtered<FilteredCollisions>::iterator> colType;
+  using TrackType = const soa::Filtered<FilteredTracks>::iterator;
+  using TrackTypePtr = std::shared_ptr<TrackType>;
+  using ColType = const soa::Filtered<FilteredCollisions>::iterator;
+  using ColTypePtr = std::shared_ptr<ColType>;
 
-  std::map<int64_t, std::vector<trkType>> selectedtracks_1;
-  std::map<int64_t, std::vector<trkType>> selectedtracks_2;
-  std::map<std::pair<int, float>, std::vector<colType>> mixbins;
+  std::map<int64_t, std::vector<TrackTypePtr>> selectedtracks_1;
+  std::map<int64_t, std::vector<TrackTypePtr>> selectedtracks_2;
+  std::map<std::pair<int, float>, std::vector<ColTypePtr>> mixbins;
 
-  std::unique_ptr<o2::aod::singletrackselector::FemtoPair<trkType>> Pair = std::make_unique<o2::aod::singletrackselector::FemtoPair<trkType>>();
+  std::unique_ptr<o2::aod::singletrackselector::FemtoPair<TrackTypePtr>> Pair = std::make_unique<o2::aod::singletrackselector::FemtoPair<TrackTypePtr>>();
 
   Filter pFilter = o2::aod::singletrackselector::p > _min_P&& o2::aod::singletrackselector::p < _max_P;
   Filter etaFilter = nabs(o2::aod::singletrackselector::eta) < _eta;
@@ -283,8 +285,8 @@ struct FemtoCorrelationsMC {
   template <typename Type>
   void fillEtaPhi(Type const& tracks1, Type const& tracks2, unsigned int centBin)
   { // template for particles from the same collision non-identical
-    for (auto ii : tracks1) {
-      for (auto iii : tracks2) {
+    for (const auto& ii : tracks1) {
+      for (const auto& iii : tracks2) {
 
         Pair->SetPair(ii, iii);
         float pair_kT = Pair->GetKt();
@@ -307,8 +309,8 @@ struct FemtoCorrelationsMC {
   template <typename Type>
   void fillResMatrix(Type const& tracks1, Type const& tracks2, unsigned int centBin)
   { // template for ME
-    for (auto ii : tracks1) {
-      for (auto iii : tracks2) {
+    for (const auto& ii : tracks1) {
+      for (const auto& iii : tracks2) {
 
         Pair->SetPair(ii, iii);
         float pair_kT = Pair->GetKt();
@@ -344,7 +346,7 @@ struct FemtoCorrelationsMC {
 
     int trackPDG, trackOrigin;
 
-    for (auto track : tracks) {
+    for (const auto& track : tracks) {
       if (std::fabs(track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().posZ()) > _vertexZ)
         continue;
       if (track.tpcFractionSharedCls() > _tpcFractionSharedCls || track.itsNCls() < _itsNCls)
@@ -385,7 +387,7 @@ struct FemtoCorrelationsMC {
         if (trackPDG == 11 || trackPDG == 13 || trackPDG == 211 || trackPDG == 321 || trackPDG == 2212 || trackPDG == 1000010020)
           Purity_histos_1[centBin][trackPDG]->Fill(track.p());
 
-        selectedtracks_1[track.singleCollSelId()].push_back(std::make_shared<decltype(track)>(track)); // filling the map: eventID <-> selected particles1
+        selectedtracks_1[track.singleCollSelId()].push_back(std::make_shared<TrackType>(track)); // filling the map: eventID <-> selected particles1
       }
 
       if (IsIdentical) {
@@ -406,11 +408,11 @@ struct FemtoCorrelationsMC {
         if (trackPDG == 11 || trackPDG == 13 || trackPDG == 211 || trackPDG == 321 || trackPDG == 2212 || trackPDG == 1000010020)
           Purity_histos_2[centBin][trackPDG]->Fill(track.p());
 
-        selectedtracks_2[track.singleCollSelId()].push_back(std::make_shared<decltype(track)>(track)); // filling the map: eventID <-> selected particles2
+        selectedtracks_2[track.singleCollSelId()].push_back(std::make_shared<TrackType>(track)); // filling the map: eventID <-> selected particles2
       }
     }
 
-    for (auto collision : collisions) {
+    for (const auto& collision : collisions) {
       if (collision.multPerc() < *_centBins.value.begin() || collision.multPerc() >= *(_centBins.value.end() - 1))
         continue;
       if (collision.hadronicRate() < _IRcut.value.first || collision.hadronicRate() >= _IRcut.value.second)
@@ -440,7 +442,7 @@ struct FemtoCorrelationsMC {
       int vertexBinToMix = std::floor((collision.posZ() + _vertexZ) / (2 * _vertexZ / _vertexNbinsToMix));
       float centBinToMix = o2::aod::singletrackselector::getBinIndex<float>(collision.multPerc(), _centBins, _multNsubBins);
 
-      mixbins[std::pair<int, float>{vertexBinToMix, centBinToMix}].push_back(std::make_shared<decltype(collision)>(collision));
+      mixbins[std::pair<int, float>{vertexBinToMix, centBinToMix}].push_back(std::make_shared<ColType>(collision));
     }
 
     //====================================== filling deta(dphi*) & res. matrix starts here ======================================

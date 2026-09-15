@@ -15,6 +15,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <string>
+#include <utility>
 #include <vector>
 
 using std::string;
@@ -33,13 +34,13 @@ int GFWPowerArray::getHighestHarmonic(const HarSet& inhar)
 };
 HarSet GFWPowerArray::TrimVec(HarSet hars, int ind)
 {
-  HarSet retVec = hars;
+  HarSet retVec = std::move(hars);
   retVec.erase(retVec.begin() + ind);
   return retVec;
 };
 HarSet GFWPowerArray::AddConstant(HarSet hars, int offset)
 {
-  HarSet retVec = hars;
+  HarSet retVec = std::move(hars);
   for (int& val : retVec)
     val += offset;
   return retVec;
@@ -72,19 +73,19 @@ void GFWPowerArray::PrintVector(const HarSet& singleSet)
     printf(", %i", singleSet[i]);
   printf("}\n");
 }
-HarSet GFWPowerArray::GetPowerArray(vector<HarSet> inHarmonics)
+HarSet GFWPowerArray::GetPowerArray(const vector<HarSet>& inHarmonics)
 {
   // First, find maximum number of particle correlations ( = max power) and maximum (sum of) harmonics
   int MaxHar = 0;
   int nMaxPart = 0;
-  for (HarSet singleSet : inHarmonics) {
+  for (const HarSet& singleSet : inHarmonics) {
     int harSum = getHighestHarmonic(singleSet);
     MaxHar = harSum > MaxHar ? harSum : MaxHar;
   }
   // Make a vector with MaxHar+1 entries (entry 0 for sum=0)
   HarSet retVec = HarSet(MaxHar + 1);
   // Then loop over all combinations and calculate max powers
-  for (HarSet singleSet : inHarmonics) {
+  for (const HarSet& singleSet : inHarmonics) {
     int lNPart = static_cast<int>(singleSet.size()); // Total number of particles correlated
     RecursiveFunction(retVec, singleSet, 0, lNPart);
     // Harmonic sum = 0 is a special case. In principle all 0 cases with non-zero harmonics are captured by the function above, but to calculate normalization, we set all harmonics to 0. This means that sum=0 power is the max number of harmonics/particles being correlated
@@ -107,7 +108,7 @@ void GFWPowerArray::PowerArrayTest()
     HarSet{2, 2},
     HarSet{3, 3}};
   printf("Input harmonics are:\n");
-  for (HarSet inSet : AllHars)
+  for (const HarSet& inSet : AllHars)
     PrintVector(inSet);
   printf("The configuration of powers must then be:\n");
   auto vc = GetPowerArray(AllHars);

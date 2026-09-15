@@ -55,7 +55,7 @@ class FemtoUniverseParticleHisto
   /// \param tempFitVarpTAxis axis object for the pT axis in the pT vs. tempFitVar plots
   /// \param tempFitVarAxis axis object for the tempFitVar axis
   template <o2::aod::femtouniverse_mc_particle::MCType mc, typename T>
-  void init_base(std::string folderName, std::string tempFitVarAxisTitle, T& tempFitVarpTAxis, T& tempFitVarAxis) // o2-linter: disable=name/function-variable
+  void init_base(const std::string& folderName, const std::string& tempFitVarAxisTitle, T& tempFitVarpTAxis, T& tempFitVarAxis) // o2-linter: disable=name/function-variable
   {
     std::string folderSuffix = static_cast<std::string>(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]).c_str();
     /// Histograms of the kinematic properties
@@ -72,7 +72,7 @@ class FemtoUniverseParticleHisto
 
   // comment
   template <o2::aod::femtouniverse_mc_particle::MCType mc, typename T>
-  void init_debug(std::string folderName, T& tempFitVarMomAxis, bool isFillITSNsigma) // o2-linter: disable=name/function-variable
+  void init_debug(const std::string& folderName, T& tempFitVarMomAxis, bool isFillITSNsigma) // o2-linter: disable=name/function-variable
   {
     std::string folderSuffix = static_cast<std::string>(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]).c_str();
     if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kTrack || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kV0Child || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kCascadeBachelor || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kMCTruthTrack) {
@@ -146,7 +146,7 @@ class FemtoUniverseParticleHisto
   /// \param tempFitVarpTAxis axis object for the pT axis in the pT vs. tempFitVar plots
   /// \param tempFitVarAxis axis object for the tempFitVar axis
   template <typename T>
-  void init_MC(std::string folderName, std::string /*tempFitVarAxisTitle*/, T& tempFitVarpTAxis, T& tempFitVarAxis, bool isDebug) // o2-linter: disable=name/function-variable
+  void init_MC(const std::string& folderName, const std::string& /*tempFitVarAxisTitle*/, T& tempFitVarpTAxis, T& tempFitVarAxis, bool isDebug) // o2-linter: disable=name/function-variable
   {
     /// Particle-type specific histograms
     std::string folderSuffix = static_cast<std::string>(o2::aod::femtouniverse_mc_particle::MCTypeName[o2::aod::femtouniverse_mc_particle::MCType::kTruth]).c_str();
@@ -222,7 +222,7 @@ class FemtoUniverseParticleHisto
   /// \param tempFitVarBins binning of the tempFitVar (DCA_xy in case of tracks, CPA in case of V0s, etc.)
   /// \param isMC add Monte Carlo truth histograms to the output file
   template <typename T>
-  void init(o2::framework::HistogramRegistry* registry, T& tempFitVarpTBins, T& tempFitVarBins, bool isMC, int pdgCode, bool isDebug = false, std::optional<std::string> flexibleFolder = std::nullopt, bool isFillITSNsigma = false)
+  void init(o2::framework::HistogramRegistry* registry, T& tempFitVarpTBins, T& tempFitVarBins, bool isMC, int pdgCode, bool isDebug = false, const std::optional<std::string>& flexibleFolder = std::nullopt, bool isFillITSNsigma = false)
   {
     mPDG = pdgCode;
     if (registry) {

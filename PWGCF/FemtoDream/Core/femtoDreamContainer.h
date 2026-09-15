@@ -32,6 +32,7 @@
 
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace o2::analysis::femtoDream
@@ -75,7 +76,7 @@ class FemtoDreamContainer
   /// \param mTAxis axis object for the mT axis
 
   template <typename T>
-  void init_base(std::string folderName, std::string femtoObs,
+  void init_base(const std::string& folderName, const std::string& femtoObs,
                  T& femtoObsAxis, T& pTAxis, T& kTAxis, T& mTAxis, T& multAxis, T& multPercentileAxis,
                  T& /*kstarAxis4D*/, T& mTAxis4D, T& multAxis4D, T& multPercentileAxis4D,
                  bool use4dplots, bool extendedplots, T& mP2Axis)
@@ -108,7 +109,7 @@ class FemtoDreamContainer
   /// \param folderName Name of the directory in the output file (no suffix for reconstructed data/ Monte Carlo; "_MC" for Monte Carlo Truth)
   /// \param femtoObsAxis axis object for the femto observable axis
   template <typename T>
-  void init_MC(std::string folderName, std::string femtoObs, T femtoObsAxis, T multAxis, T mTAxis, bool smearingByOrigin)
+  void init_MC(const std::string& folderName, const std::string& femtoObs, T femtoObsAxis, T multAxis, T mTAxis, bool smearingByOrigin)
   {
     mHistogramRegistry->add((folderName + "/relPairDist_ReconNoFake").c_str(), ("; " + femtoObs + "; Entries").c_str(), o2::framework::HistType::kTH1F, {femtoObsAxis});
     mHistogramRegistry->add((folderName + "/relPairkstarmT_ReconNoFake").c_str(), ("; " + femtoObs + "; #it{m}_{T} (GeV/#it{c}^{2})").c_str(), o2::framework::HistType::kTH2F, {femtoObsAxis, mTAxis});
@@ -161,7 +162,7 @@ class FemtoDreamContainer
     framework::AxisSpec multAxis4D = {multBins4D, "Multiplicity"};
     framework::AxisSpec multPercentileAxis4D = {multPercentileBins4D, "Multiplicity Percentile (%)"};
 
-    framework::AxisSpec mP2Axis = {invMassBin, "Mass (GeV)"};
+    framework::AxisSpec mP2Axis = {std::move(invMassBin), "Mass (GeV)"};
 
     std::string folderName = static_cast<std::string>(mFolderSuffix[mEventType]) + static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kRecon]);
 
@@ -182,8 +183,8 @@ class FemtoDreamContainer
 
   /// Initialize the histograms for pairs in divided qn or phi-psi bins
   template <typename T>
-  void init_base_EP(std::string folderName, std::string femtoObs,
-                    T& femtoObsAxis, T& mTAxi4D, T& multPercentileAxis4D, T& epObsAxis, std::string epObs)
+  void init_base_EP(const std::string& folderName, const std::string& femtoObs,
+                    T& femtoObsAxis, T& mTAxi4D, T& multPercentileAxis4D, T& epObsAxis, const std::string& epObs)
   {
     mHistogramRegistry->add((folderName + "/relPairkstarmTMultMultPercentileQn").c_str(), ("; " + femtoObs + "; #it{m}_{T} (GeV/#it{c}); Centrality;" + epObs).c_str(), o2::framework::HistType::kTHnSparseF, {femtoObsAxis, mTAxi4D, multPercentileAxis4D, epObsAxis});
   }
@@ -219,14 +220,14 @@ class FemtoDreamContainer
 
   /// Initialize the histograms for pairs with 3D component in divided qn bins
   template <typename T>
-  void init_base_3Dqn(std::string folderName, std::string femtoDKout, std::string femtoDKside, std::string femtoDKlong,
+  void init_base_3Dqn(const std::string& folderName, const std::string& femtoDKout, const std::string& femtoDKside, const std::string& femtoDKlong,
                       T& femtoDKoutAxis, T& femtoDKsideAxis, T& femtoDKlongAxis, T& mTAxi4D, T& multPercentileAxis4D, T& qnAxis, T& pairPhiAxis)
   {
     mHistogramRegistry->add((folderName + "/relPair3dRmTMultPercentileQnPairphi").c_str(), ("; " + femtoDKout + femtoDKside + femtoDKlong + "; #it{m}_{T} (GeV/#it{c}); Centrality; qn; #varphi_{pair} - #Psi_{EP}").c_str(), o2::framework::HistType::kTHnSparseF, {femtoDKoutAxis, femtoDKsideAxis, femtoDKlongAxis, mTAxi4D, multPercentileAxis4D, qnAxis, pairPhiAxis});
   }
 
   template <typename T>
-  void init_3Dqn_MC(std::string folderName, std::string femtoDKout, std::string femtoDKside, std::string femtoDKlong,
+  void init_3Dqn_MC(const std::string& folderName, const std::string& femtoDKout, const std::string& femtoDKside, const std::string& femtoDKlong,
                     T& femtoDKoutAxis, T& femtoDKsideAxis, T& femtoDKlongAxis, bool smearingByOrigin = false)
   {
     mHistogramRegistry->add((folderName + "/hNoMCtruthPairsCounter").c_str(), "; Counter; Entries", o2::framework::HistType::kTH1I, {{1, 0, 1}});
@@ -257,8 +258,8 @@ class FemtoDreamContainer
     framework::AxisSpec DKlongAxis = {DKlongBins, femtoObsDKlong};
     framework::AxisSpec mTAxis4D = {mTBins4D, "#it{m}_{T} (GeV/#it{c})"};
     framework::AxisSpec multPercentileAxis4D = {multPercentileBins4D, "Centralty(%)"};
-    framework::AxisSpec qnAxis = {qnBins, "qn"};
-    framework::AxisSpec pairPhiAxis = {pairPhiBins, "#varphi_{pair} - #Psi_{EP} (rad)"};
+    framework::AxisSpec qnAxis = {std::move(qnBins), "qn"};
+    framework::AxisSpec pairPhiAxis = {std::move(pairPhiBins), "#varphi_{pair} - #Psi_{EP} (rad)"};
 
     std::string folderName = static_cast<std::string>(mFolderSuffix[mEventType]) + static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kRecon]) + static_cast<std::string>("_3Dqn");
 

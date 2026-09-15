@@ -371,7 +371,7 @@ struct FemtoDreamProducerTaskForSpecificAnalysis {
   /// @param groupSelectedV0s partition for the second particle passed by the process function
   /// @param parts femtoDreamParticles table
   template <bool isMC, typename PartitionType, typename PartType>
-  void createSpecifiedDerivedData(const o2::aod::FDCollision& col, PartitionType groupSelectedTracks, PartitionType groupSelectedV0s, PartType parts)
+  void createSpecifiedDerivedData(const o2::aod::FDCollision& col, const PartitionType& groupSelectedTracks, const PartitionType& groupSelectedV0s, const PartType& parts)
   {
     /// check tracks
     int tracksCount = 0;
@@ -512,7 +512,7 @@ struct FemtoDreamProducerTaskForSpecificAnalysis {
   /// @param groupSelectedV0s partition for the second particle passed by the process function
   /// @param parts femtoDreamParticles table
   template <bool isMC, typename PartitionType, typename PartType>
-  void createSpecifiedDerivedDataTrkCascade(const o2::aod::FDCollision& col, PartitionType groupSelectedTracks, PartitionType groupSelectedCascades, PartType parts)
+  void createSpecifiedDerivedDataTrkCascade(const o2::aod::FDCollision& col, const PartitionType& groupSelectedTracks, const PartitionType& groupSelectedCascades, const PartType& parts)
   {
 
     /// check tracks
@@ -592,7 +592,7 @@ struct FemtoDreamProducerTaskForSpecificAnalysis {
   /// @param groupSelectedV0s partition for the second particle passed by the process function
   /// @param parts femtoDreamParticles table
   template <bool isMC, typename PartitionType, typename PartType>
-  void createSpecifiedDerivedDataV0Cascade(const o2::aod::FDCollision& col, PartitionType groupSelectedV0s, PartitionType groupSelectedCascades, PartType parts)
+  void createSpecifiedDerivedDataV0Cascade(const o2::aod::FDCollision& col, const PartitionType& groupSelectedV0s, const PartitionType& groupSelectedCascades, const PartType& parts)
   {
 
     /// check V0s
@@ -634,7 +634,7 @@ struct FemtoDreamProducerTaskForSpecificAnalysis {
   PROCESS_SWITCH(FemtoDreamProducerTaskForSpecificAnalysis, processCollisionsWithNV0sAndNCascades, "Enable producing data with ppp collisions for data", false);
 
   template <bool isMC, typename PartitionType, typename PartType>
-  void createSpecifiedDerivedDataV0Phi(const o2::aod::FDCollision& col, PartitionType groupSelectedV0s, PartitionType groupSelectedResos, PartType parts)
+  void createSpecifiedDerivedDataV0Phi(const o2::aod::FDCollision& col, const PartitionType& groupSelectedV0s, const PartitionType& groupSelectedResos, const PartType& parts)
   {
     // check v0's
     int v0Count = 0;
@@ -792,7 +792,7 @@ struct FemtoDreamProducerTaskForSpecificAnalysis {
   PROCESS_SWITCH(FemtoDreamProducerTaskForSpecificAnalysis, processCollisionsWithNV0AndNPhi, "Enable producing data with pp collisions for data v0-reso", true);
 
   template <bool isMC, typename PartitionType, typename PartType>
-  void createSpecifiedDerivedDataK0ShortKStar(const o2::aod::FDCollision& col, PartitionType groupSelectedV0s, PartitionType groupSelectedResos, PartType parts)
+  void createSpecifiedDerivedDataK0ShortKStar(const o2::aod::FDCollision& col, const PartitionType& groupSelectedV0s, const PartitionType& groupSelectedResos, const PartType& parts)
   {
     // check v0's
     int v0Count = 0;
@@ -954,7 +954,7 @@ struct FemtoDreamProducerTaskForSpecificAnalysis {
   /// For that, this function is created.
   /// For eventual future changes of femtoDreamProducerTaskReso.cxx, createSpecifiedDerivedDataK0ShortKStar() is kept as it is
   template <bool isMC, typename PartitionType, typename PartType>
-  void createSpecifiedDerivedDataK0ShortKStarLegacy(const o2::aod::FDCollision& col, PartitionType groupSelectedV0s, PartitionType groupSelectedResos, PartType parts)
+  void createSpecifiedDerivedDataK0ShortKStarLegacy(const o2::aod::FDCollision& col, const PartitionType& groupSelectedV0s, const PartitionType& groupSelectedResos, const PartType& parts)
   {
     // check v0's
     int v0Count = 0;
@@ -1119,7 +1119,7 @@ struct FemtoDreamProducerTaskForSpecificAnalysis {
   PROCESS_SWITCH(FemtoDreamProducerTaskForSpecificAnalysis, createSpecifiedDerivedDataNK0ShortNKStarLegacy, "Enable producing data with pp collisions for data K0Short-KStar with kV0Child/KResoChild daughter types", false);
 
   template <bool isMC, typename PartitionType, typename PartType>
-  void createSpecifiedDerivedDataK0ShortKStarFromMothers(const o2::aod::FDCollision& col, PartitionType groupSelectedV0s, PartitionType groupSelectedResos, PartType parts)
+  void createSpecifiedDerivedDataK0ShortKStarFromMothers(const o2::aod::FDCollision& col, const PartitionType& groupSelectedV0s, const PartitionType& groupSelectedResos, const PartType& parts)
   {
     // check v0's
     int v0Count = 0;

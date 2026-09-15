@@ -226,7 +226,7 @@ struct femtoDreamTripletTaskTrackTrackTrackPbPb {
   }
 
   template <bool isMC, typename CollisionType>
-  void fillCollision(CollisionType col)
+  void fillCollision(const CollisionType& col)
   {
     ThreeBodyQARegistry.fill(HIST("TripletTaskQA/hSECollisionBins"), colBinning.getBin({col.posZ(), col.multNtr()}));
     eventHisto.fillQA<isMC>(col);
@@ -241,7 +241,7 @@ struct femtoDreamTripletTaskTrackTrackTrackPbPb {
   /// @param magFieldTesla magnetic field of the collision
   /// @param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType, typename PartType>
-  void doSameEvent(PartitionType groupSelectedParts, PartType parts, float magFieldTesla, int multCol, float centCol)
+  void doSameEvent(const PartitionType& groupSelectedParts, const PartType& parts, float magFieldTesla, int multCol, float centCol)
   {
     /// Histogramming same event
     int numberOfTracksPassingSelection = 0;
@@ -379,7 +379,7 @@ struct femtoDreamTripletTaskTrackTrackTrackPbPb {
   /// \param magFieldTesla magnetic field of the collision
   /// \param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType, typename PartType>
-  void doMixedEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartitionType groupPartsThree, PartType parts, float magFieldTesla, int multCol)
+  void doMixedEvent(const PartitionType& groupPartsOne, const PartitionType& groupPartsTwo, const PartitionType& groupPartsThree, const PartType& parts, float magFieldTesla, int multCol)
   {
     for (auto& [p1, p2, p3] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo, groupPartsThree))) {
 

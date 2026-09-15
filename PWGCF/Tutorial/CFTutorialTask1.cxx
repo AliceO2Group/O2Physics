@@ -78,7 +78,7 @@ struct CFTutorialTask1 {
     }
     histos.fill(HIST("hZvtx_after_sel"), coll.posZ());
 
-    for (auto track : inputTracks) { // Loop over tracks
+    for (const auto& track : inputTracks) { // Loop over tracks
       if (fabs(track.eta()) > 0.8) {
         continue;
       }

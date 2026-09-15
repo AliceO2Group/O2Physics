@@ -36,6 +36,7 @@
 
 #include <fstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 ClassImp(FlowContainer);
@@ -71,7 +72,7 @@ FlowContainer::~FlowContainer()
   delete fProf;
   delete fProfRand;
 };
-void FlowContainer::Initialize(TObjArray* inputList, const o2::framework::AxisSpec axis, int nRandom)
+void FlowContainer::Initialize(TObjArray* inputList, const o2::framework::AxisSpec& axis, int nRandom)
 {
   std::vector<double> multiBins = axis.binEdges;
   int nMultiBins = axis.nBins.value_or(0);
@@ -390,7 +391,7 @@ bool FlowContainer::CreateStatisticsProfile(StatisticsType StatType, int arg)
 }
 void FlowContainer::SetIDName(TString newname)
 {
-  fIDName = newname;
+  fIDName = std::move(newname);
 }
 TProfile* FlowContainer::GetCorrXXVsMulti(const char* order, int l_pti)
 {

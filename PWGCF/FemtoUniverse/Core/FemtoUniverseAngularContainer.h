@@ -71,7 +71,7 @@ class FemtoUniverseAngularContainer
   /// \param kTAxis axis object for the kT axis
   /// \param mTAxis axis object for the mT axis
   template <typename T>
-  void initBase(std::string folderName, std::string /*femtoObs*/, T /*femtoObsAxis*/, T /*multAxis*/, T /*kTAxis*/, T /*mTAxis*/, T /*multAxis3D*/, T /*mTAxis3D*/, T etaAxis, T phiAxis, bool use3dplots)
+  void initBase(const std::string& folderName, const std::string& /*femtoObs*/, T /*femtoObsAxis*/, T /*multAxis*/, T /*kTAxis*/, T /*mTAxis*/, T /*multAxis3D*/, T /*mTAxis3D*/, T etaAxis, T phiAxis, bool use3dplots)
   {
     mHistogramRegistry->add((folderName + "/DeltaEtaDeltaPhi").c_str(), ";  #Delta#varphi (rad); #Delta#eta", o2::framework::HistType::kTH2F, {phiAxis, etaAxis});
     if (use3dplots) {
@@ -85,7 +85,7 @@ class FemtoUniverseAngularContainer
   /// \param folderName Name of the directory in the output file (no suffix for reconstructed data/ Monte Carlo; "_MC" for Monte Carlo Truth)
   /// \param femtoObsAxis axis object for the femto observable axis
   template <typename T>
-  void initMC(std::string /*folderName*/, std::string /*femtoObs*/, T /*femtoObsAxis*/, T /*multAxis*/, T /*mTAxis*/)
+  void initMC(const std::string& /*folderName*/, const std::string& /*femtoObs*/, T /*femtoObsAxis*/, T /*multAxis*/, T /*mTAxis*/)
   {
   }
 

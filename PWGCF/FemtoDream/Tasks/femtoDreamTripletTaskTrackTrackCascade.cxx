@@ -248,7 +248,7 @@ struct femtoDreamTripletTaskTrackTrackCascade {
   /// @param magFieldTesla magnetic field of the collision
   /// @param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType, typename PartType>
-  void doSameEvent(PartitionType groupSelectedTracks, PartitionType groupSelectedCascades, PartType parts, float magFieldTesla, int multCol, float centCol)
+  void doSameEvent(const PartitionType& groupSelectedTracks, const PartitionType& groupSelectedCascades, const PartType& parts, float magFieldTesla, int multCol, float centCol)
   {
     /// Histograming tracks
     for (auto& part : groupSelectedTracks) {
@@ -357,7 +357,7 @@ struct femtoDreamTripletTaskTrackTrackCascade {
   /// \param magFieldTesla magnetic field of the collision
   /// \param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType, typename PartType>
-  void doMixedEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartitionType groupPartsThree, PartType parts, float magFieldTesla, int multCol)
+  void doMixedEvent(const PartitionType& groupPartsOne, const PartitionType& groupPartsTwo, const PartitionType& groupPartsThree, const PartType& parts, float magFieldTesla, int multCol)
   {
     for (auto& [T1, T2, casc] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo, groupPartsThree))) {
       const auto& posChild = parts.iteratorAt(casc.globalIndex() - 3);

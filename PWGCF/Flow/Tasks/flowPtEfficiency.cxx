@@ -391,7 +391,7 @@ struct FlowPtEfficiency {
   }
 
   template <typename TTrack>
-  bool trackSelected(TTrack track)
+  bool trackSelected(const TTrack& track)
   {
     if (cfgkIsTrackGlobal && !track.isGlobalTrack()) {
       return false;

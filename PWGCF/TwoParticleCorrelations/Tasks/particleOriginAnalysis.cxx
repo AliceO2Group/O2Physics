@@ -178,7 +178,7 @@ struct ParticleOriginAnalysis {
     std::vector<std::string> cfgnames = {"cfgElectronPIDSelection", "cfgMuonPIDSelection", "cfgPionPIDSelection", "cfgKaonPIDSelection", "cfgProtonPIDSelection"};
     std::vector<uint8_t> spids = {0, 1, 2, 3, 4};
     for (uint i = 0; i < cfgnames.size(); ++i) {
-      auto includeIt = [&pidselector, &initContext](int spid, auto name) {
+      auto includeIt = [&pidselector, &initContext](int spid, const auto& name) {
         bool mUseIt = false;
         bool mExcludeIt = false;
         if (getTaskOptionValue(initContext, "dpt-dpt-filter-tracks", TString::Format("%s.mUseIt", name.c_str()).Data(), mUseIt, false) &&

@@ -261,7 +261,7 @@ struct femtoDreamPairTaskV0V0 {
   };
 
   template <bool isMC, typename CollisionType>
-  void fillCollision(CollisionType col)
+  void fillCollision(const CollisionType& col)
   {
     eventHisto.fillQA<isMC>(col);
   }
@@ -277,7 +277,7 @@ struct femtoDreamPairTaskV0V0 {
   /// @param magFieldTesla magnetic field of the collision
   /// @param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType, typename PartType, typename Collision>
-  void doSameEvent(PartitionType SliceV01, PartitionType SliceV02, PartType parts, Collision col)
+  void doSameEvent(const PartitionType& SliceV01, const PartitionType& SliceV02, const PartType& parts, const Collision& col)
   {
     for (auto& v0 : SliceV01) {
       const auto& posChild = parts.iteratorAt(v0.index() - 2);
@@ -365,7 +365,7 @@ struct femtoDreamPairTaskV0V0 {
   PROCESS_SWITCH(femtoDreamPairTaskV0V0, processSameEvent, "Enable processing same event", true);
 
   template <bool isMC, typename CollisionType, typename PartType, typename PartitionType, typename BinningType>
-  void doMixedEvent_NotMasked(CollisionType& cols, PartType& parts, PartitionType& part1, PartitionType& part2, BinningType policy)
+  void doMixedEvent_NotMasked(CollisionType& cols, PartType& parts, PartitionType& part1, PartitionType& part2, const BinningType& policy)
   {
     for (auto const& [collision1, collision2] : soa::selfCombinations(policy, Mixing.Depth.value, -1, cols, cols)) {
       auto SliceV01 = part1->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);
