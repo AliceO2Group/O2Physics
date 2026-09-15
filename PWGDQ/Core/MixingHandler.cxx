@@ -194,18 +194,3 @@ int MixingHandler::GetBinFromCategory(VarManager::Variables var, int category) c
   truncatedCategory /= norm;
   return truncatedCategory % nBins[ivar];
 }
-
-//_________________________________________________________________________
-void MixingHandler::SetCategoryBinCenters(int category, float* values) const
-{
-  //
-  // set the mixing variables to the bin centers of this category (used for the leftover mixing)
-  //
-  for (auto const& [var, pos] : fVariables) {
-    int bin = GetBinFromCategory(static_cast<VarManager::Variables>(var), category);
-    if (bin < 0) {
-      continue;
-    }
-    values[var] = 0.5 * (fVariableLimits[pos][bin] + fVariableLimits[pos][bin + 1]);
-  }
-}

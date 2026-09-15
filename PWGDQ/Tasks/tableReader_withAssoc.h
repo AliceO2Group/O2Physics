@@ -73,7 +73,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <functional>
 #include <iterator>
 #include <map>
 #include <memory>
@@ -81,26 +80,6 @@
 #include <utility>
 #include <variant>
 #include <vector>
-
-// OutputObj with a callback run on the first dereference, i.e. right before the end-of-stream snapshot
-// (tasks cannot register their own EndOfStream callback, CallbackService::set replaces the framework one)
-template <typename T>
-struct FinalizingOutputObj : public o2::framework::OutputObj<T> {
-  using o2::framework::OutputObj<T>::OutputObj;
-  std::function<void()> finalizeBeforeSnapshot;
-  bool finalized = false;
-
-  T& operator*()
-  {
-    if (!finalized) {
-      finalized = true;
-      if (finalizeBeforeSnapshot) {
-        finalizeBeforeSnapshot();
-      }
-    }
-    return o2::framework::OutputObj<T>::operator*();
-  }
-};
 
 // Some definitions
 namespace o2::aod
@@ -1376,7 +1355,7 @@ struct AnalysisSameEventPairing {
   TH1D* ResoFlowEP = nullptr;
   int fCurrentRun = -1; // needed to detect if the run changed and trigger update of calibrations etc.
 
-  FinalizingOutputObj<THashList> fOutputList{"output"};
+  o2::framework::OutputObj<THashList> fOutputList{"output"};
 
   struct : o2::framework::ConfigurableGroup {
     o2::framework::Configurable<std::string> track{"cfgTrackCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
@@ -1741,9 +1720,6 @@ struct AnalysisSameEventPairing {
     }
 
     if (fConfigRunMixingAcrossTFs) {
-      if (fConfigMixingDepth.value < MixingHandler::MinPoolDepth) {
-        LOGF(fatal, "cfgMixingDepth must be at least %d", MixingHandler::MinPoolDepth);
-      }
       if (fNCutsBarrel > MixingHandler::NMaxCuts) {
         LOGF(fatal, "Across-TF mixing supports at most %d barrel track-cut bits, got %d", MixingHandler::NMaxCuts, fNCutsBarrel);
       }
@@ -1849,12 +1825,6 @@ struct AnalysisSameEventPairing {
       o2::aod::dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON
       VarManager::SetUseVars(fHistMan->GetUsedVars());                                                // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
-      // mix the events left in the pools at the end of the stream
-      fOutputList.finalizeBeforeSnapshot = [this]() {
-        if (fConfigRunMixingAcrossTFs) {
-          runLeftoverMixing();
-        }
-      };
     }
   }
 
@@ -1932,97 +1902,6 @@ struct AnalysisSameEventPairing {
     }
   }
 
-  // Mix all the events in the pool for the cuts in mixingMask (event-wise variables are those of the current event)
-  void runEventMixing(MixingHandler::MixingPool& pool, uint32_t mixingMask)
-  {
-    auto const& events = pool.GetEvents();
-    // each pair of events is mixed once
-    for (size_t iev1 = 0; iev1 < events.size(); iev1++) {
-      for (size_t iev2 = iev1 + 1; iev2 < events.size(); iev2++) {
-        auto const& mixingEvent = events[iev1];
-        auto const& poolEvent = events[iev2];
-        if (!(mixingEvent.filteringMask & poolEvent.filteringMask & mixingMask)) {
-          continue;
-        }
-        for (auto const& t1 : mixingEvent.tracks1) {
-          // run +- pairing
-          for (auto const& t2 : poolEvent.tracks2) {
-            // check the two-track filter for the mixed pair
-            uint32_t mixedTwoTrackFilter = t1.filteringFlags & t2.filteringFlags & mixingMask;
-            if (!mixedTwoTrackFilter) {
-              continue;
-            }
-            VarManager::FillPairMEAcrossTFs(t1, t2);
-            for (int icut = 0; icut < fNCutsBarrel; icut++) {
-              if (mixedTwoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
-                fHistMan->FillHistClass(Form("PairsBarrelMEPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
-              }
-            }
-          }
-          // run ++ pairing
-          for (auto const& t2 : poolEvent.tracks1) {
-            // check the two-track filter for the mixed pair and skip the same track associated to both collisions
-            uint32_t mixedTwoTrackFilter = t1.filteringFlags & t2.filteringFlags & mixingMask;
-            if (!mixedTwoTrackFilter || t1.IsSamePhysicalTrack(t2)) {
-              continue;
-            }
-            VarManager::FillPairMEAcrossTFs(t1, t2);
-            for (int icut = 0; icut < fNCutsBarrel; icut++) {
-              if (mixedTwoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
-                fHistMan->FillHistClass(Form("PairsBarrelMEPP_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
-              }
-            }
-          }
-        }
-        for (auto const& t1 : mixingEvent.tracks2) {
-          // run -+ pairing
-          for (auto const& t2 : poolEvent.tracks1) {
-            // check the two-track filter for the mixed pair
-            uint32_t mixedTwoTrackFilter = t1.filteringFlags & t2.filteringFlags & mixingMask;
-            if (!mixedTwoTrackFilter) {
-              continue;
-            }
-            VarManager::FillPairMEAcrossTFs(t1, t2);
-            for (int icut = 0; icut < fNCutsBarrel; icut++) {
-              if (mixedTwoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
-                fHistMan->FillHistClass(Form("PairsBarrelMEPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
-              }
-            }
-          }
-          // run -- pairing
-          for (auto const& t2 : poolEvent.tracks2) {
-            // check the two-track filter for the mixed pair and skip the same track associated to both collisions
-            uint32_t mixedTwoTrackFilter = t1.filteringFlags & t2.filteringFlags & mixingMask;
-            if (!mixedTwoTrackFilter || t1.IsSamePhysicalTrack(t2)) {
-              continue;
-            }
-            VarManager::FillPairMEAcrossTFs(t1, t2);
-            for (int icut = 0; icut < fNCutsBarrel; icut++) {
-              if (mixedTwoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
-                fHistMan->FillHistClass(Form("PairsBarrelMEMM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  // Mix the events left in the pools (end of stream or run change), with the mixing variables set to the category bin centers
-  void runLeftoverMixing()
-  {
-    for (auto& [category, pool] : fMixingHandler.GetPools()) { // o2-linter: disable=const-ref-in-for-loop (the pools are modified)
-      const uint32_t mixingMask = pool.GetMixingMask(MixingHandler::MinPoolDepth);
-      if (!mixingMask) {
-        continue;
-      }
-      VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
-      fMixingHandler.SetCategoryBinCenters(category, dqtablereader_helpers::varValues());
-      runEventMixing(pool, mixingMask);
-      pool.ClearBits(mixingMask);
-    }
-  }
-
   // Template function to run same event pairing (barrel-barrel, muon-muon, barrel-muon)
   template <bool TTwoProngFitter, int TPairType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TTrackAssocs, typename TTracks>
   void runSameEventPairing(TEvents const& events, o2::framework::Preslice<TTrackAssocs>& preslice, TTrackAssocs const& assocs, TTracks const& /*tracks*/)
@@ -2031,9 +1910,6 @@ struct AnalysisSameEventPairing {
       if (fCurrentRun != events.begin().runNumber()) {
         if (fConfigRunMixingAcrossTFs) {
           // do not mix events from different runs
-          if (fCurrentRun >= 0) {
-            runLeftoverMixing();
-          }
           fMixingHandler.ClearPools();
         }
         initParamsFromCCDB(events.begin().timestamp(), events.begin().runNumber(), TTwoProngFitter);
@@ -2636,7 +2512,7 @@ struct AnalysisSameEventPairing {
               continue;
             }
             auto t1 = assoc.template reducedtrack_as<TTracks>();
-            MixingHandler::MixingTrack mixingTrack(t1.pt(), t1.eta(), t1.phi(), trackFilterForMixing, currentMixingDataFrameSequence, static_cast<uint64_t>(assoc.reducedtrackId()));
+            MixingHandler::MixingTrack mixingTrack(t1.pt(), t1.eta(), t1.phi(), trackFilterForMixing, currentMixingDataFrameSequence, static_cast<uint64_t>(assoc.reducedtrackId()), static_cast<int8_t>(t1.sign()));
             if (t1.sign() > 0) {
               mixingEvent.AddTrack1(mixingTrack);
             } else {
@@ -2647,15 +2523,72 @@ struct AnalysisSameEventPairing {
         if (mixingEvent.tracks1.empty() && mixingEvent.tracks2.empty()) {
           continue;
         }
-        // 2) add the event to the pool corresponding to this event
+        // 2) run the mixing with the events in the pool corresponding to this event
         auto& pool = fMixingHandler.GetPool(mixingCategory);
-        pool.AddEvent(mixingEvent);
-        // 3) mix all the events in the pool for the cuts which reached the pool depth
-        uint32_t mixingMask = pool.GetMixingMask(fMixingHandler.GetPoolDepth());
-        if (mixingMask) {
-          runEventMixing(pool, mixingMask);
-          pool.ClearBits(mixingMask);
+        for (auto const& poolEvent : pool.GetEvents()) {
+          for (auto const& t1 : mixingEvent.tracks1) {
+            // run +- pairing
+            for (auto const& t2 : poolEvent.tracks2) {
+              // check the two-track filter for the mixed pair
+              uint32_t mixedTwoTrackFilter = t1.filteringFlags & t2.filteringFlags;
+              if (!mixedTwoTrackFilter) {
+                continue;
+              }
+              VarManager::FillPairMEAcrossTFs(t1, t2);
+              for (int icut = 0; icut < ncuts; icut++) {
+                if (mixedTwoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
+                  fHistMan->FillHistClass(Form("PairsBarrelMEPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                }
+              }
+            }
+            // run ++ pairing
+            for (auto const& t2 : poolEvent.tracks1) {
+              // check the two-track filter for the mixed pair and skip the same track associated to both collisions
+              uint32_t mixedTwoTrackFilter = t1.filteringFlags & t2.filteringFlags;
+              if (!mixedTwoTrackFilter || t1.IsSamePhysicalTrack(t2)) {
+                continue;
+              }
+              VarManager::FillPairMEAcrossTFs(t1, t2);
+              for (int icut = 0; icut < ncuts; icut++) {
+                if (mixedTwoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
+                  fHistMan->FillHistClass(Form("PairsBarrelMEPP_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                }
+              }
+            }
+          }
+          for (auto const& t1 : mixingEvent.tracks2) {
+            // run -+ pairing
+            for (auto const& t2 : poolEvent.tracks1) {
+              // check the two-track filter for the mixed pair
+              uint32_t mixedTwoTrackFilter = t1.filteringFlags & t2.filteringFlags;
+              if (!mixedTwoTrackFilter) {
+                continue;
+              }
+              VarManager::FillPairMEAcrossTFs(t1, t2);
+              for (int icut = 0; icut < ncuts; icut++) {
+                if (mixedTwoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
+                  fHistMan->FillHistClass(Form("PairsBarrelMEPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                }
+              }
+            }
+            // run -- pairing
+            for (auto const& t2 : poolEvent.tracks2) {
+              // check the two-track filter for the mixed pair and skip the same track associated to both collisions
+              uint32_t mixedTwoTrackFilter = t1.filteringFlags & t2.filteringFlags;
+              if (!mixedTwoTrackFilter || t1.IsSamePhysicalTrack(t2)) {
+                continue;
+              }
+              VarManager::FillPairMEAcrossTFs(t1, t2);
+              for (int icut = 0; icut < ncuts; icut++) {
+                if (mixedTwoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
+                  fHistMan->FillHistClass(Form("PairsBarrelMEMM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                }
+              }
+            }
+          }
         }
+        // 3) add the current event to the pool
+        pool.UpdatePool(mixingEvent, fMixingHandler.GetPoolDepth(), mixingEvent.filteringMask);
         // pool.Print();
       }
     } // end loop over events
