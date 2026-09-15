@@ -63,7 +63,7 @@ void DielectronCut::SetPairOpAng(float minOpAng, float maxOpAng)
 }
 void DielectronCut::SetMaxMeePhiVDep(std::function<float(float)> phivDepCut, float min_phiv, float max_phiv)
 {
-  mMaxMeePhiVDep = phivDepCut;
+  mMaxMeePhiVDep = std::move(phivDepCut);
   mMinPhivPair = min_phiv;
   mMaxPhivPair = max_phiv;
   LOG(info) << "Dielectron Cut, set max mee phiv dep: " << mMaxMeePhiVDep(2.5);
@@ -194,7 +194,7 @@ void DielectronCut::SetTrackMaxDcaZ(float maxDcaZ)
 
 void DielectronCut::SetTrackMaxDcaXYPtDep(std::function<float(float)> ptDepCut)
 {
-  mMaxDcaXYPtDep = ptDepCut;
+  mMaxDcaXYPtDep = std::move(ptDepCut);
   LOG(info) << "Dielectron Cut, set max DCA xy pt dep: " << mMaxDcaXYPtDep(1.0);
 }
 void DielectronCut::ApplyPhiV(bool flag)
