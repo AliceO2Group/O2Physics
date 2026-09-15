@@ -25,12 +25,7 @@
 #include <Framework/AnalysisTask.h>
 #include <Framework/Logger.h>
 
-#include <algorithm>
 #include <array>
-#include <cassert>
-#include <stdexcept>
-#include <string>
-#include <vector>
 
 namespace o2::analysis
 {

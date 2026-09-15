@@ -777,11 +777,9 @@ struct HfTaskFlowCharmHadrons {
       } else {
         scalprodCand = cosNPhi * xQVec + sinNPhi * yQVec;
       }
-      LOG(info) << "\nScalar product before correction" << scalprodCand;
       if (useOnlineResoCorrection && scalarProdReso > 1e-5f) {
         scalprodCand /= scalarProdReso;
       }
-      LOG(info) << "Scalar product after correction" << scalprodCand;
 
       if (fillMassPtMlTree || fillMassPtMlSpCentTree || fillMassPtMlSpCentPvTree) {
         if (downSampleFactor < 1.) {
@@ -979,63 +977,6 @@ struct HfTaskFlowCharmHadrons {
     runFlowAnalysis<RunMode::kSP, DecayChannel::Xic0ToXiPi>(collision, candsXic0, tracks);
   }
   PROCESS_SWITCH(HfTaskFlowCharmHadrons, processXic0, "Process Xic0 candidates", false);
-
-  // // Ds with rectangular cuts
-  // void processDs(CollsWithSPQvecs::iterator const& collision,
-  //                CandDsData const& /*candidatesDs*/,
-  //                TracksWithExtra const& tracks)
-  // {
-  //   auto candsDsToKKPi = selectedDsToKKPi->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-  //   auto candsDsToPiKK = selectedDsToPiKK->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-  //   runFlowAnalysis<RunMode::kSP, DecayChannel::DsToKKPi>(collision, candsDsToKKPi, tracks);
-  //   runFlowAnalysis<RunMode::kSP, DecayChannel::DsToPiKK>(collision, candsDsToPiKK, tracks);
-  // }
-  // PROCESS_SWITCH(HfTaskFlowCharmHadrons, processDs, "Process Ds candidates", false);
-
-  // // D0 with rectangular cuts
-  // void processD0(CollsWithSPQvecs::iterator const& collision,
-  //                CandD0Data const& /*candidatesD0*/,
-  //                TracksWithExtra const& tracks)
-  // {
-  //   auto candsD0ToPiK = selectedD0ToPiK->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-  //   auto candsD0ToKPi = selectedD0ToKPi->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-  //   runFlowAnalysis<RunMode::kSP, DecayChannel::D0ToPiK>(collision, candsD0ToPiK, tracks);
-  //   runFlowAnalysis<RunMode::kSP, DecayChannel::D0ToKPi>(collision, candsD0ToKPi, tracks);
-  // }
-  // PROCESS_SWITCH(HfTaskFlowCharmHadrons, processD0, "Process D0 candidates", false);
-
-  // // Dplus with rectangular cuts
-  // void processDplus(CollsWithSPQvecs::iterator const& collision,
-  //                   CandDplusData const& candidatesDplus,
-  //                   TracksWithExtra const& tracks)
-  // {
-  //   runFlowAnalysis<RunMode::kSP, DecayChannel::DplusToPiKPi>(collision, candidatesDplus, tracks);
-  // }
-  // PROCESS_SWITCH(HfTaskFlowCharmHadrons, processDplus, "Process Dplus candidates", true);
-
-  // // Lc with rectangular cuts
-  // void processLc(CollsWithSPQvecs::iterator const& collision,
-  //                CandLcData const& /*candidatesLc*/,
-  //                TracksWithExtra const& tracks)
-  // {
-  //   auto candsLcToPKPi = selectedLcToPKPi->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-  //   auto candsLcToPiKP = selectedLcToPiKP->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-  //   runFlowAnalysis<RunMode::kSP, DecayChannel::LcToPKPi>(collision, candsLcToPKPi, tracks);
-  //   runFlowAnalysis<RunMode::kSP, DecayChannel::LcToPiKP>(collision, candsLcToPiKP, tracks);
-  // }
-  // PROCESS_SWITCH(HfTaskFlowCharmHadrons, processLc, "Process Lc candidates", false);
-
-  // // Xic with rectangular cuts
-  // void processXic(CollsWithSPQvecs::iterator const& collision,
-  //                 CandXicData const& /*candidatesXic*/,
-  //                 TracksWithExtra const& tracks)
-  // {
-  //   auto candsXicToPKPi = selectedXicToPKPi->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-  //   auto candsXicToPiKP = selectedXicToPiKP->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-  //   runFlowAnalysis<RunMode::kSP, DecayChannel::XicToPKPi>(collision, candsXicToPKPi, tracks);
-  //   runFlowAnalysis<RunMode::kSP, DecayChannel::XicToPiKP>(collision, candsXicToPiKP, tracks);
-  // }
-  // PROCESS_SWITCH(HfTaskFlowCharmHadrons, processXic, "Process Xic candidates", false);
 
   /// Compute resolution
   /// \param collision is the collision with the Q vector information
