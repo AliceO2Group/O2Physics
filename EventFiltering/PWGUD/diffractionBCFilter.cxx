@@ -321,7 +321,7 @@ struct DGBCFilterRun3 {
 
     // loop over bcs
     int isDGBC;
-    for (auto bc : bcs) {
+    for (const auto& bc : bcs) {
       auto bcnum = bc.globalBC();
       auto ccs = false;
 
