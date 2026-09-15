@@ -56,7 +56,7 @@ struct FlowZdcTask {
   SliceCache cache;
   Configurable<bool> useFT0M{"useFT0M", true, "FT0M for centrality"};
   Configurable<bool> useFT0C{"useFT0C", false, "FT0C for centrality"};
-  Configurable<bool> useGlbTracks{"useGlbTracks", false, "GlbTracks for centrality"};  
+  Configurable<bool> useGlbTracks{"useGlbTracks", false, "GlbTracks for centrality"};
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0, "Accepted z-vertex range"};
   Configurable<float> maxZem{"maxZem", 3099.5, "Max ZEM signal"};
   // for ZDC info and analysis
@@ -69,7 +69,7 @@ struct FlowZdcTask {
   Configurable<float> maxAmpFT0M{"maxAmpFT0M", 2500, "Max FT0M amp"};
   Configurable<int> nBinsAmpFT0M{"nBinsAmpFT0M", 100, "N bins FT0M amp"};
   Configurable<int> nBinsAmpFT0C{"nBinsAmpFT0C", 100, "N bins FT0C amp"};
-  Configurable<int> nBinsGlbTracks{"nBinsGlbTracks", 100, "N bins global tracks"};  
+  Configurable<int> nBinsGlbTracks{"nBinsGlbTracks", 100, "N bins global tracks"};
   Configurable<int> nBinsZDC{"nBinsZDC", 400, "nBinsZDC"};
   Configurable<int> nBinsZP{"nBinsZP", 50, "nBinsZP"};
   Configurable<int> nBinsZN{"nBinsZN", 50, "nBinsZN"};
@@ -215,7 +215,7 @@ struct FlowZdcTask {
       if (useGlbTracks) {
         histos.add("ZPAZNAVsGlbTracks", ";N_{global tracks} (|#eta|<0.8);ZPA Amplitude;ZNA Amplitude;", kTH3F, {{{nBinsGlbTracks, minNch, maxNch}, {nBinsZP, -0.5, maxZp}, {nBinsZN, -0.5, maxZn}}});
         histos.add("ZPCZNCVsGlbTracks", ";N_{global tracks} (|#eta|<0.8);ZPC Amplitude;ZNC Amplitude;", kTH3F, {{{nBinsGlbTracks, minNch, maxNch}, {nBinsZP, -0.5, maxZp}, {nBinsZN, -0.5, maxZn}}});
-      }      
+      }
       histos.add("ZNAVsFT0C", ";T0C (#times 1/100);ZNA Amplitude;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZn}}});
       histos.add("ZNAVsFT0M", ";T0A+T0C (#times 1/100);ZNA Amplitude;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0M}, {nBinsZDC, -0.5, maxZn}}});
       histos.add("ZNCVsFT0C", ";T0C (#times 1/100);ZNC Amplitude;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZn}}});
