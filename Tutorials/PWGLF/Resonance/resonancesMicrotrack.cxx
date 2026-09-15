@@ -90,7 +90,7 @@ struct ResonancesMicrotrack {
   }
 
   template <bool IsResoMicrotrack, typename TrackType>
-  bool trackCut(const TrackType track)
+  bool trackCut(const TrackType& track)
   {
     if constexpr (!IsResoMicrotrack) {
       if (std::abs(track.pt()) < cMinPtcut)
