@@ -99,24 +99,23 @@ struct TwoParticleCorrelationsMpi {
   SliceCache cache;
 
   // Configuration
-  Configurable<float> cfgCutVertex{"cfgCutVertex", 7.0f, "Accepted z-vertex range"};
-  Configurable<float> cfgCutPt{"cfgCutPt", 0.5f, "Minimal pT for tracks"};
-  Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
-  Configurable<std::pair<float, float>> cfgFlowPtRef{"cfgFlowPtRef", {0.5f, 3.0f}, "Minimum and maximum pT for reference flow particles"};
-  Configurable<std::pair<float, float>> cfgFlowPtPOI{"cfgFlowPtPOI", {0.5f, 10.0f}, "Minimum and maximum pT for particles of interest in flow correlations"};
-
-  Configurable<int> cfgPtOrder{"cfgPtOrder", 1, "Only consider pairs for which pT,1 < pT,2 (0 = OFF, 1 = ON)"};
-  Configurable<int> cfgTriggerCharge{"cfgTriggerCharge", 0, "Select on charge of trigger particle: 0 = all; 1 = positive; -1 = negative"};
-  Configurable<int> cfgAssociatedCharge{"cfgAssociatedCharge", 0, "Select on charge of associated particle: 0 = all charged; 1 = positive; -1 = negative"};
-  Configurable<int> cfgPairCharge{"cfgPairCharge", 0, "Select on charge of particle pair: 0 = all; 1 = like sign; -1 = unlike sign"};
-  Configurable<int> cfgCorrelationMethod{"cfgCorrelationMethod", 0, "Correlation method, 0 = all, 1 = dd, 2 = ddbar"};
-
-  Configurable<float> cfgTwoTrackCut{"cfgTwoTrackCut", -1, "Two track cut: -1 = off; >0 otherwise distance value (suggested: 0.02)"};
-  Configurable<float> cfgTwoTrackCutMinRadius{"cfgTwoTrackCutMinRadius", 0.8f, "Two track cut: radius in m from which two track cuts are applied"};
-  ;
-  Configurable<int> cfgLocalEfficiency{"cfgLocalEfficiency", 0, "0 = OFF and 1 = ON for local efficiency"};
-  Configurable<bool> cfgDropStepRECO{"cfgDropStepRECO", false, "choice to drop step RECO if efficiency correction is used"};
-  Configurable<int> cfgCentBinsForMC{"cfgCentBinsForMC", 0, "0 = generated multiplicity; 1 = reconstructed multiplicity and all associated collisions"};
+  struct : ConfigurableGroup {
+    Configurable<float> cfgCutVertex{"cfgCutVertex", 7.0f, "Accepted z-vertex range"};
+    Configurable<float> cfgCutPt{"cfgCutPt", 0.5f, "Minimal pT for tracks"};
+    Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
+    Configurable<std::pair<float, float>> cfgFlowPtRef{"cfgFlowPtRef", {0.5f, 3.0f}, "Minimum and maximum pT for reference flow particles"};
+    Configurable<std::pair<float, float>> cfgFlowPtPOI{"cfgFlowPtPOI", {0.5f, 10.0f}, "Minimum and maximum pT for particles of interest in flow correlations"};
+    Configurable<int> cfgPtOrder{"cfgPtOrder", 1, "Only consider pairs for which pT,1 < pT,2 (0 = OFF, 1 = ON)"};
+    Configurable<int> cfgTriggerCharge{"cfgTriggerCharge", 0, "Select on charge of trigger particle: 0 = all; 1 = positive; -1 = negative"};
+    Configurable<int> cfgAssociatedCharge{"cfgAssociatedCharge", 0, "Select on charge of associated particle: 0 = all charged; 1 = positive; -1 = negative"};
+    Configurable<int> cfgPairCharge{"cfgPairCharge", 0, "Select on charge of particle pair: 0 = all; 1 = like sign; -1 = unlike sign"};
+    Configurable<int> cfgCorrelationMethod{"cfgCorrelationMethod", 0, "Correlation method, 0 = all, 1 = dd, 2 = ddbar"};
+    Configurable<float> cfgTwoTrackCut{"cfgTwoTrackCut", -1, "Two track cut: -1 = off; >0 otherwise distance value (suggested: 0.02)"};
+    Configurable<float> cfgTwoTrackCutMinRadius{"cfgTwoTrackCutMinRadius", 0.8f, "Two track cut: radius in m from which two track cuts are applied"};
+    Configurable<int> cfgLocalEfficiency{"cfgLocalEfficiency", 0, "0 = OFF and 1 = ON for local efficiency"};
+    Configurable<bool> cfgDropStepRECO{"cfgDropStepRECO", false, "choice to drop step RECO if efficiency correction is used"};
+    Configurable<int> cfgCentBinsForMC{"cfgCentBinsForMC", 0, "0 = generated multiplicity; 1 = reconstructed multiplicity and all associated collisions"};
+  } cfgGeneral;
   Configurable<uint16_t> cfgTrackBitMask{"cfgTrackBitMask", 0, "BitMask for track selection systematics; refer to the enum TrackSelectionCuts in filtering task"};
   Configurable<uint16_t> cfgMultCorrelationsMask{"cfgMultCorrelationsMask", 0, "Selection bitmask for the multiplicity correlations. This should match the filter selection cfgEstimatorBitMask."};
   Configurable<std::string> cfgMultCutFormula{"cfgMultCutFormula", "", "Multiplicity correlations cut formula. A result greater than zero results in accepted event. Parameters: [cFT0C] FT0C centrality, [mFV0A] V0A multiplicity, [mGlob] global track multiplicity, [mPV] PV track multiplicity, [cFT0M] FT0M centrality"};
@@ -178,18 +177,18 @@ struct TwoParticleCorrelationsMpi {
   } cfgEventWeight;
 
   // This filter is applied to AOD and derived data (column names are identical)
-  Filter collisionZVtxFilter = nabs(aod::collision::posZ) < cfgCutVertex;
+  Filter collisionZVtxFilter = nabs(aod::collision::posZ) < cfgGeneral.cfgCutVertex;
   // This filter is only applied to AOD
   Filter collisionVertexTypeFilter = (aod::collision::flags & static_cast<uint16_t>(aod::collision::CollisionFlagsRun2::Run2VertexerTracks)) == static_cast<uint16_t>(aod::collision::CollisionFlagsRun2::Run2VertexerTracks);
 
   // Track filters
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true));
-  Filter cfTrackFilter = (nabs(aod::cftrack::eta) < cfgCutEta) && (aod::cftrack::pt > cfgCutPt) && ncheckbit(aod::track::trackType, as<uint8_t>(cfgTrackBitMask));
+  Filter trackFilter = (nabs(aod::track::eta) < cfgGeneral.cfgCutEta) && (aod::track::pt > cfgGeneral.cfgCutPt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true));
+  Filter cfTrackFilter = (nabs(aod::cftrack::eta) < cfgGeneral.cfgCutEta) && (aod::cftrack::pt > cfgGeneral.cfgCutPt) && ncheckbit(aod::track::trackType, as<uint8_t>(cfgTrackBitMask));
 
   // MC filters
-  Filter cfMCCollisionFilter = nabs(aod::mccollision::posZ) < cfgCutVertex;
-  Filter cfMCParticleFilter = (nabs(aod::cfmcparticle::eta) < cfgCutEta) && (aod::cfmcparticle::pt > cfgCutPt); // && (aod::cfmcparticle::sign != 0); //check the sign manually, some specials may be neutral
-  Filter mcParticleFilter = (nabs(aod::mcparticle::eta) < cfgCutEta) && (aod::mcparticle::pt > cfgCutPt);
+  Filter cfMCCollisionFilter = nabs(aod::mccollision::posZ) < cfgGeneral.cfgCutVertex;
+  Filter cfMCParticleFilter = (nabs(aod::cfmcparticle::eta) < cfgGeneral.cfgCutEta) && (aod::cfmcparticle::pt > cfgGeneral.cfgCutPt); // && (aod::cfmcparticle::sign != 0); //check the sign manually, some specials may be neutral
+  Filter mcParticleFilter = (nabs(aod::mcparticle::eta) < cfgGeneral.cfgCutEta) && (aod::mcparticle::pt > cfgGeneral.cfgCutPt);
 
   // Output definitions
   OutputObj<CorrelationContainer> same{"sameEvent"};
@@ -340,8 +339,8 @@ struct TwoParticleCorrelationsMpi {
     if (cfgUserAxis < NoUserAxis || cfgUserAxis > EventSeedAxis) {
       LOGF(fatal, "Unsupported cfgUserAxis=%d; use 0 (off), 1 (invariant mass), or 2 (event seed)", cfgUserAxis.value);
     }
-    if (cfgCentBinsForMC < 0 || cfgCentBinsForMC > 1) {
-      LOGF(fatal, "Unsupported cfgCentBinsForMC=%d; use 0 (generated multiplicity), 1 (reconstructed multiplicity and all associated collisions)", cfgCentBinsForMC.value);
+    if (cfgGeneral.cfgCentBinsForMC < 0 || cfgGeneral.cfgCentBinsForMC > 1) {
+      LOGF(fatal, "Unsupported cfgCentBinsForMC=%d; use 0 (generated multiplicity), 1 (reconstructed multiplicity and all associated collisions)", cfgGeneral.cfgCentBinsForMC.value);
     }
     const int enabledDerivedSameProcesses = static_cast<int>(doprocessSameDerived) + static_cast<int>(doprocessSameDerivedCorrected) + static_cast<int>(doprocessSameDerivedMultSet) + static_cast<int>(doprocessSameDerivedMultSetCorrected);
     if (enabledDerivedSameProcesses > 1) {
@@ -526,7 +525,7 @@ struct TwoParticleCorrelationsMpi {
     registry.add("trackcount_mixed", "bin", {HistType::kTH3F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}, {10, -0.5, 9.5}, {10, -0.5, 9.5}}});
     if (cfgFillAcceptanceWeights && !cfgAcceptanceRunByRun) {
       AxisSpec phiAxis{cfgAcceptancePhiBins, 0., o2::constants::math::TwoPI, "#varphi"};
-      AxisSpec etaAxis{cfgAcceptanceEtaBins, -cfgCutEta.value, cfgCutEta.value, "#eta"};
+      AxisSpec etaAxis{cfgAcceptanceEtaBins, -cfgGeneral.cfgCutEta.value, cfgGeneral.cfgCutEta.value, "#eta"};
       mAcceptanceWeights = registry.add<TH3>("phi_eta_vtxz_ref", "Reference-track acceptance;#varphi;#eta;z_{vtx} (cm)", {HistType::kTH3D, {phiAxis, etaAxis, axisVertex}});
     }
 
@@ -541,8 +540,8 @@ struct TwoParticleCorrelationsMpi {
       cfg.mPairCuts = true;
     }
 
-    if (cfgTwoTrackCut > 0) {
-      mPairCuts.SetTwoTrackCuts(cfgTwoTrackCut, cfgTwoTrackCutMinRadius);
+    if (cfgGeneral.cfgTwoTrackCut > 0) {
+      mPairCuts.SetTwoTrackCuts(cfgGeneral.cfgTwoTrackCut, cfgGeneral.cfgTwoTrackCutMinRadius);
     }
 
     // --- OBJECT INIT ---
@@ -592,8 +591,8 @@ struct TwoParticleCorrelationsMpi {
     same.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, userAxis));
     mixed.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, userMixingAxis));
 
-    same->setTrackEtaCut(cfgCutEta);
-    mixed->setTrackEtaCut(cfgCutEta);
+    same->setTrackEtaCut(cfgGeneral.cfgCutEta);
+    mixed->setTrackEtaCut(cfgGeneral.cfgCutEta);
 
     if (!cfgEfficiencyAssociated.value.empty()) {
       efficiencyAssociatedCache.reserve(512);
@@ -619,8 +618,8 @@ struct TwoParticleCorrelationsMpi {
              name, range.first, range.second, ptAxisSpec.binEdges.front(), ptAxisSpec.binEdges.back());
       }
     };
-    validateFlowPtRange(cfgFlowPtRef.value, "cfgFlowPtRef");
-    validateFlowPtRange(cfgFlowPtPOI.value, "cfgFlowPtPOI");
+    validateFlowPtRange(cfgGeneral.cfgFlowPtRef.value, "cfgFlowPtRef");
+    validateFlowPtRange(cfgGeneral.cfgFlowPtPOI.value, "cfgFlowPtPOI");
     const int nPtBins = static_cast<int>(ptAxisSpec.binEdges.size()) - 1;
     fPtAxis = std::make_unique<TAxis>(nPtBins, ptAxisSpec.binEdges.data());
     if (cfgRegions->GetSize() < 0) {
@@ -806,7 +805,7 @@ struct TwoParticleCorrelationsMpi {
     }
 
     // Fill the nominal sums
-    if (std::abs(track.eta()) < cfgCutEta) {
+    if (std::abs(track.eta()) < cfgGeneral.cfgCutEta) {
       flowPtContainer->fill(weff, track.pt());
     }
 
@@ -842,7 +841,7 @@ struct TwoParticleCorrelationsMpi {
     }
 
     AxisSpec phiAxis{cfgAcceptancePhiBins, 0., o2::constants::math::TwoPI, "#varphi"};
-    AxisSpec etaAxis{cfgAcceptanceEtaBins, -cfgCutEta.value, cfgCutEta.value, "#eta"};
+    AxisSpec etaAxis{cfgAcceptanceEtaBins, -cfgGeneral.cfgCutEta.value, cfgGeneral.cfgCutEta.value, "#eta"};
     const std::string histogramName = Form("%d/phi_eta_vtxz_ref", runNumber);
     const auto histogram = registry.add<TH3>(histogramName.c_str(), "Reference-track acceptance;#varphi;#eta;z_{vtx} (cm)", {HistType::kTH3D, {phiAxis, etaAxis, axisVertex}});
     mAcceptanceWeightsByRun.emplace(runNumber, histogram);
@@ -862,8 +861,8 @@ struct TwoParticleCorrelationsMpi {
   template <DataType dt, typename TTrack>
   inline void fillGFW(const TTrack& track, const float& centMult, const double& posZ)
   {
-    const bool withinPtRef = track.pt() > cfgFlowPtRef->first && track.pt() < cfgFlowPtRef->second;
-    const bool withinPtPOI = track.pt() > cfgFlowPtPOI->first && track.pt() < cfgFlowPtPOI->second;
+    const bool withinPtRef = track.pt() > cfgGeneral.cfgFlowPtRef->first && track.pt() < cfgGeneral.cfgFlowPtRef->second;
+    const bool withinPtPOI = track.pt() > cfgGeneral.cfgFlowPtPOI->first && track.pt() < cfgGeneral.cfgFlowPtPOI->second;
     if (!withinPtRef && !withinPtPOI) {
       return;
     }
@@ -1727,8 +1726,8 @@ struct TwoParticleCorrelationsMpi {
           }
         } else { // otherwise check the sign against the configuration
           const int sign = getParticleSign(track1);
-          if (cfgTriggerCharge != 0) {
-            if (cfgTriggerCharge * sign < 0) {
+          if (cfgGeneral.cfgTriggerCharge != 0) {
+            if (cfgGeneral.cfgTriggerCharge * sign < 0) {
               continue;
             }
           } else if (sign == 0) {
@@ -1737,7 +1736,7 @@ struct TwoParticleCorrelationsMpi {
         }
       } else if constexpr (std::experimental::is_detected<HasSign, typename TTracks1::iterator>::value) {
         // Check reco objects that have the sign attribute. There are no neutrals to deal with.
-        if (cfgTriggerCharge != 0 && cfgTriggerCharge * track1.sign() < 0) {
+        if (cfgGeneral.cfgTriggerCharge != 0 && cfgGeneral.cfgTriggerCharge * track1.sign() < 0) {
           continue;
         }
       }
@@ -1837,22 +1836,22 @@ struct TwoParticleCorrelationsMpi {
         }
 
         if constexpr (std::experimental::is_detected<HasDecay, typename TTracks1::iterator>::value && std::experimental::is_detected<HasDecay, typename TTracks2::iterator>::value) {
-          if (cfgCorrelationMethod == CorrelationMethod::Dd && track1.decay() != track2.decay()) {
+          if (cfgGeneral.cfgCorrelationMethod == CorrelationMethod::Dd && track1.decay() != track2.decay()) {
             continue;
           }
-          if (cfgCorrelationMethod == CorrelationMethod::Ddbar && track1.decay() == track2.decay()) {
+          if (cfgGeneral.cfgCorrelationMethod == CorrelationMethod::Ddbar && track1.decay() == track2.decay()) {
             continue;
           }
         }
 
-        if (cfgPtOrder != 0 && track2.pt() >= track1.pt()) {
+        if (cfgGeneral.cfgPtOrder != 0 && track2.pt() >= track1.pt()) {
           continue;
         }
 
         if constexpr (std::experimental::is_detected<HasSign, typename TTracks2::iterator>::value || std::experimental::is_detected<HasPDGCode, typename TTracks2::iterator>::value) {
           const int associatedSign = getParticleSign(track2);
-          if (cfgAssociatedCharge != 0) {
-            if (cfgAssociatedCharge * associatedSign < 0) {
+          if (cfgGeneral.cfgAssociatedCharge != 0) {
+            if (cfgGeneral.cfgAssociatedCharge * associatedSign < 0) {
               continue;
             }
           } else if (associatedSign == 0) { // mc particles come in neutrals, need to check explicitly
@@ -1862,7 +1861,7 @@ struct TwoParticleCorrelationsMpi {
 
         if constexpr ((std::experimental::is_detected<HasSign, typename TTracks1::iterator>::value || std::experimental::is_detected<HasPDGCode, typename TTracks1::iterator>::value) &&
                       (std::experimental::is_detected<HasSign, typename TTracks2::iterator>::value || std::experimental::is_detected<HasPDGCode, typename TTracks2::iterator>::value)) {
-          if (cfgPairCharge != 0 && cfgPairCharge * getParticleSign(track1) * getParticleSign(track2) < 0) {
+          if (cfgGeneral.cfgPairCharge != 0 && cfgGeneral.cfgPairCharge * getParticleSign(track1) * getParticleSign(track2) < 0) {
             continue;
           }
         }
@@ -1873,7 +1872,7 @@ struct TwoParticleCorrelationsMpi {
               if (cfg.mPairCuts && mPairCuts.conversionCuts(track1, track2)) {
                 continue;
               }
-              if (cfgTwoTrackCut > 0 && mPairCuts.twoTrackCut(track1, track2, magField)) {
+              if (cfgGeneral.cfgTwoTrackCut > 0 && mPairCuts.twoTrackCut(track1, track2, magField)) {
                 continue;
               }
             }
@@ -1927,7 +1926,7 @@ struct TwoParticleCorrelationsMpi {
       return;
     }
     if (!cfgEfficiencyTrigger.value.empty()) {
-      if (cfgLocalEfficiency > 0) {
+      if (cfgGeneral.cfgLocalEfficiency > 0) {
         TFile* fEfficiencyTrigger = TFile::Open(cfgEfficiencyTrigger.value.c_str(), "READ");
         cfg.mEfficiencyTrigger = dynamic_cast<THn*>(fEfficiencyTrigger->Get("ccdb_object"));
       } else {
@@ -1939,7 +1938,7 @@ struct TwoParticleCorrelationsMpi {
       LOGF(info, "Loaded efficiency histogram for trigger particles from %s", cfgEfficiencyTrigger.value.c_str());
     }
     if (!cfgEfficiencyAssociated.value.empty()) {
-      if (cfgLocalEfficiency > 0) {
+      if (cfgGeneral.cfgLocalEfficiency > 0) {
         TFile* fEfficiencyAssociated = TFile::Open(cfgEfficiencyAssociated.value.c_str(), "READ");
         cfg.mEfficiencyAssociated = dynamic_cast<THn*>(fEfficiencyAssociated->Get("ccdb_object"));
       } else {
@@ -2095,7 +2094,7 @@ struct TwoParticleCorrelationsMpi {
     loadCcdbYieldTemplates(collision.timestamp());
 
     int field = 0;
-    if (cfgTwoTrackCut > 0) {
+    if (cfgGeneral.cfgTwoTrackCut > 0) {
       field = getMagneticField(collision.timestamp());
     }
 
@@ -2116,7 +2115,7 @@ struct TwoParticleCorrelationsMpi {
     }
 
     const bool hasEfficiency = (cfg.mEfficiencyAssociated != nullptr || cfg.mEfficiencyTrigger != nullptr);
-    const bool fillReco = !(cfgDropStepRECO && hasEfficiency);
+    const bool fillReco = !(cfgGeneral.cfgDropStepRECO && hasEfficiency);
     EventSeedEstimate seedEstimate;
 
     if (cfgUserAxis == EventSeedAxis) {
@@ -2275,7 +2274,7 @@ struct TwoParticleCorrelationsMpi {
       int bin = configurableBinningDerived.getBin(std::tuple(collision1.posZ(), multiplicity));
       float eventWeight = 1.0f / it.currentWindowNeighbours();
       int field = 0;
-      if (cfgTwoTrackCut > 0) {
+      if (cfgGeneral.cfgTwoTrackCut > 0) {
         field = getMagneticField(collision1.timestamp());
       }
 
@@ -2284,12 +2283,12 @@ struct TwoParticleCorrelationsMpi {
       }
 
       bool hasEfficiencyMixed = (cfg.mEfficiencyAssociated != nullptr || cfg.mEfficiencyTrigger != nullptr);
-      bool fillRecoMixed = !(cfgDropStepRECO && hasEfficiencyMixed);
+      bool fillRecoMixed = !(cfgGeneral.cfgDropStepRECO && hasEfficiencyMixed);
 
       if (it.isNewWindow()) {
         loadEfficiency(collision1.timestamp());
         hasEfficiencyMixed = (cfg.mEfficiencyAssociated != nullptr || cfg.mEfficiencyTrigger != nullptr);
-        fillRecoMixed = !(cfgDropStepRECO && hasEfficiencyMixed);
+        fillRecoMixed = !(cfgGeneral.cfgDropStepRECO && hasEfficiencyMixed);
 
         if (cfgUserAxis == EventSeedAxis) {
           loadCcdbYieldTemplates(collision1.timestamp());
@@ -2357,7 +2356,7 @@ struct TwoParticleCorrelationsMpi {
     }
 
     auto multiplicity = mcCollision.multiplicity();
-    if (cfgCentBinsForMC > 0) {
+    if (cfgGeneral.cfgCentBinsForMC > 0) {
       if (collisions.size() == 0) {
         return;
       }
@@ -2381,7 +2380,7 @@ struct TwoParticleCorrelationsMpi {
         continue;
       }
       const int sign = getParticleSign(mcParticle);
-      if (sign == 0 || (cfgAssociatedCharge != 0 && cfgAssociatedCharge * sign < 0)) {
+      if (sign == 0 || (cfgGeneral.cfgAssociatedCharge != 0 && cfgGeneral.cfgAssociatedCharge * sign < 0)) {
         continue;
       }
       if (!cfgMcTriggerPDGs->empty() && std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), mcParticle.pdgCode()) != cfgMcTriggerPDGs->end()) {
@@ -2432,7 +2431,7 @@ struct TwoParticleCorrelationsMpi {
   template <typename... ParticleTypes>
   void processMCMixedDerivedT(soa::Filtered<aod::CFMcCollisions> const& mcCollisions, soa::Filtered<aod::CFCollisionsWithLabel> const& collisions, ParticleTypes&&... particles)
   {
-    bool useMCMultiplicity = (cfgCentBinsForMC == 0);
+    bool useMCMultiplicity = (cfgGeneral.cfgCentBinsForMC == 0);
     auto getMultiplicity =
       [&collisions, &useMCMultiplicity, this](auto& col) {
         if (useMCMultiplicity) {
