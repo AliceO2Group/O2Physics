@@ -19,7 +19,6 @@
 #define COMMON_TOOLS_TRACKTUNER_H_
 
 #include <CCDB/BasicCCDBManager.h>
-#include <CCDB/CcdbApi.h>
 #include <CommonConstants/MathConstants.h>
 #include <DetectorsBase/Propagator.h>
 #include <Framework/AnalysisDataModel.h>
@@ -629,6 +628,20 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
       }
       ccdb_object_qoverpt = dynamic_cast<TList*>(inputFileQoverPt->Get("ccdb_object"));
     }
+
+    getDcaGraphs(ccdb_object_dca, ccdb_object_qoverpt);
+  }
+
+  /// \brief Builds the correction graphs from lists obtained elsewhere, typically straight
+  /// from the aod::TrackTunerCCDBObjects columns, so no CCDB client is involved.
+  void getDcaGraphs(TList* ccdb_object_dca, TList* ccdb_object_qoverpt)
+  {
+    /// abort if the graphs were already loaded
+    if (areGraphsConfigured) {
+      LOG(fatal) << "[TrackTuner::getDcaGraphs()] Function already called, i.e. the calibrations are already loaded. This further call should never happen. Aborting...";
+    }
+    std::string grOneOverPtPionNameMC = "sigmaVsPtMc";
+    std::string grOneOverPtPionNameData = "sigmaVsPtData";
 
     // choose wheter to use corrections w/ PV refit or w/o it, and retrieve the proper TList
     std::string dir = "woPvRefit";
