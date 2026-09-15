@@ -113,6 +113,8 @@ struct SigmaHadCorr {
   Configurable<float> cutMaxKStar{"cutMaxKStar", 1.5, "Maximum k* for Sigma-hadron pairs (GeV/c)"};
 
   Configurable<float> minPtSigma{"minPtSigma", 1.f, "Minimum pT for Sigma candidates (GeV/c)"};
+  Configurable<float> cutRapMotherMC{"cutRapMotherMC", 1.0f, "Rapidity cut for generated mother Sigma in MC"};
+  Configurable<float> cutPtGenMC{"cutPtGenMC", 0.5f, "Minimum pT for generated Sigma particles in MC"};
   Configurable<bool> useRecalculatedSigmaMomentum{"useRecalculatedSigmaMomentum", true, "If true, compute k* using Sigma momentum recalculated from daughter kinematics"};
   Configurable<float> cutDCAtoPVSigma{"cutDCAtoPVSigma", 0.1f, "Max DCA to primary vertex for Sigma candidates (cm)"};
   Configurable<float> cutSigmaRadius{"cutSigmaRadius", 20.f, "Minimum radius for Sigma candidates (cm)"};
@@ -237,29 +239,29 @@ struct SigmaHadCorr {
     float versorZ = sigmaPz / pMother;
     float eChDau = std::sqrt(massChargedDau * massChargedDau + sigmaDauPx * sigmaDauPx + sigmaDauPy * sigmaDauPy + sigmaDauPz * sigmaDauPz);
     float a = versorX * sigmaDauPx + versorY * sigmaDauPy + versorZ * sigmaDauPz;
-    float K = massSigma * massSigma + massChargedDau * massChargedDau - massNeutralDau * massNeutralDau;
-    float A = 4.f * (eChDau * eChDau - a * a);
-    float B = -4.f * a * K;
-    float C = 4.f * eChDau * eChDau * massSigma * massSigma - K * K;
-    if (std::abs(A) < epsilon) {
+    float coefK = massSigma * massSigma + massChargedDau * massChargedDau - massNeutralDau * massNeutralDau;
+    float coefA = 4.f * (eChDau * eChDau - a * a);
+    float coefB = -4.f * a * coefK;
+    float coefC = 4.f * eChDau * eChDau * massSigma * massSigma - coefK * coefK;
+    if (std::abs(coefA) < epsilon) {
       return -999.f;
     }
-    float D = B * B - 4.f * A * C;
-    if (D < 0.f) {
+    float discriminant = coefB * coefB - 4.f * coefA * coefC;
+    if (discriminant < 0.f) {
       return -999.f;
     }
-    float sqrtD = std::sqrt(D);
-    float P1 = (-B + sqrtD) / (2.f * A);
-    float P2 = (-B - sqrtD) / (2.f * A);
-    if (P2 < 0.f && P1 < 0.f) {
+    float sqrtDiscriminant = std::sqrt(discriminant);
+    float root1 = (-coefB + sqrtDiscriminant) / (2.f * coefA);
+    float root2 = (-coefB - sqrtDiscriminant) / (2.f * coefA);
+    if (root2 < 0.f && root1 < 0.f) {
       return -999.f;
     }
-    if (P2 < 0.f) {
-      return P1;
+    if (root2 < 0.f) {
+      return root1;
     }
-    float p1Diff = std::abs(P1 - pMother);
-    float p2Diff = std::abs(P2 - pMother);
-    return (p1Diff < p2Diff) ? P1 : P2;
+    float p1Diff = std::abs(root1 - pMother);
+    float p2Diff = std::abs(root2 - pMother);
+    return (p1Diff < p2Diff) ? root1 : root2;
   }
 
   std::array<float, 3> getSigmaMomentumForKstar(float sigmaPx, float sigmaPy, float sigmaPz, float sigmaDauPx, float sigmaDauPy, float sigmaDauPz)
@@ -792,6 +794,12 @@ struct SigmaHadCorr {
       int pdgMothAbs = std::abs(mcPart.pdgCode());
       bool isValidMother = doSigmaMinus ? (pdgMothAbs == PDG_t::kSigmaMinus || pdgMothAbs == PDG_t::kSigmaPlus) : (pdgMothAbs == PDG_t::kSigmaPlus);
       if (!isValidMother) {
+        continue;
+      }
+      if (std::abs(mcPart.y()) > cutRapMotherMC) {
+        continue;
+      }
+      if (mcPart.pt() < cutPtGenMC) {
         continue;
       }
       bool hasChargedDaughter = false;
