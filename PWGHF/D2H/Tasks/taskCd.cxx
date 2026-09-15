@@ -257,6 +257,12 @@ struct HfTaskCd {
   using CollisionsWithEvSelFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms>;
   using CollisionsMcWithEvSelFT0M = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults, aod::CentFT0Ms>;
 
+  struct : ConfigurableGroup {
+    std::string prefix = "mixing";
+    Configurable<bool> enabled{"enabled", false, "Analyze mixed-event input in a separate run"};
+    Configurable<int> type{"type", 0, "QA label matching builder mixing.type: 0 d, 1 K, 2 pion"};
+  } mixing;
+
   using CdCandidates = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelCd, aod::HfCand3ProngWPidPiKaDe>>;
   using CdCandidatesMc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelCd, aod::HfCand3ProngWPidPiKaDe, aod::HfCand3ProngMcRec>>;
   using McParticles3ProngMatched = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
@@ -327,6 +333,30 @@ struct HfTaskCd {
     }
     const bool isData = doprocessDataStd || doprocessDataStdWithFT0C || doprocessDataStdWithFT0M;
 
+    if (mixing.enabled) {
+      constexpr int LastMixingType{2};
+      if (!isData || mixing.type < 0 || mixing.type > LastMixingType) {
+        LOGP(fatal, "Mixed-event taskCd requires a data process and a valid mixing.type.");
+      }
+      registry.add("Mixed/hMassVsPtVsType", "Mixed candidates after selector;M(dK#pi);p_{T};mixing type", HistType::kTH3F,
+                   {{400, 2.4, 4.4}, {binsPt, "p_{T}"}, {3, -0.5, 2.5}});
+    }
+    if (isData && (fillCandLiteTree || fillCandFullTree)) {
+      registry.add("Data/hTreeCutFlow", "Cumulative write preselection per mass hypothesis;Stage;Hypothesis", HistType::kTH2D, {{4, -0.5, 3.5}, {2, -0.5, 1.5}});
+      registry.add("Data/hDeuteronTofStatus", "TOF status before write preselection;Status;Hypothesis", HistType::kTH2D, {{5, -0.5, 4.5}, {2, -0.5, 1.5}});
+      const std::array<std::string, 4> cutLabels{"Before tree cuts", "After TOF (or disabled)", "After minimum d DCA", "After DCA ordering (or disabled)"};
+      const std::array<std::string, 5> tofLabels{"No TOF match", "Nonfinite nSigma", "Missing nSigma sentinel", "Finite nSigma within cut", "Finite nSigma outside cut"};
+      for (size_t i = 0; i < cutLabels.size(); ++i) {
+        registry.get<TH2>(HIST("Data/hTreeCutFlow"))->GetXaxis()->SetBinLabel(i + 1, cutLabels[i].c_str());
+      }
+      for (size_t i = 0; i < tofLabels.size(); ++i) {
+        registry.get<TH2>(HIST("Data/hDeuteronTofStatus"))->GetXaxis()->SetBinLabel(i + 1, tofLabels[i].c_str());
+      }
+      for (const auto& histogram : {registry.get<TH2>(HIST("Data/hTreeCutFlow")), registry.get<TH2>(HIST("Data/hDeuteronTofStatus"))}) {
+        histogram->GetYaxis()->SetBinLabel(1, "DeKPi");
+        histogram->GetYaxis()->SetBinLabel(2, "PiKDe");
+      }
+    }
     auto addHistogramsRec = [&](const std::string& histoName, const std::string& xAxisTitle, const std::string& yAxisTitle, const HistogramConfigSpec& configSpec) {
       if (!isData) {
         registry.add(("MC/reconstructed/signal/" + histoName + "RecSig").c_str(), ("3-prong candidates (matched);" + xAxisTitle + ";" + yAxisTitle).c_str(), configSpec);
@@ -768,6 +798,14 @@ struct HfTaskCd {
       const auto chi2PCA = candidate.chi2PCA();
       const auto cpa = candidate.cpa();
       const auto cpaXY = candidate.cpaXY();
+      if (mixing.enabled) {
+        if (candidate.isSelCdToDeKPi() >= selectionFlagCd) {
+          registry.fill(HIST("Mixed/hMassVsPtVsType"), HfHelper::invMassCdToDeKPi(candidate), candidate.pt(), mixing.type.value);
+        }
+        if (candidate.isSelCdToPiKDe() >= selectionFlagCd) {
+          registry.fill(HIST("Mixed/hMassVsPtVsType"), HfHelper::invMassCdToPiKDe(candidate), candidate.pt(), mixing.type.value);
+        }
+      }
       if (candidate.isSelCdToDeKPi() >= selectionFlagCd) {
         registry.fill(HIST("Data/hMass"), HfHelper::invMassCdToDeKPi(candidate));
         registry.fill(HIST("Data/hMassVsPtVsNPvContributors"), HfHelper::invMassCdToDeKPi(candidate), pt, numPvContributors);
@@ -874,15 +912,26 @@ struct HfTaskCd {
           registry.fill(HIST("Data/hNsigmaTPCKaVsP"), prong1.tpcInnerParam() * prong1.sign(), nSigmaTpcKa);
           registry.fill(HIST("Data/hNsigmaTOFKaVsP"), prong1.tpcInnerParam() * prong1.sign(), nSigmaTofKa);
 
+          // Diagnostic categories only: preserve the existing selection predicates below.
+          enum TofStatus { NoMatch, Nonfinite, Missing, WithinCut, OutsideCut };
+          constexpr float MissingTofNSigma{-999.f};
+          const int hypothesis = isDeKPi ? 0 : 1;
+          const int tofStatus = !deuteronProng.hasTOF() ? NoMatch : !std::isfinite(nSigmaTofDe) ? Nonfinite : nSigmaTofDe <= MissingTofNSigma ? Missing : std::abs(nSigmaTofDe) <= cfgMaxDeuteronTofPidPreselection ? WithinCut : OutsideCut;
+          registry.fill(HIST("Data/hDeuteronTofStatus"), tofStatus, hypothesis);
+          registry.fill(HIST("Data/hTreeCutFlow"), 0, hypothesis);
           if (cfgUseTofPidForDeuteron && std::abs(nSigmaTofDe) > cfgMaxDeuteronTofPidPreselection) {
             return;
           }
+          registry.fill(HIST("Data/hTreeCutFlow"), 1, hypothesis);
           if (std::abs(dcaDeuteron) < cfgMinDeuteronDcaPreselection) {
             return;
           }
+          registry.fill(HIST("Data/hTreeCutFlow"), 2, hypothesis);
           if (cfgCutOnDeuteronDcaOrdering && (std::abs(dcaDeuteron) > std::abs(dcaKaon) || std::abs(dcaDeuteron) > std::abs(dcaPion))) {
             return;
           }
+
+          registry.fill(HIST("Data/hTreeCutFlow"), 3, hypothesis);
 
           if (fillCandLiteTree) {
             rowCandCdLite(

@@ -69,14 +69,21 @@
 
 #include <Rtypes.h>
 
+#include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <deque>
+#include <map>
 #include <memory>
 #include <numeric>
+#include <set>
 #include <stdexcept>
 #include <string>
+#include <tuple>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -140,6 +147,16 @@ struct HfCandidateCreator3Prong {
   Configurable<bool> createLc{"createLc", false, "enable Lc+/- candidate creation"};
   Configurable<bool> createXic{"createXic", false, "enable Xic+/- candidate creation"};
   Configurable<bool> createCharmNuclei{"createCharmNuclei", false, "enable createCharmNuclei candidate creation"};
+  struct : ConfigurableGroup {
+    std::string prefix = "mixing";
+    Configurable<bool> enabled{"enabled", false, "Enable Cd event mixing in the existing no-PV-refit DCA data process"};
+    Configurable<int> type{"type", 0, "Replace 0: deuteron, 1: kaon, 2: pion"};
+    Configurable<int> depth{"depth", 5, "Previous distinct events per pool within a dataframe"};
+    Configurable<float> zBinWidth{"zBinWidth", 1.f, "PV z pool width (cm); no track translation"};
+    Configurable<int> pvMultBinWidth{"pvMultBinWidth", 20, "PV track multiplicity pool width; used only without centrality"};
+    Configurable<float> centralityBinWidth{"centralityBinWidth", 10.f, "Centrality pool width (%); replaces PV multiplicity binning in FT0C/FT0M modes"};
+  } mixing;
+
   // KF
   Configurable<bool> applyTopoConstraint{"applyTopoConstraint", false, "apply origin from PV hypothesis for created candidate, works only in KF mode"};
   Configurable<bool> applyInvMassConstraint{"applyInvMassConstraint", false, "apply particle type hypothesis to recalculate created candidate's momentum, works only in KF mode"};
@@ -177,6 +194,31 @@ struct HfCandidateCreator3Prong {
                                     doprocessPvRefitWithKFParticleCentFT0M, doprocessNoPvRefitWithKFParticleCentFT0M, doprocessPvRefitWithKFParticleUpc, doprocessNoPvRefitWithKFParticleUpc};
     if ((std::accumulate(doprocessDF.begin(), doprocessDF.end(), 0) + std::accumulate(doprocessKF.begin(), doprocessKF.end(), 0)) != 1) {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
+    }
+    if (mixing.enabled) {
+      constexpr int LastMixingType{2};
+      if (!(doprocessNoPvRefitWithDCAFitterN || doprocessNoPvRefitWithDCAFitterNCentFT0C || doprocessNoPvRefitWithDCAFitterNCentFT0M) ||
+          !createCharmNuclei || createDplus || createDs || createLc || createXic) {
+        LOGP(fatal, "Cd mixing requires a no-PV-refit DCA data process and only createCharmNuclei enabled.");
+      }
+      if (mixing.type < 0 || mixing.type > LastMixingType || mixing.depth <= 0 ||
+          !std::isfinite(mixing.zBinWidth.value) || mixing.zBinWidth <= 0.f || (doprocessNoPvRefitWithDCAFitterN && mixing.pvMultBinWidth <= 0) ||
+          !std::isfinite(mixing.centralityBinWidth.value) || mixing.centralityBinWidth <= 0.f) {
+        LOGP(fatal, "Invalid mixing configuration.");
+      }
+      registry.add("Mixing/hCounter", "Cd mixing;stage;Entries", HistType::kTH1D, {{5, 0., 5.}});
+      registry.get<TH1>(HIST("Mixing/hCounter"))->GetXaxis()->SetBinLabel(1, "seed candidates");
+      registry.get<TH1>(HIST("Mixing/hCounter"))->GetXaxis()->SetBinLabel(2, "accepted events");
+      registry.get<TH1>(HIST("Mixing/hCounter"))->GetXaxis()->SetBinLabel(3, "candidate pairs");
+      registry.get<TH1>(HIST("Mixing/hCounter"))->GetXaxis()->SetBinLabel(4, "unique fit attempts");
+      registry.get<TH1>(HIST("Mixing/hCounter"))->GetXaxis()->SetBinLabel(5, "written candidates");
+      const AxisSpec partnerAxis{mixing.depth.value + 1, -0.5, mixing.depth.value + 0.5};
+      registry.add("Mixing/hPoolSize", "Buffered events before insertion;Pool size;Event-charge entries", HistType::kTH1D, {partnerAxis});
+      registry.add("Mixing/hNPartners", "Partners with at least one usable candidate pair;Partners;Event-charge entries", HistType::kTH1D, {partnerAxis});
+      registry.add("Mixing/hEventPairDeltaPVZ", "One entry per usable event pair and charge;z_{current}-z_{previous} (cm);Event pairs", HistType::kTH1D, {{200, -10., 10.}});
+      registry.add("Mixing/hEventPairCentrality", "One entry per usable event pair and charge;Current centrality (%);Previous centrality (%)", HistType::kTH2D, {{102, -1.5, 100.5}, {102, -1.5, 100.5}});
+      registry.add("Mixing/hPoolOccupancy", "Occupancy at end of dataframe;Buffered events;Pools", HistType::kTH1D, {partnerAxis});
+      registry.add("Mixing/hDeltaPVZ", "Mixed event PV difference;z_{A}-z_{B} (cm);Candidate pairs", HistType::kTH1F, {{200, -10., 10.}});
     }
     std::array<bool, 4> processesCollisions = {doprocessCollisions, doprocessCollisionsCentFT0C, doprocessCollisionsCentFT0M, doprocessCollisionsUpc};
     const int nProcessesCollisions = std::accumulate(processesCollisions.begin(), processesCollisions.end(), 0);
@@ -715,6 +757,180 @@ struct HfCandidateCreator3Prong {
   ///                             ///
   ///////////////////////////////////
 
+  // In-memory adapter only: no new AOD table and no changes to the ordinary fitter.
+  template <typename TSeed, typename TTracks>
+  struct HfMixed3ProngSeed {
+    TSeed source;
+    TTracks const* tracks;
+    std::array<int64_t, 3> ids;
+    uint8_t flag;
+    template <typename T>
+    auto collision_as() const
+    {
+      return source.template collision_as<T>();
+    }
+    template <typename T>
+    auto prong0_as() const
+    {
+      return tracks->rawIteratorAt(ids[0]);
+    }
+    template <typename T>
+    auto prong1_as() const
+    {
+      return tracks->rawIteratorAt(ids[1]);
+    }
+    template <typename T>
+    auto prong2_as() const
+    {
+      return tracks->rawIteratorAt(ids[2]);
+    }
+    int64_t prong0Id() const { return ids[0]; }
+    int64_t prong1Id() const { return ids[1]; }
+    int64_t prong2Id() const { return ids[2]; }
+    uint8_t hfflag() const { return flag; }
+  };
+
+  template <CentralityEstimator CentEstimator, typename TCollisions, typename TCandidates, typename TTracks, typename TBCs>
+  void runCreator3ProngMixedWithDCAFitterN(TCollisions const& collisions, TCandidates const& candidates, TTracks const& tracks, TBCs const& bcs, uint8_t channelFlag)
+  {
+    constexpr int LastProng{2};
+    using Seed = std::decay_t<decltype(*candidates.begin())>;
+    using Event = std::vector<Seed>;
+    using PoolKey = std::tuple<int, int, int, int, int>; // run, charge, PV z, PV multiplicity OR centrality (unused bin is zero)
+    std::map<int64_t, Event> events;
+    std::map<PoolKey, std::deque<Event>> pools;
+    std::set<std::array<int64_t, 4>> seedKeys;
+    std::map<std::array<int64_t, 4>, Seed> mixedCandidates; // reference collision and ordered prong track IDs
+
+    // These are skim candidates, before final topology/PID/BDT selection.
+    // Enumerate both d hypotheses for each source below, including cross-prong exchanges.
+    for (const auto& seed : candidates) {
+      if (!(seed.hfflag() & channelFlag)) {
+        continue;
+      }
+      std::array<int64_t, 4> key{seed.collisionId(), seed.prong0Id(), seed.prong1Id(), seed.prong2Id()};
+      if (seedKeys.insert(key).second) {
+        events[seed.collisionId()].push_back(seed);
+        registry.fill(HIST("Mixing/hCounter"), 0.5);
+      }
+    }
+
+    for (const auto& [collisionId, event] : events) {
+      auto collision = event.front().template collision_as<TCollisions>();
+      float centrality{-1.f};
+      if (hfEvSel.getHfCollisionRejectionMask<true, CentEstimator, TBCs>(collision, centrality, ccdb, registry) != 0) {
+        continue;
+      }
+      if (!std::isfinite(collision.posZ())) {
+        continue;
+      }
+      registry.fill(HIST("Mixing/hCounter"), 1.5);
+      const int eventRun = collision.template bc_as<TBCs>().runNumber();
+      const int zBin = static_cast<int>(std::floor(collision.posZ() / mixing.zBinWidth));
+      int multBin = 0;
+      if constexpr (CentEstimator == CentralityEstimator::None) {
+        multBin = collision.multNTracksPV() / mixing.pvMultBinWidth;
+      }
+      int centralityBin = 0;
+      if constexpr (CentEstimator != CentralityEstimator::None) {
+        if (!std::isfinite(centrality) || centrality < 0.f) {
+          continue;
+        }
+        centralityBin = static_cast<int>(std::floor(centrality / mixing.centralityBinWidth));
+      }
+
+      // Separate matter/antimatter within each accepted event before adding it to pools.
+      for (const int& charge : {-1, 1}) {
+        Event seeds;
+        for (const auto& seed : event) {
+          auto t0 = seed.template prong0_as<TTracks>();
+          auto t1 = seed.template prong1_as<TTracks>();
+          auto t2 = seed.template prong2_as<TTracks>();
+          if (t0.sign() == charge && t1.sign() == -charge && t2.sign() == charge &&
+              t0.globalIndex() != t2.globalIndex()) {
+            seeds.push_back(seed);
+          }
+        }
+        if (seeds.empty()) {
+          continue;
+        }
+        auto& pool = pools[PoolKey{eventRun, charge, zBin, multBin, centralityBin}];
+        registry.fill(HIST("Mixing/hPoolSize"), pool.size());
+        int nPartners = 0;
+        for (const auto& previousEvent : pool) {
+          bool hasUsablePair = false;
+          for (const auto& seedA : seeds) {
+            for (const auto& seedB : previousEvent) {
+              if (seedA.collisionId() == seedB.collisionId()) {
+                continue;
+              }
+              std::array<int64_t, 3> idsA{seedA.prong0Id(), seedA.prong1Id(), seedA.prong2Id()};
+              std::array<int64_t, 3> idsB{seedB.prong0Id(), seedB.prong1Id(), seedB.prong2Id()};
+              bool sharesTrack = false;
+              for (const auto& id : idsA) {
+                sharesTrack |= std::find(idsB.begin(), idsB.end(), id) != idsB.end();
+              }
+              if (sharesTrack) {
+                continue;
+              }
+              hasUsablePair = true;
+              registry.fill(HIST("Mixing/hCounter"), 2.5);
+              auto collisionB = seedB.template collision_as<TCollisions>();
+              registry.fill(HIST("Mixing/hDeltaPVZ"), collision.posZ() - collisionB.posZ());
+
+              auto buildMixed = [&](auto const& referenceCollision, auto const& referenceSeed,
+                                    std::array<int64_t, 3> ids, std::array<int64_t, 3> const& donorIds,
+                                    int deuteronProng, int donorDeuteronProng) {
+                const int replacedProng = mixing.type == 0 ? deuteronProng : (mixing.type == 1 ? 1 : LastProng - deuteronProng);
+                const int donorProng = mixing.type == 0 ? donorDeuteronProng : (mixing.type == 1 ? 1 : LastProng - donorDeuteronProng);
+                ids[replacedProng] = donorIds[donorProng];
+                // Preserve prong positions; the selector evaluates both mass hypotheses.
+                std::array<int64_t, 4> key{referenceCollision.globalIndex(), ids[0], ids[1], ids[2]};
+                mixedCandidates.try_emplace(key, referenceSeed);
+              };
+              for (const int& deuteronProngA : {0, LastProng}) {
+                for (const int& deuteronProngB : {0, LastProng}) {
+                  buildMixed(collision, seedA, idsA, idsB, deuteronProngA, deuteronProngB);
+                  buildMixed(collisionB, seedB, idsB, idsA, deuteronProngB, deuteronProngA);
+                }
+              }
+            }
+          }
+          if (hasUsablePair) {
+            ++nPartners;
+            auto previousCollision = previousEvent.front().template collision_as<TCollisions>();
+            registry.fill(HIST("Mixing/hEventPairDeltaPVZ"), collision.posZ() - previousCollision.posZ());
+            float previousCentrality = -1.f;
+            if constexpr (CentEstimator == CentralityEstimator::FT0C) {
+              previousCentrality = previousCollision.centFT0C();
+            } else if constexpr (CentEstimator == CentralityEstimator::FT0M) {
+              previousCentrality = previousCollision.centFT0M();
+            }
+            registry.fill(HIST("Mixing/hEventPairCentrality"), centrality, previousCentrality);
+          }
+        }
+        registry.fill(HIST("Mixing/hNPartners"), nPartners);
+        pool.push_back(std::move(seeds));
+        if (pool.size() > static_cast<size_t>(mixing.depth.value)) {
+          pool.pop_front();
+        }
+      }
+    }
+    for (const auto& entry : pools) {
+      registry.fill(HIST("Mixing/hPoolOccupancy"), entry.second.size());
+    }
+    // The ordinary reconstruction function consumes these adapters without any changes.
+    std::vector<HfMixed3ProngSeed<Seed, TTracks>> mixedSeeds;
+    mixedSeeds.reserve(mixedCandidates.size());
+    for (const auto& [key, source] : mixedCandidates) {
+      mixedSeeds.push_back({source, &tracks, {key[1], key[2], key[3]}, channelFlag});
+      registry.fill(HIST("Mixing/hCounter"), 3.5);
+    }
+    const auto firstIndex = rowCandidateBase.lastIndex();
+    runCreator3ProngWithDCAFitterN<false, false, CentEstimator>(collisions, mixedSeeds, tracks, bcs);
+    registry.fill(HIST("Mixing/hCounter"), 4.5, rowCandidateBase.lastIndex() - firstIndex);
+  }
+
   /// @brief process function using DCA fitter  w/ PV refit and w/o centrality selections
   void processPvRefitWithDCAFitterN(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                                     FilteredPvRefitHf3Prongs const& rowsTrackIndexProng3,
@@ -731,7 +947,11 @@ struct HfCandidateCreator3Prong {
                                       TracksWCovExtraPidPiKaPrLightNuclei const& tracks,
                                       aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
-    runCreator3ProngWithDCAFitterN</*doPvRefit*/ false, false, CentralityEstimator::None>(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps);
+    if (mixing.enabled) {
+      runCreator3ProngMixedWithDCAFitterN<CentralityEstimator::None>(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps, static_cast<uint8_t>(BIT(DecayType::CdToDeKPi)));
+    } else {
+      runCreator3ProngWithDCAFitterN</*doPvRefit*/ false, /*applyUpcSel*/ false, CentralityEstimator::None>(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps);
+    }
   }
   PROCESS_SWITCH(HfCandidateCreator3Prong, processNoPvRefitWithDCAFitterN, "Run candidate creator using DCA fitter without PV refit and w/o centrality selections", true);
 
@@ -777,7 +997,11 @@ struct HfCandidateCreator3Prong {
                                               TracksWCovExtraPidPiKaPrLightNuclei const& tracks,
                                               aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
-    runCreator3ProngWithDCAFitterN</*doPvRefit*/ false, false, CentralityEstimator::FT0C>(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps);
+    if (mixing.enabled) {
+      runCreator3ProngMixedWithDCAFitterN<CentralityEstimator::FT0C>(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps, static_cast<uint8_t>(BIT(DecayType::CdToDeKPi)));
+    } else {
+      runCreator3ProngWithDCAFitterN</*doPvRefit*/ false, /*applyUpcSel*/ false, CentralityEstimator::FT0C>(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps);
+    }
   }
   PROCESS_SWITCH(HfCandidateCreator3Prong, processNoPvRefitWithDCAFitterNCentFT0C, "Run candidate creator using DCA fitter without PV refit and  w/ centrality selection on FT0C", false);
 
@@ -823,7 +1047,11 @@ struct HfCandidateCreator3Prong {
                                               TracksWCovExtraPidPiKaPrLightNuclei const& tracks,
                                               aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
-    runCreator3ProngWithDCAFitterN</*doPvRefit*/ false, false, CentralityEstimator::FT0M>(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps);
+    if (mixing.enabled) {
+      runCreator3ProngMixedWithDCAFitterN<CentralityEstimator::FT0M>(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps, static_cast<uint8_t>(BIT(DecayType::CdToDeKPi)));
+    } else {
+      runCreator3ProngWithDCAFitterN</*doPvRefit*/ false, /*applyUpcSel*/ false, CentralityEstimator::FT0M>(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps);
+    }
   }
   PROCESS_SWITCH(HfCandidateCreator3Prong, processNoPvRefitWithDCAFitterNCentFT0M, "Run candidate creator using DCA fitter without PV refit and  w/ centrality selection on FT0M", false);
 
