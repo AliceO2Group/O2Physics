@@ -266,7 +266,7 @@ struct phianalysisrun3 {
     histos.fill(HIST("hCentrality"), multiplicity);
     histos.fill(HIST("hNcontributor"), collision.numContrib());
     histos.fill(HIST("hVtxZ"), collision.posZ());
-    for (auto track1 : tracks) {
+    for (const auto& track1 : tracks) {
       if (!selectionTrack(track1)) {
         continue;
       }
@@ -276,7 +276,7 @@ struct phianalysisrun3 {
       histos.fill(HIST("hNsigmaKaonTPC"), track1.tpcNSigmaKa());
       histos.fill(HIST("hNsigmaKaonTOF"), track1.tofNSigmaKa());
       auto track1ID = track1.index();
-      for (auto track2 : tracks) {
+      for (const auto& track2 : tracks) {
         if (!selectionTrack(track2)) {
           continue;
         }
@@ -394,7 +394,7 @@ struct phianalysisrun3 {
       }
       auto daughtp = false;
       auto daughtm = false;
-      for (auto kCurrentDaughter : kDaughters) {
+      for (const auto& kCurrentDaughter : kDaughters) {
         if (!kCurrentDaughter.isPhysicalPrimary()) {
           continue;
         }
@@ -421,7 +421,7 @@ struct phianalysisrun3 {
     }
     histos.fill(HIST("hMC"), 5.5);
     auto oldindex = -999;
-    for (auto track1 : tracks) {
+    for (const auto& track1 : tracks) {
       if (!selectionTrack(track1)) {
         continue;
       }
@@ -429,7 +429,7 @@ struct phianalysisrun3 {
         continue;
       }
       auto track1ID = track1.index();
-      for (auto track2 : tracks) {
+      for (const auto& track2 : tracks) {
         if (!track2.has_mcParticle()) {
           continue;
         }

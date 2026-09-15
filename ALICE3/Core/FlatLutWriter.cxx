@@ -85,7 +85,7 @@ bool FlatLutWriter::fatSolve(lutEntry_t& lutEntry,
   o2::upgrade::convertTLorentzVectorToO2Track(q, tlv, {0.f, 0.f, 0.f}, trkIn);
 
   o2::track::TrackParCov trkOut;
-  const int status = fat.FastTrack(trkIn, trkOut, nch);
+  const int status = fat.fastTrack(trkIn, trkOut, nch);
   if (status <= mAtLeastHits) {
     LOGF(debug, "fatSolve: FastTrack failed with status %d (threshold %d)", status, mAtLeastHits);
     return false;
@@ -94,8 +94,8 @@ bool FlatLutWriter::fatSolve(lutEntry_t& lutEntry,
   LOGF(debug, "fatSolve: FastTrack succeeded with status %d", status);
 
   lutEntry.valid = true;
-  lutEntry.itof = fat.GetGoodHitProb(itof);
-  lutEntry.otof = fat.GetGoodHitProb(otof);
+  lutEntry.itof = fat.getGoodHitProb(itof);
+  lutEntry.otof = fat.getGoodHitProb(otof);
 
   static constexpr int nCov = 15;
   for (int i = 0; i < nCov; ++i)
@@ -104,16 +104,16 @@ bool FlatLutWriter::fatSolve(lutEntry_t& lutEntry,
   // Define the efficiency
   auto totfake = 0.f;
   lutEntry.eff = 1.f;
-  for (size_t i = 1; i < fat.GetNLayers(); ++i) {
-    if (fat.IsLayerInert(i))
+  for (size_t i = 1; i < fat.getNLayers(); ++i) {
+    if (fat.isLayerInert(i))
       continue; // skip inert layers
-    auto igoodhit = fat.GetGoodHitProb(i);
+    auto igoodhit = fat.getGoodHitProb(i);
     if (igoodhit <= 0.f || i == itof || i == otof)
       continue;
     lutEntry.eff *= igoodhit;
     auto pairfake = 0.f;
-    for (size_t j = i + 1; j < fat.GetNLayers(); ++j) {
-      auto jgoodhit = fat.GetGoodHitProb(j);
+    for (size_t j = i + 1; j < fat.getNLayers(); ++j) {
+      auto jgoodhit = fat.getGoodHitProb(j);
       if (jgoodhit <= 0.f || j == itof || j == otof)
         continue;
       pairfake = (1.f - igoodhit) * (1.f - jgoodhit);
@@ -290,7 +290,7 @@ void FlatLutWriter::lutWrite(const char* filename, int pdg, float field, size_t 
     LOGF(info, "Writing nch bin %d/%d", inch, nnch);
     auto nch = lutHeader.nchmap.eval(inch);
     lutEntry.nch = nch;
-    fat.SetdNdEtaCent(nch);
+    fat.setdNdEtaCent(nch);
 
     for (int irad = 0; irad < nrad; ++irad) {
       for (int ieta = 0; ieta < neta; ++ieta) {
