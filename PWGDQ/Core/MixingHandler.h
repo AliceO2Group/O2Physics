@@ -176,7 +176,7 @@ class MixingHandler : public TNamed
     // pool depth is a number of mixed partners and not a number of arrivals.
     void UpdatePool(const MixingEvent& event, int16_t poolDepth, uint32_t agingMask)
     {
-      for (auto& poolEvent : events) { // o2-linter: disable=const-ref-in-for-loop (the events are modified)
+      for (auto& poolEvent : events) {
         poolEvent.IncrementCounters(agingMask, poolDepth);
       }
       CleanPool();
