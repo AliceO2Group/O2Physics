@@ -14,6 +14,8 @@
 
 #include <Framework/AnalysisDataModel.h>
 
+#include <cstdint>
+
 namespace o2::aod
 {
 
@@ -25,6 +27,9 @@ DECLARE_SOA_COLUMN(PhiDoubleOmega, phiDoubleOmega, float);
 DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);
 DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);
 DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);
+DECLARE_SOA_COLUMN(PrimaryVtxX, primaryVtxX, float);
+DECLARE_SOA_COLUMN(PrimaryVtxY, primaryVtxY, float);
+DECLARE_SOA_COLUMN(PrimaryVtxZ, primaryVtxZ, float);
 DECLARE_SOA_COLUMN(CosPAOmega, cosPAOmega, float);
 DECLARE_SOA_COLUMN(CosPADirectLambda, cosPADirectLambda, float);
 DECLARE_SOA_COLUMN(CosPADoubleOmega, cosPADoubleOmega, float);
@@ -34,6 +39,12 @@ DECLARE_SOA_COLUMN(DCAxyDirectLambdaToPV, dcaXYDirectLambdaToPV, float);
 DECLARE_SOA_COLUMN(DCAzDirectLambdaToPV, dcaZDirectLambdaToPV, float);
 DECLARE_SOA_COLUMN(DCAxyDirectKaonToPV, dcaXYDirectKaonToPV, float);
 DECLARE_SOA_COLUMN(DCAzDirectKaonToPV, dcaZDirectKaonToPV, float);
+DECLARE_SOA_COLUMN(TPCNSigmaDirectKaon, tpcNSigmaDirectKaon, float); // -999 when TPC is unavailable or the candidate is not reconstructed.
+DECLARE_SOA_COLUMN(TOFNSigmaDirectKaon, tofNSigmaDirectKaon, float); // -999 when TOF is unavailable or the candidate is not reconstructed.
+// Three bits per daughter (ITS, TPC, TOF), ordered as: Omega kaon, Omega
+// proton, Omega pion, direct proton, direct pion, direct kaon (also for c.c.).
+// Bits 18-31 are zero; generated-only rows have a zero bitmap.
+DECLARE_SOA_COLUMN(DaughterDetectorMap, daughterDetectorMap, uint32_t);
 DECLARE_SOA_COLUMN(MassDoubleOmega, massDoubleOmega, float);
 DECLARE_SOA_COLUMN(MassOmega, massOmega, float);
 DECLARE_SOA_COLUMN(MassXi, massXi, float);
@@ -43,6 +54,7 @@ DECLARE_SOA_COLUMN(GenEta, genEta, float);
 DECLARE_SOA_COLUMN(GenPhi, genPhi, float);
 DECLARE_SOA_COLUMN(GenDecayLength, genDecayLength, float);
 DECLARE_SOA_COLUMN(PdgDoubleOmega, pdgDoubleOmega, int);
+DECLARE_SOA_COLUMN(GenMotherId, genMotherId, int64_t); // MC particle index within the input dataframe.
 DECLARE_SOA_COLUMN(IsReco, isReco, bool);
 } // namespace DoubleOmegaTables
 
@@ -53,6 +65,9 @@ DECLARE_SOA_COLUMN(IsReco, isReco, bool);
     DoubleOmegaTables::DecayVtxX,             \
     DoubleOmegaTables::DecayVtxY,             \
     DoubleOmegaTables::DecayVtxZ,             \
+    DoubleOmegaTables::PrimaryVtxX,           \
+    DoubleOmegaTables::PrimaryVtxY,           \
+    DoubleOmegaTables::PrimaryVtxZ,           \
     DoubleOmegaTables::CosPAOmega,            \
     DoubleOmegaTables::CosPADirectLambda,     \
     DoubleOmegaTables::CosPADoubleOmega,      \
@@ -62,6 +77,9 @@ DECLARE_SOA_COLUMN(IsReco, isReco, bool);
     DoubleOmegaTables::DCAzDirectLambdaToPV,  \
     DoubleOmegaTables::DCAxyDirectKaonToPV,   \
     DoubleOmegaTables::DCAzDirectKaonToPV,    \
+    DoubleOmegaTables::TPCNSigmaDirectKaon,   \
+    DoubleOmegaTables::TOFNSigmaDirectKaon,   \
+    DoubleOmegaTables::DaughterDetectorMap,   \
     DoubleOmegaTables::MassDoubleOmega,       \
     DoubleOmegaTables::MassOmega,             \
     DoubleOmegaTables::MassXi
@@ -76,6 +94,7 @@ DECLARE_SOA_TABLE(DoubleOmegaTableMC, "AOD", "DBLOMEGAMCTABLE",
                   DoubleOmegaTables::GenPhi,
                   DoubleOmegaTables::GenDecayLength,
                   DoubleOmegaTables::PdgDoubleOmega,
+                  DoubleOmegaTables::GenMotherId,
                   DoubleOmegaTables::IsReco);
 
 #undef DOUBLE_OMEGA_RECO_COLUMNS
