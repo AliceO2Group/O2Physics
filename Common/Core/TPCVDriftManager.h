@@ -14,8 +14,6 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/LHCConstants.h>
-#include <CommonUtils/ConfigurableParam.h>
-#include <CommonUtils/ConfigurableParamHelper.h>
 #include <DataFormatsTPC/VDriftCorrFact.h>
 #include <Framework/DataTypes.h>
 #include <Framework/Logger.h>
@@ -28,15 +26,6 @@
 namespace o2::aod::common
 {
 
-struct TPCVDriftManagerParam : public o2::conf::ConfigurableParamHelper<TPCVDriftManagerParam> {
-  // Use the TPC side flags (with legacy-data fallback) instead of the tgl-sign-based correction.
-  // Off by default so that existing analyses see no change in results until this is explicitly
-  // enabled for testing.
-  bool useSideBasedCorrection = false;
-
-  O2ParamDef(TPCVDriftManagerParam, "TPCVDriftManager");
-};
-
 // Thin wrapper for vdrift ccdb queries should partially mirror VDriftHelper class.
 // Allows to move TPC standalone tracks under the assumption of a different
 // collision than the track is associated to.
@@ -46,6 +35,14 @@ class TPCVDriftManager
   void init(o2::ccdb::BasicCCDBManager* ccdb) noexcept
   {
     mCCDB = ccdb;
+  }
+
+  // Use the TPC side flags (with legacy-data fallback) instead of the tgl-sign-based correction.
+  // Off by default so that existing analyses see no change in results until this is explicitly
+  // enabled for testing. Tasks using TPCVDriftManager can expose this via their own Configurable.
+  void setUseSideBasedCorrection(bool value) noexcept
+  {
+    mUseSideBasedCorrection = value;
   }
 
   void update(uint64_t timestamp) noexcept
@@ -143,7 +140,7 @@ class TPCVDriftManager
 
     // impose new Z coordinate
     float zShift = 0.f;
-    if (!TPCVDriftManagerParam::Instance().useSideBasedCorrection) {
+    if (!mUseSideBasedCorrection) {
       // Legacy behaviour (default): infer the side from tgl alone.
       zShift = (track.getTgl() < 0.f) ? -dDrift : dDrift;
     } else {
@@ -206,6 +203,7 @@ class TPCVDriftManager
 
  private:
   bool mValid{false};
+  bool mUseSideBasedCorrection{false}; // off by default: preserves legacy tgl-sign behaviour
   // Factors
   float mTPCVDriftNS{0.f}; // drift velocity in cm/ns
 
