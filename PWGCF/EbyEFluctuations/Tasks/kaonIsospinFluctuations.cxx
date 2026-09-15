@@ -15,9 +15,9 @@
 /// \author Rahul Verma (rahul.verma@iitb.ac.in) :: Sadhana Dash (sadhana@phy.iitb.ac.in)
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/mcCentrality.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -31,25 +31,33 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
 #include <Framework/Configurable.h>
 #include <Framework/Expressions.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
-#include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include <Math/LorentzVector.h>
-#include <Math/PxPyPzM4D.h>
+#include <Math/GenVector/LorentzVector.h>
+#include <Math/GenVector/PxPyPzM4D.h>
 #include <TH1.h>
+#include <TH2.h>
+#include <THnSparse.h>
 #include <TPDGCode.h>
+#include <TString.h>
 
 #include <sys/types.h>
 
 #include <algorithm>
+#include <bitset>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
+#include <functional>
+#include <memory>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <typeindex>
@@ -125,40 +133,63 @@ constexpr int IdBitDE = 5;
 // constexpr int IdBitHE = 7;
 // constexpr int IdBitAL = 8;
 
-#define BIT_IS_K0S 0
-#define BIT_IS_LAMBDA 1
-#define BIT_IS_ANTILAMBDA 2
-#define BIT_IS_GAMMA 3
-#define BIT_IS_PHI_1020 4
-#define BIT_IS_JPSI_TO_EE 5
-#define BIT_IS_JPSI_TO_MUMU 6
-#define BIT_IS_RHO_770 7
-#define BIT_IS_KSTAR_892 8
-#define BIT_IS_KSTAR_892_BAR 9
-#define BIT_IS_LAMBDA_1520 10
-#define BIT_IS_DELTA_1232 11
+constexpr int BitIsK0S = 0;
+constexpr int BitIsLAMBDA = 1;
+constexpr int BitIsANTILAMBDA = 2;
+constexpr int BitIsGAMMA = 3;
+constexpr int BitIsPhi1020 = 4;
+constexpr int BitIsJPsiToEE = 5;
+constexpr int BitIsJPsiToMuMu = 6;
+constexpr int BitIsRho770 = 7;
+constexpr int BitIsKstar892 = 8;
+constexpr int BitIsKstar892bar = 9;
+// constexpr int BitIsLAMBDA_1520 = 10;
+// constexpr int BitIsDELTA_1232 = 11;
 
-#define BIT_POS_DAU_HAS_SAME_COLL 0
-#define BIT_NEG_DAU_HAS_SAME_COLL 1
-#define BIT_BOTH_DAU_HAS_SAME_COLL 2
+constexpr int BitPosDauHasSameColl = 0;
+constexpr int BitNegDauHasSameColl = 1;
+constexpr int BitBothDauHasSameColl = 2;
 
-#define BIT_POS_DAU_HAS_SAME_COLL_BC 0
-#define BIT_NEG_DAU_HAS_SAME_COLL_BC 1
-#define BIT_BOTH_DAU_HAS_SAME_COLL_BC 2
+constexpr int BitPosDauHasSameCollBC = 0;
+constexpr int BitNegDauHasSameCollBC = 1;
+constexpr int BitBothDauHasSameCollBC = 2;
 
-#define BITSET(mask, ithBit) ((mask) |= (1 << (ithBit)))    // avoid name bitset as std::bitset is already there
-#define BITCHECK(mask, ithBit) ((mask) & (1 << (ithBit)))   // bit check will return int value of (1<<ithBit), not bool, use BITCHECK != 0 in Analysis
-#define OTHERBITS(mask, ithBit) ((mask) & ~(1 << (ithBit))) // Returns new value with ithBit set to zero and all other bits unmodified; does not modify the original mask
+template <typename T>
+constexpr void BITSET(T& mask, unsigned int ithBit) // avoid name bitset as std::bitset is already there
+{
+  mask |= (T{1} << ithBit);
+}
 
-#define BOOL_BITCHECK(mask, ithBit) (((mask) & (1 << (ithBit))) != 0)     // returns true or false, bit check will return int value of (1<<ithBit)
-#define BOOL_OTHERBITSON(mask, ithBit) (((mask) & ~(1 << (ithBit))) != 0) // returns true or false, checks if any of the other bit execpt ithBit is non zero or not.
+template <typename T>
+constexpr T BITCHECK(T mask, unsigned int ithBit) // bit check will return int value of (1<<ithBit), not bool, use BITCHECK != 0 in Analysis
+{
+  return mask & (T{1} << ithBit);
+}
+
+template <typename T>
+constexpr T OTHERBITS(T mask, unsigned int ithBit) // Returns new value with ithBit set to zero and all other bits unmodified; does not modify the original mask
+{
+  return mask & ~(T{1} << ithBit);
+}
+
+template <typename T>
+constexpr bool BOOLBITCHECK(T mask, unsigned int ithBit) // returns true or false, bit check will return int value of (1<<ithBit)
+{
+  return (mask & (T{1} << ithBit)) != 0;
+}
+
+template <typename T>
+constexpr bool BOOLOTHERBITSON(T mask, unsigned int ithBit) // returns true or false, checks if any of the other bit execpt ithBit is non zero or not.
+{
+  return (mask & ~(T{1} << ithBit)) != 0;
+}
 
 // Precomputed powers of 10 up to 1e18 (19 elements) //int64_t has max 19 digits
-static const double doublePowersOf10[] = {
+static constexpr std::array<double, 19> DoublePowersOf10 = {
   1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9,
   1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18};
 
-// static const int64_t intPowersOf10[] = {
+// static constexpr std::array<int64_t, 19> intPowersOf10 = {
 //   1LL, 10LL, 100LL, 1000LL, 10000LL, 100000LL, 1000000LL,
 //   10000000LL, 100000000LL, 1000000000LL, 10000000000LL,
 //   100000000000LL, 1000000000000LL, 10000000000000LL,
@@ -239,8 +270,8 @@ struct PrimVtxParticleTable {
 
   HistogramRegistry primVtxQAPlots{"primVtxQAPlots", {}, OutputObjHandlingPolicy::AnalysisObject, true};
 
-  static constexpr double DefaultWideMassCutValues[6][3] = {{1.013, 1.026, 1}, {3.035, 3.155, 1}, {3.035, 3.155, 1}, {0.875, 0.915, 1}, {0.875, 0.915, 1}, {0.650, 0.900, 1}};
-  Configurable<LabeledArray<double>> cfgPrimVtxCndtsMassCuts{"cfgPrimVtxCndtsMassCuts", {&DefaultWideMassCutValues[0][0], 6, 3, {"Phi1020", "JPsiToEE", "JPsiToMuMu", "KStar892", "KStar892Bar", "Rho770"}, {"massLow", "massUp", "doRecoCheck"}}, "cut values for primary vertex reconstruction to reduce pair memory storage"};
+  static constexpr std::array<std::array<double, 3>, 6> DefaultWideMassCutValues = {{{1.013, 1.026, 1}, {3.035, 3.155, 1}, {3.035, 3.155, 1}, {0.875, 0.915, 1}, {0.875, 0.915, 1}, {0.650, 0.900, 1}}};
+  Configurable<LabeledArray<double>> cfgPrimVtxCndtsMassCuts{"cfgPrimVtxCndtsMassCuts", {DefaultWideMassCutValues[0].data(), 6, 3, {"Phi1020", "JPsiToEE", "JPsiToMuMu", "KStar892", "KStar892Bar", "Rho770"}, {"massLow", "massUp", "doRecoCheck"}}, "cut values for primary vertex reconstruction to reduce pair memory storage"};
 
   struct : ConfigurableGroup {
     Configurable<bool> printDebugMessages{"printDebugMessages", false, "printDebugMessages"};
@@ -331,34 +362,34 @@ struct PrimVtxParticleTable {
     float eNegMu = -999.0;
 
     // phi(1020)
-    static const float phiMassLow = getCfg<float>(cfgPrimVtxCndtsMassCuts, kPrimTrkPhi1020, kPrimMassLow);
-    static const float phiMassUp = getCfg<float>(cfgPrimVtxCndtsMassCuts, kPrimTrkPhi1020, kPrimMassUp);
-    static const bool doPhi1020 = getCfg<bool>(cfgPrimVtxCndtsMassCuts, kPrimTrkPhi1020, kPrimDoRecoCheck);
+    static const auto phiMassLow = getCfg<float>(cfgPrimVtxCndtsMassCuts, kPrimTrkPhi1020, kPrimMassLow);
+    static const auto phiMassUp = getCfg<float>(cfgPrimVtxCndtsMassCuts, kPrimTrkPhi1020, kPrimMassUp);
+    static const auto doPhi1020 = getCfg<bool>(cfgPrimVtxCndtsMassCuts, kPrimTrkPhi1020, kPrimDoRecoCheck);
 
     // J/psi -> e+e-
-    static const float jpsiEEMassLow = getCfg<float>(cfgPrimVtxCndtsMassCuts, kPrimTrkJPsiToEE, kPrimMassLow);
-    static const float jpsiEEMassUp = getCfg<float>(cfgPrimVtxCndtsMassCuts, kPrimTrkJPsiToEE, kPrimMassUp);
-    static const bool doJPsiToEE = getCfg<bool>(cfgPrimVtxCndtsMassCuts, kPrimTrkJPsiToEE, kPrimDoRecoCheck);
+    static const auto jpsiEEMassLow = getCfg<float>(cfgPrimVtxCndtsMassCuts, kPrimTrkJPsiToEE, kPrimMassLow);
+    static const auto jpsiEEMassUp = getCfg<float>(cfgPrimVtxCndtsMassCuts, kPrimTrkJPsiToEE, kPrimMassUp);
+    static const auto doJPsiToEE = getCfg<bool>(cfgPrimVtxCndtsMassCuts, kPrimTrkJPsiToEE, kPrimDoRecoCheck);
 
     // J/psi -> mu+mu-
-    static const float jpsiMuMuMassLow = getCfg<float>(cfgPrimVtxCndtsMassCuts, kPrimTrkJPsiToMuMu, kPrimMassLow);
-    static const float jpsiMuMuMassUp = getCfg<float>(cfgPrimVtxCndtsMassCuts, kPrimTrkJPsiToMuMu, kPrimMassUp);
-    static const bool doJPsiToMuMu = getCfg<bool>(cfgPrimVtxCndtsMassCuts, kPrimTrkJPsiToMuMu, kPrimDoRecoCheck);
+    static const auto jpsiMuMuMassLow = getCfg<float>(cfgPrimVtxCndtsMassCuts, kPrimTrkJPsiToMuMu, kPrimMassLow);
+    static const auto jpsiMuMuMassUp = getCfg<float>(cfgPrimVtxCndtsMassCuts, kPrimTrkJPsiToMuMu, kPrimMassUp);
+    static const auto doJPsiToMuMu = getCfg<bool>(cfgPrimVtxCndtsMassCuts, kPrimTrkJPsiToMuMu, kPrimDoRecoCheck);
 
     // K*(892)
-    static const float kstarMassLow = getCfg<float>(cfgPrimVtxCndtsMassCuts, kPrimTrkKStar892, kPrimMassLow);
-    static const float kstarMassUp = getCfg<float>(cfgPrimVtxCndtsMassCuts, kPrimTrkKStar892, kPrimMassUp);
-    static const bool doKStar892 = getCfg<bool>(cfgPrimVtxCndtsMassCuts, kPrimTrkKStar892, kPrimDoRecoCheck);
+    static const auto kstarMassLow = getCfg<float>(cfgPrimVtxCndtsMassCuts, kPrimTrkKStar892, kPrimMassLow);
+    static const auto kstarMassUp = getCfg<float>(cfgPrimVtxCndtsMassCuts, kPrimTrkKStar892, kPrimMassUp);
+    static const auto doKStar892 = getCfg<bool>(cfgPrimVtxCndtsMassCuts, kPrimTrkKStar892, kPrimDoRecoCheck);
 
     // K*(892)Bar
-    static const float kstarBarMassLow = getCfg<float>(cfgPrimVtxCndtsMassCuts, kPrimTrkKStar892Bar, kPrimMassLow);
-    static const float kstarBarMassUp = getCfg<float>(cfgPrimVtxCndtsMassCuts, kPrimTrkKStar892Bar, kPrimMassUp);
-    static const bool doKStar892Bar = getCfg<bool>(cfgPrimVtxCndtsMassCuts, kPrimTrkKStar892Bar, kPrimDoRecoCheck);
+    static const auto kstarBarMassLow = getCfg<float>(cfgPrimVtxCndtsMassCuts, kPrimTrkKStar892Bar, kPrimMassLow);
+    static const auto kstarBarMassUp = getCfg<float>(cfgPrimVtxCndtsMassCuts, kPrimTrkKStar892Bar, kPrimMassUp);
+    static const auto doKStar892Bar = getCfg<bool>(cfgPrimVtxCndtsMassCuts, kPrimTrkKStar892Bar, kPrimDoRecoCheck);
 
     // ρ(770)
-    static const float rhoMassLow = getCfg<float>(cfgPrimVtxCndtsMassCuts, kPrimTrkRho770, kPrimMassLow);
-    static const float rhoMassUp = getCfg<float>(cfgPrimVtxCndtsMassCuts, kPrimTrkRho770, kPrimMassUp);
-    static const bool doRho770 = getCfg<bool>(cfgPrimVtxCndtsMassCuts, kPrimTrkRho770, kPrimDoRecoCheck);
+    static const auto rhoMassLow = getCfg<float>(cfgPrimVtxCndtsMassCuts, kPrimTrkRho770, kPrimMassLow);
+    static const auto rhoMassUp = getCfg<float>(cfgPrimVtxCndtsMassCuts, kPrimTrkRho770, kPrimMassUp);
+    static const auto doRho770 = getCfg<bool>(cfgPrimVtxCndtsMassCuts, kPrimTrkRho770, kPrimDoRecoCheck);
 
     bool fillTable = false;
 
@@ -372,11 +403,13 @@ struct PrimVtxParticleTable {
       auto negTracksPerColl = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
       for (const auto& posTrack : posTracksPerColl) {
-        if (posTrack.tpcNClsCrossedRows() < analysisCuts.trackTPCNClsCrossedRowsLow)
+        if (posTrack.tpcNClsCrossedRows() < analysisCuts.trackTPCNClsCrossedRowsLow) {
           continue;
+        }
         for (const auto& negTrack : negTracksPerColl) {
-          if (negTrack.tpcNClsCrossedRows() < analysisCuts.trackTPCNClsCrossedRowsLow)
+          if (negTrack.tpcNClsCrossedRows() < analysisCuts.trackTPCNClsCrossedRowsLow) {
             continue;
+          }
           px = posTrack.px() + negTrack.px();
           py = posTrack.py() + negTrack.py();
           pz = posTrack.pz() + negTrack.pz();
@@ -395,8 +428,9 @@ struct PrimVtxParticleTable {
           // phi(1020) -> K+ + K-
           if (doPhi1020) {
             mPhi1020 = RecoDecay::m(p, ePosKa + eNegKa);
-            if (phiMassLow < mPhi1020 && mPhi1020 < phiMassUp)
+            if (phiMassLow < mPhi1020 && mPhi1020 < phiMassUp) {
               fillTable = true;
+            }
           }
 
           // J/ψ       -> e+/e-
@@ -404,8 +438,9 @@ struct PrimVtxParticleTable {
             ePosEl = RecoDecay::e(posTrack.px(), posTrack.py(), posTrack.pz(), MassElectron);
             eNegEl = RecoDecay::e(negTrack.px(), negTrack.py(), negTrack.pz(), MassElectron);
             mJPsiToEE = RecoDecay::m(p, ePosEl + eNegEl);
-            if (jpsiEEMassLow < mJPsiToEE && mJPsiToEE < jpsiEEMassUp)
+            if (jpsiEEMassLow < mJPsiToEE && mJPsiToEE < jpsiEEMassUp) {
               fillTable = true;
+            }
           }
 
           // J/ψ       -> mu+/mu-
@@ -413,28 +448,32 @@ struct PrimVtxParticleTable {
             ePosMu = RecoDecay::e(posTrack.px(), posTrack.py(), posTrack.pz(), MassMuonMinus);
             eNegMu = RecoDecay::e(negTrack.px(), negTrack.py(), negTrack.pz(), MassMuonMinus);
             mJPsiToMuMu = RecoDecay::m(p, ePosMu + eNegMu);
-            if (jpsiMuMuMassLow < mJPsiToMuMu && mJPsiToMuMu < jpsiMuMuMassUp)
+            if (jpsiMuMuMassLow < mJPsiToMuMu && mJPsiToMuMu < jpsiMuMuMassUp) {
               fillTable = true;
+            }
           }
 
           // K(892)*   -> K+ + pi-
           if (doKStar892) {
             mKStar892 = RecoDecay::m(p, ePosKa + eNegPi);
-            if (kstarMassLow < mKStar892 && mKStar892 < kstarMassUp)
+            if (kstarMassLow < mKStar892 && mKStar892 < kstarMassUp) {
               fillTable = true;
+            }
           }
 
           // K(892)*Bar -> K- + pi+
           if (doKStar892Bar) {
             mKStar892Bar = RecoDecay::m(p, ePosPi + eNegKa);
-            if (kstarBarMassLow < mKStar892Bar && mKStar892Bar < kstarBarMassUp)
+            if (kstarBarMassLow < mKStar892Bar && mKStar892Bar < kstarBarMassUp) {
               fillTable = true;
+            }
           }
           // ρ(770)    -> pi+ + pi-
           if (doRho770) {
             mRho770 = RecoDecay::m(p, ePosPi + eNegPi);
-            if (rhoMassLow < mRho770 && mRho770 < rhoMassUp)
+            if (rhoMassLow < mRho770 && mRho770 < rhoMassUp) {
               fillTable = true;
+            }
           }
 
           // Δ(1232)   -> p + π :: // To do :: Add this in future
@@ -515,7 +554,7 @@ struct KaonIsospinFluctuations {
 
   // PDG data base
   // Service<o2::framework::O2DatabasePDG> pdgDB;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   // Configurables
   struct : ConfigurableGroup {
@@ -542,13 +581,13 @@ struct KaonIsospinFluctuations {
   Configurable<double> v0settingCosPA{"v0settingCosPA", 0.98, "V0 CosPA"};
   Configurable<float> v0settingRadius{"v0settingRadius", 0.5, "v0radius"};
 
-  static constexpr double DefaulV0CutValues[4][15] = {{0.48, 0.515, 0.1, 1.5, 0.5, 0.2, 0.2, 1, 1, 1, 1, 1, 1, 1, 1}, {1.10, 1.12, -0.1, 999.0, 999.0, 999.0, 999.0, 1, 1, 1, 1, 1, 1, 1, 1}, {1.10, 1.12, -0.1, 999.0, 999.0, 999.0, 999.0, 1, 1, 1, 1, 1, 1, 1, 1}, {-0.1, 0.03, -0.1, 999.0, 999.0, 0.01, 0.2, 1, 1, 1, 1, 1, 1, 1, 1}};
-  Configurable<LabeledArray<double>> cfgV0ParticleCuts = {"cfgV0ParticleCuts", {&DefaulV0CutValues[0][0], 4, 15, {"K0s", "Lambda", "AntiLambda", "Gamma"}, {"V0MLow", "V0MUp", "V0LowPt", "V0HighPt", "V0Rapitidy", "V0ARMcut1", "V0ARMcut2", "V0DoRecoCheck", "V0FillPreSel", "V0FillPreSelDau", "V0FillPostSel", "V0FillPostSelDau", "V0CheckPrimVtxContm", "V0CheckV0DecayContm", "V0CheckMPMSigma"}}, "cut values for V0 reconstruction"};
+  static constexpr std::array<std::array<double, 15>, 4> DefaulV0CutValues = {{{0.48, 0.515, 0.1, 1.5, 0.5, 0.2, 0.2, 1, 1, 1, 1, 1, 1, 1, 1}, {1.10, 1.12, -0.1, 999.0, 999.0, 999.0, 999.0, 1, 1, 1, 1, 1, 1, 1, 1}, {1.10, 1.12, -0.1, 999.0, 999.0, 999.0, 999.0, 1, 1, 1, 1, 1, 1, 1, 1}, {-0.1, 0.03, -0.1, 999.0, 999.0, 0.01, 0.2, 1, 1, 1, 1, 1, 1, 1, 1}}};
+  Configurable<LabeledArray<double>> cfgV0ParticleCuts = {"cfgV0ParticleCuts", {DefaulV0CutValues[0].data(), 4, 15, {"K0s", "Lambda", "AntiLambda", "Gamma"}, {"V0MLow", "V0MUp", "V0LowPt", "V0HighPt", "V0Rapitidy", "V0ARMcut1", "V0ARMcut2", "V0DoRecoCheck", "V0FillPreSel", "V0FillPreSelDau", "V0FillPostSel", "V0FillPostSelDau", "V0CheckPrimVtxContm", "V0CheckV0DecayContm", "V0CheckMPMSigma"}}, "cut values for V0 reconstruction"};
 
-  static constexpr double DefaulPrimVtxCutValues[6][10] = {{1.013, 1.026, 1, 1, 1, 1, 1, 1, 1, 1}, {3.035, 3.155, 1, 1, 1, 1, 1, 1, 1, 1}, {3.035, 3.155, 1, 1, 1, 1, 1, 1, 1, 1}, {0.875, 0.915, 1, 1, 1, 1, 1, 1, 1, 1}, {0.875, 0.915, 1, 1, 1, 1, 1, 1, 1, 1}, {0.650, 0.900, 1, 1, 1, 1, 1, 1, 1, 1}};
-  Configurable<LabeledArray<double>> cfgPrimVtxParticleCuts{"cfgPrimVtxParticleCuts", {&DefaulPrimVtxCutValues[0][0], 6, 10, {"Phi1020", "JPsiToEE", "JPsiToMuMu", "KStar892", "KStar892Bar", "Rho770"}, {"massLow", "massUp", "doRecoCheck", "fillPreSelQA", "fillPreSelDauQA", "fillPostSelQA", "fillPostSelDauQA", "checkPrimVtxContm", "checkV0DecayContm", "checkMPMSigma"}}, "cut values for primary vertex reconstruction"};
+  static constexpr std::array<std::array<double, 10>, 6> DefaulPrimVtxCutValues = {{{1.013, 1.026, 1, 1, 1, 1, 1, 1, 1, 1}, {3.035, 3.155, 1, 1, 1, 1, 1, 1, 1, 1}, {3.035, 3.155, 1, 1, 1, 1, 1, 1, 1, 1}, {0.875, 0.915, 1, 1, 1, 1, 1, 1, 1, 1}, {0.875, 0.915, 1, 1, 1, 1, 1, 1, 1, 1}, {0.650, 0.900, 1, 1, 1, 1, 1, 1, 1, 1}}};
+  Configurable<LabeledArray<double>> cfgPrimVtxParticleCuts{"cfgPrimVtxParticleCuts", {DefaulPrimVtxCutValues[0].data(), 6, 10, {"Phi1020", "JPsiToEE", "JPsiToMuMu", "KStar892", "KStar892Bar", "Rho770"}, {"massLow", "massUp", "doRecoCheck", "fillPreSelQA", "fillPreSelDauQA", "fillPostSelQA", "fillPostSelDauQA", "checkPrimVtxContm", "checkV0DecayContm", "checkMPMSigma"}}, "cut values for primary vertex reconstruction"};
 
-  static constexpr double DefaulTrackCountConfigValues[4][8] = {{1, 1, 1, 1, 1, 1, 1, 1}, {1, 1, 1, 1, 1, 1, 1, 1}, {1, 1, 1, 1, 1, 1, 1, 1}, {1, 1, 1, 1, 1, 1, 1, 1}};
+  static constexpr std::array<std::array<double, 8>, 4> DefaulTrackCountConfigValues = {{{1, 1, 1, 1, 1, 1, 1, 1}, {1, 1, 1, 1, 1, 1, 1, 1}, {1, 1, 1, 1, 1, 1, 1, 1}, {1, 1, 1, 1, 1, 1, 1, 1}}};
   // Track Configurables
   struct : ConfigurableGroup {
     Configurable<int> cfgTrk01TpcNClsCrossedRows{"cfgTrk01TpcNClsCrossedRows", 70, "cfgTrk01TpcNClsCrossedRows"};
@@ -558,20 +597,20 @@ struct KaonIsospinFluctuations {
     Configurable<float> cfgTrk05PtLow{"cfgTrk05PtLow", 0.15, "cfgTrk05PtLow"};
     Configurable<float> cfgTrk06PtHigh{"cfgTrk06PtHigh", 2.0, "cfgTrk06PtHigh"};
     Configurable<bool> cfgTrk07DoVGselTrackCheck{"cfgTrk07DoVGselTrackCheck", false, "cfgTrk07DoVGselTrackCheck"};
-    Configurable<LabeledArray<double>> countSetting{"countSetting", {&DefaulTrackCountConfigValues[0][0], 4, 8, {"Pi", "Ka", "Pr", "El"}, {"countPrompt", "countNonPrompt", "countDauContam", "countRejected", "fillPrompt", "fillNonPrompt", "fillDauContam", "fillRejected"}}, "configurables for identified particle count"}; //
+    Configurable<LabeledArray<double>> countSetting{"countSetting", {DefaulTrackCountConfigValues[0].data(), 4, 8, {"Pi", "Ka", "Pr", "El"}, {"countPrompt", "countNonPrompt", "countDauContam", "countRejected", "fillPrompt", "fillNonPrompt", "fillDauContam", "fillRejected"}}, "configurables for identified particle count"}; //
   } cfgTrackCuts;
 
   // Configurables for particle Identification
-  static constexpr double DefaulPIDcheckValues[6][10] = {{0.7, 0, 2.0, 2.0, 4.0, 0, 2.0, 2.0, 4.0, 1}, {0.8, 0, 2.0, 2.0, 4.0, 0, 2.0, 2.0, 4.0, 1}, {0.8, 0, 2.0, 2.0, 4.0, 0, 2.0, 2.0, 4.0, 1}, {0.4, 0, 2.0, 2.0, 4.0, 0, 2.0, 2.0, 4.0, 1}, {0.4, 0, 2.0, 2.0, 4.0, 0, 2.0, 2.0, 4.0, 1}, {0.4, 0, 2.0, 2.0, 4.0, 0, 2.0, 2.0, 4.0, 1}};
-  static constexpr double DefaulPidVetoValues[6][4] = {{1, 1, 3.0, 3.0}, {1, 1, 3.0, 3.0}, {1, 1, 3.0, 3.0}, {0, 0, 3.0, 3.0}, {0, 0, 3.0, 3.0}, {0, 0, 3.0, 3.0}};
+  static constexpr std::array<std::array<double, 10>, 6> DefaulPIDcheckValues = {{{0.7, 0, 2.0, 2.0, 4.0, 0, 2.0, 2.0, 4.0, 1}, {0.8, 0, 2.0, 2.0, 4.0, 0, 2.0, 2.0, 4.0, 1}, {0.8, 0, 2.0, 2.0, 4.0, 0, 2.0, 2.0, 4.0, 1}, {0.4, 0, 2.0, 2.0, 4.0, 0, 2.0, 2.0, 4.0, 1}, {0.4, 0, 2.0, 2.0, 4.0, 0, 2.0, 2.0, 4.0, 1}, {0.4, 0, 2.0, 2.0, 4.0, 0, 2.0, 2.0, 4.0, 1}}};
+  static constexpr std::array<std::array<double, 4>, 6> DefaulPidVetoValues = {{{1, 1, 3.0, 3.0}, {1, 1, 3.0, 3.0}, {1, 1, 3.0, 3.0}, {0, 0, 3.0, 3.0}, {0, 0, 3.0, 3.0}, {0, 0, 3.0, 3.0}}};
   struct : ConfigurableGroup {
     Configurable<bool> cfgId01CheckVetoCut{"cfgId01CheckVetoCut", false, "cfgId01CheckVetoCut"};
     Configurable<bool> cfgId02DoElRejection{"cfgId02DoElRejection", true, "cfgId02DoElRejection"};
     Configurable<bool> cfgId03DoDeRejection{"cfgId03DoDeRejection", false, "cfgId03DoDeRejection"};
     Configurable<bool> cfgId04DoPdependentId{"cfgId04DoPdependentId", true, "cfgId04DoPdependentId"};
     Configurable<bool> cfgId05DoTpcInnerParamId{"cfgId05DoTpcInnerParamId", false, "cfgId05DoTpcInnerParamId"};
-    Configurable<LabeledArray<double>> pidConfigSetting{"pidConfigSetting", {&DefaulPIDcheckValues[0][0], 6, 10, {"Pi", "Ka", "Pr", "El", "Mu", "De"}, {"ThrPforTOF", "IdCutTypeLowP", "NSigmaTPCLowP", "NSigmaTOFLowP", "NSigmaRadLowP", "IdCutTypeHighP", "NSigmaTPCHighP", "NSigmaTOFHighP", "NSigmaRadHighP", "doVetoOthers"}}, "cut values for particle identification"}; //
-    Configurable<LabeledArray<double>> pidVetoSetting{"pidVetoSetting", {&DefaulPidVetoValues[0][0], 6, 4, {"Pi", "Ka", "Pr", "El", "Mu", "De"}, {"doVetoTPC", "doVetoTOF", "vetoTPC", "vetoTOF"}}, "veto cut for particle Identifiation"};                                                                                                                                    //
+    Configurable<LabeledArray<double>> pidConfigSetting{"pidConfigSetting", {DefaulPIDcheckValues[0].data(), 6, 10, {"Pi", "Ka", "Pr", "El", "Mu", "De"}, {"ThrPforTOF", "IdCutTypeLowP", "NSigmaTPCLowP", "NSigmaTOFLowP", "NSigmaRadLowP", "IdCutTypeHighP", "NSigmaTPCHighP", "NSigmaTOFHighP", "NSigmaRadHighP", "doVetoOthers"}}, "cut values for particle identification"}; //
+    Configurable<LabeledArray<double>> pidVetoSetting{"pidVetoSetting", {DefaulPidVetoValues[0].data(), 6, 4, {"Pi", "Ka", "Pr", "El", "Mu", "De"}, {"doVetoTPC", "doVetoTOF", "vetoTPC", "vetoTOF"}}, "veto cut for particle Identifiation"};                                                                                                                                    //
   } cfgIdCut;
 
   struct : ConfigurableGroup {
@@ -631,39 +670,38 @@ struct KaonIsospinFluctuations {
     // Add new Configurables related to efficency axis in future
   } cfgEffCorr;
 
-  static constexpr int DefaultSparseHistValues[3][2] = {{4, 1}, {6, 1}, {6, 1}};
-  static constexpr double DefaultAxisValues[31][3] = {
-    {500, -1.5, 498.5 /*nPi*/},
-    {500, -1.5, 498.5 /*nKa*/},
-    {500, -1.5, 498.5 /*nPr*/},
-    {500, -1.5, 498.5 /*nEl*/},
-    {500, -1.5, 498.5 /*nMu*/},
-    {500, -1.5, 498.5 /*nDe*/},
-    {100, -1.5, 98.5 /*nK0s*/},
-    {100, -1.5, 98.5 /*nLambda*/},
-    {100, -1.5, 98.5 /*nAntiLambda*/},
-    {100, -1.5, 98.5 /*nGamma*/},
-    {100, -1.5, 98.5 /*nPhi1020*/},
-    {100, -1.5, 98.5 /*nJPsiToEE*/},
-    {100, -1.5, 98.5 /*nJPsiToMuMu*/},
-    {100, -1.5, 98.5 /*nKStar892*/},
-    {100, -1.5, 98.5 /*nKStar892Bar*/},
-    {100, -1.5, 98.5 /*nRho770*/},
-    {100, -1.5, 98.5 /*nRejectedPi*/},
-    {100, -1.5, 98.5 /*nRejectedKa*/},
-    {100, -1.5, 98.5 /*nRejectedPr*/},
-    {100, -1.5, 98.5 /*nRejectedEl*/},
-    {100, -1.5, 98.5 /*nRejectedMu*/},
-    {100, -1.5, 98.5 /*nRejectedDe*/},
-    {500, -1.5, 498.5 /*nKaon*/},
-    {10000, -1.5, 9998.5 /*(nK0s)^{2}*/},
-    {250000, -1.5, 249998.5 /*(nKaon)^{2}*/},
-    {500, -1.5, 498.5 /*(nK0s*nKaon)*/},
-    {250000, -1.5, 249998.5 /*(nKaPlus)^{2}*/},
-    {250000, -1.5, 249998.5 /*(nKaMinus)^{2}*/},
-    {250000, -1.5, 249998.5 /*(nKaPlus*nKaMinus)*/},
-    {1020, -1.0, 101.0 /*centrality*/},
-    {2000, -1.5, 1998.5 /*nTrack*/}};
+  static constexpr std::array<std::array<int, 2>, 3> DefaultSparseHistValues = {{{4, 1}, {6, 1}, {6, 1}}};
+  static constexpr std::array<std::array<double, 3>, 31> DefaultAxisValues = {{{500, -1.5, 498.5 /*nPi*/},
+                                                                               {500, -1.5, 498.5 /*nKa*/},
+                                                                               {500, -1.5, 498.5 /*nPr*/},
+                                                                               {500, -1.5, 498.5 /*nEl*/},
+                                                                               {500, -1.5, 498.5 /*nMu*/},
+                                                                               {500, -1.5, 498.5 /*nDe*/},
+                                                                               {100, -1.5, 98.5 /*nK0s*/},
+                                                                               {100, -1.5, 98.5 /*nLambda*/},
+                                                                               {100, -1.5, 98.5 /*nAntiLambda*/},
+                                                                               {100, -1.5, 98.5 /*nGamma*/},
+                                                                               {100, -1.5, 98.5 /*nPhi1020*/},
+                                                                               {100, -1.5, 98.5 /*nJPsiToEE*/},
+                                                                               {100, -1.5, 98.5 /*nJPsiToMuMu*/},
+                                                                               {100, -1.5, 98.5 /*nKStar892*/},
+                                                                               {100, -1.5, 98.5 /*nKStar892Bar*/},
+                                                                               {100, -1.5, 98.5 /*nRho770*/},
+                                                                               {100, -1.5, 98.5 /*nRejectedPi*/},
+                                                                               {100, -1.5, 98.5 /*nRejectedKa*/},
+                                                                               {100, -1.5, 98.5 /*nRejectedPr*/},
+                                                                               {100, -1.5, 98.5 /*nRejectedEl*/},
+                                                                               {100, -1.5, 98.5 /*nRejectedMu*/},
+                                                                               {100, -1.5, 98.5 /*nRejectedDe*/},
+                                                                               {500, -1.5, 498.5 /*nKaon*/},
+                                                                               {10000, -1.5, 9998.5 /*(nK0s)^{2}*/},
+                                                                               {250000, -1.5, 249998.5 /*(nKaon)^{2}*/},
+                                                                               {500, -1.5, 498.5 /*(nK0s*nKaon)*/},
+                                                                               {250000, -1.5, 249998.5 /*(nKaPlus)^{2}*/},
+                                                                               {250000, -1.5, 249998.5 /*(nKaMinus)^{2}*/},
+                                                                               {250000, -1.5, 249998.5 /*(nKaPlus*nKaMinus)*/},
+                                                                               {1020, -1.0, 101.0 /*centrality*/},
+                                                                               {2000, -1.5, 1998.5 /*nTrack*/}}};
 
   inline static const std::array<std::array<std::string, 3>, 10> defaultSparseAxis = {{
     {"centrality", "centrality", "centrality"},
@@ -679,20 +717,18 @@ struct KaonIsospinFluctuations {
   }};
 
   struct : ConfigurableGroup {
-    Configurable<LabeledArray<int>> sparseSetting{"sparseSetting", {&DefaultSparseHistValues[0][0], 3, 2, {"hSparse0", "hSparse1", "hSparse2"}, {"nAxis", "sparseType"}}, "configuration of sparse histogram"};
-    Configurable<LabeledArray<std::string>> sparseAxisStr{"sparseAxisStr", {&defaultSparseAxis[0][0], 10, 3, {"Axis0", "Axis1", "Axis2", "Axis3", "Axis4", "Axis5", "Axis6", "Axis7", "Axis8", "Axis9"}, {"sparse1", "sparse2", "sparse3"}}, "configuration of sparse histogramee"};
-    Configurable<LabeledArray<double>> axisSetting{"axisSetting", {&DefaultAxisValues[0][0], 31, 3, {"nPi", "nKa", "nPr", "nEl", "nMu", "nDe", "nK0s", "nLambda", "nAntiLambda", "nGamma", "nPhi1020", "nJPsiToEE", "nJPsiToMuMu", "nKStar892", "nKStar892Bar", "nRho770", "nRejectedPi", "nRejectedKa", "nRejectedPr", "nRejectedEl", "nRejectedMu", "nRejectedDe", "nKaon", "(nK0s)^{2}", "(nKaon)^{2}", "(nK0s*nKaon)", "(nKaPlus)^{2}", "(nKaMinus)^{2}", "(nKaPlus*nKaMinus)", "centrality", "nTrack"}, {"nBins", "xLow", "xUp"}}, "particle count axis bin configuration"};
+    Configurable<LabeledArray<int>> sparseSetting{"sparseSetting", {DefaultSparseHistValues[0].data(), 3, 2, {"hSparse0", "hSparse1", "hSparse2"}, {"nAxis", "sparseType"}}, "configuration of sparse histogram"};
+    Configurable<LabeledArray<std::string>> sparseAxisStr{"sparseAxisStr", {defaultSparseAxis[0].data(), 10, 3, {"Axis0", "Axis1", "Axis2", "Axis3", "Axis4", "Axis5", "Axis6", "Axis7", "Axis8", "Axis9"}, {"sparse1", "sparse2", "sparse3"}}, "configuration of sparse histogramee"};
+    Configurable<LabeledArray<double>> axisSetting{"axisSetting", {DefaultAxisValues[0].data(), 31, 3, {"nPi", "nKa", "nPr", "nEl", "nMu", "nDe", "nK0s", "nLambda", "nAntiLambda", "nGamma", "nPhi1020", "nJPsiToEE", "nJPsiToMuMu", "nKStar892", "nKStar892Bar", "nRho770", "nRejectedPi", "nRejectedKa", "nRejectedPr", "nRejectedEl", "nRejectedMu", "nRejectedDe", "nKaon", "(nK0s)^{2}", "(nKaon)^{2}", "(nK0s*nKaon)", "(nKaPlus)^{2}", "(nKaMinus)^{2}", "(nKaPlus*nKaMinus)", "centrality", "nTrack"}, {"nBins", "xLow", "xUp"}}, "particle count axis bin configuration"};
   } cfgAxis;
 
   std::string getModifiedStr(const std::string& myString)
   {
-    size_t pos = myString.rfind('/');
+    const size_t pos = myString.rfind('/');
     if (pos != std::string::npos) {
-      std::string subString = myString.substr(0, pos); // remove "/" from end of the string
-      return subString;
-    } else {
-      return myString;
+      return myString.substr(0, pos); // remove "/" from end of the string
     }
+    return myString;
   }
 
   enum V0ParicleTypeEnum {
@@ -727,7 +763,7 @@ struct KaonIsospinFluctuations {
     kFillSimple
   };
 
-  static constexpr std::string_view FillModeDire[] = {
+  static constexpr std::array<std::string_view, 3> FillModeDire = {
     "PreSel/",
     "PostSel/",
     ""};
@@ -752,7 +788,7 @@ struct KaonIsospinFluctuations {
     processTypeEnumSize
   };
 
-  static constexpr std::string_view ProcessTypeDire[] = {
+  static constexpr std::array<std::string_view, 5> ProcessTypeDire = {
     "DataProcessing",
     "RecoProcessing",
     "PurityProcessing",
@@ -795,7 +831,7 @@ struct KaonIsospinFluctuations {
     pidEnumSize
   };
 
-  static constexpr std::string_view PidDire[] = {
+  static constexpr std::array<std::string_view, 32> PidDire = {
     "Pi/",
     "Ka/",
     "Pr/",
@@ -863,7 +899,7 @@ struct KaonIsospinFluctuations {
     signModeEnumSize
   };
 
-  static constexpr std::string_view SignDire[] = {
+  static constexpr std::array<std::string_view, 4> SignDire = {
     "Pos/",
     "Neg/",
     "Neu/",
@@ -876,7 +912,7 @@ struct KaonIsospinFluctuations {
     countTypeEnumSize
   };
 
-  static constexpr std::string_view CountDire[] = {
+  static constexpr std::array<std::string_view, 3> CountDire = {
     "intCount/",
     "floatCount/",
     "effWeightSum/"};
@@ -900,7 +936,7 @@ struct KaonIsospinFluctuations {
     kRejectionTagEnumSize
   };
 
-  static constexpr std::string_view TrackTagDire[]{
+  static constexpr std::array<std::string_view, 15> TrackTagDire = {
     "kPassed",
     "kFailTpcNClsCrossedRows",
     "kFailTrkdcaXY",
@@ -1001,20 +1037,21 @@ struct KaonIsospinFluctuations {
     mgr.setURL(cfgCCDB.cfgCCDB01URL);
     mgr.setCaching(true);
     auto ccdbObj = mgr.getForTimeStamp<TList>(cfgCCDB.cfgCCDB02Path, cfgCCDB.cfgCCDB03SOR);
-    if (!ccdbObj) {
-      if (cfgDebug.printDebugMessages)
+    if (cfgDebug.printDebugMessages) {
+      if (!ccdbObj) {
         LOG(info) << "DEBUG :: CCDB OBJECT NOT FOUND";
-    } else {
-      if (cfgDebug.printDebugMessages)
+      } else {
         LOG(info) << "DEBUG :: CCDB OBJECT FOUND";
+      }
     }
 
     ccdbObj->Print();
-
-    hPtEtaForBinSearch = reinterpret_cast<TH2F*>(ccdbObj->FindObject("hPtEta"));
-    if (cfgDebug.printDebugMessages)
+    hPtEtaForBinSearch = dynamic_cast<TH2F*>(ccdbObj->FindObject("hPtEta"));
+    if (cfgDebug.printDebugMessages) {
       LOG(info) << "DEBUG :: Obj Name = " << hPtEtaForBinSearch->GetName() << " :: entries = " << hPtEtaForBinSearch->GetEntries();
-    std::string name = "";
+    }
+
+    std::string name;
     for (int i = 0; i <= kPrimRho770; i++) {
       for (int j = 0; j < (kNeg + 1); j++) {
         if (i > kDe) {
@@ -1022,10 +1059,13 @@ struct KaonIsospinFluctuations {
             continue;
           }
         }
+
         name = "hPtEta" + getModifiedStr(static_cast<std::string>(PidDire[i])) + getModifiedStr(static_cast<std::string>(SignDire[j]));
-        hPtEtaForEffCorrection[i][j] = reinterpret_cast<TH2F*>(ccdbObj->FindObject(name.c_str()));
-        if (cfgDebug.printDebugMessages)
-          LOG(info) << "DEBUG :: Obj Name = " << hPtEtaForEffCorrection[i][j]->GetName() << " :: entries = " << hPtEtaForBinSearch->GetEntries();
+        hPtEtaForEffCorrection[i][j] = dynamic_cast<TH2F*>(ccdbObj->FindObject(name.c_str()));
+        if (cfgDebug.printDebugMessages) {
+          LOG(info) << "DEBUG :: Obj Name = " << hPtEtaForEffCorrection[i][j]->GetName()
+                    << " :: entries = " << hPtEtaForEffCorrection[i][j]->GetEntries();
+        }
       }
     }
 
@@ -1302,9 +1342,9 @@ struct KaonIsospinFluctuations {
         addV0Histos(histReg, basePath);
       }
       if (fillDauTrackQA) {
-        addDaughterQASparse(histReg, basePath + posPidPath + "Pos/tpcId/");                                                  // K0s daughter info
-        histReg.addClone((basePath + posPidPath + "Pos/tpcId/").c_str(), (basePath + posPidPath + "Pos/tpctofId/").c_str()); // for identification using tof+tpc
-        histReg.addClone((basePath + posPidPath + "Pos/").c_str(), (basePath + negPidPath + "Neg/").c_str());                // For both daughters positive and negative
+        addDaughterQASparse(histReg, basePath + posPidPath + "Pos/tpcId/");                              // K0s daughter info
+        histReg.addClone(basePath + posPidPath + "Pos/tpcId/", basePath + posPidPath + "Pos/tpctofId/"); // for identification using tof+tpc
+        histReg.addClone(basePath + posPidPath + "Pos/", basePath + negPidPath + "Neg/");                // For both daughters positive and negative
       }
     };
 
@@ -1313,7 +1353,7 @@ struct KaonIsospinFluctuations {
     };
 
     auto addCountLabels = [](const auto& h) {
-      h->GetXaxis()->SetBinLabel(h->GetXaxis()->FindBin(static_cast<int>(0)), "Total Repeats / Fake Counts");
+      h->GetXaxis()->SetBinLabel(h->GetXaxis()->FindBin(static_cast<int>(0)), "Total Repeats / Fake Counts"); // NOLINT(readability-redundant-casting)
       static const int twenty = 20;
       for (int i = 1; i < twenty; i++) {
         h->GetXaxis()->SetBinLabel(h->GetXaxis()->FindBin(i), Form("Counted %d Times", i));
@@ -1375,9 +1415,9 @@ struct KaonIsospinFluctuations {
                                    axisIParticleCount1, axisIParticleCount2,
                                    axisfParticleCount1, axisfParticleCount2,
                                    axisEffSum1, axisEffSum2](auto& histReg, const std::string& basePath) {
-      std::string histTitle = "";
-      std::string signLabel = "";
-      std::string prefixLabel = "";
+      std::string histTitle;
+      std::string signLabel;
+      std::string prefixLabel;
       auto axisOfCounts = axisIParticleCount1;
       for (int k = 0; k < countTypeEnumSize; k++) {
         if (k == kIntCount) {
@@ -1394,8 +1434,9 @@ struct KaonIsospinFluctuations {
             signLabel = SignDire[j].data();
             if (kDe < i && i < kRejectedPi) {
               signLabel = "";
-              if (j == 1)
+              if (j == 1) {
                 continue;
+              }
             }
             if (i == kPi || i == kRejectedPi) {
               if (k == kIntCount) {
@@ -1437,13 +1478,11 @@ struct KaonIsospinFluctuations {
                                        axisP, axisPt, axisEta, axisPhi, axisRapidity](auto& histReg, const std::string& basePath) {
       if (basePath == "recoPhi1020/PreSel/" || basePath == "recoPhi1020/PostSel/") {
         histReg.add((basePath + "h11_mass").c_str(), "mass", kTH1F, {axisPhiMass});
-      } else if (basePath == "recoJPsiToEE/PreSel/" || basePath == "recoJPsiToEE/PostSel/") {
+      } else if (basePath == "recoJPsiToEE/PreSel/" || basePath == "recoJPsiToEE/PostSel/" ||
+                 basePath == "recoJPsiToMuMu/PreSel/" || basePath == "recoJPsiToMuMu/PostSel/") {
         histReg.add((basePath + "h11_mass").c_str(), "mass", kTH1F, {axisJPsiMass});
-      } else if (basePath == "recoJPsiToMuMu/PreSel/" || basePath == "recoJPsiToMuMu/PostSel/") {
-        histReg.add((basePath + "h11_mass").c_str(), "mass", kTH1F, {axisJPsiMass});
-      } else if (basePath == "recoKStar892/PreSel/" || basePath == "recoKStar892/PostSel/") {
-        histReg.add((basePath + "h11_mass").c_str(), "mass", kTH1F, {axisKStar892Mass});
-      } else if (basePath == "recoKStar892Bar/PreSel/" || basePath == "recoKStar892Bar/PostSel/") {
+      } else if (basePath == "recoKStar892/PreSel/" || basePath == "recoKStar892/PostSel/" ||
+                 basePath == "recoKStar892Bar/PreSel/" || basePath == "recoKStar892Bar/PostSel/") {
         histReg.add((basePath + "h11_mass").c_str(), "mass", kTH1F, {axisKStar892Mass});
       } else if (basePath == "recoRho770/PreSel/" || basePath == "recoRho770/PostSel/") {
         histReg.add((basePath + "h11_mass").c_str(), "mass", kTH1F, {axisRho770Mass});
@@ -1463,16 +1502,16 @@ struct KaonIsospinFluctuations {
         addPrimVtxParticleQAHistos(histReg, basePath);
       }
       if (fillDauTrackQA) {
-        addDaughterQASparse(histReg, basePath + posPidPath + "Pos/tpcId/");                                                  // Daughter info
-        histReg.addClone((basePath + posPidPath + "Pos/tpcId/").c_str(), (basePath + posPidPath + "Pos/tpctofId/").c_str()); // for identification using tof+tpc
-        histReg.addClone((basePath + posPidPath + "Pos/").c_str(), (basePath + negPidPath + "Neg/").c_str());                // For both daughters positive and negative
+        addDaughterQASparse(histReg, basePath + posPidPath + "Pos/tpcId/");                              // Daughter info
+        histReg.addClone(basePath + posPidPath + "Pos/tpcId/", basePath + posPidPath + "Pos/tpctofId/"); // for identification using tof+tpc
+        histReg.addClone(basePath + posPidPath + "Pos/", basePath + negPidPath + "Neg/");                // For both daughters positive and negative
       }
     };
 
     // Pre Sel and post Sel Histos related to particle originating from primary vertex
     std::array<HistogramRegistry*, 6> primVtxRegs{&recoPhi1020, &recoJPsiToEE, &recoJPsiToMuMu, &recoKStar892, &recoKStar892Bar, &recoRho770};
 
-    std::string basePath = "", posPidPath = "", negPidPath = "", commonCountName = "", commonCountTitle = "";
+    std::string basePath, posPidPath, negPidPath, commonCountName, commonCountTitle;
     bool fillMotherQA = false, fillDauTrackQA = false;
     // Pre Sel and post Sel Histos  for Phi1020, J/psi to ee, J/psi to MuMu, K*(892), K*(892)Bar, Rho770
     for (int iPidType = kPrimTrkPhi1020; iPidType <= kPrimTrkRho770; iPidType++) {
@@ -1682,12 +1721,12 @@ struct KaonIsospinFluctuations {
       }
     }
 
-    int iPidMode;
-    int signType;
-    int variableType;
-    int nBins;
-    double xLow;
-    double xUp;
+    int iPidMode = -999;
+    int signType = -999;
+    int variableType = -999;
+    int nBins = -999;
+    double xLow = -999;
+    double xUp = -999;
     std::string axisTitle, signLabel, countTypeLabel;
     std::vector<std::string> nameTokens;
     for (uint iAxis = 0; iAxis < cfgAxis.sparseAxisStr->getLabelsRows().size(); iAxis++) {
@@ -1695,8 +1734,9 @@ struct KaonIsospinFluctuations {
         nameTokens = tokenizeBySlash(cfgAxis.sparseAxisStr->get(iAxis, iSparse));
         getSparseInfoFromTokens(cfgAxis.axisSetting, nameTokens, iPidMode, signType, variableType, iAxis, iSparse);
 
-        if (iAxis >= static_cast<uint>(cfgAxis.sparseSetting->get(iSparse, "nAxis")))
+        if (iAxis >= static_cast<uint>(cfgAxis.sparseSetting->get(iSparse, "nAxis"))) {
           continue;
+        }
 
         nBins = getCfg<int>(cfgAxis.axisSetting, iPidMode, kNBin);
         xLow = getCfg<double>(cfgAxis.axisSetting, iPidMode, kXLow);
@@ -1723,7 +1763,9 @@ struct KaonIsospinFluctuations {
           countTypeLabel = "ews_";
         }
 
-        axisTitle = countTypeLabel + cfgAxis.axisSetting->getLabelsRows()[iPidMode] + signLabel;
+        axisTitle = countTypeLabel;
+        axisTitle += cfgAxis.axisSetting->getLabelsRows()[iPidMode];
+        axisTitle += signLabel;
         static const int two = 2;
         if (iSparse == 0) {
           axisList0[iAxis] = AxisSpec(nBins, xLow, xUp, axisTitle);
@@ -1742,13 +1784,14 @@ struct KaonIsospinFluctuations {
         if (iPidMode == -1) {
           LOG(fatal) << "DEBUG :: axis Not found in the List :: iAxis = " << iAxis << " :: iSparse = " << iSparse;
         }
-        if (cfgDebug.printDebugMessages)
+        if (cfgDebug.printDebugMessages) {
           LOG(info) << "DEBUG :: row = " << iAxis << " :: col = " << iSparse << " :: iPidMode = " << iPidMode << " :: sign = " << signType << " :: variable = " << variableType;
-        if (cfgDebug.printDebugMessages)
           LOG(info) << "DEBUG :: axisTitle == " << axisTitle;
+        }
       }
-      if (cfgDebug.printDebugMessages)
+      if (cfgDebug.printDebugMessages) {
         LOG(info) << "DEBUG :: ";
+      }
     }
 
     auto createSparseHisotgrams = [](auto& histReg, const std::string& basePath, const std::string& title, const auto& axisList, const int& nAxis, const int& sparseType) {
@@ -1870,7 +1913,7 @@ struct KaonIsospinFluctuations {
     eventPostSel
   };
 
-  static constexpr std::string_view HistRegDire[] = {
+  static constexpr std::array<std::string_view, 28> HistRegDire = {
     "v0Table/Full/",
     "v0Table/postK0sCheck/",
     "v0Table/postK0sMassCut/",
@@ -1910,7 +1953,7 @@ struct KaonIsospinFluctuations {
     detEnumSize
   };
 
-  static constexpr std::string_view DetDire[] = {
+  static constexpr std::array<std::string_view, 6> DetDire = {
     "tpcId/",
     "tofId/",
     "tpctofId/",
@@ -1922,17 +1965,14 @@ struct KaonIsospinFluctuations {
   template <typename T>
   bool selTrackForId(const T& track)
   {
-    static const float minus3 = -3.0;
-    static const float five = 5.0;
-    static const float three = 3.0;
-    if (minus3 < track.tpcNSigmaEl() && track.tpcNSigmaEl() < five &&
-        std::fabs(track.tpcNSigmaPi()) > three &&
-        std::fabs(track.tpcNSigmaKa()) > three &&
-        std::fabs(track.tpcNSigmaPr()) > three) {
-      return false;
-    } else {
-      return true;
-    }
+    static constexpr float Minus3 = -3.0f;
+    static constexpr float Five = 5.0f;
+    static constexpr float Three = 3.0f;
+
+    return !(Minus3 < track.tpcNSigmaEl() && track.tpcNSigmaEl() < Five &&
+             std::fabs(track.tpcNSigmaPi()) > Three &&
+             std::fabs(track.tpcNSigmaKa()) > Three &&
+             std::fabs(track.tpcNSigmaPr()) > Three);
   }
 
   // If vetoIdOthers = true; it passed all veto checks
@@ -1941,7 +1981,7 @@ struct KaonIsospinFluctuations {
   bool vetoIdOthersTPC(const T& track)
   {
     // Static is only run once, ever.
-    static const bool doVetoTPC[6] = {
+    static const std::array<bool, 6> doVetoTPC = {
       getCfg<bool>(cfgIdCut.pidVetoSetting, kPi, kDoVetoTPC),
       getCfg<bool>(cfgIdCut.pidVetoSetting, kKa, kDoVetoTPC),
       getCfg<bool>(cfgIdCut.pidVetoSetting, kPr, kDoVetoTPC),
@@ -1949,7 +1989,7 @@ struct KaonIsospinFluctuations {
       getCfg<bool>(cfgIdCut.pidVetoSetting, kMu, kDoVetoTPC),
       getCfg<bool>(cfgIdCut.pidVetoSetting, kDe, kDoVetoTPC)};
 
-    static const float vetoTPC[6] = {
+    static const std::array<float, 6> vetoTPC = {
       getCfg<float>(cfgIdCut.pidVetoSetting, kPi, kVetoTPC),
       getCfg<float>(cfgIdCut.pidVetoSetting, kKa, kVetoTPC),
       getCfg<float>(cfgIdCut.pidVetoSetting, kPr, kVetoTPC),
@@ -1957,23 +1997,23 @@ struct KaonIsospinFluctuations {
       getCfg<float>(cfgIdCut.pidVetoSetting, kMu, kVetoTPC),
       getCfg<float>(cfgIdCut.pidVetoSetting, kDe, kVetoTPC)};
 
-    if constexpr (pidMode != kPi)
-      if (doVetoTPC[kPi] && std::fabs(track.tpcNSigmaPi()) < vetoTPC[kPi])
+    if constexpr (pidMode != kPi)                                          // NOLINT(readability-braces-around-statements)
+      if (doVetoTPC[kPi] && std::fabs(track.tpcNSigmaPi()) < vetoTPC[kPi]) // NOLINT(readability-braces-around-statements)
         return false;
-    if constexpr (pidMode != kKa)
-      if (doVetoTPC[kKa] && std::fabs(track.tpcNSigmaKa()) < vetoTPC[kKa])
+    if constexpr (pidMode != kKa)                                          // NOLINT(readability-braces-around-statements)
+      if (doVetoTPC[kKa] && std::fabs(track.tpcNSigmaKa()) < vetoTPC[kKa]) // NOLINT(readability-braces-around-statements)
         return false;
-    if constexpr (pidMode != kPr)
-      if (doVetoTPC[kPr] && std::fabs(track.tpcNSigmaPr()) < vetoTPC[kPr])
+    if constexpr (pidMode != kPr)                                          // NOLINT(readability-braces-around-statements)
+      if (doVetoTPC[kPr] && std::fabs(track.tpcNSigmaPr()) < vetoTPC[kPr]) // NOLINT(readability-braces-around-statements)
         return false;
-    if constexpr (pidMode != kEl)
-      if (doVetoTPC[kEl] && std::fabs(track.tpcNSigmaEl()) < vetoTPC[kEl])
+    if constexpr (pidMode != kEl)                                          // NOLINT(readability-braces-around-statements)
+      if (doVetoTPC[kEl] && std::fabs(track.tpcNSigmaEl()) < vetoTPC[kEl]) // NOLINT(readability-braces-around-statements)
         return false;
-    if constexpr (pidMode != kMu)
-      if (doVetoTPC[kMu] && std::fabs(track.tpcNSigmaMu()) < vetoTPC[kMu])
+    if constexpr (pidMode != kMu)                                          // NOLINT(readability-braces-around-statements)
+      if (doVetoTPC[kMu] && std::fabs(track.tpcNSigmaMu()) < vetoTPC[kMu]) // NOLINT(readability-braces-around-statements)
         return false;
-    if constexpr (pidMode != kDe)
-      if (doVetoTPC[kDe] && std::fabs(track.tpcNSigmaDe()) < vetoTPC[kDe])
+    if constexpr (pidMode != kDe)                                          // NOLINT(readability-braces-around-statements)
+      if (doVetoTPC[kDe] && std::fabs(track.tpcNSigmaDe()) < vetoTPC[kDe]) // NOLINT(readability-braces-around-statements)
         return false;
 
     return true;
@@ -1983,7 +2023,7 @@ struct KaonIsospinFluctuations {
   bool vetoIdOthersTOF(const T& track)
   {
     // Only computed once
-    static const bool doVetoTOF[6] = {
+    static const std::array<bool, 6> doVetoTOF = {
       getCfg<bool>(cfgIdCut.pidVetoSetting, kPi, kDoVetoTOF),
       getCfg<bool>(cfgIdCut.pidVetoSetting, kKa, kDoVetoTOF),
       getCfg<bool>(cfgIdCut.pidVetoSetting, kPr, kDoVetoTOF),
@@ -1991,7 +2031,7 @@ struct KaonIsospinFluctuations {
       getCfg<bool>(cfgIdCut.pidVetoSetting, kMu, kDoVetoTOF),
       getCfg<bool>(cfgIdCut.pidVetoSetting, kDe, kDoVetoTOF)};
 
-    static const float vetoTOF[6] = {
+    static const std::array<float, 6> vetoTOF = {
       getCfg<float>(cfgIdCut.pidVetoSetting, kPi, kVetoTOF),
       getCfg<float>(cfgIdCut.pidVetoSetting, kKa, kVetoTOF),
       getCfg<float>(cfgIdCut.pidVetoSetting, kPr, kVetoTOF),
@@ -1999,24 +2039,32 @@ struct KaonIsospinFluctuations {
       getCfg<float>(cfgIdCut.pidVetoSetting, kMu, kVetoTOF),
       getCfg<float>(cfgIdCut.pidVetoSetting, kDe, kVetoTOF)};
 
+    // NOLINTBEGIN(readability-braces-around-statements)
     if constexpr (pidMode != kPi)
       if (doVetoTOF[kPi] && std::fabs(track.tofNSigmaPi()) < vetoTOF[kPi])
         return false;
+
     if constexpr (pidMode != kKa)
       if (doVetoTOF[kKa] && std::fabs(track.tofNSigmaKa()) < vetoTOF[kKa])
         return false;
+
     if constexpr (pidMode != kPr)
       if (doVetoTOF[kPr] && std::fabs(track.tofNSigmaPr()) < vetoTOF[kPr])
         return false;
+
     if constexpr (pidMode != kEl)
       if (doVetoTOF[kEl] && std::fabs(track.tofNSigmaEl()) < vetoTOF[kEl])
         return false;
+
     if constexpr (pidMode != kMu)
       if (doVetoTOF[kMu] && std::fabs(track.tofNSigmaMu()) < vetoTOF[kMu])
         return false;
+
     if constexpr (pidMode != kDe)
       if (doVetoTOF[kDe] && std::fabs(track.tofNSigmaDe()) < vetoTOF[kDe])
         return false;
+
+    // NOLINTEND(readability-braces-around-statements)
 
     return true;
   }
@@ -2175,15 +2223,15 @@ struct KaonIsospinFluctuations {
   bool selPdependent(const T& track, int& IdMethod)
   {
     // Static cache inside function - initialized once on first call
-    static const float thrPforTOF = getCfg<float>(cfgIdCut.pidConfigSetting, pidMode, kThrPforTOF);
-    static const int idCutTypeLowP = getCfg<int>(cfgIdCut.pidConfigSetting, pidMode, kIdCutTypeLowP);
-    static const float nSigmaTPCLowP = getCfg<float>(cfgIdCut.pidConfigSetting, pidMode, kNSigmaTPCLowP);
-    static const float nSigmaTOFLowP = getCfg<float>(cfgIdCut.pidConfigSetting, pidMode, kNSigmaTOFLowP);
-    static const float nSigmaRadLowP = getCfg<float>(cfgIdCut.pidConfigSetting, pidMode, kNSigmaRadLowP);
-    static const int idCutTypeHighP = getCfg<int>(cfgIdCut.pidConfigSetting, pidMode, kIdCutTypeHighP);
-    static const float nSigmaTPCHighP = getCfg<float>(cfgIdCut.pidConfigSetting, pidMode, kNSigmaTPCHighP);
-    static const float nSigmaTOFHighP = getCfg<float>(cfgIdCut.pidConfigSetting, pidMode, kNSigmaTOFHighP);
-    static const float nSigmaRadHighP = getCfg<float>(cfgIdCut.pidConfigSetting, pidMode, kNSigmaRadHighP);
+    static const auto thrPforTOF = getCfg<float>(cfgIdCut.pidConfigSetting, pidMode, kThrPforTOF);
+    static const auto idCutTypeLowP = getCfg<int>(cfgIdCut.pidConfigSetting, pidMode, kIdCutTypeLowP);
+    static const auto nSigmaTPCLowP = getCfg<float>(cfgIdCut.pidConfigSetting, pidMode, kNSigmaTPCLowP);
+    static const auto nSigmaTOFLowP = getCfg<float>(cfgIdCut.pidConfigSetting, pidMode, kNSigmaTOFLowP);
+    static const auto nSigmaRadLowP = getCfg<float>(cfgIdCut.pidConfigSetting, pidMode, kNSigmaRadLowP);
+    static const auto idCutTypeHighP = getCfg<int>(cfgIdCut.pidConfigSetting, pidMode, kIdCutTypeHighP);
+    static const auto nSigmaTPCHighP = getCfg<float>(cfgIdCut.pidConfigSetting, pidMode, kNSigmaTPCHighP);
+    static const auto nSigmaTOFHighP = getCfg<float>(cfgIdCut.pidConfigSetting, pidMode, kNSigmaTOFHighP);
+    static const auto nSigmaRadHighP = getCfg<float>(cfgIdCut.pidConfigSetting, pidMode, kNSigmaRadHighP);
 
     if (track.p() < thrPforTOF) {
       if (checkReliableTOF(track)) {
@@ -2213,8 +2261,8 @@ struct KaonIsospinFluctuations {
   template <typename T>
   bool selPionTPCInnerParam(const T& track)
   {
-    static const float nSigmaTPCLowP = getCfg<float>(cfgIdCut.pidConfigSetting, kPi, kNSigmaTPCLowP);
-    static const float nSigmaTPCHighP = getCfg<float>(cfgIdCut.pidConfigSetting, kPi, kNSigmaTPCHighP);
+    static const auto nSigmaTPCLowP = getCfg<float>(cfgIdCut.pidConfigSetting, kPi, kNSigmaTPCLowP);
+    static const auto nSigmaTPCHighP = getCfg<float>(cfgIdCut.pidConfigSetting, kPi, kNSigmaTPCHighP);
     constexpr float KTPCInnerLow = 0.05f;
     constexpr float KTPCInnerHigh = 0.70f;
 
@@ -2232,8 +2280,8 @@ struct KaonIsospinFluctuations {
   template <typename T>
   bool selKaonTPCInnerParam(const T& track)
   {
-    static const float nSigmaTPCLowP = getCfg<float>(cfgIdCut.pidConfigSetting, kKa, kNSigmaTPCLowP);
-    static const float nSigmaTPCHighP = getCfg<float>(cfgIdCut.pidConfigSetting, kKa, kNSigmaTPCHighP);
+    static const auto nSigmaTPCLowP = getCfg<float>(cfgIdCut.pidConfigSetting, kKa, kNSigmaTPCLowP);
+    static const auto nSigmaTPCHighP = getCfg<float>(cfgIdCut.pidConfigSetting, kKa, kNSigmaTPCHighP);
     constexpr float KTPCInnerLow = 0.05f;
     constexpr float KTPCInnerHigh = 0.70f;
     if (vetoIdOthersTPC<kKa>(track)) {
@@ -2250,8 +2298,8 @@ struct KaonIsospinFluctuations {
   template <typename T>
   bool selProtonTPCInnerParam(const T& track)
   {
-    static const float nSigmaTPCLowP = getCfg<float>(cfgIdCut.pidConfigSetting, kPr, kNSigmaTPCLowP);
-    static const float nSigmaTPCHighP = getCfg<float>(cfgIdCut.pidConfigSetting, kPr, kNSigmaTPCHighP);
+    static const auto nSigmaTPCLowP = getCfg<float>(cfgIdCut.pidConfigSetting, kPr, kNSigmaTPCLowP);
+    static const auto nSigmaTPCHighP = getCfg<float>(cfgIdCut.pidConfigSetting, kPr, kNSigmaTPCHighP);
     constexpr float KTPCInnerLow = 0.05f;
     constexpr float KTPCInnerHigh = 1.60f;
 
@@ -2289,11 +2337,14 @@ struct KaonIsospinFluctuations {
   bool selElectronTPCInnerParam(const T& track)
   {
     constexpr float KNSigmaMax = 3.0f;
-    if (track.tpcNSigmaEl() < KNSigmaMax && track.tpcNSigmaPi() > KNSigmaMax && track.tpcNSigmaKa() > KNSigmaMax && track.tpcNSigmaPr() > KNSigmaMax && track.tpcNSigmaDe() > KNSigmaMax) {
-      return true;
-    }
-    return false;
+
+    return track.tpcNSigmaEl() < KNSigmaMax &&
+           track.tpcNSigmaPi() > KNSigmaMax &&
+           track.tpcNSigmaKa() > KNSigmaMax &&
+           track.tpcNSigmaPr() > KNSigmaMax &&
+           track.tpcNSigmaDe() > KNSigmaMax;
   }
+
   //
   //_____________________________________________________TOF selection Functions _______________________________________________________________________
   // TOF Selections
@@ -2303,15 +2354,16 @@ struct KaonIsospinFluctuations {
   {
     // Constants to avoid magic numbers and repeated getCfg calls
     static constexpr float ThresholdP = 0.75f;
-    static const float nSigmaTPCLowP = getCfg<float>(cfgIdCut.pidConfigSetting, kPi, kNSigmaTPCLowP);
-    static const float nSigmaTOFLowP = getCfg<float>(cfgIdCut.pidConfigSetting, kPi, kNSigmaTOFLowP);
-    static const float nSigmaTPCHighP = getCfg<float>(cfgIdCut.pidConfigSetting, kPi, kNSigmaTPCHighP);
-    static const float nSigmaTOFHighP = getCfg<float>(cfgIdCut.pidConfigSetting, kPi, kNSigmaTOFHighP);
+    static const auto nSigmaTPCLowP = getCfg<float>(cfgIdCut.pidConfigSetting, kPi, kNSigmaTPCLowP);
+    static const auto nSigmaTOFLowP = getCfg<float>(cfgIdCut.pidConfigSetting, kPi, kNSigmaTOFLowP);
+    static const auto nSigmaTPCHighP = getCfg<float>(cfgIdCut.pidConfigSetting, kPi, kNSigmaTPCHighP);
+    static const auto nSigmaTOFHighP = getCfg<float>(cfgIdCut.pidConfigSetting, kPi, kNSigmaTOFHighP);
     if (vetoIdOthersTOF<kPi>(track)) {
       if (track.p() <= ThresholdP && std::abs(track.tpcNSigmaPi()) < nSigmaTPCLowP && std::abs(track.tofNSigmaPi()) < nSigmaTOFLowP) {
         return true;
-      } else if (ThresholdP < track.p() // after p = 0.75, Pi and Ka lines of nSigma 3.0 will start intersecting
-                 && std::abs(track.tpcNSigmaPi()) < nSigmaTPCHighP && std::abs(track.tofNSigmaPi()) < nSigmaTOFHighP) {
+      }
+      if (ThresholdP < track.p()                                                                                 // after p = 0.75, Pi and Ka lines of nSigma 3.0 will start intersecting
+          && std::abs(track.tpcNSigmaPi()) < nSigmaTPCHighP && std::abs(track.tofNSigmaPi()) < nSigmaTOFHighP) { // NOLINT(bugprone-branch-clone)
         return true;
       }
     }
@@ -2324,10 +2376,10 @@ struct KaonIsospinFluctuations {
   {
     static constexpr float ThresholdPLow = 0.75f; // π-K separation
     static constexpr float ThresholdPUp = 1.30f;  // K-p separation
-    static const float nSigmaTPCLowP = getCfg<float>(cfgIdCut.pidConfigSetting, kKa, kNSigmaTPCLowP);
-    static const float nSigmaTOFLowP = getCfg<float>(cfgIdCut.pidConfigSetting, kKa, kNSigmaTOFLowP);
-    static const float nSigmaTPCHighP = getCfg<float>(cfgIdCut.pidConfigSetting, kKa, kNSigmaTPCHighP);
-    static const float nSigmaTOFHighP = getCfg<float>(cfgIdCut.pidConfigSetting, kKa, kNSigmaTOFHighP);
+    static const auto nSigmaTPCLowP = getCfg<float>(cfgIdCut.pidConfigSetting, kKa, kNSigmaTPCLowP);
+    static const auto nSigmaTOFLowP = getCfg<float>(cfgIdCut.pidConfigSetting, kKa, kNSigmaTOFLowP);
+    static const auto nSigmaTPCHighP = getCfg<float>(cfgIdCut.pidConfigSetting, kKa, kNSigmaTPCHighP);
+    static const auto nSigmaTOFHighP = getCfg<float>(cfgIdCut.pidConfigSetting, kKa, kNSigmaTOFHighP);
 
     if (vetoIdOthersTOF<kKa>(track)) {
       if (track.p() <= ThresholdPLow && std::abs(track.tpcNSigmaKa()) < nSigmaTPCLowP && std::abs(track.tofNSigmaKa()) < nSigmaTOFLowP) {
@@ -2352,10 +2404,10 @@ struct KaonIsospinFluctuations {
     // Static config values (fetched once per template instantiation)
     static constexpr float ThresholdPLow = 1.30f; // Kaon-proton separation
     static constexpr float ThresholdPUp = 3.10f;  // Proton-deuteron separation
-    static const float nSigmaTPCLowP = getCfg<float>(cfgIdCut.pidConfigSetting, kPr, kNSigmaTPCLowP);
-    static const float nSigmaTOFLowP = getCfg<float>(cfgIdCut.pidConfigSetting, kPr, kNSigmaTOFLowP);
-    static const float nSigmaTPCHighP = getCfg<float>(cfgIdCut.pidConfigSetting, kPr, kNSigmaTPCHighP);
-    static const float nSigmaTOFHighP = getCfg<float>(cfgIdCut.pidConfigSetting, kPr, kNSigmaTOFHighP);
+    static const auto nSigmaTPCLowP = getCfg<float>(cfgIdCut.pidConfigSetting, kPr, kNSigmaTPCLowP);
+    static const auto nSigmaTOFLowP = getCfg<float>(cfgIdCut.pidConfigSetting, kPr, kNSigmaTOFLowP);
+    static const auto nSigmaTPCHighP = getCfg<float>(cfgIdCut.pidConfigSetting, kPr, kNSigmaTPCHighP);
+    static const auto nSigmaTOFHighP = getCfg<float>(cfgIdCut.pidConfigSetting, kPr, kNSigmaTOFHighP);
 
     if (vetoIdOthersTOF<kPr>(track)) {
       if (track.p() <= ThresholdPLow && std::abs(track.tpcNSigmaPr()) < nSigmaTPCLowP && std::abs(track.tofNSigmaPr()) < nSigmaTOFLowP) {
@@ -2403,7 +2455,7 @@ struct KaonIsospinFluctuations {
     if (!vetoIdOthersTOF<kEl>(track)) {
       return false;
     }
-    static const float nSigmaRadHighP = getCfg<float>(cfgIdCut.pidConfigSetting, kEl, kNSigmaRadHighP);
+    static const auto nSigmaRadHighP = getCfg<float>(cfgIdCut.pidConfigSetting, kEl, kNSigmaRadHighP);
     const float sumSq = track.tpcNSigmaEl() * track.tpcNSigmaEl() + track.tofNSigmaEl() * track.tofNSigmaEl();
     return sumSq < nSigmaRadHighP;
   }
@@ -2415,11 +2467,13 @@ struct KaonIsospinFluctuations {
   {
     if (cfgIdCut.cfgId04DoPdependentId) {
       return selPdependent<kPi>(track, IdMethod);
-    } else if (cfgIdCut.cfgId05DoTpcInnerParamId) {
+    }
+    if (cfgIdCut.cfgId05DoTpcInnerParamId) {
       if (selPionTPCInnerParam(track)) {
         IdMethod = kTPCidentified;
         return true;
-      } else if (track.hasTOF() && track.beta() > 0.0 && selPionTOF(track)) {
+      }
+      if (track.hasTOF() && track.beta() > 0.0 && selPionTOF(track)) {
         IdMethod = kTOFidentified;
         return true;
       }
@@ -2434,11 +2488,13 @@ struct KaonIsospinFluctuations {
   {
     if (cfgIdCut.cfgId04DoPdependentId) {
       return selPdependent<kKa>(track, IdMethod);
-    } else if (cfgIdCut.cfgId05DoTpcInnerParamId) {
+    }
+    if (cfgIdCut.cfgId05DoTpcInnerParamId) {
       if (selKaonTPCInnerParam(track)) {
         IdMethod = kTPCidentified;
         return true;
-      } else if (track.hasTOF() && track.beta() > 0.0 && selKaonTOF(track)) {
+      }
+      if (track.hasTOF() && track.beta() > 0.0 && selKaonTOF(track)) {
         IdMethod = kTOFidentified;
         return true;
       }
@@ -2453,11 +2509,13 @@ struct KaonIsospinFluctuations {
   {
     if (cfgIdCut.cfgId04DoPdependentId) {
       return selPdependent<kPr>(track, IdMethod);
-    } else if (cfgIdCut.cfgId05DoTpcInnerParamId) {
+    }
+    if (cfgIdCut.cfgId05DoTpcInnerParamId) {
       if (selProtonTPCInnerParam(track)) {
         IdMethod = kTPCidentified;
         return true;
-      } else if (track.hasTOF() && track.beta() > 0.0 && selProtonTOF(track)) {
+      }
+      if (track.hasTOF() && track.beta() > 0.0 && selProtonTOF(track)) {
         IdMethod = kTOFidentified;
         return true;
       }
@@ -2472,11 +2530,13 @@ struct KaonIsospinFluctuations {
   {
     if (cfgIdCut.cfgId04DoPdependentId) {
       return selPdependent<kEl>(track, IdMethod);
-    } else if (cfgIdCut.cfgId05DoTpcInnerParamId) {
+    }
+    if (cfgIdCut.cfgId05DoTpcInnerParamId) {
       if (selElectronTPCInnerParam(track)) {
         IdMethod = kTPCidentified;
         return true;
-      } else if (track.hasTOF() && track.beta() > 0.0 && selElectronTOF(track)) {
+      }
+      if (track.hasTOF() && track.beta() > 0.0 && selElectronTOF(track)) {
         IdMethod = kTOFidentified;
         return true;
       }
@@ -2501,11 +2561,13 @@ struct KaonIsospinFluctuations {
   {
     if (cfgIdCut.cfgId04DoPdependentId) {
       return selPdependent<kPr>(track, IdMethod);
-    } else if (cfgIdCut.cfgId05DoTpcInnerParamId) {
+    }
+    if (cfgIdCut.cfgId05DoTpcInnerParamId) {
       if (selDeuteronTPCInnerParam(track)) {
         IdMethod = kTPCidentified;
         return true;
-      } else if (track.hasTOF() && track.beta() > 0.0 && selDeuteronTOF(track)) {
+      }
+      if (track.hasTOF() && track.beta() > 0.0 && selDeuteronTOF(track)) {
         IdMethod = kTOFidentified;
         return true;
       }
@@ -2541,7 +2603,7 @@ struct KaonIsospinFluctuations {
   int countBits(uint8_t x)
   {
     int count = 0;
-    while (x) {
+    while (x != 0) {
       x &= (x - 1); // Clear the least significant bit set
       count++;
     }
@@ -2588,7 +2650,7 @@ struct KaonIsospinFluctuations {
   }
 
   template <typename T, typename H>
-  void findRepeatedEntries(const std::vector<H>& ParticleList, T hist)
+  void findRepeatedEntries(const std::vector<H>& ParticleList, const T& hist)
   {
     for (uint ii = 0; ii < ParticleList.size(); ii++) {
       int nCommonCount = 0; // checking the repeat number of track
@@ -2623,8 +2685,9 @@ struct KaonIsospinFluctuations {
   template <typename T, typename U>
   int binarySearchAnyList(const T& ParticleList, const U& key)
   {
-    if (ParticleList.empty())
+    if (ParticleList.empty()) {
       return -1;
+    }
     int low = 0;
     int high = ParticleList.size() - 1;
     while (low <= high) {
@@ -2632,16 +2695,17 @@ struct KaonIsospinFluctuations {
       if (ParticleList[mid].globalIndex == key) {
         return mid;
       }
-      if (ParticleList[mid].globalIndex < key)
+      if (ParticleList[mid].globalIndex < key) {
         low = mid + 1;
-      else
+      } else {
         high = mid - 1;
+      }
     }
     return -1; // If we reach here, then element was not present
   }
 
   template <bool checkTag, typename T>
-  void executeSortPairDaughters(auto& posDauList, auto& negDauList, T hist)
+  void executeSortPairDaughters(auto& posDauList, auto& negDauList, const T& hist)
   {
     sortVector(posDauList);
     sortVector(negDauList);
@@ -2680,7 +2744,7 @@ struct KaonIsospinFluctuations {
   {
     posTrackMotherFlag = 0;
     negTrackMotherFlag = 0;
-    mSigma = doublePowersOf10[8];
+    mSigma = DoublePowersOf10[8];
     mpBit = 0;
 
     uint start = 0;
@@ -2753,63 +2817,48 @@ struct KaonIsospinFluctuations {
   template <typename T>
   bool selK0s(const T& v0)
   {
-    static const float mLow = getCfg<float>(cfgV0ParticleCuts, kV0TrkK0s, kV0MLow);
-    static const float mUp = getCfg<float>(cfgV0ParticleCuts, kV0TrkK0s, kV0MUp);
-    static const float ptLow = getCfg<float>(cfgV0ParticleCuts, kV0TrkK0s, kV0LowPt);
-    static const float ptHigh = getCfg<float>(cfgV0ParticleCuts, kV0TrkK0s, kV0HighPt);
-    static const float yCut = getCfg<float>(cfgV0ParticleCuts, kV0TrkK0s, kV0Rapitidy);
-    static const float armFactor = getCfg<float>(cfgV0ParticleCuts, kV0TrkK0s, kV0ARMcut1);
+    static const auto mLow = getCfg<float>(cfgV0ParticleCuts, kV0TrkK0s, kV0MLow);
+    static const auto mUp = getCfg<float>(cfgV0ParticleCuts, kV0TrkK0s, kV0MUp);
+    static const auto ptLow = getCfg<float>(cfgV0ParticleCuts, kV0TrkK0s, kV0LowPt);
+    static const auto ptHigh = getCfg<float>(cfgV0ParticleCuts, kV0TrkK0s, kV0HighPt);
+    static const auto yCut = getCfg<float>(cfgV0ParticleCuts, kV0TrkK0s, kV0Rapitidy);
+    static const auto armFactor = getCfg<float>(cfgV0ParticleCuts, kV0TrkK0s, kV0ARMcut1);
 
-    if (mLow < v0.mK0Short() && v0.mK0Short() < mUp &&
-        ptLow < v0.pt() && v0.pt() < ptHigh &&
-        std::abs(v0.rapidity(MassK0Short)) < yCut &&
-        v0.qtarm() > (armFactor * std::abs(v0.alpha()))) {
-      return true;
-    }
-    return false;
+    return (mLow < v0.mK0Short() && v0.mK0Short() < mUp &&
+            ptLow < v0.pt() && v0.pt() < ptHigh &&
+            std::abs(v0.rapidity(MassK0Short)) < yCut &&
+            v0.qtarm() > (armFactor * std::abs(v0.alpha())));
   }
 
   template <typename T>
   bool selLambda(const T& v0)
   {
-    static const float mLow = getCfg<float>(cfgV0ParticleCuts, kV0TrkLambda, kV0MLow);
-    static const float mUp = getCfg<float>(cfgV0ParticleCuts, kV0TrkLambda, kV0MUp);
+    static const auto mLow = getCfg<float>(cfgV0ParticleCuts, kV0TrkLambda, kV0MLow);
+    static const auto mUp = getCfg<float>(cfgV0ParticleCuts, kV0TrkLambda, kV0MUp);
 
-    if (mLow < v0.mLambda() && v0.mLambda() < mUp) {
-      return true;
-    } else {
-      return false;
-    }
+    return (mLow < v0.mLambda() && v0.mLambda() < mUp);
   }
 
   template <typename T>
   bool selAntiLambda(const T& v0)
   {
-    static const float mLow = getCfg<float>(cfgV0ParticleCuts, kV0TrkAntiLambda, kV0MLow);
-    static const float mUp = getCfg<float>(cfgV0ParticleCuts, kV0TrkAntiLambda, kV0MUp);
+    static const auto mLow = getCfg<float>(cfgV0ParticleCuts, kV0TrkAntiLambda, kV0MLow);
+    static const auto mUp = getCfg<float>(cfgV0ParticleCuts, kV0TrkAntiLambda, kV0MUp);
 
-    if (mLow < v0.mAntiLambda() && v0.mAntiLambda() < mUp) {
-      return true;
-    } else {
-      return false;
-    }
+    return (mLow < v0.mAntiLambda() && v0.mAntiLambda() < mUp);
   }
 
   template <typename T>
   bool selGamma(const T& v0)
   {
-    static const float mLow = getCfg<float>(cfgV0ParticleCuts, kV0TrkGamma, kV0MLow);
-    static const float mUp = getCfg<float>(cfgV0ParticleCuts, kV0TrkGamma, kV0MUp);
-    static const float armCut = getCfg<float>(cfgV0ParticleCuts, kV0TrkGamma, kV0ARMcut1);
-    static const float alphaCut = getCfg<float>(cfgV0ParticleCuts, kV0TrkGamma, kV0ARMcut2);
+    static const auto mLow = getCfg<float>(cfgV0ParticleCuts, kV0TrkGamma, kV0MLow);
+    static const auto mUp = getCfg<float>(cfgV0ParticleCuts, kV0TrkGamma, kV0MUp);
+    static const auto armCut = getCfg<float>(cfgV0ParticleCuts, kV0TrkGamma, kV0ARMcut1);
+    static const auto alphaCut = getCfg<float>(cfgV0ParticleCuts, kV0TrkGamma, kV0ARMcut2);
 
-    if (v0.mGamma() > mLow && v0.mGamma() < mUp &&
-        v0.qtarm() < armCut &&
-        std::abs(v0.alpha()) < alphaCut) {
-      return true;
-    } else {
-      return false;
-    }
+    return (v0.mGamma() > mLow && v0.mGamma() < mUp &&
+            v0.qtarm() < armCut &&
+            std::abs(v0.alpha()) < alphaCut);
   }
 
   template <int Mode, int fillMode, int pidMode, int signMode, int detMode, typename H, typename T>
@@ -2859,31 +2908,31 @@ struct KaonIsospinFluctuations {
     float tpcNSigmaVal = -999, tofNSigmaVal = -999;
     switch (pidMode) {
       case kPi:
-        if (!cfgFill.cfgFill09PiQA)
+        if (!cfgFill.cfgFill09PiQA) // NOLINT(readability-braces-around-statements)
           return;
         tpcNSigmaVal = track.tpcNSigmaPi();
         tofNSigmaVal = track.tofNSigmaPi();
         break;
       case kKa:
-        if (!cfgFill.cfgFill10KaQA)
+        if (!cfgFill.cfgFill10KaQA) // NOLINT(readability-braces-around-statements)
           return;
         tpcNSigmaVal = track.tpcNSigmaKa();
         tofNSigmaVal = track.tofNSigmaKa();
         break;
       case kPr:
-        if (!cfgFill.cfgFill11PrQA)
+        if (!cfgFill.cfgFill11PrQA) // NOLINT(readability-braces-around-statements)
           return;
         tpcNSigmaVal = track.tpcNSigmaPr();
         tofNSigmaVal = track.tofNSigmaPr();
         break;
       case kEl:
-        if (!cfgFill.cfgFill12ElQA)
+        if (!cfgFill.cfgFill12ElQA) // NOLINT(readability-braces-around-statements)
           return;
         tpcNSigmaVal = track.tpcNSigmaEl();
         tofNSigmaVal = track.tofNSigmaEl();
         break;
       case kDe:
-        if (!cfgFill.cfgFill13DeQA)
+        if (!cfgFill.cfgFill13DeQA) // NOLINT(readability-braces-around-statements)
           return;
         tpcNSigmaVal = track.tpcNSigmaDe();
         tofNSigmaVal = track.tofNSigmaDe();
@@ -2935,31 +2984,31 @@ struct KaonIsospinFluctuations {
     float tpcNSigmaVal = -999, tofNSigmaVal = -999;
     switch (pidMode) {
       case kPi:
-        if (!cfgFill.cfgFill09PiQA)
+        if (!cfgFill.cfgFill09PiQA) // NOLINT(readability-braces-around-statements)
           return;
         tpcNSigmaVal = track.tpcNSigmaPi();
         tofNSigmaVal = track.tofNSigmaPi();
         break;
       case kKa:
-        if (!cfgFill.cfgFill10KaQA)
+        if (!cfgFill.cfgFill10KaQA) // NOLINT(readability-braces-around-statements)
           return;
         tpcNSigmaVal = track.tpcNSigmaKa();
         tofNSigmaVal = track.tofNSigmaKa();
         break;
       case kPr:
-        if (!cfgFill.cfgFill11PrQA)
+        if (!cfgFill.cfgFill11PrQA) // NOLINT(readability-braces-around-statements)
           return;
         tpcNSigmaVal = track.tpcNSigmaPr();
         tofNSigmaVal = track.tofNSigmaPr();
         break;
       case kEl:
-        if (!cfgFill.cfgFill12ElQA)
+        if (!cfgFill.cfgFill12ElQA) // NOLINT(readability-braces-around-statements)
           return;
         tpcNSigmaVal = track.tpcNSigmaEl();
         tofNSigmaVal = track.tofNSigmaEl();
         break;
       case kDe:
-        if (!cfgFill.cfgFill13DeQA)
+        if (!cfgFill.cfgFill13DeQA) // NOLINT(readability-braces-around-statements)
           return;
         tpcNSigmaVal = track.tpcNSigmaDe();
         tofNSigmaVal = track.tofNSigmaDe();
@@ -3107,30 +3156,30 @@ struct KaonIsospinFluctuations {
     int v0TagValue = 0;
 
     // Check if positive track is pion or proton or Electron
-    if (selPion(posDaughterTrack, posPiIdMethod))
-      posIsPion = true; // Coming From K0s    -> PiPlus + PiMinus and AntiLambda -> PiPlus + AntiProton
-    if (selProton(posDaughterTrack, posPrIdMethod))
-      posIsProton = true; // Coming From Lambda -> proton + PiMinus
-    if (selElectron(posDaughterTrack, posElIdMethod))
-      posIsElectron = true; // Coming From Gamma -> ElPlus + ElMinus
-    if (selPion(negDaughterTrack, negPiIdMethod))
-      negIsPion = true; // Coming From K0s       -> PiPlus + PiMinus and Lambda -> proton + PiMinus
-    if (selProton(negDaughterTrack, negPrIdMethod))
-      negIsProton = true; // Coming From AntiLambda -> PiPlus + AntiProton
-    if (selElectron(negDaughterTrack, negElIdMethod))
-      negIsElectron = true; // Coming From Gamma -> ElPlus + ElMinus
+    if (selPion(posDaughterTrack, posPiIdMethod))     // NOLINT(readability-braces-around-statements)
+      posIsPion = true;                               // Coming From K0s    -> PiPlus + PiMinus and AntiLambda -> PiPlus + AntiProton
+    if (selProton(posDaughterTrack, posPrIdMethod))   // NOLINT(readability-braces-around-statements)
+      posIsProton = true;                             // Coming From Lambda -> proton + PiMinus
+    if (selElectron(posDaughterTrack, posElIdMethod)) // NOLINT(readability-braces-around-statements)
+      posIsElectron = true;                           // Coming From Gamma -> ElPlus + ElMinus
+    if (selPion(negDaughterTrack, negPiIdMethod))     // NOLINT(readability-braces-around-statements)
+      negIsPion = true;                               // Coming From K0s       -> PiPlus + PiMinus and Lambda -> proton + PiMinus
+    if (selProton(negDaughterTrack, negPrIdMethod))   // NOLINT(readability-braces-around-statements)
+      negIsProton = true;                             // Coming From AntiLambda -> PiPlus + AntiProton
+    if (selElectron(negDaughterTrack, negElIdMethod)) // NOLINT(readability-braces-around-statements)
+      negIsElectron = true;                           // Coming From Gamma -> ElPlus + ElMinus
 
     if (posIsPion && negIsPion) {
-      BITSET(v0TagValue, BIT_IS_K0S);
+      BITSET(v0TagValue, BitIsK0S);
     }
     if (posIsProton && negIsPion) {
-      BITSET(v0TagValue, BIT_IS_LAMBDA);
+      BITSET(v0TagValue, BitIsLAMBDA);
     }
     if (posIsPion && negIsProton) {
-      BITSET(v0TagValue, BIT_IS_ANTILAMBDA);
+      BITSET(v0TagValue, BitIsANTILAMBDA);
     }
     if (posIsElectron && negIsElectron) {
-      BITSET(v0TagValue, BIT_IS_GAMMA);
+      BITSET(v0TagValue, BitIsGAMMA);
     }
     return v0TagValue;
   }
@@ -3140,13 +3189,13 @@ struct KaonIsospinFluctuations {
   {
     int v0daughterCollisionIndexTag = 0;
     if (v0.collisionId() == posDaughterTrack.collisionId()) {
-      BITSET(v0daughterCollisionIndexTag, BIT_POS_DAU_HAS_SAME_COLL);
+      BITSET(v0daughterCollisionIndexTag, BitPosDauHasSameColl);
     }
     if (v0.collisionId() == negDaughterTrack.collisionId()) {
-      BITSET(v0daughterCollisionIndexTag, BIT_NEG_DAU_HAS_SAME_COLL);
+      BITSET(v0daughterCollisionIndexTag, BitNegDauHasSameColl);
     }
     if (posDaughterTrack.collisionId() == negDaughterTrack.collisionId()) {
-      BITSET(v0daughterCollisionIndexTag, BIT_BOTH_DAU_HAS_SAME_COLL);
+      BITSET(v0daughterCollisionIndexTag, BitBothDauHasSameColl);
     }
     return v0daughterCollisionIndexTag;
   }
@@ -3160,13 +3209,13 @@ struct KaonIsospinFluctuations {
     uint64_t negDauGlobalBC = negDaughterTrack.template collision_as<collisionType>().template bc_as<aod::BCsWithTimestamps>().globalBC();
 
     if (v0GlobalBC == posDauGlobalBC) {
-      BITSET(v0daughterBCTag, BIT_POS_DAU_HAS_SAME_COLL_BC);
+      BITSET(v0daughterBCTag, BitPosDauHasSameCollBC);
     }
     if (v0GlobalBC == negDauGlobalBC) {
-      BITSET(v0daughterBCTag, BIT_NEG_DAU_HAS_SAME_COLL_BC);
+      BITSET(v0daughterBCTag, BitNegDauHasSameCollBC);
     }
     if (posDauGlobalBC == negDauGlobalBC) {
-      BITSET(v0daughterBCTag, BIT_BOTH_DAU_HAS_SAME_COLL_BC);
+      BITSET(v0daughterBCTag, BitBothDauHasSameCollBC);
     }
     return v0daughterBCTag;
   }
@@ -3199,13 +3248,14 @@ struct KaonIsospinFluctuations {
     }
 
     // cut on dynamic columns for v0 particles
-    if (v0.v0cosPA() < v0settingCosPA)
+    if (v0.v0cosPA() < v0settingCosPA) {
       return; // in place of continue;
-    if (v0.v0radius() < v0settingRadius)
+    }
+    if (v0.v0radius() < v0settingRadius) {
       return; // in place of continue;
-
+    }
     // K0s Analysis
-    if (BOOL_BITCHECK(v0Tag, BIT_IS_K0S) && isTrueMcMatch<analysisType>(v0DecayTrueMcTag, kV0TrkK0s)) {
+    if (BOOLBITCHECK(v0Tag, BitIsK0S) && isTrueMcMatch<analysisType>(v0DecayTrueMcTag, kV0TrkK0s)) {
       v0K0sEffWeight = hPtEtaForEffCorrection[kV0K0s][kPos]->GetBinContent(v0PtEtaBin);
 
       if (cfgFill.cfgFill02V0TablePostK0sCheck) {
@@ -3213,8 +3263,8 @@ struct KaonIsospinFluctuations {
       }
       // K0s mass cut
       if (cfgFill.cfgFill03v0TablePostK0sMassCut) {
-        static const float k0sMassLow = getCfg<float>(cfgV0ParticleCuts, kV0TrkK0s, kV0MLow);
-        static const float k0sMassHigh = getCfg<float>(cfgV0ParticleCuts, kV0TrkK0s, kV0MUp);
+        static const auto k0sMassLow = getCfg<float>(cfgV0ParticleCuts, kV0TrkK0s, kV0MLow);
+        static const auto k0sMassHigh = getCfg<float>(cfgV0ParticleCuts, kV0TrkK0s, kV0MUp);
         if (k0sMassLow < v0.mK0Short() && v0.mK0Short() < k0sMassHigh) {
           fillV0QA<v0TablePostK0sMassCut, kFillSimple, kPi, kPi>(recoV0sPostMassCut, v0, posDaughterTrack, negDaughterTrack, posDauPtEtaBin, negDauPtEtaBin, v0Tag, v0DauCollisionIndexTag, v0DauBCTag, idMethodPi[kPos], idMethodPi[kNeg], v0K0sEffWeight, fillMotherQA, fillDauTrackQA);
         }
@@ -3222,7 +3272,7 @@ struct KaonIsospinFluctuations {
 
       // Final K0s Selection.
       if (selK0s(v0)) {
-        BITSET(trueV0TagValue, BIT_IS_K0S);
+        BITSET(trueV0TagValue, BitIsK0S);
         v0CandtDauList[kV0TrkK0s][kPos].emplace_back(posDaughterTrack.globalIndex(), std::abs((v0.mK0Short() - MV0DecayCndt[kV0TrkK0s]) / WV0DecayCndt[kV0TrkK0s]));
         v0CandtDauList[kV0TrkK0s][kNeg].emplace_back(negDaughterTrack.globalIndex(), std::abs((v0.mK0Short() - MV0DecayCndt[kV0TrkK0s]) / WV0DecayCndt[kV0TrkK0s]));
         k0sTagIndexList.push_back(v0.globalIndex());
@@ -3233,9 +3283,9 @@ struct KaonIsospinFluctuations {
     } // End of K0s block
 
     // Lambda Analysis
-    if (BOOL_BITCHECK(v0Tag, BIT_IS_LAMBDA) && isTrueMcMatch<analysisType>(v0DecayTrueMcTag, kV0TrkLambda)) {
+    if (BOOLBITCHECK(v0Tag, BitIsLAMBDA) && isTrueMcMatch<analysisType>(v0DecayTrueMcTag, kV0TrkLambda)) {
       if (selLambda(v0)) {
-        BITSET(trueV0TagValue, BIT_IS_LAMBDA);
+        BITSET(trueV0TagValue, BitIsLAMBDA);
         v0LambdaEffWeight = hPtEtaForEffCorrection[kV0Lambda][kPos]->GetBinContent(v0PtEtaBin);
 
         v0CandtDauList[kV0TrkLambda][kPos].emplace_back(posDaughterTrack.globalIndex(), std::abs((v0.mLambda() - MV0DecayCndt[kV0TrkLambda]) / WV0DecayCndt[kV0TrkLambda]));
@@ -3247,9 +3297,9 @@ struct KaonIsospinFluctuations {
     }
 
     // AntiLambda Analysis
-    if (BOOL_BITCHECK(v0Tag, BIT_IS_ANTILAMBDA) && isTrueMcMatch<analysisType>(v0DecayTrueMcTag, kV0TrkAntiLambda)) {
+    if (BOOLBITCHECK(v0Tag, BitIsANTILAMBDA) && isTrueMcMatch<analysisType>(v0DecayTrueMcTag, kV0TrkAntiLambda)) {
       if (selAntiLambda(v0)) {
-        BITSET(trueV0TagValue, BIT_IS_ANTILAMBDA);
+        BITSET(trueV0TagValue, BitIsANTILAMBDA);
         v0AntiLambdaEffWeight = hPtEtaForEffCorrection[kV0AntiLambda][kPos]->GetBinContent(v0PtEtaBin);
 
         v0CandtDauList[kV0TrkAntiLambda][kPos].emplace_back(posDaughterTrack.globalIndex(), std::abs((v0.mAntiLambda() - MV0DecayCndt[kV0TrkAntiLambda]) / WV0DecayCndt[kV0TrkAntiLambda]));
@@ -3261,9 +3311,9 @@ struct KaonIsospinFluctuations {
     }
 
     // Gamma Analysis
-    if (BOOL_BITCHECK(v0Tag, BIT_IS_GAMMA) && isTrueMcMatch<analysisType>(v0DecayTrueMcTag, kV0TrkGamma)) {
+    if (BOOLBITCHECK(v0Tag, BitIsGAMMA) && isTrueMcMatch<analysisType>(v0DecayTrueMcTag, kV0TrkGamma)) {
       if (selGamma(v0)) {
-        BITSET(trueV0TagValue, BIT_IS_GAMMA);
+        BITSET(trueV0TagValue, BitIsGAMMA);
         v0GammaEffWeight = hPtEtaForEffCorrection[kV0Gamma][kPos]->GetBinContent(v0PtEtaBin);
 
         v0CandtDauList[kV0TrkGamma][kPos].emplace_back(posDaughterTrack.globalIndex(), std::abs((v0.mGamma() - MV0DecayCndt[kV0TrkGamma]) / WV0DecayCndt[kV0TrkGamma]));
@@ -3311,34 +3361,34 @@ struct KaonIsospinFluctuations {
 
     if constexpr (fillMode == kFillPostSel) {
       // Since it is selected it must have the that track's bit
-      if (!BOOL_BITCHECK(posTrackV0MotherFlag, row)) {
+      if (!BOOLBITCHECK(posTrackV0MotherFlag, row)) {
         LOG(error) << "pos Daughter Track tagged in postSel, but not found in preSel";
       }
-      if (!BOOL_BITCHECK(negTrackV0MotherFlag, row)) {
+      if (!BOOLBITCHECK(negTrackV0MotherFlag, row)) {
         LOG(error) << "neg Daughter Track tagged in postSel, but not found in preSel";
       }
 
       // check other bits to know if dauhter is contamination from other particles.
       // If contamination is to be checked, then remove particles with contamination.
       if (checkPrimVtxContm) {
-        if (BOOL_OTHERBITSON(posTrackPrimVtxMotherFlag, row)) {
+        if (BOOLOTHERBITSON(posTrackPrimVtxMotherFlag, row)) {
           countIt = false;
         }
-        if (BOOL_OTHERBITSON(negTrackPrimVtxMotherFlag, row)) {
+        if (BOOLOTHERBITSON(negTrackPrimVtxMotherFlag, row)) {
           countIt = false;
         }
       }
       if (checkV0DecayContm) {
-        if (BOOL_OTHERBITSON(posTrackV0MotherFlag, row)) {
+        if (BOOLOTHERBITSON(posTrackV0MotherFlag, row)) {
           countIt = false;
         }
-        if (BOOL_OTHERBITSON(negTrackV0MotherFlag, row)) {
+        if (BOOLOTHERBITSON(negTrackV0MotherFlag, row)) {
           countIt = false;
         }
         // If it is the most probable mass case then count it.
-        if (countIt == false) {
-          // LOG(info)<<"DEBUG :: cout check :: rqBit = "<<requiredBit<<" :: row = "<<row<<" : "<<std::bitset<8>(1<<row)<<" :: bool_check "<<BOOL_BITCHECK(mpBit, row)<<" :: "<<getCfg<bool>(cfgPrimVtxParticleCuts, row, kPrimCheckMPMSigma)<<" :: "<<std::bitset<8>(mpBit);
-          if (requiredBit == 1 && BOOL_BITCHECK(mpBit, row) && checkMPMSigma) {
+        if (!countIt) {
+          // LOG(info)<<"DEBUG :: cout check :: rqBit = "<<requiredBit<<" :: row = "<<row<<" : "<<std::bitset<8>(1<<row)<<" :: bool_check "<<BOOLBITCHECK(mpBit, row)<<" :: "<<getCfg<bool>(cfgPrimVtxParticleCuts, row, kPrimCheckMPMSigma)<<" :: "<<std::bitset<8>(mpBit);
+          if (requiredBit == 1 && BOOLBITCHECK(mpBit, row) && checkMPMSigma) {
             countIt = true;
             // LOG(info)<<"DEBUG :: counted at row = "<<row<<" :: "<<std::bitset<8>(1<<row);
           }
@@ -3407,7 +3457,7 @@ struct KaonIsospinFluctuations {
     }
 
     // K0s Analysis
-    if (BOOL_BITCHECK(v0Tag, BIT_IS_K0S) && selK0s(v0) && isTrueMcMatch<analysisType>(v0DecayTrueMcTag, kV0TrkK0s)) {
+    if (BOOLBITCHECK(v0Tag, BitIsK0S) && selK0s(v0) && isTrueMcMatch<analysisType>(v0DecayTrueMcTag, kV0TrkK0s)) {
       checkV0Particle<recoK0sPostSel, kPi, kPi, fillMode, kV0TrkK0s>(recoK0s,
                                                                      v0, posDaughterTrack, negDaughterTrack,
                                                                      v0PtEtaBin, posDauPtEtaBin, negDauPtEtaBin,
@@ -3418,7 +3468,7 @@ struct KaonIsospinFluctuations {
                                                                      requiredBit, mpBit);
     } // End of K0s block
 
-    if (BOOL_BITCHECK(v0Tag, BIT_IS_LAMBDA) && selLambda(v0) && isTrueMcMatch<analysisType>(v0DecayTrueMcTag, kV0TrkLambda)) {
+    if (BOOLBITCHECK(v0Tag, BitIsLAMBDA) && selLambda(v0) && isTrueMcMatch<analysisType>(v0DecayTrueMcTag, kV0TrkLambda)) {
       checkV0Particle<recoLambdaPostSel, kPr, kPi, fillMode, kV0TrkLambda>(recoV0sPostLambdaCheck, // recoLambda,
                                                                            v0, posDaughterTrack, negDaughterTrack,
                                                                            v0PtEtaBin, posDauPtEtaBin, negDauPtEtaBin,
@@ -3429,7 +3479,7 @@ struct KaonIsospinFluctuations {
                                                                            requiredBit, mpBit);
     } // End of Lambda block
 
-    if (BOOL_BITCHECK(v0Tag, BIT_IS_ANTILAMBDA) && selAntiLambda(v0) && isTrueMcMatch<analysisType>(v0DecayTrueMcTag, kV0TrkAntiLambda)) {
+    if (BOOLBITCHECK(v0Tag, BitIsANTILAMBDA) && selAntiLambda(v0) && isTrueMcMatch<analysisType>(v0DecayTrueMcTag, kV0TrkAntiLambda)) {
       checkV0Particle<recoAntiLambdaPostSel, kPi, kPr, fillMode, kV0TrkAntiLambda>(recoV0sPostAntiLambdaCheck, // recoAntiLambda,
                                                                                    v0, posDaughterTrack, negDaughterTrack,
                                                                                    v0PtEtaBin, posDauPtEtaBin, negDauPtEtaBin,
@@ -3440,7 +3490,7 @@ struct KaonIsospinFluctuations {
                                                                                    requiredBit, mpBit);
     } // End of AntiLambda block
 
-    if (BOOL_BITCHECK(v0Tag, BIT_IS_GAMMA) && selGamma(v0) && isTrueMcMatch<analysisType>(v0DecayTrueMcTag, kV0TrkGamma)) {
+    if (BOOLBITCHECK(v0Tag, BitIsGAMMA) && selGamma(v0) && isTrueMcMatch<analysisType>(v0DecayTrueMcTag, kV0TrkGamma)) {
       checkV0Particle<recoGammaPostSel, kEl, kEl, fillMode, kV0TrkGamma>(recoV0sPostGammaCheck, // recoGamma,
                                                                          v0, posDaughterTrack, negDaughterTrack,
                                                                          v0PtEtaBin, posDauPtEtaBin, negDauPtEtaBin,
@@ -3533,57 +3583,63 @@ struct KaonIsospinFluctuations {
   {
 
     // Cache config values once per template instantiation
-    static const float massLow = getCfg<float>(cfgPrimVtxParticleCuts, row, kPrimMassLow);
-    static const float massHigh = getCfg<float>(cfgPrimVtxParticleCuts, row, kPrimMassUp);
+    static const auto massLow = getCfg<float>(cfgPrimVtxParticleCuts, row, kPrimMassLow);
+    static const auto massHigh = getCfg<float>(cfgPrimVtxParticleCuts, row, kPrimMassUp);
 
-    static const bool checkPrimVtxContm = getCfg<bool>(cfgPrimVtxParticleCuts, row, kPrimCheckPrimVtxContm);
-    static const bool checkV0DecayContm = getCfg<bool>(cfgPrimVtxParticleCuts, row, kPrimCheckV0DecayContm);
-    static const bool checkMPMSigma = getCfg<bool>(cfgPrimVtxParticleCuts, row, kPrimCheckMPMSigma);
+    static const auto checkPrimVtxContm = getCfg<bool>(cfgPrimVtxParticleCuts, row, kPrimCheckPrimVtxContm);
+    static const auto checkV0DecayContm = getCfg<bool>(cfgPrimVtxParticleCuts, row, kPrimCheckV0DecayContm);
+    static const auto checkMPMSigma = getCfg<bool>(cfgPrimVtxParticleCuts, row, kPrimCheckMPMSigma);
 
-    static const bool fillPreSel = getCfg<bool>(cfgPrimVtxParticleCuts, row, kPrimFillPreSel);
-    static const bool fillPreSelDau = getCfg<bool>(cfgPrimVtxParticleCuts, row, kPrimFillPreSelDau);
-    static const bool fillPostSel = getCfg<bool>(cfgPrimVtxParticleCuts, row, kPrimFillPostSel);
-    static const bool fillPostSelDau = getCfg<bool>(cfgPrimVtxParticleCuts, row, kPrimFillPostSelDau);
+    static const auto fillPreSel = getCfg<bool>(cfgPrimVtxParticleCuts, row, kPrimFillPreSel);
+    static const auto fillPreSelDau = getCfg<bool>(cfgPrimVtxParticleCuts, row, kPrimFillPreSelDau);
+    static const auto fillPostSel = getCfg<bool>(cfgPrimVtxParticleCuts, row, kPrimFillPostSel);
+    static const auto fillPostSelDau = getCfg<bool>(cfgPrimVtxParticleCuts, row, kPrimFillPostSelDau);
 
     static LorentzVector vecMother;
     // uint16_t flagBit = 0;
 
     // Mass window check & vector assignment
     if constexpr (particleMode == Phi1020) {
-      if (!(massLow < mother.mPhi1020() && mother.mPhi1020() < massHigh))
+      if (!(massLow < mother.mPhi1020() && mother.mPhi1020() < massHigh)) {
         return;
-      BITSET(primVtxCndtTag, BIT_IS_PHI_1020);
-      // flagBit = 1 << BIT_IS_PHI_1020;
+      }
+      BITSET(primVtxCndtTag, BitIsPhi1020);
+      // flagBit = 1 << BitIsPhi1020;
       vecMother = LorentzVector(mother.px(), mother.py(), mother.pz(), mother.mPhi1020());
     } else if constexpr (particleMode == JPsiToEE) {
-      if (!(massLow < mother.mJPsiToEE() && mother.mJPsiToEE() < massHigh))
+      if (!(massLow < mother.mJPsiToEE() && mother.mJPsiToEE() < massHigh)) {
         return;
-      BITSET(primVtxCndtTag, BIT_IS_JPSI_TO_EE);
-      // flagBit = 1 << BIT_IS_JPSI_TO_EE;
+      }
+      BITSET(primVtxCndtTag, BitIsJPsiToEE);
+      // flagBit = 1 << BitIsJPsiToEE;
       vecMother = LorentzVector(mother.px(), mother.py(), mother.pz(), mother.mJPsiToEE());
     } else if constexpr (particleMode == JPsiToMuMu) {
-      if (!(massLow < mother.mJPsiToMuMu() && mother.mJPsiToMuMu() < massHigh))
+      if (!(massLow < mother.mJPsiToMuMu() && mother.mJPsiToMuMu() < massHigh)) {
         return;
-      BITSET(primVtxCndtTag, BIT_IS_JPSI_TO_MUMU);
-      // flagBit = 1 << BIT_IS_JPSI_TO_MUMU;
+      }
+      BITSET(primVtxCndtTag, BitIsJPsiToMuMu);
+      // flagBit = 1 << BitIsJPsiToMuMu;
       vecMother = LorentzVector(mother.px(), mother.py(), mother.pz(), mother.mJPsiToMuMu());
     } else if constexpr (particleMode == KStar892) {
-      if (!(massLow < mother.mKStar892() && mother.mKStar892() < massHigh))
+      if (!(massLow < mother.mKStar892() && mother.mKStar892() < massHigh)) {
         return;
-      BITSET(primVtxCndtTag, BIT_IS_KSTAR_892);
-      // flagBit = 1 << BIT_IS_KSTAR_892;
+      }
+      BITSET(primVtxCndtTag, BitIsKstar892);
+      // flagBit = 1 << BitIsKstar892;
       vecMother = LorentzVector(mother.px(), mother.py(), mother.pz(), mother.mKStar892());
     } else if constexpr (particleMode == KStar892Bar) {
-      if (!(massLow < mother.mKStar892Bar() && mother.mKStar892Bar() < massHigh))
+      if (!(massLow < mother.mKStar892Bar() && mother.mKStar892Bar() < massHigh)) {
         return;
-      BITSET(primVtxCndtTag, BIT_IS_KSTAR_892_BAR);
-      // flagBit = 1 << BIT_IS_KSTAR_892_BAR;
+      }
+      BITSET(primVtxCndtTag, BitIsKstar892bar);
+      // flagBit = 1 << BitIsKstar892bar;
       vecMother = LorentzVector(mother.px(), mother.py(), mother.pz(), mother.mKStar892Bar());
     } else if constexpr (particleMode == Rho770) {
-      if (!(massLow < mother.mRho770() && mother.mRho770() < massHigh))
+      if (!(massLow < mother.mRho770() && mother.mRho770() < massHigh)) {
         return;
-      BITSET(primVtxCndtTag, BIT_IS_RHO_770);
-      // flagBit = 1 << BIT_IS_RHO_770;
+      }
+      BITSET(primVtxCndtTag, BitIsRho770);
+      // flagBit = 1 << BitIsRho770;
       vecMother = LorentzVector(mother.px(), mother.py(), mother.pz(), mother.mRho770());
     } else {
       static_assert(particleMode == Phi1020 || particleMode == JPsiToEE || particleMode == JPsiToMuMu ||
@@ -3603,28 +3659,28 @@ struct KaonIsospinFluctuations {
       fillDauTrackQA = fillPreSelDau;
     } else if constexpr (fillMode == kFillPostSel) {
       // Since it is selected it must have the that track's bit
-      if (!BOOL_BITCHECK(posTrackPrimVtxMotherFlag, row)) {
+      if (!BOOLBITCHECK(posTrackPrimVtxMotherFlag, row)) {
         LOG(error) << "pos Daughter Track tagged in postSel, but not found in preSel";
       }
-      if (!BOOL_BITCHECK(negTrackPrimVtxMotherFlag, row)) {
+      if (!BOOLBITCHECK(negTrackPrimVtxMotherFlag, row)) {
         LOG(error) << "neg Daughter Track tagged in postSel, but not found in preSel";
       }
 
       // check other bits to know if dauhter is contamination from other particles.
       // If contamination is to be check, remove particles with contamination.
       if (checkPrimVtxContm) {
-        if (BOOL_OTHERBITSON(posTrackPrimVtxMotherFlag, row) || BOOL_OTHERBITSON(negTrackPrimVtxMotherFlag, row)) {
+        if (BOOLOTHERBITSON(posTrackPrimVtxMotherFlag, row) || BOOLOTHERBITSON(negTrackPrimVtxMotherFlag, row)) {
           countIt = false;
         }
         // If it is the most probable mass case then count it.
-        if (countIt == false) {
-          if (requiredBit == 0 && BOOL_BITCHECK(mpBit, row) && checkMPMSigma) {
+        if (!countIt) {
+          if (requiredBit == 0 && BOOLBITCHECK(mpBit, row) && checkMPMSigma) {
             countIt = true;
           }
         }
       }
       if (checkV0DecayContm) {
-        if (BOOL_OTHERBITSON(posTrackV0MotherFlag, row) || BOOL_OTHERBITSON(negTrackV0MotherFlag, row)) {
+        if (BOOLOTHERBITSON(posTrackV0MotherFlag, row) || BOOLOTHERBITSON(negTrackV0MotherFlag, row)) {
           countIt = false;
         }
       }
@@ -3659,35 +3715,35 @@ struct KaonIsospinFluctuations {
 
     // do Identification of only what is needed
     if (checkTrackId[kPi][kPos]) {
-      if (selParticle<kPi>(posTrack, idMethodSignTrk[kPi][kPos]))
+      if (selParticle<kPi>(posTrack, idMethodSignTrk[kPi][kPos])) // NOLINT(readability-braces-around-statements)
         posDauIs[kPi] = true;
     }
     if (checkTrackId[kPi][kNeg]) {
-      if (selParticle<kPi>(negTrack, idMethodSignTrk[kPi][kNeg]))
+      if (selParticle<kPi>(negTrack, idMethodSignTrk[kPi][kNeg])) // NOLINT(readability-braces-around-statements)
         negDauIs[kPi] = true;
     }
     if (checkTrackId[kKa][kPos]) {
-      if (selParticle<kKa>(posTrack, idMethodSignTrk[kKa][kPos]))
+      if (selParticle<kKa>(posTrack, idMethodSignTrk[kKa][kPos])) // NOLINT(readability-braces-around-statements)
         posDauIs[kKa] = true;
     }
     if (checkTrackId[kKa][kNeg]) {
-      if (selParticle<kKa>(negTrack, idMethodSignTrk[kKa][kNeg]))
+      if (selParticle<kKa>(negTrack, idMethodSignTrk[kKa][kNeg])) // NOLINT(readability-braces-around-statements)
         negDauIs[kKa] = true;
     }
     if (checkTrackId[kEl][kPos]) {
-      if (selParticle<kEl>(posTrack, idMethodSignTrk[kEl][kPos]))
+      if (selParticle<kEl>(posTrack, idMethodSignTrk[kEl][kPos])) // NOLINT(readability-braces-around-statements)
         posDauIs[kEl] = true;
     }
     if (checkTrackId[kEl][kNeg]) {
-      if (selParticle<kEl>(negTrack, idMethodSignTrk[kEl][kNeg]))
+      if (selParticle<kEl>(negTrack, idMethodSignTrk[kEl][kNeg])) // NOLINT(readability-braces-around-statements)
         negDauIs[kEl] = true;
     }
     if (checkTrackId[kMu][kPos]) {
-      if (selParticle<kMu>(posTrack, idMethodSignTrk[kMu][kPos]))
+      if (selParticle<kMu>(posTrack, idMethodSignTrk[kMu][kPos])) // NOLINT(readability-braces-around-statements)
         posDauIs[kMu] = true;
     }
     if (checkTrackId[kMu][kNeg]) {
-      if (selParticle<kMu>(negTrack, idMethodSignTrk[kMu][kNeg]))
+      if (selParticle<kMu>(negTrack, idMethodSignTrk[kMu][kNeg])) // NOLINT(readability-braces-around-statements)
         negDauIs[kMu] = true;
     }
 
@@ -3765,14 +3821,14 @@ struct KaonIsospinFluctuations {
     decayDauTagBit = 0;
     const int chargeIndex = (track.signed1Pt() > 0) ? kPos : (track.signed1Pt() < 0) ? kNeg
                                                                                      : -1;
-    if (chargeIndex == -1)
+    if (chargeIndex == -1) {
       LOG(fatal) << "DEBUG :: Unsigned track found";
-
+    }
     const auto globalIdx = track.globalIndex();
     // V0 channel checks (kPos/kNeg differ by chargeIndex)
-    if (doV0K0s && binarySearchAnyList(v0CandtDauList[kV0K0s][chargeIndex], globalIdx) != -1)
+    if (doV0K0s && binarySearchAnyList(v0CandtDauList[kV0K0s][chargeIndex], globalIdx) != -1) {
       BITSET(decayDauTagBit, IdBitPI);
-
+    }
     if (doV0Lambda) {
       if (binarySearchAnyList(v0CandtDauList[kV0Lambda][chargeIndex], globalIdx) != -1) {
         BITSET(decayDauTagBit, (chargeIndex == kPos) ? IdBitPR : IdBitPI);
@@ -3785,27 +3841,28 @@ struct KaonIsospinFluctuations {
       }
     }
 
-    if (doV0Gamma && binarySearchAnyList(v0CandtDauList[kV0Gamma][chargeIndex], globalIdx) != -1)
+    if (doV0Gamma && binarySearchAnyList(v0CandtDauList[kV0Gamma][chargeIndex], globalIdx) != -1) {
       BITSET(decayDauTagBit, IdBitEL);
-
+    }
     // PrimVtx candidate decays
-    if (doPhi1020 && binarySearchAnyList(primVtxCandtDauList[kPrimTrkPhi1020][chargeIndex], globalIdx) != -1)
+    if (doPhi1020 && binarySearchAnyList(primVtxCandtDauList[kPrimTrkPhi1020][chargeIndex], globalIdx) != -1) {
       BITSET(decayDauTagBit, IdBitKA);
-
-    if (doJPsiToEE && binarySearchAnyList(primVtxCandtDauList[kPrimTrkJPsiToEE][chargeIndex], globalIdx) != -1)
+    }
+    if (doJPsiToEE && binarySearchAnyList(primVtxCandtDauList[kPrimTrkJPsiToEE][chargeIndex], globalIdx) != -1) {
       BITSET(decayDauTagBit, IdBitEL);
-
-    if (doJPsiToMuMu && binarySearchAnyList(primVtxCandtDauList[kPrimTrkJPsiToMuMu][chargeIndex], globalIdx) != -1)
+    }
+    if (doJPsiToMuMu && binarySearchAnyList(primVtxCandtDauList[kPrimTrkJPsiToMuMu][chargeIndex], globalIdx) != -1) {
       BITSET(decayDauTagBit, IdBitMU);
-
-    if (doKStar892 && binarySearchAnyList(primVtxCandtDauList[kPrimTrkKStar892][chargeIndex], globalIdx) != -1)
+    }
+    if (doKStar892 && binarySearchAnyList(primVtxCandtDauList[kPrimTrkKStar892][chargeIndex], globalIdx) != -1) {
       BITSET(decayDauTagBit, (chargeIndex == kPos) ? IdBitKA : IdBitPI);
-
-    if (doKStar892Bar && binarySearchAnyList(primVtxCandtDauList[kPrimTrkKStar892Bar][chargeIndex], globalIdx) != -1)
+    }
+    if (doKStar892Bar && binarySearchAnyList(primVtxCandtDauList[kPrimTrkKStar892Bar][chargeIndex], globalIdx) != -1) {
       BITSET(decayDauTagBit, (chargeIndex == kPos) ? IdBitPI : IdBitKA);
-
-    if (doRho770 && binarySearchAnyList(primVtxCandtDauList[kPrimTrkRho770][chargeIndex], globalIdx) != -1)
+    }
+    if (doRho770 && binarySearchAnyList(primVtxCandtDauList[kPrimTrkRho770][chargeIndex], globalIdx) != -1) {
       BITSET(decayDauTagBit, IdBitPI);
+    }
   }
 
   template <int Mode, int fillMode, int pidMode, int signMode, int detMode, typename H, typename T>
@@ -3820,11 +3877,11 @@ struct KaonIsospinFluctuations {
   template <int Mode, int fillMode, int pidMode, int signMode, typename H, typename T>
   void fillIdentifiedTrackFullQA(H& histReg, const T& track, const int& idMethod, const double& particleMass, const float& effWeight)
   {
-    if (idMethod == kTPCidentified) {
+    if (idMethod == kTPCidentified) { // To be updated in future.
       fillAllTypeQA<Mode, fillMode, pidMode, signMode, tpcId>(histReg, track, particleMass, effWeight);
-    } else if (idMethod == kTPCTOFidentified) {
+    } else if (idMethod == kTPCTOFidentified) { // NOLINT(bugprone-branch-clone)
       fillAllTypeQA<Mode, fillMode, pidMode, signMode, tpctofId>(histReg, track, particleMass, effWeight);
-    } else if (idMethod == kUnidentified) {
+    } else if (idMethod == kUnidentified) { // NOLINT(bugprone-branch-clone)
       fillAllTypeQA<Mode, fillMode, pidMode, signMode, tpctofId>(histReg, track, particleMass, effWeight);
     }
   }
@@ -3845,8 +3902,8 @@ struct KaonIsospinFluctuations {
     static const bool fillRejected = getCfg<bool>(cfgTrackCuts.countSetting, pidMode, kFillRejected);
 
     bool isPrompTrk = (decayDauTagBit == 0);
-    bool isNonPromptTrk = BOOL_BITCHECK(decayDauTagBit, idBit);
-    bool isDauContam = BOOL_OTHERBITSON(decayDauTagBit, idBit);
+    bool isNonPromptTrk = BOOLBITCHECK(decayDauTagBit, idBit);
+    bool isDauContam = BOOLOTHERBITSON(decayDauTagBit, idBit);
 
     bool countIt = (countPrompt && isPrompTrk) || (countNonPrompt && isNonPromptTrk) || (countDauContam && isDauContam);
     effWeight = hPtEtaForEffCorrection[pidMode][signMode]->GetBinContent(ptEtaBin);
@@ -3878,8 +3935,9 @@ struct KaonIsospinFluctuations {
                                   auto& iNRejected, auto& fNRejected, auto& iNTrk, auto& fNTrk, auto& effWeight, auto& effWeightSum,
                                   const int& ptEtaBin, const int& decayDauTagBit)
   {
-    if (!trackIsType)
+    if (!trackIsType) {
       return;
+    }
     if (track.signed1Pt() > 0) {
       fillIdentifiedTrackQASign<pidMode, kPos, idBit>(histReg1, histReg2, track, particleMass, idMethod,
                                                       iNRejected[kPos], fNRejected[kPos], iNTrk[kPos], fNTrk[kPos], effWeight[kPos], effWeightSum[kPos],
@@ -3975,13 +4033,13 @@ struct KaonIsospinFluctuations {
   template <int dirMode, typename T>
   void fillCollQA(const T& col)
   {
-    if (col.sel8())
+    if (col.sel8()) // NOLINT(readability-braces-around-statements)
       recoEvent.fill(HIST(HistRegDire[dirMode]) + HIST("CollType"), 0);
-    if (col.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+    if (col.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) // NOLINT(readability-braces-around-statements)
       recoEvent.fill(HIST(HistRegDire[dirMode]) + HIST("CollType"), 1);
-    if (col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+    if (col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) // NOLINT(readability-braces-around-statements)
       recoEvent.fill(HIST(HistRegDire[dirMode]) + HIST("CollType"), 2);
-    if (col.selection_bit(o2::aod::evsel::kIsVertexITSTPC))
+    if (col.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) // NOLINT(readability-braces-around-statements)
       recoEvent.fill(HIST(HistRegDire[dirMode]) + HIST("CollType"), 3);
   }
 
@@ -4062,7 +4120,7 @@ struct KaonIsospinFluctuations {
   inline bool isTrueMcMatch(uint8_t mcTag, int idBit)
   {
     if constexpr (analysisType == doPurityProcessing) {
-      return BOOL_BITCHECK(mcTag, idBit);
+      return BOOLBITCHECK(mcTag, idBit);
     } else {
       return true; // Always allow if not doing purity processing
     }
@@ -4281,13 +4339,13 @@ struct KaonIsospinFluctuations {
     // Variables for  collision loop and track counting
     float centrality = 0;
     int nTrack = 0;
-    std::array<std::array<int, 2>, pidVecSize> iNTrk;
-    std::array<std::array<float, 2>, pidVecSize> fNTrk;
-    std::array<std::array<float, 2>, pidVecSize> effWeightSum;
+    std::array<std::array<int, 2>, pidVecSize> iNTrk{};
+    std::array<std::array<float, 2>, pidVecSize> fNTrk{};
+    std::array<std::array<float, 2>, pidVecSize> effWeightSum{};
 
     // Variables for sparse histogram filling
     // Get Size of all Three sparse histograms
-    std::array<int, 3> hSparseNAxis;
+    std::array<int, 3> hSparseNAxis{};
     hSparseNAxis[0] = getCfg<int>(cfgAxis.sparseSetting, 0, 0);
     hSparseNAxis[1] = getCfg<int>(cfgAxis.sparseSetting, 1, 0);
     hSparseNAxis[2] = getCfg<int>(cfgAxis.sparseSetting, 2, 0);
@@ -4304,7 +4362,7 @@ struct KaonIsospinFluctuations {
                                                                  std::vector<std::type_index>(hSparseNAxis[2], typeid(void))}};
 
     // Obtaining pointers to the variables and their typeid
-    int iPidMode, signType, variableType;
+    int iPidMode = -999, signType = -999, variableType = -999;
     int nSparse = 3;
     for (int iSparse = 0; iSparse < nSparse; iSparse++) {           // Looping over sparse histos
       for (int iAxis = 0; iAxis < hSparseNAxis[iSparse]; iAxis++) { // Looping over the available axis.
@@ -4357,7 +4415,7 @@ struct KaonIsospinFluctuations {
     // create buffers for storing the values and filling them
     // std::shared_ptr<THnSparse>
     std::array<std::shared_ptr<THnSparse>, 3> hSparses;
-    std::array<std::array<double, 8>, 3> buffers;
+    std::array<std::array<double, 8>, 3> buffers{};
     // preallocated stack buffers for obtaining variables // To Use hSparse->Fill(buffer.data());
 
     hSparses[0] = recoAnalysis.get<THnSparse>(HIST("recoAnalysis/Sparse0"));
@@ -4369,8 +4427,8 @@ struct KaonIsospinFluctuations {
 
       // Declaring variables outside the loop to avoid slight overhead for stack allocation and deallocation during each iteration.
       // Variables and Efficiency Weigths for V0s, Prim Vtx particles and  Tracks
-      std::array<std::array<int, 2>, 6> idMethodSignTrk; // 2 for pos and neg, 6 for Pi, Ka, Pr, El, Mu, De
-      std::array<std::array<float, 2>, pidVecSize> effWeight;
+      std::array<std::array<int, 2>, 6> idMethodSignTrk{}; // 2 for pos and neg, 6 for Pi, Ka, Pr, El, Mu, De
+      std::array<std::array<float, 2>, pidVecSize> effWeight{};
 
       // Varaibles for V0 Loop
       int ptEtaBinV0 = -1, ptEtaBinPosDau = -1, ptEtaBinNegDau = -1;
@@ -4384,8 +4442,8 @@ struct KaonIsospinFluctuations {
       int trackIdTag = 0;
       int ptEtaBinTrk = -1;
 
-      std::array<bool, 6> trackIs;
-      std::array<int, 6> idMethodTrk;
+      std::array<bool, 6> trackIs{};
+      std::array<int, 6> idMethodTrk{};
 
       int decayDauTagBit = 0;
 
@@ -4402,7 +4460,7 @@ struct KaonIsospinFluctuations {
       const bool doKStar892Bar = getCfg<bool>(cfgPrimVtxParticleCuts, kPrimTrkKStar892Bar, kPrimDoRecoCheck);
       const bool doRho770 = getCfg<bool>(cfgPrimVtxParticleCuts, kPrimTrkRho770, kPrimDoRecoCheck);
 
-      bool checkTrackId[6][2];
+      std::array<std::array<bool, 2>, 6> checkTrackId{};
       checkTrackId[kPi][kPos] = doRho770 || doKStar892Bar;
       checkTrackId[kPi][kNeg] = doRho770 || doKStar892;
       checkTrackId[kKa][kPos] = doPhi1020 || doKStar892;
@@ -4412,8 +4470,8 @@ struct KaonIsospinFluctuations {
       checkTrackId[kMu][kPos] = doJPsiToMuMu;
       checkTrackId[kMu][kNeg] = doJPsiToMuMu;
 
-      bool posDauIs[6];
-      bool negDauIs[6];
+      std::array<bool, 6> posDauIs{};
+      std::array<bool, 6> negDauIs{};
 
       uint8_t posTrackPrimVtxMotherFlag = 0;
       uint8_t negTrackPrimVtxMotherFlag = 0;
@@ -4424,13 +4482,13 @@ struct KaonIsospinFluctuations {
       int iTotalPrimVtxCndtTrk = 0;
       float fTotalPrimVtxCndtTrk = 0;
 
-      int count1;
-      int count2;
-      int count4;
-      int count5;
-      int count6;
+      int count1 = 0;
+      int count2 = 0;
+      int count4 = 0;
+      int count5 = 0;
+      int count6 = 0;
 
-      std::array<float, 2> massSigma = {static_cast<float>(doublePowersOf10[8]), static_cast<float>(doublePowersOf10[8])};
+      std::array<float, 2> massSigma = {static_cast<float>(DoublePowersOf10[8]), static_cast<float>(DoublePowersOf10[8])};
       std::array<uint8_t, 2> mpBit = {0, 0};
       int requiredBit = -1;
 
@@ -4459,8 +4517,9 @@ struct KaonIsospinFluctuations {
           }
 
           auto v0mcparticle = v0.mcParticle(); // Reco Level Check + Truth Level Check
-          if (!v0mcparticle.isPhysicalPrimary())
+          if (!v0mcparticle.isPhysicalPrimary()) {
             continue;
+          }
 
           //___________________________Truth Level_________________________________________________________
           if constexpr (analysisType == doPurityProcessing) {
@@ -4594,7 +4653,7 @@ struct KaonIsospinFluctuations {
         iTotalPrimVtxCndtTrk = iNTrk[kPrimPhi1020][kPos] + iNTrk[kPrimJPsiToEE][kPos] + iNTrk[kPrimJPsiToMuMu][kPos] + iNTrk[kPrimKStar892][kPos] + iNTrk[kPrimKStar892Bar][kPos] + iNTrk[kPrimRho770][kPos];
         fTotalPrimVtxCndtTrk = fNTrk[kPrimPhi1020][kPos] + fNTrk[kPrimJPsiToEE][kPos] + fNTrk[kPrimJPsiToMuMu][kPos] + fNTrk[kPrimKStar892][kPos] + fNTrk[kPrimKStar892Bar][kPos] + fNTrk[kPrimRho770][kPos];
         if (iTotalPrimVtxCndtTrk == 0 && fTotalPrimVtxCndtTrk == 0) {
-          goto skipSecondPrimVtxCndtLoop;
+          goto skipSecondPrimVtxCndtLoop; // NOLINT(cppcoreguidelines-avoid-goto)
         }
 
         primVtxSortStart = std::chrono::high_resolution_clock::now();
@@ -4736,9 +4795,9 @@ struct KaonIsospinFluctuations {
             }
 
             auto v0mcparticle = v0.mcParticle(); // Reco Level Check
-            if (!v0mcparticle.isPhysicalPrimary())
+            if (!v0mcparticle.isPhysicalPrimary()) {
               continue;
-
+            }
             //___________________________Truth Level_________________________________________________________
             if constexpr (analysisType == doPurityProcessing) {
               auto posDauMcPart = posDaughterTrack.mcParticle();
@@ -4917,9 +4976,7 @@ struct KaonIsospinFluctuations {
           if (!collision.has_mcCollision()) {
             continue;
           }
-          centrality = -1;
           mcColl = collision.mcCollision();
-
           centrality = collision.centFT0C();
           if (cfgCentAxis.centAxis04Type == kCentFT0M) {
             centrality = collision.centFT0M();
@@ -5116,7 +5173,7 @@ struct KaonIsospinFluctuations {
   PROCESS_SWITCH(KaonIsospinFluctuations, processSim, "Process for Sim", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) // NOLINT(readability-inconsistent-declaration-parameter-name)
 {
   return WorkflowSpec{
     adaptAnalysisTask<PrimVtxParticleTable>(cfgc),
