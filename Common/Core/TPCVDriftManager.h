@@ -48,7 +48,7 @@ class TPCVDriftManager
   void update(uint64_t timestamp) noexcept
   {
     // Keep the object we already have if it is still valid for this timestamp.
-    // firstTime/lastTime are the first and last timestamps of the TFs the correction
+    // firstTime/lastTime are the first and last timestamps of the TF the correction
     // was derived from, so the validity range is closed on both ends.
     if (mVD != nullptr && timestamp >= static_cast<uint64_t>(mVD->firstTime) && timestamp <= static_cast<uint64_t>(mVD->lastTime)) {
       return;
