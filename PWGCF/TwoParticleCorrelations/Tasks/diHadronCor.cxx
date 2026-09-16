@@ -102,7 +102,7 @@ struct DiHadronCor {
   O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgCentralityWeight, std::string, "", "CCDB path to centrality weight object")
   O2_DEFINE_CONFIGURABLE(cfgLocalEfficiency, bool, false, "Use local efficiency object")
-  O2_DEFINE_CONFIGURABLE(cfgVerbosity, bool, false, "Verbose output")
+  O2_DEFINE_CONFIGURABLE(cfgVerbosity2, bool, false, "Verbose output")
   O2_DEFINE_CONFIGURABLE(cfgUseEventWeights, bool, false, "Use event weights for mixed event")
   O2_DEFINE_CONFIGURABLE(cfgUsePtOrder, bool, true, "enable trigger pT < associated pT cut")
   O2_DEFINE_CONFIGURABLE(cfgUsePtOrderInMixEvent, bool, true, "enable trigger pT < associated pT cut in mixed event")
@@ -1107,7 +1107,7 @@ struct DiHadronCor {
         continue;
 
       auto groupedCollisions = collisions.sliceBy(collisionPerMCCollision, collision1.globalIndex());
-      if (cfgVerbosity > 0) {
+      if (cfgVerbosity2 > 0) {
         LOGF(info, "Found %d related collisions", groupedCollisions.size());
       }
       float cent = -1;
