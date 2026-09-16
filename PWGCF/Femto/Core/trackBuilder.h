@@ -684,7 +684,13 @@ class TrackBuilder
                                         track.tpcNClsFound(),
                                         track.tpcNClsCrossedRows(),
                                         track.tpcNClsShared(),
-                                        track.beta());
+                                        track.beta(),
+                                        track.tpcChi2NCl(),
+                                        track.detectorMap(),
+                                        // fillType distinguishes selected tracks (kTrack) from rows that only exist to resolve a daughter index.
+                                        // A daughter whose collisionId differs from the one of its mother candidate is written a second time
+                                        // under the mother's collision, so downstream counting must skip isDaughterOnly() rows.
+                                        static_cast<datatypes::TrackType>(type));
     }
     if (mProduceElectronPids) {
       float itsEl = 0.f;
@@ -805,6 +811,7 @@ class TrackBuilder
   [[nodiscard]] bool isPassThrough() const { return mTrackSelection.isPassThrough(); }
   [[nodiscard]] bool producingTracks() const { return mProduceTracks; }
   [[nodiscard]] bool producingLiteTracks() const { return mProduceLiteTracks; }
+  [[nodiscard]] bool producingTrackExtras() const { return mProduceTrackExtras; }
 
   template <typename T>
   void reset(T const& tracks)

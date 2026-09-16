@@ -18,6 +18,7 @@
 
 #include "PWGCF/Femto/Core/dataTypes.h"
 #include "PWGCF/Femto/Core/femtoUtils.h"
+#include "PWGCF/Femto/Core/modes.h"
 
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -335,7 +336,9 @@ DECLARE_SOA_DYNAMIC_COLUMN(HasTpc, hasTpc, [](uint8_t detectorMap) -> bool { ret
 DECLARE_SOA_DYNAMIC_COLUMN(HasTof, hasTof, [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::TOF; }); //! Track has TOF
 DECLARE_SOA_COLUMN(FillType, fillType, o2::analysis::femto::datatypes::TrackType);                                         //! modes::Track this row was written as (kTrack = selected track, otherwise daughter-only row)
 DECLARE_SOA_DYNAMIC_COLUMN(IsDaughterOnly, isDaughterOnly,                                                                 //! True if the row was only written to resolve a daughter index (not a selected track)
-                           [](o2::analysis::femto::datatypes::TrackType fillType) -> bool { return fillType != o2::analysis::femto::modes::TrackType::kTrack; });
+                           [](o2::analysis::femto::datatypes::TrackType fillType) -> bool {
+                             return fillType != static_cast<o2::analysis::femto::datatypes::TrackType>(o2::analysis::femto::modes::Track::kTrack);
+                           });
 
 // tof related information
 DECLARE_SOA_COLUMN(TofBeta, tofBeta, float); //! Tof beta
