@@ -761,9 +761,9 @@ struct HfCandidateCreator3Prong {
   template <typename TSeed, typename TTracks>
   struct HfMixed3ProngSeed {
     TSeed source;
-    TTracks const* tracks;
-    std::array<int64_t, 3> ids;
-    uint8_t flag;
+    TTracks const* tracks{nullptr};
+    std::array<int64_t, 3> ids{};
+    uint8_t flag{0};
     template <typename T>
     auto collision_as() const
     {
