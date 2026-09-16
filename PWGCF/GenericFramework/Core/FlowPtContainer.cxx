@@ -707,6 +707,45 @@ void FlowPtContainer::fillPtProfiles(const double& centmult, const double& rn)
   }
   return;
 }
+bool FlowPtContainer::addPtProfile(const char* name, int observableOrder)
+{
+  if (!fCorrList || !name || !name[0] || observableOrder < 1 || observableOrder > mpar) {
+    LOGF(error, "Cannot add pT profile %s for order %d", name ? name : "(null)", observableOrder);
+    return false;
+  }
+  const std::string profileName{name};
+  if (fCorrList->FindObject(profileName.c_str())) {
+    LOGF(error, "pT profile %s already exists", profileName.c_str());
+    return false;
+  }
+  auto* original = dynamic_cast<BootstrapProfile*>(fCorrList->At(observableOrder - 1));
+  const auto* axis = original->GetXaxis();
+  BootstrapProfile* profile = nullptr;
+  if (axis->GetXbins()->GetSize()) {
+    profile = new BootstrapProfile(profileName.c_str(), profileName.c_str(), axis->GetNbins(), axis->GetXbins()->GetArray());
+  } else {
+    profile = new BootstrapProfile(profileName.c_str(), profileName.c_str(), axis->GetNbins(), axis->GetXmin(), axis->GetXmax());
+  }
+  if (original->fListOfEntries) {
+    profile->InitializeSubsamples(original->fListOfEntries->GetEntries());
+  }
+  fCorrList->Add(profile);
+  return true;
+}
+bool FlowPtContainer::fillPtProfile(const char* name, int observableOrder, double mult, double eventWeight, double rn)
+{
+  if (!fCorrList || !name || observableOrder < 1 || observableOrder > mpar ||
+      static_cast<size_t>(observableOrder) >= corrDen.size() || corrDen[observableOrder] == 0. || eventWeight == 0.) {
+    return false;
+  }
+  auto* profile = dynamic_cast<BootstrapProfile*>(fCorrList->FindObject(name));
+  if (!profile) {
+    LOGF(error, "pT profile %s has not been booked", name);
+    return false;
+  }
+  profile->FillProfile(mult, corrNum[observableOrder] / corrDen[observableOrder], eventWeight, rn);
+  return true;
+}
 void FlowPtContainer::fillSubeventPtProfiles(const double& centmult, const double& rn)
 {
   int histCounter = 0;

@@ -67,6 +67,10 @@ class FlowPtContainer : public TNamed
   void calculateSubeventCorrelations();
   void calculateCMTerms();
   void fillPtProfiles(const double& lMult, const double& rn);
+  // Book and fill a separate pT observable with a weight calculated by the task.
+  // The task can supply a separate event weight for the same observable.
+  bool addPtProfile(const char* name, int observableOrder);
+  bool fillPtProfile(const char* name, int observableOrder, double mult, double eventWeight, double rn);
   void fillSubeventPtProfiles(const double& lMult, const double& rn);
   void fillVnPtCorrProfiles(const double& lMult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask);
   void fillVnDeltaPtProfiles(const double& centmult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask);
