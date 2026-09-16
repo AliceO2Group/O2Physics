@@ -186,7 +186,7 @@ struct RadialFlowDecorr {
 
   Configurable<int> cfgSys{"cfgSys", 1, "Which collision system? 1-->PbPb, 2-->NeNe, 3-->OO, 4-->pp"};
   Configurable<int> cfgSystType{"cfgSystType", 0, "Systematic variation: 0=Base,1=systDCA,2=systEff,3=systFlat,4=systNEta,5=systNITS,6=systNTPC,7=systPileup,8=systVz,9=systEtaBinning"};
-  Configurable<int> cfgNBootstrap{"cfgNBootstrap", 30, "Number of Poisson bootstrap samples (base data run only)"};
+  Configurable<int> cfgNBootstrap{"cfgNBootstrap", 16, "Number of Poisson bootstrap samples (base data run only)"};
   Configurable<int> cfgBootstrapSeed{"cfgBootstrapSeed", 0, "TRandom3 seed for bootstrap (0 = machine-random per job)"};
 
   Configurable<bool> cfgFlat{"cfgFlat", false, "Whether to use flattening weights"};
@@ -462,23 +462,68 @@ struct RadialFlowDecorr {
   }
 
   // Inclusive efficiency/fake lookup (no species dependence).
-  float getEfficiency(float mult, float pt, float eta, int effidx, bool useEff) const
+  float getEfficiency(float mult, float pt, float eta,
+                      int effidx, bool useEff) const
   {
     if (!useEff) {
       return (effidx == 0) ? 1.0f : 0.0f;
     }
+
+    const float invalid =
+      std::numeric_limits<float>::quiet_NaN();
+
     TH3F* h = (effidx == 0) ? state.hEff : state.hFake;
-    if (!h) {
-      return -1;
+
+    if (!h || !std::isfinite(mult) ||
+        !std::isfinite(pt) || !std::isfinite(eta)) {
+      return invalid;
     }
-    int ibx = h->GetXaxis()->FindBin(mult);
-    int iby = h->GetYaxis()->FindBin(pt);
-    int ibz = h->GetZaxis()->FindBin(eta);
-    float val = h->GetBinContent(ibx, iby, ibz);
-    if (effidx == 0) {
-      return (val > 0.f) ? val : 1.0f;
+
+    int ibx = h->GetXaxis()->FindFixBin(mult);
+
+    // Reject Nch underflow, clamp overflow.
+    if (ibx < 1) {
+      return invalid;
     }
-    return val;
+
+    ibx = std::min(ibx, h->GetNbinsX());
+
+    int iby = h->GetYaxis()->FindFixBin(pt);
+    int ibz = h->GetZaxis()->FindFixBin(eta);
+
+    // Do not extrapolate in pT or eta.
+    if (iby < 1 || iby > h->GetNbinsY() ||
+        ibz < 1 || ibz > h->GetNbinsZ()) {
+      return invalid;
+    }
+
+    const double val = h->GetBinContent(ibx, iby, ibz);
+    const double err = h->GetBinError(ibx, iby, ibz);
+
+    // A bin without a positive error is not a valid measurement.
+    if (!std::isfinite(val) ||
+        !std::isfinite(err) || err <= 0.0) {
+      return invalid;
+    }
+
+    // Physical-domain checks.
+    if (val < 0.0 || val > 1.0 ||
+        (effidx == 0 && val == 0.0)) {
+      return invalid;
+    }
+
+    return static_cast<float>(val);
+  }
+
+  // Reject missing or invalid efficiency/fake corrections consistently in all passes.
+  bool getValidEffFake(float mult, float pt, float eta, bool useEff,
+                       float& eff, float& fake) const
+  {
+    eff = getEfficiency(mult, pt, eta, 0, useEff);
+    fake = getEfficiency(mult, pt, eta, 1, useEff);
+    return std::isfinite(eff) && std::isfinite(fake) &&
+           eff > KFloatEpsilon && eff <= 1.f &&
+           fake >= 0.f && fake < 1.f;
   }
 
   float getFlatteningWeight(float vz, float chg, float pt, float eta, float phi, bool useFlat) const
@@ -497,6 +542,139 @@ struct RadialFlowDecorr {
     bins[3] = h->GetAxis(3)->FindBin(eta);
     bins[4] = h->GetAxis(4)->FindBin(phi);
     return h->GetBinContent(bins.data());
+  }
+
+  TH3F* rebinNchMap(const TH3F* h, int sysConfig,
+                    const char* newName) const
+  {
+    if (!h) {
+      return nullptr;
+    }
+
+    // PbPb: 100 tracks; NeNe, OO, pp: 10 tracks
+    const int trackStep = (sysConfig == 1) ? 100 : 10;
+
+    const int nx = h->GetNbinsX();
+    const int ny = h->GetNbinsY();
+    const int nz = h->GetNbinsZ();
+
+    const double originalWidth = h->GetXaxis()->GetBinWidth(1);
+
+    const int groupSize =
+      static_cast<int>(std::lround(trackStep / originalWidth));
+
+    // Ensure the input binning allows exact 10/100-track groups
+    if (groupSize < 1 ||
+        std::abs(groupSize * originalWidth - trackStep) > 1.e-6) {
+      LOGF(fatal, "Nch bin width is incompatible with %d-track rebinning",
+           trackStep);
+      return nullptr;
+    }
+
+    for (int ix = 1; ix <= nx; ++ix) {
+      if (std::abs(h->GetXaxis()->GetBinWidth(ix) -
+                   originalWidth) > 1.e-6) {
+        LOGF(fatal, "Input Nch axis must have uniform bin widths");
+        return nullptr;
+      }
+    }
+
+    // Construct the new Nch bin edges
+    std::vector<double> xEdges;
+    xEdges.push_back(h->GetXaxis()->GetBinLowEdge(1));
+
+    for (int ix = 1; ix <= nx; ix += groupSize) {
+      const int last = std::min(ix + groupSize - 1, nx);
+      xEdges.push_back(h->GetXaxis()->GetBinUpEdge(last));
+    }
+
+    // Preserve the original pT and eta axes exactly
+    auto copyEdges = [](const TAxis* axis) {
+      std::vector<double> edges;
+
+      for (int i = 1; i <= axis->GetNbins(); ++i) {
+        edges.push_back(axis->GetBinLowEdge(i));
+      }
+
+      edges.push_back(axis->GetBinUpEdge(axis->GetNbins()));
+      return edges;
+    };
+
+    const auto yEdges = copyEdges(h->GetYaxis());
+    const auto zEdges = copyEdges(h->GetZaxis());
+
+    const int nNewX = static_cast<int>(xEdges.size()) - 1;
+
+    auto* rebinned = new TH3F(
+      newName, h->GetTitle(),
+      nNewX, xEdges.data(),
+      ny, yEdges.data(),
+      nz, zEdges.data());
+
+    rebinned->SetDirectory(nullptr);
+    rebinned->Sumw2();
+
+    // Rebin independently for each (pT, eta) slice
+    for (int iy = 1; iy <= ny; ++iy) {
+      for (int iz = 1; iz <= nz; ++iz) {
+
+        int lastValid = 0;
+        double lastValue = 0.;
+        double lastError = 0.;
+
+        for (int ib = 1; ib <= nNewX; ++ib) {
+
+          const int first = (ib - 1) * groupSize + 1;
+          const int last = std::min(first + groupSize - 1, nx);
+
+          double sumW = 0.;
+          double sumVW = 0.;
+
+          for (int ix = first; ix <= last; ++ix) {
+
+            const double v = h->GetBinContent(ix, iy, iz);
+            const double e = h->GetBinError(ix, iy, iz);
+
+            // Inverse-variance weighting requires a positive error
+            if (!std::isfinite(v) ||
+                !std::isfinite(e) || e <= 0.) {
+              continue;
+            }
+
+            const double weight = 1. / (e * e);
+
+            sumW += weight;
+            sumVW += v * weight;
+          }
+
+          if (sumW > 0.) {
+
+            const double avg = sumVW / sumW;
+            const double err = std::sqrt(1. / sumW);
+
+            rebinned->SetBinContent(ib, iy, iz, avg);
+            rebinned->SetBinError(ib, iy, iz, err);
+
+            lastValid = ib;
+            lastValue = avg;
+            lastError = err;
+          }
+        }
+
+        // Extend the final valid value into trailing empty bins.
+        // This also allows safe overflow clamping at readout.
+        for (int ib = lastValid + 1; ib <= nNewX; ++ib) {
+          if (lastValid == 0) {
+            break;
+          }
+
+          rebinned->SetBinContent(ib, iy, iz, lastValue);
+          rebinned->SetBinError(ib, iy, iz, lastError);
+        }
+      }
+    }
+
+    return rebinned;
   }
 
   std::vector<o2::detectors::AlignParam>* offsetFT0 = nullptr;
@@ -937,6 +1115,7 @@ struct RadialFlowDecorr {
   // ===========================================================================
   void init(InitContext&)
   {
+    TH1::SetDefaultSumw2(kTRUE);
     // Nch axes by system
     if (cfgSys == kPbPb) {
       nChAxis = {cfgNchPbMax / 2, KBinOffset, cfgNchPbMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
@@ -1082,26 +1261,50 @@ struct RadialFlowDecorr {
         return;
       }
 
+      // 1. Process Efficiency Map
       auto* hNum = dynamic_cast<TH3F*>(lst->FindObject("h3_RecoMatchedToPrimary"));
       auto* hDen = dynamic_cast<TH3F*>(lst->FindObject("h3_AllPrimary"));
       if (hNum && hDen) {
         state.hEff = dynamic_cast<TH3F*>(hNum->Clone("hEff"));
         state.hEff->SetDirectory(nullptr);
+        state.hEff->Sumw2();
         state.hEff->Divide(hDen);
+
+        TH3F* rebinnedEff = rebinNchMap(state.hEff, cfgSys.value, "hEffRebinned");
+        if (!rebinnedEff) {
+          LOGF(fatal, "Failed to rebin efficiency map");
+          return;
+        }
+
+        delete state.hEff;
+        state.hEff = rebinnedEff;
+
       } else {
-        LOGF(error, "Missing CCDB objects for efficiency (h3_RecoMatchedToPrimary / h3_AllPrimary).");
+        LOGF(fatal, "Missing CCDB objects for efficiency (h3_RecoMatchedToPrimary / h3_AllPrimary).");
       }
 
+      // 2. Process Fake Map
       auto* hNumS = dynamic_cast<TH3F*>(lst->FindObject("h3_RecoUnMatchedToPrimary_Secondary"));
       auto* hNumF = dynamic_cast<TH3F*>(lst->FindObject("h3_RecoUnMatchedToPrimary_Fake"));
       auto* hDenF = dynamic_cast<TH3F*>(lst->FindObject("h3_AllReco"));
       if (hNumS && hNumF && hDenF) {
         state.hFake = dynamic_cast<TH3F*>(hNumS->Clone("hFake"));
-        state.hFake->Add(hNumF);
         state.hFake->SetDirectory(nullptr);
+        state.hFake->Sumw2();
+        state.hFake->Add(hNumF); // Secondary + fake: add exactly once.
         state.hFake->Divide(hDenF);
+
+        TH3F* rebinnedFake = rebinNchMap(state.hFake, cfgSys.value, "hFakeRebinned");
+        if (!rebinnedFake) {
+          LOGF(fatal, "Failed to rebin fake map");
+          return;
+        }
+
+        delete state.hFake;
+        state.hFake = rebinnedFake;
+
       } else {
-        LOGF(error, "Missing CCDB objects for fakes.");
+        LOGF(fatal, "Missing CCDB objects for fakes.");
       }
     }
 
@@ -1333,9 +1536,11 @@ struct RadialFlowDecorr {
       histos.fill(HIST("hEta"), eta);
       histos.fill(HIST("hPhi"), phi);
 
-      float eff = getEfficiency(multPV, pt, eta, 0, cfgEff);
-      float fake = getEfficiency(multPV, pt, eta, 1, cfgEff);
-      float w = (eff > KFloatEpsilon) ? (1.0f - fake) / eff : 0.0f;
+      float eff = 1.f, fake = 0.f;
+      if (!getValidEffFake(multPV, pt, eta, cfgEff, eff, fake)) {
+        continue;
+      }
+      float w = (1.0f - fake) / eff;
       if (std::isfinite(w) && w > 0.f) {
         histos.fill(HIST("MCReco/hEtaPhiRecoEffWtd"), vz, sign, pt, eta, phi, w);
         histos.fill(HIST("MCReco/hEtaPhiReco"), vz, sign, pt, eta, phi, 1.0);
@@ -1420,8 +1625,10 @@ struct RadialFlowDecorr {
       histos.fill(HIST("hEta"), eta);
       histos.fill(HIST("hPhi"), phi);
 
-      float eff = getEfficiency(multPV, pt, eta, 0, cfgEff);
-      float fake = getEfficiency(multPV, pt, eta, 1, cfgEff);
+      float eff = 1.f, fake = 0.f;
+      if (!getValidEffFake(multPV, pt, eta, cfgEff, eff, fake)) {
+        continue;
+      }
       float flatW = getFlatteningWeight(vz, sign, pt, eta, phi, cfgFlat);
       float w = flatW * (1.0 - fake) / eff;
       if (!std::isfinite(w) || w <= 0.f || eff <= KFloatEpsilon) {
@@ -1609,8 +1816,10 @@ struct RadialFlowDecorr {
       histos.fill(HIST("hEta"), eta);
       histos.fill(HIST("hPhi"), phi);
 
-      float eff = getEfficiency(multPV, pt, eta, 0, cfgEff);
-      float fake = getEfficiency(multPV, pt, eta, 1, cfgEff);
+      float eff = 1.f, fake = 0.f;
+      if (!getValidEffFake(multPV, pt, eta, cfgEff, eff, fake)) {
+        continue;
+      }
       float flatW = getFlatteningWeight(vz, sign, pt, eta, phi, cfgFlat);
       float w = flatW * (1.0 - fake) / eff;
       if (!std::isfinite(w) || w <= 0.f || eff <= KFloatEpsilon) {
@@ -2012,11 +2221,10 @@ struct RadialFlowDecorr {
         ntrk++;
       }
 
-      float eff = getEfficiency(coll.multNTracksPV(), pt, eta, 0, cfgEff);
-      if (eff <= KFloatEpsilon) {
+      float eff = 1.f, fake = 0.f;
+      if (!getValidEffFake(coll.multNTracksPV(), pt, eta, cfgEff, eff, fake)) {
         continue;
       }
-      float fake = getEfficiency(coll.multNTracksPV(), pt, eta, 1, cfgEff);
       float w = (1.0f - fake) / eff;
       if (!std::isfinite(w) || w <= 0.f) {
         continue;
@@ -2087,8 +2295,10 @@ struct RadialFlowDecorr {
       histos.fill(HIST("hEta"), eta);
       histos.fill(HIST("hPhi"), phi);
 
-      float eff = getEfficiency(coll.multNTracksPV(), pt, eta, 0, cfgEff);
-      float fake = getEfficiency(coll.multNTracksPV(), pt, eta, 1, cfgEff);
+      float eff = 1.f, fake = 0.f;
+      if (!getValidEffFake(coll.multNTracksPV(), pt, eta, cfgEff, eff, fake)) {
+        continue;
+      }
       float flatWeight = getFlatteningWeight(vz, sign, pt, eta, phi, cfgFlat);
 
       histos.fill(HIST("pEffWeight_pt_eta_cent"), pt, eta, cent, eff);
@@ -2201,8 +2411,13 @@ struct RadialFlowDecorr {
       LOGF(warning, "Data fluc: mean pT or mult map missing");
       return;
     }
-    if ((cfgEff || cfgFlat) && (!state.hEff || !state.hFake || !state.hFlatWeight)) {
-      LOGF(warning, "Data fluc: correction maps requested but not all present.");
+    if (cfgEff && (!state.hEff || !state.hFake)) {
+      LOGF(warning, "Data fluc: Efficiency maps requested but not present.");
+      return;
+    }
+
+    if (cfgFlat && !state.hFlatWeight) {
+      LOGF(warning, "Data fluc: Flattening map requested but not present.");
       return;
     }
 
@@ -2260,11 +2475,10 @@ struct RadialFlowDecorr {
         continue;
       }
 
-      float eff = getEfficiency(coll.multNTracksPV(), pt, eta, 0, cfgEff);
-      if (eff <= KFloatEpsilon) {
+      float eff = 1.f, fake = 0.f;
+      if (!getValidEffFake(coll.multNTracksPV(), pt, eta, cfgEff, eff, fake)) {
         continue;
       }
-      float fake = getEfficiency(coll.multNTracksPV(), pt, eta, 1, cfgEff);
       float flatWeight = getFlatteningWeight(vz, sign, pt, eta, phi, cfgFlat);
       float w = flatWeight * (1.0f - fake) / eff;
       if (!std::isfinite(w) || w <= 0.f) {
