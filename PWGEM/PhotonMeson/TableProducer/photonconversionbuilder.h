@@ -186,6 +186,7 @@ struct PhotonConversionBuilder {
   Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
   Configurable<int> modeTrackPropagation{"modeTrackPropagation", 0, "0: use real track propagation, including material, 1: use fast approximation using only geometry, 2: Use real track propagation and make comparison to fast propagation (only for debugging and testing)"};
   Configurable<float> propV0LegsRadius{"propV0LegsRadius", 60.f, "Radius to which the V0 legs are propagated to calculate psipair and phiV"};
+  o2::framework::Configurable<bool> useSideBasedCorrection{"useSideBasedCorrection", false, "when moving TPC-only tracks, use TPC side flags (with legacy fallback) instead of tgl sign"};
 
   // deduplication settings
   struct : ConfigurableGroup {
@@ -476,6 +477,8 @@ struct PhotonConversionBuilder {
         }
       }
     }
+
+    mVDriftMgr.setUseSideBasedCorrection(useSideBasedCorrection.value);
   }
 
   void initCCDB(MyBCs::iterator const& bc)
