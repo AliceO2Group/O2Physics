@@ -86,6 +86,21 @@ enum class MomentumType : o2::analysis::femto::datatypes::MomentumType {
   kPTpc = 2,  // momentum at inner wall of tpc
 };
 
+/// axis title for the momentum used on the x axis of PID histograms
+constexpr const char* momentumTypeToAxisTitle(MomentumType type)
+{
+  switch (type) {
+    case MomentumType::kPt:
+      return "p_{T} (GeV/#it{c})";
+    case MomentumType::kPAtPv:
+      return "p (GeV/#it{c})";
+    case MomentumType::kPTpc:
+      return "p_{TPC} (GeV/#it{c})";
+    default:
+      return "p (GeV/#it{c})";
+  }
+}
+
 enum class TransverseMassType : o2::analysis::femto::datatypes::TransverseMassType {
   kAveragePdgMass = 0,
   kReducedPdgMass = 1,
@@ -146,8 +161,29 @@ enum class Track : o2::analysis::femto::datatypes::TrackType {
   kCascadeBachelor,
   kResonanceDaughter,
   kKinkDaughter,
-  kCharmDaughter
+  kCharmDaughter,
+  kTrackTypeLast
 };
+
+constexpr const char* trackTypeToString(Track type)
+{
+  switch (type) {
+    case Track::kTrack:
+      return "Track";
+    case Track::kV0Daughter:
+      return "V0Daughter";
+    case Track::kCascadeBachelor:
+      return "CascadeBachelor";
+    case Track::kResonanceDaughter:
+      return "ResonanceDaughter";
+    case Track::kKinkDaughter:
+      return "KinkDaughter";
+    case Track::kCharmDaughter:
+      return "CharmDaughter";
+    default:
+      return "UnknownTrackType";
+  }
+}
 
 enum class V0 : o2::analysis::femto::datatypes::V0Type {
   kLambda,

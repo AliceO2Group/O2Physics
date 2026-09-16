@@ -328,6 +328,15 @@ DECLARE_SOA_DYNAMIC_COLUMN(TpcSharedOverFound, tpcSharedOverFound, //! Number of
                            [](uint8_t tpcNclsFound, uint8_t tpcNClsShared) -> float { return static_cast<float>(tpcNClsShared) / static_cast<float>(tpcNclsFound); });
 DECLARE_SOA_COLUMN(TpcChi2NCl, tpcChi2NCl, float); //! Tpc chi2
 
+// detector map and row type
+DECLARE_SOA_COLUMN(DetectorMap, detectorMap, uint8_t);                                                                     //! Detector map of the track (same bit layout as o2::aod::track::DetectorMap)
+DECLARE_SOA_DYNAMIC_COLUMN(HasIts, hasIts, [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::ITS; }); //! Track has ITS
+DECLARE_SOA_DYNAMIC_COLUMN(HasTpc, hasTpc, [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::TPC; }); //! Track has TPC
+DECLARE_SOA_DYNAMIC_COLUMN(HasTof, hasTof, [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::TOF; }); //! Track has TOF
+DECLARE_SOA_COLUMN(FillType, fillType, o2::analysis::femto::datatypes::TrackType);                                         //! modes::Track this row was written as (kTrack = selected track, otherwise daughter-only row)
+DECLARE_SOA_DYNAMIC_COLUMN(IsDaughterOnly, isDaughterOnly,                                                                 //! True if the row was only written to resolve a daughter index (not a selected track)
+                           [](o2::analysis::femto::datatypes::TrackType fillType) -> bool { return fillType != o2::analysis::femto::modes::TrackType::kTrack; });
+
 // tof related information
 DECLARE_SOA_COLUMN(TofBeta, tofBeta, float); //! Tof beta
 // tof mass will be stored in mass column
@@ -444,8 +453,15 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FTrackExtras_001, "FTRACKEXTRA", 1, //! track
                                    femtotracks::TpcNClsCrossedRows,
                                    femtotracks::TpcNClsShared,
                                    femtotracks::TofBeta,
+                                   femtotracks::TpcChi2NCl,
+                                   femtotracks::DetectorMap,
+                                   femtotracks::FillType,
                                    femtotracks::TpcCrossedRowsOverFound<femtotracks::TpcNClsFound, femtotracks::TpcNClsCrossedRows>,
-                                   femtotracks::TpcSharedOverFound<femtotracks::TpcNClsFound, femtotracks::TpcNClsShared>);
+                                   femtotracks::TpcSharedOverFound<femtotracks::TpcNClsFound, femtotracks::TpcNClsShared>,
+                                   femtotracks::HasIts<femtotracks::DetectorMap>,
+                                   femtotracks::HasTpc<femtotracks::DetectorMap>,
+                                   femtotracks::HasTof<femtotracks::DetectorMap>,
+                                   femtotracks::IsDaughterOnly<femtotracks::FillType>);
 using FTrackExtras = FTrackExtras_001;
 
 // table for extra PID information
