@@ -22,11 +22,14 @@
 #include "PWGHF/DataModel/DerivedTables.h"
 #include "PWGJE/Core/JetDQUtilities.h"
 #include "PWGJE/Core/JetHFUtilities.h"
+#include "PWGJE/Core/JetV0Utilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/JetReducedDataDQ.h"
 #include "PWGJE/DataModel/JetReducedDataHF.h"
 #include "PWGJE/DataModel/JetReducedDataSelector.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/V0SelectorTables.h"
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisHelpers.h>
@@ -248,6 +251,12 @@ struct JetDerivedDataWriter {
       Produces<aod::StoredJDielectronMcIds> storedDielectronParticleIdsTable;
     } productsDielectron;
 
+    struct : ProducesGroup {
+      Produces<aod::StoredV0CoresBase> storedV0sTable;
+      Produces<aod::StoredJV0Ids> storedV0IdsTable;
+      Produces<aod::StoredV0SignalFlags> storedV0SignalFlagsTable;
+    } productsV0;
+
   } products;
 
   struct : PresliceGroup {
@@ -413,6 +422,17 @@ struct JetDerivedDataWriter {
       for (const auto& XicToXiPiPiCandidate : XicToXiPiPiCandidates) {
         jethfutilities::fillHFCandidateTable<isMc>(XicToXiPiPiCandidate, products.productsXicToXiPiPi.storedXicToXiPiPiCollisionsTable.lastIndex(), products.productsXicToXiPiPi.storedXicToXiPiPisTable, products.productsXicToXiPiPi.storedXicToXiPiPiParsTable, products.productsXicToXiPiPi.storedXicToXiPiPiParExtrasTable, products.productsXicToXiPiPi.storedXicToXiPiPiParDaughtersDummyTable, products.productsXicToXiPiPi.storedXicToXiPiPiSelsTable, products.productsXicToXiPiPi.storedXicToXiPiPiMlsTable, products.productsXicToXiPiPi.storedXicToXiPiPiMlDughtersDummyTable, products.productsXicToXiPiPi.storedXicToXiPiPiMcsTable);
         products.productsXicToXiPiPi.storedXicToXiPiPiIdsTable(collisionMapping[collision.globalIndex()], trackMapping[XicToXiPiPiCandidate.prong0Id()], trackMapping[XicToXiPiPiCandidate.prong1Id()], trackMapping[XicToXiPiPiCandidate.prong2Id()], trackMapping[XicToXiPiPiCandidate.prong3Id()], trackMapping[XicToXiPiPiCandidate.prong4Id()]);
+      }
+    }
+  }
+
+  template <typename T>
+  void storeV0(soa::Join<aod::JCollisions, aod::JCollisionSelections>::iterator const& collision, aod::JTracks const&, T const& V0Candidates)
+  {
+    if (collision.isCollisionSelected()) {
+      for (const auto& V0Candidate : V0Candidates) {
+        jetv0utilities::fillV0CandidateTable(V0Candidate, products.productsV0.storedV0sTable, products.productsV0.storedV0SignalFlagsTable);
+        products.productsV0.storedV0IdsTable(collisionMapping[collision.globalIndex()], trackMapping[V0Candidate.posTrackId()], trackMapping[V0Candidate.negTrackId()]);
       }
     }
   }
@@ -669,6 +689,12 @@ struct JetDerivedDataWriter {
     storeXicToXiPiPi<true>(collision, tracks, XicToXiPiPiCollisions, XicToXiPiPiCandidates);
   }
   PROCESS_SWITCH(JetDerivedDataWriter, processXicToXiPiPiMCD, "write out mcd output tables for XicToXiPiPi", false);
+
+  void processV0Data(soa::Join<aod::JCollisions, aod::JCollisionSelections>::iterator const& collision, aod::JTracks const& tracks, aod::CandidatesV0Data const& V0Candidates)
+  {
+    storeV0(collision, tracks, V0Candidates);
+  }
+  PROCESS_SWITCH(JetDerivedDataWriter, processV0Data, "write out data output tables for V0", false);
 
   void processDielectron(soa::Join<aod::JCollisions, aod::JCollisionSelections>::iterator const& collision, aod::JTracks const&, aod::CollisionsDielectron const& DielectronCollisions, aod::CandidatesDielectronData const& DielectronCandidates)
   {
