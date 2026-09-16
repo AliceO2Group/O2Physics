@@ -132,6 +132,10 @@ struct FlowGenericFramework {
   O2_DEFINE_CONFIGURABLE(cfgUsePID, bool, true, "Enable PID information")
   O2_DEFINE_CONFIGURABLE(cfgUseGapMethod, bool, false, "Use gap method in vn-pt calculations")
   struct : ConfigurableGroup {
+    O2_DEFINE_CONFIGURABLE(cfgAnalyseChargedHadrons, bool, true, "Store radial-flow and fraction outputs for charged tracks, pions, kaons, and protons");
+    O2_DEFINE_CONFIGURABLE(cfgAnalyseK0Lambda, bool, true, "Store radial-flow and fraction outputs for K0 and Lambda candidates");
+  } cfgAnalysisChannels;
+  struct : ConfigurableGroup {
     O2_DEFINE_CONFIGURABLE(cfgUsePtCorrWeights, bool, true, "Enable or disable the use of multiplicity-based event weighting for pt-pt correlations");
     O2_DEFINE_CONFIGURABLE(cfgUseMultiplicityFlowWeights, bool, true, "Enable or disable the use of multiplicity-based event weighting for azimuthal correlations");
     O2_DEFINE_CONFIGURABLE(cfgUseMultiplicityFractionWeights, bool, false, "Enable or disable the use of multiplicity-based event weighting for the spectral fraction");
@@ -531,6 +535,9 @@ struct FlowGenericFramework {
   void init(InitContext const&)
   {
     LOGF(info, "FlowGenericFramework::init()");
+    if (!cfgAnalysisChannels.cfgAnalyseChargedHadrons && !cfgAnalysisChannels.cfgAnalyseK0Lambda) {
+      LOGF(fatal, "Enable at least one radial-flow analysis channel");
+    }
     gfwMemberCache.regions.SetNames(cfgRegions->GetNames());
     gfwMemberCache.regions.SetEtaMin(cfgRegions->GetEtaMin());
     gfwMemberCache.regions.SetEtaMax(cfgRegions->GetEtaMax());
@@ -734,11 +741,11 @@ struct FlowGenericFramework {
       AxisSpec axisLambdaMass = {resoSwitchVals[MassBins][Lambda], resoCutVals[MassMin][Lambda], resoCutVals[MassMax][Lambda]};
       AxisSpec yAxis = {100, -1, 1};
       // QA histograms for V0s
-      if (cfgFill.cfgFillV0QA && (resoSwitchVals[UseParticle][K0] != 0 || resoSwitchVals[UseParticle][Lambda] != 0)) {
+      if (cfgAnalysisChannels.cfgAnalyseK0Lambda && cfgFill.cfgFillV0QA && (resoSwitchVals[UseParticle][K0] != 0 || resoSwitchVals[UseParticle][Lambda] != 0)) {
         registryQA.add("trackQA/after/etaV02", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
         registryQA.add("trackQA/after/etaV0", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
       }
-      if (resoSwitchVals[UseParticle][K0] != 0) {
+      if (cfgAnalysisChannels.cfgAnalyseK0Lambda && resoSwitchVals[UseParticle][K0] != 0) {
         if (cfgFill.cfgFillV0QA) {
           registryQA.add("K0/PiPlusTPC_K0", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTPC}}});
           registryQA.add("K0/PiMinusTPC_K0", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTPC}}});
@@ -768,7 +775,7 @@ struct FlowGenericFramework {
         registryQA.get<TH1>(HIST("K0/hK0Count"))->GetXaxis()->SetBinLabel(FillV0DaughterTrackSelection, "v0 Daughter eta selection");
       }
 
-      if (resoSwitchVals[UseParticle][Lambda] != 0) {
+      if (cfgAnalysisChannels.cfgAnalyseK0Lambda && resoSwitchVals[UseParticle][Lambda] != 0) {
         if (cfgFill.cfgFillV0QA) {
           registryQA.add("Lambda/PrPlusTPC_L", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTPC}}});
           registryQA.add("Lambda/PiMinusTPC_L", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTPC}}});
@@ -808,48 +815,56 @@ struct FlowGenericFramework {
     }
     if (!doprocessEfficiency) {
       if (doprocessData || doprocessRun2 || doprocessMCReco || doprocessMC) {
-        registry.add("npt_v02_ch", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registry.add("npt_v02_pi", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registry.add("npt_v02_ka", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registry.add("npt_v02_pr", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registry.add("npt_v0_ch", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registry.add("npt_v0_pi", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registry.add("npt_v0_ka", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registry.add("npt_v0_pr", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registry.add("npt_v02_K0_sig", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registry.add("npt_v02_K0_sb1", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registry.add("npt_v02_K0_sb2", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registry.add("npt_v02_Lambda_sig", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registry.add("npt_v02_Lambda_sb1", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registry.add("npt_v02_Lambda_sb2", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registry.add("npt_v0_K0_sig", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registry.add("npt_v0_K0_sb1", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registry.add("npt_v0_K0_sb2", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registry.add("npt_v0_Lambda_sig", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registry.add("npt_v0_Lambda_sb1", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registry.add("npt_v0_Lambda_sb2", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+        if (cfgAnalysisChannels.cfgAnalyseChargedHadrons) {
+          registry.add("npt_v02_ch", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registry.add("npt_v02_pi", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registry.add("npt_v02_ka", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registry.add("npt_v02_pr", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registry.add("npt_v0_ch", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registry.add("npt_v0_pi", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registry.add("npt_v0_ka", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registry.add("npt_v0_pr", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+        }
+        if (cfgAnalysisChannels.cfgAnalyseK0Lambda) {
+          registry.add("npt_v02_K0_sig", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registry.add("npt_v02_K0_sb1", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registry.add("npt_v02_K0_sb2", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registry.add("npt_v02_Lambda_sig", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registry.add("npt_v02_Lambda_sb1", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registry.add("npt_v02_Lambda_sb2", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registry.add("npt_v0_K0_sig", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registry.add("npt_v0_K0_sb1", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registry.add("npt_v0_K0_sb2", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registry.add("npt_v0_Lambda_sig", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registry.add("npt_v0_Lambda_sb1", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registry.add("npt_v0_Lambda_sb2", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+        }
       }
       if (doprocessMCGen || doprocessOnTheFly || doprocessMC) {
-        registryGen.add("MCGen/npt_v02_ch", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registryGen.add("MCGen/npt_v02_pi", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registryGen.add("MCGen/npt_v02_ka", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registryGen.add("MCGen/npt_v02_pr", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registryGen.add("MCGen/npt_v0_ch", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registryGen.add("MCGen/npt_v0_pi", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registryGen.add("MCGen/npt_v0_ka", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registryGen.add("MCGen/npt_v0_pr", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registryGen.add("MCGen/npt_v02_K0_sig", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registryGen.add("MCGen/npt_v02_K0_sb1", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registryGen.add("MCGen/npt_v02_K0_sb2", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registryGen.add("MCGen/npt_v02_Lambda_sig", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registryGen.add("MCGen/npt_v02_Lambda_sb1", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registryGen.add("MCGen/npt_v02_Lambda_sb2", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registryGen.add("MCGen/npt_v0_K0_sig", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registryGen.add("MCGen/npt_v0_K0_sb1", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registryGen.add("MCGen/npt_v0_K0_sb2", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registryGen.add("MCGen/npt_v0_Lambda_sig", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registryGen.add("MCGen/npt_v0_Lambda_sb1", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-        registryGen.add("MCGen/npt_v0_Lambda_sb2", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+        if (cfgAnalysisChannels.cfgAnalyseChargedHadrons) {
+          registryGen.add("MCGen/npt_v02_ch", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registryGen.add("MCGen/npt_v02_pi", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registryGen.add("MCGen/npt_v02_ka", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registryGen.add("MCGen/npt_v02_pr", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registryGen.add("MCGen/npt_v0_ch", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registryGen.add("MCGen/npt_v0_pi", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registryGen.add("MCGen/npt_v0_ka", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registryGen.add("MCGen/npt_v0_pr", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+        }
+        if (cfgAnalysisChannels.cfgAnalyseK0Lambda) {
+          registryGen.add("MCGen/npt_v02_K0_sig", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registryGen.add("MCGen/npt_v02_K0_sb1", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registryGen.add("MCGen/npt_v02_K0_sb2", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registryGen.add("MCGen/npt_v02_Lambda_sig", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registryGen.add("MCGen/npt_v02_Lambda_sb1", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registryGen.add("MCGen/npt_v02_Lambda_sb2", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registryGen.add("MCGen/npt_v0_K0_sig", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registryGen.add("MCGen/npt_v0_K0_sb1", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registryGen.add("MCGen/npt_v0_K0_sb2", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registryGen.add("MCGen/npt_v0_Lambda_sig", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registryGen.add("MCGen/npt_v0_Lambda_sb1", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+          registryGen.add("MCGen/npt_v0_Lambda_sb2", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
+        }
       }
       if (cfgEventWeight.cfgStoreCombinedFractionWeights) {
         for (const auto& name : {"npt_v02_ch", "npt_v02_pi", "npt_v02_ka", "npt_v02_pr",
@@ -859,6 +874,10 @@ struct FlowGenericFramework {
                                  "npt_v0_K0_sig", "npt_v0_K0_sb1", "npt_v0_K0_sb2",
                                  "npt_v0_Lambda_sig", "npt_v0_Lambda_sb1", "npt_v0_Lambda_sb2"}) {
           const std::string source{name};
+          const bool resonance = source.find("_K0") != std::string::npos || source.find("_Lambda") != std::string::npos;
+          if (resonance ? !cfgAnalysisChannels.cfgAnalyseK0Lambda : !cfgAnalysisChannels.cfgAnalyseChargedHadrons) {
+            continue;
+          }
           const std::string target = source + (source.rfind("npt_v02_", 0) == 0 ? "_w3pc" : "_w2pc");
           if (doprocessData || doprocessRun2 || doprocessMCReco || doprocessMC) {
             registry.addClone(source, target);
@@ -877,13 +896,15 @@ struct FlowGenericFramework {
       histosNpt[setup][KaonID] = std::make_unique<TH1D>(Form("npt%sKa", setupName), "; #it{p}_{T} (GeV/#it{c}; Count)", ptAxis.binEdges.size() - 1, ptAxis.binEdges.data());
       histosNpt[setup][ProtonID] = std::make_unique<TH1D>(Form("npt%sPr", setupName), "; #it{p}_{T} (GeV/#it{c}; Count)", ptAxis.binEdges.size() - 1, ptAxis.binEdges.data());
 
-      histosResoNpt[setup].resize(ResonanceCount);
-      histosResoNpt[setup][K0Sideband1] = std::make_unique<TH1D>(Form("npt%sK0SB1", setupName), "; #it{p}_{T} (GeV/#it{c}; Count", ptAxis.binEdges.size() - 1, ptAxis.binEdges.data());
-      histosResoNpt[setup][K0Signal] = std::make_unique<TH1D>(Form("npt%sK0Sig", setupName), "; #it{p}_{T} (GeV/#it{c}; Count", ptAxis.binEdges.size() - 1, ptAxis.binEdges.data());
-      histosResoNpt[setup][K0Sideband2] = std::make_unique<TH1D>(Form("npt%sK0SB2", setupName), "; #it{p}_{T} (GeV/#it{c}; Count", ptAxis.binEdges.size() - 1, ptAxis.binEdges.data());
-      histosResoNpt[setup][LambdaSideband1] = std::make_unique<TH1D>(Form("npt%sLambdaSB1", setupName), "; #it{p}_{T} (GeV/#it{c}; Count", ptAxis.binEdges.size() - 1, ptAxis.binEdges.data());
-      histosResoNpt[setup][LambdaSignal] = std::make_unique<TH1D>(Form("npt%sLambdaSig", setupName), "; #it{p}_{T} (GeV/#it{c}; Count", ptAxis.binEdges.size() - 1, ptAxis.binEdges.data());
-      histosResoNpt[setup][LambdaSideband2] = std::make_unique<TH1D>(Form("npt%sLambdaSB2", setupName), "; #it{p}_{T} (GeV/#it{c}; Count", ptAxis.binEdges.size() - 1, ptAxis.binEdges.data());
+      if (cfgAnalysisChannels.cfgAnalyseK0Lambda) {
+        histosResoNpt[setup].resize(ResonanceCount);
+        histosResoNpt[setup][K0Sideband1] = std::make_unique<TH1D>(Form("npt%sK0SB1", setupName), "; #it{p}_{T} (GeV/#it{c}; Count", ptAxis.binEdges.size() - 1, ptAxis.binEdges.data());
+        histosResoNpt[setup][K0Signal] = std::make_unique<TH1D>(Form("npt%sK0Sig", setupName), "; #it{p}_{T} (GeV/#it{c}; Count", ptAxis.binEdges.size() - 1, ptAxis.binEdges.data());
+        histosResoNpt[setup][K0Sideband2] = std::make_unique<TH1D>(Form("npt%sK0SB2", setupName), "; #it{p}_{T} (GeV/#it{c}; Count", ptAxis.binEdges.size() - 1, ptAxis.binEdges.data());
+        histosResoNpt[setup][LambdaSideband1] = std::make_unique<TH1D>(Form("npt%sLambdaSB1", setupName), "; #it{p}_{T} (GeV/#it{c}; Count", ptAxis.binEdges.size() - 1, ptAxis.binEdges.data());
+        histosResoNpt[setup][LambdaSignal] = std::make_unique<TH1D>(Form("npt%sLambdaSig", setupName), "; #it{p}_{T} (GeV/#it{c}; Count", ptAxis.binEdges.size() - 1, ptAxis.binEdges.data());
+        histosResoNpt[setup][LambdaSideband2] = std::make_unique<TH1D>(Form("npt%sLambdaSB2", setupName), "; #it{p}_{T} (GeV/#it{c}; Count", ptAxis.binEdges.size() - 1, ptAxis.binEdges.data());
+      }
     }
 
     if (gfwMemberCache.regions.GetSize() < 0) {
@@ -924,9 +945,19 @@ struct FlowGenericFramework {
 
     fGFW->CreateRegions();
     auto oba = new TObjArray();
-    addConfigObjectsToObjArray(oba, corrconfigs);
-    addConfigObjectsToObjArray(oba, corrconfigsV02);
-    addConfigObjectsToObjArray(oba, corrconfigsV0);
+    addConfigObjectsToObjArray(oba, corrconfigs, 0, corrconfigs.size());
+    if (cfgAnalysisChannels.cfgAnalyseChargedHadrons) {
+      addConfigObjectsToObjArray(oba, corrconfigsV02, 0, std::min<size_t>(SpeciesCount, corrconfigsV02.size()));
+    }
+    if (cfgAnalysisChannels.cfgAnalyseK0Lambda) {
+      addConfigObjectsToObjArray(oba, corrconfigsV02, std::min<size_t>(SpeciesCount, corrconfigsV02.size()), corrconfigsV02.size());
+    }
+    if (cfgAnalysisChannels.cfgAnalyseChargedHadrons) {
+      addConfigObjectsToObjArray(oba, corrconfigsV0, 0, std::min<size_t>(SpeciesCount, corrconfigsV0.size()));
+    }
+    if (cfgAnalysisChannels.cfgAnalyseK0Lambda) {
+      addConfigObjectsToObjArray(oba, corrconfigsV0, std::min<size_t>(SpeciesCount, corrconfigsV0.size()), corrconfigsV0.size());
+    }
 
     if (doprocessData || doprocessRun2 || doprocessMCReco || doprocessMC) {
       fFC.setObject(new FlowContainer("FlowContainer"));
@@ -940,6 +971,9 @@ struct FlowGenericFramework {
       fFCpt->initialise(multAxis, cfgMpar, gfwMemberCache.configs, cfgNbootstrap);
       if (cfgEventWeight.cfgStoreCombinedFractionWeights) {
         for (const auto& name : {"mpt1_w2pc_ch", "mpt1_w2pc_pi", "mpt1_w2pc_ka", "mpt1_w2pc_pr"}) {
+          if (!cfgAnalysisChannels.cfgAnalyseChargedHadrons && std::string_view{name} != "mpt1_w2pc_ch") {
+            continue;
+          }
           if (!fFCpt->addPtProfile(name, 1)) {
             LOGF(fatal, "Could not add mean-pT profile %s", name);
           }
@@ -959,6 +993,9 @@ struct FlowGenericFramework {
       fFCptGen->initialise(multAxis, cfgMpar, gfwMemberCache.configs, cfgNbootstrap);
       if (cfgEventWeight.cfgStoreCombinedFractionWeights) {
         for (const auto& name : {"mpt1_w2pc_ch", "mpt1_w2pc_pi", "mpt1_w2pc_ka", "mpt1_w2pc_pr"}) {
+          if (!cfgAnalysisChannels.cfgAnalyseChargedHadrons && std::string_view{name} != "mpt1_w2pc_ch") {
+            continue;
+          }
           if (!fFCptGen->addPtProfile(name, 1)) {
             LOGF(fatal, "Could not add generated mean-pT profile %s", name);
           }
@@ -1129,9 +1166,9 @@ struct FlowGenericFramework {
     After
   };
 
-  void addConfigObjectsToObjArray(TObjArray* oba, const std::vector<GFW::CorrConfig>& configs)
+  void addConfigObjectsToObjArray(TObjArray* oba, const std::vector<GFW::CorrConfig>& configs, size_t first, size_t last)
   {
-    for (auto it = configs.begin(); it != configs.end(); ++it) {
+    for (auto it = configs.begin() + first; it != configs.begin() + last; ++it) {
       if (it->pTDif) {
         std::string suffix = "_ptDiff";
         for (auto i = 0; i < fPtAxis->GetNbins(); ++i) {
@@ -1623,7 +1660,8 @@ struct FlowGenericFramework {
   template <DataType dt>
   void fillCombinedFractionProfile(FractionSetup setup, int index, bool resonance, double pt, double centmult, double fraction, double weight)
   {
-    if (!cfgEventWeight.cfgStoreCombinedFractionWeights || weight <= 0.) {
+    if (!cfgEventWeight.cfgStoreCombinedFractionWeights || weight <= 0. ||
+        (resonance ? !cfgAnalysisChannels.cfgAnalyseK0Lambda : !cfgAnalysisChannels.cfgAnalyseChargedHadrons)) {
       return;
     }
     if (setup == FractionV02) {
@@ -1708,7 +1746,7 @@ struct FlowGenericFramework {
   template <DataType dt>
   void fillNptRegistry(FractionSetup setup, const float& centmult, const NptHistos& nptHistos, const NptDenominators& dns)
   {
-    if (dns[ChargedID] <= 0) {
+    if (!cfgAnalysisChannels.cfgAnalyseChargedHadrons || dns[ChargedID] <= 0) {
       return;
     }
 
@@ -1827,15 +1865,18 @@ struct FlowGenericFramework {
     if (cfgEventWeight.cfgStoreCombinedFractionWeights && flowPtContainer->corrDen[1] > 0.) {
       constexpr std::array<const char*, SpeciesCount> ProfileNames = {"mpt1_w2pc_ch", "mpt1_w2pc_pi", "mpt1_w2pc_ka", "mpt1_w2pc_pr"};
       for (int species = 0; species < SpeciesCount; ++species) {
+        if (species != ChargedID && !cfgAnalysisChannels.cfgAnalyseChargedHadrons) {
+          continue;
+        }
         flowPtContainer->fillPtProfile(ProfileNames[species], 1, centmult, flowPtContainer->corrDen[1] * dnsV0[species], rndm);
       }
     }
 
-    if (corrconfigsV02.size() < SpeciesCount) {
+    if (cfgAnalysisChannels.cfgAnalyseChargedHadrons && corrconfigsV02.size() < SpeciesCount) {
       return;
     }
 
-    if (dnsV02[ChargedID] > 0) {
+    if (cfgAnalysisChannels.cfgAnalyseChargedHadrons && dnsV02[ChargedID] > 0) {
       for (uint l_ind = 0; l_ind < SpeciesCount; ++l_ind) {
         for (int i = 1; i <= fPtAxis->GetNbins(); i++) {
           auto dnx = fGFW->Calculate(corrconfigsV02.at(l_ind), i - 1, kTRUE).real();
@@ -1854,6 +1895,9 @@ struct FlowGenericFramework {
       }
     }
 
+    if (!cfgAnalysisChannels.cfgAnalyseChargedHadrons) {
+      return;
+    }
     if (corrconfigsV0.size() < SpeciesCount) {
       return;
     }
@@ -1884,8 +1928,11 @@ struct FlowGenericFramework {
   template <DataType dt>
   void fillResonanceOutput(FractionSetup setup, const float& centmult, const double& rndm)
   {
+    if (!cfgAnalysisChannels.cfgAnalyseK0Lambda) {
+      return;
+    }
     auto& flowContainer = (dt == Gen) ? fFCgen : fFC;
-    auto& flowPtContainer = (dt == Gen) ? fFCptGen : fFCpt;
+    const auto& flowPtContainer = (dt == Gen) ? *fFCptGen : *fFCpt;
 
     if (setup == FractionV02) {
       if (histosNpt[FractionV02][ChargedID]->Integral() <= 0) {
@@ -1991,25 +2038,25 @@ struct FlowGenericFramework {
 
       std::vector<double> dns = {dnK0SB1, dnK0Sig, dnK0SB2, dnLambdaSB1, dnLambdaSig, dnLambdaSB2};
 
-      if (flowPtContainer->corrDenSub[0][1] == 0. || flowPtContainer->corrDenSub[1][1] == 0.) {
+      if (flowPtContainer.corrDenSub[0][1] == 0. || flowPtContainer.corrDenSub[1][1] == 0.) {
         return;
       }
 
       double mpt = 0;
       double dnx = 0;
       if (cfgKinematics.cfgEtaPtPt->first * cfgKinematics.cfgEtaPtPt->second >= 0) {
-        if (flowPtContainer->corrDen[1] == 0.) {
+        if (flowPtContainer.corrDen[1] == 0.) {
           return;
         }
-        dnx = flowPtContainer->corrDen[1];
-        mpt = flowPtContainer->corrNum[1] / dnx;
+        dnx = flowPtContainer.corrDen[1];
+        mpt = flowPtContainer.corrNum[1] / dnx;
       } else {
-        if (flowPtContainer->corrDenSub[0][1] == 0. || flowPtContainer->corrDenSub[1][1] == 0.) {
+        if (flowPtContainer.corrDenSub[0][1] == 0. || flowPtContainer.corrDenSub[1][1] == 0.) {
           return;
         }
-        double mptSub1 = flowPtContainer->corrNumSub[0][1] / flowPtContainer->corrDenSub[0][1];
-        double mptSub2 = flowPtContainer->corrNumSub[1][1] / flowPtContainer->corrDenSub[1][1];
-        dnx = 0.5 * (flowPtContainer->corrDenSub[0][1] + flowPtContainer->corrDenSub[1][1]);
+        double mptSub1 = flowPtContainer.corrNumSub[0][1] / flowPtContainer.corrDenSub[0][1];
+        double mptSub2 = flowPtContainer.corrNumSub[1][1] / flowPtContainer.corrDenSub[1][1];
+        dnx = 0.5 * (flowPtContainer.corrDenSub[0][1] + flowPtContainer.corrDenSub[1][1]);
         mpt = 0.5 * (mptSub1 + mptSub2);
       }
 
@@ -2028,7 +2075,7 @@ struct FlowGenericFramework {
           }
           const double value = mpt * histosResoNpt[FractionV0][l_ind - 4]->GetBinContent(i) / dns[l_ind - 4];
           const double weight = cfgEventWeight.cfgUsePtCorrWeights ? profileWeight : 1.0;
-          fillCombinedFractionProfile<dt>(FractionV0, l_ind - SpeciesCount, true, fPtAxis->GetBinCenter(i), centmult, histosResoNpt[FractionV0][l_ind - SpeciesCount]->GetBinContent(i) / dns[l_ind - SpeciesCount], flowPtContainer->corrDen[1] * dns[l_ind - SpeciesCount]);
+          fillCombinedFractionProfile<dt>(FractionV0, l_ind - SpeciesCount, true, fPtAxis->GetBinCenter(i), centmult, histosResoNpt[FractionV0][l_ind - SpeciesCount]->GetBinContent(i) / dns[l_ind - SpeciesCount], flowPtContainer.corrDen[1] * dns[l_ind - SpeciesCount]);
           flowContainer->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, value, weight, rndm);
         }
       }
@@ -2133,27 +2180,29 @@ struct FlowGenericFramework {
 
     fillOutputContainers<dt>((cfgUseNch) ? multiplicity : centrality, lRandom);
 
-    // Reset fraction histograms per event
-    for (const auto& vec : histosResoNpt) {
-      for (const auto& h : vec) {
-        h->Reset("ICESM");
+    if (cfgAnalysisChannels.cfgAnalyseK0Lambda) {
+      // Reset fraction histograms per event
+      for (const auto& vec : histosResoNpt) {
+        for (const auto& h : vec) {
+          h->Reset("ICESM");
+        }
       }
-    }
 
-    // Process V0s only for reconstructed-track workflows.
-    if constexpr (dt != Gen) {
-      for (const auto& v0 : v0s) {
-        processV0<Reco>(v0, tracks, collision, centrality);
+      // Process V0s only for reconstructed-track workflows.
+      if constexpr (dt != Gen) {
+        for (const auto& v0 : v0s) {
+          processV0<Reco>(v0, tracks, collision, centrality);
+        }
+      } else {
+        for (const auto& particle : tracks) {
+          processV0<Gen>(particle, tracks, collision, centrality);
+        }
       }
-    } else {
-      for (const auto& particle : tracks) {
-        processV0<Gen>(particle, tracks, collision, centrality);
-      }
-    }
 
-    for (auto setup = 0; setup < FractionSetupCount; ++setup) {
-      auto fractionSetup = static_cast<FractionSetup>(setup);
-      fillResonanceOutput<dt>(fractionSetup, (cfgUseNch) ? multiplicity : centrality, lRandom);
+      for (auto setup = 0; setup < FractionSetupCount; ++setup) {
+        auto fractionSetup = static_cast<FractionSetup>(setup);
+        fillResonanceOutput<dt>(fractionSetup, (cfgUseNch) ? multiplicity : centrality, lRandom);
+      }
     }
   }
 
@@ -3034,18 +3083,18 @@ struct FlowGenericFramework {
         th1sList[run][EventSel]->Fill(1.5);
       }
 
-      const auto centrality = getCentrality(collision);
+      const auto recoCentrality = getCentrality(collision);
 
       if (cfgEventSelection.cfgOccupancySelection >= 0) {
         int occupancy = collision.trackOccupancyInTimeRange();
         if (cfgFill.cfgFillQA) {
-          registryQA.fill(HIST("eventQA/before/occ_mult_cent"), occupancy, tracks.size(), centrality);
+          registryQA.fill(HIST("eventQA/before/occ_mult_cent"), occupancy, tracks.size(), recoCentrality);
         }
         if (occupancy < 0 || occupancy > cfgEventSelection.cfgOccupancySelection) {
           return;
         }
         if (cfgFill.cfgFillQA) {
-          registryQA.fill(HIST("eventQA/after/occ_mult_cent"), occupancy, tracks.size(), centrality);
+          registryQA.fill(HIST("eventQA/after/occ_mult_cent"), occupancy, tracks.size(), recoCentrality);
         }
       }
       registryQA.fill(HIST("eventQA/eventSel"), 2.5);
@@ -3056,7 +3105,7 @@ struct FlowGenericFramework {
       if (cfgFill.cfgFillQA) {
         fillEventQA<Before>(collision, tracks);
       }
-      if (!eventSelected(collision, tracks.size(), centrality, run)) {
+      if (!eventSelected(collision, tracks.size(), recoCentrality, run)) {
         return;
       }
       if (cfgFill.cfgFillQA) {
@@ -3066,7 +3115,7 @@ struct FlowGenericFramework {
       auto field = (cfgEventSelection.cfgMagField == DefaultMagneticFieldCut) ? getMagneticField(bc.timestamp()) : static_cast<int>(cfgEventSelection.cfgMagField);
       const auto groupedTracks = tracks.sliceBy(mcTracksPerCollision, collision.globalIndex());
       const auto groupedV0s = v0s.sliceBy(mcV0sPerCollision, collision.globalIndex());
-      processCollision<Reco>(collision, groupedTracks, groupedV0s, centrality, field, run);
+      processCollision<Reco>(collision, groupedTracks, groupedV0s, recoCentrality, field, run);
     }
   }
   PROCESS_SWITCH(FlowGenericFramework, processMC, "Process analysis for MC reconstructed and generated events simultaneously", false);
