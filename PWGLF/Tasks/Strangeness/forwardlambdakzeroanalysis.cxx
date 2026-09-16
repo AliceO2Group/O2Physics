@@ -58,12 +58,15 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/TrackFwd.h>
+#include <ReconstructionDataFormats/TrackParametrization.h>
+#include <Framework/BinningPolicy.h>
 
 #include <Math/MatrixRepresentationsStatic.h>
 #include <Math/SMatrix.h>
 #include <Math/SVector.h>
 #include <TH1.h>
 #include <TH2.h>
+#include <TH3.h>
 #include <TObject.h>
 #include <TPDGCode.h>
 #include <TVector3.h>
