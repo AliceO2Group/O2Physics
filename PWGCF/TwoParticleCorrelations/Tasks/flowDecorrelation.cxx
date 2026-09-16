@@ -200,8 +200,8 @@ struct FlowDecorrelation {
   o2::ft0::Geometry ft0Det;
   o2::fv0::Geometry* fv0Det{};
   static constexpr uint64_t Ft0IndexA = 96;
-  std::vector<o2::detectors::AlignParam>* offsetFT0;
-  std::vector<o2::detectors::AlignParam>* offsetFV0;
+  std::vector<o2::detectors::AlignParam>* offsetFT0{}; //!!!
+  std::vector<o2::detectors::AlignParam>* offsetFV0{}; //!!!
   std::vector<float> cstFT0RelGain{};
 
   // Corrections
@@ -256,9 +256,6 @@ struct FlowDecorrelation {
     kFT0COuterRingMin = 144,
     kFT0COuterRingMax = 207
   };
-  std::array<float, 6> tofNsigmaCut;
-  std::array<float, 6> itsNsigmaCut;
-  std::array<float, 6> tpcNsigmaCut;
   struct Ft0cCConstants {
     double zFt0cDistance = -83.44;
     double maxWidth = 12.;
@@ -283,7 +280,6 @@ struct FlowDecorrelation {
       LOGF(fatal, "Centrality table is unavailable, cannot select collisions by centrality");
     }
     const AxisSpec axisPhi{72, 0.0, constants::math::TwoPI, "#varphi"};
-    const AxisSpec axisEta{40, -1., 1., "#eta"};
     const AxisSpec axisEtaFull{90, -6., 6., "#eta"};
     const AxisSpec axisCentrality{20, 0., 100., "cent"};
 
@@ -671,14 +667,14 @@ struct FlowDecorrelation {
       if (mEfficiency == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiency.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.value.c_str(), (void*)mEfficiency);
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.value.c_str(), static_cast<void*>(mEfficiency));
     }
     if (cfgCentralityWeight.value.empty() == false) {
       mCentralityWeight = ccdb->getForTimeStamp<TH1D>(cfgCentralityWeight, timestamp);
       if (mCentralityWeight == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgCentralityWeight.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgCentralityWeight.value.c_str(), (void*)mCentralityWeight);
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgCentralityWeight.value.c_str(), static_cast<void*>(mCentralityWeight));
     }
     correctionsLoaded = true;
   }
@@ -1093,8 +1089,6 @@ struct FlowDecorrelation {
       if (y < (Ft0aLocations.blockFar + Ft0aLocations.offSetY) && y > (Ft0aLocations.blockClose + Ft0aLocations.offSetY)) {
         return true;
       }
-    }
-    if (x < (Ft0aLocations.blockFar + Ft0aLocations.offSetX) && x > (Ft0aLocations.blockClose + Ft0aLocations.offSetX)) {
       if (y > (-Ft0aLocations.blockFar + Ft0aLocations.offSetY) && y < (-Ft0aLocations.blockClose + Ft0aLocations.offSetY)) {
         return true;
       }
@@ -1104,8 +1098,6 @@ struct FlowDecorrelation {
       if (y < (Ft0aLocations.blockFar + Ft0aLocations.offSetY) && y > (Ft0aLocations.blockClose + Ft0aLocations.offSetY)) {
         return true;
       }
-    }
-    if (x > (-Ft0aLocations.blockFar + Ft0aLocations.offSetX) && x < (-Ft0aLocations.blockClose + Ft0aLocations.offSetX)) {
       if (y > (-Ft0aLocations.blockFar + Ft0aLocations.offSetY) && y < (-Ft0aLocations.blockClose + Ft0aLocations.offSetY)) {
         return true;
       }
@@ -1115,9 +1107,6 @@ struct FlowDecorrelation {
       if (y > (-Ft0aLocations.blockFar + Ft0aLocations.offSetY - Ft0aLocations.rectOffSet) && y < (-Ft0aLocations.blockClose + Ft0aLocations.offSetY - Ft0aLocations.rectOffSet)) {
         return true;
       }
-    }
-
-    if (x < (Ft0aLocations.blockClose + Ft0aLocations.offSetX) && x > (-Ft0aLocations.blockClose + Ft0aLocations.offSetX)) {
       if (y < (Ft0aLocations.blockFar + Ft0aLocations.offSetY + Ft0aLocations.rectOffSet) && y > (Ft0aLocations.blockClose + Ft0aLocations.offSetY + Ft0aLocations.rectOffSet)) {
         return true;
       }
@@ -1127,13 +1116,11 @@ struct FlowDecorrelation {
       if (x > (-Ft0aLocations.blockFar + Ft0aLocations.offSetX - Ft0aLocations.rectOffSet) && x < (-Ft0aLocations.blockClose + Ft0aLocations.offSetX - Ft0aLocations.rectOffSet)) {
         return true;
       }
-    }
-
-    if (y < (Ft0aLocations.blockClose + Ft0aLocations.offSetY) && y > (-Ft0aLocations.blockClose + Ft0aLocations.offSetY)) {
       if (x < (Ft0aLocations.blockFar + Ft0aLocations.offSetX + Ft0aLocations.rectOffSet) && x > (Ft0aLocations.blockClose + Ft0aLocations.offSetX + Ft0aLocations.rectOffSet)) {
         return true;
       }
     }
+
     return false;
   }
 
