@@ -51,6 +51,7 @@
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Array2D.h>
+#include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -59,7 +60,6 @@
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/TrackFwd.h>
 #include <ReconstructionDataFormats/TrackParametrization.h>
-#include <Framework/BinningPolicy.h>
 
 #include <Math/MatrixRepresentationsStatic.h>
 #include <Math/SMatrix.h>
