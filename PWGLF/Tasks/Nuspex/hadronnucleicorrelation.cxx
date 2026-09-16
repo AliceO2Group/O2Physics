@@ -325,8 +325,10 @@ struct HadronNucleiCorrelation {
       const AxisSpec tofNSigmaAxis = {axisNSigma, "n#sigma TOF"};
       const AxisSpec tpcNSigmaAxis = {axisNSigma, "n#sigma TPC"};
       const AxisSpec itsNSigmaAxis = {axisNSigma, "n#sigma ITS"};
-      registryQa.add("QA/h2dTPCTOF_Pr", "n#sigma TPC vs n#sigma TOF", {HistType::kTH2D, {tpcNSigmaAxis, tofNSigmaAxis}});
-      registryQa.add("QA/h2dTPCTOF_AntiPr", "n#sigma TPC vs n#sigma TOF", {HistType::kTH2D, {tpcNSigmaAxis, tofNSigmaAxis}});
+      registryQa.add("QA/h3dTPCTOF_Pr", "n#sigma TPC vs n#sigma TOF; n#sigma TPC;n#sigma TOF;p_{T} (GeV/c)", {HistType::kTH3D, {tpcNSigmaAxis, tofNSigmaAxis, ptAxis}});
+      registryQa.add("QA/h3dTPCTOF_AntiPr", "n#sigma TPC vs n#sigma TOF; n#sigma TPC;n#sigma TOF;p_{T} (GeV/c)", {HistType::kTH3D, {tpcNSigmaAxis, tofNSigmaAxis, ptAxis}});
+      registryQa.add("QA/h3dTPCTOF_De", "n#sigma TPC vs n#sigma TOF; n#sigma TPC;n#sigma TOF;p_{T} (GeV/c)", {HistType::kTH3D, {tpcNSigmaAxis, tofNSigmaAxis, ptAxis}});
+      registryQa.add("QA/h3dTPCTOF_AntiDe", "n#sigma TPC vs n#sigma TOF; n#sigma TPC;n#sigma TOF;p_{T} (GeV/c)", {HistType::kTH3D, {tpcNSigmaAxis, tofNSigmaAxis, ptAxis}});
       registryQa.add("QA/hnSigmaTPCVsPt_El", "n#sigma TPC vs p_{T} for e hypothesis (all tracks)", {HistType::kTH2D, {ptAxis, tpcNSigmaAxis}});
       registryQa.add("QA/hnSigmaTPCVsPt_Pr", "n#sigma TPC vs p_{T} for p hypothesis (all tracks)", {HistType::kTH2D, {ptAxis, tpcNSigmaAxis}});
       registryQa.add("QA/hnSigmaTPCVsPt_De", "n#sigma TPC vs p_{T} for d hypothesis (all tracks)", {HistType::kTH2D, {ptAxis, tpcNSigmaAxis}});
@@ -352,8 +354,6 @@ struct HadronNucleiCorrelation {
         registryQa.add("QA/hnSigmaTOFVsPt_De_AfterSel", "n#sigma TOF vs p_{T} for d hypothesis (all tracks)", {HistType::kTH2D, {ptAxis, tofNSigmaAxis}});
         registryQa.add("QA/hnSigmaITSVsPt_Pr_AfterSel", "n#sigma ITS vs p_{T} for p hypothesis (all tracks)", {HistType::kTH2D, {ptAxis, itsNSigmaAxis}});
         registryQa.add("QA/hnSigmaITSVsPt_De_AfterSel", "n#sigma ITS vs p_{T} for d hypothesis (all tracks)", {HistType::kTH2D, {ptAxis, itsNSigmaAxis}});
-        registryQa.add("QA/h2dTPCTOF_Pr_AfterSel", "n#sigma TPC vs n#sigma TOF", {HistType::kTH2D, {tpcNSigmaAxis, tofNSigmaAxis}});
-        registryQa.add("QA/h2dTPCTOF_AntiPr_AfterSel", "n#sigma TPC vs n#sigma TOF", {HistType::kTH2D, {tpcNSigmaAxis, tofNSigmaAxis}});
       }
     }
 
@@ -716,7 +716,7 @@ struct HadronNucleiCorrelation {
   // Generated-level candidate selection, shared by same- and mixed-event processing:
   // same cuts as the pairing (primary if requested, |eta| <= etaCut, PDG code of one of the two species)
   template <typename TParticle>
-  void addGenCandidate(TParticle const& particle, GenCollisionCache& cache)
+  void addGenCandidate(TParticle const& particle, GenCollisionCache& colCache)
   {
     if (isPrim && !particle.isPhysicalPrimary()) {
       return;
@@ -730,10 +730,10 @@ struct HadronNucleiCorrelation {
     }
     const GenCandidate cand{particle.pt(), particle.eta(), particle.phi()};
     if (pdg == pdgPart0) {
-      cache.cand0.push_back(cand);
+      colCache.cand0.push_back(cand);
     }
     if (pdg == pdgPart1) {
-      cache.cand1.push_back(cand);
+      colCache.cand1.push_back(cand);
     }
   }
 
@@ -742,9 +742,9 @@ struct HadronNucleiCorrelation {
   template <typename TParticles>
   GenCollisionCache buildGenCollisionCache(TParticles const& particles)
   {
-    GenCollisionCache cache;
+    GenCollisionCache colCache;
     for (const auto& mcParticle : particles) {
-      addGenCandidate(mcParticle, cache);
+      addGenCandidate(mcParticle, colCache);
 
       if (!mcParticle.isPhysicalPrimary()) {
         continue;
@@ -757,10 +757,10 @@ struct HadronNucleiCorrelation {
         continue;
       }
       if (std::abs(p->Charge()) > 1E-3) {
-        cache.mult++;
+        colCache.mult++;
       }
     }
-    return cache;
+    return colCache;
   }
 
   void processSameEvent(FilteredCollisions::iterator const& collision, FilteredTracks const& tracks)
@@ -812,8 +812,14 @@ struct HadronNucleiCorrelation {
         registryQa.fill(HIST("QA/hnSigmaTOFVsPt_De"), track.pt() * track.sign(), track.tofNSigmaDe());
         registryQa.fill(HIST("QA/hnSigmaITSVsPt_Pr"), track.pt() * track.sign(), track.itsNSigmaPr());
         registryQa.fill(HIST("QA/hnSigmaITSVsPt_De"), track.pt() * track.sign(), track.itsNSigmaDe());
-        registryQa.fill(HIST("QA/h2dTPCTOF_AntiPr"), track.tpcNSigmaPr(), track.tofNSigmaPr());
-        registryQa.fill(HIST("QA/h2dTPCTOF_Pr"), track.tpcNSigmaPr(), track.tofNSigmaPr());
+        if (track.sign() > 0) {
+          registryQa.fill(HIST("QA/h3dTPCTOF_Pr"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
+          registryQa.fill(HIST("QA/h3dTPCTOF_De"), track.tpcNSigmaDe(), track.tofNSigmaDe(), track.pt());
+        }
+        if (track.sign() < 0) {
+          registryQa.fill(HIST("QA/h3dTPCTOF_AntiPr"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
+          registryQa.fill(HIST("QA/h3dTPCTOF_AntiDe"), track.tpcNSigmaDe(), track.tofNSigmaDe(), track.pt());
+        }
 
         if (isProton(track, -1)) {
           registryQa.fill(HIST("QA/hEtaAntiPr"), track.eta());
@@ -821,7 +827,6 @@ struct HadronNucleiCorrelation {
           registryQa.fill(HIST("QA/hnSigmaTOFVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.tofNSigmaPr());
           registryQa.fill(HIST("QA/hnSigmaTPCVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.tpcNSigmaPr());
           registryQa.fill(HIST("QA/hnSigmaITSVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.itsNSigmaPr());
-          registryQa.fill(HIST("QA/h2dTPCTOF_AntiPr_AfterSel"), track.tpcNSigmaPr(), track.tofNSigmaPr());
         }
         if (isProton(track, +1)) {
           registryQa.fill(HIST("QA/hEtaPr"), track.eta());
@@ -829,7 +834,6 @@ struct HadronNucleiCorrelation {
           registryQa.fill(HIST("QA/hnSigmaTOFVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.tofNSigmaPr());
           registryQa.fill(HIST("QA/hnSigmaTPCVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.tpcNSigmaPr());
           registryQa.fill(HIST("QA/hnSigmaITSVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.itsNSigmaPr());
-          registryQa.fill(HIST("QA/h2dTPCTOF_Pr_AfterSel"), track.tpcNSigmaPr(), track.tofNSigmaPr());
         }
         if (isDeuteron(track, -1)) {
           registryQa.fill(HIST("QA/hEtaAntiDe"), track.eta());
@@ -1050,8 +1054,6 @@ struct HadronNucleiCorrelation {
         registryQa.fill(HIST("QA/hnSigmaTOFVsPt_De"), track.pt() * track.sign(), track.tofNSigmaDe());
         registryQa.fill(HIST("QA/hnSigmaITSVsPt_Pr"), track.pt() * track.sign(), track.itsNSigmaPr());
         registryQa.fill(HIST("QA/hnSigmaITSVsPt_De"), track.pt() * track.sign(), track.itsNSigmaDe());
-        registryQa.fill(HIST("QA/h2dTPCTOF_AntiPr"), track.tpcNSigmaPr(), track.tofNSigmaPr());
-        registryQa.fill(HIST("QA/h2dTPCTOF_Pr"), track.tpcNSigmaPr(), track.tofNSigmaPr());
 
         if (isProton(track, -1)) {
           registryQa.fill(HIST("QA/hEtaAntiPr"), track.eta());
@@ -1059,7 +1061,6 @@ struct HadronNucleiCorrelation {
           registryQa.fill(HIST("QA/hnSigmaTOFVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.tofNSigmaPr());
           registryQa.fill(HIST("QA/hnSigmaTPCVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.tpcNSigmaPr());
           registryQa.fill(HIST("QA/hnSigmaITSVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.itsNSigmaPr());
-          registryQa.fill(HIST("QA/h2dTPCTOF_AntiPr_AfterSel"), track.tpcNSigmaPr(), track.tofNSigmaPr());
         }
         if (isProton(track, +1)) {
           registryQa.fill(HIST("QA/hEtaPr"), track.eta());
@@ -1067,7 +1068,6 @@ struct HadronNucleiCorrelation {
           registryQa.fill(HIST("QA/hnSigmaTOFVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.tofNSigmaPr());
           registryQa.fill(HIST("QA/hnSigmaTPCVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.tpcNSigmaPr());
           registryQa.fill(HIST("QA/hnSigmaITSVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.itsNSigmaPr());
-          registryQa.fill(HIST("QA/h2dTPCTOF_Pr_AfterSel"), track.tpcNSigmaPr(), track.tofNSigmaPr());
         }
         if (isDeuteron(track, -1)) {
           registryQa.fill(HIST("QA/hEtaAntiDe"), track.eta());
@@ -2031,9 +2031,9 @@ struct HadronNucleiCorrelation {
     genCaches.reserve(mcCollisions.size());
     for (const auto& collision : mcCollisions) {
       auto particlesPerCol = mcParticles.sliceBy(perMcCollision, collision.globalIndex());
-      auto cache = buildGenCollisionCache(particlesPerCol);
-      registry.fill(HIST("hMult"), cache.mult);
-      genCaches.emplace(collision.globalIndex(), std::move(cache));
+      auto colCache = buildGenCollisionCache(particlesPerCol);
+      registry.fill(HIST("hMult"), colCache.mult);
+      genCaches.emplace(collision.globalIndex(), std::move(colCache));
     }
 
     auto getMultiplicity = [&genCaches](SimCollisions::iterator const& collision) {
