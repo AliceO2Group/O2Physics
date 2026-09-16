@@ -284,9 +284,14 @@ class McBuilder
     this->getOrCreateMcParticleRow<system>(mcParticle, mcParticles, mcCol, mcProducts);
   }
 
-  /// Write the generated primary charged particles needed for the dNch/deta calculation
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
-  void fillMcPassThrough(T1 const& mcCols, T2 const& mcParticles, T3& perMcCollision, T4& mcProducts, T5& pdgDb)
+  /// Write all generated physical primaries within the eta acceptance.
+  /// No charge requirement is applied here: neutral primaries (e.g. Lambdas) are needed for generator-level
+  /// pair triggers. Charge (and any other) selection has to be done downstream.
+  /// NOTE: FMcParticles also contains rows created through reco labels (secondaries, particles outside the
+  ///       acceptance), so a dNch/deta loop must still require origin == kPhysicalPrimary, a charged pdg code
+  ///       and the eta acceptance
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4>
+  void fillMcPassThrough(T1 const& mcCols, T2 const& mcParticles, T3& perMcCollision, T4& mcProducts)
   {
     if (!mPassThrough) {
       return;
@@ -298,10 +303,6 @@ class McBuilder
       auto particlesThisCollision = mcParticles.sliceBy(perMcCollision, mcCol.globalIndex());
       for (const auto& mcParticle : particlesThisCollision) {
         if (!mcParticle.isPhysicalPrimary() || std::fabs(mcParticle.eta()) > mEtaAcceptanceMcReco) {
-          continue;
-        }
-        const auto* pdgParticle = pdgDb->GetParticle(mcParticle.pdgCode());
-        if (pdgParticle == nullptr || std::fabs(pdgParticle->Charge()) < o2::constants::math::Almost0) {
           continue;
         }
         // NOTE: full mcParticles table, never the slice - the ancestry walk resolves global indices
