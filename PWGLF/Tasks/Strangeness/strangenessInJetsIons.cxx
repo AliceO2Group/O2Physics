@@ -1449,7 +1449,7 @@ struct StrangenessInJetsIons {
 
   // Return true if McCollisions has at least 1 RECO collisions that passed event selections
   template <typename RecoColls>
-  bool HasRecoEvent(int mcCollIndex, RecoColls recoCollisions)
+  bool HasRecoEvent(int mcCollIndex, const RecoColls& recoCollisions)
   {
     for (const auto& recoColl : recoCollisions) {
       if (mcCollIndex == recoColl.mcCollisionId()) {
@@ -1569,7 +1569,7 @@ struct StrangenessInJetsIons {
 
   // Fill Minimum Bias histograms
   template <typename MCRecoCollision, typename V0PerColl, typename CascPerColl, typename TracksPerColl>
-  void FillMBEventHistoMCREC(MCRecoCollision collision,
+  void FillMBEventHistoMCREC(const MCRecoCollision& collision,
                              aod::McParticles const& mcParticles,
                              V0PerColl const& v0sPerColl,
                              CascPerColl const& cascPerColl,
@@ -1777,7 +1777,7 @@ struct StrangenessInJetsIons {
   }
 
   template <typename TV0>
-  void fillFeeddownMatrix(TV0 v0, float pt, float centrality, bool passedLambda, bool passedAntiLambda)
+  void fillFeeddownMatrix(const TV0& v0, float pt, float centrality, bool passedLambda, bool passedAntiLambda)
   // Fill feeddown matrix for Lambdas or AntiLambdas
   // Adapted from: PWGLF/Tasks/Strangeness/derivedlambdakzeroanalysis.cxx
   {

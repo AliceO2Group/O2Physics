@@ -41,6 +41,7 @@
 #include <TMath.h>
 #include <TPDGCode.h>
 
+#include <cstdlib>
 #include <vector>
 
 using namespace o2;

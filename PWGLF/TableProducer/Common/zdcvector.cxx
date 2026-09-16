@@ -113,7 +113,6 @@ struct zdcvector {
   Configurable<bool> storeZdcTime{"storeZdcTime", true, "Store timestamp and time from first event of run"};
 
   RCTFlagsChecker rctChecker;
-  std::unordered_map<int, uint64_t> runStartTime;
 
   void init(o2::framework::InitContext&)
   {
@@ -177,6 +176,8 @@ struct zdcvector {
   TH2D* gainprofile = nullptr;
   TProfile* gainprofilevxy = nullptr;
 
+  int runNumberForSOR = -1;
+  uint64_t sorTimestamp = 0;
   // int lastRunNumberTimeRec = -999;
   // for time since start of run
   // int runForStartTime = -999;
@@ -230,14 +231,23 @@ struct zdcvector {
     auto bc = collision.foundBC_as<BCsRun3>();
     const uint64_t timestampzdc = bc.timestamp(); // in milliseconds
 
+    if (currentRunNumber != runNumberForSOR) {
+
+      auto runDuration = ccdb->getRunDuration(currentRunNumber, true);
+      sorTimestamp = static_cast<uint64_t>(runDuration.first);
+      runNumberForSOR = currentRunNumber;
+
+      LOGF(info,
+           "Run %d: SOR timestamp = %llu ms",
+           currentRunNumber,
+           static_cast<unsigned long long>(sorTimestamp));
+    }
+
     float timeInMinutes = 0.f;
 
-    auto itStart = runStartTime.find(currentRunNumber);
-    if (itStart == runStartTime.end()) {
-      runStartTime[currentRunNumber] = timestampzdc;
-      timeInMinutes = 0.f;
-    } else {
-      timeInMinutes = static_cast<float>(timestampzdc - itStart->second) / 60000.f;
+    if (timestampzdc >= sorTimestamp && sorTimestamp > 0) {
+      timeInMinutes =
+        static_cast<float>(timestampzdc - sorTimestamp) / 60000.f;
     }
 
     // Helper to keep your early-return structure unchanged.

@@ -58,6 +58,7 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/TrackFwd.h>
+#include <ReconstructionDataFormats/TrackParametrization.h>
 
 #include <Math/MatrixRepresentationsStatic.h>
 #include <Math/SMatrix.h>
@@ -68,6 +69,7 @@
 #include <TPDGCode.h>
 #include <TVector3.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>

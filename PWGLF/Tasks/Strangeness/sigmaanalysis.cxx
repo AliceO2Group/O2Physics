@@ -293,6 +293,7 @@ struct sigmaanalysis {
   ConfigurableAxis axisPsiPair{"axisPsiPair", {250, -5.0f, 5.0f}, "Psipair for photons"};
   ConfigurableAxis axisPhi{"axisPhi", {200, 0, 2 * o2::constants::math::PI}, "Phi for photons"};
   ConfigurableAxis axisZ{"axisZ", {120, -120.0f, 120.0f}, "V0 Z position (cm)"};
+  ConfigurableAxis axisOPAngle{"axisOPAngle", {140, 0.0f, 7.0f}, "Opening angle (rad)"};
 
   // EMCal-specifc
   ConfigurableAxis axisClrDefinition{"axisClrDefinition", {51, -0.5, 50.5}, "Cluster Definition"};
@@ -456,7 +457,7 @@ struct sigmaanalysis {
         histos.add(histodir + "/Sigma0/h2dRadiusVspT", "h2dRadiusVspT", kTH2D, {axisV0PairRadius, axisPt});
         histos.add(histodir + "/Sigma0/hDCAPairDau", "hDCAPairDau", kTH1D, {axisDCAdau});
         histos.add(histodir + "/Sigma0/h3dMass", "h3dMass", kTH3D, {axisCentrality, axisPt, axisSigmaMass});
-        histos.add(histodir + "/Sigma0/h3dOPAngleVsMass", "h3dOPAngleVsMass", kTH3D, {{140, 0.0f, +7.0f}, axisPt, axisSigmaMass});
+        histos.add(histodir + "/Sigma0/h3dOPAngleVsMass", "h3dOPAngleVsMass", kTH3D, {axisOPAngle, axisPt, axisSigmaMass});
         if (doArm) {
           histos.add(histodir + "/Sigma0/h4dAlphaVsQtarmVsMass", "h4dAlphaVsQtarmVsMass", kTHnD, {axisAPAlpha, axisAPQt, axisPt, axisSigmaMass});
         }
@@ -468,7 +469,7 @@ struct sigmaanalysis {
         histos.add(histodir + "/ASigma0/h2dRadiusVspT", "h2dRadiusVspT", kTH2D, {axisV0PairRadius, axisPt});
         histos.add(histodir + "/ASigma0/hDCAPairDau", "hDCAPairDau", kTH1D, {axisDCAdau});
         histos.add(histodir + "/ASigma0/h3dMass", "h3dMass", kTH3D, {axisCentrality, axisPt, axisSigmaMass});
-        histos.add(histodir + "/ASigma0/h3dOPAngleVsMass", "h3dOPAngleVsMass", kTH3D, {{140, 0.0f, +7.0f}, axisPt, axisSigmaMass});
+        histos.add(histodir + "/ASigma0/h3dOPAngleVsMass", "h3dOPAngleVsMass", kTH3D, {axisOPAngle, axisPt, axisSigmaMass});
         if (doArm) {
           histos.add(histodir + "/ASigma0/h4dAlphaVsQtarmVsMass", "h4dAlphaVsQtarmVsMass", kTHnD, {axisAPAlpha, axisAPQt, axisPt, axisSigmaMass});
         }
@@ -1208,6 +1209,8 @@ struct sigmaanalysis {
 
     //_______________________________________
     // Sigmas and Lambdas
+    float rapidity = doLambdaStar ? sigma.lambdaStarY() : sigma.sigma0Y();
+
     if (sigma.lambdaAlpha() > 0) {
       if (fillSelhistos) {
         histos.fill(HIST(MainDir[mode]) + HIST("/Lambda/h2dTPCvsTOFNSigma_LambdaPr"), sigma.lambdaPosPrTPCNSigma(), sigma.lambdaPrTOFNSigma());
@@ -1221,7 +1224,7 @@ struct sigmaanalysis {
 
       histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/hMass"), sigma.sigma0Mass());
       histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/hPt"), sigma.pt());
-      histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/hY"), sigma.sigma0Y());
+      histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/hY"), rapidity);
       histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/hRadius"), sigma.radius());
       histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/h2dRadiusVspT"), sigma.radius(), sigma.pt());
       histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/hDCAPairDau"), sigma.dcadaughters());
@@ -1244,7 +1247,7 @@ struct sigmaanalysis {
 
       histos.fill(HIST(MainDir[mode]) + HIST("/ASigma0/hMass"), sigma.sigma0Mass());
       histos.fill(HIST(MainDir[mode]) + HIST("/ASigma0/hPt"), sigma.pt());
-      histos.fill(HIST(MainDir[mode]) + HIST("/ASigma0/hY"), sigma.sigma0Y());
+      histos.fill(HIST(MainDir[mode]) + HIST("/ASigma0/hY"), rapidity);
       histos.fill(HIST(MainDir[mode]) + HIST("/ASigma0/hRadius"), sigma.radius());
       histos.fill(HIST(MainDir[mode]) + HIST("/ASigma0/h2dRadiusVspT"), sigma.radius(), sigma.pt());
       histos.fill(HIST(MainDir[mode]) + HIST("/ASigma0/hDCAPairDau"), sigma.dcadaughters());

@@ -35,7 +35,6 @@
 #include <cstdint>
 #include <map>
 #include <memory>
-#include <type_traits>
 #include <vector>
 
 using namespace o2;

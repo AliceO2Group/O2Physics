@@ -16,6 +16,7 @@
 #include "PWGCF/Femto/Core/cascadeBuilder.h"
 #include "PWGCF/Femto/Core/collisionBuilder.h"
 #include "PWGCF/Femto/Core/kinkBuilder.h"
+#include "PWGCF/Femto/Core/mcBuilder.h"
 #include "PWGCF/Femto/Core/partitions.h"
 #include "PWGCF/Femto/Core/trackBuilder.h"
 #include "PWGCF/Femto/Core/v0Builder.h"
@@ -39,6 +40,9 @@ struct FemtoProducerDerivedToDerived {
   using FilteredFemtoCollisions = o2::soa::Filtered<FemtoCollisions>;
   using FilteredFemtoCollision = FilteredFemtoCollisions::iterator;
 
+  using FemtoMcCollisions = o2::soa::Join<FemtoCollisions, o2::aod::FColLabels>;
+  using FilteredFemtoMcCollisions = o2::soa::Filtered<FemtoMcCollisions>;
+
   using FemtoTracks = o2::soa::Join<o2::aod::FTracks, o2::aod::FTrackMasks>;
   using FemtoTracksWithMass = o2::soa::Join<FemtoTracks, o2::aod::FTrackMass>;
   using FemtoLambdas = o2::soa::Join<o2::aod::FLambdas, o2::aod::FLambdaMasks>;
@@ -47,6 +51,9 @@ struct FemtoProducerDerivedToDerived {
   using FemtoOmegas = o2::soa::Join<o2::aod::FOmegas, o2::aod::FOmegaMasks>;
   using FemtoSigma = o2::soa::Join<o2::aod::FSigmas, o2::aod::FSigmaMasks>;
   using FemtoSigmaPlus = o2::soa::Join<o2::aod::FSigmaPlus, o2::aod::FSigmaPlusMasks>;
+
+  using FemtoMcTracks = o2::soa::Join<FemtoTracks, o2::aod::FTrackLabels>;
+  using FemtoMcParticles = o2::soa::Join<o2::aod::FMcParticles, o2::aod::FMcMotherLabels>;
 
   o2::framework::SliceCache cache;
 
@@ -110,6 +117,15 @@ struct FemtoProducerDerivedToDerived {
   o2::framework::Partition<FemtoOmegas> omegaPartition = MAKE_CASCADE_PARTITION(omegaSelection);
   o2::framework::Preslice<FemtoOmegas> perColOmegas = o2::aod::femtobase::stored::fColId;
 
+  // mc builder
+  mcbuilder::McBuilderDerivedToDerived mcBuilder;
+  mcbuilder::McBuilderDerivedToDerivedProducts mcBuilderProducts;
+  mcbuilder::ConfMcTablesDerivedToDerived confMcBuilder;
+
+  o2::framework::Partition<FemtoMcTracks> mcTrackPartition1 = MAKE_TRACK_PARTITION(trackSelections1);
+  o2::framework::Partition<FemtoMcTracks> mcTrackPartition2 = MAKE_TRACK_PARTITION(trackSelections2);
+  o2::framework::Preslice<FemtoMcTracks> perColMcTracks = o2::aod::femtobase::stored::fColId;
+
   void init(o2::framework::InitContext& /*context*/)
   {
     const int activeProcesses =
@@ -118,7 +134,8 @@ struct FemtoProducerDerivedToDerived {
       static_cast<int>(doprocessLambdas) +
       static_cast<int>(doprocessTracksXis) + static_cast<int>(doprocessTracksOmegas) +
       static_cast<int>(doprocessTracksK0shorts) + static_cast<int>(doprocessTracksSigma) +
-      static_cast<int>(doprocessTracksSigmaPlus);
+      static_cast<int>(doprocessTracksSigmaPlus) +
+      static_cast<int>(doprocessTracksMc);
     if (activeProcesses != 1) {
       LOG(fatal) << "Exactly one process function must be activated (got " << activeProcesses << ").";
     }
@@ -127,6 +144,7 @@ struct FemtoProducerDerivedToDerived {
     v0Builder.init(confV0Builder);
     cascadeBuilder.init(confCascadeBuilder);
     kinkBuilder.init(confKinkBuilder);
+    mcBuilder.init(confMcBuilder);
   }
 
   // process functions
@@ -246,6 +264,35 @@ struct FemtoProducerDerivedToDerived {
     kinkBuilder.processSigmaPlus(col, sigmaplus, tracks, sigmaPlusPartition, trackBuilder, cache, kinkBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksSigmaPlus, "Process sigmaPlus and tracks", false);
+
+  // mc processing
+  //   // NOTE: unlike the other process functions, this one subscribes to the full
+  // collision table and iterates manually. The MC index maps are keyed by source
+  // global index and must live for the whole dataframe
+  void processTracksMc(FilteredFemtoMcCollisions const& cols,
+                       FemtoMcTracks const& tracks,
+                       o2::aod::FMcCols const& mcCols,
+                       FemtoMcParticles const& mcParticles,
+                       o2::aod::FMcMothers const& mcMothers,
+                       o2::aod::FMcPartMoths const& mcPartonicMothers)
+  {
+    // once per dataframe
+    mcBuilder.reset(mcCols, mcParticles);
+
+    for (auto const& col : cols) {
+      if (trackBuilder.collisionHasTooFewTracks(col, tracks, mcTrackPartition1, mcTrackPartition2, cache)) {
+        continue;
+      }
+      // track indexMap is per collision by construction, so it resets here
+      trackBuilder.reset(tracks);
+      collisionBuilder.processCollision(col, collisionBuilderProducts);
+      mcBuilder.fillCollisionWithLabel(col, mcCols, mcBuilderProducts);
+      trackBuilder.processTracksWithMc(col, tracks, mcTrackPartition1, mcTrackPartition2, cache,
+                                       trackBuilderProducts, collisionBuilderProducts,
+                                       mcBuilder, mcCols, mcParticles, mcMothers, mcPartonicMothers, mcBuilderProducts);
+    }
+  }
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksMc, "Process tracks with MC information", false);
 };
 
 o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)

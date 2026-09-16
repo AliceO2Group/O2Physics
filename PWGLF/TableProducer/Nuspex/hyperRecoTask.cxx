@@ -85,48 +85,6 @@ constexpr float MaxAbsVertexZ = 10.f;
 constexpr int NumBetheBlochParameters = 5;
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 static const std::vector<std::string> particleName{"He3"};
-std::shared_ptr<TH1> hEvents;
-std::shared_ptr<TH1> hEventsZorro;
-std::shared_ptr<TH1> hZvtx;
-std::shared_ptr<TH1> hCentFT0A;
-std::shared_ptr<TH1> hCentFT0C;
-std::shared_ptr<TH1> hCentFT0M;
-std::shared_ptr<TH2> hNsigma3HeSel;
-std::shared_ptr<TH2> hDeDx3HeSel;
-std::shared_ptr<TH2> hDeDxTot;
-std::shared_ptr<TH1> hH3LMassBefSel;
-std::shared_ptr<TH1> hH3LMassTracked;
-std::shared_ptr<TH1> hH4LMassBefSel;
-std::shared_ptr<TH1> hH4LMassTracked;
-std::shared_ptr<TH1> hDecayChannel;
-std::shared_ptr<TH1> hIsMatterGen;
-std::shared_ptr<TH1> hIsMatterGenTwoBody;
-std::shared_ptr<TH1> hEvtMC;
-std::shared_ptr<TH1> hImpactParamGen;
-std::shared_ptr<TH1> hImpactParamGenOneReco;
-std::shared_ptr<TH1> hImpactParamReco;
-std::shared_ptr<TH1> hGen3HLBeforeEvtSel;
-std::shared_ptr<TH1> hGen3HLAfterSel;
-std::shared_ptr<TH1> hGenOneRecoCentrality;
-std::shared_ptr<TH1> hRecoCentrality;
-std::shared_ptr<TH2> hGenEventsNchEta05;
-std::shared_ptr<TH2> hGenEventsNchEta08;
-std::shared_ptr<TH2> hGenCentralityColvsMultiplicityGenEta05;
-std::shared_ptr<TH2> hGenCentralityColvsMultiplicityGenEta08;
-std::shared_ptr<TH2> hGenCentralityColvsImpactParamGen;
-std::shared_ptr<TH2> hGenCentralityColvsFT0Cmultiplicity;
-std::shared_ptr<TH2> hRecoCentralityColvsMultiplicityRecoEta05;
-std::shared_ptr<TH2> hRecoCentralityColvsMultiplicityRecoEta08;
-std::shared_ptr<TH2> hRecoCentralityColvsImpactParamReco;
-std::shared_ptr<TH2> hRecoCentralityColvsFT0Cmultiplicity;
-std::shared_ptr<TH2> hGen3HLvsImpactParameterBeforeEvtSel;
-std::shared_ptr<TH2> hGen3HLvsImpactParameterAfterSel;
-std::shared_ptr<TH2> hGen3HLvsMultiplicityGenEta05BeforeEvtSel;
-std::shared_ptr<TH2> hGen3HLvsMultiplicityGenEta05AfterSel;
-std::shared_ptr<TH2> hGen3HLvsMultiplicityGenEta08BeforeEvtSel;
-std::shared_ptr<TH2> hGen3HLvsMultiplicityGenEta08AfterSel;
-std::shared_ptr<TH2> hGen3HLvsMultiplicityFT0CBeforeEvtSel;
-std::shared_ptr<TH2> hGen3HLvsMultiplicityFT0CAfterSel;
 
 } // namespace
 
@@ -320,80 +278,80 @@ struct HyperRecoTask {
     const AxisSpec ptAxis{binsPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec multAxis = {binsMult, "Multiplicity #eta <0.5"};
 
-    hNsigma3HeSel = qaRegistry.add<TH2>("hNsigma3HeSel", "; p_{TPC}/z (GeV/#it{c}); n_{#sigma} ({}^{3}He)", HistType::kTH2F, {rigidityAxis, nSigma3HeAxis});
-    hDeDx3HeSel = qaRegistry.add<TH2>("hDeDx3HeSel", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dedxAxis});
-    hDeDxTot = qaRegistry.add<TH2>("hDeDxTot", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dedxAxis});
-    hH3LMassBefSel = qaRegistry.add<TH1>("hH3LMassBefSel", ";M (GeV/#it{c}^{2}); ", HistType::kTH1D, {{60, 2.96, 3.04}});
-    hH3LMassTracked = qaRegistry.add<TH1>("hH3LMassTracked", ";M (GeV/#it{c}^{2}); ", HistType::kTH1D, {{60, 2.96, 3.04}});
-    hH4LMassBefSel = qaRegistry.add<TH1>("hH4LMassBefSel", ";M (GeV/#it{c}^{2}); ", HistType::kTH1D, {{60, 3.76, 3.84}});
-    hH4LMassTracked = qaRegistry.add<TH1>("hH4LMassTracked", ";M (GeV/#it{c}^{2}); ", HistType::kTH1D, {{60, 3.76, 3.84}});
+    qaRegistry.add<TH2>("hNsigma3HeSel", "; p_{TPC}/z (GeV/#it{c}); n_{#sigma} ({}^{3}He)", HistType::kTH2F, {rigidityAxis, nSigma3HeAxis});
+    qaRegistry.add<TH2>("hDeDx3HeSel", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dedxAxis});
+    qaRegistry.add<TH2>("hDeDxTot", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dedxAxis});
+    qaRegistry.add<TH1>("hH3LMassBefSel", ";M (GeV/#it{c}^{2}); ", HistType::kTH1D, {{60, 2.96, 3.04}});
+    qaRegistry.add<TH1>("hH3LMassTracked", ";M (GeV/#it{c}^{2}); ", HistType::kTH1D, {{60, 2.96, 3.04}});
+    qaRegistry.add<TH1>("hH4LMassBefSel", ";M (GeV/#it{c}^{2}); ", HistType::kTH1D, {{60, 3.76, 3.84}});
+    qaRegistry.add<TH1>("hH4LMassTracked", ";M (GeV/#it{c}^{2}); ", HistType::kTH1D, {{60, 3.76, 3.84}});
 
-    hEvents = qaRegistry.add<TH1>("hEvents", ";Events; ", HistType::kTH1D, {{5, -0.5, 4.5}});
+    const auto hEvents = qaRegistry.add<TH1>("hEvents", ";Events; ", HistType::kTH1D, {{5, -0.5, 4.5}});
     hEvents->GetXaxis()->SetBinLabel(1, "All");
     hEvents->GetXaxis()->SetBinLabel(2, "sel8");
     hEvents->GetXaxis()->SetBinLabel(3, "z_{vtx}");
     hEvents->GetXaxis()->SetBinLabel(4, "kNoSameBunchPileup");
     hEvents->GetXaxis()->SetBinLabel(5, "kIsGoodZvtxFT0vsPV");
 
-    hEventsZorro = qaRegistry.add<TH1>("hEventsZorro", ";Events; ", HistType::kTH1D, {{2, -0.5, 1.5}});
+    const auto hEventsZorro = qaRegistry.add<TH1>("hEventsZorro", ";Events; ", HistType::kTH1D, {{2, -0.5, 1.5}});
     hEventsZorro->GetXaxis()->SetBinLabel(1, "Zorro before evsel");
     hEventsZorro->GetXaxis()->SetBinLabel(2, "Zorro after evsel");
 
     if (doprocessMC || doprocessMCTracked) {
-      hDecayChannel = qaRegistry.add<TH1>("hDecayChannel", ";Decay channel; ", HistType::kTH1D, {{2, -0.5, 1.5}});
+      const auto hDecayChannel = qaRegistry.add<TH1>("hDecayChannel", ";Decay channel; ", HistType::kTH1D, {{2, -0.5, 1.5}});
       hDecayChannel->GetXaxis()->SetBinLabel(1, "2-body");
       hDecayChannel->GetXaxis()->SetBinLabel(2, "3-body");
-      hIsMatterGen = qaRegistry.add<TH1>("hIsMatterGen", ";; ", HistType::kTH1D, {{2, -0.5, 1.5}});
+      const auto hIsMatterGen = qaRegistry.add<TH1>("hIsMatterGen", ";; ", HistType::kTH1D, {{2, -0.5, 1.5}});
       hIsMatterGen->GetXaxis()->SetBinLabel(1, "Matter");
       hIsMatterGen->GetXaxis()->SetBinLabel(2, "Antimatter");
-      hIsMatterGenTwoBody = qaRegistry.add<TH1>("hIsMatterGenTwoBody", ";; ", HistType::kTH1D, {{2, -0.5, 1.5}});
+      const auto hIsMatterGenTwoBody = qaRegistry.add<TH1>("hIsMatterGenTwoBody", ";; ", HistType::kTH1D, {{2, -0.5, 1.5}});
       hIsMatterGenTwoBody->GetXaxis()->SetBinLabel(1, "Matter");
       hIsMatterGenTwoBody->GetXaxis()->SetBinLabel(2, "Antimatter");
     }
-    hZvtx = qaRegistry.add<TH1>("hZvtx", ";z_{vtx} (cm); ", HistType::kTH1D, {{100, -20, 20}});
-    hCentFT0A = qaRegistry.add<TH1>("hCentFT0A", ";Centrality; ", HistType::kTH1D, {{100, 0, 100}});
-    hCentFT0C = qaRegistry.add<TH1>("hCentFT0C", ";Centrality; ", HistType::kTH1D, {{100, 0, 100}});
-    hCentFT0M = qaRegistry.add<TH1>("hCentFT0M", ";Centrality; ", HistType::kTH1D, {{100, 0, 100}});
+    qaRegistry.add<TH1>("hZvtx", ";z_{vtx} (cm); ", HistType::kTH1D, {{100, -20, 20}});
+    qaRegistry.add<TH1>("hCentFT0A", ";Centrality; ", HistType::kTH1D, {{100, 0, 100}});
+    qaRegistry.add<TH1>("hCentFT0C", ";Centrality; ", HistType::kTH1D, {{100, 0, 100}});
+    qaRegistry.add<TH1>("hCentFT0M", ";Centrality; ", HistType::kTH1D, {{100, 0, 100}});
 
     if (doprocessEventLossMC) {
       // Infomation for all generated collisions
-      hEvtMC = qaRegistry.add<TH1>("QAEvent/hEvtMC", ";; ", HistType::kTH1D, {{3, -0.5, 2.5}});
+      const auto hEvtMC = qaRegistry.add<TH1>("QAEvent/hEvtMC", ";; ", HistType::kTH1D, {{3, -0.5, 2.5}});
       hEvtMC->GetXaxis()->SetBinLabel(1, "All gen evts");
       hEvtMC->GetXaxis()->SetBinLabel(2, "Gen evts with al least one reconstructed");
       hEvtMC->GetXaxis()->SetBinLabel(3, "Gen evts with no reconstructed collisions");
-      hGenEventsNchEta05 = qaRegistry.add<TH2>("QAEvent/hGenEventsNchEta05", ";;", HistType::kTH2D, {{multAxis}, {2, -0.5f, +1.5f}});
+      const auto hGenEventsNchEta05 = qaRegistry.add<TH2>("QAEvent/hGenEventsNchEta05", ";;", HistType::kTH2D, {{multAxis}, {2, -0.5f, +1.5f}});
       hGenEventsNchEta05->GetYaxis()->SetBinLabel(1, "All gen. events");
       hGenEventsNchEta05->GetYaxis()->SetBinLabel(2, "Gen evts with at least 1 rec. collisions");
-      hGenEventsNchEta08 = qaRegistry.add<TH2>("QAEvent/hGenEventsNchEta08", ";;", HistType::kTH2D, {{multAxis}, {2, -0.5f, +1.5f}});
+      const auto hGenEventsNchEta08 = qaRegistry.add<TH2>("QAEvent/hGenEventsNchEta08", ";;", HistType::kTH2D, {{multAxis}, {2, -0.5f, +1.5f}});
       hGenEventsNchEta08->GetYaxis()->SetBinLabel(1, "All gen. events");
       hGenEventsNchEta08->GetYaxis()->SetBinLabel(2, "Gen evts with at least 1 rec. collisions");
-      hImpactParamGen = qaRegistry.add<TH1>("QAEvent/McColAll/hImpactParamGen", "Impact parameter of generated MC events; Impact Parameter (b); Counts", HistType::kTH1D, {impactParamAxis});
+      qaRegistry.add<TH1>("QAEvent/McColAll/hImpactParamGen", "Impact parameter of generated MC events; Impact Parameter (b); Counts", HistType::kTH1D, {impactParamAxis});
       // Infomation for generated collisions which at least one rec. collision and passed the event selection
-      hImpactParamGenOneReco = qaRegistry.add<TH1>("QAEvent/McColPassedEvSel/hImpactParamGenOneReco", "Impact parameter of generated MC events with at least one rec. evt and passed the event selection; Impact Parameter (b); Counts", HistType::kTH1D, {impactParamAxis});
-      hGenOneRecoCentrality = qaRegistry.add<TH1>("QAEvent/McColPassedEvSel/hGenOneRecoCentrality", "Centrality distribution of generated MC events with at least one rec. evt and passed the event selection; Centrality (FT0C %); Counts", HistType::kTH1D, {centFT0CAxis});
-      hGenCentralityColvsMultiplicityGenEta05 = qaRegistry.add<TH2>("QAEvent/McColPassedEvSel/hGenCentralityColvsMultiplicityGenEta05", "Correlation between FT0C centrality and charged particle multiplicity in generated MC events with at least one rec. evt and passed the event selection; Multiplicity #eta <0.5; Counts", HistType::kTH2D, {centFT0CAxis, multAxis});
-      hGenCentralityColvsMultiplicityGenEta08 = qaRegistry.add<TH2>("QAEvent/McColPassedEvSel/hGenCentralityColvsMultiplicityGenEta08", "Correlation between FT0C centrality and charged particle multiplicity in generated MC events with at least one rec. evt and passed the event selection; Multiplicity #eta <0.8; Counts", HistType::kTH2D, {centFT0CAxis, multAxis});
-      hGenCentralityColvsImpactParamGen = qaRegistry.add<TH2>("QAEvent/McColPassedEvSel/hGenCentralityColvsImpactParamGen", "Correlation between FT0C centrality and impact parameter in generated MC events with at least one rec. evt and passed the event selection; Multiplicity #eta <0.8; Counts", HistType::kTH2D, {centFT0CAxis, impactParamAxis});
-      hGenCentralityColvsFT0Cmultiplicity = qaRegistry.add<TH2>("QAEvent/McColPassedEvSel/hGenCentralityColvsFT0Cmultiplicity", "Correlation between FT0C centrality and FT0C multiplicity in generated MC events with at least one rec. evt and passed the event selection; FT0c multiplicity", HistType::kTH2D, {centFT0CAxis, binsFT0CMultAxis});
+      qaRegistry.add<TH1>("QAEvent/McColPassedEvSel/hImpactParamGenOneReco", "Impact parameter of generated MC events with at least one rec. evt and passed the event selection; Impact Parameter (b); Counts", HistType::kTH1D, {impactParamAxis});
+      qaRegistry.add<TH1>("QAEvent/McColPassedEvSel/hGenOneRecoCentrality", "Centrality distribution of generated MC events with at least one rec. evt and passed the event selection; Centrality (FT0C %); Counts", HistType::kTH1D, {centFT0CAxis});
+      qaRegistry.add<TH2>("QAEvent/McColPassedEvSel/hGenCentralityColvsMultiplicityGenEta05", "Correlation between FT0C centrality and charged particle multiplicity in generated MC events with at least one rec. evt and passed the event selection; Multiplicity #eta <0.5; Counts", HistType::kTH2D, {centFT0CAxis, multAxis});
+      qaRegistry.add<TH2>("QAEvent/McColPassedEvSel/hGenCentralityColvsMultiplicityGenEta08", "Correlation between FT0C centrality and charged particle multiplicity in generated MC events with at least one rec. evt and passed the event selection; Multiplicity #eta <0.8; Counts", HistType::kTH2D, {centFT0CAxis, multAxis});
+      qaRegistry.add<TH2>("QAEvent/McColPassedEvSel/hGenCentralityColvsImpactParamGen", "Correlation between FT0C centrality and impact parameter in generated MC events with at least one rec. evt and passed the event selection; Multiplicity #eta <0.8; Counts", HistType::kTH2D, {centFT0CAxis, impactParamAxis});
+      qaRegistry.add<TH2>("QAEvent/McColPassedEvSel/hGenCentralityColvsFT0Cmultiplicity", "Correlation between FT0C centrality and FT0C multiplicity in generated MC events with at least one rec. evt and passed the event selection; FT0c multiplicity", HistType::kTH2D, {centFT0CAxis, binsFT0CMultAxis});
       // Infomation for all reconstructed collisions passed the event selection (for Event Splitting)
-      hImpactParamReco = qaRegistry.add<TH1>("QAEvent/McColAll/hImpactParamReco", "Impact parameter of generated MC events with at least one rec. evt; Impact Parameter (b); Counts", HistType::kTH1D, {impactParamAxis});
-      hRecoCentrality = qaRegistry.add<TH1>("QAEvent/McColAll/hRecoCentrality", "Centrality distribution of reconstructed MC events passed the event selection; Centrality (FT0C %); Counts", HistType::kTH1D, {centFT0CAxis});
-      hRecoCentralityColvsMultiplicityRecoEta05 = qaRegistry.add<TH2>("QAEvent/McColAll/hRecoCentralityColvsMultiplicityRecoEta05", "Correlation between FT0C centrality and charged particle multiplicity in reconstructed MC events passed the event selection; Multiplicity #eta <0.5; Counts", HistType::kTH2D, {centFT0CAxis, multAxis});
-      hRecoCentralityColvsMultiplicityRecoEta08 = qaRegistry.add<TH2>("QAEvent/McColAll/hRecoCentralityColvsMultiplicityRecoEta08", "Correlation between FT0C centrality and charged particle multiplicity in reconstructed MC events passed the event selection; Multiplicity #eta <0.8; Counts", HistType::kTH2D, {centFT0CAxis, multAxis});
-      hRecoCentralityColvsImpactParamReco = qaRegistry.add<TH2>("QAEvent/McColAll/hRecoCentralityColvsImpactParamReco", "Correlation between FT0C centrality and impact parameter in reconstructed MC events passed the event selection; Impact Parameter (b); Counts", HistType::kTH2D, {centFT0CAxis, impactParamAxis});
-      hRecoCentralityColvsFT0Cmultiplicity = qaRegistry.add<TH2>("QAEvent/McColAll/hRecoCentralityColvsFT0Cmultiplicity", "Correlation between FT0C centrality and FT0C multiplicity in reconstructed MC events passed the event selection; FT0C (%); FT0c multiplicity", HistType::kTH2D, {centFT0CAxis, binsFT0CMultAxis});
+      qaRegistry.add<TH1>("QAEvent/McColAll/hImpactParamReco", "Impact parameter of generated MC events with at least one rec. evt; Impact Parameter (b); Counts", HistType::kTH1D, {impactParamAxis});
+      qaRegistry.add<TH1>("QAEvent/McColAll/hRecoCentrality", "Centrality distribution of reconstructed MC events passed the event selection; Centrality (FT0C %); Counts", HistType::kTH1D, {centFT0CAxis});
+      qaRegistry.add<TH2>("QAEvent/McColAll/hRecoCentralityColvsMultiplicityRecoEta05", "Correlation between FT0C centrality and charged particle multiplicity in reconstructed MC events passed the event selection; Multiplicity #eta <0.5; Counts", HistType::kTH2D, {centFT0CAxis, multAxis});
+      qaRegistry.add<TH2>("QAEvent/McColAll/hRecoCentralityColvsMultiplicityRecoEta08", "Correlation between FT0C centrality and charged particle multiplicity in reconstructed MC events passed the event selection; Multiplicity #eta <0.8; Counts", HistType::kTH2D, {centFT0CAxis, multAxis});
+      qaRegistry.add<TH2>("QAEvent/McColAll/hRecoCentralityColvsImpactParamReco", "Correlation between FT0C centrality and impact parameter in reconstructed MC events passed the event selection; Impact Parameter (b); Counts", HistType::kTH2D, {centFT0CAxis, impactParamAxis});
+      qaRegistry.add<TH2>("QAEvent/McColAll/hRecoCentralityColvsFT0Cmultiplicity", "Correlation between FT0C centrality and FT0C multiplicity in reconstructed MC events passed the event selection; FT0C (%); FT0c multiplicity", HistType::kTH2D, {centFT0CAxis, binsFT0CMultAxis});
       // Information of generated 3HL in generated events
-      hGen3HLBeforeEvtSel = qaRegistry.add<TH1>("QAEvent/McCol3HL/hGen3HLBeforeEvtSel", "3HL generated #it{p}_{T} distribution in all gen evt;#it{p}_{T} (GeV/#it{c}); Counts", HistType::kTH1D, {ptAxis});
-      hGen3HLvsImpactParameterBeforeEvtSel = qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsImpactParameterBeforeEvtSel", "Correlation 3HL generated #it{p}_{T} and impact parameter in all gen evt;#it{p}_{T} (GeV/#it{c}); Impact parameter (b)", HistType::kTH2D, {ptAxis, impactParamAxis});
-      hGen3HLvsMultiplicityGenEta05BeforeEvtSel = qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsMultiplicityGenEta05BeforeEvtSel", "Correlation 3HL generated #it{p}_{T} and charged particle multiplicity in all gen evt;#it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.5", HistType::kTH2D, {ptAxis, multAxis});
-      hGen3HLvsMultiplicityGenEta08BeforeEvtSel = qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsMultiplicityGenEta08BeforeEvtSel", "Correlation 3HL generated #it{p}_{T} and charged particle multiplicity in all gen evt;#it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.8", HistType::kTH2D, {ptAxis, multAxis});
-      hGen3HLvsMultiplicityFT0CBeforeEvtSel = qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsMultiplicityFT0CBeforeEvtSel", "Correlation 3HL generated #it{p}_{T} and FT0C multiplicity in all gen evt;#it{p}_{T} (GeV/#it{c}); FT0C Multiplicity", HistType::kTH2D, {ptAxis, binsFT0CMultAxis});
+      qaRegistry.add<TH1>("QAEvent/McCol3HL/hGen3HLBeforeEvtSel", "3HL generated #it{p}_{T} distribution in all gen evt;#it{p}_{T} (GeV/#it{c}); Counts", HistType::kTH1D, {ptAxis});
+      qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsImpactParameterBeforeEvtSel", "Correlation 3HL generated #it{p}_{T} and impact parameter in all gen evt;#it{p}_{T} (GeV/#it{c}); Impact parameter (b)", HistType::kTH2D, {ptAxis, impactParamAxis});
+      qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsMultiplicityGenEta05BeforeEvtSel", "Correlation 3HL generated #it{p}_{T} and charged particle multiplicity in all gen evt;#it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.5", HistType::kTH2D, {ptAxis, multAxis});
+      qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsMultiplicityGenEta08BeforeEvtSel", "Correlation 3HL generated #it{p}_{T} and charged particle multiplicity in all gen evt;#it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.8", HistType::kTH2D, {ptAxis, multAxis});
+      qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsMultiplicityFT0CBeforeEvtSel", "Correlation 3HL generated #it{p}_{T} and FT0C multiplicity in all gen evt;#it{p}_{T} (GeV/#it{c}); FT0C Multiplicity", HistType::kTH2D, {ptAxis, binsFT0CMultAxis});
       // Information of generated 3HL in generated events with at least one rec. event and passed the event selection
-      hGen3HLAfterSel = qaRegistry.add<TH1>("QAEvent/McCol3HL/hGen3HLAfterSel", "3HL generated #it{p}_{T} distribution in gen. evts with at least one rec. evt; #it{p}_{T} (GeV/#it{c}); Counts", HistType::kTH1D, {ptAxis});
-      hGen3HLvsImpactParameterAfterSel = qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsImpactParameterAfterSel", "Correlation 3HL generated #it{p}_{T} and impact parameter in gen. evts with at least one rec. evt;#it{p}_{T} (GeV/#it{c}); Impact parameter (b)", HistType::kTH2D, {ptAxis, impactParamAxis});
-      hGen3HLvsMultiplicityGenEta05AfterSel = qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsMultiplicityGenEta05AfterSel", "Correlation 3HL generated #it{p}_{T} and charged particle multiplicity in gen. evts with at least one rec. evt;#it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.5", HistType::kTH2D, {ptAxis, multAxis});
-      hGen3HLvsMultiplicityGenEta08AfterSel = qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsMultiplicityGenEta08AfterSel", "Correlation 3HL generated #it{p}_{T} and charged particle multiplicity in gen. evts with at least one rec. evt;#it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.8", HistType::kTH2D, {ptAxis, multAxis});
-      hGen3HLvsMultiplicityFT0CAfterSel = qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsMultiplicityFT0CAfterSel", "Correlation 3HL generated #it{p}_{T} and FT0C multiplicity in gen. evts with at least one rec;#it{p}_{T} (GeV/#it{c}); FT0C Multiplicity", HistType::kTH2D, {ptAxis, binsFT0CMultAxis});
+      qaRegistry.add<TH1>("QAEvent/McCol3HL/hGen3HLAfterSel", "3HL generated #it{p}_{T} distribution in gen. evts with at least one rec. evt; #it{p}_{T} (GeV/#it{c}); Counts", HistType::kTH1D, {ptAxis});
+      qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsImpactParameterAfterSel", "Correlation 3HL generated #it{p}_{T} and impact parameter in gen. evts with at least one rec. evt;#it{p}_{T} (GeV/#it{c}); Impact parameter (b)", HistType::kTH2D, {ptAxis, impactParamAxis});
+      qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsMultiplicityGenEta05AfterSel", "Correlation 3HL generated #it{p}_{T} and charged particle multiplicity in gen. evts with at least one rec. evt;#it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.5", HistType::kTH2D, {ptAxis, multAxis});
+      qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsMultiplicityGenEta08AfterSel", "Correlation 3HL generated #it{p}_{T} and charged particle multiplicity in gen. evts with at least one rec. evt;#it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.8", HistType::kTH2D, {ptAxis, multAxis});
+      qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsMultiplicityFT0CAfterSel", "Correlation 3HL generated #it{p}_{T} and FT0C multiplicity in gen. evts with at least one rec;#it{p}_{T} (GeV/#it{c}); FT0C Multiplicity", HistType::kTH2D, {ptAxis, binsFT0CMultAxis});
     }
   }
 
@@ -462,7 +420,7 @@ struct HyperRecoTask {
     for (const auto& collision : collisions) {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
-      hEvents->Fill(0.);
+      qaRegistry.fill(HIST("hEvents"), 0.);
 
       if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && !disableITSROFCut) {
         continue;
@@ -473,7 +431,7 @@ struct HyperRecoTask {
         // accounting done after ITS border cut, to properly correct with the MC
         zorroSelected = zorro.isSelected(collision.template bc_as<aod::BCsWithTimestamps>().globalBC());
         if (zorroSelected) {
-          hEventsZorro->Fill(0.);
+          qaRegistry.fill(HIST("hEventsZorro"), 0.);
         }
       }
 
@@ -481,35 +439,35 @@ struct HyperRecoTask {
         continue;
       }
 
-      hEvents->Fill(1.);
+      qaRegistry.fill(HIST("hEvents"), 1.);
 
       if (std::abs(collision.posZ()) > MaxAbsVertexZ) {
         continue;
       }
-      hEvents->Fill(2.);
+      qaRegistry.fill(HIST("hEvents"), 2.);
 
       if (zorroSelected) {
-        hEventsZorro->Fill(1.);
+        qaRegistry.fill(HIST("hEventsZorro"), 1.);
       }
 
       if (cfgEvSelkNoSameBunchPileup) {
         if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
           continue;
         }
-        hEvents->Fill(3.);
+        qaRegistry.fill(HIST("hEvents"), 3.);
       }
       if (cfgEvSelkIsGoodZvtxFT0vsPV) {
         if (!collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
           continue;
         }
-        hEvents->Fill(4.);
+        qaRegistry.fill(HIST("hEvents"), 4.);
       }
 
       goodCollision[collision.globalIndex()] = true;
-      hZvtx->Fill(collision.posZ());
-      hCentFT0A->Fill(collision.centFT0A());
-      hCentFT0C->Fill(collision.centFT0C());
-      hCentFT0M->Fill(collision.centFT0M());
+      qaRegistry.fill(HIST("hZvtx"), collision.posZ());
+      qaRegistry.fill(HIST("hCentFT0A"), collision.centFT0A());
+      qaRegistry.fill(HIST("hCentFT0C"), collision.centFT0C());
+      qaRegistry.fill(HIST("hCentFT0M"), collision.centFT0M());
     }
   }
 
@@ -519,41 +477,41 @@ struct HyperRecoTask {
     for (const auto& collision : collisions) {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
-      hEvents->Fill(0.);
+      qaRegistry.fill(HIST("hEvents"), 0.);
       if (collision.has_mcCollision()) {
         recoCollisionIds[collision.mcCollisionId()] = collision.globalIndex();
       }
       if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
         continue;
 
-      hEvents->Fill(1.);
+      qaRegistry.fill(HIST("hEvents"), 1.);
 
       if (std::abs(collision.posZ()) > MaxAbsVertexZ) {
         continue;
       }
-      hEvents->Fill(2.);
+      qaRegistry.fill(HIST("hEvents"), 2.);
 
       if (cfgEvSelkNoSameBunchPileup) {
         if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
           continue;
         }
-        hEvents->Fill(3.);
+        qaRegistry.fill(HIST("hEvents"), 3.);
       }
       if (cfgEvSelkIsGoodZvtxFT0vsPV) {
         if (!collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
           continue;
         }
-        hEvents->Fill(4.);
+        qaRegistry.fill(HIST("hEvents"), 4.);
       }
 
       if (collision.has_mcCollision()) {
         isSurvEvSelCollision[collision.mcCollisionId()] = true;
       }
       goodCollision[collision.globalIndex()] = true;
-      hZvtx->Fill(collision.posZ());
-      hCentFT0A->Fill(collision.centFT0A());
-      hCentFT0C->Fill(collision.centFT0C());
-      hCentFT0M->Fill(collision.centFT0M());
+      qaRegistry.fill(HIST("hZvtx"), collision.posZ());
+      qaRegistry.fill(HIST("hCentFT0A"), collision.centFT0A());
+      qaRegistry.fill(HIST("hCentFT0C"), collision.centFT0C());
+      qaRegistry.fill(HIST("hCentFT0M"), collision.centFT0M());
     }
   }
   template <class Ttrack, class Tcolls>
@@ -580,8 +538,8 @@ struct HyperRecoTask {
     if (hypCand.momHe3TPC < tpcRigidityMinHe)
       return;
     hypCand.momPiTPC = piTrack.tpcInnerParam();
-    hDeDxTot->Fill(hypCand.momHe3TPC * heTrack.sign(), heTrack.tpcSignal());
-    hDeDxTot->Fill(hypCand.momPiTPC * piTrack.sign(), piTrack.tpcSignal());
+    qaRegistry.fill(HIST("hDeDxTot"), hypCand.momHe3TPC * heTrack.sign(), heTrack.tpcSignal());
+    qaRegistry.fill(HIST("hDeDxTot"), hypCand.momPiTPC * piTrack.sign(), piTrack.tpcSignal());
     hypCand.flags |= static_cast<uint8_t>((heTrack.pidForTracking() & 0xF) << 4);
     hypCand.flags |= static_cast<uint8_t>(piTrack.pidForTracking() & 0xF);
     auto heTrackCov = getTrackParCov(heTrack);
@@ -632,11 +590,11 @@ struct HyperRecoTask {
     if (!isHypMass)
       return;
 
-    hH3LMassBefSel->Fill(massH3L);
-    hH4LMassBefSel->Fill(massH4L);
+    qaRegistry.fill(HIST("hH3LMassBefSel"), massH3L);
+    qaRegistry.fill(HIST("hH4LMassBefSel"), massH4L);
     if (!trackedClSize.empty() && trackedClSize[hypCand.v0ID] > 0) {
-      hH3LMassTracked->Fill(massH3L);
-      hH4LMassTracked->Fill(massH4L);
+      qaRegistry.fill(HIST("hH3LMassTracked"), massH3L);
+      qaRegistry.fill(HIST("hH4LMassTracked"), massH4L);
     }
 
     hypCand.dcaV0dau = std::sqrt(fitter.getChi2AtPCACandidate());
@@ -695,8 +653,8 @@ struct HyperRecoTask {
       hypCand.massTOFHe3 = hypCand.momHe3TPC * 2.f * std::sqrt(1.f / (beta * beta) - 1.f);
     }
 
-    hDeDx3HeSel->Fill(heTrack.sign() * hypCand.momHe3TPC, heTrack.tpcSignal());
-    hNsigma3HeSel->Fill(heTrack.sign() * hypCand.momHe3TPC, hypCand.nSigmaHe3);
+    qaRegistry.fill(HIST("hDeDx3HeSel"), heTrack.sign() * hypCand.momHe3TPC, heTrack.tpcSignal());
+    qaRegistry.fill(HIST("hNsigma3HeSel"), heTrack.sign() * hypCand.momHe3TPC, hypCand.nSigmaHe3);
     hyperCandidates.push_back(hypCand);
   }
 
@@ -914,7 +872,8 @@ struct HyperRecoTask {
     for (const auto& hypCand : hyperCandidates) {
       auto collision = collisions.rawIteratorAt(hypCand.collisionID);
       float trackedHypClSize = !trackedClSize.empty() ? trackedClSize[hypCand.v0ID] : 0;
-      outputDataTableWithCollID(hypCand.collisionID, collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
+      outputDataTableWithCollID(hypCand.collisionID, hypCand.heTrackID, hypCand.piTrackID,
+                                collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
                                 collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(),
                                 collision.posX(), collision.posY(), collision.posZ(),
                                 mRunNumber, hypCand.isMatter,
@@ -952,7 +911,8 @@ struct HyperRecoTask {
         continue;
       int chargeFactor = -1 + 2 * (hypCand.pdgCode > 0);
       float trackedHypClSize = !trackedClSize.empty() ? trackedClSize[hypCand.v0ID] : 0;
-      outputMCTable(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
+      outputMCTable(hypCand.collisionID, hypCand.heTrackID, hypCand.piTrackID,
+                    collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
                     collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(),
                     collision.posX(), collision.posY(), collision.posZ(),
                     mRunNumber, hypCand.isMatter,
@@ -994,18 +954,18 @@ struct HyperRecoTask {
         }
       }
       if (mcPart.pdgCode() > 0) {
-        hIsMatterGen->Fill(0.);
+        qaRegistry.fill(HIST("hIsMatterGen"), 0.);
       } else {
-        hIsMatterGen->Fill(1.);
+        qaRegistry.fill(HIST("hIsMatterGen"), 1.);
       }
       if (!isHeFound) {
-        hDecayChannel->Fill(1.);
+        qaRegistry.fill(HIST("hDecayChannel"), 1.);
       }
-      hDecayChannel->Fill(0.);
+      qaRegistry.fill(HIST("hDecayChannel"), 0.);
       if (mcPart.pdgCode() > 0) {
-        hIsMatterGenTwoBody->Fill(0.);
+        qaRegistry.fill(HIST("hIsMatterGenTwoBody"), 0.);
       } else {
-        hIsMatterGenTwoBody->Fill(1.);
+        qaRegistry.fill(HIST("hIsMatterGenTwoBody"), 1.);
       }
       if (std::find(filledMothers.begin(), filledMothers.end(), mcPart.globalIndex()) != std::end(filledMothers)) {
         continue;
@@ -1036,7 +996,8 @@ struct HyperRecoTask {
         ft0cOccupancyInTimeRange = recoCollision.ft0cOccupancyInTimeRange();
       }
 
-      outputMCTable(centFT0A, centFT0C, centFT0M,
+      outputMCTable(-1, -1, -1,
+                    centFT0A, centFT0C, centFT0M,
                     trackOccupancyInTimeRange, ft0cOccupancyInTimeRange,
                     primVtx[0], primVtx[1], primVtx[2],
                     mRunNumber, 0,
@@ -1092,14 +1053,14 @@ struct HyperRecoTask {
     //////////// Event loss estimation via impact parameter and multiplicity by MCFT0C
 
     // Fill all generated events
-    hEvtMC->Fill(0);
-    hImpactParamGen->Fill(mcCollision.impactParameter());
-    hGenEventsNchEta05->Fill(mcCollision.multMCNParticlesEta05(), 0);
-    hGenEventsNchEta08->Fill(mcCollision.multMCNParticlesEta08(), 0);
+    qaRegistry.fill(HIST("QAEvent/hEvtMC"), 0);
+    qaRegistry.fill(HIST("QAEvent/McColAll/hImpactParamGen"), mcCollision.impactParameter());
+    qaRegistry.fill(HIST("QAEvent/hGenEventsNchEta05"), mcCollision.multMCNParticlesEta05(), 0);
+    qaRegistry.fill(HIST("QAEvent/hGenEventsNchEta08"), mcCollision.multMCNParticlesEta08(), 0);
 
     // Fill generated events with no reconstructed collisions
     if (collisions.size() == 0) {
-      hEvtMC->Fill(1);
+      qaRegistry.fill(HIST("QAEvent/hEvtMC"), 1);
     }
 
     // Define the generated events with at least one reconstructed event
@@ -1117,24 +1078,24 @@ struct HyperRecoTask {
         centralityFT0C = col.centFT0C();
       }
       atLeastOneRecoEvt = true;
-      hImpactParamReco->Fill(mcCollision.impactParameter());
-      hRecoCentrality->Fill(col.centFT0C());
-      hRecoCentralityColvsMultiplicityRecoEta05->Fill(col.centFT0C(), mcCollision.multMCNParticlesEta05());
-      hRecoCentralityColvsMultiplicityRecoEta08->Fill(col.centFT0C(), mcCollision.multMCNParticlesEta08());
-      hRecoCentralityColvsImpactParamReco->Fill(col.centFT0C(), mcCollision.impactParameter());
-      hRecoCentralityColvsFT0Cmultiplicity->Fill(col.centFT0C(), mcCollision.multMCFT0C());
+      qaRegistry.fill(HIST("QAEvent/McColAll/hImpactParamReco"), mcCollision.impactParameter());
+      qaRegistry.fill(HIST("QAEvent/McColAll/hRecoCentrality"), col.centFT0C());
+      qaRegistry.fill(HIST("QAEvent/McColAll/hRecoCentralityColvsMultiplicityRecoEta05"), col.centFT0C(), mcCollision.multMCNParticlesEta05());
+      qaRegistry.fill(HIST("QAEvent/McColAll/hRecoCentralityColvsMultiplicityRecoEta08"), col.centFT0C(), mcCollision.multMCNParticlesEta08());
+      qaRegistry.fill(HIST("QAEvent/McColAll/hRecoCentralityColvsImpactParamReco"), col.centFT0C(), mcCollision.impactParameter());
+      qaRegistry.fill(HIST("QAEvent/McColAll/hRecoCentralityColvsFT0Cmultiplicity"), col.centFT0C(), mcCollision.multMCFT0C());
     }
 
     if (atLeastOneRecoEvt) {
-      hEvtMC->Fill(2);
-      hGenEventsNchEta05->Fill(mcCollision.multMCNParticlesEta05(), 1);
-      hGenEventsNchEta08->Fill(mcCollision.multMCNParticlesEta08(), 1);
-      hImpactParamGenOneReco->Fill(mcCollision.impactParameter());
-      hGenOneRecoCentrality->Fill(centralityFT0C);
-      hGenCentralityColvsMultiplicityGenEta05->Fill(centralityFT0C, mcCollision.multMCNParticlesEta05());
-      hGenCentralityColvsMultiplicityGenEta08->Fill(centralityFT0C, mcCollision.multMCNParticlesEta08());
-      hGenCentralityColvsImpactParamGen->Fill(centralityFT0C, mcCollision.impactParameter());
-      hGenCentralityColvsFT0Cmultiplicity->Fill(centralityFT0C, mcCollision.multMCFT0C());
+      qaRegistry.fill(HIST("QAEvent/hEvtMC"), 2);
+      qaRegistry.fill(HIST("QAEvent/hGenEventsNchEta05"), mcCollision.multMCNParticlesEta05(), 1);
+      qaRegistry.fill(HIST("QAEvent/hGenEventsNchEta08"), mcCollision.multMCNParticlesEta08(), 1);
+      qaRegistry.fill(HIST("QAEvent/McColPassedEvSel/hImpactParamGenOneReco"), mcCollision.impactParameter());
+      qaRegistry.fill(HIST("QAEvent/McColPassedEvSel/hGenOneRecoCentrality"), centralityFT0C);
+      qaRegistry.fill(HIST("QAEvent/McColPassedEvSel/hGenCentralityColvsMultiplicityGenEta05"), centralityFT0C, mcCollision.multMCNParticlesEta05());
+      qaRegistry.fill(HIST("QAEvent/McColPassedEvSel/hGenCentralityColvsMultiplicityGenEta08"), centralityFT0C, mcCollision.multMCNParticlesEta08());
+      qaRegistry.fill(HIST("QAEvent/McColPassedEvSel/hGenCentralityColvsImpactParamGen"), centralityFT0C, mcCollision.impactParameter());
+      qaRegistry.fill(HIST("QAEvent/McColPassedEvSel/hGenCentralityColvsFT0Cmultiplicity"), centralityFT0C, mcCollision.multMCFT0C());
     }
     // Construct the H3L 4-vector based on the generated daugthers identification by PDG
     ROOT::Math::PxPyPzMVector daugh1, daugh2, mother;
@@ -1172,19 +1133,19 @@ struct HyperRecoTask {
       mother = daugh1 + daugh2;
 
       // Fill informations for generated 3HL in all generated events
-      hGen3HLBeforeEvtSel->Fill(mother.pt());
-      hGen3HLvsImpactParameterBeforeEvtSel->Fill(mother.pt(), mcCollision.impactParameter());
-      hGen3HLvsMultiplicityGenEta05BeforeEvtSel->Fill(mother.pt(), mcCollision.multMCNParticlesEta05());
-      hGen3HLvsMultiplicityGenEta08BeforeEvtSel->Fill(mother.pt(), mcCollision.multMCNParticlesEta08());
-      hGen3HLvsMultiplicityFT0CBeforeEvtSel->Fill(mother.pt(), mcCollision.multMCFT0C());
+      qaRegistry.fill(HIST("QAEvent/McCol3HL/hGen3HLBeforeEvtSel"), mother.pt());
+      qaRegistry.fill(HIST("QAEvent/McCol3HL/hGen3HLvsImpactParameterBeforeEvtSel"), mother.pt(), mcCollision.impactParameter());
+      qaRegistry.fill(HIST("QAEvent/McCol3HL/hGen3HLvsMultiplicityGenEta05BeforeEvtSel"), mother.pt(), mcCollision.multMCNParticlesEta05());
+      qaRegistry.fill(HIST("QAEvent/McCol3HL/hGen3HLvsMultiplicityGenEta08BeforeEvtSel"), mother.pt(), mcCollision.multMCNParticlesEta08());
+      qaRegistry.fill(HIST("QAEvent/McCol3HL/hGen3HLvsMultiplicityFT0CBeforeEvtSel"), mother.pt(), mcCollision.multMCFT0C());
 
       // Fill informations for generated 3HL in generated events with at least one reconstructed event
       if (atLeastOneRecoEvt) {
-        hGen3HLAfterSel->Fill(mother.pt());
-        hGen3HLvsImpactParameterAfterSel->Fill(mother.pt(), mcCollision.impactParameter());
-        hGen3HLvsMultiplicityGenEta05AfterSel->Fill(mother.pt(), mcCollision.multMCNParticlesEta05());
-        hGen3HLvsMultiplicityGenEta08AfterSel->Fill(mother.pt(), mcCollision.multMCNParticlesEta08());
-        hGen3HLvsMultiplicityFT0CAfterSel->Fill(mother.pt(), mcCollision.multMCFT0C());
+        qaRegistry.fill(HIST("QAEvent/McCol3HL/hGen3HLAfterSel"), mother.pt());
+        qaRegistry.fill(HIST("QAEvent/McCol3HL/hGen3HLvsImpactParameterAfterSel"), mother.pt(), mcCollision.impactParameter());
+        qaRegistry.fill(HIST("QAEvent/McCol3HL/hGen3HLvsMultiplicityGenEta05AfterSel"), mother.pt(), mcCollision.multMCNParticlesEta05());
+        qaRegistry.fill(HIST("QAEvent/McCol3HL/hGen3HLvsMultiplicityGenEta08AfterSel"), mother.pt(), mcCollision.multMCNParticlesEta08());
+        qaRegistry.fill(HIST("QAEvent/McCol3HL/hGen3HLvsMultiplicityFT0CAfterSel"), mother.pt(), mcCollision.multMCFT0C());
       }
     }
   }

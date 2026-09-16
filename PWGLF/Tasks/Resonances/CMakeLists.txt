@@ -333,3 +333,8 @@ o2physics_add_dpl_workflow(cha01710analysis
     SOURCES cha01710analysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(xi1530kaoncorrelation
+    SOURCES xi1530kaoncorrelation.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
