@@ -70,24 +70,24 @@ void drawFastTracker(const float magneticField = 20.f, // in units of kGauss
   Double_t resZIB = 0.00025;
   Double_t resRPhiOB = 0.00100;
   Double_t resZOB = 0.00100;
-  Double_t eff = 0.98;
+  Double_t trackerEff = 0.98;
   // fastTracker.AddLayer("vertex", 0.0, 250, 0, 0);                // dummy vertex for matrix calculation
 
   // N.B. Tracker configuration outdated and is only meant to be used as a template
   fastTracker.addLayer("bpipe0", 0.48, 250, 0.00042, 2.772e-02); // 150 mum Be
-  fastTracker.addLayer("B00", 0.50, 250, x0IB, xrhoIB, resRPhiIB, resZIB, eff, 1);
-  fastTracker.addLayer("B01", 1.20, 250, x0IB, xrhoIB, resRPhiIB, resZIB, eff, 1);
-  fastTracker.addLayer("B02", 2.50, 250, x0IB, xrhoIB, resRPhiIB, resZIB, eff, 1);
+  fastTracker.addLayer("B00", 0.50, 250, x0IB, xrhoIB, resRPhiIB, resZIB, trackerEff, 1);
+  fastTracker.addLayer("B01", 1.20, 250, x0IB, xrhoIB, resRPhiIB, resZIB, trackerEff, 1);
+  fastTracker.addLayer("B02", 2.50, 250, x0IB, xrhoIB, resRPhiIB, resZIB, trackerEff, 1);
   fastTracker.addLayer("bpipe1", 3.7, 250, 0.0014, 9.24e-02); // 500 mum Be
-  fastTracker.addLayer("B03", 3.75, 250, x0OB, xrhoOB, resRPhiOB, resZOB, eff, 1);
-  fastTracker.addLayer("B04", 7.00, 250, x0OB, xrhoOB, resRPhiOB, resZOB, eff, 1);
-  fastTracker.addLayer("B05", 12.0, 250, x0OB, xrhoOB, resRPhiOB, resZOB, eff, 1);
-  fastTracker.addLayer("B06", 20.0, 250, x0OB, xrhoOB, resRPhiOB, resZOB, eff, 1);
-  fastTracker.addLayer("B07", 30.0, 250, x0OB, xrhoOB, resRPhiOB, resZOB, eff, 1);
-  fastTracker.addLayer("B08", 45.0, 250, x0OB, xrhoOB, resRPhiOB, resZOB, eff, 1);
-  fastTracker.addLayer("B09", 60.0, 250, x0OB, xrhoOB, resRPhiOB, resZOB, eff, 1);
-  fastTracker.addLayer("B10", 80.0, 250, x0OB, xrhoOB, resRPhiOB, resZOB, eff, 1);
-  fastTracker.addLayer("B11", 100., 250, x0OB, xrhoOB, resRPhiOB, resZOB, eff, 1);
+  fastTracker.addLayer("B03", 3.75, 250, x0OB, xrhoOB, resRPhiOB, resZOB, trackerEff, 1);
+  fastTracker.addLayer("B04", 7.00, 250, x0OB, xrhoOB, resRPhiOB, resZOB, trackerEff, 1);
+  fastTracker.addLayer("B05", 12.0, 250, x0OB, xrhoOB, resRPhiOB, resZOB, trackerEff, 1);
+  fastTracker.addLayer("B06", 20.0, 250, x0OB, xrhoOB, resRPhiOB, resZOB, trackerEff, 1);
+  fastTracker.addLayer("B07", 30.0, 250, x0OB, xrhoOB, resRPhiOB, resZOB, trackerEff, 1);
+  fastTracker.addLayer("B08", 45.0, 250, x0OB, xrhoOB, resRPhiOB, resZOB, trackerEff, 1);
+  fastTracker.addLayer("B09", 60.0, 250, x0OB, xrhoOB, resRPhiOB, resZOB, trackerEff, 1);
+  fastTracker.addLayer("B10", 80.0, 250, x0OB, xrhoOB, resRPhiOB, resZOB, trackerEff, 1);
+  fastTracker.addLayer("B11", 100., 250, x0OB, xrhoOB, resRPhiOB, resZOB, trackerEff, 1);
 
   fastTracker.print();
   fastTracker.setMagneticField(magneticField);
