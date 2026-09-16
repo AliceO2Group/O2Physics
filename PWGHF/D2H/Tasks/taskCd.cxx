@@ -913,10 +913,17 @@ struct HfTaskCd {
           registry.fill(HIST("Data/hNsigmaTOFKaVsP"), prong1.tpcInnerParam() * prong1.sign(), nSigmaTofKa);
 
           // Diagnostic categories only: preserve the existing selection predicates below.
-          enum TofStatus { NoMatch, Nonfinite, Missing, WithinCut, OutsideCut };
+          enum TofStatus { NoMatch,
+                           Nonfinite,
+                           Missing,
+                           WithinCut,
+                           OutsideCut };
           constexpr float MissingTofNSigma{-999.f};
           const int hypothesis = isDeKPi ? 0 : 1;
-          const int tofStatus = !deuteronProng.hasTOF() ? NoMatch : !std::isfinite(nSigmaTofDe) ? Nonfinite : nSigmaTofDe <= MissingTofNSigma ? Missing : std::abs(nSigmaTofDe) <= cfgMaxDeuteronTofPidPreselection ? WithinCut : OutsideCut;
+          const int tofStatus = !deuteronProng.hasTOF() ? NoMatch : !std::isfinite(nSigmaTofDe)                               ? Nonfinite
+                                                                  : nSigmaTofDe <= MissingTofNSigma                           ? Missing
+                                                                  : std::abs(nSigmaTofDe) <= cfgMaxDeuteronTofPidPreselection ? WithinCut
+                                                                                                                              : OutsideCut;
           registry.fill(HIST("Data/hDeuteronTofStatus"), tofStatus, hypothesis);
           registry.fill(HIST("Data/hTreeCutFlow"), 0, hypothesis);
           if (cfgUseTofPidForDeuteron && std::abs(nSigmaTofDe) > cfgMaxDeuteronTofPidPreselection) {
