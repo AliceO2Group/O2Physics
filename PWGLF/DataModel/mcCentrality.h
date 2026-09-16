@@ -20,6 +20,7 @@
 #ifndef PWGLF_DATAMODEL_MCCENTRALITY_H_
 #define PWGLF_DATAMODEL_MCCENTRALITY_H_
 
+// O2 includes
 #include "Common/DataModel/Centrality.h"
 
 #include <Framework/ASoA.h>
@@ -38,8 +39,12 @@ DECLARE_SOA_TABLE(McCentFV0As, "AOD", "MCCENTFV0A", o2::soa::Marker<1>, cent::Ce
 DECLARE_SOA_TABLE(McCentFT0Ms, "AOD", "MCCENTFT0M", o2::soa::Marker<2>, cent::CentFT0M);
 DECLARE_SOA_TABLE(McCentFT0As, "AOD", "MCCENTFT0A", o2::soa::Marker<3>, cent::CentFT0A);
 DECLARE_SOA_TABLE(McCentFT0Cs, "AOD", "MCCENTFT0C", o2::soa::Marker<4>, cent::CentFT0C);
-DECLARE_SOA_TABLE(McCentFDDMs, "AOD", "MCCENTFDDM", o2::soa::Marker<5>, cent::CentFDDM);
-DECLARE_SOA_TABLE(McCentNTPVs, "AOD", "MCCENTNTPV", o2::soa::Marker<6>, cent::CentNTPV);
+DECLARE_SOA_TABLE(McCentFT0CVariant1s, "AOD", "MCCENTFT0CVAR1", o2::soa::Marker<5>, cent::CentFT0CVariant1);
+DECLARE_SOA_TABLE(McCentFT0CVariant2s, "AOD", "MCCENTFT0CVAR2", o2::soa::Marker<6>, cent::CentFT0CVariant2);
+DECLARE_SOA_TABLE(McCentFDDMs, "AOD", "MCCENTFDDM", o2::soa::Marker<7>, cent::CentFDDM);
+DECLARE_SOA_TABLE(McCentNTPVs, "AOD", "MCCENTNTPV", o2::soa::Marker<8>, cent::CentNTPV);
+DECLARE_SOA_TABLE(McCentNGlobals, "AOD", "MCCENTNGLOBAL", o2::soa::Marker<9>, cent::CentNGlobal);
+DECLARE_SOA_TABLE(McCentMFTs, "AOD", "MCCENTMFT", o2::soa::Marker<10>, cent::CentMFT);
 
 } // namespace o2::aod
 

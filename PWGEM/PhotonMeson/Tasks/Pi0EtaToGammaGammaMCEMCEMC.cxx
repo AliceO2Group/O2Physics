@@ -27,7 +27,7 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::aod::pwgem::photonmeson::photonpair;
 
-using MyEMCClusters = soa::Join<aod::MinClusters, aod::EMEMCClusterMCLabels, aod::EMCEMEventIds>;
+using MyEMCClusters = soa::Join<aod::MinClusters, aod::EMEMCClusterMCLabels_001, aod::EMCEMEventIds>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {

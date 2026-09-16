@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file MeanptFluctuations.cxx
+/// \file meanptFluctuations.cxx
 /// \brief Task for analyzing <pT> fluctuation upto fourth order of inclusive hadrons
 /// \author Swati Saha
 
@@ -34,7 +34,6 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TDatabasePDG.h>
 #include <TF1.h>
 #include <THn.h>
 #include <TPDGCode.h>
@@ -56,9 +55,9 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
+#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, (DEFAULT), (HELP)};
 
-struct MeanptFluctuationsAnalysis {
+struct MeanptFluctuations {
 
   // MC
   Configurable<bool> cfgIsMC{"cfgIsMC", true, "Run MC"};
@@ -89,6 +88,7 @@ struct MeanptFluctuationsAnalysis {
   Configurable<bool> cfgEvSelkNoTimeFrameBorder{"cfgEvSelkNoTimeFrameBorder", true, "TimeFrame border event selection cut"};
   Configurable<bool> cfgEvSelUseGoodZvtxFT0vsPV{"cfgEvSelUseGoodZvtxFT0vsPV", true, "GoodZvertex and FT0 vs PV cut"};
   Configurable<int> cfgCentralityEstimator{"cfgCentralityEstimator", 1, "Centrlaity estimatore choice: 1-->FT0C, 2-->FT0A; 3-->FT0M, 4-->FV0A"};
+  Configurable<bool> cfgUseParticlePDGsInProcessMcReco{"cfgUseParticlePDGsInProcessMcReco", true, "Check partcile PDG codes in reco"};
 
   // pT dep DCAxy and DCAz cuts
   Configurable<bool> cfgUsePtDepDCAxy{"cfgUsePtDepDCAxy", true, "Use pt-dependent DCAxy cut"};
@@ -144,7 +144,7 @@ struct MeanptFluctuationsAnalysis {
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutPreSelEta) && (aod::track::pt > cfgCutPtLower) && (aod::track::pt < cfgCutPreSelPt) && (requireGlobalTrackInFilter()) && (aod::track::tpcChi2NCl < cfgCutTpcChi2NCl) && (aod::track::itsChi2NCl < cfgCutItsChi2NCl) && (nabs(aod::track::dcaZ) < cfgCutTrackDcaZ);
 
   // Connect to ccdb
-  Service<ccdb::BasicCCDBManager> ccdb;
+  Service<ccdb::BasicCCDBManager> ccdb{};
   Configurable<int64_t> ccdbnolaterthan{"ccdbnolaterthan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<std::string> ccdburl{"ccdburl", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
 
@@ -225,6 +225,7 @@ struct MeanptFluctuationsAnalysis {
     histos.add("AnalysisProfiles/Prof_skew_t1", "", {HistType::kTProfile2D, {centAxis, multAxis}});
     histos.add("AnalysisProfiles/Prof_kurt_t1", "", {HistType::kTProfile2D, {centAxis, multAxis}});
     histos.add("AnalysisProfiles/Hist2D_Nch_centrality", "", {HistType::kTH2D, {centAxis, multAxis}});
+    histos.add("AnalysisProfiles/Hist2D_Ngen_centrality", "", {HistType::kTH2D, {centAxis, multAxis}});
     histos.add("AnalysisProfiles/Hist2D_meanpt_centrality", "", {HistType::kTH2D, {centAxis, meanpTAxis}});
 
     // Analysis Profiles for error (reconstructed data)
@@ -319,21 +320,21 @@ struct MeanptFluctuationsAnalysis {
       cfgFuncParas.multGlobalPVCutPars = cfgFuncParas.cfgMultGlobalPVCutPars;
       cfgFuncParas.multMultV0ACutPars = cfgFuncParas.cfgMultMultV0ACutPars;
       cfgFuncParas.fMultPVT0CCutLow = new TF1("fMultPVT0CCutLow", cfgFuncParas.cfgMultCentLowCutFunction->c_str(), 0, 100);
-      cfgFuncParas.fMultPVT0CCutLow->SetParameters(&(cfgFuncParas.multPVT0CCutPars[0]));
+      cfgFuncParas.fMultPVT0CCutLow->SetParameters(cfgFuncParas.multPVT0CCutPars.data());
       cfgFuncParas.fMultPVT0CCutHigh = new TF1("fMultPVT0CCutHigh", cfgFuncParas.cfgMultCentHighCutFunction->c_str(), 0, 100);
-      cfgFuncParas.fMultPVT0CCutHigh->SetParameters(&(cfgFuncParas.multPVT0CCutPars[0]));
+      cfgFuncParas.fMultPVT0CCutHigh->SetParameters(cfgFuncParas.multPVT0CCutPars.data());
       cfgFuncParas.fMultT0CCutLow = new TF1("fMultT0CCutLow", cfgFuncParas.cfgMultCentLowCutFunction->c_str(), 0, 100);
-      cfgFuncParas.fMultT0CCutLow->SetParameters(&(cfgFuncParas.multT0CCutPars[0]));
+      cfgFuncParas.fMultT0CCutLow->SetParameters(cfgFuncParas.multT0CCutPars.data());
       cfgFuncParas.fMultT0CCutHigh = new TF1("fMultT0CCutHigh", cfgFuncParas.cfgMultCentHighCutFunction->c_str(), 0, 100);
-      cfgFuncParas.fMultT0CCutHigh->SetParameters(&(cfgFuncParas.multT0CCutPars[0]));
+      cfgFuncParas.fMultT0CCutHigh->SetParameters(cfgFuncParas.multT0CCutPars.data());
       cfgFuncParas.fMultGlobalPVCutLow = new TF1("fMultGlobalPVCutLow", cfgFuncParas.cfgMultMultPVLowCutFunction->c_str(), 0, 4000);
-      cfgFuncParas.fMultGlobalPVCutLow->SetParameters(&(cfgFuncParas.multGlobalPVCutPars[0]));
+      cfgFuncParas.fMultGlobalPVCutLow->SetParameters(cfgFuncParas.multGlobalPVCutPars.data());
       cfgFuncParas.fMultGlobalPVCutHigh = new TF1("fMultGlobalPVCutHigh", cfgFuncParas.cfgMultMultPVHighCutFunction->c_str(), 0, 4000);
-      cfgFuncParas.fMultGlobalPVCutHigh->SetParameters(&(cfgFuncParas.multGlobalPVCutPars[0]));
+      cfgFuncParas.fMultGlobalPVCutHigh->SetParameters(cfgFuncParas.multGlobalPVCutPars.data());
       cfgFuncParas.fMultMultV0ACutLow = new TF1("fMultMultV0ACutLow", cfgFuncParas.cfgMultMultV0ALowCutFunction->c_str(), 0, 4000);
-      cfgFuncParas.fMultMultV0ACutLow->SetParameters(&(cfgFuncParas.multMultV0ACutPars[0]));
+      cfgFuncParas.fMultMultV0ACutLow->SetParameters(cfgFuncParas.multMultV0ACutPars.data());
       cfgFuncParas.fMultMultV0ACutHigh = new TF1("fMultMultV0ACutHigh", cfgFuncParas.cfgMultMultV0AHighCutFunction->c_str(), 0, 4000);
-      cfgFuncParas.fMultMultV0ACutHigh->SetParameters(&(cfgFuncParas.multMultV0ACutPars[0]));
+      cfgFuncParas.fMultMultV0ACutHigh->SetParameters(cfgFuncParas.multMultV0ACutPars.data());
       cfgFuncParas.fT0AV0AMean = new TF1("fT0AV0AMean", "[0]+[1]*x", 0, 200000);
       cfgFuncParas.fT0AV0AMean->SetParameters(-1601.0581, 9.417652e-01);
       cfgFuncParas.fT0AV0ASigma = new TF1("fT0AV0ASigma", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 200000);
@@ -350,7 +351,7 @@ struct MeanptFluctuationsAnalysis {
   } //! end init function
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision, const int& multTrk, const float& centrality)
+  bool eventSelected(TCollision const& collision, const int multTrk, const float centrality)
   {
     if (collision.alias_bit(kTVXinTRD)) {
       // TRD triggered
@@ -362,71 +363,87 @@ struct MeanptFluctuationsAnalysis {
       float zRes = std::sqrt(collision.covZZ());
       float zResMax = 0.25;
       float numContribMin = 20;
-      if (zRes > zResMax && collision.numContrib() < numContribMin)
+      if (zRes > zResMax && collision.numContrib() < numContribMin) {
         vtxz = -999;
+      }
     }
     auto multNTracksPV = collision.multNTracksPV();
 
-    if ((vtxz > cfgCutVertex) || (vtxz < -1.0 * cfgCutVertex))
+    if ((vtxz > cfgCutVertex) || (vtxz < -1.0 * cfgCutVertex)) {
       return 0;
-    if (multNTracksPV < fMultPVCutLow->Eval(centrality))
+    }
+    if (multNTracksPV < fMultPVCutLow->Eval(centrality)) {
       return 0;
-    if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
+    }
+    if (multNTracksPV > fMultPVCutHigh->Eval(centrality)) {
       return 0;
-    if (multTrk < fMultCutLow->Eval(centrality))
+    }
+    if (multTrk < fMultCutLow->Eval(centrality)) {
       return 0;
-    if (multTrk > fMultCutHigh->Eval(centrality))
+    }
+    if (multTrk > fMultCutHigh->Eval(centrality)) {
       return 0;
-    if (multTrk > fMultMultPVCut->Eval(multNTracksPV))
+    }
+    if (multTrk > fMultMultPVCut->Eval(multNTracksPV)) {
       return 0;
+    }
 
     return 1;
   }
 
   template <typename TCollision>
-  bool eventSelectedSmallion(TCollision collision, const int multTrk, const float centrality)
+  bool eventSelectedSmallion(TCollision const& collision, const int multTrk, const float centrality)
   {
     auto multNTracksPV = collision.multNTracksPV();
 
     if (cfgEvSelMultCorrelation) {
       if (cfgFuncParas.cfgMultPVT0CCutEnabled) {
-        if (multNTracksPV < cfgFuncParas.fMultPVT0CCutLow->Eval(centrality))
+        if (multNTracksPV < cfgFuncParas.fMultPVT0CCutLow->Eval(centrality)) {
           return 0;
-        if (multNTracksPV > cfgFuncParas.fMultPVT0CCutHigh->Eval(centrality))
+        }
+        if (multNTracksPV > cfgFuncParas.fMultPVT0CCutHigh->Eval(centrality)) {
           return 0;
+        }
       }
 
       if (cfgFuncParas.cfgMultT0CCutEnabled) {
-        if (multTrk < cfgFuncParas.fMultT0CCutLow->Eval(centrality))
+        if (multTrk < cfgFuncParas.fMultT0CCutLow->Eval(centrality)) {
           return 0;
-        if (multTrk > cfgFuncParas.fMultT0CCutHigh->Eval(centrality))
+        }
+        if (multTrk > cfgFuncParas.fMultT0CCutHigh->Eval(centrality)) {
           return 0;
+        }
       }
 
       if (cfgFuncParas.cfgMultGlobalPVCutEnabled) {
-        if (multTrk < cfgFuncParas.fMultGlobalPVCutLow->Eval(multNTracksPV))
+        if (multTrk < cfgFuncParas.fMultGlobalPVCutLow->Eval(multNTracksPV)) {
           return 0;
-        if (multTrk > cfgFuncParas.fMultGlobalPVCutHigh->Eval(multNTracksPV))
+        }
+        if (multTrk > cfgFuncParas.fMultGlobalPVCutHigh->Eval(multNTracksPV)) {
           return 0;
+        }
       }
 
       if (cfgFuncParas.cfgMultMultV0ACutEnabled) {
-        if (collision.multFV0A() < cfgFuncParas.fMultMultV0ACutLow->Eval(multTrk))
+        if (collision.multFV0A() < cfgFuncParas.fMultMultV0ACutLow->Eval(multTrk)) {
           return 0;
-        if (collision.multFV0A() > cfgFuncParas.fMultMultV0ACutHigh->Eval(multTrk))
+        }
+        if (collision.multFV0A() > cfgFuncParas.fMultMultV0ACutHigh->Eval(multTrk)) {
           return 0;
+        }
       }
     }
 
     float sigma = 5.0;
-    if (cfgEvSelV0AT0ACut && (std::fabs(collision.multFV0A() - cfgFuncParas.fT0AV0AMean->Eval(collision.multFT0A())) > sigma * cfgFuncParas.fT0AV0ASigma->Eval(collision.multFT0A())))
+    if (cfgEvSelV0AT0ACut && (std::fabs(collision.multFV0A() - cfgFuncParas.fT0AV0AMean->Eval(collision.multFT0A())) > sigma * cfgFuncParas.fT0AV0ASigma->Eval(collision.multFT0A()))) {
       return 0;
+    }
 
     return 1;
   }
 
   template <typename TCollision>
-  bool eventSelectionDefaultCuts(TCollision coll)
+  bool eventSelectionDefaultCuts(TCollision const& coll)
   {
     histos.fill(HIST("hEventStatData"), 0.5);
     if (!coll.sel8()) {
@@ -490,7 +507,7 @@ struct MeanptFluctuationsAnalysis {
     if (std::abs(mcCollision.posZ()) < cfgCutVertex) {
       histos.fill(HIST("MCGenerated/hMC"), 1.5);
     }
-    auto cent = 0;
+    auto cent = 0.0f;
 
     int nchInel = 0;
     for (const auto& mcParticle : mcParticles) {
@@ -501,8 +518,9 @@ struct MeanptFluctuationsAnalysis {
         }
       }
     }
-    if (nchInel > 0 && std::abs(mcCollision.posZ()) < cfgCutVertex)
+    if (nchInel > 0 && std::abs(mcCollision.posZ()) < cfgCutVertex) {
       histos.fill(HIST("MCGenerated/hMC"), 2.5);
+    }
     std::vector<int64_t> selectedEvents(collisions.size());
     int nevts = 0;
 
@@ -557,15 +575,19 @@ struct MeanptFluctuationsAnalysis {
     float nChgen = 0.0;
 
     for (const auto& mcParticle : mcParticles) {
-      if (!mcParticle.has_mcCollision())
+      if (!mcParticle.has_mcCollision()) {
         continue;
+      }
 
       // charged check
-      auto pdgEntry = TDatabasePDG::Instance()->GetParticle(mcParticle.pdgCode());
-      if (!pdgEntry)
-        continue;
-      if (pdgEntry->Charge() == 0)
-        continue;
+      auto pdgcode = std::abs(mcParticle.pdgCode());
+      if (pdgcode != PDG_t::kPiPlus &&
+          pdgcode != PDG_t::kKPlus &&
+          pdgcode != PDG_t::kProton &&
+          pdgcode != PDG_t::kElectron &&
+          pdgcode != PDG_t::kMuonMinus) {
+        continue; // skip this track
+      }
 
       if (mcParticle.isPhysicalPrimary()) {
         if ((mcParticle.pt() > cfgCutPtLower) && (mcParticle.pt() < cfgCutPreSelPt) && (std::abs(mcParticle.eta()) < cfgCutPreSelEta)) {
@@ -589,8 +611,9 @@ struct MeanptFluctuationsAnalysis {
     } //! end particle loop
 
     // Generated MeanPt distribution
-    if (nNgen > 0.0f)
+    if (nNgen > 0.0f) {
       histos.fill(HIST("MCGenerated/hMeanPt"), cent, pTsumgen / nNgen);
+    }
 
     // calculating observables
     if (nChgen > cfgMinNch) {
@@ -627,72 +650,120 @@ struct MeanptFluctuationsAnalysis {
     }
     //-------------------------------------------------------------------------------------------
   }
-  PROCESS_SWITCH(MeanptFluctuationsAnalysis, processMCGen, "Process Generated MC data", true);
+  PROCESS_SWITCH(MeanptFluctuations, processMCGen, "Process Generated MC data", true);
 
-  void processMCRec(MyMCRecCollisions::iterator const& collision, MyMCTracks const& tracks, aod::McCollisions const&, aod::McParticles const& mcParticles)
+  void processMCRec(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions, MyMCTracks const& tracks)
   {
     histos.fill(HIST("MCGenerated/hMC"), 5.5);
 
-    if (!collision.has_mcCollision()) {
-      return;
+    if (collisions.size() == 0) {
+      return; // this generated event was never reconstructed at all
     }
+
     histos.fill(HIST("MCGenerated/hMC"), 6.5);
 
-    if (!eventSelectionDefaultCuts(collision)) {
+    std::vector<int64_t> selectedEvents(collisions.size());
+    int nevts = 0;
+
+    for (const auto& collision : collisions) {
+      if (!collision.sel8() || std::abs(collision.mcCollision().posZ()) > cfgCutVertex) {
+        continue;
+      }
+      if (cfgUseGoodITSLayerAllCut && !(collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))) {
+        continue;
+      }
+      if (cfgEvSelkNoSameBunchPileup && !(collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))) {
+        continue;
+      }
+      if (cfgEvSelkNoITSROFrameBorder && !(collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
+      if (cfgEvSelkNoTimeFrameBorder && !(collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))) {
+        continue;
+      }
+      if (cfgEvSelUseGoodZvtxFT0vsPV && !(collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))) {
+        continue;
+      }
+
+      auto rectrackspart = tracks.sliceBy(perCollision, collision.globalIndex());
+      auto cent = collision.centFT0C();
+
+      fillMultCorrPlotsBeforeSel(collision, rectrackspart);
+
+      if (cfgUseSmallIonAdditionalEventCutInMC && !eventSelectedSmallion(collision, rectrackspart.size(), cent)) {
+        continue;
+      }
+
+      if (cfgUseSmallIonAdditionalEventCutInMC) {
+        fillMultCorrPlotsAfterSel(collision, rectrackspart);
+      }
+
+      selectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
+    }
+    selectedEvents.resize(nevts);
+    const auto evtReconstructedAndSelected = std::find(selectedEvents.begin(), selectedEvents.end(), mcCollision.globalIndex()) != selectedEvents.end();
+
+    if (!evtReconstructedAndSelected) { // Check that the event is reconstructed and that the reconstructed events pass the selection
       return;
     }
     histos.fill(HIST("MCGenerated/hMC"), 7.5);
 
-    fillMultCorrPlotsBeforeSel(collision, tracks);
-
-    const auto centralityFT0C = collision.centFT0C();
-    if (cfgUse22sEventCut && !eventSelected(collision, tracks.size(), centralityFT0C))
-      return;
-    if (cfgUseSmallIonAdditionalEventCut && !eventSelectedSmallion(collision, tracks.size(), centralityFT0C))
-      return;
-
-    if (cfgUseSmallIonAdditionalEventCut) {
-      fillMultCorrPlotsAfterSel(collision, tracks);
+    auto bestColl = collisions.begin();
+    bool foundValidColl = false;
+    for (auto const& coll : collisions) {
+      if (!foundValidColl || coll.numContrib() > bestColl.numContrib()) {
+        bestColl = coll;
+        foundValidColl = true;
+      }
     }
-
+    if (!foundValidColl) {
+      return;
+    }
     histos.fill(HIST("MCGenerated/hMC"), 8.5);
-    histos.fill(HIST("hZvtx_after_sel"), collision.posZ());
+
+    if (!bestColl.has_mcCollision()) {
+      return;
+    }
+    histos.fill(HIST("MCGenerated/hMC"), 9.5);
 
     double cent = 0.0;
     int centChoiceFT0C = 1;
     int centChoiceFT0A = 2;
     int centChoiceFT0M = 3;
     int centChoiceFV0A = 4;
-    if (cfgCentralityEstimator == centChoiceFT0C)
-      cent = collision.centFT0C();
-    else if (cfgCentralityEstimator == centChoiceFT0A)
-      cent = collision.centFT0A();
-    else if (cfgCentralityEstimator == centChoiceFT0M)
-      cent = collision.centFT0M();
-    else if (cfgCentralityEstimator == centChoiceFV0A)
-      cent = collision.centFV0A();
+    if (cfgCentralityEstimator == centChoiceFT0C) {
+      cent = bestColl.centFT0C();
+    } else if (cfgCentralityEstimator == centChoiceFT0A) {
+      cent = bestColl.centFT0A();
+    } else if (cfgCentralityEstimator == centChoiceFT0M) {
+      cent = bestColl.centFT0M();
+    } else if (cfgCentralityEstimator == centChoiceFV0A) {
+      cent = bestColl.centFV0A();
+    }
 
     histos.fill(HIST("hCentrality"), cent);
+    histos.fill(HIST("hZvtx_after_sel"), bestColl.posZ());
 
-    histos.fill(HIST("Hist2D_globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());
-    histos.fill(HIST("Hist2D_cent_nch"), tracks.size(), centralityFT0C);
+    auto tracksThisCollision = tracks.sliceBy(perCollision, bestColl.globalIndex());
+    histos.fill(HIST("Hist2D_globalTracks_PVTracks"), bestColl.multNTracksPV(), tracksThisCollision.size());
+    histos.fill(HIST("Hist2D_cent_nch"), tracksThisCollision.size(), cent);
 
     // Calculating generated no of particles for the collision event
     double noGen = 0.0;
-    auto mcColl = collision.mcCollision();
-    // Slice particles belonging only to this MC collision
-    auto particlesThisEvent = mcParticles.sliceBy(perMcCollision, mcColl.globalIndex());
-
-    for (const auto& mcParticle : particlesThisEvent) {
-      if (!mcParticle.has_mcCollision())
+    for (const auto& mcParticle : mcParticles) {
+      if (!mcParticle.has_mcCollision()) {
         continue;
+      }
 
       // charged check
-      auto pdgEntry = TDatabasePDG::Instance()->GetParticle(mcParticle.pdgCode());
-      if (!pdgEntry)
-        continue;
-      if (pdgEntry->Charge() == 0)
-        continue;
+      auto pdgcode = std::abs(mcParticle.pdgCode());
+      if (pdgcode != PDG_t::kPiPlus &&
+          pdgcode != PDG_t::kKPlus &&
+          pdgcode != PDG_t::kProton &&
+          pdgcode != PDG_t::kElectron &&
+          pdgcode != PDG_t::kMuonMinus) {
+        continue; // skip this track
+      }
 
       if (mcParticle.isPhysicalPrimary()) {
         if ((mcParticle.pt() > cfgCutPtLower) && (mcParticle.pt() < cfgCutPreSelPt) && (std::abs(mcParticle.eta()) < cfgCutPreSelEta)) {
@@ -706,14 +777,13 @@ struct MeanptFluctuationsAnalysis {
     // variables
     double pTsum = 0.0;
     double nN = 0.0;
-
     float q1 = 0.0;
     float q2 = 0.0;
     float q3 = 0.0;
     float q4 = 0.0;
     float nCh = 0.0;
 
-    for (const auto& track : tracks) { // Loop over tracks
+    for (const auto& track : tracksThisCollision) { // Loop over tracks
 
       if (!track.has_collision()) {
         continue;
@@ -725,6 +795,21 @@ struct MeanptFluctuationsAnalysis {
       auto particle = track.mcParticle();
       if (!particle.has_mcCollision()) {
         continue;
+      }
+
+      if (particle.mcCollisionId() != mcCollision.globalIndex()) { // reject tracks whose true particle belongs to a DIFFERENT generated collision (pileup contamination in bestColl)
+        continue;
+      }
+
+      if (cfgUseParticlePDGsInProcessMcReco) {
+        auto pdgPart = std::abs(particle.pdgCode());
+        if (pdgPart != PDG_t::kPiPlus &&
+            pdgPart != PDG_t::kKPlus &&
+            pdgPart != PDG_t::kProton &&
+            pdgPart != PDG_t::kElectron &&
+            pdgPart != PDG_t::kMuonMinus) {
+          continue; // skip this track
+        }
       }
 
       if (!track.isPVContributor()) {
@@ -777,8 +862,9 @@ struct MeanptFluctuationsAnalysis {
     histos.fill(HIST("MCGenerated/hNgenVsNrec"), noGen, nCh);
 
     // MeanPt
-    if (nN > 0.0f)
+    if (nN > 0.0f) {
       histos.fill(HIST("hMeanPt"), cent, pTsum / nN);
+    }
 
     // calculating observables
     if (nCh > cfgMinNch) {
@@ -799,6 +885,7 @@ struct MeanptFluctuationsAnalysis {
       histos.get<TProfile2D>(HIST("AnalysisProfilesV2/Prof_var_t1"))->Fill(noGen, nCh, varianceTerm1);
       histos.get<TProfile2D>(HIST("AnalysisProfilesV2/Prof_skew_t1"))->Fill(noGen, nCh, skewnessTerm1);
       histos.get<TProfile2D>(HIST("AnalysisProfilesV2/Prof_kurt_t1"))->Fill(noGen, nCh, kurtosisTerm1);
+      histos.fill(HIST("AnalysisProfiles/Hist2D_Ngen_centrality"), cent, noGen);
 
       // selecting subsample and filling profiles
       float lRandom = fRndm->Rndm();
@@ -815,7 +902,7 @@ struct MeanptFluctuationsAnalysis {
     }
     //-------------------------------------------------------------------------------------------
   }
-  PROCESS_SWITCH(MeanptFluctuationsAnalysis, processMCRec, "Process MC Reconstructed Data", true);
+  PROCESS_SWITCH(MeanptFluctuations, processMCRec, "Process MC Reconstructed Data", true);
 
   // void process(aod::Collision const& coll, aod::Tracks const& inputTracks)
   void processData(AodCollisions::iterator const& coll, aod::BCsWithTimestamps const&, AodTracks const& inputTracks)
@@ -827,10 +914,12 @@ struct MeanptFluctuationsAnalysis {
     fillMultCorrPlotsBeforeSel(coll, inputTracks);
 
     const auto centralityFT0C = coll.centFT0C();
-    if (cfgUse22sEventCut && !eventSelected(coll, inputTracks.size(), centralityFT0C))
+    if (cfgUse22sEventCut && !eventSelected(coll, inputTracks.size(), centralityFT0C)) {
       return;
-    if (cfgUseSmallIonAdditionalEventCut && !eventSelectedSmallion(coll, inputTracks.size(), centralityFT0C))
+    }
+    if (cfgUseSmallIonAdditionalEventCut && !eventSelectedSmallion(coll, inputTracks.size(), centralityFT0C)) {
       return;
+    }
 
     if (cfgUseSmallIonAdditionalEventCut) {
       fillMultCorrPlotsAfterSel(coll, inputTracks);
@@ -845,14 +934,15 @@ struct MeanptFluctuationsAnalysis {
     int centChoiceFT0A = 2;
     int centChoiceFT0M = 3;
     int centChoiceFV0A = 4;
-    if (cfgCentralityEstimator == centChoiceFT0C)
+    if (cfgCentralityEstimator == centChoiceFT0C) {
       cent = coll.centFT0C();
-    else if (cfgCentralityEstimator == centChoiceFT0A)
+    } else if (cfgCentralityEstimator == centChoiceFT0A) {
       cent = coll.centFT0A();
-    else if (cfgCentralityEstimator == centChoiceFT0M)
+    } else if (cfgCentralityEstimator == centChoiceFT0M) {
       cent = coll.centFT0M();
-    else if (cfgCentralityEstimator == centChoiceFV0A)
+    } else if (cfgCentralityEstimator == centChoiceFV0A) {
       cent = coll.centFV0A();
+    }
 
     histos.fill(HIST("hCentrality"), cent);
 
@@ -916,8 +1006,9 @@ struct MeanptFluctuationsAnalysis {
       }
     }
     // MeanPt
-    if (nN > 0.0f)
+    if (nN > 0.0f) {
       histos.fill(HIST("hMeanPt"), cent, pTsum / nN);
+    }
 
     // calculating observables
     if (nCh > cfgMinNch) {
@@ -944,12 +1035,12 @@ struct MeanptFluctuationsAnalysis {
     }
     //-------------------------------------------------------------------------------------------
   }
-  PROCESS_SWITCH(MeanptFluctuationsAnalysis, processData, "Process Real Data", true);
+  PROCESS_SWITCH(MeanptFluctuations, processData, "Process Real Data", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   // Equivalent to the AddTask in AliPhysics
   return WorkflowSpec{
-    adaptAnalysisTask<MeanptFluctuationsAnalysis>(cfgc)};
+    adaptAnalysisTask<MeanptFluctuations>(cfgc)};
 }

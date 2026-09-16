@@ -85,6 +85,7 @@ struct JetSpectraCharged {
   Configurable<float> kappa{"kappa", 1.0, "angularity kappa"};
   Configurable<float> alpha{"alpha", 1.0, "angularity alpha"};
   Configurable<bool> useFT0CVariant{"useFT0CVariant", false, "IF checkCentFT0M is false: false -> use standard FT0C centrality selection; true -> use FT0CVariant1"};
+  Configurable<float> rhoShift{"rhoShift", 0, "value of artificial rho shift: rho -> rho - rhoShift ; 0 by default"};
 
   std::vector<int> eventSelectionBits;
   int trackSelection = -1;
@@ -347,13 +348,13 @@ struct JetSpectraCharged {
       return true;
     } // if isMCGenOnly is true, skip MC selection and accept all of them
 
-    float centrality = -1.0;
+    float mcpCentrality = -1.0;
     // checkCentFT0M ? centrality = mccollision.centFT0M() : centrality = mccollision.centFT0C();
-    centrality = mccollision.centFT0M();
+    mcpCentrality = mccollision.centFT0M();
 
     if (fillHistograms) {
       registry.fill(HIST("h_mccollisions"), 0.5);
-      registry.fill(HIST("h2_centrality_mccollisions"), centrality, 0.5, eventWeight);
+      registry.fill(HIST("h2_centrality_mccollisions"), mcpCentrality, 0.5, eventWeight);
       if (isWeighted)
         registry.fill(HIST("h_mccollisions_weighted"), 0.5, eventWeight);
     }
@@ -363,7 +364,7 @@ struct JetSpectraCharged {
     }
     if (fillHistograms) {
       registry.fill(HIST("h_mccollisions"), 1.5);
-      registry.fill(HIST("h2_centrality_mccollisions"), centrality, 1.5, eventWeight);
+      registry.fill(HIST("h2_centrality_mccollisions"), mcpCentrality, 1.5, eventWeight);
       if (isWeighted)
         registry.fill(HIST("h_mccollisions_weighted"), 1.5, eventWeight);
     }
@@ -373,7 +374,7 @@ struct JetSpectraCharged {
     }
     if (fillHistograms) {
       registry.fill(HIST("h_mccollisions"), 2.5);
-      registry.fill(HIST("h2_centrality_mccollisions"), centrality, 2.5, eventWeight);
+      registry.fill(HIST("h2_centrality_mccollisions"), mcpCentrality, 2.5, eventWeight);
       if (isWeighted)
         registry.fill(HIST("h_mccollisions_weighted"), 2.5, eventWeight);
     }
@@ -389,7 +390,7 @@ struct JetSpectraCharged {
         occupancyIsGood = true;
       }
 
-      if ((centralityMin < centrality) && (centrality < centralityMax)) {
+      if ((centralityMin < mcpCentrality) && (mcpCentrality < centralityMax)) {
         centralityIsGood = true;
       }
     } else {
@@ -401,9 +402,9 @@ struct JetSpectraCharged {
           occupancyIsGood = true;
         }
 
-        float centrality = -1.0;
-        checkCentFT0M ? centrality = collision.centFT0M() : centrality = (useFT0CVariant ? collision.centFT0CVariant1() : collision.centFT0C());
-        if ((centralityMin < centrality) && (centrality < centralityMax)) {
+        float mcdCentrality = -1.0;
+        checkCentFT0M ? mcdCentrality = collision.centFT0M() : mcdCentrality = (useFT0CVariant ? collision.centFT0CVariant1() : collision.centFT0C());
+        if ((centralityMin < mcdCentrality) && (mcdCentrality < centralityMax)) {
           centralityIsGood = true;
         }
       }
@@ -414,7 +415,7 @@ struct JetSpectraCharged {
     }
     if (fillHistograms) {
       registry.fill(HIST("h_mccollisions"), 3.5);
-      registry.fill(HIST("h2_centrality_mccollisions"), centrality, 3.5, eventWeight);
+      registry.fill(HIST("h2_centrality_mccollisions"), mcpCentrality, 3.5, eventWeight);
       if (isWeighted)
         registry.fill(HIST("h_mccollisions_weighted"), 3.5, eventWeight);
     }
@@ -424,7 +425,7 @@ struct JetSpectraCharged {
     }
     if (fillHistograms) {
       registry.fill(HIST("h_mccollisions"), 4.5);
-      registry.fill(HIST("h2_centrality_mccollisions"), centrality, 4.5, eventWeight);
+      registry.fill(HIST("h2_centrality_mccollisions"), mcpCentrality, 4.5, eventWeight);
       if (isWeighted)
         registry.fill(HIST("h_mccollisions_weighted"), 4.5, eventWeight);
     }
@@ -434,7 +435,7 @@ struct JetSpectraCharged {
     }
     if (fillHistograms) {
       registry.fill(HIST("h_mccollisions"), 5.5);
-      registry.fill(HIST("h2_centrality_mccollisions"), centrality, 5.5, eventWeight);
+      registry.fill(HIST("h2_centrality_mccollisions"), mcpCentrality, 5.5, eventWeight);
       if (isWeighted)
         registry.fill(HIST("h_mccollisions_weighted"), 5.5, eventWeight);
     }
@@ -521,7 +522,7 @@ struct JetSpectraCharged {
     if (jet.pt() > pTHatMaxMCD * pTHat || pTHat < pTHatAbsoluteMin) {
       return;
     }
-    double jetcorrpt = jet.pt() - (rho * jet.area());
+    double jetcorrpt = jet.pt() - ((rho - rhoShift) * jet.area());
     if (jet.r() == round(selectedJetsRadius * 100.0f)) {
       // fill jet histograms after area-based subtraction
       registry.fill(HIST("h_jet_pt_rhoareasubtracted"), jetcorrpt, weight);
@@ -579,7 +580,7 @@ struct JetSpectraCharged {
     }
     if (jet.r() == round(selectedJetsRadius * 100.0f)) {
       // fill mcp jet histograms
-      double jetcorrpt = jet.pt() - (rho * jet.area());
+      double jetcorrpt = jet.pt() - ((rho - rhoShift) * jet.area());
       registry.fill(HIST("h_jet_pt_part_rhoareasubtracted"), jetcorrpt, weight);
       registry.fill(HIST("h3_jet_pt_jet_eta_jet_phi_part_rhoareasubtracted"), jetcorrpt, jet.eta(), jet.phi(), weight);
       if (jetcorrpt > 0) {
@@ -1028,7 +1029,7 @@ struct JetSpectraCharged {
     bool hasSel8Coll = false;
     bool centralityIsGood = false;
     bool occupancyIsGood = false;
-    float centrality = mccollision.centFT0M();
+    float mcpCentrality = mccollision.centFT0M();
     if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly) {
       if (hasRecoColl && jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
         hasSel8Coll = true;
@@ -1036,7 +1037,7 @@ struct JetSpectraCharged {
       if (hasRecoColl && (trackOccupancyInTimeRangeMin < collisions.begin().trackOccupancyInTimeRange()) && (collisions.begin().trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMax)) {
         occupancyIsGood = true;
       }
-      if ((centralityMin < centrality) && (centrality < centralityMax)) {
+      if ((centralityMin < mcpCentrality) && (mcpCentrality < centralityMax)) {
         centralityIsGood = true;
       }
     } else {
@@ -1047,9 +1048,9 @@ struct JetSpectraCharged {
         if ((trackOccupancyInTimeRangeMin < collision.trackOccupancyInTimeRange()) && (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMax)) {
           occupancyIsGood = true;
         }
-        float centrality = -1.0;
-        checkCentFT0M ? centrality = collision.centFT0M() : (centrality = (useFT0CVariant ? collision.centFT0CVariant1() : collision.centFT0C()));
-        if ((centralityMin < centrality) && (centrality < centralityMax)) {
+        float mcdCentrality = -1.0;
+        checkCentFT0M ? mcdCentrality = collision.centFT0M() : (mcdCentrality = (useFT0CVariant ? collision.centFT0CVariant1() : collision.centFT0C()));
+        if ((centralityMin < mcdCentrality) && (mcdCentrality < centralityMax)) {
           centralityIsGood = true;
         }
       }
@@ -1111,7 +1112,7 @@ struct JetSpectraCharged {
     bool hasSel8Coll = false;
     bool centralityIsGood = false;
     bool occupancyIsGood = false;
-    float centrality = mccollision.centFT0M();
+    float mcpCentrality = mccollision.centFT0M();
     if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly) {
       if (hasRecoColl && jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
         hasSel8Coll = true;
@@ -1119,7 +1120,7 @@ struct JetSpectraCharged {
       if (hasRecoColl && (trackOccupancyInTimeRangeMin < collisions.begin().trackOccupancyInTimeRange()) && (collisions.begin().trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMax)) {
         occupancyIsGood = true;
       }
-      if ((centralityMin < centrality) && (centrality < centralityMax)) {
+      if ((centralityMin < mcpCentrality) && (mcpCentrality < centralityMax)) {
         centralityIsGood = true;
       }
     } else {
@@ -1130,9 +1131,9 @@ struct JetSpectraCharged {
         if ((trackOccupancyInTimeRangeMin < collision.trackOccupancyInTimeRange()) && (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMax)) {
           occupancyIsGood = true;
         }
-        float centrality = -1.0;
-        checkCentFT0M ? centrality = collision.centFT0M() : (centrality = (useFT0CVariant ? collision.centFT0CVariant1() : collision.centFT0C()));
-        if ((centralityMin < centrality) && (centrality < centralityMax)) {
+        float mcdCentrality = -1.0;
+        checkCentFT0M ? mcdCentrality = collision.centFT0M() : (mcdCentrality = (useFT0CVariant ? collision.centFT0CVariant1() : collision.centFT0C()));
+        if ((centralityMin < mcdCentrality) && (mcdCentrality < centralityMax)) {
           centralityIsGood = true;
         }
       }

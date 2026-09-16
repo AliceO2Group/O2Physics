@@ -110,6 +110,14 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "CentFT0C_MultTPC", "CentFT0C vs MultTPC", false, 100, 0., 100., VarManager::kCentFT0C, 100, 0., 50000., VarManager::kMultTPC);
       hm->AddHistogram(histClass, "CentFT0C_Run", "Cent FT0C", true, 1, -0.5, 0.5, VarManager::kRunNo, 100, 0., 100., VarManager::kCentFT0C, 1, 0, 1, VarManager::kNothing, "", "", "", VarManager::kNothing, VarManager::kNothing, false, true);
     }
+    if (subGroupStr.Contains("alice3multcent")) {
+      hm->AddHistogram(histClass, "Cent", "Cent", false, 100, 0.0, 100.0, VarManager::kCent);
+      hm->AddHistogram(histClass, "MultPV", "MultPV", false, 100, 0.0, 10000.0, VarManager::kMultPV);
+      hm->AddHistogram(histClass, "MultPVeta1", "MultPVeta1", false, 100, 0.0, 10000.0, VarManager::kMultPVeta1);
+      hm->AddHistogram(histClass, "MultPVetaHalf", "MultPVetaHalf", false, 100, 0.0, 10000.0, VarManager::kMultPVetaHalf);
+      hm->AddHistogram(histClass, "MultGlobal", "MultGlobal", false, 100, 0.0, 10000.0, VarManager::kMultGlobalTracks);
+      hm->AddHistogram(histClass, "MultGlobalPV", "MultGlobalPV", false, 100, 0.0, 10000.0, VarManager::kMultGlobalTracksPV);
+    }
     if (subGroupStr.Contains("randomplane")) {
       hm->AddHistogram(histClass, "random plane angle", "random Psi", false, 100, -TMath::Pi() / 2, TMath::Pi() / 2, VarManager::kRandomPsi2);
     }
@@ -1394,6 +1402,17 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
           alice3MassBins[i] = 0.01 * (i);
         }
         hm->AddHistogram(histClass, "Mass_PtLong", "", false, 500, alice3MassBins.data(), VarManager::kMass, 20, pTBins.data(), VarManager::kPt);
+      }
+      if (subGroupStr.Contains("alice3pbpb")) {
+        hm->AddHistogram(histClass, "Mass_Cent", "", false, 125, 0.0, 5.0, VarManager::kMass, 20, 0.0, 100.0, VarManager::kCent);
+        hm->AddHistogram(histClass, "Pt_CentFT0C", "", false, 100, 0.0, 10.0, VarManager::kPt, 20, 0.0, 100.0, VarManager::kCent);
+        hm->AddHistogram(histClass, "Mass_Pt_CentFT0C", "", false, 75, 1.5, 4.5, VarManager::kMass, 20, 0.0, 10.0, VarManager::kPt, 10, 0.0, 100.0, VarManager::kCent);
+      }
+      if (subGroupStr.Contains("alice3mult")) {
+        hm->AddHistogram(histClass, "Mass_Pt_MultGlobal", "Mass vs pT vs multGlobal", false, 200, 0.0, 5.0, VarManager::kMass, 40, 0.0, 40.0, VarManager::kPt, 100, 0.0, 10000.0, VarManager::kMultGlobalTracks);
+        hm->AddHistogram(histClass, "Mass_MultGlobal", "Mass vs Global Tracks", false, 200, 0.0, 5.0, VarManager::kMass, 100, 0, 10000.0, VarManager::kMultGlobalTracks);
+        hm->AddHistogram(histClass, "Mass_MultGlobal_VtxZ", "Mass vs Global Tracks vs VtxZ", false, 200, 2.0, 5.0, VarManager::kMass, 100, 0, 10000.0, VarManager::kMultGlobalTracks, 20, -10.0, 10.0, VarManager::kVtxZ);
+        hm->AddHistogram(histClass, "VtxZ_MultGlobal", "VtxZ vs VtxNcontribReal", false, 240, -12.0, 12.0, VarManager::kVtxZ, 100, 0, 10000.0, VarManager::kMultGlobalTracks);
       }
       if (subGroupStr.Contains("dielectron-polarization-he-pbpb")) {
         std::array<int, 5> varsHEpbpb = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kCosThetaHE, VarManager::kPhiHE};

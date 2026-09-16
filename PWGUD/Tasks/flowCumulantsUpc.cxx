@@ -640,7 +640,7 @@ struct FlowCumulantsUpc {
   }
 
   template <typename TTrack>
-  bool trackSelected(TTrack track)
+  bool trackSelected(const TTrack& track)
   {
     registry.fill(HIST("hTrackCount"), 0.5);
     if (track.pt() < cfgPtCutMin || track.pt() > cfgPtCutMax) {

@@ -313,10 +313,8 @@ struct Pi0EtaToGammaGammaMC {
     if (mRunNumber == collision.runNumber()) {
       return;
     }
+    mRunNumber = collision.runNumber();
 
-    if (mRunNumber == collision.runNumber()) {
-      return;
-    }
     // In case override, don't proceed, please - no CCDB access required
     if (d_bz_input > -990) { // o2-linter: disable=magic-number (override value)
       d_bz = d_bz_input;
@@ -325,7 +323,6 @@ struct Pi0EtaToGammaGammaMC {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f)); // o2-linter: disable=magic-number (override value)
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
-      mRunNumber = collision.runNumber();
       return;
     }
 

@@ -157,7 +157,7 @@ struct ExclusivePhiLeptons {
     std::vector<decltype(tracks.begin())> rawElectronTracksTOF;
 
     int counterPV = 0;
-    for (auto trk : tracks) {
+    for (const auto& trk : tracks) {
       if (!trk.isPVContributor()) {
         continue;
       }

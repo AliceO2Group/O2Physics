@@ -39,12 +39,14 @@ class TPCVDriftManager
 
   void update(uint64_t timestamp) noexcept
   {
-    // Check validity of already present obj, otherwise update
-    if (mVD != nullptr && (timestamp > static_cast<uint64_t>(mVD->firstTime) || timestamp < static_cast<uint64_t>(mVD->lastTime))) {
+    // Keep the object we already have if it is still valid for this timestamp.
+    // firstTime/lastTime are the first and last timestamps of the TFs the correction
+    // was derived from, so the validity range is closed on both ends.
+    if (mVD != nullptr && timestamp >= static_cast<uint64_t>(mVD->firstTime) && timestamp <= static_cast<uint64_t>(mVD->lastTime)) {
       return;
     }
 
-    // Update Obj
+    // Update Object
     mVD = mCCDB->getForTimeStamp<o2::tpc::VDriftCorrFact>("TPC/Calib/VDriftTgl", timestamp);
     if (mVD == nullptr || mVD->firstTime < 0 || mVD->lastTime < 0) {
       LOGP(error, "Got invalid VDriftCorrFact for {}", timestamp);
@@ -58,7 +60,28 @@ class TPCVDriftManager
     mTPCVDriftNS = mVD->refVDrift * mVD->corrFact * 1e-3;
 
     mValid = true;
-    LOGP(info, "Updated VDrift for timestamp {} with vdrift={:.7f} (cm/ns)", mVD->creationTime, mTPCVDriftNS);
+    LOGP(debug, "Updated VDrift for timestamp {} with vdrift={:.7f} (cm/ns)", mVD->creationTime, mTPCVDriftNS);
+  }
+
+  // Adopts a drift correction obtained elsewhere, typically straight from the
+  // aod::TpcCalibCCDBObjects column, so no CCDB manager is involved at all.
+  void update(const o2::tpc::VDriftCorrFact& vd) noexcept
+  {
+    if (mVD == &vd) { // same object as last time, nothing to recompute
+      return;
+    }
+    if (vd.firstTime < 0 || vd.lastTime < 0) {
+      LOGP(error, "Got invalid VDriftCorrFact created at {}", vd.creationTime);
+      mValid = false;
+      return;
+    }
+    mVD = &vd;
+
+    // TODO account for laser calib
+
+    mTPCVDriftNS = mVD->refVDrift * mVD->corrFact * 1e-3;
+    mValid = true;
+    LOGP(debug, "Updated VDrift for timestamp {} with vdrift={:.7f} (cm/ns)", mVD->creationTime, mTPCVDriftNS);
   }
 
   template <typename BCs, typename Collisions, typename Collision, typename TrackExtra, typename Track>

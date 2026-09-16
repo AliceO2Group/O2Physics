@@ -362,7 +362,7 @@ struct phispectrapbpbqa {
 
     int Npostrack = 0;
     histos.fill(HIST("hOccupancy"), occupancy, centrality);
-    for (auto track1 : posThisColl) {
+    for (const auto& track1 : posThisColl) {
       if (!selectionTrack(track1)) {
         continue;
       }
@@ -409,7 +409,7 @@ struct phispectrapbpbqa {
       // 1) φ at a chosen radius (e.g., outer pad rows ~247 cm)
       histos.fill(HIST("hPhiMommentum"), track1.phi(), track1.p(), occupancy);
 
-      for (auto track2 : negThisColl) {
+      for (const auto& track2 : negThisColl) {
         if (track1.sign() * track2.sign() > 0.0) {
           continue;
         }
@@ -643,7 +643,7 @@ struct phispectrapbpbqa {
       auto Rectrackspart = RecTracks.sliceBy(perCollision, RecCollision.globalIndex());
       // loop over reconstructed particle
       int ntrack1 = 0;
-      for (auto track1 : Rectrackspart) {
+      for (const auto& track1 : Rectrackspart) {
         if (!selectionTrack(track1)) {
           continue;
         }
@@ -677,7 +677,7 @@ struct phispectrapbpbqa {
           histos.fill(HIST("hNsigmaTOFAfterCut"), nSigmaTOF, track1.p(), occupancy);
         }
         ntrack1 = ntrack1 + 1;
-        for (auto track2 : Rectrackspart) {
+        for (const auto& track2 : Rectrackspart) {
           auto track2ID = track2.index();
           if (track2ID <= track1ID) {
             continue;
@@ -785,7 +785,7 @@ struct phispectrapbpbqa {
         }
         auto daughtp = false;
         auto daughtm = false;
-        for (auto kCurrentDaughter : kDaughters) {
+        for (const auto& kCurrentDaughter : kDaughters) {
           if (!kCurrentDaughter.isPhysicalPrimary()) {
             continue;
           }

@@ -258,7 +258,7 @@ constexpr static uint32_t gkTrackFillMapWithCovNoTOF = VarManager::ObjTypes::Tra
 constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::Muon | VarManager::ObjTypes::MuonCov;
 
 // Global function used to define needed histogram classes
-void DefineHistograms(HistogramManager* histMan, TString histClasses, const char* histGroups); // defines histograms for all tasks
+void DefineHistograms(HistogramManager* histMan, const TString& histClasses, const char* histGroups); // defines histograms for all tasks
 
 // Enum containing the ordering of statistics histograms to be written in the QA file
 enum ZorroStatHist {
@@ -2013,7 +2013,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   // adaptAnalysisTask<AnalysisDileptonTrack>(cfgc)};
 }
 
-void DefineHistograms(HistogramManager* histMan, TString histClasses, const char* histGroups)
+void DefineHistograms(HistogramManager* histMan, const TString& histClasses, const char* histGroups)
 {
   //
   // Define here the histograms for all the classes required in analysis.

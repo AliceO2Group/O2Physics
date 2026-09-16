@@ -512,9 +512,9 @@ struct SginclusivePhiKstarSD {
   }
 
   //_____________________________________________________________________________
-  double cosThetaCollinsSoperFrame(ROOT::Math::PxPyPzMVector pair1,
-                                   ROOT::Math::PxPyPzMVector pair2,
-                                   ROOT::Math::PxPyPzMVector fourpion)
+  double cosThetaCollinsSoperFrame(const ROOT::Math::PxPyPzMVector& pair1,
+                                   const ROOT::Math::PxPyPzMVector& pair2,
+                                   const ROOT::Math::PxPyPzMVector& fourpion)
   {
     double halfSqrtSnn = 2680.;
     double massOfLead208 = 193.6823;
@@ -540,7 +540,7 @@ struct SginclusivePhiKstarSD {
     return cosThetaCs;
   }
 
-  double phiCollinsSoperFrame(ROOT::Math::PxPyPzMVector pair1, ROOT::Math::PxPyPzMVector pair2, ROOT::Math::PxPyPzMVector fourpion)
+  double phiCollinsSoperFrame(const ROOT::Math::PxPyPzMVector& pair1, const ROOT::Math::PxPyPzMVector& pair2, const ROOT::Math::PxPyPzMVector& fourpion)
   {
     // Half of the energy per pair of the colliding nucleons.
     double halfSqrtSnn = 2680.;
@@ -1081,10 +1081,10 @@ struct SginclusivePhiKstarSD {
       if (gapSide == DoubleGap && mult2 == numFourTracks) {
         ROOT::Math::PxPyPzMVector pair1, pair2, pair3, pair4;
         if (static_cast<int>(onlyPionTracksp.size()) == numTwoTracks && static_cast<int>(onlyPionTracksn.size()) == numTwoTracks) {
-          ROOT::Math::PxPyPzMVector k1 = onlyPionTracksp.at(0);
-          ROOT::Math::PxPyPzMVector k2 = onlyPionTracksp.at(1);
-          ROOT::Math::PxPyPzMVector k3 = onlyPionTracksn.at(0);
-          ROOT::Math::PxPyPzMVector k4 = onlyPionTracksn.at(1);
+          const ROOT::Math::PxPyPzMVector& k1 = onlyPionTracksp.at(0);
+          const ROOT::Math::PxPyPzMVector& k2 = onlyPionTracksp.at(1);
+          const ROOT::Math::PxPyPzMVector& k3 = onlyPionTracksn.at(0);
+          const ROOT::Math::PxPyPzMVector& k4 = onlyPionTracksn.at(1);
           phiv = k1 + k2 + k3 + k4;
           pair1 = k1 + k3;
           pair2 = k2 + k4;
@@ -1109,10 +1109,10 @@ struct SginclusivePhiKstarSD {
         if (static_cast<int>(onlyPionTracksp.size()) != numTwoTracks && static_cast<int>(onlyPionTracksn.size()) != numTwoTracks) {
           if (static_cast<int>(onlyPionTracksp.size()) + static_cast<int>(onlyPionTracksn.size()) != numFourTracks)
             return;
-          ROOT::Math::PxPyPzMVector l1 = onlyPionTrackspm.at(0);
-          ROOT::Math::PxPyPzMVector l2 = onlyPionTrackspm.at(1);
-          ROOT::Math::PxPyPzMVector l3 = onlyPionTrackspm.at(2);
-          ROOT::Math::PxPyPzMVector l4 = onlyPionTrackspm.at(3);
+          const ROOT::Math::PxPyPzMVector& l1 = onlyPionTrackspm.at(0);
+          const ROOT::Math::PxPyPzMVector& l2 = onlyPionTrackspm.at(1);
+          const ROOT::Math::PxPyPzMVector& l3 = onlyPionTrackspm.at(2);
+          const ROOT::Math::PxPyPzMVector& l4 = onlyPionTrackspm.at(3);
           phiv1 = l1 + l2 + l3 + l4;
           registry.fill(HIST("os_pppp_pT_2_ls"), phiv1.M(), phiv1.Pt(), phiv1.Rapidity());
         }

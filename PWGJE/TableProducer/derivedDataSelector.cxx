@@ -155,9 +155,9 @@ struct JetDerivedDataSelector {
 
   void processSelectMcCollisionsPerCollision(aod::JMcCollisions const& mcCollisions, soa::Join<aod::JCollisions, aod::JMcCollisionLbs> const& collisions)
   {
-    for (auto mcCollision : mcCollisions) {
+    for (const auto& mcCollision : mcCollisions) {
       const auto collisionsPerMcCollision = collisions.sliceBy(CollisionsPerMcCollision, mcCollision.globalIndex());
-      for (auto collision : collisionsPerMcCollision) {
+      for (const auto& collision : collisionsPerMcCollision) {
         if (collisionFlag[collision.globalIndex()]) {
           mcCollisionFlag[mcCollision.globalIndex()] = true;
         }

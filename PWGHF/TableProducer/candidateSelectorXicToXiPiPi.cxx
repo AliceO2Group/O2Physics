@@ -274,9 +274,9 @@ struct HfCandidateSelectorXicToXiPiPi {
                      TrackSelectorPID::Status const statusPidPiXi,
                      TrackSelectorPID::Status const statusPidPrLam,
                      TrackSelectorPID::Status const statusPidPiLam,
-                     bool const useTpcPidOnly)
+                     bool const useOnlyTpcPid)
   {
-    if (useTpcPidOnly) {
+    if (useOnlyTpcPid) {
       return (statusPidPi0 == TrackSelectorPID::Accepted || statusPidPi0 == TrackSelectorPID::NotApplicable) && (statusPidPi1 == TrackSelectorPID::Accepted || statusPidPi1 == TrackSelectorPID::NotApplicable) && (statusPidPiXi == TrackSelectorPID::Accepted || statusPidPiXi == TrackSelectorPID::NotApplicable) && (statusPidPrLam == TrackSelectorPID::Accepted || statusPidPrLam == TrackSelectorPID::NotApplicable) && (statusPidPiLam == TrackSelectorPID::Accepted || statusPidPiLam == TrackSelectorPID::NotApplicable);
     }
     if (statusPidPi0 == TrackSelectorPID::Rejected || statusPidPi1 == TrackSelectorPID::Rejected || statusPidPiXi == TrackSelectorPID::Rejected || statusPidPrLam == TrackSelectorPID::Rejected || statusPidPiLam == TrackSelectorPID::Rejected) {
@@ -567,7 +567,7 @@ struct HfCandidateSelectorXicToXiPiPi {
 
       // ITS track quality selection on pions from charm baryon
       if ((!isSelectedTrackItsQuality(trackPi0, nClustersItsMin, itsChi2PerClusterMax) || trackPi0.itsNClsInnerBarrel() < nClustersItsInnBarrMin) ||
-          (!isSelectedTrackItsQuality(trackPi0, nClustersItsMin, itsChi2PerClusterMax) || trackPi1.itsNClsInnerBarrel() < nClustersItsInnBarrMin)) {
+          (!isSelectedTrackItsQuality(trackPi1, nClustersItsMin, itsChi2PerClusterMax) || trackPi1.itsNClsInnerBarrel() < nClustersItsInnBarrMin)) {
         return false;
       }
       if constexpr (IsMc) {

@@ -3748,8 +3748,8 @@ struct PidFlowPtCorr {
   PROCESS_SWITCH(PidFlowPtCorr, processMCClosure, "Run truth-level MC flow closure", false);
 
   /**
-   * @brief this function is used to fill THn hist for NUA correction and for NUE correction
-   * @details hist THn: (runNumberIDX, phi, eta, Vz), note that different runNumber will be put in the same hist
+   * @brief Fill THnSparse histograms used to derive NUA weights
+   * @details Histograms use (runNumberIDX, phi, eta, Vz, pT); cfgUseNUAWithPt enables NUE weighting before filling
    *
    * @param collision
    * @param tracks
@@ -3779,6 +3779,10 @@ struct PidFlowPtCorr {
       return;
     }
     // end collision cut
+
+    if (switchsOpts.cfgUseNUAWithPt.value) {
+      loadCorrections(bc.timestamp());
+    }
 
     // loop the vector, find the place to put (phi eta Vz)
     // if the run number is new, create one
@@ -3816,24 +3820,32 @@ struct PidFlowPtCorr {
 
       // fill the THn
       if (isWithinRefPtRange(track.pt())) {
-        registry.fill(HIST("correction/hRunNumberPhiEtaVertex"), matchedPosition, track.phi(), track.eta(), collision.posZ(), track.pt());
+        float weightNUE = 1.f;
+        if (switchsOpts.cfgUseNUAWithPt.value) {
+          setParticleNUEWeight(weightNUE, track, cent);
+        }
+        registry.fill(HIST("correction/hRunNumberPhiEtaVertex"), matchedPosition, track.phi(), track.eta(), collision.posZ(), track.pt(), weightNUE);
       }
 
       int pid = this->getPidConfigurable(track);
       if (!isWithinPOIPtRange(pid, track.pt())) {
         continue;
       }
+      float weightNUEPid = 1.f;
+      if (switchsOpts.cfgUseNUAWithPt.value) {
+        setParticleNUEWeight(weightNUEPid, track, cent, pid);
+      }
       switch (pid) {
         case MyParticleType::kPion:
-          registry.fill(HIST("correction/hRunNumberPhiEtaVertexPion"), matchedPosition, track.phi(), track.eta(), collision.posZ(), track.pt());
+          registry.fill(HIST("correction/hRunNumberPhiEtaVertexPion"), matchedPosition, track.phi(), track.eta(), collision.posZ(), track.pt(), weightNUEPid);
           break;
 
         case MyParticleType::kKaon:
-          registry.fill(HIST("correction/hRunNumberPhiEtaVertexKaon"), matchedPosition, track.phi(), track.eta(), collision.posZ(), track.pt());
+          registry.fill(HIST("correction/hRunNumberPhiEtaVertexKaon"), matchedPosition, track.phi(), track.eta(), collision.posZ(), track.pt(), weightNUEPid);
           break;
 
         case MyParticleType::kProton:
-          registry.fill(HIST("correction/hRunNumberPhiEtaVertexProton"), matchedPosition, track.phi(), track.eta(), collision.posZ(), track.pt());
+          registry.fill(HIST("correction/hRunNumberPhiEtaVertexProton"), matchedPosition, track.phi(), track.eta(), collision.posZ(), track.pt(), weightNUEPid);
           break;
 
         default:

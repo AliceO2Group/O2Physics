@@ -48,9 +48,9 @@ struct ExclusivePhi {
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   //_____________________________________________________________________________
-  Double_t CosThetaHelicityFrame(TLorentzVector pionPositive,
-                                 TLorentzVector pionNegative,
-                                 TLorentzVector possibleRhoZero)
+  Double_t CosThetaHelicityFrame(const TLorentzVector& pionPositive,
+                                 const TLorentzVector& pionNegative,
+                                 const TLorentzVector& possibleRhoZero)
   {
 
     Double_t HalfSqrtSnn = 2680.;
@@ -77,7 +77,7 @@ struct ExclusivePhi {
     return CosThetaHE;
   }
   //------------------------------------------------------------------------------------------------------
-  Double_t PhiHelicityFrame(TLorentzVector muonPositive, TLorentzVector muonNegative, TLorentzVector possibleJPsi)
+  Double_t PhiHelicityFrame(const TLorentzVector& muonPositive, const TLorentzVector& muonNegative, const TLorentzVector& possibleJPsi)
   {
 
     // Half of the energy per pair of the colliding nucleons.
@@ -266,7 +266,7 @@ struct ExclusivePhi {
     std::vector<float> onlyKaonSigma;
     std::vector<decltype(tracks.begin())> rawKaonTracks;
 
-    for (auto trk : tracks) {
+    for (const auto& trk : tracks) {
       registry.fill(HIST("hSelectionCounter"), 1);
       if (!trk.isPVContributor()) {
         continue;
@@ -323,7 +323,7 @@ struct ExclusivePhi {
     if (onlyKaonTracks.size() == 2) {
       registry.fill(HIST("hSelectionCounter"), 7);
 
-      for (auto kaon : onlyKaonTracks) {
+      for (const auto& kaon : onlyKaonTracks) {
         phi += kaon;
       }
 
@@ -373,7 +373,7 @@ struct ExclusivePhi {
     std::vector<TLorentzVector> allTracksAreITSonlyAndFourITSclusters;
 
     int counter = 0;
-    for (auto t : tracks) {
+    for (const auto& t : tracks) {
       registry.fill(HIST("hSelectionCounter2"), 0);
       if (!t.isPVContributor()) {
         continue;
@@ -466,16 +466,16 @@ struct ExclusivePhi {
     // if ((collision.posZ() < -10) || (collision.posZ() > 10)) {
     if (allTracksAreKaons.size() == 2) {
       registry.fill(HIST("hSelectionCounter2"), 7);
-      for (auto kaon : allTracksAreKaons) {
+      for (const auto& kaon : allTracksAreKaons) {
         phiWithoutPID += kaon;
       }
       registry.fill(HIST("hTracksKaons"), allTracksAreKaons.size());
       // kaon mass hypothesis with wrong momentum for one track
-      for (auto kaon : allTracksAreKaonsWrongMomentum) {
+      for (const auto& kaon : allTracksAreKaonsWrongMomentum) {
         phiWrongMomentaWithoutPID += kaon;
       }
       // pion mass hypothesis
-      for (auto pion : allTracksArePions) {
+      for (const auto& pion : allTracksArePions) {
         phiWithoutPIDPionHypothesis += pion;
       }
 
@@ -619,7 +619,7 @@ struct ExclusivePhi {
     if (allTracksAreKaonsBandPID.size() == 2) {
 
       TLorentzVector reallyPhi;
-      for (auto kaon : allTracksAreKaonsBandPID) {
+      for (const auto& kaon : allTracksAreKaonsBandPID) {
         reallyPhi += kaon;
       }
 

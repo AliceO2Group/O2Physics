@@ -1180,17 +1180,17 @@ struct LambdaTableProducer {
                                       : getCorrectionFactors<kAntiLambda>(v0);
 
       if (v0Type == kLambda) {
-        prPx = v0.template posTrack_as<T>().px();
-        prPy = v0.template posTrack_as<T>().py();
-        prPz = v0.template posTrack_as<T>().pz();
+        prPx = v0.pxpos();
+        prPy = v0.pypos();
+        prPz = v0.pzpos();
         histos.fill(HIST("Tracks/h1f_lambda_pt_vs_invm"), mass, v0.pt());
         fillLambdaQAHistos<kLambda>(collision, v0, tracks);
         fillKinematicHists<kRec, kLambda>(v0.pt(), v0.eta(), v0.yLambda(),
                                           v0.phi());
       } else {
-        prPx = v0.template negTrack_as<T>().px();
-        prPy = v0.template negTrack_as<T>().py();
-        prPz = v0.template negTrack_as<T>().pz();
+        prPx = v0.pxneg();
+        prPy = v0.pyneg();
+        prPz = v0.pzneg();
         histos.fill(HIST("Tracks/h1f_antilambda_pt_vs_invm"), mass, v0.pt());
         fillLambdaQAHistos<kAntiLambda>(collision, v0, tracks);
         fillKinematicHists<kRec, kAntiLambda>(v0.pt(), v0.eta(), v0.yLambda(),

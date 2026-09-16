@@ -269,7 +269,7 @@ struct Cha01710analysis {
   template <typename T>
   bool selectPionDaughter(T const& track)
   {
-    return !(!track.hasTPC() || track.tpcNClsFound() < v0Cuts.cfgV0DaughterTPCNClsMin || track.pt() < v0Cuts.cfgV0DaughterPtMin || std::abs(track.eta()) > v0Cuts.cfgV0DaughterEtaMax || std::abs(track.tpcNSigmaPi()) > v0Cuts.cfgV0DaughterTPCNSigmaPiMax);
+    return !(track.tpcNClsFound() < v0Cuts.cfgV0DaughterTPCNClsMin || track.pt() < v0Cuts.cfgV0DaughterPtMin || std::abs(track.eta()) > v0Cuts.cfgV0DaughterEtaMax || std::abs(track.tpcNSigmaPi()) > v0Cuts.cfgV0DaughterTPCNSigmaPiMax);
   }
 
   template <typename C, typename V>
@@ -298,15 +298,12 @@ struct Cha01710analysis {
       return V0MassRegion::kReject;
     }
     float dm = std::abs(v0.mK0Short() - constants::physics::MassK0Short);
+    histos.fill(HIST("V0/hMassSelected"), v0.mK0Short(), v0.pt());
+
     if (dm < v0Cuts.cfgKsMassWindow) {
-      histos.fill(HIST("V0/hMassSelected"), v0.mK0Short(), v0.pt());
       return V0MassRegion::kSignal;
     }
-    if (dm > v0Cuts.cfgKsMassWindow) {
-      histos.fill(HIST("V0/hMassSelected"), v0.mK0Short(), v0.pt());
-      return V0MassRegion::kSideband;
-    }
-    return V0MassRegion::kReject;
+    return V0MassRegion::kSideband;
   }
 
   template <typename CollisionType, typename TracksType, typename V0Type>

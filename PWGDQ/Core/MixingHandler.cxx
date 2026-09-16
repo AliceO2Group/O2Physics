@@ -58,7 +58,7 @@ MixingHandler::~MixingHandler()
 }
 
 //_________________________________________________________________________
-void MixingHandler::AddMixingVariable(int var, std::vector<float> binLims)
+void MixingHandler::AddMixingVariable(int var, const std::vector<float>& binLims)
 {
   fVariables[var] = fVariableLimits.size();
   fVariableLimits.push_back(binLims);

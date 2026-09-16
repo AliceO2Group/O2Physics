@@ -183,7 +183,7 @@ struct helium_flow {
     bool containsParticleOfInterest(false);
 
     // Loop over Reconstructed Tracks
-    for (auto track : tracks) {
+    for (const auto& track : tracks) {
 
       // Track Selection
       if (!passedTrackSelection(track))

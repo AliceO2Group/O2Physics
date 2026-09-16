@@ -411,7 +411,7 @@ struct SGFITAnalyzer {
     std::vector<TLorentzVector> goodTracks;
     std::vector<TLorentzVector> muonTracks;
     float sign = 0;
-    for (auto t : dgtracks) {
+    for (const auto& t : dgtracks) {
       TLorentzVector a;
       TLorentzVector b;
       a.SetXYZM(t.px(), t.py(), t.pz(), mpion);
@@ -424,13 +424,13 @@ struct SGFITAnalyzer {
       }
     }
     if (goodTracks.size() == 2) {
-      for (auto pion : goodTracks) {
+      for (const auto& pion : goodTracks) {
         rho += pion;
       }
       if (sign == 0 && TMath::Abs(rho.Rapidity()) < .9 && rho.M() > .5 && rho.M() < 1.2 && rho.Pt() < 0.1)
         coh_rho0 = true;
       if (muonTracks.size() == 2) {
-        for (auto muon : muonTracks) {
+        for (const auto& muon : muonTracks) {
           jpsi += muon;
         }
         if (sign == 0 && TMath::Abs(jpsi.Rapidity()) < .9 && jpsi.M() > 2.8 && jpsi.M() < 3.35 && jpsi.Pt() < 0.1)
@@ -737,7 +737,7 @@ struct SGFITAnalyzer {
       registry.get<TH2>(HIST("ZDC/MACZNA"))->Fill(PVContributors.size(), zna);
       registry.get<TH2>(HIST("ZDC/MACZNC"))->Fill(PVContributors.size(), znc);
     }
-    for (auto track : dgtracks) {
+    for (const auto& track : dgtracks) {
       registry.get<TH1>(HIST("tracks/QCAll"))->Fill(0., 1.);
       registry.get<TH1>(HIST("tracks/QCAll"))->Fill(1., track.hasITS() * 1.);
       registry.get<TH1>(HIST("tracks/QCAll"))->Fill(2., track.hasTPC() * 1.);

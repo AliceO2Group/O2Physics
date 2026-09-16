@@ -33,7 +33,7 @@ struct UDGoodRunSelector {
   void Print();
   bool isGoodRun(int runNumber);
   std::vector<int> goodRuns() { return mgoodRuns; }
-  std::vector<int> goodRuns(std::string runPeriod);
+  std::vector<int> goodRuns(const std::string& runPeriod);
   int rnumMin() { return mrnMin; }
   int rnumMax() { return mrnMax; }
 

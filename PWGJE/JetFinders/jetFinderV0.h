@@ -37,6 +37,7 @@
 #include <fastjet/JetDefinition.hh>
 #include <fastjet/PseudoJet.hh>
 
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -67,6 +68,8 @@ struct JetFinderV0Task {
   o2::framework::Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum track eta"};
   o2::framework::Configurable<float> trackPhiMin{"trackPhiMin", -999, "minimum track phi"};
   o2::framework::Configurable<float> trackPhiMax{"trackPhiMax", 999, "maximum track phi"};
+  o2::framework::Configurable<float> phiExclusionMin{"phiExclusionMin", -999, "minimum of phi exclusion region which is applied for tracks and for jets (jetR is added to the exclusion region for jets)"};
+  o2::framework::Configurable<float> phiExclusionMax{"phiExclusionMax", 999, "maximum of phi exclusion region which is applied for tracks and for jets (jetR is added to the exclusion region for jets)"};
   o2::framework::Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
   o2::framework::Configurable<std::string> particleSelections{"particleSelections", "PhysicalPrimary", "set particle selections"};
 
@@ -127,6 +130,13 @@ struct JetFinderV0Task {
       jetFinder.phiMin = -1.0 * M_PI;
       jetFinder.phiMax = 2.0 * M_PI;
     }
+    if (phiExclusionMin > -998.0) {
+      jetFinder.phiExclusionMin = phiExclusionMin;
+      jetFinder.phiExclusionMax = phiExclusionMax;
+      if (phiExclusionMin >= phiExclusionMax) {
+        throw std::runtime_error("Invalid phi exclusion range: require phiExclusionMin < phiExclusionMax when both are set.");
+      }
+    }
     jetFinder.jetPhiMin = jetPhiMin;
     jetFinder.jetPhiMax = jetPhiMax;
     if (jetPhiMin < -98.0) {
@@ -174,8 +184,8 @@ struct JetFinderV0Task {
 
   o2::framework::expressions::Filter collisionFilter = (nabs(o2::aod::jcollision::posZ) < vertexZCut && o2::aod::jcollision::centFT0M >= centralityMin && o2::aod::jcollision::centFT0M < centralityMax && o2::aod::jcollision::trackOccupancyInTimeRange <= trackOccupancyInTimeRangeMax);
   o2::framework::expressions::Filter mcCollisionFilter = (nabs(o2::aod::jmccollision::posZ) < vertexZCut);
-  o2::framework::expressions::Filter trackCuts = (o2::aod::jtrack::pt >= trackPtMin && o2::aod::jtrack::pt < trackPtMax && o2::aod::jtrack::eta >= trackEtaMin && o2::aod::jtrack::eta <= trackEtaMax && o2::aod::jtrack::phi >= trackPhiMin && o2::aod::jtrack::phi <= trackPhiMax);
-  o2::framework::expressions::Filter partCuts = (o2::aod::jmcparticle::pt >= trackPtMin && o2::aod::jmcparticle::pt < trackPtMax && o2::aod::jmcparticle::eta >= trackEtaMin && o2::aod::jmcparticle::eta <= trackEtaMax && o2::aod::jmcparticle::phi >= trackPhiMin && o2::aod::jmcparticle::phi <= trackPhiMax);
+  o2::framework::expressions::Filter trackCuts = (o2::aod::jtrack::pt >= trackPtMin && o2::aod::jtrack::pt < trackPtMax && o2::aod::jtrack::eta >= trackEtaMin && o2::aod::jtrack::eta <= trackEtaMax && o2::aod::jtrack::phi >= trackPhiMin && o2::aod::jtrack::phi <= trackPhiMax && (phiExclusionMin < -998.0 || (o2::aod::jtrack::phi <= phiExclusionMin || o2::aod::jtrack::phi >= phiExclusionMax)));
+  o2::framework::expressions::Filter partCuts = (o2::aod::jmcparticle::pt >= trackPtMin && o2::aod::jmcparticle::pt < trackPtMax && o2::aod::jmcparticle::eta >= trackEtaMin && o2::aod::jmcparticle::eta <= trackEtaMax && o2::aod::jmcparticle::phi >= trackPhiMin && o2::aod::jmcparticle::phi <= trackPhiMax && (phiExclusionMin < -998.0 || (o2::aod::jmcparticle::phi <= phiExclusionMin || o2::aod::jmcparticle::phi >= phiExclusionMax)));
 
   // function that generalically processes Data and reco level events
   template <typename T, typename U, typename V, typename M, typename N>

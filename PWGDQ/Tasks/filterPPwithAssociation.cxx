@@ -123,7 +123,7 @@ constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarMana
 constexpr static uint32_t gkTrackFillMapTPCPID = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackTPCPID;
 constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::Muon | VarManager::ObjTypes::MuonCov;
 
-void DefineHistograms(HistogramManager* histMan, TString histClasses, TString subgroups = "");
+void DefineHistograms(HistogramManager* histMan, const TString& histClasses, const TString& subgroups = "");
 
 template <typename TMap>
 void PrintBitMap(TMap map, int nbits)
@@ -720,7 +720,7 @@ struct DQFilterPPTask {
     uint32_t pairFilter = 0;
     // count the number of barrel tracks fulfilling each cut
     if constexpr (static_cast<bool>(TTrackFillMap)) {
-      for (auto trackAssoc : barrelAssocs) {
+      for (const auto& trackAssoc : barrelAssocs) {
         for (int i = 0; i < fNBarrelCuts; ++i) {
           if (trackAssoc.isDQBarrelSelected() & (static_cast<uint32_t>(1) << i)) {
             objCountersBarrel[i] += 1;
@@ -1227,7 +1227,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<DQFilterPPTask>(cfgc)};
 }
 
-void DefineHistograms(HistogramManager* histMan, TString histClasses, TString subgroups)
+void DefineHistograms(HistogramManager* histMan, const TString& histClasses, const TString& subgroups)
 {
   //
   // Define here the histograms for all the classes required in analysis.

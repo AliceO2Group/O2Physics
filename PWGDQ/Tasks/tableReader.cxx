@@ -158,7 +158,7 @@ constexpr static int pairTypeMuMu = VarManager::kDecayToMuMu;
 constexpr static int pairTypeEMu = VarManager::kElectronMuon;
 
 // Global function used to define needed histogram classes
-void DefineHistograms(HistogramManager* histMan, TString histClasses, Configurable<std::string> configVar); // defines histograms for all tasks
+void DefineHistograms(HistogramManager* histMan, const TString& histClasses, const Configurable<std::string>& configVar); // defines histograms for all tasks
 
 struct AnalysisEventSelection {
   Produces<aod::EventCuts> eventSel;
@@ -1984,13 +1984,13 @@ struct AnalysisDileptonHadron {
     std::vector<int> trackGlobalIndexes;
 
     if (dileptons.size() > 0) {
-      for (auto track : tracks) {
+      for (const auto& track : tracks) {
         trackGlobalIndexes.push_back(track.globalIndex());
         // std::cout << track.index() << " " << track.globalIndex() << std::endl;
       }
     }
     // loop once over dileptons for QA purposes
-    for (auto dilepton : dileptons) {
+    for (const auto& dilepton : dileptons) {
       VarManager::FillTrack<fgDileptonFillMap>(dilepton, fValuesDilepton);
       fHistMan->FillHistClass("DileptonsSelected", fValuesDilepton);
 
@@ -2062,7 +2062,7 @@ struct AnalysisDileptonHadron {
       auto evTracks = tracks.sliceBy(perEventTracks, event2.globalIndex());
       evTracks.bindExternalIndices(&events);
 
-      for (auto dilepton : evDileptons) {
+      for (const auto& dilepton : evDileptons) {
         for (auto& track : evTracks) {
 
           if (!(static_cast<uint32_t>(track.isBarrelSelected()) & (static_cast<uint32_t>(1) << fNHadronCutBit))) {
@@ -2189,14 +2189,14 @@ struct AnalysisDileptonTrackTrack {
     std::vector<int> trackGlobalIndexes;
 
     if (dileptons.size() > 0) {
-      for (auto track : tracks) {
+      for (const auto& track : tracks) {
         trackGlobalIndexes.push_back(track.globalIndex());
         // std::cout << track.index() << " " << track.globalIndex() << std::endl;
       }
     }
 
     // loop over dileptons
-    for (auto dilepton : dileptons) {
+    for (const auto& dilepton : dileptons) {
       VarManager::FillTrack<fgDileptonFillMap>(dilepton, fValuesQuadruplet);
 
       // apply the dilepton cut
@@ -2315,7 +2315,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<AnalysisDileptonTrackTrack>(cfgc)};
 }
 
-void DefineHistograms(HistogramManager* histMan, TString histClasses, Configurable<std::string> configVar)
+void DefineHistograms(HistogramManager* histMan, const TString& histClasses, const Configurable<std::string>& configVar)
 {
   //
   // Define here the histograms for all the classes required in analysis.

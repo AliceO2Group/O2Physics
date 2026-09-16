@@ -16,6 +16,8 @@
 #ifndef PWGCF_FEMTO_CORE_PARTITIONS_H_
 #define PWGCF_FEMTO_CORE_PARTITIONS_H_
 
+#include <Framework/Expressions.h>
+
 // collsion selection
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define MAKE_COLLISION_FILTER(selection)                                                                                \

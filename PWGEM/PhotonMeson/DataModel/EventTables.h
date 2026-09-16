@@ -29,36 +29,37 @@
 #include <Rtypes.h> // for BIT
 
 #include <cstdint>
+#include <vector>
 
 namespace o2::aod
 {
 
 namespace pmevsel
 {
-// Event selection criteria. See O2Physics/Common/CCDB/EventSelectionParams.h
-enum EventSelectionFlags {
-  kIsTriggerTVX = 0,          // FT0 vertex (acceptable FT0C-FT0A time difference) at trigger level
-  kNoITSROFrameBorder,        // bunch crossing is far from ITS RO Frame border
-  kNoTimeFrameBorder,         // bunch crossing is far from Time Frame borders
-  kNoSameBunchPileup,         // reject collisions in case of pileup with another collision in the same foundBC
-  kIsGoodZvtxFT0vsPV,         // small difference between z-vertex from PV and from FT0
-  kIsVertexITSTPC,            // at least one ITS-TPC track (reject vertices built from ITS-only tracks)
-  kIsVertexTOFmatched,        // at least one of vertex contributors is matched to TOF
-  kIsVertexTRDmatched,        // at least one of vertex contributors is matched to TRD
-  kNoCollInTimeRangeNarrow,   // no other collisions in specified time range (narrower than Strict)
-  kNoCollInTimeRangeStrict,   // no other collisions in specified time range
-  kNoCollInTimeRangeStandard, // no other collisions in specified time range with per-collision multiplicity above threshold
-  kNoCollInRofStrict,         // no other collisions in this Readout Frame
-  kNoCollInRofStandard,       // no other collisions in this Readout Frame with per-collision multiplicity above threshold
-  kNoHighMultCollInPrevRof,   // veto an event if FT0C amplitude in previous ITS ROF is above threshold
-  kIsGoodITSLayer3,           // number of inactive chips on ITS layer 3 is below maximum allowed value
-  kIsGoodITSLayer0123,        // numbers of inactive chips on ITS layers 0-3 are below maximum allowed values
-  kIsGoodITSLayersAll,        // numbers of inactive chips on all ITS layers are below maximum allowed values
-  kNsel                       // counter
-};
 
-DECLARE_SOA_BITMAP_COLUMN(Selection, selection, 32); //! Bitmask of selection flags
-DECLARE_SOA_DYNAMIC_COLUMN(Sel8, sel8, [](uint32_t selection_bit) -> bool { return (selection_bit & BIT(o2::aod::pmevsel::kIsTriggerTVX)) && (selection_bit & BIT(o2::aod::pmevsel::kNoTimeFrameBorder)) && (selection_bit & BIT(o2::aod::pmevsel::kNoITSROFrameBorder)); });
+DECLARE_SOA_DYNAMIC_COLUMN(Sel8, sel8, [](uint64_t selection_bit, int runNumber) -> bool {
+  return (selection_bit & BIT(o2::aod::evsel::kIsTriggerTVX)) && (selection_bit & BIT(o2::aod::evsel::kNoTimeFrameBorder)) && (runNumber < 568873 ? (selection_bit & BIT(o2::aod::evsel::kNoITSROFrameBorder)) : true); // o2-linter: disable=magic-number (hard-coded run range to indicate 2026 datataking)
+});
+
+// Enum used for filling table for event-norm purposes
+enum EventAcceptanceBits {
+  kAll = 0, // o2-linter: disable=magic-number (enum)
+  kHasMCColl,
+  kGoodZVtx,
+  kIsFT0AND,
+  kNoTFB,
+  kITSROFB,
+  kNoSameBunchPileUp,
+  kGoodZVtxFTOPV,
+  kNoCollInTimeRange,
+  kGoodTrackOccupancy,
+  kGoodFT0Occupancy,
+  kTVXInEMC,
+  kGoodCent,
+  kGoodRCT,
+  kGoodSel8,
+  kSize
+};
 
 } // namespace pmevsel
 
@@ -66,15 +67,26 @@ namespace pmevent
 {
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int);
 
-DECLARE_SOA_DYNAMIC_COLUMN(Sel8, sel8, [](uint64_t selection_bit) -> bool { return (selection_bit & BIT(o2::aod::evsel::kIsTriggerTVX)) && (selection_bit & BIT(o2::aod::evsel::kNoTimeFrameBorder)) && (selection_bit & BIT(o2::aod::evsel::kNoITSROFrameBorder)); });
 } // namespace pmevent
 
 DECLARE_SOA_TABLE(PMEvents, "AOD", "PMEVENT", //!   Main event information table
                   o2::soa::Index<>, pmevent::CollisionId, bc::RunNumber, bc::GlobalBC, evsel::Selection, evsel::Rct, timestamp::Timestamp,
                   collision::PosZ,
-                  collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange, pmevent::Sel8<evsel::Selection>);
+                  collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange, pmevsel::Sel8<evsel::Selection, bc::RunNumber>);
 
 using PMEvent = PMEvents::iterator;
+
+// Tables for event selection and event bookkeeping
+
+DECLARE_SOA_COLUMN(IsSelected, isSelected, bool); //! MB event selection info
+DECLARE_SOA_TABLE(PMEvSels, "AOD", "PMEVSEL",     //! joinable to o2::aod::Collisions
+                  IsSelected);
+using PMEvSel = PMEvSels::iterator;
+
+DECLARE_SOA_COLUMN(EventSelectionBit, eventSelectionBit, std::vector<uint64_t>); //! Event selection info stored in binned data for each DF
+DECLARE_SOA_TABLE(PMEvSelBits, "AOD", "PMEVSELBITS",                             //! produces binned data that can be loaded in analysis task for event counting
+                  EventSelectionBit);
+using PMEvSelBit = PMEvSelBits::iterator;
 
 namespace ccdbPcm
 {

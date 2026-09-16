@@ -12,7 +12,7 @@
 /// \file   bjetTaggingGnn.cxx
 /// \brief  b-jet tagging using GNN
 ///
-/// \author Changhwan Choi <changhwan.choi@cern.ch>, Pusan National University
+/// \author Changhwan Choi <changhwan.choi@cern.ch>, Yonsei University
 
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetTaggingUtilities.h"
@@ -43,7 +43,6 @@
 #include <TAxis.h>
 #include <TH1.h>
 #include <TH2.h>
-#include <TH3.h>
 
 #include <array>
 #include <cmath>
@@ -197,8 +196,12 @@ struct BjetTaggingGnn {
   Configurable<float> trackNppCrit{"trackNppCrit", 0.95, "track not physical primary ratio"};
 
   // jet level configurables
+  Configurable<int> jetPtNbins{"jetPtNbins", 300, "number of bins for jet pT"};
   Configurable<float> jetPtMin{"jetPtMin", 0.0, "minimum jet pT"};
-  Configurable<float> jetPtMax{"jetPtMax", 1000.0, "maximum jet pT"};
+  Configurable<float> jetPtMax{"jetPtMax", 300.0, "maximum jet pT"};
+  Configurable<int> jetPtSubNbins{"jetPtSubNbins", 300, "number of bins for UE-subtracted jet pT"};
+  Configurable<float> jetPtSubMin{"jetPtSubMin", -50.0, "minimum UE-subtracted jet pT"};
+  Configurable<float> jetPtSubMax{"jetPtSubMax", 250.0, "maximum UE-subtracted jet pT"};
   Configurable<float> jetEtaMin{"jetEtaMin", -0.9, "minimum jet pseudorapidity"};
   Configurable<float> jetEtaMax{"jetEtaMax", 0.9, "maximum jet pseudorapidity"};
   Configurable<float> leadingConstituentPtMin{"leadingConstituentPtMin", -99.0, "minimum pT selection on jet constituent"};
@@ -331,9 +334,9 @@ struct BjetTaggingGnn {
 
     const AxisSpec axisTrackpT{200, 0., 200., "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisTrackpTFine{1000, 0., 10., "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec axisJetpT{250, 0., 250., "#it{p}_{T,~ch~jet} (GeV/#it{c})"};
+    const AxisSpec axisJetpT{jetPtNbins, jetPtMin, jetPtMax, "#it{p}_{T, ch jet} (GeV/#it{c})"};
     // Used in place of axisJetpT for every "_sub"-suffixed histogram (UE-subtracted jet pT can go negative).
-    const AxisSpec axisJetpTSub{300, -50., 250., "#it{p}_{T,~ch~jet}^{sub} (GeV/#it{c})"};
+    const AxisSpec axisJetpTSub{jetPtSubNbins, jetPtSubMin, jetPtSubMax, "#it{p}_{T, ch jet}^{sub} (GeV/#it{c})"};
     const AxisSpec axisJetEta{200, -0.8, 0.8, "#it{#eta}_{jet}"};
     const AxisSpec axisDb{200, dbMin, dbMax, "#it{D}_{b}"};
     const AxisSpec axisDbFine{dbNbins, dbMin, dbMax, "#it{D}_{b}"};
@@ -364,13 +367,19 @@ struct BjetTaggingGnn {
     if (doprocessMCDJetsSV || doprocessMCDJetsSVSub) {
       registry.add("h2_SVMass_flavor", "", {HistType::kTH2F, {axisSVMass, axisJetFlavorCat}}, callSumw2);
     }
+    // Flavour split into three TH2 (b/c/lf) instead of one TH3 with a flavour axis: GRID-scale hadd
+    // merging of TH3 has been observed to dump all content into the flavour-axis overflow bin, while the
+    // equivalent TH2 merges correctly (see fillSVHistograms()/fillMCDJetHistograms() fill sites).
     auto addSVFlavorHistograms = [&](const AxisSpec& axisJetpT, const std::string& suffix) {
-      auto hMass = registry.add<TH3>("h3_SVMass_jetpT_flavor" + suffix, "", HistType::kTH3F, {axisJetpT, axisSVMass, axisJetFlavorCat}, callSumw2);
-      auto hLxyS = registry.add<TH3>("h3_SVLxyS_jetpT_flavor" + suffix, "", HistType::kTH3F, {axisJetpT, axisSVLxyS, axisJetFlavorCat}, callSumw2);
-      auto hDisp = registry.add<TH3>("h3_SVDispersion_jetpT_flavor" + suffix, "", HistType::kTH3F, {axisJetpT, axisSVDispersion, axisJetFlavorCat}, callSumw2);
-      setJetFlavorCatAxisLabels(hMass->GetZaxis());
-      setJetFlavorCatAxisLabels(hLxyS->GetZaxis());
-      setJetFlavorCatAxisLabels(hDisp->GetZaxis());
+      registry.add("h2_SVMass_jetpT_b" + suffix, "", HistType::kTH2F, {axisJetpT, axisSVMass}, callSumw2);
+      registry.add("h2_SVMass_jetpT_c" + suffix, "", HistType::kTH2F, {axisJetpT, axisSVMass}, callSumw2);
+      registry.add("h2_SVMass_jetpT_lf" + suffix, "", HistType::kTH2F, {axisJetpT, axisSVMass}, callSumw2);
+      registry.add("h2_SVLxyS_jetpT_b" + suffix, "", HistType::kTH2F, {axisJetpT, axisSVLxyS}, callSumw2);
+      registry.add("h2_SVLxyS_jetpT_c" + suffix, "", HistType::kTH2F, {axisJetpT, axisSVLxyS}, callSumw2);
+      registry.add("h2_SVLxyS_jetpT_lf" + suffix, "", HistType::kTH2F, {axisJetpT, axisSVLxyS}, callSumw2);
+      registry.add("h2_SVDispersion_jetpT_b" + suffix, "", HistType::kTH2F, {axisJetpT, axisSVDispersion}, callSumw2);
+      registry.add("h2_SVDispersion_jetpT_c" + suffix, "", HistType::kTH2F, {axisJetpT, axisSVDispersion}, callSumw2);
+      registry.add("h2_SVDispersion_jetpT_lf" + suffix, "", HistType::kTH2F, {axisJetpT, axisSVDispersion}, callSumw2);
     };
     auto addCoreJetHistograms = [&](const AxisSpec& axisJetpT, const std::string& suffix) {
       registry.add("h_jetpT" + suffix, "", HistType::kTH1F, {axisJetpT}, callSumw2);
@@ -477,7 +486,9 @@ struct BjetTaggingGnn {
     // just the core Db/flavor spectra. Histograms whose value doesn't depend on jetpT are booked once, above.
     if (doprocessMCDJets || doprocessMCDJetsSV || doprocessMCDJetsSub || doprocessMCDJetsSVSub) {
       registry.add("h2_Db_flavor", "", {HistType::kTH2F, {axisDbFine, axisJetFlavorCat}});
-      registry.add("h3_nTracks_Db_flavor", "", {HistType::kTH3F, {axisNTracks, axisDb, axisJetFlavorCat}});
+      registry.add("h2_nTracks_Db_b", "", {HistType::kTH2F, {axisNTracks, axisDb}});
+      registry.add("h2_nTracks_Db_c", "", {HistType::kTH2F, {axisNTracks, axisDb}});
+      registry.add("h2_nTracks_Db_lf", "", {HistType::kTH2F, {axisNTracks, axisDb}});
       registry.add("h2_Db_lfmatch", "lf-jet", {HistType::kTH2F, {axisDbFine, axisLfMatchStatus}});
       registry.add("h_Db_npp", "NotPhysPrim", {HistType::kTH1F, {axisDbFine}});
       registry.add("h2_Db_npp_flavor", "NotPhysPrim", {HistType::kTH2F, {axisDbFine, axisJetFlavorCat}});
@@ -485,24 +496,26 @@ struct BjetTaggingGnn {
       setLfMatchStatusAxisLabels(registry.get<TH2>(HIST("h2_Db_lfmatch"))->GetYaxis());
       setLfMatchStatusAxisLabels(registry.get<TH2>(HIST("h2_Db_npp_lfmatch"))->GetYaxis());
       setJetFlavorCatAxisLabels(registry.get<TH2>(HIST("h2_Db_flavor"))->GetYaxis());
-      setJetFlavorCatAxisLabels(registry.get<TH3>(HIST("h3_nTracks_Db_flavor"))->GetZaxis());
       setJetFlavorCatAxisLabels(registry.get<TH2>(HIST("h2_Db_npp_flavor"))->GetYaxis());
     }
     auto addMCDFlavorAndMatchedHistograms = [&](const AxisSpec& axisJetpT, const std::string& suffix) {
       auto hJetpTFlavor = registry.add<TH2>("h2_jetpT_flavor" + suffix, "", HistType::kTH2F, {axisJetpT, axisJetFlavorCat}, callSumw2);
-      auto hJetpTDbFlavor = registry.add<TH3>("h3_jetpT_Db_flavor" + suffix, "", HistType::kTH3F, {axisJetpT, axisDb, axisJetFlavorCat});
+      registry.add("h2_jetpT_Db_b" + suffix, "", HistType::kTH2F, {axisJetpT, axisDb});
+      registry.add("h2_jetpT_Db_c" + suffix, "", HistType::kTH2F, {axisJetpT, axisDb});
+      registry.add("h2_jetpT_Db_lf" + suffix, "", HistType::kTH2F, {axisJetpT, axisDb});
       auto hJetpTLfmatch = registry.add<TH2>("h2_jetpT_lfmatch" + suffix, "lf-jet", HistType::kTH2F, {axisJetpT, axisLfMatchStatus}, callSumw2);
-      auto hJetpTDbLfmatch = registry.add<TH3>("h3_jetpT_Db_lfmatch" + suffix, "lf-jet", HistType::kTH3F, {axisJetpT, axisDb, axisLfMatchStatus}, callSumw2);
       setLfMatchStatusAxisLabels(hJetpTLfmatch->GetYaxis());
-      setLfMatchStatusAxisLabels(hJetpTDbLfmatch->GetZaxis());
+      registry.add("h2_jetpT_Db_lfmatched" + suffix, "lf-jet", HistType::kTH2F, {axisJetpT, axisDb}, callSumw2);
+      registry.add("h2_jetpT_Db_lfnone" + suffix, "lf-jet", HistType::kTH2F, {axisJetpT, axisDb}, callSumw2);
       auto hResponse = registry.add<TH2>("h2_Response_DetjetpT_PartjetpT" + suffix, "", HistType::kTH2F, {axisJetpT, axisJetpT}, callSumw2);
-      auto hResponseFlavor = registry.add<TH3>("h3_Response_DetjetpT_PartjetpT_flavor" + suffix, "", HistType::kTH3F, {axisJetpT, axisJetpT, axisJetFlavorCat}, callSumw2);
+      registry.add("h2_Response_DetjetpT_PartjetpT_b" + suffix, "", HistType::kTH2F, {axisJetpT, axisJetpT}, callSumw2);
+      registry.add("h2_Response_DetjetpT_PartjetpT_c" + suffix, "", HistType::kTH2F, {axisJetpT, axisJetpT}, callSumw2);
+      registry.add("h2_Response_DetjetpT_PartjetpT_lf" + suffix, "", HistType::kTH2F, {axisJetpT, axisJetpT}, callSumw2);
       registry.add("h2_jetpT_Db_npp" + suffix, "NotPhysPrim", HistType::kTH2F, {axisJetpT, axisDb});
-      auto hJetpTDbNppFlavor = registry.add<TH3>("h3_jetpT_Db_npp_flavor" + suffix, "NotPhysPrim", HistType::kTH3F, {axisJetpT, axisDb, axisJetFlavorCat});
+      registry.add("h2_jetpT_Db_npp_b" + suffix, "NotPhysPrim", HistType::kTH2F, {axisJetpT, axisDb});
+      registry.add("h2_jetpT_Db_npp_c" + suffix, "NotPhysPrim", HistType::kTH2F, {axisJetpT, axisDb});
+      registry.add("h2_jetpT_Db_npp_lf" + suffix, "NotPhysPrim", HistType::kTH2F, {axisJetpT, axisDb});
       setJetFlavorCatAxisLabels(hJetpTFlavor->GetYaxis());
-      setJetFlavorCatAxisLabels(hJetpTDbFlavor->GetZaxis());
-      setJetFlavorCatAxisLabels(hResponseFlavor->GetZaxis());
-      setJetFlavorCatAxisLabels(hJetpTDbNppFlavor->GetZaxis());
       (void)hResponse;
 
       registry.add("h_jetpT_matched" + suffix, "", HistType::kTH1F, {axisJetpT}, callSumw2);
@@ -766,7 +779,7 @@ struct BjetTaggingGnn {
     }
   }
 
-  // lf-jets further split by MC-particle-jet match status (see h3_jetpT_Db_lfmatch).
+  // lf-jets further split by MC-particle-jet match status (see h2_jetpT_Db_lfmatched/h2_jetpT_Db_lfnone).
   static double getLfMatchStatus(int8_t jetFlavor)
   {
     return (jetFlavor == JetTaggingSpecies::none) ? 1. : 0.;
@@ -780,11 +793,11 @@ struct BjetTaggingGnn {
 
   // Selects the SV with the highest decay length significance out of all SVs matched to the jet,
   // shared by fillDataJetHistogramsSV()/fillMCDJetHistogramsSV(). Fills the inclusive SV histograms
-  // (plus the flavour-split variants when flavorCat >= 0, i.e. for MCD jets) and returns the
+  // (plus the flavour-split variants when jetFlavor >= 0, i.e. for MCD jets) and returns the
   // selected SV's mass (-1 if the jet has no SV). `jetpT` is passed in already raw-or-UE-subtracted by
   // the caller (per `withSub`) rather than recomputed here, since this function doesn't otherwise need rho.
   template <bool withSub, typename AnalysisJet, typename SecondaryVertices>
-  float fillSVHistograms(AnalysisJet const& analysisJet, SecondaryVertices const& /*allSVs*/, float jetpT, double weightEvt = 1.0, double flavorCat = -1.0)
+  float fillSVHistograms(AnalysisJet const& analysisJet, SecondaryVertices const& /*allSVs*/, float jetpT, double weightEvt = 1.0, int8_t jetFlavor = -1)
   {
     auto svs = analysisJet.template secondaryVertices_as<SecondaryVertices>();
     if (svs.size() == 0) {
@@ -801,26 +814,42 @@ struct BjetTaggingGnn {
     // jetpT-axis histograms below get the "_sub" name instead of a second registry (see `registry`'s
     // declaration).
     registry.fill(HIST("h_SVMass"), massSV, weightEvt);
-    if (flavorCat >= 0.) {
-      registry.fill(HIST("h2_SVMass_flavor"), massSV, flavorCat, weightEvt);
+    if (jetFlavor >= 0) {
+      registry.fill(HIST("h2_SVMass_flavor"), massSV, getJetFlavorCat(jetFlavor), weightEvt);
     }
     if constexpr (withSub) {
       registry.fill(HIST("h2_SVMass_jetpT_sub"), jetpT, massSV, weightEvt);
       registry.fill(HIST("h2_SVLxyS_jetpT_sub"), jetpT, lxyS, weightEvt);
       registry.fill(HIST("h2_SVDispersion_jetpT_sub"), jetpT, sv.dispersion(), weightEvt);
-      if (flavorCat >= 0.) {
-        registry.fill(HIST("h3_SVMass_jetpT_flavor_sub"), jetpT, massSV, flavorCat, weightEvt);
-        registry.fill(HIST("h3_SVLxyS_jetpT_flavor_sub"), jetpT, lxyS, flavorCat, weightEvt);
-        registry.fill(HIST("h3_SVDispersion_jetpT_flavor_sub"), jetpT, sv.dispersion(), flavorCat, weightEvt);
+      if (jetFlavor == JetTaggingSpecies::beauty) {
+        registry.fill(HIST("h2_SVMass_jetpT_b_sub"), jetpT, massSV, weightEvt);
+        registry.fill(HIST("h2_SVLxyS_jetpT_b_sub"), jetpT, lxyS, weightEvt);
+        registry.fill(HIST("h2_SVDispersion_jetpT_b_sub"), jetpT, sv.dispersion(), weightEvt);
+      } else if (jetFlavor == JetTaggingSpecies::charm) {
+        registry.fill(HIST("h2_SVMass_jetpT_c_sub"), jetpT, massSV, weightEvt);
+        registry.fill(HIST("h2_SVLxyS_jetpT_c_sub"), jetpT, lxyS, weightEvt);
+        registry.fill(HIST("h2_SVDispersion_jetpT_c_sub"), jetpT, sv.dispersion(), weightEvt);
+      } else if (jetFlavor >= 0) {
+        registry.fill(HIST("h2_SVMass_jetpT_lf_sub"), jetpT, massSV, weightEvt);
+        registry.fill(HIST("h2_SVLxyS_jetpT_lf_sub"), jetpT, lxyS, weightEvt);
+        registry.fill(HIST("h2_SVDispersion_jetpT_lf_sub"), jetpT, sv.dispersion(), weightEvt);
       }
     } else {
       registry.fill(HIST("h2_SVMass_jetpT"), jetpT, massSV, weightEvt);
       registry.fill(HIST("h2_SVLxyS_jetpT"), jetpT, lxyS, weightEvt);
       registry.fill(HIST("h2_SVDispersion_jetpT"), jetpT, sv.dispersion(), weightEvt);
-      if (flavorCat >= 0.) {
-        registry.fill(HIST("h3_SVMass_jetpT_flavor"), jetpT, massSV, flavorCat, weightEvt);
-        registry.fill(HIST("h3_SVLxyS_jetpT_flavor"), jetpT, lxyS, flavorCat, weightEvt);
-        registry.fill(HIST("h3_SVDispersion_jetpT_flavor"), jetpT, sv.dispersion(), flavorCat, weightEvt);
+      if (jetFlavor == JetTaggingSpecies::beauty) {
+        registry.fill(HIST("h2_SVMass_jetpT_b"), jetpT, massSV, weightEvt);
+        registry.fill(HIST("h2_SVLxyS_jetpT_b"), jetpT, lxyS, weightEvt);
+        registry.fill(HIST("h2_SVDispersion_jetpT_b"), jetpT, sv.dispersion(), weightEvt);
+      } else if (jetFlavor == JetTaggingSpecies::charm) {
+        registry.fill(HIST("h2_SVMass_jetpT_c"), jetpT, massSV, weightEvt);
+        registry.fill(HIST("h2_SVLxyS_jetpT_c"), jetpT, lxyS, weightEvt);
+        registry.fill(HIST("h2_SVDispersion_jetpT_c"), jetpT, sv.dispersion(), weightEvt);
+      } else if (jetFlavor >= 0) {
+        registry.fill(HIST("h2_SVMass_jetpT_lf"), jetpT, massSV, weightEvt);
+        registry.fill(HIST("h2_SVLxyS_jetpT_lf"), jetpT, lxyS, weightEvt);
+        registry.fill(HIST("h2_SVDispersion_jetpT_lf"), jetpT, sv.dispersion(), weightEvt);
       }
     }
     return massSV;
@@ -950,7 +979,13 @@ struct BjetTaggingGnn {
     registry.fill(HIST("h_Db"), analysisJet.scoreML(), weightEvt);
     registry.fill(HIST("h2_nTracks_Db"), nTracks, analysisJet.scoreML(), weightEvt);
     registry.fill(HIST("h2_Db_flavor"), analysisJet.scoreML(), flavorCat, weightEvt);
-    registry.fill(HIST("h3_nTracks_Db_flavor"), nTracks, analysisJet.scoreML(), flavorCat, weightEvt);
+    if (jetFlavor == JetTaggingSpecies::beauty) {
+      registry.fill(HIST("h2_nTracks_Db_b"), nTracks, analysisJet.scoreML(), weightEvt);
+    } else if (jetFlavor == JetTaggingSpecies::charm) {
+      registry.fill(HIST("h2_nTracks_Db_c"), nTracks, analysisJet.scoreML(), weightEvt);
+    } else {
+      registry.fill(HIST("h2_nTracks_Db_lf"), nTracks, analysisJet.scoreML(), weightEvt);
+    }
     bool isLf = jetFlavor != JetTaggingSpecies::beauty && jetFlavor != JetTaggingSpecies::charm;
     if (isLf) {
       registry.fill(HIST("h2_Db_lfmatch"), analysisJet.scoreML(), getLfMatchStatus(jetFlavor), weightEvt);
@@ -968,14 +1003,30 @@ struct BjetTaggingGnn {
       registry.fill(HIST("h_jetpT_sub"), jetpT, weightEvt);
       registry.fill(HIST("h2_jetpT_Db_sub"), jetpT, analysisJet.scoreML(), weightEvt);
       registry.fill(HIST("h2_jetpT_flavor_sub"), jetpT, flavorCat, weightEvt);
-      registry.fill(HIST("h3_jetpT_Db_flavor_sub"), jetpT, analysisJet.scoreML(), flavorCat, weightEvt);
+      if (jetFlavor == JetTaggingSpecies::beauty) {
+        registry.fill(HIST("h2_jetpT_Db_b_sub"), jetpT, analysisJet.scoreML(), weightEvt);
+      } else if (jetFlavor == JetTaggingSpecies::charm) {
+        registry.fill(HIST("h2_jetpT_Db_c_sub"), jetpT, analysisJet.scoreML(), weightEvt);
+      } else {
+        registry.fill(HIST("h2_jetpT_Db_lf_sub"), jetpT, analysisJet.scoreML(), weightEvt);
+      }
       if (isLf) {
         registry.fill(HIST("h2_jetpT_lfmatch_sub"), jetpT, getLfMatchStatus(jetFlavor), weightEvt);
-        registry.fill(HIST("h3_jetpT_Db_lfmatch_sub"), jetpT, analysisJet.scoreML(), getLfMatchStatus(jetFlavor), weightEvt);
+        if (jetFlavor == JetTaggingSpecies::none) {
+          registry.fill(HIST("h2_jetpT_Db_lfnone_sub"), jetpT, analysisJet.scoreML(), weightEvt);
+        } else {
+          registry.fill(HIST("h2_jetpT_Db_lfmatched_sub"), jetpT, analysisJet.scoreML(), weightEvt);
+        }
       }
       if (isNpp) {
         registry.fill(HIST("h2_jetpT_Db_npp_sub"), jetpT, analysisJet.scoreML(), weightEvt);
-        registry.fill(HIST("h3_jetpT_Db_npp_flavor_sub"), jetpT, analysisJet.scoreML(), flavorCat, weightEvt);
+        if (jetFlavor == JetTaggingSpecies::beauty) {
+          registry.fill(HIST("h2_jetpT_Db_npp_b_sub"), jetpT, analysisJet.scoreML(), weightEvt);
+        } else if (jetFlavor == JetTaggingSpecies::charm) {
+          registry.fill(HIST("h2_jetpT_Db_npp_c_sub"), jetpT, analysisJet.scoreML(), weightEvt);
+        } else {
+          registry.fill(HIST("h2_jetpT_Db_npp_lf_sub"), jetpT, analysisJet.scoreML(), weightEvt);
+        }
       }
 
       if (doDataDriven && !doDataDrivenSV) {
@@ -1013,14 +1064,30 @@ struct BjetTaggingGnn {
       registry.fill(HIST("h_jetpT"), jetpT, weightEvt);
       registry.fill(HIST("h2_jetpT_Db"), jetpT, analysisJet.scoreML(), weightEvt);
       registry.fill(HIST("h2_jetpT_flavor"), jetpT, flavorCat, weightEvt);
-      registry.fill(HIST("h3_jetpT_Db_flavor"), jetpT, analysisJet.scoreML(), flavorCat, weightEvt);
+      if (jetFlavor == JetTaggingSpecies::beauty) {
+        registry.fill(HIST("h2_jetpT_Db_b"), jetpT, analysisJet.scoreML(), weightEvt);
+      } else if (jetFlavor == JetTaggingSpecies::charm) {
+        registry.fill(HIST("h2_jetpT_Db_c"), jetpT, analysisJet.scoreML(), weightEvt);
+      } else {
+        registry.fill(HIST("h2_jetpT_Db_lf"), jetpT, analysisJet.scoreML(), weightEvt);
+      }
       if (isLf) {
         registry.fill(HIST("h2_jetpT_lfmatch"), jetpT, getLfMatchStatus(jetFlavor), weightEvt);
-        registry.fill(HIST("h3_jetpT_Db_lfmatch"), jetpT, analysisJet.scoreML(), getLfMatchStatus(jetFlavor), weightEvt);
+        if (jetFlavor == JetTaggingSpecies::none) {
+          registry.fill(HIST("h2_jetpT_Db_lfnone"), jetpT, analysisJet.scoreML(), weightEvt);
+        } else {
+          registry.fill(HIST("h2_jetpT_Db_lfmatched"), jetpT, analysisJet.scoreML(), weightEvt);
+        }
       }
       if (isNpp) {
         registry.fill(HIST("h2_jetpT_Db_npp"), jetpT, analysisJet.scoreML(), weightEvt);
-        registry.fill(HIST("h3_jetpT_Db_npp_flavor"), jetpT, analysisJet.scoreML(), flavorCat, weightEvt);
+        if (jetFlavor == JetTaggingSpecies::beauty) {
+          registry.fill(HIST("h2_jetpT_Db_npp_b"), jetpT, analysisJet.scoreML(), weightEvt);
+        } else if (jetFlavor == JetTaggingSpecies::charm) {
+          registry.fill(HIST("h2_jetpT_Db_npp_c"), jetpT, analysisJet.scoreML(), weightEvt);
+        } else {
+          registry.fill(HIST("h2_jetpT_Db_npp_lf"), jetpT, analysisJet.scoreML(), weightEvt);
+        }
       }
 
       if (doDataDriven && !doDataDrivenSV) {
@@ -1066,13 +1133,37 @@ struct BjetTaggingGnn {
   {
     auto [jetFlavor, nTracks] = fillMCDJetHistograms<withSub>(analysisJet, allTracks, rho, weightEvt);
     float jetpT = withSub ? (analysisJet.pt() - rho * analysisJet.area()) : analysisJet.pt();
-    float massSV = fillSVHistograms<withSub>(analysisJet, allSVs, jetpT, weightEvt, getJetFlavorCat(jetFlavor));
+    float massSV = fillSVHistograms<withSub>(analysisJet, allSVs, jetpT, weightEvt, jetFlavor);
 
     if (doDataDriven && doDataDrivenSV) {
       if constexpr (withSub) {
         registry.fill(HIST("hSparse_Incljets_sub"), jetpT, analysisJet.scoreML(), nTracks, massSV, weightEvt);
+        if (jetFlavor == JetTaggingSpecies::beauty) {
+          registry.fill(HIST("hSparse_bjets_sub"), jetpT, analysisJet.scoreML(), nTracks, massSV, weightEvt);
+        } else if (jetFlavor == JetTaggingSpecies::charm) {
+          registry.fill(HIST("hSparse_cjets_sub"), jetpT, analysisJet.scoreML(), nTracks, massSV, weightEvt);
+        } else {
+          registry.fill(HIST("hSparse_lfjets_sub"), jetpT, analysisJet.scoreML(), nTracks, massSV, weightEvt);
+          if (jetFlavor == JetTaggingSpecies::none) {
+            registry.fill(HIST("hSparse_lfjets_none_sub"), jetpT, analysisJet.scoreML(), nTracks, massSV, weightEvt);
+          } else {
+            registry.fill(HIST("hSparse_lfjets_matched_sub"), jetpT, analysisJet.scoreML(), nTracks, massSV, weightEvt);
+          }
+        }
       } else {
         registry.fill(HIST("hSparse_Incljets"), jetpT, analysisJet.scoreML(), nTracks, massSV, weightEvt);
+        if (jetFlavor == JetTaggingSpecies::beauty) {
+          registry.fill(HIST("hSparse_bjets"), jetpT, analysisJet.scoreML(), nTracks, massSV, weightEvt);
+        } else if (jetFlavor == JetTaggingSpecies::charm) {
+          registry.fill(HIST("hSparse_cjets"), jetpT, analysisJet.scoreML(), nTracks, massSV, weightEvt);
+        } else {
+          registry.fill(HIST("hSparse_lfjets"), jetpT, analysisJet.scoreML(), nTracks, massSV, weightEvt);
+          if (jetFlavor == JetTaggingSpecies::none) {
+            registry.fill(HIST("hSparse_lfjets_none"), jetpT, analysisJet.scoreML(), nTracks, massSV, weightEvt);
+          } else {
+            registry.fill(HIST("hSparse_lfjets_matched"), jetpT, analysisJet.scoreML(), nTracks, massSV, weightEvt);
+          }
+        }
       }
     }
 
@@ -1483,11 +1574,14 @@ struct BjetTaggingGnn {
           registry.fill(HIST("hSparse_pthat_jetpT_sub"), collision.template mcCollision_as<AnalysisCollisionsMCP>().ptHard(), jetpT, mcpJetpT, weightEvt); // Matched jets
           registry.fill(HIST("h2_jetpT_matched_flavor_sub"), jetpT, getJetFlavorCat(jetFlavor), weightEvt);
           registry.fill(HIST("h2_jetpT_particle_matched_flavor_sub"), mcpJetpT, getJetFlavorCat(jetFlavor), weightEvt);
-          registry.fill(HIST("h3_Response_DetjetpT_PartjetpT_flavor_sub"), jetpT, mcpJetpT, getJetFlavorCat(jetFlavor), weightEvt);
           if (jetFlavor == JetTaggingSpecies::beauty) {
+            registry.fill(HIST("h2_Response_DetjetpT_PartjetpT_b_sub"), jetpT, mcpJetpT, weightEvt);
             registry.fill(HIST("hSparse_pthat_jetpT_b_sub"), collision.template mcCollision_as<AnalysisCollisionsMCP>().ptHard(), jetpT, mcpJetpT, weightEvt); // Matched b-jets
           } else if (jetFlavor == JetTaggingSpecies::charm) {
+            registry.fill(HIST("h2_Response_DetjetpT_PartjetpT_c_sub"), jetpT, mcpJetpT, weightEvt);
             registry.fill(HIST("hSparse_pthat_jetpT_c_sub"), collision.template mcCollision_as<AnalysisCollisionsMCP>().ptHard(), jetpT, mcpJetpT, weightEvt); // Matched c-jets
+          } else {
+            registry.fill(HIST("h2_Response_DetjetpT_PartjetpT_lf_sub"), jetpT, mcpJetpT, weightEvt);
           }
         } else {
           registry.fill(HIST("h2_Response_DetjetpT_PartjetpT"), jetpT, mcpJetpT, weightEvt);
@@ -1496,11 +1590,14 @@ struct BjetTaggingGnn {
           registry.fill(HIST("hSparse_pthat_jetpT"), collision.template mcCollision_as<AnalysisCollisionsMCP>().ptHard(), jetpT, mcpJetpT, weightEvt); // Matched jets
           registry.fill(HIST("h2_jetpT_matched_flavor"), jetpT, getJetFlavorCat(jetFlavor), weightEvt);
           registry.fill(HIST("h2_jetpT_particle_matched_flavor"), mcpJetpT, getJetFlavorCat(jetFlavor), weightEvt);
-          registry.fill(HIST("h3_Response_DetjetpT_PartjetpT_flavor"), jetpT, mcpJetpT, getJetFlavorCat(jetFlavor), weightEvt);
           if (jetFlavor == JetTaggingSpecies::beauty) {
+            registry.fill(HIST("h2_Response_DetjetpT_PartjetpT_b"), jetpT, mcpJetpT, weightEvt);
             registry.fill(HIST("hSparse_pthat_jetpT_b"), collision.template mcCollision_as<AnalysisCollisionsMCP>().ptHard(), jetpT, mcpJetpT, weightEvt); // Matched b-jets
           } else if (jetFlavor == JetTaggingSpecies::charm) {
+            registry.fill(HIST("h2_Response_DetjetpT_PartjetpT_c"), jetpT, mcpJetpT, weightEvt);
             registry.fill(HIST("hSparse_pthat_jetpT_c"), collision.template mcCollision_as<AnalysisCollisionsMCP>().ptHard(), jetpT, mcpJetpT, weightEvt); // Matched c-jets
+          } else {
+            registry.fill(HIST("h2_Response_DetjetpT_PartjetpT_lf"), jetpT, mcpJetpT, weightEvt);
           }
         }
       }

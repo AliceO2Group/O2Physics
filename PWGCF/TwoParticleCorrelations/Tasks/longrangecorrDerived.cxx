@@ -45,6 +45,7 @@
 #include <Framework/runDataProcessing.h>
 
 #include <TH3.h>
+#include <TPDGCode.h>
 #include <TRandom.h>
 
 #include <cmath>
@@ -74,8 +75,8 @@ struct LongrangecorrDerived {
   SGSelector sgSelector;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   TrackSelection myTrackFilter;
-  Service<o2::framework::O2DatabasePDG> pdg;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::framework::O2DatabasePDG> pdg{};
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   struct : ConfigurableGroup {
     Configurable<int> cfgNmixedevent{"cfgNmixedevent", 5, "how many events are mixed"};
@@ -114,6 +115,10 @@ struct LongrangecorrDerived {
     Configurable<float> cfgTofPidPtCut{"cfgTofPidPtCut", 0.4f, "Minimum pt to use TOF N-sigma"};
     Configurable<float> cfgPidNsigmaMax{"cfgPidNsigmaMax", 1.5f, "Maximum n-sigma for PID"};
     Configurable<float> cfgPidNsigmaMin{"cfgPidNsigmaMin", -1.5f, "Minimum n-sigma for PID"};
+    Configurable<float> cfgCleanNsigmaTpcMax{"cfgCleanNsigmaTpcMax", 1.5f, "Max TPC n-sigma for clean templates"};
+    Configurable<float> cfgCleanNsigmaTpcMin{"cfgCleanNsigmaTpcMin", -1.5f, "Min TPC n-sigma for clean templates"};
+    Configurable<float> cfgCleanNsigmaTofMax{"cfgCleanNsigmaTofMax", 1.5f, "Max TOF n-sigma for clean templates"};
+    Configurable<float> cfgCleanNsigmaTofMin{"cfgCleanNsigmaTofMin", -1.5f, "Min TOF n-sigma for clean templates"};
     Configurable<bool> cfgGetNsigmaQA{"cfgGetNsigmaQA", true, "Get QA histograms for PID selection"};
     Configurable<bool> cfgGetdEdx{"cfgGetdEdx", true, "Get dEdx histograms for TPC signal"};
 
@@ -159,6 +164,9 @@ struct LongrangecorrDerived {
     ConfigurableAxis axisNsigmaTOF{"axisNsigmaTOF", {80, -5, 5}, "nsigmaTOF axis"};
     ConfigurableAxis axisTpcSignal{"axisTpcSignal", {250, 0, 250}, "dEdx axis for TPC"};
 
+    ConfigurableAxis axisMcPt{"axisMcPt", {100, 0.2, 10.0}, "p_{T} (GeV/c)"};
+    ConfigurableAxis axisMcEta{"axisMcEta", {100, -0.8, 0.8}, "#eta"};
+    ConfigurableAxis axisMcPhi{"axisMcPhi", {100, 0., TwoPI}, "#phi"};
   } cfgAxis;
 
   Configurable<float> cfgFv0Cut{"cfgFv0Cut", 50.0f, "FV0A threshold"};
@@ -246,7 +254,7 @@ struct LongrangecorrDerived {
       histos.add("Trig_pt", "Trig_pt", kTH1D, {cfgAxis.axisPtTrigger});
       histos.add("Trig_pt_corrected", "Trig_pt_corrected", kTH1D, {cfgAxis.axisPtTrigger});
       histos.add("Trig_invMass", "Trig_invMass", kTH1D, {cfgAxis.axisInvMassQA});
-      histos.add("Trig_hist", "Trig_hist", kTHnSparseF, {cfgAxis.axisSample, cfgAxis.axisVtxZ, cfgAxis.axisMultiplicity, cfgAxis.axisPtTrigger, cfgAxis.axisInvMass});
+      histos.add("Trig_hist", "Trigger Track Properties;Sample;Vertex Z (cm);Multiplicity;p_{T} (GeV/c);Invariant Mass (GeV/c^{2})", kTHnSparseF, {cfgAxis.axisSample, cfgAxis.axisVtxZ, cfgAxis.axisMultiplicity, cfgAxis.axisPtTrigger, cfgAxis.axisInvMass});
       histos.add("Trig_amp", "Trig_amp", kTH1D, {cfgAxis.axisAmplitude});
       histos.add("Channel_vs_Trig_amp", "Channel_vs_Trig_amp", kTH2D, {cfgAxis.axisChannel, cfgAxis.axisAmplitude});
 
@@ -275,14 +283,23 @@ struct LongrangecorrDerived {
     if (doprocessTPCtrackEff) {
       histos.add("hGenMCdndpt", "hGenMCdndpt", kTH3D, {cfgAxis.axisVtxZ, cfgAxis.axisEtaEfficiency, cfgAxis.axisPtEfficiency});
       histos.add("hRecMCdndpt", "hRecMCdndpt", kTH3D, {cfgAxis.axisVtxZ, cfgAxis.axisEtaEfficiency, cfgAxis.axisPtEfficiency});
+
+      if (cfgSel.cfgPidMask == KPidMaskPion || cfgSel.cfgPidMask == KPidMaskKaon || cfgSel.cfgPidMask == KPidMaskProton) {
+        histos.add("hMCGen_PidPtEtaPhi", "MC Gen Target", kTH3D, {cfgAxis.axisMcPt, cfgAxis.axisMcEta, cfgAxis.axisMcPhi});
+        histos.add("hMCRec_PidPtEtaPhi", "MC Rec Target", kTH3D, {cfgAxis.axisMcPt, cfgAxis.axisMcEta, cfgAxis.axisMcPhi});
+      }
+
+      if (cfgSel.cfgGetdEdx) {
+        histos.add("MC_TpcdEdx_ptwise", "MC True TPC dE/dx;Particle Species;p_{T} (GeV/c);TPC dE/dx", kTHnSparseD, {{3, 0.5, 3.5}, cfgAxis.axisPtQA, cfgAxis.axisTpcSignal});
+      }
     }
 
     myTrackFilter = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny,
                                                         TrackSelection::GlobalTrackRun3DCAxyCut::Default);
     myTrackFilter.SetPtRange(cfgSel.cfgPtCutMin, cfgSel.cfgPtCutMax);
     myTrackFilter.SetEtaRange(-cfgSel.cfgEtaCut, cfgSel.cfgEtaCut);
-    myTrackFilter.SetMinNCrossedRowsTPC(cfgSel.cfgTpcMinNCrossedRows);
-    myTrackFilter.SetMinNClustersTPC(cfgSel.cfgTpcMinNclsFound);
+    myTrackFilter.SetMinNCrossedRowsTPC(static_cast<int>(cfgSel.cfgTpcMinNCrossedRows));
+    myTrackFilter.SetMinNClustersTPC(static_cast<int>(cfgSel.cfgTpcMinNclsFound));
     myTrackFilter.SetMaxChi2PerClusterTPC(cfgSel.cfgTpcMaxChi2PerCluster);
     myTrackFilter.SetMaxDcaZ(cfgSel.cfgTpcMaxDcaZ);
     myTrackFilter.print();
@@ -498,7 +515,7 @@ struct LongrangecorrDerived {
   template <CorrelationContainer::CFStep step, typename TTarget, typename TTriggers, typename TAssocs>
   void fillCorrHist(TTarget target, TTriggers const& triggers, TAssocs const& assocs, bool mixing, float vz, float multiplicity, float eventWeight)
   {
-    int fSampleIndex = gRandom->Uniform(0, cfgSel.cfgSampleSize);
+    int fSampleIndex = static_cast<int>(gRandom->Uniform(0, cfgSel.cfgSampleSize));
     for (auto const& triggerTrack : triggers) {
       auto trigAmpl = 1.0f;
       auto trkeff = 1.0f;
@@ -770,6 +787,16 @@ struct LongrangecorrDerived {
     processSame(col, tracks, ft0as);
   }
 
+  void processV0ft0cSE(CollsTable::iterator const& col, V0TrksTable const& tracks, Ft0cTrksTable const& ft0cs)
+  {
+    processSame(col, tracks, ft0cs);
+  }
+
+  void processV0tpcSE(CollsTable::iterator const& col, V0TrksTable const& v0s, TrksTable const& tracks)
+  {
+    processSame(col, v0s, tracks);
+  }
+
   void processV0mftSE(CollsTable::iterator const& col, V0TrksTable const& tracks, MftTrksTable const& mfts)
   {
     processSame(col, tracks, mfts);
@@ -803,6 +830,16 @@ struct LongrangecorrDerived {
   void processV0ft0aME(CollsTable const& cols, V0TrksTable const& tracks, Ft0aTrksTable const& ft0as)
   {
     processMixed(cols, tracks, ft0as);
+  }
+
+  void processV0ft0cME(CollsTable const& cols, V0TrksTable const& tracks, Ft0cTrksTable const& ft0cs)
+  {
+    processMixed(cols, tracks, ft0cs);
+  }
+
+  void processV0tpcME(CollsTable const& cols, V0TrksTable const& v0s, TrksTable const& tracks)
+  {
+    processMixed(cols, v0s, tracks);
   }
 
   void processV0mftME(CollsTable const& cols, V0TrksTable const& tracks, MftTrksTable const& mfts)
@@ -855,6 +892,11 @@ struct LongrangecorrDerived {
     processSame(col, tracks, ft0as);
   }
 
+  void processUpcV0ft0cSE(UpcCollsTable::iterator const& col, V0TrksUpcTable const& tracks, Ft0cTrksUpcTable const& ft0cs)
+  {
+    processSame(col, tracks, ft0cs);
+  }
+
   void processUpcV0mftSE(UpcCollsTable::iterator const& col, V0TrksUpcTable const& tracks, MftTrksUpcTable const& mfts)
   {
     if (!isUpcEventSelected<true>(col)) {
@@ -886,6 +928,11 @@ struct LongrangecorrDerived {
   void processUpcV0ft0aME(UpcCollsTable const& cols, V0TrksUpcTable const& tracks, Ft0aTrksUpcTable const& ft0as)
   {
     processMixed(cols, tracks, ft0as);
+  }
+
+  void processUpcV0ft0cME(UpcCollsTable const& cols, V0TrksUpcTable const& tracks, Ft0cTrksUpcTable const& ft0cs)
+  {
+    processMixed(cols, tracks, ft0cs);
   }
 
   void processUpcV0mftME(UpcCollsTable const& cols, V0TrksUpcTable const& tracks, MftTrksUpcTable const& mfts)
@@ -963,6 +1010,16 @@ struct LongrangecorrDerived {
     processMcGenSame(mccollision, mfts, ft0as);
   }
 
+  void processMcGenV0ft0aSE(McCollsTable::iterator const& mccollision, McTrksTable const& tracks, McFt0aTrksTable const& ft0as)
+  {
+    processMcGenSame(mccollision, tracks, ft0as);
+  }
+
+  void processMcGenV0ft0cSE(McCollsTable::iterator const& mccollision, McTrksTable const& tracks, McFt0cTrksTable const& ft0cs)
+  {
+    processMcGenSame(mccollision, tracks, ft0cs);
+  }
+
   void processMcGenFt0aft0cSE(McCollsTable::iterator const& mccollision, McFt0aTrksTable const& ft0as, McFt0cTrksTable const& ft0cs)
   {
     processMcGenSame(mccollision, ft0as, ft0cs);
@@ -988,6 +1045,16 @@ struct LongrangecorrDerived {
     processMcGenMixed(mccollisions, mfts, ft0as);
   }
 
+  void processMcGenV0ft0aME(McCollsTable const& mccollisions, McTrksTable const& tracks, McFt0aTrksTable const& ft0as)
+  {
+    processMcGenMixed(mccollisions, tracks, ft0as);
+  }
+
+  void processMcGenV0ft0cME(McCollsTable const& mccollisions, McTrksTable const& tracks, McFt0cTrksTable const& ft0cs)
+  {
+    processMcGenMixed(mccollisions, tracks, ft0cs);
+  }
+
   void processMcGenFt0aft0cME(McCollsTable const& mccollisions, McFt0aTrksTable const& ft0as, McFt0cTrksTable const& ft0cs)
   {
     processMcGenMixed(mccollisions, ft0as, ft0cs);
@@ -995,7 +1062,7 @@ struct LongrangecorrDerived {
 
   using ColMCTrueTable = soa::Join<aod::McCollisions, aod::McCollsExtra>;
   using ColMCRecTable = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels>>;
-  using TrksMCRecTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection>;
+  using TrksMCRecTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
   Preslice<TrksMCRecTable> perColMidtrack = aod::track::collisionId;
 
   template <typename CheckCol>
@@ -1039,7 +1106,6 @@ struct LongrangecorrDerived {
         continue;
       if (RecCol.globalIndex() != mcCollision.bestCollisionIndex())
         continue;
-      auto recTracksPart = RecTracks.sliceBy(perColMidtrack, RecCol.globalIndex());
       atLeastOne = true;
     }
     for (const auto& particle : mcparticles) {
@@ -1048,9 +1114,23 @@ struct LongrangecorrDerived {
           particle.pt() < cfgSel.cfgPtCutMin ||
           particle.pt() > cfgSel.cfgPtCutMax)
         continue;
-      if (atLeastOne)
+      if (atLeastOne) {
         histos.fill(HIST("hGenMCdndpt"), mcCollision.posZ(), particle.eta(), particle.pt());
+
+        if (cfgSel.cfgPidMask == KPidMaskPion || cfgSel.cfgPidMask == KPidMaskKaon || cfgSel.cfgPidMask == KPidMaskProton) {
+          auto pdgcode = std::abs(particle.pdgCode());
+
+          bool isTargetGen = (cfgSel.cfgPidMask == KPidMaskPion && pdgcode == PDG_t::kPiPlus) ||
+                             (cfgSel.cfgPidMask == KPidMaskKaon && pdgcode == PDG_t::kKPlus) ||
+                             (cfgSel.cfgPidMask == KPidMaskProton && pdgcode == PDG_t::kProton);
+
+          if (isTargetGen) {
+            histos.fill(HIST("hMCGen_PidPtEtaPhi"), particle.pt(), particle.eta(), particle.phi());
+          }
+        }
+      }
     }
+
     for (const auto& RecCol : RecCols) {
       if (!isEventSelected(RecCol))
         continue;
@@ -1069,6 +1149,58 @@ struct LongrangecorrDerived {
           continue;
         if (particle.isPhysicalPrimary()) {
           histos.fill(HIST("hRecMCdndpt"), mcCollision.posZ(), particle.eta(), particle.pt());
+
+          if (cfgSel.cfgGetdEdx) {
+            int pdgIdx = 0;
+            auto absPdg = std::abs(particle.pdgCode());
+
+            if (absPdg == PDG_t::kPiPlus)
+              pdgIdx = 1; // o2-linter: disable=pdg/explicit-code (histogram species index)
+            else if (absPdg == PDG_t::kKPlus)
+              pdgIdx = 2; // o2-linter: disable=pdg/explicit-code (histogram species index)
+            else if (absPdg == PDG_t::kProton)
+              pdgIdx = 3; // o2-linter: disable=pdg/explicit-code (histogram species index)
+
+            if (pdgIdx > 0) {
+              histos.fill(HIST("MC_TpcdEdx_ptwise"), static_cast<double>(pdgIdx), track.pt(), track.tpcSignal());
+            }
+          }
+
+          bool isTpcPion = (track.tpcNSigmaPi() > cfgSel.cfgPidNsigmaMin && track.tpcNSigmaPi() < cfgSel.cfgPidNsigmaMax);
+          bool isTpcKaon = (track.tpcNSigmaKa() > cfgSel.cfgPidNsigmaMin && track.tpcNSigmaKa() < cfgSel.cfgPidNsigmaMax);
+          bool isTpcProton = (track.tpcNSigmaPr() > cfgSel.cfgPidNsigmaMin && track.tpcNSigmaPr() < cfgSel.cfgPidNsigmaMax);
+
+          bool isTofPion = (track.tofNSigmaPi() > cfgSel.cfgPidNsigmaMin && track.tofNSigmaPi() < cfgSel.cfgPidNsigmaMax);
+          bool isTofKaon = (track.tofNSigmaKa() > cfgSel.cfgPidNsigmaMin && track.tofNSigmaKa() < cfgSel.cfgPidNsigmaMax);
+          bool isTofProton = (track.tofNSigmaPr() > cfgSel.cfgPidNsigmaMin && track.tofNSigmaPr() < cfgSel.cfgPidNsigmaMax);
+
+          bool isPion = false, isKaon = false, isProton = false;
+
+          if (track.pt() > cfgSel.cfgTofPidPtCut && track.hasTOF()) {
+            isPion = isTofPion && isTpcPion;
+            isKaon = isTofKaon && isTpcKaon;
+            isProton = isTofProton && isTpcProton;
+          } else if (!(track.pt() > cfgSel.cfgTofPidPtCut && !track.hasTOF())) {
+            isPion = isTpcPion;
+            isKaon = isTpcKaon;
+            isProton = isTpcProton;
+          }
+
+          if ((isPion && isKaon) || (isPion && isProton) || (isKaon && isProton)) {
+            isPion = isKaon = isProton = false;
+          }
+
+          if (cfgSel.cfgPidMask == KPidMaskPion || cfgSel.cfgPidMask == KPidMaskKaon || cfgSel.cfgPidMask == KPidMaskProton) {
+
+            auto pdgcodeRec = std::abs(particle.pdgCode());
+            bool isTargetRec = (cfgSel.cfgPidMask == KPidMaskPion && isPion && pdgcodeRec == PDG_t::kPiPlus) ||
+                               (cfgSel.cfgPidMask == KPidMaskKaon && isKaon && pdgcodeRec == PDG_t::kKPlus) ||
+                               (cfgSel.cfgPidMask == KPidMaskProton && isProton && pdgcodeRec == PDG_t::kProton);
+
+            if (isTargetRec) {
+              histos.fill(HIST("hMCRec_PidPtEtaPhi"), particle.pt(), particle.eta(), particle.phi());
+            }
+          }
         }
       }
     }
@@ -1104,6 +1236,9 @@ struct LongrangecorrDerived {
         if (!myTrackFilter.IsSelected(track))
           continue;
 
+        if (!track.hasTOF())
+          continue;
+
         float tpcNsig = 0.0f, tofNsig = 0.0f;
         if (cfgSel.cfgPidMask & KPidMaskPion) {
           tpcNsig = track.tpcNSigmaPi();
@@ -1124,30 +1259,25 @@ struct LongrangecorrDerived {
           }
         }
 
-        bool isTpcPion = (track.tpcNSigmaPi() > cfgSel.cfgPidNsigmaMin && track.tpcNSigmaPi() < cfgSel.cfgPidNsigmaMax);
-        bool isTpcKaon = (track.tpcNSigmaKa() > cfgSel.cfgPidNsigmaMin && track.tpcNSigmaKa() < cfgSel.cfgPidNsigmaMax);
-        bool isTpcProton = (track.tpcNSigmaPr() > cfgSel.cfgPidNsigmaMin && track.tpcNSigmaPr() < cfgSel.cfgPidNsigmaMax);
+        bool isTpcPion = (track.tpcNSigmaPi() > cfgSel.cfgCleanNsigmaTpcMin && track.tpcNSigmaPi() < cfgSel.cfgCleanNsigmaTpcMax);
+        bool isTpcKaon = (track.tpcNSigmaKa() > cfgSel.cfgCleanNsigmaTpcMin && track.tpcNSigmaKa() < cfgSel.cfgCleanNsigmaTpcMax);
+        bool isTpcProton = (track.tpcNSigmaPr() > cfgSel.cfgCleanNsigmaTpcMin && track.tpcNSigmaPr() < cfgSel.cfgCleanNsigmaTpcMax);
 
-        bool isTofPion = (track.tofNSigmaPi() > cfgSel.cfgPidNsigmaMin && track.tofNSigmaPi() < cfgSel.cfgPidNsigmaMax);
-        bool isTofKaon = (track.tofNSigmaKa() > cfgSel.cfgPidNsigmaMin && track.tofNSigmaKa() < cfgSel.cfgPidNsigmaMax);
-        bool isTofProton = (track.tofNSigmaPr() > cfgSel.cfgPidNsigmaMin && track.tofNSigmaPr() < cfgSel.cfgPidNsigmaMax);
+        bool isTofPion = (track.tofNSigmaPi() > cfgSel.cfgCleanNsigmaTofMin && track.tofNSigmaPi() < cfgSel.cfgCleanNsigmaTofMax);
+        bool isTofKaon = (track.tofNSigmaKa() > cfgSel.cfgCleanNsigmaTofMin && track.tofNSigmaKa() < cfgSel.cfgCleanNsigmaTofMax);
+        bool isTofProton = (track.tofNSigmaPr() > cfgSel.cfgCleanNsigmaTofMin && track.tofNSigmaPr() < cfgSel.cfgCleanNsigmaTofMax);
 
-        bool isPion = false, isKaon = false, isProton = false;
-        if (track.pt() > cfgSel.cfgTofPidPtCut && track.hasTOF()) {
-          isPion = isTofPion && isTpcPion;
-          isKaon = isTofKaon && isTpcKaon;
-          isProton = isTofProton && isTpcProton;
-        } else if (!(track.pt() > cfgSel.cfgTofPidPtCut && !track.hasTOF())) {
-          isPion = isTpcPion;
-          isKaon = isTpcKaon;
-          isProton = isTpcProton;
-        }
+        bool isPion = isTofPion && isTpcPion;
+        bool isKaon = isTofKaon && isTpcKaon;
+        bool isProton = isTofProton && isTpcProton;
 
         if ((isPion && isKaon) || (isPion && isProton) || (isKaon && isProton)) {
           isPion = isKaon = isProton = false;
         }
 
-        bool isTargetParticle = ((cfgSel.cfgPidMask & KPidMaskPion) && isPion) || ((cfgSel.cfgPidMask & KPidMaskKaon) && isKaon) || ((cfgSel.cfgPidMask & KPidMaskProton) && isProton);
+        bool isTargetParticle = ((cfgSel.cfgPidMask & KPidMaskPion) && isPion) ||
+                                ((cfgSel.cfgPidMask & KPidMaskKaon) && isKaon) ||
+                                ((cfgSel.cfgPidMask & KPidMaskProton) && isProton);
 
         // FILL AFTER CUTS
         if (cfgSel.cfgGetNsigmaQA && isTargetParticle) {
@@ -1170,6 +1300,10 @@ struct LongrangecorrDerived {
   PROCESS_SWITCH(LongrangecorrDerived, processMftft0aME, "mixed event MFT vs FT0A", false);
   PROCESS_SWITCH(LongrangecorrDerived, processV0ft0aSE, "same event V0 vs FT0A", false);
   PROCESS_SWITCH(LongrangecorrDerived, processV0ft0aME, "mixed event V0 vs FT0A", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processV0ft0cSE, "same event V0 vs FT0C", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processV0ft0cME, "mixed event V0 vs FT0C", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processV0tpcSE, "same event V0 vs TPC", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processV0tpcME, "mixed event V0 vs TPC", false);
   PROCESS_SWITCH(LongrangecorrDerived, processV0mftSE, "same event V0 vs MFT", false);
   PROCESS_SWITCH(LongrangecorrDerived, processV0mftME, "mixed event V0 vs MFT", false);
   PROCESS_SWITCH(LongrangecorrDerived, processFt0aft0cSE, "same event FT0A vs FT0C", false);
@@ -1184,6 +1318,8 @@ struct LongrangecorrDerived {
   PROCESS_SWITCH(LongrangecorrDerived, processUpcMftft0aME, "mixed UPC event MFT vs FT0A", false);
   PROCESS_SWITCH(LongrangecorrDerived, processUpcV0ft0aSE, "same UPC event V0 vs FT0A", false);
   PROCESS_SWITCH(LongrangecorrDerived, processUpcV0ft0aME, "mixed UPC event V0 vs FT0A", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processUpcV0ft0cSE, "same UPC event V0 vs FT0C", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processUpcV0ft0cME, "mixed UPC event V0 vs FT0C", false);
   PROCESS_SWITCH(LongrangecorrDerived, processUpcV0mftSE, "same UPC event V0 vs MFT", false);
   PROCESS_SWITCH(LongrangecorrDerived, processUpcV0mftME, "mixed UPC event V0 vs MFT", false);
   PROCESS_SWITCH(LongrangecorrDerived, processMcTpcft0aSE, "same MC event TPC vs FT0A", false);
@@ -1204,6 +1340,10 @@ struct LongrangecorrDerived {
   PROCESS_SWITCH(LongrangecorrDerived, processMcGenTpcmftME, "mixed MC gen event TPC vs MFT", false);
   PROCESS_SWITCH(LongrangecorrDerived, processMcGenMftft0aSE, "same MC gen event MFT vs FT0A", false);
   PROCESS_SWITCH(LongrangecorrDerived, processMcGenMftft0aME, "mixed MC gen event MFT vs FT0A", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processMcGenV0ft0aSE, "same MC gen event V0 vs FT0A", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processMcGenV0ft0aME, "mixed MC gen event V0 vs FT0A", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processMcGenV0ft0cSE, "same MC gen event V0 vs FT0C", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processMcGenV0ft0cME, "mixed MC gen event V0 vs FT0C", false);
   PROCESS_SWITCH(LongrangecorrDerived, processMcGenFt0aft0cSE, "same MC gen event FT0A vs FT0C", false);
   PROCESS_SWITCH(LongrangecorrDerived, processMcGenFt0aft0cME, "mixed MC gen event FT0A vs FT0C", false);
   PROCESS_SWITCH(LongrangecorrDerived, processTPCtrackEff, "process TPC track efficiency", false);
