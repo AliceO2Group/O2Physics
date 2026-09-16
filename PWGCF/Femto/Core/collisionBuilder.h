@@ -62,8 +62,9 @@ struct ConfCollisionFilters : o2::framework::ConfigurableGroup {
 
 struct ConfCollisionBits : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("CollisionBits");
-  o2::framework::Configurable<bool> passThrough{"passThrough", false, "If true, all tracks are passed through. Bits for all selections are stored."};
+  o2::framework::Configurable<bool> passThrough{"passThrough", false, "If true, all collisions are passed through. Bits for all enabled (non-zero) selection flags are stored, disabled flags (0) are not."};
   o2::framework::Configurable<int> sel8{"sel8", 1, "Use sel8 (-1: stored in bitmaks; 0 off; 1 on)"};
+  o2::framework::Configurable<int> rctFlags{"rctFlags", 1, "RCT flags ok, checker configured via CollisionRctFlags (-1: stored in bitmaks; 0 off; 1 on)"};
   o2::framework::Configurable<int> noSameBunchPileup{"noSameBunchPileup", 0, "Reject collisions in case of pileup with another collision in the same foundBC (-1: stored in bitmaks; 0 off; 1 on)"};
   o2::framework::Configurable<int> isVertexItsTpc{"isVertexItsTpc", 0, "At least one ITS-TPC track found for the vertex (-1: stored in bitmaks; 0 off; 1 on)"};
   o2::framework::Configurable<int> isGoodZvtxFt0VsPv{"isGoodZvtxFt0VsPv", 0, "small difference between z-vertex from PV and from FT0 (-1: stored in bitmaks; 0 off; 1 on)"};
@@ -96,7 +97,6 @@ struct ConfCcdb : o2::framework::ConfigurableGroup {
 
 struct ConfCollisionRctFlags : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("CollisionRctFlags");
-  o2::framework::Configurable<bool> useRctFlags{"useRctFlags", true, "Set to true to use RCT flags"};
   o2::framework::Configurable<std::string> label{"label", std::string("CBT_hadronPID"), "Which RCT flag to check"};
   o2::framework::Configurable<bool> useZdc{"useZdc", false, "Whether to use ZDC (only use for PbPb)"};
   o2::framework::Configurable<bool> treatLimitedAcceptanceAsBad{"treatLimitedAcceptanceAsBad", false, "Whether to treat limited acceptance as bad or not"};
@@ -120,6 +120,7 @@ struct ConfCollisionSelection : o2::framework::ConfigurableGroup {
 enum CollisionSels {
   // collsion selection flags
   kSel8,                      ///< Sel8
+  kRctFlags,                  ///< RCT flags ok
   kNoSameBunchPileUp,         ///< Reject collisions in case of pileup with another collision in the same foundBC
   kIsVertexItsTpc,            ///< At least one ITS-TPC track found for the vertex
   kIsGoodZvtxFt0VsPv,         ///< small difference between z-vertex from PV and from FT0
@@ -146,6 +147,7 @@ constexpr char ColSelHistName[] = "hCollisionSelection";
 const char colSelsName[] = "Collision Selection Object";
 const std::unordered_map<CollisionSels, std::string> collisionSelectionNames = {
   {kSel8, "Sel8"},
+  {kRctFlags, "RCT flags ok"},
   {kNoSameBunchPileUp, "No same bunch pileup"},
   {kIsVertexItsTpc, "Is vertex ITS TPC"},
   {kIsGoodZvtxFt0VsPv, "Is good zvtx FT0 vs PV"},
@@ -176,7 +178,6 @@ enum CollisionFilters {
   kFilterMagFieldMax,
   kFilterSphericityMin,
   kFilterSphericityMax,
-  kFilterRctFlags,
   kFilterCollisionFiltersMax
 };
 
@@ -191,8 +192,7 @@ const std::unordered_map<CollisionFilters, std::string> collisionFilterNames = {
   {kFilterMagFieldMin, "magFieldMin"},
   {kFilterMagFieldMax, "magFieldMax"},
   {kFilterSphericityMin, "sphericityMin"},
-  {kFilterSphericityMax, "sphericityMax"},
-  {kFilterRctFlags, "rctFlagsOkFilter"}};
+  {kFilterSphericityMax, "sphericityMax"}};
 
 template <auto& SelectionHistName, auto& FilterHistName>
 class CollisionSelection : public baseselection::BaseSelection<float, o2::analysis::femto::datatypes::CollisionMaskType, kCollisionSelsMax>
@@ -206,7 +206,7 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
   /// \param registry Histogram registry.
   /// \param filter ConfCollisionFilters (kinematic/quality pre-filter bounds).
   /// \param config ConfCollisionBits (selection bits + trigger list + event shape settings).
-  /// \param confRct ConfCollisionRctFlags (RCT flag checker configuration).
+  /// \param confRct ConfCollisionRctFlags (RCT flag checker configuration, used if CollisionBits.rctFlags != 0).
   /// \param confCcdb ConfCcdb (needed for the trigger CCDB path).
   template <typename T1, typename T2, typename T3, typename T4>
   void configure(o2::framework::HistogramRegistry* registry, T1 const& filter, T2 const& config, T3 const& confRct, T4 const& confCcdb)
@@ -225,8 +225,8 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
     mSphericityMin = filter.sphericityMin.value;
     mSphericityMax = filter.sphericityMax.value;
 
-    // RCT flag checker
-    mUseRctFlags = confRct.useRctFlags.value;
+    // RCT flag checker, only needed if the rct selection is enabled
+    mUseRctFlags = config.rctFlags.value != 0;
     if (mUseRctFlags) {
       LOG(info) << "Init RCT flag checker with label: " << confRct.label.value << "; use ZDC: " << confRct.useZdc.value << "; Limited acceptance is bad: " << confRct.treatLimitedAcceptanceAsBad.value;
       mRctFlagsChecker.init(confRct.label.value, confRct.useZdc.value, confRct.treatLimitedAcceptanceAsBad.value);
@@ -261,6 +261,7 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
     }
 
     this->addSelection(kSel8, collisionSelectionNames.at(kSel8), config.sel8.value);
+    this->addSelection(kRctFlags, collisionSelectionNames.at(kRctFlags), config.rctFlags.value);
     this->addSelection(kNoSameBunchPileUp, collisionSelectionNames.at(kNoSameBunchPileUp), config.noSameBunchPileup.value);
     this->addSelection(kIsVertexItsTpc, collisionSelectionNames.at(kIsVertexItsTpc), config.isVertexItsTpc.value);
     this->addSelection(kIsGoodZvtxFt0VsPv, collisionSelectionNames.at(kIsGoodZvtxFt0VsPv), config.isGoodZvtxFt0VsPv.value);
@@ -296,7 +297,6 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
         {collisionFilterNames.at(kFilterMagFieldMax), mMagFieldMax},
         {collisionFilterNames.at(kFilterSphericityMin), mSphericityMin},
         {collisionFilterNames.at(kFilterSphericityMax), mSphericityMax},
-        {collisionFilterNames.at(kFilterRctFlags), mUseRctFlags ? 1.f : 0.f},
       });
   }
 
@@ -452,10 +452,6 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
     this->template fillFilter<FilterHistName>(kFilterSphericityMax, p);
     pass &= p;
 
-    p = !mUseRctFlags || mRctFlagsChecker(col);
-    this->template fillFilter<FilterHistName>(kFilterRctFlags, p);
-    pass &= p;
-
     this->template fillFilterSummary<FilterHistName>(pass);
 
     return this->isPassThrough() || pass;
@@ -481,6 +477,10 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
     this->evaluateObservable(kIsGoodItsLayer3, static_cast<float>(col.selection_bit(o2::aod::evsel::kIsGoodITSLayer3)));
     this->evaluateObservable(kIsGoodItsLayer0123, static_cast<float>(col.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123)));
     this->evaluateObservable(kIsGoodItsLayerAll, static_cast<float>(col.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)));
+    // checker is only initialized if the rct selection is enabled
+    if (mUseRctFlags) {
+      this->evaluateObservable(kRctFlags, static_cast<float>(mRctFlagsChecker(col)));
+    }
 
     this->evaluateObservable(kOccupancyMin, col.trackOccupancyInTimeRange());
     this->evaluateObservable(kOccupancyMax, col.trackOccupancyInTimeRange());
@@ -581,7 +581,7 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
 
   // RCT flags
   mutable aod::rctsel::RCTFlagsChecker mRctFlagsChecker;
-  bool mUseRctFlags = false;
+  bool mUseRctFlags = false; // true if CollisionBits.rctFlags != 0
 
   // trigger (Zorro)
   Zorro mZorro;
@@ -817,6 +817,7 @@ class CollisionBuilder
 
   [[nodiscard]] bool fillAnyTable() const { return mFillAnyTable; }
   [[nodiscard]] bool isPassThrough() const { return mCollisionSelection.isPassThrough(); }
+  [[nodiscard]] int subGeneratorId() const { return mSubGeneratorId; }
   [[nodiscard]] bool producingCollisions() const { return mProducedCollisions; }
   [[nodiscard]] bool producingLiteCollisions() const { return mProducedLiteCollisions; }
 
