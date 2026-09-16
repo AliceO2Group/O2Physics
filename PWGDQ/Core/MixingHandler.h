@@ -42,22 +42,11 @@ class MixingHandler : public TNamed
     float eta;
     float phi;
     uint32_t filteringFlags;
-    // globalIndex is unique only within a dataframe, so the dataframe sequence is part of the track identity
-    uint64_t dataFrameSequence = 0;
-    uint64_t trackGlobalIndex = 0;
-    // electric charge of the track; 0 means "not set" and disables the charge dependent pair variables
-    int8_t sign = 0;
-    bool IsSamePhysicalTrack(const MixingTrack& other) const
-    {
-      return dataFrameSequence == other.dataFrameSequence && trackGlobalIndex == other.trackGlobalIndex;
-    }
     // Clear a bit once the track was used in mixing for that bit for the required pool depth.
     void ClearBit(uint32_t mask) { filteringFlags &= ~mask; }
     void Print() const
     {
-      std::cout << "pt: " << pt << ", eta: " << eta << ", phi: " << phi << ", sign: " << static_cast<int>(sign)
-                << ", filteringFlags: " << filteringFlags
-                << ", dataframe: " << dataFrameSequence << ", track: " << trackGlobalIndex << std::endl;
+      std::cout << "pt: " << pt << ", eta: " << eta << ", phi: " << phi << ", filteringFlags: " << filteringFlags << std::endl;
     }
   };
 

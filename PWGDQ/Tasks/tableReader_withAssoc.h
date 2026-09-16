@@ -1431,8 +1431,6 @@ struct AnalysisSameEventPairing {
 
   HistogramManager* fHistMan = nullptr;
   MixingHandler fMixingHandler;
-  // dataframe counter, part of the track identity in the mixing pools
-  uint64_t fMixingDataFrameSequence = 0;
 
   o2::analysis::DQMlResponse<float> fDQMlResponse;
   std::vector<float> fOutputMlPsi2ee; // TODO: check this is needed or not
@@ -1994,10 +1992,6 @@ struct AnalysisSameEventPairing {
     // constexpr bool fillFlowReso = eventHasQvector || eventHasQvectorCentr;
     bool isSelectedBDT = false;
     fNPairPerEvent = 0;
-    uint64_t currentMixingDataFrameSequence = 0;
-    if (fConfigRunMixingAcrossTFs) {
-      currentMixingDataFrameSequence = ++fMixingDataFrameSequence;
-    }
 
     for (auto const& event : events) {
       if (!event.isEventSelected_bit(0)) {
@@ -2512,7 +2506,7 @@ struct AnalysisSameEventPairing {
               continue;
             }
             auto t1 = assoc.template reducedtrack_as<TTracks>();
-            MixingHandler::MixingTrack mixingTrack(t1.pt(), t1.eta(), t1.phi(), trackFilterForMixing, currentMixingDataFrameSequence, static_cast<uint64_t>(assoc.reducedtrackId()), static_cast<int8_t>(t1.sign()));
+            MixingHandler::MixingTrack mixingTrack(t1.pt(), t1.eta(), t1.phi(), trackFilterForMixing);
             if (t1.sign() > 0) {
               mixingEvent.AddTrack1(mixingTrack);
             } else {
@@ -2543,9 +2537,9 @@ struct AnalysisSameEventPairing {
             }
             // run ++ pairing
             for (auto const& t2 : poolEvent.tracks1) {
-              // check the two-track filter for the mixed pair and skip the same track associated to both collisions
+              // check the two-track filter for the mixed pair
               uint32_t mixedTwoTrackFilter = t1.filteringFlags & t2.filteringFlags;
-              if (!mixedTwoTrackFilter || t1.IsSamePhysicalTrack(t2)) {
+              if (!mixedTwoTrackFilter) {
                 continue;
               }
               VarManager::FillPairMEAcrossTFs(t1, t2);
@@ -2573,9 +2567,9 @@ struct AnalysisSameEventPairing {
             }
             // run -- pairing
             for (auto const& t2 : poolEvent.tracks2) {
-              // check the two-track filter for the mixed pair and skip the same track associated to both collisions
+              // check the two-track filter for the mixed pair
               uint32_t mixedTwoTrackFilter = t1.filteringFlags & t2.filteringFlags;
-              if (!mixedTwoTrackFilter || t1.IsSamePhysicalTrack(t2)) {
+              if (!mixedTwoTrackFilter) {
                 continue;
               }
               VarManager::FillPairMEAcrossTFs(t1, t2);
