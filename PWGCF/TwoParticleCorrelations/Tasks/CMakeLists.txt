@@ -127,3 +127,8 @@ o2physics_add_dpl_workflow(charge-balance-function
                            SOURCES chargeBalanceFunction.cxx
                            PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(lambda-or-anti-lambda-producer-with-spin
+                           SOURCES lambdaOrAntiLambdaProducerWithSpin.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
