@@ -651,7 +651,7 @@ struct FlowGenericFramework {
     const int ptbins = static_cast<int>(gfwMemberCache.ptbinning.size() - 1);
     fPtAxis = new TAxis(ptbins, gfwMemberCache.ptbinning.data());
 
-    if (doprocessMCGen || doprocessOnTheFly) {
+    if (doprocessMCGen || doprocessOnTheFly || doprocessMC) {
       if (cfgFill.cfgFillQA) {
         registryQA.add("MCGen/before/pt_gen", "", {HistType::kTH1D, {ptAxis}});
         registryQA.add("MCGen/before/phi_eta_vtxZ_gen", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
@@ -669,7 +669,7 @@ struct FlowGenericFramework {
       registry.add("Efficiency/lambdaFeeddownRecoXi", "; #it{p}_{T}^{#Lambda, reco}; #it{p}_{T}^{#Xi, gen}; Centrality (%)", {HistType::kTHnSparseF, {{ptAxis, axisFeeddownXiPt, centAxis, lambdaFeeddownSpeciesAxis}}});
       registry.add("Efficiency/lambdaFeeddownGeneratedXi", "; #it{p}_{T}^{#Xi, gen}; Centrality (%)", {HistType::kTHnSparseF, {{axisFeeddownXiPt, centAxis, lambdaFeeddownSpeciesAxis}}});
     }
-    if (doprocessMCReco || doprocessData || doprocessRun2 || doprocessEfficiency) {
+    if (doprocessMCReco || doprocessData || doprocessRun2 || doprocessEfficiency || doprocessMC) {
       if (cfgFill.cfgFillQA) {
         registryQA.add("trackQA/before/phi_eta_vtxZ", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
         registryQA.add("trackQA/before/pt_dcaXY_dcaZ", "", {HistType::kTH3D, {ptAxis, dcaXYAXis, dcaZAXis}});
@@ -1682,11 +1682,11 @@ struct FlowGenericFramework {
       return;
     }
 
-    if (fFCpt->corrDen[1] == 0.) {
+    if (flowPtContainer->corrDen[1] == 0.) {
       return;
     }
-    double dnx = fFCpt->corrDen[1];
-    double mpt = fFCpt->corrNum[1] / dnx;
+    double dnx = flowPtContainer->corrDen[1];
+    double mpt = flowPtContainer->corrNum[1] / dnx;
     if (std::isnan(mpt)) {
       return;
     }
@@ -1708,6 +1708,7 @@ struct FlowGenericFramework {
   void fillResonanceOutput(FractionSetup setup, const float& centmult, const double& rndm)
   {
     auto& flowContainer = (dt == Gen) ? fFCgen : fFC;
+    auto& flowPtContainer = (dt == Gen) ? fFCptGen : fFCpt;
 
     if (setup == FractionV02) {
       if (histosNpt[FractionV02][ChargedID]->Integral() <= 0) {
@@ -1812,25 +1813,25 @@ struct FlowGenericFramework {
 
       std::vector<double> dns = {dnK0SB1, dnK0Sig, dnK0SB2, dnLambdaSB1, dnLambdaSig, dnLambdaSB2};
 
-      if (fFCpt->corrDenSub[0][1] == 0. || fFCpt->corrDenSub[1][1] == 0.) {
+      if (flowPtContainer->corrDenSub[0][1] == 0. || flowPtContainer->corrDenSub[1][1] == 0.) {
         return;
       }
 
       double mpt = 0;
       double dnx = 0;
       if (cfgKinematics.cfgEtaPtPt->first * cfgKinematics.cfgEtaPtPt->second >= 0) {
-        if (fFCpt->corrDen[1] == 0.) {
+        if (flowPtContainer->corrDen[1] == 0.) {
           return;
         }
-        dnx = fFCpt->corrDen[1];
-        mpt = fFCpt->corrNum[1] / dnx;
+        dnx = flowPtContainer->corrDen[1];
+        mpt = flowPtContainer->corrNum[1] / dnx;
       } else {
-        if (fFCpt->corrDenSub[0][1] == 0. || fFCpt->corrDenSub[1][1] == 0.) {
+        if (flowPtContainer->corrDenSub[0][1] == 0. || flowPtContainer->corrDenSub[1][1] == 0.) {
           return;
         }
-        double mptSub1 = fFCpt->corrNumSub[0][1] / fFCpt->corrDenSub[0][1];
-        double mptSub2 = fFCpt->corrNumSub[1][1] / fFCpt->corrDenSub[1][1];
-        dnx = 0.5 * (fFCpt->corrDenSub[0][1] + fFCpt->corrDenSub[1][1]);
+        double mptSub1 = flowPtContainer->corrNumSub[0][1] / flowPtContainer->corrDenSub[0][1];
+        double mptSub2 = flowPtContainer->corrNumSub[1][1] / flowPtContainer->corrDenSub[1][1];
+        dnx = 0.5 * (flowPtContainer->corrDenSub[0][1] + flowPtContainer->corrDenSub[1][1]);
         mpt = 0.5 * (mptSub1 + mptSub2);
       }
 
@@ -1877,7 +1878,8 @@ struct FlowGenericFramework {
       th1sList[run][Cent]->Fill(centrality);
     }
     fGFW->Clear();
-    fFCpt->clearVector();
+    auto& flowPtContainer = (dt == Gen) ? fFCptGen : fFCpt;
+    flowPtContainer->clearVector();
 
     float lRandom = fRndm->Rndm();
     // be cautious, this only works for Pb-Pb
@@ -2514,6 +2516,7 @@ struct FlowGenericFramework {
   template <DataType dt, typename TTrack>
   inline void fillPtSums(const TTrack& track, const float& centrality, const double& vtxz)
   {
+    auto& flowPtContainer = (dt == Gen) ? fFCptGen : fFCpt;
     double wacc = (dt == Gen) ? 1. : getAcceptance(track, vtxz, 0);
     double weff = (dt == Gen) ? 1. : getEfficiency(track, centrality);
     if (weff < 0) {
@@ -2522,22 +2525,22 @@ struct FlowGenericFramework {
 
     // Fill the nominal sums
     if (track.eta() > cfgKinematics.cfgEtaPtPt->first && track.eta() < cfgKinematics.cfgEtaPtPt->second) {
-      fFCpt->fill(weff, track.pt());
+      flowPtContainer->fill(weff, track.pt());
     }
 
     // Fill the subevent sums
     std::size_t index = 0;
     for (const auto& [etamin, etamax] : gfwMemberCache.etagapsPtPt) {
       if (etamin < track.eta() && track.eta() < etamax) {
-        fFCpt->fillSub(weff, track.pt(), index);
+        flowPtContainer->fillSub(weff, track.pt(), index);
       }
       ++index;
     }
     if (!cfgUseGapMethod) {
       std::complex<double> q2p = {weff * wacc * std::cos(2 * track.phi()), weff * wacc * std::sin(2 * track.phi())};
       std::complex<double> q2n = {weff * wacc * std::cos(-2 * track.phi()), weff * wacc * std::sin(-2 * track.phi())};
-      fFCpt->fillArray(q2p, q2n, weff * track.pt(), weff);
-      fFCpt->fillArray(weff * wacc, weff * wacc, weff, weff);
+      flowPtContainer->fillArray(q2p, q2n, weff * track.pt(), weff);
+      flowPtContainer->fillArray(weff * wacc, weff * wacc, weff, weff);
     }
   }
 
