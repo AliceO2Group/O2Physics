@@ -565,7 +565,7 @@ struct RadialFlowDecorr {
 
     // Ensure the input binning allows exact 10/100-track groups
     if (groupSize < 1 ||
-        std::abs(groupSize * originalWidth - trackStep) > 1.e-6) {
+        std::abs(groupSize * originalWidth - trackStep) > KFloatEpsilon) {
       LOGF(fatal, "Nch bin width is incompatible with %d-track rebinning",
            trackStep);
       return nullptr;
@@ -573,7 +573,7 @@ struct RadialFlowDecorr {
 
     for (int ix = 1; ix <= nx; ++ix) {
       if (std::abs(h->GetXaxis()->GetBinWidth(ix) -
-                   originalWidth) > 1.e-6) {
+                   originalWidth) > KFloatEpsilon) {
         LOGF(fatal, "Input Nch axis must have uniform bin widths");
         return nullptr;
       }
