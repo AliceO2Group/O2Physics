@@ -295,7 +295,6 @@ struct PseudorapidityDensityMFT {
   static constexpr int NoCompatibleCollisions = 0;
   static constexpr int SingleCompatibleCollision = 1;
 
-
   static constexpr int ChargeUnitTimesThree = 3;
 
   void initMagField(FullBCs::iterator const& bc)
@@ -393,7 +392,7 @@ struct PseudorapidityDensityMFT {
   Configurable<bool> useTriggerTVX{"useTriggerTVX", true, "Require kIsTriggerTVX in processGenReco"};
   Configurable<bool> useNoTimeFrameBorderCut{"useNoTimeFrameBorderCut", true, "Require kNoTimeFrameBorder in processGenReco"};
   Configurable<bool> useNoITSROFrameBorderCut{"useNoITSROFrameBorderCut", true, "Require kNoITSROFrameBorder in processGenReco"};
-  AxisSpec multAxisRecoMFT = {multBinning, "N_{ch}^{reco,MFT}"};  
+  AxisSpec multAxisRecoMFT = {multBinning, "N_{ch}^{reco,MFT}"};
   AxisSpec multAxisGenMFT = {multBinning, "N_{ch}^{gen,MFT}"};
   HistogramRegistry registry{
     "registry",
@@ -1409,10 +1408,10 @@ struct PseudorapidityDensityMFT {
 
     std::vector<typename std::decay_t<decltype(collisions)>::iterator> cols;
     for (const auto& bc : bcs) {
-    if (!useEvSel ||
-    (bc.selection_bit(aod::evsel::kIsBBT0A) &&
-     bc.selection_bit(aod::evsel::kIsBBT0C))) {        
-      registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::GoodBCs));
+      if (!useEvSel ||
+          (bc.selection_bit(aod::evsel::kIsBBT0A) &&
+           bc.selection_bit(aod::evsel::kIsBBT0C))) {
+        registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::GoodBCs));
         cols.clear();
         for (const auto& collision : collisions) {
           if (collision.has_foundBC()) {
@@ -1535,7 +1534,7 @@ struct PseudorapidityDensityMFT {
                 ((phi > ((o2::constants::math::PIHalf - 0.1) * o2::constants::math::PI) - cfgPhiCut) &&
                  (phi < ((o2::constants::math::PIHalf - 0.1) * o2::constants::math::PI) + cfgPhiCut))) {
               continue;
-                 }
+            }
           }
 
           registry.fill(HIST("TracksEtaZvtx"), track.eta(), z);
@@ -1882,7 +1881,7 @@ struct PseudorapidityDensityMFT {
               ((phi > ((o2::constants::math::PIHalf - 0.1) * o2::constants::math::PI) - cfgPhiCut) &&
                (phi < ((o2::constants::math::PIHalf - 0.1) * o2::constants::math::PI) + cfgPhiCut))) {
             continue;
-               }
+          }
         }
 
         registry.fill(HIST("Tracks/Centrality/EtaZvtx"), track.eta(), z, c);
@@ -2022,9 +2021,9 @@ struct PseudorapidityDensityMFT {
 
         if (usePhiCut) {
           if ((phi <= PhiVetoLow) ||
-          ((phi >= PhiVetoPiMin) && (phi <= PhiVetoPiMax)) ||
-          (phi >= PhiVetoHigh)) {
-          continue;
+              ((phi >= PhiVetoPiMin) && (phi <= PhiVetoPiMax)) ||
+              (phi >= PhiVetoHigh)) {
+            continue;
           }
         }
         if (usePtCut) {
@@ -2664,8 +2663,7 @@ struct PseudorapidityDensityMFT {
             std::abs(parentPdg) != PDG_t::kLambda0) {
           continue;
         }
-        const int parentSpecies = parentPdg == PDG_t::kK0Short ? 1 :
-          (parentPdg == PDG_t::kLambda0 ? 2 : 3);
+        const int parentSpecies = parentPdg == PDG_t::kK0Short ? 1 : (parentPdg == PDG_t::kLambda0 ? 2 : 3);
         registry.fill(HIST("Strangeness/Mid/RecoStrangeEtaZvtx"),
                       centralTrack.eta(), z,
                       centralTrack.dcaXY(), centralTrack.dcaZ(), parentSpecies);
@@ -2878,8 +2876,7 @@ struct PseudorapidityDensityMFT {
               // excludes fake labels and counts only matched secondaries.
               if (isSecondaryCharged) {
                 const int parentSpecies =
-                  mcpartMother.pdgCode() == PDG_t::kK0Short ? 1 :
-                  (mcpartMother.pdgCode() == PDG_t::kLambda0 ? 2 : 3);
+                  mcpartMother.pdgCode() == PDG_t::kK0Short ? 1 : (mcpartMother.pdgCode() == PDG_t::kLambda0 ? 2 : 3);
                 registry.fill(HIST("Strangeness/Fwd/RecoStrangeEtaZvtx"),
                               etaReco, z, dcaXYReco, dcaZReco, parentSpecies);
               }
@@ -3293,7 +3290,7 @@ struct PseudorapidityDensityMFT {
             ((phi >= PhiVetoPiMin) && (phi <= PhiVetoPiMax)) ||
             (phi >= PhiVetoHigh)) {
           continue;
-            }
+        }
       }
       if (usePtCut) {
         if (ptCut > cfgnPt) {
@@ -3306,44 +3303,44 @@ struct PseudorapidityDensityMFT {
                         mcCollision.posZ());
           registry.fill(HIST("TracksPtEtaGen_t"), particle.pt(), particle.eta());
         }
-        if ( mcCollision.posZ() >= cfgVzCut1 && mcCollision.posZ() <= cfgVzCut2) {
+        if (mcCollision.posZ() >= cfgVzCut1 && mcCollision.posZ() <= cfgVzCut2) {
           registry.fill(HIST("TracksEtaZvtxGen_gt0t"), particle.eta(),
                         mcCollision.posZ());
           registry.fill(HIST("TracksPhiEtaGen_gt0t"), particle.phi(), particle.eta());
-        
-        if ( nChargedCentral > 0) {
-          if (particle.isPhysicalPrimary()) {
-            registry.fill(HIST("TracksEtaZvtxGen_gt0t_primary"), particle.eta(), mcCollision.posZ());
-          }
-          registry.fill(HIST("TracksEtaZvtxGen"), particle.eta(),
-                        mcCollision.posZ());
-          registry.fill(HIST("TracksPtEtaGen"), particle.pt(), particle.eta());
-          registry.fill(HIST("TracksPhiEtaGen"), particle.phi(), particle.eta());
-          registry.fill(HIST("TracksPhiZvtxGen"), particle.phi(),
-                        mcCollision.posZ());
-          if (particle.isPhysicalPrimary()) {
-            registry.fill(HIST("Purity/mc/PrimaryAll"), static_cast<int>(SingleCountBin::Count));
-            registry.fill(HIST("Purity/mc/PrimaryAllEta"), particle.eta());
-            registry.fill(HIST("Purity/mc/PrimaryTracksEtaZvtx"), particle.eta(), mcCollision.posZ());
-            registry.fill(HIST("Purity/mc/PrimaryTracksPhiEta"), particle.phi(), particle.eta());
-          }
 
-          if (atLeastOneSel8VzGt0) {
-            registry.fill(HIST("TracksEtaZvtxGen_gt0"), particle.eta(),
-                          mcCollision.posZ());
-            registry.fill(HIST("TracksPhiEtaGen_gt0"), particle.phi(), particle.eta());
+          if (nChargedCentral > 0) {
             if (particle.isPhysicalPrimary()) {
-              registry.fill(HIST("TracksEtaZvtxGen_gt0_primary"), particle.eta(), mcCollision.posZ());
-              registry.fill(HIST("TracksPhiEtaGen_gt0_primary"), particle.phi(), particle.eta());
-              registry.fill(HIST("TracksPtZvtxGen_gt0_primary"), particle.pt(), mcCollision.posZ());
-              registry.fill(HIST("Purity/mc/PrimaryTracksEtaZvtx_gt0"), particle.eta(), mcCollision.posZ());
-              registry.fill(HIST("Purity/mc/PrimaryTracksPtZvtx_gt0"), particle.pt(), mcCollision.posZ());
-              //   registry.fill(HIST("Purity/mc/PrimaryTracksDCAxyZvtx_gt0"), dcaXyCut, mcCollision.posZ());
-              //        registry.fill(HIST("Purity/mc/PrimaryTracksDCAzZvtx_gt0"), dcaZCut, mcCollision.posZ());
+              registry.fill(HIST("TracksEtaZvtxGen_gt0t_primary"), particle.eta(), mcCollision.posZ());
+            }
+            registry.fill(HIST("TracksEtaZvtxGen"), particle.eta(),
+                          mcCollision.posZ());
+            registry.fill(HIST("TracksPtEtaGen"), particle.pt(), particle.eta());
+            registry.fill(HIST("TracksPhiEtaGen"), particle.phi(), particle.eta());
+            registry.fill(HIST("TracksPhiZvtxGen"), particle.phi(),
+                          mcCollision.posZ());
+            if (particle.isPhysicalPrimary()) {
+              registry.fill(HIST("Purity/mc/PrimaryAll"), static_cast<int>(SingleCountBin::Count));
+              registry.fill(HIST("Purity/mc/PrimaryAllEta"), particle.eta());
+              registry.fill(HIST("Purity/mc/PrimaryTracksEtaZvtx"), particle.eta(), mcCollision.posZ());
+              registry.fill(HIST("Purity/mc/PrimaryTracksPhiEta"), particle.phi(), particle.eta());
+            }
+
+            if (atLeastOneSel8VzGt0) {
+              registry.fill(HIST("TracksEtaZvtxGen_gt0"), particle.eta(),
+                            mcCollision.posZ());
+              registry.fill(HIST("TracksPhiEtaGen_gt0"), particle.phi(), particle.eta());
+              if (particle.isPhysicalPrimary()) {
+                registry.fill(HIST("TracksEtaZvtxGen_gt0_primary"), particle.eta(), mcCollision.posZ());
+                registry.fill(HIST("TracksPhiEtaGen_gt0_primary"), particle.phi(), particle.eta());
+                registry.fill(HIST("TracksPtZvtxGen_gt0_primary"), particle.pt(), mcCollision.posZ());
+                registry.fill(HIST("Purity/mc/PrimaryTracksEtaZvtx_gt0"), particle.eta(), mcCollision.posZ());
+                registry.fill(HIST("Purity/mc/PrimaryTracksPtZvtx_gt0"), particle.pt(), mcCollision.posZ());
+                //   registry.fill(HIST("Purity/mc/PrimaryTracksDCAxyZvtx_gt0"), dcaXyCut, mcCollision.posZ());
+                //        registry.fill(HIST("Purity/mc/PrimaryTracksDCAzZvtx_gt0"), dcaZCut, mcCollision.posZ());
+              }
             }
           }
         }
-      }
         if (particle.isPhysicalPrimary()) {
 
           ++nGenPrimaryChargedMFT;
