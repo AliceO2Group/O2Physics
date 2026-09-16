@@ -345,6 +345,7 @@ struct v0Configurables : o2::framework::ConfigurableGroup {
   std::string prefix = "v0BuilderOpts";
   o2::framework::Configurable<bool> generatePhotonCandidates{"generatePhotonCandidates", false, "generate gamma conversion candidates (V0s using TPC-only tracks)"};
   o2::framework::Configurable<bool> moveTPCOnlyTracks{"moveTPCOnlyTracks", true, "if dealing with TPC-only tracks, move them according to TPC drift / time info"};
+  o2::framework::Configurable<bool> useSideBasedCorrection{"useSideBasedCorrection", false, "when moving TPC-only tracks, use TPC side flags (with legacy fallback) instead of tgl sign"};
 
   // baseline conditionals of V0 building
   o2::framework::Configurable<int> minCrossedRows{"minCrossedRows", 50, "minimum TPC crossed rows for daughter tracks"};
@@ -835,6 +836,8 @@ class BuilderModule
     if (eventSelectOpts.cfgApplyRCTrequirement) {
       rctFlagsChecker.init(eventSelectOpts.cfgRCTLabel.value, eventSelectOpts.cfgCheckZDC, eventSelectOpts.cfgTreatLimitedAcceptanceAsBad);
     }
+
+    mVDriftMgr.setUseSideBasedCorrection(v0BuilderOpts.useSideBasedCorrection.value);
   }
 
   // for sorting
