@@ -363,7 +363,7 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
       {kTrueQoutVsQout, o2::framework::HistType::kTH2F, "hTrueQoutVsQout", "q_{out,True} vs q_{out}; q_{out,True} (GeV/#it{c}); q_{out} (GeV/#it{c})"},
       {kTrueQsideVsQside, o2::framework::HistType::kTH2F, "hTrueQsideVsQside", "q_{side,True} vs q_{side}; q_{side,True} (GeV/#it{c}); q_{side} (GeV/#it{c})"},
       {kTrueQlongVsQlong, o2::framework::HistType::kTH2F, "hTrueQlongVsQlong", "q_{long,True} vs q_{long}; q_{long,True} (GeV/#it{c}); q_{long} (GeV/#it{c})"},
-      {kQoutVsQsideVsQlongVsMtVsCentVsEventPlaneAngleVsQvector, o2::framework::HistType::kTHnSparseF, "hQoutQsideQlongEventPlaneAngleQvector", "Event shape enginering; q_{out} (GeV/#it{c}); q_{side} (GeV/#it{c}); q_{long} (GeV/#it{c}); #varphi_{EP}; q-vector;"},
+      {kQoutVsQsideVsQlongVsMtVsCentVsEventPlaneAngleVsQvector, o2::framework::HistType::kTHnSparseF, "hQoutVsQsideVsQlongVsMtVsCentVsEventPlaneAngleVsQvector", "Event shape enginering; q_{out} (GeV/#it{c}); q_{side} (GeV/#it{c}); q_{long} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); centrality (%); #varphi_{pair} - #Psi_{EP}; q-vector;"},
     }};
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)

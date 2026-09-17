@@ -16,6 +16,8 @@
 #ifndef PWGCF_FEMTO_CORE_MODES_H_
 #define PWGCF_FEMTO_CORE_MODES_H_
 
+#include "dataTypes.h"
+
 #include "PWGCF/Femto/Core/dataTypes.h"
 
 #include <cstdint>
@@ -178,10 +180,10 @@ enum class CharmHadron : o2::analysis::femto::datatypes::CharmHadronType {
   kLcBar
 };
 
-enum class QvecDetector : o2::analysis::femto::datatypes::QvecDetectorType {
+enum class EventShapeDetector : o2::analysis::femto::datatypes::EventShapeDetectorType {
   kFT0C = 0,
   kFT0A = 1,
-  kQvecDetectorLast = 2
+  kEventShapeDetectorLast = 2
 };
 
 enum class QvecHarmonic : o2::analysis::femto::datatypes::QvecHarmonicType {

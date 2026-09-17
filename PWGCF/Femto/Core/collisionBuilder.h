@@ -81,7 +81,8 @@ struct ConfCollisionBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> sphericityMin{"sphericityMin", {}, "Minimum sphericity"};
   o2::framework::Configurable<std::vector<float>> sphericityMax{"sphericityMax", {}, "Maximum sphericity"};
   o2::framework::Configurable<std::vector<std::string>> triggers{"triggers", {}, "List of all triggers to be used"};
-  o2::framework::Configurable<datatypes::QvecDetectorType> qvecDetector{"qvecDetector", 0, "Detector used to estimate the Q-vector: 0 -> FT0C, 1 -> FT0A"};
+  o2::framework::Configurable<datatypes::EventShapeDetectorType> eventPlaneAngleDetector{"eventPlaneAngleDetector", 0, "Detector used to estimate the event plane angle: 0 -> FT0C, 1 -> FT0A"};
+  o2::framework::Configurable<datatypes::EventShapeDetectorType> qvecDetector{"qvecDetector", 0, "Detector used to estimate the Q-vector: 0 -> FT0C, 1 -> FT0A"};
   o2::framework::Configurable<datatypes::QvecHarmonicType> qvecHarmonic{"qvecHarmonic", 2, "Harmonic n of the Q-vector and event plane angle Psi_n: 2 -> elliptic, 3 -> triangular"};
 };
 
@@ -204,7 +205,7 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
   ///        trigger (Zorro) setup, and the selection bitmask.
   /// \param registry Histogram registry.
   /// \param filter ConfCollisionFilters (kinematic/quality pre-filter bounds).
-  /// \param config ConfCollisionBits (selection bits + trigger list).
+  /// \param config ConfCollisionBits (selection bits + trigger list + event shape settings).
   /// \param confRct ConfCollisionRctFlags (RCT flag checker configuration).
   /// \param confCcdb ConfCcdb (needed for the trigger CCDB path).
   template <typename T1, typename T2, typename T3, typename T4>
@@ -244,13 +245,19 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
     }
 
     // event shape
-    mQvecDetector = static_cast<modes::QvecDetector>(config.qvecDetector.value);
-    if (mQvecDetector >= modes::QvecDetector::kQvecDetectorLast) {
-      LOG(fatal) << "Qvector Detector is not supported";
+    mEventPlaneAngleDetector = static_cast<modes::EventShapeDetector>(config.eventPlaneAngleDetector.value);
+    if (mEventPlaneAngleDetector >= modes::EventShapeDetector::kEventShapeDetectorLast) {
+      LOG(fatal) << "Detector " << static_cast<int>(mEventPlaneAngleDetector) << " for event plane angle is not supported";
     }
+
+    mQvecDetector = static_cast<modes::EventShapeDetector>(config.qvecDetector.value);
+    if (mQvecDetector >= modes::EventShapeDetector::kEventShapeDetectorLast) {
+      LOG(fatal) << "Detector " << static_cast<int>(mQvecDetector) << " for q-vector is not supported";
+    }
+
     mQvecHarmonic = static_cast<modes::QvecHarmonic>(config.qvecHarmonic.value);
     if (mQvecHarmonic < modes::QvecHarmonic::kN2 || mQvecHarmonic >= modes::QvecHarmonic::kQvecHarmonicLast) {
-      LOG(fatal) << "Qvector Harmonic is not supported";
+      LOG(fatal) << "Harmonic " << static_cast<int>(mQvecHarmonic) << " is not supported";
     }
 
     this->addSelection(kSel8, collisionSelectionNames.at(kSel8), config.sel8.value);
@@ -358,43 +365,40 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
   }
   [[nodiscard]] float getMultiplicity() const { return mMultiplicity; }
 
+  /// \brief Reduced flow vector |q_n| = |Q_n| * sqrt(M) for the configured detector and harmonic
   template <modes::System system, typename T>
   void setQvector(T const& col)
   {
+    const auto index = static_cast<std::size_t>(static_cast<int>(mQvecHarmonic) - 2); // n=2 -> 0, n=3 -> 1
     switch (mQvecDetector) {
-      case modes::QvecDetector::kFT0C:
-        mQvec = std::hypot(col.qvecFT0CReVec()[0], col.qvecFT0CImVec()[0]) * std::sqrt(col.sumAmplFT0C());
+      case modes::EventShapeDetector::kFT0C:
+        mQvec = computeReducedQvec(col.qvecFT0CReVec(), col.qvecFT0CImVec(), col.sumAmplFT0C(), index);
         break;
-      case modes::QvecDetector::kFT0A:
-        mQvec = std::hypot(col.qvecFT0AReVec()[0], col.qvecFT0AImVec()[0]) * std::sqrt(col.sumAmplFT0A());
-        break;
-      case modes::QvecDetector::kQvecDetectorLast:
-        LOG(fatal) << "Invalid Q-vector detector";
+      case modes::EventShapeDetector::kFT0A:
+        mQvec = computeReducedQvec(col.qvecFT0AReVec(), col.qvecFT0AImVec(), col.sumAmplFT0A(), index);
         break;
       default:
-        LOG(fatal) << "Invalid Q-vector detector";
+        LOG(fatal) << "Invalid detector for q-vector";
         break;
     }
   }
   [[nodiscard]] float getQvector() const { return mQvec; }
 
+  /// \brief Event plane angle Psi_n in [0, 2pi/n) for the configured detector and harmonic
   template <modes::System system, typename T>
   void setEventPlane(T const& col)
   {
-    auto harmonic = static_cast<float>(mQvecHarmonic);
-    int index = static_cast<int>(mQvecHarmonic) - 2; // get index in the qvector vector
-    switch (mQvecDetector) {
-      case modes::QvecDetector::kFT0C:
-        mEventPlane = RecoDecay::constrainAngle((std::atan2(col.qvecFT0CImVec()[index], col.qvecFT0CReVec()[index])) / harmonic, 0, harmonic); // constrain between 0 and 2pi/harmonic
+    const int harmonic = static_cast<int>(mQvecHarmonic);
+    const auto index = static_cast<std::size_t>(harmonic - 2); // n=2 -> 0, n=3 -> 1
+    switch (mEventPlaneAngleDetector) {
+      case modes::EventShapeDetector::kFT0C:
+        mEventPlane = computeEventPlane(col.qvecFT0CReVec(), col.qvecFT0CImVec(), index, harmonic);
         break;
-      case modes::QvecDetector::kFT0A:
-        mEventPlane = RecoDecay::constrainAngle((std::atan2(col.qvecFT0AImVec()[index], col.qvecFT0AReVec()[index])) / harmonic, 0, harmonic); // constrain between 0 and 2pi/harmonic
-        break;
-      case modes::QvecDetector::kQvecDetectorLast:
-        LOG(fatal) << "Invalid Q-vector detector";
+      case modes::EventShapeDetector::kFT0A:
+        mEventPlane = computeEventPlane(col.qvecFT0AReVec(), col.qvecFT0AImVec(), index, harmonic);
         break;
       default:
-        LOG(fatal) << "Invalid Q-vector detector";
+        LOG(fatal) << "Invalid detector for event plane angle";
         break;
     }
   }
@@ -527,6 +531,30 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
     return static_cast<float>(2. * lambda2 / (lambda1 + lambda2));
   }
 
+  /// \brief |q_n| = |Q_n| * sqrt(M); returns 0 for non-positive amplitude sum to avoid NaN
+  template <typename TRe, typename TIm>
+  static float computeReducedQvec(TRe const& re, TIm const& im, float sumAmpl, std::size_t index)
+  {
+    if (index >= re.size() || index >= im.size()) {
+      LOG(fatal) << "Requested Q-vector harmonic index " << index << " but only " << re.size() << " harmonics are stored";
+    }
+    if (!(sumAmpl > 0.f)) {
+      return 0.f;
+    }
+    return static_cast<float>(std::hypot(re[index], im[index]) * std::sqrt(sumAmpl));
+  }
+
+  /// \brief Psi_n = atan2(Im Q_n, Re Q_n) / n, constrained to [0, 2pi/n)
+  template <typename TRe, typename TIm>
+  static float computeEventPlane(TRe const& re, TIm const& im, std::size_t index, int harmonic)
+  {
+    if (index >= re.size() || index >= im.size()) {
+      LOG(fatal) << "Requested Q-vector harmonic index " << index << " but only " << re.size() << " harmonics are stored";
+    }
+    const double psi = std::atan2(static_cast<double>(im[index]), static_cast<double>(re[index])) / static_cast<double>(harmonic);
+    return static_cast<float>(RecoDecay::constrainAngle(psi, 0., static_cast<unsigned int>(harmonic)));
+  }
+
   // filter cuts
   float mVtxZMin = -12.f;
   float mVtxZMax = 12.f;
@@ -546,7 +574,9 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
   float mQvec = 0.f;
   float mEventPlane = 0.f;
 
-  modes::QvecDetector mQvecDetector = modes::QvecDetector::kFT0C;
+  // event shape
+  modes::EventShapeDetector mEventPlaneAngleDetector = modes::EventShapeDetector::kFT0C;
+  modes::EventShapeDetector mQvecDetector = modes::EventShapeDetector::kFT0C;
   modes::QvecHarmonic mQvecHarmonic = modes::QvecHarmonic::kN2;
 
   // RCT flags
