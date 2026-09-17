@@ -432,7 +432,7 @@ struct FlowEsePHe3 {
   Produces<o2::aod::ESETable> eseTable;
 
   template <typename TrackType>
-  float getNSigmaTPCSelfBB(const TrackType track, uint8_t POI)
+  float getNSigmaTPCSelfBB(const TrackType& track, uint8_t POI)
   {
     bool heliumPID = track.pidForTracking() == o2::track::PID::Helium3 || track.pidForTracking() == o2::track::PID::Alpha;
     float correctedTpcInnerParam = (heliumPID && cfgCompensatePIDinTracking) ? track.tpcInnerParam() / 2 : track.tpcInnerParam();
@@ -479,7 +479,7 @@ struct FlowEsePHe3 {
   }
 
   template <typename TrackType>
-  float getNSigmaTPC(const TrackType track, uint8_t POI)
+  float getNSigmaTPC(const TrackType& track, uint8_t POI)
   {
     switch (POI) {
       case ese_parameters::kProton: {
@@ -518,7 +518,7 @@ struct FlowEsePHe3 {
   }
 
   template <typename TrackType>
-  float getNSigmaTOF(const TrackType track, uint8_t POI)
+  float getNSigmaTOF(const TrackType& track, uint8_t POI)
   {
     switch (POI) {
       case ese_parameters::kProton: {
@@ -548,7 +548,7 @@ struct FlowEsePHe3 {
   }
 
   template <typename TrackType>
-  float getNSigmaITS(const TrackType track, uint8_t POI)
+  float getNSigmaITS(const TrackType& track, uint8_t POI)
   {
     switch (POI) {
       case ese_parameters::kProton: {
@@ -720,7 +720,7 @@ struct FlowEsePHe3 {
   }
 
   template <typename TrackType>
-  bool trackSelBasic(const TrackType track)
+  bool trackSelBasic(const TrackType& track)
   {
     if ((track.pt() < cfgMinPtPID) || (track.pt() > cfgMaxPtPID))
       return false;
@@ -775,7 +775,7 @@ struct FlowEsePHe3 {
   }
 
   template <typename CollType>
-  void fillEventQAhistBe(const CollType collision, const int multTrk, const float centrality)
+  void fillEventQAhistBe(const CollType& collision, const int multTrk, const float centrality)
   {
     histsESE.fill(HIST("EventQA/hist_globalTracks_centT0C_before"), centrality, multTrk);
     histsESE.fill(HIST("EventQA/hist_PVTracks_centT0C_before"), centrality, collision.multNTracksPV());
@@ -787,7 +787,7 @@ struct FlowEsePHe3 {
   }
 
   template <typename CollType>
-  void fillEventQAhistAf(const CollType collision, const int multTrk, const float centrality)
+  void fillEventQAhistAf(const CollType& collision, const int multTrk, const float centrality)
   {
     histsESE.fill(HIST("EventQA/hist_globalTracks_centT0C_after"), centrality, multTrk);
     histsESE.fill(HIST("EventQA/hist_PVTracks_centT0C_after"), centrality, collision.multNTracksPV());
@@ -799,7 +799,7 @@ struct FlowEsePHe3 {
   }
 
   template <typename TrackType>
-  void fillTrackQAhist(const TrackType track)
+  void fillTrackQAhist(const TrackType& track)
   {
     bool heliumPID = track.pidForTracking() == o2::track::PID::Helium3 || track.pidForTracking() == o2::track::PID::Alpha;
     float correctedTpcInnerParam = (heliumPID && cfgCompensatePIDinTracking) ? track.tpcInnerParam() / 2 : track.tpcInnerParam();

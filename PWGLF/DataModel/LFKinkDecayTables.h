@@ -163,13 +163,12 @@ DECLARE_SOA_TABLE(SlimKinkCandsMC, "AOD", "SLIMKINKCANDSMC",
 namespace sigmapluscand
 {
 
-DECLARE_SOA_COLUMN(XDecVtx, xDecVtx, float);               //! Decay vertex of the candidate (x direction)
-DECLARE_SOA_COLUMN(YDecVtx, yDecVtx, float);               //! Decay vertex of the candidate (y direction)
-DECLARE_SOA_COLUMN(ZDecVtx, zDecVtx, float);               //! Decay vertex of the candidate (z direction)
-DECLARE_SOA_COLUMN(Radius, radius, float);                 //! Decay radius of the candidate (cm)
-DECLARE_SOA_COLUMN(FlightDistance, flightDistance, float); //! Flight distance of the candidate (PV to decay vertex, cm)
-DECLARE_SOA_COLUMN(DcaProtonGamma, dcaProtonGamma, float); //! DCA between proton and photon at the fitted vertex (cm)
-DECLARE_SOA_COLUMN(Chi2, chi2, float);                     //! chi2 of the proton-photon vertex fit
+DECLARE_SOA_COLUMN(XDecVtx, xDecVtx, float);                   //! Decay vertex of the candidate (x direction)
+DECLARE_SOA_COLUMN(YDecVtx, yDecVtx, float);                   //! Decay vertex of the candidate (y direction)
+DECLARE_SOA_COLUMN(ZDecVtx, zDecVtx, float);                   //! Decay vertex of the candidate (z direction)
+DECLARE_SOA_COLUMN(FlightDistance, flightDistance, float);     //! 3D distance from the PV to the decay vertex (cm)
+DECLARE_SOA_COLUMN(TransDecayRadius, transDecayRadius, float); //! Transverse decay radius of the candidate (cm), stored directly in the slim tables (no XDecVtx/YDecVtx there)
+DECLARE_SOA_COLUMN(DcaProtonGamma, dcaProtonGamma, float);     //! DCA between proton and photon at the fitted vertex (cm)
 
 DECLARE_SOA_COLUMN(PxProton, pxProton, float); //! Px of the proton
 DECLARE_SOA_COLUMN(PyProton, pyProton, float); //! Py of the proton
@@ -194,6 +193,11 @@ DECLARE_SOA_COLUMN(PhotonOpeningAngle, photonOpeningAngle, float);   //! Opening
 DECLARE_SOA_COLUMN(PhotonPointingAngle, photonPointingAngle, float); //! Angle between the photon momentum and the line from its conversion point to the candidate decay vertex (rad)
 DECLARE_SOA_COLUMN(PhotonDcaToPV, photonDcaToPV, float);             //! DCA of the photon's flight line to the primary vertex (cm)
 
+DECLARE_SOA_COLUMN(RootCenter, rootCenter, float);                         //! -coefB/(2*coefA) of the missing-photon quadratic solve: negative flags an unphysical phase-space point
+DECLARE_SOA_COLUMN(AntiSigmaPointingAngle, antiSigmaPointingAngle, float); //! Angle between the field-unbent proton momentum (from its original reference point) and the PV->decay-vertex direction
+DECLARE_SOA_COLUMN(CandDcaToPV, candDcaToPV, float);                       //! DCA of the candidate's total reconstructed momentum line to the PV (cm)
+
+DECLARE_SOA_COLUMN(ProtonSign, protonSign, int);           //! Charge sign of the proton track (= sign of the whole candidate, since the photon is neutral)
 DECLARE_SOA_COLUMN(ProtonItsNCls, protonItsNCls, uint8_t); //! Number of ITS clusters of the proton track
 DECLARE_SOA_COLUMN(ProtonTpcNCls, protonTpcNCls, int16_t); //! Number of found TPC clusters of the proton track
 DECLARE_SOA_COLUMN(ProtonDcaXY, protonDcaXY, float);       //! DCA of the proton track to the primary vertex, xy (cm)
@@ -205,18 +209,15 @@ DECLARE_SOA_COLUMN(PhotonNegItsNCls, photonNegItsNCls, uint8_t); //! Number of I
 DECLARE_SOA_COLUMN(PhotonNegTpcNCls, photonNegTpcNCls, int16_t); //! Number of found TPC clusters of the photon's negative daughter
 
 // MC columns
-DECLARE_SOA_COLUMN(IsSignal, isSignal, bool); //! True if proton and photon are MC-truth matched to the same Sigma+
+DECLARE_SOA_COLUMN(CollisionIdCheck, collisionIdCheck, bool); //! True if the proton's collision ID matches the reconstructed collision ID
 
-DECLARE_SOA_COLUMN(ProtonPdgCode, protonPdgCode, int);             //! PDG code of the proton's MC particle
-DECLARE_SOA_COLUMN(ProtonMotherPdgCode, protonMotherPdgCode, int); //! PDG code of the proton's MC mother
-DECLARE_SOA_COLUMN(GammaPdgCode, gammaPdgCode, int);               //! PDG code of the measured photon's MC particle
-DECLARE_SOA_COLUMN(GammaMotherPdgCode, gammaMotherPdgCode, int);   //! PDG code of the photon's MC mother (expected: pi0)
-DECLARE_SOA_COLUMN(GammaGMotherPdgCode, gammaGMotherPdgCode, int); //! PDG code of the photon's MC grandmother (expected: Sigma+)
+DECLARE_SOA_COLUMN(IsSignal, isSignal, bool); //! True if the proton and photon share the same true Sigma+ mother
 
 DECLARE_SOA_COLUMN(XDecVtxMC, xDecVtxMC, float);         //! MC-truth Sigma+ decay vertex (x direction)
 DECLARE_SOA_COLUMN(YDecVtxMC, yDecVtxMC, float);         //! MC-truth Sigma+ decay vertex (y direction)
 DECLARE_SOA_COLUMN(ZDecVtxMC, zDecVtxMC, float);         //! MC-truth Sigma+ decay vertex (z direction)
 DECLARE_SOA_COLUMN(DecayRadiusMC, decayRadiusMC, float); //! MC-truth Sigma+ decay radius
+DECLARE_SOA_COLUMN(MassMC, massMC, float);               //! MC-truth invariant mass of the Sigma+ mother
 DECLARE_SOA_COLUMN(PxSigmaPlusMC, pxSigmaPlusMC, float); //! MC-truth Sigma+ mother Px
 DECLARE_SOA_COLUMN(PySigmaPlusMC, pySigmaPlusMC, float); //! MC-truth Sigma+ mother Py
 DECLARE_SOA_COLUMN(PzSigmaPlusMC, pzSigmaPlusMC, float); //! MC-truth Sigma+ mother Pz
@@ -228,6 +229,12 @@ DECLARE_SOA_COLUMN(PyGammaMC, pyGammaMC, float);         //! MC-truth momentum o
 DECLARE_SOA_COLUMN(PzGammaMC, pzGammaMC, float);         //! MC-truth momentum of the measured photon (Pz)
 
 // DYNAMIC COLUMNS
+
+DECLARE_SOA_DYNAMIC_COLUMN(Radius, radius, //! Transverse decay radius of the candidate (cm), from the beam axis
+                           [](float xDecVtx, float yDecVtx) -> float { return std::hypot(xDecVtx, yDecVtx); });
+
+DECLARE_SOA_DYNAMIC_COLUMN(Chi2, chi2, //! chi2 of the proton-photon vertex fit; dcaProtonGamma = sqrt(chi2) by construction in the builder
+                           [](float dcaProtonGamma) -> float { return dcaProtonGamma * dcaProtonGamma; });
 
 DECLARE_SOA_DYNAMIC_COLUMN(PxSigmaPlus, pxSigmaPlus, //! Px of the Sigma+ candidate
                            [](float pxProton, float pxGamma1, float pxGamma2) -> float { return pxProton + pxGamma1 + pxGamma2; });
@@ -258,9 +265,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(YSigmaPlusMC, ySigmaPlusMC, //! True rapidity of the 
 } // namespace sigmapluscand
 
 DECLARE_SOA_TABLE(SigmaPlusCands, "AOD", "SIGMAPLUSCANDS",
-                  sigmapluscand::XDecVtx, sigmapluscand::YDecVtx, sigmapluscand::ZDecVtx,
-                  sigmapluscand::Radius, sigmapluscand::FlightDistance,
-                  sigmapluscand::DcaProtonGamma, sigmapluscand::Chi2,
+                  sigmapluscand::XDecVtx, sigmapluscand::YDecVtx, sigmapluscand::ZDecVtx, sigmapluscand::FlightDistance,
+                  sigmapluscand::DcaProtonGamma,
                   sigmapluscand::PxProton, sigmapluscand::PyProton, sigmapluscand::PzProton,
                   sigmapluscand::PxGamma1, sigmapluscand::PyGamma1, sigmapluscand::PzGamma1,
                   sigmapluscand::PxGamma2, sigmapluscand::PyGamma2, sigmapluscand::PzGamma2,
@@ -268,10 +274,14 @@ DECLARE_SOA_TABLE(SigmaPlusCands, "AOD", "SIGMAPLUSCANDS",
                   sigmapluscand::NSigmaTPCElPos, sigmapluscand::NSigmaTPCElNeg,
                   sigmapluscand::PhotonMass, sigmapluscand::PhotonAlpha, sigmapluscand::PhotonQt, sigmapluscand::PhotonConvRadius,
                   sigmapluscand::PhotonOpeningAngle, sigmapluscand::PhotonPointingAngle, sigmapluscand::PhotonDcaToPV,
+                  sigmapluscand::RootCenter, sigmapluscand::AntiSigmaPointingAngle, sigmapluscand::CandDcaToPV,
+                  sigmapluscand::ProtonSign,
                   sigmapluscand::ProtonItsNCls, sigmapluscand::ProtonTpcNCls, sigmapluscand::ProtonDcaXY, sigmapluscand::ProtonDcaZ,
                   sigmapluscand::PhotonPosItsNCls, sigmapluscand::PhotonPosTpcNCls, sigmapluscand::PhotonNegItsNCls, sigmapluscand::PhotonNegTpcNCls,
 
                   // dynamic columns
+                  sigmapluscand::Radius<sigmapluscand::XDecVtx, sigmapluscand::YDecVtx>,
+                  sigmapluscand::Chi2<sigmapluscand::DcaProtonGamma>,
                   sigmapluscand::PxSigmaPlus<sigmapluscand::PxProton, sigmapluscand::PxGamma1, sigmapluscand::PxGamma2>,
                   sigmapluscand::PySigmaPlus<sigmapluscand::PyProton, sigmapluscand::PyGamma1, sigmapluscand::PyGamma2>,
                   sigmapluscand::PzSigmaPlus<sigmapluscand::PzProton, sigmapluscand::PzGamma1, sigmapluscand::PzGamma2>,
@@ -279,9 +289,8 @@ DECLARE_SOA_TABLE(SigmaPlusCands, "AOD", "SIGMAPLUSCANDS",
                   sigmapluscand::MassSigmaPlus<sigmapluscand::PxProton, sigmapluscand::PyProton, sigmapluscand::PzProton, sigmapluscand::PxGamma1, sigmapluscand::PyGamma1, sigmapluscand::PzGamma1, sigmapluscand::PxGamma2, sigmapluscand::PyGamma2, sigmapluscand::PzGamma2>);
 
 DECLARE_SOA_TABLE(SigmaPlusCandsMC, "AOD", "SIGMAPLUSMC",
-                  sigmapluscand::XDecVtx, sigmapluscand::YDecVtx, sigmapluscand::ZDecVtx,
-                  sigmapluscand::Radius, sigmapluscand::FlightDistance,
-                  sigmapluscand::DcaProtonGamma, sigmapluscand::Chi2,
+                  sigmapluscand::XDecVtx, sigmapluscand::YDecVtx, sigmapluscand::ZDecVtx, sigmapluscand::FlightDistance,
+                  sigmapluscand::DcaProtonGamma,
                   sigmapluscand::PxProton, sigmapluscand::PyProton, sigmapluscand::PzProton,
                   sigmapluscand::PxGamma1, sigmapluscand::PyGamma1, sigmapluscand::PzGamma1,
                   sigmapluscand::PxGamma2, sigmapluscand::PyGamma2, sigmapluscand::PzGamma2,
@@ -289,17 +298,21 @@ DECLARE_SOA_TABLE(SigmaPlusCandsMC, "AOD", "SIGMAPLUSMC",
                   sigmapluscand::NSigmaTPCElPos, sigmapluscand::NSigmaTPCElNeg,
                   sigmapluscand::PhotonMass, sigmapluscand::PhotonAlpha, sigmapluscand::PhotonQt, sigmapluscand::PhotonConvRadius,
                   sigmapluscand::PhotonOpeningAngle, sigmapluscand::PhotonPointingAngle, sigmapluscand::PhotonDcaToPV,
+                  sigmapluscand::RootCenter, sigmapluscand::AntiSigmaPointingAngle, sigmapluscand::CandDcaToPV,
+                  sigmapluscand::ProtonSign,
                   sigmapluscand::ProtonItsNCls, sigmapluscand::ProtonTpcNCls, sigmapluscand::ProtonDcaXY, sigmapluscand::ProtonDcaZ,
                   sigmapluscand::PhotonPosItsNCls, sigmapluscand::PhotonPosTpcNCls, sigmapluscand::PhotonNegItsNCls, sigmapluscand::PhotonNegTpcNCls,
+                  sigmapluscand::CollisionIdCheck,
                   sigmapluscand::IsSignal,
-                  sigmapluscand::ProtonPdgCode, sigmapluscand::ProtonMotherPdgCode,
-                  sigmapluscand::GammaPdgCode, sigmapluscand::GammaMotherPdgCode, sigmapluscand::GammaGMotherPdgCode,
                   sigmapluscand::XDecVtxMC, sigmapluscand::YDecVtxMC, sigmapluscand::ZDecVtxMC,
                   sigmapluscand::PxProtonMC, sigmapluscand::PyProtonMC, sigmapluscand::PzProtonMC,
                   sigmapluscand::PxGammaMC, sigmapluscand::PyGammaMC, sigmapluscand::PzGammaMC,
                   sigmapluscand::PxSigmaPlusMC, sigmapluscand::PySigmaPlusMC, sigmapluscand::PzSigmaPlusMC,
+                  sigmapluscand::DecayRadiusMC, sigmapluscand::MassMC,
 
                   // dynamic columns
+                  sigmapluscand::Radius<sigmapluscand::XDecVtx, sigmapluscand::YDecVtx>,
+                  sigmapluscand::Chi2<sigmapluscand::DcaProtonGamma>,
                   sigmapluscand::PxSigmaPlus<sigmapluscand::PxProton, sigmapluscand::PxGamma1, sigmapluscand::PxGamma2>,
                   sigmapluscand::PySigmaPlus<sigmapluscand::PyProton, sigmapluscand::PyGamma1, sigmapluscand::PyGamma2>,
                   sigmapluscand::PzSigmaPlus<sigmapluscand::PzProton, sigmapluscand::PzGamma1, sigmapluscand::PzGamma2>,
@@ -309,7 +322,11 @@ DECLARE_SOA_TABLE(SigmaPlusCandsMC, "AOD", "SIGMAPLUSMC",
                   sigmapluscand::YSigmaPlusMC<sigmapluscand::PxSigmaPlusMC, sigmapluscand::PySigmaPlusMC, sigmapluscand::PzSigmaPlusMC>);
 
 DECLARE_SOA_TABLE(SlimSigmaPlusCands, "AOD", "SLIMSIGMAPLUS",
-                  sigmapluscand::Radius, sigmapluscand::DcaProtonGamma,
+                  sigmapluscand::TransDecayRadius,
+                  sigmapluscand::CandDcaToPV,
+                  sigmapluscand::DcaProtonGamma,
+                  sigmapluscand::ProtonSign,
+                  sigmapluscand::ProtonDcaXY, sigmapluscand::ProtonDcaZ,
                   sigmapluscand::PxProton, sigmapluscand::PyProton, sigmapluscand::PzProton,
                   sigmapluscand::PxGamma1, sigmapluscand::PyGamma1, sigmapluscand::PzGamma1,
                   sigmapluscand::PxGamma2, sigmapluscand::PyGamma2, sigmapluscand::PzGamma2,
@@ -325,16 +342,20 @@ DECLARE_SOA_TABLE(SlimSigmaPlusCands, "AOD", "SLIMSIGMAPLUS",
                   sigmapluscand::MassSigmaPlus<sigmapluscand::PxProton, sigmapluscand::PyProton, sigmapluscand::PzProton, sigmapluscand::PxGamma1, sigmapluscand::PyGamma1, sigmapluscand::PzGamma1, sigmapluscand::PxGamma2, sigmapluscand::PyGamma2, sigmapluscand::PzGamma2>);
 
 DECLARE_SOA_TABLE(SlimSigmaPlusCandsMC, "AOD", "SLIMSIGMAPLUSMC",
-                  sigmapluscand::Radius, sigmapluscand::DcaProtonGamma,
+                  sigmapluscand::TransDecayRadius,
+                  sigmapluscand::CandDcaToPV,
+                  sigmapluscand::DcaProtonGamma,
+                  sigmapluscand::ProtonSign,
+                  sigmapluscand::ProtonDcaXY, sigmapluscand::ProtonDcaZ,
                   sigmapluscand::PxProton, sigmapluscand::PyProton, sigmapluscand::PzProton,
                   sigmapluscand::PxGamma1, sigmapluscand::PyGamma1, sigmapluscand::PzGamma1,
                   sigmapluscand::PxGamma2, sigmapluscand::PyGamma2, sigmapluscand::PzGamma2,
                   sigmapluscand::NSigmaTPCProton, sigmapluscand::NSigmaTOFProton,
                   sigmapluscand::NSigmaTPCElPos, sigmapluscand::NSigmaTPCElNeg,
                   sigmapluscand::PhotonMass,
-                  sigmapluscand::ProtonPdgCode, sigmapluscand::ProtonMotherPdgCode,
-                  sigmapluscand::GammaPdgCode, sigmapluscand::GammaMotherPdgCode, sigmapluscand::GammaGMotherPdgCode,
-                  sigmapluscand::DecayRadiusMC,
+                  sigmapluscand::CollisionIdCheck,
+                  sigmapluscand::IsSignal,
+                  sigmapluscand::DecayRadiusMC, sigmapluscand::MassMC,
                   sigmapluscand::PxSigmaPlusMC, sigmapluscand::PySigmaPlusMC, sigmapluscand::PzSigmaPlusMC,
 
                   // dynamic columns

@@ -97,9 +97,9 @@ static constexpr float CdEtaFV0 = (CmaxEtaFV0 - CminEtaFV0) / CmaxRingsFV0;
 
 // PID names
 static constexpr int CprocessIdWeak = 4;
-static constexpr o2::track::PID::ID Npart = 5;
-const std::array<int, Npart> pDGs{11, 13, 211, 321, 2212};
-static constexpr std::array<std::string, Npart> CspeciesAll{"El", "Mu", "Pi", "Ka", "Pr"};
+static constexpr o2::track::PID::ID Npart = 3;
+const std::array<int, Npart> pDGs{211, 321, 2212};
+static constexpr std::array<std::string, Npart> CspeciesAll{"Pi", "Ka", "Pr"};
 
 // histogram naming
 static constexpr std::array<std::string, 3> PidDir{"el/", "pi/", "pr/"};
@@ -2082,7 +2082,7 @@ struct FlattenictyPikp {
       v0sPerCollision.bindExternalIndices(&tracks);
       filldEdx(tracksPerCollision, v0sPerCollision, collision, bcs);
       if (defOpt.fillDCAxyHist) {
-        static_for<0, 4>([&](auto i) {
+        static_for<0, 2>([&](auto i) {
           fillDCA<i>(tracksPerCollision, collision, bcs);
         });
       }
@@ -2218,7 +2218,7 @@ struct FlattenictyPikp {
         continue;
       }
       if (gtOneRec) {
-        static_for<0, 4>([&](auto i) {
+        static_for<0, 2>([&](auto i) {
           constexpr int Cidx = i.value;
           if (std::fabs(particle.pdgCode()) == pDGs[Cidx]) {
             registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTeffGenPrimRecEvt), multRec, flatRec, particle.pt());
@@ -2271,7 +2271,7 @@ struct FlattenictyPikp {
         if (!particle.isPhysicalPrimary()) {
           continue;
         }
-        static_for<0, 4>([&](auto i) {
+        static_for<0, 2>([&](auto i) {
           constexpr int Cidx = i.value;
           if (std::fabs(particle.pdgCode()) == pDGs[Cidx]) {
             registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTeffPrimRecEvt), multRec, flatRec, track.pt());
@@ -2334,7 +2334,7 @@ struct FlattenictyPikp {
       }
     }
     registryMC.fill(HIST("Events/hEvtMcGen"), 2.5);
-    if (evtSelOpt.useInelgt0wTVX && !(mcCollision.multMCFT0C() <= 0 || mcCollision.multMCFT0A() <= 0)) {
+    if (evtSelOpt.useInelgt0wTVX && !(mcCollision.multMCFT0C() > 0 && mcCollision.multMCFT0A() > 0)) {
       return;
     }
     registryMC.fill(HIST("Events/hEvtMcGen"), 3.5);
@@ -2350,7 +2350,7 @@ struct FlattenictyPikp {
       if (std::abs(particle.eta()) > trkSelOpt.trkEtaMax) {
         continue;
       }
-      static_for<0, 4>([&](auto i) {
+      static_for<0, 2>([&](auto i) {
         constexpr int Cidx = i.value;
         if (std::fabs(particle.pdgCode()) == pDGs[Cidx]) {
           registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTgenPrimSgn), multMC, flatMC, particle.pt());       // Sgn loss den
@@ -2395,7 +2395,7 @@ struct FlattenictyPikp {
         continue;
       }
       if (gtOneRec) {
-        static_for<0, 4>([&](auto i) {
+        static_for<0, 2>([&](auto i) {
           constexpr int Cidx = i.value;
           if (std::fabs(particle.pdgCode()) == pDGs[Cidx]) {
             registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTrecCollPrimSgn), multMC, flatMC, particle.pt()); // Sgn loss num
@@ -2429,7 +2429,7 @@ struct FlattenictyPikp {
         continue;
       }
       const float multRec = getMult(collision);
-      const float flatRec = fillFlat<true>(collision);
+      const float flatRec = fillFlat<false>(collision);
 
       const auto& groupedTrks = tracks.sliceBy(perCollTrk, collision.globalIndex());
       for (const auto& track : groupedTrks) {
@@ -2452,7 +2452,7 @@ struct FlattenictyPikp {
         if (std::abs(particle.eta()) > trkSelOpt.trkEtaMax) {
           continue;
         }
-        static_for<0, 4>([&](auto i) {
+        static_for<0, 2>([&](auto i) {
           constexpr int Cidx = i.value;
           if (std::fabs(particle.pdgCode()) == pDGs[Cidx]) {
             if (!particle.isPhysicalPrimary()) {
@@ -2469,7 +2469,7 @@ struct FlattenictyPikp {
           }
         });
         if (isGoodTrack<true, false>(track, magField)) {
-          static_for<0, 4>([&](auto i) {
+          static_for<0, 2>([&](auto i) {
             constexpr int Cidx = i.value;
             if (std::fabs(particle.pdgCode()) == pDGs[Cidx]) {
               if (particle.isPhysicalPrimary()) {

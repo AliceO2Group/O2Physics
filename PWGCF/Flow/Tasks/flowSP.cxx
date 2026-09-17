@@ -774,7 +774,7 @@ struct FlowSP {
   }
 
   template <typename TrackObject>
-  ParticleType getTrackPID(TrackObject track)
+  ParticleType getTrackPID(const TrackObject& track)
   {
 
     float usedNSigmaPi = -1;
@@ -978,7 +978,7 @@ struct FlowSP {
   }
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision, const int& multTrk)
+  bool eventSelected(const TCollision& collision, const int& multTrk)
   {
     if (!collision.sel8())
       return 0;
@@ -1081,7 +1081,7 @@ struct FlowSP {
   }
 
   template <typename TrackObject>
-  bool trackSelected(TrackObject track, const int& field)
+  bool trackSelected(const TrackObject& track, const int& field)
   {
     if (std::fabs(track.eta()) > cfg.cTrackSelsEta)
       return false;
@@ -1137,7 +1137,7 @@ struct FlowSP {
   }
 
   template <FillType ft, typename CollisionObject, typename TracksObject>
-  inline void fillEventQA(CollisionObject collision, TracksObject tracks)
+  inline void fillEventQA(const CollisionObject& collision, const TracksObject& tracks)
   {
     if (!cfg.cFillEventQA)
       return;
@@ -1182,7 +1182,7 @@ struct FlowSP {
   }
 
   template <ChargeType ct, ParticleType pt, typename TrackObject>
-  inline void fillHistograms(TrackObject track)
+  inline void fillHistograms(const TrackObject& track)
   {
     double weight = spm.wacc[ct][pt] * spm.weff[ct][pt] * spm.centWeight;
     float scale = 1.0;
@@ -1251,7 +1251,7 @@ struct FlowSP {
   }
 
   template <FillType ft, ChargeType ct, ParticleType par, typename TrackObject>
-  inline void fillTrackQA(TrackObject track)
+  inline void fillTrackQA(const TrackObject& track)
   {
     if (!cfg.cFillTrackQA)
       return;
@@ -1280,7 +1280,7 @@ struct FlowSP {
   }
 
   template <FillType ft, ChargeType ct, typename TrackObject>
-  inline void fillPIDQA(TrackObject track)
+  inline void fillPIDQA(const TrackObject& track)
   {
     if (!cfg.cFillTrackQA)
       return;
@@ -1297,7 +1297,7 @@ struct FlowSP {
   }
 
   template <FillType ft, ModeType md, typename TrackObject>
-  inline void fillMCPtHistos(TrackObject track, int pdgCode)
+  inline void fillMCPtHistos(const TrackObject& track, int pdgCode)
   {
     static constexpr std::string_view Mode[] = {"Gen/", "Reco/"};
 
@@ -1333,7 +1333,7 @@ struct FlowSP {
   }
 
   template <FillType ft, ChargeType ct, typename McParticleObject>
-  inline void fillPrimaryHistos(McParticleObject mcparticle)
+  inline void fillPrimaryHistos(const McParticleObject& mcparticle)
   {
 
     if (!mcparticle.isPhysicalPrimary()) {
@@ -1344,7 +1344,7 @@ struct FlowSP {
   }
 
   template <FillType ft, ParticleType par, typename TrackObject>
-  void fillAllQA(TrackObject track)
+  void fillAllQA(const TrackObject& track)
   {
     fillTrackQA<ft, kInclusive, par>(track);
     fillPIDQA<ft, kInclusive>(track);

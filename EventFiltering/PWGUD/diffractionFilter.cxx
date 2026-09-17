@@ -284,7 +284,7 @@ struct DGFilterRun3 {
 
     // forward tracks
     int nforwardTracks[5] = {0};
-    for (auto track : fwdtracks) {
+    for (const auto& track : fwdtracks) {
       nforwardTracks[track.trackType()]++;
       registry.fill(HIST("forwardTracks/timeResolution"), track.trackType(), track.trackTimeRes());
     }

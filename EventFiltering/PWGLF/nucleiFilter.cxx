@@ -413,7 +413,7 @@ struct nucleiFilter {
           continue;
         }
         const auto& h3vector = h3vectors[iH3];
-        auto pivector = trackVector;
+        const auto& pivector = trackVector;
         auto cm = h3vector + trackVector;
         const ROOT::Math::Boost boost(cm.BoostToCM());
         boost(pivector);

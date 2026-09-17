@@ -34,9 +34,9 @@ typedef std::map<std::string, o2::framework::HistPtr> mapStringHistPtr;
 // define this in order to have a constructor of the HistogramSpec which copies the name into the title and to have dataOnly flag
 struct MyHistogramSpec {
   MyHistogramSpec(char const* const name_, char const* const title_, o2::framework::HistogramConfigSpec config_, bool callSumw2_ = false, bool dataOnly_ = false)
-    : m{name_, title_, config_, callSumw2_}, fDataOnly(dataOnly_) {}
+    : m{name_, title_, std::move(config_), callSumw2_}, fDataOnly(dataOnly_) {}
   MyHistogramSpec(char const* const name_, o2::framework::HistogramConfigSpec config_, bool callSumw2_ = false, bool dataOnly_ = false)
-    : m{name_, name_, config_, callSumw2_}, fDataOnly(dataOnly_) {}
+    : m{name_, name_, std::move(config_), callSumw2_}, fDataOnly(dataOnly_) {}
   o2::framework::HistogramSpec m{};
   bool fDataOnly{false};
 };
