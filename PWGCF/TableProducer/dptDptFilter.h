@@ -60,6 +60,7 @@
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace o2
@@ -560,7 +561,7 @@ struct DptDptTrackSelection {
   }
   DptDptTrackSelection(TrackSelection* stdTs, std::function<float(float)> ptDepCut, TList* outputList, const char* name)
     : stdTrackSelection(stdTs),
-      maxDcazPtDep(ptDepCut)
+      maxDcazPtDep(std::move(ptDepCut))
   {
     passedHistogram = new TH1F(name, name, ptbins, ptlow, ptup);
     outputList->Add(passedHistogram);
@@ -577,7 +578,7 @@ struct DptDptTrackSelection {
   }
   void setMaxDcazPtDep(std::function<float(float)> ptDepCut)
   {
-    maxDcazPtDep = ptDepCut;
+    maxDcazPtDep = std::move(ptDepCut);
   }
   void setRequirePvContributor(bool pvc = true)
   {
@@ -1210,7 +1211,7 @@ inline float extractMultiplicity(CollisionObject const& collision, CentMultEstim
 /// \brief Centrality/multiplicity percentile
 template <typename CollisionObject>
   requires(o2::aod::HasRun2Centrality<CollisionObject>)
-float getCentMultPercentile(CollisionObject collision)
+float getCentMultPercentile(const CollisionObject& collision)
 {
   switch (fCentMultEstimator) {
     case CentMultV0M:
@@ -1226,7 +1227,7 @@ float getCentMultPercentile(CollisionObject collision)
 
 template <typename CollisionObject>
   requires(o2::aod::HasCentrality<CollisionObject>)
-float getCentMultPercentile(CollisionObject collision)
+float getCentMultPercentile(const CollisionObject& collision)
 {
   switch (fCentMultEstimator) {
     case CentMultFV0A:
@@ -1246,9 +1247,9 @@ float getCentMultPercentile(CollisionObject collision)
 
 /// \brief Centrality selection when there is centrality/multiplicity information
 template <typename CollisionObject>
-inline bool centralitySelectionMult(CollisionObject collision, float& centmult)
+inline bool centralitySelectionMult(const CollisionObject& collision, float& centmult)
 {
-  float mult = getCentMultPercentile(collision);
+  float mult = getCentMultPercentile(std::move(collision));
   if (mult < ValidPercentileUpLimit && ValidPercentileLowLimit < mult) {
     centmult = mult;
     collisionFlags.set(CollSelCENTRALITYBIT);
@@ -1365,7 +1366,7 @@ inline bool isCollisionNotExcluded()
 /// \brief select on the collision occupancy
 /// \return true if collison passes the occupancy cut false otherwise
 template <typename CollisionObject>
-inline bool selectOnOccupancy(CollisionObject collision)
+inline bool selectOnOccupancy(const CollisionObject& collision)
 {
   switch (fOccupancyEstimation) {
     case OccupancyNOOCC:
@@ -1583,7 +1584,7 @@ struct TpcExcludeTrack {
     }
   }
 
-  void setCuts(std::string pLowCut, std::string pUpCut, std::string nLowCut, std::string nUpCut)
+  void setCuts(const std::string& pLowCut, const std::string& pUpCut, const std::string& nLowCut, const std::string& nUpCut)
   {
     LOGF(info, "Setting the TPC exclusion cuts: pLow=%s, pUp=%s, nLow=%s, nUp=%s", pLowCut, pUpCut, nLowCut, nUpCut);
     positiveLowCut = new TF1("posLowCut", pLowCut.c_str(), ptlow, ptup);
