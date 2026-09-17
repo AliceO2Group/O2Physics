@@ -608,7 +608,7 @@ struct HfTaskBsToJpsiPhiReduced {
   } // processDataWithBsMl
   PROCESS_SWITCH(HfTaskBsToJpsiPhiReduced, processDataWithBsMl, "Process data with ML for Bs", false);
 
-  void processMc(o2::soa::Join<aod::HfRedCandBsToJpsiPhi, aod::HfMcRecRedBss> const& candidates,
+  void processMc(soa::Join<aod::HfRedCandBsToJpsiPhi, aod::HfMcRecRedBss> const& candidates,
                  aod::HfMcGenRedBss const& mcParticles,
                  JPsis const& candidatesJpsi,
                  aod::HfRedBach0Tracks const& kaon0Tracks,
@@ -629,7 +629,7 @@ struct HfTaskBsToJpsiPhiReduced {
   } // processMc
   PROCESS_SWITCH(HfTaskBsToJpsiPhiReduced, processMc, "Process MC without ML for Bs", false);
 
-  void processMcWithBsMl(o2::soa::Join<aod::HfRedCandBsToJpsiPhi, aod::HfMcRecRedBss> const& candidates,
+  void processMcWithBsMl(soa::Join<aod::HfRedCandBsToJpsiPhi, aod::HfMcRecRedBss> const& candidates,
                          aod::HfMcGenRedBss const& mcParticles,
                          JPsis const& candidatesJpsi,
                          aod::HfRedBach0Tracks const& kaon0Tracks,
