@@ -443,11 +443,8 @@ class pidTPCModule
 
   //__________________________________________________
   template <typename TCCDB, typename M, typename T, typename B>
-  std::vector<float> createNetworkPrediction(TCCDB& ccdb, soa::Join<aod::Collisions, aod::EvSels> const& collisions, M const& mults, T const& tracks, B const& bcs, const size_t size)
+  std::unique_ptr<float[]> createNetworkPrediction(TCCDB& ccdb, soa::Join<aod::Collisions, aod::EvSels> const& collisions, M const& mults, T const& tracks, B const& bcs, const size_t size)
   {
-
-    std::vector<float> network_prediction;
-
     auto start_network_total = std::chrono::high_resolution_clock::now();
     if (pidTPCopts.autofetchNetworks) {
       const auto& bc = bcs.begin();
@@ -505,7 +502,10 @@ class pidTPCModule
     const uint64_t track_prop_size = input_dimensions * size;
     const uint64_t prediction_size = output_dimensions * size;
 
-    network_prediction = std::vector<float>(prediction_size * 9); // For each mass hypotheses
+    // Deliberately uninitialised: the evaluation loop below writes every element
+    // (one block per mass hypothesis), so zero-initialising would only touch
+    // every page of an O(100 MB) buffer twice.
+    std::unique_ptr<float[]> network_prediction(new float[prediction_size * 9]); // For each mass hypotheses
     const float nNclNormalization = response->GetNClNormalization();
     float duration_network = 0;
 
@@ -624,7 +624,7 @@ class pidTPCModule
 
   //__________________________________________________
   template <typename T, typename NSF, typename NST>
-  void makePidTables(const int flagFull, NSF& tableFull, const int flagTiny, NST& tableTiny, const o2::track::PID::ID pid, const float tpcSignal, const T& trk, const int64_t multTPC, const std::vector<float>& network_prediction, const int& count_tracks, const int& tracksForNet_size)
+  void makePidTables(const int flagFull, NSF& tableFull, const int flagTiny, NST& tableTiny, const o2::track::PID::ID pid, const float tpcSignal, const T& trk, const int64_t multTPC, const float* network_prediction, const int& count_tracks, const int& tracksForNet_size)
   {
     if (flagFull != 1 && flagTiny != 1) {
       return;
@@ -750,7 +750,7 @@ class pidTPCModule
     reserveTable(pidTPCopts.pidTinyAl, products.tablePIDTinyAl);
 
     const uint64_t tracksForNet_size = (pidTPCopts.skipTPCOnly) ? totalTPCnotStandalone : totalTPCtracks;
-    std::vector<float> network_prediction;
+    std::unique_ptr<float[]> network_prediction;
 
     if (pidTPCopts.useNetworkCorrection) {
       network_prediction = createNetworkPrediction(ccdb, cols, pidmults, tracks, bcs, tracksForNet_size);
@@ -951,7 +951,7 @@ class pidTPCModule
       }
 
       auto makePidTablesDefault = [&trk, &tpcSignalToEvaluatePID, &multTPC, &network_prediction, &count_tracks, &tracksForNet_size, this](const int flagFull, auto& tableFull, const int flagTiny, auto& tableTiny, const o2::track::PID::ID pid) {
-        this->makePidTables(flagFull, tableFull, flagTiny, tableTiny, pid, tpcSignalToEvaluatePID, trk, multTPC, network_prediction, count_tracks, tracksForNet_size);
+        this->makePidTables(flagFull, tableFull, flagTiny, tableTiny, pid, tpcSignalToEvaluatePID, trk, multTPC, network_prediction.get(), count_tracks, tracksForNet_size);
       };
 
       makePidTablesDefault(pidTPCopts.pidFullEl, products.tablePIDFullEl, pidTPCopts.pidTinyEl, products.tablePIDTinyEl, o2::track::PID::Electron);
