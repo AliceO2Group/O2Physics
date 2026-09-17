@@ -156,6 +156,17 @@ DECLARE_SOA_COLUMN(GenPosZ, genPosZ, float);
 DECLARE_SOA_COLUMN(RecoPosX, recoPosX, float);
 DECLARE_SOA_COLUMN(RecoPosY, recoPosY, float);
 DECLARE_SOA_COLUMN(RecoPosZ, recoPosZ, float);
+// FIT info
+DECLARE_SOA_COLUMN(TotalFT0AmplitudeA, totalFT0AmplitudeA, float);
+DECLARE_SOA_COLUMN(TotalFT0AmplitudeC, totalFT0AmplitudeC, float);
+DECLARE_SOA_COLUMN(TotalFV0AmplitudeA, totalFV0AmplitudeA, float);
+DECLARE_SOA_COLUMN(TotalFDDAmplitudeA, totalFDDAmplitudeA, float);
+DECLARE_SOA_COLUMN(TotalFDDAmplitudeC, totalFDDAmplitudeC, float);
+DECLARE_SOA_COLUMN(TimeFT0A, timeFT0A, float);
+DECLARE_SOA_COLUMN(TimeFT0C, timeFT0C, float);
+DECLARE_SOA_COLUMN(TimeFV0A, timeFV0A, float);
+DECLARE_SOA_COLUMN(TimeFDDA, timeFDDA, float);
+DECLARE_SOA_COLUMN(TimeFDDC, timeFDDC, float);
 // track info
 DECLARE_SOA_COLUMN(LeadingSign, leadingSign, int);
 DECLARE_SOA_COLUMN(LeadingGenPt, leadingGenPt, float);
@@ -175,6 +186,8 @@ DECLARE_SOA_COLUMN(SubleadingRecoPhi, subleadingRecoPhi, float);
 DECLARE_SOA_TABLE(ResolutionTree, "AOD", "RESOLUTIONTREE",
                   resolution_tree::GenPosX, resolution_tree::GenPosY, resolution_tree::GenPosZ,
                   resolution_tree::RecoPosX, resolution_tree::RecoPosY, resolution_tree::RecoPosZ,
+                  resolution_tree::TotalFT0AmplitudeA, resolution_tree::TotalFT0AmplitudeC, resolution_tree::TotalFV0AmplitudeA, resolution_tree::TotalFDDAmplitudeA, resolution_tree::TotalFDDAmplitudeC,
+                  resolution_tree::TimeFT0A, resolution_tree::TimeFT0C, resolution_tree::TimeFV0A, resolution_tree::TimeFDDA, resolution_tree::TimeFDDC,
                   resolution_tree::LeadingSign, resolution_tree::LeadingGenPt, resolution_tree::LeadingGenEta, resolution_tree::LeadingGenPhi,
                   resolution_tree::LeadingRecoPt, resolution_tree::LeadingRecoEta, resolution_tree::LeadingRecoPhi,
                   resolution_tree::SubleadingSign, resolution_tree::SubleadingGenPt, resolution_tree::SubleadingGenEta, resolution_tree::SubleadingGenPhi,
@@ -1219,7 +1232,7 @@ struct UpcRhoAnalysis {
       recoTracks.push_back(track);
     }
 
-    if (truePionLVs.size() != nExpectedPions || recoPionLVs.size() != nExpectedPions)
+    if (static_cast<int>(truePionLVs.size()) != nExpectedPions || static_cast<int>(recoPionLVs.size()) != nExpectedPions)
       return;
 
     ROOT::Math::PxPyPzMVector trueSystem = reconstructSystem(truePionLVs);
@@ -1245,6 +1258,8 @@ struct UpcRhoAnalysis {
 
     resolutionTree(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
                    collision.posX(), collision.posY(), collision.posZ(),
+                   collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
+                   collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC(),
                    leadingTruePion.pdgCode() / std::abs(leadingTruePion.pdgCode()), pt(leadingTruePion.px(), leadingTruePion.py()), eta(leadingTruePion.px(), leadingTruePion.py(), leadingTruePion.pz()), phi(leadingTruePion.px(), leadingTruePion.py()),
                    pt(leadingRecoPion.px(), leadingRecoPion.py()), eta(leadingRecoPion.px(), leadingRecoPion.py(), leadingRecoPion.pz()), phi(leadingRecoPion.px(), leadingRecoPion.py()),
                    subleadingTruePion.pdgCode() / std::abs(subleadingTruePion.pdgCode()), pt(subleadingTruePion.px(), subleadingTruePion.py()), eta(subleadingTruePion.px(), subleadingTruePion.py(), subleadingTruePion.pz()), phi(subleadingTruePion.px(), subleadingTruePion.py()),
