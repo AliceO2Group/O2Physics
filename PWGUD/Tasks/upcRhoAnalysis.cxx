@@ -202,7 +202,7 @@ struct UpcRhoAnalysis {
   SGSelector sgSelector;
 
   const float pcEtaCut = 0.9; // physics coordination recommendation
-  const int nExpectedPions = 2;       // only study dipion final states
+  const int nExpectedPions = 2; // only study dipion final states
   const std::vector<int> runNumbers = {544013, 544028, 544032, 544091, 544095, 544098, 544116, 544121, 544122, 544123, 544124, 544184, 544185, 544389, 544390, 544391, 544392, 544451, 544454, 544474, 544475, 544476, 544477, 544490, 544491, 544492, 544508, 544510, 544511, 544512, 544514, 544515, 544518, 544548, 544549, 544550, 544551, 544564, 544565, 544567, 544568, 544580, 544582, 544583, 544585, 544614, 544640, 544652, 544653, 544672, 544674, 544692, 544693, 544694, 544696, 544739, 544742, 544754, 544767, 544794, 544795, 544797, 544813, 544868, 544886, 544887, 544896, 544913, 544914, 544917, 544931, 544947, 544961, 544963, 544964, 544968, 544992, 545009, 545044, 545047, 545063, 545064, 545066, 545185, 545210, 545223, 545249, 545291, 545294, 545295, 545296, 545312};
   AxisSpec runNumberAxis = {static_cast<int>(runNumbers.size()), 0.5, static_cast<double>(runNumbers.size()) + 0.5, "run number"};
 
@@ -1292,7 +1292,7 @@ struct UpcRhoAnalysis {
       return;
     if (applyPid && !tracksPassPID(recoTracks)) // apply PID cut before creating derived data if desired
       return;
-    
+
     auto leadingTruePion = momentum(trueTracks[0].px(), trueTracks[0].py(), trueTracks[0].pz()) > momentum(trueTracks[1].px(), trueTracks[1].py(), trueTracks[1].pz()) ? trueTracks[0] : trueTracks[1];
     auto subleadingTruePion = (leadingTruePion == trueTracks[0]) ? trueTracks[1] : trueTracks[0];
     auto leadingRecoPion = momentum(recoTracks[0].px(), recoTracks[0].py(), recoTracks[0].pz()) > momentum(recoTracks[1].px(), recoTracks[1].py(), recoTracks[1].pz()) ? recoTracks[0] : recoTracks[1];
