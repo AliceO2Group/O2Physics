@@ -468,7 +468,7 @@ class pidTPCModule
       int versionNumber{};
     };
 
-    constexpr std::array<NNVersionEntry, 6> nnVersionsDictionary{
+    constexpr std::array<NNVersionEntry, 6> NNVersionsDictionary{
       {{"", 6, 1},
        {"1", 6, 1},
        {"2", 7, 2},
@@ -552,14 +552,14 @@ class pidTPCModule
     const uint64_t predictionSize = outputDimensions * size;
 
     int nnVersion{0};
-    for (const auto& nnVersionEntry : nnVersionsDictionary) {
+    for (const auto& nnVersionEntry : NNVersionsDictionary) {
       if (networkVersion == nnVersionEntry.versionName && inputDimensions == nnVersionEntry.numberOfFeatures) {
         nnVersion = nnVersionEntry.versionNumber;
         break;
       }
     }
     if (nnVersion == 0) {
-      LOG(fatal) << "createNetworkPrediction(): networkVersion '" << networkVersion << "' and number of features " << inputDimensions << " are not compatible according to nnVersionsDictionary";
+      LOG(fatal) << "createNetworkPrediction(): networkVersion '" << networkVersion << "' and number of features " << inputDimensions << " are not compatible according to NNVersionsDictionary";
     }
 
     const int hadronicRateNorm = collsys == CollisionSystemType::kCollSyspp ? HadronicRateNormPp : HadronicRateNormAa;
