@@ -16,8 +16,6 @@
 #ifndef PWGCF_FEMTO_CORE_MODES_H_
 #define PWGCF_FEMTO_CORE_MODES_H_
 
-#include "dataTypes.h"
-
 #include "PWGCF/Femto/Core/dataTypes.h"
 
 #include <cstdint>
@@ -182,6 +180,33 @@ constexpr const char* trackTypeToString(Track type)
       return "CharmDaughter";
     default:
       return "UnknownTrackType";
+  }
+}
+
+enum class Trigger : uint8_t {
+  kMinimumBias,
+  kTrackTrack,
+  kTrackV0,
+  kTrackTrackTrack,
+  kTrackTrackV0,
+  kTriggerLast
+};
+
+constexpr const char* triggerToString(Trigger trigger)
+{
+  switch (trigger) {
+    case Trigger::kMinimumBias:
+      return "MinimumBias";
+    case Trigger::kTrackTrack:
+      return "TrackTrack";
+    case Trigger::kTrackV0:
+      return "TrackV0";
+    case Trigger::kTrackTrackTrack:
+      return "TrackTrackTrack";
+    case Trigger::kTrackTrackV0:
+      return "TrackTrackV0";
+    default:
+      return "UnknownTrigger";
   }
 }
 

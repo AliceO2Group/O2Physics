@@ -164,16 +164,16 @@ class PairTrackTrackBuilder
         pairOrder = static_cast<pairprocesshelpers::PairOrder>(mDist(mRng));
       }
       return pairprocesshelpers::processSameEvent<mode>(trackSlice1, trackTable, col, mTrackHistManager1, mPairHistManagerSe, mCprSe, mPcSe, pairOrder);
-    } else {
-      auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      if (trackSlice1.size() < nLimitPartitionParticles || trackSlice2.size() < nLimitPartitionParticles) {
-        return false;
-      }
-      mColHistManager.template fill<mode>(col);
-      mCprSe.setMagField(col.magField());
-      return pairprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, trackTable, col, mTrackHistManager1, mTrackHistManager2, mPairHistManagerSe, mCprSe, mPcSe);
     }
+
+    auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (trackSlice1.size() < nLimitPartitionParticles || trackSlice2.size() < nLimitPartitionParticles) {
+      return false;
+    }
+    mColHistManager.template fill<mode>(col);
+    mCprSe.setMagField(col.magField());
+    return pairprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, trackTable, col, mTrackHistManager1, mTrackHistManager2, mPairHistManagerSe, mCprSe, mPcSe);
   }
 
   // mc
@@ -193,16 +193,16 @@ class PairTrackTrackBuilder
         pairOrder = static_cast<pairprocesshelpers::PairOrder>(mDist(mRng));
       }
       return pairprocesshelpers::processSameEvent<mode>(trackSlice1, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mPairHistManagerSe, mTrackCleaner1, mCprSe, mPcSe, pairOrder);
-    } else {
-      auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      if (trackSlice1.size() < nLimitPartitionParticles || trackSlice2.size() < nLimitPartitionParticles) {
-        return false;
-      }
-      mColHistManager.template fill<mode>(col, mcCols);
-      mCprSe.setMagField(col.magField());
-      return pairprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mTrackHistManager2, mPairHistManagerSe, mTrackCleaner1, mTrackCleaner2, mCprSe, mPcSe);
     }
+
+    auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (trackSlice1.size() < nLimitPartitionParticles || trackSlice2.size() < nLimitPartitionParticles) {
+      return false;
+    }
+    mColHistManager.template fill<mode>(col, mcCols);
+    mCprSe.setMagField(col.magField());
+    return pairprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mTrackHistManager2, mPairHistManagerSe, mTrackCleaner1, mTrackCleaner2, mCprSe, mPcSe);
   }
 
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
@@ -474,16 +474,16 @@ class PairV0V0Builder
         pairOrder = static_cast<pairprocesshelpers::PairOrder>(mDist(mRng));
       }
       return pairprocesshelpers::processSameEvent<mode>(v0Slice1, trackTable, col, mV0HistManager1, mPairHistManagerSe, mCprSe, mPcSe, pairOrder);
-    } else {
-      auto v0Slice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      auto v0Slice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      if (v0Slice1.size() < nLimitPartitionParticles || v0Slice2.size() < nLimitPartitionParticles) {
-        return false;
-      }
-      mColHistManager.template fill<mode>(col);
-      mCprSe.setMagField(col.magField());
-      return pairprocesshelpers::processSameEvent<mode>(v0Slice1, v0Slice2, trackTable, col, mV0HistManager1, mV0HistManager2, mPairHistManagerSe, mCprSe, mPcSe);
     }
+
+    auto v0Slice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto v0Slice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (v0Slice1.size() < nLimitPartitionParticles || v0Slice2.size() < nLimitPartitionParticles) {
+      return false;
+    }
+    mColHistManager.template fill<mode>(col);
+    mCprSe.setMagField(col.magField());
+    return pairprocesshelpers::processSameEvent<mode>(v0Slice1, v0Slice2, trackTable, col, mV0HistManager1, mV0HistManager2, mPairHistManagerSe, mCprSe, mPcSe);
   }
 
   // mc
@@ -503,16 +503,16 @@ class PairV0V0Builder
         pairOrder = static_cast<pairprocesshelpers::PairOrder>(mDist(mRng));
       }
       return pairprocesshelpers::processSameEvent<mode>(v0Slice1, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mV0HistManager1, mPairHistManagerSe, mV0Cleaner1, mCprSe, mPcSe, pairOrder);
-    } else {
-      auto v0Slice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      auto v0Slice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      if (v0Slice1.size() < nLimitPartitionParticles || v0Slice2.size() < nLimitPartitionParticles) {
-        return false;
-      }
-      mColHistManager.template fill<mode>(col, mcCols);
-      mCprSe.setMagField(col.magField());
-      return pairprocesshelpers::processSameEvent<mode>(v0Slice1, v0Slice2, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mV0HistManager1, mV0HistManager2, mPairHistManagerSe, mV0Cleaner1, mV0Cleaner2, mCprSe, mPcSe);
     }
+
+    auto v0Slice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto v0Slice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (v0Slice1.size() < nLimitPartitionParticles || v0Slice2.size() < nLimitPartitionParticles) {
+      return false;
+    }
+    mColHistManager.template fill<mode>(col, mcCols);
+    mCprSe.setMagField(col.magField());
+    return pairprocesshelpers::processSameEvent<mode>(v0Slice1, v0Slice2, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mV0HistManager1, mV0HistManager2, mPairHistManagerSe, mV0Cleaner1, mV0Cleaner2, mCprSe, mPcSe);
   }
 
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
@@ -761,16 +761,16 @@ class PairD0D0Builder
         pairOrder = static_cast<pairprocesshelpers::PairOrder>(mDist(mRng));
       }
       return pairprocesshelpers::processSameEvent<mode>(d0Slice1, trackTable, col, mD0HistManager1, mPairHistManagerSe, mCprSe, mPcSe, pairOrder);
-    } else {
-      auto d0Slice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      auto d0Slice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      if (d0Slice1.size() < nLimitPartitionParticles || d0Slice2.size() < nLimitPartitionParticles) {
-        return false;
-      }
-      mColHistManager.template fill<mode>(col);
-      mCprSe.setMagField(col.magField());
-      return pairprocesshelpers::processSameEvent<mode>(d0Slice1, d0Slice2, trackTable, col, mD0HistManager1, mD0HistManager2, mPairHistManagerSe, mCprSe, mPcSe);
     }
+
+    auto d0Slice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto d0Slice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (d0Slice1.size() < nLimitPartitionParticles || d0Slice2.size() < nLimitPartitionParticles) {
+      return false;
+    }
+    mColHistManager.template fill<mode>(col);
+    mCprSe.setMagField(col.magField());
+    return pairprocesshelpers::processSameEvent<mode>(d0Slice1, d0Slice2, trackTable, col, mD0HistManager1, mD0HistManager2, mPairHistManagerSe, mCprSe, mPcSe);
   }
 
   // mc
@@ -790,16 +790,15 @@ class PairD0D0Builder
         pairOrder = static_cast<pairprocesshelpers::PairOrder>(mDist(mRng));
       }
       return pairprocesshelpers::processSameEvent<mode>(d0Slice1, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mD0HistManager1, mPairHistManagerSe, mD0Cleaner1, mCprSe, mPcSe, pairOrder);
-    } else {
-      auto d0Slice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      auto d0Slice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      if (d0Slice1.size() < nLimitPartitionParticles || d0Slice2.size() < nLimitPartitionParticles) {
-        return false;
-      }
-      mColHistManager.template fill<mode>(col, mcCols);
-      mCprSe.setMagField(col.magField());
-      return pairprocesshelpers::processSameEvent<mode>(d0Slice1, d0Slice2, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mD0HistManager1, mD0HistManager2, mPairHistManagerSe, mD0Cleaner1, mD0Cleaner2, mCprSe, mPcSe);
     }
+    auto d0Slice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto d0Slice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (d0Slice1.size() < nLimitPartitionParticles || d0Slice2.size() < nLimitPartitionParticles) {
+      return false;
+    }
+    mColHistManager.template fill<mode>(col, mcCols);
+    mCprSe.setMagField(col.magField());
+    return pairprocesshelpers::processSameEvent<mode>(d0Slice1, d0Slice2, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mD0HistManager1, mD0HistManager2, mPairHistManagerSe, mD0Cleaner1, mD0Cleaner2, mCprSe, mPcSe);
   }
 
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
@@ -2079,15 +2078,15 @@ class PairMcParticleMcParticleBuilder
         pairOrder = static_cast<pairprocesshelpers::PairOrder>(mDist(mRng));
       }
       return pairprocesshelpers::processSameEvent<mode>(mcParticleSlice, mcParticles, mcMothers, mcPartonicMothers, col, mMcParticleHistManager1, mPairHistManagerSe, mMcParticleCleaner1, mCprSe, mPcSe, pairOrder);
-    } else {
-      auto mcParticleSlice1 = partition1->sliceByCached(o2::aod::femtomcparticle::fMcColId, col.globalIndex(), cache);
-      auto mcParticleSlice2 = partition2->sliceByCached(o2::aod::femtomcparticle::fMcColId, col.globalIndex(), cache);
-      if (mcParticleSlice1.size() < nLimitPartitionParticles || mcParticleSlice2.size() < nLimitPartitionParticles) {
-        return false;
-      }
-      mColHistManager.template fill<mode>(col);
-      return pairprocesshelpers::processSameEvent<mode>(mcParticleSlice1, mcParticleSlice2, mcParticles, mcMothers, mcPartonicMothers, col, mMcParticleHistManager1, mMcParticleHistManager2, mPairHistManagerSe, mMcParticleCleaner1, mMcParticleCleaner2, mCprSe, mPcSe);
     }
+
+    auto mcParticleSlice1 = partition1->sliceByCached(o2::aod::femtomcparticle::fMcColId, col.globalIndex(), cache);
+    auto mcParticleSlice2 = partition2->sliceByCached(o2::aod::femtomcparticle::fMcColId, col.globalIndex(), cache);
+    if (mcParticleSlice1.size() < nLimitPartitionParticles || mcParticleSlice2.size() < nLimitPartitionParticles) {
+      return false;
+    }
+    mColHistManager.template fill<mode>(col);
+    return pairprocesshelpers::processSameEvent<mode>(mcParticleSlice1, mcParticleSlice2, mcParticles, mcMothers, mcPartonicMothers, col, mMcParticleHistManager1, mMcParticleHistManager2, mPairHistManagerSe, mMcParticleCleaner1, mMcParticleCleaner2, mCprSe, mPcSe);
   }
 
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>

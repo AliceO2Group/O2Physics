@@ -105,15 +105,19 @@ struct ConfMcCollisionFilters : o2::framework::ConfigurableGroup {
 template <auto& Prefix>
 struct ConfMcParticleSelection : o2::framework::ConfigurableGroup {
   std::string prefix = std::string(Prefix);
-  // kinematic cuts for filtering tracks
+  // kinematic cuts
   o2::framework::Configurable<float> ptMin{"ptMin", 0.2f, "Minimum pT"};
   o2::framework::Configurable<float> ptMax{"ptMax", 6.f, "Maximum pT"};
   o2::framework::Configurable<float> etaMin{"etaMin", -0.9f, "Minimum eta"};
   o2::framework::Configurable<float> etaMax{"etaMax", 0.9f, "Maximum eta"};
   o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};
   o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};
+  // pdg code and charge
   o2::framework::Configurable<int> pdgCodeAbs{"pdgCodeAbs", 2212, "Absolute value of PDG code. Set sign of charge to -1 for antiparticle."};
   o2::framework::Configurable<int> chargeSign{"chargeSign", 1, "Particle charge sign: +1 for positive, -1 for negative, 0 for both"};
+  // origin
+  o2::framework::Configurable<bool> requireOrigin{"requireOrigin", false, "If true, only particles with the origin given in 'origin' are selected"};
+  o2::framework::Configurable<int> origin{"origin", static_cast<int>(modes::McOrigin::kPhysicalPrimary), "Required mc origin, only used if requireOrigin is true (see modes::McOrigin; 2: physical primary)"};
 };
 
 constexpr const char PrefixMcParticleSelection1[] = "McParticleSelection1";

@@ -201,7 +201,9 @@ class TripletTrackTrackTrackBuilder
         tripletOrder = static_cast<tripletprocesshelpers::TripletOrder>(mDist(mRng));
       }
       return tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackTable, col, mTrackHistManager1, mTripletHistManagerSe, mCtrSe, mTcSe, tripletOrder);
-    } else if (mTrack1Track2AreSameSpecies) {
+    }
+
+    if (mTrack1Track2AreSameSpecies) {
       auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       auto trackSlice3 = partition3->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       if (trackSlice1.size() < nLimitPartitionIdenticalParticles12 || trackSlice3.size() < nLimitPartitionParticles) {
@@ -213,17 +215,17 @@ class TripletTrackTrackTrackBuilder
         tripletOrder = static_cast<tripletprocesshelpers::TripletOrder>(mDist(mRng));
       }
       return tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice3, trackTable, col, mTrackHistManager1, mTrackHistManager3, mTripletHistManagerSe, mCtrSe, mTcSe, tripletOrder);
-    } else {
-      auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      auto trackSlice3 = partition3->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      if (trackSlice1.size() < nLimitPartitionParticles || trackSlice2.size() < nLimitPartitionParticles || trackSlice3.size() < nLimitPartitionParticles) {
-        return false;
-      }
-      mColHistManager.template fill<mode>(col);
-      mCtrSe.setMagField(col.magField());
-      return tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, trackSlice3, trackTable, col, mTrackHistManager1, mTrackHistManager2, mTrackHistManager3, mTripletHistManagerSe, mCtrSe, mTcSe);
     }
+
+    auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto trackSlice3 = partition3->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (trackSlice1.size() < nLimitPartitionParticles || trackSlice2.size() < nLimitPartitionParticles || trackSlice3.size() < nLimitPartitionParticles) {
+      return false;
+    }
+    mColHistManager.template fill<mode>(col);
+    mCtrSe.setMagField(col.magField());
+    return tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, trackSlice3, trackTable, col, mTrackHistManager1, mTrackHistManager2, mTrackHistManager3, mTripletHistManagerSe, mCtrSe, mTcSe);
   }
 
   // mc
@@ -243,7 +245,8 @@ class TripletTrackTrackTrackBuilder
         tripletOrder = static_cast<tripletprocesshelpers::TripletOrder>(mDist(mRng));
       }
       return tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mTripletHistManagerSe, mCleaner1, mCtrSe, mTcSe, tripletOrder);
-    } else if (mTrack1Track2AreSameSpecies) {
+    }
+    if (mTrack1Track2AreSameSpecies) {
       auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       auto trackSlice3 = partition3->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       if (trackSlice1.size() < nLimitPartitionIdenticalParticles12 || trackSlice3.size() < nLimitPartitionParticles) {
@@ -255,17 +258,17 @@ class TripletTrackTrackTrackBuilder
         tripletOrder = static_cast<tripletprocesshelpers::TripletOrder>(mDist(mRng));
       }
       return tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice3, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mTrackHistManager3, mTripletHistManagerSe, mCleaner1, mCleaner3, mCtrSe, mTcSe, tripletOrder);
-    } else {
-      auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      auto trackSlice3 = partition3->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      if (trackSlice1.size() < nLimitPartitionParticles || trackSlice2.size() < nLimitPartitionParticles || trackSlice3.size() < nLimitPartitionParticles) {
-        return false;
-      }
-      mColHistManager.template fill<mode>(col, mcCols);
-      mCtrSe.setMagField(col.magField());
-      return tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, trackSlice3, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mTrackHistManager2, mTrackHistManager3, mTripletHistManagerSe, mCleaner1, mCleaner2, mCleaner3, mCtrSe, mTcSe);
     }
+
+    auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto trackSlice3 = partition3->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (trackSlice1.size() < nLimitPartitionParticles || trackSlice2.size() < nLimitPartitionParticles || trackSlice3.size() < nLimitPartitionParticles) {
+      return false;
+    }
+    mColHistManager.template fill<mode>(col, mcCols);
+    mCtrSe.setMagField(col.magField());
+    return tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, trackSlice3, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mTrackHistManager2, mTrackHistManager3, mTripletHistManagerSe, mCleaner1, mCleaner2, mCleaner3, mCtrSe, mTcSe);
   }
 
   // data
@@ -532,17 +535,17 @@ class TripletTrackTrackV0Builder
         tripletOrder = static_cast<tripletprocesshelpers::TripletOrder>(mDist(mRng));
       }
       return tripletprocesshelpers::processSameEvent<mode>(trackSlice1, v0Slice, trackTable, col, mTrackHistManager1, mV0HistManager, mTripletHistManagerSe, mCtrSe, mTcSe, tripletOrder);
-    } else {
-      auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      auto v0Slice = partition3->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      if (trackSlice1.size() < nLimitPartitionParticles || trackSlice2.size() < nLimitPartitionParticles || v0Slice.size() < nLimitPartitionParticles) {
-        return false;
-      }
-      mColHistManager.template fill<mode>(col);
-      mCtrSe.setMagField(col.magField());
-      return tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, v0Slice, trackTable, col, mTrackHistManager1, mTrackHistManager2, mV0HistManager, mTripletHistManagerSe, mCtrSe, mTcSe);
     }
+
+    auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto v0Slice = partition3->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (trackSlice1.size() < nLimitPartitionParticles || trackSlice2.size() < nLimitPartitionParticles || v0Slice.size() < nLimitPartitionParticles) {
+      return false;
+    }
+    mColHistManager.template fill<mode>(col);
+    mCtrSe.setMagField(col.magField());
+    return tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, v0Slice, trackTable, col, mTrackHistManager1, mTrackHistManager2, mV0HistManager, mTripletHistManagerSe, mCtrSe, mTcSe);
   }
 
   // mc
@@ -563,17 +566,17 @@ class TripletTrackTrackV0Builder
         tripletOrder = static_cast<tripletprocesshelpers::TripletOrder>(mDist(mRng));
       }
       return tripletprocesshelpers::processSameEvent<mode>(trackSlice1, v0Slice, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mV0HistManager, mTripletHistManagerSe, mCleaner1, mV0Cleaner, mCtrSe, mTcSe, tripletOrder);
-    } else {
-      auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      auto v0Slice = partition3->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      if (trackSlice1.size() < nLimitPartitionParticles || trackSlice2.size() < nLimitPartitionParticles || v0Slice.size() < nLimitPartitionParticles) {
-        return false;
-      }
-      mColHistManager.template fill<mode>(col, mcCols);
-      mCtrSe.setMagField(col.magField());
-      return tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, v0Slice, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mTrackHistManager2, mV0HistManager, mTripletHistManagerSe, mCleaner1, mCleaner2, mV0Cleaner, mCtrSe, mTcSe);
     }
+
+    auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto v0Slice = partition3->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (trackSlice1.size() < nLimitPartitionParticles || trackSlice2.size() < nLimitPartitionParticles || v0Slice.size() < nLimitPartitionParticles) {
+      return false;
+    }
+    mColHistManager.template fill<mode>(col, mcCols);
+    mCtrSe.setMagField(col.magField());
+    return tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, v0Slice, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mTrackHistManager2, mV0HistManager, mTripletHistManagerSe, mCleaner1, mCleaner2, mV0Cleaner, mCtrSe, mTcSe);
   }
 
   // data
@@ -822,17 +825,17 @@ class TripletTrackTrackCascadeBuilder
         tripletOrder = static_cast<tripletprocesshelpers::TripletOrder>(mDist(mRng));
       }
       return tripletprocesshelpers::processSameEvent<mode>(trackSlice1, cascadeSlice, trackTable, col, mTrackHistManager1, mCascadeHistManager, mTripletHistManagerSe, mCtrSe, mTcSe, tripletOrder);
-    } else {
-      auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      auto cascadeSlice = partition3->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      if (trackSlice1.size() < nLimitPartitionParticles || trackSlice2.size() < nLimitPartitionParticles || cascadeSlice.size() < nLimitPartitionParticles) {
-        return false;
-      }
-      mColHistManager.template fill<mode>(col);
-      mCtrSe.setMagField(col.magField());
-      return tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, cascadeSlice, trackTable, col, mTrackHistManager1, mTrackHistManager2, mCascadeHistManager, mTripletHistManagerSe, mCtrSe, mTcSe);
     }
+
+    auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto cascadeSlice = partition3->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (trackSlice1.size() < nLimitPartitionParticles || trackSlice2.size() < nLimitPartitionParticles || cascadeSlice.size() < nLimitPartitionParticles) {
+      return false;
+    }
+    mColHistManager.template fill<mode>(col);
+    mCtrSe.setMagField(col.magField());
+    return tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, cascadeSlice, trackTable, col, mTrackHistManager1, mTrackHistManager2, mCascadeHistManager, mTripletHistManagerSe, mCtrSe, mTcSe);
   }
 
   // mc
@@ -853,17 +856,17 @@ class TripletTrackTrackCascadeBuilder
         tripletOrder = static_cast<tripletprocesshelpers::TripletOrder>(mDist(mRng));
       }
       return tripletprocesshelpers::processSameEvent<mode>(trackSlice1, cascadeSlice, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mCascadeHistManager, mTripletHistManagerSe, mTrackCleaner1, mCascadeCleaner, mCtrSe, mTcSe, tripletOrder);
-    } else {
-      auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      auto cascadeSlice = partition3->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      if (trackSlice1.size() < nLimitPartitionParticles || trackSlice2.size() < nLimitPartitionParticles || cascadeSlice.size() < nLimitPartitionParticles) {
-        return false;
-      }
-      mColHistManager.template fill<mode>(col, mcCols);
-      mCtrSe.setMagField(col.magField());
-      return tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, cascadeSlice, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mTrackHistManager2, mCascadeHistManager, mTripletHistManagerSe, mTrackCleaner1, mTrackCleaner2, mCascadeCleaner, mCtrSe, mTcSe);
     }
+
+    auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto cascadeSlice = partition3->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (trackSlice1.size() < nLimitPartitionParticles || trackSlice2.size() < nLimitPartitionParticles || cascadeSlice.size() < nLimitPartitionParticles) {
+      return false;
+    }
+    mColHistManager.template fill<mode>(col, mcCols);
+    mCtrSe.setMagField(col.magField());
+    return tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, cascadeSlice, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mTrackHistManager2, mCascadeHistManager, mTripletHistManagerSe, mTrackCleaner1, mTrackCleaner2, mCascadeCleaner, mCtrSe, mTcSe);
   }
 
   // data

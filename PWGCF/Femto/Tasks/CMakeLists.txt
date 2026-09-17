@@ -113,3 +113,8 @@ o2physics_add_dpl_workflow(femto-triplet-track-track-cascade
       SOURCES femtoTripletTrackTrackCascade.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femto-dndeta-pair
+          SOURCES femtoDndetaPair.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)

@@ -198,6 +198,11 @@ using ConfLc1PionDauBinning = ConfTrackBinning<PrefixLc1PionDauBinning>;
 using ConfCascadePosDauBinning = ConfTrackBinning<PrefixCascadePosDauBinning>;
 using ConfCascadeNegDauBinning = ConfTrackBinning<PrefixCascadeNegDauBinning>;
 using ConfCascadeBachelorBinning = ConfTrackBinning<PrefixCascadeBachelorBinning>;
+// for dN/deta tracks
+constexpr const char PrefixDndetaTrackGlobalBinning[] = "DndetaTrackGlobalBinning";
+constexpr const char PrefixDndetaTrackItsOnlyBinning[] = "DndetaTrackItsOnlyBinning";
+using ConfDndetaTrackGlobalBinning = ConfTrackBinning<PrefixDndetaTrackGlobalBinning>;
+using ConfDndetaTrackItsOnlyBinning = ConfTrackBinning<PrefixDndetaTrackItsOnlyBinning>;
 using ConfKinkChaDauBinning = ConfTrackBinning<PrefixKinkChaDauBinning>;
 // for resonance daughters
 using ConfResonancePosDauBinning = ConfTrackBinning<PrefixResonancePosDauBinning>;
@@ -296,6 +301,11 @@ constexpr const char PrefixKinkChaDauQaBinning[] = "KinkChaDauQaBinning";
 
 using ConfTrackQaBinning1 = ConfTrackQaBinning<PrefixTrackQaBinning1>;
 using ConfTrackQaBinning2 = ConfTrackQaBinning<PrefixTrackQaBinning2>;
+// for dN/deta tracks
+constexpr const char PrefixDndetaTrackGlobalQaBinning[] = "DndetaTrackGlobalQaBinning";
+constexpr const char PrefixDndetaTrackItsOnlyQaBinning[] = "DndetaTrackItsOnlyQaBinning";
+using ConfDndetaTrackGlobalQaBinning = ConfTrackQaBinning<PrefixDndetaTrackGlobalQaBinning>;
+using ConfDndetaTrackItsOnlyQaBinning = ConfTrackQaBinning<PrefixDndetaTrackItsOnlyQaBinning>;
 using ConfResonancePosDauQaBinning = ConfTrackQaBinning<PrefixResonancePosDauQaBinning>;
 using ConfResonanceNegDauQaBinning = ConfTrackQaBinning<PrefixResonanceNegDauQaBinning>;
 using ConfV01PosDauQaBinning = ConfTrackQaBinning<PrefixV01PosDauQaBinning>;
@@ -550,6 +560,9 @@ auto makeTrackMcQaHistSpecMap(T1 const& confBinningAnalysis, T2 const& confBinni
 constexpr char PrefixTrackQa[] = "TrackQA/";
 constexpr char PrefixTrack1[] = "Track1/";
 constexpr char PrefixTrack2[] = "Track2/";
+// for dN/deta tracks
+constexpr char PrefixDndetaTrackGlobal[] = "DndetaTrackGlobal/";
+constexpr char PrefixDndetaTrackItsOnly[] = "DndetaTrackItsOnly/";
 constexpr char PrefixTrack3[] = "Track3/";
 
 constexpr char PrefixResonancePosDaughter[] = "ResonancePosDau/";

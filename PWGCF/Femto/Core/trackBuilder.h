@@ -16,8 +16,6 @@
 #ifndef PWGCF_FEMTO_CORE_TRACKBUILDER_H_
 #define PWGCF_FEMTO_CORE_TRACKBUILDER_H_
 
-#include "femtoUtils.h"
-
 #include "PWGCF/Femto/Core/baseSelection.h"
 #include "PWGCF/Femto/Core/dataTypes.h"
 #include "PWGCF/Femto/Core/femtoUtils.h"
@@ -63,6 +61,8 @@ struct ConfTrackBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> itsIbClustersMin{"itsIbClustersMin", {3.f}, "Minimum number of clusters in inner barrel (max 3) of ITS"};
   o2::framework::Configurable<std::vector<std::string>> dcaxyMax{"dcaxyMax", {"0.004 + 0.013*pow(x, -1)"}, "Maximum |dca_xy| as a function of pT. Has to be a valid TForumal, where x=pt"};
   o2::framework::Configurable<std::vector<std::string>> dcazMax{"dcazMax", {"0.004 + 0.013*pow(x, -1)"}, "Maximum |dca_z| as a function of pT. Has to be a valid TForumal, where x=pt"};
+  o2::framework::Configurable<std::vector<float>> itsChi2Max{"itsChi2Max", {}, "Maximum ITS chi2 per cluster"};
+  o2::framework::Configurable<std::vector<float>> tpcChi2Max{"tpcChi2Max", {}, "Maximum TPC chi2 per cluster"};
 
   // Electron PID cuts
   o2::framework::Configurable<bool> requirePidElectron{"requirePidElectron", false, "Make election PID optional"};
@@ -166,6 +166,11 @@ constexpr const char PrefixPionMinus[] = "PionMinusSelection";
 constexpr const char PrefixKaonPlus[] = "KaonPlusSelection";
 constexpr const char PrefixKaonMinus[] = "KaonMinusSelection";
 
+// for dN/deta: tracks with TPC (ITS + TPC quality bits) and tracks without TPC (ITS quality bits only)
+// set maskLowMomentum = maskHighMomentum (quality bits only), chargeSign = 0 and the eta/pT range of the measurement
+constexpr const char PrefixTrackSelectionDndetaGlobal[] = "TrackSelectionDndetaGlobal"; // Global = ITS + TPC
+constexpr const char PrefixTrackSelectionDndetaItsOnly[] = "TrackSelectionDndetaItsOnly"; // ITS only
+
 // Instantiate different instances with unique prefixes
 using ConfTrackSelection1 = ConfTrackSelection<PrefixTrackSelection1>;
 using ConfTrackSelection2 = ConfTrackSelection<PrefixTrackSelection2>;
@@ -175,6 +180,9 @@ using ConfPionPlusSelection = ConfTrackSelection<PrefixPionPlus>;
 using ConfPionMinusSelection = ConfTrackSelection<PrefixPionMinus>;
 using ConfKaonPlusSelection = ConfTrackSelection<PrefixKaonPlus>;
 using ConfKaonMinusSelection = ConfTrackSelection<PrefixKaonMinus>;
+
+using ConfTrackSelectionDndetaGlobal = ConfTrackSelection<PrefixTrackSelectionDndetaGlobal>;
+using ConfTrackSelectionDndetaItsOnly = ConfTrackSelection<PrefixTrackSelectionDndetaItsOnly>;
 
 /// enum for all track selections
 enum TrackSels {
@@ -188,6 +196,8 @@ enum TrackSels {
   kITSnClsIbMin,        ///< Min. number of ITS clusters in the inner barrel
   kDCAxyMax,            ///< Max. |DCA_xy| (cm) as a function of pT
   kDCAzMax,             ///< Max. |DCA_z| (cm) as a function of pT
+  kITSchi2Max,          ///< Max. ITS chi2 per cluster
+  kTPCchi2Max,          ///< Max. TPC chi2 per cluster
 
   /// track pid cuts
   kItsElectron, ///< ITS Electon PID
@@ -246,6 +256,8 @@ const std::unordered_map<TrackSels, std::string> trackSelectionNames = {
   {kITSnClsIbMin, "Min. number of ITS clusters in the inner barrel"},
   {kDCAxyMax, "Max. |DCA_xy| (cm) as a function of pT"},
   {kDCAzMax, "Max. |DCA_z| (cm) as a function of pT"},
+  {kITSchi2Max, "Max. ITS chi2 per cluster"},
+  {kTPCchi2Max, "Max. TPC chi2 per cluster"},
 
   {kItsElectron, "ITS Electron PID"},
   {kItsPion, "ITS Pion PID"},
@@ -339,6 +351,8 @@ class TrackSelection : public baseselection::BaseSelection<float, datatypes::Tra
     this->addSelection(kITSnClsIbMin, trackSelectionNames.at(kITSnClsIbMin), config.itsIbClustersMin.value, limits::kLowerLimit, true, true, false);
     this->addSelection(kDCAxyMax, trackSelectionNames.at(kDCAxyMax), filter.ptMin.value, filter.ptMax.value, config.dcaxyMax.value, limits::kAbsUpperFunctionLimit, true, true, false);
     this->addSelection(kDCAzMax, trackSelectionNames.at(kDCAzMax), filter.ptMin.value, filter.ptMax.value, config.dcazMax.value, limits::kAbsUpperFunctionLimit, true, true, false);
+    this->addSelection(kITSchi2Max, trackSelectionNames.at(kITSchi2Max), config.itsChi2Max.value, limits::kUpperLimit, true, true, false);
+    this->addSelection(kTPCchi2Max, trackSelectionNames.at(kTPCchi2Max), config.tpcChi2Max.value, limits::kUpperLimit, true, true, false);
 
     // add selections for Electron pid
     this->addSelection(kItsElectron, trackSelectionNames.at(kItsElectron), config.itsElectron.value, false, false, config.requirePidElectron);
@@ -484,6 +498,8 @@ class TrackSelection : public baseselection::BaseSelection<float, datatypes::Tra
     this->evaluateObservable(kDCAxyMax, Track.dcaXY());
     this->updateLimits(kDCAzMax, Track.pt());
     this->evaluateObservable(kDCAzMax, Track.dcaZ());
+    this->evaluateObservable(kITSchi2Max, Track.itsChi2NCl());
+    this->evaluateObservable(kTPCchi2Max, Track.tpcChi2NCl());
 
     // first pass: threshold-aware PID evaluation
     // determines if the track passes any optional selection and if should be stored in the first place

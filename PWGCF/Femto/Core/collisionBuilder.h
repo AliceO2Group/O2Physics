@@ -82,9 +82,9 @@ struct ConfCollisionBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> sphericityMin{"sphericityMin", {}, "Minimum sphericity"};
   o2::framework::Configurable<std::vector<float>> sphericityMax{"sphericityMax", {}, "Maximum sphericity"};
   o2::framework::Configurable<std::vector<std::string>> triggers{"triggers", {}, "List of all triggers to be used"};
-  o2::framework::Configurable<datatypes::EventShapeDetectorType> eventPlaneAngleDetector{"eventPlaneAngleDetector", 0, "Detector used to estimate the event plane angle: 0 -> FT0C, 1 -> FT0A"};
-  o2::framework::Configurable<datatypes::EventShapeDetectorType> qvecDetector{"qvecDetector", 0, "Detector used to estimate the Q-vector: 0 -> FT0C, 1 -> FT0A"};
-  o2::framework::Configurable<datatypes::QvecHarmonicType> qvecHarmonic{"qvecHarmonic", 2, "Harmonic n of the Q-vector and event plane angle Psi_n: 2 -> elliptic, 3 -> triangular"};
+  o2::framework::Configurable<int> eventPlaneAngleDetector{"eventPlaneAngleDetector", 0, "Detector used to estimate the event plane angle: 0 -> FT0C, 1 -> FT0A"};
+  o2::framework::Configurable<int> qvecDetector{"qvecDetector", 0, "Detector used to estimate the Q-vector: 0 -> FT0C, 1 -> FT0A"};
+  o2::framework::Configurable<int> qvecHarmonic{"qvecHarmonic", 2, "Harmonic n of the Q-vector and event plane angle Psi_n: 2 -> elliptic, 3 -> triangular"};
 };
 
 struct ConfCcdb : o2::framework::ConfigurableGroup {
@@ -770,6 +770,7 @@ class CollisionBuilder
       collisionProducts.producedMultiplicityEstimators(
         col.multFT0A(),
         col.multFT0C(),
+        col.numContrib(),
         col.multNTracksPVeta1(),
         col.multNTracksPVetaHalf(),
         col.trackOccupancyInTimeRange(),

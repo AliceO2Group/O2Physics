@@ -27,6 +27,7 @@
 #include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/DataTypes.h>
 
 #include <cmath>
 #include <cstdint>
@@ -169,12 +170,14 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FColPos_001, "FCOLPOS", 1, //! full vertex po
 using FColPos = FColPos_001;
 
 // table for different multiplicity estimators
-DECLARE_SOA_TABLE_STAGED_VERSIONED(FColMults_001, "FCOLMULT", 1,   //! multiplicities
-                                   mult::MultFT0A, mult::MultFT0C, //! FIT detectors
-                                   mult::MultNTracksPVeta1,        //! number of PV contribs total
-                                   mult::MultNTracksPVetaHalf,     //! global track multiplicities
-                                   evsel::NumTracksInTimeRange,    //! occupancy (number of track in time range)
-                                   evsel::SumAmpFT0CInTimeRange);  //! occupancy (FT0C amplitude in time range)
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FColMults_001, "FCOLMULT", 1,  //! multiplicities
+                                   mult::MultFT0A,                //! FT0A detectors
+                                   mult::MultFT0C,                //! FT0C detectors
+                                   collision::NumContrib,         //! number of tracks used tto find PV
+                                   mult::MultNTracksPVeta1,       //! number of PV contribs total
+                                   mult::MultNTracksPVetaHalf,    //! global track multiplicities
+                                   evsel::NumTracksInTimeRange,   //! occupancy (number of tracks from different collisions in time range)
+                                   evsel::SumAmpFT0CInTimeRange); //! occupancy (FT0C amplitude in time range)
 using FColMults = FColMults_001;
 
 // table for different centrality (multiplicity percentile) estimators
