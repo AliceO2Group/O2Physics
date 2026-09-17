@@ -390,10 +390,6 @@ struct EmcalCorrectionTask {
       }
     }
 
-    auto hClusters = mHistManager.add<TH1>("hClusters", "hClusters", O2HistType::kTH1D, {{2, -0.5, 1.5}});
-    hClusters->GetXaxis()->SetBinLabel(1, "all clusters");
-    hClusters->GetXaxis()->SetBinLabel(2, "cross boundary cluster");
-
     // For some runs, LG cells require an extra time shift of 2 * 8.8ns due to problems in the time calibration
     // Affected run ranges (inclusive) are initialised here (min,max)
     mExtraTimeShiftRunRanges.emplace_back(535365, 535645); // LHC23g-LHC23h
@@ -538,7 +534,7 @@ struct EmcalCorrectionTask {
 
               // Store the clusters in the table where a matching collision could
               // be identified.
-              fillClusterTable<CollEventSels::filtered_iterator>(col, vertexPos, iClusterizer, cellIndicesBC, cells, &indexMapPair, &trackGlobalIndex, nullptr, nullptr);
+              fillClusterTable<CollEventSels::filtered_iterator>(col, vertexPos, iClusterizer, cellIndicesBC, &indexMapPair, &trackGlobalIndex, nullptr, nullptr);
             } else {
               mHistManager.fill(HIST("hBCMatchErrors"), 2);
             }
@@ -705,7 +701,7 @@ struct EmcalCorrectionTask {
 
               // Store the clusters in the table where a matching collision could
               // be identified.
-              fillClusterTable<CollEventSels::filtered_iterator>(col, vertexPos, iClusterizer, cellIndicesBC, cells, &indexMapPair, &trackGlobalIndex, &indexMapPairSecondary, &secondaryGlobalIndex);
+              fillClusterTable<CollEventSels::filtered_iterator>(col, vertexPos, iClusterizer, cellIndicesBC, &indexMapPair, &trackGlobalIndex, &indexMapPairSecondary, &secondaryGlobalIndex);
             } else {
               mHistManager.fill(HIST("hBCMatchErrors"), 2);
             }
@@ -904,7 +900,7 @@ struct EmcalCorrectionTask {
 
               // Store the clusters in the table where a matching collision could
               // be identified.
-              fillClusterTable<CollEventSels::filtered_iterator>(col, vertexPos, iClusterizer, cellIndicesBC, cells, &indexMapPair, &trackGlobalIndex);
+              fillClusterTable<CollEventSels::filtered_iterator>(col, vertexPos, iClusterizer, cellIndicesBC, &indexMapPair, &trackGlobalIndex);
             } else {
               mHistManager.fill(HIST("hBCMatchErrors"), 2);
             }
@@ -1103,7 +1099,7 @@ struct EmcalCorrectionTask {
 
               // Store the clusters in the table where a matching collision could
               // be identified.
-              fillClusterTable<CollEventSels::filtered_iterator>(col, vertexPos, iClusterizer, cellIndicesBC, cells, &indexMapPair, &trackGlobalIndex, &indexMapPairSecondary, &secondaryGlobalIndex);
+              fillClusterTable<CollEventSels::filtered_iterator>(col, vertexPos, iClusterizer, cellIndicesBC, &indexMapPair, &trackGlobalIndex, &indexMapPairSecondary, &secondaryGlobalIndex);
             } else {
               mHistManager.fill(HIST("hBCMatchErrors"), 2);
             }
@@ -1251,7 +1247,7 @@ struct EmcalCorrectionTask {
 
             // Store the clusters in the table where a matching collision could
             // be identified.
-            fillClusterTable<aod::Collision>(col, vertexPos, iClusterizer, cellIndicesBC, cells);
+            fillClusterTable<aod::Collision>(col, vertexPos, iClusterizer, cellIndicesBC);
           }
         } else { // ambiguous
           // LOG(warning) << "No vertex found for event. Assuming (0,0,0).";
@@ -1320,8 +1316,8 @@ struct EmcalCorrectionTask {
     LOG(debug) << "Converted to analysis clusters.";
   }
 
-  template <o2::soa::is_iterator Collision, o2::soa::is_table Cells>
-  void fillClusterTable(Collision const& col, math_utils::Point3D<float> const& vertexPos, size_t iClusterizer, const gsl::span<int64_t> cellIndicesBC, Cells const& cells, MatchResult* indexMapPair = nullptr, const std::vector<int64_t>* trackGlobalIndex = nullptr, MatchResult* indexMapPairSecondaries = nullptr, const std::vector<int64_t>* secondariesGlobalIndex = nullptr)
+  template <o2::soa::is_iterator Collision>
+  void fillClusterTable(Collision const& col, math_utils::Point3D<float> const& vertexPos, size_t iClusterizer, const gsl::span<int64_t> cellIndicesBC, MatchResult* indexMapPair = nullptr, const std::vector<int64_t>* trackGlobalIndex = nullptr, MatchResult* indexMapPairSecondaries = nullptr, const std::vector<int64_t>* secondariesGlobalIndex = nullptr)
   {
     // get the clusterType once
     const auto clusterType = static_cast<int>(mClusterDefinitions[iClusterizer]);
@@ -1359,38 +1355,14 @@ struct EmcalCorrectionTask {
                clusterType);
       dispersions(cluster.getDispersion());
       ++nCluster;
-      mHistManager.fill(HIST("hClusters"), 0);
       if (!mClusterLabels.empty()) {
         mcclusters(mClusterLabels[iCluster].getLabels(), mClusterLabels[iCluster].getEnergyFractions());
-      }
-      // loop over cells in cluster and save to table
-      bool hasLargeDispersion = cluster.getDispersion() > 8;
-      if (hasLargeDispersion) {
-        mHistManager.fill(HIST("hClusters"), 1);
-        LOG(info) << "Found cluster with large dispersion = " << cluster.getDispersion() << "\t M02 = " << cluster.getM02() << "\t NCells = " << cluster.getNCells();
       }
       for (int ncell = 0; ncell < cluster.getNCells(); ncell++) {
         cellindex = cluster.getCellIndex(ncell);
         LOG(debug) << "trying to find cell index " << cellindex << " in map";
         if (cellIndicesBC[cellindex] >= 0) {
           clustercells(clusters.lastIndex(), cellIndicesBC[cellindex]);
-          auto cellGlobalIndex = cellIndicesBC[cellindex];
-
-          if (hasLargeDispersion) {
-            auto theCell = cells.rawIteratorAt(cellGlobalIndex);
-            auto towerId = theCell.cellNumber();
-
-            auto [nSupMod, nModule, nIphi, nIeta] = geometry->GetCellIndex(towerId);
-            auto [iphiLocal, ietaLocal] = geometry->GetCellPhiEtaIndexInSModule(nSupMod, nModule, nIphi, nIeta);
-            auto [rowGlobal, colGlobal] = geometry->GlobalRowColFromIndex(towerId);
-
-            LOG(info) << "  Cell globalIndex = " << cellGlobalIndex
-                      << " towerId = " << towerId
-                      << " SM = " << nSupMod
-                      << " local(eta, phi) = (" << ietaLocal << ", " << iphiLocal << ")"
-                      << " global(eta, phi) = (" << colGlobal << ", " << rowGlobal << ")"
-                      << " E = " << theCell.amplitude();
-          }
           ++nCells;
         }
       } // end of cells of cluser loop
