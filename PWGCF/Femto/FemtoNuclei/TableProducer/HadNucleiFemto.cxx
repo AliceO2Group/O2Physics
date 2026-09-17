@@ -79,7 +79,7 @@ using std::array;
 
 using CollBracket = o2::math_utils::Bracket<int>;
 using HyperCandidates = aod::DataHypCandsWColl;
-using HyperCandidatesMC = aod::MCHypCands;
+using HyperCandidatesMC = aod::MCHypCandsWColl;
 using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::FT0Mults>;
 using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs, aod::FT0Mults>;
 using HadHyperCollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::FT0Mults>;
