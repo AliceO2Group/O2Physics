@@ -65,6 +65,8 @@ namespace o2::aod
 namespace hf_cand_bplustojpsik_lite
 {
 DECLARE_SOA_COLUMN(PtJpsi, ptJpsi, float);                                           //! Transverse momentum of Jpsi daughter candidate (GeV/c)
+DECLARE_SOA_COLUMN(PtJpsiDauPos, ptJpsiDauPos, float);                                 //! Transverse momentum of Jpsi positive daughter candidate (GeV/c)
+DECLARE_SOA_COLUMN(PtJpsiDauNeg, ptJpsiDauNeg, float);                                 //! Transverse momentum of Jpsi negative daughter candidate (GeV/c)
 DECLARE_SOA_COLUMN(PtBach, ptBach, float);                                           //! Transverse momentum of bachelor kaon (GeV/c)
 DECLARE_SOA_COLUMN(ItsNClsJpsiDauPos, itsNClsJpsiDauPos, int);                       //! Number of clusters in ITS
 DECLARE_SOA_COLUMN(TpcNClsCrossedRowsJpsiDauPos, tpcNClsCrossedRowsJpsiDauPos, int); //! Number of TPC crossed rows
@@ -149,11 +151,13 @@ DECLARE_SOA_TABLE(HfRedCandBpLites, "AOD", "HFREDCANDBPLITE", //! Table with som
                   hf_cand_bplustojpsik_lite::ImpactParameterJpsiDauPos,
                   hf_cand_bplustojpsik_lite::ImpactParameterJpsiDauNeg,
                   // Jpsi daughter features
+                  hf_cand_bplustojpsik_lite::PtJpsiDauPos,
                   hf_cand_bplustojpsik_lite::ItsNClsJpsiDauPos,
                   hf_cand_bplustojpsik_lite::TpcNClsCrossedRowsJpsiDauPos,
                   hf_cand_bplustojpsik_lite::ItsChi2NClJpsiDauPos,
                   hf_cand_bplustojpsik_lite::TpcChi2NClJpsiDauPos,
                   hf_cand_bplustojpsik_lite::AbsEtaJpsiDauPos,
+                  hf_cand_bplustojpsik_lite::PtJpsiDauNeg,
                   hf_cand_bplustojpsik_lite::ItsNClsJpsiDauNeg,
                   hf_cand_bplustojpsik_lite::TpcNClsCrossedRowsJpsiDauNeg,
                   hf_cand_bplustojpsik_lite::ItsChi2NClJpsiDauNeg,
@@ -366,6 +370,8 @@ struct HfTaskBplusToJpsiKReduced {
     auto const pVecMu0 = candidate.pVectorProng0();
     auto const pVecMu1 = candidate.pVectorProng1();
     auto ptJpsi = RecoDecay::pt(pVecMu0, pVecMu1);
+    auto ptMuPos = RecoDecay::pt(pVecMu0);
+    auto ptMuNeg = RecoDecay::pt(pVecMu1);
     auto invMassJpsi = RecoDecay::m(std::array{pVecMu0, pVecMu1}, std::array{o2::constants::physics::MassMuonPlus, o2::constants::physics::MassMuonMinus});
     uint8_t statusBplus = 0;
 
@@ -459,11 +465,13 @@ struct HfTaskBplusToJpsiKReduced {
         ptJpsi,
         candidate.impactParameter0(),
         candidate.impactParameter1(),
+        ptMuPos,
         candJpsi.itsNClsDauPos(),
         candJpsi.tpcNClsCrossedRowsDauPos(),
         candJpsi.itsChi2NClDauPos(),
         candJpsi.tpcChi2NClDauPos(),
         absEta(candJpsi.tglDauPos()),
+        ptMuNeg,
         candJpsi.itsNClsDauNeg(),
         candJpsi.tpcNClsCrossedRowsDauNeg(),
         candJpsi.itsChi2NClDauNeg(),
