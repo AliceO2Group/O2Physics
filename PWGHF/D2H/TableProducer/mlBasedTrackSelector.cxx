@@ -525,6 +525,7 @@ struct HfTrackSelectorTagSelTracks {
     features.itsNClsInnerBarrel = static_cast<float>(track.itsNClsInnerBarrel());
     features.itsChi2NCl = track.itsChi2NCl();
     features.tpcNClsFound = static_cast<float>(track.tpcNClsFound());
+    features.tpcNClsCrossedRows = static_cast<float>(track.tpcNClsCrossedRows());
     features.tpcCrossedRowsOverFindableCls = track.tpcCrossedRowsOverFindableCls();
     features.tpcChi2NCl = track.tpcChi2NCl();
     features.tpcFractionSharedCls = track.tpcFractionSharedCls();
