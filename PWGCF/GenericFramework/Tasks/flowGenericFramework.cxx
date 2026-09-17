@@ -123,18 +123,17 @@ struct FlowGenericFramework {
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Do correlations as function of Nch")
   O2_DEFINE_CONFIGURABLE(cfgUseNchCorrection, int, 1, "Use correction for Nch; 0: Use size of tracks table, 1: Use efficiency-corrected Nch values, 2: Use uncorrected Nch values");
   O2_DEFINE_CONFIGURABLE(cfgRunByRun, bool, false, "Use run-by-run NUA")
-  struct : ConfigurableGroup{
-             O2_DEFINE_CONFIGURABLE(cfgFillWeights, bool, false, "Fill NUA weights")
-               O2_DEFINE_CONFIGURABLE(cfgFillQA, bool, false, "Fill QA histograms")
-                 O2_DEFINE_CONFIGURABLE(cfgFillV0QA, bool, true, "Fill QA histograms for V0 reconstruction")
-                   O2_DEFINE_CONFIGURABLE(cfgFillRunByRunQA, bool, false, "Fill histograms on a run-by-run basis")} cfgFill;
+  struct : ConfigurableGroup {
+    O2_DEFINE_CONFIGURABLE(cfgFillWeights, bool, false, "Fill NUA weights");
+    O2_DEFINE_CONFIGURABLE(cfgFillQA, bool, false, "Fill QA histograms");
+    O2_DEFINE_CONFIGURABLE(cfgFillV0QA, bool, true, "Fill QA histograms for V0 reconstruction");
+    O2_DEFINE_CONFIGURABLE(cfgFillRunByRunQA, bool, false, "Fill histograms on a run-by-run basis");
+    O2_DEFINE_CONFIGURABLE(cfgAnalyseChargedHadrons, bool, true, "Store radial-flow and fraction outputs for charged tracks, pions, kaons, and protons");
+    O2_DEFINE_CONFIGURABLE(cfgAnalyseK0Lambda, bool, true, "Store radial-flow and fraction outputs for K0 and Lambda candidates");
+  } cfgFill;
   O2_DEFINE_CONFIGURABLE(cfgUseCentralMoments, bool, true, "Use central moments in vn-pt calculations")
   O2_DEFINE_CONFIGURABLE(cfgUsePID, bool, true, "Enable PID information")
   O2_DEFINE_CONFIGURABLE(cfgUseGapMethod, bool, false, "Use gap method in vn-pt calculations")
-  struct : ConfigurableGroup {
-    O2_DEFINE_CONFIGURABLE(cfgAnalyseChargedHadrons, bool, true, "Store radial-flow and fraction outputs for charged tracks, pions, kaons, and protons");
-    O2_DEFINE_CONFIGURABLE(cfgAnalyseK0Lambda, bool, true, "Store radial-flow and fraction outputs for K0 and Lambda candidates");
-  } cfgAnalysisChannels;
   struct : ConfigurableGroup {
     O2_DEFINE_CONFIGURABLE(cfgUsePtCorrWeights, bool, true, "Enable or disable the use of multiplicity-based event weighting for pt-pt correlations");
     O2_DEFINE_CONFIGURABLE(cfgUseMultiplicityFlowWeights, bool, true, "Enable or disable the use of multiplicity-based event weighting for azimuthal correlations");
@@ -535,7 +534,7 @@ struct FlowGenericFramework {
   void init(InitContext const&)
   {
     LOGF(info, "FlowGenericFramework::init()");
-    if (!cfgAnalysisChannels.cfgAnalyseChargedHadrons && !cfgAnalysisChannels.cfgAnalyseK0Lambda) {
+    if (!cfgFill.cfgAnalyseChargedHadrons && !cfgFill.cfgAnalyseK0Lambda) {
       LOGF(fatal, "Enable at least one radial-flow analysis channel");
     }
     gfwMemberCache.regions.SetNames(cfgRegions->GetNames());
@@ -741,11 +740,11 @@ struct FlowGenericFramework {
       AxisSpec axisLambdaMass = {resoSwitchVals[MassBins][Lambda], resoCutVals[MassMin][Lambda], resoCutVals[MassMax][Lambda]};
       AxisSpec yAxis = {100, -1, 1};
       // QA histograms for V0s
-      if (cfgAnalysisChannels.cfgAnalyseK0Lambda && cfgFill.cfgFillV0QA && (resoSwitchVals[UseParticle][K0] != 0 || resoSwitchVals[UseParticle][Lambda] != 0)) {
+      if (cfgFill.cfgAnalyseK0Lambda && cfgFill.cfgFillV0QA && (resoSwitchVals[UseParticle][K0] != 0 || resoSwitchVals[UseParticle][Lambda] != 0)) {
         registryQA.add("trackQA/after/etaV02", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
         registryQA.add("trackQA/after/etaV0", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
       }
-      if (cfgAnalysisChannels.cfgAnalyseK0Lambda && resoSwitchVals[UseParticle][K0] != 0) {
+      if (cfgFill.cfgAnalyseK0Lambda && resoSwitchVals[UseParticle][K0] != 0) {
         if (cfgFill.cfgFillV0QA) {
           registryQA.add("K0/PiPlusTPC_K0", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTPC}}});
           registryQA.add("K0/PiMinusTPC_K0", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTPC}}});
@@ -775,7 +774,7 @@ struct FlowGenericFramework {
         registryQA.get<TH1>(HIST("K0/hK0Count"))->GetXaxis()->SetBinLabel(FillV0DaughterTrackSelection, "v0 Daughter eta selection");
       }
 
-      if (cfgAnalysisChannels.cfgAnalyseK0Lambda && resoSwitchVals[UseParticle][Lambda] != 0) {
+      if (cfgFill.cfgAnalyseK0Lambda && resoSwitchVals[UseParticle][Lambda] != 0) {
         if (cfgFill.cfgFillV0QA) {
           registryQA.add("Lambda/PrPlusTPC_L", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTPC}}});
           registryQA.add("Lambda/PiMinusTPC_L", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTPC}}});
@@ -815,7 +814,7 @@ struct FlowGenericFramework {
     }
     if (!doprocessEfficiency) {
       if (doprocessData || doprocessRun2 || doprocessMCReco || doprocessMC) {
-        if (cfgAnalysisChannels.cfgAnalyseChargedHadrons) {
+        if (cfgFill.cfgAnalyseChargedHadrons) {
           registry.add("npt_v02_ch", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
           registry.add("npt_v02_pi", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
           registry.add("npt_v02_ka", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
@@ -825,7 +824,7 @@ struct FlowGenericFramework {
           registry.add("npt_v0_ka", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
           registry.add("npt_v0_pr", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
         }
-        if (cfgAnalysisChannels.cfgAnalyseK0Lambda) {
+        if (cfgFill.cfgAnalyseK0Lambda) {
           registry.add("npt_v02_K0_sig", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
           registry.add("npt_v02_K0_sb1", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
           registry.add("npt_v02_K0_sb2", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
@@ -841,7 +840,7 @@ struct FlowGenericFramework {
         }
       }
       if (doprocessMCGen || doprocessOnTheFly || doprocessMC) {
-        if (cfgAnalysisChannels.cfgAnalyseChargedHadrons) {
+        if (cfgFill.cfgAnalyseChargedHadrons) {
           registryGen.add("MCGen/npt_v02_ch", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
           registryGen.add("MCGen/npt_v02_pi", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
           registryGen.add("MCGen/npt_v02_ka", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
@@ -851,7 +850,7 @@ struct FlowGenericFramework {
           registryGen.add("MCGen/npt_v0_ka", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
           registryGen.add("MCGen/npt_v0_pr", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
         }
-        if (cfgAnalysisChannels.cfgAnalyseK0Lambda) {
+        if (cfgFill.cfgAnalyseK0Lambda) {
           registryGen.add("MCGen/npt_v02_K0_sig", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
           registryGen.add("MCGen/npt_v02_K0_sb1", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
           registryGen.add("MCGen/npt_v02_K0_sb2", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
@@ -875,7 +874,7 @@ struct FlowGenericFramework {
                                  "npt_v0_Lambda_sig", "npt_v0_Lambda_sb1", "npt_v0_Lambda_sb2"}) {
           const std::string source{name};
           const bool resonance = source.find("_K0") != std::string::npos || source.find("_Lambda") != std::string::npos;
-          if (resonance ? !cfgAnalysisChannels.cfgAnalyseK0Lambda : !cfgAnalysisChannels.cfgAnalyseChargedHadrons) {
+          if (resonance ? !cfgFill.cfgAnalyseK0Lambda : !cfgFill.cfgAnalyseChargedHadrons) {
             continue;
           }
           const std::string target = source + (source.rfind("npt_v02_", 0) == 0 ? "_w3pc" : "_w2pc");
@@ -896,7 +895,7 @@ struct FlowGenericFramework {
       histosNpt[setup][KaonID] = std::make_unique<TH1D>(Form("npt%sKa", setupName), "; #it{p}_{T} (GeV/#it{c}; Count)", ptAxis.binEdges.size() - 1, ptAxis.binEdges.data());
       histosNpt[setup][ProtonID] = std::make_unique<TH1D>(Form("npt%sPr", setupName), "; #it{p}_{T} (GeV/#it{c}; Count)", ptAxis.binEdges.size() - 1, ptAxis.binEdges.data());
 
-      if (cfgAnalysisChannels.cfgAnalyseK0Lambda) {
+      if (cfgFill.cfgAnalyseK0Lambda) {
         histosResoNpt[setup].resize(ResonanceCount);
         histosResoNpt[setup][K0Sideband1] = std::make_unique<TH1D>(Form("npt%sK0SB1", setupName), "; #it{p}_{T} (GeV/#it{c}; Count", ptAxis.binEdges.size() - 1, ptAxis.binEdges.data());
         histosResoNpt[setup][K0Signal] = std::make_unique<TH1D>(Form("npt%sK0Sig", setupName), "; #it{p}_{T} (GeV/#it{c}; Count", ptAxis.binEdges.size() - 1, ptAxis.binEdges.data());
@@ -946,16 +945,16 @@ struct FlowGenericFramework {
     fGFW->CreateRegions();
     auto oba = new TObjArray();
     addConfigObjectsToObjArray(oba, corrconfigs, 0, corrconfigs.size());
-    if (cfgAnalysisChannels.cfgAnalyseChargedHadrons) {
+    if (cfgFill.cfgAnalyseChargedHadrons) {
       addConfigObjectsToObjArray(oba, corrconfigsV02, 0, std::min<size_t>(SpeciesCount, corrconfigsV02.size()));
     }
-    if (cfgAnalysisChannels.cfgAnalyseK0Lambda) {
+    if (cfgFill.cfgAnalyseK0Lambda) {
       addConfigObjectsToObjArray(oba, corrconfigsV02, std::min<size_t>(SpeciesCount, corrconfigsV02.size()), corrconfigsV02.size());
     }
-    if (cfgAnalysisChannels.cfgAnalyseChargedHadrons) {
+    if (cfgFill.cfgAnalyseChargedHadrons) {
       addConfigObjectsToObjArray(oba, corrconfigsV0, 0, std::min<size_t>(SpeciesCount, corrconfigsV0.size()));
     }
-    if (cfgAnalysisChannels.cfgAnalyseK0Lambda) {
+    if (cfgFill.cfgAnalyseK0Lambda) {
       addConfigObjectsToObjArray(oba, corrconfigsV0, std::min<size_t>(SpeciesCount, corrconfigsV0.size()), corrconfigsV0.size());
     }
 
@@ -971,7 +970,7 @@ struct FlowGenericFramework {
       fFCpt->initialise(multAxis, cfgMpar, gfwMemberCache.configs, cfgNbootstrap);
       if (cfgEventWeight.cfgStoreCombinedFractionWeights) {
         for (const auto& name : {"mpt1_w2pc_ch", "mpt1_w2pc_pi", "mpt1_w2pc_ka", "mpt1_w2pc_pr"}) {
-          if (!cfgAnalysisChannels.cfgAnalyseChargedHadrons && std::string_view{name} != "mpt1_w2pc_ch") {
+          if (!cfgFill.cfgAnalyseChargedHadrons && std::string_view{name} != "mpt1_w2pc_ch") {
             continue;
           }
           if (!fFCpt->addPtProfile(name, 1)) {
@@ -993,7 +992,7 @@ struct FlowGenericFramework {
       fFCptGen->initialise(multAxis, cfgMpar, gfwMemberCache.configs, cfgNbootstrap);
       if (cfgEventWeight.cfgStoreCombinedFractionWeights) {
         for (const auto& name : {"mpt1_w2pc_ch", "mpt1_w2pc_pi", "mpt1_w2pc_ka", "mpt1_w2pc_pr"}) {
-          if (!cfgAnalysisChannels.cfgAnalyseChargedHadrons && std::string_view{name} != "mpt1_w2pc_ch") {
+          if (!cfgFill.cfgAnalyseChargedHadrons && std::string_view{name} != "mpt1_w2pc_ch") {
             continue;
           }
           if (!fFCptGen->addPtProfile(name, 1)) {
@@ -1661,7 +1660,7 @@ struct FlowGenericFramework {
   void fillCombinedFractionProfile(FractionSetup setup, int index, bool resonance, double pt, double centmult, double fraction, double weight)
   {
     if (!cfgEventWeight.cfgStoreCombinedFractionWeights || weight <= 0. ||
-        (resonance ? !cfgAnalysisChannels.cfgAnalyseK0Lambda : !cfgAnalysisChannels.cfgAnalyseChargedHadrons)) {
+        (resonance ? !cfgFill.cfgAnalyseK0Lambda : !cfgFill.cfgAnalyseChargedHadrons)) {
       return;
     }
     if (setup == FractionV02) {
@@ -1746,7 +1745,7 @@ struct FlowGenericFramework {
   template <DataType dt>
   void fillNptRegistry(FractionSetup setup, const float& centmult, const NptHistos& nptHistos, const NptDenominators& dns)
   {
-    if (!cfgAnalysisChannels.cfgAnalyseChargedHadrons || dns[ChargedID] <= 0) {
+    if (!cfgFill.cfgAnalyseChargedHadrons || dns[ChargedID] <= 0) {
       return;
     }
 
@@ -1865,18 +1864,18 @@ struct FlowGenericFramework {
     if (cfgEventWeight.cfgStoreCombinedFractionWeights && flowPtContainer->corrDen[1] > 0.) {
       constexpr std::array<const char*, SpeciesCount> ProfileNames = {"mpt1_w2pc_ch", "mpt1_w2pc_pi", "mpt1_w2pc_ka", "mpt1_w2pc_pr"};
       for (int species = 0; species < SpeciesCount; ++species) {
-        if (species != ChargedID && !cfgAnalysisChannels.cfgAnalyseChargedHadrons) {
+        if (species != ChargedID && !cfgFill.cfgAnalyseChargedHadrons) {
           continue;
         }
         flowPtContainer->fillPtProfile(ProfileNames[species], 1, centmult, flowPtContainer->corrDen[1] * dnsV0[species], rndm);
       }
     }
 
-    if (cfgAnalysisChannels.cfgAnalyseChargedHadrons && corrconfigsV02.size() < SpeciesCount) {
+    if (cfgFill.cfgAnalyseChargedHadrons && corrconfigsV02.size() < SpeciesCount) {
       return;
     }
 
-    if (cfgAnalysisChannels.cfgAnalyseChargedHadrons && dnsV02[ChargedID] > 0) {
+    if (cfgFill.cfgAnalyseChargedHadrons && dnsV02[ChargedID] > 0) {
       for (uint l_ind = 0; l_ind < SpeciesCount; ++l_ind) {
         for (int i = 1; i <= fPtAxis->GetNbins(); i++) {
           auto dnx = fGFW->Calculate(corrconfigsV02.at(l_ind), i - 1, kTRUE).real();
@@ -1895,7 +1894,7 @@ struct FlowGenericFramework {
       }
     }
 
-    if (!cfgAnalysisChannels.cfgAnalyseChargedHadrons) {
+    if (!cfgFill.cfgAnalyseChargedHadrons) {
       return;
     }
     if (corrconfigsV0.size() < SpeciesCount) {
@@ -1928,7 +1927,7 @@ struct FlowGenericFramework {
   template <DataType dt>
   void fillResonanceOutput(FractionSetup setup, const float& centmult, const double& rndm)
   {
-    if (!cfgAnalysisChannels.cfgAnalyseK0Lambda) {
+    if (!cfgFill.cfgAnalyseK0Lambda) {
       return;
     }
     auto& flowContainer = (dt == Gen) ? fFCgen : fFC;
@@ -2180,7 +2179,7 @@ struct FlowGenericFramework {
 
     fillOutputContainers<dt>((cfgUseNch) ? multiplicity : centrality, lRandom);
 
-    if (cfgAnalysisChannels.cfgAnalyseK0Lambda) {
+    if (cfgFill.cfgAnalyseK0Lambda) {
       // Reset fraction histograms per event
       for (const auto& vec : histosResoNpt) {
         for (const auto& h : vec) {
