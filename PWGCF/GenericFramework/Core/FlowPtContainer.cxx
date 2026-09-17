@@ -398,7 +398,6 @@ void FlowPtContainer::initialiseSubevent(const o2::framework::AxisSpec& axis, co
     LOGF(warning, "Multiplicity axis does not exist");
     return;
   }
-
   delete fSubList;
   fSubList = new TList();
   fSubList->SetOwner(kTRUE);
@@ -426,7 +425,6 @@ void FlowPtContainer::initialiseSubevent(const o2::framework::AxisSpec& axis, co
   for (const auto& name : histnames) {
     fSubList->Add(new BootstrapProfile(name.c_str(), this->GetTitle(), nMultiBins, multiBins.data()));
   }
-
   delete fSubCMList;
   fSubCMList = new TList();
   fSubCMList->SetOwner(kTRUE);
@@ -475,7 +473,6 @@ void FlowPtContainer::initialiseSubevent(int nbinsx, double* xbins, const int& m
   if (mpar == 0) {
     mpar = maxOrder;
   }
-
   delete fSubList;
   fSubList = new TList();
   fSubList->SetOwner(kTRUE);
@@ -503,7 +500,6 @@ void FlowPtContainer::initialiseSubevent(int nbinsx, double* xbins, const int& m
   for (const auto& name : histnames) {
     fSubList->Add(new BootstrapProfile(name.c_str(), this->GetTitle(), nbinsx, xbins));
   }
-
   delete fSubCMList;
   fSubCMList = new TList();
   fSubCMList->SetOwner(kTRUE);
@@ -579,7 +575,6 @@ void FlowPtContainer::initialiseSubevent(int nbinsx, double xlow, double xhigh, 
   for (const auto& name : histnames) {
     fSubList->Add(new BootstrapProfile(name.c_str(), this->GetTitle(), nbinsx, xlow, xhigh));
   }
-
   delete fSubCMList;
   fSubCMList = new TList();
   fSubCMList->SetOwner(kTRUE);
@@ -693,6 +688,45 @@ void FlowPtContainer::fillPtProfiles(const double& centmult, const double& rn)
       dynamic_cast<BootstrapProfile*>(fCorrList->At(m - 1))->FillProfile(centmult, corrNum[m] / corrDen[m], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : corrDen[m], rn);
     }
   }
+}
+bool FlowPtContainer::addPtProfile(const char* name, int observableOrder)
+{
+  if (!fCorrList || !name || (name[0] == 0) || observableOrder < 1 || observableOrder > mpar) {
+    LOGF(error, "Cannot add pT profile %s for order %d", name ? name : "(null)", observableOrder);
+    return false;
+  }
+  const std::string profileName{name};
+  if (fCorrList->FindObject(profileName.c_str())) {
+    LOGF(error, "pT profile %s already exists", profileName.c_str());
+    return false;
+  }
+  auto* original = dynamic_cast<BootstrapProfile*>(fCorrList->At(observableOrder - 1));
+  const auto* axis = original->GetXaxis();
+  BootstrapProfile* profile = nullptr;
+  if (axis->GetXbins()->GetSize() != 0) {
+    profile = new BootstrapProfile(profileName.c_str(), profileName.c_str(), axis->GetNbins(), axis->GetXbins()->GetArray());
+  } else {
+    profile = new BootstrapProfile(profileName.c_str(), profileName.c_str(), axis->GetNbins(), axis->GetXmin(), axis->GetXmax());
+  }
+  if (original->fListOfEntries) {
+    profile->InitializeSubsamples(original->fListOfEntries->GetEntries());
+  }
+  fCorrList->Add(profile);
+  return true;
+}
+bool FlowPtContainer::fillPtProfile(const char* name, int observableOrder, double mult, double eventWeight, double rn)
+{
+  if (!fCorrList || !name || observableOrder < 1 || observableOrder > mpar ||
+      static_cast<size_t>(observableOrder) >= corrDen.size() || corrDen[observableOrder] == 0. || eventWeight == 0.) {
+    return false;
+  }
+  auto* profile = dynamic_cast<BootstrapProfile*>(fCorrList->FindObject(name));
+  if (!profile) {
+    LOGF(error, "pT profile %s has not been booked", name);
+    return false;
+  }
+  profile->FillProfile(mult, corrNum[observableOrder] / corrDen[observableOrder], eventWeight, rn);
+  return true;
 }
 void FlowPtContainer::fillSubeventPtProfiles(const double& centmult, const double& rn)
 {

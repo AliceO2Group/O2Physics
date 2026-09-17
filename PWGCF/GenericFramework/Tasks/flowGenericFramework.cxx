@@ -878,7 +878,7 @@ struct FlowGenericFramework {
           if (resonance ? !cfgFill.cfgAnalyseK0Lambda : !cfgFill.cfgAnalyseChargedHadrons) {
             continue;
           }
-          const std::string target = source + (source.rfind("npt_v02_", 0) == 0 ? "_w3pc" : "_w2pc");
+          const std::string target = source + (source.starts_with("npt_v02_") ? "_w3pc" : "_w2pc");
           if (doprocessData || doprocessRun2 || doprocessMCReco || doprocessMC) {
             registry.addClone(source, target);
           }
@@ -1685,6 +1685,8 @@ struct FlowGenericFramework {
           case 5:
             fillFractionProfile<dt>(HIST("npt_v02_Lambda_sb2_w3pc"), HIST("MCGen/npt_v02_Lambda_sb2_w3pc"), pt, centmult, fraction, weight);
             break;
+          default:
+            return;
         }
       } else {
         switch (index) {
@@ -1700,6 +1702,8 @@ struct FlowGenericFramework {
           case 3:
             fillFractionProfile<dt>(HIST("npt_v02_pr_w3pc"), HIST("MCGen/npt_v02_pr_w3pc"), pt, centmult, fraction, weight);
             break;
+          default:
+            return;
         }
       }
     } else {
@@ -1723,6 +1727,8 @@ struct FlowGenericFramework {
           case 5:
             fillFractionProfile<dt>(HIST("npt_v0_Lambda_sb2_w2pc"), HIST("MCGen/npt_v0_Lambda_sb2_w2pc"), pt, centmult, fraction, weight);
             break;
+          default:
+            return;
         }
       } else {
         switch (index) {
@@ -1738,6 +1744,8 @@ struct FlowGenericFramework {
           case 3:
             fillFractionProfile<dt>(HIST("npt_v0_pr_w2pc"), HIST("MCGen/npt_v0_pr_w2pc"), pt, centmult, fraction, weight);
             break;
+          default:
+            return;
         }
       }
     }
