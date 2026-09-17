@@ -3340,7 +3340,7 @@ struct HStrangeCorrelation {
       return false;
     }
     if (fillHists) {
-      histos.fill(HIST("hEventSelection"), 3.5 /* collisions  after sel pvz sel*/);
+      histos.fill(HIST("hEventSelection"), 3.5 /* collisions  after sel centrality sel*/);
     }
 
     if (std::abs(collision.posZ()) > masterConfigurations.zVertexCut) {
