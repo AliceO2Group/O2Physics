@@ -99,6 +99,12 @@ DECLARE_SOA_COLUMN(NSigTpcTofMuJpsiDauPos, nSigTpcTofMuJpsiDauPos, float);      
 DECLARE_SOA_COLUMN(NSigTpcMuJpsiDauNeg, nSigTpcMuJpsiDauNeg, float);                 //! TPC Nsigma separation for Jpsi DauNeg with muon mass hypothesis
 DECLARE_SOA_COLUMN(NSigTofMuJpsiDauNeg, nSigTofMuJpsiDauNeg, float);                 //! TOF Nsigma separation for Jpsi DauNeg with muon mass hypothesis
 DECLARE_SOA_COLUMN(NSigTpcTofMuJpsiDauNeg, nSigTpcTofMuJpsiDauNeg, float);           //! Combined TPC and TOF Nsigma separation for Jpsi prong1 with muon mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcElJpsiDauPos, nSigTpcElJpsiDauPos, float);                 //! TPC Nsigma separation for Jpsi DauPos with electron mass hypothesis
+DECLARE_SOA_COLUMN(NSigTofElJpsiDauPos, nSigTofElJpsiDauPos, float);                 //! TOF Nsigma separation for Jpsi DauPos with electron mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcTofElJpsiDauPos, nSigTpcTofElJpsiDauPos, float);           //! Combined TPC and TOF Nsigma separation for Jpsi prong0 with electron mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcElJpsiDauNeg, nSigTpcElJpsiDauNeg, float);                 //! TPC Nsigma separation for Jpsi DauNeg with electron mass hypothesis
+DECLARE_SOA_COLUMN(NSigTofElJpsiDauNeg, nSigTofElJpsiDauNeg, float);                 //! TOF Nsigma separation for Jpsi DauNeg with electron mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcTofElJpsiDauNeg, nSigTpcTofElJpsiDauNeg, float);           //! Combined TPC and TOF Nsigma separation for Jpsi prong1 with electron mass hypothesis
 DECLARE_SOA_COLUMN(DecayLength, decayLength, float);                                 //! Decay length of candidate (cm)
 DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);                             //! Transverse decay length of candidate (cm)
 DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);             //! Normalised decay length of candidate
@@ -153,6 +159,18 @@ DECLARE_SOA_TABLE(HfRedCandBpLites, "AOD", "HFREDCANDBPLITE", //! Table with som
                   hf_cand_bplustojpsik_lite::ItsChi2NClJpsiDauNeg,
                   hf_cand_bplustojpsik_lite::TpcChi2NClJpsiDauNeg,
                   hf_cand_bplustojpsik_lite::AbsEtaJpsiDauNeg,
+                  hf_cand_bplustojpsik_lite::NSigTpcMuJpsiDauPos,
+                  hf_cand_bplustojpsik_lite::NSigTofMuJpsiDauPos,
+                  hf_cand_bplustojpsik_lite::NSigTpcTofMuJpsiDauPos,
+                  hf_cand_bplustojpsik_lite::NSigTpcMuJpsiDauNeg,
+                  hf_cand_bplustojpsik_lite::NSigTofMuJpsiDauNeg,
+                  hf_cand_bplustojpsik_lite::NSigTpcTofMuJpsiDauNeg,
+                  hf_cand_bplustojpsik_lite::NSigTpcElJpsiDauPos,
+                  hf_cand_bplustojpsik_lite::NSigTofElJpsiDauPos,
+                  hf_cand_bplustojpsik_lite::NSigTpcTofElJpsiDauPos,
+                  hf_cand_bplustojpsik_lite::NSigTpcElJpsiDauNeg,
+                  hf_cand_bplustojpsik_lite::NSigTofElJpsiDauNeg,
+                  hf_cand_bplustojpsik_lite::NSigTpcTofElJpsiDauNeg,
                   // kaon features
                   hf_cand_bplustojpsik_lite::PtBach,
                   hf_cand_bplustojpsik_lite::ImpactParameterLfTrack0,
@@ -243,6 +261,7 @@ struct HfTaskBplusToJpsiKReduced {
   o2::ccdb::CcdbApi ccdbApi;
 
   using TracksKaon = soa::Join<HfRedTracks, HfRedTracksPid>;
+  using JPsis = soa::Join<HfRedJpsis, HfRedJpsiDauPid>;
   std::vector<float> outputMl;
 
   // Filter filterSelectCandidates = (aod::hf_sel_candidate_bplus::isSelBplusToJpsiPi >= selectionFlagBplus);
@@ -337,12 +356,12 @@ struct HfTaskBplusToJpsiKReduced {
   /// \param candidatesJpsi is the table with Jpsi candidates
   template <bool DoMc, bool WithBplusMl, typename Cand>
   void fillCand(Cand const& candidate,
-                aod::HfRedJpsis const& /*candidatesJpsi*/,
+                JPsis const& /*candidatesJpsi*/,
                 aod::HfRedBach0Tracks const&)
   {
     auto ptCandBplus = candidate.pt();
     auto invMassBplus = HfHelper::invMassBplusToJpsiK(candidate, useJpsiPdgMass);
-    auto candJpsi = candidate.template jpsi_as<aod::HfRedJpsis>();
+    auto candJpsi = candidate.template jpsi_as<JPsis>();
     auto candKa = candidate.template bachKa_as<aod::HfRedBach0Tracks>();
     auto const pVecMu0 = candidate.pVectorProng0();
     auto const pVecMu1 = candidate.pVectorProng1();
@@ -450,6 +469,18 @@ struct HfTaskBplusToJpsiKReduced {
         candJpsi.itsChi2NClDauNeg(),
         candJpsi.tpcChi2NClDauNeg(),
         absEta(candJpsi.tglDauNeg()),
+        candJpsi.tpcNSigmaMuPos(),
+        candJpsi.tofNSigmaMuPos(),
+        candJpsi.tpcTofNSigmaMuPos(),
+        candJpsi.tpcNSigmaMuNeg(),
+        candJpsi.tofNSigmaMuNeg(),
+        candJpsi.tpcTofNSigmaMuNeg(),
+        candJpsi.tpcNSigmaElPos(),
+        candJpsi.tofNSigmaElPos(),
+        candJpsi.tpcTofNSigmaElPos(),
+        candJpsi.tpcNSigmaElNeg(),
+        candJpsi.tofNSigmaElNeg(),
+        candJpsi.tpcTofNSigmaElNeg(),
         // kaon features
         candidate.ptProng2(),
         candidate.impactParameter2(),
@@ -493,7 +524,7 @@ struct HfTaskBplusToJpsiKReduced {
 
   // Process functions
   void processData(aod::HfRedCandBplusToJpsiK const& candidates,
-                   aod::HfRedJpsis const& candidatesJpsi,
+                   JPsis const& candidatesJpsi,
                    aod::HfRedBach0Tracks const& kaonTracks)
   {
     for (const auto& candidate : candidates) {
@@ -506,7 +537,7 @@ struct HfTaskBplusToJpsiKReduced {
   PROCESS_SWITCH(HfTaskBplusToJpsiKReduced, processData, "Process data without ML for B+", true);
 
   void processDataWithBplusMl(aod::HfRedCandBplusToJpsiK const& candidates,
-                              aod::HfRedJpsis const& candidatesJpsi,
+                              JPsis const& candidatesJpsi,
                               aod::HfRedBach0Tracks const& kaonTracks)
   {
     for (const auto& candidate : candidates) {
@@ -520,7 +551,7 @@ struct HfTaskBplusToJpsiKReduced {
 
   void processMc(soa::Join<aod::HfRedCandBplusToJpsiK, aod::HfMcRecRedBps> const& candidates,
                  aod::HfMcGenRedBps const& mcParticles,
-                 aod::HfRedJpsis const& candidatesJpsi,
+                 JPsis const& candidatesJpsi,
                  aod::HfRedBach0Tracks const& kaonTracks)
   {
     // MC rec
@@ -540,7 +571,7 @@ struct HfTaskBplusToJpsiKReduced {
 
   void processMcWithBplusMl(soa::Join<aod::HfRedCandBplusToJpsiK, aod::HfMcRecRedBps> const& candidates,
                             aod::HfMcGenRedBps const& mcParticles,
-                            aod::HfRedJpsis const& candidatesJpsi,
+                            JPsis const& candidatesJpsi,
                             aod::HfRedBach0Tracks const& kaonTracks)
   {
     // MC rec
