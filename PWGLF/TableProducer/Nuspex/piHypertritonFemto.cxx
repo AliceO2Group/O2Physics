@@ -96,12 +96,14 @@ struct PiHypertritonFemto {
   Produces<aod::PiHypertritonFemtoTableMC> mOutputMCTable;
 
   struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
     std::string prefix{"eventMixing"};
     Configurable<float> settingCutVertex{"settingCutVertex", 10.0f, "Accepted z-vertex range"};
     Configurable<int> settingNoMixedEvents{"settingNoMixedEvents", 5, "Number of mixed events per event"};
   } eventMixing;
 
   struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
     std::string prefix{"eventSelection"};
     Configurable<bool> disableITSROFCut{"disableITSROFCut", false, "Disable the ITS readout-frame border cut for data, as in hyperRecoTask"};
     Configurable<bool> cfgEvSelkNoSameBunchPileup{"cfgEvSelkNoSameBunchPileup", false, "Reject collisions sharing the same found-by-T0 bunch crossing"};
@@ -109,6 +111,7 @@ struct PiHypertritonFemto {
   } eventSelection;
 
   struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
     std::string prefix{"pionTrack"};
     Configurable<float> settingCutEta{"settingCutEta", 0.8f, "Maximum pion track |eta|"};
     Configurable<float> settingPtMin{"settingPtMin", 0.14f, "Minimum pion pT"};
@@ -124,6 +127,7 @@ struct PiHypertritonFemto {
   } pionTrack;
 
   struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
     std::string prefix{"pionPid"};
     Configurable<float> settingMomCombMin{"settingMomCombMin", 0.5f, "Minimum momentum to use combined TPC+TOF pion PID"};
     Configurable<float> settingTPCNsigMax{"settingTPCNsigMax", 3.0f, "Maximum pion TPC n-sigma below the TOF threshold"};
@@ -132,6 +136,7 @@ struct PiHypertritonFemto {
   } pionPid;
 
   struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
     std::string prefix{"CPR"};
     Configurable<float> settingClosePairDeltaPhiMax{"settingClosePairDeltaPhiMax", 0.01f, "Average delta-phi-star ellipse semiaxis for the offline close-pair flag"};
     Configurable<float> settingClosePairDeltaEtaMax{"settingClosePairDeltaEtaMax", 0.01f, "Delta-eta ellipse semiaxis for the offline close-pair flag"};
@@ -139,35 +144,41 @@ struct PiHypertritonFemto {
   } CPR;
 
   struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
     std::string prefix{"mc"};
     Configurable<bool> settingRequireSel8{"settingRequireSel8", false, "Additionally require sel8 for reconstructed MC; TVX and timeframe border cuts always apply"};
     Configurable<bool> settingRequireRecoMCCollisionMatch{"settingRequireRecoMCCollisionMatch", true, "Require reconstructed collision MC labels"};
   } mc;
 
   struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
     std::string prefix{"hypertriton"};
     Configurable<float> settingHypMassMin{"settingHypMassMin", 2.94f, "Minimum hypertriton invariant mass"};
     Configurable<float> settingHypMassMax{"settingHypMassMax", 3.10f, "Maximum hypertriton invariant mass"};
   } hypertriton;
 
   struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
     std::string prefix{"output"};
     Configurable<bool> settingFillTable{"settingFillTable", false, "Enable output table filling"};
   } output;
 
   struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
     std::string prefix{"hadHyper"};
     Configurable<bool> enableMixing{"enableMixing", true, "Build mixed-event pion-hypertriton pairs"};
     Configurable<float> maxOutputKstar{"maxOutputKstar", -1.f, "Maximum pair k* (GeV/c); negative saves all selected pairs"};
   } hadHyper;
 
   struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
     std::string prefix{"zorro"};
     Configurable<bool> settingSkimmedProcessing{"settingSkimmedProcessing", false, "Skimmed dataset processing"};
     Configurable<std::string> settingTriggerMask{"settingTriggerMask", "fPiHypertritonFemto", "Zorro trigger mask"};
   } zorro;
 
   struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
     std::string prefix{"ccdb"};
     Configurable<std::string> settingCcdburl{"settingCcdburl", "http://alice-ccdb.cern.ch", "URL of the CCDB repository used by Zorro and the magnetic field"};
     Configurable<std::string> settingGrpmagPath{"settingGrpmagPath", "GLO/Config/GRPMagField", "CCDB path of the Run 3 magnetic field"};
