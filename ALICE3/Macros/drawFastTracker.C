@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file   drawFastTracker.C
+/// \author Nicolò Jacazio nicolo.jacazio@cern.ch
+/// \brief  Draw FastTracker performace
+
 #include "ALICE3/Core/FastTracker.h"
 #include "ALICE3/Core/TrackUtilities.h"
 
@@ -26,6 +30,7 @@
 #include <TH1.h>
 #include <TLatex.h>
 #include <TLorentzVector.h>
+#include <TPDGCode.h>
 #include <TParticlePDG.h>
 #include <TString.h>
 
@@ -34,67 +39,64 @@
 #include <cstddef>
 #include <vector>
 
-void drawFastTracker(float magneticField = 5.f, // in units of kGauss
-                     const int nch = 100,       // number of charged particles per unit rapidity
-                     const int pdg = 211)       // PDG code of the particle to track
+void drawFastTracker(const float magneticField = 20.f, // in units of kGauss
+                     const int nch = 100,              // number of charged particles per unit rapidity
+                     const int pdg = PDG_t::kPiPlus)   // PDG code of the particle to track
 {
   TDatabasePDG* db = TDatabasePDG::Instance();
-  TParticlePDG* p = 0;
+  TParticlePDG* p = nullptr;
   p = db->GetParticle(pdg);
   if (!p) {
     LOG(fatal) << "Particle with PDG code " << pdg << " not found in TDatabasePDG";
     return;
   }
-  const float mass = p->Mass();      // particle mass in GeV/c^2
-  const float q = p->Charge() / 3.0; // charge in e
+  const float mass = p->Mass();                    // particle mass in GeV/c^2
+  const int q = static_cast<int>(p->Charge() / 3); // charge in e
 
   o2::parameters::GRPMagField grpmag;
   grpmag.setFieldUniformity(true);
   grpmag.setL3Current(30000.f * (magneticField / 5.0f));
-  auto field = grpmag.getNominalL3Field();
+  // auto field = grpmag.getNominalL3Field();
   o2::base::Propagator::initFieldFromGRP(&grpmag);
 
   fair::Logger::SetVerbosity(fair::Verbosity::verylow);
   o2::fastsim::FastTracker fastTracker = o2::fastsim::FastTracker();
-  if (0) {
-    fastTracker.SetApplyEffCorrection(false);
-    Double_t x0IB = 0.001;
-    Double_t x0OB = 0.01;
-    Double_t xrhoIB = 2.3292e-02; // 100 mum Si
-    Double_t xrhoOB = 2.3292e-01; // 1000 mum Si
-    Double_t resRPhiIB = 0.00025;
-    Double_t resZIB = 0.00025;
-    Double_t resRPhiOB = 0.00100;
-    Double_t resZOB = 0.00100;
-    Double_t eff = 0.98;
-    // fastTracker.AddLayer("vertex", 0.0, 250, 0, 0);                // dummy vertex for matrix calculation
-    fastTracker.AddLayer("bpipe0", 0.48, 250, 0.00042, 2.772e-02); // 150 mum Be
-    fastTracker.AddLayer("B00", 0.50, 250, x0IB, xrhoIB, resRPhiIB, resZIB, eff, 1);
-    fastTracker.AddLayer("B01", 1.20, 250, x0IB, xrhoIB, resRPhiIB, resZIB, eff, 1);
-    fastTracker.AddLayer("B02", 2.50, 250, x0IB, xrhoIB, resRPhiIB, resZIB, eff, 1);
-    fastTracker.AddLayer("bpipe1", 3.7, 250, 0.0014, 9.24e-02); // 500 mum Be
-    fastTracker.AddLayer("B03", 3.75, 250, x0OB, xrhoOB, resRPhiOB, resZOB, eff, 1);
-    fastTracker.AddLayer("B04", 7.00, 250, x0OB, xrhoOB, resRPhiOB, resZOB, eff, 1);
-    fastTracker.AddLayer("B05", 12.0, 250, x0OB, xrhoOB, resRPhiOB, resZOB, eff, 1);
-    fastTracker.AddLayer("B06", 20.0, 250, x0OB, xrhoOB, resRPhiOB, resZOB, eff, 1);
-    fastTracker.AddLayer("B07", 30.0, 250, x0OB, xrhoOB, resRPhiOB, resZOB, eff, 1);
-    fastTracker.AddLayer("B08", 45.0, 250, x0OB, xrhoOB, resRPhiOB, resZOB, eff, 1);
-    fastTracker.AddLayer("B09", 60.0, 250, x0OB, xrhoOB, resRPhiOB, resZOB, eff, 1);
-    fastTracker.AddLayer("B10", 80.0, 250, x0OB, xrhoOB, resRPhiOB, resZOB, eff, 1);
-    fastTracker.AddLayer("B11", 100., 250, x0OB, xrhoOB, resRPhiOB, resZOB, eff, 1);
-  } else {
-    std::vector<float> pixelRes{0.025, 0.025, 0.01, 0.01};
-    // fastTracker.AddSiliconALICE3v4(pixelRes); // FIXME
-  }
+  fastTracker.setApplyEffCorrection(false);
+  Double_t x0IB = 0.001;
+  Double_t x0OB = 0.01;
+  Double_t xrhoIB = 2.3292e-02; // 100 mum Si
+  Double_t xrhoOB = 2.3292e-01; // 1000 mum Si
+  Double_t resRPhiIB = 0.00025;
+  Double_t resZIB = 0.00025;
+  Double_t resRPhiOB = 0.00100;
+  Double_t resZOB = 0.00100;
+  Double_t trackerEff = 0.98;
+  // fastTracker.AddLayer("vertex", 0.0, 250, 0, 0);                // dummy vertex for matrix calculation
 
-  fastTracker.Print();
-  fastTracker.SetMagneticField(magneticField);
+  // N.B. Tracker configuration outdated and is only meant to be used as a template
+  fastTracker.addLayer("bpipe0", 0.48, 250, 0.00042, 2.772e-02); // 150 mum Be
+  fastTracker.addLayer("B00", 0.50, 250, x0IB, xrhoIB, resRPhiIB, resZIB, trackerEff, 1);
+  fastTracker.addLayer("B01", 1.20, 250, x0IB, xrhoIB, resRPhiIB, resZIB, trackerEff, 1);
+  fastTracker.addLayer("B02", 2.50, 250, x0IB, xrhoIB, resRPhiIB, resZIB, trackerEff, 1);
+  fastTracker.addLayer("bpipe1", 3.7, 250, 0.0014, 9.24e-02); // 500 mum Be
+  fastTracker.addLayer("B03", 3.75, 250, x0OB, xrhoOB, resRPhiOB, resZOB, trackerEff, 1);
+  fastTracker.addLayer("B04", 7.00, 250, x0OB, xrhoOB, resRPhiOB, resZOB, trackerEff, 1);
+  fastTracker.addLayer("B05", 12.0, 250, x0OB, xrhoOB, resRPhiOB, resZOB, trackerEff, 1);
+  fastTracker.addLayer("B06", 20.0, 250, x0OB, xrhoOB, resRPhiOB, resZOB, trackerEff, 1);
+  fastTracker.addLayer("B07", 30.0, 250, x0OB, xrhoOB, resRPhiOB, resZOB, trackerEff, 1);
+  fastTracker.addLayer("B08", 45.0, 250, x0OB, xrhoOB, resRPhiOB, resZOB, trackerEff, 1);
+  fastTracker.addLayer("B09", 60.0, 250, x0OB, xrhoOB, resRPhiOB, resZOB, trackerEff, 1);
+  fastTracker.addLayer("B10", 80.0, 250, x0OB, xrhoOB, resRPhiOB, resZOB, trackerEff, 1);
+  fastTracker.addLayer("B11", 100., 250, x0OB, xrhoOB, resRPhiOB, resZOB, trackerEff, 1);
+
+  fastTracker.print();
+  fastTracker.setMagneticField(magneticField);
 
   TAxis ptBinning(1000, 0., 10);
-  TGraph* gPt = new TGraph();
+  auto gPt = new TGraph();
   gPt->GetXaxis()->SetTitle("#it{p}_{T} (GeV/c)");
   gPt->GetYaxis()->SetTitle("Efficiency");
-  TEfficiency* hEfficiency = new TEfficiency("hEfficiency", ";#it{p}_{T} (GeV/c);Efficiency", ptBinning.GetNbins(), ptBinning.GetBinLowEdge(1), ptBinning.GetBinUpEdge(ptBinning.GetNbins()));
+  auto hEfficiency = new TEfficiency("hEfficiency", ";#it{p}_{T} (GeV/c);Efficiency", ptBinning.GetNbins(), ptBinning.GetBinLowEdge(1), ptBinning.GetBinUpEdge(ptBinning.GetNbins()));
   TH1F* hFastTrackerQA = new TH1F("hFastTrackerQA", ";#it{p}_{T} (GeV/c;Tracking code", ptBinning.GetNbins(), ptBinning.GetBinLowEdge(1), ptBinning.GetBinUpEdge(ptBinning.GetNbins()));
 
   TLorentzVector tlv;
@@ -120,11 +122,12 @@ void drawFastTracker(float magneticField = 5.f, // in units of kGauss
       continue;
     }
 
-    for (int trial = 0; trial < 200; trial++) {
-      hEfficiency->Fill(fastTracker.FastTrack(trkIn, trkOut, nch) > 0, pt);
+    const int nTrials = 200;
+    for (int trial = 0; trial < nTrials; trial++) {
+      hEfficiency->Fill(fastTracker.fastTrack(trkIn, trkOut, nch) > 0, pt);
     }
     int status = 4;
-    status = fastTracker.FastTrack(trkIn, trkOut, nch);
+    status = fastTracker.fastTrack(trkIn, trkOut, nch);
     hFastTrackerQA->Fill(pt, status);
     if (status < 0) {
       LOG(debug) << " --- fatSolve: FastTrack failed with status " << status << " --- ";
@@ -134,12 +137,12 @@ void drawFastTracker(float magneticField = 5.f, // in units of kGauss
     }
     // define the efficiency
     float eff = 1.;
-    for (size_t l = 1; l < fastTracker.GetNLayers(); ++l) {
-      if (fastTracker.IsLayerInert(l)) {
+    for (size_t l = 1; l < fastTracker.getNLayers(); ++l) {
+      if (fastTracker.isLayerInert(l)) {
         continue; // skip inert layers
       }
       float igoodhit = 0.f;
-      igoodhit = fastTracker.GetGoodHitProb(l);
+      igoodhit = fastTracker.getGoodHitProb(l);
       if (igoodhit <= 0.) {
         continue;
       }

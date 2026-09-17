@@ -469,6 +469,10 @@ if(FastJet_FOUND)
                         REUSE_FROM JetSubstructureHFPCH
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-correlation-dmeson
+                        SOURCES jetCorrelationDmeson.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(hf-debug
                         SOURCES hfDebug.cxx
                         REUSE_FROM JetSubstructureHFOutputPCH

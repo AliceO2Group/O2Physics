@@ -142,7 +142,7 @@ bool isV0Particle(T const& particles, U const& particle, bool v0ChargedDecaysOnl
   if (v0ChargedDecaysOnly) {
     return RecoDecay::isMatchedMCGen(particles, particle, +kK0Short, std::array{+kPiPlus, -kPiPlus}, true) || RecoDecay::isMatchedMCGen(particles, particle, +kLambda0, std::array{+kProton, -kPiPlus}, true) || RecoDecay::isMatchedMCGen(particles, particle, -kLambda0, std::array{-kProton, +kPiPlus}, true);
   } else {
-    return RecoDecay::isMatchedMCGen(particles, particle, +kK0Short, std::array{+kPiPlus, -kPiPlus}, true) || RecoDecay::isMatchedMCGen(particles, particle, +kK0Short, std::array{+kPi0, +kPi0}, true) || RecoDecay::isMatchedMCGen(particles, particle, +kLambda0, std::array{+kProton, -kPiPlus}, true) || RecoDecay::isMatchedMCGen(particles, particle, +kLambda0, std::array{+kNeutron, +kPi0}, true) || RecoDecay::isMatchedMCGen(particles, particle, -kLambda0, std::array{-kProton, +kPiPlus}, true) || RecoDecay::isMatchedMCGen(particles, particle, -kLambda0, std::array{+kNeutron, +kPi0}, true);
+    return RecoDecay::isMatchedMCGen(particles, particle, +kK0Short, std::array{+kPiPlus, -kPiPlus}, true) || RecoDecay::isMatchedMCGen(particles, particle, +kK0Short, std::array{+kPi0, +kPi0}, true) || RecoDecay::isMatchedMCGen(particles, particle, +kLambda0, std::array{+kProton, -kPiPlus}, true) || RecoDecay::isMatchedMCGen(particles, particle, +kLambda0, std::array{+kNeutron, +kPi0}, true) || RecoDecay::isMatchedMCGen(particles, particle, -kLambda0, std::array{-kProton, +kPiPlus}, true) || RecoDecay::isMatchedMCGen(particles, particle, -kLambda0, std::array{-kNeutron, +kPi0}, true);
   }
 }
 
@@ -181,6 +181,32 @@ uint8_t setV0ParticleDecayBit(T const& particles, U const& particle)
     SETBIT(bit, JV0ParticleDecays::LambdaToPPi);
   }
   return bit;
+}
+
+// need to update this
+template <typename T, typename U, typename V>
+void fillV0CandidateTable(T const& candidate, U& V0CoresTable, V& V0SignalFlagsTable)
+{
+
+  V0CoresTable(
+    candidate.x(),
+    candidate.y(),
+    candidate.z(),
+    candidate.pxpos(),
+    candidate.pypos(),
+    candidate.pzpos(),
+    candidate.pxneg(),
+    candidate.pyneg(),
+    candidate.pzneg(),
+    candidate.dcaV0daughters(),
+    candidate.dcapostopv(),
+    candidate.dcanegtopv(),
+    candidate.v0cosPA(),
+    candidate.dcav0topv(),
+    candidate.v0Type());
+
+  V0SignalFlagsTable(
+    candidate.signalFlag());
 }
 
 }; // namespace jetv0utilities

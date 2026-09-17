@@ -126,7 +126,7 @@ struct NetProtonCumulants_Table_QA {
     //! centrality cut
     if (cent > 0.0f && cent < 90.0f) {
 
-      for (auto track : inputTracks) { //! Loop over tracks
+      for (const auto& track : inputTracks) { //! Loop over tracks
         histos.fill(HIST("hPtAll"), track.pt());
         histos.fill(HIST("hEtaAll"), track.eta());
         histos.fill(HIST("hPhiAll"), track.phi());
