@@ -197,6 +197,8 @@ struct HfFragmentationFunction {
 
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
+  Configurable<bool> applyMcEventSelection{"applyMcEventSelection", false, "Choose a boolean value"};
+  Configurable<bool> applyRecoEventSelection{"applyRecoEventSelection", true, "Choose a boolean value"};
 
   std::vector<int> eventSelectionBits;
 
@@ -244,7 +246,7 @@ struct HfFragmentationFunction {
   {
     // apply event selection and fill histograms for sanity check
     registry.fill(HIST("h_collision_counter"), 2.0);
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || !(std::abs(collision.posZ()) < vertexZCut)) {
+    if (applyRecoEventSelection && (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || !(std::abs(collision.posZ()) < vertexZCut))) {
       return;
     }
     registry.fill(HIST("h_collision_counter"), 3.0);
@@ -320,7 +322,7 @@ struct HfFragmentationFunction {
 
       registry.fill(HIST("h_collision_counter"), 0.0);
       // skip collisions outside of |z| < vertexZCut
-      if (!jetderiveddatautilities::selectCollision(mccollision, eventSelectionBits) || !(std::abs(mccollision.posZ()) < vertexZCut)) {
+      if (applyMcEventSelection && (!jetderiveddatautilities::selectCollision(mccollision, eventSelectionBits) || !(std::abs(mccollision.posZ()) < vertexZCut))) {
         continue;
       }
       registry.fill(HIST("h_collision_counter"), 1.0);
@@ -330,7 +332,7 @@ struct HfFragmentationFunction {
       for (const auto& collision : collisionsPerMCCollision) {
 
         registry.fill(HIST("h_collision_counter"), 2.0);
-        if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || !(std::abs(collision.posZ()) < vertexZCut)) {
+        if (applyRecoEventSelection && (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || !(std::abs(collision.posZ()) < vertexZCut))) {
           continue;
         }
         registry.fill(HIST("h_collision_counter"), 3.0);
@@ -404,7 +406,7 @@ struct HfFragmentationFunction {
     for (const auto& mccollision : mccollisions) {
       registry.fill(HIST("h_collision_counter"), 0.0);
       // skip collisions outside of |z| < vertexZCut
-      if (!jetderiveddatautilities::selectCollision(mccollision, eventSelectionBits) || !(std::abs(mccollision.posZ()) < vertexZCut)) {
+      if (applyMcEventSelection && (!jetderiveddatautilities::selectCollision(mccollision, eventSelectionBits) || !(std::abs(mccollision.posZ()) < vertexZCut))) {
         continue;
       }
       registry.fill(HIST("h_collision_counter"), 1.0);
@@ -428,7 +430,7 @@ struct HfFragmentationFunction {
             // apply collision sel8 selection on detector level jet's collision
             const auto& collision = collisions.iteratorAt(mcdjet.collisionId());
             registry.fill(HIST("h_collision_counter"), 2.0);
-            if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || !(std::abs(collision.posZ()) < vertexZCut)) {
+            if (applyRecoEventSelection && (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || !(std::abs(collision.posZ()) < vertexZCut))) {
               continue;
             }
             registry.fill(HIST("h_collision_counter"), 3.0);
