@@ -2882,8 +2882,8 @@ struct HStrangeCorrelation {
     }
     if (!masterConfigurations.doPPAnalysis) {
       // event selections in Pb-Pb
-      histos.add("hEventSelection", "hEventSelection", kTH1F, {{10, 0, 10}});
-      std::array<TString, 10> eventSelLabel = {"all", "sel8", "kIsTriggerTVX", "PV_{z}", "kIsGoodITSLayersAll", "kIsGoodZvtxFT0vsPV", "OccupCut", "kNoTimeFrameBorder", "kNoITSROFrameBorder", "kNoSameBunchPileup "};
+      histos.add("hEventSelection", "hEventSelection", kTH1F, {{11, 0, 11}});
+      std::array<TString, 11> eventSelLabel = {"all", "sel8", "kIsTriggerTVX", "PV_{z}", "Cent", "kIsGoodITSLayersAll", "kIsGoodZvtxFT0vsPV", "OccupCut", "kNoTimeFrameBorder", "kNoITSROFrameBorder", "kNoSameBunchPileup "};
       for (int i = 1; i <= histos.get<TH1>(HIST("hEventSelection"))->GetNbinsX(); i++) {
         histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(i, eventSelLabel[i - 1].Data());
       }
@@ -3336,11 +3336,18 @@ struct HStrangeCorrelation {
       histos.fill(HIST("hEventSelection"), 2.5 /* FT0 vertex (acceptable FT0C-FT0A time difference) collisions */);
     }
 
-    if (std::abs(collision.posZ()) > masterConfigurations.zVertexCut) {
+    if (collision.centFT0C() > axisRanges[5][1] || collision.centFT0C() < axisRanges[5][0]) {
       return false;
     }
     if (fillHists) {
       histos.fill(HIST("hEventSelection"), 3.5 /* collisions  after sel pvz sel*/);
+    }
+
+    if (std::abs(collision.posZ()) > masterConfigurations.zVertexCut) {
+      return false;
+    }
+    if (fillHists) {
+      histos.fill(HIST("hEventSelection"), 4.5 /* collisions  after sel pvz sel*/);
     }
 
     if (!collision.selection_bit(aod::evsel::kIsGoodITSLayersAll) && masterConfigurations.requireAllGoodITSLayers) {
@@ -3348,7 +3355,7 @@ struct HStrangeCorrelation {
       return false;
     }
     if (fillHists) {
-      histos.fill(HIST("hEventSelection"), 4.5 /* collisions  after cut time intervals with dead ITS staves*/);
+      histos.fill(HIST("hEventSelection"), 5.5 /* collisions  after cut time intervals with dead ITS staves*/);
     }
 
     if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV) && masterConfigurations.requireGoodZvtxFT0vsPV) {
@@ -3357,7 +3364,7 @@ struct HStrangeCorrelation {
       return false;
     }
     if (fillHists) {
-      histos.fill(HIST("hEventSelection"), 5.5 /* removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference*/);
+      histos.fill(HIST("hEventSelection"), 6.5 /* removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference*/);
     }
 
     auto occupancy = collision.trackOccupancyInTimeRange();
@@ -3365,7 +3372,7 @@ struct HStrangeCorrelation {
       return false;
     }
     if (fillHists) {
-      histos.fill(HIST("hEventSelection"), 6.5 /* Below min occupancy and Above max occupancy*/);
+      histos.fill(HIST("hEventSelection"), 7.5 /* Below min occupancy and Above max occupancy*/);
     }
 
     /*
@@ -3381,7 +3388,7 @@ struct HStrangeCorrelation {
       return false;
     }
     if (fillHists) {
-      histos.fill(HIST("hEventSelection"), 7.5 /* reject collisions close to Time Frame borders*/);
+      histos.fill(HIST("hEventSelection"), 8.5 /* reject collisions close to Time Frame borders*/);
     }
 
     if (!collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
@@ -3390,7 +3397,7 @@ struct HStrangeCorrelation {
       return false;
     }
     if (fillHists) {
-      histos.fill(HIST("hEventSelection"), 8.5 /* reject events affected by the ITS ROF border*/);
+      histos.fill(HIST("hEventSelection"), 9.5 /* reject events affected by the ITS ROF border*/);
     }
 
     if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
@@ -3399,7 +3406,7 @@ struct HStrangeCorrelation {
       return false;
     }
     if (fillHists) {
-      histos.fill(HIST("hEventSelection"), 9.5 /* rejects collisions which are associated with the same "found-by-T0" bunch crossing*/);
+      histos.fill(HIST("hEventSelection"), 10.5 /* rejects collisions which are associated with the same "found-by-T0" bunch crossing*/);
     }
     return true;
   }
@@ -6402,12 +6409,12 @@ struct HStrangeCorrelation {
     }
   }
 
-  void processFeedDown(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>::iterator const& collision, aod::AssocV0s const& associatedV0s, aod::McParticles const&, V0DatasWithoutTrackXMC const&, TracksComplete const&, aod::BCsWithTimestamps const&)
+  void processFeedDown(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::PVMults>::iterator const& collision, aod::AssocV0s const& associatedV0s, aod::McParticles const&, V0DatasWithoutTrackXMC const&, TracksComplete const&, aod::BCsWithTimestamps const&)
   {
 
     // ________________________________________________
     // Perform basic event selection
-    if (!isCollisionSelected(collision)) {
+    if (!(masterConfigurations.doPPAnalysis ? isCollisionSelected(collision) : isCollisionSelectedPbPb(collision, false))) {
       return;
     }
 
@@ -6420,7 +6427,9 @@ struct HStrangeCorrelation {
       if (postrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated || negtrack.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated) {
         continue;
       }
-
+      if (trackSelection.requireClusterInITS && (postrack.itsNCls() < trackSelection.minITSClustersForDaughterTracks || negtrack.itsNCls() < trackSelection.minITSClustersForDaughterTracks)) {
+        continue;
+      }
       //---] syst cuts [---
       if (v0Data.v0radius() < v0Selection.v0RadiusMin || v0Data.v0radius() > v0Selection.v0RadiusMax ||
           std::abs(v0Data.dcapostopv()) < v0Selection.dcapostopv || std::abs(v0Data.dcanegtopv()) < v0Selection.dcanegtopv ||
