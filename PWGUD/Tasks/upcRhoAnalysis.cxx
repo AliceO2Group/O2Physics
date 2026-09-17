@@ -270,7 +270,7 @@ struct UpcRhoAnalysis {
 
   void init(o2::framework::InitContext& context)
   {
-    if (context.mOptions.get<bool>("processSGdata") || context.mOptions.get<bool>("processDGdata")) {
+    if (context.mOptions.get<bool>("processSGdata") || context.mOptions.get<bool>("processDGdata") || context.mOptions.get<bool>("processMcRecoWithTruth")) {
       // QA
       // collisions
       rQC.add("QC/collisions/all/hPosXY", ";vertex #it{x} (cm);vertex #it{y} (cm);counts", kTH2D, {{2000, -0.1, 0.1}, {2000, -0.1, 0.1}});
@@ -394,7 +394,7 @@ struct UpcRhoAnalysis {
       rSystem.addClone("system/selected/AnAn/", "system/selected/XnXn/");
     }
 
-    if (context.mOptions.get<bool>("processMCdata") || context.mOptions.get<bool>("processMCdataWithBCs")) {
+    if (context.mOptions.get<bool>("processMCdata") || context.mOptions.get<bool>("processMCdataWithBCs") || context.mOptions.get<bool>("processMcRecoWithTruth")) {
       // MC
       // collisions
       rMC.add("MC/collisions/hPosXY", ";vertex #it{x} (cm);vertex #it{y} (cm);counts", kTH2D, {{2000, -0.1, 0.1}, {2000, -0.1, 0.1}});
@@ -1266,6 +1266,48 @@ struct UpcRhoAnalysis {
                    pt(subleadingRecoPion.px(), subleadingRecoPion.py()), eta(subleadingRecoPion.px(), subleadingRecoPion.py(), subleadingRecoPion.pz()), phi(subleadingRecoPion.px(), subleadingRecoPion.py()));
   }
   PROCESS_SWITCH(UpcRhoAnalysis, processResolution, "check resolution of kinematic variables", false);
+
+  void processMcRecoWithTruth(soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras, aod::UDZdcsReduced, aod::SGCollisions, aod::UDMcCollsLabels>::iterator const& collision, soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags, aod::UDMcTrackLabels> const& tracks, aod::UDMcCollisions const&, aod::UDMcParticles const&)
+  {
+    // basically just runs the analysis as for normal data but also accesses the MC truth information for the tracks and collisions
+    auto mcCollision = collision.udMcCollision();
+    const int runIndex = -1; // we don't care here
+    if (cutGapSide && collision.gapSide() != gapSide)
+      return;
+    if (!collisionPassesCuts(collision, runIndex)) // apply collision cuts
+      return;
+
+    std::vector<decltype(tracks.begin())> recoTracks; // store selected tracks
+    std::vector<decltype(tracks.begin().udMcParticle())> trueTracks;
+    for (const auto& track : tracks) {
+      fillTrackQcHistos<0>(track); // fill QC histograms before cuts
+
+      if (!trackPassesCuts(track, runIndex)) // apply track cuts
+        continue;
+      recoTracks.push_back(track);
+      if (track.has_udMcParticle())
+        trueTracks.push_back(track.udMcParticle());
+    }
+    if (static_cast<int>(recoTracks.size()) != nExpectedPions || static_cast<int>(trueTracks.size()) != nExpectedPions) // further consider only two pion systems
+      return;
+    if (applyPid && !tracksPassPID(recoTracks)) // apply PID cut before creating derived data if desired
+      return;
+    
+    auto leadingTruePion = momentum(trueTracks[0].px(), trueTracks[0].py(), trueTracks[0].pz()) > momentum(trueTracks[1].px(), trueTracks[1].py(), trueTracks[1].pz()) ? trueTracks[0] : trueTracks[1];
+    auto subleadingTruePion = (leadingTruePion == trueTracks[0]) ? trueTracks[1] : trueTracks[0];
+    auto leadingRecoPion = momentum(recoTracks[0].px(), recoTracks[0].py(), recoTracks[0].pz()) > momentum(recoTracks[1].px(), recoTracks[1].py(), recoTracks[1].pz()) ? recoTracks[0] : recoTracks[1];
+    auto subleadingRecoPion = (leadingRecoPion == recoTracks[0]) ? recoTracks[1] : recoTracks[0];
+
+    resolutionTree(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
+                   collision.posX(), collision.posY(), collision.posZ(),
+                   collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
+                   collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC(),
+                   leadingTruePion.pdgCode() / std::abs(leadingTruePion.pdgCode()), pt(leadingTruePion.px(), leadingTruePion.py()), eta(leadingTruePion.px(), leadingTruePion.py(), leadingTruePion.pz()), phi(leadingTruePion.px(), leadingTruePion.py()),
+                   pt(leadingRecoPion.px(), leadingRecoPion.py()), eta(leadingRecoPion.px(), leadingRecoPion.py(), leadingRecoPion.pz()), phi(leadingRecoPion.px(), leadingRecoPion.py()),
+                   subleadingTruePion.pdgCode() / std::abs(subleadingTruePion.pdgCode()), pt(subleadingTruePion.px(), subleadingTruePion.py()), eta(subleadingTruePion.px(), subleadingTruePion.py(), subleadingTruePion.pz()), phi(subleadingTruePion.px(), subleadingTruePion.py()),
+                   pt(subleadingRecoPion.px(), subleadingRecoPion.py()), eta(subleadingRecoPion.px(), subleadingRecoPion.py(), subleadingRecoPion.pz()), phi(subleadingRecoPion.px(), subleadingRecoPion.py()));
+  }
+  PROCESS_SWITCH(UpcRhoAnalysis, processMcRecoWithTruth, "process MC reco with access to MC truth", false);
 
   void processCollisionRecoCheck(aod::UDMcCollision const& /* mcCollision */, soa::SmallGroups<soa::Join<aod::UDMcCollsLabels, aod::UDCollisions>> const& collisions)
   {
