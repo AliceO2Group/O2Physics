@@ -1115,7 +1115,7 @@ struct RadialFlowDecorr {
   // ===========================================================================
   void init(InitContext&)
   {
-    TH1::SetDefaultSumw2(kTRUE);
+    TH1::SetDefaultSumw2(true);
     // Nch axes by system
     if (cfgSys == kPbPb) {
       nChAxis = {cfgNchPbMax / 2, KBinOffset, cfgNchPbMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
