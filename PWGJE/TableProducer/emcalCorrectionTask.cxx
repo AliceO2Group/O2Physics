@@ -407,7 +407,7 @@ struct EmcalCorrectionTask {
     }
   }
 
-  template <typename BCType>
+  template <o2::soa::is_iterator BCType>
   void initZorroCCDB(const BCType& bc)
   {
     if (applySoftwareTriggerSelection) {
@@ -1403,7 +1403,7 @@ struct EmcalCorrectionTask {
     } // end of cluster loop
   }
 
-  template <typename BC>
+  template <o2::soa::is_iterator BC>
   void fillAmbigousClusterTable(BC const& bc, size_t iClusterizer, const gsl::span<int64_t> cellIndicesBC, bool hasCollision)
   {
     int cellindex = -1;
@@ -1452,7 +1452,7 @@ struct EmcalCorrectionTask {
     } // end of cluster loop
   }
 
-  template <typename Collision>
+  template <o2::soa::is_iterator Collision>
   void doTrackMatching(Collision const& col, MyGlobTracks const& tracks, MatchResult& indexMapPair, std::vector<int64_t>& trackGlobalIndex)
   {
     auto groupedTracks = tracks.sliceBy(perCollision, col.globalIndex());
@@ -1468,7 +1468,7 @@ struct EmcalCorrectionTask {
     indexMapPair = matchTracksToCluster(mClusterPhi, mClusterEta, trackPhi, trackEta, maxMatchingDistance, MaxMatchesPerCluster);
   }
 
-  template <typename Collision>
+  template <o2::soa::is_iterator Collision>
   void doSecondaryTrackMatching(Collision const& col, EMV0Legs const& v0legs, MatchResult& indexMapPair, std::vector<int64_t>& trackGlobalIndex, MyGlobTracks const& tracks)
   {
     auto groupedV0Legs = v0legs.sliceBy(perCollisionEMV0Legs, col.globalIndex());
@@ -1504,7 +1504,7 @@ struct EmcalCorrectionTask {
     indexMapPair = matchTracksToCluster(mClusterPhi, mClusterEta, trackPhi, trackEta, maxMatchingDistance, MaxMatchesPerCluster);
   }
 
-  template <typename Tracks>
+  template <o2::soa::is_table Tracks>
   void fillTrackInfo(Tracks const& tracks, std::vector<float>& trackPhi, std::vector<float>& trackEta, std::vector<int64_t>& trackGlobalIndex)
   {
     for (const auto& track : tracks) {
