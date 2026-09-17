@@ -2883,7 +2883,7 @@ struct HStrangeCorrelation {
     if (!masterConfigurations.doPPAnalysis) {
       // event selections in Pb-Pb
       histos.add("hEventSelection", "hEventSelection", kTH1F, {{11, 0, 11}});
-      std::array<TString, 11> eventSelLabel = {"all", "sel8", "kIsTriggerTVX", "PV_{z}", "Cent", "kIsGoodITSLayersAll", "kIsGoodZvtxFT0vsPV", "OccupCut", "kNoTimeFrameBorder", "kNoITSROFrameBorder", "kNoSameBunchPileup "};
+      std::array<TString, 11> eventSelLabel = {"all", "sel8", "kIsTriggerTVX", "Centrality", "PV_{z}", "kIsGoodITSLayersAll", "kIsGoodZvtxFT0vsPV", "OccupCut", "kNoTimeFrameBorder", "kNoITSROFrameBorder", "kNoSameBunchPileup "};
       for (int i = 1; i <= histos.get<TH1>(HIST("hEventSelection"))->GetNbinsX(); i++) {
         histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(i, eventSelLabel[i - 1].Data());
       }
