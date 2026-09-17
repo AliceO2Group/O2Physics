@@ -10,22 +10,10 @@
 // or submit itself to any jurisdiction.
 //
 /// \file forwardlambdakzeroanalysis.cxx
-/// \brief V0s (K0s, Lambda and antiLambda) analysis task using derived data
+/// \brief V0s (K0s, Lambda and antiLambda) analysis task using MFT-only tracks
 ///
 /// \author David Dobrigkeit Chinellato <david.dobrigkeit.chinellato@cern.ch>, Austrian Academy of Sciences & MBI
 /// \author Romain Schotter <romain.schotter@cern.ch>, Austrian Academy of Sciences & MBI
-//
-// V0 analysis task
-// ================
-//
-// This code loops over a V0Cores table and produces some
-// standard analysis output. It is meant to be run over
-// derived data.
-//
-//    Comments, questions, complaints, suggestions?
-//    Please write to:
-//    romain.schotter@cern.ch
-//    david.dobrigkeit.chinellato@cern.ch
 //
 
 #include "PWGMM/Mult/DataModel/bestCollisionTable.h"
