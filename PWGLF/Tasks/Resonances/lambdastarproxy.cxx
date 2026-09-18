@@ -13,7 +13,6 @@
 /// \brief Standalone Lambda* deuteron-proxy task extracted from nucleibalance.cxx.
 /// \author Sushanta Tripathy <sushanta.tripathy@cern.ch>
 
-
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
@@ -34,7 +33,6 @@
 
 #include <THn.h>
 #include <TPDGCode.h>
-
 
 #include <array>
 #include <cmath>
