@@ -20,13 +20,22 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/runDataProcessing.h>
 
-#include <Math/Vector4D.h>
+#include <Math/GenVector/LorentzVector.h>
+#include <Math/GenVector/PxPyPzM4D.h>
+#include <Math/Vector4Dfwd.h>
 
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <deque>
 #include <map>
@@ -83,9 +92,9 @@ struct F0phiproxy {
     int sign;
     double px, py, pz;
     bool hasTOF;
-    FourVector vector(double mass) const
+    [[nodiscard]] FourVector vector(double mass) const
     {
-      return FourVector(px, py, pz, mass);
+      return {px, py, pz, mass};
     }
   };
   struct Event {
@@ -266,8 +275,8 @@ struct F0phiproxy {
           histos.fill(HIST("hPionTOF"), track.pt(), track.tofNSigmaPi());
           histos.fill(HIST("hKaonTOF"), track.pt(), track.tofNSigmaKa());
         }
-        TrackCandidate candidate{track.globalIndex(), track.sign(), track.px(),
-                                 track.py(), track.pz(), tof};
+        TrackCandidate candidate{.id = track.globalIndex(), .sign = track.sign(),
+                                 .px = track.px(), .py = track.py(), .pz = track.pz(), .hasTOF = tof};
         if (passPID(track.tpcNSigmaPi(), track.tofNSigmaPi(), tof, pionTPC,
                     pionTOF)) {
           event.pions.push_back(candidate);
@@ -320,8 +329,8 @@ struct F0phiproxy {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<F0phiproxy>(cfgc)};
+    adaptAnalysisTask<F0phiproxy>(context)};
 }
