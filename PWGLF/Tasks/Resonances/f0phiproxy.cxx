@@ -30,8 +30,7 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include <Math/GenVector/LorentzVector.h>
-#include <Math/GenVector/PxPyPzM4D.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
 
 #include <cmath>
@@ -52,7 +51,7 @@ struct F0phiproxy {
     soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
               aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi,
               aod::pidTPCFullKa, aod::pidTOFFullKa>;
-  using FourVector = ROOT::Math::LorentzVector<ROOT::Math::PxPyPzM4D<double>>;
+  using FourVector = ROOT::Math::PxPyPzMVector;
   Preslice<Tracks> perCollision = aod::track::collisionId;
   HistogramRegistry histos{
     "histos",
