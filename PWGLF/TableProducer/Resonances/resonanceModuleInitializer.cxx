@@ -1243,13 +1243,12 @@ struct ResonanceDaughterInitializer {
   // data-model relation keeps its legacy v000 default target; v001 consumers
   // must use resoCollision_as<T>() with the exact bound v001 table type for
   // dereferencing (aod::ResoCollisions_001 when the parent is not joined).
-  // Original-collision grouping is provided by the scalar-only version-1
-  // ResoCollisionGroups_001 table, avoiding a hard source-AO2D relation.
+  // Daughter callbacks use the original collision ID from ResoCollisionColls
+  // to slice input candidates explicitly. The scalar ResoCollisionGroups_001
+  // output is retained for consumers that do not need source-AO2D dereferencing.
   // Collision mappings are always written; cfgBypassCollIndexFill is retained
   // only so existing configuration files remain accepted.
   using ResoCollisionWithIndex = soa::Join<aod::ResoCollisions_001, aod::ResoCollisionColls>;
-  using SelectedResoCollisions = soa::Join<aod::ResoCollisions_001, aod::ResoCollisionGroups_001>;
-  PresliceUnsorted<SelectedResoCollisions> reducedCollisionsPerOriginalCollision = aod::resocollisiongroup001::originalCollisionId;
 
   /**
    * @brief Initializes the task
@@ -1263,7 +1262,7 @@ struct ResonanceDaughterInitializer {
       LOGF(fatal, "cfgPairGateMode must be 0 (configured gates) or 1 (V0 or cascade)");
     }
     const bool useEitherPairGate = FilterForDerivedTables.cfgPairGateMode.value == PairGateModeEither;
-    const bool processTrackDataEnabled = doprocessData || doprocessDataHybrid || doprocessDataWithPairGate ||
+    const bool processTrackDataEnabled = doprocessData || doprocessDataWithPairGate ||
                                          doprocessDataWithV0PairGate || doprocessDataWithCascPairGate;
     const bool processTrackMCEnabled = doprocessMC || doprocessMCWithPairGate ||
                                        doprocessMCWithV0PairGate || doprocessMCWithCascPairGate;
@@ -1275,7 +1274,6 @@ struct ResonanceDaughterInitializer {
     const bool anyDataProcessEnabled = processTrackDataEnabled || processV0DataEnabled || processCascDataEnabled;
     const bool anyMCProcessEnabled = processTrackMCEnabled || doprocessV0MC || doprocessCascMC;
     const int enabledTrackProcesses = static_cast<int>(doprocessData) +
-                                      static_cast<int>(doprocessDataHybrid) +
                                       static_cast<int>(doprocessDataWithPairGate) +
                                       static_cast<int>(doprocessDataWithV0PairGate) +
                                       static_cast<int>(doprocessDataWithCascPairGate) +
@@ -1311,10 +1309,10 @@ struct ResonanceDaughterInitializer {
     if (static_cast<int>(doprocessCascData) + static_cast<int>(doprocessCascMC) > 1) {
       LOGF(fatal, "Only one cascade process can be enabled in ResonanceDaughterInitializer");
     }
-    if ((doprocessData || doprocessDataHybrid || doprocessMC) &&
+    if ((doprocessData || doprocessMC) &&
         (useEitherPairGate || FilterForDerivedTables.cfgBypassNoPairV0s || FilterForDerivedTables.cfgBypassNoPairCascades ||
          FilterForDerivedTables.cfgGlobalDaughterVeto)) {
-      LOGF(warn, "Pair-gate options are ignored by processData/processDataHybrid/processMC; enable the matching *WithPairGate process to apply them");
+      LOGF(warn, "Pair-gate options are ignored by processData/processMC; enable the matching *WithPairGate process to apply them");
     }
     const auto validatePairGateOutputs = [&](bool pairProcessEnabled,
                                              bool v0OutputEnabled,
@@ -2204,7 +2202,9 @@ struct ResonanceDaughterInitializer {
                      static_cast<uint8_t>(o2::aod::resomicrodaughter001::PidNSigma(track.tpcNSigmaKa(), track.tofNSigmaKa(), track.hasTOF())),
                      static_cast<uint8_t>(o2::aod::resomicrodaughter001::PidNSigma(track.tpcNSigmaPr(), track.tofNSigmaPr(), track.hasTOF())),
                      static_cast<uint8_t>(trackSelFlag),
-                     trackFlags);
+                     trackFlags,
+                     static_cast<uint8_t>(track.tpcNClsCrossedRows()),
+                     track.itsClusterMap());
       if (!FilterForDerivedTables.cfgBypassTrackIndexFill) {
         resoMicroTrackTracks(track.globalIndex());
       }
@@ -2782,31 +2782,6 @@ struct ResonanceDaughterInitializer {
     fillTrackTablesForCollision<false>(collision, tracks, tracksPerCollision);
   }
   PROCESS_SWITCH(ResonanceDaughterInitializer, processData, "Process tracks for data", false);
-
-  /**
-   * @brief Processes data tracks using the two-stage hybrid grouping
-   *
-   * GroupSlicer associates tracks automatically to the original
-   * aod::Collision. Reduced collisions retain a scalar original-collision row
-   * number and are explicitly sliced from the much smaller mapping table. The
-   * tracks argument is already the selected slice and must not be sliced again.
-   */
-  void processDataHybrid(aod::Collision const& originalCollision,
-                         SelectedResoCollisions const& reducedCollisions,
-                         soa::Filtered<aod::ResoTrackCandidates> const& tracks)
-  {
-    auto reducedCollisionsThisCollision = reducedCollisions.sliceBy(reducedCollisionsPerOriginalCollision, originalCollision.globalIndex());
-    if (reducedCollisionsThisCollision.size() == 0) {
-      return;
-    }
-    if (reducedCollisionsThisCollision.size() > 1) {
-      LOGF(error, "Found %zu reduced collisions for one original collision; skipping the ambiguous association", reducedCollisionsThisCollision.size());
-      return;
-    }
-    auto reducedCollision = reducedCollisionsThisCollision.begin();
-    fillTrackTables<false>(reducedCollision, tracks);
-  }
-  PROCESS_SWITCH(ResonanceDaughterInitializer, processDataHybrid, "Process data tracks with the two-stage hybrid grouping", false);
 
   /**
    * @brief Processes data tracks with configurable selected V0 and cascade gates
