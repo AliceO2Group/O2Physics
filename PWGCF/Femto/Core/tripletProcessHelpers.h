@@ -27,6 +27,10 @@
 
 namespace o2::analysis::femto::tripletprocesshelpers
 {
+// NOTE: all processSameEvent helpers return true if at least one triplet in the event passed
+//       the triplet cleaner, the close triplet rejection and the triplet cuts.
+//       This allows to use them as a triplet trigger.
+
 enum TripletOrder : uint8_t {
   kOrder123, // no swap
   kOrder213, // swap 1&2: for the case that particle 1 & 2 are the same species, particle 3 is something else
@@ -43,7 +47,7 @@ template <modes::Mode mode,
           typename T5,
           typename T6,
           typename T7>
-void processSameEvent(T1 const& SliceParticle,
+bool processSameEvent(T1 const& SliceParticle,
                       T2 const& TrackTable,
                       T3 const& Collision,
                       T4& ParticleHistManager,
@@ -53,6 +57,7 @@ void processSameEvent(T1 const& SliceParticle,
                       TripletOrder tripletOrder)
 {
   TripletHistManager.resetTrackedParticlesPerEvent();
+  bool foundTriplet = false;
 
   for (auto const& part : SliceParticle) {
     ParticleHistManager.template fill<mode>(part, TrackTable);
@@ -93,17 +98,19 @@ void processSameEvent(T1 const& SliceParticle,
     if (TripletHistManager.checkTripletCuts()) {
       TripletHistManager.template fill<mode>();
       TripletHistManager.trackParticlesPerEvent(p1, p2, p3);
+      foundTriplet = true;
     }
   }
 
   TripletHistManager.fillMixingQaSe();
+  return foundTriplet;
 }
 
 // process same event for identical 2 particles and 1 other particle
 template <modes::Mode mode,
           typename T1, typename T2, typename T3, typename T4,
           typename T5, typename T6, typename T7, typename T8, typename T9>
-void processSameEvent(T1 const& SliceParticle1, // 1&2 have same species
+bool processSameEvent(T1 const& SliceParticle1, // 1&2 have same species
                       T2 const& SliceParticle3,
                       T3 const& TrackTable,
                       T4 const& Collision,
@@ -115,6 +122,7 @@ void processSameEvent(T1 const& SliceParticle1, // 1&2 have same species
                       TripletOrder tripletOrder)
 {
   TripletHistManager.resetTrackedParticlesPerEvent();
+  bool foundTriplet = false;
 
   for (auto const& part : SliceParticle1) {
     ParticleHistManager1.template fill<mode>(part, TrackTable);
@@ -152,11 +160,13 @@ void processSameEvent(T1 const& SliceParticle1, // 1&2 have same species
       if (TripletHistManager.checkTripletCuts()) {
         TripletHistManager.template fill<mode>();
         TripletHistManager.trackParticlesPerEvent(p1, p2, p3);
+        foundTriplet = true;
       }
     }
   }
 
   TripletHistManager.fillMixingQaSe();
+  return foundTriplet;
 }
 
 // process same event for 3 different particles
@@ -172,7 +182,7 @@ template <modes::Mode mode,
           typename T9,
           typename T10,
           typename T11>
-void processSameEvent(T1 const& SliceParticle1,
+bool processSameEvent(T1 const& SliceParticle1,
                       T2 const& SliceParticle2,
                       T3 const& SliceParticle3,
                       T4 const& TrackTable,
@@ -185,6 +195,7 @@ void processSameEvent(T1 const& SliceParticle1,
                       T11& TcManager)
 {
   TripletHistManager.resetTrackedParticlesPerEvent();
+  bool foundTriplet = false;
 
   for (auto const& part : SliceParticle1) {
     ParticleHistManager1.template fill<mode>(part, TrackTable);
@@ -215,10 +226,12 @@ void processSameEvent(T1 const& SliceParticle1,
     if (TripletHistManager.checkTripletCuts()) {
       TripletHistManager.template fill<mode>();
       TripletHistManager.trackParticlesPerEvent(p1, p2, p3);
+      foundTriplet = true;
     }
   }
 
   TripletHistManager.fillMixingQaSe();
+  return foundTriplet;
 }
 
 // process same event for 3 identical particles with mc information
@@ -235,7 +248,7 @@ template <modes::Mode mode,
           typename T10,
           typename T11,
           typename T12>
-void processSameEvent(T1 const& SliceParticle,
+bool processSameEvent(T1 const& SliceParticle,
                       T2 const& TrackTable,
                       T3 const& mcParticles,
                       T4 const& mcMothers,
@@ -250,6 +263,7 @@ void processSameEvent(T1 const& SliceParticle,
                       TripletOrder tripletOrder)
 {
   TripletHistManager.resetTrackedParticlesPerEvent();
+  bool foundTriplet = false;
 
   for (auto const& part : SliceParticle) {
     if (!Cleaner.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
@@ -299,17 +313,19 @@ void processSameEvent(T1 const& SliceParticle,
     if (TripletHistManager.checkTripletCuts()) {
       TripletHistManager.template fill<mode>();
       TripletHistManager.trackParticlesPerEvent(p1, p2, p3);
+      foundTriplet = true;
     }
   }
 
   TripletHistManager.fillMixingQaSe();
+  return foundTriplet;
 }
 
 // process same event for 2 identical particles and one other with mc information
 template <modes::Mode mode,
           typename T1, typename T2, typename T3, typename T4, typename T5, typename T6,
           typename T7, typename T8, typename T9, typename T10, typename T11, typename T12, typename T13, typename T14, typename T15>
-void processSameEvent(T1 const& SliceParticle1,
+bool processSameEvent(T1 const& SliceParticle1,
                       T2 const& SliceParticle3,
                       T3 const& TrackTable,
                       T4 const& mcParticles,
@@ -327,6 +343,7 @@ void processSameEvent(T1 const& SliceParticle1,
                       TripletOrder tripletOrder)
 {
   TripletHistManager.resetTrackedParticlesPerEvent();
+  bool foundTriplet = false;
 
   for (auto const& part : SliceParticle1) {
     if (!Cleaner1.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
@@ -376,11 +393,13 @@ void processSameEvent(T1 const& SliceParticle1,
       if (TripletHistManager.checkTripletCuts()) {
         TripletHistManager.template fill<mode>();
         TripletHistManager.trackParticlesPerEvent(p1, p2, p3);
+        foundTriplet = true;
       }
     }
   }
 
   TripletHistManager.fillMixingQaSe();
+  return foundTriplet;
 }
 
 // process same event for 3 different particles with mc information
@@ -404,7 +423,7 @@ template <modes::Mode mode,
           typename T16,
           typename T17,
           typename T18>
-void processSameEvent(T1 const& SliceParticle1,
+bool processSameEvent(T1 const& SliceParticle1,
                       T2 const& SliceParticle2,
                       T3 const& SliceParticle3,
                       T4 const& TrackTable,
@@ -424,6 +443,7 @@ void processSameEvent(T1 const& SliceParticle1,
                       T18& TcManager)
 {
   TripletHistManager.resetTrackedParticlesPerEvent();
+  bool foundTriplet = false;
 
   for (auto const& part : SliceParticle1) {
     if (!Cleaner1.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
@@ -469,10 +489,12 @@ void processSameEvent(T1 const& SliceParticle1,
     if (TripletHistManager.checkTripletCuts()) {
       TripletHistManager.template fill<mode>();
       TripletHistManager.trackParticlesPerEvent(p1, p2, p3);
+      foundTriplet = true;
     }
   }
 
   TripletHistManager.fillMixingQaSe();
+  return foundTriplet;
 }
 
 // process mixed event

@@ -16,8 +16,6 @@
 #ifndef PWGCF_FEMTO_CORE_MODES_H_
 #define PWGCF_FEMTO_CORE_MODES_H_
 
-#include "dataTypes.h"
-
 #include "PWGCF/Femto/Core/dataTypes.h"
 
 #include <cstdint>
@@ -86,6 +84,21 @@ enum class MomentumType : o2::analysis::femto::datatypes::MomentumType {
   kPTpc = 2,  // momentum at inner wall of tpc
 };
 
+/// axis title for the momentum used on the x axis of PID histograms
+constexpr const char* momentumTypeToAxisTitle(MomentumType type)
+{
+  switch (type) {
+    case MomentumType::kPt:
+      return "p_{T} (GeV/#it{c})";
+    case MomentumType::kPAtPv:
+      return "p (GeV/#it{c})";
+    case MomentumType::kPTpc:
+      return "p_{TPC} (GeV/#it{c})";
+    default:
+      return "p (GeV/#it{c})";
+  }
+}
+
 enum class TransverseMassType : o2::analysis::femto::datatypes::TransverseMassType {
   kAveragePdgMass = 0,
   kReducedPdgMass = 1,
@@ -146,8 +159,56 @@ enum class Track : o2::analysis::femto::datatypes::TrackType {
   kCascadeBachelor,
   kResonanceDaughter,
   kKinkDaughter,
-  kCharmDaughter
+  kCharmDaughter,
+  kTrackTypeLast
 };
+
+constexpr const char* trackTypeToString(Track type)
+{
+  switch (type) {
+    case Track::kTrack:
+      return "Track";
+    case Track::kV0Daughter:
+      return "V0Daughter";
+    case Track::kCascadeBachelor:
+      return "CascadeBachelor";
+    case Track::kResonanceDaughter:
+      return "ResonanceDaughter";
+    case Track::kKinkDaughter:
+      return "KinkDaughter";
+    case Track::kCharmDaughter:
+      return "CharmDaughter";
+    default:
+      return "UnknownTrackType";
+  }
+}
+
+enum class Trigger : uint8_t {
+  kMinimumBias,
+  kTrackTrack,
+  kTrackV0,
+  kTrackTrackTrack,
+  kTrackTrackV0,
+  kTriggerLast
+};
+
+constexpr const char* triggerToString(Trigger trigger)
+{
+  switch (trigger) {
+    case Trigger::kMinimumBias:
+      return "MinimumBias";
+    case Trigger::kTrackTrack:
+      return "TrackTrack";
+    case Trigger::kTrackV0:
+      return "TrackV0";
+    case Trigger::kTrackTrackTrack:
+      return "TrackTrackTrack";
+    case Trigger::kTrackTrackV0:
+      return "TrackTrackV0";
+    default:
+      return "UnknownTrigger";
+  }
+}
 
 enum class V0 : o2::analysis::femto::datatypes::V0Type {
   kLambda,

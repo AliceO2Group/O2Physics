@@ -18,6 +18,7 @@
 
 #include "PWGCF/Femto/Core/dataTypes.h"
 #include "PWGCF/Femto/Core/femtoUtils.h"
+#include "PWGCF/Femto/Core/modes.h"
 
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -26,6 +27,7 @@
 #include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/DataTypes.h>
 
 #include <cmath>
 #include <cstdint>
@@ -168,12 +170,14 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FColPos_001, "FCOLPOS", 1, //! full vertex po
 using FColPos = FColPos_001;
 
 // table for different multiplicity estimators
-DECLARE_SOA_TABLE_STAGED_VERSIONED(FColMults_001, "FCOLMULT", 1,   //! multiplicities
-                                   mult::MultFT0A, mult::MultFT0C, //! FIT detectors
-                                   mult::MultNTracksPVeta1,        //! number of PV contribs total
-                                   mult::MultNTracksPVetaHalf,     //! global track multiplicities
-                                   evsel::NumTracksInTimeRange,    //! occupancy (number of track in time range)
-                                   evsel::SumAmpFT0CInTimeRange);  //! occupancy (FT0C amplitude in time range)
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FColMults_001, "FCOLMULT", 1,  //! multiplicities
+                                   mult::MultFT0A,                //! FT0A detectors
+                                   mult::MultFT0C,                //! FT0C detectors
+                                   collision::NumContrib,         //! number of tracks used tto find PV
+                                   mult::MultNTracksPVeta1,       //! number of PV contribs total
+                                   mult::MultNTracksPVetaHalf,    //! global track multiplicities
+                                   evsel::NumTracksInTimeRange,   //! occupancy (number of tracks from different collisions in time range)
+                                   evsel::SumAmpFT0CInTimeRange); //! occupancy (FT0C amplitude in time range)
 using FColMults = FColMults_001;
 
 // table for different centrality (multiplicity percentile) estimators
@@ -328,6 +332,17 @@ DECLARE_SOA_DYNAMIC_COLUMN(TpcSharedOverFound, tpcSharedOverFound, //! Number of
                            [](uint8_t tpcNclsFound, uint8_t tpcNClsShared) -> float { return static_cast<float>(tpcNClsShared) / static_cast<float>(tpcNclsFound); });
 DECLARE_SOA_COLUMN(TpcChi2NCl, tpcChi2NCl, float); //! Tpc chi2
 
+// detector map and row type
+DECLARE_SOA_COLUMN(DetectorMap, detectorMap, uint8_t);                                                                     //! Detector map of the track (same bit layout as o2::aod::track::DetectorMap)
+DECLARE_SOA_DYNAMIC_COLUMN(HasIts, hasIts, [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::ITS; }); //! Track has ITS
+DECLARE_SOA_DYNAMIC_COLUMN(HasTpc, hasTpc, [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::TPC; }); //! Track has TPC
+DECLARE_SOA_DYNAMIC_COLUMN(HasTof, hasTof, [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::TOF; }); //! Track has TOF
+DECLARE_SOA_COLUMN(FillType, fillType, o2::analysis::femto::datatypes::TrackType);                                         //! modes::Track this row was written as (kTrack = selected track, otherwise daughter-only row)
+DECLARE_SOA_DYNAMIC_COLUMN(IsDaughterOnly, isDaughterOnly,                                                                 //! True if the row was only written to resolve a daughter index (not a selected track)
+                           [](o2::analysis::femto::datatypes::TrackType fillType) -> bool {
+                             return fillType != static_cast<o2::analysis::femto::datatypes::TrackType>(o2::analysis::femto::modes::Track::kTrack);
+                           });
+
 // tof related information
 DECLARE_SOA_COLUMN(TofBeta, tofBeta, float); //! Tof beta
 // tof mass will be stored in mass column
@@ -444,8 +459,15 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FTrackExtras_001, "FTRACKEXTRA", 1, //! track
                                    femtotracks::TpcNClsCrossedRows,
                                    femtotracks::TpcNClsShared,
                                    femtotracks::TofBeta,
+                                   femtotracks::TpcChi2NCl,
+                                   femtotracks::DetectorMap,
+                                   femtotracks::FillType,
                                    femtotracks::TpcCrossedRowsOverFound<femtotracks::TpcNClsFound, femtotracks::TpcNClsCrossedRows>,
-                                   femtotracks::TpcSharedOverFound<femtotracks::TpcNClsFound, femtotracks::TpcNClsShared>);
+                                   femtotracks::TpcSharedOverFound<femtotracks::TpcNClsFound, femtotracks::TpcNClsShared>,
+                                   femtotracks::HasIts<femtotracks::DetectorMap>,
+                                   femtotracks::HasTpc<femtotracks::DetectorMap>,
+                                   femtotracks::HasTof<femtotracks::DetectorMap>,
+                                   femtotracks::IsDaughterOnly<femtotracks::FillType>);
 using FTrackExtras = FTrackExtras_001;
 
 // table for extra PID information
