@@ -168,7 +168,7 @@ constexpr const char PrefixKaonMinus[] = "KaonMinusSelection";
 
 // for dN/deta: tracks with TPC (ITS + TPC quality bits) and tracks without TPC (ITS quality bits only)
 // set maskLowMomentum = maskHighMomentum (quality bits only), chargeSign = 0 and the eta/pT range of the measurement
-constexpr const char PrefixTrackSelectionDndetaGlobal[] = "TrackSelectionDndetaGlobal"; // Global = ITS + TPC
+constexpr const char PrefixTrackSelectionDndetaGlobal[] = "TrackSelectionDndetaGlobal";   // Global = ITS + TPC
 constexpr const char PrefixTrackSelectionDndetaItsOnly[] = "TrackSelectionDndetaItsOnly"; // ITS only
 
 // Instantiate different instances with unique prefixes
