@@ -171,10 +171,10 @@ struct HadronNucleiCorrelation {
   std::vector<std::shared_ptr<TH3>> hCorrEtaPhiMixdEv;
 
   int nBinspT = 0;
-  TH2F* hEffPtEtaProton = nullptr;
-  TH2F* hEffPtEtaAntiProton = nullptr;
-  TH2F* hEffPtEtaDeuteron = nullptr;
-  TH2F* hEffPtEtaAntiDeuteron = nullptr;
+  TH2* hEffPtEtaProton = nullptr;
+  TH2* hEffPtEtaAntiProton = nullptr;
+  TH2* hEffPtEtaDeuteron = nullptr;
+  TH2* hEffPtEtaAntiDeuteron = nullptr;
   bool correctionsLoaded = false; // true only if all four efficiency histograms above were retrieved successfully
 
   // Generated-level pairing: PDG codes of the two species selected by `mode` (set in init)
@@ -686,22 +686,22 @@ struct HadronNucleiCorrelation {
       LOGP(error, "Could not open corrections file {}", Form("%s", filepath.Data()));
       return;
     }
-    hEffPtEtaProton = dynamic_cast<TH2F*>(l->FindObject(Form("%s_proton", histname.Data())));
+    hEffPtEtaProton = dynamic_cast<TH2*>(l->FindObject(Form("%s_proton", histname.Data())));
     if (!hEffPtEtaProton) {
       LOGP(error, "Could not open histogram {}", Form("%s_proton", histname.Data()));
       return;
     }
-    hEffPtEtaAntiProton = dynamic_cast<TH2F*>(l->FindObject(Form("%s_antiproton", histname.Data())));
+    hEffPtEtaAntiProton = dynamic_cast<TH2*>(l->FindObject(Form("%s_antiproton", histname.Data())));
     if (!hEffPtEtaAntiProton) {
       LOGP(error, "Could not open histogram {}", Form("%s_antiproton", histname.Data()));
       return;
     }
-    hEffPtEtaDeuteron = dynamic_cast<TH2F*>(l->FindObject(Form("%s_deuteron", histname.Data())));
+    hEffPtEtaDeuteron = dynamic_cast<TH2*>(l->FindObject(Form("%s_deuteron", histname.Data())));
     if (!hEffPtEtaDeuteron) {
       LOGP(error, "Could not open histogram {}", Form("%s_deuteron", histname.Data()));
       return;
     }
-    hEffPtEtaAntiDeuteron = dynamic_cast<TH2F*>(l->FindObject(Form("%s_antideuteron", histname.Data())));
+    hEffPtEtaAntiDeuteron = dynamic_cast<TH2*>(l->FindObject(Form("%s_antideuteron", histname.Data())));
     if (!hEffPtEtaAntiDeuteron) {
       LOGP(error, "Could not open histogram {}", Form("%s_antideuteron", histname.Data()));
       return;
