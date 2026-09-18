@@ -58,7 +58,6 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -89,16 +88,16 @@ static const std::vector<std::string> particleName{"He3"};
 } // namespace
 
 struct hyperCandidate {
-  float recoPtHe3() const { return std::hypot(momHe3[0], momHe3[1]); }
-  float recoPhiHe3() const { return std::atan2(momHe3[1], momHe3[0]); }
-  float recoEtaHe3() const { return std::asinh(momHe3[2] / recoPtHe3()); }
-  float recoPtPi() const { return std::hypot(momPi[0], momPi[1]); }
-  float recoPhiPi() const { return std::atan2(momPi[1], momPi[0]); }
-  float recoEtaPi() const { return std::asinh(momPi[2] / recoPtPi()); }
-  float genPt() const { return std::hypot(gMom[0], gMom[1]); }
-  float genPtHe3() const { return std::hypot(gMomHe3[0], gMomHe3[1]); }
-  float genPhi() const { return std::atan2(gMom[1], gMom[0]); }
-  float genEta() const { return std::asinh(gMom[2] / genPt()); }
+  [[nodiscard]] float recoPtHe3() const { return std::hypot(momHe3[0], momHe3[1]); }
+  [[nodiscard]] float recoPhiHe3() const { return std::atan2(momHe3[1], momHe3[0]); }
+  [[nodiscard]] float recoEtaHe3() const { return std::asinh(momHe3[2] / recoPtHe3()); }
+  [[nodiscard]] float recoPtPi() const { return std::hypot(momPi[0], momPi[1]); }
+  [[nodiscard]] float recoPhiPi() const { return std::atan2(momPi[1], momPi[0]); }
+  [[nodiscard]] float recoEtaPi() const { return std::asinh(momPi[2] / recoPtPi()); }
+  [[nodiscard]] float genPt() const { return std::hypot(gMom[0], gMom[1]); }
+  [[nodiscard]] float genPtHe3() const { return std::hypot(gMomHe3[0], gMomHe3[1]); }
+  [[nodiscard]] float genPhi() const { return std::atan2(gMom[1], gMom[0]); }
+  [[nodiscard]] float genEta() const { return std::asinh(gMom[2] / genPt()); }
 
   int v0ID = -1;
   int heTrackID = -1;
@@ -482,8 +481,9 @@ struct HyperRecoTask {
       if (collision.has_mcCollision()) {
         recoCollisionIds[collision.mcCollisionId()] = collision.globalIndex();
       }
-      if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
+      if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
         continue;
+      }
 
       qaRegistry.fill(HIST("hEvents"), 1.);
 
@@ -536,8 +536,9 @@ struct HyperRecoTask {
     hypCand.clusterSizeITSPi = piTrack.itsClusterSizes();
     bool heliumPID = heTrack.pidForTracking() == o2::track::PID::Helium3 || heTrack.pidForTracking() == o2::track::PID::Alpha;
     hypCand.momHe3TPC = (heliumPID && cfgCompensatePIDinTracking) ? heTrack.tpcInnerParam() / 2 : heTrack.tpcInnerParam();
-    if (hypCand.momHe3TPC < tpcRigidityMinHe)
+    if (hypCand.momHe3TPC < tpcRigidityMinHe) {
       return;
+    }
     hypCand.momPiTPC = piTrack.tpcInnerParam();
     qaRegistry.fill(HIST("hDeDxTot"), hypCand.momHe3TPC * heTrack.sign(), heTrack.tpcSignal());
     qaRegistry.fill(HIST("hDeDxTot"), hypCand.momPiTPC * piTrack.sign(), piTrack.tpcSignal());
@@ -579,17 +580,21 @@ struct HyperRecoTask {
       hypMom[i] = hypCand.momHe3[i] + hypCand.momPi[i];
     }
     float hypPt = std::hypot(hypMom[0], hypMom[1]);
-    if (hypPt < ptMin)
+    if (hypPt < ptMin) {
       return;
+    }
     float massH3L = std::sqrt(h3lE * h3lE - hypMom[0] * hypMom[0] - hypMom[1] * hypMom[1] - hypMom[2] * hypMom[2]);
     float massH4L = std::sqrt(h4lE * h4lE - hypMom[0] * hypMom[0] - hypMom[1] * hypMom[1] - hypMom[2] * hypMom[2]);
     bool isHypMass = false;
-    if (massH3L > o2::constants::physics::MassHyperTriton - massWidth && massH3L < o2::constants::physics::MassHyperTriton + massWidth)
+    if (massH3L > o2::constants::physics::MassHyperTriton - massWidth && massH3L < o2::constants::physics::MassHyperTriton + massWidth) {
       isHypMass = true;
-    if (massH4L > o2::constants::physics::MassHyperhydrog4 - massWidth && massH4L < o2::constants::physics::MassHyperhydrog4 + massWidth)
+    }
+    if (massH4L > o2::constants::physics::MassHyperhydrog4 - massWidth && massH4L < o2::constants::physics::MassHyperhydrog4 + massWidth) {
       isHypMass = true;
-    if (!isHypMass)
+    }
+    if (!isHypMass) {
       return;
+    }
 
     qaRegistry.fill(HIST("hH3LMassBefSel"), massH3L);
     qaRegistry.fill(HIST("hH4LMassBefSel"), massH4L);
@@ -671,8 +676,9 @@ struct HyperRecoTask {
       auto posTrack = tracks.rawIteratorAt(v0.posTrackId());
       auto negTrack = tracks.rawIteratorAt(v0.negTrackId());
 
-      if (std::abs(posTrack.eta()) > etaMax || std::abs(negTrack.eta()) > etaMax)
+      if (std::abs(posTrack.eta()) > etaMax || std::abs(negTrack.eta()) > etaMax) {
         continue;
+      }
 
       // temporary fix: tpcInnhRecoCentralityColvsFT0CmultiplicityerParam() returns the momentum in all the software tags before: https://github.com/AliceO2Group/AliceO2/pull/12521
       auto nSigmaTPCpos = computeNSigmaHe3(posTrack);
@@ -711,24 +717,30 @@ struct HyperRecoTask {
 
     for (const auto& track : tracks) {
 
-      if (std::abs(track.eta()) > etaMax)
+      if (std::abs(track.eta()) > etaMax) {
         continue;
+      }
 
-      if (!track.hasITS())
+      if (!track.hasITS()) {
         continue;
+      }
 
       auto nSigmaHe = computeNSigmaHe3(track);
       bool isHe = nSigmaHe > -1 * nSigmaMaxHe;
       int pdgHypo = isHe ? heDauPdg : PDG_t::kPiPlus;
       // LOG(info) << "ncls found: " << track.tpcNClsFound();
-      if (isHe && track.tpcNClsFound() < nTPCClusMinHe)
+      if (isHe && track.tpcNClsFound() < nTPCClusMinHe) {
         continue;
-      if (!isHe && track.tpcNClsFound() < nTPCClusMinPi)
+      }
+      if (!isHe && track.tpcNClsFound() < nTPCClusMinPi) {
         continue;
-      if (isHe && track.tpcNClsCrossedRows() < nTPCCrossedRowsMinHe)
+      }
+      if (isHe && track.tpcNClsCrossedRows() < nTPCCrossedRowsMinHe) {
         continue;
-      if (!isHe && track.tpcNClsCrossedRows() < nTPCCrossedRowsMinPi)
+      }
+      if (!isHe && track.tpcNClsCrossedRows() < nTPCCrossedRowsMinPi) {
         continue;
+      }
 
       svCreator.appendTrackCand(track, collisions, pdgHypo, ambiguousTracks, bcs);
     }
@@ -756,12 +768,15 @@ struct HyperRecoTask {
         if (mcTrackHe.has_mothers() && mcTrackPi.has_mothers()) {
           for (const auto& heMother : mcTrackHe.mothers_as<aod::McParticles>()) {
             for (const auto& piMother : mcTrackPi.mothers_as<aod::McParticles>()) {
-              if (heMother.globalIndex() != piMother.globalIndex())
+              if (heMother.globalIndex() != piMother.globalIndex()) {
                 continue;
-              if (std::abs(mcTrackHe.pdgCode()) != heDauPdg || std::abs(mcTrackPi.pdgCode()) != PDG_t::kPiPlus)
+              }
+              if (std::abs(mcTrackHe.pdgCode()) != heDauPdg || std::abs(mcTrackPi.pdgCode()) != PDG_t::kPiPlus) {
                 continue;
-              if (std::abs(heMother.pdgCode()) != hyperPdg)
+              }
+              if (std::abs(heMother.pdgCode()) != hyperPdg) {
                 continue;
+              }
 
               auto primVtx = std::array<float, 3>{heMother.vx(), heMother.vy(), heMother.vz()};
               auto secVtx = std::array<float, 3>{mcTrackHe.vx(), mcTrackHe.vy(), mcTrackHe.vz()};
@@ -1055,17 +1070,21 @@ struct HyperRecoTask {
   template <typename CollType>
   bool passEvtSel(const CollType& collision)
   {
-    if (!collision.sel8())
+    if (!collision.sel8()) {
       return false;
+    }
 
-    if ((std::abs(collision.posZ())) > MaxAbsVertexZ)
+    if ((std::abs(collision.posZ())) > MaxAbsVertexZ) {
       return false;
+    }
 
-    if (cfgEvSelkNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup))
+    if (cfgEvSelkNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return false;
+    }
 
-    if (cfgEvSelkIsGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+    if (cfgEvSelkIsGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
+    }
 
     return true;
   }
@@ -1127,10 +1146,12 @@ struct HyperRecoTask {
     ROOT::Math::PxPyPzMVector daugh1, daugh2, mother;
 
     for (const auto& genParticle : GenParticles) {
-      if (std::abs(genParticle.y()) > 1)
+      if (std::abs(genParticle.y()) > 1) {
         continue;
-      if (std::abs(genParticle.pdgCode()) != hyperPdg)
+      }
+      if (std::abs(genParticle.pdgCode()) != hyperPdg) {
         continue;
+      }
 
       auto daughters = genParticle.daughters_as<aod::McParticles>();
 
@@ -1153,8 +1174,9 @@ struct HyperRecoTask {
         }
       }
       // Check pairs to avoid wrong charge associations
-      if (!((dauHe3 && dauPiMinus) || !(dauAntiHe3 && dauPiPos)))
+      if (!((dauHe3 && dauPiMinus) || !(dauAntiHe3 && dauPiPos))) {
         continue;
+      }
 
       mother = daugh1 + daugh2;
 

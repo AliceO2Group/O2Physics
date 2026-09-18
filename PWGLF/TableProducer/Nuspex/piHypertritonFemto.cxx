@@ -34,6 +34,7 @@
 #include <CommonConstants/PhysicsConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/BinningPolicy.h>
 #include <Framework/CallbackService.h>
@@ -44,6 +45,7 @@
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/TrackParametrization.h>
 
 #include <Math/GenVector/Boost.h>
 #include <Math/GenVector/LorentzVector.h>
@@ -55,6 +57,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <deque>
 #include <functional>
@@ -274,14 +277,14 @@ struct PiHypertritonFemto {
     std::array<ClosePairTrack, 2> daughterClosePairTracks{}; // He3, decay pion.
     uint64_t mixedPairCount{0};                              // Accumulated over the complete residence in the mixing pool.
 
-    float pt() const { return std::hypot(momentum[0], momentum[1]); }
-    float eta() const
+    [[nodiscard]] float pt() const { return std::hypot(momentum[0], momentum[1]); }
+    [[nodiscard]] float eta() const
     {
       const float transverseMomentum = pt();
       return transverseMomentum > 0.f ? std::asinh(momentum[2] / transverseMomentum) : 999.f;
     }
-    float phi() const { return std::atan2(momentum[1], momentum[0]); }
-    int8_t sign() const { return isMatter ? 1 : -1; }
+    [[nodiscard]] float phi() const { return std::atan2(momentum[1], momentum[0]); }
+    [[nodiscard]] int8_t sign() const { return isMatter ? 1 : -1; }
   };
 
   struct HadHyperHadron {
@@ -293,9 +296,9 @@ struct PiHypertritonFemto {
     int8_t signValue{0};
     ClosePairTrack closePairTrack{};
 
-    float eta() const { return std::get<1>(info); }
-    float phi() const { return std::get<2>(info); }
-    int8_t sign() const { return signValue; }
+    [[nodiscard]] float eta() const { return std::get<1>(info); }
+    [[nodiscard]] float phi() const { return std::get<2>(info); }
+    [[nodiscard]] int8_t sign() const { return signValue; }
   };
 
   struct HadHyperEvent {
@@ -402,7 +405,7 @@ struct PiHypertritonFemto {
     // AO2D signed1Pt is signed inverse rigidity: He3's |Z|=2 is already included.
     // Do not multiply it by two again. Cache each source event's field-dependent values.
     constexpr float CurvatureFactor = 0.3f * 0.01f / 2.f; // B in T, radius in cm.
-    for (size_t i = 0; i < CPRTPCRadii.size(); ++i) {
+    for (std::size_t i = 0; i < CPRTPCRadii.size(); ++i) {
       const float argument = CurvatureFactor * mMagneticFieldTesla * CPRTPCRadii[i] * track.signed1Pt();
       if (std::isfinite(argument) && std::abs(argument) < 1.f) {
         result.phiStar[i] = track.phi() - std::asin(argument);
@@ -415,7 +418,7 @@ struct PiHypertritonFemto {
     constexpr float TeslaToKilogauss = 10.f;
     constexpr float TPCHalfLength = 250.f; // cm
     const float fieldKilogauss = TeslaToKilogauss * mMagneticFieldTesla;
-    for (size_t i = 0; i < CPRTPCRadii.size(); ++i) {
+    for (std::size_t i = 0; i < CPRTPCRadii.size(); ++i) {
       float localX = 0.f;
       if (!trackPar.getXatLabR(CPRTPCRadii[i], localX, fieldKilogauss, o2::track::DirOutward)) {
         continue;
@@ -436,7 +439,7 @@ struct PiHypertritonFemto {
   {
     ClosePairResult result;
     result.deltaEta = pion.eta - daughter.eta;
-    for (size_t i = 0; i < CPRTPCRadii.size(); ++i) {
+    for (std::size_t i = 0; i < CPRTPCRadii.size(); ++i) {
       if (pion.valid[i] && daughter.valid[i]) {
         result.deltaPhiStar += wrapDeltaPhi(pion.phiStar[i] - daughter.phiStar[i]);
         ++result.validRadii;
@@ -487,7 +490,7 @@ struct PiHypertritonFemto {
         rejectionFlags |= aod::pihypertritonfemto::ClosePairDistanceUnavailable;
       }
     }
-    for (size_t i = 0; i < results.size(); ++i) {
+    for (std::size_t i = 0; i < results.size(); ++i) {
       const auto& result = results[i];
       const auto& qa = mClosePairQA[mixed ? 1 : 0][i];
       qa.validRadii->Fill(result.validRadii);
@@ -581,7 +584,7 @@ struct PiHypertritonFemto {
     const std::array<float, 3> decayPionMomentum{candidate.ptPi() * std::cos(candidate.phiPi()), candidate.ptPi() * std::sin(candidate.phiPi()), candidate.ptPi() * std::sinh(candidate.etaPi())};
 
     HadHyperCandidate result;
-    for (size_t i = 0; i < result.momentum.size(); ++i) {
+    for (std::size_t i = 0; i < result.momentum.size(); ++i) {
       result.momentum[i] = heMomentum[i] + decayPionMomentum[i];
     }
     result.mass = computeHyperCandidateMass(candidate);
@@ -857,7 +860,7 @@ struct PiHypertritonFemto {
   {
     const int depth = static_cast<int>(pool.size());
     hadHyperRegistry.fill(HIST("hMixingDepth"), depth);
-    for (size_t partnerIndex = 0; partnerIndex < pool.size(); ++partnerIndex) {
+    for (std::size_t partnerIndex = 0; partnerIndex < pool.size(); ++partnerIndex) {
       auto& partner = pool[partnerIndex];
       const float currentPosZ = std::get<0>(currentEvent.info);
       const float partnerPosZ = std::get<0>(partner.info);
@@ -865,7 +868,7 @@ struct PiHypertritonFemto {
       hadHyperRegistry.fill(HIST("hMixEventDeltaCentFT0CVsCent"), currentEvent.centrality, currentEvent.centrality - partner.centrality);
       hadHyperRegistry.fill(HIST("hMixEventDeltaPosZVsCent"), partner.centrality, partnerPosZ - currentPosZ);
       hadHyperRegistry.fill(HIST("hMixEventDeltaCentFT0CVsCent"), partner.centrality, partner.centrality - currentEvent.centrality);
-      for (size_t candidateIndex = 0; candidateIndex < currentEvent.candidates.size(); ++candidateIndex) {
+      for (std::size_t candidateIndex = 0; candidateIndex < currentEvent.candidates.size(); ++candidateIndex) {
         auto& candidate = currentEvent.candidates[candidateIndex];
         for (const auto& pion : partner.hadrons) {
           if (fillPair<isMC>(candidate, pion, currentEvent, partner, true, depth)) {
@@ -873,7 +876,7 @@ struct PiHypertritonFemto {
           }
         }
       }
-      for (size_t candidateIndex = 0; candidateIndex < partner.candidates.size(); ++candidateIndex) {
+      for (std::size_t candidateIndex = 0; candidateIndex < partner.candidates.size(); ++candidateIndex) {
         auto& candidate = partner.candidates[candidateIndex];
         for (const auto& pion : currentEvent.hadrons) {
           if (fillPair<isMC>(candidate, pion, partner, currentEvent, true, depth)) {
@@ -908,7 +911,7 @@ struct PiHypertritonFemto {
     if (requestedMixingDepth <= 0) {
       return;
     }
-    const auto mixingDepth = static_cast<size_t>(requestedMixingDepth);
+    const auto mixingDepth = static_cast<std::size_t>(requestedMixingDepth);
     if (pool.size() >= mixingDepth) {
       flushMixedEventMultiplicity(pool.front());
       pool.pop_front();
@@ -949,8 +952,8 @@ void PiHypertritonFemto::init(o2::framework::InitContext&)
 
   const std::array<std::string, 2> eventNames{"SE", "ME"};
   const std::array<std::string, 2> daughterNames{"He3", "DecayPi"};
-  for (size_t eventIndex = 0; eventIndex < eventNames.size(); ++eventIndex) {
-    for (size_t daughterIndex = 0; daughterIndex < daughterNames.size(); ++daughterIndex) {
+  for (std::size_t eventIndex = 0; eventIndex < eventNames.size(); ++eventIndex) {
+    for (std::size_t daughterIndex = 0; daughterIndex < daughterNames.size(); ++daughterIndex) {
       const std::string prefix = "CPR/" + eventNames[eventIndex] + "/" + daughterNames[daughterIndex];
       auto& qa = mClosePairQA[eventIndex][daughterIndex];
       qa.before = hadHyperRegistry.add<TH2>((prefix + "/hBefore").c_str(), "All pairs;#Delta#eta;#LT#Delta#varphi*#GT",
@@ -1006,7 +1009,7 @@ void PiHypertritonFemto::init(o2::framework::InitContext&)
     "Zorro (data, optional)",
     "MC collision label (MC, optional)",
     "Mixing bin (if enabled)"};
-  for (size_t i = 0; i < eventsLabels.size(); i++) {
+  for (std::size_t i = 0; i < eventsLabels.size(); i++) {
     mQaRegistry.get<TH1>(HIST("hEvents"))->GetXaxis()->SetBinLabel(i + 1, eventsLabels[i].c_str());
   }
 }
