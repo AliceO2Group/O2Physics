@@ -31,6 +31,8 @@
 #include <CommonConstants/MathConstants.h>
 #include <DataFormatsITSMFT/DPLAlpideParam.h>
 #include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
@@ -38,11 +40,13 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TAxis.h>
 #include <TH1.h>
 #include <TH2.h>
 
 #include <cinttypes>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <string>
@@ -100,7 +104,7 @@ struct JetCrossSectionEfficiency {
 
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
   uint64_t rctMask = 0;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   int cachedTruthRofRun = std::numeric_limits<int>::min();
   int64_t cachedTruthRofOffsetInBC = -1;
@@ -124,15 +128,15 @@ struct JetCrossSectionEfficiency {
 
   enum BinPbPbTruthSelectionOnly {
     PbPbTruthSelectionOnlyInel = 1,
-    PbPbTruthSelectionOnlyRct,
-    PbPbTruthSelectionOnlyTvx,
-    PbPbTruthSelectionOnlyNoTimeFrameBorder,
-    PbPbTruthSelectionOnlyNoItsRofBorder,
-    PbPbTruthSelectionOnlySelection,
-    PbPbTruthSelectionOnlyHasCollision,
-    PbPbTruthSelectionOnlyVertexZ,
-    PbPbTruthSelectionOnlyNoSplit,
-    PbPbTruthSelectionOnlyNBins = PbPbTruthSelectionOnlyNoSplit
+    PbPbTruthSelectionOnlyRct = 2,
+    PbPbTruthSelectionOnlyTvx = 3,
+    PbPbTruthSelectionOnlyNoTimeFrameBorder = 4,
+    PbPbTruthSelectionOnlyNoItsRofBorder = 5,
+    PbPbTruthSelectionOnlySelection = 6,
+    PbPbTruthSelectionOnlyHasCollision = 7,
+    PbPbTruthSelectionOnlyVertexZ = 8,
+    PbPbTruthSelectionOnlyNoSplit = 9,
+    PbPbTruthSelectionOnlyNBins = 9
   };
 
   static constexpr float ConfigSwitchLow = -98.0f;
@@ -190,7 +194,9 @@ struct JetCrossSectionEfficiency {
 
   void init(InitContext&)
   {
-    if (!(acceptSplitCollisions == NonSplitOnly || acceptSplitCollisions == SplitOkCheckAnyAssocColl || acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly)) {
+    if (acceptSplitCollisions != NonSplitOnly &&
+        acceptSplitCollisions != SplitOkCheckAnyAssocColl &&
+        acceptSplitCollisions != SplitOkCheckFirstAssocCollOnly) {
       LOGF(fatal, "Configurable acceptSplitCollisions has wrong input value; stopping workflow");
     }
 
