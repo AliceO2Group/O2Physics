@@ -1359,7 +1359,7 @@ struct OnTheFlyTracker {
           thisCascade.mXi = RecoDecay::m(std::array{std::array{pBach[0], pBach[1], pBach[2]}, std::array{pV0[0], pV0[1], pV0[2]}},
                                          std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassLambda});
           newCascadeTrack.setPID(pdgCodeToPID(PDG_t::kXiMinus)); // FIXME: not OK for omegas
-          float trackTime = (eventCollisionTimeNS + gRandom->Gaus(0., TimeResolutionNs)) * NsToMus;
+          trackTime = (eventCollisionTimeNS + gRandom->Gaus(0., TimeResolutionNs)) * NsToMus;
           tracksCascadeProngs[NCascProngs + 1] = TrackAlice3{newCascadeTrack, mcParticle.globalIndex(), trackTime, TimeResolutionUs, false, false, false, 1, thisCascade.foundClusters, TrackType::kRecoCascDaug};
 
           fillCascadeTable = true;
