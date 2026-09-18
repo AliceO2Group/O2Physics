@@ -18,8 +18,8 @@
 /// so the same builder is used by all dN/deta tasks independent of the trigger type.
 ///
 /// Tracks are selected with the femto track bitmask via two partitions:
-///   - global tracks (with TPC):   ITS + TPC quality bits (trackbuilder::ConfTrackSelectionDndetaWithTpc)
-///   - ITS-only tracks (no TPC):   ITS quality bits only  (trackbuilder::ConfTrackSelectionDndetaWithoutTpc)
+///   - global tracks (with TPC):   ITS + TPC quality bits (trackbuilder::ConfTrackSelectionDndetaGlobal)
+///   - ITS-only tracks (no TPC):   ITS quality bits only  (trackbuilder::ConfTrackSelectionDndetaItsOnly)
 /// The QA of the selected tracks is done with one track histogram manager per track class.
 /// This reproduces the global track selection, where the TPC cuts are only applied if the track has TPC.
 /// A track is taken from the first partition only if it has TPC and from the second only if it has no TPC,
@@ -175,7 +175,7 @@ class DndetaBuilder
 
   /// \return true if the collision was selected (including the trigger)
   template <typename T1, typename T2, typename T3, typename T4, typename T5>
-  bool processData(T1 const& col, T2& partitionWithTpc, T3& partitionWithoutTpc, T4& cache, T5 const& trigger)
+  bool processData(T1 const& col, T2& partitionGlobal, T3& partitionItsOnly, T4& cache, T5 const& trigger)
   {
     if (!selectCollision(col, trigger)) {
       return false;
@@ -184,24 +184,24 @@ class DndetaBuilder
     const float cent = col.cent();
     mHistManager.fillEvent(posZ, cent);
 
-    auto tracksWithTpc = partitionWithTpc->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-    auto tracksWithoutTpc = partitionWithoutTpc->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto tracksGlobal = partitionGlobal->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto tracksItsOnly = partitionItsOnly->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
 
     int nch = 0;
-    for (auto const& track : tracksWithTpc) {
+    for (auto const& track : tracksGlobal) {
       if (!isTrackAccepted(track, true)) {
         continue;
       }
       nch++;
-      mTrackHistManagerGlobal.template fill<modes::Mode::kReco_Qa>(track, tracksWithTpc);
+      mTrackHistManagerGlobal.template fill<modes::Mode::kReco_Qa>(track, tracksGlobal);
       mHistManager.fillDataTrack(posZ, cent, track.eta(), track.phi(), true);
     }
-    for (auto const& track : tracksWithoutTpc) {
+    for (auto const& track : tracksItsOnly) {
       if (!isTrackAccepted(track, false)) {
         continue;
       }
       nch++;
-      mTrackHistManagerItsOnly.template fill<modes::Mode::kReco_Qa>(track, tracksWithoutTpc);
+      mTrackHistManagerItsOnly.template fill<modes::Mode::kReco_Qa>(track, tracksItsOnly);
       mHistManager.fillDataTrack(posZ, cent, track.eta(), track.phi(), false);
     }
     if (mDoCorrelation) {
@@ -236,8 +236,8 @@ class DndetaBuilder
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11>
   void processMc(T1 const& cols,
                  T2 const& mcCols,
-                 T3& partitionWithTpc,
-                 T4& partitionWithoutTpc,
+                 T3& partitionGlobal,
+                 T4& partitionItsOnly,
                  T5& cache,
                  T6 const& mcParticles,
                  T7 const& mcMothers,
@@ -275,9 +275,9 @@ class DndetaBuilder
       }
       selectedReco[static_cast<std::size_t>(col.fMcColId())] = col.globalIndex();
       if (mDoMcEfficiency) {
-        auto tracksWithTpc = partitionWithTpc->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-        auto tracksWithoutTpc = partitionWithoutTpc->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-        fillRecoMc(col, tracksWithTpc, tracksWithoutTpc, mcParticles, mcMothers);
+        auto tracksGlobal = partitionGlobal->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+        auto tracksItsOnly = partitionItsOnly->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+        fillRecoMc(col, tracksGlobal, tracksItsOnly, mcParticles, mcMothers);
       }
     }
 
@@ -503,20 +503,20 @@ class DndetaBuilder
   }
 
   template <typename T1, typename T2, typename T3, typename T4, typename T5>
-  void fillRecoMc(T1 const& col, T2 const& tracksWithTpc, T3 const& tracksWithoutTpc, T4 const& mcParticles, T5 const& mcMothers)
+  void fillRecoMc(T1 const& col, T2 const& tracksGlobal, T3 const& tracksItsOnly, T4 const& mcParticles, T5 const& mcMothers)
   {
     mHistManager.fillRecoCollision(col.posZ(), col.cent());
     // labels are tracked over both partitions, so a fake is also found if the other track comes from the other partition
     std::vector<int64_t> usedLabels;
-    for (auto const& track : tracksWithTpc) {
+    for (auto const& track : tracksGlobal) {
       if (isTrackAccepted(track, true)) {
-        mTrackHistManagerGlobal.template fill<modes::Mode::kReco_Qa>(track, tracksWithTpc);
+        mTrackHistManagerGlobal.template fill<modes::Mode::kReco_Qa>(track, tracksGlobal);
         fillRecoMcTrack(col, track, mcParticles, mcMothers, usedLabels);
       }
     }
-    for (auto const& track : tracksWithoutTpc) {
+    for (auto const& track : tracksItsOnly) {
       if (isTrackAccepted(track, false)) {
-        mTrackHistManagerItsOnly.template fill<modes::Mode::kReco_Qa>(track, tracksWithoutTpc);
+        mTrackHistManagerItsOnly.template fill<modes::Mode::kReco_Qa>(track, tracksItsOnly);
         fillRecoMcTrack(col, track, mcParticles, mcMothers, usedLabels);
       }
     }
