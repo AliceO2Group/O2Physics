@@ -64,8 +64,7 @@ static constexpr TrackSelectionFlags::flagtype TrackSelectionTpc =
   TrackSelectionFlags::kTPCNCls |
   TrackSelectionFlags::kTPCCrossedRowsOverNCls |
   TrackSelectionFlags::kTPCChi2NDF;
-static constexpr TrackSelectionFlags::flagtype TrackSelectionDca =
-  TrackSelectionFlags::kDCAz | TrackSelectionFlags::kDCAxy;
+// static constexpr TrackSelectionFlags::flagtype TrackSelectionDca = TrackSelectionFlags::kDCAz | TrackSelectionFlags::kDCAxy;
 static constexpr TrackSelectionFlags::flagtype TrackSelectionDcaxyOnly =
   TrackSelectionFlags::kDCAxy;
 
@@ -114,6 +113,14 @@ struct StudyPnch {
   Configurable<bool> isPtdecrease{"isPtdecrease", false, "Varies low pT particles by a conservative amount of -50%"};
   Configurable<bool> cPrint{"cPrint", false, "Enable printing information for debugging"};
   Configurable<bool> isApplyStrangenessSysUncert{"isApplyStrangenessSysUncert", false, "Enable the evaluation of systematics due to strange particle contribution"};
+  Configurable<bool> isApplyDCAstandardcuts{"isApplyDCAstandardcuts", true, "Apply DCA standard run 2 cuts"};
+  Configurable<bool> isApplyDCAcustomcuts{"isApplyDCAcustomcuts", false, "Apply DCA custom cuts"};
+  Configurable<float> cDcazP0{"cDcazP0", 1.0f, "dcaz parameter0"};
+  Configurable<float> cDcazP1{"cDcazP1", 1.0f, "dcaz parameter1"};
+  Configurable<float> cDcazP2{"cDcazP2", 1.0f, "dcaz parameter2"};
+  Configurable<float> cDcaxyP0{"cDcaxyP0", 1.0f, "dcaxy parameter0"};
+  Configurable<float> cDcaxyP1{"cDcaxyP1", 1.0f, "dcaxy parameter1"};
+  Configurable<float> cDcaxyP2{"cDcaxyP2", 1.0f, "dcaxy parameter2"};
 
   void init(InitContext const&)
   {
@@ -147,6 +154,7 @@ struct StudyPnch {
     }
     if (doprocessData) {
       histos.add("hMultiplicityData", "hMultiplicityData", kTH1F, {axisMult}, true);
+      histos.add("hMultiplicityDataINELgt0", "hMultiplicityDataINELgt0", kTH1F, {axisMult}, true);
     }
     if (doprocessCorrelation) {
       histos.add("GlobalMult_vs_FT0A", "GlobalMult_vs_FT0A", kTH2F, {axisMult, axisFt0aMult}, true);
@@ -215,10 +223,34 @@ struct StudyPnch {
   template <typename CheckTrack>
   bool isTrackSelected(CheckTrack const& track)
   {
+    if (isApplyDCAcustomcuts) {
+      if (std::abs(track.dcaXY()) > cDcaxyP0 + cDcaxyP1 / std::pow(track.pt(), cDcaxyP2))
+        return false;
+      if (std::abs(track.dcaZ()) > cDcazP0 + cDcazP1 / std::pow(track.pt(), cDcazP2))
+        return false;
+    }
     if (std::abs(track.eta()) >= etaRange) {
       return false;
     }
     if (isApplyExtraPhiCut && ((track.phi() > extraphicut1 && track.phi() < extraphicut2) || track.phi() <= extraphicut3 || track.phi() >= extraphicut4)) {
+      return false;
+    }
+    return true;
+  }
+
+  template <typename CheckInelgt0>
+  bool isInegt0Selected(CheckInelgt0 const& track)
+  {
+    if (isApplyDCAcustomcuts) {
+      if (std::abs(track.dcaXY()) > cDcaxyP0 + cDcaxyP1 / std::pow(track.pt(), cDcaxyP2))
+        return false;
+      if (std::abs(track.dcaZ()) > cDcazP0 + cDcazP1 / std::pow(track.pt(), cDcazP2))
+        return false;
+    }
+    if (!isApplyInelgt0) {
+      return false;
+    }
+    if (std::abs(track.eta()) >= 1.0f) {
       return false;
     }
     return true;
@@ -249,6 +281,33 @@ struct StudyPnch {
     return true;
   }
 
+  template <typename CheckGenInelgt0>
+  bool isInelgt0GenSelected(CheckGenInelgt0 const& track)
+  {
+    if (!isApplyInelgt0) {
+      return false;
+    }
+    if (!track.isPhysicalPrimary()) {
+      return false;
+    }
+    if (!track.producedByGenerator()) {
+      return false;
+    }
+    auto pdgTrack = pdg->GetParticle(track.pdgCode());
+    if (pdgTrack == nullptr) {
+      return false;
+    }
+    if (std::abs(pdgTrack->Charge()) < kMinCharge) {
+      return false;
+    }
+    if (std::abs(track.eta()) >= 1.0f) {
+      return false;
+    }
+    if (isApplyExtraPhiCut && ((track.phi() > extraphicut1 && track.phi() < extraphicut2) || track.phi() <= extraphicut3 || track.phi() >= extraphicut4)) {
+      return false;
+    }
+    return true;
+  }
   template <typename countTrk>
   int countNTracks(countTrk const& tracks)
   {
@@ -268,6 +327,22 @@ struct StudyPnch {
       nTrk++;
     }
     return nTrk;
+  }
+
+  template <typename countInelgt0Trk>
+  int countINELTracks(countInelgt0Trk const& tracks)
+  {
+    auto nTrkinel = 0;
+    for (const auto& track : tracks) {
+      if (!isInegt0Selected(track)) {
+        continue;
+      }
+      if (isApplyPhiSelection && (track.phi() < minPhi || track.phi() > maxPhi)) {
+        continue;
+      }
+      nTrkinel++;
+    }
+    return nTrkinel;
   }
 
   template <typename countTrk, typename McColType>
@@ -290,6 +365,25 @@ struct StudyPnch {
       nTrk++;
     }
     return nTrk;
+  }
+
+  template <typename countInelgt0GenTrk, typename McColType>
+  int countINELGenTracks(countInelgt0GenTrk const& tracks, McColType const& McCol)
+  {
+    auto nTrkgeninel = 0;
+    for (const auto& track : tracks) {
+      if (!isInelgt0GenSelected(track)) {
+        continue;
+      }
+      if (track.mcCollisionId() != McCol.mcCollisionId()) {
+        continue;
+      }
+      if (isApplyPhiSelection && (track.phi() < minPhi || track.phi() > maxPhi)) {
+        continue;
+      }
+      nTrkgeninel++;
+    }
+    return nTrkgeninel;
   }
 
   template <typename countTrk, typename McColType>
@@ -322,6 +416,33 @@ struct StudyPnch {
       histos.fill(HIST("PhiVsEtaHist"), track.phi(), track.eta());
     }
     return nTrk;
+  }
+
+  template <typename countInelgt0RecTrk, typename McColType>
+  int countINELMcCol(countInelgt0RecTrk const& tracks, McColType const& McCol)
+  {
+    auto nTrkrecinel = 0;
+    std::vector<int> mcRecIDs;
+    for (const auto& track : tracks) {
+      if (!isInegt0Selected(track)) {
+        continue;
+      }
+      if (track.has_mcParticle()) {
+        auto particle = track.mcParticle();
+        if (isApplyCheckID && particle.mcCollisionId() != McCol.mcCollisionId()) {
+          continue;
+        }
+        if (isApplyDuplicatedTrack && find(mcRecIDs.begin(), mcRecIDs.end(), particle.globalIndex()) != mcRecIDs.end()) {
+          continue;
+        }
+        mcRecIDs.push_back(particle.globalIndex());
+        if (isApplyPhiSelection && (track.phi() < minPhi || track.phi() > maxPhi)) {
+          continue;
+        }
+        nTrkrecinel++;
+      }
+    }
+    return nTrkrecinel;
   }
 
   template <typename countTrk, typename McColType>
@@ -392,8 +513,7 @@ struct StudyPnch {
                               ncheckbit(aod::track::trackCutFlag, TrackSelectionIts);
   Filter fTrackSelectionTPC = ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC),
                                      ncheckbit(aod::track::trackCutFlag, TrackSelectionTpc), true);
-  Filter fTrackSelectionDCA = ifnode(dcaZ.node() > 0.f, nabs(aod::track::dcaZ) <= dcaZ && ncheckbit(aod::track::trackCutFlag, TrackSelectionDcaxyOnly),
-                                     ncheckbit(aod::track::trackCutFlag, TrackSelectionDca));
+  Filter fTrackSelectionDCA = ifnode(isApplyDCAstandardcuts.node(), nabs(aod::track::dcaZ) <= dcaZ && ncheckbit(aod::track::trackCutFlag, TrackSelectionDcaxyOnly), true);
 
   void processData(ColDataTable::iterator const& cols, FilTrackDataTable const& tracks)
   {
@@ -401,13 +521,11 @@ struct StudyPnch {
       return;
     }
     auto mult = countNTracks(tracks);
-    if (isApplyInelgt0 && etaRange == 1.0f) {
-      if (mult > 0) {
-        histos.fill(HIST("hMultiplicityData"), mult);
-      }
-    } else {
-      histos.fill(HIST("hMultiplicityData"), mult);
+    auto multINELgt0 = countINELTracks(tracks);
+    if (isApplyInelgt0 && multINELgt0 == 0) {
+      return;
     }
+    histos.fill(HIST("hMultiplicityData"), mult);
   }
 
   void processCorrelation(ColDataTable::iterator const& cols, FilTrackDataTable const& tracks)
@@ -425,10 +543,6 @@ struct StudyPnch {
 
   void processMonteCarlo(soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultMCExtras>::iterator const& mcCollision, ColMCRecTable const& RecCols, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
   {
-    if (isApplyInelgt0 && !mcCollision.isInelGt0()) {
-      return;
-    }
-
     for (const auto& RecCol : RecCols) {
       if (!isEventSelected(RecCol)) {
         continue;
@@ -442,22 +556,21 @@ struct StudyPnch {
       }
       auto recTracksPart = RecTracks.sliceBy(perCollision, RecCol.globalIndex());
       auto multrec = countNTracksMcCol(recTracksPart, RecCol);
+      auto multrecinelgt = countINELMcCol(recTracksPart, RecCol);
       float multgen = countGenTracks(GenParticles, RecCol);
+      float multgeninelgt = countINELGenTracks(GenParticles, RecCol);
       float nTrkPtCut = countTracksPtCut(GenParticles, RecCol);
-      if (isApplyInelgt0 && etaRange == 1.0f) {
-        if (multrec == 0 || multgen == 0) {
-          if (nTrkPtCut == 0) {
-            continue;
-          }
+      if (isApplyInelgt0) {
+        if (multrecinelgt == 0 || multgeninelgt == 0) {
           continue;
         }
       }
       histos.fill(HIST("hMultiplicityMCrec"), multrec);
+      histos.fill(HIST("hMultiplicityMCgen"), multgen);
+      histos.fill(HIST("hResponseMatrix"), multrec, multgen);
       if (cPrint) {
         LOG(info) << "Generated Particles with standard pT:" << multgen;
       }
-      histos.fill(HIST("hMultiplicityMCgen"), multgen);
-      histos.fill(HIST("hResponseMatrix"), multrec, multgen);
       nTrkPtCut = multgen + nTrkPtCut;
       if (cPrint) {
         LOG(info) << "After Counting low pT: " << nTrkPtCut;
@@ -475,9 +588,6 @@ struct StudyPnch {
 
   void processEvtLossSigLossMC(soa::Join<ColMCTrueTable, aod::MultMCExtras>::iterator const& mcCollision, ColMCRecTable const& RecCols, TrackMCTrueTable const& GenParticles)
   {
-    if (isApplyInelgt0 && !mcCollision.isInelGt0()) {
-      return;
-    }
     if (isApplyTVX && !(mcCollision.multMCFT0C() > 0 && mcCollision.multMCFT0A() > 0)) {
       return;
     }
@@ -487,19 +597,19 @@ struct StudyPnch {
     // All generated events
     histos.fill(HIST("MCEventHist"), 1);
     auto nTrk_multAll = 0;
+    auto nTrk_multInelAll = 0;
     for (const auto& GenParticle : GenParticles) {
-      if (!isGenTrackSelected(GenParticle)) {
-        continue;
+      if (isInelgt0GenSelected(GenParticle)) {
+        nTrk_multInelAll++;
       }
-      nTrk_multAll++;
-    }
-    if (isApplyInelgt0 && etaRange == 1.0f) {
-      if (nTrk_multAll > 0) {
-        histos.fill(HIST("hMultiplicityMCgenAll"), nTrk_multAll);
+      if (isGenTrackSelected(GenParticle)) {
+        nTrk_multAll++;
       }
-    } else {
-      histos.fill(HIST("hMultiplicityMCgenAll"), nTrk_multAll);
     }
+    if (isApplyInelgt0 && nTrk_multInelAll == 0) {
+      return;
+    }
+    histos.fill(HIST("hMultiplicityMCgenAll"), nTrk_multAll);
 
     bool atLeastOne = false;
     auto numcontributors = -999;
@@ -518,19 +628,19 @@ struct StudyPnch {
     if (atLeastOne) {
       histos.fill(HIST("MCEventHist"), 2);
       auto nTrk_multSel = 0;
+      auto nTrk_multInelSel = 0;
       for (const auto& GenParticle : GenParticles) {
-        if (!isGenTrackSelected(GenParticle)) {
-          continue;
+        if (isInelgt0GenSelected(GenParticle)) {
+          nTrk_multInelSel++;
         }
-        nTrk_multSel++;
-      }
-      if (isApplyInelgt0 && etaRange == 1.0f) {
-        if (nTrk_multSel > 0) {
-          histos.fill(HIST("hMultiplicityMCgenSel"), nTrk_multSel);
+        if (isGenTrackSelected(GenParticle)) {
+          nTrk_multSel++;
         }
-      } else {
-        histos.fill(HIST("hMultiplicityMCgenSel"), nTrk_multSel);
       }
+      if (isApplyInelgt0 && nTrk_multInelSel == 0) {
+        return;
+      }
+      histos.fill(HIST("hMultiplicityMCgenSel"), nTrk_multSel);
     }
   }
 
