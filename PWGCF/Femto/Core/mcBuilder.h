@@ -122,9 +122,11 @@ struct ConfMcParticleSelection : o2::framework::ConfigurableGroup {
 
 constexpr const char PrefixMcParticleSelection1[] = "McParticleSelection1";
 constexpr const char PrefixMcParticleSelection2[] = "McParticleSelection2";
+constexpr const char PrefixMcParticleSelection3[] = "McParticleSelection3";
 
 using ConfMcParticleSelection1 = ConfMcParticleSelection<PrefixMcParticleSelection1>;
 using ConfMcParticleSelection2 = ConfMcParticleSelection<PrefixMcParticleSelection2>;
+using ConfMcParticleSelection3 = ConfMcParticleSelection<PrefixMcParticleSelection3>;
 
 class McBuilder
 {

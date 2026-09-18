@@ -787,6 +787,20 @@ class PairHistManager
     mTrueCent = 0.5f * (col1.cent() + col2.cent());
   }
 
+  /// pair cuts on the mc-truth values, for the pure mc-truth path (kMc without kReco),
+  /// where the reco values are never set
+  bool checkPairCutsMcTruth() const
+  {
+    return (!(mKstarMin > 0.f) || mTrueKstar > mKstarMin) &&
+           (!(mKstarMax > 0.f) || mTrueKstar < mKstarMax) &&
+           (!(mKtMin > 0.f) || mTrueKt > mKtMin) &&
+           (!(mKtMax > 0.f) || mTrueKt < mKtMax) &&
+           (!(mMtMin > 0.f) || mTrueMt > mMtMin) &&
+           (!(mMtMax > 0.f) || mTrueMt < mMtMax) &&
+           (!(mMassInvMin > 0.f) || mTrueMinv > mMassInvMin) &&
+           (!(mMassInvMax > 0.f) || mTrueMinv < mMassInvMax);
+  }
+
   bool checkPairCuts() const
   {
     return (!(mKstarMin > 0.f) || mKstar > mKstarMin) &&
