@@ -224,8 +224,8 @@ struct Kstarqa {
 
     rEventSelection.add("hEventCut", "No. of event after cuts", kTH1D, {{20, 0, 20}});
     std::shared_ptr<TH1> hEventSelection = rEventSelection.get<TH1>(HIST("hEventCut"));
-    rTrackSelection.add("hTrackCut", "No. of tracks after cuts", kTH1D, {{20, 0, 20}});
-    std::shared_ptr<TH1> hTrackSelection = rTrackSelection.get<TH1>(HIST("hTrackCut"));
+    rEventSelection.add("hTrackCut", "No. of tracks after cuts", kTH1D, {{20, 0, 20}});
+    std::shared_ptr<TH1> hTrackSelection = rEventSelection.get<TH1>(HIST("hTrackCut"));
 
     auto check = [](bool enabled) { return enabled ? "" : " #otimes"; }; // check if a cut is enabled and put #otimes beside that label if not enabled
 
@@ -249,8 +249,8 @@ struct Kstarqa {
     std::vector<std::string> trackCutLabels = {
       "All Tracks",
       std::string("GlobalTracks") + check(configGp.isGlobalTracks.value),
-      std::string("pT > ") + std::to_string(configGp.cfgCutPT.value),
-      std::string("|#eta| < ") + std::to_string(configGp.cfgCutEtaMax.value),
+      std::string("pT > ") + std::to_string(configGp.cfgCutPT),
+      std::string("|#eta| < ") + std::to_string(configGp.cfgCutEtaMax),
       std::string("DCAxy < ") + std::to_string(configGp.cfgCutDCAxyMax.value) + check(!configGp.isApplyPtDepDCACut.value),
       std::string("DCAz < ") + std::to_string(configGp.cfgCutDCAz.value),
       std::string("ITS clusters > ") + std::to_string(configGp.cfgITScluster.value),
@@ -506,27 +506,24 @@ struct Kstarqa {
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
-    if (fillHist)
-      rEventSelection.fill(HIST("hTrackCut"), 0);
+
+    rEventSelection.fill(HIST("hTrackCut"), 0);
 
     if (configGp.isGlobalTracks) {
       if (!candidate.isGlobalTrack())
         return false;
 
-      if (fillHist)
-        rEventSelection.fill(HIST("hTrackCut"), 1);
+      rEventSelection.fill(HIST("hTrackCut"), 1);
 
       if (std::abs(candidate.pt()) < configGp.cfgCutPT)
         return false;
 
-      if (fillHist)
-        rEventSelection.fill(HIST("hTrackCut"), 2);
+      rEventSelection.fill(HIST("hTrackCut"), 2);
 
       if (std::abs(candidate.eta()) > configGp.cfgCutEtaMax)
         return false;
 
-      if (fillHist)
-        rEventSelection.fill(HIST("hTrackCut"), 3);
+      rEventSelection.fill(HIST("hTrackCut"), 3);
 
       if (!configGp.isApplyPtDepDCACut) {
         if (std::abs(candidate.dcaXY()) > configGp.cfgCutDCAxyMax)
@@ -537,8 +534,7 @@ struct Kstarqa {
           return false;
       }
 
-      if (fillHist)
-        rEventSelection.fill(HIST("hTrackCut"), 4);
+      rEventSelection.fill(HIST("hTrackCut"), 4);
 
       if (!configGp.isApplyPtDepDCACut) {
         if (std::abs(candidate.dcaZ()) > configGp.cfgCutDCAz)
@@ -548,26 +544,22 @@ struct Kstarqa {
           return false;
       }
 
-      if (fillHist)
-        rEventSelection.fill(HIST("hTrackCut"), 5);
+      rEventSelection.fill(HIST("hTrackCut"), 5);
 
       if (candidate.itsNCls() < configGp.cfgITScluster)
         return false;
 
-      if (fillHist)
-        rEventSelection.fill(HIST("hTrackCut"), 6);
+      rEventSelection.fill(HIST("hTrackCut"), 6);
 
       if (candidate.tpcNClsFound() < configGp.cfgTPCcluster)
         return false;
 
-      if (fillHist)
-        rEventSelection.fill(HIST("hTrackCut"), 7);
+      rEventSelection.fill(HIST("hTrackCut"), 7);
 
       if (configGp.hasITS && !candidate.hasITS())
         return false;
 
-      if (fillHist)
-        rEventSelection.fill(HIST("hTrackCut"), 8);
+      rEventSelection.fill(HIST("hTrackCut"), 8);
 
       if (configGp.isITSTPCRefit) {
         if (!(candidate.flags() & o2::aod::track::ITSrefit) ||
@@ -576,37 +568,31 @@ struct Kstarqa {
         }
       }
 
-      if (fillHist)
-        rEventSelection.fill(HIST("hTrackCut"), 9);
+      rEventSelection.fill(HIST("hTrackCut"), 9);
 
       if (configGp.cfgPVContributor && !candidate.isPVContributor())
         return false;
 
-      if (fillHist)
-        rEventSelection.fill(HIST("hTrackCut"), 10);
+      rEventSelection.fill(HIST("hTrackCut"), 10);
 
     } else if (!configGp.isGlobalTracks) {
 
-      if (fillHist)
-        rEventSelection.fill(HIST("hTrackCut"), 0);
+      rEventSelection.fill(HIST("hTrackCut"), 0);
 
       if (!candidate.isGlobalTrackWoDCA())
         return false;
 
-      if (fillHist)
-        rEventSelection.fill(HIST("hTrackCut"), 1);
+      rEventSelection.fill(HIST("hTrackCut"), 1);
 
       if (std::abs(candidate.pt()) < configGp.cfgCutPT)
         return false;
 
-      if (fillHist)
-        rEventSelection.fill(HIST("hTrackCut"), 2);
+      rEventSelection.fill(HIST("hTrackCut"), 2);
 
       if (std::abs(candidate.eta()) > configGp.cfgCutEtaMax)
         return false;
 
-      if (fillHist)
-        rEventSelection.fill(HIST("hTrackCut"), 3);
+      rEventSelection.fill(HIST("hTrackCut"), 3);
 
       if (!configGp.isApplyPtDepDCACut) {
         if (std::abs(candidate.dcaXY()) > configGp.cfgCutDCAxyMax)
@@ -617,8 +603,7 @@ struct Kstarqa {
           return false;
       }
 
-      if (fillHist)
-        rEventSelection.fill(HIST("hTrackCut"), 4);
+      rEventSelection.fill(HIST("hTrackCut"), 4);
 
       if (!configGp.isApplyPtDepDCACut) {
         if (std::abs(candidate.dcaZ()) > configGp.cfgCutDCAz)
@@ -628,14 +613,12 @@ struct Kstarqa {
           return false;
       }
 
-      if (fillHist)
-        rEventSelection.fill(HIST("hTrackCut"), 5);
+      rEventSelection.fill(HIST("hTrackCut"), 5);
 
       if (candidate.itsNCls() < configGp.cfgITScluster)
         return false;
 
-      if (fillHist)
-        rEventSelection.fill(HIST("hTrackCut"), 6);
+      rEventSelection.fill(HIST("hTrackCut"), 6);
 
       if (candidate.tpcNClsFound() < configGp.cfgTPCcluster)
         return false;
@@ -643,8 +626,7 @@ struct Kstarqa {
       if (configGp.hasITS && !candidate.hasITS())
         return false;
 
-      if (fillHist)
-        rEventSelection.fill(HIST("hTrackCut"), 7);
+      rEventSelection.fill(HIST("hTrackCut"), 7);
 
       if (configGp.isITSTPCRefit) {
         if (!(candidate.flags() & o2::aod::track::ITSrefit) ||
@@ -653,14 +635,12 @@ struct Kstarqa {
         }
       }
 
-      if (fillHist)
-        rEventSelection.fill(HIST("hTrackCut"), 8);
+      rEventSelection.fill(HIST("hTrackCut"), 8);
 
       if (configGp.cfgPVContributor && !candidate.isPVContributor())
         return false;
 
-      if (fillHist)
-        rEventSelection.fill(HIST("hTrackCut"), 9);
+      rEventSelection.fill(HIST("hTrackCut"), 9);
     }
 
     return true;
