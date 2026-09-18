@@ -23,6 +23,8 @@
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 
+#include <cstdint>
+
 namespace o2::aod
 {
 DECLARE_SOA_TABLE(HfCandDpFullEvs, "AOD", "HFCANDDPFULLEV",
@@ -38,6 +40,8 @@ DECLARE_SOA_TABLE(HfCandDpMcEvs, "AOD", "HFCANDDPMCEV",
 
 namespace full
 {
+DECLARE_SOA_INDEX_COLUMN_FULL(HfCandDpFullEv, hfCandDpFullEv, int32_t, HfCandDpFullEvs, "");
+DECLARE_SOA_INDEX_COLUMN_FULL(HfCandDpMcEv, hfCandDpMcEv, int32_t, HfCandDpMcEvs, "");
 DECLARE_SOA_COLUMN(RSecondaryVertex, rSecondaryVertex, float);                     //! Radius of secondary vertex (cm)
 DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);                                     //! Transverse momentum of prong0 (GeV/c)
 DECLARE_SOA_COLUMN(PProng0, pProng0, float);                                       //! Momentum of prong0 (GeV/c)
@@ -57,8 +61,6 @@ DECLARE_SOA_COLUMN(Eta, eta, float);                                            
 DECLARE_SOA_COLUMN(Phi, phi, float);                                               //! Azimuth angle of candidate
 DECLARE_SOA_COLUMN(E, e, float);                                                   //! Energy of candidate (GeV)
 DECLARE_SOA_COLUMN(Centrality, centrality, float);                                 //! Collision centrality
-DECLARE_SOA_INDEX_COLUMN(HfCandDpMcEv, hfCandDpMcEv);                              //! The Mc collision index this MC particles belongs to
-DECLARE_SOA_INDEX_COLUMN(HfCandDpFullEv, hfCandDpFullEv);                          //! The collision index this candidate belongs to
 DECLARE_SOA_COLUMN(NSigTpcPi0, nSigTpcPi0, float);                                 //! TPC Nsigma separation for prong0 with pion mass hypothesis
 DECLARE_SOA_COLUMN(NSigTpcKa0, nSigTpcKa0, float);                                 //! TPC Nsigma separation for prong0 with kaon mass hypothesis
 DECLARE_SOA_COLUMN(NSigTofPi0, nSigTofPi0, float);                                 //! TOF Nsigma separation for prong0 with pion mass hypothesis
@@ -71,12 +73,12 @@ DECLARE_SOA_COLUMN(NSigTpcPi2, nSigTpcPi2, float);                              
 DECLARE_SOA_COLUMN(NSigTpcKa2, nSigTpcKa2, float);                                 //! TPC Nsigma separation for prong2 with kaon mass hypothesis
 DECLARE_SOA_COLUMN(NSigTofPi2, nSigTofPi2, float);                                 //! TOF Nsigma separation for prong2 with pion mass hypothesis
 DECLARE_SOA_COLUMN(NSigTofKa2, nSigTofKa2, float);                                 //! TOF Nsigma separation for prong2 with kaon mass hypothesis
-DECLARE_SOA_COLUMN(NSigTpcTofPi0, nSigTpcTofPi0, float);                           //! TPC and TOF combined Nsigma separation for prong0 with pion mass hypothesis
-DECLARE_SOA_COLUMN(NSigTpcTofKa0, nSigTpcTofKa0, float);                           //! TPC and TOF combined Nsigma separation for prong0 with kaon mass hypothesis
-DECLARE_SOA_COLUMN(NSigTpcTofPi1, nSigTpcTofPi1, float);                           //! TPC and TOF combined Nsigma separation for prong1 with pion mass hypothesis
-DECLARE_SOA_COLUMN(NSigTpcTofKa1, nSigTpcTofKa1, float);                           //! TPC and TOF combined Nsigma separation for prong1 with kaon mass hypothesis
-DECLARE_SOA_COLUMN(NSigTpcTofPi2, nSigTpcTofPi2, float);                           //! TPC and TOF combined Nsigma separation for prong2 with pion mass hypothesis
-DECLARE_SOA_COLUMN(NSigTpcTofKa2, nSigTpcTofKa2, float);                           //! TPC and TOF combined Nsigma separation for prong2 with kaon mass hypothesis
+DECLARE_SOA_COLUMN(TpcTofNSigmaPi0, tpcTofNSigmaPi0, float);                       //! TPC and TOF combined Nsigma separation for prong0 with pion mass hypothesis
+DECLARE_SOA_COLUMN(TpcTofNSigmaKa0, tpcTofNSigmaKa0, float);                       //! TPC and TOF combined Nsigma separation for prong0 with kaon mass hypothesis
+DECLARE_SOA_COLUMN(TpcTofNSigmaPi1, tpcTofNSigmaPi1, float);                       //! TPC and TOF combined Nsigma separation for prong1 with pion mass hypothesis
+DECLARE_SOA_COLUMN(TpcTofNSigmaKa1, tpcTofNSigmaKa1, float);                       //! TPC and TOF combined Nsigma separation for prong1 with kaon mass hypothesis
+DECLARE_SOA_COLUMN(TpcTofNSigmaPi2, tpcTofNSigmaPi2, float);                       //! TPC and TOF combined Nsigma separation for prong2 with pion mass hypothesis
+DECLARE_SOA_COLUMN(TpcTofNSigmaKa2, tpcTofNSigmaKa2, float);                       //! TPC and TOF combined Nsigma separation for prong2 with kaon mass hypothesis
 DECLARE_SOA_COLUMN(DecayLength, decayLength, float);                               //! Decay length of candidate (cm)
 DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);                           //! Transverse decay length of candidate (cm)
 DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);           //! Normalised decay length of candidate
@@ -96,7 +98,7 @@ DECLARE_SOA_TABLE(HfCandDpMls, "AOD", "HFCANDDPML",
                   full::MlScore0,
                   full::MlScore1)
 
-DECLARE_SOA_TABLE(HfCandDpTinys, "AOD", "HFCANDDPTINY",
+DECLARE_SOA_TABLE(HfCandDpTinys, "AOD", "HFCANDDPTINY", o2::soa::Index<>,
                   full::CandidateSelFlag,
                   full::M,
                   full::Pt,
@@ -107,7 +109,7 @@ DECLARE_SOA_TABLE(HfCandDpTinys, "AOD", "HFCANDDPTINY",
                   hf_cand_mc_flag::OriginMcRec,
                   hf_cand_mc_flag::FlagMcDecayChanRec)
 
-DECLARE_SOA_TABLE(HfCandDpLites, "AOD", "HFCANDDPLITE",
+DECLARE_SOA_TABLE(HfCandDpLites, "AOD", "HFCANDDPLITE", o2::soa::Index<>,
                   hf_cand::Chi2PCA,
                   full::DecayLength,
                   full::DecayLengthXY,
@@ -126,20 +128,20 @@ DECLARE_SOA_TABLE(HfCandDpLites, "AOD", "HFCANDDPLITE",
                   full::NSigTpcKa0,
                   full::NSigTofPi0,
                   full::NSigTofKa0,
-                  full::NSigTpcTofPi0,
-                  full::NSigTpcTofKa0,
+                  full::TpcTofNSigmaPi0,
+                  full::TpcTofNSigmaKa0,
                   full::NSigTpcPi1,
                   full::NSigTpcKa1,
                   full::NSigTofPi1,
                   full::NSigTofKa1,
-                  full::NSigTpcTofPi1,
-                  full::NSigTpcTofKa1,
+                  full::TpcTofNSigmaPi1,
+                  full::TpcTofNSigmaKa1,
                   full::NSigTpcPi2,
                   full::NSigTpcKa2,
                   full::NSigTofPi2,
                   full::NSigTofKa2,
-                  full::NSigTpcTofPi2,
-                  full::NSigTpcTofKa2,
+                  full::TpcTofNSigmaPi2,
+                  full::TpcTofNSigmaKa2,
                   full::CandidateSelFlag,
                   full::M,
                   full::Pt,
@@ -155,7 +157,7 @@ DECLARE_SOA_TABLE(HfCandDpLites, "AOD", "HFCANDDPLITE",
                   hf_cand_mc_flag::OriginMcRec,
                   hf_cand_mc_flag::FlagMcDecayChanRec)
 
-DECLARE_SOA_TABLE(HfCandDpFulls, "AOD", "HFCANDDPFULL",
+DECLARE_SOA_TABLE(HfCandDpFulls, "AOD", "HFCANDDPFULL", o2::soa::Index<>,
                   hf_cand::XSecondaryVertex,
                   hf_cand::YSecondaryVertex,
                   hf_cand::ZSecondaryVertex,
@@ -201,20 +203,20 @@ DECLARE_SOA_TABLE(HfCandDpFulls, "AOD", "HFCANDDPFULL",
                   full::NSigTpcKa0,
                   full::NSigTofPi0,
                   full::NSigTofKa0,
-                  full::NSigTpcTofPi0,
-                  full::NSigTpcTofKa0,
+                  full::TpcTofNSigmaPi0,
+                  full::TpcTofNSigmaKa0,
                   full::NSigTpcPi1,
                   full::NSigTpcKa1,
                   full::NSigTofPi1,
                   full::NSigTofKa1,
-                  full::NSigTpcTofPi1,
-                  full::NSigTpcTofKa1,
+                  full::TpcTofNSigmaPi1,
+                  full::TpcTofNSigmaKa1,
                   full::NSigTpcPi2,
                   full::NSigTpcKa2,
                   full::NSigTofPi2,
                   full::NSigTofKa2,
-                  full::NSigTpcTofPi2,
-                  full::NSigTpcTofKa2,
+                  full::TpcTofNSigmaPi2,
+                  full::TpcTofNSigmaKa2,
                   full::CandidateSelFlag,
                   full::M,
                   full::Pt,
@@ -233,7 +235,7 @@ DECLARE_SOA_TABLE(HfCandDpFulls, "AOD", "HFCANDDPFULL",
                   hf_cand_mc_flag::OriginMcRec,
                   hf_cand_mc_flag::FlagMcDecayChanRec);
 
-DECLARE_SOA_TABLE(HfCandDpMcPs, "AOD", "HFCANDDPMCP",
+DECLARE_SOA_TABLE(HfCandDpMcPs, "AOD", "HFCANDDPMCP", o2::soa::Index<>,
                   full::Pt,
                   full::Eta,
                   full::Phi,
