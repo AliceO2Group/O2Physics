@@ -518,16 +518,16 @@ template <modes::Mode mode,
           typename T9,
           typename T10>
 bool processSameEventMcTruth(T1 const& SliceParticle,
-                      T2 const& /*mcParticles*/,
-                      T3 const& mcMothers,
-                      T4 const& mcPartonicMothers,
-                      T5 const& Collision,
-                      T6& ParticleHistManager,
-                      T7& TripletHistManager,
-                      T8& ParticleCleaner,
-                      T9& CtrManager,
-                      T10& TcManager,
-                      TripletOrder tripletOrder)
+                             T2 const& /*mcParticles*/,
+                             T3 const& mcMothers,
+                             T4 const& mcPartonicMothers,
+                             T5 const& Collision,
+                             T6& ParticleHistManager,
+                             T7& TripletHistManager,
+                             T8& ParticleCleaner,
+                             T9& CtrManager,
+                             T10& TcManager,
+                             TripletOrder tripletOrder)
 {
   TripletHistManager.resetTrackedParticlesPerEvent();
   bool foundTriplet = false;
@@ -587,19 +587,19 @@ template <modes::Mode mode,
           typename T1, typename T2, typename T3, typename T4, typename T5, typename T6,
           typename T7, typename T8, typename T9, typename T10, typename T11, typename T12, typename T13>
 bool processSameEventMcTruth(T1 const& SliceParticle1, // 1&2 have same species
-                      T2 const& SliceParticle3,
-                      T3 const& /*mcParticles*/,
-                      T4 const& mcMothers,
-                      T5 const& mcPartonicMothers,
-                      T6 const& Collision,
-                      T7& ParticleHistManager1,
-                      T8& ParticleHistManager3,
-                      T9& TripletHistManager,
-                      T10& ParticleCleaner1,
-                      T11& ParticleCleaner3,
-                      T12& CtrManager,
-                      T13& TcManager,
-                      TripletOrder tripletOrder)
+                             T2 const& SliceParticle3,
+                             T3 const& /*mcParticles*/,
+                             T4 const& mcMothers,
+                             T5 const& mcPartonicMothers,
+                             T6 const& Collision,
+                             T7& ParticleHistManager1,
+                             T8& ParticleHistManager3,
+                             T9& TripletHistManager,
+                             T10& ParticleCleaner1,
+                             T11& ParticleCleaner3,
+                             T12& CtrManager,
+                             T13& TcManager,
+                             TripletOrder tripletOrder)
 {
   TripletHistManager.resetTrackedParticlesPerEvent();
   bool foundTriplet = false;
@@ -662,21 +662,21 @@ template <modes::Mode mode,
           typename T1, typename T2, typename T3, typename T4, typename T5, typename T6,
           typename T7, typename T8, typename T9, typename T10, typename T11, typename T12, typename T13, typename T14, typename T15, typename T16>
 bool processSameEventMcTruth(T1 const& SliceParticle1,
-                      T2 const& SliceParticle2,
-                      T3 const& SliceParticle3,
-                      T4 const& /*mcParticles*/,
-                      T5 const& mcMothers,
-                      T6 const& mcPartonicMothers,
-                      T7 const& Collision,
-                      T8& ParticleHistManager1,
-                      T9& ParticleHistManager2,
-                      T10& ParticleHistManager3,
-                      T11& TripletHistManager,
-                      T12& ParticleCleaner1,
-                      T13& ParticleCleaner2,
-                      T14& ParticleCleaner3,
-                      T15& CtrManager,
-                      T16& TcManager)
+                             T2 const& SliceParticle2,
+                             T3 const& SliceParticle3,
+                             T4 const& /*mcParticles*/,
+                             T5 const& mcMothers,
+                             T6 const& mcPartonicMothers,
+                             T7 const& Collision,
+                             T8& ParticleHistManager1,
+                             T9& ParticleHistManager2,
+                             T10& ParticleHistManager3,
+                             T11& TripletHistManager,
+                             T12& ParticleCleaner1,
+                             T13& ParticleCleaner2,
+                             T14& ParticleCleaner3,
+                             T15& CtrManager,
+                             T16& TcManager)
 {
   TripletHistManager.resetTrackedParticlesPerEvent();
   bool foundTriplet = false;
