@@ -31,6 +31,7 @@
 #include <Framework/runDataProcessing.h>
 
 #include <Math/GenVector/LorentzVector.h>
+#include <Math/GenVector/PxPyPzM4D.h>
 #include <Math/Vector4Dfwd.h>
 
 #include <cmath>
@@ -51,7 +52,7 @@ struct F0phiproxy {
     soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
               aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi,
               aod::pidTPCFullKa, aod::pidTOFFullKa>;
-  using FourVector = ROOT::Math::PxPyPzMVector;
+  using FourVector = ROOT::Math::LorentzVector<ROOT::Math::PxPyPzM4D<double>>;
   Preslice<Tracks> perCollision = aod::track::collisionId;
   HistogramRegistry histos{
     "histos",
