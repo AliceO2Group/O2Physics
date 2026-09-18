@@ -23,7 +23,6 @@
 #include "PWGCF/Femto/Core/particleCleaner.h"
 #include "PWGCF/Femto/Core/partitions.h"
 #include "PWGCF/Femto/Core/tripletBuilder.h"
-#include "PWGCF/Femto/Core/tripletCleaner.h"
 #include "PWGCF/Femto/Core/tripletHistManager.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 

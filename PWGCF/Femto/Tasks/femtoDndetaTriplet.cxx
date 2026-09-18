@@ -74,7 +74,7 @@ struct FemtoDndetaTriplet {
   using FemtoMcParticles = o2::soa::Join<o2::aod::FMcParticles, o2::aod::FMcMotherLabels>;
 
   o2::framework::SliceCache cache;
-  o2::framework::Service<o2::framework::O2DatabasePDG> pdg;
+  o2::framework::Service<o2::framework::O2DatabasePDG> pdg = {};
 
   // setup dndeta
   dndetabuilder::ConfDndeta confDndeta;
