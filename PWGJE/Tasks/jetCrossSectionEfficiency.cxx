@@ -41,6 +41,7 @@
 #include <TH1.h>
 #include <TH2.h>
 
+#include <cinttypes>
 #include <cmath>
 #include <cstdint>
 #include <limits>
@@ -376,7 +377,7 @@ struct JetCrossSectionEfficiency {
 
     auto alppar = ccdb->getForTimeStamp<o2::itsmft::DPLAlpideParam<0>>("ITS/Config/AlpideParam", truthBC.timestamp());
     if (alppar == nullptr) {
-      LOGF(fatal, "Could not retrieve ITS/Config/AlpideParam for sel8FullPbPb truth selections (run %d, timestamp %llu)", truthBC.runNumber(), static_cast<unsigned long long>(truthBC.timestamp()));
+      LOGF(fatal, "Could not retrieve ITS/Config/AlpideParam for sel8FullPbPb truth selections (run %d, timestamp %" PRIu64 ")", truthBC.runNumber(), static_cast<uint64_t>(truthBC.timestamp()));
       return false;
     }
 
@@ -384,10 +385,10 @@ struct JetCrossSectionEfficiency {
     cachedTruthRofOffsetInBC = truthRofOffsetInBC >= 0 ? truthRofOffsetInBC : alppar->roFrameBiasInBC;
     cachedTruthRofLengthInBC = truthRofLengthInBC > 0 ? truthRofLengthInBC : alppar->roFrameLengthInBC;
     if (cachedTruthRofLengthInBC <= 0) {
-      LOGF(fatal, "Invalid ITS ROF length %lld BC for sel8FullPbPb truth selections", static_cast<long long>(cachedTruthRofLengthInBC));
+      LOGF(fatal, "Invalid ITS ROF length %" PRId64 " BC for sel8FullPbPb truth selections", static_cast<int64_t>(cachedTruthRofLengthInBC));
       return false;
     }
-    LOGF(info, "sel8FullPbPb truth selections use ITS ROF offset %lld and length %lld BC for run %d", static_cast<long long>(cachedTruthRofOffsetInBC), static_cast<long long>(cachedTruthRofLengthInBC), cachedTruthRofRun);
+    LOGF(info, "sel8FullPbPb truth selections use ITS ROF offset %" PRId64 " and length %" PRId64 " BC for run %d", static_cast<int64_t>(cachedTruthRofOffsetInBC), static_cast<int64_t>(cachedTruthRofLengthInBC), cachedTruthRofRun);
     return true;
   }
 
