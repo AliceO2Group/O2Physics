@@ -298,7 +298,7 @@ struct OnTheFlyTracker {
     int isUsedInCascading = 0;    ///< 0: not at all, 1: is a cascade, 2: is a bachelor, 3: is a pion, 4: is a proton
     int nSiliconHits = 0;         ///< number of silicon hits
     int nTPCHits = 0;             ///< number of TPC hits
-    TrackType trackType;
+    TrackType trackType = TrackType::kNone;
   };
 
   // Helper struct to pass cascade information
@@ -388,8 +388,6 @@ struct OnTheFlyTracker {
   // For processing and vertexing
   std::vector<TrackAlice3> recoPrimaries;
   std::vector<TrackAlice3> ghostPrimaries;
-  std::vector<TrackAlice3> recoV0Daugs;
-  std::vector<TrackAlice3> recoCascDaugs;
   std::vector<TrackAlice3> tracksAlice3;
   std::vector<TrackAlice3> ghostTracksAlice3;
   std::vector<o2::InteractionRecord> bcData;
@@ -409,7 +407,6 @@ struct OnTheFlyTracker {
   static constexpr float TimeResolutionUs = TimeResolutionNs * NsToMus; // us
 
   o2::dataformats::DCA dcaInfo;
-  o2::dataformats::VertexBase vtx;
 
   template <typename T>
   std::shared_ptr<T> getHist(const std::string& name)
@@ -1141,9 +1138,9 @@ struct OnTheFlyTracker {
         nTrackAtPCA.getPxPyPzGlo(negP);
 
         // get decay vertex coordinates
-        const auto& vtx = fitter.getPCACandidate();
+        const auto& pcaCandidate = fitter.getPCACandidate();
         for (int i = 0; i < NDim3D; i++) {
-          pos[i] = vtx[i];
+          pos[i] = pcaCandidate[i];
         }
 
         // calculate basic V0 properties here
@@ -1348,8 +1345,7 @@ struct OnTheFlyTracker {
           }
 
           o2::track::TrackParCov newCascadeTrack = fitter.getTrack(0); // (cascade)
-          std::array<float, 3> kinkVtx = {-999, -999, -999};
-          kinkVtx = fitter.getPCACandidatePos();
+          std::array<float, 3> kinkVtx = fitter.getPCACandidatePos();
           thisCascade.dcaV0dau = -1.f; // unknown
           thisCascade.v0radius = -1.f; // unknown
           thisCascade.dcacascdau = std::sqrt(fitter.getChi2AtPCACandidate());
@@ -1364,7 +1360,6 @@ struct OnTheFlyTracker {
                                          std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassLambda});
           newCascadeTrack.setPID(pdgCodeToPID(PDG_t::kXiMinus)); // FIXME: not OK for omegas
           float trackTime = (eventCollisionTimeNS + gRandom->Gaus(0., TimeResolutionNs)) * NsToMus;
-
           tracksCascadeProngs[NCascProngs + 1] = TrackAlice3{newCascadeTrack, mcParticle.globalIndex(), trackTime, TimeResolutionUs, false, false, false, 1, thisCascade.foundClusters, TrackType::kRecoCascDaug};
 
           fillCascadeTable = true;
@@ -1462,7 +1457,7 @@ struct OnTheFlyTracker {
     o2::track::TrackParCov trackParCov;
     o2::upgrade::convertMCParticleToO2Track(mcParticle, trackParCov, pdgDB);
     std::vector<TLorentzVector> v0DecayProducts;
-    std::vector<double> laDecayVertex, v0DecayVertex;
+    std::vector<double> v0DecayVertex;
     decayV0Particle(mcParticle, v0DecayProducts, v0DecayVertex, mcParticle.pdgCode());
 
     if (v0DecayProducts.size() != NV0Prongs) {
@@ -1513,12 +1508,13 @@ struct OnTheFlyTracker {
 
     // Store not reconstructed daughters, will update them in case reconstruction is successful
     float trackTime = (eventCollisionTimeNS + gRandom->Gaus(0., TimeResolutionNs)) * NsToMus;
-    tracksV0Daugs.push_back(TrackAlice3{v0DaughterTrackParCovsPerfect[0], mcParticle.globalIndex(), 0.f, TimeResolutionUs, true, false, true, 1, TrackType::kGhostV0Daug});
+    tracksV0Daugs.push_back(TrackAlice3{v0DaughterTrackParCovsPerfect[0], mcParticle.globalIndex(), trackTime, TimeResolutionUs, true, false, true, 1, TrackType::kGhostV0Daug});
     trackTime = (eventCollisionTimeNS + gRandom->Gaus(0., TimeResolutionNs)) * NsToMus;
-    tracksV0Daugs.push_back(TrackAlice3{v0DaughterTrackParCovsPerfect[1], mcParticle.globalIndex(), 0.f, TimeResolutionUs, true, false, true, 1, TrackType::kGhostV0Daug});
-    tracksV0Daugs.push_back(TrackAlice3{v0DaughterTrackParCovsPerfect[0], mcParticle.globalIndex(), 0.f, TimeResolutionUs, true, false, true, 1, 0, 0, TrackType::kGhostV0Daug});
+    tracksV0Daugs.push_back(TrackAlice3{v0DaughterTrackParCovsPerfect[1], mcParticle.globalIndex(), trackTime, TimeResolutionUs, true, false, true, 1, TrackType::kGhostV0Daug});
     trackTime = (eventCollisionTimeNS + gRandom->Gaus(0., TimeResolutionNs)) * NsToMus;
-    tracksV0Daugs.push_back(TrackAlice3{v0DaughterTrackParCovsPerfect[1], mcParticle.globalIndex(), 0.f, TimeResolutionUs, true, false, true, 1, 0, 0, TrackType::kGhostV0Daug});
+    tracksV0Daugs.push_back(TrackAlice3{v0DaughterTrackParCovsPerfect[0], mcParticle.globalIndex(), trackTime, TimeResolutionUs, true, false, true, 1, 0, 0, TrackType::kGhostV0Daug});
+    trackTime = (eventCollisionTimeNS + gRandom->Gaus(0., TimeResolutionNs)) * NsToMus;
+    tracksV0Daugs.push_back(TrackAlice3{v0DaughterTrackParCovsPerfect[1], mcParticle.globalIndex(), trackTime, TimeResolutionUs, true, false, true, 1, 0, 0, TrackType::kGhostV0Daug});
 
     bool fillV0Table{false};
     for (int i = 0; i < NV0Prongs; i++) {
@@ -1631,9 +1627,9 @@ struct OnTheFlyTracker {
         nTrackAtPCA.getPxPyPzGlo(negP);
 
         // get decay vertex coordinates
-        const auto& vtx = fitter.getPCACandidate();
+        const auto& pcaCandidate = fitter.getPCACandidate();
         for (int i = 0; i < NDim3D; i++) {
-          pos[i] = vtx[i];
+          pos[i] = pcaCandidate[i];
         }
 
         // calculate basic V0 properties here
@@ -1798,7 +1794,7 @@ struct OnTheFlyTracker {
           dcaXY = dcaInfo.getY();
           dcaZ = dcaInfo.getZ();
         }
-        if (doExtraQA && (!extraQAwithoutDecayDaughters || (extraQAwithoutDecayDaughters && !trackParCov.isDecayDau))) {
+        if (doExtraQA && (!extraQAwithoutDecayDaughters || !trackParCov.isDecayDau)) {
           getHist<TH2>(histPath + "h2dDCAxy")->Fill(trackParametrization.getPt(), dcaXY * 1e+4);
           getHist<TH2>(histPath + "h2dDCAz")->Fill(trackParametrization.getPt(), dcaZ * 1e+4);
           histos.fill(HIST("hTrackXatDCA"), trackParametrization.getX());
