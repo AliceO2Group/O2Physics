@@ -268,7 +268,9 @@ class DndetaBuilder
       if (!col.has_fMcCol() || bestReco[static_cast<std::size_t>(col.fMcColId())] != col.globalIndex()) {
         continue;
       }
-      if (!selectCollision(col, [&]() { return recoTrigger(col); })) {
+      if (!selectCollision(col, [&]() {
+            return recoTrigger(col);
+          })) {
         continue;
       }
       selectedReco[static_cast<std::size_t>(col.fMcColId())] = col.globalIndex();
