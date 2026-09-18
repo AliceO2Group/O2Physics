@@ -1008,6 +1008,7 @@ struct ResonanceDaughterInitializer {
   static constexpr float MomentumQuantizationScale = 1000.f;
   static constexpr std::size_t StoredMCRelationCount = 2;
   static constexpr std::size_t MaxCandidateDaughters = 3;
+  static constexpr int NumberOfITSLayers = 7;
 
   /// Selected-candidate state and the optional global daughter-ID veto set.
   /// By default only candidate existence is recorded and daughter reuse is
@@ -1132,6 +1133,8 @@ struct ResonanceDaughterInitializer {
   // General daughter output options
   Configurable<bool> cfgFillQA{"cfgFillQA", false, "Fill QA histograms"};
   Configurable<bool> cfgDetailTrackQA{"cfgDetailTrackQA", false, "Fill detailed QA histograms for enabled track output tables"};
+  Configurable<bool> cfgQAITS{"cfgQAITS", false, "Fill Micro001 ITS quality vs pT (requires cfgFillQA and cfgFillMicroTracks)"};
+  Configurable<bool> cfgQATPC{"cfgQATPC", false, "Fill Micro001 TPC crossed rows vs pT (requires cfgFillQA and cfgFillMicroTracks)"};
 
   // Track pre-selection and DCA cuts
   struct : ConfigurableGroup {
@@ -1508,6 +1511,24 @@ struct ResonanceDaughterInitializer {
             qaRegistry.add("QA/h4UltraMicroTrackTPCnSigma", "ResoUltraMicroTracks TPC nSigma Pi, Ka, Pr as pT", kTHnSparseD, {ptAxis, nSigmaTPCAxis, nSigmaTPCAxis, nSigmaTPCAxis});
             qaRegistry.add("QA/h4UltraMicroTrackTOFnSigma", "ResoUltraMicroTracks TOF nSigma Pi, Ka, Pr as pT", kTHnSparseD, {ptAxis, nSigmaTOFAxis, nSigmaTOFAxis, nSigmaTOFAxis});
           }
+        }
+      }
+
+      if ((processTrackDataEnabled || processTrackMCEnabled) && FilterForDerivedTables.cfgFillMicroTracks) {
+        AxisSpec qualityPtAxis = {300, 0.f, 30.f, "#it{p}_{T} (GeV/#it{c})"};
+        if (cfgQAITS) {
+          AxisSpec itsMapAxis = {128, -0.5, 127.5, "ITS cluster map"};
+          AxisSpec itsNClsAxis = {8, -0.5, 7.5, "ITS occupied layers"};
+          AxisSpec itsInnerBarrelNClsAxis = {4, -0.5, 3.5, "ITS inner-barrel occupied layers"};
+          AxisSpec itsLayerAxis = {NumberOfITSLayers, -0.5, NumberOfITSLayers - 0.5, "ITS layer (0 = innermost)"};
+          qaRegistry.add("QA/h2MicroTrackITSClusterMapVsPt", "ResoMicroTracks ITS cluster map vs pT", kTH2D, {qualityPtAxis, itsMapAxis});
+          qaRegistry.add("QA/h2MicroTrackITSNClsVsPt", "ResoMicroTracks ITS occupied layers vs pT", kTH2D, {qualityPtAxis, itsNClsAxis});
+          qaRegistry.add("QA/h2MicroTrackITSNClsInnerBarrelVsPt", "ResoMicroTracks ITS inner-barrel occupied layers vs pT", kTH2D, {qualityPtAxis, itsInnerBarrelNClsAxis});
+          qaRegistry.add("QA/h2MicroTrackITSLayerHitsVsPt", "ResoMicroTracks ITS hits vs pT (one entry per occupied layer)", kTH2D, {qualityPtAxis, itsLayerAxis});
+        }
+        if (cfgQATPC) {
+          AxisSpec tpcCrossedRowsAxis = {256, -0.5, 255.5, "TPC crossed rows"};
+          qaRegistry.add("QA/h2MicroTrackTPCCrossedRowsVsPt", "ResoMicroTracks TPC crossed rows vs pT", kTH2D, {qualityPtAxis, tpcCrossedRowsAxis});
         }
       }
 
@@ -2192,6 +2213,22 @@ struct ResonanceDaughterInitializer {
         if (track.hasTOF()) {
           qaRegistry.fill(HIST("QA/h4MicroTrackTOFnSigma"), track.pt(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr());
         }
+      }
+      // Quality QA follows the same selected rows as Micro001, independently
+      // of the detailed PID/DCA QA. ITS count getters count occupied layers.
+      if (cfgFillQA && cfgQAITS) {
+        const auto itsClusterMap = track.itsClusterMap();
+        qaRegistry.fill(HIST("QA/h2MicroTrackITSClusterMapVsPt"), track.pt(), itsClusterMap);
+        qaRegistry.fill(HIST("QA/h2MicroTrackITSNClsVsPt"), track.pt(), track.itsNCls());
+        qaRegistry.fill(HIST("QA/h2MicroTrackITSNClsInnerBarrelVsPt"), track.pt(), track.itsNClsInnerBarrel());
+        for (int layer = 0; layer < NumberOfITSLayers; ++layer) {
+          if ((itsClusterMap & (1u << layer)) != 0) {
+            qaRegistry.fill(HIST("QA/h2MicroTrackITSLayerHitsVsPt"), track.pt(), layer);
+          }
+        }
+      }
+      if (cfgFillQA && cfgQATPC) {
+        qaRegistry.fill(HIST("QA/h2MicroTrackTPCCrossedRowsVsPt"), track.pt(), track.tpcNClsCrossedRows());
       }
       reso2microtrks(collision.globalIndex(),
                      track.globalIndex(),
