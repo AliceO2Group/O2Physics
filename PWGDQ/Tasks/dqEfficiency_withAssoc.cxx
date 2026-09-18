@@ -460,7 +460,9 @@ struct AnalysisEventSelection {
               collisionSplittingMap[*ev1It] = true;
               collisionSplittingMap[*ev2It] = true;
             }
-            fHistMan->FillHistClass("SameBunchCorrelations", dqefficiency_helpers::varValues());
+            if (fConfigQA) {
+              fHistMan->FillHistClass("SameBunchCorrelations", dqefficiency_helpers::varValues());
+            }
           } // end second event loop
         } // end first event loop
       } // end if BC1 events > 1
@@ -485,7 +487,9 @@ struct AnalysisEventSelection {
               collisionSplittingMap[ev1It] = true;
               collisionSplittingMap[ev2It] = true;
             }
-            fHistMan->FillHistClass("OutOfBunchCorrelations", dqefficiency_helpers::varValues());
+            if (fConfigQA) {
+              fHistMan->FillHistClass("OutOfBunchCorrelations", dqefficiency_helpers::varValues());
+            }
           }
         }
       }
@@ -1116,7 +1120,9 @@ struct AnalysisMuonSelection {
         VarManager::ResetValues(0, VarManager::kNVars);
         VarManager::FillTrack<TMuonFillMap>(track);
         VarManager::fgValues[VarManager::kMuonNAssocsInBunch] = static_cast<float>(evIndices.size());
-        fHistMan->FillHistClass("Muon_AmbiguityInBunch", dqefficiency_helpers::varValues());
+        if (fConfigQA) {
+          fHistMan->FillHistClass("Muon_AmbiguityInBunch", dqefficiency_helpers::varValues());
+        }
       } // end loop over in-bunch ambiguous tracks
 
       for (auto const& [trackIdx, evIndices] : fNAssocsOutOfBunch) {
@@ -1127,7 +1133,9 @@ struct AnalysisMuonSelection {
         VarManager::ResetValues(0, VarManager::kNVars);
         VarManager::FillTrack<TMuonFillMap>(track);
         VarManager::fgValues[VarManager::kMuonNAssocsOutOfBunch] = static_cast<float>(evIndices.size());
-        fHistMan->FillHistClass("Muon_AmbiguityOutOfBunch", dqefficiency_helpers::varValues());
+        if (fConfigQA) {
+          fHistMan->FillHistClass("Muon_AmbiguityOutOfBunch", dqefficiency_helpers::varValues());
+        }
       } // end loop over out-of-bunch ambiguous tracks
 
       // publish the ambiguity table

@@ -2308,7 +2308,9 @@ struct AnalysisSameEventPairing {
                                       VarManager::fgValues[VarManager::kVtxX], VarManager::fgValues[VarManager::kVtxY], VarManager::fgValues[VarManager::kVtxZ], VarManager::fgValues[VarManager::kDCAxy1], VarManager::fgValues[VarManager::kDCAz1], VarManager::fgValues[VarManager::kITSclusterMap1], VarManager::fgValues[VarManager::kTPCnSigmaEl1], VarManager::fgValues[VarManager::kDCAxy2], VarManager::fgValues[VarManager::kDCAz2], VarManager::fgValues[VarManager::kITSclusterMap2], VarManager::fgValues[VarManager::kTPCnSigmaEl2],
                                       isAmbiInBunch, isAmbiOutOfBunch, VarManager::fgValues[VarManager::kMultFT0A], VarManager::fgValues[VarManager::kMultFT0C], VarManager::fgValues[VarManager::kCentFT0M], VarManager::fgValues[VarManager::kVtxNcontribReal]);
               if constexpr (TPairType == VarManager::kDecayToMuMu) {
-                fHistMan->FillHistClass(histNames[icut][0].Data(), dqtablereader_helpers::varValues());
+                if (fConfigQA) {
+                  fHistMan->FillHistClass(histNames[icut][0].Data(), dqtablereader_helpers::varValues());
+                }
                 if (useMiniTree.fConfigMiniTree) {
                   auto t1 = a1.template reducedmuon_as<TTracks>();
                   auto t2 = a2.template reducedmuon_as<TTracks>();
@@ -2328,7 +2330,7 @@ struct AnalysisSameEventPairing {
                     }
                   }
                 }
-                if (fConfigAmbiguousMuonHistograms) {
+                if (fConfigQA && fConfigAmbiguousMuonHistograms) {
                   if (isAmbiInBunch) {
                     fHistMan->FillHistClass(histNames[icut][3 + histIdxOffset].Data(), dqtablereader_helpers::varValues());
                   }
@@ -2341,12 +2343,14 @@ struct AnalysisSameEventPairing {
                 }
               }
               if constexpr (TPairType == VarManager::kDecayToEE) {
-                fHistMan->FillHistClass(histNames[icut][0].Data(), dqtablereader_helpers::varValues());
-                if (isAmbiExtra) {
-                  fHistMan->FillHistClass(histNames[icut][3].Data(), dqtablereader_helpers::varValues());
+                if (fConfigQA) {
+                  fHistMan->FillHistClass(histNames[icut][0].Data(), dqtablereader_helpers::varValues());
+                  if (isAmbiExtra) {
+                    fHistMan->FillHistClass(histNames[icut][3].Data(), dqtablereader_helpers::varValues());
+                  }
                 }
               }
-            } else {
+            } else if (fConfigQA) {
               if (sign1 > 0) {
                 if constexpr (TPairType == VarManager::kDecayToMuMu) {
                   fHistMan->FillHistClass(histNames[icut][1].Data(), dqtablereader_helpers::varValues());
@@ -2391,21 +2395,23 @@ struct AnalysisSameEventPairing {
                 }
               }
             }
-            for (unsigned int iPairCut = 0; iPairCut < fPairCuts.size(); iPairCut++) {
-              AnalysisCompositeCut cut = fPairCuts.at(iPairCut);
-              if (!(cut.IsSelected(dqtablereader_helpers::varValues()))) { // apply pair cuts
-                continue;
-              }
-              if (sign1 * sign2 < 0) {
-                fHistMan->FillHistClass(histNames[ncuts + icut * ncuts + iPairCut][0].Data(), dqtablereader_helpers::varValues());
-              } else {
-                if (sign1 > 0) {
-                  fHistMan->FillHistClass(histNames[ncuts + icut * ncuts + iPairCut][1].Data(), dqtablereader_helpers::varValues());
-                } else {
-                  fHistMan->FillHistClass(histNames[ncuts + icut * ncuts + iPairCut][2].Data(), dqtablereader_helpers::varValues());
+            if (fConfigQA) {
+              for (unsigned int iPairCut = 0; iPairCut < fPairCuts.size(); iPairCut++) {
+                AnalysisCompositeCut cut = fPairCuts.at(iPairCut);
+                if (!(cut.IsSelected(dqtablereader_helpers::varValues()))) { // apply pair cuts
+                  continue;
                 }
-              }
-            } // end loop (pair cuts)
+                if (sign1 * sign2 < 0) {
+                  fHistMan->FillHistClass(histNames[ncuts + icut * ncuts + iPairCut][0].Data(), dqtablereader_helpers::varValues());
+                } else {
+                  if (sign1 > 0) {
+                    fHistMan->FillHistClass(histNames[ncuts + icut * ncuts + iPairCut][1].Data(), dqtablereader_helpers::varValues());
+                  } else {
+                    fHistMan->FillHistClass(histNames[ncuts + icut * ncuts + iPairCut][2].Data(), dqtablereader_helpers::varValues());
+                  }
+                }
+              } // end loop (pair cuts)
+            }
           }
         } // end loop (cuts)
 
@@ -2461,18 +2467,22 @@ struct AnalysisSameEventPairing {
                   if (fConfigNRotations.value == 1) {
                     VarManager::FillPairRotation<TPairType, TTrackFillMap>(t1, t2, fConfigNRotations.value);
                     if constexpr (TPairType == VarManager::kDecayToEE) {
-                      fHistMan->FillHistClass(Form("PairsBarrelTRPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
-                      if (isAmbiExtra) {
-                        fHistMan->FillHistClass(Form("PairsBarrelTRPM_ambiguousextra_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                      if (fConfigQA) {
+                        fHistMan->FillHistClass(Form("PairsBarrelTRPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                        if (isAmbiExtra) {
+                          fHistMan->FillHistClass(Form("PairsBarrelTRPM_ambiguousextra_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                        }
                       }
                     }
                   } else if (fConfigNRotations.value == 3) {
                     for (int irot = 1; irot <= fConfigNRotations.value; irot++) {
                       VarManager::FillPairRotation<TPairType, TTrackFillMap>(t1, t2, irot);
                       if constexpr (TPairType == VarManager::kDecayToEE) {
-                        fHistMan->FillHistClass(Form("PairsBarrelTRPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
-                        if (isAmbiExtra) {
-                          fHistMan->FillHistClass(Form("PairsBarrelTRPM_ambiguousextra_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                        if (fConfigQA) {
+                          fHistMan->FillHistClass(Form("PairsBarrelTRPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                          if (isAmbiExtra) {
+                            fHistMan->FillHistClass(Form("PairsBarrelTRPM_ambiguousextra_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                          }
                         }
                       }
                     }
@@ -2531,7 +2541,9 @@ struct AnalysisSameEventPairing {
               VarManager::FillPairMEAcrossTFs(t1, t2);
               for (int icut = 0; icut < ncuts; icut++) {
                 if (mixedTwoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
-                  fHistMan->FillHistClass(Form("PairsBarrelMEPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                  if (fConfigQA) {
+                    fHistMan->FillHistClass(Form("PairsBarrelMEPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                  }
                 }
               }
             }
@@ -2545,7 +2557,9 @@ struct AnalysisSameEventPairing {
               VarManager::FillPairMEAcrossTFs(t1, t2);
               for (int icut = 0; icut < ncuts; icut++) {
                 if (mixedTwoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
-                  fHistMan->FillHistClass(Form("PairsBarrelMEPP_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                  if (fConfigQA) {
+                    fHistMan->FillHistClass(Form("PairsBarrelMEPP_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                  }
                 }
               }
             }
@@ -2561,7 +2575,9 @@ struct AnalysisSameEventPairing {
               VarManager::FillPairMEAcrossTFs(t1, t2);
               for (int icut = 0; icut < ncuts; icut++) {
                 if (mixedTwoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
-                  fHistMan->FillHistClass(Form("PairsBarrelMEPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                  if (fConfigQA) {
+                    fHistMan->FillHistClass(Form("PairsBarrelMEPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                  }
                 }
               }
             }
@@ -2575,7 +2591,9 @@ struct AnalysisSameEventPairing {
               VarManager::FillPairMEAcrossTFs(t1, t2);
               for (int icut = 0; icut < ncuts; icut++) {
                 if (mixedTwoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
-                  fHistMan->FillHistClass(Form("PairsBarrelMEMM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                  if (fConfigQA) {
+                    fHistMan->FillHistClass(Form("PairsBarrelMEMM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                  }
                 }
               }
             }
@@ -2696,60 +2714,62 @@ struct AnalysisSameEventPairing {
           isAmbiInBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 28)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 29));
           isAmbiOutOfBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 30)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31));
           isUnambiguous = !((twoTrackFilter & (static_cast<uint32_t>(1) << 28)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 29)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 30)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31)));
-          if (pairSign == 0) {
-            if constexpr (TPairType == VarManager::kDecayToMuMu) {
-              fHistMan->FillHistClass(histNames[icut][3].Data(), dqtablereader_helpers::varValues());
-              if (fConfigAmbiguousMuonHistograms) {
-                if (isAmbiInBunch) {
-                  fHistMan->FillHistClass(histNames[icut][15].Data(), dqtablereader_helpers::varValues());
-                }
-                if (isAmbiOutOfBunch) {
-                  fHistMan->FillHistClass(histNames[icut][18].Data(), dqtablereader_helpers::varValues());
-                }
-                if (isUnambiguous) {
-                  fHistMan->FillHistClass(histNames[icut][21].Data(), dqtablereader_helpers::varValues());
-                }
-              }
-            }
-            if constexpr (TPairType == VarManager::kDecayToEE) {
-              fHistMan->FillHistClass(Form("PairsBarrelMEPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
-            }
-          } else {
-            if (pairSign > 0) {
+          if (fConfigQA) {
+            if (pairSign == 0) {
               if constexpr (TPairType == VarManager::kDecayToMuMu) {
-                fHistMan->FillHistClass(histNames[icut][4].Data(), dqtablereader_helpers::varValues());
+                fHistMan->FillHistClass(histNames[icut][3].Data(), dqtablereader_helpers::varValues());
                 if (fConfigAmbiguousMuonHistograms) {
                   if (isAmbiInBunch) {
-                    fHistMan->FillHistClass(histNames[icut][16].Data(), dqtablereader_helpers::varValues());
+                    fHistMan->FillHistClass(histNames[icut][15].Data(), dqtablereader_helpers::varValues());
                   }
                   if (isAmbiOutOfBunch) {
-                    fHistMan->FillHistClass(histNames[icut][19].Data(), dqtablereader_helpers::varValues());
+                    fHistMan->FillHistClass(histNames[icut][18].Data(), dqtablereader_helpers::varValues());
                   }
                   if (isUnambiguous) {
-                    fHistMan->FillHistClass(histNames[icut][22].Data(), dqtablereader_helpers::varValues());
+                    fHistMan->FillHistClass(histNames[icut][21].Data(), dqtablereader_helpers::varValues());
                   }
                 }
               }
               if constexpr (TPairType == VarManager::kDecayToEE) {
-                fHistMan->FillHistClass(Form("PairsBarrelMEPP_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                fHistMan->FillHistClass(Form("PairsBarrelMEPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
               }
             } else {
-              if constexpr (TPairType == VarManager::kDecayToMuMu) {
-                fHistMan->FillHistClass(histNames[icut][5].Data(), dqtablereader_helpers::varValues());
-                if (fConfigAmbiguousMuonHistograms) {
-                  if (isAmbiInBunch) {
-                    fHistMan->FillHistClass(histNames[icut][17].Data(), dqtablereader_helpers::varValues());
-                  }
-                  if (isAmbiOutOfBunch) {
-                    fHistMan->FillHistClass(histNames[icut][20].Data(), dqtablereader_helpers::varValues());
-                  }
-                  if (isUnambiguous) {
-                    fHistMan->FillHistClass(histNames[icut][23].Data(), dqtablereader_helpers::varValues());
+              if (pairSign > 0) {
+                if constexpr (TPairType == VarManager::kDecayToMuMu) {
+                  fHistMan->FillHistClass(histNames[icut][4].Data(), dqtablereader_helpers::varValues());
+                  if (fConfigAmbiguousMuonHistograms) {
+                    if (isAmbiInBunch) {
+                      fHistMan->FillHistClass(histNames[icut][16].Data(), dqtablereader_helpers::varValues());
+                    }
+                    if (isAmbiOutOfBunch) {
+                      fHistMan->FillHistClass(histNames[icut][19].Data(), dqtablereader_helpers::varValues());
+                    }
+                    if (isUnambiguous) {
+                      fHistMan->FillHistClass(histNames[icut][22].Data(), dqtablereader_helpers::varValues());
+                    }
                   }
                 }
-              }
-              if constexpr (TPairType == VarManager::kDecayToEE) {
-                fHistMan->FillHistClass(Form("PairsBarrelMEMM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                if constexpr (TPairType == VarManager::kDecayToEE) {
+                  fHistMan->FillHistClass(Form("PairsBarrelMEPP_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                }
+              } else {
+                if constexpr (TPairType == VarManager::kDecayToMuMu) {
+                  fHistMan->FillHistClass(histNames[icut][5].Data(), dqtablereader_helpers::varValues());
+                  if (fConfigAmbiguousMuonHistograms) {
+                    if (isAmbiInBunch) {
+                      fHistMan->FillHistClass(histNames[icut][17].Data(), dqtablereader_helpers::varValues());
+                    }
+                    if (isAmbiOutOfBunch) {
+                      fHistMan->FillHistClass(histNames[icut][20].Data(), dqtablereader_helpers::varValues());
+                    }
+                    if (isUnambiguous) {
+                      fHistMan->FillHistClass(histNames[icut][23].Data(), dqtablereader_helpers::varValues());
+                    }
+                  }
+                }
+                if constexpr (TPairType == VarManager::kDecayToEE) {
+                  fHistMan->FillHistClass(Form("PairsBarrelMEMM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                }
               }
             }
           }
@@ -2907,13 +2927,15 @@ struct AnalysisSameEventPairing {
               if (itHist == histNames.end()) {
                 continue;
               }
-              if (sign1 * sign2 < 0) { // Opposite Sign
-                fHistMan->FillHistClass(itHist->second[0].Data(), dqtablereader_helpers::varValues());
-              } else { // Like Sign
-                if (sign1 > 0) {
-                  fHistMan->FillHistClass(itHist->second[1].Data(), dqtablereader_helpers::varValues());
-                } else {
-                  fHistMan->FillHistClass(itHist->second[2].Data(), dqtablereader_helpers::varValues());
+              if (fConfigQA) {
+                if (sign1 * sign2 < 0) { // Opposite Sign
+                  fHistMan->FillHistClass(itHist->second[0].Data(), dqtablereader_helpers::varValues());
+                } else { // Like Sign
+                  if (sign1 > 0) {
+                    fHistMan->FillHistClass(itHist->second[1].Data(), dqtablereader_helpers::varValues());
+                  } else {
+                    fHistMan->FillHistClass(itHist->second[2].Data(), dqtablereader_helpers::varValues());
+                  }
                 }
               }
             } // end pair cut loop
@@ -2976,13 +2998,15 @@ struct AnalysisSameEventPairing {
               if (itHist == histNames.end() || itHist->second.size() < 6) {
                 continue;
               }
-              if (sign1 * sign2 < 0) {
-                fHistMan->FillHistClass(itHist->second[3].Data(), dqtablereader_helpers::varValues());
-              } else {
-                if (sign1 > 0) {
-                  fHistMan->FillHistClass(itHist->second[4].Data(), dqtablereader_helpers::varValues());
+              if (fConfigQA) {
+                if (sign1 * sign2 < 0) {
+                  fHistMan->FillHistClass(itHist->second[3].Data(), dqtablereader_helpers::varValues());
                 } else {
-                  fHistMan->FillHistClass(itHist->second[5].Data(), dqtablereader_helpers::varValues());
+                  if (sign1 > 0) {
+                    fHistMan->FillHistClass(itHist->second[4].Data(), dqtablereader_helpers::varValues());
+                  } else {
+                    fHistMan->FillHistClass(itHist->second[5].Data(), dqtablereader_helpers::varValues());
+                  }
                 }
               }
             } // end pair cut loop
