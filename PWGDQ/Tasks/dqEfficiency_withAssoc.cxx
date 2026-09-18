@@ -1608,8 +1608,6 @@ struct AnalysisSameEventPairing {
   } fConfigCCDB;
 
   struct : ConfigurableGroup {
-    Configurable<bool> useRemoteField{"cfgUseRemoteField", false, "Chose whether to fetch the magnetic field from ccdb or set it manually"};
-    Configurable<float> magField{"cfgMagField", 5.0f, "Manually set magnetic field"};
     Configurable<bool> flatTables{"cfgFlatTables", false, "Produce a single flat tables with all relevant information of the pairs and single tracks"};
     Configurable<bool> polarTables{"cfgPolarTables", false, "Produce tables with dilepton polarization information"};
     Configurable<bool> useKFVertexing{"cfgUseKFVertexing", false, "Use KF Particle for secondary vertex reconstruction (DCAFitter is used by default)"};
@@ -2154,35 +2152,22 @@ struct AnalysisSameEventPairing {
 
   void initParamsFromCCDB(uint64_t timestamp, bool withTwoProngFitter = true)
   {
-    if (fConfigOptions.useRemoteField.value) {
-      auto grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(fConfigCCDB.grpMagPath, timestamp);
-      float magField = 0.0;
-      if (grpmag != nullptr) {
-        magField = grpmag->getNominalL3Field();
+    auto grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(fConfigCCDB.grpMagPath, timestamp);
+    float magField = 0.0;
+    if (grpmag != nullptr) {
+      magField = grpmag->getNominalL3Field();
+    } else {
+      LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", timestamp);
+    }
+    if (withTwoProngFitter) {
+      if (fConfigOptions.useKFVertexing.value) {
+        VarManager::SetupTwoProngKFParticle(magField);
       } else {
-        LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", timestamp);
-      }
-      if (withTwoProngFitter) {
-        if (fConfigOptions.useKFVertexing.value) {
-          VarManager::SetupTwoProngKFParticle(magField);
-        } else {
-          VarManager::SetupTwoProngDCAFitter(magField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fConfigOptions.useAbsDCA.value); // TODO: get these parameters from Configurables
-          VarManager::SetupTwoProngFwdDCAFitter(magField, true, 200.0f, 1.0e-3f, 0.9f, fConfigOptions.useAbsDCA.value);
-        }
-      } else {
-        VarManager::SetupTwoProngDCAFitter(magField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fConfigOptions.useAbsDCA.value); // needed because take in varmanager Bz from fgFitterTwoProngBarrel for PhiV calculations
+        VarManager::SetupTwoProngDCAFitter(magField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fConfigOptions.useAbsDCA.value); // TODO: get these parameters from Configurables
+        VarManager::SetupTwoProngFwdDCAFitter(magField, true, 200.0f, 1.0e-3f, 0.9f, fConfigOptions.useAbsDCA.value);
       }
     } else {
-      if (withTwoProngFitter) {
-        if (fConfigOptions.useKFVertexing.value) {
-          VarManager::SetupTwoProngKFParticle(fConfigOptions.magField.value);
-        } else {
-          VarManager::SetupTwoProngDCAFitter(fConfigOptions.magField.value, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fConfigOptions.useAbsDCA.value); // TODO: get these parameters from Configurables
-          VarManager::SetupTwoProngFwdDCAFitter(fConfigOptions.magField.value, true, 200.0f, 1.0e-3f, 0.9f, fConfigOptions.useAbsDCA.value);
-        }
-      } else {
-        VarManager::SetupTwoProngDCAFitter(fConfigOptions.magField.value, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fConfigOptions.useAbsDCA.value); // needed because take in varmanager Bz from fgFitterTwoProngBarrel for PhiV calculations
-      }
+      VarManager::SetupTwoProngDCAFitter(magField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fConfigOptions.useAbsDCA.value); // needed because take in varmanager Bz from fgFitterTwoProngBarrel for PhiV calculations
     }
   }
 
@@ -3368,8 +3353,6 @@ struct AnalysisAsymmetricPairing {
 
   Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> fConfigGRPMagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<bool> fConfigUseRemoteField{"cfgUseRemoteField", false, "Choose whether to fetch the magnetic field from ccdb or set it manually"};
-  Configurable<float> fConfigMagField{"cfgMagField", 5.0f, "Manually set magnetic field"};
 
   Configurable<bool> fConfigUseKFVertexing{"cfgUseKFVertexing", false, "Use KF Particle for secondary vertex reconstruction (DCAFitter is used by default)"};
   Configurable<bool> fConfigUseAbsDCA{"cfgUseAbsDCA", false, "Use absolute DCA minimization instead of chi^2 minimization in secondary vertexing"};
@@ -3776,40 +3759,24 @@ struct AnalysisAsymmetricPairing {
 
   void initParamsFromCCDB(uint64_t timestamp, bool isTriplets)
   {
-    if (fConfigUseRemoteField.value) {
-      auto grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(fConfigGRPMagPath, timestamp);
-      float magField = 0.0;
-      if (grpmag != nullptr) {
-        magField = grpmag->getNominalL3Field();
+    auto grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(fConfigGRPMagPath, timestamp);
+    float magField = 0.0;
+    if (grpmag != nullptr) {
+      magField = grpmag->getNominalL3Field();
+    } else {
+      LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", timestamp);
+    }
+    if (isTriplets) {
+      if (fConfigUseKFVertexing.value) {
+        VarManager::SetupThreeProngKFParticle(magField);
       } else {
-        LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", timestamp);
-      }
-      if (isTriplets) {
-        if (fConfigUseKFVertexing.value) {
-          VarManager::SetupThreeProngKFParticle(magField);
-        } else {
-          VarManager::SetupThreeProngDCAFitter(magField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fConfigUseAbsDCA.value);
-        }
-      } else {
-        if (fConfigUseKFVertexing.value) {
-          VarManager::SetupTwoProngKFParticle(magField);
-        } else {
-          VarManager::SetupTwoProngDCAFitter(magField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fConfigUseAbsDCA.value); // TODO: get these parameters from Configurables
-        }
+        VarManager::SetupThreeProngDCAFitter(magField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fConfigUseAbsDCA.value);
       }
     } else {
-      if (isTriplets) {
-        if (fConfigUseKFVertexing.value) {
-          VarManager::SetupThreeProngKFParticle(fConfigMagField.value);
-        } else {
-          VarManager::SetupThreeProngDCAFitter(fConfigMagField.value, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fConfigUseAbsDCA.value);
-        }
+      if (fConfigUseKFVertexing.value) {
+        VarManager::SetupTwoProngKFParticle(magField);
       } else {
-        if (fConfigUseKFVertexing.value) {
-          VarManager::SetupTwoProngKFParticle(fConfigMagField.value);
-        } else {
-          VarManager::SetupTwoProngDCAFitter(fConfigMagField.value, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fConfigUseAbsDCA.value); // TODO: get these parameters from Configurables
-        }
+        VarManager::SetupTwoProngDCAFitter(magField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fConfigUseAbsDCA.value); // TODO: get these parameters from Configurables
       }
     }
   }
@@ -4364,9 +4331,7 @@ struct AnalysisDileptonTrack {
   Configurable<std::string> fConfigHistogramSubgroups{"cfgDileptonTrackHistogramsSubgroups", "invmass,vertexing", "Comma separated list of dilepton-track histogram subgroups"};
   Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
 
-  Configurable<bool> fConfigUseRemoteField{"cfgUseRemoteField", false, "Chose whether to fetch the magnetic field from ccdb or set it manually"};
   Configurable<std::string> fConfigGRPmagPath{"cfgGrpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<float> fConfigMagField{"cfgMagField", 5.0f, "Manually set magnetic field"};
   Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
@@ -4740,25 +4705,17 @@ struct AnalysisDileptonTrack {
   // init parameters from CCDB
   void initParamsFromCCDB(uint64_t timestamp)
   {
-    if (fConfigUseRemoteField.value) {
-      auto grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(fConfigGRPmagPath.value, timestamp);
-      float magField = 0.0;
-      if (grpmag != nullptr) {
-        magField = grpmag->getNominalL3Field();
-      } else {
-        LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", timestamp);
-      }
-      if (fConfigUseKFVertexing.value) {
-        VarManager::SetupThreeProngKFParticle(magField);
-      } else {
-        VarManager::SetupThreeProngDCAFitter(magField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, false); // TODO: get these parameters from Configurables
-      }
+    auto grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(fConfigGRPmagPath.value, timestamp);
+    float magField = 0.0;
+    if (grpmag != nullptr) {
+      magField = grpmag->getNominalL3Field();
     } else {
-      if (fConfigUseKFVertexing.value) {
-        VarManager::SetupThreeProngKFParticle(fConfigMagField.value);
-      } else {
-        VarManager::SetupThreeProngDCAFitter(fConfigMagField.value, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, false); // TODO: get these parameters from Configurables
-      }
+      LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", timestamp);
+    }
+    if (fConfigUseKFVertexing.value) {
+      VarManager::SetupThreeProngKFParticle(magField);
+    } else {
+      VarManager::SetupThreeProngDCAFitter(magField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, false); // TODO: get these parameters from Configurables
     }
   }
 
