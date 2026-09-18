@@ -97,7 +97,6 @@ enum Mode { kDefault = 0, // same event pairs
             kEvtMixing,   // event mixing
             kNModes };
 
-static constexpr int nModesConst = 2;
 static const std::vector<std::string> modePrefixes{
   "",          // Default : no prefix
   "EvtMixing/" // Event mixing
