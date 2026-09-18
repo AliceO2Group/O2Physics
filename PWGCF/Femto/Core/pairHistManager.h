@@ -760,6 +760,14 @@ class PairHistManager
     mTrueMinv = getMinv(mTrueParticle1, mTrueParticle2);
     mTrueKstar = getKstar(mTrueParticle1, mTrueParticle2);
 
+    // in the pure mc-truth path there is no reco counterpart, so the generated values are also
+    // stored in the reco members; they are used by getKinematic(), i.e. by the kinematic histograms
+    // of the pair cleaner and of the close pair rejection
+    mKt = mTrueKt;
+    mMt = mTrueMt;
+    mMassInv = mTrueMinv;
+    mKstar = mTrueKstar;
+
     if (mPlotBertschPratt) {
       std::tie(mTrueQout, mTrueQside, mTrueQlong) = computeBertschPrattLCMS(mTrueParticle1, mTrueParticle2);
     }

@@ -438,10 +438,19 @@ class TripletHistManager
     mTrueMt = getMt(mTrueParticle1, mTrueParticle2, mTrueParticle3);
     mTrueQ3 = getQ3(mTrueParticle1, mTrueParticle2, mTrueParticle3);
 
+    // in the pure mc-truth path there is no reco counterpart, so the generated values are also
+    // stored in the reco members; they are used by getKinematic(), i.e. by the kinematic histograms
+    // of the triplet cleaner and of the close triplet rejection
+    mMt = mTrueMt;
+    mQ3 = mTrueQ3;
+
     if (mPlotKstar) {
       mTrueKstar12 = getKstar(mTrueParticle1, mTrueParticle2);
       mTrueKstar13 = getKstar(mTrueParticle1, mTrueParticle3);
       mTrueKstar23 = getKstar(mTrueParticle2, mTrueParticle3);
+      mKstar12 = mTrueKstar12;
+      mKstar13 = mTrueKstar13;
+      mKstar23 = mTrueKstar23;
     }
   }
 
