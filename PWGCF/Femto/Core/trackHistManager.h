@@ -863,7 +863,7 @@ class TrackHistManager
     const auto first = desc.find(';');
     const auto second = (first == std::string::npos) ? std::string::npos : desc.find(';', first + 1);
     if (second != std::string::npos) {
-      desc = desc.substr(0, first + 1) + " " + modes::momentumTypeToAxisTitle(mMomentumType) + " " + desc.substr(second);
+      desc.replace(first + 1, second - first - 1, " " + std::string(modes::momentumTypeToAxisTitle(mMomentumType)) + " ");
     }
     mHistogramRegistry->add(pidDir + getHistNameV2(hist, HistTable), desc.c_str(), getHistType(hist, HistTable), {Specs.at(hist)});
   }
