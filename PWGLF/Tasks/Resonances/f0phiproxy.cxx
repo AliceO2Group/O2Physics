@@ -24,10 +24,10 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
-#include <Framework/HistogramRegistry.h>
 #include <Framework/runDataProcessing.h>
 
 #include <Math/GenVector/LorentzVector.h>
@@ -275,8 +275,7 @@ struct F0phiproxy {
           histos.fill(HIST("hPionTOF"), track.pt(), track.tofNSigmaPi());
           histos.fill(HIST("hKaonTOF"), track.pt(), track.tofNSigmaKa());
         }
-        TrackCandidate candidate{.id = track.globalIndex(), .sign = track.sign(),
-                                 .px = track.px(), .py = track.py(), .pz = track.pz(), .hasTOF = tof};
+        TrackCandidate candidate{.id = track.globalIndex(), .sign = track.sign(), .px = track.px(), .py = track.py(), .pz = track.pz(), .hasTOF = tof};
         if (passPID(track.tpcNSigmaPi(), track.tofNSigmaPi(), tof, pionTPC,
                     pionTOF)) {
           event.pions.push_back(candidate);
