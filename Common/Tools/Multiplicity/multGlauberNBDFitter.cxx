@@ -107,7 +107,7 @@ void multGlauberNBDFitter::InitGlauberNBD(const float mu, const float k, const f
 {
   fNBDFitterMode = NBDFitterMode::Glauber;
   fGlauberNBD = new TF1("fGlauberNBD", this, &multGlauberNBDFitter::GlauberProbDistrib,
-                        0, 50000, 5, "multGlauberNBDFitter", "GlauberProbDistrib");
+                        0, 50000, 5);
   fGlauberNBD->SetParameter(Index(FitPar::mu), mu);
   fGlauberNBD->SetParameter(Index(FitPar::k), k);
   fGlauberNBD->SetParameter(Index(FitPar::f), f);
@@ -125,7 +125,7 @@ void multGlauberNBDFitter::InitTrentoNBD(const float mu, const float k, const fl
   fNBDFitterMode = NBDFitterMode::Trento;
   fGlauberNBD = nullptr;
   fTrentoNBD = new TF1("fTrentoNBD", this, &multGlauberNBDFitter::TrentoProbDistrib,
-                       0, 50000, 5, "multGlauberNBDFitter", "TrentoProbDistrib");
+                       0, 50000, 5);
   fTrentoNBD->SetParameter(Index(FitPar::mu), mu);
   fTrentoNBD->SetParameter(Index(FitPar::k), k);
   fTrentoNBD->SetParameter(Index(FitPar::norm), norm);
