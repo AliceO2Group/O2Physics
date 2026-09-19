@@ -2376,27 +2376,29 @@ struct nucleiInJets {
       const auto particleType = mapPDGToValue(mcTrack.pdgCode());
       if (particleType != 0) {
         bool isTpcPassed = true;
-        bool isTOFAndTPCPreSel = isTof;
+        bool isTofPidPassed = isTof;
         switch (std::abs(particleType)) {
           case Particle::kProton:
             isTpcPassed = std::abs(completeTrack.tpcNSigmaPr()) < cfgnTPCPIDPr;
-            isTOFAndTPCPreSel = isTof && std::abs(completeTrack.tpcNSigmaPr()) < cfgnTPCPIDPrTOF;
+            isTofPidPassed = isTof && std::abs(completeTrack.tofNSigmaPr()) < cfgnTPCPIDPrTOF;
             break;
           case Particle::kDeuteron:
             isTpcPassed = std::abs(completeTrack.tpcNSigmaDe()) < cfgnTPCPIDDe;
-            isTOFAndTPCPreSel = isTof && std::abs(completeTrack.tpcNSigmaDe()) < cfgnTPCPIDDeTOF;
+            isTofPidPassed = isTof && std::abs(completeTrack.tofNSigmaDe()) < cfgnTPCPIDDeTOF;
             break;
           case Particle::kTriton:
             isTpcPassed = std::abs(completeTrack.tpcNSigmaTr()) < cfgnTPCPIDTr;
-            isTOFAndTPCPreSel = isTof && std::abs(completeTrack.tpcNSigmaTr()) < cfgnTPCPIDTrTOF;
+            isTofPidPassed = isTof && std::abs(completeTrack.tofNSigmaTr()) < cfgnTPCPIDTrTOF;
             break;
           case Particle::kHelium:
             isTpcPassed = std::abs(completeTrack.tpcNSigmaHe()) < cfgnTPCPIDHe;
-            isTOFAndTPCPreSel = isTof && std::abs(completeTrack.tpcNSigmaHe()) < cfgnTPCPIDHeTOF;
+            isTofPidPassed = isTof && std::abs(completeTrack.tofNSigmaHe()) < cfgnTPCPIDHeTOF;
             break;
           default:
             break;
         }
+        const bool isTPCTOFPassed = isTpcPassed && isTofPidPassed;
+        const bool isTPCTOFVetoPassed = isTpcPassed && (!isTof || isTofPidPassed);
         jetHist.fill(HIST("eff/recmatched/pt/PtParticleType"), mcTrack.pt(), jetFlag, particleType);
         if (useMcC) {
           if (useDataLikeHist)
@@ -2408,12 +2410,10 @@ struct nucleiInJets {
           jetHist.fill(HIST("eff/recmatched/pt/PtParticleTypeTPC"), mcTrack.pt(), jetFlag, particleType);
         if (isTof)
           jetHist.fill(HIST("eff/recmatched/pt/PtParticleTypeTOF"), mcTrack.pt(), jetFlag, particleType);
-        if (isTOFAndTPCPreSel) {
+        if (isTPCTOFPassed)
           jetHist.fill(HIST("eff/recmatched/pt/PtParticleTypeTPCTOF"), mcTrack.pt(), jetFlag, particleType);
+        if (isTPCTOFVetoPassed)
           jetHist.fill(HIST("eff/recmatched/pt/PtParticleTypeTPCTOFVeto"), mcTrack.pt(), jetFlag, particleType);
-        } else {
-          jetHist.fill(HIST("eff/recmatched/pt/PtParticleTypeTPCTOFVeto"), mcTrack.pt(), jetFlag, particleType);
-        }
 
         if (jetFlag) {
           jetHist.fill(HIST("eff/recmatched/jetCone/ptEta/PtEtaParticleType"), mcTrack.pt(), mcTrack.eta(), particleType);
@@ -2421,12 +2421,10 @@ struct nucleiInJets {
             jetHist.fill(HIST("eff/recmatched/jetCone/ptEta/PtEtaParticleTypeTPC"), mcTrack.pt(), mcTrack.eta(), particleType);
           if (isTof)
             jetHist.fill(HIST("eff/recmatched/jetCone/ptEta/PtEtaParticleTypeTOF"), mcTrack.pt(), mcTrack.eta(), particleType);
-          if (isTOFAndTPCPreSel) {
+          if (isTPCTOFPassed)
             jetHist.fill(HIST("eff/recmatched/jetCone/ptEta/PtEtaParticleTypeTPCTOF"), mcTrack.pt(), mcTrack.eta(), particleType);
+          if (isTPCTOFVetoPassed)
             jetHist.fill(HIST("eff/recmatched/jetCone/ptEta/PtEtaParticleTypeTPCTOFVeto"), mcTrack.pt(), mcTrack.eta(), particleType);
-          } else {
-            jetHist.fill(HIST("eff/recmatched/jetCone/ptEta/PtEtaParticleTypeTPCTOFVeto"), mcTrack.pt(), mcTrack.eta(), particleType);
-          }
         }
 
         if (jetFlagPerpCone) {
@@ -2446,12 +2444,11 @@ struct nucleiInJets {
             jetHist.fill(HIST("eff/recmatched/perpCone/pt/PtParticleTypeTOF"), mcTrack.pt(), particleType);
             jetHist.fill(HIST("eff/recmatched/perpCone/ptEta/PtEtaParticleTypeTOF"), mcTrack.pt(), mcTrack.eta(), particleType);
           }
-          if (isTOFAndTPCPreSel) {
+          if (isTPCTOFPassed) {
             jetHist.fill(HIST("eff/recmatched/perpCone/pt/PtParticleTypeTPCTOF"), mcTrack.pt(), particleType);
             jetHist.fill(HIST("eff/recmatched/perpCone/ptEta/PtEtaParticleTypeTPCTOF"), mcTrack.pt(), mcTrack.eta(), particleType);
-            jetHist.fill(HIST("eff/recmatched/perpCone/pt/PtParticleTypeTPCTOFVeto"), mcTrack.pt(), particleType);
-            jetHist.fill(HIST("eff/recmatched/perpCone/ptEta/PtEtaParticleTypeTPCTOFVeto"), mcTrack.pt(), mcTrack.eta(), particleType);
-          } else {
+          }
+          if (isTPCTOFVetoPassed) {
             jetHist.fill(HIST("eff/recmatched/perpCone/pt/PtParticleTypeTPCTOFVeto"), mcTrack.pt(), particleType);
             jetHist.fill(HIST("eff/recmatched/perpCone/ptEta/PtEtaParticleTypeTPCTOFVeto"), mcTrack.pt(), mcTrack.eta(), particleType);
           }
