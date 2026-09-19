@@ -319,7 +319,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     if (mult == 1) {
       return {c[0] - c2[0], c[1] - c2[1]};
     }
-    return {c[0] - double(mult) * c2[0], c[1] - double(mult) * c2[1]};
+    return {c[0] - static_cast<double>(mult) * c2[0], c[1] - static_cast<double>(mult) * c2[1]};
   }
 
   bool noneZeroDenom(std::vector<TComplex> resultMultCorr)
