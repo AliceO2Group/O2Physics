@@ -436,7 +436,7 @@ struct LongrangeMaker {
     float centrality = selColCent(col);
     histos.fill(HIST("Nch_vs_Centrality"), col.centFT0C(), multiplicity);
     histos.fill(HIST("PVtracks_vs_Centrality"), col.centFT0C(), col.multNTracksPV());
-    
+
     if (cfgfittrksel.cfgVerbosity > 0) {
       LOGF(info, "Event multiplicity = %f | centrality = %f", multiplicity, centrality);
     }
