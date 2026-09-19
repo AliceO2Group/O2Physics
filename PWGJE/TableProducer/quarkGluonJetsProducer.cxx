@@ -94,7 +94,7 @@ using QGMLJet = QGMLJets::iterator;
 
 namespace qgmlconst
 {
-DECLARE_SOA_INDEX_COLUMN(QGMLJet, qGMLJet);
+DECLARE_SOA_INDEX_COLUMN(QGMLJET, qGMLJet);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(P, p, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
