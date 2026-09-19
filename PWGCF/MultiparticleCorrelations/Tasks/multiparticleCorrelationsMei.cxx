@@ -13,7 +13,6 @@
 /// \brief Multiparticle correlation in O2 Framework
 /// \author yuanjun.mei@cern.ch
 
-#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -287,13 +286,15 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     };
 
     std::vector<TComplex> c = {q(harmonic[m - 1], mult), q(0, mult)};
-    if ((m - 1) == 0)
+    if ((m - 1) == 0) {
       return c;
+    }
     std::vector<TComplex> temp = recursion(m - 1, Qvector, harmonic);
     c[0] *= temp[0];
     c[1] *= temp[1];
-    if ((m - 1) == skip)
+    if ((m - 1) == skip) {
       return c;
+    }
 
     int counter1 = 0;
     int hhold = harmonic[counter1];
@@ -324,11 +325,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
 
   bool noneZeroDenom(std::vector<TComplex> resultMultCorr)
   {
-    if (resultMultCorr[1].Re() != 0) {
-      return true;
-    } else {
-      return false;
-    }
+    return resultMultCorr[1].Re() != 0;
   }
 
   TObject* getObjectFromList(TList* list, const char* objectName)
