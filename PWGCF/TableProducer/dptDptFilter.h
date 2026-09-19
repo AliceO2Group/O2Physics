@@ -1733,12 +1733,12 @@ inline bool acceptParticle(ParticleObject& particle, MCCollisionObject const&)
 //////////////////////////////////////////////////////////////////////////////////
 
 struct PIDSpeciesSelection {
-  const std::vector<int> pdgcodes = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton};
-  const std::vector<std::string_view> spnames = {"e", "mu", "pi", "ka", "p"};
-  const std::vector<std::string_view> sptitles = {"e", "#mu", "#pi", "K", "p"};
-  const std::vector<std::string_view> spfnames = {"E", "Mu", "Pi", "Ka", "Pr"};
-  const std::vector<std::string_view> spadjnames = {"Electron", "Muon", "Pion", "Kaon", "Proton"};
-  const std::vector<double> spmasses = {o2::constants::physics::MassElectron, o2::constants::physics::MassMuon, o2::constants::physics::MassPionCharged, o2::constants::physics::MassKaonCharged, o2::constants::physics::MassProton};
+  const std::vector<int> pdgcodes = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton, o2::constants::physics::kDeuteron};
+  const std::vector<std::string_view> spnames = {"e", "mu", "pi", "ka", "p", "d"};
+  const std::vector<std::string_view> sptitles = {"e", "#mu", "#pi", "K", "p", "d"};
+  const std::vector<std::string_view> spfnames = {"E", "Mu", "Pi", "Ka", "Pr", "De"};
+  const std::vector<std::string_view> spadjnames = {"Electron", "Muon", "Pion", "Kaon", "Proton", "Deuteron"};
+  const std::vector<double> spmasses = {o2::constants::physics::MassElectron, o2::constants::physics::MassMuon, o2::constants::physics::MassPionCharged, o2::constants::physics::MassKaonCharged, o2::constants::physics::MassProton, o2::constants::physics::MassDeuteron};
   const std::vector<std::string_view> chadjnames = {"P", "M"};
   const char* hadname = "h";
   const char* hadtitle = "h";
@@ -1787,10 +1787,10 @@ struct PIDSpeciesSelection {
     auto last = config[config.size() - 1];
     uint8_t lastsp = species[config.size() - 1];
     LOGF(info, "Inserted species %d with", lastsp);
-    LOGF(info, "  minTPC nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMinNSigmasTPC[0], last->mMinNSigmasTPC[1], last->mMinNSigmasTPC[2], last->mMinNSigmasTPC[3], last->mMinNSigmasTPC[4]);
-    LOGF(info, "  maxTPC nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMaxNSigmasTPC[0], last->mMaxNSigmasTPC[1], last->mMaxNSigmasTPC[2], last->mMaxNSigmasTPC[3], last->mMaxNSigmasTPC[4]);
-    LOGF(info, "  minTOF nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMinNSigmasTOF[0], last->mMinNSigmasTOF[1], last->mMinNSigmasTOF[2], last->mMinNSigmasTOF[3], last->mMinNSigmasTOF[4]);
-    LOGF(info, "  maxTOF nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMaxNSigmasTOF[0], last->mMaxNSigmasTOF[1], last->mMaxNSigmasTOF[2], last->mMaxNSigmasTOF[3], last->mMaxNSigmasTOF[4]);
+    LOGF(info, "  minTPC nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f, de: %.2f", last->mMinNSigmasTPC[0], last->mMinNSigmasTPC[1], last->mMinNSigmasTPC[2], last->mMinNSigmasTPC[3], last->mMinNSigmasTPC[4], last->mMinNSigmasTPC[5]);
+    LOGF(info, "  maxTPC nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f, de: %.2f", last->mMaxNSigmasTPC[0], last->mMaxNSigmasTPC[1], last->mMaxNSigmasTPC[2], last->mMaxNSigmasTPC[3], last->mMaxNSigmasTPC[4], last->mMaxNSigmasTPC[5]);
+    LOGF(info, "  minTOF nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f, de: %.2f", last->mMinNSigmasTOF[0], last->mMinNSigmasTOF[1], last->mMinNSigmasTOF[2], last->mMinNSigmasTOF[3], last->mMinNSigmasTOF[4], last->mMinNSigmasTOF[5]);
+    LOGF(info, "  maxTOF nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f, de: %.2f", last->mMaxNSigmasTOF[0], last->mMaxNSigmasTOF[1], last->mMaxNSigmasTOF[2], last->mMaxNSigmasTOF[3], last->mMaxNSigmasTOF[4], last->mMaxNSigmasTOF[5]);
     LOGF(info, "  %.1f < pT < %.1f", last->mPtMin, last->mPtMax);
   }
   void addExcludedSpecies(uint8_t sp, const o2::analysis::TrackSelectionPIDCfg* incfg)
@@ -1802,18 +1802,18 @@ struct PIDSpeciesSelection {
     uint8_t lastsp = speciesexclude[configexclude.size() - 1];
 
     LOGF(info, "Inserted species %d for exclusion with", lastsp);
-    LOGF(info, "  minTPC nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMinNSigmasTPC[0], last->mMinNSigmasTPC[1], last->mMinNSigmasTPC[2], last->mMinNSigmasTPC[3], last->mMinNSigmasTPC[4]);
-    LOGF(info, "  maxTPC nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMaxNSigmasTPC[0], last->mMaxNSigmasTPC[1], last->mMaxNSigmasTPC[2], last->mMaxNSigmasTPC[3], last->mMaxNSigmasTPC[4]);
-    LOGF(info, "  minTOF nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMinNSigmasTOF[0], last->mMinNSigmasTOF[1], last->mMinNSigmasTOF[2], last->mMinNSigmasTOF[3], last->mMinNSigmasTOF[4]);
-    LOGF(info, "  maxTOF nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMaxNSigmasTOF[0], last->mMaxNSigmasTOF[1], last->mMaxNSigmasTOF[2], last->mMaxNSigmasTOF[3], last->mMaxNSigmasTOF[4]);
+    LOGF(info, "  minTPC nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f, de: %.2f", last->mMinNSigmasTPC[0], last->mMinNSigmasTPC[1], last->mMinNSigmasTPC[2], last->mMinNSigmasTPC[3], last->mMinNSigmasTPC[4], last->mMinNSigmasTPC[5]);
+    LOGF(info, "  maxTPC nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f, de: %.2f", last->mMaxNSigmasTPC[0], last->mMaxNSigmasTPC[1], last->mMaxNSigmasTPC[2], last->mMaxNSigmasTPC[3], last->mMaxNSigmasTPC[4], last->mMaxNSigmasTPC[5]);
+    LOGF(info, "  minTOF nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f, de: %.2f", last->mMinNSigmasTOF[0], last->mMinNSigmasTOF[1], last->mMinNSigmasTOF[2], last->mMinNSigmasTOF[3], last->mMinNSigmasTOF[4], last->mMinNSigmasTOF[5]);
+    LOGF(info, "  maxTOF nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f, de: %.2f", last->mMaxNSigmasTOF[0], last->mMaxNSigmasTOF[1], last->mMaxNSigmasTOF[2], last->mMaxNSigmasTOF[3], last->mMaxNSigmasTOF[4], last->mMaxNSigmasTOF[5]);
     LOGF(info, "  %.1f < pT < %.1f", last->mPtMin, last->mPtMax);
   }
   template <StrongDebugging outdebug, typename TrackObject>
   int8_t whichSpecies(TrackObject const& track)
   {
     TString debuginfo;
-    std::vector<float> tpcnsigmas = {track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
-    std::vector<float> tofnsigmas = {track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr()};
+    std::vector<float> tpcnsigmas = {track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(), track.tpcNSigmaDe()};
+    std::vector<float> tofnsigmas = {track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(), track.tofNSigmaDe()};
 
     auto outmomentumdebug = [&]() {
       if constexpr (outdebug != 0) {
