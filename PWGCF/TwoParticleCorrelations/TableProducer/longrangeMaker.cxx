@@ -236,6 +236,9 @@ struct LongrangeMaker {
     ConfigurableAxis axisPQA{"axisPQA", {100, 0.0, 10.0}, "p (GeV/c)"};
     ConfigurableAxis axisTpcSignal{"axisTpcSignal", {250, 0, 250}, "TPC dE/dx (a.u.)"};
     ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 15, 25, 30, 40, 50, 60, 80, 100, 150, 200}, "Multiplicity / Centrality"};
+
+    ConfigurableAxis axisMultQA{"axisMultQA", {500, -0.5, 499.5}, "multiplicity QA axis"};
+    ConfigurableAxis axisCentQA{"axisCentQA", {100, 0., 100.}, "centrality QA axis"};
   } cfgAxis;
 
   Configurable<std::vector<double>> itsNsigmaPidCut{"itsNsigmaPidCut", std::vector<double>{3, 2.5, 2, -3, -2.5, -2}, "ITS n-sigma cut for pions_posNsigma, kaons_posNsigma, protons_posNsigma, pions_negNsigma, kaons_negNsigma, protons_negNsigma"};
@@ -346,6 +349,9 @@ struct LongrangeMaker {
     histos.add("hTpcdEdx_pos_after", "Pos-prong dE/dx After PID;V0 Species;Multiplicity;p (GeV/c);TPC dE/dx", kTHnSparseF, {cfgAxis.axisV0Species, cfgAxis.axisMultiplicity, cfgAxis.axisPQA, cfgAxis.axisTpcSignal});
     histos.add("hTpcdEdx_neg_after", "Neg-prong dE/dx After PID;V0 Species;Multiplicity;p (GeV/c);TPC dE/dx", kTHnSparseF, {cfgAxis.axisV0Species, cfgAxis.axisMultiplicity, cfgAxis.axisPQA, cfgAxis.axisTpcSignal});
 
+    histos.add("Nch_vs_Centrality", "Nch_vs_Centrality", kTH2D, {cfgAxis.axisCentQA, cfgAxis.axisMultQA});
+    histos.add("PVtracks_vs_Centrality", "PVtracks_vs_Centrality", kTH2D, {cfgAxis.axisCentQA, cfgAxis.axisMultQA});
+
     myTrackFilter = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny,
                                                         TrackSelection::GlobalTrackRun3DCAxyCut::Default);
     myTrackFilter.SetPtRange(cfgtrksel.cfgPtCutMin, cfgtrksel.cfgPtCutMax);
@@ -428,6 +434,9 @@ struct LongrangeMaker {
     }
     float multiplicity = countNTracks(tracks, col.posZ());
     float centrality = selColCent(col);
+    histos.fill(HIST("Nch_vs_Centrality"), col.centFT0C(), multiplicity);
+    histos.fill(HIST("PVtracks_vs_Centrality"), col.centFT0C(), col.multNTracksPV());
+
     if (cfgfittrksel.cfgVerbosity > 0) {
       LOGF(info, "Event multiplicity = %f | centrality = %f", multiplicity, centrality);
     }
