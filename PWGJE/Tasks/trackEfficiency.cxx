@@ -69,14 +69,9 @@ struct TrackEfficiency {
   Configurable<float> centralityMax{"centralityMax", 999, ""};
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
   Configurable<float> trackDcaZmax{"trackDcaZmax", 99, "additional cut on dcaZ to PV for tracks; uniformTracks in particular don't cut on this at all"};
-  Configurable<float> ptHighEffMax{"ptHighEffMax", 100., "maximum pT in efficiency histograms for high pT (lower limit set by upper limit for low pT)"};
+  Configurable<float> ptHighEffMax{"ptHighEffMax", 100., "maximum pT in efficiency histograms for high pT (minimum is set by upper limit of ptLowEffBinning parameter)"};
   Configurable<int> ptHighEffNBins{"ptHighEffNBins", 18, "number of pt bins in efficiency histograms for high pT"};
-  ConfigurableAxis lowPtEffBinning{"lowPtEffBinning", {
-                                                        200,
-                                                        0.,
-                                                        10.,
-                                                      },
-                                   "binning of low pT axis in efficiency histograms"};
+  ConfigurableAxis ptLowEffBinning{"ptLowEffBinning", {200, 0., 10.}, "binning of low pT axis in efficiency histograms"};
 
   // Track QA process function configurables:
   Configurable<float> trackQAEtaMin{"trackQAEtaMin", -0.9, "minimum eta acceptance for tracks in the processTracks QA"};
@@ -86,7 +81,7 @@ struct TrackEfficiency {
   Configurable<int> trackOccupancyInTimeRangeMax{"trackOccupancyInTimeRangeMax", 999999, "maximum occupancy of tracks in neighbouring collisions in a given time range; only applied for reconstructed tracks, not mc particles"};
   Configurable<int> trackOccupancyInTimeRangeMin{"trackOccupancyInTimeRangeMin", -999999, "minimum occupancy of tracks in neighbouring collisions in a given time range; only applied for reconstructed tracks, not mc particles"};
 
-  ConfigurableAxis centBinning{"centBinning", {VARIABLE_WIDTH, 0., 10., 50., 70., 100}, "binning of centrality histograms"};
+  ConfigurableAxis centralityBinning{"centralityBinning", {VARIABLE_WIDTH, 0., 10., 50., 70., 100}, "binning of centrality histograms"};
   ConfigurableAxis intRateBinning{"intRateBinning", {50, 0., 50000.0}, "binning for interaction rate axis"};
   ConfigurableAxis phiEffBinning{"phiEffBinning", {200, -1., 7.}, "binning for phi axis in efficiency histograms"};
   ConfigurableAxis etaEffBinning{"etaEffBinning", {200, -1., 1.}, "binning for eta axis in efficiency histograms"};
@@ -254,11 +249,11 @@ struct TrackEfficiency {
       LOGP(info, "Using standard track selection: %s", trackSelections.value);
     }
 
-    AxisSpec ptAxisEff = {lowPtEffBinning, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec ptAxisHighEff = {ptHighEffNBins, ptAxisEff.binEdges[-1], ptHighEffMax, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec ptAxisEff = {ptLowEffBinning, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec ptAxisHighEff = {ptHighEffNBins, ptAxisEff.binEdges.back(), ptHighEffMax, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec etaAxisEff{etaEffBinning, "#eta"};
     AxisSpec phiAxisEff{phiEffBinning, "#phi"};
-    AxisSpec centAxis = {centBinning, "centrality (%)"};
+    AxisSpec centAxis = {centralityBinning, "centrality (%)"};
     AxisSpec intRateAxis = {intRateBinning, "int. rate (kHz)"};
     AxisSpec occupancyAxis = {140, -0.5, 13999.5, "occupancy"};
     AxisSpec nTracksAxis = {16001, -1., 16000, "n tracks"};
@@ -610,7 +605,8 @@ struct TrackEfficiency {
           registry.fill(HIST("h3_particle_pt_high_particle_eta_particle_phi_associatedtrack_nonprimary"), jMcParticleFromTrack.pt(), jMcParticleFromTrack.eta(), jMcParticleFromTrack.phi());
 
           if (std::find(seenMcParticlesVector.begin(), seenMcParticlesVector.end(), jMcParticleFromTrack.globalIndex()) != seenMcParticlesVector.end()) {
-            // particle matches to two tracks so it appears again in this loop over tracks, these histograms keep track of the extra entries from this duplication
+            // occasionally, one particle can match to two reconstructed tracks
+            // since this particle will appear again in this loop over tracks, these histograms keep track of the extra entries from this duplication
             registry.fill(HIST("h3_track_pt_track_eta_track_phi_associatedtrack_split_nonprimary"), track.pt(), track.eta(), track.phi());
             registry.fill(HIST("h3_particle_pt_particle_eta_particle_phi_associatedtrack_split_nonprimary"), jMcParticleFromTrack.pt(), jMcParticleFromTrack.eta(), jMcParticleFromTrack.phi());
 
@@ -634,9 +630,8 @@ struct TrackEfficiency {
         registry.fill(HIST("h2_particle_pt_high_track_pt_high_residual_associatedtrack_primary"), jMcParticleFromTrack.pt(), (jMcParticleFromTrack.pt() - track.pt()) / jMcParticleFromTrack.pt());
 
         if (std::find(seenMcParticlesVector.begin(), seenMcParticlesVector.end(), jMcParticleFromTrack.globalIndex()) != seenMcParticlesVector.end()) {
-          // particle matches to two tracks so it appears again in this loop over tracks, these histograms keep track of the extra entries from this duplication
-          // doesn't overlap with the previous std::find call since we looked at non-physical primaries before and now we are only looking at physical primaries
-          // to get a histogram corrected for the duplication (e.g. for efficiency/resolution studies), you should subtract these histograms below from the corresponding histograms above
+          // same as above, but doesn't overlap with the previous std::find call since we looked at non-physical primaries before and now we are only looking at physical primaries
+          // to get a histogram corrected for the duplication (e.g. for efficiency/resolution studies), you should subtract these histograms below from the corresponding histograms right before this if block
           registry.fill(HIST("h3_track_pt_track_eta_track_phi_associatedtrack_split_primary"), track.pt(), track.eta(), track.phi());
           registry.fill(HIST("h3_particle_pt_particle_eta_particle_phi_associatedtrack_split_primary"), jMcParticleFromTrack.pt(), jMcParticleFromTrack.eta(), jMcParticleFromTrack.phi());
 
