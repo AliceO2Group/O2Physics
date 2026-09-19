@@ -760,6 +760,14 @@ class PairHistManager
     mTrueMinv = getMinv(mTrueParticle1, mTrueParticle2);
     mTrueKstar = getKstar(mTrueParticle1, mTrueParticle2);
 
+    // in the pure mc-truth path there is no reco counterpart, so the generated values are also
+    // stored in the reco members; they are used by getKinematic(), i.e. by the kinematic histograms
+    // of the pair cleaner and of the close pair rejection
+    mKt = mTrueKt;
+    mMt = mTrueMt;
+    mMassInv = mTrueMinv;
+    mKstar = mTrueKstar;
+
     if (mPlotBertschPratt) {
       std::tie(mTrueQout, mTrueQside, mTrueQlong) = computeBertschPrattLCMS(mTrueParticle1, mTrueParticle2);
     }
@@ -785,6 +793,20 @@ class PairHistManager
     setPairMcTruth(particle1, particle2);
     mTrueMult = 0.5f * (col1.mult() + col2.mult());
     mTrueCent = 0.5f * (col1.cent() + col2.cent());
+  }
+
+  /// pair cuts on the mc-truth values, for the pure mc-truth path (kMc without kReco),
+  /// where the reco values are never set
+  bool checkPairCutsMcTruth() const
+  {
+    return (!(mKstarMin > 0.f) || mTrueKstar > mKstarMin) &&
+           (!(mKstarMax > 0.f) || mTrueKstar < mKstarMax) &&
+           (!(mKtMin > 0.f) || mTrueKt > mKtMin) &&
+           (!(mKtMax > 0.f) || mTrueKt < mKtMax) &&
+           (!(mMtMin > 0.f) || mTrueMt > mMtMin) &&
+           (!(mMtMax > 0.f) || mTrueMt < mMtMax) &&
+           (!(mMassInvMin > 0.f) || mTrueMinv > mMassInvMin) &&
+           (!(mMassInvMax > 0.f) || mTrueMinv < mMassInvMax);
   }
 
   bool checkPairCuts() const

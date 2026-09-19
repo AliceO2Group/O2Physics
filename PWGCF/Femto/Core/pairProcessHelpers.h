@@ -341,7 +341,7 @@ bool processSameEvent(T1 const& SliceParticle,
     if (CprManager.isClosePair(p1, p2, PairHistManager)) {
       continue;
     }
-    if (PairHistManager.checkPairCuts()) {
+    if (PairHistManager.checkPairCutsMcTruth()) {
       PairHistManager.template fill<mode>();
       PairHistManager.trackParticlesPerEvent(p1, p2);
       foundPair = true;
@@ -408,7 +408,7 @@ bool processSameEvent(T1 const& SliceParticle1,
     if (CprManager.isClosePair(p1, p2, PairHistManager)) {
       continue;
     }
-    if (PairHistManager.checkPairCuts()) {
+    if (PairHistManager.checkPairCutsMcTruth()) {
       PairHistManager.template fill<mode>();
       PairHistManager.trackParticlesPerEvent(p1, p2);
       foundPair = true;
@@ -714,7 +714,7 @@ void processMixedEvent(T1 const& Collisions,
         continue;
       }
 
-      if (PairHistManager.checkPairCuts()) {
+      if (PairHistManager.checkPairCutsMcTruth()) {
         hasValidPair = true;
         PairHistManager.trackParticlesPerEvent(p1, p2);
         PairHistManager.template fill<mode>();
