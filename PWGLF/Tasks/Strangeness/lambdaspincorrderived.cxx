@@ -50,6 +50,7 @@
 #include <cstdint>
 #include <deque>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -198,6 +199,11 @@ struct lambdaspincorrderived {
       "ConfWeightPaths",
       std::vector<std::string>{},
       "Replaced-leg CCDB paths in order: REP_LL_leg1,REP_UL_leg1,REP_ALAL_leg1,REP_LL_leg2,REP_UL_leg2,REP_ALAL_leg2"};
+    Configurable<bool> useConditionedSEWeight{"useConditionedSEWeight", false, "Use replacement weights derived from successful SE targets only"};
+    Configurable<std::vector<std::string>> ConfConditionedWeightPaths{
+      "ConfConditionedWeightPaths",
+      std::vector<std::string>{},
+      "Conditioned CCDB paths in order: REP/SUC_TGT for LL_leg1,UL_leg1,ALAL_leg1,LL_leg2,UL_leg2,ALAL_leg2"};
     Configurable<std::vector<std::string>> ConfFixedWeightPaths{
       "ConfFixedWeightPaths",
       std::vector<std::string>{},
@@ -292,6 +298,25 @@ struct lambdaspincorrderived {
 
   } v0Configurations;
 
+  struct : ConfigurableGroup {
+    std::string prefix = "closePairQA";
+
+    Configurable<bool> fillClosePairQA{
+      "fillClosePairQA",
+      true,
+      "Fill daughter deta-dphi vs Lambda-Lambda deltaR close-pair QA"};
+
+    ConfigurableAxis axClosePairDEta{
+      "axClosePairDEta",
+      {100, -0.2, 0.2},
+      "#Delta#eta daughter"};
+
+    ConfigurableAxis axClosePairDPhi{
+      "axClosePairDPhi",
+      {100, -0.2, 0.2},
+      "#Delta#varphi daughter"};
+  } cfgClosePairQA;
+
   // Event Mixing
   Configurable<int> cosDef{"cosDef", 1, "Defination of cos"};
 
@@ -311,7 +336,7 @@ struct lambdaspincorrderived {
   ConfigurableAxis configThnAxisPhi{"configThnAxisPhi", {VARIABLE_WIDTH, 0.0, 2.0 * TMath::Pi()}, "Phi"};
 
   ConfigurableAxis configThnAxisDeltaPhi{"configThnAxisDeltaPhi", {VARIABLE_WIDTH, 0.0, TMath::Pi() / 6, 2.0 * TMath::Pi() / 6, 3.0 * TMath::Pi() / 6, 4.0 * TMath::Pi() / 6, 5.0 * TMath::Pi() / 6, TMath::Pi()}, "Delta Phi"};
-  ConfigurableAxis configThnAxisDeltaR{"configThnAxisDeltaR", {VARIABLE_WIDTH, 0.0, 0.5, 1.2, 2.0, 3.1, 4.0}, "Delta R"};
+  ConfigurableAxis configThnAxisDeltaR{"configThnAxisDeltaR", {VARIABLE_WIDTH, 0.0, 0.4, 0.8, 1.2, 2.0, 3.1, 4.0}, "Delta R"};
   ConfigurableAxis configThnAxisDeltaRap{"configThnAxisDeltaRap", {VARIABLE_WIDTH, 0.0, 0.2, 0.5, 1.0, 1.6}, "Delta Rap"};
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -450,6 +475,58 @@ struct lambdaspincorrderived {
       histos.add("etaCent", "etaCent", HistType::kTH2D, {{32, -0.8, 0.8}, {8, 0.0, 80.0}}, true);
     }
 
+    if (cfgClosePairQA.fillClosePairQA) {
+      histos.add(
+        "hClosePairPP_kStar020",
+        "p_{1}-p_{2}, k* > 0.2 GeV/c;#Delta#eta;#Delta#varphi;#DeltaR_{#Lambda#Lambda}",
+        HistType::kTH3D,
+        {cfgClosePairQA.axClosePairDEta, cfgClosePairQA.axClosePairDPhi, configThnAxisDeltaR},
+        true);
+      histos.add(
+        "hClosePairPiPi_kStar020",
+        "#pi_{1}-#pi_{2}, k* > 0.2 GeV/c;#Delta#eta;#Delta#varphi;#DeltaR_{#Lambda#Lambda}",
+        HistType::kTH3D,
+        {cfgClosePairQA.axClosePairDEta, cfgClosePairQA.axClosePairDPhi, configThnAxisDeltaR},
+        true);
+      histos.add(
+        "hClosePairPPi_kStar020",
+        "p_{1}-#pi_{2}, k* > 0.2 GeV/c;#Delta#eta;#Delta#varphi;#DeltaR_{#Lambda#Lambda}",
+        HistType::kTH3D,
+        {cfgClosePairQA.axClosePairDEta, cfgClosePairQA.axClosePairDPhi, configThnAxisDeltaR},
+        true);
+      histos.add(
+        "hClosePairPiP_kStar020",
+        "#pi_{1}-p_{2}, k* > 0.2 GeV/c;#Delta#eta;#Delta#varphi;#DeltaR_{#Lambda#Lambda}",
+        HistType::kTH3D,
+        {cfgClosePairQA.axClosePairDEta, cfgClosePairQA.axClosePairDPhi, configThnAxisDeltaR},
+        true);
+
+      histos.add(
+        "hClosePairPP",
+        "p_{1}-p_{2};#Delta#eta;#Delta#varphi;#DeltaR_{#Lambda#Lambda}",
+        HistType::kTH3D,
+        {cfgClosePairQA.axClosePairDEta, cfgClosePairQA.axClosePairDPhi, configThnAxisDeltaR},
+        true);
+      histos.add(
+        "hClosePairPiPi",
+        "#pi_{1}-#pi_{2};#Delta#eta;#Delta#varphi;#DeltaR_{#Lambda#Lambda}",
+        HistType::kTH3D,
+        {cfgClosePairQA.axClosePairDEta, cfgClosePairQA.axClosePairDPhi, configThnAxisDeltaR},
+        true);
+      histos.add(
+        "hClosePairPPi",
+        "p_{1}-#pi_{2};#Delta#eta;#Delta#varphi;#DeltaR_{#Lambda#Lambda}",
+        HistType::kTH3D,
+        {cfgClosePairQA.axClosePairDEta, cfgClosePairQA.axClosePairDPhi, configThnAxisDeltaR},
+        true);
+      histos.add(
+        "hClosePairPiP",
+        "#pi_{1}-p_{2};#Delta#eta;#Delta#varphi;#DeltaR_{#Lambda#Lambda}",
+        HistType::kTH3D,
+        {cfgClosePairQA.axClosePairDEta, cfgClosePairQA.axClosePairDPhi, configThnAxisDeltaR},
+        true);
+    }
+
     if (fillWeightQAHistos) {
       // QA for weighting
       histos.add("REP_LL_leg1_weighted",
@@ -537,6 +614,19 @@ struct lambdaspincorrderived {
       histos.add("TGT_ALL_leg2", "Target ALL leg2", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
       histos.add("TGT_ALAL_leg2", "Target ALAL leg2", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
 
+      // Target candidates restricted to branches for which at least one valid
+      // replacement was found.  Use REP/SUC_TGT as the conditioned matching
+      // efficiency when SE itself is restricted to replacement-found pairs.
+      histos.add("SUC_TGT_LL_leg1", "Successful target LL leg1", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("SUC_TGT_LAL_leg1", "Successful target LAL leg1", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("SUC_TGT_ALL_leg1", "Successful target ALL leg1", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("SUC_TGT_ALAL_leg1", "Successful target ALAL leg1", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+
+      histos.add("SUC_TGT_LL_leg2", "Successful target LL leg2", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("SUC_TGT_LAL_leg2", "Successful target LAL leg2", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("SUC_TGT_ALL_leg2", "Successful target ALL leg2", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+      histos.add("SUC_TGT_ALAL_leg2", "Successful target ALAL leg2", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+
       histos.add("REP_LL_leg2", "Repl LL leg2", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
       histos.add("REP_LAL_leg2", "Repl LAL leg2", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
       histos.add("REP_ALL_leg2", "Repl ALL leg2", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
@@ -566,6 +656,19 @@ struct lambdaspincorrderived {
     histos.add("hSparseLambdaAntiLambda", "hSparseLambdaAntiLambda", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisR}, true);
     histos.add("hSparseAntiLambdaLambda", "hSparseAntiLambdLambda", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisR}, true);
     histos.add("hSparseAntiLambdaAntiLambda", "hSparseAntiLambdaAntiLambda", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisR}, true);
+
+    // Original same-event pairs split by whether the ME replacement search
+    // succeeds.  These use the original SE pair variables and the ordinary
+    // SE NUA weight; no mixing or replacement-efficiency weight is applied.
+    histos.add("hSparseLambdaLambdaSEReplacementFound", "hSparseLambdaLambdaSEReplacementFound", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisR}, true);
+    histos.add("hSparseLambdaAntiLambdaSEReplacementFound", "hSparseLambdaAntiLambdaSEReplacementFound", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisR}, true);
+    histos.add("hSparseAntiLambdaLambdaSEReplacementFound", "hSparseAntiLambdaLambdaSEReplacementFound", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisR}, true);
+    histos.add("hSparseAntiLambdaAntiLambdaSEReplacementFound", "hSparseAntiLambdaAntiLambdaSEReplacementFound", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisR}, true);
+
+    histos.add("hSparseLambdaLambdaSEReplacementNotFound", "hSparseLambdaLambdaSEReplacementNotFound", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisR}, true);
+    histos.add("hSparseLambdaAntiLambdaSEReplacementNotFound", "hSparseLambdaAntiLambdaSEReplacementNotFound", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisR}, true);
+    histos.add("hSparseAntiLambdaLambdaSEReplacementNotFound", "hSparseAntiLambdaLambdaSEReplacementNotFound", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisR}, true);
+    histos.add("hSparseAntiLambdaAntiLambdaSEReplacementNotFound", "hSparseAntiLambdaAntiLambdaSEReplacementNotFound", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisR}, true);
 
     histos.add("hSparseLambdaLambdaMixed", "hSparseLambdaLambdaMixed", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisR}, true);
     histos.add("hSparseLambdaAntiLambdaMixed", "hSparseLambdaAntiLambdaMixed", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisR}, true);
@@ -633,12 +736,18 @@ struct lambdaspincorrderived {
     ccdb->setCreatedNotAfter(cfgCcdbParam.nolaterthan.value);
     LOGF(info, "Getting alignment offsets from the CCDB (check carefully)...");
     if (useweight) {
-      const auto& repPaths = cfgCcdbParam.ConfWeightPaths.value;
+      if (cfgCcdbParam.useConditionedSEWeight && cfgCcdbParam.useFixedWeight) {
+        LOGF(fatal, "useFixedWeight must be false with useConditionedSEWeight: the fixed leg already belongs to the successful SE subset");
+      }
+      const auto& repPaths = cfgCcdbParam.useConditionedSEWeight
+                               ? cfgCcdbParam.ConfConditionedWeightPaths.value
+                               : cfgCcdbParam.ConfWeightPaths.value;
+      const char* activePathName = cfgCcdbParam.useConditionedSEWeight ? "ConfConditionedWeightPaths" : "ConfWeightPaths";
       if (repPaths.size() < 6) {
-        LOGF(fatal, "ConfWeightPaths must contain 6 paths: REP_LL_leg1, REP_UL_leg1, REP_ALAL_leg1, REP_LL_leg2, REP_UL_leg2, REP_ALAL_leg2. Found %zu", repPaths.size());
+        LOGF(fatal, "%s must contain 6 paths: LL_leg1, UL_leg1, ALAL_leg1, LL_leg2, UL_leg2, ALAL_leg2. Found %zu", activePathName, repPaths.size());
       }
       for (size_t i = 0; i < repPaths.size(); ++i) {
-        LOGF(info, "ConfWeightPaths[%zu] = '%s'", i, repPaths[i].c_str());
+        LOGF(info, "%s[%zu] = '%s'", activePathName, i, repPaths[i].c_str());
       }
 
       auto loadRep = [&](int idx, const char* name) -> TH3D* {
@@ -851,6 +960,20 @@ struct lambdaspincorrderived {
       return 1.0;
     }
     return w;
+  }
+  static inline double getKStar(
+    const ROOT::Math::PtEtaPhiMVector& p1,
+    const ROOT::Math::PtEtaPhiMVector& p2)
+  {
+    const auto pair = p1 + p2;
+
+    ROOT::Math::Boost boostToPairCM{pair.BoostToCM()};
+    const auto p1CM = boostToPairCM(p1);
+
+    return std::sqrt(
+      p1CM.Px() * p1CM.Px() +
+      p1CM.Py() * p1CM.Py() +
+      p1CM.Pz() * p1CM.Pz());
   }
 
   int getWeightCategory(int tag1, int tag2) const
@@ -1243,6 +1366,103 @@ struct lambdaspincorrderived {
     }
   }
 
+  void fillSEReplacementOutcomeSparse(
+    int tag1, int tag2,
+    const ROOT::Math::PtEtaPhiMVector& particle1,
+    const ROOT::Math::PtEtaPhiMVector& particle2,
+    const ROOT::Math::PtEtaPhiMVector& daughter1,
+    const ROOT::Math::PtEtaPhiMVector& daughter2,
+    bool replacementFound)
+  {
+    const double lambda1Mass = usePDGM ? o2::constants::physics::MassLambda : particle1.M();
+    const double lambda2Mass = usePDGM ? o2::constants::physics::MassLambda : particle2.M();
+
+    const auto particle1Dummy = ROOT::Math::PtEtaPhiMVector(particle1.Pt(), particle1.Eta(), particle1.Phi(), lambda1Mass);
+    const auto particle2Dummy = ROOT::Math::PtEtaPhiMVector(particle2.Pt(), particle2.Eta(), particle2.Phi(), lambda2Mass);
+    const auto pairDummy = particle1Dummy + particle2Dummy;
+    ROOT::Math::Boost boostPairToCM{pairDummy.BoostToCM()};
+
+    const auto lambda1CM = boostPairToCM(particle1Dummy);
+    const auto lambda2CM = boostPairToCM(particle2Dummy);
+    ROOT::Math::Boost boostLambda1ToCM{lambda1CM.BoostToCM()};
+    ROOT::Math::Boost boostLambda2ToCM{lambda2CM.BoostToCM()};
+
+    const auto proton1PairCM = boostPairToCM(daughter1);
+    const auto proton2PairCM = boostPairToCM(daughter2);
+    const auto proton1LambdaRF = boostLambda1ToCM(proton1PairCM);
+    const auto proton2LambdaRF = boostLambda2ToCM(proton2PairCM);
+
+    ROOT::Math::Boost boostL1LabToRF{particle1Dummy.BoostToCM()};
+    ROOT::Math::Boost boostL2LabToRF{particle2Dummy.BoostToCM()};
+    const auto proton1LRF = boostL1LabToRF(daughter1);
+    const auto proton2LRF = boostL2LabToRF(daughter2);
+
+    const TVector3 u1 = TVector3(proton1LRF.Px(), proton1LRF.Py(), proton1LRF.Pz()).Unit();
+    const TVector3 u2 = TVector3(proton2LRF.Px(), proton2LRF.Py(), proton2LRF.Pz()).Unit();
+    const TVector3 k1 = TVector3(proton1LambdaRF.Px(), proton1LambdaRF.Py(), proton1LambdaRF.Pz()).Unit();
+    const TVector3 k2 = TVector3(proton2LambdaRF.Px(), proton2LambdaRF.Py(), proton2LambdaRF.Pz()).Unit();
+
+    double cosThetaDiff = (cosDef == 0) ? u1.Dot(u2) : k1.Dot(k2);
+    if (cosThetaDiff > 1.0) {
+      cosThetaDiff = 111.0;
+    } else if (cosThetaDiff < -1.0) {
+      cosThetaDiff = -111.0;
+    }
+
+    const double dphi1 = RecoDecay::constrainAngle(particle1.Phi(), 0.0F, harmonic);
+    const double dphi2 = RecoDecay::constrainAngle(particle2.Phi(), 0.0F, harmonic);
+    const double dphiPair = RecoDecay::constrainAngle(dphi1 - dphi2, -TMath::Pi(), harmonicDphi);
+    const double deltaRap = std::abs(particle1.Rapidity() - particle2.Rapidity());
+    const double deltaR = TMath::Sqrt(deltaRap * deltaRap + dphiPair * dphiPair);
+
+    // Match the ordinary SE sparse exactly.  This is only the established SE
+    // NUA correction, not an ME-availability or replacement-candidate weight.
+    const double pairNUAWeight = getNUAWeight(tag1, particle1.Phi(), particle1.Eta()) *
+                                 getNUAWeight(tag2, particle2.Phi(), particle2.Eta());
+
+    if (replacementFound) {
+      if (tag1 == 0 && tag2 == 0) {
+        histos.fill(HIST("hSparseLambdaLambdaSEReplacementFound"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, pairNUAWeight);
+      } else if (tag1 == 0 && tag2 == 1) {
+        histos.fill(HIST("hSparseLambdaAntiLambdaSEReplacementFound"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, pairNUAWeight);
+      } else if (tag1 == 1 && tag2 == 0) {
+        histos.fill(HIST("hSparseAntiLambdaLambdaSEReplacementFound"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, pairNUAWeight);
+      } else if (tag1 == 1 && tag2 == 1) {
+        histos.fill(HIST("hSparseAntiLambdaAntiLambdaSEReplacementFound"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, pairNUAWeight);
+      }
+      return;
+    }
+
+    if (tag1 == 0 && tag2 == 0) {
+      histos.fill(HIST("hSparseLambdaLambdaSEReplacementNotFound"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, pairNUAWeight);
+    } else if (tag1 == 0 && tag2 == 1) {
+      histos.fill(HIST("hSparseLambdaAntiLambdaSEReplacementNotFound"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, pairNUAWeight);
+    } else if (tag1 == 1 && tag2 == 0) {
+      histos.fill(HIST("hSparseAntiLambdaLambdaSEReplacementNotFound"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, pairNUAWeight);
+    } else if (tag1 == 1 && tag2 == 1) {
+      histos.fill(HIST("hSparseAntiLambdaAntiLambdaSEReplacementNotFound"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, pairNUAWeight);
+    }
+  }
+
+  template <typename T1, typename T2>
+  void fillSEReplacementOutcome(T1 const& first, T2 const& second, bool replacementFound)
+  {
+    const auto firstLambda = ROOT::Math::PtEtaPhiMVector(first.lambdaPt(), first.lambdaEta(), first.lambdaPhi(), first.lambdaMass());
+    const auto firstProton = ROOT::Math::PtEtaPhiMVector(first.protonPt(), first.protonEta(), first.protonPhi(), o2::constants::physics::MassProton);
+    const auto secondLambda = ROOT::Math::PtEtaPhiMVector(second.lambdaPt(), second.lambdaEta(), second.lambdaPhi(), second.lambdaMass());
+    const auto secondProton = ROOT::Math::PtEtaPhiMVector(second.protonPt(), second.protonEta(), second.protonPhi(), o2::constants::physics::MassProton);
+    const int firstStatus = first.v0Status();
+    const int secondStatus = second.v0Status();
+
+    // Keep the same unlike-sign ordering used by processData: Lambda first,
+    // AntiLambda second.
+    if (firstStatus == 1 && secondStatus == 0) {
+      fillSEReplacementOutcomeSparse(0, 1, secondLambda, firstLambda, secondProton, firstProton, replacementFound);
+      return;
+    }
+    fillSEReplacementOutcomeSparse(firstStatus, secondStatus, firstLambda, secondLambda, firstProton, secondProton, replacementFound);
+  }
+
   void fillHistogramsSys(int tag1, int tag2,
                          const ROOT::Math::PtEtaPhiMVector& particle1, const ROOT::Math::PtEtaPhiMVector& particle2,
                          const ROOT::Math::PtEtaPhiMVector& daughpart1, const ROOT::Math::PtEtaPhiMVector& daughpart2,
@@ -1532,8 +1752,53 @@ struct lambdaspincorrderived {
         }
         if (hasSharedDaughters(v0, v02))
           continue;
+
         proton2 = ROOT::Math::PtEtaPhiMVector(v02.protonPt(), v02.protonEta(), v02.protonPhi(), o2::constants::physics::MassProton);
         lambda2 = ROOT::Math::PtEtaPhiMVector(v02.lambdaPt(), v02.lambdaEta(), v02.lambdaPhi(), v02.lambdaMass());
+        const double kStar = getKStar(lambda, lambda2);
+
+        // Close-pair QA for same-sign Lambda pairs in the signal mass window.
+        if (cfgClosePairQA.fillClosePairQA &&
+            v0.v0Status() == v02.v0Status() &&
+            v0.lambdaMass() > 1.11f && v0.lambdaMass() < 1.12f &&
+            v02.lambdaMass() > 1.11f && v02.lambdaMass() < 1.12f) {
+          // Keep the parent DeltaR definition identical to the main analysis.
+          const double dPhiLL = deltaPhiMinusPiToPi(lambda.Phi(), lambda2.Phi());
+          const double dYLL = lambda.Rapidity() - lambda2.Rapidity();
+          const double deltaRLL = std::sqrt(dYLL * dYLL + dPhiLL * dPhiLL);
+
+          // Lambda = proton + pion.
+          const auto pion1 = lambda - proton;
+          const auto pion2 = lambda2 - proton2;
+
+          const double dEtaPP = proton.Eta() - proton2.Eta();
+          const double dPhiPP = deltaPhiMinusPiToPi(proton.Phi(), proton2.Phi());
+          histos.fill(HIST("hClosePairPP"), dEtaPP, dPhiPP, deltaRLL);
+          if (kStar > 0.20) {
+            histos.fill(HIST("hClosePairPP_kStar020"), dEtaPP, dPhiPP, deltaRLL);
+          }
+
+          const double dEtaPiPi = pion1.Eta() - pion2.Eta();
+          const double dPhiPiPi = deltaPhiMinusPiToPi(pion1.Phi(), pion2.Phi());
+          histos.fill(HIST("hClosePairPiPi"), dEtaPiPi, dPhiPiPi, deltaRLL);
+          if (kStar > 0.20) {
+            histos.fill(HIST("hClosePairPiPi_kStar020"), dEtaPiPi, dPhiPiPi, deltaRLL);
+          }
+
+          const double dEtaPPi = proton.Eta() - pion2.Eta();
+          const double dPhiPPi = deltaPhiMinusPiToPi(proton.Phi(), pion2.Phi());
+          histos.fill(HIST("hClosePairPPi"), dEtaPPi, dPhiPPi, deltaRLL);
+          if (kStar > 0.20) {
+            histos.fill(HIST("hClosePairPPi_kStar020"), dEtaPPi, dPhiPPi, deltaRLL);
+          }
+
+          const double dEtaPiP = pion1.Eta() - proton2.Eta();
+          const double dPhiPiP = deltaPhiMinusPiToPi(pion1.Phi(), proton2.Phi());
+          histos.fill(HIST("hClosePairPiP"), dEtaPiP, dPhiPiP, deltaRLL);
+          if (kStar > 0.20) {
+            histos.fill(HIST("hClosePairPiP_kStar020"), dEtaPiP, dPhiPiP, deltaRLL);
+          }
+        }
         if ((v0.v0Status() == 0 && v02.v0Status() == 1) || (v0.v0Status() == 1 && v02.v0Status() == 0))
           if (fillBasicQAHistos)
             histos.fill(HIST("deltaPhiSame"), RecoDecay::constrainAngle(v0.lambdaPhi() - v02.lambdaPhi(), -TMath::Pi(), harmonicDphi));
@@ -1688,6 +1953,41 @@ struct lambdaspincorrderived {
       return;
     }
   }
+
+  template <typename LV>
+  void fillSuccessfulTargetControlMap(int tag1, int tag2, int leg, LV const& targetParticle, float weight)
+  {
+    if (!fillReplacementQAHistos) {
+      return;
+    }
+    const double pt = targetParticle.Pt();
+    const double phi = RecoDecay::constrainAngle(targetParticle.Phi(), 0.0F, harmonic);
+    const double etaOrY = userapidity ? targetParticle.Rapidity() : targetParticle.Eta();
+
+    if (leg == 1) {
+      if (tag1 == 0 && tag2 == 0)
+        histos.fill(HIST("SUC_TGT_LL_leg1"), phi, etaOrY, pt, weight);
+      else if (tag1 == 0 && tag2 == 1)
+        histos.fill(HIST("SUC_TGT_LAL_leg1"), phi, etaOrY, pt, weight);
+      else if (tag1 == 1 && tag2 == 0)
+        histos.fill(HIST("SUC_TGT_ALL_leg1"), phi, etaOrY, pt, weight);
+      else if (tag1 == 1 && tag2 == 1)
+        histos.fill(HIST("SUC_TGT_ALAL_leg1"), phi, etaOrY, pt, weight);
+      return;
+    }
+
+    if (leg == 2) {
+      if (tag1 == 0 && tag2 == 0)
+        histos.fill(HIST("SUC_TGT_LL_leg2"), phi, etaOrY, pt, weight);
+      else if (tag1 == 0 && tag2 == 1)
+        histos.fill(HIST("SUC_TGT_LAL_leg2"), phi, etaOrY, pt, weight);
+      else if (tag1 == 1 && tag2 == 0)
+        histos.fill(HIST("SUC_TGT_ALL_leg2"), phi, etaOrY, pt, weight);
+      else if (tag1 == 1 && tag2 == 1)
+        histos.fill(HIST("SUC_TGT_ALAL_leg2"), phi, etaOrY, pt, weight);
+    }
+  }
+
   template <typename LV>
   void fillFixedLegControlMap(int tag1, int tag2,
                               int repLeg,
@@ -1773,15 +2073,6 @@ struct lambdaspincorrderived {
 
       auto poolA = V0s.sliceBy(tracksPerCollisionV0, collision1.index());
 
-      // if pool empty, push and continue
-      if (eventPools[bin].empty()) {
-        eventPools[bin].emplace_back(collision1.index(), std::move(poolA));
-        if ((int)eventPools[bin].size() > nEvtMixing) {
-          eventPools[bin].pop_front();
-        }
-        continue;
-      }
-
       for (const auto& [t1, t2] : soa::combinations(o2::soa::CombinationsFullIndexPolicy(poolA, poolA))) {
         if (!selectionV0(t1) || !selectionV0(t2)) {
           continue;
@@ -1846,8 +2137,11 @@ struct lambdaspincorrderived {
         }
 
         if (totalRepl <= 0) {
+          fillSEReplacementOutcome(t1, t2, false);
           continue;
         }
+
+        fillSEReplacementOutcome(t1, t2, true);
 
         const float wBase = 1.0f / static_cast<float>(totalRepl);
 
@@ -1884,6 +2178,9 @@ struct lambdaspincorrderived {
             // -------- leg-1 replacement: (tX, t2)
             if (doMixLeg1) {
               if (tX.v0Status() == t1.v0Status() && checkKinematics(t1, tX)) {
+                fillSuccessfulTargetControlMap(t1.v0Status(), t2.v0Status(), 1,
+                                               ROOT::Math::PtEtaPhiMVector(t1.lambdaPt(), t1.lambdaEta(), t1.lambdaPhi(), t1.lambdaMass()),
+                                               wBase);
                 fillReplacementControlMap(tX.v0Status(), t2.v0Status(), 1, false,
                                           ROOT::Math::PtEtaPhiMVector(tX.lambdaPt(), tX.lambdaEta(), tX.lambdaPhi(), tX.lambdaMass()),
                                           wBase);
@@ -1912,6 +2209,9 @@ struct lambdaspincorrderived {
             // -------- leg-2 replacement: (t1, tX)
             if (doMixLeg2) {
               if (tX.v0Status() == t2.v0Status() && checkKinematics(t2, tX)) {
+                fillSuccessfulTargetControlMap(t1.v0Status(), t2.v0Status(), 2,
+                                               ROOT::Math::PtEtaPhiMVector(t2.lambdaPt(), t2.lambdaEta(), t2.lambdaPhi(), t2.lambdaMass()),
+                                               wBase);
                 fillReplacementControlMap(t1.v0Status(), tX.v0Status(), 2, false,
                                           ROOT::Math::PtEtaPhiMVector(tX.lambdaPt(), tX.lambdaEta(), tX.lambdaPhi(), tX.lambdaMass()),
                                           wBase);
@@ -2130,6 +2430,14 @@ struct lambdaspincorrderived {
     int replacedLeg = 1;
     int age = 0;
     uint64_t seed = 0;
+    uint64_t outcomeId = 0;
+  };
+
+  struct PendingSEReplacementOutcome {
+    StoredV6Candidate first;
+    StoredV6Candidate second;
+    int remainingBranches = 0;
+    bool replacementFound = false;
   };
 
   template <typename T>
@@ -2142,17 +2450,19 @@ struct lambdaspincorrderived {
             static_cast<int64_t>(t.protonIndex()), static_cast<int64_t>(t.pionIndex())};
   }
 
-  template <typename TRep, typename TFixed>
-  void fillV6MixedBranch(TRep const& replacement, TFixed const& fixed, int replacedLeg, float controlWeight, float mixWeight)
+  template <typename TRep, typename TTarget, typename TFixed>
+  void fillV6MixedBranch(TRep const& replacement, TTarget const& target, TFixed const& fixed, int replacedLeg, float controlWeight, float mixWeight)
   {
     const auto repProton = ROOT::Math::PtEtaPhiMVector(replacement.protonPt(), replacement.protonEta(), replacement.protonPhi(), o2::constants::physics::MassProton);
     const auto repLambda = ROOT::Math::PtEtaPhiMVector(replacement.lambdaPt(), replacement.lambdaEta(), replacement.lambdaPhi(), replacement.lambdaMass());
     const auto fixedProton = ROOT::Math::PtEtaPhiMVector(fixed.protonPt(), fixed.protonEta(), fixed.protonPhi(), o2::constants::physics::MassProton);
     const auto fixedLambda = ROOT::Math::PtEtaPhiMVector(fixed.lambdaPt(), fixed.lambdaEta(), fixed.lambdaPhi(), fixed.lambdaMass());
+    const auto targetLambda = ROOT::Math::PtEtaPhiMVector(target.lambdaPt(), target.lambdaEta(), target.lambdaPhi(), target.lambdaMass());
     const int repStatus = replacement.v0Status();
     const int fixedStatus = fixed.v0Status();
 
     if (replacedLeg == 1) {
+      fillSuccessfulTargetControlMap(target.v0Status(), fixedStatus, 1, targetLambda, controlWeight);
       fillReplacementControlMap(repStatus, fixedStatus, 1, false, repLambda, controlWeight);
       fillFixedLegControlMap(repStatus, fixedStatus, 1, false, fixedLambda, controlWeight);
       if ((repStatus == 0 && fixedStatus == 1) || (repStatus == 1 && fixedStatus == 0)) {
@@ -2170,6 +2480,7 @@ struct lambdaspincorrderived {
       return;
     }
 
+    fillSuccessfulTargetControlMap(fixedStatus, target.v0Status(), 2, targetLambda, controlWeight);
     fillReplacementControlMap(fixedStatus, repStatus, 2, false, repLambda, controlWeight);
     fillFixedLegControlMap(fixedStatus, repStatus, 2, false, fixedLambda, controlWeight);
     if (fillBasicQAHistos) {
@@ -2234,9 +2545,37 @@ struct lambdaspincorrderived {
   struct V6PendingState {
     std::deque<PendingV6Branch> data;
     std::deque<PendingV6BranchMC> mc;
+    std::unordered_map<uint64_t, PendingSEReplacementOutcome> dataOutcomes;
+    uint64_t nextOutcomeId = 1;
   };
 
   V6PendingState v6Pending;
+
+  void finalizePendingSEReplacementOutcome(uint64_t outcomeId, bool replacementFound)
+  {
+    if (outcomeId == 0) {
+      return;
+    }
+    auto outcomeIt = v6Pending.dataOutcomes.find(outcomeId);
+    if (outcomeIt == v6Pending.dataOutcomes.end()) {
+      return;
+    }
+
+    auto& outcome = outcomeIt->second;
+    if (replacementFound && !outcome.replacementFound) {
+      fillSEReplacementOutcome(outcome.first, outcome.second, true);
+      outcome.replacementFound = true;
+    }
+
+    --outcome.remainingBranches;
+    if (outcome.remainingBranches > 0) {
+      return;
+    }
+    if (!outcome.replacementFound) {
+      fillSEReplacementOutcome(outcome.first, outcome.second, false);
+    }
+    v6Pending.dataOutcomes.erase(outcomeIt);
+  }
 
   template <typename T>
   StoredV6CandidateMC storeV6CandidateMC(T const& t) const
@@ -2248,17 +2587,19 @@ struct lambdaspincorrderived {
             static_cast<int64_t>(mcacc::prIdx(t)), static_cast<int64_t>(mcacc::piIdx(t))};
   }
 
-  template <typename TRep, typename TFixed>
-  void fillV6MixedBranchMC(TRep const& replacement, TFixed const& fixed, int replacedLeg, float controlWeight, float mixWeight)
+  template <typename TRep, typename TTarget, typename TFixed>
+  void fillV6MixedBranchMC(TRep const& replacement, TTarget const& target, TFixed const& fixed, int replacedLeg, float controlWeight, float mixWeight)
   {
     const auto repProton = ROOT::Math::PtEtaPhiMVector(mcacc::prPt(replacement), mcacc::prEta(replacement), mcacc::prPhi(replacement), o2::constants::physics::MassProton);
     const auto repLambda = ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(replacement), mcacc::lamEta(replacement), mcacc::lamPhi(replacement), mcacc::lamMass(replacement));
     const auto fixedProton = ROOT::Math::PtEtaPhiMVector(mcacc::prPt(fixed), mcacc::prEta(fixed), mcacc::prPhi(fixed), o2::constants::physics::MassProton);
     const auto fixedLambda = ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(fixed), mcacc::lamEta(fixed), mcacc::lamPhi(fixed), mcacc::lamMass(fixed));
+    const auto targetLambda = ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(target), mcacc::lamEta(target), mcacc::lamPhi(target), mcacc::lamMass(target));
     const int repStatus = mcacc::v0Status(replacement);
     const int fixedStatus = mcacc::v0Status(fixed);
 
     if (replacedLeg == 1) {
+      fillSuccessfulTargetControlMap(mcacc::v0Status(target), fixedStatus, 1, targetLambda, controlWeight);
       fillReplacementControlMap(repStatus, fixedStatus, 1, false, repLambda, controlWeight);
       fillFixedLegControlMap(repStatus, fixedStatus, 1, false, fixedLambda, controlWeight);
       if (fillBasicQAHistos) {
@@ -2274,6 +2615,7 @@ struct lambdaspincorrderived {
       return;
     }
 
+    fillSuccessfulTargetControlMap(fixedStatus, mcacc::v0Status(target), 2, targetLambda, controlWeight);
     fillReplacementControlMap(fixedStatus, repStatus, 2, false, repLambda, controlWeight);
     fillFixedLegControlMap(fixedStatus, repStatus, 2, false, fixedLambda, controlWeight);
     if (fillBasicQAHistos) {
@@ -2819,11 +3161,13 @@ struct lambdaspincorrderived {
     size_t pendingAdded = 0;
     if (!cfgV6CarryUnmatched) {
       v6Pending.data.clear();
+      v6Pending.dataOutcomes.clear();
     } else {
       for (auto it = v6Pending.data.begin(); it != v6Pending.data.end();) {
         auto& pending = *it;
         ++pending.age;
         if (cfgV6MaxPendingAge.value > 0 && pending.age > cfgV6MaxPendingAge.value) {
+          finalizePendingSEReplacementOutcome(pending.outcomeId, false);
           ++pendingExpired;
           it = v6Pending.data.erase(it);
           continue;
@@ -2868,9 +3212,10 @@ struct lambdaspincorrderived {
           if (hasSharedDaughters(replacement, pending.target) || hasSharedDaughters(replacement, pending.fixed)) {
             continue;
           }
-          fillV6MixedBranch(replacement, pending.fixed, pending.replacedLeg, controlWeight, mixWeight);
+          fillV6MixedBranch(replacement, pending.target, pending.fixed, pending.replacedLeg, controlWeight, mixWeight);
         }
         ++pendingMatched;
+        finalizePendingSEReplacementOutcome(pending.outcomeId, true);
         it = v6Pending.data.erase(it);
       }
     }
@@ -2981,23 +3326,50 @@ struct lambdaspincorrderived {
           }
         }
 
+        const bool replacementFoundNow = nFill1 > 0 || nFill2 > 0;
+        std::vector<PendingV6Branch> branchesToCarry;
+        branchesToCarry.reserve(2);
         if (cfgV6CarryUnmatched) {
           const auto hasPendingSpace = [&]() {
-            return cfgV6MaxPendingBranches.value <= 0 || static_cast<int>(v6Pending.data.size()) < cfgV6MaxPendingBranches.value;
+            return cfgV6MaxPendingBranches.value <= 0 ||
+                   static_cast<int>(v6Pending.data.size() + branchesToCarry.size()) < cfgV6MaxPendingBranches.value;
           };
           if (doMixLeg1 && nFill1 == 0 && hasPendingSpace()) {
-            v6Pending.data.push_back({storeV6Candidate(t1, curColIdx), storeV6Candidate(t2, curColIdx), colBin, 1, 0,
-                                      static_cast<uint64_t>(t1.globalIndex()) ^ splitmix64(static_cast<uint64_t>(t2.globalIndex())) ^ splitmix64(static_cast<uint64_t>(curColIdx))});
-            ++pendingAdded;
+            branchesToCarry.push_back({storeV6Candidate(t1, curColIdx), storeV6Candidate(t2, curColIdx), colBin, 1, 0,
+                                       static_cast<uint64_t>(t1.globalIndex()) ^ splitmix64(static_cast<uint64_t>(t2.globalIndex())) ^ splitmix64(static_cast<uint64_t>(curColIdx)), 0});
           }
           if (doMixLeg2 && nFill2 == 0 && hasPendingSpace()) {
-            v6Pending.data.push_back({storeV6Candidate(t2, curColIdx), storeV6Candidate(t1, curColIdx), colBin, 2, 0,
-                                      static_cast<uint64_t>(t2.globalIndex()) ^ splitmix64(static_cast<uint64_t>(t1.globalIndex())) ^ splitmix64(static_cast<uint64_t>(curColIdx))});
-            ++pendingAdded;
+            branchesToCarry.push_back({storeV6Candidate(t2, curColIdx), storeV6Candidate(t1, curColIdx), colBin, 2, 0,
+                                       static_cast<uint64_t>(t2.globalIndex()) ^ splitmix64(static_cast<uint64_t>(t1.globalIndex())) ^ splitmix64(static_cast<uint64_t>(curColIdx)), 0});
           }
         }
 
-        if (nFill1 <= 0 && nFill2 <= 0) {
+        if (replacementFoundNow) {
+          fillSEReplacementOutcome(t1, t2, true);
+        } else if (branchesToCarry.empty()) {
+          // No accepted replacement exists and there is no pending branch that
+          // could still find one in a later data frame.
+          fillSEReplacementOutcome(t1, t2, false);
+        } else {
+          uint64_t outcomeId = v6Pending.nextOutcomeId++;
+          if (outcomeId == 0) {
+            outcomeId = v6Pending.nextOutcomeId++;
+          }
+          v6Pending.dataOutcomes.emplace(
+            outcomeId,
+            PendingSEReplacementOutcome{storeV6Candidate(t1, curColIdx), storeV6Candidate(t2, curColIdx),
+                                        static_cast<int>(branchesToCarry.size()), false});
+          for (auto& branch : branchesToCarry) {
+            branch.outcomeId = outcomeId;
+          }
+        }
+
+        for (auto& branch : branchesToCarry) {
+          v6Pending.data.push_back(std::move(branch));
+          ++pendingAdded;
+        }
+
+        if (!replacementFoundNow) {
           continue;
         }
         // Residual-weight QA needs a leg-specific normalization:
@@ -3037,6 +3409,9 @@ struct lambdaspincorrderived {
               continue;
             if (hasSharedDaughters(tX, t2))
               continue;
+            fillSuccessfulTargetControlMap(t1.v0Status(), t2.v0Status(), 1,
+                                           ROOT::Math::PtEtaPhiMVector(t1.lambdaPt(), t1.lambdaEta(), t1.lambdaPhi(), t1.lambdaMass()),
+                                           wSELeg1);
             fillReplacementControlMap(tX.v0Status(), t2.v0Status(), 1, false,
                                       ROOT::Math::PtEtaPhiMVector(tX.lambdaPt(), tX.lambdaEta(), tX.lambdaPhi(), tX.lambdaMass()),
                                       wSELeg1);
@@ -3088,6 +3463,9 @@ struct lambdaspincorrderived {
               continue;
             if (hasSharedDaughters(tY, t2))
               continue;
+            fillSuccessfulTargetControlMap(t1.v0Status(), t2.v0Status(), 2,
+                                           ROOT::Math::PtEtaPhiMVector(t2.lambdaPt(), t2.lambdaEta(), t2.lambdaPhi(), t2.lambdaMass()),
+                                           wSELeg2);
             fillReplacementControlMap(t1.v0Status(), tY.v0Status(), 2, false,
                                       ROOT::Math::PtEtaPhiMVector(tY.lambdaPt(), tY.lambdaEta(), tY.lambdaPhi(), tY.lambdaMass()),
                                       wSELeg2);
@@ -3431,7 +3809,7 @@ struct lambdaspincorrderived {
           if (hasSharedDaughters(replacement, pending.target) || hasSharedDaughters(replacement, pending.fixed)) {
             continue;
           }
-          fillV6MixedBranch(replacement, pending.fixed, pending.replacedLeg, controlWeight, mixWeight);
+          fillV6MixedBranch(replacement, pending.target, pending.fixed, pending.replacedLeg, controlWeight, mixWeight);
         }
         ++pendingMatched;
         it = v6Pending.data.erase(it);
@@ -3612,6 +3990,9 @@ struct lambdaspincorrderived {
             if (hasSharedDaughters(tX, t2))
               continue;
 
+            fillSuccessfulTargetControlMap(t1.v0Status(), t2.v0Status(), 1,
+                                           ROOT::Math::PtEtaPhiMVector(t1.lambdaPt(), t1.lambdaEta(), t1.lambdaPhi(), t1.lambdaMass()),
+                                           wSELeg1);
             fillReplacementControlMap(tX.v0Status(), t2.v0Status(), 1, false,
                                       ROOT::Math::PtEtaPhiMVector(tX.lambdaPt(), tX.lambdaEta(), tX.lambdaPhi(), tX.lambdaMass()),
                                       wSELeg1);
@@ -3665,6 +4046,9 @@ struct lambdaspincorrderived {
             if (hasSharedDaughters(tY, t2))
               continue;
 
+            fillSuccessfulTargetControlMap(t1.v0Status(), t2.v0Status(), 2,
+                                           ROOT::Math::PtEtaPhiMVector(t2.lambdaPt(), t2.lambdaEta(), t2.lambdaPhi(), t2.lambdaMass()),
+                                           wSELeg2);
             fillReplacementControlMap(t1.v0Status(), tY.v0Status(), 2, false,
                                       ROOT::Math::PtEtaPhiMVector(tY.lambdaPt(), tY.lambdaEta(), tY.lambdaPhi(), tY.lambdaMass()),
                                       wSELeg2);
@@ -3995,7 +4379,7 @@ struct lambdaspincorrderived {
           if (hasSharedDaughtersMC(replacement, pending.target) || hasSharedDaughtersMC(replacement, pending.fixed)) {
             continue;
           }
-          fillV6MixedBranchMC(replacement, pending.fixed, pending.replacedLeg, controlWeight, mixWeight);
+          fillV6MixedBranchMC(replacement, pending.target, pending.fixed, pending.replacedLeg, controlWeight, mixWeight);
         }
         ++pendingMatchedMC;
         it = v6Pending.mc.erase(it);
@@ -4159,6 +4543,9 @@ struct lambdaspincorrderived {
               continue;
             if (hasSharedDaughtersMC(tX, t2))
               continue;
+            fillSuccessfulTargetControlMap(mcacc::v0Status(t1), mcacc::v0Status(t2), 1,
+                                           ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(t1), mcacc::lamEta(t1), mcacc::lamPhi(t1), mcacc::lamMass(t1)),
+                                           wSELeg1);
             fillReplacementControlMap(mcacc::v0Status(tX), mcacc::v0Status(t2), 1, false,
                                       ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(tX), mcacc::lamEta(tX), mcacc::lamPhi(tX), mcacc::lamMass(tX)),
                                       wSELeg1);
@@ -4214,6 +4601,9 @@ struct lambdaspincorrderived {
               continue;
             if (hasSharedDaughtersMC(tY, t2))
               continue;
+            fillSuccessfulTargetControlMap(mcacc::v0Status(t1), mcacc::v0Status(t2), 2,
+                                           ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(t2), mcacc::lamEta(t2), mcacc::lamPhi(t2), mcacc::lamMass(t2)),
+                                           wSELeg2);
             fillReplacementControlMap(mcacc::v0Status(t1), mcacc::v0Status(tY), 2, false,
                                       ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(tY), mcacc::lamEta(tY), mcacc::lamPhi(tY), mcacc::lamMass(tY)),
                                       wSELeg2);
@@ -4265,6 +4655,13 @@ struct lambdaspincorrderived {
     if (cfgV6LogPending) {
       LOGF(info, "MEV6 end of stream: unmatchedData=%zu unmatchedMC=%zu", v6Pending.data.size(), v6Pending.mc.size());
     }
+    for (auto& [outcomeId, outcome] : v6Pending.dataOutcomes) {
+      static_cast<void>(outcomeId);
+      if (!outcome.replacementFound) {
+        fillSEReplacementOutcome(outcome.first, outcome.second, false);
+      }
+    }
+    v6Pending.dataOutcomes.clear();
     v6Pending.data.clear();
     v6Pending.mc.clear();
   }
