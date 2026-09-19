@@ -72,8 +72,8 @@ namespace o2::analysis::dptdptfilter
 {
 using DptDptFullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>;
 using DptDptFullTracksAmbiguous = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::TrackCompColls>;
-using DptDptTracksPID = soa::Join<aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFbeta>;
-using DptDptTracksFullPID = soa::Join<aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
+using DptDptTracksPID = soa::Join<aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCDe, aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe, aod::pidTOFbeta>;
+using DptDptTracksFullPID = soa::Join<aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFbeta>;
 using DptDptFullTracksPID = soa::Join<DptDptFullTracks, DptDptTracksPID>;
 using DptDptFullTracksPIDAmbiguous = soa::Join<DptDptFullTracksAmbiguous, DptDptTracksPID>;
 using DptDptFullTracksFullPID = soa::Join<DptDptFullTracks, DptDptTracksFullPID>;
@@ -1160,7 +1160,7 @@ struct DptDptFilterTracks {
   Configurable<int> cfgTrackType{"cfgTrackType", 4, "Type of selected tracks: 0 = no selection;1 = Run2 global tracks FB96;3 = Run3 tracks;4 = Run3 tracks MM sel;5 = Run2 TPC only tracks;7 = Run 3 TPC only tracks;30-33 = any/two on 3 ITS,any/all in 7 ITS;40-43 same as 30-33 w tighter DCAxy;50-53 w tighter pT DCAz. Default 4"};
   Configurable<bool> cfgOnlyInOneSide{"cfgOnlyInOneSide", false, "select tracks that don't cross the TPC central membrane. Default false"};
   Configurable<o2::analysis::CheckRangeCfg> cfgTraceDCAOutliers{"cfgTraceDCAOutliers", {false, 0.0, 0.0}, "Track the generator level DCAxy outliers: false/true, low dcaxy, up dcaxy. Default {false,0.0,0.0}"};
-  Configurable<float> cfgTraceOutOfSpeciesParticles{"cfgTraceOutOfSpeciesParticles", false, "Track the particles which are not e,mu,pi,K,p: false/true. Default false"};
+  Configurable<float> cfgTraceOutOfSpeciesParticles{"cfgTraceOutOfSpeciesParticles", false, "Track the particles which are not e,mu,pi,K,p,d: false/true. Default false"};
   Configurable<int> cfgRecoIdMethod{"cfgRecoIdMethod", 0, "Method for identifying reconstructed tracks: 0 No PID, 1 PID, 2 mcparticle, 3 mcparticle only primaries, 4 mcparticle only sec, 5 mcparicle only sec from decays, 6 mcparticle only sec from material. Default 0"};
   Configurable<o2::analysis::TrackSelectionTuneCfg> cfgTuneTrackSelection{"cfgTuneTrackSelection", {}, "Track selection: {useit: true/false, tpccls-useit, tpcxrws-useit, tpcxrfc-useit, tpcshcls-useit, dcaxy-useit, dcaz-useit}. Default {false,0.70,false,0.8,false,0.4,false,2.4,false,3.2,false}"};
   Configurable<o2::analysis::TrackSelectionPIDCfg> cfgPionPIDSelection{"cfgPionPIDSelection",
@@ -1178,6 +1178,9 @@ struct DptDptFilterTracks {
   Configurable<o2::analysis::TrackSelectionPIDCfg> cfgMuonPIDSelection{"cfgMuonPIDSelection",
                                                                        {},
                                                                        "PID criteria for muons"};
+  Configurable<o2::analysis::TrackSelectionPIDCfg> cfgDeuteronPIDSelection{"cfgDeuteronPIDSelection",
+                                                                           {},
+                                                                           "PID criteria for deuterons"};
 
   OutputObj<TList> fOutput{"DptDptFilterTracksInfo", OutputObjHandlingPolicy::AnalysisObject};
   Service<o2::framework::O2DatabasePDG> fPDG;
@@ -1280,6 +1283,7 @@ struct DptDptFilterTracks {
     insertInPIDselector(cfgPionPIDSelection, 2);
     insertInPIDselector(cfgKaonPIDSelection, 3);
     insertInPIDselector(cfgProtonPIDSelection, 4);
+    insertInPIDselector(cfgDeuteronPIDSelection, 5);
 
     if ((fDataType == kData) || (fDataType == kDataNoEvtSel) || (fDataType == kMC)) {
       /* create the reconstructed data histograms */
@@ -1481,7 +1485,7 @@ struct DptDptFilterTracks {
     /* the debug info output file if required */
     if (cfgOutDebugInfo) {
       debugstream.open("tracings.csv");
-      debugstream << "p,piw,pt,hastof,dEdx,beta,tpcnEl,tpcnMu,tpcnPi,tpcnKa,tpcnPr,tofnEl,tofnMu,tofnPi,tofnKa,tofnPr,tpcnElSft,tpcnMuSft,tpcnPiSft,tpcnKaSft,tpcnPrSft,tofnElSft,tofnMuSft,tofnPiSft,tofnKaSft,tofnPrSft,idcode,pid,pid2,truepid,phprim,process\n";
+      debugstream << "p,piw,pt,hastof,dEdx,beta,tpcnEl,tpcnMu,tpcnPi,tpcnKa,tpcnPr,tpcnDe,tofnEl,tofnMu,tofnPi,tofnKa,tofnPr,tofnDe,tpcnElSft,tpcnMuSft,tpcnPiSft,tpcnKaSft,tpcnPrSft,tpcnDeSft,tofnElSft,tofnMuSft,tofnPiSft,tofnKaSft,tofnPrSft,tofnDeSft,idcode,pid,pid2,truepid,phprim,process\n";
       debugstream.close();
     }
   }
