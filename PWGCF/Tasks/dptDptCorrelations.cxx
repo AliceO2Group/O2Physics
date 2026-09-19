@@ -287,17 +287,17 @@ struct DptDptCorrelations {
       photon = p1+p2;
       photon.M()*/
 
-      constexpr float kLARGETANTHETA = 1e10;
-      constexpr float kVERYSMALLETA = 1e-10;
-      float tantheta1 = kLARGETANTHETA;
+      constexpr float LARGETANTHETA = 1e10;
+      constexpr float VERYSMALLETA = 1e-10;
+      float tantheta1 = LARGETANTHETA;
 
-      if (track1.eta() < -kVERYSMALLETA || track1.eta() > kVERYSMALLETA) {
+      if (track1.eta() < -VERYSMALLETA || track1.eta() > VERYSMALLETA) {
         float expTmp = std::exp(-track1.eta());
         tantheta1 = 2.0 * expTmp / (1.0 - expTmp * expTmp);
       }
 
-      float tantheta2 = kLARGETANTHETA;
-      if (track2.eta() < -kVERYSMALLETA || track2.eta() > kVERYSMALLETA) {
+      float tantheta2 = LARGETANTHETA;
+      if (track2.eta() < -VERYSMALLETA || track2.eta() > VERYSMALLETA) {
         float expTmp = std::exp(-track2.eta());
         tantheta2 = 2.0 * expTmp / (1.0 - expTmp * expTmp);
       }
@@ -918,8 +918,8 @@ struct DptDptCorrelations {
   std::string cfgCCDBSuffix{""};
 
   /* pair conversion suppression defaults */
-  static constexpr float kCfgPairCutDefaults[1][5] = {{-1, -1, -1, -1, -1}};
-  Configurable<LabeledArray<float>> cfgPairCut{"cfgPairCut", {kCfgPairCutDefaults[0], 5, {"Photon", "K0", "Lambda", "Phi", "Rho"}}, "Conversion suppressions"};
+  static constexpr float KCfgPairCutDefaults[1][5] = {{-1, -1, -1, -1, -1}};
+  Configurable<LabeledArray<float>> cfgPairCut{"cfgPairCut", {KCfgPairCutDefaults[0], 5, {"Photon", "K0", "Lambda", "Phi", "Rho"}}, "Conversion suppressions"};
   /* two tracks cut */
   Configurable<float> cfgTwoTrackCut{"cfgTwoTrackCut", -1, "Two-tracks cut: -1 = off; >0 otherwise distance value (suggested: 0.02"};
   Configurable<float> cfgTwoTrackCutMinRadius{"cfgTwoTrackCutMinRadius", 0.8f, "Two-tracks cut: radius in m from which two-tracks cut is applied"};
@@ -1020,8 +1020,7 @@ struct DptDptCorrelations {
     {
       /* self configure the desired species */
       o2::analysis::dptdptfilter::PIDSpeciesSelection pidselector;
-      std::vector<std::string> cfgnames = {"cfgElectronPIDSelection", "cfgMuonPIDSelection", "cfgPionPIDSelection", "cfgKaonPIDSelection", "cfgProtonPIDSelection"};
-      std::vector<uint8_t> spids = {0, 1, 2, 3, 4};
+      std::vector<std::string> cfgnames = {"cfgElectronPIDSelection", "cfgMuonPIDSelection", "cfgPionPIDSelection", "cfgKaonPIDSelection", "cfgProtonPIDSelection", "cfgDeuteronPIDSelection"};
       for (uint i = 0; i < cfgnames.size(); ++i) {
         auto includeIt = [&pidselector, &initContext](int spid, const auto& name) {
           bool mUseIt = false;
@@ -1036,7 +1035,7 @@ struct DptDptCorrelations {
             }
           }
         };
-        includeIt(spids[i], cfgnames[i]);
+        includeIt(i, cfgnames[i]);
       }
       uint nspecies = pidselector.getNSpecies();
       if (nspecies == 0) {
@@ -1224,8 +1223,8 @@ struct DptDptCorrelations {
   {
     using namespace correlationstask;
 
-    static constexpr std::string_view kStrDim[] = {"", "", "2D", "3D", "4D"};
-    return kStrDim[nNoOfDimensions].data();
+    static constexpr std::string_view KStrDim[] = {"", "", "2D", "3D", "4D"};
+    return KStrDim[nNoOfDimensions].data();
   }
 
   template <bool gen, typename FilterdCollision, typename FilteredTracks>
@@ -1491,7 +1490,7 @@ struct DptDptCorrelations {
   SliceCache cache;
   using BinningZVtxMultRec = ColumnBinningPolicy<aod::collision::PosZ, aod::dptdptfilter::DptDptCFCollisionCentMult>;
   BinningZVtxMultRec bindingOnVtxAndMultRec{{vtxBinsEdges, multBinsEdges}, true}; // true is for 'ignore overflows' (true by default)
-  static constexpr int kNoOfLoggingCombinations = 10;
+  static constexpr int KNoOfLoggingCombinations = 10;
 
   void processRecLevelMixed(soa::Filtered<aod::DptDptCFAcceptedCollisions> const& collisions, aod::BCsWithTimestamps const&, soa::Filtered<aod::ScannedTracks> const& tracks)
   {
@@ -1501,7 +1500,7 @@ struct DptDptCorrelations {
     LOGF(DPTDPTLOGCOLLISIONS, "Received %d collisions", collisions.size());
     int logcomb = 0;
     for (auto const& [collision1, tracks1, collision2, tracks2] : pairreco) {
-      if (logcomb < kNoOfLoggingCombinations) {
+      if (logcomb < KNoOfLoggingCombinations) {
         LOGF(DPTDPTLOGCOLLISIONS, "Received collision pair: %ld (%f, %f): %s, %ld (%f, %f): %s",
              collision1.globalIndex(), collision1.posZ(), collision1.centmult(), collision1.collisionaccepted() ? "accepted" : "not accepted",
              collision2.globalIndex(), collision2.posZ(), collision2.centmult(), collision2.collisionaccepted() ? "accepted" : "not accepted");
@@ -1536,7 +1535,7 @@ struct DptDptCorrelations {
     LOGF(DPTDPTLOGCOLLISIONS, "Received %d collisions", collisions.size());
     int logcomb = 0;
     for (auto const& [collision1, tracks1, collision2, tracks2] : pairreco) {
-      if (logcomb < kNoOfLoggingCombinations) {
+      if (logcomb < KNoOfLoggingCombinations) {
         LOGF(DPTDPTLOGCOLLISIONS,
              "Received collision pair: %ld (%f, %f): %s, %ld (%f, %f): %s",
              collision1.globalIndex(),
@@ -1580,7 +1579,7 @@ struct DptDptCorrelations {
     LOGF(DPTDPTLOGCOLLISIONS, "Received %d generated collisions", collisions.size());
     int logcomb = 0;
     for (auto const& [collision1, tracks1, collision2, tracks2] : pairgen) {
-      if (logcomb < kNoOfLoggingCombinations) {
+      if (logcomb < KNoOfLoggingCombinations) {
         LOGF(DPTDPTLOGCOLLISIONS, "Received generated collision pair: %ld (%f, %f): %s, %ld (%f, %f): %s",
              collision1.globalIndex(), collision1.posZ(), collision1.centmult(), collision1.collisionaccepted() ? "accepted" : "not accepted",
              collision2.globalIndex(), collision2.posZ(), collision2.centmult(), collision2.collisionaccepted() ? "accepted" : "not accepted");
@@ -1611,7 +1610,7 @@ struct DptDptCorrelations {
     LOGF(DPTDPTLOGCOLLISIONS, "Received %d generated collisions", collisions.size());
     int logcomb = 0;
     for (auto const& [collision1, tracks1, collision2, tracks2] : pairgen) {
-      if (logcomb < kNoOfLoggingCombinations) {
+      if (logcomb < KNoOfLoggingCombinations) {
         LOGF(DPTDPTLOGCOLLISIONS,
              "Received generated collision pair: %ld (%f, %f): %s, %ld (%f, %f): %s",
              collision1.globalIndex(),
