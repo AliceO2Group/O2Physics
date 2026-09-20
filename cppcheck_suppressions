@@ -7,5 +7,4 @@ unreadVariable
 unusedStructMember:*.h
 useStlAlgorithm
 variableScope
-unusedFunction:fillRho2Pair
-unusedFunction:LambdaProtonBalanceFunction::fillRho2Pair
+unusedFunction:*/lambdaProtonBalanceFunction.cxx:357
