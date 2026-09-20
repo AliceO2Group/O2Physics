@@ -385,7 +385,7 @@ struct HfTaskBplusToJpsiKReduced {
     }
 
     SETBIT(statusBplus, SelectionStep::RecoSkims);
-    if (HfHelper::selectionBplusToJpsiKTopol(candidate, cuts, binsPt, useJpsiPdgMass)) {
+    if (HfHelper::selectionBplusToJpsiKTopol<JPsis>(candidate, cuts, binsPt, useJpsiPdgMass)) {
       SETBIT(statusBplus, SelectionStep::RecoTopol);
     } else if (selectionFlagBplus >= BIT(SelectionStep::RecoTopol) * 2 - 1) {
       return;

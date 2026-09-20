@@ -437,8 +437,8 @@ struct HfTaskB0ToJpsiK0StarReduced {
     SETBIT(statusB0PiK, SelectionStep::RecoSkims);
 
     // topological selection for the two K*0 mass hypotheses
-    bool selKPi = HfHelper::selectionB0ToJpsiK0StarTopol(candidate, cuts, binsPt, useJpsiPdgMass, useK0StarPdgMass, true);
-    bool selPiK = HfHelper::selectionB0ToJpsiK0StarTopol(candidate, cuts, binsPt, useJpsiPdgMass, useK0StarPdgMass, false);
+    bool selKPi = HfHelper::selectionB0ToJpsiK0StarTopol<JPsis>(candidate, cuts, binsPt, useJpsiPdgMass, useK0StarPdgMass, true);
+    bool selPiK = HfHelper::selectionB0ToJpsiK0StarTopol<JPsis>(candidate, cuts, binsPt, useJpsiPdgMass, useK0StarPdgMass, false);
 
     if (!selKPi && !selPiK && selectionFlagB0 >= BIT(SelectionStep::RecoTopol) * 2 - 1) {
       return;
