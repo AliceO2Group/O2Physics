@@ -119,7 +119,7 @@ struct jEPDzeroFlowAnalysis {
   }
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision)
+  bool eventSelected(const TCollision& collision)
   {
     if (!collision.sel8()) {
       return false;

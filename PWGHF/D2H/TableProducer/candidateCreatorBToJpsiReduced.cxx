@@ -75,6 +75,8 @@ struct HfCandidateCreatorBToJpsiReduced {
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any B+ is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
+  Configurable<double> maxChi2JPsiVtx{"maxChi2JPsiVtx", 1e9, "maximum value of chi2 for JPsi vertex computed with DCAFitter"};
+  Configurable<double> maxChi2BhadVtx{"maxChi2BhadVtx", 0.9, "maximum value of chi2 for B-hadron vertex computed with DCAFitter"};
 
   // selection
   Configurable<double> invMassWindowJpsiHadTolerance{"invMassWindowJpsiHadTolerance", 0.01, "invariant-mass window tolerance for J/Psi K pair preselections (GeV/c2)"};
@@ -82,7 +84,7 @@ struct HfCandidateCreatorBToJpsiReduced {
   float myInvMassWindowJpsiK{1.}, myInvMassWindowJpsiK0Star{1.}, myInvMassWindowJpsiPhi{1.}; // variable that will store the value of invMassWindowJpsiK (defined in dataCreatorJpsiKReduced.cxx)
   double massBplus{o2::constants::physics::MassBPlus}, massB0{o2::constants::physics::MassB0}, massBs{o2::constants::physics::MassBS};
   double bz{0.};
-  o2::vertexing::DCAFitterN<2> df2; // fitter for B vertex (2-prong vertex fitter)
+  o2::vertexing::DCAFitterN<2> df2; // fitter for JPsi vertex (2-prong vertex fitter)
   o2::vertexing::DCAFitterN<3> df3; // fitter for B vertex (3-prong vertex fitter)
   o2::vertexing::DCAFitterN<4> df4; // fitter for B vertex (4-prong vertex fitter)
 
@@ -104,6 +106,7 @@ struct HfCandidateCreatorBToJpsiReduced {
     df2.setMaxDZIni(maxDZIni);
     df2.setMinParamChange(minParamChange);
     df2.setMinRelChi2Change(minRelChi2Change);
+    df2.setMaxChi2(maxChi2JPsiVtx);
     df2.setUseAbsDCA(useAbsDCA);
     df2.setWeightedFinalPCA(useWeightedFinalPCA);
     df2.setMatCorrType(noMatCorr);
@@ -114,6 +117,7 @@ struct HfCandidateCreatorBToJpsiReduced {
       df3.setMaxDZIni(maxDZIni);
       df3.setMinParamChange(minParamChange);
       df3.setMinRelChi2Change(minRelChi2Change);
+      df3.setMaxChi2(maxChi2BhadVtx);
       df3.setUseAbsDCA(useAbsDCA);
       df3.setWeightedFinalPCA(useWeightedFinalPCA);
       df3.setMatCorrType(noMatCorr);
@@ -123,6 +127,7 @@ struct HfCandidateCreatorBToJpsiReduced {
       df4.setMaxDZIni(maxDZIni);
       df4.setMinParamChange(minParamChange);
       df4.setMinRelChi2Change(minRelChi2Change);
+      df3.setMaxChi2(maxChi2BhadVtx);
       df4.setUseAbsDCA(useAbsDCA);
       df4.setWeightedFinalPCA(useWeightedFinalPCA);
       df4.setMatCorrType(noMatCorr);

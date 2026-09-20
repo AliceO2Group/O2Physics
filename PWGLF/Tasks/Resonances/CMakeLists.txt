@@ -338,3 +338,13 @@ o2physics_add_dpl_workflow(xi1530kaoncorrelation
     SOURCES xi1530kaoncorrelation.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(f0phiproxy
+    SOURCES f0phiproxy.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(lambdastarproxy
+    SOURCES lambdastarproxy.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)

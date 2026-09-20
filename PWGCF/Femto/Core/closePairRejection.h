@@ -60,10 +60,11 @@ enum CprHist {
 };
 
 // template configurable group for Cpr
-template <auto& Prefix>
+// DefaultCutAverage: default of cutAverage (e.g. false for pairs of generated particles, where no detector effects are present)
+template <auto& Prefix, bool DefaultCutAverage = true>
 struct ConfCpr : o2::framework::ConfigurableGroup {
   std::string prefix = std::string(Prefix);
-  o2::framework::Configurable<bool> cutAverage{"cutAverage", true, "Apply CPR if the average deta-dphistar is below the configured values"};
+  o2::framework::Configurable<bool> cutAverage{"cutAverage", DefaultCutAverage, "Apply CPR if the average deta-dphistar is below the configured values"};
   o2::framework::Configurable<bool> cutAnyRadius{"cutAnyRadius", false, "Apply CPR if the deta-dphistar is below the configured values at any radius"};
   o2::framework::Configurable<bool> cutElipsoidal{"cutElipsoidal", true, "If true, apply CPR as episoidal cut. If false use rectangluar cut."};
   o2::framework::Configurable<bool> plotAllRadii{"plotAllRadii", true, "Plot deta-dphi distribution at all radii"};
@@ -100,6 +101,7 @@ constexpr const char PrefixCprV0DaughterV0DaughterNeg[] = "CprV0DaughterV0Daught
 constexpr const char PrefixCprV0DaughterResoDaughterPos[] = "CprV0DaughterResoDaughterPos";
 constexpr const char PrefixCprV0DaughterResoDaughterNeg[] = "CprV0DaughterResoDaughterNeg";
 constexpr const char PrefixCprTrackCascadeBachelor[] = "CprTrackCascadeBachelor";
+constexpr const char PrefixCprMcParticleMcParticle[] = "CprMcParticleMcParticle";
 
 // pairs
 using ConfCprTrackTrack = ConfCpr<PrefixCprTrackTrack>;
@@ -117,6 +119,7 @@ using ConfCprV0DaugherV0DaughterNeg = ConfCpr<PrefixCprV0DaughterV0DaughterNeg>;
 using ConfCprV0DaughterResoDaughterPos = ConfCpr<PrefixCprV0DaughterResoDaughterPos>;
 using ConfCprV0DaughterResoDaughterNeg = ConfCpr<PrefixCprV0DaughterResoDaughterNeg>;
 using ConfCprTrackCascadeBachelor = ConfCpr<PrefixCprTrackCascadeBachelor>;
+using ConfCprMcParticleMcParticle = ConfCpr<PrefixCprMcParticleMcParticle, false>; // generated particles, no cut by default
 
 // tpc radii for computing phistar
 constexpr int Nradii = 9;

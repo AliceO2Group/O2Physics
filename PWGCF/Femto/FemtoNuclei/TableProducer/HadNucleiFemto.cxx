@@ -82,7 +82,7 @@ using std::array;
 
 using CollBracket = o2::math_utils::Bracket<int>;
 using HyperCandidates = aod::DataHypCandsWColl;
-using HyperCandidatesMC = aod::MCHypCands;
+using HyperCandidatesMC = aod::MCHypCandsWColl;
 using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::FT0Mults>;
 using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs, aod::FT0Mults>;
 using HadHyperCollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::FT0Mults>;
@@ -534,14 +534,14 @@ struct HadNucleiFemto {
     float phiPi{0.f};
     bool isMatter{false};
 
-    float pt() const { return std::hypot(momentum[0], momentum[1]); }
-    float eta() const
+    [[nodiscard]] float pt() const { return std::hypot(momentum[0], momentum[1]); }
+    [[nodiscard]] float eta() const
     {
       const float transverseMomentum = pt();
       return transverseMomentum > 0.f ? std::asinh(momentum[2] / transverseMomentum) : 999.f;
     }
-    float phi() const { return std::atan2(momentum[1], momentum[0]); }
-    int8_t sign() const { return isMatter ? 1 : -1; }
+    [[nodiscard]] float phi() const { return std::atan2(momentum[1], momentum[0]); }
+    [[nodiscard]] int8_t sign() const { return isMatter ? 1 : -1; }
   };
 
   struct HadHyperHadron {
@@ -556,10 +556,10 @@ struct HadNucleiFemto {
     float phiValue{0.f};
     int8_t signValue{0};
 
-    float pt() const { return std::hypot(momentum[0], momentum[1]); }
-    float eta() const { return etaValue; }
-    float phi() const { return phiValue; }
-    int8_t sign() const { return signValue; }
+    [[nodiscard]] float pt() const { return std::hypot(momentum[0], momentum[1]); }
+    [[nodiscard]] float eta() const { return etaValue; }
+    [[nodiscard]] float phi() const { return phiValue; }
+    [[nodiscard]] int8_t sign() const { return signValue; }
   };
 
   struct HadHyperEvent {
