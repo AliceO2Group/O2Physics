@@ -112,7 +112,7 @@ bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
       LOGF(error, "LUT header PDG mismatch: expected %d, got %d; not loading", pdg, header.pdg);
       return false;
     }
-  } catch (framework::RuntimeErrorRef ref) {
+  } catch (framework::RuntimeErrorRef& ref) {
     LOGF(error, "%s", framework::error_from_ref(ref).what);
     return false;
   }
@@ -136,7 +136,7 @@ bool TrackSmearer::adoptTable(int pdg, const uint8_t* buffer, size_t size, bool 
       return false;
     }
     mLUTData[ipdg] = FlatLutData::AdoptFromBuffer(buffer, size);
-  } catch (framework::RuntimeErrorRef ref) {
+  } catch (framework::RuntimeErrorRef& ref) {
     LOGF(error, "%s", framework::error_from_ref(ref).what);
   }
 
@@ -159,7 +159,7 @@ bool TrackSmearer::viewTable(int pdg, const uint8_t* buffer, size_t size, bool f
       return false;
     }
     mLUTData[ipdg] = FlatLutData::ViewFromBuffer(buffer, size);
-  } catch (framework::RuntimeErrorRef ref) {
+  } catch (framework::RuntimeErrorRef& ref) {
     LOGF(error, "%s", framework::error_from_ref(ref).what);
   }
 

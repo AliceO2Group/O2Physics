@@ -79,7 +79,7 @@ struct OnTheFlyTofPid {
   Produces<aod::UpgradeTofShortLived> upgradeTofShortLived;
 
   // necessary for particle charges
-  Service<o2::framework::O2DatabasePDG> pdg{};
+  Service<o2::framework::O2DatabasePDG> pdgDatabase{};
   // Necessary for LUTs
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
@@ -567,7 +567,7 @@ struct OnTheFlyTofPid {
 
     // Todo: check the different mass hypothesis iteratively
     for (const auto& track : tracks) {
-      auto pdgInfo = pdg->GetParticle(track.mPdgCode);
+      auto pdgInfo = pdgDatabase->GetParticle(track.mPdgCode);
       if (pdgInfo == nullptr) {
         continue;
       }
@@ -626,12 +626,12 @@ struct OnTheFlyTofPid {
   {
     // Compute tracking contribution to timing using the error propagation formula
     // Uses light speed in m/ps, magnetic field in T (*0.1 for conversion kGauss -> T)
-    double a0 = mass * mass;
-    double a1 = 0.299792458 * (0.1 * magneticField) * (0.01 * o2::constants::physics::LightSpeedCm2NS / 1e+3);
-    double a2 = (detRadius * 0.01) * (detRadius * 0.01) * (0.299792458) * (0.299792458) * (0.1 * magneticField) * (0.1 * magneticField) / 2.0;
-    double dtofOndPt = (std::pow(pt, 4) * std::pow(std::cosh(eta), 2) * std::acos(1.0 - a2 / std::pow(pt, 2)) - 2.0 * a2 * std::pow(pt, 2) * (a0 + std::pow(pt * std::cosh(eta), 2)) / std::sqrt(a2 * (2.0 * std::pow(pt, 2) - a2))) / (a1 * std::pow(pt, 3) * std::sqrt(a0 + std::pow(pt * std::cosh(eta), 2)));
-    double dtofOndEta = std::pow(pt, 2) * std::sinh(eta) * std::cosh(eta) * std::acos(1.0 - a2 / std::pow(pt, 2)) / (a1 * std::sqrt(a0 + std::pow(pt * std::cosh(eta), 2)));
-    double trackTimeResolution = std::hypot(std::fabs(dtofOndPt) * trackPtResolution, std::fabs(dtofOndEta) * trackEtaResolution);
+    const double a0 = 1.0 * mass * mass;
+    const double a1 = 0.299792458 * (0.1 * magneticField) * (0.01 * o2::constants::physics::LightSpeedCm2NS / 1e+3);
+    const double a2 = (detRadius * 0.01) * (detRadius * 0.01) * (0.299792458) * (0.299792458) * (0.1 * magneticField) * (0.1 * magneticField) / 2.0;
+    const double dtofOndPt = (std::pow(pt, 4) * std::pow(std::cosh(eta), 2) * std::acos(1.0 - a2 / std::pow(pt, 2)) - 2.0 * a2 * std::pow(pt, 2) * (a0 + std::pow(pt * std::cosh(eta), 2)) / std::sqrt(a2 * (2.0 * std::pow(pt, 2) - a2))) / (a1 * std::pow(pt, 3) * std::sqrt(a0 + std::pow(pt * std::cosh(eta), 2)));
+    const double dtofOndEta = std::pow(pt, 2) * std::sinh(eta) * std::cosh(eta) * std::acos(1.0 - a2 / std::pow(pt, 2)) / (a1 * std::sqrt(a0 + std::pow(pt * std::cosh(eta), 2)));
+    const double trackTimeResolution = std::hypot(std::fabs(dtofOndPt) * trackPtResolution, std::fabs(dtofOndEta) * trackEtaResolution);
     return trackTimeResolution;
   }
 
@@ -667,7 +667,7 @@ struct OnTheFlyTofPid {
       if (mcParticle.has_daughters()) {
         continue;
       }
-      const auto& pdgInfo = pdg->GetParticle(mcParticle.pdgCode());
+      const auto& pdgInfo = pdgDatabase->GetParticle(mcParticle.pdgCode());
       if (!pdgInfo) {
         // LOG(warning) << "PDG code " << mcParticle.pdgCode() << " not found in the database";
         continue;

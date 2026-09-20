@@ -78,7 +78,7 @@ struct OnTheFlyRichPid {
   Produces<aod::UpgradeRichSignal> upgradeRichSignal;
 
   // necessary for particle charges
-  Service<o2::framework::O2DatabasePDG> pdg{};
+  Service<o2::framework::O2DatabasePDG> pdgDatabase{};
   // Necessary for LUTs
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
@@ -359,11 +359,11 @@ struct OnTheFlyRichPid {
       histos.add("hSectorID", "hSectorID", kTH1F, {axisSector});
 
       const int kNspec = 9; // electron, muon, pion, kaon, proton, deuteron, triton, helium3, alpha
-      std::string particleNames1[kNspec] = {"#it{e}", "#it{#mu}", "#it{#pi}", "#it{K}", "#it{p}", "#it{d}", "#it{t}", "^{3}He", "#it{#alpha}"};
-      std::string particleNames2[kNspec] = {"Elec", "Muon", "Pion", "Kaon", "Prot", "Deut", "Trit", "He3", "Al"};
+      const std::array<std::string, kNspec> particleNames1 = {"#it{e}", "#it{#mu}", "#it{#pi}", "#it{K}", "#it{p}", "#it{d}", "#it{t}", "^{3}He", "#it{#alpha}"};
+      const std::array<std::string, kNspec> particleNames2 = {"Elec", "Muon", "Pion", "Kaon", "Prot", "Deut", "Trit", "He3", "Al"};
       for (int iTrue = 0; iTrue < kNspec; iTrue++) {
-        std::string nameTitleBarrelTrackRes = "h2dBarrelAngularResTrack" + particleNames2[iTrue] + "VsP";
-        std::string nameTitleBarrelTotalRes = "h2dBarrelAngularResTotal" + particleNames2[iTrue] + "VsP";
+        const std::string nameTitleBarrelTrackRes = "h2dBarrelAngularResTrack" + particleNames2[iTrue] + "VsP";
+        const std::string nameTitleBarrelTotalRes = "h2dBarrelAngularResTotal" + particleNames2[iTrue] + "VsP";
         const AxisSpec axisTrackAngularRes{static_cast<int>(nBinsAngularRes), 0.0f, +5.0f, "Track angular resolution - " + particleNames1[iTrue] + " (mrad)"};
         const AxisSpec axisTotalAngularRes{static_cast<int>(nBinsAngularRes), 0.0f, +5.0f, "Total angular resolution - " + particleNames1[iTrue] + " (mrad)"};
         histos.add(nameTitleBarrelTrackRes.c_str(), nameTitleBarrelTrackRes.c_str(), kTH2F, {axisMomentum, axisTrackAngularRes});
@@ -371,7 +371,7 @@ struct OnTheFlyRichPid {
       }
       for (int iTrue = 0; iTrue < kNspec; iTrue++) {
         for (int iHyp = 0; iHyp < kNspec; iHyp++) {
-          std::string nameTitle = "h2dBarrelNsigmaTrue" + particleNames2[iTrue] + "Vs" + particleNames2[iHyp] + "Hypothesis";
+          const std::string nameTitle = "h2dBarrelNsigmaTrue" + particleNames2[iTrue] + "Vs" + particleNames2[iHyp] + "Hypothesis";
           if (iTrue == iHyp) {
             const AxisSpec axisNsigmaCorrect{static_cast<int>(nBinsNsigmaCorrectSpecies), -10.0f, +10.0f, "N#sigma - True " + particleNames1[iTrue] + " vs " + particleNames1[iHyp] + " hypothesis"};
             histos.add(nameTitle.c_str(), nameTitle.c_str(), kTH2F, {axisMomentum, axisNsigmaCorrect});
@@ -578,9 +578,9 @@ struct OnTheFlyRichPid {
     // float zSecTof = detCenters[iSecor].Z();
     const float rSecRichSquared = rSecRich * rSecRich;
     const float zSecRichSquared = zSecRich * zSecRich;
-    const float radiusRipple = (rSecRichSquared + zSecRichSquared) / (rSecRich + zSecRich / std::tan(polar));
-    const float zRipple = radiusRipple / std::tan(polar);
-    const float absZ = std::hypot(radiusRipple - rSecRich, zRipple - zSecRich);
+    const float radRipple = (rSecRichSquared + zSecRichSquared) / (rSecRich + zSecRich / std::tan(polar));
+    const float zRipple = radRipple / std::tan(polar);
+    const float absZ = std::hypot(radRipple - rSecRich, zRipple - zSecRich);
     float fraction = 1.;
     if (tileZlength / 2. - absZ < radius) {
       fraction = fraction - (1. / o2::constants::math::PI) * std::acos((tileZlength / 2. - absZ) / radius);
@@ -727,7 +727,7 @@ struct OnTheFlyRichPid {
     // First we compute the number of charged particles in the event
     float dNdEta = 0.f;
     if (flagRICHLoadDelphesLUTs) {
-      for (const auto& track : tracks) {
+      for (const auto& track : tracks) { // We first compute the number of charged particles in the event
         if (!track.has_mcParticle()) {
           continue;
         }
@@ -738,7 +738,7 @@ struct OnTheFlyRichPid {
         if (mcParticle.has_daughters()) {
           continue;
         }
-        const auto& pdgInfo = pdg->GetParticle(mcParticle.pdgCode());
+        const auto& pdgInfo = pdgDatabase->GetParticle(mcParticle.pdgCode());
         if (!pdgInfo) {
           // LOG(warning) << "PDG code " << mcParticle.pdgCode() << " not found in the database";
           continue;
@@ -772,7 +772,7 @@ struct OnTheFlyRichPid {
       }
 
       // get particle to calculate Cherenkov angle and resolution
-      auto pdgInfo = pdg->GetParticle(mcParticle.pdgCode());
+      const& auto pdgInfo = pdgDatabase->GetParticle(mcParticle.pdgCode());
       if (pdgInfo == nullptr) {
         fillDummyValues();
         continue;
