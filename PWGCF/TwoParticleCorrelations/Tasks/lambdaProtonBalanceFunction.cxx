@@ -103,7 +103,7 @@ struct LambdaProtonBalanceFunction {
   std::shared_ptr<TH1> hMassAntiLambdaMerged;
 
   // ════════════════════════════════════════════════════════════════════════
-  // SECTION A2 — Extended invariant-mass histograms (y × pT grid)
+  // SECTION A2— Extended invariant-mass histograms (y × pT grid)
   //   hMassLambdaExtended[iY][iPt]     → Lambda_invMassExtended/Lambda/
   //   hMassAntiLambdaExtended[iY][iPt] → Lambda_invMassExtended/AntiLambda/
   //   Rapidity bins (kExtNyBins = 2): [-0.8,-0.7), [-0.7,-0.6]
