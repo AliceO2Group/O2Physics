@@ -514,7 +514,7 @@ struct QADataCollectingEngine {
           fhTruePvsP->Fill(track.p(), mcparticle.p());
           fhTruePvsInnerP->Fill(track.tpcInnerParam(), mcparticle.p());
 
-          auto fillhisto = [](auto& h, float pt, float eta, bool cond1, bool cond2) {
+          auto fillmchisto = [](auto& h, float pt, float eta, bool cond1, bool cond2) {
             if (cond1 && cond2) {
               h->Fill(eta, pt);
             }
@@ -522,15 +522,15 @@ struct QADataCollectingEngine {
           std::vector<float> tPt = {track.pt(), mcparticle.pt()};
           std::vector<float> tEta = {track.eta(), mcparticle.eta()};
           for (uint ix = 0; ix < tPt.size(); ++ix) {
-            fillhisto(fhPtVsEtaPrimItsA[ix][track.trackacceptedid()], tPt[ix], tEta[ix], hasits, isprimary);
-            fillhisto(fhPtVsEtaPrimItsTpcA[ix][track.trackacceptedid()], tPt[ix], tEta[ix], hasits && hastpc, isprimary);
-            fillhisto(fhPtVsEtaPrimItsTpcTofA[ix][track.trackacceptedid()], tPt[ix], tEta[ix], hasits && hastof, isprimary);
-            fillhisto(fhPtVsEtaSecItsA[ix][track.trackacceptedid()], tPt[ix], tEta[ix], hasits, issecdecay);
-            fillhisto(fhPtVsEtaSecItsTpcA[ix][track.trackacceptedid()], tPt[ix], tEta[ix], hasits && hastpc, issecdecay);
-            fillhisto(fhPtVsEtaSecItsTpcTofA[ix][track.trackacceptedid()], tPt[ix], tEta[ix], hasits && hastof, issecdecay);
-            fillhisto(fhPtVsEtaMatItsA[ix][track.trackacceptedid()], tPt[ix], tEta[ix], hasits, isfrommaterial);
-            fillhisto(fhPtVsEtaMatItsTpcA[ix][track.trackacceptedid()], tPt[ix], tEta[ix], hasits && hastpc, isfrommaterial);
-            fillhisto(fhPtVsEtaMatItsTpcTofA[ix][track.trackacceptedid()], tPt[ix], tEta[ix], hasits && hastof, isfrommaterial);
+            fillmchisto(fhPtVsEtaPrimItsA[ix][track.trackacceptedid()], tPt[ix], tEta[ix], hasits, isprimary);
+            fillmchisto(fhPtVsEtaPrimItsTpcA[ix][track.trackacceptedid()], tPt[ix], tEta[ix], hasits && hastpc, isprimary);
+            fillmchisto(fhPtVsEtaPrimItsTpcTofA[ix][track.trackacceptedid()], tPt[ix], tEta[ix], hasits && hastof, isprimary);
+            fillmchisto(fhPtVsEtaSecItsA[ix][track.trackacceptedid()], tPt[ix], tEta[ix], hasits, issecdecay);
+            fillmchisto(fhPtVsEtaSecItsTpcA[ix][track.trackacceptedid()], tPt[ix], tEta[ix], hasits && hastpc, issecdecay);
+            fillmchisto(fhPtVsEtaSecItsTpcTofA[ix][track.trackacceptedid()], tPt[ix], tEta[ix], hasits && hastof, issecdecay);
+            fillmchisto(fhPtVsEtaMatItsA[ix][track.trackacceptedid()], tPt[ix], tEta[ix], hasits, isfrommaterial);
+            fillmchisto(fhPtVsEtaMatItsTpcA[ix][track.trackacceptedid()], tPt[ix], tEta[ix], hasits && hastpc, isfrommaterial);
+            fillmchisto(fhPtVsEtaMatItsTpcTofA[ix][track.trackacceptedid()], tPt[ix], tEta[ix], hasits && hastof, isfrommaterial);
           }
         }
       }
@@ -879,13 +879,10 @@ struct PidExtraDataCollectingEngine {
   /* only after track selection */
   std::vector<std::shared_ptr<TH2>> fhIdTPCdEdxSignalVsP{nsp, nullptr};
   std::vector<std::shared_ptr<TProfile2D>> fpIdTPCdEdxSignalVsPSigmas{nsp, nullptr};
-  std::vector<std::vector<std::shared_ptr<TH2>>> fhIdTPCdEdxSignalDiffVsP{nsp, {nmainsp, nullptr}};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhIdTPCnSigmasVsP{nsp, {nallmainsp, nullptr}};
   std::vector<std::shared_ptr<TH2>> fhIdTOFSignalVsP{nsp, nullptr};
   std::vector<std::shared_ptr<TProfile2D>> fpIdTOFSignalVsPSigmas{nsp, nullptr};
-  std::vector<std::vector<std::shared_ptr<TH2>>> fhIdTOFSignalDiffVsP{nsp, {nmainsp, nullptr}};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhIdTOFnSigmasVsP{nsp, {nallmainsp, nullptr}};
-  std::vector<std::shared_ptr<TH2>> fhIdPvsTOFSqMass{nsp, nullptr};
 
   template <efficiencyandqatask::KindOfData kindOfData>
   void init(HistogramRegistry& registry, const char* dirname)
@@ -1005,10 +1002,10 @@ struct DptDptEfficiencyAndQc {
   float* fCentMultMax = nullptr;
 
   /* the data collecting engine instances */
-  QADataCollectingEngine** qaDataCE;
-  QAExtraDataCollectingEngine** qaExtraDataCE;
-  PidDataCollectingEngine** pidDataCE;
-  PidExtraDataCollectingEngine** pidExtraDataCE;
+  QADataCollectingEngine** qaDataCE = nullptr;
+  QAExtraDataCollectingEngine** qaExtraDataCE = nullptr;
+  PidDataCollectingEngine** pidDataCE = nullptr;
+  PidExtraDataCollectingEngine** pidExtraDataCE = nullptr;
 
   /* the histogram registries */
   HistogramRegistry registryOne{"registryOne", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -1179,7 +1176,6 @@ struct DptDptEfficiencyAndQc {
       if (doPidExtraAnalysis) {
         pidExtraDataCE = new PidExtraDataCollectingEngine*[ncmranges];
       }
-      std::string recogen;
       if (ncmranges > registryBank.size()) {
         LOGF(fatal, "There are more centrality ranges configured than registries in the bank. Please fix it!");
       }
@@ -1434,7 +1430,7 @@ using BCsWithTimestamps = soa::Join<aod::BCs, aod::Timestamps>;
 struct CheckTimestamp {
 
   o2::ccdb::CcdbApi ccdbApi;
-  int mRunNumber;
+  int mRunNumber = 0;
   uint64_t runsor = 0;
   uint64_t runeor = 0;
   std::shared_ptr<TH2> hTimeStampDiffNegative = nullptr;
