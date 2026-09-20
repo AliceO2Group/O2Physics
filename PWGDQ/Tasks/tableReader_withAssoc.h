@@ -2479,7 +2479,9 @@ struct AnalysisSameEventPairing {
                     }
                   } else {
                     LOGF(fatal, "Unsupported number of rotations: %d, only 1 and 3 are supported", fConfigNRotations.value);
-                  } else if (fConfigNRotations.value == 3) {
+                  }
+                  else if (fConfigNRotations.value == 3)
+                  {
                     for (int irot = 1; irot <= fConfigNRotations.value; irot++) {
                       VarManager::FillPairRotation<TPairType, TTrackFillMap>(t1, t2, irot);
                       if constexpr (TPairType == VarManager::kDecayToEE) {
@@ -2489,7 +2491,9 @@ struct AnalysisSameEventPairing {
                         }
                       }
                     }
-                  } else {
+                  }
+                  else
+                  {
                     LOGF(fatal, "Unsupported number of rotations: %d, only 1 and 3 are supported", fConfigNRotations.value);
                   }
                 }
