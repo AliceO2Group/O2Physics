@@ -31,6 +31,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <iterator>
+#include <ranges>
 #include <vector>
 
 //_______________________________________________________________________
