@@ -61,8 +61,6 @@
 #include <utility>
 #include <vector>
 
-#include <math.h>
-
 using namespace o2;
 using namespace o2::framework;
 
@@ -288,14 +286,13 @@ class ToTLUT
   o2::ccdb::BasicCCDBManager* mCcdbManager = nullptr;
 };
 
-static constexpr int kNumHypothesisParticles = 9;
-std::array<std::array<std::shared_ptr<TH2>, kNumHypothesisParticles>, kNumHypothesisParticles> h2dBarrelNsigmaTrue;
-std::array<std::shared_ptr<TH2>, kNumHypothesisParticles> h2dHitsPerTrackVsP;
-std::array<std::shared_ptr<TH2>, kNumHypothesisParticles> h2dToTvsPperParticle;
-std::array<std::shared_ptr<TH2>, kNumHypothesisParticles> h2dHitsPerTrackVsPLin;
-std::array<std::shared_ptr<TH2>, kNumHypothesisParticles> h2dToTvsPperParticleLin;
-
 struct OnTheFlyTrackerPid {
+  static constexpr int kNumHypothesisParticles = 9;
+  std::array<std::array<std::shared_ptr<TH2>, kNumHypothesisParticles>, kNumHypothesisParticles> h2dBarrelNsigmaTrue;
+  std::array<std::shared_ptr<TH2>, kNumHypothesisParticles> h2dHitsPerTrackVsP;
+  std::array<std::shared_ptr<TH2>, kNumHypothesisParticles> h2dToTvsPperParticle;
+  std::array<std::shared_ptr<TH2>, kNumHypothesisParticles> h2dHitsPerTrackVsPLin;
+  std::array<std::shared_ptr<TH2>, kNumHypothesisParticles> h2dToTvsPperParticleLin;
 
   float calculateNsigma(float measuredToT, float expectedToT, float resolution)
   {
