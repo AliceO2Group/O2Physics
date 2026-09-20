@@ -66,15 +66,13 @@ float map_t::fracPositionWithinBin(float val) const
 {
   float width = (max - min) / nbins;
   int bin = 0;
-  float returnVal = kBinCenterOffset;
   if (log) {
     bin = static_cast<int>((std::log10(val) - min) / width);
-    returnVal = ((std::log10(val) - min) / width) - bin;
+    return ((std::log10(val) - min) / width) - bin;
   } else {
     bin = static_cast<int>((val - min) / width);
-    returnVal = val / width - bin;
+    return val / width - bin;
   }
-  return returnVal;
 }
 
 int map_t::find(float val) const
