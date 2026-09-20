@@ -65,8 +65,8 @@ namespace o2::aod
 namespace hf_cand_bstojpsiphi_lite
 {
 DECLARE_SOA_COLUMN(PtJpsi, ptJpsi, float);                                           //! Transverse momentum of Jpsi daughter candidate (GeV/c)
-DECLARE_SOA_COLUMN(PtJpsiDauPos, ptJpsiDauPos, float);                                 //! Transverse momentum of Jpsi positive daughter candidate (GeV/c)
-DECLARE_SOA_COLUMN(PtJpsiDauNeg, ptJpsiDauNeg, float);                                 //! Transverse momentum of Jpsi negative daughter candidate (GeV/c)
+DECLARE_SOA_COLUMN(PtJpsiDauPos, ptJpsiDauPos, float);                               //! Transverse momentum of Jpsi positive daughter candidate (GeV/c)
+DECLARE_SOA_COLUMN(PtJpsiDauNeg, ptJpsiDauNeg, float);                               //! Transverse momentum of Jpsi negative daughter candidate (GeV/c)
 DECLARE_SOA_COLUMN(PtBach0, ptBach0, float);                                         //! Transverse momentum of bachelor kaon(<- phi) (GeV/c)
 DECLARE_SOA_COLUMN(PtBach1, ptBach1, float);                                         //! Transverse momentum of bachelor kaon(<- phi) (GeV/c)
 DECLARE_SOA_COLUMN(ItsNClsJpsiDauPos, itsNClsJpsiDauPos, int);                       //! Number of clusters in ITS
