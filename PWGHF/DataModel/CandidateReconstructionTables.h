@@ -590,9 +590,9 @@ DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterProduct, impactParameterProduct, // Im
 DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterProductJpsi, impactParameterProductJpsi, // J/Psi impact parameter for B+ -> J/Psi K
                            [](float dcaDauPos, float dcaDauNeg) -> float { return dcaDauPos * dcaDauNeg; });
 DECLARE_SOA_DYNAMIC_COLUMN(CpaJpsi, cpaJpsi, //!
-                           [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px0, float py0, float pz0, float px1, float py1, float pz1) -> float { return RecoDecay::cpa(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}, std::array{px0+px1, py0+py1, pz0+pz1}); });
+                           [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px0, float py0, float pz0, float px1, float py1, float pz1) -> float { return RecoDecay::cpa(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}, std::array{px0 + px1, py0 + py1, pz0 + pz1}); });
 DECLARE_SOA_DYNAMIC_COLUMN(CpaJpsiXY, cpaJpsiXY, //!
-                           [](float xVtxP, float yVtxP, float xVtxS, float yVtxS, float px0, float py0, float px1, float py1) -> float { return RecoDecay::cpaXY(std::array{xVtxP, yVtxP}, std::array{xVtxS, yVtxS}, std::array{px0+px1, py0+py1}); });
+                           [](float xVtxP, float yVtxP, float xVtxS, float yVtxS, float px0, float py0, float px1, float py1) -> float { return RecoDecay::cpaXY(std::array{xVtxP, yVtxP}, std::array{xVtxS, yVtxS}, std::array{px0 + px1, py0 + py1}); });
 
 enum DecayTypeMc : uint8_t { BplusToD0PiToKPiPi = 0,
                              BplusToD0KToKPiK,
@@ -1951,9 +1951,9 @@ DECLARE_SOA_DYNAMIC_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, //!
 DECLARE_SOA_DYNAMIC_COLUMN(CtXY, ctXY, //!
                            [](float px0, float py0, float pz0, float px1, float py1, float pz1, float px2, float py2, float pz2, float px3, float py3, float pz3, float xVtxP, float yVtxP, float xVtxS, float yVtxS, const std::array<double, 4>& m) -> float { return RecoDecay::ctXY(std::array{xVtxP, yVtxP}, std::array{xVtxS, yVtxS}, std::array{std::array{px0, py0, pz0}, std::array{px1, py1, pz1}, std::array{px2, py2, pz2}, std::array{px3, py3, pz3}}, m); });
 DECLARE_SOA_DYNAMIC_COLUMN(CpaJpsi, cpaJpsi, //!
-                           [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px0, float py0, float pz0, float px1, float py1, float pz1) -> float { return RecoDecay::cpa(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}, std::array{px0+px1, py0+py1, pz0+pz1}); });
+                           [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px0, float py0, float pz0, float px1, float py1, float pz1) -> float { return RecoDecay::cpa(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}, std::array{px0 + px1, py0 + py1, pz0 + pz1}); });
 DECLARE_SOA_DYNAMIC_COLUMN(CpaJpsiXY, cpaJpsiXY, //!
-                           [](float xVtxP, float yVtxP, float xVtxS, float yVtxS, float px0, float py0, float px1, float py1) -> float { return RecoDecay::cpaXY(std::array{xVtxP, yVtxP}, std::array{xVtxS, yVtxS}, std::array{px0+px1, py0+py1}); });
+                           [](float xVtxP, float yVtxP, float xVtxS, float yVtxS, float px0, float py0, float px1, float py1) -> float { return RecoDecay::cpaXY(std::array{xVtxP, yVtxP}, std::array{xVtxS, yVtxS}, std::array{px0 + px1, py0 + py1}); });
 } // namespace hf_cand_4prong
 
 // declare dedicated B0 -> J/Psi K*0 decay candidate table
