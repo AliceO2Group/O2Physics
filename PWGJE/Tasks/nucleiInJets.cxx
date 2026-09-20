@@ -329,6 +329,7 @@ struct nucleiInJets {
     jetHist.add("jet/h1BkgRho", "Background #rho; #rho (GeV/c/area); Entries", kTH1F, {{100, 0, 20}});
     jetHist.add("jet/h1JetEvents", "NumbeOfJetEvents", kTH1F, {{1, 0, 1}});
     jetHist.add("jetBkgSub/h1JetEvents", "Number of jet events with leading p_{T}^{jet,bkg sub} above cfgjetPtBkgSubMin", kTH1F, {{1, 0, 1}});
+    jetHist.add("jetBkgSub/h1BkgRhoLeadingJetPtBkgSubAboveCut", "Background #rho for events with leading p_{T}^{jet,bkg sub} above cfgjetPtBkgSubMin; #rho (GeV/#it{c}/area); Entries", kTH1F, {{100, 0, 20}});
     jetHist.add("jet/h1JetEta", "jet_{#eta}", kTH1F, {{100, -1.0, 1.0}});
     jetHist.add("jet/h1JetPhi", "jet_{#phi}", kTH1F, {{80, -1.0, 7.}});
     jetHist.add("jet/nJetsPerEvent", "nJetsPerEvent", kTH1F, {{15, .0, 15.}});
@@ -1807,6 +1808,7 @@ struct nucleiInJets {
     }
     if (leadingJetPtBkgSub > cfgjetPtBkgSubMin) {
       jetHist.fill(HIST("jetBkgSub/vertexZ"), collision.posZ());
+      jetHist.fill(HIST("jetBkgSub/h1BkgRhoLeadingJetPtBkgSubAboveCut"), backgroundRho);
       jetHist.fill(HIST("hNEvents"), 8.5);
     }
     if (isWithJetEvents && nJets == 0)
@@ -1908,6 +1910,7 @@ struct nucleiInJets {
     }
     if (leadingJetPtBkgSub > cfgjetPtBkgSubMin) {
       jetHist.fill(HIST("jetBkgSub/vertexZ"), collision.posZ());
+      jetHist.fill(HIST("jetBkgSub/h1BkgRhoLeadingJetPtBkgSubAboveCut"), backgroundRho);
       jetHist.fill(HIST("hNEvents"), 8.5);
     }
     if (isWithJetEvents && nJets == 0)
