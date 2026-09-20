@@ -64,20 +64,18 @@ void lutEntry_t::print() const
 
 float map_t::fracPositionWithinBin(float val) const
 {
-  float width = (max - min) / nbins;
-  int bin = 0;
+  const float width = (max - min) / nbins;
+  const int bin = find(val);
   if (log) {
-    bin = static_cast<int>((std::log10(val) - min) / width);
     return ((std::log10(val) - min) / width) - bin;
   } else {
-    bin = static_cast<int>((val - min) / width);
     return val / width - bin;
   }
 }
 
 int map_t::find(float val) const
 {
-  float width = (max - min) / nbins;
+  const float width = (max - min) / nbins;
   int bin = 0;
   if (log) {
     bin = static_cast<int>((std::log10(val) - min) / width);
