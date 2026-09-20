@@ -1115,7 +1115,6 @@ struct HfDataCreatorJpsiHadReduced {
           }
           registry.fill(HIST("hFitCandidatesBPlus"), SVFitting::FitOk);
 
-          o2::track::TrackParCov trackParCovBPlus{};
           std::array<float, 3> pVecBPlus{}, pVec0{}, pVec1{}, pVec2{};
 
           auto secondaryVertexBPlus = df3.getPCACandidate();
@@ -1124,8 +1123,6 @@ struct HfDataCreatorJpsiHadReduced {
           df3.getTrack(2).getPxPyPzGlo(pVec2);
           pVecBPlus = RecoDecay::pVec(pVec0, pVec1, pVec2);
           pVecJpsi = RecoDecay::pVec(pVec0, pVec1);
-          trackParCovBPlus = df3.createParentTrackParCov();
-          trackParCovBPlus.setAbsCharge(0); // to be sure
 
           if (!isBSelected(pVecBPlus, secondaryVertexBPlus, collision)) {
             continue;
