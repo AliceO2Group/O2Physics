@@ -17,13 +17,12 @@
 /// The task store data relevant to the calculation of hadronization observables radial
 /// profile and/or jet momentum fraction for charmed hadrons
 
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetHFUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
-
-#include "PWGHF/Core/DecayChannels.h"
 
 #include "Common/Core/RecoDecay.h"
 
@@ -65,7 +64,7 @@ double deltaPhi(double phi1, double phi2)
   return std::abs(dphi);
 }
 
-// 
+//
 /// Collision counter selection indexes
 ///
 /// The collision selection is done and stored in multiple steps, for later QA analysis.
@@ -73,16 +72,16 @@ double deltaPhi(double phi1, double phi2)
 /// function, this namespace with enums is create
 namespace collisionSelections
 {
-  enum CollisionSelectionStep {
-    kMCCollisions = 0,                          ///< raw mccollisions with no selection, starts with 0
-    kMCCollisionsZCut,                          ///< mccollisions with z vtx selection
-    kMCCollisionsZCutSel8,                      ///< mccollisions with z vtx and sel8 mc emulated selections
-    kMCCollisionsZCutSel8HasCollisions,          ///< mccollisions with z vtx and sel8 mc emulated selections, with at least one reconstructed collisions
-    kMCCollisionsZCutSel8SplitCollisions,       ///< mccollisions with z vtx and sel8 mc emulated selections, with no split reconstructed collisions
-    kRecoCollisions,                            ///< raw reconstructed collisions after previous mccollisions selection
-    kRecoCollisionsZcut,                        ///< reconstructed collisions with z vtx selection after previous mccollisions selection
-    kRecoCollisionsZcutSel8                     ///< reconstructed collisions with z vtx and sel8 selections after previous mccollisions selection
-  };
+enum CollisionSelectionStep {
+  kMCCollisions = 0,                    ///< raw mccollisions with no selection, starts with 0
+  kMCCollisionsZCut,                    ///< mccollisions with z vtx selection
+  kMCCollisionsZCutSel8,                ///< mccollisions with z vtx and sel8 mc emulated selections
+  kMCCollisionsZCutSel8HasCollisions,   ///< mccollisions with z vtx and sel8 mc emulated selections, with at least one reconstructed collisions
+  kMCCollisionsZCutSel8SplitCollisions, ///< mccollisions with z vtx and sel8 mc emulated selections, with no split reconstructed collisions
+  kRecoCollisions,                      ///< raw reconstructed collisions after previous mccollisions selection
+  kRecoCollisionsZcut,                  ///< reconstructed collisions with z vtx selection after previous mccollisions selection
+  kRecoCollisionsZcutSel8               ///< reconstructed collisions with z vtx and sel8 selections after previous mccollisions selection
+};
 }
 // creating table for storing distance data
 namespace o2::aod
@@ -469,7 +468,7 @@ struct HfFragmentationFunction {
       if (!hasSelectedCollision) {
         continue;
       }
-      
+
       // --- begin particle level jets storage
       // hf particle level jets associated to same mccollision
       const auto mcpJetsPerMCCollision = mcpjets.sliceBy(MCPJetsPerMCCollisionPreslice, mccollision.globalIndex());
@@ -498,7 +497,7 @@ struct HfFragmentationFunction {
             } else if (mcdcand.candidateSelFlag() & BIT(1)) { // CandidateSelFlag == BIT(1) -> selected as HFbar
               selectedAs = -1;
             }
-            
+
             // store matched particle and detector level data in one single table (calculate angular distance in eta-phi plane on the fly)
             matchJetTable(jetutilities::deltaR(mcpjet, mcpcand), mcpjet.pt(), mcpjet.eta(), mcpjet.phi(), mcpjet.template tracks_as<aod::JetParticles>().size() + mcpjet.template candidates_as<TCandidatesMCP>().size(), // particle level jet
                           mcpcand.pt(), mcpcand.eta(), mcpcand.phi(), mcpcand.y(), (mcpcand.originMcGen() == RecoDecay::OriginType::Prompt),                                                                              // particle level HF
@@ -510,11 +509,11 @@ struct HfFragmentationFunction {
         } else {
           // store matched particle and detector level data in one single table (calculate angular distance in eta-phi plane on the fly)
           matchJetTable(jetutilities::deltaR(mcpjet, mcpcand), mcpjet.pt(), mcpjet.eta(), mcpjet.phi(), mcpjet.template tracks_as<aod::JetParticles>().size() + mcpjet.template candidates_as<TCandidatesMCP>().size(), // particle level jet
-                        mcpcand.pt(), mcpcand.eta(), mcpcand.phi(), mcpcand.y(), (mcpcand.originMcGen() == RecoDecay::OriginType::Prompt),                                                                               // particle level HF
-                        -2, -2, -2, -2, -2,                                                                                                                                                                              // no detector-level jet found
-                        -2, -2, -2, -2, -2, false,                                                                                                                                                                          // no detector-level jet found
-                        -2, -2, -2,                                                                                                                                                                                      // no detector-level jet found
-                        -2, -2);                                                                                                                                                                                         // no detector-level jet found
+                        mcpcand.pt(), mcpcand.eta(), mcpcand.phi(), mcpcand.y(), (mcpcand.originMcGen() == RecoDecay::OriginType::Prompt),                                                                              // particle level HF
+                        -2, -2, -2, -2, -2,                                                                                                                                                                             // no detector-level jet found
+                        -2, -2, -2, -2, -2, false,                                                                                                                                                                      // no detector-level jet found
+                        -2, -2, -2,                                                                                                                                                                                     // no detector-level jet found
+                        -2, -2);                                                                                                                                                                                        // no detector-level jet found
         }
       } // end of mcpjets loop
 
@@ -551,12 +550,12 @@ struct HfFragmentationFunction {
             }
 
             // store matched particle and detector level data in one single table (calculate angular distance in eta-phi plane on the fly)
-              matchJetTable(-2, -2, -2, -2, -2,                                                                                                                                                                             // particle level jet
-                            -2, -2, -2, -2, false,                                                                                                                                                                             // particle level HF
-                            jetutilities::deltaR(mcdjet, mcdcand), mcdjet.pt(), mcdjet.eta(), mcdjet.phi(), mcdjet.template tracks_as<aod::JetTracks>().size() + mcdjet.template candidates_as<TCandidatesMCD>().size(),    // detector level jet
-                            mcdcand.pt(), mcdcand.eta(), mcdcand.phi(), mcdcand.m(), mcdcand.y(), (mcdcand.originMcRec() == RecoDecay::OriginType::Prompt),                                                                 // detector level HF
-                            mcdcand.mlScores()[0], mcdcand.mlScores()[1], mcdcand.mlScores()[2],                                                                                                                            // Machine Learning PID scores: background, prompt, non-prompt
-                            static_cast<int>(mcdcand.flagMcMatchRec()), selectedAs);                                                                                                                                        // HF = +1, HFbar = -1, neither = 0
+            matchJetTable(-2, -2, -2, -2, -2,                                                                                                                                                                          // particle level jet
+                          -2, -2, -2, -2, false,                                                                                                                                                                       // particle level HF
+                          jetutilities::deltaR(mcdjet, mcdcand), mcdjet.pt(), mcdjet.eta(), mcdjet.phi(), mcdjet.template tracks_as<aod::JetTracks>().size() + mcdjet.template candidates_as<TCandidatesMCD>().size(), // detector level jet
+                          mcdcand.pt(), mcdcand.eta(), mcdcand.phi(), mcdcand.m(), mcdcand.y(), (mcdcand.originMcRec() == RecoDecay::OriginType::Prompt),                                                              // detector level HF
+                          mcdcand.mlScores()[0], mcdcand.mlScores()[1], mcdcand.mlScores()[2],                                                                                                                         // Machine Learning PID scores: background, prompt, non-prompt
+                          static_cast<int>(mcdcand.flagMcMatchRec()), selectedAs);                                                                                                                                     // HF = +1, HFbar = -1, neither = 0
           }
         } // end of non-matched detector level jets loop
       } // end of collisions loop
