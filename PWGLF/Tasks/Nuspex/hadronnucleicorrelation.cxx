@@ -47,6 +47,7 @@
 
 #include <chrono>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -185,9 +186,9 @@ struct HadronNucleiCorrelation {
   // compact candidate vectors instead of re-reading the full MC particle table for every pair
   struct GenCandidate {
     float ptVal, etaVal, phiVal;
-    float pt() const { return ptVal; }
-    float eta() const { return etaVal; }
-    float phi() const { return phiVal; }
+    [[nodiscard]] float pt() const { return ptVal; }
+    [[nodiscard]] float eta() const { return etaVal; }
+    [[nodiscard]] float phi() const { return phiVal; }
   };
 
   // Per-collision information needed for generated-level same- and mixed-event pairing
@@ -589,9 +590,8 @@ struct HadronNucleiCorrelation {
       return;
     }
 
-    float deltaEta = part0.eta() - part1.eta();
-    float deltaPhi = part0.phi() - part1.phi();
-    deltaPhi = RecoDecay::constrainAngle(deltaPhi, -1 * o2::constants::math::PIHalf);
+    const float deltaEta = part0.eta() - part1.eta();
+    const float deltaPhi = RecoDecay::constrainAngle(part0.phi() - part1.phi(), -1 * o2::constants::math::PIHalf);
 
     for (int k = 0; k < nBinspT; k++) {
 
@@ -660,9 +660,8 @@ struct HadronNucleiCorrelation {
   void fillHistogramsGen(T1 const& part0, T1 const& part1, const bool ME)
   {
 
-    float deltaEta = part0.eta() - part1.eta();
-    float deltaPhi = part0.phi() - part1.phi();
-    deltaPhi = RecoDecay::constrainAngle(deltaPhi, -1 * o2::constants::math::PIHalf);
+    const float deltaEta = part0.eta() - part1.eta();
+    const float deltaPhi = RecoDecay::constrainAngle(part0.phi() - part1.phi(), -1 * o2::constants::math::PIHalf);
 
     for (int k = 0; k < nBinspT; k++) {
 
