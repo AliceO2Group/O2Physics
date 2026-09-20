@@ -371,12 +371,12 @@ struct OnTheFlyTofPid {
 
   struct TOFLayerEfficiency {
    private:
-    const float layerRadius;
-    const float layerLength;
-    const float pixelDimensionZ;
-    const float pixelDimensionRPhi;
-    const float fractionInactive;
-    const float magField;
+    float layerRadius;
+    float layerLength;
+    float pixelDimensionZ;
+    float pixelDimensionRPhi;
+    float fractionInactive;
+    float magField;
 
     TAxis* axisZ = nullptr;
     TAxis* axisRPhi = nullptr;
@@ -418,16 +418,16 @@ struct OnTheFlyTofPid {
       const float inactiveBorderRPhi = pixelDimensionRPhi * std::sqrt(fractionInactive) / 2;
       const float inactiveBorderZ = pixelDimensionZ * std::sqrt(fractionInactive) / 2;
       static constexpr int NDimBorderArray = 4;
-      const double arrayRPhi[NDimBorderArray] = {-pixelDimensionRPhi / 2, -pixelDimensionRPhi / 2 + inactiveBorderRPhi, pixelDimensionRPhi / 2 - inactiveBorderRPhi, pixelDimensionRPhi / 2};
+      const std::array<double, NDimBorderArray> arrayRPhi = {-pixelDimensionRPhi / 2, -pixelDimensionRPhi / 2 + inactiveBorderRPhi, pixelDimensionRPhi / 2 - inactiveBorderRPhi, pixelDimensionRPhi / 2};
       for (int i = 0; i < NDimBorderArray; i++) {
         LOG(info) << "arrayRPhi[" << i << "] = " << arrayRPhi[i];
       }
-      axisInPixelRPhi = new TAxis(3, arrayRPhi);
-      const double arrayZ[NDimBorderArray] = {-pixelDimensionZ / 2, -pixelDimensionZ / 2 + inactiveBorderZ, pixelDimensionZ / 2 - inactiveBorderZ, pixelDimensionZ / 2};
+      axisInPixelRPhi = new TAxis(3, arrayRPhi.data());
+      const std::array<double, NDimBorderArray> arrayZ = {-pixelDimensionZ / 2, -pixelDimensionZ / 2 + inactiveBorderZ, pixelDimensionZ / 2 - inactiveBorderZ, pixelDimensionZ / 2};
       for (int i = 0; i < NDimBorderArray; i++) {
         LOG(info) << "arrayZ[" << i << "] = " << arrayZ[i];
       }
-      axisInPixelZ = new TAxis(3, arrayZ);
+      axisInPixelZ = new TAxis(3, arrayZ.data());
 
       hHitMap = new TH2F(Form("hHitMap_R%.0f", layerRadius), "HitMap;z (cm); r#phi (cm)", 1000, -1000, 1000, 1000, -1000, 1000);
       hHitMapInPixel = new TH2F(Form("hHitMapInPixel_R%.0f", layerRadius), "HitMapInPixel;z (cm); r#phi (cm)", 1000, -10, 10, 1000, -10, 10);
@@ -491,6 +491,8 @@ struct OnTheFlyTofPid {
         case kInactiveBottom:
         case kInactiveTop:
           return false;
+        default:
+          break;
       }
       switch (axisInPixelZ->FindBin(localZ)) {
         case kInactiveLeft:
@@ -498,6 +500,8 @@ struct OnTheFlyTofPid {
         case kInactiveBottom:
         case kInactiveTop:
           return false;
+        default:
+          break;
       }
       hHitMapInPixel->Fill(localZ, localRPhi);
       hHitMap->Fill(z, rphi);

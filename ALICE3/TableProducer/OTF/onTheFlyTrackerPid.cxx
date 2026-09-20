@@ -355,8 +355,8 @@ struct OnTheFlyTrackerPid {
                                                          (-centerDistance + trcCircle.rC + radius) *
                                                          (centerDistance + trcCircle.rC + radius));
 
-      const float point1[2] = {radical * ux + displace * vx, radical * uy + displace * vy};
-      const float point2[2] = {radical * ux - displace * vx, radical * uy - displace * vy};
+      const std::array<float, 2> point1 = {radical * ux + displace * vx, radical * uy + displace * vy};
+      const std::array<float, 2> point2 = {radical * ux - displace * vx, radical * uy - displace * vy};
 
       std::array<float, 3> mom{};
       track.getPxPyPzGlo(mom);
