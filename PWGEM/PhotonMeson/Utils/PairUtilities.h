@@ -22,11 +22,14 @@
 
 #include <Math/GenVector/Boost.h>
 #include <Math/Vector3D.h>
+#include <Math/Vector3Dfwd.h>
 #include <Math/Vector4D.h>
+#include <Math/Vector4Dfwd.h>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 
 namespace o2::aod::pwgem::photonmeson::utils::pairutil

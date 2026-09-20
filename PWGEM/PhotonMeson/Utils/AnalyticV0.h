@@ -22,7 +22,7 @@
 
 #include <CommonConstants/MathConstants.h>
 #include <DCAFitter/DCAFitterN.h>
-#include <MathUtils/Utils.h>
+#include <MathUtils/Cartesian.h>
 #include <ReconstructionDataFormats/HelixHelper.h>
 #include <ReconstructionDataFormats/Track.h>
 
@@ -44,7 +44,7 @@ inline o2::track::TrackParCov trackFromLeg(LegParam const& leg)
   std::array<float, 21> cov{};        // o2-linter: disable=magic-number (lab-frame covariance has 21 elements)
   cov[0] = cov[2] = cov[5] = 0.01f;   // o2-linter: disable=magic-number (placeholder sigma_xyz = 0.1 cm)
   cov[9] = cov[14] = cov[20] = 1e-4f; // o2-linter: disable=magic-number (placeholder sigma_p = 0.01 GeV/c)
-  return o2::track::TrackParCov(leg.xyz, leg.mom, cov, leg.charge, true);
+  return {leg.xyz, leg.mom, cov, leg.charge, true};
 }
 
 inline std::array<float, 3> getPropMomentumFromTrackHelix(const float s, const o2::track::TrackParCov& track,
@@ -57,7 +57,7 @@ inline std::array<float, 3> getPropMomentumFromTrackHelix(const float s, const o
   if (dotProd < 0.f) {
     addPhi -= o2::constants::math::PI;
   }
-  const float phi = RecoDecay::constrainAngle<float>(phi0 + dphi + addPhi);
+  const auto phi = RecoDecay::constrainAngle<float>(phi0 + dphi + addPhi);
   return {std::cos(phi) * pt, std::sin(phi) * pt, track.getTgl() * pt};
 }
 
@@ -126,7 +126,7 @@ inline AnalyticV0 buildAnalyticV0(LegParam const& pos, LegParam const& neg, floa
   const float r1 = h1.rC, r2 = h2.rC;
 
   int nCand = 0;
-  float c1x[2], c1y[2], c2x[2], c2y[2];
+  std::array<float, 2> c1x{}, c1y{}, c2x{}, c2y{};
   float pcaXY = 0.f;
   if (d > r1 + r2) { // external gap: tangent points along the centre line
     c1x[0] = h1.xC + r1 * ux;

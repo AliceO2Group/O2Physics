@@ -30,7 +30,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
-#include <ranges>
+#include <iterator>
 #include <vector>
 
 //_______________________________________________________________________
@@ -838,7 +838,7 @@ inline MotherCensus censusMothers(std::array<int, 4> const& motherPhotonIds)
   const auto& mp = motherPhotonIds;
   MotherCensus c;
   for (int i = 0; i < kNLegs; ++i) {
-    const size_t ui = static_cast<size_t>(i);
+    const auto ui = static_cast<size_t>(i);
     if (mp[ui] < 0) {
       continue;
     }
