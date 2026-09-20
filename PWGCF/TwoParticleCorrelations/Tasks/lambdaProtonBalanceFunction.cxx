@@ -354,19 +354,6 @@ struct LambdaProtonBalanceFunction {
   {
     return RecoDecay::y(std::array<float, 3>{track.px(), track.py(), track.pz()}, kMassProton);
   }
-  // Fills both eta-space and rapidity-space rho2 histograms in one call.
-  // Separated guards prevent filling when either index is out of acceptance.
-  void fillRho2Pair(
-    std::shared_ptr<TH2>& histEta, std::shared_ptr<TH2>& histY,
-    int idxEta1, int idxEta2, int idxY1, int idxY2) const
-  {
-    if (idxEta1 >= 0 && idxEta2 >= 0) {
-      histEta->Fill(idxEta1, idxEta2);
-    }
-    if (idxY1 >= 0 && idxY2 >= 0) {
-      histY->Fill(idxY1, idxY2);
-    }
-  }
 
   float displayDeltaPhi(float dPhi) const
   {
@@ -1174,7 +1161,6 @@ struct LambdaProtonBalanceFunction {
     AxisSpec lambdaMassAxis = {200, 1.08f, 1.15f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
     AxisSpec vertexZAxis = {100, -15.f, 15.f, "vrtx_{Z} [cm]"};
     AxisSpec ptAxis = {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec pzAxis = {200, -10.0f, 10.0f, "p_{z} (GeV/#it{c})"};
     AxisSpec axisP = {200, 0.0f, 6.0f, "p (GeV/c)"};
     // axisPTPC: TPC inner momentum — the variable that drives the proton PID selection logic.
     // Used alongside axisP so both total-p and pTPC views are available for every diagnostic plot.
@@ -1188,7 +1174,6 @@ struct LambdaProtonBalanceFunction {
     AxisSpec nsigmaAxis = {100, -10.0f, 10.0f, "n#sigma"};
     AxisSpec dcaAxis = {100, -1.0f, 1.0f, "DCAxy (cm)"};
     AxisSpec dcaZAxis = {100, -1.0f, 1.0f, "DCAz (cm)"};
-    AxisSpec massAxis = {200, 1.08f, 1.15f, "M (GeV/#it{c}^{2})"};
     AxisSpec dcaAxisWide = {200, 0.0f, 5.0f, "DCA (cm)"};
     AxisSpec multAxis = {100, 0.0f, 100.0f, "FT0M Percentile (%)"};
     AxisSpec etaAxis = {kRhoEtaBins, kRhoMin, kRhoMax, "#eta"};
@@ -1228,8 +1213,6 @@ struct LambdaProtonBalanceFunction {
     registryOther.add("hNPairs_AntiLambda_PrimProton", "#bar{#Lambda}-p pairs per event (after q_{inv} cut);N_{pairs};Events", {HistType::kTH1F, {{200, 0.0f, 200.0f}}});
     registryOther.add("hNPairs_AntiLambda_PrimAntiProton", "#bar{#Lambda}-#bar{p} pairs per event (after q_{inv} cut);N_{pairs};Events", {HistType::kTH1F, {{200, 0.0f, 200.0f}}});
 
-    // ── Event cutflow ─────────────────────────────────────────
-
     // ══════════════════════════════════════════════════════════════════════════
     // NEW STAGED QA_Detec REGISTRATION
     // ══════════════════════════════════════════════════════════════════════════
@@ -1241,7 +1224,6 @@ struct LambdaProtonBalanceFunction {
     AxisSpec axisDecayR = {100, 0.0f, 50.0f, "cm"};
     AxisSpec axisCtau = {100, 0.0f, 50.0f, "ctau (cm)"};
     AxisSpec axisCutFlow = {14, 0.5f, 14.5f, "Cut stage"};
-    AxisSpec axisTOFMatchFrac = {50, 0.0f, 1.0f, "TOF matching fraction"};
 
     auto addProtonQAForStage = [&](const char* species, const char* stage) {
       // Kinematics
@@ -1922,7 +1904,7 @@ struct LambdaProtonBalanceFunction {
     // ══════════════════════════════════════════════════════════════════════
     centSets.clear();
     centEdgesLocal = {0.f, 5.f, 10.f, 20.f, 40.f, 60.f, 80.f};
-    if (cFillCentHists.value && centEdgesLocal.size() >= 2) {
+    if (cFillCentHists.value) {
       const size_t nCent = centEdgesLocal.size() - 1;
       centSets.resize(nCent);
 
@@ -2025,9 +2007,9 @@ struct LambdaProtonBalanceFunction {
     // ALAp : trigger=AntiLambda,assoc=antiproton
     // LL/LAL/ALL/ALAL: both V0s from respective selected lists (self-pairs rejected)
     //
-    // Each channel has BOTH eta-space (unrolledIndex) and
-    // rapidity-space (unrolledIndexY) versions filled in the SAME loop.
-    // fillRho2Pair() handles both fills atomically.
+    // Each channel has both eta-space (unrolledIndex) and
+    // rapidity-space (unrolledIndexY) versions filled in the same loop; the
+    // eta-space fills are gated by cFillEtaSpace.
     // ─────────────────────────────────────────────────────────────────────
 
     // ── Event cutflow bin 1 — enters process (after sel8 + posZ filters) ──
