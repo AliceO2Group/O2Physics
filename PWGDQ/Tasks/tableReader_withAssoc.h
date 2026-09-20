@@ -1377,8 +1377,8 @@ struct AnalysisSameEventPairing {
   o2::framework::Configurable<bool> fConfigAmbiguousMuonHistograms{"cfgAmbiguousMuonHistograms", true, "If true, fill ambiguous histograms"};
 
   // option for TR pair fill
-  Configurable<bool> fConfigTRPairs{"cfgFillTRPairs", false, "If true, fill Track rotation pairs"};
-  Configurable<int> fConfigNRotations{"cfgNRotations", 3, "Number of rotations for event plane preserving track rotation method, only 1 or 3 are supported"};
+  o2::framework::Configurable<bool> fConfigTRPairs{"cfgFillTRPairs", false, "If true, fill Track rotation pairs"};
+  o2::framework::Configurable<int> fConfigNRotations{"cfgNRotations", 3, "Number of rotations for event plane preserving track rotation method, only 1 or 3 are supported"};
 
   struct : o2::framework::ConfigurableGroup {
     o2::framework::Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
