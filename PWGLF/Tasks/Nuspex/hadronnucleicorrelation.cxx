@@ -1995,8 +1995,11 @@ struct HadronNucleiCorrelation {
         case -o2::constants::physics::Pdg::kDeuteron:
           registry.fill(HIST("hGen_EtaPhiPt_Deuteron"), particle.eta(), particle.phi(), -1. * particle.pt());
           break;
+        case PDG_t::kNeutron:
+        case -PDG_t::kNeutron:
+          break;
         default:
-          LOG(fatal) << "Unhandled PDG code, should not happen, check the code!" << particle.pdgCode();
+          LOG(fatal) << "Unhandled PDG code, should not happen, check the code! " << particle.pdgCode();
           break;
       }
     }
