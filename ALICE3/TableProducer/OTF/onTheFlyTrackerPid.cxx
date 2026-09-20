@@ -304,7 +304,7 @@ struct OnTheFlyTrackerPid {
     return (measuredToT - expectedToT) / resolution;
   }
 
-  float getToTMeanFromMomentumSlice(std::shared_ptr<TH2> hist, float momentum)
+  float getToTMeanFromMomentumSlice(const std::shared_ptr<TH2>& hist, float momentum)
   {
     if (!hist)
       return -1.f;
@@ -319,7 +319,7 @@ struct OnTheFlyTrackerPid {
     return mean;
   }
 
-  float getToTResolutionFromMomentumSlice(std::shared_ptr<TH2> hist, float momentum)
+  float getToTResolutionFromMomentumSlice(const std::shared_ptr<TH2>& hist, float momentum)
   {
     if (!hist)
       return -1.f;

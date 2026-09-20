@@ -71,10 +71,11 @@ struct HfCandidateSelectorCd {
   Configurable<float> itsChi2PerClusterMax{"itsChi2PerClusterMax", 1e10f, "max its fit chi2 per ITS cluster"};
   // DCA track cuts
   Configurable<std::vector<double>> binsPtTrack{"binsPtTrack", std::vector<double>{hf_cuts_single_track::vecBinsPtTrack}, "track pT bin limits for DCA XY/Z pT-dependent cut"};
-  Configurable<LabeledArray<double>> cutsSingleTrack{"cutsSingleTrack", {hf_cuts_single_track::CutsTrack[0], hf_cuts_single_track::NBinsPtTrack, hf_cuts_single_track::NCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections"};
+  Configurable<LabeledArray<double>> cutsSingleTrack{"cutsSingleTrack", {&hf_cuts_single_track::CutsTrack[0][0], hf_cuts_single_track::NBinsPtTrack, hf_cuts_single_track::NCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_cd_to_de_k_pi::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_cd_to_de_k_pi::Cuts[0], hf_cuts_cd_to_de_k_pi::NBinsPt, hf_cuts_cd_to_de_k_pi::NCutVars, hf_cuts_cd_to_de_k_pi::labelsPt, hf_cuts_cd_to_de_k_pi::labelsCutVar}, "Cd candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {&hf_cuts_cd_to_de_k_pi::Cuts[0][0], hf_cuts_cd_to_de_k_pi::NBinsPt, hf_cuts_cd_to_de_k_pi::NCutVars, hf_cuts_cd_to_de_k_pi::labelsPt, hf_cuts_cd_to_de_k_pi::labelsCutVar}, "Cd candidate selection per pT bin"};
+  Configurable<bool> acceptCandidatesWithoutCdFlag{"acceptCandidatesWithoutCdFlag", false, "Apply the Cd mass hypotheses also to 3-prong candidates without the Cd skim bit; intended for MC reflection studies"};
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
 
@@ -102,15 +103,15 @@ struct HfCandidateSelectorCd {
     selectorDeuteron = selectorPion;
 
     if (activateQA) {
-      constexpr int kNBinsSelections = aod::SelectionStep::NSelectionSteps;
-      std::string labels[kNBinsSelections];
+      constexpr int NBinsSelections = aod::SelectionStep::NSelectionSteps;
+      std::string labels[NBinsSelections];
       labels[0] = "No selection";
       labels[1 + aod::SelectionStep::RecoSkims] = "Skims selection";
       labels[1 + aod::SelectionStep::RecoTopol] = "Skims & Topological selections";
       labels[1 + aod::SelectionStep::RecoPID] = "Skims & Topological & PID selections";
-      static const AxisSpec axisSelections = {kNBinsSelections, 0.5, kNBinsSelections + 0.5, ""};
+      static const AxisSpec axisSelections = {NBinsSelections, 0.5, NBinsSelections + 0.5, ""};
       registry.add("hSelections", "Selections;;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisSelections, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
-      for (int iBin = 0; iBin < kNBinsSelections; ++iBin) {
+      for (int iBin = 0; iBin < NBinsSelections; ++iBin) {
         registry.get<TH2>(HIST("hSelections"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
       }
     }
@@ -264,7 +265,7 @@ struct HfCandidateSelectorCd {
 
       auto ptCand = candidate.pt();
 
-      if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::CdToDeKPi)) {
+      if (!acceptCandidatesWithoutCdFlag && !(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::CdToDeKPi)) {
         hfSelCdCandidate(statusCdToDeKPi, statusCdToPiKDe);
         if (activateQA) {
           registry.fill(HIST("hSelections"), 1, ptCand);
@@ -314,24 +315,11 @@ struct HfCandidateSelectorCd {
 
       if (usePid) {
         // track-level PID selection
-        TrackSelectorPID::Status pidTrackPos1Deuteron;
-        TrackSelectorPID::Status pidTrackPos2Deuteron;
-        TrackSelectorPID::Status pidTrackPos1Pion;
-        TrackSelectorPID::Status pidTrackPos2Pion;
-        TrackSelectorPID::Status pidTrackNegKaon;
-        if (usePidTpcAndTof) {
-          pidTrackPos1Deuteron = selectorDeuteron.statusTpcAndTof(trackPos1, candidate.nSigTpcDe0(), candidate.nSigTofDe0());
-          pidTrackPos2Deuteron = selectorDeuteron.statusTpcAndTof(trackPos2, candidate.nSigTpcDe2(), candidate.nSigTofDe2());
-          pidTrackPos1Pion = selectorPion.statusTpcAndTof(trackPos1, candidate.nSigTpcPi0(), candidate.nSigTofPi0());
-          pidTrackPos2Pion = selectorPion.statusTpcAndTof(trackPos2, candidate.nSigTpcPi2(), candidate.nSigTofPi2());
-          pidTrackNegKaon = selectorKaon.statusTpcAndTof(trackNeg, candidate.nSigTpcKa1(), candidate.nSigTofKa1());
-        } else {
-          pidTrackPos1Deuteron = selectorDeuteron.statusTpcOrTof(trackPos1, candidate.nSigTpcDe0(), candidate.nSigTofDe0());
-          pidTrackPos2Deuteron = selectorDeuteron.statusTpcOrTof(trackPos2, candidate.nSigTpcDe2(), candidate.nSigTofDe2());
-          pidTrackPos1Pion = selectorPion.statusTpcOrTof(trackPos1, candidate.nSigTpcPi0(), candidate.nSigTofPi0());
-          pidTrackPos2Pion = selectorPion.statusTpcOrTof(trackPos2, candidate.nSigTpcPi2(), candidate.nSigTofPi2());
-          pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg, candidate.nSigTpcKa1(), candidate.nSigTofKa1());
-        }
+        const auto pidTrackPos1Deuteron = usePidTpcAndTof ? selectorDeuteron.statusTpcAndTof(trackPos1, candidate.nSigTpcDe0(), candidate.nSigTofDe0()) : selectorDeuteron.statusTpcOrTof(trackPos1, candidate.nSigTpcDe0(), candidate.nSigTofDe0());
+        const auto pidTrackPos2Deuteron = usePidTpcAndTof ? selectorDeuteron.statusTpcAndTof(trackPos2, candidate.nSigTpcDe2(), candidate.nSigTofDe2()) : selectorDeuteron.statusTpcOrTof(trackPos2, candidate.nSigTpcDe2(), candidate.nSigTofDe2());
+        const auto pidTrackPos1Pion = usePidTpcAndTof ? selectorPion.statusTpcAndTof(trackPos1, candidate.nSigTpcPi0(), candidate.nSigTofPi0()) : selectorPion.statusTpcOrTof(trackPos1, candidate.nSigTpcPi0(), candidate.nSigTofPi0());
+        const auto pidTrackPos2Pion = usePidTpcAndTof ? selectorPion.statusTpcAndTof(trackPos2, candidate.nSigTpcPi2(), candidate.nSigTofPi2()) : selectorPion.statusTpcOrTof(trackPos2, candidate.nSigTpcPi2(), candidate.nSigTofPi2());
+        const auto pidTrackNegKaon = usePidTpcAndTof ? selectorKaon.statusTpcAndTof(trackNeg, candidate.nSigTpcKa1(), candidate.nSigTofKa1()) : selectorKaon.statusTpcOrTof(trackNeg, candidate.nSigTpcKa1(), candidate.nSigTofKa1());
 
         if (!isSelectedPID(pidTrackPos1Deuteron, pidTrackNegKaon, pidTrackPos2Pion)) {
           pidCdToDeKPi = 0; // reject CdToDeKPi

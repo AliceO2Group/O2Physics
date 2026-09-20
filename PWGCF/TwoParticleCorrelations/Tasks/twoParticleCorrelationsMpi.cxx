@@ -16,6 +16,11 @@
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/Core/PairCuts.h"
 #include "PWGCF/DataModel/CorrelationsDerived.h"
+#include "PWGCF/GenericFramework/Core/FlowContainer.h"
+#include "PWGCF/GenericFramework/Core/FlowPtContainer.h"
+#include "PWGCF/GenericFramework/Core/GFW.h"
+#include "PWGCF/GenericFramework/Core/GFWConfig.h"
+#include "PWGCF/GenericFramework/Core/GFWWeights.h"
 
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/RecoDecay.h"
@@ -39,9 +44,9 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/O2DatabasePDGPlugin.h>
-#include <Framework/StepTHn.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TAxis.h>
 #include <TDirectory.h>
 #include <TFile.h>
 #include <TFormula.h>
@@ -50,7 +55,9 @@
 #include <THn.h>
 #include <TList.h>
 #include <TNamed.h>
+#include <TObjArray.h>
 #include <TObject.h>
+#include <TRandom3.h>
 #include <TString.h>
 #include <TTree.h>
 
@@ -66,6 +73,7 @@
 #include <experimental/type_traits>
 #include <functional>
 #include <iterator>
+#include <map>
 #include <memory>
 #include <string>
 #include <tuple>
@@ -77,29 +85,37 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace constants::math;
+using namespace o2::analysis::genericframework;
 
 static constexpr std::array<std::array<float, 5>, 1> CfgPairCutDefaults = {{{-1, -1, -1, -1, -1}}};
+static constexpr std::array<std::array<double, 2>, 4> LongArrayDouble = {{{{-0.8, -0.5}}, {{0.5, 0.8}}, {{-2, -2}}, {{-2, -2}}}};
+static constexpr int DefaultAcceptancePhiBins = 72;
+static constexpr int DefaultAcceptanceEtaBins = 32;
+static constexpr int InvalidRunNumber = -1;
+static constexpr int FlowNBootstrap = 10;
+static constexpr int MaxPtCorrelationOrder = 4;
 
 struct TwoParticleCorrelationsMpi {
   SliceCache cache;
 
   // Configuration
-  Configurable<float> cfgCutVertex{"cfgCutVertex", 7.0f, "Accepted z-vertex range"};
-  Configurable<float> cfgCutPt{"cfgCutPt", 0.5f, "Minimal pT for tracks"};
-  Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
-
-  Configurable<int> cfgPtOrder{"cfgPtOrder", 1, "Only consider pairs for which pT,1 < pT,2 (0 = OFF, 1 = ON)"};
-  Configurable<int> cfgTriggerCharge{"cfgTriggerCharge", 0, "Select on charge of trigger particle: 0 = all; 1 = positive; -1 = negative"};
-  Configurable<int> cfgAssociatedCharge{"cfgAssociatedCharge", 0, "Select on charge of associated particle: 0 = all charged; 1 = positive; -1 = negative"};
-  Configurable<int> cfgPairCharge{"cfgPairCharge", 0, "Select on charge of particle pair: 0 = all; 1 = like sign; -1 = unlike sign"};
-  Configurable<int> cfgCorrelationMethod{"cfgCorrelationMethod", 0, "Correlation method, 0 = all, 1 = dd, 2 = ddbar"};
-
-  Configurable<float> cfgTwoTrackCut{"cfgTwoTrackCut", -1, "Two track cut: -1 = off; >0 otherwise distance value (suggested: 0.02)"};
-  Configurable<float> cfgTwoTrackCutMinRadius{"cfgTwoTrackCutMinRadius", 0.8f, "Two track cut: radius in m from which two track cuts are applied"};
-  ;
-  Configurable<int> cfgLocalEfficiency{"cfgLocalEfficiency", 0, "0 = OFF and 1 = ON for local efficiency"};
-  Configurable<bool> cfgDropStepRECO{"cfgDropStepRECO", false, "choice to drop step RECO if efficiency correction is used"};
-  Configurable<int> cfgCentBinsForMC{"cfgCentBinsForMC", 0, "0 = OFF and 1 = ON for data like multiplicity/centrality bins for MC steps"};
+  struct : ConfigurableGroup {
+    Configurable<float> cfgCutVertex{"cfgCutVertex", 7.0f, "Accepted z-vertex range"};
+    Configurable<float> cfgCutPt{"cfgCutPt", 0.5f, "Minimal pT for tracks"};
+    Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
+    Configurable<std::pair<float, float>> cfgFlowPtRef{"cfgFlowPtRef", {0.5f, 3.0f}, "Minimum and maximum pT for reference flow particles"};
+    Configurable<std::pair<float, float>> cfgFlowPtPOI{"cfgFlowPtPOI", {0.5f, 10.0f}, "Minimum and maximum pT for particles of interest in flow correlations"};
+    Configurable<int> cfgPtOrder{"cfgPtOrder", 1, "Only consider pairs for which pT,1 < pT,2 (0 = OFF, 1 = ON)"};
+    Configurable<int> cfgTriggerCharge{"cfgTriggerCharge", 0, "Select on charge of trigger particle: 0 = all; 1 = positive; -1 = negative"};
+    Configurable<int> cfgAssociatedCharge{"cfgAssociatedCharge", 0, "Select on charge of associated particle: 0 = all charged; 1 = positive; -1 = negative"};
+    Configurable<int> cfgPairCharge{"cfgPairCharge", 0, "Select on charge of particle pair: 0 = all; 1 = like sign; -1 = unlike sign"};
+    Configurable<int> cfgCorrelationMethod{"cfgCorrelationMethod", 0, "Correlation method, 0 = all, 1 = dd, 2 = ddbar"};
+    Configurable<float> cfgTwoTrackCut{"cfgTwoTrackCut", -1, "Two track cut: -1 = off; >0 otherwise distance value (suggested: 0.02)"};
+    Configurable<float> cfgTwoTrackCutMinRadius{"cfgTwoTrackCutMinRadius", 0.8f, "Two track cut: radius in m from which two track cuts are applied"};
+    Configurable<int> cfgLocalEfficiency{"cfgLocalEfficiency", 0, "0 = OFF and 1 = ON for local efficiency"};
+    Configurable<bool> cfgDropStepRECO{"cfgDropStepRECO", false, "choice to drop step RECO if efficiency correction is used"};
+    Configurable<int> cfgCentBinsForMC{"cfgCentBinsForMC", 0, "0 = generated multiplicity; 1 = reconstructed multiplicity and all associated collisions"};
+  } cfgGeneral;
   Configurable<uint16_t> cfgTrackBitMask{"cfgTrackBitMask", 0, "BitMask for track selection systematics; refer to the enum TrackSelectionCuts in filtering task"};
   Configurable<uint16_t> cfgMultCorrelationsMask{"cfgMultCorrelationsMask", 0, "Selection bitmask for the multiplicity correlations. This should match the filter selection cfgEstimatorBitMask."};
   Configurable<std::string> cfgMultCutFormula{"cfgMultCutFormula", "", "Multiplicity correlations cut formula. A result greater than zero results in accepted event. Parameters: [cFT0C] FT0C centrality, [mFV0A] V0A multiplicity, [mGlob] global track multiplicity, [mPV] PV track multiplicity, [cFT0M] FT0M centrality"};
@@ -109,6 +125,11 @@ struct TwoParticleCorrelationsMpi {
 
   Configurable<std::string> cfgEfficiencyTrigger{"cfgEfficiencyTrigger", "", "CCDB path to efficiency object for trigger particles"};
   Configurable<std::string> cfgEfficiencyAssociated{"cfgEfficiencyAssociated", "", "CCDB path to efficiency object for associated particles"};
+  Configurable<std::string> cfgAcceptance{"cfgAcceptance", "", "CCDB path to the GFW acceptance object"};
+  Configurable<bool> cfgFillAcceptanceWeights{"cfgFillAcceptanceWeights", false, "Fill acceptance maps instead of physics outputs"};
+  Configurable<bool> cfgAcceptanceRunByRun{"cfgAcceptanceRunByRun", false, "Fill or load run-by-run acceptance weights"};
+  Configurable<int> cfgAcceptancePhiBins{"cfgAcceptancePhiBins", int{DefaultAcceptancePhiBins}, "Number of phi bins in acceptance maps"};
+  Configurable<int> cfgAcceptanceEtaBins{"cfgAcceptanceEtaBins", int{DefaultAcceptanceEtaBins}, "Number of eta bins in acceptance maps"};
   Configurable<std::string> cfgNuncSeedsTemplateFile{"cfgNuncSeedsTemplateFile", "", "Local ROOT file containing ensembleYieldTemplates"};
   Configurable<std::string> cfgNuncSeedsTemplate{"cfgNuncSeedsTemplate", "", "CCDB path to the ensemble-yield template ccdb_object"};
   Configurable<float> cfgMinPairAcceptance{"cfgMinPairAcceptance", 0.05f, "Minimum pair acceptance used by the event seed estimator"};
@@ -117,6 +138,8 @@ struct TwoParticleCorrelationsMpi {
   Configurable<float> cfgEventSeedPriorExposure{"cfgEventSeedPriorExposure", 1.f, "Gamma-prior strength in equivalent event exposures for MAP-EM"};
   Configurable<int> cfgEventSeedEMMaxIterations{"cfgEventSeedEMMaxIterations", 10, "Maximum number of weighted MAP-EM iterations per event"};
   Configurable<float> cfgEventSeedEMTolerance{"cfgEventSeedEMTolerance", 1.e-5f, "Relative component-yield convergence tolerance for MAP-EM"};
+  Configurable<std::vector<float>> cfgEventClassifierPercentileLower{"cfgEventClassifierPercentileLower", {}, "Lower event-classifier percentile boundary in each axisMultiplicity bin; empty keeps the raw classifier user axis"};
+  Configurable<std::vector<float>> cfgEventClassifierPercentileUpper{"cfgEventClassifierPercentileUpper", {}, "Upper event-classifier percentile boundary in each axisMultiplicity bin; empty keeps the raw classifier user axis"};
 
   Configurable<int> cfgNumMixedEvents{"cfgNumMixedEvents", 5, "Number of mixed events per event"};
 
@@ -124,7 +147,7 @@ struct TwoParticleCorrelationsMpi {
 
   Configurable<int> cfgDecayParticleMask{"cfgDecayParticleMask", 0, "Selection bitmask for the decay particles: 0 = no selection"};
   Configurable<float> cfgV0RapidityMax{"cfgV0RapidityMax", 0.8, "Maximum rapidity for the decay particles (0 = no selection)"};
-  Configurable<int> cfgMassAxis{"cfgMassAxis", 0, "Use invariant mass axis (0 = OFF, 1 = ON)"};
+  Configurable<int> cfgUserAxis{"cfgUserAxis", 0, "Additional user axis: 0 = OFF, 1 = invariant mass, 2 = event seed, 3 = nMPI (MCGen only)"};
   Configurable<std::vector<int>> cfgMcTriggerPDGs{"cfgMcTriggerPDGs", {}, "MC PDG codes to use exclusively as trigger particles and exclude from associated particles. Empty = no selection."};
 
   ConfigurableAxis axisVertex{"axisVertex", {7, -7, 7}, "vertex axis for histograms"};
@@ -138,25 +161,34 @@ struct TwoParticleCorrelationsMpi {
   ConfigurableAxis axisEtaEfficiency{"axisEtaEfficiency", {20, -1.0, 1.0}, "eta axis for efficiency histograms"};
   ConfigurableAxis axisPtEfficiency{"axisPtEfficiency", {VARIABLE_WIDTH, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0}, "pt axis for efficiency histograms"};
 
-  ConfigurableAxis axisInvMass{"axisInvMass", {VARIABLE_WIDTH, 1.7, 1.75, 1.8, 1.85, 1.9, 1.95, 2.0, 5.0}, "invariant mass axis for histograms"};
+  ConfigurableAxis axisUser{"axisUser", {VARIABLE_WIDTH, 1.7, 1.75, 1.8, 1.85, 1.9, 1.95, 2.0, 5.0}, "additional user axis for histograms"};
 
   ConfigurableAxis axisMultCorrCent{"axisMultCorrCent", {100, 0, 100}, "multiplicity correlation axis for centralities"};
   ConfigurableAxis axisMultCorrV0{"axisMultCorrV0", {1000, 0, 100000}, "multiplicity correlation axis for V0 multiplicities"};
   ConfigurableAxis axisMultCorrMult{"axisMultCorrMult", {1000, 0, 1000}, "multiplicity correlation axis for track multiplicities"};
 
+  Configurable<GFWRegions> cfgRegions{"cfgRegions", {{"refN", "refP", "refFull"}, {-0.8, 0.4, -0.8}, {-0.4, 0.8, 0.8}, {0, 0, 0}, {1, 1, 1}}, "Configurations for GFW regions"};
+  Configurable<GFWCorrConfigs> cfgCorrConfig{"cfgCorrConfig", {{"refP {2} refN {-2}", "refP {3} refN {-3}", "refP {4} refN {-4}", "refFull {2 -2}", "refFull {2 2 -2 -2}"}, {"ChGap22", "ChGap32", "ChGap42", "ChFull22", "ChFull24"}, {0, 0, 0, 0, 0}, {0, 0, 0, 0, 0}}, "Configurations for each correlation to calculate"};
+  Configurable<LabeledArray<double>> cfgPtPtGaps{"cfgPtPtGaps", {LongArrayDouble.front().data(), 4, 2, {"subevent 1", "subevent 2", "subevent 3", "subevent 4"}, {"etamin", "etamax"}}, "{etamin,etamax} for all ptpt-subevents"};
+  struct : ConfigurableGroup {
+    Configurable<bool> cfgUsePtCorrWeights{"cfgUsePtCorrWeights", true, "Use multiplicity-based event weighting for pt-pt correlations"};
+    Configurable<bool> cfgUseMultiplicityFlowWeights{"cfgUseMultiplicityFlowWeights", true, "Use multiplicity-based event weighting for azimuthal correlations"};
+    Configurable<bool> cfgUseMultiplicityFractionWeights{"cfgUseMultiplicityFractionWeights", false, "Use multiplicity-based event weighting for the spectral fraction"};
+  } cfgEventWeight;
+
   // This filter is applied to AOD and derived data (column names are identical)
-  Filter collisionZVtxFilter = nabs(aod::collision::posZ) < cfgCutVertex;
+  Filter collisionZVtxFilter = nabs(aod::collision::posZ) < cfgGeneral.cfgCutVertex;
   // This filter is only applied to AOD
   Filter collisionVertexTypeFilter = (aod::collision::flags & static_cast<uint16_t>(aod::collision::CollisionFlagsRun2::Run2VertexerTracks)) == static_cast<uint16_t>(aod::collision::CollisionFlagsRun2::Run2VertexerTracks);
 
   // Track filters
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true));
-  Filter cfTrackFilter = (nabs(aod::cftrack::eta) < cfgCutEta) && (aod::cftrack::pt > cfgCutPt) && ncheckbit(aod::track::trackType, as<uint8_t>(cfgTrackBitMask));
+  Filter trackFilter = (nabs(aod::track::eta) < cfgGeneral.cfgCutEta) && (aod::track::pt > cfgGeneral.cfgCutPt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true));
+  Filter cfTrackFilter = (nabs(aod::cftrack::eta) < cfgGeneral.cfgCutEta) && (aod::cftrack::pt > cfgGeneral.cfgCutPt) && ncheckbit(aod::track::trackType, as<uint8_t>(cfgTrackBitMask));
 
   // MC filters
-  Filter cfMCCollisionFilter = nabs(aod::mccollision::posZ) < cfgCutVertex;
-  Filter cfMCParticleFilter = (nabs(aod::cfmcparticle::eta) < cfgCutEta) && (aod::cfmcparticle::pt > cfgCutPt); // && (aod::cfmcparticle::sign != 0); //check the sign manually, some specials may be neutral
-  Filter mcParticleFilter = (nabs(aod::mcparticle::eta) < cfgCutEta) && (aod::mcparticle::pt > cfgCutPt);
+  Filter cfMCCollisionFilter = nabs(aod::mccollision::posZ) < cfgGeneral.cfgCutVertex;
+  Filter cfMCParticleFilter = (nabs(aod::cfmcparticle::eta) < cfgGeneral.cfgCutEta) && (aod::cfmcparticle::pt > cfgGeneral.cfgCutPt); // && (aod::cfmcparticle::sign != 0); //check the sign manually, some specials may be neutral
+  Filter mcParticleFilter = (nabs(aod::mcparticle::eta) < cfgGeneral.cfgCutEta) && (aod::mcparticle::pt > cfgGeneral.cfgCutPt);
 
   // Output definitions
   OutputObj<CorrelationContainer> same{"sameEvent"};
@@ -172,7 +204,10 @@ struct TwoParticleCorrelationsMpi {
     bool mPairCuts = false;
     THn* mEfficiencyTrigger = nullptr;
     THn* mEfficiencyAssociated = nullptr;
+    GFWWeights* mAcceptance = nullptr;
     bool efficiencyLoaded = false;
+    bool acceptanceLoaded = false;
+    int acceptanceRunNumber = InvalidRunNumber;
   } cfg;
 
   struct YieldTemplate {
@@ -237,20 +272,56 @@ struct TwoParticleCorrelationsMpi {
     }
   };
 
+  struct PendingSeedTriggerFill {
+    float pt;
+    float multiplicity;
+    float posZ;
+    float weight;
+  };
+
+  struct PendingSeedPairFill {
+    float deltaEta;
+    float assocPt;
+    float triggerPt;
+    float multiplicity;
+    float deltaPhi;
+    float posZ;
+    float weight;
+  };
+
   std::vector<YieldTemplate> yieldTemplates;
   std::vector<std::unique_ptr<TH3D>> pairAcceptanceMaps;
   std::vector<std::unique_ptr<TH2D>> pairAcceptanceEtaVertexMaps;
   int pairAcceptanceSchemaVersion = 0;
   const TList* loadedCcdbYieldTemplateObject = nullptr;
   bool eventSeedEstimatorEnabled = false;
+  bool eventClassifierPercentileAxisEnabled = false;
 
   enum CorrelationMethod {
     All = 0,
     Dd,
     Ddbar
   };
+  enum UserAxisMode {
+    NoUserAxis = 0,
+    InvariantMassAxis,
+    EventSeedAxis,
+    NMPIAxis
+  };
   HistogramRegistry registry{"registry"};
   PairCuts mPairCuts;
+
+  // Generic Framework outputs
+  OutputObj<FlowContainer> fFC{"FlowContainer"};
+  OutputObj<FlowPtContainer> fFCpt{"FlowPtContainer"};
+  OutputObj<FlowContainer> fFCGen{"FlowContainer_gen"};
+  OutputObj<FlowPtContainer> fFCptGen{"FlowPtContainer_gen"};
+  std::unique_ptr<GFW> fGFW{std::make_unique<GFW>()};
+  std::unique_ptr<TAxis> fPtAxis;
+  std::unique_ptr<TRandom3> fRndm{std::make_unique<TRandom3>()};
+  std::vector<GFW::CorrConfig> mCorrConfigs;
+  std::shared_ptr<TH3> mAcceptanceWeights;
+  std::map<int, std::shared_ptr<TH3>> mAcceptanceWeightsByRun;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
   Service<o2::framework::O2DatabasePDG> pdg{};
@@ -259,15 +330,48 @@ struct TwoParticleCorrelationsMpi {
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>;
 
   using DerivedCollisions = soa::Filtered<aod::CFCollisions>;
+  using DerivedCollisionsCorrected = soa::Filtered<aod::CFCollisionsWithExtra>;
+  using DerivedCollisionsMultSet = soa::Filtered<soa::Join<aod::CFCollisions, aod::CFMultSets>>;
+  using DerivedCollisionsMultSetCorrected = soa::Filtered<soa::Join<aod::CFCollisions, aod::CFCollisionsExtra, aod::CFMultSets>>;
   using DerivedTracks = soa::Filtered<aod::CFTracks>;
 
   void init(o2::framework::InitContext&)
   {
-    if (doprocessMCSameDerived && (doprocessSameDerived || doprocessSameDerivedMultSet)) {
+    if (cfgUserAxis < NoUserAxis || cfgUserAxis > NMPIAxis) {
+      LOGF(fatal, "Unsupported cfgUserAxis=%d; use 0 (off), 1 (invariant mass), 2 (event seed), or 3 (nMPI)", cfgUserAxis.value);
+    }
+    if (cfgGeneral.cfgCentBinsForMC < 0 || cfgGeneral.cfgCentBinsForMC > 1) {
+      LOGF(fatal, "Unsupported cfgCentBinsForMC=%d; use 0 (generated multiplicity), 1 (reconstructed multiplicity and all associated collisions)", cfgGeneral.cfgCentBinsForMC.value);
+    }
+    const int enabledDerivedSameProcesses = static_cast<int>(doprocessSameDerived) + static_cast<int>(doprocessSameDerivedCorrected) + static_cast<int>(doprocessSameDerivedMultSet) + static_cast<int>(doprocessSameDerivedMultSetCorrected);
+    if (enabledDerivedSameProcesses > 1) {
+      LOGF(fatal, "Only one reconstructed derived same-event process can be enabled");
+    }
+    const int enabledDerivedMixedProcesses = static_cast<int>(doprocessMixedDerived) + static_cast<int>(doprocessMixedDerivedCorrected) + static_cast<int>(doprocessMixedDerivedMultSet) + static_cast<int>(doprocessMixedDerivedMultSetCorrected);
+    if (enabledDerivedMixedProcesses > 1) {
+      LOGF(fatal, "Only one reconstructed derived mixed-event process can be enabled");
+    }
+    if (doprocessMCSameDerived && enabledDerivedSameProcesses > 0) {
       LOGF(fatal, "processMCSameDerived is mutually exclusive with the reconstructed derived same-event processes because it also fills those outputs");
     }
     if (doprocessSameGenMC && doprocessMCSameDerived) {
       LOGF(fatal, "processSameGenMC and processMCSameDerived are mutually exclusive because both fill the generated same-event outputs");
+    }
+    if (cfgUserAxis == NMPIAxis &&
+        (!(doprocessSameGenMC || doprocessMCSameDerived) ||
+         doprocessSameAOD || enabledDerivedSameProcesses > 0 ||
+         doprocessMixedAOD || enabledDerivedMixedProcesses > 0 || doprocessMCMixedDerived ||
+         cfgGeneral.cfgCentBinsForMC != 0 || cfgFillAcceptanceWeights)) {
+      LOGF(fatal, "cfgUserAxis=3 supports generated MC same events only: enable processSameGenMC or processMCSameDerived and disable all other same/mixed processes");
+    }
+    if (cfgFillAcceptanceWeights && !cfgAcceptance.value.empty()) {
+      LOGF(fatal, "cfgFillAcceptanceWeights and cfgAcceptance are mutually exclusive: produce and apply acceptance weights in separate jobs");
+    }
+    if (cfgFillAcceptanceWeights && !(doprocessSameDerived || doprocessSameDerivedMultSet || doprocessMCSameDerived)) {
+      LOGF(fatal, "cfgFillAcceptanceWeights requires a reconstructed derived same-event process");
+    }
+    if (cfgAcceptancePhiBins < 1 || cfgAcceptanceEtaBins < 1) {
+      LOGF(fatal, "Acceptance-map bin counts must be positive");
     }
     if (!cfgNuncSeedsTemplateFile.value.empty() && !cfgNuncSeedsTemplate.value.empty()) {
       LOGF(fatal, "Configure only one template source: cfgNuncSeedsTemplateFile or cfgNuncSeedsTemplate");
@@ -279,13 +383,47 @@ struct TwoParticleCorrelationsMpi {
       LOGF(fatal, "MAP-EM configuration requires non-negative prior exposure, at least one iteration, and positive tolerance");
     }
     eventSeedEstimatorEnabled = !cfgNuncSeedsTemplateFile.value.empty() || !cfgNuncSeedsTemplate.value.empty();
+    if (cfgUserAxis == EventSeedAxis && !eventSeedEstimatorEnabled) {
+      LOGF(fatal, "cfgUserAxis=2 requires an event-seed template configured through cfgNuncSeedsTemplateFile or cfgNuncSeedsTemplate");
+    }
+    const bool hasLowerPercentileBoundaries = !cfgEventClassifierPercentileLower->empty();
+    const bool hasUpperPercentileBoundaries = !cfgEventClassifierPercentileUpper->empty();
+    if (hasLowerPercentileBoundaries != hasUpperPercentileBoundaries) {
+      LOGF(fatal, "Configure both cfgEventClassifierPercentileLower and cfgEventClassifierPercentileUpper, or leave both empty");
+    }
+    eventClassifierPercentileAxisEnabled = hasLowerPercentileBoundaries;
+    if (eventClassifierPercentileAxisEnabled) {
+      const int nMultiplicityBins = AxisSpec(axisMultiplicity).getNbins();
+      if (static_cast<int>(cfgEventClassifierPercentileLower->size()) != nMultiplicityBins ||
+          static_cast<int>(cfgEventClassifierPercentileUpper->size()) != nMultiplicityBins) {
+        LOGF(fatal, "Event-classifier percentile boundary vectors must each contain exactly %d values, one per axisMultiplicity bin", nMultiplicityBins);
+      }
+      for (int multBin = 0; multBin < nMultiplicityBins; ++multBin) {
+        if (!std::isfinite(cfgEventClassifierPercentileLower->at(multBin)) ||
+            !std::isfinite(cfgEventClassifierPercentileUpper->at(multBin)) ||
+            cfgEventClassifierPercentileLower->at(multBin) >= cfgEventClassifierPercentileUpper->at(multBin)) {
+          LOGF(fatal, "Invalid event-classifier percentile boundaries in multiplicity bin %d: lower=%g upper=%g",
+               multBin, cfgEventClassifierPercentileLower->at(multBin), cfgEventClassifierPercentileUpper->at(multBin));
+        }
+      }
+      if (cfgUserAxis == EventSeedAxis || cfgUserAxis == NMPIAxis) {
+        const std::vector<double> expectedEdges{-1.5, -0.5, 0.5, 1.5, 2.5};
+        const auto& configuredEdges = AxisSpec(axisUser).binEdges;
+        const float threshold = 1.e-6;
+        if (configuredEdges.size() != expectedEdges.size() ||
+            !std::equal(configuredEdges.begin(), configuredEdges.end(), expectedEdges.begin(),
+                        [&threshold](double lhs, double rhs) { return std::abs(lhs - rhs) < threshold; })) {
+          LOGF(fatal, "Percentile-class event classifier axis requires axisUser edges {-1.5,-0.5,0.5,1.5,2.5}");
+        }
+      }
+    }
     LOGF(info, "Event seed estimator histogram booking: %s (local template='%s', CCDB template='%s')",
          eventSeedEstimatorEnabled ? "enabled" : "disabled",
          cfgNuncSeedsTemplateFile.value.c_str(), cfgNuncSeedsTemplate.value.c_str());
 
     registry.add("yields", "multiplicity/centrality vs pT vs eta", {HistType::kTH3F, {{100, 0, 100, "/multiplicity/centrality"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
     registry.add("etaphi", "multiplicity/centrality vs eta vs phi", {HistType::kTH3F, {{100, 0, 100, "multiplicity/centrality"}, {100, -2, 2, "#eta"}, {200, 0, o2::constants::math::TwoPI, "#varphi"}}});
-    if (doprocessSameDerivedMultSet) {
+    if (doprocessSameDerivedMultSet || doprocessSameDerivedMultSetCorrected) {
       if (cfgMultCorrelationsMask == 0) {
         LOGF(fatal, "cfgMultCorrelationsMask can not be 0 when MultSet process functions are in use.");
       }
@@ -307,13 +445,14 @@ struct TwoParticleCorrelationsMpi {
       }
       registry.add("multCorrelations", "Multiplicity correlations", {HistType::kTHnSparseF, multAxes});
     }
-    registry.add("multiplicity", "event multiplicity", {HistType::kTH1F, {{1000, 0, 100, "/multiplicity/centrality"}}});
+    registry.add("multiplicity", "event multiplicity", {HistType::kTH1F, {{100, 0, 100, "/multiplicity/centrality"}}});
     if (eventSeedEstimatorEnabled) {
       registry.add("eventSeedEstimator", "event-level template estimator", {HistType::kTHnSparseF, {{100, 0, 100, "multiplicity"}, {100, -0.5, 99.5, "N_{trig}"}, {200, 0, 20, "Y_{near}"}, {200, 0, 20, "Y_{away}"}, {200, 0, 100, "N_{uncorrelated seeds}"}}});
       registry.add("eventSeedPairProbabilities", "summed pair probabilities", {HistType::kTH3F, {{200, 0, 200, "#Sigma P_{baseline}"}, {200, 0, 200, "#Sigma P_{near}"}, {200, 0, 200, "#Sigma P_{away}"}}});
       registry.add("eventSeedEstimatorStatus", "event-estimator status", {HistType::kTH1F, {{5, -0.5, 4.5, "status"}}});
       registry.add("eventSeedTemplateCoverage", "template coverage vs multiplicity", {HistType::kTH2F, {{100, 0, 100, "multiplicity"}, {102, -0.01, 1.01, "matched/candidate pairs"}}});
       registry.add("eventSeedEstimateVsMultiplicity", "event-level seed estimate vs multiplicity", {HistType::kTH2F, {{100, 0, 100, "multiplicity"}, {200, 0, 100, "N_{uncorrelated seeds}"}}});
+      registry.add("eventSeedFixedProbabilityVsMultiplicity", "fixed-probability event Seed versus multiplicity;multiplicity;N_{seed}^{probability sum}", {HistType::kTH2F, {axisMultiplicity, {1000, 0, 100}}});
       registry.add("eventNearYieldVsMultiplicity", "event-level near yield vs multiplicity", {HistType::kTH2F, {{100, 0, 100, "multiplicity"}, {200, 0, 20, "Y_{near}"}}});
       registry.add("eventAwayYieldVsMultiplicity", "event-level away yield vs multiplicity", {HistType::kTH2F, {{100, 0, 100, "multiplicity"}, {200, 0, 20, "Y_{away}"}}});
       registry.add("profileEventNTriggers", "mean event trigger count", {HistType::kTProfile, {axisMultiplicity}});
@@ -337,6 +476,7 @@ struct TwoParticleCorrelationsMpi {
         registry.add("profileEventEMAwayPrior", "mean MAP-EM away-component prior mode", {HistType::kTProfile, {axisMultiplicity}});
         registry.add("profileEventEMBaselinePrior", "mean MAP-EM baseline-component prior mode", {HistType::kTProfile, {axisMultiplicity}});
         registry.add("eventSeedMAPVsProbability", "MAP-EM versus fixed-probability seed estimate;N_{seed}^{probability sum};N_{seed}^{MAP-EM}", {HistType::kTH2F, {{200, 0, 100}, {200, 0, 100}}});
+        registry.add("eventSeedMAPEMVsMultiplicity", "MAP-EM event Seed versus multiplicity;multiplicity;N_{seed}^{MAP-EM}", {HistType::kTH2F, {axisMultiplicity, {1000, 0, 100}}});
         registry.add("profileEventProbabilityNuncSeeds", "mean fixed-probability seed estimate", {HistType::kTProfile, {axisMultiplicity}});
       }
       auto* estimatorStatus = registry.get<TH1>(HIST("eventSeedEstimatorStatus")).get();
@@ -346,6 +486,7 @@ struct TwoParticleCorrelationsMpi {
       estimatorStatus->GetXaxis()->SetBinLabel(4, "no acceptance-corrected pairs");
       estimatorStatus->GetXaxis()->SetBinLabel(5, "valid estimate");
       registry.add("mcValidation/estimatedSeedsVsTrueNMPI", "template estimator response;N_{MPI}^{true};N_{seed}^{estimated}", {HistType::kTH2F, {{101, -0.5, 100.5}, {202, -0.5, 100.5}}});
+      registry.add("mcValidation/estimatedSeedsVsTrueNMPIVsMultiplicity", "event-level template estimator response;multiplicity;N_{MPI}^{true};N_{seed}^{estimated}", {HistType::kTH3F, {axisMultiplicity, {101, -0.5, 100.5}, {202, -0.5, 100.5}}});
       if (cfgEventSeedEstimatorMethod == 1) {
         registry.add("mcValidation/probabilityEstimatedSeedsVsTrueNMPI", "fixed-probability estimator response;N_{MPI}^{true};N_{seed}^{probability sum}", {HistType::kTH2F, {{101, -0.5, 100.5}, {202, -0.5, 100.5}}});
       }
@@ -364,6 +505,7 @@ struct TwoParticleCorrelationsMpi {
       mcValidationStatus->GetXaxis()->SetBinLabel(6, "no acceptance-corrected pairs");
       mcValidationStatus->GetXaxis()->SetBinLabel(7, "valid response");
       registry.add("mcValidation/generated/estimatedSeedsVsTrueNMPI", "generated-level template estimator response;N_{MPI}^{true};N_{seed,gen}^{estimated}", {HistType::kTH2F, {{101, -0.5, 100.5}, {202, -0.5, 100.5}}});
+      registry.add("mcValidation/generated/estimatedSeedsVsTrueNMPIVsMultiplicity", "generated event-level template estimator response;N_{ch}^{gen};N_{MPI}^{true};N_{seed,gen}^{estimated}", {HistType::kTH3F, {axisMultiplicity, {101, -0.5, 100.5}, {202, -0.5, 100.5}}});
       if (cfgEventSeedEstimatorMethod == 1) {
         registry.add("mcValidation/generated/probabilityEstimatedSeedsVsTrueNMPI", "generated-level fixed-probability estimator response;N_{MPI}^{true};N_{seed,gen}^{probability sum}", {HistType::kTH2F, {{101, -0.5, 100.5}, {202, -0.5, 100.5}}});
       }
@@ -389,6 +531,11 @@ struct TwoParticleCorrelationsMpi {
     registry.add("eventcount_mixed", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
     registry.add("trackcount_same", "bin", {HistType::kTH2F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}, {10, -0.5, 9.5}}});
     registry.add("trackcount_mixed", "bin", {HistType::kTH3F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}, {10, -0.5, 9.5}, {10, -0.5, 9.5}}});
+    if (cfgFillAcceptanceWeights && !cfgAcceptanceRunByRun) {
+      AxisSpec phiAxis{cfgAcceptancePhiBins, 0., o2::constants::math::TwoPI, "#varphi"};
+      AxisSpec etaAxis{cfgAcceptanceEtaBins, -cfgGeneral.cfgCutEta.value, cfgGeneral.cfgCutEta.value, "#eta"};
+      mAcceptanceWeights = registry.add<TH3>("phi_eta_vtxz_ref", "Reference-track acceptance;#varphi;#eta;z_{vtx} (cm)", {HistType::kTH3D, {phiAxis, etaAxis, axisVertex}});
+    }
 
     mPairCuts.SetHistogramRegistry(&registry);
 
@@ -401,8 +548,8 @@ struct TwoParticleCorrelationsMpi {
       cfg.mPairCuts = true;
     }
 
-    if (cfgTwoTrackCut > 0) {
-      mPairCuts.SetTwoTrackCuts(cfgTwoTrackCut, cfgTwoTrackCutMinRadius);
+    if (cfgGeneral.cfgTwoTrackCut > 0) {
+      mPairCuts.SetTwoTrackCuts(cfgGeneral.cfgTwoTrackCut, cfgGeneral.cfgTwoTrackCutMinRadius);
     }
 
     // --- OBJECT INIT ---
@@ -441,15 +588,23 @@ struct TwoParticleCorrelationsMpi {
     std::vector<AxisSpec> userAxis;
     std::vector<AxisSpec> userMixingAxis;
 
-    if (cfgMassAxis != 0) {
-      userAxis.emplace_back(axisInvMass, "m (GeV/c^2)");
-      userMixingAxis.emplace_back(axisInvMass, "m (GeV/c^2)");
+    if (cfgUserAxis == InvariantMassAxis) {
+      userAxis.emplace_back(axisUser, "m (GeV/c^2)");
+      userMixingAxis.emplace_back(axisUser, "m (GeV/c^2)");
+    } else if (cfgUserAxis == EventSeedAxis) {
+      const char* title = eventClassifierPercentileAxisEnabled ? "N_{seed} percentile class" : "N_{seed}";
+      userAxis.emplace_back(axisUser, title);
+      userMixingAxis.emplace_back(axisUser, title);
+    } else if (cfgUserAxis == NMPIAxis) {
+      const char* title = eventClassifierPercentileAxisEnabled ? "N_{MPI}^{true} percentile class" : "N_{MPI}^{true}";
+      userAxis.emplace_back(axisUser, title);
+      userMixingAxis.emplace_back(axisUser, title);
     }
     same.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, userAxis));
     mixed.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, userMixingAxis));
 
-    same->setTrackEtaCut(cfgCutEta);
-    mixed->setTrackEtaCut(cfgCutEta);
+    same->setTrackEtaCut(cfgGeneral.cfgCutEta);
+    mixed->setTrackEtaCut(cfgGeneral.cfgCutEta);
 
     if (!cfgEfficiencyAssociated.value.empty()) {
       efficiencyAssociatedCache.reserve(512);
@@ -463,6 +618,298 @@ struct TwoParticleCorrelationsMpi {
     ccdb->setCreatedNotAfter(now); // TODO must become global parameter from the train creation time
 
     loadLocalYieldTemplates();
+
+    // Generic Framework init
+    AxisSpec ptAxisSpec = axisPtTrigger;
+    const auto validateFlowPtRange = [&ptAxisSpec](const std::pair<float, float>& range, const char* name) {
+      if (!std::isfinite(range.first) || !std::isfinite(range.second) || range.first >= range.second) {
+        LOGF(fatal, "%s must define a finite, increasing pT range; received {%g, %g}", name, range.first, range.second);
+      }
+      if (range.first < ptAxisSpec.binEdges.front() || range.second > ptAxisSpec.binEdges.back()) {
+        LOGF(fatal, "%s={%g, %g} must be contained in axisPtTrigger={%g, %g}",
+             name, range.first, range.second, ptAxisSpec.binEdges.front(), ptAxisSpec.binEdges.back());
+      }
+    };
+    validateFlowPtRange(cfgGeneral.cfgFlowPtRef.value, "cfgFlowPtRef");
+    validateFlowPtRange(cfgGeneral.cfgFlowPtPOI.value, "cfgFlowPtPOI");
+    const int nPtBins = static_cast<int>(ptAxisSpec.binEdges.size()) - 1;
+    fPtAxis = std::make_unique<TAxis>(nPtBins, ptAxisSpec.binEdges.data());
+    if (cfgRegions->GetSize() < 0) {
+      LOGF(error, "Configuration contains vectors of different size - check the GFWRegions configurable");
+    }
+    for (auto i(0); i < cfgRegions->GetSize(); ++i) {
+      fGFW->AddRegion(cfgRegions->GetNames()[i], cfgRegions->GetEtaMin()[i], cfgRegions->GetEtaMax()[i], (cfgRegions->GetpTDifs()[i] != 0) ? nPtBins + 1 : 1, cfgRegions->GetBitmasks()[i]);
+    }
+    for (auto i = 0; i < cfgCorrConfig->GetSize(); ++i) {
+      mCorrConfigs.push_back(fGFW->GetCorrelatorConfig(cfgCorrConfig->GetCorrs()[i], cfgCorrConfig->GetHeads()[i], cfgCorrConfig->GetpTDifs()[i] != 0));
+    }
+    if (mCorrConfigs.empty()) {
+      LOGF(error, "Configuration contains vectors of different size - check the GFWCorrConfig configurable");
+    }
+    fGFW->CreateRegions();
+    int nPtPtSubevents = 0;
+    for (uint32_t i = 0; i < cfgPtPtGaps->rows(); ++i) {
+      if (cfgPtPtGaps->get(i, uint32_t{0}) < -1. || cfgPtPtGaps->get(i, uint32_t{1}) < -1.) {
+        continue;
+      }
+      ++nPtPtSubevents;
+    }
+
+    if (!cfgFillAcceptanceWeights && (doprocessMCSameDerived || doprocessSameDerived || doprocessSameDerivedMultSet)) {
+      auto recoProfiles = std::make_unique<TObjArray>();
+      addConfigObjectsToObjArray(recoProfiles.get(), mCorrConfigs, cfgUserAxis == EventSeedAxis && eventClassifierPercentileAxisEnabled);
+      fFC.setObject(new FlowContainer("FlowContainer"));
+      fFC->SetXAxis(fPtAxis.get());
+      fFC->Initialize(recoProfiles.get(), axisMultiplicity, FlowNBootstrap);
+
+      fFCpt.setObject(new FlowPtContainer("FlowPtContainer"));
+      fFCpt->setEventWeight(cfgEventWeight.cfgUsePtCorrWeights ? eventweight::TupleWeight : eventweight::UnityWeight);
+      fFCpt->setUseCentralMoments(true);
+      fFCpt->setUseGapMethod(true);
+      fFCpt->initialise(axisMultiplicity, MaxPtCorrelationOrder, cfgCorrConfig.value, FlowNBootstrap);
+      fFCpt->initialiseSubevent(axisMultiplicity, MaxPtCorrelationOrder, nPtPtSubevents, FlowNBootstrap);
+    }
+    if (!cfgFillAcceptanceWeights && (doprocessMCSameDerived || doprocessSameGenMC)) {
+      auto generatedProfiles = std::make_unique<TObjArray>();
+      addConfigObjectsToObjArray(generatedProfiles.get(), mCorrConfigs, cfgUserAxis == NMPIAxis && eventClassifierPercentileAxisEnabled);
+      fFCGen.setObject(new FlowContainer("FlowContainer_gen"));
+      fFCGen->SetXAxis(fPtAxis.get());
+      fFCGen->Initialize(generatedProfiles.get(), axisMultiplicity, FlowNBootstrap);
+
+      fFCptGen.setObject(new FlowPtContainer("FlowPtContainer_gen"));
+      fFCptGen->setEventWeight(cfgEventWeight.cfgUsePtCorrWeights ? eventweight::TupleWeight : eventweight::UnityWeight);
+      fFCptGen->setUseCentralMoments(true);
+      fFCptGen->setUseGapMethod(true);
+      fFCptGen->initialise(axisMultiplicity, MaxPtCorrelationOrder, cfgCorrConfig.value, FlowNBootstrap);
+      fFCptGen->initialiseSubevent(axisMultiplicity, MaxPtCorrelationOrder, nPtPtSubevents, FlowNBootstrap);
+    }
+  }
+
+  enum DataType {
+    Reco,
+    Gen
+  };
+  enum GFWRegionMask {
+    ReferenceMask = 1,
+    PoiMask = 2,
+    OverlapMask = 4
+  };
+  enum SeedClass {
+    InvalidSeedClass = -1,
+    LowSeedClass,
+    MiddleSeedClass,
+    HighSeedClass,
+    SeedClassCount
+  };
+
+  const char* getSeedClassSuffix(const SeedClass seedClass) const
+  {
+    if (cfgUserAxis.value == NMPIAxis) {
+      switch (seedClass) {
+        case LowSeedClass:
+          return "__nMPILow";
+        case MiddleSeedClass:
+          return "__nMPIMiddle";
+        case HighSeedClass:
+          return "__nMPIHigh";
+        default:
+          return "";
+      }
+    }
+    switch (seedClass) {
+      case LowSeedClass:
+        return "__seedLow";
+      case MiddleSeedClass:
+        return "__seedMiddle";
+      case HighSeedClass:
+        return "__seedHigh";
+      default:
+        return "";
+    }
+  }
+
+  std::string getSeedClassProfileName(const std::string& baseName, const SeedClass seedClass) const
+  {
+    return baseName + getSeedClassSuffix(seedClass);
+  }
+
+  void addFlowProfileDefinition(TObjArray* profiles, const std::string& name, const std::string& title, const bool addSeedClasses)
+  {
+    profiles->Add(new TNamed(name.c_str(), title.c_str()));
+    if (!addSeedClasses) {
+      return;
+    }
+    for (int seedClassIndex = LowSeedClass; seedClassIndex < SeedClassCount; ++seedClassIndex) {
+      const auto seedClass = static_cast<SeedClass>(seedClassIndex);
+      const auto classifiedName = getSeedClassProfileName(name, seedClass);
+      const auto classifiedTitle = getSeedClassProfileName(title, seedClass);
+      profiles->Add(new TNamed(classifiedName.c_str(), classifiedTitle.c_str()));
+    }
+  }
+
+  void addConfigObjectsToObjArray(TObjArray* profiles, const std::vector<GFW::CorrConfig>& configs, const bool addSeedClasses)
+  {
+    profiles->SetOwner(true);
+    for (const auto& config : configs) {
+      if (config.pTDif) {
+        const std::string suffix = "_ptDiff";
+        for (auto i = 0; i < fPtAxis->GetNbins(); ++i) {
+          const std::string index = Form("_pt_%i", i + 1);
+          const std::string name = config.Head + index;
+          const std::string title = config.Head + suffix;
+          addFlowProfileDefinition(profiles, name, title, addSeedClasses);
+        }
+      } else {
+        addFlowProfileDefinition(profiles, config.Head, config.Head, addSeedClasses);
+      }
+    }
+  }
+
+  template <DataType dt>
+  void fillOutputContainers(const float& centMult, const double& randomNumber, const SeedClass seedClass = InvalidSeedClass)
+  {
+    auto& flowContainer = (dt == Gen) ? fFCGen : fFC;
+    auto& flowPtContainer = (dt == Gen) ? fFCptGen : fFCpt;
+    const auto fillFlowProfile = [&](const std::string& profileName, const double value, const double weight) {
+      flowContainer->FillProfile(profileName.c_str(), centMult, value, weight, randomNumber);
+      if (seedClass != InvalidSeedClass) {
+        const auto classifiedName = getSeedClassProfileName(profileName, seedClass);
+        flowContainer->FillProfile(classifiedName.c_str(), centMult, value, weight, randomNumber);
+      }
+    };
+
+    flowPtContainer->calculateCorrelations();
+    flowPtContainer->calculateSubeventCorrelations();
+    flowPtContainer->fillPtProfiles(centMult, randomNumber);
+    flowPtContainer->fillSubeventPtProfiles(centMult, randomNumber);
+    flowPtContainer->fillCMProfiles(centMult, randomNumber);
+    flowPtContainer->fillCMSubeventProfiles(centMult, randomNumber);
+
+    for (std::size_t configIndex = 0; configIndex < mCorrConfigs.size(); ++configIndex) {
+      if (!mCorrConfigs.at(configIndex).pTDif) {
+        const auto dnx = fGFW->Calculate(mCorrConfigs.at(configIndex), 0, true).real();
+        if (dnx == 0) {
+          continue;
+        }
+        const auto val = fGFW->Calculate(mCorrConfigs.at(configIndex), 0, false).real() / dnx;
+        if (std::abs(val) < 1) {
+          fillFlowProfile(mCorrConfigs.at(configIndex).Head, val, cfgEventWeight.cfgUseMultiplicityFlowWeights ? dnx : 1.0);
+          flowPtContainer->fillVnPtProfiles(centMult, val, dnx, randomNumber, cfgCorrConfig->GetpTCorrMasks()[configIndex]);
+        }
+        continue;
+      }
+      for (int i = 1; i <= fPtAxis->GetNbins(); i++) {
+        const auto dnx = fGFW->Calculate(mCorrConfigs.at(configIndex), i - 1, true).real();
+        if (dnx == 0) {
+          continue;
+        }
+        const auto val = fGFW->Calculate(mCorrConfigs.at(configIndex), i - 1, false).real() / dnx;
+        if (std::abs(val) < 1) {
+          const std::string profileName = Form("%s_pt_%i", mCorrConfigs.at(configIndex).Head.c_str(), i);
+          fillFlowProfile(profileName, val, cfgEventWeight.cfgUseMultiplicityFlowWeights ? dnx : 1.0);
+        }
+      }
+    }
+  }
+
+  template <DataType dt, typename TTrack>
+  inline void fillPtSums(const TTrack& track, const float& centMult, const double& posZ)
+  {
+    auto& flowPtContainer = (dt == Gen) ? fFCptGen : fFCpt;
+    double weff = 1.;
+    if constexpr (dt == Reco) {
+      if (cfg.mEfficiencyTrigger) {
+        weff = getEfficiencyCorrection(cfg.mEfficiencyTrigger, track.eta(), track.pt(), centMult, posZ);
+      }
+    }
+    if (weff < 0) {
+      return;
+    }
+
+    // Fill the nominal sums
+    if (std::abs(track.eta()) < cfgGeneral.cfgCutEta) {
+      flowPtContainer->fill(weff, track.pt());
+    }
+
+    // Fill the subevent sums
+    std::size_t index = 0;
+    for (uint32_t i = 0; i < cfgPtPtGaps->rows(); ++i) {
+      const auto etamin = cfgPtPtGaps->get(i, uint32_t{0});
+      const auto etamax = cfgPtPtGaps->get(i, uint32_t{1});
+      if (etamin < -1. || etamax < -1.) {
+        continue;
+      }
+      if (etamin < track.eta() && track.eta() < etamax) {
+        flowPtContainer->fillSub(weff, track.pt(), index);
+      }
+      ++index;
+    }
+  }
+
+  template <typename TTrack>
+  double getAcceptance(const TTrack& track, const double& posZ)
+  {
+    if (!cfg.mAcceptance) {
+      return 1.;
+    }
+    return cfg.mAcceptance->getNUA(track.phi(), track.eta(), posZ);
+  }
+
+  std::shared_ptr<TH3> getAcceptanceWeightsForRun(const int runNumber)
+  {
+    const auto existing = mAcceptanceWeightsByRun.find(runNumber);
+    if (existing != mAcceptanceWeightsByRun.end()) {
+      return existing->second;
+    }
+
+    AxisSpec phiAxis{cfgAcceptancePhiBins, 0., o2::constants::math::TwoPI, "#varphi"};
+    AxisSpec etaAxis{cfgAcceptanceEtaBins, -cfgGeneral.cfgCutEta.value, cfgGeneral.cfgCutEta.value, "#eta"};
+    const std::string histogramName = Form("%d/phi_eta_vtxz_ref", runNumber);
+    const auto histogram = registry.add<TH3>(histogramName.c_str(), "Reference-track acceptance;#varphi;#eta;z_{vtx} (cm)", {HistType::kTH3D, {phiAxis, etaAxis, axisVertex}});
+    mAcceptanceWeightsByRun.emplace(runNumber, histogram);
+    return histogram;
+  }
+
+  template <typename TTrack>
+  void fillAcceptanceWeights(const TTrack& track, const double& posZ, const int runNumber)
+  {
+    if (track.pt() <= fPtAxis->GetXmin() || track.pt() >= fPtAxis->GetXmax()) {
+      return;
+    }
+    const auto histogram = cfgAcceptanceRunByRun ? getAcceptanceWeightsForRun(runNumber) : mAcceptanceWeights;
+    histogram->Fill(track.phi(), track.eta(), posZ);
+  }
+
+  template <DataType dt, typename TTrack>
+  inline void fillGFW(const TTrack& track, const float& centMult, const double& posZ)
+  {
+    const bool withinPtRef = track.pt() > cfgGeneral.cfgFlowPtRef->first && track.pt() < cfgGeneral.cfgFlowPtRef->second;
+    const bool withinPtPOI = track.pt() > cfgGeneral.cfgFlowPtPOI->first && track.pt() < cfgGeneral.cfgFlowPtPOI->second;
+    if (!withinPtRef && !withinPtPOI) {
+      return;
+    }
+    double wacc = 1.;
+    double weff = 1.;
+    if constexpr (dt == Reco) {
+      wacc = getAcceptance(track, posZ);
+      if (cfg.mEfficiencyAssociated) {
+        weff = getEfficiencyCorrection(cfg.mEfficiencyAssociated, track.eta(), track.pt(), centMult, posZ);
+      }
+    }
+    if (weff < 0 || !std::isfinite(wacc) || wacc <= 0.) {
+      return;
+    }
+    const double weight = weff * wacc;
+    const int ptBin = fPtAxis->FindBin(track.pt()) - 1;
+    if (withinPtRef) {
+      fGFW->Fill(track.eta(), ptBin, track.phi(), weight, ReferenceMask);
+    }
+    if (withinPtPOI) {
+      fGFW->Fill(track.eta(), ptBin, track.phi(), weight, PoiMask);
+    }
+    if (withinPtRef && withinPtPOI) {
+      fGFW->Fill(track.eta(), ptBin, track.phi(), weight, OverlapMask);
+    }
   }
 
   int getMagneticField(uint64_t timestamp)
@@ -484,6 +931,18 @@ struct TwoParticleCorrelationsMpi {
 
   template <class T>
   using HasMultSet = decltype(std::declval<T&>().multiplicities());
+
+  template <class T>
+  using HasCorrectedMultiplicity = decltype(std::declval<T&>().multiplicityCorrected());
+
+  template <typename TCollision>
+  static float getAnalysisMultiplicity(const TCollision& collision)
+  {
+    if constexpr (std::experimental::is_detected<HasCorrectedMultiplicity, TCollision>::value) {
+      return collision.multiplicityCorrected();
+    }
+    return collision.multiplicity();
+  }
 
   template <typename TCollision, typename TTracks>
   void fillQA(const TCollision& collision, float multiplicity, const TTracks& tracks)
@@ -532,11 +991,10 @@ struct TwoParticleCorrelationsMpi {
   template <typename TTarget>
   bool fillContainerEvent(TTarget target, float multiplicity, CorrelationContainer::CFStep step)
   {
-    const float containerMultiplicity = getCorrelationContainerMultiplicity(multiplicity);
-    if (containerMultiplicity < 0.f) {
+    if (multiplicity < 0.f) {
       return false;
     }
-    target->fillEvent(containerMultiplicity, step);
+    target->fillEvent(multiplicity, step);
     return true;
   }
 
@@ -896,6 +1354,70 @@ struct TwoParticleCorrelationsMpi {
     return static_cast<int>(std::distance(edges.begin(), upper)) - 1;
   }
 
+  double getEventSeedUserAxisValue(double multiplicity, double eventSeed) const
+  {
+    if (!eventClassifierPercentileAxisEnabled || eventSeed < 0.0) {
+      return eventSeed;
+    }
+    const int multBin = findPairAcceptanceMultiplicityBin(multiplicity);
+    if (multBin < 0 || multBin >= static_cast<int>(cfgEventClassifierPercentileLower->size())) {
+      return -1.0;
+    }
+    if (eventSeed < cfgEventClassifierPercentileLower->at(multBin)) {
+      return 0.0;
+    }
+    if (eventSeed >= cfgEventClassifierPercentileUpper->at(multBin)) {
+      return 2.0;
+    }
+    return 1.0;
+  }
+
+  double getTrueNMPIUserAxisValue(double multiplicity, double nMPI) const
+  {
+    if (!eventClassifierPercentileAxisEnabled || nMPI < 0.0) {
+      return nMPI;
+    }
+    const int multBin = findPairAcceptanceMultiplicityBin(multiplicity);
+    if (multBin < 0 || multBin >= static_cast<int>(cfgEventClassifierPercentileLower->size())) {
+      return -1.0;
+    }
+    if (nMPI < cfgEventClassifierPercentileLower->at(multBin)) {
+      return 0.0;
+    }
+    if (nMPI >= cfgEventClassifierPercentileUpper->at(multBin)) {
+      return 2.0;
+    }
+    return 1.0;
+  }
+
+  SeedClass getEventSeedClass(const double multiplicity, const double eventSeed) const
+  {
+    if (!eventClassifierPercentileAxisEnabled) {
+      return InvalidSeedClass;
+    }
+    const double userAxisValue = getEventSeedUserAxisValue(multiplicity, eventSeed);
+    if (!std::isfinite(userAxisValue) ||
+        userAxisValue < static_cast<double>(LowSeedClass) ||
+        userAxisValue >= static_cast<double>(SeedClassCount)) {
+      return InvalidSeedClass;
+    }
+    return static_cast<SeedClass>(userAxisValue);
+  }
+
+  SeedClass getTrueNMPIClass(const double multiplicity, const double nMPI) const
+  {
+    if (!eventClassifierPercentileAxisEnabled) {
+      return InvalidSeedClass;
+    }
+    const double userAxisValue = getTrueNMPIUserAxisValue(multiplicity, nMPI);
+    if (!std::isfinite(userAxisValue) ||
+        userAxisValue < static_cast<double>(LowSeedClass) ||
+        userAxisValue >= static_cast<double>(SeedClassCount)) {
+      return InvalidSeedClass;
+    }
+    return static_cast<SeedClass>(userAxisValue);
+  }
+
   double getPairAcceptance(double multiplicity, double deltaPhi, double deltaEta, double posZ) const
   {
     const int multBin = findPairAcceptanceMultiplicityBin(multiplicity);
@@ -927,7 +1449,7 @@ struct TwoParticleCorrelationsMpi {
   }
 
   void addPairProbabilities(EventSeedEstimate& estimate, const YieldTemplate& yieldTemplate,
-                            double multiplicity, double deltaPhi, double deltaEta, double posZ)
+                            double multiplicity, double deltaPhi, double deltaEta, double posZ, bool fillAcceptanceQA = true)
   {
     const auto& parameters = yieldTemplate.parameters;
     const double near = std::max(0.0, evaluateGaussian(deltaPhi, parameters.data()) + evaluateGaussian(deltaPhi, parameters.data() + 3));
@@ -977,7 +1499,9 @@ struct TwoParticleCorrelationsMpi {
     }
     estimate.sumAcceptanceWeights += acceptanceWeight;
     ++estimate.nAcceptanceCorrectedPairs;
-    registry.fill(HIST("eventSeedAcceptanceWeight"), acceptanceWeight);
+    if (fillAcceptanceQA) {
+      registry.fill(HIST("eventSeedAcceptanceWeight"), acceptanceWeight);
+    }
   }
 
   void finalizeEventSeedEstimate(EventSeedEstimate& estimate)
@@ -1090,6 +1614,7 @@ struct TwoParticleCorrelationsMpi {
     registry.fill(HIST("eventSeedEstimator"), multiplicity, estimate.nTriggers, estimate.nearYield(), estimate.awayYield(), estimate.nuncSeeds());
     registry.fill(HIST("eventSeedPairProbabilities"), estimate.probabilityBaselinePairs, estimate.probabilityNearPairs, estimate.probabilityAwayPairs);
     registry.fill(HIST("eventSeedEstimateVsMultiplicity"), multiplicity, estimate.nuncSeeds());
+    registry.fill(HIST("eventSeedFixedProbabilityVsMultiplicity"), multiplicity, estimate.probabilityNuncSeeds());
     registry.fill(HIST("eventNearYieldVsMultiplicity"), multiplicity, estimate.nearYield());
     registry.fill(HIST("eventAwayYieldVsMultiplicity"), multiplicity, estimate.awayYield());
     registry.fill(HIST("profileEventNearYield"), multiplicity, estimate.nearYield());
@@ -1103,6 +1628,7 @@ struct TwoParticleCorrelationsMpi {
       registry.fill(HIST("profileEventEMAwayPrior"), multiplicity, estimate.priorComponentCounts[1]);
       registry.fill(HIST("profileEventEMBaselinePrior"), multiplicity, estimate.priorComponentCounts[2]);
       registry.fill(HIST("eventSeedMAPVsProbability"), estimate.probabilityNuncSeeds(), estimate.nuncSeeds());
+      registry.fill(HIST("eventSeedMAPEMVsMultiplicity"), multiplicity, estimate.nuncSeeds());
     }
   }
 
@@ -1139,6 +1665,7 @@ struct TwoParticleCorrelationsMpi {
     const double bias = estimatedSeeds - trueNMPI;
     registry.fill(HIST("mcValidation/status"), 6.0);
     registry.fill(HIST("mcValidation/estimatedSeedsVsTrueNMPI"), trueNMPI, estimatedSeeds);
+    registry.fill(HIST("mcValidation/estimatedSeedsVsTrueNMPIVsMultiplicity"), multiplicity, trueNMPI, estimatedSeeds);
     if (estimate.usedMapEM) {
       registry.fill(HIST("mcValidation/probabilityEstimatedSeedsVsTrueNMPI"), trueNMPI, estimate.probabilityNuncSeeds());
     }
@@ -1182,6 +1709,7 @@ struct TwoParticleCorrelationsMpi {
     const double bias = estimatedSeeds - trueNMPI;
     registry.fill(HIST("mcValidation/generated/status"), 5.0);
     registry.fill(HIST("mcValidation/generated/estimatedSeedsVsTrueNMPI"), trueNMPI, estimatedSeeds);
+    registry.fill(HIST("mcValidation/generated/estimatedSeedsVsTrueNMPIVsMultiplicity"), multiplicity, trueNMPI, estimatedSeeds);
     if (estimate.usedMapEM) {
       registry.fill(HIST("mcValidation/generated/probabilityEstimatedSeedsVsTrueNMPI"), trueNMPI, estimate.probabilityNuncSeeds());
     }
@@ -1192,11 +1720,34 @@ struct TwoParticleCorrelationsMpi {
     }
   }
 
-  template <CorrelationContainer::CFStep step, typename TTarget, typename TTracks1, typename TTracks2>
-  void fillCorrelations(TTarget target, TTracks1& tracks1, TTracks2& tracks2, float multiplicity, float posZ, int magField, float eventWeight, EventSeedEstimate* seedEstimate = nullptr)
+  template <CorrelationContainer::CFStep step, typename TTarget>
+  void flushSeedAxisFills(TTarget target, const std::vector<PendingSeedTriggerFill>& triggerFills, const std::vector<PendingSeedPairFill>& pairFills, double eventSeed)
   {
-    const float containerMultiplicity = getCorrelationContainerMultiplicity(multiplicity);
-    if (containerMultiplicity < 0.f) {
+    for (const auto& fill : triggerFills) {
+      target->getTriggerHist()->Fill(step, fill.pt, fill.multiplicity, fill.posZ, getEventSeedUserAxisValue(fill.multiplicity, eventSeed), fill.weight);
+    }
+    for (const auto& fill : pairFills) {
+      target->getPairHist()->Fill(step, fill.deltaEta, fill.assocPt, fill.triggerPt, fill.multiplicity, fill.deltaPhi, fill.posZ, getEventSeedUserAxisValue(fill.multiplicity, eventSeed), fill.weight);
+    }
+  }
+
+  template <CorrelationContainer::CFStep step, typename TTarget, typename TTracks>
+  double estimateEventSeedWithoutFilling(TTarget target, TTracks& tracks, float multiplicity, float posZ, int magField)
+  {
+    EventSeedEstimate estimate;
+    std::vector<PendingSeedTriggerFill> discardedTriggerFills;
+    std::vector<PendingSeedPairFill> discardedPairFills;
+    discardedTriggerFills.reserve(tracks.size());
+    discardedPairFills.reserve(tracks.size() * tracks.size());
+    fillCorrelations<step>(std::move(target), tracks, tracks, multiplicity, posZ, magField, 1.0f, &estimate, &discardedTriggerFills, &discardedPairFills, -1.f, false, false);
+    finalizeEventSeedEstimate(estimate);
+    return estimate.nuncSeeds();
+  }
+
+  template <CorrelationContainer::CFStep step, typename TTarget, typename TTracks1, typename TTracks2>
+  void fillCorrelations(TTarget target, TTracks1& tracks1, TTracks2& tracks2, float multiplicity, float posZ, int magField, float eventWeight, EventSeedEstimate* seedEstimate = nullptr, std::vector<PendingSeedTriggerFill>* pendingTriggerFills = nullptr, std::vector<PendingSeedPairFill>* pendingPairFills = nullptr, double userAxisValue = -1.0, bool fillEstimatorAcceptanceQA = true, bool fillLoopQA = true)
+  {
+    if (multiplicity < 0.f) {
       return;
     }
 
@@ -1229,8 +1780,8 @@ struct TwoParticleCorrelationsMpi {
           }
         } else { // otherwise check the sign against the configuration
           const int sign = getParticleSign(track1);
-          if (cfgTriggerCharge != 0) {
-            if (cfgTriggerCharge * sign < 0) {
+          if (cfgGeneral.cfgTriggerCharge != 0) {
+            if (cfgGeneral.cfgTriggerCharge * sign < 0) {
               continue;
             }
           } else if (sign == 0) {
@@ -1239,7 +1790,7 @@ struct TwoParticleCorrelationsMpi {
         }
       } else if constexpr (std::experimental::is_detected<HasSign, typename TTracks1::iterator>::value) {
         // Check reco objects that have the sign attribute. There are no neutrals to deal with.
-        if (cfgTriggerCharge != 0 && cfgTriggerCharge * track1.sign() < 0) {
+        if (cfgGeneral.cfgTriggerCharge != 0 && cfgGeneral.cfgTriggerCharge * track1.sign() < 0) {
           continue;
         }
       }
@@ -1253,7 +1804,9 @@ struct TwoParticleCorrelationsMpi {
           if (t && std::abs(y) > cfgV0RapidityMax) {
             continue; // V0s are not allowed to be outside the rapidity range
           }
-          registry.fill(HIST("yvspt"), y, track1.pt());
+          if (fillLoopQA) {
+            registry.fill(HIST("yvspt"), y, track1.pt());
+          }
         }
       }
 
@@ -1270,18 +1823,26 @@ struct TwoParticleCorrelationsMpi {
         }
       }
 
-      if (cfgMassAxis) {
+      if (cfgUserAxis == EventSeedAxis) {
+        if (pendingTriggerFills) {
+          pendingTriggerFills->push_back({track1.pt(), multiplicity, posZ, triggerWeight});
+        } else {
+          target->getTriggerHist()->Fill(step, track1.pt(), multiplicity, posZ, userAxisValue, triggerWeight);
+        }
+      } else if (cfgUserAxis == NMPIAxis) {
+        target->getTriggerHist()->Fill(step, track1.pt(), multiplicity, posZ, userAxisValue, triggerWeight);
+      } else if (cfgUserAxis == InvariantMassAxis) {
         if constexpr (std::experimental::is_detected<HasInvMass, typename TTracks1::iterator>::value) {
-          target->getTriggerHist()->Fill(step, track1.pt(), containerMultiplicity, posZ, track1.invMass(), triggerWeight);
+          target->getTriggerHist()->Fill(step, track1.pt(), multiplicity, posZ, track1.invMass(), triggerWeight);
         } else if constexpr (std::experimental::is_detected<HasPDGCode, typename TTracks1::iterator>::value) {
           // TParticlePDG *p = pdg->GetParticle(track1.pdgCode());
           // target->getTriggerHist()->Fill(step, track1.pt(), multiplicity, posZ, p->Mass(), triggerWeight);
-          target->getTriggerHist()->Fill(step, track1.pt(), containerMultiplicity, posZ, 1.8, triggerWeight);
+          target->getTriggerHist()->Fill(step, track1.pt(), multiplicity, posZ, 1.8, triggerWeight);
         } else {
-          LOGF(fatal, "Can not fill mass axis without invMass column. Disable cfgMassAxis.");
+          LOGF(fatal, "Can not fill invariant-mass user axis without invMass column. Disable cfgUserAxis or select another mode.");
         }
       } else {
-        target->getTriggerHist()->Fill(step, track1.pt(), containerMultiplicity, posZ, triggerWeight);
+        target->getTriggerHist()->Fill(step, track1.pt(), multiplicity, posZ, triggerWeight);
       }
 
       const bool triggerHasTemplate = seedEstimate && hasTriggerTemplate(multiplicity, track1.pt());
@@ -1331,22 +1892,22 @@ struct TwoParticleCorrelationsMpi {
         }
 
         if constexpr (std::experimental::is_detected<HasDecay, typename TTracks1::iterator>::value && std::experimental::is_detected<HasDecay, typename TTracks2::iterator>::value) {
-          if (cfgCorrelationMethod == CorrelationMethod::Dd && track1.decay() != track2.decay()) {
+          if (cfgGeneral.cfgCorrelationMethod == CorrelationMethod::Dd && track1.decay() != track2.decay()) {
             continue;
           }
-          if (cfgCorrelationMethod == CorrelationMethod::Ddbar && track1.decay() == track2.decay()) {
+          if (cfgGeneral.cfgCorrelationMethod == CorrelationMethod::Ddbar && track1.decay() == track2.decay()) {
             continue;
           }
         }
 
-        if (cfgPtOrder != 0 && track2.pt() >= track1.pt()) {
+        if (cfgGeneral.cfgPtOrder != 0 && track2.pt() >= track1.pt()) {
           continue;
         }
 
         if constexpr (std::experimental::is_detected<HasSign, typename TTracks2::iterator>::value || std::experimental::is_detected<HasPDGCode, typename TTracks2::iterator>::value) {
           const int associatedSign = getParticleSign(track2);
-          if (cfgAssociatedCharge != 0) {
-            if (cfgAssociatedCharge * associatedSign < 0) {
+          if (cfgGeneral.cfgAssociatedCharge != 0) {
+            if (cfgGeneral.cfgAssociatedCharge * associatedSign < 0) {
               continue;
             }
           } else if (associatedSign == 0) { // mc particles come in neutrals, need to check explicitly
@@ -1356,7 +1917,7 @@ struct TwoParticleCorrelationsMpi {
 
         if constexpr ((std::experimental::is_detected<HasSign, typename TTracks1::iterator>::value || std::experimental::is_detected<HasPDGCode, typename TTracks1::iterator>::value) &&
                       (std::experimental::is_detected<HasSign, typename TTracks2::iterator>::value || std::experimental::is_detected<HasPDGCode, typename TTracks2::iterator>::value)) {
-          if (cfgPairCharge != 0 && cfgPairCharge * getParticleSign(track1) * getParticleSign(track2) < 0) {
+          if (cfgGeneral.cfgPairCharge != 0 && cfgGeneral.cfgPairCharge * getParticleSign(track1) * getParticleSign(track2) < 0) {
             continue;
           }
         }
@@ -1367,7 +1928,7 @@ struct TwoParticleCorrelationsMpi {
               if (cfg.mPairCuts && mPairCuts.conversionCuts(track1, track2)) {
                 continue;
               }
-              if (cfgTwoTrackCut > 0 && mPairCuts.twoTrackCut(track1, track2, magField)) {
+              if (cfgGeneral.cfgTwoTrackCut > 0 && mPairCuts.twoTrackCut(track1, track2, magField)) {
                 continue;
               }
             }
@@ -1387,23 +1948,31 @@ struct TwoParticleCorrelationsMpi {
         if (triggerHasTemplate) {
           ++seedEstimate->nCandidatePairs;
           if (const auto* yieldTemplate = findYieldTemplate(multiplicity, track1.pt(), track2.pt())) {
-            addPairProbabilities(*seedEstimate, *yieldTemplate, multiplicity, deltaPhi, deltaEta, posZ);
+            addPairProbabilities(*seedEstimate, *yieldTemplate, multiplicity, deltaPhi, deltaEta, posZ, fillEstimatorAcceptanceQA);
           } else {
             ++seedEstimate->nPairsWithoutTemplate;
           }
         }
 
         // last param is the weight
-        if (cfgMassAxis) {
-          if constexpr (std::experimental::is_detected<HasInvMass, typename TTracks1::iterator>::value) {
-            target->getPairHist()->Fill(step, deltaEta, track2.pt(), track1.pt(), containerMultiplicity, deltaPhi, posZ, track1.invMass(), associatedWeight);
-          } else if constexpr (std::experimental::is_detected<HasPDGCode, typename TTracks1::iterator>::value) {
-            target->getPairHist()->Fill(step, deltaEta, track2.pt(), track1.pt(), containerMultiplicity, deltaPhi, posZ, 1.8, associatedWeight); // p->Mass()
+        if (cfgUserAxis == EventSeedAxis) {
+          if (pendingPairFills) {
+            pendingPairFills->push_back({deltaEta, track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, associatedWeight});
           } else {
-            LOGF(fatal, "Can not fill mass axis without invMass column. Disable cfgMassAxis.");
+            target->getPairHist()->Fill(step, deltaEta, track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, userAxisValue, associatedWeight);
+          }
+        } else if (cfgUserAxis == NMPIAxis) {
+          target->getPairHist()->Fill(step, deltaEta, track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, userAxisValue, associatedWeight);
+        } else if (cfgUserAxis == InvariantMassAxis) {
+          if constexpr (std::experimental::is_detected<HasInvMass, typename TTracks1::iterator>::value) {
+            target->getPairHist()->Fill(step, deltaEta, track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, track1.invMass(), associatedWeight);
+          } else if constexpr (std::experimental::is_detected<HasPDGCode, typename TTracks1::iterator>::value) {
+            target->getPairHist()->Fill(step, deltaEta, track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, 1.8, associatedWeight); // p->Mass()
+          } else {
+            LOGF(fatal, "Can not fill invariant-mass user axis without invMass column. Disable cfgUserAxis or select another mode.");
           }
         } else {
-          target->getPairHist()->Fill(step, deltaEta, track2.pt(), track1.pt(), containerMultiplicity, deltaPhi, posZ, associatedWeight);
+          target->getPairHist()->Fill(step, deltaEta, track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, associatedWeight);
         }
       }
     }
@@ -1415,7 +1984,7 @@ struct TwoParticleCorrelationsMpi {
       return;
     }
     if (!cfgEfficiencyTrigger.value.empty()) {
-      if (cfgLocalEfficiency > 0) {
+      if (cfgGeneral.cfgLocalEfficiency > 0) {
         TFile* fEfficiencyTrigger = TFile::Open(cfgEfficiencyTrigger.value.c_str(), "READ");
         cfg.mEfficiencyTrigger = dynamic_cast<THn*>(fEfficiencyTrigger->Get("ccdb_object"));
       } else {
@@ -1427,7 +1996,7 @@ struct TwoParticleCorrelationsMpi {
       LOGF(info, "Loaded efficiency histogram for trigger particles from %s", cfgEfficiencyTrigger.value.c_str());
     }
     if (!cfgEfficiencyAssociated.value.empty()) {
-      if (cfgLocalEfficiency > 0) {
+      if (cfgGeneral.cfgLocalEfficiency > 0) {
         TFile* fEfficiencyAssociated = TFile::Open(cfgEfficiencyAssociated.value.c_str(), "READ");
         cfg.mEfficiencyAssociated = dynamic_cast<THn*>(fEfficiencyAssociated->Get("ccdb_object"));
       } else {
@@ -1441,6 +2010,33 @@ struct TwoParticleCorrelationsMpi {
     cfg.efficiencyLoaded = true;
   }
 
+  void loadAcceptance(const uint64_t timestamp, const int runNumber)
+  {
+    if (cfgFillAcceptanceWeights || cfgAcceptance.value.empty()) {
+      cfg.mAcceptance = nullptr;
+      cfg.acceptanceLoaded = true;
+      return;
+    }
+    if (cfg.acceptanceLoaded && (!cfgAcceptanceRunByRun || cfg.acceptanceRunNumber == runNumber)) {
+      return;
+    }
+
+    std::string path = cfgAcceptance.value;
+    if (cfgAcceptanceRunByRun) {
+      if (path.back() != '/') {
+        path += '/';
+      }
+      path += "RunByRun/";
+    }
+    cfg.mAcceptance = ccdb->getForTimeStamp<GFWWeights>(path, timestamp);
+    if (!cfg.mAcceptance || !cfg.mAcceptance->isDataFilled()) {
+      LOGF(fatal, "Could not load a populated GFW acceptance object from %s for run %d at timestamp %llu", path.c_str(), runNumber, timestamp);
+    }
+    cfg.acceptanceLoaded = true;
+    cfg.acceptanceRunNumber = runNumber;
+    LOGF(info, "Loaded GFW acceptance object from %s for run %d", path.c_str(), runNumber);
+  }
+
   double getEfficiencyCorrection(THn* eff, float eta, float pt, float multiplicity, float posZ)
   {
     std::array<int, 4> effVars{};
@@ -1449,11 +2045,6 @@ struct TwoParticleCorrelationsMpi {
     effVars[2] = eff->GetAxis(2)->FindBin(multiplicity);
     effVars[3] = eff->GetAxis(3)->FindBin(posZ);
     return eff->GetBinContent(effVars.data());
-  }
-
-  float getCorrelationContainerMultiplicity(float multiplicity) const
-  {
-    return multiplicity;
   }
 
   template <typename TCollision, typename TTracks>
@@ -1478,8 +2069,19 @@ struct TwoParticleCorrelationsMpi {
     registry.fill(HIST("eventcount_same"), -2);
     fillQA(collision, multiplicity, tracks);
     EventSeedEstimate seedEstimate;
-    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(same, tracks, tracks, multiplicity, collision.posZ(), getMagneticField(bc.timestamp()), 1.0f, &seedEstimate);
+    std::vector<PendingSeedTriggerFill> pendingTriggerFills;
+    std::vector<PendingSeedPairFill> pendingPairFills;
+    if (cfgUserAxis == EventSeedAxis) {
+      pendingTriggerFills.reserve(tracks.size());
+      pendingPairFills.reserve(tracks.size() * tracks.size());
+    }
+    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(same, tracks, tracks, multiplicity, collision.posZ(), getMagneticField(bc.timestamp()), 1.0f, &seedEstimate,
+                                                                 cfgUserAxis == EventSeedAxis ? &pendingTriggerFills : nullptr,
+                                                                 cfgUserAxis == EventSeedAxis ? &pendingPairFills : nullptr);
     finalizeEventSeedEstimate(seedEstimate);
+    if (cfgUserAxis == EventSeedAxis) {
+      flushSeedAxisFills<CorrelationContainer::kCFStepReconstructed>(same, pendingTriggerFills, pendingPairFills, seedEstimate.nuncSeeds());
+    }
     fillEventSeedEstimatorQA(multiplicity, seedEstimate);
     if (trueNMPI) {
       fillMCValidation(multiplicity, seedEstimate, *trueNMPI);
@@ -1497,6 +2099,12 @@ struct TwoParticleCorrelationsMpi {
                         soa::Filtered<aod::CFMcParticles> const& mcParticles,
                         soa::SmallGroups<aod::CFCollisionsWithLabel> const& collisions)
   {
+    if (cfgFillAcceptanceWeights) {
+      return;
+    }
+    if (cfgUserAxis == NMPIAxis && mcCollision.nMPI() < 0) {
+      return;
+    }
     if (!cfgNuncSeedsTemplate.value.empty()) {
       for (const auto& collision : collisions) {
         loadCcdbYieldTemplates(collision.timestamp());
@@ -1505,10 +2113,45 @@ struct TwoParticleCorrelationsMpi {
     }
 
     const auto generatedMultiplicity = mcCollision.multiplicity();
+    const double trueNMPIUserAxisValue = cfgUserAxis == NMPIAxis
+                                           ? getTrueNMPIUserAxisValue(generatedMultiplicity, mcCollision.nMPI())
+                                           : -1.0;
+    if (cfgUserAxis == NMPIAxis) {
+      fGFW->Clear();
+      fFCptGen->clearVector();
+      for (const auto& mcParticle : mcParticles) {
+        if (!mcParticle.isPhysicalPrimary()) {
+          continue;
+        }
+        const int sign = getParticleSign(mcParticle);
+        if (sign == 0 || (cfgGeneral.cfgAssociatedCharge != 0 && cfgGeneral.cfgAssociatedCharge * sign < 0)) {
+          continue;
+        }
+        if (!cfgMcTriggerPDGs->empty() &&
+            std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), mcParticle.pdgCode()) != cfgMcTriggerPDGs->end()) {
+          continue;
+        }
+        fillPtSums<Gen>(mcParticle, generatedMultiplicity, mcCollision.posZ());
+        fillGFW<Gen>(mcParticle, generatedMultiplicity, mcCollision.posZ());
+      }
+      fillOutputContainers<Gen>(generatedMultiplicity, fRndm->Rndm(), getTrueNMPIClass(generatedMultiplicity, mcCollision.nMPI()));
+    }
     fillContainerEvent(same, generatedMultiplicity, CorrelationContainer::kCFStepAll);
     EventSeedEstimate seedEstimate;
-    fillCorrelations<CorrelationContainer::kCFStepAll>(same, mcParticles, mcParticles, generatedMultiplicity, mcCollision.posZ(), 0, 1.0f, &seedEstimate);
+    std::vector<PendingSeedTriggerFill> pendingTriggerFills;
+    std::vector<PendingSeedPairFill> pendingPairFills;
+    if (cfgUserAxis == EventSeedAxis) {
+      pendingTriggerFills.reserve(mcParticles.size());
+      pendingPairFills.reserve(mcParticles.size() * mcParticles.size());
+    }
+    fillCorrelations<CorrelationContainer::kCFStepAll>(same, mcParticles, mcParticles, generatedMultiplicity, mcCollision.posZ(), 0, 1.0f, &seedEstimate,
+                                                       cfgUserAxis == EventSeedAxis ? &pendingTriggerFills : nullptr,
+                                                       cfgUserAxis == EventSeedAxis ? &pendingPairFills : nullptr,
+                                                       trueNMPIUserAxisValue);
     finalizeEventSeedEstimate(seedEstimate);
+    if (cfgUserAxis == EventSeedAxis) {
+      flushSeedAxisFills<CorrelationContainer::kCFStepAll>(same, pendingTriggerFills, pendingPairFills, seedEstimate.nuncSeeds());
+    }
     fillGeneratedMCValidation(generatedMultiplicity, seedEstimate, mcCollision.nMPI());
   }
   PROCESS_SWITCH(TwoParticleCorrelationsMpi, processSameGenMC, "Process generated MC events from derived data and validate against the stored HepMC N MPI", false);
@@ -1516,22 +2159,38 @@ struct TwoParticleCorrelationsMpi {
   template <class CollType, class TTracks1, class TTracks2>
   void processSameDerivedT(CollType const& collision, TTracks1 const& tracks1, TTracks2 const& tracks2, const int* trueNMPI = nullptr)
   {
-    using BinningTypeDerived = ColumnBinningPolicy<aod::collision::PosZ, aod::cfcollision::Multiplicity>;
-    BinningTypeDerived configurableBinningDerived{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
+    auto getMultiplicity = [](const auto& col) {
+      return getAnalysisMultiplicity(col);
+    };
+    using BinningTypeDerived = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
+    BinningTypeDerived configurableBinningDerived{{getMultiplicity}, {axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
+    const auto multiplicity = getMultiplicity(collision);
     if (cfgVerbosity > 0) {
-      LOGF(info, "processSameDerivedT: Tracks for collision: %d/%d | Vertex: %.1f | Multiplicity/Centrality: %.1f", tracks1.size(), tracks2.size(), collision.posZ(), collision.multiplicity());
+      LOGF(info, "processSameDerivedT: Tracks for collision: %d/%d | Vertex: %.1f | Multiplicity/Centrality: %.1f", tracks1.size(), tracks2.size(), collision.posZ(), multiplicity);
+    }
+    if (cfgFillAcceptanceWeights) {
+      for (const auto& track : tracks2) {
+        fillAcceptanceWeights(track, collision.posZ(), collision.runNumber());
+      }
+      return;
     }
     loadEfficiency(collision.timestamp());
+    loadAcceptance(collision.timestamp(), collision.runNumber());
     loadCcdbYieldTemplates(collision.timestamp());
 
-    const auto multiplicity = collision.multiplicity();
-
     int field = 0;
-    if (cfgTwoTrackCut > 0) {
+    if (cfgGeneral.cfgTwoTrackCut > 0) {
       field = getMagneticField(collision.timestamp());
     }
 
-    int bin = configurableBinningDerived.getBin({collision.posZ(), collision.multiplicity()});
+    fGFW->Clear();
+    fFCpt->clearVector();
+    for (const auto& track : tracks2) {
+      fillPtSums<Reco>(track, multiplicity, collision.posZ());
+      fillGFW<Reco>(track, multiplicity, collision.posZ());
+    }
+
+    int bin = configurableBinningDerived.getBin(std::tuple(collision.posZ(), multiplicity));
     registry.fill(HIST("eventcount_same"), bin);
     registry.fill(HIST("trackcount_same"), bin, tracks1.size());
     if constexpr (std::experimental::is_detected<HasDecay, typename TTracks1::iterator>::value) {
@@ -1541,8 +2200,39 @@ struct TwoParticleCorrelationsMpi {
     }
 
     const bool hasEfficiency = (cfg.mEfficiencyAssociated != nullptr || cfg.mEfficiencyTrigger != nullptr);
-    const bool fillReco = !(cfgDropStepRECO && hasEfficiency);
+    const bool fillReco = !(cfgGeneral.cfgDropStepRECO && hasEfficiency);
     EventSeedEstimate seedEstimate;
+
+    if (cfgUserAxis == EventSeedAxis) {
+      std::vector<PendingSeedTriggerFill> pendingTriggerFills;
+      std::vector<PendingSeedPairFill> pendingPairFills;
+      pendingTriggerFills.reserve(tracks1.size());
+      pendingPairFills.reserve(tracks1.size() * tracks2.size());
+
+      if (fillReco) {
+        fillContainerEvent(same, multiplicity, CorrelationContainer::kCFStepReconstructed);
+        fillCorrelations<CorrelationContainer::kCFStepReconstructed>(same, tracks1, tracks2, multiplicity, collision.posZ(), field, 1.0f, &seedEstimate, &pendingTriggerFills, &pendingPairFills);
+        finalizeEventSeedEstimate(seedEstimate);
+        flushSeedAxisFills<CorrelationContainer::kCFStepReconstructed>(same, pendingTriggerFills, pendingPairFills, seedEstimate.nuncSeeds());
+      } else if (hasEfficiency) {
+        fillContainerEvent(same, multiplicity, CorrelationContainer::kCFStepCorrected);
+        fillCorrelations<CorrelationContainer::kCFStepCorrected>(same, tracks1, tracks2, multiplicity, collision.posZ(), field, 1.0f, &seedEstimate, &pendingTriggerFills, &pendingPairFills);
+        finalizeEventSeedEstimate(seedEstimate);
+        flushSeedAxisFills<CorrelationContainer::kCFStepCorrected>(same, pendingTriggerFills, pendingPairFills, seedEstimate.nuncSeeds());
+      }
+
+      if (fillReco && hasEfficiency) {
+        fillContainerEvent(same, multiplicity, CorrelationContainer::kCFStepCorrected);
+        fillCorrelations<CorrelationContainer::kCFStepCorrected>(same, tracks1, tracks2, multiplicity, collision.posZ(), field, 1.0f, nullptr, nullptr, nullptr, getEventSeedUserAxisValue(multiplicity, seedEstimate.nuncSeeds()));
+      }
+      const auto seedClass = getEventSeedClass(multiplicity, seedEstimate.nuncSeeds());
+      fillOutputContainers<Reco>(multiplicity, fRndm->Rndm(), seedClass);
+      fillEventSeedEstimatorQA(multiplicity, seedEstimate);
+      if (trueNMPI) {
+        fillMCValidation(multiplicity, seedEstimate, *trueNMPI);
+      }
+      return;
+    }
 
     if (fillReco) {
       fillContainerEvent(same, multiplicity, CorrelationContainer::kCFStepReconstructed);
@@ -1553,19 +2243,26 @@ struct TwoParticleCorrelationsMpi {
       fillCorrelations<CorrelationContainer::kCFStepCorrected>(same, tracks1, tracks2, multiplicity, collision.posZ(), field, 1.0f, fillReco ? nullptr : &seedEstimate);
     }
     finalizeEventSeedEstimate(seedEstimate);
+    fillOutputContainers<Reco>(multiplicity, fRndm->Rndm());
     fillEventSeedEstimatorQA(multiplicity, seedEstimate);
     if (trueNMPI) {
       fillMCValidation(multiplicity, seedEstimate, *trueNMPI);
     }
   }
 
-  void processSameDerived(DerivedCollisions::iterator const& collision, soa::Filtered<aod::CFTracks> const& tracks)
+  void processSameDerived(DerivedCollisions::iterator const& collision, DerivedTracks const& tracks)
   {
     processSameDerivedT(collision, tracks, tracks);
   }
   PROCESS_SWITCH(TwoParticleCorrelationsMpi, processSameDerived, "Process same event on derived data", false);
 
-  void processSameDerivedMultSet(soa::Filtered<soa::Join<aod::CFCollisions, aod::CFMultSets>>::iterator const& collision, soa::Filtered<aod::CFTracks> const& tracks)
+  void processSameDerivedCorrected(DerivedCollisionsCorrected::iterator const& collision, DerivedTracks const& tracks)
+  {
+    processSameDerivedT(collision, tracks, tracks);
+  }
+  PROCESS_SWITCH(TwoParticleCorrelationsMpi, processSameDerivedCorrected, "Process same event on derived data with corrected multiplicity", false);
+
+  void processSameDerivedMultSet(DerivedCollisionsMultSet::iterator const& collision, DerivedTracks const& tracks)
   {
     if (!passOutlier(collision)) {
       return;
@@ -1573,6 +2270,15 @@ struct TwoParticleCorrelationsMpi {
     processSameDerivedT(collision, tracks, tracks);
   }
   PROCESS_SWITCH(TwoParticleCorrelationsMpi, processSameDerivedMultSet, "Process same event on derived data with multiplicity sets", false);
+
+  void processSameDerivedMultSetCorrected(DerivedCollisionsMultSetCorrected::iterator const& collision, DerivedTracks const& tracks)
+  {
+    if (!passOutlier(collision)) {
+      return;
+    }
+    processSameDerivedT(collision, tracks, tracks);
+  }
+  PROCESS_SWITCH(TwoParticleCorrelationsMpi, processSameDerivedMultSetCorrected, "Process same event on derived data with corrected multiplicity and multiplicity sets", false);
 
   using BinningTypeAOD = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentRun2V0M>;
   void processMixedAOD(AodCollisions const& collisions, AodTracks const& tracks, aod::BCsWithTimestamps const&)
@@ -1585,6 +2291,7 @@ struct TwoParticleCorrelationsMpi {
     SameKindPair<AodCollisions, AodTracks, BinningTypeAOD> pairs{configurableBinning, cfgNumMixedEvents, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     int skipID = -1;
+    double triggerEventSeed = -1.0;
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
       auto& [collision1, tracks1, collision2, tracks2] = *it;
       int bin = configurableBinning.getBin({collision1.posZ(), collision1.centRun2V0M()});
@@ -1601,6 +2308,11 @@ struct TwoParticleCorrelationsMpi {
           skipID = collision1.globalIndex();
           continue;
         }
+        if (cfgUserAxis == EventSeedAxis) {
+          auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
+          loadCcdbYieldTemplates(bc.timestamp());
+          triggerEventSeed = getEventSeedUserAxisValue(collision1.centRun2V0M(), estimateEventSeedWithoutFilling<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, collision1.centRun2V0M(), collision1.posZ(), getMagneticField(bc.timestamp())));
+        }
       }
       if (!collision2.alias_bit(kINT7) || !collision2.sel7()) {
         continue;
@@ -1612,7 +2324,7 @@ struct TwoParticleCorrelationsMpi {
 
       // LOGF(info, "Tracks: %d and %d entries", tracks1.size(), tracks2.size());
 
-      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, tracks2, collision1.centRun2V0M(), collision1.posZ(), getMagneticField(bc.timestamp()), 1.0f / it.currentWindowNeighbours());
+      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, tracks2, collision1.centRun2V0M(), collision1.posZ(), getMagneticField(bc.timestamp()), 1.0f / it.currentWindowNeighbours(), nullptr, nullptr, nullptr, triggerEventSeed);
     }
   }
   PROCESS_SWITCH(TwoParticleCorrelationsMpi, processMixedAOD, "Process mixed events on AOD", false);
@@ -1621,7 +2333,7 @@ struct TwoParticleCorrelationsMpi {
   void processMixedDerivedT(CollType const& collisions, TrackTypes&&... tracks)
   {
     auto getMultiplicity =
-      [this](auto& col) {
+      [this](const auto& col) {
         if constexpr (std::experimental::is_detected<HasMultSet, CollType>::value) {
           if (!passOutlier(col)) {
             return -1.0f;
@@ -1629,7 +2341,7 @@ struct TwoParticleCorrelationsMpi {
         } else {
           (void)this; // fix compile error on unused 'this' capture
         }
-        return col.multiplicity();
+        return getAnalysisMultiplicity(col);
       };
 
     using BinningTypeDerived = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
@@ -1640,30 +2352,40 @@ struct TwoParticleCorrelationsMpi {
     using TB = std::tuple_element<std::tuple_size_v<decltype(tracksTuple)> - 1, decltype(tracksTuple)>::type;
     Pair<CollType, TA, TB, BinningTypeDerived> pairs{configurableBinningDerived, cfgNumMixedEvents, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
+    double triggerEventSeed = -1.0;
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
       auto& [collision1, tracks1, collision2, tracks2] = *it;
       float multiplicity = getMultiplicity(collision1);
       int bin = configurableBinningDerived.getBin(std::tuple(collision1.posZ(), multiplicity));
       float eventWeight = 1.0f / it.currentWindowNeighbours();
       int field = 0;
-      if (cfgTwoTrackCut > 0) {
+      if (cfgGeneral.cfgTwoTrackCut > 0) {
         field = getMagneticField(collision1.timestamp());
       }
 
       if (cfgVerbosity > 0) {
-        LOGF(info, "processMixedDerived: Mixed collisions bin: %d pair: [%d, %d] %d (%.3f, %.3f), %d (%.3f, %.3f)", bin, it.isNewWindow(), it.currentWindowNeighbours(), collision1.globalIndex(), collision1.posZ(), collision1.multiplicity(), collision2.globalIndex(), collision2.posZ(), collision2.multiplicity());
+        LOGF(info, "processMixedDerived: Mixed collisions bin: %d pair: [%d, %d] %d (%.3f, %.3f), %d (%.3f, %.3f)", bin, it.isNewWindow(), it.currentWindowNeighbours(), collision1.globalIndex(), collision1.posZ(), multiplicity, collision2.globalIndex(), collision2.posZ(), getAnalysisMultiplicity(collision2));
       }
 
       bool hasEfficiencyMixed = (cfg.mEfficiencyAssociated != nullptr || cfg.mEfficiencyTrigger != nullptr);
-      bool fillRecoMixed = !(cfgDropStepRECO && hasEfficiencyMixed);
+      bool fillRecoMixed = !(cfgGeneral.cfgDropStepRECO && hasEfficiencyMixed);
 
       if (it.isNewWindow()) {
         loadEfficiency(collision1.timestamp());
         hasEfficiencyMixed = (cfg.mEfficiencyAssociated != nullptr || cfg.mEfficiencyTrigger != nullptr);
-        fillRecoMixed = !(cfgDropStepRECO && hasEfficiencyMixed);
+        fillRecoMixed = !(cfgGeneral.cfgDropStepRECO && hasEfficiencyMixed);
+
+        if (cfgUserAxis == EventSeedAxis) {
+          loadCcdbYieldTemplates(collision1.timestamp());
+          if constexpr (std::is_same_v<std::remove_cvref_t<TA>, std::remove_cvref_t<TB>>) {
+            triggerEventSeed = getEventSeedUserAxisValue(multiplicity, estimateEventSeedWithoutFilling<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, multiplicity, collision1.posZ(), field));
+          } else {
+            LOGF(fatal, "Event-seed user axis for mixed events requires the same trigger and associated track table so the trigger event can be estimated independently");
+          }
+        }
 
         if (fillRecoMixed) {
-          fillContainerEvent(mixed, collision1.multiplicity(), CorrelationContainer::kCFStepReconstructed);
+          fillContainerEvent(mixed, multiplicity, CorrelationContainer::kCFStepReconstructed);
         }
       }
 
@@ -1672,14 +2394,14 @@ struct TwoParticleCorrelationsMpi {
       registry.fill(HIST("eventcount_mixed"), bin);
       registry.fill(HIST("trackcount_mixed"), bin, tracks1.size(), tracks2.size());
       if (fillRecoMixed) {
-        fillCorrelations<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, tracks2, collision1.multiplicity(), collision1.posZ(), field, eventWeight);
+        fillCorrelations<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, tracks2, multiplicity, collision1.posZ(), field, eventWeight, nullptr, nullptr, nullptr, triggerEventSeed);
       }
 
       if (hasEfficiencyMixed) {
         if (it.isNewWindow()) {
-          fillContainerEvent(mixed, collision1.multiplicity(), CorrelationContainer::kCFStepCorrected);
+          fillContainerEvent(mixed, multiplicity, CorrelationContainer::kCFStepCorrected);
         }
-        fillCorrelations<CorrelationContainer::kCFStepCorrected>(mixed, tracks1, tracks2, collision1.multiplicity(), collision1.posZ(), field, eventWeight);
+        fillCorrelations<CorrelationContainer::kCFStepCorrected>(mixed, tracks1, tracks2, multiplicity, collision1.posZ(), field, eventWeight, nullptr, nullptr, nullptr, triggerEventSeed);
       }
     }
   }
@@ -1690,93 +2412,39 @@ struct TwoParticleCorrelationsMpi {
   }
   PROCESS_SWITCH(TwoParticleCorrelationsMpi, processMixedDerived, "Process mixed events on derived data", false);
 
-  void processMixedDerivedMultSet(soa::Filtered<soa::Join<aod::CFCollisions, aod::CFMultSets>> const& collisions, DerivedTracks const& tracks)
+  void processMixedDerivedCorrected(DerivedCollisionsCorrected const& collisions, DerivedTracks const& tracks)
+  {
+    processMixedDerivedT(collisions, tracks);
+  }
+  PROCESS_SWITCH(TwoParticleCorrelationsMpi, processMixedDerivedCorrected, "Process mixed events on derived data with corrected multiplicity", false);
+
+  void processMixedDerivedMultSet(DerivedCollisionsMultSet const& collisions, DerivedTracks const& tracks)
   {
     processMixedDerivedT(collisions, tracks);
   }
   PROCESS_SWITCH(TwoParticleCorrelationsMpi, processMixedDerivedMultSet, "Process mixed events on derived data with multiplicity sets", false);
 
-  int getSpecies(int pdgCode)
+  void processMixedDerivedMultSetCorrected(DerivedCollisionsMultSetCorrected const& collisions, DerivedTracks const& tracks)
   {
-    switch (pdgCode) {
-      case 211: // pion
-      case -211:
-        return 0;
-      case 321: // Kaon
-      case -321:
-        return 1;
-      case 2212: // proton
-      case -2212:
-        return 2;
-      default:
-        break;
-    }
-    if (std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), pdgCode) != cfgMcTriggerPDGs->end()) {
-      return 4;
-    }
-    // The efficiency histogram is hardcoded to contain 5 species. Anything special will have the 4th slot.
-    return 3;
+    processMixedDerivedT(collisions, tracks);
   }
-
-  // NOTE SmallGroups includes soa::Filtered always
-  Preslice<aod::CFTracksWithLabel> perCollision = aod::cftrack::cfCollisionId;
-  void processMCEfficiency(soa::Filtered<aod::CFMcCollisions>::iterator const& mcCollision, aod::CFMcParticles const& mcParticles, soa::SmallGroups<aod::CFCollisionsWithLabel> const& collisions, aod::CFTracksWithLabel const& tracks)
-  {
-    if (cfgVerbosity > 0) {
-      LOGF(info, "MC collision at vtx-z = %f with %d mc particles and %d reconstructed collisions", mcCollision.posZ(), mcParticles.size(), collisions.size());
-    }
-
-    auto multiplicity = mcCollision.multiplicity();
-    if (cfgCentBinsForMC > 0) {
-      if (collisions.size() == 0) {
-        return;
-      }
-      for (const auto& collision : collisions) {
-        multiplicity = collision.multiplicity();
-      }
-    }
-    // Primaries
-    for (const auto& mcParticle : mcParticles) {
-      if (mcParticle.isPhysicalPrimary() && mcParticle.sign() != 0 && !(std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), mcParticle.pdgCode()) != cfgMcTriggerPDGs->end())) {
-        same->getTrackHistEfficiency()->Fill(CorrelationContainer::MC, mcParticle.eta(), mcParticle.pt(), getSpecies(mcParticle.pdgCode()), multiplicity, mcCollision.posZ());
-      }
-    }
-    for (const auto& collision : collisions) {
-      auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
-      if (cfgVerbosity > 0) {
-        LOGF(info, "  Reconstructed collision at vtx-z = %f", collision.posZ());
-        LOGF(info, "  which has %d tracks", groupedTracks.size());
-      }
-
-      for (const auto& track : groupedTracks) {
-        if (cfgTrackBitMask > 0 && (track.trackType() & (uint8_t)cfgTrackBitMask) != (uint8_t)cfgTrackBitMask) {
-          continue;
-        }
-        if (track.has_cfMCParticle()) {
-          const auto& mcParticle = track.cfMCParticle();
-          if (mcParticle.isPhysicalPrimary()) {
-            same->getTrackHistEfficiency()->Fill(CorrelationContainer::RecoPrimaries, mcParticle.eta(), mcParticle.pt(), getSpecies(mcParticle.pdgCode()), multiplicity, mcCollision.posZ());
-          }
-          same->getTrackHistEfficiency()->Fill(CorrelationContainer::RecoAll, mcParticle.eta(), mcParticle.pt(), getSpecies(mcParticle.pdgCode()), multiplicity, mcCollision.posZ());
-          // LOGF(info, "Filled track %d", track.globalIndex());
-        } else {
-          // fake track
-          same->getTrackHistEfficiency()->Fill(CorrelationContainer::Fake, track.eta(), track.pt(), 0, multiplicity, mcCollision.posZ());
-        }
-      }
-    }
-  }
-  PROCESS_SWITCH(TwoParticleCorrelationsMpi, processMCEfficiency, "MC: Extract efficiencies", false);
+  PROCESS_SWITCH(TwoParticleCorrelationsMpi, processMixedDerivedMultSetCorrected, "Process mixed events on derived data with corrected multiplicity and multiplicity sets", false);
 
   template <class McCollision, class Particles1, class Particles2>
   void processMCSameDerivedT(McCollision const& mcCollision, Particles1 const& mcParticles1, Particles2 const& mcParticles2, soa::SmallGroups<aod::CFCollisionsWithLabel> const& collisions)
   {
+    if (cfgFillAcceptanceWeights) {
+      return;
+    }
+    if (cfgUserAxis == NMPIAxis && mcCollision.nMPI() < 0) {
+      return;
+    }
     if (cfgVerbosity > 0) {
       LOGF(info, "processMCSameDerivedT. MC collision: %d, particles1: %d, particles2: %d, collisions: %d", mcCollision.globalIndex(), mcParticles1.size(), mcParticles2.size(), collisions.size());
     }
 
     auto multiplicity = mcCollision.multiplicity();
-    if (cfgCentBinsForMC > 0) {
+    if (cfgGeneral.cfgCentBinsForMC > 0) {
       if (collisions.size() == 0) {
         return;
       }
@@ -1784,8 +2452,11 @@ struct TwoParticleCorrelationsMpi {
         multiplicity = collision.multiplicity();
       }
     }
+    const double trueNMPIUserAxisValue = cfgUserAxis == NMPIAxis
+                                           ? getTrueNMPIUserAxisValue(multiplicity, mcCollision.nMPI())
+                                           : -1.0;
 
-    if (!(doprocessMCSameDerived || doprocessSameDerived || doprocessSameDerivedMultSet)) {
+    if (!(doprocessMCSameDerived || doprocessSameDerived || doprocessSameDerivedCorrected || doprocessSameDerivedMultSet || doprocessSameDerivedMultSetCorrected)) {
       if constexpr (std::experimental::is_detected<HasDecay, typename Particles1::iterator>::value) {
         fillQA(mcCollision, multiplicity, mcCollision.posZ(), mcParticles1, mcParticles2);
       } else {
@@ -1793,21 +2464,44 @@ struct TwoParticleCorrelationsMpi {
       }
     }
 
+    fGFW->Clear();
+    fFCptGen->clearVector();
+    for (const auto& mcParticle : mcParticles2) {
+      if (!mcParticle.isPhysicalPrimary()) {
+        continue;
+      }
+      const int sign = getParticleSign(mcParticle);
+      if (sign == 0 || (cfgGeneral.cfgAssociatedCharge != 0 && cfgGeneral.cfgAssociatedCharge * sign < 0)) {
+        continue;
+      }
+      if (!cfgMcTriggerPDGs->empty() && std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), mcParticle.pdgCode()) != cfgMcTriggerPDGs->end()) {
+        continue;
+      }
+      fillPtSums<Gen>(mcParticle, multiplicity, mcCollision.posZ());
+      fillGFW<Gen>(mcParticle, multiplicity, mcCollision.posZ());
+    }
+    const SeedClass nMPIClass = cfgUserAxis == NMPIAxis ? getTrueNMPIClass(multiplicity, mcCollision.nMPI()) : InvalidSeedClass;
+    fillOutputContainers<Gen>(multiplicity, fRndm->Rndm(), nMPIClass);
+
     fillContainerEvent(same, multiplicity, CorrelationContainer::kCFStepAll);
-    fillCorrelations<CorrelationContainer::kCFStepAll>(same, mcParticles1, mcParticles2, multiplicity, mcCollision.posZ(), 0, 1.0f);
+    fillCorrelations<CorrelationContainer::kCFStepAll>(same, mcParticles1, mcParticles2, multiplicity, mcCollision.posZ(), 0, 1.0f,
+                                                       nullptr, nullptr, nullptr, trueNMPIUserAxisValue);
 
     if (collisions.size() == 0) {
       return;
     }
 
     fillContainerEvent(same, multiplicity, CorrelationContainer::kCFStepVertex);
-    fillCorrelations<CorrelationContainer::kCFStepVertex>(same, mcParticles1, mcParticles2, multiplicity, mcCollision.posZ(), 0, 1.0f);
+    fillCorrelations<CorrelationContainer::kCFStepVertex>(same, mcParticles1, mcParticles2, multiplicity, mcCollision.posZ(), 0, 1.0f,
+                                                          nullptr, nullptr, nullptr, trueNMPIUserAxisValue);
 
     fillContainerEvent(same, multiplicity, CorrelationContainer::kCFStepTrackedOnlyPrim);
-    fillCorrelations<CorrelationContainer::kCFStepTrackedOnlyPrim>(same, mcParticles1, mcParticles2, multiplicity, mcCollision.posZ(), 0, 1.0f);
+    fillCorrelations<CorrelationContainer::kCFStepTrackedOnlyPrim>(same, mcParticles1, mcParticles2, multiplicity, mcCollision.posZ(), 0, 1.0f,
+                                                                   nullptr, nullptr, nullptr, trueNMPIUserAxisValue);
 
     fillContainerEvent(same, multiplicity, CorrelationContainer::kCFStepTracked);
-    fillCorrelations<CorrelationContainer::kCFStepTracked>(same, mcParticles1, mcParticles2, multiplicity, mcCollision.posZ(), 0, 1.0f);
+    fillCorrelations<CorrelationContainer::kCFStepTracked>(same, mcParticles1, mcParticles2, multiplicity, mcCollision.posZ(), 0, 1.0f,
+                                                           nullptr, nullptr, nullptr, trueNMPIUserAxisValue);
 
     // kCFStepReconstructed and kCFStepCorrected are filled below for every
     // reconstructed collision associated with this MC collision.
@@ -1818,6 +2512,9 @@ struct TwoParticleCorrelationsMpi {
   void processMCSameDerived(soa::Filtered<aod::CFMcCollisionsWithExtra>::iterator const& mcCollision, soa::Filtered<aod::CFMcParticles> const& mcParticles, soa::SmallGroups<aod::CFCollisionsWithLabel> const& collisions, soa::Filtered<aod::CFTracks> const& tracks) // TODO. For mixed no need to check the daughters since the events are different
   {
     processMCSameDerivedT(mcCollision, mcParticles, mcParticles, collisions);
+    if (cfgUserAxis == NMPIAxis) {
+      return;
+    }
     if (eventSeedEstimatorEnabled && collisions.size() == 0) {
       registry.fill(HIST("mcValidation/status"), 0.0);
     }
@@ -1833,7 +2530,7 @@ struct TwoParticleCorrelationsMpi {
   template <typename... ParticleTypes>
   void processMCMixedDerivedT(soa::Filtered<aod::CFMcCollisions> const& mcCollisions, soa::Filtered<aod::CFCollisionsWithLabel> const& collisions, ParticleTypes&&... particles)
   {
-    bool useMCMultiplicity = (cfgCentBinsForMC == 0);
+    bool useMCMultiplicity = (cfgGeneral.cfgCentBinsForMC == 0);
     auto getMultiplicity =
       [&collisions, &useMCMultiplicity, this](auto& col) {
         if (useMCMultiplicity) {

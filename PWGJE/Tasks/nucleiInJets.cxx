@@ -167,6 +167,26 @@ struct nucleiInJets {
   Configurable<bool> usebkgSubractionMC{"usebkgSubractionMC", true, "use rho-area background subtraction for detector-level matched MC jets"};
   Configurable<float> cfgjetPtBkgSubMinMC{"cfgjetPtBkgSubMinMC", 10.0f, "minimum detector-level matched MC jet pT after optional background subtraction"};
   Configurable<bool> useRapidityCutForPID{"useRapidityCutForPID", false, "true: use rapidity cut for PID, false: no rapidity cut for PID"};
+  Configurable<bool> isPOCollision{"isPOCollision", false, "true: use pO rapidity shift for inclusive PID/efficiency rapidity cuts; false: symmetric system, no rapidity shift"};
+  Configurable<double> cfgPORapidityShiftForPID{"cfgPORapidityShiftForPID", 0.0, "pO rapidity shift for inclusive PID/efficiency rapidity cuts: y_{CMS}=y_{lab}-shift. Set sign/value according to beam convention"};
+  Configurable<double> cfgPORapidityMinForPID{"cfgPORapidityMinForPID", -0.5, "minimum pO shifted rapidity for PID/efficiency cuts"};
+  Configurable<double> cfgPORapidityMaxForPID{"cfgPORapidityMaxForPID", 0.0, "maximum pO shifted rapidity for PID/efficiency cuts"};
+
+  double rapidityInSelectedFrame(double rapidityLab)
+  {
+    return isPOCollision ? rapidityLab - static_cast<double>(cfgPORapidityShiftForPID) : rapidityLab;
+  }
+
+  bool isRapiditySelectedForPID(double rapidityLab)
+  {
+    const double rap = rapidityInSelectedFrame(rapidityLab);
+    if (isPOCollision) {
+      const double rapMin = std::min(static_cast<double>(cfgPORapidityMinForPID), static_cast<double>(cfgPORapidityMaxForPID));
+      const double rapMax = std::max(static_cast<double>(cfgPORapidityMinForPID), static_cast<double>(cfgPORapidityMaxForPID));
+      return rap > rapMin && rap < rapMax;
+    }
+    return std::abs(rap) < std::abs(static_cast<double>(cfgtrkMaxRap));
+  }
 
   Configurable<bool> addpik{"addpik", true, "add pion and kaon hist"};
   ConfigurableAxis binsDCA{"binsDCA", {400, -1.f, 1.f}, ""};
@@ -239,6 +259,7 @@ struct nucleiInJets {
     const AxisSpec dcazAxis{binsDCA, "DCAz (cm)"};
     const AxisSpec dedxAxis{binsdEdx, "d#it{E}/d#it{x} A.U."};
     const AxisSpec vzAxis{300, -15.f, 15.f, "Vz (cm)"};
+    const AxisSpec EtaAxis{40, -1.f, 1.f, "#eta"};
 
     const AxisSpec betaAxis{binsBeta, "TOF #beta"};
     const AxisSpec ptZHeAxis{binsPtZHe, "#it{p}_{T}"};
@@ -729,6 +750,12 @@ struct nucleiInJets {
       jetHist.add<TH3>("eff/recmatched/pt/PtParticleTypeTPCTOF", "Pt (p) vs jetflag vs particletype", HistType::kTH3D, {{PtAxis}, {2, 0, 2}, {14, -7, 7}});
       jetHist.add<TH3>("eff/recmatched/pt/PtParticleTypeTPCTOFVeto", "Pt (p) vs jetflag vs particletype", HistType::kTH3D, {{PtAxis}, {2, 0, 2}, {14, -7, 7}});
 
+      jetHist.add<TH3>("eff/recmatched/jetCone/ptEta/PtEtaParticleType", "rec matched jet cone; #it{p}_{T}^{true} (GeV/#it{c}); #eta^{true}; particle type", HistType::kTH3D, {{PtAxis}, {EtaAxis}, {14, -7, 7}});
+      jetHist.add<TH3>("eff/recmatched/jetCone/ptEta/PtEtaParticleTypeTPC", "rec matched jet cone TPC; #it{p}_{T}^{true} (GeV/#it{c}); #eta^{true}; particle type", HistType::kTH3D, {{PtAxis}, {EtaAxis}, {14, -7, 7}});
+      jetHist.add<TH3>("eff/recmatched/jetCone/ptEta/PtEtaParticleTypeTOF", "rec matched jet cone TOF; #it{p}_{T}^{true} (GeV/#it{c}); #eta^{true}; particle type", HistType::kTH3D, {{PtAxis}, {EtaAxis}, {14, -7, 7}});
+      jetHist.add<TH3>("eff/recmatched/jetCone/ptEta/PtEtaParticleTypeTPCTOF", "rec matched jet cone TPC+TOF; #it{p}_{T}^{true} (GeV/#it{c}); #eta^{true}; particle type", HistType::kTH3D, {{PtAxis}, {EtaAxis}, {14, -7, 7}});
+      jetHist.add<TH3>("eff/recmatched/jetCone/ptEta/PtEtaParticleTypeTPCTOFVeto", "rec matched jet cone TPC+TOF veto; #it{p}_{T}^{true} (GeV/#it{c}); #eta^{true}; particle type", HistType::kTH3D, {{PtAxis}, {EtaAxis}, {14, -7, 7}});
+
       jetHist.add<TH2>("eff/recmatched/perpCone/pt/PtParticleType", "Pt (p) vs particletype", HistType::kTH2D, {{PtAxis}, {14, -7, 7}});
       jetHist.add<TH3>("eff/recmatched/perpCone/mcC/pt/PtParticleType", "Pt (rec) vs Pt (true) vs particletype", HistType::kTH3D, {{PtAxis}, {PtAxis}, {14, -7, 7}});
       jetHist.add<TH3>("eff/recmatched/perpCone/mcCSpectra/pt/PtParticleType", "Pt (rec) vs Pt (true) vs particletype", HistType::kTH3D, {{PtAxis}, {PtAxis}, {14, -7, 7}});
@@ -736,8 +763,15 @@ struct nucleiInJets {
       jetHist.add<TH2>("eff/recmatched/perpCone/pt/PtParticleTypeTOF", "Pt (p) vs particletype", HistType::kTH2D, {{PtAxis}, {14, -7, 7}});
       jetHist.add<TH2>("eff/recmatched/perpCone/pt/PtParticleTypeTPCTOF", "Pt (p) vs particletype", HistType::kTH2D, {{PtAxis}, {14, -7, 7}});
       jetHist.add<TH2>("eff/recmatched/perpCone/pt/PtParticleTypeTPCTOFVeto", "Pt (p) vs particletype", HistType::kTH2D, {{PtAxis}, {14, -7, 7}});
+      jetHist.add<TH3>("eff/recmatched/perpCone/ptEta/PtEtaParticleType", "rec matched perpendicular cone; #it{p}_{T}^{true} (GeV/#it{c}); #eta^{true}; particle type", HistType::kTH3D, {{PtAxis}, {EtaAxis}, {14, -7, 7}});
+      jetHist.add<TH3>("eff/recmatched/perpCone/ptEta/PtEtaParticleTypeTPC", "rec matched perpendicular cone TPC; #it{p}_{T}^{true} (GeV/#it{c}); #eta^{true}; particle type", HistType::kTH3D, {{PtAxis}, {EtaAxis}, {14, -7, 7}});
+      jetHist.add<TH3>("eff/recmatched/perpCone/ptEta/PtEtaParticleTypeTOF", "rec matched perpendicular cone TOF; #it{p}_{T}^{true} (GeV/#it{c}); #eta^{true}; particle type", HistType::kTH3D, {{PtAxis}, {EtaAxis}, {14, -7, 7}});
+      jetHist.add<TH3>("eff/recmatched/perpCone/ptEta/PtEtaParticleTypeTPCTOF", "rec matched perpendicular cone TPC+TOF; #it{p}_{T}^{true} (GeV/#it{c}); #eta^{true}; particle type", HistType::kTH3D, {{PtAxis}, {EtaAxis}, {14, -7, 7}});
+      jetHist.add<TH3>("eff/recmatched/perpCone/ptEta/PtEtaParticleTypeTPCTOFVeto", "rec matched perpendicular cone TPC+TOF veto; #it{p}_{T}^{true} (GeV/#it{c}); #eta^{true}; particle type", HistType::kTH3D, {{PtAxis}, {EtaAxis}, {14, -7, 7}});
       jetHist.add<TH3>("eff/recmatched/gen/pt/PtParticleType", "Pt (p) vs jetflag vs particletype", HistType::kTH3D, {{PtAxis}, {2, 0, 2}, {14, -7, 7}});
+      jetHist.add<TH3>("eff/recmatched/gen/jetCone/ptEta/PtEtaParticleType", "generated jet cone; #it{p}_{T}^{true} (GeV/#it{c}); #eta^{true}; particle type", HistType::kTH3D, {{PtAxis}, {EtaAxis}, {14, -7, 7}});
       jetHist.add<TH2>("eff/recmatched/gen/perpCone/pt/PtParticleType", "Pt (p) vs particletype", HistType::kTH2D, {{PtAxis}, {14, -7, 7}});
+      jetHist.add<TH3>("eff/recmatched/gen/perpCone/ptEta/PtEtaParticleType", "generated perpendicular cone; #it{p}_{T}^{true} (GeV/#it{c}); #eta^{true}; particle type", HistType::kTH3D, {{PtAxis}, {EtaAxis}, {14, -7, 7}});
       jetHist.add<TH3>("eff/recmatched/mcC/gen/pt/PtParticleType", "Pt (gen, mcC) vs jetflag vs particletype", HistType::kTH3D, {{PtAxis}, {2, 0, 2}, {14, -7, 7}});
       jetHist.add<TH3>("eff/recmatched/mcCSpectra/gen/pt/PtParticleType", "Pt (gen, mcCSpectra) vs jetflag vs particletype", HistType::kTH3D, {{PtAxis}, {2, 0, 2}, {14, -7, 7}});
       jetHist.add<TH2>("eff/recmatched/mcC/gen/perpCone/pt/PtParticleType", "Pt (gen, mcC, perp cone) vs particletype", HistType::kTH2D, {{PtAxis}, {14, -7, 7}});
@@ -791,7 +825,7 @@ struct nucleiInJets {
   }
 
   template <typename TrackType>
-  bool isTrackSelectedWithoutDcaxy(const TrackType track)
+  bool isTrackSelectedWithoutDcaxy(const TrackType& track)
   {
     // standard track selection
     if (track.pt() < cfgtrkMinPt)
@@ -822,7 +856,7 @@ struct nucleiInJets {
   }
 
   template <typename TrackType>
-  bool isTrackSelected(const TrackType track)
+  bool isTrackSelected(const TrackType& track)
   {
     if (!isTrackSelectedWithoutDcaxy(track))
       return false;
@@ -860,7 +894,7 @@ struct nucleiInJets {
     if (isWithLeadingJet) {
       double delPhi = TVector2::Phi_mpi_pi(leadingJetPtEtaPhi[2] - trk.phi());
       double delEta = leadingJetPtEtaPhi[1] - trk.eta();
-      double R = RecoDecay::sumOfSquares(delEta, delPhi);
+      double R = RecoDecay::sqrtSumOfSquares(delEta, delPhi);
       if (R < cfgjetR)
         jetFlag = true;
       jetPt = leadingJetPtEtaPhi[0];
@@ -868,15 +902,15 @@ struct nucleiInJets {
       std::array<float, 2> perpConePhiJet = getPerpendicuarPhi(leadingJetPtEtaPhi[2]);
       double delPhiPerpCone1 = TVector2::Phi_mpi_pi(perpConePhiJet[0] - trk.phi());
       double delPhiPerpCone2 = TVector2::Phi_mpi_pi(perpConePhiJet[1] - trk.phi());
-      double RPerpCone1 = RecoDecay::sumOfSquares(delEta, delPhiPerpCone1);
-      double RPerpCone2 = RecoDecay::sumOfSquares(delEta, delPhiPerpCone2);
+      double RPerpCone1 = RecoDecay::sqrtSumOfSquares(delEta, delPhiPerpCone1);
+      double RPerpCone2 = RecoDecay::sqrtSumOfSquares(delEta, delPhiPerpCone2);
       if (RPerpCone1 < cfgjetR || RPerpCone2 < cfgjetR)
         jetFlagPerpCone = true;
     } else {
       for (auto const& jet : jets) {
         double delPhi = TVector2::Phi_mpi_pi(jet.phi() - trk.phi());
         double delEta = jet.eta() - trk.eta();
-        double R = RecoDecay::sumOfSquares(delEta, delPhi);
+        double R = RecoDecay::sqrtSumOfSquares(delEta, delPhi);
         if (R < cfgjetR)
           jetFlag = true;
         jetPt = jet.pt();
@@ -1192,11 +1226,11 @@ struct nucleiInJets {
           jetHist.fill(HIST("tracks/antiDeuteron/dca/after/hDCAxyVsPtantiDeuteron_jet"), trk.dcaXY(), trk.pt());
           jetHist.fill(HIST("tracks/antiDeuteron/dca/after/hDCAzVsPtantiDeuteron_jet"), trk.dcaZ(), trk.pt());
         }
-        if (cEnableHeliumQA && std::abs(trk.tpcNSigmaTr()) < cfgnTPCPIDTr) {
+        if (cEnableTritonQA && std::abs(trk.tpcNSigmaTr()) < cfgnTPCPIDTr) {
           jetHist.fill(HIST("tracks/antiTriton/dca/after/hDCAxyVsPtantiTriton_jet"), trk.dcaXY(), trk.pt());
           jetHist.fill(HIST("tracks/antiTriton/dca/after/hDCAzVsPtantiTriton_jet"), trk.dcaZ(), trk.pt());
         }
-        if (cEnableTritonQA && std::abs(trk.tpcNSigmaHe()) < cfgnTPCPIDHe) {
+        if (cEnableHeliumQA && std::abs(trk.tpcNSigmaHe()) < cfgnTPCPIDHe) {
           jetHist.fill(HIST("tracks/antiHelium/dca/after/hDCAxyVsPtantiHelium_jet"), trk.dcaXY(), trk.pt());
           jetHist.fill(HIST("tracks/antiHelium/dca/after/hDCAzVsPtantiHelium_jet"), trk.dcaZ(), trk.pt());
         }
@@ -1556,11 +1590,11 @@ struct nucleiInJets {
           jetHist.fill(HIST("tracks/antiDeuteron/dca/after/hDCAxyVsPtantiDeuteron"), trk.dcaXY(), trk.pt());
           jetHist.fill(HIST("tracks/antiDeuteron/dca/after/hDCAzVsPtantiDeuteron"), trk.dcaZ(), trk.pt());
         }
-        if (cEnableHeliumQA && std::abs(trk.tpcNSigmaHe()) < cfgnTPCPIDHe) {
+        if (cEnableTritonQA && std::abs(trk.tpcNSigmaTr()) < cfgnTPCPIDTr) {
           jetHist.fill(HIST("tracks/antiTriton/dca/after/hDCAxyVsPtantiTriton"), trk.dcaXY(), trk.pt());
           jetHist.fill(HIST("tracks/antiTriton/dca/after/hDCAzVsPtantiTriton"), trk.dcaZ(), trk.pt());
         }
-        if (cEnableTritonQA && std::abs(trk.tpcNSigmaHe()) < cfgnTPCPIDHe) {
+        if (cEnableHeliumQA && std::abs(trk.tpcNSigmaHe()) < cfgnTPCPIDHe) {
           jetHist.fill(HIST("tracks/antiHelium/dca/after/hDCAxyVsPtantiHelium"), trk.dcaXY(), trk.pt());
           jetHist.fill(HIST("tracks/antiHelium/dca/after/hDCAzVsPtantiHelium"), trk.dcaZ(), trk.pt());
         }
@@ -1829,8 +1863,7 @@ struct nucleiInJets {
       }
 
       auto rapidityData = [&](float m2z) {
-        const float rap = trk.rapidity(m2z);
-        return rap < std::abs(cfgtrkMaxRap);
+        return isRapiditySelectedForPID(trk.rapidity(m2z));
       };
 
       auto prRapidityWithinRange = rapidityData(o2::constants::physics::MassProton);
@@ -2110,7 +2143,7 @@ struct nucleiInJets {
         continue;
       if (std::fabs(mcParticle.eta()) > cfgtrkMaxEta)
         continue;
-      if (std::fabs(mcParticle.y()) > cfgtrkMaxRap)
+      if (!isRapiditySelectedForPID(mcParticle.y()))
         continue;
 
       bool jetFlag = false;
@@ -2307,13 +2340,10 @@ struct nucleiInJets {
       auto mcTrack = track.mcParticle_as<aod::JetParticles>();
       if (!mcTrack.isPhysicalPrimary())
         continue;
-      if (std::fabs(mcTrack.y()) > cfgtrkMaxRap)
+      if (!isRapiditySelectedForPID(mcTrack.y()))
         continue;
 
       bool isTof(completeTrack.hasTOF());
-      bool isTOFAndTPCPreSel(completeTrack.hasTOF() &&
-                             (std::abs(completeTrack.tpcNSigmaPr()) < cfgnTPCPIDPrTOF || std::abs(completeTrack.tpcNSigmaDe()) < cfgnTPCPIDDeTOF ||
-                              std::abs(completeTrack.tpcNSigmaHe()) < cfgnTPCPIDHeTOF || std::abs(completeTrack.tpcNSigmaTr()) < cfgnTPCPIDTrTOF));
 
       bool jetFlag = false;
       bool jetFlagPerpCone = false;
@@ -2343,44 +2373,88 @@ struct nucleiInJets {
         }
       } // jet
 
-      if (mapPDGToValue(mcTrack.pdgCode()) != 0) {
-        bool isTpcPassed(true); // why is this always true?
-        jetHist.fill(HIST("eff/recmatched/pt/PtParticleType"), mcTrack.pt(), jetFlag, mapPDGToValue(mcTrack.pdgCode()));
+      const auto particleType = mapPDGToValue(mcTrack.pdgCode());
+      if (particleType != 0) {
+        bool isTpcPassed = true;
+        bool isTOFAndTPCPreSel = isTof;
+        switch (std::abs(particleType)) {
+          case Particle::kProton:
+            isTpcPassed = std::abs(completeTrack.tpcNSigmaPr()) < cfgnTPCPIDPr;
+            isTOFAndTPCPreSel = isTof && std::abs(completeTrack.tpcNSigmaPr()) < cfgnTPCPIDPrTOF;
+            break;
+          case Particle::kDeuteron:
+            isTpcPassed = std::abs(completeTrack.tpcNSigmaDe()) < cfgnTPCPIDDe;
+            isTOFAndTPCPreSel = isTof && std::abs(completeTrack.tpcNSigmaDe()) < cfgnTPCPIDDeTOF;
+            break;
+          case Particle::kTriton:
+            isTpcPassed = std::abs(completeTrack.tpcNSigmaTr()) < cfgnTPCPIDTr;
+            isTOFAndTPCPreSel = isTof && std::abs(completeTrack.tpcNSigmaTr()) < cfgnTPCPIDTrTOF;
+            break;
+          case Particle::kHelium:
+            isTpcPassed = std::abs(completeTrack.tpcNSigmaHe()) < cfgnTPCPIDHe;
+            isTOFAndTPCPreSel = isTof && std::abs(completeTrack.tpcNSigmaHe()) < cfgnTPCPIDHeTOF;
+            break;
+          default:
+            break;
+        }
+        jetHist.fill(HIST("eff/recmatched/pt/PtParticleType"), mcTrack.pt(), jetFlag, particleType);
         if (useMcC) {
           if (useDataLikeHist)
-            jetHist.fill(HIST("eff/recmatched/mcC/pt/PtParticleType"), track.pt(), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()));
+            jetHist.fill(HIST("eff/recmatched/mcC/pt/PtParticleType"), track.pt(), mcTrack.pt(), particleType);
           else
-            jetHist.fill(HIST("eff/recmatched/mcCSpectra/pt/PtParticleType"), track.pt(), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()));
+            jetHist.fill(HIST("eff/recmatched/mcCSpectra/pt/PtParticleType"), track.pt(), mcTrack.pt(), particleType);
         }
         if (isTpcPassed)
-          jetHist.fill(HIST("eff/recmatched/pt/PtParticleTypeTPC"), mcTrack.pt(), jetFlag, mapPDGToValue(mcTrack.pdgCode()));
+          jetHist.fill(HIST("eff/recmatched/pt/PtParticleTypeTPC"), mcTrack.pt(), jetFlag, particleType);
         if (isTof)
-          jetHist.fill(HIST("eff/recmatched/pt/PtParticleTypeTOF"), mcTrack.pt(), jetFlag, mapPDGToValue(mcTrack.pdgCode()));
+          jetHist.fill(HIST("eff/recmatched/pt/PtParticleTypeTOF"), mcTrack.pt(), jetFlag, particleType);
         if (isTOFAndTPCPreSel) {
-          jetHist.fill(HIST("eff/recmatched/pt/PtParticleTypeTPCTOF"), mcTrack.pt(), jetFlag, mapPDGToValue(mcTrack.pdgCode()));
-          jetHist.fill(HIST("eff/recmatched/pt/PtParticleTypeTPCTOFVeto"), mcTrack.pt(), jetFlag, mapPDGToValue(mcTrack.pdgCode()));
+          jetHist.fill(HIST("eff/recmatched/pt/PtParticleTypeTPCTOF"), mcTrack.pt(), jetFlag, particleType);
+          jetHist.fill(HIST("eff/recmatched/pt/PtParticleTypeTPCTOFVeto"), mcTrack.pt(), jetFlag, particleType);
         } else {
-          jetHist.fill(HIST("eff/recmatched/pt/PtParticleTypeTPCTOFVeto"), mcTrack.pt(), jetFlag, mapPDGToValue(mcTrack.pdgCode()));
+          jetHist.fill(HIST("eff/recmatched/pt/PtParticleTypeTPCTOFVeto"), mcTrack.pt(), jetFlag, particleType);
+        }
+
+        if (jetFlag) {
+          jetHist.fill(HIST("eff/recmatched/jetCone/ptEta/PtEtaParticleType"), mcTrack.pt(), mcTrack.eta(), particleType);
+          if (isTpcPassed)
+            jetHist.fill(HIST("eff/recmatched/jetCone/ptEta/PtEtaParticleTypeTPC"), mcTrack.pt(), mcTrack.eta(), particleType);
+          if (isTof)
+            jetHist.fill(HIST("eff/recmatched/jetCone/ptEta/PtEtaParticleTypeTOF"), mcTrack.pt(), mcTrack.eta(), particleType);
+          if (isTOFAndTPCPreSel) {
+            jetHist.fill(HIST("eff/recmatched/jetCone/ptEta/PtEtaParticleTypeTPCTOF"), mcTrack.pt(), mcTrack.eta(), particleType);
+            jetHist.fill(HIST("eff/recmatched/jetCone/ptEta/PtEtaParticleTypeTPCTOFVeto"), mcTrack.pt(), mcTrack.eta(), particleType);
+          } else {
+            jetHist.fill(HIST("eff/recmatched/jetCone/ptEta/PtEtaParticleTypeTPCTOFVeto"), mcTrack.pt(), mcTrack.eta(), particleType);
+          }
         }
 
         if (jetFlagPerpCone) {
-          jetHist.fill(HIST("eff/recmatched/perpCone/pt/PtParticleType"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()));
+          jetHist.fill(HIST("eff/recmatched/perpCone/pt/PtParticleType"), mcTrack.pt(), particleType);
+          jetHist.fill(HIST("eff/recmatched/perpCone/ptEta/PtEtaParticleType"), mcTrack.pt(), mcTrack.eta(), particleType);
           if (useMcC) {
             if (useDataLikeHist)
-              jetHist.fill(HIST("eff/recmatched/perpCone/mcC/pt/PtParticleType"), track.pt(), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()));
+              jetHist.fill(HIST("eff/recmatched/perpCone/mcC/pt/PtParticleType"), track.pt(), mcTrack.pt(), particleType);
             else
-              jetHist.fill(HIST("eff/recmatched/perpCone/mcCSpectra/pt/PtParticleType"), track.pt(), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()));
+              jetHist.fill(HIST("eff/recmatched/perpCone/mcCSpectra/pt/PtParticleType"), track.pt(), mcTrack.pt(), particleType);
           }
-          if (isTpcPassed)
-            jetHist.fill(HIST("eff/recmatched/perpCone/pt/PtParticleTypeTPC"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()));
-          if (isTof)
-            jetHist.fill(HIST("eff/recmatched/perpCone/pt/PtParticleTypeTOF"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()));
+          if (isTpcPassed) {
+            jetHist.fill(HIST("eff/recmatched/perpCone/pt/PtParticleTypeTPC"), mcTrack.pt(), particleType);
+            jetHist.fill(HIST("eff/recmatched/perpCone/ptEta/PtEtaParticleTypeTPC"), mcTrack.pt(), mcTrack.eta(), particleType);
+          }
+          if (isTof) {
+            jetHist.fill(HIST("eff/recmatched/perpCone/pt/PtParticleTypeTOF"), mcTrack.pt(), particleType);
+            jetHist.fill(HIST("eff/recmatched/perpCone/ptEta/PtEtaParticleTypeTOF"), mcTrack.pt(), mcTrack.eta(), particleType);
+          }
           if (isTOFAndTPCPreSel) {
-            jetHist.fill(HIST("eff/recmatched/perpCone/pt/PtParticleTypeTPCTOF"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()));
-            jetHist.fill(HIST("eff/recmatched/perpCone/pt/PtParticleTypeTPCTOFVeto"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()));
+            jetHist.fill(HIST("eff/recmatched/perpCone/pt/PtParticleTypeTPCTOF"), mcTrack.pt(), particleType);
+            jetHist.fill(HIST("eff/recmatched/perpCone/ptEta/PtEtaParticleTypeTPCTOF"), mcTrack.pt(), mcTrack.eta(), particleType);
+            jetHist.fill(HIST("eff/recmatched/perpCone/pt/PtParticleTypeTPCTOFVeto"), mcTrack.pt(), particleType);
+            jetHist.fill(HIST("eff/recmatched/perpCone/ptEta/PtEtaParticleTypeTPCTOFVeto"), mcTrack.pt(), mcTrack.eta(), particleType);
+          } else {
+            jetHist.fill(HIST("eff/recmatched/perpCone/pt/PtParticleTypeTPCTOFVeto"), mcTrack.pt(), particleType);
+            jetHist.fill(HIST("eff/recmatched/perpCone/ptEta/PtEtaParticleTypeTPCTOFVeto"), mcTrack.pt(), mcTrack.eta(), particleType);
           }
-        } else {
-          jetHist.fill(HIST("eff/recmatched/perpCone/pt/PtParticleTypeTPCTOFVeto"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()));
         }
       }
     } // tracks
@@ -2391,7 +2465,7 @@ struct nucleiInJets {
         continue;
       if (std::fabs(mcParticle.eta()) > cfgtrkMaxEta)
         continue;
-      if (std::fabs(mcParticle.y()) > cfgtrkMaxRap)
+      if (!isRapiditySelectedForPID(mcParticle.y()))
         continue;
       bool jetFlagMC = false;
       bool jetFlagPerpConeMC = false;
@@ -2421,22 +2495,27 @@ struct nucleiInJets {
         }
       } // jet
 
-      if (mapPDGToValue(mcParticle.pdgCode()) != 0) {
-        jetHist.fill(HIST("eff/recmatched/gen/pt/PtParticleType"), mcParticle.pt(), jetFlagMC, mapPDGToValue(mcParticle.pdgCode()));
+      const auto particleType = mapPDGToValue(mcParticle.pdgCode());
+      if (particleType != 0) {
+        jetHist.fill(HIST("eff/recmatched/gen/pt/PtParticleType"), mcParticle.pt(), jetFlagMC, particleType);
+        if (jetFlagMC) {
+          jetHist.fill(HIST("eff/recmatched/gen/jetCone/ptEta/PtEtaParticleType"), mcParticle.pt(), mcParticle.eta(), particleType);
+        }
         if (useMcC) {
           if (useDataLikeHist) {
-            jetHist.fill(HIST("eff/recmatched/mcC/gen/pt/PtParticleType"), mcParticle.pt(), jetFlagMC, mapPDGToValue(mcParticle.pdgCode()));
+            jetHist.fill(HIST("eff/recmatched/mcC/gen/pt/PtParticleType"), mcParticle.pt(), jetFlagMC, particleType);
           } else {
-            jetHist.fill(HIST("eff/recmatched/mcCSpectra/gen/pt/PtParticleType"), mcParticle.pt(), jetFlagMC, mapPDGToValue(mcParticle.pdgCode()));
+            jetHist.fill(HIST("eff/recmatched/mcCSpectra/gen/pt/PtParticleType"), mcParticle.pt(), jetFlagMC, particleType);
           }
         }
         if (jetFlagPerpConeMC) {
-          jetHist.fill(HIST("eff/recmatched/gen/perpCone/pt/PtParticleType"), mcParticle.pt(), mapPDGToValue(mcParticle.pdgCode()));
+          jetHist.fill(HIST("eff/recmatched/gen/perpCone/pt/PtParticleType"), mcParticle.pt(), particleType);
+          jetHist.fill(HIST("eff/recmatched/gen/perpCone/ptEta/PtEtaParticleType"), mcParticle.pt(), mcParticle.eta(), particleType);
           if (useMcC) {
             if (useDataLikeHist) {
-              jetHist.fill(HIST("eff/recmatched/mcC/gen/perpCone/pt/PtParticleType"), mcParticle.pt(), mapPDGToValue(mcParticle.pdgCode()));
+              jetHist.fill(HIST("eff/recmatched/mcC/gen/perpCone/pt/PtParticleType"), mcParticle.pt(), particleType);
             } else {
-              jetHist.fill(HIST("eff/recmatched/mcCSpectra/gen/perpCone/pt/PtParticleType"), mcParticle.pt(), mapPDGToValue(mcParticle.pdgCode()));
+              jetHist.fill(HIST("eff/recmatched/mcCSpectra/gen/perpCone/pt/PtParticleType"), mcParticle.pt(), particleType);
             }
           }
         }
@@ -2555,7 +2634,6 @@ struct nucleiInJets {
   void processRecInc(EventTableMC::iterator const& coll, TrackCandidatesIncMC const& tracks, aod::JetParticles const& particleTracks, aod::JMcCollisions const&)
   {
     jetHist.fill(HIST("recInc/eventStat"), 0.5);
-
     bool isSel8 = jetderiveddatautilities::selectCollision(coll, jetderiveddatautilities::initialiseEventSelectionBits("sel8"));
     bool isSelNoSameBunchPileup = jetderiveddatautilities::selectCollision(coll, jetderiveddatautilities::initialiseEventSelectionBits("NoSameBunchPileup"));
     bool isSelIsGoodZvtxFT0vsPV = jetderiveddatautilities::selectCollision(coll, jetderiveddatautilities::initialiseEventSelectionBits("IsGoodZvtxFT0vsPV"));
@@ -2643,9 +2721,7 @@ struct nucleiInJets {
 
       // auto mass = TDatabasePDG::Instance()->GetParticle(abs(mcTrack.pdgCode()))->Mass();
       // auto rapidity = RecoDecay::y(std::array{track.px(), track.py(), track.pz()}, mass);
-      auto rapidity = mcTrack.y();
-
-      if (std::abs(rapidity) > cfgtrkMaxRap)
+      if (!isRapiditySelectedForPID(mcTrack.y()))
         continue;
       // Proton
       if (std::abs(mcTrack.pdgCode()) == 2212) { // Proton
@@ -2727,7 +2803,7 @@ struct nucleiInJets {
         continue;
       if (std::fabs(mcParticle.eta()) > cfgtrkMaxEta && useEtaSelForEffDen)
         continue;
-      if (std::fabs(mcParticle.y()) > cfgtrkMaxRap)
+      if (!isRapiditySelectedForPID(mcParticle.y()))
         continue;
 
       if (mapPDGToValue(mcParticle.pdgCode()) != 0) {
@@ -2833,7 +2909,7 @@ struct nucleiInJets {
       // Apply kinematic cuts similar to track selection
       if (std::fabs(mcParticle.eta()) > cfgtrkMaxEta)
         continue;
-      if (std::fabs(mcParticle.y()) > cfgtrkMaxRap)
+      if (!isRapiditySelectedForPID(mcParticle.y()))
         continue;
 
       int particleType = mapPDGToValue(mcParticle.pdgCode());

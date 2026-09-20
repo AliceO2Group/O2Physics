@@ -150,6 +150,26 @@ DECLARE_SOA_DYNAMIC_COLUMN(NSigmaOuterTOF, nSigmaOuterTOF, //! General function 
                              }
                            });
 
+DECLARE_SOA_COLUMN(NSigmaSplusInnerTOF, nSigmaSplusInnerTOF, float);   //! NSigma Sigma plus InnerTOF
+DECLARE_SOA_COLUMN(NSigmaSminusInnerTOF, nSigmaSminusInnerTOF, float); //! NSigma Sigma minus InnerTOF
+DECLARE_SOA_COLUMN(NSigmaXiInnerTOF, nSigmaXiInnerTOF, float);         //! NSigma Xi InnerTOF
+DECLARE_SOA_COLUMN(NSigmaOmegaInnerTOF, nSigmaOmegaInnerTOF, float);   //! NSigma Omega InnerTOF
+
+DECLARE_SOA_COLUMN(NSigmaSplusOuterTOF, nSigmaSplusOuterTOF, float);   //! NSigma Sigma plus OuterTOF
+DECLARE_SOA_COLUMN(NSigmaSminusOuterTOF, nSigmaSminusOuterTOF, float); //! NSigma Sigma minus OuterTOF
+DECLARE_SOA_COLUMN(NSigmaXiOuterTOF, nSigmaXiOuterTOF, float);         //! NSigma Xi OuterTOF
+DECLARE_SOA_COLUMN(NSigmaOmegaOuterTOF, nSigmaOmegaOuterTOF, float);   //! NSigma Omega OuterTOF
+
+DECLARE_SOA_COLUMN(InnerTOFExpectedTimeSp, innerTOFExpectedTimeSp, float); //! Reconstructed expected time at the InnerTOF for the Sigma plus mass hypotheses
+DECLARE_SOA_COLUMN(InnerTOFExpectedTimeSm, innerTOFExpectedTimeSm, float); //! Reconstructed expected time at the InnerTOF for the Sigma minus mass hypotheses
+DECLARE_SOA_COLUMN(InnerTOFExpectedTimeXi, innerTOFExpectedTimeXi, float); //! Reconstructed expected time at the InnerTOF for the Xi mass hypotheses
+DECLARE_SOA_COLUMN(InnerTOFExpectedTimeOm, innerTOFExpectedTimeOm, float); //! Reconstructed expected time at the InnerTOF for the Omega mass hypotheses
+
+DECLARE_SOA_COLUMN(OuterTOFExpectedTimeSp, outerTOFExpectedTimeSp, float); //! Reconstructed expected time at the OuterTOF for the Sigma plus mass hypotheses
+DECLARE_SOA_COLUMN(OuterTOFExpectedTimeSm, outerTOFExpectedTimeSm, float); //! Reconstructed expected time at the OuterTOF for the Sigma minus mass hypotheses
+DECLARE_SOA_COLUMN(OuterTOFExpectedTimeXi, outerTOFExpectedTimeXi, float); //! Reconstructed expected time at the OuterTOF for the Xi mass hypotheses
+DECLARE_SOA_COLUMN(OuterTOFExpectedTimeOm, outerTOFExpectedTimeOm, float); //! Reconstructed expected time at the OuterTOF for the Omega mass hypotheses
+
 } // namespace upgrade_tof
 
 DECLARE_SOA_TABLE(UpgradeTofMCs, "AOD", "UPGRADETOFMC",
@@ -222,9 +242,28 @@ DECLARE_SOA_TABLE(UpgradeTofExpectedTimes, "AOD", "UPGRADETOFEXPT",
                   upgrade_tof::OuterTOFExpectedTimeHe3,
                   upgrade_tof::OuterTOFExpectedTimeAl);
 
+DECLARE_SOA_TABLE(UpgradeTofShortLiveds, "AOD", "UPGRTOFSHRTLVD",
+                  upgrade_tof::NSigmaSplusInnerTOF,
+                  upgrade_tof::NSigmaSminusInnerTOF,
+                  upgrade_tof::NSigmaXiInnerTOF,
+                  upgrade_tof::NSigmaOmegaInnerTOF,
+                  upgrade_tof::NSigmaSplusOuterTOF,
+                  upgrade_tof::NSigmaSminusOuterTOF,
+                  upgrade_tof::NSigmaXiOuterTOF,
+                  upgrade_tof::NSigmaOmegaOuterTOF,
+                  upgrade_tof::InnerTOFExpectedTimeSp,
+                  upgrade_tof::InnerTOFExpectedTimeSm,
+                  upgrade_tof::InnerTOFExpectedTimeXi,
+                  upgrade_tof::InnerTOFExpectedTimeOm,
+                  upgrade_tof::OuterTOFExpectedTimeSp,
+                  upgrade_tof::OuterTOFExpectedTimeSm,
+                  upgrade_tof::OuterTOFExpectedTimeXi,
+                  upgrade_tof::OuterTOFExpectedTimeOm);
+
 using UpgradeTofMC = UpgradeTofMCs::iterator;
 using UpgradeTof = UpgradeTofs::iterator;
 using UpgradeTofExpectedTime = UpgradeTofExpectedTimes::iterator;
+using UpgradeTofShortLived = UpgradeTofShortLiveds::iterator;
 
 } // namespace o2::aod
 

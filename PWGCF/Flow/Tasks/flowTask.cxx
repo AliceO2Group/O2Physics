@@ -861,7 +861,7 @@ struct FlowTask {
   }
 
   template <DataType dt, typename TTrack>
-  inline void fillPtSums(TTrack track, float weff)
+  inline void fillPtSums(const TTrack& track, float weff)
   {
     if (std::abs(track.eta()) < cfgEtaVnPt) {
       (dt == kGen) ? fFCptgen->fill(1., track.pt()) : fFCpt->fill(weff, track.pt());
@@ -986,7 +986,7 @@ struct FlowTask {
   }
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision, const int multTrk, const float centrality)
+  bool eventSelected(const TCollision& collision, const int multTrk, const float centrality)
   {
     registry.fill(HIST("hEventCountSpecific"), 0.5);
     if (cfgEvSelkNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
@@ -1109,7 +1109,7 @@ struct FlowTask {
   }
 
   template <typename TTrack>
-  bool trackSelected(TTrack track)
+  bool trackSelected(const TTrack& track)
   {
     if (cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutObs] && (std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxy->Eval(track.pt())))
       return false;
@@ -1119,7 +1119,7 @@ struct FlowTask {
   }
 
   template <typename TTrack>
-  bool trackSelectedForNch(TTrack track)
+  bool trackSelectedForNch(const TTrack& track)
   {
     if (cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutNch] && (std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxyForNch->Eval(track.pt())))
       return false;
@@ -1129,7 +1129,7 @@ struct FlowTask {
   }
 
   template <typename TTrack>
-  bool rejectionTPCoverlap(TTrack track, const int field)
+  bool rejectionTPCoverlap(const TTrack& track, const int field)
   {
     double phimodn = track.phi();
     if (field < 0) // for negative polarity field
@@ -1478,7 +1478,7 @@ struct FlowTask {
       registry.fill(HIST("hMeanPt"), independent, ptSum / weffEvent, weffEvent);
     }
     if (weffEventWithinGap08)
-      registry.fill(HIST("hMeanPtWithinGap08"), independent, ptSum_Gap08 / weffEventWithinGap08, 1.0);
+      registry.fill(HIST("hMeanPtWithinGap08"), independent, ptSum_Gap08 / weffEventWithinGap08, cfgUserIO.cfgUserPtVnEvWeightEnabled ? weffEventWithinGap08 : 1.);
     if (weffEventWithinGap08)
       bootstrapArray[sampleIndex][kMeanPtWithinGap08]->Fill(independent, ptSum_Gap08 / weffEventWithinGap08, 1.0);
     // c22_gap8 * pt_withGap8
@@ -1583,7 +1583,7 @@ struct FlowTask {
     }
 
     if (count_Gap08 > 0)
-      registry.fill(HIST("hMeanPtWithinGap08_MC"), independent, ptSum_Gap08 / count_Gap08, 1.0);
+      registry.fill(HIST("hMeanPtWithinGap08_MC"), independent, ptSum_Gap08 / count_Gap08, cfgUserIO.cfgUserPtVnEvWeightEnabled ? count_Gap08 : 1.);
     int sampleIndex = static_cast<int>(cfgNbootstrap * lRandom);
     if (count_Gap08 > 0)
       bootstrapArray[sampleIndex][kMeanPtWithinGap08_MC]->Fill(independent, ptSum_Gap08 / count_Gap08, 1.0);

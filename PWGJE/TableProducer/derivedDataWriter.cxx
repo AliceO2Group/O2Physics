@@ -22,11 +22,14 @@
 #include "PWGHF/DataModel/DerivedTables.h"
 #include "PWGJE/Core/JetDQUtilities.h"
 #include "PWGJE/Core/JetHFUtilities.h"
+#include "PWGJE/Core/JetV0Utilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/JetReducedDataDQ.h"
 #include "PWGJE/DataModel/JetReducedDataHF.h"
 #include "PWGJE/DataModel/JetReducedDataSelector.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/V0SelectorTables.h"
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisHelpers.h>
@@ -36,6 +39,8 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 #include <MathUtils/detail/TypeTruncation.h>
+
+#include <Rtypes.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -246,6 +251,12 @@ struct JetDerivedDataWriter {
       Produces<aod::StoredJDielectronMcIds> storedDielectronParticleIdsTable;
     } productsDielectron;
 
+    struct : ProducesGroup {
+      Produces<aod::StoredV0CoresBase> storedV0sTable;
+      Produces<aod::StoredJV0Ids> storedV0IdsTable;
+      Produces<aod::StoredV0SignalFlags> storedV0SignalFlagsTable;
+    } productsV0;
+
   } products;
 
   struct : PresliceGroup {
@@ -415,6 +426,17 @@ struct JetDerivedDataWriter {
     }
   }
 
+  template <typename T>
+  void storeV0(soa::Join<aod::JCollisions, aod::JCollisionSelections>::iterator const& collision, aod::JTracks const&, T const& V0Candidates)
+  {
+    if (collision.isCollisionSelected()) {
+      for (const auto& V0Candidate : V0Candidates) {
+        jetv0utilities::fillV0CandidateTable(V0Candidate, products.productsV0.storedV0sTable, products.productsV0.storedV0SignalFlagsTable);
+        products.productsV0.storedV0IdsTable(collisionMapping[collision.globalIndex()], trackMapping[V0Candidate.posTrackId()], trackMapping[V0Candidate.negTrackId()]);
+      }
+    }
+  }
+
   void processDummyTable(aod::JDummys const&)
   {
     products.storedJDummysTable(1);
@@ -519,7 +541,7 @@ struct JetDerivedDataWriter {
         std::copy(amplitudesFT0CSpan.begin(), amplitudesFT0CSpan.end(), std::back_inserter(amplitudesFT0C));
         std::copy(amplitudesFDDASpan.begin(), amplitudesFDDASpan.end(), std::back_inserter(amplitudesFDDA));
         std::copy(amplitudesFDDCSpan.begin(), amplitudesFDDCSpan.end(), std::back_inserter(amplitudesFDDC));
-        products.storedJCollisionUPCsTable(amplitudesFV0, amplitudesFT0A, amplitudesFT0C, amplitudesFDDA, amplitudesFDDC);
+        products.storedJCollisionUPCsTable(amplitudesFV0, amplitudesFT0A, amplitudesFT0C, amplitudesFDDA, amplitudesFDDC, collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC());
       }
     }
   }
@@ -668,6 +690,12 @@ struct JetDerivedDataWriter {
   }
   PROCESS_SWITCH(JetDerivedDataWriter, processXicToXiPiPiMCD, "write out mcd output tables for XicToXiPiPi", false);
 
+  void processV0Data(soa::Join<aod::JCollisions, aod::JCollisionSelections>::iterator const& collision, aod::JTracks const& tracks, aod::CandidatesV0Data const& V0Candidates)
+  {
+    storeV0(collision, tracks, V0Candidates);
+  }
+  PROCESS_SWITCH(JetDerivedDataWriter, processV0Data, "write out data output tables for V0", false);
+
   void processDielectron(soa::Join<aod::JCollisions, aod::JCollisionSelections>::iterator const& collision, aod::JTracks const&, aod::CollisionsDielectron const& DielectronCollisions, aod::CandidatesDielectronData const& DielectronCandidates)
   {
     if (collision.isCollisionSelected()) {
@@ -711,11 +739,11 @@ struct JetDerivedDataWriter {
 
         const auto particlesPerMcCollision = particles.sliceBy(preslices.ParticlesPerMcCollision, mcCollision.globalIndex());
 
-        for (auto particle : particlesPerMcCollision) {
+        for (const auto& particle : particlesPerMcCollision) {
           particleMapping[particle.globalIndex()] = particleTableIndex;
           particleTableIndex++;
         }
-        for (auto particle : particlesPerMcCollision) {
+        for (const auto& particle : particlesPerMcCollision) {
 
           std::vector<int32_t> mothersIds;
           int daughtersIds[2] = {-1, -1};

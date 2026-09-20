@@ -1000,7 +1000,7 @@ struct HfTaskFlow {
   // }
 
   template <typename TCollision>
-  int64_t getMultiplicityEstimator(TCollision collision, bool isSameEvent)
+  int64_t getMultiplicityEstimator(const TCollision& collision, bool isSameEvent)
   {
     switch (configCollision.multiplicityEstimator) {
       case MultiplicityEstimators::MultNTracksPV:
@@ -1228,7 +1228,7 @@ struct HfTaskFlow {
       LOGF(info, "Loaded efficiency histogram from %s (%p)", configTask.loadEfficienciesForTpc.value.c_str(), static_cast<void*>(mEfficiencyTpc));
     }
     if (configTask.loadEfficienciesForMft.value.empty() == false) {
-      mEfficiencyMft = ccdb->getForTimeStamp<TH3D>(configTask.loadEfficienciesForTpc, timestamp);
+      mEfficiencyMft = ccdb->getForTimeStamp<TH3D>(configTask.loadEfficienciesForMft, timestamp);
       if (mEfficiencyMft == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for MFT tracks from %s", configTask.loadEfficienciesForMft.value.c_str());
       }
@@ -1292,7 +1292,7 @@ struct HfTaskFlow {
   }
 
   template <typename TTracks>
-  double getCorrectedMultiplicity(TTracks tracks) // function to count the number of tracks in the event and fill the histogram
+  double getCorrectedMultiplicity(const TTracks& tracks) // function to count the number of tracks in the event and fill the histogram
   {
     auto trackCounter = 0;
     auto weightMultiplicity = 1.0f;

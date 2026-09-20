@@ -192,9 +192,9 @@ class reconstructedParticle
  public:
   // constructor/destructor
   reconstructedParticle() {}
-  explicit reconstructedParticle(std::string name, TLorentzVector ivm, std::vector<int>& comb)
+  explicit reconstructedParticle(std::string name, const TLorentzVector& ivm, std::vector<int>& comb)
   {
-    fName = name;
+    fName = std::move(name);
     fIVM = ivm;
     fComb = comb;
   };
@@ -219,7 +219,7 @@ class reconstructedEvent
   reconstructedEvent() {}
   explicit reconstructedEvent(recResType recs, int chargeState, std::vector<int>& comb)
   {
-    fRecs = recs;
+    fRecs = std::move(recs);
     fComb = comb;
     fChargeState = chargeState;
   };
@@ -250,7 +250,7 @@ class resonance
 
   void setisFinal() { fisFinal = true; }
   void setCounter(int counter) { fCounter = counter; }
-  void setName(std::string name) { fName = name; }
+  void setName(std::string name) { fName = std::move(name); }
   void setStatus(int status) { fStatus = status; }
   void setPID(int pid) { fPID = pid; }
   void setPIDFun(int pidfun) { fPIDfun = pidfun; }
@@ -259,9 +259,9 @@ class resonance
     fdetectorHits = std::vector<int>{its, tpc, trd, tof};
   }
   void clearParents() { fParents.clear(); }
-  void addParent(std::string parent) { fParents.push_back(parent); }
+  void addParent(const std::string& parent) { fParents.push_back(parent); }
   void setDaughters(std::vector<std::string>& daughters) { fDaughters = daughters; }
-  void setIVM(TLorentzVector ivm)
+  void setIVM(const TLorentzVector& ivm)
   {
     fIVM = ivm;
     fStatus = 1;
@@ -299,8 +299,8 @@ class resonance
     fdcaxyMax = dcaxymax;
     fdcazMax = dcazmax;
   }
-  void setPIDSelector(pidSelector pidcuts) { fpidSelector = pidcuts; }
-  void setAngleCuts(std::vector<angleCut*> anglecuts) { fangleCuts = anglecuts; }
+  void setPIDSelector(const pidSelector& pidcuts) { fpidSelector = pidcuts; }
+  void setAngleCuts(std::vector<angleCut*> anglecuts) { fangleCuts = std::move(anglecuts); }
 
   // histograms
   void setMassHistAxis(int nbins, double binmin, double binmax)
@@ -477,7 +477,7 @@ class decayTree
   // getters
   int nFinals() { return fnFinals; }
   std::vector<resonance*> getResonances() { return fResonances; }
-  resonance* getResonance(std::string name);
+  resonance* getResonance(const std::string& name);
   resonance* getFinal(int counter);
   std::vector<resonance*> getFinals(resonance* res);
   std::vector<int> ntrackRange() { return std::vector<int>{fnTracksMin, fnTracksMax}; }

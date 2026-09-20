@@ -376,7 +376,7 @@ void DelphesO2LutWriter::diagonalise(lutEntry_t& lutEntry)
   // m.Print();
   TMatrixDSymEigen eigen(m);
   // eigenvalues vector
-  TVectorD eigenVal = eigen.GetEigenValues();
+  const TVectorD& eigenVal = eigen.GetEigenValues();
   for (int i = 0; i < kEig; ++i)
     lutEntry.eigval[i] = eigenVal[i];
   // eigenvectors matrix

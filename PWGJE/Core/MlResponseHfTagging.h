@@ -34,10 +34,9 @@
 // Fill the map of available input features
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP_BJET(FEATURE)                                 \
-  {                                                            \
-    #FEATURE, static_cast<uint8_t>(InputFeaturesBTag::FEATURE) \
-  }
+#define FILL_MAP_BJET(FEATURE) \
+  {                            \
+    #FEATURE, static_cast<uint8_t>(InputFeaturesBTag::FEATURE)}
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
 // matches the entry in EnumInputFeatures associated to this FEATURE
@@ -424,7 +423,7 @@ class GNNBjetAllocator : public TensorAllocator
 
  public:
   GNNBjetAllocator() : TensorAllocator(), nJetFeat(4), nTrkFeat(13), nFlav(3), nTrkOrigin(5), maxNNodes(40), tfFunc([](float x) { return x; }) {}
-  GNNBjetAllocator(int64_t nJetFeat, int64_t nTrkFeat, int64_t nFlav, int64_t nTrkOrigin, std::vector<float>& tfJetMean, std::vector<float>& tfJetStdev, std::vector<float>& tfTrkMean, std::vector<float>& tfTrkStdev, int64_t maxNNodes = 40, std::string tfFuncType = "linear")
+  GNNBjetAllocator(int64_t nJetFeat, int64_t nTrkFeat, int64_t nFlav, int64_t nTrkOrigin, std::vector<float>& tfJetMean, std::vector<float>& tfJetStdev, std::vector<float>& tfTrkMean, std::vector<float>& tfTrkStdev, int64_t maxNNodes = 40, const std::string& tfFuncType = "linear")
     : TensorAllocator(), nJetFeat(nJetFeat), nTrkFeat(nTrkFeat), nFlav(nFlav), nTrkOrigin(nTrkOrigin), maxNNodes(maxNNodes), tfJetMean(tfJetMean), tfJetStdev(tfJetStdev), tfTrkMean(tfTrkMean), tfTrkStdev(tfTrkStdev), tfFunc([](float x) { return x; })
   {
     if (tfFuncType == "asinh") {

@@ -25,6 +25,7 @@
 #include "Common/Core/ZorroSummary.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 
@@ -203,8 +204,8 @@ struct HfTaskPidStudies {
   using PidTracks = soa::Join<aod::Tracks, aod::TracksExtra,
                               aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                               aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
-  using CollSels = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms>;
-  using CollisionsMc = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms>;
+  using CollSels = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Cs, aod::CentFT0Ms>;
+  using CollisionsMc = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults, aod::CentFT0Cs, aod::CentFT0Ms>;
   using V0sMcRec = soa::Join<aod::V0Datas, aod::V0MCCores>;
   using CascsMcRec = soa::Join<aod::CascDatas, aod::CascMCCores>;
 

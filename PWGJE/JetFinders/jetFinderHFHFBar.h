@@ -41,6 +41,7 @@
 #include <fastjet/JetDefinition.hh>
 #include <fastjet/PseudoJet.hh>
 
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -72,6 +73,8 @@ struct JetFinderHFHFBarTask {
   o2::framework::Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum track eta"};
   o2::framework::Configurable<float> trackPhiMin{"trackPhiMin", -999, "minimum track phi"};
   o2::framework::Configurable<float> trackPhiMax{"trackPhiMax", 999, "maximum track phi"};
+  o2::framework::Configurable<float> phiExclusionMin{"phiExclusionMin", -999, "minimum of phi exclusion region which is applied for tracks and for jets (jetR is added to the exclusion region for jets)"};
+  o2::framework::Configurable<float> phiExclusionMax{"phiExclusionMax", 999, "maximum of phi exclusion region which is applied for tracks and for jets (jetR is added to the exclusion region for jets)"};
   o2::framework::Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
   o2::framework::Configurable<std::string> particleSelections{"particleSelections", "PhysicalPrimary", "set particle selections"};
 
@@ -143,6 +146,13 @@ struct JetFinderHFHFBarTask {
       jetFinder.phiMin = -1.0 * M_PI;
       jetFinder.phiMax = 2.0 * M_PI;
     }
+    if (phiExclusionMin > -998.0) {
+      jetFinder.phiExclusionMin = phiExclusionMin;
+      jetFinder.phiExclusionMax = phiExclusionMax;
+      if (phiExclusionMin >= phiExclusionMax) {
+        throw std::runtime_error("Invalid phi exclusion range: require phiExclusionMin < phiExclusionMax when both are set.");
+      }
+    }
     jetFinder.jetPhiMin = jetPhiMin;
     jetFinder.jetPhiMax = jetPhiMax;
     if (jetPhiMin < -98.0) {
@@ -184,8 +194,8 @@ struct JetFinderHFHFBarTask {
   o2::aod::EMCALClusterDefinition clusterDefinition = o2::aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitionS.value);
   o2::framework::expressions::Filter collisionFilter = (nabs(o2::aod::jcollision::posZ) < vertexZCut && o2::aod::jcollision::centFT0M >= centralityMin && o2::aod::jcollision::centFT0M < centralityMax && o2::aod::jcollision::trackOccupancyInTimeRange <= trackOccupancyInTimeRangeMax);
   o2::framework::expressions::Filter mcCollisionFilter = (nabs(o2::aod::jmccollision::posZ) < vertexZCut);
-  o2::framework::expressions::Filter trackCuts = (o2::aod::jtrack::pt >= trackPtMin && o2::aod::jtrack::pt < trackPtMax && o2::aod::jtrack::eta >= trackEtaMin && o2::aod::jtrack::eta <= trackEtaMax && o2::aod::jtrack::phi >= trackPhiMin && o2::aod::jtrack::phi <= trackPhiMax);
-  o2::framework::expressions::Filter partCuts = (o2::aod::jmcparticle::pt >= trackPtMin && o2::aod::jmcparticle::pt < trackPtMax && o2::aod::jmcparticle::eta >= trackEtaMin && o2::aod::jmcparticle::eta <= trackEtaMax && o2::aod::jmcparticle::phi >= trackPhiMin && o2::aod::jmcparticle::phi <= trackPhiMax);
+  o2::framework::expressions::Filter trackCuts = (o2::aod::jtrack::pt >= trackPtMin && o2::aod::jtrack::pt < trackPtMax && o2::aod::jtrack::eta >= trackEtaMin && o2::aod::jtrack::eta <= trackEtaMax && o2::aod::jtrack::phi >= trackPhiMin && o2::aod::jtrack::phi <= trackPhiMax && (phiExclusionMin < -998.0 || (o2::aod::jtrack::phi <= phiExclusionMin || o2::aod::jtrack::phi >= phiExclusionMax)));
+  o2::framework::expressions::Filter partCuts = (o2::aod::jmcparticle::pt >= trackPtMin && o2::aod::jmcparticle::pt < trackPtMax && o2::aod::jmcparticle::eta >= trackEtaMin && o2::aod::jmcparticle::eta <= trackEtaMax && o2::aod::jmcparticle::phi >= trackPhiMin && o2::aod::jmcparticle::phi <= trackPhiMax && (phiExclusionMin < -998.0 || (o2::aod::jmcparticle::phi <= phiExclusionMin || o2::aod::jmcparticle::phi >= phiExclusionMax)));
   o2::framework::expressions::Filter clusterFilter = (o2::aod::jcluster::definition == static_cast<int>(clusterDefinition) && o2::aod::jcluster::eta >= clusterEtaMin && o2::aod::jcluster::eta <= clusterEtaMax && o2::aod::jcluster::phi >= clusterPhiMin && o2::aod::jcluster::phi <= clusterPhiMax && o2::aod::jcluster::energy >= clusterEnergyMin && o2::aod::jcluster::time > clusterTimeMin && o2::aod::jcluster::time < clusterTimeMax && (clusterRejectExotics && o2::aod::jcluster::isExotic != true));
   // o2::framework::expressions::Filter candidateCuts = (o2::aod::hfcand::pt >= candPtMin && o2::aod::hfcand::pt < candPtMax && o2::aod::hfcand::y >= candYMin && o2::aod::hfcand::y < candYMax);
 

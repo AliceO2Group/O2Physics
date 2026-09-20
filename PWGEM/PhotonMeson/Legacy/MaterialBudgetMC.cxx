@@ -131,7 +131,7 @@ struct MaterialBudgetMC {
         auto* list_pair_subsys_photoncut = dynamic_cast<THashList*>(list_pair_subsys->FindObject(photon_cut_name.data()));
 
         for (const auto& cut3 : cuts3) {
-          std::string pair_cut_name = cut3.getName();
+          std::string const& pair_cut_name = cut3.getName();
           o2::aod::pwgem::photon::histogram::AddHistClass(list_pair_subsys_photoncut, pair_cut_name.data());
           auto* list_pair_subsys_paircut = dynamic_cast<THashList*>(list_pair_subsys_photoncut->FindObject(pair_cut_name.data()));
           o2::aod::pwgem::photon::histogram::DefineHistograms(list_pair_subsys_paircut, "material_budget_study", "Pair");

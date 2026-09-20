@@ -322,7 +322,7 @@ struct efficiencyQA {
   }
 
   template <class T, class Hist>
-  void fillHistTrack(T const& track, std::shared_ptr<Hist> hist, float const& y, float const& z = 1)
+  void fillHistTrack(T const& track, const std::shared_ptr<Hist>& hist, float const& y, float const& z = 1)
   {
     bool itsAccept = !(track.itsChi2NCl() > 36. || track.itsNCls() < 4);
     bool tpcAccept = !(track.tpcCrossedRowsOverFindableCls() < 0.8 || track.tpcNClsCrossedRows() < 70 || track.tpcChi2NCl() > 4. || track.tpcNClsFound() < 90);
@@ -347,7 +347,7 @@ struct efficiencyQA {
   }
 
   template <class T>
-  void fillHistTrack(T const& track, std::shared_ptr<THnBase> hist, float const& y, float const& z = 1, float const& t = 1)
+  void fillHistTrack(T const& track, const std::shared_ptr<THnBase>& hist, float const& y, float const& z = 1, float const& t = 1)
   {
     bool itsAccept = !(track.itsChi2NCl() > 36. || track.itsNCls() < 4);
     bool tpcAccept = !(track.tpcCrossedRowsOverFindableCls() < 0.8 || track.tpcNClsCrossedRows() < 70 || track.tpcChi2NCl() > 4. || track.tpcNClsFound() < 90);

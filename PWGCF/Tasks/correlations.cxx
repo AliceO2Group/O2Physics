@@ -13,6 +13,8 @@
 /// \brief task for the correlation calculations with CF-filtered tracks for O2 analysis
 /// \author Jan Fiete Grosse-Oetringhaus <jan.fiete.grosse-oetringhaus@cern.ch>, Jasper Parkkila <jasper.parkkila@cern.ch>
 
+// o2-linter: disable=name/workflow-file (preserve the established workflow filename and executable name)
+
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/Core/PairCuts.h"
 #include "PWGCF/DataModel/CorrelationsDerived.h"
@@ -26,6 +28,7 @@
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
 #include <DataFormatsParameters/GRPObject.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -45,7 +48,6 @@
 #include <TFile.h>
 #include <TFormula.h>
 #include <THn.h>
-#include <TMath.h>
 #include <TVector2.h>
 
 #include <sys/types.h>
@@ -71,7 +73,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace constants::math;
 
-#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
+#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP}; // NOLINT(bugprone-macro-parentheses)
 
 // NOTE This is a nice idea but will again make it impossible to use subwagon configurations...
 // namespace o2::aod
@@ -84,7 +86,7 @@ using namespace constants::math;
 //                   cfcorreff::Correction);
 // } // namespace o2::aod
 
-static constexpr float kCfgPairCutDefaults[1][5] = {{-1, -1, -1, -1, -1}};
+static constexpr std::array<std::array<float, 5>, 1> kCfgPairCutDefaults = {{{-1, -1, -1, -1, -1}}}; // o2-linter: disable=name/constexpr-constant (preserve the established identifier)
 
 struct CorrelationTask {
   SliceCache cache;
@@ -105,15 +107,17 @@ struct CorrelationTask {
   O2_DEFINE_CONFIGURABLE(cfgLocalEfficiency, int, 0, "0 = OFF and 1 = ON for local efficiency");
   O2_DEFINE_CONFIGURABLE(cfgDropStepRECO, bool, false, "choice to drop step RECO if efficiency correction is used")
   O2_DEFINE_CONFIGURABLE(cfgCentBinsForMC, int, 0, "0 = OFF and 1 = ON for data like multiplicity/centrality bins for MC steps");
+  O2_DEFINE_CONFIGURABLE(cfgRequireRecoCollision, int, 1, "0 = all generated collisions; 1 = only generated collisions with exactly 1 reconstructed collision; 2 = select reconstructed collision with largest number of contributors per generated collision")
   O2_DEFINE_CONFIGURABLE(cfgTrackBitMask, uint16_t, 0, "BitMask for track selection systematics; refer to the enum TrackSelectionCuts in filtering task");
   O2_DEFINE_CONFIGURABLE(cfgMultCorrelationsMask, uint16_t, 0, "Selection bitmask for the multiplicity correlations. This should match the filter selection cfgEstimatorBitMask.")
   O2_DEFINE_CONFIGURABLE(cfgMultCutFormula, std::string, "", "Multiplicity correlations cut formula. A result greater than zero results in accepted event. Parameters: [cFT0C] FT0C centrality, [mFV0A] V0A multiplicity, [mGlob] global track multiplicity, [mPV] PV track multiplicity, [cFT0M] FT0M centrality")
 
   // Suggested values: Photon: 0.004; K0 and Lambda: 0.005
-  Configurable<LabeledArray<float>> cfgPairCut{"cfgPairCut", {kCfgPairCutDefaults[0], 5, {"Photon", "K0", "Lambda", "Phi", "Rho"}}, "Pair cuts on various particles"};
+  Configurable<LabeledArray<float>> cfgPairCut{"cfgPairCut", {kCfgPairCutDefaults.front().data(), 5, {"Photon", "K0", "Lambda", "Phi", "Rho"}}, "Pair cuts on various particles"};
 
   O2_DEFINE_CONFIGURABLE(cfgEfficiencyTrigger, std::string, "", "CCDB path to efficiency object for trigger particles")
   O2_DEFINE_CONFIGURABLE(cfgEfficiencyAssociated, std::string, "", "CCDB path to efficiency object for associated particles")
+  O2_DEFINE_CONFIGURABLE(cfgUseRun3MagField, bool, false, "false: Run 2 GRPObject; true: Run 3 GRPMagField")
 
   O2_DEFINE_CONFIGURABLE(cfgNoMixedEvents, int, 5, "Number of mixed events per event")
   O2_DEFINE_CONFIGURABLE(cfgRejectMixedPhiProngEvents, bool, true, "Reject associated hadrons from either mixed-phi prong event")
@@ -173,7 +177,7 @@ struct CorrelationTask {
   std::vector<int> p2indexCache;
 
   std::unique_ptr<TFormula> multCutFormula;
-  std::array<uint, aod::cfmultset::NMultiplicityEstimators> multCutFormulaParamIndex;
+  std::array<uint, aod::cfmultset::NMultiplicityEstimators> multCutFormulaParamIndex{};
 
   struct Config {
     bool mPairCuts = false;
@@ -185,7 +189,9 @@ struct CorrelationTask {
   HistogramRegistry registry{"registry"};
   PairCuts mPairCuts;
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
+  int mCachedRunNumber{-1}; // cached run number for magnetic field -- to avoid re-fetching the magnetic field for the same run, assuming that the magnetic field remains the same for the same run
+  int mCachedMagField{0};   // cached magnetic field --reduces number of calls to the CCDB
 
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>>;
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>;
@@ -193,15 +199,27 @@ struct CorrelationTask {
   using DerivedCollisions = soa::Filtered<aod::CFCollisions>;
   using DerivedTracks = soa::Filtered<aod::CFTracks>;
 
+  enum RecoCollisionSelection {
+    AllGeneratedCollisions = 0,
+    RequireOneRecoCollision,
+    RequireBestRecoCollision
+  };
+
   void init(o2::framework::InitContext&)
   {
+    if (cfgRequireRecoCollision < 0 || cfgRequireRecoCollision > RecoCollisionSelection::RequireBestRecoCollision) {
+      LOGF(fatal, "Unsupported cfgRequireRecoCollision=%d; use 0 (no reco. collision required), 1 (exactly one reco. collision required), 2 (at least one. reco, and best reco. collision selected)", cfgRequireRecoCollision.value);
+    }
     if (doprocessSame2ProngDerivedML || doprocessSame2Prong2ProngML || doprocessMixed2ProngDerivedML || doprocessMixed2Prong2ProngML || doprocessMCEfficiency2ProngML || doprocessMCReflection2ProngML) {
-      if (cfgPtDepMLbkg->empty() || cfgPtCentDepMLbkgSel->empty())
+      if (cfgPtDepMLbkg->empty() || cfgPtCentDepMLbkgSel->empty()) {
         LOGF(fatal, "cfgPtDepMLbkg or cfgPtCentDepMLbkgSel can not be empty when ML 2-prong selections are used.");
-      if (cfgPtDepMLbkg->size() != cfgPtCentDepMLbkgSel->size())
+      }
+      if (cfgPtDepMLbkg->size() != cfgPtCentDepMLbkgSel->size()) {
         LOGF(fatal, "cfgPtDepMLbkg and cfgPtCentDepMLbkgSel must be same size.");
-      if (!cfgPtCentDepMLpromptSel->empty() && cfgPtCentDepMLpromptSel->size() != cfgPtDepMLbkg->size())
+      }
+      if (!cfgPtCentDepMLpromptSel->empty() && cfgPtCentDepMLpromptSel->size() != cfgPtDepMLbkg->size()) {
         LOGF(fatal, "cfgPtDepMLbkg and cfgPtCentDepMLpromptSel must be same size.");
+      }
     }
     registry.add("yields", "multiplicity/centrality vs pT vs eta", {HistType::kTH3F, {{100, 0, 100, "/multiplicity/centrality"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
     registry.add("etaphi", "multiplicity/centrality vs eta vs phi", {HistType::kTH3F, {{100, 0, 100, "multiplicity/centrality"}, {100, -2, 2, "#eta"}, {200, 0, o2::constants::math::TwoPI, "#varphi"}}});
@@ -224,19 +242,25 @@ struct CorrelationTask {
       registry.add("invMassReflected", "2-prong invariant mass (GeV/c^2)", {HistType::kTH3F, {axisSpecMass, axisPtTrigger, axisMultiplicity}});
     }
     if (doprocessSameDerivedMultSet) {
-      if (cfgMultCorrelationsMask == 0)
+      if (cfgMultCorrelationsMask == 0) {
         LOGF(fatal, "cfgMultCorrelationsMask can not be 0 when MultSet process functions are in use.");
+      }
       std::vector<AxisSpec> multAxes;
-      if (cfgMultCorrelationsMask & aod::cfmultset::CentFT0C)
+      if (cfgMultCorrelationsMask & aod::cfmultset::CentFT0C) {
         multAxes.emplace_back(axisMultCorrCent, "FT0C centrality");
-      if (cfgMultCorrelationsMask & aod::cfmultset::MultFV0A)
+      }
+      if (cfgMultCorrelationsMask & aod::cfmultset::MultFV0A) {
         multAxes.emplace_back(axisMultCorrV0, "V0A multiplicity");
-      if (cfgMultCorrelationsMask & aod::cfmultset::MultNTracksPV)
+      }
+      if (cfgMultCorrelationsMask & aod::cfmultset::MultNTracksPV) {
         multAxes.emplace_back(axisMultCorrMult, "Nch PV");
-      if (cfgMultCorrelationsMask & aod::cfmultset::MultNTracksGlobal)
+      }
+      if (cfgMultCorrelationsMask & aod::cfmultset::MultNTracksGlobal) {
         multAxes.emplace_back(axisMultCorrMult, "Nch Global");
-      if (cfgMultCorrelationsMask & aod::cfmultset::CentFT0M)
+      }
+      if (cfgMultCorrelationsMask & aod::cfmultset::CentFT0M) {
         multAxes.emplace_back(axisMultCorrCent, "FT0M centrality");
+      }
       registry.add("multCorrelations", "Multiplicity correlations", {HistType::kTHnSparseF, multAxes});
     }
     registry.add("multiplicity", "event multiplicity", {HistType::kTH1F, {{1000, 0, 100, "/multiplicity/centrality"}}});
@@ -302,10 +326,12 @@ struct CorrelationTask {
       userAxis.emplace_back(axisInvMass, "m (GeV/c^2)");
       userMixingAxis.emplace_back(axisInvMass, "m (GeV/c^2)");
     }
-    if (doprocessSame2Prong2Prong || doprocessSame2Prong2ProngML)
+    if (doprocessSame2Prong2Prong || doprocessSame2Prong2ProngML) {
       userAxis.emplace_back(axisInvMass, "m (GeV/c^2)");
-    if (doprocessMixed2Prong2Prong || doprocessMixed2Prong2ProngML)
+    }
+    if (doprocessMixed2Prong2Prong || doprocessMixed2Prong2ProngML) {
       userMixingAxis.emplace_back(axisInvMass, "m (GeV/c^2)");
+    }
 
     same.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, userAxis));
     mixed.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, userMixingAxis));
@@ -313,12 +339,14 @@ struct CorrelationTask {
     same->setTrackEtaCut(cfgCutEta);
     mixed->setTrackEtaCut(cfgCutEta);
 
-    if (!cfgEfficiencyAssociated.value.empty())
+    if (!cfgEfficiencyAssociated.value.empty()) {
       efficiencyAssociatedCache.reserve(512);
+    }
     if (doprocessMCEfficiency2Prong || doprocessMCEfficiency2ProngML || doprocessMCReflection2ProngML) {
       p2indexCache.reserve(16);
-      if (cfgMcTriggerPDGs->empty())
+      if (cfgMcTriggerPDGs->empty()) {
         LOGF(fatal, "At least one PDG code in {} is to be selected to process 2-prong efficiency.", cfgMcTriggerPDGs.name);
+      }
     }
 
     // o2-ccdb-upload -p Users/jgrosseo/correlations/LHC15o -f /tmp/correction_2011_global.root -k correction
@@ -331,21 +359,32 @@ struct CorrelationTask {
     ccdb->setCreatedNotAfter(now); // TODO must become global parameter from the train creation time
   }
 
-  int getMagneticField(uint64_t timestamp)
+  int getMagneticField(int runNumber, uint64_t timestamp)
   {
-    // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
-    static o2::parameters::GRPObject* grpo = nullptr;
-    // static o2::parameters::GRPMagField* grpo = nullptr;
-    if (grpo == nullptr) {
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
-      // grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", timestamp);
-      if (grpo == nullptr) {
-        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
-        return 0;
-      }
-      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
+    static constexpr const char* kGRPPathRun2 = "GLO/GRP/GRP";            // fixed path for now, can be made into a config
+    static constexpr const char* kGRPPathRun3 = "GLO/Config/GRPMagField"; // fixed path for now, can be made into a config
+
+    if (runNumber == mCachedRunNumber) {
+      return mCachedMagField;
     }
-    return grpo->getNominalL3Field();
+
+    if (cfgUseRun3MagField) {
+      auto* grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(kGRPPathRun3, timestamp);
+      if (grpmag == nullptr) {
+        LOGF(fatal, "Run 3 GRPMagField not found at %s for run %d timestamp %llu", kGRPPathRun3, runNumber, timestamp);
+      }
+      mCachedMagField = grpmag->getNominalL3Field();
+    } else {
+      auto* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(kGRPPathRun2, timestamp);
+      if (grpo == nullptr) {
+        LOGF(fatal, "Run 2 GRPObject not found at %s for run %d timestamp %llu", kGRPPathRun2, runNumber, timestamp);
+      }
+      mCachedMagField = grpo->getNominalL3Field();
+    }
+
+    mCachedRunNumber = runNumber;
+    LOGF(info, "Run %d: magnetic field %d kG", runNumber, mCachedMagField);
+    return mCachedMagField;
   }
 
   template <class p2typeIterator>
@@ -372,8 +411,9 @@ struct CorrelationTask {
   {
     registry.fill(HIST("multiplicity"), multiplicity);
     if constexpr (std::experimental::is_detected<HasMultSet, TCollision>::value) {
-      if (std::popcount(cfgMultCorrelationsMask.value) != static_cast<int>(collision.multiplicities().size()))
+      if (std::popcount(cfgMultCorrelationsMask.value) != static_cast<int>(collision.multiplicities().size())) {
         LOGF(fatal, "Multiplicity selections (cfgMultCorrelationsMask = 0x%x) do not match the size of the table column (%ld). The histogram filling relies on the preservation of order.", cfgMultCorrelationsMask.value, collision.multiplicities().size());
+      }
       // need to convert to vec of doubles since THnSparse has no way to fill vec of floats directly
       std::vector<double> v(collision.multiplicities().begin(), collision.multiplicities().end());
       registry.get<THnSparse>(HIST("multCorrelations")).get()->Fill(v.data());
@@ -394,21 +434,25 @@ struct CorrelationTask {
   {
     for (const auto& track1 : tracks1) {
       if constexpr (std::experimental::is_detected<HasInvMass, typename TTracks1::iterator>::value && std::experimental::is_detected<HasDecay, typename TTracks1::iterator>::value) {
-        if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>(track1.decay()))) == 0u)
+        if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>(track1.decay()))) == 0u) {
           continue;
+        }
         if constexpr (std::experimental::is_detected<HasMlProbD0, typename TTracks1::iterator>::value) {
-          if (!passMLScore(track1))
+          if (!passMLScore(track1)) {
             continue;
+          }
         }
         registry.fill(HIST("invMass"), track1.invMass(), track1.pt(), multiplicity, posZ);
         for (const auto& track2 : tracks2) {
           if constexpr (std::experimental::is_detected<HasInvMass, typename TTracks2::iterator>::value && std::experimental::is_detected<HasDecay, typename TTracks2::iterator>::value) {
             if (doprocessSame2Prong2Prong || doprocessMixed2Prong2Prong || doprocessSame2Prong2ProngML || doprocessMixed2Prong2ProngML) {
-              if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>(track1.decay()))) == 0u)
+              if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>(track1.decay()))) == 0u) {
                 continue;
+              }
               if constexpr (std::experimental::is_detected<HasMlProbD0, typename TTracks2::iterator>::value) {
-                if (!passMLScore(track2))
+                if (!passMLScore(track2)) {
                   continue;
+                }
               }
 
               if constexpr (std::experimental::is_detected<HasProng0Id, typename TTracks1::iterator>::value) {
@@ -437,12 +481,14 @@ struct CorrelationTask {
                 }
               } // no shared prong for two mothers
 
-              if (cfgCorrelationMethod == 1 && track1.decay() != track2.decay())
+              if (cfgCorrelationMethod == 1 && track1.decay() != track2.decay()) {
                 continue;
-              if (cfgCorrelationMethod == 2 && track1.decay() == track2.decay())
+              }
+              if (cfgCorrelationMethod == 2 && track1.decay() == track2.decay()) { // o2-linter: disable=magic-number (value is the established ddbar correlation-method mode)
                 continue;
+              }
               registry.fill(HIST("invMassTwoPart"), track1.invMass(), track2.invMass(), track1.pt(), track2.pt(), multiplicity);
-              registry.fill(HIST("invMassTwoPartDPhi"), track1.invMass(), track2.invMass(), track1.pt(), track2.pt(), TVector2::Phi_0_2pi(track1.phi() - track2.phi() + TMath::Pi() / 2.0) - TMath::Pi() / 2.0);
+              registry.fill(HIST("invMassTwoPartDPhi"), track1.invMass(), track2.invMass(), track1.pt(), track2.pt(), TVector2::Phi_0_2pi(track1.phi() - track2.phi() + PIHalf) - PIHalf);
               if (std::abs(track1.phi() - track2.phi()) < constants::math::PI * 0.5) {
                 registry.fill(HIST("invMassTwoPartDEta"), track1.invMass(), track2.invMass(), track1.pt(), track2.pt(), track1.eta() - track2.eta());
               }
@@ -451,8 +497,9 @@ struct CorrelationTask {
         }
       }
       if constexpr (std::experimental::is_detected<HasPDGCode, typename TTracks1::iterator>::value) {
-        if (!cfgMcTriggerPDGs->empty() && std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), track1.pdgCode()) == cfgMcTriggerPDGs->end())
+        if (!cfgMcTriggerPDGs->empty() && std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), track1.pdgCode()) == cfgMcTriggerPDGs->end()) {
           continue;
+        }
       }
       registry.fill(HIST("yieldsTrigger"), multiplicity, track1.pt(), track1.eta());
       registry.fill(HIST("etaphiTrigger"), multiplicity, track1.eta(), track1.phi());
@@ -461,7 +508,7 @@ struct CorrelationTask {
   }
 
   template <typename TTarget, typename TCollision>
-  bool fillCollisionAOD(TTarget target, TCollision collision, float multiplicity)
+  bool fillCollisionAOD(TTarget target, const TCollision& collision, float multiplicity)
   {
     target->fillEvent(multiplicity, CorrelationContainer::kCFStepAll);
 
@@ -521,11 +568,13 @@ struct CorrelationTask {
   template <class CollType>
   bool passOutlier(CollType const& collision)
   {
-    if (cfgMultCutFormula.value.empty())
+    if (cfgMultCutFormula.value.empty()) {
       return true;
+    }
     for (uint i = 0; i < aod::cfmultset::NMultiplicityEstimators; ++i) {
-      if ((cfgMultCorrelationsMask.value & (1u << i)) == 0 || multCutFormulaParamIndex[i] == ~0u)
+      if ((cfgMultCorrelationsMask.value & (1u << i)) == 0 || multCutFormulaParamIndex[i] == ~0u) {
         continue;
+      }
       auto estIndex = std::popcount(cfgMultCorrelationsMask.value & ((1u << i) - 1));
       multCutFormula->SetParameter(multCutFormulaParamIndex[i], collision.multiplicities()[estIndex]);
     }
@@ -535,8 +584,9 @@ struct CorrelationTask {
   template <typename T>
   std::tuple<bool, float> getV0Rapidity(const T& track)
   {
-    if constexpr (!std::experimental::is_detected<HasDecay, T>::value)
+    if constexpr (!std::experimental::is_detected<HasDecay, T>::value) {
       return {false, 0.0f}; // no decay type, return dummy rapidity
+    }
     const auto decayType = track.decay();
     float mass = 0.f;
 
@@ -560,7 +610,7 @@ struct CorrelationTask {
 
     const float p2 = px * px + py * py + pz * pz;
 
-    const float E = std::sqrt(p2 + mass * mass);
+    const float E = std::sqrt(p2 + mass * mass); // o2-linter: disable=name/function-variable (E is the conventional symbol for particle energy)
     return {true, 0.5f * std::log((E + pz) / (E - pz))};
   }
 
@@ -591,45 +641,52 @@ struct CorrelationTask {
       if constexpr (std::experimental::is_detected<HasPDGCode, typename TTracks1::iterator>::value) {
         // If the MC trigger particle is on the trigger PDG code list, we will accept them regardless of their charge.
         if (!cfgMcTriggerPDGs->empty()) {
-          if (std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), track1.pdgCode()) == cfgMcTriggerPDGs->end())
+          if (std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), track1.pdgCode()) == cfgMcTriggerPDGs->end()) {
             continue;
+          }
         } else { // otherwise check the sign against the configuration
           if (cfgTriggerCharge != 0) {
-            if (cfgTriggerCharge * track1.sign() < 0)
+            if (cfgTriggerCharge * track1.sign() < 0) {
               continue;
+            }
           } else if (track1.sign() == 0) {
             continue; // reject neutral MC particles
           }
         }
       } else if constexpr (std::experimental::is_detected<HasSign, typename TTracks1::iterator>::value) {
         // Check reco objects that have the sign attribute. There are no neutrals to deal with.
-        if (cfgTriggerCharge != 0 && cfgTriggerCharge * track1.sign() < 0)
+        if (cfgTriggerCharge != 0 && cfgTriggerCharge * track1.sign() < 0) {
           continue;
+        }
       }
 
       if constexpr (std::experimental::is_detected<HasMcDecay, typename TTracks1::iterator>::value) {
-        if (((track1.mcDecay() != aod::cf2prongtrack::D0ToPiK) && (track1.mcDecay() != aod::cf2prongtrack::D0barToKPiExclusive)) || (!cfgPtCentDepMLpromptSel->empty() && (track1.decay() & aod::cf2prongmcpart::Prompt) == 0))
+        if (((track1.mcDecay() != aod::cf2prongtrack::D0ToPiK) && (track1.mcDecay() != aod::cf2prongtrack::D0barToKPiExclusive)) || (!cfgPtCentDepMLpromptSel->empty() && (track1.decay() & aod::cf2prongmcpart::Prompt) == 0)) {
           continue;
+        }
       } else if constexpr (std::experimental::is_detected<HasDecay, typename TTracks1::iterator>::value) {
         if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>(track1.decay()))) == 0u) {
           continue; // skip particles that do not match the decay mask
         }
         if (cfgV0RapidityMax > 0) {
           auto [t, y] = getV0Rapidity(track1);
-          if (t && std::abs(y) > cfgV0RapidityMax)
+          if (t && std::abs(y) > cfgV0RapidityMax) {
             continue; // V0s are not allowed to be outside the rapidity range
+          }
           registry.fill(HIST("yvspt"), y, track1.pt());
         }
       }
 
       if constexpr (std::experimental::is_detected<HasPartDaugh0Id, typename TTracks1::iterator>::value) {
-        if (track1.cfParticleDaugh0Id() < 0 && track1.cfParticleDaugh1Id() < 0)
+        if (track1.cfParticleDaugh0Id() < 0 && track1.cfParticleDaugh1Id() < 0) {
           continue; // these we could not match
+        }
       }
 
       if constexpr (std::experimental::is_detected<HasMlProbD0, typename TTracks1::iterator>::value) {
-        if (!passMLScore(track1))
+        if (!passMLScore(track1)) {
           continue;
+        }
       } // ML selection
 
       float triggerWeight = eventWeight;
@@ -640,9 +697,9 @@ struct CorrelationTask {
       }
 
       if (cfgMassAxis) {
-        if constexpr (std::experimental::is_detected<HasInvMass, typename TTracks1::iterator>::value)
+        if constexpr (std::experimental::is_detected<HasInvMass, typename TTracks1::iterator>::value) {
           target->getTriggerHist()->Fill(step, track1.pt(), multiplicity, posZ, track1.invMass(), triggerWeight);
-        else if constexpr (std::experimental::is_detected<HasPDGCode, typename TTracks1::iterator>::value) {
+        } else if constexpr (std::experimental::is_detected<HasPDGCode, typename TTracks1::iterator>::value) {
           // TParticlePDG *p = pdg->GetParticle(track1.pdgCode());
           // target->getTriggerHist()->Fill(step, track1.pt(), multiplicity, posZ, p->Mass(), triggerWeight);
           target->getTriggerHist()->Fill(step, track1.pt(), multiplicity, posZ, 1.8, triggerWeight);
@@ -684,26 +741,31 @@ struct CorrelationTask {
         }
 
         if constexpr (std::experimental::is_detected<HasPDGCode, typename TTracks2::iterator>::value) { // skip those that are specifically chosen to be triggers
-          if (!cfgMcTriggerPDGs->empty() && std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), track2.pdgCode()) != cfgMcTriggerPDGs->end())
+          if (!cfgMcTriggerPDGs->empty() && std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), track2.pdgCode()) != cfgMcTriggerPDGs->end()) {
             continue; // TODO: fix cases like MC D0-D0
+          }
         }
 
         // Daughter track and particle checks
         if constexpr (std::experimental::is_detected<HasProng0Id, typename TTracks1::iterator>::value) {
-          if (track2.globalIndex() == track1.cfTrackProng0Id()) // do not correlate daughter tracks of the same event
+          if (track2.globalIndex() == track1.cfTrackProng0Id()) { // do not correlate daughter tracks of the same event
             continue;
+          }
         }
         if constexpr (std::experimental::is_detected<HasProng1Id, typename TTracks1::iterator>::value) {
-          if (track2.globalIndex() == track1.cfTrackProng1Id()) // do not correlate daughter tracks of the same event
+          if (track2.globalIndex() == track1.cfTrackProng1Id()) { // do not correlate daughter tracks of the same event
             continue;
+          }
         }
         if constexpr (std::experimental::is_detected<HasPartDaugh0Id, typename TTracks1::iterator>::value) {
-          if (track2.globalIndex() == track1.cfParticleDaugh0Id()) // do not correlate daughter particles of the same event
+          if (track2.globalIndex() == track1.cfParticleDaugh0Id()) { // do not correlate daughter particles of the same event
             continue;
+          }
         }
         if constexpr (std::experimental::is_detected<HasPartDaugh1Id, typename TTracks1::iterator>::value) {
-          if (track2.globalIndex() == track1.cfParticleDaugh1Id()) // do not correlate daughter particles of the same event
+          if (track2.globalIndex() == track1.cfParticleDaugh1Id()) { // do not correlate daughter particles of the same event
             continue;
+          }
         }
 
         if constexpr (step <= CorrelationContainer::kCFStepTracked && !std::experimental::is_detected<HasDecay, typename TTracks2::iterator>::value) {
@@ -714,8 +776,9 @@ struct CorrelationTask {
 
         // If decay attributes are found for the second track/particle, we assume 2p-2p correlation
         if constexpr (std::experimental::is_detected<HasMcDecay, typename TTracks2::iterator>::value) {
-          if ((((track2.mcDecay()) != aod::cf2prongtrack::D0ToPiK) && ((track2.mcDecay()) != aod::cf2prongtrack::D0barToKPiExclusive)) || (!cfgPtCentDepMLpromptSel->empty() && (track2.decay() & aod::cf2prongmcpart::Prompt) == 0))
+          if ((((track2.mcDecay()) != aod::cf2prongtrack::D0ToPiK) && ((track2.mcDecay()) != aod::cf2prongtrack::D0barToKPiExclusive)) || (!cfgPtCentDepMLpromptSel->empty() && (track2.decay() & aod::cf2prongmcpart::Prompt) == 0)) {
             continue;
+          }
         } else if constexpr (std::experimental::is_detected<HasDecay, typename TTracks2::iterator>::value) {
           if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>(track2.decay()))) == 0u) {
             continue; // skip particles that do not match the decay mask
@@ -731,10 +794,12 @@ struct CorrelationTask {
         }
 
         if constexpr (std::experimental::is_detected<HasDecay, typename TTracks1::iterator>::value && std::experimental::is_detected<HasDecay, typename TTracks2::iterator>::value) {
-          if (cfgCorrelationMethod == 1 && track1.decay() != track2.decay())
+          if (cfgCorrelationMethod == 1 && track1.decay() != track2.decay()) {
             continue;
-          if (cfgCorrelationMethod == 2 && track1.decay() == track2.decay())
+          }
+          if (cfgCorrelationMethod == 2 && track1.decay() == track2.decay()) { // o2-linter: disable=magic-number (value is the established ddbar correlation-method mode)
             continue;
+          }
         }
 
         if constexpr (std::experimental::is_detected<HasProng0Id, typename TTracks1::iterator>::value) {
@@ -771,8 +836,9 @@ struct CorrelationTask {
         if constexpr (std::experimental::is_detected<HasSign, typename TTracks2::iterator>::value) {
           // TODO: support for MC D0-D0 case
           if (cfgAssociatedCharge != 0) {
-            if (cfgAssociatedCharge * track2.sign() < 0)
+            if (cfgAssociatedCharge * track2.sign() < 0) {
               continue;
+            }
           } else if (track2.sign() == 0) { // mc particles come in neutrals, need to check explicitly
             continue;
           }
@@ -807,16 +873,18 @@ struct CorrelationTask {
         float deltaPhi = RecoDecay::constrainAngle(track1.phi() - track2.phi(), -o2::constants::math::PIHalf);
 
         if constexpr (std::experimental::is_detected<HasMlProbD0, typename TTracks2::iterator>::value) {
-          if (!passMLScore(track2))
+          if (!passMLScore(track2)) {
             continue;
+          }
         } // ML selection
 
         // last param is the weight
         if (cfgMassAxis && (doprocessSame2Prong2Prong || doprocessMixed2Prong2Prong || doprocessSame2Prong2ProngML || doprocessMixed2Prong2ProngML) && !(doprocessSame2ProngDerived || doprocessSame2ProngDerivedML || doprocessMixed2ProngDerived || doprocessMixed2ProngDerivedML || doprocessMixed2ProngDerivedMixedPhi)) {
-          if constexpr (std::experimental::is_detected<HasInvMass, typename TTracks1::iterator>::value && std::experimental::is_detected<HasInvMass, typename TTracks2::iterator>::value)
+          if constexpr (std::experimental::is_detected<HasInvMass, typename TTracks1::iterator>::value && std::experimental::is_detected<HasInvMass, typename TTracks2::iterator>::value) {
             target->getPairHist()->Fill(step, track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, track2.invMass(), track1.invMass(), associatedWeight);
-          else
+          } else {
             LOGF(fatal, "Can not fill mass axis without invMass column. \n no mass for two particles");
+          }
         } else if (cfgMassAxis) {
           if constexpr (std::experimental::is_detected<HasInvMass, typename TTracks1::iterator>::value) {
             target->getPairHist()->Fill(step, track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, track1.invMass(), associatedWeight);
@@ -847,7 +915,7 @@ struct CorrelationTask {
       if (cfg.mEfficiencyTrigger == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiencyTrigger.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram for trigger particles from %s (%p)", cfgEfficiencyTrigger.value.c_str(), (void*)cfg.mEfficiencyTrigger);
+      LOGF(info, "Loaded efficiency histogram for trigger particles from %s (%p)", cfgEfficiencyTrigger.value.c_str(), static_cast<void*>(cfg.mEfficiencyTrigger));
     }
     if (cfgEfficiencyAssociated.value.empty() == false) {
       if (cfgLocalEfficiency > 0) {
@@ -859,7 +927,7 @@ struct CorrelationTask {
       if (cfg.mEfficiencyAssociated == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for associated particles from %s", cfgEfficiencyAssociated.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram for associated particles from %s (%p)", cfgEfficiencyAssociated.value.c_str(), (void*)cfg.mEfficiencyAssociated);
+      LOGF(info, "Loaded efficiency histogram for associated particles from %s (%p)", cfgEfficiencyAssociated.value.c_str(), static_cast<void*>(cfg.mEfficiencyAssociated));
     }
     cfg.efficiencyLoaded = true;
   }
@@ -894,7 +962,7 @@ struct CorrelationTask {
     }
     registry.fill(HIST("eventcount_same"), -2);
     fillQA(collision, multiplicity, tracks);
-    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(same, tracks, tracks, multiplicity, collision.posZ(), getMagneticField(bc.timestamp()), 1.0f);
+    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(same, tracks, tracks, multiplicity, collision.posZ(), getMagneticField(bc.runNumber(), bc.timestamp()), 1.0f);
   }
   PROCESS_SWITCH(CorrelationTask, processSameAOD, "Process same event on AOD", true);
 
@@ -911,16 +979,17 @@ struct CorrelationTask {
     const auto multiplicity = collision.multiplicity();
     int field = 0;
     if (cfgTwoTrackCut > 0) {
-      field = getMagneticField(collision.timestamp());
+      field = getMagneticField(collision.runNumber(), collision.timestamp());
     }
 
     int bin = configurableBinningDerived.getBin({collision.posZ(), collision.multiplicity()});
     registry.fill(HIST("eventcount_same"), bin);
     registry.fill(HIST("trackcount_same"), bin, tracks1.size());
-    if constexpr (std::experimental::is_detected<HasDecay, typename TTracks1::iterator>::value)
+    if constexpr (std::experimental::is_detected<HasDecay, typename TTracks1::iterator>::value) {
       fillQA(collision, multiplicity, collision.posZ(), tracks1, tracks2);
-    else
+    } else {
       fillQA(collision, multiplicity, tracks1);
+    }
 
     const bool hasEfficiency = (cfg.mEfficiencyAssociated != nullptr || cfg.mEfficiencyTrigger != nullptr);
     const bool fillReco = !(cfgDropStepRECO && hasEfficiency);
@@ -943,8 +1012,9 @@ struct CorrelationTask {
 
   void processSameDerivedMultSet(soa::Filtered<soa::Join<aod::CFCollisions, aod::CFMultSets>>::iterator const& collision, soa::Filtered<aod::CFTracks> const& tracks)
   {
-    if (!passOutlier(collision))
+    if (!passOutlier(collision)) {
       return;
+    }
     processSameDerivedT(collision, tracks, tracks);
   }
   PROCESS_SWITCH(CorrelationTask, processSameDerivedMultSet, "Process same event on derived data with multiplicity sets", false);
@@ -1011,7 +1081,7 @@ struct CorrelationTask {
 
       // LOGF(info, "Tracks: %d and %d entries", tracks1.size(), tracks2.size());
 
-      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, tracks2, collision1.centRun2V0M(), collision1.posZ(), getMagneticField(bc.timestamp()), 1.0f / it.currentWindowNeighbours());
+      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, tracks2, collision1.centRun2V0M(), collision1.posZ(), getMagneticField(bc.runNumber(), bc.timestamp()), 1.0f / it.currentWindowNeighbours());
     }
   }
   PROCESS_SWITCH(CorrelationTask, processMixedAOD, "Process mixed events on AOD", false);
@@ -1022,8 +1092,9 @@ struct CorrelationTask {
     auto getMultiplicity =
       [this](auto& col) {
         if constexpr (std::experimental::is_detected<HasMultSet, CollType>::value) {
-          if (!passOutlier(col))
+          if (!passOutlier(col)) {
             return -1.0f;
+          }
         } else {
           (void)this; // fix compile error on unused 'this' capture
         }
@@ -1045,7 +1116,7 @@ struct CorrelationTask {
       float eventWeight = 1.0f / it.currentWindowNeighbours();
       int field = 0;
       if (cfgTwoTrackCut > 0) {
-        field = getMagneticField(collision1.timestamp());
+        field = getMagneticField(collision1.runNumber(), collision1.timestamp());
       }
 
       if (cfgVerbosity > 0) {
@@ -1197,10 +1268,11 @@ struct CorrelationTask {
       case -2212:
         return 2;
     }
-    if (std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), pdgCode) != cfgMcTriggerPDGs->end())
+    if (std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), pdgCode) != cfgMcTriggerPDGs->end()) {
       return 4; // NOTE - if changed, the number in processMCEfficiency2Prong needs to be changed too since we skip the getSpecies call
-    else        // The efficiency histogram is hardcoded to contain 5 species. Anything special will have the 4th slot.
+    } else {    // The efficiency histogram is hardcoded to contain 5 species. Anything special will have the 4th slot.
       return 3;
+    }
   }
 
   // NOTE SmallGroups includes soa::Filtered always
@@ -1211,13 +1283,30 @@ struct CorrelationTask {
       LOGF(info, "MC collision at vtx-z = %f with %d mc particles and %d reconstructed collisions", mcCollision.posZ(), mcParticles.size(), collisions.size());
     }
 
+    // Select reconstructed collisions as specified by cfgRequireRecoCollision
     auto multiplicity = mcCollision.multiplicity();
-    if (cfgCentBinsForMC > 0) {
+    if (cfgRequireRecoCollision > 0) {
       if (collisions.size() == 0) {
         return;
       }
-      for (const auto& collision : collisions) {
-        multiplicity = collision.multiplicity();
+      if (cfgRequireRecoCollision == RecoCollisionSelection::RequireOneRecoCollision) { // cfgRequireRecoCollision == 1
+        if (collisions.size() != 1) {
+          return;
+        }
+        multiplicity = collisions.begin().multiplicity();
+      }
+      if (cfgRequireRecoCollision == RecoCollisionSelection::RequireBestRecoCollision) { // cfgRequireRecoCollision == 2
+        bool foundBestCollision = false;
+        for (const auto& collision : collisions) {
+          if (collision.bestRecoCollision()) {
+            multiplicity = collision.multiplicity();
+            foundBestCollision = true;
+            break;
+          }
+        }
+        if (!foundBestCollision) {
+          return;
+        }
       }
     }
     // Primaries
@@ -1226,7 +1315,11 @@ struct CorrelationTask {
         same->getTrackHistEfficiency()->Fill(CorrelationContainer::MC, mcParticle.eta(), mcParticle.pt(), getSpecies(mcParticle.pdgCode()), multiplicity, mcCollision.posZ());
       }
     }
+    const bool useBestCollision = cfgRequireRecoCollision == RecoCollisionSelection::AllGeneratedCollisions || cfgRequireRecoCollision == RecoCollisionSelection::RequireBestRecoCollision; // For cfgRequireRecoCollision == 0 still need to reject split vertices
     for (const auto& collision : collisions) {
+      if (useBestCollision && !collision.bestRecoCollision()) {
+        continue;
+      }
       auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
       if (cfgVerbosity > 0) {
         LOGF(info, "  Reconstructed collision at vtx-z = %f", collision.posZ());
@@ -1234,12 +1327,14 @@ struct CorrelationTask {
       }
 
       for (const auto& track : groupedTracks) {
-        if (cfgTrackBitMask > 0 && (track.trackType() & (uint8_t)cfgTrackBitMask) != (uint8_t)cfgTrackBitMask)
+        if (cfgTrackBitMask > 0 && (track.trackType() & (uint8_t)cfgTrackBitMask) != (uint8_t)cfgTrackBitMask) {
           continue;
+        }
         if (track.has_cfMCParticle()) {
           const auto& mcParticle = track.cfMCParticle();
-          if ((doprocessMCEfficiency2Prong || doprocessMCEfficiency2ProngML) && std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), mcParticle.pdgCode()) != cfgMcTriggerPDGs->end())
+          if ((doprocessMCEfficiency2Prong || doprocessMCEfficiency2ProngML) && std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), mcParticle.pdgCode()) != cfgMcTriggerPDGs->end()) {
             continue; // properly booked by the 2Prong efficiency function, ignore here
+          }
           if (mcParticle.isPhysicalPrimary()) {
             same->getTrackHistEfficiency()->Fill(CorrelationContainer::RecoPrimaries, mcParticle.eta(), mcParticle.pt(), getSpecies(mcParticle.pdgCode()), multiplicity, mcCollision.posZ());
           }
@@ -1255,7 +1350,7 @@ struct CorrelationTask {
   PROCESS_SWITCH(CorrelationTask, processMCEfficiency, "MC: Extract efficiencies", false);
 
   template <bool reflectionSpec, class p2type>
-  void processMCEfficiency2ProngT(soa::Filtered<aod::CFMcCollisions>::iterator const& mcCollision, soa::Join<aod::CFMcParticles, aod::CF2ProngMcParts> const& mcParticles, soa::SmallGroups<aod::CFCollisionsWithLabel> const& collisions, aod::CFTracksWithLabel const&, p2type const& p2tracks, Preslice<p2type>& perCollision2Prong)
+  void processMCEfficiency2ProngT(soa::Filtered<aod::CFMcCollisions>::iterator const& mcCollision, soa::Join<aod::CFMcParticles, aod::CF2ProngMcParts> const& mcParticles, soa::SmallGroups<aod::CFCollisionsWithLabel> const& collisions, aod::CFTracksWithLabel const&, p2type const& p2tracks, Preslice<p2type>& collision2ProngPreslice)
   {
     auto multiplicity = mcCollision.multiplicity();
     if (cfgCentBinsForMC > 0) {
@@ -1270,68 +1365,81 @@ struct CorrelationTask {
     p2indexCache.clear();
     for (const auto& mcParticle : mcParticles) {
       if (std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), mcParticle.pdgCode()) != cfgMcTriggerPDGs->end()) {
-        if ((mcParticle.mcDecay() != aod::cf2prongtrack::D0ToPiK) && (mcParticle.mcDecay() != aod::cf2prongtrack::D0barToKPiExclusive))
+        if ((mcParticle.mcDecay() != aod::cf2prongtrack::D0ToPiK) && (mcParticle.mcDecay() != aod::cf2prongtrack::D0barToKPiExclusive)) {
           continue; // wrong decay channel
-        if (mcParticle.cfParticleDaugh0Id() < 0 && mcParticle.cfParticleDaugh1Id() < 0)
+        }
+        if (mcParticle.cfParticleDaugh0Id() < 0 && mcParticle.cfParticleDaugh1Id() < 0) {
           continue; // daughters not found
+        }
         if constexpr (!reflectionSpec) {
-          if (cfgPtCentDepMLpromptSel->empty() || (mcParticle.decay() & aod::cf2prongmcpart::Prompt) != 0)
+          if (cfgPtCentDepMLpromptSel->empty() || (mcParticle.decay() & aod::cf2prongmcpart::Prompt) != 0) {
             same->getTrackHistEfficiency()->Fill(CorrelationContainer::MC, mcParticle.eta(), mcParticle.pt(), 4, multiplicity, mcCollision.posZ());
+          }
         }
         p2indexCache.push_back(mcParticle.globalIndex());
       }
     }
     for (const auto& collision : collisions) {
-      auto grouped2ProngTracks = p2tracks.sliceBy(perCollision2Prong, collision.globalIndex());
+      auto grouped2ProngTracks = p2tracks.sliceBy(collision2ProngPreslice, collision.globalIndex());
 
       for (const auto& p2track : grouped2ProngTracks) {
         if constexpr (!reflectionSpec) {
-          if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>(p2track.decay()))) == 0u)
+          if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>(p2track.decay()))) == 0u) {
             continue;
+          }
         }
         // Check if the mc particles of the prongs are found.
         if constexpr (std::experimental::is_detected<HasMlProbD0, typename p2type::iterator>::value) {
-          if (!passMLScore(p2track))
+          if (!passMLScore(p2track)) {
             continue;
+          }
         }
-        if constexpr (!reflectionSpec)
+        if constexpr (!reflectionSpec) {
           same->getTrackHistEfficiency()->Fill(CorrelationContainer::RecoAll, p2track.eta(), p2track.pt(), 4, multiplicity, mcCollision.posZ());
+        }
         auto fillMC2p = [&](const aod::CFTracksWithLabel::iterator& p) -> bool {
-          if (!p.has_cfMCParticle())
+          if (!p.has_cfMCParticle()) {
             return false;
+          }
           auto m = std::find_if(p2indexCache.begin(), p2indexCache.end(), [&](const auto& t) -> bool {
             const auto& mcParticle = mcParticles.iteratorAt(t - mcParticles.begin().globalIndex());
             return (p.cfMCParticleId() == mcParticle.cfParticleDaugh0Id() || p.cfMCParticleId() == mcParticle.cfParticleDaugh1Id());
           });
-          if (m == p2indexCache.end())
+          if (m == p2indexCache.end()) {
             return false;
+          }
           const auto& mcParticle = mcParticles.iteratorAt(*m - mcParticles.begin().globalIndex());
           if constexpr (!reflectionSpec) {
-            if (!cfgPtCentDepMLpromptSel->empty() && (mcParticle.decay() & aod::cf2prongmcpart::Prompt) == 0)
+            if (!cfgPtCentDepMLpromptSel->empty() && (mcParticle.decay() & aod::cf2prongmcpart::Prompt) == 0) {
               return true; // a valid candidate but not a prompt
+            }
             same->getTrackHistEfficiency()->Fill(CorrelationContainer::RecoPrimaries, mcParticle.eta(), mcParticle.pt(), 4, multiplicity, mcCollision.posZ());
           } else {
             if ((mcParticle.mcDecay() == aod::cf2prongtrack::D0barToKPiExclusive && (p2track.decay() == aod::cf2prongtrack::D0barToKPiExclusive || p2track.decay() == aod::cf2prongtrack::D0barToKPi)) ||
-                (mcParticle.mcDecay() == aod::cf2prongtrack::D0ToPiK && p2track.decay() == aod::cf2prongtrack::D0ToPiK))
+                (mcParticle.mcDecay() == aod::cf2prongtrack::D0ToPiK && p2track.decay() == aod::cf2prongtrack::D0ToPiK)) {
               registry.fill(HIST("invMassSignal"), p2track.invMass(), p2track.pt(), multiplicity);
-            else // one particle may be filled into both histograms through duplicates
+            } else { // one particle may be filled into both histograms through duplicates
               registry.fill(HIST("invMassReflected"), p2track.invMass(), p2track.pt(), multiplicity);
+            }
           }
           return true;
         };
         if (p2track.has_cfTrackProng0()) {
           //
-          if (const auto& p0 = p2track.template cfTrackProng0_as<aod::CFTracksWithLabel>(); fillMC2p(p0))
+          if (const auto& p0 = p2track.template cfTrackProng0_as<aod::CFTracksWithLabel>(); fillMC2p(p0)) {
             continue;
+          }
         }
         if (p2track.has_cfTrackProng1()) {
-          if (const auto& p1 = p2track.template cfTrackProng1_as<aod::CFTracksWithLabel>(); fillMC2p(p1))
+          if (const auto& p1 = p2track.template cfTrackProng1_as<aod::CFTracksWithLabel>(); fillMC2p(p1)) {
             continue;
+          }
         }
 
         // fake track
-        if constexpr (!reflectionSpec)
+        if constexpr (!reflectionSpec) {
           same->getTrackHistEfficiency()->Fill(CorrelationContainer::Fake, p2track.eta(), p2track.pt(), 4, multiplicity, mcCollision.posZ());
+        }
       }
     }
   }
@@ -1374,10 +1482,11 @@ struct CorrelationTask {
     }
 
     if (!(doprocessSameDerived || doprocessSameDerivedMultSet || doprocessSame2ProngDerived || doprocessSame2ProngDerivedML || doprocessSame2Prong2Prong || doprocessSame2Prong2ProngML)) {
-      if constexpr (std::experimental::is_detected<HasDecay, typename Particles1::iterator>::value)
+      if constexpr (std::experimental::is_detected<HasDecay, typename Particles1::iterator>::value) {
         fillQA(mcCollision, multiplicity, mcCollision.posZ(), mcParticles1, mcParticles2);
-      else
+      } else {
         fillQA(mcCollision, multiplicity, mcParticles1);
+      }
     }
 
     same->fillEvent(multiplicity, CorrelationContainer::kCFStepAll);
@@ -1424,11 +1533,13 @@ struct CorrelationTask {
     bool useMCMultiplicity = (cfgCentBinsForMC == 0);
     auto getMultiplicity =
       [&collisions, &useMCMultiplicity, this](auto& col) {
-        if (useMCMultiplicity)
+        if (useMCMultiplicity) {
           return col.multiplicity();
+        }
         auto groupedCollisions = collisions.sliceBy(collisionPerMCCollision, col.globalIndex());
-        if (groupedCollisions.size() == 0)
+        if (groupedCollisions.size() == 0) {
           return -1.0f;
+        }
         return groupedCollisions.begin().multiplicity();
       };
 

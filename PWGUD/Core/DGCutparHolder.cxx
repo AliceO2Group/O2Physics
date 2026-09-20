@@ -11,6 +11,7 @@
 
 #include "PWGUD/Core/DGCutparHolder.h"
 
+#include <utility>
 #include <vector>
 
 // setter
@@ -45,7 +46,7 @@ void DGCutparHolder::SetNTracks(int MinNTracks, int MaxNTracks)
 }
 void DGCutparHolder::SetNetCharges(std::vector<int> netCharges)
 {
-  mNetCharges = netCharges;
+  mNetCharges = std::move(netCharges);
 }
 void DGCutparHolder::SetPidHypothesis(int pidHypo)
 {
@@ -102,11 +103,11 @@ void DGCutparHolder::SetMaxFITtime(float maxFITtime)
 }
 void DGCutparHolder::SetFITAmpLimits(std::vector<float> FITAmpLimits)
 {
-  mFITAmpLimits = FITAmpLimits;
+  mFITAmpLimits = std::move(FITAmpLimits);
 }
 void DGCutparHolder::SetCollisionSel(std::vector<int> collisionSel)
 {
-  mCollisionSel = collisionSel;
+  mCollisionSel = std::move(collisionSel);
 }
 
 // getter

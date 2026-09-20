@@ -64,8 +64,11 @@ using CharmHadronMaskType = uint32_t;
 using CharmHadronType = uint16_t;
 
 // datatypes for event shape enums
-using QvecDetectorType = uint8_t;
+using EventShapeDetectorType = uint8_t;
 using QvecHarmonicType = uint8_t;
+
+// datatype for kinematic variable
+using KinematicVariableType = uint8_t;
 
 } // namespace o2::analysis::femto::datatypes
 

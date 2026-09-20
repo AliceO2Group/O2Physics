@@ -34,6 +34,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -64,6 +65,8 @@
 #include <TH1.h>
 #include <TH2.h>
 #include <TPDGCode.h>
+
+#include <Rtypes.h>
 
 #include <algorithm>
 #include <array>
@@ -127,6 +130,7 @@ struct HfDataCreatorJpsiHadReduced {
   // J/Psi related tables
   Produces<aod::HfRedJpsis> hfJpsi;
   Produces<aod::HfRedJpsiCov> hfRedJpsiCov;
+  Produces<aod::HfRedJpsiDauPid> hfRedJpsiDauPid;
   // Ka bachelor related tables
   Produces<aod::HfRedBach0Bases> hfTrackLfDau0;
   Produces<aod::HfRedBach0Cov> hfTrackCovLfDau0;
@@ -152,6 +156,8 @@ struct HfDataCreatorJpsiHadReduced {
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any B0 is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
+  Configurable<double> maxChi2JPsiVtx{"maxChi2JPsiVtx", 1e9, "maximum value of chi2 for JPsi vertex computed with DCAFitter"};
+  Configurable<double> maxChi2BhadVtx{"maxChi2BhadVtx", 0.9, "maximum value of chi2 for B-hadron vertex computed with DCAFitter"};
 
   struct : o2::framework::ConfigurableGroup {
     // TPC PID
@@ -188,10 +194,10 @@ struct HfDataCreatorJpsiHadReduced {
   // O2DatabasePDG service
   Service<o2::framework::O2DatabasePDG> pdg{};
 
-  using TracksPid = soa::Join<aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullEl, aod::pidTOFFullEl>;
+  using TracksPid = soa::Join<aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::pidTPCFullMu, aod::pidTOFFullMu>;
   using TracksPidWithSel = soa::Join<aod::TracksWCovDcaExtra, TracksPid, aod::TrackSelection>;
   using TracksPidWithSelAndMc = soa::Join<TracksPidWithSel, aod::McTrackLabels>;
-  using CollisionsWCMcLabels = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
+  using CollisionsWCMcLabels = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults>;
   using BCsInfo = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
 
   Preslice<aod::HfCand2ProngWPid> candsJpsiPerCollision = aod::track_association::collisionId;
@@ -295,6 +301,7 @@ struct HfDataCreatorJpsiHadReduced {
     df2.setMaxDZIni(maxDZIni);
     df2.setMinParamChange(minParamChange);
     df2.setMinRelChi2Change(minRelChi2Change);
+    df2.setMaxChi2(maxChi2JPsiVtx);
     df2.setUseAbsDCA(useAbsDCA);
     df2.setWeightedFinalPCA(useWeightedFinalPCA);
     df2.setMatCorrType(noMatCorr);
@@ -305,6 +312,7 @@ struct HfDataCreatorJpsiHadReduced {
       df3.setMaxDZIni(maxDZIni);
       df3.setMinParamChange(minParamChange);
       df3.setMinRelChi2Change(minRelChi2Change);
+      df3.setMaxChi2(maxChi2BhadVtx);
       df3.setUseAbsDCA(useAbsDCA);
       df3.setWeightedFinalPCA(useWeightedFinalPCA);
       df3.setMatCorrType(noMatCorr);
@@ -314,6 +322,7 @@ struct HfDataCreatorJpsiHadReduced {
       df4.setMaxDZIni(maxDZIni);
       df4.setMinParamChange(minParamChange);
       df4.setMinRelChi2Change(minRelChi2Change);
+      df4.setMaxChi2(maxChi2BhadVtx);
       df4.setUseAbsDCA(useAbsDCA);
       df4.setWeightedFinalPCA(useWeightedFinalPCA);
       df4.setMatCorrType(noMatCorr);
@@ -1455,6 +1464,10 @@ struct HfDataCreatorJpsiHadReduced {
                      trackPosParCov.getSigma1PtSnp(), trackNegParCov.getSigma1PtSnp(),
                      trackPosParCov.getSigma1PtTgl(), trackNegParCov.getSigma1PtTgl(),
                      trackPosParCov.getSigma1Pt2(), trackNegParCov.getSigma1Pt2());
+        hfRedJpsiDauPid(trackPos.tpcNSigmaMu(), trackNeg.tpcNSigmaMu(),
+                        trackPos.tpcNSigmaEl(), trackNeg.tpcNSigmaEl(),
+                        trackPos.tofNSigmaMu(), trackNeg.tofNSigmaMu(),
+                        trackPos.tofNSigmaEl(), trackNeg.tofNSigmaEl());
         fillHfReducedCollision = true;
       }
     } // candsJpsi loop
@@ -1479,7 +1492,7 @@ struct HfDataCreatorJpsiHadReduced {
     // }
   }
 
-  void processJpsiKData(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processJpsiKData(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                         aod::HfCand2ProngWPid const& candsJpsi,
                         aod::TrackAssoc const& trackIndices,
                         TracksPidWithSel const& tracks,
@@ -1507,7 +1520,7 @@ struct HfDataCreatorJpsiHadReduced {
   }
   PROCESS_SWITCH(HfDataCreatorJpsiHadReduced, processJpsiKData, "Process J/Psi K without MC info", true);
 
-  void processJpsiPhiData(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processJpsiPhiData(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                           aod::HfCand2ProngWPid const& candsJpsi,
                           aod::TrackAssoc const& trackIndices,
                           TracksPidWithSel const& tracks,
@@ -1535,7 +1548,7 @@ struct HfDataCreatorJpsiHadReduced {
   }
   PROCESS_SWITCH(HfDataCreatorJpsiHadReduced, processJpsiPhiData, "Process J/Psi phi without MC info", false);
 
-  void processJpsiK0StarData(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processJpsiK0StarData(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults> const& collisions,
                              aod::HfCand2ProngWPid const& candsJpsi,
                              aod::TrackAssoc const& trackIndices,
                              TracksPidWithSel const& tracks,

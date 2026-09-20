@@ -41,14 +41,17 @@ DECLARE_SOA_COLUMN(PosZ, posZ, float);
 DECLARE_SOA_COLUMN(FlagUPC, flagUPC, int8_t);
 DECLARE_SOA_COLUMN(OccupancyInTime, occupancyInTime, int);
 DECLARE_SOA_COLUMN(HadronicRate, hadronicRate, double);
-DECLARE_SOA_COLUMN(Trs, trs, int8_t);
-DECLARE_SOA_COLUMN(Trofs, trofs, int8_t);
-DECLARE_SOA_COLUMN(Hmpr, hmpr, int8_t);
-DECLARE_SOA_COLUMN(Tfb, tfb, int8_t);
-DECLARE_SOA_COLUMN(ItsRofb, itsRofb, int8_t);
-DECLARE_SOA_COLUMN(Sbp, sbp, int8_t);
-DECLARE_SOA_COLUMN(ZvtxFT0vsPv, zvtxFT0vsPv, int8_t);
-DECLARE_SOA_COLUMN(VtxITSTPC, vtxITSTPC, int8_t);
+
+// DECLARE_SOA_COLUMN(Trs, trs, int8_t);
+// DECLARE_SOA_COLUMN(Trofs, trofs, int8_t);
+// DECLARE_SOA_COLUMN(Hmpr, hmpr, int8_t);
+// DECLARE_SOA_COLUMN(Tfb, tfb, int8_t);
+// DECLARE_SOA_COLUMN(ItsRofb, itsRofb, int8_t);
+// DECLARE_SOA_COLUMN(Sbp, sbp, int8_t);
+// DECLARE_SOA_COLUMN(ZvtxFT0vsPv, zvtxFT0vsPv, int8_t);
+// DECLARE_SOA_COLUMN(VtxITSTPC, vtxITSTPC, int8_t);
+DECLARE_SOA_COLUMN(BcSelBits, bcSelBits, uint8_t);
+
 DECLARE_SOA_COLUMN(ZdcAenergy, zdcAenergy, float);
 DECLARE_SOA_COLUMN(ZdcCenergy, zdcCenergy, float);
 DECLARE_SOA_COLUMN(ZdcAtime, zdcAtime, float);
@@ -121,10 +124,10 @@ DECLARE_SOA_COLUMN(TrueChannel, trueChannel, int);
 // DECLARE_SOA_COLUMN(TruePosX, truePosX, float);
 // DECLARE_SOA_COLUMN(TruePosY, truePosY, float);
 DECLARE_SOA_COLUMN(TruePosZ, truePosZ, float);
-// truth tau particles // index 0: tau+ // index 1: tau -
-DECLARE_SOA_COLUMN(TrueTauPx, trueTauPx, float[2]);
-DECLARE_SOA_COLUMN(TrueTauPy, trueTauPy, float[2]);
-DECLARE_SOA_COLUMN(TrueTauPz, trueTauPz, float[2]);
+// // truth tau particles // index 0: tau+ // index 1: tau -
+// DECLARE_SOA_COLUMN(TrueTauPx, trueTauPx, float[2]);
+// DECLARE_SOA_COLUMN(TrueTauPy, trueTauPy, float[2]);
+// DECLARE_SOA_COLUMN(TrueTauPz, trueTauPz, float[2]);
 // truth tau daughter particles - 4 particles
 DECLARE_SOA_COLUMN(TrueDaugPx, trueDaugPx, float[4]);
 DECLARE_SOA_COLUMN(TrueDaugPy, trueDaugPy, float[4]);
@@ -136,6 +139,7 @@ DECLARE_SOA_COLUMN(True6DaugPy, true6DaugPy, float[6]);
 DECLARE_SOA_COLUMN(True6DaugPz, true6DaugPz, float[6]);
 DECLARE_SOA_COLUMN(True6DaugPdgCode, true6DaugPdgCode, int[6]);
 DECLARE_SOA_COLUMN(Problem, problem, int8_t);
+DECLARE_SOA_COLUMN(IsRec, isRec, int8_t);
 } // namespace tautree
 
 DECLARE_SOA_TABLE(DataTauFourTracks, "AOD", "TAUFOURTRACK",
@@ -146,8 +150,10 @@ DECLARE_SOA_TABLE(DataTauFourTracks, "AOD", "TAUFOURTRACK",
                   tautree::PosZ,
                   tautree::FlagUPC, tautree::OccupancyInTime, tautree::HadronicRate,
                   //
-                  tautree::Trs, tautree::Trofs, tautree::Hmpr,
-                  tautree::Tfb, tautree::ItsRofb, tautree::Sbp, tautree::ZvtxFT0vsPv, tautree::VtxITSTPC,
+                  tautree::BcSelBits,
+                  // tautree::Trs, tautree::Trofs, tautree::Hmpr,
+                  // tautree::Tfb, tautree::ItsRofb, tautree::Sbp, tautree::ZvtxFT0vsPv, tautree::VtxITSTPC,
+                  //
                   tautree::ZdcAenergy, tautree::ZdcCenergy,
                   tautree::ZdcAtime, tautree::ZdcCtime,
                   // tautree::Qtot,
@@ -169,10 +175,14 @@ DECLARE_SOA_TABLE(TrueTauFourTracks, "AOD", "TRUETAU",
                   // tautree::PosX, tautree::PosY,
                   tautree::PosZ,
                   tautree::FlagUPC, tautree::OccupancyInTime, tautree::HadronicRate,
-                  tautree::Trs, tautree::Trofs, tautree::Hmpr,
-                  tautree::Tfb, tautree::ItsRofb, tautree::Sbp, tautree::ZvtxFT0vsPv, tautree::VtxITSTPC,
-                  tautree::ZdcAenergy, tautree::ZdcCenergy,
-                  tautree::ZdcAtime, tautree::ZdcCtime,
+                  //
+                  tautree::BcSelBits,
+                  // tautree::Trs, tautree::Trofs, tautree::Hmpr,
+                  // tautree::Tfb, tautree::ItsRofb, tautree::Sbp, tautree::ZvtxFT0vsPv, tautree::VtxITSTPC,
+                  //
+                  // zdc information do not exist in MC
+                  // tautree::ZdcAenergy, tautree::ZdcCenergy,
+                  // tautree::ZdcAtime, tautree::ZdcCtime,
                   // tautree::Qtot,
                   tautree::TotalFT0AmplitudeA, tautree::TotalFT0AmplitudeC, tautree::TotalFV0AmplitudeA,
                   // tautree::TimeFT0A, tautree::TimeFT0C, tautree::TimeFV0A,
@@ -187,10 +197,19 @@ DECLARE_SOA_TABLE(TrueTauFourTracks, "AOD", "TRUETAU",
                   tautree::TrueChannel,
                   // tautree::TrueHasRecoColl,
                   tautree::TruePosZ,
-                  tautree::TrueTauPx, tautree::TrueTauPy, tautree::TrueTauPz,
+                  // tautree::TrueTauPx, tautree::TrueTauPy, tautree::TrueTauPz,
                   tautree::TrueDaugPx, tautree::TrueDaugPy, tautree::TrueDaugPz,
                   tautree::TrueDaugPdgCode,
                   tautree::Problem);
+
+DECLARE_SOA_TABLE(GenTauFourTracks, "AOD", "GENTAU",
+                  tautree::TrueChannel,
+                  tautree::TruePosZ,
+                  // tautree::TrueTauPx, tautree::TrueTauPy, tautree::TrueTauPz,
+                  tautree::TrueDaugPx, tautree::TrueDaugPy, tautree::TrueDaugPz,
+                  tautree::TrueDaugPdgCode,
+                  tautree::Problem,
+                  tautree::IsRec);
 
 DECLARE_SOA_TABLE(DataTauSixTracks, "AOD", "TAUSIXTRACK",
                   tautree::RunNumber, tautree::Bc, tautree::TotalTracks, tautree::NumContrib,
@@ -200,8 +219,10 @@ DECLARE_SOA_TABLE(DataTauSixTracks, "AOD", "TAUSIXTRACK",
                   tautree::PosZ,
                   tautree::FlagUPC, tautree::OccupancyInTime, tautree::HadronicRate,
                   //
-                  tautree::Trs, tautree::Trofs, tautree::Hmpr,
-                  tautree::Tfb, tautree::ItsRofb, tautree::Sbp, tautree::ZvtxFT0vsPv, tautree::VtxITSTPC,
+                  tautree::BcSelBits,
+                  // tautree::Trs, tautree::Trofs, tautree::Hmpr,
+                  // tautree::Tfb, tautree::ItsRofb, tautree::Sbp, tautree::ZvtxFT0vsPv, tautree::VtxITSTPC,
+                  //
                   tautree::ZdcAenergy, tautree::ZdcCenergy,
                   tautree::ZdcAtime, tautree::ZdcCtime,
                   // tautree::Qtot,
@@ -223,10 +244,14 @@ DECLARE_SOA_TABLE(TrueTauSixTracks, "AOD", "TRUETAUSIX",
                   // tautree::PosX, tautree::PosY,
                   tautree::PosZ,
                   tautree::FlagUPC, tautree::OccupancyInTime, tautree::HadronicRate,
-                  tautree::Trs, tautree::Trofs, tautree::Hmpr,
-                  tautree::Tfb, tautree::ItsRofb, tautree::Sbp, tautree::ZvtxFT0vsPv, tautree::VtxITSTPC,
-                  tautree::ZdcAenergy, tautree::ZdcCenergy,
-                  tautree::ZdcAtime, tautree::ZdcCtime,
+                  //
+                  tautree::BcSelBits,
+                  // tautree::Trs, tautree::Trofs, tautree::Hmpr,
+                  // tautree::Tfb, tautree::ItsRofb, tautree::Sbp, tautree::ZvtxFT0vsPv, tautree::VtxITSTPC,
+                  //
+                  // ZDC information do not exist in MC
+                  // tautree::ZdcAenergy, tautree::ZdcCenergy,
+                  // tautree::ZdcAtime, tautree::ZdcCtime,
                   // tautree::Qtot,
                   tautree::TotalFT0AmplitudeA, tautree::TotalFT0AmplitudeC, tautree::TotalFV0AmplitudeA,
                   // tautree::TimeFT0A, tautree::TimeFT0C, tautree::TimeFV0A,
@@ -241,10 +266,19 @@ DECLARE_SOA_TABLE(TrueTauSixTracks, "AOD", "TRUETAUSIX",
                   tautree::TrueChannel,
                   // tautree::TrueHasRecoColl,
                   tautree::TruePosZ,
-                  tautree::TrueTauPx, tautree::TrueTauPy, tautree::TrueTauPz,
+                  // tautree::TrueTauPx, tautree::TrueTauPy, tautree::TrueTauPz,
                   tautree::True6DaugPx, tautree::True6DaugPy, tautree::True6DaugPz,
                   tautree::True6DaugPdgCode,
                   tautree::Problem);
+
+DECLARE_SOA_TABLE(GenTauSixTracks, "AOD", "GENTAUSIX",
+                  tautree::TrueChannel,
+                  tautree::TruePosZ,
+                  // tautree::TrueTauPx, tautree::TrueTauPy, tautree::TrueTauPz,
+                  tautree::True6DaugPx, tautree::True6DaugPy, tautree::True6DaugPz,
+                  tautree::True6DaugPdgCode,
+                  tautree::Problem,
+                  tautree::IsRec);
 
 } // namespace o2::aod
 

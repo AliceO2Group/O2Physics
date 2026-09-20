@@ -242,7 +242,7 @@ struct EventByEvent {
         return;
       registry.fill(HIST("hSelectionCounter"), 5);
 
-      for (auto t : tracks) {
+      for (const auto& t : tracks) {
 
         if (!trackselector(t, parameters))
           continue;
@@ -270,14 +270,14 @@ struct EventByEvent {
         registry.fill(HIST("hSelectionCounter"), 6);
         if ((rawPionTracks.size() >= 2) && (allTracks.size() >= 2)) {
 
-          for (auto pion : onlyPionTracks) {
+          for (const auto& pion : onlyPionTracks) {
             p += pion;
           }
 
           registry.fill(HIST("h4TracksPions"), onlyPionTracks.size());
           registry.fill(HIST("hSelectionCounter"), 7);
 
-          for (auto rtrk : rawPionTracks) {
+          for (const auto& rtrk : rawPionTracks) {
 
             TLorentzVector itrk;
             itrk.SetXYZM(rtrk.px(), rtrk.py(), rtrk.pz(), o2::constants::physics::MassPionCharged);
@@ -293,7 +293,7 @@ struct EventByEvent {
 
           int sign = 0;
           TLorentzVector piplus, piminus;
-          for (auto rawPion : rawPionTracks) {
+          for (const auto& rawPion : rawPionTracks) {
             sign += rawPion.sign();
           }
 

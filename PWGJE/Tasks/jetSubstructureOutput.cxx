@@ -308,7 +308,7 @@ struct JetSubstructureOutputTask {
   void processClearMapsMCP(aod::JetMcCollisions const& mcCollisions)
   {
     jetMappingMCP.clear();
-    for (auto mcCollision : mcCollisions) {
+    for (const auto& mcCollision : mcCollisions) {
       mcCollisionOutputTable(mcCollision.posZ(), mcCollision.accepted(), mcCollision.attempted(), mcCollision.xsectGen(), mcCollision.xsectErr(), mcCollision.weight());
     }
   }
