@@ -65,6 +65,25 @@ double deltaPhi(double phi1, double phi2)
   return std::abs(dphi);
 }
 
+// 
+/// Collision counter selection indexes
+///
+/// The collision selection is done and stored in multiple steps, for later QA analysis.
+/// In order not to hard code which bins should be filled throughout different process
+/// function, this namespace with enums is create
+namespace collisionSelections
+{
+  enum CollisionSelectionStep {
+    kMCCollisions = 0,                          ///< raw mccollisions with no selection, starts with 0
+    kMCCollisionsZCut,                          ///< mccollisions with z vtx selection
+    kMCCollisionsZCutSel8,                      ///< mccollisions with z vtx and sel8 mc emulated selections
+    kMCCollisionsZCutSel8HasCollisions,          ///< mccollisions with z vtx and sel8 mc emulated selections, with at least one reconstructed collisions
+    kMCCollisionsZCutSel8SplitCollisions,       ///< mccollisions with z vtx and sel8 mc emulated selections, with no split reconstructed collisions
+    kRecoCollisions,                            ///< raw reconstructed collisions after previous mccollisions selection
+    kRecoCollisionsZcut,                        ///< reconstructed collisions with z vtx selection after previous mccollisions selection
+    kRecoCollisionsZcutSel8                     ///< reconstructed collisions with z vtx and sel8 selections after previous mccollisions selection
+  };
+}
 // creating table for storing distance data
 namespace o2::aod
 {
@@ -199,6 +218,7 @@ struct HfFragmentationFunction {
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
   Configurable<bool> applyMcEventSelection{"applyMcEventSelection", false, "Choose a boolean value"};
   Configurable<bool> applyRecoEventSelection{"applyRecoEventSelection", true, "Choose a boolean value"};
+  Configurable<bool> rejectSplitCollisions{"rejectSplitCollisions", true, "reject generated events associated to more than one reconstructed collision"};
 
   std::vector<int> eventSelectionBits;
 
@@ -208,12 +228,12 @@ struct HfFragmentationFunction {
     eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
 
     // create histograms
-    // collision system histograms
-    std::vector<std::string> histLabels = {"mccollisions", "z_cut", "collisions", "sel8"};
+    // collision counter histograms
+    std::vector<std::string> histLabels = {"mccollisions", "mccollisions+z_cut", "mccollisions+z_{cut}+sel8", "mccollisions+z_{cut}+sel8+HasCollisions", "mccollisions+z_{cut}+sel8+NoSplitVtx", "collisions", "collisions+z_{cut}", "collisions+z_{cut}+sel8"};
     registry.add("h_collision_counter", ";# of collisions;", HistType::kTH1F, {{static_cast<int>(histLabels.size()), 0.0, static_cast<double>(histLabels.size())}});
-    auto counter = registry.get<TH1>(HIST("h_collision_counter"));
+    auto collCounter = registry.get<TH1>(HIST("h_collision_counter"));
     for (std::vector<std::string>::size_type iCounter = 0; iCounter < histLabels.size(); iCounter++) {
-      counter->GetXaxis()->SetBinLabel(iCounter + 1, histLabels[iCounter].data());
+      collCounter->GetXaxis()->SetBinLabel(iCounter + 1, histLabels[iCounter].data());
     }
     registry.add("h_jet_counter", ";# of jets;", {HistType::kTH1F, {{6, 0., 3.0}}});
     auto jetCounter = registry.get<TH1>(HIST("h_jet_counter"));
@@ -245,11 +265,11 @@ struct HfFragmentationFunction {
                    aod::JetTracks const&)
   {
     // apply event selection and fill histograms for sanity check
-    registry.fill(HIST("h_collision_counter"), 2.0);
+    registry.fill(HIST("h_collision_counter"), collisionSelections::kRecoCollisions);
     if (applyRecoEventSelection && (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || !(std::abs(collision.posZ()) < vertexZCut))) {
       return;
     }
-    registry.fill(HIST("h_collision_counter"), 3.0);
+    registry.fill(HIST("h_collision_counter"), collisionSelections::kRecoCollisionsZcutSel8);
 
     for (const auto& jet : jets) {
       // fill jet counter histogram
@@ -320,22 +340,22 @@ struct HfFragmentationFunction {
   {
     for (const auto& mccollision : mccollisions) {
 
-      registry.fill(HIST("h_collision_counter"), 0.0);
+      registry.fill(HIST("h_collision_counter"), collisionSelections::kMCCollisions);
       // skip collisions outside of |z| < vertexZCut
       if (applyMcEventSelection && (!jetderiveddatautilities::selectCollision(mccollision, eventSelectionBits) || !(std::abs(mccollision.posZ()) < vertexZCut))) {
         continue;
       }
-      registry.fill(HIST("h_collision_counter"), 1.0);
+      registry.fill(HIST("h_collision_counter"), collisionSelections::kMCCollisionsZCutSel8);
 
       // reconstructed collisions associated to same mccollision
       const auto collisionsPerMCCollision = collisions.sliceBy(collisionsPerMCCollisionPreslice, mccollision.globalIndex());
       for (const auto& collision : collisionsPerMCCollision) {
 
-        registry.fill(HIST("h_collision_counter"), 2.0);
+        registry.fill(HIST("h_collision_counter"), collisionSelections::kRecoCollisions);
         if (applyRecoEventSelection && (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || !(std::abs(collision.posZ()) < vertexZCut))) {
           continue;
         }
-        registry.fill(HIST("h_collision_counter"), 3.0);
+        registry.fill(HIST("h_collision_counter"), collisionSelections::kRecoCollisionsZcutSel8);
 
         // d0 detector level jets associated to the current same collision
         const auto d0mcdJetsPerCollision = mcdjets.sliceBy(d0MCDJetsPerCollisionPreslice, collision.globalIndex());
@@ -392,25 +412,65 @@ struct HfFragmentationFunction {
   }
   PROCESS_SWITCH(HfFragmentationFunction, processMcEfficiency, "non-matched and matched MC HF and jets", false);
 
-  template <typename TMCPJetsPerMCCollisionPreslice, typename TJetsMCD, typename TJetsMCP, typename TCandidatesMCD, typename TCandidatesMCP>
+  template <typename TMCPJetsPerMCCollisionPreslice, typename TMCDJetsPerCollisionPreslice, typename TJetsMCP, typename TJetsMCD, typename TCandidatesMCP, typename TCandidatesMCD>
   void analyzeMC(TMCPJetsPerMCCollisionPreslice const& MCPJetsPerMCCollisionPreslice,
+                 TMCDJetsPerCollisionPreslice const& MCDJetsPerCollisionPreslice,
                  aod::JetMcCollisions const& mccollisions,
                  aod::JetCollisionsMCD const& collisions,
-                 TJetsMCD const&,
                  TJetsMCP const& mcpjets,
-                 TCandidatesMCD const&,
+                 TJetsMCD const& mcdjets,
                  TCandidatesMCP const&,
-                 aod::JetTracks const&,
-                 aod::JetParticles const&)
+                 TCandidatesMCD const&,
+                 aod::JetParticles const&,
+                 aod::JetTracks const&)
   {
     for (const auto& mccollision : mccollisions) {
-      registry.fill(HIST("h_collision_counter"), 0.0);
+
+      // --- begin event selection
+      registry.fill(HIST("h_collision_counter"), collisionSelections::kMCCollisions);
       // skip collisions outside of |z| < vertexZCut
-      if (applyMcEventSelection && (!jetderiveddatautilities::selectCollision(mccollision, eventSelectionBits) || !(std::abs(mccollision.posZ()) < vertexZCut))) {
+      if (applyMcEventSelection && !(std::abs(mccollision.posZ()) < vertexZCut)) {
         continue;
       }
-      registry.fill(HIST("h_collision_counter"), 1.0);
+      registry.fill(HIST("h_collision_counter"), collisionSelections::kMCCollisionsZCut);
+      if (applyMcEventSelection && !jetderiveddatautilities::selectCollision(mccollision, eventSelectionBits)) {
+        continue;
+      }
+      registry.fill(HIST("h_collision_counter"), collisionSelections::kMCCollisionsZCutSel8);
 
+      // reconstructed collisions associated to same mccollision
+      const auto collisionsPerMCCollision = collisions.sliceBy(collisionsPerMCCollisionPreslice, mccollision.globalIndex());
+      // only consider events with at least one reconstructed collision
+      if (collisionsPerMCCollision.size() == 0) {
+        continue;
+      }
+      // only consider events with no split vertices (one mccollision-to-one collision)
+      registry.fill(HIST("h_collision_counter"), collisionSelections::kMCCollisionsZCutSel8HasCollisions);
+      if (rejectSplitCollisions && collisionsPerMCCollision.size() > 1) {
+        continue;
+      }
+      registry.fill(HIST("h_collision_counter"), collisionSelections::kMCCollisionsZCutSel8SplitCollisions);
+
+      bool hasSelectedCollision = false;
+      for (const auto& collision : collisionsPerMCCollision) {
+
+        registry.fill(HIST("h_collision_counter"), collisionSelections::kRecoCollisions);
+        if (applyRecoEventSelection && !(std::abs(collision.posZ()) < vertexZCut)) {
+          continue;
+        }
+        registry.fill(HIST("h_collision_counter"), collisionSelections::kRecoCollisionsZcut);
+        if (applyRecoEventSelection && !jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
+          continue;
+        }
+        registry.fill(HIST("h_collision_counter"), collisionSelections::kRecoCollisionsZcutSel8);
+        hasSelectedCollision = true;
+      } // end of collisions loop
+
+      if (!hasSelectedCollision) {
+        continue;
+      }
+      
+      // --- begin particle level jets storage
       // hf particle level jets associated to same mccollision
       const auto mcpJetsPerMCCollision = mcpjets.sliceBy(MCPJetsPerMCCollisionPreslice, mccollision.globalIndex());
       for (const auto& mcpjet : mcpJetsPerMCCollision) {
@@ -426,14 +486,6 @@ struct HfFragmentationFunction {
           // loop over detector level matched to current particle level
           for (const auto& mcdjet : mcpjet.template matchedJetCand_as<TJetsMCD>()) {
             registry.fill(HIST("h_jet_counter"), 2.0);
-
-            // apply collision sel8 selection on detector level jet's collision
-            const auto& collision = collisions.iteratorAt(mcdjet.collisionId());
-            registry.fill(HIST("h_collision_counter"), 2.0);
-            if (applyRecoEventSelection && (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || !(std::abs(collision.posZ()) < vertexZCut))) {
-              continue;
-            }
-            registry.fill(HIST("h_collision_counter"), 3.0);
 
             // obtain leading HF candidate in jet
             auto mcdcand = mcdjet.template candidates_first_as<TCandidatesMCD>();
@@ -460,37 +512,80 @@ struct HfFragmentationFunction {
           matchJetTable(jetutilities::deltaR(mcpjet, mcpcand), mcpjet.pt(), mcpjet.eta(), mcpjet.phi(), mcpjet.template tracks_as<aod::JetParticles>().size() + mcpjet.template candidates_as<TCandidatesMCP>().size(), // particle level jet
                         mcpcand.pt(), mcpcand.eta(), mcpcand.phi(), mcpcand.y(), (mcpcand.originMcGen() == RecoDecay::OriginType::Prompt),                                                                               // particle level HF
                         -2, -2, -2, -2, -2,                                                                                                                                                                              // no detector-level jet found
-                        -2, -2, -2, -2, -2, -2,                                                                                                                                                                          // no detector-level jet found
+                        -2, -2, -2, -2, -2, false,                                                                                                                                                                          // no detector-level jet found
                         -2, -2, -2,                                                                                                                                                                                      // no detector-level jet found
                         -2, -2);                                                                                                                                                                                         // no detector-level jet found
         }
       } // end of mcpjets loop
+
+      // --- begin non-matched detector level jets storage (fake candidates and correlated background if present)
+      // reconstructed collisions associated to same mccollision
+      for (const auto& collision : collisionsPerMCCollision) {
+
+        // Also apply the reconstructed level collisions selections
+        if (applyRecoEventSelection && (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || !(std::abs(collision.posZ()) < vertexZCut))) {
+          continue;
+        }
+
+        // d0 detector level jets associated to the current same collision
+        const auto mcdJetsPerCollision = mcdjets.sliceBy(MCDJetsPerCollisionPreslice, collision.globalIndex());
+        for (const auto& mcdjet : mcdJetsPerCollision) {
+
+          registry.fill(HIST("h_jet_counter"), 0.5);
+
+          // obtain leading HF candidate in jet
+          auto mcdcand = mcdjet.template candidates_first_as<TCandidatesMCD>();
+
+          if (mcdjet.has_matchedJetCand()) {
+            registry.fill(HIST("h_jet_counter"), 1.5);
+          } else { // store the detector level non-matched candidates
+
+            // reflection information for storage: D0 = +1, D0bar = -1, neither = 0
+            int selectedAs = 0;
+
+            // bitwise AND operation: Checks whether BIT(i) is set, regardless of other bits
+            if (mcdcand.candidateSelFlag() & BIT(0)) { // CandidateSelFlag == BIT(0) -> selected as D0
+              selectedAs = 1;
+            } else if (mcdcand.candidateSelFlag() & BIT(1)) { // CandidateSelFlag == BIT(1) -> selected as D0bar
+              selectedAs = -1;
+            }
+
+            // store matched particle and detector level data in one single table (calculate angular distance in eta-phi plane on the fly)
+              matchJetTable(-2, -2, -2, -2, -2,                                                                                                                                                                             // particle level jet
+                            -2, -2, -2, -2, false,                                                                                                                                                                             // particle level HF
+                            jetutilities::deltaR(mcdjet, mcdcand), mcdjet.pt(), mcdjet.eta(), mcdjet.phi(), mcdjet.template tracks_as<aod::JetTracks>().size() + mcdjet.template candidates_as<TCandidatesMCD>().size(),    // detector level jet
+                            mcdcand.pt(), mcdcand.eta(), mcdcand.phi(), mcdcand.m(), mcdcand.y(), (mcdcand.originMcRec() == RecoDecay::OriginType::Prompt),                                                                 // detector level HF
+                            mcdcand.mlScores()[0], mcdcand.mlScores()[1], mcdcand.mlScores()[2],                                                                                                                            // Machine Learning PID scores: background, prompt, non-prompt
+                            static_cast<int>(mcdcand.flagMcMatchRec()), selectedAs);                                                                                                                                        // HF = +1, HFbar = -1, neither = 0
+          }
+        } // end of non-matched detector level jets loop
+      } // end of collisions loop
     } // end of mccollisions loop
   } // end of analyzeMC function
 
   void processD0MC(aod::JetMcCollisions const& mccollisions,
                    aod::JetCollisionsMCD const& collisions,
-                   JetD0MCDTable const& mcdjets,
                    JetD0MCPTable const& mcpjets,
-                   aod::CandidatesD0MCD const& mcdcands,
+                   JetD0MCDTable const& mcdjets,
                    aod::CandidatesD0MCP const& mcpcands,
-                   aod::JetTracks const& jettracks,
-                   aod::JetParticles const& jetparticles)
+                   aod::CandidatesD0MCD const& mcdcands,
+                   aod::JetParticles const& jetparticles,
+                   aod::JetTracks const& jettracks)
   {
-    analyzeMC<Preslice<JetD0MCPTable>, JetD0MCDTable, JetD0MCPTable, aod::CandidatesD0MCD, aod::CandidatesD0MCP>(d0MCPJetsPerMCCollisionPreslice, mccollisions, collisions, mcdjets, mcpjets, mcdcands, mcpcands, jettracks, jetparticles);
+    analyzeMC<Preslice<JetD0MCPTable>, Preslice<JetD0MCDTable>, JetD0MCPTable, JetD0MCDTable, aod::CandidatesD0MCP, aod::CandidatesD0MCD>(d0MCPJetsPerMCCollisionPreslice, d0MCDJetsPerCollisionPreslice, mccollisions, collisions, mcpjets, mcdjets, mcpcands, mcdcands, jetparticles, jettracks);
   }
   PROCESS_SWITCH(HfFragmentationFunction, processD0MC, "Store all simulated D0 jets information with matched candidate (if any found)", false);
 
   void processLcMC(aod::JetMcCollisions const& mccollisions,
                    aod::JetCollisionsMCD const& collisions,
-                   JetLcMCDTable const& mcdjets,
                    JetLcMCPTable const& mcpjets,
-                   aod::CandidatesLcMCD const& mcdcands,
+                   JetLcMCDTable const& mcdjets,
                    aod::CandidatesLcMCP const& mcpcands,
-                   aod::JetTracks const& jettracks,
-                   aod::JetParticles const& jetparticles)
+                   aod::CandidatesLcMCD const& mcdcands,
+                   aod::JetParticles const& jetparticles,
+                   aod::JetTracks const& jettracks)
   {
-    analyzeMC<Preslice<JetLcMCPTable>, JetLcMCDTable, JetLcMCPTable, aod::CandidatesLcMCD, aod::CandidatesLcMCP>(lcMCPJetsPerMCCollisionPreslice, mccollisions, collisions, mcdjets, mcpjets, mcdcands, mcpcands, jettracks, jetparticles);
+    analyzeMC<Preslice<JetLcMCPTable>, Preslice<JetLcMCDTable>, JetLcMCPTable, JetLcMCDTable, aod::CandidatesLcMCP, aod::CandidatesLcMCD>(lcMCPJetsPerMCCollisionPreslice, lcMCDJetsPerCollisionPreslice, mccollisions, collisions, mcpjets, mcdjets, mcpcands, mcdcands, jetparticles, jettracks);
   }
   PROCESS_SWITCH(HfFragmentationFunction, processLcMC, "Store all simulated Lc jets information with matched candidate (if any found)", false);
 };
