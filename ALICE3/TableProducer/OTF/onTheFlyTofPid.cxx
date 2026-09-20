@@ -228,7 +228,6 @@ struct OnTheFlyTofPid {
     pRandomNumberGenerator.SetSeed(0); // fully randomize
     if (simConfig.flagTOFLoadDelphesLUTs) {
       for (int icfg = 0; icfg < nGeometries; ++icfg) {
-        const std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
         mSmearer.emplace_back(std::make_unique<o2::fastsim::TrackSmearer>());
         mSmearer[icfg]->setCcdbManager(ccdb.operator->());
         std::map<std::string, std::string> globalConfiguration = mGeoContainer.getConfiguration(icfg, "global");
@@ -392,8 +391,13 @@ struct OnTheFlyTofPid {
       delete hHitMapInPixelBefore;
     }
 
-    TOFLayerEfficiency(float r, float l, std::array<float, 2> pDimensions, float fIA, float m)
-      : layerRadius(r), layerLength(l), pixelDimensionZ(pDimensions[0]), pixelDimensionRPhi(pDimensions[1]), fractionInactive(fIA), magField(m), axisZ(new TAxis(static_cast<int>(layerLength / pixelDimensionZ), -layerLength / 2, layerLength))
+    TOFLayerEfficiency(float r, float l, std::array<float, 2> pDimensions, float fIA, float m) : layerRadius(r),
+                                                                                                 layerLength(l),
+                                                                                                 pixelDimensionZ(pDimensions[0]),
+                                                                                                 pixelDimensionRPhi(pDimensions[1]),
+                                                                                                 fractionInactive(fIA),
+                                                                                                 magField(m),
+                                                                                                 axisZ(new TAxis(static_cast<int>(layerLength / pixelDimensionZ), -layerLength / 2, layerLength))
     {
       // Assuming square pixels for simplicity
       const float circumference = o2::constants::math::TwoPI * layerRadius;
@@ -466,18 +470,22 @@ struct OnTheFlyTofPid {
         // LOG(warning) << "Local hit difference in z is bigger than the pixel size";
       }
       hHitMapInPixelBefore->Fill(localZ, localRPhi);
+      enum PixelBin : int { kInactiveLeft = 0,
+                            kInactiveRight = 1,
+                            kInactiveBottom = 3,
+                            kInactiveTop = 4 };
       switch (axisInPixelRPhi->FindBin(localRPhi)) {
-        case 0:
-        case 1:
-        case 3:
-        case 4:
+        case kInactiveLeft:
+        case kInactiveRight:
+        case kInactiveBottom:
+        case kInactiveTop:
           return false;
       }
       switch (axisInPixelZ->FindBin(localZ)) {
-        case 0:
-        case 1:
-        case 3:
-        case 4:
+        case kInactiveLeft:
+        case kInactiveRight:
+        case kInactiveBottom:
+        case kInactiveTop:
           return false;
       }
       hHitMapInPixel->Fill(localZ, localRPhi);
@@ -809,7 +817,7 @@ struct OnTheFlyTofPid {
       static std::array<float, NParticles> expectedTimeInnerTOF, expectedTimeOuterTOF;
       static std::array<float, NParticles> deltaTimeInnerTOF, deltaTimeOuterTOF;
       static std::array<float, NParticles> nSigmaInnerTOF, nSigmaOuterTOF;
-      float momentumHypotheses[NParticles]; // Store momentum hypothesis for each particle
+      std::array<float, NParticles> momentumHypotheses; // Store momentum hypothesis for each particle
       auto truePdgInfo = pdg->GetParticle(mcParticle.pdgCode());
       float rigidity = momentum; // fallback to momentum if charge unknown
 
@@ -866,8 +874,8 @@ struct OnTheFlyTofPid {
           double etaResolution = std::fabs(std::sin(2.0 * std::atan(std::exp(-pseudorapidity)))) * std::sqrt(trkWithTime.mPseudorapidity.second);
           if (simConfig.flagTOFLoadDelphesLUTs) {
             if (mSmearer[collision.lutConfigId()]->hasTable(Particles[ii].pdgCode)) { // Only if the LUT for this particle was loaded
-              ptResolution = mSmearer[collision.lutConfigId()]->getAbsPtRes(Particles[ii].pdgCode, dNdEta, pseudorapidity, transverseMomentum);
-              etaResolution = mSmearer[collision.lutConfigId()]->getAbsEtaRes(Particles[ii].pdgCode, dNdEta, pseudorapidity, transverseMomentum);
+              ptResolution = mSmearer[collision.lutConfigId()]->getAbsPtRes(Particles[ii].pdgCode, pseudorapidity, dNdEta, transverseMomentum);
+              etaResolution = mSmearer[collision.lutConfigId()]->getAbsEtaRes(Particles[ii].pdgCode, pseudorapidity, dNdEta, transverseMomentum);
             }
           }
           const float innerTrackTimeReso = calculateTrackTimeResolutionAdvanced(transverseMomentum, pseudorapidity, ptResolution, etaResolution, Particles[ii].mass, simConfig.innerTOFRadius, mMagneticField);

@@ -68,9 +68,8 @@ float map_t::fracPositionWithinBin(float val) const
   const int bin = find(val);
   if (log) {
     return ((std::log10(val) - min) / width) - bin;
-  } else {
-    return val / width - bin;
   }
+  return val / width - bin;
 }
 
 int map_t::find(float val) const
@@ -156,12 +155,12 @@ lutEntry_t* FlatLutData::getEntry(int nch_bin, int rad_bin, int eta_bin, int pt_
 
 const lutHeader_t& FlatLutData::getHeaderRef() const
 {
-  return *reinterpret_cast<const lutHeader_t*>(mDataRef.data());
+  return *static_cast<const lutHeader_t*>(static_cast<const void*>(mDataRef.data()));
 }
 
 lutHeader_t& FlatLutData::getHeader()
 {
-  return *reinterpret_cast<lutHeader_t*>(mData.data());
+  return *static_cast<lutHeader_t*>(static_cast<void*>(mData.data()));
 }
 
 void FlatLutData::updateRef()
@@ -221,7 +220,7 @@ lutHeader_t FlatLutData::previewHeader(const uint8_t* buffer, size_t size)
   if (size < sizeof(lutHeader_t)) {
     throw framework::runtime_error_f("Buffer too small for LUT header: expected at least %zu, got %zu", sizeof(lutHeader_t), size);
   }
-  const auto* header = reinterpret_cast<const lutHeader_t*>(buffer);
+  const auto* header = static_cast<const lutHeader_t*>(static_cast<const void*>(buffer));
   if (!header->checkVersion()) {
     throw framework::runtime_error_f("LUT header version mismatch: expected %d, got %d", LUTCOVM_VERSION, header->version);
   }
