@@ -817,7 +817,7 @@ struct OnTheFlyTofPid {
       static std::array<float, NParticles> expectedTimeInnerTOF, expectedTimeOuterTOF;
       static std::array<float, NParticles> deltaTimeInnerTOF, deltaTimeOuterTOF;
       static std::array<float, NParticles> nSigmaInnerTOF, nSigmaOuterTOF;
-      std::array<float, NParticles> momentumHypotheses; // Store momentum hypothesis for each particle
+      std::array<float, NParticles> momentumHypotheses{}; // Store momentum hypothesis for each particle
       auto truePdgInfo = pdg->GetParticle(mcParticle.pdgCode());
       float rigidity = momentum; // fallback to momentum if charge unknown
 
