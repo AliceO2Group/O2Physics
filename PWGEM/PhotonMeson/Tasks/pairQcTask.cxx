@@ -930,7 +930,6 @@ struct PairQCTask {
     fRegistry.fill(HIST("Photon/AnalyticV0/hScore_R_Truth"), std::min(p.own.score, 29.9f), rB, truth);                             // o2-linter: disable=magic-number (clamp to the axis)
     fRegistry.fill(HIST("Photon/AnalyticV0/hPhotonLike_Truth"), isPhotonLike(p.own, mAltCuts) ? 1.f : 0.f, truth);
   }
-
   template <bool IsMC>
   void runDedupQA(std::vector<PhotonCand>& cands)
   {
@@ -959,9 +958,12 @@ struct PairQCTask {
               const bool sameRecoTrack = (a.leg[static_cast<size_t>(il)].trackId == b.leg[static_cast<size_t>(il)].trackId) ||
                                          (a.leg[static_cast<size_t>(il)].trackId == b.leg[static_cast<size_t>(1 - il)].trackId);
               const bool sameMC = (ida == idb) || (ida == idbX);
-              truth = (!sameRecoTrack && !sameMC) ? 0.f : (!sameRecoTrack && sameMC) ? 1.f
-                                                        : (sameRecoTrack && sameMC)  ? 2.f
-                                                                                     : 3.f; // o2-linter: disable=magic-number (class codes, see booking)
+              // 0 diff reco/diff MC, 1 diff reco/same MC, 2 same reco/same MC, 3 same reco/diff MC
+              if (!sameRecoTrack) {
+                truth = sameMC ? 1.f : 0.f;
+              } else {
+                truth = sameMC ? 2.f : 3.f; // o2-linter: disable=magic-number (class codes, see booking)
+              }
             }
             const bool legFlagged = pairutil::legsIdentical(a.dedupCand, b.dedupCand, il, mDedupCfg);
             fRegistry.fill(HIST("Dedup/MC/hLegTrackTruthClass"), truth);
@@ -1001,9 +1003,8 @@ struct PairQCTask {
             }
           }
           if (mcutil::classifyDupPair(a.mc, b.mc) == mcutil::DupClass::SameMcPhoton) {
-            const float splitType = (split[0] && split[1]) ? 3.f : split[0] ? 1.f
-                                                                 : split[1] ? 2.f
-                                                                            : 0.f; // o2-linter: disable=magic-number (split codes, see booking)
+            // 0 no split leg, 1 split e+, 2 split e-, 3 both
+            const float splitType = static_cast<float>((split[0] ? 1 : 0) + (split[1] ? 2 : 0)); // o2-linter: disable=magic-number (bit code, see booking)
             fRegistry.fill(HIST("Dedup/MC/hSamePhotonDuplicateType"), splitType);
             fRegistry.fill(HIST("Dedup/MC/hSamePhotonDuplicateType_vs_Flagged"), splitType, flagged ? 1.f : 0.f);
             fRegistry.fill(HIST("Dedup/MC/hDupTrackClassMatrix"), static_cast<float>(a.dedupCand.nITSTPC), static_cast<float>(b.dedupCand.nITSTPC));
