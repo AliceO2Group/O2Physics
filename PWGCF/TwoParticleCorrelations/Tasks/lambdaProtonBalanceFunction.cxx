@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file lambdaProtonBalanceFunction.cxx
-/// \brief Single- and two-particle density correlations (rho1, rho2) and R2 correlations for Lambda-proton pairs to measure the balance function.
+/// \brief Single- and two-particle density correlations (rho1, rho2) and R2 correlations for Lambda-proton, proton-proton and Lambda-Lambda pairs (plus antiparticle combinations) to measure the balance function.
 /// \author Anoop Poruthiyil <anoop.poruthiyil@cern.ch>
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
@@ -75,7 +75,7 @@ struct LambdaProtonBalanceFunction {
   // Contains per-event distributions of N_before, N_after, N_removed, fraction.
   HistogramRegistry registryProtonVetoQA{"ProtonVetoQA", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
-  // pT bins 0.6 → 6.0 in steps of 0.2 (used for per-bin rho2 / mass histograms)
+  // pT bins 0.6 → 3.6 in steps of 0.2 (used for per-bin rho2 / mass histograms)
   std::vector<float> ptEdges;
 
   // ════════════════════════════════════════════════════════════════════════
@@ -90,8 +90,8 @@ struct LambdaProtonBalanceFunction {
   // SECTION A2 — Extended invariant-mass histograms (y × pT grid)
   //   hMassLambdaExtended[iY][iPt]     → Lambda_invMassExtended/Lambda/
   //   hMassAntiLambdaExtended[iY][iPt] → Lambda_invMassExtended/AntiLambda/
-  //   Rapidity bins: [-1.0,-0.9), [-0.9,-0.8), [-0.8,-0.7), [-0.7,-0.6]
-  //   pT bins:       [0.0,0.1), [0.1,0.2), ..., [2.4,2.5]
+  //   Rapidity bins (kExtNyBins = 2): [-0.8,-0.7), [-0.7,-0.6]
+  //   pT bins (kExtNptBins = 25):     [0.0,0.1), [0.1,0.2), ..., [2.4,2.5]
   // ════════════════════════════════════════════════════════════════════════
   static constexpr int kExtNyBins = 2;
   static constexpr int kExtNptBins = 25;
@@ -108,7 +108,9 @@ struct LambdaProtonBalanceFunction {
   // ════════════════════════════════════════════════════════════════════════
   // SECTION B — rho2 eta-space histograms
   //   Naming: hRho2_<channel>         = per-pT-bin vector
-  //           hRho2_<channel>_pT015toMaxDefined = merged (full pT range)
+  //           hRho2_<channel>_pT015toMaxDefined = merged (full pT range as
+  //           set by the pT cuts: protons 0.5-3.6, Lambdas 0.6-3.6 GeV/c;
+  //           "015" is a legacy name and does NOT reflect the actual lower cut)
   // ════════════════════════════════════════════════════════════════════════
   // Lambda–proton family
   std::shared_ptr<TH2> hRho2_Lp_pT015toMaxDefined;
@@ -172,6 +174,8 @@ struct LambdaProtonBalanceFunction {
   // sample before constructing future Balance Functions.
   int64_t runTotalProtonBeforeVeto = 0;  ///< sum of N_before_veto over all events
   int64_t runTotalProtonRemovedVeto = 0; ///< sum of N_removed_by_veto over all events
+  int64_t runTotalAntiPBeforeVeto = 0;   ///< antiproton: sum of N_before_veto
+  int64_t runTotalAntiPRemovedVeto = 0;  ///< antiproton: sum of N_removed_by_veto
   // ─────────────────────────────────────────────────────────────────────
 
   // ── Configurables ─────────────────────────────────────────────────────
@@ -186,7 +190,7 @@ struct LambdaProtonBalanceFunction {
   Configurable<float> pProtonITSMaxChi2PerCluster{"pProtonITSMaxChi2PerCluster", 36.0f, "Max ITS chi2 / Ncls"};
   Configurable<float> cPPMinTpcSignal{"cPPMinTpcSignal", 10.0f, "Min raw TPC signal (sanity cut)"};
   // DCA cuts
-  Configurable<float> pProtonMaxDCAxy{"pProtonMaxDCAxy", 0.02f, "Max |DCAxy| (cm)"}; // changed 0.1-->0.05-->0.02 (tightened for cleanest primary-proton sample)
+  Configurable<float> pProtonMaxDCAxy{"pProtonMaxDCAxy", 0.02f, "Max |DCAxy| (cm)"}; // tight cut for cleanest primary-proton sample
   Configurable<float> pProtonMaxDCAz{"pProtonMaxDCAz", 0.1f, "Max |DCAz| (cm)"};
 
   Configurable<float> pProtonTPCTOFSwitchP{"pProtonTPCTOFSwitchP", 0.700000238f, "p threshold (GeV/c) above which TOF is used if available"};
@@ -214,8 +218,10 @@ struct LambdaProtonBalanceFunction {
   // ─────────────────────────────────────────────────────────────────────
 
   // Proton Kinematic Cuts (from strange9)
-  Configurable<float> pProtonMinP{"pProtonMinP", 0.5f, "Min p_{TPC} for primary protons"};
-  Configurable<float> pProtonMaxP{"pProtonMaxP", 3.5999999f, "Max p for primary protons"};
+  Configurable<float> pProtonMinP{"pProtonMinP", 0.5f, "Min p for primary protons (GeV/c)"};
+  Configurable<float> pProtonMaxP{"pProtonMaxP", 3.6f, "Max p for primary protons (GeV/c)"};
+  Configurable<float> pProtonMinPt{"pProtonMinPt", 0.5f, "Min pT for primary protons (GeV/c)"};
+  Configurable<float> pProtonMaxPt{"pProtonMaxPt", 3.6f, "Max pT for primary protons (GeV/c)"};
   Configurable<float> pProtonMaxEta{"pProtonMaxEta", 0.5f, "Max |eta| for primary protons"};
   Configurable<float> pProtonMaxY{"pProtonMaxY", 0.5f, "Max |y| for primary protons"};
 
@@ -235,12 +241,10 @@ struct LambdaProtonBalanceFunction {
   Configurable<float> cV0DauMinPt{"cV0DauMinPt", 0.1f, "Daughter pT minimum"};
   Configurable<float> cV0DauMaxEta{"cV0DauMaxEta", 0.8f, "Daughter |eta| cut"};
   Configurable<int> cV0DauMinTpcCrossedRows{"cV0DauMinTpcCrossedRows", 70, "Daughter TPC min crossed rows"};
-  // Rapidity-specific constants matched to PProtonMaxY's default value (0.8).
+  // Rapidity-specific constants matched to pProtonMaxY's default value (0.5).
   // Note: Since these are compile-time constexpr, the axis will NOT auto-update
-  // if PProtonMaxY is changed via configurable at runtime. The axis just needs to
+  // if pProtonMaxY is changed via configurable at runtime. The axis just needs to
   // stay >= the cut, not exactly equal.
-
-  // When u change JSON, adjust this also (not needed is my new finding)
 
   // Eta
   static constexpr int kRhoEtaBins = 40;
@@ -254,13 +258,16 @@ struct LambdaProtonBalanceFunction {
 
   static constexpr int kRhoPhiBins = 72;
   static constexpr int kRhoUnrolledBins = kRhoEtaBins * kRhoPhiBins;
+  static constexpr int kRhoUnrolledBinsY = kRhoYBins * kRhoPhiBins;
 
   void buildPtBins()
   {
     ptEdges.clear();
-    static constexpr float kPtEdgeMax = 6.0001f;
-    for (float pt = 0.6f; pt <= kPtEdgeMax; pt += 0.2f) {
-      ptEdges.push_back(pt);
+    static constexpr int kNPtEdges = 16; // 0.6, 0.8, ..., 3.6 GeV/c (15 bins)
+    static constexpr float kPtEdgeMin = 0.6f;
+    static constexpr float kPtEdgeStep = 0.2f;
+    for (int i = 0; i < kNPtEdges; ++i) {
+      ptEdges.push_back(kPtEdgeMin + kPtEdgeStep * static_cast<float>(i));
     }
   }
 
@@ -317,7 +324,7 @@ struct LambdaProtonBalanceFunction {
   static constexpr float kMassProton = o2::constants::physics::MassProton;
   static constexpr float kMassLambda = o2::constants::physics::MassLambda;
 
-  // Femtoscopic q_inv cut (applied only to QA Before/After plots, not to physics rho2 histograms):
+  // Femtoscopic q_inv cut: pairs with q_inv <= kQinvCutLP are rejected from all rho2 histograms (pp, pAp, App, ApAp, LP-family, LL-family):
   static constexpr float kQinvCutLP = 0.01f;
 
   template <typename T>
@@ -342,6 +349,26 @@ struct LambdaProtonBalanceFunction {
   float displayDeltaPhi(float dPhi) const
   {
     return RecoDecay::constrainAngle(dPhi, -o2::constants::math::PI / 2.0f);
+  }
+
+  // k* = |p*| of one particle in the pair rest frame, from four-momenta.
+  float computeKstar(float px1, float py1, float pz1, float m1,
+                     float px2, float py2, float pz2, float m2) const
+  {
+    const float E1 = std::sqrt(px1 * px1 + py1 * py1 + pz1 * pz1 + m1 * m1);
+    const float E2 = std::sqrt(px2 * px2 + py2 * py2 + pz2 * pz2 + m2 * m2);
+    const float sx = px1 + px2;
+    const float sy = py1 + py2;
+    const float sz = pz1 + pz2;
+    const float sE = E1 + E2;
+    const float s = sE * sE - sx * sx - sy * sy - sz * sz;
+    if (s <= 0.f) {
+      return 0.f;
+    }
+    // k*^2 = [ (s - (m1+m2)^2)(s - (m1-m2)^2) ] / (4 s)
+    const float a = s - (m1 + m2) * (m1 + m2);
+    const float b = s - (m1 - m2) * (m1 - m2);
+    return std::sqrt(std::max(a * b, 0.f) / (4.f * s));
   }
 
   // ── Femtoscopic q_inv computation ────────────────────────────────────────
@@ -370,23 +397,16 @@ struct LambdaProtonBalanceFunction {
     const float pTPC = trk.tpcInnerParam(); // NOTE: pTPC, not trk.p() — matches reference exactly
     const float nsPr = trk.tpcNSigmaPr();
 
+    if (std::abs(nsPr) >= pProtonTPCNsigma.value) {
+      return false;
+    }
     if (pTPC < pProtonTPCTOFSwitchP.value) {
-      if (std::abs(nsPr) >= pProtonTPCNsigma.value) {
-        return false;
-      }
-      return true;
-    } else {
-      if (std::abs(nsPr) >= pProtonTPCNsigma.value) {
-        return false;
-      }
-      if (!trk.hasTOF()) {
-        return false;
-      }
-      if (std::abs(trk.tofNSigmaPr()) >= pProtonTOFNsigma.value) {
-        return false;
-      }
       return true;
     }
+    if (!trk.hasTOF()) {
+      return false;
+    }
+    return std::abs(trk.tofNSigmaPr()) < pProtonTOFNsigma.value;
   }
   // ─────────────────────────────────────────────────────────────────────
 
@@ -396,9 +416,9 @@ struct LambdaProtonBalanceFunction {
 
   /// Canonical analysis stages for (anti)proton QA fills.
   enum class ProtonQAStage : int {
-    RawAfterTrackSel = 0, ///< truly RAW — before any track selection, DCA, or PID
-    TpcPid = 1,           ///< after DCA + TPC PID cut passes
-    TpcTofPid = 2,        ///< after DCA + TPC PID + TOF PID all pass
+    RawAfterTrackSel = 0, ///< after track-quality selection (TrackSelection table), before DCA cuts and PID
+    TpcPid = 1,           ///< after DCA + TPC PID cut passes (all momenta)
+    TpcTofPid = 2,        ///< after DCA + full PID: TPC everywhere, plus TOF required only above pProtonTPCTOFSwitchP
     FinalSelected = 3     ///< entered selectedPrimProtons / selectedPrimAntiProtons
   };
 
@@ -476,10 +496,10 @@ struct LambdaProtonBalanceFunction {
   void fillProtonDetectorQuality(ProtonQAStage stage, TTrack const& trk)
   {
     const float pt = trk.pt();
-    const float tpcCR = static_cast<float>(trk.tpcNClsCrossedRows());
+    const auto tpcCR = static_cast<float>(trk.tpcNClsCrossedRows());
     const float tpcCRoF = trk.tpcCrossedRowsOverFindableCls();
     const float tpcChi2 = trk.tpcChi2NCl();
-    const float itsN = static_cast<float>(trk.itsNCls());
+    const auto itsN = static_cast<float>(trk.itsNCls());
     const float itsChi2 = trk.itsChi2NCl();
     const float dcaXY = trk.dcaXY();
     const float dcaZ = trk.dcaZ();
@@ -1072,6 +1092,33 @@ struct LambdaProtonBalanceFunction {
     }
   }
 
+  // Per-particle cache used by the pair loops (avoids recomputing per pair).
+  struct PartInfo {
+    int64_t gid;
+    float px, py, pz, E;
+    float eta, phi, y, pt;
+    int idxEta;
+    int idxY;
+  };
+
+  template <typename TTrack>
+  PartInfo makeProtonInfo(TTrack const& t) const
+  {
+    PartInfo p;
+    p.gid = t.globalIndex();
+    p.px = t.px();
+    p.py = t.py();
+    p.pz = t.pz();
+    p.E = std::sqrt(p.px * p.px + p.py * p.py + p.pz * p.pz + kMassProton * kMassProton);
+    p.eta = t.eta();
+    p.phi = t.phi();
+    p.pt = t.pt();
+    p.y = protonRapidity(t);
+    p.idxEta = unrolledIndex(p.eta, p.phi);
+    p.idxY = unrolledIndexY(p.y, p.phi);
+    return p;
+  }
+
   void init(InitContext const&)
   {
     buildPtBins();
@@ -1100,7 +1147,6 @@ struct LambdaProtonBalanceFunction {
     AxisSpec etaAxis = {kRhoEtaBins, kRhoMin, kRhoMax, "#eta"};
     AxisSpec phiAxis = {kRhoPhiBins, 0.0f, o2::constants::math::TwoPI, "#varphi"};
     AxisSpec unrolledAxis = {kRhoUnrolledBins, 0.0f, static_cast<float>(kRhoUnrolledBins), "index(#eta,#varphi)"};
-    static constexpr int kRhoUnrolledBinsY = kRhoYBins * kRhoPhiBins;
     AxisSpec unrolledAxisY = {kRhoUnrolledBinsY, 0.0f, static_cast<float>(kRhoUnrolledBinsY), "index(y,#varphi)"};
     AxisSpec rapidityAxis = {kRhoYBins, kRhoYMin, kRhoYMax, "y"};
     AxisSpec yAxis = {kRhoYBins, kRhoYMin, kRhoYMax, "y"};
@@ -1126,14 +1172,14 @@ struct LambdaProtonBalanceFunction {
     registryOther.add("hNPrimAntiProtonRemovedByVeto", "AntiProton candidates removed by V0-daughter veto;N;Events", {HistType::kTH1F, {{200, 0.0f, 200.0f}}});
     registryOther.add("hNPrimAntiProtonAfterVeto", "AntiProton candidates after V0-daughter veto;N;Events", {HistType::kTH1F, {{200, 0.0f, 200.0f}}});
     // ─────────────────────────────────────────────────────────────────────
-    registryOther.add("hPtSelLambda", "#Lambda p_{T} yield", {HistType::kTH1F, {ptAxis}});
-    registryOther.add("hPtSelAntiLambda", "#bar{#Lambda} p_{T} yield", {HistType::kTH1F, {ptAxis}});
-    registryOther.add("hPtSelectedPrimProton", "Selected primary proton p_{T} yield", {HistType::kTH1F, {ptAxis}});
-    registryOther.add("hPtSelectedPrimAntiProton", "Selected primary antiproton p_{T} yield", {HistType::kTH1F, {ptAxis}});
-    registryOther.add("hNPairs_Lambda_PrimProton", "#Lambda-p pairs per event", {HistType::kTH1F, {{200, 0.0f, 200.0f}}});
-    registryOther.add("hNPairs_Lambda_PrimAntiProton", "#Lambda-#bar{p} pairs per event", {HistType::kTH1F, {{200, 0.0f, 200.0f}}});
-    registryOther.add("hNPairs_AntiLambda_PrimProton", "#bar{#Lambda}-p pairs per event", {HistType::kTH1F, {{200, 0.0f, 200.0f}}});
-    registryOther.add("hNPairs_AntiLambda_PrimAntiProton", "#bar{#Lambda}-#bar{p} pairs per event", {HistType::kTH1F, {{200, 0.0f, 200.0f}}});
+    registryOther.add("hPtSelLambda", "Selected #Lambda p_{T} spectrum (raw counts);#it{p}_{T} (GeV/#it{c});Counts", {HistType::kTH1F, {ptAxis}});
+    registryOther.add("hPtSelAntiLambda", "Selected #bar{#Lambda} p_{T} spectrum (raw counts);#it{p}_{T} (GeV/#it{c});Counts", {HistType::kTH1F, {ptAxis}});
+    registryOther.add("hPtSelectedPrimProton", "Selected primary proton p_{T} spectrum (raw counts, after V0-daughter veto);#it{p}_{T} (GeV/#it{c});Counts", {HistType::kTH1F, {ptAxis}});
+    registryOther.add("hPtSelectedPrimAntiProton", "Selected primary antiproton p_{T} spectrum (raw counts, after V0-daughter veto);#it{p}_{T} (GeV/#it{c});Counts", {HistType::kTH1F, {ptAxis}});
+    registryOther.add("hNPairs_Lambda_PrimProton", "#Lambda-p pairs per event (after q_{inv} cut);N_{pairs};Events", {HistType::kTH1F, {{200, 0.0f, 200.0f}}});
+    registryOther.add("hNPairs_Lambda_PrimAntiProton", "#Lambda-#bar{p} pairs per event (after q_{inv} cut);N_{pairs};Events", {HistType::kTH1F, {{200, 0.0f, 200.0f}}});
+    registryOther.add("hNPairs_AntiLambda_PrimProton", "#bar{#Lambda}-p pairs per event (after q_{inv} cut);N_{pairs};Events", {HistType::kTH1F, {{200, 0.0f, 200.0f}}});
+    registryOther.add("hNPairs_AntiLambda_PrimAntiProton", "#bar{#Lambda}-#bar{p} pairs per event (after q_{inv} cut);N_{pairs};Events", {HistType::kTH1F, {{200, 0.0f, 200.0f}}});
 
     // ── Event cutflow ─────────────────────────────────────────
 
@@ -1147,7 +1193,7 @@ struct LambdaProtonBalanceFunction {
     AxisSpec axisCosPA_zoom = {200, 0.99f, 1.0f, "Cos(PA)"};
     AxisSpec axisDecayR = {100, 0.0f, 50.0f, "cm"};
     AxisSpec axisCtau = {100, 0.0f, 50.0f, "ctau (cm)"};
-    AxisSpec axisCutFlow = {5, 0.5f, 5.5f, "Cut stage"};
+    AxisSpec axisCutFlow = {14, 0.5f, 14.5f, "Cut stage"};
     AxisSpec axisTOFMatchFrac = {50, 0.0f, 1.0f, "TOF matching fraction"};
 
     auto addProtonQAForStage = [&](const char* species, const char* stage) {
@@ -1197,16 +1243,16 @@ struct LambdaProtonBalanceFunction {
 
     auto addLambdaQAForStage = [&](const char* species, const char* stage) {
       // Kinematics
-      registryQaDetector.add(Form("%s/01_Kinematics/%s/h1f_pt", species, stage), "p_{T};p_{T} (GeV/c);Counts", {HistType::kTH1F, {axisPtProton}});
-      registryQaDetector.add(Form("%s/01_Kinematics/%s/h1f_eta", species, stage), "#eta;#eta;Counts", {HistType::kTH1F, {qaEtaAxis}});
-      registryQaDetector.add(Form("%s/01_Kinematics/%s/h1f_phi", species, stage), "#phi;#phi;Counts", {HistType::kTH1F, {qaPhiAxis}});
+      registryQaDetector.add(Form("%s/01_Kinematics/%s/h1f_pt", species, stage), "V0 p_{T} (RawCandidate = all V0s before any cut, both hypotheses);p_{T} (GeV/c);Counts", {HistType::kTH1F, {axisPtProton}});
+      registryQaDetector.add(Form("%s/01_Kinematics/%s/h1f_eta", species, stage), "V0 #eta (RawCandidate = all V0s before any cut, both hypotheses);#eta;Counts", {HistType::kTH1F, {qaEtaAxis}});
+      registryQaDetector.add(Form("%s/01_Kinematics/%s/h1f_phi", species, stage), "V0 #varphi (RawCandidate = all V0s before any cut, both hypotheses);#varphi;Counts", {HistType::kTH1F, {qaPhiAxis}});
       if (std::string(stage) == "02_Final") {
         registryQaDetector.add(Form("%s/01_Kinematics/%s/h1f_rapidity", species, stage), "y;y;Counts", {HistType::kTH1F, {rapidityAxis}});
       }
 
       // Topology
-      registryQaDetector.add(Form("%s/02_Topology/%s/h1f_cospa", species, stage), "Cos(PA);Cos(PA);Counts", {HistType::kTH1F, {{100, 0.9f, 1.0f, "Cos(PA)"}}});
-      registryQaDetector.add(Form("%s/02_Topology/%s/h1f_cospa_zoom", species, stage), "Cos(PA);Cos(PA);Counts", {HistType::kTH1F, {axisCosPA_zoom}});
+      registryQaDetector.add(Form("%s/02_Topology/%s/h1f_cospa", species, stage), "V0 cos(PA), full range;cos(PA);Counts", {HistType::kTH1F, {{100, 0.9f, 1.0f, "cos(PA)"}}});
+      registryQaDetector.add(Form("%s/02_Topology/%s/h1f_cospa_zoom", species, stage), "V0 cos(PA), zoom 0.99-1.0;cos(PA);Counts", {HistType::kTH1F, {axisCosPA_zoom}});
       registryQaDetector.add(Form("%s/02_Topology/%s/h1f_dcaV0toPV", species, stage), "DCA V0 to PV;DCA (cm);Counts", {HistType::kTH1F, {dcaAxisWide}});
       registryQaDetector.add(Form("%s/02_Topology/%s/h1f_ctau", species, stage), "ctau;ctau (cm);Counts", {HistType::kTH1F, {axisCtau}});
       if (std::string(stage) == "01_RawCandidate" || std::string(stage) == "02_Final") {
@@ -1280,21 +1326,45 @@ struct LambdaProtonBalanceFunction {
       addDaughterQA("02_AntiLambda", "02_AntiPion", stage);
     }
 
-    registryQaDetector.add("Selection/TOF_Matching/hTOFMatchedFractionVsPt", "TOF matched fraction vs p_{T};p_{T};Fraction", {HistType::kTProfile, {axisPtProton}});
+    registryQaDetector.add("Selection/TOF_Matching/hTOFMatchedFractionVsPt", "TOF-matched fraction of selected (anti)protons (before V0-daughter veto) vs p_{T};p_{T} (GeV/c);TOF-matched fraction", {HistType::kTProfile, {axisPtProton}});
     // ── Item 4: 2D TOF-matching efficiency maps (eta × phi) ──────────────────
     registryQaDetector.add("Selection/TOF_Matching/h2f_TOFMatchedFractionVsEtaPhi",
-                           "Proton TOF matched fraction vs (#eta, #varphi);#eta;#varphi;Fraction",
+                           "TOF-matched fraction of selected (anti)protons (before V0-daughter veto) vs (#eta, #varphi);#eta;#varphi;TOF-matched fraction",
                            {HistType::kTProfile2D, {qaEtaAxis, qaPhiAxis}});
     // ─────────────────────────────────────────────────────────────────────────
-    registryQaDetector.add("Selection/TOF_Matching/hCutFlow", "Proton Track Cutflow;Stage;Counts", {HistType::kTH1F, {axisCutFlow}});
+    registryQaDetector.add("Selection/TOF_Matching/hCutFlow", "(Anti)proton track cutflow (both charges);Stage;Counts", {HistType::kTH1F, {axisCutFlow}});
+    {
+      auto hCF = registryQaDetector.get<TH1>(HIST("Selection/TOF_Matching/hCutFlow"));
+      hCF->GetXaxis()->SetBinLabel(1, "All tracks");
+      hCF->GetXaxis()->SetBinLabel(2, "hasTPC");
+      hCF->GetXaxis()->SetBinLabel(3, "TPC crossed rows");
+      hCF->GetXaxis()->SetBinLabel(4, "TPC rows/findable");
+      hCF->GetXaxis()->SetBinLabel(5, "TPC chi2");
+      hCF->GetXaxis()->SetBinLabel(6, "ITS Ncls");
+      hCF->GetXaxis()->SetBinLabel(7, "ITS chi2");
+      hCF->GetXaxis()->SetBinLabel(8, "TPC signal");
+      hCF->GetXaxis()->SetBinLabel(9, "p_TPC & pT window");
+      hCF->GetXaxis()->SetBinLabel(10, "|y| window");
+      hCF->GetXaxis()->SetBinLabel(11, "DCA xy,z");
+      hCF->GetXaxis()->SetBinLabel(12, "PID (TPC/TOF)");
+      hCF->GetXaxis()->SetBinLabel(13, "V0-daughter veto");
+      hCF->GetXaxis()->SetBinLabel(14, "Selected");
+    }
 
     // ══════════════════════════════════════════════════════════════════════════
     // EXISTING QA_Detec REGISTRATION (Preserved for backward compatibility)
     // ══════════════════════════════════════════════════════════════════════════
 
-    // -- Proton (existing) --r INEL > 0
+    // -- Event cutflow --
     registryOther.add("hEventCutflow", "Event Cutflow;Step;Counts",
                       {HistType::kTH1F, {{4, 0.5f, 4.5f}}});
+    {
+      auto hEC = registryOther.get<TH1>(HIST("hEventCutflow"));
+      hEC->GetXaxis()->SetBinLabel(1, "sel8 + |z|<cut (Filter)");
+      hEC->GetXaxis()->SetBinLabel(2, "numContrib >= 1");
+      hEC->GetXaxis()->SetBinLabel(3, "centFT0M < 80");
+      hEC->GetXaxis()->SetBinLabel(4, "INEL > 0");
+    }
 
     // ── ProtonVetoQA histograms ───────────────────────────────────────────
     // Purpose: quantify the importance of the V0-daughter veto for the
@@ -1330,12 +1400,21 @@ struct LambdaProtonBalanceFunction {
     // hPileupFlags: each bin corresponds to a different event-selection bit.
     // Bin 1 = kNoSameBunchPileup, Bin 2 = kIsGoodZvtxFT0vsPV,
     // Bin 3 = kIsVertexITSTPC, Bin 4 = kIsVertexTOFmatched,
-    // Bin 5 = kIsVertexTRDmatched, Bin 6 = any pileup-rejection bit fired.
+    // Bin 5 = kIsVertexTRDmatched, Bin 6 = kNoSameBunchPileup && kIsGoodZvtxFT0vsPV && kIsVertexITSTPC all set.
     registryOther.add("hPileupFlags",
-                      "Event-level pile-up rejection flags (Bin 6: All 3 passed (AND));Flag;Events passing",
+                      "Event-level pile-up rejection flags;Flag;Events passing",
                       {HistType::kTH1F, {{6, 0.5f, 6.5f, "Pileup flag"}}});
+    {
+      auto hPU = registryOther.get<TH1>(HIST("hPileupFlags"));
+      hPU->GetXaxis()->SetBinLabel(1, "NoSameBunchPileup");
+      hPU->GetXaxis()->SetBinLabel(2, "GoodZvtxFT0vsPV");
+      hPU->GetXaxis()->SetBinLabel(3, "VertexITSTPC");
+      hPU->GetXaxis()->SetBinLabel(4, "VertexTOFmatched");
+      hPU->GetXaxis()->SetBinLabel(5, "VertexTRDmatched");
+      hPU->GetXaxis()->SetBinLabel(6, "NoSBPU&&GoodZvtx&&ITSTPC");
+    }
     registryOther.add("h2f_NTracks_vs_Cent",
-                      "N_{tracks}(|#eta|<0.8) vs FT0M cent;FT0M (%);N_{tracks}(|#eta|<0.8)",
+                      "N_{tracks}(|#eta|<0.8, all TracksIU, no quality cut) vs FT0M cent;FT0M (%);N_{tracks}(|#eta|<0.8)",
                       {HistType::kTH2F, {multAxis, {200, 0.0f, 200.0f, "N_{tracks}"}}});
     registryOther.add("h2f_NumContrib_vs_Cent",
                       "N_{contribs} vs FT0M percentile;FT0M (%);N_{contribs}",
@@ -1362,15 +1441,15 @@ struct LambdaProtonBalanceFunction {
     // ── Rho histograms ───────────────────────────────────────────────────
     registryRho.add("hEventCounter", "Events", {HistType::kTH1F, {{1, 0.0, 1.0}}});
     // eta-based rho1
-    registryRho.add("h2_rho1_Proton", "rho1 proton", {HistType::kTH2F, {etaAxis, phiAxis}});
-    registryRho.add("h2_rho1_AntiProton", "rho1 pbar", {HistType::kTH2F, {etaAxis, phiAxis}});
-    registryRho.add("h2_rho1_Lambda", "rho1 lambda", {HistType::kTH2F, {etaAxis, phiAxis}});
-    registryRho.add("h2_rho1_AntiLambda", "rho1 lambdabar", {HistType::kTH2F, {etaAxis, phiAxis}});
+    registryRho.add("h2_rho1_Proton", "#rho_{1}(p) in (#eta,#varphi) (after V0-daughter veto)", {HistType::kTH2F, {etaAxis, phiAxis}});
+    registryRho.add("h2_rho1_AntiProton", "#rho_{1}(#bar{p}) in (#eta,#varphi) (after V0-daughter veto)", {HistType::kTH2F, {etaAxis, phiAxis}});
+    registryRho.add("h2_rho1_Lambda", "#rho_{1}(#Lambda) in (#eta,#varphi)", {HistType::kTH2F, {etaAxis, phiAxis}});
+    registryRho.add("h2_rho1_AntiLambda", "#rho_{1}(#bar{#Lambda}) in (#eta,#varphi)", {HistType::kTH2F, {etaAxis, phiAxis}});
     // rapidity-based rho1
-    registryRho.add("h2_rho1_Proton_y", "rho1 proton (y)", {HistType::kTH2F, {yAxis, phiAxis}});
-    registryRho.add("h2_rho1_AntiProton_y", "rho1 pbar (y)", {HistType::kTH2F, {yAxis, phiAxis}});
-    registryRho.add("h2_rho1_Lambda_y", "rho1 lambda (y)", {HistType::kTH2F, {yAxis, phiAxis}});
-    registryRho.add("h2_rho1_AntiLambda_y", "rho1 lambdabar (y)", {HistType::kTH2F, {yAxis, phiAxis}});
+    registryRho.add("h2_rho1_Proton_y", "#rho_{1}(p) in (y,#varphi) (after V0-daughter veto)", {HistType::kTH2F, {yAxis, phiAxis}});
+    registryRho.add("h2_rho1_AntiProton_y", "#rho_{1}(#bar{p}) in (y,#varphi) (after V0-daughter veto)", {HistType::kTH2F, {yAxis, phiAxis}});
+    registryRho.add("h2_rho1_Lambda_y", "#rho_{1}(#Lambda) in (y,#varphi)", {HistType::kTH2F, {yAxis, phiAxis}});
+    registryRho.add("h2_rho1_AntiLambda_y", "#rho_{1}(#bar{#Lambda}) in (y,#varphi)", {HistType::kTH2F, {yAxis, phiAxis}});
     // ─────────────────────────────────────────────────────────────────────
 
     // ── Autocorrelation / feed-down diagnostic histograms ────────────────
@@ -1379,28 +1458,30 @@ struct LambdaProtonBalanceFunction {
     // Folder:  CorrelationQA/PrimaryProton_vs_LambdaDaughter/
     //
     // h2f_dEta_dPhi         : Δη vs Δφ for every (selected Lambda, selected
-    //                         primary proton) pair.  No veto on shared tracks.
-    //                         A peak at (0,0) indicates track sharing / feed-down.
+    //                         primary proton) pair. The primary-proton list is
+    //                         ALREADY cleaned by the V0-daughter veto, so the same
+    //                         track cannot appear; this checks for residual
+    //                         proximity correlation (e.g. undetected feed-down).
     // h2f_dEta_dPhi_nonSameTrack : same, restricted to pairs where the primary
     //                         proton track is NOT the Lambda positive daughter.
-    AxisSpec axisCorDEta = {64, -1.6f, 1.6f};
+    AxisSpec axisCorDEta = {64, -1.6f, 1.6f, "#Delta#eta"};
     AxisSpec axisCorDPhi = {72, -o2::constants::math::PI, o2::constants::math::PI, "#Delta#varphi"};
     AxisSpec axisCorDPhiDisplay = {72, -o2::constants::math::PI / 2.0f, 3.0f * o2::constants::math::PI / 2.0f, "#Delta#varphi"};
     registryCorrelationQA.add(
       "PrimaryProton_vs_LambdaDaughter/h2f_dEta_dPhi",
-      "Primary Proton vs #Lambda Daughter Proton;#Delta#eta = #eta_{prim} - #eta_{dau};#Delta#varphi = #varphi_{prim} - #varphi_{dau}",
+      "Primary Proton (after V0-daughter veto) vs #Lambda Daughter Proton;#Delta#eta = #eta_{prim} - #eta_{dau};#Delta#varphi = #varphi_{prim} - #varphi_{dau}",
       {HistType::kTH2F, {axisCorDEta, axisCorDPhi}});
     registryCorrelationQA.add(
       "PrimaryProton_vs_LambdaDaughter/h2f_dEta_dPhi_display",
-      "Primary Proton vs #Lambda Daughter Proton (display shifted #Delta#varphi);#Delta#eta = #eta_{prim} - #eta_{dau};#Delta#varphi = #varphi_{prim} - #varphi_{dau}",
+      "Primary Proton (after V0-daughter veto) vs #Lambda Daughter Proton (display shifted #Delta#varphi);#Delta#eta = #eta_{prim} - #eta_{dau};#Delta#varphi = #varphi_{prim} - #varphi_{dau}",
       {HistType::kTH2F, {axisCorDEta, axisCorDPhiDisplay}});
     registryCorrelationQA.add(
       "PrimaryProton_vs_LambdaDaughter/h2f_dEta_dPhi_nonSameTrack",
-      "Primary Proton vs #Lambda Daughter (non-same-track pairs only);#Delta#eta;#Delta#varphi",
+      "Primary Proton (after V0-daughter veto) vs #Lambda Daughter (non-same-track pairs only);#Delta#eta;#Delta#varphi",
       {HistType::kTH2F, {axisCorDEta, axisCorDPhi}});
     registryCorrelationQA.add(
       "PrimaryProton_vs_LambdaDaughter/h2f_dEta_dPhi_nonSameTrack_display",
-      "Primary Proton vs #Lambda Daughter (non-same-track pairs only, display shifted #Delta#varphi);#Delta#eta;#Delta#varphi",
+      "Primary Proton (after V0-daughter veto) vs #Lambda Daughter (non-same-track pairs only, display shifted #Delta#varphi);#Delta#eta;#Delta#varphi",
       {HistType::kTH2F, {axisCorDEta, axisCorDPhiDisplay}});
     // ─────────────────────────────────────────────────────────────────────
 
@@ -1410,11 +1491,11 @@ struct LambdaProtonBalanceFunction {
     // Same-track matching is impossible here (opposite charges).
     registryCorrelationQA.add(
       "PrimaryAntiProton_vs_LambdaDaughter/h2f_dEta_dPhi",
-      "Primary AntiProton vs #Lambda Daughter Proton;#Delta#eta = #eta_{prim} - #eta_{dau};#Delta#varphi = #varphi_{prim} - #varphi_{dau}",
+      "Primary AntiProton (after V0-daughter veto) vs #Lambda Daughter Proton;#Delta#eta = #eta_{prim} - #eta_{dau};#Delta#varphi = #varphi_{prim} - #varphi_{dau}",
       {HistType::kTH2F, {axisCorDEta, axisCorDPhi}});
     registryCorrelationQA.add(
       "PrimaryAntiProton_vs_LambdaDaughter/h2f_dEta_dPhi_display",
-      "Primary AntiProton vs #Lambda Daughter Proton (display shifted #Delta#varphi);#Delta#eta;#Delta#varphi",
+      "Primary AntiProton (after V0-daughter veto) vs #Lambda Daughter Proton (display shifted #Delta#varphi);#Delta#eta;#Delta#varphi",
       {HistType::kTH2F, {axisCorDEta, axisCorDPhiDisplay}});
     // ─────────────────────────────────────────────────────────────────────
 
@@ -1424,11 +1505,11 @@ struct LambdaProtonBalanceFunction {
     // Same-track matching is impossible here (opposite charges).
     registryCorrelationQA.add(
       "PrimaryProton_vs_AntiLambdaDaughter/h2f_dEta_dPhi",
-      "Primary Proton vs #bar{#Lambda} Daughter AntiProton;#Delta#eta = #eta_{prim} - #eta_{dau};#Delta#varphi = #varphi_{prim} - #varphi_{dau}",
+      "Primary Proton (after V0-daughter veto) vs #bar{#Lambda} Daughter AntiProton;#Delta#eta = #eta_{prim} - #eta_{dau};#Delta#varphi = #varphi_{prim} - #varphi_{dau}",
       {HistType::kTH2F, {axisCorDEta, axisCorDPhi}});
     registryCorrelationQA.add(
       "PrimaryProton_vs_AntiLambdaDaughter/h2f_dEta_dPhi_display",
-      "Primary Proton vs #bar{#Lambda} Daughter AntiProton (display shifted #Delta#varphi);#Delta#eta;#Delta#varphi",
+      "Primary Proton (after V0-daughter veto) vs #bar{#Lambda} Daughter AntiProton (display shifted #Delta#varphi);#Delta#eta;#Delta#varphi",
       {HistType::kTH2F, {axisCorDEta, axisCorDPhiDisplay}});
     // ─────────────────────────────────────────────────────────────────────
 
@@ -1440,19 +1521,19 @@ struct LambdaProtonBalanceFunction {
     //          the AntiLambda neg-daughter (i.e. genuine different-track pairs).
     registryCorrelationQA.add(
       "PrimaryAntiProton_vs_AntiLambdaDaughter/h2f_dEta_dPhi",
-      "Primary AntiProton vs #bar{#Lambda} Daughter AntiProton;#Delta#eta = #eta_{prim} - #eta_{dau};#Delta#varphi = #varphi_{prim} - #varphi_{dau}",
+      "Primary AntiProton (after V0-daughter veto) vs #bar{#Lambda} Daughter AntiProton;#Delta#eta = #eta_{prim} - #eta_{dau};#Delta#varphi = #varphi_{prim} - #varphi_{dau}",
       {HistType::kTH2F, {axisCorDEta, axisCorDPhi}});
     registryCorrelationQA.add(
       "PrimaryAntiProton_vs_AntiLambdaDaughter/h2f_dEta_dPhi_display",
-      "Primary AntiProton vs #bar{#Lambda} Daughter AntiProton (display shifted #Delta#varphi);#Delta#eta;#Delta#varphi",
+      "Primary AntiProton (after V0-daughter veto) vs #bar{#Lambda} Daughter AntiProton (display shifted #Delta#varphi);#Delta#eta;#Delta#varphi",
       {HistType::kTH2F, {axisCorDEta, axisCorDPhiDisplay}});
     registryCorrelationQA.add(
       "PrimaryAntiProton_vs_AntiLambdaDaughter/h2f_dEta_dPhi_nonSameTrack",
-      "Primary AntiProton vs #bar{#Lambda} Daughter (non-same-track pairs only);#Delta#eta;#Delta#varphi",
+      "Primary AntiProton (after V0-daughter veto) vs #bar{#Lambda} Daughter (non-same-track pairs only);#Delta#eta;#Delta#varphi",
       {HistType::kTH2F, {axisCorDEta, axisCorDPhi}});
     registryCorrelationQA.add(
       "PrimaryAntiProton_vs_AntiLambdaDaughter/h2f_dEta_dPhi_nonSameTrack_display",
-      "Primary AntiProton vs #bar{#Lambda} Daughter (non-same-track pairs only, display shifted #Delta#varphi);#Delta#eta;#Delta#varphi",
+      "Primary AntiProton (after V0-daughter veto) vs #bar{#Lambda} Daughter (non-same-track pairs only, display shifted #Delta#varphi);#Delta#eta;#Delta#varphi",
       {HistType::kTH2F, {axisCorDEta, axisCorDPhiDisplay}});
     // ─────────────────────────────────────────────────────────────────────
 
@@ -1478,13 +1559,14 @@ struct LambdaProtonBalanceFunction {
     registryCorrelationQA.add(
       "QA3/PairCleaning/h1f_pairCleaning",
       "p-p pair cleaning;Step;Counts",
-      {HistType::kTH1F, {{3, 0.5f, 3.5f}}});
+      {HistType::kTH1F, {{4, 0.5f, 4.5f}}});
     // Bin labels are set after histogram registration
     {
       auto h = registryCorrelationQA.get<TH1>(HIST("QA3/PairCleaning/h1f_pairCleaning"));
       h->GetXaxis()->SetBinLabel(1, "All Candidate Pairs");
       h->GetXaxis()->SetBinLabel(2, "Rejected Same Track");
-      h->GetXaxis()->SetBinLabel(3, "Accepted");
+      h->GetXaxis()->SetBinLabel(3, "Rejected q_inv");
+      h->GetXaxis()->SetBinLabel(4, "Accepted");
     }
     // ─────────────────────────────────────────────────────────────────────
 
@@ -1512,33 +1594,62 @@ struct LambdaProtonBalanceFunction {
       {HistType::kTH1F, {{600, 0.0f, 6.0f, "q_{inv} (GeV/c)"}}});
     registryCorrelationQA.add(
       "QA3/SplitTrackQA/h1f_qinv_LP_Before_qinvCut",
-      "Split-track QA: q_{inv} for #Lambda-p pairs, before q_{inv} cut;q_{inv} (GeV/c);Counts",
+      "Split-track QA: q_{inv} for #Lambda/#bar{#Lambda}-p/#bar{p} pairs (all four LP combos), before q_{inv} cut;q_{inv} (GeV/c);Counts",
       {HistType::kTH1F, {{600, 0.0f, 6.0f, "q_{inv} (GeV/c)"}}});
     registryCorrelationQA.add(
       "QA3/SplitTrackQA/h1f_qinv_LL_Before_qinvCut",
-      "Split-track QA: q_{inv} for #Lambda-#Lambda pairs, before q_{inv} cut;q_{inv} (GeV/c);Counts",
+      "Split-track QA: q_{inv} for #Lambda/#bar{#Lambda}-#Lambda/#bar{#Lambda} pairs (all four LL combos), before q_{inv} cut;q_{inv} (GeV/c);Counts",
       {HistType::kTH1F, {{600, 0.0f, 6.0f, "q_{inv} (GeV/c)"}}});
     // "After_qinvCut": filled only for pairs surviving the q_inv cut
-    // (q_inv > kQinvCutLP), applied uniformly to PP, LP, and LL pairs.
+    // (q_inv > kQinvCutLP), applied uniformly to all pair types (PP, pAp, App, ApAp, LP-family, LL-family).
     registryCorrelationQA.add(
       "QA3/SplitTrackQA/h1f_qinv_PP_After_qinvCut",
-      "Split-track QA: q_{inv} for p-p pairs, after q_{inv} cut;q_{inv} (GeV/c);Counts",
+      "Split-track QA: q_{inv} for p-p pairs, after q_{inv} cut (q_{inv} > 0.01 GeV/c);q_{inv} (GeV/c);Counts",
       {HistType::kTH1F, {{600, 0.0f, 6.0f, "q_{inv} (GeV/c)"}}});
     registryCorrelationQA.add(
       "QA3/SplitTrackQA/h1f_qinv_LP_After_qinvCut",
-      "Split-track QA: q_{inv} for #Lambda-p pairs, after q_{inv} cut (q_{inv} > 0.01 GeV/c);q_{inv} (GeV/c);Counts",
+      "Split-track QA: q_{inv} for #Lambda/#bar{#Lambda}-p/#bar{p} pairs (all four LP combos), after q_{inv} cut (q_{inv} > 0.01 GeV/c);q_{inv} (GeV/c);Counts",
       {HistType::kTH1F, {{600, 0.0f, 6.0f, "q_{inv} (GeV/c)"}}});
     registryCorrelationQA.add(
       "QA3/SplitTrackQA/h1f_qinv_LL_After_qinvCut",
-      "Split-track QA: q_{inv} for #Lambda-#Lambda pairs, after q_{inv} cut;q_{inv} (GeV/c);Counts",
+      "Split-track QA: q_{inv} for #Lambda/#bar{#Lambda}-#Lambda/#bar{#Lambda} pairs (all four LL combos), after q_{inv} cut (q_{inv} > 0.01 GeV/c);q_{inv} (GeV/c);Counts",
+      {HistType::kTH1F, {{600, 0.0f, 6.0f, "q_{inv} (GeV/c)"}}});
+    // q_inv Before/After QA for p-pbar, pbar-p and pbar-pbar pairs
+    registryCorrelationQA.add(
+      "QA3/SplitTrackQA/h1f_qinv_pAp_Before_qinvCut",
+      "Split-track QA: q_{inv} for p-#bar{p} pairs, before q_{inv} cut;q_{inv} (GeV/c);Counts",
       {HistType::kTH1F, {{600, 0.0f, 6.0f, "q_{inv} (GeV/c)"}}});
     registryCorrelationQA.add(
+      "QA3/SplitTrackQA/h1f_qinv_pAp_After_qinvCut",
+      "Split-track QA: q_{inv} for p-#bar{p} pairs, after q_{inv} cut (q_{inv} > 0.01 GeV/c);q_{inv} (GeV/c);Counts",
+      {HistType::kTH1F, {{600, 0.0f, 6.0f, "q_{inv} (GeV/c)"}}});
+    registryCorrelationQA.add(
+      "QA3/SplitTrackQA/h1f_qinv_App_Before_qinvCut",
+      "Split-track QA: q_{inv} for #bar{p}-p pairs, before q_{inv} cut;q_{inv} (GeV/c);Counts",
+      {HistType::kTH1F, {{600, 0.0f, 6.0f, "q_{inv} (GeV/c)"}}});
+    registryCorrelationQA.add(
+      "QA3/SplitTrackQA/h1f_qinv_App_After_qinvCut",
+      "Split-track QA: q_{inv} for #bar{p}-p pairs, after q_{inv} cut (q_{inv} > 0.01 GeV/c);q_{inv} (GeV/c);Counts",
+      {HistType::kTH1F, {{600, 0.0f, 6.0f, "q_{inv} (GeV/c)"}}});
+    registryCorrelationQA.add(
+      "QA3/SplitTrackQA/h1f_qinv_ApAp_Before_qinvCut",
+      "Split-track QA: q_{inv} for #bar{p}-#bar{p} pairs, before q_{inv} cut;q_{inv} (GeV/c);Counts",
+      {HistType::kTH1F, {{600, 0.0f, 6.0f, "q_{inv} (GeV/c)"}}});
+    registryCorrelationQA.add(
+      "QA3/SplitTrackQA/h1f_qinv_ApAp_After_qinvCut",
+      "Split-track QA: q_{inv} for #bar{p}-#bar{p} pairs, after q_{inv} cut (q_{inv} > 0.01 GeV/c);q_{inv} (GeV/c);Counts",
+      {HistType::kTH1F, {{600, 0.0f, 6.0f, "q_{inv} (GeV/c)"}}});
+    registryCorrelationQA.add("QA3/Kstar/h1f_kstar_Lp", "k* of #Lambda-p pairs (after q_{inv} cut);k* (GeV/c);Counts", {HistType::kTH1F, {{200, 0.0f, 2.0f}}});
+    registryCorrelationQA.add("QA3/Kstar/h1f_kstar_LAp", "k* of #Lambda-#bar{p} pairs (after q_{inv} cut);k* (GeV/c);Counts", {HistType::kTH1F, {{200, 0.0f, 2.0f}}});
+    registryCorrelationQA.add("QA3/Kstar/h1f_kstar_ALp", "k* of #bar{#Lambda}-p pairs (after q_{inv} cut);k* (GeV/c);Counts", {HistType::kTH1F, {{200, 0.0f, 2.0f}}});
+    registryCorrelationQA.add("QA3/Kstar/h1f_kstar_ALAp", "k* of #bar{#Lambda}-#bar{p} pairs (after q_{inv} cut);k* (GeV/c);Counts", {HistType::kTH1F, {{200, 0.0f, 2.0f}}});
+    registryCorrelationQA.add(
       "QA3/SplitTrackQA/h1f_sharedClsFraction_t1",
-      "Split-track QA: TPC shared-cluster fraction (track 1 in close p-p pairs);Fraction;Counts",
+      "Split-track QA: TPC shared-cluster fraction, track 1 (p-p: first proton; #Lambda-p: V0 daughter) in close pairs;Fraction;Counts",
       {HistType::kTH1F, {{50, 0.0f, 1.0f}}});
     registryCorrelationQA.add(
       "QA3/SplitTrackQA/h1f_sharedClsFraction_t2",
-      "Split-track QA: TPC shared-cluster fraction (track 2 in close p-p pairs);Fraction;Counts",
+      "Split-track QA: TPC shared-cluster fraction, track 2 (p-p: second proton; #Lambda-p: primary (anti)proton) in close pairs;Fraction;Counts",
       {HistType::kTH1F, {{50, 0.0f, 1.0f}}});
     // ─────────────────────────────────────────────────────────────────────
 
@@ -1553,58 +1664,58 @@ struct LambdaProtonBalanceFunction {
                                       {HistType::kTH1F, {pidCheckPtAxis}});
     h_TPCorTOF =
       registryProtonPidCheck.add<TH1>("h_TPCorTOF",
-                                      "Proton candidates: TPC mandatory, TOF optional if present;#it{p}_{T} (GeV/#it{c});Counts",
+                                      "Proton candidates: TPC required; if TOF present at any p, TOF n#sigma also required (differs from final selection, which requires TOF only above p_{TPC} switch);#it{p}_{T} (GeV/#it{c});Counts",
                                       {HistType::kTH1F, {pidCheckPtAxis}});
     // ─────────────────────────────────────────────────────────────────────
 
     // ── Merged / pT015toMaxDefined histograms ───────────────────────────────────
     hRho2_Lp_pT015toMaxDefined =
       registryRho.add<TH2>("h2_rho2_Lp_pT015toMaxDefined",
-                           "Lambda-p correlation (integrated pT range)",
+                           "#rho_{2}(#Lambda, p) in (#eta,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(#eta,#varphi) of #Lambda (trigger);index(#eta,#varphi) of p (associate)",
                            {HistType::kTH2F, {unrolledAxis, unrolledAxis}});
     hRho2_LAp_pT015toMaxDefined =
       registryRho.add<TH2>("h2_rho2_LAp_pT015toMaxDefined",
-                           "Lambda-pbar correlation (integrated pT range)",
+                           "#rho_{2}(#Lambda, #bar{p}) in (#eta,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(#eta,#varphi) of #Lambda (trigger);index(#eta,#varphi) of #bar{p} (associate)",
                            {HistType::kTH2F, {unrolledAxis, unrolledAxis}});
     hRho2_ALp_pT015toMaxDefined =
       registryRho.add<TH2>("h2_rho2_ALp_pT015toMaxDefined",
-                           "AntiLambda-p correlation (integrated pT range)",
+                           "#rho_{2}(#bar{#Lambda}, p) in (#eta,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(#eta,#varphi) of #bar{#Lambda} (trigger);index(#eta,#varphi) of p (associate)",
                            {HistType::kTH2F, {unrolledAxis, unrolledAxis}});
     hRho2_ALAp_pT015toMaxDefined =
       registryRho.add<TH2>("h2_rho2_ALAp_pT015toMaxDefined",
-                           "AntiLambda-pbar correlation (integrated pT range)",
+                           "#rho_{2}(#bar{#Lambda}, #bar{p}) in (#eta,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(#eta,#varphi) of #bar{#Lambda} (trigger);index(#eta,#varphi) of #bar{p} (associate)",
                            {HistType::kTH2F, {unrolledAxis, unrolledAxis}});
     hRho2_pp_pT015toMaxDefined =
       registryRho.add<TH2>("h2_rho2_pp_pT015toMaxDefined",
-                           "pp correlation",
+                           "#rho_{2}(p, p) in (#eta,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(#eta,#varphi) of p (trigger);index(#eta,#varphi) of p (associate)",
                            {HistType::kTH2F, {unrolledAxis, unrolledAxis}});
     hRho2_pAp_pT015toMaxDefined =
       registryRho.add<TH2>("h2_rho2_pAp_pT015toMaxDefined",
-                           "p-pbar correlation",
+                           "#rho_{2}(p, #bar{p}) in (#eta,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(#eta,#varphi) of p (trigger);index(#eta,#varphi) of #bar{p} (associate)",
                            {HistType::kTH2F, {unrolledAxis, unrolledAxis}});
     hRho2_App_pT015toMaxDefined =
       registryRho.add<TH2>("h2_rho2_App_pT015toMaxDefined",
-                           "pbar-p correlation",
+                           "#rho_{2}(#bar{p}, p) in (#eta,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(#eta,#varphi) of #bar{p} (trigger);index(#eta,#varphi) of p (associate)",
                            {HistType::kTH2F, {unrolledAxis, unrolledAxis}});
     hRho2_ApAp_pT015toMaxDefined =
       registryRho.add<TH2>("h2_rho2_ApAp_pT015toMaxDefined",
-                           "pbar-pbar correlation",
+                           "#rho_{2}(#bar{p}, #bar{p}) in (#eta,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(#eta,#varphi) of #bar{p} (trigger);index(#eta,#varphi) of #bar{p} (associate)",
                            {HistType::kTH2F, {unrolledAxis, unrolledAxis}});
     hRho2_LL_pT015toMaxDefined =
       registryRho.add<TH2>("h2_rho2_LL_pT015toMaxDefined",
-                           "Lambda-Lambda correlation",
+                           "#rho_{2}(#Lambda, #Lambda) in (#eta,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(#eta,#varphi) of #Lambda (trigger);index(#eta,#varphi) of #Lambda (associate)",
                            {HistType::kTH2F, {unrolledAxis, unrolledAxis}});
     hRho2_LAL_pT015toMaxDefined =
       registryRho.add<TH2>("h2_rho2_LAL_pT015toMaxDefined",
-                           "Lambda-AntiLambda correlation",
+                           "#rho_{2}(#Lambda, #bar{#Lambda}) in (#eta,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(#eta,#varphi) of #Lambda (trigger);index(#eta,#varphi) of #bar{#Lambda} (associate)",
                            {HistType::kTH2F, {unrolledAxis, unrolledAxis}});
     hRho2_ALL_pT015toMaxDefined =
       registryRho.add<TH2>("h2_rho2_ALL_pT015toMaxDefined",
-                           "AntiLambda-Lambda correlation",
+                           "#rho_{2}(#bar{#Lambda}, #Lambda) in (#eta,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(#eta,#varphi) of #bar{#Lambda} (trigger);index(#eta,#varphi) of #Lambda (associate)",
                            {HistType::kTH2F, {unrolledAxis, unrolledAxis}});
     hRho2_ALAL_pT015toMaxDefined =
       registryRho.add<TH2>("h2_rho2_ALAL_pT015toMaxDefined",
-                           "AntiLambda-AntiLambda correlation",
+                           "#rho_{2}(#bar{#Lambda}, #bar{#Lambda}) in (#eta,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(#eta,#varphi) of #bar{#Lambda} (trigger);index(#eta,#varphi) of #bar{#Lambda} (associate)",
                            {HistType::kTH2F, {unrolledAxis, unrolledAxis}});
 
     // ── Rapidity merged rho2 histograms ─────────────────────────────────────
@@ -1614,55 +1725,55 @@ struct LambdaProtonBalanceFunction {
     // so the booked axis must match that range or downstream R2/BF code that
     // expects y-space-sized histograms will see a dimension mismatch.
     hRho2_Lp_y_pT015toMaxDefined =
-      registryRho.add<TH2>("h2_rho2_Lp_y_pT015toMaxDefined", "Lambda-p (y)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
+      registryRho.add<TH2>("h2_rho2_Lp_y_pT015toMaxDefined", "#rho_{2}(#Lambda, p) in (y,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(y,#varphi) of #Lambda (trigger);index(y,#varphi) of p (associate)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
     hRho2_LAp_y_pT015toMaxDefined =
-      registryRho.add<TH2>("h2_rho2_LAp_y_pT015toMaxDefined", "Lambda-pbar (y)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
+      registryRho.add<TH2>("h2_rho2_LAp_y_pT015toMaxDefined", "#rho_{2}(#Lambda, #bar{p}) in (y,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(y,#varphi) of #Lambda (trigger);index(y,#varphi) of #bar{p} (associate)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
     hRho2_ALp_y_pT015toMaxDefined =
-      registryRho.add<TH2>("h2_rho2_ALp_y_pT015toMaxDefined", "AntiLambda-p (y)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
+      registryRho.add<TH2>("h2_rho2_ALp_y_pT015toMaxDefined", "#rho_{2}(#bar{#Lambda}, p) in (y,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(y,#varphi) of #bar{#Lambda} (trigger);index(y,#varphi) of p (associate)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
     hRho2_ALAp_y_pT015toMaxDefined =
-      registryRho.add<TH2>("h2_rho2_ALAp_y_pT015toMaxDefined", "AntiLambda-pbar (y)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
+      registryRho.add<TH2>("h2_rho2_ALAp_y_pT015toMaxDefined", "#rho_{2}(#bar{#Lambda}, #bar{p}) in (y,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(y,#varphi) of #bar{#Lambda} (trigger);index(y,#varphi) of #bar{p} (associate)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
     hRho2_pp_y_pT015toMaxDefined =
-      registryRho.add<TH2>("h2_rho2_pp_y_pT015toMaxDefined", "pp (y)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
+      registryRho.add<TH2>("h2_rho2_pp_y_pT015toMaxDefined", "#rho_{2}(p, p) in (y,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(y,#varphi) of p (trigger);index(y,#varphi) of p (associate)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
     hRho2_pAp_y_pT015toMaxDefined =
-      registryRho.add<TH2>("h2_rho2_pAp_y_pT015toMaxDefined", "p-pbar (y)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
+      registryRho.add<TH2>("h2_rho2_pAp_y_pT015toMaxDefined", "#rho_{2}(p, #bar{p}) in (y,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(y,#varphi) of p (trigger);index(y,#varphi) of #bar{p} (associate)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
     hRho2_App_y_pT015toMaxDefined =
-      registryRho.add<TH2>("h2_rho2_App_y_pT015toMaxDefined", "pbar-p (y)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
+      registryRho.add<TH2>("h2_rho2_App_y_pT015toMaxDefined", "#rho_{2}(#bar{p}, p) in (y,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(y,#varphi) of #bar{p} (trigger);index(y,#varphi) of p (associate)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
     hRho2_ApAp_y_pT015toMaxDefined =
-      registryRho.add<TH2>("h2_rho2_ApAp_y_pT015toMaxDefined", "pbar-pbar (y)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
+      registryRho.add<TH2>("h2_rho2_ApAp_y_pT015toMaxDefined", "#rho_{2}(#bar{p}, #bar{p}) in (y,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(y,#varphi) of #bar{p} (trigger);index(y,#varphi) of #bar{p} (associate)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
     hRho2_LL_y_pT015toMaxDefined =
-      registryRho.add<TH2>("h2_rho2_LL_y_pT015toMaxDefined", "Lambda-Lambda (y)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
+      registryRho.add<TH2>("h2_rho2_LL_y_pT015toMaxDefined", "#rho_{2}(#Lambda, #Lambda) in (y,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(y,#varphi) of #Lambda (trigger);index(y,#varphi) of #Lambda (associate)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
     hRho2_LAL_y_pT015toMaxDefined =
-      registryRho.add<TH2>("h2_rho2_LAL_y_pT015toMaxDefined", "Lambda-AntiLambda (y)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
+      registryRho.add<TH2>("h2_rho2_LAL_y_pT015toMaxDefined", "#rho_{2}(#Lambda, #bar{#Lambda}) in (y,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(y,#varphi) of #Lambda (trigger);index(y,#varphi) of #bar{#Lambda} (associate)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
     hRho2_ALL_y_pT015toMaxDefined =
-      registryRho.add<TH2>("h2_rho2_ALL_y_pT015toMaxDefined", "AntiLambda-Lambda (y)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
+      registryRho.add<TH2>("h2_rho2_ALL_y_pT015toMaxDefined", "#rho_{2}(#bar{#Lambda}, #Lambda) in (y,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(y,#varphi) of #bar{#Lambda} (trigger);index(y,#varphi) of #Lambda (associate)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
     hRho2_ALAL_y_pT015toMaxDefined =
-      registryRho.add<TH2>("h2_rho2_ALAL_y_pT015toMaxDefined", "AntiLambda-AntiLambda (y)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
+      registryRho.add<TH2>("h2_rho2_ALAL_y_pT015toMaxDefined", "#rho_{2}(#bar{#Lambda}, #bar{#Lambda}) in (y,#varphi) space, q_{inv} > 0.01 GeV/#it{c};index(y,#varphi) of #bar{#Lambda} (trigger);index(y,#varphi) of #bar{#Lambda} (associate)", {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
     // ─────────────────────────────────────────────────────────────────────
 
     hPtSelectedPrimProton_pT015toMaxDefined =
       registryOther.add<TH1>("hPtSelectedPrimProton_pT015toMaxDefined",
-                             "Proton p_{T} yield (integrated pT range)",
+                             "Selected primary proton p_{T} spectrum (integrated, 0.5-3.6 GeV/#it{c});#it{p}_{T} (GeV/#it{c});Counts",
                              {HistType::kTH1F, {ptAxis}});
     hPtSelectedPrimAntiProton_pT015toMaxDefined =
       registryOther.add<TH1>("hPtSelectedPrimAntiProton_pT015toMaxDefined",
-                             "Antiproton p_{T} yield (integrated pT range)",
+                             "Selected primary antiproton p_{T} spectrum (integrated, 0.5-3.6 GeV/#it{c});#it{p}_{T} (GeV/#it{c});Counts",
                              {HistType::kTH1F, {ptAxis}});
     hPtSelLambda_pT015toMaxDefined =
       registryOther.add<TH1>("hPtSelLambda_pT015toMaxDefined",
-                             "#Lambda p_{T} yield (integrated pT range)",
+                             "Selected #Lambda p_{T} spectrum (integrated, 0.6-3.6 GeV/#it{c});#it{p}_{T} (GeV/#it{c});Counts",
                              {HistType::kTH1F, {ptAxis}});
     hPtSelAntiLambda_pT015toMaxDefined =
       registryOther.add<TH1>("hPtSelAntiLambda_pT015toMaxDefined",
-                             "#bar{#Lambda} p_{T} yield (integrated pT range)",
+                             "Selected #bar{#Lambda} p_{T} spectrum (integrated, 0.6-3.6 GeV/#it{c});#it{p}_{T} (GeV/#it{c});Counts",
                              {HistType::kTH1F, {ptAxis}});
 
     hMassLambdaMerged =
       registryLambda.add<TH1>("hMassLambdaNoMassCut_pT015toMaxDefined",
-                              "Lambda Mass No Mass Cut (integrated pT range)",
+                              "#Lambda mass (all selections except #Lambda mass window), integrated #it{p}_{T} 0.6-3.6 GeV/#it{c};#it{M}_{inv} [GeV/#it{c}^{2}];Counts",
                               {HistType::kTH1F, {lambdaMassAxis}});
     hMassAntiLambdaMerged =
       registryLambda.add<TH1>("hMassAntiLambdaNoMassCut_pT015toMaxDefined",
-                              "AntiLambda Mass No Mass Cut (integrated pT range)",
+                              "#bar{#Lambda} mass (all selections except #Lambda mass window), integrated #it{p}_{T} 0.6-3.6 GeV/#it{c};#it{M}_{inv} [GeV/#it{c}^{2}];Counts",
                               {HistType::kTH1F, {lambdaMassAxis}});
     // ─────────────────────────────────────────────────────────────────────
 
@@ -1681,39 +1792,39 @@ struct LambdaProtonBalanceFunction {
       hPtPrimProton_Lambda.push_back(
         registryOther.add<TH1>(
           Form("hPtPrimProton_Lambda_ptBin%02zu", i),
-          Form("Proton pT in #Lambda-p pairs %.1f < pT < %.1f", ptLo, ptHi),
+          Form("Proton #it{p}_{T} in #Lambda-p pairs, #Lambda #it{p}_{T} in [%.1f, %.1f) GeV/#it{c};#it{p}_{T}^{p} (GeV/#it{c});Counts", ptLo, ptHi),
           {HistType::kTH1F, {ptAxis}}));
       hPtPrimAntiProton_Lambda.push_back(
         registryOther.add<TH1>(
           Form("hPtPrimAntiProton_Lambda_ptBin%02zu", i),
-          Form("Antiproton pT in #Lambda-#bar{p} pairs %.1f < pT < %.1f", ptLo, ptHi),
+          Form("Antiproton #it{p}_{T} in #Lambda-#bar{p} pairs, #Lambda #it{p}_{T} in [%.1f, %.1f) GeV/#it{c};#it{p}_{T}^{#bar{p}} (GeV/#it{c});Counts", ptLo, ptHi),
           {HistType::kTH1F, {ptAxis}}));
       hPtPrimProton_AntiLambda.push_back(
         registryOther.add<TH1>(
           Form("hPtPrimProton_AntiLambda_ptBin%02zu", i),
-          Form("Proton pT in #bar{#Lambda}-p pairs %.1f < pT < %.1f", ptLo, ptHi),
+          Form("Proton #it{p}_{T} in #bar{#Lambda}-p pairs, #bar{#Lambda} #it{p}_{T} in [%.1f, %.1f) GeV/#it{c};#it{p}_{T}^{p} (GeV/#it{c});Counts", ptLo, ptHi),
           {HistType::kTH1F, {ptAxis}}));
       hPtPrimAntiProton_AntiLambda.push_back(
         registryOther.add<TH1>(
           Form("hPtPrimAntiProton_AntiLambda_ptBin%02zu", i),
-          Form("Antiproton pT in #bar{#Lambda}-#bar{p} pairs %.1f < pT < %.1f", ptLo, ptHi),
+          Form("Antiproton #it{p}_{T} in #bar{#Lambda}-#bar{p} pairs, #bar{#Lambda} #it{p}_{T} in [%.1f, %.1f) GeV/#it{c};#it{p}_{T}^{#bar{p}} (GeV/#it{c});Counts", ptLo, ptHi),
           {HistType::kTH1F, {ptAxis}}));
 
       hMassLambdaPtBins.push_back(
         registryLambda.add<TH1>(
           Form("hMassLambdaNoMassCut_ptBin%02zu", i),
-          Form("Lambda Mass No Mass Cut %.1f < pT < %.1f", ptLo, ptHi),
+          Form("#Lambda mass (all selections except #Lambda mass window), %.1f #leq #it{p}_{T} < %.1f GeV/#it{c};#it{M}_{inv} [GeV/#it{c}^{2}];Counts", ptLo, ptHi),
           {HistType::kTH1F, {lambdaMassAxis}}));
       hMassAntiLambdaPtBins.push_back(
         registryLambda.add<TH1>(
           Form("hMassAntiLambdaNoMassCut_ptBin%02zu", i),
-          Form("AntiLambda Mass No Mass Cut %.1f < pT < %.1f", ptLo, ptHi),
+          Form("#bar{#Lambda} mass (all selections except #Lambda mass window), %.1f #leq #it{p}_{T} < %.1f GeV/#it{c};#it{M}_{inv} [GeV/#it{c}^{2}];Counts", ptLo, ptHi),
           {HistType::kTH1F, {lambdaMassAxis}}));
     }
     // ─────────────────────────────────────────────────────────────────────
 
     // ── Extended y × pT invariant-mass histograms ─────────────────────────
-    // Rapidity bins: 4 bins from -1.0 to -0.6 in steps of 0.1
+    // Rapidity bins: 2 bins from -0.8 to -0.6 in steps of 0.1
     // pT bins:       25 bins from 0.0 to 2.5 in steps of 0.1
     // Folder structure:
     //   Lambda_invMassExtended/Lambda/hMassLambda_yBinXX_ptBinYY
@@ -1744,7 +1855,7 @@ struct LambdaProtonBalanceFunction {
         hMassLambdaExtended[iY][iPt] =
           registryLambdaExtended.add<TH1>(
             Form("Lambda/hMassLambda_yBin%02d_ptBin%02d", iY, iPt),
-            Form("Lambda Invariant Mass | %.1f <= y %s %.1f | %.1f <= pT %s %.1f GeV/c",
+            Form("#Lambda mass (no mass-window cut) | %.1f #leq y %s %.1f | %.1f #leq #it{p}_{T} %s %.1f GeV/#it{c};#it{M}_{inv} [GeV/#it{c}^{2}];Counts",
                  yLow, yUpBracket, yHigh, ptLow, ptUpBracket, ptHigh),
             {HistType::kTH1F, {lambdaMassAxis}});
 
@@ -1752,7 +1863,7 @@ struct LambdaProtonBalanceFunction {
         hMassAntiLambdaExtended[iY][iPt] =
           registryLambdaExtended.add<TH1>(
             Form("AntiLambda/hMassAntiLambda_yBin%02d_ptBin%02d", iY, iPt),
-            Form("AntiLambda Invariant Mass | %.1f <= y %s %.1f | %.1f <= pT %s %.1f GeV/c",
+            Form("#bar{#Lambda} mass (no mass-window cut) | %.1f #leq y %s %.1f | %.1f #leq #it{p}_{T} %s %.1f GeV/#it{c};#it{M}_{inv} [GeV/#it{c}^{2}];Counts",
                  yLow, yUpBracket, yHigh, ptLow, ptUpBracket, ptHigh),
             {HistType::kTH1F, {lambdaMassAxis}});
       }
@@ -1819,7 +1930,7 @@ struct LambdaProtonBalanceFunction {
     // ── Event cutflow bin 3 — after centFT0M < 80 ────────────────────────
     registryOther.fill(HIST("hEventCutflow"), 3.0f);
 
-    // INEL > 0: require at least one charged track in |eta| < 1.0
+    // INEL > 0: require at least one charged track in |eta| < 0.8
     int nTracksINEL = 0;
     static constexpr float kMaxInelEta = 0.8f;
     for (auto const& trk : tracks) {
@@ -1869,6 +1980,7 @@ struct LambdaProtonBalanceFunction {
 
     // ====== Step 1: Initialise containers ======================================
     std::unordered_set<int64_t> v0DaughterTrackIds;
+    v0DaughterTrackIds.reserve(64);
     std::vector<MyTracks::iterator> selectedPrimProtons;
     std::vector<MyTracks::iterator> selectedPrimAntiProtons;
     std::vector<aod::V0Datas::iterator> selectedLambdas;
@@ -1896,6 +2008,8 @@ struct LambdaProtonBalanceFunction {
     constexpr float mK0PDG = o2::constants::physics::MassK0Short;
 
     for (const auto& v0 : V0s) {
+      const auto& v0PosDauCached = v0.posTrack_as<MyTracks>();
+      const auto& v0NegDauCached = v0.negTrack_as<MyTracks>();
 
       // ── TRULY RAW QA Fills — before any V0 selection cut ─────────────
       // Placed here at the very top of the loop: before v0Type, daughter
@@ -1905,8 +2019,8 @@ struct LambdaProtonBalanceFunction {
       // and the AntiLambda hypothesis (pos=pion, neg=proton) since no PID
       // decision has been made yet. This gives the true combinatorial view.
       {
-        const auto& rawPosDau = v0.posTrack_as<MyTracks>();
-        const auto& rawNegDau = v0.negTrack_as<MyTracks>();
+        const auto& rawPosDau = v0PosDauCached;
+        const auto& rawNegDau = v0NegDauCached;
         const float rawCtau = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * mLambdaPDG;
         const float rawBgctau = rawCtau * v0.p() / mLambdaPDG;
         // Lambda hypothesis (positive daughter assumed proton)
@@ -1932,8 +2046,8 @@ struct LambdaProtonBalanceFunction {
       }
       // ─────────────────────────────────────────────────────────────────
 
-      const auto& v0PosDau = v0.posTrack_as<MyTracks>();
-      const auto& v0NegDau = v0.negTrack_as<MyTracks>();
+      const auto& v0PosDau = v0PosDauCached;
+      const auto& v0NegDau = v0NegDauCached;
 
       // ── Daughter kinematic quality cuts (from strange9) ───────────────
       if (v0PosDau.pt() <= cV0DauMinPt.value || v0NegDau.pt() <= cV0DauMinPt.value ||
@@ -2075,7 +2189,7 @@ struct LambdaProtonBalanceFunction {
         // ── Extended y × pT Lambda invariant-mass fill ────────────────────
         // Use the same rapidity variable `y` computed above
         // and the same pT variable `pt` = v0.pt() already in scope.
-        // Accept only -1.0 <= y <= -0.6 and 0.0 <= pT <= 2.5 GeV/c.
+        // Accept only -0.8 <= y <= -0.6 and 0.0 <= pT <= 2.5 GeV/c.
         if (y >= kExtYMin && y <= kExtYMax && pt >= kExtPtMin && pt <= kExtPtMax) {
           // Determine rapidity bin index
           int iYext = static_cast<int>((y - kExtYMin) / kExtYStep);
@@ -2110,7 +2224,7 @@ struct LambdaProtonBalanceFunction {
         // ── Extended y × pT AntiLambda invariant-mass fill ────────────────
         // Use the same rapidity variable `y` computed above
         // and the same pT variable `pt` = v0.pt() already in scope.
-        // Accept only -1.0 <= y <= -0.6 and 0.0 <= pT <= 2.5 GeV/c.
+        // Accept only -0.8 <= y <= -0.6 and 0.0 <= pT <= 2.5 GeV/c.
         if (y >= kExtYMin && y <= kExtYMax && pt >= kExtPtMin && pt <= kExtPtMax) {
           int iYext = static_cast<int>((y - kExtYMin) / kExtYStep);
           if (iYext >= kExtNyBins) {
@@ -2199,47 +2313,54 @@ struct LambdaProtonBalanceFunction {
       if (trk.sign() > 0) {
         fillProtonKinematics<true>(ProtonQAStage::RawAfterTrackSel, trk);
         fillProtonDetectorQuality<true>(ProtonQAStage::RawAfterTrackSel, trk);
-        if (trk.hasTPC())
+        if (trk.hasTPC()) {
           fillProtonTpcQA<true>(ProtonQAStage::RawAfterTrackSel, trk);
-        if (trk.hasTOF())
+        }
+        if (trk.hasTOF()) {
           fillProtonTofQA<true>(ProtonQAStage::RawAfterTrackSel, trk);
+        }
       } else {
         fillProtonKinematics<false>(ProtonQAStage::RawAfterTrackSel, trk);
         fillProtonDetectorQuality<false>(ProtonQAStage::RawAfterTrackSel, trk);
-        if (trk.hasTPC())
+        if (trk.hasTPC()) {
           fillProtonTpcQA<false>(ProtonQAStage::RawAfterTrackSel, trk);
-        if (trk.hasTOF())
+        }
+        if (trk.hasTOF()) {
           fillProtonTofQA<false>(ProtonQAStage::RawAfterTrackSel, trk);
+        }
       }
       // ─────────────────────────────────────────────────────────────────
 
       // ── Track quality cuts ────────────────────────────────────────────
-      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 1.0f); // Quality cut starting point (after kinematics)
+      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 1.0f);
       if (!trk.hasTPC()) {
         continue;
       }
-      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 2.0f); // passed hasTPC
+      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 2.0f);
       if (trk.tpcNClsCrossedRows() < pProtonTPCMinRows.value) {
         continue;
       }
-      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 3.0f); // passed tpcNClsCrossedRows
+      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 3.0f);
       if (trk.tpcCrossedRowsOverFindableCls() < pProtonTPCMinRowsOverFindable.value) {
         continue;
       }
-      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 4.0f); // passed tpcCrossedRowsOverFindableCls
+      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 4.0f);
       if (trk.tpcChi2NCl() > pProtonTPCMaxChi2PerCluster.value) {
         continue;
       }
-      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 5.0f); // passed tpcChi2NCl
+      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 5.0f);
       if (trk.itsNCls() < pProtonITSMinClusters.value) {
         continue;
       }
+      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 6.0f);
       if (trk.itsChi2NCl() > pProtonITSMaxChi2PerCluster.value) {
         continue;
       }
+      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 7.0f);
       if (trk.tpcSignal() < cPPMinTpcSignal.value) {
         continue;
       }
+      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 8.0f);
       // ─────────────────────────────────────────────────────────────────
 
       // ── p_TPC and pT acceptance cuts ─────────────────────────────────────────────
@@ -2247,9 +2368,10 @@ struct LambdaProtonBalanceFunction {
       if (pTPC < pProtonMinP.value || pTPC > pProtonMaxP.value) {
         continue;
       }
-      if (trk.pt() < pProtonMinP.value || trk.pt() > pProtonMaxP.value) {
+      if (trk.pt() < pProtonMinPt.value || trk.pt() > pProtonMaxPt.value) {
         continue;
       }
+      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 9.0f);
       // ─────────────────────────────────────────────────────────────────
 
       // ── Proton kinematic acceptance ───────────────────────────────────
@@ -2259,6 +2381,7 @@ struct LambdaProtonBalanceFunction {
       if (std::abs(y) > pProtonMaxY.value) {
         continue;
       }
+      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 10.0f);
       // ─────────────────────────────────────────────────────────────────
       // ── DCA cuts ─────────────────────────────────────────────────────
       const bool passDCA = (std::abs(trk.dcaXY()) < pProtonMaxDCAxy.value) &&
@@ -2266,6 +2389,7 @@ struct LambdaProtonBalanceFunction {
       if (!passDCA) {
         continue;
       }
+      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 11.0f);
       // ─────────────────────────────────────────────────────────────────
 
       // FIX-4: ProtonCounts_byPID_Check — protons only (sign > 0 guard added)
@@ -2294,14 +2418,16 @@ struct LambdaProtonBalanceFunction {
           fillProtonKinematics<true>(ProtonQAStage::TpcPid, trk);
           fillProtonDetectorQuality<true>(ProtonQAStage::TpcPid, trk);
           fillProtonTpcQA<true>(ProtonQAStage::TpcPid, trk);
-          if (trk.hasTOF())
+          if (trk.hasTOF()) {
             fillProtonTofQA<true>(ProtonQAStage::TpcPid, trk);
+          }
         } else {
           fillProtonKinematics<false>(ProtonQAStage::TpcPid, trk);
           fillProtonDetectorQuality<false>(ProtonQAStage::TpcPid, trk);
           fillProtonTpcQA<false>(ProtonQAStage::TpcPid, trk);
-          if (trk.hasTOF())
+          if (trk.hasTOF()) {
             fillProtonTofQA<false>(ProtonQAStage::TpcPid, trk);
+          }
         }
       }
 
@@ -2324,6 +2450,7 @@ struct LambdaProtonBalanceFunction {
       if (!passesPrimProtonPid(trk)) {
         continue;
       }
+      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 12.0f);
 
       // TOF Matching Fraction check on selected protons
       registryQaDetector.fill(HIST("Selection/TOF_Matching/hTOFMatchedFractionVsPt"), trk.pt(), trk.hasTOF() ? 1.0f : 0.0f);
@@ -2363,7 +2490,7 @@ struct LambdaProtonBalanceFunction {
       // This MUST appear before push_back so that every pp histogram
       // (which iterates selectedPrimProtons / selectedPrimAntiProtons)
       // automatically uses the cleaned collection.
-      const bool isV0Daughter = v0DaughterTrackIds.count(trk.globalIndex()) > 0;
+      const bool isV0Daughter = v0DaughterTrackIds.contains(trk.globalIndex());
       if (trk.sign() > 0) {
         ++nProtonBeforeVeto;
       } else {
@@ -2378,9 +2505,11 @@ struct LambdaProtonBalanceFunction {
         }
         continue;
       }
+      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 13.0f);
       // ─────────────────────────────────────────────────────────────────
 
       // ── Classify into proton / antiproton lists ───────────────────────
+      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 14.0f);
       // VS Code: commented out unused variables.
       // const float pz = trk.pt() * std::sinh(trk.eta());
       // const float eta = trk.eta();
@@ -2391,8 +2520,9 @@ struct LambdaProtonBalanceFunction {
         fillProtonTpcQA<true>(ProtonQAStage::FinalSelected, trk);
         // TOF QA only when track was accepted through the TPC+TOF branch:
         // p > PProtonTPC_TOFSwitchP guarantees hasTOF() and nSigmaTOF passed (beta window cut removed). //BETACUTCommented
-        if (pTPC > pProtonTPCTOFSwitchP.value)
+        if (pTPC > pProtonTPCTOFSwitchP.value) {
           fillProtonTofQA<true>(ProtonQAStage::FinalSelected, trk);
+        }
 
         registryOther.fill(HIST("hPtSelectedPrimProton"), trk.pt());
         hPtSelectedPrimProton_pT015toMaxDefined->Fill(trk.pt());
@@ -2403,8 +2533,9 @@ struct LambdaProtonBalanceFunction {
         fillProtonTpcQA<false>(ProtonQAStage::FinalSelected, trk);
         // TOF QA only when track was accepted through the TPC+TOF branch:
         // p > pProtonTPCTOFSwitchP guarantees hasTOF() and nSigmaTOF passed (beta window cut removed). //BETACUTCommented
-        if (pTPC > pProtonTPCTOFSwitchP.value)
+        if (pTPC > pProtonTPCTOFSwitchP.value) {
           fillProtonTofQA<false>(ProtonQAStage::FinalSelected, trk);
+        }
 
         registryOther.fill(HIST("hPtSelectedPrimAntiProton"), trk.pt());
         hPtSelectedPrimAntiProton_pT015toMaxDefined->Fill(trk.pt());
@@ -2442,6 +2573,8 @@ struct LambdaProtonBalanceFunction {
       // Accumulate run-level totals for endOfStream() summary.
       runTotalProtonBeforeVeto += nBefore;
       runTotalProtonRemovedVeto += nRemoved;
+      runTotalAntiPBeforeVeto += nAntiPBeforeVeto;
+      runTotalAntiPRemovedVeto += nAntiPRemovedVeto;
     }
     // ─────────────────────────────────────────────────────────────────────
 
@@ -2461,6 +2594,18 @@ struct LambdaProtonBalanceFunction {
     registryOther.fill(HIST("hNSelectedPrimProtons"), static_cast<float>(selectedPrimProtons.size()));
     registryOther.fill(HIST("hNSelectedPrimAntiProtons"), static_cast<float>(selectedPrimAntiProtons.size()));
 
+    // ── Per-particle caches for the pair loops ───────────────────────────
+    std::vector<PartInfo> protonInfo;
+    std::vector<PartInfo> antiProtonInfo;
+    protonInfo.reserve(selectedPrimProtons.size());
+    antiProtonInfo.reserve(selectedPrimAntiProtons.size());
+    for (auto const& t : selectedPrimProtons) {
+      protonInfo.push_back(makeProtonInfo(t));
+    }
+    for (auto const& t : selectedPrimAntiProtons) {
+      antiProtonInfo.push_back(makeProtonInfo(t));
+    }
+
     // ── pp rho2 fills (eta and y) ───────────────────────────────────────────
     for (auto const& p1 : selectedPrimProtons) {
       const float y1_pp = protonRapidity(p1);
@@ -2472,8 +2617,7 @@ struct LambdaProtonBalanceFunction {
           registryCorrelationQA.fill(HIST("QA3/PairCleaning/h1f_pairCleaning"), 2);
           continue;
         } // CHANGED from globalIndex()
-        // QA3/PairCleaning: accepted pair
-        registryCorrelationQA.fill(HIST("QA3/PairCleaning/h1f_pairCleaning"), 3);
+        // QA3/PairCleaning: bins 3 (Rejected q_inv) and 4 (Accepted) are filled at the q_inv cut below
 
         // QA3/RawPairDensity: fill Δη vs Δφ for every accepted p-p pair
         {
@@ -2512,12 +2656,22 @@ struct LambdaProtonBalanceFunction {
           }
         }
 
+        // q_inv cut (pp)
+        {
+          const float qE1 = std::sqrt(p1.px() * p1.px() + p1.py() * p1.py() + p1.pz() * p1.pz() + kMassProton * kMassProton);
+          const float qE2 = std::sqrt(p2.px() * p2.px() + p2.py() * p2.py() + p2.pz() * p2.pz() + kMassProton * kMassProton);
+          if (computeQinv(p1.px(), p1.py(), p1.pz(), qE1, p2.px(), p2.py(), p2.pz(), qE2) <= kQinvCutLP) {
+            registryCorrelationQA.fill(HIST("QA3/PairCleaning/h1f_pairCleaning"), 3);
+            continue;
+          }
+          registryCorrelationQA.fill(HIST("QA3/PairCleaning/h1f_pairCleaning"), 4);
+        }
         const int idx1 = unrolledIndex(p1.eta(), p1.phi());
         const int idx2 = unrolledIndex(p2.eta(), p2.phi());
         const float y2_pp = protonRapidity(p2);
         const int idxY1 = unrolledIndexY(y1_pp, p1.phi());
         const int idxY2 = unrolledIndexY(y2_pp, p2.phi());
-        // Physics pair correlations (rho2): q_inv cut not applied to rho2
+        // Physics pair correlations (rho2): q_inv cut applied (pairs with q_inv <= kQinvCutLP are rejected above)
         if (idx1 >= 0 && idx2 >= 0) {
           hRho2_pp_pT015toMaxDefined->Fill(idx1, idx2);
         }
@@ -2526,54 +2680,54 @@ struct LambdaProtonBalanceFunction {
         }
       }
     }
-    for (auto const& p1 : selectedPrimProtons) {
-      const float y1_pAp = protonRapidity(p1);
-      for (auto const& p2 : selectedPrimAntiProtons) {
-        const int idx1 = unrolledIndex(p1.eta(), p1.phi());
-        const int idx2 = unrolledIndex(p2.eta(), p2.phi());
-        const float y2_pAp = protonRapidity(p2);
-        const int idxY1 = unrolledIndexY(y1_pAp, p1.phi());
-        const int idxY2 = unrolledIndexY(y2_pAp, p2.phi());
-        if (idx1 >= 0 && idx2 >= 0) {
-          hRho2_pAp_pT015toMaxDefined->Fill(idx1, idx2);
-        }
-        if (idxY1 >= 0 && idxY2 >= 0) {
-          hRho2_pAp_y_pT015toMaxDefined->Fill(idxY1, idxY2);
-        }
-      }
-    }
-    for (auto const& p1 : selectedPrimAntiProtons) {
-      const float y1_App = protonRapidity(p1);
-      for (auto const& p2 : selectedPrimProtons) {
-        const int idx1 = unrolledIndex(p1.eta(), p1.phi());
-        const int idx2 = unrolledIndex(p2.eta(), p2.phi());
-        const float y2_App = protonRapidity(p2);
-        const int idxY1 = unrolledIndexY(y1_App, p1.phi());
-        const int idxY2 = unrolledIndexY(y2_App, p2.phi());
-        if (idx1 >= 0 && idx2 >= 0) {
-          hRho2_App_pT015toMaxDefined->Fill(idx1, idx2);
-        }
-        if (idxY1 >= 0 && idxY2 >= 0) {
-          hRho2_App_y_pT015toMaxDefined->Fill(idxY1, idxY2);
-        }
-      }
-    }
-    for (auto const& p1 : selectedPrimAntiProtons) {
-      const float y1_ApAp = protonRapidity(p1);
-      for (auto const& p2 : selectedPrimAntiProtons) {
-        if (p1.index() == p2.index()) {
+    for (auto const& a : protonInfo) {
+      for (auto const& b : antiProtonInfo) {
+        const float qinvPAp = computeQinv(a.px, a.py, a.pz, a.E, b.px, b.py, b.pz, b.E);
+        registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_pAp_Before_qinvCut"), qinvPAp);
+        if (qinvPAp <= kQinvCutLP) {
           continue;
-        } // CHANGED from globalIndex()
-        const int idx1 = unrolledIndex(p1.eta(), p1.phi());
-        const int idx2 = unrolledIndex(p2.eta(), p2.phi());
-        const float y2_ApAp = protonRapidity(p2);
-        const int idxY1 = unrolledIndexY(y1_ApAp, p1.phi());
-        const int idxY2 = unrolledIndexY(y2_ApAp, p2.phi());
-        if (idx1 >= 0 && idx2 >= 0) {
-          hRho2_ApAp_pT015toMaxDefined->Fill(idx1, idx2);
         }
-        if (idxY1 >= 0 && idxY2 >= 0) {
-          hRho2_ApAp_y_pT015toMaxDefined->Fill(idxY1, idxY2);
+        registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_pAp_After_qinvCut"), qinvPAp);
+        if (a.idxEta >= 0 && b.idxEta >= 0) {
+          hRho2_pAp_pT015toMaxDefined->Fill(a.idxEta, b.idxEta);
+        }
+        if (a.idxY >= 0 && b.idxY >= 0) {
+          hRho2_pAp_y_pT015toMaxDefined->Fill(a.idxY, b.idxY);
+        }
+      }
+    }
+    for (auto const& a : antiProtonInfo) {
+      for (auto const& b : protonInfo) {
+        const float qinvApp = computeQinv(a.px, a.py, a.pz, a.E, b.px, b.py, b.pz, b.E);
+        registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_App_Before_qinvCut"), qinvApp);
+        if (qinvApp <= kQinvCutLP) {
+          continue;
+        }
+        registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_App_After_qinvCut"), qinvApp);
+        if (a.idxEta >= 0 && b.idxEta >= 0) {
+          hRho2_App_pT015toMaxDefined->Fill(a.idxEta, b.idxEta);
+        }
+        if (a.idxY >= 0 && b.idxY >= 0) {
+          hRho2_App_y_pT015toMaxDefined->Fill(a.idxY, b.idxY);
+        }
+      }
+    }
+    for (auto const& a : antiProtonInfo) {
+      for (auto const& b : antiProtonInfo) {
+        if (a.gid == b.gid) {
+          continue;
+        }
+        const float qinvApAp = computeQinv(a.px, a.py, a.pz, a.E, b.px, b.py, b.pz, b.E);
+        registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_ApAp_Before_qinvCut"), qinvApAp);
+        if (qinvApAp <= kQinvCutLP) {
+          continue;
+        }
+        registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_ApAp_After_qinvCut"), qinvApAp);
+        if (a.idxEta >= 0 && b.idxEta >= 0) {
+          hRho2_ApAp_pT015toMaxDefined->Fill(a.idxEta, b.idxEta);
+        }
+        if (a.idxY >= 0 && b.idxY >= 0) {
+          hRho2_ApAp_y_pT015toMaxDefined->Fill(a.idxY, b.idxY);
         }
       }
     }
@@ -2633,7 +2787,13 @@ struct LambdaProtonBalanceFunction {
         const float yP = protonRapidity(primProton);
         const int idxYL = unrolledIndexY(yL, v0.phi());
         const int idxYP = unrolledIndexY(yP, primProton.phi());
-        // Physics pair correlations (rho2 / pT / pair-count): q_inv cut not applied to rho2
+        // Physics pair correlations (rho2 / pT / pair-count): q_inv cut applied (pairs with q_inv <= kQinvCutLP are rejected above)
+        if (qinvLP <= kQinvCutLP) {
+          continue;
+        }
+        registryCorrelationQA.fill(HIST("QA3/Kstar/h1f_kstar_Lp"),
+                                   computeKstar(v0.px(), v0.py(), v0.pz(), kMassLambda,
+                                                primProton.px(), primProton.py(), primProton.pz(), kMassProton));
         if (idxLambda >= 0 && idxPrimP >= 0) {
           if (bin >= 0) {
             hPtPrimProton_Lambda[bin]->Fill(primProton.pt());
@@ -2677,7 +2837,13 @@ struct LambdaProtonBalanceFunction {
         const float yAp = protonRapidity(primAntiProton);
         const int idxYL2 = unrolledIndexY(yL2, v0.phi());
         const int idxYAp = unrolledIndexY(yAp, primAntiProton.phi());
-        // Physics pair correlations (rho2 / pT / pair-count): q_inv cut not applied to rho2
+        // Physics pair correlations (rho2 / pT / pair-count): q_inv cut applied (pairs with q_inv <= kQinvCutLP are rejected above)
+        if (qinvLAp <= kQinvCutLP) {
+          continue;
+        }
+        registryCorrelationQA.fill(HIST("QA3/Kstar/h1f_kstar_LAp"),
+                                   computeKstar(v0.px(), v0.py(), v0.pz(), kMassLambda,
+                                                primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), kMassProton));
         if (idxLambda >= 0 && idxPrimPbar >= 0) {
           if (bin >= 0) {
             hPtPrimAntiProton_Lambda[bin]->Fill(primAntiProton.pt());
@@ -2693,11 +2859,11 @@ struct LambdaProtonBalanceFunction {
       // ── Autocorrelation diagnostic: primary proton vs Lambda daughter proton──
       // Lambda proton daughter = v0PosDau (positive track, identified as proton
       // by |tpcNSigmaPr| < PProtonTPCNsigma, already in scope above).
-      // Loop over ALL selected primary protons — no daughter-track veto applied
-      // intentionally (the purpose is to DETECT the autocorrelation).
+      // Loop over ALL selected primary protons. NOTE: selectedPrimProtons is already
+      // cleaned by the V0-daughter veto, so the same-track case cannot occur here;
+      // this only checks for residual proximity correlations (e.g. undetected feed-down).
       // Fills inclusive h2f_dEta_dPhi for all pairs and
-      // h2f_dEta_dPhi_nonSameTrack for pairs where the primary proton is not
-      // the Lambda positive daughter.
+      // h2f_dEta_dPhi_nonSameTrack for every pair in this cleaned sample.
       {
         const float etaDau = v0PosDau.eta();
         const float phiDau = v0PosDau.phi();
@@ -2793,7 +2959,13 @@ struct LambdaProtonBalanceFunction {
         const float yP2 = protonRapidity(primProton);
         const int idxYAL = unrolledIndexY(yAL, v0.phi());
         const int idxYP2 = unrolledIndexY(yP2, primProton.phi());
-        // Physics pair correlations (rho2 / pT / pair-count): q_inv cut not applied to rho2
+        // Physics pair correlations (rho2 / pT / pair-count): q_inv cut applied (pairs with q_inv <= kQinvCutLP are rejected above)
+        if (qinvALp <= kQinvCutLP) {
+          continue;
+        }
+        registryCorrelationQA.fill(HIST("QA3/Kstar/h1f_kstar_ALp"),
+                                   computeKstar(v0.px(), v0.py(), v0.pz(), kMassLambda,
+                                                primProton.px(), primProton.py(), primProton.pz(), kMassProton));
         if (idxAL >= 0 && idxPrimP >= 0) {
           if (bin >= 0) {
             hPtPrimProton_AntiLambda[bin]->Fill(primProton.pt());
@@ -2844,7 +3016,13 @@ struct LambdaProtonBalanceFunction {
         const float yAp2 = protonRapidity(primAntiProton);
         const int idxYAL2 = unrolledIndexY(yAL2, v0.phi());
         const int idxYAp2 = unrolledIndexY(yAp2, primAntiProton.phi());
-        // Physics pair correlations (rho2 / pT / pair-count): q_inv cut not applied to rho2
+        // Physics pair correlations (rho2 / pT / pair-count): q_inv cut applied (pairs with q_inv <= kQinvCutLP are rejected above)
+        if (qinvALAp <= kQinvCutLP) {
+          continue;
+        }
+        registryCorrelationQA.fill(HIST("QA3/Kstar/h1f_kstar_ALAp"),
+                                   computeKstar(v0.px(), v0.py(), v0.pz(), kMassLambda,
+                                                primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), kMassProton));
         if (idxAL2 >= 0 && idxPrimPb >= 0) {
           if (bin >= 0) {
             hPtPrimAntiProton_AntiLambda[bin]->Fill(primAntiProton.pt());
@@ -2881,9 +3059,10 @@ struct LambdaProtonBalanceFunction {
       // ── Combo 4: AntiLambda daughter antiproton ↔ primary antiproton ─
       // AntiLambda neg-daughter = v0NegDau (charge −1, identified as
       // antiproton). Primary antiproton = selectedPrimAntiProtons (charge −1).
-      // Fills inclusive h2f_dEta_dPhi for all pairs and
-      // h2f_dEta_dPhi_nonSameTrack for pairs where the primary antiproton is
-      // not the AntiLambda negative daughter.
+      // Fills inclusive h2f_dEta_dPhi for all pairs and h2f_dEta_dPhi_nonSameTrack
+      // for every pair in this cleaned sample (selectedPrimAntiProtons is already
+      // veto-cleaned, so the primary antiproton can never be the AntiLambda
+      // negative daughter; the nonSameTrack histogram will equal the inclusive one).
       {
         const float etaDauAL4 = v0NegDau.eta();
         const float phiDauAL4 = v0NegDau.phi();
@@ -2951,15 +3130,16 @@ struct LambdaProtonBalanceFunction {
           const float Ev2 = std::sqrt(v2pmag * v2pmag + kMassLambda * kMassLambda);
           const float qinvLL = computeQinv(v1.px(), v1.py(), v1.pz(), Ev1, v2.px(), v2.py(), v2.pz(), Ev2);
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_Before_qinvCut"), qinvLL);
-          if (qinvLL > kQinvCutLP) {
-            registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_After_qinvCut"), qinvLL);
+          if (qinvLL <= kQinvCutLP) {
+            continue;
           }
+          registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_After_qinvCut"), qinvLL);
         }
         const int idx1 = unrolledIndex(v1.eta(), v1.phi());
         const int idx2 = unrolledIndex(v2.eta(), v2.phi());
         const int idxY1 = unrolledIndexY(yv1L, v1.phi());
         const int idxY2 = unrolledIndexY(v2.rapidity(1), v2.phi());
-        // Physics pair correlations (rho2): q_inv cut not applied to rho2
+        // Physics pair correlations (rho2): q_inv cut applied (pairs with q_inv <= kQinvCutLP are rejected above)
         if (idx1 >= 0 && idx2 >= 0) {
           hRho2_LL_pT015toMaxDefined->Fill(idx1, idx2);
         }
@@ -3000,15 +3180,16 @@ struct LambdaProtonBalanceFunction {
           const float Ev2L = std::sqrt(v2pmagL * v2pmagL + kMassLambda * kMassLambda);
           const float qinvLAL = computeQinv(v1.px(), v1.py(), v1.pz(), Ev1L, v2.px(), v2.py(), v2.pz(), Ev2L);
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_Before_qinvCut"), qinvLAL);
-          if (qinvLAL > kQinvCutLP) {
-            registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_After_qinvCut"), qinvLAL);
+          if (qinvLAL <= kQinvCutLP) {
+            continue;
           }
+          registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_After_qinvCut"), qinvLAL);
         }
         const int idx1 = unrolledIndex(v1.eta(), v1.phi());
         const int idx2 = unrolledIndex(v2.eta(), v2.phi());
         const int idxY1 = unrolledIndexY(yv1LAL, v1.phi());
         const int idxY2 = unrolledIndexY(v2.rapidity(2), v2.phi());
-        // Physics pair correlations (rho2): q_inv cut not applied to rho2
+        // Physics pair correlations (rho2): q_inv cut applied (pairs with q_inv <= kQinvCutLP are rejected above)
         if (idx1 >= 0 && idx2 >= 0) {
           hRho2_LAL_pT015toMaxDefined->Fill(idx1, idx2);
         }
@@ -3049,15 +3230,16 @@ struct LambdaProtonBalanceFunction {
           const float Ev2AL = std::sqrt(v2pmagAL * v2pmagAL + kMassLambda * kMassLambda);
           const float qinvALL = computeQinv(v1.px(), v1.py(), v1.pz(), Ev1AL, v2.px(), v2.py(), v2.pz(), Ev2AL);
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_Before_qinvCut"), qinvALL);
-          if (qinvALL > kQinvCutLP) {
-            registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_After_qinvCut"), qinvALL);
+          if (qinvALL <= kQinvCutLP) {
+            continue;
           }
+          registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_After_qinvCut"), qinvALL);
         }
         const int idx1 = unrolledIndex(v1.eta(), v1.phi());
         const int idx2 = unrolledIndex(v2.eta(), v2.phi());
         const int idxY1 = unrolledIndexY(yv1ALL, v1.phi());
         const int idxY2 = unrolledIndexY(v2.rapidity(1), v2.phi());
-        // Physics pair correlations (rho2): q_inv cut not applied to rho2
+        // Physics pair correlations (rho2): q_inv cut applied (pairs with q_inv <= kQinvCutLP are rejected above)
         if (idx1 >= 0 && idx2 >= 0) {
           hRho2_ALL_pT015toMaxDefined->Fill(idx1, idx2);
         }
@@ -3101,15 +3283,16 @@ struct LambdaProtonBalanceFunction {
           const float Ev2AL2 = std::sqrt(v2pmagAL2 * v2pmagAL2 + kMassLambda * kMassLambda);
           const float qinvALAL = computeQinv(v1.px(), v1.py(), v1.pz(), Ev1AL2, v2.px(), v2.py(), v2.pz(), Ev2AL2);
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_Before_qinvCut"), qinvALAL);
-          if (qinvALAL > kQinvCutLP) {
-            registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_After_qinvCut"), qinvALAL);
+          if (qinvALAL <= kQinvCutLP) {
+            continue;
           }
+          registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_After_qinvCut"), qinvALAL);
         }
         const int idx1 = unrolledIndex(v1.eta(), v1.phi());
         const int idx2 = unrolledIndex(v2.eta(), v2.phi());
         const int idxY1 = unrolledIndexY(yv1ALAL, v1.phi());
         const int idxY2 = unrolledIndexY(v2.rapidity(2), v2.phi());
-        // Physics pair correlations (rho2): q_inv cut not applied to rho2
+        // Physics pair correlations (rho2): q_inv cut applied (pairs with q_inv <= kQinvCutLP are rejected above)
         if (idx1 >= 0 && idx2 >= 0) {
           hRho2_ALAL_pT015toMaxDefined->Fill(idx1, idx2);
         }
@@ -3145,6 +3328,12 @@ struct LambdaProtonBalanceFunction {
     LOG(info) << "Total proton candidates after veto  : " << totalAfter;
     LOG(info) << "Total removed by veto               : " << totalRemoved;
     LOG(info) << Form("Fraction removed                    : %.6f", fracRemoved);
+    const double fracRemovedAp = (runTotalAntiPBeforeVeto > 0)
+                                   ? static_cast<double>(runTotalAntiPRemovedVeto) / static_cast<double>(runTotalAntiPBeforeVeto)
+                                   : 0.0;
+    LOG(info) << "Total antiproton candidates before veto: " << runTotalAntiPBeforeVeto;
+    LOG(info) << "Total antiproton removed by veto       : " << runTotalAntiPRemovedVeto;
+    LOG(info) << Form("Antiproton fraction removed         : %.6f", fracRemovedAp);
     LOG(info) << "===============================================";
     LOG(info) << "";
   }
@@ -3155,6 +3344,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<LambdaProtonBalanceFunction>(cfgc)};
 }
-
-// What i did here is to change the eta acceptance from 0.8 to 1.0 for now for QA purposes, but later for final analysis we will change it back to 0.8. So please ignore the changes related to maxEta and qaEtaAxis for now. I have kept the maxEta as 1.0f so that it can be used for track acceptance in the code, but we will change it to 0.8f later for final analysis. The same goes for qaEtaAxis, I have set it to -1.0f to 1.0f for now, but we will change it to -0.8f to 0.8f later for final analysis.
-//  Also we previously gave 0.8 rapidity cut for lambda and anti-lambda, but now we have changed it to 1.0 for now for QA purposes, but later for final analysis we will change it back to 0.8. So please ignore the changes related to rapidity cuts for now.
