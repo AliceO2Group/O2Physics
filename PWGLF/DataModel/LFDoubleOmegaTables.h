@@ -33,12 +33,18 @@ DECLARE_SOA_COLUMN(PrimaryVtxZ, primaryVtxZ, float);
 DECLARE_SOA_COLUMN(CosPAOmega, cosPAOmega, float);
 DECLARE_SOA_COLUMN(CosPADirectLambda, cosPADirectLambda, float);
 DECLARE_SOA_COLUMN(CosPADoubleOmega, cosPADoubleOmega, float);
+DECLARE_SOA_COLUMN(CosPAOmegaToPV, cosPAOmegaToPV, float);
+DECLARE_SOA_COLUMN(CosPADirectLambdaToPV, cosPADirectLambdaToPV, float);
 DECLARE_SOA_COLUMN(DCAxyOmegaToPV, dcaXYOmegaToPV, float);
-DECLARE_SOA_COLUMN(DCAzOmegaToPV, dcaZOmegaToPV, float);
 DECLARE_SOA_COLUMN(DCAxyDirectLambdaToPV, dcaXYDirectLambdaToPV, float);
-DECLARE_SOA_COLUMN(DCAzDirectLambdaToPV, dcaZDirectLambdaToPV, float);
 DECLARE_SOA_COLUMN(DCAxyDirectKaonToPV, dcaXYDirectKaonToPV, float);
-DECLARE_SOA_COLUMN(DCAzDirectKaonToPV, dcaZDirectKaonToPV, float);
+// Transverse DCA to the primary vertex of the final-state tracks, ordered as
+// the detector map: Omega kaon, Omega proton, Omega pion, direct proton, direct pion.
+DECLARE_SOA_COLUMN(DCAxyOmegaKaonToPV, dcaXYOmegaKaonToPV, float);
+DECLARE_SOA_COLUMN(DCAxyOmegaProtonToPV, dcaXYOmegaProtonToPV, float);
+DECLARE_SOA_COLUMN(DCAxyOmegaPionToPV, dcaXYOmegaPionToPV, float);
+DECLARE_SOA_COLUMN(DCAxyDirectProtonToPV, dcaXYDirectProtonToPV, float);
+DECLARE_SOA_COLUMN(DCAxyDirectPionToPV, dcaXYDirectPionToPV, float);
 DECLARE_SOA_COLUMN(TPCNSigmaDirectKaon, tpcNSigmaDirectKaon, float); // -999 when TPC is unavailable or the candidate is not reconstructed.
 DECLARE_SOA_COLUMN(TOFNSigmaDirectKaon, tofNSigmaDirectKaon, float); // -999 when TOF is unavailable or the candidate is not reconstructed.
 // Three bits per daughter (ITS, TPC, TOF), ordered as: Omega kaon, Omega
@@ -71,12 +77,16 @@ DECLARE_SOA_COLUMN(IsReco, isReco, bool);
     DoubleOmegaTables::CosPAOmega,            \
     DoubleOmegaTables::CosPADirectLambda,     \
     DoubleOmegaTables::CosPADoubleOmega,      \
+    DoubleOmegaTables::CosPAOmegaToPV,        \
+    DoubleOmegaTables::CosPADirectLambdaToPV, \
     DoubleOmegaTables::DCAxyOmegaToPV,        \
-    DoubleOmegaTables::DCAzOmegaToPV,         \
     DoubleOmegaTables::DCAxyDirectLambdaToPV, \
-    DoubleOmegaTables::DCAzDirectLambdaToPV,  \
     DoubleOmegaTables::DCAxyDirectKaonToPV,   \
-    DoubleOmegaTables::DCAzDirectKaonToPV,    \
+    DoubleOmegaTables::DCAxyOmegaKaonToPV,    \
+    DoubleOmegaTables::DCAxyOmegaProtonToPV,  \
+    DoubleOmegaTables::DCAxyOmegaPionToPV,    \
+    DoubleOmegaTables::DCAxyDirectProtonToPV, \
+    DoubleOmegaTables::DCAxyDirectPionToPV,   \
     DoubleOmegaTables::TPCNSigmaDirectKaon,   \
     DoubleOmegaTables::TOFNSigmaDirectKaon,   \
     DoubleOmegaTables::DaughterDetectorMap,   \
