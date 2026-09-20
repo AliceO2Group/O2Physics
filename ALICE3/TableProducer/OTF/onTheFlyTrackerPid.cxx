@@ -61,6 +61,8 @@
 #include <utility>
 #include <vector>
 
+#include <math.h>
+
 using namespace o2;
 using namespace o2::framework;
 
@@ -117,9 +119,8 @@ class ToTLUT
   ~ToTLUT()
   {
     for (const auto& hist_ptr : mLUTHistogramFlat) {
-      if (hist_ptr) {
-        delete hist_ptr;
-      }
+
+      delete hist_ptr;
     }
   }
 
@@ -131,7 +132,7 @@ class ToTLUT
       LOG(warning) << "Provided filename is empty for PDG " << pdg;
       return false;
     }
-    if (filename.rfind("ccdb:", 0) == 0) {       // Check if filename starts with "ccdb:"
+    if (filename.starts_with("ccdb:")) {         // Check if filename starts with "ccdb:"
       std::string ccdbPath = filename.substr(5); // remove "ccdb:" prefix
       const std::string outPath = "/tmp/ToTLUTs/";
       const std::string localFilename = outPath + ccdbPath + "/snapshot.root";
@@ -150,10 +151,9 @@ class ToTLUT
         }
         testFile.close();
         return load(pdg, localFilename);
-      } else { // File is found, proceed to load it
-        checkFile.close();
-        return load(pdg, localFilename);
-      }
+      } // File is found, proceed to load it
+      checkFile.close();
+      return load(pdg, localFilename);
     }
     // In case the file is already available locally
     TFile* f = TFile::Open(filename.c_str());
@@ -162,7 +162,7 @@ class ToTLUT
       return false;
     }
 
-    int currentPdgIdx;
+    int currentPdgIdx = 0;
     auto it = mPdgToIndexMap.find(pdg);
     if (it == mPdgToIndexMap.end()) {
       currentPdgIdx = mIndexToPdgMap.size();
@@ -201,7 +201,7 @@ class ToTLUT
 
           TH1F* histFromFile = dynamic_cast<TH1F*>(f->Get(histName));
           if (histFromFile) {
-            TH1F* clonedHist = static_cast<TH1F*>(histFromFile->Clone());
+            TH1F* clonedHist = dynamic_cast<TH1F*>(histFromFile->Clone());
             clonedHist->SetDirectory(nullptr);
 
             size_t flatIdx = getFlatIndex(currentPdgIdx, layer, etaBin, pBin);
@@ -299,15 +299,17 @@ struct OnTheFlyTrackerPid {
 
   float calculateNsigma(float measuredToT, float expectedToT, float resolution)
   {
-    if (resolution <= 0)
+    if (resolution <= 0) {
       return 999.f;
+    }
     return (measuredToT - expectedToT) / resolution;
   }
 
   float getToTMeanFromMomentumSlice(const std::shared_ptr<TH2>& hist, float momentum)
   {
-    if (!hist)
+    if (!hist) {
       return -1.f;
+    }
     int binX = hist->GetXaxis()->FindBin(momentum);
     TH1D* proj = hist->ProjectionY("temp", binX, binX);
     if (proj->GetEntries() < kMinEntriesForProjection) {
@@ -321,8 +323,9 @@ struct OnTheFlyTrackerPid {
 
   float getToTResolutionFromMomentumSlice(const std::shared_ptr<TH2>& hist, float momentum)
   {
-    if (!hist)
+    if (!hist) {
       return -1.f;
+    }
     int binX = hist->GetXaxis()->FindBin(momentum);
     TH1D* proj = hist->ProjectionY("temp", binX, binX);
     if (proj->GetEntries() < kMinEntriesForProjection) {
@@ -338,7 +341,7 @@ struct OnTheFlyTrackerPid {
   {
     float length = -100;
     o2::math_utils::CircleXYf_t trcCircle;
-    float sna, csa;
+    float sna = NAN, csa = NAN;
     track.getCircleParams(magneticField, trcCircle, sna, csa);
 
     const float centerDistance = std::hypot(trcCircle.xC, trcCircle.yC);
@@ -359,12 +362,12 @@ struct OnTheFlyTrackerPid {
       const float point1[2] = {radical * ux + displace * vx, radical * uy + displace * vy};
       const float point2[2] = {radical * ux - displace * vx, radical * uy - displace * vy};
 
-      std::array<float, 3> mom;
+      std::array<float, 3> mom{};
       track.getPxPyPzGlo(mom);
       const float scalarProduct1 = point1[0] * mom[0] + point1[1] * mom[1];
       const float scalarProduct2 = point2[0] * mom[0] + point2[1] * mom[1];
 
-      std::array<float, 3> startPoint;
+      std::array<float, 3> startPoint{};
       track.getXYZGlo(startPoint);
 
       float cosAngle = -1000, modulus = -1000;
@@ -525,24 +528,25 @@ struct OnTheFlyTrackerPid {
     for (size_t iTrue = 0; iTrue < particleInfo.size(); ++iTrue) {
       std::string trueName = particleInfo[iTrue].second;
       std::string trueNamePretty = trueName; // Fallback
-      if (trueName == "Elec")
+      if (trueName == "Elec") {
         trueNamePretty = "#it{e}";
-      else if (trueName == "Muon")
+      } else if (trueName == "Muon") {
         trueNamePretty = "#it{#mu}";
-      else if (trueName == "Pion")
+      } else if (trueName == "Pion") {
         trueNamePretty = "#it{#pi}";
-      else if (trueName == "Kaon")
+      } else if (trueName == "Kaon") {
         trueNamePretty = "#it{K}";
-      else if (trueName == "Prot")
+      } else if (trueName == "Prot") {
         trueNamePretty = "#it{p}";
-      else if (trueName == "Deut")
+      } else if (trueName == "Deut") {
         trueNamePretty = "#it{d}";
-      else if (trueName == "Trit")
+      } else if (trueName == "Trit") {
         trueNamePretty = "#it{t}";
-      else if (trueName == "He3")
+      } else if (trueName == "He3") {
         trueNamePretty = "#it{^{3}He}";
-      else if (trueName == "Al")
+      } else if (trueName == "Al") {
         trueNamePretty = "#it{^{4}He}";
+      }
 
       if (enableLogPBins.value) {
         const AxisSpec axisMomentumLog{mLogBins, "#it{p/z} (GeV/#it{c})"};
@@ -558,24 +562,25 @@ struct OnTheFlyTrackerPid {
         for (size_t iHyp = 0; iHyp < particleInfo.size(); ++iHyp) {
           std::string hypName = particleInfo[iHyp].second;
           std::string hypNamePretty = hypName; // Fallback
-          if (hypName == "Elec")
+          if (hypName == "Elec") {
             hypNamePretty = "#it{e}";
-          else if (hypName == "Muon")
+          } else if (hypName == "Muon") {
             hypNamePretty = "#it{#mu}";
-          else if (hypName == "Pion")
+          } else if (hypName == "Pion") {
             hypNamePretty = "#it{#pi}";
-          else if (hypName == "Kaon")
+          } else if (hypName == "Kaon") {
             hypNamePretty = "#it{K}";
-          else if (hypName == "Prot")
+          } else if (hypName == "Prot") {
             hypNamePretty = "#it{p}";
-          else if (hypName == "Deut")
+          } else if (hypName == "Deut") {
             hypNamePretty = "#it{d}";
-          else if (hypName == "Trit")
+          } else if (hypName == "Trit") {
             hypNamePretty = "#it{t}";
-          else if (hypName == "He3")
+          } else if (hypName == "He3") {
             hypNamePretty = "#it{^{3}He}";
-          else if (hypName == "Al")
+          } else if (hypName == "Al") {
             hypNamePretty = "#it{^{4}He}";
+          }
 
           std::string histName = "NSigma/BarrelNsigmaTrue" + trueName + "Vs" + hypName + "Hypothesis";
           std::string histTitle = "Nsigma (True " + trueNamePretty + " vs Hyp " + hypNamePretty + "); #it{p/z} (GeV/#it{c}); N#sigma";
@@ -613,7 +618,7 @@ struct OnTheFlyTrackerPid {
 
     for (const auto& track : tracks) {
       float truncatedMeanToT = -1.0f;
-      std::array<float, kNumHypothesisParticles> nSigmaValues;
+      std::array<float, kNumHypothesisParticles> nSigmaValues{};
       nSigmaValues.fill(999.f);
 
       if (!track.has_mcParticle()) {
@@ -690,7 +695,7 @@ struct OnTheFlyTrackerPid {
       std::vector<float> validToTs;
 
       for (int layer = kMinLayerForTruncation; layer < maxBarrelLayers.value; ++layer) {
-        if ((hitMap >> layer) & 0x1) {
+        if (((hitMap >> layer) & 0x1) != 0) {
           TH1F* totHist = mToTLUT->getHistogramForSampling(truePdgIdx, layer, binnedEta, binnedP);
 
           if (totHist && totHist->GetEntries() > 1) {
@@ -704,14 +709,15 @@ struct OnTheFlyTrackerPid {
       const size_t nValid = validToTs.size();
       size_t nUse = 0;
 
-      if (nValid == kMidLowValidHits || nValid == kMidHighValidHits)
+      if (nValid == kMidLowValidHits || nValid == kMidHighValidHits) {
         nUse = kMaxValidHitsForTruncation34;
-      else if (nValid == kMinValidHits || nValid == kLowValidHits)
+      } else if (nValid == kMinValidHits || nValid == kLowValidHits) {
         nUse = kMaxValidHitsForTruncation12;
-      else if (nValid == kHighValidHits1 || nValid == kHighValidHits2)
+      } else if (nValid == kHighValidHits1 || nValid == kHighValidHits2) {
         nUse = kMaxValidHitsForTruncation56;
-      else if (nValid >= kMaxValidHits)
+      } else if (nValid >= kMaxValidHits) {
         nUse = kMaxValidHitsForTruncation7Plus;
+      }
 
       if (nUse > 0 && nValid >= nUse) {
         std::sort(validToTs.begin(), validToTs.end());
