@@ -336,7 +336,6 @@ struct OnTheFlyTrackerPid {
 
   float computeTrackLength(o2::track::TrackParCov track, float radius, float magneticField)
   {
-    float length = -100;
     o2::math_utils::CircleXYf_t trcCircle;
     float sna = NAN, csa = NAN;
     track.getCircleParams(magneticField, trcCircle, sna, csa);
@@ -344,7 +343,7 @@ struct OnTheFlyTrackerPid {
     const float centerDistance = std::hypot(trcCircle.xC, trcCircle.yC);
 
     if (centerDistance < trcCircle.rC + radius && centerDistance > std::fabs(trcCircle.rC - radius)) {
-      length = 0.0f;
+      float length = 0.0f;
       const float ux = trcCircle.xC / centerDistance;
       const float uy = trcCircle.yC / centerDistance;
       const float vx = -uy;
@@ -379,8 +378,9 @@ struct OnTheFlyTrackerPid {
       cosAngle /= modulus;
       length = trcCircle.rC * std::acos(cosAngle);
       length *= std::sqrt(1.0f + track.getTgl() * track.getTgl());
+      return length;
     }
-    return length;
+    return -100.f;
   }
 
   Produces<aod::UpgradeTrkPidSignals> tableUpgradeTrkPidSignals;

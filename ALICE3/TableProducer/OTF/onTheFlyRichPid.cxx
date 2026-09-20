@@ -696,7 +696,7 @@ struct OnTheFlyRichPid {
   {
     // Compute tracking contribution to timing using the error propagation formula
     // Uses light speed in m/ps, magnetic field in T (*0.1 for conversion kGauss -> T)
-    const double a0 = mass * mass;
+    const double a0 = 1.0 * mass * mass;
     const double a1 = refractiveIndex;
     const double a1Squared = a1 * a1;
     const float ptCoshEta = pt * std::cosh(eta);

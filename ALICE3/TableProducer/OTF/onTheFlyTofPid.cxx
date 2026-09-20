@@ -172,6 +172,15 @@ struct OnTheFlyTofPid {
     int pdgCode;
     double mass;
     float charge;
+    void set(const std::string_view texName_, const std::string_view name_, ParticleId type_, int pdgCode_, double mass_, float charge_)
+    {
+      texName = texName_;
+      name = name_;
+      type = type_;
+      pdgCode = pdgCode_;
+      mass = mass_;
+      charge = charge_;
+    }
   };
 
   static constexpr ParticleInfo particleEl{.texName = "#it{e}", .name = "Elec", .type = El, .pdgCode = PDG_t::kElectron, .mass = o2::constants::physics::MassElectron, .charge = 1.f};
@@ -391,6 +400,8 @@ struct OnTheFlyTofPid {
       delete hHitMapInPixelBefore;
     }
 
+    TOFLayerEfficiency& operator=(const TOFLayerEfficiency&) = delete;
+
     TOFLayerEfficiency(float r, float l, std::array<float, 2> pDimensions, float fIA, float m) : layerRadius(r),
                                                                                                  layerLength(l),
                                                                                                  pixelDimensionZ(pDimensions[0]),
@@ -558,7 +569,7 @@ struct OnTheFlyTofPid {
   };
 
   std::vector<TracksWithTime> tracksWithTime;
-  bool eventTime(std::vector<TracksWithTime>& tracks,
+  bool eventTime(const std::vector<TracksWithTime>& tracks,
                  std::array<float, 2>& tzero)
   {
 
