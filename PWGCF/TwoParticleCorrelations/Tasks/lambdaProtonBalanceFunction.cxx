@@ -61,10 +61,26 @@ using MyTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA,
                            aod::pidTPCPi, aod::pidTPCPr, aod::pidTOFPr,
                            aod::pidTOFbeta, aod::TrackSelection>;
 
+// Per-centrality-bin histogram set. Defined at file scope (NOT inside the task struct),
+// otherwise O2's struct reflection in adaptAnalysisTask fails to compile.
+struct CentRho2Set {
+  // eta space (only booked if cFillEtaSpace && cFillCentEtaSpace)
+  std::shared_ptr<TH2> Lp, LAp, ALp, ALAp, pp, pAp, App, ApAp, LL, LAL, ALL, ALAL;
+  // y space
+  std::shared_ptr<TH2> Lp_y, LAp_y, ALp_y, ALAp_y, pp_y, pAp_y, App_y, ApAp_y, LL_y, LAL_y, ALL_y, ALAL_y;
+  // rho1 eta
+  std::shared_ptr<TH2> rho1_Proton, rho1_AntiProton, rho1_Lambda, rho1_AntiLambda;
+  // rho1 y
+  std::shared_ptr<TH2> rho1_Proton_y, rho1_AntiProton_y, rho1_Lambda_y, rho1_AntiLambda_y;
+  // event counter
+  std::shared_ptr<TH1> hEvents;
+};
+
 struct LambdaProtonBalanceFunction {
   HistogramRegistry registryLambda{"Lambda_invMass", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry registryLambdaExtended{"Lambda_invMassExtended", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry registryRho{"rho1ANDrho2_LP", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry registryCent{"rho1ANDrho2_LP_CentralityBased", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry registryOther{"Other_Hists", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry registryPid{"PID", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry registryQaDetector{"QA_Detec", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -149,6 +165,10 @@ struct LambdaProtonBalanceFunction {
   std::shared_ptr<TH2> hRho2_ALL_y_pT015toMaxDefined;
   std::shared_ptr<TH2> hRho2_ALAL_y_pT015toMaxDefined;
 
+  // SECTION E — centrality-differential storage (struct CentRho2Set is defined above the task)
+  std::vector<CentRho2Set> centSets;
+  std::vector<float> centEdgesLocal;
+
   // ════════════════════════════════════════════════════════════════════════
   // SECTION D — pT-spectra and pair-count monitoring histograms
   // ════════════════════════════════════════════════════════════════════════
@@ -179,8 +199,11 @@ struct LambdaProtonBalanceFunction {
   // ─────────────────────────────────────────────────────────────────────
 
   // ── Configurables ─────────────────────────────────────────────────────
-  Configurable<int> cPPandV0NBins{"cPPandV0NBins", 100, "N bins in all histos"};
+
   Configurable<float> cPPandV0ZVertexCut{"cPPandV0ZVertexCut", 10.0f, "Accepted z-vertex range (cm)"};
+  Configurable<bool> cFillEtaSpace{"cFillEtaSpace", false, "Fill eta-space rho1/rho2 histograms"};
+  Configurable<bool> cUseQinvCut{"cUseQinvCut", true, "Apply q_inv > 0.01 GeV/c pair cut (false = no q_inv rejection)"};
+  Configurable<bool> cFillCentHists{"cFillCentHists", true, "Fill centrality-differential rho1/rho2 histograms in separate rho1ANDrho2_LP_CentralityBased folder"};
 
   // Track quality cuts
   Configurable<int> pProtonTPCMinRows{"pProtonTPCMinRows", 70, "Minimum TPC crossed rows"};
@@ -222,14 +245,13 @@ struct LambdaProtonBalanceFunction {
   Configurable<float> pProtonMaxP{"pProtonMaxP", 3.6f, "Max p for primary protons (GeV/c)"};
   Configurable<float> pProtonMinPt{"pProtonMinPt", 0.5f, "Min pT for primary protons (GeV/c)"};
   Configurable<float> pProtonMaxPt{"pProtonMaxPt", 3.6f, "Max pT for primary protons (GeV/c)"};
-  Configurable<float> pProtonMaxEta{"pProtonMaxEta", 0.5f, "Max |eta| for primary protons"};
+
   Configurable<float> pProtonMaxY{"pProtonMaxY", 0.5f, "Max |y| for primary protons"};
 
   // Lambda Kinematic Cuts (from strange9)
   Configurable<float> lambdaV0MinPt{"lambdaV0MinPt", 0.60f, "Min pT for Lambdas"};
   Configurable<float> lambdaV0MaxPt{"lambdaV0MaxPt", 3.60f, "Max pT for Lambdas"};
   Configurable<float> lambdaV0MaxY{"lambdaV0MaxY", 0.5f, "Max |y| for Lambdas"};
-  Configurable<float> lambdaV0MaxEta{"lambdaV0MaxEta", 0.5f, "Max |eta| for Lambdas"};
 
   // V0 Mass and Topology Cuts (from strange9)
   Configurable<float> lambdaV0MaxCTau{"lambdaV0MaxCTau", 30.0f, "Max V0 ctau (cm)"};
@@ -387,6 +409,31 @@ struct LambdaProtonBalanceFunction {
     const float q2 = dE * dE - dpx * dpx - dpy * dpy - dpz * dpz;
     // q2 should be <= 0 for physical pairs; protect sqrt from numerical noise
     return std::sqrt(std::max(-q2, 0.0f));
+  }
+
+  // true => pair is rejected by the q_inv cut (never true when the cut is switched off)
+  bool failsQinvCut(float qinv) const
+  {
+    return cUseQinvCut.value && (qinv <= kQinvCutLP);
+  }
+
+  // Returns index of centrality bin for cent, or -1 if outside all bins.
+  int centBinIndex(float cent) const
+  {
+    for (size_t i = 0; i + 1 < centEdgesLocal.size(); ++i) {
+      if (cent >= centEdgesLocal[i] && cent < centEdgesLocal[i + 1]) {
+        return static_cast<int>(i);
+      }
+    }
+    return -1;
+  }
+
+  // Fill helper: fills h (if valid) at (a,b) only when both indices are in range.
+  static void fillIdx(std::shared_ptr<TH2> const& h, int a, int b)
+  {
+    if (h && a >= 0 && b >= 0) {
+      h->Fill(a, b);
+    }
   }
   // ─────────────────────────────────────────────────────────────────────
 
@@ -1125,7 +1172,7 @@ struct LambdaProtonBalanceFunction {
 
     // ── Common axis definitions ──────────────────────────────────────────
     AxisSpec lambdaMassAxis = {200, 1.08f, 1.15f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
-    AxisSpec vertexZAxis = {cPPandV0NBins, -15.f, 15.f, "vrtx_{Z} [cm]"};
+    AxisSpec vertexZAxis = {100, -15.f, 15.f, "vrtx_{Z} [cm]"};
     AxisSpec ptAxis = {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec pzAxis = {200, -10.0f, 10.0f, "p_{z} (GeV/#it{c})"};
     AxisSpec axisP = {200, 0.0f, 6.0f, "p (GeV/c)"};
@@ -1869,6 +1916,75 @@ struct LambdaProtonBalanceFunction {
       }
     }
     // ─────────────────────────────────────────────────────────────────────
+
+    // ══════════════════════════════════════════════════════════════════════
+    // Centrality-differential histograms → top-level folder "rho1ANDrho2_LP_CentralityBased"
+    // ══════════════════════════════════════════════════════════════════════
+    centSets.clear();
+    centEdgesLocal = {0.f, 5.f, 10.f, 20.f, 40.f, 60.f, 80.f};
+    if (cFillCentHists.value && centEdgesLocal.size() >= 2) {
+      const size_t nCent = centEdgesLocal.size() - 1;
+      centSets.resize(nCent);
+
+      for (size_t ic = 0; ic < nCent; ++ic) {
+        const float cLo = centEdgesLocal[ic];
+        const float cHi = centEdgesLocal[ic + 1];
+        const std::string dir = Form("Cent%02d_%02d", static_cast<int>(cLo), static_cast<int>(cHi));
+        const std::string ctag = Form("FT0M %.0f-%.0f%%", cLo, cHi);
+        auto& S = centSets[ic];
+
+        S.hEvents = registryCent.add<TH1>((dir + "/hEventCounter").c_str(),
+                                          ("Events, " + ctag).c_str(),
+                                          {HistType::kTH1F, {{1, 0.0, 1.0}}});
+
+        // ── rho1, y space (always) ──
+        S.rho1_Proton_y = registryCent.add<TH2>((dir + "/h2_rho1_Proton_y").c_str(), ("#rho_{1}(p) in (y,#varphi), " + ctag).c_str(), {HistType::kTH2F, {yAxis, phiAxis}});
+        S.rho1_AntiProton_y = registryCent.add<TH2>((dir + "/h2_rho1_AntiProton_y").c_str(), ("#rho_{1}(#bar{p}) in (y,#varphi), " + ctag).c_str(), {HistType::kTH2F, {yAxis, phiAxis}});
+        S.rho1_Lambda_y = registryCent.add<TH2>((dir + "/h2_rho1_Lambda_y").c_str(), ("#rho_{1}(#Lambda) in (y,#varphi), " + ctag).c_str(), {HistType::kTH2F, {yAxis, phiAxis}});
+        S.rho1_AntiLambda_y = registryCent.add<TH2>((dir + "/h2_rho1_AntiLambda_y").c_str(), ("#rho_{1}(#bar{#Lambda}) in (y,#varphi), " + ctag).c_str(), {HistType::kTH2F, {yAxis, phiAxis}});
+
+        // ── rho2, y space (always) ──
+        auto addY = [&](std::shared_ptr<TH2>& h, const char* name, const char* title) {
+          h = registryCent.add<TH2>((dir + "/" + name).c_str(), (std::string(title) + ", " + ctag).c_str(), {HistType::kTH2F, {unrolledAxisY, unrolledAxisY}});
+        };
+        addY(S.Lp_y, "h2_rho2_Lp_y_pT015toMaxDefined", "#rho_{2}(#Lambda,p) (y,#varphi)");
+        addY(S.LAp_y, "h2_rho2_LAp_y_pT015toMaxDefined", "#rho_{2}(#Lambda,#bar{p}) (y,#varphi)");
+        addY(S.ALp_y, "h2_rho2_ALp_y_pT015toMaxDefined", "#rho_{2}(#bar{#Lambda},p) (y,#varphi)");
+        addY(S.ALAp_y, "h2_rho2_ALAp_y_pT015toMaxDefined", "#rho_{2}(#bar{#Lambda},#bar{p}) (y,#varphi)");
+        addY(S.pp_y, "h2_rho2_pp_y_pT015toMaxDefined", "#rho_{2}(p,p) (y,#varphi)");
+        addY(S.pAp_y, "h2_rho2_pAp_y_pT015toMaxDefined", "#rho_{2}(p,#bar{p}) (y,#varphi)");
+        addY(S.App_y, "h2_rho2_App_y_pT015toMaxDefined", "#rho_{2}(#bar{p},p) (y,#varphi)");
+        addY(S.ApAp_y, "h2_rho2_ApAp_y_pT015toMaxDefined", "#rho_{2}(#bar{p},#bar{p}) (y,#varphi)");
+        addY(S.LL_y, "h2_rho2_LL_y_pT015toMaxDefined", "#rho_{2}(#Lambda,#Lambda) (y,#varphi)");
+        addY(S.LAL_y, "h2_rho2_LAL_y_pT015toMaxDefined", "#rho_{2}(#Lambda,#bar{#Lambda}) (y,#varphi)");
+        addY(S.ALL_y, "h2_rho2_ALL_y_pT015toMaxDefined", "#rho_{2}(#bar{#Lambda},#Lambda) (y,#varphi)");
+        addY(S.ALAL_y, "h2_rho2_ALAL_y_pT015toMaxDefined", "#rho_{2}(#bar{#Lambda},#bar{#Lambda}) (y,#varphi)");
+
+        // ── eta space (only if BOTH switches on: memory heavy) ──
+        if (cFillEtaSpace.value) {
+          S.rho1_Proton = registryCent.add<TH2>((dir + "/h2_rho1_Proton").c_str(), ("#rho_{1}(p) in (#eta,#varphi), " + ctag).c_str(), {HistType::kTH2F, {etaAxis, phiAxis}});
+          S.rho1_AntiProton = registryCent.add<TH2>((dir + "/h2_rho1_AntiProton").c_str(), ("#rho_{1}(#bar{p}) in (#eta,#varphi), " + ctag).c_str(), {HistType::kTH2F, {etaAxis, phiAxis}});
+          S.rho1_Lambda = registryCent.add<TH2>((dir + "/h2_rho1_Lambda").c_str(), ("#rho_{1}(#Lambda) in (#eta,#varphi), " + ctag).c_str(), {HistType::kTH2F, {etaAxis, phiAxis}});
+          S.rho1_AntiLambda = registryCent.add<TH2>((dir + "/h2_rho1_AntiLambda").c_str(), ("#rho_{1}(#bar{#Lambda}) in (#eta,#varphi), " + ctag).c_str(), {HistType::kTH2F, {etaAxis, phiAxis}});
+
+          auto addEta = [&](std::shared_ptr<TH2>& h, const char* name, const char* title) {
+            h = registryCent.add<TH2>((dir + "/" + name).c_str(), (std::string(title) + ", " + ctag).c_str(), {HistType::kTH2F, {unrolledAxis, unrolledAxis}});
+          };
+          addEta(S.Lp, "h2_rho2_Lp_pT015toMaxDefined", "#rho_{2}(#Lambda,p) (#eta,#varphi)");
+          addEta(S.LAp, "h2_rho2_LAp_pT015toMaxDefined", "#rho_{2}(#Lambda,#bar{p}) (#eta,#varphi)");
+          addEta(S.ALp, "h2_rho2_ALp_pT015toMaxDefined", "#rho_{2}(#bar{#Lambda},p) (#eta,#varphi)");
+          addEta(S.ALAp, "h2_rho2_ALAp_pT015toMaxDefined", "#rho_{2}(#bar{#Lambda},#bar{p}) (#eta,#varphi)");
+          addEta(S.pp, "h2_rho2_pp_pT015toMaxDefined", "#rho_{2}(p,p) (#eta,#varphi)");
+          addEta(S.pAp, "h2_rho2_pAp_pT015toMaxDefined", "#rho_{2}(p,#bar{p}) (#eta,#varphi)");
+          addEta(S.App, "h2_rho2_App_pT015toMaxDefined", "#rho_{2}(#bar{p},p) (#eta,#varphi)");
+          addEta(S.ApAp, "h2_rho2_ApAp_pT015toMaxDefined", "#rho_{2}(#bar{p},#bar{p}) (#eta,#varphi)");
+          addEta(S.LL, "h2_rho2_LL_pT015toMaxDefined", "#rho_{2}(#Lambda,#Lambda) (#eta,#varphi)");
+          addEta(S.LAL, "h2_rho2_LAL_pT015toMaxDefined", "#rho_{2}(#Lambda,#bar{#Lambda}) (#eta,#varphi)");
+          addEta(S.ALL, "h2_rho2_ALL_pT015toMaxDefined", "#rho_{2}(#bar{#Lambda},#Lambda) (#eta,#varphi)");
+          addEta(S.ALAL, "h2_rho2_ALAL_pT015toMaxDefined", "#rho_{2}(#bar{#Lambda},#bar{#Lambda}) (#eta,#varphi)");
+        }
+      }
+    }
   }
 
   Filter eventFilter = (o2::aod::evsel::sel8 == true);
@@ -1945,6 +2061,17 @@ struct LambdaProtonBalanceFunction {
     registryOther.fill(HIST("hEventCutflow"), 4.0f);
 
     registryRho.fill(HIST("hEventCounter"), 0.5);
+
+    // ── Centrality bin for the centrality-differential histograms ─────────
+    CentRho2Set* cs = nullptr;
+    if (cFillCentHists.value) {
+      const int iCent = centBinIndex(collision.centFT0M());
+      if (iCent >= 0 && iCent < static_cast<int>(centSets.size())) {
+        cs = &centSets[iCent];
+        cs->hEvents->Fill(0.5);
+      }
+    }
+
     registryOther.fill(HIST("hVertexZRec"), collision.posZ());
     registryOther.fill(HIST("hFT0MPercentile"), collision.centFT0M());
 
@@ -2279,8 +2406,16 @@ struct LambdaProtonBalanceFunction {
         fillDaughterQA<DaughterParent::Lambda, DaughterType::Proton>(DaughterQAStage::Final, v0PosDau);
         fillDaughterQA<DaughterParent::Lambda, DaughterType::Pion>(DaughterQAStage::Final, v0NegDau);
 
-        registryRho.fill(HIST("h2_rho1_Lambda"), v0.eta(), v0.phi());
+        if (cFillEtaSpace.value) {
+          registryRho.fill(HIST("h2_rho1_Lambda"), v0.eta(), v0.phi());
+        }
         registryRho.fill(HIST("h2_rho1_Lambda_y"), v0.rapidity(1), v0.phi());
+        if (cs) {
+          cs->rho1_Lambda_y->Fill(v0.rapidity(1), v0.phi());
+          if (cs->rho1_Lambda) {
+            cs->rho1_Lambda->Fill(v0.eta(), v0.phi());
+          }
+        }
         registryOther.fill(HIST("hPtSelLambda"), pt);
         hPtSelLambda_pT015toMaxDefined->Fill(pt);
       }
@@ -2295,8 +2430,16 @@ struct LambdaProtonBalanceFunction {
         fillDaughterQA<DaughterParent::AntiLambda, DaughterType::AntiProton>(DaughterQAStage::Final, v0NegDau);
         fillDaughterQA<DaughterParent::AntiLambda, DaughterType::AntiPion>(DaughterQAStage::Final, v0PosDau);
 
-        registryRho.fill(HIST("h2_rho1_AntiLambda"), v0.eta(), v0.phi());
+        if (cFillEtaSpace.value) {
+          registryRho.fill(HIST("h2_rho1_AntiLambda"), v0.eta(), v0.phi());
+        }
         registryRho.fill(HIST("h2_rho1_AntiLambda_y"), v0.rapidity(2), v0.phi());
+        if (cs) {
+          cs->rho1_AntiLambda_y->Fill(v0.rapidity(2), v0.phi());
+          if (cs->rho1_AntiLambda) {
+            cs->rho1_AntiLambda->Fill(v0.eta(), v0.phi());
+          }
+        }
         registryOther.fill(HIST("hPtSelAntiLambda"), pt);
         hPtSelAntiLambda_pT015toMaxDefined->Fill(pt);
       }
@@ -2520,7 +2663,7 @@ struct LambdaProtonBalanceFunction {
         fillProtonTpcQA<true>(ProtonQAStage::FinalSelected, trk);
         // TOF QA only when track was accepted through the TPC+TOF branch:
         // p > PProtonTPC_TOFSwitchP guarantees hasTOF() and nSigmaTOF passed (beta window cut removed). //BETACUTCommented
-        if (pTPC > pProtonTPCTOFSwitchP.value) {
+        if (pTPC >= pProtonTPCTOFSwitchP.value) {
           fillProtonTofQA<true>(ProtonQAStage::FinalSelected, trk);
         }
 
@@ -2533,7 +2676,7 @@ struct LambdaProtonBalanceFunction {
         fillProtonTpcQA<false>(ProtonQAStage::FinalSelected, trk);
         // TOF QA only when track was accepted through the TPC+TOF branch:
         // p > pProtonTPCTOFSwitchP guarantees hasTOF() and nSigmaTOF passed (beta window cut removed). //BETACUTCommented
-        if (pTPC > pProtonTPCTOFSwitchP.value) {
+        if (pTPC >= pProtonTPCTOFSwitchP.value) {
           fillProtonTofQA<false>(ProtonQAStage::FinalSelected, trk);
         }
 
@@ -2580,14 +2723,30 @@ struct LambdaProtonBalanceFunction {
 
     // ── Single-particle density for protons (eta and y) ──────────────────
     for (auto const& primProton : selectedPrimProtons) {
-      registryRho.fill(HIST("h2_rho1_Proton"), primProton.eta(), primProton.phi());
+      if (cFillEtaSpace.value) {
+        registryRho.fill(HIST("h2_rho1_Proton"), primProton.eta(), primProton.phi());
+      }
       const float yp = protonRapidity(primProton);
       registryRho.fill(HIST("h2_rho1_Proton_y"), yp, primProton.phi());
+      if (cs) {
+        cs->rho1_Proton_y->Fill(yp, primProton.phi());
+        if (cs->rho1_Proton) {
+          cs->rho1_Proton->Fill(primProton.eta(), primProton.phi());
+        }
+      }
     }
     for (auto const& primAntiProton : selectedPrimAntiProtons) {
-      registryRho.fill(HIST("h2_rho1_AntiProton"), primAntiProton.eta(), primAntiProton.phi());
+      if (cFillEtaSpace.value) {
+        registryRho.fill(HIST("h2_rho1_AntiProton"), primAntiProton.eta(), primAntiProton.phi());
+      }
       const float yap = protonRapidity(primAntiProton);
       registryRho.fill(HIST("h2_rho1_AntiProton_y"), yap, primAntiProton.phi());
+      if (cs) {
+        cs->rho1_AntiProton_y->Fill(yap, primAntiProton.phi());
+        if (cs->rho1_AntiProton) {
+          cs->rho1_AntiProton->Fill(primAntiProton.eta(), primAntiProton.phi());
+        }
+      }
     }
     // ─────────────────────────────────────────────────────────────────────
 
@@ -2634,7 +2793,7 @@ struct LambdaProtonBalanceFunction {
             const float E2 = std::sqrt(p2mag * p2mag + kMassProton * kMassProton);
             const float qinvPP = computeQinv(p1.px(), p1.py(), p1.pz(), E1, p2.px(), p2.py(), p2.pz(), E2);
             registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_PP_Before_qinvCut"), qinvPP);
-            if (qinvPP > kQinvCutLP) {
+            if (!failsQinvCut(qinvPP)) {
               registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_PP_After_qinvCut"), qinvPP);
             }
           }
@@ -2660,7 +2819,7 @@ struct LambdaProtonBalanceFunction {
         {
           const float qE1 = std::sqrt(p1.px() * p1.px() + p1.py() * p1.py() + p1.pz() * p1.pz() + kMassProton * kMassProton);
           const float qE2 = std::sqrt(p2.px() * p2.px() + p2.py() * p2.py() + p2.pz() * p2.pz() + kMassProton * kMassProton);
-          if (computeQinv(p1.px(), p1.py(), p1.pz(), qE1, p2.px(), p2.py(), p2.pz(), qE2) <= kQinvCutLP) {
+          if (failsQinvCut(computeQinv(p1.px(), p1.py(), p1.pz(), qE1, p2.px(), p2.py(), p2.pz(), qE2))) {
             registryCorrelationQA.fill(HIST("QA3/PairCleaning/h1f_pairCleaning"), 3);
             continue;
           }
@@ -2672,11 +2831,15 @@ struct LambdaProtonBalanceFunction {
         const int idxY1 = unrolledIndexY(y1_pp, p1.phi());
         const int idxY2 = unrolledIndexY(y2_pp, p2.phi());
         // Physics pair correlations (rho2): q_inv cut applied (pairs with q_inv <= kQinvCutLP are rejected above)
-        if (idx1 >= 0 && idx2 >= 0) {
+        if (cFillEtaSpace.value && idx1 >= 0 && idx2 >= 0) {
           hRho2_pp_pT015toMaxDefined->Fill(idx1, idx2);
         }
         if (idxY1 >= 0 && idxY2 >= 0) {
           hRho2_pp_y_pT015toMaxDefined->Fill(idxY1, idxY2);
+        }
+        if (cs) {
+          fillIdx(cs->pp, idx1, idx2);
+          fillIdx(cs->pp_y, idxY1, idxY2);
         }
       }
     }
@@ -2684,15 +2847,19 @@ struct LambdaProtonBalanceFunction {
       for (auto const& b : antiProtonInfo) {
         const float qinvPAp = computeQinv(a.px, a.py, a.pz, a.E, b.px, b.py, b.pz, b.E);
         registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_pAp_Before_qinvCut"), qinvPAp);
-        if (qinvPAp <= kQinvCutLP) {
+        if (failsQinvCut(qinvPAp)) {
           continue;
         }
         registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_pAp_After_qinvCut"), qinvPAp);
-        if (a.idxEta >= 0 && b.idxEta >= 0) {
+        if (cFillEtaSpace.value && a.idxEta >= 0 && b.idxEta >= 0) {
           hRho2_pAp_pT015toMaxDefined->Fill(a.idxEta, b.idxEta);
         }
         if (a.idxY >= 0 && b.idxY >= 0) {
           hRho2_pAp_y_pT015toMaxDefined->Fill(a.idxY, b.idxY);
+        }
+        if (cs) {
+          fillIdx(cs->pAp, a.idxEta, b.idxEta);
+          fillIdx(cs->pAp_y, a.idxY, b.idxY);
         }
       }
     }
@@ -2700,15 +2867,19 @@ struct LambdaProtonBalanceFunction {
       for (auto const& b : protonInfo) {
         const float qinvApp = computeQinv(a.px, a.py, a.pz, a.E, b.px, b.py, b.pz, b.E);
         registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_App_Before_qinvCut"), qinvApp);
-        if (qinvApp <= kQinvCutLP) {
+        if (failsQinvCut(qinvApp)) {
           continue;
         }
         registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_App_After_qinvCut"), qinvApp);
-        if (a.idxEta >= 0 && b.idxEta >= 0) {
+        if (cFillEtaSpace.value && a.idxEta >= 0 && b.idxEta >= 0) {
           hRho2_App_pT015toMaxDefined->Fill(a.idxEta, b.idxEta);
         }
         if (a.idxY >= 0 && b.idxY >= 0) {
           hRho2_App_y_pT015toMaxDefined->Fill(a.idxY, b.idxY);
+        }
+        if (cs) {
+          fillIdx(cs->App, a.idxEta, b.idxEta);
+          fillIdx(cs->App_y, a.idxY, b.idxY);
         }
       }
     }
@@ -2719,15 +2890,19 @@ struct LambdaProtonBalanceFunction {
         }
         const float qinvApAp = computeQinv(a.px, a.py, a.pz, a.E, b.px, b.py, b.pz, b.E);
         registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_ApAp_Before_qinvCut"), qinvApAp);
-        if (qinvApAp <= kQinvCutLP) {
+        if (failsQinvCut(qinvApAp)) {
           continue;
         }
         registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_ApAp_After_qinvCut"), qinvApAp);
-        if (a.idxEta >= 0 && b.idxEta >= 0) {
+        if (cFillEtaSpace.value && a.idxEta >= 0 && b.idxEta >= 0) {
           hRho2_ApAp_pT015toMaxDefined->Fill(a.idxEta, b.idxEta);
         }
         if (a.idxY >= 0 && b.idxY >= 0) {
           hRho2_ApAp_y_pT015toMaxDefined->Fill(a.idxY, b.idxY);
+        }
+        if (cs) {
+          fillIdx(cs->ApAp, a.idxEta, b.idxEta);
+          fillIdx(cs->ApAp_y, a.idxY, b.idxY);
         }
       }
     }
@@ -2763,7 +2938,7 @@ struct LambdaProtonBalanceFunction {
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_Before_qinvCut"), qinvLP);
         }
         // QA3/SplitTrackQA: q_inv Before and After cut
-        if (qinvLP > kQinvCutLP) {
+        if (!failsQinvCut(qinvLP)) {
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_After_qinvCut"), qinvLP);
         }
         // QA3/SplitTrackQA: close-pair block for daughter-overlap diagnosed split tracks
@@ -2788,7 +2963,7 @@ struct LambdaProtonBalanceFunction {
         const int idxYL = unrolledIndexY(yL, v0.phi());
         const int idxYP = unrolledIndexY(yP, primProton.phi());
         // Physics pair correlations (rho2 / pT / pair-count): q_inv cut applied (pairs with q_inv <= kQinvCutLP are rejected above)
-        if (qinvLP <= kQinvCutLP) {
+        if (failsQinvCut(qinvLP)) {
           continue;
         }
         registryCorrelationQA.fill(HIST("QA3/Kstar/h1f_kstar_Lp"),
@@ -2798,10 +2973,16 @@ struct LambdaProtonBalanceFunction {
           if (bin >= 0) {
             hPtPrimProton_Lambda[bin]->Fill(primProton.pt());
           }
-          hRho2_Lp_pT015toMaxDefined->Fill(idxLambda, idxPrimP);
+          if (cFillEtaSpace.value) {
+            hRho2_Lp_pT015toMaxDefined->Fill(idxLambda, idxPrimP);
+          }
         }
         if (idxYL >= 0 && idxYP >= 0) {
           hRho2_Lp_y_pT015toMaxDefined->Fill(idxYL, idxYP);
+        }
+        if (cs) {
+          fillIdx(cs->Lp, idxLambda, idxPrimP);
+          fillIdx(cs->Lp_y, idxYL, idxYP);
         }
         ++nPairs_Lambda_PrimProton;
       }
@@ -2820,7 +3001,7 @@ struct LambdaProtonBalanceFunction {
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_Before_qinvCut"), qinvLAp);
         }
         // QA3/SplitTrackQA: q_inv Before and After cut
-        if (qinvLAp > kQinvCutLP) {
+        if (!failsQinvCut(qinvLAp)) {
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_After_qinvCut"), qinvLAp);
         }
         // QA3/RawPairDensity: Lambda-antiproton → same LP histogram
@@ -2838,7 +3019,7 @@ struct LambdaProtonBalanceFunction {
         const int idxYL2 = unrolledIndexY(yL2, v0.phi());
         const int idxYAp = unrolledIndexY(yAp, primAntiProton.phi());
         // Physics pair correlations (rho2 / pT / pair-count): q_inv cut applied (pairs with q_inv <= kQinvCutLP are rejected above)
-        if (qinvLAp <= kQinvCutLP) {
+        if (failsQinvCut(qinvLAp)) {
           continue;
         }
         registryCorrelationQA.fill(HIST("QA3/Kstar/h1f_kstar_LAp"),
@@ -2848,10 +3029,16 @@ struct LambdaProtonBalanceFunction {
           if (bin >= 0) {
             hPtPrimAntiProton_Lambda[bin]->Fill(primAntiProton.pt());
           }
-          hRho2_LAp_pT015toMaxDefined->Fill(idxLambda, idxPrimPbar);
+          if (cFillEtaSpace.value) {
+            hRho2_LAp_pT015toMaxDefined->Fill(idxLambda, idxPrimPbar);
+          }
         }
         if (idxYL2 >= 0 && idxYAp >= 0) {
           hRho2_LAp_y_pT015toMaxDefined->Fill(idxYL2, idxYAp);
+        }
+        if (cs) {
+          fillIdx(cs->LAp, idxLambda, idxPrimPbar);
+          fillIdx(cs->LAp_y, idxYL2, idxYAp);
         }
         ++nPairs_Lambda_PrimAntiProton;
       }
@@ -2942,7 +3129,7 @@ struct LambdaProtonBalanceFunction {
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_Before_qinvCut"), qinvALp);
         }
         // QA3/SplitTrackQA: q_inv Before and After cut
-        if (qinvALp > kQinvCutLP) {
+        if (!failsQinvCut(qinvALp)) {
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_After_qinvCut"), qinvALp);
         }
         // QA3/RawPairDensity: AntiLambda-proton → same LP histogram
@@ -2960,7 +3147,7 @@ struct LambdaProtonBalanceFunction {
         const int idxYAL = unrolledIndexY(yAL, v0.phi());
         const int idxYP2 = unrolledIndexY(yP2, primProton.phi());
         // Physics pair correlations (rho2 / pT / pair-count): q_inv cut applied (pairs with q_inv <= kQinvCutLP are rejected above)
-        if (qinvALp <= kQinvCutLP) {
+        if (failsQinvCut(qinvALp)) {
           continue;
         }
         registryCorrelationQA.fill(HIST("QA3/Kstar/h1f_kstar_ALp"),
@@ -2970,10 +3157,16 @@ struct LambdaProtonBalanceFunction {
           if (bin >= 0) {
             hPtPrimProton_AntiLambda[bin]->Fill(primProton.pt());
           }
-          hRho2_ALp_pT015toMaxDefined->Fill(idxAL, idxPrimP);
+          if (cFillEtaSpace.value) {
+            hRho2_ALp_pT015toMaxDefined->Fill(idxAL, idxPrimP);
+          }
         }
         if (idxYAL >= 0 && idxYP2 >= 0) {
           hRho2_ALp_y_pT015toMaxDefined->Fill(idxYAL, idxYP2);
+        }
+        if (cs) {
+          fillIdx(cs->ALp, idxAL, idxPrimP);
+          fillIdx(cs->ALp_y, idxYAL, idxYP2);
         }
         ++nPairs_AntiLambda_PrimProton;
       }
@@ -2992,7 +3185,7 @@ struct LambdaProtonBalanceFunction {
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_Before_qinvCut"), qinvALAp);
         }
         // QA3/SplitTrackQA: q_inv Before and After cut
-        if (qinvALAp > kQinvCutLP) {
+        if (!failsQinvCut(qinvALAp)) {
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_After_qinvCut"), qinvALAp);
         }
         // QA3/SplitTrackQA: close-pair block for daughter-overlap diagnosed split tracks
@@ -3017,7 +3210,7 @@ struct LambdaProtonBalanceFunction {
         const int idxYAL2 = unrolledIndexY(yAL2, v0.phi());
         const int idxYAp2 = unrolledIndexY(yAp2, primAntiProton.phi());
         // Physics pair correlations (rho2 / pT / pair-count): q_inv cut applied (pairs with q_inv <= kQinvCutLP are rejected above)
-        if (qinvALAp <= kQinvCutLP) {
+        if (failsQinvCut(qinvALAp)) {
           continue;
         }
         registryCorrelationQA.fill(HIST("QA3/Kstar/h1f_kstar_ALAp"),
@@ -3027,10 +3220,16 @@ struct LambdaProtonBalanceFunction {
           if (bin >= 0) {
             hPtPrimAntiProton_AntiLambda[bin]->Fill(primAntiProton.pt());
           }
-          hRho2_ALAp_pT015toMaxDefined->Fill(idxAL2, idxPrimPb);
+          if (cFillEtaSpace.value) {
+            hRho2_ALAp_pT015toMaxDefined->Fill(idxAL2, idxPrimPb);
+          }
         }
         if (idxYAL2 >= 0 && idxYAp2 >= 0) {
           hRho2_ALAp_y_pT015toMaxDefined->Fill(idxYAL2, idxYAp2);
+        }
+        if (cs) {
+          fillIdx(cs->ALAp, idxAL2, idxPrimPb);
+          fillIdx(cs->ALAp_y, idxYAL2, idxYAp2);
         }
         ++nPairs_AntiLambda_PrimAntiProton;
       }
@@ -3130,7 +3329,7 @@ struct LambdaProtonBalanceFunction {
           const float Ev2 = std::sqrt(v2pmag * v2pmag + kMassLambda * kMassLambda);
           const float qinvLL = computeQinv(v1.px(), v1.py(), v1.pz(), Ev1, v2.px(), v2.py(), v2.pz(), Ev2);
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_Before_qinvCut"), qinvLL);
-          if (qinvLL <= kQinvCutLP) {
+          if (failsQinvCut(qinvLL)) {
             continue;
           }
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_After_qinvCut"), qinvLL);
@@ -3140,11 +3339,15 @@ struct LambdaProtonBalanceFunction {
         const int idxY1 = unrolledIndexY(yv1L, v1.phi());
         const int idxY2 = unrolledIndexY(v2.rapidity(1), v2.phi());
         // Physics pair correlations (rho2): q_inv cut applied (pairs with q_inv <= kQinvCutLP are rejected above)
-        if (idx1 >= 0 && idx2 >= 0) {
+        if (cFillEtaSpace.value && idx1 >= 0 && idx2 >= 0) {
           hRho2_LL_pT015toMaxDefined->Fill(idx1, idx2);
         }
         if (idxY1 >= 0 && idxY2 >= 0) {
           hRho2_LL_y_pT015toMaxDefined->Fill(idxY1, idxY2);
+        }
+        if (cs) {
+          fillIdx(cs->LL, idx1, idx2);
+          fillIdx(cs->LL_y, idxY1, idxY2);
         }
       }
     }
@@ -3180,7 +3383,7 @@ struct LambdaProtonBalanceFunction {
           const float Ev2L = std::sqrt(v2pmagL * v2pmagL + kMassLambda * kMassLambda);
           const float qinvLAL = computeQinv(v1.px(), v1.py(), v1.pz(), Ev1L, v2.px(), v2.py(), v2.pz(), Ev2L);
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_Before_qinvCut"), qinvLAL);
-          if (qinvLAL <= kQinvCutLP) {
+          if (failsQinvCut(qinvLAL)) {
             continue;
           }
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_After_qinvCut"), qinvLAL);
@@ -3190,11 +3393,15 @@ struct LambdaProtonBalanceFunction {
         const int idxY1 = unrolledIndexY(yv1LAL, v1.phi());
         const int idxY2 = unrolledIndexY(v2.rapidity(2), v2.phi());
         // Physics pair correlations (rho2): q_inv cut applied (pairs with q_inv <= kQinvCutLP are rejected above)
-        if (idx1 >= 0 && idx2 >= 0) {
+        if (cFillEtaSpace.value && idx1 >= 0 && idx2 >= 0) {
           hRho2_LAL_pT015toMaxDefined->Fill(idx1, idx2);
         }
         if (idxY1 >= 0 && idxY2 >= 0) {
           hRho2_LAL_y_pT015toMaxDefined->Fill(idxY1, idxY2);
+        }
+        if (cs) {
+          fillIdx(cs->LAL, idx1, idx2);
+          fillIdx(cs->LAL_y, idxY1, idxY2);
         }
       }
     }
@@ -3230,7 +3437,7 @@ struct LambdaProtonBalanceFunction {
           const float Ev2AL = std::sqrt(v2pmagAL * v2pmagAL + kMassLambda * kMassLambda);
           const float qinvALL = computeQinv(v1.px(), v1.py(), v1.pz(), Ev1AL, v2.px(), v2.py(), v2.pz(), Ev2AL);
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_Before_qinvCut"), qinvALL);
-          if (qinvALL <= kQinvCutLP) {
+          if (failsQinvCut(qinvALL)) {
             continue;
           }
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_After_qinvCut"), qinvALL);
@@ -3240,11 +3447,15 @@ struct LambdaProtonBalanceFunction {
         const int idxY1 = unrolledIndexY(yv1ALL, v1.phi());
         const int idxY2 = unrolledIndexY(v2.rapidity(1), v2.phi());
         // Physics pair correlations (rho2): q_inv cut applied (pairs with q_inv <= kQinvCutLP are rejected above)
-        if (idx1 >= 0 && idx2 >= 0) {
+        if (cFillEtaSpace.value && idx1 >= 0 && idx2 >= 0) {
           hRho2_ALL_pT015toMaxDefined->Fill(idx1, idx2);
         }
         if (idxY1 >= 0 && idxY2 >= 0) {
           hRho2_ALL_y_pT015toMaxDefined->Fill(idxY1, idxY2);
+        }
+        if (cs) {
+          fillIdx(cs->ALL, idx1, idx2);
+          fillIdx(cs->ALL_y, idxY1, idxY2);
         }
       }
     }
@@ -3283,7 +3494,7 @@ struct LambdaProtonBalanceFunction {
           const float Ev2AL2 = std::sqrt(v2pmagAL2 * v2pmagAL2 + kMassLambda * kMassLambda);
           const float qinvALAL = computeQinv(v1.px(), v1.py(), v1.pz(), Ev1AL2, v2.px(), v2.py(), v2.pz(), Ev2AL2);
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_Before_qinvCut"), qinvALAL);
-          if (qinvALAL <= kQinvCutLP) {
+          if (failsQinvCut(qinvALAL)) {
             continue;
           }
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LL_After_qinvCut"), qinvALAL);
@@ -3293,11 +3504,15 @@ struct LambdaProtonBalanceFunction {
         const int idxY1 = unrolledIndexY(yv1ALAL, v1.phi());
         const int idxY2 = unrolledIndexY(v2.rapidity(2), v2.phi());
         // Physics pair correlations (rho2): q_inv cut applied (pairs with q_inv <= kQinvCutLP are rejected above)
-        if (idx1 >= 0 && idx2 >= 0) {
+        if (cFillEtaSpace.value && idx1 >= 0 && idx2 >= 0) {
           hRho2_ALAL_pT015toMaxDefined->Fill(idx1, idx2);
         }
         if (idxY1 >= 0 && idxY2 >= 0) {
           hRho2_ALAL_y_pT015toMaxDefined->Fill(idxY1, idxY2);
+        }
+        if (cs) {
+          fillIdx(cs->ALAL, idx1, idx2);
+          fillIdx(cs->ALAL_y, idxY1, idxY2);
         }
       }
     }
