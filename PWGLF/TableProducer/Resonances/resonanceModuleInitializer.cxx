@@ -110,9 +110,9 @@ struct ResonanceModuleInitializer {
   static constexpr int PdgLambda1520 = o2::constants::physics::Pdg::kLambda1520_Py;
   static constexpr int Xi1530Code = 3324;
   static constexpr int PdgK1Plus1270 = o2::constants::physics::Pdg::kK1_1270Plus;
-  static constexpr int Xi1820NeutralCode = 123314;
-  static constexpr int Xi1820MinusCode = 123324;
-  static constexpr int Omega2012MinusCode = 123334;
+  static constexpr int Xi1820MinusCode = o2::constants::physics::Pdg::kXi1820Minus;
+  static constexpr int Xi1820ZeroCode = o2::constants::physics::Pdg::kXi1820Zero;
+  static constexpr int Omega2012MinusCode = o2::constants::physics::Pdg::kOmega2012Minus;
   static constexpr int PdgProton = PDG_t::kProton;
   static constexpr int PdgLambda0 = PDG_t::kLambda0;
   static constexpr int PdgXiMinus = PDG_t::kXiMinus;
@@ -232,7 +232,7 @@ struct ResonanceModuleInitializer {
                                                     || (nabs(aod::mcparticle::pdgCode) == PdgLambda1520)      // Lambda(1520)
                                                     || (nabs(aod::mcparticle::pdgCode) == Xi1530Code)         // Xi(1530)0
                                                     || (nabs(aod::mcparticle::pdgCode) == PdgK1Plus1270)      // K1(1270)+
-                                                    || (nabs(aod::mcparticle::pdgCode) == Xi1820NeutralCode)  // Xi(1820)0
+                                                    || (nabs(aod::mcparticle::pdgCode) == Xi1820ZeroCode)     // Xi(1820)0
                                                     || (nabs(aod::mcparticle::pdgCode) == Xi1820MinusCode)    // Xi(1820)-
                                                     || (nabs(aod::mcparticle::pdgCode) == Omega2012MinusCode) // Omega(2012)-
                                                     || (nabs(aod::mcparticle::pdgCode) == PdgProton)          // proton
