@@ -179,6 +179,7 @@ struct nucleiInJets {
   Configurable<bool> useMcC{"useMcC", true, "use mcC"};
   Configurable<bool> usebkgSubractionMC{"usebkgSubractionMC", true, "use rho-area background subtraction for detector-level matched MC jets"};
   Configurable<float> cfgjetPtBkgSubMinMC{"cfgjetPtBkgSubMinMC", 10.0f, "minimum detector-level matched MC jet pT after optional background subtraction"};
+  Configurable<bool> useFullConeAcceptance{"useFullConeAcceptance", true, "require jet/perpendicular-cone axes to satisfy |eta_axis| < cfgtrkMaxEta - cfgjetR for jet and efficiency histograms"};
   Configurable<bool> useRapidityCutForPID{"useRapidityCutForPID", false, "true: use rapidity cut for PID, false: no rapidity cut for PID"};
   Configurable<bool> isPOCollision{"isPOCollision", false, "true: use pO rapidity shift for inclusive PID/efficiency rapidity cuts; false: symmetric system, no rapidity shift"};
   Configurable<double> cfgPORapidityShiftForPID{"cfgPORapidityShiftForPID", 0.0, "pO rapidity shift for inclusive PID/efficiency rapidity cuts: y_{CMS}=y_{lab}-shift. Set sign/value according to beam convention"};
@@ -199,6 +200,15 @@ struct nucleiInJets {
       return rap > rapMin && rap < rapMax;
     }
     return std::abs(rap) < std::abs(static_cast<double>(cfgtrkMaxRap));
+  }
+
+  bool isConeAxisAccepted(double etaAxis)
+  {
+    if (!useFullConeAcceptance) {
+      return true;
+    }
+    const double maxAcceptedConeAxisEta = static_cast<double>(cfgtrkMaxEta) - static_cast<double>(cfgjetR);
+    return maxAcceptedConeAxisEta > 0. && std::abs(etaAxis) < maxAcceptedConeAxisEta;
   }
 
   Configurable<bool> addpik{"addpik", true, "add pion and kaon hist"};
@@ -322,6 +332,10 @@ struct nucleiInJets {
     jetHist.add("jet/h1JetEta", "jet_{#eta}", kTH1F, {{100, -1.0, 1.0}});
     jetHist.add("jet/h1JetPhi", "jet_{#phi}", kTH1F, {{80, -1.0, 7.}});
     jetHist.add("jet/nJetsPerEvent", "nJetsPerEvent", kTH1F, {{15, .0, 15.}});
+    jetHist.add<TH2>("jet/qa/h2JetConeEtaPhiBeforeAcceptance", "jet-cone axis before full-cone acceptance;#eta_{axis};#varphi_{axis}", HistType::kTH2F, {{EtaAxis}, {70, 0.f, 7.f}});
+    jetHist.add<TH2>("jet/qa/h2JetConeEtaPhiAfterAcceptance", "jet-cone axis after full-cone acceptance;#eta_{axis};#varphi_{axis}", HistType::kTH2F, {{EtaAxis}, {70, 0.f, 7.f}});
+    jetHist.add<TH2>("jet/qa/h2PerpConeEtaPhiAfterAcceptance", "perpendicular-cone axes after full-cone acceptance;#eta_{axis};#varphi_{axis}", HistType::kTH2F, {{EtaAxis}, {70, 0.f, 7.f}});
+    jetHist.add("jet/qa/nAcceptedJetsPerEvent", "number of full-cone-accepted jets per event;N_{jets};Entries", kTH1F, {{15, .0, 15.}});
     jetHist.add("jetBkgSub/h1LeadingJetPtBkgSub", "leading jet background-subtracted #it{p}_{T}; #it{p}_{T}^{jet,bkg sub} (GeV/#it{c}); Entries", kTH1F, {PtJetBkgSubAxis});
     jetHist.add("jetBkgSub/h2LeadingJetPtBkgSubVsVertexZ", "leading jet background-subtracted #it{p}_{T} vs V_{z}; #it{p}_{T}^{jet,bkg sub} (GeV/#it{c}); V_{z} (cm)", kTH2F, {PtJetBkgSubAxis, vzAxis});
     jetHist.add("mcpJet/nJetsPerEvent", "nJetsPerEvent", kTH1F, {{15, .0, 15.}});
@@ -756,6 +770,9 @@ struct nucleiInJets {
       jetHist.add<TH2>("recmatched/h2ResponseMatrix", "matched jet pT;#it{p}_{T} (mes.); #it{p}_{T} (true)", HistType::kTH2F, {{100, 0., 100.}, {100, 0., 100.}});
       jetHist.add<TH2>("recmatched/h2ResponseMatrixLeadingJet", "matched jet rec pT vs true pt;#it{p}_{T} (mes.); #it{p}_{T} (true)", HistType::kTH2F, {{100, 0., 100.}, {100, 0., 100.}});
       jetHist.add<TH2>("recmatched/mcC/h2ResponseMatrixLeadingJet", "matched jet rec pT vs true pt;#it{p}_{T} (mes.); #it{p}_{T} (true)", HistType::kTH2F, {{100, 0., 100.}, {100, 0., 100.}});
+      jetHist.add<TH2>("recmatched/qa/h2JetConeEtaPhiBeforeAcceptance", "matched jet-cone axis before full-cone acceptance;#eta_{axis};#varphi_{axis}", HistType::kTH2F, {{EtaAxis}, {70, 0.f, 7.f}});
+      jetHist.add<TH2>("recmatched/qa/h2JetConeEtaPhiAfterAcceptance", "matched jet-cone axis after full-cone acceptance;#eta_{axis};#varphi_{axis}", HistType::kTH2F, {{EtaAxis}, {70, 0.f, 7.f}});
+      jetHist.add<TH2>("recmatched/qa/h2PerpConeEtaPhiAfterAcceptance", "matched perpendicular-cone axes after full-cone acceptance;#eta_{axis};#varphi_{axis}", HistType::kTH2F, {{EtaAxis}, {70, 0.f, 7.f}});
 
       /////////
       jetHist.add<TH1>("recmatched/hRecJetPt", "matched jet pT (Rec level);#it{p}_{T,jet part} (GeV/#it{c}); #it{p}_{T,jet part} - #it{p}_{T,jet det}", HistType::kTH1F, {{100, 0., 100.}});
@@ -923,6 +940,9 @@ struct nucleiInJets {
     float jetPt = -999.;
 
     if (isWithLeadingJet) {
+      if (!isConeAxisAccepted(leadingJetPtEtaPhi[1])) {
+        return;
+      }
       double delPhi = TVector2::Phi_mpi_pi(leadingJetPtEtaPhi[2] - trk.phi());
       double delEta = leadingJetPtEtaPhi[1] - trk.eta();
       double R = RecoDecay::sqrtSumOfSquares(delEta, delPhi);
@@ -939,6 +959,9 @@ struct nucleiInJets {
         jetFlagPerpCone = true;
     } else {
       for (auto const& jet : jets) {
+        if (!isConeAxisAccepted(jet.eta())) {
+          continue;
+        }
         double delPhi = TVector2::Phi_mpi_pi(jet.phi() - trk.phi());
         double delEta = jet.eta() - trk.eta();
         double R = RecoDecay::sqrtSumOfSquares(delEta, delPhi);
@@ -1729,6 +1752,7 @@ struct nucleiInJets {
       return;
     jetHist.fill(HIST("hNEvents"), 6.5);
     int nJets = 0;
+    int nAcceptedJets = 0;
     std::vector<float> leadingJetWithPtEtaPhi(3);
     float leadingJetPt = -1.0f;
     float leadingJetPtBkgSub = -999.0f;
@@ -1741,6 +1765,7 @@ struct nucleiInJets {
       jetHist.fill(HIST("jet/h1JetPt"), chargedjet.pt());
       jetHist.fill(HIST("jet/h1JetEta"), chargedjet.eta());
       jetHist.fill(HIST("jet/h1JetPhi"), chargedjet.phi());
+      jetHist.fill(HIST("jet/qa/h2JetConeEtaPhiBeforeAcceptance"), chargedjet.eta(), chargedjet.phi());
 
       // Calculate background subtracted jet pt
       float jetArea = M_PI * cfgjetR * cfgjetR; // Assuming circular jet area
@@ -1750,7 +1775,15 @@ struct nucleiInJets {
       jetHist.fill(HIST("jet/h1JetPtBkgSub"), jetPtBkgSub);
       jetHist.fill(HIST("jet/h2JetPtVsBkgRho"), chargedjet.pt(), backgroundRho);
 
-      if (chargedjet.pt() > leadingJetPt) {
+      if (isConeAxisAccepted(chargedjet.eta())) {
+        const auto perpConePhiJet = getPerpendicuarPhi(chargedjet.phi());
+        jetHist.fill(HIST("jet/qa/h2JetConeEtaPhiAfterAcceptance"), chargedjet.eta(), chargedjet.phi());
+        jetHist.fill(HIST("jet/qa/h2PerpConeEtaPhiAfterAcceptance"), chargedjet.eta(), perpConePhiJet[0]);
+        jetHist.fill(HIST("jet/qa/h2PerpConeEtaPhiAfterAcceptance"), chargedjet.eta(), perpConePhiJet[1]);
+        nAcceptedJets++;
+      }
+
+      if (isConeAxisAccepted(chargedjet.eta()) && chargedjet.pt() > leadingJetPt) {
         leadingJetPt = chargedjet.pt();
         leadingJetPtBkgSub = jetPtBkgSub;
         leadingJetWithPtEtaPhi[0] = chargedjet.pt();
@@ -1760,20 +1793,25 @@ struct nucleiInJets {
       nJets++;
     }
     jetHist.fill(HIST("jet/nJetsPerEvent"), nJets);
+    jetHist.fill(HIST("jet/qa/nAcceptedJetsPerEvent"), nAcceptedJets);
     jetHist.fill(HIST("vertexZ"), collision.posZ());
     if (nJets > 0) {
       jetHist.fill(HIST("jet/vertexZ"), collision.posZ());
       jetHist.fill(HIST("hNEvents"), 7.5);
-      jetHist.fill(HIST("jetBkgSub/h1LeadingJetPtBkgSub"), leadingJetPtBkgSub);
-      jetHist.fill(HIST("jetBkgSub/h2LeadingJetPtBkgSubVsVertexZ"), leadingJetPtBkgSub, collision.posZ());
     } else {
       jetHist.fill(HIST("jetOut/vertexZ"), collision.posZ());
+    }
+    if (nAcceptedJets > 0) {
+      jetHist.fill(HIST("jetBkgSub/h1LeadingJetPtBkgSub"), leadingJetPtBkgSub);
+      jetHist.fill(HIST("jetBkgSub/h2LeadingJetPtBkgSubVsVertexZ"), leadingJetPtBkgSub, collision.posZ());
     }
     if (leadingJetPtBkgSub > cfgjetPtBkgSubMin) {
       jetHist.fill(HIST("jetBkgSub/vertexZ"), collision.posZ());
       jetHist.fill(HIST("hNEvents"), 8.5);
     }
     if (isWithJetEvents && nJets == 0)
+      return;
+    if (isWithJetEvents && nAcceptedJets == 0)
       return;
     jetHist.fill(HIST("jet/h1JetEvents"), 0.5);
     if (leadingJetPtBkgSub > cfgjetPtBkgSubMin) {
@@ -1815,6 +1853,7 @@ struct nucleiInJets {
       return;
     jetHist.fill(HIST("hNEvents"), 6.5);
     int nJets = 0;
+    int nAcceptedJets = 0;
     std::vector<float> leadingJetWithPtEtaPhi(3);
     float leadingJetPt = -1.0f;
     float leadingJetPtBkgSub = -999.0f;
@@ -1827,6 +1866,7 @@ struct nucleiInJets {
       jetHist.fill(HIST("jet/h1JetPt"), chargedjet.pt());
       jetHist.fill(HIST("jet/h1JetEta"), chargedjet.eta());
       jetHist.fill(HIST("jet/h1JetPhi"), chargedjet.phi());
+      jetHist.fill(HIST("jet/qa/h2JetConeEtaPhiBeforeAcceptance"), chargedjet.eta(), chargedjet.phi());
 
       // Calculate background subtracted jet pt
       float jetArea = M_PI * cfgjetR * cfgjetR; // Assuming circular jet area
@@ -1836,7 +1876,15 @@ struct nucleiInJets {
       jetHist.fill(HIST("jet/h1JetPtBkgSub"), jetPtBkgSub);
       jetHist.fill(HIST("jet/h2JetPtVsBkgRho"), chargedjet.pt(), backgroundRho);
 
-      if (chargedjet.pt() > leadingJetPt) {
+      if (isConeAxisAccepted(chargedjet.eta())) {
+        const auto perpConePhiJet = getPerpendicuarPhi(chargedjet.phi());
+        jetHist.fill(HIST("jet/qa/h2JetConeEtaPhiAfterAcceptance"), chargedjet.eta(), chargedjet.phi());
+        jetHist.fill(HIST("jet/qa/h2PerpConeEtaPhiAfterAcceptance"), chargedjet.eta(), perpConePhiJet[0]);
+        jetHist.fill(HIST("jet/qa/h2PerpConeEtaPhiAfterAcceptance"), chargedjet.eta(), perpConePhiJet[1]);
+        nAcceptedJets++;
+      }
+
+      if (isConeAxisAccepted(chargedjet.eta()) && chargedjet.pt() > leadingJetPt) {
         leadingJetPt = chargedjet.pt();
         leadingJetPtBkgSub = jetPtBkgSub;
         leadingJetWithPtEtaPhi[0] = chargedjet.pt();
@@ -1846,20 +1894,25 @@ struct nucleiInJets {
       nJets++;
     }
     jetHist.fill(HIST("jet/nJetsPerEvent"), nJets);
+    jetHist.fill(HIST("jet/qa/nAcceptedJetsPerEvent"), nAcceptedJets);
     jetHist.fill(HIST("vertexZ"), collision.posZ());
     if (nJets > 0) {
       jetHist.fill(HIST("jet/vertexZ"), collision.posZ());
       jetHist.fill(HIST("hNEvents"), 7.5);
-      jetHist.fill(HIST("jetBkgSub/h1LeadingJetPtBkgSub"), leadingJetPtBkgSub);
-      jetHist.fill(HIST("jetBkgSub/h2LeadingJetPtBkgSubVsVertexZ"), leadingJetPtBkgSub, collision.posZ());
     } else {
       jetHist.fill(HIST("jetOut/vertexZ"), collision.posZ());
+    }
+    if (nAcceptedJets > 0) {
+      jetHist.fill(HIST("jetBkgSub/h1LeadingJetPtBkgSub"), leadingJetPtBkgSub);
+      jetHist.fill(HIST("jetBkgSub/h2LeadingJetPtBkgSubVsVertexZ"), leadingJetPtBkgSub, collision.posZ());
     }
     if (leadingJetPtBkgSub > cfgjetPtBkgSubMin) {
       jetHist.fill(HIST("jetBkgSub/vertexZ"), collision.posZ());
       jetHist.fill(HIST("hNEvents"), 8.5);
     }
     if (isWithJetEvents && nJets == 0)
+      return;
+    if (isWithJetEvents && nAcceptedJets == 0)
       return;
     jetHist.fill(HIST("jet/h1JetEvents"), 0.5);
     if (leadingJetPtBkgSub > cfgjetPtBkgSubMin) {
@@ -2341,6 +2394,16 @@ struct nucleiInJets {
         if (mcdJetPtForResponse < cfgjetPtBkgSubMinMC) {
           continue;
         }
+        const double jetAxisEtaForEff = isWithLeadingJet ? (useLeadingJetDetLevelValue ? mcdjet.eta() : mcpjet.eta()) : mcdjet.eta();
+        const double jetAxisPhiForEff = isWithLeadingJet ? (useLeadingJetDetLevelValue ? mcdjet.phi() : mcpjet.phi()) : mcdjet.phi();
+        jetHist.fill(HIST("recmatched/qa/h2JetConeEtaPhiBeforeAcceptance"), jetAxisEtaForEff, jetAxisPhiForEff);
+        if (!isConeAxisAccepted(jetAxisEtaForEff)) {
+          continue;
+        }
+        const auto perpConePhiJet = getPerpendicuarPhi(static_cast<float>(jetAxisPhiForEff));
+        jetHist.fill(HIST("recmatched/qa/h2JetConeEtaPhiAfterAcceptance"), jetAxisEtaForEff, jetAxisPhiForEff);
+        jetHist.fill(HIST("recmatched/qa/h2PerpConeEtaPhiAfterAcceptance"), jetAxisEtaForEff, perpConePhiJet[0]);
+        jetHist.fill(HIST("recmatched/qa/h2PerpConeEtaPhiAfterAcceptance"), jetAxisEtaForEff, perpConePhiJet[1]);
         mcdJetPt.push_back(mcdJetPtForResponse);
         mcdJetPhi.push_back(mcdjet.phi());
         mcdJetEta.push_back(mcdjet.eta());
