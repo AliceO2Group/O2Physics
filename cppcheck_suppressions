@@ -7,3 +7,4 @@ unreadVariable
 unusedStructMember:*.h
 useStlAlgorithm
 variableScope
+unusedFunction:fillRho2Pair
