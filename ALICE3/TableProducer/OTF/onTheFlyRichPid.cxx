@@ -764,7 +764,7 @@ struct OnTheFlyRichPid {
       }
 
       const auto& mcParticle = track.mcParticle();
-      o2::track::TrackParCov o2track = o2::upgrade::convertMCParticleToO2Track(mcParticle, pdg);
+      o2::track::TrackParCov o2track = o2::upgrade::convertMCParticleToO2Track(mcParticle, pdgDatabase);
 
       // float xPv = kErrorValue;
       if (o2track.propagateToDCA(mcPvVtx, mMagneticField)) {
@@ -772,7 +772,7 @@ struct OnTheFlyRichPid {
       }
 
       // get particle to calculate Cherenkov angle and resolution
-      const& auto pdgInfo = pdgDatabase->GetParticle(mcParticle.pdgCode());
+      const auto& pdgInfo = pdgDatabase->GetParticle(mcParticle.pdgCode());
       if (pdgInfo == nullptr) {
         fillDummyValues();
         continue;

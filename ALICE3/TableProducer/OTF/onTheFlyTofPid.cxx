@@ -166,12 +166,12 @@ struct OnTheFlyTofPid {
   std::array<std::array<std::shared_ptr<TH2>, NParticles>, NParticles> h2dOuterDeltaTrue;
 
   struct ParticleInfo {
-    const std::string_view texName;
-    const std::string_view name;
-    const ParticleId type;
-    const int pdgCode;
-    const double mass;
-    const float charge;
+    std::string_view texName;
+    std::string_view name;
+    ParticleId type;
+    int pdgCode;
+    double mass;
+    float charge;
   };
 
   static constexpr ParticleInfo particleEl{.texName = "#it{e}", .name = "Elec", .type = El, .pdgCode = PDG_t::kElectron, .mass = o2::constants::physics::MassElectron, .charge = 1.f};
@@ -567,7 +567,7 @@ struct OnTheFlyTofPid {
 
     // Todo: check the different mass hypothesis iteratively
     for (const auto& track : tracks) {
-      auto pdgInfo = pdgDatabase->GetParticle(track.mPdgCode);
+      const auto& pdgInfo = pdgDatabase->GetParticle(track.mPdgCode);
       if (pdgInfo == nullptr) {
         continue;
       }
@@ -694,7 +694,7 @@ struct OnTheFlyTofPid {
       LOG(debug) << "Track without mcParticle found!";
 
       const auto& mcParticle = track.mcParticle();
-      o2::track::TrackParCov o2track = o2::upgrade::convertMCParticleToO2Track(mcParticle, pdg);
+      o2::track::TrackParCov o2track = o2::upgrade::convertMCParticleToO2Track(mcParticle, pdgDatabase);
 
       float xPv = -100.f;
       static constexpr float TrkXThreshold = -99.f; // Threshold to consider a good propagation of the track
@@ -731,7 +731,7 @@ struct OnTheFlyTofPid {
       }
 
       // get mass to calculate velocity
-      auto pdgInfo = pdg->GetParticle(mcParticle.pdgCode());
+      const auto& pdgInfo = pdgDatabase->GetParticle(mcParticle.pdgCode());
       if (pdgInfo == nullptr) {
         LOG(error) << "PDG code " << mcParticle.pdgCode() << " not found in the database";
         upgradeTofMC(-999.f, -999.f, -999.f, -999.f);
@@ -818,7 +818,7 @@ struct OnTheFlyTofPid {
       static std::array<float, NParticles> deltaTimeInnerTOF, deltaTimeOuterTOF;
       static std::array<float, NParticles> nSigmaInnerTOF, nSigmaOuterTOF;
       std::array<float, NParticles> momentumHypotheses{}; // Store momentum hypothesis for each particle
-      auto truePdgInfo = pdg->GetParticle(mcParticle.pdgCode());
+      const auto& truePdgInfo = pdgDatabase->GetParticle(mcParticle.pdgCode());
       float rigidity = momentum; // fallback to momentum if charge unknown
 
       // Use MC truth charge for rigidity calculation
@@ -874,8 +874,8 @@ struct OnTheFlyTofPid {
           double etaResolution = std::fabs(std::sin(2.0 * std::atan(std::exp(-pseudorapidity)))) * std::sqrt(trkWithTime.mPseudorapidity.second);
           if (simConfig.flagTOFLoadDelphesLUTs) {
             if (mSmearer[collision.lutConfigId()]->hasTable(Particles[ii].pdgCode)) { // Only if the LUT for this particle was loaded
-              ptResolution = mSmearer[collision.lutConfigId()]->getAbsPtRes(Particles[ii].pdgCode, pseudorapidity, dNdEta, transverseMomentum);
-              etaResolution = mSmearer[collision.lutConfigId()]->getAbsEtaRes(Particles[ii].pdgCode, pseudorapidity, dNdEta, transverseMomentum);
+              ptResolution = mSmearer[collision.lutConfigId()]->getAbsPtRes(Particles[ii].pdgCode, dNdEta, pseudorapidity, transverseMomentum);
+              etaResolution = mSmearer[collision.lutConfigId()]->getAbsEtaRes(Particles[ii].pdgCode, dNdEta, pseudorapidity, transverseMomentum);
             }
           }
           const float innerTrackTimeReso = calculateTrackTimeResolutionAdvanced(transverseMomentum, pseudorapidity, ptResolution, etaResolution, Particles[ii].mass, simConfig.innerTOFRadius, mMagneticField);
@@ -914,7 +914,7 @@ struct OnTheFlyTofPid {
 
       if (plotsConfig.doQAplots) {
         for (int ii = 0; ii < NParticles; ii++) {
-          if (!doQaForParticle(Particles[ii].pdgCode) || std::fabs(mcParticle.pdgCode()) != pdg->GetParticle(Particles[ii].pdgCode)->PdgCode()) {
+          if (!doQaForParticle(Particles[ii].pdgCode) || std::fabs(mcParticle.pdgCode()) != pdgDatabase->GetParticle(Particles[ii].pdgCode)->PdgCode()) {
             continue;
           }
           if (trackLengthRecoInnerTOF > 0) {

@@ -386,8 +386,8 @@ struct OnTheFlyTrackerPid {
   Produces<aod::UpgradeTrkPidSignals> tableUpgradeTrkPidSignals;
   Produces<aod::UpgradeTrkPids> tableUpgradeTrkPids;
 
-  Service<o2::framework::O2DatabasePDG> pdg;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::framework::O2DatabasePDG> pdgDatabase{};
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   std::unique_ptr<ToTLUT> mToTLUT;
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -625,7 +625,7 @@ struct OnTheFlyTrackerPid {
 
       const auto& mcParticle = track.mcParticle();
 
-      const auto& pdgInfo = pdg->GetParticle(mcParticle.pdgCode());
+      const auto& pdgInfo = pdgDatabase->GetParticle(mcParticle.pdgCode());
       if (!pdgInfo) {
         tableUpgradeTrkPidSignals(truncatedMeanToT);
         tableUpgradeTrkPids(nSigmaValues[0], nSigmaValues[1], nSigmaValues[2], nSigmaValues[3],
@@ -658,7 +658,7 @@ struct OnTheFlyTrackerPid {
 
       uint16_t hitMap = 0;
       int nHitLayers = 0;
-      o2::track::TrackParCov o2track = o2::upgrade::convertMCParticleToO2Track(mcParticle, pdg);
+      o2::track::TrackParCov o2track = o2::upgrade::convertMCParticleToO2Track(mcParticle, pdgDatabase);
 
       float xPv = -100.f;
       static constexpr float kTrkXThreshold = -99.f;
