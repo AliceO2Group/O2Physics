@@ -287,6 +287,7 @@ struct FlowGenericFramework {
     TH1* mEfficiency = nullptr;
     std::vector<TH1*> mPIDEfficiencies;
     std::vector<GFWWeights*> mAcceptance;
+    std::map<int, std::vector<std::shared_ptr<GFWWeights>>> mAcceptanceByRun;
     bool correctionsLoaded = false;
   } cfg;
 
@@ -1205,6 +1206,7 @@ struct FlowGenericFramework {
       return;
     }
     if (!cfgAcceptance.value.empty()) {
+<<<<<<< HEAD
       std::string runstr = (cfgFill.cfgRunByRun) ? "RunByRun/" : "";
       cfg.mAcceptance.clear();
       if (cfgFill.cfgUsePID) {
@@ -1215,6 +1217,42 @@ struct FlowGenericFramework {
         cfg.mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value + runstr + "pr/", timestamp));
       } else {
         cfg.mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value + runstr, timestamp));
+=======
+      const int acceptanceKey = cfgRunByRun ? bc.runNumber() : 0;
+      auto cachedAcceptance = cfg.mAcceptanceByRun.find(acceptanceKey);
+      if (cachedAcceptance == cfg.mAcceptanceByRun.end()) {
+        std::vector<std::shared_ptr<GFWWeights>> acceptanceWeights;
+        auto loadAcceptance = [&](const std::string& path) {
+          auto* weights = ccdb->getForTimeStamp<GFWWeights>(path, timestamp);
+          if (weights == nullptr) {
+            LOGF(fatal, "Could not load acceptance weights from %s", path.c_str());
+          }
+          auto* clonedWeights = dynamic_cast<GFWWeights*>(weights->Clone());
+          if (clonedWeights == nullptr) {
+            LOGF(fatal, "Could not clone acceptance weights from %s", path.c_str());
+          }
+          acceptanceWeights.emplace_back(clonedWeights);
+        };
+
+        std::string runstr = (cfgRunByRun) ? "RunByRun/" : "";
+        if (cfgUsePID) {
+          loadAcceptance(cfgAcceptance.value + runstr + "ref/");
+          loadAcceptance(cfgAcceptance.value + runstr + "ch/");
+          loadAcceptance(cfgAcceptance.value + runstr + "pi/");
+          loadAcceptance(cfgAcceptance.value + runstr + "ka/");
+          loadAcceptance(cfgAcceptance.value + runstr + "pr/");
+        } else {
+          loadAcceptance(cfgAcceptance.value + runstr);
+        }
+        cachedAcceptance = cfg.mAcceptanceByRun.emplace(acceptanceKey, std::move(acceptanceWeights)).first;
+        LOGF(info, "Loaded acceptance weights for run %d", bc.runNumber());
+      }
+
+      cfg.mAcceptance.clear();
+      cfg.mAcceptance.reserve(cachedAcceptance->second.size());
+      for (const auto& weights : cachedAcceptance->second) {
+        cfg.mAcceptance.push_back(weights.get());
+>>>>>>> fc25e54b2 (Cache acceptance maps per run)
       }
     }
     // Run-by-run efficiencies are not supported at the moment
