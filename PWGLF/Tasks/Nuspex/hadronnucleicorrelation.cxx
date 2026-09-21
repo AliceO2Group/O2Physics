@@ -620,9 +620,8 @@ struct HadronNucleiCorrelation {
       return;
     }
 
-    float deltaEta = part0.eta() - part1.eta();
-    float deltaPhi = part0.phi() - part1.phi();
-    deltaPhi = RecoDecay::constrainAngle(deltaPhi, -1 * o2::constants::math::PIHalf);
+    const float deltaEta = part0.eta() - part1.eta();
+    const float deltaPhi = RecoDecay::constrainAngle(part0.phi() - part1.phi(), -1 * o2::constants::math::PIHalf);
 
     for (int k = 0; k < nBinspT; k++) {
 
@@ -691,9 +690,8 @@ struct HadronNucleiCorrelation {
   void fillHistogramsGen(T1 const& part0, T1 const& part1, const bool ME)
   {
 
-    float deltaEta = part0.eta() - part1.eta();
-    float deltaPhi = part0.phi() - part1.phi();
-    deltaPhi = RecoDecay::constrainAngle(deltaPhi, -1 * o2::constants::math::PIHalf);
+    const float deltaEta = part0.eta() - part1.eta();
+    const float deltaPhi = RecoDecay::constrainAngle(part0.phi() - part1.phi(), -1 * o2::constants::math::PIHalf);
     // Here we have to use doRapidity
     const float deltaRapidity = part0.rapidityForPdg(pdgPart0) - part1.rapidityForPdg(pdgPart1);
     for (int k = 0; k < nBinspT; k++) {
