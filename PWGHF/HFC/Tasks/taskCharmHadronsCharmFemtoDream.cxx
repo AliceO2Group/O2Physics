@@ -100,12 +100,12 @@ struct HfTaskCharmHadronsCharmFemtoDream {
   Configurable<float> massMaxD0{"massMaxD0", 2.0f, "Maximum D0 mass"};
   Configurable<float> deltaMassMin{"deltaMassMin", 0.139f, "Minimum Dstar-D0 mass difference"};
   Configurable<float> deltaMassMax{"deltaMassMax", 0.17f, "Maximum Dstar-D0 mass difference"};
-  Configurable<float> daughterMassMin{"daughterMassMin", 1.80f, "Minimum Dstar daughter D0 mass"};
-  Configurable<float> daughterMassMax{"daughterMassMax", 1.93f, "Maximum Dstar daughter D0 mass"};
+  Configurable<float> daughterMassMin{"daughterMassMin", 1.80f,"Minimum Dstar daughter D0 mass"};
+  Configurable<float> daughterMassMax{"daughterMassMax", 1.93f,"Maximum Dstar daughter D0 mass"};
   Configurable<bool> useMl{"useMl", false, "Require valid ML scores and apply score cuts"};
   Configurable<float> maxBkgD0{"maxBkgD0", 1.f, "Maximum D0 background score"};
   Configurable<float> minPromptD0{"minPromptD0", 0.f, "Minimum D0 prompt score"};
-  Configurable<float> maxBkgDstar{"maxBkgDstar", 1.f, "Maximum Dstar background score"};
+  Configurable<float> maxBkgDstar{"maxBkgDstar", 1.f,"Maximum Dstar background score"};
   Configurable<float> minPromptDstar{"minPromptDstar", 0.f, "Minimum Dstar prompt score"};
   Configurable<int> charmHadCandSel{"charmHadCandSel", 1, "Minimum reduced charm candidate selection flag"};
   struct : ConfigurableGroup {
@@ -177,7 +177,7 @@ struct HfTaskCharmHadronsCharmFemtoDream {
     const AxisSpec ptStar{72, ptMinDstar.value, ptMaxDstar.value, "Dstar pT (GeV/c)"};
     const AxisSpec mult{mixingBinMult, "NTracksPV"};
     const AxisSpec channel{
-      kNPairChannels, -0.5, kNPairChannels - 0.5,
+      static_cast<int>(kNPairChannels), -0.5, static_cast<double>(kNPairChannels) - 0.5,
       "0=D0D0 LS,1=D0barD0bar LS,2=D0D0bar US,3=D0D*+ LS,4=D0barD*- LS,5=D0D*- US,6=D0barD*+ US"};
     registry.add("SE/D0D0", "Same event", kTHnSparseF,
                  {kstar, massD0, massD0, pt, pt, mult, channel});
