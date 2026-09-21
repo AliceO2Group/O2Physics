@@ -162,7 +162,7 @@ struct HfTaskCharmHadronsCharmFemtoDream {
 
   void init(InitContext const&)
   {
-    if (static_cast<int>(doprocessD0D0) + doprocessD0Dstar != 1) {
+    if (static_cast<int>(doprocessD0D0) + static_cast<int>(doprocessD0Dstar) != 1) {
       LOGP(fatal, "Enable exactly one charm-charm analysis process");
     }
     if (mixSetting.mixingDepth < 0 || mixSetting.mixingBinPolicy < 0 || mixSetting.mixingBinPolicy > 2 || ptMinD0 < 0 || ptMinD0 >= ptMaxD0 ||
