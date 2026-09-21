@@ -4201,9 +4201,9 @@ struct StrangenessInJetsIons {
     if (particleOfInterestDict[ParticleOfInterest::kCascades]) { // Cascades
       for (const auto& casc : Cascades) {
         // Get cascade daughters
-        const auto& bach = casc.bachelor_as<DaughterTracks>();
-        const auto& pos = casc.posTrack_as<DaughterTracks>();
-        const auto& neg = casc.negTrack_as<DaughterTracks>();
+        const auto& bach = casc.bachelor_as<DaughterTracksMB>();
+        const auto& pos = casc.posTrack_as<DaughterTracksMB>();
+        const auto& neg = casc.negTrack_as<DaughterTracksMB>();
         TVector3 cascadeDir(casc.px(), casc.py(), casc.pz());
 
         // Xi+
