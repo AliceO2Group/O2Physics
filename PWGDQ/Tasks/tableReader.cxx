@@ -719,7 +719,7 @@ struct AnalysisEventMixing {
   TH2D* SingleMuv24m = nullptr; // Single muon v24, loaded from CCDB
   TH2D* SingleMuv22p = nullptr; // Single antimuon v22, loaded from CCDB
   TH2D* SingleMuv24p = nullptr; // Single antimuon v24, loaded from CCDB
-  int fCurrentRun = 0;              // needed to detect if the run changed and trigger update of calibrations etc.
+  int fCurrentRun = 0;          // needed to detect if the run changed and trigger update of calibrations etc.
 
   Filter filterEventSelected = aod::dqanalysisflags::isEventSelected == 1;
   Filter filterTrackSelected = aod::dqanalysisflags::isBarrelSelected > 0;
@@ -1046,7 +1046,7 @@ struct AnalysisSameEventPairing {
   o2::base::MatLayerCylSet* lut = nullptr;
   TH1D* ResoFlowSP = nullptr; // Resolution factors for flow analysis, this will be loaded from CCDB
   TH1D* ResoFlowEP = nullptr; // Resolution factors for flow analysis, this will be loaded from CCDB
-  int fCurrentRun = 0;            // needed to detect if the run changed and trigger update of calibrations etc.
+  int fCurrentRun = 0;        // needed to detect if the run changed and trigger update of calibrations etc.
 
   OutputObj<THashList> fOutputList{"output"};
   Configurable<std::string> fConfigTrackCuts{"cfgTrackCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
