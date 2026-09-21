@@ -214,17 +214,21 @@ struct StrangenessInJetsIons {
   // Cascade analysis parameters
   struct : ConfigurableGroup {
     // std::string prefix = "configCasc"; // name in JSON
-    Configurable<float> minimumCascRadius{"minimumCascRadius", 0.1f, "Minimum cascade radius"};
+    Configurable<float> minimumV0RadiusCasc{"minimumV0RadiusCasc", 1.5f, "Minimum V0 radius (cm) for cascade analysis"};
+    Configurable<float> minimumCascRadius{"minimumCascRadius", 1.5f, "Minimum cascade radius (cm)"};
     // Configurable<float> maximumCascRadius{"maximumCascRadius", 40.0f, "Maximum cascade radius"};
+    Configurable<float> dcabachtopvMin{"dcabachtopvMin", 0.07f, "Minimum DCA of bachelor to primary vertex (cm)"};
+    Configurable<float> dcaV0topvMin{"dcaV0topvMin", 0.02f, "Minimum DCA of V0 to primary vertex (cm)"};
+    Configurable<double> dcaV0DaughtersMaxCasc{"dcaV0DaughtersMaxCasc", 0.7f, "Maximum DCA between V0 daughters (cm) for cascade analysis"};
+    Configurable<float> dcaCascDaughtersMax{"dcaCascDaughtersMax", 0.8f, "Maximum DCA between daughters (cm)"};
+    Configurable<double> dcaPosToPVminV0{"dcaPosToPVminV0", 0.1f, "Minimum DCA of V0 positive track to primary vertex in cascades (cm)"};
+    Configurable<double> dcaNegToPVminV0{"dcaNegToPVminV0", 0.1f, "Minimum DCA of V0 negative track to primary vertex in cascades (cm)"};
+    Configurable<double> v0cospaMinCasc{"v0cospaMinCasc", 0.99f, "Minimum V0 cosine of pointing angle for cascade analysis"};
     Configurable<float> casccospaMin{"casccospaMin", 0.99f, "Minimum cascade cosine of pointing angle"};
-    Configurable<float> dcabachtopvMin{"dcabachtopvMin", 0.1f, "Minimum DCA of bachelor to primary vertex"};
-    Configurable<float> dcaV0topvMin{"dcaV0topvMin", 0.1f, "Minimum DCA of V0 to primary vertex"};
-    Configurable<float> dcaCascDaughtersMax{"dcaCascDaughtersMax", 0.5f, "Maximum DCA between daughters"};
-    Configurable<double> dcaNegToPVminV0{"dcaNegToPVminV0", 0.1f, "Minimum DCA of V0 negative track to primary vertex in cascades"};
-    Configurable<double> dcaPosToPVminV0{"dcaPosToPVminV0", 0.1f, "Minimum DCA of V0 positive track to primary vertex in cascades"};
-    Configurable<float> deltaMassXi{"deltaMassXi", 0.02f, "Mass window for Xi rejection"};
-    Configurable<float> deltaMassOmega{"deltaMassOmega", 0.02f, "Mass window for Omega rejection"};
-    Configurable<float> deltaMassLambda{"deltaMassLambda", 0.02f, "Mass window for Lambda inclusion"};
+
+    Configurable<float> deltaMassXi{"deltaMassXi", 0.008f, "[Omega] Mass window for Xi rejection"};
+    Configurable<float> deltaMassOmega{"deltaMassOmega", 0.008f, "[Xi] Mass window for Omega rejection"};
+    Configurable<float> deltaMassLambda{"deltaMassLambda", 0.005f, "[Xi, Omega] Mass window for Lambda inclusion"};
   } configCasc;
 
   // Axes
@@ -874,7 +878,6 @@ struct StrangenessInJetsIons {
       registryData.fill(HIST("h2_centrality_deltaPt_RandomCone"), multiplicity, deltaPtRandomCone);
       registryData.fill(HIST("h2_centrality_rhoPerp"), multiplicity, rhoPerp);
     } else if (selProcess == 1) {
-      // Ricordati di definire questi istogrammi nel tuo book/registry MC!
       registryMC.fill(HIST("h2_centrality_deltaPt_RandomCone_gen"), multiplicity, deltaPtRandomCone);
       registryMC.fill(HIST("h2_centrality_rhoPerp_gen"), multiplicity, rhoPerp);
     } else if (selProcess == 2) {
@@ -1192,12 +1195,12 @@ struct StrangenessInJetsIons {
     }
 
     // V0 selections
-    if (casc.v0cosPA(coll.posX(), coll.posY(), coll.posZ()) < configV0.v0cospaMin)
+    if (casc.v0cosPA(coll.posX(), coll.posY(), coll.posZ()) < configCasc.v0cospaMinCasc)
       return false;
     // if (casc.v0radius() < configV0.minimumV0Radius || casc.v0radius() > configV0.maximumV0Radius)
-    if (casc.v0radius() < configV0.minimumV0Radius)
+    if (casc.v0radius() < configCasc.minimumV0RadiusCasc)
       return false;
-    if (std::fabs(casc.dcaV0daughters()) > configV0.dcaV0DaughtersMax)
+    if (std::fabs(casc.dcaV0daughters()) > configCasc.dcaV0DaughtersMaxCasc)
       return false;
     if (std::fabs(casc.dcapostopv()) < configCasc.dcaPosToPVminV0)
       return false;
@@ -1308,12 +1311,12 @@ struct StrangenessInJetsIons {
     }
 
     // V0 selections
-    if (casc.v0cosPA(coll.posX(), coll.posY(), coll.posZ()) < configV0.v0cospaMin)
+    if (casc.v0cosPA(coll.posX(), coll.posY(), coll.posZ()) < configCasc.v0cospaMinCasc)
       return false;
     // if (casc.v0radius() < configV0.minimumV0Radius || casc.v0radius() > configV0.maximumV0Radius)
-    if (casc.v0radius() < configV0.minimumV0Radius)
+    if (casc.v0radius() < configCasc.minimumV0RadiusCasc)
       return false;
-    if (std::fabs(casc.dcaV0daughters()) > configV0.dcaV0DaughtersMax)
+    if (std::fabs(casc.dcaV0daughters()) > configCasc.dcaV0DaughtersMaxCasc)
       return false;
     if (std::fabs(casc.dcapostopv()) < configCasc.dcaPosToPVminV0)
       return false;
