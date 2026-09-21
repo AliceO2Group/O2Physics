@@ -594,7 +594,7 @@ struct HfDataCreatorJpsiHadReduced {
               // check that the other prongs come from the same b-hadron
               int const index2Mother = RecoDecay::getMother(particlesMc, vecDaughtersB[2].mcParticle(), bHadronMotherHypo, true);
               if (indexRecB > -1 && indexRecJPsi > -1 && index2Mother > -1 && index2Mother == indexRecB) {
-                flag = jpsiDau == kMuonMinus ? signB * partlyRecoDecayMapMuMu[std::abs(bHadronMotherHypo)] : signB * partlyRecoDecayMapEE[std::abs(bHadronMotherHypo)];
+                flag = jpsiDau == kMuonMinus ? signB * partlyRecoDecayMapMuMu.at(std::abs(bHadronMotherHypo)) : signB * partlyRecoDecayMapEE.at(std::abs(bHadronMotherHypo));
                 break;
               }
             }
@@ -694,7 +694,7 @@ struct HfDataCreatorJpsiHadReduced {
               int const index2Mother = RecoDecay::getMother(particlesMc, vecDaughtersB[2].mcParticle(), bHadronMotherHypo, true);
               int const index3Mother = RecoDecay::getMother(particlesMc, vecDaughtersB[3].mcParticle(), bHadronMotherHypo, true);
               if (indexRecB > -1 && indexRecJPsi > -1 && index2Mother > -1 && index3Mother > -1 && index2Mother == indexRecB && index3Mother == indexRecB) {
-                flag = jpsiDau == kMuonMinus ? signB * partlyRecoDecayMapMuMu[std::abs(bHadronMotherHypo)] : signB * partlyRecoDecayMapEE[std::abs(bHadronMotherHypo)];
+                flag = jpsiDau == kMuonMinus ? signB * partlyRecoDecayMapMuMu.at(std::abs(bHadronMotherHypo)) : signB * partlyRecoDecayMapEE.at(std::abs(bHadronMotherHypo));
                 break;
               }
             }
@@ -795,7 +795,7 @@ struct HfDataCreatorJpsiHadReduced {
               int const index2Mother = RecoDecay::getMother(particlesMc, vecDaughtersB[2].mcParticle(), bHadronMotherHypo, true);
               int const index3Mother = RecoDecay::getMother(particlesMc, vecDaughtersB[3].mcParticle(), bHadronMotherHypo, true);
               if (indexRecB > -1 && indexRecJPsi > -1 && index2Mother > -1 && index3Mother > -1 && index2Mother == indexRecB && index3Mother == indexRecB) {
-                flag = jpsiDau == kMuonMinus ? signB * partlyRecoDecayMapMuMu[std::abs(bHadronMotherHypo)] : signB * partlyRecoDecayMapEE[std::abs(bHadronMotherHypo)];
+                flag = jpsiDau == kMuonMinus ? signB * partlyRecoDecayMapMuMu.at(std::abs(bHadronMotherHypo)) : signB * partlyRecoDecayMapEE.at(std::abs(bHadronMotherHypo));
                 break;
               }
             }
