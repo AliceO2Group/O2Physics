@@ -26,8 +26,6 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Tools/ML/MlResponse.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
@@ -45,6 +43,7 @@
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include <Tools/ML/MlResponse.h>
 
 #include <algorithm>
 #include <array>
@@ -77,7 +76,7 @@ struct HfProducerCharmHadronsCharmFemtoDream {
     Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{}, "CCDB model paths, one per pT bin"};
     Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "Timestamp used to retrieve models"};
     Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Load new BDT from CCDB instead of local files"};
-  } mlD0{{}, "mlD0"}, mlDstar{{}, "mlDstar"};
+  } mlD0{.prefix = "mlD0"}, mlDstar{.prefix = "mlDstar"};
   o2::analysis::HfMlResponseD0ToKPi<float> hfMlResponseD0;
   o2::analysis::HfMlResponseDstarToD0Pi<float> hfMlResponseDstar;
   o2::ccdb::CcdbApi ccdbApi;
@@ -159,9 +158,10 @@ struct HfProducerCharmHadronsCharmFemtoDream {
 
   void init(InitContext const&)
   {
-    if (static_cast<int>(doprocessD0D0) + doprocessD0Dstar + doprocessD0D0Ml +
-          doprocessD0DstarMl + doprocessD0D0WithFT0C + doprocessD0DstarWithFT0C +
-          doprocessD0D0MlWithFT0C + doprocessD0DstarMlWithFT0C !=
+    if (static_cast<int>(doprocessD0D0) + static_cast<int>(doprocessD0Dstar) +
+          static_cast<int>(doprocessD0D0Ml) + static_cast<int>(doprocessD0DstarMl) +
+          static_cast<int>(doprocessD0D0WithFT0C) + static_cast<int>(doprocessD0DstarWithFT0C) +
+          static_cast<int>(doprocessD0D0MlWithFT0C) + static_cast<int>(doprocessD0DstarMlWithFT0C) !=
         1) {
       LOGP(fatal, "Enable exactly one charm-charm producer process");
     }
