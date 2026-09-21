@@ -26,11 +26,9 @@
 #include <onnxruntime_c_api.h>
 #include <onnxruntime_cxx_api.h>
 
-#include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
-#include <iterator>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -97,6 +95,8 @@ void OnnxModel::initModel(const std::string& localPath, const bool enableOptimiz
   mSession = std::make_shared<Ort::Session>(*mEnv, modelPath.c_str(), sessionOptions);
   mMemInfo = Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
 
+  mInputNamesChar.clear();
+  mOutputNamesChar.clear();
   mInputNames.clear();
   mInputShapes.clear();
   mOutputNames.clear();
@@ -113,6 +113,14 @@ void OnnxModel::initModel(const std::string& localPath, const bool enableOptimiz
   }
   for (std::size_t i = 0; i < mSession->GetOutputCount(); ++i) {
     mOutputShapes.emplace_back(mSession->GetOutputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape());
+  }
+  mInputNamesChar.reserve(mInputNames.size());
+  for (const auto& name : mInputNames) {
+    mInputNamesChar.push_back(name.c_str());
+  }
+  mOutputNamesChar.reserve(mOutputNames.size());
+  for (const auto& name : mOutputNames) {
+    mOutputNamesChar.push_back(name.c_str());
   }
   LOG(info) << "Input Nodes:";
   for (std::size_t i = 0; i < mInputNames.size(); i++) {
@@ -173,7 +181,7 @@ std::vector<int64_t> OnnxModel::inferInputShape(const std::size_t iinput, const 
   return inputShape;
 }
 
-std::vector<Ort::Value> OnnxModel::evalModelRaw(std::vector<Ort::Value>& input)
+void OnnxModel::checkInput(const std::vector<Ort::Value>& input) const
 {
   if (!mSession) {
     LOG(fatal) << "OnnxModel::evalModel called before initModel()";
@@ -184,19 +192,15 @@ std::vector<Ort::Value> OnnxModel::evalModelRaw(std::vector<Ort::Value>& input)
   for (std::size_t i = 0; i < input.size(); i++) {
     LOG(debug) << "Input tensor " << i << " shape: " << printShape(input[i].GetTensorTypeAndShapeInfo().GetShape());
   }
+}
 
-  std::vector<const char*> inputNamesChar(mInputNames.size(), nullptr);
-  std::transform(std::begin(mInputNames), std::end(mInputNames), std::begin(inputNamesChar),
-                 [](const std::string& str) { return str.c_str(); });
-
-  std::vector<const char*> outputNamesChar(mOutputNames.size(), nullptr);
-  std::transform(std::begin(mOutputNames), std::end(mOutputNames), std::begin(outputNamesChar),
-                 [](const std::string& str) { return str.c_str(); });
-
+std::vector<Ort::Value> OnnxModel::evalModelRaw(std::vector<Ort::Value>& input)
+{
+  checkInput(input);
   std::vector<Ort::Value> outputTensors;
   try {
-    const Ort::RunOptions runOptions;
-    outputTensors = mSession->Run(runOptions, inputNamesChar.data(), input.data(), input.size(), outputNamesChar.data(), outputNamesChar.size());
+    const Ort::RunOptions runOptions{nullptr};
+    outputTensors = mSession->Run(runOptions, mInputNamesChar.data(), input.data(), input.size(), mOutputNamesChar.data(), mOutputNamesChar.size());
   } catch (const Ort::Exception& exception) {
     LOG(fatal) << "Error running model inference: " << exception.what();
   }
@@ -206,19 +210,42 @@ std::vector<Ort::Value> OnnxModel::evalModelRaw(std::vector<Ort::Value>& input)
     LOG(fatal) << "Number of output tensors: " << outputTensors.size() << " does not agree with the model specified size: " << mOutputNames.size();
   }
   for (std::size_t i = 0; i < outputTensors.size(); i++) {
-    const std::vector<int64_t> shape = outputTensors[i].GetTensorTypeAndShapeInfo().GetShape();
-    LOG(debug) << "Output tensor " << i << " shape: " << printShape(shape);
-    bool shapeOk = (shape.size() == mOutputShapes[i].size());
-    for (std::size_t idim = 0; shapeOk && idim < shape.size(); idim++) {
-      // dynamic dimensions of the model (< 0) can take any value
-      shapeOk = (mOutputShapes[i][idim] < 0) || (shape[idim] == mOutputShapes[i][idim]);
-    }
-    if (!shapeOk) {
-      LOG(fatal) << "Shape of output tensor " << i << " does not agree with model specification! Output: " << printShape(shape) << " model: " << printShape(mOutputShapes[i]);
-    }
+    checkOutput(outputTensors[i], i);
   }
 
   return outputTensors;
+}
+
+Ort::Value OnnxModel::evalModelLast(std::vector<Ort::Value>& input)
+{
+  checkInput(input);
+  if (mOutputNamesChar.empty()) {
+    LOG(fatal) << "Model has no outputs";
+  }
+  Ort::Value output{nullptr};
+  try {
+    // A null RunOptions uses the runtime defaults without allocating options per call.
+    const Ort::RunOptions runOptions{nullptr};
+    mSession->Run(runOptions, mInputNamesChar.data(), input.data(), input.size(), &mOutputNamesChar.back(), &output, 1);
+  } catch (const Ort::Exception& exception) {
+    LOG(fatal) << "Error running model inference: " << exception.what();
+  }
+  checkOutput(output, mOutputShapes.size() - 1);
+  return output;
+}
+
+void OnnxModel::checkOutput(const Ort::Value& tensor, const std::size_t index) const
+{
+  const std::vector<int64_t> shape = tensor.GetTensorTypeAndShapeInfo().GetShape();
+  LOG(debug) << "Output tensor " << index << " shape: " << printShape(shape);
+  bool shapeOk = (shape.size() == mOutputShapes[index].size());
+  for (std::size_t idim = 0; shapeOk && idim < shape.size(); idim++) {
+    // Dynamic dimensions of the model (< 0) can take any value.
+    shapeOk = (mOutputShapes[index][idim] < 0) || (shape[idim] == mOutputShapes[index][idim]);
+  }
+  if (!shapeOk) {
+    LOG(fatal) << "Shape of output tensor " << index << " does not agree with model specification! Output: " << printShape(shape) << " model: " << printShape(mOutputShapes[index]);
+  }
 }
 
 void OnnxModel::setActiveThreads(const int threads)

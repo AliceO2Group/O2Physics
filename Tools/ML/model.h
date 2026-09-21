@@ -45,8 +45,8 @@ namespace ml
 ///    for as long as the returned vector is alive.
 ///  - evalModel(input): convenience wrapper returning a copy of the *last* model output as std::vector<T>.
 ///  - evalModel(input, output): same as above but writes into a caller-provided vector. The vector is
-///    resized as needed and its capacity is reused across calls, which avoids per-call allocations in
-///    hot loops (e.g. batched inference).
+///    resized as needed and its capacity is reused across calls, which avoids repeated allocations of the result buffer.
+///    Only the last model output is requested from ONNX Runtime.
 ///
 /// Inputs given as std::vector<T> are wrapped in an Ort::Value without copying. The input vector must therefore
 /// stay alive until the call returns (which is always the case for the synchronous calls provided here).
@@ -87,8 +87,8 @@ class OnnxModel
   template <typename T>
   void evalModel(std::vector<Ort::Value>& input, std::vector<T>& output)
   {
-    const std::vector<Ort::Value> outputTensors = evalModelRaw(input);
-    copyLastOutput<T>(outputTensors, output);
+    const Ort::Value tensor = evalModelLast(input);
+    copyOutput<T>(tensor, output);
   }
 
   /// Run a single-input model on a flat vector of features (batches are inferred from the model input shape)
@@ -178,6 +178,11 @@ class OnnxModel
   std::vector<std::string> mOutputNames;
   std::vector<std::vector<int64_t>> mOutputShapes;
 
+  // Pointers into the name vectors above, populated only after all names are loaded.
+  // Moving the model transfers the backing vectors without invalidating these pointers.
+  std::vector<const char*> mInputNamesChar;
+  std::vector<const char*> mOutputNamesChar;
+
   // Environment settings
   std::string modelPath;
   int activeThreads = 0;
@@ -197,20 +202,26 @@ class OnnxModel
     tensors.emplace_back(Ort::Value::CreateTensor<T>(mMemInfo, data.data(), data.size(), inputShape.data(), inputShape.size()));
   }
 
-  /// Copy the content of the last output tensor into output (reusing its allocation)
+  /// Request only the last output, keeping its tensor alive until the caller has copied it
+  Ort::Value evalModelLast(std::vector<Ort::Value>& input);
+  void checkInput(const std::vector<Ort::Value>& input) const;
+  void checkOutput(const Ort::Value& tensor, std::size_t index) const;
+
+  /// Copy the content of an output tensor into output (reusing its allocation)
   template <typename T>
-  void copyLastOutput(const std::vector<Ort::Value>& outputTensors, std::vector<T>& output) const
+  void copyOutput(const Ort::Value& tensor, std::vector<T>& output) const
   {
-    if (outputTensors.empty()) {
-      LOG(fatal) << "Model returned no output tensors";
-    }
-    const Ort::Value& tensor = outputTensors.back();
     const auto info = tensor.GetTensorTypeAndShapeInfo();
     if (info.GetElementType() != Ort::TypeToTensorType<T>::type) {
       LOG(fatal) << "Requested output type (ONNX type id " << static_cast<int>(Ort::TypeToTensorType<T>::type) << ") does not match the model output tensor type (ONNX type id " << static_cast<int>(info.GetElementType()) << ")";
     }
     const T* data = tensor.GetTensorData<T>();
-    output.assign(data, data + info.GetElementCount());
+    const auto size = info.GetElementCount();
+    if (size == 0) {
+      output.clear();
+    } else {
+      output.assign(data, data + size);
+    }
   }
 
   // Internal function for printing the shape of tensors
