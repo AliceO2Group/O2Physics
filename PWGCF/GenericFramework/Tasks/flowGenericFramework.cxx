@@ -1252,10 +1252,12 @@ struct FlowGenericFramework {
           auto* weights = ccdb->getForTimeStamp<GFWWeights>(path, timestamp);
           if (weights == nullptr) {
             LOGF(fatal, "Could not load acceptance weights from %s", path.c_str());
+            return;
           }
           auto* clonedWeights = dynamic_cast<GFWWeights*>(weights->Clone());
           if (clonedWeights == nullptr) {
             LOGF(fatal, "Could not clone acceptance weights from %s", path.c_str());
+            return;
           }
           acceptanceWeights.emplace_back(clonedWeights);
         };
