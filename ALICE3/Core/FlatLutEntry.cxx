@@ -27,10 +27,6 @@
 
 namespace o2::fastsim
 {
-namespace
-{
-constexpr float kBinCenterOffset = 0.5f;
-} // namespace
 
 void lutEntry_t::print() const
 {
