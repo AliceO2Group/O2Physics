@@ -26,6 +26,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Tools/ML/MlResponse.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
@@ -43,7 +44,6 @@
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <Tools/ML/MlResponse.h>
 
 #include <algorithm>
 #include <array>
