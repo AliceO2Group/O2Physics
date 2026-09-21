@@ -17,7 +17,6 @@
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/HfMlResponseD0ToKPi.h"
 #include "PWGHF/Core/HfMlResponseDstarToD0Pi.h"
-#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
@@ -27,19 +26,30 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include <Tools/ML/MlResponse.h>
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DetectorsBase/Propagator.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
 #include <Framework/Expressions.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -56,10 +66,10 @@ struct HfProducerCharmHadronsCharmFemtoDream {
   // Each species needs its own model, feature order and pT-dependent cuts.
   struct MlConfig : ConfigurableGroup {
     std::string prefix;
-    static constexpr double DefaultCuts[3] = {1., 0., 0.};
+    static inline const std::array<double, 3> DefaultCuts{1., 0., 0.};
     Configurable<int> applyMlMode{"applyMlMode", FillMlFromSelector, "0: no ML, 1: selector scores, 2: new BDT after selector"};
     Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{0., 36.}, "pT bin limits for new BDT"};
-    Configurable<LabeledArray<double>> cutsMl{"cutsMl", {DefaultCuts, 1, 3}, "New BDT cuts per pT bin: background, prompt, nonprompt"};
+    Configurable<LabeledArray<double>> cutsMl{"cutsMl", {DefaultCuts.data(), 1, 3}, "New BDT cuts per pT bin: background, prompt, nonprompt"};
     Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{0, 1, 1}, "Reject scores above (0), below (1), or do not cut (2)"};
     Configurable<int> nClassesMl{"nClassesMl", 3, "Three output classes: background, prompt, nonprompt"};
     Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{}, "Ordered input feature names for new BDT"};
@@ -81,7 +91,7 @@ struct HfProducerCharmHadronsCharmFemtoDream {
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Minimum D0 selector decision"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "CCDB URL"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "Run 3 magnetic field"};
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   o2::hf_evsel::HfEventSelection hfEvSel;
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
   HistogramRegistry registry{"QA", {}, OutputObjHandlingPolicy::AnalysisObject};
