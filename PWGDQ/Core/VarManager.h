@@ -1495,6 +1495,8 @@ class VarManager : public TObject
   static void FillPair(T1 const& t1, T2 const& t2, float* values = nullptr);
   template <int pairType, uint32_t fillMap, typename T1, typename T2>
   static void FillPairRotation(T1 const& t1, T2 const& t2, int rotation, float* values = nullptr);
+  template <typename T>
+  static void FillPairRotation_ME(T const& t1, T const& t2, int rotation, float* values = nullptr);
   template <int pairType, uint32_t fillMap, typename C, typename T1, typename T2>
   static void FillPairCollision(C const& collision, T1 const& t1, T2 const& t2, float* values = nullptr);
   template <int pairType, uint32_t fillMap, typename C, typename T1, typename T2, typename M, typename P>
@@ -4084,7 +4086,11 @@ void VarManager::FillPairRotation(T1 const& t1, T2 const& t2, int rotation, floa
     rotationphi2 = 2 * values[kPsi2A] - t2.phi() + o2::constants::math::PI;
   }
 
-  rotationphi2 = RecoDecay::constrainAngle(rotationphi2);
+  if (rotationphi2 >= o2::constants::math::TwoPI) {
+    rotationphi2 -= o2::constants::math::TwoPI;
+  } else if (rotationphi2 < 0) {
+    rotationphi2 += o2::constants::math::TwoPI;
+  }
 
   values[kCharge] = t1.sign() + t2.sign();
   values[kCharge1] = t1.sign();
@@ -4545,6 +4551,51 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
   if (fgUsedVars[kPairPhiv]) {
     values[kPairPhiv] = calculatePhiV<pairType>(t1, t2);
   }
+}
+
+template <typename T>
+void VarManager::FillPairRotation_ME(T const& t1, T const& t2, int rotation, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+
+  float m1 = o2::constants::physics::MassElectron;
+  double rotationphi2 = t2.phi;
+
+  if (rotation == 1) {
+    rotationphi2 = t2.phi + o2::constants::math::PI;
+  } else if (rotation == 2) {
+    rotationphi2 = 2 * values[kPsi2A] - t2.phi;
+  } else if (rotation == 3) {
+    rotationphi2 = 2 * values[kPsi2A] - t2.phi + o2::constants::math::PI;
+  }
+
+  if (rotationphi2 >= o2::constants::math::TwoPI) {
+    rotationphi2 -= o2::constants::math::TwoPI;
+  } else if (rotationphi2 < 0) {
+    rotationphi2 += o2::constants::math::TwoPI;
+  }
+
+  ROOT::Math::PtEtaPhiMVector v1(t1.pt, t1.eta, t1.phi, m1);
+  ROOT::Math::PtEtaPhiMVector v2(t2.pt, t2.eta, rotationphi2, m1);
+  ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+  values[kMass] = v12.M();
+  values[kPt] = v12.Pt();
+  values[kEta] = v12.Eta();
+  // values[kPhi] = v12.Phi();
+  values[kPhi] = RecoDecay::constrainAngle(v12.Phi());
+  values[kRap] = -v12.Rapidity();
+  double Ptot1 = TMath::Sqrt(v1.Px() * v1.Px() + v1.Py() * v1.Py() + v1.Pz() * v1.Pz());
+  double Ptot2 = TMath::Sqrt(v2.Px() * v2.Px() + v2.Py() * v2.Py() + v2.Pz() * v2.Pz());
+  values[kDeltaPtotTracks] = Ptot1 - Ptot2;
+
+  values[kPt1] = t1.pt;
+  values[kEta1] = t1.eta;
+  values[kPhi1] = t1.phi;
+  values[kPt2] = t2.pt;
+  values[kEta2] = t2.eta;
+  values[kPhi2] = rotationphi2;
 }
 
 template <typename T>
