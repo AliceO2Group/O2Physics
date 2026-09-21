@@ -91,7 +91,7 @@ DECLARE_SOA_COLUMN(TpcChi2NClLfTrack1, tpcChi2NClLfTrack1, float);              
 DECLARE_SOA_COLUMN(AbsEtaLfTrack1, absEtaLfTrack1, float);                             //! |eta|
 DECLARE_SOA_COLUMN(MJpsi, mJpsi, float);                                               //! Invariant mass of Jpsi daughter candidates (GeV/c)
 DECLARE_SOA_COLUMN(MK0Star, mK0Star, float);                                           //! Invariant mass of K*0 daughter candidates (GeV/c)
-DECLARE_SOA_COLUMN(M, m, float);                                                       //! Invariant mass of candidate (GeV/c2)
+DECLARE_SOA_COLUMN(M, m, float);                                                       //! Invariant mass of candidate particle (GeV/c2)
 DECLARE_SOA_COLUMN(Pt, pt, float);                                                     //! Transverse momentum of candidate (GeV/c)
 DECLARE_SOA_COLUMN(PtGen, ptGen, float);                                               //! Transverse momentum of candidate (GeV/c)
 DECLARE_SOA_COLUMN(P, p, float);                                                       //! Momentum of candidate (GeV/c)
@@ -127,7 +127,7 @@ DECLARE_SOA_COLUMN(DecayLength, decayLength, float);                            
 DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);                               //! Transverse decay length of candidate (cm)
 DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);               //! Normalised decay length of candidate
 DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float);           //! Normalised transverse decay length of candidate
-DECLARE_SOA_COLUMN(CtXY, ctXY, float);                                                 //! Pseudo-proper decay length of candidate
+DECLARE_SOA_COLUMN(CtXY, ctXY, float);                                                 //! Pseudo-proper decay length of candidate particle
 DECLARE_SOA_COLUMN(ImpactParameterProduct, impactParameterProduct, float);             //! Impact parameter product of B daughters
 DECLARE_SOA_COLUMN(ImpactParameterProductJpsi, impactParameterProductJpsi, float);     //! Impact parameter product of Jpsi daughters
 DECLARE_SOA_COLUMN(ImpactParameterProductK0Star, impactParameterProductK0Star, float); //! Impact parameter product of K*0 daughters
@@ -154,6 +154,7 @@ DECLARE_SOA_TABLE(HfRedCandB0Lites, "AOD", "HFREDCANDB0LITE", //! Table with som
                   hf_cand_b0tojpsik0star_lite::Y,
                   hf_cand_b0tojpsik0star_lite::Cpa,
                   hf_cand_b0tojpsik0star_lite::CpaXY,
+                  hf_cand_b0tojpsik0star_lite::CpaJpsi,
                   hf_cand::Chi2PCA,
                   hf_cand_b0tojpsik0star_lite::DecayLength,
                   hf_cand_b0tojpsik0star_lite::DecayLengthXY,
@@ -565,37 +566,35 @@ struct HfTaskB0ToJpsiK0StarReduced {
     }
 
     auto fillTable = [&](bool isSelKPi) {
-      auto ctXY = isSelKPi ? candidate.ctXY(std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus})
-                           : candidate.ctXY(std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus});
-      auto mlScoreSig = isSelKPi ? mlScoreSigKPi : mlScoreSigPiK;
-      auto invMassB0 = isSelKPi ? invMassB0KPi : invMassB0PiK;
-      auto invMassK0Star = isSelKPi ? invMassK0StarKPi : invMassK0StarPiK;
+      auto ctXY = candidate.ctXY(std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
+      auto ctXYBar = candidate.ctXY(std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus});
       hfRedCandB0Lite(
         // B0 - meson features
-        invMassB0,
+        isSelKPi ? invMassB0KPi : invMassB0PiK,
         ptCandB0,
         candidate.eta(),
         candidate.phi(),
         HfHelper::yB0(candidate),
         candidate.cpa(),
         candidate.cpaXY(),
+        candidate.cpaJpsi(),
         candidate.chi2PCA(),
         candidate.decayLength(),
         candidate.decayLengthXY(),
         candidate.decayLengthNormalised(),
         candidate.decayLengthXYNormalised(),
-        ctXY,
+        isSelKPi ? ctXY : ctXYBar,
         candidate.impactParameterProduct(),
         candidate.impactParameterProductJpsi(),
         candidate.impactParameterProductK0Star(),
         candidate.maxNormalisedDeltaIP(),
-        mlScoreSig,
+        isSelKPi ? mlScoreSigKPi : mlScoreSigPiK,
         isSelKPi ? statusB0KPi : -1,
         isSelKPi ? -1 : statusB0PiK,
         // J/Psi features
         invMassJpsi,
         ptJpsi,
-        invMassK0Star,
+        isSelKPi ? invMassK0StarKPi : invMassK0StarPiK,
         candidate.impactParameter0(),
         candidate.impactParameter1(),
         candidate.impactParameter2(),
