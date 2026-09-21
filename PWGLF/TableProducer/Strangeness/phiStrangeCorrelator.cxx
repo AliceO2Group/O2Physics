@@ -238,7 +238,7 @@ struct PhiMesonCandProducer {
           continue;
         }
 
-        const auto& mcParticles = mcParticlesOpt.value().get();
+        const auto& mcParticles = mcParticlesOpt->get();
         const auto track1McParticle = mcParticles.rawIteratorAt(track1.mcParticleId());
         if (track1McParticle.pdgCode() != PDG_t::kKPlus || !track1McParticle.isPhysicalPrimary()) {
           continue;
@@ -259,7 +259,7 @@ struct PhiMesonCandProducer {
             continue;
           }
 
-          const auto& mcParticles = mcParticlesOpt.value().get();
+          const auto& mcParticles = mcParticlesOpt->get();
           const auto track2McParticle = mcParticles.rawIteratorAt(track2.mcParticleId());
           if (track2McParticle.pdgCode() != PDG_t::kKMinus || !track2McParticle.isPhysicalPrimary()) {
             continue;
@@ -285,7 +285,7 @@ struct PhiMesonCandProducer {
             continue;
           }
 
-          const auto& mcParticles = mcParticlesOpt.value().get();
+          const auto& mcParticles = mcParticlesOpt->get();
 
           const auto track1McParticle = mcParticles.rawIteratorAt(track1.mcParticleId());
           const auto track2McParticle = mcParticles.rawIteratorAt(track2.mcParticleId());
@@ -403,10 +403,20 @@ struct PhiMesonCandProducer {
   PROCESS_SWITCH(PhiMesonCandProducer, processMCGen, "Process function to select Phi meson candidates in MCGen", false);
 };
 
-struct K0sReducedCandProducer {
-  // Produce the table with the K0s candidates information
+struct V0ReducedCandProducer {
+  enum V0Type { kK0s = 0,
+                kLambda,
+                kAntiLambda };
+
+  // Produce the table with the V0 candidates information
   Produces<aod::K0sReducedCandidatesData> k0sReducedCandidatesData;
   Produces<aod::K0sReducedCandidatesMcReco> k0sReducedCandidatesMcReco;
+
+  Produces<aod::LambdaReducedCandidatesData> lambdaReducedCandidatesData;
+  Produces<aod::LambdaReducedCandidatesMcReco> lambdaReducedCandidatesMcReco;
+
+  Produces<aod::AntiLambdaReducedCandidatesData> antilambdaReducedCandidatesData;
+  Produces<aod::AntiLambdaReducedCandidatesMcReco> antilambdaReducedCandidatesMcReco;
 
   HistogramRegistry histos{"k0sReducedCandidates", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
@@ -417,6 +427,7 @@ struct K0sReducedCandProducer {
   struct : ConfigurableGroup {
     Configurable<float> etaMax{"etaMax", 0.8f, "eta max"};
     Configurable<float> nSigmaCutTPCSecPion{"nSigmaCutTPCSecPion", 4.0f, "Value of the TPC Nsigma cut for secondary Pions"};
+    Configurable<float> nSigmaCutTPCSecProton{"nSigmaCutTPCSecProton", 4.0f, "Value of the TPC Nsigma cut for secondary Protons"};
 
     Configurable<int> minTPCnClsFound{"minTPCnClsFound", 70, "min number of found TPC clusters"};
     Configurable<int> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70, "min number of TPC crossed rows"};
@@ -425,25 +436,37 @@ struct K0sReducedCandProducer {
 
   // Configurables for V0 selection
   struct : ConfigurableGroup {
-    Configurable<float> v0SettingCosPA{"v0SettingCosPA", 0.98f, "V0 CosPA"};
-    Configurable<float> v0SettingRadius{"v0SettingRadius", 0.5f, "V0 decay radius"};
-    Configurable<float> v0SettingDCAV0Dau{"v0SettingDCAV0Dau", 1.0f, "DCA V0 Daughters"};
-    Configurable<float> v0SettingDCAPosToPV{"v0SettingDCAPosToPV", 0.1f, "DCA Pos To PV"};
-    Configurable<float> v0SettingDCANegToPV{"v0SettingDCANegToPV", 0.1f, "DCA Neg To PV"};
-    Configurable<float> v0SettingMinPt{"v0SettingMinPt", 0.1f, "V0 min pt"};
+    Configurable<float> decayRadius{"decayRadius", 0.5f, "V0 decay radius"};
+    Configurable<float> dcaV0Dau{"dcaV0Dau", 1.0f, "DCA V0 Daughters"};
+    Configurable<float> dcaPosToPV{"dcaPosToPV", 0.1f, "DCA Pos To PV"};
+    Configurable<float> dcaNegToPV{"dcaNegToPV", 0.1f, "DCA Neg To PV"};
 
-    Configurable<bool> cfgFurtherV0Selection{"cfgFurtherV0Selection", false, "Further V0 selection"};
-    Configurable<float> ctauK0s{"ctauK0s", 20.0f, "C tau K0s(cm)"};
-    Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2f, "parameter Armenteros Cut"};
-    Configurable<float> v0rejK0s{"v0rejK0s", 0.005f, "V0 rej K0s"};
+    Configurable<bool> furtherV0Selection{"furtherV0Selection", false, "Further V0 selection"};
 
-    Configurable<std::pair<float, float>> rangeMK0sSignal{"rangeMK0sSignal", {0.47f, 0.53f}, "K0S mass range for signal extraction"};
+    Configurable<float> yAcceptance{"yAcceptance", 0.5f, "Rapidity acceptance"};
 
-    Configurable<float> cfgYAcceptance{"cfgYAcceptance", 0.5f, "Rapidity acceptance"};
+    struct : ConfigurableGroup {
+      Configurable<float> cosPA{"cosPA", 0.98f, "V0 CosPA"};
+      Configurable<float> ctau{"ctau", 20.0f, "C tau K0s(cm)"};
+      Configurable<float> rejMass{"rejMass", 0.005f, "V0 rej K0s"};
+
+      Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2f, "Parameter for Armenteros Cut for K0S"};
+
+      Configurable<float> minPt{"minPt", 0.1f, "K0S min pt"};
+      Configurable<std::vector<double>> binspTK0S{"binspTK0S", {0.1, 0.5, 0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for K0S"};
+      Configurable<std::pair<float, float>> rangeMK0sSignal{"rangeMK0sSignal", {0.47f, 0.53f}, "K0S mass range for signal extraction"};
+    } k0sConfigs;
+
+    struct : ConfigurableGroup {
+      Configurable<float> cosPA{"cosPA", 0.98f, "V0 CosPA"};
+      Configurable<float> ctau{"ctau", 7.89f, "C tau Lambda(cm)"};
+      Configurable<float> rejMass{"rejMass", 0.005f, "V0 rej Lambda"};
+
+      Configurable<float> minPt{"minPt", 0.1f, "Lambda min pt"};
+      Configurable<std::vector<double>> binspTLambda{"binspTLambda", {0.1, 0.5, 0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for Lambda"};
+      Configurable<std::pair<float, float>> rangeMLambdaSignal{"rangeMLambdaSignal", {1.11f, 1.12f}, "Lambda mass range for signal extraction"};
+    } lambdaConfigs;
   } v0Configs;
-
-  // Configurable on K0S pT bins
-  Configurable<std::vector<double>> binspTK0S{"binspTK0S", {0.1, 0.5, 0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for K0S"};
 
   // Constants
   static constexpr double MassK0S = o2::constants::physics::MassK0Short;
@@ -454,9 +477,9 @@ struct K0sReducedCandProducer {
   Filter collisionFilter = aod::lf_selection_event::defaultSel == true;
 
   // Defining filters on V0s (cannot filter on dynamic columns)
-  Filter v0PreFilter = (nabs(aod::v0data::dcapostopv) > v0Configs.v0SettingDCAPosToPV &&
-                        nabs(aod::v0data::dcanegtopv) > v0Configs.v0SettingDCANegToPV &&
-                        aod::v0data::dcaV0daughters < v0Configs.v0SettingDCAV0Dau);
+  Filter v0PreFilter = (nabs(aod::v0data::dcapostopv) > v0Configs.dcaPosToPV &&
+                        nabs(aod::v0data::dcanegtopv) > v0Configs.dcaNegToPV &&
+                        aod::v0data::dcaV0daughters < v0Configs.dcaV0Dau);
 
   // Defining the type of the collisions for data and MC
   using SelCollisions = soa::Join<aod::Collisions, aod::CentFT0Ms, aod::PVMults, aod::PhiStrangeEvtSelDataLike>;
@@ -469,16 +492,35 @@ struct K0sReducedCandProducer {
   using FullV0s = soa::Filtered<aod::V0Datas>;
   using FullMCV0s = soa::Filtered<soa::Join<aod::V0Datas, aod::McV0Labels>>;
 
-  using V0DauTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCFullPi>;
+  using V0DauTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullPr>;
   using V0DauMCTracks = soa::Join<V0DauTracks, aod::McTrackLabels>;
 
   void init(InitContext&)
   {
     AxisSpec binnedmultAxis{(std::vector<double>)binsMult, "centFT0M"};
-    AxisSpec binnedpTK0SAxis{(std::vector<double>)binspTK0S, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec binnedpTK0SAxis{(std::vector<double>)v0Configs.k0sConfigs.binspTK0S, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec binnedpTLambdaAxis{(std::vector<double>)v0Configs.lambdaConfigs.binspTLambda, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec massK0SAxis = {200, 0.45f, 0.55f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
+    AxisSpec massLambdaAxis = {200, 1.08f, 1.15f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
 
     histos.add("h3K0sCandidatesMass", "K^{0}_{S} candidate invariant mass", kTH3F, {binnedmultAxis, binnedpTK0SAxis, massK0SAxis});
+    histos.add("h3LambdaCandidatesMass", "#Lambda candidate invariant mass", kTH3F, {binnedmultAxis, binnedpTK0SAxis, massLambdaAxis});
+    histos.add("h3AntiLambdaCandidatesMass", "#bar{#Lambda} candidate invariant mass", kTH3F, {binnedmultAxis, binnedpTK0SAxis, massLambdaAxis});
+  }
+
+  template <V0Type v0Type>
+  constexpr int getPdgCode()
+  {
+    if constexpr (v0Type == kK0S) {
+      return PDG_t::kK0Short;
+    } else if constexpr (v0Type == kLambda) {
+      return PDG_t::kLambda0;
+    } else if constexpr (v0Type == kAntiLambda) {
+      return PDG_t::kLambda0Bar;
+    } else {
+      static_assert(v0Type == kK0S || v0Type == kLambda || v0Type == kAntiLambda, "Unsupported particle type in getPdgCode");
+      return 0;
+    }
   }
 
   // Single track selection for strangeness sector
@@ -505,7 +547,7 @@ struct K0sReducedCandProducer {
   }
 
   // V0 selection
-  template <bool isMC, typename T1, typename T2>
+  template <bool isMC, V0Type v0Type, typename T1, typename T2>
   bool selectionV0(const T1& v0, const T2& collision)
   {
     using V0DauTrackType = std::conditional_t<isMC, V0DauMCTracks, V0DauTracks>;
@@ -518,87 +560,157 @@ struct K0sReducedCandProducer {
     }
 
     if constexpr (!isMC) {
-      if (std::abs(posDaughterTrack.tpcNSigmaPi()) > trackConfigs.nSigmaCutTPCSecPion) {
-        return false;
-      }
-      if (std::abs(negDaughterTrack.tpcNSigmaPi()) > trackConfigs.nSigmaCutTPCSecPion) {
-        return false;
-      }
-    }
-
-    if (v0.v0cosPA() < v0Configs.v0SettingCosPA) {
-      return false;
-    }
-    if (v0.v0radius() < v0Configs.v0SettingRadius) {
-      return false;
-    }
-    if (v0.pt() < v0Configs.v0SettingMinPt) {
-      return false;
-    }
-
-    if (v0Configs.cfgFurtherV0Selection) {
-      if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * MassK0S > v0Configs.ctauK0s) {
-        return false;
-      }
-      if (v0.qtarm() < (v0Configs.paramArmenterosCut * std::abs(v0.alpha()))) {
-        return false;
-      }
-      if (std::abs(v0.mLambda() - MassLambda) < v0Configs.v0rejK0s) {
-        return false;
+      if constexpr (v0Type == kK0s) {
+        if (std::abs(posDaughterTrack.tpcNSigmaPi()) > trackConfigs.nSigmaCutTPCSecPion) {
+          return false;
+        }
+        if (std::abs(negDaughterTrack.tpcNSigmaPi()) > trackConfigs.nSigmaCutTPCSecPion) {
+          return false;
+        }
+      } else if constexpr (v0Type == kLambda) {
+        if (std::abs(posDaughterTrack.tpcNSigmaPr()) > trackConfigs.nSigmaCutTPCSecProton) {
+          return false;
+        }
+        if (std::abs(negDaughterTrack.tpcNSigmaPi()) > trackConfigs.nSigmaCutTPCSecPion) {
+          return false;
+        }
+      } else if constexpr (v0Type == kAntiLambda) {
+        if (std::abs(posDaughterTrack.tpcNSigmaPi()) > trackConfigs.nSigmaCutTPCSecPion) {
+          return false;
+        }
+        if (std::abs(negDaughterTrack.tpcNSigmaPr()) > trackConfigs.nSigmaCutTPCSecProton) {
+          return false;
+        }
       }
     }
 
-    if (std::abs(v0.yK0Short()) > v0Configs.cfgYAcceptance) {
+    if (v0.v0radius() < v0Configs.decayRadius) {
       return false;
+    }
+    if (std::abs(v0.rapidity(v0Type)) > v0Configs.yAcceptance) {
+      return false;
+    }
+
+    const auto& cfgs = [&]() -> const auto& {
+      if constexpr (v0Type == kK0s) {
+        return v0Configs.k0sConfigs;
+      } else if constexpr (v0Type == kLambda || v0Type == kAntiLambda) {
+        return v0Configs.lambdaConfigs;
+      }
+    }();
+
+    if (v0.v0cosPA() < cfgs.cosPA) {
+      return false;
+    }
+    if (v0.pt() < cfgs.minPt) {
+      return false;
+    }
+
+    if (v0Configs.furtherV0Selection) {
+      constexpr float assumedMass = v0Type == kK0s ? MassK0S : MassLambda;
+      if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * assumedMass > cfgs.ctau) {
+        return false;
+      }
+
+      if constexpr (v0Type == kK0s) {
+        if (std::abs(v0.mLambda() - MassLambda) < cfgs.rejMass ||
+            std::abs(v0.mAntiLambda() - MassLambda) < cfgs.rejMass) {
+          return false;
+        }
+        if (v0.qtarm() < (cfgs.paramArmenterosCut * std::abs(v0.alpha()))) {
+          return false;
+        }
+      } else {
+        if (std::abs(v0.mK0Short() - MassK0S) < cfgs.rejMass) {
+          return false;
+        }
+      }
     }
 
     return true;
+  }
+
+  template <bool isMC, V0Type v0Type, typename TV0, typename TColl>
+  void processV0Type(TColl const& collision, TV0 const& v0, std::optional<std::reference_wrapper<const aod::McParticles>> mcParticlesOpt = std::nullopt)
+  {
+    // Cut on V0 dynamic columns
+    if (!selectionV0<isMC, v0Type>(v0, collision)) {
+      return;
+    }
+
+    if constexpr (isMC) {
+      if (!v0.has_mcParticle() || !mcParticlesOpt) {
+        return;
+      }
+
+      const auto& mcParticles = mcParticlesOpt->get();
+      const auto& v0McParticle = mcParticles.rawIteratorAt(v0.mcParticleId());
+      if (v0McParticle.pdgCode() != getPdgCode<v0Type>() || !v0McParticle.isPhysicalPrimary()) {
+        return;
+      }
+
+      if constexpr (v0Type == kK0s) {
+        k0sReducedCandidatesMcReco(collision.globalIndex(), v0.mK0Short(), v0McParticle.pt(), v0McParticle.y(), v0McParticle.phi());
+      } else if constexpr (v0Type == kLambda) {
+        lambdaReducedCandidatesMcReco(collision.globalIndex(), v0.mLambda(), v0McParticle.pt(), v0McParticle.y(), v0McParticle.phi());
+      } else if constexpr (v0Type == kAntiLambda) {
+        antilambdaReducedCandidatesMcReco(collision.globalIndex(), v0.mAntiLambda(), v0McParticle.pt(), v0McParticle.y(), v0McParticle.phi());
+      }
+    } else {
+      if constexpr (v0Type == kK0s) {
+        histos.fill(HIST("h3K0sCandidatesMass"), collision.centFT0M(), v0.pt(), v0.mK0Short());
+        k0sReducedCandidatesData(collision.globalIndex(), v0.mK0Short(), v0.pt(), v0.yK0Short(), v0.phi());
+      } else if constexpr (v0Type == kLambda) {
+        histos.fill(HIST("h3LambdaCandidatesMass"), collision.centFT0M(), v0.pt(), v0.mLambda());
+        lambdaReducedCandidatesData(collision.globalIndex(), v0.mLambda(), v0.pt(), v0.yLambda(), v0.phi());
+      } else if constexpr (v0Type == kAntiLambda) {
+        histos.fill(HIST("h3AntiLambdaCandidatesMass"), collision.centFT0M(), v0.pt(), v0.mAntiLambda());
+        antilambdaReducedCandidatesData(collision.globalIndex(), v0.mAntiLambda(), v0.pt(), v0.yLambda(), v0.phi());
+        // histos.fill(HIST("h3LambdaCandidatesMass"), collision.centFT0M(), v0.pt(), v0.mAntiLambda());
+        // lambdaReducedCandidatesData(collision.globalIndex(), v0.mAntiLambda(), v0.pt(), v0.yLambda(), v0.phi());
+      }
+    }
+  }
+
+  template <bool isMC, V0Type... Types, typename TColl, typename TV0>
+  void evaluateAllHypotheses(TColl const& collision, TV0 const& v0, std::optional<std::reference_wrapper<const aod::McParticles>> mcParticlesOpt = std::nullopt)
+  {
+    (processV0Type<isMC, Types>(collision, v0, mcParticlesOpt), ...);
   }
 
   // void processData(SelCollisions::iterator const& collision, FullV0s const& V0s, V0DauTracks const&)
   void processData(FilteredSelCollisions::iterator const& collision, FullV0s const& V0s, V0DauTracks const&)
   {
     for (const auto& v0 : V0s) {
-      // Cut on V0 dynamic columns
-      if (!selectionV0<false>(v0, collision)) {
-        continue;
-      }
-
-      histos.fill(HIST("h3K0sCandidatesMass"), collision.centFT0M(), v0.pt(), v0.mK0Short());
-
-      k0sReducedCandidatesData(collision.globalIndex(), v0.mK0Short(), v0.pt(), v0.yK0Short(), v0.phi());
+      evaluateAllHypotheses<false, kK0s, kLambda, kAntiLambda>(collision, v0);
     }
   }
 
-  PROCESS_SWITCH(K0sReducedCandProducer, processData, "Process function to select reduced K0s candidates in Data or in McReco (w/o McTruth) analysis", true);
+  PROCESS_SWITCH(V0ReducedCandProducer, processData, "Process function to select reduced K0s candidates in Data or in McReco (w/o McTruth) analysis", true);
 
   // void processMCReco(SimCollisions::iterator const& collision, FullMCV0s const& V0s, V0DauMCTracks const&, aod::McParticles const& mcParticles)
   void processMCReco(FilteredSimCollisions::iterator const& collision, FullMCV0s const& V0s, V0DauMCTracks const&, aod::McParticles const& mcParticles)
   {
     for (const auto& v0 : V0s) {
-      if (!selectionV0<true>(v0, collision)) {
-        continue;
-      }
-      if (!v0.has_mcParticle()) {
-        continue;
-      }
-
-      const auto& v0McParticle = mcParticles.rawIteratorAt(v0.mcParticleId());
-      if (std::abs(v0McParticle.pdgCode()) != PDG_t::kK0Short || !v0McParticle.isPhysicalPrimary()) {
-        continue;
-      }
-
-      k0sReducedCandidatesMcReco(collision.globalIndex(), v0.mK0Short(), v0McParticle.pt(), v0McParticle.y(), v0McParticle.phi());
+      evaluateAllHypotheses<true, kK0s, kLambda, kAntiLambda>(collision, v0, mcParticles);
     }
   }
 
-  PROCESS_SWITCH(K0sReducedCandProducer, processMCReco, "Process function to select reduced K0s candidates in MCReco w MC truth", false);
+  PROCESS_SWITCH(V0ReducedCandProducer, processMCReco, "Process function to select reduced K0s candidates in MCReco w MC truth", false);
 };
 
-struct XiReducedCandProducer {
+struct CascadeReducedCandProducer {
+  enum CascadeType { kXi = 0,
+                     kAntiXi,
+                     kOmega,
+                     kAntiOmega };
+
   // Produce the table with the Xi candidates information
   Produces<aod::XiReducedCandidatesData> xiReducedCandidatesData;
   Produces<aod::XiReducedCandidatesMcReco> xiReducedCandidatesMcReco;
+
+  Produces<aod::OmegaReducedCandidatesData> omegaReducedCandidatesData;
+  Produces<aod::OmegaReducedCandidatesMcReco> omegaReducedCandidatesMcReco;
 
   HistogramRegistry histos{"xiReducedCandidates", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
@@ -609,6 +721,7 @@ struct XiReducedCandProducer {
   struct : ConfigurableGroup {
     Configurable<float> etaMax{"etaMax", 0.8f, "eta max"};
     Configurable<float> nSigmaCutTPCSecPion{"nSigmaCutTPCSecPion", 4.0f, "Value of the TPC Nsigma cut for secondary Pions"};
+    Configurable<float> nSigmaCutTPCSecKaon{"nSigmaCutTPCSecKaon", 4.0f, "Value of the TPC Nsigma cut for secondary Kaons"};
     Configurable<float> nSigmaCutTPCSecProton{"nSigmaCutTPCSecProton", 4.0f, "Value of the TPC Nsigma cut for secondary Protons"};
 
     Configurable<int> minTPCnClsFound{"minTPCnClsFound", 70, "min number of found TPC clusters"};
@@ -618,35 +731,48 @@ struct XiReducedCandProducer {
 
   // Configurables for Cascade selection
   struct : ConfigurableGroup {
-    Configurable<float> cascSettingV0CosPA{"cascSettingV0CosPA", 0.98f, "V0 CosPA"};
-    Configurable<float> cascSettingCosPA{"cascSettingCosPA", 0.98f, "Cascade CosPA"};
-    Configurable<float> cascSettingV0Radius{"cascSettingV0Radius", 0.5f, "V0 decay radius"};
-    Configurable<float> cascSettingRadius{"cascSettingRadius", 0.5f, "Cascade decay radius"};
-    Configurable<float> cascSettingDCAV0Dau{"cascSettingDCAV0Dau", 1.0f, "DCA V0 Daughters"};
-    Configurable<float> cascSettingDCACascDau{"cascSettingDCACascDau", 1.0f, "DCA Cascade Daughters"};
-    Configurable<float> cascSettingDCAPosToPV{"cascSettingDCAPosToPV", 0.1f, "DCA Pos To PV"};
-    Configurable<float> cascSettingDCANegToPV{"cascSettingDCANegToPV", 0.1f, "DCA Neg To PV"};
-    Configurable<float> cascSettingDCABachToPV{"cascSettingDCABachToPV", 0.1f, "DCA Bach To PV"};
-    Configurable<float> cascSettingMinPt{"cascSettingMinPt", 0.8f, "Cascade min pt"};
+    Configurable<float> dcaV0Dau{"dcaV0Dau", 1.0f, "DCA V0 Daughters"};
+    Configurable<float> dcaCascDau{"dcaCascDau", 1.0f, "DCA Cascade Daughters"};
+    Configurable<float> dcaPosToPV{"dcaPosToPV", 0.1f, "DCA Pos To PV"};
+    Configurable<float> dcaNegToPV{"dcaNegToPV", 0.1f, "DCA Neg To PV"};
+    Configurable<float> dcaBachToPV{"dcaBachToPV", 0.1f, "DCA Bach To PV"};
 
-    Configurable<float> cfgYAcceptance{"cfgYAcceptance", 0.5f, "Rapidity acceptance"};
+    Configurable<float> yAcceptance{"yAcceptance", 0.5f, "Rapidity acceptance"};
+
+    struct : ConfigurableGroup {
+      Configurable<float> v0CosPA{"v0CosPA", 0.98f, "V0 CosPA"};
+      Configurable<float> cosPA{"cosPA", 0.98f, "Cascade CosPA"};
+      Configurable<float> v0Radius{"v0Radius", 0.5f, "V0 decay radius"};
+      Configurable<float> radius{"radius", 0.5f, "Cascade decay radius"};
+
+      Configurable<float> minPt{"minPt", 0.8f, "Cascade min pt"};
+      Configurable<std::vector<double>> binspTXi{"binspTXi", {0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for Xi"};
+    } xiConfigs;
+
+    struct : ConfigurableGroup {
+      Configurable<float> v0CosPA{"v0CosPA", 0.98f, "V0 CosPA"};
+      Configurable<float> cosPA{"cosPA", 0.98f, "Cascade CosPA"};
+      Configurable<float> v0Radius{"v0Radius", 0.5f, "V0 decay radius"};
+      Configurable<float> radius{"radius", 0.5f, "Cascade decay radius"};
+
+      Configurable<float> minPt{"minPt", 0.8f, "Cascade min pt"};
+      Configurable<std::vector<double>> binspTOmega{"binspTOmega", {0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for Omega"};
+    } omegaConfigs;
   } cascadeConfigs;
-
-  // Configurables for Xi pT bins
-  Configurable<std::vector<double>> binspTXi{"binspTXi", {0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for Xi"};
 
   // Constants
   static constexpr double MassXi = o2::constants::physics::MassXiMinus;
+  static constexpr double MassOmega = o2::constants::physics::MassOmegaMinus;
 
   // Filter on default selected collisions
   Filter collisionFilter = aod::lf_selection_event::defaultSel == true;
 
   // Defining filters on Cascades (cannot filter on dynamic columns)
-  Filter cascadePreFilter = (nabs(aod::cascdata::dcapostopv) > cascadeConfigs.cascSettingDCAPosToPV &&
-                             nabs(aod::cascdata::dcanegtopv) > cascadeConfigs.cascSettingDCANegToPV &&
-                             nabs(aod::cascdata::dcabachtopv) > cascadeConfigs.cascSettingDCABachToPV &&
-                             aod::cascdata::dcaV0daughters < cascadeConfigs.cascSettingDCAV0Dau &&
-                             aod::cascdata::dcacascdaughters < cascadeConfigs.cascSettingDCACascDau);
+  Filter cascadePreFilter = (nabs(aod::cascdata::dcapostopv) > cascadeConfigs.dcaPosToPV &&
+                             nabs(aod::cascdata::dcanegtopv) > cascadeConfigs.dcaNegToPV &&
+                             nabs(aod::cascdata::dcabachtopv) > cascadeConfigs.dcaBachToPV &&
+                             aod::cascdata::dcaV0daughters < cascadeConfigs.dcaV0Dau &&
+                             aod::cascdata::dcacascdaughters < cascadeConfigs.dcaCascDau);
 
   // Defining the type of the collisions for data and MC
   using SelCollisions = soa::Join<aod::Collisions, aod::CentFT0Ms, aod::PVMults, aod::PhiStrangeEvtSelDataLike>;
@@ -659,16 +785,36 @@ struct XiReducedCandProducer {
   using FullCascades = soa::Filtered<aod::CascDatas>;
   using FullMCCascades = soa::Filtered<soa::Join<aod::CascDatas, aod::McCascLabels>>;
 
-  using DauTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullPr>;
+  using DauTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
   using DauMCTracks = soa::Join<DauTracks, aod::McTrackLabels>;
 
   void init(InitContext&)
   {
     AxisSpec binnedmultAxis{(std::vector<double>)binsMult, "centFT0M"};
-    AxisSpec binnedpTXiAxis{(std::vector<double>)binspTXi, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec binnedpTXiAxis{(std::vector<double>)cascadeConfigs.xiConfigs.binspTXi, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec binnedpTOmegaAxis{(std::vector<double>)cascadeConfigs.omegaConfigs.binspTOmega, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec massXiAxis = {200, 1.2f, 1.4f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
+    AxisSpec massOmegaAxis = {200, 1.6f, 1.8f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
 
     histos.add("h3XiCandidatesMass", "#Xi candidate invariant mass", kTH3F, {binnedmultAxis, binnedpTXiAxis, massXiAxis});
+    histos.add("h3OmegaCandidatesMass", "#Omega candidate invariant mass", kTH3F, {binnedmultAxis, binnedpTOmegaAxis, massOmegaAxis});
+  }
+
+  template <CascadeType cascadeType>
+  constexpr int getPdgCode()
+  {
+    if constexpr (cascadeType == kXi) {
+      return PDG_t::kXiMinus;
+    } else if constexpr (cascadeType == kAntiXi) {
+      return PDG_t::kXiPlusBar;
+    } else if constexpr (cascadeType == kOmega) {
+      return PDG_t::kOmegaMinus;
+    } else if constexpr (cascadeType == kAntiOmega) {
+      return PDG_t::kOmegaPlusBar;
+    } else {
+      static_assert(cascadeType == kXi || cascadeType == kAntiXi || cascadeType == kOmega || cascadeType == kAntiOmega, "Unsupported particle type in getPdgCode");
+      return 0;
+    }
   }
 
   // Single track selection for strangeness sector
@@ -695,9 +841,19 @@ struct XiReducedCandProducer {
   }
 
   // Cascade selection
-  template <bool isMC, typename T1, typename T2>
+  template <bool isMC, CascadeType cascadeType, typename T1, typename T2>
   bool selectionCascade(const T1& cascade, const T2& collision)
   {
+    if constexpr (cascadeType == kXi || cascadeType == kOmega) {
+      if (cascade.sign() > 0) {
+        return false; // Matter must have negative charge
+      }
+    } else {
+      if (cascade.sign() < 0) {
+        return false; // Anti-matter must have positive charge
+      }
+    }
+
     using DauTrackType = std::conditional_t<isMC, DauMCTracks, DauTracks>;
 
     const auto& posDaughterTrack = cascade.template posTrack_as<DauTrackType>();
@@ -709,14 +865,14 @@ struct XiReducedCandProducer {
     }
 
     if constexpr (!isMC) {
-      if (cascade.sign() < 0) {
+      if constexpr (cascadeType == kXi || cascadeType == kOmega) {
         if (std::abs(posDaughterTrack.tpcNSigmaPr()) > trackConfigs.nSigmaCutTPCSecProton) {
           return false;
         }
         if (std::abs(negDaughterTrack.tpcNSigmaPi()) > trackConfigs.nSigmaCutTPCSecPion) {
           return false;
         }
-      } else if (cascade.sign() > 0) {
+      } else {
         if (std::abs(posDaughterTrack.tpcNSigmaPi()) > trackConfigs.nSigmaCutTPCSecPion) {
           return false;
         }
@@ -724,73 +880,112 @@ struct XiReducedCandProducer {
           return false;
         }
       }
-      if (std::abs(bachDaughterTrack.tpcNSigmaPi()) > trackConfigs.nSigmaCutTPCSecPion) {
-        return false;
+
+      if constexpr (cascadeType == kXi || cascadeType == kAntiXi) {
+        if (std::abs(bachDaughterTrack.tpcNSigmaPi()) > trackConfigs.nSigmaCutTPCSecPion) {
+          return false;
+        }
+      } else if constexpr (cascadeType == kOmega || cascadeType == kAntiOmega) {
+        if (std::abs(bachDaughterTrack.tpcNSigmaKa()) > trackConfigs.nSigmaCutTPCSecKaon) {
+          return false;
+        }
       }
     }
+
+    if (std::abs(cascade.rapidity(cascadeType)) > cascadeConfigs.yAcceptance) {
+      return false;
+    }
+
+    const auto& cfgs = [&]() -> const auto& {
+      if constexpr (cascadeType == kXi || cascadeType == kAntiXi) {
+        return cascadeConfigs.xiConfigs;
+      } else if constexpr (cascadeType == kOmega || cascadeType == kAntiOmega) {
+        return cascadeConfigs.omegaConfigs;
+      }
+    }();
 
     const auto& pvx = collision.posX();
     const auto& pvy = collision.posY();
     const auto& pvz = collision.posZ();
 
-    if (cascade.v0cosPA(pvx, pvy, pvz) < cascadeConfigs.cascSettingV0CosPA) {
+    if (cascade.v0cosPA(pvx, pvy, pvz) < cfgs.v0CosPA) {
       return false;
     }
-    if (cascade.casccosPA(pvx, pvy, pvz) < cascadeConfigs.cascSettingCosPA) {
+    if (cascade.casccosPA(pvx, pvy, pvz) < cfgs.cosPA) {
       return false;
     }
-    if (cascade.v0radius() < cascadeConfigs.cascSettingV0Radius) {
+    if (cascade.v0radius() < cfgs.v0Radius) {
       return false;
     }
-    if (cascade.cascradius() < cascadeConfigs.cascSettingRadius) {
+    if (cascade.cascradius() < cfgs.radius) {
       return false;
     }
-    if (cascade.pt() < cascadeConfigs.cascSettingMinPt) {
+    if (cascade.pt() < cfgs.minPt) {
       return false;
     }
 
-    if (std::abs(cascade.yXi()) > cascadeConfigs.cfgYAcceptance) {
-      return false;
-    }
     return true;
   }
 
-  void processData(FilteredSelCollisions::iterator const& collision, FullCascades const& cascades, DauTracks const&)
+  template <bool isMC, CascadeType cascadeType, typename TCascade, typename TColl>
+  void processCascadeType(TColl const& collision, TCascade const& cascade, std::optional<std::reference_wrapper<const aod::McParticles>> mcParticlesOpt = std::nullopt)
   {
-    for (const auto& cascade : cascades) {
-      // Cut on cascade dynamic columns
-      if (!selectionCascade<false>(cascade, collision)) {
-        continue;
+    // Cut on Cascade dynamic columns
+    if (!selectionCascade<isMC, cascadeType>(cascade, collision)) {
+      return;
+    }
+
+    if constexpr (isMC) {
+      if (!cascade.has_mcParticle() || !mcParticlesOpt) {
+        return;
       }
 
-      histos.fill(HIST("h3XiCandidatesMass"), collision.centFT0M(), cascade.pt(), cascade.mXi());
+      const auto& mcParticles = mcParticlesOpt->get();
+      const auto& cascadeMcParticle = mcParticles.rawIteratorAt(cascade.mcParticleId());
+      if (cascadeMcParticle.pdgCode() != getPdgCode<cascadeType>() || !cascadeMcParticle.isPhysicalPrimary()) {
+        return;
+      }
 
-      xiReducedCandidatesData(collision.globalIndex(), cascade.mXi(), cascade.pt(), cascade.yXi(), cascade.phi());
+      if constexpr (cascadeType == kXi || cascadeType == kAntiXi) {
+        xiReducedCandidatesMcReco(collision.globalIndex(), cascade.mXi(), cascadeMcParticle.pt(), cascadeMcParticle.y(), cascadeMcParticle.phi());
+      } else if constexpr (cascadeType == kOmega || cascadeType == kAntiOmega) {
+        omegaReducedCandidatesMcReco(collision.globalIndex(), cascade.mOmega(), cascadeMcParticle.pt(), cascadeMcParticle.y(), cascadeMcParticle.phi());
+      }
+    } else {
+      if constexpr (cascadeType == kXi || cascadeType == kAntiXi) {
+        histos.fill(HIST("h3XiCandidatesMass"), collision.centFT0M(), cascade.pt(), cascade.mXi());
+        xiReducedCandidatesData(collision.globalIndex(), cascade.mXi(), cascade.pt(), cascade.yXi(), cascade.phi());
+      } else if constexpr (cascadeType == kOmega || cascadeType == kAntiOmega) {
+        histos.fill(HIST("h3OmegaCandidatesMass"), collision.centFT0M(), cascade.pt(), cascade.mOmega());
+        omegaReducedCandidatesData(collision.globalIndex(), cascade.mOmega(), cascade.pt(), cascade.yOmega(), cascade.phi());
+      }
     }
   }
 
-  PROCESS_SWITCH(XiReducedCandProducer, processData, "Process function to select reduced Xi candidates in Data or in McReco (w/o McTruth) analysis", true);
+  template <bool isMC, CascadeType... cascadeTypes, typename TColl, typename TCascade>
+  void evaluateAllHypotheses(TColl const& collision, TCascade const& cascade, std::optional<std::reference_wrapper<const aod::McParticles>> mcParticlesOpt = std::nullopt)
+  {
+    (processCascadeType<isMC, cascadeTypes>(collision, cascade, mcParticlesOpt), ...);
+  }
+
+  void
+    processData(FilteredSelCollisions::iterator const& collision, FullCascades const& cascades, DauTracks const&)
+  {
+    for (const auto& cascade : cascades) {
+      evaluateAllHypotheses<false, kXi, kAntiXi, kOmega, kAntiOmega>(collision, cascade);
+    }
+  }
+
+  PROCESS_SWITCH(CascadeReducedCandProducer, processData, "Process function to select reduced Xi candidates in Data or in McReco (w/o McTruth) analysis", true);
 
   void processMCReco(FilteredSimCollisions::iterator const& collision, FullMCCascades const& cascades, DauMCTracks const&, aod::McParticles const& mcParticles)
   {
     for (const auto& cascade : cascades) {
-      if (!selectionCascade<true>(cascade, collision)) {
-        continue;
-      }
-      if (!cascade.has_mcParticle()) {
-        continue;
-      }
-
-      const auto& cascadeMcParticle = mcParticles.rawIteratorAt(cascade.mcParticleId());
-      if (std::abs(cascadeMcParticle.pdgCode()) != PDG_t::kXiMinus || !cascadeMcParticle.isPhysicalPrimary()) {
-        continue;
-      }
-
-      xiReducedCandidatesMcReco(collision.globalIndex(), cascade.mXi(), cascadeMcParticle.pt(), cascadeMcParticle.y(), cascadeMcParticle.phi());
+      evaluateAllHypotheses<true, kXi, kAntiXi, kOmega, kAntiOmega>(collision, cascade, mcParticles);
     }
   }
 
-  PROCESS_SWITCH(XiReducedCandProducer, processMCReco, "Process function to select reduced Xi candidates in MCReco w MC truth", false);
+  PROCESS_SWITCH(CascadeReducedCandProducer, processMCReco, "Process function to select reduced Xi candidates in MCReco w MC truth", false);
 };
 
 struct PionTrackProducer {
@@ -1323,8 +1518,8 @@ struct EventSelectionProducer {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<PhiMesonCandProducer>(cfgc),
-                      adaptAnalysisTask<K0sReducedCandProducer>(cfgc),
-                      adaptAnalysisTask<XiReducedCandProducer>(cfgc),
+                      adaptAnalysisTask<V0ReducedCandProducer>(cfgc),
+                      adaptAnalysisTask<CascadeReducedCandProducer>(cfgc),
                       adaptAnalysisTask<PionTrackProducer>(cfgc),
                       adaptAnalysisTask<EventSelectionProducer>(cfgc)};
 }
