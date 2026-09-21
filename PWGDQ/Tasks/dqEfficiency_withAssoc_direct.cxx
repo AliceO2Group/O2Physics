@@ -1828,7 +1828,7 @@ struct AnalysisSameEventPairing {
             VarManager::FillPairCollision<TPairType, TTrackFillMap>(event, t1, t2);
           }
           if constexpr (TTwoProngFitter) {
-            VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, fConfigOptions.propToPCA);
+            VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2);
             if (fConfigOptions.recomputePV) {
               VarManager::SetPVrecalculationKF(false);
               VarManager::ResetValues(VarManager::kVertexingLxyProjectedRecalculatePV, VarManager::kVertexingLxyProjectedRecalculatePV + 1);
@@ -1921,7 +1921,7 @@ struct AnalysisSameEventPairing {
             VarManager::FillPairCollision<TPairType, TTrackFillMap>(event, t1, t2);
           }
           if constexpr (TTwoProngFitter) {
-            VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, fConfigOptions.propToPCA);
+            VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2);
           }
           if constexpr (eventHasQvector) {
             VarManager::FillPairVn<TPairType>(t1, t2);

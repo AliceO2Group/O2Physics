@@ -1765,7 +1765,7 @@ struct AnalysisSameEventPairing {
           }
 
           if constexpr (TTwoProngFitter) {
-            VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, fConfigOptions.propToPCA);
+            VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2);
             o2::dataformats::VertexBase pvRefit;
             if (fConfigOptions.recomputePV) {
               VarManager::SetPVrecalculationKF(false);

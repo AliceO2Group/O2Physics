@@ -1383,7 +1383,6 @@ struct AnalysisSameEventPairing {
     o2::framework::Configurable<bool> polarTables{"cfgPolarTables", false, "Produce tables with dilepton polarization information"};
     o2::framework::Configurable<bool> useKFVertexing{"cfgUseKFVertexing", false, "Use KF Particle for secondary vertex reconstruction (DCAFitter is used by default)"};
     o2::framework::Configurable<bool> useAbsDCA{"cfgUseAbsDCA", false, "Use absolute DCA minimization instead of chi^2 minimization in secondary vertexing"};
-    o2::framework::Configurable<bool> propToPCA{"cfgPropToPCA", false, "Propagate tracks to secondary vertex"};
     o2::framework::Configurable<bool> noCorr{"cfgNoCorrFwdProp", false, "Do not correct for MCS effects in track propagation"};
     o2::framework::Configurable<std::string> collisionSystem{"syst", "pp", "Collision system, pp or PbPb"};
     o2::framework::Configurable<float> centerMassEnergy{"energy", 13600, "Center of mass energy in GeV"};
@@ -2038,7 +2037,7 @@ struct AnalysisSameEventPairing {
             VarManager::FillPairCollision<TPairType, TTrackFillMap>(event, t1, t2);
           }
           if constexpr (TTwoProngFitter) {
-            VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, fConfigOptions.propToPCA);
+            VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2);
           }
           if constexpr (eventHasQvector) {
             VarManager::FillPairVn<TPairType>(t1, t2);
@@ -2166,7 +2165,7 @@ struct AnalysisSameEventPairing {
             VarManager::FillPairCollision<TPairType, TTrackFillMap>(event, t1, t2);
           }
           if constexpr (TTwoProngFitter) {
-            VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, fConfigOptions.propToPCA);
+            VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2);
           }
           if constexpr (eventHasQvector) {
             VarManager::FillPairVn<TPairType>(t1, t2);
@@ -3204,7 +3203,6 @@ struct AnalysisAsymmetricPairing {
 
   o2::framework::Configurable<bool> fConfigUseKFVertexing{"cfgUseKFVertexing", false, "Use KF Particle for secondary vertex reconstruction (DCAFitter is used by default)"};
   o2::framework::Configurable<bool> fConfigUseAbsDCA{"cfgUseAbsDCA", false, "Use absolute DCA minimization instead of chi^2 minimization in secondary vertexing"};
-  o2::framework::Configurable<bool> fConfigPropToPCA{"cfgPropToPCA", false, "Propagate tracks to secondary vertex"};
   o2::framework::Configurable<std::string> fConfigLutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   o2::framework::Configurable<bool> fConfigFetchInteractionRate{"cfgFetchInteractionRate", false, "Fetch event-wise interaction rate from the CCDB"};
   o2::framework::Configurable<std::string> fConfigIRSource{"cfgIRSource", "ZNC hadronic", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
@@ -3619,7 +3617,7 @@ struct AnalysisAsymmetricPairing {
 
         VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
         if constexpr (TTwoProngFitter) {
-          VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, fConfigPropToPCA);
+          VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2);
         }
 
         // Fill histograms

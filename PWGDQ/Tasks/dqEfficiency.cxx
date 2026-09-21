@@ -795,7 +795,7 @@ struct AnalysisSameEventPairing {
       VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
       // secondary vertexing is not implemented for e-mu pairs so we need to hide this function from the e-mu analysis for now
       if constexpr ((TPairType == VarManager::kDecayToEE) || (TPairType == VarManager::kDecayToMuMu)) {
-        VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, fPropToPCA, VarManager::fgValues);
+        VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, VarManager::fgValues);
       }
 
       // run MC matching for this pair

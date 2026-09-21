@@ -1466,7 +1466,7 @@ struct AnalysisSameEventPairing {
       VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
       if constexpr ((TPairType == pairTypeEE) || (TPairType == pairTypeMuMu)) { // call this just for ee or mumu pairs
         if constexpr (TTwoProngFitter == true) {
-          VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, fPropToPCA);
+          VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2);
         }
         if constexpr (eventHasQvector) {
           VarManager::FillPairVn<TEventFillMap, TPairType>(t1, t2);
