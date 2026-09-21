@@ -91,9 +91,7 @@ DECLARE_SOA_COLUMN(TpcChi2NClLfTrack1, tpcChi2NClLfTrack1, float);              
 DECLARE_SOA_COLUMN(AbsEtaLfTrack1, absEtaLfTrack1, float);                             //! |eta|
 DECLARE_SOA_COLUMN(MJpsi, mJpsi, float);                                               //! Invariant mass of Jpsi daughter candidates (GeV/c)
 DECLARE_SOA_COLUMN(MK0Star, mK0Star, float);                                           //! Invariant mass of K*0 daughter candidates (GeV/c)
-DECLARE_SOA_COLUMN(MK0StarBar, mK0StarBar, float);                                     //! Invariant mass of K*0bar daughter candidates (GeV/c)
 DECLARE_SOA_COLUMN(M, m, float);                                                       //! Invariant mass of candidate particle (GeV/c2)
-DECLARE_SOA_COLUMN(MBar, mBar, float);                                                 //! Invariant mass of candidate antiparticle (GeV/c2)
 DECLARE_SOA_COLUMN(Pt, pt, float);                                                     //! Transverse momentum of candidate (GeV/c)
 DECLARE_SOA_COLUMN(PtGen, ptGen, float);                                               //! Transverse momentum of candidate (GeV/c)
 DECLARE_SOA_COLUMN(P, p, float);                                                       //! Momentum of candidate (GeV/c)
@@ -151,7 +149,6 @@ DECLARE_SOA_COLUMN(FlagWrongCollision, flagWrongCollision, int8_t);             
 
 DECLARE_SOA_TABLE(HfRedCandB0Lites, "AOD", "HFREDCANDB0LITE", //! Table with some B0 properties
                   hf_cand_b0tojpsik0star_lite::M,
-                  hf_cand_b0tojpsik0star_lite::MBar,
                   hf_cand_b0tojpsik0star_lite::Pt,
                   hf_cand_b0tojpsik0star_lite::Eta,
                   hf_cand_b0tojpsik0star_lite::Phi,
@@ -177,7 +174,6 @@ DECLARE_SOA_TABLE(HfRedCandB0Lites, "AOD", "HFREDCANDB0LITE", //! Table with som
                   hf_cand_b0tojpsik0star_lite::MJpsi,
                   hf_cand_b0tojpsik0star_lite::PtJpsi,
                   hf_cand_b0tojpsik0star_lite::MK0Star,
-                  hf_cand_b0tojpsik0star_lite::MK0StarBar,
                   hf_cand_b0tojpsik0star_lite::ImpactParameterJpsiDauPos,
                   hf_cand_b0tojpsik0star_lite::ImpactParameterJpsiDauNeg,
                   hf_cand_b0tojpsik0star_lite::ImpactParameterLfTrack0,
@@ -574,11 +570,9 @@ struct HfTaskB0ToJpsiK0StarReduced {
     auto fillTable = [&](bool isSelKPi) {
       auto ctXY = candidate.ctXY(std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
       auto ctXYBar = candidate.ctXY(std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus});
-      auto mlScoreSig = TESTBIT(isSelKPi, SelectionStep::RecoPID) ? mlScoreSigKPi : mlScoreSigPiK;
       hfRedCandB0Lite(
         // B0 - meson features
-        invMassB0KPi,
-        invMassB0PiK,
+        isSelKPi ? invMassB0KPi : invMassB0PiK,
         ptCandB0,
         candidate.eta(),
         candidate.phi(),
@@ -597,14 +591,13 @@ struct HfTaskB0ToJpsiK0StarReduced {
         candidate.impactParameterProductJpsi(),
         candidate.impactParameterProductK0Star(),
         candidate.maxNormalisedDeltaIP(),
-        mlScoreSig,
-        statusB0KPi,
-        statusB0PiK,
+        isSelKPi ? mlScoreSigKPi : mlScoreSigPiK,
+        isSelKPi ? statusB0KPi : -1,
+        isSelKPi? -1 : statusB0PiK,
         // J/Psi features
         invMassJpsi,
         ptJpsi,
-        invMassK0StarKPi,
-        invMassK0StarPiK,
+        isSelKPi ? invMassK0StarKPi : invMassK0StarPiK,
         candidate.impactParameter0(),
         candidate.impactParameter1(),
         candidate.impactParameter2(),
