@@ -434,6 +434,10 @@ struct FlowGenericFramework {
     LambdaSideband2,
     ResonanceCount
   };
+  enum DataType {
+    Reco,
+    Gen
+  };
   enum OutputSpecies {
     K0 = 0,
     Lambda,
@@ -854,17 +858,9 @@ struct FlowGenericFramework {
         }
         if (cfgFill.cfgAnalyseK0Lambda) {
           registryGen.add("MCGen/npt_v02_K0_sig", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-          registryGen.add("MCGen/npt_v02_K0_sb1", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-          registryGen.add("MCGen/npt_v02_K0_sb2", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
           registryGen.add("MCGen/npt_v02_Lambda_sig", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-          registryGen.add("MCGen/npt_v02_Lambda_sb1", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-          registryGen.add("MCGen/npt_v02_Lambda_sb2", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
           registryGen.add("MCGen/npt_v0_K0_sig", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-          registryGen.add("MCGen/npt_v0_K0_sb1", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-          registryGen.add("MCGen/npt_v0_K0_sb2", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
           registryGen.add("MCGen/npt_v0_Lambda_sig", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-          registryGen.add("MCGen/npt_v0_Lambda_sb1", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
-          registryGen.add("MCGen/npt_v0_Lambda_sb2", "; #it{p}_{T} (GeV/#it{c}; ; centrality (%); fraction)", {HistType::kTProfile2D, {ptAxis, centAxis}});
         }
       }
       if (cfgMethod.cfgStoreCombinedFractionWeights) {
@@ -883,7 +879,7 @@ struct FlowGenericFramework {
           if (doprocessData || doprocessRun2 || doprocessMCReco || doprocessMC) {
             registry.addClone(source, target);
           }
-          if (doprocessMCGen || doprocessOnTheFly || doprocessMC) {
+          if ((doprocessMCGen || doprocessOnTheFly || doprocessMC) && source.find("_sb") == std::string::npos) {
             registryGen.addClone("MCGen/" + source, "MCGen/" + target);
           }
         }
@@ -943,21 +939,31 @@ struct FlowGenericFramework {
     if (corrconfigsV0.empty()) {
       LOGF(error, "Radial (V0) configuration contains vectors of different size - check the GFWCorrConfig configurable");
     }
+    const size_t requiredChargedConfigs = static_cast<size_t>(SpeciesCount);
+    const size_t requiredResonanceConfigs = requiredChargedConfigs + static_cast<size_t>(ResonanceCount);
+    if (cfgFill.cfgAnalyseChargedHadrons && (corrconfigsV02.size() < requiredChargedConfigs || corrconfigsV0.size() < requiredChargedConfigs)) {
+      LOGF(fatal, "Charged-hadron analysis requires at least %zu V02 and V0 correlation configurations", requiredChargedConfigs);
+    }
+    if (cfgFill.cfgAnalyseK0Lambda && (corrconfigsV02.size() < requiredResonanceConfigs || corrconfigsV0.size() < requiredResonanceConfigs)) {
+      LOGF(fatal, "K0/Lambda analysis requires at least %zu V02 and V0 correlation configurations", requiredResonanceConfigs);
+    }
 
     fGFW->CreateRegions();
+    const size_t v02ResonanceEnd = std::min(requiredResonanceConfigs, corrconfigsV02.size());
+    const size_t v0ResonanceEnd = std::min(requiredResonanceConfigs, corrconfigsV0.size());
     auto oba = new TObjArray();
-    addConfigObjectsToObjArray(oba, corrconfigs, 0, corrconfigs.size());
+    addConfigObjectsToObjArray<Reco>(oba, corrconfigs, 0, corrconfigs.size());
     if (cfgFill.cfgAnalyseChargedHadrons) {
-      addConfigObjectsToObjArray(oba, corrconfigsV02, 0, std::min<size_t>(SpeciesCount, corrconfigsV02.size()));
+      addConfigObjectsToObjArray<Reco>(oba, corrconfigsV02, 0, std::min<size_t>(SpeciesCount, corrconfigsV02.size()));
     }
     if (cfgFill.cfgAnalyseK0Lambda) {
-      addConfigObjectsToObjArray(oba, corrconfigsV02, std::min<size_t>(SpeciesCount, corrconfigsV02.size()), corrconfigsV02.size());
+      addConfigObjectsToObjArray<Reco>(oba, corrconfigsV02, std::min<size_t>(SpeciesCount, corrconfigsV02.size()), v02ResonanceEnd);
     }
     if (cfgFill.cfgAnalyseChargedHadrons) {
-      addConfigObjectsToObjArray(oba, corrconfigsV0, 0, std::min<size_t>(SpeciesCount, corrconfigsV0.size()));
+      addConfigObjectsToObjArray<Reco>(oba, corrconfigsV0, 0, std::min<size_t>(SpeciesCount, corrconfigsV0.size()));
     }
     if (cfgFill.cfgAnalyseK0Lambda) {
-      addConfigObjectsToObjArray(oba, corrconfigsV0, std::min<size_t>(SpeciesCount, corrconfigsV0.size()), corrconfigsV0.size());
+      addConfigObjectsToObjArray<Reco>(oba, corrconfigsV0, std::min<size_t>(SpeciesCount, corrconfigsV0.size()), v0ResonanceEnd);
     }
 
     if (doprocessData || doprocessRun2 || doprocessMCReco || doprocessMC) {
@@ -982,10 +988,25 @@ struct FlowGenericFramework {
       }
       fFCpt->initialiseSubevent(multAxis, cfgMpar, gfwMemberCache.etagapsPtPt.size(), cfgNbootstrap);
     }
+    delete oba;
+    auto obaGen = new TObjArray();
+    addConfigObjectsToObjArray<Gen>(obaGen, corrconfigs, 0, corrconfigs.size());
+    if (cfgFill.cfgAnalyseChargedHadrons) {
+      addConfigObjectsToObjArray<Gen>(obaGen, corrconfigsV02, 0, std::min<size_t>(SpeciesCount, corrconfigsV02.size()));
+    }
+    if (cfgFill.cfgAnalyseK0Lambda) {
+      addConfigObjectsToObjArray<Gen>(obaGen, corrconfigsV02, std::min<size_t>(SpeciesCount, corrconfigsV02.size()), v02ResonanceEnd, true);
+    }
+    if (cfgFill.cfgAnalyseChargedHadrons) {
+      addConfigObjectsToObjArray<Gen>(obaGen, corrconfigsV0, 0, std::min<size_t>(SpeciesCount, corrconfigsV0.size()));
+    }
+    if (cfgFill.cfgAnalyseK0Lambda) {
+      addConfigObjectsToObjArray<Gen>(obaGen, corrconfigsV0, std::min<size_t>(SpeciesCount, corrconfigsV0.size()), v0ResonanceEnd, true);
+    }
     if (doprocessMCGen || doprocessOnTheFly || doprocessMC) {
       fFCgen.setObject(new FlowContainer("FlowContainer_gen"));
       fFCgen->SetXAxis(fPtAxis);
-      fFCgen->Initialize(oba, multAxis, cfgNbootstrap);
+      fFCgen->Initialize(obaGen, multAxis, cfgNbootstrap);
 
       fFCptGen.setObject(new FlowPtContainer("FlowPtContainer_gen"));
       fFCptGen->setEventWeight(cfgMethod.cfgUsePtCorrWeights ? eventweight::TupleWeight : eventweight::UnityWeight);
@@ -1004,7 +1025,7 @@ struct FlowGenericFramework {
       }
       fFCptGen->initialiseSubevent(multAxis, cfgMpar, gfwMemberCache.etagapsPtPt.size(), cfgNbootstrap);
     }
-    delete oba;
+    delete obaGen;
     fPtDepDCAxy = new TF1("ptDepDCAxy", Form("[0]*%s", cfgTrackCuts.cfgDCAxyPtDep->c_str()), 0.001, 100);
     fPtDepDCAxy->SetParameter(0, cfgTrackCuts.cfgDCAxyNSigma / 7.);
     LOGF(info, "DCAxy pt-dependence function: %s", Form("[0]*%s", cfgTrackCuts.cfgDCAxyPtDep->c_str()));
@@ -1167,9 +1188,26 @@ struct FlowGenericFramework {
     After
   };
 
-  void addConfigObjectsToObjArray(TObjArray* oba, const std::vector<GFW::CorrConfig>& configs, size_t first, size_t last)
+  template <DataType dt>
+  void addConfigObjectsToObjArray(TObjArray* oba, const std::vector<GFW::CorrConfig>& configs, size_t first, size_t last, bool resonanceConfigs = false)
   {
+    if (first > last || last > configs.size()) {
+      LOGF(fatal, "Invalid correlation configuration range [%zu, %zu) for %zu entries", first, last, configs.size());
+    }
+    if constexpr (dt == Gen) {
+      if (resonanceConfigs && first < static_cast<size_t>(SpeciesCount)) {
+        LOGF(fatal, "Generated resonance configurations must start at index %d or later", static_cast<int>(SpeciesCount));
+      }
+    }
     for (auto it = configs.begin() + first; it != configs.begin() + last; ++it) {
+      if constexpr (dt == Gen) {
+        if (resonanceConfigs) {
+          const auto resonanceIndex = static_cast<size_t>(std::distance(configs.begin(), it)) - SpeciesCount;
+          if (resonanceIndex != K0Signal && resonanceIndex != LambdaSignal) {
+            continue;
+          }
+        }
+      }
       if (it->pTDif) {
         std::string suffix = "_ptDiff";
         for (auto i = 0; i < fPtAxis->GetNbins(); ++i) {
@@ -1206,19 +1244,7 @@ struct FlowGenericFramework {
       return;
     }
     if (!cfgAcceptance.value.empty()) {
-<<<<<<< HEAD
-      std::string runstr = (cfgFill.cfgRunByRun) ? "RunByRun/" : "";
-      cfg.mAcceptance.clear();
-      if (cfgFill.cfgUsePID) {
-        cfg.mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value + runstr + "ref/", timestamp));
-        cfg.mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value + runstr + "ch/", timestamp));
-        cfg.mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value + runstr + "pi/", timestamp));
-        cfg.mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value + runstr + "ka/", timestamp));
-        cfg.mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value + runstr + "pr/", timestamp));
-      } else {
-        cfg.mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value + runstr, timestamp));
-=======
-      const int acceptanceKey = cfgRunByRun ? bc.runNumber() : 0;
+      const int acceptanceKey = cfgFill.cfgRunByRun ? bc.runNumber() : 0;
       auto cachedAcceptance = cfg.mAcceptanceByRun.find(acceptanceKey);
       if (cachedAcceptance == cfg.mAcceptanceByRun.end()) {
         std::vector<std::shared_ptr<GFWWeights>> acceptanceWeights;
@@ -1234,8 +1260,8 @@ struct FlowGenericFramework {
           acceptanceWeights.emplace_back(clonedWeights);
         };
 
-        std::string runstr = (cfgRunByRun) ? "RunByRun/" : "";
-        if (cfgUsePID) {
+        std::string runstr = (cfgFill.cfgRunByRun) ? "RunByRun/" : "";
+        if (cfgFill.cfgUsePID) {
           loadAcceptance(cfgAcceptance.value + runstr + "ref/");
           loadAcceptance(cfgAcceptance.value + runstr + "ch/");
           loadAcceptance(cfgAcceptance.value + runstr + "pi/");
@@ -1252,7 +1278,6 @@ struct FlowGenericFramework {
       cfg.mAcceptance.reserve(cachedAcceptance->second.size());
       for (const auto& weights : cachedAcceptance->second) {
         cfg.mAcceptance.push_back(weights.get());
->>>>>>> fc25e54b2 (Cache acceptance maps per run)
       }
     }
     // Run-by-run efficiencies are not supported at the moment
@@ -1567,11 +1592,6 @@ struct FlowGenericFramework {
     return ((track.tpcNClsCrossedRows() >= tpcNClsCrossedRowsDefault) && (track.tpcNClsFound() >= tpcNClsFoundDefault) && (track.itsNCls() >= itsNclsDefault));
   }
 
-  enum DataType {
-    Reco,
-    Gen
-  };
-
   template <typename TTrack>
   void fillWeights(const TTrack& track, const double vtxz, const int pid_index, const int run)
   {
@@ -1701,6 +1721,11 @@ struct FlowGenericFramework {
     if (!cfgMethod.cfgStoreCombinedFractionWeights || weight <= 0. ||
         (resonance ? !cfgFill.cfgAnalyseK0Lambda : !cfgFill.cfgAnalyseChargedHadrons)) {
       return;
+    }
+    if constexpr (dt == Gen) {
+      if (resonance && index != K0Signal && index != LambdaSignal) {
+        return;
+      }
     }
     if (setup == FractionV02) {
       if (resonance) {
@@ -2002,41 +2027,50 @@ struct FlowGenericFramework {
       }
 
       for (int i = 1; i <= fPtAxis->GetNbins(); ++i) {
-        if (dnK0SB1 > 0) {
-          fillFractionProfile<dt>(HIST("npt_v02_K0_sb1"), HIST("MCGen/npt_v02_K0_sb1"), fPtAxis->GetBinCenter(i), centmult, histosResoNpt[FractionV02][K0Sideband1]->GetBinContent(i) / dnK0SB1, cfgMethod.cfgUseMultiplicityFractionWeights ? dnK0SB1 : 1.);
+        if constexpr (dt != Gen) {
+          if (dnK0SB1 > 0) {
+            fillFractionProfile<dt>(HIST("npt_v02_K0_sb1"), HIST("MCGen/npt_v02_K0_sb1"), fPtAxis->GetBinCenter(i), centmult, histosResoNpt[FractionV02][K0Sideband1]->GetBinContent(i) / dnK0SB1, cfgMethod.cfgUseMultiplicityFractionWeights ? dnK0SB1 : 1.);
+          }
+          if (dnK0SB2 > 0) {
+            fillFractionProfile<dt>(HIST("npt_v02_K0_sb2"), HIST("MCGen/npt_v02_K0_sb2"), fPtAxis->GetBinCenter(i), centmult, histosResoNpt[FractionV02][K0Sideband2]->GetBinContent(i) / dnK0SB2, cfgMethod.cfgUseMultiplicityFractionWeights ? dnK0SB2 : 1.);
+          }
+          if (dnLambdaSB1 > 0) {
+            fillFractionProfile<dt>(HIST("npt_v02_Lambda_sb1"), HIST("MCGen/npt_v02_Lambda_sb1"), fPtAxis->GetBinCenter(i), centmult, histosResoNpt[FractionV02][LambdaSideband1]->GetBinContent(i) / dnLambdaSB1, cfgMethod.cfgUseMultiplicityFractionWeights ? dnLambdaSB1 : 1.);
+          }
+          if (dnLambdaSB2 > 0) {
+            fillFractionProfile<dt>(HIST("npt_v02_Lambda_sb2"), HIST("MCGen/npt_v02_Lambda_sb2"), fPtAxis->GetBinCenter(i), centmult, histosResoNpt[FractionV02][LambdaSideband2]->GetBinContent(i) / dnLambdaSB2, cfgMethod.cfgUseMultiplicityFractionWeights ? dnLambdaSB2 : 1.);
+          }
         }
         if (dnK0Sig > 0) {
           fillFractionProfile<dt>(HIST("npt_v02_K0_sig"), HIST("MCGen/npt_v02_K0_sig"), fPtAxis->GetBinCenter(i), centmult, histosResoNpt[FractionV02][K0Signal]->GetBinContent(i) / dnK0Sig, cfgMethod.cfgUseMultiplicityFractionWeights ? dnK0Sig : 1.);
         }
-        if (dnK0SB2 > 0) {
-          fillFractionProfile<dt>(HIST("npt_v02_K0_sb2"), HIST("MCGen/npt_v02_K0_sb2"), fPtAxis->GetBinCenter(i), centmult, histosResoNpt[FractionV02][K0Sideband2]->GetBinContent(i) / dnK0SB2, cfgMethod.cfgUseMultiplicityFractionWeights ? dnK0SB2 : 1.);
-        }
-        if (dnLambdaSB1 > 0) {
-          fillFractionProfile<dt>(HIST("npt_v02_Lambda_sb1"), HIST("MCGen/npt_v02_Lambda_sb1"), fPtAxis->GetBinCenter(i), centmult, histosResoNpt[FractionV02][LambdaSideband1]->GetBinContent(i) / dnLambdaSB1, cfgMethod.cfgUseMultiplicityFractionWeights ? dnLambdaSB1 : 1.);
-        }
         if (dnLambdaSig > 0) {
           fillFractionProfile<dt>(HIST("npt_v02_Lambda_sig"), HIST("MCGen/npt_v02_Lambda_sig"), fPtAxis->GetBinCenter(i), centmult, histosResoNpt[FractionV02][LambdaSignal]->GetBinContent(i) / dnLambdaSig, cfgMethod.cfgUseMultiplicityFractionWeights ? dnLambdaSig : 1.);
         }
-        if (dnLambdaSB2 > 0) {
-          fillFractionProfile<dt>(HIST("npt_v02_Lambda_sb2"), HIST("MCGen/npt_v02_Lambda_sb2"), fPtAxis->GetBinCenter(i), centmult, histosResoNpt[FractionV02][LambdaSideband2]->GetBinContent(i) / dnLambdaSB2, cfgMethod.cfgUseMultiplicityFractionWeights ? dnLambdaSB2 : 1.);
-        }
       }
 
-      std::vector<double> dns = {dnK0SB1, dnK0Sig, dnK0SB2, dnLambdaSB1, dnLambdaSig, dnLambdaSB2};
+      std::array<double, ResonanceCount> dns = {dnK0SB1, dnK0Sig, dnK0SB2, dnLambdaSB1, dnLambdaSig, dnLambdaSB2};
 
-      for (uint l_ind = 4; l_ind < corrconfigsV02.size(); ++l_ind) {
+      const size_t resonanceConfigEnd = std::min(static_cast<size_t>(SpeciesCount) + static_cast<size_t>(ResonanceCount), corrconfigsV02.size());
+      for (size_t l_ind = SpeciesCount; l_ind < resonanceConfigEnd; ++l_ind) {
+        const auto resonanceIndex = l_ind - SpeciesCount;
+        if constexpr (dt == Gen) {
+          if (resonanceIndex != K0Signal && resonanceIndex != LambdaSignal) {
+            continue;
+          }
+        }
         for (int i = 1; i <= fPtAxis->GetNbins(); i++) {
           auto dnx = fGFW->Calculate(corrconfigsV02.at(l_ind), i - 1, kTRUE).real();
           if (dnx == 0) {
             continue;
           }
           auto val = fGFW->Calculate(corrconfigsV02.at(l_ind), i - 1, kFALSE).real() / dnx;
-          if (std::abs(val) < 1 && dns[l_ind - 4] > 0) {
-            fillCombinedFractionProfile<dt>(FractionV02, l_ind - SpeciesCount, true, fPtAxis->GetBinCenter(i), centmult, histosResoNpt[FractionV02][l_ind - SpeciesCount]->GetBinContent(i) / dns[l_ind - SpeciesCount], dnx * dns[l_ind - SpeciesCount]);
+          if (std::abs(val) < 1 && dns[resonanceIndex] > 0) {
+            fillCombinedFractionProfile<dt>(FractionV02, resonanceIndex, true, fPtAxis->GetBinCenter(i), centmult, histosResoNpt[FractionV02][resonanceIndex]->GetBinContent(i) / dns[resonanceIndex], dnx * dns[resonanceIndex]);
             if (cfgMethod.cfgUseMultiplicityFractionWeights) {
-              dnx *= dns[l_ind - 4];
+              dnx *= dns[resonanceIndex];
             }
-            flowContainer->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centmult, val * histosResoNpt[FractionV02][l_ind - 4]->GetBinContent(i) / dns[l_ind - 4], cfgMethod.cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm);
+            flowContainer->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centmult, val * histosResoNpt[FractionV02][resonanceIndex]->GetBinContent(i) / dns[resonanceIndex], cfgMethod.cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm);
           }
         }
       }
@@ -2062,27 +2096,29 @@ struct FlowGenericFramework {
       }
 
       for (int i = 1; i <= fPtAxis->GetNbins(); ++i) {
-        if (dnK0SB1 > 0) {
-          fillFractionProfile<dt>(HIST("npt_v0_K0_sb1"), HIST("MCGen/npt_v0_K0_sb1"), fPtAxis->GetBinCenter(i), centmult, histosResoNpt[FractionV0][K0Sideband1]->GetBinContent(i) / dnK0SB1, cfgMethod.cfgUseMultiplicityFractionWeights ? dnK0SB1 : 1.);
+        if constexpr (dt != Gen) {
+          if (dnK0SB1 > 0) {
+            fillFractionProfile<dt>(HIST("npt_v0_K0_sb1"), HIST("MCGen/npt_v0_K0_sb1"), fPtAxis->GetBinCenter(i), centmult, histosResoNpt[FractionV0][K0Sideband1]->GetBinContent(i) / dnK0SB1, cfgMethod.cfgUseMultiplicityFractionWeights ? dnK0SB1 : 1.);
+          }
+          if (dnK0SB2 > 0) {
+            fillFractionProfile<dt>(HIST("npt_v0_K0_sb2"), HIST("MCGen/npt_v0_K0_sb2"), fPtAxis->GetBinCenter(i), centmult, histosResoNpt[FractionV0][K0Sideband2]->GetBinContent(i) / dnK0SB2, cfgMethod.cfgUseMultiplicityFractionWeights ? dnK0SB2 : 1.);
+          }
+          if (dnLambdaSB1 > 0) {
+            fillFractionProfile<dt>(HIST("npt_v0_Lambda_sb1"), HIST("MCGen/npt_v0_Lambda_sb1"), fPtAxis->GetBinCenter(i), centmult, histosResoNpt[FractionV0][LambdaSideband1]->GetBinContent(i) / dnLambdaSB1, cfgMethod.cfgUseMultiplicityFractionWeights ? dnLambdaSB1 : 1.);
+          }
+          if (dnLambdaSB2 > 0) {
+            fillFractionProfile<dt>(HIST("npt_v0_Lambda_sb2"), HIST("MCGen/npt_v0_Lambda_sb2"), fPtAxis->GetBinCenter(i), centmult, histosResoNpt[FractionV0][LambdaSideband2]->GetBinContent(i) / dnLambdaSB2, cfgMethod.cfgUseMultiplicityFractionWeights ? dnLambdaSB2 : 1.);
+          }
         }
         if (dnK0Sig > 0) {
           fillFractionProfile<dt>(HIST("npt_v0_K0_sig"), HIST("MCGen/npt_v0_K0_sig"), fPtAxis->GetBinCenter(i), centmult, histosResoNpt[FractionV0][K0Signal]->GetBinContent(i) / dnK0Sig, cfgMethod.cfgUseMultiplicityFractionWeights ? dnK0Sig : 1.);
         }
-        if (dnK0SB2 > 0) {
-          fillFractionProfile<dt>(HIST("npt_v0_K0_sb2"), HIST("MCGen/npt_v0_K0_sb2"), fPtAxis->GetBinCenter(i), centmult, histosResoNpt[FractionV0][K0Sideband2]->GetBinContent(i) / dnK0SB2, cfgMethod.cfgUseMultiplicityFractionWeights ? dnK0SB2 : 1.);
-        }
-        if (dnLambdaSB1 > 0) {
-          fillFractionProfile<dt>(HIST("npt_v0_Lambda_sb1"), HIST("MCGen/npt_v0_Lambda_sb1"), fPtAxis->GetBinCenter(i), centmult, histosResoNpt[FractionV0][LambdaSideband1]->GetBinContent(i) / dnLambdaSB1, cfgMethod.cfgUseMultiplicityFractionWeights ? dnLambdaSB1 : 1.);
-        }
         if (dnLambdaSig > 0) {
           fillFractionProfile<dt>(HIST("npt_v0_Lambda_sig"), HIST("MCGen/npt_v0_Lambda_sig"), fPtAxis->GetBinCenter(i), centmult, histosResoNpt[FractionV0][LambdaSignal]->GetBinContent(i) / dnLambdaSig, cfgMethod.cfgUseMultiplicityFractionWeights ? dnLambdaSig : 1.);
         }
-        if (dnLambdaSB2 > 0) {
-          fillFractionProfile<dt>(HIST("npt_v0_Lambda_sb2"), HIST("MCGen/npt_v0_Lambda_sb2"), fPtAxis->GetBinCenter(i), centmult, histosResoNpt[FractionV0][LambdaSideband2]->GetBinContent(i) / dnLambdaSB2, cfgMethod.cfgUseMultiplicityFractionWeights ? dnLambdaSB2 : 1.);
-        }
       }
 
-      std::vector<double> dns = {dnK0SB1, dnK0Sig, dnK0SB2, dnLambdaSB1, dnLambdaSig, dnLambdaSB2};
+      std::array<double, ResonanceCount> dns = {dnK0SB1, dnK0Sig, dnK0SB2, dnLambdaSB1, dnLambdaSig, dnLambdaSB2};
 
       if (flowPtContainer.corrDenSub[0][1] == 0. || flowPtContainer.corrDenSub[1][1] == 0.) {
         return;
@@ -2110,18 +2146,25 @@ struct FlowGenericFramework {
         return;
       }
 
-      for (uint l_ind = 4; l_ind < corrconfigsV0.size(); ++l_ind) {
+      const size_t resonanceConfigEnd = std::min(static_cast<size_t>(SpeciesCount) + static_cast<size_t>(ResonanceCount), corrconfigsV0.size());
+      for (size_t l_ind = SpeciesCount; l_ind < resonanceConfigEnd; ++l_ind) {
+        const auto resonanceIndex = l_ind - SpeciesCount;
+        if constexpr (dt == Gen) {
+          if (resonanceIndex != K0Signal && resonanceIndex != LambdaSignal) {
+            continue;
+          }
+        }
         for (int i = 1; i <= fPtAxis->GetNbins(); i++) {
-          if (dns[l_ind - 4] <= 0) {
+          if (dns[resonanceIndex] <= 0) {
             continue;
           }
           double profileWeight = dnx;
           if (cfgMethod.cfgUseMultiplicityFractionWeights) {
-            profileWeight *= dns[l_ind - 4];
+            profileWeight *= dns[resonanceIndex];
           }
-          const double value = mpt * histosResoNpt[FractionV0][l_ind - 4]->GetBinContent(i) / dns[l_ind - 4];
+          const double value = mpt * histosResoNpt[FractionV0][resonanceIndex]->GetBinContent(i) / dns[resonanceIndex];
           const double weight = cfgMethod.cfgUsePtCorrWeights ? profileWeight : 1.0;
-          fillCombinedFractionProfile<dt>(FractionV0, l_ind - SpeciesCount, true, fPtAxis->GetBinCenter(i), centmult, histosResoNpt[FractionV0][l_ind - SpeciesCount]->GetBinContent(i) / dns[l_ind - SpeciesCount], flowPtContainer.corrDen[1] * dns[l_ind - SpeciesCount]);
+          fillCombinedFractionProfile<dt>(FractionV0, resonanceIndex, true, fPtAxis->GetBinCenter(i), centmult, histosResoNpt[FractionV0][resonanceIndex]->GetBinContent(i) / dns[resonanceIndex], flowPtContainer.corrDen[1] * dns[resonanceIndex]);
           flowContainer->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, value, weight, rndm);
         }
       }
