@@ -940,7 +940,8 @@ struct nucleiInJets {
     bool jetFlagPerpCone = false;
     float jetPt = -999.;
 
-    if (isWithLeadingJet) {
+    const bool hasValidLeadingJet = leadingJetPtEtaPhi.size() >= 3 && leadingJetPtEtaPhi[0] > 0.f;
+    if (isWithLeadingJet && hasValidLeadingJet) {
       if (!isConeAxisAccepted(leadingJetPtEtaPhi[1])) {
         return;
       }
@@ -958,7 +959,7 @@ struct nucleiInJets {
       double RPerpCone2 = RecoDecay::sqrtSumOfSquares(delEta, delPhiPerpCone2);
       if (RPerpCone1 < cfgjetR || RPerpCone2 < cfgjetR)
         jetFlagPerpCone = true;
-    } else {
+    } else if (!isWithLeadingJet) {
       for (auto const& jet : jets) {
         if (!isConeAxisAccepted(jet.eta())) {
           continue;
@@ -1754,7 +1755,7 @@ struct nucleiInJets {
     jetHist.fill(HIST("hNEvents"), 6.5);
     int nJets = 0;
     int nAcceptedJets = 0;
-    std::vector<float> leadingJetWithPtEtaPhi(3);
+    std::vector<float> leadingJetWithPtEtaPhi(3, -999.f);
     float leadingJetPt = -1.0f;
     float leadingJetPtBkgSub = -999.0f;
     float backgroundRho = collision.rho(); // Get background rho from collision
@@ -1856,7 +1857,7 @@ struct nucleiInJets {
     jetHist.fill(HIST("hNEvents"), 6.5);
     int nJets = 0;
     int nAcceptedJets = 0;
-    std::vector<float> leadingJetWithPtEtaPhi(3);
+    std::vector<float> leadingJetWithPtEtaPhi(3, -999.f);
     float leadingJetPt = -1.0f;
     float leadingJetPtBkgSub = -999.0f;
     float backgroundRho = collision.rho(); // Get background rho from collision
@@ -2290,7 +2291,7 @@ struct nucleiInJets {
     jetHist.fill(HIST("mcdJet/eventStat"), 2.5);
 
     int nJets = 0;
-    std::vector<float> leadingJetWithPtEtaPhi(3);
+    std::vector<float> leadingJetWithPtEtaPhi(3, -999.f);
     float leadingJetPt = -1.0f;
     for (auto& mcdjet : mcdjets) {
       jetHist.fill(HIST("mcdJet/hJetPt"), mcdjet.pt());
@@ -2322,7 +2323,8 @@ struct nucleiInJets {
       bool jetFlag = false;
       bool jetFlagPerpCone = false;
       // float jetPt = -999.;
-      if (isWithLeadingJet) {
+      const bool hasValidLeadingJet = leadingJetWithPtEtaPhi.size() >= 3 && leadingJetWithPtEtaPhi[0] > 0.f;
+      if (isWithLeadingJet && hasValidLeadingJet) {
         double delPhi = TVector2::Phi_mpi_pi(leadingJetWithPtEtaPhi[2] - track.phi());
         double delEta = leadingJetWithPtEtaPhi[1] - track.eta();
         double R = RecoDecay::sqrtSumOfSquares(delEta, delPhi);
@@ -2335,7 +2337,7 @@ struct nucleiInJets {
         double RPerpCone2 = RecoDecay::sqrtSumOfSquares(delEta, delPhiPerpCone2);
         if (RPerpCone1 < cfgjetR || RPerpCone2 < cfgjetR)
           jetFlagPerpCone = true;
-      } else {
+      } else if (!isWithLeadingJet) {
         for (const auto& mcdjet : mcdjets) {
           double delPhi = TVector2::Phi_mpi_pi(mcdjet.phi() - track.phi());
           double delEta = mcdjet.eta() - track.eta();
@@ -2385,7 +2387,7 @@ struct nucleiInJets {
       return;
     // LOG(info) <<" size(mcd) "<<mcdjets.size();
 
-    std::vector<double> leadingJetWithPtEtaPhi(3);
+    std::vector<double> leadingJetWithPtEtaPhi(3, -999.);
     for (const auto& mcdjet : mcdjets) {
       if (!mcdjet.has_matchedJetGeo())
         continue;
