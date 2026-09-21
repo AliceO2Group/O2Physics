@@ -177,8 +177,8 @@ struct AnalysisEventSelection {
 
   HistogramManager* fHistMan = nullptr;
   MixingHandler* fMixHandler = nullptr;
-  AnalysisCompositeCut* fEventCut;
-  int fLastRun;
+  AnalysisCompositeCut* fEventCut = nullptr;
+  int fLastRun = -1;
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
 
@@ -349,10 +349,10 @@ struct AnalysisTrackSelection {
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
 
-  HistogramManager* fHistMan;
+  HistogramManager* fHistMan = nullptr;
   std::vector<AnalysisCompositeCut> fTrackCuts;
 
-  int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
+  int fCurrentRun = 0; // needed to detect if the run changed and trigger update of calibrations etc.
 
   int64_t reserveSize = 0;
 
@@ -479,7 +479,7 @@ struct AnalysisMuonSelection {
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
   Configurable<std::string> fConfigAddMuonHistogram{"cfgAddMuonHistogram", "", "Comma separated list of histograms"};
 
-  HistogramManager* fHistMan;
+  HistogramManager* fHistMan = nullptr;
   std::vector<AnalysisCompositeCut> fMuonCuts;
 
   Filter filterEventSelected = aod::dqanalysisflags::isEventSelected == 1;
@@ -602,14 +602,14 @@ struct AnalysisPrefilterSelection {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   o2::parameters::GRPMagField* grpmag = nullptr;
-  int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
+  int fCurrentRun = 0; // needed to detect if the run changed and trigger update of calibrations etc.
 
   Filter barrelTracksSelectedPrefilter = aod::dqanalysisflags::isBarrelSelectedPrefilter > 0;
 
   Partition<soa::Filtered<MyBarrelTracksSelected>> barrelTracksSelected = aod::dqanalysisflags::isBarrelSelected > 0;
 
   std::map<int, bool> fPrefiltermap;
-  AnalysisCompositeCut* fPairCut;
+  AnalysisCompositeCut* fPairCut = nullptr;
 
   void init(o2::framework::InitContext& context)
   {
@@ -719,13 +719,13 @@ struct AnalysisEventMixing {
   TH2D* SingleMuv24m = nullptr; // Single muon v24, loaded from CCDB
   TH2D* SingleMuv22p = nullptr; // Single antimuon v22, loaded from CCDB
   TH2D* SingleMuv24p = nullptr; // Single antimuon v24, loaded from CCDB
-  int fCurrentRun;              // needed to detect if the run changed and trigger update of calibrations etc.
+  int fCurrentRun = 0;              // needed to detect if the run changed and trigger update of calibrations etc.
 
   Filter filterEventSelected = aod::dqanalysisflags::isEventSelected == 1;
   Filter filterTrackSelected = aod::dqanalysisflags::isBarrelSelected > 0;
   Filter filterMuonTrackSelected = aod::dqanalysisflags::isMuonSelected > 0;
 
-  HistogramManager* fHistMan;
+  HistogramManager* fHistMan = nullptr;
   // NOTE: The bit mask is required to run pairing just based on the desired electron/muon candidate cuts
   uint32_t fTwoTrackFilterMask = 0;
   uint32_t fTwoMuonFilterMask = 0;
@@ -1046,7 +1046,7 @@ struct AnalysisSameEventPairing {
   o2::base::MatLayerCylSet* lut = nullptr;
   TH1D* ResoFlowSP = nullptr; // Resolution factors for flow analysis, this will be loaded from CCDB
   TH1D* ResoFlowEP = nullptr; // Resolution factors for flow analysis, this will be loaded from CCDB
-  int fCurrentRun;            // needed to detect if the run changed and trigger update of calibrations etc.
+  int fCurrentRun = 0;            // needed to detect if the run changed and trigger update of calibrations etc.
 
   OutputObj<THashList> fOutputList{"output"};
   Configurable<std::string> fConfigTrackCuts{"cfgTrackCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
@@ -1097,7 +1097,7 @@ struct AnalysisSameEventPairing {
   Filter filterMuonTrackSelected = aod::dqanalysisflags::isMuonSelected > 0;
   Filter prefilter = aod::dqanalysisflags::isPrefilterVetoed == 0;
 
-  HistogramManager* fHistMan;
+  HistogramManager* fHistMan = nullptr;
 
   o2::analysis::DQMlResponse<float> fDQMlResponse;
   std::vector<float> fOutputMlPsi2ee = {}; // TODO: check this is needed or not
@@ -1217,7 +1217,6 @@ struct AnalysisSameEventPairing {
           histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
           fTrackHistNames.push_back(names);
 
-          TString cutNamesStr = fConfigPairCuts.value;
           if (!cutNamesStr.IsNull()) { // if pair cuts
             std::unique_ptr<TObjArray> objArrayPair(cutNamesStr.Tokenize(","));
             for (int iPairCut = 0; iPairCut < objArrayPair->GetEntries(); ++iPairCut) { // loop over pair cuts
@@ -1255,7 +1254,6 @@ struct AnalysisSameEventPairing {
           }
           fMuonHistNames.push_back(names);
 
-          TString cutNamesStr = fConfigPairCuts.value;
           if (!cutNamesStr.IsNull()) { // if pair cuts
             std::unique_ptr<TObjArray> objArrayPair(cutNamesStr.Tokenize(","));
             for (int iPairCut = 0; iPairCut < objArrayPair->GetEntries(); ++iPairCut) { // loop over pair cuts
@@ -1288,11 +1286,10 @@ struct AnalysisSameEventPairing {
             histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
             fTrackMuonHistNames.push_back(names);
 
-            TString cutNamesStr = fConfigPairCuts.value;
             if (!cutNamesStr.IsNull()) { // if pair cuts
               std::unique_ptr<TObjArray> objArrayPair(cutNamesStr.Tokenize(","));
               for (int iPairCut = 0; iPairCut < objArrayPair->GetEntries(); ++iPairCut) { // loop over pair cuts
-                std::vector<TString> names = {
+                names = {
                   Form("PairsEleMuSEPM_%s_%s_%s", objArrayBarrel->At(icut)->GetName(), objArrayMuon->At(icut)->GetName(), objArrayPair->At(iPairCut)->GetName()),
                   Form("PairsEleMuSEPP_%s_%s_%s", objArrayBarrel->At(icut)->GetName(), objArrayMuon->At(icut)->GetName(), objArrayPair->At(iPairCut)->GetName()),
                   Form("PairsEleMuSEMM_%s_%s_%s", objArrayBarrel->At(icut)->GetName(), objArrayMuon->At(icut)->GetName(), objArrayPair->At(iPairCut)->GetName())};
@@ -1876,7 +1873,7 @@ struct AnalysisDileptonHadron {
   //  To be modified/adapted if new requirements appear
   float mMagField = 0.0;
   o2::parameters::GRPMagField* grpmag = nullptr;
-  int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
+  int fCurrentRun = 0; // needed to detect if the run changed and trigger update of calibrations etc.
 
   OutputObj<THashList> fOutputList{"output"};
   // TODO: For now this is only used to determine the position in the filter bit map for the hadron cut
@@ -1902,14 +1899,14 @@ struct AnalysisDileptonHadron {
   constexpr static uint32_t fgDileptonFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::Pair; // fill map
 
   // use two values array to avoid mixing up the quantities
-  float* fValuesDilepton;
-  float* fValuesHadron;
-  HistogramManager* fHistMan;
+  float* fValuesDilepton = nullptr;
+  float* fValuesHadron = nullptr;
+  HistogramManager* fHistMan = nullptr;
 
   // NOTE: the barrel track filter is shared between the filters for dilepton electron candidates (first n-bits)
   //       and the associated hadrons (n+1 bit) --> see the barrel track selection task
   //      The current condition should be replaced when bitwise operators will become available in Filter expressions
-  int fNHadronCutBit;
+  int fNHadronCutBit = 0;
 
   NoBinningPolicy<aod::dqanalysisflags::MixingHash> hashBin;
 
@@ -2113,8 +2110,8 @@ struct AnalysisDileptonTrackTrack {
   constexpr static uint32_t fgDileptonFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::Pair; // fill map
 
   // use some values array to avoid mixing up the quantities
-  float* fValuesQuadruplet;
-  HistogramManager* fHistMan;
+  float* fValuesQuadruplet = nullptr;
+  HistogramManager* fHistMan = nullptr;
 
   // cut name setting
   TString fTrackCutName1;

@@ -328,7 +328,7 @@ struct AnalysisEventSelection {
   HistogramManager* fHistMan = nullptr;
   MixingHandler* fMixHandler = nullptr;
 
-  AnalysisCompositeCut* fEventCut;
+  AnalysisCompositeCut* fEventCut = nullptr;
 
   o2::parameters::GRPObject* fGrpMagRun2 = nullptr; // for run 2, we access the GRPObject from GLO/GRP/GRP
   o2::parameters::GRPMagField* fGrpMag = nullptr;   // for run 3, we access GRPMagField from GLO/Config/GRPMagField
@@ -338,7 +338,7 @@ struct AnalysisEventSelection {
 
   std::map<int64_t, bool> fSelMap;                     // key: reduced event global index, value: event selection decision
   std::map<uint64_t, std::vector<int64_t>> fBCCollMap; // key: global BC, value: vector of reduced event global indices
-  int fCurrentRun;
+  int fCurrentRun = -1;
 
   void init(o2::framework::InitContext& context)
   {
@@ -665,11 +665,11 @@ struct AnalysisTrackSelection {
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
   Service<o2::pid::tof::TOFResponse> fTofResponse;
 
-  HistogramManager* fHistMan;
+  HistogramManager* fHistMan = nullptr;
   std::vector<AnalysisCompositeCut*> fTrackCuts;
   std::vector<TString> fHistNamesReco;
 
-  int fCurrentRun; // current run (needed to detect run changes for loading CCDB parameters)
+  int fCurrentRun = 0; // current run (needed to detect run changes for loading CCDB parameters)
 
   std::map<int64_t, std::vector<int64_t>> fNAssocsInBunch;    // key: track global index, value: vector of global index for events associated in-bunch (events that have in-bunch pileup or splitting)
   std::map<int64_t, std::vector<int64_t>> fNAssocsOutOfBunch; // key: track global index, value: vector of global index for events associated out-of-bunch (events that have no in-bunch pileup)
@@ -907,9 +907,9 @@ struct AnalysisPrefilterSelection {
   Configurable<bool> fPropTrack{"cfgPropTrack", false, "Propagate tracks to associated collision to recalculate DCA and momentum vector"};
 
   std::map<uint32_t, uint32_t> fPrefilterMap;
-  AnalysisCompositeCut* fPairCut;
-  uint32_t fPrefilterMask;
-  int fPrefilterCutBit;
+  AnalysisCompositeCut* fPairCut = nullptr;
+  uint32_t fPrefilterMask = 0;
+  int fPrefilterCutBit = -1;
 
   Preslice<aod::TrackAssoc> trackAssocsPerCollision = aod::track_association::collisionId;
 
@@ -1298,7 +1298,7 @@ struct AnalysisSameEventPairing {
   o2::base::MatLayerCylSet* fLUT = nullptr;
   TH1D* ResoFlowSP = nullptr;
   TH1D* ResoFlowEP = nullptr;
-  int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
+  int fCurrentRun = -1; // needed to detect if the run changed and trigger update of calibrations etc.
 
   OutputObj<THashList> fOutputList{"output"};
 
@@ -1352,22 +1352,22 @@ struct AnalysisSameEventPairing {
 
   // keep histogram class names in maps, so we don't have to buld their names in the pair loops
   std::map<int, std::vector<TString>> fTrackHistNames;
-  std::map<int, std::vector<TString>> fMuonHistNames;
+  // std::map<int, std::vector<TString>> fMuonHistNames;
   std::map<int, std::vector<TString>> fTrackMuonHistNames; // for electron-muon pairs: key = iTrack * fNCutsMuon + iMuon
 
   std::vector<AnalysisCompositeCut> fPairCuts;
   AnalysisCompositeCut fMCGenAccCut;
   // bool fUseMCGenAccCut = false;
 
-  uint32_t fTrackFilterMask; // mask for the track cuts required in this task to be applied on the barrel cuts produced upstream
-  uint32_t fMuonFilterMask;  // mask for the muon cuts required in this task to be applied on the muon cuts produced upstream
-  int fNCutsBarrel;
-  int fNCutsMuon;
-  int fNPairCuts;
+  uint32_t fTrackFilterMask = 0; // mask for the track cuts required in this task to be applied on the barrel cuts produced upstream
+  uint32_t fMuonFilterMask = 0;  // mask for the muon cuts required in this task to be applied on the muon cuts produced upstream
+  int fNCutsBarrel = 0;
+  int fNCutsMuon = 0;
+  int fNPairCuts = 0;
   bool fHasTwoProngGenMCsignals = false;
 
-  bool fEnableBarrelHistos;
-  bool fEnableBarrelMuonHistos;
+  bool fEnableBarrelHistos = false;
+  bool fEnableBarrelMuonHistos = false;
 
   std::vector<TString> fTrackCuts; // barrel cut names, used in EMu histogram filling
   std::vector<TString> fMuonCuts;  // muon cut names, used in EMu histogram filling
@@ -1459,7 +1459,6 @@ struct AnalysisSameEventPairing {
             // if there are pair cuts specified, assign hist directories for each barrel cut - pair cut combination
             // NOTE: This could possibly lead to large histogram outputs. It is strongly advised to use pair cuts only
             //   if you know what you are doing.
-            TString cutNamesStr = fConfigOptions.pair.value;
             if (!cutNamesStr.IsNull()) { // if pair cuts
               std::unique_ptr<TObjArray> objArrayPair(cutNamesStr.Tokenize(","));
               fNPairCuts = objArrayPair->GetEntries();
@@ -1772,7 +1771,6 @@ struct AnalysisSameEventPairing {
               VarManager::ResetValues(VarManager::kVertexingLxyProjectedRecalculatePV, VarManager::kVertexingLxyProjectedRecalculatePV + 1);
               VarManager::ResetValues(VarManager::kVertexingTauxyProjectedPoleJPsiMassRecalculatePV, VarManager::kVertexingTauxyProjectedPoleJPsiMassRecalculatePV + 1);
               // cout << "primary vertex (before): x -> " << event.posX() << " y -> " << event.posY() << " z -> " << event.posZ() << endl;
-              o2::dataformats::VertexBase pvRefit;
               bool ok = refitPVWithPVertexer(event, tracks, t1, t2, pvRefit);
               if (ok)
                 VarManager::FillPairVertexingRecomputePV<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, pvRefit);
@@ -1803,8 +1801,8 @@ struct AnalysisSameEventPairing {
           }
         }
         // Fill normal histograms
-        bool isAmbiInBunch = (twoTrackFilter & (1 << 28)) || (twoTrackFilter & (1 << 29));
-        bool isAmbiOutOfBunch = (twoTrackFilter & (1 << 30)) || (twoTrackFilter & (1 << 31));
+        bool isAmbiInBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 28)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 29));
+        bool isAmbiOutOfBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 30)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31));
 
         for (int icut = 0; icut < ncuts; icut++) { // loop over cut definitions
           if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
