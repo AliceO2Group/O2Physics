@@ -208,10 +208,11 @@ struct HfProducerCharmHadronsCharmFemtoDream {
       initMl(mlDstar, hfMlResponseDstar, withMl);
     }
     hfEvSel.init(registry, &zorroSummary);
-    registry.add("events", ";stage (0=all,1=accepted);events", kTH1F,
-                 {{2, -0.5, 1.5}});
-    registry.add("candidates", ";species (0=D0,1=D0bar,2=Dstar+,3=Dstar-);rows",
-                 kTH1F, {{4, -0.5, 3.5}});
+    const AxisSpec eventStage{2, -0.5, 1.5, "stage (0=all,1=accepted)"};
+    const AxisSpec candidateSpecies{
+        4, -0.5, 3.5, "species (0=D0,1=D0bar,2=Dstar+,3=Dstar-)"};
+    registry.add("events", "Events", kTH1F, {eventStage});
+    registry.add("candidates", "Candidates", kTH1F, {candidateSpecies});
   }
 
   template <o2::hf_centrality::CentralityEstimator CentEstimator,
