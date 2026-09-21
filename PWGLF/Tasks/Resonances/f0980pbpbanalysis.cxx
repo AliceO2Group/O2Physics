@@ -361,7 +361,7 @@ struct F0980pbpbanalysis {
 
   // Event selection
   template <typename TCollision>
-  bool eventSelected(TCollision collision, const bool QA)
+  bool eventSelected(const TCollision& collision, const bool QA)
   {
     if (QAConfig.cfgQAEventCut && QA)
       fillQA(false, collision, 1);
@@ -438,7 +438,7 @@ struct F0980pbpbanalysis {
 
   // Track selection
   template <typename TrackType>
-  bool trackSelected(const TrackType track, const bool QA)
+  bool trackSelected(const TrackType& track, const bool QA)
   {
     if (QAConfig.cfgQATrackCut && QA)
       fillQA(false, track, 3);
@@ -519,7 +519,7 @@ struct F0980pbpbanalysis {
 
   // PID selection
   template <typename TrackType>
-  bool selectionPID(const TrackType track, const bool QA)
+  bool selectionPID(const TrackType& track, const bool QA)
   {
     if (QA)
       fillQA(false, track, 4);
@@ -580,7 +580,7 @@ struct F0980pbpbanalysis {
   } // PID selection
 
   template <typename TrackType1, typename TrackType2>
-  bool pairAngleSelection(const TrackType1 track1, const TrackType2 track2)
+  bool pairAngleSelection(const TrackType1& track1, const TrackType2& track2)
   {
     double pt1, pt2, pz1, pz2, p1, p2, angle;
     pt1 = track1.pt();
@@ -597,7 +597,7 @@ struct F0980pbpbanalysis {
   }
 
   template <typename TrackType>
-  float getTpcNSigma(const TrackType track)
+  float getTpcNSigma(const TrackType& track)
   {
     if (cfgListPtl == PtlList::PtlPion) {
       return track.tpcNSigmaPi();
@@ -607,7 +607,7 @@ struct F0980pbpbanalysis {
   }
 
   template <typename TrackType>
-  float getTofNSigma(const TrackType track)
+  float getTofNSigma(const TrackType& track)
   {
     if (cfgListPtl == PtlList::PtlPion) {
       return track.tofNSigmaPi();

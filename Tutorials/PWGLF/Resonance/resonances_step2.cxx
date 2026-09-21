@@ -96,7 +96,7 @@ struct resonances_tutorial {
 
   // Track selection
   template <typename TrackType>
-  bool trackCut(const TrackType track)
+  bool trackCut(const TrackType& track)
   {
     // basic track cuts
     if (std::abs(track.pt()) < cMinPtcut)
@@ -133,7 +133,7 @@ struct resonances_tutorial {
   void fillHistograms(const CollisionType& collision, const TracksType& dTracks1, const TracksType& dTracks2)
   {
     auto multiplicity = collision.cent();
-    for (auto track1 : dTracks1) { // loop over all dTracks1
+    for (const auto& track1 : dTracks1) { // loop over all dTracks1
       if (!trackCut(track1) || !selectionPID(track1)) {
         continue; // track selection and PID selection
       }
@@ -145,7 +145,7 @@ struct resonances_tutorial {
       if (track1.hasTOF()) {
         histos.fill(HIST("hNsigmaKaonTOF"), track1.tofNSigmaKa());
       }
-      for (auto track2 : dTracks2) { // loop over all dTracks2
+      for (const auto& track2 : dTracks2) { // loop over all dTracks2
         if (!trackCut(track2) || !selectionPID(track2)) {
           continue; // track selection and PID selection
         }

@@ -68,14 +68,14 @@ struct TOFCalibConfig {
   }
 
   template <typename VType>
-  void getCfg(o2::framework::InitContext& initContext, const std::string name, VType& v, const std::string task)
+  void getCfg(o2::framework::InitContext& initContext, const std::string& name, VType& v, const std::string& task)
   {
     if (!o2::common::core::getTaskOptionValue(initContext, task, name, v, false)) {
       LOG(fatal) << "Could not get " << name << " from " << task << " task";
     }
   }
 
-  void inheritFromBaseTask(o2::framework::InitContext& initContext, const std::string task = "tof-signal")
+  void inheritFromBaseTask(o2::framework::InitContext& initContext, const std::string& task = "tof-signal")
   {
     mInitMode = 2;
     getCfg(initContext, "ccdb-url", mUrl, task);

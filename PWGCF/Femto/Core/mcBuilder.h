@@ -105,22 +105,28 @@ struct ConfMcCollisionFilters : o2::framework::ConfigurableGroup {
 template <auto& Prefix>
 struct ConfMcParticleSelection : o2::framework::ConfigurableGroup {
   std::string prefix = std::string(Prefix);
-  // kinematic cuts for filtering tracks
+  // kinematic cuts
   o2::framework::Configurable<float> ptMin{"ptMin", 0.2f, "Minimum pT"};
   o2::framework::Configurable<float> ptMax{"ptMax", 6.f, "Maximum pT"};
   o2::framework::Configurable<float> etaMin{"etaMin", -0.9f, "Minimum eta"};
   o2::framework::Configurable<float> etaMax{"etaMax", 0.9f, "Maximum eta"};
   o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};
   o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};
+  // pdg code and charge
   o2::framework::Configurable<int> pdgCodeAbs{"pdgCodeAbs", 2212, "Absolute value of PDG code. Set sign of charge to -1 for antiparticle."};
   o2::framework::Configurable<int> chargeSign{"chargeSign", 1, "Particle charge sign: +1 for positive, -1 for negative, 0 for both"};
+  // origin
+  o2::framework::Configurable<bool> requireOrigin{"requireOrigin", false, "If true, only particles with the origin given in 'origin' are selected"};
+  o2::framework::Configurable<int> origin{"origin", static_cast<int>(modes::McOrigin::kPhysicalPrimary), "Required mc origin, only used if requireOrigin is true (see modes::McOrigin; 2: physical primary)"};
 };
 
 constexpr const char PrefixMcParticleSelection1[] = "McParticleSelection1";
 constexpr const char PrefixMcParticleSelection2[] = "McParticleSelection2";
+constexpr const char PrefixMcParticleSelection3[] = "McParticleSelection3";
 
 using ConfMcParticleSelection1 = ConfMcParticleSelection<PrefixMcParticleSelection1>;
 using ConfMcParticleSelection2 = ConfMcParticleSelection<PrefixMcParticleSelection2>;
+using ConfMcParticleSelection3 = ConfMcParticleSelection<PrefixMcParticleSelection3>;
 
 class McBuilder
 {
@@ -284,9 +290,14 @@ class McBuilder
     this->getOrCreateMcParticleRow<system>(mcParticle, mcParticles, mcCol, mcProducts);
   }
 
-  /// Write the generated primary charged particles needed for the dNch/deta calculation
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
-  void fillMcPassThrough(T1 const& mcCols, T2 const& mcParticles, T3& perMcCollision, T4& mcProducts, T5& pdgDb)
+  /// Write all generated physical primaries within the eta acceptance.
+  /// No charge requirement is applied here: neutral primaries (e.g. Lambdas) are needed for generator-level
+  /// pair triggers. Charge (and any other) selection has to be done downstream.
+  /// NOTE: FMcParticles also contains rows created through reco labels (secondaries, particles outside the
+  ///       acceptance), so a dNch/deta loop must still require origin == kPhysicalPrimary, a charged pdg code
+  ///       and the eta acceptance
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4>
+  void fillMcPassThrough(T1 const& mcCols, T2 const& mcParticles, T3& perMcCollision, T4& mcProducts)
   {
     if (!mPassThrough) {
       return;
@@ -298,10 +309,6 @@ class McBuilder
       auto particlesThisCollision = mcParticles.sliceBy(perMcCollision, mcCol.globalIndex());
       for (const auto& mcParticle : particlesThisCollision) {
         if (!mcParticle.isPhysicalPrimary() || std::fabs(mcParticle.eta()) > mEtaAcceptanceMcReco) {
-          continue;
-        }
-        const auto* pdgParticle = pdgDb->GetParticle(mcParticle.pdgCode());
-        if (pdgParticle == nullptr || std::fabs(pdgParticle->Charge()) < o2::constants::math::Almost0) {
           continue;
         }
         // NOTE: full mcParticles table, never the slice - the ancestry walk resolves global indices
@@ -748,6 +755,182 @@ class McBuilder
   std::unordered_map<int64_t, int64_t> mMcMotherMap;
   std::unordered_map<int64_t, int64_t> mMcPartonicMotherMap;
 };
+
+struct McBuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {
+  o2::framework::Produces<o2::aod::StoredFMcCols> producedMcCollisions;
+  o2::framework::Produces<o2::aod::StoredFMcParticles> producedMcParticles;
+  o2::framework::Produces<o2::aod::StoredFMcMothers> producedMothers;
+  o2::framework::Produces<o2::aod::StoredFMcPartMoths> producedPartonicMothers;
+  o2::framework::Produces<o2::aod::StoredFMcMotherLabels> producedMcMotherLabels;
+
+  o2::framework::Produces<o2::aod::StoredFColLabels> producedCollisionLabels;
+  o2::framework::Produces<o2::aod::StoredFTrackLabels> producedTrackLabels;
+};
+
+struct ConfMcTablesDerivedToDerived : o2::framework::ConfigurableGroup {
+  std::string prefix = std::string("McTables");
+  o2::framework::Configurable<bool> requireMcLabel{"requireMcLabel", false, "Reject particles without an associated MC particle instead of writing a -1 label"}; // dummy configuration for now
+};
+
+/// Copies MC information from one femto derived file into another.
+/// The ancestry is already resolved upstream (FMcMothers / FMcPartMoths /
+/// FMcMotherLabels), so this only remaps indices: each source row is copied on
+/// first use and cached for the rest of the dataframe.
+class McBuilderDerivedToDerived
+{
+ public:
+  McBuilderDerivedToDerived() = default;
+  ~McBuilderDerivedToDerived() = default;
+
+  template <typename T>
+  void init(T& config)
+  {
+    LOG(info) << "Initialize derived-to-derived monte carlo builder...";
+    mRequireMcLabel = config.requireMcLabel.value;
+    LOG(info) << "Initialization done...";
+  }
+
+  /// Write one FColLabels row. Call exactly once per produced collision,
+  /// directly after collisionBuilder.processCollision().
+  template <typename T1, typename T2, typename T3>
+  void fillCollisionWithLabel(T1 const& col, T2 const& /*mcCols*/, T3& mcProducts)
+  {
+    if (!col.has_fMcCol()) {
+      mcProducts.producedCollisionLabels(-1);
+      return;
+    }
+    auto mcCol = col.template fMcCol_as<T2>();
+    mcProducts.producedCollisionLabels(this->getOrCreateMcCollisionRow(mcCol, mcProducts));
+  }
+
+  /// True if this track has no MC particle and we are configured to drop such tracks.
+  template <typename T>
+  bool rejectParticle(T const& particle) const
+  {
+    return mRequireMcLabel && !particle.has_fMcParticle();
+  }
+
+  /// Write one FTrackLabels row. Call exactly once per produced track row.
+  /// mcParticles must be joined with FMcMotherLabels so the mother indices resolve.
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
+  void fillTrackWithLabel(T1 const& track, T2 const& mcCols, T3 const& /*mcParticles*/, T4 const& mcMothers, T5 const& mcPartonicMothers, T6& mcProducts)
+  {
+    if (!track.has_fMcParticle()) {
+      mcProducts.producedTrackLabels(-1);
+      return;
+    }
+    auto mcParticle = track.template fMcParticle_as<T3>();
+    mcProducts.producedTrackLabels(
+      this->getOrCreateMcParticleRow(mcParticle, mcCols, mcMothers, mcPartonicMothers, mcProducts));
+  }
+
+  template <typename T1, typename T2>
+  void reset(T1 const& mcCols, T2 const& mcParticles)
+  {
+    mCollisionMap.clear();
+    mCollisionMap.reserve(mcCols.size());
+    mMcParticleMap.clear();
+    mMcParticleMap.reserve(mcParticles.size());
+    mMcMotherMap.clear();
+    mMcMotherMap.reserve(mcParticles.size());
+    mMcPartonicMotherMap.clear();
+    mMcPartonicMotherMap.reserve(mcParticles.size());
+  }
+
+ private:
+  template <typename T1, typename T2>
+  int64_t getOrCreateMcCollisionRow(T1 const& mcCol, T2& mcProducts)
+  {
+    const int64_t gid = mcCol.globalIndex();
+    auto it = mCollisionMap.find(gid);
+    if (it != mCollisionMap.end()) {
+      return it->second;
+    }
+    mcProducts.producedMcCollisions(mcCol.posZ(),
+                                    mcCol.mult(),
+                                    mcCol.cent());
+    const int64_t row = mcProducts.producedMcCollisions.lastIndex();
+    mCollisionMap.emplace(gid, row);
+    return row;
+  }
+
+  /// Find-or-create the FMcParticles row. On first creation the mother and
+  /// partonic mother rows are copied and the single matching FMcMotherLabels row
+  /// is written, so the two tables stay in lockstep exactly as in McBuilder.
+  template <typename T1, typename T2, typename T3, typename T4, typename T5>
+  int64_t getOrCreateMcParticleRow(T1 const& mcParticle, T2 const& /*mcCols*/, T3 const& /*mcMothers*/, T4 const& /*mcPartonicMothers*/, T5& mcProducts)
+  {
+    const int64_t gid = mcParticle.globalIndex();
+    auto it = mMcParticleMap.find(gid);
+    if (it != mMcParticleMap.end()) {
+      return it->second;
+    }
+
+    // NOTE: the MC collision of the particle, not of the reconstructed collision.
+    // These differ for wrongly associated particles, which is the point of keeping it.
+    int64_t mcColId = -1;
+    if (mcParticle.has_fMcCol()) {
+      auto mcCol = mcParticle.template fMcCol_as<T2>();
+      mcColId = this->getOrCreateMcCollisionRow(mcCol, mcProducts);
+    }
+
+    mcProducts.producedMcParticles(mcColId,
+                                   mcParticle.origin(),
+                                   mcParticle.pdgCode(),
+                                   mcParticle.signedPt(),
+                                   mcParticle.eta(),
+                                   mcParticle.phi());
+    const int64_t row = mcProducts.producedMcParticles.lastIndex();
+    mMcParticleMap.emplace(gid, row);
+
+    // --- mother ---
+    int64_t mcMotherRow = -1;
+    if (mcParticle.has_fMcMother()) {
+      auto mother = mcParticle.template fMcMother_as<T3>();
+      const int64_t motherGid = mother.globalIndex();
+      auto itM = mMcMotherMap.find(motherGid);
+      if (itM != mMcMotherMap.end()) {
+        mcMotherRow = itM->second;
+      } else {
+        mcProducts.producedMothers(mother.origin(),
+                                   mother.pdgCode(),
+                                   mother.signedPt(),
+                                   mother.eta(),
+                                   mother.phi());
+        mcMotherRow = mcProducts.producedMothers.lastIndex();
+        mMcMotherMap.emplace(motherGid, mcMotherRow);
+      }
+    }
+
+    // --- partonic mother ---
+    int64_t mcPartonicMotherRow = -1;
+    if (mcParticle.has_fMcPartMoth()) {
+      auto partonicMother = mcParticle.template fMcPartMoth_as<T4>();
+      const int64_t partonicGid = partonicMother.globalIndex();
+      auto itPM = mMcPartonicMotherMap.find(partonicGid);
+      if (itPM != mMcPartonicMotherMap.end()) {
+        mcPartonicMotherRow = itPM->second;
+      } else {
+        mcProducts.producedPartonicMothers(partonicMother.pdgCode());
+        mcPartonicMotherRow = mcProducts.producedPartonicMothers.lastIndex();
+        mMcPartonicMotherMap.emplace(partonicGid, mcPartonicMotherRow);
+      }
+    }
+
+    // exactly one FMcMotherLabels row per FMcParticles row, written here and only here
+    mcProducts.producedMcMotherLabels(mcMotherRow, mcPartonicMotherRow);
+
+    return row;
+  }
+
+  bool mRequireMcLabel = false;
+
+  std::unordered_map<int64_t, int64_t> mCollisionMap;
+  std::unordered_map<int64_t, int64_t> mMcParticleMap;
+  std::unordered_map<int64_t, int64_t> mMcMotherMap;
+  std::unordered_map<int64_t, int64_t> mMcPartonicMotherMap;
+};
+
 } // namespace o2::analysis::femto::mcbuilder
 
 #endif // PWGCF_FEMTO_CORE_MCBUILDER_H_

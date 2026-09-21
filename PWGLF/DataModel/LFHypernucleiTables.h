@@ -38,6 +38,8 @@ DECLARE_SOA_COLUMN(MultFT0C, multFT0C, float);                                 /
 DECLARE_SOA_COLUMN(PsiTPC, psiTPC, float);                                     // Psi with TPC estimator
 DECLARE_SOA_COLUMN(MultTPC, multTPC, float);                                   // Multiplicity with TPC estimator
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                                // Collision index
+DECLARE_SOA_INDEX_COLUMN_FULL(HeTrack, heTrack, int, Tracks, "_He");           // Original helium daughter track
+DECLARE_SOA_INDEX_COLUMN_FULL(PiTrack, piTrack, int, Tracks, "_Pi");           // Original pion daughter track
 
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t);                    // Run number
 DECLARE_SOA_COLUMN(IsMatter, isMatter, bool);                         // bool: true for matter
@@ -161,9 +163,41 @@ DECLARE_SOA_TABLE(MCHypCands, "AOD", "MCHYPCANDS",
                   hyperrec::IsSurvEvSel,
                   hyperrec::IsTwoBodyDecay, aod::mcparticle::StatusCode);
 
+DECLARE_SOA_TABLE(MCHypCandsWColl, "AOD", "MCHYPCANDSWCOLL",
+                  o2::soa::Index<>,
+                  hyperrec::CollisionId, hyperrec::HeTrackId, hyperrec::PiTrackId,
+                  hyperrec::CentralityFT0A, hyperrec::CentralityFT0C, hyperrec::CentralityFT0M,
+                  hyperrec::TrackOccupancyInTimeRange, hyperrec::Ft0cOccupancyInTimeRange,
+                  hyperrec::XPrimVtx, hyperrec::YPrimVtx, hyperrec::ZPrimVtx,
+
+                  hyperrec::RunNumber, hyperrec::IsMatter,
+                  hyperrec::PtHe3, hyperrec::PhiHe3, hyperrec::EtaHe3,
+                  hyperrec::PtPi, hyperrec::PhiPi, hyperrec::EtaPi,
+                  hyperrec::XDecVtx, hyperrec::YDecVtx, hyperrec::ZDecVtx,
+                  hyperrec::DcaV0Daug, hyperrec::DcaHe, hyperrec::DcaPi,
+                  hyperrec::NSigmaHe, hyperrec::NTPCclusHe, hyperrec::NTPCclusPi, hyperrec::NTPCpidClusHe, hyperrec::NTPCpidClusPi, hyperrec::NTPCCrossedRowsHe, hyperrec::NTPCCrossedRowsPi,
+                  hyperrec::TpcMomHe, hyperrec::TpcMomPi, hyperrec::TpcSignalHe, hyperrec::TpcSignalPi, hyperrec::TpcChi2He, hyperrec::ItsChi2He, hyperrec::ItsChi2Pi,
+                  hyperrec::TofMass,
+                  hyperrec::ItsClusterSizesHe, hyperrec::ItsClusterSizesPi,
+                  hyperrec::Flags, hyperrec::TrackedClSize,
+                  hyperrec::GenPt,
+                  hyperrec::GenPhi,
+                  hyperrec::GenEta,
+                  hyperrec::GenPtHe3,
+                  hyperrec::GenXDecVtx,
+                  hyperrec::GenYDecVtx,
+                  hyperrec::GenZDecVtx,
+                  hyperrec::IsReco,
+                  hyperrec::IsFakeHeOnITSLayer,
+                  hyperrec::IsSignal,
+                  hyperrec::IsRecoMCCollision,
+                  hyperrec::IsSurvEvSel,
+                  hyperrec::IsTwoBodyDecay, aod::mcparticle::StatusCode);
+
 DECLARE_SOA_TABLE(DataHypCandsWColl, "AOD", "HYPCANDSWCOLL",
                   o2::soa::Index<>,
-                  hyperrec::CollisionId, hyperrec::CentralityFT0A, hyperrec::CentralityFT0C, hyperrec::CentralityFT0M,
+                  hyperrec::CollisionId, hyperrec::HeTrackId, hyperrec::PiTrackId,
+                  hyperrec::CentralityFT0A, hyperrec::CentralityFT0C, hyperrec::CentralityFT0M,
                   hyperrec::TrackOccupancyInTimeRange, hyperrec::Ft0cOccupancyInTimeRange,
                   hyperrec::XPrimVtx, hyperrec::YPrimVtx, hyperrec::ZPrimVtx,
 
@@ -181,6 +215,7 @@ DECLARE_SOA_TABLE(DataHypCandsWColl, "AOD", "HYPCANDSWCOLL",
 using DataHypCand = DataHypCands::iterator;
 using DataHypCandFlow = DataHypCandsFlow::iterator;
 using MCHypCand = MCHypCands::iterator;
+using MCHypCandWColl = MCHypCandsWColl::iterator;
 using DataHypCandWColl = DataHypCandsWColl::iterator;
 
 namespace hyperkink

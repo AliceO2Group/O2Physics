@@ -75,7 +75,14 @@ struct zdc2stagecalibration {
   Configurable<std::string> confGainPath{"confGainPath", "", "CCDB path to the run-wise stage-1 gain map"};
   Configurable<bool> useSpatialCalib{"useSpatialCalib", false, "use ZDC spatial calibration"};
   Configurable<std::string> confSpatialPath{"confSpatialPath", "", "CCDB path to ZDC spatial calibration"};
+  Configurable<bool> deriveSpatialCalib{"deriveSpatialCalib", false, "store spatial regression moments after gain correction"};
+  Configurable<bool> deriveQRecentering{"deriveQRecentering", false, "store Q-vector recentering regression moments after gain and spatial correction"};
+  Configurable<bool> useQRecentering{"useQRecentering", false, "apply Q-vector recentering calibration"};
+  Configurable<std::string> confQRecenteringPath{"confQRecenteringPath", "", "CCDB path to the run-wise Q-vector recentering coefficients"};
 
+  Configurable<int> cfgSpatialCalibBins{
+    "cfgSpatialCalibBins", 30,
+    "number of bins per cross coordinate for spatial calibration"};
   struct : ConfigurableGroup {
     Configurable<bool> requireRCTFlagChecker{"requireRCTFlagChecker", true, "Check event quality in run condition table"};
     Configurable<std::string> cfgEvtRCTFlagCheckerLabel{"cfgEvtRCTFlagCheckerLabel", "CBT", "Evt sel: RCT flag checker label"};
@@ -90,6 +97,12 @@ struct zdc2stagecalibration {
   uint64_t eorTimestamp = 0;
   TH2D* gainprofile = nullptr;
   TH3D* spatialprofile = nullptr;
+  TH3D* qRecenteringProfile = nullptr;
+
+  static constexpr int kQRecenteringNFeatures = 21;
+  static constexpr int kQRecenteringNMatrixMoments = kQRecenteringNFeatures * (kQRecenteringNFeatures + 1) / 2;
+  static constexpr int kQRecenteringNComponents = 4;
+  static constexpr int kQRecenteringNMoments = kQRecenteringNMatrixMoments + kQRecenteringNComponents * kQRecenteringNFeatures;
 
   void init(o2::framework::InitContext&)
   {
@@ -98,11 +111,20 @@ struct zdc2stagecalibration {
     const int nTimeBins = static_cast<int>(std::ceil(cfgMaxRunHours.value * 60.f / cfgTimeSliceMinutes.value));
     AxisSpec timeAxis = {nTimeBins, 0.0, cfgMaxRunHours.value, "time from SOR (h)"};
     AxisSpec towerAxis = {4, 0.0, 4.0, "tower"};
-    AxisSpec crossCoordAxis = {2, 0.0, 2.0, "coordinate"};
-    AxisSpec ratioAxis = {240, 0.0, 2.4, "#Sigma tower/common"};
     AxisSpec crossAxis = {120, -1.0, 1.0, "cross asymmetry"};
     AxisSpec momentAxis = {15, 0.0, 15.0, "regression moment"};
+    AxisSpec spatialMomentAxis = {6, 0.0, 6.0, "normalized pair regression moment"};
+    AxisSpec spatialCalibAxis = {cfgSpatialCalibBins.value, -1.0, 1.0, "cross asymmetry"};
     AxisSpec phiAxis = {72, -3.14159265358979323846, 3.14159265358979323846, "#phi"};
+    AxisSpec crossCoordAxis = {2, 0.0, 2.0, "coordinate"};
+    AxisSpec ratioAxis = {240, 0.0, 2.4, "#Sigma tower/common"};
+    AxisSpec qRecenteringMomentAxis = {kQRecenteringNMoments, 0.0, static_cast<double>(kQRecenteringNMoments), "regression moment"};
+    AxisSpec centralityAxis = {80, 0.0, 80.0, "centrality (%)"};
+    AxisSpec vertexXYAxis = {100, -0.5, 0.5, "vertex x/y (cm)"};
+    AxisSpec vertexZAxis = {100, -10.0, 10.0, "vertex z (cm)"};
+    AxisSpec qComponentAxis = {4, 0.0, 4.0, "Q component"};
+    AxisSpec qCorrelationComponentAxis = {4, 0.0, 4.0, "A-C correlation component"};
+    AxisSpec qValueAxis = {200, -4.0, 4.0, "Q"};
 
     histos.add("hEvtSelInfo", "hEvtSelInfo", kTH1F, {{10, 0.0, 10.0}});
     auto hEvtSelInfo = histos.get<TH1>(HIST("hEvtSelInfo"));
@@ -141,10 +163,61 @@ struct zdc2stagecalibration {
     histos.add("PhiQA/hPhiAfterGainZNC", "ZNC #phi after gain calibration;#phi;events", kTH1F, {phiAxis});
     histos.add("PhiQA/hPhiAfterSpatialZNA", "ZNA #phi after spatial calibration;#phi;events", kTH1F, {phiAxis});
     histos.add("PhiQA/hPhiAfterSpatialZNC", "ZNC #phi after spatial calibration;#phi;events", kTH1F, {phiAxis});
+    histos.add("PhiQA/hPhiRawVsCentralityZNA", "ZNA #phi raw vs centrality;centrality (%);#phi", kTH2F, {centralityAxis, phiAxis});
+    histos.add("PhiQA/hPhiRawVsCentralityZNC", "ZNC #phi raw vs centrality;centrality (%);#phi", kTH2F, {centralityAxis, phiAxis});
+    histos.add("PhiQA/hPhiAfterGainVsCentralityZNA", "ZNA #phi after gain vs centrality;centrality (%);#phi", kTH2F, {centralityAxis, phiAxis});
+    histos.add("PhiQA/hPhiAfterGainVsCentralityZNC", "ZNC #phi after gain vs centrality;centrality (%);#phi", kTH2F, {centralityAxis, phiAxis});
+    histos.add("PhiQA/hPhiAfterSpatialVsCentralityZNA", "ZNA #phi after spatial calibration vs centrality;centrality (%);#phi", kTH2F, {centralityAxis, phiAxis});
+    histos.add("PhiQA/hPhiAfterSpatialVsCentralityZNC", "ZNC #phi after spatial calibration vs centrality;centrality (%);#phi", kTH2F, {centralityAxis, phiAxis});
 
     // Stage-1 correction input. For each time bin the first 10 y bins contain sum(T_i*T_j), the next 4 contain sum(C*T_i), and the last contains the event count.
     histos.add("GainCalibration/hGainMomentsZNA", "ZNA linear-regression moments;time from SOR (h);moment index", kTH2D, {timeAxis, momentAxis});
     histos.add("GainCalibration/hGainMomentsZNC", "ZNC linear-regression moments;time from SOR (h);moment index", kTH2D, {timeAxis, momentAxis});
+    // Normalized two-pair spatial regression moments. For each (Xcross,Ycross) cell:
+    // u=(T1+T4)/C, v=(T2+T3)/C, and moments are u^2, u*v, v^2, u, v, N.
+    histos.add("SpatialCalibration/hSpatialMomentsZNA", "ZNA normalized pair spatial regression moments;X cross;Y cross;moment index", kTH3D, {spatialCalibAxis, spatialCalibAxis, spatialMomentAxis});
+    histos.add("SpatialCalibration/hSpatialMomentsZNC", "ZNC normalized pair spatial regression moments;X cross;Y cross;moment index", kTH3D, {spatialCalibAxis, spatialCalibAxis, spatialMomentAxis});
+
+    // Q-recentering regression moments derived independently in 1% centrality bins.
+    // The centrality feature C is local to each 1% bin: C=2*(cent-(floor(cent)+0.5)), so C is in [-1,1).
+    // Feature order:
+    // 0:1, 1:C, 2:T, 3:Vx, 4:Vy, 5:Vz, 6:C2, 7:T2, 8:Vx2, 9:Vy2, 10:Vz2,
+    // 11:C*T, 12:C*Vx, 13:C*Vy, 14:C*Vz, 15:T*Vx, 16:T*Vy, 17:T*Vz,
+    // 18:Vx*Vy, 19:Vx*Vz, 20:Vy*Vz.
+    // For each 1% centrality bin, moments 0..230 are the upper triangle of sum(X_i X_j),
+    // followed by 4 blocks of 21 sum(X_i Q): QxA, QyA, QxC, QyC.
+    histos.add("QRecenteringCalibration/hRegressionMoments", "Q recentering regression moments;centrality (%);moment index", kTH2D, {centralityAxis, qRecenteringMomentAxis});
+
+    histos.add("QRecenteringQA/pQBeforeVsCentrality", "Q before recentering vs centrality;centrality (%);Q component;<Q>", kTProfile2D, {centralityAxis, qComponentAxis});
+    histos.add("QRecenteringQA/pQBeforeVsTime", "Q before recentering vs time;time from SOR (h);Q component;<Q>", kTProfile2D, {timeAxis, qComponentAxis});
+    histos.add("QRecenteringQA/pQBeforeVsVx", "Q before recentering vs v_{x};v_{x} (cm);Q component;<Q>", kTProfile2D, {vertexXYAxis, qComponentAxis});
+    histos.add("QRecenteringQA/pQBeforeVsVy", "Q before recentering vs v_{y};v_{y} (cm);Q component;<Q>", kTProfile2D, {vertexXYAxis, qComponentAxis});
+    histos.add("QRecenteringQA/pQBeforeVsVz", "Q before recentering vs v_{z};v_{z} (cm);Q component;<Q>", kTProfile2D, {vertexZAxis, qComponentAxis});
+    histos.add("QRecenteringQA/pQAfterVsCentrality", "Q after recentering vs centrality;centrality (%);Q component;<Q>", kTProfile2D, {centralityAxis, qComponentAxis});
+    histos.add("QRecenteringQA/pQAfterVsTime", "Q after recentering vs time;time from SOR (h);Q component;<Q>", kTProfile2D, {timeAxis, qComponentAxis});
+    histos.add("QRecenteringQA/pQAfterVsVx", "Q after recentering vs v_{x};v_{x} (cm);Q component;<Q>", kTProfile2D, {vertexXYAxis, qComponentAxis});
+    histos.add("QRecenteringQA/pQAfterVsVy", "Q after recentering vs v_{y};v_{y} (cm);Q component;<Q>", kTProfile2D, {vertexXYAxis, qComponentAxis});
+    histos.add("QRecenteringQA/pQAfterVsVz", "Q after recentering vs v_{z};v_{z} (cm);Q component;<Q>", kTProfile2D, {vertexZAxis, qComponentAxis});
+
+    // A-C Q-vector correlation QA. These histograms are diagnostic only; no Qx/Qy mixing is applied.
+    histos.add("QCorrelationQA/hQxAQxCBefore", "QxA vs QxC before recentering;Q_{x}^{A};Q_{x}^{C}", kTH2F, {qValueAxis, qValueAxis});
+    histos.add("QCorrelationQA/hQyAQyCBefore", "QyA vs QyC before recentering;Q_{y}^{A};Q_{y}^{C}", kTH2F, {qValueAxis, qValueAxis});
+    histos.add("QCorrelationQA/hQxAQyCBefore", "QxA vs QyC before recentering;Q_{x}^{A};Q_{y}^{C}", kTH2F, {qValueAxis, qValueAxis});
+    histos.add("QCorrelationQA/hQyAQxCBefore", "QyA vs QxC before recentering;Q_{y}^{A};Q_{x}^{C}", kTH2F, {qValueAxis, qValueAxis});
+    histos.add("QCorrelationQA/hQxAQxCAfter", "QxA vs QxC after recentering;Q_{x}^{A};Q_{x}^{C}", kTH2F, {qValueAxis, qValueAxis});
+    histos.add("QCorrelationQA/hQyAQyCAfter", "QyA vs QyC after recentering;Q_{y}^{A};Q_{y}^{C}", kTH2F, {qValueAxis, qValueAxis});
+    histos.add("QCorrelationQA/hQxAQyCAfter", "QxA vs QyC after recentering;Q_{x}^{A};Q_{y}^{C}", kTH2F, {qValueAxis, qValueAxis});
+    histos.add("QCorrelationQA/hQyAQxCAfter", "QyA vs QxC after recentering;Q_{y}^{A};Q_{x}^{C}", kTH2F, {qValueAxis, qValueAxis});
+    histos.add("PhiQA/hPhiAfterRecenteringZNA", "ZNA #phi after Q recentering;#phi;events", kTH1F, {phiAxis});
+    histos.add("PhiQA/hPhiAfterRecenteringZNC", "ZNC #phi after Q recentering;#phi;events", kTH1F, {phiAxis});
+    histos.add("PhiQA/hPhiAfterRecenteringVsCentralityZNA", "ZNA #phi after Q recentering vs centrality;centrality (%);#phi", kTH2F, {centralityAxis, phiAxis});
+    histos.add("PhiQA/hPhiAfterRecenteringVsCentralityZNC", "ZNC #phi after Q recentering vs centrality;centrality (%);#phi", kTH2F, {centralityAxis, phiAxis});
+
+    // A-C Q correlations versus centrality. Component convention:
+    // 0: QxA*QxC, 1: QyA*QyC, 2: QxA*QyC, 3: QyA*QxC.
+    // These are QA only; they are never used in the recentering correction.
+    histos.add("QCorrelationQA/pQACorrelationBeforeVsCentrality", "A-C Q correlations before recentering;centrality (%);correlation component;<Q_{A}Q_{C}>", kTProfile2D, {centralityAxis, qCorrelationComponentAxis});
+    histos.add("QCorrelationQA/pQACorrelationAfterVsCentrality", "A-C Q correlations after recentering;centrality (%);correlation component;<Q_{A}Q_{C}>", kTProfile2D, {centralityAxis, qCorrelationComponentAxis});
 
     ccdb->setURL(cfgCcdbParam.cfgURL);
     ccdb->setCaching(true);
@@ -165,6 +238,7 @@ struct zdc2stagecalibration {
     bcSOR = static_cast<int64_t>(runInfo.orbitSOR) * static_cast<int64_t>(o2::constants::lhc::LHCMaxBunches);
     gainprofile = nullptr;
     spatialprofile = nullptr;
+    qRecenteringProfile = nullptr;
     if (calibrationStage.value == 2 && useGainCallib.value && !confGainPath.value.empty()) {
       gainprofile = ccdb->getForTimeStamp<TH2D>(confGainPath.value, timestamp);
       if (!gainprofile) {
@@ -176,6 +250,12 @@ struct zdc2stagecalibration {
 
       if (!spatialprofile) {
         LOGF(warn, "No ZDC spatial calibration found for run %d at timestamp %llu", runNumber, static_cast<unsigned long long>(timestamp));
+      }
+    }
+    if (calibrationStage.value == 2 && useQRecentering.value && !confQRecenteringPath.value.empty()) {
+      qRecenteringProfile = ccdb->getForTimeStamp<TH3D>(confQRecenteringPath.value, timestamp);
+      if (!qRecenteringProfile) {
+        LOGF(warn, "No ZDC Q-recentering calibration found for run %d at timestamp %llu", runNumber, static_cast<unsigned long long>(timestamp));
       }
     }
   }
@@ -204,6 +284,27 @@ struct zdc2stagecalibration {
       return 1.0;
     }
     return gain;
+  }
+
+  std::array<double, kQRecenteringNFeatures> makeQRecenteringFeatures(float centrality, float timeFromSOR, float vx, float vy, float vz) const
+  {
+    // Recentering is solved independently in each 1% centrality bin.
+    // Keep a local centrality coordinate inside the bin so correlations with time/vertex
+    // are retained without using the global 0-80% centrality scale.
+    const double cent = static_cast<double>(centrality);
+    const double centBinLow = std::floor(cent);
+    const double c = 2.0 * (cent - (centBinLow + 0.5));
+    const double runHours = (eorTimestamp > sorTimestamp) ? static_cast<double>(eorTimestamp - sorTimestamp) * 1.e-3 / 3600.0 : static_cast<double>(cfgMaxRunHours.value);
+    const double t = (runHours > 0.0) ? (2.0 * static_cast<double>(timeFromSOR) / runHours - 1.0) : 0.0;
+    const double x = static_cast<double>(vx) / 0.1;
+    const double y = static_cast<double>(vy) / 0.1;
+    const double z = static_cast<double>(vz) / 10.0;
+
+    return {1.0, c, t, x, y, z,
+            c * c, t * t, x * x, y * y, z * z,
+            c * t, c * x, c * y, c * z,
+            t * x, t * y, t * z,
+            x * y, x * z, y * z};
   }
 
   using MyCollisions = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::Mults, o2::aod::FT0sCorrected, o2::aod::CentFT0Cs>;
@@ -300,6 +401,8 @@ struct zdc2stagecalibration {
     const double phiRawC = std::atan2(rawYC, rawXC);
     histos.fill(HIST("PhiQA/hPhiRawZNA"), phiRawA);
     histos.fill(HIST("PhiQA/hPhiRawZNC"), phiRawC);
+    histos.fill(HIST("PhiQA/hPhiRawVsCentralityZNA"), centrality, phiRawA);
+    histos.fill(HIST("PhiQA/hPhiRawVsCentralityZNC"), centrality, phiRawC);
 
     if (calibrationStage.value == 1) {
       std::array<double, 15> momentsA{};
@@ -359,11 +462,42 @@ struct zdc2stagecalibration {
     const double phiGainC = std::atan2(gainYC, gainXC);
     histos.fill(HIST("PhiQA/hPhiAfterGainZNA"), phiGainA);
     histos.fill(HIST("PhiQA/hPhiAfterGainZNC"), phiGainC);
+    histos.fill(HIST("PhiQA/hPhiAfterGainVsCentralityZNA"), centrality, phiGainA);
+    histos.fill(HIST("PhiQA/hPhiAfterGainVsCentralityZNC"), centrality, phiGainC);
 
     const double crossLookupXA = (znaCorr[3] - znaCorr[0]) / (znaCorr[3] + znaCorr[0]);
     const double crossLookupYA = (znaCorr[2] - znaCorr[1]) / (znaCorr[2] + znaCorr[1]);
     const double crossLookupXC = (zncCorr[3] - zncCorr[0]) / (zncCorr[3] + zncCorr[0]);
     const double crossLookupYC = (zncCorr[2] - zncCorr[1]) / (zncCorr[2] + zncCorr[1]);
+    if (calibrationStage.value == 2 && useGainCallib.value && deriveSpatialCalib.value && !useSpatialCalib.value) {
+
+      const double uA = (znaCorr[0] + znaCorr[3]) / static_cast<double>(znaEnergycommon);
+      const double vA = (znaCorr[1] + znaCorr[2]) / static_cast<double>(znaEnergycommon);
+      const double uC = (zncCorr[0] + zncCorr[3]) / static_cast<double>(zncEnergycommon);
+      const double vC = (zncCorr[1] + zncCorr[2]) / static_cast<double>(zncEnergycommon);
+
+      if (std::isfinite(uA) && std::isfinite(vA) && std::isfinite(uC) && std::isfinite(vC)) {
+        const std::array<double, 6> spatialMomentsA = {
+          uA * uA,
+          uA * vA,
+          vA * vA,
+          uA,
+          vA,
+          1.0};
+        const std::array<double, 6> spatialMomentsC = {
+          uC * uC,
+          uC * vC,
+          vC * vC,
+          uC,
+          vC,
+          1.0};
+
+        for (int i = 0; i < 6; ++i) {
+          histos.fill(HIST("SpatialCalibration/hSpatialMomentsZNA"), crossLookupXA, crossLookupYA, i + 0.5, spatialMomentsA[i]);
+          histos.fill(HIST("SpatialCalibration/hSpatialMomentsZNC"), crossLookupXC, crossLookupYC, i + 0.5, spatialMomentsC[i]);
+        }
+      }
+    }
 
     bool spatialOK = true;
     if (calibrationStage.value == 2 && useSpatialCalib.value) {
@@ -419,6 +553,8 @@ struct zdc2stagecalibration {
     const double phiSpatialC = std::atan2(centroidYC, centroidXC);
     histos.fill(HIST("PhiQA/hPhiAfterSpatialZNA"), phiSpatialA);
     histos.fill(HIST("PhiQA/hPhiAfterSpatialZNC"), phiSpatialC);
+    histos.fill(HIST("PhiQA/hPhiAfterSpatialVsCentralityZNA"), centrality, phiSpatialA);
+    histos.fill(HIST("PhiQA/hPhiAfterSpatialVsCentralityZNC"), centrality, phiSpatialC);
 
     histos.fill(HIST("GainQA/hSumOverCommonVsTimeZNA"), timeFromSOR, ratioA);
     histos.fill(HIST("GainQA/hSumOverCommonVsTimeZNC"), timeFromSOR, ratioC);
@@ -495,9 +631,99 @@ struct zdc2stagecalibration {
       fillTable(false, 0.f, 0.f, 0.f, 0.f);
       return;
     }
-    histos.fill(HIST("hEvtSelInfo"), 7.5);
 
-    fillTable(true, static_cast<float>(qxZDCA), static_cast<float>(qxZDCC), static_cast<float>(qyZDCA), static_cast<float>(qyZDCC));
+    const auto qFeatures = makeQRecenteringFeatures(centrality, timeFromSOR, vx, vy, vz);
+    std::array<double, 4> qValues = {qxZDCA, qyZDCA, qxZDCC, qyZDCC};
+
+    for (int i = 0; i < 4; ++i) {
+      const double component = i + 0.5;
+      histos.fill(HIST("QRecenteringQA/pQBeforeVsCentrality"), centrality, component, qValues[i]);
+      histos.fill(HIST("QRecenteringQA/pQBeforeVsTime"), timeFromSOR, component, qValues[i]);
+      histos.fill(HIST("QRecenteringQA/pQBeforeVsVx"), vx, component, qValues[i]);
+      histos.fill(HIST("QRecenteringQA/pQBeforeVsVy"), vy, component, qValues[i]);
+      histos.fill(HIST("QRecenteringQA/pQBeforeVsVz"), vz, component, qValues[i]);
+    }
+
+    histos.fill(HIST("QCorrelationQA/hQxAQxCBefore"), qValues[0], qValues[2]);
+    histos.fill(HIST("QCorrelationQA/hQyAQyCBefore"), qValues[1], qValues[3]);
+    histos.fill(HIST("QCorrelationQA/hQxAQyCBefore"), qValues[0], qValues[3]);
+    histos.fill(HIST("QCorrelationQA/hQyAQxCBefore"), qValues[1], qValues[2]);
+    histos.fill(HIST("QCorrelationQA/pQACorrelationBeforeVsCentrality"), centrality, 0.5, qValues[0] * qValues[2]);
+    histos.fill(HIST("QCorrelationQA/pQACorrelationBeforeVsCentrality"), centrality, 1.5, qValues[1] * qValues[3]);
+    histos.fill(HIST("QCorrelationQA/pQACorrelationBeforeVsCentrality"), centrality, 2.5, qValues[0] * qValues[3]);
+    histos.fill(HIST("QCorrelationQA/pQACorrelationBeforeVsCentrality"), centrality, 3.5, qValues[1] * qValues[2]);
+
+    if (calibrationStage.value == 2 && useGainCallib.value && useSpatialCalib.value && deriveQRecentering.value && !useQRecentering.value) {
+      int moment = 0;
+      for (int i = 0; i < kQRecenteringNFeatures; ++i) {
+        for (int j = i; j < kQRecenteringNFeatures; ++j) {
+          histos.fill(HIST("QRecenteringCalibration/hRegressionMoments"), centrality, moment + 0.5, qFeatures[i] * qFeatures[j]);
+          ++moment;
+        }
+      }
+      for (int component = 0; component < kQRecenteringNComponents; ++component) {
+        for (int i = 0; i < kQRecenteringNFeatures; ++i) {
+          const int index = kQRecenteringNMatrixMoments + component * kQRecenteringNFeatures + i;
+          histos.fill(HIST("QRecenteringCalibration/hRegressionMoments"), centrality, index + 0.5, qFeatures[i] * qValues[component]);
+        }
+      }
+    }
+
+    bool qRecenteringOK = true;
+    if (calibrationStage.value == 2 && useQRecentering.value) {
+      if (!qRecenteringProfile) {
+        qRecenteringOK = false;
+      } else {
+        for (int component = 0; component < kQRecenteringNComponents; ++component) {
+          double predictedBias = 0.0;
+          for (int i = 0; i < kQRecenteringNFeatures; ++i) {
+            const double coefficient = qRecenteringProfile->GetBinContent(qRecenteringProfile->FindBin(centrality, i + 0.5, component + 0.5));
+            if (!std::isfinite(coefficient)) {
+              qRecenteringOK = false;
+              break;
+            }
+            predictedBias += coefficient * qFeatures[i];
+          }
+          if (!qRecenteringOK || !std::isfinite(predictedBias)) {
+            qRecenteringOK = false;
+            break;
+          }
+          qValues[component] -= predictedBias;
+        }
+      }
+    }
+    if (!qRecenteringOK) {
+      fillTable(false, 0.f, 0.f, 0.f, 0.f);
+      return;
+    }
+
+    for (int i = 0; i < 4; ++i) {
+      const double component = i + 0.5;
+      histos.fill(HIST("QRecenteringQA/pQAfterVsCentrality"), centrality, component, qValues[i]);
+      histos.fill(HIST("QRecenteringQA/pQAfterVsTime"), timeFromSOR, component, qValues[i]);
+      histos.fill(HIST("QRecenteringQA/pQAfterVsVx"), vx, component, qValues[i]);
+      histos.fill(HIST("QRecenteringQA/pQAfterVsVy"), vy, component, qValues[i]);
+      histos.fill(HIST("QRecenteringQA/pQAfterVsVz"), vz, component, qValues[i]);
+    }
+
+    histos.fill(HIST("QCorrelationQA/hQxAQxCAfter"), qValues[0], qValues[2]);
+    histos.fill(HIST("QCorrelationQA/hQyAQyCAfter"), qValues[1], qValues[3]);
+    histos.fill(HIST("QCorrelationQA/hQxAQyCAfter"), qValues[0], qValues[3]);
+    histos.fill(HIST("QCorrelationQA/hQyAQxCAfter"), qValues[1], qValues[2]);
+    histos.fill(HIST("QCorrelationQA/pQACorrelationAfterVsCentrality"), centrality, 0.5, qValues[0] * qValues[2]);
+    histos.fill(HIST("QCorrelationQA/pQACorrelationAfterVsCentrality"), centrality, 1.5, qValues[1] * qValues[3]);
+    histos.fill(HIST("QCorrelationQA/pQACorrelationAfterVsCentrality"), centrality, 2.5, qValues[0] * qValues[3]);
+    histos.fill(HIST("QCorrelationQA/pQACorrelationAfterVsCentrality"), centrality, 3.5, qValues[1] * qValues[2]);
+
+    const double phiRecenteringA = std::atan2(qValues[1], qValues[0]);
+    const double phiRecenteringC = std::atan2(qValues[3], qValues[2]);
+    histos.fill(HIST("PhiQA/hPhiAfterRecenteringZNA"), phiRecenteringA);
+    histos.fill(HIST("PhiQA/hPhiAfterRecenteringZNC"), phiRecenteringC);
+    histos.fill(HIST("PhiQA/hPhiAfterRecenteringVsCentralityZNA"), centrality, phiRecenteringA);
+    histos.fill(HIST("PhiQA/hPhiAfterRecenteringVsCentralityZNC"), centrality, phiRecenteringC);
+
+    histos.fill(HIST("hEvtSelInfo"), 7.5);
+    fillTable(true, static_cast<float>(qValues[0]), static_cast<float>(qValues[2]), static_cast<float>(qValues[1]), static_cast<float>(qValues[3]));
     histos.fill(HIST("hEvtSelInfo"), 8.5);
   }
 };
