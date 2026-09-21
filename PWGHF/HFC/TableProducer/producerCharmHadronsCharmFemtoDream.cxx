@@ -305,7 +305,7 @@ struct HfProducerCharmHadronsCharmFemtoDream {
       rowMasks(hasD0 ? 1 : 0, hasDstar ? 1 : 0, 0);
     }
   }
-  PROCESS_SWITCH(HfProducerCharmHadronsCharmFemtoDream, processD0D0,"D0 only, data", true);
+  PROCESS_SWITCH(HfProducerCharmHadronsCharmFemtoDream, processD0D0, "D0 only, data", true);
 
   void processD0Dstar(Collisions::iterator const& col,
                       aod::BCsWithTimestamps const&, aod::Tracks const&,
@@ -328,7 +328,7 @@ struct HfProducerCharmHadronsCharmFemtoDream {
       rowMasks(hasD0 ? 1 : 0, hasDstar ? 1 : 0, 0);
     }
   }
-  PROCESS_SWITCH(HfProducerCharmHadronsCharmFemtoDream, processD0D0Ml,"D0 with selector ML scores", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsCharmFemtoDream, processD0D0Ml, "D0 with selector ML scores", false);
 
   void processD0DstarMl(Collisions::iterator const& col,
                         aod::BCsWithTimestamps const&, aod::Tracks const&,
@@ -341,7 +341,7 @@ struct HfProducerCharmHadronsCharmFemtoDream {
       rowMasks(hasD0 ? 1 : 0, hasDstar ? 1 : 0, 0);
     }
   }
-  PROCESS_SWITCH(HfProducerCharmHadronsCharmFemtoDream, processD0DstarMl,"D0 and Dstar with selector ML scores", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsCharmFemtoDream, processD0DstarMl, "D0 and Dstar with selector ML scores", false);
 
   void processD0D0WithFT0C(CollisionsWithFT0C::iterator const& col,
                            aod::BCsWithTimestamps const&, aod::Tracks const&,
