@@ -7,4 +7,3 @@ unreadVariable
 unusedStructMember:*.h
 useStlAlgorithm
 variableScope
-unusedFunction:*/lambdaProtonBalanceFunction.cxx:357
