@@ -1773,7 +1773,7 @@ struct QuarkoniaToHyperons {
       float k0shortScore = -1;
       if (mlConfigurations.calculateK0ShortScores) {
         // evaluate machine-learning scores
-        float* k0shortProbability = mlCustomModelK0Short.evalModel(inputFeatures);
+        const std::vector<float> k0shortProbability = mlCustomModelK0Short.evalModel(inputFeatures);
         k0shortScore = k0shortProbability[1];
       } else {
         k0shortScore = v0.k0ShortBDTScore();
@@ -1788,7 +1788,7 @@ struct QuarkoniaToHyperons {
       float lambdaScore = -1;
       if (mlConfigurations.calculateLambdaScores) {
         // evaluate machine-learning scores
-        float* lambdaProbability = mlCustomModelLambda.evalModel(inputFeatures);
+        const std::vector<float> lambdaProbability = mlCustomModelLambda.evalModel(inputFeatures);
         lambdaScore = lambdaProbability[1];
       } else {
         lambdaScore = v0.lambdaBDTScore();
@@ -1803,7 +1803,7 @@ struct QuarkoniaToHyperons {
       float antiLambdaScore = -1;
       if (mlConfigurations.calculateAntiLambdaScores) {
         // evaluate machine-learning scores
-        float* antilambdaProbability = mlCustomModelAntiLambda.evalModel(inputFeatures);
+        const std::vector<float> antilambdaProbability = mlCustomModelAntiLambda.evalModel(inputFeatures);
         antiLambdaScore = antilambdaProbability[1];
       } else {
         antiLambdaScore = v0.antiLambdaBDTScore();

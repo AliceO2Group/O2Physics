@@ -190,8 +190,16 @@ class MlResponse
       LOG(fatal) << "Number of input nodes in the model " << mPaths[nModel] << " is different from the number of input features to be tested (" << numInputNodes << " vs " << numInputFeatures << ")";
     }
 
-    TypeOutputScore* outputPtr = mModels[nModel].template evalModel<TypeOutputScore>(input);
-    return std::vector<TypeOutputScore>{outputPtr, outputPtr + mNClasses};
+    // evalModel returns an owning copy of the (last) output tensor of the model
+    std::vector<TypeOutputScore> output = mModels[nModel].template evalModel<TypeOutputScore>(input);
+    if (output.size() < mNClasses) {
+      LOG(fatal) << "Model " << mPaths[nModel] << " returned " << output.size() << " scores, but " << static_cast<int>(mNClasses) << " classes are expected. Please check your configurables.";
+    }
+    if (output.size() > mNClasses) {
+      // keep only the first mNClasses scores (e.g. single-candidate probabilities of a multi-output model)
+      output.resize(mNClasses);
+    }
+    return output;
   }
 
   /// Get vector with model predictions for a batch of candidates
@@ -221,11 +229,16 @@ class MlResponse
       LOG(fatal) << "Number of input nodes in the model " << mPaths[nModel] << " differs from features per row (" << numInputNodes << " vs " << featuresPerRow << ")";
     }
 
-    TypeOutputScore* outputPtr = mModels[nModel].template evalModel<TypeOutputScore>(input);
-    if (outputPtr == nullptr) {
-      LOG(fatal) << "Batched model evaluation failed for model " << mPaths[nModel];
+    std::vector<TypeOutputScore> output = mModels[nModel].template evalModel<TypeOutputScore>(input);
+    const std::size_t expectedOutputSize = nRows * mNClasses;
+    if (output.size() < expectedOutputSize) {
+      LOG(fatal) << "Model " << mPaths[nModel] << " returned " << output.size() << " scores, but " << expectedOutputSize << " scores are expected for " << nRows << " rows and " << static_cast<int>(mNClasses) << " classes. Please check your configurables.";
     }
-    return std::vector<TypeOutputScore>{outputPtr, outputPtr + nRows * mNClasses};
+    if (output.size() > expectedOutputSize) {
+      // keep only the first scores (e.g. batched probabilities of a multi-output model)
+      output.resize(expectedOutputSize);
+    }
+    return output;
   }
 
   /// ML selections
