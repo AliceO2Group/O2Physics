@@ -64,7 +64,7 @@ enum CandTypeSel {
 static const int nCellsFV0 = 48;
 static const int nInnerCellsFV0 = 32;
 std::array<float, nCellsFV0> rhoLatticeFV0{};
-std::array<float, nCellsFV0> fv0AmplitudeWoCalib{};
+std::array<float, nCellsFV0> rhoLatticeFV0Calibrated{};
 std::array<float, nCellsFV0> calib = {1.01697, 1.122, 1.03854, 1.108, 1.11634, 1.14971, 1.19321, 1.06866, 0.954675, 0.952695, 0.969853, 0.957557, 0.989784, 1.01549, 1.02182, 0.976005, 1.01865, 1.06871, 1.06264, 1.02969, 1.07378, 1.06622, 1.15057, 1.0433, 0.83654, 0.847178, 0.890027, 0.920814, 0.888271, 1.04662, 0.8869, 0.856348, 0.863181, 0.906312, 0.902166, 1.00122, 1.03303, 0.887866, 0.892437, 0.906278, 0.884976, 0.864251, 0.917221, 1.10618, 1.04028, 0.893184, 0.915734, 0.892676};
 std::map<int, int> channelsToRings = {{0, 0}, {1, 1}, {2, 2}, {3, 3}, {4, 7}, {5, 6}, {6, 5}, {7, 4}, {8, 8}, {9, 9}, {10, 10}, {11, 11}, {12, 15}, {13, 14}, {14, 13}, {15, 12}, {16, 16}, {17, 17}, {18, 18}, {19, 19}, {20, 23}, {21, 22}, {22, 21}, {23, 20}, {24, 24}, {25, 25}, {26, 26}, {27, 27}, {28, 31}, {29, 30}, {30, 29}, {31, 28}, {32, 32}, {33, 34}, {34, 36}, {35, 38}, {36, 47}, {37, 45}, {38, 43}, {39, 41}, {40, 33}, {41, 35}, {42, 37}, {43, 39}, {44, 46}, {45, 44}, {46, 42}, {47, 40}};
 
@@ -124,8 +124,6 @@ struct HfTaskFlattenicityD0Lc {
 
   void init(InitContext const&)
   {
-    std::array<bool, 3> doprocess{doprocessData, doprocessMCD0, doprocessMCLc};
-
     hfEvSel.addHistograms(registry);
     registry.add("Flattenicity", "Number of events; 1-#rho; Counter", {kTH1F, {{100, 0, 1}}});
     registry.add("Flattenicity_calibrated", "Number of events; 1-#rho; Counter", {kTH1F, {{100, 0, 1}}});
@@ -462,25 +460,23 @@ struct HfTaskFlattenicityD0Lc {
   }
   PROCESS_SWITCH(HfTaskFlattenicityD0Lc, processMCLc, "Process MC Lc with DCAFitter", false);
 
-  template <typename CollType, typename CandTypeD0, typename CandTypeLc, typename BCsType>
+  template <typename CollType, typename CandTypeD0, typename CandTypeLc>
   void runAnalysisData(CollType const& collisions,
                        CandTypeD0 const& candidatesD0,
                        CandTypeLc const& candidatesLc,
-                       BCsType const& bcs,
-                       TracksWPid const& tracks)
+                       aod::BcFullInfos const&,
+                       TracksWPid const&)
   {
     for (const auto& collision : collisions) {
 
       float centrality{-1.f};
-      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None, BCsType>(collision, centrality, ccdb, registry);
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None, aod::BcFullInfos>(collision, centrality, ccdb, registry);
       hfEvSel.fillHistograms(collision, rejectionMask, centrality);
       if (rejectionMask != 0) {
         continue;
       }
 
-      const float flat = fillFlat<true>(collision, 0);
-      const float flatCalibrated = fillFlat<true>(collision, 1);
-
+      const float flat = fillFlat<true>(collision);
       const auto thisCollId = collision.globalIndex();
 
       // D0
@@ -557,7 +553,6 @@ struct HfTaskFlattenicityD0Lc {
         const auto ptProng2 = candidate.ptProng2();
         const auto decayLength = candidate.decayLength();
         const auto decayLengthXY = candidate.decayLengthXY();
-        const auto chi2PCA = candidate.chi2PCA();
         const auto cpa = candidate.cpa();
         const auto cpaXY = candidate.cpaXY();
 
@@ -619,13 +614,13 @@ struct HfTaskFlattenicityD0Lc {
     }
   }
 
-  template <int ReconstructionType, typename CandTypeD0, typename CollType, typename BCsType>
+  template <int ReconstructionType, typename CandTypeD0, typename CollType>
   void runAnalysisMCD0(CandTypeD0 const& candidatesD0,
                        soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles2prong,
                        TracksSelQuality const&,
                        CollType const& collisions,
                        aod::McCollisions const&,
-                       BCsType const&)
+                       aod::BcFullInfos const&)
   {
     // MC rec.
     for (const auto& candidate : candidatesD0) {
@@ -638,8 +633,7 @@ struct HfTaskFlattenicityD0Lc {
 
       auto collision = candidate.template collision_as<CollType>();
 
-      const float flat = fillFlat<false>(collision, 0);
-      const float flatCalibrated = fillFlat<false>(collision, 1);
+      const float flat = fillFlat<false>(collision);
 
       float massD0{0.f}, massD0bar{0.f};
       massD0 = HfHelper::invMassD0ToPiK(candidate);
@@ -737,8 +731,6 @@ struct HfTaskFlattenicityD0Lc {
       auto ctCandidate = HfHelper::ctD0(candidate);
       auto cpaCandidate = candidate.cpa();
       auto cpaxyCandidate = candidate.cpaXY();
-      int const minItsClustersOfProngs = std::min(trackPos.itsNCls(), trackNeg.itsNCls());
-      int const minTpcCrossedRowsOfProngs = std::min(trackPos.tpcNClsCrossedRows(), trackNeg.tpcNClsCrossedRows());
       if (candidate.isSelD0() >= selectionFlagD0) {
         registry.fill(HIST("MC/D0/hMassSigBkgD0"), massD0, ptCandidate, rapidityCandidate);
         if (candidate.flagMcMatchRec() == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
@@ -812,7 +804,7 @@ struct HfTaskFlattenicityD0Lc {
         float flat{-1.f};
         const auto& recoCollsPerMcColl = collisions.sliceBy(colPerMcCollision, particle.mcCollision().globalIndex());
         for (const auto& recCol : recoCollsPerMcColl) {
-          flat = fillFlat<false>(recCol, 0);
+          flat = fillFlat<false>(recCol);
         }
 
         float ptGenB = -1;
@@ -838,21 +830,20 @@ struct HfTaskFlattenicityD0Lc {
     }
   }
 
-  template <int ReconstructionType, typename CandTypeLc, typename CollType, typename BCsType>
+  template <int ReconstructionType, typename CandTypeLc, typename CollType>
   void runAnalysisMCLc(CandTypeLc const& candidatesLc,
                        soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles3prong,
                        TracksSelQuality const&,
                        CollType const& collisions,
                        aod::McCollisions const&,
-                       BCsType const&)
+                       aod::BcFullInfos const&)
   {
     for (const auto& collision : collisions) {
       // MC Rec.
       const auto thisCollId = collision.globalIndex();
       const auto& groupedLcCandidates = candidatesLc.sliceBy(candLcPerCollision, thisCollId);
 
-      const float flat = fillFlat<true>(collision, 0);
-      const float flatCalibrated = fillFlat<true>(collision, 1);
+      const float flat = fillFlat<true>(collision);
 
       for (const auto& candidate : groupedLcCandidates) {
         if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
@@ -870,12 +861,6 @@ struct HfTaskFlattenicityD0Lc {
           registry.fill(HIST("MC/Lc/hPtGenSig"), particleMother.pt());
 
           const auto pt = candidate.pt();
-          const auto ptProng0 = candidate.ptProng0();
-          const auto ptProng1 = candidate.ptProng1();
-          const auto ptProng2 = candidate.ptProng2();
-          const auto decayLength = candidate.decayLength();
-          const auto chi2PCA = candidate.chi2PCA();
-          const auto cpa = candidate.cpa();
           const auto originType = candidate.originMcRec();
           const auto ptRecB = candidate.ptBhadMotherPart();
 
@@ -1005,7 +990,7 @@ struct HfTaskFlattenicityD0Lc {
         float flat{-1.f};
         const auto& recoCollsPerMcColl = collisions.sliceBy(colPerMcCollisionLc, particle.mcCollision().globalIndex());
         for (const auto& recCol : recoCollsPerMcColl) {
-          flat = fillFlat<false>(recCol, 0);
+          flat = fillFlat<false>(recCol);
         }
 
         const auto ptGen = particle.pt();
@@ -1050,10 +1035,10 @@ struct HfTaskFlattenicityD0Lc {
   }
 
   template <bool fillHist = true, typename CollType>
-  float fillFlat(CollType const& collision, bool const& ifCalib)
+  float fillFlat(CollType const& collision)
   {
     rhoLatticeFV0.fill(0);
-    fv0AmplitudeWoCalib.fill(0);
+    rhoLatticeFV0Calibrated.fill(0);
     if (collision.has_foundFV0()) {
       auto fv0 = collision.foundFV0();
       std::bitset<8> fV0Triggers = fv0.triggerMask();
@@ -1061,28 +1046,27 @@ struct HfTaskFlattenicityD0Lc {
       if (isOkFV0OrA) {
         for (std::size_t ich = 0; ich < fv0.channel().size(); ich++) {
           float amplCh = fv0.amplitude()[ich];
+          float amplChCalibrated = fv0.amplitude()[ich];
           int chv0 = fv0.channel()[ich];
           int chv0phi = channelsToRings.at(chv0);
           if (amplCh > 0.0) {
             if (chv0phi > 0.0) {
-              fv0AmplitudeWoCalib[chv0phi] = amplCh;
-              if (ifCalib) {
-                amplCh *= calib[chv0phi];
-              }
+              amplChCalibrated *= calib[chv0phi];
               if (chv0 < nInnerCellsFV0) {
                 rhoLatticeFV0[chv0phi] += amplCh;
+                rhoLatticeFV0Calibrated[chv0phi] += amplChCalibrated;
               } else {
                 rhoLatticeFV0[chv0phi] += amplCh / 2.;
+                rhoLatticeFV0Calibrated[chv0phi] += amplChCalibrated / 2.;
               }
             }
           }
         }
         float flattenicityFV0 = calcFlatenicity(rhoLatticeFV0);
+        float flattenicityFV0Calibrated = calcFlatenicity(rhoLatticeFV0Calibrated);
         if constexpr (fillHist) {
-          if (ifCalib)
-            registry.fill(HIST("Flattenicity_calibrated"), 1 - flattenicityFV0);
-          else
-            registry.fill(HIST("Flattenicity"), 1 - flattenicityFV0);
+          registry.fill(HIST("Flattenicity_calibrated"), 1 - flattenicityFV0Calibrated);
+          registry.fill(HIST("Flattenicity"), 1 - flattenicityFV0);
         }
         return 1. - flattenicityFV0;
       } else {
