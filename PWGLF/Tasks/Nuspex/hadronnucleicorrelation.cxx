@@ -36,6 +36,7 @@
 #include <Framework/InitContext.h>
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
 
 #include <TH1.h>
 #include <TH2.h>
@@ -47,6 +48,7 @@
 
 #include <chrono>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -146,6 +148,12 @@ struct HadronNucleiCorrelation {
   ConfigurableAxis axisNSigma{"axisNSigma", {35, -7.f, 7.f}, "n#sigma"};
   ConfigurableAxis deltaPhiAxis = {"deltaPhiAxis", {46, -1 * o2::constants::math::PIHalf, 3 * o2::constants::math::PIHalf}, "#Delta#phi (rad)"};
 
+  struct : ConfigurableGroup {
+    std::string prefix = "axes"; // JSON group name
+    ConfigurableAxis axisDeltaEta{"axisDeltaEta", {300, -1.5, 1.5}, "#Delta#eta"};
+    ConfigurableAxis axisDeltaRap{"axisDeltaRap", {300, -1.5, 1.5}, "#Delta y"};
+  } settingsAxes;
+
   using FilteredCollisions = soa::Filtered<aod::SingleCollSels>;
   using FilteredCollisionsExtra = soa::Filtered<soa::Join<aod::SingleCollSels, aod::SingleCollExtras>>;
   using SimCollisions = soa::Filtered<aod::McCollisions>;
@@ -165,10 +173,10 @@ struct HadronNucleiCorrelation {
   // std::unique_ptr<o2::aod::singletrackselector::FemtoPair<TrkTypeMC>> PairMC = std::make_unique<o2::aod::singletrackselector::FemtoPair<TrkTypeMC>>();
 
   // Data histograms
-  std::vector<std::shared_ptr<TH3>> hEtaPhiSameEv;
-  std::vector<std::shared_ptr<TH3>> hEtaPhiMixdEv;
-  std::vector<std::shared_ptr<TH3>> hCorrEtaPhiSameEv;
-  std::vector<std::shared_ptr<TH3>> hCorrEtaPhiMixdEv;
+  std::vector<std::shared_ptr<TH3>> hDeltaPhiSameEv;
+  std::vector<std::shared_ptr<TH3>> hDeltaPhiMixdEv;
+  std::vector<std::shared_ptr<TH3>> hCorrDeltaPhiSameEv;
+  std::vector<std::shared_ptr<TH3>> hCorrDeltaPhiMixdEv;
 
   int nBinspT = 0;
   TH2* hEffPtEtaProton = nullptr;
@@ -185,9 +193,32 @@ struct HadronNucleiCorrelation {
   // compact candidate vectors instead of re-reading the full MC particle table for every pair
   struct GenCandidate {
     float ptVal, etaVal, phiVal;
-    float pt() const { return ptVal; }
-    float eta() const { return etaVal; }
-    float phi() const { return phiVal; }
+    [[nodiscard]] float pt() const { return ptVal; }
+    [[nodiscard]] float eta() const { return etaVal; }
+    [[nodiscard]] float phi() const { return phiVal; }
+    [[nodiscard]] float pz() const { return ptVal * std::sinh(etaVal); }
+    [[nodiscard]] float p() const { return std::hypot(ptVal, pz()); }
+    [[nodiscard]] float energyForMass(const float mass) const { return std::hypot(p(), mass); }
+    [[nodiscard]] float rapidityForMass(const float mass) const
+    {
+      const float e = energyForMass(mass);
+      return 0.5f * std::log((e + pz()) / (e - pz()));
+    };
+    [[nodiscard]] float mass(const int pdg) const
+    {
+      switch (pdg) {
+        case o2::constants::physics::Pdg::kDeuteron:
+        case -o2::constants::physics::Pdg::kDeuteron:
+          return o2::track::PID::getMass(o2::track::PID::Deuteron);
+        case PDG_t::kProton:
+        case -PDG_t::kProton:
+          return o2::track::PID::getMass(o2::track::PID::Proton);
+        default:
+          LOG(fatal) << "Unhandled pdg " << pdg;
+          return 0.f;
+      }
+    }
+    [[nodiscard]] float rapidityForPdg(const int pdg) const { return rapidityForMass(mass(pdg)); }
   };
 
   // Per-collision information needed for generated-level same- and mixed-event pairing
@@ -223,8 +254,8 @@ struct HadronNucleiCorrelation {
     const AxisSpec ptAxis = {200, -10.f, 10.f, "#it{p}_{T} GeV/#it{c}"};
     const AxisSpec ptAxisSmall = {100, -5.f, 5.f, "#it{p}_{T} GeV/#it{c}"};
 
-    const AxisSpec deltaEtaAxis = {300, -1.5, 1.5, "#Delta#eta"};
-    const AxisSpec deltaRapAxis = {300, -1.5, 1.5, "#Delta y"};
+    const AxisSpec deltaEtaAxis = {settingsAxes.axisDeltaEta, "#Delta#eta"};
+    const AxisSpec deltaRapAxis = {settingsAxes.axisDeltaRap, "#Delta y"};
 
     if (doprocessSameEvent || doprocessSameEventEvSel) {
       registry.add("hNEvents", "hNEvents", {HistType::kTH1D, {{7, 0.f, 7.f}}});
@@ -288,17 +319,17 @@ struct HadronNucleiCorrelation {
         const TString ptTag = Form("pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10);
         const TString ptInterval = Form("(%.1f<p_{T}^{assoc} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1));
         if (doRapidity) {
-          hEtaPhiSameEv.push_back(registry.add<TH3>(Form("hEtaPhi_%s_SE_%s", name.Data(), ptTag.Data()), "Raw #Delta y #Delta#phi " + ptInterval, {HistType::kTH3F, {deltaRapAxis, deltaPhiAxis, ptBinnedAxis}}));
-          hEtaPhiMixdEv.push_back(registry.add<TH3>(Form("hEtaPhi_%s_ME_%s", name.Data(), ptTag.Data()), "Raw #Delta y #Delta#phi " + ptInterval, {HistType::kTH3F, {deltaRapAxis, deltaPhiAxis, ptBinnedAxis}}));
+          hDeltaPhiSameEv.push_back(registry.add<TH3>(Form("hEtaPhi_%s_SE_%s", name.Data(), ptTag.Data()), "Raw #Delta y #Delta#phi " + ptInterval, {HistType::kTH3F, {deltaRapAxis, deltaPhiAxis, ptBinnedAxis}}));
+          hDeltaPhiMixdEv.push_back(registry.add<TH3>(Form("hEtaPhi_%s_ME_%s", name.Data(), ptTag.Data()), "Raw #Delta y #Delta#phi " + ptInterval, {HistType::kTH3F, {deltaRapAxis, deltaPhiAxis, ptBinnedAxis}}));
 
-          hCorrEtaPhiSameEv.push_back(registry.add<TH3>(Form("hCorrEtaPhi_%s_SE_%s", name.Data(), ptTag.Data()), "#Delta y #Delta#phi " + ptInterval, {HistType::kTH3F, {deltaRapAxis, deltaPhiAxis, ptBinnedAxis}}));
-          hCorrEtaPhiMixdEv.push_back(registry.add<TH3>(Form("hCorrEtaPhi_%s_ME_%s", name.Data(), ptTag.Data()), "#Delta y #Delta#phi " + ptInterval, {HistType::kTH3F, {deltaRapAxis, deltaPhiAxis, ptBinnedAxis}}));
+          hCorrDeltaPhiSameEv.push_back(registry.add<TH3>(Form("hCorrEtaPhi_%s_SE_%s", name.Data(), ptTag.Data()), "#Delta y #Delta#phi " + ptInterval, {HistType::kTH3F, {deltaRapAxis, deltaPhiAxis, ptBinnedAxis}}));
+          hCorrDeltaPhiMixdEv.push_back(registry.add<TH3>(Form("hCorrEtaPhi_%s_ME_%s", name.Data(), ptTag.Data()), "#Delta y #Delta#phi " + ptInterval, {HistType::kTH3F, {deltaRapAxis, deltaPhiAxis, ptBinnedAxis}}));
         } else {
-          hEtaPhiSameEv.push_back(registry.add<TH3>(Form("hEtaPhi_%s_SE_%s", name.Data(), ptTag.Data()), "Raw #Delta#eta#Delta#phi " + ptInterval, {HistType::kTH3F, {deltaEtaAxis, deltaPhiAxis, ptBinnedAxis}}));
-          hEtaPhiMixdEv.push_back(registry.add<TH3>(Form("hEtaPhi_%s_ME_%s", name.Data(), ptTag.Data()), "Raw #Delta#eta#Delta#phi " + ptInterval, {HistType::kTH3F, {deltaEtaAxis, deltaPhiAxis, ptBinnedAxis}}));
+          hDeltaPhiSameEv.push_back(registry.add<TH3>(Form("hEtaPhi_%s_SE_%s", name.Data(), ptTag.Data()), "Raw #Delta#eta#Delta#phi " + ptInterval, {HistType::kTH3F, {deltaEtaAxis, deltaPhiAxis, ptBinnedAxis}}));
+          hDeltaPhiMixdEv.push_back(registry.add<TH3>(Form("hEtaPhi_%s_ME_%s", name.Data(), ptTag.Data()), "Raw #Delta#eta#Delta#phi " + ptInterval, {HistType::kTH3F, {deltaEtaAxis, deltaPhiAxis, ptBinnedAxis}}));
 
-          hCorrEtaPhiSameEv.push_back(registry.add<TH3>(Form("hCorrEtaPhi_%s_SE_%s", name.Data(), ptTag.Data()), "#Delta#eta#Delta#phi " + ptInterval, {HistType::kTH3F, {deltaEtaAxis, deltaPhiAxis, ptBinnedAxis}}));
-          hCorrEtaPhiMixdEv.push_back(registry.add<TH3>(Form("hCorrEtaPhi_%s_ME_%s", name.Data(), ptTag.Data()), "#Delta#eta#Delta#phi " + ptInterval, {HistType::kTH3F, {deltaEtaAxis, deltaPhiAxis, ptBinnedAxis}}));
+          hCorrDeltaPhiSameEv.push_back(registry.add<TH3>(Form("hCorrEtaPhi_%s_SE_%s", name.Data(), ptTag.Data()), "#Delta#eta#Delta#phi " + ptInterval, {HistType::kTH3F, {deltaEtaAxis, deltaPhiAxis, ptBinnedAxis}}));
+          hCorrDeltaPhiMixdEv.push_back(registry.add<TH3>(Form("hCorrEtaPhi_%s_ME_%s", name.Data(), ptTag.Data()), "#Delta#eta#Delta#phi " + ptInterval, {HistType::kTH3F, {deltaEtaAxis, deltaPhiAxis, ptBinnedAxis}}));
         }
       }
     }
@@ -640,14 +671,14 @@ struct HadronNucleiCorrelation {
         }
 
         if (ME) {
-          hEtaPhiMixdEv[k]->Fill(deltaEta, deltaPhi, part1.pt());
+          hDeltaPhiMixdEv[k]->Fill(deltaEta, deltaPhi, part1.pt());
           if (corr0 != 0 && corr1 != 0) {
-            hCorrEtaPhiMixdEv[k]->Fill(deltaEta, deltaPhi, part1.pt(), 1. / (corr0 * corr1));
+            hCorrDeltaPhiMixdEv[k]->Fill(deltaEta, deltaPhi, part1.pt(), 1. / (corr0 * corr1));
           }
         } else {
-          hEtaPhiSameEv[k]->Fill(deltaEta, deltaPhi, part1.pt());
+          hDeltaPhiSameEv[k]->Fill(deltaEta, deltaPhi, part1.pt());
           if (corr0 != 0 && corr1 != 0) {
-            hCorrEtaPhiSameEv[k]->Fill(deltaEta, deltaPhi, part1.pt(), 1. / (corr0 * corr1));
+            hCorrDeltaPhiSameEv[k]->Fill(deltaEta, deltaPhi, part1.pt(), 1. / (corr0 * corr1));
           }
         } // SE
       } // pT condition
@@ -663,17 +694,16 @@ struct HadronNucleiCorrelation {
     float deltaEta = part0.eta() - part1.eta();
     float deltaPhi = part0.phi() - part1.phi();
     deltaPhi = RecoDecay::constrainAngle(deltaPhi, -1 * o2::constants::math::PIHalf);
-
+    // Here we have to use doRapidity
+    const float deltaRapidity = part0.rapidityForPdg(pdgPart0) - part1.rapidityForPdg(pdgPart1);
     for (int k = 0; k < nBinspT; k++) {
-
       if (part0.pt() >= pTBins.value.at(k) && part0.pt() < pTBins.value.at(k + 1)) {
-
         if (ME) {
-          hEtaPhiMixdEv[k]->Fill(deltaEta, deltaPhi, part1.pt());
-          hCorrEtaPhiMixdEv[k]->Fill(deltaEta, deltaPhi, part1.pt());
+          hDeltaPhiMixdEv[k]->Fill(doRapidity ? deltaRapidity : deltaEta, deltaPhi, part1.pt());
+          hCorrDeltaPhiMixdEv[k]->Fill(doRapidity ? deltaRapidity : deltaEta, deltaPhi, part1.pt());
         } else {
-          hEtaPhiSameEv[k]->Fill(deltaEta, deltaPhi, part1.pt());
-          hCorrEtaPhiSameEv[k]->Fill(deltaEta, deltaPhi, part1.pt());
+          hDeltaPhiSameEv[k]->Fill(doRapidity ? deltaRapidity : deltaEta, deltaPhi, part1.pt());
+          hCorrDeltaPhiSameEv[k]->Fill(doRapidity ? deltaRapidity : deltaEta, deltaPhi, part1.pt());
         } // SE
       } // pT condition
     } // nBinspT loop
