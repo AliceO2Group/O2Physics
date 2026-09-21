@@ -373,6 +373,12 @@ struct StrangenessInJetsIons {
         registryData.add("OmegaPos_in_ue", "OmegaPos_in_ue", HistType::kTH3F, {multAxis, ptAxis, invMassOmegaAxis});
         registryData.add("OmegaNeg_in_jet", "OmegaNeg_in_jet", HistType::kTH3F, {multAxis, ptAxis, invMassOmegaAxis});
         registryData.add("OmegaNeg_in_ue", "OmegaNeg_in_ue", HistType::kTH3F, {multAxis, ptAxis, invMassOmegaAxis});
+        if (doRandomConeSys) {
+          registryData.add("XiPos_in_rc", "XiPos_in_rc", HistType::kTH3F, {multAxis, ptAxis, invMassXiAxis});
+          registryData.add("XiNeg_in_rc", "XiNeg_in_rc", HistType::kTH3F, {multAxis, ptAxis, invMassXiAxis});
+          registryData.add("OmegaPos_in_rc", "OmegaPos_in_rc", HistType::kTH3F, {multAxis, ptAxis, invMassOmegaAxis});
+          registryData.add("OmegaNeg_in_rc", "OmegaNeg_in_rc", HistType::kTH3F, {multAxis, ptAxis, invMassOmegaAxis});
+        }
       }
       if (particleOfInterestDict[ParticleOfInterest::kPions]) {
         registryData.add("Pion_in_jet", "Pion_in_jet", HistType::kTHnSparseF, {multAxis, ptAxisLongLived, nsigmaTPCAxis, nsigmaTOFAxis, dcaAxis});
@@ -2488,6 +2494,13 @@ struct StrangenessInJetsIons {
           const double deltaPhiUe2 = getDeltaPhi(cascadeDir.Phi(), ue2[i].Phi());
           const double deltaRue2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
 
+          bool isInRC = false;
+          if (doRandomConeSys) {
+            const float deltaRrc1 = getDeltaR(cascadeDir.Eta(), cascadeDir.Phi(), rcSys1[i].Eta(), rcSys1[i].Phi());
+            const float deltaRrc2 = getDeltaR(cascadeDir.Eta(), cascadeDir.Phi(), rcSys2[i].Eta(), rcSys2[i].Phi());
+            isInRC = (deltaRrc1 < rJet) || (deltaRrc2 < rJet);
+          }
+
           // Xi+
           if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() > 0) {
             if (deltaRjet < rJet) {
@@ -2495,6 +2508,9 @@ struct StrangenessInJetsIons {
             }
             if (deltaRue1 < rJet || deltaRue2 < rJet) {
               registryData.fill(HIST("XiPos_in_ue"), multiplicity, casc.pt(), casc.mXi());
+            }
+            if (doRandomConeSys && isInRC) {
+              registryData.fill(HIST("XiPos_in_rc"), multiplicity, casc.pt(), casc.mXi());
             }
           }
           // Xi-
@@ -2505,6 +2521,9 @@ struct StrangenessInJetsIons {
             if (deltaRue1 < rJet || deltaRue2 < rJet) {
               registryData.fill(HIST("XiNeg_in_ue"), multiplicity, casc.pt(), casc.mXi());
             }
+            if (doRandomConeSys && isInRC) {
+              registryData.fill(HIST("XiNeg_in_rc"), multiplicity, casc.pt(), casc.mXi());
+            }
           }
           // Omega+
           if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() > 0) {
@@ -2514,6 +2533,9 @@ struct StrangenessInJetsIons {
             if (deltaRue1 < rJet || deltaRue2 < rJet) {
               registryData.fill(HIST("OmegaPos_in_ue"), multiplicity, casc.pt(), casc.mOmega());
             }
+            if (doRandomConeSys && isInRC) {
+              registryData.fill(HIST("OmegaPos_in_rc"), multiplicity, casc.pt(), casc.mOmega());
+            }
           }
           // Omega-
           if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() < 0) {
@@ -2522,6 +2544,9 @@ struct StrangenessInJetsIons {
             }
             if (deltaRue1 < rJet || deltaRue2 < rJet) {
               registryData.fill(HIST("OmegaNeg_in_ue"), multiplicity, casc.pt(), casc.mOmega());
+            }
+            if (doRandomConeSys && isInRC) {
+              registryData.fill(HIST("OmegaNeg_in_rc"), multiplicity, casc.pt(), casc.mOmega());
             }
           }
         }
