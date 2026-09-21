@@ -347,7 +347,8 @@ struct HfProducerCharmHadronsCharmFemtoDream {
   PROCESS_SWITCH(HfProducerCharmHadronsCharmFemtoDream, processD0D0Ml, "D0 with selector ML scores", false);
 
   void processD0DstarMl(Collisions::iterator const& col,
-                        aod::BCsWithTimestamps const&, aod::Tracks const&,
+                        aod::BCsWithTimestamps const&,
+                        aod::Tracks const&,
                         soa::Filtered<D0sMl> const& d0s,
                         soa::Filtered<DstarsMl> const& dstars)
   {
@@ -360,7 +361,8 @@ struct HfProducerCharmHadronsCharmFemtoDream {
   PROCESS_SWITCH(HfProducerCharmHadronsCharmFemtoDream, processD0DstarMl, "D0 and Dstar with selector ML scores", false);
 
   void processD0D0WithFT0C(CollisionsWithFT0C::iterator const& col,
-                           aod::BCsWithTimestamps const&, aod::Tracks const&,
+                           aod::BCsWithTimestamps const&,
+                           aod::Tracks const&,
                            soa::Filtered<D0s> const& d0s)
   {
     if (acceptCollision<o2::hf_centrality::CentralityEstimator::FT0C>(col)) {
