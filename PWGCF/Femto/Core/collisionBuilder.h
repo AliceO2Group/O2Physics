@@ -669,6 +669,9 @@ class CollisionBuilder
   template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
   void initCollision(T1 const& bc, T2 const& col, T3 const& tracks, T4& ccdb, T5& histRegistry)
   {
+    if (!mFillAnyTable) {
+      return; // selection object was never configured (no collision table requested), applying selections would use an unset registry
+    }
     if (mRunNumber != bc.runNumber()) {
       mRunNumber = bc.runNumber();
       if (mMagFieldForced == 0) {
