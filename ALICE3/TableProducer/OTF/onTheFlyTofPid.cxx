@@ -166,12 +166,12 @@ struct OnTheFlyTofPid {
   std::array<std::array<std::shared_ptr<TH2>, NParticles>, NParticles> h2dOuterDeltaTrue;
 
   struct ParticleInfo {
-    std::string_view texName;
-    std::string_view name;
-    ParticleId type;
-    int pdgCode;
-    double mass;
-    float charge;
+    std::string_view texName{};
+    std::string_view name{};
+    ParticleId type{};
+    int pdgCode{};
+    double mass{};
+    float charge{};
     void set(const std::string_view texName_, const std::string_view name_, ParticleId type_, int pdgCode_, double mass_, float charge_)
     {
       texName = texName_;
@@ -400,6 +400,7 @@ struct OnTheFlyTofPid {
       delete hHitMapInPixelBefore;
     }
 
+    TOFLayerEfficiency(const TOFLayerEfficiency&) = delete;
     TOFLayerEfficiency& operator=(const TOFLayerEfficiency&) = delete;
 
     TOFLayerEfficiency(float r, float l, std::array<float, 2> pDimensions, float fIA, float m) : layerRadius(r),
@@ -825,7 +826,7 @@ struct OnTheFlyTofPid {
       const float measuredTimeInnerTOF = trkWithTime.mInnerTOFTime.first - tzero[0];
       const float measuredTimeOuterTOF = trkWithTime.mOuterTOFTime.first - tzero[0];
       const float momentum = trkWithTime.mMomentum.first;
-      const float pseudorapidity = trkWithTime.mPseudorapidity.first;
+      const float eta = trkWithTime.mPseudorapidity.first;
       const float noSmearingPt = trkWithTime.mNoSmearingPt;
 
       // Straight to Nsigma
@@ -884,17 +885,17 @@ struct OnTheFlyTofPid {
         float innerTotalTimeReso = simConfig.innerTOFTimeReso;
         float outerTotalTimeReso = simConfig.outerTOFTimeReso;
         if (simConfig.flagIncludeTrackTimeRes) {
-          const float transverseMomentum = momentumHypotheses[ii] / std::cosh(pseudorapidity);
+          const float transverseMomentum = momentumHypotheses[ii] / std::cosh(eta);
           double ptResolution = transverseMomentum * transverseMomentum * std::sqrt(trkWithTime.mMomentum.second);
-          double etaResolution = std::fabs(std::sin(2.0 * std::atan(std::exp(-pseudorapidity)))) * std::sqrt(trkWithTime.mPseudorapidity.second);
+          double etaResolution = std::fabs(std::sin(2.0 * std::atan(std::exp(-eta)))) * std::sqrt(trkWithTime.mPseudorapidity.second);
           if (simConfig.flagTOFLoadDelphesLUTs) {
             if (mSmearer[collision.lutConfigId()]->hasTable(Particles[ii].pdgCode)) { // Only if the LUT for this particle was loaded
-              ptResolution = mSmearer[collision.lutConfigId()]->getAbsPtRes(Particles[ii].pdgCode, dNdEta, pseudorapidity, transverseMomentum);
-              etaResolution = mSmearer[collision.lutConfigId()]->getAbsEtaRes(Particles[ii].pdgCode, dNdEta, pseudorapidity, transverseMomentum);
+              ptResolution = mSmearer[collision.lutConfigId()]->getAbsPtRes(Particles[ii].pdgCode, dNdEta, eta, transverseMomentum);
+              etaResolution = mSmearer[collision.lutConfigId()]->getAbsEtaRes(Particles[ii].pdgCode, dNdEta, eta, transverseMomentum);
             }
           }
-          const float innerTrackTimeReso = calculateTrackTimeResolutionAdvanced(transverseMomentum, pseudorapidity, ptResolution, etaResolution, Particles[ii].mass, simConfig.innerTOFRadius, mMagneticField);
-          const float outerTrackTimeReso = calculateTrackTimeResolutionAdvanced(transverseMomentum, pseudorapidity, ptResolution, etaResolution, Particles[ii].mass, simConfig.outerTOFRadius, mMagneticField);
+          const float innerTrackTimeReso = calculateTrackTimeResolutionAdvanced(transverseMomentum, eta, ptResolution, etaResolution, Particles[ii].mass, simConfig.innerTOFRadius, mMagneticField);
+          const float outerTrackTimeReso = calculateTrackTimeResolutionAdvanced(transverseMomentum, eta, ptResolution, etaResolution, Particles[ii].mass, simConfig.outerTOFRadius, mMagneticField);
           innerTotalTimeReso = std::hypot(simConfig.innerTOFTimeReso, innerTrackTimeReso);
           outerTotalTimeReso = std::hypot(simConfig.outerTOFTimeReso, outerTrackTimeReso);
 
@@ -909,7 +910,7 @@ struct OnTheFlyTofPid {
                 h2dOuterTimeResTotal[ii]->Fill(momentumHypotheses[ii], outerTotalTimeReso);
                 if (ii == Pi) {
                   histos.fill(HIST("h2dRelativePtResolution"), transverseMomentum, 100.0 * ptResolution / transverseMomentum);
-                  histos.fill(HIST("h2dRelativeEtaResolution"), pseudorapidity, 100.0 * etaResolution / (std::fabs(pseudorapidity) + 1e-6));
+                  histos.fill(HIST("h2dRelativeEtaResolution"), eta, 100.0 * etaResolution / (std::fabs(eta) + 1e-6));
                 }
               }
             }

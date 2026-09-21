@@ -53,6 +53,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <format>
 #include <fstream>
 #include <map>
 #include <memory>
@@ -579,8 +580,8 @@ struct OnTheFlyTrackerPid {
             hypNamePretty = "#it{^{4}He}";
           }
 
-          std::string histName = "NSigma/BarrelNsigmaTrue" + trueName + "Vs" + hypName + "Hypothesis";
-          std::string histTitle = "Nsigma (True " + trueNamePretty + " vs Hyp " + hypNamePretty + "); #it{p/z} (GeV/#it{c}); N#sigma";
+          const std::string histName = std::format("NSigma/BarrelNsigmaTrue{}Vs{}Hypothesis", trueName, hypName);
+          const std::string histTitle = std::format("Nsigma (True {} vs Hyp {}); #it{{p/z}} (GeV/#it{{c}}); N#sigma", trueNamePretty, hypNamePretty);
           h2dBarrelNsigmaTrue[iTrue][iHyp] = histos.add<TH2>(histName.c_str(), histTitle.c_str(), kTH2F, {axisMomentumLog, axisNsigma});
         }
       }
@@ -588,12 +589,12 @@ struct OnTheFlyTrackerPid {
       if (enableLinearPBins.value) {
         const AxisSpec axisMomentumLin{numLinearBins.value, static_cast<double>(linearPMin.value), static_cast<double>(linearPMax.value), "#it{p/z} (GeV/#it{c})"};
 
-        std::string hitsVsPLinName = "HitsPerTrackLin/hHitsPerTrackVsPLin_" + trueName;
-        std::string hitsVsPLinTitle = "N_hits vs #it{p/z} for " + trueNamePretty + " (linear); #it{p/z} (GeV/#it{c}); N_hits";
+        const std::string hitsVsPLinName = std::format("HitsPerTrackLin/hHitsPerTrackVsPLin_{}", trueName);
+        const std::string hitsVsPLinTitle = std::format("N_hits vs #it{{p/z}} for {} (linear); #it{{p/z}} (GeV/#it{{c}}); N_hits", trueNamePretty);
         h2dHitsPerTrackVsPLin[iTrue] = histos.add<TH2>(hitsVsPLinName.c_str(), hitsVsPLinTitle.c_str(), kTH2F, {axisMomentumLin, axisHitsPerTrack});
 
-        std::string totVsPLinName = "ToTvsPLin/hToTvsPLin_" + trueName;
-        std::string totVsPLinTitle = "ToT vs #it{p/z} for " + trueNamePretty + " (linear); #it{p/z} (GeV/#it{c}); ToT (#mus/10#mum)";
+        const std::string totVsPLinName = std::format("ToTvsPLin/hToTvsPLin_{}", trueName);
+        const std::string totVsPLinTitle = std::format("ToT vs #it{{p/z}} for {} (linear); #it{{p/z}} (GeV/#it{{c}}); ToT (#mus/10#mum)", trueNamePretty);
         h2dToTvsPperParticleLin[iTrue] = histos.add<TH2>(totVsPLinName.c_str(), totVsPLinTitle.c_str(), kTH2F, {axisMomentumLin, axisToT});
       }
     }
