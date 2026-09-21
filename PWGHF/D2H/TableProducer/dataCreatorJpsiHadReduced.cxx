@@ -60,7 +60,6 @@
 #include <Framework/WorkflowSpec.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
-#include <ReconstructionDataFormats/Track.h>
 
 #include <TH1.h>
 #include <TH2.h>
@@ -106,13 +105,13 @@ enum WrongCollisionType : uint8_t {
   SplitCollision,
 };
 
-std::map<int, hf_decay::hf_cand_beauty::DecayChannelToJpsiMain> partlyRecoDecayMapMuMu = {
+std::map<int, hf_decay::hf_cand_beauty::DecayChannelToJpsiMain> const partlyRecoDecayMapMuMu = {
   {Pdg::kB0, hf_decay::hf_cand_beauty::DecayChannelToJpsiMain::B0ToJpsiXToMuMuX},
   {Pdg::kBPlus, hf_decay::hf_cand_beauty::DecayChannelToJpsiMain::BplusToJpsiXToMuMuX},
   {Pdg::kBS, hf_decay::hf_cand_beauty::DecayChannelToJpsiMain::BsToJpsiXToMuMuX},
   {Pdg::kLambdaB0, hf_decay::hf_cand_beauty::DecayChannelToJpsiMain::LbToJpsiXToMuMuX}};
 
-std::map<int, hf_decay::hf_cand_beauty::DecayChannelToJpsiMain> partlyRecoDecayMapEE = {
+std::map<int, hf_decay::hf_cand_beauty::DecayChannelToJpsiMain> const partlyRecoDecayMapEE = {
   {Pdg::kB0, hf_decay::hf_cand_beauty::DecayChannelToJpsiMain::B0ToJpsiXToEEX},
   {Pdg::kBPlus, hf_decay::hf_cand_beauty::DecayChannelToJpsiMain::BplusToJpsiXToEEX},
   {Pdg::kBS, hf_decay::hf_cand_beauty::DecayChannelToJpsiMain::BsToJpsiXToEEX},

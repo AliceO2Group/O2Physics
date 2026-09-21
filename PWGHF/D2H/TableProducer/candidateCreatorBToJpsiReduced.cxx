@@ -36,6 +36,7 @@
 #include <Framework/WorkflowSpec.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/TrackParametrization.h>
 #include <ReconstructionDataFormats/TrackParametrizationWithError.h>
 
 #include <TH1.h>
@@ -45,6 +46,7 @@
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
+#include <utility> // std::move
 
 using namespace o2;
 using namespace o2::aod;
