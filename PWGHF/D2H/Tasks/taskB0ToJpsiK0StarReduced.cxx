@@ -128,7 +128,6 @@ DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);                        
 DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);               //! Normalised decay length of candidate
 DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float);           //! Normalised transverse decay length of candidate
 DECLARE_SOA_COLUMN(CtXY, ctXY, float);                                                 //! Pseudo-proper decay length of candidate particle
-DECLARE_SOA_COLUMN(CtXYBar, ctXYBar, float);                                           //! Pseudo-proper decay length of candidate antiparticle
 DECLARE_SOA_COLUMN(ImpactParameterProduct, impactParameterProduct, float);             //! Impact parameter product of B daughters
 DECLARE_SOA_COLUMN(ImpactParameterProductJpsi, impactParameterProductJpsi, float);     //! Impact parameter product of Jpsi daughters
 DECLARE_SOA_COLUMN(ImpactParameterProductK0Star, impactParameterProductK0Star, float); //! Impact parameter product of K*0 daughters
@@ -162,7 +161,6 @@ DECLARE_SOA_TABLE(HfRedCandB0Lites, "AOD", "HFREDCANDB0LITE", //! Table with som
                   hf_cand_b0tojpsik0star_lite::DecayLengthNormalised,
                   hf_cand_b0tojpsik0star_lite::DecayLengthXYNormalised,
                   hf_cand_b0tojpsik0star_lite::CtXY,
-                  hf_cand_b0tojpsik0star_lite::CtXYBar,
                   hf_cand_b0tojpsik0star_lite::ImpactParameterProduct,
                   hf_cand_b0tojpsik0star_lite::ImpactParameterProductJpsi,
                   hf_cand_b0tojpsik0star_lite::ImpactParameterProductK0Star,
@@ -585,8 +583,7 @@ struct HfTaskB0ToJpsiK0StarReduced {
         candidate.decayLengthXY(),
         candidate.decayLengthNormalised(),
         candidate.decayLengthXYNormalised(),
-        ctXY,
-        ctXYBar,
+        isSelKPi ? ctXY : ctXYBar,
         candidate.impactParameterProduct(),
         candidate.impactParameterProductJpsi(),
         candidate.impactParameterProductK0Star(),
