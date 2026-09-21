@@ -590,7 +590,7 @@ struct HfTaskB0ToJpsiK0StarReduced {
         candidate.maxNormalisedDeltaIP(),
         isSelKPi ? mlScoreSigKPi : mlScoreSigPiK,
         isSelKPi ? statusB0KPi : -1,
-        isSelKPi? -1 : statusB0PiK,
+        isSelKPi ? -1 : statusB0PiK,
         // J/Psi features
         invMassJpsi,
         ptJpsi,
