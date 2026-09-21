@@ -26,7 +26,6 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Tools/ML/MlResponse.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
@@ -44,6 +43,7 @@
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include <Tools/ML/MlResponse.h>
 
 #include <algorithm>
 #include <array>
@@ -62,81 +62,66 @@ struct HfProducerCharmHadronsCharmFemtoDream {
     FillMlFromSelector = 1,
     FillMlFromNewBDT = 2
   };
-  Configurable<int> selectionFlagD0{"selectionFlagD0", 1,
-                                    "Minimum D0 selector decision"};
-  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch",
-                                    "CCDB URL"};
-  Configurable<std::string> ccdbPathGrpMag{
-    "ccdbPathGrpMag", "GLO/Config/GRPMagField", "Run 3 magnetic field"};
-
+  static constexpr std::size_t NMlClasses = 3;
+  static constexpr std::size_t NMlPtEdgesMin = 2;
+  static constexpr int ND0Hypotheses = 2;
   // Each species needs its own model, feature order and pT-dependent cuts.
-  struct MlConfig : ConfigurableGroup {
+  struct HfMlConfig : ConfigurableGroup {
     std::string prefix;
-    static inline const std::array<double, 3> DefaultCuts{1., 0., 0.};
-    Configurable<int> applyMlMode{
-      "applyMlMode", FillMlFromSelector,
-      "0: no ML, 1: selector scores, 2: new BDT after selector"};
-    Configurable<std::vector<double>> binsPtMl{
-      "binsPtMl", std::vector<double>{0., 36.}, "pT bin limits for new BDT"};
-    Configurable<LabeledArray<double>> cutsMl{
-      "cutsMl",
-      {DefaultCuts.data(), 1, 3},
-      "New BDT cuts per pT bin: background, prompt, nonprompt"};
-    Configurable<std::vector<int>> cutDirMl{
-      "cutDirMl", std::vector<int>{0, 1, 1},
-      "Reject scores above (0), below (1), or do not cut (2)"};
-    Configurable<int> nClassesMl{
-      "nClassesMl", 3, "Three output classes: background, prompt, nonprompt"};
-    Configurable<std::vector<std::string>> namesInputFeatures{
-      "namesInputFeatures", std::vector<std::string>{},
-      "Ordered input feature names for new BDT"};
-    Configurable<std::vector<std::string>> onnxFileNames{
-      "onnxFileNames", std::vector<std::string>{},
-      "Model files, one per pT bin"};
-    Configurable<std::vector<std::string>> modelPathsCCDB{
-      "modelPathsCCDB", std::vector<std::string>{},
-      "CCDB model paths, one per pT bin"};
-    Configurable<int64_t> timestampCCDB{"timestampCCDB", -1,
-                                        "Timestamp used to retrieve models"};
-    Configurable<bool> loadModelsFromCCDB{
-      "loadModelsFromCCDB", false,
-      "Load new BDT from CCDB instead of local files"};
-  } mlD0{.prefix = "mlD0"}, mlDstar{.prefix = "mlDstar"};
+    static inline const std::array<double, 3> defaultCuts{1., 0., 0.};
+    Configurable<int> applyMlMode{"applyMlMode", FillMlFromSelector, "0: no ML, 1: selector scores, 2: new BDT after selector"};
+    Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{0., 36.}, "pT bin limits for new BDT"};
+    Configurable<LabeledArray<double>> cutsMl{"cutsMl", {defaultCuts.data(), 1, 3}, "New BDT cuts per pT bin: background, prompt, nonprompt"};
+    Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{0, 1, 1}, "Reject scores above (0), below (1), or do not cut (2)"};
+    Configurable<int> nClassesMl{"nClassesMl", 3, "Three output classes: background, prompt, nonprompt"};
+    Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{}, "Ordered input feature names for new BDT"};
+    Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{}, "Model files, one per pT bin"};
+    Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{}, "CCDB model paths, one per pT bin"};
+    Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "Timestamp used to retrieve models"};
+    Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Load new BDT from CCDB instead of local files"};
+  };
+
   Produces<aod::FDCollisions> collisions;
   Produces<aod::FDColMasks> rowMasks;
   Produces<aod::FDHfCand2Prong> d0Rows;
   Produces<aod::FDHfCandDstar> dstarRows;
+
+  Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Minimum D0 selector decision"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "CCDB URL"};
+  Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "Run 3 magnetic field"};
+  HfMlConfig mlD0{.prefix = "mlD0"}, mlDstar{.prefix = "mlDstar"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
   o2::ccdb::CcdbApi ccdbApi;
   o2::hf_evsel::HfEventSelection hfEvSel;
   o2::analysis::HfMlResponseD0ToKPi<float> hfMlResponseD0;
   o2::analysis::HfMlResponseDstarToD0Pi<float> hfMlResponseDstar;
-  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
-  HistogramRegistry registry{"registry"};
 
-  bool hasD0 = false;
-  bool hasDstar = false;
-  int runNumber = -1;
   using Collisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
   using CollisionsWithFT0C = soa::Join<Collisions, aod::CentFT0Cs>;
   using D0s = soa::Join<aod::HfCand2Prong, aod::HfSelD0>;
   using Dstars =
-    soa::Join<aod::HfCandDstars, aod::HfD0FromDstar, aod::HfSelDstarToD0Pi>;
+      soa::Join<aod::HfCandDstars, aod::HfD0FromDstar, aod::HfSelDstarToD0Pi>;
 
   using D0sMl = soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0, aod::HfMlD0>;
   using DstarsMl = soa::Join<aod::HfCandDstarsWPid, aod::HfD0FromDstar,
                              aod::HfSelDstarToD0Pi, aod::HfMlDstarToD0Pi>;
 
   Filter filterSelectCandidateD0 =
-    (aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 ||
-     aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0);
+      (aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 ||
+       aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0);
   Filter filterSelectCandidateDstar =
-    aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == true;
+      aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == true;
+
+  HistogramRegistry registry{"registry"};
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
+
+  bool hasD0 = false;
+  bool hasDstar = false;
+  int runNumber = -1;
 
   template <typename Response>
-  void initMl(MlConfig const& cfg, Response& response, bool withMl)
-  {
+  void initMl(HfMlConfig const&cfg, Response &response, bool withMl) {
     if (cfg.applyMlMode.value < NoMl ||
         cfg.applyMlMode.value > FillMlFromNewBDT) {
       LOGP(fatal, "{}: invalid applyMlMode", cfg.prefix);
@@ -147,8 +132,8 @@ struct HfProducerCharmHadronsCharmFemtoDream {
     if (!withMl) {
       LOGP(fatal, "{}: new BDT requires an Ml producer process", cfg.prefix);
     }
-    auto const& edges = cfg.binsPtMl.value;
-    if (edges.size() < 2 ||
+    auto const&edges = cfg.binsPtMl.value;
+    if (edges.size() < NMlPtEdgesMin ||
         !std::all_of(edges.begin(), edges.end(),
                      [](double x) { return std::isfinite(x); }) ||
         std::adjacent_find(edges.begin(), edges.end(), [](double a, double b) {
@@ -158,8 +143,8 @@ struct HfProducerCharmHadronsCharmFemtoDream {
            cfg.prefix);
     }
     const auto nBins = edges.size() - 1;
-    if (cfg.nClassesMl.value != 3 || cfg.cutDirMl.value.size() != 3 ||
-        cfg.cutsMl.value.rows() != nBins || cfg.cutsMl.value.cols() != 3 ||
+    if (cfg.nClassesMl.value != NMlClasses || cfg.cutDirMl.value.size() != NMlClasses ||
+        cfg.cutsMl.value.rows() != nBins || cfg.cutsMl.value.cols() != NMlClasses ||
         cfg.onnxFileNames.value.size() != nBins ||
         cfg.namesInputFeatures.value.empty() ||
         (cfg.loadModelsFromCCDB.value &&
@@ -169,14 +154,14 @@ struct HfProducerCharmHadronsCharmFemtoDream {
            "features",
            cfg.prefix);
     }
-    for (auto direction : cfg.cutDirMl.value) {
+    for (const auto& direction : cfg.cutDirMl.value) {
       if (direction < o2::cuts_ml::CutGreater ||
           direction > o2::cuts_ml::CutNot) {
         LOGP(fatal, "{}: invalid cutDirMl", cfg.prefix);
       }
     }
     for (unsigned int bin = 0; bin < nBins; ++bin) {
-      for (unsigned int score = 0; score < 3; ++score) {
+      for (unsigned int score = 0; score < NMlClasses; ++score) {
         if (!std::isfinite(cfg.cutsMl.value.get(bin, score))) {
           LOGP(fatal, "{}: cutsMl must be finite", cfg.prefix);
         }
@@ -196,17 +181,16 @@ struct HfProducerCharmHadronsCharmFemtoDream {
     response.init();
   }
 
-  void init(InitContext const&)
-  {
+  void init(InitContext const&) {
     const std::array<bool, 8> processSwitches{
-      static_cast<bool>(doprocessD0D0),
-      static_cast<bool>(doprocessD0Dstar),
-      static_cast<bool>(doprocessD0D0Ml),
-      static_cast<bool>(doprocessD0DstarMl),
-      static_cast<bool>(doprocessD0D0WithFT0C),
-      static_cast<bool>(doprocessD0DstarWithFT0C),
-      static_cast<bool>(doprocessD0D0MlWithFT0C),
-      static_cast<bool>(doprocessD0DstarMlWithFT0C)};
+        static_cast<bool>(doprocessD0D0),
+        static_cast<bool>(doprocessD0Dstar),
+        static_cast<bool>(doprocessD0D0Ml),
+        static_cast<bool>(doprocessD0DstarMl),
+        static_cast<bool>(doprocessD0D0WithFT0C),
+        static_cast<bool>(doprocessD0DstarWithFT0C),
+        static_cast<bool>(doprocessD0D0MlWithFT0C),
+        static_cast<bool>(doprocessD0DstarMlWithFT0C)};
     if (std::count(processSwitches.begin(), processSwitches.end(), true) != 1) {
       LOGP(fatal, "Enable exactly one charm-charm producer process");
     }
@@ -232,12 +216,11 @@ struct HfProducerCharmHadronsCharmFemtoDream {
 
   template <o2::hf_centrality::CentralityEstimator CentEstimator,
             typename Collision>
-  bool acceptCollision(Collision const& col)
-  {
+  bool acceptCollision(Collision const&col) {
     registry.fill(HIST("events"), 0);
     float cent = -1.f; // No centrality for pp MB.
     const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<
-      true, CentEstimator, aod::BCsWithTimestamps>(col, cent, ccdb, registry);
+        true, CentEstimator, aod::BCsWithTimestamps>(col, cent, ccdb, registry);
     hfEvSel.fillHistograms(col, rejectionMask, cent);
     if (rejectionMask != 0) {
       return false;
@@ -248,7 +231,7 @@ struct HfProducerCharmHadronsCharmFemtoDream {
     initCCDB(bc, runNumber, ccdb, ccdbPathGrpMag.value, nullptr, false);
     // Propagator field is in kG; FemtoDream uses Tesla.
     const float fieldTesla =
-      0.1f * o2::base::Propagator::Instance()->getNominalBz();
+        0.1f * o2::base::Propagator::Instance()->getNominalBz();
     // MultV0M is the common reduced percentile column: FT0C or -1 (no
     // estimator).
     collisions(col.posZ(), cent, col.multNTracksPV(), 2.f, fieldTesla);
@@ -258,14 +241,13 @@ struct HfProducerCharmHadronsCharmFemtoDream {
   }
 
   template <typename Scores>
-  std::array<float, 3> readScores(Scores const& scores)
-  {
-    if (scores.size() != 3) {
+  std::array<float, 3> readScores(Scores const&scores) {
+    if (scores.size() != NMlClasses) {
       LOGP(fatal,
            "Expected three selector ML scores: background, prompt, nonprompt");
       return {-1.f, -1.f, -1.f};
     }
-    for (auto score : scores) {
+    for (const auto& score : scores) {
       if (!std::isfinite(score)) {
         LOGP(fatal, "Non-finite selector ML score");
       }
@@ -274,16 +256,15 @@ struct HfProducerCharmHadronsCharmFemtoDream {
   }
 
   template <bool WithMl, typename Collision, typename Candidates>
-  void fillD0(Collision const& col, Candidates const& candidates)
-  {
+  void fillD0(Collision const&col, Candidates const&candidates) {
     const auto timestamp =
-      col.template bc_as<aod::BCsWithTimestamps>().timestamp();
-    for (auto const& cand : candidates) {
+        col.template bc_as<aod::BCsWithTimestamps>().timestamp();
+    for (const auto& cand : candidates) {
       auto p0 = cand.template prong0_as<aod::Tracks>();
       auto p1 = cand.template prong1_as<aod::Tracks>();
       // The OR filter accepts the row if either hypothesis passes. Write only
       // the passing hypotheses, each with its own flavour and ML scores.
-      for (int hypothesis = 0; hypothesis < 2; ++hypothesis) {
+      for (int hypothesis = 0; hypothesis < ND0Hypotheses; ++hypothesis) {
         if ((hypothesis == 0 ? cand.isSelD0() : cand.isSelD0bar()) <
             selectionFlagD0) {
           continue;
@@ -304,7 +285,7 @@ struct HfProducerCharmHadronsCharmFemtoDream {
             const int pdgCode = hypothesis == 0 ? o2::constants::physics::kD0
                                                 : -o2::constants::physics::kD0;
             auto features =
-              hfMlResponseD0.getInputFeatures<true>(cand, pdgCode);
+                hfMlResponseD0.getInputFeatures<true>(cand, pdgCode);
             std::vector<float> output;
             if (!hfMlResponseD0.isSelectedMl(features, cand.pt(), output)) {
               continue; // Reject this hypothesis only.
@@ -323,11 +304,10 @@ struct HfProducerCharmHadronsCharmFemtoDream {
   }
 
   template <bool WithMl, typename Collision, typename Candidates>
-  void fillDstar(Collision const& col, Candidates const& candidates)
-  {
+  void fillDstar(Collision const&col, Candidates const&candidates) {
     const auto timestamp =
-      col.template bc_as<aod::BCsWithTimestamps>().timestamp();
-    for (auto const& cand : candidates) {
+        col.template bc_as<aod::BCsWithTimestamps>().timestamp();
+    for (const auto& cand : candidates) {
       auto p0 = cand.template prong0_as<aod::Tracks>();
       auto p1 = cand.template prong1_as<aod::Tracks>();
       auto soft = cand.template prongPi_as<aod::Tracks>();
@@ -360,118 +340,99 @@ struct HfProducerCharmHadronsCharmFemtoDream {
     }
   }
 
-  void processD0D0(Collisions::iterator const& col,
+  void processD0D0(Collisions::iterator const&col,
                    aod::BCsWithTimestamps const&, aod::Tracks const&,
-                   soa::Filtered<D0s> const& d0s)
-  {
+                   soa::Filtered<D0s> const&d0s) {
     if (acceptCollision<o2::hf_centrality::CentralityEstimator::None>(col)) {
       fillD0<false>(col, d0s);
       rowMasks(hasD0 ? 1 : 0, hasDstar ? 1 : 0, 0);
     }
   }
-  PROCESS_SWITCH(HfProducerCharmHadronsCharmFemtoDream, processD0D0,
-                 "D0 only, data", true);
+  PROCESS_SWITCH(HfProducerCharmHadronsCharmFemtoDream, processD0D0, "D0 only, data", true);
 
-  void processD0Dstar(Collisions::iterator const& col,
+  void processD0Dstar(Collisions::iterator const&col,
                       aod::BCsWithTimestamps const&, aod::Tracks const&,
-                      soa::Filtered<D0s> const& d0s,
-                      soa::Filtered<Dstars> const& dstars)
-  {
+                      soa::Filtered<D0s> const&d0s,
+                      soa::Filtered<Dstars> const&dstars) {
     if (acceptCollision<o2::hf_centrality::CentralityEstimator::None>(col)) {
       fillD0<false>(col, d0s);
       fillDstar<false>(col, dstars);
       rowMasks(hasD0 ? 1 : 0, hasDstar ? 1 : 0, 0);
     }
   }
-  PROCESS_SWITCH(HfProducerCharmHadronsCharmFemtoDream, processD0Dstar,
-                 "D0 and Dstar, data", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsCharmFemtoDream, processD0Dstar, "D0 and Dstar, data", false);
 
-  void processD0D0Ml(Collisions::iterator const& col,
+  void processD0D0Ml(Collisions::iterator const&col,
                      aod::BCsWithTimestamps const&, aod::Tracks const&,
-                     soa::Filtered<D0sMl> const& d0s)
-  {
+                     soa::Filtered<D0sMl> const&d0s) {
     if (acceptCollision<o2::hf_centrality::CentralityEstimator::None>(col)) {
       fillD0<true>(col, d0s);
       rowMasks(hasD0 ? 1 : 0, hasDstar ? 1 : 0, 0);
     }
   }
-  PROCESS_SWITCH(HfProducerCharmHadronsCharmFemtoDream, processD0D0Ml,
-                 "D0 with selector ML scores", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsCharmFemtoDream, processD0D0Ml, "D0 with selector ML scores", false);
 
-  void processD0DstarMl(Collisions::iterator const& col,
+  void processD0DstarMl(Collisions::iterator const&col,
                         aod::BCsWithTimestamps const&, aod::Tracks const&,
-                        soa::Filtered<D0sMl> const& d0s,
-                        soa::Filtered<DstarsMl> const& dstars)
-  {
+                        soa::Filtered<D0sMl> const&d0s,
+                        soa::Filtered<DstarsMl> const&dstars) {
     if (acceptCollision<o2::hf_centrality::CentralityEstimator::None>(col)) {
       fillD0<true>(col, d0s);
       fillDstar<true>(col, dstars);
       rowMasks(hasD0 ? 1 : 0, hasDstar ? 1 : 0, 0);
     }
   }
-  PROCESS_SWITCH(HfProducerCharmHadronsCharmFemtoDream, processD0DstarMl,
-                 "D0 and Dstar with selector ML scores", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsCharmFemtoDream, processD0DstarMl, "D0 and Dstar with selector ML scores", false);
 
-  void processD0D0WithFT0C(CollisionsWithFT0C::iterator const& col,
+  void processD0D0WithFT0C(CollisionsWithFT0C::iterator const&col,
                            aod::BCsWithTimestamps const&, aod::Tracks const&,
-                           soa::Filtered<D0s> const& d0s)
-  {
+                           soa::Filtered<D0s> const&d0s) {
     if (acceptCollision<o2::hf_centrality::CentralityEstimator::FT0C>(col)) {
       fillD0<false>(col, d0s);
       rowMasks(hasD0 ? 1 : 0, hasDstar ? 1 : 0, 0);
     }
   }
-  PROCESS_SWITCH(HfProducerCharmHadronsCharmFemtoDream, processD0D0WithFT0C,
-                 "D0 only, data with FT0C centrality", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsCharmFemtoDream, processD0D0WithFT0C, "D0 only, data with FT0C centrality", false);
 
-  void processD0DstarWithFT0C(CollisionsWithFT0C::iterator const& col,
+  void processD0DstarWithFT0C(CollisionsWithFT0C::iterator const&col,
                               aod::BCsWithTimestamps const&,
                               aod::Tracks const&,
-                              soa::Filtered<D0s> const& d0s,
-                              soa::Filtered<Dstars> const& dstars)
-  {
+                              soa::Filtered<D0s> const&d0s,
+                              soa::Filtered<Dstars> const&dstars) {
     if (acceptCollision<o2::hf_centrality::CentralityEstimator::FT0C>(col)) {
       fillD0<false>(col, d0s);
       fillDstar<false>(col, dstars);
       rowMasks(hasD0 ? 1 : 0, hasDstar ? 1 : 0, 0);
     }
   }
-  PROCESS_SWITCH(HfProducerCharmHadronsCharmFemtoDream, processD0DstarWithFT0C,
-                 "D0 and Dstar, data with FT0C centrality", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsCharmFemtoDream, processD0DstarWithFT0C, "D0 and Dstar, data with FT0C centrality", false);
 
-  void processD0D0MlWithFT0C(CollisionsWithFT0C::iterator const& col,
+  void processD0D0MlWithFT0C(CollisionsWithFT0C::iterator const&col,
                              aod::BCsWithTimestamps const&,
                              aod::Tracks const&,
-                             soa::Filtered<D0sMl> const& d0s)
-  {
+                             soa::Filtered<D0sMl> const&d0s) {
     if (acceptCollision<o2::hf_centrality::CentralityEstimator::FT0C>(col)) {
       fillD0<true>(col, d0s);
       rowMasks(hasD0 ? 1 : 0, hasDstar ? 1 : 0, 0);
     }
   }
-  PROCESS_SWITCH(HfProducerCharmHadronsCharmFemtoDream, processD0D0MlWithFT0C,
-                 "D0 with selector ML scores and FT0C centrality", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsCharmFemtoDream, processD0D0MlWithFT0C, "D0 with selector ML scores and FT0C centrality", false);
 
-  void processD0DstarMlWithFT0C(CollisionsWithFT0C::iterator const& col,
+  void processD0DstarMlWithFT0C(CollisionsWithFT0C::iterator const&col,
                                 aod::BCsWithTimestamps const&,
                                 aod::Tracks const&,
-                                soa::Filtered<D0sMl> const& d0s,
-                                soa::Filtered<DstarsMl> const& dstars)
-  {
+                                soa::Filtered<D0sMl> const&d0s,
+                                soa::Filtered<DstarsMl> const&dstars) {
     if (acceptCollision<o2::hf_centrality::CentralityEstimator::FT0C>(col)) {
       fillD0<true>(col, d0s);
       fillDstar<true>(col, dstars);
       rowMasks(hasD0 ? 1 : 0, hasDstar ? 1 : 0, 0);
     }
   }
-  PROCESS_SWITCH(HfProducerCharmHadronsCharmFemtoDream,
-                 processD0DstarMlWithFT0C,
-                 "D0 and Dstar with selector ML scores and FT0C centrality",
-                 false);
+  PROCESS_SWITCH(HfProducerCharmHadronsCharmFemtoDream, processD0DstarMlWithFT0C, "D0 and Dstar with selector ML scores and FT0C centrality", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
+WorkflowSpec defineDataProcessing(ConfigContext const&cfgc) {
   return WorkflowSpec{
-    adaptAnalysisTask<HfProducerCharmHadronsCharmFemtoDream>(cfgc)};
+      adaptAnalysisTask<HfProducerCharmHadronsCharmFemtoDream>(cfgc)};
 }
