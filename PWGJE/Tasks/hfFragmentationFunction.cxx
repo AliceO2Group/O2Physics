@@ -70,16 +70,16 @@ double deltaPhi(double phi1, double phi2)
 /// function, this namespace with enums is create
 namespace collisionSelections
 {
-  enum CollisionSelectionStep {
-    kMCCollisions = 0,                          ///< raw mccollisions with no selection, starts with 0
-    kMCCollisionsZCut,                          ///< mccollisions with z vtx selection
-    kMCCollisionsZCutSel8,                      ///< mccollisions with z vtx and sel8 mc emulated selections
-    kMCCollisionsZCutSel8HasCollisions,         ///< mccollisions with z vtx and sel8 mc emulated selections, with at least one reconstructed collisions
-    kMCCollisionsZCutSel8SplitCollisions,       ///< mccollisions with z vtx and sel8 mc emulated selections, with no split reconstructed collisions
-    kRecoCollisions,                            ///< raw reconstructed collisions after previous mccollisions selection
-    kRecoCollisionsZcut,                        ///< reconstructed collisions with z vtx selection after previous mccollisions selection
-    kRecoCollisionsZcutSel8                     ///< reconstructed collisions with z vtx and sel8 selections after previous mccollisions selection
-  };
+enum CollisionSelectionStep {
+  kMCCollisions = 0,                    ///< raw mccollisions with no selection, starts with 0
+  kMCCollisionsZCut,                    ///< mccollisions with z vtx selection
+  kMCCollisionsZCutSel8,                ///< mccollisions with z vtx and sel8 mc emulated selections
+  kMCCollisionsZCutSel8HasCollisions,   ///< mccollisions with z vtx and sel8 mc emulated selections, with at least one reconstructed collisions
+  kMCCollisionsZCutSel8SplitCollisions, ///< mccollisions with z vtx and sel8 mc emulated selections, with no split reconstructed collisions
+  kRecoCollisions,                      ///< raw reconstructed collisions after previous mccollisions selection
+  kRecoCollisionsZcut,                  ///< reconstructed collisions with z vtx selection after previous mccollisions selection
+  kRecoCollisionsZcutSel8               ///< reconstructed collisions with z vtx and sel8 selections after previous mccollisions selection
+};
 }
 // creating table for storing distance data
 namespace o2::aod
@@ -525,14 +525,14 @@ struct HfFragmentationFunction {
           }
         } else {
           // store matched particle and detector level data in one single table (calculate angular distance in eta-phi plane on the fly)
-          matchJetTable(jetutilities::deltaR(mcpjet, mcpcand), mcpjet.pt(), mcpjet.eta(), mcpjet.phi(), mcpjet.template tracks_as<aod::JetParticles>().size() + mcpjet.template candidates_as<TCandidatesMCP>().size(),   // particle level jet
-                        mcpcand.pt(), mcpcand.eta(), mcpcand.phi(), mcpcand.y(), (mcpcand.originMcGen() == RecoDecay::OriginType::Prompt),                                                                                // particle level HF
-                        std::abs(mccollision.posZ()) < vertexZCut, jetderiveddatautilities::selectCollision(mccollision, eventSelectionBits), static_cast<int>(collisionsPerMCCollision.size()), numSelectedCollisions,   // MC collision selections
-                        -2, -2, -2, -2, -2,                                                                                                                                                                               // no detector-level jet found
-                        -2, -2, -2, -2, -2, false,                                                                                                                                                                        // no detector-level jet found
-                        -2, -2, -2,                                                                                                                                                                                       // no detector-level jet found
-                        -2, -2,                                                                                                                                                                                           // no detector-level jet found
-                        false, false);                                                                                                                                                                                    // no detector-level jet found
+          matchJetTable(jetutilities::deltaR(mcpjet, mcpcand), mcpjet.pt(), mcpjet.eta(), mcpjet.phi(), mcpjet.template tracks_as<aod::JetParticles>().size() + mcpjet.template candidates_as<TCandidatesMCP>().size(), // particle level jet
+                        mcpcand.pt(), mcpcand.eta(), mcpcand.phi(), mcpcand.y(), (mcpcand.originMcGen() == RecoDecay::OriginType::Prompt),                                                                              // particle level HF
+                        std::abs(mccollision.posZ()) < vertexZCut, jetderiveddatautilities::selectCollision(mccollision, eventSelectionBits), static_cast<int>(collisionsPerMCCollision.size()), numSelectedCollisions, // MC collision selections
+                        -2, -2, -2, -2, -2,                                                                                                                                                                             // no detector-level jet found
+                        -2, -2, -2, -2, -2, false,                                                                                                                                                                      // no detector-level jet found
+                        -2, -2, -2,                                                                                                                                                                                     // no detector-level jet found
+                        -2, -2,                                                                                                                                                                                         // no detector-level jet found
+                        false, false);                                                                                                                                                                                  // no detector-level jet found
         }
       } // end of mcpjets loop
 
@@ -564,14 +564,14 @@ struct HfFragmentationFunction {
             }
 
             // store matched particle and detector level data in one single table (calculate angular distance in eta-phi plane on the fly)
-              matchJetTable(-2, -2, -2, -2, -2,                                                                                                                                                                             // particle level jet
-                            -2, -2, -2, -2, false,                                                                                                                                                                          // particle level HF
-                            std::abs(mccollision.posZ()) < vertexZCut, jetderiveddatautilities::selectCollision(mccollision, eventSelectionBits), static_cast<int>(collisionsPerMCCollision.size()), numSelectedCollisions,                   // MC collision selections
-                            jetutilities::deltaR(mcdjet, mcdcand), mcdjet.pt(), mcdjet.eta(), mcdjet.phi(), mcdjet.template tracks_as<aod::JetTracks>().size() + mcdjet.template candidates_as<TCandidatesMCD>().size(),    // detector level jet
-                            mcdcand.pt(), mcdcand.eta(), mcdcand.phi(), mcdcand.m(), mcdcand.y(), (mcdcand.originMcRec() == RecoDecay::OriginType::Prompt),                                                                 // detector level HF
-                            mcdcand.mlScores()[0], mcdcand.mlScores()[1], mcdcand.mlScores()[2],                                                                                                                            // Machine Learning PID scores: background, prompt, non-prompt
-                            static_cast<int>(mcdcand.flagMcMatchRec()), selectedAs,                                                                                                                                         // HF = +1, HFbar = -1, neither = 0
-                            std::abs(collision.posZ()) < vertexZCut, jetderiveddatautilities::selectCollision(collision, eventSelectionBits));                                                                              // Reconstructed collision selections
+            matchJetTable(-2, -2, -2, -2, -2,                                                                                                                                                                             // particle level jet
+                          -2, -2, -2, -2, false,                                                                                                                                                                          // particle level HF
+                          std::abs(mccollision.posZ()) < vertexZCut, jetderiveddatautilities::selectCollision(mccollision, eventSelectionBits), static_cast<int>(collisionsPerMCCollision.size()), numSelectedCollisions, // MC collision selections
+                          jetutilities::deltaR(mcdjet, mcdcand), mcdjet.pt(), mcdjet.eta(), mcdjet.phi(), mcdjet.template tracks_as<aod::JetTracks>().size() + mcdjet.template candidates_as<TCandidatesMCD>().size(),    // detector level jet
+                          mcdcand.pt(), mcdcand.eta(), mcdcand.phi(), mcdcand.m(), mcdcand.y(), (mcdcand.originMcRec() == RecoDecay::OriginType::Prompt),                                                                 // detector level HF
+                          mcdcand.mlScores()[0], mcdcand.mlScores()[1], mcdcand.mlScores()[2],                                                                                                                            // Machine Learning PID scores: background, prompt, non-prompt
+                          static_cast<int>(mcdcand.flagMcMatchRec()), selectedAs,                                                                                                                                         // HF = +1, HFbar = -1, neither = 0
+                          std::abs(collision.posZ()) < vertexZCut, jetderiveddatautilities::selectCollision(collision, eventSelectionBits));                                                                              // Reconstructed collision selections
           }
         } // end of non-matched detector level jets loop
       } // end of collisions loop
