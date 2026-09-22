@@ -128,9 +128,9 @@ struct HfProducerCharmHadronsCharmFemtoDream {
       LOGP(fatal, "{}: new BDT requires an Ml producer process", cfg.prefix);
     }
     auto const& edges = cfg.binsPtMl.value;
-    if (edges.size() < NMlPtEdgesMin || !std::all_of(edges.begin(), edges.end(), [](double x) { return std::isfinite(x); }) || std::adjacent_find(edges.begin(), edges.end(), [](double a, double b) {
-                                                                                                                                 return a >= b;
-                                                                                                                               }) != edges.end()) {
+    const bool areEdgesFinite = std::all_of(edges.begin(), edges.end(), [](double x) { return std::isfinite(x); });
+    const bool areEdgesIncreasing = std::adjacent_find(edges.begin(), edges.end(), [](double a, double b) { return a >= b; }) == edges.end();
+    if (edges.size() < NMlPtEdgesMin || !areEdgesFinite || !areEdgesIncreasing) {
       LOGP(fatal, "{}: binsPtMl must be finite and strictly increasing", cfg.prefix);
     }
     const auto nBins = edges.size() - 1;
