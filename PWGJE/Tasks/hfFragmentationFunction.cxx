@@ -70,16 +70,16 @@ double deltaPhi(double phi1, double phi2)
 /// function, this namespace with enums is create
 namespace collision_selections
 {
-  enum CollisionSelectionStep {
-    StepMcCollisions = 0,                          ///< raw mccollisions with no selection, starts with 0
-    StepMcCollisionsZCut,                          ///< mccollisions with z vtx selection
-    StepMcCollisionsZCutSel8,                      ///< mccollisions with z vtx and sel8 mc emulated selections
-    StepMcCollisionsZCutSel8HasCollisions,         ///< mccollisions with z vtx and sel8 mc emulated selections, with at least one reconstructed collisions
-    StepMcCollisionsZCutSel8NoSplitCollisions,       ///< mccollisions with z vtx and sel8 mc emulated selections, with no split reconstructed collisions
-    StepRecoCollisions,                            ///< raw reconstructed collisions after previous mccollisions selection
-    StepRecoCollisionsZcut,                        ///< reconstructed collisions with z vtx selection after previous mccollisions selection
-    StepRecoCollisionsZcutSel8                     ///< reconstructed collisions with z vtx and sel8 selections after previous mccollisions selection
-  };
+enum CollisionSelectionStep {
+  StepMcCollisions = 0,                      ///< raw mccollisions with no selection, starts with 0
+  StepMcCollisionsZCut,                      ///< mccollisions with z vtx selection
+  StepMcCollisionsZCutSel8,                  ///< mccollisions with z vtx and sel8 mc emulated selections
+  StepMcCollisionsZCutSel8HasCollisions,     ///< mccollisions with z vtx and sel8 mc emulated selections, with at least one reconstructed collisions
+  StepMcCollisionsZCutSel8NoSplitCollisions, ///< mccollisions with z vtx and sel8 mc emulated selections, with no split reconstructed collisions
+  StepRecoCollisions,                        ///< raw reconstructed collisions after previous mccollisions selection
+  StepRecoCollisionsZcut,                    ///< reconstructed collisions with z vtx selection after previous mccollisions selection
+  StepRecoCollisionsZcutSel8                 ///< reconstructed collisions with z vtx and sel8 selections after previous mccollisions selection
+};
 } // namespace collision_selections
 // creating table for storing distance data
 namespace o2::aod
