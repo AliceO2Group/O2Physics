@@ -75,10 +75,10 @@ struct HfTaskCharmHadronsCharmFemtoDream {
   Configurable<float> daughterMassMin{"daughterMassMin", 1.80f, "Minimum Dstar daughter D0 mass"};
   Configurable<float> daughterMassMax{"daughterMassMax", 1.93f, "Maximum Dstar daughter D0 mass"};
   Configurable<bool> useMl{"useMl", false, "Require valid ML scores and apply score cuts"};
-  Configurable<float> maxBkgD0{"maxBkgD0", 1.f, "Maximum D0 background score"};
-  Configurable<float> minPromptD0{"minPromptD0", 0.f, "Minimum D0 prompt score"};
-  Configurable<float> maxBkgDstar{"maxBkgDstar", 1.f, "Maximum Dstar background score"};
-  Configurable<float> minPromptDstar{"minPromptDstar", 0.f, "Minimum Dstar prompt score"};
+  Configurable<float> d0BkgBdtMax{"d0BkgBdtMax", 1.f, "Maximum D0 background score"};
+  Configurable<float> d0PromptBdtMin{"d0PromptBdtMin", 0.f, "Minimum D0 prompt score"};
+  Configurable<float> dstarBkgBdtMax{"dstarBkgBdtMax", 1.f, "Maximum Dstar background score"};
+  Configurable<float> dstarPromptBdtMin{"dstarPromptBdtMin", 0.f, "Minimum Dstar prompt score"};
   Configurable<int> charmHadCandSel{"charmHadCandSel", 1, "Minimum reduced charm candidate selection flag"};
   struct : ConfigurableGroup {
     std::string prefix = "eventSel";
@@ -108,8 +108,8 @@ struct HfTaskCharmHadronsCharmFemtoDream {
   Preslice<FilteredCharmCand2Prongs> perCollisionD0 = aod::femtodreamparticle::fdCollisionId;
   Preslice<FilteredCharmCandDstars> perCollisionDstar = aod::femtodreamparticle::fdCollisionId;
 
-  Partition<FilteredCharmCand2Prongs> partitionCharmHadron2Prong = ifnode(useMl, aod::fdhf::bdtBkg <= maxBkgD0 && aod::fdhf::bdtPrompt >= minPromptD0, Node{LiteralNode{true}});
-  Partition<FilteredCharmCandDstars> partitionCharmHadronDstar = ifnode(useMl, aod::fdhf::bdtBkg <= maxBkgDstar && aod::fdhf::bdtPrompt >= minPromptDstar, Node{LiteralNode{true}});
+  Partition<FilteredCharmCand2Prongs> partitionCharmHadron2Prong = ifnode(useMl, aod::fdhf::bdtBkg <= d0BkgBdtMax && aod::fdhf::bdtPrompt >= d0PromptBdtMin, Node{LiteralNode{true}});
+  Partition<FilteredCharmCandDstars> partitionCharmHadronDstar = ifnode(useMl, aod::fdhf::bdtBkg <= dstarBkgBdtMax && aod::fdhf::bdtPrompt >= dstarPromptBdtMin, Node{LiteralNode{true}});
 
   ConfigurableAxis mixingBinMult{"mixingBinMult", {VARIABLE_WIDTH, 0.f, 20.f, 60.f, 200.f}, "Mixing bins - multiplicity"};
   ConfigurableAxis mixingBinMultPercentile{"mixingBinMultPercentile", {VARIABLE_WIDTH, 0.f, 100.f}, "Mixing bins - multiplicity percentile"};
@@ -125,19 +125,12 @@ struct HfTaskCharmHadronsCharmFemtoDream {
     if (doprocessD0D0 == doprocessD0Dstar) {
       LOGP(fatal, "Enable exactly one charm-charm analysis process");
     }
-    if (mixSetting.mixingDepth < 0 || mixSetting.mixingBinPolicy < 0 ||
-        mixSetting.mixingBinPolicy > MixingBinPolicyMax || ptMinD0 < 0 || ptMinD0 >= ptMaxD0 ||
-        ptMinDstar < 0 || ptMinDstar >= ptMaxDstar || etaMax <= 0 ||
-        massMinD0 >= massMaxD0 || deltaMassMin >= deltaMassMax ||
-        daughterMassMin >= daughterMassMax || charmHadCandSel < 1 ||
-        eventSel.multMin > eventSel.multMax ||
-        eventSel.multPercentileMin > eventSel.multPercentileMax) {
+    if (mixSetting.mixingDepth < 0 || mixSetting.mixingBinPolicy < 0 || mixSetting.mixingBinPolicy > MixingBinPolicyMax || ptMinD0 < 0 || ptMinD0 >= ptMaxD0 || ptMinDstar < 0 || ptMinDstar >= ptMaxDstar || etaMax <= 0 || massMinD0 >= massMaxD0 || deltaMassMin >= deltaMassMax || daughterMassMin >= daughterMassMax || charmHadCandSel < 1 || eventSel.multMin > eventSel.multMax || eventSel.multPercentileMin > eventSel.multPercentileMax) {
       LOGP(fatal, "Invalid charm-charm selection or mixing configuration");
     }
     colBinningMult = {{mixingBinVztx, mixingBinMult}, true};
     colBinningMultPercentile = {{mixingBinVztx, mixingBinMultPercentile}, true};
-    colBinningMultMultPercentile = {
-      {mixingBinVztx, mixingBinMult, mixingBinMultPercentile}, true};
+    colBinningMultMultPercentile = {{mixingBinVztx, mixingBinMult, mixingBinMultPercentile}, true};
     const AxisSpec kstar{400, 0., 2., "k* (GeV/c)"};
     const AxisSpec massD0{300, massMinD0.value, massMaxD0.value, "M(Kpi) (GeV/c2)"};
     const AxisSpec deltaMass{310, deltaMassMin.value, deltaMassMax.value, "Delta M (GeV/c2)"};
@@ -198,15 +191,14 @@ struct HfTaskCharmHadronsCharmFemtoDream {
     return first.pt() < second.pt(); // leading pT first for equal flavours
   }
 
-  template <typename Candidates>
-  void validateMlScores(Candidates const& candidates)
+  template <typename CandsType>
+  void validateMlScores(CandsType const& candidates)
   {
     if (!useMl) {
       return;
     }
     for (const auto& row : candidates) {
-      if (!std::isfinite(row.bdtBkg()) || !std::isfinite(row.bdtPrompt()) ||
-          row.bdtBkg() < 0.f || row.bdtPrompt() < 0.f) {
+      if (!std::isfinite(row.bdtBkg()) || !std::isfinite(row.bdtPrompt()) || row.bdtBkg() < 0.f || row.bdtPrompt() < 0.f) {
         LOGP(fatal, "ML cuts requested on missing/invalid scores: use an ML producer process");
       }
     }
@@ -244,8 +236,7 @@ struct HfTaskCharmHadronsCharmFemtoDream {
   }
 
   template <bool Mixed, bool IsDstar, typename FirstRow, typename SecondRow>
-  void fillPair(FirstRow const& first, SecondRow const& second, float firstMass,
-                float secondMass, float mult)
+  void fillPair(FirstRow const& first, SecondRow const& second, float firstMass, float secondMass, float mult)
   {
     if constexpr (!Mixed) {
       if (sharesDaughter<IsDstar>(first, second)) {
@@ -276,17 +267,23 @@ struct HfTaskCharmHadronsCharmFemtoDream {
     }
   }
 
-  template <typename Policy, typename Collision>
-  int mixingBin(Policy const& policy, Collision col)
+  template <typename CollType>
+  int mixingBin(CollType const& col)
   {
-    return policy.getBin(policy.getBinningValues(col));
+    switch (mixSetting.mixingBinPolicy) {
+      case aod::femtodreamcollision::kMult:
+        return colBinningMult.getBin({col.posZ(), col.multNtr()});
+      case aod::femtodreamcollision::kMultPercentile:
+        return colBinningMultPercentile.getBin({col.posZ(), col.multV0M()});
+      case aod::femtodreamcollision::kMultMultPercentile:
+        return colBinningMultMultPercentile.getBin({col.posZ(), col.multNtr(), col.multV0M()});
+      default:
+        return -1;
+    }
   }
 
   template <bool IsDstar, typename D0Table, typename OtherTable, typename Policy>
-  void doMixedEvent(FilteredCollisions const& cols,
-                    D0Table const& d0Rows,
-                    OtherTable const& otherRows,
-                    Policy const& policy)
+  void doMixedEvent(FilteredCollisions const& cols, D0Table const& d0Rows, OtherTable const& otherRows, Policy const& policy)
   {
     Partition<FilteredCollisions> partitionMaskedCol1 = (aod::femtodreamcollision::bitmaskTrackOne & bitMask) == bitMask;
     // TrackOne denotes D0 presence, TrackTwo denotes Dstar presence.
@@ -314,9 +311,9 @@ struct HfTaskCharmHadronsCharmFemtoDream {
         continue;
       }
       if constexpr (IsDstar) {
-        registry.fill(HIST("MixingQA/hMECollisionBinsD0Dstar"), mixingBin(policy, collision1));
+        registry.fill(HIST("MixingQA/hMECollisionBinsD0Dstar"), mixingBin(collision1));
       } else {
-        registry.fill(HIST("MixingQA/hMECollisionBinsD0D0"), mixingBin(policy, collision1));
+        registry.fill(HIST("MixingQA/hMECollisionBinsD0D0"), mixingBin(collision1));
       }
       auto first = d0Rows.sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);
       auto second = otherRows.sliceByCached(aod::femtodreamparticle::fdCollisionId, collision2.globalIndex(), cache);
@@ -334,9 +331,7 @@ struct HfTaskCharmHadronsCharmFemtoDream {
   // Write candidates once per collision, independently of SE/ME pair counts.
   // Reuse the same output tables and field conventions as the track/V0 tasks.
   template <bool WithDstar, typename CollType, typename D0Slice, typename DstarSlice>
-  void fillTables(CollType const& col,
-                  D0Slice const& d0s,
-                  DstarSlice const& dstars)
+  void fillTables(CollType const& col, D0Slice const& d0s, DstarSlice const& dstars)
   {
     int64_t timeStamp = -1;
     bool hasCandidate = false;
@@ -353,10 +348,7 @@ struct HfTaskCharmHadronsCharmFemtoDream {
         continue;
       }
       recordTimeStamp(part.timeStamp());
-      rowFemtoResultCharm2Prong(col.globalIndex(), timeStamp, mass, part.pt(),
-                                part.eta(), part.phi(), part.prong0Id(),
-                                part.prong1Id(), part.charge(), part.bdtBkg(),
-                                part.bdtPrompt(), part.bdtFD(), 0, 0);
+      rowFemtoResultCharm2Prong(col.globalIndex(), timeStamp, mass, part.pt(), part.eta(), part.phi(), part.prong0Id(), part.prong1Id(), part.charge(), part.bdtBkg(), part.bdtPrompt(), part.bdtFD(), 0, 0);
     }
     if constexpr (WithDstar) {
       for (const auto& part : dstars) {
@@ -367,11 +359,7 @@ struct HfTaskCharmHadronsCharmFemtoDream {
         recordTimeStamp(part.timeStamp());
         const std::array<double, 2> daughterMasses = part.charge() > 0 ? std::array{MassPiPlus, MassKPlus} : std::array{MassKPlus, MassPiPlus};
         // CharmM is delta mass, CharmDaughM is M(Kpi), as in D+Track.
-        rowFemtoResultCharmDstar(
-          col.globalIndex(), timeStamp, mass, part.mDaughD0(daughterMasses),
-          part.pt(), part.eta(), part.phi(), part.prong0Id(), part.prong1Id(),
-          part.prong2Id(), part.charge(), part.bdtBkg(), part.bdtPrompt(),
-          part.bdtFD(), 0, 0);
+        rowFemtoResultCharmDstar(col.globalIndex(), timeStamp, mass, part.mDaughD0(daughterMasses), part.pt(), part.eta(), part.phi(), part.prong0Id(), part.prong1Id(), part.prong2Id(), part.charge(), part.bdtBkg(), part.bdtPrompt(), part.bdtFD(), 0, 0);
       }
     }
     // Retain D0-only/Dstar-only events even when no clean SE pair exists.
@@ -382,10 +370,7 @@ struct HfTaskCharmHadronsCharmFemtoDream {
   }
 
   template <bool WithDstar, typename D0Table, typename DstarTable, typename Policy>
-  void runWithPolicy(FilteredCollisions const& cols,
-                     D0Table const& d0Rows,
-                     DstarTable const& dstarRows,
-                     Policy const& policy)
+  void runWithPolicy(FilteredCollisions const& cols, D0Table const& d0Rows, DstarTable const& dstarRows, Policy const& policy)
   {
     for (const auto& col : cols) {
       auto d0s = d0Rows.sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
@@ -396,7 +381,7 @@ struct HfTaskCharmHadronsCharmFemtoDream {
       } else {
         fillTables<false>(col, d0s, d0s);
       }
-      const int bin = mixingBin(policy, col);
+      const int bin = mixingBin(col);
       if (bin < 0 || !std::isfinite(col.magField())) {
         registry.fill(HIST("QA/events"), 1);
         continue;
@@ -428,9 +413,7 @@ struct HfTaskCharmHadronsCharmFemtoDream {
   }
 
   template <bool WithDstar, typename DstarTable>
-  void run(FilteredCollisions const& cols,
-           FilteredCharmCand2Prongs const& d0Rows,
-           DstarTable const& dstarRows)
+  void run(FilteredCollisions const& cols, FilteredCharmCand2Prongs const& d0Rows, DstarTable const& dstarRows)
   {
     validateMlScores(d0Rows);
     partitionCharmHadron2Prong.bindTable(d0Rows);
@@ -471,6 +454,5 @@ struct HfTaskCharmHadronsCharmFemtoDream {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<HfTaskCharmHadronsCharmFemtoDream>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfTaskCharmHadronsCharmFemtoDream>(cfgc)};
 }
