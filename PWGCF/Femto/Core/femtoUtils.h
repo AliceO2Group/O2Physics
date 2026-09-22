@@ -93,6 +93,9 @@ inline double getPdgMass(int pdgCode)
     case kKPlus:
       mass = o2::constants::physics::MassKPlus;
       break;
+    case kK0Short:
+      mass = o2::constants::physics::MassK0Short;
+      break;
     case kProton:
       mass = o2::constants::physics::MassProton;
       break;

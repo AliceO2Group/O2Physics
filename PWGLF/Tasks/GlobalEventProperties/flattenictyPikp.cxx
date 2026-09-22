@@ -67,6 +67,7 @@
 #include <array>
 #include <chrono>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <iterator>
 #include <map>
@@ -97,9 +98,9 @@ static constexpr float CdEtaFV0 = (CmaxEtaFV0 - CminEtaFV0) / CmaxRingsFV0;
 
 // PID names
 static constexpr int CprocessIdWeak = 4;
-static constexpr o2::track::PID::ID Npart = 5;
-const std::array<int, Npart> pDGs{11, 13, 211, 321, 2212};
-static constexpr std::array<std::string, Npart> CspeciesAll{"El", "Mu", "Pi", "Ka", "Pr"};
+static constexpr o2::track::PID::ID Npart = 3;
+const std::array<int, Npart> pDGs{211, 321, 2212};
+static constexpr std::array<std::string, Npart> CspeciesAll{"Pi", "Ka", "Pr"};
 
 // histogram naming
 static constexpr std::array<std::string, 3> PidDir{"el/", "pi/", "pr/"};
@@ -184,7 +185,6 @@ enum V0Sel {
   v0SelRejectV0sAtTPCSector,
   v0SelCosPA,
   v0SelV0radius,
-  v0SelDCAposToPV,
   v0SelDaughters,
   v0SelDCAv0daughter,
   nV0Sel
@@ -297,8 +297,8 @@ struct FlattenictyPikp {
   } evtSelOpt;
 
   struct : ConfigurableGroup {
-    ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.2, 3.4, 3.6, 3.8, 4, 4.4, 4.8, 5.2, 5.6, 6, 6.5, 7, 7.5, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30}, "pT binning"};
-    ConfigurableAxis axisPtV0s{"axisPtV0s", {VARIABLE_WIDTH, 0, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.2, 1.4, 1.6, 1.8, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.2, 3.4, 3.6, 3.8, 4, 4.4, 4.8, 5.2, 5.6, 6, 6.4, 6.8, 7.2, 7.6, 8, 8.4, 8.8, 9.2, 9.6, 10, 10.5, 11, 11.5, 12, 12.5, 13, 13.5, 14, 14.5, 15, 20}, "pT V0s binning"};
+    ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.2, 3.4, 3.6, 3.8, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50}, "pT binning"};
+    ConfigurableAxis axisPtV0s{"axisPtV0s", {VARIABLE_WIDTH, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.2, 1.4, 1.6, 1.8, 2, 2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 9, 12, 15, 18, 24, 30}, "pT V0s binning"};
     ConfigurableAxis axisPtFine{"axisPtFine", {250, 0.1f, 20.1f}, "pT fine binning"};
     ConfigurableAxis axisFlatPerc{"axisFlatPerc", {102, -0.01, 1.01}, "Flattenicity percentiles binning"};
     ConfigurableAxis axisMultPerc{"axisMultPerc", {VARIABLE_WIDTH, 0., 1., 5., 10., 15., 20., 30., 40., 50., 70., 100.}, "Multiplicity percentiles binning"};
@@ -310,9 +310,9 @@ struct FlattenictyPikp {
     ConfigurableAxis axisPhiMod = {"axisPhiMod", {100, 0, constants::math::PI / 9}, "fmod(#varphi,#pi/9)"};
     ConfigurableAxis axisEta = {"axisEta", {50, -1.0, 1.0}, "#eta binning"};
     ConfigurableAxis axisRapidity = {"axisRapidity", {50, -1.0, 1.0}, "#it{y} binning"};
-    ConfigurableAxis axisDedx{"axisDedx", {100, 0, 100}, "dE/dx binning"};
-    ConfigurableAxis axisNsigmaTPC{"axisNsigmaTPC", {200, -10, 10}, "nsigmaTPC binning"};
-    ConfigurableAxis axisNsigmaTOF{"axisNsigmaTOF", {200, -10, 10}, "nsigmaTOF binning"};
+    ConfigurableAxis axisDedx{"axisDedx", {200, 0, 200}, "dE/dx binning"};
+    ConfigurableAxis axisNsigmaTPC{"axisNsigmaTPC", {200, -10.0f, 10.0f}, "nsigmaTPC binning"};
+    ConfigurableAxis axisNsigmaTOF{"axisNsigmaTOF", {200, -10.0f, 10.0f}, "nsigmaTOF binning"};
     ConfigurableAxis axisAmplFV0{"axisAmplFV0", {4096, 0, 4096}, "FV0 amplitude (ADC) binning"};
     ConfigurableAxis axisAmplFV0Sum{"axisAmplFV0Sum", {4096, 0, 4096}, "FV0 amplitude sum (ADC) binning"};
     ConfigurableAxis axisChannelFV0{"axisChannelFV0", {49, 0., 49.}, "FV0 channel ID binning"};
@@ -323,11 +323,12 @@ struct FlattenictyPikp {
     Configurable<float> rapMax{"rapMax", 0.5f, "Maximum range of rapidity for tracks"};
     Configurable<float> trkPtMin{"trkPtMin", 0.1f, "Minimum pT of tracks"};
     Configurable<bool> applyNcl{"applyNcl", false, "Apply cut on TPC clusters"};
-    Configurable<float> nclTPCMin{"nclTPCMin", 130.0f, "Minimum of number of TPC found clusters"};
+    Configurable<int16_t> nclTPCMin{"nclTPCMin", 130, "Minimum number of TPC found clusters"};
     Configurable<bool> applyNclPID{"applyNclPID", true, "Apply cut on TPC PID clusters"};
-    Configurable<float> nclPidTPCMin{"nclPidTPCMin", 130.0f, "Minimum of number of TPC PID clusters"};
+    Configurable<int16_t> nclPidTPCMin{"nclPidTPCMin", 130, "Minimum number of TPC PID clusters"};
     Configurable<float> phiCutPtMin{"phiCutPtMin", 2.0f, "Minimum pT for phi cut"};
     Configurable<float> tofBetaPion{"tofBetaPion", 1.0f, "Minimum beta for TOF pions"};
+    Configurable<bool> useSelTOFBeta{"useSelTOFBeta", true, "Use selection of TOF Beta"};
     Configurable<float> tofBetaPiMax{"tofBetaPiMax", 5E-5, "Maximum beta for TOF pion selection"};
     Configurable<bool> rejectTrkAtTPCSector{"rejectTrkAtTPCSector", true, "Reject tracks close to the TPC sector boundaries"};
     Configurable<std::string> geoTrkCutMin{"geoTrkCutMin", "0.06/x+pi/18.0-0.06", "ROOT TF1 formula for minimum phi cut in TPC"};
@@ -337,15 +338,14 @@ struct FlattenictyPikp {
     Configurable<float> momMIPMin{"momMIPMin", 0.4f, "Minimum momentum of MIP pions"};
     Configurable<float> dEdxMIPMax{"dEdxMIPMax", 60.0f, "Maximum range of MIP dedx"};
     Configurable<float> dEdxMIPMin{"dEdxMIPMin", 40.0f, "Maximum range of MIP dedx"};
-    Configurable<float> nsigmaMax{"nsigmaMax", 100.0f, "Maximum range of nsgima for tracks"};
     Configurable<float> dcaNsigmaCombinedMax{"dcaNsigmaCombinedMax", 3.0f, "Maximum range of combined nsgima of tracks for DCA"};
     Configurable<float> momSelPiTOF{"momSelPiTOF", 0.4f, "Minimum momentum cut for TOF pions"};
-    Configurable<float> nsigmaSelKaTOF{"nsigmaSelKaTOF", 3.0f, "Nsigma cut for TOF kaons"};
     Configurable<float> betaPlateuMax{"betaPlateuMax", 0.1f, "Beta max for Plateau electrons"};
     Configurable<std::vector<float>> dcaXY{"dcaXY", std::vector<float>{0.1f, 0.0f, 0.0f}, "abs dcaXY selection: [0] + [1] * pT^[2]"};
     Configurable<std::vector<float>> dcaZ{"dcaZ", std::vector<float>{0.1f, 0.0f, 0.0f}, "abs dcaZ selection: [0] + [1] * pT^[2]"};
     Configurable<float> nsigmaDCAxy{"nsigmaDCAxy", 1.0f, "Nsigma cut on DCAxy"};
     Configurable<float> nsigmaDCAz{"nsigmaDCAz", 1.0f, "Nsigma cut on DCAz"};
+    Configurable<bool> requireGoodTOFMatch{"requireGoodTOFMatch", true, "Require good TOF match"};
   } trkSelOpt;
 
   struct : ConfigurableGroup {
@@ -353,10 +353,9 @@ struct FlattenictyPikp {
     Configurable<int> v0TypeSel{"v0TypeSel", 1, "select on a certain V0 type (leave negative if no selection desired)"};
     Configurable<float> v0Ymax{"v0Ymax", 0.8f, "Maximum rapidity of V0s"};
     Configurable<bool> rejectV0sAtTPCSector{"rejectV0sAtTPCSector", true, "Reject V0s close to the TPC sector boundaries"};
-    Configurable<bool> v0requireITS{"v0requireITS", true, "Additional cut on the ITS requirement"};
-    Configurable<float> nsigmaElTPC{"nsigmaElTPC", 5.0, "max nsigma of TPC for electorn"};
-    Configurable<float> nsigmaPiTPC{"nsigmaPiTPC", 5.0, "max nsigma of TPC for pion"};
-    Configurable<float> nsigmaPrTPC{"nsigmaPrTPC", 5.0, "max nsigma of TPC for proton"};
+    Configurable<float> nsigmaElTPC{"nsigmaElTPC", 3.0, "max nsigma of TPC for electorn"};
+    Configurable<float> nsigmaPiTPC{"nsigmaPiTPC", 3.0, "max nsigma of TPC for pion"};
+    Configurable<float> nsigmaPrTPC{"nsigmaPrTPC", 3.0, "max nsigma of TPC for proton"};
     Configurable<float> nsigmaElTOF{"nsigmaElTOF", 3.0, "max nsigma of TOF for electorn"};
     Configurable<float> nsigmaPiTOF{"nsigmaPiTOF", 3.0, "max nsigma of TOF for pion"};
     Configurable<float> nsigmaPrTOF{"nsigmaPrTOF", 3.0, "max nsigma of TOF for proton"};
@@ -365,40 +364,38 @@ struct FlattenictyPikp {
     // standad parameters for V0 selection
     Configurable<float> v0etamin{"v0etamin", -0.8f, "min eta of V0s"};
     Configurable<float> v0etamax{"v0etamax", +0.8f, "max eta of V0s"};
-    Configurable<int> v0minNCrossedRowsTPC{"v0minNCrossedRowsTPC", 70, "Additional cut on the minimum number of crossed rows in the TPC"};
+    Configurable<float> v0ptmin{"v0ptmin", 0.1f, "min pT of V0s"};
+    Configurable<float> v0ptmax{"v0ptmax", 1e10f, "max pT of V0s"};
+    Configurable<int16_t> v0minNCrossedRowsTPC{"v0minNCrossedRowsTPC", 70, "Additional cut on the minimum number of crossed rows in the TPC"};
     Configurable<bool> applyV0sNclFound{"applyV0sNclFound", false, "Apply cut on TPC Found clusters"};
-    Configurable<float> v0NclTPCMin{"v0NclTPCMin", 130.0f, "Minimum of number of TPC found clusters"};
+    Configurable<int16_t> v0NclTPCMin{"v0NclTPCMin", 130, "Minimum number of TPC found clusters"};
     Configurable<bool> applyV0sNclPID{"applyV0sNclPID", true, "Apply cut on TPC PID clusters"};
-    Configurable<float> v0NclPidTPCMin{"v0NclPidTPCMin", 130.0f, "Minimum of number of TPC PID clusters"};
-    Configurable<float> v0maxChi2PerClusterTPC{"v0maxChi2PerClusterTPC", 4.f, "Additional cut on the maximum value of the chi2 per cluster in the TPC"};
-    Configurable<float> v0maxChi2PerClusterITS{"v0maxChi2PerClusterITS", 36.f, "Additional cut on the maximum value of the chi2 per cluster in the ITS"};
-    Configurable<int> v0minITSnClusters{"v0minITSnClusters", 4, "minimum number of found ITS clusters"};
-    Configurable<float> v0minNCrossedRowsOverFindableClustersTPC{"v0minNCrossedRowsOverFindableClustersTPC", 0.8f, "Additional cut on the minimum value of the ratio between crossed rows and findable clusters in the TPC"};
-    Configurable<float> dcaV0daughter{"dcaV0daughter", 1.0, "max DCA of V0 daughter tracks (cm)"};
-    Configurable<float> v0cospa{"v0cospa", 0.995, "min V0 CosPA"};
-    Configurable<float> dcaPosToPV{"dcaPosToPV", 0.05f, "min DCA Pos To PV (cm)"};
-    Configurable<float> dcaNegToPV{"dcaNegToPV", 0.05f, "min DCA Neg To PV (cm)"};
+    Configurable<int16_t> v0NclPidTPCMin{"v0NclPidTPCMin", 130, "Minimum number of TPC PID clusters"};
+    Configurable<bool> applyV0sNclShared{"applyV0sNclShared", true, "Apply cut on TPC shared clusters"};
+    Configurable<int16_t> v0NclSharedTPCMax{"v0NclSharedTPCMax", 5, "Maximum number of TPC shared clusters"};
+    Configurable<float> dcaV0daughter{"dcaV0daughter", 0.01, "max DCA of V0 daughter tracks (cm)"};
+    Configurable<float> v0cospa{"v0cospa", 0.999, "min V0 CosPA"};
     Configurable<float> v0Rmin{"v0Rmin", 1.2, "min V0 radius (cm)"};
     Configurable<float> v0Rmax{"v0Rmax", 1E5, "max V0 radius (cm)"};
     // parameters for selection KOs
-    Configurable<float> cTauK0s{"cTauK0s", 20, "v0ctau for K0s"};
-    Configurable<float> cosPAK0s{"cosPAK0s", 0.995, "V0 CosPA for K0s"};
-    Configurable<float> v0radiusK0s{"v0radiusK0s", 0.5, "v0radius for K0s"};
+    Configurable<float> cTauK0s{"cTauK0s", 20.0, "v0ctau for K0s"};
     Configurable<float> dmassK{"dmassK", 0.01f, "Competing Mass Rejection cut for K0s"};
     Configurable<float> armPodK0s{"armPodK0s", 5.0f, "pT * (cut) > |alpha|, Armenteros-Podolanski cut for K0s"};
-    ConfigurableAxis axisK0sMass{"axisK0sMass", {200, 0.4f, 0.6f}, "K0Short mass binning"};
+    ConfigurableAxis axisK0sMass{"axisK0sMass", {80, 0.4f, 0.6f}, "K0Short mass binning"};
+    Configurable<float> v0dcaK0s{"v0dcaK0s", 0.1f, "Minimum DCA To PV (cm) for K0Short"};
     // parameters for selection Lambda / antiLambda
-    Configurable<float> cTauLambda{"cTauLambda", 30, "v0ctau for Lambda"};
-    Configurable<float> cosPALambda{"cosPALambda", 0.995, "V0 CosPA for Lambda"};
-    Configurable<float> v0radiusLambda{"v0radiusLambda", 0.5, "v0radius for Lambda"};
+    Configurable<float> cTauLambda{"cTauLambda", 30.0, "v0ctau for Lambda"};
     Configurable<float> dmassL{"dmassL", 0.01f, "Competing Mass Rejection cut for Lambda"};
-    ConfigurableAxis axisLambdaMass{"axisLambdaMass", {200, 1.101f, 1.131f}, "Lambda mass binning"};
+    Configurable<float> v0dcaProtonFromLam{"v0dcaProtonFromLam", 0.05f, "Minimum DCA To PV (cm) for Protons (from Lambda)"};
+    Configurable<float> v0dcaPionFromLam{"v0dcaPionFromLam", 0.2f, "Minimum DCA To PV (cm) for Pions (from Lambda)"};
+    ConfigurableAxis axisLambdaMass{"axisLambdaMass", {50, 1.09f, 1.14f}, "Lambda mass binning"};
     // parameters for selection Gamma
     Configurable<float> dmassG{"dmassG", 0.1f, "max mass for Gammas"};
-    Configurable<float> armPodGammasalpha{"armPodGammasalpha", 0.45f, "Armenteros-Podolanski alpha cut for Gammas"};
-    Configurable<float> armPodGammasqT{"armPodGammasqT", 0.01f, "Armenteros-Podolanski qT cut for Gammas"};
-    ConfigurableAxis axisGammaMass{"axisGammaMass", {200, 0.0f, 0.5f}, "Gamma mass binning"};
-    Configurable<float> dEdxPlateauSel{"dEdxPlateauSel", 50, "dEdx selection sensitivity for electrons"};
+    Configurable<float> armPodGammasalpha{"armPodGammasalpha", 1.0f, "Armenteros-Podolanski alpha cut for Gammas"};
+    Configurable<float> armPodGammasqT{"armPodGammasqT", 0.1f, "Armenteros-Podolanski qT cut for Gammas"};
+    ConfigurableAxis axisGammaMass{"axisGammaMass", {50, 0.0f, 0.1f}, "Gamma mass binning"};
+    Configurable<float> v0dcaElectronFromGamma{"v0dcaElectronFromGamma", 0.1f, "Minimum DCA To PV (cm) for Electrons (from Gamma)"};
+    Configurable<float> dEdxPlateauSel{"dEdxPlateauSel", 50.0f, "dEdx selection sensitivity for electrons"};
   } v0SelOpt;
 
   Service<ccdb::BasicCCDBManager> ccdb{};
@@ -715,36 +712,48 @@ struct FlattenictyPikp {
         registryData.get<TH1>(HIST("Tracks/V0qa/hV0Sel"))->GetXaxis()->SetBinLabel(v0SelRejectV0sAtTPCSector + 1, "Reject V0s at TPC sector");
         registryData.get<TH1>(HIST("Tracks/V0qa/hV0Sel"))->GetXaxis()->SetBinLabel(v0SelCosPA + 1, "Cos PA");
         registryData.get<TH1>(HIST("Tracks/V0qa/hV0Sel"))->GetXaxis()->SetBinLabel(v0SelV0radius + 1, "V0 radius");
-        registryData.get<TH1>(HIST("Tracks/V0qa/hV0Sel"))->GetXaxis()->SetBinLabel(v0SelDCAposToPV + 1, "DCA pos to PV");
         registryData.get<TH1>(HIST("Tracks/V0qa/hV0Sel"))->GetXaxis()->SetBinLabel(v0SelDaughters + 1, "V0 daughters' sel.");
         registryData.get<TH1>(HIST("Tracks/V0qa/hV0Sel"))->GetXaxis()->SetBinLabel(v0SelDCAv0daughter + 1, "DCA v0 daughter");
         // V0's QA
         registryData.add("Tracks/V0qa/hV0Pt", "pT", kTH1F, {ptAxisV0s});
         registryData.add("Tracks/V0qa/hV0ArmPod", ";#alpha; #it{q}_T (GeV/c)", kTH2F, {v0SelOpt.axisArmPodAlpha, v0SelOpt.axisArmPodqT});
         // daughters' QA
+        registryData.add("Tracks/V0qa/hNsigmaGaVsPt", ";#it{n#sigma}; #it{p}_{T} (GeV/#it{c})", kTH2F, {ptAxisV0s, nSigmaTPCAxis});
+        registryData.add("Tracks/V0qa/hNsigmaK0sVsPt", ";#it{n#sigma}; #it{p}_{T} (GeV/#it{c})", kTH2F, {ptAxisV0s, nSigmaTPCAxis});
+        registryData.add("Tracks/V0qa/hNsigmaPiFromLaVsPt", ";#it{n#sigma}; #it{p}_{T} (GeV/#it{c})", kTH2F, {ptAxisV0s, nSigmaTPCAxis});
+        registryData.add("Tracks/V0qa/hNsigmaPrFromLaVsPt", ";#it{n#sigma}; #it{p}_{T} (GeV/#it{c})", kTH2F, {ptAxisV0s, nSigmaTPCAxis});
+        registryData.add("Tracks/V0qa/hNsigmaPiFromALaVsPt", ";#it{n#sigma}; #it{p}_{T} (GeV/#it{c})", kTH2F, {ptAxisV0s, nSigmaTPCAxis});
+        registryData.add("Tracks/V0qa/hNsigmaPrFromALaVsPt", ";#it{n#sigma}; #it{p}_{T} (GeV/#it{c})", kTH2F, {ptAxisV0s, nSigmaTPCAxis});
+        registryData.add("Tracks/V0qa/hMassGaVsPt", ";Inv. Mass (GeV/#it{c}^{2}); #it{p}_{T} (GeV/#it{c})", kTH2F, {v0SelOpt.axisGammaMass, ptAxisV0s});
+        registryData.add("Tracks/V0qa/hMassK0sVsPt", ";Inv. Mass (GeV/#it{c}^{2}); #it{p}_{T} (GeV/#it{c})", kTH2F, {v0SelOpt.axisK0sMass, ptAxisV0s});
+        registryData.add("Tracks/V0qa/hMassLaVsPt", ";Inv. Mass (GeV/#it{c}^{2}); #it{p}_{T} (GeV/#it{c})", kTH2F, {v0SelOpt.axisLambdaMass, ptAxisV0s});
+        registryData.add("Tracks/V0qa/hMassALaVsPt", ";Inv. Mass (GeV/#it{c}^{2}); #it{p}_{T} (GeV/#it{c})", kTH2F, {v0SelOpt.axisLambdaMass, ptAxisV0s});
+        registryData.add("Tracks/V0qa/el/Ga/hEtaVsRap", ";#eta; #it{y}", kTH2F, {etaAxis, etaAxis});
+        registryData.add("Tracks/V0qa/pi/K0s/hEtaVsRap", ";#eta; #it{y}", kTH2F, {etaAxis, etaAxis});
         registryData.add("Tracks/V0qa/el/Ga/hArmPod", ";#alpha; #it{q}_T (GeV/c)", kTH2F, {v0SelOpt.axisArmPodAlpha, v0SelOpt.axisArmPodqT});
         registryData.add("Tracks/V0qa/pi/K0s/hArmPod", ";#alpha; #it{q}_T (GeV/c)", kTH2F, {v0SelOpt.axisArmPodAlpha, v0SelOpt.axisArmPodqT});
         registryData.add("Tracks/V0qa/el/Ga/hNclVsEta", ";#eta; #it{N}^{TPC}_cl", kTH2F, {etaAxis, clTpcAxis});
         registryData.add("Tracks/V0qa/pi/K0s/hNclVsEta", ";#eta; #it{N}^{TPC}_cl", kTH2F, {etaAxis, clTpcAxis});
         registryData.add("Tracks/V0qa/el/Ga/hNclVsPt", ";#it{p}_{T} (GeV/#it{c}); #it{N}^{TPC}_cl", kTH2F, {ptAxis, clTpcAxis});
         registryData.add("Tracks/V0qa/pi/K0s/hNclVsPt", ";#it{p}_{T} (GeV/#it{c}); #it{N}^{TPC}_cl", kTH2F, {ptAxis, clTpcAxis});
-        registryData.add("Tracks/V0qa/el/Ga/hdEdxMIPVsEta", ";#eta; dE/dx", kTH2F, {etaAxis, dEdxAxis});
-        registryData.add("Tracks/V0qa/pi/K0s/hdEdxMIPVsEta", ";#eta; dE/dx", kTH2F, {etaAxis, dEdxAxis});
+        registryData.add({"Tracks/V0qa/el/Ga/hdEdxVsPVsEta", ";#eta; dE/dx", {kTHnSparseF, {dEdxAxis, ptAxisV0s, etaAxis}}});
+        registryData.add({"Tracks/V0qa/pi/K0s/hdEdxVsPVsEta", ";#eta; dE/dx", {kTHnSparseF, {dEdxAxis, ptAxisV0s, etaAxis}}});
+        registryData.add("Tracks/V0qa/el/Ga/hDCAxyVsPt", ";DCA_{xy} (cm); #it{p}_{T} (GeV/#it{c})", kTH2F, {dcaXYAxis, ptAxis});
+        registryData.add("Tracks/V0qa/pi/K0s/hDCAxyVsPt", ";DCA_{xy} (cm); #it{p}_{T} (GeV/#it{c})", kTH2F, {dcaXYAxis, ptAxis});
         registryData.addClone("Tracks/V0qa/pi/K0s/", "Tracks/V0qa/pi/La/");
         registryData.addClone("Tracks/V0qa/pi/K0s/", "Tracks/V0qa/pi/ALa/");
         registryData.addClone("Tracks/V0qa/pi/La/", "Tracks/V0qa/pr/La/");
         registryData.addClone("Tracks/V0qa/pi/ALa/", "Tracks/V0qa/pr/ALa/");
-
         if (defOpt.storeThnSparse) {
-          registryData.add({"Tracks/CleanTof/all/hPiTof", "; #eta; mult; flat; #it{p} (GeV/#it{c}); dEdx", {kTHnSparseF, {etaAxis, multAxis, flatAxis, pAxis, dEdxAxis}}});
-          registryData.add({"Tracks/CleanV0/all/hEV0", "; #eta; mult; flat; #it{p} (GeV/#it{c}); dEdx", {kTHnSparseF, {etaAxis, multAxis, flatAxis, pAxis, dEdxAxis}}});
-          registryData.add({"Tracks/CleanV0/all/hPiV0", "; #eta; mult; flat; #it{p} (GeV/#it{c}); dEdx", {kTHnSparseF, {etaAxis, multAxis, flatAxis, pAxis, dEdxAxis}}});
-          registryData.add({"Tracks/CleanV0/all/hPV0", "; #eta; mult; flat; #it{p} (GeV/#it{c}); dEdx", {kTHnSparseF, {etaAxis, multAxis, flatAxis, pAxis, dEdxAxis}}});
+          registryData.add({"Tracks/CleanTof/all/hPiTof", "; #eta; mult; flat; #it{p} (GeV/#it{c}); dEdx", {kTHnSparseF, {etaAxis, multAxis, flatAxis, ptAxisV0s, dEdxAxis}}});
+          registryData.add({"Tracks/CleanV0/all/hEV0", "; #eta; mult; flat; #it{p} (GeV/#it{c}); dEdx", {kTHnSparseF, {etaAxis, multAxis, flatAxis, ptAxisV0s, dEdxAxis}}});
+          registryData.add({"Tracks/CleanV0/all/hPiV0", "; #eta; mult; flat; #it{p} (GeV/#it{c}); dEdx", {kTHnSparseF, {etaAxis, multAxis, flatAxis, ptAxisV0s, dEdxAxis}}});
+          registryData.add({"Tracks/CleanV0/all/hPV0", "; #eta; mult; flat; #it{p} (GeV/#it{c}); dEdx", {kTHnSparseF, {etaAxis, multAxis, flatAxis, ptAxisV0s, dEdxAxis}}});
         } else {
-          registryData.add({"Tracks/CleanTof/all/hPiTof", "; #eta; mult; flat; #it{p} (GeV/#it{c}); dEdx", {kTH3F, {etaAxis, pAxis, dEdxAxis}}});
-          registryData.add({"Tracks/CleanV0/all/hEV0", "; #eta; mult; flat; #it{p} (GeV/#it{c}); dEdx", {kTH3F, {etaAxis, pAxis, dEdxAxis}}});
-          registryData.add({"Tracks/CleanV0/all/hPiV0", "; #eta; mult; flat; #it{p} (GeV/#it{c}); dEdx", {kTH3F, {etaAxis, pAxis, dEdxAxis}}});
-          registryData.add({"Tracks/CleanV0/all/hPV0", "; #eta; mult; flat; #it{p} (GeV/#it{c}); dEdx", {kTH3F, {etaAxis, pAxis, dEdxAxis}}});
+          registryData.add({"Tracks/CleanTof/all/hPiTof", "; #eta; mult; flat; #it{p} (GeV/#it{c}); dEdx", {kTH3F, {etaAxis, ptAxisV0s, dEdxAxis}}});
+          registryData.add({"Tracks/CleanV0/all/hEV0", "; #eta; mult; flat; #it{p} (GeV/#it{c}); dEdx", {kTH3F, {etaAxis, ptAxisV0s, dEdxAxis}}});
+          registryData.add({"Tracks/CleanV0/all/hPiV0", "; #eta; mult; flat; #it{p} (GeV/#it{c}); dEdx", {kTH3F, {etaAxis, ptAxisV0s, dEdxAxis}}});
+          registryData.add({"Tracks/CleanV0/all/hPV0", "; #eta; mult; flat; #it{p} (GeV/#it{c}); dEdx", {kTH3F, {etaAxis, ptAxisV0s, dEdxAxis}}});
         }
         registryData.add("Tracks/CleanTof/all/hBetaVsP", ";Momentum (GeV/#it{c}); #beta", kTH2F, {{{ptAxisV0s}, {120, 0., 1.2}}});
         registryData.add("Tracks/CleanTof/all/hTofExpPi", ";Momentum (GeV/#it{c});#it{t}^{#pi}_{Exp}/#it{t}_{TOF}", kTH2F, {{{ptAxisV0s}, {100, 0.2, 1.2}}});
@@ -952,21 +961,36 @@ struct FlattenictyPikp {
   template <ChargeType chrg, typename T>
   bool selTOFPi(T const& track)
   {
-    if (track.hasTOF() && track.goodTOFMatch()) {
-      const float tTOF = track.tofSignal();
-      const float trkLength = track.length();
-      const float tExpPiTOF = track.tofExpSignalPi(tTOF);
-      if (track.p() >= trkSelOpt.momSelPiTOF && trkLength > Cnull && tTOF > Cnull) {
-        registryData.fill(HIST(CprefixCleanTof) + HIST(Ccharge[chrg]) + HIST("hTofExpPi"), track.p(), tExpPiTOF / tTOF);
-        if (std::abs((tExpPiTOF / tTOF) - Cone) < trkSelOpt.tofBetaPiMax) {
-          registryData.fill(HIST(CprefixCleanTof) + HIST(Ccharge[chrg]) + HIST("hBetaVsP"), track.p(), track.beta());
-          // if (std::abs(track.tpcNSigmaPi()) < v0SelOpt.nsigmaPiTPC && std::abs(track.tofNSigmaPi()) < v0SelOpt.nsigmaPiTOF) {
-          return true;
-          // }
-        }
-      }
+    if (!track.hasTOF()) {
+      return false;
     }
-    return false;
+    if (trkSelOpt.requireGoodTOFMatch && !track.goodTOFMatch()) {
+      return false;
+    }
+    if (track.p() < trkSelOpt.momSelPiTOF) {
+      return false;
+    }
+    if (track.length() == Cnull) {
+      return false;
+    }
+    const float tTOF = track.tofSignal();
+    const float tExpPiTOF = track.tofExpSignalPi(tTOF);
+    if (tTOF == Cnull) {
+      return false;
+    }
+    registryData.fill(HIST(CprefixCleanTof) + HIST(Ccharge[chrg]) + HIST("hTofExpPi"), track.p(), tExpPiTOF / tTOF);
+
+    const bool isSelTOFBeta = std::abs((tExpPiTOF / tTOF) - Cone) < trkSelOpt.tofBetaPiMax;
+    const bool isSelNsigmaPi = std::sqrt(std::pow(std::fabs(track.tofNSigmaPi()), 2.) + std::pow(std::fabs(track.tpcNSigmaPi()), 2.)) < trkSelOpt.dcaNsigmaCombinedMax;
+
+    if (trkSelOpt.useSelTOFBeta && !isSelTOFBeta) {
+      return false;
+    }
+    if (!isSelNsigmaPi) {
+      return false;
+    }
+    registryData.fill(HIST(CprefixCleanTof) + HIST(Ccharge[chrg]) + HIST("hBetaVsP"), track.p(), track.beta());
+    return true;
   }
 
   template <int id, typename T, typename C>
@@ -986,7 +1010,13 @@ struct FlattenictyPikp {
       if (!isGoodTrack<false, false>(track, magField)) {
         continue;
       }
-      if (track.hasTOF() && (std::sqrt(std::pow(std::fabs(o2::aod::pidutils::tpcNSigma<id>(track)), 2) + std::pow(std::fabs(o2::aod::pidutils::tofNSigma<id>(track)), 2) < trkSelOpt.dcaNsigmaCombinedMax))) {
+      if (!track.hasTOF()) {
+        continue;
+      }
+      if (trkSelOpt.requireGoodTOFMatch && !track.goodTOFMatch()) {
+        continue;
+      }
+      if (std::sqrt(std::pow(std::fabs(o2::aod::pidutils::tpcNSigma<id>(track)), 2.) + std::pow(std::fabs(o2::aod::pidutils::tofNSigma<id>(track)), 2.) < trkSelOpt.dcaNsigmaCombinedMax)) {
         registryData.fill(HIST(Cprefix) + HIST(CspeciesAll[id]) + HIST(CpTvsDCAxy), mult, flat, track.pt(), track.dcaXY());
       }
     }
@@ -1216,6 +1246,8 @@ struct FlattenictyPikp {
         if (selectTypeV0s(collision, v0, posTrack, negTrack) == kLam) { // L -> p + pi-
           fillV0QA<kPi, kLam>(v0, negTrack);
           fillV0QA<kPr, kLam>(v0, posTrack);
+          registryData.fill(HIST(CprefixV0qa) + HIST("hNsigmaPiFromLaVsPt"), negTrack.pt(), negTrack.tpcNSigmaPi());
+          registryData.fill(HIST(CprefixV0qa) + HIST("hNsigmaPrFromLaVsPt"), posTrack.pt(), posTrack.tpcNSigmaPr());
           if (defOpt.storeThnSparse) {
             if (defOpt.fillChrgType) {
               registryData.fill(HIST(CprefixCleanV0) + HIST(Ccharge[kPos]) + HIST("hPV0"), posTrack.eta(), mult, flat, posTrack.sign() * posTrack.p(), dEdxPos);
@@ -1237,6 +1269,8 @@ struct FlattenictyPikp {
         if (selectTypeV0s(collision, v0, posTrack, negTrack) == kaLam) { // antiLambda -> pbar + pi+
           fillV0QA<kPi, kaLam>(v0, posTrack);
           fillV0QA<kPr, kaLam>(v0, negTrack);
+          registryData.fill(HIST(CprefixV0qa) + HIST("hNsigmaPiFromALaVsPt"), posTrack.pt(), posTrack.tpcNSigmaPi());
+          registryData.fill(HIST(CprefixV0qa) + HIST("hNsigmaPrFromALaVsPt"), negTrack.pt(), negTrack.tpcNSigmaPr());
           if (defOpt.storeThnSparse) {
             if (defOpt.fillChrgType) {
               registryData.fill(HIST(CprefixCleanV0) + HIST(Ccharge[kPos]) + HIST("hPiV0"), posTrack.eta(), mult, flat, posTrack.sign() * posTrack.p(), dEdxPos);
@@ -1429,10 +1463,30 @@ struct FlattenictyPikp {
   template <int id, int typeMother, typename V, typename U>
   inline void fillV0QA(V const& v0, U const& track)
   {
+    if (typeMother == kGa) {
+      const float rap = RecoDecay::y(std::array{v0.px(), v0.py(), v0.pz()}, o2::constants::physics::MassGamma);
+      registryData.fill(HIST(CprefixV0qa) + HIST(PidDir[id]) + HIST(V0Dir[typeMother]) + HIST("hEtaVsRap"), track.eta(), rap);
+      registryData.fill(HIST(CprefixV0qa) + HIST("hNsigmaGaVsPt"), track.pt(), track.tpcNSigmaEl());
+      registryData.fill(HIST(CprefixV0qa) + HIST("hMassGaVsPt"), v0.mGamma(), v0.pt());
+    }
+    if (typeMother == kKz) {
+      registryData.fill(HIST(CprefixV0qa) + HIST(PidDir[id]) + HIST(V0Dir[typeMother]) + HIST("hEtaVsRap"), track.eta(), v0.yK0Short());
+      registryData.fill(HIST(CprefixV0qa) + HIST("hNsigmaK0sVsPt"), track.pt(), track.tpcNSigmaPi());
+      registryData.fill(HIST(CprefixV0qa) + HIST("hMassK0sVsPt"), v0.mK0Short(), v0.pt());
+    }
+    if (typeMother == kLam || typeMother == kaLam) {
+      registryData.fill(HIST(CprefixV0qa) + HIST(PidDir[id]) + HIST(V0Dir[typeMother]) + HIST("hEtaVsRap"), track.eta(), v0.yLambda());
+      if (typeMother == kLam) {
+        registryData.fill(HIST(CprefixV0qa) + HIST("hMassLaVsPt"), v0.mLambda(), v0.pt());
+      } else {
+        registryData.fill(HIST(CprefixV0qa) + HIST("hMassALaVsPt"), v0.mAntiLambda(), v0.pt());
+      }
+    }
     registryData.fill(HIST(CprefixV0qa) + HIST(PidDir[id]) + HIST(V0Dir[typeMother]) + HIST("hArmPod"), v0.alpha(), v0.qtarm());
     registryData.fill(HIST(CprefixV0qa) + HIST(PidDir[id]) + HIST(V0Dir[typeMother]) + HIST("hNclVsEta"), track.eta(), track.tpcNClsPID());
     registryData.fill(HIST(CprefixV0qa) + HIST(PidDir[id]) + HIST(V0Dir[typeMother]) + HIST("hNclVsPt"), track.pt(), track.tpcNClsPID());
-    registryData.fill(HIST(CprefixV0qa) + HIST(PidDir[id]) + HIST(V0Dir[typeMother]) + HIST("hdEdxMIPVsEta"), track.eta(), track.tpcSignal());
+    registryData.fill(HIST(CprefixV0qa) + HIST(PidDir[id]) + HIST(V0Dir[typeMother]) + HIST("hdEdxVsPVsEta"), track.tpcSignal(), track.p(), track.eta());
+    registryData.fill(HIST(CprefixV0qa) + HIST(PidDir[id]) + HIST(V0Dir[typeMother]) + HIST("hDCAxyVsPt"), v0.dcapostopv(), track.pt());
   }
 
   template <typename C, typename T1, typename T2>
@@ -1458,15 +1512,10 @@ struct FlattenictyPikp {
 
     // Gamma selection
     if (isMassG) {
-      if (std::abs(RecoDecay::y(std::array{v0.px(), v0.py(), v0.pz()}, o2::constants::physics::MassGamma)) < v0SelOpt.v0Ymax) { // rapidity cut
-        if (std::abs(v0.alpha()) < v0SelOpt.armPodGammasalpha && v0.qtarm() < v0SelOpt.armPodGammasqT) {                        //
-          if (postrk.hasTPC() && std::abs(postrk.tpcNSigmaEl()) < v0SelOpt.nsigmaElTPC) {
-            if (postrk.hasTOF() && std::abs(postrk.tofNSigmaEl()) < v0SelOpt.nsigmaElTOF) {
-              return kGa;
-            }
-          }
-          if (negtrk.hasTPC() && std::abs(negtrk.tpcNSigmaEl()) < v0SelOpt.nsigmaElTPC) {
-            if (negtrk.hasTOF() && std::abs(negtrk.tofNSigmaEl()) < v0SelOpt.nsigmaElTOF) {
+      if (std::abs(RecoDecay::y(std::array{v0.px(), v0.py(), v0.pz()}, o2::constants::physics::MassGamma)) < v0SelOpt.v0Ymax) {             // rapidity cut
+        if (std::abs(v0.alpha()) < v0SelOpt.armPodGammasalpha && v0.qtarm() < v0SelOpt.armPodGammasqT) {                                    // Arm.-Pod. cut
+          if (std::abs(v0.dcapostopv()) > v0SelOpt.v0dcaElectronFromGamma && std::abs(v0.dcanegtopv()) > v0SelOpt.v0dcaElectronFromGamma) { // dca to PV
+            if (std::abs(postrk.tpcNSigmaEl()) < v0SelOpt.nsigmaElTPC && std::abs(negtrk.tpcNSigmaEl()) < v0SelOpt.nsigmaElTPC) {           // TPC nsigma cut
               return kGa;
             }
           }
@@ -1475,16 +1524,11 @@ struct FlattenictyPikp {
     }
     // K0S selection, K0S -> pi + pi
     if (isMassK0s) {
-      if (std::abs(v0.yK0Short()) < v0SelOpt.v0Ymax) {                                                                                                // rapidity cut
-        if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short < v0SelOpt.cTauK0s) {       // ctau cut
-          if (v0.v0cosPA() >= v0SelOpt.cosPAK0s && v0.v0radius() >= v0SelOpt.v0radiusK0s && v0.qtarm() * v0SelOpt.armPodK0s > std::abs(v0.alpha())) { //
-            if (postrk.hasTPC() && std::abs(postrk.tpcNSigmaPi()) < v0SelOpt.nsigmaPiTPC) {
-              if (postrk.hasTOF() && std::abs(postrk.tofNSigmaPi()) < v0SelOpt.nsigmaPiTOF) {
-                return kKz;
-              }
-            }
-            if (negtrk.hasTPC() && std::abs(negtrk.tpcNSigmaPi()) < v0SelOpt.nsigmaPiTPC) {
-              if (negtrk.hasTOF() && std::abs(negtrk.tofNSigmaPi()) < v0SelOpt.nsigmaPiTOF) {
+      if (std::abs(v0.yK0Short()) < v0SelOpt.v0Ymax) {                                                                                          // rapidity cut
+        if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short < v0SelOpt.cTauK0s) { // ctau cut
+          if (v0.qtarm() * v0SelOpt.armPodK0s > std::abs(v0.alpha())) {                                                                         // Arm.-Pod. cut
+            if (std::abs(v0.dcapostopv()) > v0SelOpt.v0dcaK0s && std::abs(v0.dcanegtopv()) > v0SelOpt.v0dcaK0s) {                               // dca to PV
+              if (std::abs(postrk.tpcNSigmaPi()) < v0SelOpt.nsigmaPiTPC && std::abs(negtrk.tpcNSigmaPi()) < v0SelOpt.nsigmaPiTPC) {             // TPC nsigma cut
                 return kKz;
               }
             }
@@ -1496,11 +1540,9 @@ struct FlattenictyPikp {
     if (isMassL) {
       if (std::abs(v0.yLambda()) < v0SelOpt.v0Ymax) {                                                                                              // rapidity cut
         if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0 < v0SelOpt.cTauLambda) { // ctau cut
-          if (v0.v0cosPA() >= v0SelOpt.cosPALambda && v0.v0radius() >= v0SelOpt.v0radiusLambda) {                                                  //
-            if (postrk.hasTPC() && std::abs(postrk.tpcNSigmaPr()) < v0SelOpt.nsigmaPrTPC && negtrk.hasTPC() && std::abs(negtrk.tpcNSigmaPi()) < v0SelOpt.nsigmaPiTPC) {
-              if (postrk.hasTOF() && std::abs(postrk.tofNSigmaPr()) < v0SelOpt.nsigmaPrTOF && negtrk.hasTOF() && std::abs(negtrk.tofNSigmaPi()) < v0SelOpt.nsigmaPiTOF) {
-                return kLam;
-              }
+          if (std::abs(v0.dcapostopv()) > v0SelOpt.v0dcaProtonFromLam && std::abs(v0.dcanegtopv()) > v0SelOpt.v0dcaPionFromLam) {                  // dca to PV
+            if (std::abs(postrk.tpcNSigmaPr()) < v0SelOpt.nsigmaPrTPC && std::abs(negtrk.tpcNSigmaPi()) < v0SelOpt.nsigmaPiTPC) {                  // TPC nsigma cut
+              return kLam;
             }
           }
         }
@@ -1510,11 +1552,9 @@ struct FlattenictyPikp {
     if (isMassAL) {
       if (std::abs(v0.yLambda()) < v0SelOpt.v0Ymax) {                                                                                              // rapidity cut
         if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0 < v0SelOpt.cTauLambda) { // ctau cut
-          if (v0.v0cosPA() >= v0SelOpt.cosPALambda && v0.v0radius() >= v0SelOpt.v0radiusLambda) {                                                  //
-            if (postrk.hasTPC() && std::abs(postrk.tpcNSigmaPi()) < v0SelOpt.nsigmaPiTPC && negtrk.hasTPC() && std::abs(negtrk.tpcNSigmaPr()) < v0SelOpt.nsigmaPrTPC) {
-              if (postrk.hasTOF() && std::abs(postrk.tofNSigmaPi()) < v0SelOpt.nsigmaPiTOF && negtrk.hasTOF() && std::abs(negtrk.tofNSigmaPr()) < v0SelOpt.nsigmaPrTOF) {
-                return kaLam;
-              }
+          if (std::abs(v0.dcapostopv()) > v0SelOpt.v0dcaPionFromLam && std::abs(v0.dcanegtopv()) > v0SelOpt.v0dcaProtonFromLam) {                  // dca to PV
+            if (std::abs(postrk.tpcNSigmaPi()) < v0SelOpt.nsigmaPiTPC && std::abs(negtrk.tpcNSigmaPr()) < v0SelOpt.nsigmaPrTPC) {                  // TPC nsigma cut
+              return kaLam;
             }
           }
         }
@@ -1554,10 +1594,6 @@ struct FlattenictyPikp {
       return false;
     }
     registryData.fill(HIST("Tracks/V0qa/hV0Sel"), v0SelV0radius);
-    if (std::abs(v0.dcapostopv()) < v0SelOpt.dcaPosToPV || std::abs(v0.dcanegtopv()) < v0SelOpt.dcaNegToPV) {
-      return false;
-    }
-    registryData.fill(HIST("Tracks/V0qa/hV0Sel"), v0SelDCAposToPV);
     // selection of V0 daughters
     if (!(isGoodV0DaughterTrack(posTrack) && isGoodV0DaughterTrack(negTrack))) {
       return false;
@@ -1580,13 +1616,10 @@ struct FlattenictyPikp {
     if (track.eta() < v0SelOpt.v0etamin || track.eta() > v0SelOpt.v0etamax) {
       return false;
     }
-    if (!track.hasTPC()) {
+    if (track.pt() < v0SelOpt.v0ptmin || track.pt() > v0SelOpt.v0ptmax) {
       return false;
     }
     if (track.tpcNClsCrossedRows() < v0SelOpt.v0minNCrossedRowsTPC) {
-      return false;
-    }
-    if (track.tpcCrossedRowsOverFindableCls() < v0SelOpt.v0minNCrossedRowsOverFindableClustersTPC) {
       return false;
     }
     if (v0SelOpt.applyV0sNclFound) {
@@ -1599,17 +1632,10 @@ struct FlattenictyPikp {
         return false;
       }
     }
-    if (track.tpcChi2NCl() > v0SelOpt.v0maxChi2PerClusterTPC) {
-      return false;
-    }
-    if (v0SelOpt.v0requireITS && (!track.hasITS())) {
-      return false;
-    }
-    if (v0SelOpt.v0requireITS && track.itsNCls() < v0SelOpt.v0minITSnClusters) {
-      return false;
-    }
-    if (track.itsChi2NCl() > v0SelOpt.v0maxChi2PerClusterITS) {
-      return false;
+    if (v0SelOpt.applyV0sNclShared) {
+      if (track.tpcNClsShared() > v0SelOpt.v0NclSharedTPCMax) {
+        return false;
+      }
     }
     return true;
   }
@@ -2082,7 +2108,7 @@ struct FlattenictyPikp {
       v0sPerCollision.bindExternalIndices(&tracks);
       filldEdx(tracksPerCollision, v0sPerCollision, collision, bcs);
       if (defOpt.fillDCAxyHist) {
-        static_for<0, 4>([&](auto i) {
+        static_for<0, 2>([&](auto i) {
           fillDCA<i>(tracksPerCollision, collision, bcs);
         });
       }
@@ -2218,7 +2244,7 @@ struct FlattenictyPikp {
         continue;
       }
       if (gtOneRec) {
-        static_for<0, 4>([&](auto i) {
+        static_for<0, 2>([&](auto i) {
           constexpr int Cidx = i.value;
           if (std::fabs(particle.pdgCode()) == pDGs[Cidx]) {
             registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTeffGenPrimRecEvt), multRec, flatRec, particle.pt());
@@ -2271,7 +2297,7 @@ struct FlattenictyPikp {
         if (!particle.isPhysicalPrimary()) {
           continue;
         }
-        static_for<0, 4>([&](auto i) {
+        static_for<0, 2>([&](auto i) {
           constexpr int Cidx = i.value;
           if (std::fabs(particle.pdgCode()) == pDGs[Cidx]) {
             registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTeffPrimRecEvt), multRec, flatRec, track.pt());
@@ -2334,7 +2360,7 @@ struct FlattenictyPikp {
       }
     }
     registryMC.fill(HIST("Events/hEvtMcGen"), 2.5);
-    if (evtSelOpt.useInelgt0wTVX && !(mcCollision.multMCFT0C() <= 0 || mcCollision.multMCFT0A() <= 0)) {
+    if (evtSelOpt.useInelgt0wTVX && !(mcCollision.multMCFT0C() > 0 && mcCollision.multMCFT0A() > 0)) {
       return;
     }
     registryMC.fill(HIST("Events/hEvtMcGen"), 3.5);
@@ -2350,7 +2376,7 @@ struct FlattenictyPikp {
       if (std::abs(particle.eta()) > trkSelOpt.trkEtaMax) {
         continue;
       }
-      static_for<0, 4>([&](auto i) {
+      static_for<0, 2>([&](auto i) {
         constexpr int Cidx = i.value;
         if (std::fabs(particle.pdgCode()) == pDGs[Cidx]) {
           registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTgenPrimSgn), multMC, flatMC, particle.pt());       // Sgn loss den
@@ -2395,7 +2421,7 @@ struct FlattenictyPikp {
         continue;
       }
       if (gtOneRec) {
-        static_for<0, 4>([&](auto i) {
+        static_for<0, 2>([&](auto i) {
           constexpr int Cidx = i.value;
           if (std::fabs(particle.pdgCode()) == pDGs[Cidx]) {
             registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTrecCollPrimSgn), multMC, flatMC, particle.pt()); // Sgn loss num
@@ -2429,7 +2455,7 @@ struct FlattenictyPikp {
         continue;
       }
       const float multRec = getMult(collision);
-      const float flatRec = fillFlat<true>(collision);
+      const float flatRec = fillFlat<false>(collision);
 
       const auto& groupedTrks = tracks.sliceBy(perCollTrk, collision.globalIndex());
       for (const auto& track : groupedTrks) {
@@ -2452,7 +2478,7 @@ struct FlattenictyPikp {
         if (std::abs(particle.eta()) > trkSelOpt.trkEtaMax) {
           continue;
         }
-        static_for<0, 4>([&](auto i) {
+        static_for<0, 2>([&](auto i) {
           constexpr int Cidx = i.value;
           if (std::fabs(particle.pdgCode()) == pDGs[Cidx]) {
             if (!particle.isPhysicalPrimary()) {
@@ -2469,7 +2495,7 @@ struct FlattenictyPikp {
           }
         });
         if (isGoodTrack<true, false>(track, magField)) {
-          static_for<0, 4>([&](auto i) {
+          static_for<0, 2>([&](auto i) {
             constexpr int Cidx = i.value;
             if (std::fabs(particle.pdgCode()) == pDGs[Cidx]) {
               if (particle.isPhysicalPrimary()) {

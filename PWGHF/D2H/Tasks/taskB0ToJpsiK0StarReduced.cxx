@@ -65,6 +65,8 @@ namespace o2::aod
 namespace hf_cand_b0tojpsik0star_lite
 {
 DECLARE_SOA_COLUMN(PtJpsi, ptJpsi, float);                                             //! Transverse momentum of Jpsi daughter candidate (GeV/c)
+DECLARE_SOA_COLUMN(PtJpsiDauPos, ptJpsiDauPos, float);                                 //! Transverse momentum of Jpsi positive daughter candidate (GeV/c)
+DECLARE_SOA_COLUMN(PtJpsiDauNeg, ptJpsiDauNeg, float);                                 //! Transverse momentum of Jpsi negative daughter candidate (GeV/c)
 DECLARE_SOA_COLUMN(PtBach0, ptBach0, float);                                           //! Transverse momentum of bachelor kaon(<- K*0) (GeV/c)
 DECLARE_SOA_COLUMN(PtBach1, ptBach1, float);                                           //! Transverse momentum of bachelor kaon(<- K*0) (GeV/c)
 DECLARE_SOA_COLUMN(ItsNClsJpsiDauPos, itsNClsJpsiDauPos, int);                         //! Number of clusters in ITS
@@ -89,7 +91,7 @@ DECLARE_SOA_COLUMN(TpcChi2NClLfTrack1, tpcChi2NClLfTrack1, float);              
 DECLARE_SOA_COLUMN(AbsEtaLfTrack1, absEtaLfTrack1, float);                             //! |eta|
 DECLARE_SOA_COLUMN(MJpsi, mJpsi, float);                                               //! Invariant mass of Jpsi daughter candidates (GeV/c)
 DECLARE_SOA_COLUMN(MK0Star, mK0Star, float);                                           //! Invariant mass of K*0 daughter candidates (GeV/c)
-DECLARE_SOA_COLUMN(M, m, float);                                                       //! Invariant mass of candidate (GeV/c2)
+DECLARE_SOA_COLUMN(M, m, float);                                                       //! Invariant mass of candidate particle (GeV/c2)
 DECLARE_SOA_COLUMN(Pt, pt, float);                                                     //! Transverse momentum of candidate (GeV/c)
 DECLARE_SOA_COLUMN(PtGen, ptGen, float);                                               //! Transverse momentum of candidate (GeV/c)
 DECLARE_SOA_COLUMN(P, p, float);                                                       //! Momentum of candidate (GeV/c)
@@ -115,11 +117,17 @@ DECLARE_SOA_COLUMN(NSigTpcTofMuJpsiDauPos, nSigTpcTofMuJpsiDauPos, float);      
 DECLARE_SOA_COLUMN(NSigTpcMuJpsiDauNeg, nSigTpcMuJpsiDauNeg, float);                   //! TPC Nsigma separation for Jpsi DauNeg with muon mass hypothesis
 DECLARE_SOA_COLUMN(NSigTofMuJpsiDauNeg, nSigTofMuJpsiDauNeg, float);                   //! TOF Nsigma separation for Jpsi DauNeg with muon mass hypothesis
 DECLARE_SOA_COLUMN(NSigTpcTofMuJpsiDauNeg, nSigTpcTofMuJpsiDauNeg, float);             //! Combined TPC and TOF Nsigma separation for Jpsi prong1 with muon mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcElJpsiDauPos, nSigTpcElJpsiDauPos, float);                   //! TPC Nsigma separation for Jpsi DauPos with electron mass hypothesis
+DECLARE_SOA_COLUMN(NSigTofElJpsiDauPos, nSigTofElJpsiDauPos, float);                   //! TOF Nsigma separation for Jpsi DauPos with electron mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcTofElJpsiDauPos, nSigTpcTofElJpsiDauPos, float);             //! Combined TPC and TOF Nsigma separation for Jpsi prong0 with electron mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcElJpsiDauNeg, nSigTpcElJpsiDauNeg, float);                   //! TPC Nsigma separation for Jpsi DauNeg with electron mass hypothesis
+DECLARE_SOA_COLUMN(NSigTofElJpsiDauNeg, nSigTofElJpsiDauNeg, float);                   //! TOF Nsigma separation for Jpsi DauNeg with electron mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcTofElJpsiDauNeg, nSigTpcTofElJpsiDauNeg, float);             //! Combined TPC and TOF Nsigma separation for Jpsi prong1 with electron mass hypothesis
 DECLARE_SOA_COLUMN(DecayLength, decayLength, float);                                   //! Decay length of candidate (cm)
 DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);                               //! Transverse decay length of candidate (cm)
 DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);               //! Normalised decay length of candidate
 DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float);           //! Normalised transverse decay length of candidate
-DECLARE_SOA_COLUMN(CtXY, ctXY, float);                                                 //! Pseudo-proper decay length of candidate
+DECLARE_SOA_COLUMN(CtXY, ctXY, float);                                                 //! Pseudo-proper decay length of candidate particle
 DECLARE_SOA_COLUMN(ImpactParameterProduct, impactParameterProduct, float);             //! Impact parameter product of B daughters
 DECLARE_SOA_COLUMN(ImpactParameterProductJpsi, impactParameterProductJpsi, float);     //! Impact parameter product of Jpsi daughters
 DECLARE_SOA_COLUMN(ImpactParameterProductK0Star, impactParameterProductK0Star, float); //! Impact parameter product of K*0 daughters
@@ -146,6 +154,7 @@ DECLARE_SOA_TABLE(HfRedCandB0Lites, "AOD", "HFREDCANDB0LITE", //! Table with som
                   hf_cand_b0tojpsik0star_lite::Y,
                   hf_cand_b0tojpsik0star_lite::Cpa,
                   hf_cand_b0tojpsik0star_lite::CpaXY,
+                  hf_cand_b0tojpsik0star_lite::CpaJpsi,
                   hf_cand::Chi2PCA,
                   hf_cand_b0tojpsik0star_lite::DecayLength,
                   hf_cand_b0tojpsik0star_lite::DecayLengthXY,
@@ -168,16 +177,30 @@ DECLARE_SOA_TABLE(HfRedCandB0Lites, "AOD", "HFREDCANDB0LITE", //! Table with som
                   hf_cand_b0tojpsik0star_lite::ImpactParameterLfTrack0,
                   hf_cand_b0tojpsik0star_lite::ImpactParameterLfTrack1,
                   // Jpsi daughter features
+                  hf_cand_b0tojpsik0star_lite::PtJpsiDauPos,
                   hf_cand_b0tojpsik0star_lite::ItsNClsJpsiDauPos,
                   hf_cand_b0tojpsik0star_lite::TpcNClsCrossedRowsJpsiDauPos,
                   hf_cand_b0tojpsik0star_lite::ItsChi2NClJpsiDauPos,
                   hf_cand_b0tojpsik0star_lite::TpcChi2NClJpsiDauPos,
                   hf_cand_b0tojpsik0star_lite::AbsEtaJpsiDauPos,
+                  hf_cand_b0tojpsik0star_lite::PtJpsiDauNeg,
                   hf_cand_b0tojpsik0star_lite::ItsNClsJpsiDauNeg,
                   hf_cand_b0tojpsik0star_lite::TpcNClsCrossedRowsJpsiDauNeg,
                   hf_cand_b0tojpsik0star_lite::ItsChi2NClJpsiDauNeg,
                   hf_cand_b0tojpsik0star_lite::TpcChi2NClJpsiDauNeg,
                   hf_cand_b0tojpsik0star_lite::AbsEtaJpsiDauNeg,
+                  hf_cand_b0tojpsik0star_lite::NSigTpcMuJpsiDauPos,
+                  hf_cand_b0tojpsik0star_lite::NSigTofMuJpsiDauPos,
+                  hf_cand_b0tojpsik0star_lite::NSigTpcTofMuJpsiDauPos,
+                  hf_cand_b0tojpsik0star_lite::NSigTpcMuJpsiDauNeg,
+                  hf_cand_b0tojpsik0star_lite::NSigTofMuJpsiDauNeg,
+                  hf_cand_b0tojpsik0star_lite::NSigTpcTofMuJpsiDauNeg,
+                  hf_cand_b0tojpsik0star_lite::NSigTpcElJpsiDauPos,
+                  hf_cand_b0tojpsik0star_lite::NSigTofElJpsiDauPos,
+                  hf_cand_b0tojpsik0star_lite::NSigTpcTofElJpsiDauPos,
+                  hf_cand_b0tojpsik0star_lite::NSigTpcElJpsiDauNeg,
+                  hf_cand_b0tojpsik0star_lite::NSigTofElJpsiDauNeg,
+                  hf_cand_b0tojpsik0star_lite::NSigTpcTofElJpsiDauNeg,
                   // K0* features
                   hf_cand_b0tojpsik0star_lite::PtBach0,
                   hf_cand_b0tojpsik0star_lite::ItsNClsLfTrack0,
@@ -272,6 +295,7 @@ struct HfTaskB0ToJpsiK0StarReduced {
   o2::ccdb::CcdbApi ccdbApi;
 
   using TracksKaon = soa::Join<HfRedTracks, HfRedTracksPid>;
+  using JPsis = soa::Join<HfRedJpsis, HfRedJpsiDauPid>;
   std::vector<float> outputMl;
 
   // Filter filterSelectCandidates = (aod::hf_sel_candidate_bplus::isSelBsToJpsiPi >= selectionFlagBs);
@@ -376,14 +400,14 @@ struct HfTaskB0ToJpsiK0StarReduced {
   /// \param candidatesJpsi is the table with Jpsi candidates
   template <bool DoMc, bool WithB0Ml, typename Cand>
   void fillCand(Cand const& candidate,
-                aod::HfRedJpsis const& /*candidatesJpsi*/,
+                JPsis const& /*candidatesJpsi*/,
                 aod::HfRedBach0Tracks const&,
                 aod::HfRedBach1Tracks const&)
   {
     auto ptCandB0 = candidate.pt();
     auto invMassB0KPi = HfHelper::invMassB0ToJpsiK0Star(candidate, useJpsiPdgMass, useK0StarPdgMass, true);
     auto invMassB0PiK = HfHelper::invMassB0ToJpsiK0Star(candidate, useJpsiPdgMass, useK0StarPdgMass, false);
-    auto candJpsi = candidate.template jpsi_as<aod::HfRedJpsis>();
+    auto candJpsi = candidate.template jpsi_as<JPsis>();
     auto candLfDau0 = candidate.template prong0K0Star_as<aod::HfRedBach0Tracks>();
     auto candLfDau1 = candidate.template prong1K0Star_as<aod::HfRedBach1Tracks>();
     auto const pVecMu0 = candidate.pVectorProng0();
@@ -391,6 +415,8 @@ struct HfTaskB0ToJpsiK0StarReduced {
     auto const pVecLfDau0 = candidate.pVectorProng2();
     auto const pVecLfDau1 = candidate.pVectorProng3();
     auto ptJpsi = RecoDecay::pt(pVecMu0, pVecMu1);
+    auto ptMuPos = RecoDecay::pt(pVecMu0);
+    auto ptMuNeg = RecoDecay::pt(pVecMu1);
     auto ptK0Star = RecoDecay::pt(pVecLfDau0, pVecLfDau1);
     auto invMassJpsi = RecoDecay::m(std::array{pVecMu0, pVecMu1}, std::array{o2::constants::physics::MassMuonPlus, o2::constants::physics::MassMuonMinus});
     auto invMassK0StarKPi = RecoDecay::m(std::array{pVecLfDau0, pVecLfDau1}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
@@ -412,8 +438,8 @@ struct HfTaskB0ToJpsiK0StarReduced {
     SETBIT(statusB0PiK, SelectionStep::RecoSkims);
 
     // topological selection for the two K*0 mass hypotheses
-    bool selKPi = HfHelper::selectionB0ToJpsiK0StarTopol(candidate, cuts, binsPt, useJpsiPdgMass, useK0StarPdgMass, true);
-    bool selPiK = HfHelper::selectionB0ToJpsiK0StarTopol(candidate, cuts, binsPt, useJpsiPdgMass, useK0StarPdgMass, false);
+    bool selKPi = HfHelper::selectionB0ToJpsiK0StarTopol<JPsis>(candidate, cuts, binsPt, useJpsiPdgMass, useK0StarPdgMass, true);
+    bool selPiK = HfHelper::selectionB0ToJpsiK0StarTopol<JPsis>(candidate, cuts, binsPt, useJpsiPdgMass, useK0StarPdgMass, false);
 
     if (!selKPi && !selPiK && selectionFlagB0 >= BIT(SelectionStep::RecoTopol) * 2 - 1) {
       return;
@@ -540,51 +566,63 @@ struct HfTaskB0ToJpsiK0StarReduced {
     }
 
     auto fillTable = [&](bool isSelKPi) {
-      auto ctXY = isSelKPi ? candidate.ctXY(std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus})
-                           : candidate.ctXY(std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus});
-      auto mlScoreSig = isSelKPi ? mlScoreSigKPi : mlScoreSigPiK;
-      auto invMassB0 = isSelKPi ? invMassB0KPi : invMassB0PiK;
-      auto invMassK0Star = isSelKPi ? invMassK0StarKPi : invMassK0StarPiK;
+      auto ctXY = candidate.ctXY(std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
+      auto ctXYBar = candidate.ctXY(std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus});
       hfRedCandB0Lite(
         // B0 - meson features
-        invMassB0,
+        isSelKPi ? invMassB0KPi : invMassB0PiK,
         ptCandB0,
         candidate.eta(),
         candidate.phi(),
         HfHelper::yB0(candidate),
         candidate.cpa(),
         candidate.cpaXY(),
+        candidate.cpaJpsi(),
         candidate.chi2PCA(),
         candidate.decayLength(),
         candidate.decayLengthXY(),
         candidate.decayLengthNormalised(),
         candidate.decayLengthXYNormalised(),
-        ctXY,
+        isSelKPi ? ctXY : ctXYBar,
         candidate.impactParameterProduct(),
         candidate.impactParameterProductJpsi(),
         candidate.impactParameterProductK0Star(),
         candidate.maxNormalisedDeltaIP(),
-        mlScoreSig,
+        isSelKPi ? mlScoreSigKPi : mlScoreSigPiK,
         isSelKPi ? statusB0KPi : -1,
         isSelKPi ? -1 : statusB0PiK,
         // J/Psi features
         invMassJpsi,
         ptJpsi,
-        invMassK0Star,
+        isSelKPi ? invMassK0StarKPi : invMassK0StarPiK,
         candidate.impactParameter0(),
         candidate.impactParameter1(),
         candidate.impactParameter2(),
         candidate.impactParameter3(),
+        ptMuPos,
         candJpsi.itsNClsDauPos(),
         candJpsi.tpcNClsCrossedRowsDauPos(),
         candJpsi.itsChi2NClDauPos(),
         candJpsi.tpcChi2NClDauPos(),
         absEta(candJpsi.tglDauPos()),
+        ptMuNeg,
         candJpsi.itsNClsDauNeg(),
         candJpsi.tpcNClsCrossedRowsDauNeg(),
         candJpsi.itsChi2NClDauNeg(),
         candJpsi.tpcChi2NClDauNeg(),
         absEta(candJpsi.tglDauNeg()),
+        candJpsi.tpcNSigmaMuPos(),
+        candJpsi.tofNSigmaMuPos(),
+        candJpsi.tpcTofNSigmaMuPos(),
+        candJpsi.tpcNSigmaMuNeg(),
+        candJpsi.tofNSigmaMuNeg(),
+        candJpsi.tpcTofNSigmaMuNeg(),
+        candJpsi.tpcNSigmaElPos(),
+        candJpsi.tofNSigmaElPos(),
+        candJpsi.tpcTofNSigmaElPos(),
+        candJpsi.tpcNSigmaElNeg(),
+        candJpsi.tofNSigmaElNeg(),
+        candJpsi.tpcTofNSigmaElNeg(),
         // K*0 daughter features
         candLfDau0.pt(),
         candLfDau0.itsNCls(),
@@ -649,7 +687,7 @@ struct HfTaskB0ToJpsiK0StarReduced {
 
   // Process functions
   void processData(aod::HfRedCandB0ToJpsiK0Star const& candidates,
-                   aod::HfRedJpsis const& candidatesJpsi,
+                   JPsis const& candidatesJpsi,
                    aod::HfRedBach0Tracks const& kaon0Tracks,
                    aod::HfRedBach1Tracks const& kaon1Tracks)
   {
@@ -663,7 +701,7 @@ struct HfTaskB0ToJpsiK0StarReduced {
   PROCESS_SWITCH(HfTaskB0ToJpsiK0StarReduced, processData, "Process data without ML for B0", true);
 
   void processDataWithB0Ml(aod::HfRedCandB0ToJpsiK0Star const& candidates,
-                           aod::HfRedJpsis const& candidatesJpsi,
+                           JPsis const& candidatesJpsi,
                            aod::HfRedBach0Tracks const& kaon0Tracks,
                            aod::HfRedBach1Tracks const& kaon1Tracks)
   {
@@ -678,7 +716,7 @@ struct HfTaskB0ToJpsiK0StarReduced {
 
   void processMc(soa::Join<aod::HfRedCandB0ToJpsiK0Star, aod::HfMcRecRedB0s> const& candidates,
                  aod::HfMcGenRedB0s const& mcParticles,
-                 aod::HfRedJpsis const& candidatesJpsi,
+                 JPsis const& candidatesJpsi,
                  aod::HfRedBach0Tracks const& kaon0Tracks,
                  aod::HfRedBach1Tracks const& kaon1Tracks)
   {
@@ -699,7 +737,7 @@ struct HfTaskB0ToJpsiK0StarReduced {
 
   void processMcWithB0Ml(soa::Join<aod::HfRedCandB0ToJpsiK0Star, aod::HfMcRecRedB0s> const& candidates,
                          aod::HfMcGenRedB0s const& mcParticles,
-                         aod::HfRedJpsis const& candidatesJpsi,
+                         JPsis const& candidatesJpsi,
                          aod::HfRedBach0Tracks const& kaon0Tracks,
                          aod::HfRedBach1Tracks const& kaon1Tracks)
   {

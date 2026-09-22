@@ -494,6 +494,10 @@ struct AnalysisEventSelection {
       // create the mixing hash and publish it into the hash table
       if (fMixHandler != nullptr) {
         int hh = fMixHandler->FindEventCategory(dqtablereader_helpers::varValues());
+        // events outside the mixing limits (-1) get a distinct negative hash so that they are not mixed with each other
+        if (hh < 0) {
+          hh = -1 - static_cast<int>(event.globalIndex());
+        }
         hash(hh);
       }
     }
@@ -1604,13 +1608,14 @@ struct AnalysisSameEventPairing {
             if (fConfigTRPairs) {
               names.push_back(Form("PairsBarrelTRPM_%s", objArray->At(icut)->GetName()));
               names.push_back(Form("PairsBarrelTRPM_ambiguousextra_%s", objArray->At(icut)->GetName()));
-              histNames += Form("%s;%s;", names[6].Data(), names[7].Data());
+              names.push_back(Form("PairsBarrelTR_MEPM_%s", objArray->At(icut)->GetName()));
+              histNames += Form("%s;%s;%s;", names[6].Data(), names[7].Data(), names[8].Data());
             }
             if (fEnableBarrelMixingHistos) {
               names.push_back(Form("PairsBarrelMEPM_%s", objArray->At(icut)->GetName()));
               names.push_back(Form("PairsBarrelMEPP_%s", objArray->At(icut)->GetName()));
               names.push_back(Form("PairsBarrelMEMM_%s", objArray->At(icut)->GetName()));
-              histNames += Form("%s;%s;%s;", names[(fConfigTRPairs ? 8 : 6)].Data(), names[(fConfigTRPairs ? 9 : 7)].Data(), names[(fConfigTRPairs ? 10 : 8)].Data());
+              histNames += Form("%s;%s;%s;", names[(fConfigTRPairs ? 9 : 6)].Data(), names[(fConfigTRPairs ? 10 : 7)].Data(), names[(fConfigTRPairs ? 11 : 8)].Data());
             }
             fTrackHistNames[icut] = names;
 
@@ -1714,6 +1719,9 @@ struct AnalysisSameEventPairing {
     }
 
     if (fConfigRunMixingAcrossTFs) {
+      if (fNCutsBarrel > MixingHandler::NMaxCuts) {
+        LOGF(fatal, "Across-TF mixing supports at most %d barrel track-cut bits, got %d", MixingHandler::NMaxCuts, fNCutsBarrel);
+      }
       TString mixVarsString = fConfigMixingVariables.value;
       TString mixVarsJsonString = fConfigMixingVariablesJson.value;
       std::unique_ptr<TObjArray> objArray(mixVarsString.Tokenize(","));
@@ -1899,6 +1907,10 @@ struct AnalysisSameEventPairing {
   {
     if (events.size() > 0) { // Additional protection to avoid crashing of events.begin().runNumber()
       if (fCurrentRun != events.begin().runNumber()) {
+        if (fConfigRunMixingAcrossTFs) {
+          // do not mix events from different runs
+          fMixingHandler.ClearPools();
+        }
         initParamsFromCCDB(events.begin().timestamp(), events.begin().runNumber(), TTwoProngFitter);
         fCurrentRun = events.begin().runNumber();
       }
@@ -2005,6 +2017,10 @@ struct AnalysisSameEventPairing {
           LOGF(fatal, "Flow resolution histograms are not available, cannot fill flow variables!");
         }
         VarManager::FillEventFlowResoFactor(ResoFlowSP, ResoFlowEP);
+      }
+      int mixingCategory = -1;
+      if (fConfigRunMixingAcrossTFs) {
+        mixingCategory = fMixingHandler.FindEventCategory(dqtablereader_helpers::varValues());
       }
 
       bool isFirst = true;
@@ -2478,6 +2494,9 @@ struct AnalysisSameEventPairing {
 
       if (fConfigRunMixingAcrossTFs) {
         // run event mixing across TFs
+        if (mixingCategory < 0) {
+          continue;
+        }
         // 1) create a MixingEvent and fill it with the relevant tracks
         MixingHandler::MixingEvent mixingEvent;
         uint32_t trackFilterForMixing = 0;
@@ -2496,8 +2515,11 @@ struct AnalysisSameEventPairing {
             }
           }
         }
+        if (mixingEvent.tracks1.empty() && mixingEvent.tracks2.empty()) {
+          continue;
+        }
         // 2) run the mixing with the events in the pool corresponding to this event
-        auto& pool = fMixingHandler.GetPool(fMixingHandler.FindEventCategory(dqtablereader_helpers::varValues()));
+        auto& pool = fMixingHandler.GetPool(mixingCategory);
         for (auto const& poolEvent : pool.GetEvents()) {
           for (auto const& t1 : mixingEvent.tracks1) {
             // run +- pairing
@@ -2511,6 +2533,20 @@ struct AnalysisSameEventPairing {
               for (int icut = 0; icut < ncuts; icut++) {
                 if (mixedTwoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
                   fHistMan->FillHistClass(Form("PairsBarrelMEPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                }
+              }
+              if (fConfigTRPairs) {
+                // mixing event track should be rotated, so second parameter
+                if (fConfigNRotations.value != 1 && fConfigNRotations.value != 3) {
+                  LOGF(fatal, "Unsupported number of rotations: %d, only 1 and 3 are supported", fConfigNRotations.value);
+                }
+                for (int irot = 1; irot <= fConfigNRotations.value; ++irot) {
+                  VarManager::FillPairRotation_ME(t2, t1, irot);
+                  for (int icut = 0; icut < ncuts; icut++) {
+                    if (mixedTwoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
+                      fHistMan->FillHistClass(Form("PairsBarrelTR_MEPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                    }
+                  }
                 }
               }
             }
@@ -2543,6 +2579,19 @@ struct AnalysisSameEventPairing {
                   fHistMan->FillHistClass(Form("PairsBarrelMEPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
                 }
               }
+              if (fConfigTRPairs) {
+                if (fConfigNRotations.value != 1 && fConfigNRotations.value != 3) {
+                  LOGF(fatal, "Unsupported number of rotations: %d, only 1 and 3 are supported", fConfigNRotations.value);
+                }
+                for (int irot = 1; irot <= fConfigNRotations.value; ++irot) {
+                  VarManager::FillPairRotation_ME(t2, t1, irot);
+                  for (int icut = 0; icut < ncuts; icut++) {
+                    if (mixedTwoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
+                      fHistMan->FillHistClass(Form("PairsBarrelTR_MEPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                    }
+                  }
+                }
+              }
             }
             // run -- pairing
             for (auto const& t2 : poolEvent.tracks2) {
@@ -2561,7 +2610,7 @@ struct AnalysisSameEventPairing {
           }
         }
         // 3) add the current event to the pool
-        pool.UpdatePool(mixingEvent, fMixingHandler.GetPoolDepth());
+        pool.UpdatePool(mixingEvent, fMixingHandler.GetPoolDepth(), mixingEvent.filteringMask);
         // pool.Print();
       }
     } // end loop over events

@@ -51,7 +51,7 @@ class GFWWeights : public TNamed
   double getIntegratedEfficiency(double pt);
   void setDataFilled(bool newval) { fDataFilled = newval; }
   void setMCFilled(bool newval) { fMCFilled = newval; }
-  void readAndMerge(TString filelinks, TString listName = "OutputList", bool addData = kTRUE, bool addRec = kTRUE, bool addGen = kTRUE);
+  void readAndMerge(const TString& filelinks, const TString& listName = "OutputList", bool addData = kTRUE, bool addRec = kTRUE, bool addGen = kTRUE);
   void setPtBins(int Nbins, double* bins);
   Long64_t Merge(TCollection* collist);
   void rebinNUA(int nX = 1, int nY = 2, int nZ = 5);

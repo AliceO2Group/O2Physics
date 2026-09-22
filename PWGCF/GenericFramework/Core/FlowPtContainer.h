@@ -28,6 +28,7 @@
 #include <Rtypes.h>
 #include <RtypesCore.h>
 
+#include <array>
 #include <complex>
 #include <cstdint>
 #include <variant>
@@ -47,13 +48,13 @@ class FlowPtContainer : public TNamed
   using FillType = std::variant<std::complex<double>, double>;
   FlowPtContainer();
   explicit FlowPtContainer(const char* name);
-  ~FlowPtContainer();
+  ~FlowPtContainer() override;
   FlowPtContainer(const char* name, const char* title);
-  void initialise(const o2::framework::AxisSpec axis, const int& maxOrder, const o2::analysis::genericframework::GFWCorrConfigs& configs, const int& nsub = 10);
+  void initialise(const o2::framework::AxisSpec& axis, const int& maxOrder, const o2::analysis::genericframework::GFWCorrConfigs& configs, const int& nsub = 10);
   void initialise(int nbinsx, double* xbins, const int& maxOrder, const o2::analysis::genericframework::GFWCorrConfigs& configs, const int& nsub = 10);
   void initialise(int nbinsx, double xlow, double xhigh, const int& maxOrder, const o2::analysis::genericframework::GFWCorrConfigs& configs, const int& nsub = 10);
   // initial pt-pt correlations with two subevents
-  void initialiseSubevent(const o2::framework::AxisSpec axis, const int& maxOrder, const int& nsubev = 2, const int& nsub = 10);
+  void initialiseSubevent(const o2::framework::AxisSpec& axis, const int& maxOrder, const int& nsubev = 2, const int& nsub = 10);
   void initialiseSubevent(int nbinsx, double* xbins, const int& maxOrder, const int& nsubev = 2, const int& nsub = 10);
   void initialiseSubevent(int nbinsx, double xlow, double xhigh, const int& maxOrder, const int& nsubev = 2, const int& nsub = 10);
   void fill(const double& w, const double& pt);
@@ -66,32 +67,38 @@ class FlowPtContainer : public TNamed
   void calculateCorrelations();
   void calculateSubeventCorrelations();
   void calculateCMTerms();
-  void fillPtProfiles(const double& lMult, const double& rn);
-  void fillSubeventPtProfiles(const double& lMult, const double& rn);
-  void fillVnPtCorrProfiles(const double& lMult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask);
+  void fillPtProfiles(const double& centmult, const double& rn);
+  // Book and fill a separate pT observable with a weight calculated by the task.
+  // The task can supply a separate event weight for the same observable.
+  bool addPtProfile(const char* name, int observableOrder);
+  bool fillPtProfile(const char* name, int observableOrder, double mult, double eventWeight, double rn);
+  void fillSubeventPtProfiles(const double& centmult, const double& rn);
+  void fillVnPtCorrProfiles(const double& centmult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask);
   void fillVnDeltaPtProfiles(const double& centmult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask);
-  void fillVnPtCorrProfiles(const int configIndex, const double& lMult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask);
+  void fillVnPtCorrProfiles(const int configIndex, const double& centmult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask);
   void fillVnDeltaPtProfiles(const int configIndex, const double& centmult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask);
   void fillVnDeltaPtStdProfiles(const double& centmult, const double& rn);
   void fillVnPtCorrStdProfiles(const double& centmult, const double& rn);
   void fillVnPtProfiles(const double& centmult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask)
   {
-    if (fUseCentralMoments)
+    if (fUseCentralMoments) {
       fillVnDeltaPtProfiles(centmult, flowval, flowtuples, rn, mask);
-    else
+    } else {
       fillVnPtCorrProfiles(centmult, flowval, flowtuples, rn, mask);
+    }
   }
   void fillVnPtProfiles(const int configIndex, const double& centmult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask)
   {
-    if (fUseCentralMoments)
+    if (fUseCentralMoments) {
       fillVnDeltaPtProfiles(configIndex, centmult, flowval, flowtuples, rn, mask);
-    else
+    } else {
       fillVnPtCorrProfiles(configIndex, centmult, flowval, flowtuples, rn, mask);
+    }
   }
   void skipVnPtProfiles(uint8_t mask)
   {
     for (auto m(1); m <= mpar; ++m) {
-      if (!(mask & (1 << (m - 1)))) {
+      if ((mask & (1 << (m - 1))) == 0) {
         continue;
       }
       if (fUseCentralMoments) {
@@ -102,17 +109,17 @@ class FlowPtContainer : public TNamed
         ++fillCounter;
       }
     }
-    return;
   }
   void fillVnPtStdProfiles(const double& centmult, const double& rn)
   {
-    if (fUseCentralMoments)
+    if (fUseCentralMoments) {
       fillVnDeltaPtStdProfiles(centmult, rn);
-    else
+    } else {
       fillVnPtCorrStdProfiles(centmult, rn);
+    }
   }
-  void fillCMProfiles(const double& lMult, const double& rn);
-  void fillCMSubeventProfiles(const double& lMult, const double& rn);
+  void fillCMProfiles(const double& centmult, const double& rn);
+  void fillCMSubeventProfiles(const double& centmult, const double& rn);
   TList* getCorrList() { return fCorrList; }
   TList* getCMTermList() { return fCMTermList; }
   TList* getCovList() { return fCovList; }
@@ -224,8 +231,8 @@ class FlowPtContainer : public TNamed
   static const int centralMomentMaxOrder = 4;
   std::vector<std::vector<int>> subevents;
   void getSubevents(int k, int n, std::vector<int>& current, std::vector<std::vector<int>>& subevents);
-  static constexpr float FactorialArray[9] = {1., 1., 2., 6., 24., 120., 720., 5040., 40320.};
-  static constexpr int SignArray[9] = {1, -1, 1, -1, 1, -1, 1, -1, 1};
+  static constexpr std::array<float, 9> FactorialArray = {1., 1., 2., 6., 24., 120., 720., 5040., 40320.};
+  static constexpr std::array<int, 9> SignArray = {1, -1, 1, -1, 1, -1, 1, -1, 1};
   ClassDef(FlowPtContainer, 2);
 };
 #endif // PWGCF_GENERICFRAMEWORK_CORE_FLOWPTCONTAINER_H_

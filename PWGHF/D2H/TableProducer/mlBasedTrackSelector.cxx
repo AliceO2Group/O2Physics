@@ -327,7 +327,8 @@ struct HfTrackSelectorTagSelTracks {
     Configurable<double> thresholdScoreKaonDs{"thresholdScoreKaonDs", 0., "min. Ds kaon-class score"};
     // ONNX runtime
     Configurable<bool> loadModelsFromCcdb{"loadModelsFromCcdb", false, "load the ONNX models from CCDB instead of a local path"};
-    Configurable<std::string> mlModelPathCcdb{"mlModelPathCcdb", "path/to/ml/models", "CCDB path of the ML models"};
+    Configurable<std::string> mlModelPathCcdbDplus{"mlModelPathCcdbDplus", "path/to/ml/models/Dplus", "CCDB path of the D+ track model"};
+    Configurable<std::string> mlModelPathCcdbDs{"mlModelPathCcdbDs", "path/to/ml/models/Ds", "CCDB path of the Ds track model"};
     Configurable<int64_t> timestampCcdbForMlModels{"timestampCcdbForMlModels", -1, "timestamp of the ONNX files to be queried in CCDB"};
     Configurable<bool> enableOnnxOptimizations{"enableOnnxOptimizations", true, "enable the ONNX graph optimisations"};
     Configurable<int> onnxThreads{"onnxThreads", 1, "number of threads used by the ONNX runtime (0 = let onnxruntime decide)"};
@@ -384,11 +385,13 @@ struct HfTrackSelectorTagSelTracks {
   /// Configure one model from its configurables.
   /// \param model is the model to configure
   /// \param onnxFile is the ONNX file name
+  /// \param ccdbPath is the CCDB path of the model, used if the models are loaded from CCDB
   /// \param features are the input feature names, in the order the model expects
   /// \param thrPion, thrKaon are the score thresholds
   /// \param name is used in the log message
   void configureModel(HfTrackModel& model,
                       std::string const& onnxFile,
+                      std::string const& ccdbPath,
                       std::vector<std::string> const& features,
                       const double thrPion,
                       const double thrKaon,
@@ -407,7 +410,7 @@ struct HfTrackSelectorTagSelTracks {
     model.response.configure(binsPtSingle, dummyCuts, cutDir, static_cast<uint8_t>(nOut));
     if (config.loadModelsFromCcdb) {
       ccdbApi.init(config.ccdbUrl);
-      model.response.setModelPathsCCDB(onnxFiles, ccdbApi, std::vector<std::string>{config.mlModelPathCcdb.value}, config.timestampCcdbForMlModels);
+      model.response.setModelPathsCCDB(onnxFiles, ccdbApi, std::vector<std::string>{ccdbPath}, config.timestampCcdbForMlModels);
     } else {
       model.response.setModelPathsLocal(onnxFiles);
     }
@@ -415,7 +418,7 @@ struct HfTrackSelectorTagSelTracks {
     model.response.init(config.enableOnnxOptimizations, config.onnxThreads);
     model.enabled = true;
     LOGP(info, "{}: configured from {} with {} input features and {} output classes (pion score > {}, kaon score > {})",
-         name, onnxFile, features.size(), nOut, thrPion, thrKaon);
+         name, config.loadModelsFromCcdb ? "CCDB " + ccdbPath : onnxFile, features.size(), nOut, thrPion, thrKaon);
   }
 
   void init(InitContext const&)
@@ -430,11 +433,11 @@ struct HfTrackSelectorTagSelTracks {
     }
 
     if (config.applyMlDplus) {
-      configureModel(models[ChannelDplusToPiKPi], config.onnxFileNameDplus, config.inputFeaturesDplus,
+      configureModel(models[ChannelDplusToPiKPi], config.onnxFileNameDplus, config.mlModelPathCcdbDplus, config.inputFeaturesDplus,
                      config.thresholdScorePionDplus, config.thresholdScoreKaonDplus, "D+ track model");
     }
     if (config.applyMlDs) {
-      configureModel(models[ChannelDsToKKPi], config.onnxFileNameDs, config.inputFeaturesDs,
+      configureModel(models[ChannelDsToKKPi], config.onnxFileNameDs, config.mlModelPathCcdbDs, config.inputFeaturesDs,
                      config.thresholdScorePionDs, config.thresholdScoreKaonDs, "Ds track model");
     }
     if (!models[ChannelDplusToPiKPi].enabled && !models[ChannelDsToKKPi].enabled) {
@@ -522,6 +525,7 @@ struct HfTrackSelectorTagSelTracks {
     features.itsNClsInnerBarrel = static_cast<float>(track.itsNClsInnerBarrel());
     features.itsChi2NCl = track.itsChi2NCl();
     features.tpcNClsFound = static_cast<float>(track.tpcNClsFound());
+    features.tpcNClsCrossedRows = static_cast<float>(track.tpcNClsCrossedRows());
     features.tpcCrossedRowsOverFindableCls = track.tpcCrossedRowsOverFindableCls();
     features.tpcChi2NCl = track.tpcChi2NCl();
     features.tpcFractionSharedCls = track.tpcFractionSharedCls();

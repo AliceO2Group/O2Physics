@@ -273,6 +273,10 @@ struct AnalysisEventSelection {
 
     if (fMixHandler != nullptr) {
       int hh = fMixHandler->FindEventCategory(VarManager::fgValues);
+      // events outside the mixing limits (-1) get a distinct negative hash so that they are not mixed with each other
+      if (hh < 0) {
+        hh = -1 - static_cast<int>(event.globalIndex());
+      }
       hash(hh);
     }
   }

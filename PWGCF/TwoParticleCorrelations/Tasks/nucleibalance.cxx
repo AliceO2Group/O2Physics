@@ -71,8 +71,8 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace constants::math;
 
-#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) \
-  Configurable<TYPE> NAME{#NAME, (DEFAULT), (HELP)}; // NOLINT(bugprone-macro-parentheses)
+#define O2_DEFINE_CONFIGURABLE(name, type, defaultValue, help) \
+  Configurable<type> name{#name, (defaultValue), (help)}; // NOLINT(bugprone-macro-parentheses)
 
 static constexpr float PairCutOff = -1.f;
 static constexpr std::array<std::array<float, 5>, 1> CfgPairCutDefaults{{{PairCutOff, PairCutOff, PairCutOff, PairCutOff, PairCutOff}}};
@@ -1787,6 +1787,8 @@ struct Lambdastarproxy {
   // Inclusive PID-QA histograms are filled before final PID cuts, after event/track-quality cuts.
   // Candidate-level nSigma/TOF/DCA histograms are filled after final PID cuts.
   Configurable<int> lstarEnablePidQA{"lstarEnablePidQA", 0, "Enable PID QA histograms (dE/dx, TOF #beta, proxy invariant-mass QA, etc.): 1 = ON, 0 = OFF"};
+  Configurable<int> lstarEnableProxyControls{"lstarEnableProxyControls", 1, "Enable TOF/PID-partitioned proxy spectra and inclusive full-pK maps (requires lstarEnableSparse)"};
+  Configurable<int> lstarRequireTOFMatchDe{"lstarRequireTOFMatchDe", 0, "Require a TOF match for every selected deuteron; 0 preserves hybrid unmatched candidates"};
   Configurable<int> lstarEnableSparse{"lstarEnableSparse", 1, "Enable THnSparse invariant-mass histograms (#Lambda^{*} pK and proxy); 1 = ON, 0 = OFF"};
   Configurable<float> lstarLambdaAbsYMax{"lstarLambdaAbsYMax", 0.5f, "Max |y_{pK}| (or y_{proxy K}) for #Lambda^{*} candidates"};
 
@@ -1795,10 +1797,13 @@ struct Lambdastarproxy {
     int charge;
     int tid;
   };
+  // PID flags describe detector compatibility, not truth-level purity.
   struct ProxyCand {
     float px, py, pz;
     float pxFull, pyFull, pzFull;
     bool protonLike;
+    bool hasTOF;
+    bool protonTPCCompatible;
     int charge;
     int tid;
   };
@@ -2081,6 +2086,13 @@ struct Lambdastarproxy {
     AxisSpec dcaXYAxis{200, -0.2, 0.2, "DCA_{xy} (cm)"};
     AxisSpec dcaZAxis{200, -0.2, 0.2, "DCA_{z} (cm)"};
 
+    // Count reconstructed collisions received by the data process, before any
+    // task event cuts and after all of them, independently of track candidates.
+    histos.add("hEventSelection", "Proxy event selection;Selection stage;Events",
+               HistType::kTH1D, {AxisSpec{2, 0.5, 2.5, "Selection stage"}});
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "Before event selection");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "After event selection");
+
     // Invariant-mass spectra
     histos.add("hInvMassPKUnlike",
                "pK invariant mass (unlike-sign);M_{pK} (GeV/c^{2});Counts",
@@ -2091,6 +2103,30 @@ struct Lambdastarproxy {
 
     // THnSparse for invariant-mass analysis (mass, pT, multiplicity/centrality)
     if (lstarEnableSparse.value != 0) {
+
+      if (lstarEnableProxyControls.value != 0) {
+        // Axes 3/4/5 partition the SAME inclusive proxy sample in every pair class.
+        const std::vector<AxisSpec> controlAxes{
+          AxisSpec{400, 1.4, 1.8, "M_{(d/2)K} (GeV/c^{2})"},
+          AxisSpec{100, 0., 10., "p_{T}^{(d/2)K} (GeV/c)"}, centAxis,
+          AxisSpec{2, -0.5, 1.5, "deuteron hasTOF (0/1)"},
+          AxisSpec{2, -0.5, 1.5, "passes full proton PID (0/1)"},
+          AxisSpec{2, -0.5, 1.5, "passes proton TPC cut only (0/1)"}};
+        histos.add("hLambdaStarProxySelectedTrackControlSparse", "Selected deuteron track controls",
+                   HistType::kTHnSparseF,
+                   {AxisSpec{100, 0., 10., "p_{T}^{d,full} (GeV/c)"}, controlAxes[3], controlAxes[4], controlAxes[5]}, true);
+        auto mapAxes = controlAxes;
+        // Full-pK rapidity is recorded, not imposed. Include mass flow bins
+        // when projecting these maps back onto the inclusive proxy sample.
+        mapAxes.emplace_back(1000, 1.4, 2.4, "M_{pK}^{full} (GeV/c^{2})");
+        mapAxes.emplace_back(2, -0.5, 1.5, "passes full-pK rapidity (0/1)");
+        for (auto const& pairClass : {"Unlike", "Like", "Mixed"}) {
+          const std::string spectrumName = std::string("hLambdaStarProxyControl") + pairClass + "Sparse";
+          const std::string mapName = std::string("hLambdaStarProxyControlFullPK") + pairClass + "Sparse";
+          histos.add(spectrumName.c_str(), "Inclusive proxy acceptance; PID compatibility controls", HistType::kTHnSparseF, controlAxes, true);
+          histos.add(mapName.c_str(), "Inclusive proxy acceptance; full-pK control map", HistType::kTHnSparseF, mapAxes, true);
+        }
+      }
 
       histos.add(
         "hLambdaStarProxyVsFullPKMixedSparse",
@@ -2587,6 +2623,7 @@ struct Lambdastarproxy {
   bool passOptionalDeuteronTOFExtras(const TTrack& trk) const
   {
     const bool needTOF =
+      (lstarRequireTOFMatchDe.value != 0) ||
       (lstarEnableBetaCutDe.value != 0) ||
       (lstarEnableExpSignalTOFDe.value != 0 && lstarTOFExpSignalDiffDeMax.value > 0.f);
 
@@ -2595,6 +2632,8 @@ struct Lambdastarproxy {
         if (!trk.hasTOF()) {
           return false;
         }
+      } else {
+        return false;
       }
     }
 
@@ -2758,12 +2797,20 @@ struct Lambdastarproxy {
                         std::array{m1, m2});
   }
 
-  void process(FilteredCollisions::iterator const& collision, FilteredTracks const& tracks)
+  void process(CollisionsWithEvSel::iterator const& collision, FilteredTracks const& tracks)
   {
+    histos.fill(HIST("hEventSelection"), 1.);
+    // Use unfiltered collisions here so the first bin includes vertex rejects.
+    // Preserve the strict vertex acceptance of collisionZVtxFilter; the MC QA
+    // process still uses that framework filter and does not fill this counter.
+    if (!(std::abs(collision.posZ()) < lstarCutVertex.value)) {
+      return;
+    }
     // Event selection (cfgTrigger) -- AO2D only
     if (!keepCollisionAO2D(collision)) {
       return;
     }
+    histos.fill(HIST("hEventSelection"), 2.);
     // physics masses (GeV/c^2)
     constexpr double MassProton = o2::constants::physics::MassProton;
     constexpr double MassKaonCharged = o2::constants::physics::MassKaonCharged;
@@ -2901,7 +2948,8 @@ struct Lambdastarproxy {
 
       const float nsTPCDe = trkD.tpcNSigmaDe();
       const float nsTOFDe = trkD.tofNSigmaDe();
-      const bool hasTofDe = hasTOFMatch(trkD);
+      // These controls require the actual match flag, never an inferred PID value.
+      const bool hasTofDe = trkD.hasTOF();
 
       if (!passOptionalDeuteronTOFExtras(trkD)) {
         continue;
@@ -3005,6 +3053,11 @@ struct Lambdastarproxy {
       const float pzFull =
         ptD * std::sinh(etaD);
 
+      if (lstarEnableSparse.value != 0 && lstarEnableProxyControls.value != 0) {
+        histos.fill(HIST("hLambdaStarProxySelectedTrackControlSparse"), ptD, hasTofDe,
+                    passesProtonSelection, std::abs(nsTPCPrAsProxy) < lstarCutNsigmaTPCPr.value);
+      }
+
       proxyCands.push_back(
         ProxyCand{
           .px = pxProxy,
@@ -3017,6 +3070,8 @@ struct Lambdastarproxy {
 
           .protonLike =
             passesProtonSelection,
+          .hasTOF = hasTofDe,
+          .protonTPCCompatible = std::abs(nsTPCPrAsProxy) < lstarCutNsigmaTPCPr.value,
 
           .charge =
             static_cast<int>(
@@ -3274,6 +3329,16 @@ struct Lambdastarproxy {
           // Inclusive invariant-mass spectrum for the #Lambda^{*} proxy (d/2 + K)
           histos.fill(HIST("hDeuteronProxyMass"), mass);
           if (lstarEnableSparse.value != 0) {
+            if (lstarEnableProxyControls.value != 0) {
+              const bool passFullY = std::abs(yFullPK) <= lstarLambdaAbsYMax.value;
+              if (unlikeSignProxy) {
+                histos.fill(HIST("hLambdaStarProxyControlUnlikeSparse"), mass, ptPair, eventMult, pr.hasTOF, pr.protonLike, pr.protonTPCCompatible);
+                histos.fill(HIST("hLambdaStarProxyControlFullPKUnlikeSparse"), mass, ptPair, eventMult, pr.hasTOF, pr.protonLike, pr.protonTPCCompatible, massFullPK, passFullY);
+              } else {
+                histos.fill(HIST("hLambdaStarProxyControlLikeSparse"), mass, ptPair, eventMult, pr.hasTOF, pr.protonLike, pr.protonTPCCompatible);
+                histos.fill(HIST("hLambdaStarProxyControlFullPKLikeSparse"), mass, ptPair, eventMult, pr.hasTOF, pr.protonLike, pr.protonTPCCompatible, massFullPK, passFullY);
+              }
+            }
 
             if (unlikeSignProxy) {
 
@@ -3535,6 +3600,12 @@ struct Lambdastarproxy {
                 massFullPK);
 
             if (lstarEnableSparse.value != 0) {
+
+              if (lstarEnableProxyControls.value != 0) {
+                const bool passFullY = std::abs(yFullPK) <= lstarLambdaAbsYMax.value;
+                histos.fill(HIST("hLambdaStarProxyControlMixedSparse"), mass, ptPair, eventMult, pr.hasTOF, pr.protonLike, pr.protonTPCCompatible);
+                histos.fill(HIST("hLambdaStarProxyControlFullPKMixedSparse"), mass, ptPair, eventMult, pr.hasTOF, pr.protonLike, pr.protonTPCCompatible, massFullPK, passFullY);
+              }
 
               // Standard mixed-event proxy spectrum.
               //
