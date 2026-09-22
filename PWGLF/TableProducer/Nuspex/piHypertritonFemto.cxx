@@ -355,7 +355,7 @@ struct PiHypertritonFemto {
      {"hPoolFlow", "Mixing pool selection;0=selected,1=in range;events", {HistType::kTH1F, {{2, -0.5, 1.5}}}},
      {"hDaughterHeTPC", "He3 daughter QA per candidate;TPC rigidity;TPC signal", {HistType::kTH2F, {{100, 0., 10.}, {300, 0., 1500.}}}},
      {"hDaughterPiTPC", "Pion daughter QA per candidate;TPC rigidity;TPC signal", {HistType::kTH2F, {{100, 0., 10.}, {300, 0., 1500.}}}},
-     {"hPionTPC", "Pair pion QA per selected track;TPC rigidity;TPC signal", {HistType::kTH2F, {{100, 0., 10.}, {300, 0., 1500.}}}},
+     {"hPairPionTPC", "Pair pion QA per selected track;TPC rigidity;TPC signal", {HistType::kTH2F, {{100, 0., 10.}, {300, 0., 1500.}}}},
      {"MC/SE/hKstarRecVsGenHyperReco", "Pion-hypertriton k* response for reconstructed true hypertritons;generated k* (GeV/#it{c});reconstructed k* (GeV/#it{c})", {HistType::kTH2F, {{300, 0., 3.}, {300, 0., 3.}}}},
      {"MC/SE/hKstarResolutionHyperReco", "Pion-hypertriton k* resolution for reconstructed true hypertritons;reconstructed k* (GeV/#it{c});k*_{reco}-k*_{gen} (GeV/#it{c})", {HistType::kTH2F, {{300, 0., 3.}, {200, -0.2, 0.2}}}},
      {"MC/SE/hPrimaryPionVsKstarDen", "Truth-matched selected pion pair-weighted denominator;k* (GeV/#it{c});Entries", {HistType::kTH1D, {{300, 0., 3.}}}},
@@ -788,7 +788,7 @@ struct PiHypertritonFemto {
         continue;
       }
       event.hadrons.push_back(makePion<isMC>(track, primaryVertex));
-      hadHyperRegistry.fill(HIST("hPionTPC"), track.tpcInnerParam(), track.tpcSignal());
+      hadHyperRegistry.fill(HIST("hPairPionTPC"), track.tpcInnerParam(), track.tpcSignal());
     }
   }
 
