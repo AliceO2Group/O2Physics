@@ -162,15 +162,7 @@ struct HfProducerCharmHadronsCharmFemtoDream {
 
   void init(InitContext const&)
   {
-    const std::array<bool, 8> processSwitches{
-      static_cast<bool>(doprocessD0D0),
-      static_cast<bool>(doprocessD0Dstar),
-      static_cast<bool>(doprocessD0D0Ml),
-      static_cast<bool>(doprocessD0DstarMl),
-      static_cast<bool>(doprocessD0D0WithFT0C),
-      static_cast<bool>(doprocessD0DstarWithFT0C),
-      static_cast<bool>(doprocessD0D0MlWithFT0C),
-      static_cast<bool>(doprocessD0DstarMlWithFT0C)};
+    const std::array<bool, 8> processSwitches{doprocessD0D0, doprocessD0Dstar, doprocessD0D0Ml, doprocessD0DstarMl, doprocessD0D0WithFT0C, doprocessD0DstarWithFT0C, doprocessD0D0MlWithFT0C, doprocessD0DstarMlWithFT0C};
     if (std::count(processSwitches.begin(), processSwitches.end(), true) != 1) {
       LOGP(fatal, "Enable exactly one charm-charm producer process");
     }
@@ -192,9 +184,8 @@ struct HfProducerCharmHadronsCharmFemtoDream {
     registry.add("candidates", "Candidates", kTH1F, {candidateSpecies});
   }
 
-  template <o2::hf_centrality::CentralityEstimator CentEstimator,
-            typename Collision>
-  bool acceptCollision(Collision const& col)
+  template <o2::hf_centrality::CentralityEstimator CentEstimator, typename CollType>
+  bool acceptCollision(CollType const& col)
   {
     registry.fill(HIST("events"), 0);
     float cent = -1.f; // No centrality for pp MB.
@@ -232,8 +223,8 @@ struct HfProducerCharmHadronsCharmFemtoDream {
     return {scores[0], scores[1], scores[2]};
   }
 
-  template <bool WithMl, typename Collision, typename Candidates>
-  void fillD0(Collision const& col, Candidates const& candidates)
+  template <bool WithMl, typename CollType, typename CandsType>
+  void fillD0(CollType const& col, CandsType const& candidates)
   {
     const auto timestamp = col.template bc_as<aod::BCsWithTimestamps>().timestamp();
     for (const auto& cand : candidates) {
@@ -242,15 +233,13 @@ struct HfProducerCharmHadronsCharmFemtoDream {
       // The OR filter accepts the row if either hypothesis passes. Write only
       // the passing hypotheses, each with its own flavour and ML scores.
       for (int hypothesis = 0; hypothesis < ND0Hypotheses; ++hypothesis) {
-        if ((hypothesis == 0 ? cand.isSelD0() : cand.isSelD0bar()) <
-            selectionFlagD0) {
+        if ((hypothesis == 0 ? cand.isSelD0() : cand.isSelD0bar()) < selectionFlagD0) {
           continue;
         }
         std::array<float, 3> scores{-1.f, -1.f, -1.f};
         if constexpr (WithMl) {
           if (mlD0.applyMlMode != NoMl) {
-            scores = hypothesis == 0 ? readScores(cand.mlProbD0())
-                                     : readScores(cand.mlProbD0bar());
+            scores = hypothesis == 0 ? readScores(cand.mlProbD0()) : readScores(cand.mlProbD0bar());
           }
           if (mlD0.applyMlMode == FillMlFromNewBDT) {
             // Do not call the ML response with an out-of-range model index.
@@ -266,18 +255,15 @@ struct HfProducerCharmHadronsCharmFemtoDream {
             scores = readScores(output);
           }
         }
-        d0Rows(collisions.lastIndex(), timestamp, hypothesis == 0 ? 1 : -1,
-               p0.globalIndex(), p1.globalIndex(), p0.pt(), p1.pt(), p0.eta(),
-               p1.eta(), p0.phi(), p1.phi(), 1 << hypothesis, scores[0],
-               scores[1], scores[2]);
+        d0Rows(collisions.lastIndex(), timestamp, hypothesis == 0 ? 1 : -1, p0.globalIndex(), p1.globalIndex(), p0.pt(), p1.pt(), p0.eta(), p1.eta(), p0.phi(), p1.phi(), 1 << hypothesis, scores[0], scores[1], scores[2]);
         hasD0 = true;
         registry.fill(HIST("candidates"), hypothesis);
       }
     }
   }
 
-  template <bool WithMl, typename Collision, typename Candidates>
-  void fillDstar(Collision const& col, Candidates const& candidates)
+  template <bool WithMl, typename CollType, typename CandsType>
+  void fillDstar(CollType const& col, CandsType const& candidates)
   {
     const auto timestamp = col.template bc_as<aod::BCsWithTimestamps>().timestamp();
     for (const auto& cand : candidates) {
@@ -302,17 +288,15 @@ struct HfProducerCharmHadronsCharmFemtoDream {
           scores = readScores(output);
         }
       }
-      dstarRows(collisions.lastIndex(), timestamp, soft.sign(),
-                p0.globalIndex(), p1.globalIndex(), soft.globalIndex(), p0.pt(),
-                p1.pt(), soft.pt(), p0.eta(), p1.eta(), soft.eta(), p0.phi(),
-                p1.phi(), soft.phi(), 1, scores[0], scores[1], scores[2]);
+      dstarRows(collisions.lastIndex(), timestamp, soft.sign(), p0.globalIndex(), p1.globalIndex(), soft.globalIndex(), p0.pt(), p1.pt(), soft.pt(), p0.eta(), p1.eta(), soft.eta(), p0.phi(), p1.phi(), soft.phi(), 1, scores[0], scores[1], scores[2]);
       hasDstar = true;
       registry.fill(HIST("candidates"), soft.sign() > 0 ? 2 : 3);
     }
   }
 
   void processD0D0(Collisions::iterator const& col,
-                   aod::BCsWithTimestamps const&, aod::Tracks const&,
+                   aod::BCsWithTimestamps const&,
+                   aod::Tracks const&,
                    soa::Filtered<D0s> const& d0s)
   {
     if (acceptCollision<o2::hf_centrality::CentralityEstimator::None>(col)) {
@@ -323,7 +307,8 @@ struct HfProducerCharmHadronsCharmFemtoDream {
   PROCESS_SWITCH(HfProducerCharmHadronsCharmFemtoDream, processD0D0, "D0 only, data", true);
 
   void processD0Dstar(Collisions::iterator const& col,
-                      aod::BCsWithTimestamps const&, aod::Tracks const&,
+                      aod::BCsWithTimestamps const&,
+                      aod::Tracks const&,
                       soa::Filtered<D0s> const& d0s,
                       soa::Filtered<Dstars> const& dstars)
   {
@@ -336,7 +321,8 @@ struct HfProducerCharmHadronsCharmFemtoDream {
   PROCESS_SWITCH(HfProducerCharmHadronsCharmFemtoDream, processD0Dstar, "D0 and Dstar, data", false);
 
   void processD0D0Ml(Collisions::iterator const& col,
-                     aod::BCsWithTimestamps const&, aod::Tracks const&,
+                     aod::BCsWithTimestamps const&,
+                     aod::Tracks const&,
                      soa::Filtered<D0sMl> const& d0s)
   {
     if (acceptCollision<o2::hf_centrality::CentralityEstimator::None>(col)) {
@@ -415,6 +401,5 @@ struct HfProducerCharmHadronsCharmFemtoDream {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<HfProducerCharmHadronsCharmFemtoDream>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfProducerCharmHadronsCharmFemtoDream>(cfgc)};
 }
