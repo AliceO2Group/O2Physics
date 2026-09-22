@@ -2800,7 +2800,7 @@ struct forwardlambdakzeroanalysis {
       initCCDB(bcs, collision);
 
       if (!isEventAccepted(collision, bcs, true)) {
-        return;
+        continue;
       }
 
       float centrality = -1;
