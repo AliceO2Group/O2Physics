@@ -68,19 +68,19 @@ double deltaPhi(double phi1, double phi2)
 /// The collision selection is done and stored in multiple steps, for later QA analysis.
 /// In order not to hard code which bins should be filled throughout different process
 /// function, this namespace with enums is create
-namespace collisionSelections
+namespace collision_selections
 {
   enum CollisionSelectionStep {
-    kMCCollisions = 0,                          ///< raw mccollisions with no selection, starts with 0
-    kMCCollisionsZCut,                          ///< mccollisions with z vtx selection
-    kMCCollisionsZCutSel8,                      ///< mccollisions with z vtx and sel8 mc emulated selections
-    kMCCollisionsZCutSel8HasCollisions,         ///< mccollisions with z vtx and sel8 mc emulated selections, with at least one reconstructed collisions
-    kMCCollisionsZCutSel8SplitCollisions,       ///< mccollisions with z vtx and sel8 mc emulated selections, with no split reconstructed collisions
-    kRecoCollisions,                            ///< raw reconstructed collisions after previous mccollisions selection
-    kRecoCollisionsZcut,                        ///< reconstructed collisions with z vtx selection after previous mccollisions selection
-    kRecoCollisionsZcutSel8                     ///< reconstructed collisions with z vtx and sel8 selections after previous mccollisions selection
+    StepMcCollisions = 0,                          ///< raw mccollisions with no selection, starts with 0
+    StepMcCollisionsZCut,                          ///< mccollisions with z vtx selection
+    StepMcCollisionsZCutSel8,                      ///< mccollisions with z vtx and sel8 mc emulated selections
+    StepMcCollisionsZCutSel8HasCollisions,         ///< mccollisions with z vtx and sel8 mc emulated selections, with at least one reconstructed collisions
+    StepMcCollisionsZCutSel8NoSplitCollisions,       ///< mccollisions with z vtx and sel8 mc emulated selections, with no split reconstructed collisions
+    StepRecoCollisions,                            ///< raw reconstructed collisions after previous mccollisions selection
+    StepRecoCollisionsZcut,                        ///< reconstructed collisions with z vtx selection after previous mccollisions selection
+    StepRecoCollisionsZcutSel8                     ///< reconstructed collisions with z vtx and sel8 selections after previous mccollisions selection
   };
-}
+} // namespace collision_selections
 // creating table for storing distance data
 namespace o2::aod
 {
@@ -275,11 +275,11 @@ struct HfFragmentationFunction {
                    aod::JetTracks const&)
   {
     // apply event selection and fill histograms for sanity check
-    registry.fill(HIST("h_collision_counter"), collisionSelections::kRecoCollisions);
+    registry.fill(HIST("h_collision_counter"), collision_selections::StepRecoCollisions);
     if (applyRecoEventSelection && (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || !(std::abs(collision.posZ()) < vertexZCut))) {
       return;
     }
-    registry.fill(HIST("h_collision_counter"), collisionSelections::kRecoCollisionsZcutSel8);
+    registry.fill(HIST("h_collision_counter"), collision_selections::StepRecoCollisionsZcutSel8);
 
     for (const auto& jet : jets) {
       // fill jet counter histogram
@@ -350,22 +350,22 @@ struct HfFragmentationFunction {
   {
     for (const auto& mccollision : mccollisions) {
 
-      registry.fill(HIST("h_collision_counter"), collisionSelections::kMCCollisions);
+      registry.fill(HIST("h_collision_counter"), collision_selections::StepMcCollisions);
       // skip collisions outside of |z| < vertexZCut
       if (applyMcEventSelection && (!jetderiveddatautilities::selectCollision(mccollision, eventSelectionBits) || !(std::abs(mccollision.posZ()) < vertexZCut))) {
         continue;
       }
-      registry.fill(HIST("h_collision_counter"), collisionSelections::kMCCollisionsZCutSel8);
+      registry.fill(HIST("h_collision_counter"), collision_selections::StepMcCollisionsZCutSel8);
 
       // reconstructed collisions associated to same mccollision
       const auto collisionsPerMCCollision = collisions.sliceBy(collisionsPerMCCollisionPreslice, mccollision.globalIndex());
       for (const auto& collision : collisionsPerMCCollision) {
 
-        registry.fill(HIST("h_collision_counter"), collisionSelections::kRecoCollisions);
+        registry.fill(HIST("h_collision_counter"), collision_selections::StepRecoCollisions);
         if (applyRecoEventSelection && (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || !(std::abs(collision.posZ()) < vertexZCut))) {
           continue;
         }
-        registry.fill(HIST("h_collision_counter"), collisionSelections::kRecoCollisionsZcutSel8);
+        registry.fill(HIST("h_collision_counter"), collision_selections::StepRecoCollisionsZcutSel8);
 
         // d0 detector level jets associated to the current same collision
         const auto d0mcdJetsPerCollision = mcdjets.sliceBy(d0MCDJetsPerCollisionPreslice, collision.globalIndex());
@@ -437,16 +437,16 @@ struct HfFragmentationFunction {
     for (const auto& mccollision : mccollisions) {
 
       // --- begin event selection
-      registry.fill(HIST("h_collision_counter"), collisionSelections::kMCCollisions);
+      registry.fill(HIST("h_collision_counter"), collision_selections::StepMcCollisions);
       // skip collisions outside of |z| < vertexZCut
       if (applyMcEventSelection && !(std::abs(mccollision.posZ()) < vertexZCut)) {
         continue;
       }
-      registry.fill(HIST("h_collision_counter"), collisionSelections::kMCCollisionsZCut);
+      registry.fill(HIST("h_collision_counter"), collision_selections::StepMcCollisionsZCut);
       if (applyMcEventSelection && !jetderiveddatautilities::selectCollision(mccollision, eventSelectionBits)) {
         continue;
       }
-      registry.fill(HIST("h_collision_counter"), collisionSelections::kMCCollisionsZCutSel8);
+      registry.fill(HIST("h_collision_counter"), collision_selections::StepMcCollisionsZCutSel8);
 
       // reconstructed collisions associated to this mccollision
       const auto collisionsPerMCCollision = collisions.sliceBy(collisionsPerMCCollisionPreslice, mccollision.globalIndex());
@@ -455,24 +455,24 @@ struct HfFragmentationFunction {
         continue;
       }
       // only consider events with no split vertices (one mccollision-to-one collision)
-      registry.fill(HIST("h_collision_counter"), collisionSelections::kMCCollisionsZCutSel8HasCollisions);
+      registry.fill(HIST("h_collision_counter"), collision_selections::StepMcCollisionsZCutSel8HasCollisions);
       if (rejectSplitCollisions && collisionsPerMCCollision.size() > 1) {
         continue;
       }
-      registry.fill(HIST("h_collision_counter"), collisionSelections::kMCCollisionsZCutSel8SplitCollisions);
+      registry.fill(HIST("h_collision_counter"), collision_selections::StepMcCollisionsZCutSel8NoSplitCollisions);
 
       int numSelectedCollisions = 0;
       for (const auto& collision : collisionsPerMCCollision) {
 
-        registry.fill(HIST("h_collision_counter"), collisionSelections::kRecoCollisions);
+        registry.fill(HIST("h_collision_counter"), collision_selections::StepRecoCollisions);
         if (!(std::abs(collision.posZ()) < vertexZCut)) {
           continue;
         }
-        registry.fill(HIST("h_collision_counter"), collisionSelections::kRecoCollisionsZcut);
+        registry.fill(HIST("h_collision_counter"), collision_selections::StepRecoCollisionsZcut);
         if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
           continue;
         }
-        registry.fill(HIST("h_collision_counter"), collisionSelections::kRecoCollisionsZcutSel8);
+        registry.fill(HIST("h_collision_counter"), collision_selections::StepRecoCollisionsZcutSel8);
         numSelectedCollisions++;
       } // end of collisions loop
 
