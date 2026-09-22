@@ -17,7 +17,6 @@
 /// The task store data relevant to the calculation of hadronization observables radial
 /// profile and/or jet momentum fraction for charmed hadrons
 
-#include "PWGHF/Core/DecayChannels.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
@@ -227,7 +226,7 @@ struct HfFragmentationFunction {
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
   Configurable<bool> applyMcEventSelection{"applyMcEventSelection", false, "Choose a boolean value"};
-  Configurable<bool> applyRecoEventSelection{"applyRecoEventSelection", false, "Choose a boolean value"};
+  Configurable<bool> applyRecoEventSelection{"applyRecoEventSelection", true, "data: apply z-vertex and event selection; MC: reject generated events whose reconstructed collisions all fail them"};
   Configurable<bool> rejectMCCollisionNoRecoCollision{"rejectMCCollisionNoRecoCollision", false, "reject generated events with no reconstructed collision"};
   Configurable<bool> rejectSplitCollisions{"rejectSplitCollisions", false, "reject generated events associated to more than one reconstructed collision"};
 
