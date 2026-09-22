@@ -308,7 +308,7 @@ void DefineHistograms(HistogramManager* histMan, const TString& histClasses, con
 template <typename TMap>
 void PrintBitMap(TMap map, int nbits)
 {
-  std::string msg = "";
+  std::string msg;
   for (int i = 0; i < nbits; i++) {
     msg += ((map & (TMap(1) << i)) > 0 ? "1" : "0");
   }
@@ -631,7 +631,7 @@ struct AnalysisTrackSelection {
     if (addTrackCutsStr != "") {
       std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
       for (const auto& t : addTrackCuts) {
-        fTrackCuts.push_back(reinterpret_cast<AnalysisCompositeCut*>(t));
+        fTrackCuts.push_back(dynamic_cast<AnalysisCompositeCut*>(t));
       }
     }
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
@@ -826,11 +826,11 @@ struct AnalysisTrackSelection {
                   //  cout << "      Cut matched, filling histograms" << endl;
                   if (isCorrectAssoc) {
                     //  cout << "      Correct association" << endl;
-                    fHistMan->FillHistClass(fHistNamesMCMatched[icut * 2 * fMCSignals.size() + 2 * isig].Data(), VarManager::fgValues);
+                    fHistMan->FillHistClass(fHistNamesMCMatched[icut * 2 * fMCSignals.size() + 2 * isig].Data(), static_cast<float*>(VarManager::fgValues));
                     // cout << "      Filled histogram dir: " << fHistNamesMCMatched[icut * 2 * fMCSignals.size() + 2 * isig].Data() << endl;
                   } else {
                     // cout << "      Incorrect association" << endl;
-                    fHistMan->FillHistClass(fHistNamesMCMatched[icut * 2 * fMCSignals.size() + 2 * isig + 1].Data(), VarManager::fgValues);
+                    fHistMan->FillHistClass(fHistNamesMCMatched[icut * 2 * fMCSignals.size() + 2 * isig + 1].Data(), static_cast<float*>(VarManager::fgValues));
                     // cout << "      Filled histogram dir: " << fHistNamesMCMatched[icut * 2 * fMCSignals.size() + 2 * isig + 1].Data() << endl;
                   }
                 }
@@ -1062,7 +1062,7 @@ struct AnalysisPrefilterSelection {
       bool track1Loose = assoc1.isBarrelSelected_bit(fPrefilterCutBit);
       bool track2Loose = assoc2.isBarrelSelected_bit(fPrefilterCutBit);
 
-      if (!((track1Candidate > 0 && track2Loose) || (track2Candidate > 0 && track1Loose))) {
+      if ((track1Candidate == 0 || !track2Loose) && (track2Candidate == 0 || !track1Loose)) {
         continue;
       }
 
@@ -1110,7 +1110,7 @@ struct AnalysisPrefilterSelection {
         // auto track = assoc.template track_as<MyBarrelTracksWithCov>();
         mymap = -1;
         // if (fPrefilterMap.find(track.globalIndex()) != fPrefilterMap.end()) {
-        if (fPrefilterMap.find(assoc.trackId()) != fPrefilterMap.end()) {
+        if (fPrefilterMap.contains(assoc.trackId())) {
           // NOTE: publish the bitwise negated bits (~), so there will be zeroes for cuts that failed the prefiltering and 1 everywhere else
           // mymap = ~fPrefilterMap[track.globalIndex()];
           mymap = ~fPrefilterMap[assoc.trackId()];
@@ -1984,7 +1984,7 @@ struct AnalysisSameEventPairing {
                                           VarManager::fgValues[VarManager::kVertexingTauxyProjected], VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMass], VarManager::fgValues[VarManager::kVertexingTauzProjected], VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMassRecalculatePV],
                                           VarManager::fgValues[VarManager::kVtxX], VarManager::fgValues[VarManager::kVtxY], VarManager::fgValues[VarManager::kVtxZ], VarManager::fgValues[VarManager::kDCAxy1], VarManager::fgValues[VarManager::kDCAz1], VarManager::fgValues[VarManager::kITSclusterMap1], VarManager::fgValues[VarManager::kTPCnSigmaEl1], VarManager::fgValues[VarManager::kDCAxy2], VarManager::fgValues[VarManager::kDCAz2], VarManager::fgValues[VarManager::kITSclusterMap2], VarManager::fgValues[VarManager::kTPCnSigmaEl2],
                                           isAmbiInBunch, isAmbiOutOfBunch, isCorrect_pair, VarManager::fgValues[VarManager::kMultFT0A], VarManager::fgValues[VarManager::kMultFT0C], VarManager::fgValues[VarManager::kCentFT0M], VarManager::fgValues[VarManager::kVtxNcontribReal]);
-                  fHistMan->FillHistClass(histNamesMC[icut * fRecMCSignals.size() + isig][0].Data(), VarManager::fgValues); // matched signal
+                  fHistMan->FillHistClass(histNamesMC[icut * fRecMCSignals.size() + isig][0].Data(), static_cast<float*>(VarManager::fgValues)); // matched signal
                   /*if (fConfigOptions.fConfigMiniTree) {
                     if constexpr (TPairType == VarManager::kDecayToMuMu) {
                       twoTrackFilter = a1.isMuonSelected_raw() & a2.isMuonSelected_raw() & fMuonFilterMask;
@@ -2372,7 +2372,7 @@ struct AnalysisDileptonTrack {
   std::vector<TString> fPairCutNames;
   std::vector<TString> fCommonPairCutNames;
 
-  Service<o2::ccdb::BasicCCDBManager> fCCDB;
+  Service<o2::ccdb::BasicCCDBManager> fCCDB{};
 
   // TODO: The filter expressions seem to always use the default value of configurables, not the values from the actual configuration file
   Filter eventFilter = aod::dqanalysisflags::isEventSelected > static_cast<uint32_t>(0);
@@ -2648,7 +2648,7 @@ struct AnalysisDileptonTrack {
         for (int iCutTrack = 0; iCutTrack < fNCuts; iCutTrack++) {
 
           // here we check that this track cut is one of those required to associate with the dileptons
-          if (!(fTrackCutBitMap & (static_cast<uint32_t>(1) << iCutTrack))) {
+          if ((fTrackCutBitMap & (static_cast<uint32_t>(1) << iCutTrack)) == 0) {
             continue;
           }
 
