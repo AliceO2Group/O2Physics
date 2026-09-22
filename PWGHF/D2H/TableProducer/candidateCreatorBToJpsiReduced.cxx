@@ -36,6 +36,7 @@
 #include <Framework/WorkflowSpec.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/TrackParametrization.h>
 #include <ReconstructionDataFormats/TrackParametrizationWithError.h>
 
 #include <TH1.h>
@@ -45,6 +46,7 @@
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
+#include <utility> // std::move
 
 using namespace o2;
 using namespace o2::aod;
@@ -176,10 +178,26 @@ struct HfCandidateCreatorBToJpsiReduced {
     }
 
     for (const auto& candJpsi : candsJpsiThisColl) {
-      o2::track::TrackParametrizationWithError<float> trackPosParCov(
-        candJpsi.xDauPos(), candJpsi.alphaDauPos(), {candJpsi.yDauPos(), candJpsi.zDauPos(), candJpsi.snpDauPos(), candJpsi.tglDauPos(), candJpsi.signed1PtDauPos()}, 1 /*Charge*/, 1 /*Muon*/);
-      o2::track::TrackParametrizationWithError<float> trackNegParCov(
-        candJpsi.xDauNeg(), candJpsi.alphaDauNeg(), {candJpsi.yDauNeg(), candJpsi.zDauNeg(), candJpsi.snpDauNeg(), candJpsi.tglDauNeg(), candJpsi.signed1PtDauNeg()}, -1 /*Charge*/, 1 /*Muon*/);
+
+      std::array<float, o2::track::kNParams> parsTrackPos = {candJpsi.yDauPos(), candJpsi.zDauPos(), candJpsi.snpDauPos(), candJpsi.tglDauPos(), candJpsi.signed1PtDauPos()};
+      std::array<float, o2::track::kNParams> parsTrackNeg = {candJpsi.yDauNeg(), candJpsi.zDauNeg(), candJpsi.snpDauNeg(), candJpsi.tglDauNeg(), candJpsi.signed1PtDauNeg()};
+
+      std::array<float, o2::track::kCovMatSize> covTrackPos = {candJpsi.cYYDauPos(), candJpsi.cZYDauPos(), candJpsi.cZZDauPos(),
+                                                               candJpsi.cSnpYDauPos(), candJpsi.cSnpZDauPos(),
+                                                               candJpsi.cSnpSnpDauPos(), candJpsi.cTglYDauPos(), candJpsi.cTglZDauPos(),
+                                                               candJpsi.cTglSnpDauPos(), candJpsi.cTglTglDauPos(),
+                                                               candJpsi.c1PtYDauPos(), candJpsi.c1PtZDauPos(), candJpsi.c1PtSnpDauPos(),
+                                                               candJpsi.c1PtTglDauPos(), candJpsi.c1Pt21Pt2DauPos()};
+
+      std::array<float, o2::track::kCovMatSize> covTrackNeg = {candJpsi.cYYDauNeg(), candJpsi.cZYDauNeg(), candJpsi.cZZDauNeg(),
+                                                               candJpsi.cSnpYDauNeg(), candJpsi.cSnpZDauNeg(),
+                                                               candJpsi.cSnpSnpDauNeg(), candJpsi.cTglYDauNeg(), candJpsi.cTglZDauNeg(),
+                                                               candJpsi.cTglSnpDauNeg(), candJpsi.cTglTglDauNeg(),
+                                                               candJpsi.c1PtYDauNeg(), candJpsi.c1PtZDauNeg(), candJpsi.c1PtSnpDauNeg(),
+                                                               candJpsi.c1PtTglDauNeg(), candJpsi.c1Pt21Pt2DauNeg()};
+
+      o2::track::TrackParametrizationWithError<float> trackPosParCov(candJpsi.xDauPos(), candJpsi.alphaDauPos(), std::move(parsTrackPos), std::move(covTrackPos));
+      o2::track::TrackParametrizationWithError<float> trackNegParCov(candJpsi.xDauNeg(), candJpsi.alphaDauNeg(), std::move(parsTrackNeg), std::move(covTrackNeg));
 
       // ---------------------------------
       // reconstruct J/Psi candidate

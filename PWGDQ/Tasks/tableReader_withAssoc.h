@@ -1608,13 +1608,14 @@ struct AnalysisSameEventPairing {
             if (fConfigTRPairs) {
               names.push_back(Form("PairsBarrelTRPM_%s", objArray->At(icut)->GetName()));
               names.push_back(Form("PairsBarrelTRPM_ambiguousextra_%s", objArray->At(icut)->GetName()));
-              histNames += Form("%s;%s;", names[6].Data(), names[7].Data());
+              names.push_back(Form("PairsBarrelTR_MEPM_%s", objArray->At(icut)->GetName()));
+              histNames += Form("%s;%s;%s;", names[6].Data(), names[7].Data(), names[8].Data());
             }
             if (fEnableBarrelMixingHistos) {
               names.push_back(Form("PairsBarrelMEPM_%s", objArray->At(icut)->GetName()));
               names.push_back(Form("PairsBarrelMEPP_%s", objArray->At(icut)->GetName()));
               names.push_back(Form("PairsBarrelMEMM_%s", objArray->At(icut)->GetName()));
-              histNames += Form("%s;%s;%s;", names[(fConfigTRPairs ? 8 : 6)].Data(), names[(fConfigTRPairs ? 9 : 7)].Data(), names[(fConfigTRPairs ? 10 : 8)].Data());
+              histNames += Form("%s;%s;%s;", names[(fConfigTRPairs ? 9 : 6)].Data(), names[(fConfigTRPairs ? 10 : 7)].Data(), names[(fConfigTRPairs ? 11 : 8)].Data());
             }
             fTrackHistNames[icut] = names;
 
@@ -2534,6 +2535,20 @@ struct AnalysisSameEventPairing {
                   fHistMan->FillHistClass(Form("PairsBarrelMEPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
                 }
               }
+              if (fConfigTRPairs) {
+                // mixing event track should be rotated, so second parameter
+                if (fConfigNRotations.value != 1 && fConfigNRotations.value != 3) {
+                  LOGF(fatal, "Unsupported number of rotations: %d, only 1 and 3 are supported", fConfigNRotations.value);
+                }
+                for (int irot = 1; irot <= fConfigNRotations.value; ++irot) {
+                  VarManager::FillPairRotation_ME(t2, t1, irot);
+                  for (int icut = 0; icut < ncuts; icut++) {
+                    if (mixedTwoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
+                      fHistMan->FillHistClass(Form("PairsBarrelTR_MEPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                    }
+                  }
+                }
+              }
             }
             // run ++ pairing
             for (auto const& t2 : poolEvent.tracks1) {
@@ -2562,6 +2577,19 @@ struct AnalysisSameEventPairing {
               for (int icut = 0; icut < ncuts; icut++) {
                 if (mixedTwoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
                   fHistMan->FillHistClass(Form("PairsBarrelMEPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                }
+              }
+              if (fConfigTRPairs) {
+                if (fConfigNRotations.value != 1 && fConfigNRotations.value != 3) {
+                  LOGF(fatal, "Unsupported number of rotations: %d, only 1 and 3 are supported", fConfigNRotations.value);
+                }
+                for (int irot = 1; irot <= fConfigNRotations.value; ++irot) {
+                  VarManager::FillPairRotation_ME(t2, t1, irot);
+                  for (int icut = 0; icut < ncuts; icut++) {
+                    if (mixedTwoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
+                      fHistMan->FillHistClass(Form("PairsBarrelTR_MEPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                    }
+                  }
                 }
               }
             }

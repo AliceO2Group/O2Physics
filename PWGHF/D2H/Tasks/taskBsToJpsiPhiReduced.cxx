@@ -146,6 +146,7 @@ DECLARE_SOA_TABLE(HfRedCandBsLites, "AOD", "HFREDCANDBSLITE", //! Table with som
                   hf_cand_bstojpsiphi_lite::Y,
                   hf_cand_bstojpsiphi_lite::Cpa,
                   hf_cand_bstojpsiphi_lite::CpaXY,
+                  hf_cand_bstojpsiphi_lite::CpaJpsi,
                   hf_cand::Chi2PCA,
                   hf_cand_bstojpsiphi_lite::DecayLength,
                   hf_cand_bstojpsiphi_lite::DecayLengthXY,
@@ -419,7 +420,7 @@ struct HfTaskBsToJpsiPhiReduced {
     }
 
     SETBIT(statusBs, SelectionStep::RecoSkims);
-    if (HfHelper::selectionBsToJpsiPhiTopol(candidate, cuts, binsPt, useJpsiPdgMass, usePhiPdgMass)) {
+    if (HfHelper::selectionBsToJpsiPhiTopol<JPsis>(candidate, cuts, binsPt, useJpsiPdgMass, usePhiPdgMass)) {
       SETBIT(statusBs, SelectionStep::RecoTopol);
     } else if (selectionFlagBs >= BIT(SelectionStep::RecoTopol) * 2 - 1) {
       return;
@@ -486,6 +487,7 @@ struct HfTaskBsToJpsiPhiReduced {
         HfHelper::yBs(candidate),
         candidate.cpa(),
         candidate.cpaXY(),
+        candidate.cpaJpsi(),
         candidate.chi2PCA(),
         candidate.decayLength(),
         candidate.decayLengthXY(),
