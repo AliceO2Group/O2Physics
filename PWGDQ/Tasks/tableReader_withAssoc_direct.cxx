@@ -82,8 +82,6 @@ using namespace o2::framework::expressions;
 using namespace o2::aod;
 using namespace o2::common::core;
 
-Zorro zorro;
-
 // Some definitions
 namespace o2::aod
 {
@@ -325,6 +323,8 @@ struct AnalysisEventSelection {
   // RCT flag checker
   o2::aod::rctsel::RCTFlagsChecker rctChecker{"CBT"};
 
+  Zorro zorro;
+
   HistogramManager* fHistMan = nullptr;
   MixingHandler* fMixHandler = nullptr;
 
@@ -449,7 +449,7 @@ struct AnalysisEventSelection {
         }
         VarManager::SetCalibrationType(fConfigPostCalibTPC.fConfigTPCpostCalibType, fConfigPostCalibTPC.fConfigTPCuseInterpolatedCalib);
       }
-      if (fIsRun2 == true) {
+      if (fIsRun2) {
         fGrpMagRun2 = fCCDB->getForTimeStamp<o2::parameters::GRPObject>(fConfigCCDB.fConfigGrpMagPathRun2, bcs.begin().timestamp());
         if (fGrpMagRun2 != nullptr) {
           o2::base::Propagator::initFieldFromGRP(fGrpMagRun2);
@@ -513,13 +513,13 @@ struct AnalysisEventSelection {
         zorro.setBaseCCDBPath(fConfigZorro.fConfigCcdbPathZorro.value);
         zorro.setBCtolerance(fConfigZorro.fBcTolerance);
         zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), fConfigZorro.fConfigZorroTrigMask.value);
-        zorro.populateExternalHists(fCurrentRun, reinterpret_cast<TH2D*>(fStatsList->At(kStatsZorroInfo)), reinterpret_cast<TH2D*>(fStatsList->At(kStatsZorroSel)));
+        zorro.populateExternalHists(fCurrentRun, dynamic_cast<TH2D*>(fStatsList->At(kStatsZorroInfo)), dynamic_cast<TH2D*>(fStatsList->At(kStatsZorroSel)));
 
         if (!fEventCut->IsSelected(VarManager::fgValues) || (fConfigRCT.fConfigUseRCT.value && !rctChecker(event))) {
           continue;
         }
 
-        bool zorroSel = zorro.isSelected(bc.globalBC(), fConfigZorro.fBcTolerance, reinterpret_cast<TH2D*>(fStatsList->At(kStatsZorroSel)));
+        bool zorroSel = zorro.isSelected(bc.globalBC(), fConfigZorro.fBcTolerance, dynamic_cast<TH2D*>(fStatsList->At(kStatsZorroSel)));
         if (fConfigZorro.fConfigRunZorroSel && (!zorroSel)) {
           continue;
         }
@@ -607,7 +607,7 @@ struct AnalysisEventSelection {
     }
 
     // publish the table
-    uint32_t evSel = static_cast<uint32_t>(0);
+    auto evSel = static_cast<uint32_t>(0);
     for (auto& event : events) {
       evSel = 0;
       if (fSelMap[event.globalIndex()]) { // event passed the user cuts
@@ -676,8 +676,9 @@ struct AnalysisTrackSelection {
 
   void init(o2::framework::InitContext& context)
   {
-    if (context.mOptions.get<bool>("processDummy"))
+    if (context.mOptions.get<bool>("processDummy")) {
       return;
+    }
 
     VarManager::SetDefaultVarNames();
     fCurrentRun = 0;
@@ -696,7 +697,7 @@ struct AnalysisTrackSelection {
     if (addTrackCutsStr != "") {
       std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
       for (auto& t : addTrackCuts) {
-        fTrackCuts.push_back(reinterpret_cast<AnalysisCompositeCut*>(t));
+        fTrackCuts.push_back(dynamic_cast<AnalysisCompositeCut*>(t));
       }
     }
 
@@ -745,8 +746,9 @@ struct AnalysisTrackSelection {
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillTimeFrame(events);
     VarManager::FillTimeFrame(tracks);
-    if (fConfigQA)
+    if (fConfigQA) {
       fHistMan->FillHistClass("TimeFrameStats", VarManager::fgValues);
+    }
 
     if (bcs.size() > 0 && fCurrentRun != bcs.begin().runNumber()) {
       if (fConfigComputeTPCpostCalib) {
@@ -759,7 +761,7 @@ struct AnalysisTrackSelection {
         VarManager::SetCalibrationObject(VarManager::kTPCProtonSigma, calibList->FindObject("sigma_map_proton"));
       }
 
-      o2::parameters::GRPMagField* grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bcs.begin().timestamp());
+      auto grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bcs.begin().timestamp());
       if (grpmag != nullptr) {
         VarManager::SetMagneticField(grpmag->getNominalL3Field());
       } else {
@@ -792,14 +794,16 @@ struct AnalysisTrackSelection {
 
       VarManager::FillTrack<TTrackFillMap>(track);
       // compute quantities which depend on the associated collision, such as DCA
-      if (track.collisionId() != event.globalIndex())
+      if (track.collisionId() != event.globalIndex()) {
         VarManager::FillTrackCollision<TTrackFillMap>(track, event);
+      }
 
-      if (fConfigQA)
+      if (fConfigQA) {
         fHistMan->FillHistClass("AssocsBarrel_BeforeCuts", VarManager::fgValues);
+      }
 
       int iCut = 0;
-      uint32_t filterMap = static_cast<uint32_t>(0);
+      auto filterMap = static_cast<uint32_t>(0);
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, iCut++) {
         if ((*cut)->IsSelected(VarManager::fgValues)) {
           filterMap |= (static_cast<uint32_t>(1) << iCut);
@@ -1015,7 +1019,7 @@ struct AnalysisPrefilterSelection {
       bool track1Loose = assoc1.isBarrelSelected_bit(fPrefilterCutBit);
       bool track2Loose = assoc2.isBarrelSelected_bit(fPrefilterCutBit);
 
-      if (!((track1Candidate > 0 && track2Loose) || (track2Candidate > 0 && track1Loose))) {
+      if ((track1Candidate == 0 || !track2Loose) && (track2Candidate == 0 || !track1Loose)) {
         continue;
       }
 
@@ -1062,7 +1066,7 @@ struct AnalysisPrefilterSelection {
         // auto track = assoc.template track_as<MyBarrelTracksWithCov>();
         mymap = -1;
         // if (fPrefilterMap.find(track.globalIndex()) != fPrefilterMap.end()) {
-        if (fPrefilterMap.find(assoc.trackId()) != fPrefilterMap.end()) {
+        if (fPrefilterMap.contains(assoc.trackId())) {
           // NOTE: publish the bitwise negated bits (~), so there will be zeroes for cuts that failed the prefiltering and 1 everywhere else
           // mymap = ~fPrefilterMap[track.globalIndex()];
           mymap = ~fPrefilterMap[assoc.trackId()];
@@ -1133,7 +1137,7 @@ struct AnalysisMuonSelection {
     if (addCutsStr != "") {
       std::vector<AnalysisCut*> addCuts = dqcuts::GetCutsFromJSON(addCutsStr.Data());
       for (auto& t : addCuts) {
-        fMuonCuts.push_back(reinterpret_cast<AnalysisCompositeCut*>(t));
+        fMuonCuts.push_back(dynamic_cast<AnalysisCompositeCut*>(t));
       }
     }
 
@@ -1177,7 +1181,7 @@ struct AnalysisMuonSelection {
     fNAssocsOutOfBunch.clear();
 
     if (bcs.size() > 0 && fCurrentRun != bcs.begin().runNumber()) {
-      o2::parameters::GRPMagField* grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(fConfigCCDB.grpMagPath, bcs.begin().timestamp());
+      auto grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(fConfigCCDB.grpMagPath, bcs.begin().timestamp());
       if (grpmag != nullptr) {
         o2::base::Propagator::initFieldFromGRP(grpmag);
         VarManager::SetMagneticField(grpmag->getNominalL3Field());
@@ -1191,7 +1195,7 @@ struct AnalysisMuonSelection {
     if (fConfigPublishAmbiguity) {
       muonAmbiguities.reserve(muons.size());
     }
-    uint32_t filterMap = static_cast<uint32_t>(0);
+    auto filterMap = static_cast<uint32_t>(0);
     int iCut = 0;
 
     for (auto& assoc : assocs) {
@@ -1240,8 +1244,9 @@ struct AnalysisMuonSelection {
     if (fConfigPublishAmbiguity) {
       if (fConfigQA) {
         for (auto& [trackIdx, evIndices] : fNAssocsInBunch) {
-          if (evIndices.size() <= 1)
+          if (evIndices.size() <= 1) {
             continue;
+          }
           auto track = muons.rawIteratorAt(trackIdx);
           VarManager::ResetValues(0, VarManager::kNMuonTrackVariables);
           VarManager::FillTrack<TMuonFillMap>(track);
@@ -1249,8 +1254,9 @@ struct AnalysisMuonSelection {
           fHistMan->FillHistClass("TrackMuon_AmbiguityInBunch", VarManager::fgValues);
         }
         for (auto& [trackIdx, evIndices] : fNAssocsOutOfBunch) {
-          if (evIndices.size() <= 1)
+          if (evIndices.size() <= 1) {
             continue;
+          }
           auto track = muons.rawIteratorAt(trackIdx);
           VarManager::ResetValues(0, VarManager::kNMuonTrackVariables);
           VarManager::FillTrack<TMuonFillMap>(track);
@@ -1505,8 +1511,9 @@ struct AnalysisSameEventPairing {
             int seqTrackIdx = 0; // sequential index into fTrackCuts (which contains only required cuts)
             for (int iTrack = 0; iTrack < fNCutsBarrel; ++iTrack) {
               // skip barrel cuts not required in this task
-              if (!(fTrackFilterMask & (static_cast<uint32_t>(1) << iTrack)))
+              if ((fTrackFilterMask & (static_cast<uint32_t>(1) << iTrack)) == 0) {
                 continue;
+              }
               TString trackCutName = fTrackCuts[seqTrackIdx];
               seqTrackIdx++;
               std::vector<TString> names = {
@@ -1555,7 +1562,7 @@ struct AnalysisSameEventPairing {
   void initParamsFromCCDB(uint64_t timestamp, bool withTwoProngFitter = true)
   {
     if (fConfigOptions.useRemoteField.value) {
-      o2::parameters::GRPMagField* grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(fConfigCCDB.grpMagPath, timestamp);
+      auto grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(fConfigCCDB.grpMagPath, timestamp);
       o2::base::MatLayerCylSet* lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(fCCDB->get<o2::base::MatLayerCylSet>(fConfigCCDB.lutPath));
       float magField = 0.0;
       if (grpmag != nullptr) {
@@ -1609,15 +1616,18 @@ struct AnalysisSameEventPairing {
     // int nMyPVContrib = 0; int nMyPVContribOrig = 0;
     for (auto const& trk : tracks) {
       // check if it is PV contributor
-      if (!trk.isPVContributor())
+      if (!trk.isPVContributor()) {
         continue;
+      }
       // check if it contributes to the vtx of this collision
-      if (trk.collisionId() != collision.globalIndex())
+      if (trk.collisionId() != collision.globalIndex()) {
         continue;
+      }
       // nMyPVContribOrig++;
       // --- remove t1 and t2 if they are PV contributors ---
-      if (trk.globalIndex() == t1.globalIndex() || trk.globalIndex() == t2.globalIndex())
+      if (trk.globalIndex() == t1.globalIndex() || trk.globalIndex() == t2.globalIndex()) {
         continue;
+      }
       // add tracks and parameters to the list
       pvContribGlobIDs.push_back(trk.globalIndex());
       pvContribTrackPars.push_back(getTrackParCov(trk));
@@ -1642,8 +1652,9 @@ struct AnalysisSameEventPairing {
     vertexer.init();
 
     bool PVrefit_doable = vertexer.prepareVertexRefit(pvContribTrackPars, Pvtx);
-    if (!PVrefit_doable)
+    if (!PVrefit_doable) {
       return false;
+    }
 
     // --- do the refit ---
     pvRefitted = vertexer.refitVertex(vec_useTrk_PVrefit, Pvtx);
@@ -1702,8 +1713,9 @@ struct AnalysisSameEventPairing {
     // constexpr bool fillFlowReso = eventHasQvector;
 
     for (auto& event : events) {
-      if (!event.isEventSelected_bit(0))
+      if (!event.isEventSelected_bit(0)) {
         continue;
+      }
 
       if (fConfigOptions.collSplitting && event.isEventSelected_bit(2)) {
         continue;
@@ -1713,8 +1725,9 @@ struct AnalysisSameEventPairing {
       VarManager::FillEvent<TEventFillMap>(event, VarManager::fgValues);
 
       auto groupedAssocs = assocs.sliceBy(preslice, event.globalIndex());
-      if (groupedAssocs.size() == 0)
+      if (groupedAssocs.size() == 0) {
         continue;
+      }
 
       if (fConfigOptions.useFlowReso) {
         if (ResoFlowSP == nullptr || ResoFlowEP == nullptr) {
@@ -1728,8 +1741,9 @@ struct AnalysisSameEventPairing {
         if constexpr (TPairType == VarManager::kDecayToEE) {
 
           twoTrackFilter = a1.isBarrelSelected_raw() & a2.isBarrelSelected_raw() & a1.isBarrelSelectedPrefilter_raw() & a2.isBarrelSelectedPrefilter_raw() & fTrackFilterMask;
-          if (!twoTrackFilter)
+          if (!twoTrackFilter) {
             continue;
+          }
 
           auto t1 = a1.template track_as<TTracks>();
           auto t2 = a2.template track_as<TTracks>();
@@ -1772,8 +1786,9 @@ struct AnalysisSameEventPairing {
               VarManager::ResetValues(VarManager::kVertexingTauxyProjectedPoleJPsiMassRecalculatePV, VarManager::kVertexingTauxyProjectedPoleJPsiMassRecalculatePV + 1);
               // cout << "primary vertex (before): x -> " << event.posX() << " y -> " << event.posY() << " z -> " << event.posZ() << endl;
               bool ok = refitPVWithPVertexer(event, tracks, t1, t2, pvRefit);
-              if (ok)
+              if (ok) {
                 VarManager::FillPairVertexingRecomputePV<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, pvRefit);
+              }
               // cout << "primary vertex (after): ok -> " << ok << " x -> " << pvRefit.getX() << " y -> " << pvRefit.getY() << " z -> " << pvRefit.getZ() << endl;
             }
           }
@@ -1845,8 +1860,9 @@ struct AnalysisSameEventPairing {
             // Pair cuts
             for (unsigned int iPairCut = 0; iPairCut < fPairCuts.size(); iPairCut++) {
               AnalysisCompositeCut cut = fPairCuts.at(iPairCut);
-              if (!cut.IsSelected(VarManager::fgValues))
+              if (!cut.IsSelected(VarManager::fgValues)) {
                 continue;              // apply pair cuts
+              }
               if (sign1 * sign2 < 0) { // opposite sign pairs
                 fHistMan->FillHistClass(histNames[ncuts + icut * fPairCuts.size() + iPairCut][0].Data(), VarManager::fgValues);
               } else if (sign1 > 0) { // ++ pairs
@@ -1888,26 +1904,32 @@ struct AnalysisSameEventPairing {
     constexpr bool eventHasQvector = ((TEventFillMap & VarManager::ObjTypes::CollisionQvect) > 0);
 
     for (auto& event : events) {
-      if (!event.isEventSelected_bit(0))
+      if (!event.isEventSelected_bit(0)) {
         continue;
-      if (fConfigOptions.collSplitting && event.isEventSelected_bit(2))
+      }
+      if (fConfigOptions.collSplitting && event.isEventSelected_bit(2)) {
         continue;
+      }
 
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<TEventFillMap>(event, VarManager::fgValues);
 
       auto groupedAssocs1 = assocs1.sliceBy(preslice1, event.globalIndex());
-      if (groupedAssocs1.size() == 0)
+      if (groupedAssocs1.size() == 0) {
         continue;
+      }
       auto groupedAssocs2 = assocs2.sliceBy(preslice2, event.globalIndex());
-      if (groupedAssocs2.size() == 0)
+      if (groupedAssocs2.size() == 0) {
         continue;
+      }
 
       for (auto& [a1, a2] : o2::soa::combinations(soa::CombinationsFullIndexPolicy(groupedAssocs1, groupedAssocs2))) {
-        if (!(a1.isBarrelSelected_raw() & a1.isBarrelSelectedPrefilter_raw() & fTrackFilterMask))
+        if (!(a1.isBarrelSelected_raw() & a1.isBarrelSelectedPrefilter_raw() & fTrackFilterMask)) {
           continue;
-        if (!(a2.isMuonSelected_raw() & fMuonFilterMask))
+        }
+        if (!(a2.isMuonSelected_raw() & fMuonFilterMask)) {
           continue;
+        }
 
         auto t1 = a1.template track_as<TTracks>();
         auto t2 = a2.template fwdtrack_as<TMuons>();
@@ -1922,14 +1944,18 @@ struct AnalysisSameEventPairing {
           }
         }
         // store ambiguity flags in bits 28-31
-        if (t1.barrelAmbiguityInBunch() > 1)
+        if (t1.barrelAmbiguityInBunch() > 1) {
           twoTrackFilter |= (1u << 28);
-        if (t2.muonAmbiguityInBunch() > 1)
+        }
+        if (t2.muonAmbiguityInBunch() > 1) {
           twoTrackFilter |= (1u << 29);
-        if (t1.barrelAmbiguityOutOfBunch() > 1)
+        }
+        if (t1.barrelAmbiguityOutOfBunch() > 1) {
           twoTrackFilter |= (1u << 30);
-        if (t2.muonAmbiguityOutOfBunch() > 1)
+        }
+        if (t2.muonAmbiguityOutOfBunch() > 1) {
           twoTrackFilter |= (1u << 31);
+        }
 
         VarManager::FillPair<VarManager::kElectronMuon, TTrackFillMap>(t1, t2);
         if (fConfigOptions.fPropTrack) {
@@ -1945,15 +1971,18 @@ struct AnalysisSameEventPairing {
                          t1.sign() + t2.sign(), twoTrackFilter, 0);
 
         for (int iTrack = 0; iTrack < fNCutsBarrel; ++iTrack) {
-          if (!(a1.isBarrelSelected_raw() & (1u << iTrack)))
+          if (!(a1.isBarrelSelected_raw() & (1u << iTrack))) {
             continue;
+          }
           for (int iMuon = 0; iMuon < fNCutsMuon; ++iMuon) {
-            if (!(a2.isMuonSelected_raw() & (1u << iMuon)))
+            if (!(a2.isMuonSelected_raw() & (1u << iMuon))) {
               continue;
+            }
             int index = iTrack * fNCutsMuon + iMuon;
             auto itHist = histNames.find(index);
-            if (itHist == histNames.end())
+            if (itHist == histNames.end()) {
               continue;
+            }
             if (sign1 * sign2 < 0) {
               fHistMan->FillHistClass(itHist->second[0].Data(), VarManager::fgValues);
             } else if (sign1 > 0) {
