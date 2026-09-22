@@ -148,7 +148,7 @@ struct HfTaskUpcLc {
   Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_p_k_pi::vecBinsPt}, "pT bin limits"};
   Configurable<bool> fillTreeOnlySingleGap{"fillTreeOnlySingleGap", false, "Only fill the tree for candidates that pass the single-gap UPC events"};
-  Configurable<bool> fillMcGenLcTree{"fillMcGenLcTree", true, "Fill the generated Lc to p K pi tree"};
+  Configurable<bool> fillMcGenLcTree{"fillMcGenLcTree", false, "Fill the generated Lc to p K pi tree"};
   Configurable<bool> fillTreeUpcQa{"fillTreeUpcQa", false, "Fill Tree for UPC QA"};
   Configurable<bool> fillHistQa{"fillHistQa", false, "Fill histograms for UPC detector QA"};
   Configurable<bool> verticesWithUpc{"verticesWithUpc", false, "Consider vertices with UPC settings"};
