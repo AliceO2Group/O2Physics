@@ -716,7 +716,7 @@ struct AnalysisTrackSelection {
     if (addTrackCutsStr != "") {
       std::vector<AnalysisCut*> addTrackCuts = o2::aod::dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
       for (auto const& t : addTrackCuts) {
-        fTrackCuts.push_back(static_cast<AnalysisCompositeCut*>(t));
+        fTrackCuts.push_back(dynamic_cast<AnalysisCompositeCut*>(t));
       }
     }
 
@@ -983,7 +983,7 @@ struct AnalysisMuonSelection {
     if (addCutsStr != "") {
       std::vector<AnalysisCut*> addCuts = o2::aod::dqcuts::GetCutsFromJSON(addCutsStr.Data());
       for (auto const& t : addCuts) {
-        fMuonCuts.push_back(static_cast<AnalysisCompositeCut*>(t));
+        fMuonCuts.push_back(dynamic_cast<AnalysisCompositeCut*>(t));
       }
     }
 
@@ -1904,7 +1904,7 @@ struct AnalysisSameEventPairing {
     }*/
 
     auto twoTrackFilter = static_cast<uint32_t>(0);
-    uint32_t dileptonMcDecision = static_cast<uint32_t>(0); // placeholder, copy of the dqEfficiency.cxx one
+    auto dileptonMcDecision = static_cast<uint32_t>(0); // placeholder, copy of the dqEfficiency.cxx one
     int sign1 = 0;
     int sign2 = 0;
     // Reserve capacity for the output tables to avoid repeated reallocations
@@ -3274,7 +3274,7 @@ struct AnalysisAsymmetricPairing {
     if (addPairCutsStr != "") {
       std::vector<AnalysisCut*> addPairCuts = o2::aod::dqcuts::GetCutsFromJSON(addPairCutsStr.Data());
       for (auto const& t : addPairCuts) {
-        fPairCuts.push_back(static_cast<AnalysisCompositeCut*>(t));
+        fPairCuts.push_back(dynamic_cast<AnalysisCompositeCut*>(t));
         cutNamesStr += Form(",%s", t->GetName());
       }
     }
@@ -3564,8 +3564,8 @@ struct AnalysisAsymmetricPairing {
       for (auto const& [a1, a2] : combinations(o2::soa::CombinationsFullIndexPolicy(groupedLegAAssocs, groupedLegBAssocs))) {
 
         auto twoTrackFilter = static_cast<uint32_t>(0);
-        uint32_t twoTrackCommonFilter = static_cast<uint32_t>(0);
-        uint32_t pairFilter = static_cast<uint32_t>(0);
+        auto twoTrackCommonFilter = static_cast<uint32_t>(0);
+        auto pairFilter = static_cast<uint32_t>(0);
         for (int icut = 0; icut < fNLegCuts; ++icut) {
           // Find leg pair definitions both candidates participate in
           if ((a1.isBarrelSelected_raw() & fConstructedLegAFilterMasksMap[icut]) && (a2.isBarrelSelected_raw() & fConstructedLegBFilterMasksMap[icut])) {
@@ -3764,8 +3764,8 @@ struct AnalysisAsymmetricPairing {
   template <bool TThreeProngFitter, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TTrackAssoc, typename TTracks, typename TEvent>
   void readTriplet(TTrackAssoc const& a1, TTrackAssoc const& a2, TTrackAssoc const& a3, TTracks const& /*tracks*/, TEvent const& event, VarManager::PairCandidateType tripletType)
   {
-    uint32_t threeTrackFilter = static_cast<uint32_t>(0);
-    uint32_t threeTrackCommonFilter = static_cast<uint32_t>(0);
+    auto threeTrackFilter = static_cast<uint32_t>(0);
+    auto threeTrackCommonFilter = static_cast<uint32_t>(0);
     for (int icut = 0; icut < fNLegCuts; ++icut) {
       // Find out which leg cut combinations the triplet passes
       if ((a1.isBarrelSelected_raw() & fConstructedLegAFilterMasksMap[icut]) && (a2.isBarrelSelected_raw() & fConstructedLegBFilterMasksMap[icut]) && (a3.isBarrelSelected_raw() & fConstructedLegCFilterMasksMap[icut])) {
@@ -4236,7 +4236,7 @@ struct AnalysisDileptonTrack {
 
   void initAccFromCCDB(uint64_t timestamp)
   {
-    TList* listAccs = fCCDB->getForTimeStamp<TList>(fConfigAccCCDBPath, timestamp);
+    auto listAccs = fCCDB->getForTimeStamp<TList>(fConfigAccCCDBPath, timestamp);
     if (!listAccs) {
       LOG(fatal) << "Problem getting TList object with efficiencies!";
     }
@@ -4605,7 +4605,7 @@ struct AnalysisDileptonTrack {
               continue;
             }
             for (uint32_t iTrackCut = 0; iTrackCut < fTrackCutNames.size(); iTrackCut++) {
-              if (trackSelection & (static_cast<uint32_t>(1) << iTrackCut)) {
+              if ((trackSelection & (static_cast<uint32_t>(1) << iTrackCut)) != 0) {
                 fHistMan->FillHistClass(Form("DileptonTrackME_%s_%s", fTrackCutNames[icut].Data(), fTrackCutNames[iTrackCut].Data()), dqtablereader_helpers::varValues());
                 if (fConfigEnergycorrelator) {
                   fHistMan->FillHistClass(Form("DileptonTrackECME_%s_%s", fTrackCutNames[icut].Data(), fTrackCutNames[iTrackCut].Data()), dqtablereader_helpers::varValues());
@@ -4653,7 +4653,7 @@ struct AnalysisDileptonTrack {
               continue;
             }
             for (uint32_t iTrackCut = 0; iTrackCut < fTrackCutNames.size(); iTrackCut++) {
-              if (muonSelection & (static_cast<uint32_t>(1) << iTrackCut)) {
+              if ((muonSelection & (static_cast<uint32_t>(1) << iTrackCut)) != 0) {
                 fHistMan->FillHistClass(Form("DileptonTrackME_%s_%s", fTrackCutNames[icut].Data(), fTrackCutNames[iTrackCut].Data()), dqtablereader_helpers::varValues());
               }
             }
