@@ -404,7 +404,7 @@ struct PhiMesonCandProducer {
 };
 
 struct V0ReducedCandProducer {
-  enum V0Type { kK0s = 0,
+  enum V0Type { kK0S = 0,
                 kLambda,
                 kAntiLambda };
 
@@ -446,23 +446,23 @@ struct V0ReducedCandProducer {
     Configurable<float> yAcceptance{"yAcceptance", 0.5f, "Rapidity acceptance"};
 
     struct : ConfigurableGroup {
-      Configurable<float> cosPA{"cosPA", 0.98f, "V0 CosPA"};
-      Configurable<float> ctau{"ctau", 20.0f, "C tau K0s(cm)"};
-      Configurable<float> rejMass{"rejMass", 0.005f, "V0 rej K0s"};
+      Configurable<float> cosPAK0S{"cosPAK0S", 0.98f, "K0S CosPA"};
+      Configurable<float> ctauK0S{"ctauK0S", 20.0f, "C tau K0s(cm)"};
+      Configurable<float> rejMassK0S{"rejMassK0S", 0.005f, "V0 rej K0s"};
 
-      Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2f, "Parameter for Armenteros Cut for K0S"};
+      Configurable<float> paramArmenterosCutK0S{"paramArmenterosCutK0S", 0.2f, "Parameter for Armenteros Cut for K0S"};
 
-      Configurable<float> minPt{"minPt", 0.1f, "K0S min pt"};
+      Configurable<float> minPtK0S{"minPtK0S", 0.1f, "K0S min pt"};
       Configurable<std::vector<double>> binspTK0S{"binspTK0S", {0.1, 0.5, 0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for K0S"};
       Configurable<std::pair<float, float>> rangeMK0sSignal{"rangeMK0sSignal", {0.47f, 0.53f}, "K0S mass range for signal extraction"};
     } k0sConfigs;
 
     struct : ConfigurableGroup {
-      Configurable<float> cosPA{"cosPA", 0.98f, "V0 CosPA"};
-      Configurable<float> ctau{"ctau", 7.89f, "C tau Lambda(cm)"};
-      Configurable<float> rejMass{"rejMass", 0.005f, "V0 rej Lambda"};
+      Configurable<float> cosPALambda{"cosPALambda", 0.98f, "Lambda CosPA"};
+      Configurable<float> ctauLambda{"ctauLambda", 7.89f, "C tau Lambda(cm)"};
+      Configurable<float> rejMassLambda{"rejMassLambda", 0.005f, "V0 rej Lambda"};
 
-      Configurable<float> minPt{"minPt", 0.1f, "Lambda min pt"};
+      Configurable<float> minPtLambda{"minPtLambda", 0.1f, "Lambda min pt"};
       Configurable<std::vector<double>> binspTLambda{"binspTLambda", {0.1, 0.5, 0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for Lambda"};
       Configurable<std::pair<float, float>> rangeMLambdaSignal{"rangeMLambdaSignal", {1.11f, 1.12f}, "Lambda mass range for signal extraction"};
     } lambdaConfigs;
@@ -560,7 +560,7 @@ struct V0ReducedCandProducer {
     }
 
     if constexpr (!isMC) {
-      if constexpr (v0Type == kK0s) {
+      if constexpr (v0Type == kK0S) {
         if (std::abs(posDaughterTrack.tpcNSigmaPi()) > trackConfigs.nSigmaCutTPCSecPion) {
           return false;
         }
@@ -591,37 +591,33 @@ struct V0ReducedCandProducer {
       return false;
     }
 
-    const auto& cfgs = [&]() -> const auto& {
-      if constexpr (v0Type == kK0s) {
-        return v0Configs.k0sConfigs;
-      } else if constexpr (v0Type == kLambda || v0Type == kAntiLambda) {
-        return v0Configs.lambdaConfigs;
-      }
-    }();
+    const float cutCosPA = (v0Type == kK0S) ? v0Configs.k0sConfigs.cosPAK0S : v0Configs.lambdaConfigs.cosPALambda;
+    const float cutMinPt = (v0Type == kK0S) ? v0Configs.k0sConfigs.minPtK0S : v0Configs.lambdaConfigs.minPtLambda;
+    const float cutCtau = (v0Type == kK0S) ? v0Configs.k0sConfigs.ctauK0S : v0Configs.lambdaConfigs.ctauLambda;
 
-    if (v0.v0cosPA() < cfgs.cosPA) {
+    if (v0.v0cosPA() < cutCosPA) {
       return false;
     }
-    if (v0.pt() < cfgs.minPt) {
+    if (v0.pt() < cutMinPt) {
       return false;
     }
 
     if (v0Configs.furtherV0Selection) {
-      constexpr float assumedMass = v0Type == kK0s ? MassK0S : MassLambda;
-      if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * assumedMass > cfgs.ctau) {
+      constexpr float assumedMass = v0Type == kK0S ? MassK0S : MassLambda;
+      if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * assumedMass > cutCtau) {
         return false;
       }
 
-      if constexpr (v0Type == kK0s) {
-        if (std::abs(v0.mLambda() - MassLambda) < cfgs.rejMass ||
-            std::abs(v0.mAntiLambda() - MassLambda) < cfgs.rejMass) {
+      if constexpr (v0Type == kK0S) {
+        if (std::abs(v0.mLambda() - MassLambda) < v0Configs.k0sConfigs.rejMassK0S ||
+            std::abs(v0.mAntiLambda() - MassLambda) < v0Configs.k0sConfigs.rejMassK0S) {
           return false;
         }
-        if (v0.qtarm() < (cfgs.paramArmenterosCut * std::abs(v0.alpha()))) {
+        if (v0.qtarm() < (v0Configs.k0sConfigs.paramArmenterosCutK0S * std::abs(v0.alpha()))) {
           return false;
         }
       } else {
-        if (std::abs(v0.mK0Short() - MassK0S) < cfgs.rejMass) {
+        if (std::abs(v0.mK0Short() - MassK0S) < v0Configs.lambdaConfigs.rejMassLambda) {
           return false;
         }
       }
@@ -649,7 +645,7 @@ struct V0ReducedCandProducer {
         return;
       }
 
-      if constexpr (v0Type == kK0s) {
+      if constexpr (v0Type == kK0S) {
         k0sReducedCandidatesMcReco(collision.globalIndex(), v0.mK0Short(), v0McParticle.pt(), v0McParticle.y(), v0McParticle.phi());
       } else if constexpr (v0Type == kLambda) {
         lambdaReducedCandidatesMcReco(collision.globalIndex(), v0.mLambda(), v0McParticle.pt(), v0McParticle.y(), v0McParticle.phi());
@@ -657,7 +653,7 @@ struct V0ReducedCandProducer {
         antilambdaReducedCandidatesMcReco(collision.globalIndex(), v0.mAntiLambda(), v0McParticle.pt(), v0McParticle.y(), v0McParticle.phi());
       }
     } else {
-      if constexpr (v0Type == kK0s) {
+      if constexpr (v0Type == kK0S) {
         histos.fill(HIST("h3K0sCandidatesMass"), collision.centFT0M(), v0.pt(), v0.mK0Short());
         k0sReducedCandidatesData(collision.globalIndex(), v0.mK0Short(), v0.pt(), v0.yK0Short(), v0.phi());
       } else if constexpr (v0Type == kLambda) {
@@ -682,17 +678,17 @@ struct V0ReducedCandProducer {
   void processData(FilteredSelCollisions::iterator const& collision, FullV0s const& V0s, V0DauTracks const&)
   {
     for (const auto& v0 : V0s) {
-      evaluateAllHypotheses<false, kK0s, kLambda, kAntiLambda>(collision, v0);
+      evaluateAllHypotheses<false, kK0S, kLambda, kAntiLambda>(collision, v0);
     }
   }
 
-  PROCESS_SWITCH(V0ReducedCandProducer, processData, "Process function to select reduced K0s candidates in Data or in McReco (w/o McTruth) analysis", true);
+  PROCESS_SWITCH(V0ReducedCandProducer, processData, "Process function to select reduced K0S candidates in Data or in McReco (w/o McTruth) analysis", true);
 
   // void processMCReco(SimCollisions::iterator const& collision, FullMCV0s const& V0s, V0DauMCTracks const&, aod::McParticles const& mcParticles)
   void processMCReco(FilteredSimCollisions::iterator const& collision, FullMCV0s const& V0s, V0DauMCTracks const&, aod::McParticles const& mcParticles)
   {
     for (const auto& v0 : V0s) {
-      evaluateAllHypotheses<true, kK0s, kLambda, kAntiLambda>(collision, v0, mcParticles);
+      evaluateAllHypotheses<true, kK0S, kLambda, kAntiLambda>(collision, v0, mcParticles);
     }
   }
 
@@ -740,22 +736,22 @@ struct CascadeReducedCandProducer {
     Configurable<float> yAcceptance{"yAcceptance", 0.5f, "Rapidity acceptance"};
 
     struct : ConfigurableGroup {
-      Configurable<float> v0CosPA{"v0CosPA", 0.98f, "V0 CosPA"};
-      Configurable<float> cosPA{"cosPA", 0.98f, "Cascade CosPA"};
-      Configurable<float> v0Radius{"v0Radius", 0.5f, "V0 decay radius"};
-      Configurable<float> radius{"radius", 0.5f, "Cascade decay radius"};
+      Configurable<float> v0CosPAXi{"v0CosPAXi", 0.98f, "Xi V0 CosPA"};
+      Configurable<float> cosPAXi{"cosPAXi", 0.98f, "Xi CosPA"};
+      Configurable<float> v0RadiusXi{"v0RadiusXi", 0.5f, "V0 decay radius"};
+      Configurable<float> radiusXi{"radiusXi", 0.5f, "Xi decay radius"};
 
-      Configurable<float> minPt{"minPt", 0.8f, "Cascade min pt"};
+      Configurable<float> minPtXi{"minPtXi", 0.8f, "Xi min pt"};
       Configurable<std::vector<double>> binspTXi{"binspTXi", {0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for Xi"};
     } xiConfigs;
 
     struct : ConfigurableGroup {
-      Configurable<float> v0CosPA{"v0CosPA", 0.98f, "V0 CosPA"};
-      Configurable<float> cosPA{"cosPA", 0.98f, "Cascade CosPA"};
-      Configurable<float> v0Radius{"v0Radius", 0.5f, "V0 decay radius"};
-      Configurable<float> radius{"radius", 0.5f, "Cascade decay radius"};
+      Configurable<float> v0CosPAOmega{"v0CosPAOmega", 0.98f, "Omega V0 CosPA"};
+      Configurable<float> cosPAOmega{"cosPAOmega", 0.98f, "Omega CosPA"};
+      Configurable<float> v0RadiusOmega{"v0RadiusOmega", 0.5f, "V0 decay radius"};
+      Configurable<float> radiusOmega{"radiusOmega", 0.5f, "Omega decay radius"};
 
-      Configurable<float> minPt{"minPt", 0.8f, "Cascade min pt"};
+      Configurable<float> minPtOmega{"minPtOmega", 0.8f, "Omega min pt"};
       Configurable<std::vector<double>> binspTOmega{"binspTOmega", {0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for Omega"};
     } omegaConfigs;
   } cascadeConfigs;
@@ -896,31 +892,29 @@ struct CascadeReducedCandProducer {
       return false;
     }
 
-    const auto& cfgs = [&]() -> const auto& {
-      if constexpr (cascadeType == kXi || cascadeType == kAntiXi) {
-        return cascadeConfigs.xiConfigs;
-      } else if constexpr (cascadeType == kOmega || cascadeType == kAntiOmega) {
-        return cascadeConfigs.omegaConfigs;
-      }
-    }();
+    const float cutV0CosPA = (cascadeType == kXi || cascadeType == kAntiXi) ? cascadeConfigs.xiConfigs.v0CosPAXi : cascadeConfigs.omegaConfigs.v0CosPAOmega;
+    const float cutCosPA = (cascadeType == kXi || cascadeType == kAntiXi) ? cascadeConfigs.xiConfigs.cosPAXi : cascadeConfigs.omegaConfigs.cosPAOmega;
+    const float cutV0Radius = (cascadeType == kXi || cascadeType == kAntiXi) ? cascadeConfigs.xiConfigs.v0RadiusXi : cascadeConfigs.omegaConfigs.v0RadiusOmega;
+    const float cutRadius = (cascadeType == kXi || cascadeType == kAntiXi) ? cascadeConfigs.xiConfigs.radiusXi : cascadeConfigs.omegaConfigs.radiusOmega;
+    const float cutMinPt = (cascadeType == kXi || cascadeType == kAntiXi) ? cascadeConfigs.xiConfigs.minPtXi : cascadeConfigs.omegaConfigs.minPtOmega;
 
     const auto& pvx = collision.posX();
     const auto& pvy = collision.posY();
     const auto& pvz = collision.posZ();
 
-    if (cascade.v0cosPA(pvx, pvy, pvz) < cfgs.v0CosPA) {
+    if (cascade.v0cosPA(pvx, pvy, pvz) < cutV0CosPA) {
       return false;
     }
-    if (cascade.casccosPA(pvx, pvy, pvz) < cfgs.cosPA) {
+    if (cascade.casccosPA(pvx, pvy, pvz) < cutCosPA) {
       return false;
     }
-    if (cascade.v0radius() < cfgs.v0Radius) {
+    if (cascade.v0radius() < cutV0Radius) {
       return false;
     }
-    if (cascade.cascradius() < cfgs.radius) {
+    if (cascade.cascradius() < cutRadius) {
       return false;
     }
-    if (cascade.pt() < cfgs.minPt) {
+    if (cascade.pt() < cutMinPt) {
       return false;
     }
 
