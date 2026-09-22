@@ -1348,7 +1348,7 @@ struct lambdapolsp {
 
   using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse>;
 
-  void processDatav1(EventCandidatescalibstage::iterator const& collision, AllTrackCandidates const& tracks, ResoV0s const& V0s, BCsRun3 const&)
+  void processDatav1(EventCandidatescalibstage::iterator const& collision, AllTrackCandidates const& tracks, BCsRun3 const&)
   {
 
     if (!collision.sel8()) {
