@@ -370,7 +370,7 @@ struct AnalysisEventSelection {
     if (fConfigQA) {
       fHistMan = new HistogramManager("analysisHistos", "", VarManager::kNVars);
       fHistMan->SetUseDefaultVariableNames(true);
-      fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
+      fHistMan->SetDefaultVarNames(static_cast<TString*>(VarManager::fgVariableNames), static_cast<TString*>(VarManager::fgVariableUnits));
       DefineHistograms(fHistMan, "TimeFrameStats;Event_BeforeCuts;Event_AfterCuts;", fConfigAddEventHistogram.value.data());
       if (fConfigCheckSplitCollisions) {
         DefineHistograms(fHistMan, "OutOfBunchCorrelations;SameBunchCorrelations;", "");
@@ -481,7 +481,7 @@ struct AnalysisEventSelection {
     VarManager::FillTimeFrame(bcs);
     VarManager::FillTimeFrame(events);
     if (fConfigQA) {
-      fHistMan->FillHistClass("TimeFrameStats", VarManager::fgValues);
+      fHistMan->FillHistClass("TimeFrameStats", static_cast<float*>(VarManager::fgValues));
     }
 
     fSelMap.clear();
@@ -496,7 +496,7 @@ struct AnalysisEventSelection {
 
       // the hash table is joined to the events by row order, so publish one row per event before any event selection
       if (fMixHandler != nullptr) {
-        int hh = fMixHandler->FindEventCategory(VarManager::fgValues);
+        int hh = fMixHandler->FindEventCategory(static_cast<float*>(VarManager::fgValues));
         // events outside the mixing limits (-1) get a distinct negative hash so that they are not mixed with each other
         if (hh < 0) {
           hh = -1 - static_cast<int>(event.globalIndex());
@@ -506,7 +506,7 @@ struct AnalysisEventSelection {
 
       bool decision = false;
       if (fConfigQA) {
-        fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
+        fHistMan->FillHistClass("Event_BeforeCuts", static_cast<float*>(VarManager::fgValues));
       }
 
       if (fConfigZorro.fConfigRunZorro) {
@@ -515,7 +515,7 @@ struct AnalysisEventSelection {
         zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), fConfigZorro.fConfigZorroTrigMask.value);
         zorro.populateExternalHists(fCurrentRun, dynamic_cast<TH2D*>(fStatsList->At(kStatsZorroInfo)), dynamic_cast<TH2D*>(fStatsList->At(kStatsZorroSel)));
 
-        if (!fEventCut->IsSelected(VarManager::fgValues) || (fConfigRCT.fConfigUseRCT.value && !rctChecker(event))) {
+        if (!fEventCut->IsSelected(static_cast<float*>(VarManager::fgValues)) || (fConfigRCT.fConfigUseRCT.value && !rctChecker(event))) {
           continue;
         }
 
@@ -525,14 +525,14 @@ struct AnalysisEventSelection {
         }
       } else {
 
-        if (!fEventCut->IsSelected(VarManager::fgValues) || (fConfigRCT.fConfigUseRCT.value && !rctChecker(event))) {
+        if (!fEventCut->IsSelected(static_cast<float*>(VarManager::fgValues)) || (fConfigRCT.fConfigUseRCT.value && !rctChecker(event))) {
           continue;
         }
       }
 
       decision = true;
       if (fConfigQA) {
-        fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
+        fHistMan->FillHistClass("Event_AfterCuts", static_cast<float*>(VarManager::fgValues));
       }
 
       fSelMap[event.globalIndex()] = decision;
@@ -572,7 +572,7 @@ struct AnalysisEventSelection {
               collisionSplittingMap[*ev2It] = true;
             }
             if (fConfigQA) {
-              fHistMan->FillHistClass("SameBunchCorrelations", VarManager::fgValues);
+              fHistMan->FillHistClass("SameBunchCorrelations", static_cast<float*>(VarManager::fgValues));
             }
           } // end second event loop
         } // end first event loop
@@ -599,7 +599,7 @@ struct AnalysisEventSelection {
               collisionSplittingMap[ev2It] = true;
             }
             if (fConfigQA) {
-              fHistMan->FillHistClass("OutOfBunchCorrelations", VarManager::fgValues);
+              fHistMan->FillHistClass("OutOfBunchCorrelations", static_cast<float*>(VarManager::fgValues));
             }
           }
         }
@@ -707,7 +707,7 @@ struct AnalysisTrackSelection {
     if (fConfigQA) {
       fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
       fHistMan->SetUseDefaultVariableNames(kTRUE);
-      fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
+      fHistMan->SetDefaultVarNames(static_cast<TString*>(VarManager::fgVariableNames), static_cast<TString*>(VarManager::fgVariableUnits));
 
       // Configure histogram classes for each track cut;
       TString histClasses = "TimeFrameStats;AssocsBarrel_BeforeCuts;";
@@ -747,7 +747,7 @@ struct AnalysisTrackSelection {
     VarManager::FillTimeFrame(events);
     VarManager::FillTimeFrame(tracks);
     if (fConfigQA) {
-      fHistMan->FillHistClass("TimeFrameStats", VarManager::fgValues);
+      fHistMan->FillHistClass("TimeFrameStats", static_cast<float*>(VarManager::fgValues));
     }
 
     if (bcs.size() > 0 && fCurrentRun != bcs.begin().runNumber()) {
@@ -799,16 +799,16 @@ struct AnalysisTrackSelection {
       }
 
       if (fConfigQA) {
-        fHistMan->FillHistClass("AssocsBarrel_BeforeCuts", VarManager::fgValues);
+        fHistMan->FillHistClass("AssocsBarrel_BeforeCuts", static_cast<float*>(VarManager::fgValues));
       }
 
       int iCut = 0;
       auto filterMap = static_cast<uint32_t>(0);
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, iCut++) {
-        if ((*cut)->IsSelected(VarManager::fgValues)) {
+        if ((*cut)->IsSelected(static_cast<float*>(VarManager::fgValues))) {
           filterMap |= (static_cast<uint32_t>(1) << iCut);
           if (fConfigQA) {
-            fHistMan->FillHistClass(fHistNamesReco[iCut], VarManager::fgValues);
+            fHistMan->FillHistClass(fHistNamesReco[iCut], static_cast<float*>(VarManager::fgValues));
           }
         }
       } // end loop over cuts
@@ -850,7 +850,7 @@ struct AnalysisTrackSelection {
           VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
           VarManager::FillTrack<TTrackFillMap>(track);
           VarManager::fgValues[VarManager::kBarrelNAssocsInBunch] = static_cast<float>(evIndices.size());
-          fHistMan->FillHistClass("TrackBarrel_AmbiguityInBunch", VarManager::fgValues);
+          fHistMan->FillHistClass("TrackBarrel_AmbiguityInBunch", static_cast<float*>(VarManager::fgValues));
         } // end loop over in-bunch ambiguous tracks
 
         for (auto& [trackIdx, evIndices] : fNAssocsOutOfBunch) {
@@ -861,7 +861,7 @@ struct AnalysisTrackSelection {
           VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
           VarManager::FillTrack<TTrackFillMap>(track);
           VarManager::fgValues[VarManager::kBarrelNAssocsOutOfBunch] = static_cast<float>(evIndices.size());
-          fHistMan->FillHistClass("TrackBarrel_AmbiguityOutOfBunch", VarManager::fgValues);
+          fHistMan->FillHistClass("TrackBarrel_AmbiguityOutOfBunch", static_cast<float*>(VarManager::fgValues));
         } // end loop over out-of-bunch ambiguous tracks
       }
 
@@ -1029,7 +1029,7 @@ struct AnalysisPrefilterSelection {
         VarManager::FillPairCollision<VarManager::kDecayToEE, gkTrackFillMapWithCov>(event, track1, track2);
       }
       // if the pair fullfils the criteria, add an entry into the prefilter map for the two tracks
-      if (fPairCut->IsSelected(VarManager::fgValues)) {
+      if (fPairCut->IsSelected(static_cast<float*>(VarManager::fgValues))) {
         if (fPrefilterMap.find(track1.globalIndex()) == fPrefilterMap.end() && track1Candidate > 0) {
           fPrefilterMap[track1.globalIndex()] = track1Candidate;
         }
@@ -1147,7 +1147,7 @@ struct AnalysisMuonSelection {
       if (fHistMan == nullptr) {
         fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
         fHistMan->SetUseDefaultVariableNames(kTRUE);
-        fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
+        fHistMan->SetDefaultVarNames(static_cast<TString*>(VarManager::fgVariableNames), static_cast<TString*>(VarManager::fgVariableUnits));
 
         TString histDirNames = "TrackMuon_BeforeCuts;";
         for (auto& cut : fMuonCuts) {
@@ -1211,14 +1211,14 @@ struct AnalysisMuonSelection {
       filterMap = static_cast<uint32_t>(0);
       VarManager::FillTrack<TMuonFillMap>(track);
       if (fConfigQA) {
-        fHistMan->FillHistClass("TrackMuon_BeforeCuts", VarManager::fgValues);
+        fHistMan->FillHistClass("TrackMuon_BeforeCuts", static_cast<float*>(VarManager::fgValues));
       }
       iCut = 0;
       for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, iCut++) {
-        if ((*cut)->IsSelected(VarManager::fgValues)) {
+        if ((*cut)->IsSelected(static_cast<float*>(VarManager::fgValues))) {
           filterMap |= (static_cast<uint32_t>(1) << iCut);
           if (fConfigQA) {
-            fHistMan->FillHistClass(Form("TrackMuon_%s", (*cut)->GetName()), VarManager::fgValues);
+            fHistMan->FillHistClass(Form("TrackMuon_%s", (*cut)->GetName()), static_cast<float*>(VarManager::fgValues));
           }
         }
       }
@@ -1251,7 +1251,7 @@ struct AnalysisMuonSelection {
           VarManager::ResetValues(0, VarManager::kNMuonTrackVariables);
           VarManager::FillTrack<TMuonFillMap>(track);
           VarManager::fgValues[VarManager::kMuonNAssocsInBunch] = static_cast<float>(evIndices.size());
-          fHistMan->FillHistClass("TrackMuon_AmbiguityInBunch", VarManager::fgValues);
+          fHistMan->FillHistClass("TrackMuon_AmbiguityInBunch", static_cast<float*>(VarManager::fgValues));
         }
         for (auto& [trackIdx, evIndices] : fNAssocsOutOfBunch) {
           if (evIndices.size() <= 1) {
@@ -1261,7 +1261,7 @@ struct AnalysisMuonSelection {
           VarManager::ResetValues(0, VarManager::kNMuonTrackVariables);
           VarManager::FillTrack<TMuonFillMap>(track);
           VarManager::fgValues[VarManager::kMuonNAssocsOutOfBunch] = static_cast<float>(evIndices.size());
-          fHistMan->FillHistClass("TrackMuon_AmbiguityOutOfBunch", VarManager::fgValues);
+          fHistMan->FillHistClass("TrackMuon_AmbiguityOutOfBunch", static_cast<float*>(VarManager::fgValues));
         }
       }
       // publish ambiguity table (one row per FwdTrack)
@@ -1549,7 +1549,7 @@ struct AnalysisSameEventPairing {
 
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
     fHistMan->SetUseDefaultVariableNames(kTRUE);
-    fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
+    fHistMan->SetDefaultVarNames(static_cast<TString*>(VarManager::fgVariableNames), static_cast<TString*>(VarManager::fgVariableUnits));
 
     VarManager::SetCollisionSystem((TString)fConfigOptions.collisionSystem, fConfigOptions.centerMassEnergy); // set collision system and center of mass energy
 
@@ -1722,7 +1722,7 @@ struct AnalysisSameEventPairing {
       }
 
       VarManager::ResetValues(0, VarManager::kNVars);
-      VarManager::FillEvent<TEventFillMap>(event, VarManager::fgValues);
+      VarManager::FillEvent<TEventFillMap>(event, static_cast<float*>(VarManager::fgValues));
 
       auto groupedAssocs = assocs.sliceBy(preslice, event.globalIndex());
       if (groupedAssocs.size() == 0) {
@@ -1822,37 +1822,37 @@ struct AnalysisSameEventPairing {
         for (int icut = 0; icut < ncuts; icut++) { // loop over cut definitions
           if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
             if (sign1 * sign2 < 0) { // opposite sign pairs
-              fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
+              fHistMan->FillHistClass(histNames[icut][0].Data(), static_cast<float*>(VarManager::fgValues));
               PromptNonPromptSepTable(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kRap], VarManager::fgValues[VarManager::kPhi],
                                       VarManager::fgValues[VarManager::kVertexingTauxyProjected], VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMass], VarManager::fgValues[VarManager::kVertexingTauzProjected], VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMassRecalculatePV],
                                       VarManager::fgValues[VarManager::kVtxX], VarManager::fgValues[VarManager::kVtxY], VarManager::fgValues[VarManager::kVtxZ], VarManager::fgValues[VarManager::kDCAxy1], VarManager::fgValues[VarManager::kDCAz1], VarManager::fgValues[VarManager::kITSclusterMap1], VarManager::fgValues[VarManager::kTPCnSigmaEl1], VarManager::fgValues[VarManager::kDCAxy2], VarManager::fgValues[VarManager::kDCAz2], VarManager::fgValues[VarManager::kITSclusterMap2], VarManager::fgValues[VarManager::kTPCnSigmaEl2],
                                       isAmbiInBunch, isAmbiOutOfBunch, VarManager::fgValues[VarManager::kMultFT0A], VarManager::fgValues[VarManager::kMultFT0C], VarManager::fgValues[VarManager::kCentFT0M], VarManager::fgValues[VarManager::kVtxNcontribReal]);
               if (fConfigOptions.fConfigQA) {
                 if (isAmbiInBunch) {
-                  fHistMan->FillHistClass(histNames[icut][3].Data(), VarManager::fgValues);
+                  fHistMan->FillHistClass(histNames[icut][3].Data(), static_cast<float*>(VarManager::fgValues));
                 }
                 if (isAmbiOutOfBunch) {
-                  fHistMan->FillHistClass(histNames[icut][3 + 3].Data(), VarManager::fgValues);
+                  fHistMan->FillHistClass(histNames[icut][3 + 3].Data(), static_cast<float*>(VarManager::fgValues));
                 }
               }
             } else if (sign1 > 0) { // ++ pairs
-              fHistMan->FillHistClass(histNames[icut][1].Data(), VarManager::fgValues);
+              fHistMan->FillHistClass(histNames[icut][1].Data(), static_cast<float*>(VarManager::fgValues));
               if (fConfigOptions.fConfigQA) {
                 if (isAmbiInBunch) {
-                  fHistMan->FillHistClass(histNames[icut][4].Data(), VarManager::fgValues);
+                  fHistMan->FillHistClass(histNames[icut][4].Data(), static_cast<float*>(VarManager::fgValues));
                 }
                 if (isAmbiOutOfBunch) {
-                  fHistMan->FillHistClass(histNames[icut][4 + 3].Data(), VarManager::fgValues);
+                  fHistMan->FillHistClass(histNames[icut][4 + 3].Data(), static_cast<float*>(VarManager::fgValues));
                 }
               }
             } else { // -- pairs
-              fHistMan->FillHistClass(histNames[icut][2].Data(), VarManager::fgValues);
+              fHistMan->FillHistClass(histNames[icut][2].Data(), static_cast<float*>(VarManager::fgValues));
               if (fConfigOptions.fConfigQA) {
                 if (isAmbiInBunch) {
-                  fHistMan->FillHistClass(histNames[icut][5].Data(), VarManager::fgValues);
+                  fHistMan->FillHistClass(histNames[icut][5].Data(), static_cast<float*>(VarManager::fgValues));
                 }
                 if (isAmbiOutOfBunch) {
-                  fHistMan->FillHistClass(histNames[icut][5 + 3].Data(), VarManager::fgValues);
+                  fHistMan->FillHistClass(histNames[icut][5 + 3].Data(), static_cast<float*>(VarManager::fgValues));
                 }
               }
             }
@@ -1860,15 +1860,15 @@ struct AnalysisSameEventPairing {
             // Pair cuts
             for (unsigned int iPairCut = 0; iPairCut < fPairCuts.size(); iPairCut++) {
               AnalysisCompositeCut cut = fPairCuts.at(iPairCut);
-              if (!cut.IsSelected(VarManager::fgValues)) {
+              if (!cut.IsSelected(static_cast<float*>(VarManager::fgValues))) {
                 continue;              // apply pair cuts
               }
               if (sign1 * sign2 < 0) { // opposite sign pairs
-                fHistMan->FillHistClass(histNames[ncuts + icut * fPairCuts.size() + iPairCut][0].Data(), VarManager::fgValues);
+                fHistMan->FillHistClass(histNames[ncuts + icut * fPairCuts.size() + iPairCut][0].Data(), static_cast<float*>(VarManager::fgValues));
               } else if (sign1 > 0) { // ++ pairs
-                fHistMan->FillHistClass(histNames[ncuts + icut * fPairCuts.size() + iPairCut][1].Data(), VarManager::fgValues);
+                fHistMan->FillHistClass(histNames[ncuts + icut * fPairCuts.size() + iPairCut][1].Data(), static_cast<float*>(VarManager::fgValues));
               } else { // -- pairs
-                fHistMan->FillHistClass(histNames[ncuts + icut * fPairCuts.size() + iPairCut][2].Data(), VarManager::fgValues);
+                fHistMan->FillHistClass(histNames[ncuts + icut * fPairCuts.size() + iPairCut][2].Data(), static_cast<float*>(VarManager::fgValues));
               }
             } // end loop (pair cuts)
           }
@@ -1912,7 +1912,7 @@ struct AnalysisSameEventPairing {
       }
 
       VarManager::ResetValues(0, VarManager::kNVars);
-      VarManager::FillEvent<TEventFillMap>(event, VarManager::fgValues);
+      VarManager::FillEvent<TEventFillMap>(event, static_cast<float*>(VarManager::fgValues));
 
       auto groupedAssocs1 = assocs1.sliceBy(preslice1, event.globalIndex());
       if (groupedAssocs1.size() == 0) {
@@ -1984,11 +1984,11 @@ struct AnalysisSameEventPairing {
               continue;
             }
             if (sign1 * sign2 < 0) {
-              fHistMan->FillHistClass(itHist->second[0].Data(), VarManager::fgValues);
+              fHistMan->FillHistClass(itHist->second[0].Data(), static_cast<float*>(VarManager::fgValues));
             } else if (sign1 > 0) {
-              fHistMan->FillHistClass(itHist->second[1].Data(), VarManager::fgValues);
+              fHistMan->FillHistClass(itHist->second[1].Data(), static_cast<float*>(VarManager::fgValues));
             } else {
-              fHistMan->FillHistClass(itHist->second[2].Data(), VarManager::fgValues);
+              fHistMan->FillHistClass(itHist->second[2].Data(), static_cast<float*>(VarManager::fgValues));
             }
           } // end muon cut loop
         } // end barrel cut loop
