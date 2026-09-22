@@ -333,7 +333,7 @@ struct AnalysisEventSelection {
   o2::parameters::GRPObject* fGrpMagRun2 = nullptr; // for run 2, we access the GRPObject from GLO/GRP/GRP
   o2::parameters::GRPMagField* fGrpMag = nullptr;   // for run 3, we access GRPMagField from GLO/Config/GRPMagField
 
-  Service<o2::ccdb::BasicCCDBManager> fCCDB;
+  Service<o2::ccdb::BasicCCDBManager> fCCDB{};
   o2::ccdb::CcdbApi fCCDBApi;
 
   std::map<int64_t, bool> fSelMap;                     // key: reduced event global index, value: event selection decision
@@ -662,8 +662,8 @@ struct AnalysisTrackSelection {
   Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
 
-  Service<o2::ccdb::BasicCCDBManager> fCCDB;
-  Service<o2::pid::tof::TOFResponse> fTofResponse;
+  Service<o2::ccdb::BasicCCDBManager> fCCDB{};
+  Service<o2::pid::tof::TOFResponse> fTofResponse{};
 
   HistogramManager* fHistMan = nullptr;
   std::vector<AnalysisCompositeCut*> fTrackCuts;
@@ -1103,7 +1103,7 @@ struct AnalysisMuonSelection {
     Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   } fConfigCCDB;
 
-  Service<o2::ccdb::BasicCCDBManager> fCCDB;
+  Service<o2::ccdb::BasicCCDBManager> fCCDB{};
 
   HistogramManager* fHistMan = nullptr;
   std::vector<AnalysisCompositeCut*> fMuonCuts;
@@ -1343,7 +1343,7 @@ struct AnalysisSameEventPairing {
     Configurable<std::string> flowPath{"flowPath", "Users/y/yiping/FlowResolution", "Path to the flow resolution object"};
   } fConfigCCDB;
 
-  Service<o2::ccdb::BasicCCDBManager> fCCDB;
+  Service<o2::ccdb::BasicCCDBManager> fCCDB{};
 
   // vectors needed for PV recomputation
   std::vector<int64_t> pvContribGlobIDs;
