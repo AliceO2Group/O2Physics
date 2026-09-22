@@ -195,14 +195,14 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
   // **) Particle histograms:
   struct ParticleHistograms {
     TList* fParticleHistogramsList = nullptr; //!<! list to hold all control particle histograms
-    std::array<std::array<std::array<TH1F*, 2>, 2>, eParticleHistograms_N> fParticleHistograms{nullptr};
+    std::array<std::array<std::array<TH1F*, 2>, 2>, eParticleHistograms_N> fParticleHistograms{};
   } pc; // you have to prepend "pc." for all objects name in this group later in the code
 
   // *) Event histograms:
   struct EventHistograms {
-    TList* fEventHistogramsList = nullptr;                                                         //!<! list to hold all event-level histograms
-    std::array<std::array<std::array<TH1F*, 2>, 2>, eEventHistograms_N> fEventHistograms{nullptr}; //! [ type - see enum EEventHistograms ][reco,sim][before, after event cuts]
-  } ec;                                                                                            // prepend "ec." for event counters
+    TList* fEventHistogramsList = nullptr;                                                  //!<! list to hold all event-level histograms
+    std::array<std::array<std::array<TH1F*, 2>, 2>, eEventHistograms_N> fEventHistograms{}; //! [ type - see enum EEventHistograms ][reco,sim][before, after event cuts]
+  } ec;                                                                                     // prepend "ec." for event counters
 
   // *) External histograms:
   struct ExternalHistograms {
@@ -212,7 +212,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
 
   struct Observables {
     TList* fObservablesList = nullptr;
-    std::array<std::array<TProfile*, 2>, 2> fProfTwo{nullptr}; //! [reco,sim][before, after event cuts]
+    std::array<std::array<TProfile*, 2>, 2> fProfTwo{}; //! [reco,sim][before, after event cuts]
   } obs;
 
   // *) Quality assurance histograms:
