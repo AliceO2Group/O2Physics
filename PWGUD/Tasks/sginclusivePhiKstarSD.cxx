@@ -517,7 +517,7 @@ struct SginclusivePhiKstarSD {
   //_____________________________________________________________________________
   double cosThetaCollinsSoperFrame(const ROOT::Math::PxPyPzMVector& pair1,
                                    const ROOT::Math::PxPyPzMVector& pair2,
-                                   const ROOT::Math::PxPyPzMVector& fourpion)
+                                   const ROOT::Math::PxPyPzMVector& fourPion)
   {
     double halfSqrtSnn = 2680.;
     double massOfLead208 = 193.6823;
@@ -528,7 +528,7 @@ struct SginclusivePhiKstarSD {
 
     ROOT::Math::PxPyPzMVector v1 = ROOT::Math::PxPyPzMVector(pair1.Px(), pair1.Py(), pair1.Pz(), pair1.M());
     ROOT::Math::PxPyPzMVector v2 = ROOT::Math::PxPyPzMVector(pair2.Px(), pair2.Py(), pair2.Pz(), pair2.M());
-    ROOT::Math::PxPyPzMVector v12 = ROOT::Math::PxPyPzMVector(fourpion.Px(), fourpion.Py(), fourpion.Pz(), fourpion.M());
+    ROOT::Math::PxPyPzMVector v12 = ROOT::Math::PxPyPzMVector(fourPion.Px(), fourPion.Py(), fourPion.Pz(), fourPion.M());
 
     // Boost to center of mass frame
     ROOT::Math::Boost boostv12{v12.BoostToCM()};
@@ -543,7 +543,7 @@ struct SginclusivePhiKstarSD {
     return cosThetaCs;
   }
 
-  double phiCollinsSoperFrame(const ROOT::Math::PxPyPzMVector& pair1, const ROOT::Math::PxPyPzMVector& pair2, const ROOT::Math::PxPyPzMVector& fourpion)
+  double phiCollinsSoperFrame(const ROOT::Math::PxPyPzMVector& pair1, const ROOT::Math::PxPyPzMVector& pair2, const ROOT::Math::PxPyPzMVector& fourPion)
   {
     // Half of the energy per pair of the colliding nucleons.
     double halfSqrtSnn = 2680.;
@@ -555,7 +555,7 @@ struct SginclusivePhiKstarSD {
 
     ROOT::Math::PxPyPzMVector v1 = ROOT::Math::PxPyPzMVector(pair1.Px(), pair1.Py(), pair1.Pz(), pair1.M());
     ROOT::Math::PxPyPzMVector v2 = ROOT::Math::PxPyPzMVector(pair2.Px(), pair2.Py(), pair2.Pz(), pair2.M());
-    ROOT::Math::PxPyPzMVector v12 = ROOT::Math::PxPyPzMVector(fourpion.Px(), fourpion.Py(), fourpion.Pz(), fourpion.M());
+    ROOT::Math::PxPyPzMVector v12 = ROOT::Math::PxPyPzMVector(fourPion.Px(), fourPion.Py(), fourPion.Pz(), fourPion.M());
 
     // Boost to center of mass frame
     ROOT::Math::Boost boostv12{v12.BoostToCM()};
@@ -568,8 +568,8 @@ struct SginclusivePhiKstarSD {
     ROOT::Math::XYZVectorF yaxisCs{(beam1Cm.Cross(beam2Cm)).Unit()};
     ROOT::Math::XYZVectorF xaxisCs{(yaxisCs.Cross(zaxisCs)).Unit()};
 
-    double phi = std::atan2(yaxisCs.Dot(v1Cm), xaxisCs.Dot(v1Cm));
-    return phi;
+    double phiAngle = std::atan2(yaxisCs.Dot(v1Cm), xaxisCs.Dot(v1Cm));
+    return phiAngle;
   }
 
   template <typename C>
