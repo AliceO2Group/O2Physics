@@ -38,7 +38,6 @@
 #include <DCAFitter/FwdDCAFitterN.h>
 #include <DataFormatsFIT/Triggers.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
-#include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/MatLayerCylSet.h>
 #include <DetectorsBase/Propagator.h>
 #include <Framework/AnalysisDataModel.h>
