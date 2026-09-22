@@ -43,6 +43,7 @@
 
 #include <Rtypes.h>
 
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -187,37 +188,37 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
   // *) Define and initialize all data members to be called in the main process* functions:
   // **) Task configuration:
   struct TaskConfiguration {
-    bool fProcess[eProcess_N] = {false}; // Set what to process. See enum EProcess for full description. Set via implicit variables within a PROCESS_SWITCH clause.
-    bool fDryRun = false;                // book all histos and run without filling and calculating anything
-  } tc;                                  // you have to prepend "tc." for all objects name in this group later in the code
+    std::array<bool, eProcess_N> fProcess{false}; // Set what to process. See enum EProcess for full description. Set via implicit variables within a PROCESS_SWITCH clause.
+    bool fDryRun = false;                         // book all histos and run without filling and calculating anything
+  } tc;                                           // you have to prepend "tc." for all objects name in this group later in the code
 
   // **) Particle histograms:
   struct ParticleHistograms {
-    TList* fParticleHistogramsList = NULL; //!<! list to hold all control particle histograms
-    TH1F* fParticleHistograms[eParticleHistograms_N][2][2] = {{{NULL}}};
+    TList* fParticleHistogramsList = nullptr; //!<! list to hold all control particle histograms
+    std::array<std::array<std::array<TH1F*, 2>, 2>, eParticleHistograms_N> fParticleHistograms{};
   } pc; // you have to prepend "pc." for all objects name in this group later in the code
 
   // *) Event histograms:
   struct EventHistograms {
-    TList* fEventHistogramsList = NULL;                            //!<! list to hold all event-level histograms
-    TH1F* fEventHistograms[eEventHistograms_N][2][2] = {{{NULL}}}; //! [ type - see enum EEventHistograms ][reco,sim][before, after event cuts]
-  } ec;                                                            // prepend "ec." for event counters
+    TList* fEventHistogramsList = nullptr;                                                  //!<! list to hold all event-level histograms
+    std::array<std::array<std::array<TH1F*, 2>, 2>, eEventHistograms_N> fEventHistograms{}; //! [ type - see enum EEventHistograms ][reco,sim][before, after event cuts]
+  } ec;                                                                                     // prepend "ec." for event counters
 
   // *) External histograms:
   struct ExternalHistograms {
-    TList* fExternalHistogramsList = NULL;
-    TH1D* fhistWeights = NULL;
+    TList* fExternalHistogramsList = nullptr;
+    TH1D* fhistWeights = nullptr;
   } ex;
 
   struct Observables {
-    TList* fObservablesList = NULL;
-    TProfile* fProfTwo[2][2] = {{NULL}}; //! [reco,sim][before, after event cuts]
+    TList* fObservablesList = nullptr;
+    std::array<std::array<TProfile*, 2>, 2> fProfTwo{}; //! [reco,sim][before, after event cuts]
   } obs;
 
   // *) Quality assurance histograms:
   struct QualityAssurance {
-    TList* fQualityAssuranceList = NULL; //!<! list to hold all qualityAssurance histograms
-    TH2F* fHistCentralityRecSim = NULL;
+    TList* fQualityAssuranceList = nullptr; //!<! list to hold all qualityAssurance histograms
+    TH2F* fHistCentralityRecSim = nullptr;
   } qa; // prepend "qa." for qa histograms
 
   // *) functions
@@ -552,6 +553,12 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
         break; // thisCent is already FT0C
     }
 
+    LOGF(info,
+         "centFT0C=%.6f  centFT0M=%.6f  centFV0A=%.6f",
+         collision.centFT0C(),
+         collision.centFT0M(),
+         collision.centFV0A());
+
     auto thisRefMult = collision.multTPC(); // use auto to determine the type
     switch (multiplicityTables) {
       case eMultTPC:
@@ -605,7 +612,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
         if (rm == eMC) {
           auto thisMCCollision = collision.mcCollision(); // corresponding MC truth simulated particle
           int multiplicitySim = static_cast<int>(tracks.size());
-          auto impactParameter = thisMCCollision.impactParameter() * 1e15;
+          auto impactParameter = thisMCCollision.impactParameter();
           LOGF(info,
                "Reco collision = %d, MC collision = %d, b = %f",
                collision.globalIndex(),
