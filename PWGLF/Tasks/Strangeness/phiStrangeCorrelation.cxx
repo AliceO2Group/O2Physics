@@ -55,6 +55,7 @@
 #include <functional>
 #include <iterator>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -330,7 +331,7 @@ struct PhiStrangeCorrelation {
   // Buffer for mixed event, organized as a vector of deques, one for each multiplicity bin, containing the past events with their particles of interest needed for mixing
   std::vector<std::deque<MiniEvent>> eventBuffer;
 
-  int runNumber{-1};
+  int mLastRunNumber{-1};
 
   void init(InitContext&)
   {
@@ -430,7 +431,32 @@ struct PhiStrangeCorrelation {
     eventBuffer.resize(binsMult->size() - 1);
   }
 
-  void fetchSingleEfficiencyMapFromCCDB(EffMapPtr& effMap, std::string_view particleName)
+  void fetchSingleEfficiencyMapFromCCDB(EffMapPtr& effMap, std::string_view particleName, std::optional<int> runNumber = std::nullopt)
+  {
+    std::string path = fmt::format("{}{}", ccdbEfficiencyPath.value, particleName);
+
+    auto fetchFromCCDB = [&]<typename HistoType>() -> std::shared_ptr<HistoType> {
+      auto mapPtr = runNumber ? ccdb->getForRun<HistoType>(path, *runNumber) : ccdb->get<HistoType>(path);
+      return std::shared_ptr<HistoType>(mapPtr);
+    };
+
+    if (auto map3D = fetchFromCCDB.operator()<TH3D>()) {
+      effMap = map3D;
+      LOG(debug) << "Efficiency map (TH3) for " << particleName << " loaded from CCDB";
+      return;
+    }
+
+    if (auto map2D = fetchFromCCDB.operator()<TH2D>()) {
+      effMap = map2D;
+      LOG(debug) << "Efficiency map (TH2) for " << particleName << " loaded from CCDB";
+      return;
+    }
+
+    std::string runSuffix = runNumber ? fmt::format(" for run {}", *runNumber) : "";
+    LOG(fatal) << "Could not load efficiency map (neither TH3 nor TH2) for " << particleName << " from CCDB" << runSuffix << "!";
+  }
+
+  /*void fetchSingleEfficiencyMapFromCCDB(EffMapPtr& effMap, std::string_view particleName)
   {
     std::string path = fmt::format("{}{}", ccdbEfficiencyPath.value, particleName);
 
@@ -451,7 +477,7 @@ struct PhiStrangeCorrelation {
 
   void fetchSingleEfficiencyMapPerPeriodFromCCDB(EffMapPtr& effMap, std::string_view particleName, int runNumber)
   {
-    std::string path = fmt::format("{}{}/{}", ccdbEfficiencyPath.value, particleName, runNumber);
+    std::string path = fmt::format("{}{}", ccdbEfficiencyPath.value, particleName);
 
     if (auto map3D = std::shared_ptr<TH3>(ccdb->getForRun<TH3D>(path, runNumber))) {
       effMap = map3D;
@@ -466,9 +492,37 @@ struct PhiStrangeCorrelation {
     }
 
     LOG(fatal) << "Could not load efficiency map (neither TH3 nor TH2) for " << particleName << " from CCDB for run " << runNumber;
+  }*/
+
+  void loadEfficiencyMaps(std::optional<int> runNumber = std::nullopt)
+  {
+    if (runNumber) {
+      if (*runNumber == mLastRunNumber) {
+        return;
+      }
+      mLastRunNumber = *runNumber;
+    }
+
+    // Load the Trigger (Phi) map if requested by analysis method
+    if (efficiencyConfigs.applyPhiEfficiency) {
+      fetchSingleEfficiencyMapFromCCDB(effMapPhi, "Phi", runNumber);
+    }
+
+    // Only load the associated maps that are explicitly enabled
+    for (size_t i = 0; i < kAssocPartSize; ++i) {
+      if (activeCorrelationTypes->at(i)) {
+        fetchSingleEfficiencyMapFromCCDB(effMapsAssoc[i], AssocParticleLabels[i], runNumber);
+      }
+    }
+
+    if (runNumber) {
+      LOG(info) << "Efficiency maps successfully updated from CCDB for run " << *runNumber;
+    } else {
+      LOG(info) << "Global efficiency maps successfully loaded from CCDB";
+    }
   }
 
-  void loadEfficiencyMaps()
+  /*void loadEfficiencyMaps()
   {
     // Load the Trigger (Phi) map if requested by analysis method
     if (efficiencyConfigs.applyPhiEfficiency) {
@@ -496,7 +550,7 @@ struct PhiStrangeCorrelation {
         fetchSingleEfficiencyMapPerPeriodFromCCDB(effMapsAssoc[i], AssocParticleLabels[i], runNumber);
       }
     }
-  }
+  }*/
 
   // Compute weight based on efficiencies
   template <typename... BoundEffMaps>
@@ -781,10 +835,9 @@ struct PhiStrangeCorrelation {
   {
     float multiplicity = collision.centFT0M();
 
-    auto bc = collision.template bc_as<aod::BCs>();
-
     if (efficiencyConfigs.applyEfficiency && efficiencyConfigs.perPeriodEfficiency) {
-      loadEfficiencyMapsPerPeriod(bc.runNumber());
+      auto bc = collision.template bc_as<aod::BCs>();
+      loadEfficiencyMaps(bc.runNumber());
     }
 
     for (const auto& phiCand : phiCandidates) {
@@ -819,7 +872,8 @@ struct PhiStrangeCorrelation {
                                   aod::PhimesonCandidatesMcReco const& phiCandidates,
                                   aod::K0sReducedCandidatesMcReco const& k0sReduced,
                                   aod::XiReducedCandidatesMcReco const& xiReduced,
-                                  aod::PionTracksMcReco const& pionTracks)
+                                  aod::PionTracksMcReco const& pionTracks,
+                                  aod::BCs const&)
   {
     processPhiAssocSE(collision, phiCandidates,
                       makeAssocInput<kK0S>(k0sReduced),
@@ -838,6 +892,11 @@ struct PhiStrangeCorrelation {
     for (const auto& [c1, phiCands, c2, assocRed] : pairPhiAssoc) {
       float multiplicity = c1.centFT0M();
 
+      if (efficiencyConfigs.applyEfficiency && efficiencyConfigs.perPeriodEfficiency) {
+        auto bc = c1.template bc_as<aod::BCs>();
+        loadEfficiencyMaps(bc.runNumber());
+      }
+
       for (const auto& [phiCand, assoc] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(phiCands, assocRed))) {
         if (efficiencyConfigs.applyEfficiency && efficiencyConfigs.applyPhiEfficiency && phiCand.pt() >= binspTPhi->back()) {
           continue;
@@ -850,7 +909,8 @@ struct PhiStrangeCorrelation {
 
   void processPhiK0SMEDataLike(SelCollisions const& collisions,
                                aod::PhimesonCandidatesData const& phiCandidates,
-                               aod::K0sReducedCandidatesData const& k0sReduced)
+                               aod::K0sReducedCandidatesData const& k0sReduced,
+                               aod::BCs const&)
   {
     processPhiAssocME<kK0S>(collisions, phiCandidates, k0sReduced);
   }
@@ -859,7 +919,8 @@ struct PhiStrangeCorrelation {
 
   void processPhiK0SMEMCWithPDG(SimCollisions const& collisions,
                                 aod::PhimesonCandidatesMcReco const& phiCandidates,
-                                aod::K0sReducedCandidatesMcReco const& k0sReduced)
+                                aod::K0sReducedCandidatesMcReco const& k0sReduced,
+                                aod::BCs const&)
   {
     processPhiAssocME<kK0S>(collisions, phiCandidates, k0sReduced);
   }
@@ -868,7 +929,8 @@ struct PhiStrangeCorrelation {
 
   void processPhiXiMEDataLike(SelCollisions const& collisions,
                               aod::PhimesonCandidatesData const& phiCandidates,
-                              aod::XiReducedCandidatesData const& xiReduced)
+                              aod::XiReducedCandidatesData const& xiReduced,
+                              aod::BCs const&)
   {
     processPhiAssocME<kXi>(collisions, phiCandidates, xiReduced);
   }
@@ -877,7 +939,8 @@ struct PhiStrangeCorrelation {
 
   void processPhiXiMEMCWithPDG(SimCollisions const& collisions,
                                aod::PhimesonCandidatesMcReco const& phiCandidates,
-                               aod::XiReducedCandidatesMcReco const& xiReduced)
+                               aod::XiReducedCandidatesMcReco const& xiReduced,
+                               aod::BCs const&)
   {
     processPhiAssocME<kXi>(collisions, phiCandidates, xiReduced);
   }
@@ -886,7 +949,8 @@ struct PhiStrangeCorrelation {
 
   void processPhiPionMEDataLike(SelCollisions const& collisions,
                                 aod::PhimesonCandidatesData const& phiCandidates,
-                                aod::PionTracksData const& pionTracks)
+                                aod::PionTracksData const& pionTracks,
+                                aod::BCs const&)
   {
     processPhiAssocME<kPion>(collisions, phiCandidates, pionTracks);
   }
@@ -895,7 +959,8 @@ struct PhiStrangeCorrelation {
 
   void processPhiPionMEMCWithPDG(SimCollisions const& collisions,
                                  aod::PhimesonCandidatesMcReco const& phiCandidates,
-                                 aod::PionTracksMcReco const& pionTracks)
+                                 aod::PionTracksMcReco const& pionTracks,
+                                 aod::BCs const&)
   {
     processPhiAssocME<kPion>(collisions, phiCandidates, pionTracks);
   }
