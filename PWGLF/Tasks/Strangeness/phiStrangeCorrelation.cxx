@@ -1303,7 +1303,7 @@ struct PhiStrangeCorrelation {
 
               histos.fill(histoKey, collision.posZ(), mcCollision.centFT0M(), assoc.pt(), assoc.y());
             }
-          };
+          }; // NOLINT(readability/braces)
 
           fillRecoAssocSpecies(makeAssocInput<kK0S>(k0sReduced), HIST("k0s/h4K0SMCReco"));
           fillRecoAssocSpecies(makeAssocInput<kLambda>(lambdaReduced), HIST("lambda/h4LambdaMCReco"));
@@ -1337,7 +1337,7 @@ struct PhiStrangeCorrelation {
       for (const auto& mcParticle : mcParticlesThisMcColl) {
         if (std::abs(mcParticle.y()) > yConfigs.cfgYAcceptance) {
           continue;
-        };
+        }
 
         auto fillGenHistos = [&](auto h3Key, auto h4Key) {
           histos.fill(h3Key, mcCollision.centFT0M(), mcParticle.pt(), mcParticle.y());
@@ -1352,7 +1352,7 @@ struct PhiStrangeCorrelation {
           }
 
           fillGenHistos(h3Key, h4Key);
-        };
+        }; // NOLINT(readability/braces)
 
         switch (std::abs(mcParticle.pdgCode())) {
           case o2::constants::physics::Pdg::kPhi:
@@ -1404,13 +1404,13 @@ struct PhiStrangeCorrelation {
     for (const auto& mcParticle : mcParticles) {
       if (std::abs(mcParticle.y()) > yConfigs.cfgYAcceptance) {
         continue;
-      };
+      }
 
       auto fillPartCollection = [&]<AssociatedParticleType PartType>() {
         if (activeCorrelationTypes->at(PartType) && isGenSpeciesValid<PartType>(mcParticle, minPtMcGenConfigs.bypassPtCut.value)) {
           assocParticles[PartType].emplace_back(mcParticle.pt(), mcParticle.y(), mcParticle.phi());
         }
-      };
+      }; // NOLINT(readability/braces)
 
       switch (std::abs(mcParticle.pdgCode())) {
         case o2::constants::physics::Pdg::kPhi:
