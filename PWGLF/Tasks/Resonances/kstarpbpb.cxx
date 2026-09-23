@@ -49,7 +49,6 @@
 #include <Math/Vector3Dfwd.h>
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
-#include <TF1.h>
 #include <THn.h>
 #include <TPDGCode.h>
 #include <TRandom3.h>
@@ -531,7 +530,7 @@ struct Kstarpbpb {
     if (cfgSAFrame.value == kProductionPlane) {
       return ROOT::Math::XYZVector(0., 0., 1.).Cross(mother.Vect()).Unit(); // z x p
     }
-    return ROOT::Math::XYZVector(std::sin(cfgEPNormalHarmonic.value * psiSA), -std::cos(cfgEPNormalHarmonic.value * psiSA), 0.);
+    return {std::sin(cfgEPNormalHarmonic.value * psiSA), -std::cos(cfgEPNormalHarmonic.value * psiSA), 0.};
   }
 
   // ---------------- event selection, common to all K* and phi(1020) process functions ----------------
@@ -686,7 +685,7 @@ struct Kstarpbpb {
     double pz1 = candidate1.pz(), pz2 = candidate2.pz();
     double p1 = candidate1.p(), p2 = candidate2.p();
     double angle = std::acos(std::clamp((pt1 * pt2 + pz1 * pz2) / (p1 * p2), -1.0, 1.0)); // clamp = TMath::ACos behaviour
-    return !(phiSA.isDeepAngle && angle < phiSA.cfgDeepAngle);
+    return !phiSA.isDeepAngle || angle >= phiSA.cfgDeepAngle;
   }
 
   template <typename T>
@@ -699,7 +698,7 @@ struct Kstarpbpb {
   ROOT::Math::XYZVector getSAAxisPhiMC(const ROOT::Math::PxPyPzMVector& mother, double psiSA)
   {
     if (cfgSAFrame.value == kEventPlane) {
-      return ROOT::Math::XYZVector(std::cos(2.0 * psiSA), std::sin(2.0 * psiSA), 0.);
+      return {std::cos(2.0 * psiSA), std::sin(2.0 * psiSA), 0.};
     }
     return getSAAxis(mother, psiSA);
   }
@@ -1451,7 +1450,7 @@ struct Kstarpbpb {
     auto threeVecDau = boost(kaonMinus).Vect();
     auto cosThetaStar = axis.Dot(threeVecDau) / std::sqrt(threeVecDau.Mag2()) / std::sqrt(axis.Mag2());
     auto sa = std::cos(2.0 * getPhiInRange(threeVecDau.Phi() - getSAPlaneAngle(mother, psiSA)));
-    return {cosThetaStar, sa};
+    return {.cosThetaStar = cosThetaStar, .sa = sa};
   }
 
   void processSEPhi(EventCandidates::iterator const& collision, TrackCandidates const& tracks)

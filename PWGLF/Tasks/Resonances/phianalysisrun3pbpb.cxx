@@ -410,7 +410,7 @@ struct Phianalysisrun3pbpb {
       return false;
     }
     int occupancy = collision.trackOccupancyInTimeRange();
-    return !(selectionConfig.fillOccupancy && (occupancy < cfgMinOccupancy || occupancy > cfgMaxOccupancy));
+    return !selectionConfig.fillOccupancy || (occupancy >= cfgMinOccupancy && occupancy <= cfgMaxOccupancy);
   }
   template <typename CheckColCent>
   float selColMultMC(CheckColCent const& col)
@@ -448,7 +448,7 @@ struct Phianalysisrun3pbpb {
     double p1 = candidate1.p();
     double p2 = candidate2.p();
     double angle = std::acos((pt1 * pt2 + pz1 * pz2) / (p1 * p2));
-    return !(isDeepAngle && angle < cfgDeepAngle);
+    return !isDeepAngle || angle >= cfgDeepAngle;
   }
   template <typename T1, typename T2>
   void fillinvMass(const T1& candidate1, const T2& candidate2, float multiplicity, bool unlike, bool mix, bool likesign, float massd1, float massd2)
