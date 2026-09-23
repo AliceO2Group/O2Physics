@@ -35,7 +35,9 @@ enum TripletOrder : uint8_t {
   kOrder123, // no swap
   kOrder213, // swap 1&2: for the case that particle 1 & 2 are the same species, particle 3 is something else
   kOrder132, // swap 2&3
-  kOrder321, // reverse: swap 1&3
+  kOrder231, // swap 1&2 & 1&3
+  kOrder312, // swap 2&3 & 1&3
+  kOrder321, // swap 1&3
 };
 
 // process same event for identical 3 particles
@@ -75,6 +77,12 @@ bool processSameEvent(T1 const& SliceParticle,
         break;
       case kOrder132:
         TripletHistManager.setTriplet(p1, p3, p2, Collision);
+        break;
+      case kOrder231:
+        TripletHistManager.setTriplet(p2, p3, p1, Collision);
+        break;
+      case kOrder312:
+        TripletHistManager.setTriplet(p3, p1, p2, Collision);
         break;
       case kOrder321:
         TripletHistManager.setTriplet(p3, p2, p1, Collision);
@@ -291,6 +299,12 @@ bool processSameEvent(T1 const& SliceParticle,
       case kOrder132:
         TripletHistManager.setTripletMc(p1, p3, p2, mcParticles, Collision, mcCollisions);
         break;
+      case kOrder231:
+        TripletHistManager.setTripletMc(p2, p3, p1, mcParticles, Collision, mcCollisions);
+        break;
+      case kOrder312:
+        TripletHistManager.setTripletMc(p3, p1, p2, mcParticles, Collision, mcCollisions);
+        break;
       case kOrder321:
         TripletHistManager.setTripletMc(p3, p2, p1, mcParticles, Collision, mcCollisions);
         break;
@@ -403,7 +417,6 @@ bool processSameEvent(T1 const& SliceParticle1,
 }
 
 // process same event for 3 different particles with mc information
-// NOTE: added `Cleaner1`, `Cleaner2`, `Cleaner3` (one per species)
 template <modes::Mode mode,
           typename T1,
           typename T2,
@@ -498,13 +511,6 @@ bool processSameEvent(T1 const& SliceParticle1,
 }
 
 // --- mc truth only (kMc without kReco): triplets of generated particles ---------------------------
-// These are named processSameEventMcTruth (not processSameEvent) on purpose: several of the reco
-// overloads have the same number of arguments and every parameter is a template type, so the call
-// would be ambiguous.
-// The particles ARE the truth, so there is no track table, no reco counterpart and no charge rescaling.
-// The close triplet rejection and the triplet cleaner take the table of mc particles where the reco
-// helpers take the track table; both ignore it in the track-track-track case.
-
 // process same event for identical 3 mc particles
 template <modes::Mode mode,
           typename T1,
@@ -548,16 +554,24 @@ bool processSameEventMcTruth(T1 const& SliceParticle,
 
     // Randomize triplet order if enabled, then compute the kinematic (Q3) for this triplet
     switch (tripletOrder) {
+      case kOrder123:
+        TripletHistManager.setTripletMcTruth(p1, p2, p3, Collision);
+        break;
       case kOrder213:
         TripletHistManager.setTripletMcTruth(p2, p1, p3, Collision);
         break;
       case kOrder132:
         TripletHistManager.setTripletMcTruth(p1, p3, p2, Collision);
         break;
+      case kOrder231:
+        TripletHistManager.setTripletMcTruth(p2, p3, p1, Collision);
+        break;
+      case kOrder312:
+        TripletHistManager.setTripletMcTruth(p3, p1, p2, Collision);
+        break;
       case kOrder321:
         TripletHistManager.setTripletMcTruth(p3, p2, p1, Collision);
         break;
-      case kOrder123:
       default:
         TripletHistManager.setTripletMcTruth(p1, p2, p3, Collision);
         break;
@@ -729,7 +743,6 @@ bool processSameEventMcTruth(T1 const& SliceParticle1,
 }
 
 // process mixed event
-// (no cleaner here — ParticleCleaner only operates on MC info, see the mc overload below)
 template <modes::Mode mode,
           typename T1,
           typename T2,
@@ -843,8 +856,6 @@ void processMixedEvent(T1 const& Collisions,
 }
 
 // process mixed event in mc
-// NOTE: added `mcMothers`, `mcPartonicMothers` (missing in the original — mixed-event mc triplets
-// were never mc-cleaned via TcManager) plus `Cleaner1`, `Cleaner2`, `Cleaner3`
 template <modes::Mode mode,
           typename T1,
           typename T2,
