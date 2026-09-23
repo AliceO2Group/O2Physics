@@ -662,12 +662,11 @@ struct DndetaMFTPbPb {
       registryMC.add({"Tracks/hEtaVsNchGenRecEvt", "; #eta; mult gen w/ Rec evt", {HistType::kTH2F, {etaAxis, multFT0cAxis}}});
     }
     if (doprocessMcReassocDCA) {
-      registryMC.add({"Events/Centrality/EvtGenRecReassoc", ";status;centrality", {HistType::kTHnSparseF, {{4, 0.5, 4.5}, centralityAxis}}});
+      registryMC.add({"Events/Centrality/EvtGenRecReassoc", ";status;centrality", {HistType::kTHnSparseF, {{3, 0.5, 3.5}, centralityAxis}}});
       auto heff = registryMC.get<THnSparse>(HIST("Events/Centrality/EvtGenRecReassoc"));
-      heff->GetAxis(0)->SetBinLabel(1, "All generated");
-      heff->GetAxis(0)->SetBinLabel(2, "All reconstructed");
-      heff->GetAxis(0)->SetBinLabel(3, "Selected reconstructed");
-      heff->GetAxis(0)->SetBinLabel(4, "Remove split vertices");
+      heff->GetAxis(0)->SetBinLabel(1, "All reconstructed");
+      heff->GetAxis(0)->SetBinLabel(2, "Selected reconstructed");
+      heff->GetAxis(0)->SetBinLabel(3, "Remove split vertices");
 
       registryMC.add("Events/hCentBest", "; centrality", HistType::kTH1F, {centralityAxis});
       registryMC.add("Events/hGenMult", "Sel rec evt. vs generated mult; mult", HistType::kTH1F, {multAxis});
@@ -2677,23 +2676,7 @@ struct DndetaMFTPbPb {
                            MftBestTracksLabeled const& besttracks,
                            MftTracksLabeled const& /*tracks*/)
   {
-    float cGen = -1;
-    float crecMin = 105.f;
-    for (const auto& collision : collisions) {
-      if (isGoodEvent<false>(collision)) {
-        float c = getRecoCent(collision);
-        if (c < crecMin) {
-          crecMin = c;
-        }
-      }
-    }
-    if (cGen < 0) {
-      cGen = crecMin;
-    }
-
     createMCIds(mcCollisions, collisions, particles);
-
-    registryMC.fill(HIST("Events/Centrality/EvtGenRecReassoc"), 1., cGen);
 
     int nNoMC{0};
     for (const auto& collision : collisions) {
