@@ -2223,13 +2223,31 @@ struct MuonGlobalAlignment { // o2-linter: disable=name/workflow-file,name/struc
                 c.posX(), c.posY(), c.posZ(),
                 c.covXX(), c.covYY(), c.covZZ());
 
+      bool hasOppositeSignMuonPair = false;
+      std::vector<MuonPair> muonPairs;
+      getMuonPairs(collisionInfo, muonPairs);
+      for (auto [mchIndex1, mchIndex2] : muonPairs) {
+
+        int sign1 = muonTracks.rawIteratorAt(mchIndex1).sign();
+        int sign2 = muonTracks.rawIteratorAt(mchIndex2).sign();
+
+        // only consider opposite-sign pairs
+        if ((sign1 * sign2) < 0) {
+          hasOppositeSignMuonPair = true;
+          break;
+        }
+      }
+
       // loop over MCH tracks
       for (const auto& mchIndex : collisionInfo.mchTracks) {
         auto const& mchTrack = muonTracks.rawIteratorAt(mchIndex);
 
-        // only store good MCH tracks
-        if (!IsGoodMuon(mchTrack, c, cfgTrackChi2MchUp, 0.f, cfgPtMchLow, {cfgEtaMftLow, cfgEtaMftUp}, {cfgRabsLow, cfgRabsUp}, fSigmaPdcaUp)) {
-          continue;
+        // store all MCH tracks when the event contains a muon pair of opposite sign
+        if (!hasOppositeSignMuonPair) {
+          // only store good MCH tracks
+          if (!IsGoodMuon(mchTrack, c, cfgTrackChi2MchUp, 0.f, cfgPtMchLow, {cfgEtaMftLow, cfgEtaMftUp}, {cfgRabsLow, cfgRabsUp}, fSigmaPdcaUp)) {
+            continue;
+          }
         }
 
         fwdTable(collId,
@@ -2809,17 +2827,23 @@ struct MuonGlobalAlignment { // o2-linter: disable=name/workflow-file,name/struc
       std::vector<MuonPair> muonPairs;
       getMuonPairs(collisionInfo, muonPairs);
 
-      for (const auto& [mchIndex1, mchIndex2] : muonPairs) {
+      for (auto [mchIndex1, mchIndex2] : muonPairs) { // o2-linter: disable=const-ref-in-for-loop (values are modified in loop)
 
-        auto const& muonTrack1 = muonTracks.rawIteratorAt(mchIndex1);
-        auto const& muonTrack2 = muonTracks.rawIteratorAt(mchIndex2);
-        int sign1 = muonTrack1.sign();
-        int sign2 = muonTrack2.sign();
+        int sign1 = muonTracks.rawIteratorAt(mchIndex1).sign();
+        int sign2 = muonTracks.rawIteratorAt(mchIndex2).sign();
 
         // only consider opposite-sign pairs
         if ((sign1 * sign2) >= 0) {
           continue;
         }
+
+        // make sure that index #1 corresponds to the positive track
+        if (sign1 < 0) {
+          std::swap(mchIndex1, mchIndex2);
+        }
+
+        auto const& muonTrack1 = muonTracks.rawIteratorAt(mchIndex1);
+        auto const& muonTrack2 = muonTracks.rawIteratorAt(mchIndex2);
 
         bool isGoodMuon1 = IsGoodMuon(muonTrack1, collision, cfgTrackChi2MchUp, 0.f, cfgPtMchLow, {cfgEtaMchLow, cfgEtaMchUp}, {cfgRabsLow, cfgRabsUp}, fSigmaPdcaUp);
         bool isGoodMuon2 = IsGoodMuon(muonTrack2, collision, cfgTrackChi2MchUp, 0.f, cfgPtMchLow, {cfgEtaMchLow, cfgEtaMchUp}, {cfgRabsLow, cfgRabsUp}, fSigmaPdcaUp);
