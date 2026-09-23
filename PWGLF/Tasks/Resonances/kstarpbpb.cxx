@@ -158,7 +158,7 @@ struct Kstarpbpb {
     Configurable<bool> isDeepAngle{"isDeepAngle", false, "Deep Angle cut"};
     Configurable<double> cfgDeepAngle{"cfgDeepAngle", 0.04, "Deep Angle cut value"};
     Configurable<bool> ispTdepPID{"ispTdepPID", true, "pT dependent PID"};
-    Configurable<bool> isTOFOnly{"isTOFOnly", false, "use TOF only PID"};
+    Configurable<bool> isTOFOnly{"isTOFOnly", false, "TOF only PID"};
     Configurable<double> confRapidity{"confRapidity", 0.5, "Rapidity cut"};
     Configurable<bool> genacceptancecut{"genacceptancecut", true, "use acceptance cut for generated"};
     Configurable<bool> avoidsplitrackMC{"avoidsplitrackMC", false, "avoid split track in MC"};
