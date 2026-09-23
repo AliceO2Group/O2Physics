@@ -62,22 +62,22 @@ struct HfTaskCharmHadronsCharmFemtoDream {
   Produces<aod::FDHfCharmDstar> rowFemtoResultCharmDstar;
   Produces<aod::FDHfColl> rowFemtoResultColl;
 
-  Configurable<float> ptMinD0{"ptMinD0", 0.f, "Minimum D0 pT"};
-  Configurable<float> ptMaxD0{"ptMaxD0", 36.f, "Maximum D0 pT"};
-  Configurable<float> ptMinDstar{"ptMinDstar", 0.f, "Minimum Dstar pT"};
-  Configurable<float> ptMaxDstar{"ptMaxDstar", 36.f, "Maximum Dstar pT"};
-  Configurable<float> etaMax{"etaMax", 0.8f, "Maximum absolute candidate eta"};
-  Configurable<float> massMinD0{"massMinD0", 1.7f, "Minimum D0 mass (keep sidebands)"};
-  Configurable<float> massMaxD0{"massMaxD0", 2.0f, "Maximum D0 mass"};
-  Configurable<float> deltaMassMin{"deltaMassMin", MassPiPlus, "Minimum Dstar-D0 mass difference"};
-  Configurable<float> deltaMassMax{"deltaMassMax", 0.17f, "Maximum Dstar-D0 mass difference"};
-  Configurable<float> daughterMassMin{"daughterMassMin", 1.80f, "Minimum Dstar daughter D0 mass"};
-  Configurable<float> daughterMassMax{"daughterMassMax", 1.93f, "Maximum Dstar daughter D0 mass"};
+  Configurable<float> ptD0Min{"ptD0Min", 0.f, "Minimum D0 pT"};
+  Configurable<float> ptD0Max{"ptD0Max", 36.f, "Maximum D0 pT"};
+  Configurable<float> ptDstarMin{"ptDstarMin", 0.f, "Minimum Dstar pT"};
+  Configurable<float> ptDstarMax{"ptDstarMax", 36.f, "Maximum Dstar pT"};
+  Configurable<float> etaCandMax{"etaCandMax", 0.8f, "Maximum absolute candidate eta"};
+  Configurable<float> massD0Min{"massD0Min", 1.7f, "Minimum D0 mass (keep sidebands)"};
+  Configurable<float> massD0Max{"massD0Max", 2.0f, "Maximum D0 mass"};
+  Configurable<float> deltaMassDstarMin{"deltaMassDstarMin", MassPiPlus, "Minimum Dstar-D0 mass difference"};
+  Configurable<float> deltaMassDstarMax{"deltaMassDstarMax", 0.17f, "Maximum Dstar-D0 mass difference"};
+  Configurable<float> massD0DaughterMin{"massD0DaughterMin", 1.80f, "Minimum Dstar daughter D0 mass"};
+  Configurable<float> massD0DaughterMax{"massD0DaughterMax", 1.93f, "Maximum Dstar daughter D0 mass"};
   Configurable<bool> useMl{"useMl", false, "Require valid ML scores and apply score cuts"};
-  Configurable<float> d0BkgBdtMax{"d0BkgBdtMax", 1.f, "Maximum D0 background score"};
-  Configurable<float> d0PromptBdtMin{"d0PromptBdtMin", 0.f, "Minimum D0 prompt score"};
-  Configurable<float> dstarBkgBdtMax{"dstarBkgBdtMax", 1.f, "Maximum Dstar background score"};
-  Configurable<float> dstarPromptBdtMin{"dstarPromptBdtMin", 0.f, "Minimum Dstar prompt score"};
+  Configurable<float> bkgBdtD0Max{"bkgBdtD0Max", 1.f, "Maximum D0 background score"};
+  Configurable<float> promptBdtD0Min{"promptBdtD0Min", 0.f, "Minimum D0 prompt score"};
+  Configurable<float> bkgBdtDstarMax{"bkgBdtDstarMax", 1.f, "Maximum Dstar background score"};
+  Configurable<float> promptBdtDstarMin{"promptBdtDstarMin", 0.f, "Minimum Dstar prompt score"};
   Configurable<int> charmHadCandSel{"charmHadCandSel", 1, "Minimum reduced charm candidate selection flag"};
   struct : ConfigurableGroup {
     std::string prefix = "eventSel";
@@ -107,8 +107,8 @@ struct HfTaskCharmHadronsCharmFemtoDream {
   Preslice<FilteredCharmCand2Prongs> perCollisionD0 = aod::femtodreamparticle::fdCollisionId;
   Preslice<FilteredCharmCandDstars> perCollisionDstar = aod::femtodreamparticle::fdCollisionId;
 
-  Partition<FilteredCharmCand2Prongs> partitionCharmHadron2Prong = ifnode(useMl, aod::fdhf::bdtBkg <= d0BkgBdtMax && aod::fdhf::bdtPrompt >= d0PromptBdtMin, Node{LiteralNode{true}});
-  Partition<FilteredCharmCandDstars> partitionCharmHadronDstar = ifnode(useMl, aod::fdhf::bdtBkg <= dstarBkgBdtMax && aod::fdhf::bdtPrompt >= dstarPromptBdtMin, Node{LiteralNode{true}});
+  Partition<FilteredCharmCand2Prongs> partitionCharmHadron2Prong = ifnode(useMl, aod::fdhf::bdtBkg <= bkgBdtD0Max && aod::fdhf::bdtPrompt >= promptBdtD0Min, Node{LiteralNode{true}});
+  Partition<FilteredCharmCandDstars> partitionCharmHadronDstar = ifnode(useMl, aod::fdhf::bdtBkg <= bkgBdtDstarMax && aod::fdhf::bdtPrompt >= promptBdtDstarMin, Node{LiteralNode{true}});
 
   ConfigurableAxis mixingBinMult{"mixingBinMult", {VARIABLE_WIDTH, 0.f, 20.f, 60.f, 200.f}, "Mixing bins - multiplicity"};
   ConfigurableAxis mixingBinMultPercentile{"mixingBinMultPercentile", {VARIABLE_WIDTH, 0.f, 100.f}, "Mixing bins - multiplicity percentile"};
@@ -124,17 +124,17 @@ struct HfTaskCharmHadronsCharmFemtoDream {
     if (doprocessD0D0 == doprocessD0Dstar) {
       LOGP(fatal, "Enable exactly one charm-charm analysis process");
     }
-    if (mixSetting.mixingDepth < 0 || mixSetting.mixingBinPolicy < 0 || mixSetting.mixingBinPolicy > MixingBinPolicyMax || ptMinD0 < 0 || ptMinD0 >= ptMaxD0 || ptMinDstar < 0 || ptMinDstar >= ptMaxDstar || etaMax <= 0 || massMinD0 >= massMaxD0 || deltaMassMin >= deltaMassMax || daughterMassMin >= daughterMassMax || charmHadCandSel < 1 || eventSel.multMin > eventSel.multMax || eventSel.multPercentileMin > eventSel.multPercentileMax) {
+    if (mixSetting.mixingDepth < 0 || mixSetting.mixingBinPolicy < 0 || mixSetting.mixingBinPolicy > MixingBinPolicyMax || ptD0Min < 0 || ptD0Min >= ptD0Max || ptDstarMin < 0 || ptDstarMin >= ptDstarMax || etaCandMax <= 0 || massD0Min >= massD0Max || deltaMassDstarMin >= deltaMassDstarMax || massD0DaughterMin >= massD0DaughterMax || charmHadCandSel < 1 || eventSel.multMin > eventSel.multMax || eventSel.multPercentileMin > eventSel.multPercentileMax) {
       LOGP(fatal, "Invalid charm-charm selection or mixing configuration");
     }
     colBinningMult = {{mixingBinVztx, mixingBinMult}, true};
     colBinningMultPercentile = {{mixingBinVztx, mixingBinMultPercentile}, true};
     colBinningMultMultPercentile = {{mixingBinVztx, mixingBinMult, mixingBinMultPercentile}, true};
     const AxisSpec kstar{400, 0., 2., "k* (GeV/c)"};
-    const AxisSpec massD0{300, massMinD0.value, massMaxD0.value, "M(Kpi) (GeV/c2)"};
-    const AxisSpec deltaMass{310, deltaMassMin.value, deltaMassMax.value, "Delta M (GeV/c2)"};
-    const AxisSpec pt{72, ptMinD0.value, ptMaxD0.value, "D0 pT (GeV/c)"};
-    const AxisSpec ptStar{72, ptMinDstar.value, ptMaxDstar.value, "Dstar pT (GeV/c)"};
+    const AxisSpec massD0{300, massD0Min.value, massD0Max.value, "M(Kpi) (GeV/c2)"};
+    const AxisSpec deltaMass{310, deltaMassDstarMin.value, deltaMassDstarMax.value, "Delta M (GeV/c2)"};
+    const AxisSpec pt{72, ptD0Min.value, ptD0Max.value, "D0 pT (GeV/c)"};
+    const AxisSpec ptStar{72, ptDstarMin.value, ptDstarMax.value, "Dstar pT (GeV/c)"};
     const AxisSpec mult{mixingBinMult, "NTracksPV"};
     const AxisSpec channel{static_cast<int>(NPairChannels), -0.5, static_cast<double>(NPairChannels) - 0.5, "0=D0D0 LS,1=D0barD0bar LS,2=D0D0bar US,3=D0D*+ LS,4=D0barD*- LS,5=D0D*- US,6=D0barD*+ US"};
     registry.add("SE/D0D0", "Same event", kTHnSparseF, {kstar, massD0, massD0, pt, pt, mult, channel});
@@ -206,20 +206,20 @@ struct HfTaskCharmHadronsCharmFemtoDream {
   template <bool IsDstar, bool FillQa = false, typename Row>
   bool select(Row const& row, float& mass)
   {
-    if (std::abs(row.charge()) != 1 || !std::isfinite(row.pt()) || !std::isfinite(row.eta()) || !std::isfinite(row.phi()) || std::abs(row.eta()) >= etaMax || row.pt() < (IsDstar ? ptMinDstar.value : ptMinD0.value) || row.pt() >= (IsDstar ? ptMaxDstar.value : ptMaxD0.value)) {
+    if (std::abs(row.charge()) != 1 || !std::isfinite(row.pt()) || !std::isfinite(row.eta()) || !std::isfinite(row.phi()) || std::abs(row.eta()) >= etaCandMax || row.pt() < (IsDstar ? ptDstarMin.value : ptD0Min.value) || row.pt() >= (IsDstar ? ptDstarMax.value : ptD0Max.value)) {
       return false;
     }
     const std::array<double, 2> masses = row.charge() > 0 ? std::array{MassPiPlus, MassKPlus} : std::array{MassKPlus, MassPiPlus};
     if constexpr (IsDstar) {
       const float daughterMass = row.mDaughD0(masses);
-      if (!std::isfinite(daughterMass) || daughterMass < daughterMassMin || daughterMass >= daughterMassMax) {
+      if (!std::isfinite(daughterMass) || daughterMass < massD0DaughterMin || daughterMass >= massD0DaughterMax) {
         return false;
       }
       mass = row.m(std::array{masses[0], masses[1], MassPiPlus}) - daughterMass;
     } else {
       mass = row.m(masses);
     }
-    if (!std::isfinite(mass) || mass < (IsDstar ? deltaMassMin.value : massMinD0.value) || mass >= (IsDstar ? deltaMassMax.value : massMaxD0.value)) {
+    if (!std::isfinite(mass) || mass < (IsDstar ? deltaMassDstarMin.value : massD0Min.value) || mass >= (IsDstar ? deltaMassDstarMax.value : massD0Max.value)) {
       return false;
     }
     if constexpr (IsDstar) {
