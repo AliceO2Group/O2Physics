@@ -2067,7 +2067,7 @@ class PairMcParticleMcParticleBuilder
   bool processSameEvent(T1 const& col, T2 const& mcParticles, T3 const& mcMothers, T4 const& mcPartonicMothers, T5& partition1, T6& partition2, T7& cache)
   {
     if (mSameSpecies) {
-      auto mcParticleSlice = partition1->sliceByCached(o2::aod::femtomcparticle::fMcColId, col.globalIndex(), cache);
+      auto mcParticleSlice = partition1->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, col.globalIndex(), cache);
 
       if (mcParticleSlice.size() < nLimitPartitionIdenticalParticles) {
         return false;
@@ -2080,8 +2080,8 @@ class PairMcParticleMcParticleBuilder
       return pairprocesshelpers::processSameEvent<mode>(mcParticleSlice, mcParticles, mcMothers, mcPartonicMothers, col, mMcParticleHistManager1, mPairHistManagerSe, mMcParticleCleaner1, mCprSe, mPcSe, pairOrder);
     }
 
-    auto mcParticleSlice1 = partition1->sliceByCached(o2::aod::femtomcparticle::fMcColId, col.globalIndex(), cache);
-    auto mcParticleSlice2 = partition2->sliceByCached(o2::aod::femtomcparticle::fMcColId, col.globalIndex(), cache);
+    auto mcParticleSlice1 = partition1->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, col.globalIndex(), cache);
+    auto mcParticleSlice2 = partition2->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, col.globalIndex(), cache);
     if (mcParticleSlice1.size() < nLimitPartitionParticles || mcParticleSlice2.size() < nLimitPartitionParticles) {
       return false;
     }

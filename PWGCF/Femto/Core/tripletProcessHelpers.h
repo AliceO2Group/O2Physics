@@ -1005,8 +1005,8 @@ void processMixedEventMcTruth(T1 const& McCollisions,
   int windowSizeRaw = 0;
   int windowSizeEffective = 0;
 
-  std::optional<decltype(Partition1->sliceByCached(o2::aod::femtomcparticle::fMcColId, 0, cache))> sliceParticle1;
-  std::optional<decltype(Partition2->sliceByCached(o2::aod::femtomcparticle::fMcColId, 0, cache))> sliceParticle2;
+  std::optional<decltype(Partition1->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, 0, cache))> sliceParticle1;
+  std::optional<decltype(Partition2->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, 0, cache))> sliceParticle2;
 
   for (auto const& [collision1, collision2, collision3] : o2::soa::selfCombinations(policy, depth, -1, McCollisions, McCollisions, McCollisions)) {
 
@@ -1019,18 +1019,18 @@ void processMixedEventMcTruth(T1 const& McCollisions,
       windowSizeEffective = 0;
       lastCollisionIndex1 = collision1.globalIndex();
       lastCollisionIndex2 = -1; // force sliceParticle2 to refresh below
-      sliceParticle1.emplace(Partition1->sliceByCached(o2::aod::femtomcparticle::fMcColId, collision1.globalIndex(), cache));
+      sliceParticle1.emplace(Partition1->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, collision1.globalIndex(), cache));
     }
 
     // inner sub-window
     if (collision2.globalIndex() != lastCollisionIndex2) {
       lastCollisionIndex2 = collision2.globalIndex();
-      sliceParticle2.emplace(Partition2->sliceByCached(o2::aod::femtomcparticle::fMcColId, collision2.globalIndex(), cache));
+      sliceParticle2.emplace(Partition2->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, collision2.globalIndex(), cache));
     }
 
     ++windowSizeRaw;
 
-    auto sliceParticle3 = Partition3->sliceByCached(o2::aod::femtomcparticle::fMcColId, collision3.globalIndex(), cache);
+    auto sliceParticle3 = Partition3->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, collision3.globalIndex(), cache);
 
     TripletHistManager.resetTrackedParticlesPerEvent();
 

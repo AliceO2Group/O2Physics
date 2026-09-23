@@ -76,7 +76,7 @@ struct FemtoPairMcParticleMcParticle {
 
   o2::framework::Partition<FemtoMcParticles> mcParticlesPartition2 = MAKE_MC_PARTICLE_PARTITION(confMcParticleSelection2);
 
-  o2::framework::Preslice<FemtoMcParticles> perColParticles = o2::aod::femtomcparticle::fMcColId;
+  o2::framework::PresliceUnsorted<FemtoMcParticles> perColParticles = o2::aod::femtomcparticle::fMcColId;
 
   // setup pairs
   pairhistmanager::ConfPairBinning confPairBinning;
