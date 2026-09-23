@@ -54,31 +54,6 @@ using namespace o2::soa;
 
 struct doublephimeson {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-<<<<<<< HEAD
-  Configurable<int> strategyPID1{"strategyPID1", 0, "PID strategy 1"};
-  Configurable<int> strategyPID2{"strategyPID2", 0, "PID strategy 2"};
-  Configurable<float> daughterDeltaR{"daughterDeltaR", 0.0, "delta R of daughter"};
-  Configurable<float> minPhiMass1{"minPhiMass1", 1.01, "Minimum phi mass1"};
-  Configurable<float> maxPhiMass1{"maxPhiMass1", 1.03, "Maximum phi mass1"};
-  Configurable<float> minPhiPt{"minPhiPt", 0, "Minimum phi Pt"};
-  Configurable<float> maxPhiPt{"maxPhiPt", 100, "Maximum phi Pt"};
-  Configurable<float> minPhiMass2{"minPhiMass2", 1.01, "Minimum phi mass2"};
-  Configurable<float> maxPhiMass2{"maxPhiMass2", 1.03, "Maximum phi mass2"};
-  Configurable<float> minExoticPt{"minExoticPt", 6.0, "Minimum Exotic Pt"};
-  Configurable<float> minExoticMass{"minExoticMass", 2.0, "Minimum Exotic mass"};
-  Configurable<float> maxExoticMass{"maxExoticMass", 3.6, "Maximum Exotic mass"};
-  Configurable<bool> additionalEvsel{"additionalEvsel", true, "Additional event selection"};
-  Configurable<bool> isDeep{"isDeep", true, "Store deep angle"};
-  Configurable<float> cutMinNsigmaTPC{"cutMinNsigmaTPC", -2.5, "nsigma cut TPC"};
-  Configurable<float> cutNsigmaTPC{"cutNsigmaTPC", 2.5, "nsigma cut TPC"};
-  Configurable<float> cutNsigmaTOF{"cutNsigmaTOF", 2.5, "nsigma cut TOF"};
-  Configurable<float> momTOFCut{"momTOFCut", 1.8, "minimum pT cut for madnatory TOF"};
-  Configurable<float> maxKaonPt{"maxKaonPt", 100.0, "maximum kaon pt cut"};
-  Configurable<float> cfgCrossPhiLow{"cfgCrossPhiLow", 1.01, "Lower edge of phi mass window for cross-pairing (ghost) veto"};
-  Configurable<float> cfgCrossPhiHigh{"cfgCrossPhiHigh", 1.03, "Upper edge of phi mass window for cross-pairing (ghost) veto"};
-  Configurable<bool> useParametrized{"useParametrized", false, "Use pT dependent mass peak and width"};
-  Configurable<bool> useCrossPairRejection{"useCrossPairRejection", true, "Use cross pair phi signal compatibilaty"};
-=======
   struct : ConfigurableGroup {
     Configurable<int> strategyPID1{"strategyPID1", 0, "PID strategy 1"};
     Configurable<int> strategyPID2{"strategyPID2", 0, "PID strategy 2"};
@@ -107,7 +82,6 @@ struct doublephimeson {
     Configurable<bool> applyMomentumShift{"applyMomentumShift", false, "Apply momentum shift to kaons to check effect on phi mass peak"};
   } config;
 
->>>>>>> e91d2ba11 (fixed compiler warnings)
   Configurable<bool> cfgFillDataDrivenPhiResolution{
     "cfgFillDataDrivenPhiResolution", true,
     "Fill the single-phi daughter-kinematics sparse used for data-driven X resolution and inter-dataset momentum-scale calibration"};
@@ -403,9 +377,6 @@ struct doublephimeson {
                 thnAxisNumPhi,
                 axisDoublePhiPID});
 
-<<<<<<< HEAD
-    histos.add("SEMassUnlike_VertexVars", "SEMassUnlike_VertexVars", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisInvMassDeltaPhi, thnAxisInvMassPhi, thnAxisInvMassPhi, thnAxisDecayLength, thnAxisFitChi2Ndf, thnAxisRmsDcaSig});
-=======
     histos.add("SEMassPhiPhi", "SEMassPhiPhi", HistType::kTHnSparseF,
                {
                  thnAxisInvMass,        // M(phi-phi)
@@ -446,7 +417,6 @@ struct doublephimeson {
     histos.add("NEvents", "NEvents", HistType::kTH1F, {{2, 0, 2}});
 
     histos.add("SEMassUnlike_VertexVars", "SEMassUnlike_VertexVars", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisInvMassDeltaPhi, thnAxisInvMassPhi, thnAxisInvMassPhi, thnAxisDecayLength, thnAxisFitChi2Ndf, thnAxisRmsDcaSig});
->>>>>>> e91d2ba11 (fixed compiler warnings)
 
     // Single-phi calibration input. Axis order:
     //   0 m(KK), 1 pT(K+), 2 pT(K-), 3 eta(K+), 4 eta(K-),
@@ -561,17 +531,10 @@ struct doublephimeson {
       if (!hasTOF) {
         // TPC-only branch
         if (ptcand < 0.5f) {
-<<<<<<< HEAD
-          return std::abs(nsigmaTPC) < cutNsigmaTPC;
-        } else {
-          return nsigmaTPC > -2.0f &&
-                 nsigmaTPC < cutNsigmaTPC;
-=======
           return std::abs(nsigmaTPC) < config.cutNsigmaTPC;
         } else {
           return nsigmaTPC > -2.0f &&
                  nsigmaTPC < config.cutNsigmaTPC;
->>>>>>> e91d2ba11 (fixed compiler warnings)
         }
 
       } else {
@@ -1424,11 +1387,7 @@ struct doublephimeson {
     }
     int phimult = 0;
     for (auto const& phitrackd1 : phitracks) {
-<<<<<<< HEAD
-      if (phitrackd1.phiMass() < minPhiMass1 || phitrackd1.phiMass() > maxPhiMass1) {
-=======
       if (phitrackd1.phiMass() < config.minPhiMass1 || phitrackd1.phiMass() > config.maxPhiMass1) {
->>>>>>> e91d2ba11 (fixed compiler warnings)
         continue;
       }
       auto kaonplusd1pt = TMath::Sqrt(phitrackd1.phid1Px() * phitrackd1.phid1Px() + phitrackd1.phid1Py() * phitrackd1.phid1Py());
@@ -1564,11 +1523,7 @@ struct doublephimeson {
     int phimult = 0;
 
     for (auto const& phitrackd1 : phitracks) {
-<<<<<<< HEAD
-      if (phitrackd1.phiMass() < minPhiMass1 || phitrackd1.phiMass() > maxPhiMass1) {
-=======
       if (phitrackd1.phiMass() < config.minPhiMass1 || phitrackd1.phiMass() > config.maxPhiMass1) {
->>>>>>> e91d2ba11 (fixed compiler warnings)
         continue;
       }
       auto kaonplusd1pt = TMath::Sqrt(phitrackd1.phid1Px() * phitrackd1.phid1Px() + phitrackd1.phid1Py() * phitrackd1.phid1Py());
@@ -2252,14 +2207,10 @@ struct doublephimeson {
       // Apply the same daughter/PID requirements before filling the calibration
       // sparse.  The phi-pT requirement for that sparse is evaluated below from
       // the RAW daughters, so it remains independent of any optional correction.
-<<<<<<< HEAD
-      if (kpluspt > maxKaonPt || kminuspt > maxKaonPt) {
-=======
       if (kpluspt > config.maxKaonPt || kminuspt > config.maxKaonPt) {
         continue;
       }
       if (!selectionPID(t.phid1TPC(), t.phid1TOF(), t.phid1TOFHit(), config.strategyPID1, kpluspt)) {
->>>>>>> e91d2ba11 (fixed compiler warnings)
         continue;
       }
       if (!selectionPID(t.phid2TPC(), t.phid2TOF(), t.phid2TOFHit(), config.strategyPID2, kminuspt)) {
@@ -2292,35 +2243,6 @@ struct doublephimeson {
         continue;
       }
       if (phi1Mass < config.minPhiMass1 || phi1Mass > config.maxPhiMass1) {
-        continue;
-      }
-
-      if (cfgFillDataDrivenPhiResolution) {
-        // IMPORTANT: always store the RAW reconstructed daughter momenta here,
-        // independent of cfgApplyKaonMomentumCorrection.  This keeps the
-        // resolution calibration data-driven and also allows two data sets to
-        // be compared later to infer their relative momentum-scale shift
-        // without circularly applying a pre-existing correction first.
-        TLorentzVector kplusRaw;
-        TLorentzVector kminusRaw;
-        kplusRaw.SetXYZM(t.phid1Px(), t.phid1Py(), t.phid1Pz(), mKPDG);
-        kminusRaw.SetXYZM(t.phid2Px(), t.phid2Py(), t.phid2Pz(), mKPDG);
-        const TLorentzVector phiForResolution = kplusRaw + kminusRaw;
-        const double dPhiKK = TVector2::Phi_mpi_pi(kplusRaw.Phi() - kminusRaw.Phi());
-        if (phiForResolution.Pt() >= minPhiPt && phiForResolution.Pt() <= maxPhiPt) {
-          histos.fill(HIST("PhiMassResolutionDataDriven"),
-                      phiForResolution.M(),
-                      kplusRaw.Pt(), kminusRaw.Pt(),
-                      kplusRaw.Eta(), kminusRaw.Eta(),
-                      dPhiKK, phiForResolution.Pt());
-        }
-      }
-
-      // From here onward keep the original signal-phi definition unchanged.
-      if (phi1.Pt() < minPhiPt || phi1.Pt() > maxPhiPt) {
-        continue;
-      }
-      if (phi1Mass < minPhiMass1 || phi1Mass > maxPhiMass1) {
         continue;
       }
 
@@ -2462,11 +2384,7 @@ struct doublephimeson {
       buildPhiAndKaons(t1, phi1, k1p, k1m);
       const double phi1Mass = cfgApplyKaonMomentumCorrection ? phi1.M() : t1.phiMass();
 
-<<<<<<< HEAD
-      if (phi1Mass < minPhiMass1 || phi1Mass > maxPhiMass1) {
-=======
       if (phi1Mass < config.minPhiMass1 || phi1Mass > config.maxPhiMass1) {
->>>>>>> e91d2ba11 (fixed compiler warnings)
         continue;
       }
       if (phi1.Pt() < config.minPhiPt || phi1.Pt() > config.maxPhiPt) {
@@ -2501,11 +2419,7 @@ struct doublephimeson {
         buildPhiAndKaons(t2, phi2, k2p, k2m);
         const double phi2Mass = cfgApplyKaonMomentumCorrection ? phi2.M() : t2.phiMass();
 
-<<<<<<< HEAD
-        if (phi2Mass < minPhiMass1 || phi2Mass > maxPhiMass1) {
-=======
         if (phi2Mass < config.minPhiMass1 || phi2Mass > config.maxPhiMass1) {
->>>>>>> e91d2ba11 (fixed compiler warnings)
           continue;
         }
         if (phi2.Pt() < config.minPhiPt || phi2.Pt() > config.maxPhiPt) {
@@ -2604,11 +2518,7 @@ struct doublephimeson {
       const double minDR = minDRV[i];
       const double combine4kpid = pid4KV[i];
       const double nkaonTOF = nTOFV[i];
-<<<<<<< HEAD
-      if (!useParametrized) {
-=======
       if (!config.useParametrized) {
->>>>>>> e91d2ba11 (fixed compiler warnings)
         dMNominal = deltaMPhiNominal(p1.M(), p2.M());
       } else {
         dMNominal = getDeltaMPhi(p1.M(), p1.Pt(), p2.M(), p2.Pt());
@@ -2627,11 +2537,7 @@ struct doublephimeson {
       const double apt = phiPtAsymmetry(p1, p2);
       // const double absCosTheta = absCosThetaStar(p1, p2);
 
-<<<<<<< HEAD
-      if (pairPt > minExoticPt) {
-=======
       if (pairPt > config.minExoticPt) {
->>>>>>> e91d2ba11 (fixed compiler warnings)
         histos.fill(HIST("hPtCorrelation"), pairPt, ptcorr);
         // histos.fill(HIST("hMassCent"), p1.M(), p2.M(), collision.centrality());
         histos.fill(HIST("SEMassUnlike_AllVars"),
