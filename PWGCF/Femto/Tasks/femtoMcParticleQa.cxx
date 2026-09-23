@@ -59,7 +59,7 @@ struct FemtoMcParticleQa {
   mcparticlehistmanager::McParticleHistManager<mcparticlehistmanager::PrefixMcParticle1> mcParticleHistManager1;
 
   o2::framework::Partition<FemtoMcParticles> mcParticlesPartition1 = MAKE_MC_PARTICLE_PARTITION(confMcParticleSelection1);
-  o2::framework::Preslice<FemtoMcParticles> perColReco = o2::aod::femtomcparticle::fMcColId;
+  o2::framework::PresliceUnsorted<FemtoMcParticles> perColReco = o2::aod::femtomcparticle::fMcColId;
 
   particlecleaner::ConfMcParticleCleaner1 confMcParticleCleaner1;
   particlecleaner::ParticleCleaner mcParticleCleaner;
@@ -83,7 +83,7 @@ struct FemtoMcParticleQa {
 
   void process(FilteredFemtoMcCollision const& col, FemtoMcParticles const& /*mcParticles*/, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
-    auto mcParticleSlice = mcParticlesPartition1->sliceByCached(o2::aod::femtomcparticle::fMcColId, col.globalIndex(), cache);
+    auto mcParticleSlice = mcParticlesPartition1->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, col.globalIndex(), cache);
     if (mcParticleSlice.size() == 0) {
       return;
     }
