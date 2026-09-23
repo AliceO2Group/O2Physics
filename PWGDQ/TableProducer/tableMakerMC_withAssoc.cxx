@@ -1427,6 +1427,8 @@ struct TableMakerMC {
               if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
                 if (fConfigVariousOptions.fUseML.value) {
                   skimBestMuonMatchesML(muons, mftTracks, mftCovs, collision);
+                } else {
+                  skimBestMuonMatches(muons);
                 }
               } else {
                 skimBestMuonMatches(muons);

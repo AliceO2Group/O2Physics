@@ -716,7 +716,7 @@ struct AnalysisTrackSelection {
     if (addTrackCutsStr != "") {
       std::vector<AnalysisCut*> addTrackCuts = o2::aod::dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
       for (auto const& t : addTrackCuts) {
-        fTrackCuts.push_back(static_cast<AnalysisCompositeCut*>(t));
+        fTrackCuts.push_back(dynamic_cast<AnalysisCompositeCut*>(t));
       }
     }
 
@@ -951,9 +951,7 @@ struct AnalysisMuonSelection {
   o2::framework::Configurable<bool> fConfigPublishAmbiguity{"cfgPublishAmbiguity", true, "If true, publish ambiguity table and fill QA histograms"};
 
   o2::framework::Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  o2::framework::Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   o2::framework::Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
-  o2::framework::Configurable<std::string> fConfigGeoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
 
   o2::framework::Service<o2::ccdb::BasicCCDBManager> fCCDB{};
 
@@ -985,7 +983,7 @@ struct AnalysisMuonSelection {
     if (addCutsStr != "") {
       std::vector<AnalysisCut*> addCuts = o2::aod::dqcuts::GetCutsFromJSON(addCutsStr.Data());
       for (auto const& t : addCuts) {
-        fMuonCuts.push_back(static_cast<AnalysisCompositeCut*>(t));
+        fMuonCuts.push_back(dynamic_cast<AnalysisCompositeCut*>(t));
       }
     }
 
@@ -1015,9 +1013,6 @@ struct AnalysisMuonSelection {
     fCCDB->setCaching(true);
     fCCDB->setLocalObjectValidityChecking();
     fCCDB->setCreatedNotAfter(fConfigNoLaterThan.value);
-    if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      fCCDB->get<TGeoManager>(fConfigGeoPath);
-    }
   }
 
   template <uint32_t TEventFillMap, uint32_t TMuonFillMap, typename TEvents, typename TMuons>
@@ -1027,13 +1022,6 @@ struct AnalysisMuonSelection {
     fNAssocsOutOfBunch.clear();
 
     if (events.size() > 0 && fCurrentRun != events.begin().runNumber()) {
-      auto grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, events.begin().timestamp());
-      if (grpmag != nullptr) {
-        o2::base::Propagator::initFieldFromGRP(grpmag);
-        VarManager::SetMagneticField(grpmag->getNominalL3Field());
-      } else {
-        LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", events.begin().timestamp());
-      }
       fCurrentRun = events.begin().runNumber();
     }
 
@@ -1384,7 +1372,6 @@ struct AnalysisSameEventPairing {
     o2::framework::Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
     o2::framework::Configurable<std::string> grpMagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
     o2::framework::Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
-    o2::framework::Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
     o2::framework::Configurable<std::string> GrpLhcIfPath{"grplhcif", "GLO/Config/GRPLHCIF", "Path on the CCDB for the GRPLHCIF object"};
     o2::framework::Configurable<std::string> efficiencyPath{"effHistPath", "Users/z/zhxiong/efficiency", "Path on the CCDB for the efficiency histograms"};
     o2::framework::Configurable<std::string> flowPath{"flowPath", "Users/y/yiping/FlowResolution", "Path to the flow resolution object"};
@@ -1392,14 +1379,10 @@ struct AnalysisSameEventPairing {
   } fConfigCCDB;
 
   struct : o2::framework::ConfigurableGroup {
-    o2::framework::Configurable<bool> useRemoteField{"cfgUseRemoteField", false, "Chose whether to fetch the magnetic field from ccdb or set it manually"};
-    o2::framework::Configurable<float> magField{"cfgMagField", 5.0f, "Manually set magnetic field"};
     o2::framework::Configurable<bool> flatTables{"cfgFlatTables", false, "Produce a single flat tables with all relevant information of the pairs and single tracks"};
     o2::framework::Configurable<bool> polarTables{"cfgPolarTables", false, "Produce tables with dilepton polarization information"};
     o2::framework::Configurable<bool> useKFVertexing{"cfgUseKFVertexing", false, "Use KF Particle for secondary vertex reconstruction (DCAFitter is used by default)"};
     o2::framework::Configurable<bool> useAbsDCA{"cfgUseAbsDCA", false, "Use absolute DCA minimization instead of chi^2 minimization in secondary vertexing"};
-    o2::framework::Configurable<bool> propToPCA{"cfgPropToPCA", false, "Propagate tracks to secondary vertex"};
-    o2::framework::Configurable<bool> corrFullGeo{"cfgCorrFullGeo", false, "Use full geometry to correct for MCS effects in track propagation"};
     o2::framework::Configurable<bool> noCorr{"cfgNoCorrFwdProp", false, "Do not correct for MCS effects in track propagation"};
     o2::framework::Configurable<std::string> collisionSystem{"syst", "pp", "Collision system, pp or PbPb"};
     o2::framework::Configurable<float> centerMassEnergy{"energy", 13600, "Center of mass energy in GeV"};
@@ -1469,7 +1452,7 @@ struct AnalysisSameEventPairing {
     fEnableBarrelHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmed") || context.mOptions.get<bool>("processBarrelOnlyWithCollSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCov") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCovWithMultExtra") || context.mOptions.get<bool>("processBarrelOnlyWithQvectorCentrSkimmedNoCov") || context.mOptions.get<bool>("processBarrelOnlyWithQvectorCentrSkimmed");
     fEnableBarrelMixingHistos = context.mOptions.get<bool>("processMixingAllSkimmed") || context.mOptions.get<bool>("processMixingBarrelSkimmed") || context.mOptions.get<bool>("processMixingBarrelSkimmedFlow") || context.mOptions.get<bool>("processMixingBarrelWithQvectorCentrSkimmedNoCov");
     fEnableBarrelMixingHistos |= fConfigRunMixingAcrossTFs;
-    fEnableMuonHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processMuonOnlySkimmed") || context.mOptions.get<bool>("processMuonOnlySkimmedMultExtra") || context.mOptions.get<bool>("processMuonOnlySkimmedFlow");
+    fEnableMuonHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processMuonOnlySkimmed") || context.mOptions.get<bool>("processMuonOnlySkimmedMultExtra") || context.mOptions.get<bool>("processMuonOnlySkimmedFlow") || context.mOptions.get<bool>("processMuonOnlyVertexingSkimmed");
     fEnableMuonMixingHistos = context.mOptions.get<bool>("processMixingAllSkimmed") || context.mOptions.get<bool>("processMixingMuonSkimmed") || context.mOptions.get<bool>("processMixingMuonSkimmedFlow");
     fEnableBarrelMuonHistos = context.mOptions.get<bool>("processElectronMuonSkimmed");
     fEnableBarrelMuonMixingHistos = context.mOptions.get<bool>("processMixingElectronMuonSkimmed");
@@ -1749,10 +1732,6 @@ struct AnalysisSameEventPairing {
 
     if (fConfigOptions.noCorr) {
       VarManager::SetupFwdDCAFitterNoCorr();
-    } else if (fConfigOptions.corrFullGeo || (fConfigOptions.useKFVertexing && fConfigOptions.propToPCA)) {
-      if (!o2::base::GeometryManager::isGeometryLoaded()) {
-        fCCDB->get<TGeoManager>(fConfigCCDB.geoPath);
-      }
     } else {
       fLUT = o2::base::MatLayerCylSet::rectifyPtrFromFile(fCCDB->get<o2::base::MatLayerCylSet>(fConfigCCDB.lutPath));
       VarManager::SetupMatLUTFwdDCAFitter(fLUT);
@@ -1830,35 +1809,22 @@ struct AnalysisSameEventPairing {
   void initParamsFromCCDB(uint64_t timestamp, int runNumber, bool withTwoProngFitter = true)
   {
 
-    if (fConfigOptions.useRemoteField.value) {
-      auto grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(fConfigCCDB.grpMagPath, timestamp);
-      float magField = 0.0;
-      if (grpmag != nullptr) {
-        magField = grpmag->getNominalL3Field();
+    auto grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(fConfigCCDB.grpMagPath, timestamp);
+    float magField = 0.0;
+    if (grpmag != nullptr) {
+      magField = grpmag->getNominalL3Field();
+    } else {
+      LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", timestamp);
+    }
+    if (withTwoProngFitter) {
+      if (fConfigOptions.useKFVertexing.value) {
+        VarManager::SetupTwoProngKFParticle(magField);
       } else {
-        LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", timestamp);
-      }
-      if (withTwoProngFitter) {
-        if (fConfigOptions.useKFVertexing.value) {
-          VarManager::SetupTwoProngKFParticle(magField);
-        } else {
-          VarManager::SetupTwoProngDCAFitter(magField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fConfigOptions.useAbsDCA.value); // TODO: get these parameters from Configurables
-          VarManager::SetupTwoProngFwdDCAFitter(magField, true, 200.0f, 1.0e-3f, 0.9f, fConfigOptions.useAbsDCA.value);
-        }
-      } else {
-        VarManager::SetupTwoProngDCAFitter(magField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fConfigOptions.useAbsDCA.value); // needed because take in varmanager Bz from fgFitterTwoProngBarrel for PhiV calculations
+        VarManager::SetupTwoProngDCAFitter(magField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fConfigOptions.useAbsDCA.value); // TODO: get these parameters from Configurables
+        VarManager::SetupTwoProngFwdDCAFitter(magField, true, 200.0f, 1.0e-3f, 0.9f, fConfigOptions.useAbsDCA.value);
       }
     } else {
-      if (withTwoProngFitter) {
-        if (fConfigOptions.useKFVertexing.value) {
-          VarManager::SetupTwoProngKFParticle(fConfigOptions.magField.value);
-        } else {
-          VarManager::SetupTwoProngDCAFitter(fConfigOptions.magField.value, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fConfigOptions.useAbsDCA.value); // TODO: get these parameters from Configurables
-          VarManager::SetupTwoProngFwdDCAFitter(fConfigOptions.magField.value, true, 200.0f, 1.0e-3f, 0.9f, fConfigOptions.useAbsDCA.value);
-        }
-      } else {
-        VarManager::SetupTwoProngDCAFitter(fConfigOptions.magField.value, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fConfigOptions.useAbsDCA.value); // needed because take in varmanager Bz from fgFitterTwoProngBarrel for PhiV calculations
-      }
+      VarManager::SetupTwoProngDCAFitter(magField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fConfigOptions.useAbsDCA.value); // needed because take in varmanager Bz from fgFitterTwoProngBarrel for PhiV calculations
     }
 
     std::map<std::string, std::string> metadataRCT, header;
@@ -1939,7 +1905,7 @@ struct AnalysisSameEventPairing {
     }*/
 
     auto twoTrackFilter = static_cast<uint32_t>(0);
-    uint32_t dileptonMcDecision = static_cast<uint32_t>(0); // placeholder, copy of the dqEfficiency.cxx one
+    auto dileptonMcDecision = static_cast<uint32_t>(0); // placeholder, copy of the dqEfficiency.cxx one
     int sign1 = 0;
     int sign2 = 0;
     // Reserve capacity for the output tables to avoid repeated reallocations
@@ -2072,7 +2038,7 @@ struct AnalysisSameEventPairing {
             VarManager::FillPairCollision<TPairType, TTrackFillMap>(event, t1, t2);
           }
           if constexpr (TTwoProngFitter) {
-            VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, fConfigOptions.propToPCA);
+            VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2);
           }
           if constexpr (eventHasQvector) {
             VarManager::FillPairVn<TPairType>(t1, t2);
@@ -2200,7 +2166,7 @@ struct AnalysisSameEventPairing {
             VarManager::FillPairCollision<TPairType, TTrackFillMap>(event, t1, t2);
           }
           if constexpr (TTwoProngFitter) {
-            VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, fConfigOptions.propToPCA);
+            VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2);
           }
           if constexpr (eventHasQvector) {
             VarManager::FillPairVn<TPairType>(t1, t2);
@@ -2216,49 +2182,47 @@ struct AnalysisSameEventPairing {
             dileptonInfoList(event.collisionId(), event.posX(), event.posY(), event.posZ());
           }
 
-          if constexpr (TTwoProngFitter) {
-            dimuonsExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingLz], VarManager::fgValues[VarManager::kVertexingLxy]);
-            if (fConfigOptions.flatTables.value) {
-              dimuonAllList(event.posX(), event.posY(), event.posZ(), event.numContrib(),
-                            event.selection_raw(), evSel,
-                            -999., -999., -999.,
-                            VarManager::fgValues[VarManager::kMass],
-                            false,
-                            VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), VarManager::fgValues[VarManager::kVertexingChi2PCA],
-                            VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingTauzErr],
-                            VarManager::fgValues[VarManager::kVertexingTauxy], VarManager::fgValues[VarManager::kVertexingTauxyErr],
-                            VarManager::fgValues[VarManager::kCosPointingAngle],
-                            VarManager::fgValues[VarManager::kPt1], VarManager::fgValues[VarManager::kEta1], VarManager::fgValues[VarManager::kPhi1], t1.sign(),
-                            VarManager::fgValues[VarManager::kPt2], VarManager::fgValues[VarManager::kEta2], VarManager::fgValues[VarManager::kPhi2], t2.sign(),
-                            t1.fwdDcaX(), t1.fwdDcaY(), t2.fwdDcaX(), t2.fwdDcaY(),
-                            0., 0.,
-                            t1.chi2MatchMCHMID(), t2.chi2MatchMCHMID(),
-                            t1.chi2MatchMCHMFT(), t2.chi2MatchMCHMFT(),
-                            t1.chi2(), t2.chi2(),
-                            -999., -999., -999., -999.,
-                            -999., -999., -999., -999.,
-                            -999., -999., -999., -999.,
-                            -999., -999., -999., -999.,
-                            (twoTrackFilter & (static_cast<uint32_t>(1) << 28)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 29)), (twoTrackFilter & (static_cast<uint32_t>(1) << 30)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31)),
-                            true, true,
-                            VarManager::fgValues[VarManager::kU2Q2], VarManager::fgValues[VarManager::kU3Q3],
-                            VarManager::fgValues[VarManager::kR2EP_AB], VarManager::fgValues[VarManager::kR2SP_AB], VarManager::fgValues[VarManager::kCentFT0C],
-                            VarManager::fgValues[VarManager::kCos2DeltaPhi], VarManager::fgValues[VarManager::kCos3DeltaPhi],
-                            VarManager::fgValues[VarManager::kCORR2POI], VarManager::fgValues[VarManager::kCORR4POI], VarManager::fgValues[VarManager::kM01POI], VarManager::fgValues[VarManager::kM0111POI], VarManager::fgValues[VarManager::kMultDimuons],
-                            VarManager::fgValues[VarManager::kVertexingPz], VarManager::fgValues[VarManager::kVertexingSV]);
-            }
-            if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedMuonCollInfo) > 0) {
-              if constexpr (eventHasQvector || eventHasQvectorCentr) {
-                dileptonFlowList(event.collisionId(), VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kCentFT0C],
-                                 VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), isFirst,
-                                 VarManager::fgValues[VarManager::kU2Q2], VarManager::fgValues[VarManager::kR2SP_AB], VarManager::fgValues[VarManager::kR2SP_AC], VarManager::fgValues[VarManager::kR2SP_BC],
-                                 VarManager::fgValues[VarManager::kU3Q3], VarManager::fgValues[VarManager::kR3SP],
-                                 VarManager::fgValues[VarManager::kCos2DeltaPhi], VarManager::fgValues[VarManager::kR2EP_AB], VarManager::fgValues[VarManager::kR2EP_AC], VarManager::fgValues[VarManager::kR2EP_BC],
-                                 VarManager::fgValues[VarManager::kCos3DeltaPhi], VarManager::fgValues[VarManager::kR3EP],
-                                 VarManager::fgValues[VarManager::kCORR2POI], VarManager::fgValues[VarManager::kCORR4POI], VarManager::fgValues[VarManager::kM01POI], VarManager::fgValues[VarManager::kM0111POI],
-                                 VarManager::fgValues[VarManager::kCORR2REF], VarManager::fgValues[VarManager::kCORR4REF], VarManager::fgValues[VarManager::kM11REF], VarManager::fgValues[VarManager::kM1111REF],
-                                 VarManager::fgValues[VarManager::kMultDimuons], VarManager::fgValues[VarManager::kMultA]);
-              }
+          dimuonsExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingLz], VarManager::fgValues[VarManager::kVertexingLxy]);
+          if (fConfigOptions.flatTables.value) {
+            dimuonAllList(event.posX(), event.posY(), event.posZ(), event.numContrib(),
+                          event.selection_raw(), evSel,
+                          -999., -999., -999.,
+                          VarManager::fgValues[VarManager::kMass],
+                          false,
+                          VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), VarManager::fgValues[VarManager::kVertexingChi2PCA],
+                          VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingTauzErr],
+                          VarManager::fgValues[VarManager::kVertexingTauxy], VarManager::fgValues[VarManager::kVertexingTauxyErr],
+                          VarManager::fgValues[VarManager::kCosPointingAngle],
+                          VarManager::fgValues[VarManager::kPt1], VarManager::fgValues[VarManager::kEta1], VarManager::fgValues[VarManager::kPhi1], t1.sign(),
+                          VarManager::fgValues[VarManager::kPt2], VarManager::fgValues[VarManager::kEta2], VarManager::fgValues[VarManager::kPhi2], t2.sign(),
+                          t1.fwdDcaX(), t1.fwdDcaY(), t2.fwdDcaX(), t2.fwdDcaY(),
+                          0., 0.,
+                          t1.chi2MatchMCHMID(), t2.chi2MatchMCHMID(),
+                          t1.chi2MatchMCHMFT(), t2.chi2MatchMCHMFT(),
+                          t1.chi2(), t2.chi2(),
+                          -999., -999., -999., -999.,
+                          -999., -999., -999., -999.,
+                          -999., -999., -999., -999.,
+                          -999., -999., -999., -999.,
+                          (twoTrackFilter & (static_cast<uint32_t>(1) << 28)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 29)), (twoTrackFilter & (static_cast<uint32_t>(1) << 30)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31)),
+                          true, true,
+                          VarManager::fgValues[VarManager::kU2Q2], VarManager::fgValues[VarManager::kU3Q3],
+                          VarManager::fgValues[VarManager::kR2EP_AB], VarManager::fgValues[VarManager::kR2SP_AB], VarManager::fgValues[VarManager::kCentFT0C],
+                          VarManager::fgValues[VarManager::kCos2DeltaPhi], VarManager::fgValues[VarManager::kCos3DeltaPhi],
+                          VarManager::fgValues[VarManager::kCORR2POI], VarManager::fgValues[VarManager::kCORR4POI], VarManager::fgValues[VarManager::kM01POI], VarManager::fgValues[VarManager::kM0111POI], VarManager::fgValues[VarManager::kMultDimuons],
+                          VarManager::fgValues[VarManager::kVertexingPz], VarManager::fgValues[VarManager::kVertexingSV]);
+          }
+          if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedMuonCollInfo) > 0) {
+            if constexpr (eventHasQvector || eventHasQvectorCentr) {
+              dileptonFlowList(event.collisionId(), VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kCentFT0C],
+                               VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), isFirst,
+                               VarManager::fgValues[VarManager::kU2Q2], VarManager::fgValues[VarManager::kR2SP_AB], VarManager::fgValues[VarManager::kR2SP_AC], VarManager::fgValues[VarManager::kR2SP_BC],
+                               VarManager::fgValues[VarManager::kU3Q3], VarManager::fgValues[VarManager::kR3SP],
+                               VarManager::fgValues[VarManager::kCos2DeltaPhi], VarManager::fgValues[VarManager::kR2EP_AB], VarManager::fgValues[VarManager::kR2EP_AC], VarManager::fgValues[VarManager::kR2EP_BC],
+                               VarManager::fgValues[VarManager::kCos3DeltaPhi], VarManager::fgValues[VarManager::kR3EP],
+                               VarManager::fgValues[VarManager::kCORR2POI], VarManager::fgValues[VarManager::kCORR4POI], VarManager::fgValues[VarManager::kM01POI], VarManager::fgValues[VarManager::kM0111POI],
+                               VarManager::fgValues[VarManager::kCORR2REF], VarManager::fgValues[VarManager::kCORR4REF], VarManager::fgValues[VarManager::kM11REF], VarManager::fgValues[VarManager::kM1111REF],
+                               VarManager::fgValues[VarManager::kMultDimuons], VarManager::fgValues[VarManager::kMultA]);
             }
           }
           if (t1.sign() != t2.sign()) {
@@ -2309,7 +2273,9 @@ struct AnalysisSameEventPairing {
                                       VarManager::fgValues[VarManager::kVtxX], VarManager::fgValues[VarManager::kVtxY], VarManager::fgValues[VarManager::kVtxZ], VarManager::fgValues[VarManager::kDCAxy1], VarManager::fgValues[VarManager::kDCAz1], VarManager::fgValues[VarManager::kITSclusterMap1], VarManager::fgValues[VarManager::kTPCnSigmaEl1], VarManager::fgValues[VarManager::kDCAxy2], VarManager::fgValues[VarManager::kDCAz2], VarManager::fgValues[VarManager::kITSclusterMap2], VarManager::fgValues[VarManager::kTPCnSigmaEl2],
                                       isAmbiInBunch, isAmbiOutOfBunch, VarManager::fgValues[VarManager::kMultFT0A], VarManager::fgValues[VarManager::kMultFT0C], VarManager::fgValues[VarManager::kCentFT0M], VarManager::fgValues[VarManager::kVtxNcontribReal]);
               if constexpr (TPairType == VarManager::kDecayToMuMu) {
-                fHistMan->FillHistClass(histNames[icut][0].Data(), dqtablereader_helpers::varValues());
+                if (fConfigQA) {
+                  fHistMan->FillHistClass(histNames[icut][0].Data(), dqtablereader_helpers::varValues());
+                }
                 if (useMiniTree.fConfigMiniTree) {
                   auto t1 = a1.template reducedmuon_as<TTracks>();
                   auto t2 = a2.template reducedmuon_as<TTracks>();
@@ -2329,7 +2295,7 @@ struct AnalysisSameEventPairing {
                     }
                   }
                 }
-                if (fConfigAmbiguousMuonHistograms) {
+                if (fConfigQA && fConfigAmbiguousMuonHistograms) {
                   if (isAmbiInBunch) {
                     fHistMan->FillHistClass(histNames[icut][3 + histIdxOffset].Data(), dqtablereader_helpers::varValues());
                   }
@@ -2342,12 +2308,14 @@ struct AnalysisSameEventPairing {
                 }
               }
               if constexpr (TPairType == VarManager::kDecayToEE) {
-                fHistMan->FillHistClass(histNames[icut][0].Data(), dqtablereader_helpers::varValues());
-                if (isAmbiExtra) {
-                  fHistMan->FillHistClass(histNames[icut][3].Data(), dqtablereader_helpers::varValues());
+                if (fConfigQA) {
+                  fHistMan->FillHistClass(histNames[icut][0].Data(), dqtablereader_helpers::varValues());
+                  if (isAmbiExtra) {
+                    fHistMan->FillHistClass(histNames[icut][3].Data(), dqtablereader_helpers::varValues());
+                  }
                 }
               }
-            } else {
+            } else if (fConfigQA) {
               if (sign1 > 0) {
                 if constexpr (TPairType == VarManager::kDecayToMuMu) {
                   fHistMan->FillHistClass(histNames[icut][1].Data(), dqtablereader_helpers::varValues());
@@ -2392,21 +2360,23 @@ struct AnalysisSameEventPairing {
                 }
               }
             }
-            for (unsigned int iPairCut = 0; iPairCut < fPairCuts.size(); iPairCut++) {
-              AnalysisCompositeCut cut = fPairCuts.at(iPairCut);
-              if (!(cut.IsSelected(dqtablereader_helpers::varValues()))) { // apply pair cuts
-                continue;
-              }
-              if (sign1 * sign2 < 0) {
-                fHistMan->FillHistClass(histNames[ncuts + icut * ncuts + iPairCut][0].Data(), dqtablereader_helpers::varValues());
-              } else {
-                if (sign1 > 0) {
-                  fHistMan->FillHistClass(histNames[ncuts + icut * ncuts + iPairCut][1].Data(), dqtablereader_helpers::varValues());
-                } else {
-                  fHistMan->FillHistClass(histNames[ncuts + icut * ncuts + iPairCut][2].Data(), dqtablereader_helpers::varValues());
+            if (fConfigQA) {
+              for (unsigned int iPairCut = 0; iPairCut < fPairCuts.size(); iPairCut++) {
+                AnalysisCompositeCut cut = fPairCuts.at(iPairCut);
+                if (!(cut.IsSelected(dqtablereader_helpers::varValues()))) { // apply pair cuts
+                  continue;
                 }
-              }
-            } // end loop (pair cuts)
+                if (sign1 * sign2 < 0) {
+                  fHistMan->FillHistClass(histNames[ncuts + icut * ncuts + iPairCut][0].Data(), dqtablereader_helpers::varValues());
+                } else {
+                  if (sign1 > 0) {
+                    fHistMan->FillHistClass(histNames[ncuts + icut * ncuts + iPairCut][1].Data(), dqtablereader_helpers::varValues());
+                  } else {
+                    fHistMan->FillHistClass(histNames[ncuts + icut * ncuts + iPairCut][2].Data(), dqtablereader_helpers::varValues());
+                  }
+                }
+              } // end loop (pair cuts)
+            }
           }
         } // end loop (cuts)
 
@@ -2462,18 +2432,22 @@ struct AnalysisSameEventPairing {
                   if (fConfigNRotations.value == 1) {
                     VarManager::FillPairRotation<TPairType, TTrackFillMap>(t1, t2, fConfigNRotations.value);
                     if constexpr (TPairType == VarManager::kDecayToEE) {
-                      fHistMan->FillHistClass(Form("PairsBarrelTRPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
-                      if (isAmbiExtra) {
-                        fHistMan->FillHistClass(Form("PairsBarrelTRPM_ambiguousextra_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                      if (fConfigQA) {
+                        fHistMan->FillHistClass(Form("PairsBarrelTRPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                        if (isAmbiExtra) {
+                          fHistMan->FillHistClass(Form("PairsBarrelTRPM_ambiguousextra_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                        }
                       }
                     }
                   } else if (fConfigNRotations.value == 3) {
                     for (int irot = 1; irot <= fConfigNRotations.value; irot++) {
                       VarManager::FillPairRotation<TPairType, TTrackFillMap>(t1, t2, irot);
                       if constexpr (TPairType == VarManager::kDecayToEE) {
-                        fHistMan->FillHistClass(Form("PairsBarrelTRPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
-                        if (isAmbiExtra) {
-                          fHistMan->FillHistClass(Form("PairsBarrelTRPM_ambiguousextra_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                        if (fConfigQA) {
+                          fHistMan->FillHistClass(Form("PairsBarrelTRPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                          if (isAmbiExtra) {
+                            fHistMan->FillHistClass(Form("PairsBarrelTRPM_ambiguousextra_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                          }
                         }
                       }
                     }
@@ -2532,7 +2506,9 @@ struct AnalysisSameEventPairing {
               VarManager::FillPairMEAcrossTFs(t1, t2);
               for (int icut = 0; icut < ncuts; icut++) {
                 if (mixedTwoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
-                  fHistMan->FillHistClass(Form("PairsBarrelMEPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                  if (fConfigQA) {
+                    fHistMan->FillHistClass(Form("PairsBarrelMEPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                  }
                 }
               }
               if (fConfigTRPairs) {
@@ -2560,7 +2536,9 @@ struct AnalysisSameEventPairing {
               VarManager::FillPairMEAcrossTFs(t1, t2);
               for (int icut = 0; icut < ncuts; icut++) {
                 if (mixedTwoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
-                  fHistMan->FillHistClass(Form("PairsBarrelMEPP_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                  if (fConfigQA) {
+                    fHistMan->FillHistClass(Form("PairsBarrelMEPP_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                  }
                 }
               }
             }
@@ -2576,7 +2554,9 @@ struct AnalysisSameEventPairing {
               VarManager::FillPairMEAcrossTFs(t1, t2);
               for (int icut = 0; icut < ncuts; icut++) {
                 if (mixedTwoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
-                  fHistMan->FillHistClass(Form("PairsBarrelMEPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                  if (fConfigQA) {
+                    fHistMan->FillHistClass(Form("PairsBarrelMEPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                  }
                 }
               }
               if (fConfigTRPairs) {
@@ -2603,7 +2583,9 @@ struct AnalysisSameEventPairing {
               VarManager::FillPairMEAcrossTFs(t1, t2);
               for (int icut = 0; icut < ncuts; icut++) {
                 if (mixedTwoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
-                  fHistMan->FillHistClass(Form("PairsBarrelMEMM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                  if (fConfigQA) {
+                    fHistMan->FillHistClass(Form("PairsBarrelMEMM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                  }
                 }
               }
             }
@@ -2724,60 +2706,62 @@ struct AnalysisSameEventPairing {
           isAmbiInBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 28)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 29));
           isAmbiOutOfBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 30)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31));
           isUnambiguous = !((twoTrackFilter & (static_cast<uint32_t>(1) << 28)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 29)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 30)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31)));
-          if (pairSign == 0) {
-            if constexpr (TPairType == VarManager::kDecayToMuMu) {
-              fHistMan->FillHistClass(histNames[icut][3].Data(), dqtablereader_helpers::varValues());
-              if (fConfigAmbiguousMuonHistograms) {
-                if (isAmbiInBunch) {
-                  fHistMan->FillHistClass(histNames[icut][15].Data(), dqtablereader_helpers::varValues());
-                }
-                if (isAmbiOutOfBunch) {
-                  fHistMan->FillHistClass(histNames[icut][18].Data(), dqtablereader_helpers::varValues());
-                }
-                if (isUnambiguous) {
-                  fHistMan->FillHistClass(histNames[icut][21].Data(), dqtablereader_helpers::varValues());
-                }
-              }
-            }
-            if constexpr (TPairType == VarManager::kDecayToEE) {
-              fHistMan->FillHistClass(Form("PairsBarrelMEPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
-            }
-          } else {
-            if (pairSign > 0) {
+          if (fConfigQA) {
+            if (pairSign == 0) {
               if constexpr (TPairType == VarManager::kDecayToMuMu) {
-                fHistMan->FillHistClass(histNames[icut][4].Data(), dqtablereader_helpers::varValues());
+                fHistMan->FillHistClass(histNames[icut][3].Data(), dqtablereader_helpers::varValues());
                 if (fConfigAmbiguousMuonHistograms) {
                   if (isAmbiInBunch) {
-                    fHistMan->FillHistClass(histNames[icut][16].Data(), dqtablereader_helpers::varValues());
+                    fHistMan->FillHistClass(histNames[icut][15].Data(), dqtablereader_helpers::varValues());
                   }
                   if (isAmbiOutOfBunch) {
-                    fHistMan->FillHistClass(histNames[icut][19].Data(), dqtablereader_helpers::varValues());
+                    fHistMan->FillHistClass(histNames[icut][18].Data(), dqtablereader_helpers::varValues());
                   }
                   if (isUnambiguous) {
-                    fHistMan->FillHistClass(histNames[icut][22].Data(), dqtablereader_helpers::varValues());
+                    fHistMan->FillHistClass(histNames[icut][21].Data(), dqtablereader_helpers::varValues());
                   }
                 }
               }
               if constexpr (TPairType == VarManager::kDecayToEE) {
-                fHistMan->FillHistClass(Form("PairsBarrelMEPP_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                fHistMan->FillHistClass(Form("PairsBarrelMEPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
               }
             } else {
-              if constexpr (TPairType == VarManager::kDecayToMuMu) {
-                fHistMan->FillHistClass(histNames[icut][5].Data(), dqtablereader_helpers::varValues());
-                if (fConfigAmbiguousMuonHistograms) {
-                  if (isAmbiInBunch) {
-                    fHistMan->FillHistClass(histNames[icut][17].Data(), dqtablereader_helpers::varValues());
-                  }
-                  if (isAmbiOutOfBunch) {
-                    fHistMan->FillHistClass(histNames[icut][20].Data(), dqtablereader_helpers::varValues());
-                  }
-                  if (isUnambiguous) {
-                    fHistMan->FillHistClass(histNames[icut][23].Data(), dqtablereader_helpers::varValues());
+              if (pairSign > 0) {
+                if constexpr (TPairType == VarManager::kDecayToMuMu) {
+                  fHistMan->FillHistClass(histNames[icut][4].Data(), dqtablereader_helpers::varValues());
+                  if (fConfigAmbiguousMuonHistograms) {
+                    if (isAmbiInBunch) {
+                      fHistMan->FillHistClass(histNames[icut][16].Data(), dqtablereader_helpers::varValues());
+                    }
+                    if (isAmbiOutOfBunch) {
+                      fHistMan->FillHistClass(histNames[icut][19].Data(), dqtablereader_helpers::varValues());
+                    }
+                    if (isUnambiguous) {
+                      fHistMan->FillHistClass(histNames[icut][22].Data(), dqtablereader_helpers::varValues());
+                    }
                   }
                 }
-              }
-              if constexpr (TPairType == VarManager::kDecayToEE) {
-                fHistMan->FillHistClass(Form("PairsBarrelMEMM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                if constexpr (TPairType == VarManager::kDecayToEE) {
+                  fHistMan->FillHistClass(Form("PairsBarrelMEPP_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                }
+              } else {
+                if constexpr (TPairType == VarManager::kDecayToMuMu) {
+                  fHistMan->FillHistClass(histNames[icut][5].Data(), dqtablereader_helpers::varValues());
+                  if (fConfigAmbiguousMuonHistograms) {
+                    if (isAmbiInBunch) {
+                      fHistMan->FillHistClass(histNames[icut][17].Data(), dqtablereader_helpers::varValues());
+                    }
+                    if (isAmbiOutOfBunch) {
+                      fHistMan->FillHistClass(histNames[icut][20].Data(), dqtablereader_helpers::varValues());
+                    }
+                    if (isUnambiguous) {
+                      fHistMan->FillHistClass(histNames[icut][23].Data(), dqtablereader_helpers::varValues());
+                    }
+                  }
+                }
+                if constexpr (TPairType == VarManager::kDecayToEE) {
+                  fHistMan->FillHistClass(Form("PairsBarrelMEMM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                }
               }
             }
           }
@@ -2935,13 +2919,15 @@ struct AnalysisSameEventPairing {
               if (itHist == histNames.end()) {
                 continue;
               }
-              if (sign1 * sign2 < 0) { // Opposite Sign
-                fHistMan->FillHistClass(itHist->second[0].Data(), dqtablereader_helpers::varValues());
-              } else { // Like Sign
-                if (sign1 > 0) {
-                  fHistMan->FillHistClass(itHist->second[1].Data(), dqtablereader_helpers::varValues());
-                } else {
-                  fHistMan->FillHistClass(itHist->second[2].Data(), dqtablereader_helpers::varValues());
+              if (fConfigQA) {
+                if (sign1 * sign2 < 0) { // Opposite Sign
+                  fHistMan->FillHistClass(itHist->second[0].Data(), dqtablereader_helpers::varValues());
+                } else { // Like Sign
+                  if (sign1 > 0) {
+                    fHistMan->FillHistClass(itHist->second[1].Data(), dqtablereader_helpers::varValues());
+                  } else {
+                    fHistMan->FillHistClass(itHist->second[2].Data(), dqtablereader_helpers::varValues());
+                  }
                 }
               }
             } // end pair cut loop
@@ -3004,13 +2990,15 @@ struct AnalysisSameEventPairing {
               if (itHist == histNames.end() || itHist->second.size() < 6) {
                 continue;
               }
-              if (sign1 * sign2 < 0) {
-                fHistMan->FillHistClass(itHist->second[3].Data(), dqtablereader_helpers::varValues());
-              } else {
-                if (sign1 > 0) {
-                  fHistMan->FillHistClass(itHist->second[4].Data(), dqtablereader_helpers::varValues());
+              if (fConfigQA) {
+                if (sign1 * sign2 < 0) {
+                  fHistMan->FillHistClass(itHist->second[3].Data(), dqtablereader_helpers::varValues());
                 } else {
-                  fHistMan->FillHistClass(itHist->second[5].Data(), dqtablereader_helpers::varValues());
+                  if (sign1 > 0) {
+                    fHistMan->FillHistClass(itHist->second[4].Data(), dqtablereader_helpers::varValues());
+                  } else {
+                    fHistMan->FillHistClass(itHist->second[5].Data(), dqtablereader_helpers::varValues());
+                  }
                 }
               }
             } // end pair cut loop
@@ -3108,19 +3096,25 @@ struct AnalysisSameEventPairing {
   void processMuonOnlySkimmed(MyEventsVtxCovSelected const& events,
                               o2::soa::Join<o2::aod::ReducedMuonsAssoc, o2::aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
   {
-    runSameEventPairing<true, VarManager::kDecayToMuMu, gkEventFillMapWithCov, gkMuonFillMapWithCov>(events, muonAssocsPerCollision, muonAssocs, muons);
+    runSameEventPairing<false, VarManager::kDecayToMuMu, gkEventFillMapWithCov, gkMuonFillMapWithCov>(events, muonAssocsPerCollision, muonAssocs, muons);
   }
 
   void processMuonOnlySkimmedMultExtra(MyEventsVtxCovSelectedMultExtra const& events,
                                        o2::soa::Join<o2::aod::ReducedMuonsAssoc, o2::aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
   {
-    runSameEventPairing<true, VarManager::kDecayToMuMu, gkEventFillMapWithMultExtra, gkMuonFillMapWithCov>(events, muonAssocsPerCollision, muonAssocs, muons);
+    runSameEventPairing<false, VarManager::kDecayToMuMu, gkEventFillMapWithMultExtra, gkMuonFillMapWithCov>(events, muonAssocsPerCollision, muonAssocs, muons);
   }
 
   void processMuonOnlySkimmedFlow(MyEventsQvectorCentrSelected const& events,
                                   o2::soa::Join<o2::aod::ReducedMuonsAssoc, o2::aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
   {
-    runSameEventPairing<true, VarManager::kDecayToMuMu, gkEventFillMapWithMultExtraWithQVector, gkMuonFillMapWithCov>(events, muonAssocsPerCollision, muonAssocs, muons);
+    runSameEventPairing<false, VarManager::kDecayToMuMu, gkEventFillMapWithMultExtraWithQVector, gkMuonFillMapWithCov>(events, muonAssocsPerCollision, muonAssocs, muons);
+  }
+
+  void processMuonOnlyVertexingSkimmed(MyEventsVtxCovSelected const& events,
+                                       o2::soa::Join<o2::aod::ReducedMuonsAssoc, o2::aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
+  {
+    runSameEventPairing<true, VarManager::kDecayToMuMu, gkEventFillMapWithCov, gkMuonFillMapWithCov>(events, muonAssocsPerCollision, muonAssocs, muons);
   }
 
   void processElectronMuonSkimmed(MyEventsVtxCovSelected const& events,
@@ -3191,6 +3185,7 @@ struct AnalysisSameEventPairing {
   PROCESS_SWITCH(AnalysisSameEventPairing, processMuonOnlySkimmed, "Run muon only pairing, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMuonOnlySkimmedMultExtra, "Run muon only pairing, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMuonOnlySkimmedFlow, "Run muon only pairing, with skimmed tracks and flow", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processMuonOnlyVertexingSkimmed, "Run muon only pairing with two-prong vertexing, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processElectronMuonSkimmed, "Run electron-muon pairing, with skimmed tracks/muons", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMixingAllSkimmed, "Run all types of mixed pairing, with skimmed tracks/muons", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMixingBarrelSkimmed, "Run barrel type mixing pairing, with skimmed tracks", false);
@@ -3233,12 +3228,9 @@ struct AnalysisAsymmetricPairing {
 
   o2::framework::Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   o2::framework::Configurable<std::string> fConfigGRPMagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  o2::framework::Configurable<bool> fConfigUseRemoteField{"cfgUseRemoteField", false, "Choose whether to fetch the magnetic field from ccdb or set it manually"};
-  o2::framework::Configurable<float> fConfigMagField{"cfgMagField", 5.0f, "Manually set magnetic field"};
 
   o2::framework::Configurable<bool> fConfigUseKFVertexing{"cfgUseKFVertexing", false, "Use KF Particle for secondary vertex reconstruction (DCAFitter is used by default)"};
   o2::framework::Configurable<bool> fConfigUseAbsDCA{"cfgUseAbsDCA", false, "Use absolute DCA minimization instead of chi^2 minimization in secondary vertexing"};
-  o2::framework::Configurable<bool> fConfigPropToPCA{"cfgPropToPCA", false, "Propagate tracks to secondary vertex"};
   o2::framework::Configurable<std::string> fConfigLutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   o2::framework::Configurable<bool> fConfigFetchInteractionRate{"cfgFetchInteractionRate", false, "Fetch event-wise interaction rate from the CCDB"};
   o2::framework::Configurable<std::string> fConfigIRSource{"cfgIRSource", "ZNC hadronic", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
@@ -3310,7 +3302,7 @@ struct AnalysisAsymmetricPairing {
     if (addPairCutsStr != "") {
       std::vector<AnalysisCut*> addPairCuts = o2::aod::dqcuts::GetCutsFromJSON(addPairCutsStr.Data());
       for (auto const& t : addPairCuts) {
-        fPairCuts.push_back(static_cast<AnalysisCompositeCut*>(t));
+        fPairCuts.push_back(dynamic_cast<AnalysisCompositeCut*>(t));
         cutNamesStr += Form(",%s", t->GetName());
       }
     }
@@ -3516,40 +3508,24 @@ struct AnalysisAsymmetricPairing {
 
   void initParamsFromCCDB(uint64_t timestamp, bool isTriplets)
   {
-    if (fConfigUseRemoteField.value) {
-      auto grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(fConfigGRPMagPath, timestamp);
-      float magField = 0.0;
-      if (grpmag != nullptr) {
-        magField = grpmag->getNominalL3Field();
+    auto grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(fConfigGRPMagPath, timestamp);
+    float magField = 0.0;
+    if (grpmag != nullptr) {
+      magField = grpmag->getNominalL3Field();
+    } else {
+      LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", timestamp);
+    }
+    if (isTriplets) {
+      if (fConfigUseKFVertexing.value) {
+        VarManager::SetupThreeProngKFParticle(magField);
       } else {
-        LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", timestamp);
-      }
-      if (isTriplets) {
-        if (fConfigUseKFVertexing.value) {
-          VarManager::SetupThreeProngKFParticle(magField);
-        } else {
-          VarManager::SetupThreeProngDCAFitter(magField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fConfigUseAbsDCA.value);
-        }
-      } else {
-        if (fConfigUseKFVertexing.value) {
-          VarManager::SetupTwoProngKFParticle(magField);
-        } else {
-          VarManager::SetupTwoProngDCAFitter(magField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fConfigUseAbsDCA.value); // TODO: get these parameters from Configurables
-        }
+        VarManager::SetupThreeProngDCAFitter(magField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fConfigUseAbsDCA.value);
       }
     } else {
-      if (isTriplets) {
-        if (fConfigUseKFVertexing.value) {
-          VarManager::SetupThreeProngKFParticle(fConfigMagField.value);
-        } else {
-          VarManager::SetupThreeProngDCAFitter(fConfigMagField.value, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fConfigUseAbsDCA.value);
-        }
+      if (fConfigUseKFVertexing.value) {
+        VarManager::SetupTwoProngKFParticle(magField);
       } else {
-        if (fConfigUseKFVertexing.value) {
-          VarManager::SetupTwoProngKFParticle(fConfigMagField.value);
-        } else {
-          VarManager::SetupTwoProngDCAFitter(fConfigMagField.value, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fConfigUseAbsDCA.value); // TODO: get these parameters from Configurables
-        }
+        VarManager::SetupTwoProngDCAFitter(magField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fConfigUseAbsDCA.value); // TODO: get these parameters from Configurables
       }
     }
   }
@@ -3616,8 +3592,8 @@ struct AnalysisAsymmetricPairing {
       for (auto const& [a1, a2] : combinations(o2::soa::CombinationsFullIndexPolicy(groupedLegAAssocs, groupedLegBAssocs))) {
 
         auto twoTrackFilter = static_cast<uint32_t>(0);
-        uint32_t twoTrackCommonFilter = static_cast<uint32_t>(0);
-        uint32_t pairFilter = static_cast<uint32_t>(0);
+        auto twoTrackCommonFilter = static_cast<uint32_t>(0);
+        auto pairFilter = static_cast<uint32_t>(0);
         for (int icut = 0; icut < fNLegCuts; ++icut) {
           // Find leg pair definitions both candidates participate in
           if ((a1.isBarrelSelected_raw() & fConstructedLegAFilterMasksMap[icut]) && (a2.isBarrelSelected_raw() & fConstructedLegBFilterMasksMap[icut])) {
@@ -3669,7 +3645,7 @@ struct AnalysisAsymmetricPairing {
 
         VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
         if constexpr (TTwoProngFitter) {
-          VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, fConfigPropToPCA);
+          VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2);
         }
 
         // Fill histograms
@@ -3816,8 +3792,8 @@ struct AnalysisAsymmetricPairing {
   template <bool TThreeProngFitter, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TTrackAssoc, typename TTracks, typename TEvent>
   void readTriplet(TTrackAssoc const& a1, TTrackAssoc const& a2, TTrackAssoc const& a3, TTracks const& /*tracks*/, TEvent const& event, VarManager::PairCandidateType tripletType)
   {
-    uint32_t threeTrackFilter = static_cast<uint32_t>(0);
-    uint32_t threeTrackCommonFilter = static_cast<uint32_t>(0);
+    auto threeTrackFilter = static_cast<uint32_t>(0);
+    auto threeTrackCommonFilter = static_cast<uint32_t>(0);
     for (int icut = 0; icut < fNLegCuts; ++icut) {
       // Find out which leg cut combinations the triplet passes
       if ((a1.isBarrelSelected_raw() & fConstructedLegAFilterMasksMap[icut]) && (a2.isBarrelSelected_raw() & fConstructedLegBFilterMasksMap[icut]) && (a3.isBarrelSelected_raw() & fConstructedLegCFilterMasksMap[icut])) {
@@ -3983,9 +3959,7 @@ struct AnalysisDileptonTrack {
   o2::framework::Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
   o2::framework::Configurable<int> fConfigMixingDepth{"cfgMixingDepth", 5, "Event mixing pool depth"};
 
-  o2::framework::Configurable<bool> fConfigUseRemoteField{"cfgUseRemoteField", false, "Chose whether to fetch the magnetic field from ccdb or set it manually"};
   o2::framework::Configurable<std::string> fConfigGRPmagPath{"cfgGrpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  o2::framework::Configurable<float> fConfigMagField{"cfgMagField", 5.0f, "Manually set magnetic field"};
 
   o2::framework::Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   o2::framework::Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
@@ -4274,31 +4248,23 @@ struct AnalysisDileptonTrack {
   // init parameters from CCDB
   void initParamsFromCCDB(uint64_t timestamp)
   {
-    if (fConfigUseRemoteField.value) {
-      auto grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(fConfigGRPmagPath.value, timestamp);
-      float magField = 0.0;
-      if (grpmag != nullptr) {
-        magField = grpmag->getNominalL3Field();
-      } else {
-        LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", timestamp);
-      }
-      if (fConfigUseKFVertexing.value) {
-        VarManager::SetupThreeProngKFParticle(magField);
-      } else {
-        VarManager::SetupThreeProngDCAFitter(magField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, false); // TODO: get these parameters from Configurables
-      }
+    auto grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(fConfigGRPmagPath.value, timestamp);
+    float magField = 0.0;
+    if (grpmag != nullptr) {
+      magField = grpmag->getNominalL3Field();
     } else {
-      if (fConfigUseKFVertexing.value) {
-        VarManager::SetupThreeProngKFParticle(fConfigMagField.value);
-      } else {
-        VarManager::SetupThreeProngDCAFitter(fConfigMagField.value, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, false); // TODO: get these parameters from Configurables
-      }
+      LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", timestamp);
+    }
+    if (fConfigUseKFVertexing.value) {
+      VarManager::SetupThreeProngKFParticle(magField);
+    } else {
+      VarManager::SetupThreeProngDCAFitter(magField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, false); // TODO: get these parameters from Configurables
     }
   }
 
   void initAccFromCCDB(uint64_t timestamp)
   {
-    TList* listAccs = fCCDB->getForTimeStamp<TList>(fConfigAccCCDBPath, timestamp);
+    auto listAccs = fCCDB->getForTimeStamp<TList>(fConfigAccCCDBPath, timestamp);
     if (!listAccs) {
       LOG(fatal) << "Problem getting TList object with efficiencies!";
     }
@@ -4667,7 +4633,7 @@ struct AnalysisDileptonTrack {
               continue;
             }
             for (uint32_t iTrackCut = 0; iTrackCut < fTrackCutNames.size(); iTrackCut++) {
-              if (trackSelection & (static_cast<uint32_t>(1) << iTrackCut)) {
+              if ((trackSelection & (static_cast<uint32_t>(1) << iTrackCut)) != 0) {
                 fHistMan->FillHistClass(Form("DileptonTrackME_%s_%s", fTrackCutNames[icut].Data(), fTrackCutNames[iTrackCut].Data()), dqtablereader_helpers::varValues());
                 if (fConfigEnergycorrelator) {
                   fHistMan->FillHistClass(Form("DileptonTrackECME_%s_%s", fTrackCutNames[icut].Data(), fTrackCutNames[iTrackCut].Data()), dqtablereader_helpers::varValues());
@@ -4715,7 +4681,7 @@ struct AnalysisDileptonTrack {
               continue;
             }
             for (uint32_t iTrackCut = 0; iTrackCut < fTrackCutNames.size(); iTrackCut++) {
-              if (muonSelection & (static_cast<uint32_t>(1) << iTrackCut)) {
+              if ((muonSelection & (static_cast<uint32_t>(1) << iTrackCut)) != 0) {
                 fHistMan->FillHistClass(Form("DileptonTrackME_%s_%s", fTrackCutNames[icut].Data(), fTrackCutNames[iTrackCut].Data()), dqtablereader_helpers::varValues());
               }
             }
@@ -4750,9 +4716,7 @@ struct AnalysisDileptonTrackTrack {
 
   o2::framework::Configurable<bool> fConfigSetupFourProngFitter{"cfgSetupFourProngFitter", false, "Use DCA for secondary vertex reconstruction (DCAFitter is used by default)"};
   o2::framework::Configurable<bool> fConfigUseKFVertexing{"cfgUseKFVertexing", false, "Use KF Particle for secondary vertex reconstruction (DCAFitter is used by default)"};
-  o2::framework::Configurable<bool> fConfigUseRemoteField{"cfgUseRemoteField", false, "Chose whether to fetch the magnetic field from ccdb or set it manually"};
   o2::framework::Configurable<std::string> fConfigGRPmagPath{"cfgGrpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  o2::framework::Configurable<float> fConfigMagField{"cfgMagField", 5.0f, "Manually set magnetic field"};
 
   o2::framework::Produces<o2::aod::DileptonTrackTrackCandidates> DileptonTrackTrackTable;
 
@@ -4833,30 +4797,19 @@ struct AnalysisDileptonTrackTrack {
   // init parameters from CCDB
   void initParamsFromCCDB(uint64_t timestamp)
   {
-    if (fConfigUseRemoteField.value) {
-      auto grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(fConfigGRPmagPath.value, timestamp);
-      float magField = 0.0;
-      if (grpmag != nullptr) {
-        magField = grpmag->getNominalL3Field();
-      } else {
-        LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", timestamp);
-      }
-      if (fConfigUseKFVertexing.value) {
-        VarManager::SetupTwoProngKFParticle(magField);
-        VarManager::SetupFourProngKFParticle(magField);
-      } else if (fConfigSetupFourProngFitter.value) {
-        VarManager::SetupTwoProngDCAFitter(magField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, false);  // TODO: get these parameters from Configurables
-        VarManager::SetupFourProngDCAFitter(magField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, false); // TODO: get these parameters from Configurables
-      }
+    auto grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(fConfigGRPmagPath.value, timestamp);
+    float magField = 0.0;
+    if (grpmag != nullptr) {
+      magField = grpmag->getNominalL3Field();
     } else {
-      if (fConfigUseKFVertexing.value) {
-        VarManager::SetupTwoProngKFParticle(fConfigMagField.value);
-        VarManager::SetupFourProngKFParticle(fConfigMagField.value);
-      } else if (fConfigSetupFourProngFitter.value) {
-        LOGP(info, "Setting up DCA fitter for two and four prong candidates");
-        VarManager::SetupTwoProngDCAFitter(fConfigMagField.value, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, false);  // TODO: get these parameters from Configurables
-        VarManager::SetupFourProngDCAFitter(fConfigMagField.value, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, false); // TODO: get these parameters from Configurables
-      }
+      LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", timestamp);
+    }
+    if (fConfigUseKFVertexing.value) {
+      VarManager::SetupTwoProngKFParticle(magField);
+      VarManager::SetupFourProngKFParticle(magField);
+    } else if (fConfigSetupFourProngFitter.value) {
+      VarManager::SetupTwoProngDCAFitter(magField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, false);  // TODO: get these parameters from Configurables
+      VarManager::SetupFourProngDCAFitter(magField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, false); // TODO: get these parameters from Configurables
     }
   }
 
