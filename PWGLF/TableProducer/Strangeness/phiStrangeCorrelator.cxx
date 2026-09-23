@@ -504,8 +504,8 @@ struct V0ReducedCandProducer {
     AxisSpec massLambdaAxis = {200, 1.08f, 1.15f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
 
     histos.add("h3K0sCandidatesMass", "K^{0}_{S} candidate invariant mass", kTH3F, {binnedmultAxis, binnedpTK0SAxis, massK0SAxis});
-    histos.add("h3LambdaCandidatesMass", "#Lambda candidate invariant mass", kTH3F, {binnedmultAxis, binnedpTK0SAxis, massLambdaAxis});
-    histos.add("h3AntiLambdaCandidatesMass", "#bar{#Lambda} candidate invariant mass", kTH3F, {binnedmultAxis, binnedpTK0SAxis, massLambdaAxis});
+    histos.add("h3LambdaCandidatesMass", "#Lambda candidate invariant mass", kTH3F, {binnedmultAxis, binnedpTLambdaAxis, massLambdaAxis});
+    histos.add("h3AntiLambdaCandidatesMass", "#bar{#Lambda} candidate invariant mass", kTH3F, {binnedmultAxis, binnedpTLambdaAxis, massLambdaAxis});
   }
 
   template <V0Type v0Type>
