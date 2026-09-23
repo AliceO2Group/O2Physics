@@ -1582,9 +1582,9 @@ struct StrangenessInJetsIons {
           }
           break;
         case kXiMinus:
-          if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+          if (particleOfInterestDict[ParticleOfInterest::kCascades] || calculateFeeddownMatrix) {
             registryMC.fill(HIST("XiNeg_generated_MB"), genMultiplicity, particle.pt());
-            if (hasReco) {
+            if (hasReco && particleOfInterestDict[ParticleOfInterest::kCascades]) {
               registryMC.fill(HIST("XiNeg_generated_w_reco_MB"), genMultiplicity, particle.pt());
             }
           }
@@ -1592,7 +1592,7 @@ struct StrangenessInJetsIons {
         case kXiPlusBar:
           if (particleOfInterestDict[ParticleOfInterest::kCascades] || calculateFeeddownMatrix) {
             registryMC.fill(HIST("XiPos_generated_MB"), genMultiplicity, particle.pt());
-            if (hasReco) {
+            if (hasReco && particleOfInterestDict[ParticleOfInterest::kCascades]) {
               registryMC.fill(HIST("XiPos_generated_w_reco_MB"), genMultiplicity, particle.pt());
             }
           }
