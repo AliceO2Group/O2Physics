@@ -830,11 +830,13 @@ struct HadronNucleiCorrelation {
   bool selectPair(T const& part0, T const& part1) const
   {
     if constexpr (eventSelection) {
-      if (removeSameBunchPileup && !part0.template singleCollSel_as<FilteredCollisionsExtra>().isNoSameBunchPileup()) {
-        return false;
-      }
-      if (removeSameBunchPileup && !part1.template singleCollSel_as<FilteredCollisionsExtra>().isNoSameBunchPileup()) {
-        return false;
+      if (removeSameBunchPileup.value) {
+        if (!part0.template singleCollSel_as<FilteredCollisionsExtra>().isNoSameBunchPileup()) {
+          return false;
+        }
+        if (!part1.template singleCollSel_as<FilteredCollisionsExtra>().isNoSameBunchPileup()) {
+          return false;
+        }
       }
     }
     if (part0.tpcFractionSharedCls() > maxtpcSharedCls.value) {
