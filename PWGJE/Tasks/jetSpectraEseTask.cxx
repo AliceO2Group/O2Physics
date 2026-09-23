@@ -121,6 +121,7 @@ struct JetSpectraEseTask {
 
   Configurable<bool> cfgrhoPhi{"cfgrhoPhi", true, "Flag for rho(phi)"};
   Configurable<bool> cfgRhoPhiPvalCriteria{"cfgRhoPhiPvalCriteria", true, "Use <rho> instead of rho(phi) when the rho(phi) fit p-value is below 0.01"};
+  Configurable<float> cfgRhoPhiPvalCut{"cfgRhoPhiPvalCut", 0.01, "p-value cut for rho(phi) fit"};
 
   Configurable<int> cfgnTotalSystem{"cfgnTotalSystem", 7, "total qvector number // look in Qvector table for this number"};
   Configurable<int> cfgnCorrLevel{"cfgnCorrLevel", 3, "QVector step: 0 = no corr, 1 = rect, 2 = twist, 3 = full"};
@@ -225,6 +226,7 @@ struct JetSpectraEseTask {
   struct EventPlane {
     float psi2;
     float psi3;
+    bool isValid;
   };
 
   struct EventPlaneFiller {
@@ -237,6 +239,7 @@ struct JetSpectraEseTask {
     kEventSel,
     kOccupancyCut,
     kCentCut,
+    kEPValid,
     kEse,
     kRhoLocal,
     kLeadJetCut
@@ -382,6 +385,7 @@ struct JetSpectraEseTask {
       registry.get<TH1>(HIST("eventQA/hEventCounter"))->GetXaxis()->SetBinLabel(kEventSel, "Event selection");
       registry.get<TH1>(HIST("eventQA/hEventCounter"))->GetXaxis()->SetBinLabel(kOccupancyCut, "Occupancy cut");
       registry.get<TH1>(HIST("eventQA/hEventCounter"))->GetXaxis()->SetBinLabel(kCentCut, "Centrality cut");
+      registry.get<TH1>(HIST("eventQA/hEventCounter"))->GetXaxis()->SetBinLabel(kEPValid, "EP valid");
       registry.get<TH1>(HIST("eventQA/hEventCounter"))->GetXaxis()->SetBinLabel(kEse, "ESE available");
       registry.get<TH1>(HIST("eventQA/hEventCounter"))->GetXaxis()->SetBinLabel(kRhoLocal, "rho(#phi) available");
       registry.get<TH1>(HIST("eventQA/hEventCounter"))->GetXaxis()->SetBinLabel(kLeadJetCut, "leading jet pT cut");
@@ -697,6 +701,10 @@ struct JetSpectraEseTask {
     registry.fill(HIST("eventQA/hEventCounter"), kCentCut);
 
     const auto psi{procEP<PsiFillerEse>(collision)};
+    if (!psi.isValid) {
+      return;
+    }
+    registry.fill(HIST("eventQA/hEventCounter"), kEPValid);
     const auto qPerc{collision.qPERCFT0C()};
     if (qPerc[0] < 0) {
       return;
@@ -853,6 +861,9 @@ struct JetSpectraEseTask {
       registry.fill(HIST("eventQA/hEventCounterMixed"), kCentCut);
 
       const auto psi{procEP<PsiFillerFalse>(c1)};
+      if (!psi.isValid) {
+        continue;
+      }
       const auto qPerc{c1.qPERCFT0C()};
       if (qPerc[0] < 0) {
         continue;
@@ -1002,6 +1013,9 @@ struct JetSpectraEseTask {
     }
 
     [[maybe_unused]] const auto psi{procEP<PsiFillerEP>(collision)};
+    if (!psi.isValid) {
+      return;
+    }
     detCorrelation(collision);
     auto originalCollision =
       collision.collision_as<OgCol>();
@@ -1024,6 +1038,9 @@ struct JetSpectraEseTask {
     float count{0.5};
     registry.fill(HIST("hEventCounterOcc"), count++);
     const auto psi{procEP<PsiFillerFalse>(collision)};
+    if (!psi.isValid) {
+      return;
+    }
     const auto qPerc{collision.qPERCFT0C()};
 
     auto occupancy{collision.trackOccupancyInTimeRange()};
@@ -1400,7 +1417,9 @@ struct JetSpectraEseTask {
         fillEPCos(vec, epCorrContainer22, epCorrContainer24, epCorrContainer44);
       }
     }
-    return {.psi2 = epMap.at(cfgEPRefA), .psi3 = ep3Map.at(cfgEPRefA)};
+    // check A is valid
+    bool isValidA{epMap.at(cfgEPRefA) != InvalidValue};
+    return {.psi2 = epMap.at(cfgEPRefA), .psi3 = ep3Map.at(cfgEPRefA), .isValid = isValidA};
   }
   template <typename collision>
   void fillEPCos(const collision& col, const std::array<float, 3>& Corr22, const std::array<float, 3>& Corr42, const std::array<float, 3>& Corr44)
@@ -1611,8 +1630,8 @@ struct JetSpectraEseTask {
     if constexpr (fillHist) {
       registry.fill(HIST("eventQA/hRhoPhiCheck"), 0.5);
     }
-    const float pValue = 0.01;
-    if (cfgRhoPhiPvalCriteria && cDF < pValue) {
+
+    if (cfgRhoPhiPvalCriteria && cDF < cfgRhoPhiPvalCut ) {
       const float noFlow = 0.0f;
       modulationFit->SetParameter(1, noFlow); // o2-linter: disable=magic-number (fit params)
       modulationFit->SetParameter(3, noFlow); // o2-linter: disable=magic-number (fit params)
@@ -1701,6 +1720,9 @@ struct JetSpectraEseTask {
     }
 
     const auto psi{procEP<PsiFillerEse>(collision)};
+    if (!psi.isValid) {
+      return;
+    }
     auto qPerc{collision.qPERCFT0C()};
     if (qPerc[0] < 0) {
       return;
