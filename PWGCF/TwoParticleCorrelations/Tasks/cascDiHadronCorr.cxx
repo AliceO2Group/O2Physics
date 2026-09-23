@@ -1219,7 +1219,7 @@ struct CascDiHadronCorr {
       if (step >= CorrelationContainer::kCFStepTrackedOnlyPrim && !track1.isPhysicalPrimary())
         continue;
 
-      if (!(cfgOutputXi && getSpecies(track1.pdgCode()) == getSpecies(PDG_t::kXiMinus)) || (cfgOutputOmega && getSpecies(track1.pdgCode()) == getSpecies(PDG_t::kOmegaMinus)))
+      if (!((cfgOutputXi && getSpecies(track1.pdgCode()) == getSpecies(PDG_t::kXiMinus)) || (cfgOutputOmega && getSpecies(track1.pdgCode()) == getSpecies(PDG_t::kOmegaMinus))))
         continue;
 
       if (system == SameEvent && (doprocessMCSameCasc))
