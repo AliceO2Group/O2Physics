@@ -69,7 +69,7 @@ struct HfProducerCharmHadronsCharmFemtoDream {
   struct HfMlConfig : ConfigurableGroup {
     std::string prefix;
     static inline const std::array<double, 3> defaultCuts{1., 0., 0.};
-    Configurable<int> applyMlMode{"applyMlMode", FillMlFromSelector, "0: no ML, 1: selector scores, 2: new BDT after selector"};
+    Configurable<int> mlApplicationMode{"mlApplicationMode", FillMlFromSelector, "0: no ML, 1: selector scores, 2: new BDT after selector"};
     Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{0., 36.}, "pT bin limits for new BDT"};
     Configurable<LabeledArray<double>> cutsMl{"cutsMl", {defaultCuts.data(), 1, 3}, "New BDT cuts per pT bin: background, prompt, nonprompt"};
     Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{0, 1, 1}, "Reject scores above (0), below (1), or do not cut (2)"};
@@ -118,10 +118,10 @@ struct HfProducerCharmHadronsCharmFemtoDream {
   template <typename Response>
   void initMl(HfMlConfig const& cfg, Response& response, bool withMl)
   {
-    if (cfg.applyMlMode.value < NoMl || cfg.applyMlMode.value > FillMlFromNewBDT) {
-      LOGP(fatal, "{}: invalid applyMlMode", cfg.prefix);
+    if (cfg.mlApplicationMode.value < NoMl || cfg.mlApplicationMode.value > FillMlFromNewBDT) {
+      LOGP(fatal, "{}: invalid mlApplicationMode", cfg.prefix);
     }
-    if (cfg.applyMlMode.value != FillMlFromNewBDT) {
+    if (cfg.mlApplicationMode.value != FillMlFromNewBDT) {
       return;
     }
     if (!withMl) {
@@ -238,10 +238,10 @@ struct HfProducerCharmHadronsCharmFemtoDream {
         }
         std::array<float, 3> scores{-1.f, -1.f, -1.f};
         if constexpr (WithMl) {
-          if (mlD0.applyMlMode != NoMl) {
+          if (mlD0.mlApplicationMode != NoMl) {
             scores = hypothesis == 0 ? readScores(cand.mlProbD0()) : readScores(cand.mlProbD0bar());
           }
-          if (mlD0.applyMlMode == FillMlFromNewBDT) {
+          if (mlD0.mlApplicationMode == FillMlFromNewBDT) {
             // Do not call the ML response with an out-of-range model index.
             if (!std::isfinite(cand.pt()) || cand.pt() < mlD0.binsPtMl.value.front() || cand.pt() >= mlD0.binsPtMl.value.back()) {
               continue;
@@ -272,10 +272,10 @@ struct HfProducerCharmHadronsCharmFemtoDream {
       auto soft = cand.template prongPi_as<aod::Tracks>();
       std::array<float, 3> scores{-1.f, -1.f, -1.f};
       if constexpr (WithMl) {
-        if (mlDstar.applyMlMode != NoMl) {
+        if (mlDstar.mlApplicationMode != NoMl) {
           scores = readScores(cand.mlProbDstarToD0Pi());
         }
-        if (mlDstar.applyMlMode == FillMlFromNewBDT) {
+        if (mlDstar.mlApplicationMode == FillMlFromNewBDT) {
           if (!std::isfinite(cand.pt()) || cand.pt() < mlDstar.binsPtMl.value.front() || cand.pt() >= mlDstar.binsPtMl.value.back()) {
             continue;
           }
