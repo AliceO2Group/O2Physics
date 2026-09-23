@@ -579,8 +579,9 @@ struct strangederivedbuilder {
       // auto TraCascTable_thisColl = TraCascades.sliceBy(TraCascperCollision, collIdx);
       bool strange = V0Table_thisColl.size() > 0 ||
                      CascTable_thisColl.size() > 0 ||
-                     KFCascTable_thisColl.size() > 0/* ||
-                     TraCascTable_thisColl.size() > 0*/;
+                     KFCascTable_thisColl.size() > 0 /* ||
+                      TraCascTable_thisColl.size() > 0*/
+        ;
 
       auto bc = collision.template bc_as<bcType>();
 
@@ -762,7 +763,7 @@ struct strangederivedbuilder {
       for (const auto& casc : KFCascTable_thisColl)
         KFCascadeCollIndices[casc.globalIndex()] = products.strangeColl.lastIndex();
       // for (const auto& casc : TraCascTable_thisColl)
-        // TraCascadeCollIndices[casc.globalIndex()] = products.strangeColl.lastIndex();
+      // TraCascadeCollIndices[casc.globalIndex()] = products.strangeColl.lastIndex();
     }
 
     // +-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+
