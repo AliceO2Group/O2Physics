@@ -295,6 +295,25 @@ struct FemtoProducer {
         LOG(warn) << "  - particles in pass-through, collisions not: the extra particle rows hang off "
                   << "a candidate-biased event sample, which will bias event-normalised observables.";
       }
+
+      // in mc pass-through every generated collision is written, but reco collisions of other
+      // sub-generators are still rejected in checkCollision -> biased event-loss denominator
+      if (mcBuilder.isPassThrough() && collisionBuilder.isPassThrough() && collisionBuilder.subGeneratorId() >= 0) {
+        LOG(warn) << "MC and collision pass-through are enabled, but CollisionFilter.subGeneratorId = "
+                  << collisionBuilder.subGeneratorId() << " still rejects reconstructed collisions of other sub-generators, "
+                  << "while all generated collisions are written. Set it to -1 for unbiased event/signal-loss corrections.";
+      }
+
+      // daughter tracks can be written a second time under the collision of their mother candidate;
+      // without FTrackExtras (fillType) these rows cannot be told apart from selected tracks downstream
+      const bool anyDaughterBuilder = k0shortBuilder.fillAnyTable() || lambdaBuilder.fillAnyTable() || antilambdaBuilder.fillAnyTable() ||
+                                      xiBuilder.fillAnyTable() || omegaBuilder.fillAnyTable() ||
+                                      sigmaBuilder.fillAnyTable() || sigmaPlusBuilder.fillAnyTable() ||
+                                      d0Builder.fillAnyTable() || d0barBuilder.fillAnyTable() || lcBuilder.fillAnyTable() || lcBarBuilder.fillAnyTable();
+      if (trackBuilder.isPassThrough() && anyDaughterBuilder && !trackBuilder.producingTrackExtras()) {
+        LOG(warn) << "Track pass-through is enabled together with candidates that register daughter tracks, but FTrackExtras is not produced. "
+                  << "Daughter-only track rows cannot be identified downstream (enable TrackTables.produceTrackExtras).";
+      }
     }
 
     // ---- guard: exactly one process function ---------------------------------
@@ -671,7 +690,7 @@ struct FemtoProducer {
   {
     if (mcBuilder.isPassThrough()) {
       mcBuilder.reset(mcCols, mcParticles);
-      mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts, pdgDb);
+      mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts);
     }
 
     for (const auto& col : cols) {
@@ -694,7 +713,7 @@ struct FemtoProducer {
   {
     if (mcBuilder.isPassThrough()) {
       mcBuilder.reset(mcCols, mcParticles);
-      mcBuilder.fillMcPassThrough<modes::System::kPbPb_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts, pdgDb);
+      mcBuilder.fillMcPassThrough<modes::System::kPbPb_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts);
     }
 
     for (const auto& col : cols) {
@@ -718,7 +737,7 @@ struct FemtoProducer {
   {
     if (mcBuilder.isPassThrough()) {
       mcBuilder.reset(mcCols, mcParticles);
-      mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts, pdgDb);
+      mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts);
     }
 
     for (const auto& col : cols) {
@@ -745,7 +764,7 @@ struct FemtoProducer {
   {
     if (mcBuilder.isPassThrough()) {
       mcBuilder.reset(mcCols, mcParticles);
-      mcBuilder.fillMcPassThrough<modes::System::kPbPb_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts, pdgDb);
+      mcBuilder.fillMcPassThrough<modes::System::kPbPb_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts);
     }
 
     for (const auto& col : cols) {
@@ -773,7 +792,7 @@ struct FemtoProducer {
   {
     if (mcBuilder.isPassThrough()) {
       mcBuilder.reset(mcCols, mcParticles);
-      mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts, pdgDb);
+      mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts);
     }
 
     for (const auto& col : cols) {
@@ -804,7 +823,7 @@ struct FemtoProducer {
   {
     if (mcBuilder.isPassThrough()) {
       mcBuilder.reset(mcCols, mcParticles);
-      mcBuilder.fillMcPassThrough<modes::System::kPbPb_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts, pdgDb);
+      mcBuilder.fillMcPassThrough<modes::System::kPbPb_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts);
     }
 
     for (const auto& col : cols) {
@@ -834,7 +853,7 @@ struct FemtoProducer {
   {
     if (mcBuilder.isPassThrough()) {
       mcBuilder.reset(mcCols, mcParticles);
-      mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts, pdgDb);
+      mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts);
     }
 
     for (const auto& col : cols) {
@@ -862,7 +881,7 @@ struct FemtoProducer {
   {
     if (mcBuilder.isPassThrough()) {
       mcBuilder.reset(mcCols, mcParticles);
-      mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts, pdgDb);
+      mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts);
     }
 
     for (const auto& col : cols) {
@@ -892,7 +911,7 @@ struct FemtoProducer {
   {
     if (mcBuilder.isPassThrough()) {
       mcBuilder.reset(mcCols, mcParticles);
-      mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts, pdgDb);
+      mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts);
     }
 
     for (const auto& col : cols) {
@@ -919,7 +938,7 @@ struct FemtoProducer {
   {
     if (mcBuilder.isPassThrough()) {
       mcBuilder.reset(mcCols, mcParticles);
-      mcBuilder.fillMcPassThrough<modes::System::kPbPb_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts, pdgDb);
+      mcBuilder.fillMcPassThrough<modes::System::kPbPb_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts);
     }
 
     for (const auto& col : cols) {
@@ -976,7 +995,7 @@ struct FemtoProducer {
   {
     if (mcBuilder.isPassThrough()) {
       mcBuilder.reset(mcCols, mcParticles);
-      mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts, pdgDb);
+      mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts);
     }
 
     for (const auto& col : cols) {
@@ -1003,7 +1022,7 @@ struct FemtoProducer {
   {
     if (mcBuilder.isPassThrough()) {
       mcBuilder.reset(mcCols, mcParticles);
-      mcBuilder.fillMcPassThrough<modes::System::kPbPb_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts, pdgDb);
+      mcBuilder.fillMcPassThrough<modes::System::kPbPb_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts);
     }
 
     for (const auto& col : cols) {

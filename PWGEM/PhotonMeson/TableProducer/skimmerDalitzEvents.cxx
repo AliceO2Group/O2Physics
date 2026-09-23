@@ -13,15 +13,17 @@
 /// \brief write tables for photons and electrons for dalitz decay
 /// \author josuha.konig@cern.ch
 
+#include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
+#include "Common/DataModel/EventSelection.h"
+
 #include <Framework/ASoA.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Concepts.h>
 #include <Framework/Configurable.h>
-#include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
 using namespace o2;
@@ -40,6 +42,12 @@ using MyV0PhotonsLegsMC = o2::soa::Join<o2::aod::V0LegsTmp, aod::V0LegsXYZTmp, a
 
 struct skimmerDalitzEvents {
 
+  SliceCache cache;
+  PresliceUnsorted<MyElectrons> perCollisionEl = aod::emprimaryelectron::collisionId;
+  PresliceUnsorted<o2::aod::V0PhotonsKFTmp> perCol_pcm = o2::aod::v0photonkf::collisionId;
+  PresliceUnsorted<o2::aod::V0LegsTmp> perCol_legs = o2::aod::v0leg::collisionId;
+  PresliceUnsorted<o2::aod::V0LegsTmp> perId_legs = o2::aod::v0leg::trackId;
+
   Produces<aod::V0PhotonsKF> v0photonskf;
   Produces<aod::V0Legs> v0legs;
   Produces<aod::V0LegsXYZ> v0legsXYZ;
@@ -53,21 +61,24 @@ struct skimmerDalitzEvents {
   Configurable<unsigned int> minNGammaCand{"minNGammaCand", 1, "minimum number of V0 photon candidates in one event"};
 
   // ---------- for data ----------
-  template <bool isMC, typename TElectrons, typename TV0Photons, typename TV0Legs>
-  void process(MyCollisions const& collisions, TElectrons const& emPrimaryElecTmp, TV0Photons const& v0photonskfTmp, TV0Legs const& v0LegsTmp)
+  template <bool isMC, o2::soa::is_table TElectrons, o2::soa::is_table TV0Photons, o2::soa::is_table TV0Legs>
+  void coreProcess(MyCollisions const& collisions, TElectrons const& emPrimaryElecTmp, TV0Photons const& v0photonskfTmp, TV0Legs const& v0LegsTmp)
   {
-    PresliceUnsorted<TElectrons> perCollisionEl = aod::emprimaryelectron::collisionId;
-    Preslice<TV0Photons> perCol_pcm = o2::aod::v0photonkf::collisionId;
-    Preslice<TV0Legs> perCol_legs = o2::aod::v0leg::collisionId;
-    for (const auto& collision : collisions) {
-      auto tracks = emPrimaryElecTmp.sliceBy(perCollisionEl, collision.globalIndex()); // o2::aod::track::collisionId // o2::aod::emprimaryelectronda::pmeventId
 
+    auto leg = v0LegsTmp.begin();
+    for (const auto& collision : collisions) {
+      // get electrons for current collision
+      auto tracks = emPrimaryElecTmp.sliceBy(perCollisionEl, collision.globalIndex());
+
+      // check that there are at least minNElecCand in the collision
       if (tracks.size() < minNElecCand) {
         continue;
       }
 
+      // get photons for current collision
       auto photonskf = v0photonskfTmp.sliceBy(perCol_pcm, collision.globalIndex());
 
+      // check that there are at least minNGammaCand in the collision
       if (photonskf.size() < minNGammaCand) {
         continue;
       }
@@ -90,7 +101,7 @@ struct skimmerDalitzEvents {
       }
 
       for (const auto& v0 : photonskf) {
-        v0photonskf(v0.collisionId(), v0.v0Id(), v0.posTrack(), v0.negTrack(),
+        v0photonskf(v0.collisionId(), v0.v0Id(), v0legs.lastIndex() + 1, v0legs.lastIndex() + 2, // o2-linter: disable=magic-number (indexing for v0 leg table)
                     v0.vx(), v0.vy(), v0.vz(),
                     v0.px(), v0.py(), v0.pz(),
                     v0.mGamma(),
@@ -101,25 +112,29 @@ struct skimmerDalitzEvents {
 
         v0photonsphivpsi(
           v0.phiv(), v0.psipair());
-      }
 
-      auto v0LegsTmpPerColl = v0LegsTmp.sliceBy(perCol_legs, collision.globalIndex());
-      for (const auto& leg : v0LegsTmp) {
-        v0legs(
-          leg.collisionId(), leg.trackId(), leg.sign(),
-          leg.px(), leg.py(), leg.pz(),
-          leg.dcaXY(), leg.dcaZ(),
-          leg.tpcNClsFindable(), leg.tpcNClsFindableMinusFound(), leg.tpcNClsFindableMinusCrossedRows(), leg.tpcNClsShared(),
-          leg.tpcChi2NCl(), leg.tpcInnerParam(),
-          leg.tpcSignal(), leg.tpcNSigmaEl(), leg.tpcNSigmaPi(),
-          leg.itsClusterSizes(), leg.itsChi2NCl(), leg.detectorMap());
+        for (const auto& legId : {v0.posTrackId(), v0.negTrackId()}) {
+          if (legId < 0 || legId >= static_cast<int>(v0LegsTmp.size())) {
+            LOG(warning) << "legID " << legId << " is outside of range of v0legs table with size " << static_cast<int>(v0LegsTmp.size());
+            continue;
+          }
+          leg.setCursor(legId);
+          v0legs(
+            leg.collisionId(), leg.trackId(), leg.sign(),
+            leg.px(), leg.py(), leg.pz(),
+            leg.dcaXY(), leg.dcaZ(),
+            leg.tpcNClsFindable(), leg.tpcNClsFindableMinusFound(), leg.tpcNClsFindableMinusCrossedRows(), leg.tpcNClsShared(),
+            leg.tpcChi2NCl(), leg.tpcInnerParam(),
+            leg.tpcSignal(), leg.tpcNSigmaEl(), leg.tpcNSigmaPi(),
+            leg.itsClusterSizes(), leg.itsChi2NCl(), leg.detectorMap());
 
-        v0legsXYZ(
-          leg.x(), leg.y(), leg.z());
+          v0legsXYZ(
+            leg.x(), leg.y(), leg.z());
 
-        if constexpr (isMC) {
-          v0legsDeDxMC(
-            leg.mcTunedTPCSignal());
+          if constexpr (isMC) {
+            v0legsDeDxMC(
+              leg.mcTunedTPCSignal());
+          }
         }
       }
     }
@@ -127,12 +142,12 @@ struct skimmerDalitzEvents {
 
   void processRec(MyCollisions const& collisions, MyElectrons const& emPrimaryElecTmp, MyV0Photons const& v0photonskfTmp, MyV0PhotonsLegs const& v0LegsTmp)
   {
-    process<false, MyElectrons, MyV0Photons, MyV0PhotonsLegs>(collisions, emPrimaryElecTmp, v0photonskfTmp, v0LegsTmp);
+    coreProcess<false, MyElectrons, MyV0Photons, MyV0PhotonsLegs>(collisions, emPrimaryElecTmp, v0photonskfTmp, v0LegsTmp);
   }
 
   void processMC(MyCollisions const& collisions, MyElectronsMC const& emPrimaryElecTmp, MyV0Photons const& v0photonskfTmp, MyV0PhotonsLegsMC const& v0LegsTmp)
   {
-    process<true, MyElectronsMC, MyV0Photons, MyV0PhotonsLegsMC>(collisions, emPrimaryElecTmp, v0photonskfTmp, v0LegsTmp);
+    coreProcess<true, MyElectronsMC, MyV0Photons, MyV0PhotonsLegsMC>(collisions, emPrimaryElecTmp, v0photonskfTmp, v0LegsTmp);
   }
 
   PROCESS_SWITCH(skimmerDalitzEvents, processRec, "process reconstructed info only", false);  // data

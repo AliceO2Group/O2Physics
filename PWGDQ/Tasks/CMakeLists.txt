@@ -9,7 +9,7 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-# tableReader_withAssoc.cxx is 5000 lines of task definitions, and seven
+# tableReader_withAssoc.h is 5000 lines of task definitions, and seven
 # workflow variants below #include it verbatim -- differing only in which
 # adaptAnalysisTask<> entries they list, with identical preprocessor state and
 # identical link libraries. Without this it is parsed and instantiated seven
@@ -21,7 +21,7 @@ add_library(TableReaderWithAssocPCH OBJECT tableReaderWithAssocPCH.cxx)
 target_link_libraries(TableReaderWithAssocPCH PUBLIC O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::PWGDQCore O2Physics::MLCore)
 if(NOT DEFINED ENV{USE_RECC})
   target_precompile_headers(TableReaderWithAssocPCH PRIVATE
-    [["PWGDQ/Tasks/tableReader_withAssoc.cxx"]])
+    [["PWGDQ/Tasks/tableReader_withAssoc.h"]])
 endif()
 
 o2physics_add_dpl_workflow(table-reader

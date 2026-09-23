@@ -24,12 +24,15 @@
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/CollisionTypeHelper.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TableHelper.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/TableProducer/PID/pidTPCBase.h" // IWYU pragma: keep
 #include "Tools/ML/model.h"
 
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -46,6 +49,7 @@
 #include <TRandom.h>
 #include <TString.h>
 
+#include <array>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -54,6 +58,7 @@
 #include <memory>
 #include <ratio>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <math.h>
@@ -139,6 +144,9 @@ struct pidTPCConfigurables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> useNetworkAl{"useNetworkAl", 1, {"Switch for applying neural network on the alpha mass hypothesis (if network enabled) (set to 0 to disable)"}};
   o2::framework::Configurable<float> networkBetaGammaCutoff{"networkBetaGammaCutoff", 0.45, {"Lower value of beta-gamma to override the NN application"}};
   o2::framework::Configurable<std::string> cfgPathGrpLhcIf{"ccdb-path-grplhcif", "GLO/Config/GRPLHCIF", "Path on the CCDB for the GRPLHCIF object"};
+
+  o2::framework::Configurable<float> phiEntranceCoeff1{"phiEntranceCoeff1", 1.026f, "phiEntrance = phi + phiEntranceCoeff1 * LightSpeedDm2PS * 0.5 * phiEntranceCoeff2 * 1/pT[GeV/c]"};
+  o2::framework::Configurable<float> phiEntranceCoeff2{"phiEntranceCoeff2", 85.f, "phiEntrance = phi + phiEntranceCoeff1 * LightSpeedDm2PS * 0.5 * phiEntranceCoeff2 * 1/pT[GeV/c]"};
 };
 
 // helper getter - FIXME should be separate
@@ -443,12 +451,50 @@ class pidTPCModule
 
   //__________________________________________________
   template <typename TCCDB, typename M, typename T, typename B>
-  std::vector<float> createNetworkPrediction(TCCDB& ccdb, soa::Join<aod::Collisions, aod::EvSels> const& collisions, M const& mults, T const& tracks, B const& bcs, const size_t size)
+  std::unique_ptr<float[]> createNetworkPrediction(TCCDB& ccdb, soa::Join<aod::Collisions, aod::EvSels> const& collisions, M const& mults, T const& tracks, B const& bcs, const size_t size)
   {
+    constexpr int NParticleTypes = 9;
+    constexpr double OneToKilo = 1.e-3;
+    constexpr int NanoToOne = 1000000000;
+    constexpr double MultiplicityNorm = 11000.;
+    constexpr double HadronicRateNormPp = 1500.;
+    constexpr double HadronicRateNormAa = 50.;
+    constexpr double Ft0cOccupancyNorm = 60000.;
+    constexpr float LightSpeedDm2PS = o2::constants::physics::LightSpeedCm2PS / 10.f;
 
-    std::vector<float> network_prediction;
+    struct NNVersionEntry {
+      std::string_view versionName{};
+      int numberOfFeatures{};
+      int versionNumber{};
+    };
 
-    auto start_network_total = std::chrono::high_resolution_clock::now();
+    constexpr std::array<NNVersionEntry, 6> NNVersionsDictionary{
+      {{"", 6, 1},
+       {"1", 6, 1},
+       {"2", 7, 2},
+       {"3", 8, 3},
+       {"4", 9, 4},
+       {"5", 9, 5}}};
+
+    enum IndexNnFeature : int {
+      IdxTpcInnerParam = 0,
+      IdxTgl,
+      IdxSigned1Pt,
+      IdxMass,
+      IdxMultiplicity,
+      IdxNClusters,
+      IdxFt0cOcc,
+      IdxHadronicRate,
+      IdxModPhi
+    };
+
+    constexpr int OldestNNVersionWithFt0c{2};
+    constexpr int OldestNNVersionWithHadronicRate{3};
+    constexpr int OldestNNVersionWithModPhi{4};
+    constexpr int NNVersionWithModPhiEntrance{5};
+
+    const auto startNetworkTotal = std::chrono::high_resolution_clock::now();
+
     if (pidTPCopts.autofetchNetworks) {
       const auto& bc = bcs.begin();
       // Initialise correct TPC response object before NN setup (for NCl normalisation)
@@ -486,7 +532,7 @@ class pidTPCModule
 
       if (bc.timestamp() < network.getValidityFrom() || bc.timestamp() > network.getValidityUntil()) { // fetches network only if the runnumbers change
         LOG(info) << "Fetching network for timestamp: " << bc.timestamp();
-        bool retrieveSuccess = ccdb->getCCDBAccessor().retrieveBlob(pidTPCopts.networkPathCCDB.value, ".", metadata, bc.timestamp(), false, pidTPCopts.networkPathLocally.value, "", "", &headers);
+        const bool retrieveSuccess = ccdb->getCCDBAccessor().retrieveBlob(pidTPCopts.networkPathCCDB.value, ".", metadata, bc.timestamp(), false, pidTPCopts.networkPathLocally.value, "", "", &headers);
         networkVersion = headers["NN-Version"];
         if (retrieveSuccess) {
           network.initModel(pidTPCopts.networkPathLocally.value, pidTPCopts.enableNetworkOptimizations.value, pidTPCopts.networkSetNumThreads.value, strtoul(headers["Valid-From"].c_str(), NULL, 0), strtoul(headers["Valid-Until"].c_str(), NULL, 0));
@@ -500,49 +546,52 @@ class pidTPCModule
     }
 
     // Defining some network parameters
-    int input_dimensions = network.getNumInputNodes();
-    int output_dimensions = network.getNumOutputNodes();
-    const uint64_t track_prop_size = input_dimensions * size;
-    const uint64_t prediction_size = output_dimensions * size;
+    const int inputDimensions = network.getNumInputNodes();
+    const int outputDimensions = network.getNumOutputNodes();
+    const uint64_t trackPropSize = inputDimensions * size;
+    const uint64_t predictionSize = outputDimensions * size;
 
-    network_prediction = std::vector<float>(prediction_size * 9); // For each mass hypotheses
+    int nnVersion{0};
+    for (const auto& nnVersionEntry : NNVersionsDictionary) {
+      if (networkVersion == nnVersionEntry.versionName && inputDimensions == nnVersionEntry.numberOfFeatures) {
+        nnVersion = nnVersionEntry.versionNumber;
+        break;
+      }
+    }
+    if (nnVersion == 0) {
+      LOG(fatal) << "createNetworkPrediction(): networkVersion '" << networkVersion << "' and number of features " << inputDimensions << " are not compatible according to NNVersionsDictionary";
+    }
+
+    const int hadronicRateNorm = collsys == CollisionSystemType::kCollSyspp ? HadronicRateNormPp : HadronicRateNormAa;
+
+    // Deliberately uninitialised: the evaluation loop below writes every element
+    // (one block per mass hypothesis), so zero-initialising would only touch
+    // every page of an O(100 MB) buffer twice.
+    std::unique_ptr<float[]> networkPrediction(new float[predictionSize * NParticleTypes]); // For each mass hypotheses
+
     const float nNclNormalization = response->GetNClNormalization();
-    float duration_network = 0;
+    float durationNetwork = 0;
 
-    std::vector<float> track_properties(track_prop_size);
-    uint64_t counter_track_props = 0;
-    int loop_counter = 0;
+    std::vector<float> trackProperties(trackPropSize);
+    uint64_t counterTrackProps = 0;
+    int loopCounter = 0;
 
     // To load the Hadronic rate once for each collision
-    float hadronicRateBegin = 0.;
     std::vector<float> hadronicRateForCollision(collisions.size(), 0.0f);
-    size_t i = 0;
+    size_t iCollision = 0;
     for (const auto& collision : collisions) {
       const auto& bc = collision.template bc_as<B>();
       if (irSource.compare("") != 0) {
-        hadronicRateForCollision[i] = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource) * 1.e-3;
-      } else {
-        hadronicRateForCollision[i] = 0.0f;
+        hadronicRateForCollision[iCollision] = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource) * OneToKilo;
       }
-      i++;
+      ++iCollision;
     }
-    auto bc = bcs.begin();
-    if (irSource.compare("") != 0) {
-      hadronicRateBegin = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource) * 1.e-3; // kHz
-    } else {
-      hadronicRateBegin = 0.0f;
-    }
+    const auto bc = bcs.begin();
+    const float hadronicRateBegin = irSource.compare("") != 0 ? mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource) * OneToKilo : 0.f;
 
     // Filling a std::vector<float> to be evaluated by the network
     // Evaluation on single tracks brings huge overhead: Thus evaluation is done on one large vector
-    static constexpr int NParticleTypes = 9;
-    constexpr int ExpectedInputDimensionsNNV2 = 7;
-    constexpr int ExpectedInputDimensionsNNV3 = 8;
-    constexpr int ExpectedInputDimensionsNNV4 = 9;
-    constexpr auto NetworkVersionV2 = "2";
-    constexpr auto NetworkVersionV3 = "3";
-    constexpr auto NetworkVersionV4 = "4";
-    for (int j = 0; j < NParticleTypes; j++) { // Loop over particle number for which network correction is used
+    for (int jParticleType = 0; jParticleType < NParticleTypes; ++jParticleType) { // Loop over particle number for which network correction is used
       for (auto const& trk : tracks) {
         if (!trk.hasTPC()) {
           continue;
@@ -552,79 +601,55 @@ class pidTPCModule
             continue;
           }
         }
-        track_properties[counter_track_props] = trk.tpcInnerParam();
-        track_properties[counter_track_props + 1] = trk.tgl();
-        track_properties[counter_track_props + 2] = trk.signed1Pt();
-        track_properties[counter_track_props + 3] = o2::track::pid_constants::sMasses[j];
-        track_properties[counter_track_props + 4] = (trk.has_collision() && mults.size() > 0) ? mults[trk.collisionId()] / 11000. : 1.;
-        track_properties[counter_track_props + 5] = std::sqrt(nNclNormalization / trk.tpcNClsFound());
-        if (input_dimensions == ExpectedInputDimensionsNNV2 && networkVersion == NetworkVersionV2) {
-          track_properties[counter_track_props + 6] = (trk.has_collision() && mults.size() > 0) ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / 60000. : 1.;
+        const bool isGoodTrack = trk.has_collision() && mults.size() > 0;
+        trackProperties[counterTrackProps + IdxTpcInnerParam] = trk.tpcInnerParam();
+        trackProperties[counterTrackProps + IdxTgl] = trk.tgl();
+        trackProperties[counterTrackProps + IdxSigned1Pt] = trk.signed1Pt();
+        trackProperties[counterTrackProps + IdxMass] = o2::track::pid_constants::sMasses[jParticleType];
+        trackProperties[counterTrackProps + IdxMultiplicity] = isGoodTrack ? mults[trk.collisionId()] / MultiplicityNorm : 1.;
+        trackProperties[counterTrackProps + IdxNClusters] = std::sqrt(nNclNormalization / trk.tpcNClsFound());
+        if (nnVersion >= OldestNNVersionWithFt0c) {
+          trackProperties[counterTrackProps + IdxFt0cOcc] = isGoodTrack ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / Ft0cOccupancyNorm : 1.;
         }
-        if (input_dimensions == ExpectedInputDimensionsNNV3 && networkVersion == NetworkVersionV3) {
-          track_properties[counter_track_props + 6] = (trk.has_collision() && mults.size() > 0) ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / 60000. : 1.;
-          if (trk.has_collision() && mults.size() > 0) {
-            if (collsys == CollisionSystemType::kCollSyspp) {
-              track_properties[counter_track_props + 7] = hadronicRateForCollision[trk.collisionId()] / 1500.;
-            } else {
-              track_properties[counter_track_props + 7] = hadronicRateForCollision[trk.collisionId()] / 50.;
-            }
-          } else {
-            // asign Hadronic Rate at beginning of run  if track does not belong to a collision
-            if (collsys == CollisionSystemType::kCollSyspp) {
-              track_properties[counter_track_props + 7] = hadronicRateBegin / 1500.;
-            } else {
-              track_properties[counter_track_props + 7] = hadronicRateBegin / 50.;
-            }
+        if (nnVersion >= OldestNNVersionWithHadronicRate) {
+          const float hadronicRate = isGoodTrack ? hadronicRateForCollision[trk.collisionId()] : hadronicRateBegin;
+          trackProperties[counterTrackProps + IdxHadronicRate] = hadronicRate / hadronicRateNorm;
+        }
+        if (nnVersion >= OldestNNVersionWithModPhi) {
+          float phi = trk.phi();
+          if (nnVersion == NNVersionWithModPhiEntrance) {
+            phi += pidTPCopts.phiEntranceCoeff1 * LightSpeedDm2PS * 0.5 * pidTPCopts.phiEntranceCoeff2 * trk.signed1Pt();
           }
+          trackProperties[counterTrackProps + IdxModPhi] = RecoDecay::constrainAngle(phi, 0.f, o2::constants::math::NSectors);
         }
-
-        if (input_dimensions == ExpectedInputDimensionsNNV4 && networkVersion == NetworkVersionV4) {
-          track_properties[counter_track_props + 6] = (trk.has_collision() && mults.size() > 0) ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / 60000. : 1.;
-          if (trk.has_collision() && mults.size() > 0) {
-            if (collsys == CollisionSystemType::kCollSyspp) {
-              track_properties[counter_track_props + 7] = hadronicRateForCollision[trk.collisionId()] / 1500.;
-            } else {
-              track_properties[counter_track_props + 7] = hadronicRateForCollision[trk.collisionId()] / 50.;
-            }
-          } else {
-            // asign Hadronic Rate at beginning of run  if track does not belong to a collision
-            if (collsys == CollisionSystemType::kCollSyspp) {
-              track_properties[counter_track_props + 7] = hadronicRateBegin / 1500.;
-            } else {
-              track_properties[counter_track_props + 7] = hadronicRateBegin / 50.;
-            }
-          }
-          track_properties[counter_track_props + 8] = std::fmod(std::fmod(trk.phi(), 2 * M_PI) + 2 * M_PI, M_PI / 9.0);
-        }
-        counter_track_props += input_dimensions;
+        counterTrackProps += inputDimensions;
       }
 
-      auto start_network_eval = std::chrono::high_resolution_clock::now();
-      float* output_network = network.evalModel(track_properties);
-      auto stop_network_eval = std::chrono::high_resolution_clock::now();
-      duration_network += std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_eval - start_network_eval).count();
-      for (uint64_t k = 0; k < prediction_size; k += output_dimensions) {
-        for (int l = 0; l < output_dimensions; l++) {
-          network_prediction[k + l + prediction_size * loop_counter] = output_network[k + l];
+      const auto startNetworkEval = std::chrono::high_resolution_clock::now();
+      const float* const outputNetwork = network.evalModel(trackProperties);
+      const auto stopNetworkEval = std::chrono::high_resolution_clock::now();
+      durationNetwork += std::chrono::duration<float, std::ratio<1, NanoToOne>>(stopNetworkEval - startNetworkEval).count();
+      for (uint64_t kPrediction = 0; kPrediction < predictionSize; kPrediction += outputDimensions) {
+        for (int lOutputDim = 0; lOutputDim < outputDimensions; ++lOutputDim) {
+          networkPrediction[kPrediction + lOutputDim + predictionSize * loopCounter] = outputNetwork[kPrediction + lOutputDim];
         }
       }
 
-      counter_track_props = 0;
-      loop_counter += 1;
+      counterTrackProps = 0;
+      ++loopCounter;
     }
-    track_properties.clear();
+    trackProperties.clear();
 
-    auto stop_network_total = std::chrono::high_resolution_clock::now();
-    LOG(debug) << "Neural Network for the TPC PID response correction: Time per track (eval ONNX): " << duration_network / (size * 9) << "ns ; Total time (eval ONNX): " << duration_network / 1000000000 << " s";
-    LOG(debug) << "Neural Network for the TPC PID response correction: Time per track (eval + overhead): " << std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_total - start_network_total).count() / (size * 9) << "ns ; Total time (eval + overhead): " << std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_total - start_network_total).count() / 1000000000 << " s";
+    const auto stopNetworkTotal = std::chrono::high_resolution_clock::now();
+    LOG(debug) << "Neural Network for the TPC PID response correction: Time per track (eval ONNX): " << durationNetwork / (size * NParticleTypes) << "ns ; Total time (eval ONNX): " << durationNetwork / NanoToOne << " s";
+    LOG(debug) << "Neural Network for the TPC PID response correction: Time per track (eval + overhead): " << std::chrono::duration<float, std::ratio<1, NanoToOne>>(stopNetworkTotal - startNetworkTotal).count() / (size * NParticleTypes) << "ns ; Total time (eval + overhead): " << std::chrono::duration<float, std::ratio<1, NanoToOne>>(stopNetworkTotal - startNetworkTotal).count() / NanoToOne << " s";
 
-    return network_prediction;
+    return networkPrediction;
   }
 
   //__________________________________________________
   template <typename T, typename NSF, typename NST>
-  void makePidTables(const int flagFull, NSF& tableFull, const int flagTiny, NST& tableTiny, const o2::track::PID::ID pid, const float tpcSignal, const T& trk, const int64_t multTPC, const std::vector<float>& network_prediction, const int& count_tracks, const int& tracksForNet_size)
+  void makePidTables(const int flagFull, NSF& tableFull, const int flagTiny, NST& tableTiny, const o2::track::PID::ID pid, const float tpcSignal, const T& trk, const int64_t multTPC, const float* network_prediction, const int& count_tracks, const int& tracksForNet_size)
   {
     if (flagFull != 1 && flagTiny != 1) {
       return;
@@ -750,7 +775,7 @@ class pidTPCModule
     reserveTable(pidTPCopts.pidTinyAl, products.tablePIDTinyAl);
 
     const uint64_t tracksForNet_size = (pidTPCopts.skipTPCOnly) ? totalTPCnotStandalone : totalTPCtracks;
-    std::vector<float> network_prediction;
+    std::unique_ptr<float[]> network_prediction;
 
     if (pidTPCopts.useNetworkCorrection) {
       network_prediction = createNetworkPrediction(ccdb, cols, pidmults, tracks, bcs, tracksForNet_size);
@@ -951,7 +976,7 @@ class pidTPCModule
       }
 
       auto makePidTablesDefault = [&trk, &tpcSignalToEvaluatePID, &multTPC, &network_prediction, &count_tracks, &tracksForNet_size, this](const int flagFull, auto& tableFull, const int flagTiny, auto& tableTiny, const o2::track::PID::ID pid) {
-        this->makePidTables(flagFull, tableFull, flagTiny, tableTiny, pid, tpcSignalToEvaluatePID, trk, multTPC, network_prediction, count_tracks, tracksForNet_size);
+        this->makePidTables(flagFull, tableFull, flagTiny, tableTiny, pid, tpcSignalToEvaluatePID, trk, multTPC, network_prediction.get(), count_tracks, tracksForNet_size);
       };
 
       makePidTablesDefault(pidTPCopts.pidFullEl, products.tablePIDFullEl, pidTPCopts.pidTinyEl, products.tablePIDTinyEl, o2::track::PID::Electron);

@@ -75,8 +75,8 @@ struct LongrangecorrDerived {
   SGSelector sgSelector;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   TrackSelection myTrackFilter;
-  Service<o2::framework::O2DatabasePDG> pdg;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::framework::O2DatabasePDG> pdg{};
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   struct : ConfigurableGroup {
     Configurable<int> cfgNmixedevent{"cfgNmixedevent", 5, "how many events are mixed"};
@@ -115,6 +115,10 @@ struct LongrangecorrDerived {
     Configurable<float> cfgTofPidPtCut{"cfgTofPidPtCut", 0.4f, "Minimum pt to use TOF N-sigma"};
     Configurable<float> cfgPidNsigmaMax{"cfgPidNsigmaMax", 1.5f, "Maximum n-sigma for PID"};
     Configurable<float> cfgPidNsigmaMin{"cfgPidNsigmaMin", -1.5f, "Minimum n-sigma for PID"};
+    Configurable<float> cfgCleanNsigmaTpcMax{"cfgCleanNsigmaTpcMax", 1.5f, "Max TPC n-sigma for clean templates"};
+    Configurable<float> cfgCleanNsigmaTpcMin{"cfgCleanNsigmaTpcMin", -1.5f, "Min TPC n-sigma for clean templates"};
+    Configurable<float> cfgCleanNsigmaTofMax{"cfgCleanNsigmaTofMax", 1.5f, "Max TOF n-sigma for clean templates"};
+    Configurable<float> cfgCleanNsigmaTofMin{"cfgCleanNsigmaTofMin", -1.5f, "Min TOF n-sigma for clean templates"};
     Configurable<bool> cfgGetNsigmaQA{"cfgGetNsigmaQA", true, "Get QA histograms for PID selection"};
     Configurable<bool> cfgGetdEdx{"cfgGetdEdx", true, "Get dEdx histograms for TPC signal"};
 
@@ -284,14 +288,18 @@ struct LongrangecorrDerived {
         histos.add("hMCGen_PidPtEtaPhi", "MC Gen Target", kTH3D, {cfgAxis.axisMcPt, cfgAxis.axisMcEta, cfgAxis.axisMcPhi});
         histos.add("hMCRec_PidPtEtaPhi", "MC Rec Target", kTH3D, {cfgAxis.axisMcPt, cfgAxis.axisMcEta, cfgAxis.axisMcPhi});
       }
+
+      if (cfgSel.cfgGetdEdx) {
+        histos.add("MC_TpcdEdx_ptwise", "MC True TPC dE/dx;Particle Species;p_{T} (GeV/c);TPC dE/dx", kTHnSparseD, {{3, 0.5, 3.5}, cfgAxis.axisPtQA, cfgAxis.axisTpcSignal});
+      }
     }
 
     myTrackFilter = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny,
                                                         TrackSelection::GlobalTrackRun3DCAxyCut::Default);
     myTrackFilter.SetPtRange(cfgSel.cfgPtCutMin, cfgSel.cfgPtCutMax);
     myTrackFilter.SetEtaRange(-cfgSel.cfgEtaCut, cfgSel.cfgEtaCut);
-    myTrackFilter.SetMinNCrossedRowsTPC(cfgSel.cfgTpcMinNCrossedRows);
-    myTrackFilter.SetMinNClustersTPC(cfgSel.cfgTpcMinNclsFound);
+    myTrackFilter.SetMinNCrossedRowsTPC(static_cast<int>(cfgSel.cfgTpcMinNCrossedRows));
+    myTrackFilter.SetMinNClustersTPC(static_cast<int>(cfgSel.cfgTpcMinNclsFound));
     myTrackFilter.SetMaxChi2PerClusterTPC(cfgSel.cfgTpcMaxChi2PerCluster);
     myTrackFilter.SetMaxDcaZ(cfgSel.cfgTpcMaxDcaZ);
     myTrackFilter.print();
@@ -507,7 +515,7 @@ struct LongrangecorrDerived {
   template <CorrelationContainer::CFStep step, typename TTarget, typename TTriggers, typename TAssocs>
   void fillCorrHist(TTarget target, TTriggers const& triggers, TAssocs const& assocs, bool mixing, float vz, float multiplicity, float eventWeight)
   {
-    int fSampleIndex = gRandom->Uniform(0, cfgSel.cfgSampleSize);
+    int fSampleIndex = static_cast<int>(gRandom->Uniform(0, cfgSel.cfgSampleSize));
     for (auto const& triggerTrack : triggers) {
       auto trigAmpl = 1.0f;
       auto trkeff = 1.0f;
@@ -1142,6 +1150,22 @@ struct LongrangecorrDerived {
         if (particle.isPhysicalPrimary()) {
           histos.fill(HIST("hRecMCdndpt"), mcCollision.posZ(), particle.eta(), particle.pt());
 
+          if (cfgSel.cfgGetdEdx) {
+            int pdgIdx = 0;
+            auto absPdg = std::abs(particle.pdgCode());
+
+            if (absPdg == PDG_t::kPiPlus)
+              pdgIdx = 1; // o2-linter: disable=pdg/explicit-code (histogram species index)
+            else if (absPdg == PDG_t::kKPlus)
+              pdgIdx = 2; // o2-linter: disable=pdg/explicit-code (histogram species index)
+            else if (absPdg == PDG_t::kProton)
+              pdgIdx = 3; // o2-linter: disable=pdg/explicit-code (histogram species index)
+
+            if (pdgIdx > 0) {
+              histos.fill(HIST("MC_TpcdEdx_ptwise"), static_cast<double>(pdgIdx), track.pt(), track.tpcSignal());
+            }
+          }
+
           bool isTpcPion = (track.tpcNSigmaPi() > cfgSel.cfgPidNsigmaMin && track.tpcNSigmaPi() < cfgSel.cfgPidNsigmaMax);
           bool isTpcKaon = (track.tpcNSigmaKa() > cfgSel.cfgPidNsigmaMin && track.tpcNSigmaKa() < cfgSel.cfgPidNsigmaMax);
           bool isTpcProton = (track.tpcNSigmaPr() > cfgSel.cfgPidNsigmaMin && track.tpcNSigmaPr() < cfgSel.cfgPidNsigmaMax);
@@ -1167,9 +1191,11 @@ struct LongrangecorrDerived {
           }
 
           if (cfgSel.cfgPidMask == KPidMaskPion || cfgSel.cfgPidMask == KPidMaskKaon || cfgSel.cfgPidMask == KPidMaskProton) {
-            bool isTargetRec = (cfgSel.cfgPidMask == KPidMaskPion && isPion) ||
-                               (cfgSel.cfgPidMask == KPidMaskKaon && isKaon) ||
-                               (cfgSel.cfgPidMask == KPidMaskProton && isProton);
+
+            auto pdgcodeRec = std::abs(particle.pdgCode());
+            bool isTargetRec = (cfgSel.cfgPidMask == KPidMaskPion && isPion && pdgcodeRec == PDG_t::kPiPlus) ||
+                               (cfgSel.cfgPidMask == KPidMaskKaon && isKaon && pdgcodeRec == PDG_t::kKPlus) ||
+                               (cfgSel.cfgPidMask == KPidMaskProton && isProton && pdgcodeRec == PDG_t::kProton);
 
             if (isTargetRec) {
               histos.fill(HIST("hMCRec_PidPtEtaPhi"), particle.pt(), particle.eta(), particle.phi());
@@ -1210,6 +1236,9 @@ struct LongrangecorrDerived {
         if (!myTrackFilter.IsSelected(track))
           continue;
 
+        if (!track.hasTOF())
+          continue;
+
         float tpcNsig = 0.0f, tofNsig = 0.0f;
         if (cfgSel.cfgPidMask & KPidMaskPion) {
           tpcNsig = track.tpcNSigmaPi();
@@ -1230,30 +1259,25 @@ struct LongrangecorrDerived {
           }
         }
 
-        bool isTpcPion = (track.tpcNSigmaPi() > cfgSel.cfgPidNsigmaMin && track.tpcNSigmaPi() < cfgSel.cfgPidNsigmaMax);
-        bool isTpcKaon = (track.tpcNSigmaKa() > cfgSel.cfgPidNsigmaMin && track.tpcNSigmaKa() < cfgSel.cfgPidNsigmaMax);
-        bool isTpcProton = (track.tpcNSigmaPr() > cfgSel.cfgPidNsigmaMin && track.tpcNSigmaPr() < cfgSel.cfgPidNsigmaMax);
+        bool isTpcPion = (track.tpcNSigmaPi() > cfgSel.cfgCleanNsigmaTpcMin && track.tpcNSigmaPi() < cfgSel.cfgCleanNsigmaTpcMax);
+        bool isTpcKaon = (track.tpcNSigmaKa() > cfgSel.cfgCleanNsigmaTpcMin && track.tpcNSigmaKa() < cfgSel.cfgCleanNsigmaTpcMax);
+        bool isTpcProton = (track.tpcNSigmaPr() > cfgSel.cfgCleanNsigmaTpcMin && track.tpcNSigmaPr() < cfgSel.cfgCleanNsigmaTpcMax);
 
-        bool isTofPion = (track.tofNSigmaPi() > cfgSel.cfgPidNsigmaMin && track.tofNSigmaPi() < cfgSel.cfgPidNsigmaMax);
-        bool isTofKaon = (track.tofNSigmaKa() > cfgSel.cfgPidNsigmaMin && track.tofNSigmaKa() < cfgSel.cfgPidNsigmaMax);
-        bool isTofProton = (track.tofNSigmaPr() > cfgSel.cfgPidNsigmaMin && track.tofNSigmaPr() < cfgSel.cfgPidNsigmaMax);
+        bool isTofPion = (track.tofNSigmaPi() > cfgSel.cfgCleanNsigmaTofMin && track.tofNSigmaPi() < cfgSel.cfgCleanNsigmaTofMax);
+        bool isTofKaon = (track.tofNSigmaKa() > cfgSel.cfgCleanNsigmaTofMin && track.tofNSigmaKa() < cfgSel.cfgCleanNsigmaTofMax);
+        bool isTofProton = (track.tofNSigmaPr() > cfgSel.cfgCleanNsigmaTofMin && track.tofNSigmaPr() < cfgSel.cfgCleanNsigmaTofMax);
 
-        bool isPion = false, isKaon = false, isProton = false;
-        if (track.pt() > cfgSel.cfgTofPidPtCut && track.hasTOF()) {
-          isPion = isTofPion && isTpcPion;
-          isKaon = isTofKaon && isTpcKaon;
-          isProton = isTofProton && isTpcProton;
-        } else if (!(track.pt() > cfgSel.cfgTofPidPtCut && !track.hasTOF())) {
-          isPion = isTpcPion;
-          isKaon = isTpcKaon;
-          isProton = isTpcProton;
-        }
+        bool isPion = isTofPion && isTpcPion;
+        bool isKaon = isTofKaon && isTpcKaon;
+        bool isProton = isTofProton && isTpcProton;
 
         if ((isPion && isKaon) || (isPion && isProton) || (isKaon && isProton)) {
           isPion = isKaon = isProton = false;
         }
 
-        bool isTargetParticle = ((cfgSel.cfgPidMask & KPidMaskPion) && isPion) || ((cfgSel.cfgPidMask & KPidMaskKaon) && isKaon) || ((cfgSel.cfgPidMask & KPidMaskProton) && isProton);
+        bool isTargetParticle = ((cfgSel.cfgPidMask & KPidMaskPion) && isPion) ||
+                                ((cfgSel.cfgPidMask & KPidMaskKaon) && isKaon) ||
+                                ((cfgSel.cfgPidMask & KPidMaskProton) && isProton);
 
         // FILL AFTER CUTS
         if (cfgSel.cfgGetNsigmaQA && isTargetParticle) {

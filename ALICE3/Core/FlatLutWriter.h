@@ -23,7 +23,7 @@
 #include <string>
 namespace o2::fastsim
 {
-using lutEntry_t = o2::delphes::lutEntry_t;
+using lutEntry_t = o2::fastsim::lutEntry_t;
 /**
  * @brief LUT writer using flat binary format
  *
@@ -39,10 +39,10 @@ class FlatLutWriter
   FlatLutWriter() = default;
 
   // Setters for binning configuration
-  void setBinningNch(bool log, int nbins, float min, float max) { mNchBinning = {log, nbins, min, max}; }
-  void setBinningRadius(bool log, int nbins, float min, float max) { mRadiusBinning = {log, nbins, min, max}; }
-  void setBinningEta(bool log, int nbins, float min, float max) { mEtaBinning = {log, nbins, min, max}; }
-  void setBinningPt(bool log, int nbins, float min, float max) { mPtBinning = {log, nbins, min, max}; }
+  void setBinningNch(bool log, int nbins, float min, float max) { mNchBinning = {.log = log, .nbins = nbins, .min = min, .max = max}; }
+  void setBinningRadius(bool log, int nbins, float min, float max) { mRadiusBinning = {.log = log, .nbins = nbins, .min = min, .max = max}; }
+  void setBinningEta(bool log, int nbins, float min, float max) { mEtaBinning = {.log = log, .nbins = nbins, .min = min, .max = max}; }
+  void setBinningPt(bool log, int nbins, float min, float max) { mPtBinning = {.log = log, .nbins = nbins, .min = min, .max = max}; }
 
   void setEtaMaxBarrel(float eta) { etaMaxBarrel = eta; }
   void setAtLeastHits(int n) { mAtLeastHits = n; }
@@ -59,7 +59,7 @@ class FlatLutWriter
                 const float nch = 1.0f);
 
   void print() const;
-  bool fwdSolve(float* covm, float pt = 0.1f, float eta = 0.0f, float mass = o2::track::pid_constants::sMasses[o2::track::PID::Pion]);
+  bool fwdSolve(o2::fastsim::CovarianceArray covm, float pt = 0.1f, float eta = 0.0f, float mass = o2::track::pid_constants::sMasses[o2::track::PID::Pion]);
   bool fwdPara(lutEntry_t& lutEntry, float pt = 0.1f, float eta = 0.0f, float mass = o2::track::pid_constants::sMasses[o2::track::PID::Pion], float Bfield = 0.5f);
   void lutWrite(const char* filename = "lutCovm.dat", int pdg = 211, float field = 0.2f, size_t itof = 0, size_t otof = 0);
   TGraph* lutRead(const char* filename, int pdg, int what, int vs, float nch = 0.f, float radius = 0.f, float eta = 0.f, float pt = 0.f);
@@ -84,13 +84,13 @@ class FlatLutWriter
     int nbins;
     float min;
     float max;
-    std::string toString() const;
+    [[nodiscard]] std::string toString() const;
   };
 
-  LutBinning mNchBinning = {true, 20, 0.5f, 3.5f};
-  LutBinning mRadiusBinning = {false, 1, 0.0f, 100.0f};
-  LutBinning mEtaBinning = {false, 80, -4.0f, 4.0f};
-  LutBinning mPtBinning = {true, 200, -2.0f, 2.0f};
+  LutBinning mNchBinning = {.log = true, .nbins = 20, .min = 0.5f, .max = 3.5f};
+  LutBinning mRadiusBinning = {.log = false, .nbins = 1, .min = 0.0f, .max = 100.0f};
+  LutBinning mEtaBinning = {.log = false, .nbins = 80, .min = -4.0f, .max = 4.0f};
+  LutBinning mPtBinning = {.log = true, .nbins = 200, .min = -2.0f, .max = 2.0f};
 };
 
 } // namespace o2::fastsim
