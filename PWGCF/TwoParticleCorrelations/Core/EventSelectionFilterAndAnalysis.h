@@ -231,8 +231,6 @@ inline uint64_t EventSelectionFilterAndAnalysis::Filter(CollisionToFilter const&
     bool acc = mMultiplicityClasses->ComplexBrickHelper::Filter(selectedMask, bit);
     acceptcollision = acceptcollision && acc;
   }
-  if (mTriggerSelection != nullptr) {
-  }
   if (mZVertex != nullptr) {
     bool acc = filterBrickValue(selectedMask, bit, mZVertex, col.posZ());
     acceptcollision = acceptcollision && acc;
