@@ -196,7 +196,7 @@ struct CascDiHadronCorr {
 
   // make the filters and cuts.
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgCutVtxZ);
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && /*((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && */(aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
+  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
   using FilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
   using FilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
   using FilteredTracksWithMCLabels = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>>;
@@ -248,24 +248,14 @@ struct CascDiHadronCorr {
       float eta;
       float phi;
       float pt;
-      int region;
-      float efficiency;
-      float efficiencyError;
-      int type;
     };
-    float pvz;
-    float mult;
-    std::vector<ValidParticle> trigParticles;
+    float pvz = 0;
+    float mult = 0;
     std::vector<ValidParticle> assocParticles;
-    void addValidParticle(float eta, float phi, float pt, int region, float efficiency, float efficiencyError, int type)
+    void addValidParticle(float eta, float phi, float pt)
     {
-      ValidParticle particle{eta, phi, pt, region, efficiency, efficiencyError, type};
-
-      if (type == -1) {
-        trigParticles.push_back(particle);
-      } else {
-        assocParticles.push_back(particle);
-      }
+      ValidParticle particle{eta, phi, pt};
+      assocParticles.push_back(particle);
     }
   };
   using ValidCollisions = std::vector<std::vector<ValidCollision>>;
@@ -480,7 +470,7 @@ struct CascDiHadronCorr {
   }
 
   template <typename TTrack>
-  bool trackSelected(TTrack track)
+  bool trackSelected(const TTrack& track)
   {
     if (std::abs(track.eta()) > cfgCutEta) {
       return false;
@@ -495,7 +485,7 @@ struct CascDiHadronCorr {
   }
 
   template <typename TTrackCasc>
-  bool cascSelected(TTrackCasc casc, float posX, float posY, float posZ)
+  bool cascSelected(const TTrackCasc& casc, float posX, float posY, float posZ)
   {
     if (std::abs(casc.eta()) > cfgCutEta) {
       return false;
@@ -638,7 +628,7 @@ struct CascDiHadronCorr {
   }
 
   template <typename TTrack>
-  bool genTrackSelected(TTrack track)
+  bool genTrackSelected(const TTrack& track)
   {
     if (!track.isPhysicalPrimary()) {
       return false;
@@ -670,7 +660,7 @@ struct CascDiHadronCorr {
       if (mEfficiency == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiency.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.value.c_str(), (void*)mEfficiency);
+      LOGF(info, "Loaded efficiency histogram from %s", cfgEfficiency.value.c_str());
     }
     if (cfgEfficiencyCasc.value.empty() == false) {
       if (cfgLocalEfficiency > 0) {
@@ -682,14 +672,14 @@ struct CascDiHadronCorr {
       if (mEfficiencyCasc == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiencyCasc.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiencyCasc.value.c_str(), (void*)mEfficiencyCasc);
+      LOGF(info, "Loaded efficiency histogram from %s", cfgEfficiencyCasc.value.c_str());
     }
     if (cfgCentralityWeight.value.empty() == false) {
       mCentralityWeight = ccdb->getForTimeStamp<TH1D>(cfgCentralityWeight, timestamp);
       if (mCentralityWeight == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgCentralityWeight.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgCentralityWeight.value.c_str(), (void*)mCentralityWeight);
+      LOGF(info, "Loaded efficiency histogram from %s", cfgCentralityWeight.value.c_str());
     }
     correctionsLoaded = true;
   }
@@ -742,7 +732,7 @@ struct CascDiHadronCorr {
 
   // fill multiple histograms
   template <typename TCollision, typename TTracks>
-  void fillYield(TCollision collision, TTracks tracks) // function to fill the yield and etaphi histograms.
+  void fillYield(const TCollision& collision, const TTracks& tracks) // function to fill the yield and etaphi histograms.
   {
     float weff1 = 1;
     float vtxz = collision.posZ();
@@ -784,7 +774,7 @@ struct CascDiHadronCorr {
   }
 
   template <CorrelationContainer::CFStep step, typename TTracks, typename TCollision>
-  void fillCorrelations(TTracks tracks1, TCollision currentCollision, float posZ, int bin, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms (use buffer, only for mixevent)
+  void fillCorrelations(const TTracks& tracks1, const TCollision& currentCollision, float posZ, int bin, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms (use buffer, only for mixevent)
   {
     float triggerWeight = 1.0f;
     float associatedWeight = 1.0f;
@@ -832,7 +822,7 @@ struct CascDiHadronCorr {
   }
 
   template <CorrelationContainer::CFStep step, typename TTracks, typename TCollision>
-  void fillCorrelationsCasc(TTracks tracks1, TCollision currentCollision, float posX, float posY, float posZ, int bin, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms (use buffer, only for mixevent)
+  void fillCorrelationsCasc(const TTracks& tracks1, const TCollision& currentCollision, float posX, float posY, float posZ, int bin, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms (use buffer, only for mixevent)
   {
     float triggerWeight = 1.0f;
     float associatedWeight = 1.0f;
@@ -883,7 +873,7 @@ struct CascDiHadronCorr {
   }
 
   template <CorrelationContainer::CFStep step, typename TTracks, typename TTracksAssoc>
-  void fillCorrelations(TTracks tracks1, TTracksAssoc tracks2, float posZ, int system, int magneticField, float cent, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
+  void fillCorrelations(const TTracks& tracks1, const TTracksAssoc& tracks2, float posZ, int system, int magneticField, float cent, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
     // Cache efficiency for particles (too many FindBin lookups)
     if (mEfficiency) {
@@ -968,7 +958,7 @@ struct CascDiHadronCorr {
   }
 
   template <CorrelationContainer::CFStep step, typename TTracks, typename TTracksAssoc>
-  void fillCorrelationsCasc(TTracks tracks1, TTracksAssoc tracks2, float posX, float posY, float posZ, int system, int magneticField, float cent, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
+  void fillCorrelationsCasc(const TTracks& tracks1, const TTracksAssoc& tracks2, float posX, float posY, float posZ, int system, int magneticField, float cent, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
     // Cache efficiency for particles (too many FindBin lookups)
     if (mEfficiency) {
@@ -992,8 +982,6 @@ struct CascDiHadronCorr {
     float triggerWeight = 1.0f;
     float associatedWeight = 1.0f;
     // loop over all tracks
-    if (tracks1.size() > 0)
-      std::cout<<"event begin"<<std::endl;
     for (auto const& track1 : tracks1) {
 
       if (!cascSelected(track1, posX, posY, posZ))
@@ -1020,7 +1008,6 @@ struct CascDiHadronCorr {
         }
 
         if (!cfgUsePtOrder && bachelor.globalIndex() == track2.globalIndex()) {
-          std::cout<<"bacheor phi = "<<bachelor.phi()<<" asso phi = "<<track2.phi()<<std::endl;
           continue; // For pt-differential correlations, skip if the trigger bachelor and associate are the same track
         }
         if (!cfgUsePtOrder && posdau.globalIndex() == track2.globalIndex())
@@ -1076,7 +1063,7 @@ struct CascDiHadronCorr {
   }
 
   template <CorrelationContainer::CFStep step, typename TTracks, typename TTracksAssoc>
-  void fillCorrelationsExcludeSoloTracks(TTracks tracks1, TTracksAssoc tracks2, float posZ, int magneticField, float cent, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
+  void fillCorrelationsExcludeSoloTracks(const TTracks& tracks1, const TTracksAssoc& tracks2, float posZ, int magneticField, float cent, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
     std::vector<int64_t> tracksSkipIndices;
     std::vector<int64_t> tracks2SkipIndices;
@@ -1172,7 +1159,7 @@ struct CascDiHadronCorr {
   }
 
   template <CorrelationContainer::CFStep step, typename TTracks, typename TTracksAssoc>
-  void fillMCCorrelations(TTracks tracks1, TTracksAssoc tracks2, float posZ, int system, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
+  void fillMCCorrelations(const TTracks& tracks1, const TTracksAssoc& tracks2, float posZ, int system, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
     double fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
 
@@ -1220,7 +1207,7 @@ struct CascDiHadronCorr {
   }
 
   template <CorrelationContainer::CFStep step, typename TTracks, typename TTracksAssoc>
-  void fillMCCorrelationsCasc(TTracks tracks1, TTracksAssoc tracks2, float posZ, int system, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
+  void fillMCCorrelationsCasc(const TTracks& tracks1, const TTracksAssoc& tracks2, float posZ, int system, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
     double fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
 
@@ -1273,7 +1260,7 @@ struct CascDiHadronCorr {
   }
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision, const int multTrk, const float centrality, const bool fillCounter)
+  bool eventSelected(const TCollision& collision, const int multTrk, const float centrality, const bool fillCounter)
   {
     registry.fill(HIST("hEventCountSpecific"), 0.5);
     if (cfgEvSel.cfgEvSelkNoSameBunchPileup.value && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
@@ -1616,7 +1603,7 @@ struct CascDiHadronCorr {
     for (const auto& track : tracks) {
       if (!trackSelected(track))
         continue;
-      currentCollision.addValidParticle(track.eta(), track.phi(), track.pt(), 0, 1, 1, 1);
+      currentCollision.addValidParticle(track.eta(), track.phi(), track.pt());
     }
 
     fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, currentCollision, collision.posZ(), bin, weightCent);
@@ -1669,7 +1656,7 @@ struct CascDiHadronCorr {
     for (const auto& track : tracks) {
       if (!trackSelected(track))
         continue;
-      currentCollision.addValidParticle(track.eta(), track.phi(), track.pt(), 0, 1, 1, 1);
+      currentCollision.addValidParticle(track.eta(), track.phi(), track.pt());
     }
 
     fillCorrelationsCasc<CorrelationContainer::kCFStepReconstructed>(cascades, currentCollision, collision.posX(), collision.posY(), collision.posZ(), bin, weightCent);
@@ -1892,7 +1879,7 @@ struct CascDiHadronCorr {
   }
   PROCESS_SWITCH(CascDiHadronCorr, processMCMixed, "Process MC mixed events", false);
 
-void processMCMixedCasc(FilteredMcCollisions const& mcCollisions, FilteredMcParticles const& mcParticles, SmallGroupMcCollisions const& collisions)
+  void processMCMixedCasc(FilteredMcCollisions const& mcCollisions, FilteredMcParticles const& mcParticles, SmallGroupMcCollisions const& collisions)
   {
     auto getTracksSize = [&mcParticles, this](FilteredMcCollisions::iterator const& mcCollision) {
       auto associatedTracks = mcParticles.sliceByCached(o2::aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), this->cache);
