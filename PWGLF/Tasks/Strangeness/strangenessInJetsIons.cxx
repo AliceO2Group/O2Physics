@@ -1582,7 +1582,7 @@ struct StrangenessInJetsIons {
           }
           break;
         case kXiMinus:
-          if (particleOfInterestDict[ParticleOfInterest::kCascades] || calculateFeeddownMatrix) {
+          if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
             registryMC.fill(HIST("XiNeg_generated_MB"), genMultiplicity, particle.pt());
             if (hasReco) {
               registryMC.fill(HIST("XiNeg_generated_w_reco_MB"), genMultiplicity, particle.pt());
@@ -1775,30 +1775,30 @@ struct StrangenessInJetsIons {
           continue;
         if (std::abs(motherPos.pdgCode()) != kLambda0)
           continue;
-        if (std::abs(motherPos.eta()) > 0.8)
+        if (std::abs(motherBach.eta()) > 0.8)
           continue;
 
         // Xi+
         if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() > 0 &&
-            motherPos.pdgCode() == kXiPlusBar &&
+            motherBach.pdgCode() == kXiPlusBar &&
             passedRapidityCut(casc.yXi(), configV0.rapidityMax)) {
           registryMC.fill(HIST("XiPos_reconstructed_MB_incl"), multiplicity, casc.pt());
         }
         // Xi-
         if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() < 0 &&
-            motherPos.pdgCode() == kXiMinus &&
+            motherBach.pdgCode() == kXiMinus &&
             passedRapidityCut(casc.yXi(), configV0.rapidityMax)) {
           registryMC.fill(HIST("XiNeg_reconstructed_MB_incl"), multiplicity, casc.pt());
         }
         // Omega+
         if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() > 0 &&
-            motherPos.pdgCode() == kOmegaPlusBar &&
+            motherBach.pdgCode() == kOmegaPlusBar &&
             passedRapidityCut(casc.yOmega(), configV0.rapidityMax)) {
           registryMC.fill(HIST("OmegaPos_reconstructed_MB_incl"), multiplicity, casc.pt());
         }
         // Omega-
         if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() < 0 &&
-            motherPos.pdgCode() == kOmegaMinus &&
+            motherBach.pdgCode() == kOmegaMinus &&
             passedRapidityCut(casc.yOmega(), configV0.rapidityMax)) {
           registryMC.fill(HIST("OmegaNeg_reconstructed_MB_incl"), multiplicity, casc.pt());
         }
@@ -1807,11 +1807,11 @@ struct StrangenessInJetsIons {
           continue;
 
         // Rapidity generated particle
-        double yGen = motherPos.y();
+        double yGen = motherBach.y();
 
         // Histograms below are filled only for PhysicalPrimary particles
         // Xi+ (primary)
-        if (motherPos.pdgCode() == kXiPlusBar) {
+        if (motherBach.pdgCode() == kXiPlusBar) {
           if (passedRapidityCut(yGen, configV0.rapidityMax)) {
             registryMC.fill(HIST("XiPos_gen_recoEvent_MB"), multiplicity, casc.pt());
           }
