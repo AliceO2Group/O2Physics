@@ -105,6 +105,7 @@ struct CascDiHadronCorr {
   O2_DEFINE_CONFIGURABLE(cfgOutputXi, bool, true, "Output Xi-charged correlation")
   O2_DEFINE_CONFIGURABLE(cfgOutputOmega, bool, false, "Output Omega-charged correlation")
   struct : ConfigurableGroup {
+    std::string prefix = "cfgEvSel";
     O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, false, "Use additional event cut on mult correlations")
     O2_DEFINE_CONFIGURABLE(cfgEvSelkNoSameBunchPileup, bool, false, "rejects collisions which are associated with the same found-by-T0 bunch crossing")
     O2_DEFINE_CONFIGURABLE(cfgEvSelkNoITSROFrameBorder, bool, false, "reject events at ITS ROF border")
