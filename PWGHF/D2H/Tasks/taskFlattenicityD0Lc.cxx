@@ -25,6 +25,7 @@
 
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -84,8 +85,8 @@ struct HfTaskFlattenicityD0Lc {
   HfEventSelection hfEvSel;
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
-  using Collisions = soa::Join<aod::Collisions, aod::EvSels>;
-  using CollisionsWithMcLabels = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
+  using Collisions = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults>;
+  using CollisionsWithMcLabels = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults>;
 
   using TracksWPid = soa::Join<o2::aod::FullTracks, aod::TracksDCA, o2::aod::TrackSelection, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr>;
   using TracksSelQuality = soa::Join<aod::TracksExtra, aod::TracksWMc>;
@@ -640,7 +641,6 @@ struct HfTaskFlattenicityD0Lc {
       massD0bar = HfHelper::invMassD0barToKPi(candidate);
 
       auto trackPos = candidate.template prong0_as<TracksSelQuality>();
-      auto trackNeg = candidate.template prong1_as<TracksSelQuality>();
       if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
         auto indexMother = RecoDecay::getMother(mcParticles2prong, trackPos.template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>(), o2::constants::physics::Pdg::kD0, true);
         auto particleMother = mcParticles2prong.rawIteratorAt(indexMother);
