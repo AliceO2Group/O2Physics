@@ -2362,6 +2362,10 @@ struct FlowGenericFramework {
       if (!track.isPhysicalPrimary()) {
         return;
       }
+      auto pdgParticle = pdgDB->GetParticle(track.pdgCode());
+      if (!pdgParticle || pdgParticle->Charge() == 0.) {
+        return;
+      }
       if (cfgFill.cfgFillQA) {
         fillTrackQA<Gen, Before>(track, vtxz);
       }
