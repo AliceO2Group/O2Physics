@@ -25,10 +25,13 @@
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/Tools/StandardCCDBLoader.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DetectorsBase/Propagator.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -40,6 +43,7 @@
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/TrackParametrization.h>
 
 #include <Math/Vector3D.h> // IWYU pragma: keep (do not replace with Math/Vector3Dfwd.h)
 #include <Math/Vector3Dfwd.h>
@@ -73,7 +77,10 @@ static const std::vector<std::string> DirList = {"V0BeforeSel", "PhotonSel", "La
 static const std::vector<std::string> DirList2 = {"EMCalPhotonBeforeSel", "EMCalPhotonSel"};
 
 struct sigma0builder {
+  o2::common::StandardCCDBLoaderConfigurables standardCCDBLoaderConfigurables;
+  o2::common::StandardCCDBLoader ccdbLoader;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+  int mRunNumber = 0;
   ctpRateFetcher rateFetcher;
 
   //___________________________________________________
@@ -104,6 +111,15 @@ struct sigma0builder {
   Produces<aod::Pi0CoresMC> pi0coresmc;        // Reco pi0 MC properties
   Produces<aod::Pi0Gens> pi0Gens;              // Generated pi0s
   Produces<aod::Pi0GenCollRef> pi0GenCollRefs; // references collisions from pi0Gens
+
+  //__________________________________________________
+  // Xi0 specific
+  Produces<aod::Xi0Cores> xi0cores;           // xi0 candidates info for analysis
+  Produces<aod::Xi0CollRefs> xi0collRefs;     // references to straCollision
+  Produces<aod::Xi0Indices> xi0Indices;       // references to V0Cores
+  Produces<aod::Xi0MCCores> xi0mccores;       // Reco xi0 MC properties
+  Produces<aod::Xi0MCCollRefs> xi0mccollRefs; // references to straMCCollision
+  Produces<aod::Xi0MCIndices> xi0mcIndices;   // references to V0MCCores
 
   //__________________________________________________
   // pack track quality but separte also afterburner
@@ -176,6 +192,7 @@ struct sigma0builder {
   Configurable<bool> fillPi0Tables{"fillPi0Tables", false, "fill pi0 tables for QA"};
   Configurable<bool> fillSigma0Tables{"fillSigma0Tables", true, "fill sigma0 tables for analysis"};
   Configurable<bool> fillKStarTables{"fillKStarTables", true, "fill kstar tables for analysis"};
+  Configurable<bool> fillXi0Tables{"fillXi0Tables", false, "fill xi0 tables for analysis"};
 
   // For ML Selection
   Configurable<bool> useMLScores{"useMLScores", false, "use ML scores to select candidates"};
@@ -284,6 +301,19 @@ struct sigma0builder {
     Configurable<float> KShortMaxTPCNSigmas{"KShortMaxTPCNSigmas", 1e+9, "Max |TPC NSigma| (pion hypothesis) for K0S daughters"};
   } kshortSelections;
 
+  // Xi0 criteria:
+  struct : ConfigurableGroup {
+    std::string prefix = "cascadeSelections"; // JSON group name
+    Configurable<float> maxPi0Rapidity{"maxPi0Rapidity", 1.0, "Maximum rapidity of pi0"};
+    Configurable<float> massPi0Window{"massPi0Window", 0.115, "Maximum pi0 mass (GeV/c)"};
+    Configurable<float> dcaPi0daughters{"dcaPi0daughters", 1., "Maximum DCA between pi0 daughters"};
+    Configurable<float> radiusPi0{"radiusPi0", 2.5, "Max DCA V0 Daughters (cm)"};
+    Configurable<float> dcaPi0ToPV{"dcaPi0ToPV", 0.0, "Minimum Pi0 DCA to PV(cm)"};
+    Configurable<float> dcaCascadeDaughters{"dcaCascadeDaughters", 1., "Maximum DCA between cascade daughters"};
+    Configurable<float> radiusCascade{"radiusCascade", 2.5, "Minimum cascade decay radius (cm)"};
+    Configurable<float> cosPACascade{"cosPACascade", 0.95, "Min cascade CosPA"};
+  } cascadeSelections;
+
   // KStar criteria:
   Configurable<float> KStarWindow{"KStarWindow", 0.1, "Mass window around expected (in GeV/c2)"};
   Configurable<float> KStarMaxRap{"KStarMaxRap", 0.8, "Max kstar rapidity"};
@@ -315,11 +345,13 @@ struct sigma0builder {
     ConfigurableAxis axisNch{"axisNch", {300, 0.0f, 3000.0f}, "N_{ch}"};
 
     // Invariant Mass
-    ConfigurableAxis axisSigmaMass{"axisSigmaMass", {500, 1.10f, 1.30f}, "M_{#Sigma^{0}} (GeV/c^{2})"};
-    ConfigurableAxis axisLambdaMass{"axisLambdaMass", {200, 1.101f, 1.131f}, "M_{#Lambda} (GeV/c^{2})"};
-    ConfigurableAxis axisPhotonMass{"axisPhotonMass", {200, 0.0f, 0.3f}, "M_{#Gamma}"};
-    ConfigurableAxis axisK0SMass{"axisK0SMass", {200, 0.4f, 0.6f}, "M_{K^{0}}"};
-    ConfigurableAxis axisKStarMass{"axisKStarMass", {500, 0.6f, 1.6f}, "M_{K^{*}} (GeV/c^{2})"};
+    ConfigurableAxis axisSigmaMass{"axisSigmaMass", {500, 1.10f, 1.30f}, "#it{M}_{#Sigma^{0}} (GeV/#it{c}^{2})"};
+    ConfigurableAxis axisLambdaMass{"axisLambdaMass", {200, 1.101f, 1.131f}, "#it{M}_{#Lambda} (GeV/#it{c}^{2})"};
+    ConfigurableAxis axisPhotonMass{"axisPhotonMass", {200, 0.0f, 0.3f}, "#it{M}_{#Gamma} (GeV/#it{c}^{2})"};
+    ConfigurableAxis axisK0SMass{"axisK0SMass", {200, 0.4f, 0.6f}, "#it{M}_{K^{0}_{S}} (GeV/#it{c}^{2})"};
+    ConfigurableAxis axisKStarMass{"axisKStarMass", {500, 0.6f, 1.6f}, "#it{M}_{K^{*}} (GeV/#it{c}}^{2})"};
+    ConfigurableAxis axisPi0Mass{"axisPi0Mass", {100, 0.08f, 0.18f}, "#it{M}_{#pi^{0}} (GeV/#it{c}^{2})"};
+    ConfigurableAxis axisXi0Mass{"axisXi0Mass", {100, 1.27f, 1.37f}, "#it{M}_{#Xi^{0}} (GeV/#it{c}^{2})"};
 
     // AP plot axes
     ConfigurableAxis axisAPAlpha{"axisAPAlpha", {220, -1.1f, 1.1f}, "V0 AP alpha"};
@@ -350,6 +382,30 @@ struct sigma0builder {
     ConfigurableAxis axisClrShape{"axisClrShape", {100, 0.0, 1.0}, "cluster shape"};
   } axisConfig;
 
+  struct : ConfigurableGroup {
+    std::string prefix = "fitterConfiguration"; // JSON group name
+    Configurable<bool> propagateToPCA{"propagateToPCA", true, "Propagate to PCA?"};
+    Configurable<float> minParamChange{"minParamChange", 4., "Stop minimization iterations if largest change of any X is smaller than this."};
+    Configurable<float> minRelChi2Change{"minRelChi2Change", 0.9, "Stop iterations is chi2/chi2old > this"};
+    Configurable<float> maxR{"maxR", 200., "Don't consider as a seed (circles intersection) if its R exceeds this"};
+    Configurable<float> maxDXYIni{"maxDXYIni", 4.0f, "Don't consider as a seed (circles intersection) if XY distance exceeds this"};
+    Configurable<float> maxDZIni{"maxDZIni", 1e9, "Don't consider as a seed (circles intersection) if Z distance exceeds this"};
+    Configurable<float> maxChi2{"maxChi2", 1e9, "Max dca from prongs to vertex"};
+    Configurable<bool> useAbsDCA{"useAbsDCA", true, "Use abs dca minimization"};
+    Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Max generated particle rapidity"};
+  } fitterConfiguration;
+
+  // CCDB options
+  struct : ConfigurableGroup {
+    // manual
+    Configurable<bool> useCustomRunNumber{"ccdbConfigurations.useCustomRunNumber", false, "Use custom run number"};
+    Configurable<int> customRunNumber{"ccdbConfigurations.customRunNumber", 544122, "Manually set the run number "};
+    Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  } ccdbConfigurations;
+
+  o2::vertexing::DCAFitterN<2> fitter2Prongs; // 2-prong o2 dca fitter
+  o2::vertexing::DCAFitterN<3> fitter3Prongs; // 3-prong o2 dca fitter
+
   void init(InitContext const&)
   {
     LOGF(info, "Initializing now: cross-checking correctness...");
@@ -366,9 +422,9 @@ struct sigma0builder {
     }
 
     // setting CCDB service
-    ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
-    ccdb->setFatalWhenNull(false);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setURL(ccdbConfigurations.ccdburl.value);
 
     histos.add("hEventCentrality", "hEventCentrality", kTH1D, {axisConfig.axisCentrality});
 
@@ -560,6 +616,11 @@ struct sigma0builder {
       histos.get<TH1>(HIST("KStarSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(3, "KStar Y Window");
 
       histos.add("KStarSel/hKStarMassSelected", "hKStarMassSelected", kTH1F, {axisConfig.axisKStarMass});
+    }
+
+    if (fillXi0Tables) {
+      histos.add("Xi0Sel/hPi0Mass", "hPi0Mass", kTH1F, {axisConfig.axisPi0Mass});
+      histos.add("Xi0Sel/hXi0Mass", "hXi0Mass", kTH1F, {axisConfig.axisXi0Mass});
     }
 
     if (doAssocStudy && (doprocessMonteCarlo || doprocessMonteCarloWithTOF)) {
@@ -782,18 +843,66 @@ struct sigma0builder {
       histos.add("V0QA/h2dGenKShortVsMultMC", "h2dGenKShortVsMultMC", kTH2D, {axisConfig.axisNch, axisConfig.axisPt});
     }
 
+    fitter2Prongs.setPropagateToPCA(fitterConfiguration.propagateToPCA);
+    fitter2Prongs.setMaxR(fitterConfiguration.maxR);
+    fitter2Prongs.setMinParamChange(fitterConfiguration.minParamChange);
+    fitter2Prongs.setMinRelChi2Change(fitterConfiguration.minRelChi2Change);
+    fitter2Prongs.setMaxDZIni(fitterConfiguration.maxDZIni);
+    fitter2Prongs.setMaxDXYIni(fitterConfiguration.maxDXYIni);
+    fitter2Prongs.setMaxChi2(fitterConfiguration.maxChi2);
+    fitter2Prongs.setUseAbsDCA(fitterConfiguration.useAbsDCA);
+    fitter2Prongs.setWeightedFinalPCA(fitterConfiguration.useWeightedFinalPCA);
+
+    fitter3Prongs.setPropagateToPCA(fitterConfiguration.propagateToPCA);
+    fitter3Prongs.setMaxR(fitterConfiguration.maxR);
+    fitter3Prongs.setMinParamChange(fitterConfiguration.minParamChange);
+    fitter3Prongs.setMinRelChi2Change(fitterConfiguration.minRelChi2Change);
+    fitter3Prongs.setMaxDZIni(fitterConfiguration.maxDZIni);
+    fitter3Prongs.setMaxDXYIni(fitterConfiguration.maxDXYIni);
+    fitter3Prongs.setMaxChi2(fitterConfiguration.maxChi2);
+    fitter3Prongs.setUseAbsDCA(fitterConfiguration.useAbsDCA);
+    fitter3Prongs.setWeightedFinalPCA(fitterConfiguration.useWeightedFinalPCA);
+
+    fitter2Prongs.setMatCorrType(o2::base::Propagator::MatCorrType::USEMatCorrLUT);
+    fitter3Prongs.setMatCorrType(o2::base::Propagator::MatCorrType::USEMatCorrLUT);
+
+    // mag field has to be set later
+    fitter2Prongs.setBz(-999.9f); // will NOT make sense if not changed
+    fitter3Prongs.setBz(-999.9f); // will NOT make sense if not changed
+
     // inspect histogram sizes, please
     histos.print();
+  }
+
+  template <typename TCollision> // TCollision should be of the type: soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>::iterator or so
+  void initCCDB(TCollision const& collision)
+  {
+    if (mRunNumber == collision.runNumber() || (ccdbConfigurations.useCustomRunNumber && mRunNumber == ccdbConfigurations.customRunNumber)) {
+      return;
+    }
+
+    mRunNumber = ccdbConfigurations.useCustomRunNumber ? ccdbConfigurations.customRunNumber : collision.runNumber();
+
+    ccdbLoader.initCCDB(standardCCDBLoaderConfigurables, ccdb, mRunNumber);
+
+    auto magneticField = o2::base::Propagator::Instance()->getNominalBz();
+    // Set magnetic field value once known
+    fitter2Prongs.setBz(magneticField);
+    fitter3Prongs.setBz(magneticField);
   }
 
   // ______________________________________________________
   // Struct to store V0Pair properties
   struct V0PairTopoInfo {
-    float X = -999.f;
-    float Y = -999.f;
-    float Z = -999.f;
-    float DCADau = -999.f;
-    float CosPA = -1.f;
+    std::array<float, 3> position{-999.f, -999.f, -999.f};
+    float dcaPi0ToPV = 999.f;
+    float daughterDCA = 999.f;
+    float cosPA = -1.f;
+    float pi0Mass = 999.f;
+    float pi0Y = 999.f;
+
+    int v01Index = 0; // index to de-reference V0Cores table
+    int v02Index = 0; // index to de-reference V0Cores table
   };
 
   // ______________________________________________________
@@ -856,6 +965,79 @@ struct sigma0builder {
     float MCvy = 999.f;
   };
 
+  // ______________________________________________________
+  // Struct to store V0Pair properties
+  struct Xi0Info {
+    std::array<float, 3> gamma1Momentum{999.f, 999.f, 999.f};
+    std::array<float, 3> gamma2Momentum{999.f, 999.f, 999.f};
+    std::array<float, 3> lambdaMomentum{999.f, 999.f, 999.f};
+    std::array<float, 3> pi0Position{0., 0., 0.};
+    std::array<float, 3> cascadePosition{0., 0., 0.};
+    float xi0Mass = 999.f;
+    float dcaPi0ToPV = 999.f;
+    float pi0DaughterDCA = 999.f;
+    float cascadeDaughterDCA = 999.f;
+    float cascadeDCAxy = 999.f;
+    float cascadeDCAz = 999.f;
+
+    int collisionId = 0;
+    int gamma1Index = 0; // index to de-reference V0Cores table
+    int gamma2Index = 0; // index to de-reference V0Cores table
+    int lambdaIndex = 0; // index to de-reference V0Cores table
+
+    std::array<float, 21> covariance{0.};
+  };
+
+  struct Xi0MCInfo {
+    int gamma1Index = 0; // index to de-reference V0MCCores table
+    int gamma2Index = 0; // index to de-reference V0MCCores table
+    int lambdaIndex = 0; // index to de-reference V0MCCores table
+
+    // Basic kinematic info
+    float gamma1MCpx = -999.f;
+    float gamma1MCpy = -999.f;
+    float gamma1MCpz = -999.f;
+    float gamma2MCpx = -999.f;
+    float gamma2MCpy = -999.f;
+    float gamma2MCpz = -999.f;
+    float lambdaMCpx = -999.f;
+    float lambdaMCpy = -999.f;
+    float lambdaMCpz = -999.f;
+
+    // MC association info
+    bool gamma1IsPhysicalPrimary = false;
+    bool gamma2IsPhysicalPrimary = false;
+    bool lambdaIsPhysicalPrimary = false;
+    int gamma1PDGCodePos = 0;
+    int gamma1PDGCodeNeg = 0;
+    int gamma2PDGCodePos = 0;
+    int gamma2PDGCodeNeg = 0;
+    int lambdaPDGCodePos = 0;
+    int lambdaPDGCodeNeg = 0;
+    int gamma1PDGCode = 0;
+    int gamma2PDGCode = 0;
+    int lambdaPDGCode = 0;
+    int gamma1PDGCodeMother = 0;
+    int gamma2PDGCodeMother = 0;
+    int lambdaPDGCodeMother = 0;
+
+    int pi0PDGCode = 0;
+    int pi0MCProcess = 0;
+    bool pi0IsPhysicalPrimary = false;
+    float pi0X = -999.f;
+    float pi0Y = -999.f;
+    float pi0Z = -999.f;
+
+    int xi0PDGCode = 0;
+    int xi0MCProcess = 0;
+    bool xi0IsPhysicalPrimary = false;
+    float xi0X = -999.f;
+    float xi0Y = -999.f;
+    float xi0Z = -999.f;
+
+    int xi0PDGCodeMother = 0;
+  };
+
   template <typename TV01, typename TV02>
   V0PairTopoInfo propagateV0PairToDCA(TV01 const& v01, TV02 const& v02)
   {
@@ -886,18 +1068,18 @@ struct sigma0builder {
     ROOT::Math::XYZVector PCA = 0.5 * (pointOn1 + pointOn2);
 
     // Calculate properties and fill struct
-    info.DCADau = (cross.Mag2() > 0) ? std::abs(posdiff.Dot(cross)) / cross.R() : 999.f;
-    info.CosPA = v01momentumNorm.Dot(v02momentumNorm);
+    info.daughterDCA = (cross.Mag2() > 0) ? std::abs(posdiff.Dot(cross)) / cross.R() : 999.f;
+    info.cosPA = v01momentumNorm.Dot(v02momentumNorm);
 
     float Min_threshold = 1e-5f;      // Threshold to consider lines as parallel, can be tuned
     if (d < Min_threshold) {          // Parallel or nearly parallel lines
-      info.X = info.Y = info.Z = 0.f; // should we use another dummy value? Perhaps 999.f?
+      info.position[0] = info.position[1] = info.position[2] = 0.f; // should we use another dummy value? Perhaps 999.f?
       return info;
     }
 
-    info.X = PCA.X();
-    info.Y = PCA.Y();
-    info.Z = PCA.Z();
+    info.position[0] = PCA.X();
+    info.position[1] = PCA.Y();
+    info.position[2] = PCA.Z();
 
     return info;
   }
@@ -1245,6 +1427,105 @@ struct sigma0builder {
     MCinfo.V01MCpx = sumPx;
     MCinfo.V01MCpy = sumPy;
     MCinfo.V01MCpz = sumPz;
+
+    return MCinfo;
+  }
+
+  template <typename TV0, typename TMCParticles>
+  Xi0MCInfo getXi0MCInfo(TV0 const& gamma1, TV0 const& gamma2, TV0 const& lambda, TMCParticles const& mcparticles)
+  {
+    Xi0MCInfo MCinfo;
+
+    if (!gamma1.has_v0MCCore() || !gamma2.has_v0MCCore() || !lambda.has_v0MCCore()) {
+      return MCinfo;
+    }
+
+    auto gamma1MC = gamma1.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
+    auto gamma2MC = gamma2.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
+    auto lambdaMC = lambda.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
+
+    // Basic kinematic info
+    MCinfo.gamma1MCpx = gamma1MC.pxMC();
+    MCinfo.gamma1MCpy = gamma1MC.pyMC();
+    MCinfo.gamma1MCpz = gamma1MC.pzMC();
+    MCinfo.gamma2MCpx = gamma2MC.pxMC();
+    MCinfo.gamma2MCpy = gamma2MC.pyMC();
+    MCinfo.gamma2MCpz = gamma2MC.pzMC();
+    MCinfo.lambdaMCpx = lambdaMC.pxMC();
+    MCinfo.lambdaMCpy = lambdaMC.pyMC();
+    MCinfo.lambdaMCpz = lambdaMC.pzMC();
+
+    // MC association info
+    MCinfo.gamma1Index = gamma1MC.globalIndex();
+    MCinfo.gamma2Index = gamma2MC.globalIndex();
+    MCinfo.lambdaIndex = lambdaMC.globalIndex();
+    MCinfo.gamma1IsPhysicalPrimary = gamma1MC.isPhysicalPrimary();
+    MCinfo.gamma2IsPhysicalPrimary = gamma2MC.isPhysicalPrimary();
+    MCinfo.lambdaIsPhysicalPrimary = lambdaMC.isPhysicalPrimary();
+    MCinfo.gamma1PDGCodePos = gamma1MC.pdgCodePositive();
+    MCinfo.gamma1PDGCodeNeg = gamma1MC.pdgCodeNegative();
+    MCinfo.gamma2PDGCodePos = gamma2MC.pdgCodePositive();
+    MCinfo.gamma2PDGCodeNeg = gamma2MC.pdgCodeNegative();
+    MCinfo.lambdaPDGCodePos = lambdaMC.pdgCodePositive();
+    MCinfo.lambdaPDGCodeNeg = lambdaMC.pdgCodeNegative();
+    MCinfo.gamma1PDGCode = gamma1MC.pdgCode();
+    MCinfo.gamma2PDGCode = gamma2MC.pdgCode();
+    MCinfo.lambdaPDGCode = lambdaMC.pdgCode();
+
+    // Get corresponding entries in MCParticles table
+    auto MCParticle_gamma1 = mcparticles.rawIteratorAt(gamma1MC.particleIdMC());
+    auto MCParticle_gamma2 = mcparticles.rawIteratorAt(gamma2MC.particleIdMC());
+    auto MCParticle_lambda = mcparticles.rawIteratorAt(lambdaMC.particleIdMC());
+
+    if ((std::abs(MCParticle_gamma1.pdgCode()) == PDG_t::kGamma) &&
+        (std::abs(MCParticle_gamma2.pdgCode()) == PDG_t::kGamma) &&
+        (std::abs(MCParticle_lambda.pdgCode()) == PDG_t::kLambda0)) {
+
+      // Get MC Mothers
+      auto const& MCMothersList_gamma1 = MCParticle_gamma1.template mothers_as<aod::McParticles>();
+      auto const& MCMothersList_gamma2 = MCParticle_gamma2.template mothers_as<aod::McParticles>();
+      auto const& MCMothersList_lambda = MCParticle_lambda.template mothers_as<aod::McParticles>();
+
+      if (!MCMothersList_gamma1.empty() && !MCMothersList_gamma2.empty() && !MCMothersList_lambda.empty()) { // Are there mothers?
+        auto const& MCMother_gamma1 = MCMothersList_gamma1.front();                                          // First mother
+        auto const& MCMother_gamma2 = MCMothersList_gamma2.front();                                          // First mother
+        auto const& MCMother_lambda = MCMothersList_lambda.front();                                          // First mother
+
+        MCinfo.gamma1PDGCodeMother = MCMother_gamma1.pdgCode();
+        MCinfo.gamma2PDGCodeMother = MCMother_gamma2.pdgCode();
+        MCinfo.lambdaPDGCodeMother = MCMother_lambda.pdgCode();
+
+        if (MCMother_gamma1.globalIndex() == MCMother_gamma2.globalIndex() && std::abs(MCinfo.gamma2PDGCodeMother) == PDG_t::kPi0) { // check that gamma1 and gamma2 have the same pi0 mother
+
+          MCinfo.pi0PDGCode = MCMother_gamma1.pdgCode();
+          MCinfo.pi0MCProcess = MCMother_gamma1.getProcess();
+          MCinfo.pi0IsPhysicalPrimary = MCMother_gamma1.isPhysicalPrimary();
+          MCinfo.pi0X = MCMother_gamma1.vx();
+          MCinfo.pi0Y = MCMother_gamma1.vy();
+          MCinfo.pi0Z = MCMother_gamma1.vz();
+
+          auto const& MCMothersList_pi0 = MCMother_gamma1.template mothers_as<aod::McParticles>(); // get pi0 mother list
+          if (!MCMothersList_pi0.empty()) {                                                        // Are there mothers?
+            auto const& MCMother_pi0 = MCMothersList_pi0.front();                                  // get pi0 mother
+
+            if (MCMother_pi0.globalIndex() == MCMother_lambda.globalIndex()) { // check that lambda and pi0 have the same mother.
+              MCinfo.xi0PDGCode = MCMother_pi0.pdgCode();
+              MCinfo.xi0MCProcess = MCMother_pi0.getProcess();
+              MCinfo.pi0IsPhysicalPrimary = MCMother_pi0.isPhysicalPrimary();
+              MCinfo.xi0X = MCMother_pi0.vx();
+              MCinfo.xi0Y = MCMother_pi0.vy();
+              MCinfo.xi0Z = MCMother_pi0.vz();
+
+              auto const& v0pairmothers = MCMother_pi0.template mothers_as<aod::McParticles>(); // Get mothers
+              if (!v0pairmothers.empty()) {
+                auto& v0PairMother = v0pairmothers.front(); // V0Pair mother, V0s grandmother
+                MCinfo.xi0PDGCodeMother = v0PairMother.pdgCode();
+              }
+            }
+          }
+        }
+      }
+    }
 
     return MCinfo;
   }
@@ -1629,9 +1910,9 @@ struct sigma0builder {
     GenInfo.IsPi0 = mcParticle.pdgCode() == PDG_t::kPi0;                                         // 111;
     GenInfo.IsSigma0 = mcParticle.pdgCode() == PDG_t::kSigma0;                                   // PDG_t::kSigma0
     GenInfo.IsAntiSigma0 = mcParticle.pdgCode() == PDG_t::kSigma0Bar;                            //-3212
-    GenInfo.IsKStar = std::abs(mcParticle.pdgCode()) == o2::constants::physics::Pdg::kK0Star892; // 313;
     GenInfo.IsLambdaStar = mcParticle.pdgCode() == 3124;                                         // 102134 (PYTHIA8)
     GenInfo.IsAntiLambdaStar = mcParticle.pdgCode() == -3124;                                    // -102134
+    GenInfo.IsKStar = std::abs(mcParticle.pdgCode()) == o2::constants::physics::Pdg::kK0Star892; // 313;
     GenInfo.IsProducedByGenerator = mcParticle.producedByGenerator();
     GenInfo.MCProcess = mcParticle.getProcess();
     GenInfo.MCPt = mcParticle.pt();
@@ -2310,7 +2591,7 @@ struct sigma0builder {
                  pi0MCInfo.fIsV02Primary, pi0MCInfo.V02PDGCode, pi0MCInfo.V02PDGCodeMother, pi0MCInfo.fIsV02CorrectlyAssign);
     }
 
-    pi0cores(pi0TopoInfo.X, pi0TopoInfo.Y, pi0TopoInfo.Z, pi0TopoInfo.DCADau, pi0TopoInfo.CosPA,
+    pi0cores(pi0TopoInfo.position[0], pi0TopoInfo.position[1], pi0TopoInfo.position[2], pi0TopoInfo.daughterDCA, pi0TopoInfo.cosPA,
              gamma1.px(), gamma1.py(), gamma1.pz(),
              gamma1.mGamma(), gamma1.qtarm(), gamma1.alpha(), gamma1.dcapostopv(), gamma1.dcanegtopv(), gamma1.dcaV0daughters(),
              gamma1.negativeeta(), gamma1.positiveeta(), gamma1.v0cosPA(), gamma1.v0radius(), gamma1.z(),
@@ -2321,6 +2602,274 @@ struct sigma0builder {
              posTrackGamma2.tpcCrossedRows(), negTrackGamma2.tpcCrossedRows(), posTrackGamma2.tpcNSigmaEl(), negTrackGamma2.tpcNSigmaEl(), gamma2.v0Type());
 
     pi0coresRefs(collision.globalIndex());
+
+    return true;
+  }
+
+  //_______________________________________________
+  // Build pi0 candidate for QA
+  template <typename TV0Object, typename TCollision>
+  bool buildPi0ForXi0(TV0Object const& gamma1, TV0Object const& gamma2, TCollision const& collision, V0PairTopoInfo& info)
+  {
+    //_______________________________________________
+    // Check if both V0s are made of the same tracks
+    if (gamma1.posTrackExtraId() == gamma2.posTrackExtraId() ||
+        gamma1.negTrackExtraId() == gamma2.negTrackExtraId()) {
+      return false;
+    }
+
+    //_______________________________________________
+    // Calculate pi0 properties
+    const std::array<float, 3> vtxGamma1 = {gamma1.x(), gamma1.y(), gamma1.z()};
+    const std::array<float, 3> vtxGamma2 = {gamma2.x(), gamma2.y(), gamma2.z()};
+
+    const std::array<float, 3> momGamma1 = {gamma1.px(), gamma1.py(), gamma1.pz()};
+    const std::array<float, 3> momGamma2 = {gamma2.px(), gamma2.py(), gamma2.pz()};
+
+    const std::array<float, 21> covGamma1 = {999.};
+    const std::array<float, 21> covGamma2 = {999.};
+
+    std::array<float, 3> pVecGamma1{gamma1.px(), gamma1.py(), gamma1.pz()};
+    std::array<float, 3> pVecGamma2{gamma2.px(), gamma2.py(), gamma2.pz()};
+    std::array arrpi0{pVecGamma1, pVecGamma2};
+    info.pi0Mass = RecoDecay::m(arrpi0, std::array{o2::constants::physics::MassPhoton, o2::constants::physics::MassPhoton});
+    info.pi0Y = RecoDecay::y(std::array{gamma1.px() + gamma2.px(), gamma1.py() + gamma2.py(), gamma1.pz() + gamma2.pz()}, o2::constants::physics::MassPi0);
+
+    info.v01Index = gamma1.globalIndex();
+    info.v02Index = gamma2.globalIndex();
+
+    //_______________________________________________
+    // Pi0-specific selections:
+    if (std::abs(info.pi0Y) > cascadeSelections.maxPi0Rapidity)
+      return false;
+
+    if (std::abs(info.pi0Mass - o2::constants::physics::MassPi0) > cascadeSelections.massPi0Window)
+      return false;
+
+    o2::track::TrackParCov gammaTrack1(vtxGamma1, momGamma1, covGamma1, 0, true);
+    gammaTrack1.setAbsCharge(0);
+    gammaTrack1.setPID(o2::track::PID::Photon);
+    o2::track::TrackParCov gammaTrack2(vtxGamma2, momGamma2, covGamma2, 0, true);
+    gammaTrack2.setAbsCharge(0);
+    gammaTrack2.setPID(o2::track::PID::Photon);
+
+    // First build Pi0 to select secondary pi0s
+    int nCandPi0 = 0;
+    try {
+      nCandPi0 = fitter2Prongs.process(gammaTrack1, gammaTrack2);
+    } catch (...) {
+      return false;
+    }
+    if (nCandPi0 == 0) {
+      return false;
+    }
+
+    fitter2Prongs.propagateTracksToVertex(); // propagate e and K to D vertex
+    if (!fitter2Prongs.isPropagateTracksToVertexDone()) {
+      return false;
+    }
+
+    info.daughterDCA = TMath::Sqrt(fitter2Prongs.getChi2AtPCACandidate());
+
+    if (info.daughterDCA > cascadeSelections.dcaPi0daughters) {
+      return false;
+    }
+
+    // get decay vertex coordinates
+    const auto& vtxPi0 = fitter2Prongs.getPCACandidate();
+    for (int i = 0; i < 3; i++) {
+      info.position[i] = vtxPi0[i];
+    }
+    if (std::hypot(info.position[0], info.position[1]) < cascadeSelections.radiusPi0) {
+      return false;
+    }
+
+    float x = vtxPi0[0];
+    float y = vtxPi0[1];
+    float z = vtxPi0[2];
+    float px = pVecGamma1[0] + pVecGamma2[0];
+    float py = pVecGamma1[1] + pVecGamma2[1];
+    float pz = pVecGamma1[2] + pVecGamma2[2];
+    info.dcaPi0ToPV = std::sqrt((std::pow((collision.posY() - y) * pz - (collision.posZ() - z) * py, 2) + std::pow((collision.posX() - x) * pz - (collision.posZ() - z) * px, 2) + std::pow((collision.posX() - x) * py - (collision.posY() - y) * px, 2)) / (px * px + py * py + pz * pz));
+    if (info.dcaPi0ToPV < cascadeSelections.dcaPi0ToPV) {
+      return false;
+    }
+
+    histos.fill(HIST("Xi0Sel/hPi0Mass"), info.pi0Mass);
+
+    return true;
+  }
+
+  //_______________________________________________
+  // Build Xi0 candidate for analysis
+  template <typename TV0Object, typename TCollision, typename TMCParticles>
+  bool buildXi0(TV0Object const& gamma1, TV0Object const& gamma2, TV0Object const& lambda, TCollision const& collision, TMCParticles const& mcparticles)
+  {
+    Xi0Info cascade;
+    //_______________________________________________
+    // Check if the 3 V0s are made of the same tracks
+    if (gamma1.posTrackExtraId() == gamma2.posTrackExtraId() ||
+        gamma1.negTrackExtraId() == gamma2.negTrackExtraId() ||
+        gamma1.posTrackExtraId() == lambda.posTrackExtraId() ||
+        gamma1.negTrackExtraId() == lambda.negTrackExtraId() ||
+        gamma2.posTrackExtraId() == lambda.posTrackExtraId() ||
+        gamma2.negTrackExtraId() == lambda.negTrackExtraId()) {
+      return false;
+    }
+
+    const std::array<float, 3> vtxGamma1 = {gamma1.x(), gamma1.y(), gamma1.z()};
+    const std::array<float, 3> vtxGamma2 = {gamma2.x(), gamma2.y(), gamma2.z()};
+    const std::array<float, 3> vtxLambda = {lambda.x(), lambda.y(), lambda.z()};
+
+    const std::array<float, 3> momGamma1 = {gamma1.px(), gamma1.py(), gamma1.pz()};
+    const std::array<float, 3> momGamma2 = {gamma2.px(), gamma2.py(), gamma2.pz()};
+    const std::array<float, 3> momLambda = {lambda.px(), lambda.py(), lambda.pz()};
+
+    const std::array<float, 21> covGamma1 = {999.};
+    const std::array<float, 21> covGamma2 = {999.};
+    const std::array<float, 21> covLambda = {999.};
+
+    o2::track::TrackParCov gammaTrack1(vtxGamma1, momGamma1, covGamma1, 0, true);
+    gammaTrack1.setAbsCharge(0);
+    gammaTrack1.setPID(o2::track::PID::Photon);
+    o2::track::TrackParCov gammaTrack2(vtxGamma2, momGamma2, covGamma2, 0, true);
+    gammaTrack2.setAbsCharge(0);
+    gammaTrack2.setPID(o2::track::PID::Photon);
+    o2::track::TrackParCov lambdaTrack(vtxLambda, momLambda, covLambda, 0, true);
+    lambdaTrack.setAbsCharge(0);
+    lambdaTrack.setPID(o2::track::PID::Lambda);
+
+    // build Xi0 --> pi0 Lambda --> gamma gamma Lambda
+    int nCandXi0 = 0;
+    try {
+      nCandXi0 = fitter3Prongs.process(gammaTrack1, gammaTrack2, lambdaTrack);
+    } catch (...) {
+      return false;
+    }
+    if (nCandXi0 == 0) {
+      return false;
+    }
+
+    fitter3Prongs.propagateTracksToVertex(); // propagate e and K to D vertex
+    if (!fitter3Prongs.isPropagateTracksToVertexDone()) {
+      return false;
+    }
+
+    auto lGamma1Track = fitter3Prongs.getTrack(0);
+    auto lGamma2Track = fitter3Prongs.getTrack(1);
+    auto lLambdaTrack = fitter3Prongs.getTrack(2);
+
+    cascade.cascadeDaughterDCA = TMath::Sqrt(fitter3Prongs.getChi2AtPCACandidate());
+    if (cascade.cascadeDaughterDCA > cascadeSelections.dcaCascadeDaughters) {
+      return false;
+    }
+
+    lGamma1Track.getPxPyPzGlo(cascade.gamma1Momentum);
+    lGamma2Track.getPxPyPzGlo(cascade.gamma2Momentum);
+    lLambdaTrack.getPxPyPzGlo(cascade.lambdaMomentum);
+    // get decay vertex coordinates
+    const auto& vtx = fitter3Prongs.getPCACandidate();
+    for (int i = 0; i < 3; i++) {
+      cascade.cascadePosition[i] = vtx[i];
+    }
+    if (std::hypot(cascade.cascadePosition[0], cascade.cascadePosition[1]) < cascadeSelections.radiusCascade) {
+      return false;
+    }
+
+    double cosPA = RecoDecay::cpa(
+      std::array{collision.posX(), collision.posY(), collision.posZ()},
+      std::array{cascade.cascadePosition[0], cascade.cascadePosition[1], cascade.cascadePosition[2]},
+      std::array{cascade.gamma1Momentum[0] + cascade.gamma2Momentum[0] + cascade.lambdaMomentum[0],
+                 cascade.gamma1Momentum[1] + cascade.gamma2Momentum[1] + cascade.lambdaMomentum[1],
+                 cascade.gamma1Momentum[2] + cascade.gamma2Momentum[2] + cascade.lambdaMomentum[2]});
+    if (cosPA < cascadeSelections.cosPACascade) {
+      return false;
+    }
+
+    // Calculate DCAxy of the cascade (with bending)
+    auto lCascadeTrack = fitter3Prongs.createParentTrackParCov();
+    lCascadeTrack.setAbsCharge(0);                 // to be sure
+    lCascadeTrack.setPID(o2::track::PID::XiMinus); // FIXME: not OK for omegas
+    std::array<float, 2> dcaInfo{999.f, 999.f};
+
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lCascadeTrack, 2.f, fitter3Prongs.getMatCorrType(), &dcaInfo);
+    cascade.cascadeDCAxy = dcaInfo[0];
+    cascade.cascadeDCAz = dcaInfo[1];
+
+    // Populate information
+    // cascadecandidate.v0Id = v0index.globalIndex();
+    cascade.collisionId = collision.globalIndex();
+    cascade.gamma1Index = gamma1.globalIndex();
+    cascade.gamma2Index = gamma2.globalIndex();
+    cascade.lambdaIndex = lambda.globalIndex();
+
+    std::array<float, 3> momPi0{gamma1.px() + gamma2.px(), gamma1.py() + gamma2.py(), gamma1.pz() + gamma2.pz()};
+    auto arrMom = std::array{momPi0, momLambda};
+    cascade.xi0Mass = RecoDecay::m(arrMom, std::array{o2::constants::physics::MassPi0, o2::constants::physics::MassXi0});
+
+    // Calculate position covariance matrix
+    auto covVtxV = fitter3Prongs.calcPCACovMatrix(0);
+    // std::array<float, 6> positionCovariance;
+    float positionCovariance[6];
+    positionCovariance[0] = covVtxV(0, 0);
+    positionCovariance[1] = covVtxV(1, 0);
+    positionCovariance[2] = covVtxV(1, 1);
+    positionCovariance[3] = covVtxV(2, 0);
+    positionCovariance[4] = covVtxV(2, 1);
+    positionCovariance[5] = covVtxV(2, 2);
+    // store momentum covariance matrix
+    std::array<float, 21> covTgamma1 = {0.};
+    std::array<float, 21> covTgamma2 = {0.};
+    std::array<float, 21> covTlambda = {0.};
+    // std::array<float, 6> momentumCovariance;
+    lGamma1Track.getCovXYZPxPyPzGlo(covTgamma1);
+    lGamma2Track.getCovXYZPxPyPzGlo(covTgamma2);
+    lLambdaTrack.getCovXYZPxPyPzGlo(covTlambda);
+    constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
+    for (int i = 0; i < 21; i++) {
+      cascade.covariance[i] = 0.0f;
+    }
+    for (int i = 0; i < 6; i++) {
+      cascade.covariance[i] = positionCovariance[i];
+      cascade.covariance[MomInd[i]] = covTgamma1[MomInd[i]] + covTgamma2[MomInd[i]] + covTlambda[MomInd[i]];
+    }
+
+    // Check if MC data and populate corresponding table
+    if constexpr (requires { collision.straMCCollisionId(); gamma1.motherMCPartId(); gamma2.motherMCPartId(); lambda.motherMCPartId(); }) {
+      auto xi0MCInfo = getXi0MCInfo(gamma1, gamma2, lambda, mcparticles);
+
+      xi0mccores(xi0MCInfo.gamma1MCpx, xi0MCInfo.gamma1MCpy, xi0MCInfo.gamma1MCpz,
+                 xi0MCInfo.gamma1IsPhysicalPrimary, xi0MCInfo.gamma1PDGCodePos, xi0MCInfo.gamma1PDGCodeNeg, xi0MCInfo.gamma1PDGCode, xi0MCInfo.gamma1PDGCodeMother,
+                 xi0MCInfo.gamma2MCpx, xi0MCInfo.gamma2MCpy, xi0MCInfo.gamma2MCpz,
+                 xi0MCInfo.gamma2IsPhysicalPrimary, xi0MCInfo.gamma2PDGCodePos, xi0MCInfo.gamma2PDGCodeNeg, xi0MCInfo.gamma2PDGCode, xi0MCInfo.gamma2PDGCodeMother,
+                 xi0MCInfo.lambdaMCpx, xi0MCInfo.lambdaMCpy, xi0MCInfo.lambdaMCpz,
+                 xi0MCInfo.lambdaIsPhysicalPrimary, xi0MCInfo.lambdaPDGCodePos, xi0MCInfo.lambdaPDGCodeNeg, xi0MCInfo.lambdaPDGCode, xi0MCInfo.lambdaPDGCodeMother,
+                 xi0MCInfo.pi0X, xi0MCInfo.pi0Y, xi0MCInfo.pi0Z, xi0MCInfo.pi0IsPhysicalPrimary, xi0MCInfo.pi0MCProcess, xi0MCInfo.pi0PDGCode,
+                 xi0MCInfo.xi0X, xi0MCInfo.xi0Y, xi0MCInfo.xi0Z, xi0MCInfo.xi0IsPhysicalPrimary, xi0MCInfo.xi0MCProcess, xi0MCInfo.xi0PDGCode, xi0MCInfo.xi0PDGCodeMother);
+
+      xi0mcIndices(xi0MCInfo.gamma1Index, xi0MCInfo.gamma2Index, xi0MCInfo.lambdaIndex);
+
+      int mcCollisionIndex = -1;
+      if (collision.has_straMCCollision()) {
+        auto mcCollision = collision.template straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>();
+        mcCollisionIndex = mcCollision.globalIndex();
+      }
+      xi0mccollRefs(mcCollisionIndex);
+    }
+
+    xi0cores(cascade.cascadePosition[0], cascade.cascadePosition[1], cascade.cascadePosition[2],
+             cascade.pi0Position[0], cascade.pi0Position[1], cascade.pi0Position[2],
+             vtxLambda[0], vtxLambda[1], vtxLambda[2],
+             cascade.cascadeDaughterDCA, cascade.pi0DaughterDCA, cascade.cascadeDCAxy, cascade.cascadeDCAz,
+             cascade.gamma1Momentum[0], cascade.gamma1Momentum[1], cascade.gamma1Momentum[2],
+             cascade.gamma2Momentum[0], cascade.gamma2Momentum[1], cascade.gamma2Momentum[2],
+             cascade.lambdaMomentum[0], cascade.lambdaMomentum[1], cascade.lambdaMomentum[2]);
+
+    xi0Indices(cascade.gamma1Index, cascade.gamma2Index, cascade.lambdaIndex);
+
+    xi0collRefs(collision.globalIndex());
+
+    histos.fill(HIST("Xi0Sel/hXi0Mass"), cascade.xi0Mass);
 
     return true;
   }
@@ -2374,7 +2923,7 @@ struct sigma0builder {
     // Sigma0 topological info
     auto sigma0TopoInfo = propagateV0PairToDCA(gamma, lambda);
 
-    sigma0cores(gamma.globalIndex(), lambda.globalIndex(), sigma0TopoInfo.X, sigma0TopoInfo.Y, sigma0TopoInfo.Z, sigma0TopoInfo.DCADau,
+    sigma0cores(gamma.globalIndex(), lambda.globalIndex(), sigma0TopoInfo.position[0], sigma0TopoInfo.position[1], sigma0TopoInfo.position[2], sigma0TopoInfo.daughterDCA,
                 gamma.px(), gamma.py(), gamma.pz(), gamma.mGamma(), lambda.px(), lambda.py(), lambda.pz(), lambda.mLambda(), lambda.mAntiLambda());
 
     // MC properties
@@ -2601,7 +3150,7 @@ struct sigma0builder {
 
     auto kstarTopoInfo = propagateV0PairToDCA(gamma, kshort);
 
-    kstarcores(gamma.globalIndex(), kshort.globalIndex(), kstarTopoInfo.X, kstarTopoInfo.Y, kstarTopoInfo.Z, kstarTopoInfo.DCADau,
+    kstarcores(gamma.globalIndex(), kshort.globalIndex(), kstarTopoInfo.position[0], kstarTopoInfo.position[1], kstarTopoInfo.position[2], kstarTopoInfo.daughterDCA,
                gamma.px(), gamma.py(), gamma.pz(), gamma.mGamma(), kshort.px(), kshort.py(), kshort.pz(), kshort.mK0Short());
 
     // MC properties
@@ -2720,6 +3269,8 @@ struct sigma0builder {
     //_______________________________________________
     // Collisions loop
     for (const auto& coll : collisions) {
+      initCCDB(coll);
+
       // Event selection
       if (eventSelections.fUseEventSelection) {
         if (!IsEventAccepted(coll, true))
@@ -2839,6 +3390,36 @@ struct sigma0builder {
               if (!buildPi0(gamma1, gamma2, coll, mcparticles))
                 continue;
             }
+          }
+        }
+      }
+
+      //_______________________________________________
+      // Xi0 loop
+      if (fillXi0Tables) {
+        // First find pi0 candidates
+        std::vector<V0PairTopoInfo> pi0Candidates;
+        for (size_t i = 0; i < bestGammasArray.size(); ++i) { // loop over photons
+          auto gamma1 = fullV0s.rawIteratorAt(bestGammasArray[i]);
+          for (size_t j = i + 1; j < bestGammasArray.size(); ++j) { // loop over photons
+            auto gamma2 = fullV0s.rawIteratorAt(bestGammasArray[j]);
+            V0PairTopoInfo pi0Info;
+            if (!buildPi0ForXi0(gamma1, gamma2, coll, pi0Info)) {
+              continue;
+            }
+            pi0Candidates.push_back(pi0Info);
+          }
+        }
+
+        // second build Xi0 candidates
+        for (size_t i = 0; i < bestLambdasArray.size(); ++i) { // loop over Lambda
+          auto lambda = fullV0s.rawIteratorAt(bestLambdasArray[i]);
+          for (size_t j = 0; j < pi0Candidates.size(); ++j) { // loop over pi0
+            auto gamma1 = fullV0s.rawIteratorAt(pi0Candidates[j].v01Index);
+            auto gamma2 = fullV0s.rawIteratorAt(pi0Candidates[j].v02Index);
+            // Building pi0 candidate & filling tables
+            if (!buildXi0(gamma1, gamma2, lambda, coll, mcparticles))
+              continue;
           }
         }
       }
