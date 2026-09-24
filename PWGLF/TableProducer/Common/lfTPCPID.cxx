@@ -89,7 +89,7 @@ const std::string defaultOptions[nSpecies][nOptions]{{"", "", "false", "false"},
 // Structure to hold the parameters
 struct bbParams {
   const std::string name;
-  bbParams(const std::string& n) : name(n) {}
+  explicit bbParams(const std::string& n) : name(n) {}
   // Parameters for the Bethe-Bloch parametrization
   float bb1 = 0.03209809958934784f;    // Aleph Bethe Bloch parameter 1
   float bb2 = 19.9768009185791f;       // Aleph Bethe Bloch parameter 2
