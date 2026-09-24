@@ -249,7 +249,7 @@ struct strangederivedbuilder {
   Preslice<aod::V0Datas> V0perCollision = o2::aod::v0data::collisionId;
   Preslice<aod::CascDatas> CascperCollision = o2::aod::cascdata::collisionId;
   Preslice<aod::KFCascDatas> KFCascperCollision = o2::aod::cascdata::collisionId;
-  Preslice<aod::TraCascDatas> TraCascperCollision = o2::aod::cascdata::collisionId;
+  // Preslice<aod::TraCascDatas> TraCascperCollision = o2::aod::cascdata::collisionId;
   Preslice<aod::McParticles> mcParticlePerMcCollision = o2::aod::mcparticle::mcCollisionId;
   Preslice<UDCollisionsFull> udCollisionsPerCollision = o2::aod::udcollision::collisionId;
 
@@ -280,7 +280,7 @@ struct strangederivedbuilder {
   }
 
   template <typename VType>
-  void getCfg(o2::framework::InitContext& initContext, const std::string& name, VType& v, const std::string task)
+  void getCfg(o2::framework::InitContext& initContext, const std::string& name, VType& v, const std::string& task)
   {
     if (!o2::common::core::getTaskOptionValue(initContext, task, name, v, inheritEvtSelFromTaskVerbose)) {
       LOG(fatal) << "Could not get " << name << " from " << task << " task";
@@ -576,11 +576,12 @@ struct strangederivedbuilder {
       auto V0Table_thisColl = V0s.sliceBy(V0perCollision, collIdx);
       auto CascTable_thisColl = Cascades.sliceBy(CascperCollision, collIdx);
       auto KFCascTable_thisColl = KFCascades.sliceBy(KFCascperCollision, collIdx);
-      auto TraCascTable_thisColl = TraCascades.sliceBy(TraCascperCollision, collIdx);
+      // auto TraCascTable_thisColl = TraCascades.sliceBy(TraCascperCollision, collIdx);
       bool strange = V0Table_thisColl.size() > 0 ||
                      CascTable_thisColl.size() > 0 ||
-                     KFCascTable_thisColl.size() > 0 ||
-                     TraCascTable_thisColl.size() > 0;
+                     KFCascTable_thisColl.size() > 0 /* ||
+                      TraCascTable_thisColl.size() > 0*/
+        ;
 
       auto bc = collision.template bc_as<bcType>();
 
@@ -761,8 +762,8 @@ struct strangederivedbuilder {
         CascadeCollIndices[casc.globalIndex()] = products.strangeColl.lastIndex();
       for (const auto& casc : KFCascTable_thisColl)
         KFCascadeCollIndices[casc.globalIndex()] = products.strangeColl.lastIndex();
-      for (const auto& casc : TraCascTable_thisColl)
-        TraCascadeCollIndices[casc.globalIndex()] = products.strangeColl.lastIndex();
+      // for (const auto& casc : TraCascTable_thisColl)
+      // TraCascadeCollIndices[casc.globalIndex()] = products.strangeColl.lastIndex();
     }
 
     // +-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+

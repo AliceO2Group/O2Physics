@@ -202,10 +202,10 @@ struct BuilderModule {
   std::vector<std::shared_ptr<TProfile>> hCalibPVMC;
 
   int nEnabledTables = 0;
-  int mRunNumber;
+  int mRunNumber = 0;
 
   // TAxis
-  int nCentBins;
+  int nCentBins = 0;
   std::vector<double> centralityBins;
 
   // Registers the on-the-fly-calibration QA histograms for one estimator (no-op unless recalibrateCentrality
@@ -445,7 +445,7 @@ struct BuilderModule {
           double meanMult_MC = -1;
           double diffMultDataVsMC = 1e+09;
           int endBinMc = startBinMc;
-          for (int j = startBinMc; j >= 1; j--) {
+          for (int j = startBinMc - 1; j >= 1; j--) {
             // Loop over MC bins
             TH1D* projMC = h2dMultRecoVsMultGen_MC->ProjectionY("", j, startBinMc);
             int nEntries = projMC->Integral();
@@ -518,9 +518,9 @@ struct BuilderModule {
           double meanMult_MC = -1;
           double diffMultDataVsMC = 1e+09;
           int endBinMc = h1dCalib->GetNbinsX();
-          for (int j = startBinMc; j <= h1dCalib->GetNbinsX(); j++) {
+          for (int j = startBinMc + 1; j <= h1dCalib->GetNbinsX(); j++) {
             // Loop over MC bins
-            TH1D* projMC = h2dMultRecoVsMultGen_MC->ProjectionY("", startBinMc, endBinMc);
+            TH1D* projMC = h2dMultRecoVsMultGen_MC->ProjectionY("", startBinMc, j);
             int nEntries = projMC->Integral();
             double meanMC = projMC->GetMean();
             double ldiff = std::abs(meanMC - meanMult_Data);
@@ -733,4 +733,4 @@ struct BuilderModule {
 } // namespace pwglf
 } // namespace o2
 
-#endif // PWGLF_UTILS_MCCENTRALITYMODULE_
+#endif // PWGLF_UTILS_MCCENTRALITYMODULE_H_

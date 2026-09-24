@@ -100,9 +100,9 @@ using MyBarrelTracksWithCov = soa::Join<aod::Tracks, aod::TracksExtra, aod::Trac
                                         aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                         aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta,
                                         aod::McTrackLabels>;
-using MyMuons = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels, aod::FwdTracksDCA>;
-using MyMuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::McFwdTrackLabels, aod::FwdTracksDCA>;
-using MyMuonsRealignWithCov = soa::Join<aod::FwdTracksReAlign, aod::FwdTrksCovReAlign, aod::McFwdTrackLabels, aod::FwdTracksDCA>;
+using MyMuons = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels>;
+using MyMuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::McFwdTrackLabels>;
+using MyMuonsRealignWithCov = soa::Join<aod::FwdTracksReAlign, aod::FwdTrksCovReAlign, aod::McFwdTrackLabels>;
 
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
 using MyEventsWithMults = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::McCollisionLabels>;
@@ -144,7 +144,7 @@ template <typename TMap>
 void PrintBitMap(TMap map, int nbits)
 {
   for (int i = 0; i < nbits; i++) {
-    cout << ((map & (TMap(1) << i)) > 0 ? "1" : "0");
+    LOG(info) << ((map & (TMap(1) << i)) > 0 ? "1" : "0");
   }
 }
 */
@@ -234,9 +234,6 @@ struct TableMakerMC {
     Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
     Configurable<std::string> fGeoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
     Configurable<std::string> fGrpMagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-    Configurable<std::string> fZShiftPath{"zShiftPath", "Users/m/mcoquet/ZShift", "CCDB path for z shift to apply to forward tracks"};
-    Configurable<bool> fUseRemoteZShift{"cfgUseRemoteZShift", false, "Enable getting Zshift from ccdb"};
-    Configurable<float> fManualZShift{"cfgManualZShift", 0.f, "Manual value for the Zshift for muons."};
     Configurable<std::string> fGrpMagPathRun2{"grpmagPathRun2", "GLO/GRP/GRP", "CCDB path of the GRPObject (Usage for Run 2)"};
     Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   } fConfigCCDB;
@@ -580,17 +577,16 @@ struct TableMakerMC {
       /*if ((std::abs(mctrack.pdgCode())>400 && std::abs(mctrack.pdgCode())<599) ||
           (std::abs(mctrack.pdgCode())>4000 && std::abs(mctrack.pdgCode())<5999) ||
           (mcflags > 0)) {
-        cout << ">>>>>>>>>>>>>>>>>>>>>>> track idx / pdg / process / status code / HEPMC status / primary : "
-             << mctrack.globalIndex() << " / " << mctrack.pdgCode() << " / "
-             << mctrack.getProcess() << " / " << mctrack.getGenStatusCode() << " / " << mctrack.getHepMCStatusCode() << " / " << mctrack.isPhysicalPrimary() << endl;
-        cout << ">>>>>>>>>>>>>>>>>>>>>>> track bitmap: ";
+        LOG(info) << ">>>>>>>>>>>>>>>>>>>>>> track idx / pdg / process / status code / HEPMC status / primary : "
+                  << mctrack.globalIndex() << " / " << mctrack.pdgCode() << " / "
+                  << mctrack.getProcess() << " / " << mctrack.getGenStatusCode() << " / " << mctrack.getHepMCStatusCode() << " / " << mctrack.isPhysicalPrimary();
+        LOG(info) << ">>>>>>>>>>>>>>>>>>>>>> track bitmap: ";
         PrintBitMap(mcflags, 16);
-        cout << endl;
         if (mctrack.has_mothers()) {
           for (const auto& m : mctrack.mothersIds()) {
             if (m < mcTracks.size()) { // protect against bad mother indices
               auto aMother = mcTracks.rawIteratorAt(m);
-              cout << "<<<<<< mother idx / pdg: " << m << " / " << aMother.pdgCode() << endl;
+              LOG(info) << "<<<<<< mother idx / pdg: " << m << " / " << aMother.pdgCode();
             }
           }
         }
@@ -600,7 +596,7 @@ struct TableMakerMC {
 
             if (d < mcTracks.size()) { // protect against bad daughter indices
               auto aDaughter = mcTracks.rawIteratorAt(d);
-              cout << "<<<<<< daughter idx / pdg: " << d << " / " << aDaughter.pdgCode() << endl;
+              LOG(info) << "<<<<<< daughter idx / pdg: " << d << " / " << aDaughter.pdgCode();
             }
           }
         }
@@ -1133,22 +1129,29 @@ struct TableMakerMC {
       VarManager::FillTrack<TMuonFillMap>(muon);
       // NOTE: If a muon is associated to multiple collisions, depending on the selections,
       //       it may be accepted for some associations and rejected for other
-      if (fConfigVariousOptions.fPropMuon) {
+      if (static_cast<int>(muon.trackType()) > 2 && fConfigVariousOptions.fPropMuon) {
         VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
       }
-      // recalculte pDca and global muon kinematics
-      if (static_cast<int>(muon.trackType()) < 2 && fConfigVariousOptions.fRefitGlobalMuon) {
+      // recalculate pDca / DCA and global muon kinematics
+      // kMuonPDca is always taken from MCH (standalone or the MCH matched to a global)
+      if (static_cast<int>(muon.trackType()) <= 2) {
         auto muontrack = muon.template matchMCHTrack_as<TMuons>();
-        if (muontrack.eta() < fConfigVariousOptions.fMuonMatchEtaMin || muontrack.eta() > fConfigVariousOptions.fMuonMatchEtaMax) {
-          continue;
-        }
-        auto mfttrack = muon.template matchMFTTrack_as<TMFTTracks>();
         VarManager::FillTrackCollision<TMuonFillMap>(muontrack, collision);
-        if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
-          auto const& mfttrackcov = mfCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
-          VarManager::FillGlobalMuonRefitCov<TMuonFillMap, TMFTFillMap>(muontrack, mfttrack, collision, mfttrackcov);
+        if (fConfigVariousOptions.fRefitGlobalMuon) {
+          if (muontrack.eta() < fConfigVariousOptions.fMuonMatchEtaMin || muontrack.eta() > fConfigVariousOptions.fMuonMatchEtaMax) {
+            continue;
+          }
+          auto mfttrack = muon.template matchMFTTrack_as<TMFTTracks>();
+          // Helix DCA (kMuonDCAx/y) is filled from the refitted parameters inside FillGlobalMuonRefit(Cov)
+          if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
+            auto const& mfttrackcov = mfCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
+            VarManager::FillGlobalMuonRefitCov<TMuonFillMap, TMFTFillMap>(muontrack, mfttrack, collision, mfttrackcov);
+          } else {
+            VarManager::FillGlobalMuonRefit<TMuonFillMap>(muontrack, mfttrack, collision);
+          }
         } else {
-          VarManager::FillGlobalMuonRefit<TMuonFillMap>(muontrack, mfttrack, collision);
+          // Helix DCA of the global track; leaves kMuonPDca from the matched MCH above
+          VarManager::FillTrackCollision<TMuonFillMap>(muon, collision);
         }
       } else {
         VarManager::FillTrackCollision<TMuonFillMap>(muon, collision);
@@ -1262,21 +1265,28 @@ struct TableMakerMC {
       }
 
       VarManager::FillTrack<TMuonFillMap>(muon);
-      if (fConfigVariousOptions.fPropMuon) {
+      if (static_cast<int>(muon.trackType()) > 2 && fConfigVariousOptions.fPropMuon) {
         VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
       }
-      // recalculte pDca and global muon kinematics
+      // recalculate pDca / DCA and global muon kinematics
+      // kMuonPDca is always taken from MCH (standalone or the MCH matched to a global)
       int globalClusters = muon.nClusters();
-      if (static_cast<int>(muon.trackType()) < 2 && fConfigVariousOptions.fRefitGlobalMuon) {
+      if (static_cast<int>(muon.trackType()) <= 2) {
         auto muontrack = muon.template matchMCHTrack_as<TMuons>();
-        auto mfttrack = muon.template matchMFTTrack_as<TMFTTracks>();
-        globalClusters += mfttrack.nClusters();
         VarManager::FillTrackCollision<TMuonFillMap>(muontrack, collision);
-        if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
-          auto const& mfttrackcov = mfCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
-          VarManager::FillGlobalMuonRefitCov<TMuonFillMap, TMFTFillMap>(muontrack, mfttrack, collision, mfttrackcov);
+        if (fConfigVariousOptions.fRefitGlobalMuon) {
+          auto mfttrack = muon.template matchMFTTrack_as<TMFTTracks>();
+          globalClusters += mfttrack.nClusters();
+          // Helix DCA (kMuonDCAx/y) is filled from the refitted parameters inside FillGlobalMuonRefit(Cov)
+          if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
+            auto const& mfttrackcov = mfCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
+            VarManager::FillGlobalMuonRefitCov<TMuonFillMap, TMFTFillMap>(muontrack, mfttrack, collision, mfttrackcov);
+          } else {
+            VarManager::FillGlobalMuonRefit<TMuonFillMap>(muontrack, mfttrack, collision);
+          }
         } else {
-          VarManager::FillGlobalMuonRefit<TMuonFillMap>(muontrack, mfttrack, collision);
+          // Helix DCA of the global track; leaves kMuonPDca from the matched MCH above
+          VarManager::FillTrackCollision<TMuonFillMap>(muon, collision);
         }
       } else {
         VarManager::FillTrackCollision<TMuonFillMap>(muon, collision);
@@ -1322,16 +1332,6 @@ struct TableMakerMC {
         if (fGrpMag != nullptr) {
           o2::base::Propagator::initFieldFromGRP(fGrpMag);
           VarManager::SetMagneticField(fGrpMag->getNominalL3Field());
-        }
-        if (fConfigCCDB.fUseRemoteZShift) {
-          auto* fZShift = fCCDB->getForTimeStamp<std::vector<float>>(fConfigCCDB.fZShiftPath, bcs.begin().timestamp());
-          if (fZShift != nullptr && !fZShift->empty()) {
-            VarManager::SetZShift((*fZShift)[0]);
-          } else {
-            LOG(fatal) << "Could not retrieve Z-shift value from CCDB";
-          }
-        } else {
-          VarManager::SetZShift(fConfigCCDB.fManualZShift.value);
         }
         if (fConfigVariousOptions.fPropMuon) {
           VarManager::SetupMuonMagField();
@@ -1427,6 +1427,8 @@ struct TableMakerMC {
               if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
                 if (fConfigVariousOptions.fUseML.value) {
                   skimBestMuonMatchesML(muons, mftTracks, mftCovs, collision);
+                } else {
+                  skimBestMuonMatches(muons);
                 }
               } else {
                 skimBestMuonMatches(muons);

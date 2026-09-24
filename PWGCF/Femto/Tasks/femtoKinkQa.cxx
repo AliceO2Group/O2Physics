@@ -101,7 +101,7 @@ struct FemtoKinkQa {
   o2::framework::Partition<FemtoSigmaPlus> sigmaPlusPartition = MAKE_SIGMAPLUS_PARTITION(confSigmaPlusSelection);
   o2::framework::Preslice<FemtoSigmaPlus> perColSigmaPlus = o2::aod::femtobase::stored::fColId;
 
-  o2::framework::Partition<FemtoSigmaPlusWithLabel> sigmaPlusWithLabelPartition = MAKE_SIGMAPLUS_PARTITION(confSigmaSelection);
+  o2::framework::Partition<FemtoSigmaPlusWithLabel> sigmaPlusWithLabelPartition = MAKE_SIGMAPLUS_PARTITION(confSigmaPlusSelection);
   o2::framework::Preslice<FemtoSigmaPlusWithLabel> perColSigmaPlussWithLabel = o2::aod::femtobase::stored::fColId;
 
   kinkhistmanager::ConfSigmaPlusBinning1 confSigmaPlusBinning;

@@ -975,7 +975,7 @@ struct HfHelper {
   /// \param useJpsiPdgMass Use PDG mass for J/psi when calculating B0 candidate mass
   /// \param useK0StarPdgMass Use PDG mass for K*0 when calculating B0 candidate mass
   /// \return true if candidate passes all selections
-  template <typename T1, typename T2, typename T3>
+  template <typename JPsis, typename T1, typename T2, typename T3>
   static bool selectionB0ToJpsiK0StarTopol(const T1& candB0, const T2& cuts, const T3& binsPt, const bool useJpsiPdgMass, const bool useK0StarPdgMass, const bool k0StarToKPi = true)
   {
     auto ptCandB0 = candB0.pt();
@@ -990,7 +990,7 @@ struct HfHelper {
                          : RecoDecay::m(std::array{pVecLfDau0, pVecLfDau1}, std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus});
     auto ptJpsi = RecoDecay::pt(pVecMu0, pVecMu1);
     auto ptK0Star = RecoDecay::pt(pVecLfDau0, pVecLfDau1);
-    auto candJpsi = candB0.jpsi();
+    auto candJpsi = candB0.template jpsi_as<JPsis>();
     float pseudoPropDecLen = candB0.decayLengthXY() * mCandB0 / ptCandB0;
 
     int binPt = o2::analysis::findBin(binsPt, ptCandB0);
@@ -1106,7 +1106,7 @@ struct HfHelper {
   /// \param binsPt pT bin limits
   /// \param useJpsiPdgMass Use PDG mass for J/psi when calculating B+ candidate mass
   /// \return true if candidate passes all selections
-  template <typename T1, typename T2, typename T3>
+  template <typename JPsis, typename T1, typename T2, typename T3>
   static bool selectionBplusToJpsiKTopol(const T1& candBp, const T2& cuts, const T3& binsPt, const bool useJpsiPdgMass)
   {
     auto ptCandBp = candBp.pt();
@@ -1116,7 +1116,7 @@ struct HfHelper {
     auto const pVecKa = candBp.pVectorProng2();
     auto ptJpsi = RecoDecay::pt(pVecMu0, pVecMu1);
     auto ptKa = RecoDecay::pt(pVecKa);
-    auto candJpsi = candBp.jpsi();
+    auto candJpsi = candBp.template jpsi_as<JPsis>();
     float pseudoPropDecLen = candBp.decayLengthXY() * mCandBp / ptCandBp;
 
     int binPt = o2::analysis::findBin(binsPt, ptCandBp);
@@ -1297,7 +1297,7 @@ struct HfHelper {
   /// \param useJpsiPdgMass Use PDG mass for J/psi when calculating Bs candidate mass
   /// \param usePhiPdgMass Use PDG mass for phi when calculating Bs candidate mass
   /// \return true if candidate passes all selections
-  template <typename T1, typename T2, typename T3>
+  template <typename JPsis, typename T1, typename T2, typename T3>
   static bool selectionBsToJpsiPhiTopol(const T1& candBs, const T2& cuts, const T3& binsPt, const bool useJpsiPdgMass, const bool usePhiPdgMass)
   {
     auto ptCandBs = candBs.pt();
@@ -1309,7 +1309,7 @@ struct HfHelper {
     auto mCandPhi = RecoDecay::m(std::array{pVecKa0, pVecKa1}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus});
     auto ptJpsi = RecoDecay::pt(pVecMu0, pVecMu1);
     auto ptPhi = RecoDecay::pt(pVecKa0, pVecKa1);
-    auto candJpsi = candBs.jpsi();
+    auto candJpsi = candBs.template jpsi_as<JPsis>();
     float pseudoPropDecLen = candBs.decayLengthXY() * mCandBs / ptCandBs;
 
     int binPt = o2::analysis::findBin(binsPt, ptCandBs);

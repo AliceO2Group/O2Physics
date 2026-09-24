@@ -77,7 +77,7 @@ using MyMCCollision = MyMCCollisions::iterator;
 using MyV0Photons = o2::soa::Join<o2::aod::V0PhotonsKF, o2::aod::V0KFEMEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
 
-using MyEMCClusters = o2::soa::Join<o2::aod::SkimEMCClusters, o2::aod::EMEMCClusterMCLabels, o2::aod::EMCEMEventIds>;
+using MyEMCClusters = o2::soa::Join<o2::aod::SkimEMCClusters, o2::aod::EMEMCClusterMCLabels_001, o2::aod::EMCEMEventIds>;
 using MyEMCCluster = MyEMCClusters::iterator;
 
 // using MyPHOSClusters = o2::soa::Join<o2::aod::PHOSClusters, o2::aod::PHOSEMEventIds>;
