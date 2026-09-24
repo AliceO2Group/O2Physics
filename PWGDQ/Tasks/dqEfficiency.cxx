@@ -1369,7 +1369,7 @@ struct AnalysisDileptonTrackTrack {
   float* fValuesQuadruplet = nullptr;
 
   std::vector<TString> fQuadrupletCutNames;
-  AnalysisCompositeCut fDileptonCut;
+  AnalysisCompositeCut fDileptonCut{};
   std::vector<AnalysisCompositeCut> fQuadrupletCuts;
   TString fTrackCutName1;
   TString fTrackCutName2;

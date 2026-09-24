@@ -4751,7 +4751,7 @@ struct AnalysisDileptonTrackTrack {
   TString fTrackCutName1;
   TString fTrackCutName2;
   bool fIsSameTrackCut = false;
-  AnalysisCompositeCut fDileptonCut;
+  AnalysisCompositeCut fDileptonCut{};
   std::vector<TString> fQuadrupletCutNames;
   std::vector<AnalysisCompositeCut> fQuadrupletCuts;
 

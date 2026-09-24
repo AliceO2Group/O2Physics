@@ -84,6 +84,7 @@ class EventSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
 
  private:
   struct ComplexBrickHelper {
+    virtual ~ComplexBrickHelper() = default;
     CutBrick<float>* mBrick = nullptr;
     int mDefaultEstimatorIndex = -1;
     std::vector<int> mAlternateEstimatorIndex = std::vector<int>{};
@@ -95,15 +96,15 @@ class EventSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
     void armedBrick(uint64_t&, uint64_t&, uint64_t&, int&);
   };
   struct MultiplicityBrick : public ComplexBrickHelper {
-    virtual void initialize();
+    void initialize() override;
     std::vector<float> GetMultiplicities();
     int GetArmedIndex() { return mBrick->getArmedIndex(); }
-    virtual bool Filter(uint64_t& mask, int& bit, CutBrick<float>* brick, int index);
+    bool Filter(uint64_t& mask, int& bit, CutBrick<float>* brick, int index) override;
   };
   struct PileUpRejBrick : public ComplexBrickHelper {
-    virtual void initialize();
+    void initialize() override;
     std::vector<float> mIndepVar = std::vector<float>{};
-    virtual bool Filter(uint64_t& mask, int& bit, CutBrick<float>* brick, int index);
+    bool Filter(uint64_t& mask, int& bit, CutBrick<float>* brick, int index) override;
   };
 
   static bool filterBrickValue(uint64_t& mask, int& bit, CutBrick<float>* brick, float value);
