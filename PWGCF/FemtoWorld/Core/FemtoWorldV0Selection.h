@@ -472,9 +472,7 @@ std::array<cutContainerType, 5> FemtoWorldV0Selection::getCutContainer(C const& 
     sign = -1.;
   } else if (abs(nSigmaPrPos) < nSigmaPIDMax && abs(nSigmaPiNeg) < nSigmaPIDMax && diffAntiLambda < diffLambda) {
     sign = 1.;
-  }
-  // if it happens that none of these are true, ignore the invariant mass
-  else {
+  } else { // if it happens that none of these are true, ignore the invariant mass
     if (abs(nSigmaPrNeg) < nSigmaPIDMax && abs(nSigmaPiPos) < nSigmaPIDMax) {
       sign = -1.;
     } else if (abs(nSigmaPrPos) < nSigmaPIDMax && abs(nSigmaPiNeg) < nSigmaPIDMax) {
