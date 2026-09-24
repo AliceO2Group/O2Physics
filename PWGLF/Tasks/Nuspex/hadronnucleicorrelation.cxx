@@ -1752,10 +1752,9 @@ struct HadronNucleiCorrelation {
         }
       }
 
-      if (std::abs(particle.eta()) > etaCut) {
-        continue;
+      if (std::abs(particle.eta()) < etaCut) {
+        fillGeneratedQa(2.5);
       }
-      fillGeneratedQa(2.5);
 
       // (anti)neutrons are accepted by fillGeneratedQa for QA counting only: they have no
       // eta-phi-pt histogram and must not reach the switch below (whose default is fatal)
@@ -1777,9 +1776,6 @@ struct HadronNucleiCorrelation {
           break;
         case -o2::constants::physics::Pdg::kDeuteron:
           registry.fill(HIST("hGen_EtaPhiPt_Deuteron"), particle.eta(), particle.phi(), -1. * particle.pt());
-          break;
-        case PDG_t::kNeutron:
-        case -PDG_t::kNeutron:
           break;
         default:
           LOG(fatal) << "Unhandled PDG code, should not happen, check the code! " << particle.pdgCode();
