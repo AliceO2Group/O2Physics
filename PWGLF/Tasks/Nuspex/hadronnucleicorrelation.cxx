@@ -365,13 +365,13 @@ struct HadronNucleiCorrelation {
       }
     }
 
+    const AxisSpec dcaPtAxis = {100, 0.f, 10.f, "#it{p}_{T} GeV/#it{c}"};
     if (doprocessSameEvent || doprocessSameEventEvSel || doprocessMC) {
       const AxisSpec dcaXyAxis = {600, -3.f, 3.f, "DCA xy (cm)"};
-      const AxisSpec ptAxis = {100, 0.f, 10.f, "#it{p}_{T} GeV/#it{c}"};
-      registry.add("hPrDCAxy", "DCAxy p", {HistType::kTH2D, {dcaXyAxis, ptAxis}});
-      registry.add("hAntiPrDCAxy", "DCAxy #bar{p}", {HistType::kTH2D, {dcaXyAxis, ptAxis}});
-      registry.add("hDeDCAxy", "DCAxy d", {HistType::kTH2D, {dcaXyAxis, ptAxis}});
-      registry.add("hAntiDeDCAxy", "DCAxy #bar{d}", {HistType::kTH2D, {dcaXyAxis, ptAxis}});
+      registry.add("hPrDCAxy", "DCAxy p", {HistType::kTH2D, {dcaXyAxis, dcaPtAxis}});
+      registry.add("hAntiPrDCAxy", "DCAxy #bar{p}", {HistType::kTH2D, {dcaXyAxis, dcaPtAxis}});
+      registry.add("hDeDCAxy", "DCAxy d", {HistType::kTH2D, {dcaXyAxis, dcaPtAxis}});
+      registry.add("hAntiDeDCAxy", "DCAxy #bar{d}", {HistType::kTH2D, {dcaXyAxis, dcaPtAxis}});
     }
     registry.add("hMult", "multiplicity", {HistType::kTH1D, {{200, 0.f, 200.f, "N_{ch}"}}});
 
@@ -382,7 +382,6 @@ struct HadronNucleiCorrelation {
     if (doQA && (doprocessSameEvent || doprocessSameEventEvSel || doprocessMC)) {
       const AxisSpec dcaXyAxis = {200, -0.2f, 0.2f, "DCA xy (cm)"};
       const AxisSpec dcaZAxis = {200, -0.2f, 0.2f, "DCA z (cm)"};
-      const AxisSpec ptAxis = {100, 0.f, 10.f, "#it{p}_{T} GeV/#it{c}"};
 
       // Track QA
       registryQa.add("QA/hVtxZ_trk", "#it{z}_{vtx}", {HistType::kTH1D, {{150, -15.f, 15.f, "#it{z}_{vtx} (cm)"}}});
@@ -391,8 +390,8 @@ struct HadronNucleiCorrelation {
       registryQa.add("QA/hTPCchi2", "TPC chi2/Ncls; TPC chi2/Ncls", {HistType::kTH1D, {{100, 0.f, 10.f}}});
       registryQa.add("QA/hTPCcrossedRowsOverFindableCls", "TPC crossed Rows Over Findable Cls; TPC Crossed Rows Over Findable Cls", {HistType::kTH1D, {{100, 0.f, 2.f}}});
       registryQa.add("QA/hITSchi2", "ITS chi2/Ncls; ITS chi2/Ncls", {HistType::kTH1D, {{100, 0.f, 20.f}}});
-      registryQa.add("QA/hDCAxy", "DCAxy", {HistType::kTH2D, {dcaXyAxis, ptAxis}});
-      registryQa.add("QA/hDCAz", "DCAz", {HistType::kTH2D, {dcaZAxis, ptAxis}});
+      registryQa.add("QA/hDCAxy", "DCAxy", {HistType::kTH2D, {dcaXyAxis, dcaPtAxis}});
+      registryQa.add("QA/hDCAz", "DCAz", {HistType::kTH2D, {dcaZAxis, dcaPtAxis}});
       registryQa.add("QA/TPCChi2VsPZ", "TPCChi2VsPZ", {HistType::kTH2D, {{100, 0.f, 10.f, "p_{TPC}/Z (GeV/c)"}, {120, 0.f, 6.f, "TPC Chi2"}}});
       registryQa.add("QA/h3dTPCTOF_Pr", "n#sigma TPC vs n#sigma TOF", {HistType::kTH3D, {tpcNSigmaAxis, tofNSigmaAxis, ptAxis}});
       registryQa.add("QA/h3dTPCTOF_AntiPr", "n#sigma TPC vs n#sigma TOF", {HistType::kTH3D, {tpcNSigmaAxis, tofNSigmaAxis, ptAxis}});
