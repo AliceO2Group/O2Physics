@@ -311,8 +311,22 @@ struct PhiStrangeCorrelation {
   SliceCache cache;
 
   struct : PresliceGroup {
-    Preslice<aod::PhimesonCandidatesData> phiCandDataPerCollision = aod::lf_selection_phi_candidate::collisionId;
-    // PresliceUnsorted<aod::PhimesonCandidatesMcReco> phiCandMcRecoPerCollision = aod::lf_selection_phi_candidate::collisionId;
+#define DEFINE_PRESLICE(PREF, TAB_PREF, COL_ID)                                              \
+  Preslice<aod::TAB_PREF##CandidatesData> PREF##DataPerCollision = aod::COL_ID::collisionId; \
+  Preslice<aod::TAB_PREF##CandidatesMcReco> PREF##McRecoPerCollision = aod::COL_ID::collisionId;
+
+    // Trigger
+    DEFINE_PRESLICE(phiCand, Phimeson, lf_selection_phi_candidate)
+
+    // Associated Strangeness
+    DEFINE_PRESLICE(k0s, K0sReduced, v0)
+    DEFINE_PRESLICE(lambda, LambdaReduced, v0)
+    DEFINE_PRESLICE(antiLambda, AntiLambdaReduced, v0)
+    DEFINE_PRESLICE(xi, XiReduced, cascade)
+    DEFINE_PRESLICE(omega, OmegaReduced, cascade)
+#undef DEFINE_PRESLICE
+
+    /*Preslice<aod::PhimesonCandidatesData> phiCandDataPerCollision = aod::lf_selection_phi_candidate::collisionId;
     Preslice<aod::PhimesonCandidatesMcReco> phiCandMcRecoPerCollision = aod::lf_selection_phi_candidate::collisionId;
 
     Preslice<aod::K0sReducedCandidatesData> k0sDataPerCollision = aod::v0::collisionId;
@@ -328,7 +342,7 @@ struct PhiStrangeCorrelation {
     Preslice<aod::XiReducedCandidatesMcReco> xiMcRecoPerCollision = aod::cascade::collisionId;
 
     Preslice<aod::OmegaReducedCandidatesData> omegaDataPerCollision = aod::cascade::collisionId;
-    Preslice<aod::OmegaReducedCandidatesMcReco> omegaMcRecoPerCollision = aod::cascade::collisionId;
+    Preslice<aod::OmegaReducedCandidatesMcReco> omegaMcRecoPerCollision = aod::cascade::collisionId;*/
 
     Preslice<aod::PionTracksData> pionTrackDataPerCollision = aod::track::collisionId;
     Preslice<aod::PionTracksMcReco> pionTrackMcRecoPerCollision = aod::track::collisionId;
@@ -338,9 +352,6 @@ struct PhiStrangeCorrelation {
 
   // Necessary service to retrieve efficiency maps from CCDB
   Service<ccdb::BasicCCDBManager> ccdb{};
-
-  // std::shared_ptr<TH3> effMapPhi{};
-  // std::array<std::shared_ptr<TH3>, kAssocPartSize> effMapsAssoc{};
 
   EffMapPtr effMapPhi;
   std::array<EffMapPtr, kAssocPartSize> effMapsAssoc{};
@@ -365,12 +376,13 @@ struct PhiStrangeCorrelation {
   struct MiniEvent {
     float multiplicity{};
     std::vector<MiniParticle> phiParticles;
-    std::vector<MiniParticle> k0sParticles;
+    std::array<std::vector<MiniParticle>, kAssocPartSize> assocParticles;
+    /*std::vector<MiniParticle> k0sParticles;
     std::vector<MiniParticle> lambdaParticles;
     std::vector<MiniParticle> antilambdaParticles;
     std::vector<MiniParticle> xiParticles;
     std::vector<MiniParticle> omegaParticles;
-    std::vector<MiniParticle> pionParticles;
+    std::vector<MiniParticle> pionParticles;*/
   };
 
   // Buffer for mixed event, organized as a vector of deques, one for each multiplicity bin, containing the past events with their particles of interest needed for mixing
@@ -982,7 +994,40 @@ struct PhiStrangeCorrelation {
     }
   }
 
-  void processPhiK0SMEDataLike(SelCollisions const& collisions,
+#define DO_PROCESS_SWITCH(CLASS, FUNC_NAME, DESC) \
+  PROCESS_SWITCH(CLASS, FUNC_NAME, DESC, true)
+
+#define DEFINE_ME_PROCESSES(PART_NAME, PART_ENUM, TABLE_DATA, TABLE_MC)                                                     \
+  void processPhi##PART_NAME##MEDataLike(SelCollisions const& collisions,                                                   \
+                                         aod::PhimesonCandidatesData const& phiCandidates,                                  \
+                                         TABLE_DATA const& assocReduced,                                                    \
+                                         aod::BCs const&)                                                                   \
+  {                                                                                                                         \
+    processPhiAssocME<PART_ENUM>(collisions, phiCandidates, assocReduced);                                                  \
+  }                                                                                                                         \
+                                                                                                                            \
+  DO_PROCESS_SWITCH(PhiStrangeCorrelation, processPhi##PART_NAME##MEDataLike, "Phi-" #PART_NAME " ME Data  or MC w/o PDG"); \
+                                                                                                                            \
+  void processPhi##PART_NAME##MEMCWithPDG(SimCollisions const& collisions,                                                  \
+                                          aod::PhimesonCandidatesMcReco const& phiCandidates,                               \
+                                          TABLE_MC const& assocReduced,                                                     \
+                                          aod::BCs const&)                                                                  \
+  {                                                                                                                         \
+    processPhiAssocME<PART_ENUM>(collisions, phiCandidates, assocReduced);                                                  \
+  }                                                                                                                         \
+                                                                                                                            \
+  DO_PROCESS_SWITCH(PhiStrangeCorrelation, processPhi##PART_NAME##MEMCWithPDG, "Phi-" #PART_NAME " ME MC w/ PDG");
+
+  DEFINE_ME_PROCESSES(K0S, kK0S, aod::K0sReducedCandidatesData, aod::K0sReducedCandidatesMcReco)
+  DEFINE_ME_PROCESSES(Lambda, kLambda, aod::LambdaReducedCandidatesData, aod::LambdaReducedCandidatesMcReco)
+  DEFINE_ME_PROCESSES(AntiLambda, kAntiLambda, aod::AntiLambdaReducedCandidatesData, aod::AntiLambdaReducedCandidatesMcReco)
+  DEFINE_ME_PROCESSES(Xi, kXi, aod::XiReducedCandidatesData, aod::XiReducedCandidatesMcReco)
+  DEFINE_ME_PROCESSES(Omega, kOmega, aod::OmegaReducedCandidatesData, aod::OmegaReducedCandidatesMcReco)
+  DEFINE_ME_PROCESSES(Pion, kPion, aod::PionTracksData, aod::PionTracksMcReco)
+#undef DEFINE_ME_PROCESSES
+#undef DO_PROCESS_SWITCH
+
+  /*void processPhiK0SMEDataLike(SelCollisions const& collisions,
                                aod::PhimesonCandidatesData const& phiCandidates,
                                aod::K0sReducedCandidatesData const& k0sReduced,
                                aod::BCs const&)
@@ -1100,7 +1145,7 @@ struct PhiStrangeCorrelation {
     processPhiAssocME<kPion>(collisions, phiCandidates, pionTracks);
   }
 
-  PROCESS_SWITCH(PhiStrangeCorrelation, processPhiPionMEMCWithPDG, "Process function for Phi-Pion 2D Correlations in MC with PDG ME", true);
+  PROCESS_SWITCH(PhiStrangeCorrelation, processPhiPionMEMCWithPDG, "Process function for Phi-Pion 2D Correlations in MC with PDG ME", true);*/
 
   void processParticleEfficiency(MCCollisions const& mcCollisions,
                                  SimCollisions const& collisions,
@@ -1196,8 +1241,8 @@ struct PhiStrangeCorrelation {
       const auto mcParticlesThisMcColl = mcParticles.sliceBy(preslices.mcPartPerMcCollision, mcCollision.globalIndex());
 
       for (const auto& mcParticle : mcParticlesThisMcColl) {
-        auto inYAcceptance = [&]() {
-          return std::abs(mcParticle.y()) <= yConfigs.cfgYAcceptance;
+        if (std::abs(mcParticle.y()) > yConfigs.cfgYAcceptance) {
+          continue;
         };
 
         auto fillGenHistos = [&](auto h3Key, auto h4Key) {
@@ -1215,28 +1260,12 @@ struct PhiStrangeCorrelation {
           fillGenHistos(h3Key, h4Key);
         };
 
-        if (!inYAcceptance()) {
-          continue;
-        }
-
         switch (std::abs(mcParticle.pdgCode())) {
           case o2::constants::physics::Pdg::kPhi:
             if (eventSelectionType == 0 && mcParticle.pt() >= minPtMcGenConfigs.minPhiPt) {
               fillGenHistos(HIST("phi/h3PhiMCGen"), HIST("phi/h4PhiMCGenAssocReco"));
             }
             break;
-          /*case PDG_t::kK0Short:
-            if (mcParticle.isPhysicalPrimary() && mcParticle.pt() >= minPtMcGenConfigs.v0SettingMinPt)
-              fillGenHistos(HIST("k0s/h3K0SMCGen"), HIST("k0s/h4K0SMCGenAssocReco"));
-            break;
-          case PDG_t::kXiMinus:
-            if (mcParticle.isPhysicalPrimary() && mcParticle.pt() >= minPtMcGenConfigs.cascadeSettingMinPt)
-              fillGenHistos(HIST("xi/h3XiMCGen"), HIST("xi/h4XiMCGenAssocReco"));
-            break;
-          case PDG_t::kPiPlus:
-            if (mcParticle.isPhysicalPrimary() && mcParticle.pt() >= minPtMcGenConfigs.cMinPionPtcut)
-              fillGenHistos(HIST("pi/h3PiMCGen"), HIST("pi/h4PiMCGenAssocReco"));
-            break;*/
           case getPdgCode<kK0S>():
             fillGenAssocSpecies.template operator()<kK0S>(HIST("k0s/h3K0SMCGen"), HIST("k0s/h4K0SMCGenAssocReco"));
             break;
@@ -1264,155 +1293,30 @@ struct PhiStrangeCorrelation {
 
   PROCESS_SWITCH(PhiStrangeCorrelation, processParticleEfficiency, "Process function for Efficiency Computation for Particles of Interest", false);
 
-  /*void processMCGenClosureSE(MCCollisions::iterator const& mcCollision, aod::McParticles const& mcParticles)
-  {
-    float multiplicity = mcCollision.centFT0M();
-
-    std::vector<int64_t> phiIndices;
-    std::vector<int64_t> k0sIndices;
-    std::vector<int64_t> pionIndices;
-    std::vector<std::vector<int64_t>> assocIndices;
-
-    auto inYAcceptance = [&](const auto& mcParticle) {
-      return std::abs(mcParticle.y()) <= yConfigs.cfgYAcceptance;
-    };
-
-    for (const auto& mcParticle : mcParticles) {
-      if (!inYAcceptance(mcParticle))
-        continue;
-
-      switch (std::abs(mcParticle.pdgCode())) {
-        case o2::constants::physics::Pdg::kPhi:
-          if (eventSelectionType == 0 && mcParticle.pt() >= minPtMcGenConfigs.minPhiPt)
-            phiIndices.push_back(mcParticle.globalIndex());
-          break;
-        case PDG_t::kK0Short:
-          if (mcParticle.isPhysicalPrimary() && mcParticle.pt() >= minPtMcGenConfigs.v0SettingMinPt)
-            k0sIndices.push_back(mcParticle.globalIndex());
-          break;
-        case PDG_t::kPiPlus:
-          if (mcParticle.isPhysicalPrimary() && mcParticle.pt() >= minPtMcGenConfigs.cMinPionPtcut)
-            pionIndices.push_back(mcParticle.globalIndex());
-          break;
-        default:
-          break;
-      }
-    }
-
-    assocIndices.push_back(k0sIndices);
-    assocIndices.push_back(pionIndices);
-
-    for (std::size_t iTrigg{0}; iTrigg < phiIndices.size(); ++iTrigg) {
-      auto& phiParticle = mcParticles.rawIteratorAt(phiIndices[iTrigg]);
-
-      static_for<0, assocIndices.size() - 1>([&](auto i_idx) {
-        constexpr unsigned int Idx = i_idx.value;
-
-        for (std::size_t iAssoc{0}; iAssoc < assocIndices[Idx].size(); ++iAssoc) {
-          auto& assocParticle = mcParticles.rawIteratorAt(assocIndices[Idx][iAssoc]);
-
-          histos.fill(HIST("mcGenClosure/h5Phi") + HIST(AssocParticleLabels[Idx]) + HIST("ClosureGenSE"), multiplicity, phiParticle.pt(), assocParticle.pt(), phiParticle.y() - assocParticle.y(), getDeltaPhi(phiParticle.phi(), assocParticle.phi()));
-        }
-      });
-    }
-  }
-
-  PROCESS_SWITCH(PhiStrangeCorrelation, processMCGenClosureSE, "Process function for MC Gen Closure Test in SE", false);
-
-  void processMCGenClosureME(MCCollisions::iterator const& mcCollision, aod::McParticles const& mcParticles)
-  {
-    float multiplicity = mcCollision.centFT0M();
-
-    std::vector<MiniParticle> phiParticles;
-    std::vector<MiniParticle> k0sParticles;
-    std::vector<MiniParticle> pionParticles;
-
-    auto inYAcceptance = [&](const auto& mcParticle) {
-      return std::abs(mcParticle.y()) <= yConfigs.cfgYAcceptance;
-    };
-
-    for (const auto& mcParticle : mcParticles) {
-      if (!inYAcceptance(mcParticle))
-        continue;
-
-      switch (std::abs(mcParticle.pdgCode())) {
-        case o2::constants::physics::Pdg::kPhi:
-          if (eventSelectionType == 0 && mcParticle.pt() >= minPtMcGenConfigs.minPhiPt)
-            phiParticles.emplace_back(mcParticle.pt(), mcParticle.y(), mcParticle.phi());
-          break;
-        case PDG_t::kK0Short:
-          if (mcParticle.isPhysicalPrimary() && mcParticle.pt() >= minPtMcGenConfigs.v0SettingMinPt)
-            k0sParticles.emplace_back(mcParticle.pt(), mcParticle.y(), mcParticle.phi());
-          break;
-        case PDG_t::kPiPlus:
-          if (mcParticle.isPhysicalPrimary() && mcParticle.pt() >= minPtMcGenConfigs.cMinPionPtcut)
-            pionParticles.emplace_back(mcParticle.pt(), mcParticle.y(), mcParticle.phi());
-          break;
-        default:
-          break;
-      }
-    }
-
-    if (phiParticles.empty() && k0sParticles.empty() && pionParticles.empty())
-      return;
-
-    int multBin = getCentBin(multiplicity);
-
-    // Loop over past events in the same multiplicity bin and fill histograms with all combinations of current phi particles and past K0S and pion particles
-    for (const auto& pastEvent : eventBuffer[multBin]) {
-      for (const auto& phiParticle : phiParticles) {
-        for (const auto& k0sParticle : pastEvent.k0sParticles) {
-          histos.fill(HIST("mcGenClosure/h5PhiK0SClosureGenME"), multiplicity, phiParticle.pt, k0sParticle.pt, phiParticle.y - k0sParticle.y, getDeltaPhi(phiParticle.phi, k0sParticle.phi));
-        }
-        for (const auto& pionParticle : pastEvent.pionParticles) {
-          histos.fill(HIST("mcGenClosure/h5PhiPiClosureGenME"), multiplicity, phiParticle.pt, pionParticle.pt, phiParticle.y - pionParticle.y, getDeltaPhi(phiParticle.phi, pionParticle.phi));
-        }
-      }
-    }
-
-    // Add current event to buffer
-    MiniEvent currentEvent;
-    currentEvent.multiplicity = multiplicity;
-    currentEvent.phiParticles = std::move(phiParticles);
-    currentEvent.k0sParticles = std::move(k0sParticles);
-    currentEvent.pionParticles = std::move(pionParticles);
-
-    eventBuffer[multBin].push_front(std::move(currentEvent));
-    if (eventBuffer[multBin].size() > static_cast<std::size_t>(cfgNoMixedEvents.value))
-      eventBuffer[multBin].pop_back();
-  }
-
-  PROCESS_SWITCH(PhiStrangeCorrelation, processMCGenClosureME, "Process function for MC Gen Closure Test in ME", false);*/
-
   void processMCGenClosure(MCCollisions::iterator const& mcCollision, aod::McParticles const& mcParticles)
   {
     float multiplicity = mcCollision.centFT0M();
 
     std::vector<MiniParticle> phiParticles;
-    std::vector<MiniParticle> k0sParticles;
+    std::array<std::vector<MiniParticle>, kAssocPartSize> assocParticles;
+    /*std::vector<MiniParticle> k0sParticles;
     std::vector<MiniParticle> lambdaParticles;
     std::vector<MiniParticle> antilambdaParticles;
     std::vector<MiniParticle> xiParticles;
     std::vector<MiniParticle> omegaParticles;
-    std::vector<MiniParticle> pionParticles;
+    std::vector<MiniParticle> pionParticles;*/
 
     // Preliminary loop to fill vectors of particles of interest for the current event, applying pt and y cuts
     for (const auto& mcParticle : mcParticles) {
-      auto inYAcceptance = [&]() {
-        return std::abs(mcParticle.y()) <= yConfigs.cfgYAcceptance;
-      };
-
-      auto fillPartCollection = [&]<AssociatedParticleType PartType>(auto& collection) {
-        if (!activeCorrelationTypes->at(PartType) || !isGenSpeciesValid<PartType>(mcParticle, minPtMcGenConfigs.bypassPtCut.value)) {
-          return;
-        }
-
-        collection.emplace_back(mcParticle.pt(), mcParticle.y(), mcParticle.phi());
-      };
-
-      if (!inYAcceptance()) {
+      if (std::abs(mcParticle.y()) > yConfigs.cfgYAcceptance) {
         continue;
-      }
+      };
+
+      auto fillPartCollection = [&]<AssociatedParticleType PartType>() {
+        if (activeCorrelationTypes->at(PartType) && isGenSpeciesValid<PartType>(mcParticle, minPtMcGenConfigs.bypassPtCut.value)) {
+          assocParticles[PartType].emplace_back(mcParticle.pt(), mcParticle.y(), mcParticle.phi());
+        }
+      };
 
       switch (std::abs(mcParticle.pdgCode())) {
         case o2::constants::physics::Pdg::kPhi:
@@ -1420,49 +1324,37 @@ struct PhiStrangeCorrelation {
             phiParticles.emplace_back(mcParticle.pt(), mcParticle.y(), mcParticle.phi());
           }
           break;
-        /*case PDG_t::kK0Short:
-          if (mcParticle.isPhysicalPrimary() && (minPtMcGenConfigs.bypassPtCut || mcParticle.pt() >= minPtMcGenConfigs.v0SettingMinPt))
-            k0sParticles.emplace_back(mcParticle.pt(), mcParticle.y(), mcParticle.phi());
-          break;
-        case PDG_t::kXiMinus:
-          if (mcParticle.isPhysicalPrimary() && (minPtMcGenConfigs.bypassPtCut || mcParticle.pt() >= minPtMcGenConfigs.cascadeSettingMinPt))
-            xiParticles.emplace_back(mcParticle.pt(), mcParticle.y(), mcParticle.phi());
-          break;
-        case PDG_t::kPiPlus:
-          if (mcParticle.isPhysicalPrimary() && (minPtMcGenConfigs.bypassPtCut || mcParticle.pt() >= minPtMcGenConfigs.cMinPionPtcut))
-            pionParticles.emplace_back(mcParticle.pt(), mcParticle.y(), mcParticle.phi());
-          break;*/
         case getPdgCode<kK0S>():
-          fillPartCollection.template operator()<kK0S>(k0sParticles);
+          fillPartCollection.template operator()<kK0S>();
           break;
         case getPdgCode<kLambda>():
-          fillPartCollection.template operator()<kLambda>(lambdaParticles);
+          fillPartCollection.template operator()<kLambda>();
           break;
         case getPdgCode<kAntiLambda>():
-          fillPartCollection.template operator()<kAntiLambda>(antilambdaParticles);
+          fillPartCollection.template operator()<kAntiLambda>();
           break;
         case getPdgCode<kXi>():
-          fillPartCollection.template operator()<kXi>(xiParticles);
+          fillPartCollection.template operator()<kXi>();
           break;
         case getPdgCode<kOmega>():
-          fillPartCollection.template operator()<kOmega>(omegaParticles);
+          fillPartCollection.template operator()<kOmega>();
           break;
         case getPdgCode<kPion>():
-          fillPartCollection.template operator()<kPion>(pionParticles);
+          fillPartCollection.template operator()<kPion>();
           break;
         default:
           break;
       }
     }
 
-    const bool skipK0s = !activeCorrelationTypes->at(kK0S) || k0sParticles.empty();
-    const bool skipLambda = !activeCorrelationTypes->at(kLambda) || lambdaParticles.empty();
-    const bool skipAntiLambda = !activeCorrelationTypes->at(kAntiLambda) || antilambdaParticles.empty();
-    const bool skipXi = !activeCorrelationTypes->at(kXi) || xiParticles.empty();
-    const bool skipOmega = !activeCorrelationTypes->at(kOmega) || omegaParticles.empty();
-    const bool skipPion = !activeCorrelationTypes->at(kPion) || pionParticles.empty();
+    bool hasAnyAssoc = false;
+    for (size_t i = 0; i < kAssocPartSize; ++i) {
+      if (!assocParticles[i].empty()) {
+        hasAnyAssoc = true;
+      }
+    }
 
-    if (phiParticles.empty() && skipK0s && skipLambda && skipAntiLambda && skipXi && skipOmega && skipPion) {
+    if (phiParticles.empty() && !hasAnyAssoc) {
       return;
     }
 
@@ -1472,9 +1364,6 @@ struct PhiStrangeCorrelation {
     }
 
     // Same Event Correlations
-    std::array<std::vector<MiniParticle>*, kAssocPartSize> currentAssocParticles{&k0sParticles, &lambdaParticles, &antilambdaParticles,
-                                                                                 &xiParticles, &omegaParticles, &pionParticles};
-
     for (const auto& phiParticle : phiParticles) {
       histos.fill(HIST("phi/h3PhiMCClosureGen"), multiplicity, phiParticle.pt, phiParticle.y);
 
@@ -1484,7 +1373,7 @@ struct PhiStrangeCorrelation {
           return;
         }
 
-        for (const auto& assocParticle : *(currentAssocParticles[Idx])) {
+        for (const auto& assocParticle : assocParticles[Idx]) {
           histos.fill(HIST("phi") + HIST(AssocParticleLabels[Idx]) + HIST("/h5Phi") + HIST(AssocParticleLabels[Idx]) + HIST("ClosureMCGen"),
                       multiplicity, phiParticle.pt, assocParticle.pt,
                       phiParticle.y - assocParticle.y,
@@ -1494,11 +1383,8 @@ struct PhiStrangeCorrelation {
     }
 
     // Mixed Event Correlations
+    // Loop over past events in the same multiplicity bin and fill histograms with all combinations of current phi particles and past associated particles
     for (const auto& pastEvent : eventBuffer[multBin]) {
-      std::array<const std::vector<MiniParticle>*, kAssocPartSize> pastAssocParticles{&pastEvent.k0sParticles, &pastEvent.lambdaParticles, &pastEvent.antilambdaParticles,
-                                                                                      &pastEvent.xiParticles, &pastEvent.omegaParticles, &pastEvent.pionParticles};
-
-      // Loop over past events in the same multiplicity bin and fill histograms with all combinations of current phi particles and past associated particles
       for (const auto& phiParticle : phiParticles) {
         static_for<0, AssocParticleLabels.size() - 1>([&](auto i_idx) {
           constexpr unsigned int Idx = i_idx.value;
@@ -1506,7 +1392,7 @@ struct PhiStrangeCorrelation {
             return;
           }
 
-          for (const auto& assocParticle : *(pastAssocParticles[Idx])) {
+          for (const auto& assocParticle : pastEvent.assocParticles[Idx]) {
             histos.fill(HIST("phi") + HIST(AssocParticleLabels[Idx]) + HIST("/h5Phi") + HIST(AssocParticleLabels[Idx]) + HIST("ClosureMCGenME"),
                         multiplicity, phiParticle.pt, assocParticle.pt,
                         phiParticle.y - assocParticle.y,
@@ -1519,12 +1405,13 @@ struct PhiStrangeCorrelation {
     MiniEvent currentEvent;
     currentEvent.multiplicity = multiplicity;
     currentEvent.phiParticles = std::move(phiParticles);
-    currentEvent.k0sParticles = std::move(k0sParticles);
+    currentEvent.assocParticles = std::move(assocParticles);
+    /*currentEvent.k0sParticles = std::move(k0sParticles);
     currentEvent.lambdaParticles = std::move(lambdaParticles);
     currentEvent.antilambdaParticles = std::move(antilambdaParticles);
     currentEvent.xiParticles = std::move(xiParticles);
     currentEvent.omegaParticles = std::move(omegaParticles);
-    currentEvent.pionParticles = std::move(pionParticles);
+    currentEvent.pionParticles = std::move(pionParticles);*/
 
     eventBuffer[multBin].push_front(std::move(currentEvent));
     if (eventBuffer[multBin].size() > static_cast<std::size_t>(cfgNoMixedEvents.value)) {
