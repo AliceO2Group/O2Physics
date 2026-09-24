@@ -256,15 +256,17 @@ struct HResonanceCorrelation {
       int region;
       float efficiency;
       float efficiencyError;
-      int type;
+      // no species tag stored here: the `type` argument to addValidParticle
+      // below (-1 = trigger, else Phi/K*0) only decides which vector this
+      // particle goes into; once stored, nothing reads it back.
     };
-    float pvz;
-    float mult;
+    float pvz = 0.f;
+    float mult = 0.f;
     std::vector<ValidParticle> trigParticles;
     std::vector<ValidParticle> assocParticles;
     void addValidParticle(float eta, float phi, float pt, int region, float efficiency, float efficiencyError, int type)
     {
-      ValidParticle particle{eta, phi, pt, region, efficiency, efficiencyError, type};
+      ValidParticle particle{eta, phi, pt, region, efficiency, efficiencyError};
 
       if (type == -1) {
         trigParticles.push_back(particle);
@@ -278,29 +280,29 @@ struct HResonanceCorrelation {
   ValidCollisions validCollisions;
 
   // objects to use for efficiency corrections
-  TH2F* hEfficiencyTrigger;
-  TH3F* hEfficiencyTriggerMult;
-  THnF* hEfficiencyTriggerMultVsPhi;
-  TH2F* hEfficiencyPion;
-  TH2F* hEfficiencyPhi;
-  THnF* hEfficiencyPhiMultVsPhi;
-  TH2F* hEfficiencyKstar;
-  THnF* hEfficiencyKstarMultVsPhi;
-  TH2F* hEfficiencyHadron;
-  TH3F* hEfficiencyHadronMult;
-  TH1F* hPurityHadron;
-  TH2F* hPurityHadronMult;
+  TH2F* hEfficiencyTrigger = nullptr;
+  TH3F* hEfficiencyTriggerMult = nullptr;
+  THnF* hEfficiencyTriggerMultVsPhi = nullptr;
+  TH2F* hEfficiencyPion = nullptr;
+  TH2F* hEfficiencyPhi = nullptr;
+  THnF* hEfficiencyPhiMultVsPhi = nullptr;
+  TH2F* hEfficiencyKstar = nullptr;
+  THnF* hEfficiencyKstarMultVsPhi = nullptr;
+  TH2F* hEfficiencyHadron = nullptr;
+  TH3F* hEfficiencyHadronMult = nullptr;
+  TH1F* hPurityHadron = nullptr;
+  TH2F* hPurityHadronMult = nullptr;
 
   // objects to propagate the efficiency uncertainty
-  TH2F* hEfficiencyUncertaintyTrigger;
-  TH3F* hEfficiencyUncertaintyTriggerMult;
-  TH2F* hEfficiencyUncertaintyPion;
-  TH2F* hEfficiencyUncertaintyPhi;
-  TH2F* hEfficiencyUncertaintyKstar;
-  TH2F* hEfficiencyUncertaintyHadron;
-  TH3F* hEfficiencyUncertaintyHadronMult;
-  TH1F* hPurityUncertaintyHadron;
-  TH2F* hPurityUncertaintyHadronMult;
+  TH2F* hEfficiencyUncertaintyTrigger = nullptr;
+  TH3F* hEfficiencyUncertaintyTriggerMult = nullptr;
+  TH2F* hEfficiencyUncertaintyPion = nullptr;
+  TH2F* hEfficiencyUncertaintyPhi = nullptr;
+  TH2F* hEfficiencyUncertaintyKstar = nullptr;
+  TH2F* hEfficiencyUncertaintyHadron = nullptr;
+  TH3F* hEfficiencyUncertaintyHadronMult = nullptr;
+  TH1F* hPurityUncertaintyHadron = nullptr;
+  TH2F* hPurityUncertaintyHadronMult = nullptr;
 
   using BinningTypePP = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
   using BinningTypePbPb = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
@@ -320,9 +322,9 @@ struct HResonanceCorrelation {
   static constexpr int IndexKstar = 1;
   static constexpr int IndexPion = 2;
 
-  uint16_t doCorrelation;
-  int mRunNumber;
-  int mRunNumberZorro;
+  uint16_t doCorrelation = 0;
+  int mRunNumber = 0;
+  int mRunNumberZorro = 0;
 
   std::vector<std::vector<float>> axisRanges;
 
@@ -1075,7 +1077,7 @@ struct HResonanceCorrelation {
     return true;
   }
 
-  double calculateAverageDeltaPhiStar(double* trigg, double* assoc, double B)
+  double calculateAverageDeltaPhiStar(const double* trigg, const double* assoc, double B)
   {
     double dPhiStar = 0;
     double dPhiStarMean = 0;
@@ -1361,7 +1363,7 @@ struct HResonanceCorrelation {
       c.isRightBg = (massWindowConfigurationsPhi.minBgNSigma * sig < delta && delta < massWindowConfigurationsPhi.maxBgNSigma * sig);
 
       c.passesMcSelection = (!masterConfigurations.doMCassociation || assocCandidate.mcTruePhi()) &&
-                            (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary());
+                             (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary());
 
       // Candidate-level kinematic/spectrum QA, ported from the equivalent
       // block in hStrangeCorrelation.cxx (h3d<Species>Spectrum[Y],
@@ -1712,7 +1714,7 @@ struct HResonanceCorrelation {
       c.isRightBg = (massWindowConfigurationsKstar.minBgNSigma * sig < delta && delta < massWindowConfigurationsKstar.maxBgNSigma * sig);
 
       c.passesMcSelection = (!masterConfigurations.doMCassociation || assocCandidate.mcTrueKstar()) &&
-                            (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary());
+                             (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary());
 
       // Same candidate-level Spectrum/EtaVsPtVsPhi QA as fillCorrelationsPhi
       // above -- see the comment there for rationale.
@@ -2717,7 +2719,7 @@ struct HResonanceCorrelation {
     std::vector<uint32_t> piIndices;
     std::vector<uint32_t> phiIndices;
     std::vector<uint32_t> kstarIndices; // intentionally left unpopulated: Kstar0 is not
-                                        // extended to this process function in this version
+                                         // extended to this process function in this version
 
     for (auto const& mcParticle : mcParticles) {
       double geta = mcParticle.eta();
@@ -2830,9 +2832,9 @@ struct HResonanceCorrelation {
       }
     }
 
-    associatedIndices.emplace_back(phiIndices);         // IndexPhi   = 0
-    associatedIndices.emplace_back(kstarIndices);       // IndexKstar = 1 (always empty here)
-    associatedIndices.emplace_back(piIndices);          // IndexPion  = 2
+    associatedIndices.emplace_back(phiIndices);   // IndexPhi   = 0
+    associatedIndices.emplace_back(kstarIndices);  // IndexKstar = 1 (always empty here)
+    associatedIndices.emplace_back(piIndices);     // IndexPion  = 2
     associatedIndices.emplace_back(assocHadronIndices); // Hadron = 3
 
     for (std::size_t iTrigger = 0; iTrigger < triggerIndices.size(); iTrigger++) {
@@ -2914,7 +2916,7 @@ struct HResonanceCorrelation {
     std::vector<uint32_t> piIndices;
     std::vector<uint32_t> phiIndices;
     std::vector<uint32_t> kstarIndices; // intentionally left unpopulated: Kstar0 is not
-                                        // extended to this process function in this version
+                                         // extended to this process function in this version
     float centMultFT0M = -1;
     float centMultFT0A = -1;
     float centMultFT0C = -1;
@@ -2998,9 +3000,9 @@ struct HResonanceCorrelation {
       }
     }
 
-    associatedIndices.emplace_back(phiIndices);         // IndexPhi   = 0
-    associatedIndices.emplace_back(kstarIndices);       // IndexKstar = 1 (always empty here)
-    associatedIndices.emplace_back(piIndices);          // IndexPion  = 2
+    associatedIndices.emplace_back(phiIndices);   // IndexPhi   = 0
+    associatedIndices.emplace_back(kstarIndices);  // IndexKstar = 1 (always empty here)
+    associatedIndices.emplace_back(piIndices);     // IndexPion  = 2
     associatedIndices.emplace_back(assocHadronIndices); // Hadron = 3
     for (std::size_t iTrigger = 0; iTrigger < triggerIndices.size(); iTrigger++) {
       auto triggerParticle = mcParticles.iteratorAt(triggerIndices[iTrigger]);
