@@ -57,6 +57,7 @@
 #include <TH1.h>
 #include <TString.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
@@ -177,6 +178,8 @@ struct TaskPi0FlowEMC {
     Configurable<bool> useEMCal{"useEMCal", false, "flag to use EMCal clusters"};
     Configurable<bool> useDCal{"useDCal", false, "flag to use DCal clusters"};
     Configurable<bool> useCrosspairs{"useCrosspairs", true, "flag to allow pairing of EMCal with DCal clusters. If this is set, useEMCal and useDCal are ignored!"};
+    Configurable<bool> useAsymmetricEnergyCut{"useAsymmetricEnergyCut", false, "flag to turn on the asymmetric cluster energy cut: max(E1,E2) > asymmetricMinEnergy. Only for EMCal EMCal cluster pairing, not to be used for PCM EMCal pairing."};
+    Configurable<float> asymmetricMinEnergy{"asymmetricMinEnergy", 0.9f, "cut value for max(E1,E2) > asymmetricMinEnergy. Will only be used of useAsymmetricEnergyCut is set to true!"};
   } emccuts;
 
   V0PhotonCut fV0PhotonCut;
@@ -1064,6 +1067,11 @@ struct TaskPi0FlowEMC {
           continue;
         }
       }
+
+      if (emccuts.useAsymmetricEnergyCut && std::max(g1.corrE(), g2.corrE()) < emccuts.asymmetricMinEnergy) {
+        continue;
+      }
+
       ROOT::Math::PtEtaPhiMVector v1(g1.corrPt(), g1.eta(), g1.phi(), 0.);
       ROOT::Math::PtEtaPhiMVector v2(g2.corrPt(), g2.eta(), g2.phi(), 0.);
       ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
@@ -1209,6 +1217,10 @@ struct TaskPi0FlowEMC {
           continue;
         }
         if (emccuts.useDCal.value && !emccuts.useCrosspairs.value && (isEMCalRegion(g1.phi()) || isEMCalRegion(g2.phi()))) {
+          continue;
+        }
+
+        if (emccuts.useAsymmetricEnergyCut && std::max(g1.corrE(), g2.corrE()) < emccuts.asymmetricMinEnergy) {
           continue;
         }
 

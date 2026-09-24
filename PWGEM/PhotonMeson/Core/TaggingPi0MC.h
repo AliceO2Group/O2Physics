@@ -33,7 +33,6 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 
-#include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
@@ -91,7 +90,6 @@ using MyMCElectron = MyMCElectrons::iterator;
 
 template <o2::aod::pwgem::photonmeson::photonpair::PairType pairtype, typename... Types>
 struct TaggingPi0MC {
-  o2::framework::Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   o2::framework::Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
 
   o2::framework::Configurable<int> cfgQvecEstimator{"cfgQvecEstimator", 0, "FT0M:0, FT0A:1, FT0C:2"};
@@ -214,7 +212,6 @@ struct TaggingPi0MC {
   static constexpr std::array<std::string_view, 2> parnames = {"Pi0/", "Eta/"};
 
   o2::ccdb::CcdbApi ccdbApi;
-  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb{};
   int mRunNumber = 0;
   float d_bz = 0;
   TF1* f1fd_k0s_to_pi0 = nullptr;
@@ -232,11 +229,6 @@ struct TaggingPi0MC {
     mRunNumber = 0;
     d_bz = 0;
     f1fd_k0s_to_pi0 = new TF1("f1fd_k0s_to_pi0", TString(fd_k0s_to_pi0), 0.f, 100.f);
-
-    ccdb->setURL(ccdburl);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    ccdb->setFatalWhenNull(false);
   }
 
   template <o2::soa::is_iterator TCollision>

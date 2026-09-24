@@ -67,16 +67,16 @@
 // using namespace o2::framework::expressions;
 // using namespace o2::constants::physics;
 
-using o2::framework::AxisSpec;
-using o2::framework::Configurable;
-using o2::framework::ConfigurableGroup;
-using o2::framework::HistType;
-using o2::framework::kTH1D;
-using o2::framework::kTH1F;
-using o2::framework::kTH2F;
-using o2::framework::kTHnSparseF;
-using o2::framework::Preslice;
-using o2::framework::Produces;
+// using o2::framework::AxisSpec;
+// using o2::framework::Configurable;
+// using o2::framework::ConfigurableGroup;
+// using o2::framework::HistType;
+// using o2::framework::kTH1D;
+// using o2::framework::kTH1F;
+// using o2::framework::kTH2F;
+// using o2::framework::kTHnSparseF;
+// using o2::framework::Preslice;
+// using o2::framework::Produces;
 
 using MyCollisions = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::PMEvSels>;
 using MyCollisionsWithSWT = o2::soa::Join<MyCollisions, o2::aod::EMSWTriggerBitsTMP>;
@@ -110,15 +110,15 @@ template <o2::soa::is_table TEMPrimaryElectronsFromDalitz, o2::soa::is_table TEM
 struct skimmerPrimaryElectronFromDalitzEE {
 
   o2::framework::SliceCache cache;
-  Preslice<o2::aod::Tracks> perCol = o2::aod::track::collisionId;
+  o2::framework::Preslice<o2::aod::Tracks> perCol = o2::aod::track::collisionId;
   o2::framework::PresliceOptional<MyTracksMC> perTracksCollision = o2::aod::track::collisionId;
-  Preslice<TV0PhotonsKF> perCol_pcm = o2::aod::v0photonkf::collisionId; // o2::aod::V0PhotonsKF
-  Preslice<o2::aod::TrackAssoc> trackIndicesPerCollision = o2::aod::track_association::collisionId;
-  Produces<TEMPrimaryElectronsFromDalitz> emprimaryelectrons;
-  Produces<TEMPrimaryElectronsDeDxMC> emprimaryelectronsDeDxMC;
+  o2::framework::Preslice<TV0PhotonsKF> perCol_pcm = o2::aod::v0photonkf::collisionId; // o2::aod::V0PhotonsKF
+  o2::framework::Preslice<o2::aod::TrackAssoc> trackIndicesPerCollision = o2::aod::track_association::collisionId;
+  o2::framework::Produces<TEMPrimaryElectronsFromDalitz> emprimaryelectrons;
+  o2::framework::Produces<TEMPrimaryElectronsDeDxMC> emprimaryelectronsDeDxMC;
   o2::framework::Service<o2::pid::tof::TOFResponse> mTOFResponse{};
 
-  Produces<o2::aod::EMTOFNSigmas> emtofs;
+  o2::framework::Produces<o2::aod::EMTOFNSigmas> emtofs;
 
   enum class enumFillingMode {
     SingleTrack = 1,
@@ -127,56 +127,53 @@ struct skimmerPrimaryElectronFromDalitzEE {
   };
 
   // Configurables
-  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
+  o2::framework::Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
   // Operation and minimisation criteria
-  Configurable<float> dBzInput{"dBzInput", -999, "bz field in kG, -999 is automatic"};
-  Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 0, "min ncluster tpc"}; // o2-linter: disable=name/function-variable (renaming configs would mess up hyperloop)
-  Configurable<int> mincrossedrows{"mincrossedrows", 70, "min. crossed rows"};
-  Configurable<float> min_tpc_cr_findable_ratio{"min_tpc_cr_findable_ratio", 0.8, "min. TPC Ncr/Nf ratio"};
-  Configurable<float> max_frac_shared_clusters_tpc{"max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
-  Configurable<int> min_ncluster_its{"min_ncluster_its", 4, "min ncluster its"};
-  Configurable<int> min_ncluster_itsib{"min_ncluster_itsib", 1, "min ncluster itsib"};
-  Configurable<float> minchi2tpc{"minchi2tpc", 0.0, "min. chi2/NclsTPC"};
-  Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max. chi2/NclsTPC"};
-  Configurable<float> minchi2its{"minchi2its", 0.0, "min. chi2/NclsITS"};
-  Configurable<float> maxchi2its{"maxchi2its", 36.0, "max. chi2/NclsITS"};
-  Configurable<float> minpt{"minpt", 0.05, "min pt for ITS-TPC track"};
-  Configurable<float> maxeta{"maxeta", 2.0, "max eta acceptance"};
-  Configurable<float> dca_xy_max{"dca_xy_max", 1, "max DCAxy in cm"};                 // o2-linter: disable=name/function-variable (renaming configs would mess up hyperloop)
-  Configurable<float> dca_z_max{"dca_z_max", 1, "max DCAz in cm"};                    // o2-linter: disable=name/function-variable (renaming configs would mess up hyperloop)
-  Configurable<float> dca_3d_sigma_max{"dca_3d_sigma_max", 2, "max DCA 3D in sigma"}; // o2-linter: disable=name/function-variable (renaming configs would mess up hyperloop)
-  Configurable<float> minTPCNsigmaEl{"minTPCNsigmaEl", -2.5, "min. TPC n sigma for electron inclusion"};
-  Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", +3.5, "max. TPC n sigma for electron inclusion"};
-  Configurable<float> maxTPCNsigmaPi{"maxTPCNsigmaPi", 0.0, "max. TPC n sigma for pion exclusion"};
-  Configurable<float> minTPCNsigmaPi{"minTPCNsigmaPi", 0.0, "min. TPC n sigma for pion exclusion"};
-  Configurable<float> minTOFNsigmaEl{"minTOFNsigmaEl", -3.5, "min. TOF n sigma for electron inclusion"};
-  Configurable<float> maxTOFNsigmaEl{"maxTOFNsigmaEl", +3.5, "max. TOF n sigma for electron inclusion"};
-  Configurable<float> minTPCNsigmaKa{"minTPCNsigmaKa", -2.5, "min. TPC n sigma for kaon exclusion"};
-  Configurable<float> maxTPCNsigmaKa{"maxTPCNsigmaKa", 2.5, "max. TPC n sigma for kaon exclusion"};
-  Configurable<float> minTPCNsigmaPr{"minTPCNsigmaPr", -2.5, "min. TPC n sigma for proton exclusion"};
-  Configurable<float> maxTPCNsigmaPr{"maxTPCNsigmaPr", 2.5, "max. TPC n sigma for proton exclusion"};
-  Configurable<bool> requireTOF{"requireTOF", false, "require TOF hit"};
-  Configurable<float> min_pin_for_pion_rejection{"min_pin_for_pion_rejection", 0.0, "pion rejection is applied above this pin"}; // this is used only in TOFreq
-  Configurable<float> max_pin_for_pion_rejection{"max_pin_for_pion_rejection", 0.5, "pion rejection is applied below this pin"};
-  Configurable<float> minMee{"minMee", 0., "min. mee to store dalitz ee pairs"};
-  Configurable<float> maxMee{"maxMee", 0.5, "max. mee to store dalitz ee pairs"};
-  Configurable<float> minMeegamma{"minMeegamma", 0.3, "min. mee to store eegamma candidates"};
-  Configurable<float> maxMeegamma{"maxMeegamma", 0.8, "max. mee to store eegamma candidates"};
-  Configurable<bool> photonsNeeded{"photonsNeeded", true, "require a minimum of one photons per collision"};
-  Configurable<bool> fillLS{"fillLS", true, "flag to fill LS histograms for QA"};
-  Configurable<int> fillingMode{"fillingMode", 1, "Filling mode| 1: fill tracks without pair selection, 2: fill tracks from selected pairs, 3: fill tracks from selected pairs that can be combined with a photon"};
-  Configurable<bool> fillWithEtaMassCut{"fillWithEtaMassCut", true, "only valid for fillingmode 3; true: filling tabled based on eta candidate selection with minMeegamma < M < maxMeegamma, false: fill identical to fillingmode 2"};
-  Configurable<bool> includeITSsa{"includeITSsa", false, "Flag to include ITSsa tracks"};
-  Configurable<float> maxpt_itssa{"maxpt_itssa", 0.15, "max pt for ITSsa track"}; // o2-linter: disable=name/function-variable (renaming configs would mess up hyperloop)
-  Configurable<float> maxMeanITSClusterSize{"maxMeanITSClusterSize", 16, "max <ITS cluster size> x cos(lambda)"};
-  Configurable<float> slope{"slope", 0.0185, "slope for m vs. phiv"};
-  Configurable<float> intercept{"intercept", -0.0380, "intercept for m vs. phiv"};
-  Configurable<bool> useTOFNSigmaDeltaBC{"useTOFNSigmaDeltaBC", false, "Flag to shift delta BC for TOF n sigma (only with TTCA)"};
-  Configurable<bool> storeOnlyTrueElectronMC{"storeOnlyTrueElectronMC", false, "Flag to store only true electron in MC"};
+  o2::framework::Configurable<float> dBzInput{"dBzInput", -999, "bz field in kG, -999 is automatic"};
+  o2::framework::Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 0, "min ncluster tpc"}; // o2-linter: disable=name/function-variable (renaming configs would mess up hyperloop)
+  o2::framework::Configurable<int> mincrossedrows{"mincrossedrows", 70, "min. crossed rows"};
+  o2::framework::Configurable<float> min_tpc_cr_findable_ratio{"min_tpc_cr_findable_ratio", 0.8, "min. TPC Ncr/Nf ratio"};
+  o2::framework::Configurable<float> max_frac_shared_clusters_tpc{"max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
+  o2::framework::Configurable<int> min_ncluster_its{"min_ncluster_its", 4, "min ncluster its"};
+  o2::framework::Configurable<int> min_ncluster_itsib{"min_ncluster_itsib", 1, "min ncluster itsib"};
+  o2::framework::Configurable<float> minchi2tpc{"minchi2tpc", 0.0, "min. chi2/NclsTPC"};
+  o2::framework::Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max. chi2/NclsTPC"};
+  o2::framework::Configurable<float> minchi2its{"minchi2its", 0.0, "min. chi2/NclsITS"};
+  o2::framework::Configurable<float> maxchi2its{"maxchi2its", 36.0, "max. chi2/NclsITS"};
+  o2::framework::Configurable<float> minpt{"minpt", 0.05, "min pt for ITS-TPC track"};
+  o2::framework::Configurable<float> maxeta{"maxeta", 2.0, "max eta acceptance"};
+  o2::framework::Configurable<float> dca_xy_max{"dca_xy_max", 1, "max DCAxy in cm"};                 // o2-linter: disable=name/function-variable (renaming configs would mess up hyperloop)
+  o2::framework::Configurable<float> dca_z_max{"dca_z_max", 1, "max DCAz in cm"};                    // o2-linter: disable=name/function-variable (renaming configs would mess up hyperloop)
+  o2::framework::Configurable<float> dca_3d_sigma_max{"dca_3d_sigma_max", 2, "max DCA 3D in sigma"}; // o2-linter: disable=name/function-variable (renaming configs would mess up hyperloop)
+  o2::framework::Configurable<float> minTPCNsigmaEl{"minTPCNsigmaEl", -2.5, "min. TPC n sigma for electron inclusion"};
+  o2::framework::Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", +3.5, "max. TPC n sigma for electron inclusion"};
+  o2::framework::Configurable<float> maxTPCNsigmaPi{"maxTPCNsigmaPi", 0.0, "max. TPC n sigma for pion exclusion"};
+  o2::framework::Configurable<float> minTPCNsigmaPi{"minTPCNsigmaPi", 0.0, "min. TPC n sigma for pion exclusion"};
+  o2::framework::Configurable<float> minTOFNsigmaEl{"minTOFNsigmaEl", -3.5, "min. TOF n sigma for electron inclusion"};
+  o2::framework::Configurable<float> maxTOFNsigmaEl{"maxTOFNsigmaEl", +3.5, "max. TOF n sigma for electron inclusion"};
+  o2::framework::Configurable<float> minTPCNsigmaKa{"minTPCNsigmaKa", -2.5, "min. TPC n sigma for kaon exclusion"};
+  o2::framework::Configurable<float> maxTPCNsigmaKa{"maxTPCNsigmaKa", 2.5, "max. TPC n sigma for kaon exclusion"};
+  o2::framework::Configurable<float> minTPCNsigmaPr{"minTPCNsigmaPr", -2.5, "min. TPC n sigma for proton exclusion"};
+  o2::framework::Configurable<float> maxTPCNsigmaPr{"maxTPCNsigmaPr", 2.5, "max. TPC n sigma for proton exclusion"};
+  o2::framework::Configurable<bool> requireTOF{"requireTOF", false, "require TOF hit"};
+  o2::framework::Configurable<float> min_pin_for_pion_rejection{"min_pin_for_pion_rejection", 0.0, "pion rejection is applied above this pin"}; // this is used only in TOFreq
+  o2::framework::Configurable<float> max_pin_for_pion_rejection{"max_pin_for_pion_rejection", 0.5, "pion rejection is applied below this pin"};
+  o2::framework::Configurable<float> minMee{"minMee", 0., "min. mee to store dalitz ee pairs"};
+  o2::framework::Configurable<float> maxMee{"maxMee", 0.5, "max. mee to store dalitz ee pairs"};
+  o2::framework::Configurable<float> minMeegamma{"minMeegamma", 0.3, "min. mee to store eegamma candidates"};
+  o2::framework::Configurable<float> maxMeegamma{"maxMeegamma", 0.8, "max. mee to store eegamma candidates"};
+  o2::framework::Configurable<bool> photonsNeeded{"photonsNeeded", true, "require a minimum of one photons per collision"};
+  o2::framework::Configurable<bool> fillLS{"fillLS", true, "flag to fill LS histograms for QA"};
+  o2::framework::Configurable<int> fillingMode{"fillingMode", 1, "Filling mode| 1: fill tracks without pair selection, 2: fill tracks from selected pairs, 3: fill tracks from selected pairs that can be combined with a photon"};
+  o2::framework::Configurable<bool> fillWithEtaMassCut{"fillWithEtaMassCut", true, "only valid for fillingmode 3; true: filling tabled based on eta candidate selection with minMeegamma < M < maxMeegamma, false: fill identical to fillingmode 2"};
+  o2::framework::Configurable<bool> includeITSsa{"includeITSsa", false, "Flag to include ITSsa tracks"};
+  o2::framework::Configurable<float> maxpt_itssa{"maxpt_itssa", 0.15, "max pt for ITSsa track"}; // o2-linter: disable=name/function-variable (renaming configs would mess up hyperloop)
+  o2::framework::Configurable<float> maxMeanITSClusterSize{"maxMeanITSClusterSize", 16, "max <ITS cluster size> x cos(lambda)"};
+  o2::framework::Configurable<float> slope{"slope", 0.0185, "slope for m vs. phiv"};
+  o2::framework::Configurable<float> intercept{"intercept", -0.0380, "intercept for m vs. phiv"};
+  o2::framework::Configurable<bool> useTOFNSigmaDeltaBC{"useTOFNSigmaDeltaBC", false, "Flag to shift delta BC for TOF n sigma (only with TTCA)"};
+  o2::framework::Configurable<bool> storeOnlyTrueElectronMC{"storeOnlyTrueElectronMC", false, "Flag to store only true electron in MC"};
 
   o2::framework::HistogramRegistry fRegistry{"output", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject, false, false};
   static constexpr std::array<std::string_view, 3> DileptonSigns = {"uls/", "lspp/", "lsmm/"};
@@ -205,55 +202,55 @@ struct skimmerPrimaryElectronFromDalitzEE {
     mTOFResponse->initSetup(ccdb, initContext);
     LOGF(info, "after TOF initSetup");
 
-    fRegistry.add("Track/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
-    fRegistry.add("Track/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, o2::constants::math::TwoPI}, {400, -2.0f, 2.0f}}, false);
-    fRegistry.add("Track/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{400, -20, 20}}, false);
-    fRegistry.add("Track/hRelDeltaPt", "pT resolution;p_{T} (GeV/c);#Deltap_{T}/p_{T}", kTH2F, {{1000, 0, 10}, {100, 0, 0.1}}, false);
-    fRegistry.add("Track/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -1.0f, 1.0f}, {200, -1.0f, 1.0f}}, false);
-    fRegistry.add("Track/hDCAxy_Pt", "DCA_{xy} vs. pT;p_{T} (GeV/c);DCA_{xy} (cm)", kTH2F, {{200, 0, 10}, {200, -1, 1}}, false);
-    fRegistry.add("Track/hDCAz_Pt", "DCA_{z} vs. pT;p_{T} (GeV/c);DCA_{z} (cm)", kTH2F, {{200, 0, 10}, {200, -1, 1}}, false);
-    fRegistry.add("Track/hDCAxyzSigma", "DCA xy vs. z;DCA_{xy} (#sigma);DCA_{z} (#sigma)", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}}, false);
-    fRegistry.add("Track/hDCAxyRes_Pt", "DCA_{xy} resolution vs. pT;p_{T} (GeV/c);DCA_{xy} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0., 500}}, false);
-    fRegistry.add("Track/hDCAzRes_Pt", "DCA_{z} resolution vs. pT;p_{T} (GeV/c);DCA_{z} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0., 500}}, false);
+    fRegistry.add("Track/hPt", "pT;p_{T} (GeV/c)", o2::framework::kTH1F, {{1000, 0.0f, 10}}, false);
+    fRegistry.add("Track/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", o2::framework::kTH2F, {{180, 0, o2::constants::math::TwoPI}, {400, -2.0f, 2.0f}}, false);
+    fRegistry.add("Track/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", o2::framework::kTH1F, {{400, -20, 20}}, false);
+    fRegistry.add("Track/hRelDeltaPt", "pT resolution;p_{T} (GeV/c);#Deltap_{T}/p_{T}", o2::framework::kTH2F, {{1000, 0, 10}, {100, 0, 0.1}}, false);
+    fRegistry.add("Track/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", o2::framework::kTH2F, {{200, -1.0f, 1.0f}, {200, -1.0f, 1.0f}}, false);
+    fRegistry.add("Track/hDCAxy_Pt", "DCA_{xy} vs. pT;p_{T} (GeV/c);DCA_{xy} (cm)", o2::framework::kTH2F, {{200, 0, 10}, {200, -1, 1}}, false);
+    fRegistry.add("Track/hDCAz_Pt", "DCA_{z} vs. pT;p_{T} (GeV/c);DCA_{z} (cm)", o2::framework::kTH2F, {{200, 0, 10}, {200, -1, 1}}, false);
+    fRegistry.add("Track/hDCAxyzSigma", "DCA xy vs. z;DCA_{xy} (#sigma);DCA_{z} (#sigma)", o2::framework::kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}}, false);
+    fRegistry.add("Track/hDCAxyRes_Pt", "DCA_{xy} resolution vs. pT;p_{T} (GeV/c);DCA_{xy} resolution (#mum)", o2::framework::kTH2F, {{200, 0, 10}, {500, 0., 500}}, false);
+    fRegistry.add("Track/hDCAzRes_Pt", "DCA_{z} resolution vs. pT;p_{T} (GeV/c);DCA_{z} resolution (#mum)", o2::framework::kTH2F, {{200, 0, 10}, {500, 0., 500}}, false);
 
     // TPC
-    fRegistry.add("Track/hNclsTPC", "number of TPC clusters", kTH1F, {{161, -0.5, 160.5}}, false);
-    fRegistry.add("Track/hNcrTPC", "number of TPC crossed rows", kTH1F, {{161, -0.5, 160.5}}, false);
-    fRegistry.add("Track/hChi2TPC", "chi2/number of TPC clusters", kTH1F, {{100, 0, 10}}, false);
-    fRegistry.add("Track/hTPCNcr2Nf", "TPC Ncr/Nfindable", kTH1F, {{200, 0, 2}}, false);
-    fRegistry.add("Track/hTPCNcls2Nf", "TPC Ncls/Nfindable", kTH1F, {{200, 0, 2}}, false);
-    fRegistry.add("Track/hTPCNclsShared", "TPC Ncls shared/Ncls;p_{T} (GeV/c);N_{cls}^{shared}/N_{cls} in TPC", kTH2F, {{1000, 0, 10}, {100, 0, 1}}, false);
-    fRegistry.add("Track/hTPCdEdx", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
-    fRegistry.add("Track/hTPCdEdxMC", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
-    fRegistry.add("Track/hTPCNsigmaEl", "TPC n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-    fRegistry.add("Track/hTPCNsigmaPi", "TPC n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+    fRegistry.add("Track/hNclsTPC", "number of TPC clusters", o2::framework::kTH1F, {{161, -0.5, 160.5}}, false);
+    fRegistry.add("Track/hNcrTPC", "number of TPC crossed rows", o2::framework::kTH1F, {{161, -0.5, 160.5}}, false);
+    fRegistry.add("Track/hChi2TPC", "chi2/number of TPC clusters", o2::framework::kTH1F, {{100, 0, 10}}, false);
+    fRegistry.add("Track/hTPCNcr2Nf", "TPC Ncr/Nfindable", o2::framework::kTH1F, {{200, 0, 2}}, false);
+    fRegistry.add("Track/hTPCNcls2Nf", "TPC Ncls/Nfindable", o2::framework::kTH1F, {{200, 0, 2}}, false);
+    fRegistry.add("Track/hTPCNclsShared", "TPC Ncls shared/Ncls;p_{T} (GeV/c);N_{cls}^{shared}/N_{cls} in TPC", o2::framework::kTH2F, {{1000, 0, 10}, {100, 0, 1}}, false);
+    fRegistry.add("Track/hTPCdEdx", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", o2::framework::kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
+    fRegistry.add("Track/hTPCdEdxMC", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", o2::framework::kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
+    fRegistry.add("Track/hTPCNsigmaEl", "TPC n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TPC}", o2::framework::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+    fRegistry.add("Track/hTPCNsigmaPi", "TPC n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", o2::framework::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
 
     // ITS
-    fRegistry.add("Track/hNclsITS", "number of ITS clusters", kTH1F, {{8, -0.5, 7.5}}, false);
-    fRegistry.add("Track/hChi2ITS", "chi2/number of ITS clusters", kTH1F, {{400, 0, 40}}, false);
-    fRegistry.add("Track/hITSClusterMap", "ITS cluster map", kTH1F, {{128, -0.5, 127.5}}, false);
-    fRegistry.add("Track/hMeanClusterSizeITS", "mean cluster size ITS;p_{pv} (GeV/c);<ITS cluster size> #times cos(#lambda)", kTH2F, {{1000, 0, 10}, {150, 0, 15}}, false);
-    fRegistry.add("Track/hMeanClusterSizeITSib", "mean cluster size ITSib;p_{pv} (GeV/c);<ITSib cluster size> #times cos(#lambda)", kTH2F, {{1000, 0, 10}, {150, 0, 15}}, false);
-    fRegistry.add("Track/hMeanClusterSizeITSob", "mean cluster size ITSob;p_{pv} (GeV/c);<ITSob cluster size> #times cos(#lambda)", kTH2F, {{1000, 0, 10}, {150, 0, 15}}, false);
+    fRegistry.add("Track/hNclsITS", "number of ITS clusters", o2::framework::kTH1F, {{8, -0.5, 7.5}}, false);
+    fRegistry.add("Track/hChi2ITS", "chi2/number of ITS clusters", o2::framework::kTH1F, {{400, 0, 40}}, false);
+    fRegistry.add("Track/hITSClusterMap", "ITS cluster map", o2::framework::kTH1F, {{128, -0.5, 127.5}}, false);
+    fRegistry.add("Track/hMeanClusterSizeITS", "mean cluster size ITS;p_{pv} (GeV/c);<ITS cluster size> #times cos(#lambda)", o2::framework::kTH2F, {{1000, 0, 10}, {150, 0, 15}}, false);
+    fRegistry.add("Track/hMeanClusterSizeITSib", "mean cluster size ITSib;p_{pv} (GeV/c);<ITSib cluster size> #times cos(#lambda)", o2::framework::kTH2F, {{1000, 0, 10}, {150, 0, 15}}, false);
+    fRegistry.add("Track/hMeanClusterSizeITSob", "mean cluster size ITSob;p_{pv} (GeV/c);<ITSob cluster size> #times cos(#lambda)", o2::framework::kTH2F, {{1000, 0, 10}, {150, 0, 15}}, false);
 
     // TOF
-    fRegistry.add("Track/hChi2TOF", "chi2 of TOF", kTH1F, {{100, 0, 10}}, false);
-    fRegistry.add("Track/hTOFbeta", "TOF beta;p_{pv} (GeV/c);#beta", kTH2F, {{1000, 0, 10}, {240, 0, 1.2}}, false);
-    fRegistry.add("Track/hTOFNsigmaEl", "TOF n sigma el;p_{pv} (GeV/c);n #sigma_{e}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-    fRegistry.add("Track/hTOFNsigmaPi", "TOF n sigma pi;p_{pv} (GeV/c);n #sigma_{#pi}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+    fRegistry.add("Track/hChi2TOF", "chi2 of TOF", o2::framework::kTH1F, {{100, 0, 10}}, false);
+    fRegistry.add("Track/hTOFbeta", "TOF beta;p_{pv} (GeV/c);#beta", o2::framework::kTH2F, {{1000, 0, 10}, {240, 0, 1.2}}, false);
+    fRegistry.add("Track/hTOFNsigmaEl", "TOF n sigma el;p_{pv} (GeV/c);n #sigma_{e}^{TOF}", o2::framework::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+    fRegistry.add("Track/hTOFNsigmaPi", "TOF n sigma pi;p_{pv} (GeV/c);n #sigma_{#pi}^{TOF}", o2::framework::kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
 
     // pair
-    fRegistry.add("Pair/uls/hTrackMvsPt", "m_{ee} vs. p_{T,ee};m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c)", kTH2F, {{100, 0, 0.1}, {200, 0, 2}}, false);
-    fRegistry.add("Pair/uls/hCheckEMvsPt", "m_{ee} vs. p_{T,ee};m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c)", kTH2F, {{100, 0, 0.1}, {200, 0, 2}}, false);
-    fRegistry.add("Pair/uls/hMvsPt", "m_{ee} vs. p_{T,ee};m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c)", kTH2F, {{100, 0, 0.1}, {200, 0, 2}}, false);
-    fRegistry.add("Pair/uls/hMCutMvsPt", "m_{ee} vs. p_{T,ee};m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c)", kTH2F, {{100, 0, 0.1}, {200, 0, 2}}, false);
-    fRegistry.add("Pair/uls/hMPhiCutMvsPt", "m_{ee} vs. p_{T,ee};m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c)", kTH2F, {{100, 0, 0.1}, {200, 0, 2}}, false);
+    fRegistry.add("Pair/uls/hTrackMvsPt", "m_{ee} vs. p_{T,ee};m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c)", o2::framework::kTH2F, {{100, 0, 0.1}, {200, 0, 2}}, false);
+    fRegistry.add("Pair/uls/hCheckEMvsPt", "m_{ee} vs. p_{T,ee};m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c)", o2::framework::kTH2F, {{100, 0, 0.1}, {200, 0, 2}}, false);
+    fRegistry.add("Pair/uls/hMvsPt", "m_{ee} vs. p_{T,ee};m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c)", o2::framework::kTH2F, {{100, 0, 0.1}, {200, 0, 2}}, false);
+    fRegistry.add("Pair/uls/hMCutMvsPt", "m_{ee} vs. p_{T,ee};m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c)", o2::framework::kTH2F, {{100, 0, 0.1}, {200, 0, 2}}, false);
+    fRegistry.add("Pair/uls/hMPhiCutMvsPt", "m_{ee} vs. p_{T,ee};m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c)", o2::framework::kTH2F, {{100, 0, 0.1}, {200, 0, 2}}, false);
 
-    fRegistry.add("Pair/uls/hTrackMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{180, 0, o2::constants::math::PI}, {100, 0, 0.1}}, false);
-    fRegistry.add("Pair/uls/hCheckEMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{180, 0, o2::constants::math::PI}, {100, 0, 0.1}}, false);
-    fRegistry.add("Pair/uls/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{180, 0, o2::constants::math::PI}, {100, 0, 0.1}}, false);
-    fRegistry.add("Pair/uls/hMCutMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{180, 0, o2::constants::math::PI}, {100, 0, 0.1}}, false);
-    fRegistry.add("Pair/uls/hMPhiCutMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{180, 0, o2::constants::math::PI}, {100, 0, 0.1}}, false);
+    fRegistry.add("Pair/uls/hTrackMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", o2::framework::kTH2F, {{180, 0, o2::constants::math::PI}, {100, 0, 0.1}}, false);
+    fRegistry.add("Pair/uls/hCheckEMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", o2::framework::kTH2F, {{180, 0, o2::constants::math::PI}, {100, 0, 0.1}}, false);
+    fRegistry.add("Pair/uls/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", o2::framework::kTH2F, {{180, 0, o2::constants::math::PI}, {100, 0, 0.1}}, false);
+    fRegistry.add("Pair/uls/hMCutMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", o2::framework::kTH2F, {{180, 0, o2::constants::math::PI}, {100, 0, 0.1}}, false);
+    fRegistry.add("Pair/uls/hMPhiCutMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", o2::framework::kTH2F, {{180, 0, o2::constants::math::PI}, {100, 0, 0.1}}, false);
 
     fRegistry.addClone("Pair/uls/", "Pair/lspp/");
     fRegistry.addClone("Pair/uls/", "Pair/lsmm/");
