@@ -52,10 +52,11 @@ consteval float getValFromBin(int bin)
 enum BinExpColCntr { AllCollisions = 1,
                      Sel8ZCut = 2 };
 
-enum BinMCColCntr { AllMCCollisions = 1,
-                    SelectedMCCollisions = 2,
-                    AssociatedRecoCollisions = 3,
-                    SelectedAssociatedRecoCollisions = 4
+enum BinMCColCntr {
+  AllMCCollisions = 1,
+  EventSelection = 2,
+  VertexZCut = 3,
+  HasMCPDsJet = 4
 };
 
 enum BinMCJetCntr {
@@ -318,13 +319,20 @@ struct JetDsSpecSubs {
     // Detector-level sparse histograms
     registry.add(
       "hSparse_ds_mcd1",
-      ";m_{D_{S}}^{rec};#it{p}_{T,D_{S}}^{det};#it{p}_{T,jet}^{det};z^{D_{S},jet}_{||,det};Origin(D_{S});Matching status",
+      ";m_{D_{S}}^{rec};"
+      "#it{p}_{T,D_{S}}^{det};"
+      "#it{p}_{T,jet}^{det};"
+      "z^{D_{S},jet}_{||,det};"
+      "Origin(D_{S});"
+      "flagMcMatchRec;"
+      "Jet matching status",
       {HistType::kTHnSparseF,
        {{350, 1.6, 2.3},
         {100, 0., 50.},
         {100, 0., 100.},
         {200, 0., 1.},
         {3, -0.5, 2.5},
+        {21, -10.5, 10.5},
         {2, -0.5, 1.5}}});
 
     registry.add(
@@ -356,13 +364,20 @@ struct JetDsSpecSubs {
     // Particle-level sparse with origin and matching status
     registry.add(
       "hSparse_ds_mcp",
-      ";#it{p}_{T,D_{S}}^{part};#it{p}_{T,jet}^{part};z^{D_{S},jet}_{||,part};#DeltaR_{D_{S},jet}^{part};Origin(D_{S});Matching status",
+      ";#it{p}_{T,D_{S}}^{part};"
+      "#it{p}_{T,jet}^{part};"
+      "z^{D_{S},jet}_{||,part};"
+      "#DeltaR_{D_{S},jet}^{part};"
+      "Origin(D_{S});"
+      "flagMcMatchGen;"
+      "Jet matching status",
       {HistType::kTHnSparseF,
        {{100, 0., 50.},
         {100, 0., 100.},
         {200, 0., 1.},
         {200, 0., 1.},
         {3, -0.5, 2.5},
+        {21, -10.5, 10.5},
         {2, -0.5, 1.5}}});
 
     // Matched detector-level Ds-tagged jets
@@ -418,10 +433,10 @@ struct JetDsSpecSubs {
 
     // Counter labels
     auto mcCollisionCounter = registry.get<TH1>(HIST("hMCColCounter"));
-    mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::AllMCCollisions, "All MC coll.");
-    mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::SelectedMCCollisions, "Selected MC coll.");
-    mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::AssociatedRecoCollisions, "MC-associated reco coll.");
-    mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::SelectedAssociatedRecoCollisions, "Selected MC-associated reco coll.");
+    mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::AllMCCollisions, "All MC collisions");
+    mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::EventSelection, "Event selection");
+    mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::VertexZCut, "|z_{vtx}| < cut");
+    mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::HasMCPDsJet, "Has MCP D_{s}-jet");
 
     auto jetCounter = registry.get<TH1>(HIST("hMCJetCounter"));
     jetCounter->GetXaxis()->SetBinLabel(BinMCJetCntr::MCPJets, "MCP Ds-jets");
@@ -432,12 +447,12 @@ struct JetDsSpecSubs {
 
     // Matching-status labels
     auto hSparseMCD = registry.get<THnSparse>(HIST("hSparse_ds_mcd1"));
-    hSparseMCD->GetAxis(5)->SetBinLabel(1, "Unmatched");
-    hSparseMCD->GetAxis(5)->SetBinLabel(2, "Matched");
+    hSparseMCD->GetAxis(6)->SetBinLabel(1, "Unmatched");
+    hSparseMCD->GetAxis(6)->SetBinLabel(2, "Matched");
 
     auto hSparseMCP = registry.get<THnSparse>(HIST("hSparse_ds_mcp"));
-    hSparseMCP->GetAxis(5)->SetBinLabel(1, "Unmatched");
-    hSparseMCP->GetAxis(5)->SetBinLabel(2, "Matched");
+    hSparseMCP->GetAxis(6)->SetBinLabel(1, "Unmatched");
+    hSparseMCP->GetAxis(6)->SetBinLabel(2, "Matched");
   }
 
   void addMCPOnTheFlyHistograms()
@@ -755,16 +770,26 @@ struct JetDsSpecSubs {
       // All MC collisions
       registry.fill(HIST("hMCColCounter"), getValFromBin(BinMCColCntr::AllMCCollisions));
 
-      // MC collision selection
-      if (!jetderiveddatautilities::selectCollision(mccollision, eventSelectionBits) ||
-          !(std::abs(mccollision.posZ()) < vertexZCut)) {
+      // Event selection
+      if (!jetderiveddatautilities::selectCollision(mccollision, eventSelectionBits)) {
         continue;
       }
-      // Selected MC collisions
-      registry.fill(HIST("hMCColCounter"), getValFromBin(BinMCColCntr::SelectedMCCollisions));
+
+      registry.fill(HIST("hMCColCounter"), getValFromBin(BinMCColCntr::EventSelection));
+
+      // Vertex-z selection
+      if (std::abs(mccollision.posZ()) >= vertexZCut) {
+        continue;
+      }
+
+      registry.fill(HIST("hMCColCounter"), getValFromBin(BinMCColCntr::VertexZCut));
 
       // Particle-level jets belonging to the current MC collision
       const auto mcpJetsPerMCCollision = mcpjets.sliceBy(MCPJetsPerMCCollisionPreslice, mccollision.globalIndex());
+
+      if (mcpJetsPerMCCollision.size() > 0) {
+        registry.fill(HIST("hMCColCounter"), getValFromBin(BinMCColCntr::HasMCPDsJet));
+      }
 
       // Particle-level Ds-tagged jets
       for (const auto& mcpjet : mcpJetsPerMCCollision) {
@@ -806,6 +831,7 @@ struct JetDsSpecSubs {
           zParallelMCP,
           deltaRMCP,
           originMCP,
+          flagMcMatchGen,
           static_cast<float>(isMatchedMCP));
 
         // Store all particle-level Ds-tagged jets
@@ -984,7 +1010,7 @@ struct JetDsSpecSubs {
       registry.fill(HIST("h_ds_phi_mcd"), mcdcand.phi());
       registry.fill(HIST("h_ds_mass_mcd"), mcdcand.m());
 
-      // Detector-level sparse: mass, pT Ds, pT jet, z_parallel, origin, matching status
+      // Detector-level sparse: mass, pT Ds, pT jet, z_parallel, origin, flagMcMatchRec, matching status
       registry.fill(
         HIST("hSparse_ds_mcd1"),
         mcdcand.m(),
@@ -992,6 +1018,7 @@ struct JetDsSpecSubs {
         mcdjet.pt(),
         zParallelMCD,
         originMCD,
+        flagMcMatchRec,
         static_cast<float>(isMatchedMCD));
 
       // Detector-level sparse: pT Ds, pT jet, DeltaR

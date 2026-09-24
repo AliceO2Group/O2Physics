@@ -38,7 +38,6 @@
 #include <DCAFitter/FwdDCAFitterN.h>
 #include <DataFormatsFIT/Triggers.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
-#include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/MatLayerCylSet.h>
 #include <DetectorsBase/Propagator.h>
 #include <Framework/AnalysisDataModel.h>
@@ -1514,7 +1513,7 @@ class VarManager : public TObject
   template <int candidateType, typename T1, typename T2>
   static void FillQuadMC(T1 const& dilepton, T2 const& track1, T2 const& track2, float* values = nullptr);
   template <int pairType, uint32_t collFillMap, uint32_t fillMap, typename C, typename T>
-  static void FillPairVertexing(C const& collision, T const& t1, T const& t2, bool propToSV = false, float* values = nullptr);
+  static void FillPairVertexing(C const& collision, T const& t1, T const& t2, float* values = nullptr);
   template <int pairType, uint32_t collFillMap, uint32_t fillMap, typename C, typename T>
   static void FillPairVertexingRecomputePV(C const& /*collision*/, T const& t1, T const& t2, const o2::dataformats::VertexBase& pvRefitted, float* values = nullptr);
   template <uint32_t collFillMap, uint32_t fillMap, typename C, typename T>
@@ -1873,7 +1872,7 @@ template <uint32_t fillMap, typename T, typename C>
 void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   if constexpr ((fillMap & ReducedMuonCov) > 0) {
@@ -1915,7 +1914,7 @@ template <uint32_t fillMap, typename T1, typename T2, typename C>
 void VarManager::FillGlobalMuonRefit(T1 const& muontrack, T2 const& mfttrack, const C& collision, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
   if constexpr ((fillMap & MuonCov) > 0 || (fillMap & ReducedMuonCov) > 0) {
     float xShift = 0.f;
@@ -1950,7 +1949,7 @@ template <uint32_t MuonfillMap, uint32_t MFTfillMap, typename T1, typename T2, t
 void VarManager::FillGlobalMuonRefitCov(T1 const& muontrack, T2 const& mfttrack, const C& collision, C2 const& mftcov, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
   if constexpr ((MuonfillMap & MuonCov) > 0) {
     if constexpr ((MFTfillMap & MFTCov) > 0) {
@@ -1984,7 +1983,7 @@ template <typename T>
 void VarManager::FillTimeFrame(T const& tf, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
   if constexpr (T::template contains<o2::aod::BCs>()) {
     values[kTFNBCs] = tf.size();
@@ -2010,7 +2009,7 @@ template <typename T>
 void VarManager::FillBC(T const& bc, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
   values[kRunNo] = bc.runNumber();
   values[kBC] = bc.globalBC();
@@ -2023,7 +2022,7 @@ template <uint32_t fillMap, typename T>
 void VarManager::FillEvent(T const& event, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   if constexpr ((fillMap & CollisionTimestamp) > 0) {
@@ -2690,7 +2689,7 @@ template <typename T>
 void VarManager::FillEventTracks(T const& tracks, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   // compute event properties based on DCAz of the tracks
@@ -2826,7 +2825,7 @@ template <typename T>
 void VarManager::FillEventFlowResoFactor(T const& hs_sp, T const& hs_ep, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   if (values[kCentFT0C] >= 0.) {
@@ -2842,7 +2841,7 @@ template <typename T>
 void VarManager::FillTwoMixEventsFlowResoFactor(T const& hs_sp, T const& hs_ep, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   if (values[kTwoEvCentFT0C1] >= 0.) {
@@ -2866,7 +2865,7 @@ template <typename T, typename T1, typename T2>
 void VarManager::FillTwoMixEventsCumulants(T const& h_v22ev1, T const& h_v24ev1, T const& h_v22ev2, T const& h_v24ev2, T1 const& t1, T2 const& t2, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   int idx_v22ev1 = 0;
@@ -2912,7 +2911,7 @@ template <typename T>
 void VarManager::FillTwoEvents(T const& ev1, T const& ev2, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
   // if constexpr (T::template contains<o2::aod::Collision>()) {
   values[kTwoEvPosZ1] = ev1.posZ();
@@ -2932,7 +2931,7 @@ template <uint32_t fillMap, typename T1, typename T2>
 void VarManager::FillTwoMixEvents(T1 const& ev1, T1 const& ev2, T2 const& /*tracks1*/, T2 const& /*tracks2*/, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
   values[kTwoEvPosZ1] = ev1.posZ();
   values[kTwoEvPosZ2] = ev2.posZ();
@@ -2990,7 +2989,7 @@ template <uint32_t fillMap, typename T>
 void VarManager::FillTrack(T const& track, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   if constexpr ((fillMap & TrackMFT) > 0) {
@@ -3425,7 +3424,7 @@ void VarManager::FillTrackCollision(T const& track, C const& collision, float* v
 {
 
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
   if constexpr ((fillMap & ReducedTrackBarrel) > 0 || (fillMap & TrackDCA) > 0) {
     auto trackPar = getTrackPar(track);
@@ -3476,7 +3475,7 @@ template <uint32_t fillMap, typename T, typename C, typename M, typename P>
 void VarManager::FillTrackCollisionMatCorr(T const& track, C const& collision, M const& materialCorr, P const& propagator, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
   if constexpr ((fillMap & ReducedTrackBarrel) > 0 || (fillMap & TrackDCA) > 0) {
     auto trackPar = getTrackPar(track);
@@ -3504,7 +3503,7 @@ template <uint32_t fillMap, typename T>
 void VarManager::FillPhoton(T const& track, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   // Quantities based on the basic table (contains just kine information and filter bits)
@@ -3540,7 +3539,7 @@ void VarManager::FillTrackEMCal(T const& cluster, float trackP, float deltaEta, 
   // trackP: momentum of the matched track, used to compute E/p when called in a track-cluster matching context;
   //   the default (negative) value leaves E/p at the -999 sentinel, as for tracks without a matched cluster.
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   values[kEMCalEnergy] = cluster.energy();
@@ -3565,7 +3564,7 @@ template <typename U, typename T>
 void VarManager::FillTrackMC(const U& mcStack, T const& track, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   // Quantities based on the mc particle table
@@ -3599,7 +3598,7 @@ void VarManager::FillTrackCollisionMC(T1 const& track, T2 const& MotherTrack, C 
 {
 
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   float m = o2::constants::physics::MassBPlus;
@@ -3653,7 +3652,7 @@ void VarManager::FillTrackCollisionMC(T1 const& track, const std::array<double, 
 {
 
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   float m = o2::constants::physics::MassJPsi;
@@ -3749,7 +3748,7 @@ template <uint32_t fillMap, typename T1, typename T2, typename C>
 void VarManager::FillPairPropagateMuon(T1 const& muon1, T2 const& muon2, const C& collision, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
   o2::dataformats::GlobalFwdTrack propmuon1 = PropagateMuon(muon1, collision);
   o2::dataformats::GlobalFwdTrack propmuon2 = PropagateMuon(muon2, collision);
@@ -3774,7 +3773,7 @@ template <int pairType, uint32_t fillMap, typename T1, typename T2>
 void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   float m1 = o2::constants::physics::MassElectron;
@@ -4049,7 +4048,7 @@ template <int pairType, uint32_t fillMap, typename T1, typename T2>
 void VarManager::FillPairRotation(T1 const& t1, T2 const& t2, int rotation, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   float m1 = o2::constants::physics::MassElectron;
@@ -4120,7 +4119,7 @@ template <int pairType, uint32_t fillMap, typename C, typename T1, typename T2>
 void VarManager::FillPairCollision(const C& collision, T1 const& t1, T2 const& t2, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   if constexpr ((pairType == kDecayToEE) && ((fillMap & TrackCov) > 0 || (fillMap & ReducedTrackBarrelCov) > 0)) {
@@ -4172,7 +4171,7 @@ template <int pairType, uint32_t fillMap, typename C, typename T1, typename T2, 
 void VarManager::FillPairCollisionMatCorr(C const& collision, T1 const& t1, T2 const& t2, M const& materialCorr, P const& propagator, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   if constexpr ((pairType == kDecayToEE) && ((fillMap & TrackCov) > 0 || (fillMap & ReducedTrackBarrelCov) > 0)) {
@@ -4231,7 +4230,7 @@ void VarManager::FillTriple(T1 const& t1, T2 const& t2, T3 const& t3, float* val
 {
 
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
   if (pairType == kTripleCandidateToEEPhoton) {
     float m1 = o2::constants::physics::MassElectron;
@@ -4305,7 +4304,7 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
   // Lightweight fill function called from the innermost event mixing loop
   //
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   float m1 = o2::constants::physics::MassElectron;
@@ -4602,7 +4601,7 @@ template <typename T>
 void VarManager::FillPairMEAcrossTFs(T const& t1, T const& t2, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   float m1 = o2::constants::physics::MassElectron;
@@ -4672,7 +4671,7 @@ template <int pairType, typename T1, typename T2>
 void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   float m1 = o2::constants::physics::MassElectron;
@@ -4847,7 +4846,7 @@ template <int candidateType, typename T1, typename T2, typename T3>
 void VarManager::FillTripleMC(T1 const& t1, T2 const& t2, T3 const& t3, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   if constexpr (candidateType == kTripleCandidateToEEPhoton) {
@@ -4929,7 +4928,7 @@ void VarManager::FillTripleMC(T1 const& t1, T2 const& t2, T3 const& t3, float* v
 }
 
 template <int pairType, uint32_t collFillMap, uint32_t fillMap, typename C, typename T>
-void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2, bool propToSV, float* values)
+void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2, float* values)
 {
   // check at compile time that the event and cov matrix have the cov matrix
   constexpr bool eventHasVtxCov = ((collFillMap & Collision) > 0 || (collFillMap & ReducedEventVtxCov) > 0);
@@ -4937,7 +4936,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
   constexpr bool muonHasCov = ((fillMap & MuonCov) > 0 || (fillMap & ReducedMuonCov) > 0);
 
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
   float m1 = o2::constants::physics::MassElectron;
   float m2 = o2::constants::physics::MassElectron;
@@ -4945,7 +4944,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
     m1 = o2::constants::physics::MassKaonCharged;
     m2 = o2::constants::physics::MassPionCharged;
   }
-  if constexpr (pairType == kDecayToMuMu && muonHasCov) {
+  if constexpr (pairType == kDecayToMuMu) {
     m1 = o2::constants::physics::MassMuon;
     m2 = o2::constants::physics::MassMuon;
   }
@@ -5010,22 +5009,16 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       std::array<float, 6> covMatrixPCA{};
       // get track impact parameters
       // This modifies track momenta!
-      o2::math_utils::Point3D<float> vtxXYZ(collision.posX(), collision.posY(), collision.posZ());
-      std::array<float, 6> vtxCov{collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ()};
-      o2::dataformats::VertexBase primaryVertex = {vtxXYZ, vtxCov};
       // auto primaryVertex = getPrimaryVertex(collision);
-      auto covMatrixPV = primaryVertex.getCov();
+      std::array<float, 6> covMatrixPV{collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ()};
 
       if constexpr ((pairType == kDecayToEE || pairType == kDecayToKPi) && trackHasCov) {
         secondaryVertex = fgFitterTwoProngBarrel.getPCACandidate();
         // printf("secVtx (first) %f %f  %f \n",secondaryVertex[0],secondaryVertex[1],secondaryVertex[2]);
         covMatrixPCA = fgFitterTwoProngBarrel.calcPCACovMatrixFlat();
-        auto chi2PCA = fgFitterTwoProngBarrel.getChi2AtPCACandidate();
-        auto trackParVar0 = fgFitterTwoProngBarrel.getTrack(0);
-        auto trackParVar1 = fgFitterTwoProngBarrel.getTrack(1);
-        values[kVertexingChi2PCA] = chi2PCA;
-        v1 = {trackParVar0.getPt(), trackParVar0.getEta(), trackParVar0.getPhi(), m1};
-        v2 = {trackParVar1.getPt(), trackParVar1.getEta(), trackParVar1.getPhi(), m2};
+        values[kVertexingChi2PCA] = fgFitterTwoProngBarrel.getChi2AtPCACandidate();
+        v1 = {fgFitterTwoProngBarrel.getTrack(0).getPt(), fgFitterTwoProngBarrel.getTrack(0).getEta(), fgFitterTwoProngBarrel.getTrack(0).getPhi(), m1};
+        v2 = {fgFitterTwoProngBarrel.getTrack(1).getPt(), fgFitterTwoProngBarrel.getTrack(1).getEta(), fgFitterTwoProngBarrel.getTrack(1).getPhi(), m2};
         v12 = v1 + v2;
         if (fgPVrecalKF) {
           primaryVertexNew = RecalculatePrimaryVertex(t1, t2, collision);
@@ -5035,40 +5028,29 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
         // Get pca candidate from forward DCA fitter
         secondaryVertex = fgFitterTwoProngFwd.getPCACandidate();
         covMatrixPCA = fgFitterTwoProngFwd.calcPCACovMatrixFlat();
-        auto chi2PCA = fgFitterTwoProngFwd.getChi2AtPCACandidate();
-        auto trackParVar0 = fgFitterTwoProngFwd.getTrack(0);
-        auto trackParVar1 = fgFitterTwoProngFwd.getTrack(1);
-        values[kVertexingChi2PCA] = chi2PCA;
-        v1 = {trackParVar0.getPt(), trackParVar0.getEta(), trackParVar0.getPhi(), m1};
-        v2 = {trackParVar1.getPt(), trackParVar1.getEta(), trackParVar1.getPhi(), m2};
+        values[kVertexingChi2PCA] = fgFitterTwoProngFwd.getChi2AtPCACandidate();
+        v1 = {fgFitterTwoProngFwd.getTrack(0).getPt(), fgFitterTwoProngFwd.getTrack(0).getEta(), fgFitterTwoProngFwd.getTrack(0).getPhi(), m1};
+        v2 = {fgFitterTwoProngFwd.getTrack(1).getPt(), fgFitterTwoProngFwd.getTrack(1).getEta(), fgFitterTwoProngFwd.getTrack(1).getPhi(), m2};
         v12 = v1 + v2;
-
-        values[kPt1] = trackParVar0.getPt();
-        values[kEta1] = trackParVar0.getEta();
-        values[kPhi1] = trackParVar0.getPhi();
-
-        values[kPt2] = trackParVar1.getPt();
-        values[kEta2] = trackParVar1.getEta();
-        values[kPhi2] = trackParVar1.getPhi();
       }
-      double phi = std::atan2(secondaryVertex[1] - collision.posY(), secondaryVertex[0] - collision.posX());
-      double theta = std::atan2(secondaryVertex[2] - collision.posZ(),
-                                std::sqrt((secondaryVertex[0] - collision.posX()) * (secondaryVertex[0] - collision.posX()) +
-                                          (secondaryVertex[1] - collision.posY()) * (secondaryVertex[1] - collision.posY())));
+      const double dx = secondaryVertex[0] - collision.posX();
+      const double dy = secondaryVertex[1] - collision.posY();
+      const double dz = secondaryVertex[2] - collision.posZ();
+      double phi = std::atan2(dy, dx);
+      double theta = std::atan2(dz, std::sqrt(dx * dx + dy * dy));
 
       values[kVertexingLxyzErr] = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
       values[kVertexingLxyErr] = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
       values[kVertexingLzErr] = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, 0, theta) + getRotatedCovMatrixXX(covMatrixPCA, 0, theta));
 
-      values[kVertexingLxy] = (collision.posX() - secondaryVertex[0]) * (collision.posX() - secondaryVertex[0]) +
-                              (collision.posY() - secondaryVertex[1]) * (collision.posY() - secondaryVertex[1]);
-      values[kVertexingLz] = (collision.posZ() - secondaryVertex[2]) * (collision.posZ() - secondaryVertex[2]);
+      values[kVertexingLxy] = dx * dx + dy * dy;
+      values[kVertexingLz] = dz * dz;
       values[kVertexingLxyz] = values[kVertexingLxy] + values[kVertexingLz];
       values[kVertexingLxy] = std::sqrt(values[kVertexingLxy]);
       values[kVertexingLz] = std::sqrt(values[kVertexingLz]);
       values[kVertexingLxyz] = std::sqrt(values[kVertexingLxyz]);
 
-      values[kVertexingTauz] = (collision.posZ() - secondaryVertex[2]) * v12.M() / (TMath::Abs(v12.Pz()) * o2::constants::physics::LightSpeedCm2NS);
+      values[kVertexingTauz] = -dz * v12.M() / (TMath::Abs(v12.Pz()) * o2::constants::physics::LightSpeedCm2NS);
       values[kVertexingTauxy] = values[kVertexingLxy] * v12.M() / (v12.Pt() * o2::constants::physics::LightSpeedCm2NS);
 
       values[kVertexingPz] = TMath::Abs(v12.Pz());
@@ -5077,63 +5059,43 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       values[kVertexingTauzErr] = values[kVertexingLzErr] * v12.M() / (TMath::Abs(v12.Pz()) * o2::constants::physics::LightSpeedCm2NS);
       values[kVertexingTauxyErr] = values[kVertexingLxyErr] * v12.M() / (v12.Pt() * o2::constants::physics::LightSpeedCm2NS);
 
-      values[kCosPointingAngle] = ((secondaryVertex[0] - collision.posX()) * v12.Px() +
-                                   (secondaryVertex[1] - collision.posY()) * v12.Py() +
-                                   (secondaryVertex[2] - collision.posZ()) * v12.Pz()) /
+      values[kCosPointingAngle] = (dx * v12.Px() + dy * v12.Py() + dz * v12.Pz()) /
                                   (v12.P() * values[VarManager::kVertexingLxyz]);
       // Decay length defined as in Run 2
-      values[kVertexingLzProjected] = ((secondaryVertex[2] - collision.posZ()) * v12.Pz()) / TMath::Sqrt(v12.Pz() * v12.Pz());
-      values[kVertexingLxyProjected] = ((secondaryVertex[0] - collision.posX()) * v12.Px()) + ((secondaryVertex[1] - collision.posY()) * v12.Py());
+      values[kVertexingLzProjected] = (dz * v12.Pz()) / TMath::Sqrt(v12.Pz() * v12.Pz());
+      values[kVertexingLxyProjected] = (dx * v12.Px()) + (dy * v12.Py());
       values[kVertexingLxyProjected] = values[kVertexingLxyProjected] / TMath::Sqrt((v12.Px() * v12.Px()) + (v12.Py() * v12.Py()));
-      values[kVertexingLxyzProjected] = ((secondaryVertex[0] - collision.posX()) * v12.Px()) + ((secondaryVertex[1] - collision.posY()) * v12.Py()) + ((secondaryVertex[2] - collision.posZ()) * v12.Pz());
+      values[kVertexingLxyzProjected] = (dx * v12.Px()) + (dy * v12.Py()) + (dz * v12.Pz());
       values[kVertexingLxyzProjected] = values[kVertexingLxyzProjected] / TMath::Sqrt((v12.Px() * v12.Px()) + (v12.Py() * v12.Py()) + (v12.Pz() * v12.Pz()));
-      if (fgPVrecalKF) {
-        values[kVertexingLxyProjectedRecalculatePV] = (secondaryVertex[0] - primaryVertexNew.getX()) * v12.Px() + (secondaryVertex[1] - primaryVertexNew.getY()) * v12.Py();
-        values[kVertexingLxyProjectedRecalculatePV] = values[kVertexingLxyProjectedRecalculatePV] / v12.Pt();
-      }
       values[kVertexingTauxyProjected] = values[kVertexingLxyProjected] * v12.M() / (v12.Pt());
       values[kVertexingTauxyProjectedPoleJPsiMass] = values[kVertexingLxyProjected] * o2::constants::physics::MassJPsi / (v12.Pt());
       values[kVertexingTauxyProjectedNs] = values[kVertexingTauxyProjected] / o2::constants::physics::LightSpeedCm2NS;
       if (fgPVrecalKF) {
+        values[kVertexingLxyProjectedRecalculatePV] = (secondaryVertex[0] - primaryVertexNew.getX()) * v12.Px() + (secondaryVertex[1] - primaryVertexNew.getY()) * v12.Py();
+        values[kVertexingLxyProjectedRecalculatePV] = values[kVertexingLxyProjectedRecalculatePV] / v12.Pt();
         values[kVertexingTauxyProjectedPoleJPsiMassRecalculatePV] = values[kVertexingLxyProjectedRecalculatePV] * o2::constants::physics::MassJPsi / (v12.Pt());
       }
       values[kVertexingTauzProjected] = values[kVertexingLzProjected] * v12.M() / TMath::Abs(v12.Pz());
       values[kVertexingTauxyzProjected] = values[kVertexingLxyzProjected] * v12.M() / (v12.P());
     }
-  } else {
+  } else if constexpr (((pairType == kDecayToEE || pairType == kDecayToKPi) && trackHasCov) || ((pairType == kDecayToMuMu) && muonHasCov)) {
     KFParticle trk0KF;
     KFParticle trk1KF;
     KFParticle KFGeoTwoProng;
-    if constexpr ((pairType == kDecayToEE) && trackHasCov) {
-      KFPTrack kfpTrack0 = createKFPTrackFromTrack(t1);
-      trk0KF = KFParticle(kfpTrack0, -11 * t1.sign());
-      KFPTrack kfpTrack1 = createKFPTrackFromTrack(t2);
-      trk1KF = KFParticle(kfpTrack1, -11 * t2.sign());
-
-      KFGeoTwoProng.SetConstructMethod(2);
-      KFGeoTwoProng.AddDaughter(trk0KF);
-      KFGeoTwoProng.AddDaughter(trk1KF);
-
-    } else if constexpr ((pairType == kDecayToMuMu) && muonHasCov) {
-      KFPTrack kfpTrack0 = createKFPFwdTrackFromFwdTrack(t1);
-      trk0KF = KFParticle(kfpTrack0, -13 * t1.sign());
-      KFPTrack kfpTrack1 = createKFPFwdTrackFromFwdTrack(t2);
-      trk1KF = KFParticle(kfpTrack1, -13 * t2.sign());
-
-      KFGeoTwoProng.SetConstructMethod(2);
-      KFGeoTwoProng.AddDaughter(trk0KF);
-      KFGeoTwoProng.AddDaughter(trk1KF);
-
-    } else if constexpr ((pairType == kDecayToKPi) && trackHasCov) {
-      KFPTrack kfpTrack0 = createKFPTrackFromTrack(t1);
-      trk0KF = KFParticle(kfpTrack0, 321 * t1.sign());
-      KFPTrack kfpTrack1 = createKFPTrackFromTrack(t2);
-      trk1KF = KFParticle(kfpTrack1, 211 * t2.sign());
-
-      KFGeoTwoProng.SetConstructMethod(2);
-      KFGeoTwoProng.AddDaughter(trk0KF);
-      KFGeoTwoProng.AddDaughter(trk1KF);
+    if constexpr (pairType == kDecayToEE) {
+      trk0KF = KFParticle(createKFPTrackFromTrack(t1), -11 * t1.sign());
+      trk1KF = KFParticle(createKFPTrackFromTrack(t2), -11 * t2.sign());
+    } else if constexpr (pairType == kDecayToMuMu) {
+      trk0KF = KFParticle(createKFPFwdTrackFromFwdTrack(t1), -13 * t1.sign());
+      trk1KF = KFParticle(createKFPFwdTrackFromFwdTrack(t2), -13 * t2.sign());
+    } else if constexpr (pairType == kDecayToKPi) {
+      trk0KF = KFParticle(createKFPTrackFromTrack(t1), 321 * t1.sign());
+      trk1KF = KFParticle(createKFPTrackFromTrack(t2), 211 * t2.sign());
     }
+    KFGeoTwoProng.SetConstructMethod(2);
+    KFGeoTwoProng.AddDaughter(trk0KF);
+    KFGeoTwoProng.AddDaughter(trk1KF);
+
     if (fgUsedVars[kKFMass]) {
       float mass = 0., massErr = 0.;
       if (!KFGeoTwoProng.GetMass(mass, massErr)) {
@@ -5257,70 +5219,28 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
           values[kKFMassGeoTop] = -999.;
         }
       }
-      if (propToSV) {
-        if constexpr ((pairType == kDecayToMuMu) && muonHasCov) {
-          o2::track::TrackParCovFwd pars1 = FwdToTrackPar(t1, t1);
-          o2::track::TrackParCovFwd pars2 = FwdToTrackPar(t2, t2);
 
-          auto geoMan1 = o2::base::GeometryManager::meanMaterialBudget(t1.x(), t1.y(), t1.z(), KFGeoTwoProng.GetX(), KFGeoTwoProng.GetY(), KFGeoTwoProng.GetZ());
-          auto geoMan2 = o2::base::GeometryManager::meanMaterialBudget(t2.x(), t2.y(), t2.z(), KFGeoTwoProng.GetX(), KFGeoTwoProng.GetY(), KFGeoTwoProng.GetZ());
-          auto x2x01 = static_cast<float>(geoMan1.meanX2X0);
-          auto x2x02 = static_cast<float>(geoMan2.meanX2X0);
-          std::array<float, 3> B{};
-          std::array<float, 3> xyz = {0.f, 0.f, 0.f};
-          KFGeoTwoProng.GetFieldValue(xyz.data(), B.data());
-          // TODO: find better soluton to handle cases where KF outputs negative variances
-          /*float covXX = 0.1;
-          float covYY = 0.1;
-          if (KFGeoTwoProng.GetCovariance(0, 0) > 0) {
-            covXX = KFGeoTwoProng.GetCovariance(0, 0);
-          }
-          if (KFGeoTwoProng.GetCovariance(1, 1) > 0) {
-            covYY = KFGeoTwoProng.GetCovariance(0, 0);
-          }*/
-          pars1.propagateToVtxhelixWithMCS(KFGeoTwoProng.GetZ(), {KFGeoTwoProng.GetX(), KFGeoTwoProng.GetY()}, {KFGeoTwoProng.GetCovariance(0, 0), KFGeoTwoProng.GetCovariance(1, 1)}, B[2], x2x01);
-          pars2.propagateToVtxhelixWithMCS(KFGeoTwoProng.GetZ(), {KFGeoTwoProng.GetX(), KFGeoTwoProng.GetY()}, {KFGeoTwoProng.GetCovariance(0, 0), KFGeoTwoProng.GetCovariance(1, 1)}, B[2], x2x02);
-          v1 = {pars1.getPt(), pars1.getEta(), pars1.getPhi(), m1};
-          v2 = {pars2.getPt(), pars2.getEta(), pars2.getPhi(), m2};
-          v12 = v1 + v2;
-          values[kMass] = v12.M();
-          values[kPt] = v12.Pt();
-          values[kEta] = v12.Eta();
-          values[kPhi] = v12.Phi();
-          values[kRap] = -v12.Rapidity();
-          values[kVertexingTauxy] = KFGeoTwoProng.GetPseudoProperDecayTime(KFPV, v12.M()) / (o2::constants::physics::LightSpeedCm2NS);
-          values[kVertexingTauz] = -1 * dzPair2PV * v12.M() / (TMath::Abs(v12.Pz()) * o2::constants::physics::LightSpeedCm2NS);
-          values[kVertexingTauxyErr] = values[kVertexingLxyErr] * v12.M() / (v12.Pt() * o2::constants::physics::LightSpeedCm2NS);
-          values[kVertexingTauzErr] = values[kVertexingLzErr] * v12.M() / (TMath::Abs(v12.Pz()) * o2::constants::physics::LightSpeedCm2NS);
-          values[kVertexingPz] = TMath::Abs(v12.Pz());
-          values[kVertexingSV] = KFGeoTwoProng.GetZ();
+      float sv[3] = {KFGeoTwoProng.GetX(), KFGeoTwoProng.GetY(), KFGeoTwoProng.GetZ()};
+      KFParticle trk0AtSV = trk0KF;
+      KFParticle trk1AtSV = trk1KF;
+      trk0AtSV.TransportToPoint(sv);
+      trk1AtSV.TransportToPoint(sv);
 
-          values[kPt1] = pars1.getPt();
-          values[kEta1] = pars1.getEta();
-          values[kPhi1] = pars1.getPhi();
-
-          values[kPt2] = pars2.getPt();
-          values[kEta2] = pars2.getEta();
-          values[kPhi2] = pars2.getPhi();
-        }
-      }
+      v1 = {trk0AtSV.GetPt(), trk0AtSV.GetEta(), trk0AtSV.GetPhi(), m1};
+      v2 = {trk1AtSV.GetPt(), trk1AtSV.GetEta(), trk1AtSV.GetPhi(), m2};
+      v12 = v1 + v2;
     }
   }
-  if (propToSV) {
-    values[kMass] = v12.M();
-    values[kPt] = v12.Pt();
-    values[kEta] = v12.Eta();
-    // values[kPhi] = v12.Phi();
-    values[kPhi] = RecoDecay::constrainAngle(v12.Phi());
-  } else {
-    values[kPt1] = t1.pt();
-    values[kEta1] = t1.eta();
-    values[kPhi1] = t1.phi();
-
-    values[kPt2] = t2.pt();
-    values[kEta2] = t2.eta();
-    values[kPhi2] = t2.phi();
-  }
+  values[kMass] = v12.M();
+  values[kPt] = v12.Pt();
+  values[kEta] = v12.Eta();
+  values[kPhi] = RecoDecay::constrainAngle(v12.Phi());
+  values[kPt1] = v1.Pt();
+  values[kEta1] = v1.Eta();
+  values[kPhi1] = v1.Phi();
+  values[kPt2] = v2.Pt();
+  values[kEta2] = v2.Eta();
+  values[kPhi2] = v2.Phi();
 }
 
 template <int pairType, uint32_t collFillMap, uint32_t fillMap, typename C, typename T>
@@ -5334,7 +5254,7 @@ void VarManager::FillPairVertexingRecomputePV(C const& /*collision*/, T const& t
   constexpr bool muonHasCov = ((fillMap & MuonCov) > 0 || (fillMap & ReducedMuonCov) > 0);
 
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   float m1 = o2::constants::physics::MassElectron;
@@ -5395,7 +5315,7 @@ void VarManager::FillTripletVertexing(C const& collision, T const& t1, T const& 
   bool trackHasCov = ((fillMap & ReducedTrackBarrelCov) > 0);
 
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   float m1 = o2::constants::physics::MassKaonCharged;
@@ -5618,7 +5538,7 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
   constexpr bool trackHasCov = ((fillMap & TrackCov) > 0 || (fillMap & ReducedTrackBarrelCov) > 0);
   constexpr bool muonHasCov = ((fillMap & MuonCov) > 0 || (fillMap & ReducedMuonCov) > 0);
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   float mtrack = o2::constants::physics::MassMuon;
@@ -5882,7 +5802,7 @@ template <typename C, typename A>
 void VarManager::FillQVectorFromGFW(C const& /*collision*/, A const& compA11, A const& compB11, A const& compC11, A const& compA21, A const& compB21, A const& compC21, A const& compA31, A const& compB31, A const& compC31, A const& compA41, A const& compB41, A const& compC41, A const& compA23, A const& compA42, float S10A, float S10B, float S10C, float S11A, float S11B, float S11C, float S12A, float S13A, float S14A, float S21A, float S22A, float S31A, float S41A, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   // Fill Qn vectors from generic flow framework for different eta gap A, B, C (n=1,2,3,4) with proper normalisation
@@ -5987,7 +5907,7 @@ template <typename C>
 void VarManager::FillQVectorFromCentralFW(C const& collision, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   float xQVecFT0a = collision.qvecFT0ARe();   // already normalised
@@ -6083,7 +6003,7 @@ template <typename C>
 void VarManager::FillSpectatorPlane(C const& collision, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   auto zncEnergy = collision.energySectorZNC();
@@ -6191,7 +6111,7 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
 {
 
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   float m1 = o2::constants::physics::MassElectron;
@@ -6440,7 +6360,7 @@ template <typename T>
 void VarManager::FillZDC(T const& zdc, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   values[kEnergyCommonZNA] = (zdc.energyCommonZNA() > 0) ? zdc.energyCommonZNA() : -1.;
@@ -6457,7 +6377,7 @@ template <typename T1, typename T2>
 void VarManager::FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float* values, float hadronMass)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   if (fgUsedVars[kPairMass] || fgUsedVars[kPairPt] || fgUsedVars[kPairEta] || fgUsedVars[kPairPhi] || fgUsedVars[kPairMassDau] || fgUsedVars[kPairPtDau] || fgUsedVars[kDileptonHadronKstar]) {
@@ -6498,10 +6418,10 @@ template <int pairType, uint32_t collFillMap, uint32_t fillMap, typename C, type
 void VarManager::FillEnergyCorrelatorTriple(C const& collision, T1 const& lepton1, T2 const& lepton2, T3 const& hadron, float* values, float Translow, float Transhigh, bool applyFitMass, float sidebandMass, float weight)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
   if (fgUsedVars[kVertexingTauxyProjectedPoleJPsiMass] || fgUsedVars[kVertexingLxyProjected]) {
-    FillPairVertexing<pairType, collFillMap, fillMap>(collision, lepton1, lepton2, false, values);
+    FillPairVertexing<pairType, collFillMap, fillMap>(collision, lepton1, lepton2, values);
   }
   float m1 = o2::constants::physics::MassElectron;
   float m2 = o2::constants::physics::MassElectron;
@@ -6629,7 +6549,7 @@ template <typename T1, typename T2>
 void VarManager::FillDileptonPhoton(T1 const& dilepton, T2 const& photon, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
   if (fgUsedVars[kPairMass] || fgUsedVars[kPairPt] || fgUsedVars[kPairEta] || fgUsedVars[kPairPhi]) {
     ROOT::Math::PtEtaPhiMVector v1(dilepton.pt(), dilepton.eta(), dilepton.phi(), dilepton.mass());
@@ -6656,7 +6576,7 @@ template <typename T>
 void VarManager::FillHadron(T const& hadron, float* values, float hadronMass)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   ROOT::Math::PtEtaPhiMVector vhadron(hadron.pt(), hadron.eta(), hadron.phi(), hadronMass);
@@ -6671,7 +6591,7 @@ template <int partType, typename Cand, typename H, typename T>
 void VarManager::FillSingleDileptonCharmHadron(Cand const& candidate, H hfHelper, T& bdtScoreCharmHad, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   if constexpr (partType == kJPsi) {
@@ -6714,7 +6634,7 @@ template <int candidateType, typename T1, typename T2, typename T3>
 void VarManager::FillDileptonTrackTrack(T1 const& dilepton, T2 const& hadron1, T3 const& hadron2, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   double defaultDileptonMass = o2::constants::physics::MassJPsi;
@@ -6776,7 +6696,7 @@ void VarManager::FillDileptonTrackTrackVertexing(C const& collision, T1 const& l
   }
 
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   float mlepton1 = o2::constants::physics::MassElectron;
@@ -7026,7 +6946,7 @@ template <int candidateType, typename T1, typename T2>
 void VarManager::FillQuadMC(T1 const& dilepton, T2 const& track1, T2 const& track2, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   double defaultDileptonMass = o2::constants::physics::MassJPsi;
@@ -7177,7 +7097,7 @@ template <typename T1>
 void VarManager::FillBdtScore(T1 const& bdtScore, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   if (bdtScore.size() == 1) {
@@ -7218,7 +7138,7 @@ template <typename T1, typename T2, typename T3, typename T4, typename T5>
 void VarManager::FillFIT(T1 const& bc, T2 const& bcs, T3 const& ft0s, T4 const& fv0as, T5 const& fdds, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   // Initialize FIT info structure
@@ -7278,7 +7198,7 @@ template <uint32_t fillMap, typename T>
 void VarManager::FillEventAlice3(T const& event, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
   if constexpr ((fillMap & CollisionTimestamp) > 0) {
     values[kTimestamp] = event.timestamp();
@@ -7366,7 +7286,7 @@ template <uint32_t fillMap, typename T>
 void VarManager::FillTrackAlice3(T const& track, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   if constexpr ((fillMap & Track) > 0 || (fillMap & ReducedTrack) > 0) {
@@ -7519,7 +7439,7 @@ template <int pairType, uint32_t fillMap, typename T1, typename T2>
 void VarManager::FillPairAlice3(T1 const& t1, T2 const& t2, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   float m1 = o2::constants::physics::MassElectron;
@@ -7730,7 +7650,7 @@ template <typename M, typename T>
 void VarManager::FillResolutions(M const& mcTrack, T const& track, float* values)
 {
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   values[kDeltaPt] = track.pt() - mcTrack.pt();
@@ -7747,7 +7667,7 @@ void VarManager::FillPairVertexingAlice3(C const& collision, T const& t1, T cons
   constexpr bool trackHasCov = ((fillMap & TrackCov) > 0 || (fillMap & ReducedTrackBarrelCov) > 0);
 
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
   float m1 = o2::constants::physics::MassElectron;
   float m2 = o2::constants::physics::MassElectron;
@@ -7904,7 +7824,7 @@ void VarManager::FillTripletVertexingALICE3(C const& collision, T const& t1, T c
   bool trackHasCov = ((fillMap & ReducedTrackBarrelCov) > 0);
 
   if (!values) {
-    values = fgValues;
+    values = static_cast<float*>(fgValues);
   }
 
   float m1 = o2::constants::physics::MassKaonCharged;

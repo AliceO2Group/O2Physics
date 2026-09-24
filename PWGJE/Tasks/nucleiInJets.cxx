@@ -816,6 +816,17 @@ struct nucleiInJets {
       jetHist.add<TH2>("eff/recmatched/mcC/gen/perpCone/pt/PtParticleType", "Pt (gen, mcC, perp cone) vs particletype", HistType::kTH2D, {{PtAxis}, {14, -7, 7}});
       jetHist.add<TH2>("eff/recmatched/mcCSpectra/gen/perpCone/pt/PtParticleType", "Pt (gen, mcCSpectra, perp cone) vs particletype", HistType::kTH2D, {{PtAxis}, {14, -7, 7}});
 
+      jetHist.add<TH1>("jetSelCorr/genSel/hLeadingJetPt", "particle-level leading jet selected for jet-selection correction; #it{p}_{T,lead}^{gen} (GeV/#it{c}); Entries", HistType::kTH1F, {{100, 0., 100.}});
+      jetHist.add<TH1>("jetSelCorr/recoSel/hLeadingJetPtBkgSub", "matched detector-level leading jet selected for jet-selection correction; #it{p}_{T,lead}^{reco,corr} (GeV/#it{c}); Entries", HistType::kTH1F, {{120, -20., 100.}});
+      jetHist.add<TH2>("jetSelCorr/recoSel/hMatchedLeadingJetPt", "selected matched leading jet; #it{p}_{T,lead}^{reco,corr} (GeV/#it{c}); #it{p}_{T,lead}^{gen} (GeV/#it{c})", HistType::kTH2F, {{120, -20., 100.}, {100, 0., 100.}});
+      jetHist.add<TH1>("jetSelCorr/eventNorm/hEventCounts", "event count for leading-jet event-normalization correction; event selection; Entries", HistType::kTH1D, {{2, 0., 2.}});
+      jetHist.get<TH1>(HIST("jetSelCorr/eventNorm/hEventCounts"))->GetXaxis()->SetBinLabel(1, "gen lead #it{p}_{T} > cut");
+      jetHist.get<TH1>(HIST("jetSelCorr/eventNorm/hEventCounts"))->GetXaxis()->SetBinLabel(2, "reco lead #it{p}_{T}^{corr} > cut");
+      jetHist.add<TH2>("jetSelCorr/genSel/jetCone/pt/PtParticleType", "generated primaries in particle-level leading-jet cone; #it{p}_{T}^{gen} (GeV/#it{c}); particle type", HistType::kTH2D, {{PtAxis}, {14, -7, 7}});
+      jetHist.add<TH2>("jetSelCorr/genSel/perpCone/pt/PtParticleType", "generated primaries in particle-level perpendicular cone; #it{p}_{T}^{gen} (GeV/#it{c}); particle type", HistType::kTH2D, {{PtAxis}, {14, -7, 7}});
+      jetHist.add<TH2>("jetSelCorr/recoSel/jetCone/pt/PtParticleType", "generated primaries in matched reco-selected leading-jet cone; #it{p}_{T}^{gen} (GeV/#it{c}); particle type", HistType::kTH2D, {{PtAxis}, {14, -7, 7}});
+      jetHist.add<TH2>("jetSelCorr/recoSel/perpCone/pt/PtParticleType", "generated primaries in matched reco-selected perpendicular cone; #it{p}_{T}^{gen} (GeV/#it{c}); particle type", HistType::kTH2D, {{PtAxis}, {14, -7, 7}});
+
       jetHist.add<TH2>("feeddown/antiProton/jetCone/PtOrigin", "reconstructed #bar{p} origin in jet cone; #it{p}_{T}^{rec} (GeV/#it{c}); origin", HistType::kTH2D, {{PtAxis}, {ParticleOriginAxis}});
       jetHist.add<TH2>("feeddown/antiProton/jetCone/PtOriginTPC", "reconstructed #bar{p} origin in jet cone, TPC PID; #it{p}_{T}^{rec} (GeV/#it{c}); origin", HistType::kTH2D, {{PtAxis}, {ParticleOriginAxis}});
       jetHist.add<TH2>("feeddown/antiProton/jetCone/PtOriginTOF", "reconstructed #bar{p} origin in jet cone, TOF matched; #it{p}_{T}^{rec} (GeV/#it{c}); origin", HistType::kTH2D, {{PtAxis}, {ParticleOriginAxis}});
@@ -2298,13 +2309,17 @@ struct nucleiInJets {
     jetHist.fill(HIST("mcdJet/eventStat"), 2.5);
 
     int nJets = 0;
+    int nAcceptedJets = 0;
     std::vector<float> leadingJetWithPtEtaPhi(3, -999.f);
     float leadingJetPt = -1.0f;
     for (auto& mcdjet : mcdjets) {
       jetHist.fill(HIST("mcdJet/hJetPt"), mcdjet.pt());
       jetHist.fill(HIST("mcdJet/hJetEta"), mcdjet.eta());
       jetHist.fill(HIST("mcdJet/hJetPhi"), mcdjet.phi());
-      if (mcdjet.pt() > leadingJetPt) {
+      if (isConeAxisAccepted(mcdjet.eta())) {
+        nAcceptedJets++;
+      }
+      if (isConeAxisAccepted(mcdjet.eta()) && mcdjet.pt() > leadingJetPt) {
         leadingJetPt = mcdjet.pt();
         leadingJetWithPtEtaPhi[0] = mcdjet.pt();
         leadingJetWithPtEtaPhi[1] = mcdjet.eta();
@@ -2315,6 +2330,8 @@ struct nucleiInJets {
     jetHist.fill(HIST("mcdJet/vertexZ"), collisionJet.posZ());
     jetHist.fill(HIST("mcdJet/nJetsPerEvent"), nJets);
     if (isWithJetEvents && nJets == 0)
+      return;
+    if (isWithJetEvents && nAcceptedJets == 0)
       return;
     for (const auto& track : tracks) {
       auto fullTrack = track.track_as<TrackCandidatesMC>();
@@ -2346,6 +2363,9 @@ struct nucleiInJets {
           jetFlagPerpCone = true;
       } else if (!isWithLeadingJet) {
         for (const auto& mcdjet : mcdjets) {
+          if (!isConeAxisAccepted(mcdjet.eta())) {
+            continue;
+          }
           double delPhi = TVector2::Phi_mpi_pi(mcdjet.phi() - track.phi());
           double delEta = mcdjet.eta() - track.eta();
           double R = RecoDecay::sqrtSumOfSquares(delEta, delPhi);
@@ -2364,6 +2384,73 @@ struct nucleiInJets {
   }
 
   Preslice<soa::Join<aod::JMcParticles, aod::JMcParticlePIs>> perMCCol = aod::jmcparticle::mcCollisionId;
+
+  template <typename CollType>
+  bool isRecoCollisionSelectedForJetSelectionCorrection(const CollType& collision)
+  {
+    if (std::abs(collision.posZ()) > cfgMaxZVertex) {
+      return false;
+    }
+    if (!jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits("sel8"))) {
+      return false;
+    }
+    if (selNoSameBunchPileup && !jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits("NoSameBunchPileup"))) {
+      return false;
+    }
+    if (selIsGoodZvtxFT0vsPV && !jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits("IsGoodZvtxFT0vsPV"))) {
+      return false;
+    }
+    if (useOccupancy && !isOccupancyAccepted(collision)) {
+      return false;
+    }
+    return true;
+  }
+
+  template <bool RecoSelected, typename ParticlesType>
+  void fillJetSelectionCorrectionParticles(const ParticlesType& mcParticles, double jetEta, double jetPhi)
+  {
+    const auto perpConePhiJet = getPerpendicuarPhi(jetPhi);
+    for (const auto& mcParticle : mcParticles) {
+      if (!mcParticle.isPhysicalPrimary()) {
+        continue;
+      }
+      if (std::fabs(mcParticle.eta()) > cfgtrkMaxEta) {
+        continue;
+      }
+      if (useRapidityCutForPID && !isRapiditySelectedForPID(mcParticle.y())) {
+        continue;
+      }
+
+      const auto particleType = mapPDGToValue(mcParticle.pdgCode());
+      if (particleType == 0) {
+        continue;
+      }
+
+      const double delEta = jetEta - mcParticle.eta();
+      const double delPhi = TVector2::Phi_mpi_pi(jetPhi - mcParticle.phi());
+      const double rJet = RecoDecay::sqrtSumOfSquares(delEta, delPhi);
+      if (rJet < cfgjetR) {
+        if constexpr (RecoSelected) {
+          jetHist.fill(HIST("jetSelCorr/recoSel/jetCone/pt/PtParticleType"), mcParticle.pt(), particleType);
+        } else {
+          jetHist.fill(HIST("jetSelCorr/genSel/jetCone/pt/PtParticleType"), mcParticle.pt(), particleType);
+        }
+      }
+
+      const double delPhiPerpCone1 = TVector2::Phi_mpi_pi(perpConePhiJet[0] - mcParticle.phi());
+      const double delPhiPerpCone2 = TVector2::Phi_mpi_pi(perpConePhiJet[1] - mcParticle.phi());
+      const double rPerpCone1 = RecoDecay::sqrtSumOfSquares(delEta, delPhiPerpCone1);
+      const double rPerpCone2 = RecoDecay::sqrtSumOfSquares(delEta, delPhiPerpCone2);
+      if (rPerpCone1 < cfgjetR || rPerpCone2 < cfgjetR) {
+        if constexpr (RecoSelected) {
+          jetHist.fill(HIST("jetSelCorr/recoSel/perpCone/pt/PtParticleType"), mcParticle.pt(), particleType);
+        } else {
+          jetHist.fill(HIST("jetSelCorr/genSel/perpCone/pt/PtParticleType"), mcParticle.pt(), particleType);
+        }
+      }
+    }
+  }
+
   void processRecMatched(JetCollWithLabel const& collision, JetMCDetTable const& mcdjets,
                          soa::Join<aod::JetTracks, aod::JTrackPIs, aod::JMcTrackLbs> const& tracks,
                          JetMCPartTable const&, TrackCandidatesMC const&, aod::JetParticles const& particleTracks, aod::JMcCollisions const&)
@@ -2725,6 +2812,94 @@ struct nucleiInJets {
   } // process
 
   int nprocessSimJEEvents = 0;
+  void processJetSelectionCorrection(aod::JetMcCollision const& collision,
+                                     soa::SmallGroups<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos>> const& recocolls,
+                                     JetMCDetTable const&, JetMCPartTable const& mcpjets, aod::JetParticles const& mcParticles)
+  {
+    if (std::abs(collision.posZ()) > cfgMaxZVertex) {
+      return;
+    }
+
+    bool hasGenLeadingJet = false;
+    double genLeadingJetPt = -999.;
+    double genLeadingJetEta = -999.;
+    double genLeadingJetPhi = -999.;
+
+    for (const auto& mcpjet : mcpjets) {
+      if (!isConeAxisAccepted(mcpjet.eta())) {
+        continue;
+      }
+      if (mcpjet.pt() > genLeadingJetPt) {
+        hasGenLeadingJet = true;
+        genLeadingJetPt = mcpjet.pt();
+        genLeadingJetEta = mcpjet.eta();
+        genLeadingJetPhi = mcpjet.phi();
+      }
+    }
+
+    if (hasGenLeadingJet && genLeadingJetPt > cfgjetPtBkgSubMinMC) {
+      jetHist.fill(HIST("jetSelCorr/eventNorm/hEventCounts"), 0.5);
+      jetHist.fill(HIST("jetSelCorr/genSel/hLeadingJetPt"), genLeadingJetPt);
+      fillJetSelectionCorrectionParticles<false>(mcParticles, genLeadingJetEta, genLeadingJetPhi);
+    }
+
+    bool hasRecoSelectedLeadingJet = false;
+    double recoSelectedLeadingJetPt = -999.;
+    double recoSelectedMatchedGenJetPt = -999.;
+    double recoSelectedMatchedGenJetEta = -999.;
+    double recoSelectedMatchedGenJetPhi = -999.;
+
+    for (const auto& mcpjet : mcpjets) {
+      if (!mcpjet.has_matchedJetGeo()) {
+        continue;
+      }
+      if (!isConeAxisAccepted(mcpjet.eta())) {
+        continue;
+      }
+      for (const auto& mcdjet : mcpjet.template matchedJetGeo_as<JetMCDetTable>()) {
+        if (!isConeAxisAccepted(mcdjet.eta())) {
+          continue;
+        }
+        double selectedRecoCollisionRho = -1.;
+        bool hasSelectedRecoCollision = false;
+        for (const auto& recocoll : recocolls) {
+          if (mcdjet.collisionId() != recocoll.globalIndex()) {
+            continue;
+          }
+          if (!isRecoCollisionSelectedForJetSelectionCorrection(recocoll)) {
+            continue;
+          }
+          selectedRecoCollisionRho = recocoll.rho();
+          hasSelectedRecoCollision = true;
+          break;
+        }
+        if (!hasSelectedRecoCollision) {
+          continue;
+        }
+
+        const double jetArea = M_PI * cfgjetR * cfgjetR;
+        const double mcdJetPtBkgSub = usebkgSubractionMC ? mcdjet.pt() - selectedRecoCollisionRho * jetArea : mcdjet.pt();
+        if (mcdJetPtBkgSub <= cfgjetPtBkgSubMinMC) {
+          continue;
+        }
+        if (mcdJetPtBkgSub > recoSelectedLeadingJetPt) {
+          hasRecoSelectedLeadingJet = true;
+          recoSelectedLeadingJetPt = mcdJetPtBkgSub;
+          recoSelectedMatchedGenJetPt = mcpjet.pt();
+          recoSelectedMatchedGenJetEta = mcpjet.eta();
+          recoSelectedMatchedGenJetPhi = mcpjet.phi();
+        }
+      }
+    }
+
+    if (hasRecoSelectedLeadingJet) {
+      jetHist.fill(HIST("jetSelCorr/eventNorm/hEventCounts"), 1.5);
+      jetHist.fill(HIST("jetSelCorr/recoSel/hLeadingJetPtBkgSub"), recoSelectedLeadingJetPt);
+      jetHist.fill(HIST("jetSelCorr/recoSel/hMatchedLeadingJetPt"), recoSelectedLeadingJetPt, recoSelectedMatchedGenJetPt);
+      fillJetSelectionCorrectionParticles<true>(mcParticles, recoSelectedMatchedGenJetEta, recoSelectedMatchedGenJetPhi);
+    }
+  }
+
   void processGenMatched(aod::JetMcCollision const& collision,
                          soa::SmallGroups<soa::Join<aod::JMcCollisionLbs, aod::JetCollisions>> const& recocolls,
                          JetMCDetTable const&, JetMCPartTable const& mcpjets, aod::JetParticles const& mcParticles)
@@ -3134,6 +3309,7 @@ struct nucleiInJets {
   PROCESS_SWITCH(nucleiInJets, processMCRec, "nuclei in Jets for detectorlevel Jets", false);
   PROCESS_SWITCH(nucleiInJets, processMCGen, "nuclei in Jets MC particlelevel Jets", false);
   PROCESS_SWITCH(nucleiInJets, processRecMatched, "nuclei in Jets rec matched", false);
+  PROCESS_SWITCH(nucleiInJets, processJetSelectionCorrection, "nuclei in Jets jet-selection migration correction", false);
   PROCESS_SWITCH(nucleiInJets, processGenMatched, "nuclei in Jets gen matched", false);
   PROCESS_SWITCH(nucleiInJets, processEventSignalLoss, "Event and signal loss analysis (inclusive)", false);
 };

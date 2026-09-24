@@ -125,6 +125,7 @@ struct HStrangeCorrelation {
     Configurable<bool> doCorrelationOmegaPlus{"doCorrelationOmegaPlus", false, "do OmegaPlus correlation"};
     Configurable<bool> doCorrelationPion{"doCorrelationPion", false, "do Pion correlation"};
     Configurable<bool> doGenEventSelection{"doGenEventSelection", true, "use event selections when performing closure test for the gen events"};
+    Configurable<bool> doClosureTestPureMC{"doClosureTestPureMC", false, "fill regular ClosureTest histograms without event or reconstructed-trigger selection, using MC vertex z and centrality 0.05; keep truth-particle selections"};
     Configurable<bool> selectINELgtZERO{"selectINELgtZERO", true, "select INEL>0 events"};
     Configurable<bool> selectINELgtONE{"selectINELgtONE", false, "select INEL>1 events (at least 2 charged particles in |eta| < 1)"};
     Configurable<float> zVertexCut{"zVertexCut", 10, "Cut on PV position"};
@@ -6181,71 +6182,82 @@ struct HStrangeCorrelation {
 
     float bestCollisionCentpercentile = -1;
     float bestCollisionVtxZ = 0.0f;
-    bool bestCollisionSel8 = false;
-    bool bestCollisionINELgtZERO = false;
-    bool bestCollisionINELgtONE = false;
-    bool bestCollisionNoSameBunchPileup = false;
-    bool bestCollisionGoodTriggerTVX = false;
-    bool bestCollisionGoodZvtxFT0vsPV = false;
-    bool isCollisionSelect = false;
-    int biggestNContribs = -1;
-    uint32_t bestCollisionTriggerPresenceMap = 0;
+    // Pure MC defines an inclusive generated-event reference, independent of
+    // reconstructed collisions and triggerPresenceMap. Particle/pair selections
+    // below still define the observable. PairLossK0 diagnostics above retain
+    // their own event selection.
+    if (masterConfigurations.doClosureTestPureMC) {
+      bestCollisionCentpercentile = 0.05f;
+      bestCollisionVtxZ = mcCollision.posZ();
+    } else {
+      bool bestCollisionSel8 = false;
+      bool bestCollisionINELgtZERO = false;
+      bool bestCollisionINELgtONE = false;
+      bool bestCollisionNoSameBunchPileup = false;
+      bool bestCollisionGoodTriggerTVX = false;
+      bool bestCollisionGoodZvtxFT0vsPV = false;
+      bool isCollisionSelect = false;
+      int biggestNContribs = -1;
+      uint32_t bestCollisionTriggerPresenceMap = 0;
 
-    for (auto const& recCollision : recCollisions) {
-      if (biggestNContribs < recCollision.numContrib()) {
-        biggestNContribs = recCollision.numContrib();
-        bestCollisionCentpercentile = masterConfigurations.doPPAnalysis ? recCollision.centFT0M() : recCollision.centFT0C();
-        if (masterConfigurations.applyNewMCSelection) {
-          isCollisionSelect = ((masterConfigurations.doPPAnalysis && isCollisionSelected(recCollision)) || (!masterConfigurations.doPPAnalysis && isCollisionSelectedPbPb(recCollision, false)));
-        } else {
-          bestCollisionSel8 = recCollision.sel8();
+      for (auto const& recCollision : recCollisions) {
+        if (biggestNContribs < recCollision.numContrib()) {
+          biggestNContribs = recCollision.numContrib();
+          bestCollisionCentpercentile = masterConfigurations.doPPAnalysis ? recCollision.centFT0M() : recCollision.centFT0C();
+          // Both branches fill the generated-level THns with this vertex position, so it
+          // is taken from the best collision regardless of which event selection is used.
           bestCollisionVtxZ = recCollision.posZ();
-          bestCollisionINELgtZERO = recCollision.isInelGt0();
-          bestCollisionINELgtONE = recCollision.isInelGt1();
-          bestCollisionNoSameBunchPileup = recCollision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
-          bestCollisionGoodTriggerTVX = recCollision.selection_bit(aod::evsel::kIsTriggerTVX);
-          bestCollisionGoodZvtxFT0vsPV = recCollision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
-        }
-        if (triggerPresenceMap.size() > 0) {
-          bestCollisionTriggerPresenceMap = triggerPresenceMap[recCollision.globalIndex()];
+          if (masterConfigurations.applyNewMCSelection) {
+            isCollisionSelect = ((masterConfigurations.doPPAnalysis && isCollisionSelected(recCollision)) || (!masterConfigurations.doPPAnalysis && isCollisionSelectedPbPb(recCollision, false)));
+          } else {
+            bestCollisionSel8 = recCollision.sel8();
+            bestCollisionINELgtZERO = recCollision.isInelGt0();
+            bestCollisionINELgtONE = recCollision.isInelGt1();
+            bestCollisionNoSameBunchPileup = recCollision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
+            bestCollisionGoodTriggerTVX = recCollision.selection_bit(aod::evsel::kIsTriggerTVX);
+            bestCollisionGoodZvtxFT0vsPV = recCollision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
+          }
+          if (triggerPresenceMap.size() > 0) {
+            bestCollisionTriggerPresenceMap = triggerPresenceMap[recCollision.globalIndex()];
+          }
         }
       }
-    }
-    // ________________________________________________
-    // skip if desired trigger not found
-    if (triggerPresenceMap.size() > 0 && !TESTBIT(bestCollisionTriggerPresenceMap, triggerBinToSelect)) {
-      return;
-    }
-
-    if (masterConfigurations.applyNewMCSelection) {
-      if (!isCollisionSelect) {
+      // ________________________________________________
+      // skip if desired trigger not found
+      if (triggerPresenceMap.size() > 0 && !TESTBIT(bestCollisionTriggerPresenceMap, triggerBinToSelect)) {
         return;
       }
-    } else {
-      if (masterConfigurations.doGenEventSelection) {
-        if (!bestCollisionSel8) {
+
+      if (masterConfigurations.applyNewMCSelection) {
+        if (!isCollisionSelect) {
           return;
         }
-        if (std::abs(bestCollisionVtxZ) > masterConfigurations.zVertexCut) {
-          return;
-        }
-        if (!bestCollisionINELgtZERO) {
-          return;
-        }
-        if (masterConfigurations.selectINELgtONE && !bestCollisionINELgtONE) {
-          return;
-        }
-        if (masterConfigurations.rejectSameBunchPileup && !bestCollisionNoSameBunchPileup) {
-          return;
-        }
-        if (masterConfigurations.requireGoodTriggerTVX && !bestCollisionGoodTriggerTVX) {
-          return;
-        }
-        if (masterConfigurations.requireGoodZvtxFT0vsPV && !bestCollisionGoodZvtxFT0vsPV) {
-          return;
-        }
-        if (bestCollisionCentpercentile > axisRanges[5][1] || bestCollisionCentpercentile < axisRanges[5][0]) {
-          return;
+      } else {
+        if (masterConfigurations.doGenEventSelection) {
+          if (!bestCollisionSel8) {
+            return;
+          }
+          if (std::abs(bestCollisionVtxZ) > masterConfigurations.zVertexCut) {
+            return;
+          }
+          if (!bestCollisionINELgtZERO) {
+            return;
+          }
+          if (masterConfigurations.selectINELgtONE && !bestCollisionINELgtONE) {
+            return;
+          }
+          if (masterConfigurations.rejectSameBunchPileup && !bestCollisionNoSameBunchPileup) {
+            return;
+          }
+          if (masterConfigurations.requireGoodTriggerTVX && !bestCollisionGoodTriggerTVX) {
+            return;
+          }
+          if (masterConfigurations.requireGoodZvtxFT0vsPV && !bestCollisionGoodZvtxFT0vsPV) {
+            return;
+          }
+          if (bestCollisionCentpercentile > axisRanges[5][1] || bestCollisionCentpercentile < axisRanges[5][0]) {
+            return;
+          }
         }
       }
     }

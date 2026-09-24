@@ -328,7 +328,8 @@ struct FlattenictyPikp {
     Configurable<int16_t> nclPidTPCMin{"nclPidTPCMin", 130, "Minimum number of TPC PID clusters"};
     Configurable<float> phiCutPtMin{"phiCutPtMin", 2.0f, "Minimum pT for phi cut"};
     Configurable<float> tofBetaPion{"tofBetaPion", 1.0f, "Minimum beta for TOF pions"};
-    Configurable<bool> useSelTOFBeta{"useSelTOFBeta", true, "Use selection of TOF Beta"};
+    Configurable<bool> useSelTOFBeta{"useSelTOFBeta", true, "Apply selection of TOF Beta"};
+    Configurable<bool> useSelTOFnSigma{"useSelTOFnSigma", false, "Apply Nsigma selection of TOF"};
     Configurable<float> tofBetaPiMax{"tofBetaPiMax", 5E-5, "Maximum beta for TOF pion selection"};
     Configurable<bool> rejectTrkAtTPCSector{"rejectTrkAtTPCSector", true, "Reject tracks close to the TPC sector boundaries"};
     Configurable<std::string> geoTrkCutMin{"geoTrkCutMin", "0.06/x+pi/18.0-0.06", "ROOT TF1 formula for minimum phi cut in TPC"};
@@ -973,9 +974,9 @@ struct FlattenictyPikp {
     if (track.length() == Cnull) {
       return false;
     }
-    const float tTOF = track.tofSignal();
-    const float tExpPiTOF = track.tofExpSignalPi(tTOF);
-    if (tTOF == Cnull) {
+    const float& tTOF = track.tofSignal();
+    const float& tExpPiTOF = track.tofExpSignalPi(tTOF);
+    if (tTOF <= Cnull) {
       return false;
     }
     registryData.fill(HIST(CprefixCleanTof) + HIST(Ccharge[chrg]) + HIST("hTofExpPi"), track.p(), tExpPiTOF / tTOF);
@@ -986,7 +987,7 @@ struct FlattenictyPikp {
     if (trkSelOpt.useSelTOFBeta && !isSelTOFBeta) {
       return false;
     }
-    if (!isSelNsigmaPi) {
+    if (trkSelOpt.useSelTOFnSigma && !isSelNsigmaPi) {
       return false;
     }
     registryData.fill(HIST(CprefixCleanTof) + HIST(Ccharge[chrg]) + HIST("hBetaVsP"), track.p(), track.beta());
