@@ -880,7 +880,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       KFParticle kfV0MassConstrained = kfV0;
       kfV0MassConstrained.SetNonlinearMassConstraint(o2::constants::physics::MassLambda); // set mass constrain to Lambda
       if (kfUseV0MassConstraint) {
-        KFParticle const kfV0 = kfV0MassConstrained;
+        kfV0 = kfV0MassConstrained;
       }
       kfV0.TransportToDecayVertex();
 
@@ -921,7 +921,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       kfOmegaMassConstrained.SetNonlinearMassConstraint(o2::constants::physics::MassOmegaMinus); // set mass constrain to OmegaMinus
       if (kfUseCascadeMassConstraint) {
         // set mass constraint if requested
-        KFParticle const kfOmega = kfOmegaMassConstrained;
+        kfOmega = kfOmegaMassConstrained;
       }
       registry.fill(HIST("hInvMassOmegaMinus"), massCasc);
       kfOmega.TransportToDecayVertex();
@@ -931,7 +931,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       //*>~<* step 3 : reconstruc Omegac0 with KF
       // Create KF charm bach Pion from track
       KFPTrack const kfTrackBachPion = createKFPTrackFromTrack(trackCharmBachelor);
-      KFParticle const kfBachPion(kfTrackBachPion, kPiPlus);
+      KFParticle const kfBachPion(kfTrackBachPion, bachCharge < 0 ? kPiPlus : kPiMinus);
       const KFParticle* omegaC0Daugthers[2] = {&kfBachPion, &kfOmega};
 
       // construct OmegaC0
@@ -1414,7 +1414,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       kfXiMassConstrained.SetNonlinearMassConstraint(o2::constants::physics::MassXiMinus); // set mass constrain to XiMinus
       if (kfUseCascadeMassConstraint) {
         // set mass constraint if requested
-        KFParticle const kfXi = kfXiMassConstrained;
+        kfXi = kfXiMassConstrained;
       }
       registry.fill(HIST("hInvMassXiMinus"), massCasc);
       kfXi.TransportToDecayVertex();
@@ -1848,7 +1848,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       }
       registry.fill(HIST("hInvMassXiMinus_rej"), massCascrej); // rej: Add competing rejection to minimize misidentified Xi impact. Reject if kfBachPionRej is Pion and the constructed cascade has Xi's invariant mass.
       KFParticle kfOmegaMassConstrained = kfOmega;
-      kfOmegaMassConstrained.SetNonlinearMassConstraint(o2::constants::physics::MassOmegaMinus); // set mass constrain to XiMinus
+      kfOmegaMassConstrained.SetNonlinearMassConstraint(o2::constants::physics::MassOmegaMinus); // set mass constrain to OmegaMinus
       if (kfUseCascadeMassConstraint) {
         // set mass constraint if requested
         kfOmega = kfOmegaMassConstrained;
