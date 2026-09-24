@@ -111,7 +111,7 @@ class EventSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
   template <typename CollisionToFilter, typename AssociatedTracks>
   void StoreMultiplicities(CollisionToFilter const&, AssociatedTracks const&);
   int CalculateMaskLength() override;
-  virtual void StoreArmedMask() override;
+  void StoreArmedMask() override;
 
   std::vector<CutBrick<float>*> mBFieldSelection; //! the magnetic field selection cuts
   MultiplicityBrick* mMultiplicityClasses;        //! the multiplicity classes cuts
