@@ -13,6 +13,7 @@
 /// \brief Analysis of D0/Lambda_c yield as a function of flattenicity
 /// \author Laszlo Gyulai, laszlo.gyulai@cern.ch
 
+#include "RecoDecay.h"
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
@@ -23,22 +24,31 @@
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
 
-#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponseTOF.h"
-#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsFIT/Triggers.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
+#include <Rtypes.h>
+#include <THnSparse.h>
+#include <TPDGCode.h>
 
-#include <algorithm>
+#include <cstdint>
+#include <bitset>
+#include <cstddef>
+#include <cmath>
 #include <map>
 #include <string>
 #include <vector>
@@ -1039,6 +1049,7 @@ struct HfTaskFlattenicityD0Lc {
   {
     rhoLatticeFV0.fill(0);
     rhoLatticeFV0Calibrated.fill(0);
+    float flat = 9999;
     if (collision.has_foundFV0()) {
       auto fv0 = collision.foundFV0();
       std::bitset<8> fV0Triggers = fv0.triggerMask();
@@ -1068,13 +1079,10 @@ struct HfTaskFlattenicityD0Lc {
           registry.fill(HIST("Flattenicity_calibrated"), 1 - flattenicityFV0Calibrated);
           registry.fill(HIST("Flattenicity"), 1 - flattenicityFV0);
         }
-        return 1. - flattenicityFV0;
-      } else {
-        return 9999;
-      }
-    } else {
-      return 9999;
+        flat = 1. - flattenicityFV0;
+      }     
     }
+    return flat;
   }
 
   template <typename T, std::size_t S>
