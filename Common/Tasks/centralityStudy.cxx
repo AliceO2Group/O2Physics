@@ -426,6 +426,7 @@ struct CentralityStudy {
       histos.add("hFV0AOuter_BCs", "hFV0AOuter_BCs", kTH1D, {axisMultUltraFineFV0A});
 
       histos.add("hFV0AT0C_BCs", "hFV0AT0C_BCs", kTH1D, {axisMultUltraFineFV0AT0C});
+      histos.add("hFV0AOuterT0C_BCs", "hFV0AOuterT0C_BCs", kTH1D, {axisMultUltraFineFV0AT0C});
       histos.add("hScaledFT0M_BCs", "hScaledFT0M_BCs", kTH1D, {axisMultUltraFineScaledFT0M});
       histos.add("hScaledFV0AT0C_BCs", "hScaledFV0AT0C_BCs", kTH1D, {axisMultUltraFineScaledFV0AT0C});
 
@@ -1380,6 +1381,7 @@ struct CentralityStudy {
       histos.fill(HIST("hFT0MOuterA_BCs"), (multbc.multFT0AOuter() + multbc.multFT0C()) * scale.factorFT0M);
       histos.fill(HIST("hFV0A_BCs"), multbc.multFV0A() * scale.factorFV0A);
       histos.fill(HIST("hFV0AT0C_BCs"), (multbc.multFV0A() + multbc.multFT0C()) * scale.factorFIT);
+      histos.fill(HIST("hFV0AOuterT0C_BCs"), (multbc.multFV0AOuter() + multbc.multFT0C()) * scale.factorFIT);
       histos.fill(HIST("hFIT_BCs"), (multbc.multFT0C() + multbc.multFT0AOuter() + multbc.multFV0AOuter()) * scale.factorFIT);
       histos.fill(HIST("hFIT_FullV0_BCs"), (multbc.multFT0C() + multbc.multFT0AOuter() + multbc.multFV0A()) * scale.factorFIT);
       histos.fill(HIST("hFIT_All_BCs"), (multbc.multFT0C() + multbc.multFT0A() + multbc.multFV0A()) * scale.factorFIT);
