@@ -948,6 +948,8 @@ struct sigma0builder {
     bool IsSigma0 = false;
     bool IsAntiSigma0 = false;
     bool IsKStar = false;
+    bool IsLambdaStar = false;
+    bool IsAntiLambdaStar = false;
     bool IsProducedByGenerator = false;
     bool IsSterile = false;
     int MCProcess = -1;
