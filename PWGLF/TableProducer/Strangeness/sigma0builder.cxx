@@ -21,16 +21,16 @@
 #include "PWGLF/DataModel/LFStrangenessMLTables.h"
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "Common/Tools/StandardCCDBLoader.h"
-#include <DCAFitter/DCAFitterN.h>
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/Tools/StandardCCDBLoader.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -113,7 +113,7 @@ struct sigma0builder {
   //__________________________________________________
   // Xi0 specific
   Produces<aod::Xi0Cores> xi0cores;           // xi0 candidates info for analysis
-  Produces<aod::Xi0CollRefs> xi0collRefs;      // references to straCollision
+  Produces<aod::Xi0CollRefs> xi0collRefs;     // references to straCollision
   Produces<aod::Xi0Indices> xi0Indices;       // references to V0Cores
   Produces<aod::Xi0MCCores> xi0mccores;       // Reco xi0 MC properties
   Produces<aod::Xi0MCCollRefs> xi0mccollRefs; // references to straMCCollision
@@ -892,12 +892,12 @@ struct sigma0builder {
   // ______________________________________________________
   // Struct to store V0Pair properties
   struct V0PairTopoInfo {
-    std::array<float, 3> position {-999.f, -999.f, -999.f};
+    std::array<float, 3> position{-999.f, -999.f, -999.f};
     float dcaPi0ToPV = 999.f;
     float daughterDCA = 999.f;
     float cosPA = -1.f;
-    float pi0Mass= 999.f;
-    float pi0Y= 999.f;
+    float pi0Mass = 999.f;
+    float pi0Y = 999.f;
 
     int v01Index = 0; // index to de-reference V0Cores table
     int v02Index = 0; // index to de-reference V0Cores table
@@ -964,31 +964,31 @@ struct sigma0builder {
   // ______________________________________________________
   // Struct to store V0Pair properties
   struct Xi0Info {
-    std::array<float, 3> gamma1Momentum {999.f, 999.f, 999.f};
-    std::array<float, 3> gamma2Momentum {999.f, 999.f, 999.f};
-    std::array<float, 3> lambdaMomentum {999.f, 999.f, 999.f};
-    std::array<float, 3> pi0Position {0., 0., 0.};
-    std::array<float, 3> cascadePosition {0., 0., 0.};
+    std::array<float, 3> gamma1Momentum{999.f, 999.f, 999.f};
+    std::array<float, 3> gamma2Momentum{999.f, 999.f, 999.f};
+    std::array<float, 3> lambdaMomentum{999.f, 999.f, 999.f};
+    std::array<float, 3> pi0Position{0., 0., 0.};
+    std::array<float, 3> cascadePosition{0., 0., 0.};
     float xi0Mass = 999.f;
     float dcaPi0ToPV = 999.f;
     float pi0DaughterDCA = 999.f;
     float cascadeDaughterDCA = 999.f;
     float cascadeDCAxy = 999.f;
     float cascadeDCAz = 999.f;
-    
+
     int collisionId = 0;
     int gamma1Index = 0; // index to de-reference V0Cores table
     int gamma2Index = 0; // index to de-reference V0Cores table
     int lambdaIndex = 0; // index to de-reference V0Cores table
 
-    std::array<float, 21> covariance {0.};
+    std::array<float, 21> covariance{0.};
   };
 
   struct Xi0MCInfo {
     int gamma1Index = 0; // index to de-reference V0MCCores table
     int gamma2Index = 0; // index to de-reference V0MCCores table
     int lambdaIndex = 0; // index to de-reference V0MCCores table
-    
+
     // Basic kinematic info
     float gamma1MCpx = -999.f;
     float gamma1MCpy = -999.f;
@@ -1472,8 +1472,8 @@ struct sigma0builder {
     auto MCParticle_gamma2 = mcparticles.rawIteratorAt(gamma2MC.particleIdMC());
     auto MCParticle_lambda = mcparticles.rawIteratorAt(lambdaMC.particleIdMC());
 
-    if ((std::abs(MCParticle_gamma1.pdgCode()) == PDG_t::kGamma) && 
-        (std::abs(MCParticle_gamma2.pdgCode()) == PDG_t::kGamma) && 
+    if ((std::abs(MCParticle_gamma1.pdgCode()) == PDG_t::kGamma) &&
+        (std::abs(MCParticle_gamma2.pdgCode()) == PDG_t::kGamma) &&
         (std::abs(MCParticle_lambda.pdgCode()) == PDG_t::kLambda0)) {
 
       // Get MC Mothers
@@ -1482,9 +1482,9 @@ struct sigma0builder {
       auto const& MCMothersList_lambda = MCParticle_lambda.template mothers_as<aod::McParticles>();
 
       if (!MCMothersList_gamma1.empty() && !MCMothersList_gamma2.empty() && !MCMothersList_lambda.empty()) { // Are there mothers?
-        auto const& MCMother_gamma1 = MCMothersList_gamma1.front();         // First mother
-        auto const& MCMother_gamma2 = MCMothersList_gamma2.front();         // First mother
-        auto const& MCMother_lambda = MCMothersList_lambda.front();         // First mother
+        auto const& MCMother_gamma1 = MCMothersList_gamma1.front();                                          // First mother
+        auto const& MCMother_gamma2 = MCMothersList_gamma2.front();                                          // First mother
+        auto const& MCMother_lambda = MCMothersList_lambda.front();                                          // First mother
 
         MCinfo.gamma1PDGCodeMother = MCMother_gamma1.pdgCode();
         MCinfo.gamma2PDGCodeMother = MCMother_gamma2.pdgCode();
@@ -1500,9 +1500,9 @@ struct sigma0builder {
           MCinfo.pi0Z = MCMother_gamma1.vz();
 
           auto const& MCMothersList_pi0 = MCMother_gamma1.template mothers_as<aod::McParticles>(); // get pi0 mother list
-          if (!MCMothersList_pi0.empty()) { // Are there mothers?
-            auto const& MCMother_pi0 = MCMothersList_pi0.front(); // get pi0 mother
-            
+          if (!MCMothersList_pi0.empty()) {                                                        // Are there mothers?
+            auto const& MCMother_pi0 = MCMothersList_pi0.front();                                  // get pi0 mother
+
             if (MCMother_pi0.globalIndex() == MCMother_lambda.globalIndex()) { // check that lambda and pi0 have the same mother.
               MCinfo.xi0PDGCode = MCMother_pi0.pdgCode();
               MCinfo.xi0MCProcess = MCMother_pi0.getProcess();
@@ -2601,7 +2601,7 @@ struct sigma0builder {
   //_______________________________________________
   // Build pi0 candidate for QA
   template <typename TV0Object, typename TCollision>
-  bool buildPi0ForXi0(TV0Object const& gamma1, TV0Object const& gamma2, TCollision const& collision, V0PairTopoInfo &info)
+  bool buildPi0ForXi0(TV0Object const& gamma1, TV0Object const& gamma2, TCollision const& collision, V0PairTopoInfo& info)
   {
     //_______________________________________________
     // Check if both V0s are made of the same tracks
@@ -2629,7 +2629,7 @@ struct sigma0builder {
 
     info.v01Index = gamma1.globalIndex();
     info.v02Index = gamma2.globalIndex();
-    
+
     //_______________________________________________
     // Pi0-specific selections:
     if (std::abs(info.pi0Y) > cascadeSelections.maxPi0Rapidity)
@@ -2675,7 +2675,7 @@ struct sigma0builder {
     if (std::hypot(info.position[0], info.position[1]) < cascadeSelections.radiusPi0) {
       return false;
     }
-    
+
     float x = vtxPi0[0];
     float y = vtxPi0[1];
     float z = vtxPi0[2];
@@ -2780,9 +2780,9 @@ struct sigma0builder {
 
     // Calculate DCAxy of the cascade (with bending)
     auto lCascadeTrack = fitter3Prongs.createParentTrackParCov();
-    lCascadeTrack.setAbsCharge(0);    // to be sure
+    lCascadeTrack.setAbsCharge(0);                 // to be sure
     lCascadeTrack.setPID(o2::track::PID::XiMinus); // FIXME: not OK for omegas
-    std::array<float, 2> dcaInfo {999.f, 999.f};
+    std::array<float, 2> dcaInfo{999.f, 999.f};
 
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lCascadeTrack, 2.f, fitter3Prongs.getMatCorrType(), &dcaInfo);
     cascade.cascadeDCAxy = dcaInfo[0];
@@ -2795,10 +2795,10 @@ struct sigma0builder {
     cascade.gamma2Index = gamma2.globalIndex();
     cascade.lambdaIndex = lambda.globalIndex();
 
-    std::array<float, 3> momPi0{gamma1.px()+gamma2.px(), gamma1.py()+gamma2.py(), gamma1.pz()+gamma2.pz()};
+    std::array<float, 3> momPi0{gamma1.px() + gamma2.px(), gamma1.py() + gamma2.py(), gamma1.pz() + gamma2.pz()};
     auto arrMom = std::array{momPi0, momLambda};
     cascade.xi0Mass = RecoDecay::m(arrMom, std::array{o2::constants::physics::MassPi0, o2::constants::physics::MassXi0});
-    
+
     // Calculate position covariance matrix
     auto covVtxV = fitter3Prongs.calcPCACovMatrix(0);
     // std::array<float, 6> positionCovariance;
@@ -2827,7 +2827,7 @@ struct sigma0builder {
     }
 
     // Check if MC data and populate corresponding table
-    if constexpr (requires { collision.straMCCollisionId(); gamma1.motherMCPartId(); gamma2.motherMCPartId(); lambda.motherMCPartId();}) {
+    if constexpr (requires { collision.straMCCollisionId(); gamma1.motherMCPartId(); gamma2.motherMCPartId(); lambda.motherMCPartId(); }) {
       auto xi0MCInfo = getXi0MCInfo(gamma1, gamma2, lambda, collision, mcparticles);
 
       xi0mccores(xi0MCInfo.gamma1MCpx, xi0MCInfo.gamma1MCpy, xi0MCInfo.gamma1MCpz,
@@ -2838,7 +2838,7 @@ struct sigma0builder {
                  xi0MCInfo.lambdaIsPhysicalPrimary, xi0MCInfo.lambdaPDGCodePos, xi0MCInfo.lambdaPDGCodeNeg, xi0MCInfo.lambdaPDGCode, xi0MCInfo.lambdaPDGCodeMother,
                  xi0MCInfo.pi0X, xi0MCInfo.pi0Y, xi0MCInfo.pi0Z, xi0MCInfo.pi0IsPhysicalPrimary, xi0MCInfo.pi0MCProcess, xi0MCInfo.pi0PDGCode,
                  xi0MCInfo.xi0X, xi0MCInfo.xi0Y, xi0MCInfo.xi0Z, xi0MCInfo.xi0IsPhysicalPrimary, xi0MCInfo.xi0MCProcess, xi0MCInfo.xi0PDGCode, xi0MCInfo.xi0PDGCodeMother);
-      
+
       xi0mcIndices(xi0MCInfo.gamma1Index, xi0MCInfo.gamma2Index, xi0MCInfo.lambdaIndex);
 
       int mcCollisionIndex = -1;
@@ -3402,7 +3402,7 @@ struct sigma0builder {
             pi0Candidates.push_back(pi0Info);
           }
         }
-        
+
         // second build Xi0 candidates
         for (size_t i = 0; i < bestLambdasArray.size(); ++i) { // loop over Lambda
           auto lambda = fullV0s.rawIteratorAt(bestLambdasArray[i]);
