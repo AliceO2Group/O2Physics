@@ -1361,7 +1361,7 @@ struct HResonanceCorrelation {
       c.isRightBg = (massWindowConfigurationsPhi.minBgNSigma * sig < delta && delta < massWindowConfigurationsPhi.maxBgNSigma * sig);
 
       c.passesMcSelection = (!masterConfigurations.doMCassociation || assocCandidate.mcTruePhi()) &&
-                             (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary());
+                            (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary());
 
       // Candidate-level kinematic/spectrum QA, ported from the equivalent
       // block in hStrangeCorrelation.cxx (h3d<Species>Spectrum[Y],
@@ -1712,7 +1712,7 @@ struct HResonanceCorrelation {
       c.isRightBg = (massWindowConfigurationsKstar.minBgNSigma * sig < delta && delta < massWindowConfigurationsKstar.maxBgNSigma * sig);
 
       c.passesMcSelection = (!masterConfigurations.doMCassociation || assocCandidate.mcTrueKstar()) &&
-                             (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary());
+                            (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary());
 
       // Same candidate-level Spectrum/EtaVsPtVsPhi QA as fillCorrelationsPhi
       // above -- see the comment there for rationale.
@@ -2717,7 +2717,7 @@ struct HResonanceCorrelation {
     std::vector<uint32_t> piIndices;
     std::vector<uint32_t> phiIndices;
     std::vector<uint32_t> kstarIndices; // intentionally left unpopulated: Kstar0 is not
-                                         // extended to this process function in this version
+                                        // extended to this process function in this version
 
     for (auto const& mcParticle : mcParticles) {
       double geta = mcParticle.eta();
@@ -2830,9 +2830,9 @@ struct HResonanceCorrelation {
       }
     }
 
-    associatedIndices.emplace_back(phiIndices);   // IndexPhi   = 0
-    associatedIndices.emplace_back(kstarIndices);  // IndexKstar = 1 (always empty here)
-    associatedIndices.emplace_back(piIndices);     // IndexPion  = 2
+    associatedIndices.emplace_back(phiIndices);         // IndexPhi   = 0
+    associatedIndices.emplace_back(kstarIndices);       // IndexKstar = 1 (always empty here)
+    associatedIndices.emplace_back(piIndices);          // IndexPion  = 2
     associatedIndices.emplace_back(assocHadronIndices); // Hadron = 3
 
     for (std::size_t iTrigger = 0; iTrigger < triggerIndices.size(); iTrigger++) {
@@ -2914,7 +2914,7 @@ struct HResonanceCorrelation {
     std::vector<uint32_t> piIndices;
     std::vector<uint32_t> phiIndices;
     std::vector<uint32_t> kstarIndices; // intentionally left unpopulated: Kstar0 is not
-                                         // extended to this process function in this version
+                                        // extended to this process function in this version
     float centMultFT0M = -1;
     float centMultFT0A = -1;
     float centMultFT0C = -1;
@@ -2998,9 +2998,9 @@ struct HResonanceCorrelation {
       }
     }
 
-    associatedIndices.emplace_back(phiIndices);   // IndexPhi   = 0
-    associatedIndices.emplace_back(kstarIndices);  // IndexKstar = 1 (always empty here)
-    associatedIndices.emplace_back(piIndices);     // IndexPion  = 2
+    associatedIndices.emplace_back(phiIndices);         // IndexPhi   = 0
+    associatedIndices.emplace_back(kstarIndices);       // IndexKstar = 1 (always empty here)
+    associatedIndices.emplace_back(piIndices);          // IndexPion  = 2
     associatedIndices.emplace_back(assocHadronIndices); // Hadron = 3
     for (std::size_t iTrigger = 0; iTrigger < triggerIndices.size(); iTrigger++) {
       auto triggerParticle = mcParticles.iteratorAt(triggerIndices[iTrigger]);
