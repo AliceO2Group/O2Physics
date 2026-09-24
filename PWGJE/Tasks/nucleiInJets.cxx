@@ -328,7 +328,8 @@ struct nucleiInJets {
     jetHist.add("jet/h2JetPtVsBkgRho", "jet_{p_{T}} vs background #rho; jet_{p_{T}} (GeV/c); #rho (GeV/c/area)", kTH2F, {PtJetAxis, {100, 0, 20}});
     jetHist.add("jet/h1BkgRho", "Background #rho; #rho (GeV/c/area); Entries", kTH1F, {{100, 0, 20}});
     jetHist.add("jet/h1JetEvents", "NumbeOfJetEvents", kTH1F, {{1, 0, 1}});
-    jetHist.add("jetBkgSub/h1JetEvents", "Number of jet events with leading p_{T}^{jet,bkg sub} above cfgjetPtBkgSubMin", kTH1F, {{1, 0, 1}});
+    jetHist.add("jetBkgSub/h1JetEventsBeforeRhoSelection", "Number of jet events with leading p_{T}^{jet,bkg sub} above cfgjetPtBkgSubMin before rho selection", kTH1F, {{1, 0, 1}});
+    jetHist.add("jetBkgSub/h1JetEvents", "Number of jet events with leading p_{T}^{jet,bkg sub} above cfgjetPtBkgSubMin and rho > 0", kTH1F, {{1, 0, 1}});
     jetHist.add("jetBkgSub/h1BkgRhoLeadingJetPtBkgSubAboveCut", "Background #rho for events with leading p_{T}^{jet,bkg sub} above cfgjetPtBkgSubMin; #rho (GeV/#it{c}/area); Entries", kTH1F, {{100, 0, 20}});
     jetHist.add("jet/h1JetEta", "jet_{#eta}", kTH1F, {{100, -1.0, 1.0}});
     jetHist.add("jet/h1JetPhi", "jet_{#phi}", kTH1F, {{80, -1.0, 7.}});
@@ -1807,7 +1808,7 @@ struct nucleiInJets {
       jetHist.fill(HIST("jetBkgSub/h1LeadingJetPtBkgSub"), leadingJetPtBkgSub);
       jetHist.fill(HIST("jetBkgSub/h2LeadingJetPtBkgSubVsVertexZ"), leadingJetPtBkgSub, collision.posZ());
     }
-    if (leadingJetPtBkgSub > cfgjetPtBkgSubMin) {
+    if (backgroundRho > 0 && leadingJetPtBkgSub > cfgjetPtBkgSubMin) {
       jetHist.fill(HIST("jetBkgSub/vertexZ"), collision.posZ());
       jetHist.fill(HIST("jetBkgSub/h1BkgRhoLeadingJetPtBkgSubAboveCut"), backgroundRho);
       jetHist.fill(HIST("hNEvents"), 8.5);
@@ -1818,7 +1819,10 @@ struct nucleiInJets {
       return;
     jetHist.fill(HIST("jet/h1JetEvents"), 0.5);
     if (leadingJetPtBkgSub > cfgjetPtBkgSubMin) {
-      jetHist.fill(HIST("jetBkgSub/h1JetEvents"), 0.5);
+      jetHist.fill(HIST("jetBkgSub/h1JetEventsBeforeRhoSelection"), 0.5);
+      if (backgroundRho > 0) {
+        jetHist.fill(HIST("jetBkgSub/h1JetEvents"), 0.5);
+      }
     }
     for (const auto& track : tracks) {
       auto trk = track.track_as<TrackCandidates>();
@@ -1909,7 +1913,7 @@ struct nucleiInJets {
       jetHist.fill(HIST("jetBkgSub/h1LeadingJetPtBkgSub"), leadingJetPtBkgSub);
       jetHist.fill(HIST("jetBkgSub/h2LeadingJetPtBkgSubVsVertexZ"), leadingJetPtBkgSub, collision.posZ());
     }
-    if (leadingJetPtBkgSub > cfgjetPtBkgSubMin) {
+    if (backgroundRho > 0 && leadingJetPtBkgSub > cfgjetPtBkgSubMin) {
       jetHist.fill(HIST("jetBkgSub/vertexZ"), collision.posZ());
       jetHist.fill(HIST("jetBkgSub/h1BkgRhoLeadingJetPtBkgSubAboveCut"), backgroundRho);
       jetHist.fill(HIST("hNEvents"), 8.5);
@@ -1920,7 +1924,10 @@ struct nucleiInJets {
       return;
     jetHist.fill(HIST("jet/h1JetEvents"), 0.5);
     if (leadingJetPtBkgSub > cfgjetPtBkgSubMin) {
-      jetHist.fill(HIST("jetBkgSub/h1JetEvents"), 0.5);
+      jetHist.fill(HIST("jetBkgSub/h1JetEventsBeforeRhoSelection"), 0.5);
+      if (backgroundRho > 0) {
+        jetHist.fill(HIST("jetBkgSub/h1JetEvents"), 0.5);
+      }
     }
     for (auto& track : tracks) {
       auto trk = track.track_as<TrackCandidatesLfPid>();
@@ -2366,6 +2373,13 @@ struct nucleiInJets {
     if (!jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits("sel8")))
       return;
 
+    if (selNoSameBunchPileup && !jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits("NoSameBunchPileup")))
+      return;
+    if (selIsGoodZvtxFT0vsPV && !jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits("IsGoodZvtxFT0vsPV")))
+      return;
+    if (useOccupancy && !isOccupancyAccepted(collision))
+      return;
+
     jetHist.fill(HIST("recmatched/vertexZ"), collision.posZ());
 
     // Event-wise random splitting for closure test: decide once per event
@@ -2376,6 +2390,22 @@ struct nucleiInJets {
       jetHist.fill(HIST("jet/h1BkgRho"), backgroundRho);
     }
 
+    // Select the accepted detector-level leading jet before considering matches.
+    int64_t leadingDetJetId = -1;
+    float leadingDetJetPt = -1.f;
+    if (isWithLeadingJet) {
+      for (const auto& mcdjet : mcdjets) {
+        if (isConeAxisAccepted(mcdjet.eta()) && mcdjet.pt() > leadingDetJetPt) {
+          leadingDetJetPt = mcdjet.pt();
+          leadingDetJetId = mcdjet.globalIndex();
+        }
+      }
+      if (leadingDetJetId < 0) {
+        return;
+      }
+    }
+
+    std::vector<int64_t> mcdJetIds{};
     std::vector<double> mcdJetPt{};
     std::vector<double> mcdJetPhi{};
     std::vector<double> mcdJetEta{};
@@ -2396,7 +2426,7 @@ struct nucleiInJets {
           continue;
 
         const float mcdJetPtForResponse = usebkgSubractionMC ? mcdjet.pt() - backgroundRho * jetArea : mcdjet.pt();
-        if (mcdJetPtForResponse < cfgjetPtBkgSubMinMC) {
+        if (mcdJetPtForResponse <= cfgjetPtBkgSubMinMC) {
           continue;
         }
         const double jetAxisEtaForEff = isWithLeadingJet ? (useLeadingJetDetLevelValue ? mcdjet.eta() : mcpjet.eta()) : mcdjet.eta();
@@ -2409,6 +2439,7 @@ struct nucleiInJets {
         jetHist.fill(HIST("recmatched/qa/h2JetConeEtaPhiAfterAcceptance"), jetAxisEtaForEff, jetAxisPhiForEff);
         jetHist.fill(HIST("recmatched/qa/h2PerpConeEtaPhiAfterAcceptance"), jetAxisEtaForEff, perpConePhiJet[0]);
         jetHist.fill(HIST("recmatched/qa/h2PerpConeEtaPhiAfterAcceptance"), jetAxisEtaForEff, perpConePhiJet[1]);
+        mcdJetIds.push_back(mcdjet.globalIndex());
         mcdJetPt.push_back(mcdJetPtForResponse);
         mcdJetPhi.push_back(mcdjet.phi());
         mcdJetEta.push_back(mcdjet.eta());
@@ -2435,6 +2466,13 @@ struct nucleiInJets {
       indexJet = std::distance(mcdJetPt.begin(), itLeadPtJet);
     } else {
       LOGP(fatal, "Error: Index {} is out of range for vectors!", indexJet);
+    }
+    if (isWithLeadingJet) {
+      const auto leadingMatch = std::find(mcdJetIds.begin(), mcdJetIds.end(), leadingDetJetId);
+      if (leadingMatch == mcdJetIds.end()) {
+        return; // Do not replace an unmatched or rejected leading jet with a subleading jet.
+      }
+      indexJet = std::distance(mcdJetIds.begin(), leadingMatch);
     }
     if (useMcC) {
       if (useDataLikeHist)
