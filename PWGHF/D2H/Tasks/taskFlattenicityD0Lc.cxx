@@ -13,7 +13,7 @@
 /// \brief Analysis of D0/Lambda_c yield as a function of flattenicity
 /// \author Laszlo Gyulai, laszlo.gyulai@cern.ch
 
-#include "RecoDecay.h"
+#include "Common/Core/RecoDecay.h"
 
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannels.h"
