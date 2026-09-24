@@ -1166,7 +1166,7 @@ struct HResonanceCorrelation {
           fillTriggerHistogram(histos.get<TH2>(HIST("sameEvent/TriggerParticlesHadron")), trigg.pt(), mult, efficiencyTrigger, efficiencyTriggerError, purityTrigger, purityTriggerError);
       }
       double triggSign = trigg.sign();
-      double triggForDeltaPhiStar[] = {trigg.phi(), trigg.pt(), triggSign};
+      const double triggForDeltaPhiStar[] = {trigg.phi(), trigg.pt(), triggSign};
       for (auto const& assocTrack : assocs) {
         auto assoc = assocTrack.template track_as<TracksComplete>();
 
@@ -1195,7 +1195,7 @@ struct HResonanceCorrelation {
         float pttrigger = trigg.pt();
 
         double assocSign = assoc.sign();
-        double assocForDeltaPhiStar[] = {assoc.phi(), assoc.pt(), assocSign};
+        const double assocForDeltaPhiStar[] = {assoc.phi(), assoc.pt(), assocSign};
 
         float etaWeight = 1.;
         if (checks.doOnTheFlyFlattening) {
@@ -1446,7 +1446,7 @@ struct HResonanceCorrelation {
       }
 
       double triggSign = trigg.sign();
-      double triggForDeltaPhiStar[] = {trigg.phi(), trigg.pt(), triggSign};
+      const double triggForDeltaPhiStar[] = {trigg.phi(), trigg.pt(), triggSign};
 
       if (mixingInBf) {
         currentCollision.addValidParticle(trigg.eta(), trigg.phi(), trigg.pt(), -1, efficiencyTrigg, efficiencyTriggError, -1);
@@ -1495,8 +1495,8 @@ struct HResonanceCorrelation {
 
         double binFillThn[6] = {deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult};
 
-        double assocForDeltaPhiStarPlus[] = {c.phiKplus, c.ptKplus, c.signKplus};
-        double assocForDeltaPhiStarMinus[] = {c.phiKminus, c.ptKminus, c.signKminus};
+        const double assocForDeltaPhiStarPlus[] = {c.phiKplus, c.ptKplus, c.signKplus};
+        const double assocForDeltaPhiStarMinus[] = {c.phiKminus, c.ptKminus, c.signKminus};
 
         if (!c.passesMcSelection)
           continue;
@@ -1786,7 +1786,7 @@ struct HResonanceCorrelation {
       }
 
       double triggSign = trigg.sign();
-      double triggForDeltaPhiStar[] = {trigg.phi(), trigg.pt(), triggSign};
+      const double triggForDeltaPhiStar[] = {trigg.phi(), trigg.pt(), triggSign};
 
       if (mixingInBf) {
         currentCollision.addValidParticle(trigg.eta(), trigg.phi(), trigg.pt(), -1, efficiencyTrigg, efficiencyTriggError, -1);
@@ -1835,8 +1835,8 @@ struct HResonanceCorrelation {
 
         double binFillThn[6] = {deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult};
 
-        double assocForDeltaPhiStarPlus[] = {c.phiPos, c.ptPos, c.signPos};
-        double assocForDeltaPhiStarMinus[] = {c.phiNeg, c.ptNeg, c.signNeg};
+        const double assocForDeltaPhiStarPlus[] = {c.phiPos, c.ptPos, c.signPos};
+        const double assocForDeltaPhiStarMinus[] = {c.phiNeg, c.ptNeg, c.signNeg};
 
         if (!c.passesMcSelection)
           continue;
