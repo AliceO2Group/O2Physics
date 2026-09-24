@@ -1458,8 +1458,8 @@ struct sigma0builder {
     MCinfo.gamma2Index = gamma2MC.globalIndex();
     MCinfo.lambdaIndex = lambdaMC.globalIndex();
     MCinfo.gamma1IsPhysicalPrimary = gamma1MC.isPhysicalPrimary();
-    MCinfo.gamma1IsPhysicalPrimary = gamma2MC.isPhysicalPrimary();
-    MCinfo.gamma1IsPhysicalPrimary = lambdaMC.isPhysicalPrimary();
+    MCinfo.gamma2IsPhysicalPrimary = gamma2MC.isPhysicalPrimary();
+    MCinfo.lambdaIsPhysicalPrimary = lambdaMC.isPhysicalPrimary();
     MCinfo.gamma1PDGCodePos = gamma1MC.pdgCodePositive();
     MCinfo.gamma1PDGCodeNeg = gamma1MC.pdgCodeNegative();
     MCinfo.gamma2PDGCodePos = gamma2MC.pdgCodePositive();
