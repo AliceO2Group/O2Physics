@@ -38,7 +38,6 @@
 #include <TIterator.h>
 #include <TList.h>
 #include <TObject.h>
-#include <TParticlePDG.h>
 #include <TProfile.h>
 #include <TString.h>
 #include <TSystem.h>
