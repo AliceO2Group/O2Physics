@@ -14,6 +14,7 @@
 /// \author Laszlo Gyulai, laszlo.gyulai@cern.ch
 
 #include "RecoDecay.h"
+
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
@@ -41,14 +42,16 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
-#include <Rtypes.h>
+
 #include <THnSparse.h>
 #include <TPDGCode.h>
 
-#include <cstdint>
+#include <Rtypes.h>
+
 #include <bitset>
-#include <cstddef>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <map>
 #include <string>
 #include <vector>
@@ -1080,7 +1083,7 @@ struct HfTaskFlattenicityD0Lc {
           registry.fill(HIST("Flattenicity"), 1 - flattenicityFV0);
         }
         flat = 1. - flattenicityFV0;
-      }     
+      }
     }
     return flat;
   }
