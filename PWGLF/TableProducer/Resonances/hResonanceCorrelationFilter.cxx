@@ -255,14 +255,14 @@ struct HResonanceCorrelationFilter {
 
   Zorro zorro;
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
-  int mRunNumber;
+  int mRunNumber = -1;
 
   struct TriggCandidate {
-    float pt;
-    int collisionId;
-    int trackId;
-    bool isPhysicalPrimary;
-    float origPt;
+    float pt = 0.f;
+    int collisionId = -1;
+    int trackId = -1;
+    bool isPhysicalPrimary = false;
+    float origPt = 0.f;
   };
   TriggCandidate thisTrigg;
 
@@ -1256,9 +1256,9 @@ struct HResonanceCorrelationFilter {
         }
 
         LorentzVectorPtEtaPhiMass kaon = LorentzVectorPtEtaPhiMass(kaonTrack.pt(), kaonTrack.eta(), kaonTrack.phi(),
-                                                                   o2::constants::physics::MassKPlus);
+                                                                    o2::constants::physics::MassKPlus);
         LorentzVectorPtEtaPhiMass pion = LorentzVectorPtEtaPhiMass(pionTrack.pt(), pionTrack.eta(), pionTrack.phi(),
-                                                                   o2::constants::physics::MassPiPlus);
+                                                                    o2::constants::physics::MassPiPlus);
         LorentzVectorPtEtaPhiMass kstar = kaon + pion;
 
         float invMass = kstar.M();
