@@ -82,7 +82,7 @@ struct HfDerivedDataCreatorDsToKKPi {
   Configurable<bool> fillCandidateMl{"fillCandidateMl", true, "Fill candidate selection ML scores"};
   Configurable<bool> fillCandidateId{"fillCandidateId", true, "Fill original indices from the candidate table"};
   Configurable<bool> fillCandidateMc{"fillCandidateMc", true, "Fill candidate MC info"};
-  Configurable<bool> fillCorrelatedBkgs{"fillCorrelatedBkgs", false, "Accept correlated background candidates in MC processing"};
+  Configurable<bool> acceptCorrelatedBkgs{"acceptCorrelatedBkgs", false, "Accept correlated background candidates in MC processing"};
   // Parameters for production of training samples
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
@@ -116,9 +116,9 @@ struct HfDerivedDataCreatorDsToKKPi {
   Partition<SelectedCandidatesMl> candidatesMlAll = aod::hf_sel_candidate_ds::isSelDsToKKPi >= 0;
   Partition<SelectedCandidatesMcMl> candidatesMcMlAll = aod::hf_sel_candidate_ds::isSelDsToKKPi >= 0;
   // partitions for signal and background
-  Partition<SelectedCandidatesMc> candidatesMcSig = (nabs(aod::hf_cand_mc_flag::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK)) || (fillCorrelatedBkgs && aod::hf_cand_mc_flag::flagMcMatchRec != 0);
+  Partition<SelectedCandidatesMc> candidatesMcSig = (nabs(aod::hf_cand_mc_flag::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK)) || (acceptCorrelatedBkgs && aod::hf_cand_mc_flag::flagMcMatchRec != 0);
   Partition<SelectedCandidatesMc> candidatesMcBkg = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) != static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK);
-  Partition<SelectedCandidatesMcMl> candidatesMcMlSig = (nabs(aod::hf_cand_mc_flag::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK)) || (fillCorrelatedBkgs && aod::hf_cand_mc_flag::flagMcMatchRec != 0);
+  Partition<SelectedCandidatesMcMl> candidatesMcMlSig = (nabs(aod::hf_cand_mc_flag::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK)) || (acceptCorrelatedBkgs && aod::hf_cand_mc_flag::flagMcMatchRec != 0);
   Partition<SelectedCandidatesMcMl> candidatesMcMlBkg = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) != static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK);
 
   void init(InitContext const&)
