@@ -1053,7 +1053,6 @@ struct HfCandidateCreator3ProngExpressions {
                           McCollisions const& mcCollisions,
                           BCsInfo const&)
   {
-    LOG(info) << "Running MC matching for 3-prong candidates";
     rowCandidateProng3->bindExternalIndices(&tracks);
 
     int indexRec = -1;
@@ -1103,7 +1102,6 @@ struct HfCandidateCreator3ProngExpressions {
       }
 
       if (matchCorrelatedBackground) {
-        LOG(info) << "Matching correlated background candidates";
         indexRec = -1;                  // Index of the matched reconstructed candidate
         constexpr int DepthMainMax = 2; // Depth for final state matching
         constexpr int DepthResoMax = 1; // Depth for resonant decay matching
@@ -1359,13 +1357,11 @@ struct HfCandidateCreator3ProngExpressions {
       }
       if (origin == RecoDecay::OriginType::NonPrompt) {
         auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
-        LOG(info) << "flagChannelMain: " << static_cast<int>(flagChannelMain) << ", origin: " << static_cast<int>(origin) << ", swapping: " << static_cast<int>(swapping) << ", resonant channel: " << static_cast<int>(flagChannelResonant);
         rowMcMatchRec(flagChannelMain, origin, swapping, flagChannelResonant, bHadMother.pt(), bHadMother.pdgCode(), nKinkedTracks, nInteractionsWithMaterial);
       } else {
         if (std::abs(flagChannelMain) == DecayChannelMain::CDeuteronToDeKPi) {
           origin = RecoDecay::OriginType::Prompt;
         }
-        LOG(info) << "flagChannelMain: " << static_cast<int>(flagChannelMain) << ", origin: " << static_cast<int>(origin) << ", swapping: " << static_cast<int>(swapping) << ", resonant channel: " << static_cast<int>(flagChannelResonant);
         rowMcMatchRec(flagChannelMain, origin, swapping, flagChannelResonant, -1.f, 0, nKinkedTracks, nInteractionsWithMaterial);
       }
     }

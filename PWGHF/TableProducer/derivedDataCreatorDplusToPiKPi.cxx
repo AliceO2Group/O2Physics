@@ -243,8 +243,6 @@ struct HfDerivedDataCreatorDplusToPiKPi {
                          TracksWPid const&,
                          aod::BCs const&)
   {
-    LOG(info) << "IsMc:" << IsMc;
-    LOG(info) << "Processing candidates for collisions with size: " << collisions.size() << " and candidates with size: " << candidates.size();
     // Fill collision properties
     if constexpr (IsMc) {
       if (confDerData.fillMcRCollId) {
