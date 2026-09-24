@@ -257,7 +257,7 @@ struct BuilderModule {
 
     nEnabledTables = 0;
 
-    TString listOfRequestors[nTablesConst];
+    std::array<TString, nTablesConst> listOfRequestors{};
     for (int i = 0; i < nTablesConst; i++) {
       int f = baseOpts.enabledTables->get(tableNames[i].c_str(), "enable");
       if (f == 1) {
