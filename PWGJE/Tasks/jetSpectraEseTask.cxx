@@ -458,6 +458,7 @@ struct JetSpectraEseTask {
       registry.get<TH1>(HIST("eventQA/hEventCounterMixed"))->GetXaxis()->SetBinLabel(kEventSel, "Event selection");
       registry.get<TH1>(HIST("eventQA/hEventCounterMixed"))->GetXaxis()->SetBinLabel(kOccupancyCut, "Occupancy cut");
       registry.get<TH1>(HIST("eventQA/hEventCounterMixed"))->GetXaxis()->SetBinLabel(kCentCut, "Centrality cut");
+      registry.get<TH1>(HIST("eventQA/hEventCounterMixed"))->GetXaxis()->SetBinLabel(kEPValid, "EP valid");
       registry.get<TH1>(HIST("eventQA/hEventCounterMixed"))->GetXaxis()->SetBinLabel(kEse, "ESE available");
       registry.get<TH1>(HIST("eventQA/hEventCounterMixed"))->GetXaxis()->SetBinLabel(kRhoLocal, "rho(#phi) available");
       registry.get<TH1>(HIST("eventQA/hEventCounterMixed"))->GetXaxis()->SetBinLabel(kLeadJetCut, "leading jet pT cut");
@@ -864,6 +865,7 @@ struct JetSpectraEseTask {
       if (!psi.isValid) {
         continue;
       }
+      registry.fill(HIST("eventQA/hEventCounterMixed"), kEPValid);
       const auto qPerc{c1.qPERCFT0C()};
       if (qPerc[0] < 0) {
         continue;
