@@ -653,12 +653,12 @@ bool applyTrackKinematics(T const& track, float pTMin = 0.15, float pTMax = 100.
 }
 
 template <typename T>
-bool selectTrack(T const& track, int trackSelection, bool isEmbedded = false)
+bool selectTrack(T const& track, int trackSelection, bool rejectEmbedded = false)
 {
   if (!(track.trackSel() & (1ULL << JTrackSel::notBadMcTrack))) {
     return false;
   }
-  if (isEmbedded && !(track.trackSel() & (1ULL << JTrackSel::embeddedTrack))) { // will get rid of non embedded tracks
+  if (rejectEmbedded && !(track.trackSel() & (1ULL << JTrackSel::embeddedTrack))) { // will get rid of non embedded tracks
     return false;
   }
   if (trackSelection == -1) {

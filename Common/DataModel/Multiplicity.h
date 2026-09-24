@@ -216,6 +216,8 @@ DECLARE_SOA_TABLE_VERSIONED(MultMCExtras_001, "AOD", "MULTMCEXTRA", 1, //! Table
 using MultMCExtras = MultMCExtras_001;
 using MultMCExtra = MultMCExtras::iterator;
 using MultsExtraMC = MultMCExtras; // for backwards compatibility with previous naming scheme
+template <aod::is_origin_hash O>
+using MultsExtraMCFrom = MultMCExtras_001From<O>;
 
 // crosslinks
 namespace mult

@@ -91,10 +91,10 @@ constexpr bool isEMCALClusterTable()
  */
 
 template <typename T, typename U>
-bool isTrackSelected(T const& track, int trackSelection, const U* candidate = nullptr)
+bool isTrackSelected(T const& track, int trackSelection, bool rejectEmbedded = false, const U* candidate = nullptr)
 {
 
-  if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
+  if (!jetderiveddatautilities::selectTrack(track, trackSelection, rejectEmbedded)) {
     return false;
   }
   if (candidate != nullptr) {
@@ -115,10 +115,10 @@ bool isTrackSelected(T const& track, int trackSelection, const U* candidate = nu
  */
 
 template <typename T, typename U>
-void analyseTracks(std::vector<fastjet::PseudoJet>& inputParticles, T const& tracks, int trackSelection, const U* candidate = nullptr)
+void analyseTracks(std::vector<fastjet::PseudoJet>& inputParticles, T const& tracks, int trackSelection, bool rejectEmbedded = false, const U* candidate = nullptr)
 {
   for (auto& track : tracks) {
-    if (isTrackSelected(track, trackSelection, candidate)) {
+    if (isTrackSelected(track, trackSelection, rejectEmbedded, candidate)) {
       fastjetutilities::fillTracks(track, inputParticles, track.globalIndex());
     }
   }
@@ -134,11 +134,11 @@ void analyseTracks(std::vector<fastjet::PseudoJet>& inputParticles, T const& tra
  */
 
 template <typename T, typename U>
-void analyseTracksMultipleCandidates(std::vector<fastjet::PseudoJet>& inputParticles, T const& tracks, int trackSelection, U const& candidates)
+void analyseTracksMultipleCandidates(std::vector<fastjet::PseudoJet>& inputParticles, T const& tracks, int trackSelection, bool rejectEmbedded, U const& candidates)
 {
   for (auto& track : tracks) {
     bool isSelected = true;
-    if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
+    if (!jetderiveddatautilities::selectTrack(track, trackSelection, rejectEmbedded)) {
       continue;
     }
     for (auto& candidate : candidates) {
