@@ -152,6 +152,8 @@ struct multEstimator {
   std::shared_ptr<TH2> Nch_vs_cent_vs_eta;
   std::shared_ptr<TH2> Nch_vs_cent_vs_eta_conditional;
   std::shared_ptr<TH2> tmp_histo_per_event;
+  std::shared_ptr<TH1> Events_vs_cent;
+  std::shared_ptr<TH1> Events_vs_cent_conditional;
 
   void init(InitContext&)
   {
@@ -169,6 +171,9 @@ struct multEstimator {
     Nch_vs_cent_vs_eta = registry.add<TH2>("Nch_vs_cent_vs_eta", "Nch_vs_cent_vs_eta", kTH2F, {{100, 0.0, 100.0, "cent"}, {200, -1.0, 1.0, "deta"}});
     Nch_vs_cent_vs_eta_conditional = registry.add<TH2>("Nch_vs_cent_vs_eta_conditional", "Nch_vs_cent_vs_eta_conditional", kTH2F, {{100, 0.0, 100.0, "cent"}, {200, -1.0, 1.0, "deta"}});
     tmp_histo_per_event = std::make_shared<TH2F>(TH2F("tmp_histo_per_event", "tmp_histo_per_event", 100, 0.0, 100.0, 200, -1.0, 1.0));
+
+    Events_vs_cent = std::make_shared<TH1F>(TH1F("Events_vs_cent", "Events_vs_cent", 100, 0.0, 100.));
+    Events_vs_cent_conditional = std::make_shared<TH1F>(TH1F("Events_vs_cent_conditional", "Events_vs_cent_conditional", 100, 0.0, 100.));
 
     ITShisto = registry.add<TH2>(Form("nsigmaITS_PDG%i", _particlePDG.value), Form("nsigmaITS_PDG%i", _particlePDG.value), kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
     TPChisto = registry.add<TH2>(Form("nsigmaTPC_PDG%i", _particlePDG.value), Form("nsigmaTPC_PDG%i", _particlePDG.value), kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
@@ -233,6 +238,7 @@ struct multEstimator {
     if (centValue < _centCut.value.first || centValue >= _centCut.value.second)
       return;
 
+    Events_vs_cent->Fill(centValue);
     // ============================ dNch/deta no cuts ================================
 
     int cadidates_counter = 0;
@@ -307,8 +313,10 @@ struct multEstimator {
     Nch_vs_cent_vs_eta->Add(tmp_histo_per_event.get());
     if (Nch_vs_cent_vs_eta->GetEntries() != tot_counter)
       LOGF(fatal, "tot counter != entries");
-    if (cadidates_counter >= _minNcandidates)
+    if (cadidates_counter >= _minNcandidates) {
       Nch_vs_cent_vs_eta_conditional->Add(tmp_histo_per_event.get());
+      Events_vs_cent_conditional->Fill(centValue);
+    }
 
     tmp_histo_per_event->Reset();
     if (tmp_histo_per_event->GetEntries())
