@@ -28,7 +28,6 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 
-#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
@@ -93,8 +92,8 @@ using namespace o2::pwgem::photonmeson;
 
 // ─── Event Information Tables ────────────────────────────────────────────
 
-using MyCollisions = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMEventsQvec_001>;
-using MyCollisionsMC = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMEventsQvec_001, aod::EMMCEventLabels>;
+using MyCollisions = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMEventsQvec_001, aod::EmMagFields, aod::EmTpcObjects>;
+using MyCollisionsMC = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMEventsQvec_001, aod::EMMCEventLabels, aod::EmMagFields, aod::EmTpcObjects>;
 using MyCollision = MyCollisions::iterator;
 
 // ─── Photon Tables ────────────────────────────────────────────
@@ -339,11 +338,9 @@ struct Photonhbt {
   // CONFIGURABLES
   /*************************************************/
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb{};
-  Configurable<std::string> cfgCcdbUrl{"cfgCcdbUrl", "http://alice-ccdb.cern.ch", "CCDB url"};
   Configurable<float> cfgBzOverrideT{"cfgBzOverrideT", -999.f, "Bz in Tesla; used instead of CCDB if > -100"};
   float mBzT{0.f};           // signed, Tesla
-  float mVDriftCmPerNs{0.f}; // TPC drift velocity from CCDB; 0 = unavailable
+  float mVDriftCmPerNs{0.f}; // TPC drift velocity from CCDB
 
   // ─── Configurables: QA flags ───────────────────────────────────────────────
   struct : ConfigurableGroup {
@@ -717,9 +714,6 @@ struct Photonhbt {
     std::random_device seedGen;
     engine = std::mt19937(seedGen());
     dist01 = std::uniform_int_distribution<int>(0, 1);
-    ccdb->setURL(cfgCcdbUrl);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
 
     const float worst = selfTestLegHelix();
     constexpr float kSelfTestTol = 1.e-4f;
@@ -765,28 +759,23 @@ struct Photonhbt {
   template <typename TCollision>
   void initCCDB(TCollision const& collision)
   {
+    // the drift velocity can change within a run, so it is read for every collision
+    const auto& vd = collision.vdriftTgl();
+    mVDriftCmPerNs = vd.refVDrift * vd.corrFact * 1e-3f; // o2-linter: disable=magic-number (cm/us -> cm/ns)
+
     if (mRunNumber == collision.runNumber()) {
       return;
     }
     mRunNumber = collision.runNumber();
-
-    auto vd = ccdb->getForRun<o2::tpc::VDriftCorrFact>("TPC/Calib/VDriftTgl", mRunNumber);
-    if (vd != nullptr) {
-      mVDriftCmPerNs = vd->refVDrift * vd->corrFact * 1e-3f; // o2-linter: disable=magic-number (cm/us -> cm/ns)
-      LOGF(info, "photonhbt: run %d, TPC vdrift = %.6f cm/ns (%.4f cm/us); 1 cm in z = %.0f ns",
-           mRunNumber, mVDriftCmPerNs, 1e3f * mVDriftCmPerNs,
-           (mVDriftCmPerNs > 0.f) ? 1.f / mVDriftCmPerNs : -1.f);
-    } else {
-      mVDriftCmPerNs = 0.f;
-      LOGF(warn, "photonhbt: no TPC VDrift object for run %d -- the z scale stays in cm", mRunNumber);
-    }
+    LOGF(info, "photonhbt: run %d, TPC vdrift = %.6f cm/ns (%.4f cm/us); 1 cm in z = %.0f ns",
+         mRunNumber, mVDriftCmPerNs, 1e3f * mVDriftCmPerNs,
+         (mVDriftCmPerNs > 0.f) ? 1.f / mVDriftCmPerNs : -1.f);
 
     if (cfgBzOverrideT.value > -100.f) { // o2-linter: disable=magic-number (number in case B-field is overridden in case not fetched from CCDB)
       mBzT = cfgBzOverrideT.value;
       return;
     }
-    auto grpmag = ccdb->getForRun<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", mRunNumber);
-    mBzT = 0.1f * static_cast<float>(grpmag->getNominalL3Field());
+    mBzT = 0.1f * static_cast<float>(collision.grpMagField().getNominalL3Field());
     LOGF(info, "photonhbt: run %d, Bz = %.2f T", mRunNumber, mBzT);
   }
 
