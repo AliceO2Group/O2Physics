@@ -259,12 +259,12 @@ struct HResonanceCorrelation {
 
   struct ValidCollision {
     struct ValidParticle {
-      float eta;
-      float phi;
-      float pt;
-      int region;
-      float efficiency;
-      float efficiencyError;
+      float eta = 0.f;
+      float phi = 0.f;
+      float pt = 0.f;
+      int region = -1;
+      float efficiency = 1.f;
+      float efficiencyError = 0.f;
       float mass = 0.f; // only meaningful for Phi/K*0 buffered candidates when
                         // masterConfigurations.fillCorrelationHistWithMass is
                         // set; unused (stays 0) for trigger particles and for
