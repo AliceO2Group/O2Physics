@@ -100,7 +100,7 @@ struct flowTest {
     if (evPhi < 0)
       evPhi += 2. * TMath::Pi();
 
-    long nCh = 0;
+    int64_t nCh = 0;
 
     if (imp > minB && imp < maxB) {
       // event within range

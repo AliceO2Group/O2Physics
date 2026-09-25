@@ -459,7 +459,7 @@ struct doublephitable {
 
     auto* grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbPathGrpMag.value, bc.timestamp());
     if (grpmag == nullptr) {
-      LOGF(fatal, "GRPMagField unavailable for run %d, timestamp %llu", bc.runNumber(), static_cast<unsigned long long>(bc.timestamp()));
+      LOGF(fatal, "GRPMagField unavailable for run %d, timestamp %llu", bc.runNumber(), bc.timestamp());
     }
 
     o2::base::Propagator::initFieldFromGRP(grpmag);

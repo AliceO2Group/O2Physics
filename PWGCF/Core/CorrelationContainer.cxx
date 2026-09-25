@@ -112,7 +112,7 @@ CorrelationContainer::CorrelationContainer(const char* name, const char* objTitl
 
   std::vector<o2::framework::AxisSpec> pairAxis(correlationAxis);
   pairAxis.insert(pairAxis.end(), userAxis.begin(), userAxis.end());
-  long bins = 1;
+  int64_t bins = 1;
   for (const auto& axis : pairAxis) {
     bins *= axis.getNbins();
   }

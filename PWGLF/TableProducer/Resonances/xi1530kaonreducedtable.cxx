@@ -508,8 +508,7 @@ struct xi1530kaonreducedtable {
   {
     auto* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("/GLO/Config/GRPMagField", timestamp);
     if (grpo == nullptr) {
-      LOGF(fatal, "GRPMagField object not found in CCDB for timestamp %llu",
-           static_cast<unsigned long long>(timestamp));
+      LOGF(fatal, "GRPMagField object not found in CCDB for timestamp %llu", timestamp);
       return 0.f;
     }
     return 0.1f * grpo->getNominalL3Field(); // kG -> T
