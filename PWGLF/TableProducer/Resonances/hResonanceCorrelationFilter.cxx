@@ -40,10 +40,11 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
+#include <Framework/Logger.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include <Math/Vector4Dfwd.h>
+#include <Math/Vector4D.h>
 #include <TH1.h>
 
 #include <cmath>
@@ -84,12 +85,6 @@ struct HResonanceCorrelationFilter {
 
   Configurable<float> cfgTPCNsigmaKaon{"cfgTPCNsigmaKaon", 3.0f, "TPC Kaon PID"};
   Configurable<float> cfgTOFNsigmaKaon{"cfgTOFNsigmaKaon", 3.0f, "TOF Kaon PID"};
-
-  Configurable<float> cfgMinMass{"cfgMinMass", 1.005f, "Minimum KK mass"};
-  Configurable<float> cfgMaxMass{"cfgMaxMass", 1.035f, "Maximum KK mass"};
-
-  Configurable<float> cfgMinMassKstar{"cfgMinMassKstar", 0.796f, "Minimum K#pi mass"};
-  Configurable<float> cfgMaxMassKstar{"cfgMaxMassKstar", 0.996f, "Maximum K#pi mass"};
 
   Configurable<float> cfgRapidity{"cfgRapidity", 0.5f, "Rapidity cut"};
 
@@ -223,7 +218,38 @@ struct HResonanceCorrelationFilter {
   Configurable<std::string> parameterCCDBPath{"parameterCCDBPath", "Users/k/kcui/LHC25b4a/parameter", "Path of the mean and sigma"};
 
   // must include windows for background and peak
-  Configurable<float> maxMassNSigma{"maxMassNSigma", 12.0f, "max mass region to be considered for further analysis"};
+  //
+  // This filter-level cut is an acceptance pre-cut only -- it decides what
+  // ever reaches AssocPhis/AssocKstars, not what counts as signal. It must
+  // stay wider than whatever signal+background region hResonanceCorrelation.cxx
+  // wants downstream (its massWindowConfigurationsPhi/Kstar go out to
+  // maxBgNSigma=6 by default), or that background region gets silently
+  // truncated before it ever reaches the analysis task. peakMass/sigma here
+  // mirror the analysis task's own massWindowConfigurationsPhi/Kstar
+  // (sigma = PDG Gamma/2.355 placeholder -- refit from your own peak and
+  // update both files together, they must agree on what "sigma" means).
+  Configurable<float> maxMassNSigma{"maxMassNSigma", 12.0f, "max mass region to be considered for further analysis, in units of sigma"};
+
+  struct : ConfigurableGroup {
+    std::string prefix = "massWindowConfigurationsPhi";
+    Configurable<float> peakMass{"peakMass", 1.019455f, "Phi(1020) PDG mass (GeV)"};
+    Configurable<float> sigma{"sigma", 0.0018f, "effective width (GeV) for the maxMassNSigma pre-cut -- keep in sync with hResonanceCorrelation.cxx's massWindowConfigurationsPhi.sigma"};
+  } massWindowConfigurationsPhi;
+
+  struct : ConfigurableGroup {
+    std::string prefix = "massWindowConfigurationsKstar";
+    Configurable<float> peakMass{"peakMass", 0.89555f, "K*0(892) PDG mass (GeV)"};
+    Configurable<float> sigma{"sigma", 0.0201f, "effective width (GeV) for the maxMassNSigma pre-cut -- keep in sync with hResonanceCorrelation.cxx's massWindowConfigurationsKstar.sigma"};
+  } massWindowConfigurationsKstar;
+
+  // Derived acceptance-window bounds, computed once in init() from the
+  // Configurables above (peakMass +/- maxMassNSigma * sigma) rather than
+  // hand-entered GeV numbers, so there is exactly one place to widen the
+  // pre-cut instead of four independent literals that can drift apart.
+  float mMinMassPhi = 0.f;
+  float mMaxMassPhi = 0.f;
+  float mMinMassKstar = 0.f;
+  float mMaxMassKstar = 0.f;
 
   // For extracting strangeness mass QA plots
   struct : ConfigurableGroup {
@@ -292,6 +318,13 @@ struct HResonanceCorrelationFilter {
 
     zorroSummary.setObject(zorro.getZorroSummary());
     mRunNumber = -1;
+
+    mMinMassPhi = massWindowConfigurationsPhi.peakMass - maxMassNSigma * massWindowConfigurationsPhi.sigma;
+    mMaxMassPhi = massWindowConfigurationsPhi.peakMass + maxMassNSigma * massWindowConfigurationsPhi.sigma;
+    mMinMassKstar = massWindowConfigurationsKstar.peakMass - maxMassNSigma * massWindowConfigurationsKstar.sigma;
+    mMaxMassKstar = massWindowConfigurationsKstar.peakMass + maxMassNSigma * massWindowConfigurationsKstar.sigma;
+    LOGF(info, "Assoc mass pre-cut windows: Phi [%.4f, %.4f] GeV, K*0 [%.4f, %.4f] GeV",
+         mMinMassPhi, mMaxMassPhi, mMinMassKstar, mMaxMassKstar);
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -1095,7 +1128,7 @@ struct HResonanceCorrelationFilter {
       }
 
       // optional mass window
-      if (invMass < cfgMinMass || invMass > cfgMaxMass) {
+      if (invMass < mMinMassPhi || invMass > mMaxMassPhi) {
         continue;
       }
 
@@ -1181,7 +1214,7 @@ struct HResonanceCorrelationFilter {
       }
 
       // optional mass window
-      if (invMass < cfgMinMass || invMass > cfgMaxMass) {
+      if (invMass < mMinMassPhi || invMass > mMaxMassPhi) {
         continue;
       }
 
@@ -1294,7 +1327,7 @@ struct HResonanceCorrelationFilter {
         }
 
         // mass window
-        if (invMass < cfgMinMassKstar || invMass > cfgMaxMassKstar) {
+        if (invMass < mMinMassKstar || invMass > mMaxMassKstar) {
           continue;
         }
 
@@ -1375,7 +1408,7 @@ struct HResonanceCorrelationFilter {
         }
 
         // mass window
-        if (invMass < cfgMinMassKstar || invMass > cfgMaxMassKstar) {
+        if (invMass < mMinMassKstar || invMass > mMaxMassKstar) {
           continue;
         }
 
