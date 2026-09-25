@@ -17,6 +17,7 @@
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/HfMlResponseD0ToKPi.h"
 #include "PWGHF/Core/HfMlResponseDstarToD0Pi.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
@@ -68,12 +69,11 @@ struct HfProducerCharmHadronsCharmFemtoDream {
   // Each species needs its own model, feature order and pT-dependent cuts.
   struct HfMlConfig : ConfigurableGroup {
     std::string prefix;
-    static inline const std::array<double, 3> defaultCuts{1., 0., 0.};
     Configurable<int> mlApplicationMode{"mlApplicationMode", FillMlFromSelector, "0: no ML, 1: selector scores, 2: new BDT after selector"};
-    Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{0., 36.}, "pT bin limits for new BDT"};
-    Configurable<LabeledArray<double>> cutsMl{"cutsMl", {defaultCuts.data(), 1, 3}, "New BDT cuts per pT bin: background, prompt, nonprompt"};
-    Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{0, 1, 1}, "Reject scores above (0), below (1), or do not cut (2)"};
-    Configurable<int> nClassesMl{"nClassesMl", 3, "Three output classes: background, prompt, nonprompt"};
+    Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for new BDT"};
+    Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::Cuts[0], hf_cuts_ml::NBinsPt, hf_cuts_ml::NCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsDmesCutScore}, "New BDT cuts per pT bin: background, prompt, nonprompt"};
+    Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Reject scores above (0), below (1), or do not cut (2)"};
+    Configurable<int> nClassesMl{"nClassesMl", static_cast<int>(hf_cuts_ml::NCutScores), "Three output classes: background, prompt, nonprompt"};
     Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{}, "Ordered input feature names for new BDT"};
     Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{}, "Model files, one per pT bin"};
     Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{}, "CCDB model paths, one per pT bin"};
