@@ -698,8 +698,8 @@ struct HResonanceCorrelationFilter {
   // outer `requires { assoc.tofSignal(); }` is already false for FullTracks
   // (Hadron's track type, which has no PID columns at all).
   enum AssocSpecies { AssocPion = 0,
-                       AssocKaon = 1,
-                       AssocHadron = 2 };
+                      AssocKaon = 1,
+                      AssocHadron = 2 };
 
   // Merged predicate for the Pion/Kaon/Hadron associated-track pools. Pion and
   // Kaon both run over IDTracks/IDTracksMC (identical C++ type), so the two
@@ -1395,9 +1395,9 @@ struct HResonanceCorrelationFilter {
         }
 
         LorentzVectorPtEtaPhiMass kaon = LorentzVectorPtEtaPhiMass(kaonTrack.pt(), kaonTrack.eta(), kaonTrack.phi(),
-                                                                    o2::constants::physics::MassKPlus);
+                                                                   o2::constants::physics::MassKPlus);
         LorentzVectorPtEtaPhiMass pion = LorentzVectorPtEtaPhiMass(pionTrack.pt(), pionTrack.eta(), pionTrack.phi(),
-                                                                    o2::constants::physics::MassPiPlus);
+                                                                   o2::constants::physics::MassPiPlus);
         LorentzVectorPtEtaPhiMass kstar = kaon + pion;
 
         float invMass = kstar.M();
