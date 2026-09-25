@@ -468,6 +468,8 @@ struct V0ReducedCandProducer {
     } lambdaConfigs;
   } v0Configs;
 
+  Configurable<std::vector<double>> binspTXi{"binspTXi", {0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for Xi"};
+
   // Constants
   static constexpr double MassK0S = o2::constants::physics::MassK0Short;
   static constexpr double MassLambda = o2::constants::physics::MassLambda0;
@@ -500,12 +502,16 @@ struct V0ReducedCandProducer {
     AxisSpec binnedmultAxis{(std::vector<double>)binsMult, "centFT0M"};
     AxisSpec binnedpTK0SAxis{(std::vector<double>)v0Configs.k0sConfigs.binspTK0S, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec binnedpTLambdaAxis{(std::vector<double>)v0Configs.lambdaConfigs.binspTLambda, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec binnedpTXiAxis{(std::vector<double>)binspTXi, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec massK0SAxis = {200, 0.45f, 0.55f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
     AxisSpec massLambdaAxis = {200, 1.08f, 1.15f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
 
     histos.add("h3K0sCandidatesMass", "K^{0}_{S} candidate invariant mass", kTH3F, {binnedmultAxis, binnedpTK0SAxis, massK0SAxis});
     histos.add("h3LambdaCandidatesMass", "#Lambda candidate invariant mass", kTH3F, {binnedmultAxis, binnedpTLambdaAxis, massLambdaAxis});
     histos.add("h3AntiLambdaCandidatesMass", "#bar{#Lambda} candidate invariant mass", kTH3F, {binnedmultAxis, binnedpTLambdaAxis, massLambdaAxis});
+
+    histos.add("h2LambdaFromXi", "#Lambda from #Xi", kTH2F, {binnedpTLambdaAxis, binnedpTXiAxis});
+    histos.add("h2AntiLambdaFromXi", "#bar{#Lambda} from #Xi", kTH2F, {binnedpTLambdaAxis, binnedpTXiAxis});
   }
 
   template <V0Type v0Type>
@@ -641,7 +647,31 @@ struct V0ReducedCandProducer {
 
       const auto& mcParticles = mcParticlesOpt->get();
       const auto& v0McParticle = mcParticles.rawIteratorAt(v0.mcParticleId());
-      if (v0McParticle.pdgCode() != getPdgCode<v0Type>() || !v0McParticle.isPhysicalPrimary()) {
+      // if (v0McParticle.pdgCode() != getPdgCode<v0Type>() || !v0McParticle.isPhysicalPrimary()) {
+      // return;
+      //}
+      if (v0McParticle.pdgCode() != getPdgCode<v0Type>()) {
+        return;
+      }
+
+      if constexpr ((v0Type == kLambda || v0Type == kAntiLambda)) {
+        if (v0.has_mcMotherParticle()) {
+          auto v0McMotherParticle = mcParticles.rawIteratorAt(v0.mcMotherParticleId());
+          if (std::abs(v0McMotherParticle.y()) <= v0Configs.yAcceptance) {
+            if constexpr (v0Type == kLambda) {
+              if (v0McMotherParticle.pdgCode() == PDG_t::kXiMinus || v0McMotherParticle.pdgCode() == o2::constants::physics::Pdg::kXi0) {
+                histos.fill(HIST("h2LambdaFromXi"), v0McParticle.pt(), v0McMotherParticle.pt());
+              }
+            } else if constexpr (v0Type == kAntiLambda) {
+              if (v0McMotherParticle.pdgCode() == PDG_t::kXiPlusBar || v0McMotherParticle.pdgCode() == -o2::constants::physics::Pdg::kXi0) {
+                histos.fill(HIST("h2AntiLambdaFromXi"), v0McParticle.pt(), v0McMotherParticle.pt());
+              }
+            }
+          }
+        }
+      }
+
+      if (!v0McParticle.isPhysicalPrimary()) {
         return;
       }
 
