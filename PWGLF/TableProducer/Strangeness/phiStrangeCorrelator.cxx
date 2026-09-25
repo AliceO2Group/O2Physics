@@ -663,7 +663,7 @@ struct V0ReducedCandProducer {
                 histos.fill(HIST("h2LambdaFromXi"), v0McParticle.pt(), v0McMotherParticle.pt());
               }
             } else if constexpr (v0Type == kAntiLambda) {
-              if (v0McMotherParticle.pdgCode() == PDG_t::kXiPlusBar || v0McMotherParticle.pdgCode() == o2::constants::physics::Pdg::kXi0) {
+              if (v0McMotherParticle.pdgCode() == PDG_t::kXiPlusBar || v0McMotherParticle.pdgCode() == -o2::constants::physics::Pdg::kXi0) {
                 histos.fill(HIST("h2AntiLambdaFromXi"), v0McParticle.pt(), v0McMotherParticle.pt());
               }
             }
