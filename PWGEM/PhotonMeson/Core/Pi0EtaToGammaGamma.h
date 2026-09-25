@@ -471,10 +471,17 @@ struct Pi0EtaToGammaGamma {
       return;
     }
 
-    o2::base::Propagator::initFieldFromGRP(&collision.grpMagField());
+    // o2::base::Propagator::initFieldFromGRP(&collision.grpMagField());
     // Fetch magnetic field from ccdb for current collision
-    d_bz = collision.grpMagField().getNominalL3Field();
+    // d_bz = collision.grpMagField().getNominalL3Field();
+
+    auto* grpmag = ccdb->getForRun<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", collision.runNumber());
+    if (grpmag == nullptr) {
+      LOGF(fatal, "Could not retrieve GRPMagField for run %d", collision.runNumber());
+    }
+    d_bz = grpmag->getNominalL3Field();
     LOG(info) << "Retrieved GRP for timestamp " << collision.timestamp() << " with magnetic field of " << d_bz << " kZG";
+
     fV0PhotonCut.SetD_Bz(d_bz);
   }
 
@@ -1139,7 +1146,7 @@ struct Pi0EtaToGammaGamma {
   o2::framework::expressions::Filter prefilter_primaryelectron = ifnode(dileptoncuts.cfg_apply_cuts_from_prefilter_derived.node(), o2::aod::emprimaryelectron::pfbderived == static_cast<uint16_t>(0), true);
 
   int ndf = 0;
-  void processAnalysis(o2::soa::Filtered<o2::soa::Join<o2::aod::PMEvents, o2::aod::EMEventsAlias, o2::aod::EMEventsMult_000, o2::aod::EMEventsCent_000, o2::aod::EMEventsQvec_001, o2::aod::EmMagFields>> const& collisions, Types const&... args)
+  void processAnalysis(o2::soa::Filtered<o2::soa::Join<o2::aod::PMEvents, o2::aod::EMEventsAlias, o2::aod::EMEventsMult_000, o2::aod::EMEventsCent_000, o2::aod::EMEventsQvec_001>> const& collisions, Types const&... args)
   {
     // LOGF(info, "ndf = %d", ndf);
     if constexpr (pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPCMPCM) {
@@ -1176,7 +1183,7 @@ struct Pi0EtaToGammaGamma {
   PROCESS_SWITCH(Pi0EtaToGammaGamma, processAnalysis, "process pair analysis", true);
 
   // using FilteredMyCollisionsWithJJMC = o2::soa::Filtered<o2::soa::Join<o2::soa::Join<o2::aod::PMEvents, o2::aod::EMEventsMult_000, o2::aod::EMEventsCent_000, o2::aod::EMEventsQvec_001>, o2::aod::EMEventsWeight>>;
-  void processAnalysisJJMC(o2::soa::Filtered<o2::soa::Join<o2::aod::PMEvents, o2::aod::EMEventsAlias, o2::aod::EMEventsMult_000, o2::aod::EMEventsCent_000, o2::aod::EMEventsQvec_001, o2::aod::EMEventsWeight, o2::aod::EmMagFields>> const& collisions, Types const&... args)
+  void processAnalysisJJMC(o2::soa::Filtered<o2::soa::Join<o2::aod::PMEvents, o2::aod::EMEventsAlias, o2::aod::EMEventsMult_000, o2::aod::EMEventsCent_000, o2::aod::EMEventsQvec_001, o2::aod::EMEventsWeight>> const& collisions, Types const&... args)
   {
     // LOGF(info, "ndf = %d", ndf);
     if constexpr (pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPCMPCM) {

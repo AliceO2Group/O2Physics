@@ -85,7 +85,7 @@ using namespace o2::aod::pwgem::photon;
 using namespace o2::aod::pwgem::photonmeson::utils::mcutil;
 using namespace o2::aod::pwgem::dilepton::utils::mcutil;
 
-using MyCollisions = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, o2::aod::EmMagFields>;
+using MyCollisions = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000>;
 using MyCollision = MyCollisions::iterator;
 
 using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
@@ -95,7 +95,7 @@ using MyV0PhotonsML = soa::Join<MyV0Photons, aod::V0PhotonsPhiVPsi>;
 using MyV0PhotonML = MyV0PhotonsML::iterator;
 
 // MC Joins
-using MyCollisionsMC = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMMCEventLabels, o2::aod::EmMagFields>;
+using MyCollisionsMC = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMMCEventLabels>;
 using MyCollisionMC = MyCollisionsMC::iterator;
 
 using MyMCCollisions = soa::Join<aod::EMMCEvents, aod::BinnedGenPts>;
@@ -276,8 +276,14 @@ struct PCMQC {
     }
 
     // Fetch magnetic field from ccdb for current collision
-    d_bz = collision.grpMagField().getNominalL3Field();
-    LOG(info) << "Retrieved GRP for timestamp " << collision.timestamp() << " with magnetic field of " << d_bz << " kZG";
+    // d_bz = collision.grpMagField().getNominalL3Field();
+    // LOG(info) << "Retrieved GRP for timestamp " << collision.timestamp() << " with magnetic field of " << d_bz << " kZG";
+    auto* grpmag = ccdb->getForRun<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", collision.runNumber());
+    if (grpmag == nullptr) {
+      LOGF(fatal, "Could not retrieve GRPMagField for run %d", collision.runNumber());
+    }
+    d_bz = grpmag->getNominalL3Field();
+    LOG(info) << "Retrieved GRP for run " << collision.runNumber() << " with magnetic field of " << d_bz << " kZG";
     fV0PhotonCut.SetD_Bz(d_bz);
   }
 
