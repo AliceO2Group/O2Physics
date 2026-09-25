@@ -578,6 +578,9 @@ class VarManager : public TObject
     kTrackTime,
     kTrackTimeRes,
     kTrackTimeResRelative,
+    kTrackAssocDeltaTime,     // track time - time of the associated collision (BC offset included), ns
+    kTrackAssocTimeThreshold, // time-compatibility threshold of the track-to-collision associator (margin included), ns
+    kTrackAssocDeltaTimeNorm, // |kTrackAssocDeltaTime| / kTrackAssocTimeThreshold; < 1 means the association is time compatible
     kDetectorMap,
     kHasITS,
     kHasTRD,
@@ -1474,6 +1477,22 @@ class VarManager : public TObject
   static void FillTrackEMCal(T const& cluster, float trackP = -1.0f, float deltaEta = -999.0f, float deltaPhi = -999.0f, float* values = nullptr);
   template <uint32_t fillMap, typename T, typename C>
   static void FillTrackCollision(T const& track, C const& collision, float* values = nullptr);
+  // Re-evaluation of the time compatibility of a (barrel track, collision) association, mirroring
+  //   Common/Core/CollisionAssociation.h::runAssocWithTime. Fills kTrackAssocDeltaTime, kTrackAssocTimeThreshold, kTrackAssocDeltaTimeNorm.
+  //   orig* : collision originally assigned to the track in the AO2D (reference of trackTime)
+  //   coll* : collision of the association under test
+  //   The last 5 parameters must match the configuration of track-to-collision-associator used at skimming time
+  //   (timeMargin and nSigma may be smaller in order to tighten the association at analysis level).
+  static bool computeBarrelAssocTimeCompat(float trackTime, float trackTimeRes, bool timeResIsRange, bool isPVContributor,
+                                           int64_t origBC, float origCollTime, int origNumContrib,
+                                           int64_t collBC, float collTime, float collTimeRes,
+                                           float nSigma, float timeMargin, int bcWindowForOneSigma,
+                                           int usePVAssociation, int maxPvContribLowMult, float* values = nullptr);
+  // Same as above for DQ skimmed tables: track = ReducedTracks+ReducedTracksBarrel, collision/origCollision = ReducedEvents+ReducedEventsExtended
+  template <typename T, typename C>
+  static bool isBarrelAssocTimeCompatible(T const& track, C const& collision, C const& origCollision,
+                                          float nSigma, float timeMargin, int bcWindowForOneSigma,
+                                          int usePVAssociation, int maxPvContribLowMult, float* values = nullptr);
   template <int candidateType, uint32_t fillMap, typename T1, typename T2, typename C>
   static void FillTrackCollisionMC(T1 const& track, T2 const& MotherTrack, C const& collision, float* values = nullptr);
   template <int candidateType, typename T1>
@@ -3469,6 +3488,18 @@ void VarManager::FillTrackCollision(T const& track, C const& collision, float* v
     values[kMuonDCAx] = dcaX;
     values[kMuonDCAy] = dcaY;
   }
+}
+
+template <typename T, typename C>
+bool VarManager::isBarrelAssocTimeCompatible(T const& track, C const& collision, C const& origCollision,
+                                             float nSigma, float timeMargin, int bcWindowForOneSigma,
+                                             int usePVAssociation, int maxPvContribLowMult, float* values)
+{
+  return computeBarrelAssocTimeCompat(track.trackTime(), track.trackTimeRes(),
+                                      (track.flags() & o2::aod::track::TrackTimeResIsRange) > 0, track.isPVContributor(),
+                                      static_cast<int64_t>(origCollision.globalBC()), origCollision.collisionTime(), origCollision.numContrib(),
+                                      static_cast<int64_t>(collision.globalBC()), collision.collisionTime(), collision.collisionTimeRes(),
+                                      nSigma, timeMargin, bcWindowForOneSigma, usePVAssociation, maxPvContribLowMult, values);
 }
 
 template <uint32_t fillMap, typename T, typename C, typename M, typename P>
