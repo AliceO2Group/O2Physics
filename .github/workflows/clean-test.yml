@@ -39,6 +39,11 @@ name: Clean PR checks
         type: boolean
         default: true
 
+      'check_build/O2Physics/code-check':
+        description: build/O2Physics/code-check
+        type: boolean
+        default: true
+
 permissions: {}
 
 jobs:
