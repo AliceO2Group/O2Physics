@@ -782,8 +782,9 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
           }
           auto mcParticle = track.mcParticle();
           auto chargeMC = pdg->GetParticle(mcParticle.pdgCode())->Charge();
-          if (std::abs(chargeMC) == 3) {
-            chargeMC /= 3;
+          const int chargeMCUnit = 3;
+          if (std::abs(chargeMC) == chargeMCUnit) {
+            chargeMC /= chargeMCUnit;
           }
           if constexpr (cuts == eBefore) {
             pc.fParticleHistograms[eHistPt][eSim][eBefore]->Fill(mcParticle.pt());
