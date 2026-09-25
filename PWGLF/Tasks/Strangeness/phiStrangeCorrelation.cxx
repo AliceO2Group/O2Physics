@@ -546,9 +546,6 @@ struct PhiStrangeCorrelation {
       ccdb->setLocalObjectValidityChecking();
       ccdb->setFatalWhenNull(false);
 
-      /*for (int i = 0; i < ParticleOfInterestSize; ++i) {
-        loadEfficiencyMapFromCCDB(static_cast<ParticleOfInterest>(i));
-      }*/
       if (!efficiencyConfigs.perPeriodEfficiency) {
         loadEfficiencyMaps();
       }
@@ -823,8 +820,37 @@ struct PhiStrangeCorrelation {
   {
     const std::array<std::pair<float, float>, kPhiMassRegions> phiMassRegions = {phiConfigs.rangeMPhiSignal, phiConfigs.rangeMPhiSideband};
 
+    float deltaY = phiCand.y() - assoc.y();
+    float deltaPhi = getDeltaPhi(phiCand.phi(), assoc.phi());
+
     if (analysisMode == kMassvsMass) {
-      if constexpr (PartType == kK0S) {
+
+#define FILL_MASS_CASE(PART_ENUM, PART_STR)                                                                                                           \
+  if constexpr (PartType == PART_ENUM) {                                                                                                              \
+    if constexpr (IsME) {                                                                                                                             \
+      customFillTHn(HIST("phi" PART_STR "/h6Phi" PART_STR "DataME"), weight, multiplicity, phiCand.pt(), assoc.pt(), deltaY, phiCand.m(), assoc.m()); \
+    } else {                                                                                                                                          \
+      customFillTHn(HIST("phi" PART_STR "/h6Phi" PART_STR "Data"), weight, multiplicity, phiCand.pt(), assoc.pt(), deltaY, phiCand.m(), assoc.m());   \
+    }                                                                                                                                                 \
+  }
+
+      FILL_MASS_CASE(kK0S, "K0S");
+      FILL_MASS_CASE(kLambda, "Lambda");
+      FILL_MASS_CASE(kAntiLambda, "AntiLambda");
+      FILL_MASS_CASE(kXi, "Xi");
+      FILL_MASS_CASE(kOmega, "Omega");
+      if constexpr (PartType == kPion) {
+        if constexpr (IsME) {
+          customFillTHn(HIST("phiPi/h6PhiPiTPCDataME"), weight, multiplicity, phiCand.pt(), assoc.pt(), deltaY, phiCand.m(), assoc.nSigmaTPC());
+          customFillTHn(HIST("phiPi/h6PhiPiTOFDataME"), weight, multiplicity, phiCand.pt(), assoc.pt(), deltaY, phiCand.m(), assoc.nSigmaTOF());
+        } else {
+          customFillTHn(HIST("phiPi/h6PhiPiTPCData"), weight, multiplicity, phiCand.pt(), assoc.pt(), deltaY, phiCand.m(), assoc.nSigmaTPC());
+          customFillTHn(HIST("phiPi/h6PhiPiTOFData"), weight, multiplicity, phiCand.pt(), assoc.pt(), deltaY, phiCand.m(), assoc.nSigmaTOF());
+        }
+      }
+#undef FILL_MASS_CASE
+
+      /*if constexpr (PartType == kK0S) {
         if constexpr (IsME) {
           customFillTHn(HIST("phiK0S/h6PhiK0SDataME"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), phiCand.m(), assoc.m());
         } else {
@@ -862,12 +888,31 @@ struct PhiStrangeCorrelation {
           customFillTHn(HIST("phiPi/h6PhiPiTPCData"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), phiCand.m(), assoc.nSigmaTPC());
           customFillTHn(HIST("phiPi/h6PhiPiTOFData"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), phiCand.m(), assoc.nSigmaTOF());
         }
-      }
+      }*/
     } else if (analysisMode == kDeltaYvsDeltaPhi) {
       std::function<void()> fillSignal;
       std::function<void()> fillSideband;
 
-      if constexpr (PartType == kK0S) {
+#define FILL_DYDP_CASE(PART_ENUM, PART_STR)                                                                                                                               \
+  if constexpr (PartType == PART_ENUM) {                                                                                                                                  \
+    if constexpr (IsME) {                                                                                                                                                 \
+      fillSignal = [&]() { customFillTHn(HIST("phi" PART_STR "/h5Phi" PART_STR "DataMESignal"), weight, multiplicity, phiCand.pt(), assoc.pt(), deltaY, deltaPhi); };     \
+      fillSideband = [&]() { customFillTHn(HIST("phi" PART_STR "/h5Phi" PART_STR "DataMESideband"), weight, multiplicity, phiCand.pt(), assoc.pt(), deltaY, deltaPhi); }; \
+    } else {                                                                                                                                                              \
+      fillSignal = [&]() { customFillTHn(HIST("phi" PART_STR "/h5Phi" PART_STR "DataSignal"), weight, multiplicity, phiCand.pt(), assoc.pt(), deltaY, deltaPhi); };       \
+      fillSideband = [&]() { customFillTHn(HIST("phi" PART_STR "/h5Phi" PART_STR "DataSideband"), weight, multiplicity, phiCand.pt(), assoc.pt(), deltaY, deltaPhi); };   \
+    }                                                                                                                                                                     \
+  }
+
+      FILL_DYDP_CASE(kK0S, "K0S");
+      FILL_DYDP_CASE(kLambda, "Lambda");
+      FILL_DYDP_CASE(kAntiLambda, "AntiLambda");
+      FILL_DYDP_CASE(kXi, "Xi");
+      FILL_DYDP_CASE(kOmega, "Omega");
+      FILL_DYDP_CASE(kPion, "Pi");
+#undef FILL_DYDP_CASE
+
+      /*if constexpr (PartType == kK0S) {
         if constexpr (IsME) {
           fillSignal = [&]() { customFillTHn(HIST("phiK0S/h5PhiK0SDataMESignal"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), getDeltaPhi(phiCand.phi(), assoc.phi())); };
           fillSideband = [&]() { customFillTHn(HIST("phiK0S/h5PhiK0SDataMESideband"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), getDeltaPhi(phiCand.phi(), assoc.phi())); };
@@ -915,7 +960,7 @@ struct PhiStrangeCorrelation {
           fillSignal = [&]() { customFillTHn(HIST("phiPi/h5PhiPiDataSignal"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), getDeltaPhi(phiCand.phi(), assoc.phi())); };
           fillSideband = [&]() { customFillTHn(HIST("phiPi/h5PhiPiDataSideband"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), getDeltaPhi(phiCand.phi(), assoc.phi())); };
         }
-      }
+      }*/
 
       static_for<0, kPhiMassRegions - 1>([&](auto i_idx) {
         constexpr unsigned int Idx = i_idx.value;
