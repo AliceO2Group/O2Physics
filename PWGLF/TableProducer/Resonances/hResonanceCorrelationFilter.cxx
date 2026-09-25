@@ -31,6 +31,7 @@
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -42,13 +43,11 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include <Math/Vector4D.h>
 #include <Math/Vector4Dfwd.h>
 #include <TH1.h>
-#include <TList.h>
-#include <TPDGCode.h>
 
 #include <cmath>
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -181,6 +180,14 @@ struct HResonanceCorrelationFilter {
     Configurable<float> pionMinBayesProb{"pionMinBayesProb", 0.95, "minimal Bayesian probability for pion ID"};
     Configurable<float> assocPionNSigmaTPCFOF{"assocPionNSigmaTPCFOF", 3, "minimal n sigma in TOF and TPC for Pion ID"};
     Configurable<float> rejectSigma{"rejectSigma", 1, "n sigma for rejecting pion candidates"};
+
+    // Associated kaon identification (mirrors the pion selection above, with
+    // the accept/reject roles swapped: accept kaon-consistent tracks, reject
+    // pion-/proton-consistent ones). Selected via the Species template tag on
+    // isValidAssocTrack<Species>() below -- production path (which table rows
+    // get made) is still separate per process function, only the PID gate
+    // logic itself is shared.
+    Configurable<float> assocKaonNSigmaTPCFOF{"assocKaonNSigmaTPCFOF", 3, "minimal n sigma in TOF and TPC for Kaon ID"};
 
     // primary particle DCAxy selections
     // formula: |DCAxy| <  0.004f + (0.013f / pt)
@@ -391,7 +398,7 @@ struct HResonanceCorrelationFilter {
 
   // more event selections in Pb-Pb
   template <typename TCollision>
-  bool isCollisionSelectedPbPb(TCollision collision)
+  bool isCollisionSelectedPbPb(TCollision const& collision)
   {
     if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) && eventSelections.requireGoodTriggerTVX) /* FT0 vertex (acceptable FT0C-FT0A time difference) collisions */
       return false;
@@ -626,7 +633,7 @@ struct HResonanceCorrelationFilter {
 
   // reco-level trigger quality checks (N.B.: DCA is filtered, not selected)
   template <class TTrack>
-  bool isValidTrigger(TTrack track)
+  bool isValidTrigger(TTrack const& track)
   {
     if (track.eta() > generalSelections.triggerEtaMax || track.eta() < generalSelections.triggerEtaMin) {
       return false;
@@ -650,9 +657,30 @@ struct HResonanceCorrelationFilter {
     return true;
   }
 
-  template <class TTrack>
-  bool isValidAssocTrack(TTrack assoc)
+  // Species tag for isValidAssocTrack<Species>()'s PID gate below. AssocPion
+  // and AssocKaon select which nSigma cut direction applies (accept that
+  // species, reject the other two); AssocHadron carries no PID logic of its
+  // own -- passed for clarity at Hadron call sites, but never actually reaches
+  // the `if constexpr (Species == AssocKaon) ... else ...` branch, since the
+  // outer `requires { assoc.tofSignal(); }` is already false for FullTracks
+  // (Hadron's track type, which has no PID columns at all).
+  enum AssocSpecies { AssocPion = 0,
+                       AssocKaon = 1,
+                       AssocHadron = 2 };
+
+  // Merged predicate for the Pion/Kaon/Hadron associated-track pools. Pion and
+  // Kaon both run over IDTracks/IDTracksMC (identical C++ type), so the two
+  // PID directions cannot be told apart by a `requires{}` type check the way
+  // Hadron (FullTracks, no PID columns) is told apart from the other two --
+  // hence the explicit non-type template parameter instead. Everything except
+  // the PID nSigma cut direction (phase-space cuts, MC-truth lookup, table
+  // fills) is identical across all three species, so it stays unduplicated
+  // here; only the accept/reject block branches on Species.
+  template <int Species, class TTrack>
+  bool isValidAssocTrack(TTrack const& assoc)
   {
+    static_assert(Species == AssocPion || Species == AssocKaon || Species == AssocHadron,
+                  "isValidAssocTrack: unknown species tag");
     if (assoc.eta() > generalSelections.assocEtaMax || assoc.eta() < generalSelections.assocEtaMin) {
       return false;
     }
@@ -670,27 +698,49 @@ struct HResonanceCorrelationFilter {
     float nSigmaTPCTOF[8] = {-10, -10, -10, -10, -10, -10, -10, -10};
     if constexpr (requires { assoc.tofSignal(); } && !requires { assoc.mcParticle(); }) {
       if (assoc.tofSignal() > 0) {
-        if (std::sqrt(assoc.tofNSigmaPi() * assoc.tofNSigmaPi() + assoc.tpcNSigmaPi() * assoc.tpcNSigmaPi()) > trackSelections.assocPionNSigmaTPCFOF)
-          return false;
-        if (assoc.tofNSigmaPr() < trackSelections.rejectSigma)
-          return false;
-        if (assoc.tpcNSigmaPr() < trackSelections.rejectSigma)
-          return false;
-        if (assoc.tofNSigmaKa() < trackSelections.rejectSigma)
-          return false;
-        if (assoc.tpcNSigmaKa() < trackSelections.rejectSigma)
-          return false;
+        if constexpr (Species == AssocKaon) {
+          if (std::sqrt(assoc.tofNSigmaKa() * assoc.tofNSigmaKa() + assoc.tpcNSigmaKa() * assoc.tpcNSigmaKa()) > trackSelections.assocKaonNSigmaTPCFOF)
+            return false;
+          if (assoc.tofNSigmaPr() < trackSelections.rejectSigma)
+            return false;
+          if (assoc.tpcNSigmaPr() < trackSelections.rejectSigma)
+            return false;
+          if (assoc.tofNSigmaPi() < trackSelections.rejectSigma)
+            return false;
+          if (assoc.tpcNSigmaPi() < trackSelections.rejectSigma)
+            return false;
+        } else {
+          if (std::sqrt(assoc.tofNSigmaPi() * assoc.tofNSigmaPi() + assoc.tpcNSigmaPi() * assoc.tpcNSigmaPi()) > trackSelections.assocPionNSigmaTPCFOF)
+            return false;
+          if (assoc.tofNSigmaPr() < trackSelections.rejectSigma)
+            return false;
+          if (assoc.tpcNSigmaPr() < trackSelections.rejectSigma)
+            return false;
+          if (assoc.tofNSigmaKa() < trackSelections.rejectSigma)
+            return false;
+          if (assoc.tpcNSigmaKa() < trackSelections.rejectSigma)
+            return false;
+        }
         nSigmaTPCTOF[4] = assoc.tofNSigmaPi();
         nSigmaTPCTOF[5] = assoc.tofNSigmaKa();
         nSigmaTPCTOF[6] = assoc.tofNSigmaPr();
         nSigmaTPCTOF[7] = assoc.tofNSigmaEl();
       } else {
-        if (assoc.tpcNSigmaPi() > trackSelections.assocPionNSigmaTPCFOF)
-          return false;
-        if (assoc.tpcNSigmaPr() < trackSelections.rejectSigma)
-          return false;
-        if (assoc.tpcNSigmaKa() < trackSelections.rejectSigma)
-          return false;
+        if constexpr (Species == AssocKaon) {
+          if (assoc.tpcNSigmaKa() > trackSelections.assocKaonNSigmaTPCFOF)
+            return false;
+          if (assoc.tpcNSigmaPr() < trackSelections.rejectSigma)
+            return false;
+          if (assoc.tpcNSigmaPi() < trackSelections.rejectSigma)
+            return false;
+        } else {
+          if (assoc.tpcNSigmaPi() > trackSelections.assocPionNSigmaTPCFOF)
+            return false;
+          if (assoc.tpcNSigmaPr() < trackSelections.rejectSigma)
+            return false;
+          if (assoc.tpcNSigmaKa() < trackSelections.rejectSigma)
+            return false;
+        }
       }
       nSigmaTPCTOF[0] = assoc.tpcNSigmaPi();
       nSigmaTPCTOF[1] = assoc.tpcNSigmaKa();
@@ -831,7 +881,7 @@ struct HResonanceCorrelationFilter {
     /// _________________________________________________
     /// Step 1: Populate table with trigger tracks
     for (auto const& track : tracks) {
-      if (!isValidAssocTrack(track))
+      if (!isValidAssocTrack<AssocPion>(track))
         continue;
     }
   }
@@ -859,7 +909,63 @@ struct HResonanceCorrelationFilter {
     /// _________________________________________________
     /// Step 1: Populate table with trigger tracks
     for (auto const& track : tracks) {
-      if (!isValidAssocTrack(track))
+      if (!isValidAssocTrack<AssocPion>(track))
+        continue;
+    }
+  }
+
+  void processAssocKaons(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<IDTracks> const& tracks, aod::BCsWithTimestamps const&)
+  {
+    // Load parameters for sideband subtraction
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    // Perform basic event selection
+    if (!collision.sel8()) {
+      return;
+    }
+    // No need to correlate stuff that's in far collisions
+    if (std::abs(collision.posZ()) > eventSelections.zVertexCut) {
+      return;
+    }
+    if (zorroMask.value != "") {
+      initCCDB(bc);
+      bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
+      if (!zorroSelected) {
+        return;
+      }
+    }
+
+    /// _________________________________________________
+    /// Step 1: Populate table with trigger tracks
+    for (auto const& track : tracks) {
+      if (!isValidAssocTrack<AssocKaon>(track))
+        continue;
+    }
+  }
+
+  void processAssocKaonsMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<IDTracksMC> const& tracks, aod::McParticles const&, aod::BCsWithTimestamps const&)
+  {
+    // Load parameters for sideband subtraction
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    // Perform basic event selection
+    if (!collision.sel8()) {
+      return;
+    }
+    // No need to correlate stuff that's in far collisions
+    if (std::abs(collision.posZ()) > eventSelections.zVertexCut) {
+      return;
+    }
+    if (zorroMask.value != "") {
+      initCCDB(bc);
+      bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
+      if (!zorroSelected) {
+        return;
+      }
+    }
+
+    /// _________________________________________________
+    /// Step 1: Populate table with trigger tracks
+    for (auto const& track : tracks) {
+      if (!isValidAssocTrack<AssocKaon>(track))
         continue;
     }
   }
@@ -887,7 +993,7 @@ struct HResonanceCorrelationFilter {
     /// _________________________________________________
     /// Step 1: Populate table with trigger tracks
     for (auto const& track : tracks) {
-      if (!isValidAssocTrack(track))
+      if (!isValidAssocTrack<AssocHadron>(track))
         continue;
     }
   }
@@ -914,7 +1020,7 @@ struct HResonanceCorrelationFilter {
     /// _________________________________________________
     /// Step 1: Populate table with trigger tracks
     for (auto const& track : tracks) {
-      if (!isValidAssocTrack(track))
+      if (!isValidAssocTrack<AssocHadron>(track))
         continue;
     }
   }
@@ -1256,9 +1362,9 @@ struct HResonanceCorrelationFilter {
         }
 
         LorentzVectorPtEtaPhiMass kaon = LorentzVectorPtEtaPhiMass(kaonTrack.pt(), kaonTrack.eta(), kaonTrack.phi(),
-                                                                   o2::constants::physics::MassKPlus);
+                                                                    o2::constants::physics::MassKPlus);
         LorentzVectorPtEtaPhiMass pion = LorentzVectorPtEtaPhiMass(pionTrack.pt(), pionTrack.eta(), pionTrack.phi(),
-                                                                   o2::constants::physics::MassPiPlus);
+                                                                    o2::constants::physics::MassPiPlus);
         LorentzVectorPtEtaPhiMass kstar = kaon + pion;
 
         float invMass = kstar.M();
@@ -1326,6 +1432,8 @@ struct HResonanceCorrelationFilter {
   PROCESS_SWITCH(HResonanceCorrelationFilter, processTriggersMC, "Produce trigger tables for MC", false);
   PROCESS_SWITCH(HResonanceCorrelationFilter, processAssocPions, "Produce associated Pion tables", false);
   PROCESS_SWITCH(HResonanceCorrelationFilter, processAssocPionsMC, "Produce associated Pion tables for MC", false);
+  PROCESS_SWITCH(HResonanceCorrelationFilter, processAssocKaons, "Produce associated Kaon tables", false);
+  PROCESS_SWITCH(HResonanceCorrelationFilter, processAssocKaonsMC, "Produce associated Kaon tables for MC", false);
   PROCESS_SWITCH(HResonanceCorrelationFilter, processAssocHadrons, "Produce associated Hadron tables", true);
   PROCESS_SWITCH(HResonanceCorrelationFilter, processAssocHadronsMC, "Produce associated Hadron tables for MC", false);
   PROCESS_SWITCH(HResonanceCorrelationFilter, processPhis, "Produce associated phi tables", true);
