@@ -68,7 +68,6 @@
 #include <memory>
 #include <string>
 #include <string_view>
-#include <variant>
 #include <vector>
 
 using namespace o2;
@@ -105,6 +104,7 @@ struct HResonanceCorrelation {
     Configurable<bool> doCorrelationPhi{"doCorrelationPhi", false, "do Phi correlation"};
     Configurable<bool> doCorrelationKstar{"doCorrelationKstar", false, "do K*0 correlation"};
     Configurable<bool> doCorrelationPion{"doCorrelationPion", false, "do Pion correlation"};
+    Configurable<bool> doCorrelationKaon{"doCorrelationKaon", false, "do Kaon correlation"};
     Configurable<bool> doGenEventSelection{"doGenEventSelection", true, "use event selections when performing closure test for the gen events"};
     Configurable<bool> selectINELgtZERO{"selectINELgtZERO", true, "select INEL>0 events"};
     Configurable<float> zVertexCut{"zVertexCut", 10, "Cut on PV position"};
@@ -284,6 +284,7 @@ struct HResonanceCorrelation {
   TH3F* hEfficiencyTriggerMult = nullptr;
   THnF* hEfficiencyTriggerMultVsPhi = nullptr;
   TH2F* hEfficiencyPion = nullptr;
+  TH2F* hEfficiencyKaon = nullptr;
   TH2F* hEfficiencyPhi = nullptr;
   THnF* hEfficiencyPhiMultVsPhi = nullptr;
   TH2F* hEfficiencyKstar = nullptr;
@@ -297,6 +298,7 @@ struct HResonanceCorrelation {
   TH2F* hEfficiencyUncertaintyTrigger = nullptr;
   TH3F* hEfficiencyUncertaintyTriggerMult = nullptr;
   TH2F* hEfficiencyUncertaintyPion = nullptr;
+  TH2F* hEfficiencyUncertaintyKaon = nullptr;
   TH2F* hEfficiencyUncertaintyPhi = nullptr;
   TH2F* hEfficiencyUncertaintyKstar = nullptr;
   TH2F* hEfficiencyUncertaintyHadron = nullptr;
@@ -315,12 +317,22 @@ struct HResonanceCorrelation {
   Preslice<aod::AssocPhis> collisionSlicePhis = aod::assocPhis::collisionId;
   Preslice<aod::AssocKstars> collisionSliceKstars = aod::assocKstars::collisionId;
 
-  static constexpr std::string_view Particlenames[] = {"Phi", "Kstar0", "Pion", "Hadron"};
-  static constexpr int PdgCodes[] = {333, 313, 211, 0}; // Hadron has no single PDG code; 0 is a harmless placeholder
+  // Kaon sits after Pion, taking the slot Hadron used to occupy (Hadron
+  // moves to IndexHadron below) -- same reason Hadron itself sits outside
+  // AssocParticleTypesNoHadron: the generator-level MC-truth matching used by
+  // the closure test/prediction blocks further down is "intentionally
+  // restricted to Pion only" (see the NOTE comments at their static_for<...>
+  // calls) and was never extended to Kstar0 either, so Kaon joins Hadron
+  // outside that group rather than shifting Pion's/Kstar0's/Phi's indices or
+  // AssocParticleTypesNoHadron's boundary.
+  static constexpr std::string_view Particlenames[] = {"Phi", "Kstar0", "Pion", "Kaon", "Hadron"};
+  static constexpr int PdgCodes[] = {333, 313, 211, 321, 0}; // Hadron has no single PDG code; 0 is a harmless placeholder
 
   static constexpr int IndexPhi = 0;
   static constexpr int IndexKstar = 1;
   static constexpr int IndexPion = 2;
+  static constexpr int IndexKaon = 3;
+  static constexpr int IndexHadron = 4;
 
   uint16_t doCorrelation = 0;
   int mRunNumber = 0;
@@ -333,8 +345,8 @@ struct HResonanceCorrelation {
 
   static constexpr float Neutral = 0.0;
 
-  static constexpr int AssocParticleTypes = 4;         // Phi, Kstar0, Pion, Hadron
-  static constexpr int AssocParticleTypesNoHadron = 3; // Phi, Kstar0, Pion
+  static constexpr int AssocParticleTypes = 5;         // Phi, Kstar0, Pion, Kaon, Hadron
+  static constexpr int AssocParticleTypesNoHadron = 3; // Phi, Kstar0, Pion (Kaon excluded too -- see the comment above IndexKaon)
 
   /// Function to aid in calculating delta-phi
   /// \param phi1 first phi value
@@ -387,6 +399,7 @@ struct HResonanceCorrelation {
     hEfficiencyHadron = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyHadron"));
     hEfficiencyHadronMult = static_cast<TH3F*>(listEfficiencies->FindObject("hEfficiencyHadronMult"));
     hEfficiencyPion = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyPion"));
+    hEfficiencyKaon = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyKaon"));
     hPurityHadron = static_cast<TH1F*>(listEfficiencies->FindObject("hPurityHadron"));
     hPurityHadronMult = static_cast<TH2F*>(listEfficiencies->FindObject("hPurityHadronMult"));
     hEfficiencyUncertaintyTrigger = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyUncertaintyTrigger"));
@@ -394,6 +407,7 @@ struct HResonanceCorrelation {
     hEfficiencyUncertaintyPhi = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyUncertaintyPhi"));
     hEfficiencyUncertaintyKstar = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyUncertaintyKstar"));
     hEfficiencyUncertaintyPion = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyUncertaintyPion"));
+    hEfficiencyUncertaintyKaon = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyUncertaintyKaon"));
     hEfficiencyUncertaintyHadron = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyUncertaintyHadron"));
     hEfficiencyUncertaintyHadronMult = static_cast<TH3F*>(listEfficiencies->FindObject("hEfficiencyUncertaintyHadronMult"));
     hPurityUncertaintyHadron = static_cast<TH1F*>(listEfficiencies->FindObject("hPurityUncertaintyHadron"));
@@ -411,10 +425,12 @@ struct HResonanceCorrelation {
     mRunNumber = 0;
     mRunNumberZorro = 0;
     hEfficiencyPion = 0x0;
+    hEfficiencyKaon = 0x0;
     hEfficiencyPhi = 0x0;
     hEfficiencyKstar = 0x0;
     hEfficiencyUncertaintyTrigger = 0x0;
     hEfficiencyUncertaintyPion = 0x0;
+    hEfficiencyUncertaintyKaon = 0x0;
     hEfficiencyUncertaintyPhi = 0x0;
     hEfficiencyUncertaintyKstar = 0x0;
 
@@ -431,8 +447,10 @@ struct HResonanceCorrelation {
       SETBIT(doCorrelation, IndexKstar);
     if (masterConfigurations.doCorrelationPion)
       SETBIT(doCorrelation, IndexPion);
+    if (masterConfigurations.doCorrelationKaon)
+      SETBIT(doCorrelation, IndexKaon);
     if (masterConfigurations.doCorrelationHadron)
-      SETBIT(doCorrelation, 3);
+      SETBIT(doCorrelation, IndexHadron);
 
     // Store axis ranges to prevent spurious filling
     // axis status:
@@ -623,8 +641,8 @@ struct HResonanceCorrelation {
     // ========================================================================
     // SHARED QA HISTOGRAMS
     // ========================================================================
-    bool anySameEvent = doprocessSameEventHPhis || doprocessSameEventHKstars || doprocessSameEventHPions || doprocessSameEventHHadrons;
-    bool anyMixedEvent = doprocessMixedEventHPhis || doprocessMixedEventHPhisInBuffer || doprocessMixedEventHKstars || doprocessMixedEventHKstarsInBuffer || doprocessMixedEventHPions || doprocessMixedEventHHadrons;
+    bool anySameEvent = doprocessSameEventHPhis || doprocessSameEventHKstars || doprocessSameEventHPions || doprocessSameEventHKaons || doprocessSameEventHHadrons;
+    bool anyMixedEvent = doprocessMixedEventHPhis || doprocessMixedEventHPhisInBuffer || doprocessMixedEventHKstars || doprocessMixedEventHKstarsInBuffer || doprocessMixedEventHPions || doprocessMixedEventHKaons || doprocessMixedEventHHadrons;
 
     if (doMixingQAandEventQA && (anySameEvent || anyMixedEvent)) {
       if (anySameEvent)
@@ -669,6 +687,9 @@ struct HResonanceCorrelation {
         } else if (i == IndexPion) { // Pion
           doSE = doprocessSameEventHPions;
           doME = doprocessMixedEventHPions;
+        } else if (i == IndexKaon) { // Kaon
+          doSE = doprocessSameEventHKaons;
+          doME = doprocessMixedEventHKaons;
         } else { // Hadron
           doSE = doprocessSameEventHHadrons;
           doME = doprocessMixedEventHHadrons;
@@ -772,7 +793,18 @@ struct HResonanceCorrelation {
       histos.add("hNegativePionEtaVsPt", "", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisMult});
     }
 
-    if (TESTBIT(doCorrelation, 3) && doprocessSameEventHHadrons) {
+    if (TESTBIT(doCorrelation, IndexKaon) && doprocessSameEventHKaons) {
+      if (masterConfigurations.doFullCorrelationStudy) {
+        histos.add("sameEvent/TriggerParticlesKaon", "TriggersKaon", kTH2F, {axesConfigurations.axisPtQA, axesConfigurations.axisMult});
+      }
+      histos.add("hNumberOfRejectedPairsKaon", "hNumberOfRejectedPairsKaon", kTH1F, {{1, 0, 1}});
+      histos.add("hKaonEtaVsPtAllSelected", "", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisMult});
+      histos.add("hKaonEtaVsPt", "", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisMult});
+      histos.add("hPositiveKaonEtaVsPt", "", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisMult});
+      histos.add("hNegativeKaonEtaVsPt", "", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisMult});
+    }
+
+    if (TESTBIT(doCorrelation, IndexHadron) && doprocessSameEventHHadrons) {
       if (masterConfigurations.doFullCorrelationStudy) {
         histos.add("sameEvent/TriggerParticlesHadron", "TriggersHadron", kTH2F, {axesConfigurations.axisPtQA, axesConfigurations.axisMult});
       }
@@ -933,7 +965,7 @@ struct HResonanceCorrelation {
 
   // event selections in Pb-Pb
   template <typename TCollision>
-  bool isisCollisionSelectPbPb(TCollision collision, bool fillHists)
+  bool isisCollisionSelectPbPb(TCollision const& collision, bool fillHists)
   {
     if (fillHists)
       histos.fill(HIST("hEventSelection"), 0.5 /* all collisions */);
@@ -1012,7 +1044,7 @@ struct HResonanceCorrelation {
   }
 
   template <class TTrack>
-  bool isValidTrigger(TTrack track, bool isLeading)
+  bool isValidTrigger(TTrack const& track, bool isLeading)
   {
     if (track.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsTrigger) {
       return false; // crossed rows
@@ -1049,7 +1081,7 @@ struct HResonanceCorrelation {
     return true;
   }
   template <class TTrack>
-  bool isValidAssocHadron(TTrack track)
+  bool isValidAssocHadron(TTrack const& track)
   {
     if (track.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated) {
       return false; // crossed rows
@@ -1086,14 +1118,17 @@ struct HResonanceCorrelation {
     double phaseProton = (-0.3 * B * assoc[2]) / (2 * assoc[1]);
     double phaseTrack = (-0.3 * B * trigg[2]) / (2 * trigg[1]);
 
-    for (double r = MinRadiusTPC; r <= MaxRadiusTPC; r += 0.05) {
+    constexpr double kRadiusStep = 0.05;
+    int nSteps = static_cast<int>((MaxRadiusTPC - MinRadiusTPC) / kRadiusStep);
+    for (int iR = 0; iR <= nSteps; ++iR) {
+      double r = MinRadiusTPC + iR * kRadiusStep;
       dPhiStar = dPhi + std::asin(phaseProton * r) - std::asin(phaseTrack * r);
       dPhiStarMean += (dPhiStar / 34);
     }
 
     return dPhiStarMean;
   }
-  void fillTriggerHistogram(std::shared_ptr<TH2> hist, double pt, double mult, float eff, float effUncert, float purity, float purityErr)
+  void fillTriggerHistogram(std::shared_ptr<TH2> const& hist, double pt, double mult, float eff, float effUncert, float purity, float purityErr)
   {
     int binx = hist->GetXaxis()->FindBin(pt);
     int biny = hist->GetYaxis()->FindBin(mult);
@@ -1104,7 +1139,7 @@ struct HResonanceCorrelation {
     hist->SetBinContent(binx, biny, newContent);
     hist->SetBinError(binx, biny, newUncert);
   }
-  void fillCorrelationHistogram(std::shared_ptr<THn> hist, double binFillThn[], float etaWeight, float efficiency, float totalEffUncert, float purity, float totalPurityUncert)
+  void fillCorrelationHistogram(std::shared_ptr<THn> const& hist, double binFillThn[], float etaWeight, float efficiency, float totalEffUncert, float purity, float totalPurityUncert)
   {
     float previousContent, previousError2, currentContent, currentError2;
     int bin = hist->GetBin(binFillThn);
