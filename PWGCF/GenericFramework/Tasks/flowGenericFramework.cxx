@@ -71,6 +71,7 @@
 #include <cstdlib>
 #include <iomanip>
 #include <ios>
+#include <iterator>
 #include <map>
 #include <memory>
 #include <sstream>
@@ -939,7 +940,7 @@ struct FlowGenericFramework {
     if (corrconfigsV0.empty()) {
       LOGF(error, "Radial (V0) configuration contains vectors of different size - check the GFWCorrConfig configurable");
     }
-    const size_t requiredChargedConfigs = static_cast<size_t>(SpeciesCount);
+    const auto requiredChargedConfigs = static_cast<size_t>(SpeciesCount);
     const size_t requiredResonanceConfigs = requiredChargedConfigs + static_cast<size_t>(ResonanceCount);
     if (cfgFill.cfgAnalyseChargedHadrons && (corrconfigsV02.size() < requiredChargedConfigs || corrconfigsV0.size() < requiredChargedConfigs)) {
       LOGF(fatal, "Charged-hadron analysis requires at least %zu V02 and V0 correlation configurations", requiredChargedConfigs);
@@ -2360,6 +2361,10 @@ struct FlowGenericFramework {
 
     } else if constexpr (framework::has_type_v<aod::mcparticle::McCollisionId, typename TTrack::all_columns>) {
       if (!track.isPhysicalPrimary()) {
+        return;
+      }
+      auto pdgParticle = pdgDB->GetParticle(track.pdgCode());
+      if (!pdgParticle || pdgParticle->Charge() == 0.) {
         return;
       }
       if (cfgFill.cfgFillQA) {
