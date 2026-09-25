@@ -268,7 +268,6 @@ struct forwardlambdakzeroanalysis {
   ctpRateFetcher rateFetcher;
   int mRunNumber = 0;
   float magField = 0.;
-  std::map<std::string, std::string> metadata;
   o2::parameters::GRPMagField* grpmag = nullptr;
 
   // CCDB options
