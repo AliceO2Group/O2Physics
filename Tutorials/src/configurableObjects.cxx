@@ -63,10 +63,8 @@ auto printMatrix(Array2D<T> const& m)
   return ss.str();
 }
 
-static constexpr float defaultm[3][4] = {{1.1, 1.2, 1.3, 1.4}, {2.1, 2.2, 2.3, 2.4}, {3.1, 3.2, 3.3, 3.4}};
-static LabeledArray<float> la{&defaultm[0][0], 3, 4, {"r 1", "r 2", "r 3"}, {"c 1", "c 2", "c 3", "c 4"}};
-const std::string defaultmS[3][4] = {{"One.One", "One.Two", "One.Three", "One.Four"}, {"Two.One", "Two.Two", "Two.Three", "Two.Four"}, {"Three.One", "Three.Two", "Three.Three", "Three.Four"}};
-static LabeledArray<std::string> laS{&defaultmS[0][0], 3, 4, {"rS 1", "rS 2", "rS 3"}, {"cS 1", "cS 2", "cS 3", "cS 4"}};
+static constexpr std::array<std::array<float, 4>, 3> defaultm{{{1.1, 1.2, 1.3, 1.4}, {2.1, 2.2, 2.3, 2.4}, {3.1, 3.2, 3.3, 3.4}}};
+static constexpr std::array<std::array<std::string, 4>, 3> defaultmS{{{"One.One", "One.Two", "One.Three", "One.Four"}, {"Two.One", "Two.Two", "Two.Three", "Two.Four"}, {"Three.One", "Three.Two", "Three.Three", "Three.Four"}}};
 
 struct ConfigurableObjectDemo {
   // Simple type configurables
@@ -82,9 +80,9 @@ struct ConfigurableObjectDemo {
   Configurable<std::vector<int>> array{"array", {0, 0, 0, 0, 0, 0, 0}, "generic int array"};
   Configurable<std::vector<float>> farray{"farray", {0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1}, "generic float array"};
   Configurable<std::vector<double>> darray{"darray", {0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1}, "generic double array"};
-  Configurable<Array2D<float>> vmatrix{"matrix", {&defaultm[0][0], 3, 4}, "generic matrix"};
-  Configurable<LabeledArray<float>> vla{"vla", {defaultm[0], 3, 4, {"r 1", "r 2", "r 3"}, {"c 1", "c 2", "c 3", "c 4"}}, "labeled array with float content"};
-  Configurable<LabeledArray<std::string>> vlaS{"vlaS", {defaultmS[0], 3, 4, {"rS 1", "rS 2", "rS 3"}, {"cS 1", "cS 2", "cS 3", "cS 4"}}, "labeled array with string content"};
+  Configurable<Array2D<float>> vmatrix{"matrix", {defaultm.front().data(), 3, 4}, "generic matrix"};
+  Configurable<LabeledArray<float>> vla{"vla", {defaultm.front().data(), 3, 4, {"r 1", "r 2", "r 3"}, {"c 1", "c 2", "c 3", "c 4"}}, "labeled array with float content"};
+  Configurable<LabeledArray<std::string>> vlaS{"vlaS", {defaultmS.front().data(), 3, 4, {"rS 1", "rS 2", "rS 3"}, {"cS 1", "cS 2", "cS 3", "cS 4"}}, "labeled array with string content"};
 
   // Configurables can be grouped into `ConfigurableGroup`s.
   // Their names must be unique.

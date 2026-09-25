@@ -51,7 +51,7 @@ enum triggerAliases {
   kNaliases
 };
 
-extern std::string aliasLabels[kNaliases];
+extern const std::array<std::string, kNaliases> aliasLabels;
 
 class TriggerAliases
 {
