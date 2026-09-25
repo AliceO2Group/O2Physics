@@ -192,8 +192,8 @@ struct hypertritonAnalysis {
                    kEvSelAllSteps };
 
   // Helper to do bookkeeping and late filling of QA histos
-  std::array<long, kHypAllSteps> stats;
-  std::array<long, kEvSelAllSteps> evselstats;
+  std::array<int64_t, kHypAllSteps> stats;
+  std::array<int64_t, kEvSelAllSteps> evselstats;
 
   void resetHistos()
   {

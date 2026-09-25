@@ -279,21 +279,21 @@ struct zdc2stagecalibration {
     auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), runNumber);
     sorTimestamp = runInfo.sor;
     eorTimestamp = runInfo.eor;
-    bcSOR = static_cast<int64_t>(runInfo.orbitSOR) * static_cast<int64_t>(o2::constants::lhc::LHCMaxBunches);
+    bcSOR = runInfo.orbitSOR * static_cast<int64_t>(o2::constants::lhc::LHCMaxBunches);
     gainprofile = nullptr;
     spatialprofile = nullptr;
     qRecenteringProfile = nullptr;
     if (calibrationStage.value == 2 && useGainCallib.value && !confGainPath.value.empty()) {
       gainprofile = ccdb->getForTimeStamp<TH2D>(confGainPath.value, timestamp);
       if (!gainprofile) {
-        LOGF(warn, "No ZDC stage-1 gain map found for run %d at timestamp %llu", runNumber, static_cast<unsigned long long>(timestamp));
+        LOGF(warn, "No ZDC stage-1 gain map found for run %d at timestamp %llu", runNumber, timestamp);
       }
     }
     if (calibrationStage.value == 2 && useSpatialCalib.value && !confSpatialPath.value.empty()) {
       spatialprofile = ccdb->getForTimeStamp<TH3D>(confSpatialPath.value, timestamp);
 
       if (!spatialprofile) {
-        LOGF(warn, "No ZDC spatial calibration found for run %d at timestamp %llu", runNumber, static_cast<unsigned long long>(timestamp));
+        LOGF(warn, "No ZDC spatial calibration found for run %d at timestamp %llu", runNumber, timestamp);
       }
     }
     if (calibrationStage.value == 2 && useQRecentering.value) {
@@ -302,7 +302,7 @@ struct zdc2stagecalibration {
         qRecenteringProfile = ccdb->getForTimeStamp<TH3D>(qRecenteringPath, timestamp);
       }
       if (!qRecenteringProfile) {
-        LOGF(warn, "No ZDC Q-recentering calibration found for run %d at timestamp %llu", runNumber, static_cast<unsigned long long>(timestamp));
+        LOGF(warn, "No ZDC Q-recentering calibration found for run %d at timestamp %llu", runNumber, timestamp);
       }
     }
   }
