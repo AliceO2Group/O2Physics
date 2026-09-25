@@ -33,7 +33,7 @@ namespace o2::aod::singletrackselector
 namespace pidutils
 {
 
-//========================================== SFINAE checks ==========================================
+//========================================== SFINAE checks for TPC ==========================================
 
 template <typename T, typename = void>
 struct hasTPCPi : std::false_type {
@@ -77,6 +77,8 @@ template <typename T>
 struct hasTPCHe<T, std::void_t<o2::aod::pidutils::hasTPCHe<T>>> : std::true_type {
 };
 
+//========================================== SFINAE checks for TOF ==========================================
+
 template <typename T, typename = void>
 struct hasTOFPi : std::false_type {
 };
@@ -119,6 +121,50 @@ template <typename T>
 struct hasTOFHe<T, std::void_t<o2::aod::pidutils::hasTOFHe<T>>> : std::true_type {
 };
 
+//========================================== SFINAE checks for ITS ==========================================
+
+template <typename T, typename = void>
+struct hasITSPi : std::false_type {
+};
+template <typename T>
+struct hasITSPi<T, std::void_t<decltype(std::declval<T&>().itsNSigmaPi())>> : std::true_type {
+};
+
+template <typename T, typename = void>
+struct hasITSKa : std::false_type {
+};
+template <typename T>
+struct hasITSKa<T, std::void_t<decltype(std::declval<T&>().itsNSigmaKa())>> : std::true_type {
+};
+
+template <typename T, typename = void>
+struct hasITSPr : std::false_type {
+};
+template <typename T>
+struct hasITSPr<T, std::void_t<decltype(std::declval<T&>().itsNSigmaPr())>> : std::true_type {
+};
+
+template <typename T, typename = void>
+struct hasITSDe : std::false_type {
+};
+template <typename T>
+struct hasITSDe<T, std::void_t<decltype(std::declval<T&>().itsNSigmaDe())>> : std::true_type {
+};
+
+template <typename T, typename = void>
+struct hasITSTr : std::false_type {
+};
+template <typename T>
+struct hasITSTr<T, std::void_t<decltype(std::declval<T&>().itsNSigmaTr())>> : std::true_type {
+};
+
+template <typename T, typename = void>
+struct hasITSHe : std::false_type {
+};
+template <typename T>
+struct hasITSHe<T, std::void_t<decltype(std::declval<T&>().itsNSigmaHe())>> : std::true_type {
+};
+
 } // namespace pidutils
 
 //========================================== ITS PID ==========================================
@@ -128,17 +174,23 @@ inline float getITSNsigma(TrackType const& track, int const& PDG)
 {
   switch (PDG) {
     case 211:
-      return track.itsNSigmaPi();
+      if constexpr (o2::aod::singletrackselector::pidutils::hasITSPi<TrackType>::value)
+        return track.itsNSigmaPi();
     case 321:
-      return track.itsNSigmaKa();
+      if constexpr (o2::aod::singletrackselector::pidutils::hasITSKa<TrackType>::value)
+        return track.itsNSigmaKa();
     case 2212:
-      return track.itsNSigmaPr();
+      if constexpr (o2::aod::singletrackselector::pidutils::hasITSPr<TrackType>::value)
+        return track.itsNSigmaPr();
     case 1000010020:
-      return track.itsNSigmaDe();
+      if constexpr (o2::aod::singletrackselector::pidutils::hasITSDe<TrackType>::value)
+        return track.itsNSigmaDe();
     case 1000020030:
-      return track.itsNSigmaHe();
+      if constexpr (o2::aod::singletrackselector::pidutils::hasITSHe<TrackType>::value)
+        return track.itsNSigmaHe();
     case 1000010030:
-      return track.itsNSigmaTr();
+      if constexpr (o2::aod::singletrackselector::pidutils::hasITSTr<TrackType>::value)
+        return track.itsNSigmaTr();
     case 0:
       return -1000.0;
     default:
