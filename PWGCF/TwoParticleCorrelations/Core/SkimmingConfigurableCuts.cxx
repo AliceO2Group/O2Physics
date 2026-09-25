@@ -1188,19 +1188,18 @@ bool TrackSelectionBrick::FulfillsITSHitRequirements(uint8_t itsClusterMap)
   return true;
 }
 
-const std::string TrackSelectionBrick::mCutNames[static_cast<int>(TrackSelectionBrick::TrackCuts::kNCuts)] =
-  {
-    "TrackType",
-    "TPCNCls",
-    "TPCCrossedRowsOverNCls",
-    "TPCRefit",
-    "ITSNCls",
-    "ITSChi2NDF",
-    "ITSRefit",
-    "ITSHits",
-    "GoldenChi2",
-    "DCAxy",
-    "DCAz"};
+const std::array<std::string, static_cast<int>(TrackSelectionBrick::TrackCuts::kNCuts)> TrackSelectionBrick::mCutNames{
+  "TrackType",
+  "TPCNCls",
+  "TPCCrossedRowsOverNCls",
+  "TPCRefit",
+  "ITSNCls",
+  "ITSChi2NDF",
+  "ITSRefit",
+  "ITSHits",
+  "GoldenChi2",
+  "DCAxy",
+  "DCAz"};
 
 /// \brief Returns wether the cut brick is incorporated in the selection chain
 /// \return true if the cut brick is incorporated

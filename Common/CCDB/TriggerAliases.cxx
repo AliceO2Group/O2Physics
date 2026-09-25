@@ -16,7 +16,7 @@
 #include <cstdint>
 #include <string>
 
-std::string aliasLabels[kNaliases] = {
+const std::array<std::string, kNaliases> aliasLabels{
   "kINT7",
   "kEMC7",
   "kINT7inMUON",

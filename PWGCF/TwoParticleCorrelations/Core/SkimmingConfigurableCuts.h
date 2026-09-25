@@ -530,7 +530,7 @@ class TrackSelectionBrick : public SpecialCutBrick
     kNCuts
   };
 
-  static const std::string mCutNames[static_cast<int>(TrackCuts::kNCuts)];
+  static const std::array<std::string, static_cast<int>(TrackSelectionBrick::TrackCuts::kNCuts)> mCutNames;
 
   std::vector<bool> IsArmed() override;
   template <typename TrackToFilter>
