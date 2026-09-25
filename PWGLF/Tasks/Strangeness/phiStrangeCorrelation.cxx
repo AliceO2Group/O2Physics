@@ -289,12 +289,12 @@ struct PhiStrangeCorrelation {
 
   // Configurables for minimum pt selection in McGen
   struct : ConfigurableGroup {
-    Configurable<float> minPhiPt{"minPhiPt", 0.4f, "Minimum pT for Phi candidates"};
-    Configurable<float> v0SettingMinPt{"v0SettingMinPt", 0.1f, "V0 min pt"};
-    Configurable<float> lambdaSettingMinPt{"lambdaSettingMinPt", 0.2f, "Lambda min pt"};
-    Configurable<float> cascadeSettingMinPt{"cascadeSettingMinPt", 0.8f, "Cascade min pt"};
-    Configurable<float> omegaSettingMinPt{"omegaSettingMinPt", 0.8f, "Omega min pt"};
-    Configurable<float> cMinPionPtcut{"cMinPionPtcut", 0.2f, "Track minimum pt cut"};
+    Configurable<float> minPtPhi{"minPtPhi", 0.4f, "Minimum pT for Phi candidates"};
+    Configurable<float> minPtK0S{"minPtK0S", 0.1f, "Minimum pT for K0S candidates"};
+    Configurable<float> minPtLambda{"minPtLambda", 0.2f, "Minimum pT for Lambda candidates"};
+    Configurable<float> minPtXi{"minPtXi", 0.8f, "Minimum pT for Xi candidates"};
+    Configurable<float> minPtOmega{"minPtOmega", 0.8f, "Minimum pT for Omega candidates"};
+    Configurable<float> minPtPion{"minPtPion", 0.2f, "Minimum pT for Pion candidates"};
     Configurable<bool> bypassPtCut{"bypassPtCut", false, "Bypass the minimum pt cut at MCGen level"};
   } minPtMcGenConfigs;
 
@@ -695,15 +695,15 @@ struct PhiStrangeCorrelation {
   float getMinGenPt() const
   {
     if constexpr (PartType == kK0S) {
-      return minPtMcGenConfigs.v0SettingMinPt.value;
+      return minPtMcGenConfigs.minPtK0S.value;
     } else if constexpr (PartType == kLambda || PartType == kAntiLambda) {
-      return minPtMcGenConfigs.lambdaSettingMinPt.value;
+      return minPtMcGenConfigs.minPtLambda.value;
     } else if constexpr (PartType == kXi) {
-      return minPtMcGenConfigs.cascadeSettingMinPt.value;
+      return minPtMcGenConfigs.minPtXi.value;
     } else if constexpr (PartType == kOmega) {
-      return minPtMcGenConfigs.omegaSettingMinPt.value;
+      return minPtMcGenConfigs.minPtOmega.value;
     } else if constexpr (PartType == kPion) {
-      return minPtMcGenConfigs.cMinPionPtcut.value;
+      return minPtMcGenConfigs.minPtPion.value;
     } else {
       static_assert(PartType == kK0S || PartType == kLambda || PartType == kAntiLambda ||
                       PartType == kXi || PartType == kOmega || PartType == kPion,
@@ -1356,7 +1356,7 @@ struct PhiStrangeCorrelation {
 
         switch (std::abs(mcParticle.pdgCode())) {
           case o2::constants::physics::Pdg::kPhi:
-            if (eventSelectionType == 0 && mcParticle.pt() >= minPtMcGenConfigs.minPhiPt) {
+            if (eventSelectionType == 0 && mcParticle.pt() >= minPtMcGenConfigs.minPtPhi) {
               fillGenHistos(HIST("phi/h3PhiMCGen"), HIST("phi/h4PhiMCGenAssocReco"));
             }
             break;
@@ -1414,7 +1414,7 @@ struct PhiStrangeCorrelation {
 
       switch (std::abs(mcParticle.pdgCode())) {
         case o2::constants::physics::Pdg::kPhi:
-          if (eventSelectionType == 0 && (minPtMcGenConfigs.bypassPtCut || mcParticle.pt() >= minPtMcGenConfigs.minPhiPt)) {
+          if (eventSelectionType == 0 && (minPtMcGenConfigs.bypassPtCut || mcParticle.pt() >= minPtMcGenConfigs.minPtPhi)) {
             phiParticles.emplace_back(mcParticle.pt(), mcParticle.y(), mcParticle.phi());
           }
           break;
