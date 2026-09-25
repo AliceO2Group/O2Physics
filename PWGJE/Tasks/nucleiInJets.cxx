@@ -2499,8 +2499,9 @@ struct nucleiInJets {
     float leadingDetJetPt = -1.f;
     if (isWithLeadingJet) {
       for (const auto& mcdjet : mcdjets) {
-        if (isConeAxisAccepted(mcdjet.eta()) && mcdjet.pt() > leadingDetJetPt) {
-          leadingDetJetPt = mcdjet.pt();
+        const float mcdJetPtForResponseSel = usebkgSubractionMC ? mcdjet.pt() - backgroundRho * jetArea : mcdjet.pt();
+        if (isConeAxisAccepted(mcdjet.eta()) && mcdJetPtForResponseSel > leadingDetJetPt) {
+          leadingDetJetPt = mcdJetPtForResponseSel;
           leadingDetJetId = mcdjet.globalIndex();
         }
       }
