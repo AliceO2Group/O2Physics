@@ -150,8 +150,10 @@ constexpr static uint32_t gkEventFillMapWithMultsEventFilterZdc = VarManager::Ob
 // constexpr static uint32_t gkEventFillMapWithMultsRapidityGapFilterZdc = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionMult | VarManager::ObjTypes::CollisionMultExtra | VarManager::ObjTypes::RapidityGapFilter | VarManager::ObjTypes::Zdc;
 constexpr static uint32_t gkEventFillMapWithMultsRapidityGapFilterZdcFit = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionMult | VarManager::ObjTypes::CollisionMultExtra | VarManager::ObjTypes::RapidityGapFilter | VarManager::ObjTypes::Zdc | VarManager::ObjTypes::Fit;
 // constexpr static uint32_t gkEventFillMapWithCent = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent;
-constexpr static uint32_t gkEventFillMapWithCentAndMults = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent | VarManager::CollisionMult | VarManager::ObjTypes::CollisionMultExtra | VarManager::ObjTypes::Zdc;
-constexpr static uint32_t gkEventFillMapWithCentAndMultsQvect = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent | VarManager::CollisionMult | VarManager::ObjTypes::CollisionMultExtra | VarManager::ObjTypes::CollisionQvectCentr | VarManager::ObjTypes::Zdc;
+constexpr static uint32_t gkEventFillMapWithCentAndMults = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent | VarManager::CollisionMult | VarManager::ObjTypes::CollisionMultExtra;
+constexpr static uint32_t gkEventFillMapWithCentAndMultsZdc = gkEventFillMapWithCentAndMults | VarManager::ObjTypes::Zdc;
+constexpr static uint32_t gkEventFillMapWithCentAndMultsQvect = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent | VarManager::CollisionMult | VarManager::ObjTypes::CollisionMultExtra | VarManager::ObjTypes::CollisionQvectCentr;
+constexpr static uint32_t gkEventFillMapWithCentAndMultsQvectZdc = gkEventFillMapWithCentAndMultsQvect | VarManager::ObjTypes::Zdc;
 constexpr static uint32_t gkEventFillMapWithMultsExtra = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::CollisionMult | VarManager::ObjTypes::CollisionMultExtra;
 //  constexpr static uint32_t gkEventFillMapWithCentRun2 = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCentRun2; // Unused variable
 // constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackPID | VarManager::ObjTypes::TrackPIDExtra;
@@ -2125,7 +2127,7 @@ struct TableMaker {
                    TrackAssoc const& trackAssocs, FwdTrackAssoc const& fwdTrackAssocs,
                    MFTTrackAssoc const& mftAssocs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
   {
-    fullSkimming<gkEventFillMapWithCentAndMultsQvect, gkTrackFillMapWithCov, gkMuonFillMapWithCov, gkMFTFillMap>(collisions, bcs, zdcs, tracksBarrel, muons, mftTracks, trackAssocs, fwdTrackAssocs, mftAssocs, nullptr, ft0s, fv0as, fdds);
+    fullSkimming<gkEventFillMapWithCentAndMultsQvectZdc, gkTrackFillMapWithCov, gkMuonFillMapWithCov, gkMFTFillMap>(collisions, bcs, zdcs, tracksBarrel, muons, mftTracks, trackAssocs, fwdTrackAssocs, mftAssocs, nullptr, ft0s, fv0as, fdds);
   }
 
   // produce the barrel only DQ skimmed data model typically for Pb-Pb (with centrality), no subscribtion to the DQ event filter
@@ -2182,7 +2184,7 @@ struct TableMaker {
   void processPbPbMuonOnly(MyEventsWithCentAndMults const& collisions, MyBCs const& bcs, aod::Zdcs const& zdcs,
                            MyMuonsWithCov const& muons, FwdTrackAssoc const& fwdTrackAssocs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
   {
-    fullSkimming<gkEventFillMapWithCentAndMults, 0u, gkMuonFillMapWithCov, 0u>(collisions, bcs, zdcs, nullptr, muons, nullptr, nullptr, fwdTrackAssocs, nullptr, nullptr, ft0s, fv0as, fdds);
+    fullSkimming<gkEventFillMapWithCentAndMultsZdc, 0u, gkMuonFillMapWithCov, 0u>(collisions, bcs, zdcs, nullptr, muons, nullptr, nullptr, fwdTrackAssocs, nullptr, nullptr, ft0s, fv0as, fdds);
   }
 
   // produce the muon-only DQ skimmed data model typically for UPC Pb-Pb (no centrality), subscribe to the DQ rapidity gap event filter (filter-PbPb)
@@ -2197,7 +2199,7 @@ struct TableMaker {
   void processPbPbStreamMuonOnly(MyEventsWithCentAndMultsQvect const& collisions, MyBCs const& bcs, aod::Zdcs const& zdcs,
                                  MyMuonsNoDca const& muons, FwdTrackAssoc const& fwdTrackAssocs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
   {
-    fullSkimming<gkEventFillMapWithCentAndMultsQvect, 0u, gkMuonFillMap, 0u>(collisions, bcs, zdcs, nullptr, muons, nullptr, nullptr, fwdTrackAssocs, nullptr, nullptr, ft0s, fv0as, fdds);
+    fullSkimming<gkEventFillMapWithCentAndMultsQvectZdc, 0u, gkMuonFillMap, 0u>(collisions, bcs, zdcs, nullptr, muons, nullptr, nullptr, fwdTrackAssocs, nullptr, nullptr, ft0s, fv0as, fdds);
   }
 
   // produce the realigned muon only DQ skimmed data model typically for Pb-Pb (with centrality), no subscribtion to the DQ event filter

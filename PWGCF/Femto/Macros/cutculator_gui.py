@@ -231,6 +231,7 @@ class CutCulatorApp(tk.Tk):
         self._is_filter_hist = False
         self._vars = {}  # (SelectionName, idx) → BooleanVar
         self._check_labels = {}  # (SelectionName, idx) → Label (custom checkbox glyph)
+        self._setters = {}  # (SelectionName, idx) → callable(bool) setting the checkbox state + glyph
 
         self._build_ui()
 
@@ -263,6 +264,26 @@ class CutCulatorApp(tk.Tk):
         self._hist_combo = ttk.Combobox(bar, textvariable=self._hist_var, state="disabled", width=30, font=FONT_BODY)
         self._hist_combo.pack(side="left", padx=6)
         self._hist_combo.bind("<<ComboboxSelected>>", self._on_hist_selected)
+
+        # ── bitmask input: check all cuts corresponding to a given bitmask ──
+        tk.Label(bar, text="Bitmask:", font=FONT_BODY, bg=BG_CARD, fg=FG_DIM).pack(side="left", padx=(20, 0))
+        self._mask_var = tk.StringVar()
+        mask_entry = tk.Entry(
+            bar,
+            textvariable=self._mask_var,
+            width=16,
+            font=FONT_BODY,
+            bg=BG,
+            fg=FG,
+            insertbackground=FG,
+            relief="flat",
+            highlightthickness=1,
+            highlightbackground=BORDER,
+            highlightcolor=ACCENT,
+        )
+        mask_entry.pack(side="left", padx=6)
+        mask_entry.bind("<Return>", lambda _e: self._apply_bitmask())
+        self._make_button(bar, "Set Bitmask", self._apply_bitmask, ACCENT).pack(side="left", padx=2)
 
         self._style_combobox()
 
@@ -470,6 +491,7 @@ class CutCulatorApp(tk.Tk):
         self._hist = hist
         self._vars = {}
         self._check_labels = {}
+        self._setters = {}
 
         # Always start from a clean summary panel — forget()-ing the pane only
         # hides it, it does not destroy previously built rows.
@@ -714,10 +736,15 @@ class CutCulatorApp(tk.Tk):
         self._vars[(sel_name, idx)] = var
         self._check_labels[(sel_name, idx)] = check_lbl
 
+        def set_state(state):
+            var.set(state)
+            check_lbl.config(text="[x]" if state else "[ ]", fg=ACCENT_ALWAYS if state else FG_DIM)
+            text_lbl.config(fg=FG if state else FG_DIM)
+
+        self._setters[(sel_name, idx)] = set_state
+
         def toggle(_e=None):
-            var.set(not var.get())
-            check_lbl.config(text="[x]" if var.get() else "[ ]", fg=ACCENT_ALWAYS if var.get() else FG_DIM)
-            text_lbl.config(fg=FG if var.get() else FG_DIM)
+            set_state(not var.get())
             self._update_bitmask()
 
         for w in (row, check_lbl, text_lbl):
@@ -752,13 +779,54 @@ class CutCulatorApp(tk.Tk):
         if pos.upper() != "X":
             tk.Label(row, text=f"bit {pos}", font=FONT_SMALL, bg=BG_CARD, fg=FG_DIM, width=8).pack(side="right", padx=4)
 
+        def set_state(state):
+            var.set(state)
+            check_lbl.config(text="[x]" if state else "[ ]", fg=color if state else FG_DIM)
+
+        self._setters[(sel_name, idx)] = set_state
+
         def toggle(_e=None):
-            var.set(not var.get())
-            check_lbl.config(text="[x]" if var.get() else "[ ]", fg=color if var.get() else FG_DIM)
+            set_state(not var.get())
             self._update_bitmask()
 
         for w in (row, check_lbl, text_lbl):
             w.bind("<Button-1>", toggle)
+
+    # ── Bitmask input ─────────────────────────────────────────────────────────
+    def _apply_bitmask(self):
+        """Check exactly the cuts whose bit is set in the entered bitmask. The
+        always-applied minimal floors are added to the summary automatically."""
+        if self._is_filter_hist or not self._groups:
+            messagebox.showinfo("Not applicable", "Load a selection histogram first.")
+            return
+
+        text = self._mask_var.get().strip()
+        try:
+            bitmask = int(text, 0)
+        except ValueError:
+            try:
+                # int(x, 0) rejects decimals with leading zeros, e.g. "010"
+                bitmask = int(text, 10)
+            except ValueError:
+                bitmask = -1
+        if bitmask < 0:
+            messagebox.showerror("Invalid bitmask", f"Cannot parse '{text}'.\nUse decimal, 0x hex or 0b binary.")
+            return
+
+        known_bits = set()
+        for (sel_name, idx), set_state in self._setters.items():
+            pos = bit_position_int(self._groups[sel_name][idx])
+            if pos >= 0:
+                known_bits.add(pos)
+            set_state(pos >= 0 and bool(bitmask & (1 << pos)))
+        self._update_bitmask()
+
+        unknown_bits = [i for i in range(bitmask.bit_length()) if bitmask & (1 << i) and i not in known_bits]
+        if unknown_bits:
+            messagebox.showwarning(
+                "Unknown bits",
+                f"Bit(s) {', '.join(map(str, unknown_bits))} are set but not defined in this histogram.",
+            )
 
     # ── Bitmask computation + summary update ──────────────────────────────────
     def _update_bitmask(self):

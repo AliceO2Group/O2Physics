@@ -128,6 +128,11 @@ struct DedxPidAnalysis {
 
   };
 
+  enum NDCAzSelectionMode : int {
+    DCAz1 = 1,
+    DCAzpT = 2,
+  };
+
   enum MomentumMode : int {
     TpcInnerParam = 1,
     TotalMomentum = 2
@@ -205,7 +210,11 @@ struct DedxPidAnalysis {
                                        "max z distance to IP"};
   Configurable<float> etaMin{"etaMin", -0.8f, "etaMin"};
   Configurable<float> etaMax{"etaMax", +0.8f, "etaMax"};
-  // Configurable<float> minNCrossedRowsOverFindableClustersTPC{"minNCrossedRowsOverFindableClustersTPC", 0.8f, "Additional cut on the minimum value of the ratio between crossed rows and findable clusters in the TPC"};
+  // Configurables para activar/desactivar cortes
+  Configurable<bool> requireITSRefit{"requireITSRefit", true, "Require ITS refit"};
+  Configurable<bool> requireTPCRefit{"requireTPCRefit", true, "Require TPC refit"};
+  Configurable<bool> requireMinNCrossedRowsOverFindableClustersTPC{"requireMinNCrossedRowsOverFindableClustersTPC", true, "Require min N crossed rows / findable clusters TPC"};
+  Configurable<float> minNCrossedRowsOverFindableClustersTPC{"minNCrossedRowsOverFindableClustersTPC", 0.8f, "Additional cut on the minimum value of the ratio between crossed rows and findable clusters in the TPC"};
   Configurable<float> nSigmaDCAxy{"nSigmaDCAxy", 3.0, "nSigma DCAxy selection"};
   Configurable<float> dcaXYp0{"dcaXYp0", 0.0105f, "DCAxy formula: p0 + p1/pt^p2"};
   Configurable<float> dcaXYp1{"dcaXYp1", 0.0350f, "DCAxy p1 parameter"};
@@ -214,7 +223,7 @@ struct DedxPidAnalysis {
   Configurable<float> dcaZp1{"dcaZp1", 0.0350f, "DCAz p1 parameter"};
   Configurable<float> dcaZp2{"dcaZp2", 1.1f, "DCAz p2 parameter"};
   Configurable<float> nSigmaDCAz{"nSigmaDCAz", 3.0, "nSigma DCAz selection"};
-  // Configurable<float> maxDCAz{"maxDCAz", 0.1f, "maxDCAz"};
+  Configurable<float> maxDCAz{"maxDCAz", 0.1f, "maxDCAz"};
   Configurable<float> pionMin{"pionMin", 0.35f, "pionMin"};
   Configurable<float> pionMax{"pionMax", 0.45f, "pionMax"};
   Configurable<float> elTofCut{"elTofCut", 0.1f, "elTofCut"};
@@ -252,6 +261,7 @@ struct DedxPidAnalysis {
   Configurable<bool> nPileUp{"nPileUp", true, "Rejects events with pileup in the same bunch crossing"};
   Configurable<int> nINELSelectionMode{"nINELSelectionMode", 2, "INEL event selection: 1 no sel, 2 INEL>0, 3 INEL>1"};
   Configurable<bool> nGoodITS{"nGoodITS", true, "Numbers of inactive chips on all ITS layers are below maximum allowed values"};
+  Configurable<int> nDCAzOption{"nDCAzOption", 1, "DCA selection: 1: from -0.1 to 0.1, 2: pT dependent cut"};
   Configurable<int> v0SelectionMode{"v0SelectionMode", 3, "V0 Selection base on TPC: 1, TOF:2 ,Both:3"};
   Configurable<int> momentumMode{"momentumMode", 2, "1: TPC inner param, 2: Total momentum p"};
   Configurable<uint8_t> v0TypeSelection{"v0TypeSelection", 1, "select on a certain V0 type (leave negative if no selection desired)"};
@@ -283,10 +293,16 @@ struct DedxPidAnalysis {
     TrackSelection selectedTracks;
     selectedTracks.SetPtRange(0.1f, 1e10f);
     selectedTracks.SetEtaRange(etaMin, etaMax);
-    // selectedTracks.SetRequireITSRefit(true);
-    // selectedTracks.SetRequireTPCRefit(true);
+    if (requireITSRefit.value) {
+      selectedTracks.SetRequireITSRefit(true);
+    }
+    if (requireTPCRefit.value) {
+      selectedTracks.SetRequireTPCRefit(true);
+    }
     selectedTracks.SetMinNCrossedRowsTPC(static_cast<int>(minNCrossedRowsTPC.value));
-    // selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC);
+    if (requireMinNCrossedRowsOverFindableClustersTPC.value) {
+      selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC.value);
+    }
     selectedTracks.SetMaxChi2PerClusterTPC(maxChi2TPC);
     selectedTracks.SetRequireHitsInITSLayers(1, {0, 1, 2});
     selectedTracks.SetMaxChi2PerClusterITS(maxChi2ITS);
@@ -312,10 +328,32 @@ struct DedxPidAnalysis {
     } else {
       LOGF(info, "GoodZvtxFT0vsPV cut disabled");
     }
+    if (requireITSRefit) {
+      LOGF(info, "Applying ITSRefit cut");
+    } else {
+      LOGF(info, "ITSRefit cut disabled");
+    }
+
+    if (requireTPCRefit) {
+      LOGF(info, "Applying TPCRefit cut");
+    } else {
+      LOGF(info, "TPCRefit cut disabled");
+    }
+    if (requireMinNCrossedRowsOverFindableClustersTPC) {
+      LOGF(info, "Applying MinNCrossedRowsOverFindableClustersTPC cut");
+    } else {
+      LOGF(info, "MinNCrossedRowsOverFindableClustersTPC cut disabled");
+    }
+
     if (nGoodITS) {
       LOGF(info, "Applying GoodITSLayersAll cut");
     } else {
       LOGF(info, "GoodITSLayersAll cut disabled");
+    }
+    if (nDCAzOption == DCAz1) {
+      LOGF(info, "Applying -0.1 to 0.1 cut");
+    } else if (nDCAzOption == DCAzpT) {
+      LOGF(info, "Applying pT-dependet cut");
     }
     if (nINELSelectionMode == NoSelINEL) {
       LOGF(info, "Applying just INEL");
@@ -856,8 +894,13 @@ struct DedxPidAnalysis {
   template <typename T1>
   bool passesDCAzCut(const T1& track) const
   {
-    const float maxiDcaZ = nSigmaDCAz.value * (dcaZp0.value + dcaZp1.value / std::pow(track.pt(), dcaZp2.value)) / 3.0;
-    return std::abs(track.dcaZ()) < maxiDcaZ;
+    if (nDCAzOption.value == DCAz1) {
+      return std::abs(track.dcaZ()) < maxDCAz.value;
+    } else if (nDCAzOption.value == DCAzpT) {
+      const float maxiDcaZ = nSigmaDCAz.value * (dcaZp0.value + dcaZp1.value / std::pow(track.pt(), dcaZp2.value)) / 3.0;
+      return std::abs(track.dcaZ()) < maxiDcaZ;
+    }
+    return true;
   }
   // Momentum
   template <typename T1>
