@@ -2472,6 +2472,9 @@ struct nucleiInJets {
     // Event-wise random splitting for closure test: decide once per event
     bool useDataLikeHist = (randUniform.Uniform(0, 1) < 0.5);
     const float backgroundRho = collision.rho();
+    if (usebkgSubractionMC && backgroundRho <= 0.f) {
+      return;
+    }
     const float jetArea = M_PI * cfgjetR * cfgjetR;
     if (usebkgSubractionMC) {
       jetHist.fill(HIST("jet/h1BkgRho"), backgroundRho);
@@ -2482,8 +2485,9 @@ struct nucleiInJets {
     float leadingDetJetPt = -1.f;
     if (isWithLeadingJet) {
       for (const auto& mcdjet : mcdjets) {
-        if (isConeAxisAccepted(mcdjet.eta()) && mcdjet.pt() > leadingDetJetPt) {
-          leadingDetJetPt = mcdjet.pt();
+        const float mcdJetPtForResponseSel = usebkgSubractionMC ? mcdjet.pt() - backgroundRho * jetArea : mcdjet.pt();
+        if (isConeAxisAccepted(mcdjet.eta()) && mcdJetPtForResponseSel > leadingDetJetPt) {
+          leadingDetJetPt = mcdJetPtForResponseSel;
           leadingDetJetId = mcdjet.globalIndex();
         }
       }
