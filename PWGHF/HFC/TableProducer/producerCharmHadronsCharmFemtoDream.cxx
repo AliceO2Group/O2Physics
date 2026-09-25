@@ -74,7 +74,7 @@ struct HfProducerCharmHadronsCharmFemtoDream {
     Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for new BDT"};
     Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::Cuts[0], hf_cuts_ml::NBinsPt, hf_cuts_ml::NCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsDmesCutScore}, "New BDT cuts per pT bin: background, prompt, nonprompt"};
     Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Reject scores above (0), below (1), or do not cut (2)"};
-    Configurable<int> nClassesMl{"nClassesMl", static_cast<int>(hf_cuts_ml::NCutScores), "Three output classes: background, prompt, nonprompt"};
+    Configurable<int> nClassesMl{"nClassesMl", hf_cuts_ml::NCutScores, "Three output classes: background, prompt, nonprompt"};
     Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{}, "Ordered input feature names for new BDT"};
     Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{}, "Model files, one per pT bin"};
     Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{}, "CCDB model paths, one per pT bin"};
