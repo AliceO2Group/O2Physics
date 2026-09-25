@@ -121,9 +121,9 @@ struct EventSelectionQaTask {
     strLPMProductionTag = metadataInfo.get("LPMProductionTag"); // to extract info from ccdb by the tag
     strPassName = metadataInfo.get(isMC ? "AnchorPassName" : "RecoPassName");
 
-    const AxisSpec axisMultV0M{1000, 0., isLowFlux ? 40000. : 40000., "V0M multiplicity"};
+    const AxisSpec axisMultV0M{1000, 0., 40000., "V0M multiplicity"};
     const AxisSpec axisMultV0A{1000, 0., isLowFlux ? 40000. : 200000., "V0A multiplicity"};
-    const AxisSpec axisMultV0C{1000, 0., isLowFlux ? 30000. : 30000., "V0C multiplicity"};
+    const AxisSpec axisMultV0C{1000, 0., 30000., "V0C multiplicity"};
     const AxisSpec axisMultT0A{1000, 0., isLowFlux ? 10000. : 200000., "T0A multiplicity"};
     const AxisSpec axisMultT0C{1000, 0., isLowFlux ? 2000. : 70000., "T0C multiplicity"};
     const AxisSpec axisMultT0M{1000, 0., isLowFlux ? 12000. : 270000., "T0M multiplicity"};
@@ -578,9 +578,7 @@ struct EventSelectionQaTask {
       histos.fill(HIST("hV0C012vsTklCol"), nTracklets, multRingV0C012);
 
       // filling plots for accepted events
-      bool accepted = 0;
-      accepted |= !isINT1period & col.sel7();
-      accepted |= isINT1period & sel1;
+      bool accepted = (!isINT1period && col.sel7()) || (isINT1period && sel1);
       if (!accepted) {
         continue;
       }
@@ -801,13 +799,13 @@ struct EventSelectionQaTask {
         const auto& bcPast = bcs.iteratorAt(bc.globalIndex() - deltaIndex);
         deltaBC = globalBC - bcPast.globalBC();
         if (deltaBC < maxDeltaBC) {
-          pastActivityFT0 |= bcPast.has_ft0();
-          pastActivityFV0 |= bcPast.has_fv0a();
-          pastActivityFDD |= bcPast.has_fdd();
+          pastActivityFT0 = pastActivityFT0 || bcPast.has_ft0();
+          pastActivityFV0 = pastActivityFV0 || bcPast.has_fv0a();
+          pastActivityFDD = pastActivityFDD || bcPast.has_fdd();
         }
       }
 
-      bool pastActivity = pastActivityFT0 | pastActivityFV0 | pastActivityFDD;
+      bool pastActivity = pastActivityFT0 || pastActivityFV0 || pastActivityFDD;
 
       int localBC = bc.globalBC() % nBCsPerOrbit;
       float timeV0A = bc.has_fv0a() ? bc.fv0a().time() : -999.f;
