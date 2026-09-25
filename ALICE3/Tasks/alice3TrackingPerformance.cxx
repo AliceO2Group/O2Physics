@@ -78,19 +78,20 @@ struct Alice3TrackingPerformance {
       }
       const std::string tag = "_" + prefix;
       prefix += "/";
-      particlePtDistribution[pdg] = histos.add<TH1>(prefix + "particlePtDistribution" + tag, "", kTH1D, {ptAxis});
-      particleEtaDistribution[pdg] = histos.add<TH1>(prefix + "particleEtaDistribution" + tag, "", kTH1D, {etaAxis});
+      auto histoName = [&](const std::string& name) { return Form("%s%s%s", prefix.c_str(), name.c_str(), tag.c_str()); };
+      particlePtDistribution[pdg] = histos.add<TH1>(histoName("particlePtDistribution"), "", kTH1D, {ptAxis});
+      particleEtaDistribution[pdg] = histos.add<TH1>(histoName("particleEtaDistribution"), "", kTH1D, {etaAxis});
 
-      ptDistribution[pdg] = histos.add<TH1>(prefix + "ptDistribution" + tag, "", kTH1D, {ptAxis});
-      ptResolutionVsPt[pdg] = histos.add<TH2>(prefix + "ptResolutionVsPt" + tag, "", kTH2D, {ptAxis, axisPtDelta});
-      ptResolutionVsEta[pdg] = histos.add<TProfile2D>(prefix + "ptResolutionVsEta" + tag, "", kTProfile2D, {ptAxis, etaAxis});
-      invPtResolutionVsPt[pdg] = histos.add<TH2>(prefix + "invPtResolutionVsPt" + tag, "", kTH2D, {ptAxis, invPtDeltaAxis});
-      invPtResolutionVsEta[pdg] = histos.add<TProfile2D>(prefix + "invPtResolutionVsEta" + tag, "", kTProfile2D, {ptAxis, etaAxis});
-      dcaXyResolutionVsPt[pdg] = histos.add<TH2>(prefix + "dcaXyResolutionVsPt" + tag, "", kTH2D, {ptAxis, axisDcaXy});
-      dcaZResolutionVsPt[pdg] = histos.add<TH2>(prefix + "dcaZResolutionVsPt" + tag, "", kTH2D, {ptAxis, axisDcaZ});
-      covariancePtPtVsPt[pdg] = histos.add<TH2>(prefix + "covariancePtPtVsPt" + tag, "", kTH2D, {ptAxis, axisCovariancePtPt});
-      covarianceDcaXyDcaXyVsPt[pdg] = histos.add<TH2>(prefix + "covarianceDcaXyDcaXyVsPt" + tag, "", kTH2D, {ptAxis, axisCovarianceDcaXyDcaXy});
-      covarianceDcaZDcaZVsPt[pdg] = histos.add<TH2>(prefix + "covarianceDcaZDcaZVsPt" + tag, "", kTH2D, {ptAxis, axisCovarianceDcaZDcaZ});
+      ptDistribution[pdg] = histos.add<TH1>(histoName("ptDistribution"), "", kTH1D, {ptAxis});
+      ptResolutionVsPt[pdg] = histos.add<TH2>(histoName("ptResolutionVsPt"), "", kTH2D, {ptAxis, axisPtDelta});
+      ptResolutionVsEta[pdg] = histos.add<TProfile2D>(histoName("ptResolutionVsEta"), "", kTProfile2D, {ptAxis, etaAxis});
+      invPtResolutionVsPt[pdg] = histos.add<TH2>(histoName("invPtResolutionVsPt"), "", kTH2D, {ptAxis, invPtDeltaAxis});
+      invPtResolutionVsEta[pdg] = histos.add<TProfile2D>(histoName("invPtResolutionVsEta"), "", kTProfile2D, {ptAxis, etaAxis});
+      dcaXyResolutionVsPt[pdg] = histos.add<TH2>(histoName("dcaXyResolutionVsPt"), "", kTH2D, {ptAxis, axisDcaXy});
+      dcaZResolutionVsPt[pdg] = histos.add<TH2>(histoName("dcaZResolutionVsPt"), "", kTH2D, {ptAxis, axisDcaZ});
+      covariancePtPtVsPt[pdg] = histos.add<TH2>(histoName("covariancePtPtVsPt"), "", kTH2D, {ptAxis, axisCovariancePtPt});
+      covarianceDcaXyDcaXyVsPt[pdg] = histos.add<TH2>(histoName("covarianceDcaXyDcaXyVsPt"), "", kTH2D, {ptAxis, axisCovarianceDcaXyDcaXy});
+      covarianceDcaZDcaZVsPt[pdg] = histos.add<TH2>(histoName("covarianceDcaZDcaZVsPt"), "", kTH2D, {ptAxis, axisCovarianceDcaZDcaZ});
     }
   }
 
@@ -102,10 +103,7 @@ struct Alice3TrackingPerformance {
         return false;
       }
       const int etaBin = particleEtaDistribution[0]->GetXaxis()->FindBin(p.eta());
-      if (etaBin < 1 || etaBin > particleEtaDistribution[0]->GetXaxis()->GetNbins()) {
-        return false;
-      }
-      return true;
+      return etaBin >= 1 && etaBin <= particleEtaDistribution[0]->GetXaxis()->GetNbins();
     };
 
     for (const auto& mcParticle : mcParticles) {
@@ -115,7 +113,7 @@ struct Alice3TrackingPerformance {
       }
       particlePtDistribution[0]->Fill(mcParticle.pt());
       particleEtaDistribution[0]->Fill(mcParticle.eta());
-      if (particlePtDistribution.find(mcParticle.pdgCode()) == particlePtDistribution.end()) {
+      if (!particlePtDistribution.contains(mcParticle.pdgCode())) {
         continue;
       }
       particlePtDistribution[mcParticle.pdgCode()]->Fill(mcParticle.pt());
@@ -148,7 +146,7 @@ struct Alice3TrackingPerformance {
       if (!isParticleSelected(mcParticle)) {
         continue;
       }
-      if (ptResolutionVsPt.find(mcParticle.pdgCode()) == ptResolutionVsPt.end()) {
+      if (!ptResolutionVsPt.contains(mcParticle.pdgCode())) {
         continue;
       }
       fillResolutionHistograms(mcParticle.pdgCode());

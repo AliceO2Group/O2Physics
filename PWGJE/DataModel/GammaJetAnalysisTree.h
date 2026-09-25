@@ -73,9 +73,10 @@ namespace gjmcevent
 DECLARE_SOA_INDEX_COLUMN(GjEvent, gjevent);
 DECLARE_SOA_COLUMN(Weight, weight, double);
 DECLARE_SOA_COLUMN(Rho, rho, float);                              // gen level rho
+DECLARE_SOA_COLUMN(PtHard, ptHard, float);                        // hard-scattering scale
 DECLARE_SOA_COLUMN(IsMultipleAssigned, isMultipleAssigned, bool); // if the corresponding MC collision matched to this rec collision was also matched to other rec collisions (allows to skip those on analysis level   )
 } // namespace gjmcevent
-DECLARE_SOA_TABLE(GjMCEvents, "AOD", "GJMCEVENT", gjmcevent::GjEventId, gjmcevent::Weight, gjmcevent::Rho, gjmcevent::IsMultipleAssigned)
+DECLARE_SOA_TABLE(GjMCEvents, "AOD", "GJMCEVENT", gjmcevent::GjEventId, gjmcevent::Weight, gjmcevent::Rho, gjmcevent::PtHard, gjmcevent::IsMultipleAssigned)
 // Information about EMCal clusters
 namespace gjgamma
 {

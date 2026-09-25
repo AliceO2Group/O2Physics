@@ -14,6 +14,7 @@
 /// \author marvin.hemmer@cern.ch
 /// dependencies: emcal-correction-task
 
+#include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/GammaTablesRedux.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/emcalHistoDefinitions.h"
@@ -74,7 +75,7 @@ struct SkimmerGammaCalo {
   Configurable<float> minE{"minE", 0.5, "Minimum energy for energy cut"};
   Configurable<float> maxE{"maxE", std::numeric_limits<uint16_t>::max(), "Maximum energy for energy cut"};
   Configurable<bool> removeExotic{"removeExotic", false, "Flag to enable the removal of exotic clusters."};
-  Configurable<std::vector<int>> clusterDefinitions{"clusterDefinitions", {0, 1, 2, 10, 11, 12, 13, 20, 21, 22, 30, 40, 41, 42, 43, 44, 45}, "Cluster definitions to be accepted (e.g. 13 for kV3MostSplitLowSeed)"};
+  Configurable<std::vector<int>> clusterDefinitions{"clusterDefinitions", {0, 1, 2, 10, 11, 12, 13, 20, 21, 22, 30, 40, 41, 42, 43, 44, 45}, "Cluster definitions storageID to be accepted (see O2Physics/PWGJE/DataModel/EMCALClusters.h for the storageID)"};
   Configurable<float> maxdEta{"maxdEta", 0.1, "Set a maximum difference in eta for tracks and cluster to still count as matched"};
   Configurable<float> maxdPhi{"maxdPhi", 0.1, "Set a maximum difference in phi for tracks and cluster to still count as matched"};
   Configurable<float> maxEoverP{"maxEoverP", 1.5, "Set a maximum for cluster E / track p for track matching."};
@@ -92,8 +93,8 @@ struct SkimmerGammaCalo {
                  << "cluster table and must not be enabled together — this doubles MinClusters rows "
                  << "relative to EMCClusterMCLabels_001.";
     }
-    historeg.add("DefinitionIn", "Cluster definitions before cuts;#bf{Cluster definition};#bf{#it{N}_{clusters}}", HistType::kTH1F, {{51, -0.5, 50.5}});
-    historeg.add("DefinitionOut", "Cluster definitions after cuts;#bf{Cluster definition};#bf{#it{N}_{clusters}}", HistType::kTH1F, {{51, -0.5, 50.5}});
+    historeg.add("DefinitionIn", "Cluster definitions before cuts;#bf{Cluster definition};#bf{#it{N}_{clusters}}", HistType::kTH1F, {{53, -0.5, 52.5}});
+    historeg.add("DefinitionOut", "Cluster definitions after cuts;#bf{Cluster definition};#bf{#it{N}_{clusters}}", HistType::kTH1F, {{53, -0.5, 52.5}});
     historeg.add("EIn", "Energy of clusters before cuts", gHistoSpecClusterE);
     historeg.add("EOut", "Energy of clusters after cuts", gHistoSpecClusterE);
     historeg.add("MTEtaPhiBeforeTM", "Eta phi of matched tracks before TM cuts", gHistoSpecClusterTMdEtadPhi);
@@ -311,19 +312,19 @@ struct SkimmerGammaCalo {
     }
   }
 
-  void processRec(soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>::iterator const& collision, aod::EMCALClusters const& emcclusters, aod::EMCALClusterCells const& emcclustercells, aod::EMCALMatchedTracks const& emcmatchedtracks, aod::FullTracks const& tracks)
+  void processRec(soa::Join<aod::Collisions, aod::EvSels, aod::PMEvSels>::iterator const& collision, aod::EMCALClusters const& emcclusters, aod::EMCALClusterCells const& emcclustercells, aod::EMCALMatchedTracks const& emcmatchedtracks, aod::FullTracks const& tracks)
   {
     runAnalysis(collision, emcclusters, emcclustercells, emcmatchedtracks, tracks);
   }
   PROCESS_SWITCH(SkimmerGammaCalo, processRec, "process only reconstructed info", true);
 
-  void processRecWithSecondaries(soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>::iterator const& collision, aod::EMCALClusters const& emcclusters, aod::EMCALClusterCells const& emcclustercells, aod::EMCALMatchedTracks const& emcmatchedtracks, aod::FullTracks const& tracks, aod::EMCMatchSecs const& emcmatchedsecondaries)
+  void processRecWithSecondaries(soa::Join<aod::Collisions, aod::EvSels, aod::PMEvSels>::iterator const& collision, aod::EMCALClusters const& emcclusters, aod::EMCALClusterCells const& emcclustercells, aod::EMCALMatchedTracks const& emcmatchedtracks, aod::FullTracks const& tracks, aod::EMCMatchSecs const& emcmatchedsecondaries)
   {
     runAnalysis(collision, emcclusters, emcclustercells, emcmatchedtracks, tracks, emcmatchedsecondaries);
   }
   PROCESS_SWITCH(SkimmerGammaCalo, processRecWithSecondaries, "process reconstructed info with secondary track matching.", false);
 
-  void processRecMC(soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>::iterator const& collision,
+  void processRecMC(soa::Join<aod::Collisions, aod::EvSels, aod::PMEvSels>::iterator const& collision,
                     soa::Join<aod::EMCALClusters, aod::EMCALMCClusters> const& emcclusters,
                     aod::EMCALClusterCells const& emcclustercells, aod::EMCALMatchedTracks const& emcmatchedtracks,
                     aod::FullTracks const& tracks)
@@ -332,7 +333,7 @@ struct SkimmerGammaCalo {
   }
   PROCESS_SWITCH(SkimmerGammaCalo, processRecMC, "process reconstructed info + MC labels at once", false);
 
-  void processRecMCWithSecondaries(soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>::iterator const& collision,
+  void processRecMCWithSecondaries(soa::Join<aod::Collisions, aod::EvSels, aod::PMEvSels>::iterator const& collision,
                                    soa::Join<aod::EMCALClusters, aod::EMCALMCClusters> const& emcclusters,
                                    aod::EMCALClusterCells const& emcclustercells, aod::EMCALMatchedTracks const& emcmatchedtracks,
                                    aod::FullTracks const& tracks, aod::EMCMatchSecs const& emcmatchedsecondaries)

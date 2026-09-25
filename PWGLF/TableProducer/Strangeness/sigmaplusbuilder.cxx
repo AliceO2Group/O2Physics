@@ -18,19 +18,25 @@
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/DCAFitterN.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/Propagator.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/PID.h>
 #include <ReconstructionDataFormats/Track.h>
@@ -52,36 +58,61 @@ using namespace o2::framework;
 using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA,
                              aod::pidTPCFullEl, aod::pidTPCFullPr, aod::pidTOFFullPr>;
 using TracksFullMC = soa::Join<TracksFull, aod::McTrackLabels>;
-using CollisionsFull = aod::Collisions;
-using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels>;
+using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels>;
+using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
 
 struct Sigmaplusbuilder {
+
+  // event selection
+  Configurable<float> cutZVertex{"cutZVertex", 10.0f, "Accepted z-vertex range (cm)"};
 
   // photon (PCM) selection
   Configurable<float> photonMaxMass{"photonMaxMass", 0.20, "Max photon mass (GeV/c^2)"};
   Configurable<float> photonMinRapidity{"photonMinRapidity", -0.8, "Min photon rapidity"};
   Configurable<float> photonMaxRapidity{"photonMaxRapidity", 0.8, "Max photon rapidity"};
+  Configurable<float> cutRapMotherMC{"cutRapMotherMC", 1.0f, "Rapidity cut for generated mother Sigma+ in MC"};
+  Configurable<float> cutPtGenMC{"cutPtGenMC", 0.5f, "Minimum pT for generated Sigma+ in MC"};
   Configurable<float> photonDauEtaMin{"photonDauEtaMin", -0.8, "Min eta of photon daughter tracks"};
   Configurable<float> photonDauEtaMax{"photonDauEtaMax", 0.8, "Max eta of photon daughter tracks"};
   Configurable<float> photonMinRadius{"photonMinRadius", 3.0, "Min photon conversion radius (cm)"};
   Configurable<float> photonMaxRadius{"photonMaxRadius", 115., "Max photon conversion radius (cm)"};
   Configurable<float> photonMinV0cospa{"photonMinV0cospa", 0.80, "Min V0 CosPA"};
   Configurable<float> photonMaxDCAV0Dau{"photonMaxDCAV0Dau", 3.5, "Max DCA between photon daughters (cm)"};
+  Configurable<float> photonMaxOpeningAngle{"photonMaxOpeningAngle", 0.4, "Max opening angle between the photon's e+/e- daughter momenta (rad)"};
+  Configurable<float> photonMaxDeltaTheta{"photonMaxDeltaTheta", 0.15, "Max |theta_pos - theta_neg| of the photon's daughter tracks (rad)"};
   Configurable<float> photonMaxQt{"photonMaxQt", 0.15, "Max Armenteros qT for photons (GeV/c)"};
   Configurable<float> photonMaxAlpha{"photonMaxAlpha", 1.0, "Max |Armenteros alpha| for photons"};
-  Configurable<float> photonMaxTPCNSigmaEl{"photonMaxTPCNSigmaEl", 15, "Max |TPC nSigma_el| for photon daughters"};
+  Configurable<float> photonDauMinTPCNSigmaEl{"photonDauMinTPCNSigmaEl", -5., "Min TPC nSigma_el of the photon daughters"};
+  Configurable<float> photonDauMaxTPCNSigmaEl{"photonDauMaxTPCNSigmaEl", 5., "Max TPC nSigma_el of the photon daughters"};
+  Configurable<float> photonDauMinTpcNCls{"photonDauMinTpcNCls", 30, "Min number of found TPC clusters for the photon (V0) daughter tracks"};
 
   // proton selection
   Configurable<float> protonMinPt{"protonMinPt", 0.3, "Minimum proton pT (GeV/c)"};
   Configurable<float> protonMaxEta{"protonMaxEta", 0.9, "Maximum |eta| for proton track"};
+  Configurable<float> protonMinTpcNCls{"protonMinTpcNCls", 80, "Min number of found TPC clusters for the proton track"};
   Configurable<float> protonMaxTPCNSigma{"protonMaxTPCNSigma", 4, "Max |TPC nSigma_pr| for proton"};
   Configurable<float> protonMaxTOFNSigma{"protonMaxTOFNSigma", 4, "Max |TOF nSigma_pr| for proton, if TOF available"};
   Configurable<float> protonPtMinRequireTOF{"protonPtMinRequireTOF", 0.75, "Above this pT, require TOF PID for proton"};
+  Configurable<bool> protonRequireTofHit{"protonRequireTofHit", false, "Above protonPtMinRequireTOF, reject a proton with no TOF hit at all"};
+  Configurable<float> protonMinDcaToPV{"protonMinDcaToPV", 0.005, "Min DCAxy of the proton track to the PV (cm)"};
+  Configurable<float> protonMaxDcaToPV{"protonMaxDcaToPV", 5.0, "Max DCAxy of the proton track to the PV (cm)"};
 
   // proton-photon candidate selection
-  Configurable<float> candMaxDcaProtonGamma{"candMaxDcaProtonGamma", 5.0, "Max DCA between proton and photon at the fitted vertex (cm)"};
+  Configurable<float> candMaxDcaProtonGamma{"candMaxDcaProtonGamma", 0.5, "Max DCA between proton and photon at the fitted vertex (cm)"};
+  Configurable<float> candMaxDcaToPV{"candMaxDcaToPV", 0.1, "Max DCA of the candidate's total (reconstructed) momentum line to the PV (cm)"};
+  Configurable<bool> candRejectNegRootCenter{"candRejectNegRootCenter", true, "Reject candidates with rootCenter<0"};
+  Configurable<float> candMaxRootCenter{"candMaxRootCenter", 15, "Max rootCenter=-coefB/(2*coefA) (GeV/c)"};
+  Configurable<float> candMinAntiSigmaPointingAngle{"candMinAntiSigmaPointingAngle", 0.0, "Min AntiSigmaPointingAngle (rad)"};
+  Configurable<float> candMaxAntiSigmaPointingAngle{"candMaxAntiSigmaPointingAngle", 0.3, "Max AntiSigmaPointingAngle (rad)"};
+  Configurable<float> candMaxSigmaMass{"candMaxSigmaMass", 1.35, "Max reconstructed Sigma+ candidate mass (GeV/c^2)"};
+  Configurable<float> candMaxRapidity{"candMaxRapidity", 0.9, "Max |rapidity| of the reconstructed Sigma+ candidate"};
   Configurable<float> candMinRadius{"candMinRadius", 1.0, "Min candidate decay radius (cm)"};
   Configurable<float> candMaxRadius{"candMaxRadius", 100., "Max candidate decay radius (cm)"};
+  Configurable<float> candMinFlightDistance{"candMinFlightDistance", 0.0, "Min 3D distance from PV to candidate decay vertex (cm)"};
+  Configurable<float> candMaxFlightDistance{"candMaxFlightDistance", 250.0, "Max 3D distance from PV to candidate decay vertex (cm)"};
+  Configurable<float> candMaxPhotonOpeningAngle{"candMaxPhotonOpeningAngle", 3.15, "Max photon opening angle (rad), recomputed from the daughters' raw track momenta"};
+  Configurable<float> candMaxPhotonPointingAngle{"candMaxPhotonPointingAngle", 0.5, "Max angle between the photon's fitted momentum and the decay-vertex-to-conversion-point line (rad)"};
+  Configurable<float> candMaxPhotonDcaToPV{"candMaxPhotonDcaToPV", 250.0, "Max DCA of the photon's flight line to the PV (cm)"};
 
   // missing-photon discriminant retry
   // resolution-shaped function and tuned parameters from Run 2 used
@@ -93,13 +124,17 @@ struct Sigmaplusbuilder {
   Configurable<float> discrRetryPhiPar0{"discrRetryPhiPar0", 0.000129845, "par0 of the delta-phi resolution function"};
   Configurable<float> discrRetryPhiPar1{"discrRetryPhiPar1", 0.00199688, "par1 of the delta-phi resolution function"};
 
+  Configurable<bool> fillSlimTables{"fillSlimTables", false, "write the slim candidate tables instead of the full ones"};
+
   Configurable<std::string> ccdbPath{"ccdbPath", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
 
   Produces<aod::SigmaPlusCands> sigmaPlusCands;
   Produces<aod::SigmaPlusCandsMC> sigmaPlusCandsMC;
+  Produces<aod::SlimSigmaPlusCands> slimSigmaPlusCands;
+  Produces<aod::SlimSigmaPlusCandsMC> slimSigmaPlusCandsMC;
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   o2::vertexing::DCAFitterN<2> fitter;
   int mRunNumber = 0;
   float mBz = 0;
@@ -123,6 +158,7 @@ struct Sigmaplusbuilder {
     fitter.setMinParamChange(1e-3);
     fitter.setMinRelChi2Change(0.9);
     fitter.setMaxDZIni(1e9);
+    fitter.setMaxDXYIni(1e9);
     fitter.setMaxChi2(1e9);
     fitter.setUseAbsDCA(true);
 
@@ -133,116 +169,195 @@ struct Sigmaplusbuilder {
 
     const AxisSpec axisVertexZ{100, -15., 15., "vrtx_{Z} (cm)"};
 
-    const AxisSpec axisPhotonSel{11, -0.5, 10.5, "selection step"};
+    const AxisSpec axisPhotonSel{14, -0.5, 13.5, "selection step"};
     const AxisSpec axisPhotonMass{200, 0., 0.3, "m_{#gamma} (GeV/c^{2})"};
     const AxisSpec axisPhotonPt{100, 0., 5., "#it{p}_{T,#gamma} (GeV/c)"};
     const AxisSpec axisPhotonRadius{200, 0., 200., "R_{conv} (cm)"};
     const AxisSpec axisAlpha{100, -1., 1., "#alpha_{AP}"};
     const AxisSpec axisQt{100, 0., 0.3, "q_{T,AP} (GeV/c)"};
     const AxisSpec axisConvXY{200, -100., 100., "conv. point (cm)"};
+    const AxisSpec axisNSigmaEl{100, -10., 10., "n#sigma_{el}"};
+    const AxisSpec axisTpcNCls{160, -0.5, 159.5, "TPC clusters"};
+    const AxisSpec axisPhotonOpeningAngle{180, 0., 3.15, "opening angle (rad)"};
+    const AxisSpec axisPhotonDeltaTheta{200, -1., 1., "#Delta#theta (rad)"};
 
-    const AxisSpec axisProtonSel{5, -0.5, 4.5, "selection step"};
+    const AxisSpec axisProtonSel{7, -0.5, 6.5, "selection step"};
     const AxisSpec axisProtonPt{100, 0., 5., "#it{p}_{T,p} (GeV/c)"};
     const AxisSpec axisNSigma{100, -5., 5., "n#sigma"};
+    const AxisSpec axisProtonDcaToPV{1000, 0., 5., "DCA_{xy,p} to PV (cm)"};
 
     histos.add("hVertexZ", "hVertexZ", kTH1F, {axisVertexZ});
 
     histos.add("Photon/hSelectionCounter", "Photon/hSelectionCounter", kTH1F, {axisPhotonSel});
     auto hPhotonSel = histos.get<TH1>(HIST("Photon/hSelectionCounter"));
     hPhotonSel->GetXaxis()->SetBinLabel(1, "All");
-    hPhotonSel->GetXaxis()->SetBinLabel(2, "Mass");
-    hPhotonSel->GetXaxis()->SetBinLabel(3, "Rapidity");
-    hPhotonSel->GetXaxis()->SetBinLabel(4, "Neg eta");
-    hPhotonSel->GetXaxis()->SetBinLabel(5, "Pos eta");
+    hPhotonSel->GetXaxis()->SetBinLabel(2, "Neg eta");
+    hPhotonSel->GetXaxis()->SetBinLabel(3, "Pos eta");
+    hPhotonSel->GetXaxis()->SetBinLabel(4, "TPC clusters");
+    hPhotonSel->GetXaxis()->SetBinLabel(5, "TPC nSigma_{el}");
     hPhotonSel->GetXaxis()->SetBinLabel(6, "DCA daughters");
     hPhotonSel->GetXaxis()->SetBinLabel(7, "Radius");
-    hPhotonSel->GetXaxis()->SetBinLabel(8, "CosPA");
-    hPhotonSel->GetXaxis()->SetBinLabel(9, "Qt");
-    hPhotonSel->GetXaxis()->SetBinLabel(10, "Alpha");
-    hPhotonSel->GetXaxis()->SetBinLabel(11, "TPC nSigma el");
+    hPhotonSel->GetXaxis()->SetBinLabel(8, "Opening angle");
+    hPhotonSel->GetXaxis()->SetBinLabel(9, "Delta theta");
+    hPhotonSel->GetXaxis()->SetBinLabel(10, "CosPA");
+    hPhotonSel->GetXaxis()->SetBinLabel(11, "Rapidity");
+    hPhotonSel->GetXaxis()->SetBinLabel(12, "Qt");
+    hPhotonSel->GetXaxis()->SetBinLabel(13, "Alpha");
+    hPhotonSel->GetXaxis()->SetBinLabel(14, "Mass");
 
     histos.add("Photon/hMass", "Photon/hMass", kTH1F, {axisPhotonMass});
     histos.add("Photon/hPt", "Photon/hPt", kTH1F, {axisPhotonPt});
     histos.add("Photon/hRadius", "Photon/hRadius", kTH1F, {axisPhotonRadius});
     histos.add("Photon/h2ArmenterosPodolanski", "Photon/h2ArmenterosPodolanski", kTH2F, {axisAlpha, axisQt});
     histos.add("Photon/h2ConvPointXY", "Photon/h2ConvPointXY", kTH2F, {axisConvXY, axisConvXY});
+    histos.add("Photon/h2TPCNSigmaElPosVsPt", "Photon/h2TPCNSigmaElPosVsPt", kTH2F, {axisPhotonPt, axisNSigmaEl});
+    histos.add("Photon/h2TPCNSigmaElNegVsPt", "Photon/h2TPCNSigmaElNegVsPt", kTH2F, {axisPhotonPt, axisNSigmaEl});
+    histos.add("Photon/h2TPCNClsPosVsPt", "Photon/h2TPCNClsPosVsPt", kTH2F, {axisPhotonPt, axisTpcNCls});
+    histos.add("Photon/h2TPCNClsNegVsPt", "Photon/h2TPCNClsNegVsPt", kTH2F, {axisPhotonPt, axisTpcNCls});
+    histos.add("Photon/hOpeningAngle", "Photon/hOpeningAngle", kTH1F, {axisPhotonOpeningAngle});
+    histos.add("Photon/hDeltaTheta", "Photon/hDeltaTheta", kTH1F, {axisPhotonDeltaTheta});
 
     histos.add("Proton/hSelectionCounter", "Proton/hSelectionCounter", kTH1F, {axisProtonSel});
     auto hProtonSel = histos.get<TH1>(HIST("Proton/hSelectionCounter"));
     hProtonSel->GetXaxis()->SetBinLabel(1, "All");
     hProtonSel->GetXaxis()->SetBinLabel(2, "Pt");
     hProtonSel->GetXaxis()->SetBinLabel(3, "Eta");
-    hProtonSel->GetXaxis()->SetBinLabel(4, "TPC nSigma");
-    hProtonSel->GetXaxis()->SetBinLabel(5, "TOF nSigma");
+    hProtonSel->GetXaxis()->SetBinLabel(4, "TPC clusters");
+    hProtonSel->GetXaxis()->SetBinLabel(5, "TPC nSigma");
+    hProtonSel->GetXaxis()->SetBinLabel(6, "TOF nSigma");
+    hProtonSel->GetXaxis()->SetBinLabel(7, "DCA to PV");
 
     histos.add("Proton/hPt", "Proton/hPt", kTH1F, {axisProtonPt});
     histos.add("Proton/h2TPCNSigmaVsPt", "Proton/h2TPCNSigmaVsPt", kTH2F, {axisProtonPt, axisNSigma});
     histos.add("Proton/h2TOFNSigmaVsPt", "Proton/h2TOFNSigmaVsPt", kTH2F, {axisProtonPt, axisNSigma});
+    histos.add("Proton/h2TPCNClsVsPt", "Proton/h2TPCNClsVsPt", kTH2F, {axisProtonPt, axisTpcNCls});
+    histos.add("Proton/h2DcaToPVVsPt", "Proton/h2DcaToPVVsPt", kTH2F, {axisProtonPt, axisProtonDcaToPV});
 
-    const AxisSpec axisCandSel{7, -0.5, 6.5, "selection step"};
+    const AxisSpec axisCandSel{15, -0.5, 14.5, "selection step"};
+    const AxisSpec axisCandPhotonDcaToPV{250, 0., 250., "DCA_{#gamma-line} to PV (cm)"};
     const AxisSpec axisDca{100, 0., 10., "DCA(p,#gamma) (cm)"};
+    const AxisSpec axisDcaToPV{500, 0., 0.5, "DCA_{cand} to PV (cm)"};
     const AxisSpec axisCandRadius{200, 0., 200., "R_{dec} (cm)"};
+    const AxisSpec axisFlightDistance{250, 0., 250., "|SV-PV| (cm)"};
     const AxisSpec axisDiscriminant{200, -1., 1., "discriminant (GeV^{4}/#it{c}^{4})"};
+    const AxisSpec axisRootCenter{400, -10., 10., "-b/(2a) (GeV/#it{c})"};
+    const AxisSpec axisAntiSigmaPA{180, 0., 3.15, "AntiPA (rad)"};
     const AxisSpec axisMassSigma{200, 1.0, 1.4, "m_{p#gamma#gamma} (GeV/#it{c}^{2})"};
+    const AxisSpec axisRapidity{200, -2., 2., "y_{#Sigma^{+}}"};
     const AxisSpec axisSigmaPt{100, 0., 6., "#it{p}_{T,#Sigma^{+}} (GeV/#it{c})"};
     const AxisSpec axisMomentum{100, 0., 10., "#it{p} (GeV/#it{c})"};
 
     histos.add("Candidate/hSelectionCounter", "Candidate/hSelectionCounter", kTH1F, {axisCandSel});
     auto hCandSel = histos.get<TH1>(HIST("Candidate/hSelectionCounter"));
     hCandSel->GetXaxis()->SetBinLabel(1, "All pairs");
-    hCandSel->GetXaxis()->SetBinLabel(2, "Vertex fit");
-    hCandSel->GetXaxis()->SetBinLabel(3, "DCA(p,#gamma)");
-    hCandSel->GetXaxis()->SetBinLabel(4, "Radius");
-    hCandSel->GetXaxis()->SetBinLabel(5, "Real root");
-    hCandSel->GetXaxis()->SetBinLabel(6, "Valid root");
-    hCandSel->GetXaxis()->SetBinLabel(7, "Filled");
+    hCandSel->GetXaxis()->SetBinLabel(2, "Autocorrelation");
+    hCandSel->GetXaxis()->SetBinLabel(3, "Vertex fit");
+    hCandSel->GetXaxis()->SetBinLabel(4, "DCA(p,#gamma)");
+    hCandSel->GetXaxis()->SetBinLabel(5, "Radius");
+    hCandSel->GetXaxis()->SetBinLabel(6, "Flight distance");
+    hCandSel->GetXaxis()->SetBinLabel(7, "Real root");
+    hCandSel->GetXaxis()->SetBinLabel(8, "Valid root");
+    hCandSel->GetXaxis()->SetBinLabel(9, "DCA to PV");
+    hCandSel->GetXaxis()->SetBinLabel(10, "Mass");
+    hCandSel->GetXaxis()->SetBinLabel(11, "Rapidity");
+    hCandSel->GetXaxis()->SetBinLabel(12, "Photon opening angle");
+    hCandSel->GetXaxis()->SetBinLabel(13, "Photon pointing angle");
+    hCandSel->GetXaxis()->SetBinLabel(14, "Photon DCA to PV");
+    hCandSel->GetXaxis()->SetBinLabel(15, "Filled");
 
     histos.add("Candidate/hDcaProtonGamma", "Candidate/hDcaProtonGamma", kTH1F, {axisDca});
+    histos.add("Candidate/hDcaToPV", "Candidate/hDcaToPV", kTH1F, {axisDcaToPV});
     histos.add("Candidate/hRadius", "Candidate/hRadius", kTH1F, {axisCandRadius});
+    histos.add("Candidate/hFlightDistance", "Candidate/hFlightDistance", kTH1F, {axisFlightDistance});
+    histos.add("Candidate/hPhotonOpeningAngle", "Candidate/hPhotonOpeningAngle", kTH1F, {axisPhotonOpeningAngle});
+    histos.add("Candidate/hPhotonPointingAngle", "Candidate/hPhotonPointingAngle", kTH1F, {axisPhotonOpeningAngle});
+    histos.add("Candidate/hPhotonDcaToPV", "Candidate/hPhotonDcaToPV", kTH1F, {axisCandPhotonDcaToPV});
     histos.add("Candidate/hDiscriminant", "Candidate/hDiscriminant", kTH1F, {axisDiscriminant});
+    histos.add("Candidate/hRootCenter", "Candidate/hRootCenter", kTH1F, {axisRootCenter});
     histos.add("Candidate/hMassSigmaPlus", "Candidate/hMassSigmaPlus", kTH1F, {axisMassSigma});
+    histos.add("Candidate/hRapidity", "Candidate/hRapidity", kTH1F, {axisRapidity});
     histos.add("Candidate/h2MassVsPt", "Candidate/h2MassVsPt", kTH2F, {axisSigmaPt, axisMassSigma});
+    histos.add("Candidate/h2MassVsRootCenter", "Candidate/h2MassVsRootCenter", kTH2F, {axisRootCenter, axisMassSigma});
+    histos.add("Candidate/hAntiSigmaPointingAngle", "Candidate/hAntiSigmaPointingAngle", kTH1F, {axisAntiSigmaPA});
+    histos.add("Candidate/h2MassVsAntiSigmaPointingAngle", "Candidate/h2MassVsAntiSigmaPointingAngle", kTH2F, {axisAntiSigmaPA, axisMassSigma});
 
     const AxisSpec axisDiscrIter{discrRetryMaxIter + 2, -0.5, discrRetryMaxIter + 1.5, "discriminant retry iteration"};
     histos.add("Candidate/hDiscriminantRetryIter", "Candidate/hDiscriminantRetryIter", kTH1F, {axisDiscrIter});
 
-    if (doprocessMc) {
+    if (doprocessMc || doprocessFindable) {
       histos.add("Photon/True/hSelectionCounter", "Photon/True/hSelectionCounter", kTH1F, {axisPhotonSel});
       auto hPhotonSelSignal = histos.get<TH1>(HIST("Photon/True/hSelectionCounter"));
       hPhotonSelSignal->GetXaxis()->SetBinLabel(1, "All");
-      hPhotonSelSignal->GetXaxis()->SetBinLabel(2, "Mass");
-      hPhotonSelSignal->GetXaxis()->SetBinLabel(3, "Rapidity");
-      hPhotonSelSignal->GetXaxis()->SetBinLabel(4, "Neg eta");
-      hPhotonSelSignal->GetXaxis()->SetBinLabel(5, "Pos eta");
+      hPhotonSelSignal->GetXaxis()->SetBinLabel(2, "Neg eta");
+      hPhotonSelSignal->GetXaxis()->SetBinLabel(3, "Pos eta");
+      hPhotonSelSignal->GetXaxis()->SetBinLabel(4, "TPC clusters");
+      hPhotonSelSignal->GetXaxis()->SetBinLabel(5, "TPC nSigma_{el}");
       hPhotonSelSignal->GetXaxis()->SetBinLabel(6, "DCA daughters");
       hPhotonSelSignal->GetXaxis()->SetBinLabel(7, "Radius");
-      hPhotonSelSignal->GetXaxis()->SetBinLabel(8, "CosPA");
-      hPhotonSelSignal->GetXaxis()->SetBinLabel(9, "Qt");
-      hPhotonSelSignal->GetXaxis()->SetBinLabel(10, "Alpha");
-      hPhotonSelSignal->GetXaxis()->SetBinLabel(11, "TPC nSigma el");
+      hPhotonSelSignal->GetXaxis()->SetBinLabel(8, "Opening angle");
+      hPhotonSelSignal->GetXaxis()->SetBinLabel(9, "Delta theta");
+      hPhotonSelSignal->GetXaxis()->SetBinLabel(10, "CosPA");
+      hPhotonSelSignal->GetXaxis()->SetBinLabel(11, "Rapidity");
+      hPhotonSelSignal->GetXaxis()->SetBinLabel(12, "Qt");
+      hPhotonSelSignal->GetXaxis()->SetBinLabel(13, "Alpha");
+      hPhotonSelSignal->GetXaxis()->SetBinLabel(14, "Mass");
 
+      histos.add("Photon/True/h2TPCNSigmaElPosVsPt", "Photon/True/h2TPCNSigmaElPosVsPt", kTH2F, {axisPhotonPt, axisNSigmaEl});
+      histos.add("Photon/True/h2TPCNSigmaElNegVsPt", "Photon/True/h2TPCNSigmaElNegVsPt", kTH2F, {axisPhotonPt, axisNSigmaEl});
+      histos.add("Photon/True/h2TPCNClsPosVsPt", "Photon/True/h2TPCNClsPosVsPt", kTH2F, {axisPhotonPt, axisTpcNCls});
+      histos.add("Photon/True/h2TPCNClsNegVsPt", "Photon/True/h2TPCNClsNegVsPt", kTH2F, {axisPhotonPt, axisTpcNCls});
+    }
+
+    if (doprocessMc) {
       histos.add("Photon/True/hMass", "Photon/True/hMass", kTH1F, {axisPhotonMass});
       histos.add("Photon/True/hPt", "Photon/True/hPt", kTH1F, {axisPhotonPt});
       histos.add("Photon/True/hRadius", "Photon/True/hRadius", kTH1F, {axisPhotonRadius});
       histos.add("Photon/True/h2ArmenterosPodolanski", "Photon/True/h2ArmenterosPodolanski", kTH2F, {axisAlpha, axisQt});
       histos.add("Photon/True/h2ConvPointXY", "Photon/True/h2ConvPointXY", kTH2F, {axisConvXY, axisConvXY});
+      histos.add("Photon/True/hOpeningAngle", "Photon/True/hOpeningAngle", kTH1F, {axisPhotonOpeningAngle});
+      histos.add("Photon/True/hDeltaTheta", "Photon/True/hDeltaTheta", kTH1F, {axisPhotonDeltaTheta});
 
       histos.add("Proton/True/hPt", "Proton/True/hPt", kTH1F, {axisProtonPt});
       histos.add("Proton/True/h2TPCNSigmaVsPt", "Proton/True/h2TPCNSigmaVsPt", kTH2F, {axisProtonPt, axisNSigma});
       histos.add("Proton/True/h2TOFNSigmaVsPt", "Proton/True/h2TOFNSigmaVsPt", kTH2F, {axisProtonPt, axisNSigma});
+      histos.add("Proton/True/h2TPCNClsVsPt", "Proton/True/h2TPCNClsVsPt", kTH2F, {axisProtonPt, axisTpcNCls});
+      histos.add("Proton/True/h2DcaToPVVsPt", "Proton/True/h2DcaToPVVsPt", kTH2F, {axisProtonPt, axisProtonDcaToPV});
+
+      histos.add("Proton/True/hSelectionCounter", "Proton/True/hSelectionCounter", kTH1F, {axisProtonSel});
+      auto hProtonSelSignal = histos.get<TH1>(HIST("Proton/True/hSelectionCounter"));
+      hProtonSelSignal->GetXaxis()->SetBinLabel(1, "All");
+      hProtonSelSignal->GetXaxis()->SetBinLabel(2, "Pt");
+      hProtonSelSignal->GetXaxis()->SetBinLabel(3, "Eta");
+      hProtonSelSignal->GetXaxis()->SetBinLabel(4, "TPC clusters");
+      hProtonSelSignal->GetXaxis()->SetBinLabel(5, "TPC nSigma");
+      hProtonSelSignal->GetXaxis()->SetBinLabel(6, "TOF nSigma");
+      hProtonSelSignal->GetXaxis()->SetBinLabel(7, "DCA to PV");
 
       histos.add("Candidate/True/hSelectionCounter", "Candidate/True/hSelectionCounter", kTH1F, {axisCandSel});
       auto hCandSelSignal = histos.get<TH1>(HIST("Candidate/True/hSelectionCounter"));
       hCandSelSignal->GetXaxis()->SetBinLabel(1, "All pairs");
-      hCandSelSignal->GetXaxis()->SetBinLabel(2, "Vertex fit");
-      hCandSelSignal->GetXaxis()->SetBinLabel(3, "DCA(p,#gamma)");
-      hCandSelSignal->GetXaxis()->SetBinLabel(4, "Radius");
-      hCandSelSignal->GetXaxis()->SetBinLabel(5, "Real root");
-      hCandSelSignal->GetXaxis()->SetBinLabel(6, "Valid root");
-      hCandSelSignal->GetXaxis()->SetBinLabel(7, "Filled");
+      hCandSelSignal->GetXaxis()->SetBinLabel(2, "Autocorrelation");
+      hCandSelSignal->GetXaxis()->SetBinLabel(3, "Vertex fit");
+      hCandSelSignal->GetXaxis()->SetBinLabel(4, "DCA(p,#gamma)");
+      hCandSelSignal->GetXaxis()->SetBinLabel(5, "Radius");
+      hCandSelSignal->GetXaxis()->SetBinLabel(6, "Flight distance");
+      hCandSelSignal->GetXaxis()->SetBinLabel(7, "Real root");
+      hCandSelSignal->GetXaxis()->SetBinLabel(8, "Valid root");
+      hCandSelSignal->GetXaxis()->SetBinLabel(9, "DCA to PV");
+      hCandSelSignal->GetXaxis()->SetBinLabel(10, "Mass");
+      hCandSelSignal->GetXaxis()->SetBinLabel(11, "Rapidity");
+      hCandSelSignal->GetXaxis()->SetBinLabel(12, "Photon opening angle");
+      hCandSelSignal->GetXaxis()->SetBinLabel(13, "Photon pointing angle");
+      hCandSelSignal->GetXaxis()->SetBinLabel(14, "Photon DCA to PV");
+      hCandSelSignal->GetXaxis()->SetBinLabel(15, "Filled");
 
       histos.add("Candidate/True/hDcaProtonGamma", "Candidate/True/hDcaProtonGamma", kTH1F, {axisDca});
+      histos.add("Candidate/True/hDcaToPV", "Candidate/True/hDcaToPV", kTH1F, {axisDcaToPV});
       histos.add("Candidate/True/hRadius", "Candidate/True/hRadius", kTH1F, {axisCandRadius});
+      histos.add("Candidate/True/hFlightDistance", "Candidate/True/hFlightDistance", kTH1F, {axisFlightDistance});
+      histos.add("Candidate/True/hPhotonOpeningAngle", "Candidate/True/hPhotonOpeningAngle", kTH1F, {axisPhotonOpeningAngle});
+      histos.add("Candidate/True/hPhotonPointingAngle", "Candidate/True/hPhotonPointingAngle", kTH1F, {axisPhotonOpeningAngle});
+      histos.add("Candidate/True/hPhotonDcaToPV", "Candidate/True/hPhotonDcaToPV", kTH1F, {axisCandPhotonDcaToPV});
       const AxisSpec axisVtxRes{200, 0., 20., "|vtx_{fit} - vtx_{MC}| (cm)"};
       histos.add("Candidate/True/hVertexResFromMcTruth", "Candidate/True/hVertexResFromMcTruth", kTH1F, {axisVtxRes});
       const AxisSpec axisMomRes{200, -1., 1., "(p_{fit} - p_{MC}) / p_{MC}"};
@@ -252,8 +367,13 @@ struct Sigmaplusbuilder {
       histos.add("Candidate/True/hProtonFlightAngle", "Candidate/True/hProtonFlightAngle", kTH1F, {axisProtonFlightAngle});
       histos.add("Candidate/True/hDiscriminant", "Candidate/True/hDiscriminant", kTH1F, {axisDiscriminant});
       histos.add("Candidate/True/hDiscriminantRetryIter", "Candidate/True/hDiscriminantRetryIter", kTH1F, {axisDiscrIter});
+      histos.add("Candidate/True/hRootCenter", "Candidate/True/hRootCenter", kTH1F, {axisRootCenter});
       histos.add("Candidate/True/hMassSigmaPlus", "Candidate/True/hMassSigmaPlus", kTH1F, {axisMassSigma});
+      histos.add("Candidate/True/hRapidity", "Candidate/True/hRapidity", kTH1F, {axisRapidity});
       histos.add("Candidate/True/h2MassVsPt", "Candidate/True/h2MassVsPt", kTH2F, {axisSigmaPt, axisMassSigma});
+      histos.add("Candidate/True/h2MassVsRootCenter", "Candidate/True/h2MassVsRootCenter", kTH2F, {axisRootCenter, axisMassSigma});
+      histos.add("Candidate/True/hAntiSigmaPointingAngle", "Candidate/True/hAntiSigmaPointingAngle", kTH1F, {axisAntiSigmaPA});
+      histos.add("Candidate/True/h2MassVsAntiSigmaPointingAngle", "Candidate/True/h2MassVsAntiSigmaPointingAngle", kTH2F, {axisAntiSigmaPA, axisMassSigma});
 
       histos.add("MC/hGenSigmaPlusPt", "MC/hGenSigmaPlusPt", kTH1F, {axisSigmaPt});
 
@@ -277,11 +397,11 @@ struct Sigmaplusbuilder {
     if (doprocessFindable) {
       const AxisSpec axisDetectorPresence{3, -0.5, 2.5, "detector"};
       const AxisSpec axisDuplicateTrack{2, -0.5, 1.5, "track"};
-      const AxisSpec axisV0Presence{2, -0.5, 1.5, "V0 match"};
       const AxisSpec axisTPCClusters{160, -0.5, 159.5, "TPC clusters"};
       const AxisSpec axisPhotonMomResolution{200, -1., 1., "(#it{p}_{reco,#gamma} - #it{p}_{MC,#gamma})/#it{p}_{MC,#gamma}"};
       const AxisSpec axisPhotonCosPA{200, -1., 1., "cosPA_{#gamma}"};
       const AxisSpec axisPairMass{200, 0., 0.1, "m_{e^{+}e^{-}} (GeV/#it{c}^{2})"};
+      const AxisSpec axisV0Presence{2, -0.5, 1.5, "V0 match"};
       histos.add("Findable/hSigmaPlusPt", "Findable/hSigmaPlusPt", kTH1F, {axisSigmaPt});
       histos.add("Findable/h2ProtonPtVsSigmaPlusPt", "Findable/h2ProtonPtVsSigmaPlusPt", kTH2F, {axisSigmaPt, axisMomentum});
       histos.add("Findable/hElectronPt", "Findable/hElectronPt", kTH1F, {axisMomentum});
@@ -291,14 +411,19 @@ struct Sigmaplusbuilder {
       histos.add("Findable/hPhotonMomentumResolution", "Findable/hPhotonMomentumResolution", kTH1F, {axisPhotonMomResolution});
       histos.add("Findable/hPhotonCosPA", "Findable/hPhotonCosPA", kTH1F, {axisPhotonCosPA});
       histos.add("Findable/hConversionPairV0Presence", "Findable/hConversionPairV0Presence", kTH1F, {axisV0Presence});
+      histos.add("Findable/hPhotonSearchPresence", "Findable/hPhotonSearchPresence", kTH1F, {axisV0Presence});
       histos.add("Findable/hDuplicateConversionTrackCounter", "Findable/hDuplicateConversionTrackCounter", kTH1F, {axisDuplicateTrack});
       histos.add("Findable/hDuplicateElectronTPCNClsFound", "Findable/hDuplicateElectronTPCNClsFound", kTH1F, {axisTPCClusters});
       histos.add("Findable/hDuplicatePositronTPCNClsFound", "Findable/hDuplicatePositronTPCNClsFound", kTH1F, {axisTPCClusters});
       histos.add("Findable/hElectronDetectorPresence", "Findable/hElectronDetectorPresence", kTH1F, {axisDetectorPresence});
       histos.add("Findable/hPositronDetectorPresence", "Findable/hPositronDetectorPresence", kTH1F, {axisDetectorPresence});
+
       auto hConversionPairV0Presence = histos.get<TH1>(HIST("Findable/hConversionPairV0Presence"));
       hConversionPairV0Presence->GetXaxis()->SetBinLabel(1, "valid pair");
       hConversionPairV0Presence->GetXaxis()->SetBinLabel(2, "in V0");
+      auto hPhotonSearchPresence = histos.get<TH1>(HIST("Findable/hPhotonSearchPresence"));
+      hPhotonSearchPresence->GetXaxis()->SetBinLabel(1, "valid pair");
+      hPhotonSearchPresence->GetXaxis()->SetBinLabel(2, "passed photon selection");
       auto hDuplicateConversionTrackCounter = histos.get<TH1>(HIST("Findable/hDuplicateConversionTrackCounter"));
       hDuplicateConversionTrackCounter->GetXaxis()->SetBinLabel(1, "e^{-}");
       hDuplicateConversionTrackCounter->GetXaxis()->SetBinLabel(2, "e^{+}");
@@ -313,124 +438,260 @@ struct Sigmaplusbuilder {
     }
   }
 
-  // photon (PCM) candidate selection
-  template <bool IsMC, typename TTracks, typename TV0>
-  bool selectPhoton(const TV0& v0)
+  // photon (electron/positron conversion pair) candidate
+  template <typename TTrack>
+  struct PhotonCand {
+    float x = 0.f, y = 0.f, z = 0.f;
+    float px = 0.f, py = 0.f, pz = 0.f;
+    float mGamma = 0.f;
+    float alpha = 0.f;
+    float qtarm = 0.f;
+    float radius = 0.f;
+    TTrack negTrack;
+    TTrack posTrack;
+  };
+
+  // photon candidates
+  template <bool IsMC, typename TV0s, typename TTracks>
+  std::vector<PhotonCand<typename TTracks::iterator>> findPhotonsFromV0s(const TV0s& v0s, const TTracks&, const std::array<float, 3>& pv)
   {
-    auto posTrack = v0.template posTrack_as<TTracks>();
-    auto negTrack = v0.template negTrack_as<TTracks>();
+    std::vector<PhotonCand<typename TTracks::iterator>> photons;
 
-    bool isSignal = false;
-    if constexpr (IsMC) {
-      if (posTrack.has_mcParticle() && negTrack.has_mcParticle()) {
-        auto mcPos = posTrack.template mcParticle_as<aod::McParticles>();
-        auto mcNeg = negTrack.template mcParticle_as<aod::McParticles>();
-        isSignal = findSigmaPlusMotherOfPhoton(mcPos, mcNeg) >= 0;
-      }
-    }
+    for (const auto& v0 : v0s) {
+      auto posTrack = v0.template posTrack_as<TTracks>();
+      auto negTrack = v0.template negTrack_as<TTracks>();
 
-    auto fillPhotonStep = [&](int step) {
-      histos.fill(HIST("Photon/hSelectionCounter"), step);
+      bool isSignal = false;
       if constexpr (IsMC) {
-        if (isSignal) {
-          histos.fill(HIST("Photon/True/hSelectionCounter"), step);
+        if (posTrack.has_mcParticle() && negTrack.has_mcParticle()) {
+          auto mcPos = posTrack.template mcParticle_as<aod::McParticles>();
+          auto mcNeg = negTrack.template mcParticle_as<aod::McParticles>();
+          isSignal = findSigmaPlusMotherOfPhoton(mcPos, mcNeg) >= 0;
         }
       }
-    };
-    fillPhotonStep(0);
 
-    if (v0.mGamma() < 0 || v0.mGamma() > photonMaxMass) {
-      return false;
+      auto fillPhotonStep = [&](int step) {
+        histos.fill(HIST("Photon/hSelectionCounter"), step);
+        if constexpr (IsMC) {
+          if (isSignal) {
+            histos.fill(HIST("Photon/True/hSelectionCounter"), step);
+          }
+        }
+      };
+      fillPhotonStep(0);
+
+      if (negTrack.eta() < photonDauEtaMin || negTrack.eta() > photonDauEtaMax) {
+        continue;
+      }
+      fillPhotonStep(1);
+
+      if (posTrack.eta() < photonDauEtaMin || posTrack.eta() > photonDauEtaMax) {
+        continue;
+      }
+      fillPhotonStep(2);
+
+      histos.fill(HIST("Photon/h2TPCNClsPosVsPt"), posTrack.pt(), posTrack.tpcNClsFound());
+      histos.fill(HIST("Photon/h2TPCNClsNegVsPt"), negTrack.pt(), negTrack.tpcNClsFound());
+      if constexpr (IsMC) {
+        if (isSignal) {
+          histos.fill(HIST("Photon/True/h2TPCNClsPosVsPt"), posTrack.pt(), posTrack.tpcNClsFound());
+          histos.fill(HIST("Photon/True/h2TPCNClsNegVsPt"), negTrack.pt(), negTrack.tpcNClsFound());
+        }
+      }
+      if (posTrack.tpcNClsFound() < photonDauMinTpcNCls || negTrack.tpcNClsFound() < photonDauMinTpcNCls) {
+        continue;
+      }
+      fillPhotonStep(3);
+
+      histos.fill(HIST("Photon/h2TPCNSigmaElPosVsPt"), posTrack.pt(), posTrack.tpcNSigmaEl());
+      histos.fill(HIST("Photon/h2TPCNSigmaElNegVsPt"), negTrack.pt(), negTrack.tpcNSigmaEl());
+      if constexpr (IsMC) {
+        if (isSignal) {
+          histos.fill(HIST("Photon/True/h2TPCNSigmaElPosVsPt"), posTrack.pt(), posTrack.tpcNSigmaEl());
+          histos.fill(HIST("Photon/True/h2TPCNSigmaElNegVsPt"), negTrack.pt(), negTrack.tpcNSigmaEl());
+        }
+      }
+      if (posTrack.tpcNSigmaEl() < photonDauMinTPCNSigmaEl || posTrack.tpcNSigmaEl() > photonDauMaxTPCNSigmaEl ||
+          negTrack.tpcNSigmaEl() < photonDauMinTPCNSigmaEl || negTrack.tpcNSigmaEl() > photonDauMaxTPCNSigmaEl) {
+        continue;
+      }
+      fillPhotonStep(4);
+
+      if (v0.dcaV0daughters() > photonMaxDCAV0Dau) {
+        continue;
+      }
+      fillPhotonStep(5);
+
+      std::array<float, 3> secVtx{v0.x(), v0.y(), v0.z()};
+      float radius = v0.v0radius();
+      if (radius < photonMinRadius || radius > photonMaxRadius) {
+        continue;
+      }
+      fillPhotonStep(6);
+
+      std::array<float, 3> pNeg{v0.pxneg(), v0.pyneg(), v0.pzneg()};
+      std::array<float, 3> pPos{v0.pxpos(), v0.pypos(), v0.pzpos()};
+
+      // opening angle between the daughter momenta
+      float photonOpeningAngleV0 = std::acos(std::clamp(dot3(pPos, pNeg) / std::sqrt(dot3(pPos, pPos) * dot3(pNeg, pNeg)), -1.f, 1.f));
+      histos.fill(HIST("Photon/hOpeningAngle"), photonOpeningAngleV0);
+      if constexpr (IsMC) {
+        if (isSignal) {
+          histos.fill(HIST("Photon/True/hOpeningAngle"), photonOpeningAngleV0);
+        }
+      }
+      if (photonOpeningAngleV0 > photonMaxOpeningAngle) {
+        continue;
+      }
+      fillPhotonStep(7);
+
+      // delta theta between the daughter tracks' own polar angles
+      float posTheta = 2.f * std::atan(std::exp(-posTrack.eta()));
+      float negTheta = 2.f * std::atan(std::exp(-negTrack.eta()));
+      float photonDeltaTheta = posTheta - negTheta;
+      histos.fill(HIST("Photon/hDeltaTheta"), photonDeltaTheta);
+      if constexpr (IsMC) {
+        if (isSignal) {
+          histos.fill(HIST("Photon/True/hDeltaTheta"), photonDeltaTheta);
+        }
+      }
+      if (std::abs(photonDeltaTheta) > photonMaxDeltaTheta) {
+        continue;
+      }
+      fillPhotonStep(8);
+
+      std::array<float, 3> pGamma{pNeg[0] + pPos[0], pNeg[1] + pPos[1], pNeg[2] + pPos[2]};
+      float gammaP = std::sqrt(dot3(pGamma, pGamma));
+
+      std::array<float, 3> flightVec{secVtx[0] - pv[0], secVtx[1] - pv[1], secVtx[2] - pv[2]};
+      float flightNorm = std::sqrt(dot3(flightVec, flightVec));
+      float cosPA = dot3(flightVec, pGamma) / (flightNorm * gammaP);
+      if (cosPA < photonMinV0cospa) {
+        continue;
+      }
+      fillPhotonStep(9);
+
+      float photonY = RecoDecay::y(pGamma, o2::constants::physics::MassGamma);
+      if (photonY < photonMinRapidity || photonY > photonMaxRapidity) {
+        continue;
+      }
+      fillPhotonStep(10);
+
+      float qtarm = v0.qtarm();
+      float alpha = v0.alpha();
+      if (qtarm > photonMaxQt) {
+        continue;
+      }
+      fillPhotonStep(11);
+
+      if (std::abs(alpha) > photonMaxAlpha) {
+        continue;
+      }
+      fillPhotonStep(12);
+
+      float mGamma = v0.mGamma();
+      if (mGamma > photonMaxMass) {
+        continue;
+      }
+      fillPhotonStep(13);
+
+      histos.fill(HIST("Photon/hMass"), mGamma);
+      histos.fill(HIST("Photon/hPt"), std::hypot(pGamma[0], pGamma[1]));
+      histos.fill(HIST("Photon/hRadius"), radius);
+      histos.fill(HIST("Photon/h2ArmenterosPodolanski"), alpha, qtarm);
+      histos.fill(HIST("Photon/h2ConvPointXY"), secVtx[0], secVtx[1]);
+
+      photons.push_back({secVtx[0], secVtx[1], secVtx[2], pGamma[0], pGamma[1], pGamma[2], mGamma, alpha, qtarm, radius, negTrack, posTrack});
     }
-    fillPhotonStep(1);
 
-    float photonY = RecoDecay::y(std::array{v0.px(), v0.py(), v0.pz()}, o2::constants::physics::MassGamma);
-    if (photonY < photonMinRapidity || photonY > photonMaxRapidity) {
-      return false;
-    }
-    fillPhotonStep(2);
-
-    if (v0.negativeeta() < photonDauEtaMin || v0.negativeeta() > photonDauEtaMax) {
-      return false;
-    }
-    fillPhotonStep(3);
-
-    if (v0.positiveeta() < photonDauEtaMin || v0.positiveeta() > photonDauEtaMax) {
-      return false;
-    }
-    fillPhotonStep(4);
-
-    if (std::abs(v0.dcaV0daughters()) > photonMaxDCAV0Dau) {
-      return false;
-    }
-    fillPhotonStep(5);
-
-    if (v0.v0radius() < photonMinRadius || v0.v0radius() > photonMaxRadius) {
-      return false;
-    }
-    fillPhotonStep(6);
-
-    if (v0.v0cosPA() < photonMinV0cospa) {
-      return false;
-    }
-    fillPhotonStep(7);
-
-    if (v0.qtarm() > photonMaxQt) {
-      return false;
-    }
-    fillPhotonStep(8);
-
-    if (std::abs(v0.alpha()) > photonMaxAlpha) {
-      return false;
-    }
-    fillPhotonStep(9);
-
-    if (std::abs(posTrack.tpcNSigmaEl()) > photonMaxTPCNSigmaEl || std::abs(negTrack.tpcNSigmaEl()) > photonMaxTPCNSigmaEl) {
-      return false;
-    }
-    fillPhotonStep(10);
-
-    histos.fill(HIST("Photon/hMass"), v0.mGamma());
-    histos.fill(HIST("Photon/hPt"), v0.pt());
-    histos.fill(HIST("Photon/hRadius"), v0.v0radius());
-    histos.fill(HIST("Photon/h2ArmenterosPodolanski"), v0.alpha(), v0.qtarm());
-    histos.fill(HIST("Photon/h2ConvPointXY"), v0.x(), v0.y());
-
-    return true;
+    return photons;
   }
 
   // proton candidate selection
-  template <typename TTrack>
+  template <bool IsMC, typename TTrack>
   bool selectProton(const TTrack& track)
   {
-    histos.fill(HIST("Proton/hSelectionCounter"), 0);
+    bool isSignal = false;
+    if constexpr (IsMC) {
+      if (track.has_mcParticle()) {
+        auto mcProton = track.template mcParticle_as<aod::McParticles>();
+        isSignal = findSigmaPlusMotherOfProton(mcProton) >= 0;
+      }
+    }
+    auto fillProtonStep = [&](int step) {
+      histos.fill(HIST("Proton/hSelectionCounter"), step);
+      if constexpr (IsMC) {
+        if (isSignal) {
+          histos.fill(HIST("Proton/True/hSelectionCounter"), step);
+        }
+      }
+    };
+    fillProtonStep(0);
 
     if (track.pt() < protonMinPt) {
       return false;
     }
-    histos.fill(HIST("Proton/hSelectionCounter"), 1);
+    fillProtonStep(1);
 
     if (std::abs(track.eta()) > protonMaxEta) {
       return false;
     }
-    histos.fill(HIST("Proton/hSelectionCounter"), 2);
+    fillProtonStep(2);
+
+    histos.fill(HIST("Proton/h2TPCNClsVsPt"), track.pt(), track.tpcNClsFound());
+    if constexpr (IsMC) {
+      if (isSignal) {
+        histos.fill(HIST("Proton/True/h2TPCNClsVsPt"), track.pt(), track.tpcNClsFound());
+      }
+    }
+    if (track.tpcNClsFound() < protonMinTpcNCls) {
+      return false;
+    }
+    fillProtonStep(3);
 
     if (std::abs(track.tpcNSigmaPr()) > protonMaxTPCNSigma) {
       return false;
     }
-    histos.fill(HIST("Proton/hSelectionCounter"), 3);
+    fillProtonStep(4);
 
+    // A track with no TOF hit at all is tolerated even above protonPtMinRequireTOF - only an existing-but-failing
+    // TOF nSigma gets rejected. Set protonRequireTofHit=true to instead mandate a TOF hit above the threshold.
     if (track.pt() > protonPtMinRequireTOF) {
-      if (!track.hasTOF() || std::abs(track.tofNSigmaPr()) > protonMaxTOFNSigma) {
+      if (track.hasTOF()) {
+        if (std::abs(track.tofNSigmaPr()) > protonMaxTOFNSigma) {
+          return false;
+        }
+      } else if (protonRequireTofHit) {
         return false;
       }
     }
-    histos.fill(HIST("Proton/hSelectionCounter"), 4);
+    fillProtonStep(5);
+
+    // proton DCA to PV
+    histos.fill(HIST("Proton/h2DcaToPVVsPt"), track.pt(), std::abs(track.dcaXY()));
+    if constexpr (IsMC) {
+      if (isSignal) {
+        histos.fill(HIST("Proton/True/h2DcaToPVVsPt"), track.pt(), std::abs(track.dcaXY()));
+      }
+    }
+    if (std::abs(track.dcaXY()) < protonMinDcaToPV || std::abs(track.dcaXY()) > protonMaxDcaToPV) {
+      return false;
+    }
+    fillProtonStep(6);
 
     histos.fill(HIST("Proton/hPt"), track.pt());
     histos.fill(HIST("Proton/h2TPCNSigmaVsPt"), track.pt(), track.tpcNSigmaPr());
     if (track.hasTOF()) {
       histos.fill(HIST("Proton/h2TOFNSigmaVsPt"), track.pt(), track.tofNSigmaPr());
+    }
+    if constexpr (IsMC) {
+      if (isSignal) {
+        histos.fill(HIST("Proton/True/hPt"), track.pt());
+        histos.fill(HIST("Proton/True/h2TPCNSigmaVsPt"), track.pt(), track.tpcNSigmaPr());
+        if (track.hasTOF()) {
+          histos.fill(HIST("Proton/True/h2TOFNSigmaVsPt"), track.pt(), track.tofNSigmaPr());
+        }
+      }
     }
 
     return true;
@@ -562,29 +823,31 @@ struct Sigmaplusbuilder {
   }
 
   // Build a Sigma+ -> p pi0 candidate from a proton track and a PCM photon
-  template <bool IsMC, typename TTracks, typename TTrack, typename TV0>
-  void buildSigmaPlusCandidate(const TTrack& protonTrack, const TV0& photon, const std::array<float, 3>& pv)
+  // Returns the MC index of the matched true Sigma+ mother if a signal candidate was built, -1 otherwise
+  template <bool IsMC, typename TTrack, typename TPhotonTrack>
+  int buildSigmaPlusCandidate(const TTrack& protonTrack, const PhotonCand<TPhotonTrack>& photon, const std::array<float, 3>& pv)
   {
-    auto posTrack = photon.template posTrack_as<TTracks>();
-    auto negTrack = photon.template negTrack_as<TTracks>();
+    auto posTrack = photon.posTrack;
+    auto negTrack = photon.negTrack;
 
     bool isSignal = false;
-    std::array<float, 3> mcTrueVtx{};       // Sigma+ decay vertex
-    std::array<float, 3> mcTrueMomProton{}; // true MC proton momentum
-    std::array<float, 3> mcTrueMomGamma{};  // true MC momentum of the measured photon
-    int protonPdgCode = 0;
-    int protonMotherPdgCode = 0;
-    int gammaPdgCode = 0;
-    int gammaMotherPdgCode = 0;
-    int gammaGMotherPdgCode = 0;
+    bool collisionIdCheck = false;             // MC only: true if the proton's true MC collision matches the reconstructed collision
+    std::array<float, 3> mcTrueVtx{};          // Sigma+ decay vertex
+    std::array<float, 3> mcTrueMomProton{};    // true MC proton momentum
+    std::array<float, 3> mcTrueMomGamma{};     // true MC momentum of the measured photon
+    std::array<float, 3> mcTrueMomSigmaPlus{}; // true MC momentum of the Sigma+ mother
+    float decayRadiusMC = -999.f;              // MC-truth decay radius
+    float massMC = -999.f;                     // MC-truth Sigma+ mass
+    int matchedSigmaId = -1;
     if constexpr (IsMC) {
       if (protonTrack.has_mcParticle()) {
         auto mcProton = protonTrack.template mcParticle_as<aod::McParticles>();
-        protonPdgCode = mcProton.pdgCode();
-        auto const& protonMothers = mcProton.template mothers_as<aod::McParticles>();
-        if (!protonMothers.empty()) {
-          protonMotherPdgCode = protonMothers.front().pdgCode();
+
+        auto protonCollision = protonTrack.template collision_as<CollisionsFullMC>();
+        if (protonCollision.has_mcCollision()) {
+          collisionIdCheck = protonCollision.mcCollision().globalIndex() == mcProton.mcCollisionId();
         }
+        auto const& protonMothers = mcProton.template mothers_as<aod::McParticles>();
 
         int protonSigmaIdx = findSigmaPlusMotherOfProton(mcProton);
 
@@ -595,19 +858,7 @@ struct Sigmaplusbuilder {
           auto const& posMothers = mcPos.template mothers_as<aod::McParticles>();
           if (!posMothers.empty()) {
             auto mcGamma = posMothers.front();
-            gammaPdgCode = mcGamma.pdgCode();
             mcTrueMomGamma = {mcGamma.px(), mcGamma.py(), mcGamma.pz()};
-
-            auto const& gammaMothers = mcGamma.template mothers_as<aod::McParticles>();
-            if (!gammaMothers.empty()) {
-              auto mcPi0 = gammaMothers.front();
-              gammaMotherPdgCode = mcPi0.pdgCode();
-
-              auto const& pi0Mothers = mcPi0.template mothers_as<aod::McParticles>();
-              if (!pi0Mothers.empty()) {
-                gammaGMotherPdgCode = pi0Mothers.front().pdgCode();
-              }
-            }
           }
 
           int photonSigmaIdx = findSigmaPlusMotherOfPhoton(mcPos, mcNeg);
@@ -617,6 +868,11 @@ struct Sigmaplusbuilder {
         if (isSignal) {
           mcTrueVtx = {mcProton.vx(), mcProton.vy(), mcProton.vz()};
           mcTrueMomProton = {mcProton.px(), mcProton.py(), mcProton.pz()};
+          auto mcSigmaPlusMother = protonMothers.front();
+          mcTrueMomSigmaPlus = {mcSigmaPlusMother.px(), mcSigmaPlusMother.py(), mcSigmaPlusMother.pz()};
+          matchedSigmaId = mcSigmaPlusMother.globalIndex();
+          decayRadiusMC = std::hypot(mcTrueVtx[0] - mcSigmaPlusMother.vx(), mcTrueVtx[1] - mcSigmaPlusMother.vy());
+          massMC = std::sqrt(mcSigmaPlusMother.e() * mcSigmaPlusMother.e() - mcSigmaPlusMother.p() * mcSigmaPlusMother.p());
         }
       }
     }
@@ -631,10 +887,18 @@ struct Sigmaplusbuilder {
     };
     fillCandStep(0); // all pairs
 
+    // Reject the pair if the proton track is one of the photon's own e+/e- daughter tracks.
+    if (protonTrack.globalIndex() == posTrack.globalIndex() || protonTrack.globalIndex() == negTrack.globalIndex()) {
+      return -1;
+    }
+    fillCandStep(1); // autocorrelation
+
     auto protonTrackParCov = getTrackParCov(protonTrack);
+    std::array<float, 3> protonOrigPos{};
+    protonTrackParCov.getXYZGlo(protonOrigPos);
 
     std::array<float, 21> zeroCov{};
-    auto photonTrackParCov = o2::track::TrackParCov({photon.x(), photon.y(), photon.z()}, {photon.px(), photon.py(), photon.pz()}, zeroCov, 0, true);
+    auto photonTrackParCov = o2::track::TrackParCov({photon.x, photon.y, photon.z}, {photon.px, photon.py, photon.pz}, zeroCov, 0, true);
     photonTrackParCov.setAbsCharge(0);
     photonTrackParCov.setPID(o2::track::PID::Photon);
 
@@ -642,12 +906,12 @@ struct Sigmaplusbuilder {
     try {
       nCand = fitter.process(protonTrackParCov, photonTrackParCov);
     } catch (...) {
-      return;
+      return -1;
     }
     if (nCand == 0 || !fitter.propagateTracksToVertex()) {
-      return;
+      return -1;
     }
-    fillCandStep(1); // Vertex fit
+    fillCandStep(2); // Vertex fit
 
     float fitChi2 = fitter.getChi2AtPCACandidate();
     float dcaProtonGamma = std::sqrt(fitChi2);
@@ -658,9 +922,9 @@ struct Sigmaplusbuilder {
       }
     }
     if (dcaProtonGamma > candMaxDcaProtonGamma) {
-      return;
+      return -1;
     }
-    fillCandStep(2); // DCA(p,gamma)
+    fillCandStep(3); // DCA(p,gamma)
 
     std::array<float, 3> secVtx = fitter.getPCACandidatePos();
     float radius = std::hypot(secVtx[0], secVtx[1]);
@@ -673,17 +937,28 @@ struct Sigmaplusbuilder {
       }
     }
     if (radius < candMinRadius || radius > candMaxRadius) {
-      return;
+      return -1;
     }
-    fillCandStep(3); // radius
+    fillCandStep(4); // radius
 
     // flight direction n and the decay-plane basis n, eIn, eOut
     std::array<float, 3> flightVec{secVtx[0] - pv[0], secVtx[1] - pv[1], secVtx[2] - pv[2]};
     std::array<float, 3> nHat = normalize3(flightVec);
     float flightDistance = std::sqrt(dot3(flightVec, flightVec));
 
-    std::array<float, 3> pProton;
-    std::array<float, 3> pGamma1;
+    histos.fill(HIST("Candidate/hFlightDistance"), flightDistance);
+    if constexpr (IsMC) {
+      if (isSignal) {
+        histos.fill(HIST("Candidate/True/hFlightDistance"), flightDistance);
+      }
+    }
+    if (flightDistance < candMinFlightDistance || flightDistance > candMaxFlightDistance) {
+      return -1;
+    }
+    fillCandStep(5); // flight distance
+
+    std::array<float, 3> pProton{};
+    std::array<float, 3> pGamma1{};
     fitter.getTrack(0).getPxPyPzGlo(pProton);
     fitter.getTrack(1).getPxPyPzGlo(pGamma1);
 
@@ -770,13 +1045,28 @@ struct Sigmaplusbuilder {
       }
     }
     if (discriminant < 0.f) {
-      return;
+      return -1;
     }
-    fillCandStep(4); // real root
+    fillCandStep(6); // real root
 
     // two roots from the quadratic, among both we keep the mass closest to the nominal Sigma+ mass
     float sqrtDisc = std::sqrt(discriminant);
     std::array<float, 2> roots{(-coefB + sqrtDisc) / (2.f * coefA), (-coefB - sqrtDisc) / (2.f * coefA)};
+
+    // perturbation-free center of the two roots
+    float rootCenter = -coefB / (2.f * coefA);
+    histos.fill(HIST("Candidate/hRootCenter"), rootCenter);
+    if constexpr (IsMC) {
+      if (isSignal) {
+        histos.fill(HIST("Candidate/True/hRootCenter"), rootCenter);
+      }
+    }
+    if (candRejectNegRootCenter && rootCenter < 0.f) {
+      return -1;
+    }
+    if (rootCenter > candMaxRootCenter) {
+      return -1;
+    }
 
     bool haveCandidate = false;
     float bestMass = -999.f;
@@ -802,70 +1092,213 @@ struct Sigmaplusbuilder {
       }
     }
     if (!haveCandidate) {
-      return;
+      return -1;
     }
-    fillCandStep(5); // valid root
+    fillCandStep(7); // valid root
 
     std::array<float, 3> pSigma{pProton[0] + pGamma1[0] + bestMomGamma2[0], pProton[1] + pGamma1[1] + bestMomGamma2[1], pProton[2] + pGamma1[2] + bestMomGamma2[2]};
     float ptSigma = std::hypot(pSigma[0], pSigma[1]);
 
+    // candidate DCA to PV
+    o2::track::TrackPar sigmaTrackPar({secVtx[0], secVtx[1], secVtx[2]}, {pSigma[0], pSigma[1], pSigma[2]}, protonTrack.sign(), true);
+    std::array<float, 2> dcaSigmaToPv{};
+    o2::base::Propagator::Instance()->propagateToDCA(o2::math_utils::Point3D<float>{pv[0], pv[1], pv[2]}, sigmaTrackPar, mBz, 2.f,
+                                                     o2::base::Propagator::MatCorrType::USEMatCorrNONE, &dcaSigmaToPv);
+    float candDcaToPV = std::abs(dcaSigmaToPv[0]);
+    histos.fill(HIST("Candidate/hDcaToPV"), candDcaToPV);
+    if constexpr (IsMC) {
+      if (isSignal) {
+        histos.fill(HIST("Candidate/True/hDcaToPV"), candDcaToPV);
+      }
+    }
+    if (candDcaToPV > candMaxDcaToPV) {
+      return -1;
+    }
+    fillCandStep(8); // DCA to PV
+
+    // AntiSigmaPointingAngle - Fake pointing angle
+    std::array<float, 3> protonPath{secVtx[0] - protonOrigPos[0], secVtx[1] - protonOrigPos[1], secVtx[2] - protonOrigPos[2]};
+    float protonPathLength = std::sqrt(dot3(protonPath, protonPath));
+    float svRadiusFromPv = std::hypot(secVtx[0] - pv[0], secVtx[1] - pv[1]);
+    float protonOrigRadiusFromPv = std::hypot(protonOrigPos[0] - pv[0], protonOrigPos[1] - pv[1]);
+    float propDir = (svRadiusFromPv < protonOrigRadiusFromPv) ? -1.f : 1.f;
+    float qProton = (protonTrack.sign() < 0) ? -1.f : 1.f;
+    float protonP = std::sqrt(dot3(pProton, pProton));
+    float rCurve = protonP * 1000.f / (0.2998f * std::abs(mBz));
+    float bzSign = (mBz < 0) ? -1.f : 1.f;
+    float alphaRot = -propDir * qProton * bzSign * o2::constants::math::PI;
+    if (protonPathLength / (2.f * rCurve) < 1.f) {
+      alphaRot = -2.f * propDir * qProton * bzSign * std::asin(protonPathLength / (2.f * rCurve));
+    }
+    std::array<float, 3> pProtonRot{
+      pProton[0] * std::cos(alphaRot) - pProton[1] * std::sin(alphaRot),
+      pProton[0] * std::sin(alphaRot) + pProton[1] * std::cos(alphaRot),
+      pProton[2]};
+    float alphaVtxRot = -propDir * qProton * bzSign * o2::constants::math::PI * 0.5f;
+    if (flightDistance / (2.f * rCurve) < 1.f) {
+      alphaVtxRot = -propDir * qProton * bzSign * std::asin(flightDistance / (2.f * rCurve));
+    }
+    std::array<float, 3> sigmaVertexVec{secVtx[0] - pv[0], secVtx[1] - pv[1], secVtx[2] - pv[2]};
+    std::array<float, 3> sigmaVertexVecRot{
+      sigmaVertexVec[0] * std::cos(alphaVtxRot) - sigmaVertexVec[1] * std::sin(alphaVtxRot),
+      sigmaVertexVec[0] * std::sin(alphaVtxRot) + sigmaVertexVec[1] * std::cos(alphaVtxRot),
+      sigmaVertexVec[2]};
+    float antiSigmaPointingAngle = std::acos(std::clamp(dot3(pProtonRot, sigmaVertexVecRot) / std::sqrt(dot3(pProtonRot, pProtonRot) * dot3(sigmaVertexVecRot, sigmaVertexVecRot)), -1.f, 1.f));
+    histos.fill(HIST("Candidate/hAntiSigmaPointingAngle"), antiSigmaPointingAngle);
+    if constexpr (IsMC) {
+      if (isSignal) {
+        histos.fill(HIST("Candidate/True/hAntiSigmaPointingAngle"), antiSigmaPointingAngle);
+      }
+    }
+    // window cut
+    if (antiSigmaPointingAngle < candMinAntiSigmaPointingAngle || antiSigmaPointingAngle > candMaxAntiSigmaPointingAngle) {
+      return -1;
+    }
+
     histos.fill(HIST("Candidate/hMassSigmaPlus"), bestMass);
     histos.fill(HIST("Candidate/h2MassVsPt"), ptSigma, bestMass);
+    histos.fill(HIST("Candidate/h2MassVsRootCenter"), rootCenter, bestMass);
+    histos.fill(HIST("Candidate/h2MassVsAntiSigmaPointingAngle"), antiSigmaPointingAngle, bestMass);
     if constexpr (IsMC) {
       if (isSignal) {
         histos.fill(HIST("Candidate/True/hMassSigmaPlus"), bestMass);
         histos.fill(HIST("Candidate/True/h2MassVsPt"), ptSigma, bestMass);
+        histos.fill(HIST("Candidate/True/h2MassVsAntiSigmaPointingAngle"), antiSigmaPointingAngle, bestMass);
+        histos.fill(HIST("Candidate/True/h2MassVsRootCenter"), rootCenter, bestMass);
       }
     }
-    fillCandStep(6); // filled
 
-    // photon (V0) opening angle: angle between the e+/e- daughter momenta at their own reference point
+    if (bestMass > candMaxSigmaMass) {
+      return -1;
+    }
+    fillCandStep(9); // mass
+
+    float candRapidity = RecoDecay::y(pSigma, o2::constants::physics::MassSigmaPlus);
+    histos.fill(HIST("Candidate/hRapidity"), candRapidity);
+    if constexpr (IsMC) {
+      if (isSignal) {
+        histos.fill(HIST("Candidate/True/hRapidity"), candRapidity);
+      }
+    }
+    if (std::abs(candRapidity) > candMaxRapidity) {
+      return -1;
+    }
+    fillCandStep(10); // rapidity
+
+    // photon (V0) opening angle, recomputed here from the daughters' own raw track momenta
     std::array<float, 3> pPosDau{posTrack.px(), posTrack.py(), posTrack.pz()};
     std::array<float, 3> pNegDau{negTrack.px(), negTrack.py(), negTrack.pz()};
     float photonOpeningAngle = std::acos(std::clamp(dot3(pPosDau, pNegDau) / std::sqrt(dot3(pPosDau, pPosDau) * dot3(pNegDau, pNegDau)), -1.f, 1.f));
+    histos.fill(HIST("Candidate/hPhotonOpeningAngle"), photonOpeningAngle);
+    if constexpr (IsMC) {
+      if (isSignal) {
+        histos.fill(HIST("Candidate/True/hPhotonOpeningAngle"), photonOpeningAngle);
+      }
+    }
+    if (photonOpeningAngle > candMaxPhotonOpeningAngle) {
+      return -1;
+    }
+    fillCandStep(11); // photon opening angle
 
-    // photon pointing angle: angle between the fitted photon momentum and the line from its conversion point to the p-gamma decay vertex
-    std::array<float, 3> convToDecVtx{secVtx[0] - photon.x(), secVtx[1] - photon.y(), secVtx[2] - photon.z()};
-    float photonPointingAngle = std::acos(std::clamp(dot3(pGamma1, convToDecVtx) / std::sqrt(dot3(pGamma1, pGamma1) * dot3(convToDecVtx, convToDecVtx)), -1.f, 1.f));
+    // photon pointing angle
+    std::array<float, 3> decVtxToConv{photon.x - secVtx[0], photon.y - secVtx[1], photon.z - secVtx[2]};
+    float photonPointingAngle = std::acos(std::clamp(dot3(pGamma1, decVtxToConv) / std::sqrt(dot3(pGamma1, pGamma1) * dot3(decVtxToConv, decVtxToConv)), -1.f, 1.f));
+    histos.fill(HIST("Candidate/hPhotonPointingAngle"), photonPointingAngle);
+    if constexpr (IsMC) {
+      if (isSignal) {
+        histos.fill(HIST("Candidate/True/hPhotonPointingAngle"), photonPointingAngle);
+      }
+    }
+    if (photonPointingAngle > candMaxPhotonPointingAngle) {
+      return -1;
+    }
+    fillCandStep(12); // photon pointing angle
 
-    // photon DCA to PV: distance from the PV to the line through the conversion point along the photon momentum direction
-    std::array<float, 3> convPoint{photon.x(), photon.y(), photon.z()};
-    std::array<float, 3> photonDir = normalize3({photon.px(), photon.py(), photon.pz()});
+    // photon DCA to PV
+    std::array<float, 3> convPoint{photon.x, photon.y, photon.z};
+    std::array<float, 3> photonDir = normalize3({photon.px, photon.py, photon.pz});
     std::array<float, 3> pvToConv{pv[0] - convPoint[0], pv[1] - convPoint[1], pv[2] - convPoint[2]};
     std::array<float, 3> pvToConvCrossDir = cross3(pvToConv, photonDir);
     float photonDcaToPV = std::sqrt(dot3(pvToConvCrossDir, pvToConvCrossDir));
+    histos.fill(HIST("Candidate/hPhotonDcaToPV"), photonDcaToPV);
+    if constexpr (IsMC) {
+      if (isSignal) {
+        histos.fill(HIST("Candidate/True/hPhotonDcaToPV"), photonDcaToPV);
+      }
+    }
+    if (photonDcaToPV > candMaxPhotonDcaToPV) {
+      return -1;
+    }
+    fillCandStep(13); // photon DCA to PV
+    fillCandStep(14); // filled
 
     if constexpr (IsMC) {
+      if (fillSlimTables) {
+        slimSigmaPlusCandsMC(radius,
+                             candDcaToPV, dcaProtonGamma,
+                             protonTrack.sign(),
+                             protonTrack.dcaXY(), protonTrack.dcaZ(),
+                             pProton[0], pProton[1], pProton[2],
+                             pGamma1[0], pGamma1[1], pGamma1[2],
+                             bestMomGamma2[0], bestMomGamma2[1], bestMomGamma2[2],
+                             protonTrack.tpcNSigmaPr(), protonTrack.tofNSigmaPr(),
+                             posTrack.tpcNSigmaEl(), negTrack.tpcNSigmaEl(),
+                             photon.mGamma,
+                             collisionIdCheck,
+                             isSignal,
+                             decayRadiusMC, massMC,
+                             mcTrueMomSigmaPlus[0], mcTrueMomSigmaPlus[1], mcTrueMomSigmaPlus[2]);
+        return matchedSigmaId;
+      }
       sigmaPlusCandsMC(secVtx[0], secVtx[1], secVtx[2],
-                       radius, flightDistance, dcaProtonGamma, fitChi2,
+                       flightDistance, dcaProtonGamma,
                        pProton[0], pProton[1], pProton[2],
                        pGamma1[0], pGamma1[1], pGamma1[2],
                        bestMomGamma2[0], bestMomGamma2[1], bestMomGamma2[2],
                        protonTrack.tpcNSigmaPr(), protonTrack.tofNSigmaPr(),
                        posTrack.tpcNSigmaEl(), negTrack.tpcNSigmaEl(),
-                       photon.mGamma(), photon.alpha(), photon.qtarm(), photon.v0radius(),
+                       photon.mGamma, photon.alpha, photon.qtarm, photon.radius,
                        photonOpeningAngle, photonPointingAngle, photonDcaToPV,
+                       rootCenter, antiSigmaPointingAngle, candDcaToPV,
+                       protonTrack.sign(),
                        protonTrack.itsNCls(), protonTrack.tpcNClsFound(), protonTrack.dcaXY(), protonTrack.dcaZ(),
                        posTrack.itsNCls(), posTrack.tpcNClsFound(), negTrack.itsNCls(), negTrack.tpcNClsFound(),
+                       collisionIdCheck,
                        isSignal,
-                       protonPdgCode, protonMotherPdgCode,
-                       gammaPdgCode, gammaMotherPdgCode, gammaGMotherPdgCode,
                        mcTrueVtx[0], mcTrueVtx[1], mcTrueVtx[2],
                        mcTrueMomProton[0], mcTrueMomProton[1], mcTrueMomProton[2],
-                       mcTrueMomGamma[0], mcTrueMomGamma[1], mcTrueMomGamma[2]);
+                       mcTrueMomGamma[0], mcTrueMomGamma[1], mcTrueMomGamma[2],
+                       mcTrueMomSigmaPlus[0], mcTrueMomSigmaPlus[1], mcTrueMomSigmaPlus[2],
+                       decayRadiusMC, massMC);
     } else {
+      if (fillSlimTables) {
+        slimSigmaPlusCands(radius,
+                           candDcaToPV, dcaProtonGamma,
+                           protonTrack.sign(),
+                           protonTrack.dcaXY(), protonTrack.dcaZ(),
+                           pProton[0], pProton[1], pProton[2],
+                           pGamma1[0], pGamma1[1], pGamma1[2],
+                           bestMomGamma2[0], bestMomGamma2[1], bestMomGamma2[2],
+                           protonTrack.tpcNSigmaPr(), protonTrack.tofNSigmaPr(),
+                           posTrack.tpcNSigmaEl(), negTrack.tpcNSigmaEl(),
+                           photon.mGamma);
+        return matchedSigmaId;
+      }
       sigmaPlusCands(secVtx[0], secVtx[1], secVtx[2],
-                     radius, flightDistance, dcaProtonGamma, fitChi2,
+                     flightDistance, dcaProtonGamma,
                      pProton[0], pProton[1], pProton[2],
                      pGamma1[0], pGamma1[1], pGamma1[2],
                      bestMomGamma2[0], bestMomGamma2[1], bestMomGamma2[2],
                      protonTrack.tpcNSigmaPr(), protonTrack.tofNSigmaPr(),
                      posTrack.tpcNSigmaEl(), negTrack.tpcNSigmaEl(),
-                     photon.mGamma(), photon.alpha(), photon.qtarm(), photon.v0radius(),
+                     photon.mGamma, photon.alpha, photon.qtarm, photon.radius,
                      photonOpeningAngle, photonPointingAngle, photonDcaToPV,
+                     rootCenter, antiSigmaPointingAngle, candDcaToPV,
+                     protonTrack.sign(),
                      protonTrack.itsNCls(), protonTrack.tpcNClsFound(), protonTrack.dcaXY(), protonTrack.dcaZ(),
                      posTrack.itsNCls(), posTrack.tpcNClsFound(), negTrack.itsNCls(), negTrack.tpcNClsFound());
     }
+    return matchedSigmaId;
   }
 
   void initCCDB(aod::BCs::iterator const& bc)
@@ -884,75 +1317,77 @@ struct Sigmaplusbuilder {
   void processData(CollisionsFull const& collisions, aod::V0Datas const& v0s, TracksFull const& tracks, aod::BCs const&)
   {
     for (const auto& collision : collisions) {
+      if (std::abs(collision.posZ()) > cutZVertex || !collision.sel8()) {
+        continue;
+      }
       initCCDB(collision.bc_as<aod::BCs>());
       histos.fill(HIST("hVertexZ"), collision.posZ());
       std::array<float, 3> pv{collision.posX(), collision.posY(), collision.posZ()};
 
-      auto v0sThisCollision = v0s.sliceBy(v0PerCollision, collision.globalIndex());
-      std::vector<aod::V0Datas::iterator> acceptedPhotons;
-      for (const auto& v0 : v0sThisCollision) {
-        if (selectPhoton<false, TracksFull>(v0)) {
-          acceptedPhotons.push_back(v0);
-        }
-      }
-
       auto tracksThisCollision = tracks.sliceBy(tracksPerCollision, collision.globalIndex());
+      auto v0sThisCollision = v0s.sliceBy(v0PerCollision, collision.globalIndex());
+
+      auto acceptedPhotons = findPhotonsFromV0s<false>(v0sThisCollision, tracksThisCollision, pv);
+
       std::vector<TracksFull::iterator> acceptedProtons;
       for (const auto& track : tracksThisCollision) {
-        if (selectProton(track)) {
+        if (selectProton<false>(track)) {
           acceptedProtons.push_back(track);
         }
       }
 
       for (const auto& photon : acceptedPhotons) {
         for (const auto& proton : acceptedProtons) {
-          buildSigmaPlusCandidate<false, TracksFull>(proton, photon, pv);
+          buildSigmaPlusCandidate<false>(proton, photon, pv);
         }
       }
     }
   }
   PROCESS_SWITCH(Sigmaplusbuilder, processData, "Process data", true);
 
-  void processMc(CollisionsFullMC const& collisions, aod::V0Datas const& v0s, TracksFullMC const& tracks, aod::BCs const&, aod::McParticles const& mcParticles)
+  void processMc(CollisionsFullMC const& collisions, aod::V0Datas const& v0s, TracksFullMC const& tracks, aod::BCs const&, aod::McParticles const& mcParticles, aod::McCollisions const&)
   {
+    std::vector<int> matchedSigmaPlusMcIds; // Sigma+ MC indices that got at least one signal candidate
+
     for (const auto& collision : collisions) {
+      if (std::abs(collision.posZ()) > cutZVertex || !collision.sel8()) {
+        continue;
+      }
       initCCDB(collision.bc_as<aod::BCs>());
       histos.fill(HIST("hVertexZ"), collision.posZ());
       std::array<float, 3> pv{collision.posX(), collision.posY(), collision.posZ()};
 
+      auto tracksThisCollision = tracks.sliceBy(tracksPerCollisionMC, collision.globalIndex());
       auto v0sThisCollision = v0s.sliceBy(v0PerCollision, collision.globalIndex());
-      std::vector<aod::V0Datas::iterator> acceptedPhotons;
-      for (const auto& v0 : v0sThisCollision) {
-        if (selectPhoton<true, TracksFullMC>(v0)) {
-          acceptedPhotons.push_back(v0);
 
-          histos.fill(HIST("MC/hPhotonTruthQA"), 0);
-          auto posTrack = v0.template posTrack_as<TracksFullMC>();
-          auto negTrack = v0.template negTrack_as<TracksFullMC>();
-          if (posTrack.has_mcParticle() && negTrack.has_mcParticle()) {
-            histos.fill(HIST("MC/hPhotonTruthQA"), 1);
-            auto mcPos = posTrack.template mcParticle_as<aod::McParticles>();
-            auto mcNeg = negTrack.template mcParticle_as<aod::McParticles>();
+      auto acceptedPhotons = findPhotonsFromV0s<true>(v0sThisCollision, tracksThisCollision, pv);
+      for (const auto& photon : acceptedPhotons) {
+        histos.fill(HIST("MC/hPhotonTruthQA"), 0);
+        auto posTrack = photon.posTrack;
+        auto negTrack = photon.negTrack;
+        if (posTrack.has_mcParticle() && negTrack.has_mcParticle()) {
+          histos.fill(HIST("MC/hPhotonTruthQA"), 1);
+          auto mcPos = posTrack.template mcParticle_as<aod::McParticles>();
+          auto mcNeg = negTrack.template mcParticle_as<aod::McParticles>();
 
-            auto const& posMothers = mcPos.template mothers_as<aod::McParticles>();
-            auto const& negMothers = mcNeg.template mothers_as<aod::McParticles>();
-            if (!posMothers.empty() && !negMothers.empty()) {
-              auto mcGamma = posMothers.front();
-              if (mcGamma.globalIndex() == negMothers.front().globalIndex() && mcGamma.pdgCode() == PDG_t::kGamma) {
-                histos.fill(HIST("MC/hPhotonTruthQA"), 2);
-                auto const& pi0Mothers = mcGamma.template mothers_as<aod::McParticles>();
-                if (!pi0Mothers.empty() && std::abs(pi0Mothers.front().pdgCode()) == PDG_t::kPi0) {
-                  histos.fill(HIST("MC/hPhotonTruthQA"), 3);
-                  auto const& sigmaMothers = pi0Mothers.front().template mothers_as<aod::McParticles>();
-                  if (!sigmaMothers.empty() && std::abs(sigmaMothers.front().pdgCode()) == PDG_t::kSigmaPlus) {
-                    histos.fill(HIST("MC/hPhotonTruthQA"), 4);
+          auto const& posMothers = mcPos.template mothers_as<aod::McParticles>();
+          auto const& negMothers = mcNeg.template mothers_as<aod::McParticles>();
+          if (!posMothers.empty() && !negMothers.empty()) {
+            auto mcGamma = posMothers.front();
+            if (mcGamma.globalIndex() == negMothers.front().globalIndex() && mcGamma.pdgCode() == PDG_t::kGamma) {
+              histos.fill(HIST("MC/hPhotonTruthQA"), 2);
+              auto const& pi0Mothers = mcGamma.template mothers_as<aod::McParticles>();
+              if (!pi0Mothers.empty() && std::abs(pi0Mothers.front().pdgCode()) == PDG_t::kPi0) {
+                histos.fill(HIST("MC/hPhotonTruthQA"), 3);
+                auto const& sigmaMothers = pi0Mothers.front().template mothers_as<aod::McParticles>();
+                if (!sigmaMothers.empty() && std::abs(sigmaMothers.front().pdgCode()) == PDG_t::kSigmaPlus) {
+                  histos.fill(HIST("MC/hPhotonTruthQA"), 4);
 
-                    histos.fill(HIST("Photon/True/hMass"), v0.mGamma());
-                    histos.fill(HIST("Photon/True/hPt"), v0.pt());
-                    histos.fill(HIST("Photon/True/hRadius"), v0.v0radius());
-                    histos.fill(HIST("Photon/True/h2ArmenterosPodolanski"), v0.alpha(), v0.qtarm());
-                    histos.fill(HIST("Photon/True/h2ConvPointXY"), v0.x(), v0.y());
-                  }
+                  histos.fill(HIST("Photon/True/hMass"), photon.mGamma);
+                  histos.fill(HIST("Photon/True/hPt"), std::hypot(photon.px, photon.py));
+                  histos.fill(HIST("Photon/True/hRadius"), photon.radius);
+                  histos.fill(HIST("Photon/True/h2ArmenterosPodolanski"), photon.alpha, photon.qtarm);
+                  histos.fill(HIST("Photon/True/h2ConvPointXY"), photon.x, photon.y);
                 }
               }
             }
@@ -960,10 +1395,9 @@ struct Sigmaplusbuilder {
         }
       }
 
-      auto tracksThisCollision = tracks.sliceBy(tracksPerCollisionMC, collision.globalIndex());
       std::vector<TracksFullMC::iterator> acceptedProtons;
       for (const auto& track : tracksThisCollision) {
-        if (selectProton(track)) {
+        if (selectProton<true>(track)) {
           acceptedProtons.push_back(track);
 
           histos.fill(HIST("MC/hProtonTruthQA"), 0);
@@ -972,12 +1406,6 @@ struct Sigmaplusbuilder {
             auto mcProton = track.template mcParticle_as<aod::McParticles>();
             if (findSigmaPlusMotherOfProton(mcProton) >= 0) {
               histos.fill(HIST("MC/hProtonTruthQA"), 2);
-
-              histos.fill(HIST("Proton/True/hPt"), track.pt());
-              histos.fill(HIST("Proton/True/h2TPCNSigmaVsPt"), track.pt(), track.tpcNSigmaPr());
-              if (track.hasTOF()) {
-                histos.fill(HIST("Proton/True/h2TOFNSigmaVsPt"), track.pt(), track.tofNSigmaPr());
-              }
             }
           }
         }
@@ -985,25 +1413,101 @@ struct Sigmaplusbuilder {
 
       for (const auto& photon : acceptedPhotons) {
         for (const auto& proton : acceptedProtons) {
-          buildSigmaPlusCandidate<true, TracksFullMC>(proton, photon, pv);
+          int matchedId = buildSigmaPlusCandidate<true>(proton, photon, pv);
+          if (matchedId >= 0) {
+            matchedSigmaPlusMcIds.push_back(matchedId);
+          }
         }
       }
     }
 
     // all generated Sigma+ -> p pi0 decays, regardless of reconstruction
     for (const auto& mcPart : mcParticles) {
-      if (isSigmaPlusToProtonPi0(mcPart)) {
-        histos.fill(HIST("MC/hGenSigmaPlusPt"), mcPart.pt());
+      if (!isSigmaPlusToProtonPi0(mcPart)) {
+        continue;
       }
+      if (std::abs(mcPart.y()) > cutRapMotherMC) {
+        continue;
+      }
+      if (mcPart.pt() < cutPtGenMC) {
+        continue;
+      }
+      histos.fill(HIST("MC/hGenSigmaPlusPt"), mcPart.pt());
+
+      bool wasReconstructed = std::find(matchedSigmaPlusMcIds.begin(), matchedSigmaPlusMcIds.end(), mcPart.globalIndex()) != matchedSigmaPlusMcIds.end();
+      if (wasReconstructed) {
+        continue;
+      }
+
+      // this true Sigma+ never made it into any signal candidate: still record its truth info,
+      // with the reconstructed-side columns set to -999
+      int pdgProton = mcPart.pdgCode() > 0 ? PDG_t::kProton : PDG_t::kProtonBar;
+      std::array<float, 3> genDecVtx{-999.f, -999.f, -999.f};
+      std::array<float, 3> genMomProton{-999.f, -999.f, -999.f};
+      for (const auto& daughter : mcPart.template daughters_as<aod::McParticles>()) {
+        if (daughter.pdgCode() == pdgProton) {
+          genDecVtx = {daughter.vx(), daughter.vy(), daughter.vz()};
+          genMomProton = {daughter.px(), daughter.py(), daughter.pz()};
+          break;
+        }
+      }
+      float genDecayRadiusMC = std::hypot(genDecVtx[0] - mcPart.vx(), genDecVtx[1] - mcPart.vy());
+      float genMassMC = std::sqrt(mcPart.e() * mcPart.e() - mcPart.p() * mcPart.p());
+
+      if (fillSlimTables) {
+        slimSigmaPlusCandsMC(-999.f,
+                             -999.f, -999.f,
+                             0,
+                             -999.f, -999.f,
+                             -999.f, -999.f, -999.f,
+                             -999.f, -999.f, -999.f,
+                             -999.f, -999.f, -999.f,
+                             -999.f, -999.f,
+                             -999.f, -999.f,
+                             -999.f,
+                             false,
+                             false,
+                             genDecayRadiusMC, genMassMC,
+                             mcPart.px(), mcPart.py(), mcPart.pz());
+        continue;
+      }
+
+      sigmaPlusCandsMC(-999.f, -999.f, -999.f,
+                       -999.f, -999.f,
+                       -999.f, -999.f, -999.f,
+                       -999.f, -999.f, -999.f,
+                       -999.f, -999.f, -999.f,
+                       -999.f, -999.f,
+                       -999.f, -999.f,
+                       -999.f, -999.f, -999.f, -999.f,
+                       -999.f, -999.f, -999.f,
+                       -999.f, -999.f, -999.f,
+                       0,
+                       0, -999, -999.f, -999.f,
+                       0, -999, 0, -999,
+                       false,
+                       false,
+                       genDecVtx[0], genDecVtx[1], genDecVtx[2],
+                       genMomProton[0], genMomProton[1], genMomProton[2],
+                       -999.f, -999.f, -999.f,
+                       mcPart.px(), mcPart.py(), mcPart.pz(),
+                       genDecayRadiusMC, genMassMC);
     }
   }
   PROCESS_SWITCH(Sigmaplusbuilder, processMc, "Process MC", false);
 
-  void processFindable(CollisionsFullMC const& collisions, aod::V0Datas const& v0s, TracksFullMC const& tracks, aod::McParticles const&)
+  void processFindable(CollisionsFullMC const& collisions, aod::V0Datas const& v0s, TracksFullMC const& tracks, aod::McParticles const&, aod::BCs const&)
   {
+    constexpr int MinDauTpcCls = 90;
     for (const auto& collision : collisions) {
+      if (std::abs(collision.posZ()) > cutZVertex || !collision.sel8()) {
+        continue;
+      }
+      initCCDB(collision.bc_as<aod::BCs>());
       auto tracksThisCollision = tracks.sliceBy(tracksPerCollisionMC, collision.globalIndex());
       auto v0sThisCollision = v0s.sliceBy(v0PerCollision, collision.globalIndex());
+      std::array<float, 3> pv{collision.posX(), collision.posY(), collision.posZ()};
+      auto acceptedPhotons = findPhotonsFromV0s<true>(v0sThisCollision, tracksThisCollision, pv);
 
       for (const auto& protonTrack : tracksThisCollision) {
         if (!protonTrack.has_mcParticle()) {
@@ -1035,7 +1539,7 @@ struct Sigmaplusbuilder {
             continue;
           }
 
-          if (electronTrack.tpcNClsFound() < 90 || electronTrack.sign() > 0) {
+          if (electronTrack.tpcNClsFound() < MinDauTpcCls || electronTrack.sign() > 0) {
             continue;
           }
 
@@ -1055,7 +1559,7 @@ struct Sigmaplusbuilder {
               continue;
             }
 
-            if (positronTrack.tpcNClsFound() < 90 || positronTrack.sign() < 0) {
+            if (positronTrack.tpcNClsFound() < MinDauTpcCls || positronTrack.sign() < 0) {
               continue;
             }
 
@@ -1121,10 +1625,10 @@ struct Sigmaplusbuilder {
 
             std::array<float, 3> recoGammaMom{electronTrack.px() + positronTrack.px(), electronTrack.py() + positronTrack.py(), electronTrack.pz() + positronTrack.pz()};
             float recoGammaP = std::sqrt(dot3(recoGammaMom, recoGammaMom));
-            constexpr float electronMass = o2::constants::physics::MassElectron;
+            constexpr float ElectronMass = o2::constants::physics::MassElectron;
             float electronP2 = electronTrack.px() * electronTrack.px() + electronTrack.py() * electronTrack.py() + electronTrack.pz() * electronTrack.pz();
             float positronP2 = positronTrack.px() * positronTrack.px() + positronTrack.py() * positronTrack.py() + positronTrack.pz() * positronTrack.pz();
-            float pairEnergy = std::sqrt(electronP2 + electronMass * electronMass) + std::sqrt(positronP2 + electronMass * electronMass);
+            float pairEnergy = std::sqrt(electronP2 + ElectronMass * ElectronMass) + std::sqrt(positronP2 + ElectronMass * ElectronMass);
             float pairMass2 = pairEnergy * pairEnergy - recoGammaP * recoGammaP;
             histos.fill(HIST("Findable/hElectronPositronMass"), std::sqrt(std::max(pairMass2, 0.f)));
 
@@ -1152,6 +1656,15 @@ struct Sigmaplusbuilder {
               bool sameChargeMatched = posTrack.globalIndex() == positronTrack.globalIndex() && negTrack.globalIndex() == electronTrack.globalIndex();
               if (sameChargeMatched) {
                 histos.fill(HIST("Findable/hConversionPairV0Presence"), 1);
+                break;
+              }
+            }
+
+            histos.fill(HIST("Findable/hPhotonSearchPresence"), 0);
+            for (const auto& photon : acceptedPhotons) {
+              bool sameChargeMatched = photon.posTrack.globalIndex() == positronTrack.globalIndex() && photon.negTrack.globalIndex() == electronTrack.globalIndex();
+              if (sameChargeMatched) {
+                histos.fill(HIST("Findable/hPhotonSearchPresence"), 1);
                 break;
               }
             }

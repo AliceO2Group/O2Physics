@@ -214,17 +214,21 @@ struct StrangenessInJetsIons {
   // Cascade analysis parameters
   struct : ConfigurableGroup {
     // std::string prefix = "configCasc"; // name in JSON
-    Configurable<float> minimumCascRadius{"minimumCascRadius", 0.1f, "Minimum cascade radius"};
+    Configurable<float> minimumV0RadiusCasc{"minimumV0RadiusCasc", 1.5f, "Minimum V0 radius (cm) for cascade analysis"};
+    Configurable<float> minimumCascRadius{"minimumCascRadius", 1.5f, "Minimum cascade radius (cm)"};
     // Configurable<float> maximumCascRadius{"maximumCascRadius", 40.0f, "Maximum cascade radius"};
+    Configurable<float> dcabachtopvMin{"dcabachtopvMin", 0.07f, "Minimum DCA of bachelor to primary vertex (cm)"};
+    Configurable<float> dcaV0topvMin{"dcaV0topvMin", 0.02f, "Minimum DCA of V0 to primary vertex (cm)"};
+    Configurable<double> dcaV0DaughtersMaxCasc{"dcaV0DaughtersMaxCasc", 0.7f, "Maximum DCA between V0 daughters (cm) for cascade analysis"};
+    Configurable<float> dcaCascDaughtersMax{"dcaCascDaughtersMax", 0.8f, "Maximum DCA between daughters (cm)"};
+    Configurable<double> dcaPosToPVminV0{"dcaPosToPVminV0", 0.1f, "Minimum DCA of V0 positive track to primary vertex in cascades (cm)"};
+    Configurable<double> dcaNegToPVminV0{"dcaNegToPVminV0", 0.1f, "Minimum DCA of V0 negative track to primary vertex in cascades (cm)"};
+    Configurable<double> v0cospaMinCasc{"v0cospaMinCasc", 0.99f, "Minimum V0 cosine of pointing angle for cascade analysis"};
     Configurable<float> casccospaMin{"casccospaMin", 0.99f, "Minimum cascade cosine of pointing angle"};
-    Configurable<float> dcabachtopvMin{"dcabachtopvMin", 0.1f, "Minimum DCA of bachelor to primary vertex"};
-    Configurable<float> dcaV0topvMin{"dcaV0topvMin", 0.1f, "Minimum DCA of V0 to primary vertex"};
-    Configurable<float> dcaCascDaughtersMax{"dcaCascDaughtersMax", 0.5f, "Maximum DCA between daughters"};
-    Configurable<double> dcaNegToPVminV0{"dcaNegToPVminV0", 0.1f, "Minimum DCA of V0 negative track to primary vertex in cascades"};
-    Configurable<double> dcaPosToPVminV0{"dcaPosToPVminV0", 0.1f, "Minimum DCA of V0 positive track to primary vertex in cascades"};
-    Configurable<float> deltaMassXi{"deltaMassXi", 0.02f, "Mass window for Xi rejection"};
-    Configurable<float> deltaMassOmega{"deltaMassOmega", 0.02f, "Mass window for Omega rejection"};
-    Configurable<float> deltaMassLambda{"deltaMassLambda", 0.02f, "Mass window for Lambda inclusion"};
+
+    Configurable<float> deltaMassXi{"deltaMassXi", 0.008f, "[Omega] Mass window for Xi rejection"};
+    Configurable<float> deltaMassOmega{"deltaMassOmega", 0.008f, "[Xi] Mass window for Omega rejection"};
+    Configurable<float> deltaMassLambda{"deltaMassLambda", 0.005f, "[Xi, Omega] Mass window for Lambda inclusion"};
   } configCasc;
 
   // Axes
@@ -369,6 +373,12 @@ struct StrangenessInJetsIons {
         registryData.add("OmegaPos_in_ue", "OmegaPos_in_ue", HistType::kTH3F, {multAxis, ptAxis, invMassOmegaAxis});
         registryData.add("OmegaNeg_in_jet", "OmegaNeg_in_jet", HistType::kTH3F, {multAxis, ptAxis, invMassOmegaAxis});
         registryData.add("OmegaNeg_in_ue", "OmegaNeg_in_ue", HistType::kTH3F, {multAxis, ptAxis, invMassOmegaAxis});
+        if (doRandomConeSys) {
+          registryData.add("XiPos_in_rc", "XiPos_in_rc", HistType::kTH3F, {multAxis, ptAxis, invMassXiAxis});
+          registryData.add("XiNeg_in_rc", "XiNeg_in_rc", HistType::kTH3F, {multAxis, ptAxis, invMassXiAxis});
+          registryData.add("OmegaPos_in_rc", "OmegaPos_in_rc", HistType::kTH3F, {multAxis, ptAxis, invMassOmegaAxis});
+          registryData.add("OmegaNeg_in_rc", "OmegaNeg_in_rc", HistType::kTH3F, {multAxis, ptAxis, invMassOmegaAxis});
+        }
       }
       if (particleOfInterestDict[ParticleOfInterest::kPions]) {
         registryData.add("Pion_in_jet", "Pion_in_jet", HistType::kTHnSparseF, {multAxis, ptAxisLongLived, nsigmaTPCAxis, nsigmaTOFAxis, dcaAxis});
@@ -448,7 +458,6 @@ struct StrangenessInJetsIons {
         registryMC.add("XiPos_generated_MB", "XiPos_generated_MB", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("XiNeg_generated_MB", "XiNeg_generated_MB", HistType::kTH2F, {multAxis, ptAxis});
       }
-
       if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
         registryMC.add("XiPos_generated_jet", "XiPos_generated_jet", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("XiPos_generated_ue", "XiPos_generated_ue", HistType::kTH2F, {multAxis, ptAxis});
@@ -458,11 +467,24 @@ struct StrangenessInJetsIons {
         registryMC.add("OmegaPos_generated_ue", "OmegaPos_generated_ue", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("OmegaNeg_generated_jet", "OmegaNeg_generated_jet", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("OmegaNeg_generated_ue", "OmegaNeg_generated_ue", HistType::kTH2F, {multAxis, ptAxis});
+        if (doRandomConeSys) {
+          registryMC.add("XiPos_generated_rc", "XiPos_generated_rc", HistType::kTH2F, {multAxis, ptAxis});
+          registryMC.add("XiNeg_generated_rc", "XiNeg_generated_rc", HistType::kTH2F, {multAxis, ptAxis});
+          registryMC.add("OmegaPos_generated_rc", "OmegaPos_generated_rc", HistType::kTH2F, {multAxis, ptAxis});
+          registryMC.add("OmegaNeg_generated_rc", "OmegaNeg_generated_rc", HistType::kTH2F, {multAxis, ptAxis});
+        }
 
         // Histograms for the full event (without jets)
         registryMC.add("OmegaPos_generated_MB", "OmegaPos_generated_MB", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("OmegaNeg_generated_MB", "OmegaNeg_generated_MB", HistType::kTH2F, {multAxis, ptAxis});
+
+        // In generated events with at least one reco collision
+        registryMC.add("XiPos_generated_w_reco_MB", "XiPos_generated_w_reco_MB", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("XiNeg_generated_w_reco_MB", "XiNeg_generated_w_reco_MB", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("OmegaPos_generated_w_reco_MB", "OmegaPos_generated_w_reco_MB", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("OmegaNeg_generated_w_reco_MB", "OmegaNeg_generated_w_reco_MB", HistType::kTH2F, {multAxis, ptAxis});
       }
+
       if (particleOfInterestDict[ParticleOfInterest::kPions]) {
         registryMC.add("PionPos_generated_jet", "PionPos_generated_jet", HistType::kTH2F, {multAxis, ptAxisLongLived});
         registryMC.add("PionNeg_generated_jet", "PionNeg_generated_jet", HistType::kTH2F, {multAxis, ptAxisLongLived});
@@ -597,13 +619,62 @@ struct StrangenessInJetsIons {
         registryMC.add("OmegaPos_reconstructed_ue", "OmegaPos_reconstructed_ue", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("OmegaNeg_reconstructed_jet", "OmegaNeg_reconstructed_jet", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("OmegaNeg_reconstructed_ue", "OmegaNeg_reconstructed_ue", HistType::kTH2F, {multAxis, ptAxis});
+        if (doRandomConeSys) {
+          registryMC.add("XiPos_reconstructed_rc", "XiPos_reconstructed_rc", HistType::kTH2F, {multAxis, ptAxis});
+          registryMC.add("XiNeg_reconstructed_rc", "XiNeg_reconstructed_rc", HistType::kTH2F, {multAxis, ptAxis});
+          registryMC.add("OmegaPos_reconstructed_rc", "OmegaPos_reconstructed_rc", HistType::kTH2F, {multAxis, ptAxis});
+          registryMC.add("OmegaNeg_reconstructed_rc", "OmegaNeg_reconstructed_rc", HistType::kTH2F, {multAxis, ptAxis});
+        }
+
+        // Histograms for secondary hadrons
+        registryMC.add("XiPos_reconstructed_jet_incl", "XiPos_reconstructed_jet_incl", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("XiPos_reconstructed_ue_incl", "XiPos_reconstructed_ue_incl", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("XiNeg_reconstructed_jet_incl", "XiNeg_reconstructed_jet_incl", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("XiNeg_reconstructed_ue_incl", "XiNeg_reconstructed_ue_incl", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("OmegaPos_reconstructed_jet_incl", "OmegaPos_reconstructed_jet_incl", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("OmegaPos_reconstructed_ue_incl", "OmegaPos_reconstructed_ue_incl", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("OmegaNeg_reconstructed_jet_incl", "OmegaNeg_reconstructed_jet_incl", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("OmegaNeg_reconstructed_ue_incl", "OmegaNeg_reconstructed_ue_incl", HistType::kTH2F, {multAxis, ptAxis});
+        if (doRandomConeSys) {
+          registryMC.add("XiPos_reconstructed_rc_incl", "XiPos_reconstructed_rc_incl", HistType::kTH2F, {multAxis, ptAxis});
+          registryMC.add("XiNeg_reconstructed_rc_incl", "XiNeg_reconstructed_rc_incl", HistType::kTH2F, {multAxis, ptAxis});
+          registryMC.add("OmegaPos_reconstructed_rc_incl", "OmegaPos_reconstructed_rc_incl", HistType::kTH2F, {multAxis, ptAxis});
+          registryMC.add("OmegaNeg_reconstructed_rc_incl", "OmegaNeg_reconstructed_rc_incl", HistType::kTH2F, {multAxis, ptAxis});
+        }
+
+        // Histograms for generated particles in reconstructed events
+        registryMC.add("XiPos_gen_recoEvent_jet", "XiPos_gen_recoEvent_jet", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("XiPos_gen_recoEvent_ue", "XiPos_gen_recoEvent_ue", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("XiNeg_gen_recoEvent_jet", "XiNeg_gen_recoEvent_jet", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("XiNeg_gen_recoEvent_ue", "XiNeg_gen_recoEvent_ue", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("OmegaPos_gen_recoEvent_jet", "OmegaPos_gen_recoEvent_jet", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("OmegaPos_gen_recoEvent_ue", "OmegaPos_gen_recoEvent_ue", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("OmegaNeg_gen_recoEvent_jet", "OmegaNeg_gen_recoEvent_jet", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("OmegaNeg_gen_recoEvent_ue", "OmegaNeg_gen_recoEvent_ue", HistType::kTH2F, {multAxis, ptAxis});
+        if (doRandomConeSys) {
+          registryMC.add("XiPos_gen_recoEvent_rc", "XiPos_gen_recoEvent_rc", HistType::kTH2F, {multAxis, ptAxis});
+          registryMC.add("XiNeg_gen_recoEvent_rc", "XiNeg_gen_recoEvent_rc", HistType::kTH2F, {multAxis, ptAxis});
+          registryMC.add("OmegaPos_gen_recoEvent_rc", "OmegaPos_gen_recoEvent_rc", HistType::kTH2F, {multAxis, ptAxis});
+          registryMC.add("OmegaNeg_gen_recoEvent_rc", "OmegaNeg_gen_recoEvent_rc", HistType::kTH2F, {multAxis, ptAxis});
+        }
 
         // Histograms for the full event (without jets)
         registryMC.add("XiPos_reconstructed_MB", "XiPos_reconstructed_MB", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("XiNeg_reconstructed_MB", "XiNeg_reconstructed_MB", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("OmegaPos_reconstructed_MB", "OmegaPos_reconstructed_MB", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("OmegaNeg_reconstructed_MB", "OmegaNeg_reconstructed_MB", HistType::kTH2F, {multAxis, ptAxis});
+
+        registryMC.add("XiPos_reconstructed_MB_incl", "XiPos_reconstructed_MB_incl", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("XiNeg_reconstructed_MB_incl", "XiNeg_reconstructed_MB_incl", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("OmegaPos_reconstructed_MB_incl", "OmegaPos_reconstructed_MB_incl", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("OmegaNeg_reconstructed_MB_incl", "OmegaNeg_reconstructed_MB_incl", HistType::kTH2F, {multAxis, ptAxis});
+
+        registryMC.add("XiPos_gen_recoEvent_MB", "XiPos_gen_recoEvent_MB", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("XiNeg_gen_recoEvent_MB", "XiNeg_gen_recoEvent_MB", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("OmegaPos_gen_recoEvent_MB", "OmegaPos_gen_recoEvent_MB", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("OmegaNeg_gen_recoEvent_MB", "OmegaNeg_gen_recoEvent_MB", HistType::kTH2F, {multAxis, ptAxis});
       }
+
       if (particleOfInterestDict[ParticleOfInterest::kPions]) {
         registryMC.add("Pion_reconstructed_jet", "Pion_reconstructed_jet", HistType::kTH2F, {multAxis, ptAxisLongLived});
         registryMC.add("Pion_reconstructed_ue", "Pion_reconstructed_ue", HistType::kTH2F, {multAxis, ptAxisLongLived});
@@ -874,7 +945,6 @@ struct StrangenessInJetsIons {
       registryData.fill(HIST("h2_centrality_deltaPt_RandomCone"), multiplicity, deltaPtRandomCone);
       registryData.fill(HIST("h2_centrality_rhoPerp"), multiplicity, rhoPerp);
     } else if (selProcess == 1) {
-      // Ricordati di definire questi istogrammi nel tuo book/registry MC!
       registryMC.fill(HIST("h2_centrality_deltaPt_RandomCone_gen"), multiplicity, deltaPtRandomCone);
       registryMC.fill(HIST("h2_centrality_rhoPerp_gen"), multiplicity, rhoPerp);
     } else if (selProcess == 2) {
@@ -1192,12 +1262,12 @@ struct StrangenessInJetsIons {
     }
 
     // V0 selections
-    if (casc.v0cosPA(coll.posX(), coll.posY(), coll.posZ()) < configV0.v0cospaMin)
+    if (casc.v0cosPA(coll.posX(), coll.posY(), coll.posZ()) < configCasc.v0cospaMinCasc)
       return false;
     // if (casc.v0radius() < configV0.minimumV0Radius || casc.v0radius() > configV0.maximumV0Radius)
-    if (casc.v0radius() < configV0.minimumV0Radius)
+    if (casc.v0radius() < configCasc.minimumV0RadiusCasc)
       return false;
-    if (std::fabs(casc.dcaV0daughters()) > configV0.dcaV0DaughtersMax)
+    if (std::fabs(casc.dcaV0daughters()) > configCasc.dcaV0DaughtersMaxCasc)
       return false;
     if (std::fabs(casc.dcapostopv()) < configCasc.dcaPosToPVminV0)
       return false;
@@ -1308,12 +1378,12 @@ struct StrangenessInJetsIons {
     }
 
     // V0 selections
-    if (casc.v0cosPA(coll.posX(), coll.posY(), coll.posZ()) < configV0.v0cospaMin)
+    if (casc.v0cosPA(coll.posX(), coll.posY(), coll.posZ()) < configCasc.v0cospaMinCasc)
       return false;
     // if (casc.v0radius() < configV0.minimumV0Radius || casc.v0radius() > configV0.maximumV0Radius)
-    if (casc.v0radius() < configV0.minimumV0Radius)
+    if (casc.v0radius() < configCasc.minimumV0RadiusCasc)
       return false;
-    if (std::fabs(casc.dcaV0daughters()) > configV0.dcaV0DaughtersMax)
+    if (std::fabs(casc.dcaV0daughters()) > configCasc.dcaV0DaughtersMaxCasc)
       return false;
     if (std::fabs(casc.dcapostopv()) < configCasc.dcaPosToPVminV0)
       return false;
@@ -1449,7 +1519,7 @@ struct StrangenessInJetsIons {
 
   // Return true if McCollisions has at least 1 RECO collisions that passed event selections
   template <typename RecoColls>
-  bool HasRecoEvent(int mcCollIndex, RecoColls recoCollisions)
+  bool HasRecoEvent(int mcCollIndex, const RecoColls& recoCollisions)
   {
     for (const auto& recoColl : recoCollisions) {
       if (mcCollIndex == recoColl.mcCollisionId()) {
@@ -1515,20 +1585,32 @@ struct StrangenessInJetsIons {
           if (particleOfInterestDict[ParticleOfInterest::kCascades] || calculateFeeddownMatrix) {
             registryMC.fill(HIST("XiNeg_generated_MB"), genMultiplicity, particle.pt());
           }
+          if (particleOfInterestDict[ParticleOfInterest::kCascades] && hasReco) {
+            registryMC.fill(HIST("XiNeg_generated_w_reco_MB"), genMultiplicity, particle.pt());
+          }
           break;
         case kXiPlusBar:
           if (particleOfInterestDict[ParticleOfInterest::kCascades] || calculateFeeddownMatrix) {
             registryMC.fill(HIST("XiPos_generated_MB"), genMultiplicity, particle.pt());
           }
+          if (particleOfInterestDict[ParticleOfInterest::kCascades] && hasReco) {
+            registryMC.fill(HIST("XiPos_generated_w_reco_MB"), genMultiplicity, particle.pt());
+          }
           break;
         case kOmegaMinus:
           if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
             registryMC.fill(HIST("OmegaNeg_generated_MB"), genMultiplicity, particle.pt());
+            if (hasReco) {
+              registryMC.fill(HIST("OmegaNeg_generated_w_reco_MB"), genMultiplicity, particle.pt());
+            }
           }
           break;
         case kOmegaPlusBar:
           if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
             registryMC.fill(HIST("OmegaPos_generated_MB"), genMultiplicity, particle.pt());
+            if (hasReco) {
+              registryMC.fill(HIST("OmegaPos_generated_w_reco_MB"), genMultiplicity, particle.pt());
+            }
           }
           break;
         case kPiPlus:
@@ -1569,7 +1651,7 @@ struct StrangenessInJetsIons {
 
   // Fill Minimum Bias histograms
   template <typename MCRecoCollision, typename V0PerColl, typename CascPerColl, typename TracksPerColl>
-  void FillMBEventHistoMCREC(MCRecoCollision collision,
+  void FillMBEventHistoMCREC(const MCRecoCollision& collision,
                              aod::McParticles const& mcParticles,
                              V0PerColl const& v0sPerColl,
                              CascPerColl const& cascPerColl,
@@ -1693,27 +1775,80 @@ struct StrangenessInJetsIons {
           continue;
         if (std::abs(motherPos.pdgCode()) != kLambda0)
           continue;
-        if (!motherBach.isPhysicalPrimary())
-          continue;
-
-        if (std::abs(motherPos.eta()) > 0.8)
+        if (std::abs(motherBach.eta()) > 0.8)
           continue;
 
         // Xi+
-        if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() > 0 && motherBach.pdgCode() == kXiPlusBar) {
-          registryMC.fill(HIST("XiPos_reconstructed_MB"), multiplicity, casc.pt());
+        if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() > 0 &&
+            motherBach.pdgCode() == kXiPlusBar &&
+            passedRapidityCut(casc.yXi(), configV0.rapidityMax)) {
+          registryMC.fill(HIST("XiPos_reconstructed_MB_incl"), multiplicity, casc.pt());
         }
         // Xi-
-        if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() < 0 && motherBach.pdgCode() == kXiMinus) {
-          registryMC.fill(HIST("XiNeg_reconstructed_MB"), multiplicity, casc.pt());
+        if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() < 0 &&
+            motherBach.pdgCode() == kXiMinus &&
+            passedRapidityCut(casc.yXi(), configV0.rapidityMax)) {
+          registryMC.fill(HIST("XiNeg_reconstructed_MB_incl"), multiplicity, casc.pt());
         }
         // Omega+
-        if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() > 0 && motherBach.pdgCode() == kOmegaPlusBar) {
-          registryMC.fill(HIST("OmegaPos_reconstructed_MB"), multiplicity, casc.pt());
+        if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() > 0 &&
+            motherBach.pdgCode() == kOmegaPlusBar &&
+            passedRapidityCut(casc.yOmega(), configV0.rapidityMax)) {
+          registryMC.fill(HIST("OmegaPos_reconstructed_MB_incl"), multiplicity, casc.pt());
         }
         // Omega-
-        if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() < 0 && motherBach.pdgCode() == kOmegaMinus) {
-          registryMC.fill(HIST("OmegaNeg_reconstructed_MB"), multiplicity, casc.pt());
+        if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() < 0 &&
+            motherBach.pdgCode() == kOmegaMinus &&
+            passedRapidityCut(casc.yOmega(), configV0.rapidityMax)) {
+          registryMC.fill(HIST("OmegaNeg_reconstructed_MB_incl"), multiplicity, casc.pt());
+        }
+
+        if (!motherBach.isPhysicalPrimary())
+          continue;
+
+        // Rapidity generated particle
+        double yGen = motherBach.y();
+
+        // Histograms below are filled only for PhysicalPrimary particles
+        // Xi+ (primary)
+        if (motherBach.pdgCode() == kXiPlusBar) {
+          if (passedRapidityCut(yGen, configV0.rapidityMax)) {
+            registryMC.fill(HIST("XiPos_gen_recoEvent_MB"), multiplicity, casc.pt());
+          }
+          if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() > 0 &&
+              passedRapidityCut(casc.yXi(), configV0.rapidityMax)) {
+            registryMC.fill(HIST("XiPos_reconstructed_MB"), multiplicity, casc.pt());
+          }
+        }
+        // Xi- (primary)
+        if (motherBach.pdgCode() == kXiMinus) {
+          if (passedRapidityCut(yGen, configV0.rapidityMax)) {
+            registryMC.fill(HIST("XiNeg_gen_recoEvent_MB"), multiplicity, casc.pt());
+          }
+          if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() < 0 &&
+              passedRapidityCut(casc.yXi(), configV0.rapidityMax)) {
+            registryMC.fill(HIST("XiNeg_reconstructed_MB"), multiplicity, casc.pt());
+          }
+        }
+        // Omega+ (primary)
+        if (motherBach.pdgCode() == kOmegaPlusBar) {
+          if (passedRapidityCut(yGen, configV0.rapidityMax)) {
+            registryMC.fill(HIST("OmegaPos_gen_recoEvent_MB"), multiplicity, casc.pt());
+          }
+          if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() > 0 &&
+              passedRapidityCut(casc.yOmega(), configV0.rapidityMax)) {
+            registryMC.fill(HIST("OmegaPos_reconstructed_MB"), multiplicity, casc.pt());
+          }
+        }
+        // Omega- (primary)
+        if (motherBach.pdgCode() == kOmegaMinus) {
+          if (passedRapidityCut(yGen, configV0.rapidityMax)) {
+            registryMC.fill(HIST("OmegaNeg_gen_recoEvent_MB"), multiplicity, casc.pt());
+          }
+          if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() < 0 &&
+              passedRapidityCut(casc.yOmega(), configV0.rapidityMax)) {
+            registryMC.fill(HIST("OmegaNeg_reconstructed_MB"), multiplicity, casc.pt());
+          }
         }
       }
     }
@@ -1777,7 +1912,7 @@ struct StrangenessInJetsIons {
   }
 
   template <typename TV0>
-  void fillFeeddownMatrix(TV0 v0, float pt, float centrality, bool passedLambda, bool passedAntiLambda)
+  void fillFeeddownMatrix(const TV0& v0, float pt, float centrality, bool passedLambda, bool passedAntiLambda)
   // Fill feeddown matrix for Lambdas or AntiLambdas
   // Adapted from: PWGLF/Tasks/Strangeness/derivedlambdakzeroanalysis.cxx
   {
@@ -2485,6 +2620,13 @@ struct StrangenessInJetsIons {
           const double deltaPhiUe2 = getDeltaPhi(cascadeDir.Phi(), ue2[i].Phi());
           const double deltaRue2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
 
+          bool isInRC = false;
+          if (doRandomConeSys) {
+            const float deltaRrc1 = getDeltaR(cascadeDir.Eta(), cascadeDir.Phi(), rcSys1[i].Eta(), rcSys1[i].Phi());
+            const float deltaRrc2 = getDeltaR(cascadeDir.Eta(), cascadeDir.Phi(), rcSys2[i].Eta(), rcSys2[i].Phi());
+            isInRC = (deltaRrc1 < rJet) || (deltaRrc2 < rJet);
+          }
+
           // Xi+
           if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() > 0) {
             if (deltaRjet < rJet) {
@@ -2492,6 +2634,9 @@ struct StrangenessInJetsIons {
             }
             if (deltaRue1 < rJet || deltaRue2 < rJet) {
               registryData.fill(HIST("XiPos_in_ue"), multiplicity, casc.pt(), casc.mXi());
+            }
+            if (doRandomConeSys && isInRC) {
+              registryData.fill(HIST("XiPos_in_rc"), multiplicity, casc.pt(), casc.mXi());
             }
           }
           // Xi-
@@ -2502,6 +2647,9 @@ struct StrangenessInJetsIons {
             if (deltaRue1 < rJet || deltaRue2 < rJet) {
               registryData.fill(HIST("XiNeg_in_ue"), multiplicity, casc.pt(), casc.mXi());
             }
+            if (doRandomConeSys && isInRC) {
+              registryData.fill(HIST("XiNeg_in_rc"), multiplicity, casc.pt(), casc.mXi());
+            }
           }
           // Omega+
           if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() > 0) {
@@ -2511,6 +2659,9 @@ struct StrangenessInJetsIons {
             if (deltaRue1 < rJet || deltaRue2 < rJet) {
               registryData.fill(HIST("OmegaPos_in_ue"), multiplicity, casc.pt(), casc.mOmega());
             }
+            if (doRandomConeSys && isInRC) {
+              registryData.fill(HIST("OmegaPos_in_rc"), multiplicity, casc.pt(), casc.mOmega());
+            }
           }
           // Omega-
           if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() < 0) {
@@ -2519,6 +2670,9 @@ struct StrangenessInJetsIons {
             }
             if (deltaRue1 < rJet || deltaRue2 < rJet) {
               registryData.fill(HIST("OmegaNeg_in_ue"), multiplicity, casc.pt(), casc.mOmega());
+            }
+            if (doRandomConeSys && isInRC) {
+              registryData.fill(HIST("OmegaNeg_in_rc"), multiplicity, casc.pt(), casc.mOmega());
             }
           }
         }
@@ -2943,6 +3097,26 @@ struct StrangenessInJetsIons {
                   registryMC.fill(HIST("AntiLambda_generated_rc"), genMultiplicity, hadron.Pt());
                 }
                 break;
+              case kXiMinus:
+                if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+                  registryMC.fill(HIST("XiNeg_generated_rc"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kXiPlusBar:
+                if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+                  registryMC.fill(HIST("XiPos_generated_rc"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kOmegaMinus:
+                if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+                  registryMC.fill(HIST("OmegaNeg_generated_rc"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kOmegaPlusBar:
+                if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+                  registryMC.fill(HIST("OmegaPos_generated_rc"), genMultiplicity, hadron.Pt());
+                }
+                break;
               default:
                 break;
             }
@@ -3174,6 +3348,26 @@ struct StrangenessInJetsIons {
                   registryMC.fill(HIST("AntiLambda_gen_recoEvent_jet"), multiplicity, momVec.Pt());
                 }
                 break;
+              case kXiMinus:
+                if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+                  registryMC.fill(HIST("XiNeg_gen_recoEvent_jet"), multiplicity, momVec.Pt());
+                }
+                break;
+              case kXiPlusBar:
+                if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+                  registryMC.fill(HIST("XiPos_gen_recoEvent_jet"), multiplicity, momVec.Pt());
+                }
+                break;
+              case kOmegaMinus:
+                if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+                  registryMC.fill(HIST("OmegaNeg_gen_recoEvent_jet"), multiplicity, momVec.Pt());
+                }
+                break;
+              case kOmegaPlusBar:
+                if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+                  registryMC.fill(HIST("OmegaPos_gen_recoEvent_jet"), multiplicity, momVec.Pt());
+                }
+                break;
               default:
                 break;
             }
@@ -3195,6 +3389,26 @@ struct StrangenessInJetsIons {
                   registryMC.fill(HIST("AntiLambda_gen_recoEvent_ue"), multiplicity, momVec.Pt());
                 }
                 break;
+              case kXiMinus:
+                if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+                  registryMC.fill(HIST("XiNeg_gen_recoEvent_ue"), multiplicity, momVec.Pt());
+                }
+                break;
+              case kXiPlusBar:
+                if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+                  registryMC.fill(HIST("XiPos_gen_recoEvent_ue"), multiplicity, momVec.Pt());
+                }
+                break;
+              case kOmegaMinus:
+                if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+                  registryMC.fill(HIST("OmegaNeg_gen_recoEvent_ue"), multiplicity, momVec.Pt());
+                }
+                break;
+              case kOmegaPlusBar:
+                if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+                  registryMC.fill(HIST("OmegaPos_gen_recoEvent_ue"), multiplicity, momVec.Pt());
+                }
+                break;
               default:
                 break;
             }
@@ -3214,6 +3428,26 @@ struct StrangenessInJetsIons {
               case kLambda0Bar:
                 if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
                   registryMC.fill(HIST("AntiLambda_gen_recoEvent_rc"), multiplicity, momVec.Pt());
+                }
+                break;
+              case kXiMinus:
+                if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+                  registryMC.fill(HIST("XiNeg_gen_recoEvent_rc"), multiplicity, momVec.Pt());
+                }
+                break;
+              case kXiPlusBar:
+                if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+                  registryMC.fill(HIST("XiPos_gen_recoEvent_rc"), multiplicity, momVec.Pt());
+                }
+                break;
+              case kOmegaMinus:
+                if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+                  registryMC.fill(HIST("OmegaNeg_gen_recoEvent_rc"), multiplicity, momVec.Pt());
+                }
+                break;
+              case kOmegaPlusBar:
+                if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+                  registryMC.fill(HIST("OmegaPos_gen_recoEvent_rc"), multiplicity, momVec.Pt());
                 }
                 break;
               default:
@@ -3394,8 +3628,8 @@ struct StrangenessInJetsIons {
             }
             if (pdgParent == 0)
               continue;
-            if (!isPhysPrim)
-              continue;
+            // if (!isPhysPrim)
+            //   continue;
 
             // Compute distances from jet and UE axes
             TVector3 cascadeDir(casc.px(), casc.py(), casc.pz());
@@ -3409,40 +3643,109 @@ struct StrangenessInJetsIons {
             double deltaPhiUe2 = getDeltaPhi(cascadeDir.Phi(), ue2[i].Phi());
             double deltaRue2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
 
+            bool isInRC = false;
+            if (doRandomConeSys) {
+              const float deltaRrc1 = getDeltaR(cascadeDir.Eta(), cascadeDir.Phi(), rcSys1[i].Eta(), rcSys1[i].Phi());
+              const float deltaRrc2 = getDeltaR(cascadeDir.Eta(), cascadeDir.Phi(), rcSys2[i].Eta(), rcSys2[i].Phi());
+              isInRC = (deltaRrc1 < rJet) || (deltaRrc2 < rJet);
+            }
+
             // Xi+
-            if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() > 0 && pdgParent == kXiPlusBar) {
+            if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() > 0 && pdgParent == kXiPlusBar && isPhysPrim) {
               if (deltaRjet < rJet) {
                 registryMC.fill(HIST("XiPos_reconstructed_jet"), multiplicity, casc.pt());
               }
               if (deltaRue1 < rJet || deltaRue2 < rJet) {
                 registryMC.fill(HIST("XiPos_reconstructed_ue"), multiplicity, casc.pt());
               }
+              if (doRandomConeSys && isInRC) {
+                registryMC.fill(HIST("XiPos_reconstructed_rc"), multiplicity, casc.pt());
+              }
             }
             // Xi-
-            if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() < 0 && pdgParent == kXiMinus) {
+            if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() < 0 && pdgParent == kXiMinus && isPhysPrim) {
               if (deltaRjet < rJet) {
                 registryMC.fill(HIST("XiNeg_reconstructed_jet"), multiplicity, casc.pt());
               }
               if (deltaRue1 < rJet || deltaRue2 < rJet) {
                 registryMC.fill(HIST("XiNeg_reconstructed_ue"), multiplicity, casc.pt());
               }
+              if (doRandomConeSys && isInRC) {
+                registryMC.fill(HIST("XiNeg_reconstructed_rc"), multiplicity, casc.pt());
+              }
             }
             // Omega+
-            if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() > 0 && pdgParent == kOmegaPlusBar) {
+            if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() > 0 && pdgParent == kOmegaPlusBar && isPhysPrim) {
               if (deltaRjet < rJet) {
                 registryMC.fill(HIST("OmegaPos_reconstructed_jet"), multiplicity, casc.pt());
               }
               if (deltaRue1 < rJet || deltaRue2 < rJet) {
                 registryMC.fill(HIST("OmegaPos_reconstructed_ue"), multiplicity, casc.pt());
               }
+              if (doRandomConeSys && isInRC) {
+                registryMC.fill(HIST("OmegaPos_reconstructed_rc"), multiplicity, casc.pt());
+              }
             }
             // Omega-
-            if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() < 0 && pdgParent == kOmegaMinus) {
+            if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() < 0 && pdgParent == kOmegaMinus && isPhysPrim) {
               if (deltaRjet < rJet) {
                 registryMC.fill(HIST("OmegaNeg_reconstructed_jet"), multiplicity, casc.pt());
               }
               if (deltaRue1 < rJet || deltaRue2 < rJet) {
                 registryMC.fill(HIST("OmegaNeg_reconstructed_ue"), multiplicity, casc.pt());
+              }
+              if (doRandomConeSys && isInRC) {
+                registryMC.fill(HIST("OmegaNeg_reconstructed_rc"), multiplicity, casc.pt());
+              }
+            }
+
+            // Fill inclusive histograms
+            // Xi+
+            if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() > 0 && pdgParent == kXiPlusBar) {
+              if (deltaRjet < rJet) {
+                registryMC.fill(HIST("XiPos_reconstructed_jet_incl"), multiplicity, casc.pt());
+              }
+              if (deltaRue1 < rJet || deltaRue2 < rJet) {
+                registryMC.fill(HIST("XiPos_reconstructed_ue_incl"), multiplicity, casc.pt());
+              }
+              if (doRandomConeSys && isInRC) {
+                registryMC.fill(HIST("XiPos_reconstructed_rc_incl"), multiplicity, casc.pt());
+              }
+            }
+            // Xi-
+            if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() < 0 && pdgParent == kXiMinus) {
+              if (deltaRjet < rJet) {
+                registryMC.fill(HIST("XiNeg_reconstructed_jet_incl"), multiplicity, casc.pt());
+              }
+              if (deltaRue1 < rJet || deltaRue2 < rJet) {
+                registryMC.fill(HIST("XiNeg_reconstructed_ue_incl"), multiplicity, casc.pt());
+              }
+              if (doRandomConeSys && isInRC) {
+                registryMC.fill(HIST("XiNeg_reconstructed_rc_incl"), multiplicity, casc.pt());
+              }
+            }
+            // Omega+
+            if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() > 0 && pdgParent == kOmegaPlusBar) {
+              if (deltaRjet < rJet) {
+                registryMC.fill(HIST("OmegaPos_reconstructed_jet_incl"), multiplicity, casc.pt());
+              }
+              if (deltaRue1 < rJet || deltaRue2 < rJet) {
+                registryMC.fill(HIST("OmegaPos_reconstructed_ue_incl"), multiplicity, casc.pt());
+              }
+              if (doRandomConeSys && isInRC) {
+                registryMC.fill(HIST("OmegaPos_reconstructed_rc_incl"), multiplicity, casc.pt());
+              }
+            }
+            // Omega-
+            if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() < 0 && pdgParent == kOmegaMinus) {
+              if (deltaRjet < rJet) {
+                registryMC.fill(HIST("OmegaNeg_reconstructed_jet_incl"), multiplicity, casc.pt());
+              }
+              if (deltaRue1 < rJet || deltaRue2 < rJet) {
+                registryMC.fill(HIST("OmegaNeg_reconstructed_ue_incl"), multiplicity, casc.pt());
+              }
+              if (doRandomConeSys && isInRC) {
+                registryMC.fill(HIST("OmegaNeg_reconstructed_rc_incl"), multiplicity, casc.pt());
               }
             }
           }
@@ -3898,9 +4201,9 @@ struct StrangenessInJetsIons {
     if (particleOfInterestDict[ParticleOfInterest::kCascades]) { // Cascades
       for (const auto& casc : Cascades) {
         // Get cascade daughters
-        const auto& bach = casc.bachelor_as<DaughterTracks>();
-        const auto& pos = casc.posTrack_as<DaughterTracks>();
-        const auto& neg = casc.negTrack_as<DaughterTracks>();
+        const auto& bach = casc.bachelor_as<DaughterTracksMB>();
+        const auto& pos = casc.posTrack_as<DaughterTracksMB>();
+        const auto& neg = casc.negTrack_as<DaughterTracksMB>();
         TVector3 cascadeDir(casc.px(), casc.py(), casc.pz());
 
         // Xi+

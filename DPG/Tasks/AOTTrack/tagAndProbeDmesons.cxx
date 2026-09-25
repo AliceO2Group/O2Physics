@@ -1296,7 +1296,7 @@ struct ProbeThirdTrack {
   }
 
   template <uint8_t channel, bool doMc, typename TTrackIndices, typename TTrack, typename TTracks, typename PParticles>
-  void loopOverThirdTrack(TTrackIndices const& groupedTrackThirdIndices, TTracks const& /*tracks*/, TTrack const& trackFirst, TTrack const& trackSecond, PParticles const mcParticles, const int motherIdxTag, const float radius)
+  void loopOverThirdTrack(TTrackIndices const& groupedTrackThirdIndices, TTracks const& /*tracks*/, TTrack const& trackFirst, TTrack const& trackSecond, PParticles const& mcParticles, const int motherIdxTag, const float radius)
   {
     for (const auto& trackIndex : groupedTrackThirdIndices) {
       auto trackThird = trackIndex.template track_as<TTracks>();

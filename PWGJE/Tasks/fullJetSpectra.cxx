@@ -1185,7 +1185,7 @@ struct FullJetSpectra {
     if (bcs.size() == 0) {
       return;
     }
-    for (auto bc : bcs) {
+    for (const auto& bc : bcs) {
       registry.fill(HIST("hBCCounter"), 0.5); // All BC
       if (bc.selection_bit(aod::evsel::EventSelectionFlags::kIsTriggerTVX)) {
         registry.fill(HIST("hBCCounter"), 1.5); // BC+TVX
@@ -1197,7 +1197,7 @@ struct FullJetSpectra {
         }
       }
       auto collisionsInBC = collisions.sliceBy(perFoundBC, bc.globalIndex());
-      for (auto collision : collisionsInBC) {
+      for (const auto& collision : collisionsInBC) {
         registry.fill(HIST("hBCCounter"), 4.5); // CollinBC
         if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
           registry.fill(HIST("hBCCounter"), 5.5); // CollinBC+TVX

@@ -28,7 +28,9 @@
 #include "ALICE3/DataModel/collisionAlice3.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <Framework/ASoA.h>
@@ -141,8 +143,9 @@ struct Alice3DqTableMaker {
   {
     bool isProcessSkimmingEnabled = context.mOptions.get<bool>("processSkimming");
 
-    if (!isProcessSkimmingEnabled)
+    if (!isProcessSkimmingEnabled) {
       LOG(fatal) << "No process function was enabled ALICE 3 TableMaker";
+    }
 
     VarManager::SetDefaultVarNames(); // Important that this is called before defineCuts() !!!
 
@@ -310,7 +313,7 @@ struct Alice3DqTableMaker {
     fStatsList->Add(histEvents);
 
     // Track statistics: one bin for each track selection and 5 bins for V0 tags (gamma, K0s, Lambda, anti-Lambda, Omega)
-    TH1I* histTracks = new TH1I("TrackStats", "Track statistics", fTrackCuts.size() + 5.0, -0.5, fTrackCuts.size() - 0.5 + 5.0);
+    TH1I* histTracks = new TH1I("TrackStats", "Track statistics", static_cast<int>(fTrackCuts.size() + 5.0), -0.5, fTrackCuts.size() - 0.5 + 5.0);
     ibX = 1;
     for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, ibX++) {
       histTracks->GetXaxis()->SetBinLabel(ibX, (*cut)->GetName());
@@ -623,8 +626,9 @@ struct Alice3DqTableMaker {
 
     skimCollisions(collisions);
 
-    if (fCollIndexMap.empty())
+    if (fCollIndexMap.empty()) {
       return;
+    }
 
     skimMCParticles(mcParticles, mcCollisions);
 

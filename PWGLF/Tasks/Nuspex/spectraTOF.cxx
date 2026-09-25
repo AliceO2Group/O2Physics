@@ -131,7 +131,8 @@ struct tofSpectra {
     Configurable<float> cfgCutNsigma{"cfgCutNsigma", 100.0f, "nsigma cut range for tracks"};
     Configurable<float> cfgCutEtaMin{"cfgCutEtaMin", -0.8f, "Min eta range for tracks"};
     Configurable<float> cfgCutdcaZMin{"cfgCutdcaZMin", -0.02f, "Min dcaZ range for tracks"};
-    Configurable<float> cfgCutY{"cfgCutY", 0.5f, "Y range for tracks"};
+    Configurable<float> cfgCutYMax{"cfgCutYMax", 0.5f, "Max Y range for tracks"};
+    Configurable<float> cfgCutYMin{"cfgCutYMin", -0.5f, "Min Y range for tracks"};
     Configurable<int> lastRequiredTrdCluster{"lastRequiredTrdCluster", 5, "Last cluster to require in TRD for track selection. -1 does not require any TRD cluster"};
     Configurable<bool> requireTrdOnly{"requireTrdOnly", false, "Require only tracks from TRD"};
     Configurable<bool> requireNoTrd{"requireNoTrd", false, "Require tracks without TRD"};
@@ -900,7 +901,8 @@ struct tofSpectra {
   template <bool fillFullInfo, PID::ID id, typename T, typename C>
   void fillParticleHistos(const T& track, const C& collision)
   {
-    if (std::abs(track.rapidity(PID::getMass(id))) > trkselOptions.cfgCutY) {
+    const auto rapidity = track.rapidity(PID::getMass(id));
+    if (rapidity < trkselOptions.cfgCutYMin || rapidity > trkselOptions.cfgCutYMax) {
       return;
     }
     if constexpr (id == PID::Kaon) {
@@ -1556,14 +1558,14 @@ struct tofSpectra {
       bool isTOFKaon = track.hasTOF() && std::abs(nsigmaTOFKa) < trkselOptions.cfgCutNsigma;
       bool isTOFProton = track.hasTOF() && std::abs(nsigmaTOFPr) < trkselOptions.cfgCutNsigma;
       // Precompute rapidity values to avoid redundant calculations
-      double rapidityPi = std::abs(track.rapidity(PID::getMass(2)));
-      double rapidityKa = std::abs(track.rapidity(PID::getMass(3)));
-      double rapidityPr = std::abs(track.rapidity(PID::getMass(4)));
+      double rapidityPi = track.rapidity(PID::getMass(2));
+      double rapidityKa = track.rapidity(PID::getMass(3));
+      double rapidityPr = track.rapidity(PID::getMass(4));
       if (track.eta() < trkselOptions.cfgCutEtaMin || track.eta() > trkselOptions.cfgCutEtaMax) {
         return;
       }
       if (mcParticle.isPhysicalPrimary()) {
-        if (isTPCPion && rapidityPi <= trkselOptions.cfgCutY) {
+        if (isTPCPion && rapidityPi >= trkselOptions.cfgCutYMin && rapidityPi <= trkselOptions.cfgCutYMax) {
           if (usePDGcode) {
             if (pdgCode == kPiPlus) {
               histos.fill(HIST("nsigmatpc/mc_closure/pos/pi"), track.pt(), nsigmaTPCPi, multiplicity);
@@ -1575,7 +1577,7 @@ struct tofSpectra {
             histos.fill(HIST("nsigmatpc/mc_closure/neg/pi"), track.pt(), nsigmaTPCPi, multiplicity);
           }
         }
-        if (isTPCKaon && rapidityKa <= trkselOptions.cfgCutY) {
+        if (isTPCKaon && rapidityKa >= trkselOptions.cfgCutYMin && rapidityKa <= trkselOptions.cfgCutYMax) {
           if (usePDGcode) {
             if (pdgCode == kKPlus) {
               histos.fill(HIST("nsigmatpc/mc_closure/pos/ka"), track.pt(), nsigmaTPCKa, multiplicity);
@@ -1587,7 +1589,7 @@ struct tofSpectra {
             histos.fill(HIST("nsigmatpc/mc_closure/neg/ka"), track.pt(), nsigmaTPCKa, multiplicity);
           }
         }
-        if (isTPCProton && rapidityPr <= trkselOptions.cfgCutY) {
+        if (isTPCProton && rapidityPr >= trkselOptions.cfgCutYMin && rapidityPr <= trkselOptions.cfgCutYMax) {
           if (usePDGcode) {
             if (pdgCode == kProton) {
               histos.fill(HIST("nsigmatpc/mc_closure/pos/pr"), track.pt(), nsigmaTPCPr, multiplicity);
@@ -1601,7 +1603,7 @@ struct tofSpectra {
         }
 
         // TOF Selection and Histogram Filling
-        if (isTOFPion && rapidityPi <= trkselOptions.cfgCutY) {
+        if (isTOFPion && rapidityPi >= trkselOptions.cfgCutYMin && rapidityPi <= trkselOptions.cfgCutYMax) {
           if (usePDGcode) {
             if (pdgCode == kPiPlus) {
               histos.fill(HIST("nsigmatof/mc_closure/pos/pi"), track.pt(), nsigmaTOFPi, multiplicity);
@@ -1613,7 +1615,7 @@ struct tofSpectra {
             histos.fill(HIST("nsigmatof/mc_closure/neg/pi"), track.pt(), nsigmaTOFPi, multiplicity);
           }
         }
-        if (isTOFKaon && rapidityKa <= trkselOptions.cfgCutY) {
+        if (isTOFKaon && rapidityKa >= trkselOptions.cfgCutYMin && rapidityKa <= trkselOptions.cfgCutYMax) {
           if (usePDGcode) {
             if (pdgCode == kKPlus) {
               histos.fill(HIST("nsigmatof/mc_closure/pos/ka"), track.pt(), nsigmaTOFKa, multiplicity);
@@ -1625,7 +1627,7 @@ struct tofSpectra {
             histos.fill(HIST("nsigmatof/mc_closure/neg/ka"), track.pt(), nsigmaTOFKa, multiplicity);
           }
         }
-        if (isTOFProton && rapidityPr <= trkselOptions.cfgCutY) {
+        if (isTOFProton && rapidityPr >= trkselOptions.cfgCutYMin && rapidityPr <= trkselOptions.cfgCutYMax) {
           if (usePDGcode) {
             if (pdgCode == kProton) {
               histos.fill(HIST("nsigmatof/mc_closure/pos/pr"), track.pt(), nsigmaTOFPr, multiplicity);
@@ -1693,21 +1695,21 @@ struct tofSpectra {
       const bool isTOFProton = track.hasTOF() && std::abs(nsigmaTOFPr) < trkselOptions.cfgCutNsigma;
 
       // Apply rapidity cut for identified particles
-      if (isTPCPion && std::abs(track.rapidity(PID::getMass(2))) < trkselOptions.cfgCutY) {
+      if (isTPCPion && track.rapidity(PID::getMass(2)) >= trkselOptions.cfgCutYMin && track.rapidity(PID::getMass(2)) <= trkselOptions.cfgCutYMax) {
         tpcCount++;
         if (track.sign() > 0) {
           histos.fill(HIST("nsigmatpc/test_occupancy/pos/pi"), track.pt(), nsigmaTPCPi, multiplicity, occupancy);
         } else {
           histos.fill(HIST("nsigmatpc/test_occupancy/neg/pi"), track.pt(), nsigmaTPCPi, multiplicity, occupancy);
         }
-      } else if (isTPCKaon && std::abs(track.rapidity(PID::getMass(3))) < trkselOptions.cfgCutY) {
+      } else if (isTPCKaon && track.rapidity(PID::getMass(3)) >= trkselOptions.cfgCutYMin && track.rapidity(PID::getMass(3)) <= trkselOptions.cfgCutYMax) {
         tpcCount++;
         if (track.sign() > 0) {
           histos.fill(HIST("nsigmatpc/test_occupancy/pos/ka"), track.pt(), nsigmaTPCKa, multiplicity, occupancy);
         } else {
           histos.fill(HIST("nsigmatpc/test_occupancy/neg/ka"), track.pt(), nsigmaTPCKa, multiplicity, occupancy);
         }
-      } else if (isTPCProton && std::abs(track.rapidity(PID::getMass(4))) < trkselOptions.cfgCutY) {
+      } else if (isTPCProton && track.rapidity(PID::getMass(4)) >= trkselOptions.cfgCutYMin && track.rapidity(PID::getMass(4)) <= trkselOptions.cfgCutYMax) {
         tpcCount++;
         if (track.sign() > 0) {
           histos.fill(HIST("nsigmatpc/test_occupancy/pos/pr"), track.pt(), nsigmaTPCPr, multiplicity, occupancy);
@@ -1717,21 +1719,21 @@ struct tofSpectra {
       }
 
       // TOF PID histograms
-      if (isTOFPion && std::abs(track.rapidity(PID::getMass(2))) < trkselOptions.cfgCutY) {
+      if (isTOFPion && track.rapidity(PID::getMass(2)) >= trkselOptions.cfgCutYMin && track.rapidity(PID::getMass(2)) <= trkselOptions.cfgCutYMax) {
         tofCount++;
         if (track.sign() > 0) {
           histos.fill(HIST("nsigmatof/test_occupancy/pos/pi"), track.pt(), nsigmaTOFPi, multiplicity, occupancy);
         } else {
           histos.fill(HIST("nsigmatof/test_occupancy/neg/pi"), track.pt(), nsigmaTOFPi, multiplicity, occupancy);
         }
-      } else if (isTOFKaon && std::abs(track.rapidity(PID::getMass(3))) < trkselOptions.cfgCutY) {
+      } else if (isTOFKaon && track.rapidity(PID::getMass(3)) >= trkselOptions.cfgCutYMin && track.rapidity(PID::getMass(3)) <= trkselOptions.cfgCutYMax) {
         tofCount++;
         if (track.sign() > 0) {
           histos.fill(HIST("nsigmatof/test_occupancy/pos/ka"), track.pt(), nsigmaTOFKa, multiplicity, occupancy);
         } else {
           histos.fill(HIST("nsigmatof/test_occupancy/neg/ka"), track.pt(), nsigmaTOFKa, multiplicity, occupancy);
         }
-      } else if (isTOFProton && std::abs(track.rapidity(PID::getMass(4))) < trkselOptions.cfgCutY) {
+      } else if (isTOFProton && track.rapidity(PID::getMass(4)) >= trkselOptions.cfgCutYMin && track.rapidity(PID::getMass(4)) <= trkselOptions.cfgCutYMax) {
         tofCount++;
         if (track.sign() > 0) {
           histos.fill(HIST("nsigmatof/test_occupancy/pos/pr"), track.pt(), nsigmaTOFPr, multiplicity, occupancy);
@@ -1975,7 +1977,7 @@ struct tofSpectra {
       return;
     }
 
-    if (std::abs(mcParticle.y()) > trkselOptions.cfgCutY) {
+    if (mcParticle.y() < trkselOptions.cfgCutYMin || mcParticle.y() > trkselOptions.cfgCutYMax) {
       return;
     }
     if (enablePureDCAHistogram) {
@@ -2624,7 +2626,7 @@ struct tofSpectra {
         const float multiplicity = getMultiplicity(collision);
         for (const auto& mcParticle : particlesInCollision) {
 
-          if (std::abs(mcParticle.y()) > trkselOptions.cfgCutY) {
+          if (mcParticle.y() < trkselOptions.cfgCutYMin || mcParticle.y() > trkselOptions.cfgCutYMax) {
             continue;
           }
           static_for<0, 17>([&](auto i) {
@@ -2634,7 +2636,7 @@ struct tofSpectra {
       }
     } else {
       for (const auto& mcParticle : mcParticles) {
-        if (std::abs(mcParticle.y()) > trkselOptions.cfgCutY) {
+        if (mcParticle.y() < trkselOptions.cfgCutYMin || mcParticle.y() > trkselOptions.cfgCutYMax) {
           continue;
         }
 
@@ -2668,7 +2670,7 @@ struct tofSpectra {
         histos.fill(HIST("MC/MultiplicityRecoEv"), getMultiplicityMC(mcCollision));
       }
       for (const auto& mcParticle : particlesInCollision) {
-        if (std::abs(mcParticle.y()) > trkselOptions.cfgCutY) {
+        if (mcParticle.y() < trkselOptions.cfgCutYMin || mcParticle.y() > trkselOptions.cfgCutYMax) {
           continue;
         }
         static_for<0, 17>([&](auto i) {
@@ -2699,7 +2701,7 @@ struct tofSpectra {
       }
       histos.fill(HIST("MC/MultiplicityMCINELgt1"), getMultiplicityMC(mcCollision));
       for (const auto& mcParticle : particlesInCollision) {
-        if (std::abs(mcParticle.y()) > trkselOptions.cfgCutY) {
+        if (mcParticle.y() < trkselOptions.cfgCutYMin || mcParticle.y() > trkselOptions.cfgCutYMax) {
           continue;
         }
         static_for<0, 17>([&](auto i) {
@@ -2729,8 +2731,8 @@ struct tofSpectra {
         continue;
       int pdgCode = mcParticleGen.pdgCode();
       float pt = mcParticleGen.pt();
-      float absY = std::abs(mcParticleGen.y());
-      if (absY > trkselOptions.cfgCutY) {
+      float rapidity = mcParticleGen.y();
+      if (rapidity < trkselOptions.cfgCutYMin || rapidity > trkselOptions.cfgCutYMax) {
         continue;
       }
 
@@ -2793,8 +2795,8 @@ struct tofSpectra {
 
         int pdgCode = mcParticle.pdgCode();
         float pt = mcParticle.pt();
-        float absY = std::abs(mcParticle.y());
-        if (absY > trkselOptions.cfgCutY) {
+        float rapidity = mcParticle.y();
+        if (rapidity < trkselOptions.cfgCutYMin || rapidity > trkselOptions.cfgCutYMax) {
           continue;
         }
 
@@ -2877,7 +2879,7 @@ struct tofSpectra {
         // Precompute rapidity values to avoid redundant calculations
         double rapiditypar = std::abs(track.rapidity(PID::getMass(par)));
         // TPC Selection and histogram filling
-        if (isTPCpar && rapiditypar <= trkselOptions.cfgCutY) {
+        if (isTPCpar && rapiditypar >= trkselOptions.cfgCutYMin && rapiditypar <= trkselOptions.cfgCutYMax) {
           static_for<0, NpCharge - 1>([&](auto i) {
             if (pdgCode == PDGs[i]) {
               hMCPdgNsigmaTPC[par - 2][i]->Fill(track.pt(), nsigmaTPCpar, multiplicity);

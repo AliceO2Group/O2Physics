@@ -37,7 +37,8 @@
 #include <Framework/runDataProcessing.h>
 
 #include <Math/GenVector/Boost.h>
-#include <TLorentzVector.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 #include <TPDGCode.h>
 
 #include <array>
@@ -56,7 +57,7 @@ using TracksFullMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU
 using CollisionsFull = soa::Join<aod::Collisions, aod::EvSel, aod::PVMults>;
 using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults>;
 
-struct sigmaHadCand {
+struct SigmaHadCand {
 
   float ptHad() const
   {
@@ -96,22 +97,24 @@ struct sigmaHadCand {
   float multiplicity = -1.f;
 };
 
-struct sigmaHadCorrTask {
+struct SigmaHadCorr {
 
-  std::vector<sigmaHadCand> sigmaHadCandidates;        // Vector to store Sigma-hadron candidates
   Produces<aod::SigmaProtonCands> outputDataTable;     // Output table for Sigma-hadron candidates
   Produces<aod::SigmaProtonMCCands> outputDataTableMC; // Output table for Sigma-hadron candidates in MC
+  Produces<aod::SlimKinkCandsMC> outputKinkCandsMC;    // Single-Sigma-level MC truth record, filled before hadron pairing
   // Histograms are defined with HistogramRegistry
   HistogramRegistry rEventSelection{"eventSelection", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry rSigmaHad{"sigmaHad", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   // Configurable for event selection
-  Configurable<float> cutzvertex{"cutZVertex", 10.0f, "Accepted z-vertex range (cm)"};
+  Configurable<float> cutZVertex{"cutZVertex", 10.0f, "Accepted z-vertex range (cm)"};
 
   Configurable<bool> doSigmaPion{"doSigmaPion", false, "If true, pair Sigma with pions instead of protons"};
   Configurable<bool> doSigmaMinus{"doSigmaMinus", true, "If true, pair Sigma- candidates, else Sigma+"};
   Configurable<float> cutMaxKStar{"cutMaxKStar", 1.5, "Maximum k* for Sigma-hadron pairs (GeV/c)"};
 
   Configurable<float> minPtSigma{"minPtSigma", 1.f, "Minimum pT for Sigma candidates (GeV/c)"};
+  Configurable<float> cutRapMotherMC{"cutRapMotherMC", 1.0f, "Rapidity cut for generated mother Sigma in MC"};
+  Configurable<float> cutPtGenMC{"cutPtGenMC", 0.5f, "Minimum pT for generated Sigma particles in MC"};
   Configurable<bool> useRecalculatedSigmaMomentum{"useRecalculatedSigmaMomentum", true, "If true, compute k* using Sigma momentum recalculated from daughter kinematics"};
   Configurable<float> cutDCAtoPVSigma{"cutDCAtoPVSigma", 0.1f, "Max DCA to primary vertex for Sigma candidates (cm)"};
   Configurable<float> cutSigmaRadius{"cutSigmaRadius", 20.f, "Minimum radius for Sigma candidates (cm)"};
@@ -119,7 +122,7 @@ struct sigmaHadCorrTask {
   Configurable<float> alphaAPCut{"alphaAPCut", 0., "Alpha AP cut for Sigma candidates"};
   Configurable<float> qtAPCutLow{"qtAPCutLow", 0.15, "Lower qT AP cut for Sigma candidates (GeV/c)"};
   Configurable<float> qtAPCutHigh{"qtAPCutHigh", 0.2, "Upper qT AP cut for Sigma candidates (GeV/c)"};
-  Configurable<float> cutEtaDaught{"cutEtaDaughter", 0.8f, "Eta cut for daughter tracks"};
+  Configurable<float> cutEtaDaughter{"cutEtaDaughter", 0.8f, "Eta cut for daughter tracks"};
   Configurable<float> ptMinTOFKinkDau{"ptMinTOFKinkDau", 0.75f, "Minimum pT to require TOF for kink daughter PID (GeV/c)"};
   Configurable<bool> applyTOFPIDKinkDaughter{"applyTOFPIDKinkDaughter", false, "If true, apply TOF PID cut to the kink daughter track"};
 
@@ -136,8 +139,8 @@ struct sigmaHadCorrTask {
   Configurable<bool> useMultNTracksPV{"useMultNTracksPV", false, "If true, use multNTracksPV for multiplicity and mixing bins; if false, use numContrib"};
   Configurable<bool> findLastPartonicMother{"findLastPartonicMother", true, "If true, store the initial hard-scattering parton (last partonic mother). If false, store the last parton before hadronization (first partonic mother)"};
 
-  ConfigurableAxis CfgVtxBins{"CfgVtxBins", {10, -10, 10}, "Mixing bins - z-vertex"};
-  ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0, 40.0, 80.0, 500.0}, "Mixing bins - number of contributor"};
+  ConfigurableAxis cfgVtxBins{"cfgVtxBins", {10, -10, 10}, "Mixing bins - z-vertex"};
+  ConfigurableAxis cfgMultBins{"cfgMultBins", {VARIABLE_WIDTH, 0.0, 40.0, 80.0, 500.0}, "Mixing bins - number of contributor"};
   Configurable<int> nEvtMixingBkg{"nEvtMixingBkg", 5, "Number of events to mix for background reconstruction"};
 
   Preslice<aod::KinkCands> kinkCandsPerCollisionPreslice = aod::kinkcand::collisionId;
@@ -222,12 +225,13 @@ struct sigmaHadCorrTask {
   {
     // Sigma- -> n + pi-  (charged daughter = pion, neutral daughter = neutron)
     // Sigma+ -> p + pi0  (charged daughter = proton, neutral daughter = pi0)
+    const float epsilon = 1e-6f;
     float massChargedDau = doSigmaMinus ? o2::constants::physics::MassPionCharged : o2::constants::physics::MassProton;
     float massNeutralDau = doSigmaMinus ? o2::constants::physics::MassNeutron : o2::constants::physics::MassPionNeutral;
     float massSigma = doSigmaMinus ? o2::constants::physics::MassSigmaMinus : o2::constants::physics::MassSigmaPlus;
 
     float pMother = std::sqrt(sigmaPx * sigmaPx + sigmaPy * sigmaPy + sigmaPz * sigmaPz);
-    if (pMother < 1e-6f) {
+    if (pMother < epsilon) {
       return -999.f;
     }
     float versorX = sigmaPx / pMother;
@@ -235,29 +239,29 @@ struct sigmaHadCorrTask {
     float versorZ = sigmaPz / pMother;
     float eChDau = std::sqrt(massChargedDau * massChargedDau + sigmaDauPx * sigmaDauPx + sigmaDauPy * sigmaDauPy + sigmaDauPz * sigmaDauPz);
     float a = versorX * sigmaDauPx + versorY * sigmaDauPy + versorZ * sigmaDauPz;
-    float K = massSigma * massSigma + massChargedDau * massChargedDau - massNeutralDau * massNeutralDau;
-    float A = 4.f * (eChDau * eChDau - a * a);
-    float B = -4.f * a * K;
-    float C = 4.f * eChDau * eChDau * massSigma * massSigma - K * K;
-    if (std::abs(A) < 1e-6f) {
+    float coefK = massSigma * massSigma + massChargedDau * massChargedDau - massNeutralDau * massNeutralDau;
+    float coefA = 4.f * (eChDau * eChDau - a * a);
+    float coefB = -4.f * a * coefK;
+    float coefC = 4.f * eChDau * eChDau * massSigma * massSigma - coefK * coefK;
+    if (std::abs(coefA) < epsilon) {
       return -999.f;
     }
-    float D = B * B - 4.f * A * C;
-    if (D < 0.f) {
+    float discriminant = coefB * coefB - 4.f * coefA * coefC;
+    if (discriminant < 0.f) {
       return -999.f;
     }
-    float sqrtD = std::sqrt(D);
-    float P1 = (-B + sqrtD) / (2.f * A);
-    float P2 = (-B - sqrtD) / (2.f * A);
-    if (P2 < 0.f && P1 < 0.f) {
+    float sqrtDiscriminant = std::sqrt(discriminant);
+    float root1 = (-coefB + sqrtDiscriminant) / (2.f * coefA);
+    float root2 = (-coefB - sqrtDiscriminant) / (2.f * coefA);
+    if (root2 < 0.f && root1 < 0.f) {
       return -999.f;
     }
-    if (P2 < 0.f) {
-      return P1;
+    if (root2 < 0.f) {
+      return root1;
     }
-    float p1Diff = std::abs(P1 - pMother);
-    float p2Diff = std::abs(P2 - pMother);
-    return (p1Diff < p2Diff) ? P1 : P2;
+    float p1Diff = std::abs(root1 - pMother);
+    float p2Diff = std::abs(root2 - pMother);
+    return (p1Diff < p2Diff) ? root1 : root2;
   }
 
   std::array<float, 3> getSigmaMomentumForKstar(float sigmaPx, float sigmaPy, float sigmaPz, float sigmaDauPx, float sigmaDauPy, float sigmaDauPz)
@@ -309,8 +313,9 @@ struct sigmaHadCorrTask {
   template <typename TMcParticle, typename TMcParticles>
   int findFirstPartonicMotherPDG(const TMcParticle& mcParticle, const TMcParticles& mcParticles)
   {
+    const int notFoundPdg = -999;
     if (!mcParticle.has_mothers()) {
-      return -999;
+      return notFoundPdg;
     }
     auto motherIds = mcParticle.mothersIds();
     const int defaultMotherSize = 2;
@@ -331,10 +336,10 @@ struct sigmaHadCorrTask {
         return mother.pdgCode();
       }
       int found = findFirstPartonicMotherPDG(mother, mcParticles);
-      if (found != -999)
+      if (found != notFoundPdg)
         return found;
     }
-    return -999;
+    return notFoundPdg;
   }
 
   // Walk up the decay chain iteratively and return the PDG of the last quark or gluon before beam remnants
@@ -403,24 +408,19 @@ struct sigmaHadCorrTask {
     return doSigmaPion ? track.tofNSigmaPi() : track.tofNSigmaPr();
   }
 
-  TLorentzVector trackSum, PartOneCMS, PartTwoCMS, trackRelK;
   float getKStar(float sigmaPx, float sigmaPy, float sigmaPz, float pxHad, float pyHad, float pzHad)
   {
-    TLorentzVector part1; // Sigma
-    TLorentzVector part2; // Hadron track (proton/pion)
-    part1.SetXYZM(sigmaPx, sigmaPy, sigmaPz, getSigmaMassForKstar());
-    part2.SetXYZM(pxHad, pyHad, pzHad, getHadTrackMass());
-    trackSum = part1 + part2;
+    ROOT::Math::PxPyPzMVector part1(sigmaPx, sigmaPy, sigmaPz, getSigmaMassForKstar()); // Sigma
+    ROOT::Math::PxPyPzMVector part2(pxHad, pyHad, pzHad, getHadTrackMass());            // Hadron track (proton/pion)
+    ROOT::Math::PxPyPzMVector trackSum = part1 + part2;
     const float beta = trackSum.Beta();
     const float betax = beta * std::cos(trackSum.Phi()) * std::sin(trackSum.Theta());
     const float betay = beta * std::sin(trackSum.Phi()) * std::sin(trackSum.Theta());
     const float betaz = beta * std::cos(trackSum.Theta());
-    PartOneCMS.SetXYZM(part1.Px(), part1.Py(), part1.Pz(), part1.M());
-    PartTwoCMS.SetXYZM(part2.Px(), part2.Py(), part2.Pz(), part2.M());
     const ROOT::Math::Boost boostPRF = ROOT::Math::Boost(-betax, -betay, -betaz);
-    PartOneCMS = boostPRF(PartOneCMS);
-    PartTwoCMS = boostPRF(PartTwoCMS);
-    trackRelK = PartOneCMS - PartTwoCMS;
+    ROOT::Math::PxPyPzMVector partOneCMS = boostPRF(part1);
+    ROOT::Math::PxPyPzMVector partTwoCMS = boostPRF(part2);
+    ROOT::Math::PxPyPzMVector trackRelK = partOneCMS - partTwoCMS;
     return 0.5 * trackRelK.P();
   }
 
@@ -430,7 +430,7 @@ struct sigmaHadCorrTask {
     if (candidate.pt() < ptMinHad) {
       return false;
     }
-    if (std::abs(getTPCNSigmaHad(candidate)) > cutNSigmaTPC || candidate.tpcNClsFound() < cutNTPCClusHad || std::abs(candidate.eta()) > cutEtaDaught) {
+    if (std::abs(getTPCNSigmaHad(candidate)) > cutNSigmaTPC || candidate.tpcNClsFound() < cutNTPCClusHad || std::abs(candidate.eta()) > cutEtaDaughter) {
       return false;
     }
 
@@ -500,9 +500,10 @@ struct sigmaHadCorrTask {
     return true;
   }
 
-  template <typename Ttrack, typename Tcollision>
-  void fillTreeAndHistograms(aod::KinkCands const& kinkCands, Ttrack const& tracksDauSigma, Ttrack const& tracks, Tcollision const& collision, bool isMC)
+  template <bool IsMC, typename Ttrack, typename Tcollision>
+  std::vector<SigmaHadCand> fillTreeAndHistograms(aod::KinkCands const& kinkCands, Ttrack const& tracksDauSigma, Ttrack const& tracks, Tcollision const& collision)
   {
+    std::vector<SigmaHadCand> sigmaHadCandidates;
     for (const auto& sigmaCand : kinkCands) {
       auto kinkDauTrack = tracksDauSigma.rawIteratorAt(sigmaCand.trackDaugId());
       if (!selectSigma(sigmaCand, kinkDauTrack)) {
@@ -528,6 +529,30 @@ struct sigmaHadCorrTask {
       rSigmaHad.fill(HIST("QA/hSigmaPtRecal"), sigmaPtRecal);
       rSigmaHad.fill(HIST("QA/h2InvMassVsPtSigma"), sigmaPtRecal, sigmaMassForQa);
 
+      // single-Sigma-level MC truth record, filled once per accepted candidate, independent of hadron pairing
+      if constexpr (IsMC) {
+        auto mothTrack = tracksDauSigma.rawIteratorAt(sigmaCand.trackMothId());
+        if (mothTrack.has_mcParticle() && kinkDauTrack.has_mcParticle()) {
+          auto mcMoth = mothTrack.template mcParticle_as<aod::McParticles>();
+          auto mcDaug = kinkDauTrack.template mcParticle_as<aod::McParticles>();
+          float massMC = std::sqrt(mcMoth.e() * mcMoth.e() - mcMoth.p() * mcMoth.p());
+          float decayRadiusMC = std::hypot(mcDaug.vx() - mcMoth.vx(), mcDaug.vy() - mcMoth.vy());
+          bool collisionIdCheck = false;
+          if (collision.has_mcCollision()) {
+            collisionIdCheck = collision.mcCollision().globalIndex() == mcDaug.mcCollisionId();
+          }
+          outputKinkCandsMC(sigmaCand.xDecVtx(), sigmaCand.yDecVtx(), sigmaCand.zDecVtx(),
+                            sigmaCand.pxMoth(), sigmaCand.pyMoth(), sigmaCand.pzMoth(),
+                            sigmaCand.pxDaug(), sigmaCand.pyDaug(), sigmaCand.pzDaug(),
+                            sigmaCand.dcaMothPv(), sigmaCand.dcaDaugPv(), sigmaCand.dcaKinkTopo(),
+                            sigmaCand.mothSign(),
+                            kinkDauTrack.tpcNSigmaPi(), kinkDauTrack.tpcNSigmaPr(), -999.f,
+                            kinkDauTrack.tofNSigmaPi(), kinkDauTrack.tofNSigmaPr(), -999.f,
+                            mcMoth.pdgCode(), mcDaug.pdgCode(),
+                            mcMoth.pt(), mcMoth.pz(), massMC, decayRadiusMC, collisionIdCheck);
+        }
+      }
+
       for (const auto& hadTrack : tracks) {
         if (hadTrack.globalIndex() == sigmaCand.trackDaugId()) {
           continue;
@@ -537,7 +562,7 @@ struct sigmaHadCorrTask {
           continue;
         }
 
-        sigmaHadCand candidate;
+        SigmaHadCand candidate;
         candidate.sigmaCharge = sigmaCand.mothSign();
         candidate.sigmaPx = sigmaCand.pxMoth();
         candidate.sigmaPy = sigmaCand.pyMoth();
@@ -575,33 +600,35 @@ struct sigmaHadCorrTask {
         if (hadTrack.hasTOF()) {
           rSigmaHad.fill(HIST("QA/h2TOFNSigmaHadVsPtHad"), candidate.ptHad(), candidate.nSigmaTOFHad);
         }
-        if (fillSparseInvMassKstar && !isMC) {
-          rSigmaHad.fill(HIST("hSparseSigmaHad"),
-                         candidate.sigmaMass,
-                         kStar,
-                         candidate.sigmaCharge,
-                         candidate.chargeHad,
-                         candidate.sigmaDecRadius,
-                         candidate.sigmaCosPA,
-                         sigmaPtRecal);
+        if constexpr (!IsMC) {
+          if (fillSparseInvMassKstar) {
+            rSigmaHad.fill(HIST("hSparseSigmaHad"),
+                           candidate.sigmaMass,
+                           kStar,
+                           candidate.sigmaCharge,
+                           candidate.chargeHad,
+                           candidate.sigmaDecRadius,
+                           candidate.sigmaCosPA,
+                           sigmaPtRecal);
+          }
         }
         sigmaHadCandidates.push_back(candidate);
       }
     }
+    return sigmaHadCandidates;
   }
 
   void processSameEvent(CollisionsFull const& collisions, aod::KinkCands const& kinkCands, TracksFull const& tracks)
   {
     for (auto const& collision : collisions) {
 
-      sigmaHadCandidates.clear();
-      auto kinkCands_c = kinkCands.sliceBy(kinkCandsPerCollisionPreslice, collision.globalIndex());
-      auto tracks_c = tracks.sliceBy(tracksPerCollisionPreslice, collision.globalIndex());
-      if (std::abs(collision.posZ()) > cutzvertex || !collision.sel8()) {
+      auto kinkCandsC = kinkCands.sliceBy(kinkCandsPerCollisionPreslice, collision.globalIndex());
+      auto tracksC = tracks.sliceBy(tracksPerCollisionPreslice, collision.globalIndex());
+      if (std::abs(collision.posZ()) > cutZVertex || !collision.sel8()) {
         continue;
       }
       rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
-      fillTreeAndHistograms(kinkCands_c, tracks, tracks_c, collision, false);
+      auto sigmaHadCandidates = fillTreeAndHistograms<false>(kinkCandsC, tracks, tracksC, collision);
       if (fillOutputTree) {
         // Fill output table
         for (const auto& candidate : sigmaHadCandidates) {
@@ -625,7 +652,7 @@ struct sigmaHadCorrTask {
       }
     }
   }
-  PROCESS_SWITCH(sigmaHadCorrTask, processSameEvent, "Process Same event", true);
+  PROCESS_SWITCH(SigmaHadCorr, processSameEvent, "Process Same event", true);
 
   // Processing Event Mixing
   SliceCache cache;
@@ -636,17 +663,16 @@ struct sigmaHadCorrTask {
   {
     if (useMultNTracksPV.value) {
       for (auto const& [collision1, collision2] :
-           selfCombinations(BinningTypeMultNTracksPV{{CfgVtxBins, CfgMultBins}, true}, nEvtMixingBkg, -1, collisions, collisions)) {
+           selfCombinations(BinningTypeMultNTracksPV{{cfgVtxBins, cfgMultBins}, true}, nEvtMixingBkg, -1, collisions, collisions)) {
         if (collision1.index() == collision2.index())
           continue;
-        sigmaHadCandidates.clear();
-        if (std::abs(collision1.posZ()) > cutzvertex || !collision1.sel8())
+        if (std::abs(collision1.posZ()) > cutZVertex || !collision1.sel8())
           continue;
-        if (std::abs(collision2.posZ()) > cutzvertex || !collision2.sel8())
+        if (std::abs(collision2.posZ()) > cutZVertex || !collision2.sel8())
           continue;
-        auto kinkCands_c1 = kinkCands.sliceBy(kinkCandsPerCollisionPreslice, collision1.globalIndex());
-        auto tracks_c2 = tracks.sliceBy(tracksPerCollisionPreslice, collision2.globalIndex());
-        fillTreeAndHistograms(kinkCands_c1, tracks, tracks_c2, collision1, false);
+        auto kinkCandsC1 = kinkCands.sliceBy(kinkCandsPerCollisionPreslice, collision1.globalIndex());
+        auto tracksC2 = tracks.sliceBy(tracksPerCollisionPreslice, collision2.globalIndex());
+        auto sigmaHadCandidates = fillTreeAndHistograms<false>(kinkCandsC1, tracks, tracksC2, collision1);
         if (fillOutputTree) {
           for (const auto& candidate : sigmaHadCandidates) {
             outputDataTable(candidate.sigmaCharge, candidate.sigmaPx, candidate.sigmaPy, candidate.sigmaPz,
@@ -659,17 +685,16 @@ struct sigmaHadCorrTask {
       }
     } else {
       for (auto const& [collision1, collision2] :
-           selfCombinations(BinningTypeNumContrib{{CfgVtxBins, CfgMultBins}, true}, nEvtMixingBkg, -1, collisions, collisions)) {
+           selfCombinations(BinningTypeNumContrib{{cfgVtxBins, cfgMultBins}, true}, nEvtMixingBkg, -1, collisions, collisions)) {
         if (collision1.index() == collision2.index())
           continue;
-        sigmaHadCandidates.clear();
-        if (std::abs(collision1.posZ()) > cutzvertex || !collision1.sel8())
+        if (std::abs(collision1.posZ()) > cutZVertex || !collision1.sel8())
           continue;
-        if (std::abs(collision2.posZ()) > cutzvertex || !collision2.sel8())
+        if (std::abs(collision2.posZ()) > cutZVertex || !collision2.sel8())
           continue;
-        auto kinkCands_c1 = kinkCands.sliceBy(kinkCandsPerCollisionPreslice, collision1.globalIndex());
-        auto tracks_c2 = tracks.sliceBy(tracksPerCollisionPreslice, collision2.globalIndex());
-        fillTreeAndHistograms(kinkCands_c1, tracks, tracks_c2, collision1, false);
+        auto kinkCandsC1 = kinkCands.sliceBy(kinkCandsPerCollisionPreslice, collision1.globalIndex());
+        auto tracksC2 = tracks.sliceBy(tracksPerCollisionPreslice, collision2.globalIndex());
+        auto sigmaHadCandidates = fillTreeAndHistograms<false>(kinkCandsC1, tracks, tracksC2, collision1);
         if (fillOutputTree) {
           for (const auto& candidate : sigmaHadCandidates) {
             outputDataTable(candidate.sigmaCharge, candidate.sigmaPx, candidate.sigmaPy, candidate.sigmaPz,
@@ -682,21 +707,20 @@ struct sigmaHadCorrTask {
       }
     }
   }
-  PROCESS_SWITCH(sigmaHadCorrTask, processMixedEvent, "Process Mixed event", false);
+  PROCESS_SWITCH(SigmaHadCorr, processMixedEvent, "Process Mixed event", false);
 
-  void processSameEventMC(CollisionsFullMC const& collisions, aod::KinkCands const& kinkCands, TracksFullMC const& tracks, aod::McParticles const& mcParticles)
+  void processSameEventMC(CollisionsFullMC const& collisions, aod::KinkCands const& kinkCands, TracksFullMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const&)
   {
     for (auto const& collision : collisions) {
 
-      sigmaHadCandidates.clear();
-      auto kinkCands_c = kinkCands.sliceBy(kinkCandsPerCollisionPreslice, collision.globalIndex());
-      auto tracks_c = tracks.sliceBy(tracksMCPerCollisionPreslice, collision.globalIndex());
+      auto kinkCandsC = kinkCands.sliceBy(kinkCandsPerCollisionPreslice, collision.globalIndex());
+      auto tracksC = tracks.sliceBy(tracksMCPerCollisionPreslice, collision.globalIndex());
 
-      if (std::abs(collision.posZ()) > cutzvertex || !collision.sel8()) {
+      if (std::abs(collision.posZ()) > cutZVertex || !collision.sel8()) {
         continue;
       }
       rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
-      fillTreeAndHistograms(kinkCands_c, tracks, tracks_c, collision, true);
+      auto sigmaHadCandidates = fillTreeAndHistograms<true>(kinkCandsC, tracks, tracksC, collision);
       for (const auto& candidate : sigmaHadCandidates) {
         auto mcLabelSigma = tracks.rawIteratorAt(candidate.sigmaID);
         auto mcLabelSigmaDau = tracks.rawIteratorAt(candidate.kinkDauID);
@@ -763,24 +787,64 @@ struct sigmaHadCorrTask {
         }
       }
     }
-  }
-  PROCESS_SWITCH(sigmaHadCorrTask, processSameEventMC, "Process Same event MC", false);
 
-  void processMixedEventMC(const CollisionsFullMC& collisions, const aod::KinkCands& kinkCands, const TracksFullMC& tracks, const aod::McParticles& mcParticles)
+    // all generated Sigma -> chargedDau + neutralDau decays
+    int pdgChargedDauAbs = doSigmaMinus ? PDG_t::kPiPlus : PDG_t::kProton;
+    for (const auto& mcPart : mcParticles) {
+      int pdgMothAbs = std::abs(mcPart.pdgCode());
+      bool isValidMother = doSigmaMinus ? (pdgMothAbs == PDG_t::kSigmaMinus || pdgMothAbs == PDG_t::kSigmaPlus) : (pdgMothAbs == PDG_t::kSigmaPlus);
+      if (!isValidMother) {
+        continue;
+      }
+      if (std::abs(mcPart.y()) > cutRapMotherMC) {
+        continue;
+      }
+      if (mcPart.pt() < cutPtGenMC) {
+        continue;
+      }
+      bool hasChargedDaughter = false;
+      std::array<float, 3> genDecVtx{-999.f, -999.f, -999.f};
+      int daugPdgCode = 0;
+      for (const auto& daughter : mcPart.daughters_as<aod::McParticles>()) {
+        if (std::abs(daughter.pdgCode()) == pdgChargedDauAbs) {
+          hasChargedDaughter = true;
+          genDecVtx = {daughter.vx(), daughter.vy(), daughter.vz()};
+          daugPdgCode = daughter.pdgCode();
+          break;
+        }
+      }
+      if (!hasChargedDaughter) {
+        continue;
+      }
+      float massMC = std::sqrt(mcPart.e() * mcPart.e() - mcPart.p() * mcPart.p());
+      float decayRadiusMC = std::hypot(genDecVtx[0] - mcPart.vx(), genDecVtx[1] - mcPart.vy());
+      outputKinkCandsMC(-999.f, -999.f, -999.f,
+                        -999.f, -999.f, -999.f,
+                        -999.f, -999.f, -999.f,
+                        -999.f, -999.f, -999.f,
+                        mcPart.pdgCode() > 0 ? 1 : -1,
+                        -999.f, -999.f, -999.f,
+                        -999.f, -999.f, -999.f,
+                        mcPart.pdgCode(), daugPdgCode,
+                        mcPart.pt(), mcPart.pz(), massMC, decayRadiusMC, false);
+    }
+  }
+  PROCESS_SWITCH(SigmaHadCorr, processSameEventMC, "Process Same event MC", false);
+
+  void processMixedEventMC(const CollisionsFullMC& collisions, const aod::KinkCands& kinkCands, const TracksFullMC& tracks, const aod::McParticles& mcParticles, aod::McCollisions const&)
   {
     if (useMultNTracksPV.value) {
       for (auto const& [collision1, collision2] :
-           selfCombinations(BinningTypeMultNTracksPV{{CfgVtxBins, CfgMultBins}, true}, nEvtMixingBkg, -1, collisions, collisions)) {
+           selfCombinations(BinningTypeMultNTracksPV{{cfgVtxBins, cfgMultBins}, true}, nEvtMixingBkg, -1, collisions, collisions)) {
         if (collision1.index() == collision2.index())
           continue;
-        sigmaHadCandidates.clear();
-        if (std::abs(collision1.posZ()) > cutzvertex || !collision1.sel8())
+        if (std::abs(collision1.posZ()) > cutZVertex || !collision1.sel8())
           continue;
-        if (std::abs(collision2.posZ()) > cutzvertex || !collision2.sel8())
+        if (std::abs(collision2.posZ()) > cutZVertex || !collision2.sel8())
           continue;
-        auto kinkCands_c1 = kinkCands.sliceBy(kinkCandsPerCollisionPreslice, collision1.globalIndex());
-        auto tracks_c2 = tracks.sliceBy(tracksPerCollisionPreslice, collision2.globalIndex());
-        fillTreeAndHistograms(kinkCands_c1, tracks, tracks_c2, collision1, true);
+        auto kinkCandsC1 = kinkCands.sliceBy(kinkCandsPerCollisionPreslice, collision1.globalIndex());
+        auto tracksC2 = tracks.sliceBy(tracksPerCollisionPreslice, collision2.globalIndex());
+        auto sigmaHadCandidates = fillTreeAndHistograms<true>(kinkCandsC1, tracks, tracksC2, collision1);
         for (const auto& candidate : sigmaHadCandidates) {
           auto mcLabelSigma = tracks.rawIteratorAt(candidate.sigmaID);
           auto mcLabelSigmaDau = tracks.rawIteratorAt(candidate.kinkDauID);
@@ -819,17 +883,16 @@ struct sigmaHadCorrTask {
       }
     } else {
       for (auto const& [collision1, collision2] :
-           selfCombinations(BinningTypeNumContrib{{CfgVtxBins, CfgMultBins}, true}, nEvtMixingBkg, -1, collisions, collisions)) {
+           selfCombinations(BinningTypeNumContrib{{cfgVtxBins, cfgMultBins}, true}, nEvtMixingBkg, -1, collisions, collisions)) {
         if (collision1.index() == collision2.index())
           continue;
-        sigmaHadCandidates.clear();
-        if (std::abs(collision1.posZ()) > cutzvertex || !collision1.sel8())
+        if (std::abs(collision1.posZ()) > cutZVertex || !collision1.sel8())
           continue;
-        if (std::abs(collision2.posZ()) > cutzvertex || !collision2.sel8())
+        if (std::abs(collision2.posZ()) > cutZVertex || !collision2.sel8())
           continue;
-        auto kinkCands_c1 = kinkCands.sliceBy(kinkCandsPerCollisionPreslice, collision1.globalIndex());
-        auto tracks_c2 = tracks.sliceBy(tracksPerCollisionPreslice, collision2.globalIndex());
-        fillTreeAndHistograms(kinkCands_c1, tracks, tracks_c2, collision1, true);
+        auto kinkCandsC1 = kinkCands.sliceBy(kinkCandsPerCollisionPreslice, collision1.globalIndex());
+        auto tracksC2 = tracks.sliceBy(tracksPerCollisionPreslice, collision2.globalIndex());
+        auto sigmaHadCandidates = fillTreeAndHistograms<true>(kinkCandsC1, tracks, tracksC2, collision1);
         for (const auto& candidate : sigmaHadCandidates) {
           auto mcLabelSigma = tracks.rawIteratorAt(candidate.sigmaID);
           auto mcLabelSigmaDau = tracks.rawIteratorAt(candidate.kinkDauID);
@@ -868,10 +931,10 @@ struct sigmaHadCorrTask {
       }
     }
   }
-  PROCESS_SWITCH(sigmaHadCorrTask, processMixedEventMC, "Process Mixed event MC", false);
+  PROCESS_SWITCH(SigmaHadCorr, processMixedEventMC, "Process Mixed event MC", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<sigmaHadCorrTask>(cfgc)};
+    adaptAnalysisTask<SigmaHadCorr>(cfgc)};
 }

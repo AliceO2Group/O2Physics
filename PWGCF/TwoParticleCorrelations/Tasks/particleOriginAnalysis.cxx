@@ -175,10 +175,9 @@ struct ParticleOriginAnalysis {
 
     /* self configure the desired species */
     o2::analysis::dptdptfilter::PIDSpeciesSelection pidselector;
-    std::vector<std::string> cfgnames = {"cfgElectronPIDSelection", "cfgMuonPIDSelection", "cfgPionPIDSelection", "cfgKaonPIDSelection", "cfgProtonPIDSelection"};
-    std::vector<uint8_t> spids = {0, 1, 2, 3, 4};
+    std::vector<std::string> cfgnames = {"cfgElectronPIDSelection", "cfgMuonPIDSelection", "cfgPionPIDSelection", "cfgKaonPIDSelection", "cfgProtonPIDSelection", "cfgDeuteronPIDSelection"};
     for (uint i = 0; i < cfgnames.size(); ++i) {
-      auto includeIt = [&pidselector, &initContext](int spid, auto name) {
+      auto includeIt = [&pidselector, &initContext](int spid, const auto& name) {
         bool mUseIt = false;
         bool mExcludeIt = false;
         if (getTaskOptionValue(initContext, "dpt-dpt-filter-tracks", TString::Format("%s.mUseIt", name.c_str()).Data(), mUseIt, false) &&
@@ -191,7 +190,7 @@ struct ParticleOriginAnalysis {
           }
         }
       };
-      includeIt(spids[i], cfgnames[i]);
+      includeIt(i, cfgnames[i]);
     }
     uint nspecies = pidselector.getNSpecies();
     if (nspecies == 0) {

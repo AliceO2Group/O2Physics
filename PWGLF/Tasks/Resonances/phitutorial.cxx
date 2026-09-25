@@ -81,7 +81,7 @@ struct phitutorial {
   // PREAMBLE COMPLETE, NOW WE DO HELPER FCNS
   //**************************************//
   template <typename EventType>
-  bool eventSelection(const EventType event)
+  bool eventSelection(const EventType& event)
   {
     if (!event.sel8())
       return false;
@@ -98,7 +98,7 @@ struct phitutorial {
   };
   //********************************************//
   template <typename TracksType>
-  bool trackSelection(const TracksType track)
+  bool trackSelection(const TracksType& track)
   {
     if (!track.isGlobalTrack())
       return false;

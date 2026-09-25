@@ -176,7 +176,7 @@ struct CascDerivedQAanalysis {
   std::vector<std::vector<int>> cascadesGrouped;
 
   template <typename TCascade, typename TCollision>
-  bool isCascadeSelected(TCascade casc, TCollision collision, float rapidity, bool isXi)
+  bool isCascadeSelected(const TCascade& casc, const TCollision& collision, float rapidity, bool isXi)
 
   // precalculate this information so that a check is one mask operation, not many
   {
@@ -409,7 +409,7 @@ struct CascDerivedQAanalysis {
   }
 
   template <typename TCollision>
-  bool isEventAccepted(TCollision collision, bool fillHists)
+  bool isEventAccepted(const TCollision& collision, bool fillHists)
   // check whether the collision passes our collision selections
   {
     if (fillHists) {
