@@ -16,6 +16,7 @@
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
+#include "Common/Core/MetadataHelper.h"
 #include "Common/DataModel/EventSelection.h"
 
 #include <CCDB/BasicCCDBManager.h>
@@ -59,6 +60,8 @@ using namespace o2::framework;
 using namespace o2;
 using namespace o2::aod::evsel;
 
+o2::common::core::MetadataHelper metadataInfo;
+
 using BCsRun2 = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::BcSels, aod::Run2MatchedToBCSparse>;
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 using ColEvSels = soa::Join<aod::Collisions, aod::EvSels>;
@@ -66,7 +69,6 @@ using FullTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
 using FullTracksIUwithLabels = soa::Join<aod::TracksIU, aod::TracksExtra, aod::McTrackLabels>;
 
 struct EventSelectionQaTask {
-  Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
   Configurable<int32_t> nGlobalBCs{"nGlobalBCs", 100000, "number of global bcs for detailed monitoring"};
   Configurable<bool> isLowFlux{"isLowFlux", 1, "1 - low flux (pp, pPb), 0 - high flux (PbPb)"};
   Configurable<bool> fillITSdeadStaveHists{"fillITSdeadStaveHists", 0, "0 - no, 1 - yes"};
@@ -84,6 +86,10 @@ struct EventSelectionQaTask {
   int64_t nBCsPerTF = nOrbitsPerTF * nBCsPerOrbit; // duration of TF in bcs
   int rofOffset = -1;                              // ITS ROF offset, in bc
   int rofLength = -1;                              // ITS ROF length, in bc
+
+  std::string strLPMProductionTag = ""; // MC production tag to be retrieved from AO2D metadata
+  std::string strPassName = "";         // RecoPassName (for data) or AnchorPassName (for MC) from metadata
+  bool isMC = false;
 
   std::bitset<nBCsPerOrbit> bcPatternA;
   std::bitset<nBCsPerOrbit> bcPatternC;
@@ -110,6 +116,10 @@ struct EventSelectionQaTask {
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
+
+    isMC = metadataInfo.isMC();
+    strLPMProductionTag = metadataInfo.get("LPMProductionTag"); // to extract info from ccdb by the tag
+    strPassName = metadataInfo.get(isMC ? "AnchorPassName" : "RecoPassName");
 
     const AxisSpec axisMultV0M{1000, 0., isLowFlux ? 40000. : 40000., "V0M multiplicity"};
     const AxisSpec axisMultV0A{1000, 0., isLowFlux ? 40000. : 200000., "V0A multiplicity"};
@@ -622,8 +632,13 @@ struct EventSelectionQaTask {
       lastRun = run;
       int64_t tsSOR = 0; // dummy start-of-run timestamp for unanchored MC
       int64_t tsEOR = 1; // dummy end-of-run timestamp for unanchored MC
-      if (run >= 500000) {
-        auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run);
+      const int run3min = 500000;
+      if (run >= run3min) {
+        auto runInfo = (!isMC) ? o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run)
+                               : o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run, strLPMProductionTag);
+        LOGP(info, "eventSelectionQA: isMC = {}, NumberOfOrbitsPerTF extracted from AggregatedRunInfo = {}", isMC, runInfo.orbitsPerTF);
+        LOGP(info, "eventSelectionQA: strLPMProductionTag = {}, strPassName = {}", strLPMProductionTag, strPassName);
+
         // first bc of the first orbit
         bcSOR = runInfo.orbitSOR * nBCsPerOrbit;
         // number of orbits per TF
@@ -1508,6 +1523,7 @@ struct EventSelectionQaTask {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
+  metadataInfo.initMetadata(cfgc);
   return WorkflowSpec{
     adaptAnalysisTask<EventSelectionQaTask>(cfgc)};
 }
