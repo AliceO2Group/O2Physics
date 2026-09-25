@@ -656,7 +656,129 @@ struct lambdaspincorrderived {
     histos.add("hSparseLambdaAntiLambda", "hSparseLambdaAntiLambda", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisR}, true);
     histos.add("hSparseAntiLambdaLambda", "hSparseAntiLambdLambda", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisR}, true);
     histos.add("hSparseAntiLambdaAntiLambda", "hSparseAntiLambdaAntiLambda", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisR}, true);
+    // ============================================================
+    // cos^2(theta*) sparses
+    // ============================================================
 
+    // Same event
+    histos.add("hSparseLambdaLambdaCos2",
+               "hSparseLambdaLambdaCos2",
+               HistType::kTHnSparseF,
+               {configThnAxisInvMass, configThnAxisInvMass,
+                configThnAxisPol, configThnAxisR},
+               true);
+
+    histos.add("hSparseLambdaAntiLambdaCos2",
+               "hSparseLambdaAntiLambdaCos2",
+               HistType::kTHnSparseF,
+               {configThnAxisInvMass, configThnAxisInvMass,
+                configThnAxisPol, configThnAxisR},
+               true);
+
+    histos.add("hSparseAntiLambdaLambdaCos2",
+               "hSparseAntiLambdaLambdaCos2",
+               HistType::kTHnSparseF,
+               {configThnAxisInvMass, configThnAxisInvMass,
+                configThnAxisPol, configThnAxisR},
+               true);
+
+    histos.add("hSparseAntiLambdaAntiLambdaCos2",
+               "hSparseAntiLambdaAntiLambdaCos2",
+               HistType::kTHnSparseF,
+               {configThnAxisInvMass, configThnAxisInvMass,
+                configThnAxisPol, configThnAxisR},
+               true);
+
+    // Mixed event
+    histos.add("hSparseLambdaLambdaMixedCos2",
+               "hSparseLambdaLambdaMixedCos2",
+               HistType::kTHnSparseF,
+               {configThnAxisInvMass, configThnAxisInvMass,
+                configThnAxisPol, configThnAxisR},
+               true);
+
+    histos.add("hSparseLambdaAntiLambdaMixedCos2",
+               "hSparseLambdaAntiLambdaMixedCos2",
+               HistType::kTHnSparseF,
+               {configThnAxisInvMass, configThnAxisInvMass,
+                configThnAxisPol, configThnAxisR},
+               true);
+
+    histos.add("hSparseAntiLambdaLambdaMixedCos2",
+               "hSparseAntiLambdaLambdaMixedCos2",
+               HistType::kTHnSparseF,
+               {configThnAxisInvMass, configThnAxisInvMass,
+                configThnAxisPol, configThnAxisR},
+               true);
+
+    histos.add("hSparseAntiLambdaAntiLambdaMixedCos2",
+               "hSparseAntiLambdaAntiLambdaMixedCos2",
+               HistType::kTHnSparseF,
+               {configThnAxisInvMass, configThnAxisInvMass,
+                configThnAxisPol, configThnAxisR},
+               true);
+
+    // ============================================================
+    // cos^3(theta*) sparses
+    // ============================================================
+
+    // Same event -- useful QA / future higher moment
+    histos.add("hSparseLambdaLambdaCos3",
+               "hSparseLambdaLambdaCos3",
+               HistType::kTHnSparseF,
+               {configThnAxisInvMass, configThnAxisInvMass,
+                configThnAxisPol, configThnAxisR},
+               true);
+
+    histos.add("hSparseLambdaAntiLambdaCos3",
+               "hSparseLambdaAntiLambdaCos3",
+               HistType::kTHnSparseF,
+               {configThnAxisInvMass, configThnAxisInvMass,
+                configThnAxisPol, configThnAxisR},
+               true);
+
+    histos.add("hSparseAntiLambdaLambdaCos3",
+               "hSparseAntiLambdaLambdaCos3",
+               HistType::kTHnSparseF,
+               {configThnAxisInvMass, configThnAxisInvMass,
+                configThnAxisPol, configThnAxisR},
+               true);
+
+    histos.add("hSparseAntiLambdaAntiLambdaCos3",
+               "hSparseAntiLambdaAntiLambdaCos3",
+               HistType::kTHnSparseF,
+               {configThnAxisInvMass, configThnAxisInvMass,
+                configThnAxisPol, configThnAxisR},
+               true);
+
+    // Mixed event -- needed for linearity test
+    histos.add("hSparseLambdaLambdaMixedCos3",
+               "hSparseLambdaLambdaMixedCos3",
+               HistType::kTHnSparseF,
+               {configThnAxisInvMass, configThnAxisInvMass,
+                configThnAxisPol, configThnAxisR},
+               true);
+
+    histos.add("hSparseLambdaAntiLambdaMixedCos3",
+               "hSparseLambdaAntiLambdaMixedCos3",
+               HistType::kTHnSparseF,
+               {configThnAxisInvMass, configThnAxisInvMass,
+                configThnAxisPol, configThnAxisR},
+               true);
+
+    histos.add("hSparseAntiLambdaLambdaMixedCos3",
+               "hSparseAntiLambdaLambdaMixedCos3",
+               HistType::kTHnSparseF,
+               {configThnAxisInvMass, configThnAxisInvMass,
+                configThnAxisPol, configThnAxisR},
+               true);
+
+    histos.add("hSparseAntiLambdaAntiLambdaMixedCos3",
+               "hSparseAntiLambdaAntiLambdaMixedCos3",
+               HistType::kTHnSparseF,
+               {configThnAxisInvMass, configThnAxisInvMass,
+                configThnAxisPol, configThnAxisR},
+               true);
     // Original same-event pairs split by whether the ME replacement search
     // succeeds.  These use the original SE pair variables and the ordinary
     // SE NUA weight; no mixing or replacement-efficiency weight is applied.
@@ -1142,7 +1264,8 @@ struct lambdaspincorrderived {
       cosDeltaTheta_hel = -111.0;
 
     double cosThetaDiff = (cosDef == 0) ? cosDeltaTheta_STAR_naive : cosDeltaTheta_hel;
-
+    const double cosThetaDiff2 = cosThetaDiff * cosThetaDiff;
+    const double cosThetaDiff3 = cosThetaDiff2 * cosThetaDiff;
     double pt1 = particle1.Pt();
     double dphi1 = RecoDecay::constrainAngle(particle1.Phi(), 0.0F, harmonic);
     double deta1 = particle1.Eta();
@@ -1250,6 +1373,8 @@ struct lambdaspincorrderived {
         if (fillBasicQAHistos)
           histos.fill(HIST("hPhiEtaSame"), dphi1, particle1.Eta(), nuaWeight1);
         histos.fill(HIST("hSparseLambdaLambda"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, weight);
+        histos.fill(HIST("hSparseLambdaLambdaCos2"), particle1.M(), particle2.M(), cosThetaDiff2, deltaR, weight);
+        histos.fill(HIST("hSparseLambdaLambdaCos3"), particle1.M(), particle2.M(), cosThetaDiff3, deltaR, weight);
         if (fillAnalysisSparses) {
           histos.fill(HIST("hSparseLambdaLambdaAnalysis"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, deltaRap, std::abs(dphi_pair), weight);
         }
@@ -1260,6 +1385,8 @@ struct lambdaspincorrderived {
         }
       } else if (tag1 == 0 && tag2 == 1) {
         histos.fill(HIST("hSparseLambdaAntiLambda"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, weight);
+        histos.fill(HIST("hSparseLambdaAntiLambdaCos2"), particle1.M(), particle2.M(), cosThetaDiff2, deltaR, weight);
+        histos.fill(HIST("hSparseLambdaAntiLambdaCos3"), particle1.M(), particle2.M(), cosThetaDiff3, deltaR, weight);
         if (fillAnalysisSparses) {
           histos.fill(HIST("hSparseLambdaAntiLambdaAnalysis"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, deltaRap, std::abs(dphi_pair), weight);
         }
@@ -1270,6 +1397,13 @@ struct lambdaspincorrderived {
         }
       } else if (tag1 == 1 && tag2 == 0) {
         histos.fill(HIST("hSparseAntiLambdaLambda"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, weight);
+        histos.fill(HIST("hSparseAntiLambdaLambdaCos2"),
+                    particle1.M(), particle2.M(),
+                    cosThetaDiff2, deltaR, weight);
+
+        histos.fill(HIST("hSparseAntiLambdaLambdaCos3"),
+                    particle1.M(), particle2.M(),
+                    cosThetaDiff3, deltaR, weight);
         if (fillAnalysisSparses) {
           histos.fill(HIST("hSparseAntiLambdaLambdaAnalysis"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, deltaRap, std::abs(dphi_pair), weight);
         }
@@ -1280,6 +1414,13 @@ struct lambdaspincorrderived {
         }
       } else if (tag1 == 1 && tag2 == 1) {
         histos.fill(HIST("hSparseAntiLambdaAntiLambda"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, weight);
+        histos.fill(HIST("hSparseAntiLambdaAntiLambdaCos2"),
+                    particle1.M(), particle2.M(),
+                    cosThetaDiff2, deltaR, weight);
+
+        histos.fill(HIST("hSparseAntiLambdaAntiLambdaCos3"),
+                    particle1.M(), particle2.M(),
+                    cosThetaDiff3, deltaR, weight);
         if (fillAnalysisSparses) {
           histos.fill(HIST("hSparseAntiLambdaAntiLambdaAnalysis"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, deltaRap, std::abs(dphi_pair), weight);
         }
@@ -1323,6 +1464,14 @@ struct lambdaspincorrderived {
             histos.fill(HIST("hPhiEtaMix"), dphi1, particle1.Eta(), nuaWeight1 * mixpairweight);
         }
         histos.fill(HIST("hSparseLambdaLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, weight);
+        histos.fill(HIST("hSparseLambdaLambdaMixedCos2"),
+                    particle1.M(), particle2.M(),
+                    cosThetaDiff2, deltaR, weight);
+
+        histos.fill(HIST("hSparseLambdaLambdaMixedCos3"),
+                    particle1.M(), particle2.M(),
+                    cosThetaDiff3, deltaR, weight);
+
         if (fillAnalysisSparses) {
           histos.fill(HIST("hSparseLambdaLambdaMixedAnalysis"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, deltaRap, std::abs(dphi_pair), weight);
         }
@@ -1334,6 +1483,13 @@ struct lambdaspincorrderived {
 
       } else if (tag1 == 0 && tag2 == 1) {
         histos.fill(HIST("hSparseLambdaAntiLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, weight);
+        histos.fill(HIST("hSparseLambdaAntiLambdaMixedCos2"),
+                    particle1.M(), particle2.M(),
+                    cosThetaDiff2, deltaR, weight);
+
+        histos.fill(HIST("hSparseLambdaAntiLambdaMixedCos3"),
+                    particle1.M(), particle2.M(),
+                    cosThetaDiff3, deltaR, weight);
         if (fillAnalysisSparses) {
           histos.fill(HIST("hSparseLambdaAntiLambdaMixedAnalysis"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, deltaRap, std::abs(dphi_pair), weight);
         }
@@ -1344,6 +1500,13 @@ struct lambdaspincorrderived {
         }
       } else if (tag1 == 1 && tag2 == 0) {
         histos.fill(HIST("hSparseAntiLambdaLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, weight);
+        histos.fill(HIST("hSparseAntiLambdaLambdaMixedCos2"),
+                    particle1.M(), particle2.M(),
+                    cosThetaDiff2, deltaR, weight);
+
+        histos.fill(HIST("hSparseAntiLambdaLambdaMixedCos3"),
+                    particle1.M(), particle2.M(),
+                    cosThetaDiff3, deltaR, weight);
         if (fillAnalysisSparses) {
           histos.fill(HIST("hSparseAntiLambdaLambdaMixedAnalysis"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, deltaRap, std::abs(dphi_pair), weight);
         }
@@ -1354,6 +1517,13 @@ struct lambdaspincorrderived {
         }
       } else if (tag1 == 1 && tag2 == 1) {
         histos.fill(HIST("hSparseAntiLambdaAntiLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, weight);
+        histos.fill(HIST("hSparseAntiLambdaAntiLambdaMixedCos2"),
+                    particle1.M(), particle2.M(),
+                    cosThetaDiff2, deltaR, weight);
+
+        histos.fill(HIST("hSparseAntiLambdaAntiLambdaMixedCos3"),
+                    particle1.M(), particle2.M(),
+                    cosThetaDiff3, deltaR, weight);
         if (fillAnalysisSparses) {
           histos.fill(HIST("hSparseAntiLambdaAntiLambdaMixedAnalysis"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, deltaRap, std::abs(dphi_pair), weight);
         }
