@@ -153,8 +153,17 @@ struct HResonanceCorrelation {
     ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.0, 1.0, 2.0, 3.0, 100}, "pt associated axis for histograms"};
     ConfigurableAxis axisPtQA{"axisPtQA", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
     ConfigurableAxis axisMassNSigma{"axisMassNSigma", {40, -2, 2}, "Axis for mass Nsigma"};
-    ConfigurableAxis axisPhiMass{"axisPhiMass", {300, 1.01f, 1.31f}, "Inv. Mass (GeV/c^{2})"};
-    ConfigurableAxis axisKstarMass{"axisKstarMass", {300, 0.596f, 1.196f}, "Inv. Mass (GeV/c^{2})"};
+    // Bounds must stay >= the filter task's own acceptance pre-cut
+    // (hResonanceCorrelationFilter.cxx: peakMass +/- maxMassNSigma*sigma,
+    // ~[0.998, 1.041] GeV for Phi and ~[0.654, 1.137] GeV for K*0 by
+    // default) -- anything narrower here silently underflows/overflows
+    // candidates the filter already let through, before fillCorrelationHistWithMass
+    // ever gets a chance to keep them. Bin count trimmed from the previous
+    // 300 (which spanned mostly-empty ranges, e.g. Phi out to 1.31 GeV) down
+    // to what the narrower, physically-relevant range actually needs while
+    // keeping comparable or finer MeV/bin resolution for the post-processing fit.
+    ConfigurableAxis axisPhiMass{"axisPhiMass", {100, 0.99f, 1.05f}, "Inv. Mass (GeV/c^{2})"};
+    ConfigurableAxis axisKstarMass{"axisKstarMass", {150, 0.65f, 1.15f}, "Inv. Mass (GeV/c^{2})"};
     ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 20, 40, 60, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300}, "Binning of the Multiplicity axis in model prediction process"};
     ConfigurableAxis axisMidrapidityMultiplicity{"axisMidrapidityMultiplicity", {VARIABLE_WIDTH, 0, 20, 40, 60, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300}, "Binning of the Midrapidity Multiplicity axis in model prediction process"};
   } axesConfigurations;
@@ -256,6 +265,10 @@ struct HResonanceCorrelation {
       int region;
       float efficiency;
       float efficiencyError;
+      float mass = 0.f; // only meaningful for Phi/K*0 buffered candidates when
+                        // masterConfigurations.fillCorrelationHistWithMass is
+                        // set; unused (stays 0) for trigger particles and for
+                        // Pion/Kaon/Hadron, which never carry a mass axis.
       // no species tag stored here: the `type` argument to addValidParticle
       // below (-1 = trigger, else Phi/K*0) only decides which vector this
       // particle goes into; once stored, nothing reads it back.
@@ -264,9 +277,9 @@ struct HResonanceCorrelation {
     float mult = 0.f;
     std::vector<ValidParticle> trigParticles;
     std::vector<ValidParticle> assocParticles;
-    void addValidParticle(float eta, float phi, float pt, int region, float efficiency, float efficiencyError, int type)
+    void addValidParticle(float eta, float phi, float pt, int region, float efficiency, float efficiencyError, int type, float mass = 0.f)
     {
-      ValidParticle particle{eta, phi, pt, region, efficiency, efficiencyError};
+      ValidParticle particle{eta, phi, pt, region, efficiency, efficiencyError, mass};
 
       if (type == -1) {
         trigParticles.push_back(particle);
@@ -730,7 +743,14 @@ struct HResonanceCorrelation {
         if (masterConfigurations.doFullCorrelationStudy) {
           if (doSE) {
             if (masterConfigurations.fillCorrelationHistWithMass && (i == IndexPhi || i == IndexKstar)) {
-              histos.add(fmt::format("sameEvent/Signal/{}", Particlenames[i]).c_str(), "", kTHnF, {axisDeltaPhiNDim, (i == IndexPhi ? axesConfigurations.axisPhiMass : axesConfigurations.axisKstarMass), axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
+              // Mass is ADDED as its own axis here, not swapped in for
+              // Delta-eta: the mixed-event acceptance correction needs
+              // Delta-eta (pair acceptance isn't flat in it), so it has to
+              // stay present even when mass is also kept for post-processing
+              // signal/sideband extraction. 7 axes total; see
+              // fillCorrelationsPhi/fillCorrelationsKstar's binFillThnMass
+              // for the matching fill order.
+              histos.add(fmt::format("sameEvent/Signal/{}", Particlenames[i]).c_str(), "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, (i == IndexPhi ? axesConfigurations.axisPhiMass : axesConfigurations.axisKstarMass), axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
             } else {
               histos.add(fmt::format("sameEvent/Signal/{}", Particlenames[i]).c_str(), "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
             }
@@ -743,7 +763,11 @@ struct HResonanceCorrelation {
 
           if (doME) {
             if (masterConfigurations.fillCorrelationHistWithMass && (i == IndexPhi || i == IndexKstar)) {
-              histos.add(fmt::format("mixedEvent/Signal/{}", Particlenames[i]).c_str(), "", kTHnF, {axisDeltaPhiNDim, (i == IndexPhi ? axesConfigurations.axisPhiMass : axesConfigurations.axisKstarMass), axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
+              // Same 7-axis layout as the sameEvent/Signal booking above --
+              // must match, since CorrelationBuilder-style same/mixed
+              // acceptance correction requires identical axis definitions on
+              // both sides.
+              histos.add(fmt::format("mixedEvent/Signal/{}", Particlenames[i]).c_str(), "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, (i == IndexPhi ? axesConfigurations.axisPhiMass : axesConfigurations.axisKstarMass), axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
             } else {
               histos.add(fmt::format("mixedEvent/Signal/{}", Particlenames[i]).c_str(), "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
             }
@@ -1151,9 +1175,18 @@ struct HResonanceCorrelation {
     hist->SetBinError2(bin, currentError2);
   }
 
-  template <typename TTriggers, typename THadrons>
+  // Species is an explicit compile-time tag (IndexPion, IndexKaon or
+  // IndexHadron) rather than inferred from column presence on THadrons:
+  // Pion's and Kaon's assoc tables are both Join<AssocHadrons, AssocPID>
+  // (AssocPID carries all four species' nSigmas generically), so a
+  // `requires { assocTrack.nSigmaTPCPi(); }` check can no longer tell them
+  // apart the way it could tell Pion apart from the plain (no-PID) Hadron
+  // table. Only Hadron's THadrons type lacks PID columns at all.
+  template <int Species, typename TTriggers, typename THadrons>
   void fillCorrelationsHadron(TTriggers const& triggers, THadrons const& assocs, bool mixing, float pvz, float mult, double bField)
   {
+    static_assert(Species == IndexPion || Species == IndexKaon || Species == IndexHadron,
+                  "fillCorrelationsHadron: Species must be IndexPion, IndexKaon or IndexHadron");
 
     for (auto const& triggerTrack : triggers) {
       if (masterConfigurations.doTriggPhysicalPrimary && !triggerTrack.mcPhysicalPrimary())
@@ -1195,8 +1228,10 @@ struct HResonanceCorrelation {
         }
       }
       if (!mixing) {
-        if constexpr (requires { triggerTrack.extra(); })
+        if constexpr (Species == IndexPion)
           fillTriggerHistogram(histos.get<TH2>(HIST("sameEvent/TriggerParticlesPion")), trigg.pt(), mult, efficiencyTrigger, efficiencyTriggerError, purityTrigger, purityTriggerError);
+        else if constexpr (Species == IndexKaon)
+          fillTriggerHistogram(histos.get<TH2>(HIST("sameEvent/TriggerParticlesKaon")), trigg.pt(), mult, efficiencyTrigger, efficiencyTriggerError, purityTrigger, purityTriggerError);
         else
           fillTriggerHistogram(histos.get<TH2>(HIST("sameEvent/TriggerParticlesHadron")), trigg.pt(), mult, efficiencyTrigger, efficiencyTriggerError, purityTrigger, purityTriggerError);
       }
@@ -1208,8 +1243,10 @@ struct HResonanceCorrelation {
         //---] removing autocorrelations [---
         if (doAutocorrelationRejection) {
           if (trigg.globalIndex() == assoc.globalIndex()) {
-            if constexpr (requires { assocTrack.nSigmaTPCPi(); })
+            if constexpr (Species == IndexPion)
               histos.fill(HIST("hNumberOfRejectedPairsPion"), 0.5);
+            else if constexpr (Species == IndexKaon)
+              histos.fill(HIST("hNumberOfRejectedPairsKaon"), 0.5);
             else
               histos.fill(HIST("hNumberOfRejectedPairsHadron"), 0.5);
             continue;
@@ -1253,10 +1290,14 @@ struct HResonanceCorrelation {
         float efficiencyUncertainty = 0.0f;
         float totalPurityUncert = 0.0;
         if (efficiencyFlags.applyEfficiencyCorrection) {
-          if constexpr (requires { assocTrack.nSigmaTPCPi(); }) {
+          if constexpr (Species == IndexPion) {
             efficiency = hEfficiencyPion->Interpolate(ptassoc, assoc.eta());
             if (efficiencyFlags.applyEfficiencyPropagation)
               efficiencyUncertainty = hEfficiencyUncertaintyPion->Interpolate(ptassoc, assoc.eta());
+          } else if constexpr (Species == IndexKaon) {
+            efficiency = hEfficiencyKaon->Interpolate(ptassoc, assoc.eta());
+            if (efficiencyFlags.applyEfficiencyPropagation)
+              efficiencyUncertainty = hEfficiencyUncertaintyKaon->Interpolate(ptassoc, assoc.eta());
           } else {
             if (efficiencyFlags.applyEffAsFunctionOfMult)
               efficiency = hEfficiencyHadronMult->Interpolate(ptassoc, assoc.eta(), mult);
@@ -1294,12 +1335,19 @@ struct HResonanceCorrelation {
         double binFillThn[6] = {deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult};
         double deltaPhiStar = calculateAverageDeltaPhiStar(triggForDeltaPhiStar, assocForDeltaPhiStar, bField);
         if (!mixing) {
-          if constexpr (requires { assocTrack.nSigmaTPCPi(); }) {
+          if constexpr (Species == IndexPion) {
             fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/Signal/Pion")), binFillThn, etaWeight, efficiency * efficiencyTrigger, totalEffUncert, purity * purityTrigger, totalPurityUncert);
             if (triggSign == assocSign && doDeltaPhiStarCheck) {
               histos.fill(HIST("sameEvent/Signal/Pion") + HIST("DeltaPhiStar"), deltaPhiStar, trigg.eta() - assoc.eta(), 0.5);
             } else if (doDeltaPhiStarCheck) {
               histos.fill(HIST("sameEvent/Signal/Pion") + HIST("DeltaPhiStar"), deltaPhiStar, trigg.eta() - assoc.eta(), -0.5);
+            }
+          } else if constexpr (Species == IndexKaon) {
+            fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/Signal/Kaon")), binFillThn, etaWeight, efficiency * efficiencyTrigger, totalEffUncert, purity * purityTrigger, totalPurityUncert);
+            if (triggSign == assocSign && doDeltaPhiStarCheck) {
+              histos.fill(HIST("sameEvent/Signal/Kaon") + HIST("DeltaPhiStar"), deltaPhiStar, trigg.eta() - assoc.eta(), 0.5);
+            } else if (doDeltaPhiStarCheck) {
+              histos.fill(HIST("sameEvent/Signal/Kaon") + HIST("DeltaPhiStar"), deltaPhiStar, trigg.eta() - assoc.eta(), -0.5);
             }
           } else {
             if (triggSign == assocSign && doDeltaPhiStarCheck) {
@@ -1310,8 +1358,10 @@ struct HResonanceCorrelation {
             fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/Signal/Hadron")), binFillThn, etaWeight, efficiency * efficiencyTrigger, totalEffUncert, purity * purityTrigger, totalPurityUncert);
           }
         } else {
-          if constexpr (requires { assocTrack.nSigmaTPCPi(); }) {
+          if constexpr (Species == IndexPion) {
             fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/Signal/Pion")), binFillThn, 1, efficiency * efficiencyTrigger, totalEffUncert, purity * purityTrigger, totalPurityUncert);
+          } else if constexpr (Species == IndexKaon) {
+            fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/Signal/Kaon")), binFillThn, 1, efficiency * efficiencyTrigger, totalEffUncert, purity * purityTrigger, totalPurityUncert);
           } else {
             fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/Signal/Hadron")), binFillThn, 1, efficiency * efficiencyTrigger, totalEffUncert, purity * purityTrigger, totalPurityUncert);
           }
@@ -1529,6 +1579,9 @@ struct HResonanceCorrelation {
         }
 
         double binFillThn[6] = {deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult};
+        // 7-slot layout matching the mass-mode Signal booking above: mass
+        // ADDED after Delta-eta, everything else shifted one slot right.
+        double binFillThnMass[7] = {deltaphi, deltaeta, massassoc, ptassoc, pttrigger, pvz, mult};
 
         const double assocForDeltaPhiStarPlus[] = {c.phiKplus, c.ptKplus, c.signKplus};
         const double assocForDeltaPhiStarMinus[] = {c.phiKminus, c.ptKminus, c.signKminus};
@@ -1551,10 +1604,7 @@ struct HResonanceCorrelation {
           }
         }
         if (!mixing && (masterConfigurations.fillCorrelationHistWithMass || c.isSignal)) {
-          if (masterConfigurations.fillCorrelationHistWithMass) {
-            binFillThn[1] = massassoc;
-          }
-          fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/Signal/Phi")), binFillThn, etaWeight, c.efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
+          fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/Signal/Phi")), masterConfigurations.fillCorrelationHistWithMass ? binFillThnMass : binFillThn, etaWeight, c.efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
           if (doDeltaPhiStarCheck) {
             double deltaPhiStarPlus = calculateAverageDeltaPhiStar(triggForDeltaPhiStar, assocForDeltaPhiStarPlus, bField);
             double deltaPhiStarMinus = calculateAverageDeltaPhiStar(triggForDeltaPhiStar, assocForDeltaPhiStarMinus, bField);
@@ -1582,22 +1632,27 @@ struct HResonanceCorrelation {
           }
         }
 
-        // Mixed Event Logic buffered in ValidCollision
-        if (mixing && c.isLeftBg) {
+        // Mixed Event Logic buffered in ValidCollision. LeftBg/RightBg are
+        // only booked when !fillCorrelationHistWithMass (see booking above),
+        // so both are skipped entirely in mass mode -- filling/replaying into
+        // an unbooked histogram would abort. Signal carries a real mass
+        // value through the buffer (ValidParticle::mass) so the replay loop
+        // below can build the correct 7-slot fill array in mass mode too.
+        if (mixing && c.isLeftBg && !masterConfigurations.fillCorrelationHistWithMass) {
           if (mixingInBf) {
             currentCollision.addValidParticle(c.eta, c.phi, c.pt, 0, c.efficiency, c.efficiencyError, 0 /* 0 = Phi type */);
           } else {
             fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/LeftBg/Phi")), binFillThn, 1, c.efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
           }
         }
-        if (mixing && c.isSignal) {
+        if (mixing && (masterConfigurations.fillCorrelationHistWithMass || c.isSignal)) {
           if (mixingInBf) {
-            currentCollision.addValidParticle(c.eta, c.phi, c.pt, 1, c.efficiency, c.efficiencyError, 0);
+            currentCollision.addValidParticle(c.eta, c.phi, c.pt, 1, c.efficiency, c.efficiencyError, 0, c.mass);
           } else {
-            fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/Signal/Phi")), binFillThn, 1, c.efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
+            fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/Signal/Phi")), masterConfigurations.fillCorrelationHistWithMass ? binFillThnMass : binFillThn, 1, c.efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
           }
         }
-        if (mixing && c.isRightBg) {
+        if (mixing && c.isRightBg && !masterConfigurations.fillCorrelationHistWithMass) {
           if (mixingInBf) {
             currentCollision.addValidParticle(c.eta, c.phi, c.pt, 2, c.efficiency, c.efficiencyError, 0);
           } else {
@@ -1642,12 +1697,18 @@ struct HResonanceCorrelation {
             deltaeta = std::abs(deltaeta);
           }
           double binFillThn[6] = {deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult};
+          double binFillThnMass[7] = {deltaphi, deltaeta, assoc.mass, ptassoc, pttrigger, pvz, mult};
 
+          // region 0/2 (LeftBg/RightBg) are never buffered in mass mode (see
+          // the buffering guard above), so no separate guard is needed here
+          // beyond region itself never being 0/2 in that case; region 1
+          // (Signal) picks the 7-slot mass array when mass mode is on, to
+          // match the booking above.
           if (assoc.region == 0) {
             fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/LeftBg/Phi")), binFillThn, 1, efficiencyTrigg * efficiencyAssoc, totalEffUncert, 1., 0.);
           }
           if (assoc.region == 1) {
-            fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/Signal/Phi")), binFillThn, 1, efficiencyTrigg * efficiencyAssoc, totalEffUncert, 1., 0.);
+            fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/Signal/Phi")), masterConfigurations.fillCorrelationHistWithMass ? binFillThnMass : binFillThn, 1, efficiencyTrigg * efficiencyAssoc, totalEffUncert, 1., 0.);
           }
           if (assoc.region == 2) {
             fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/RightBg/Phi")), binFillThn, 1, efficiencyTrigg * efficiencyAssoc, totalEffUncert, 1., 0.);
@@ -1869,6 +1930,9 @@ struct HResonanceCorrelation {
         }
 
         double binFillThn[6] = {deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult};
+        // 7-slot layout matching the mass-mode Signal booking above: mass
+        // ADDED after Delta-eta, everything else shifted one slot right.
+        double binFillThnMass[7] = {deltaphi, deltaeta, massassoc, ptassoc, pttrigger, pvz, mult};
 
         const double assocForDeltaPhiStarPlus[] = {c.phiPos, c.ptPos, c.signPos};
         const double assocForDeltaPhiStarMinus[] = {c.phiNeg, c.ptNeg, c.signNeg};
@@ -1891,10 +1955,7 @@ struct HResonanceCorrelation {
           }
         }
         if (!mixing && (masterConfigurations.fillCorrelationHistWithMass || c.isSignal)) {
-          if (masterConfigurations.fillCorrelationHistWithMass) {
-            binFillThn[1] = massassoc;
-          }
-          fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/Signal/Kstar0")), binFillThn, etaWeight, c.efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
+          fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/Signal/Kstar0")), masterConfigurations.fillCorrelationHistWithMass ? binFillThnMass : binFillThn, etaWeight, c.efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
           if (doDeltaPhiStarCheck) {
             double deltaPhiStarPlus = calculateAverageDeltaPhiStar(triggForDeltaPhiStar, assocForDeltaPhiStarPlus, bField);
             double deltaPhiStarMinus = calculateAverageDeltaPhiStar(triggForDeltaPhiStar, assocForDeltaPhiStarMinus, bField);
@@ -1924,22 +1985,27 @@ struct HResonanceCorrelation {
 
         // Mixed-event logic: buffered into ValidCollision when mixing via the
         // collision pool (processMixedEventHKstarsInBuffer), filled directly
-        // otherwise (processMixedEventHKstars).
-        if (mixing && c.isLeftBg) {
+        // otherwise (processMixedEventHKstars). LeftBg/RightBg are only
+        // booked when !fillCorrelationHistWithMass (see booking above), so
+        // both are skipped entirely in mass mode -- filling/replaying into an
+        // unbooked histogram would abort. Signal carries a real mass value
+        // through the buffer (ValidParticle::mass) so the replay loop below
+        // can build the correct 7-slot fill array in mass mode too.
+        if (mixing && c.isLeftBg && !masterConfigurations.fillCorrelationHistWithMass) {
           if (mixingInBf) {
             currentCollision.addValidParticle(c.eta, c.phi, c.pt, 0, c.efficiency, c.efficiencyError, 1 /* 1 = Kstar0 type */);
           } else {
             fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/LeftBg/Kstar0")), binFillThn, 1, c.efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
           }
         }
-        if (mixing && c.isSignal) {
+        if (mixing && (masterConfigurations.fillCorrelationHistWithMass || c.isSignal)) {
           if (mixingInBf) {
-            currentCollision.addValidParticle(c.eta, c.phi, c.pt, 1, c.efficiency, c.efficiencyError, 1);
+            currentCollision.addValidParticle(c.eta, c.phi, c.pt, 1, c.efficiency, c.efficiencyError, 1, c.mass);
           } else {
-            fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/Signal/Kstar0")), binFillThn, 1, c.efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
+            fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/Signal/Kstar0")), masterConfigurations.fillCorrelationHistWithMass ? binFillThnMass : binFillThn, 1, c.efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
           }
         }
-        if (mixing && c.isRightBg) {
+        if (mixing && c.isRightBg && !masterConfigurations.fillCorrelationHistWithMass) {
           if (mixingInBf) {
             currentCollision.addValidParticle(c.eta, c.phi, c.pt, 2, c.efficiency, c.efficiencyError, 1);
           } else {
@@ -1985,12 +2051,16 @@ struct HResonanceCorrelation {
             deltaeta = std::abs(deltaeta);
           }
           double binFillThn[6] = {deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult};
+          double binFillThnMass[7] = {deltaphi, deltaeta, assoc.mass, ptassoc, pttrigger, pvz, mult};
 
+          // region 0/2 (LeftBg/RightBg) are never buffered in mass mode (see
+          // the buffering guard above); region 1 (Signal) picks the 7-slot
+          // mass array when mass mode is on, to match the booking above.
           if (assoc.region == 0) {
             fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/LeftBg/Kstar0")), binFillThn, 1, efficiencyTrigg * efficiencyAssoc, totalEffUncert, 1., 0.);
           }
           if (assoc.region == 1) {
-            fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/Signal/Kstar0")), binFillThn, 1, efficiencyTrigg * efficiencyAssoc, totalEffUncert, 1., 0.);
+            fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/Signal/Kstar0")), masterConfigurations.fillCorrelationHistWithMass ? binFillThnMass : binFillThn, 1, efficiencyTrigg * efficiencyAssoc, totalEffUncert, 1., 0.);
           }
           if (assoc.region == 2) {
             fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/RightBg/Kstar0")), binFillThn, 1, efficiencyTrigg * efficiencyAssoc, totalEffUncert, 1., 0.);
@@ -2079,14 +2149,14 @@ struct HResonanceCorrelation {
       return;
     }
     // ________________________________________________
-    if (!doprocessSameEventHPhis && !doprocessSameEventHKstars && !doprocessSameEventHPions && doMixingQAandEventQA) {
+    if (!doprocessSameEventHPhis && !doprocessSameEventHKstars && !doprocessSameEventHPions && !doprocessSameEventHKaons && doMixingQAandEventQA) {
       histos.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({collision.posZ(), collision.centFT0M()}));
       histos.fill(HIST("EventQA/hMult"), collision.centFT0M());
       histos.fill(HIST("EventQA/hPvz"), collision.posZ());
     }
 
     // Do basic QA
-    if (!doprocessSameEventHPhis && !doprocessSameEventHKstars && !doprocessSameEventHPions) {
+    if (!doprocessSameEventHPhis && !doprocessSameEventHKstars && !doprocessSameEventHPions && !doprocessSameEventHKaons) {
       for (auto const& triggerTrack : triggerTracks) {
         auto track = triggerTrack.track_as<TracksComplete>();
         if (!isValidTrigger(track, triggerTrack.isLeading()))
@@ -2137,7 +2207,7 @@ struct HResonanceCorrelation {
     // ________________________________________________
     // Do hadron - hadron correlations
     if (masterConfigurations.doFullCorrelationStudy)
-      fillCorrelationsHadron(triggerTracks, assocHadrons, false, collision.posZ(), collision.centFT0M(), bField);
+      fillCorrelationsHadron<IndexHadron>(triggerTracks, assocHadrons, false, collision.posZ(), collision.centFT0M(), bField);
   }
 
   void processSameEventHPions(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>::iterator const& collision, soa::Join<aod::AssocHadrons, aod::AssocPID> const& associatedPions, soa::Join<aod::TriggerTracks, aod::TriggerTrackExtras> const& triggerTracks, TracksComplete const&, aod::BCsWithTimestamps const&)
@@ -2202,7 +2272,72 @@ struct HResonanceCorrelation {
     // ________________________________________________
     // Do hadron - Pion correlations
     if (masterConfigurations.doFullCorrelationStudy)
-      fillCorrelationsHadron(triggerTracks, associatedPions, false, collision.posZ(), collision.centFT0M(), bField);
+      fillCorrelationsHadron<IndexPion>(triggerTracks, associatedPions, false, collision.posZ(), collision.centFT0M(), bField);
+  }
+
+  void processSameEventHKaons(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>::iterator const& collision, soa::Join<aod::AssocHadrons, aod::AssocPID> const& associatedKaons, soa::Join<aod::TriggerTracks, aod::TriggerTrackExtras> const& triggerTracks, TracksComplete const&, aod::BCsWithTimestamps const&)
+  {
+    LOGF(info, "SameEventKaon: collisions=%d triggers=%zu assocKaons=%zu", collision.globalIndex(), triggerTracks.size(), associatedKaons.size());
+
+    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
+    // ________________________________________________
+    // skip if desired trigger not found
+    if (triggerPresenceMap.size() > 0 && !TESTBIT(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
+      return;
+    }
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    auto bField = getMagneticField(bc.timestamp());
+
+    if (efficiencyFlags.applyEfficiencyCorrection) {
+      initEfficiencyFromCCDB(bc);
+    }
+
+    // ________________________________________________
+    // Perform basic event selection
+    if (!isisCollisionSelect(collision)) {
+      return;
+    }
+    // ________________________________________________
+    if (!doprocessSameEventHPhis && !doprocessSameEventHKstars && !doprocessSameEventHPions && doMixingQAandEventQA) {
+      histos.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({collision.posZ(), collision.centFT0M()}));
+      histos.fill(HIST("EventQA/hMult"), collision.centFT0M());
+      histos.fill(HIST("EventQA/hPvz"), collision.posZ());
+    }
+    // Do basic QA
+    for (auto const& kaon : associatedKaons) {
+      auto kaonTrack = kaon.track_as<TracksComplete>();
+      if (!isValidAssocHadron(kaonTrack))
+        continue;
+
+      histos.fill(HIST("hKaonEtaVsPtAllSelected"), kaonTrack.pt(), kaonTrack.eta(), collision.centFT0M());
+      if (doAssocPhysicalPrimary && !kaon.mcPhysicalPrimary())
+        continue;
+      if (masterConfigurations.doMCassociation && std::abs(kaon.pdgCode()) != PdgCodes[IndexKaon])
+        continue;
+      histos.fill(HIST("hKaonEtaVsPt"), kaonTrack.pt(), kaonTrack.eta(), collision.centFT0M());
+      if (kaonTrack.sign() > 0)
+        histos.fill(HIST("hPositiveKaonEtaVsPt"), kaonTrack.pt(), kaonTrack.eta(), collision.centFT0M());
+      else
+        histos.fill(HIST("hNegativeKaonEtaVsPt"), kaonTrack.pt(), kaonTrack.eta(), collision.centFT0M());
+    }
+    if (!doprocessSameEventHPhis && !doprocessSameEventHKstars && !doprocessSameEventHPions) {
+      for (auto const& triggerTrack : triggerTracks) {
+        auto track = triggerTrack.track_as<TracksComplete>();
+        if (!isValidTrigger(track, triggerTrack.isLeading()))
+          continue;
+        histos.fill(HIST("hTriggerAllSelectedEtaVsPt"), track.pt(), track.eta(), collision.centFT0M());
+        histos.fill(HIST("hTriggerPtResolution"), track.pt(), triggerTrack.mcOriginalPt());
+        if (masterConfigurations.doTriggPhysicalPrimary && !triggerTrack.mcPhysicalPrimary())
+          continue;
+        histos.fill(HIST("hTriggerPrimaryEtaVsPt"), track.pt(), track.eta(), collision.centFT0M());
+        histos.fill(HIST("hTrackEtaVsPtVsPhi"), track.pt(), track.eta(), track.phi());
+      }
+    }
+
+    // ________________________________________________
+    // Do hadron - Kaon correlations
+    if (masterConfigurations.doFullCorrelationStudy)
+      fillCorrelationsHadron<IndexKaon>(triggerTracks, associatedKaons, false, collision.posZ(), collision.centFT0M(), bField);
   }
 
   void processSameEventHPhis(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>::iterator const& collision, aod::AssocPhis const& associatedPhis, aod::TriggerTracks const& triggerTracks, TracksComplete const&, aod::BCsWithTimestamps const&)
@@ -2360,7 +2495,7 @@ struct HResonanceCorrelation {
       // ________________________________________________
       // Do hadron - hadron correlations
       if (masterConfigurations.doFullCorrelationStudy)
-        fillCorrelationsHadron(slicedTriggerTracks, slicedAssocHadrons, true, collision1.posZ(), collision1.centFT0M(), bField);
+        fillCorrelationsHadron<IndexHadron>(slicedTriggerTracks, slicedAssocHadrons, true, collision1.posZ(), collision1.centFT0M(), bField);
     }
   }
 
@@ -2404,7 +2539,51 @@ struct HResonanceCorrelation {
       // ________________________________________________
       // Do hadron - phi correlations
       if (masterConfigurations.doFullCorrelationStudy)
-        fillCorrelationsHadron(slicedTriggerTracks, slicedAssocPions, true, collision1.posZ(), collision1.centFT0M(), bField);
+        fillCorrelationsHadron<IndexPion>(slicedTriggerTracks, slicedAssocPions, true, collision1.posZ(), collision1.centFT0M(), bField);
+    }
+  }
+
+  void processMixedEventHKaons(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults> const& collisions, soa::Join<aod::AssocHadrons, aod::AssocPID> const& assocKaons, soa::Join<aod::TriggerTracks, aod::TriggerTrackExtras> const& triggerTracks, TracksComplete const&, aod::BCsWithTimestamps const&)
+  {
+    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
+    for (auto const& [collision1, collision2] : soa::selfCombinations(colBinning, masterConfigurations.mixingParameter, -1, collisions, collisions)) {
+      auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
+      auto bField = getMagneticField(bc.timestamp());
+      // ________________________________________________
+      if (efficiencyFlags.applyEfficiencyCorrection) {
+        initEfficiencyFromCCDB(bc);
+      }
+      // ________________________________________________
+      // skip if desired trigger not found
+      if (triggerPresenceMap.size() > 0 && (!TESTBIT(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !TESTBIT(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect))) {
+        continue;
+      }
+
+      // ________________________________________________
+      // Perform basic event selection on both collisions
+      if (!isisCollisionSelect(collision1) || !isisCollisionSelect(collision2)) {
+        continue;
+      }
+      if (collision1.centFT0M() > axisRanges[5][1] || collision1.centFT0M() < axisRanges[5][0])
+        continue;
+      if (collision2.centFT0M() > axisRanges[5][1] || collision2.centFT0M() < axisRanges[5][0])
+        continue;
+      if (doMixingQAandEventQA) {
+        if (collision1.globalIndex() == collision2.globalIndex()) {
+          histos.fill(HIST("MixingQA/hMixingQA"), 0.0f); // same-collision pair counting
+        }
+        histos.fill(HIST("MixingQA/hMEpvz1"), collision1.posZ());
+        histos.fill(HIST("MixingQA/hMEpvz2"), collision2.posZ());
+        histos.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), collision1.centFT0M()}));
+      }
+      // ________________________________________________
+      // Do slicing
+      auto slicedTriggerTracks = triggerTracks.sliceBy(collisionSliceTracks, collision1.globalIndex());
+      auto slicedAssocKaons = assocKaons.sliceBy(collisionSliceHadrons, collision2.globalIndex());
+      // ________________________________________________
+      // Do hadron - Kaon correlations
+      if (masterConfigurations.doFullCorrelationStudy)
+        fillCorrelationsHadron<IndexKaon>(slicedTriggerTracks, slicedAssocKaons, true, collision1.posZ(), collision1.centFT0M(), bField);
     }
   }
 
@@ -3092,11 +3271,13 @@ struct HResonanceCorrelation {
   PROCESS_SWITCH(HResonanceCorrelation, processSelectEventWithTrigger, "Select events with trigger only", true);
 
   PROCESS_SWITCH(HResonanceCorrelation, processSameEventHPions, "Process same events, h-Pion", true);
+  PROCESS_SWITCH(HResonanceCorrelation, processSameEventHKaons, "Process same events, h-Kaon", true);
   PROCESS_SWITCH(HResonanceCorrelation, processSameEventHHadrons, "Process same events, h-h", true);
   PROCESS_SWITCH(HResonanceCorrelation, processSameEventHPhis, "Process same events, h-phi", true);
   PROCESS_SWITCH(HResonanceCorrelation, processSameEventHKstars, "Process same events, h-K*0", true);
 
   PROCESS_SWITCH(HResonanceCorrelation, processMixedEventHPions, "Process mixed events, h-Pion", true);
+  PROCESS_SWITCH(HResonanceCorrelation, processMixedEventHKaons, "Process mixed events, h-Kaon", true);
   PROCESS_SWITCH(HResonanceCorrelation, processMixedEventHHadrons, "Process mixed events, h-h", true);
   PROCESS_SWITCH(HResonanceCorrelation, processMixedEventHPhis, "Process mixed events, h-phi", true);
   PROCESS_SWITCH(HResonanceCorrelation, processMixedEventHPhisInBuffer, "Process mixed-event, h-phi using collision buffer", false);
