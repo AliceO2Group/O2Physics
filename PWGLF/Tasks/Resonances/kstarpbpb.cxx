@@ -21,7 +21,6 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -43,12 +42,12 @@
 #include <Framework/Logger.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <ReconstructionDataFormats/PID.h>
 
 #include <Math/GenVector/Boost.h>
 #include <Math/Vector3Dfwd.h>
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
+#include <TH1.h>
 #include <THn.h>
 #include <TPDGCode.h>
 #include <TRandom3.h>
@@ -132,33 +131,46 @@ struct Kstarpbpb {
   Configurable<int> nBkgRotations{"nBkgRotations", 9, "Number of rotated copies (background) per each original candidate"};
   Configurable<bool> fillRotation{"fillRotation", true, "fill rotation"};
   Configurable<bool> fillSA{"fillSA", true, "same event SA"};
-  Configurable<bool> fillOccupancy{"fillOccupancy", false, "fill Occupancy"};
-  Configurable<int> cfgOccupancyCut{"cfgOccupancyCut", 500, "Occupancy cut"};
+  Configurable<bool> fillLikeSignSA{"fillLikeSignSA", false, "fill the same-event like-sign SA sparse (needs fillSA)"};
   Configurable<bool> useWeight{"useWeight", false, "use EP dep effi weight"};
   Configurable<bool> useSP{"useSP", false, "use SP"};
   // spin-alignment quantization axis
   Configurable<int> cfgSAFrame{"cfgSAFrame", 0, "SA quantization axis: 0 = event plane (FT0C), 1 = production plane, 2 = random event plane"};
   Configurable<int> cfgRndSeed{"cfgRndSeed", 0, "Seed for random event plane (0 = unique seed per job)"};
   Configurable<float> cfgEPNormalHarmonic{"cfgEPNormalHarmonic", 2.0f, "EP normal = (sin(n*Psi), -cos(n*Psi), 0); n = 2 is the previous behaviour, n = 1 is the normal to the Psi2 plane"};
+  // phi(1020) -> K+K- reflection veto for K* (off by default: the task then behaves exactly as before)
+  Configurable<bool> cfgPhiVeto{"cfgPhiVeto", false, "Reject K pi pairs whose KK mass (pion candidate given the kaon mass) is near the phi(1020) mass"};
+  Configurable<float> cfgPhiVetoWindow{"cfgPhiVetoWindow", 0.010f, "Half-width of the phi(1020) veto window (GeV/c^2)"};
 
-  // phi(1020) spin alignment: event selection is the K* one; track/PID selections and defaults identical to PWGLF/Tasks/Resonances/phipbpb.cxx
-  // (JSON keys follow the O2 linter naming rules, so removeFakeTrack, confFakeKaonCut and nsigmaCutTPC differ from the phipbpb.cxx spelling)
+  // event loss and signal loss for K* and phi(1020) (processEvtLossSigLossMC), adapted from processEvtLossSigLossMC1 in phianalysisrun3pbpb.cxx
+  struct : ConfigurableGroup {
+    std::string prefix = "evtSigLoss";
+    Configurable<bool> cutVzGen{"cutVzGen", true, "Cut |vz| < cfgCutVertex on the generated collision"};
+    Configurable<bool> isApplyInelgt0{"isApplyInelgt0", false, "Require INEL > 0 for the generated collision"};
+    Configurable<bool> isApplyTVX{"isApplyTVX", false, "Require TVX (FT0A and FT0C MC multiplicity > 0) for the generated collision"};
+    Configurable<bool> requireSingleReco{"requireSingleReco", true, "Accepted MC event: exactly one reconstructed collision passing the selection, as in processMC / processMCPhi (false: at least one, as in phianalysisrun3pbpb.cxx)"};
+    ConfigurableAxis axisImpactPar{"axisImpactPar", {200, 0.0, 20.0}, "Impact parameter (fm)"};
+    ConfigurableAxis axisMultMC{"axisMultMC", {500, 0.0, 2000.0}, "Generated charged particles in |eta| < 0.5"};
+  } evtSigLoss;
+
+  // phi(1020) spin alignment: event selection is the K* one; track and PID selections identical to PWGLF/Tasks/Resonances/phianalysisrun3pbpb.cxx
+  // (JSON keys follow the O2 linter naming rules)
   struct : ConfigurableGroup {
     std::string prefix = "phiSA";
     Configurable<bool> removeFakeTrack{"removeFakeTrack", true, "Remove fake track from momentum difference"};
     Configurable<float> confFakeKaonCut{"confFakeKaonCut", 0.1, "Cut based on track from momentum difference"};
-    Configurable<bool> useGlobalTrack{"useGlobalTrack", true, "use Global track"};
-    Configurable<bool> useDcaSyst{"useDcaSyst", false, "useDcaSyst"};
-    Configurable<float> cfgCutTOFBeta{"cfgCutTOFBeta", 0.0, "cut TOF beta"};
-    Configurable<float> nsigmaCutTPC{"nsigmaCutTPC", 3.0, "Value of the TPC Nsigma cut"};
-    Configurable<float> nsigmaCutTOF{"nsigmaCutTOF", 3.0, "Value of the TOF Nsigma cut"};
+    // track selection (phianalysisrun3pbpb.cxx)
+    Configurable<bool> iscustomDCAcut{"iscustomDCAcut", false, "Global track (with DCA) + PV contributor + ITS clusters"};
+    Configurable<bool> ismanualDCAcut{"ismanualDCAcut", true, "Global track w/o DCA + PV contributor + manual DCAxy/DCAz + ITS clusters"};
+    Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 2.0f, "DCAxy range for kaon tracks (manual DCA cut)"};
+    Configurable<float> cfgCutDCAz{"cfgCutDCAz", 2.0f, "DCAz range for kaon tracks (manual DCA cut)"};
     Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
-    Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
-    Configurable<float> cfgTPCSharedcluster{"cfgTPCSharedcluster", 0.4, "Maximum Number of TPC shared cluster"};
+    // PID (phianalysisrun3pbpb.cxx)
+    Configurable<float> nsigmaCutTPC{"nsigmaCutTPC", 3.0, "Value of the TPC Nsigma cut"};
+    Configurable<float> nsigmaCutCombined{"nsigmaCutCombined", 3.0, "Value of the combined TPC-TOF Nsigma cut"};
+    Configurable<bool> isNoTOF{"isNoTOF", false, "TPC-only PID for all tracks"};
     Configurable<bool> isDeepAngle{"isDeepAngle", false, "Deep Angle cut"};
     Configurable<double> cfgDeepAngle{"cfgDeepAngle", 0.04, "Deep Angle cut value"};
-    Configurable<bool> ispTdepPID{"ispTdepPID", true, "pT dependent PID"};
-    Configurable<bool> isTOFOnly{"isTOFOnly", false, "TOF only PID"};
     Configurable<double> confRapidity{"confRapidity", 0.5, "Rapidity cut"};
     Configurable<bool> genacceptancecut{"genacceptancecut", true, "use acceptance cut for generated"};
     Configurable<bool> avoidsplitrackMC{"avoidsplitrackMC", false, "avoid split track in MC"};
@@ -192,6 +204,7 @@ struct Kstarpbpb {
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTOFbeta, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi>>;
 
   using CollisionMCTrueTable = aod::McCollisions;
+  using McCollisionMults = soa::Join<aod::McCollisions, aod::MultMCExtras>;
   using TrackMCTrueTable = aod::McParticles;
   using CollisionMCRecTableCentFT0C = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Cs, aod::EvSels>>;
   using TrackMCRecTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection, aod::pidTOFbeta, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi>;
@@ -224,11 +237,9 @@ struct Kstarpbpb {
     }
     rndGen.SetSeed(cfgRndSeed);
 
-    std::vector<double> occupancyBinning = {0.0, 500.0, 1000.0, 1500.0, 2000.0, 3000.0, 4000.0, 5000.0, 50000.0};
     AxisSpec phiAxis = {500, -6.28, 6.28, "phi"};
     AxisSpec resAxis = {6000, -30, 30, "Res"};
     AxisSpec centAxis = {8, 0, 80, "V0M (%)"};
-    AxisSpec occupancyAxis = {occupancyBinning, "Occupancy"};
     AxisSpec vzAxis = {400, -20.0, 20.0, "Z_{vtx} (cm)"};
     AxisSpec qvecAxis = {200, 0, 20, "q"};
     if (doprocessSE) {
@@ -241,10 +252,12 @@ struct Kstarpbpb {
         histos.add("hSparseV2SASameEventRotational_V2", "hSparseV2SASameEventRotational_V2", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisPt, configThnAxisV2, configThnAxisCentrality});
       }
       if (fillSA) {
-        histos.add("hSparseSAvsrapsameunlike", "hSparseSAvsrapsameunlike", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisPt, configThnAxisV2, configrapAxis, configThnAxisCentrality}, true);
-        histos.add("hSparseSAvsrapsamelike", "hSparseSAvsrapsamelike", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisPt, configThnAxisV2, configrapAxis, configThnAxisCentrality}, true);
+        histos.add("hSparseSAvsrapsameunlike", "hSparseSAvsrapsameunlike", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisPt, configThnAxisV2, configrapAxis, configThnAxisCentrality});
+        if (fillLikeSignSA) {
+          histos.add("hSparseSAvsrapsamelike", "hSparseSAvsrapsamelike", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisPt, configThnAxisV2, configrapAxis, configThnAxisCentrality});
+        }
         if (fillRotation) {
-          histos.add("hSparseSAvsraprot", "hSparseSAvsraprot", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisPt, configThnAxisV2, configrapAxis, configThnAxisCentrality}, true);
+          histos.add("hSparseSAvsraprot", "hSparseSAvsraprot", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisPt, configThnAxisV2, configrapAxis, configThnAxisCentrality});
         }
         if (cfgSAFrame.value == kRandomEventPlane) {
           histos.add("hPsiRandom", "Random event plane angle", kTH2F, {centAxis, phiAxis});
@@ -257,7 +270,7 @@ struct Kstarpbpb {
         histos.add("hSparseV2SAMixedEvent_V2", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisPt, configThnAxisV2, configThnAxisCentrality});
       }
       if (fillSA) {
-        histos.add("hSparseSAvsrapmix", "hSparseSAvsrapmix", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisPt, configThnAxisV2, configrapAxis, configThnAxisCentrality}, true);
+        histos.add("hSparseSAvsrapmix", "hSparseSAvsrapmix", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisPt, configThnAxisV2, configrapAxis, configThnAxisCentrality});
       }
     }
 
@@ -292,7 +305,6 @@ struct Kstarpbpb {
     if (doprocessSE && additionalQAplots1) {
       histos.add("hFTOCvsTPCSelected", "Mult correlation FT0C vs. TPC after selection", kTH2F, {{80, 0.0f, 80.0f}, {100, -0.5f, 5999.5f}});
       histos.add("hCentrality", "Centrality distribution", kTH1F, {{200, 0.0, 200.0}});
-      histos.add("hOccupancy", "Occupancy distribution", kTH1F, {occupancyAxis});
       histos.add("hVtxZ", "Vertex distribution in Z;Z (cm)", kTH1F, {{400, -20.0, 20.0}});
       histos.add("hPsiFT0C", "PsiFT0C", kTH2F, {centAxis, phiAxis});
       histos.add("hPsiFT0A", "PsiFT0A", kTH2F, {centAxis, phiAxis});
@@ -303,9 +315,9 @@ struct Kstarpbpb {
       histos.add("ResFT0CTPCSP", "ResFT0CTPCSP", kTH2F, {centAxis, resAxis});
       histos.add("ResFT0CFT0ASP", "ResFT0CFT0ASP", kTH2F, {centAxis, resAxis});
       histos.add("ResFT0ATPCSP", "ResFT0ATPCSP", kTH2F, {centAxis, resAxis});
-      histos.add("ResTrackSPFT0CTPC", "ResTrackSPFT0CTPC", kTH3F, {centAxis, occupancyAxis, resAxis});
-      histos.add("ResTrackSPFT0CFT0A", "ResTrackSPFT0CFT0A", kTH3F, {centAxis, occupancyAxis, resAxis});
-      histos.add("ResTrackSPFT0ATPC", "ResTrackSPFT0ATPC", kTH3F, {centAxis, occupancyAxis, resAxis});
+      histos.add("ResTrackSPFT0CTPC", "ResTrackSPFT0CTPC", kTH2F, {centAxis, resAxis});
+      histos.add("ResTrackSPFT0CFT0A", "ResTrackSPFT0CFT0A", kTH2F, {centAxis, resAxis});
+      histos.add("ResTrackSPFT0ATPC", "ResTrackSPFT0ATPC", kTH2F, {centAxis, resAxis});
       histos.add("hQFT0CvsCent", "q_{FT0C} vs centrality", kTH2F, {centAxis, qvecAxis});
       histos.add("hQFT0CvsVz", "q_{FT0C} vs Z_{vtx}", kTH2F, {vzAxis, qvecAxis});
       histos.add("hQFT0AvsCent", "q_{FT0A} vs centrality", kTH2F, {centAxis, qvecAxis});
@@ -366,22 +378,57 @@ struct Kstarpbpb {
         histos.add("phi/hPsiRandom", "Random event plane angle", kTH2F, {centAxis, phiAxis});
       }
       if (doprocessSEPhi) {
-        histos.add("phi/hSparseV2SameEventSA", "hSparseV2SameEventSA", HistType::kTHnSparseD, {thnAxisInvMassPhi, thnAxisPtPhi, thnAxisSAPhi, thnAxisRapidityPhi, thnAxisCentralityPhi});
-        histos.add("phi/hSparseV2SameEventCosThetaStar", "hSparseV2SameEventCosThetaStar", HistType::kTHnSparseD, {thnAxisInvMassPhi, thnAxisPtPhi, thnAxisCosThetaStarPhi, thnAxisRapidityPhi, thnAxisCentralityPhi});
+        histos.add("phi/hSparseV2SameEventSA", "hSparseV2SameEventSA", HistType::kTHnSparseF, {thnAxisInvMassPhi, thnAxisPtPhi, thnAxisSAPhi, thnAxisRapidityPhi, thnAxisCentralityPhi});
+        histos.add("phi/hSparseV2SameEventCosThetaStar", "hSparseV2SameEventCosThetaStar", HistType::kTHnSparseF, {thnAxisInvMassPhi, thnAxisPtPhi, thnAxisCosThetaStarPhi, thnAxisRapidityPhi, thnAxisCentralityPhi});
       }
       if (doprocessMEPhi) {
-        histos.add("phi/hSparseV2MixedEventSA", "hSparseV2MixedEventSA", HistType::kTHnSparseD, {thnAxisInvMassPhi, thnAxisPtPhi, thnAxisSAPhi, thnAxisRapidityPhi, thnAxisCentralityPhi});
-        histos.add("phi/hSparseV2MixedEventCosThetaStar", "hSparseV2MixedEventCosThetaStar", HistType::kTHnSparseD, {thnAxisInvMassPhi, thnAxisPtPhi, thnAxisCosThetaStarPhi, thnAxisRapidityPhi, thnAxisCentralityPhi});
+        histos.add("phi/hSparseV2MixedEventSA", "hSparseV2MixedEventSA", HistType::kTHnSparseF, {thnAxisInvMassPhi, thnAxisPtPhi, thnAxisSAPhi, thnAxisRapidityPhi, thnAxisCentralityPhi});
+        histos.add("phi/hSparseV2MixedEventCosThetaStar", "hSparseV2MixedEventCosThetaStar", HistType::kTHnSparseF, {thnAxisInvMassPhi, thnAxisPtPhi, thnAxisCosThetaStarPhi, thnAxisRapidityPhi, thnAxisCentralityPhi});
       }
       if (doprocessMCPhi) {
         histos.add("phi/hMC", "MC Event statistics", kTH1F, {{10, 0.0f, 10.0f}});
         histos.add("phi/h1PhiRecsplit", "Phi meson Rec split", kTH1F, {{100, 0.0f, 10.0f}});
         histos.add("phi/CentPercentileMCRecHist", "MC Centrality", kTH1F, {{100, 0.0f, 100.0f}});
-        histos.add("phi/hSparseV2MCGenSA", "hSparseV2SameEventSA", HistType::kTHnSparseD, {thnAxisInvMassPhi, thnAxisPtPhi, thnAxisSAPhi, thnAxisRapidityPhi, thnAxisCentralityPhi});
-        histos.add("phi/hSparseV2MCGenCosThetaStar_effy", "hSparseV2SameEventCosThetaStar_effy", HistType::kTHnSparseD, {thnAxisInvMassPhi, thnAxisPtPhi, thnAxisCosThetaStarPhi, thnAxisRapidityPhi, thnAxisCentralityPhi});
-        histos.add("phi/hSparseV2MCRecSA", "hSparseV2SameEventSA", HistType::kTHnSparseD, {thnAxisInvMassPhi, thnAxisPtPhi, thnAxisSAPhi, thnAxisRapidityPhi, thnAxisCentralityPhi});
-        histos.add("phi/hSparseV2MCRecCosThetaStar_effy", "hSparseV2SameEventCosThetaStar_effy", HistType::kTHnSparseD, {thnAxisInvMassPhi, thnAxisPtPhi, thnAxisCosThetaStarPhi, thnAxisRapidityPhi, thnAxisCentralityPhi});
+        histos.add("phi/hSparseV2MCGenSA", "hSparseV2SameEventSA", HistType::kTHnSparseF, {thnAxisInvMassPhi, thnAxisPtPhi, thnAxisSAPhi, thnAxisRapidityPhi, thnAxisCentralityPhi});
+        histos.add("phi/hSparseV2MCGenCosThetaStar_effy", "hSparseV2SameEventCosThetaStar_effy", HistType::kTHnSparseF, {thnAxisInvMassPhi, thnAxisPtPhi, thnAxisCosThetaStarPhi, thnAxisRapidityPhi, thnAxisCentralityPhi});
+        histos.add("phi/hSparseV2MCRecSA", "hSparseV2SameEventSA", HistType::kTHnSparseF, {thnAxisInvMassPhi, thnAxisPtPhi, thnAxisSAPhi, thnAxisRapidityPhi, thnAxisCentralityPhi});
+        histos.add("phi/hSparseV2MCRecCosThetaStar_effy", "hSparseV2SameEventCosThetaStar_effy", HistType::kTHnSparseF, {thnAxisInvMassPhi, thnAxisPtPhi, thnAxisCosThetaStarPhi, thnAxisRapidityPhi, thnAxisCentralityPhi});
       }
+    }
+
+    if (doprocessEvtLossSigLossMC) {
+      const AxisSpec impactParAxis{evtSigLoss.axisImpactPar, "Impact parameter (fm)"};
+      const AxisSpec multMCAxis{evtSigLoss.axisMultMC, "N_{ch}^{gen} (|#eta| < 0.5)"};
+      const AxisSpec centLossAxis{100, 0.0, 100.0, "Centrality FT0C (%)"};
+      const AxisSpec ptKstarAxis{configThnAxisPt, "#it{p}_{T} (GeV/#it{c})"};
+      const AxisSpec ptPhiAxis{phiSA.configThnAxisPt, "#it{p}_{T} (GeV/#it{c})"};
+      histos.add("evtSigLoss/MCEventHist", "MC event statistics", kTH1F, {{4, 0.5, 4.5}});
+      auto hstat = histos.get<TH1>(HIST("evtSigLoss/MCEventHist"));
+      hstat->GetXaxis()->SetBinLabel(1, "All MC events");
+      hstat->GetXaxis()->SetBinLabel(2, "MC events with selected reco event");
+      hstat->GetXaxis()->SetBinLabel(3, "MC events with no reco event");
+      hstat->GetXaxis()->SetBinLabel(4, "MC events with >1 reco event");
+      // event loss
+      histos.add("evtSigLoss/hImpactParameterGen", "Impact parameter, all generated events", kTH1F, {impactParAxis});
+      histos.add("evtSigLoss/hImpactParameterRec", "Impact parameter, generated events with selected reco event", kTH1F, {impactParAxis});
+      histos.add("evtSigLoss/hImpactParameterGenNoReco", "Impact parameter, generated events with no reco event", kTH1F, {impactParAxis});
+      histos.add("evtSigLoss/hImpactParVsCentRec", "Impact parameter vs centrality of the selected reco event", kTH2F, {centLossAxis, impactParAxis});
+      histos.add("evtSigLoss/hMultEta05Gen", "N_{ch}^{gen}, all generated events", kTH1F, {multMCAxis});
+      histos.add("evtSigLoss/hMultEta05Rec", "N_{ch}^{gen}, generated events with selected reco event", kTH1F, {multMCAxis});
+      histos.add("evtSigLoss/hMultEta05GenNoReco", "N_{ch}^{gen}, generated events with no reco event", kTH1F, {multMCAxis});
+      histos.add("evtSigLoss/hMultEta05VsCentRec", "N_{ch}^{gen} vs centrality of the selected reco event", kTH2F, {centLossAxis, multMCAxis});
+      // signal loss: K*0 + anti-K*0
+      histos.add("evtSigLoss/hKstarGenBeforeEvtSel", "Generated K*0, all events", kTH2F, {ptKstarAxis, impactParAxis});
+      histos.add("evtSigLoss/hKstarGenAfterEvtSel", "Generated K*0, events with selected reco event", kTH2F, {ptKstarAxis, impactParAxis});
+      histos.add("evtSigLoss/hKstarGenVsMultBeforeEvtSel", "Generated K*0, all events", kTH2F, {ptKstarAxis, multMCAxis});
+      histos.add("evtSigLoss/hKstarGenVsMultAfterEvtSel", "Generated K*0, events with selected reco event", kTH2F, {ptKstarAxis, multMCAxis});
+      histos.add("evtSigLoss/hKstarGenAfterEvtSelVsCent", "Generated K*0, events with selected reco event", kTH2F, {ptKstarAxis, centLossAxis});
+      // signal loss: phi(1020)
+      histos.add("evtSigLoss/hPhiGenBeforeEvtSel", "Generated phi, all events", kTH2F, {ptPhiAxis, impactParAxis});
+      histos.add("evtSigLoss/hPhiGenAfterEvtSel", "Generated phi, events with selected reco event", kTH2F, {ptPhiAxis, impactParAxis});
+      histos.add("evtSigLoss/hPhiGenVsMultBeforeEvtSel", "Generated phi, all events", kTH2F, {ptPhiAxis, multMCAxis});
+      histos.add("evtSigLoss/hPhiGenVsMultAfterEvtSel", "Generated phi, events with selected reco event", kTH2F, {ptPhiAxis, multMCAxis});
+      histos.add("evtSigLoss/hPhiGenAfterEvtSelVsCent", "Generated phi, events with selected reco event", kTH2F, {ptPhiAxis, centLossAxis});
     }
 
     ccdb->setURL(cfgCcdbParam.cfgURL);
@@ -524,6 +571,17 @@ struct Kstarpbpb {
     return psiSA;
   }
 
+  // phi(1020) -> K+K- with one kaon taken as the pion: true if the KK mass is inside the veto window (always false if cfgPhiVeto is off)
+  bool isPhiReflection(const ROOT::Math::PxPyPzMVector& kaon, const ROOT::Math::PxPyPzMVector& pion)
+  {
+    if (!cfgPhiVeto) {
+      return false;
+    }
+    ROOT::Math::PxPyPzMVector kaonAsKaon(kaon.Px(), kaon.Py(), kaon.Pz(), MassKa);
+    ROOT::Math::PxPyPzMVector pionAsKaon(pion.Px(), pion.Py(), pion.Pz(), MassKa);
+    return std::abs((kaonAsKaon + pionAsKaon).M() - o2::constants::physics::MassPhi) < cfgPhiVetoWindow;
+  }
+
   // quantization axis = normal to the SA plane
   ROOT::Math::XYZVector getSAAxis(const ROOT::Math::PxPyPzMVector& mother, double psiSA)
   {
@@ -566,115 +624,51 @@ struct Kstarpbpb {
     return collision.sel8() && collision.triggereventep() && selectionEventBits(collision);
   }
 
-  // full data event selection without the occupancy cut
+  // full data event selection
   template <typename TCollision>
   bool selectionEvent(const TCollision& collision)
   {
     return selectionEventRCT(collision) && selectionEventCuts(collision);
   }
 
-  template <typename TCollision>
-  bool selectionOccupancy(const TCollision& collision)
-  {
-    return !(fillOccupancy && collision.trackOccupancyInTimeRange() > cfgOccupancyCut);
-  }
-
-  // mixed-event pair; occupancy rejects the pair only if both events are above the cut
+  // mixed-event pair: both events selected and not from the same bunch crossing
   template <typename TCollision>
   bool selectionEventPairME(const TCollision& collision1, const TCollision& collision2)
   {
     if (!selectionEvent(collision1) || !selectionEvent(collision2)) {
       return false;
     }
-    if (collision1.bcId() == collision2.bcId()) {
-      return false;
-    }
-    return !(fillOccupancy && collision1.trackOccupancyInTimeRange() >= cfgOccupancyCut && collision2.trackOccupancyInTimeRange() >= cfgOccupancyCut);
+    return collision1.bcId() != collision2.bcId();
   }
 
-  // ---------------- phi(1020) track and PID selections, identical to phipbpb.cxx ----------------
+  // ---------------- phi(1020) track and PID selections, identical to phianalysisrun3pbpb.cxx ----------------
 
   template <typename T>
   bool selectionTrackPhi(const T& candidate)
   {
-    // table-level PIDcutFilter of phipbpb.cxx, applied here because this task also selects pions
-    if (!(std::abs(candidate.tpcNSigmaKa()) < phiSA.nsigmaCutTPC)) {
+    if (phiSA.iscustomDCAcut && !(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > phiSA.cfgITScluster)) {
       return false;
     }
-    if (phiSA.useGlobalTrack && !phiSA.useDcaSyst && !(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > phiSA.cfgITScluster && candidate.tpcNClsCrossedRows() > phiSA.cfgTPCcluster && candidate.tpcFractionSharedCls() < phiSA.cfgTPCSharedcluster)) {
-      return false;
-    }
-    if (phiSA.useGlobalTrack && phiSA.useDcaSyst && !(candidate.itsNCls() > phiSA.cfgITScluster && candidate.tpcNClsCrossedRows() > phiSA.cfgTPCcluster && candidate.tpcFractionSharedCls() < phiSA.cfgTPCSharedcluster)) {
-      return false;
-    }
-    if (!phiSA.useGlobalTrack && !(candidate.tpcNClsFound() > phiSA.cfgTPCcluster)) {
+    if (phiSA.ismanualDCAcut && !(candidate.isGlobalTrackWoDCA() && candidate.isPVContributor() && std::abs(candidate.dcaXY()) < phiSA.cfgCutDCAxy && std::abs(candidate.dcaZ()) < phiSA.cfgCutDCAz && candidate.itsNCls() > phiSA.cfgITScluster)) {
       return false;
     }
     return true;
   }
 
-  static constexpr float PhiTPCOnlyPt = 0.5f;
-  template <typename T>
-  bool selectionPIDpTdependentPhi(const T& candidate)
-  {
-    if (candidate.pt() < PhiTPCOnlyPt && std::abs(candidate.tpcNSigmaKa()) < phiSA.nsigmaCutTPC) {
-      return true;
-    }
-    if (candidate.pt() >= PhiTPCOnlyPt && candidate.hasTOF() && candidate.beta() > phiSA.cfgCutTOFBeta && std::abs(candidate.tpcNSigmaKa()) < phiSA.nsigmaCutTPC && std::abs(candidate.tofNSigmaKa()) < phiSA.nsigmaCutTOF) {
-      return true;
-    }
-    if (!phiSA.useGlobalTrack && !candidate.hasTPC()) {
-      return true;
-    }
-    return false;
-  }
-
+  // kaon PID: circular TPC-TOF cut if TOF is present, TPC-only otherwise (or always, if isNoTOF)
   template <typename T>
   bool selectionPIDPhi(const T& candidate)
   {
-    if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < phiSA.nsigmaCutTPC) {
+    if (!phiSA.isNoTOF && candidate.hasTOF() && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < (phiSA.nsigmaCutCombined * phiSA.nsigmaCutCombined)) {
       return true;
     }
-    if (candidate.hasTOF() && candidate.beta() > phiSA.cfgCutTOFBeta && std::abs(candidate.tpcNSigmaKa()) < phiSA.nsigmaCutTPC && std::abs(candidate.tofNSigmaKa()) < phiSA.nsigmaCutTOF) {
+    if (!phiSA.isNoTOF && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < phiSA.nsigmaCutTPC) {
+      return true;
+    }
+    if (phiSA.isNoTOF && std::abs(candidate.tpcNSigmaKa()) < phiSA.nsigmaCutTPC) {
       return true;
     }
     return false;
-  }
-
-  template <typename T>
-  bool selectionPIDTOFOnlyPhi(const T& candidate)
-  {
-    return candidate.hasTOF() && candidate.beta() > phiSA.cfgCutTOFBeta && std::abs(candidate.tofNSigmaKa()) < phiSA.nsigmaCutTOF;
-  }
-
-  // data PID: pT-dependent, standard or TOF-only
-  template <typename T>
-  bool selectionKaonPhi(const T& candidate)
-  {
-    if (phiSA.ispTdepPID && !phiSA.isTOFOnly && !selectionPIDpTdependentPhi(candidate)) {
-      return false;
-    }
-    if (!phiSA.ispTdepPID && !phiSA.isTOFOnly && !selectionPIDPhi(candidate)) {
-      return false;
-    }
-    if (phiSA.isTOFOnly && !selectionPIDTOFOnlyPhi(candidate)) {
-      return false;
-    }
-    return true;
-  }
-
-  static constexpr float PhiITSMaxP = 1.0f;
-  static constexpr float PhiITSNSigma = 2.5f;
-  template <typename T>
-  bool selectionITSPhi(const T& candidate)
-  {
-    if (phiSA.useGlobalTrack && candidate.p() < PhiITSMaxP) {
-      auto nSigmaITS = itsResponse.nSigmaITS<o2::track::PID::Kaon>(candidate);
-      if (!(nSigmaITS > -PhiITSNSigma && nSigmaITS < PhiITSNSigma)) {
-        return false;
-      }
-    }
-    return true;
   }
 
   // deep angle cut on pair to remove photon conversion
@@ -717,14 +711,12 @@ struct Kstarpbpb {
   ConfigurableAxis axisEPAngle{"axisEPAngle",
                                {6, -HalfPI, HalfPI},
                                "event plane angle"};
-  ConfigurableAxis axisOccup{"axisOccup", {20, -0.5, 40000.0}, "occupancy axis"};
 
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C, aod::epcalibrationtable::PsiFT0C>;
 
   int currentRunNumber = -999;
   int lastRunNumber = -999;
   TH2D* hweight = nullptr;
-  o2::aod::ITSResponse itsResponse;
   void processSE(EventCandidates::iterator const& collision, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
   {
     // scratch vectors: local to this call, never carry state across events/tracks
@@ -746,16 +738,12 @@ struct Kstarpbpb {
     histos.fill(HIST("hEvtSelInfo"), 2.5);
     auto centrality = collision.centFT0C();
     auto multTPC = collision.multNTracksPV();
-    int occupancy = collision.trackOccupancyInTimeRange();
     auto psiFT0C = collision.psiFT0C();
     auto psiFT0A = collision.psiFT0A();
     auto psiTPC = collision.psiTPC();
     auto qFT0C = collision.qFT0C();
     auto qFT0A = collision.qFT0A();
     auto qTPC = collision.qTPC();
-    if (!selectionOccupancy(collision)) {
-      return;
-    }
     histos.fill(HIST("hEvtSelInfo"), 3.5);
     if (additionalQAplots1) {
       histos.fill(HIST("hFTOCvsTPCSelected"), centrality, multTPC);
@@ -769,7 +757,6 @@ struct Kstarpbpb {
       histos.fill(HIST("ResFT0CFT0ASP"), centrality, qFT0C * qFT0A * std::cos(2.0 * (psiFT0C - psiFT0A)));
       histos.fill(HIST("ResFT0ATPCSP"), centrality, qTPC * qFT0A * std::cos(2.0 * (psiTPC - psiFT0A)));
       histos.fill(HIST("hCentrality"), centrality);
-      histos.fill(HIST("hOccupancy"), occupancy);
       histos.fill(HIST("hVtxZ"), collision.posZ());
       histos.fill(HIST("hQFT0CvsCent"), centrality, qFT0C);
       histos.fill(HIST("hQFT0CvsVz"), collision.posZ(), qFT0C);
@@ -855,6 +842,9 @@ struct Kstarpbpb {
         if (std::abs(kstarMother.Rapidity()) > confRapidity) {
           continue;
         }
+        if (isPhiReflection(daughter1, daughter2)) { // phi(1020) veto (cfgPhiVeto); also skips the rotations of this pair
+          continue;
+        }
         auto phiMinusPsi = getPhiInRange(kstarMother.Phi() - psiFT0C);
 
         if (useSP) {
@@ -869,9 +859,9 @@ struct Kstarpbpb {
           totalweight = 1.0;
         }
         if (additionalQAplots1) {
-          histos.fill(HIST("ResTrackSPFT0CTPC"), centrality, occupancy, qFT0C * qTPC * std::cos(2.0 * (psiFT0C - psiTPC)));
-          histos.fill(HIST("ResTrackSPFT0CFT0A"), centrality, occupancy, qFT0C * qFT0A * std::cos(2.0 * (psiFT0C - psiFT0A)));
-          histos.fill(HIST("ResTrackSPFT0ATPC"), centrality, occupancy, qTPC * qFT0A * std::cos(2.0 * (psiTPC - psiFT0A)));
+          histos.fill(HIST("ResTrackSPFT0CTPC"), centrality, qFT0C * qTPC * std::cos(2.0 * (psiFT0C - psiTPC)));
+          histos.fill(HIST("ResTrackSPFT0CFT0A"), centrality, qFT0C * qFT0A * std::cos(2.0 * (psiFT0C - psiFT0A)));
+          histos.fill(HIST("ResTrackSPFT0ATPC"), centrality, qTPC * qFT0A * std::cos(2.0 * (psiTPC - psiFT0A)));
         }
         if (!fillSA) {
 
@@ -909,7 +899,7 @@ struct Kstarpbpb {
             } else {
               histos.fill(HIST("hSparseSAvsrapsameunlike"), kstarMother.M(), kstarMother.Pt(), sa, kstarMother.Rapidity(), centrality);
             }
-          } else if (track1Sign * track2Sign > 0) {
+          } else if (fillLikeSignSA && track1Sign * track2Sign > 0) {
             if (usepolar) {
               histos.fill(HIST("hSparseSAvsrapsamelike"), kstarMother.M(), kstarMother.Pt(), cosThetaStar, kstarMother.Rapidity(), centrality);
             } else {
@@ -931,6 +921,9 @@ struct Kstarpbpb {
             kaonrot = ROOT::Math::PxPyPzMVector(rotkaonPx, rotkaonPy, track1.pz(), MassKa);
             kstarrot = kaonrot + daughter2;
             if (std::abs(kstarrot.Rapidity()) > confRapidity) {
+              continue;
+            }
+            if (isPhiReflection(kaonrot, daughter2)) { // phi(1020) veto (cfgPhiVeto) on the rotated pair
               continue;
             }
             auto phiMinusPsiRot = getPhiInRange(kstarrot.Phi() - psiFT0C);
@@ -1013,6 +1006,9 @@ struct Kstarpbpb {
 
         kstarMother = daughter1 + daughter2;
         if (std::abs(kstarMother.Rapidity()) > confRapidity) {
+          continue;
+        }
+        if (isPhiReflection(daughter1, daughter2)) { // phi(1020) veto (cfgPhiVeto), same as in the same event
           continue;
         }
 
@@ -1116,7 +1112,9 @@ struct Kstarpbpb {
         auto track1ID = track1.index();
         for (const auto& track2 : rectrackspart) {
           auto track2ID = track2.index();
-          if (track2ID <= track1ID) {
+          // roles are fixed (track1 = kaon candidate, track2 = pion candidate, checked against the MC PDG below),
+          // so every true K pi pair is found exactly once whatever the track order; only skip the same track
+          if (track2ID == track1ID) {
             continue;
           }
           if (!selectionTrack(track2)) {
@@ -1158,7 +1156,8 @@ struct Kstarpbpb {
               if (std::abs(mothertrack1.y()) > confRapidity) {
                 continue;
               }
-              if (pdgcheck && mothertrack1.pdgCode() != o2::constants::physics::kK0Star892) {
+              // K*0 and anti-K*0, as in data (all unlike-sign K pi pairs)
+              if (pdgcheck && std::abs(mothertrack1.pdgCode()) != o2::constants::physics::kK0Star892) {
                 continue;
               }
               if (!isTOFOnly && !(strategySelectionPID(track1, 0, strategyPID) || strategySelectionPID(track2, 1, strategyPID))) {
@@ -1177,6 +1176,9 @@ struct Kstarpbpb {
               pionMinus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), MassPi);
               kstarMother = kaonPlus + pionMinus;
               if (std::abs(kstarMother.Rapidity()) > confRapidity) {
+                continue;
+              }
+              if (isPhiReflection(kaonPlus, pionMinus)) { // phi(1020) veto (cfgPhiVeto), so the efficiency includes the true K* it removes
                 continue;
               }
               auto phiMinusPsi = getPhiInRange(kstarMother.Phi() - psiFT0C);
@@ -1208,7 +1210,8 @@ struct Kstarpbpb {
         if (std::abs(mcParticle.y()) > confRapidity) {
           continue;
         }
-        if (pdgcheck && mcParticle.pdgCode() != o2::constants::physics::kK0Star892) {
+        // K*0 and anti-K*0, as in data and in the reconstructed loop above
+        if (pdgcheck && std::abs(mcParticle.pdgCode()) != o2::constants::physics::kK0Star892) {
           continue;
         }
         auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
@@ -1217,13 +1220,15 @@ struct Kstarpbpb {
         if (kDaughters.size() != NumberOfDaughters) {
           continue;
         }
+        // daughtp = kaon daughter found, daughtm = pion daughter found (either charge: K+ pi- or K- pi+);
+        // kaonPlus / pionMinus hold the kaon / pion daughter, so the boost uses the kaon as in the reconstructed loop
         auto daughtp = false;
         auto daughtm = false;
         for (const auto& kCurrentDaughter : kDaughters) {
           if (!kCurrentDaughter.isPhysicalPrimary()) {
             continue;
           }
-          if (kCurrentDaughter.pdgCode() == +PDG_t::kKPlus) {
+          if (std::abs(kCurrentDaughter.pdgCode()) == PDG_t::kKPlus) {
             if (genacceptancecut && kCurrentDaughter.pt() > cfgCutPT && std::abs(kCurrentDaughter.eta()) < cfgCutEta) {
               daughtp = true;
             }
@@ -1231,7 +1236,7 @@ struct Kstarpbpb {
               daughtp = true;
             }
             kaonPlus = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), MassKa);
-          } else if (kCurrentDaughter.pdgCode() == -PDG_t::kPiPlus) {
+          } else if (std::abs(kCurrentDaughter.pdgCode()) == PDG_t::kPiPlus) {
             if (genacceptancecut && kCurrentDaughter.pt() > cfgCutPT && std::abs(kCurrentDaughter.eta()) < cfgCutEta) {
               daughtm = true;
             }
@@ -1455,7 +1460,7 @@ struct Kstarpbpb {
 
   void processSEPhi(EventCandidates::iterator const& collision, TrackCandidates const& tracks)
   {
-    if (!selectionEvent(collision) || !selectionOccupancy(collision)) {
+    if (!selectionEvent(collision)) {
       return;
     }
     auto centrality = collision.centFT0C();
@@ -1469,14 +1474,14 @@ struct Kstarpbpb {
       if (!(track1.signed1Pt() > cfgCutCharge.value)) { // positive kaon
         continue;
       }
-      if (!selectionTrackPhi(track1) || !selectionKaonPhi(track1) || !selectionITSPhi(track1)) {
+      if (!selectionTrackPhi(track1) || !selectionPIDPhi(track1)) {
         continue;
       }
       for (const auto& track2 : tracks) {
         if (!(track2.signed1Pt() < cfgCutCharge.value)) { // negative kaon
           continue;
         }
-        if (!selectionTrackPhi(track2) || !selectionKaonPhi(track2)) {
+        if (!selectionTrackPhi(track2) || !selectionPIDPhi(track2)) {
           continue;
         }
         if (!selectionPairPhi(track1, track2)) {
@@ -1485,14 +1490,14 @@ struct Kstarpbpb {
         if (phiSA.removeFakeTrack && (isFakeKaonPhi(track1) || isFakeKaonPhi(track2))) {
           continue;
         }
-        if (!selectionITSPhi(track2)) {
-          continue;
-        }
         kaonPlusPhi = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), MassKa);
         kaonMinusPhi = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), MassKa);
         phiMother = kaonPlusPhi + kaonMinusPhi;
-        auto [cosThetaStar, sa] = getSAValuesPhi(phiMother, kaonMinusPhi, getSAAxis(phiMother, psiSA), psiSA);
         auto absRapidity = std::abs(phiMother.Rapidity());
+        if (absRapidity > phiSA.confRapidity) {
+          continue;
+        }
+        auto [cosThetaStar, sa] = getSAValuesPhi(phiMother, kaonMinusPhi, getSAAxis(phiMother, psiSA), psiSA);
         histos.fill(HIST("phi/hSparseV2SameEventSA"), phiMother.M(), phiMother.Pt(), sa, absRapidity, centrality);
         histos.fill(HIST("phi/hSparseV2SameEventCosThetaStar"), phiMother.M(), phiMother.Pt(), cosThetaStar, absRapidity, centrality);
       }
@@ -1516,13 +1521,10 @@ struct Kstarpbpb {
         if (track1.sign() * track2.sign() > 0) {
           continue;
         }
-        if (!selectionITSPhi(track1) || !selectionITSPhi(track2)) {
-          continue;
-        }
         if (!selectionTrackPhi(track1) || !selectionTrackPhi(track2)) {
           continue;
         }
-        if (!selectionKaonPhi(track1) || !selectionKaonPhi(track2)) {
+        if (!selectionPIDPhi(track1) || !selectionPIDPhi(track2)) {
           continue;
         }
         if (!selectionPairPhi(track1, track2)) {
@@ -1539,8 +1541,11 @@ struct Kstarpbpb {
           kaonPlusPhi = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), MassKa);
         }
         phiMother = kaonPlusPhi + kaonMinusPhi;
-        auto [cosThetaStar, sa] = getSAValuesPhi(phiMother, kaonMinusPhi, getSAAxis(phiMother, psiSA), psiSA);
         auto absRapidity = std::abs(phiMother.Rapidity());
+        if (absRapidity > phiSA.confRapidity) {
+          continue;
+        }
+        auto [cosThetaStar, sa] = getSAValuesPhi(phiMother, kaonMinusPhi, getSAAxis(phiMother, psiSA), psiSA);
         histos.fill(HIST("phi/hSparseV2MixedEventSA"), phiMother.M(), phiMother.Pt(), sa, absRapidity, centrality);
         histos.fill(HIST("phi/hSparseV2MixedEventCosThetaStar"), phiMother.M(), phiMother.Pt(), cosThetaStar, absRapidity, centrality);
       }
@@ -1586,10 +1591,7 @@ struct Kstarpbpb {
         if (!selectionTrackPhi(track1)) {
           continue;
         }
-        if (phiSA.ispTdepPID && !selectionPIDpTdependentPhi(track1)) {
-          continue;
-        }
-        if (!phiSA.ispTdepPID && !selectionPIDPhi(track1)) {
+        if (!selectionPIDPhi(track1)) {
           continue;
         }
         if (!track1.has_mcParticle()) {
@@ -1604,10 +1606,7 @@ struct Kstarpbpb {
           if (!selectionTrackPhi(track2)) {
             continue;
           }
-          if (phiSA.ispTdepPID && !selectionPIDpTdependentPhi(track2)) {
-            continue;
-          }
-          if (!phiSA.ispTdepPID && !selectionPIDPhi(track2)) {
+          if (!selectionPIDPhi(track2)) {
             continue;
           }
           if (!track2.has_mcParticle()) {
@@ -1641,9 +1640,6 @@ struct Kstarpbpb {
               if (std::abs(mothertrack1.pdgCode()) != o2::constants::physics::kPhi) {
                 continue;
               }
-              if (!selectionPIDPhi(track1) || !selectionPIDPhi(track2)) {
-                continue;
-              }
               if (phiSA.avoidsplitrackMC && oldindex == mothertrack1.globalIndex()) {
                 histos.fill(HIST("phi/h1PhiRecsplit"), mothertrack1.pt());
                 continue;
@@ -1657,6 +1653,10 @@ struct Kstarpbpb {
                 kaonPlusPhi = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), MassKa);
               }
               phiMother = kaonPlusPhi + kaonMinusPhi;
+              // reconstructed-pair rapidity, same cut as in processSEPhi / processMEPhi (true-mother y is cut above)
+              if (std::abs(phiMother.Rapidity()) > phiSA.confRapidity) {
+                continue;
+              }
               auto [cosThetaStar, sa] = getSAValuesPhi(phiMother, kaonMinusPhi, getSAAxisPhiMC(phiMother, psiSA), psiSA);
               histos.fill(HIST("phi/hSparseV2MCRecCosThetaStar_effy"), phiMother.M(), phiMother.Pt(), cosThetaStar, std::abs(phiMother.Rapidity()), centrality);
               histos.fill(HIST("phi/hSparseV2MCRecSA"), phiMother.M(), phiMother.Pt(), sa, std::abs(phiMother.Rapidity()), centrality);
@@ -1702,6 +1702,118 @@ struct Kstarpbpb {
     } // rec collision loop
   }
   PROCESS_SWITCH(Kstarpbpb, processMCPhi, "Process MC phi(1020) spin alignment", false);
+
+  // ================= event loss and signal loss for K* and phi(1020) =================
+  // adapted from processEvtLossSigLossMC1 in phianalysisrun3pbpb.cxx. The accepted MC event uses the same reconstructed-event
+  // selection as processMC / processMCPhi (sel8, additionalEvSel1-4, |vz|) and, by default, the same single-reco-collision
+  // requirement; the generated K* and phi use the same rapidity and daughter conditions as the generated loops there.
+  void processEvtLossSigLossMC(McCollisionMults::iterator const& mcCollision, CollisionMCRecTableCentFT0C const& RecCollisions, TrackMCTrueTable const& GenParticles)
+  {
+    if (evtSigLoss.cutVzGen && std::abs(mcCollision.posZ()) > cfgCutVertex) {
+      return;
+    }
+    if (evtSigLoss.isApplyInelgt0 && !mcCollision.isInelGt0()) {
+      return;
+    }
+    if (evtSigLoss.isApplyTVX && (mcCollision.multMCFT0C() <= 0 || mcCollision.multMCFT0A() <= 0)) {
+      return;
+    }
+    const float impactPar = mcCollision.impactParameter();
+    const float multMC = mcCollision.multMCNParticlesEta05();
+
+    // all generated events
+    histos.fill(HIST("evtSigLoss/MCEventHist"), 1);
+    histos.fill(HIST("evtSigLoss/hImpactParameterGen"), impactPar);
+    histos.fill(HIST("evtSigLoss/hMultEta05Gen"), multMC);
+    if (RecCollisions.size() == 0) {
+      histos.fill(HIST("evtSigLoss/MCEventHist"), 3);
+      histos.fill(HIST("evtSigLoss/hImpactParameterGenNoReco"), impactPar);
+      histos.fill(HIST("evtSigLoss/hMultEta05GenNoReco"), multMC);
+    }
+    if (RecCollisions.size() > 1) {
+      histos.fill(HIST("evtSigLoss/MCEventHist"), 4);
+    }
+
+    // generated events with a selected reconstructed collision (event loss)
+    bool selected = false;
+    float centrality = -999.f;
+    if (!evtSigLoss.requireSingleReco || RecCollisions.size() == 1) {
+      for (const auto& RecCollision : RecCollisions) {
+        if (!RecCollision.sel8() || !selectionEventBits(RecCollision) || std::abs(RecCollision.posZ()) > cfgCutVertex) {
+          continue;
+        }
+        selected = true;
+        centrality = RecCollision.centFT0C();
+      }
+    }
+    if (selected) {
+      histos.fill(HIST("evtSigLoss/MCEventHist"), 2);
+      histos.fill(HIST("evtSigLoss/hImpactParameterRec"), impactPar);
+      histos.fill(HIST("evtSigLoss/hMultEta05Rec"), multMC);
+      histos.fill(HIST("evtSigLoss/hImpactParVsCentRec"), centrality, impactPar);
+      histos.fill(HIST("evtSigLoss/hMultEta05VsCentRec"), centrality, multMC);
+    }
+
+    // generated K*0 / anti-K*0 and phi(1020) (signal loss)
+    static constexpr std::size_t NumberOfDaughters = 2;
+    for (const auto& mcParticle : GenParticles) {
+      const int pdgMother = std::abs(mcParticle.pdgCode());
+      if (pdgMother != o2::constants::physics::kK0Star892 && mcParticle.pdgCode() != o2::constants::physics::kPhi) {
+        continue;
+      }
+      const bool isKstar = (pdgMother == o2::constants::physics::kK0Star892);
+      if (std::abs(mcParticle.y()) > (isKstar ? confRapidity.value : phiSA.confRapidity.value)) {
+        continue;
+      }
+      auto daughters = mcParticle.daughters_as<aod::McParticles>();
+      if (daughters.size() != NumberOfDaughters) {
+        continue;
+      }
+      bool hasKaon = false, hasPion = false, hasKPlus = false, hasKMinus = false;
+      ROOT::Math::PxPyPzMVector dau1, dau2;
+      for (const auto& dau : daughters) {
+        if (!dau.isPhysicalPrimary()) {
+          continue;
+        }
+        if (isKstar) {
+          if (std::abs(dau.pdgCode()) == PDG_t::kKPlus) {
+            hasKaon = true;
+            dau1 = ROOT::Math::PxPyPzMVector(dau.px(), dau.py(), dau.pz(), MassKa);
+          } else if (std::abs(dau.pdgCode()) == PDG_t::kPiPlus) {
+            hasPion = true;
+            dau2 = ROOT::Math::PxPyPzMVector(dau.px(), dau.py(), dau.pz(), MassPi);
+          }
+        } else {
+          if (dau.pdgCode() == PDG_t::kKPlus) {
+            hasKPlus = true;
+            dau1 = ROOT::Math::PxPyPzMVector(dau.px(), dau.py(), dau.pz(), MassKa);
+          } else if (dau.pdgCode() == PDG_t::kKMinus) {
+            hasKMinus = true;
+            dau2 = ROOT::Math::PxPyPzMVector(dau.px(), dau.py(), dau.pz(), MassKa);
+          }
+        }
+      }
+      const double pt = (dau1 + dau2).Pt();
+      if (isKstar && hasKaon && hasPion) {
+        histos.fill(HIST("evtSigLoss/hKstarGenBeforeEvtSel"), pt, impactPar);
+        histos.fill(HIST("evtSigLoss/hKstarGenVsMultBeforeEvtSel"), pt, multMC);
+        if (selected) {
+          histos.fill(HIST("evtSigLoss/hKstarGenAfterEvtSel"), pt, impactPar);
+          histos.fill(HIST("evtSigLoss/hKstarGenVsMultAfterEvtSel"), pt, multMC);
+          histos.fill(HIST("evtSigLoss/hKstarGenAfterEvtSelVsCent"), pt, centrality);
+        }
+      } else if (!isKstar && hasKPlus && hasKMinus) {
+        histos.fill(HIST("evtSigLoss/hPhiGenBeforeEvtSel"), pt, impactPar);
+        histos.fill(HIST("evtSigLoss/hPhiGenVsMultBeforeEvtSel"), pt, multMC);
+        if (selected) {
+          histos.fill(HIST("evtSigLoss/hPhiGenAfterEvtSel"), pt, impactPar);
+          histos.fill(HIST("evtSigLoss/hPhiGenVsMultAfterEvtSel"), pt, multMC);
+          histos.fill(HIST("evtSigLoss/hPhiGenAfterEvtSelVsCent"), pt, centrality);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(Kstarpbpb, processEvtLossSigLossMC, "Process event loss and signal loss for K* and phi(1020)", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
