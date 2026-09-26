@@ -103,8 +103,8 @@ struct Xi1820Analysis {
 
   // Constants
   static constexpr float SmallMomentumDenominator = 1e-10f; // Small value to avoid division by zero
-  static constexpr int PdgChargedXi1820 = 123314;           // o2-linter: disable=pdg/explicit-code (Xi(1820) PDG code not available in PDG_t or o2::constants::physics::Pdg)
-  static constexpr int PdgXi1820Zero = 123324;              // o2-linter: disable=pdg/explicit-code (Xi(1820) PDG code not available in PDG_t or o2::constants::physics::Pdg)
+  static constexpr int PdgChargedXi1820 = Pdg::kXi1820Minus;
+  static constexpr int PdgXi1820Zero = Pdg::kXi1820Zero;
   static constexpr int ExpectedDaughters = 2;               // Expected number of daughters for two-body decay
 
   // Axes

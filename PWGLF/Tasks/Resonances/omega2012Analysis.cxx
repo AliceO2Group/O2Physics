@@ -50,7 +50,6 @@ struct Omega2012Analysis {
   static constexpr float kSmallNumber = 1e-10f;       // Small number to avoid division by zero
   static constexpr float kMaxDCAV0ToPV = 1.0f;        // Maximum DCA of V0 to PV
   static constexpr int kNumExpectedDaughters = 2;     // Expected number of daughters for 2-body decay
-  static constexpr int kPlaceholderPdgCode = 3335;
   SliceCache cache;
   Preslice<aod::ResoCascades> perResoCollisionCasc = aod::resodaughter::resoCollisionId;
   Preslice<aod::ResoV0s> perResoCollisionV0 = aod::resodaughter::resoCollisionId;
@@ -73,6 +72,8 @@ struct Omega2012Analysis {
   Configurable<float> cMaxEtaCut{"cMaxEtaCut", 0.8, "Maximum |eta|"};
   Configurable<float> cfgRapidityCut{"cfgRapidityCut", 0.5, "Rapidity cut"};
   Configurable<bool> cRecoINELgt0{"cRecoINELgt0", false, "Apply Reco INEL>0 event selection"};
+  Configurable<bool> cMCINELgt0{"cMCINELgt0", false, "Require generator INEL>0 in MC processes"};
+  Configurable<bool> cMCVtxIn10{"cMCVtxIn10", false, "Require generator |vertex z| < 10 cm in MC processes"};
   Configurable<bool> cKinCuts{"cKinCuts", false, "Kinematic cuts for Xi-K0s opening angle"};
   Configurable<std::vector<float>> cKinCutsPt{"cKinCutsPt", {0.0, 0.4, 0.6, 0.8, 1.0, 1.4, 1.8, 2.2, 2.6, 3.0, 4.0, 5.0, 6.0, 1e10}, "Omega(2012) pT bins for kinematic cuts"};
   Configurable<std::vector<float>> cKinLowerCutsAlpha{"cKinLowerCutsAlpha", {1.5, 1.0, 0.5, 0.3, 0.2, 0.15, 0.1, 0.08, 0.07, 0.06, 0.04, 0.02, 0.02}, "Lower cut on Xi-K0s opening angle"};
@@ -156,6 +157,10 @@ struct Omega2012Analysis {
 
   // PDG masses
   double massK0 = MassK0Short;
+
+  // Module-initializer collision tables (matches the resonance-module-initializer producer)
+  using ResoCollisions = aod::ResoCollisions_001;
+  using ResoMCCollisions = soa::Join<ResoCollisions, aod::ResoMCCollisions_001>;
 
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::Cent>;
   BinningTypeVertexContributor colBinning{{cfgVtxBins, cfgMultBins}, true};
@@ -888,7 +893,7 @@ struct Omega2012Analysis {
   }
   PROCESS_SWITCH(Omega2012Analysis, processDummy, "Process Dummy", true);
 
-  void processData(const aod::ResoCollision& collision,
+  void processData(ResoCollisions::iterator const& collision,
                    aod::ResoCascades const& resocasc,
                    aod::ResoV0s const& resov0s)
   {
@@ -899,13 +904,13 @@ struct Omega2012Analysis {
   }
   PROCESS_SWITCH(Omega2012Analysis, processData, "Process Event for data", false);
 
-  void processMixedEvent(const aod::ResoCollisions& collisions,
+  void processMixedEvent(ResoCollisions const& collisions,
                          aod::ResoCascades const& resocasc,
                          aod::ResoV0s const& resov0s)
   {
 
     auto cascV0sTuple = std::make_tuple(resocasc, resov0s);
-    Pair<aod::ResoCollisions, aod::ResoCascades, aod::ResoV0s, BinningTypeVertexContributor> pairs{colBinning, nEvtMixing, -1, collisions, cascV0sTuple, &cache};
+    Pair<ResoCollisions, aod::ResoCascades, aod::ResoV0s, BinningTypeVertexContributor> pairs{colBinning, nEvtMixing, -1, collisions, cascV0sTuple, &cache};
 
     for (const auto& [collision1, casc1, collision2, v0s2] : pairs) {
       if (cRecoINELgt0 && (!collision1.isRecINELgt0() || !collision2.isRecINELgt0()))
@@ -947,20 +952,56 @@ struct Omega2012Analysis {
   }
   PROCESS_SWITCH(Omega2012Analysis, processMixedEvent, "Process Mixed Event", false);
 
-  // MC processes - placeholder for future implementation
-  void processMC(const aod::ResoCollision& /*collision*/,
-                 aod::ResoCascades const& /*resocasc*/,
-                 aod::ResoV0s const& /*resov0s*/,
-                 aod::McParticles const& /*mcParticles*/)
+  // MC reconstructed processing: match reconstructed Xi + K0s pairs to a common Omega(2012) mother
+  void processMC(ResoMCCollisions::iterator const& collision,
+                 soa::Join<aod::ResoCascades, aod::ResoMCCascades> const& resocasc,
+                 soa::Join<aod::ResoV0s, aod::ResoMCV0s> const& resov0s)
   {
-    // TODO: Implement MC truth matching for Xi + K0s
-    // - Match reconstructed Xi to MC Xi
-    // - Match reconstructed K0s to MC K0s
-    // - Fill MC truth histograms
-    // - Fill reconstruction efficiency histograms
-    // - Check if the Xi and K0s come from same Omega(2012) mother
+    if (cRecoINELgt0 && !collision.isRecINELgt0())
+      return;
+    if (cMCINELgt0 && !collision.isINELgt0())
+      return;
+    if (cMCVtxIn10 && !collision.isVtxIn10())
+      return;
+
+    int nCascAfterCuts = 0;
+    int nV0sAfterCuts = 0;
+    auto selectedXis = selectXiCandidates<false>(resocasc, nCascAfterCuts);
+    auto selectedK0s = selectK0sCandidates<false>(collision, resov0s, nV0sAfterCuts);
+
+    for (const auto& selectedXi : selectedXis) {
+      const auto& xi = selectedXi.candidate;
+      if (std::abs(xi.pdgCode()) != kXiMinus)
+        continue;
+
+      for (const auto& selectedK0 : selectedK0s) {
+        const auto& v0 = selectedK0.candidate;
+
+        if (sharesAnyDaughterId(selectedXi.daughterIds, selectedK0.daughterIds))
+          continue;
+        if (std::abs(v0.pdgCode()) != kK0Short)
+          continue;
+        if (xi.motherId() < 0 || xi.motherId() != v0.motherId())
+          continue;
+        if (std::abs(xi.motherPDG()) != kOmega2012Minus || xi.motherPDG() != v0.motherPDG())
+          continue;
+
+        ROOT::Math::PxPyPzEVector pXi, pK0s, pRes;
+        pXi = ROOT::Math::PxPyPzEVector(ROOT::Math::PtEtaPhiMVector(xi.pt(), xi.eta(), xi.phi(), xi.mXi()));
+        pK0s = ROOT::Math::PxPyPzEVector(ROOT::Math::PtEtaPhiMVector(v0.pt(), v0.eta(), v0.phi(), massK0));
+        pRes = pXi + pK0s;
+
+        if (std::abs(pRes.Rapidity()) >= cfgRapidityCut)
+          continue;
+
+        histos.fill(HIST("MC/hMCRecOmega2012Pt"), pRes.Pt());
+        histos.fill(HIST("MC/hMCRecOmega2012PtEta"), pRes.Pt(), pRes.Eta());
+        histos.fill(HIST("MC/hMCRecXiPt"), xi.pt());
+        histos.fill(HIST("MC/hMCRecK0sPt"), v0.pt());
+      }
+    }
   }
-  PROCESS_SWITCH(Omega2012Analysis, processMC, "Process MC with truth matching (placeholder)", false);
+  PROCESS_SWITCH(Omega2012Analysis, processMC, "Process MC with truth matching", false);
 
   void processMCGenerated(aod::McParticles const& mcParticles)
   {
@@ -968,11 +1009,10 @@ struct Omega2012Analysis {
     // This resonance decays to Xi + K0s
 
     for (const auto& mcParticle : mcParticles) {
-      // Look for Omega(2012) - PDG code may vary by generator
+      // Look for Omega(2012)
       int pdg = mcParticle.pdgCode();
 
-      // TODO: Update the PDG code library to include Omega(2012) codes
-      if (std::abs(pdg) != kPlaceholderPdgCode)
+      if (std::abs(pdg) != kOmega2012Minus)
         continue;
 
       // Fill generated level histograms
@@ -1015,10 +1055,16 @@ struct Omega2012Analysis {
           (std::abs(daughter2PDG) == kXiMinus && daughter1PDG == kK0Short)) {
         histos.fill(HIST("MC/hMCTruthInvMassXiK0s"), motherM);
         histos.fill(HIST("MC/hMCTruthMassPtXiK0s"), motherM, motherPt);
+
+        const bool isDaughter1Xi = std::abs(daughter1PDG) == kXiMinus;
+        const auto& pXiTruth = isDaughter1Xi ? p1 : p2;
+        const auto& pK0sTruth = isDaughter1Xi ? p2 : p1;
+        histos.fill(HIST("MC/hMCTrueXiPt"), pXiTruth.Pt());
+        histos.fill(HIST("MC/hMCTrueK0sPt"), pK0sTruth.Pt());
       }
     }
   }
-  PROCESS_SWITCH(Omega2012Analysis, processMCGenerated, "Process MC generated particles (placeholder)", false);
+  PROCESS_SWITCH(Omega2012Analysis, processMCGenerated, "Process MC generated particles", false);
 
   // Fill function for 3-body decay analysis
   template <bool IsResoMicrotrack, typename CollisionT, typename CascadesT, typename V0sT, typename TracksT, typename TrackIdsT>
@@ -1122,7 +1168,7 @@ struct Omega2012Analysis {
   }
 
   // 3-body decay analysis: Xi + pi + K0s with ResoTracks
-  void processThreeBodyWithTracks(const aod::ResoCollision& collision,
+  void processThreeBodyWithTracks(ResoCollisions::iterator const& collision,
                                   aod::ResoCascades const& resocasc,
                                   aod::ResoV0s const& resov0s,
                                   aod::ResoTracks const& resotracks,
@@ -1136,7 +1182,7 @@ struct Omega2012Analysis {
   PROCESS_SWITCH(Omega2012Analysis, processThreeBodyWithTracks, "Process 3-body decay with ResoTracks", false);
 
   // 3-body decay analysis: Xi + pi + K0s with ResoMicroTracks
-  void processThreeBodyWithMicroTracks(const aod::ResoCollision& collision,
+  void processThreeBodyWithMicroTracks(ResoCollisions::iterator const& collision,
                                        aod::ResoCascades const& resocasc,
                                        aod::ResoV0s const& resov0s,
                                        aod::ResoMicroTracks const& resomicrotracks,
