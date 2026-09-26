@@ -2805,7 +2805,7 @@ struct sigma0builder {
 
     std::array<float, 3> momPi0{gamma1.px() + gamma2.px(), gamma1.py() + gamma2.py(), gamma1.pz() + gamma2.pz()};
     auto arrMom = std::array{momPi0, momLambda};
-    cascade.xi0Mass = RecoDecay::m(arrMom, std::array{o2::constants::physics::MassPi0, o2::constants::physics::MassXi0});
+    cascade.xi0Mass = RecoDecay::m(arrMom, std::array{o2::constants::physics::MassPi0, o2::constants::physics::MassLambda0});
 
     // Calculate position covariance matrix
     auto covVtxV = fitter3Prongs.calcPCACovMatrix(0);
