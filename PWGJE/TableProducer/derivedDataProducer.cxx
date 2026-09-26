@@ -166,6 +166,7 @@ struct JetDerivedDataProducerTask {
     Configurable<bool> includeHadronicRate{"includeHadronicRate", true, "fill the collision information with the hadronic rate"};
     Configurable<bool> v0ChargedDecaysOnly{"v0ChargedDecaysOnly", true, "store V0s (at particle-level) only if they decay to charged particles"};
     Configurable<bool> isMCGenOnly{"isMCGenOnly", false, "analysis is run over mcGen only"};
+    Configurable<bool> rejectMisindexedTracks{"rejectMisindexedTracks", false, "explicitly reject tracks that point to non-existent collisions"};
 
     o2::framework::Configurable<bool> applyTrackingEfficiency{"applyTrackingEfficiency", {false}, "configurable to decide whether to apply artificial tracking efficiency (discarding tracks) in jet finding"};
     o2::framework::Configurable<std::vector<double>> trackingEfficiencyPtBinning{"trackingEfficiencyPtBinning", {0., 10, 999.}, "pt binning of tracking efficiency array if applyTrackingEfficiency is true"};
@@ -489,7 +490,7 @@ struct JetDerivedDataProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processMcCollisionsWithoutCentralityAndMultiplicityAndXsection, "produces derived MC collision table without centrality, multiplicity and cross section information", false);
 
-  void processTrackSelectionForWeightedMC(soa::Join<aod::Tracks, aod::McTrackLabels> const& tracks, soa::Join<aod::Collisions, aod::McCollisionLabels> const&, aod::McCollisions const& mcCollisions, aod::McParticles const&)
+  void processTrackSelectionForWeightedMC(soa::Join<aod::Tracks, aod::McTrackLabels> const& tracks, soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mcCollisions, aod::McParticles const&)
   {
     bool hasMBGap = false;
     for (auto const& mcCollision : mcCollisions) {
@@ -502,6 +503,10 @@ struct JetDerivedDataProducerTask {
       for (auto const& track : tracks) {
         if (track.has_collision()) {
           auto const& trackCollision = track.collision_as<soa::Join<aod::Collisions, aod::McCollisionLabels>>();
+          if (config.rejectMisindexedTracks && track.collisionId() >= collisions.size()) {
+            // LOGP(warning, "Tried to reference collision {} out of {} total; track skipped", track.collisionId(), collisions.size());
+            continue;
+          }
           if (track.has_mcParticle() && trackCollision.has_mcCollision()) {
             auto const& trackMcCollision = trackCollision.mcCollision_as<aod::McCollisions>();
             auto const& particleMcCollision = track.mcParticle().mcCollision_as<aod::McCollisions>();
@@ -515,7 +520,7 @@ struct JetDerivedDataProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processTrackSelectionForWeightedMC, "select whether tracks should be dropped in weighted productions", false);
 
-  void processTracks(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TracksDCACov, aod::TrackSelection, aod::TrackSelectionExtension>::iterator const& track, aod::Collisions const&)
+  void processTracks(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TracksDCACov, aod::TrackSelection, aod::TrackSelectionExtension>::iterator const& track, aod::Collisions const& collisions)
   {
     products.jTracksTable(track.collisionId(), track.pt(), track.eta(), track.phi(), jetderiveddatautilities::setTrackSelectionBit(track, track.dcaZ(), config.dcaZMax, trackMCSelection[track.globalIndex()]));
     auto trackParCov = getTrackParCov(track);
@@ -526,6 +531,10 @@ struct JetDerivedDataProducerTask {
     float dcaY = -99.0;
     if (track.collisionId() >= 0) {
       auto const& collision = track.collision_as<aod::Collisions>();
+      if (config.rejectMisindexedTracks && track.collisionId() >= collisions.size()) {
+        // LOGP(warning, "Tried to reference collision {} out of {} total; track skipped", track.collisionId(), collisions.size());
+        return;
+      }
       dcaX = xyzTrack.X() - collision.posX();
       dcaY = xyzTrack.Y() - collision.posY();
     }
