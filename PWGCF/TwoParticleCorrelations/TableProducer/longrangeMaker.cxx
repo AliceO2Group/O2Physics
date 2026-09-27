@@ -119,7 +119,6 @@ struct LongrangeMaker {
     Configurable<bool> isApplyGoodITSLayersAll{"isApplyGoodITSLayersAll", false, "Enable GoodITSLayersAll cut"};
     Configurable<bool> isApplyExtraCorrCut{"isApplyExtraCorrCut", false, "Enable extra NPVtracks vs FTOC correlation cut"};
     Configurable<bool> isApplyBestCollIndex{"isApplyBestCollIndex", true, "bestCollIndex"};
-    Configurable<bool> isrejectFlangeEvent{"isrejectFlangeEvent", false, "At least one channel with -350 TDC < time < -450 TDC"};
     Configurable<bool> isApplyNoCollInTimeRangeStandard{"isApplyNoCollInTimeRangeStandard", false, "Enable NoCollInTimeRangeStandard cut"};
     Configurable<bool> isApplyNoCollInTimeRangeStrict{"isApplyNoCollInTimeRangeStrict", false, "Enable NoCollInTimeRangeStrict cut"};
     Configurable<bool> isApplyNoCollInRofStandard{"isApplyNoCollInRofStandard", false, "Enable NoCollInRofStandard cut"};
@@ -301,7 +300,7 @@ struct LongrangeMaker {
     x->SetBinLabel(13, "ApplyNoHighMultCollInPrevRof");
     x->SetBinLabel(14, "ApplyOccupancySelection");
     x->SetBinLabel(15, "ZvertexSelection");
-    x->SetBinLabel(16, "reject flange event");
+
     histos.add("hSelectionResult", "hSelectionResult", kTH1I, {{5, -0.5, 4.5}});
 
     histos.add("hMftTrkSel", "hMftTrkSel", kTH1D, {axisTrackSel}, false);
@@ -476,14 +475,6 @@ struct LongrangeMaker {
     // ft0 loop
     if (col.has_foundFT0()) {
       const auto& ft0 = col.foundFT0();
-      if (cfgevtsel.isrejectFlangeEvent) {
-        constexpr int IsFlangeEventId = 7;
-        std::bitset<8> ft0TriggerMask = ft0.triggerMask();
-        if (ft0TriggerMask[IsFlangeEventId]) {
-          return;
-        }
-      }
-      histos.fill(HIST("EventHist"), 16);
       for (std::size_t iCh = 0; iCh < ft0.channelA().size(); iCh++) {
         auto chanelid = ft0.channelA()[iCh];
         float ampl = ft0.amplitudeA()[iCh];

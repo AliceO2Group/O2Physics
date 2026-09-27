@@ -149,7 +149,7 @@ o2physics_add_dpl_workflow(cascademlselection
 
 o2physics_add_dpl_workflow(sigma0builder
     SOURCES sigma0builder.cxx
-    PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2Physics::AnalysisCore O2Physics::MLCore O2Physics::AnalysisCCDB
+    PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2Physics::AnalysisCore O2Physics::MLCore O2Physics::AnalysisCCDB O2::DCAFitter
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(lambdajetpolarizationbuilder # o2-linter: disable=name/o2-workflow (Keep historical workflow name for backward compatibility.)

@@ -216,11 +216,11 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! transverse momentum
                            });
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //! momentum in x
                            [](float pt, float phi) -> float {
-                             return std::fabs(pt) * std::sin(phi);
+                             return std::fabs(pt) * std::cos(phi);
                            });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //! momentum in y
                            [](float pt, float phi) -> float {
-                             return std::fabs(pt) * std::cos(phi);
+                             return std::fabs(pt) * std::sin(phi);
                            });
 DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //! momentum in z
                            [](float pt, float eta) -> float {

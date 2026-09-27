@@ -149,18 +149,18 @@ class McBuilder
     mProduceMcParticles = utils::enableTable("FMcParticles_001", table.produceMcParticles.value, initContext);
     mProduceMcMothers = utils::enableTable("FMcMothers_001", table.produceMcMothers.value, initContext);
     mProduceMcPartonicMothers = utils::enableTable("FMcPartMoths_001", table.produceMcPartonicMothers.value, initContext);
-    mProduceMcMotherLabels = utils::enableTable("FMcMotherLabels", table.producedMcMotherLabels.value, initContext);
+    mProduceMcMotherLabels = utils::enableTable("FMcMotherLabels_001", table.producedMcMotherLabels.value, initContext);
 
-    mProduceCollisionLabels = utils::enableTable("FColLabels", table.producedCollisionLabels.value, initContext);
-    mProduceTrackLabels = utils::enableTable("FTrackLabels", table.producedTrackLabels.value, initContext);
-    mProduceLambdaLabels = utils::enableTable("FLambdaLabels", table.producedLambdaLabels.value, initContext);
-    mProduceK0shortLabels = utils::enableTable("FK0shortLabels", table.producedK0shortLabels.value, initContext);
-    mProduceD0Labels = utils::enableTable("FD0Labels", table.producedD0Labels.value, initContext);
-    mProduceLcLabels = utils::enableTable("FLcLabels", table.producedLcLabels.value, initContext);
-    mProduceSigmaLabels = utils::enableTable("FSigmaLabels", table.producedSigmaLabels.value, initContext);
-    mProduceSigmaPlusLabels = utils::enableTable("FSigmaPlusLabels", table.producedSigmaPlusLabels.value, initContext);
-    mProduceXiLabels = utils::enableTable("FXiLabels", table.producedXiLabels.value, initContext);
-    mProduceOmegaLabels = utils::enableTable("FOmegaLabels", table.producedOmegaLabels.value, initContext);
+    mProduceCollisionLabels = utils::enableTable("FColLabels_001", table.producedCollisionLabels.value, initContext);
+    mProduceTrackLabels = utils::enableTable("FTrackLabels_001", table.producedTrackLabels.value, initContext);
+    mProduceLambdaLabels = utils::enableTable("FLambdaLabels_001", table.producedLambdaLabels.value, initContext);
+    mProduceK0shortLabels = utils::enableTable("FK0shortLabels_001", table.producedK0shortLabels.value, initContext);
+    mProduceD0Labels = utils::enableTable("FD0Labels_001", table.producedD0Labels.value, initContext);
+    mProduceLcLabels = utils::enableTable("FLcLabels_001", table.producedLcLabels.value, initContext);
+    mProduceSigmaLabels = utils::enableTable("FSigmaLabels_001", table.producedSigmaLabels.value, initContext);
+    mProduceSigmaPlusLabels = utils::enableTable("FSigmaPlusLabels_001", table.producedSigmaPlusLabels.value, initContext);
+    mProduceXiLabels = utils::enableTable("FXiLabels_001", table.producedXiLabels.value, initContext);
+    mProduceOmegaLabels = utils::enableTable("FOmegaLabels_001", table.producedOmegaLabels.value, initContext);
 
     if (mProduceMcCollisions || mProduceCollisionLabels ||
         mProduceMcParticles || mProduceMcMotherLabels ||

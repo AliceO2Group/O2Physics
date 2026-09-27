@@ -618,7 +618,7 @@ class V0HistManager
       massLambda = v0candidate.massLambda();
       massAntiLambda = v0candidate.massAntiLambda();
       tofPosDau = posDau.tofNSigmaPi();
-      tofNegDau = posDau.tofNSigmaPi();
+      tofNegDau = negDau.tofNSigmaPi();
     }
 
     mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kMassLambda, HistTable)), massLambda);

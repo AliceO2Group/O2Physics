@@ -47,21 +47,24 @@
 #include <TList.h>
 #include <TPDGCode.h>
 #include <TParticlePDG.h>
-#include <TRandom.h>
 
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <cmath>
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <format>
+#include <functional>
 #include <limits>
 #include <map>
 #include <memory>
 #include <numeric>
 #include <optional>
+#include <random>
 #include <ranges>
+#include <span>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -113,29 +116,29 @@ using MiniMcParticle = MiniMcParticles::iterator;
 namespace mini_track
 {
 DECLARE_SOA_INDEX_COLUMN(MiniCollision, miniCollision);
-DECLARE_SOA_COLUMN(Code, code, std::uint32_t);
+DECLARE_SOA_COLUMN(CodeLow, codeLow, std::uint16_t);
+DECLARE_SOA_COLUMN(CodeHigh, codeHigh, std::uint8_t);
 } // namespace mini_track
 
-DECLARE_SOA_TABLE(MiniTracks, "AOD", "MINITRACK", soa::Index<>, mini_track::MiniCollisionId, mini_track::Code);
+DECLARE_SOA_TABLE(MiniTracks, "AOD", "MINITRACK", soa::Index<>, mini_track::MiniCollisionId, mini_track::CodeLow, mini_track::CodeHigh);
 using MiniTrack = MiniTracks::iterator;
 
 namespace tiny_mc_collision
 {
-DECLARE_SOA_COLUMN(NMcParticlesP, nMcParticlesP, std::uint16_t);
-DECLARE_SOA_COLUMN(NMcParticlesM, nMcParticlesM, NMcParticlesP::type);
+DECLARE_SOA_COLUMN(CodeLow, codeLow, std::uint16_t);
+DECLARE_SOA_COLUMN(CodeHigh, codeHigh, std::uint8_t);
 } // namespace tiny_mc_collision
 
-DECLARE_SOA_TABLE(TinyMcCollisions, "AOD", "TINYMCCOLLISION", soa::Index<>, tiny_mc_collision::NMcParticlesP, tiny_mc_collision::NMcParticlesM);
+DECLARE_SOA_TABLE(TinyMcCollisions, "AOD", "TINYMCCOLLISION", soa::Index<>, tiny_mc_collision::CodeLow, tiny_mc_collision::CodeHigh);
 using TinyMcCollision = TinyMcCollisions::iterator;
 
 namespace tiny_collision
 {
-DECLARE_SOA_COLUMN(Code, code, mini_collision::Code::type);
-DECLARE_SOA_COLUMN(NTracksP, nTracksP, std::uint16_t);
-DECLARE_SOA_COLUMN(NTracksM, nTracksM, NTracksP::type);
+DECLARE_SOA_COLUMN(CodeLow, codeLow, std::uint32_t);
+DECLARE_SOA_COLUMN(CodeHigh, codeHigh, std::uint8_t);
 } // namespace tiny_collision
 
-DECLARE_SOA_TABLE(TinyCollisions, "AOD", "TINYCOLLISION", soa::Index<>, tiny_collision::Code, tiny_collision::NTracksP, tiny_collision::NTracksM);
+DECLARE_SOA_TABLE(TinyCollisions, "AOD", "TINYCOLLISION", soa::Index<>, tiny_collision::CodeLow, tiny_collision::CodeHigh);
 using TinyCollision = TinyCollisions::iterator;
 
 namespace tiny_mc_particle
@@ -161,72 +164,69 @@ namespace
 {
 namespace fluctuation_calculator_base
 {
-inline constexpr std::int8_t MaxOrder{8};
-inline constexpr std::int32_t NExponentKeys{MaxOrder * (MaxOrder + 1) / 2};
-inline constexpr std::array<std::pair<std::int8_t, std::int8_t>, NExponentKeys> ExponentKeys{[]() consteval noexcept -> std::array<std::pair<std::int8_t, std::int8_t>, NExponentKeys> {
+constexpr std::int8_t OrderMax{8};
+constexpr std::int32_t NExponentKeys{OrderMax * (OrderMax + 1) / 2};
+constexpr std::array<std::pair<std::int8_t, std::int8_t>, NExponentKeys> ExponentKeys{[]() consteval noexcept -> std::array<std::pair<std::int8_t, std::int8_t>, NExponentKeys> {
   std::array<std::pair<std::int8_t, std::int8_t>, NExponentKeys> result{};
   std::int32_t index{};
-  for (std::int32_t const& iExponent : std::views::iota(1, MaxOrder + 1)) {
+  for (std::int32_t const& iExponent : std::views::iota(1, OrderMax + 1)) {
     for (std::int32_t const& jExponent : std::views::iota(1, iExponent + 1)) {
       result[index++] = {static_cast<std::int8_t>(iExponent), static_cast<std::int8_t>(jExponent)};
     }
   }
   return result;
 }()};
-inline constexpr std::int32_t NOrderKeys{[]() consteval noexcept -> std::int32_t {
-  std::array<std::int32_t, MaxOrder + 1> counts{1};
+constexpr std::int32_t NOrderKeys{[]() consteval noexcept -> std::int32_t {
+  std::array<std::int32_t, OrderMax + 1> counts{1};
   for (std::pair<std::int8_t, std::int8_t> const& exponentKey /* o2-linter: disable=const-ref-in-for-loop */ : ExponentKeys) {
     const std::int32_t weight{exponentKey.first};
-    for (std::int32_t const& sum : std::views::iota(weight, MaxOrder + 1)) {
+    for (std::int32_t const& sum : std::views::iota(weight, OrderMax + 1)) {
       counts[sum] += counts[sum - weight];
     }
   }
   return std::accumulate(counts.begin(), counts.end(), 0);
 }()};
-inline constexpr std::array<std::array<std::int8_t, NExponentKeys>, NOrderKeys> OrderKeys{[]() consteval noexcept -> std::array<std::array<std::int8_t, NExponentKeys>, NOrderKeys> {
-  constexpr auto FillOrderKeys{[](const auto& self, std::array<std::int8_t, NExponentKeys>& current, std::int32_t& index, std::array<std::array<std::int8_t, NExponentKeys>, NOrderKeys>& result, const std::int32_t position, const std::int32_t sum, const std::int32_t target) consteval noexcept -> void {
-    if (position == NExponentKeys) {
-      if (sum == target) {
-        result[index++] = current;
-      }
+constexpr std::array<std::array<std::int8_t, NExponentKeys>, NOrderKeys> OrderKeys{[]() consteval noexcept -> std::array<std::array<std::int8_t, NExponentKeys>, NOrderKeys> {
+  constexpr auto FillOrderKeys{[](const auto& self, const std::span<std::int8_t, NExponentKeys>& current, std::int32_t& index, const std::span<std::array<std::int8_t, NExponentKeys>, NOrderKeys>& output, const std::int32_t indexPosition, const std::int32_t sum, const std::int32_t target) consteval noexcept -> void {
+    if (std::cmp_equal(sum, target)) {
+      std::ranges::fill(std::views::drop(current, indexPosition), 0);
+      std::ranges::copy(current, output[index++].begin());
+      return;
+    }
+    if (std::cmp_equal(indexPosition, NExponentKeys)) {
       return;
     }
 
-    const std::int32_t weight{ExponentKeys[position].first};
+    const std::int32_t weight{ExponentKeys[indexPosition].first};
+    if (std::cmp_greater(weight, target - sum)) {
+      return;
+    }
     for (std::int32_t const& power : std::views::iota(0, (target - sum) / weight + 1)) {
-      current[position] = static_cast<std::int8_t>(power);
-      self(self, current, index, result, position + 1, sum + power * weight, target);
+      current[indexPosition] = static_cast<std::int8_t>(power);
+      self(self, current, index, output, indexPosition + 1, sum + power * weight, target);
     }
   }};
 
   std::array<std::array<std::int8_t, NExponentKeys>, NOrderKeys> result{};
   std::array<std::int8_t, NExponentKeys> current{};
   std::int32_t index{};
-  for (std::int32_t const& target : std::views::iota(0, MaxOrder + 1)) {
+  for (std::int32_t const& target : std::views::iota(0, OrderMax + 1)) {
     FillOrderKeys(FillOrderKeys, current, index, result, 0, 0, target);
   }
   return result;
 }()};
-inline constexpr std::array<std::pair<std::int32_t, std::pair<std::int32_t, std::int8_t>>, NOrderKeys> OrderKeyProductLinks{[]() consteval noexcept -> std::array<std::pair<std::int32_t, std::pair<std::int32_t, std::int8_t>>, NOrderKeys> {
-  std::array<std::pair<std::int32_t, std::pair<std::int32_t, std::int8_t>>, NOrderKeys> result{};
+constexpr std::array<std::pair<std::int32_t, std::int32_t>, NOrderKeys> OrderKeyProductLinks{[]() consteval noexcept -> std::array<std::pair<std::int32_t, std::int32_t>, NOrderKeys> {
+  std::array<std::pair<std::int32_t, std::int32_t>, NOrderKeys> result{};
   for (std::int32_t const& iOrderKey : std::views::iota(1, NOrderKeys)) {
-    result[iOrderKey].first = iOrderKey;
+    result[iOrderKey].first = std::inner_product(OrderKeys[iOrderKey].begin(), OrderKeys[iOrderKey].end(), ExponentKeys.begin(), 0, std::plus{}, [](const std::int8_t power, const std::pair<std::int8_t, std::int8_t>& exponentKey) consteval noexcept -> std::int32_t { return power * exponentKey.first; });
+  }
+  for (std::int32_t const& iOrderKey : std::views::iota(1, NOrderKeys) | std::views::reverse) {
     std::array<std::int8_t, NExponentKeys> orderKeyParent{OrderKeys[iOrderKey]};
-    for (std::int32_t const& iExponentKey : std::views::iota(0, NExponentKeys) | std::views::reverse) {
-      const std::int8_t power{orderKeyParent[iExponentKey]};
-      if (power <= 0) {
-        continue;
-      }
-
-      orderKeyParent[iExponentKey] = {};
-      for (std::int32_t const& iOrderKeyParent : std::views::iota(0, iOrderKey)) {
-        if (OrderKeys[iOrderKeyParent] == orderKeyParent) {
-          result[iOrderKey] = {iOrderKeyParent, {iExponentKey, power}};
-          break;
-        }
-      }
-      break;
-    }
+    const std::int32_t indexExponentKey{NExponentKeys - 1 - static_cast<std::int32_t>(std::ranges::find_if_not(std::views::reverse(orderKeyParent), std::logical_not{}) - orderKeyParent.rbegin())};
+    --orderKeyParent[indexExponentKey];
+    const std::int32_t order{result[iOrderKey].first - ExponentKeys[indexExponentKey].first};
+    const std::ranges::subrange<std::array<std::pair<std::int32_t, std::int32_t>, NOrderKeys>::iterator> orderKeyParents{std::ranges::equal_range(std::views::take(result, iOrderKey), order, {}, &std::pair<std::int32_t, std::int32_t>::first)};
+    result[iOrderKey] = {static_cast<std::int32_t>(std::ranges::lower_bound(std::views::take(OrderKeys, orderKeyParents.end() - result.begin()) | std::views::drop(orderKeyParents.begin() - result.begin()), orderKeyParent) - OrderKeys.begin()), indexExponentKey};
   }
   return result;
 }()};
@@ -235,21 +235,17 @@ static_assert([]() consteval noexcept -> bool {
     return false;
   }
   for (std::int32_t const& iOrderKey : std::views::iota(1, NOrderKeys)) {
-    const auto& [iOrderKeyParent, factor]{OrderKeyProductLinks[iOrderKey]};
-    const auto& [iExponentKey, power]{factor};
-    if (iOrderKeyParent < 0 || iOrderKeyParent >= iOrderKey || iExponentKey < 0 || iExponentKey >= NExponentKeys || power <= 0) {
+    const auto& [indexOrderKeyParent, indexExponentKey]{OrderKeyProductLinks[iOrderKey]};
+    if (std::cmp_less(indexOrderKeyParent, 0) || std::cmp_greater_equal(indexOrderKeyParent, iOrderKey) || std::cmp_less(indexExponentKey, 0) || std::cmp_greater_equal(indexExponentKey, NExponentKeys)) {
       return false;
     }
-    for (std::int32_t const& iExponentKeyAfter : std::views::iota(iExponentKey + 1, NExponentKeys)) {
-      if (OrderKeys[iOrderKey][iExponentKeyAfter] > 0) {
+    for (std::int32_t const& iExponentKeyAfter : std::views::iota(indexExponentKey + 1, NExponentKeys)) {
+      if (std::cmp_greater(OrderKeys[iOrderKey][iExponentKeyAfter], 0)) {
         return false;
       }
     }
-    std::array<std::int8_t, NExponentKeys> orderKeyReconstructed{OrderKeys[iOrderKeyParent]};
-    if (orderKeyReconstructed[iExponentKey] != 0) {
-      return false;
-    }
-    orderKeyReconstructed[iExponentKey] = power;
+    std::array<std::int8_t, NExponentKeys> orderKeyReconstructed{OrderKeys[indexOrderKeyParent]};
+    ++orderKeyReconstructed[indexExponentKey];
     if (orderKeyReconstructed != OrderKeys[iOrderKey]) {
       return false;
     }
@@ -261,49 +257,55 @@ static_assert([]() consteval noexcept -> bool {
 class FluctuationCalculatorTrack
 {
  public:
-  FluctuationCalculatorTrack() noexcept = default;
-  FluctuationCalculatorTrack(const FluctuationCalculatorTrack&) noexcept = default;
-  FluctuationCalculatorTrack(FluctuationCalculatorTrack&&) noexcept = default;
-  FluctuationCalculatorTrack& operator=(const FluctuationCalculatorTrack&) noexcept = default;
-  FluctuationCalculatorTrack& operator=(FluctuationCalculatorTrack&&) noexcept = default;
-  virtual ~FluctuationCalculatorTrack() noexcept = default;
+  constexpr FluctuationCalculatorTrack() noexcept = default;
+  constexpr FluctuationCalculatorTrack(const FluctuationCalculatorTrack&) noexcept = default;
+  constexpr FluctuationCalculatorTrack(FluctuationCalculatorTrack&&) noexcept = default;
+  constexpr FluctuationCalculatorTrack& operator=(const FluctuationCalculatorTrack&) noexcept = default;
+  constexpr FluctuationCalculatorTrack& operator=(FluctuationCalculatorTrack&&) noexcept = default;
+  virtual constexpr ~FluctuationCalculatorTrack() noexcept = default;
 
-  [[nodiscard]] std::array<double, fluctuation_calculator_base::NOrderKeys> getProducts(const double weight = 1.) const noexcept
+  [[nodiscard]] constexpr double getQ(const std::int32_t indexExponentKey) const noexcept { return mQs[indexExponentKey]; }
+  [[nodiscard]] constexpr const std::array<double, fluctuation_calculator_base::NExponentKeys>& getQs() const noexcept { return mQs; }
+  [[nodiscard]] constexpr std::array<double, fluctuation_calculator_base::NOrderKeys> getProducts(const double weight = 1.) const noexcept
   {
-    std::array<std::array<double, fluctuation_calculator_base::MaxOrder + 1>, fluctuation_calculator_base::NExponentKeys> powersQ{};
-    for (std::int32_t const& iExponentKey : std::views::iota(0, fluctuation_calculator_base::NExponentKeys)) {
-      powersQ[iExponentKey][1] = mQs[iExponentKey];
-      for (std::int32_t const& power : std::views::iota(2, fluctuation_calculator_base::MaxOrder / fluctuation_calculator_base::ExponentKeys[iExponentKey].first + 1)) {
-        powersQ[iExponentKey][power] = powersQ[iExponentKey][power - 1] * mQs[iExponentKey];
-      }
-    }
-
     std::array<double, fluctuation_calculator_base::NOrderKeys> products{weight};
     for (std::int32_t const& iOrderKey : std::views::iota(1, fluctuation_calculator_base::NOrderKeys)) {
-      const auto& [iOrderKeyParent, factor]{fluctuation_calculator_base::OrderKeyProductLinks[iOrderKey]};
-      const auto& [iExponentKey, power]{factor};
-      products[iOrderKey] = products[iOrderKeyParent] * powersQ[iExponentKey][power];
+      const auto& [indexOrderKeyParent, indexExponentKey]{fluctuation_calculator_base::OrderKeyProductLinks[iOrderKey]};
+      products[iOrderKey] = products[indexOrderKeyParent] * mQs[indexExponentKey];
     }
     return products;
   }
-  void addQ(const std::int32_t exponentKeyIndex, const double q) noexcept { mQs[exponentKeyIndex] += q; }
-  void clear() noexcept { mQs.fill({}); }
-  void fill(const double charge, const double efficiency, const double weight = 1.) noexcept
+  constexpr void setQ(const std::int32_t indexExponentKey, const double q) noexcept { mQs[indexExponentKey] = q; }
+  constexpr void setQs(const std::span<const double, fluctuation_calculator_base::NExponentKeys>& qs) noexcept
   {
-    const double inverseEfficiency{1. / efficiency};
-    std::array<double, fluctuation_calculator_base::MaxOrder + 1> powersCharge{weight};
-    std::array<double, fluctuation_calculator_base::MaxOrder + 1> powersInverseEfficiency{1.};
-    for (std::int32_t const& exponent : std::views::iota(1, fluctuation_calculator_base::MaxOrder + 1)) {
-      powersCharge[exponent] = powersCharge[exponent - 1] * charge;
-      powersInverseEfficiency[exponent] = powersInverseEfficiency[exponent - 1] * inverseEfficiency;
+    if (qs.data() != mQs.data()) {
+      std::ranges::copy(qs, mQs.begin());
     }
+  }
+  constexpr void addQ(const std::int32_t indexExponentKey, const double q) noexcept { mQs[indexExponentKey] += q; }
+  constexpr void addQs(const std::span<const double, fluctuation_calculator_base::NExponentKeys>& qs) noexcept
+  {
     for (std::int32_t const& iExponentKey : std::views::iota(0, fluctuation_calculator_base::NExponentKeys)) {
-      const auto& [exponentCharge, exponentEfficiency]{fluctuation_calculator_base::ExponentKeys[iExponentKey]};
-      addQ(iExponentKey, powersCharge[exponentCharge] * powersInverseEfficiency[exponentEfficiency]);
+      mQs[iExponentKey] += qs[iExponentKey];
+    }
+  }
+  constexpr void clear() noexcept { mQs.fill({}); }
+  constexpr void fill(const double charge, const double efficiency, const double weight = 1.) noexcept
+  {
+    const double efficiencyInverse{1. / efficiency};
+    double powerCharge{weight};
+    std::int32_t indexExponentKey{};
+    for (std::int32_t const& exponentCharge : std::views::iota(1, fluctuation_calculator_base::OrderMax + 1)) {
+      powerCharge *= charge;
+      double powerEfficiencyInverse{powerCharge};
+      for ([[maybe_unused]] std::int32_t const& exponentEfficiency : std::views::iota(1, exponentCharge + 1)) {
+        powerEfficiencyInverse *= efficiencyInverse;
+        addQ(indexExponentKey++, powerEfficiencyInverse);
+      }
     }
   }
 
- protected:
+ private:
   std::array<double, fluctuation_calculator_base::NExponentKeys> mQs{};
 };
 
@@ -514,7 +516,7 @@ constexpr std::string_view getName(const std::int32_t index)
     return EnumInfo<std::remove_cvref_t<E>>::DisplayNames.at(index);
   } else if constexpr (NameKindValue == NameKind::DisplayLower) {
     return EnumInfo<std::remove_cvref_t<E>>::DisplayNamesLower.at(index);
-  } else {
+  } else { // NameKindValue == NameKind::Default
     return EnumInfo<std::remove_cvref_t<E>>::Names.at(index);
   }
 }
@@ -526,7 +528,7 @@ constexpr std::string_view getName(const E e)
 }
 template <typename E>
   requires IsValidEnum<E>
-std::vector<std::string> getDisplayNames()
+constexpr std::vector<std::string> getDisplayNames()
 {
   if constexpr (requires { EnumInfo<std::remove_cvref_t<E>>::DisplayNames; }) {
     return {EnumInfo<std::remove_cvref_t<E>>::DisplayNames.begin(), EnumInfo<std::remove_cvref_t<E>>::DisplayNames.end()};
@@ -567,12 +569,15 @@ constexpr double getMass(const ParticleSpecies particleSpecies) noexcept
 
 namespace mini_collision_codec
 {
-inline constexpr std::int32_t NBinsVz{40};
-inline constexpr std::array<double, NEs<RangeEdge>> RangeVz{-10., 10.};
-inline constexpr std::int32_t NBinsCentrality{550};
-inline constexpr std::array<double, NBinsCentrality + 1> BinEdgesCentrality{[]() consteval noexcept -> std::array<double, NBinsCentrality + 1> {
+constexpr std::int32_t NBinsVz{40};
+constexpr std::array<double, NEs<RangeEdge>> RangeVz{-10., 10.};
+constexpr std::int32_t NBinsCentrality{550};
+constexpr std::array<double, NBinsCentrality + 1> BinEdgesCentrality{[]() consteval noexcept -> std::array<double, NBinsCentrality + 1> {
   constexpr std::array<double, 7> EdgesSelection{0., 0.001, 0.01, 0.1, 1., 10., 100.};
+  static_assert(std::ranges::adjacent_find(EdgesSelection, std::greater_equal{}) == EdgesSelection.end());
   constexpr std::array<std::int32_t, EdgesSelection.size() - 1> NBinsPerSection{100, 90, 90, 90, 90, 90};
+  static_assert(std::cmp_equal(std::accumulate(NBinsPerSection.begin(), NBinsPerSection.end(), 0), NBinsCentrality));
+
   std::array<double, NBinsCentrality + 1> edges{};
   std::int32_t index{};
   edges[index++] = EdgesSelection.front();
@@ -584,78 +589,125 @@ inline constexpr std::array<double, NBinsCentrality + 1> BinEdgesCentrality{[]()
   }
   return edges;
 }()};
-inline constexpr std::int32_t NStatesGoodNPvContributors{2};
-static_assert(static_cast<std::uint64_t>(NBinsVz) * NBinsCentrality * NStatesGoodNPvContributors <= static_cast<std::uint64_t>(std::numeric_limits<aod::mini_collision::Code::type>::max()) + 1);
+constexpr std::int32_t NStatesGoodNPvContributors{2};
+static_assert(std::cmp_less_equal(static_cast<std::uint64_t>(NBinsVz) * NBinsCentrality * NStatesGoodNPvContributors, static_cast<std::uint64_t>(std::numeric_limits<aod::mini_collision::Code::type>::max()) + 1));
 
 std::optional<aod::mini_collision::Code::type> encode(const double vz, const double centrality, const bool isGoodNPvContributors) noexcept
 {
-  if (!std::isfinite(vz) || !std::isfinite(centrality) || vz < RangeVz[toI(RangeEdge::Min)] || RangeVz[toI(RangeEdge::Max)] <= vz || centrality < BinEdgesCentrality.front() || BinEdgesCentrality.back() <= centrality) {
+  if (!(RangeVz[toI(RangeEdge::Min)] <= vz) || !(vz < RangeVz[toI(RangeEdge::Max)]) || !(BinEdgesCentrality.front() <= centrality) || !(centrality < BinEdgesCentrality.back())) {
     return std::nullopt;
   }
 
-  const std::int32_t vzBinIndex{static_cast<std::int32_t>(std::floor((vz - RangeVz[toI(RangeEdge::Min)]) / ((RangeVz[toI(RangeEdge::Max)] - RangeVz[toI(RangeEdge::Min)]) / NBinsVz)))};
-  if (vzBinIndex < 0 || NBinsVz <= vzBinIndex) {
+  const std::int32_t indexBinVz{static_cast<std::int32_t>(std::floor((vz - RangeVz[toI(RangeEdge::Min)]) / ((RangeVz[toI(RangeEdge::Max)] - RangeVz[toI(RangeEdge::Min)]) / NBinsVz)))};
+  if (std::cmp_less(indexBinVz, 0) || std::cmp_greater_equal(indexBinVz, NBinsVz)) {
     return std::nullopt;
   }
 
-  aod::mini_collision::Code::type code{static_cast<aod::mini_collision::Code::type>(vzBinIndex)};
-  aod::mini_collision::Code::type codeSpan{NBinsVz};
-  code += (static_cast<std::int32_t>(std::ranges::upper_bound(BinEdgesCentrality, centrality) - BinEdgesCentrality.begin()) - 1) * codeSpan;
-  codeSpan *= NBinsCentrality;
-  code += static_cast<aod::mini_collision::Code::type>(isGoodNPvContributors) * codeSpan;
+  aod::mini_collision::Code::type code{static_cast<aod::mini_collision::Code::type>(indexBinVz)};
+  code = code * NBinsCentrality + static_cast<std::int32_t>(std::ranges::upper_bound(BinEdgesCentrality, centrality) - BinEdgesCentrality.begin()) - 1;
+  code = code * NStatesGoodNPvContributors + static_cast<aod::mini_collision::Code::type>(isGoodNPvContributors);
   return code;
 }
 } // namespace mini_collision_codec
 
+namespace tiny_collision_codec
+{
+constexpr std::int32_t NStatesNTracks{4096};
+constexpr std::array<std::int32_t, 2> NsBitsCode{std::numeric_limits<aod::tiny_collision::CodeLow::type>::digits, std::numeric_limits<aod::tiny_collision::CodeHigh::type>::digits};
+static_assert(std::cmp_less_equal(std::bit_width(static_cast<std::uint64_t>(mini_collision_codec::NBinsVz) * mini_collision_codec::NBinsCentrality * NStatesNTracks * NStatesNTracks - 1), std::accumulate(NsBitsCode.begin(), NsBitsCode.end(), 0)));
+
+std::optional<std::tuple<aod::tiny_collision::CodeLow::type, aod::tiny_collision::CodeHigh::type>> encode(const double vz, const double centrality, const std::span<const std::uint16_t, NEs<ChargeSpecies>>& nsTracks) noexcept
+{
+  if (!(mini_collision_codec::RangeVz[toI(RangeEdge::Min)] <= vz) || !(vz < mini_collision_codec::RangeVz[toI(RangeEdge::Max)]) || !(mini_collision_codec::BinEdgesCentrality.front() <= centrality) || !(centrality < mini_collision_codec::BinEdgesCentrality.back())) {
+    return std::nullopt;
+  }
+
+  const std::int32_t indexBinVz{static_cast<std::int32_t>(std::floor((vz - mini_collision_codec::RangeVz[toI(RangeEdge::Min)]) / ((mini_collision_codec::RangeVz[toI(RangeEdge::Max)] - mini_collision_codec::RangeVz[toI(RangeEdge::Min)]) / mini_collision_codec::NBinsVz)))};
+  if (std::cmp_less(indexBinVz, 0) || std::cmp_greater_equal(indexBinVz, mini_collision_codec::NBinsVz)) {
+    return std::nullopt;
+  }
+
+  std::uint64_t code{static_cast<std::uint64_t>(indexBinVz)};
+  code = code * mini_collision_codec::NBinsCentrality + static_cast<std::int32_t>(std::ranges::upper_bound(mini_collision_codec::BinEdgesCentrality, centrality) - mini_collision_codec::BinEdgesCentrality.begin()) - 1;
+  for (std::uint16_t const& nTracks : nsTracks) {
+    if (std::cmp_greater_equal(nTracks, NStatesNTracks)) {
+      LOG(fatal) << "Invalid number of tracks " << nTracks << ": must be less than " << NStatesNTracks << "!";
+    }
+
+    code = code * NStatesNTracks + nTracks;
+  }
+  return std::tuple{static_cast<aod::tiny_collision::CodeLow::type>(code), static_cast<aod::tiny_collision::CodeHigh::type>(code >> NsBitsCode[0])};
+}
+} // namespace tiny_collision_codec
+
+namespace tiny_mc_collision_codec
+{
+constexpr std::array<std::int32_t, 2> NsBitsCode{std::numeric_limits<aod::tiny_mc_collision::CodeLow::type>::digits, std::numeric_limits<aod::tiny_mc_collision::CodeHigh::type>::digits};
+static_assert(std::cmp_less_equal(std::bit_width(static_cast<std::uint64_t>(tiny_collision_codec::NStatesNTracks) * tiny_collision_codec::NStatesNTracks - 1), std::accumulate(NsBitsCode.begin(), NsBitsCode.end(), 0)));
+
+std::tuple<aod::tiny_mc_collision::CodeLow::type, aod::tiny_mc_collision::CodeHigh::type> encode(const std::span<const std::uint16_t, NEs<ChargeSpecies>>& nsMcParticles) noexcept
+{
+  std::uint64_t code{};
+  for (std::uint16_t const& nMcParticles : nsMcParticles) {
+    if (std::cmp_greater_equal(nMcParticles, tiny_collision_codec::NStatesNTracks)) {
+      LOG(fatal) << "Invalid number of MC particles " << nMcParticles << ": must be less than " << tiny_collision_codec::NStatesNTracks << "!";
+    }
+
+    code = code * tiny_collision_codec::NStatesNTracks + nMcParticles;
+  }
+  return std::tuple{static_cast<aod::tiny_mc_collision::CodeLow::type>(code), static_cast<aod::tiny_mc_collision::CodeHigh::type>(code >> NsBitsCode[0])};
+}
+} // namespace tiny_mc_collision_codec
+
 namespace mini_track_codec
 {
-inline constexpr std::int32_t NStatesPvContributor{2};
-inline constexpr std::int32_t NBinsPt{18};
-inline constexpr std::int32_t NBinsEta{16};
-inline constexpr std::array<double, NEs<RangeEdge>> RangePt{0.2, 2.};
-inline constexpr std::array<double, NEs<RangeEdge>> RangeEta{-0.8, 0.8};
-static_assert(static_cast<std::uint64_t>(NStatesPvContributor) * NEs<Selection> * NEs<Selection> * NEs<Selection> * NEs<Selection> * NEs<Selection> * NEs<Selection> * NEs<Selection> * NEs<Selection> * NBinsPt * NBinsEta * NEs<ChargeSpecies> * NEs<ParticleSpeciesAll> * NEs<Selection> <= static_cast<std::uint64_t>(std::numeric_limits<aod::mini_track::Code::type>::max()) + 1);
+constexpr std::int32_t NStatesPvContributor{2};
+constexpr std::int32_t NBinsPt{18};
+constexpr std::int32_t NBinsEta{16};
+constexpr std::array<double, NEs<RangeEdge>> RangePt{0.2, 2.};
+constexpr std::array<double, NEs<RangeEdge>> RangeEta{-0.8, 0.8};
+constexpr std::array<std::int32_t, 2> NsBitsCode{std::numeric_limits<aod::mini_track::CodeLow::type>::digits, std::numeric_limits<aod::mini_track::CodeHigh::type>::digits};
+static_assert(std::cmp_less_equal(std::bit_width(static_cast<std::uint64_t>(NStatesPvContributor) * NEs<Selection> * NEs<Selection> * NEs<Selection> * NEs<Selection> * NEs<Selection> * NEs<Selection> * NBinsPt * NBinsEta * NEs<ChargeSpecies> * NEs<ParticleSpeciesAll> * NEs<Selection> - 1), std::accumulate(NsBitsCode.begin(), NsBitsCode.end(), 0)));
 
 struct ConfigSelection {
-  std::array<double, NEs<Selection>> minItsNCls{};
-  std::array<double, NEs<Selection>> maxItsChi2NCls{};
-  std::array<double, NEs<Selection>> minTpcNCls{};
-  std::array<double, NEs<Selection>> maxTpcChi2NCls{};
-  std::array<double, NEs<Selection>> minTpcNCrossedRows{};
-  std::array<double, NEs<Selection>> maxTpcNClsSharedRatio{};
-  std::array<std::array<double, NEs<Selection>>, NEs<DcaAxis>> maxAbsNSigmaDca{};
-  std::array<std::array<double, NEs<Selection>>, NEs<ParticleSpecies>> maxAbsNSigmaPid{};
+  std::array<double, NEs<Selection>> cutsMinItsNCls{};
+  std::array<double, NEs<Selection>> cutsMaxItsChi2NCls{};
+  std::array<double, NEs<Selection>> cutsMaxTpcChi2NCls{};
+  std::array<double, NEs<Selection>> cutsMaxTpcNClsSharedRatio{};
+  std::array<double, NEs<Selection>> cutsMinTpcNCrossedRows{};
+  std::array<std::array<double, NEs<Selection>>, NEs<DcaAxis>> cutsMaxAbsNSigmaDca{};
+  std::array<std::array<double, NEs<Selection>>, NEs<ParticleSpecies>> cutsMaxAbsNSigmaPid{};
 };
 
 template <ParticleSpeciesAll ParticleSpeciesAllValue>
   requires IsValidEnumValue<ParticleSpeciesAllValue>
-std::optional<aod::mini_track::Code::type> encode(const ConfigSelection& configSelection, const bool isPvContributor, const double itsNCls, const double itsChi2NCls, const double tpcNCls, const double tpcChi2NCls, const double tpcNCrossedRows, const double tpcNClsSharedRatio, const std::array<double, NEs<DcaAxis>>& absNSigmaDca, const double pt, const double eta, const std::int32_t sign, const double absNSigmaPid) noexcept
+std::optional<std::tuple<aod::mini_track::CodeLow::type, aod::mini_track::CodeHigh::type>> encode(const ConfigSelection& configSelection, const bool isPvContributor, const double itsNCls, const double itsChi2NCls, const double tpcChi2NCls, const double tpcNClsSharedRatio, const double tpcNCrossedRows, const std::span<const double, NEs<DcaAxis>>& absNsSigmaDca, const double pt, const double eta, const std::int32_t sign, const double absNSigmaPid) noexcept
 {
-  if (!std::isfinite(pt) || !std::isfinite(eta) || pt < RangePt[toI(RangeEdge::Min)] || RangePt[toI(RangeEdge::Max)] <= pt || eta < RangeEta[toI(RangeEdge::Min)] || RangeEta[toI(RangeEdge::Max)] <= eta) {
+  if (!(RangePt[toI(RangeEdge::Min)] <= pt) || !(pt < RangePt[toI(RangeEdge::Max)]) || !(RangeEta[toI(RangeEdge::Min)] <= eta) || !(eta < RangeEta[toI(RangeEdge::Max)])) {
     return std::nullopt;
   }
 
-  const std::int32_t ptBinIndex{static_cast<std::int32_t>(std::floor((pt - RangePt[toI(RangeEdge::Min)]) / ((RangePt[toI(RangeEdge::Max)] - RangePt[toI(RangeEdge::Min)]) / NBinsPt)))};
-  if (ptBinIndex < 0 || NBinsPt <= ptBinIndex) {
+  const std::int32_t indexBinPt{static_cast<std::int32_t>(std::floor((pt - RangePt[toI(RangeEdge::Min)]) / ((RangePt[toI(RangeEdge::Max)] - RangePt[toI(RangeEdge::Min)]) / NBinsPt)))};
+  if (std::cmp_less(indexBinPt, 0) || std::cmp_greater_equal(indexBinPt, NBinsPt)) {
     return std::nullopt;
   }
 
-  const std::int32_t etaBinIndex{static_cast<std::int32_t>(std::floor((eta - RangeEta[toI(RangeEdge::Min)]) / ((RangeEta[toI(RangeEdge::Max)] - RangeEta[toI(RangeEdge::Min)]) / NBinsEta)))};
-  if (etaBinIndex < 0 || NBinsEta <= etaBinIndex) {
+  const std::int32_t indexBinEta{static_cast<std::int32_t>(std::floor((eta - RangeEta[toI(RangeEdge::Min)]) / ((RangeEta[toI(RangeEdge::Max)] - RangeEta[toI(RangeEdge::Min)]) / NBinsEta)))};
+  if (std::cmp_less(indexBinEta, 0) || std::cmp_greater_equal(indexBinEta, NBinsEta)) {
     return std::nullopt;
   }
 
   static constexpr auto GetState{
     []<RangeEdge RangeEdgeValue>
       requires IsValidEnumValue<RangeEdgeValue>
-    (const double value, const std::array<double, NEs<Selection>>& cuts) noexcept -> std::int32_t {
+    (const double input, const std::span<const double, NEs<Selection>>& cuts) constexpr noexcept -> std::int32_t {
       for (std::int32_t const& iSelection : std::views::iota(0, NEs<Selection>) | std::views::reverse) {
         if constexpr (RangeEdgeValue == RangeEdge::Min) {
-          if (value > cuts[iSelection]) {
+          if (input > cuts[iSelection]) {
             return iSelection;
           }
-        } else {
-          if (value < cuts[iSelection]) {
+        } else { // RangeEdgeValue == RangeEdge::Max
+          if (input < cuts[iSelection]) {
             return iSelection;
           }
         }
@@ -663,92 +715,81 @@ std::optional<aod::mini_track::Code::type> encode(const ConfigSelection& configS
       return -1;
     }};
 
-  aod::mini_track::Code::type code{static_cast<aod::mini_track::Code::type>(isPvContributor)};
-  aod::mini_track::Code::type codeSpan{NStatesPvContributor};
+  std::uint64_t code{static_cast<std::uint64_t>(isPvContributor)};
   for (std::int32_t const& state : std::to_array<std::int32_t>(
          // cppcheck-suppress internalAstError
-         {GetState.template operator()<RangeEdge::Min>(itsNCls, configSelection.minItsNCls),
-          GetState.template operator()<RangeEdge::Max>(itsChi2NCls, configSelection.maxItsChi2NCls),
-          GetState.template operator()<RangeEdge::Min>(tpcNCls, configSelection.minTpcNCls),
-          GetState.template operator()<RangeEdge::Max>(tpcChi2NCls, configSelection.maxTpcChi2NCls),
-          GetState.template operator()<RangeEdge::Min>(tpcNCrossedRows, configSelection.minTpcNCrossedRows),
-          GetState.template operator()<RangeEdge::Max>(tpcNClsSharedRatio, configSelection.maxTpcNClsSharedRatio),
-          GetState.template operator()<RangeEdge::Max>(absNSigmaDca[toI(DcaAxis::Xy)], configSelection.maxAbsNSigmaDca[toI(DcaAxis::Xy)]),
-          GetState.template operator()<RangeEdge::Max>(absNSigmaDca[toI(DcaAxis::Z)], configSelection.maxAbsNSigmaDca[toI(DcaAxis::Z)])})) {
-    if (state < 0) {
+         {GetState.template operator()<RangeEdge::Min>(itsNCls, configSelection.cutsMinItsNCls),
+          GetState.template operator()<RangeEdge::Max>(itsChi2NCls, configSelection.cutsMaxItsChi2NCls),
+          GetState.template operator()<RangeEdge::Max>(tpcChi2NCls, configSelection.cutsMaxTpcChi2NCls),
+          GetState.template operator()<RangeEdge::Max>(tpcNClsSharedRatio, configSelection.cutsMaxTpcNClsSharedRatio),
+          GetState.template operator()<RangeEdge::Min>(tpcNCrossedRows, configSelection.cutsMinTpcNCrossedRows),
+          std::ranges::min(std::views::iota(0, NEs<DcaAxis>) | std::views::transform([&absNsSigmaDca, &configSelection](const std::int32_t indexDcaAxis) constexpr noexcept -> std::int32_t { return GetState.template operator()<RangeEdge::Max>(absNsSigmaDca[indexDcaAxis], configSelection.cutsMaxAbsNSigmaDca[indexDcaAxis]); }))})) {
+    if (std::cmp_less(state, 0)) {
       return std::nullopt;
     }
 
-    code += state * codeSpan;
-    codeSpan *= NEs<Selection>;
+    code = code * NEs<Selection> + state;
   }
-  code += ptBinIndex * codeSpan;
-  codeSpan *= NBinsPt;
-  code += etaBinIndex * codeSpan;
-  codeSpan *= NBinsEta;
-  code += (sign > 0 ? toI(ChargeSpecies::Plus) : toI(ChargeSpecies::Minus)) * codeSpan;
-  codeSpan *= NEs<ChargeSpecies>;
-  code += toI(ParticleSpeciesAllValue) * codeSpan;
-  codeSpan *= NEs<ParticleSpeciesAll>;
+  code = code * NBinsPt + indexBinPt;
+  code = code * NBinsEta + indexBinEta;
+  code = code * NEs<ChargeSpecies> + (std::cmp_greater(sign, 0) ? toI(ChargeSpecies::Plus) : toI(ChargeSpecies::Minus));
+  code = code * NEs<ParticleSpeciesAll> + toI(ParticleSpeciesAllValue);
   if constexpr (ParticleSpeciesAllValue != ParticleSpeciesAll::All) {
-    // clang-format v20.1.3
-    // clang-format off
-    const std::int32_t statePid{GetState.template operator()<RangeEdge::Max>(absNSigmaPid, configSelection.maxAbsNSigmaPid[toI(getValue<ParticleSpecies>(ParticleSpeciesAllValue))])};
-    // clang-format on
-    if (statePid < 0) {
+    const std::int32_t statePid = GetState.template operator()<RangeEdge::Max>(absNSigmaPid, configSelection.cutsMaxAbsNSigmaPid[toI(getValue<ParticleSpecies>(ParticleSpeciesAllValue))]);
+    if (std::cmp_less(statePid, 0)) {
       return std::nullopt;
     }
-    code += statePid * codeSpan;
+
+    code = code * NEs<Selection> + statePid;
+  } else { // ParticleSpeciesAllValue == ParticleSpeciesAll::All
+    code *= NEs<Selection>;
   }
-  return code;
+  return std::tuple{static_cast<aod::mini_track::CodeLow::type>(code), static_cast<aod::mini_track::CodeHigh::type>(code >> NsBitsCode[0])};
 }
 } // namespace mini_track_codec
 
 namespace mini_mc_particle_codec
 {
-static_assert(static_cast<std::uint64_t>(mini_track_codec::NBinsPt) * mini_track_codec::NBinsEta * NEs<ChargeSpecies> * NEs<ParticleSpecies> <= static_cast<std::uint64_t>(std::numeric_limits<aod::mini_mc_particle::Code::type>::max()) + 1);
+static_assert(std::cmp_less_equal(static_cast<std::uint64_t>(mini_track_codec::NBinsPt) * mini_track_codec::NBinsEta * NEs<ChargeSpecies> * NEs<ParticleSpecies>, static_cast<std::uint64_t>(std::numeric_limits<aod::mini_mc_particle::Code::type>::max()) + 1));
 
 template <ParticleSpecies ParticleSpeciesValue>
   requires IsValidEnumValue<ParticleSpeciesValue>
 std::optional<aod::mini_mc_particle::Code::type> encode(const double pt, const double eta, const std::int32_t sign) noexcept
 {
-  if (!std::isfinite(pt) || !std::isfinite(eta) || pt < mini_track_codec::RangePt[toI(RangeEdge::Min)] || mini_track_codec::RangePt[toI(RangeEdge::Max)] <= pt || eta < mini_track_codec::RangeEta[toI(RangeEdge::Min)] || mini_track_codec::RangeEta[toI(RangeEdge::Max)] <= eta) {
+  if (!(mini_track_codec::RangePt[toI(RangeEdge::Min)] <= pt) || !(pt < mini_track_codec::RangePt[toI(RangeEdge::Max)]) || !(mini_track_codec::RangeEta[toI(RangeEdge::Min)] <= eta) || !(eta < mini_track_codec::RangeEta[toI(RangeEdge::Max)])) {
     return std::nullopt;
   }
 
-  const std::int32_t ptBinIndex{static_cast<std::int32_t>(std::floor((pt - mini_track_codec::RangePt[toI(RangeEdge::Min)]) / ((mini_track_codec::RangePt[toI(RangeEdge::Max)] - mini_track_codec::RangePt[toI(RangeEdge::Min)]) / mini_track_codec::NBinsPt)))};
-  if (ptBinIndex < 0 || mini_track_codec::NBinsPt <= ptBinIndex) {
+  const std::int32_t indexBinPt{static_cast<std::int32_t>(std::floor((pt - mini_track_codec::RangePt[toI(RangeEdge::Min)]) / ((mini_track_codec::RangePt[toI(RangeEdge::Max)] - mini_track_codec::RangePt[toI(RangeEdge::Min)]) / mini_track_codec::NBinsPt)))};
+  if (std::cmp_less(indexBinPt, 0) || std::cmp_greater_equal(indexBinPt, mini_track_codec::NBinsPt)) {
     return std::nullopt;
   }
 
-  const std::int32_t etaBinIndex{static_cast<std::int32_t>(std::floor((eta - mini_track_codec::RangeEta[toI(RangeEdge::Min)]) / ((mini_track_codec::RangeEta[toI(RangeEdge::Max)] - mini_track_codec::RangeEta[toI(RangeEdge::Min)]) / mini_track_codec::NBinsEta)))};
-  if (etaBinIndex < 0 || mini_track_codec::NBinsEta <= etaBinIndex) {
+  const std::int32_t indexBinEta{static_cast<std::int32_t>(std::floor((eta - mini_track_codec::RangeEta[toI(RangeEdge::Min)]) / ((mini_track_codec::RangeEta[toI(RangeEdge::Max)] - mini_track_codec::RangeEta[toI(RangeEdge::Min)]) / mini_track_codec::NBinsEta)))};
+  if (std::cmp_less(indexBinEta, 0) || std::cmp_greater_equal(indexBinEta, mini_track_codec::NBinsEta)) {
     return std::nullopt;
   }
 
-  aod::mini_mc_particle::Code::type code{static_cast<aod::mini_mc_particle::Code::type>(ptBinIndex)};
-  aod::mini_mc_particle::Code::type codeSpan{mini_track_codec::NBinsPt};
-  code += etaBinIndex * codeSpan;
-  codeSpan *= mini_track_codec::NBinsEta;
-  code += (sign > 0 ? toI(ChargeSpecies::Plus) : toI(ChargeSpecies::Minus)) * codeSpan;
-  codeSpan *= NEs<ChargeSpecies>;
-  code += toI(ParticleSpeciesValue) * codeSpan;
+  aod::mini_mc_particle::Code::type code{static_cast<aod::mini_mc_particle::Code::type>(indexBinPt)};
+  code = code * mini_track_codec::NBinsEta + indexBinEta;
+  code = code * NEs<ChargeSpecies> + (std::cmp_greater(sign, 0) ? toI(ChargeSpecies::Plus) : toI(ChargeSpecies::Minus));
+  code = code * NEs<ParticleSpecies> + toI(ParticleSpeciesValue);
   return code;
 }
 } // namespace mini_mc_particle_codec
 
 template <typename T>
   requires std::is_arithmetic_v<T>
-constexpr std::int32_t nEnabled(const Configurable<LabeledArray<T>>& cfg)
+constexpr std::int32_t nEnabled(const Configurable<LabeledArray<T>>& cfg) noexcept
 {
   const LabeledArray<T>& la{cfg.value};
   return std::count_if(la[0], la[0] + la.rows() * la.cols(), [](const T x) constexpr -> bool { return x != T{}; });
 }
 template <typename T>
   requires std::is_arithmetic_v<T>
-constexpr bool isEnabled(const Configurable<LabeledArray<T>>& cfg)
+constexpr bool isEnabled(const Configurable<LabeledArray<T>>& cfg) noexcept
 {
-  return nEnabled(cfg) > 0;
+  return std::cmp_greater(nEnabled(cfg), 0);
 }
 
 double interpolate(const TH3* const h, const double x, const double y, const double z)
@@ -757,35 +798,35 @@ double interpolate(const TH3* const h, const double x, const double y, const dou
     return 0.;
   }
 
-  static constexpr auto GetBinIndicesWeights{[](const TAxis* const axis, const double position) -> std::array<std::pair<std::int32_t, double>, NEs<RangeEdge>> {
-    if (!axis) {
+  static constexpr auto GetBinIndicesWeights{[](const TAxis* const a, const double position) -> std::array<std::pair<std::int32_t, double>, NEs<RangeEdge>> {
+    if (!a) {
       return {};
     }
 
-    const std::int32_t nBins{axis->GetNbins()};
-    if (nBins == 1 || position <= axis->GetBinCenter(1)) {
+    const std::int32_t nBins{a->GetNbins()};
+    if (std::cmp_equal(nBins, 1) || position <= a->GetBinCenter(1)) {
       return {{{1, 1.}, {1, 0.}}};
     }
-    if (position >= axis->GetBinCenter(nBins)) {
+    if (position >= a->GetBinCenter(nBins)) {
       return {{{nBins, 1.}, {nBins, 0.}}};
     }
 
-    const std::int32_t binIndex{axis->FindFixBin(position)};
-    const std::int32_t binIndexLower{position < axis->GetBinCenter(binIndex) ? binIndex - 1 : binIndex};
-    const std::int32_t binIndexUpper{binIndexLower + 1};
-    const double fraction{(position - axis->GetBinCenter(binIndexLower)) / (axis->GetBinCenter(binIndexUpper) - axis->GetBinCenter(binIndexLower))};
+    const std::int32_t indexBin{a->FindFixBin(position)};
+    const std::int32_t indexBinLower{position < a->GetBinCenter(indexBin) ? indexBin - 1 : indexBin};
+    const std::int32_t indexBinUpper{indexBinLower + 1};
+    const double fraction{(position - a->GetBinCenter(indexBinLower)) / (a->GetBinCenter(indexBinUpper) - a->GetBinCenter(indexBinLower))};
 
-    return {{{binIndexLower, 1. - fraction}, {binIndexUpper, fraction}}};
+    return {{{indexBinLower, 1. - fraction}, {indexBinUpper, fraction}}};
   }};
 
-  const std::array<std::pair<std::int32_t, double>, NEs<RangeEdge>> binIndicesWeightsX{GetBinIndicesWeights(h->GetXaxis(), x)};
-  const std::array<std::pair<std::int32_t, double>, NEs<RangeEdge>> binIndicesWeightsY{GetBinIndicesWeights(h->GetYaxis(), y)};
-  const std::array<std::pair<std::int32_t, double>, NEs<RangeEdge>> binIndicesWeightsZ{GetBinIndicesWeights(h->GetZaxis(), z)};
+  const std::array<std::pair<std::int32_t, double>, NEs<RangeEdge>> indicesAndWeightsBinX{GetBinIndicesWeights(h->GetXaxis(), x)};
+  const std::array<std::pair<std::int32_t, double>, NEs<RangeEdge>> indicesAndWeightsBinY{GetBinIndicesWeights(h->GetYaxis(), y)};
+  const std::array<std::pair<std::int32_t, double>, NEs<RangeEdge>> indicesAndWeightsBinZ{GetBinIndicesWeights(h->GetZaxis(), z)};
 
   double result{};
-  for (const auto& [iBinX, weightX] : binIndicesWeightsX) {
-    for (const auto& [iBinY, weightY] : binIndicesWeightsY) {
-      for (const auto& [iBinZ, weightZ] : binIndicesWeightsZ) {
+  for (const auto& [iBinX, weightX] : indicesAndWeightsBinX) {
+    for (const auto& [iBinY, weightY] : indicesAndWeightsBinY) {
+      for (const auto& [iBinZ, weightZ] : indicesAndWeightsBinZ) {
         result += weightX * weightY * weightZ * h->GetBinContent(iBinX, iBinY, iBinZ);
       }
     }
@@ -799,8 +840,8 @@ struct PartNumFluc {
     static constexpr std::int32_t NDimensionsEfficiency{4};
 
     const TList* lCcdb{};
-    std::map<std::int32_t, std::pair<std::int32_t, std::int32_t>> runNumbersIndicesGroupIndices;
-    std::int32_t runGroupIndexCurrent{};
+    std::map<std::int32_t, std::pair<std::int32_t, std::int32_t>> runNumbersToIndicesRunAndGroup;
+    std::int32_t indexRunGroupCurrent{};
     std::array<std::array<std::array<std::pair<const TFormula*, const TH3*>, NEs<ChargeSpecies>>, NEs<DcaAxis>>, NEs<DcaMeasure>> calibrationsPtMeasureDca{};
     std::array<std::array<std::array<const TH3*, NEs<ChargeSpecies>>, NEs<ParticleSpecies>>, NEs<Detector>> hsCentralityPtEtaShiftNSigmaPid{};
     std::array<std::array<std::array<const THnBase*, NEs<ChargeSpecies>>, NEs<ParticleSpecies>>, NEs<PidStrategy>> hsVzCentralityPtEtaEfficiency{};
@@ -811,35 +852,35 @@ struct PartNumFluc {
     std::array<std::array<std::int32_t, NEs<ChargeSpecies>>, NEs<ParticleNumber>> numbers{};
     std::array<std::array<std::int32_t, NEs<ChargeSpecies>>, NEs<ParticleNumber>> numbersEff{};
 
-    void clear() noexcept { *this = {}; }
+    constexpr void clear() noexcept { *this = {}; }
   } holderMcEvent{};
 
   struct HolderEvent {
     static constexpr std::array<double, NEs<RangeEdge>> RangeCentrality{0., 100.};
-    static constexpr bool isValidCentrality(const double value) noexcept { return RangeCentrality[toI(RangeEdge::Min)] <= value && value < RangeCentrality[toI(RangeEdge::Max)]; }
+    static constexpr bool isValidCentrality(const double centrality) noexcept { return RangeCentrality[toI(RangeEdge::Min)] <= centrality && centrality < RangeCentrality[toI(RangeEdge::Max)]; }
 
     std::int32_t runNumber{};
-    std::int32_t runIndex{};
-    std::int32_t runGroupIndex{};
+    std::int32_t indexRun{};
+    std::int32_t indexRunGroup{};
     double vz{};
-    std::array<std::int32_t, NEs<ChargeSpecies>> nGlobalTracks{};
-    std::array<std::int32_t, NEs<ChargeSpecies>> nPvContributors{};
-    std::array<std::array<std::array<double, NEs<ChargeSpecies>>, NEs<DcaAxis>>, NEs<DcaMeasure>> measureDca{};
-    std::array<std::int32_t, NEs<ChargeSpecies>> nTofBeta{};
+    std::array<std::int32_t, NEs<ChargeSpecies>> nsGlobalTracks{};
+    std::array<std::int32_t, NEs<ChargeSpecies>> nsPvContributors{};
+    std::array<std::array<std::array<double, NEs<ChargeSpecies>>, NEs<DcaAxis>>, NEs<DcaMeasure>> measuresDca{};
+    std::array<std::int32_t, NEs<ChargeSpecies>> nsTofBeta{};
     double centralityCalibration{};
     double centrality{};
-    std::int32_t subgroupIndex{};
+    std::int32_t indexSubgroup{};
     std::array<std::array<std::int32_t, NEs<ChargeSpecies>>, NEs<ParticleNumber>> numbers{};
 
-    void clear() noexcept { *this = {}; }
-    [[nodiscard]] std::int32_t getNGlobalTracks() const noexcept { return std::accumulate(nGlobalTracks.begin(), nGlobalTracks.end(), 0); }
-    [[nodiscard]] std::int32_t getNPvContributors() const noexcept { return std::accumulate(nPvContributors.begin(), nPvContributors.end(), 0); }
+    constexpr void clear() noexcept { *this = {}; }
+    [[nodiscard]] constexpr std::int32_t getNGlobalTracks() const noexcept { return std::accumulate(nsGlobalTracks.begin(), nsGlobalTracks.end(), 0); }
+    [[nodiscard]] constexpr std::int32_t getNPvContributors() const noexcept { return std::accumulate(nsPvContributors.begin(), nsPvContributors.end(), 0); }
     template <DcaMeasure DcaMeasureValue, DcaAxis DcaAxisValue>
       requires IsValidEnumValue<DcaMeasureValue, DcaAxisValue>
     [[nodiscard]] double getMeasureDca() const noexcept
     {
       const std::int32_t sumNGlobalTracks{getNGlobalTracks()};
-      if (sumNGlobalTracks == 0) {
+      if (std::cmp_equal(sumNGlobalTracks, 0)) {
         return 0.;
       }
 
@@ -847,17 +888,17 @@ struct PartNumFluc {
       if constexpr (DcaMeasureValue == DcaMeasure::Sigma) {
         const double meanDca{getMeasureDca<DcaMeasure::Mean, DcaAxisValue>()};
         for (std::int32_t const& iChargeSpecies : std::views::iota(0, NEs<ChargeSpecies>)) {
-          sumDca += (std::pow(measureDca[toI(DcaMeasure::Sigma)][toI(DcaAxisValue)][iChargeSpecies], 2.) + std::pow(measureDca[toI(DcaMeasure::Mean)][toI(DcaAxisValue)][iChargeSpecies] - meanDca, 2.)) * nGlobalTracks[iChargeSpecies];
+          sumDca += (std::pow(measuresDca[toI(DcaMeasure::Sigma)][toI(DcaAxisValue)][iChargeSpecies], 2.) + std::pow(measuresDca[toI(DcaMeasure::Mean)][toI(DcaAxisValue)][iChargeSpecies] - meanDca, 2.)) * nsGlobalTracks[iChargeSpecies];
         }
         return std::sqrt(sumDca / sumNGlobalTracks);
-      } else {
+      } else { // DcaMeasureValue == DcaMeasure::Mean
         for (std::int32_t const& iChargeSpecies : std::views::iota(0, NEs<ChargeSpecies>)) {
-          sumDca += measureDca[toI(DcaMeasure::Mean)][toI(DcaAxisValue)][iChargeSpecies] * nGlobalTracks[iChargeSpecies];
+          sumDca += measuresDca[toI(DcaMeasure::Mean)][toI(DcaAxisValue)][iChargeSpecies] * nsGlobalTracks[iChargeSpecies];
         }
         return sumDca / sumNGlobalTracks;
       }
     }
-    [[nodiscard]] std::int32_t getNTofBeta() const noexcept { return std::accumulate(nTofBeta.begin(), nTofBeta.end(), 0); }
+    [[nodiscard]] constexpr std::int32_t getNTofBeta() const noexcept { return std::accumulate(nsTofBeta.begin(), nsTofBeta.end(), 0); }
   } holderEvent{};
 
   struct HolderMcParticle {
@@ -866,63 +907,79 @@ struct PartNumFluc {
     double pt{};
     double eta{};
 
-    void clear() noexcept { *this = {}; }
+    constexpr void clear() noexcept { *this = {}; }
   } holderMcParticle{};
 
   struct HolderTrack {
     static constexpr double TruncationAbsNSigmaPid{999.};
-    static constexpr double truncateNSigmaPid(const double value, const double shift = {}) noexcept
+    static constexpr double truncateNSigmaPid(const double nSigmaPid, const double shift = {}) noexcept
     {
-      const double valueShifted{value - shift};
-      return std::abs(value) < TruncationAbsNSigmaPid && std::abs(valueShifted) < TruncationAbsNSigmaPid ? valueShifted : -TruncationAbsNSigmaPid;
+      const double nSigmaPidShifted{nSigmaPid - shift};
+      return std::abs(nSigmaPid) < TruncationAbsNSigmaPid && std::abs(nSigmaPidShifted) < TruncationAbsNSigmaPid ? nSigmaPidShifted : -TruncationAbsNSigmaPid;
     }
 
-    [[nodiscard]] double getNSigmaPidCombined(const std::int32_t particleSpeciesIndex) const noexcept
+    [[nodiscard]] double getNSigmaPidCombined(const std::int32_t indexParticleSpecies) const noexcept
     {
-      return truncateNSigmaPid(std::copysign(std::hypot(nSigmaPid[toI(Detector::Tpc)][particleSpeciesIndex], nSigmaPid[toI(Detector::Tof)][particleSpeciesIndex]), nSigmaPid[toI(Detector::Tpc)][particleSpeciesIndex] + nSigmaPid[toI(Detector::Tof)][particleSpeciesIndex]));
+      return truncateNSigmaPid(std::copysign(std::hypot(nsSigmaPid[toI(Detector::Tpc)][indexParticleSpecies], nsSigmaPid[toI(Detector::Tof)][indexParticleSpecies]), nsSigmaPid[toI(Detector::Tpc)][indexParticleSpecies] + nsSigmaPid[toI(Detector::Tof)][indexParticleSpecies]));
     }
 
-    std::array<double, NEs<DcaAxis>> dca{};
+    std::array<double, NEs<DcaAxis>> dcas{};
     std::int32_t sign{};
     double pt{};
     double eta{};
     double phi{};
-    std::array<bool, NEs<Detector>> hasPid{};
-    std::array<std::array<double, NEs<ParticleSpecies>>, NEs<Detector>> nSigmaPid{[]() constexpr -> std::array<std::array<double, NEs<ParticleSpecies>>, NEs<Detector>> {
-      std::array<std::array<double, NEs<ParticleSpecies>>, NEs<Detector>> a{};
-      std::array<double, NEs<ParticleSpecies>> b{};
-      b.fill(-TruncationAbsNSigmaPid);
-      a.fill(b);
-      return a;
+    std::array<bool, NEs<Detector>> havePid{};
+    std::array<std::array<double, NEs<ParticleSpecies>>, NEs<Detector>> nsSigmaPid{[]() consteval -> std::array<std::array<double, NEs<ParticleSpecies>>, NEs<Detector>> {
+      std::array<std::array<double, NEs<ParticleSpecies>>, NEs<Detector>> result{};
+      std::array<double, NEs<ParticleSpecies>> source{};
+      source.fill(-TruncationAbsNSigmaPid);
+      result.fill(source);
+      return result;
     }()};
 
-    void clear() noexcept { *this = {}; }
+    constexpr void clear() noexcept { *this = {}; }
   } holderTrack{};
 
   struct HolderDerivedData {
     template <std::integral T>
-    static constexpr T convert(const double value) noexcept
+    static constexpr T convert(const double input) noexcept
     {
-      return std::numeric_limits<T>::lowest() <= value && value <= std::numeric_limits<T>::max() ? static_cast<T>(std::rint(value)) : (std::is_signed_v<T> ? std::numeric_limits<T>::lowest() : std::numeric_limits<T>::max());
+      return std::numeric_limits<T>::lowest() <= input && input <= std::numeric_limits<T>::max() ? static_cast<T>(std::rint(input)) : (std::is_signed_v<T> ? std::numeric_limits<T>::lowest() : std::numeric_limits<T>::max());
     }
 
-    std::array<aod::tiny_mc_collision::NMcParticlesP::type, NEs<ChargeSpecies>> nMcParticles{};
-    std::array<aod::tiny_collision::NTracksP::type, NEs<ChargeSpecies>> nTracks{};
-    std::vector<aod::tiny_mc_particle::SignedEfficiency::type> signedEfficienciesMcParticle{[]() constexpr -> std::vector<aod::tiny_mc_particle::SignedEfficiency::type> { std::vector<aod::tiny_mc_particle::SignedEfficiency::type> v{}; v.reserve(256); return v; }()};
-    std::vector<aod::tiny_track::SignedEfficiency::type> signedEfficienciesTrack{[]() constexpr -> std::vector<aod::tiny_track::SignedEfficiency::type> { std::vector<aod::tiny_track::SignedEfficiency::type> v{}; v.reserve(256); return v; }()};
+    std::array<std::uint16_t, NEs<ChargeSpecies>> nsMcParticles{};
+    std::array<std::uint16_t, NEs<ChargeSpecies>> nsTracks{};
+    std::vector<aod::tiny_mc_particle::SignedEfficiency::type> signedEfficienciesMcParticle{[]() constexpr -> std::vector<aod::tiny_mc_particle::SignedEfficiency::type> { std::vector<aod::tiny_mc_particle::SignedEfficiency::type> result{}; result.reserve(256); return result; }()};
+    std::vector<aod::tiny_track::SignedEfficiency::type> signedEfficienciesTrack{[]() constexpr -> std::vector<aod::tiny_track::SignedEfficiency::type> { std::vector<aod::tiny_track::SignedEfficiency::type> result{}; result.reserve(256); return result; }()};
 
-    void clear() noexcept
+    constexpr void clear() noexcept
     {
-      nMcParticles = {};
-      nTracks = {};
+      nsMcParticles = {};
+      nsTracks = {};
       signedEfficienciesMcParticle.clear();
       signedEfficienciesTrack.clear();
     }
   } holderDerivedData{};
 
+  struct HolderMember {
+    bool doQaAcceptance{};
+    bool doQaPhi{};
+    bool doQaPid{};
+    bool doCalculationYield{};
+    bool doCalculationPurity{};
+    bool doCalculationFractionPrimary{};
+    bool doCalculationFluctuation{};
+    bool doStorageMiniTable{};
+    std::array<double, NEs<RangeEdge>> rangePtAll{std::numeric_limits<double>::max(), std::numeric_limits<double>::lowest()};
+    std::optional<mini_track_codec::ConfigSelection> configSelection;
+    std::mt19937_64 engineRandom{std::random_device{}()};
+    std::array<std::array<std::unique_ptr<FluctuationCalculatorTrack>, NEs<ChargeNumber>>, NEs<ParticleNumber>> fluctuationCalculatorsTrackMcParticle{};
+    std::array<std::array<std::unique_ptr<FluctuationCalculatorTrack>, NEs<ChargeNumber>>, NEs<ParticleNumber>> fluctuationCalculatorsTrackTrack{};
+  } holderMember{};
+
   struct : ConfigurableGroup {
     std::string prefix{"cgCcdb"};
-    Configurable<std::string> cfgUrl{"cfgUrl", "http://ccdb-test.cern.ch:8080", "Url of CCDB"};
+    Configurable<std::string> cfgUrl{"cfgUrl", "https://alice-ccdb.cern.ch", "Url of CCDB"};
     Configurable<std::string> cfgPath{"cfgPath", "Users/f/fasi/test", "Path in CCDB"};
     Configurable<std::int64_t> cfgTimestampLatest{"cfgTimestampLatest", -1, "Latest timestamp in CCDB"};
   } cgCcdb{};
@@ -978,6 +1035,7 @@ struct PartNumFluc {
     Configurable<double> cfgCutMinTpcChi2NCls{"cfgCutMinTpcChi2NCls", 0., "Minimum chi2 per cluster TPC"};
     Configurable<LabeledArray<double>> cfgCutsMaxTpcChi2NCls{"cfgCutsMaxTpcChi2NCls", {std::array<double, NEs<Selection>>{4., 3.5, 3.}.data(), NEs<Selection>, getDisplayNames<Selection>()}, "Maximum chi2 per cluster TPC"};
     Configurable<LabeledArray<double>> cfgCutsMaxTpcNClsSharedRatio{"cfgCutsMaxTpcNClsSharedRatio", {std::array<double, NEs<Selection>>{0.5, 0.4, 0.3}.data(), NEs<Selection>, getDisplayNames<Selection>()}, "Maximum ratios of shared clusters over clusters TPC"};
+    Configurable<double> cfgCutMinTpcNClsRatio{"cfgCutMinTpcNClsRatio", 0., "Minimum ratio of clusters over findable clusters TPC"};
     Configurable<LabeledArray<std::int32_t>> cfgCutsMinTpcNCrossedRows{"cfgCutsMinTpcNCrossedRows", {std::array<std::int32_t, NEs<Selection>>{70, 80, 90}.data(), NEs<Selection>, getDisplayNames<Selection>()}, "Minimum numbers of crossed rows TPC"};
     Configurable<double> cfgCutMinTpcNCrossedRowsRatio{"cfgCutMinTpcNCrossedRowsRatio", 0.8, "Minimum ratio of crossed rows over findable clusters TPC"};
     Configurable<bool> cfgFlagRecalibrationDca{"cfgFlagRecalibrationDca", false, "DCA recalibration flag"};
@@ -1001,58 +1059,46 @@ struct PartNumFluc {
   Filter filterTrack{requireQualityTracksInFilter() && requireTrackCutInFilter(TrackSelectionFlags::kGoldenChi2)};
   Filter filterMcCollision{aod::mccollisionprop::numRecoCollision > 0};
 
-  Preslice<aod::JoinedTracksWithMc> presliceTracksPerCollision{aod::track::collisionId};
-  PresliceUnsorted<aod::JoinedTracksWithMc> presliceTracksPerMcParticle{aod::mctracklabel::mcParticleId};
+  struct : PresliceGroup {
+    Preslice<aod::JoinedTracksWithMc> tracksPerCollision{aod::track::collisionId};
+    PresliceUnsorted<aod::JoinedTracksWithMc> tracksPerMcParticle{aod::mctracklabel::mcParticleId};
+  } psg{};
 
-  Produces<aod::MiniCollisions> miniCollision{};
-  Produces<aod::MiniMcParticles> miniMcParticle{};
-  Produces<aod::MiniTracks> miniTrack{};
-  Produces<aod::TinyMcCollisions> tinyMcCollision{};
-  Produces<aod::TinyCollisions> tinyCollision{};
-  Produces<aod::TinyMcParticles> tinyMcParticle{};
-  Produces<aod::TinyTracks> tinyTrack{};
+  struct : ProducesGroup {
+    Produces<aod::MiniCollisions> miniCollision{};
+    Produces<aod::MiniMcParticles> miniMcParticle{};
+    Produces<aod::MiniTracks> miniTrack{};
+    Produces<aod::TinyMcCollisions> tinyMcCollision{};
+    Produces<aod::TinyCollisions> tinyCollision{};
+    Produces<aod::TinyMcParticles> tinyMcParticle{};
+    Produces<aod::TinyTracks> tinyTrack{};
+  } pg{};
 
-  HistogramRegistry hrCalculationFluctuation{"CalculationFluctuation", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
-  HistogramRegistry hrCalculationFractionPrimary{"CalculationFractionPrimary", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
-  HistogramRegistry hrCalculationPurity{"CalculationPurity", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
-  HistogramRegistry hrCalculationYield{"CalculationYield", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
-  HistogramRegistry hrQaMc{"QaMc", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
-  HistogramRegistry hrQaPid{"QaPid", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
-  HistogramRegistry hrQaPhi{"QaPhi", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
-  HistogramRegistry hrQaAcceptance{"QaAcceptance", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
-  HistogramRegistry hrQaDca{"QaDca", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
-  HistogramRegistry hrQaTrack{"QaTrack", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
-  HistogramRegistry hrQaCentrality{"QaCentrality", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
-  HistogramRegistry hrQaEvent{"QaEvent", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
-  HistogramRegistry hrQaRun{"QaRun", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
-  HistogramRegistry hrCounter{"Counter", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
-
-  bool doQaAcceptance{};
-  bool doQaPhi{};
-  bool doQaPid{};
-  bool doCalculationYield{};
-  bool doCalculationPurity{};
-  bool doCalculationFractionPrimary{};
-  bool doCalculationFluctuation{};
-  bool doStorageMiniTable{};
-  std::array<double, NEs<RangeEdge>> rangePtAll{std::numeric_limits<double>::max(), std::numeric_limits<double>::lowest()};
-  std::unique_ptr<mini_track_codec::ConfigSelection> configSelection;
-
-  std::array<std::array<std::unique_ptr<FluctuationCalculatorTrack>, NEs<ChargeNumber>>, NEs<ParticleNumber>> fluctuationCalculatorsTrackMcParticle{};
-  std::array<std::array<std::unique_ptr<FluctuationCalculatorTrack>, NEs<ChargeNumber>>, NEs<ParticleNumber>> fluctuationCalculatorsTrackTrack{};
+  HistogramRegistry hrCalculationFluctuation{"hrCalculationFluctuation", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  HistogramRegistry hrCalculationFractionPrimary{"hrCalculationFractionPrimary", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  HistogramRegistry hrCalculationPurity{"hrCalculationPurity", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  HistogramRegistry hrCalculationYield{"hrCalculationYield", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  HistogramRegistry hrQaMc{"hrQaMc", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  HistogramRegistry hrQaPid{"hrQaPid", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  HistogramRegistry hrQaPhi{"hrQaPhi", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  HistogramRegistry hrQaAcceptance{"hrQaAcceptance", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  HistogramRegistry hrQaDca{"hrQaDca", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  HistogramRegistry hrQaTrack{"hrQaTrack", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  HistogramRegistry hrQaCentrality{"hrQaCentrality", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  HistogramRegistry hrQaEvent{"hrQaEvent", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  HistogramRegistry hrQaRun{"hrQaRun", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  HistogramRegistry hrCounter{"hrCounter", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
   void init(const InitContext&)
   {
-    gRandom->SetSeed(0);
-
-    doQaAcceptance = isEnabled(cgAnalysis.cfgFlagsQaAcceptance);
-    doQaPhi = isEnabled(cgAnalysis.cfgFlagsQaPhi);
-    doQaPid = isEnabled(cgAnalysis.cfgFlagsQaPid);
-    doCalculationYield = isEnabled(cgAnalysis.cfgFlagsCalculationYield);
-    doCalculationPurity = isEnabled(cgAnalysis.cfgFlagsCalculationPurity);
-    doCalculationFractionPrimary = isEnabled(cgAnalysis.cfgFlagsCalculationFractionPrimary);
-    doCalculationFluctuation = isEnabled(cgAnalysis.cfgFlagsCalculationFluctuation);
-    doStorageMiniTable = isEnabled(cgAnalysis.cfgFlagsStorageMiniTable);
+    holderMember.doQaAcceptance = isEnabled(cgAnalysis.cfgFlagsQaAcceptance);
+    holderMember.doQaPhi = isEnabled(cgAnalysis.cfgFlagsQaPhi);
+    holderMember.doQaPid = isEnabled(cgAnalysis.cfgFlagsQaPid);
+    holderMember.doCalculationYield = isEnabled(cgAnalysis.cfgFlagsCalculationYield);
+    holderMember.doCalculationPurity = isEnabled(cgAnalysis.cfgFlagsCalculationPurity);
+    holderMember.doCalculationFractionPrimary = isEnabled(cgAnalysis.cfgFlagsCalculationFractionPrimary);
+    holderMember.doCalculationFluctuation = isEnabled(cgAnalysis.cfgFlagsCalculationFluctuation);
+    holderMember.doStorageMiniTable = isEnabled(cgAnalysis.cfgFlagsStorageMiniTable);
 
     if (doProcessRaw.value == doProcessMc.value) {
       LOG(fatal) << "Identical values of doProcessRaw and doProcessMc!";
@@ -1062,80 +1108,77 @@ struct PartNumFluc {
     } else {
       LOG(info) << "Enabling raw data process.";
     }
-    if (nEnabled(cgAnalysis.cfgFlagsCalculationFluctuation) > 1) {
+    if (std::cmp_greater(nEnabled(cgAnalysis.cfgFlagsCalculationFluctuation), 1)) {
       LOG(fatal) << "Invalid " << cgAnalysis.cfgFlagsCalculationFluctuation.name << "!";
     }
-    if (nEnabled(cgAnalysis.cfgFlagsStorageMiniTable) > 1) {
+    if (std::cmp_greater(nEnabled(cgAnalysis.cfgFlagsStorageMiniTable), 1)) {
       LOG(fatal) << "Invalid " << cgAnalysis.cfgFlagsStorageMiniTable.name << "!";
     }
-    if ((cgAnalysis.cfgFlagQaEvent.value || cgAnalysis.cfgFlagQaCentrality.value || doCalculationFluctuation) && cgEvent.cfgNMultiplicityBinsAxis.value <= 0) {
+    if ((cgAnalysis.cfgFlagQaEvent.value || cgAnalysis.cfgFlagQaCentrality.value || holderMember.doCalculationFluctuation) && std::cmp_less_equal(cgEvent.cfgNMultiplicityBinsAxis.value, 0)) {
       LOG(fatal) << "Invalid " << cgEvent.cfgNMultiplicityBinsAxis.name << "!";
     }
-    if (doCalculationFluctuation && cgEvent.cfgNSubgroups.value <= 0) {
+    if (holderMember.doCalculationFluctuation && std::cmp_less_equal(cgEvent.cfgNSubgroups.value, 0)) {
       LOG(fatal) << "Invalid " << cgEvent.cfgNSubgroups.name << "!";
     }
 
-    if (doStorageMiniTable) {
-      configSelection = std::make_unique<mini_track_codec::ConfigSelection>();
+    if (holderMember.doStorageMiniTable) {
+      holderMember.configSelection.emplace();
       for (std::int32_t const& iSelection : std::views::iota(0, NEs<Selection>)) {
-        configSelection->minItsNCls[iSelection] = cgTrack.cfgCutsMinItsNCls.value.get(iSelection);
-        configSelection->maxItsChi2NCls[iSelection] = cgTrack.cfgCutsMaxItsChi2NCls.value.get(iSelection);
-        configSelection->minTpcNCls[iSelection] = cgTrack.cfgCutsMinTpcNCls.value.get(iSelection);
-        configSelection->maxTpcChi2NCls[iSelection] = cgTrack.cfgCutsMaxTpcChi2NCls.value.get(iSelection);
-        configSelection->minTpcNCrossedRows[iSelection] = cgTrack.cfgCutsMinTpcNCrossedRows.value.get(iSelection);
-        configSelection->maxTpcNClsSharedRatio[iSelection] = cgTrack.cfgCutsMaxTpcNClsSharedRatio.value.get(iSelection);
+        holderMember.configSelection->cutsMinItsNCls[iSelection] = cgTrack.cfgCutsMinItsNCls.value.get(iSelection);
+        holderMember.configSelection->cutsMaxItsChi2NCls[iSelection] = cgTrack.cfgCutsMaxItsChi2NCls.value.get(iSelection);
+        holderMember.configSelection->cutsMaxTpcChi2NCls[iSelection] = cgTrack.cfgCutsMaxTpcChi2NCls.value.get(iSelection);
+        holderMember.configSelection->cutsMaxTpcNClsSharedRatio[iSelection] = cgTrack.cfgCutsMaxTpcNClsSharedRatio.value.get(iSelection);
+        holderMember.configSelection->cutsMinTpcNCrossedRows[iSelection] = cgTrack.cfgCutsMinTpcNCrossedRows.value.get(iSelection);
       }
       for (std::int32_t const& iDcaAxis : std::views::iota(0, NEs<DcaAxis>)) {
         for (std::int32_t const& iSelection : std::views::iota(0, NEs<Selection>)) {
-          configSelection->maxAbsNSigmaDca[iDcaAxis][iSelection] = cgTrack.cfgCutsMaxAbsNSigmaDca.value.get(getName<DcaAxis>(iDcaAxis).data(), getName<Selection>(iSelection).data());
+          holderMember.configSelection->cutsMaxAbsNSigmaDca[iDcaAxis][iSelection] = cgTrack.cfgCutsMaxAbsNSigmaDca.value.get(getName<DcaAxis>(iDcaAxis).data(), getName<Selection>(iSelection).data());
         }
       }
       for (std::int32_t const& iParticleSpecies : std::views::iota(0, NEs<ParticleSpecies>)) {
         for (std::int32_t const& iSelection : std::views::iota(0, NEs<Selection>)) {
-          configSelection->maxAbsNSigmaPid[iParticleSpecies][iSelection] = cgTrack.cfgCutsMaxAbsNSigmaPid.value.get(getName<ParticleSpecies, NameKind::Display>(iParticleSpecies).data(), getName<Selection>(iSelection).data());
+          holderMember.configSelection->cutsMaxAbsNSigmaPid[iParticleSpecies][iSelection] = cgTrack.cfgCutsMaxAbsNSigmaPid.value.get(getName<ParticleSpecies, NameKind::Display>(iParticleSpecies).data(), getName<Selection>(iSelection).data());
         }
       }
 
       static constexpr auto ValidateCuts{
         []<RangeEdge RangeEdgeValue>
           requires IsValidEnumValue<RangeEdgeValue>
-        (const auto& cuts, const auto& name) constexpr -> void {
+        (const std::span<const double, NEs<Selection>>& cuts, const std::string& name) constexpr -> void {
           for (std::int32_t const& iSelection : std::views::iota(0, NEs<Selection>)) {
-            if (!std::isfinite(cuts[iSelection])) {
-              LOG(fatal) << "Non-finite value in " << name << "!";
-            }
-            if (iSelection == 0) {
+            if (std::cmp_equal(iSelection, 0)) {
               continue;
             }
+
             if constexpr (RangeEdgeValue == RangeEdge::Min) {
               if (!(cuts[iSelection - 1] < cuts[iSelection])) {
                 LOG(fatal) << "Values in " << name << " must satisfy " << getName(Selection::Loose) << " < " << getName(Selection::Default) << " < " << getName(Selection::Tight) << "!";
               }
-            } else {
+            } else { // RangeEdgeValue == RangeEdge::Max
               if (!(cuts[iSelection - 1] > cuts[iSelection])) {
                 LOG(fatal) << "Values in " << name << " must satisfy " << getName(Selection::Loose) << " > " << getName(Selection::Default) << " > " << getName(Selection::Tight) << "!";
               }
             }
           }
         }};
-      ValidateCuts.template operator()<RangeEdge::Min>(configSelection->minItsNCls, cgTrack.cfgCutsMinItsNCls.name);
-      ValidateCuts.template operator()<RangeEdge::Max>(configSelection->maxItsChi2NCls, cgTrack.cfgCutsMaxItsChi2NCls.name);
-      ValidateCuts.template operator()<RangeEdge::Min>(configSelection->minTpcNCls, cgTrack.cfgCutsMinTpcNCls.name);
-      ValidateCuts.template operator()<RangeEdge::Max>(configSelection->maxTpcChi2NCls, cgTrack.cfgCutsMaxTpcChi2NCls.name);
-      ValidateCuts.template operator()<RangeEdge::Min>(configSelection->minTpcNCrossedRows, cgTrack.cfgCutsMinTpcNCrossedRows.name);
-      ValidateCuts.template operator()<RangeEdge::Max>(configSelection->maxTpcNClsSharedRatio, cgTrack.cfgCutsMaxTpcNClsSharedRatio.name);
+
+      ValidateCuts.template operator()<RangeEdge::Min>(holderMember.configSelection->cutsMinItsNCls, cgTrack.cfgCutsMinItsNCls.name);
+      ValidateCuts.template operator()<RangeEdge::Max>(holderMember.configSelection->cutsMaxItsChi2NCls, cgTrack.cfgCutsMaxItsChi2NCls.name);
+      ValidateCuts.template operator()<RangeEdge::Max>(holderMember.configSelection->cutsMaxTpcChi2NCls, cgTrack.cfgCutsMaxTpcChi2NCls.name);
+      ValidateCuts.template operator()<RangeEdge::Max>(holderMember.configSelection->cutsMaxTpcNClsSharedRatio, cgTrack.cfgCutsMaxTpcNClsSharedRatio.name);
+      ValidateCuts.template operator()<RangeEdge::Min>(holderMember.configSelection->cutsMinTpcNCrossedRows, cgTrack.cfgCutsMinTpcNCrossedRows.name);
       for (std::int32_t const& iDcaAxis : std::views::iota(0, NEs<DcaAxis>)) {
-        ValidateCuts.template operator()<RangeEdge::Max>(configSelection->maxAbsNSigmaDca[iDcaAxis], cgTrack.cfgCutsMaxAbsNSigmaDca.name);
+        ValidateCuts.template operator()<RangeEdge::Max>(holderMember.configSelection->cutsMaxAbsNSigmaDca[iDcaAxis], cgTrack.cfgCutsMaxAbsNSigmaDca.name);
       }
       for (std::int32_t const& iParticleSpecies : std::views::iota(0, NEs<ParticleSpecies>)) {
-        ValidateCuts.template operator()<RangeEdge::Max>(configSelection->maxAbsNSigmaPid[iParticleSpecies], cgTrack.cfgCutsMaxAbsNSigmaPid.name);
+        ValidateCuts.template operator()<RangeEdge::Max>(holderMember.configSelection->cutsMaxAbsNSigmaPid[iParticleSpecies], cgTrack.cfgCutsMaxAbsNSigmaPid.name);
       }
     }
 
-    if (doStorageMiniTable || static_cast<bool>(cgAnalysis.cfgFlagsCalculationFluctuation.value.get(toI(ParticleNumber::Charge)))) {
+    if (holderMember.doStorageMiniTable || static_cast<bool>(cgAnalysis.cfgFlagsCalculationFluctuation.value.get(toI(ParticleNumber::Charge)))) {
       for (std::int32_t const& iParticleSpecies : std::views::iota(0, NEs<ParticleSpecies>)) {
-        rangePtAll[toI(RangeEdge::Min)] = std::min(rangePtAll[toI(RangeEdge::Min)], cgTrack.cfgCutsRangePt.value.get(iParticleSpecies, toI(RangeEdge::Min)));
-        rangePtAll[toI(RangeEdge::Max)] = std::max(rangePtAll[toI(RangeEdge::Max)], cgTrack.cfgCutsRangePt.value.get(iParticleSpecies, toI(RangeEdge::Max)));
+        holderMember.rangePtAll[toI(RangeEdge::Min)] = std::min(holderMember.rangePtAll[toI(RangeEdge::Min)], cgTrack.cfgCutsRangePt.value.get(iParticleSpecies, toI(RangeEdge::Min)));
+        holderMember.rangePtAll[toI(RangeEdge::Max)] = std::max(holderMember.rangePtAll[toI(RangeEdge::Max)], cgTrack.cfgCutsRangePt.value.get(iParticleSpecies, toI(RangeEdge::Max)));
       }
     }
 
@@ -1145,33 +1188,33 @@ struct PartNumFluc {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(true);
-    if (cgCcdb.cfgTimestampLatest.value >= 0) {
+    if (std::cmp_greater_equal(cgCcdb.cfgTimestampLatest.value, 0)) {
       ccdb->setCreatedNotAfter(cgCcdb.cfgTimestampLatest.value);
     }
 
     readCcdb<true>();
     std::int32_t nRunsBad{};
-    for (const auto& [runNumber, runIndexGroupIndex] : holderCcdb.runNumbersIndicesGroupIndices) {
-      const std::int32_t runGroupIndex{runIndexGroupIndex.second};
-      if (runGroupIndex == 0 || (cgEvent.cfgFlagRejectionRunBad.value && runGroupIndex < 0)) {
+    for (const auto& [runNumber, indexRunAndGroup] : holderCcdb.runNumbersToIndicesRunAndGroup) {
+      const std::int32_t indexRunGroup{indexRunAndGroup.second};
+      if (std::cmp_equal(indexRunGroup, 0) || (cgEvent.cfgFlagRejectionRunBad.value && std::cmp_less(indexRunGroup, 0))) {
         ++nRunsBad;
       }
     }
 
-    if (holderCcdb.runNumbersIndicesGroupIndices.empty()) {
+    if (holderCcdb.runNumbersToIndicesRunAndGroup.empty()) {
       LOG(info) << "No run process enabled.";
     } else {
-      LOG(info) << "Number of runs: " << holderCcdb.runNumbersIndicesGroupIndices.size();
-      if (nRunsBad <= 0) {
+      LOG(info) << "Number of runs: " << holderCcdb.runNumbersToIndicesRunAndGroup.size();
+      if (std::cmp_less_equal(nRunsBad, 0)) {
         LOG(info) << "No run rejection enabled.";
       } else {
         LOG(info) << "Number of bad runs: " << nRunsBad;
       }
-      for (const auto& [runNumber, runIndexGroupIndex] : holderCcdb.runNumbersIndicesGroupIndices) {
-        if (runIndexGroupIndex.second == 0 || (cgEvent.cfgFlagRejectionRunBad.value && runIndexGroupIndex.second < 0)) {
-          LOG(info) << "Enabling rejecting run: " << runNumber << " (" << runIndexGroupIndex.second << ")";
+      for (const auto& [runNumber, indexRunAndGroup] : holderCcdb.runNumbersToIndicesRunAndGroup) {
+        if (std::cmp_equal(indexRunAndGroup.second, 0) || (cgEvent.cfgFlagRejectionRunBad.value && std::cmp_less(indexRunAndGroup.second, 0))) {
+          LOG(info) << "Enabling rejecting run: " << runNumber << " (" << indexRunAndGroup.second << ")";
         } else {
-          LOG(info) << "Enabling processing run: " << runNumber << " (" << std::abs(runIndexGroupIndex.second) << ")";
+          LOG(info) << "Enabling processing run: " << runNumber << " (" << std::abs(indexRunAndGroup.second) << ")";
         }
       }
     }
@@ -1191,7 +1234,7 @@ struct PartNumFluc {
       LOG(info) << "Enabling RCT flag: table";
     }
 
-    if ((cgEvent.cfgBitsSelection.value & ((std::uint64_t{1} << aod::evsel::EventSelectionFlags::kNsel) - 1)) == 0) {
+    if (std::cmp_equal(cgEvent.cfgBitsSelection.value & ((std::uint64_t{1} << aod::evsel::EventSelectionFlags::kNsel) - 1), 0)) {
       LOG(info) << "No event selection bit enabled.";
     } else {
       for (std::int32_t const& iBit : std::views::iota(0, aod::evsel::EventSelectionFlags::kNsel)) {
@@ -1221,7 +1264,7 @@ struct PartNumFluc {
     if (cgAnalysis.cfgFlagQaRun.value) {
       LOG(info) << "Enabling run QA.";
 
-      const HistogramConfigSpec hcsQaRun{HistType::kTProfile, {{static_cast<std::int32_t>(holderCcdb.runNumbersIndicesGroupIndices.size()), -0.5, holderCcdb.runNumbersIndicesGroupIndices.size() - 0.5, "Run Index"}}};
+      const HistogramConfigSpec hcsQaRun{HistType::kTProfile, {{static_cast<std::int32_t>(holderCcdb.runNumbersToIndicesRunAndGroup.size()), -0.5, holderCcdb.runNumbersToIndicesRunAndGroup.size() - 0.5, "Run Index"}}};
 
       for (const auto& [name, title, isChargeSpeciesSeparated] : std::to_array<std::tuple<std::string, std::string, bool>>(
              {{"Vx", "#LT#it{V}_{#it{x}}#GT (cm)", false},
@@ -1245,6 +1288,7 @@ struct PartNumFluc {
               {"TpcNCls", "TPC #LTnClusters#GT", true},
               {"TpcChi2NCls", "TPC #LT#it{#chi}^{2}/nClusters#GT", true},
               {"TpcNClsSharedRatio", "TPC #LTnSharedClusters/nClusters#GT", true},
+              {"TpcNClsRatio", "TPC #LTnClusters/nFindableClusters#GT", true},
               {"TpcNCrossedRows", "TPC #LTnCrossedRows#GT", true},
               {"TpcNCrossedRowsRatio", "TPC #LTnCrossedRows/nFindableClusters#GT", true},
               {"Pt", "#LT#it{p}_{T}#GT (GeV/#it{c})", true},
@@ -1298,7 +1342,7 @@ struct PartNumFluc {
              {{"ItsNClsChi2NCls", {HistType::kTHnSparseD, {{10, -0.5, 9.5, "ITS nClusters"}, {80, 0., 40., "ITS #it{#chi}^{2}/nClusters"}}}},
               {"TpcNClsChi2NCls", {HistType::kTHnSparseD, {{180, -0.5, 179.5, "TPC nClusters"}, {100, 0., 5., "TPC #it{#chi}^{2}/nClusters"}}}},
               {"TpcNClsNClsShared", {HistType::kTHnSparseD, {{180, -0.5, 179.5, "TPC nClusters"}, {180, -0.5, 179.5, "TPC nSharedClusters"}}}},
-              {"TpcNClsFindableNCrossedRows", {HistType::kTHnSparseD, {{180, -0.5, 179.5, "TPC nFindableClusters"}, {180, -0.5, 179.5, "TPC nCrossedRows"}}}}})) {
+              {"TpcNClsNClsFindableNCrossedRows", {HistType::kTHnSparseD, {{180, -0.5, 179.5, "TPC nClusters"}, {180, -0.5, 179.5, "TPC nFindableClusters"}, {180, -0.5, 179.5, "TPC nCrossedRows"}}}}})) {
         for (std::int32_t const& iChargeSpecies : std::views::iota(0, NEs<ChargeSpecies>)) {
           hrQaTrack.add(std::format("h{}_{}", name, getName<ChargeSpecies, NameKind::Lower>(iChargeSpecies)).c_str(), "", hcs);
         }
@@ -1331,7 +1375,7 @@ struct PartNumFluc {
 
       for (std::int32_t const& iPidStrategy : std::views::iota(0, NEs<PidStrategy>)) {
         for (std::int32_t const& iChargeSpecies : std::views::iota(0, NEs<ChargeSpecies>)) {
-          hrQaAcceptance.add(std::format("h{}Pt_{}Edge{}{}", iParticleSpeciesAll == toI(ParticleSpeciesAll::All) ? "Eta" : "Rapidity", getName<PidStrategy, NameKind::Lower>(iPidStrategy), getName<ParticleSpeciesAll>(iParticleSpeciesAll), getName<ChargeSpecies>(iChargeSpecies)).c_str(), "", {HistType::kTHnSparseD, {{300, -1.5, 1.5, iParticleSpeciesAll == toI(ParticleSpeciesAll::All) ? "#it{#eta}" : "#it{y}"}, {250, 0., 2.5, "#it{p}_{T} (GeV/#it{c})"}}});
+          hrQaAcceptance.add(std::format("h{}Pt_{}Edge{}{}", std::cmp_equal(iParticleSpeciesAll, toI(ParticleSpeciesAll::All)) ? "Eta" : "Rapidity", getName<PidStrategy, NameKind::Lower>(iPidStrategy), getName<ParticleSpeciesAll>(iParticleSpeciesAll), getName<ChargeSpecies>(iChargeSpecies)).c_str(), "", {HistType::kTHnSparseD, {{300, -1.5, 1.5, std::cmp_equal(iParticleSpeciesAll, toI(ParticleSpeciesAll::All)) ? "#it{#eta}" : "#it{y}"}, {250, 0., 2.5, "#it{p}_{T} (GeV/#it{c})"}}});
         }
       }
     }
@@ -1361,7 +1405,7 @@ struct PartNumFluc {
 
       const AxisSpec asCentrality{cgEvent.cfgAxisCentralityCalibration, "Centrality (%)"};
 
-      if (iParticleSpeciesAll == toI(ParticleSpeciesAll::All)) {
+      if (std::cmp_equal(iParticleSpeciesAll, toI(ParticleSpeciesAll::All))) {
         const AxisSpec asPOverQ{350, -3.5, 3.5, "#it{p}/#it{q} (GeV/#it{c})"};
         const AxisSpec asEta{48, -1.2, 1.2, "#it{#eta}"};
 
@@ -1489,9 +1533,9 @@ struct PartNumFluc {
 
       for (std::int32_t const& iChargeNumber : std::views::iota(0, NEs<ChargeNumber>)) {
         if (doProcessMc.value) {
-          fluctuationCalculatorsTrackMcParticle[iParticleNumber][iChargeNumber] = std::make_unique<FluctuationCalculatorTrack>();
+          holderMember.fluctuationCalculatorsTrackMcParticle[iParticleNumber][iChargeNumber] = std::make_unique<FluctuationCalculatorTrack>();
         }
-        fluctuationCalculatorsTrackTrack[iParticleNumber][iChargeNumber] = std::make_unique<FluctuationCalculatorTrack>();
+        holderMember.fluctuationCalculatorsTrackTrack[iParticleNumber][iChargeNumber] = std::make_unique<FluctuationCalculatorTrack>();
       }
 
       if (doProcessMc.value) {
@@ -1522,7 +1566,7 @@ struct PartNumFluc {
         LOG(fatal) << "Invalid gRunNumberGroupIndex!";
       }
       for (std::int32_t const& iRun : std::views::iota(0, gRunNumberGroupIndex->GetN())) {
-        holderCcdb.runNumbersIndicesGroupIndices[static_cast<std::int32_t>(std::rint(gRunNumberGroupIndex->GetX()[iRun]))] = {iRun, static_cast<std::int32_t>(std::rint(gRunNumberGroupIndex->GetY()[iRun]))};
+        holderCcdb.runNumbersToIndicesRunAndGroup[static_cast<std::int32_t>(std::rint(gRunNumberGroupIndex->GetX()[iRun]))] = {iRun, static_cast<std::int32_t>(std::rint(gRunNumberGroupIndex->GetY()[iRun]))};
       }
 
       if (cgEvent.cfgFlagRejectionRunBadMc.value) {
@@ -1531,28 +1575,28 @@ struct PartNumFluc {
           LOG(fatal) << "Invalid gRunNumberGroupIndex_mc!";
         }
         for (std::int32_t const& iRun : std::views::iota(0, gRunNumberGroupIndexMc->GetN())) {
-          if (static_cast<std::int32_t>(std::rint(gRunNumberGroupIndexMc->GetY()[iRun])) <= 0) {
-            if (const auto iter{holderCcdb.runNumbersIndicesGroupIndices.find(static_cast<std::int32_t>(std::rint(gRunNumberGroupIndexMc->GetX()[iRun])))}; iter != holderCcdb.runNumbersIndicesGroupIndices.end() && iter->second.second > 0) {
+          if (std::cmp_less_equal(static_cast<std::int32_t>(std::rint(gRunNumberGroupIndexMc->GetY()[iRun])), 0)) {
+            if (const auto iter{holderCcdb.runNumbersToIndicesRunAndGroup.find(static_cast<std::int32_t>(std::rint(gRunNumberGroupIndexMc->GetX()[iRun])))}; iter != holderCcdb.runNumbersToIndicesRunAndGroup.end() && std::cmp_greater(iter->second.second, 0)) {
               iter->second.second = -iter->second.second;
             }
           }
         }
       }
     } else {
-      const std::int32_t runGroupIndex{std::abs(holderEvent.runGroupIndex)};
-      if (holderCcdb.runGroupIndexCurrent == runGroupIndex) {
+      const std::int32_t indexRunGroup{std::abs(holderEvent.indexRunGroup)};
+      if (std::cmp_equal(holderCcdb.indexRunGroupCurrent, indexRunGroup)) {
         return;
       }
 
-      holderCcdb.runGroupIndexCurrent = runGroupIndex;
+      holderCcdb.indexRunGroupCurrent = indexRunGroup;
       holderCcdb.calibrationsPtMeasureDca = {};
       holderCcdb.hsCentralityPtEtaShiftNSigmaPid = {};
       holderCcdb.hsVzCentralityPtEtaEfficiency = {};
-      if (!cgTrack.cfgFlagRecalibrationDca.value && !isEnabled(cgTrack.cfgFlagsRecalibrationNSigmaPid) && !doCalculationFluctuation) {
+      if (!cgTrack.cfgFlagRecalibrationDca.value && !isEnabled(cgTrack.cfgFlagsRecalibrationNSigmaPid) && !holderMember.doCalculationFluctuation) {
         return;
       }
 
-      const std::string nameList{std::format("lRunGroup_{}", runGroupIndex)};
+      const std::string nameList{std::format("lRunGroup_{}", indexRunGroup)};
       const TList* const lRunGroup{dynamic_cast<const TList*>(holderCcdb.lCcdb->FindObject(nameList.c_str()))};
       if (!lRunGroup) {
         LOG(fatal) << "Invalid " << nameList << "!";
@@ -1563,17 +1607,17 @@ struct PartNumFluc {
           for (std::int32_t const& iDcaAxis : std::views::iota(0, NEs<DcaAxis>)) {
             for (std::int32_t const& iChargeSpecies : std::views::iota(0, NEs<ChargeSpecies>)) {
               std::pair<const TFormula*, const TH3*>& calibration{holderCcdb.calibrationsPtMeasureDca[iDcaMeasure][iDcaAxis][iChargeSpecies]};
-              const std::string nameFormula{std::format("fPt{}Dca{}{}{}_runGroup{}", getName<DcaMeasure>(iDcaMeasure), getName<DcaAxis>(iDcaAxis), getName<ChargeSpecies>(iChargeSpecies), doProcessMc.value ? "_mc" : "", runGroupIndex)};
+              const std::string nameFormula{std::format("fPt{}Dca{}{}{}_runGroup{}", getName<DcaMeasure>(iDcaMeasure), getName<DcaAxis>(iDcaAxis), getName<ChargeSpecies>(iChargeSpecies), doProcessMc.value ? "_mc" : "", indexRunGroup)};
               calibration.first = dynamic_cast<const TFormula*>(lRunGroup->FindObject(nameFormula.c_str()));
-              if (!calibration.first || calibration.first->GetNdim() != 1 || calibration.first->GetNpar() <= 0) {
+              if (!calibration.first || std::cmp_not_equal(calibration.first->GetNdim(), 1) || std::cmp_less_equal(calibration.first->GetNpar(), 0)) {
                 LOG(fatal) << "Invalid " << nameFormula << "!";
               }
               LOG(info) << "Reading from CCDB: " << nameFormula << " \"" << calibration.first->GetExpFormula() << "\"";
               const std::int32_t nParameters{calibration.first->GetNpar()};
 
-              const std::string nameHistogram{std::format("hCentralityEtaParameterPt{}Dca{}{}{}_runGroup{}", getName<DcaMeasure>(iDcaMeasure), getName<DcaAxis>(iDcaAxis), getName<ChargeSpecies>(iChargeSpecies), doProcessMc.value ? "_mc" : "", runGroupIndex)};
+              const std::string nameHistogram{std::format("hCentralityEtaParameterPt{}Dca{}{}{}_runGroup{}", getName<DcaMeasure>(iDcaMeasure), getName<DcaAxis>(iDcaAxis), getName<ChargeSpecies>(iChargeSpecies), doProcessMc.value ? "_mc" : "", indexRunGroup)};
               calibration.second = dynamic_cast<const TH3*>(lRunGroup->FindObject(nameHistogram.c_str()));
-              if (calibration.second == nullptr || calibration.second->GetNbinsZ() != nParameters || std::ranges::any_of(std::views::iota(0, nParameters), [zAxis = calibration.second->GetZaxis()](const std::int32_t binIndex) -> bool { return zAxis->GetBinCenter(binIndex + 1) != binIndex; })) {
+              if (calibration.second == nullptr || std::cmp_not_equal(calibration.second->GetNbinsZ(), nParameters) || std::ranges::any_of(std::views::iota(0, nParameters), [aZ = calibration.second->GetZaxis()](const std::int32_t indexBin) -> bool { return aZ->GetBinCenter(indexBin + 1) != indexBin; })) {
                 LOG(fatal) << "Invalid " << nameHistogram << "!";
               }
               LOG(info) << "Reading from CCDB: " << nameHistogram;
@@ -1589,10 +1633,10 @@ struct PartNumFluc {
 
         for (std::int32_t const& iDetector : std::views::iota(0, NEs<Detector>)) {
           for (std::int32_t const& iChargeSpecies : std::views::iota(0, NEs<ChargeSpecies>)) {
-            const std::string name{std::format("hCentralityPtEtaShift{}NSigma{}{}{}_runGroup{}", getName<Detector>(iDetector), getName<ParticleSpecies>(iParticleSpecies), getName<ChargeSpecies>(iChargeSpecies), doProcessMc.value ? "_mc" : "", runGroupIndex)};
-            const TH3*& histogram{holderCcdb.hsCentralityPtEtaShiftNSigmaPid[iDetector][iParticleSpecies][iChargeSpecies]};
-            histogram = dynamic_cast<const TH3*>(lRunGroup->FindObject(name.c_str()));
-            if (!histogram) {
+            const std::string name{std::format("hCentralityPtEtaShift{}NSigma{}{}{}_runGroup{}", getName<Detector>(iDetector), getName<ParticleSpecies>(iParticleSpecies), getName<ChargeSpecies>(iChargeSpecies), doProcessMc.value ? "_mc" : "", indexRunGroup)};
+            const TH3*& h{holderCcdb.hsCentralityPtEtaShiftNSigmaPid[iDetector][iParticleSpecies][iChargeSpecies]};
+            h = dynamic_cast<const TH3*>(lRunGroup->FindObject(name.c_str()));
+            if (!h) {
               LOG(fatal) << "Invalid " << name << "!";
             }
             LOG(info) << "Reading from CCDB: " << name;
@@ -1601,16 +1645,16 @@ struct PartNumFluc {
       }
 
       for (std::int32_t const& iParticleSpecies : std::views::iota(0, NEs<ParticleSpecies>)) {
-        if (!static_cast<bool>(cgAnalysis.cfgFlagsCalculationFluctuation.value.get(toI(ParticleNumber::Charge))) && (iParticleSpecies != toI(ParticleSpecies::Kaon) || !static_cast<bool>(cgAnalysis.cfgFlagsCalculationFluctuation.value.get(toI(ParticleNumber::Kaon)))) && (iParticleSpecies != toI(ParticleSpecies::Proton) || !static_cast<bool>(cgAnalysis.cfgFlagsCalculationFluctuation.value.get(toI(ParticleNumber::Proton))))) {
+        if (!static_cast<bool>(cgAnalysis.cfgFlagsCalculationFluctuation.value.get(toI(ParticleNumber::Charge))) && (std::cmp_not_equal(iParticleSpecies, toI(ParticleSpecies::Kaon)) || !static_cast<bool>(cgAnalysis.cfgFlagsCalculationFluctuation.value.get(toI(ParticleNumber::Kaon)))) && (std::cmp_not_equal(iParticleSpecies, toI(ParticleSpecies::Proton)) || !static_cast<bool>(cgAnalysis.cfgFlagsCalculationFluctuation.value.get(toI(ParticleNumber::Proton))))) {
           continue;
         }
 
         for (std::int32_t const& iPidStrategy : std::views::iota(0, NEs<PidStrategy>)) {
           for (std::int32_t const& iChargeSpecies : std::views::iota(0, NEs<ChargeSpecies>)) {
-            const std::string name{std::format("hVzCentralityPtEtaEfficiency{}{}{}_runGroup{}", getName<PidStrategy>(iPidStrategy), getName<ParticleSpecies>(iParticleSpecies), getName<ChargeSpecies>(iChargeSpecies), runGroupIndex)};
-            const THnBase*& histogram{holderCcdb.hsVzCentralityPtEtaEfficiency[iPidStrategy][iParticleSpecies][iChargeSpecies]};
-            histogram = dynamic_cast<const THnBase*>(lRunGroup->FindObject(name.c_str()));
-            if (!histogram || histogram->GetNdimensions() != HolderCcdb::NDimensionsEfficiency) {
+            const std::string name{std::format("hVzCentralityPtEtaEfficiency{}{}{}_runGroup{}", getName<PidStrategy>(iPidStrategy), getName<ParticleSpecies>(iParticleSpecies), getName<ChargeSpecies>(iChargeSpecies), indexRunGroup)};
+            const THnBase*& h{holderCcdb.hsVzCentralityPtEtaEfficiency[iPidStrategy][iParticleSpecies][iChargeSpecies]};
+            h = dynamic_cast<const THnBase*>(lRunGroup->FindObject(name.c_str()));
+            if (!h || std::cmp_not_equal(h->GetNdimensions(), HolderCcdb::NDimensionsEfficiency)) {
               LOG(fatal) << "Invalid " << name << "!";
             }
             LOG(info) << "Reading from CCDB: " << name;
@@ -1624,8 +1668,8 @@ struct PartNumFluc {
     requires IsValidEnumValue<PidStrategyValue, ParticleSpeciesValue, ChargeSpeciesValue>
   double getEfficiency(const bool doUseMcParticleMomentum) const
   {
-    const THnBase* const hsVzCentralityPtEtaEfficiency{holderCcdb.hsVzCentralityPtEtaEfficiency[toI(PidStrategyValue)][toI(ParticleSpeciesValue)][toI(ChargeSpeciesValue)]};
-    return hsVzCentralityPtEtaEfficiency ? hsVzCentralityPtEtaEfficiency->GetBinContent(hsVzCentralityPtEtaEfficiency->GetBin(std::array<double, HolderCcdb::NDimensionsEfficiency>{doProcessMc.value && cgEvent.cfgFlagMcCollisionVz.value ? holderMcEvent.vz : holderEvent.vz, holderEvent.centrality, doUseMcParticleMomentum ? holderMcParticle.pt : holderTrack.pt, doUseMcParticleMomentum ? holderMcParticle.eta : holderTrack.eta}.data())) : 0.;
+    const THnBase* const hVzCentralityPtEtaEfficiency{holderCcdb.hsVzCentralityPtEtaEfficiency[toI(PidStrategyValue)][toI(ParticleSpeciesValue)][toI(ChargeSpeciesValue)]};
+    return hVzCentralityPtEtaEfficiency ? hVzCentralityPtEtaEfficiency->GetBinContent(hVzCentralityPtEtaEfficiency->GetBin(std::array<double, HolderCcdb::NDimensionsEfficiency>{doProcessMc.value && cgEvent.cfgFlagMcCollisionVz.value ? holderMcEvent.vz : holderEvent.vz, holderEvent.centrality, doUseMcParticleMomentum ? holderMcParticle.pt : holderTrack.pt, doUseMcParticleMomentum ? holderMcParticle.eta : holderTrack.eta}.data())) : 0.;
   }
 
   template <bool DoRecalibrate, Detector DetectorValue, ParticleSpecies ParticleSpeciesValue>
@@ -1634,7 +1678,7 @@ struct PartNumFluc {
   {
     if constexpr (DoRecalibrate) {
       if (cgTrack.cfgFlagsRecalibrationNSigmaPid.value.get(toI(ParticleSpeciesValue))) {
-        return interpolate(holderCcdb.hsCentralityPtEtaShiftNSigmaPid[toI(DetectorValue)][toI(ParticleSpeciesValue)][holderTrack.sign > 0 ? toI(ChargeSpecies::Plus) : toI(ChargeSpecies::Minus)], holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta);
+        return interpolate(holderCcdb.hsCentralityPtEtaShiftNSigmaPid[toI(DetectorValue)][toI(ParticleSpeciesValue)][std::cmp_greater(holderTrack.sign, 0) ? toI(ChargeSpecies::Plus) : toI(ChargeSpecies::Minus)], holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta);
       }
     }
     return 0.;
@@ -1650,10 +1694,10 @@ struct PartNumFluc {
     if (std::cmp_less(parametersPtMeasureDcaScratch.size(), nParameters)) {
       parametersPtMeasureDcaScratch.resize(nParameters);
     }
-    const std::int32_t centralityBinIndex{std::clamp(hCentralityEtaParameterPtMeasureDca->GetXaxis()->FindFixBin(holderEvent.centralityCalibration), 1, hCentralityEtaParameterPtMeasureDca->GetNbinsX())};
-    const std::int32_t etaBinIndex{std::clamp(hCentralityEtaParameterPtMeasureDca->GetYaxis()->FindFixBin(holderTrack.eta), 1, hCentralityEtaParameterPtMeasureDca->GetNbinsY())};
+    const std::int32_t indexBinCentrality{std::clamp(hCentralityEtaParameterPtMeasureDca->GetXaxis()->FindFixBin(holderEvent.centralityCalibration), 1, hCentralityEtaParameterPtMeasureDca->GetNbinsX())};
+    const std::int32_t indexBinEta{std::clamp(hCentralityEtaParameterPtMeasureDca->GetYaxis()->FindFixBin(holderTrack.eta), 1, hCentralityEtaParameterPtMeasureDca->GetNbinsY())};
     for (std::int32_t const& iParameter : std::views::iota(0, nParameters)) {
-      parametersPtMeasureDcaScratch[iParameter] = hCentralityEtaParameterPtMeasureDca->GetBinContent(centralityBinIndex, etaBinIndex, iParameter + 1);
+      parametersPtMeasureDcaScratch[iParameter] = hCentralityEtaParameterPtMeasureDca->GetBinContent(indexBinCentrality, indexBinEta, iParameter + 1);
     }
     return fPtMeasureDca->EvalPar(&holderTrack.pt, parametersPtMeasureDcaScratch.data());
   }
@@ -1663,12 +1707,12 @@ struct PartNumFluc {
   double getAbsNSigmaDca() const
   {
     if (!cgTrack.cfgFlagRecalibrationDca.value) {
-      return std::abs(holderTrack.dca[toI(DcaAxisValue)]);
+      return std::abs(holderTrack.dcas[toI(DcaAxisValue)]);
     }
 
-    const std::int32_t chargeSpeciesIndex{holderTrack.sign > 0 ? toI(ChargeSpecies::Plus) : toI(ChargeSpecies::Minus)};
-    const double sigma{getMeasureDca(holderCcdb.calibrationsPtMeasureDca[toI(DcaMeasure::Sigma)][toI(DcaAxisValue)][chargeSpeciesIndex])};
-    return sigma > 0. ? std::abs((holderTrack.dca[toI(DcaAxisValue)] - getMeasureDca(holderCcdb.calibrationsPtMeasureDca[toI(DcaMeasure::Mean)][toI(DcaAxisValue)][chargeSpeciesIndex])) / sigma) : std::numeric_limits<double>::infinity();
+    const std::int32_t indexChargeSpecies{std::cmp_greater(holderTrack.sign, 0) ? toI(ChargeSpecies::Plus) : toI(ChargeSpecies::Minus)};
+    const double sigma{getMeasureDca(holderCcdb.calibrationsPtMeasureDca[toI(DcaMeasure::Sigma)][toI(DcaAxisValue)][indexChargeSpecies])};
+    return sigma > 0. ? std::abs((holderTrack.dcas[toI(DcaAxisValue)] - getMeasureDca(holderCcdb.calibrationsPtMeasureDca[toI(DcaMeasure::Mean)][toI(DcaAxisValue)][indexChargeSpecies])) / sigma) : std::numeric_limits<double>::infinity();
   }
 
   template <PidStrategyAll PidStrategyAllValue, ParticleSpeciesAll ParticleSpeciesAllValue, Selection SelectionValue = Selection::Default>
@@ -1677,44 +1721,44 @@ struct PartNumFluc {
   {
     if constexpr (ParticleSpeciesAllValue == ParticleSpeciesAll::All) {
       if constexpr (PidStrategyAllValue == PidStrategyAll::Tpc) {
-        if (!holderTrack.hasPid[toI(Detector::Tpc)]) {
+        if (!holderTrack.havePid[toI(Detector::Tpc)]) {
           return false;
         }
       } else if constexpr (PidStrategyAllValue == PidStrategyAll::Tof) {
-        if (!holderTrack.hasPid[toI(Detector::Tof)]) {
+        if (!holderTrack.havePid[toI(Detector::Tof)]) {
           return false;
         }
       } else {
-        if (!holderTrack.hasPid[toI(Detector::Tpc)] || !holderTrack.hasPid[toI(Detector::Tof)]) {
+        if (!holderTrack.havePid[toI(Detector::Tpc)] || !holderTrack.havePid[toI(Detector::Tof)]) {
           return false;
         }
       }
     } else {
-      constexpr std::int32_t ParticleSpeciesIndex{toI(getValue<ParticleSpecies>(ParticleSpeciesAllValue))};
+      constexpr std::int32_t IndexParticleSpecies{toI(getValue<ParticleSpecies>(ParticleSpeciesAllValue))};
       if constexpr (PidStrategyAllValue == PidStrategyAll::TpcTofSeparated) {
-        if (!(std::abs(holderTrack.nSigmaPid[toI(Detector::Tpc)][ParticleSpeciesIndex]) < cgTrack.cfgCutsMaxAbsNSigmaPid.value.get(ParticleSpeciesIndex, toI(SelectionValue)))) {
+        if (!(std::abs(holderTrack.nsSigmaPid[toI(Detector::Tpc)][IndexParticleSpecies]) < cgTrack.cfgCutsMaxAbsNSigmaPid.value.get(IndexParticleSpecies, toI(SelectionValue)))) {
           return false;
         }
-        if (!(std::abs(holderTrack.nSigmaPid[toI(Detector::Tof)][ParticleSpeciesIndex]) < cgTrack.cfgCutsMaxAbsNSigmaPid.value.get(ParticleSpeciesIndex, toI(SelectionValue)))) {
+        if (!(std::abs(holderTrack.nsSigmaPid[toI(Detector::Tof)][IndexParticleSpecies]) < cgTrack.cfgCutsMaxAbsNSigmaPid.value.get(IndexParticleSpecies, toI(SelectionValue)))) {
           return false;
         }
-        if (doRejectOthers && !(std::abs(holderTrack.nSigmaPid[toI(Detector::Tof)][ParticleSpeciesIndex]) < std::min(std::abs(holderTrack.nSigmaPid[toI(Detector::Tof)][(ParticleSpeciesIndex + 1) % NEs<ParticleSpecies>]), std::abs(holderTrack.nSigmaPid[toI(Detector::Tof)][(ParticleSpeciesIndex + 2) % NEs<ParticleSpecies>])))) {
+        if (doRejectOthers && !(std::abs(holderTrack.nsSigmaPid[toI(Detector::Tof)][IndexParticleSpecies]) < std::min(std::abs(holderTrack.nsSigmaPid[toI(Detector::Tof)][(IndexParticleSpecies + 1) % NEs<ParticleSpecies>]), std::abs(holderTrack.nsSigmaPid[toI(Detector::Tof)][(IndexParticleSpecies + 2) % NEs<ParticleSpecies>])))) {
           return false;
         }
       } else if constexpr (PidStrategyAllValue == PidStrategyAll::TpcTofCombined) {
-        const double absNSigmaPidCombined{std::abs(holderTrack.getNSigmaPidCombined(ParticleSpeciesIndex))};
-        if (!(absNSigmaPidCombined < cgTrack.cfgCutsMaxAbsNSigmaPid.value.get(ParticleSpeciesIndex, toI(SelectionValue)))) {
+        const double absNSigmaPidCombined{std::abs(holderTrack.getNSigmaPidCombined(IndexParticleSpecies))};
+        if (!(absNSigmaPidCombined < cgTrack.cfgCutsMaxAbsNSigmaPid.value.get(IndexParticleSpecies, toI(SelectionValue)))) {
           return false;
         }
-        if (doRejectOthers && !(absNSigmaPidCombined < std::min(std::abs(holderTrack.getNSigmaPidCombined((ParticleSpeciesIndex + 1) % NEs<ParticleSpecies>)), std::abs(holderTrack.getNSigmaPidCombined((ParticleSpeciesIndex + 2) % NEs<ParticleSpecies>))))) {
+        if (doRejectOthers && !(absNSigmaPidCombined < std::min(std::abs(holderTrack.getNSigmaPidCombined((IndexParticleSpecies + 1) % NEs<ParticleSpecies>)), std::abs(holderTrack.getNSigmaPidCombined((IndexParticleSpecies + 2) % NEs<ParticleSpecies>))))) {
           return false;
         }
       } else {
-        constexpr std::int32_t DetectorIndex{toI(getValue<Detector>(PidStrategyAllValue))};
-        if (!(std::abs(holderTrack.nSigmaPid[DetectorIndex][ParticleSpeciesIndex]) < cgTrack.cfgCutsMaxAbsNSigmaPid.value.get(ParticleSpeciesIndex, toI(SelectionValue)))) {
+        constexpr std::int32_t IndexDetector{toI(getValue<Detector>(PidStrategyAllValue))};
+        if (!(std::abs(holderTrack.nsSigmaPid[IndexDetector][IndexParticleSpecies]) < cgTrack.cfgCutsMaxAbsNSigmaPid.value.get(IndexParticleSpecies, toI(SelectionValue)))) {
           return false;
         }
-        if (doRejectOthers && !(std::abs(holderTrack.nSigmaPid[DetectorIndex][ParticleSpeciesIndex]) < std::min(std::abs(holderTrack.nSigmaPid[DetectorIndex][(ParticleSpeciesIndex + 1) % NEs<ParticleSpecies>]), std::abs(holderTrack.nSigmaPid[DetectorIndex][(ParticleSpeciesIndex + 2) % NEs<ParticleSpecies>])))) {
+        if (doRejectOthers && !(std::abs(holderTrack.nsSigmaPid[IndexDetector][IndexParticleSpecies]) < std::min(std::abs(holderTrack.nsSigmaPid[IndexDetector][(IndexParticleSpecies + 1) % NEs<ParticleSpecies>]), std::abs(holderTrack.nsSigmaPid[IndexDetector][(IndexParticleSpecies + 2) % NEs<ParticleSpecies>])))) {
           return false;
         }
       }
@@ -1727,9 +1771,9 @@ struct PartNumFluc {
   bool isPid() const
   {
     if constexpr (ParticleSpeciesAllValue == ParticleSpeciesAll::All) {
-      return ChargeSpeciesValue == ChargeSpecies::Plus ? holderMcParticle.charge > 0 : holderMcParticle.charge < 0;
+      return ChargeSpeciesValue == ChargeSpecies::Plus ? std::cmp_greater(holderMcParticle.charge, 0) : std::cmp_less(holderMcParticle.charge, 0);
     } else {
-      return holderMcParticle.pdgCode == getPdgCode(getValue<ParticleSpecies>(ParticleSpeciesAllValue), ChargeSpeciesValue);
+      return std::cmp_equal(holderMcParticle.pdgCode, getPdgCode(getValue<ParticleSpecies>(ParticleSpeciesAllValue), ChargeSpeciesValue));
     }
   }
 
@@ -1739,12 +1783,12 @@ struct PartNumFluc {
   {
     const double pt{doUseMcParticleMomentum ? holderMcParticle.pt : holderTrack.pt};
     if constexpr (ParticleSpeciesAllValue == ParticleSpeciesAll::All) {
-      if (!(rangePtAll[toI(RangeEdge::Min)] < pt) || !(pt < rangePtAll[toI(RangeEdge::Max)])) {
+      if (!(holderMember.rangePtAll[toI(RangeEdge::Min)] < pt) || !(pt < holderMember.rangePtAll[toI(RangeEdge::Max)])) {
         return false;
       }
     } else {
-      const std::int32_t particleSpeciesIndex{toI(getValue<ParticleSpecies>(ParticleSpeciesAllValue))};
-      if (!(cgTrack.cfgCutsRangePt.value.get(particleSpeciesIndex, toI(RangeEdge::Min)) < pt) || !(pt < cgTrack.cfgCutsRangePt.value.get(particleSpeciesIndex, toI(RangeEdge::Max)))) {
+      const std::int32_t indexParticleSpecies{toI(getValue<ParticleSpecies>(ParticleSpeciesAllValue))};
+      if (!(cgTrack.cfgCutsRangePt.value.get(indexParticleSpecies, toI(RangeEdge::Min)) < pt) || !(pt < cgTrack.cfgCutsRangePt.value.get(indexParticleSpecies, toI(RangeEdge::Max)))) {
         return false;
       }
     }
@@ -1762,13 +1806,13 @@ struct PartNumFluc {
     if (cgTrack.cfgFlagPvContributor.value && !track.isPVContributor()) {
       return false;
     }
-    if (!(track.itsNCls() > cgTrack.cfgCutsMinItsNCls.value.get(toI(Selection::Default)))) {
+    if (!std::cmp_greater(track.itsNCls(), cgTrack.cfgCutsMinItsNCls.value.get(toI(Selection::Default)))) {
       return false;
     }
     if (!(track.itsChi2NCl() < cgTrack.cfgCutsMaxItsChi2NCls.value.get(toI(Selection::Default)))) {
       return false;
     }
-    if (!(track.tpcNClsFound() > cgTrack.cfgCutsMinTpcNCls.value.get(toI(Selection::Default)))) {
+    if (!std::cmp_greater(track.tpcNClsFound(), cgTrack.cfgCutsMinTpcNCls.value.get(toI(Selection::Default)))) {
       return false;
     }
     if (!(cgTrack.cfgCutMinTpcChi2NCls.value < track.tpcChi2NCl()) || !(track.tpcChi2NCl() < cgTrack.cfgCutsMaxTpcChi2NCls.value.get(toI(Selection::Default)))) {
@@ -1777,7 +1821,10 @@ struct PartNumFluc {
     if (!(track.tpcFractionSharedCls() < cgTrack.cfgCutsMaxTpcNClsSharedRatio.value.get(toI(Selection::Default)))) {
       return false;
     }
-    if (!(track.tpcNClsCrossedRows() > cgTrack.cfgCutsMinTpcNCrossedRows.value.get(toI(Selection::Default)))) {
+    if (!(track.tpcFoundOverFindableCls() > cgTrack.cfgCutMinTpcNClsRatio.value)) {
+      return false;
+    }
+    if (!std::cmp_greater(track.tpcNClsCrossedRows(), cgTrack.cfgCutsMinTpcNCrossedRows.value.get(toI(Selection::Default)))) {
       return false;
     }
     if (!(track.tpcCrossedRowsOverFindableCls() > cgTrack.cfgCutMinTpcNCrossedRowsRatio.value)) {
@@ -1790,14 +1837,14 @@ struct PartNumFluc {
     requires IsValidEnumValue<ChargeSpeciesValue>
   void fillQaRunByTrackByChargeSpecies(const T& track)
   {
-    const auto fill{[this](const auto& name, const auto value) -> void {
-      hrQaRun.fill(C_CS("pRunIndex") + name + C_CS("_") + C_SV(getName<NameKind::Lower>(ChargeSpeciesValue)), holderEvent.runIndex, value);
+    const auto fill{[this](const auto& name, const auto input) -> void {
+      hrQaRun.fill(C_CS("pRunIndex") + name + C_CS("_") + C_SV(getName<NameKind::Lower>(ChargeSpeciesValue)), holderEvent.indexRun, input);
     }};
     const auto fillNSigmaPidByDetectorParticleSpecies{
       [this, &fill]<Detector DetectorValue, ParticleSpecies ParticleSpeciesValue>
         requires IsValidEnumValue<DetectorValue, ParticleSpeciesValue>
       () -> void {
-        const double nSigmaPid{holderTrack.nSigmaPid[toI(DetectorValue)][toI(ParticleSpeciesValue)]};
+        const double nSigmaPid{holderTrack.nsSigmaPid[toI(DetectorValue)][toI(ParticleSpeciesValue)]};
         if (std::abs(nSigmaPid) < HolderTrack::TruncationAbsNSigmaPid) {
           fill(C_SV(getName(DetectorValue)) + C_CS("NSigma") + C_SV(getName(ParticleSpeciesValue)), nSigmaPid);
         }
@@ -1808,18 +1855,19 @@ struct PartNumFluc {
     fill(C_CS("TpcNCls"), track.tpcNClsFound());
     fill(C_CS("TpcChi2NCls"), track.tpcChi2NCl());
     fill(C_CS("TpcNClsSharedRatio"), track.tpcFractionSharedCls());
+    fill(C_CS("TpcNClsRatio"), track.tpcFoundOverFindableCls());
     fill(C_CS("TpcNCrossedRows"), track.tpcNClsCrossedRows());
     fill(C_CS("TpcNCrossedRowsRatio"), track.tpcCrossedRowsOverFindableCls());
     fill(C_CS("Pt"), holderTrack.pt);
     fill(C_CS("Eta"), holderTrack.eta);
     fill(C_CS("Phi"), holderTrack.phi);
-    if (holderTrack.hasPid[toI(Detector::Tpc)]) {
+    if (holderTrack.havePid[toI(Detector::Tpc)]) {
       fill(C_SV(getName(Detector::Tpc)) + C_CS("DeDx"), track.tpcSignal());
       fillNSigmaPidByDetectorParticleSpecies.template operator()<Detector::Tpc, ParticleSpecies::Pion>();
       fillNSigmaPidByDetectorParticleSpecies.template operator()<Detector::Tpc, ParticleSpecies::Kaon>();
       fillNSigmaPidByDetectorParticleSpecies.template operator()<Detector::Tpc, ParticleSpecies::Proton>();
     }
-    if (holderTrack.hasPid[toI(Detector::Tof)]) {
+    if (holderTrack.havePid[toI(Detector::Tof)]) {
       fill(C_SV(getName(Detector::Tof)) + C_CS("InverseBeta"), 1. / track.beta());
       fillNSigmaPidByDetectorParticleSpecies.template operator()<Detector::Tof, ParticleSpecies::Pion>();
       fillNSigmaPidByDetectorParticleSpecies.template operator()<Detector::Tof, ParticleSpecies::Kaon>();
@@ -1831,19 +1879,19 @@ struct PartNumFluc {
     requires IsValidEnumValue<ChargeSpeciesValue>
   void fillQaRunByEventByChargeSpecies()
   {
-    const auto fill{[this](const auto& name, const auto value) -> void {
-      hrQaRun.fill(C_CS("pRunIndex") + name + C_CS("_") + C_SV(getName<NameKind::Lower>(ChargeSpeciesValue)), holderEvent.runIndex, value);
+    const auto fill{[this](const auto& name, const auto input) -> void {
+      hrQaRun.fill(C_CS("pRunIndex") + name + C_CS("_") + C_SV(getName<NameKind::Lower>(ChargeSpeciesValue)), holderEvent.indexRun, input);
     }};
 
-    fill(C_CS("NGlobalTracks"), holderEvent.nGlobalTracks[toI(ChargeSpeciesValue)]);
-    fill(C_CS("NPvContributors"), holderEvent.nPvContributors[toI(ChargeSpeciesValue)]);
-    if (holderEvent.nGlobalTracks[toI(ChargeSpeciesValue)] > 0) {
-      fill(C_SV(getName(DcaMeasure::Mean)) + C_CS("Dca") + C_SV(getName(DcaAxis::Xy)), holderEvent.measureDca[toI(DcaMeasure::Mean)][toI(DcaAxis::Xy)][toI(ChargeSpeciesValue)]);
-      fill(C_SV(getName(DcaMeasure::Sigma)) + C_CS("Dca") + C_SV(getName(DcaAxis::Xy)), holderEvent.measureDca[toI(DcaMeasure::Sigma)][toI(DcaAxis::Xy)][toI(ChargeSpeciesValue)]);
-      fill(C_SV(getName(DcaMeasure::Mean)) + C_CS("Dca") + C_SV(getName(DcaAxis::Z)), holderEvent.measureDca[toI(DcaMeasure::Mean)][toI(DcaAxis::Z)][toI(ChargeSpeciesValue)]);
-      fill(C_SV(getName(DcaMeasure::Sigma)) + C_CS("Dca") + C_SV(getName(DcaAxis::Z)), holderEvent.measureDca[toI(DcaMeasure::Sigma)][toI(DcaAxis::Z)][toI(ChargeSpeciesValue)]);
+    fill(C_CS("NGlobalTracks"), holderEvent.nsGlobalTracks[toI(ChargeSpeciesValue)]);
+    fill(C_CS("NPvContributors"), holderEvent.nsPvContributors[toI(ChargeSpeciesValue)]);
+    if (std::cmp_greater(holderEvent.nsGlobalTracks[toI(ChargeSpeciesValue)], 0)) {
+      fill(C_SV(getName(DcaMeasure::Mean)) + C_CS("Dca") + C_SV(getName(DcaAxis::Xy)), holderEvent.measuresDca[toI(DcaMeasure::Mean)][toI(DcaAxis::Xy)][toI(ChargeSpeciesValue)]);
+      fill(C_SV(getName(DcaMeasure::Sigma)) + C_CS("Dca") + C_SV(getName(DcaAxis::Xy)), holderEvent.measuresDca[toI(DcaMeasure::Sigma)][toI(DcaAxis::Xy)][toI(ChargeSpeciesValue)]);
+      fill(C_SV(getName(DcaMeasure::Mean)) + C_CS("Dca") + C_SV(getName(DcaAxis::Z)), holderEvent.measuresDca[toI(DcaMeasure::Mean)][toI(DcaAxis::Z)][toI(ChargeSpeciesValue)]);
+      fill(C_SV(getName(DcaMeasure::Sigma)) + C_CS("Dca") + C_SV(getName(DcaAxis::Z)), holderEvent.measuresDca[toI(DcaMeasure::Sigma)][toI(DcaAxis::Z)][toI(ChargeSpeciesValue)]);
     }
-    fill(C_CS("NTofBeta"), holderEvent.nTofBeta[toI(ChargeSpeciesValue)]);
+    fill(C_CS("NTofBeta"), holderEvent.nsTofBeta[toI(ChargeSpeciesValue)]);
   }
 
   template <ChargeSpecies ChargeSpeciesValue, typename T>
@@ -1857,7 +1905,7 @@ struct PartNumFluc {
     fill(C_CS("ItsNClsChi2NCls"), track.itsNCls(), track.itsChi2NCl());
     fill(C_CS("TpcNClsChi2NCls"), track.tpcNClsFound(), track.tpcChi2NCl());
     fill(C_CS("TpcNClsNClsShared"), track.tpcNClsFound(), track.tpcNClsShared());
-    fill(C_CS("TpcNClsFindableNCrossedRows"), track.tpcNClsFindable(), track.tpcNClsCrossedRows());
+    fill(C_CS("TpcNClsNClsFindableNCrossedRows"), track.tpcNClsFound(), track.tpcNClsFindable(), track.tpcNClsCrossedRows());
   }
 
   template <ChargeSpecies ChargeSpeciesValue>
@@ -1868,8 +1916,8 @@ struct PartNumFluc {
       [this]<DcaAxis DcaAxisValue>
         requires IsValidEnumValue<DcaAxisValue>
       () -> void {
-        hrQaDca.fill(C_CS("hPtDca") + C_SV(getName(DcaAxisValue)) + C_CS("_") + C_SV(getName<NameKind::Lower>(ChargeSpeciesValue)), holderTrack.pt, holderTrack.dca[toI(DcaAxisValue)]);
-        hrQaDca.fill(C_CS("pCentralityPtEtaDca") + C_SV(getName(DcaAxisValue)) + C_CS("_") + C_SV(getName<NameKind::Lower>(ChargeSpeciesValue)), holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta, holderTrack.dca[toI(DcaAxisValue)]);
+        hrQaDca.fill(C_CS("hPtDca") + C_SV(getName(DcaAxisValue)) + C_CS("_") + C_SV(getName<NameKind::Lower>(ChargeSpeciesValue)), holderTrack.pt, holderTrack.dcas[toI(DcaAxisValue)]);
+        hrQaDca.fill(C_CS("pCentralityPtEtaDca") + C_SV(getName(DcaAxisValue)) + C_CS("_") + C_SV(getName<NameKind::Lower>(ChargeSpeciesValue)), holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta, holderTrack.dcas[toI(DcaAxisValue)]);
       }};
 
     fillByDcaAxis.template operator()<DcaAxis::Xy>();
@@ -1887,13 +1935,13 @@ struct PartNumFluc {
     const auto fillByChargeSpecies{
       [this]<ChargeSpecies ChargeSpeciesValue>
         requires IsValidEnumValue<ChargeSpeciesValue>
-      (const auto& name, const double value) -> void {
+      (const auto& name, const double input) -> void {
         const auto fillByPidStrategy{
-          [this, &name, value]<PidStrategy PidStrategyValue>
+          [this, input, &name]<PidStrategy PidStrategyValue>
             requires IsValidEnumValue<PidStrategyValue>
           () -> void {
             if (isPid<getValue<PidStrategyAll>(PidStrategyValue), ParticleSpeciesAllValue>(false)) {
-              hrQaAcceptance.fill(C_CS("h") + name + C_CS("Pt_") + C_SV(getName<NameKind::Lower>(PidStrategyValue)) + C_CS("Edge") + C_SV(getName(ParticleSpeciesAllValue)) + C_SV(getName(ChargeSpeciesValue)), value, holderTrack.pt); // NOLINT(clang-analyzer-core.NonNullParamChecker)
+              hrQaAcceptance.fill(C_CS("h") + name + C_CS("Pt_") + C_SV(getName<NameKind::Lower>(PidStrategyValue)) + C_CS("Edge") + C_SV(getName(ParticleSpeciesAllValue)) + C_SV(getName(ChargeSpeciesValue)), input, holderTrack.pt); // NOLINT(clang-analyzer-core.NonNullParamChecker)
             }
           }};
 
@@ -1902,13 +1950,13 @@ struct PartNumFluc {
       }};
 
     if constexpr (ParticleSpeciesAllValue == ParticleSpeciesAll::All) {
-      if (holderTrack.sign > 0) {
+      if (std::cmp_greater(holderTrack.sign, 0)) {
         fillByChargeSpecies.template operator()<ChargeSpecies::Plus>(C_CS("Eta"), holderTrack.eta);
       } else {
         fillByChargeSpecies.template operator()<ChargeSpecies::Minus>(C_CS("Eta"), holderTrack.eta);
       }
     } else {
-      if (holderTrack.sign > 0) {
+      if (std::cmp_greater(holderTrack.sign, 0)) {
         fillByChargeSpecies.template operator()<ChargeSpecies::Plus>(C_CS("Rapidity"), track.rapidity(getMass(getValue<ParticleSpecies>(ParticleSpeciesAllValue))));
       } else {
         fillByChargeSpecies.template operator()<ChargeSpecies::Minus>(C_CS("Rapidity"), track.rapidity(getMass(getValue<ParticleSpecies>(ParticleSpeciesAllValue))));
@@ -1947,7 +1995,7 @@ struct PartNumFluc {
         fillByPidStrategy.template operator()<PidStrategy::TpcTof>();
       }};
 
-    if (holderTrack.sign > 0) {
+    if (std::cmp_greater(holderTrack.sign, 0)) {
       fillByChargeSpecies.template operator()<ChargeSpecies::Plus>();
     } else {
       fillByChargeSpecies.template operator()<ChargeSpecies::Minus>();
@@ -1970,29 +2018,29 @@ struct PartNumFluc {
         hrQaPid.fill(C_CS("hCentralityPOverQEtaTofInverseBeta"), holderEvent.centralityCalibration, track.p() / holderTrack.sign, holderTrack.eta, 1. / track.beta());
       }
     } else {
-      constexpr std::int32_t ParticleSpeciesIndex{toI(getValue<ParticleSpecies>(ParticleSpeciesAllValue))};
+      constexpr std::int32_t IndexParticleSpecies{toI(getValue<ParticleSpecies>(ParticleSpeciesAllValue))};
       const auto fillByChargeSpecies{
         [this]<ChargeSpecies ChargeSpeciesValue>
           requires IsValidEnumValue<ChargeSpeciesValue>
         () -> void {
           if constexpr (DataModeValue == DataMode::McTrack) {
             if (isPid<ParticleSpeciesAllValue, ChargeSpeciesValue>()) {
-              hrQaPid.fill(C_CS("hCentralityPtEta") + C_SV(getName(Detector::Tpc)) + C_CS("NSigma") + C_SV(getName(ParticleSpeciesAllValue)) + C_CS("_mc") + C_SV(getName(ParticleSpeciesAllValue)) + C_SV(getName(ChargeSpeciesValue)), holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta, holderTrack.nSigmaPid[toI(Detector::Tpc)][ParticleSpeciesIndex]);
-              hrQaPid.fill(C_CS("hCentralityPtEta") + C_SV(getName(Detector::Tof)) + C_CS("NSigma") + C_SV(getName(ParticleSpeciesAllValue)) + C_CS("_mc") + C_SV(getName(ParticleSpeciesAllValue)) + C_SV(getName(ChargeSpeciesValue)), holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta, holderTrack.nSigmaPid[toI(Detector::Tof)][ParticleSpeciesIndex]);
+              hrQaPid.fill(C_CS("hCentralityPtEta") + C_SV(getName(Detector::Tpc)) + C_CS("NSigma") + C_SV(getName(ParticleSpeciesAllValue)) + C_CS("_mc") + C_SV(getName(ParticleSpeciesAllValue)) + C_SV(getName(ChargeSpeciesValue)), holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta, holderTrack.nsSigmaPid[toI(Detector::Tpc)][IndexParticleSpecies]);
+              hrQaPid.fill(C_CS("hCentralityPtEta") + C_SV(getName(Detector::Tof)) + C_CS("NSigma") + C_SV(getName(ParticleSpeciesAllValue)) + C_CS("_mc") + C_SV(getName(ParticleSpeciesAllValue)) + C_SV(getName(ChargeSpeciesValue)), holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta, holderTrack.nsSigmaPid[toI(Detector::Tof)][IndexParticleSpecies]);
             }
           } else { // DataModeValue == DataMode::RawTrack
-            hrQaPid.fill(C_CS("hCentralityPtEta") + C_SV(getName(Detector::Tpc)) + C_CS("NSigma") + C_SV(getName(ParticleSpeciesAllValue)) + C_CS("_") + C_SV(getName<NameKind::Lower>(ChargeSpeciesValue)), holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta, holderTrack.nSigmaPid[toI(Detector::Tpc)][ParticleSpeciesIndex]);
+            hrQaPid.fill(C_CS("hCentralityPtEta") + C_SV(getName(Detector::Tpc)) + C_CS("NSigma") + C_SV(getName(ParticleSpeciesAllValue)) + C_CS("_") + C_SV(getName<NameKind::Lower>(ChargeSpeciesValue)), holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta, holderTrack.nsSigmaPid[toI(Detector::Tpc)][IndexParticleSpecies]);
             if (isPid<PidStrategyAll::Tof, ParticleSpeciesAllValue>(false)) {
-              hrQaPid.fill(C_CS("hCentralityPtEta") + C_SV(getName(Detector::Tpc)) + C_CS("NSigma") + C_SV(getName(ParticleSpeciesAllValue)) + C_CS("_") + C_SV(getName<NameKind::Lower>(Detector::Tof)) + C_SV(getName(ParticleSpeciesAllValue)) + C_SV(getName(ChargeSpeciesValue)), holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta, holderTrack.nSigmaPid[toI(Detector::Tpc)][ParticleSpeciesIndex]);
+              hrQaPid.fill(C_CS("hCentralityPtEta") + C_SV(getName(Detector::Tpc)) + C_CS("NSigma") + C_SV(getName(ParticleSpeciesAllValue)) + C_CS("_") + C_SV(getName<NameKind::Lower>(Detector::Tof)) + C_SV(getName(ParticleSpeciesAllValue)) + C_SV(getName(ChargeSpeciesValue)), holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta, holderTrack.nsSigmaPid[toI(Detector::Tpc)][IndexParticleSpecies]);
             }
             if (isPid<PidStrategyAll::Tpc, ParticleSpeciesAllValue>(false)) {
-              hrQaPid.fill(C_CS("hCentralityPtEta") + C_SV(getName(Detector::Tof)) + C_CS("NSigma") + C_SV(getName(ParticleSpeciesAllValue)) + C_CS("_") + C_SV(getName<NameKind::Lower>(Detector::Tpc)) + C_SV(getName(ParticleSpeciesAllValue)) + C_SV(getName(ChargeSpeciesValue)), holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta, holderTrack.nSigmaPid[toI(Detector::Tof)][ParticleSpeciesIndex]);
+              hrQaPid.fill(C_CS("hCentralityPtEta") + C_SV(getName(Detector::Tof)) + C_CS("NSigma") + C_SV(getName(ParticleSpeciesAllValue)) + C_CS("_") + C_SV(getName<NameKind::Lower>(Detector::Tpc)) + C_SV(getName(ParticleSpeciesAllValue)) + C_SV(getName(ChargeSpeciesValue)), holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta, holderTrack.nsSigmaPid[toI(Detector::Tof)][IndexParticleSpecies]);
             }
-            hrQaPid.fill(C_CS("hCentralityPtEta") + C_SV(getName(PidStrategy::TpcTof)) + C_CS("NSigma") + C_SV(getName(ParticleSpeciesAllValue)) + C_CS("_") + C_SV(getName<NameKind::Lower>(ChargeSpeciesValue)), holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta, holderTrack.getNSigmaPidCombined(ParticleSpeciesIndex));
+            hrQaPid.fill(C_CS("hCentralityPtEta") + C_SV(getName(PidStrategy::TpcTof)) + C_CS("NSigma") + C_SV(getName(ParticleSpeciesAllValue)) + C_CS("_") + C_SV(getName<NameKind::Lower>(ChargeSpeciesValue)), holderEvent.centralityCalibration, holderTrack.pt, holderTrack.eta, holderTrack.getNSigmaPidCombined(IndexParticleSpecies));
           }
         }};
 
-      if (holderTrack.sign > 0) {
+      if (std::cmp_greater(holderTrack.sign, 0)) {
         fillByChargeSpecies.template operator()<ChargeSpecies::Plus>();
       } else {
         fillByChargeSpecies.template operator()<ChargeSpecies::Minus>();
@@ -2049,7 +2097,7 @@ struct PartNumFluc {
         }
       }};
 
-    if (chargeSign > 0) {
+    if (std::cmp_greater(chargeSign, 0)) {
       fillByChargeSpecies.template operator()<ChargeSpecies::Plus>();
     } else {
       fillByChargeSpecies.template operator()<ChargeSpecies::Minus>();
@@ -2081,7 +2129,7 @@ struct PartNumFluc {
         fillByPidStrategy.template operator()<PidStrategy::TpcTof>();
       }};
 
-    if (holderTrack.sign > 0) {
+    if (std::cmp_greater(holderTrack.sign, 0)) {
       fillByChargeSpecies.template operator()<ChargeSpecies::Plus>();
     } else {
       fillByChargeSpecies.template operator()<ChargeSpecies::Minus>();
@@ -2113,7 +2161,7 @@ struct PartNumFluc {
         fillByPidStrategy.template operator()<PidStrategy::TpcTof>();
       }};
 
-    if (holderTrack.sign > 0) {
+    if (std::cmp_greater(holderTrack.sign, 0)) {
       fillByChargeSpecies.template operator()<ChargeSpecies::Plus>();
     } else {
       fillByChargeSpecies.template operator()<ChargeSpecies::Minus>();
@@ -2126,9 +2174,9 @@ struct PartNumFluc {
       if (static_cast<bool>(cgAnalysis.cfgFlagsCalculationFluctuation.value.get(iParticleNumber))) {
         for (std::int32_t const& iChargeNumber : std::views::iota(0, NEs<ChargeNumber>)) {
           if (doProcessMc.value) {
-            fluctuationCalculatorsTrackMcParticle[iParticleNumber][iChargeNumber]->clear();
+            holderMember.fluctuationCalculatorsTrackMcParticle[iParticleNumber][iChargeNumber]->clear();
           }
-          fluctuationCalculatorsTrackTrack[iParticleNumber][iChargeNumber]->clear();
+          holderMember.fluctuationCalculatorsTrackTrack[iParticleNumber][iChargeNumber]->clear();
         }
       }
     }
@@ -2155,16 +2203,16 @@ struct PartNumFluc {
         return true;
       } else if constexpr (DataModeValue == DataMode::McTrack) {
         return flagMcParticleMomentum;
-      } else {
+      } else { // DataModeValue == DataMode::RawTrack
         return false;
       }
     }(cgTrack.cfgFlagMcParticleMomentum.value)};
-    const ChargeSpecies chargeSpecies{chargeSign > 0 ? ChargeSpecies::Plus : ChargeSpecies::Minus};
+    const ChargeSpecies chargeSpecies{std::cmp_greater(chargeSign, 0) ? ChargeSpecies::Plus : ChargeSpecies::Minus};
     if (isGoodMomentum<getValue<ParticleSpeciesAll>(ParticleNumberValue)>(doUseMcParticleMomentum)) {
       if constexpr (DataModeValue == DataMode::McMcParticle) {
-        ++holderDerivedData.nMcParticles[toI(chargeSpecies)];
+        ++holderDerivedData.nsMcParticles[toI(chargeSpecies)];
       } else {
-        ++holderDerivedData.nTracks[toI(chargeSpecies)];
+        ++holderDerivedData.nsTracks[toI(chargeSpecies)];
       }
     }
 
@@ -2172,7 +2220,7 @@ struct PartNumFluc {
       [this, chargeSign, doUseMcParticleMomentum]<ParticleSpecies ParticleSpeciesValue>
         requires IsValidEnumValue<ParticleSpeciesValue> && (getValue<ParticleSpeciesAll>(ParticleNumberValue) == ParticleSpeciesAll::All || getValue<ParticleSpeciesAll>(ParticleNumberValue) == getValue<ParticleSpeciesAll>(ParticleSpeciesValue))
       () -> bool {
-        if (!isGoodMomentum<getValue<ParticleSpeciesAll>(ParticleSpeciesValue)>(doUseMcParticleMomentum) || (DataModeValue != DataMode::RawTrack && (chargeSign > 0 ? !isPid<getValue<ParticleSpeciesAll>(ParticleSpeciesValue), ChargeSpecies::Plus>() : !isPid<getValue<ParticleSpeciesAll>(ParticleSpeciesValue), ChargeSpecies::Minus>()))) {
+        if (!isGoodMomentum<getValue<ParticleSpeciesAll>(ParticleSpeciesValue)>(doUseMcParticleMomentum) || (DataModeValue != DataMode::RawTrack && (std::cmp_greater(chargeSign, 0) ? !isPid<getValue<ParticleSpeciesAll>(ParticleSpeciesValue), ChargeSpecies::Plus>() : !isPid<getValue<ParticleSpeciesAll>(ParticleSpeciesValue), ChargeSpecies::Minus>()))) {
           return false;
         }
 
@@ -2181,7 +2229,7 @@ struct PartNumFluc {
             return ptMcParticle >= thresholdPtTofPid;
           } else if constexpr (DataModeValue == DataMode::McTrack) {
             return (doUseMcParticleMomentumValue ? ptMcParticle : ptTrack) >= thresholdPtTofPid;
-          } else {
+          } else { // DataModeValue == DataMode::RawTrack
             return ptTrack >= thresholdPtTofPid;
           }
         }(doUseMcParticleMomentum, holderMcParticle.pt, holderTrack.pt, cgTrack.cfgThresholdsPtTofPid.value.get(toI(ParticleSpeciesValue)))};
@@ -2198,11 +2246,11 @@ struct PartNumFluc {
             const double efficiency{doUseTofPid ? getEfficiency<PidStrategy::TpcTof, ParticleSpeciesValue, ChargeSpeciesValue>(doUseMcParticleMomentum) : getEfficiency<PidStrategy::Tpc, ParticleSpeciesValue, ChargeSpeciesValue>(doUseMcParticleMomentum)};
             const auto fill{
               [this, efficiency]() -> void {
-                std::array<std::array<std::unique_ptr<FluctuationCalculatorTrack>, NEs<ChargeNumber>>, NEs<ParticleNumber>>& fluctuationCalculatorsTrack{DataModeValue == DataMode::McMcParticle ? fluctuationCalculatorsTrackMcParticle : fluctuationCalculatorsTrackTrack};
+                std::array<std::array<std::unique_ptr<FluctuationCalculatorTrack>, NEs<ChargeNumber>>, NEs<ParticleNumber>>& fluctuationCalculatorsTrack{DataModeValue == DataMode::McMcParticle ? holderMember.fluctuationCalculatorsTrackMcParticle : holderMember.fluctuationCalculatorsTrackTrack};
                 if constexpr (ChargeSpeciesValue == ChargeSpecies::Plus) {
                   fluctuationCalculatorsTrack[toI(ParticleNumberValue)][toI(ChargeNumber::Plus)]->fill(1., efficiency);
                   fluctuationCalculatorsTrack[toI(ParticleNumberValue)][toI(ChargeNumber::Net)]->fill(1., efficiency);
-                } else {
+                } else { // ChargeSpeciesValue == ChargeSpecies::Minus
                   fluctuationCalculatorsTrack[toI(ParticleNumberValue)][toI(ChargeNumber::Minus)]->fill(1., efficiency);
                   fluctuationCalculatorsTrack[toI(ParticleNumberValue)][toI(ChargeNumber::Net)]->fill(-1., efficiency);
                 }
@@ -2210,7 +2258,7 @@ struct PartNumFluc {
               }};
             if constexpr (DataModeValue == DataMode::McMcParticle) {
               ++holderMcEvent.numbers[toI(ParticleNumberValue)][toI(ChargeSpeciesValue)];
-              if (gRandom->Rndm() < efficiency) {
+              if (std::uniform_real_distribution<double>{}(holderMember.engineRandom) < efficiency) {
                 ++holderMcEvent.numbersEff[toI(ParticleNumberValue)][toI(ChargeSpeciesValue)];
                 fill();
               }
@@ -2222,7 +2270,7 @@ struct PartNumFluc {
             }
           }};
 
-        if (chargeSign > 0) {
+        if (std::cmp_greater(chargeSign, 0)) {
           calculateByChargeSpecies.template operator()<ChargeSpecies::Plus>();
         } else {
           calculateByChargeSpecies.template operator()<ChargeSpecies::Minus>();
@@ -2258,15 +2306,15 @@ struct PartNumFluc {
         requires IsValidEnumValue<ChargeNumberValue>
       () -> void {
         if (doProcessMc.value) {
-          const std::array<double, fluctuation_calculator_base::NOrderKeys> products{fluctuationCalculatorsTrackMcParticle[toI(ParticleNumberValue)][toI(ChargeNumberValue)]->getProducts()};
+          const std::array<double, fluctuation_calculator_base::NOrderKeys> products{holderMember.fluctuationCalculatorsTrackMcParticle[toI(ParticleNumberValue)][toI(ChargeNumberValue)]->getProducts()};
           for (std::int32_t const& iOrderKey : std::views::iota(0, fluctuation_calculator_base::NOrderKeys)) {
-            hrCalculationFluctuation.fill(C_CS("hFluctuationCalculator") + C_SV(getName(ParticleNumberValue)) + C_SV(getName(ChargeNumberValue)) + C_CS("_mc"), holderEvent.centrality, holderEvent.subgroupIndex, iOrderKey, products[iOrderKey]);
+            hrCalculationFluctuation.fill(C_CS("hFluctuationCalculator") + C_SV(getName(ParticleNumberValue)) + C_SV(getName(ChargeNumberValue)) + C_CS("_mc"), holderEvent.centrality, holderEvent.indexSubgroup, iOrderKey, products[iOrderKey]);
           }
         }
 
-        const std::array<double, fluctuation_calculator_base::NOrderKeys> products{fluctuationCalculatorsTrackTrack[toI(ParticleNumberValue)][toI(ChargeNumberValue)]->getProducts()};
+        const std::array<double, fluctuation_calculator_base::NOrderKeys> products{holderMember.fluctuationCalculatorsTrackTrack[toI(ParticleNumberValue)][toI(ChargeNumberValue)]->getProducts()};
         for (std::int32_t const& iOrderKey : std::views::iota(0, fluctuation_calculator_base::NOrderKeys)) {
-          hrCalculationFluctuation.fill(C_CS("hFluctuationCalculator") + C_SV(getName(ParticleNumberValue)) + C_SV(getName(ChargeNumberValue)), holderEvent.centrality, holderEvent.subgroupIndex, iOrderKey, products[iOrderKey]);
+          hrCalculationFluctuation.fill(C_CS("hFluctuationCalculator") + C_SV(getName(ParticleNumberValue)) + C_SV(getName(ChargeNumberValue)), holderEvent.centrality, holderEvent.indexSubgroup, iOrderKey, products[iOrderKey]);
         }
       }};
 
@@ -2279,28 +2327,28 @@ struct PartNumFluc {
   template <bool DoRecalibrate, typename T>
   bool setTrack(const T& track)
   {
-    if (std::abs(track.sign()) != 1) {
+    if (std::cmp_not_equal(std::abs(track.sign()), 1)) {
       return false;
     }
 
     holderTrack.clear();
-    holderTrack.dca[toI(DcaAxis::Xy)] = track.dcaXY();
-    holderTrack.dca[toI(DcaAxis::Z)] = track.dcaZ();
+    holderTrack.dcas[toI(DcaAxis::Xy)] = track.dcaXY();
+    holderTrack.dcas[toI(DcaAxis::Z)] = track.dcaZ();
     holderTrack.sign = track.sign();
     holderTrack.pt = track.pt();
     holderTrack.eta = track.eta();
     holderTrack.phi = track.phi();
-    holderTrack.hasPid[toI(Detector::Tpc)] = (track.hasTPC() && track.tpcSignal() > 0.);
-    holderTrack.hasPid[toI(Detector::Tof)] = (track.hasTOF() && track.beta() > 0.);
-    if (holderTrack.hasPid[toI(Detector::Tpc)]) {
-      holderTrack.nSigmaPid[toI(Detector::Tpc)][toI(ParticleSpecies::Pion)] = HolderTrack::truncateNSigmaPid(track.tpcNSigmaPi(), getShiftNSigmaPid<DoRecalibrate, Detector::Tpc, ParticleSpecies::Pion>());
-      holderTrack.nSigmaPid[toI(Detector::Tpc)][toI(ParticleSpecies::Kaon)] = HolderTrack::truncateNSigmaPid(track.tpcNSigmaKa(), getShiftNSigmaPid<DoRecalibrate, Detector::Tpc, ParticleSpecies::Kaon>());
-      holderTrack.nSigmaPid[toI(Detector::Tpc)][toI(ParticleSpecies::Proton)] = HolderTrack::truncateNSigmaPid(track.tpcNSigmaPr(), getShiftNSigmaPid<DoRecalibrate, Detector::Tpc, ParticleSpecies::Proton>());
+    holderTrack.havePid[toI(Detector::Tpc)] = (track.hasTPC() && track.tpcSignal() > 0.);
+    holderTrack.havePid[toI(Detector::Tof)] = (track.hasTOF() && track.beta() > 0.);
+    if (holderTrack.havePid[toI(Detector::Tpc)]) {
+      holderTrack.nsSigmaPid[toI(Detector::Tpc)][toI(ParticleSpecies::Pion)] = HolderTrack::truncateNSigmaPid(track.tpcNSigmaPi(), getShiftNSigmaPid<DoRecalibrate, Detector::Tpc, ParticleSpecies::Pion>());
+      holderTrack.nsSigmaPid[toI(Detector::Tpc)][toI(ParticleSpecies::Kaon)] = HolderTrack::truncateNSigmaPid(track.tpcNSigmaKa(), getShiftNSigmaPid<DoRecalibrate, Detector::Tpc, ParticleSpecies::Kaon>());
+      holderTrack.nsSigmaPid[toI(Detector::Tpc)][toI(ParticleSpecies::Proton)] = HolderTrack::truncateNSigmaPid(track.tpcNSigmaPr(), getShiftNSigmaPid<DoRecalibrate, Detector::Tpc, ParticleSpecies::Proton>());
     }
-    if (holderTrack.hasPid[toI(Detector::Tof)]) {
-      holderTrack.nSigmaPid[toI(Detector::Tof)][toI(ParticleSpecies::Pion)] = HolderTrack::truncateNSigmaPid(track.tofNSigmaPi(), getShiftNSigmaPid<DoRecalibrate, Detector::Tof, ParticleSpecies::Pion>());
-      holderTrack.nSigmaPid[toI(Detector::Tof)][toI(ParticleSpecies::Kaon)] = HolderTrack::truncateNSigmaPid(track.tofNSigmaKa(), getShiftNSigmaPid<DoRecalibrate, Detector::Tof, ParticleSpecies::Kaon>());
-      holderTrack.nSigmaPid[toI(Detector::Tof)][toI(ParticleSpecies::Proton)] = HolderTrack::truncateNSigmaPid(track.tofNSigmaPr(), getShiftNSigmaPid<DoRecalibrate, Detector::Tof, ParticleSpecies::Proton>());
+    if (holderTrack.havePid[toI(Detector::Tof)]) {
+      holderTrack.nsSigmaPid[toI(Detector::Tof)][toI(ParticleSpecies::Pion)] = HolderTrack::truncateNSigmaPid(track.tofNSigmaPi(), getShiftNSigmaPid<DoRecalibrate, Detector::Tof, ParticleSpecies::Pion>());
+      holderTrack.nsSigmaPid[toI(Detector::Tof)][toI(ParticleSpecies::Kaon)] = HolderTrack::truncateNSigmaPid(track.tofNSigmaKa(), getShiftNSigmaPid<DoRecalibrate, Detector::Tof, ParticleSpecies::Kaon>());
+      holderTrack.nsSigmaPid[toI(Detector::Tof)][toI(ParticleSpecies::Proton)] = HolderTrack::truncateNSigmaPid(track.tofNSigmaPr(), getShiftNSigmaPid<DoRecalibrate, Detector::Tof, ParticleSpecies::Proton>());
     }
 
     return true;
@@ -2324,7 +2372,7 @@ struct PartNumFluc {
       }
     }
 
-    if (holderMcParticle.charge == 0) {
+    if (std::cmp_equal(holderMcParticle.charge, 0)) {
       return false;
     }
 
@@ -2343,22 +2391,22 @@ struct PartNumFluc {
 
     if constexpr (DoInitEvent) {
       if (track.isPrimaryTrack()) {
-        const std::int32_t chargeSpeciesIndex{toI(holderTrack.sign > 0 ? ChargeSpecies::Plus : ChargeSpecies::Minus)};
-        ++holderEvent.nGlobalTracks[chargeSpeciesIndex];
+        const std::int32_t indexChargeSpecies{toI(std::cmp_greater(holderTrack.sign, 0) ? ChargeSpecies::Plus : ChargeSpecies::Minus)};
+        ++holderEvent.nsGlobalTracks[indexChargeSpecies];
         if (track.isPVContributor()) {
-          ++holderEvent.nPvContributors[chargeSpeciesIndex];
+          ++holderEvent.nsPvContributors[indexChargeSpecies];
         }
         for (std::int32_t const& iDcaAxis : std::views::iota(0, NEs<DcaAxis>)) {
-          holderEvent.measureDca[toI(DcaMeasure::Mean)][iDcaAxis][chargeSpeciesIndex] += holderTrack.dca[iDcaAxis];
-          holderEvent.measureDca[toI(DcaMeasure::Sigma)][iDcaAxis][chargeSpeciesIndex] += std::pow(holderTrack.dca[iDcaAxis], 2.);
+          holderEvent.measuresDca[toI(DcaMeasure::Mean)][iDcaAxis][indexChargeSpecies] += holderTrack.dcas[iDcaAxis];
+          holderEvent.measuresDca[toI(DcaMeasure::Sigma)][iDcaAxis][indexChargeSpecies] += std::pow(holderTrack.dcas[iDcaAxis], 2.);
         }
-        if (holderTrack.hasPid[toI(Detector::Tof)]) {
-          ++holderEvent.nTofBeta[chargeSpeciesIndex];
+        if (holderTrack.havePid[toI(Detector::Tof)]) {
+          ++holderEvent.nsTofBeta[indexChargeSpecies];
         }
       }
 
       if (cgAnalysis.cfgFlagQaRun.value && track.isPrimaryTrack()) {
-        if (holderTrack.sign > 0) {
+        if (std::cmp_greater(holderTrack.sign, 0)) {
           fillQaRunByTrackByChargeSpecies<ChargeSpecies::Plus>(track);
         } else {
           fillQaRunByTrackByChargeSpecies<ChargeSpecies::Minus>(track);
@@ -2366,7 +2414,7 @@ struct PartNumFluc {
       }
     } else {
       if (cgAnalysis.cfgFlagQaTrack.value && track.isPrimaryTrack()) {
-        if (holderTrack.sign > 0) {
+        if (std::cmp_greater(holderTrack.sign, 0)) {
           fillQaTrackByChargeSpecies<ChargeSpecies::Plus>(track);
         } else {
           fillQaTrackByChargeSpecies<ChargeSpecies::Minus>(track);
@@ -2378,7 +2426,7 @@ struct PartNumFluc {
       }
 
       if (cgAnalysis.cfgFlagQaDca.value) {
-        if (holderTrack.sign > 0) {
+        if (std::cmp_greater(holderTrack.sign, 0)) {
           fillQaDcaByChargeSpecies<ChargeSpecies::Plus>();
         } else {
           fillQaDcaByChargeSpecies<ChargeSpecies::Minus>();
@@ -2389,7 +2437,7 @@ struct PartNumFluc {
         return false;
       }
 
-      if (doQaAcceptance) {
+      if (holderMember.doQaAcceptance) {
         const double vz{doProcessMc.value && cgEvent.cfgFlagMcCollisionVz.value ? holderMcEvent.vz : holderEvent.vz};
         if (holderTrack.eta * vz > 0. && std::abs(vz) > (doProcessMc.value && cgEvent.cfgFlagMcCollisionVz.value ? cgEvent.cfgCutMaxAbsVzMc.value : cgEvent.cfgCutMaxAbsVz.value) - 1.) {
           fillQaAcceptanceByParticleSpeciesAll<ParticleSpeciesAll::All>(track);
@@ -2416,7 +2464,7 @@ struct PartNumFluc {
       return;
     }
 
-    miniCollision(*codeCollision);
+    pg.miniCollision(*codeCollision);
 
     for (const auto& mcParticle : mcParticles) {
       if (!initMcParticle(mcParticle)) {
@@ -2428,13 +2476,13 @@ struct PartNumFluc {
           [this]<ParticleSpecies ParticleSpeciesValue>
             requires IsValidEnumValue<ParticleSpeciesValue> && (getValue<ParticleSpeciesAll>(ParticleNumberValue) == ParticleSpeciesAll::All || getValue<ParticleSpeciesAll>(ParticleNumberValue) == getValue<ParticleSpeciesAll>(ParticleSpeciesValue))
           () -> bool {
-            if (!isGoodMomentum<getValue<ParticleSpeciesAll>(ParticleSpeciesValue)>(true) || (holderMcParticle.charge > 0 ? !isPid<getValue<ParticleSpeciesAll>(ParticleSpeciesValue), ChargeSpecies::Plus>() : !isPid<getValue<ParticleSpeciesAll>(ParticleSpeciesValue), ChargeSpecies::Minus>())) {
+            if (!isGoodMomentum<getValue<ParticleSpeciesAll>(ParticleSpeciesValue)>(true) || (std::cmp_greater(holderMcParticle.charge, 0) ? !isPid<getValue<ParticleSpeciesAll>(ParticleSpeciesValue), ChargeSpecies::Plus>() : !isPid<getValue<ParticleSpeciesAll>(ParticleSpeciesValue), ChargeSpecies::Minus>())) {
               return false;
             }
 
             const std::optional<aod::mini_mc_particle::Code::type> codeMcParticle{mini_mc_particle_codec::encode<ParticleSpeciesValue>(holderMcParticle.pt, holderMcParticle.eta, holderMcParticle.charge)};
             if (codeMcParticle.has_value()) {
-              miniMcParticle(miniCollision.lastIndex(), *codeMcParticle);
+              pg.miniMcParticle(pg.miniCollision.lastIndex(), *codeMcParticle);
             }
             return true;
           }};
@@ -2449,9 +2497,9 @@ struct PartNumFluc {
       }
 
       if (!cgTrack.cfgFlagMcParticlePhysicalPrimary.value || mcParticle.isPhysicalPrimary()) {
-        const auto& tracksMatched{tracks.sliceBy(presliceTracksPerMcParticle, mcParticle.globalIndex())};
+        const auto& tracksMatched{tracks.sliceBy(psg.tracksPerMcParticle, mcParticle.globalIndex())};
         for (const auto& track : tracksMatched) {
-          if (!setTrack<true>(track) || !(cgTrack.cfgCutMinTpcChi2NCls.value < track.tpcChi2NCl()) || !(track.tpcCrossedRowsOverFindableCls() > cgTrack.cfgCutMinTpcNCrossedRowsRatio.value)) {
+          if (!std::cmp_greater(track.tpcNClsFound(), cgTrack.cfgCutsMinTpcNCls.value.get(toI(Selection::Default))) || !setTrack<true>(track) || !(track.tpcChi2NCl() > cgTrack.cfgCutMinTpcChi2NCls.value) || !(track.tpcFoundOverFindableCls() > cgTrack.cfgCutMinTpcNClsRatio.value) || !(track.tpcCrossedRowsOverFindableCls() > cgTrack.cfgCutMinTpcNCrossedRowsRatio.value)) {
             continue;
           }
 
@@ -2460,20 +2508,20 @@ struct PartNumFluc {
               requires IsValidEnumValue<ParticleSpeciesAllValue> && (ParticleSpeciesAllValue != ParticleSpeciesAll::All)
             () -> bool {
               const bool doUseMcParticleMomentum{cgTrack.cfgFlagMcParticleMomentum.value};
-              if (!isGoodMomentum<ParticleSpeciesAllValue>(doUseMcParticleMomentum) || (holderTrack.sign > 0 ? !isPid<ParticleSpeciesAllValue, ChargeSpecies::Plus>() : !isPid<ParticleSpeciesAllValue, ChargeSpecies::Minus>())) {
+              if (!isGoodMomentum<ParticleSpeciesAllValue>(doUseMcParticleMomentum) || (std::cmp_greater(holderTrack.sign, 0) ? !isPid<ParticleSpeciesAllValue, ChargeSpecies::Plus>() : !isPid<ParticleSpeciesAllValue, ChargeSpecies::Minus>())) {
                 return false;
               }
 
-              constexpr std::int32_t ParticleSpeciesIndex{toI(getValue<ParticleSpecies>(ParticleSpeciesAllValue))};
+              constexpr std::int32_t IndexParticleSpecies{toI(getValue<ParticleSpecies>(ParticleSpeciesAllValue))};
               const double pt{doUseMcParticleMomentum ? holderMcParticle.pt : holderTrack.pt};
-              const bool doUseTofPid{pt >= cgTrack.cfgThresholdsPtTofPid.value.get(ParticleSpeciesIndex)};
+              const bool doUseTofPid{pt >= cgTrack.cfgThresholdsPtTofPid.value.get(IndexParticleSpecies)};
               if (!(doUseTofPid ? isPid<getValue<PidStrategyAll>(PidStrategy::TpcTof), ParticleSpeciesAllValue, Selection::Loose>(cgTrack.cfgFlagRejectionOthers.value) : isPid<getValue<PidStrategyAll>(PidStrategy::Tpc), ParticleSpeciesAllValue, Selection::Loose>(cgTrack.cfgFlagRejectionOthers.value))) {
                 return false;
               }
 
-              const std::optional<aod::mini_track::Code::type> codeTrack{mini_track_codec::encode<ParticleSpeciesAllValue>(*configSelection, track.isPVContributor(), track.itsNCls(), track.itsChi2NCl(), track.tpcNClsFound(), track.tpcChi2NCl(), track.tpcNClsCrossedRows(), track.tpcFractionSharedCls(), {getAbsNSigmaDca<DcaAxis::Xy>(), getAbsNSigmaDca<DcaAxis::Z>()}, pt, doUseMcParticleMomentum ? holderMcParticle.eta : holderTrack.eta, holderTrack.sign, doUseTofPid ? std::abs(holderTrack.getNSigmaPidCombined(ParticleSpeciesIndex)) : std::abs(holderTrack.nSigmaPid[toI(Detector::Tpc)][ParticleSpeciesIndex]))};
+              const std::optional<std::tuple<aod::mini_track::CodeLow::type, aod::mini_track::CodeHigh::type>> codeTrack{mini_track_codec::encode<ParticleSpeciesAllValue>(*holderMember.configSelection, track.isPVContributor(), track.itsNCls(), track.itsChi2NCl(), track.tpcChi2NCl(), track.tpcFractionSharedCls(), track.tpcNClsCrossedRows(), std::array<double, NEs<DcaAxis>>{getAbsNSigmaDca<DcaAxis::Xy>(), getAbsNSigmaDca<DcaAxis::Z>()}, pt, doUseMcParticleMomentum ? holderMcParticle.eta : holderTrack.eta, holderTrack.sign, doUseTofPid ? std::abs(holderTrack.getNSigmaPidCombined(IndexParticleSpecies)) : std::abs(holderTrack.nsSigmaPid[toI(Detector::Tpc)][IndexParticleSpecies]))};
               if (codeTrack.has_value()) {
-                miniTrack(miniCollision.lastIndex(), *codeTrack);
+                pg.miniTrack(pg.miniCollision.lastIndex(), std::get<0>(*codeTrack), std::get<1>(*codeTrack));
               }
               return true;
             }};
@@ -2503,10 +2551,10 @@ struct PartNumFluc {
       return;
     }
 
-    miniCollision(*codeCollision);
+    pg.miniCollision(*codeCollision);
 
     for (const auto& track : tracks) {
-      if (!setTrack<true>(track) || !(cgTrack.cfgCutMinTpcChi2NCls.value < track.tpcChi2NCl()) || !(track.tpcCrossedRowsOverFindableCls() > cgTrack.cfgCutMinTpcNCrossedRowsRatio.value)) {
+      if (!std::cmp_greater(track.tpcNClsFound(), cgTrack.cfgCutsMinTpcNCls.value.get(toI(Selection::Default))) || !setTrack<true>(track) || !(track.tpcChi2NCl() > cgTrack.cfgCutMinTpcChi2NCls.value) || !(track.tpcFoundOverFindableCls() > cgTrack.cfgCutMinTpcNClsRatio.value) || !(track.tpcCrossedRowsOverFindableCls() > cgTrack.cfgCutMinTpcNCrossedRowsRatio.value)) {
         continue;
       }
 
@@ -2514,9 +2562,9 @@ struct PartNumFluc {
         [this, &track]<ParticleSpeciesAll ParticleSpeciesAllValue>
           requires IsValidEnumValue<ParticleSpeciesAllValue>
         (const double absNSigmaPid) -> void {
-          const std::optional<aod::mini_track::Code::type> codeTrack{mini_track_codec::encode<ParticleSpeciesAllValue>(*configSelection, track.isPVContributor(), track.itsNCls(), track.itsChi2NCl(), track.tpcNClsFound(), track.tpcChi2NCl(), track.tpcNClsCrossedRows(), track.tpcFractionSharedCls(), {getAbsNSigmaDca<DcaAxis::Xy>(), getAbsNSigmaDca<DcaAxis::Z>()}, holderTrack.pt, holderTrack.eta, holderTrack.sign, absNSigmaPid)};
+          const std::optional<std::tuple<aod::mini_track::CodeLow::type, aod::mini_track::CodeHigh::type>> codeTrack{mini_track_codec::encode<ParticleSpeciesAllValue>(*holderMember.configSelection, track.isPVContributor(), track.itsNCls(), track.itsChi2NCl(), track.tpcChi2NCl(), track.tpcFractionSharedCls(), track.tpcNClsCrossedRows(), std::array<double, NEs<DcaAxis>>{getAbsNSigmaDca<DcaAxis::Xy>(), getAbsNSigmaDca<DcaAxis::Z>()}, holderTrack.pt, holderTrack.eta, holderTrack.sign, absNSigmaPid)};
           if (codeTrack.has_value()) {
-            miniTrack(miniCollision.lastIndex(), *codeTrack);
+            pg.miniTrack(pg.miniCollision.lastIndex(), std::get<0>(*codeTrack), std::get<1>(*codeTrack));
           }
         }};
       const auto fillByParticleSpeciesAll{
@@ -2534,13 +2582,13 @@ struct PartNumFluc {
               return false;
             }
 
-            constexpr std::int32_t ParticleSpeciesIndex{toI(getValue<ParticleSpecies>(ParticleSpeciesAllValue))};
-            const bool doUseTofPid{holderTrack.pt >= cgTrack.cfgThresholdsPtTofPid.value.get(ParticleSpeciesIndex)};
+            constexpr std::int32_t IndexParticleSpecies{toI(getValue<ParticleSpecies>(ParticleSpeciesAllValue))};
+            const bool doUseTofPid{holderTrack.pt >= cgTrack.cfgThresholdsPtTofPid.value.get(IndexParticleSpecies)};
             if (!(doUseTofPid ? isPid<getValue<PidStrategyAll>(PidStrategy::TpcTof), ParticleSpeciesAllValue, Selection::Loose>(cgTrack.cfgFlagRejectionOthers.value) : isPid<getValue<PidStrategyAll>(PidStrategy::Tpc), ParticleSpeciesAllValue, Selection::Loose>(cgTrack.cfgFlagRejectionOthers.value))) {
               return false;
             }
 
-            fill.template operator()<ParticleSpeciesAllValue>(doUseTofPid ? std::abs(holderTrack.getNSigmaPidCombined(ParticleSpeciesIndex)) : std::abs(holderTrack.nSigmaPid[toI(Detector::Tpc)][ParticleSpeciesIndex]));
+            fill.template operator()<ParticleSpeciesAllValue>(doUseTofPid ? std::abs(holderTrack.getNSigmaPidCombined(IndexParticleSpecies)) : std::abs(holderTrack.nsSigmaPid[toI(Detector::Tpc)][IndexParticleSpecies]));
           }
           return true;
         }};
@@ -2583,7 +2631,7 @@ struct PartNumFluc {
       hrQaMc.fill(C_CS("hNCollisionsPerMcCollision"), mcCollision.numRecoCollision());
     }
 
-    if (cgEvent.cfgFlagSingleCollisionMc.value && mcCollision.numRecoCollision() != 1) {
+    if (cgEvent.cfgFlagSingleCollisionMc.value && std::cmp_not_equal(mcCollision.numRecoCollision(), 1)) {
       return fillMcEventSelection(McEventSelection::NRecoCollisions);
     }
 
@@ -2631,14 +2679,14 @@ struct PartNumFluc {
     holderEvent.runNumber = foundBc.runNumber();
 
     {
-      const auto iter{holderCcdb.runNumbersIndicesGroupIndices.find(holderEvent.runNumber)};
-      if (iter == holderCcdb.runNumbersIndicesGroupIndices.end()) {
+      const auto iter{holderCcdb.runNumbersToIndicesRunAndGroup.find(holderEvent.runNumber)};
+      if (iter == holderCcdb.runNumbersToIndicesRunAndGroup.end()) {
         return fillEventSelection(EventSelection::Run);
       }
-      std::tie(holderEvent.runIndex, holderEvent.runGroupIndex) = iter->second;
+      std::tie(holderEvent.indexRun, holderEvent.indexRunGroup) = iter->second;
     }
 
-    if (holderEvent.runGroupIndex == 0 || (cgEvent.cfgFlagRejectionRunBad.value && holderEvent.runGroupIndex < 0)) {
+    if (std::cmp_equal(holderEvent.indexRunGroup, 0) || (cgEvent.cfgFlagRejectionRunBad.value && std::cmp_less(holderEvent.indexRunGroup, 0))) {
       return fillEventSelection(EventSelection::Run);
     }
 
@@ -2669,30 +2717,30 @@ struct PartNumFluc {
       return fillEventSelection(EventSelection::Vz);
     }
 
-    if (cgEvent.cfgCutMaxOccupancy.value >= 0) {
+    if (std::cmp_greater_equal(cgEvent.cfgCutMaxOccupancy.value, 0)) {
       const std::int32_t occupancy{collision.trackOccupancyInTimeRange()};
-      if (occupancy < 0 || occupancy >= cgEvent.cfgCutMaxOccupancy.value) {
+      if (std::cmp_less(occupancy, 0) || std::cmp_greater_equal(occupancy, cgEvent.cfgCutMaxOccupancy.value)) {
         return fillEventSelection(EventSelection::Occupancy);
       }
     }
 
     if (cgAnalysis.cfgFlagQaRun.value) {
-      hrQaRun.fill(C_CS("pRunIndexVx"), holderEvent.runIndex, collision.posX());
-      hrQaRun.fill(C_CS("pRunIndexVy"), holderEvent.runIndex, collision.posY());
-      hrQaRun.fill(C_CS("pRunIndexVz"), holderEvent.runIndex, holderEvent.vz);
-      hrQaRun.fill(C_CS("pRunIndexMultiplicityFt0a"), holderEvent.runIndex, collision.multZeqFT0A());
-      hrQaRun.fill(C_CS("pRunIndexMultiplicityFt0c"), holderEvent.runIndex, collision.multZeqFT0C());
+      hrQaRun.fill(C_CS("pRunIndexVx"), holderEvent.indexRun, collision.posX());
+      hrQaRun.fill(C_CS("pRunIndexVy"), holderEvent.indexRun, collision.posY());
+      hrQaRun.fill(C_CS("pRunIndexVz"), holderEvent.indexRun, holderEvent.vz);
+      hrQaRun.fill(C_CS("pRunIndexMultiplicityFt0a"), holderEvent.indexRun, collision.multZeqFT0A());
+      hrQaRun.fill(C_CS("pRunIndexMultiplicityFt0c"), holderEvent.indexRun, collision.multZeqFT0C());
       if (const double centrality{collision.centNTPV()}; HolderEvent::isValidCentrality(centrality)) {
-        hrQaRun.fill(C_CS("pRunIndexCentralityNtpv"), holderEvent.runIndex, centrality);
+        hrQaRun.fill(C_CS("pRunIndexCentralityNtpv"), holderEvent.indexRun, centrality);
       }
       if (const double centrality{collision.centFT0A()}; HolderEvent::isValidCentrality(centrality)) {
-        hrQaRun.fill(C_CS("pRunIndexCentralityFt0a"), holderEvent.runIndex, centrality);
+        hrQaRun.fill(C_CS("pRunIndexCentralityFt0a"), holderEvent.indexRun, centrality);
       }
       if (const double centrality{collision.centFT0C()}; HolderEvent::isValidCentrality(centrality)) {
-        hrQaRun.fill(C_CS("pRunIndexCentralityFt0c"), holderEvent.runIndex, centrality);
+        hrQaRun.fill(C_CS("pRunIndexCentralityFt0c"), holderEvent.indexRun, centrality);
       }
       if (const double centrality{collision.centFT0M()}; HolderEvent::isValidCentrality(centrality)) {
-        hrQaRun.fill(C_CS("pRunIndexCentralityFt0m"), holderEvent.runIndex, centrality);
+        hrQaRun.fill(C_CS("pRunIndexCentralityFt0m"), holderEvent.indexRun, centrality);
       }
     }
 
@@ -2700,10 +2748,10 @@ struct PartNumFluc {
       initTrack<true>(track);
     }
     for (std::int32_t const& iChargeSpecies : std::views::iota(0, NEs<ChargeSpecies>)) {
-      if (holderEvent.nGlobalTracks[iChargeSpecies] > 0) {
+      if (std::cmp_greater(holderEvent.nsGlobalTracks[iChargeSpecies], 0)) {
         for (std::int32_t const& iDcaAxis : std::views::iota(0, NEs<DcaAxis>)) {
-          holderEvent.measureDca[toI(DcaMeasure::Mean)][iDcaAxis][iChargeSpecies] /= holderEvent.nGlobalTracks[iChargeSpecies];
-          holderEvent.measureDca[toI(DcaMeasure::Sigma)][iDcaAxis][iChargeSpecies] = std::sqrt(std::max(0., holderEvent.measureDca[toI(DcaMeasure::Sigma)][iDcaAxis][iChargeSpecies] / holderEvent.nGlobalTracks[iChargeSpecies] - std::pow(holderEvent.measureDca[toI(DcaMeasure::Mean)][iDcaAxis][iChargeSpecies], 2.)));
+          holderEvent.measuresDca[toI(DcaMeasure::Mean)][iDcaAxis][iChargeSpecies] /= holderEvent.nsGlobalTracks[iChargeSpecies];
+          holderEvent.measuresDca[toI(DcaMeasure::Sigma)][iDcaAxis][iChargeSpecies] = std::sqrt(std::max(0., holderEvent.measuresDca[toI(DcaMeasure::Sigma)][iDcaAxis][iChargeSpecies] / holderEvent.nsGlobalTracks[iChargeSpecies] - std::pow(holderEvent.measuresDca[toI(DcaMeasure::Mean)][iDcaAxis][iChargeSpecies], 2.)));
         }
       }
     }
@@ -2715,21 +2763,21 @@ struct PartNumFluc {
 
     if (cgAnalysis.cfgFlagQaEvent.value) {
       hrQaEvent.fill(C_CS("hNPvContributorsNGlobalTracks"), holderEvent.getNPvContributors(), holderEvent.getNGlobalTracks());
-      if (holderEvent.getNGlobalTracks() > 0) {
+      if (std::cmp_greater(holderEvent.getNGlobalTracks(), 0)) {
         hrQaEvent.fill(C_CS("hNGlobalTracks") + C_SV(getName(DcaMeasure::Mean)) + C_CS("Dca") + C_SV(getName(DcaAxis::Xy)), holderEvent.getNGlobalTracks(), holderEvent.getMeasureDca<DcaMeasure::Mean, DcaAxis::Xy>());
         hrQaEvent.fill(C_CS("hNGlobalTracks") + C_SV(getName(DcaMeasure::Mean)) + C_CS("Dca") + C_SV(getName(DcaAxis::Z)), holderEvent.getNGlobalTracks(), holderEvent.getMeasureDca<DcaMeasure::Mean, DcaAxis::Z>());
       }
       hrQaEvent.fill(C_CS("hNTofBetaNGlobalTracks"), holderEvent.getNTofBeta(), holderEvent.getNGlobalTracks());
     }
 
-    if (!(holderEvent.getNPvContributors() - holderEvent.getNGlobalTracks() > cgEvent.cfgCutMinDeviationNPvContributors.value)) {
+    if (!std::cmp_greater(holderEvent.getNPvContributors() - holderEvent.getNGlobalTracks(), cgEvent.cfgCutMinDeviationNPvContributors.value)) {
       return fillEventSelection(EventSelection::NPvContributors);
     }
 
     readCcdb<false>();
 
     if (cgAnalysis.cfgFlagQaEvent.value) {
-      if (holderEvent.getNGlobalTracks() > 0) {
+      if (std::cmp_greater(holderEvent.getNGlobalTracks(), 0)) {
         hrQaEvent.fill(C_CS("hNGlobalTracks") + C_SV(getName(DcaMeasure::Mean)) + C_CS("Dca") + C_SV(getName(DcaAxis::Xy)) + C_CS("_nPvContributorsCut"), holderEvent.getNGlobalTracks(), holderEvent.getMeasureDca<DcaMeasure::Mean, DcaAxis::Xy>());
         hrQaEvent.fill(C_CS("hNGlobalTracks") + C_SV(getName(DcaMeasure::Mean)) + C_CS("Dca") + C_SV(getName(DcaAxis::Z)) + C_CS("_nPvContributorsCut"), holderEvent.getNGlobalTracks(), holderEvent.getMeasureDca<DcaMeasure::Mean, DcaAxis::Z>());
       }
@@ -2750,14 +2798,14 @@ struct PartNumFluc {
     }
 
     for (const auto& collision : collisions) {
-      if (collision.globalIndex() != mcCollision.bestCollisionIndex()) {
+      if (std::cmp_not_equal(collision.globalIndex(), mcCollision.bestCollisionIndex())) {
         continue;
       }
 
-      const auto& tracks{tracksUngrouped.sliceBy(presliceTracksPerCollision, collision.globalIndex())};
+      const auto& tracks{tracksUngrouped.sliceBy(psg.tracksPerCollision, collision.globalIndex())};
 
       const EventSelection eventSelection{initEvent(collision, tracks)};
-      if ((eventSelection == EventSelection::Good || toI(eventSelection) >= toI(EventSelection::NPvContributors)) && doStorageMiniTable && gRandom->Rndm() * cgEvent.cfgFactorStorageMiniTable.value < 1.) {
+      if ((eventSelection == EventSelection::Good || std::cmp_greater_equal(toI(eventSelection), toI(EventSelection::NPvContributors))) && holderMember.doStorageMiniTable && (std::uniform_real_distribution<double>{}(holderMember.engineRandom)) * cgEvent.cfgFactorStorageMiniTable.value < 1.) {
         const bool isGoodNPvContributors{eventSelection != EventSelection::NPvContributors};
         readCcdb<false>();
         fillMiniTableMc<ParticleNumber::Charge>(mcParticles, tracks, isGoodNPvContributors);
@@ -2772,9 +2820,9 @@ struct PartNumFluc {
         hrQaMc.fill(C_CS("hCentralityVzMcDeltaVz"), holderEvent.centralityCalibration, holderMcEvent.vz, holderEvent.vz - holderMcEvent.vz);
       }
 
-      if (cgAnalysis.cfgFlagQaTrack.value || cgAnalysis.cfgFlagQaDca.value || doQaAcceptance || doQaPhi || doQaPid || cgAnalysis.cfgFlagQaMc.value || doCalculationYield || doCalculationPurity || doCalculationFractionPrimary || doCalculationFluctuation) {
-        if (doCalculationFluctuation) {
-          holderEvent.subgroupIndex = gRandom->Integer(cgEvent.cfgNSubgroups.value);
+      if (cgAnalysis.cfgFlagQaTrack.value || cgAnalysis.cfgFlagQaDca.value || holderMember.doQaAcceptance || holderMember.doQaPhi || holderMember.doQaPid || cgAnalysis.cfgFlagQaMc.value || holderMember.doCalculationYield || holderMember.doCalculationPurity || holderMember.doCalculationFractionPrimary || holderMember.doCalculationFluctuation) {
+        if (holderMember.doCalculationFluctuation) {
+          holderEvent.indexSubgroup = std::uniform_int_distribution<std::int32_t>{0, cgEvent.cfgNSubgroups.value - 1}(holderMember.engineRandom);
           initCalculationFluctuation();
           holderDerivedData.clear();
         }
@@ -2784,20 +2832,20 @@ struct PartNumFluc {
             continue;
           }
 
-          const auto& tracksMatched{tracks.sliceBy(presliceTracksPerMcParticle, mcParticle.globalIndex())};
+          const auto& tracksMatched{tracks.sliceBy(psg.tracksPerMcParticle, mcParticle.globalIndex())};
 
           if (cgAnalysis.cfgFlagQaMc.value && (!cgTrack.cfgFlagMcParticlePhysicalPrimary.value || mcParticle.isPhysicalPrimary())) {
             hrQaMc.fill(C_CS("hCentralityNTracksPerMcParticle"), holderEvent.centralityCalibration, tracksMatched.size());
           }
 
           if (mcParticle.isPhysicalPrimary()) {
-            if (doCalculationYield) {
+            if (holderMember.doCalculationYield) {
               fillCalculationYieldByParticleSpecies<DataMode::McMcParticle, ParticleSpecies::Pion>();
               fillCalculationYieldByParticleSpecies<DataMode::McMcParticle, ParticleSpecies::Kaon>();
               fillCalculationYieldByParticleSpecies<DataMode::McMcParticle, ParticleSpecies::Proton>();
             }
 
-            if (doCalculationFluctuation) {
+            if (holderMember.doCalculationFluctuation) {
               calculateFluctuationByParticleNumber<DataMode::McMcParticle, ParticleNumber::Charge>();
               calculateFluctuationByParticleNumber<DataMode::McMcParticle, ParticleNumber::Kaon>();
               calculateFluctuationByParticleNumber<DataMode::McMcParticle, ParticleNumber::Proton>();
@@ -2809,14 +2857,14 @@ struct PartNumFluc {
               continue;
             }
 
-            if (doQaPhi) {
+            if (holderMember.doQaPhi) {
               fillQaPhiByParticleSpeciesAll<DataMode::McTrack, ParticleSpeciesAll::All>();
               fillQaPhiByParticleSpeciesAll<DataMode::McTrack, ParticleSpeciesAll::Pion>();
               fillQaPhiByParticleSpeciesAll<DataMode::McTrack, ParticleSpeciesAll::Kaon>();
               fillQaPhiByParticleSpeciesAll<DataMode::McTrack, ParticleSpeciesAll::Proton>();
             }
 
-            if (doQaPid) {
+            if (holderMember.doQaPid) {
               fillQaPidByParticleSpeciesAll<DataMode::McTrack, ParticleSpeciesAll::All>(track);
               fillQaPidByParticleSpeciesAll<DataMode::McTrack, ParticleSpeciesAll::Pion>(track);
               fillQaPidByParticleSpeciesAll<DataMode::McTrack, ParticleSpeciesAll::Kaon>(track);
@@ -2828,25 +2876,25 @@ struct PartNumFluc {
               hrQaMc.fill(C_CS("hCentralityPtMcEtaMcDeltaEta"), holderEvent.centralityCalibration, holderMcParticle.pt, holderMcParticle.eta, holderTrack.eta - holderMcParticle.eta);
             }
 
-            if (doCalculationYield && (!cgTrack.cfgFlagMcParticlePhysicalPrimary.value || mcParticle.isPhysicalPrimary())) {
+            if (holderMember.doCalculationYield && (!cgTrack.cfgFlagMcParticlePhysicalPrimary.value || mcParticle.isPhysicalPrimary())) {
               fillCalculationYieldByParticleSpecies<DataMode::McTrack, ParticleSpecies::Pion>();
               fillCalculationYieldByParticleSpecies<DataMode::McTrack, ParticleSpecies::Kaon>();
               fillCalculationYieldByParticleSpecies<DataMode::McTrack, ParticleSpecies::Proton>();
             }
 
-            if (doCalculationPurity && (!cgTrack.cfgFlagMcParticlePhysicalPrimary.value || mcParticle.isPhysicalPrimary())) {
+            if (holderMember.doCalculationPurity && (!cgTrack.cfgFlagMcParticlePhysicalPrimary.value || mcParticle.isPhysicalPrimary())) {
               fillCalculationPurityByParticleSpecies<ParticleSpecies::Pion>();
               fillCalculationPurityByParticleSpecies<ParticleSpecies::Kaon>();
               fillCalculationPurityByParticleSpecies<ParticleSpecies::Proton>();
             }
 
-            if (doCalculationFractionPrimary) {
+            if (holderMember.doCalculationFractionPrimary) {
               fillCalculationFractionPrimaryByParticleSpecies<ParticleSpecies::Pion>(mcParticle);
               fillCalculationFractionPrimaryByParticleSpecies<ParticleSpecies::Kaon>(mcParticle);
               fillCalculationFractionPrimaryByParticleSpecies<ParticleSpecies::Proton>(mcParticle);
             }
 
-            if (doCalculationFluctuation && (!cgTrack.cfgFlagMcParticlePhysicalPrimary.value || mcParticle.isPhysicalPrimary())) {
+            if (holderMember.doCalculationFluctuation && (!cgTrack.cfgFlagMcParticlePhysicalPrimary.value || mcParticle.isPhysicalPrimary())) {
               calculateFluctuationByParticleNumber<DataMode::McTrack, ParticleNumber::Charge>();
               calculateFluctuationByParticleNumber<DataMode::McTrack, ParticleNumber::Kaon>();
               calculateFluctuationByParticleNumber<DataMode::McTrack, ParticleNumber::Proton>();
@@ -2854,18 +2902,19 @@ struct PartNumFluc {
           }
         }
 
-        if (doCalculationFluctuation) {
+        if (holderMember.doCalculationFluctuation) {
           fillCalculationFluctuationByParticleNumber<ParticleNumber::Charge>();
           fillCalculationFluctuationByParticleNumber<ParticleNumber::Kaon>();
           fillCalculationFluctuationByParticleNumber<ParticleNumber::Proton>();
-          if (const std::optional<aod::tiny_collision::Code::type> codeCollision{mini_collision_codec::encode(cgEvent.cfgFlagMcCollisionVz.value ? holderMcEvent.vz : holderEvent.vz, holderEvent.centrality, true)}; codeCollision.has_value()) {
-            tinyMcCollision(holderDerivedData.nMcParticles[toI(ChargeSpecies::Plus)], holderDerivedData.nMcParticles[toI(ChargeSpecies::Minus)]);
-            tinyCollision(*codeCollision, holderDerivedData.nTracks[toI(ChargeSpecies::Plus)], holderDerivedData.nTracks[toI(ChargeSpecies::Minus)]);
+          if (const std::optional<std::tuple<aod::tiny_collision::CodeLow::type, aod::tiny_collision::CodeHigh::type>> codeCollision{tiny_collision_codec::encode(cgEvent.cfgFlagMcCollisionVz.value ? holderMcEvent.vz : holderEvent.vz, holderEvent.centrality, holderDerivedData.nsTracks)}; codeCollision.has_value()) {
+            const std::tuple<aod::tiny_mc_collision::CodeLow::type, aod::tiny_mc_collision::CodeHigh::type> codeMcCollision{tiny_mc_collision_codec::encode(holderDerivedData.nsMcParticles)};
+            pg.tinyMcCollision(std::get<0>(codeMcCollision), std::get<1>(codeMcCollision));
+            pg.tinyCollision(std::get<0>(*codeCollision), std::get<1>(*codeCollision));
             for (aod::tiny_mc_particle::SignedEfficiency::type const& signedEfficiency : holderDerivedData.signedEfficienciesMcParticle) {
-              tinyMcParticle(tinyMcCollision.lastIndex(), signedEfficiency);
+              pg.tinyMcParticle(pg.tinyMcCollision.lastIndex(), signedEfficiency);
             }
             for (aod::tiny_track::SignedEfficiency::type const& signedEfficiency : holderDerivedData.signedEfficienciesTrack) {
-              tinyTrack(tinyCollision.lastIndex(), signedEfficiency);
+              pg.tinyTrack(pg.tinyCollision.lastIndex(), signedEfficiency);
             }
           }
         }
@@ -2876,7 +2925,7 @@ struct PartNumFluc {
   void processRaw(const soa::Filtered<aod::JoinedCollisions>::iterator& collision, const soa::Filtered<aod::JoinedTracks>& tracks, const aod::BCsWithTimestamps&)
   {
     const EventSelection eventSelection{initEvent(collision, tracks)};
-    if ((eventSelection == EventSelection::Good || toI(eventSelection) >= toI(EventSelection::NPvContributors)) && doStorageMiniTable && gRandom->Rndm() * cgEvent.cfgFactorStorageMiniTable.value < 1.) {
+    if ((eventSelection == EventSelection::Good || std::cmp_greater_equal(toI(eventSelection), toI(EventSelection::NPvContributors))) && holderMember.doStorageMiniTable && (std::uniform_real_distribution<double>{}(holderMember.engineRandom)) * cgEvent.cfgFactorStorageMiniTable.value < 1.) {
       const bool isGoodNPvContributors{eventSelection != EventSelection::NPvContributors};
       readCcdb<false>();
       fillMiniTableRaw<ParticleNumber::Charge>(tracks, isGoodNPvContributors);
@@ -2887,12 +2936,12 @@ struct PartNumFluc {
       return;
     }
 
-    if (!cgAnalysis.cfgFlagQaTrack.value && !cgAnalysis.cfgFlagQaDca.value && !doQaAcceptance && !doQaPhi && !doQaPid && !doCalculationYield && !doCalculationFluctuation) {
+    if (!cgAnalysis.cfgFlagQaTrack.value && !cgAnalysis.cfgFlagQaDca.value && !holderMember.doQaAcceptance && !holderMember.doQaPhi && !holderMember.doQaPid && !holderMember.doCalculationYield && !holderMember.doCalculationFluctuation) {
       return;
     }
 
-    if (doCalculationFluctuation) {
-      holderEvent.subgroupIndex = gRandom->Integer(cgEvent.cfgNSubgroups.value);
+    if (holderMember.doCalculationFluctuation) {
+      holderEvent.indexSubgroup = std::uniform_int_distribution<std::int32_t>{0, cgEvent.cfgNSubgroups.value - 1}(holderMember.engineRandom);
       initCalculationFluctuation();
       holderDerivedData.clear();
     }
@@ -2902,41 +2951,41 @@ struct PartNumFluc {
         continue;
       }
 
-      if (doQaPhi) {
+      if (holderMember.doQaPhi) {
         fillQaPhiByParticleSpeciesAll<DataMode::RawTrack, ParticleSpeciesAll::All>();
         fillQaPhiByParticleSpeciesAll<DataMode::RawTrack, ParticleSpeciesAll::Pion>();
         fillQaPhiByParticleSpeciesAll<DataMode::RawTrack, ParticleSpeciesAll::Kaon>();
         fillQaPhiByParticleSpeciesAll<DataMode::RawTrack, ParticleSpeciesAll::Proton>();
       }
 
-      if (doQaPid) {
+      if (holderMember.doQaPid) {
         fillQaPidByParticleSpeciesAll<DataMode::RawTrack, ParticleSpeciesAll::All>(track);
         fillQaPidByParticleSpeciesAll<DataMode::RawTrack, ParticleSpeciesAll::Pion>(track);
         fillQaPidByParticleSpeciesAll<DataMode::RawTrack, ParticleSpeciesAll::Kaon>(track);
         fillQaPidByParticleSpeciesAll<DataMode::RawTrack, ParticleSpeciesAll::Proton>(track);
       }
 
-      if (doCalculationYield) {
+      if (holderMember.doCalculationYield) {
         fillCalculationYieldByParticleSpecies<DataMode::RawTrack, ParticleSpecies::Pion>();
         fillCalculationYieldByParticleSpecies<DataMode::RawTrack, ParticleSpecies::Kaon>();
         fillCalculationYieldByParticleSpecies<DataMode::RawTrack, ParticleSpecies::Proton>();
       }
 
-      if (doCalculationFluctuation) {
+      if (holderMember.doCalculationFluctuation) {
         calculateFluctuationByParticleNumber<DataMode::RawTrack, ParticleNumber::Charge>();
         calculateFluctuationByParticleNumber<DataMode::RawTrack, ParticleNumber::Kaon>();
         calculateFluctuationByParticleNumber<DataMode::RawTrack, ParticleNumber::Proton>();
       }
     }
 
-    if (doCalculationFluctuation) {
+    if (holderMember.doCalculationFluctuation) {
       fillCalculationFluctuationByParticleNumber<ParticleNumber::Charge>();
       fillCalculationFluctuationByParticleNumber<ParticleNumber::Kaon>();
       fillCalculationFluctuationByParticleNumber<ParticleNumber::Proton>();
-      if (const std::optional<aod::tiny_collision::Code::type> codeCollision{mini_collision_codec::encode(holderEvent.vz, holderEvent.centrality, true)}; codeCollision.has_value()) {
-        tinyCollision(*codeCollision, holderDerivedData.nTracks[toI(ChargeSpecies::Plus)], holderDerivedData.nTracks[toI(ChargeSpecies::Minus)]);
+      if (const std::optional<std::tuple<aod::tiny_collision::CodeLow::type, aod::tiny_collision::CodeHigh::type>> codeCollision{tiny_collision_codec::encode(holderEvent.vz, holderEvent.centrality, holderDerivedData.nsTracks)}; codeCollision.has_value()) {
+        pg.tinyCollision(std::get<0>(*codeCollision), std::get<1>(*codeCollision));
         for (aod::tiny_track::SignedEfficiency::type const& signedEfficiency : holderDerivedData.signedEfficienciesTrack) {
-          tinyTrack(tinyCollision.lastIndex(), signedEfficiency);
+          pg.tinyTrack(pg.tinyCollision.lastIndex(), signedEfficiency);
         }
       }
     }

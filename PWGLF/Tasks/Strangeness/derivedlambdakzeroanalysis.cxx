@@ -1205,6 +1205,8 @@ struct derivedlambdakzeroanalysis {
     if (doprocessMonteCarloRun3 || doprocessMonteCarloRun2) {
       histos.add("GeneralQA/h2dRapVsRapGen", "h2dRapVsRapGen;Rapidity;Generated rapidity", kTH2D, {axisConfigurations.axisRapidity, axisConfigurations.axisRapidity});
       histos.add("GeneralQA/h2dPtVsPtGen", "h2dPtVsPtGen;#it{p}_{T} (GeV/#it{c});#it{p}_{T}^{MC} (GeV/#it{c})", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisPt});
+      histos.add("GeneralQA/h3dRapVsRapGen", "h3dRapVsRapGen;Centrality (%);Rapidity;Generated rapidity", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisRapidity, axisConfigurations.axisRapidity});
+      histos.add("GeneralQA/h3dPtVsPtGen", "h3dPtVsPtGen;Centrality (%);#it{p}_{T} (GeV/#it{c});#it{p}_{T}^{MC} (GeV/#it{c})", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisPt});
     }
 
     // Creation of histograms: MC generated
@@ -2064,6 +2066,8 @@ struct derivedlambdakzeroanalysis {
       if (doprocessMonteCarloRun3 || doprocessMonteCarloRun2) {
         histos.fill(HIST("GeneralQA/h2dRapVsRapGen"), v0.yK0Short(), rapidityK0Short);
         histos.fill(HIST("GeneralQA/h2dPtVsPtGen"), v0.pt(), pt);
+        histos.fill(HIST("GeneralQA/h3dRapVsRapGen"), centrality, v0.yK0Short(), rapidityK0Short);
+        histos.fill(HIST("GeneralQA/h3dPtVsPtGen"), centrality, v0.pt(), pt);
       }
       nK0Shorts++;
     }
@@ -2154,6 +2158,8 @@ struct derivedlambdakzeroanalysis {
       if (doprocessMonteCarloRun3 || doprocessMonteCarloRun2) {
         histos.fill(HIST("GeneralQA/h2dRapVsRapGen"), v0.yLambda(), rapidityLambda);
         histos.fill(HIST("GeneralQA/h2dPtVsPtGen"), v0.pt(), pt);
+        histos.fill(HIST("GeneralQA/h3dRapVsRapGen"), centrality, v0.yLambda(), rapidityLambda);
+        histos.fill(HIST("GeneralQA/h3dPtVsPtGen"), centrality, v0.pt(), pt);
       }
       nLambdas++;
     }
@@ -2244,6 +2250,8 @@ struct derivedlambdakzeroanalysis {
       if (doprocessMonteCarloRun3 || doprocessMonteCarloRun2) {
         histos.fill(HIST("GeneralQA/h2dRapVsRapGen"), v0.yLambda(), rapidityLambda);
         histos.fill(HIST("GeneralQA/h2dPtVsPtGen"), v0.pt(), pt);
+        histos.fill(HIST("GeneralQA/h3dRapVsRapGen"), centrality, v0.yLambda(), rapidityLambda);
+        histos.fill(HIST("GeneralQA/h3dPtVsPtGen"), centrality, v0.pt(), pt);
       }
       nAntiLambdas++;
     }

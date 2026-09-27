@@ -367,7 +367,7 @@ struct TwoParticleCorrelationsMpi {
     if (cfgFillAcceptanceWeights && !cfgAcceptance.value.empty()) {
       LOGF(fatal, "cfgFillAcceptanceWeights and cfgAcceptance are mutually exclusive: produce and apply acceptance weights in separate jobs");
     }
-    if (cfgFillAcceptanceWeights && !(doprocessSameDerived || doprocessSameDerivedMultSet || doprocessMCSameDerived)) {
+    if (cfgFillAcceptanceWeights && !(doprocessSameDerived || doprocessSameDerivedCorrected || doprocessSameDerivedMultSet || doprocessSameDerivedMultSetCorrected || doprocessMCSameDerived)) {
       LOGF(fatal, "cfgFillAcceptanceWeights requires a reconstructed derived same-event process");
     }
     if (cfgAcceptancePhiBins < 1 || cfgAcceptanceEtaBins < 1) {
@@ -655,7 +655,7 @@ struct TwoParticleCorrelationsMpi {
       ++nPtPtSubevents;
     }
 
-    if (!cfgFillAcceptanceWeights && (doprocessMCSameDerived || doprocessSameDerived || doprocessSameDerivedMultSet)) {
+    if (!cfgFillAcceptanceWeights && (doprocessMCSameDerived || doprocessSameDerived || doprocessSameDerivedCorrected || doprocessSameDerivedMultSet || doprocessSameDerivedMultSetCorrected)) {
       auto recoProfiles = std::make_unique<TObjArray>();
       addConfigObjectsToObjArray(recoProfiles.get(), mCorrConfigs, cfgUserAxis == EventSeedAxis && eventClassifierPercentileAxisEnabled);
       fFC.setObject(new FlowContainer("FlowContainer"));
