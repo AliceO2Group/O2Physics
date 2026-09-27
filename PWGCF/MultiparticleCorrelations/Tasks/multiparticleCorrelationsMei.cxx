@@ -88,7 +88,8 @@ enum EMultiplicityTables {
 enum ERecSim {
   eRec = 0,
   eSim,
-  eRecAndSim
+  eRecAndSim,
+  eRecSim_N
 };
 
 enum ECuts {
@@ -128,11 +129,9 @@ enum EEventHistograms {
   eEventHistograms_N
 };
 
-enum EPhiAndPtHistograms {
-  ePhiRec = 0,
-  ePtRec,
-  ePtMC,
-  ePhiAndPtHistograms_N
+enum EMiscHistograms {
+  eRunNumber = 0,
+  eMiscHistograms_N
 };
 
 enum EExternalHistograms {
@@ -171,9 +170,6 @@ static constexpr std::array<const char*, eCuts_N> CutsNames = {
 // *) Main task:
 struct MultiparticleCorrelationsMei // this name is used in lower-case format to name the TDirectoryFile in AnalysisResults.root
 {
-  // *) Misc:
-  bool isFirstCollision = true; // this is used to ensure that weights hist are booked once and only once, otherwiese, a crash
-
   // *) Base TList to hold all output objects:
   TString sBaseListName = "Default list name"; // yes, I declare it separately, because I need it also later in BailOut() function
   OutputObj<TList> fBaseList{sBaseListName.Data(),
@@ -233,30 +229,30 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
 
   // **) Particle histograms:
   struct ParticleHistograms {
-    TList* fParticleHistogramsList = nullptr; //!<! list to hold all control particle histograms
-    std::array<std::array<std::array<TH1F*, 2>, 2>, eParticleHistograms_N> fParticleHistograms{};
+    TList* fParticleHistList = nullptr; //!<! list to hold all control particle histograms
+    std::array<std::array<std::array<TH1F*, eCuts_N>, 2>, eParticleHistograms_N> fParticleHist{};
   } pc;
 
   // *) Event histograms:
   struct EventHistograms {
-    TList* fEventHistogramsList = nullptr;
-    std::array<std::array<std::array<TH1F*, 2>, 2>, eEventHistograms_N> fEventHistograms{}; //! [ type - see enum EEventHistograms ][reco,sim][before, after event cuts]
+    TList* fEventHistList = nullptr;
+    std::array<std::array<std::array<TH1F*, eCuts_N>, 2>, eEventHistograms_N> fEventHist{}; //! [ type - see enum EEventHistograms ][reco,sim][before, after event cuts]
   } ec;
 
-  struct PhiAndPtHistograms {
-    TList* fPhiAndPtHistogramsList = nullptr;
-    std::array<std::array<TH1F*, 2>, ePhiAndPtHistograms_N> fPhiAndPtHistograms{}; //! [type][before, after cuts]
-  } pph;
+  struct MiscHistograms {
+    TList* fMiscHistList = nullptr;
+    TH1D* fMiscHistRunNumber = nullptr;
+  } misc;
 
   // *) External histograms:
   struct ExternalHistograms {
     TList* fExternalHistogramsList = nullptr;
-    std::array<std::array<TH1F*, 2>, eExternalHistograms_N> fWeights{}; //! [type][before, after cuts]
+    std::array<std::array<TH1F*, eCuts_N>, eExternalHistograms_N> fWeights{}; //! [type][before, after cuts]
   } ex;
 
   struct Observables {
     TList* fObservablesList = nullptr;
-    std::array<std::array<TProfile*, 2>, 2> fProfTwo{}; //! [reco,sim][before, after event cuts]
+    std::array<std::array<TProfile*, eCuts_N>, 2> fProfTwo{}; //! [reco,sim][before, after event cuts]
   } obs;
 
   // *) Quality assurance histograms:
@@ -266,11 +262,6 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
   } qa;
 
   // *) functions
-  // how to calculate multiparticle correlation (an example):
-  // auto QVectorsTable = initQVectorsTable(8, N8);
-  // (within loop over tracks) updateQVectorsTable(QVectorsTable, phi, weight);
-  // std::vector<TComplex> resultMultCorr(2, TComplex(0., 0.));
-  // resultMultCorr = recursion(8, QVectorsTable, N8); profile_run1->Fill(6.5, (resultMultCorr[0]/resultMultCorr[1].Re()).Re()/(1e-8));
   std::vector<std::vector<TComplex>> initQVectorsTable(int maxCorrelator, const std::vector<int>& harmonic)
   {
     int sum = 0;
@@ -288,14 +279,10 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
   {
     const int maxHarmonic = QVectorsTable.size();
     const int maxPower = QVectorsTable.empty() ? 0 : QVectorsTable[0].size();
-
     for (int h = 0; h < maxHarmonic; ++h) {
-      const auto cosH = std::cos(h * phi);
-      const auto sinH = std::sin(h * phi);
-
       for (int p = 0; p < maxPower; ++p) {
         const auto wp = std::pow(weight, p);
-        QVectorsTable[h][p] += TComplex(wp * cosH, wp * sinH);
+        QVectorsTable[h][p] += TComplex(wp * std::cos(h * phi), wp * std::sin(h * phi));
       }
     }
   }
@@ -329,7 +316,6 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       }
       return TComplex::Conjugate(Qvector[-n][p]);
     };
-
     std::vector<TComplex> c = {q(harmonic[m - 1], mult), q(0, mult)};
     if ((m - 1) == 0) {
       return c;
@@ -424,9 +410,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     TList* listWithRuns = nullptr; // nested list with run-wise TList's holding run-specific weights
 
     // *) Determine from filePath if the file is on a local machine, or in home dir AliEn, or in CCDB:
-    //    Algorithm: If filePath begins with "/alice/cern.ch/" then it's in the home dir AliEn;
-    //                     If filePath begins with "/alice-ccdb.cern.ch/" then it's in CCDB. Therefore, files in AliEn and CCDB must be specified with abs path;
-    //                     for local files both abs and relative paths are just fine.
+    // Algorithm: If filePath begins with "/alice/cern.ch/" then it's in the home dir AliEn; If filePath begins with "/alice-ccdb.cern.ch/" then it's in CCDB. Therefore, files in AliEn and CCDB must be specified with abs path; for local files both abs and relative paths are just fine.
     bool bFileIsInAliEn = false;
     bool bFileIsInCCDB = false;
 
@@ -453,24 +437,22 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
         LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
       }
 
-      // Finally, from the top-level TList, get the desired nested TList => the technical problem here is that it can be nested at any level,
-      // for that there is a helper utility function getObjectFromList(...) , see its implementation further below
+      // Finally, from the top-level TList, get the desired nested TList => the technical problem here is that it can be nested at any level, for that there is a helper utility function getObjectFromList(...) , see its implementation further below
       listWithRuns = dynamic_cast<TList*>(getObjectFromList(baseList, runNumber));
       if (!listWithRuns) {
         TString runNumberWithLeadingZeroes = "000";
         runNumberWithLeadingZeroes += runNumber; // another try, with "000" prepended to run number
         listWithRuns = dynamic_cast<TList*>(getObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
         if (!listWithRuns) {
-          LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+          LOGF(error, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+          return nullptr;
         }
       }
 
       // OK, we got the desired TList with efficiency corrections, after that we can use the common code for all 3 cases (local, AliEn, CCDB, that common code is below)
-
     } else if (bFileIsInCCDB) {
       // File you want to access is in your home dir in CCDB:
       // Remember that here I do not access the file; instead, I directly access the object in that file.
-      // My home dir in CCDB: https://alice-ccdb.cern.ch/browse/Users/a/abilandz/ => adapt for your case
       ccdb->setURL("https://alice-ccdb.cern.ch");
       baseList = dynamic_cast<TList*>(ccdb->get<TList>(TString(filePath).ReplaceAll("/alice-ccdb.cern.ch/", "").Data()));
       if (!baseList) {
@@ -483,13 +465,12 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
         runNumberWithLeadingZeroes += runNumber; // another try, with "000" prepended to run number
         listWithRuns = dynamic_cast<TList*>(getObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
         if (!listWithRuns) {
-          LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+          LOGF(error, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+          return nullptr;
         }
       }
 
-      // OK, we got the desired TList with efficiency corrections, after that we
-      // can use the common code for all 3 cases (local, AliEn, CCDB, that
-      // common code is below)
+      // OK, we got the desired TList with efficiency corrections, after that we can use the common code for all 3 cases (local, AliEn, CCDB, that common code is below)
     } else {
       // this is the local case:
       // Check if the external ROOT file exists at the specified path:
@@ -513,31 +494,35 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
         runNumberWithLeadingZeroes += runNumber; // another try, with "000" prepended to run number
         listWithRuns = dynamic_cast<TList*>(getObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
         if (!listWithRuns) {
-          // baseList->ls();
-          // LOGF(fatal, "\033[1;31m%s at line %d : this crash can happen if in the output file there is no list with weights for the current run number = %s\033[0m", __FUNCTION__, __LINE__, tc.fRunNumber.Data());
+          LOGF(error, "\033[1;31m%s at line %d : this crash can happen if in the output file there is no list with weights for the current run number = %s\033[0m", __FUNCTION__, __LINE__, runNumber);
+          return nullptr;
         }
       }
     }
 
     // Here comes the common code for all three cases, where from "listWithRuns" you fetch the desired histogram with efficiency corrections:
     if (!listWithRuns) {
-      LOGF(fatal,
-           "\033[1;31m%s: listWithRuns is null for run %s\033[0m",
-           __FUNCTION__, runNumber);
+      LOGF(fatal, "\033[1;31m%s: listWithRuns is null for run %s\033[0m", __FUNCTION__, runNumber);
+      return nullptr;
     }
 
     hist = dynamic_cast<TH1F*>(listWithRuns->FindObject(histName));
     if (!hist) {
-      LOGF(fatal, "%s: histogram 'hist1' not found in run list", __FUNCTION__);
+      LOGF(info, "%s: histogram 'hist' not found in run list", __FUNCTION__);
+      return nullptr;
     }
-    hist->SetDirectory(nullptr);
+
     auto histClone = dynamic_cast<TH1F*>(hist->Clone());
+    if (!histClone) {
+      LOGF(error, "%s: histogram 'histClone' failed to be cloned", __FUNCTION__);
+      return nullptr;
+    }
     histClone->SetDirectory(nullptr);
 
     delete baseList;
 
     return histClone;
-  }
+  } // end of TH1F* getHistogramWithWeights(const char* filePath, const char* runNumber, const char* histName)
 
   // templates
   template <typename T1>
@@ -610,35 +595,34 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
   template <ERecSim rs, ERealMC rm, ECuts cuts, typename T1, typename T2>
   void eventHistFill(T1 const& collision, T2 const& tracks)
   {
-    auto thisCent = chooseCent(collision);
-    auto thisRefMult = chooseMult(collision);
-
     if constexpr (rs == eRec || rs == eRecAndSim) {
       // Fill reconstructed-level event histograms
       if (rm == eReal) {
+        auto thisCent = chooseCent(collision);
+        auto thisRefMult = chooseMult(collision);
         int multiplicityRec = static_cast<int>(tracks.size());
         if constexpr (cuts == eBefore) {
-          ec.fEventHistograms[eHistMultiplicity][eRec][eBefore]->Fill(multiplicityRec);
-          ec.fEventHistograms[eHistCentrality][eRec][eBefore]->Fill(thisCent);
-          ec.fEventHistograms[eHistReferenceMultiplicity][eRec][eBefore]->Fill(thisRefMult);
-          ec.fEventHistograms[eHistVertexX][eRec][eBefore]->Fill(collision.posX());
-          ec.fEventHistograms[eHistVertexY][eRec][eBefore]->Fill(collision.posY());
-          ec.fEventHistograms[eHistVertexZ][eRec][eBefore]->Fill(collision.posZ());
+          ec.fEventHist[eHistMultiplicity][eRec][eBefore]->Fill(multiplicityRec);
+          ec.fEventHist[eHistCentrality][eRec][eBefore]->Fill(thisCent);
+          ec.fEventHist[eHistReferenceMultiplicity][eRec][eBefore]->Fill(thisRefMult);
+          ec.fEventHist[eHistVertexX][eRec][eBefore]->Fill(collision.posX());
+          ec.fEventHist[eHistVertexY][eRec][eBefore]->Fill(collision.posY());
+          ec.fEventHist[eHistVertexZ][eRec][eBefore]->Fill(collision.posZ());
         }
         if constexpr (cuts == eAfter) {
-          ec.fEventHistograms[eHistMultiplicity][eRec][eAfter]->Fill(multiplicityRec);
-          ec.fEventHistograms[eHistCentrality][eRec][eAfter]->Fill(thisCent);
-          ec.fEventHistograms[eHistReferenceMultiplicity][eRec][eAfter]->Fill(thisRefMult);
-          ec.fEventHistograms[eHistVertexX][eRec][eAfter]->Fill(collision.posX());
-          ec.fEventHistograms[eHistVertexY][eRec][eAfter]->Fill(collision.posY());
-          ec.fEventHistograms[eHistVertexZ][eRec][eAfter]->Fill(collision.posZ());
+          ec.fEventHist[eHistMultiplicity][eRec][eAfter]->Fill(multiplicityRec);
+          ec.fEventHist[eHistCentrality][eRec][eAfter]->Fill(thisCent);
+          ec.fEventHist[eHistReferenceMultiplicity][eRec][eAfter]->Fill(thisRefMult);
+          ec.fEventHist[eHistVertexX][eRec][eAfter]->Fill(collision.posX());
+          ec.fEventHist[eHistVertexY][eRec][eAfter]->Fill(collision.posY());
+          ec.fEventHist[eHistVertexZ][eRec][eAfter]->Fill(collision.posZ());
         }
       }
 
       // Fill MC simulated-level event histograms if both reconstructed and simulated data are processed
       if constexpr (rs == eRecAndSim) {
         if (!collision.has_mcCollision()) {
-          LOGF(warning, "No MC collision for this collision, skip...");
+          // LOGF(warning, "No MC collision for this collision, skip...");
           return;
         }
         if (rm == eMC) {
@@ -647,21 +631,21 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
           auto impactParameter = thisMCCollision.impactParameter();
           auto centralityMC = math::PI * impactParameter * impactParameter / sigmaInel; // centrality for sim derived from impact parameter
           if constexpr (cuts == eBefore) {
-            ec.fEventHistograms[eHistMultiplicity][eSim][eBefore]->Fill(multiplicitySim);
-            ec.fEventHistograms[eHistCentrality][eSim][eBefore]->Fill(centralityMC);
-            ec.fEventHistograms[eHistImpactParameter][eSim][eBefore]->Fill(impactParameter);
-            ec.fEventHistograms[eHistVertexX][eSim][eBefore]->Fill(thisMCCollision.posX());
-            ec.fEventHistograms[eHistVertexY][eSim][eBefore]->Fill(thisMCCollision.posY());
-            ec.fEventHistograms[eHistVertexZ][eSim][eBefore]->Fill(thisMCCollision.posZ());
+            ec.fEventHist[eHistMultiplicity][eSim][eBefore]->Fill(multiplicitySim);
+            ec.fEventHist[eHistCentrality][eSim][eBefore]->Fill(centralityMC);
+            ec.fEventHist[eHistImpactParameter][eSim][eBefore]->Fill(impactParameter);
+            ec.fEventHist[eHistVertexX][eSim][eBefore]->Fill(thisMCCollision.posX());
+            ec.fEventHist[eHistVertexY][eSim][eBefore]->Fill(thisMCCollision.posY());
+            ec.fEventHist[eHistVertexZ][eSim][eBefore]->Fill(thisMCCollision.posZ());
           }
 
           if constexpr (cuts == eAfter) {
-            ec.fEventHistograms[eHistMultiplicity][eSim][eAfter]->Fill(multiplicitySim);
-            ec.fEventHistograms[eHistCentrality][eSim][eAfter]->Fill(centralityMC);
-            ec.fEventHistograms[eHistImpactParameter][eSim][eAfter]->Fill(impactParameter);
-            ec.fEventHistograms[eHistVertexX][eSim][eAfter]->Fill(thisMCCollision.posX());
-            ec.fEventHistograms[eHistVertexY][eSim][eAfter]->Fill(thisMCCollision.posY());
-            ec.fEventHistograms[eHistVertexZ][eSim][eAfter]->Fill(thisMCCollision.posZ());
+            ec.fEventHist[eHistMultiplicity][eSim][eAfter]->Fill(multiplicitySim);
+            ec.fEventHist[eHistCentrality][eSim][eAfter]->Fill(centralityMC);
+            ec.fEventHist[eHistImpactParameter][eSim][eAfter]->Fill(impactParameter);
+            ec.fEventHist[eHistVertexX][eSim][eAfter]->Fill(thisMCCollision.posX());
+            ec.fEventHist[eHistVertexY][eSim][eAfter]->Fill(thisMCCollision.posY());
+            ec.fEventHist[eHistVertexZ][eSim][eAfter]->Fill(thisMCCollision.posZ());
           }
         } // end of if (rm == eMC) {
       }
@@ -732,8 +716,8 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
             }
           } // end of if (rm == eMC) {
         }
-      }
-    }
+      } // end of if (cfChargeCutSwitch) // charge cuts for Rec
+    } // end of if constexpr (rs == eRec || rs == eRecAndSim) {
 
     return true;
   }
@@ -744,62 +728,42 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     if constexpr (rs == eRec || rs == eRecAndSim) {
       if (rm == eReal) {
         if constexpr (cuts == eBefore) {
-          pc.fParticleHistograms[eHistPt][eRec][eBefore]->Fill(track.pt());
-          pc.fParticleHistograms[eHistPhi][eRec][eBefore]->Fill(track.phi());
-          pc.fParticleHistograms[eHistEta][eRec][eBefore]->Fill(track.eta());
-          pc.fParticleHistograms[eHistCharge][eRec][eBefore]->Fill(track.sign());
+          pc.fParticleHist[eHistPt][eRec][eBefore]->Fill(track.pt());
+          pc.fParticleHist[eHistPhi][eRec][eBefore]->Fill(track.phi());
+          pc.fParticleHist[eHistEta][eRec][eBefore]->Fill(track.eta());
+          pc.fParticleHist[eHistCharge][eRec][eBefore]->Fill(track.sign());
         }
 
         if constexpr (cuts == eAfter) {
-          pc.fParticleHistograms[eHistPt][eRec][eAfter]->Fill(track.pt());
-          pc.fParticleHistograms[eHistPhi][eRec][eAfter]->Fill(track.phi());
-          pc.fParticleHistograms[eHistEta][eRec][eAfter]->Fill(track.eta());
-          pc.fParticleHistograms[eHistCharge][eRec][eAfter]->Fill(track.sign());
+          pc.fParticleHist[eHistPt][eRec][eAfter]->Fill(track.pt());
+          pc.fParticleHist[eHistPhi][eRec][eAfter]->Fill(track.phi());
+          pc.fParticleHist[eHistEta][eRec][eAfter]->Fill(track.eta());
+          pc.fParticleHist[eHistCharge][eRec][eAfter]->Fill(track.sign());
         }
       }
 
-      // ... and corresponding MC truth simulated:
-      // See https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/mcHistograms.cxx
-      // See https://aliceo2group.github.io/analysis-framework/docs/datamodel/ao2dTables.html#montecarlo
       if constexpr (rs == eRecAndSim) {
-        if (rm == eReal) {
-          if constexpr (cuts == eBefore) {
-            pc.fParticleHistograms[eHistCharge][eSim][eBefore]->Fill(track.sign());
-            pph.fPhiAndPtHistograms[ePhiRec][eBefore]->Fill(track.phi());
-            pph.fPhiAndPtHistograms[ePtRec][eBefore]->Fill(track.pt());
-          }
-          if constexpr (cuts == eAfter) {
-            pc.fParticleHistograms[eHistCharge][eSim][eAfter]->Fill(track.sign());
-            pph.fPhiAndPtHistograms[ePhiRec][eAfter]->Fill(track.phi());
-            pph.fPhiAndPtHistograms[ePtRec][eAfter]->Fill(track.pt());
-          }
-        }
-
         if (rm == eMC) {
           if (!track.has_mcParticle()) {
-            LOGF(warning, "  No MC particle for this track, skip...");
+            // LOGF(warning, "  No MC particle for this track, skip...");
             return;
           }
           auto mcParticle = track.mcParticle();
           auto chargeMC = pdg->GetParticle(mcParticle.pdgCode())->Charge();
           const int chargeMCUnit = 3;
-          if (std::abs(chargeMC) == chargeMCUnit) {
-            chargeMC /= chargeMCUnit;
-          }
+          chargeMC /= chargeMCUnit;
           if constexpr (cuts == eBefore) {
-            pc.fParticleHistograms[eHistPt][eSim][eBefore]->Fill(mcParticle.pt());
-            pc.fParticleHistograms[eHistPhi][eSim][eBefore]->Fill(mcParticle.phi());
-            pc.fParticleHistograms[eHistEta][eSim][eBefore]->Fill(mcParticle.eta());
-            pc.fParticleHistograms[eHistCharge][eSim][eBefore]->Fill(chargeMC);
-            pph.fPhiAndPtHistograms[ePtMC][eBefore]->Fill(mcParticle.pt());
+            pc.fParticleHist[eHistPt][eSim][eBefore]->Fill(mcParticle.pt());
+            pc.fParticleHist[eHistPhi][eSim][eBefore]->Fill(mcParticle.phi());
+            pc.fParticleHist[eHistEta][eSim][eBefore]->Fill(mcParticle.eta());
+            pc.fParticleHist[eHistCharge][eSim][eBefore]->Fill(chargeMC);
           }
 
           if constexpr (cuts == eAfter) {
-            pc.fParticleHistograms[eHistPt][eSim][eAfter]->Fill(mcParticle.pt());
-            pc.fParticleHistograms[eHistPhi][eSim][eAfter]->Fill(mcParticle.phi());
-            pc.fParticleHistograms[eHistEta][eSim][eAfter]->Fill(mcParticle.eta());
-            pc.fParticleHistograms[eHistCharge][eSim][eAfter]->Fill(chargeMC);
-            pph.fPhiAndPtHistograms[ePtMC][eAfter]->Fill(mcParticle.pt());
+            pc.fParticleHist[eHistPt][eSim][eAfter]->Fill(mcParticle.pt());
+            pc.fParticleHist[eHistPhi][eSim][eAfter]->Fill(mcParticle.phi());
+            pc.fParticleHist[eHistEta][eSim][eAfter]->Fill(mcParticle.eta());
+            pc.fParticleHist[eHistCharge][eSim][eAfter]->Fill(chargeMC);
           }
         } // end of if (rm == eMC) {
       }
@@ -811,10 +775,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     for (int i = 0; i < eExternalHistograms_N; ++i) {
       for (int j = 0; j < eCuts_N; ++j) {
         ex.fWeights[i][j] =
-          getHistogramWithWeights(
-            cfFileWithWeights.value.c_str(),
-            Form("%d", runNumber),
-            Form("[%s][%s]", WeightsNames[i], CutsNames[j]));
+          getHistogramWithWeights(cfFileWithWeights.value.c_str(), Form("%d", runNumber), Form("[%s][%s]", WeightsNames[i], CutsNames[j]));
         ex.fExternalHistogramsList->Add(ex.fWeights[i][j]);
       }
     }
@@ -835,6 +796,9 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     }
   }
 
+  // *) Misc:
+  bool isFirstCollision = true; // this is used to ensure that weights hist are booked once and only once, otherwise, a crash
+
   // *) Define all member functions to be called in the main process* functions:
   template <ERecSim rs, typename T1, typename T2>
   void steer(T1 const& collision, T2 const& tracks)
@@ -845,20 +809,15 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     }
     int thisRunNumber = collision.bc().runNumber();
 
-    // Set titles for all PhiAndPtHistograms to the runNumber
-    if (rs == eRecAndSim && isFirstCollision) {
-      for (int i = 0; i < eCuts_N; ++i) {
-        for (int j = 0; j < ePhiAndPtHistograms_N; ++j) {
-          pph.fPhiAndPtHistograms[j][i]->SetTitle(Form("%d", thisRunNumber));
-        }
+    if (isFirstCollision) {
+      // Get run number
+      misc.fMiscHistRunNumber->SetTitle(Form("%d", thisRunNumber));
+      misc.fMiscHistRunNumber->SetBinContent(1, thisRunNumber);
+      // Get weights
+      if (cfExternalFileSwitch) {
+        loadWeights(thisRunNumber);
       }
     }
-
-    // Get weights
-    if (cfExternalFileSwitch && isFirstCollision) {
-      loadWeights(thisRunNumber);
-    }
-    isFirstCollision = false;
 
     // Fill Quality Assurance
     if (qualityAssuranceSwitch) {
@@ -881,11 +840,6 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       }
     }
 
-    // Print current run number:
-    LOGF(info, "Run number: %d", thisRunNumber);
-    // Print vertex X position:
-    LOGF(info, "Vertex X position: %f", collision.posX());
-
     std::vector<int> n2 = {-2, 2};
     auto qVectorsTableBeforeCutsReal = initQVectorsTable(2, n2);
     auto qVectorsTableAfterCutsReal = initQVectorsTable(2, n2);
@@ -900,7 +854,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       float wPhiAfter = 1.f;
       float wPtBefore = 1.f;
       float wPtAfter = 1.f;
-      if (cfExternalFileSwitch) {
+      if (cfExternalFileSwitch && ex.fWeights[ePhi][eBefore]) {
         wPhiBefore = ex.fWeights[ePhi][eBefore]->GetBinContent(ex.fWeights[ePhi][eBefore]->FindBin(thisPhi));
         wPhiAfter = ex.fWeights[ePhi][eAfter]->GetBinContent(ex.fWeights[ePhi][eAfter]->FindBin(thisPhi));
         wPtBefore = ex.fWeights[ePt][eBefore]->GetBinContent(ex.fWeights[ePt][eBefore]->FindBin(thisPt));
@@ -934,12 +888,14 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       }
     }
 
+    // Now the first collision ends
+    isFirstCollision = false;
   } // end of template <ERecSim rs, typename T1, typename T2> void steer(T1 const& collision, T2 const& tracks) {
 
   // *) Initialize and book all objects:
   void init(InitContext&)
   {
-    // ... code to book and initialize all analysis objects ...
+    // *) Set colors
     const int afterCutFillColor = kGreen - 10;
     const int afterCutLineColor = kGreen;
     const int beforeCutFillColor = kRed - 10;
@@ -967,211 +923,220 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       fBaseList->Add(ex.fExternalHistogramsList);
     }
 
+    // *) Book MiscHistograms TLists:
+    misc.fMiscHistList = new TList();
+    misc.fMiscHistList->SetName("MiscHistograms");
+    misc.fMiscHistList->SetOwner(true);
+    fBaseList->Add(misc.fMiscHistList);
+
+    misc.fMiscHistRunNumber = new TH1D("eRunNumber", "to be set", 1, 0, 1);
+    misc.fMiscHistList->Add(misc.fMiscHistRunNumber);
+
     // *) Book particle TLists:
-    pc.fParticleHistogramsList = new TList();
-    pc.fParticleHistogramsList->SetName("ParticleHistograms");
-    pc.fParticleHistogramsList->SetOwner(true);
-    fBaseList->Add(pc.fParticleHistogramsList); // any nested TList in the base TList appears as a subdir in the output ROOT file
+    pc.fParticleHistList = new TList();
+    pc.fParticleHistList->SetName("ParticleHistograms");
+    pc.fParticleHistList->SetOwner(true);
+    fBaseList->Add(pc.fParticleHistList); // any nested TList in the base TList appears as a subdir in the output ROOT file
 
     // *) Book pt and phi distribution with binning defined through configurables in the json file:
     std::vector<float> lPtBins = cfPtBins.value;
-    int nBinsPt = static_cast<int>(lPtBins[0]);
-    float minPt = lPtBins[1];
-    float maxPt = lPtBins[2];
+    const int nBinsPt = static_cast<int>(lPtBins[0]);
+    const float minPt = lPtBins[1];
+    const float maxPt = lPtBins[2];
 
     std::vector<float> lPhiBins = cfPhiBins.value;
-    int nBinsPhi = static_cast<int>(lPhiBins[0]);
-    float minPhi = lPhiBins[1];
-    float maxPhi = lPhiBins[2];
+    const int nBinsPhi = static_cast<int>(lPhiBins[0]);
+    const float minPhi = lPhiBins[1];
+    const float maxPhi = lPhiBins[2];
 
     std::vector<float> lEtaBins = cfEtaBins.value;
-    int nBinsEta = static_cast<int>(lEtaBins[0]);
-    float minEta = lEtaBins[1];
-    float maxEta = lEtaBins[2];
+    const int nBinsEta = static_cast<int>(lEtaBins[0]);
+    const float minEta = lEtaBins[1];
+    const float maxEta = lEtaBins[2];
 
-    int nBinsCharge = 5;
-    float minCharge = -2.5;
-    float maxCharge = 2.5;
+    const int nBinsCharge = 5;
+    const float minCharge = -2.5;
+    const float maxCharge = 2.5;
 
     if (doprocessRec || doprocessRecSim) {
-      pc.fParticleHistograms[eHistPt][eRec][eBefore] = new TH1F("[eHistPt][eRec][eBefore]", "p_{T} distribution for reconstructed particles before cuts", nBinsPt, minPt, maxPt);
-      pc.fParticleHistograms[eHistPt][eRec][eBefore]->GetXaxis()->SetTitle("p_{T}");
+      pc.fParticleHist[eHistPt][eRec][eBefore] = new TH1F("[eHistPt][eRec][eBefore]", "p_{T} distribution for reconstructed particles before cuts", nBinsPt, minPt, maxPt);
+      pc.fParticleHist[eHistPt][eRec][eBefore]->GetXaxis()->SetTitle("p_{T}");
 
-      pc.fParticleHistograms[eHistPhi][eRec][eBefore] = new TH1F("[eHistPhi][eRec][eBefore]", "#phi distribution for reconstructed particles before cuts", nBinsPhi, minPhi, maxPhi);
-      pc.fParticleHistograms[eHistPhi][eRec][eBefore]->GetXaxis()->SetTitle("#varphi");
+      pc.fParticleHist[eHistPhi][eRec][eBefore] = new TH1F("[eHistPhi][eRec][eBefore]", "#phi distribution for reconstructed particles before cuts", nBinsPhi, minPhi, maxPhi);
+      pc.fParticleHist[eHistPhi][eRec][eBefore]->GetXaxis()->SetTitle("#varphi");
 
-      pc.fParticleHistograms[eHistEta][eRec][eBefore] = new TH1F("[eHistEta][eRec][eBefore]", "#eta distribution for reconstructed particles before cuts", nBinsEta, minEta, maxEta);
-      pc.fParticleHistograms[eHistEta][eRec][eBefore]->GetXaxis()->SetTitle("#eta");
+      pc.fParticleHist[eHistEta][eRec][eBefore] = new TH1F("[eHistEta][eRec][eBefore]", "#eta distribution for reconstructed particles before cuts", nBinsEta, minEta, maxEta);
+      pc.fParticleHist[eHistEta][eRec][eBefore]->GetXaxis()->SetTitle("#eta");
 
-      pc.fParticleHistograms[eHistCharge][eRec][eBefore] = new TH1F("[eHistCharge][eRec][eBefore]", "charge distribution for reconstructed particles before cuts", nBinsCharge, minCharge, maxCharge);
-      pc.fParticleHistograms[eHistCharge][eRec][eBefore]->GetXaxis()->SetTitle("Particle charge");
+      pc.fParticleHist[eHistCharge][eRec][eBefore] = new TH1F("[eHistCharge][eRec][eBefore]", "charge distribution for reconstructed particles before cuts", nBinsCharge, minCharge, maxCharge);
+      pc.fParticleHist[eHistCharge][eRec][eBefore]->GetXaxis()->SetTitle("Particle charge");
 
       for (int i = 0; i < eParticleHistograms_N; ++i) {
-        pc.fParticleHistograms[i][eRec][eBefore]->SetColors(beforeCutLineColor, -1, beforeCutFillColor);
-        pc.fParticleHistogramsList->Add(pc.fParticleHistograms[i][eRec][eBefore]);
+        pc.fParticleHist[i][eRec][eBefore]->SetColors(beforeCutLineColor, -1, beforeCutFillColor);
+        pc.fParticleHistList->Add(pc.fParticleHist[i][eRec][eBefore]);
       }
 
       if (cfMasterCutSwitch) {
-        pc.fParticleHistograms[eHistPt][eRec][eAfter] = new TH1F("[eHistPt][eRec][eAfter]", "p_{T} distribution for reconstructed particles after cuts", nBinsPt, minPt, maxPt);
-        pc.fParticleHistograms[eHistPt][eRec][eAfter]->GetXaxis()->SetTitle("p_{T}");
+        pc.fParticleHist[eHistPt][eRec][eAfter] = new TH1F("[eHistPt][eRec][eAfter]", "p_{T} distribution for reconstructed particles after cuts", nBinsPt, minPt, maxPt);
+        pc.fParticleHist[eHistPt][eRec][eAfter]->GetXaxis()->SetTitle("p_{T}");
 
-        pc.fParticleHistograms[eHistPhi][eRec][eAfter] = new TH1F("[eHistPhi][eRec][eAfter]", "#phi distribution for reconstructed particles after cuts", nBinsPhi, minPhi, maxPhi);
-        pc.fParticleHistograms[eHistPhi][eRec][eAfter]->GetXaxis()->SetTitle("#varphi");
+        pc.fParticleHist[eHistPhi][eRec][eAfter] = new TH1F("[eHistPhi][eRec][eAfter]", "#phi distribution for reconstructed particles after cuts", nBinsPhi, minPhi, maxPhi);
+        pc.fParticleHist[eHistPhi][eRec][eAfter]->GetXaxis()->SetTitle("#varphi");
 
-        pc.fParticleHistograms[eHistEta][eRec][eAfter] = new TH1F("[eHistEta][eRec][eAfter]", "#eta distribution for reconstructed particles after cuts", nBinsEta, minEta, maxEta);
-        pc.fParticleHistograms[eHistEta][eRec][eAfter]->GetXaxis()->SetTitle("#eta");
+        pc.fParticleHist[eHistEta][eRec][eAfter] = new TH1F("[eHistEta][eRec][eAfter]", "#eta distribution for reconstructed particles after cuts", nBinsEta, minEta, maxEta);
+        pc.fParticleHist[eHistEta][eRec][eAfter]->GetXaxis()->SetTitle("#eta");
 
-        pc.fParticleHistograms[eHistCharge][eRec][eAfter] = new TH1F("[eHistCharge][eRec][eAfter]", "charge distribution for reconstructed particles after cuts", nBinsCharge, minCharge, maxCharge);
-        pc.fParticleHistograms[eHistCharge][eRec][eAfter]->GetXaxis()->SetTitle("Particle charge");
+        pc.fParticleHist[eHistCharge][eRec][eAfter] = new TH1F("[eHistCharge][eRec][eAfter]", "charge distribution for reconstructed particles after cuts", nBinsCharge, minCharge, maxCharge);
+        pc.fParticleHist[eHistCharge][eRec][eAfter]->GetXaxis()->SetTitle("Particle charge");
 
         for (int i = 0; i < eParticleHistograms_N; ++i) {
-          pc.fParticleHistograms[i][eRec][eAfter]->SetColors(afterCutLineColor, -1, afterCutFillColor);
-          pc.fParticleHistogramsList->Add(pc.fParticleHistograms[i][eRec][eAfter]);
+          pc.fParticleHist[i][eRec][eAfter]->SetColors(afterCutLineColor, -1, afterCutFillColor);
+          pc.fParticleHistList->Add(pc.fParticleHist[i][eRec][eAfter]);
         }
       }
     }
 
     if (doprocessSim || doprocessRecSim) {
-      pc.fParticleHistograms[eHistPt][eSim][eBefore] = new TH1F("[eHistPt][eSim][eBefore]", "p_{T} distribution for simulated particles  before cuts", nBinsPt, minPt, maxPt);
-      pc.fParticleHistograms[eHistPt][eSim][eBefore]->GetXaxis()->SetTitle("p_{T}");
+      pc.fParticleHist[eHistPt][eSim][eBefore] = new TH1F("[eHistPt][eSim][eBefore]", "p_{T} distribution for simulated particles  before cuts", nBinsPt, minPt, maxPt);
+      pc.fParticleHist[eHistPt][eSim][eBefore]->GetXaxis()->SetTitle("p_{T}");
 
-      pc.fParticleHistograms[eHistPhi][eSim][eBefore] = new TH1F("[eHistPhi][eSim][eBefore]", "#phi distribution for simulated particles before cuts", nBinsPhi, minPhi, maxPhi);
-      pc.fParticleHistograms[eHistPhi][eSim][eBefore]->GetXaxis()->SetTitle("#varphi");
+      pc.fParticleHist[eHistPhi][eSim][eBefore] = new TH1F("[eHistPhi][eSim][eBefore]", "#phi distribution for simulated particles before cuts", nBinsPhi, minPhi, maxPhi);
+      pc.fParticleHist[eHistPhi][eSim][eBefore]->GetXaxis()->SetTitle("#varphi");
 
-      pc.fParticleHistograms[eHistEta][eSim][eBefore] = new TH1F("[eHistEta][eSim][eBefore]", "#eta distribution for simulated particles before cuts", nBinsEta, minEta, maxEta);
-      pc.fParticleHistograms[eHistEta][eSim][eBefore]->GetXaxis()->SetTitle("#eta");
+      pc.fParticleHist[eHistEta][eSim][eBefore] = new TH1F("[eHistEta][eSim][eBefore]", "#eta distribution for simulated particles before cuts", nBinsEta, minEta, maxEta);
+      pc.fParticleHist[eHistEta][eSim][eBefore]->GetXaxis()->SetTitle("#eta");
 
-      pc.fParticleHistograms[eHistCharge][eSim][eBefore] = new TH1F("[eHistCharge][eSim][eBefore]", "charge distribution for simulated particles before cuts", nBinsCharge, minCharge, maxCharge);
-      pc.fParticleHistograms[eHistCharge][eSim][eBefore]->GetXaxis()->SetTitle("Particle charge");
+      pc.fParticleHist[eHistCharge][eSim][eBefore] = new TH1F("[eHistCharge][eSim][eBefore]", "charge distribution for simulated particles before cuts", nBinsCharge, minCharge, maxCharge);
+      pc.fParticleHist[eHistCharge][eSim][eBefore]->GetXaxis()->SetTitle("Particle charge");
 
       for (int i = 0; i < eParticleHistograms_N; ++i) {
-        pc.fParticleHistograms[i][eSim][eBefore]->SetColors(beforeCutLineColor, -1, beforeCutFillColor);
-        pc.fParticleHistogramsList->Add(pc.fParticleHistograms[i][eSim][eBefore]);
+        pc.fParticleHist[i][eSim][eBefore]->SetColors(beforeCutLineColor, -1, beforeCutFillColor);
+        pc.fParticleHistList->Add(pc.fParticleHist[i][eSim][eBefore]);
       }
 
       if (cfMasterCutSwitch) {
-        pc.fParticleHistograms[eHistPt][eSim][eAfter] = new TH1F("[eHistPt][eSim][eAfter]", "p_{T} distribution for simulated particles after cuts", nBinsPt, minPt, maxPt);
-        pc.fParticleHistograms[eHistPt][eSim][eAfter]->GetXaxis()->SetTitle("p_{T}");
+        pc.fParticleHist[eHistPt][eSim][eAfter] = new TH1F("[eHistPt][eSim][eAfter]", "p_{T} distribution for simulated particles after cuts", nBinsPt, minPt, maxPt);
+        pc.fParticleHist[eHistPt][eSim][eAfter]->GetXaxis()->SetTitle("p_{T}");
 
-        pc.fParticleHistograms[eHistPhi][eSim][eAfter] = new TH1F("[eHistPhi][eSim][eAfter]", "#phi distribution for simulated particles after cuts", nBinsPhi, minPhi, maxPhi);
-        pc.fParticleHistograms[eHistPhi][eSim][eAfter]->GetXaxis()->SetTitle("#varphi");
+        pc.fParticleHist[eHistPhi][eSim][eAfter] = new TH1F("[eHistPhi][eSim][eAfter]", "#phi distribution for simulated particles after cuts", nBinsPhi, minPhi, maxPhi);
+        pc.fParticleHist[eHistPhi][eSim][eAfter]->GetXaxis()->SetTitle("#varphi");
 
-        pc.fParticleHistograms[eHistEta][eSim][eAfter] = new TH1F("[eHistEta][eSim][eAfter]", "#eta distribution for simulated particles after cuts", nBinsEta, minEta, maxEta);
-        pc.fParticleHistograms[eHistEta][eSim][eAfter]->GetXaxis()->SetTitle("#eta");
+        pc.fParticleHist[eHistEta][eSim][eAfter] = new TH1F("[eHistEta][eSim][eAfter]", "#eta distribution for simulated particles after cuts", nBinsEta, minEta, maxEta);
+        pc.fParticleHist[eHistEta][eSim][eAfter]->GetXaxis()->SetTitle("#eta");
 
-        pc.fParticleHistograms[eHistCharge][eSim][eAfter] = new TH1F("[eHistCharge][eSim][eAfter]", "charge distribution for simulated particles after cuts", nBinsCharge, minCharge, maxCharge);
-        pc.fParticleHistograms[eHistCharge][eSim][eAfter]->GetXaxis()->SetTitle("Particle charge");
+        pc.fParticleHist[eHistCharge][eSim][eAfter] = new TH1F("[eHistCharge][eSim][eAfter]", "charge distribution for simulated particles after cuts", nBinsCharge, minCharge, maxCharge);
+        pc.fParticleHist[eHistCharge][eSim][eAfter]->GetXaxis()->SetTitle("Particle charge");
 
         for (int i = 0; i < eParticleHistograms_N; ++i) {
-          pc.fParticleHistograms[i][eSim][eAfter]->SetColors(afterCutLineColor, -1, afterCutFillColor);
-          pc.fParticleHistogramsList->Add(pc.fParticleHistograms[i][eSim][eAfter]);
+          pc.fParticleHist[i][eSim][eAfter]->SetColors(afterCutLineColor, -1, afterCutFillColor);
+          pc.fParticleHistList->Add(pc.fParticleHist[i][eSim][eAfter]);
         }
       }
     }
 
     // Book event-level histograms
-    ec.fEventHistogramsList = new TList();
-    ec.fEventHistogramsList->SetName("EventHistograms");
-    ec.fEventHistogramsList->SetOwner(true);
-    fBaseList->Add(ec.fEventHistogramsList);
+    ec.fEventHistList = new TList();
+    ec.fEventHistList->SetName("EventHistograms");
+    ec.fEventHistList->SetOwner(true);
+    fBaseList->Add(ec.fEventHistList);
 
     float defaultBoundaries[] = {0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
     const int nDefaultBins = sizeof(defaultBoundaries) / sizeof(defaultBoundaries[0]) - 1;
 
     std::vector<float> lCent = cfCentBins.value;
-    int nBinsCent = static_cast<int>(lCent[0]);
-    float minCent = lCent[1];
-    float maxCent = lCent[2];
+    const int nBinsCent = static_cast<int>(lCent[0]);
+    const float minCent = lCent[1];
+    const float maxCent = lCent[2];
 
     std::vector<float> lMult = cfMultBins.value;
-    int nBinsMult = static_cast<int>(lMult[0]);
-    float minMult = lMult[1];
-    float maxMult = lMult[2];
+    const int nBinsMult = static_cast<int>(lMult[0]);
+    const float minMult = lMult[1];
+    const float maxMult = lMult[2];
 
     std::vector<float> lMultRef = cfMultBinsRef.value;
-    int nBinsMultRef = static_cast<int>(lMultRef[0]);
-    float minMultRef = lMultRef[1];
-    float maxMultRef = lMultRef[2];
+    const int nBinsMultRef = static_cast<int>(lMultRef[0]);
+    const float minMultRef = lMultRef[1];
+    const float maxMultRef = lMultRef[2];
 
     std::vector<float> lVx = cfVxBins.value;
-    int nBinsVx = static_cast<int>(lVx[0]);
-    float minVx = lVx[1];
-    float maxVx = lVx[2];
+    const int nBinsVx = static_cast<int>(lVx[0]);
+    const float minVx = lVx[1];
+    const float maxVx = lVx[2];
 
     std::vector<float> lVy = cfVyBins.value;
-    int nBinsVy = static_cast<int>(lVy[0]);
-    float minVy = lVy[1];
-    float maxVy = lVy[2];
+    const int nBinsVy = static_cast<int>(lVy[0]);
+    const float minVy = lVy[1];
+    const float maxVy = lVy[2];
 
     std::vector<float> lVz = cfVzBins.value;
-    int nBinsVz = static_cast<int>(lVz[0]);
-    float minVz = lVz[1];
-    float maxVz = lVz[2];
+    const int nBinsVz = static_cast<int>(lVz[0]);
+    const float minVz = lVz[1];
+    const float maxVz = lVz[2];
 
     std::vector<float> lIp = cfIpBins.value;
-    int nBinsIp = static_cast<int>(lIp[0]);
-    float minIp = lIp[1];
-    float maxIp = lIp[2];
+    const int nBinsIp = static_cast<int>(lIp[0]);
+    const float minIp = lIp[1];
+    const float maxIp = lIp[2];
 
     // eEventHistograms_N
 
     if (doprocessRec || doprocessRecSim) {
       if (cfALICECentBinSwitch) {
-        ec.fEventHistograms[eHistCentrality][eRec][eBefore] = new TH1F("[eHistCentrality][eRec][eBefore]", "Centrality (reconstructed) before cuts", nDefaultBins, defaultBoundaries);
+        ec.fEventHist[eHistCentrality][eRec][eBefore] = new TH1F("[eHistCentrality][eRec][eBefore]", "Centrality (reconstructed) before cuts", nDefaultBins, defaultBoundaries);
       } else {
-        ec.fEventHistograms[eHistCentrality][eRec][eBefore] = new TH1F("[eHistCentrality][eRec][eBefore]", "Centrality (reconstructed) before cuts", nBinsCent, minCent, maxCent);
+        ec.fEventHist[eHistCentrality][eRec][eBefore] = new TH1F("[eHistCentrality][eRec][eBefore]", "Centrality (reconstructed) before cuts", nBinsCent, minCent, maxCent);
       }
-      ec.fEventHistograms[eHistCentrality][eRec][eBefore]->GetXaxis()->SetTitle(Form("Centrality (%s)", CentralityEstimatorNames[centralityEstimator]));
+      ec.fEventHist[eHistCentrality][eRec][eBefore]->GetXaxis()->SetTitle(Form("Centrality (%s)", CentralityEstimatorNames[centralityEstimator]));
 
-      ec.fEventHistograms[eHistMultiplicity][eRec][eBefore] = new TH1F("[eHistMultiplicity][eRec][eBefore]", "Multiplicity (reconstructed) before cuts", nBinsMult, minMult, maxMult);
-      ec.fEventHistograms[eHistMultiplicity][eRec][eBefore]->GetXaxis()->SetTitle("Multiplicity");
+      ec.fEventHist[eHistMultiplicity][eRec][eBefore] = new TH1F("[eHistMultiplicity][eRec][eBefore]", "Multiplicity (reconstructed) before cuts", nBinsMult, minMult, maxMult);
+      ec.fEventHist[eHistMultiplicity][eRec][eBefore]->GetXaxis()->SetTitle("Multiplicity");
 
-      ec.fEventHistograms[eHistReferenceMultiplicity][eRec][eBefore] = new TH1F("[eHistReferenceMultiplicity][eRec][eBefore]", "Reference Multiplicity before cuts", nBinsMultRef, minMultRef, maxMultRef);
-      ec.fEventHistograms[eHistReferenceMultiplicity][eRec][eBefore]->GetXaxis()->SetTitle(Form("Reference Multiplicity (%s)", MultiplicityTablesNames[multiplicityTables]));
+      ec.fEventHist[eHistReferenceMultiplicity][eRec][eBefore] = new TH1F("[eHistReferenceMultiplicity][eRec][eBefore]", "Reference Multiplicity before cuts", nBinsMultRef, minMultRef, maxMultRef);
+      ec.fEventHist[eHistReferenceMultiplicity][eRec][eBefore]->GetXaxis()->SetTitle(Form("Reference Multiplicity (%s)", MultiplicityTablesNames[multiplicityTables]));
 
-      ec.fEventHistograms[eHistVertexX][eRec][eBefore] = new TH1F("[eHistVertexX][eRec][eBefore]", "Vertex X (reconstructed) before cuts", nBinsVx, minVx, maxVx);
-      ec.fEventHistograms[eHistVertexX][eRec][eBefore]->GetXaxis()->SetTitle("Vertex X");
+      ec.fEventHist[eHistVertexX][eRec][eBefore] = new TH1F("[eHistVertexX][eRec][eBefore]", "Vertex X (reconstructed) before cuts", nBinsVx, minVx, maxVx);
+      ec.fEventHist[eHistVertexX][eRec][eBefore]->GetXaxis()->SetTitle("Vertex X");
 
-      ec.fEventHistograms[eHistVertexY][eRec][eBefore] = new TH1F("[eHistVertexY][eRec][eBefore]", "Vertex Y (reconstructed) before cuts", nBinsVy, minVy, maxVy);
-      ec.fEventHistograms[eHistVertexY][eRec][eBefore]->GetXaxis()->SetTitle("Vertex Y");
+      ec.fEventHist[eHistVertexY][eRec][eBefore] = new TH1F("[eHistVertexY][eRec][eBefore]", "Vertex Y (reconstructed) before cuts", nBinsVy, minVy, maxVy);
+      ec.fEventHist[eHistVertexY][eRec][eBefore]->GetXaxis()->SetTitle("Vertex Y");
 
-      ec.fEventHistograms[eHistVertexZ][eRec][eBefore] = new TH1F("[eHistVertexZ][eRec][eBefore]", "Vertex Z (reconstructed) before cuts", nBinsVz, minVz, maxVz);
-      ec.fEventHistograms[eHistVertexZ][eRec][eBefore]->GetXaxis()->SetTitle("Vertex Z");
+      ec.fEventHist[eHistVertexZ][eRec][eBefore] = new TH1F("[eHistVertexZ][eRec][eBefore]", "Vertex Z (reconstructed) before cuts", nBinsVz, minVz, maxVz);
+      ec.fEventHist[eHistVertexZ][eRec][eBefore]->GetXaxis()->SetTitle("Vertex Z");
 
       for (int i = 0; i < eEventHistograms_N; ++i) {
         if (i != eHistImpactParameter) {
-          ec.fEventHistograms[i][eRec][eBefore]->SetColors(beforeCutLineColor, -1, beforeCutFillColor);
-          ec.fEventHistogramsList->Add(ec.fEventHistograms[i][eRec][eBefore]);
+          ec.fEventHist[i][eRec][eBefore]->SetColors(beforeCutLineColor, -1, beforeCutFillColor);
+          ec.fEventHistList->Add(ec.fEventHist[i][eRec][eBefore]);
         }
       }
 
       if (cfMasterCutSwitch) {
         if (cfALICECentBinSwitch) {
-          ec.fEventHistograms[eHistCentrality][eRec][eAfter] = new TH1F("[eHistCentrality][eRec][eAfter]", "Centrality (reconstructed) after cuts", nDefaultBins, defaultBoundaries);
+          ec.fEventHist[eHistCentrality][eRec][eAfter] = new TH1F("[eHistCentrality][eRec][eAfter]", "Centrality (reconstructed) after cuts", nDefaultBins, defaultBoundaries);
         } else {
-          ec.fEventHistograms[eHistCentrality][eRec][eAfter] = new TH1F("[eHistCentrality][eRec][eAfter]", "Centrality (reconstructed) after cuts", nBinsCent, minCent, maxCent);
+          ec.fEventHist[eHistCentrality][eRec][eAfter] = new TH1F("[eHistCentrality][eRec][eAfter]", "Centrality (reconstructed) after cuts", nBinsCent, minCent, maxCent);
         }
-        ec.fEventHistograms[eHistCentrality][eRec][eAfter]->GetXaxis()->SetTitle(Form("Centrality (%s)", CentralityEstimatorNames[centralityEstimator]));
+        ec.fEventHist[eHistCentrality][eRec][eAfter]->GetXaxis()->SetTitle(Form("Centrality (%s)", CentralityEstimatorNames[centralityEstimator]));
 
-        ec.fEventHistograms[eHistMultiplicity][eRec][eAfter] = new TH1F("[eHistMultiplicity][eRec][eAfter]", "Multiplicity (reconstructed) after cuts", nBinsMult, minMult, maxMult);
-        ec.fEventHistograms[eHistMultiplicity][eRec][eAfter]->GetXaxis()->SetTitle("Multiplicity");
+        ec.fEventHist[eHistMultiplicity][eRec][eAfter] = new TH1F("[eHistMultiplicity][eRec][eAfter]", "Multiplicity (reconstructed) after cuts", nBinsMult, minMult, maxMult);
+        ec.fEventHist[eHistMultiplicity][eRec][eAfter]->GetXaxis()->SetTitle("Multiplicity");
 
-        ec.fEventHistograms[eHistReferenceMultiplicity][eRec][eAfter] = new TH1F("[eHistReferenceMultiplicity][eRec][eAfter]", "Reference Multiplicity after cuts", nBinsMultRef, minMultRef, maxMultRef);
-        ec.fEventHistograms[eHistReferenceMultiplicity][eRec][eAfter]->GetXaxis()->SetTitle(Form("Reference Multiplicity (%s)", MultiplicityTablesNames[multiplicityTables]));
+        ec.fEventHist[eHistReferenceMultiplicity][eRec][eAfter] = new TH1F("[eHistReferenceMultiplicity][eRec][eAfter]", "Reference Multiplicity after cuts", nBinsMultRef, minMultRef, maxMultRef);
+        ec.fEventHist[eHistReferenceMultiplicity][eRec][eAfter]->GetXaxis()->SetTitle(Form("Reference Multiplicity (%s)", MultiplicityTablesNames[multiplicityTables]));
 
-        ec.fEventHistograms[eHistVertexX][eRec][eAfter] = new TH1F("[eHistVertexX][eRec][eAfter]", "Vertex X (reconstructed) after cuts", nBinsVx, minVx, maxVx);
-        ec.fEventHistograms[eHistVertexX][eRec][eAfter]->GetXaxis()->SetTitle("Vertex X");
+        ec.fEventHist[eHistVertexX][eRec][eAfter] = new TH1F("[eHistVertexX][eRec][eAfter]", "Vertex X (reconstructed) after cuts", nBinsVx, minVx, maxVx);
+        ec.fEventHist[eHistVertexX][eRec][eAfter]->GetXaxis()->SetTitle("Vertex X");
 
-        ec.fEventHistograms[eHistVertexY][eRec][eAfter] = new TH1F("[eHistVertexY][eRec][eAfter]", "Vertex Y (reconstructed) after cuts", nBinsVy, minVy, maxVy);
-        ec.fEventHistograms[eHistVertexY][eRec][eAfter]->GetXaxis()->SetTitle("Vertex Y");
+        ec.fEventHist[eHistVertexY][eRec][eAfter] = new TH1F("[eHistVertexY][eRec][eAfter]", "Vertex Y (reconstructed) after cuts", nBinsVy, minVy, maxVy);
+        ec.fEventHist[eHistVertexY][eRec][eAfter]->GetXaxis()->SetTitle("Vertex Y");
 
-        ec.fEventHistograms[eHistVertexZ][eRec][eAfter] = new TH1F("[eHistVertexZ][eRec][eAfter]", "Vertex Z (reconstructed) after cuts", nBinsVz, minVz, maxVz);
-        ec.fEventHistograms[eHistVertexZ][eRec][eAfter]->GetXaxis()->SetTitle("Vertex Z");
+        ec.fEventHist[eHistVertexZ][eRec][eAfter] = new TH1F("[eHistVertexZ][eRec][eAfter]", "Vertex Z (reconstructed) after cuts", nBinsVz, minVz, maxVz);
+        ec.fEventHist[eHistVertexZ][eRec][eAfter]->GetXaxis()->SetTitle("Vertex Z");
 
         for (int i = 0; i < eEventHistograms_N; ++i) {
           if (i != eHistImpactParameter) {
-            ec.fEventHistograms[i][eRec][eAfter]->SetColors(afterCutLineColor, -1, afterCutFillColor);
-            ec.fEventHistogramsList->Add(ec.fEventHistograms[i][eRec][eAfter]);
+            ec.fEventHist[i][eRec][eAfter]->SetColors(afterCutLineColor, -1, afterCutFillColor);
+            ec.fEventHistList->Add(ec.fEventHist[i][eRec][eAfter]);
           }
         }
       }
@@ -1179,61 +1144,61 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
 
     if (doprocessSim || doprocessRecSim) {
       if (cfALICECentBinSwitch) {
-        ec.fEventHistograms[eHistCentrality][eSim][eBefore] = new TH1F("[eHistCentrality][eSim][eBefore]", "Centrality (simulated) before cuts", nDefaultBins, defaultBoundaries);
+        ec.fEventHist[eHistCentrality][eSim][eBefore] = new TH1F("[eHistCentrality][eSim][eBefore]", "Centrality (simulated) before cuts", nDefaultBins, defaultBoundaries);
       } else {
-        ec.fEventHistograms[eHistCentrality][eSim][eBefore] = new TH1F("[eHistCentrality][eSim][eBefore]", "Centrality (simulated) before cuts", nBinsCent, minCent, maxCent);
+        ec.fEventHist[eHistCentrality][eSim][eBefore] = new TH1F("[eHistCentrality][eSim][eBefore]", "Centrality (simulated) before cuts", nBinsCent, minCent, maxCent);
       }
-      ec.fEventHistograms[eHistCentrality][eSim][eBefore]->GetXaxis()->SetTitle(Form("Centrality (%s)", CentralityEstimatorNames[centralityEstimator]));
+      ec.fEventHist[eHistCentrality][eSim][eBefore]->GetXaxis()->SetTitle(Form("Centrality (%s)", CentralityEstimatorNames[centralityEstimator]));
 
-      ec.fEventHistograms[eHistMultiplicity][eSim][eBefore] = new TH1F("[eHistMultiplicity][eSim][eBefore]", "Multiplicity (simulated) before cuts", nBinsMult, minMult, maxMult);
-      ec.fEventHistograms[eHistMultiplicity][eSim][eBefore]->GetXaxis()->SetTitle("Multiplicity");
+      ec.fEventHist[eHistMultiplicity][eSim][eBefore] = new TH1F("[eHistMultiplicity][eSim][eBefore]", "Multiplicity (simulated) before cuts", nBinsMult, minMult, maxMult);
+      ec.fEventHist[eHistMultiplicity][eSim][eBefore]->GetXaxis()->SetTitle("Multiplicity");
 
-      ec.fEventHistograms[eHistVertexX][eSim][eBefore] = new TH1F("[eHistVertexX][eSim][eBefore]", "Vertex X (simulated) before cuts", nBinsVx, minVx, maxVx);
-      ec.fEventHistograms[eHistVertexX][eSim][eBefore]->GetXaxis()->SetTitle("Vertex X");
+      ec.fEventHist[eHistVertexX][eSim][eBefore] = new TH1F("[eHistVertexX][eSim][eBefore]", "Vertex X (simulated) before cuts", nBinsVx, minVx, maxVx);
+      ec.fEventHist[eHistVertexX][eSim][eBefore]->GetXaxis()->SetTitle("Vertex X");
 
-      ec.fEventHistograms[eHistVertexY][eSim][eBefore] = new TH1F("[eHistVertexY][eSim][eBefore]", "Vertex Y (simulated) before cuts", nBinsVy, minVy, maxVy);
-      ec.fEventHistograms[eHistVertexY][eSim][eBefore]->GetXaxis()->SetTitle("Vertex Y");
+      ec.fEventHist[eHistVertexY][eSim][eBefore] = new TH1F("[eHistVertexY][eSim][eBefore]", "Vertex Y (simulated) before cuts", nBinsVy, minVy, maxVy);
+      ec.fEventHist[eHistVertexY][eSim][eBefore]->GetXaxis()->SetTitle("Vertex Y");
 
-      ec.fEventHistograms[eHistVertexZ][eSim][eBefore] = new TH1F("[eHistVertexZ][eSim][eBefore]", "Vertex Z (simulated) before cuts", nBinsVz, minVz, maxVz);
-      ec.fEventHistograms[eHistVertexZ][eSim][eBefore]->GetXaxis()->SetTitle("Vertex Z");
+      ec.fEventHist[eHistVertexZ][eSim][eBefore] = new TH1F("[eHistVertexZ][eSim][eBefore]", "Vertex Z (simulated) before cuts", nBinsVz, minVz, maxVz);
+      ec.fEventHist[eHistVertexZ][eSim][eBefore]->GetXaxis()->SetTitle("Vertex Z");
 
-      ec.fEventHistograms[eHistImpactParameter][eSim][eBefore] = new TH1F("[eHistImpactParameter][eSim][eBefore]", "Impact Parameter (simulated) before cuts", nBinsIp, minIp, maxIp);
-      ec.fEventHistograms[eHistImpactParameter][eSim][eBefore]->GetXaxis()->SetTitle("Impact Parameter");
+      ec.fEventHist[eHistImpactParameter][eSim][eBefore] = new TH1F("[eHistImpactParameter][eSim][eBefore]", "Impact Parameter (simulated) before cuts", nBinsIp, minIp, maxIp);
+      ec.fEventHist[eHistImpactParameter][eSim][eBefore]->GetXaxis()->SetTitle("Impact Parameter");
 
       for (int i = 0; i < eEventHistograms_N; ++i) {
         if (i != eHistReferenceMultiplicity) {
-          ec.fEventHistograms[i][eSim][eBefore]->SetColors(beforeCutLineColor, -1, beforeCutFillColor);
-          ec.fEventHistogramsList->Add(ec.fEventHistograms[i][eSim][eBefore]);
+          ec.fEventHist[i][eSim][eBefore]->SetColors(beforeCutLineColor, -1, beforeCutFillColor);
+          ec.fEventHistList->Add(ec.fEventHist[i][eSim][eBefore]);
         }
       }
 
       if (cfMasterCutSwitch) {
         if (cfALICECentBinSwitch) {
-          ec.fEventHistograms[eHistCentrality][eSim][eAfter] = new TH1F("[eHistCentrality][eSim][eAfter]", "Centrality (simulated) after cuts", nDefaultBins, defaultBoundaries);
+          ec.fEventHist[eHistCentrality][eSim][eAfter] = new TH1F("[eHistCentrality][eSim][eAfter]", "Centrality (simulated) after cuts", nDefaultBins, defaultBoundaries);
         } else {
-          ec.fEventHistograms[eHistCentrality][eSim][eAfter] = new TH1F("[eHistCentrality][eSim][eAfter]", "Centrality (simulated) after cuts", nBinsCent, minCent, maxCent);
+          ec.fEventHist[eHistCentrality][eSim][eAfter] = new TH1F("[eHistCentrality][eSim][eAfter]", "Centrality (simulated) after cuts", nBinsCent, minCent, maxCent);
         }
-        ec.fEventHistograms[eHistCentrality][eSim][eAfter]->GetXaxis()->SetTitle(Form("Centrality (%s)", CentralityEstimatorNames[centralityEstimator]));
+        ec.fEventHist[eHistCentrality][eSim][eAfter]->GetXaxis()->SetTitle(Form("Centrality (%s)", CentralityEstimatorNames[centralityEstimator]));
 
-        ec.fEventHistograms[eHistMultiplicity][eSim][eAfter] = new TH1F("[eHistMultiplicity][eSim][eAfter]", "Multiplicity (simulated) after cuts", nBinsMult, minMult, maxMult);
-        ec.fEventHistograms[eHistMultiplicity][eSim][eAfter]->GetXaxis()->SetTitle("Multiplicity");
+        ec.fEventHist[eHistMultiplicity][eSim][eAfter] = new TH1F("[eHistMultiplicity][eSim][eAfter]", "Multiplicity (simulated) after cuts", nBinsMult, minMult, maxMult);
+        ec.fEventHist[eHistMultiplicity][eSim][eAfter]->GetXaxis()->SetTitle("Multiplicity");
 
-        ec.fEventHistograms[eHistVertexX][eSim][eAfter] = new TH1F("[eHistVertexX][eSim][eAfter]", "Vertex X (simulated) after cuts", nBinsVx, minVx, maxVx);
-        ec.fEventHistograms[eHistVertexX][eSim][eAfter]->GetXaxis()->SetTitle("Vertex X");
+        ec.fEventHist[eHistVertexX][eSim][eAfter] = new TH1F("[eHistVertexX][eSim][eAfter]", "Vertex X (simulated) after cuts", nBinsVx, minVx, maxVx);
+        ec.fEventHist[eHistVertexX][eSim][eAfter]->GetXaxis()->SetTitle("Vertex X");
 
-        ec.fEventHistograms[eHistVertexY][eSim][eAfter] = new TH1F("[eHistVertexY][eSim][eAfter]", "Vertex Y (simulated) after cuts", nBinsVy, minVy, maxVy);
-        ec.fEventHistograms[eHistVertexY][eSim][eAfter]->GetXaxis()->SetTitle("Vertex Y");
+        ec.fEventHist[eHistVertexY][eSim][eAfter] = new TH1F("[eHistVertexY][eSim][eAfter]", "Vertex Y (simulated) after cuts", nBinsVy, minVy, maxVy);
+        ec.fEventHist[eHistVertexY][eSim][eAfter]->GetXaxis()->SetTitle("Vertex Y");
 
-        ec.fEventHistograms[eHistVertexZ][eSim][eAfter] = new TH1F("[eHistVertexZ][eSim][eAfter]", "Vertex Z (simulated) after cuts", nBinsVz, minVz, maxVz);
-        ec.fEventHistograms[eHistVertexZ][eSim][eAfter]->GetXaxis()->SetTitle("Vertex Z");
+        ec.fEventHist[eHistVertexZ][eSim][eAfter] = new TH1F("[eHistVertexZ][eSim][eAfter]", "Vertex Z (simulated) after cuts", nBinsVz, minVz, maxVz);
+        ec.fEventHist[eHistVertexZ][eSim][eAfter]->GetXaxis()->SetTitle("Vertex Z");
 
-        ec.fEventHistograms[eHistImpactParameter][eSim][eAfter] = new TH1F("[eHistImpactParameter][eSim][eAfter]", "Impact Parameter (simulated) after cuts", nBinsIp, minIp, maxIp);
-        ec.fEventHistograms[eHistImpactParameter][eSim][eAfter]->GetXaxis()->SetTitle("Impact Parameter");
+        ec.fEventHist[eHistImpactParameter][eSim][eAfter] = new TH1F("[eHistImpactParameter][eSim][eAfter]", "Impact Parameter (simulated) after cuts", nBinsIp, minIp, maxIp);
+        ec.fEventHist[eHistImpactParameter][eSim][eAfter]->GetXaxis()->SetTitle("Impact Parameter");
 
         for (int i = 0; i < eEventHistograms_N; ++i) {
           if (i != eHistReferenceMultiplicity) {
-            ec.fEventHistograms[i][eSim][eAfter]->SetColors(afterCutLineColor, -1, afterCutFillColor);
-            ec.fEventHistogramsList->Add(ec.fEventHistograms[i][eSim][eAfter]);
+            ec.fEventHist[i][eSim][eAfter]->SetColors(afterCutLineColor, -1, afterCutFillColor);
+            ec.fEventHistList->Add(ec.fEventHist[i][eSim][eAfter]);
           }
         }
       }
@@ -1254,44 +1219,6 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
         obs.fProfTwo[eRec][eAfter] = new TProfile("obs.fProfTwo[eRec][eAfter]", "obs.fProfTwo[eRec][eAfter]", 1, 0., 1);
         obs.fProfTwo[eRec][eAfter]->GetYaxis()->SetTitle("#LT#LTk#GT#GT / 10^{-k}");
         obs.fObservablesList->Add(obs.fProfTwo[eRec][eAfter]);
-      }
-    }
-
-    if (doprocessRecSim) {
-      // *) Book PhiAndPtHistograms TLists:
-      pph.fPhiAndPtHistogramsList = new TList();
-      pph.fPhiAndPtHistogramsList->SetName("PhiAndPtHistograms");
-      pph.fPhiAndPtHistogramsList->SetOwner(true);
-      fBaseList->Add(pph.fPhiAndPtHistogramsList);
-
-      pph.fPhiAndPtHistograms[ePhiRec][eBefore] = new TH1F("[ePhiRec][eBefore]", "phi distribution for reconstructed particles before cuts", nBinsPhi, minPhi, maxPhi);
-      pph.fPhiAndPtHistograms[ePhiRec][eBefore]->GetXaxis()->SetTitle("#varphi");
-
-      pph.fPhiAndPtHistograms[ePtRec][eBefore] = new TH1F("[ePtRec][eBefore]", "pt distribution for reconstructed particles before cuts", nBinsPt, minPt, maxPt);
-      pph.fPhiAndPtHistograms[ePhiRec][eBefore]->GetXaxis()->SetTitle("p_{T}");
-
-      pph.fPhiAndPtHistograms[ePtMC][eBefore] = new TH1F("[ePtMC][eBefore]", "pt distribution for simulated particles before cuts", nBinsPt, minPt, maxPt);
-      pph.fPhiAndPtHistograms[ePhiRec][eBefore]->GetXaxis()->SetTitle("p_{T}");
-
-      for (int i = 0; i < ePhiAndPtHistograms_N; ++i) {
-        pph.fPhiAndPtHistograms[i][eBefore]->SetColors(beforeCutLineColor, -1, beforeCutFillColor);
-        pph.fPhiAndPtHistogramsList->Add(pph.fPhiAndPtHistograms[i][eBefore]);
-      }
-
-      if (cfMasterCutSwitch) {
-        pph.fPhiAndPtHistograms[ePhiRec][eAfter] = new TH1F("[ePhiRec][eAfter]", "phi distribution for reconstructed particles after cuts", nBinsPhi, minPhi, maxPhi);
-        pph.fPhiAndPtHistograms[ePhiRec][eAfter]->GetXaxis()->SetTitle("#varphi");
-
-        pph.fPhiAndPtHistograms[ePtRec][eAfter] = new TH1F("[ePtRec][eAfter]", "pt distribution for reconstructed particles after cuts", nBinsPt, minPt, maxPt);
-        pph.fPhiAndPtHistograms[ePhiRec][eAfter]->GetXaxis()->SetTitle("p_{T}");
-
-        pph.fPhiAndPtHistograms[ePtMC][eAfter] = new TH1F("[ePtMC][eAfter]", "pt distribution for simulated particles after cuts", nBinsPt, minPt, maxPt);
-        pph.fPhiAndPtHistograms[ePhiRec][eAfter]->GetXaxis()->SetTitle("p_{T}");
-
-        for (int i = 0; i < ePhiAndPtHistograms_N; ++i) {
-          pph.fPhiAndPtHistograms[i][eAfter]->SetColors(afterCutLineColor, -1, afterCutFillColor);
-          pph.fPhiAndPtHistogramsList->Add(pph.fPhiAndPtHistograms[i][eAfter]);
-        }
       }
     }
 
@@ -1317,16 +1244,12 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
   }
   PROCESS_SWITCH(MultiparticleCorrelationsMei, processRec, "process only reconstructed data", true); // yes, keep always one process switch "true", so that there is default running version
 
-  // -------------------------------------------
-
   // B) Process both reconstructed and corresponding MC truth simulated data:
   void processRecSim(CollisionRecSim const& collision, aod::BCs const&, TracksRecSim const& tracks, aod::McParticles const&, aod::McCollisions const&)
   {
     steer<eRecAndSim>(collision, tracks);
   }
   PROCESS_SWITCH(MultiparticleCorrelationsMei, processRecSim, "process both reconstructed and corresponding MC truth simulated data", false);
-
-  // -------------------------------------------
 
   // C) Process only simulated data:
   void processSim(CollisionSim const& /*collision*/, aod::BCs const&, TracksSim const& /*tracks*/)
