@@ -569,10 +569,13 @@ class pidTPCModule
     // every page of an O(100 MB) buffer twice.
     std::unique_ptr<float[]> networkPrediction(new float[predictionSize * NParticleTypes]); // For each mass hypotheses
 
-    std::vector<float> track_properties(track_prop_size);
-    std::vector<float> output_network; // output buffer, allocation is reused for all mass hypotheses
-    uint64_t counter_track_props = 0;
-    int loop_counter = 0;
+    const float nNclNormalization = response->GetNClNormalization();
+    float durationNetwork = 0.f;
+
+    std::vector<float> trackProperties(trackPropSize);
+    std::vector<float> outputNetwork; // output buffer, allocation is reused for all mass hypotheses
+    uint64_t counterTrackProps = 0;
+    uint64_t loopCounter = 0;
 
     // To load the Hadronic rate once for each collision
     std::vector<float> hadronicRateForCollision(collisions.size(), 0.0f);
@@ -623,14 +626,14 @@ class pidTPCModule
         counterTrackProps += inputDimensions;
       }
 
-      auto start_network_eval = std::chrono::high_resolution_clock::now();
-      network.evalModel(track_properties, output_network);
-      auto stop_network_eval = std::chrono::high_resolution_clock::now();
-      duration_network += std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_eval - start_network_eval).count();
-      if (output_network.size() != prediction_size) {
-        LOG(fatal) << "Network output size (" << output_network.size() << ") does not match the expected prediction size (" << prediction_size << ")";
+      const auto startNetworkEval = std::chrono::high_resolution_clock::now();
+      network.evalModel(trackProperties, outputNetwork);
+      const auto stopNetworkEval = std::chrono::high_resolution_clock::now();
+      durationNetwork += std::chrono::duration<float, std::ratio<1, NanoToOne>>(stopNetworkEval - startNetworkEval).count();
+      if (outputNetwork.size() != predictionSize) {
+        LOG(fatal) << "Network output size (" << outputNetwork.size() << ") does not match the expected prediction size (" << predictionSize << ")";
       }
-      std::copy(output_network.begin(), output_network.end(), network_prediction.get() + prediction_size * loop_counter);
+      std::copy(outputNetwork.begin(), outputNetwork.end(), networkPrediction.get() + predictionSize * loopCounter);
 
       counterTrackProps = 0;
       ++loopCounter;
