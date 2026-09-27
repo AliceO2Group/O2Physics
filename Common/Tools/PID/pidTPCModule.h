@@ -609,7 +609,7 @@ class pidTPCModule
       if (output_network.size() != prediction_size) {
         LOG(fatal) << "Network output size (" << output_network.size() << ") does not match the expected prediction size (" << prediction_size << ")";
       }
-      std::copy(output_network.begin(), output_network.end(), network_prediction.begin() + prediction_size * loop_counter);
+      std::copy(output_network.begin(), output_network.end(), network_prediction.get() + prediction_size * loop_counter);
 
       counter_track_props = 0;
       loop_counter += 1;
