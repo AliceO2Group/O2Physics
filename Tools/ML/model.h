@@ -22,7 +22,6 @@
 
 #include <Framework/Logger.h>
 
-#include <onnxruntime_c_api.h>
 #include <onnxruntime_cxx_api.h>
 
 #include <cstddef>

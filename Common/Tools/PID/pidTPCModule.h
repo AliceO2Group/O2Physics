@@ -49,6 +49,7 @@
 #include <TRandom.h>
 #include <TString.h>
 
+#include <array>
 #include <algorithm>
 #include <chrono>
 #include <cstddef>
