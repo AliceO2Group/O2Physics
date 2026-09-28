@@ -2109,9 +2109,13 @@ struct LambdaProtonBalanceFunction {
 
     // INEL > 0: require at least one charged track in |eta| < 0.8
     static constexpr float kMaxInelEta = 0.8f;
-    const int nTracksINEL = static_cast<int>(std::count_if(tracks.begin(), tracks.end(), [](auto const& trk) {
-      return std::abs(trk.eta()) < kMaxInelEta;
-    }));
+    int nTracksINEL = 0;
+    for (auto const& trk : tracks) {
+      if (std::abs(trk.eta()) < kMaxInelEta) {
+        ++nTracksINEL;
+        continue;
+      }
+    }
     if (nTracksINEL < 1) {
       return;
     }
