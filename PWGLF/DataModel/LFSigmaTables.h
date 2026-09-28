@@ -179,8 +179,6 @@ DECLARE_SOA_TABLE(Sigma0Cores, "AOD", "SIGMA0CORES",
 
                   // Basic properties
                   sigma0Core::X, sigma0Core::Y, sigma0Core::Z, sigma0Core::DCADaughters,
-                  sigma0Core::LStarAlpha<sigma0Core::PhotonPx, sigma0Core::PhotonPy, sigma0Core::PhotonPz, sigma0Core::LambdaPx, sigma0Core::LambdaPy, sigma0Core::LambdaPz>,
-                  sigma0Core::LStarQtArm<sigma0Core::PhotonPx, sigma0Core::PhotonPy, sigma0Core::PhotonPz, sigma0Core::LambdaPx, sigma0Core::LambdaPy, sigma0Core::LambdaPz>,
                   sigma0Core::PhotonPx, sigma0Core::PhotonPy, sigma0Core::PhotonPz, sigma0Core::PhotonMass,
                   sigma0Core::LambdaPx, sigma0Core::LambdaPy, sigma0Core::LambdaPz, sigma0Core::LambdaMass, sigma0Core::AntiLambdaMass,
 
@@ -197,6 +195,8 @@ DECLARE_SOA_TABLE(Sigma0Cores, "AOD", "SIGMA0CORES",
                   sigma0Core::Eta<sigma0Core::PhotonPx, sigma0Core::PhotonPy, sigma0Core::PhotonPz, sigma0Core::LambdaPx, sigma0Core::LambdaPy, sigma0Core::LambdaPz>,
                   sigma0Core::Radius<sigma0Core::X, sigma0Core::Y>,
                   sigma0Core::OPAngle<sigma0Core::PhotonPx, sigma0Core::PhotonPy, sigma0Core::PhotonPz, sigma0Core::LambdaPx, sigma0Core::LambdaPy, sigma0Core::LambdaPz>,
+                  sigma0Core::LStarAlpha<sigma0Core::PhotonPx, sigma0Core::PhotonPy, sigma0Core::PhotonPz, sigma0Core::LambdaPx, sigma0Core::LambdaPy, sigma0Core::LambdaPz>,
+                  sigma0Core::LStarQtArm<sigma0Core::PhotonPx, sigma0Core::PhotonPy, sigma0Core::PhotonPz, sigma0Core::LambdaPx, sigma0Core::LambdaPy, sigma0Core::LambdaPz>,
 
                   sigma0Core::PhotonPt<sigma0Core::PhotonPx, sigma0Core::PhotonPy>,
                   sigma0Core::PhotonP<sigma0Core::PhotonPx, sigma0Core::PhotonPy, sigma0Core::PhotonPz>,
