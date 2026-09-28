@@ -314,6 +314,7 @@ struct FemtoUniversePairTaskTrackD0 {
                               {"hEtaD0D0bar", ";#eta ;counts", {HistType::kTH1F, {{200, -1., 1.}}}},
                               {"hEtaD0", ";#eta ;counts", {HistType::kTH1F, {{200, -1., 1.}}}},
                               {"hEtaD0bar", ";#eta ;counts", {HistType::kTH1F, {{200, -1., 1.}}}},
+                              {"hYD0D0bar", ";y ;counts", {HistType::kTH1F, {{200, -1., 1.}}}},
                               {"hPtDaughters", ";#it{p}_{T} (GeV/#it{c});counts", {HistType::kTH1F, {{300, 0., 12.}}}},
                               {"hSignDaughters", ";sign ;counts", {HistType::kTH1F, {{10, -2.5, 2.5}}}}}};
 
@@ -675,6 +676,7 @@ struct FemtoUniversePairTaskTrackD0 {
       registry.fill(HIST("hPtD0D0bar"), d0d0bar.pt());
       registry.fill(HIST("hPhiD0D0bar"), d0d0bar.phi());
       registry.fill(HIST("hEtaD0D0bar"), d0d0bar.eta());
+      registry.fill(HIST("hYD0D0bar"), d0d0bar.transRadius());
       // BDT score classes
       registry.fill(HIST("DebugBdt/hBdtScore0"), d0d0bar.decayVtxX());
       registry.fill(HIST("DebugBdt/hBdtScore1"), d0d0bar.decayVtxY());
@@ -1388,7 +1390,7 @@ struct FemtoUniversePairTaskTrackD0 {
   {
     for (auto const& part : recoParts) {
       // filling the histograms for identified hadrons
-      if ((part.partType() == aod::femtouniverseparticle::ParticleType::kD0) && (part.pt() > ConfDmesons.confMinPtD0D0barReco) && (part.pt() < ConfDmesons.confMaxPtD0D0barReco)) {
+      if ((part.partType() == aod::femtouniverseparticle::ParticleType::kD0) && (part.pt() > ConfDmesons.confMinPtD0D0barReco) && (part.pt() < ConfDmesons.confMaxPtD0D0barReco) && (part.decayVtxZ() < ConfMlProb.confMlProbNonPromptMax)) {
         // getting the efficiency value
         if (doEfficiencyCorr) {
           weight = efficiencyCalculator.getWeight(ParticleNo::TWO, part.pt());
