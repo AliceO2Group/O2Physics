@@ -50,7 +50,6 @@ struct Omega2012Analysis {
   static constexpr float kSmallNumber = 1e-10f;       // Small number to avoid division by zero
   static constexpr float kMaxDCAV0ToPV = 1.0f;        // Maximum DCA of V0 to PV
   static constexpr int kNumExpectedDaughters = 2;     // Expected number of daughters for 2-body decay
-  static constexpr int kPlaceholderPdgCode = 3335;
   SliceCache cache;
   Preslice<aod::ResoCascades> perResoCollisionCasc = aod::resodaughter::resoCollisionId;
   Preslice<aod::ResoV0s> perResoCollisionV0 = aod::resodaughter::resoCollisionId;
@@ -968,11 +967,10 @@ struct Omega2012Analysis {
     // This resonance decays to Xi + K0s
 
     for (const auto& mcParticle : mcParticles) {
-      // Look for Omega(2012) - PDG code may vary by generator
+      // Look for Omega(2012)
       int pdg = mcParticle.pdgCode();
 
-      // TODO: Update the PDG code library to include Omega(2012) codes
-      if (std::abs(pdg) != kPlaceholderPdgCode)
+      if (std::abs(pdg) != o2::constants::physics::Pdg::kOmega2012Minus)
         continue;
 
       // Fill generated level histograms
