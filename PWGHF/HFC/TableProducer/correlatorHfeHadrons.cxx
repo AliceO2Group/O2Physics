@@ -16,7 +16,6 @@
 
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
 #include "PWGHF/HFL/DataModel/ElectronSelectionTable.h"
-#include "PWGJE/DataModel/EMCALClusters.h"
 
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/RecoDecay.h"
@@ -92,7 +91,8 @@ struct HfCorrelatorHfeHadrons {
   // Electron hadron correlation condition
   Configurable<bool> ptCondition{"ptCondition", true, "Electron pT should be greater than associate particle pT"};
 
-  Configurable<float> eventFractionToAnalyze{"eventFractionToAnalyze", -1, "Fraction of events to analyze (use only for ME offline on very large samples)"};
+  Configurable<float> electronEventFraction{"electronEventFraction", -1, "Fraction of events to analyze (use only for ME offline on very large samples)"};
+  Configurable<float> hadronEventFraction{"hadronEventFraction", -1, "Fraction of events to analyze (use only for ME offline on very large samples)"};
 
   TRandom3 rnd{0};
 
@@ -212,14 +212,10 @@ struct HfCorrelatorHfeHadrons {
   }
 
   // Electron-hadron Correlation
-  template <bool IsMc, typename TracksType, typename ElectronType, typename EmcClusterType, typename CollisionType, typename BcType, typename McParticlesType>
-  void fillCorrelation(CollisionType const& collision, ElectronType const& electrons, TracksType const& tracks, EmcClusterType const& emcClusters, BcType const&, McParticlesType const&)
+  template <bool IsMc, typename TracksType, typename ElectronType, typename CollisionType, typename BcType, typename McParticlesType>
+  void fillCorrelation(CollisionType const& collision, ElectronType const& electrons, TracksType const& tracks, BcType const&, McParticlesType const&)
   {
     if (!(isRun3 ? collision.sel8() : (collision.sel7() && collision.alias_bit(kINT7)))) {
-      return;
-    }
-    // skip events with no clusters
-    if (emcClusters.size() == 0 && skipNoEmcClusters) {
       return;
     }
 
@@ -228,25 +224,33 @@ struct HfCorrelatorHfeHadrons {
     int gCollisionId = collision.globalIndex();
     int64_t timeStamp = bc.timestamp();
 
-    bool skipEventTableFilling = false;
-    if (eventFractionToAnalyze > 0) {
-      if (rnd.Uniform(0, 1) > eventFractionToAnalyze) {
-        skipEventTableFilling = true;
+    bool skipEventElectronTableFilling = false;
+    bool skipEventHadronTableFilling = false;
+    if (electronEventFraction > 0) {
+      if (rnd.Uniform(0, 1) > electronEventFraction) {
+        skipEventElectronTableFilling = true;
       }
     }
 
-    registry.fill(HIST("hNevents"), 1);
+    if (hadronEventFraction > 0) {
+      if (rnd.Uniform(0, 1) > hadronEventFraction) {
+        skipEventHadronTableFilling = true;
+      }
+    }
 
+    registry.fill(HIST("hZvertex"), collision.posZ());
     // fraction of event which used for Event mixing
-    if (!skipEventTableFilling) {
+    if (!skipEventElectronTableFilling) {
       registry.fill(HIST("hTracksBin"), poolBin);
-      registry.fill(HIST("hZvertex"), collision.posZ());
+    }
+    if (!skipEventHadronTableFilling) {
+      registry.fill(HIST("hNevents"), 1);
     }
     for (const auto& hTrack : tracks) {
       if (!selAssoHadron(hTrack)) {
         continue;
       }
-      if (!skipEventTableFilling) {
+      if (!skipEventHadronTableFilling) {
         registry.fill(HIST("hptHadron"), hTrack.pt());
 
         entryHadron(hTrack.phi(), hTrack.eta(), hTrack.pt(), poolBin, gCollisionId, timeStamp);
@@ -340,7 +344,7 @@ struct HfCorrelatorHfeHadrons {
         }
       }
 
-      if (!skipEventTableFilling) {
+      if (!skipEventElectronTableFilling) {
         registry.fill(HIST("hElectronBin"), poolBin);
         entryElectron(phiElectron, etaElectron, ptElectron, nElectronLS, nElectronUS, poolBin, gCollisionId, timeStamp);
       }
@@ -452,10 +456,10 @@ struct HfCorrelatorHfeHadrons {
 
   void processData(TableCollision const& collision,
                    aod::HfCorrSelEl const& electrons,
-                   TableTracks const& tracks, aod::EMCALClusters const& emcClusters,
+                   TableTracks const& tracks,
                    aod::BCsWithTimestamps const& bcs)
   {
-    fillCorrelation<false>(collision, electrons, tracks, emcClusters, bcs, 0);
+    fillCorrelation<false>(collision, electrons, tracks, bcs, 0);
   }
 
   PROCESS_SWITCH(HfCorrelatorHfeHadrons, processData, "Process for Data", false);
@@ -464,10 +468,10 @@ struct HfCorrelatorHfeHadrons {
 
   void processMcRec(McTableCollision const& mcCollision,
                     aod::HfCorrSelEl const& mcElectrons,
-                    McTableTracks const& mcTracks, aod::EMCALClusters const& emcClusters,
+                    McTableTracks const& mcTracks,
                     aod::BCsWithTimestamps const& bcs, aod::McParticles const& mcParticle)
   {
-    fillCorrelation<true>(mcCollision, mcElectrons, mcTracks, emcClusters, bcs, mcParticle);
+    fillCorrelation<true>(mcCollision, mcElectrons, mcTracks, bcs, mcParticle);
   }
 
   PROCESS_SWITCH(HfCorrelatorHfeHadrons, processMcRec, "Process MC Reco mode", true);

@@ -289,12 +289,12 @@ struct PhiStrangeCorrelation {
 
   // Configurables for minimum pt selection in McGen
   struct : ConfigurableGroup {
-    Configurable<float> minPhiPt{"minPhiPt", 0.4f, "Minimum pT for Phi candidates"};
-    Configurable<float> v0SettingMinPt{"v0SettingMinPt", 0.1f, "V0 min pt"};
-    Configurable<float> lambdaSettingMinPt{"lambdaSettingMinPt", 0.2f, "Lambda min pt"};
-    Configurable<float> cascadeSettingMinPt{"cascadeSettingMinPt", 0.8f, "Cascade min pt"};
-    Configurable<float> omegaSettingMinPt{"omegaSettingMinPt", 0.8f, "Omega min pt"};
-    Configurable<float> cMinPionPtcut{"cMinPionPtcut", 0.2f, "Track minimum pt cut"};
+    Configurable<float> minPtPhi{"minPtPhi", 0.4f, "Minimum pT for Phi candidates"};
+    Configurable<float> minPtK0S{"minPtK0S", 0.1f, "Minimum pT for K0S candidates"};
+    Configurable<float> minPtLambda{"minPtLambda", 0.2f, "Minimum pT for Lambda candidates"};
+    Configurable<float> minPtXi{"minPtXi", 0.8f, "Minimum pT for Xi candidates"};
+    Configurable<float> minPtOmega{"minPtOmega", 0.8f, "Minimum pT for Omega candidates"};
+    Configurable<float> minPtPion{"minPtPion", 0.2f, "Minimum pT for Pion candidates"};
     Configurable<bool> bypassPtCut{"bypassPtCut", false, "Bypass the minimum pt cut at MCGen level"};
   } minPtMcGenConfigs;
 
@@ -311,8 +311,22 @@ struct PhiStrangeCorrelation {
   SliceCache cache;
 
   struct : PresliceGroup {
-    Preslice<aod::PhimesonCandidatesData> phiCandDataPerCollision = aod::lf_selection_phi_candidate::collisionId;
-    // PresliceUnsorted<aod::PhimesonCandidatesMcReco> phiCandMcRecoPerCollision = aod::lf_selection_phi_candidate::collisionId;
+#define DEFINE_PRESLICE(PREF, TAB_PREF, COL_ID)                                              \
+  Preslice<aod::TAB_PREF##CandidatesData> PREF##DataPerCollision = aod::COL_ID::collisionId; \
+  Preslice<aod::TAB_PREF##CandidatesMcReco> PREF##McRecoPerCollision = aod::COL_ID::collisionId;
+
+    // Trigger
+    DEFINE_PRESLICE(phiCand, Phimeson, lf_selection_phi_candidate)
+
+    // Associated Strangeness
+    DEFINE_PRESLICE(k0s, K0sReduced, v0)
+    DEFINE_PRESLICE(lambda, LambdaReduced, v0)
+    DEFINE_PRESLICE(antiLambda, AntiLambdaReduced, v0)
+    DEFINE_PRESLICE(xi, XiReduced, cascade)
+    DEFINE_PRESLICE(omega, OmegaReduced, cascade)
+#undef DEFINE_PRESLICE
+
+    /*Preslice<aod::PhimesonCandidatesData> phiCandDataPerCollision = aod::lf_selection_phi_candidate::collisionId;
     Preslice<aod::PhimesonCandidatesMcReco> phiCandMcRecoPerCollision = aod::lf_selection_phi_candidate::collisionId;
 
     Preslice<aod::K0sReducedCandidatesData> k0sDataPerCollision = aod::v0::collisionId;
@@ -328,7 +342,7 @@ struct PhiStrangeCorrelation {
     Preslice<aod::XiReducedCandidatesMcReco> xiMcRecoPerCollision = aod::cascade::collisionId;
 
     Preslice<aod::OmegaReducedCandidatesData> omegaDataPerCollision = aod::cascade::collisionId;
-    Preslice<aod::OmegaReducedCandidatesMcReco> omegaMcRecoPerCollision = aod::cascade::collisionId;
+    Preslice<aod::OmegaReducedCandidatesMcReco> omegaMcRecoPerCollision = aod::cascade::collisionId;*/
 
     Preslice<aod::PionTracksData> pionTrackDataPerCollision = aod::track::collisionId;
     Preslice<aod::PionTracksMcReco> pionTrackMcRecoPerCollision = aod::track::collisionId;
@@ -338,9 +352,6 @@ struct PhiStrangeCorrelation {
 
   // Necessary service to retrieve efficiency maps from CCDB
   Service<ccdb::BasicCCDBManager> ccdb{};
-
-  // std::shared_ptr<TH3> effMapPhi{};
-  // std::array<std::shared_ptr<TH3>, kAssocPartSize> effMapsAssoc{};
 
   EffMapPtr effMapPhi;
   std::array<EffMapPtr, kAssocPartSize> effMapsAssoc{};
@@ -365,12 +376,13 @@ struct PhiStrangeCorrelation {
   struct MiniEvent {
     float multiplicity{};
     std::vector<MiniParticle> phiParticles;
-    std::vector<MiniParticle> k0sParticles;
+    std::array<std::vector<MiniParticle>, kAssocPartSize> assocParticles;
+    /*std::vector<MiniParticle> k0sParticles;
     std::vector<MiniParticle> lambdaParticles;
     std::vector<MiniParticle> antilambdaParticles;
     std::vector<MiniParticle> xiParticles;
     std::vector<MiniParticle> omegaParticles;
-    std::vector<MiniParticle> pionParticles;
+    std::vector<MiniParticle> pionParticles;*/
   };
 
   // Buffer for mixed event, organized as a vector of deques, one for each multiplicity bin, containing the past events with their particles of interest needed for mixing
@@ -411,9 +423,57 @@ struct PhiStrangeCorrelation {
     AxisSpec binnedpTPiAxis{(std::vector<double>)binspTPi, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec binnedpTPiAxisExt{(std::vector<double>)binspTPiExt, "#it{p}_{T} (GeV/#it{c})"};
 
+    std::array<AxisSpec, kAssocPartSize> massAxes = {massK0SAxis, massLambdaAxis, massLambdaAxis, massXiAxis, massOmegaAxis, nSigmaPiAxis};
+    std::array<AxisSpec, kAssocPartSize> binnedpTAxes = {binnedpTK0SAxis, binnedpTLambdaAxis, binnedpTLambdaAxis, binnedpTXiAxis, binnedpTOmegaAxis, binnedpTPiAxis};
+    std::array<AxisSpec, kAssocPartSize> binnedpTExtAxes = {binnedpTK0SAxisExt, binnedpTLambdaAxisExt, binnedpTLambdaAxisExt, binnedpTXiAxisExt, binnedpTOmegaAxisExt, binnedpTPiAxisExt};
+
+    std::array<std::string, kAssocPartSize> assocTitles = {"K0Short", "Lambda", "AntiLambda", "Xi", "Omega", "Pion"};
+    std::array<std::string, kAssocPartSize> dirNames = {"k0s", "lambda", "antilambda", "xi", "omega", "pi"};
+
     histos.add("phi/h3PhiData", "Invariant mass of Phi in Data", kTH3F, {binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
 
-    histos.add("phiK0S/h6PhiK0SData", "Invariant mass of Phi vs Invariant mass of K0Short in Data", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTK0SAxis, deltayAxis, massPhiAxis, massK0SAxis});
+    histos.add("phi/h4PhiMCReco", "Phi in MC Reco", kTHnSparseF, {vertexZAxis, binnedmultAxis, binnedpTPhiAxis, yAxis});
+    histos.add("phi/h3PhiMCGen", "Phi in MC Gen", kTH3F, {binnedmultAxis, binnedpTPhiAxis, yAxis});
+    histos.add("phi/h4PhiMCGenAssocReco", "Phi in MC Gen Assoc Reco", kTHnSparseF, {vertexZAxis, binnedmultAxis, binnedpTPhiAxis, yAxis});
+
+    histos.add("phi/h3PhiMCClosureGen", "Phi in MC Gen for MC Closure Test", kTH3F, {binnedmultAxis, binnedpTPhiAxisExt, yAxis});
+
+    for (size_t i = 0; i < kAssocPartSize; ++i) {
+      std::string pName(AssocParticleLabels[i]);
+      std::string pTitle = assocTitles[i];
+      std::string dir = dirNames[i];
+
+      if (i == kPion) {
+        histos.add("phiPi/h6PhiPiTPCData", "Invariant mass of Phi vs nSigmaTPC of Pion in Data", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTAxes[i], deltayAxis, massPhiAxis, massAxes[i]});
+        histos.add("phiPi/h6PhiPiTPCDataME", "Invariant mass of Phi vs nSigmaTPC of Pion in Data ME", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTAxes[i], deltayAxis, massPhiAxis, massAxes[i]});
+        histos.add("phiPi/h6PhiPiTOFData", "Invariant mass of Phi vs nSigmaTOF of Pion in Data", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTAxes[i], deltayAxis, massPhiAxis, massAxes[i]});
+        histos.add("phiPi/h6PhiPiTOFDataME", "Invariant mass of Phi vs nSigmaTOF of Pion in Data ME", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTAxes[i], deltayAxis, massPhiAxis, massAxes[i]});
+      } else {
+        histos.add(fmt::format("phi{}/h6Phi{}Data", pName, pName).c_str(), fmt::format("Invariant mass of Phi vs Invariant mass of {} in Data", pTitle).c_str(), kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTAxes[i], deltayAxis, massPhiAxis, massAxes[i]});
+        histos.add(fmt::format("phi{}/h6Phi{}DataME", pName, pName).c_str(), fmt::format("Invariant mass of Phi vs Invariant mass of {} in Data ME", pTitle).c_str(), kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTAxes[i], deltayAxis, massPhiAxis, massAxes[i]});
+      }
+
+      for (const auto& label : PhiMassRegionLabels) {
+        histos.add(fmt::format("phi{}/h5Phi{}Data{}", pName, pName, label).c_str(), fmt::format("Deltay vs deltaphi for Phi and {} in Data", pTitle).c_str(), kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTAxes[i], deltayAxis, deltaphiAxis});
+        histos.add(fmt::format("phi{}/h5Phi{}DataME{}", pName, pName, label).c_str(), fmt::format("Deltay vs deltaphi for Phi and {} in Data ME", pTitle).c_str(), kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTAxes[i], deltayAxis, deltaphiAxis});
+      }
+
+      histos.add(fmt::format("{}/h4{}MCReco", dir, pName).c_str(), fmt::format("{} in MC Reco", pTitle).c_str(), kTHnSparseF, {vertexZAxis, binnedmultAxis, binnedpTAxes[i], yAxis});
+      histos.add(fmt::format("{}/h3{}MCGen", dir, pName).c_str(), fmt::format("{} in MC Gen", pTitle).c_str(), kTH3F, {binnedmultAxis, binnedpTAxes[i], yAxis});
+      histos.add(fmt::format("{}/h4{}MCGenAssocReco", dir, pName).c_str(), fmt::format("{} in MC Gen Assoc Reco", pTitle).c_str(), kTHnSparseF, {vertexZAxis, binnedmultAxis, binnedpTAxes[i], yAxis});
+
+      histos.add(fmt::format("phi{}/h5Phi{}ClosureMCGen", pName, pName).c_str(), fmt::format("Deltay vs deltaphi for Phi and {} in MCGen", pTitle).c_str(), kTHnSparseF, {binnedmultAxis, binnedpTPhiAxisExt, binnedpTExtAxes[i], deltayAxis, deltaphiAxis});
+      histos.add(fmt::format("phi{}/h5Phi{}ClosureMCGenME", pName, pName).c_str(), fmt::format("Deltay vs deltaphi for Phi and {} in MCGen ME", pTitle).c_str(), kTHnSparseF, {binnedmultAxis, binnedpTPhiAxisExt, binnedpTExtAxes[i], deltayAxis, deltaphiAxis});
+    }
+
+    histos.add("event/hRecoMCMultiplicityPercent", "RecoMC Multiplicity Percentile", kTH1F, {binnedmultAxis});
+    histos.add("event/h2RecoMCVertexZvsMult", "RecoMC Vertex Z vs Multiplicity Percentile", kTH2F, {vertexZAxis, binnedmultAxis});
+    histos.add("event/hSplitVertexZ", "Split in z-vtx", kTH1F, {{100, -5.0f, 5.0f}});
+    histos.add("event/hGenMCMultiplicityPercent", "Generated MC Multiplicity Percentile", kTH1F, {binnedmultAxis});
+    histos.add("event/hGenMCAssocRecoMultiplicityPercent", "Generated MC associated Multiplicity Percentile", kTH1F, {binnedmultAxis});
+    histos.add("event/h2GenMCAssocRecoVertexZvsMult", "Generated MC associated reco Vertex Z vs multiplicity", kTH2F, {vertexZAxis, binnedmultAxis});
+
+    /*histos.add("phiK0S/h6PhiK0SData", "Invariant mass of Phi vs Invariant mass of K0Short in Data", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTK0SAxis, deltayAxis, massPhiAxis, massK0SAxis});
     histos.add("phiLambda/h6PhiLambdaData", "Invariant mass of Phi vs Invariant mass of Lambda in Data", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTLambdaAxis, deltayAxis, massPhiAxis, massLambdaAxis});
     histos.add("phiXi/h6PhiXiData", "Invariant mass of Phi vs Invariant mass of Xi in Data", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTXiAxis, deltayAxis, massPhiAxis, massXiAxis});
     histos.add("phiOmega/h6PhiOmegaData", "Invariant mass of Phi vs Invariant mass of Omega in Data", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTOmegaAxis, deltayAxis, massPhiAxis, massOmegaAxis});
@@ -425,9 +485,9 @@ struct PhiStrangeCorrelation {
     histos.add("phiXi/h6PhiXiDataME", "Invariant mass of Phi vs Invariant mass of Xi in Data ME", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTXiAxis, deltayAxis, massPhiAxis, massXiAxis});
     histos.add("phiOmega/h6PhiOmegaDataME", "Invariant mass of Phi vs Invariant mass of Omega in Data ME", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTOmegaAxis, deltayAxis, massPhiAxis, massOmegaAxis});
     histos.add("phiPi/h6PhiPiTPCDataME", "Invariant mass of Phi vs nSigmaTPC Pion in Data ME", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTPiAxis, deltayAxis, massPhiAxis, nSigmaPiAxis});
-    histos.add("phiPi/h6PhiPiTOFDataME", "Invariant mass of Phi vs nSigmaTOF Pion in Data ME", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTPiAxis, deltayAxis, massPhiAxis, nSigmaPiAxis});
+    histos.add("phiPi/h6PhiPiTOFDataME", "Invariant mass of Phi vs nSigmaTOF Pion in Data ME", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTPiAxis, deltayAxis, massPhiAxis, nSigmaPiAxis});*/
 
-    for (const auto& label : PhiMassRegionLabels) {
+    /*for (const auto& label : PhiMassRegionLabels) {
       histos.add(fmt::format("phiK0S/h5PhiK0SData{}", label).c_str(), "Deltay vs deltaphi for Phi and K0Short in Data", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTK0SAxis, deltayAxis, deltaphiAxis});
       histos.add(fmt::format("phiLambda/h5PhiLambdaData{}", label).c_str(), "Deltay vs deltaphi for Phi and Lambda in Data", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTLambdaAxis, deltayAxis, deltaphiAxis});
       histos.add(fmt::format("phiXi/h5PhiXiData{}", label).c_str(), "Deltay vs deltaphi for Phi and Xi in Data", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTXiAxis, deltayAxis, deltaphiAxis});
@@ -439,20 +499,9 @@ struct PhiStrangeCorrelation {
       histos.add(fmt::format("phiXi/h5PhiXiDataME{}", label).c_str(), "Deltay vs deltaphi for Phi and Xi in Data ME", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTXiAxis, deltayAxis, deltaphiAxis});
       histos.add(fmt::format("phiOmega/h5PhiOmegaDataME{}", label).c_str(), "Deltay vs deltaphi for Phi and Omega in Data ME", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTOmegaAxis, deltayAxis, deltaphiAxis});
       histos.add(fmt::format("phiPi/h5PhiPiDataME{}", label).c_str(), "Deltay vs deltaphi for Phi and Pion in Data ME", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTPiAxis, deltayAxis, deltaphiAxis});
-    }
+    }*/
 
-    histos.add("event/hRecoMCMultiplicityPercent", "RecoMC Multiplicity Percentile", kTH1F, {binnedmultAxis});
-    histos.add("event/h2RecoMCVertexZvsMult", "RecoMC Vertex Z vs Multiplicity Percentile", kTH2F, {vertexZAxis, binnedmultAxis});
-    histos.add("event/hSplitVertexZ", "Split in z-vtx", kTH1F, {{100, -5.0f, 5.0f}});
-    histos.add("event/hGenMCMultiplicityPercent", "Generated MC Multiplicity Percentile", kTH1F, {binnedmultAxis});
-    histos.add("event/hGenMCAssocRecoMultiplicityPercent", "Generated MC associated Multiplicity Percentile", kTH1F, {binnedmultAxis});
-    histos.add("event/h2GenMCAssocRecoVertexZvsMult", "Generated MC associated reco Vertex Z vs multiplicity", kTH2F, {vertexZAxis, binnedmultAxis});
-
-    histos.add("phi/h4PhiMCReco", "Phi in MC Reco", kTHnSparseF, {vertexZAxis, binnedmultAxis, binnedpTPhiAxis, yAxis});
-    histos.add("phi/h3PhiMCGen", "Phi in MC Gen", kTH3F, {binnedmultAxis, binnedpTPhiAxis, yAxis});
-    histos.add("phi/h4PhiMCGenAssocReco", "Phi in MC Gen Assoc Reco", kTHnSparseF, {vertexZAxis, binnedmultAxis, binnedpTPhiAxis, yAxis});
-
-    histos.add("k0s/h4K0SMCReco", "K0S in MC Reco", kTHnSparseF, {vertexZAxis, binnedmultAxis, binnedpTK0SAxis, yAxis});
+    /*histos.add("k0s/h4K0SMCReco", "K0S in MC Reco", kTHnSparseF, {vertexZAxis, binnedmultAxis, binnedpTK0SAxis, yAxis});
     histos.add("k0s/h3K0SMCGen", "K0S in MC Gen", kTH3F, {binnedmultAxis, binnedpTK0SAxis, yAxis});
     histos.add("k0s/h4K0SMCGenAssocReco", "K0S in MC Gen Assoc Reco", kTHnSparseF, {vertexZAxis, binnedmultAxis, binnedpTK0SAxis, yAxis});
 
@@ -474,11 +523,9 @@ struct PhiStrangeCorrelation {
 
     histos.add("pi/h4PiMCReco", "Pion in MC Reco", kTHnSparseF, {vertexZAxis, binnedmultAxis, binnedpTPiAxis, yAxis});
     histos.add("pi/h3PiMCGen", "Pion in MC Gen", kTH3F, {binnedmultAxis, binnedpTPiAxis, yAxis});
-    histos.add("pi/h4PiMCGenAssocReco", "Pion in MC Gen Assoc Reco", kTHnSparseF, {vertexZAxis, binnedmultAxis, binnedpTPiAxis, yAxis});
+    histos.add("pi/h4PiMCGenAssocReco", "Pion in MC Gen Assoc Reco", kTHnSparseF, {vertexZAxis, binnedmultAxis, binnedpTPiAxis, yAxis});*/
 
-    histos.add("phi/h3PhiMCClosureGen", "Phi in MC Gen for MC Closure Test", kTH3F, {binnedmultAxis, binnedpTPhiAxisExt, yAxis});
-
-    histos.add("phiK0S/h5PhiK0SClosureMCGen", "Deltay vs deltaphi for Phi and K0Short in MCGen", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxisExt, binnedpTK0SAxisExt, deltayAxis, deltaphiAxis});
+    /*histos.add("phiK0S/h5PhiK0SClosureMCGen", "Deltay vs deltaphi for Phi and K0Short in MCGen", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxisExt, binnedpTK0SAxisExt, deltayAxis, deltaphiAxis});
     histos.add("phiLambda/h5PhiLambdaClosureMCGen", "Deltay vs deltaphi for Phi and Lambda in MCGen", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxisExt, binnedpTLambdaAxisExt, deltayAxis, deltaphiAxis});
     histos.add("phiAntiLambda/h5PhiAntiLambdaClosureMCGen", "Deltay vs deltaphi for Phi and AntiLambda in MCGen", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxisExt, binnedpTLambdaAxisExt, deltayAxis, deltaphiAxis});
     histos.add("phiXi/h5PhiXiClosureMCGen", "Deltay vs deltaphi for Phi and Xi in MCGen", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxisExt, binnedpTXiAxisExt, deltayAxis, deltaphiAxis});
@@ -490,7 +537,7 @@ struct PhiStrangeCorrelation {
     histos.add("phiAntiLambda/h5PhiAntiLambdaClosureMCGenME", "Deltay vs deltaphi for Phi and AntiLambda in MCGen ME", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxisExt, binnedpTLambdaAxisExt, deltayAxis, deltaphiAxis});
     histos.add("phiXi/h5PhiXiClosureMCGenME", "Deltay vs deltaphi for Phi and Xi in MCGen ME", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxisExt, binnedpTXiAxisExt, deltayAxis, deltaphiAxis});
     histos.add("phiOmega/h5PhiOmegaClosureMCGenME", "Deltay vs deltaphi for Phi and Omega in MCGen ME", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxisExt, binnedpTOmegaAxisExt, deltayAxis, deltaphiAxis});
-    histos.add("phiPi/h5PhiPiClosureMCGenME", "Deltay vs deltaphi for Phi and Pion in MCGen ME", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxisExt, binnedpTPiAxisExt, deltayAxis, deltaphiAxis});
+    histos.add("phiPi/h5PhiPiClosureMCGenME", "Deltay vs deltaphi for Phi and Pion in MCGen ME", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxisExt, binnedpTPiAxisExt, deltayAxis, deltaphiAxis});*/
 
     // Load efficiency maps from CCDB
     if (efficiencyConfigs.applyEfficiency) {
@@ -499,9 +546,6 @@ struct PhiStrangeCorrelation {
       ccdb->setLocalObjectValidityChecking();
       ccdb->setFatalWhenNull(false);
 
-      /*for (int i = 0; i < ParticleOfInterestSize; ++i) {
-        loadEfficiencyMapFromCCDB(static_cast<ParticleOfInterest>(i));
-      }*/
       if (!efficiencyConfigs.perPeriodEfficiency) {
         loadEfficiencyMaps();
       }
@@ -651,15 +695,15 @@ struct PhiStrangeCorrelation {
   float getMinGenPt() const
   {
     if constexpr (PartType == kK0S) {
-      return minPtMcGenConfigs.v0SettingMinPt.value;
+      return minPtMcGenConfigs.minPtK0S.value;
     } else if constexpr (PartType == kLambda || PartType == kAntiLambda) {
-      return minPtMcGenConfigs.lambdaSettingMinPt.value;
+      return minPtMcGenConfigs.minPtLambda.value;
     } else if constexpr (PartType == kXi) {
-      return minPtMcGenConfigs.cascadeSettingMinPt.value;
+      return minPtMcGenConfigs.minPtXi.value;
     } else if constexpr (PartType == kOmega) {
-      return minPtMcGenConfigs.omegaSettingMinPt.value;
+      return minPtMcGenConfigs.minPtOmega.value;
     } else if constexpr (PartType == kPion) {
-      return minPtMcGenConfigs.cMinPionPtcut.value;
+      return minPtMcGenConfigs.minPtPion.value;
     } else {
       static_assert(PartType == kK0S || PartType == kLambda || PartType == kAntiLambda ||
                       PartType == kXi || PartType == kOmega || PartType == kPion,
@@ -776,18 +820,53 @@ struct PhiStrangeCorrelation {
   {
     const std::array<std::pair<float, float>, kPhiMassRegions> phiMassRegions = {phiConfigs.rangeMPhiSignal, phiConfigs.rangeMPhiSideband};
 
+    float deltaY = phiCand.y() - assoc.y();
+    float deltaPhi = getDeltaPhi(phiCand.phi(), assoc.phi());
+
     if (analysisMode == kMassvsMass) {
-      if constexpr (PartType == kK0S) {
+
+#define FILL_MASS_CASE(PART_ENUM, PART_STR)                                                                                                           \
+  if constexpr (PartType == PART_ENUM) {                                                                                                              \
+    if constexpr (IsME) {                                                                                                                             \
+      customFillTHn(HIST("phi" PART_STR "/h6Phi" PART_STR "DataME"), weight, multiplicity, phiCand.pt(), assoc.pt(), deltaY, phiCand.m(), assoc.m()); \
+    } else {                                                                                                                                          \
+      customFillTHn(HIST("phi" PART_STR "/h6Phi" PART_STR "Data"), weight, multiplicity, phiCand.pt(), assoc.pt(), deltaY, phiCand.m(), assoc.m());   \
+    }                                                                                                                                                 \
+  }
+
+      FILL_MASS_CASE(kK0S, "K0S");
+      FILL_MASS_CASE(kLambda, "Lambda");
+      FILL_MASS_CASE(kAntiLambda, "AntiLambda");
+      FILL_MASS_CASE(kXi, "Xi");
+      FILL_MASS_CASE(kOmega, "Omega");
+      if constexpr (PartType == kPion) {
+        if constexpr (IsME) {
+          customFillTHn(HIST("phiPi/h6PhiPiTPCDataME"), weight, multiplicity, phiCand.pt(), assoc.pt(), deltaY, phiCand.m(), assoc.nSigmaTPC());
+          customFillTHn(HIST("phiPi/h6PhiPiTOFDataME"), weight, multiplicity, phiCand.pt(), assoc.pt(), deltaY, phiCand.m(), assoc.nSigmaTOF());
+        } else {
+          customFillTHn(HIST("phiPi/h6PhiPiTPCData"), weight, multiplicity, phiCand.pt(), assoc.pt(), deltaY, phiCand.m(), assoc.nSigmaTPC());
+          customFillTHn(HIST("phiPi/h6PhiPiTOFData"), weight, multiplicity, phiCand.pt(), assoc.pt(), deltaY, phiCand.m(), assoc.nSigmaTOF());
+        }
+      }
+#undef FILL_MASS_CASE
+
+      /*if constexpr (PartType == kK0S) {
         if constexpr (IsME) {
           customFillTHn(HIST("phiK0S/h6PhiK0SDataME"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), phiCand.m(), assoc.m());
         } else {
           customFillTHn(HIST("phiK0S/h6PhiK0SData"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), phiCand.m(), assoc.m());
         }
-      } else if constexpr (PartType == kLambda || PartType == kAntiLambda) {
+      } else if constexpr (PartType == kLambda) {
         if constexpr (IsME) {
           customFillTHn(HIST("phiLambda/h6PhiLambdaDataME"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), phiCand.m(), assoc.m());
         } else {
           customFillTHn(HIST("phiLambda/h6PhiLambdaData"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), phiCand.m(), assoc.m());
+        }
+      } else if constexpr (PartType == kAntiLambda) {
+        if constexpr (IsME) {
+          customFillTHn(HIST("phiAntiLambda/h6PhiAntiLambdaDataME"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), phiCand.m(), assoc.m());
+        } else {
+          customFillTHn(HIST("phiAntiLambda/h6PhiAntiLambdaData"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), phiCand.m(), assoc.m());
         }
       } else if constexpr (PartType == kXi) {
         if constexpr (IsME) {
@@ -809,12 +888,31 @@ struct PhiStrangeCorrelation {
           customFillTHn(HIST("phiPi/h6PhiPiTPCData"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), phiCand.m(), assoc.nSigmaTPC());
           customFillTHn(HIST("phiPi/h6PhiPiTOFData"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), phiCand.m(), assoc.nSigmaTOF());
         }
-      }
+      }*/
     } else if (analysisMode == kDeltaYvsDeltaPhi) {
       std::function<void()> fillSignal;
       std::function<void()> fillSideband;
 
-      if constexpr (PartType == kK0S) {
+#define FILL_DYDP_CASE(PART_ENUM, PART_STR)                                                                                                                               \
+  if constexpr (PartType == PART_ENUM) {                                                                                                                                  \
+    if constexpr (IsME) {                                                                                                                                                 \
+      fillSignal = [&]() { customFillTHn(HIST("phi" PART_STR "/h5Phi" PART_STR "DataMESignal"), weight, multiplicity, phiCand.pt(), assoc.pt(), deltaY, deltaPhi); };     \
+      fillSideband = [&]() { customFillTHn(HIST("phi" PART_STR "/h5Phi" PART_STR "DataMESideband"), weight, multiplicity, phiCand.pt(), assoc.pt(), deltaY, deltaPhi); }; \
+    } else {                                                                                                                                                              \
+      fillSignal = [&]() { customFillTHn(HIST("phi" PART_STR "/h5Phi" PART_STR "DataSignal"), weight, multiplicity, phiCand.pt(), assoc.pt(), deltaY, deltaPhi); };       \
+      fillSideband = [&]() { customFillTHn(HIST("phi" PART_STR "/h5Phi" PART_STR "DataSideband"), weight, multiplicity, phiCand.pt(), assoc.pt(), deltaY, deltaPhi); };   \
+    }                                                                                                                                                                     \
+  }
+
+      FILL_DYDP_CASE(kK0S, "K0S");
+      FILL_DYDP_CASE(kLambda, "Lambda");
+      FILL_DYDP_CASE(kAntiLambda, "AntiLambda");
+      FILL_DYDP_CASE(kXi, "Xi");
+      FILL_DYDP_CASE(kOmega, "Omega");
+      FILL_DYDP_CASE(kPion, "Pi");
+#undef FILL_DYDP_CASE
+
+      /*if constexpr (PartType == kK0S) {
         if constexpr (IsME) {
           fillSignal = [&]() { customFillTHn(HIST("phiK0S/h5PhiK0SDataMESignal"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), getDeltaPhi(phiCand.phi(), assoc.phi())); };
           fillSideband = [&]() { customFillTHn(HIST("phiK0S/h5PhiK0SDataMESideband"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), getDeltaPhi(phiCand.phi(), assoc.phi())); };
@@ -822,13 +920,21 @@ struct PhiStrangeCorrelation {
           fillSignal = [&]() { customFillTHn(HIST("phiK0S/h5PhiK0SDataSignal"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), getDeltaPhi(phiCand.phi(), assoc.phi())); };
           fillSideband = [&]() { customFillTHn(HIST("phiK0S/h5PhiK0SDataSideband"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), getDeltaPhi(phiCand.phi(), assoc.phi())); };
         }
-      } else if constexpr (PartType == kLambda || PartType == kAntiLambda) {
+      } else if constexpr (PartType == kLambda) {
         if constexpr (IsME) {
           fillSignal = [&]() { customFillTHn(HIST("phiLambda/h5PhiLambdaDataMESignal"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), getDeltaPhi(phiCand.phi(), assoc.phi())); };
           fillSideband = [&]() { customFillTHn(HIST("phiLambda/h5PhiLambdaDataMESideband"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), getDeltaPhi(phiCand.phi(), assoc.phi())); };
         } else {
           fillSignal = [&]() { customFillTHn(HIST("phiLambda/h5PhiLambdaDataSignal"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), getDeltaPhi(phiCand.phi(), assoc.phi())); };
           fillSideband = [&]() { customFillTHn(HIST("phiLambda/h5PhiLambdaDataSideband"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), getDeltaPhi(phiCand.phi(), assoc.phi())); };
+        }
+      } else if constexpr (PartType == kAntiLambda) {
+        if constexpr (IsME) {
+          fillSignal = [&]() { customFillTHn(HIST("phiAntiLambda/h5PhiAntiLambdaDataMESignal"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), getDeltaPhi(phiCand.phi(), assoc.phi())); };
+          fillSideband = [&]() { customFillTHn(HIST("phiAntiLambda/h5PhiAntiLambdaDataMESideband"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), getDeltaPhi(phiCand.phi(), assoc.phi())); };
+        } else {
+          fillSignal = [&]() { customFillTHn(HIST("phiAntiLambda/h5PhiAntiLambdaDataSignal"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), getDeltaPhi(phiCand.phi(), assoc.phi())); };
+          fillSideband = [&]() { customFillTHn(HIST("phiAntiLambda/h5PhiAntiLambdaDataSideband"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), getDeltaPhi(phiCand.phi(), assoc.phi())); };
         }
       } else if constexpr (PartType == kXi) {
         if constexpr (IsME) {
@@ -854,7 +960,7 @@ struct PhiStrangeCorrelation {
           fillSignal = [&]() { customFillTHn(HIST("phiPi/h5PhiPiDataSignal"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), getDeltaPhi(phiCand.phi(), assoc.phi())); };
           fillSideband = [&]() { customFillTHn(HIST("phiPi/h5PhiPiDataSideband"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), getDeltaPhi(phiCand.phi(), assoc.phi())); };
         }
-      }
+      }*/
 
       static_for<0, kPhiMassRegions - 1>([&](auto i_idx) {
         constexpr unsigned int Idx = i_idx.value;
@@ -982,7 +1088,40 @@ struct PhiStrangeCorrelation {
     }
   }
 
-  void processPhiK0SMEDataLike(SelCollisions const& collisions,
+#define DO_PROCESS_SWITCH(CLASS, FUNC_NAME, DESC) \
+  PROCESS_SWITCH(CLASS, FUNC_NAME, DESC, true)
+
+#define DEFINE_ME_PROCESSES(PART_NAME, PART_ENUM, TABLE_DATA, TABLE_MC)                                                     \
+  void processPhi##PART_NAME##MEDataLike(SelCollisions const& collisions,                                                   \
+                                         aod::PhimesonCandidatesData const& phiCandidates,                                  \
+                                         TABLE_DATA const& assocReduced,                                                    \
+                                         aod::BCs const&)                                                                   \
+  {                                                                                                                         \
+    processPhiAssocME<PART_ENUM>(collisions, phiCandidates, assocReduced);                                                  \
+  }                                                                                                                         \
+                                                                                                                            \
+  DO_PROCESS_SWITCH(PhiStrangeCorrelation, processPhi##PART_NAME##MEDataLike, "Phi-" #PART_NAME " ME Data  or MC w/o PDG"); \
+                                                                                                                            \
+  void processPhi##PART_NAME##MEMCWithPDG(SimCollisions const& collisions,                                                  \
+                                          aod::PhimesonCandidatesMcReco const& phiCandidates,                               \
+                                          TABLE_MC const& assocReduced,                                                     \
+                                          aod::BCs const&)                                                                  \
+  {                                                                                                                         \
+    processPhiAssocME<PART_ENUM>(collisions, phiCandidates, assocReduced);                                                  \
+  }                                                                                                                         \
+                                                                                                                            \
+  DO_PROCESS_SWITCH(PhiStrangeCorrelation, processPhi##PART_NAME##MEMCWithPDG, "Phi-" #PART_NAME " ME MC w/ PDG");
+
+  DEFINE_ME_PROCESSES(K0S, kK0S, aod::K0sReducedCandidatesData, aod::K0sReducedCandidatesMcReco)
+  DEFINE_ME_PROCESSES(Lambda, kLambda, aod::LambdaReducedCandidatesData, aod::LambdaReducedCandidatesMcReco)
+  DEFINE_ME_PROCESSES(AntiLambda, kAntiLambda, aod::AntiLambdaReducedCandidatesData, aod::AntiLambdaReducedCandidatesMcReco)
+  DEFINE_ME_PROCESSES(Xi, kXi, aod::XiReducedCandidatesData, aod::XiReducedCandidatesMcReco)
+  DEFINE_ME_PROCESSES(Omega, kOmega, aod::OmegaReducedCandidatesData, aod::OmegaReducedCandidatesMcReco)
+  DEFINE_ME_PROCESSES(Pion, kPion, aod::PionTracksData, aod::PionTracksMcReco)
+#undef DEFINE_ME_PROCESSES
+#undef DO_PROCESS_SWITCH
+
+  /*void processPhiK0SMEDataLike(SelCollisions const& collisions,
                                aod::PhimesonCandidatesData const& phiCandidates,
                                aod::K0sReducedCandidatesData const& k0sReduced,
                                aod::BCs const&)
@@ -1100,7 +1239,7 @@ struct PhiStrangeCorrelation {
     processPhiAssocME<kPion>(collisions, phiCandidates, pionTracks);
   }
 
-  PROCESS_SWITCH(PhiStrangeCorrelation, processPhiPionMEMCWithPDG, "Process function for Phi-Pion 2D Correlations in MC with PDG ME", true);
+  PROCESS_SWITCH(PhiStrangeCorrelation, processPhiPionMEMCWithPDG, "Process function for Phi-Pion 2D Correlations in MC with PDG ME", true);*/
 
   void processParticleEfficiency(MCCollisions const& mcCollisions,
                                  SimCollisions const& collisions,
@@ -1196,8 +1335,8 @@ struct PhiStrangeCorrelation {
       const auto mcParticlesThisMcColl = mcParticles.sliceBy(preslices.mcPartPerMcCollision, mcCollision.globalIndex());
 
       for (const auto& mcParticle : mcParticlesThisMcColl) {
-        auto inYAcceptance = [&]() {
-          return std::abs(mcParticle.y()) <= yConfigs.cfgYAcceptance;
+        if (std::abs(mcParticle.y()) > yConfigs.cfgYAcceptance) {
+          continue;
         };
 
         auto fillGenHistos = [&](auto h3Key, auto h4Key) {
@@ -1215,28 +1354,12 @@ struct PhiStrangeCorrelation {
           fillGenHistos(h3Key, h4Key);
         };
 
-        if (!inYAcceptance()) {
-          continue;
-        }
-
         switch (std::abs(mcParticle.pdgCode())) {
           case o2::constants::physics::Pdg::kPhi:
-            if (eventSelectionType == 0 && mcParticle.pt() >= minPtMcGenConfigs.minPhiPt) {
+            if (eventSelectionType == 0 && mcParticle.pt() >= minPtMcGenConfigs.minPtPhi) {
               fillGenHistos(HIST("phi/h3PhiMCGen"), HIST("phi/h4PhiMCGenAssocReco"));
             }
             break;
-          /*case PDG_t::kK0Short:
-            if (mcParticle.isPhysicalPrimary() && mcParticle.pt() >= minPtMcGenConfigs.v0SettingMinPt)
-              fillGenHistos(HIST("k0s/h3K0SMCGen"), HIST("k0s/h4K0SMCGenAssocReco"));
-            break;
-          case PDG_t::kXiMinus:
-            if (mcParticle.isPhysicalPrimary() && mcParticle.pt() >= minPtMcGenConfigs.cascadeSettingMinPt)
-              fillGenHistos(HIST("xi/h3XiMCGen"), HIST("xi/h4XiMCGenAssocReco"));
-            break;
-          case PDG_t::kPiPlus:
-            if (mcParticle.isPhysicalPrimary() && mcParticle.pt() >= minPtMcGenConfigs.cMinPionPtcut)
-              fillGenHistos(HIST("pi/h3PiMCGen"), HIST("pi/h4PiMCGenAssocReco"));
-            break;*/
           case getPdgCode<kK0S>():
             fillGenAssocSpecies.template operator()<kK0S>(HIST("k0s/h3K0SMCGen"), HIST("k0s/h4K0SMCGenAssocReco"));
             break;
@@ -1264,205 +1387,68 @@ struct PhiStrangeCorrelation {
 
   PROCESS_SWITCH(PhiStrangeCorrelation, processParticleEfficiency, "Process function for Efficiency Computation for Particles of Interest", false);
 
-  /*void processMCGenClosureSE(MCCollisions::iterator const& mcCollision, aod::McParticles const& mcParticles)
-  {
-    float multiplicity = mcCollision.centFT0M();
-
-    std::vector<int64_t> phiIndices;
-    std::vector<int64_t> k0sIndices;
-    std::vector<int64_t> pionIndices;
-    std::vector<std::vector<int64_t>> assocIndices;
-
-    auto inYAcceptance = [&](const auto& mcParticle) {
-      return std::abs(mcParticle.y()) <= yConfigs.cfgYAcceptance;
-    };
-
-    for (const auto& mcParticle : mcParticles) {
-      if (!inYAcceptance(mcParticle))
-        continue;
-
-      switch (std::abs(mcParticle.pdgCode())) {
-        case o2::constants::physics::Pdg::kPhi:
-          if (eventSelectionType == 0 && mcParticle.pt() >= minPtMcGenConfigs.minPhiPt)
-            phiIndices.push_back(mcParticle.globalIndex());
-          break;
-        case PDG_t::kK0Short:
-          if (mcParticle.isPhysicalPrimary() && mcParticle.pt() >= minPtMcGenConfigs.v0SettingMinPt)
-            k0sIndices.push_back(mcParticle.globalIndex());
-          break;
-        case PDG_t::kPiPlus:
-          if (mcParticle.isPhysicalPrimary() && mcParticle.pt() >= minPtMcGenConfigs.cMinPionPtcut)
-            pionIndices.push_back(mcParticle.globalIndex());
-          break;
-        default:
-          break;
-      }
-    }
-
-    assocIndices.push_back(k0sIndices);
-    assocIndices.push_back(pionIndices);
-
-    for (std::size_t iTrigg{0}; iTrigg < phiIndices.size(); ++iTrigg) {
-      auto& phiParticle = mcParticles.rawIteratorAt(phiIndices[iTrigg]);
-
-      static_for<0, assocIndices.size() - 1>([&](auto i_idx) {
-        constexpr unsigned int Idx = i_idx.value;
-
-        for (std::size_t iAssoc{0}; iAssoc < assocIndices[Idx].size(); ++iAssoc) {
-          auto& assocParticle = mcParticles.rawIteratorAt(assocIndices[Idx][iAssoc]);
-
-          histos.fill(HIST("mcGenClosure/h5Phi") + HIST(AssocParticleLabels[Idx]) + HIST("ClosureGenSE"), multiplicity, phiParticle.pt(), assocParticle.pt(), phiParticle.y() - assocParticle.y(), getDeltaPhi(phiParticle.phi(), assocParticle.phi()));
-        }
-      });
-    }
-  }
-
-  PROCESS_SWITCH(PhiStrangeCorrelation, processMCGenClosureSE, "Process function for MC Gen Closure Test in SE", false);
-
-  void processMCGenClosureME(MCCollisions::iterator const& mcCollision, aod::McParticles const& mcParticles)
-  {
-    float multiplicity = mcCollision.centFT0M();
-
-    std::vector<MiniParticle> phiParticles;
-    std::vector<MiniParticle> k0sParticles;
-    std::vector<MiniParticle> pionParticles;
-
-    auto inYAcceptance = [&](const auto& mcParticle) {
-      return std::abs(mcParticle.y()) <= yConfigs.cfgYAcceptance;
-    };
-
-    for (const auto& mcParticle : mcParticles) {
-      if (!inYAcceptance(mcParticle))
-        continue;
-
-      switch (std::abs(mcParticle.pdgCode())) {
-        case o2::constants::physics::Pdg::kPhi:
-          if (eventSelectionType == 0 && mcParticle.pt() >= minPtMcGenConfigs.minPhiPt)
-            phiParticles.emplace_back(mcParticle.pt(), mcParticle.y(), mcParticle.phi());
-          break;
-        case PDG_t::kK0Short:
-          if (mcParticle.isPhysicalPrimary() && mcParticle.pt() >= minPtMcGenConfigs.v0SettingMinPt)
-            k0sParticles.emplace_back(mcParticle.pt(), mcParticle.y(), mcParticle.phi());
-          break;
-        case PDG_t::kPiPlus:
-          if (mcParticle.isPhysicalPrimary() && mcParticle.pt() >= minPtMcGenConfigs.cMinPionPtcut)
-            pionParticles.emplace_back(mcParticle.pt(), mcParticle.y(), mcParticle.phi());
-          break;
-        default:
-          break;
-      }
-    }
-
-    if (phiParticles.empty() && k0sParticles.empty() && pionParticles.empty())
-      return;
-
-    int multBin = getCentBin(multiplicity);
-
-    // Loop over past events in the same multiplicity bin and fill histograms with all combinations of current phi particles and past K0S and pion particles
-    for (const auto& pastEvent : eventBuffer[multBin]) {
-      for (const auto& phiParticle : phiParticles) {
-        for (const auto& k0sParticle : pastEvent.k0sParticles) {
-          histos.fill(HIST("mcGenClosure/h5PhiK0SClosureGenME"), multiplicity, phiParticle.pt, k0sParticle.pt, phiParticle.y - k0sParticle.y, getDeltaPhi(phiParticle.phi, k0sParticle.phi));
-        }
-        for (const auto& pionParticle : pastEvent.pionParticles) {
-          histos.fill(HIST("mcGenClosure/h5PhiPiClosureGenME"), multiplicity, phiParticle.pt, pionParticle.pt, phiParticle.y - pionParticle.y, getDeltaPhi(phiParticle.phi, pionParticle.phi));
-        }
-      }
-    }
-
-    // Add current event to buffer
-    MiniEvent currentEvent;
-    currentEvent.multiplicity = multiplicity;
-    currentEvent.phiParticles = std::move(phiParticles);
-    currentEvent.k0sParticles = std::move(k0sParticles);
-    currentEvent.pionParticles = std::move(pionParticles);
-
-    eventBuffer[multBin].push_front(std::move(currentEvent));
-    if (eventBuffer[multBin].size() > static_cast<std::size_t>(cfgNoMixedEvents.value))
-      eventBuffer[multBin].pop_back();
-  }
-
-  PROCESS_SWITCH(PhiStrangeCorrelation, processMCGenClosureME, "Process function for MC Gen Closure Test in ME", false);*/
-
   void processMCGenClosure(MCCollisions::iterator const& mcCollision, aod::McParticles const& mcParticles)
   {
     float multiplicity = mcCollision.centFT0M();
 
     std::vector<MiniParticle> phiParticles;
-    std::vector<MiniParticle> k0sParticles;
+    std::array<std::vector<MiniParticle>, kAssocPartSize> assocParticles;
+    /*std::vector<MiniParticle> k0sParticles;
     std::vector<MiniParticle> lambdaParticles;
     std::vector<MiniParticle> antilambdaParticles;
     std::vector<MiniParticle> xiParticles;
     std::vector<MiniParticle> omegaParticles;
-    std::vector<MiniParticle> pionParticles;
+    std::vector<MiniParticle> pionParticles;*/
 
     // Preliminary loop to fill vectors of particles of interest for the current event, applying pt and y cuts
     for (const auto& mcParticle : mcParticles) {
-      auto inYAcceptance = [&]() {
-        return std::abs(mcParticle.y()) <= yConfigs.cfgYAcceptance;
-      };
-
-      auto fillPartCollection = [&]<AssociatedParticleType PartType>(auto& collection) {
-        if (!activeCorrelationTypes->at(PartType) || !isGenSpeciesValid<PartType>(mcParticle, minPtMcGenConfigs.bypassPtCut.value)) {
-          return;
-        }
-
-        collection.emplace_back(mcParticle.pt(), mcParticle.y(), mcParticle.phi());
-      };
-
-      if (!inYAcceptance()) {
+      if (std::abs(mcParticle.y()) > yConfigs.cfgYAcceptance) {
         continue;
-      }
+      };
+
+      auto fillPartCollection = [&]<AssociatedParticleType PartType>() {
+        if (activeCorrelationTypes->at(PartType) && isGenSpeciesValid<PartType>(mcParticle, minPtMcGenConfigs.bypassPtCut.value)) {
+          assocParticles[PartType].emplace_back(mcParticle.pt(), mcParticle.y(), mcParticle.phi());
+        }
+      };
 
       switch (std::abs(mcParticle.pdgCode())) {
         case o2::constants::physics::Pdg::kPhi:
-          if (eventSelectionType == 0 && (minPtMcGenConfigs.bypassPtCut || mcParticle.pt() >= minPtMcGenConfigs.minPhiPt)) {
+          if (eventSelectionType == 0 && (minPtMcGenConfigs.bypassPtCut || mcParticle.pt() >= minPtMcGenConfigs.minPtPhi)) {
             phiParticles.emplace_back(mcParticle.pt(), mcParticle.y(), mcParticle.phi());
           }
           break;
-        /*case PDG_t::kK0Short:
-          if (mcParticle.isPhysicalPrimary() && (minPtMcGenConfigs.bypassPtCut || mcParticle.pt() >= minPtMcGenConfigs.v0SettingMinPt))
-            k0sParticles.emplace_back(mcParticle.pt(), mcParticle.y(), mcParticle.phi());
-          break;
-        case PDG_t::kXiMinus:
-          if (mcParticle.isPhysicalPrimary() && (minPtMcGenConfigs.bypassPtCut || mcParticle.pt() >= minPtMcGenConfigs.cascadeSettingMinPt))
-            xiParticles.emplace_back(mcParticle.pt(), mcParticle.y(), mcParticle.phi());
-          break;
-        case PDG_t::kPiPlus:
-          if (mcParticle.isPhysicalPrimary() && (minPtMcGenConfigs.bypassPtCut || mcParticle.pt() >= minPtMcGenConfigs.cMinPionPtcut))
-            pionParticles.emplace_back(mcParticle.pt(), mcParticle.y(), mcParticle.phi());
-          break;*/
         case getPdgCode<kK0S>():
-          fillPartCollection.template operator()<kK0S>(k0sParticles);
+          fillPartCollection.template operator()<kK0S>();
           break;
         case getPdgCode<kLambda>():
-          fillPartCollection.template operator()<kLambda>(lambdaParticles);
+          fillPartCollection.template operator()<kLambda>();
           break;
         case getPdgCode<kAntiLambda>():
-          fillPartCollection.template operator()<kAntiLambda>(antilambdaParticles);
+          fillPartCollection.template operator()<kAntiLambda>();
           break;
         case getPdgCode<kXi>():
-          fillPartCollection.template operator()<kXi>(xiParticles);
+          fillPartCollection.template operator()<kXi>();
           break;
         case getPdgCode<kOmega>():
-          fillPartCollection.template operator()<kOmega>(omegaParticles);
+          fillPartCollection.template operator()<kOmega>();
           break;
         case getPdgCode<kPion>():
-          fillPartCollection.template operator()<kPion>(pionParticles);
+          fillPartCollection.template operator()<kPion>();
           break;
         default:
           break;
       }
     }
 
-    const bool skipK0s = !activeCorrelationTypes->at(kK0S) || k0sParticles.empty();
-    const bool skipLambda = !activeCorrelationTypes->at(kLambda) || lambdaParticles.empty();
-    const bool skipAntiLambda = !activeCorrelationTypes->at(kAntiLambda) || antilambdaParticles.empty();
-    const bool skipXi = !activeCorrelationTypes->at(kXi) || xiParticles.empty();
-    const bool skipOmega = !activeCorrelationTypes->at(kOmega) || omegaParticles.empty();
-    const bool skipPion = !activeCorrelationTypes->at(kPion) || pionParticles.empty();
+    bool hasAnyAssoc = false;
+    for (size_t i = 0; i < kAssocPartSize; ++i) {
+      if (!assocParticles[i].empty()) {
+        hasAnyAssoc = true;
+      }
+    }
 
-    if (phiParticles.empty() && skipK0s && skipLambda && skipAntiLambda && skipXi && skipOmega && skipPion) {
+    if (phiParticles.empty() && !hasAnyAssoc) {
       return;
     }
 
@@ -1472,9 +1458,6 @@ struct PhiStrangeCorrelation {
     }
 
     // Same Event Correlations
-    std::array<std::vector<MiniParticle>*, kAssocPartSize> currentAssocParticles{&k0sParticles, &lambdaParticles, &antilambdaParticles,
-                                                                                 &xiParticles, &omegaParticles, &pionParticles};
-
     for (const auto& phiParticle : phiParticles) {
       histos.fill(HIST("phi/h3PhiMCClosureGen"), multiplicity, phiParticle.pt, phiParticle.y);
 
@@ -1484,7 +1467,7 @@ struct PhiStrangeCorrelation {
           return;
         }
 
-        for (const auto& assocParticle : *(currentAssocParticles[Idx])) {
+        for (const auto& assocParticle : assocParticles[Idx]) {
           histos.fill(HIST("phi") + HIST(AssocParticleLabels[Idx]) + HIST("/h5Phi") + HIST(AssocParticleLabels[Idx]) + HIST("ClosureMCGen"),
                       multiplicity, phiParticle.pt, assocParticle.pt,
                       phiParticle.y - assocParticle.y,
@@ -1494,11 +1477,8 @@ struct PhiStrangeCorrelation {
     }
 
     // Mixed Event Correlations
+    // Loop over past events in the same multiplicity bin and fill histograms with all combinations of current phi particles and past associated particles
     for (const auto& pastEvent : eventBuffer[multBin]) {
-      std::array<const std::vector<MiniParticle>*, kAssocPartSize> pastAssocParticles{&pastEvent.k0sParticles, &pastEvent.lambdaParticles, &pastEvent.antilambdaParticles,
-                                                                                      &pastEvent.xiParticles, &pastEvent.omegaParticles, &pastEvent.pionParticles};
-
-      // Loop over past events in the same multiplicity bin and fill histograms with all combinations of current phi particles and past associated particles
       for (const auto& phiParticle : phiParticles) {
         static_for<0, AssocParticleLabels.size() - 1>([&](auto i_idx) {
           constexpr unsigned int Idx = i_idx.value;
@@ -1506,7 +1486,7 @@ struct PhiStrangeCorrelation {
             return;
           }
 
-          for (const auto& assocParticle : *(pastAssocParticles[Idx])) {
+          for (const auto& assocParticle : pastEvent.assocParticles[Idx]) {
             histos.fill(HIST("phi") + HIST(AssocParticleLabels[Idx]) + HIST("/h5Phi") + HIST(AssocParticleLabels[Idx]) + HIST("ClosureMCGenME"),
                         multiplicity, phiParticle.pt, assocParticle.pt,
                         phiParticle.y - assocParticle.y,
@@ -1519,12 +1499,13 @@ struct PhiStrangeCorrelation {
     MiniEvent currentEvent;
     currentEvent.multiplicity = multiplicity;
     currentEvent.phiParticles = std::move(phiParticles);
-    currentEvent.k0sParticles = std::move(k0sParticles);
+    currentEvent.assocParticles = std::move(assocParticles);
+    /*currentEvent.k0sParticles = std::move(k0sParticles);
     currentEvent.lambdaParticles = std::move(lambdaParticles);
     currentEvent.antilambdaParticles = std::move(antilambdaParticles);
     currentEvent.xiParticles = std::move(xiParticles);
     currentEvent.omegaParticles = std::move(omegaParticles);
-    currentEvent.pionParticles = std::move(pionParticles);
+    currentEvent.pionParticles = std::move(pionParticles);*/
 
     eventBuffer[multBin].push_front(std::move(currentEvent));
     if (eventBuffer[multBin].size() > static_cast<std::size_t>(cfgNoMixedEvents.value)) {

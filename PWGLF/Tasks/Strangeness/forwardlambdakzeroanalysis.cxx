@@ -268,7 +268,6 @@ struct forwardlambdakzeroanalysis {
   ctpRateFetcher rateFetcher;
   int mRunNumber = 0;
   float magField = 0.;
-  std::map<std::string, std::string> metadata;
   o2::parameters::GRPMagField* grpmag = nullptr;
 
   // CCDB options
@@ -2998,7 +2997,7 @@ struct forwardlambdakzeroanalysis {
   // Simulated processing in Run 3 (subscribes to MC information too)
   void processMonteCarlo(soa::Join<aod::Collisions, aod::EvSels, aod::MultsGlobal, aod::FT0Mults, aod::FV0Mults, aod::PVMults, aod::MultsExtra, aod::CentNGlobals, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::McCollisionLabels> const& collisions,
                          soa::Join<aod::MFTTracks, aod::McMFTTrackLabels> const& tracks,
-                         soa::SmallGroups<soa::Join<aod::BestCollisionsFwd3d, aod::McMFTTrackLabels>> const& besttracks,
+                         soa::Join<aod::BestCollisionsFwd3d, aod::McMFTTrackLabels> const& besttracks,
                          aod::BCsWithTimestamps const& bcs,
                          soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mccollisions,
                          aod::McParticles const& mcParticles)

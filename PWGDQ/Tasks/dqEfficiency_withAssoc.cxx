@@ -554,6 +554,17 @@ struct AnalysisTrackSelection {
   Configurable<std::string> fConfigAddTrackHistogram{"cfgAddTrackHistogram", "", "Comma separated list of histograms"};
   Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
   Configurable<bool> fConfigPublishAmbiguity{"cfgPublishAmbiguity", true, "If true, publish ambiguity table and fill QA histograms"};
+  // Re-application of the track-to-collision time compatibility on the skimmed associations.
+  //   timeMargin and nSigma must be <= the values used by track-to-collision-associator at skimming time;
+  //   bcWindow, usePVAssociation and maxPvContributors must be identical to those values.
+  struct : ConfigurableGroup {
+    Configurable<bool> cfgAssocTimeCut{"cfgAssocTimeCut", false, "If true, reject associations failing the time compatibility computed with the parameters below"};
+    Configurable<float> cfgAssocTimeMargin{"cfgAssocTimeMargin", 0.f, "time margin (ns); must be <= skimming timeMargin"};
+    Configurable<float> cfgAssocNSigma{"cfgAssocNSigma", 4.f, "nSigmaForTimeCompat; must be <= skimming value"};
+    Configurable<int> cfgAssocBcWindowForOneSigma{"cfgAssocBcWindowForOneSigma", 60, "bcWindowForOneSigma; must be equal to the skimming value"};
+    Configurable<int> cfgAssocUsePVAssociation{"cfgAssocUsePVAssociation", 1, "usePVAssociation; must be equal to the skimming value"};
+    Configurable<int> cfgAssocMaxPvContributorsForLowMultReassoc{"cfgAssocMaxPvContributorsForLowMultReassoc", 10, "maxPvContributorsForLowMultReassoc; must be equal to the skimming value"};
+  } fConfigAssocTime;
   Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/z/zhxiong/TPCPID/PostCalib", "base path to the ccdb object"};
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
@@ -711,6 +722,20 @@ struct AnalysisTrackSelection {
       }
 
       auto track = assoc.template reducedtrack_as<TTracks>();
+
+      // Reject incompatible associations while preserving the row alignment of trackSel.
+      // The track time is referenced to its original collision, not the associated one.
+      if (fConfigAssocTime.cfgAssocTimeCut) {
+        auto origEvent = track.template reducedevent_as<TEvents>();
+        if (!VarManager::isBarrelAssocTimeCompatible(track, event, origEvent,
+                                                     fConfigAssocTime.cfgAssocNSigma, fConfigAssocTime.cfgAssocTimeMargin,
+                                                     fConfigAssocTime.cfgAssocBcWindowForOneSigma, fConfigAssocTime.cfgAssocUsePVAssociation,
+                                                     fConfigAssocTime.cfgAssocMaxPvContributorsForLowMultReassoc)) {
+          trackSel(0);
+          continue;
+        }
+      }
+
       VarManager::FillTrack<TTrackFillMap>(track);
       // compute quantities which depend on the associated collision, such as DCA
       VarManager::FillTrackCollision<TTrackFillMap>(track, event);
