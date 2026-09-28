@@ -172,8 +172,8 @@ struct multEstimator {
     Nch_vs_cent_vs_eta_conditional = registry.add<TH2>("Nch_vs_cent_vs_eta_conditional", "Nch_vs_cent_vs_eta_conditional", kTH2F, {{100, 0.0, 100.0, "cent"}, {200, -1.0, 1.0, "deta"}});
     tmp_histo_per_event = std::make_shared<TH2F>(TH2F("tmp_histo_per_event", "tmp_histo_per_event", 100, 0.0, 100.0, 200, -1.0, 1.0));
 
-    Events_vs_cent = std::make_shared<TH1F>(TH1F("Events_vs_cent", "Events_vs_cent", 100, 0.0, 100.));
-    Events_vs_cent_conditional = std::make_shared<TH1F>(TH1F("Events_vs_cent_conditional", "Events_vs_cent_conditional", 100, 0.0, 100.));
+    Events_vs_cent = registry.add<TH1>("Events_vs_cent", "Events_vs_cent", kTH1F, {{100, 0.0, 100., "cent"}});
+    Events_vs_cent_conditional = registry.add<TH1>("Events_vs_cent_conditional", "Events_vs_cent_conditional", kTH1F, {{100, 0.0, 100.0, "cent"}});
 
     ITShisto = registry.add<TH2>(Form("nsigmaITS_PDG%i", _particlePDG.value), Form("nsigmaITS_PDG%i", _particlePDG.value), kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
     TPChisto = registry.add<TH2>(Form("nsigmaTPC_PDG%i", _particlePDG.value), Form("nsigmaTPC_PDG%i", _particlePDG.value), kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
