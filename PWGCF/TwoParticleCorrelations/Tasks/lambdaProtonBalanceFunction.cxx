@@ -2816,12 +2816,12 @@ struct LambdaProtonBalanceFunction {
     std::vector<PartInfo> antiProtonInfo;
     protonInfo.reserve(selectedPrimProtons.size());
     antiProtonInfo.reserve(selectedPrimAntiProtons.size());
-    for (auto const& t : selectedPrimProtons) {
-      protonInfo.push_back(makeProtonInfo(t));
-    }
-    for (auto const& t : selectedPrimAntiProtons) {
-      antiProtonInfo.push_back(makeProtonInfo(t));
-    }
+    std::transform(selectedPrimProtons.begin(), selectedPrimProtons.end(),
+                   std::back_inserter(protonInfo),
+                   [this](auto const& t) { return makeProtonInfo(t); });
+    std::transform(selectedPrimAntiProtons.begin(), selectedPrimAntiProtons.end(),
+                   std::back_inserter(antiProtonInfo),
+                   [this](auto const& t) { return makeProtonInfo(t); });
 
     // ── pp rho2 fills (eta and y) ───────────────────────────────────────────
     for (auto const& p1 : selectedPrimProtons) {
