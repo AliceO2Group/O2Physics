@@ -98,7 +98,7 @@ class CutBrick : public TNamed
   BrickStatus mState = kPASSIVE;
   BrickMode mMode = kUNSELECTED;
 
-  ClassDef(CutBrick, 1);
+  ClassDefOverride(CutBrick, 1);
 };
 
 /// \class CutBrickLimit
@@ -452,7 +452,7 @@ class CutWithVariations : public CutBrick<TValueToFilter>
   bool mAllowSeveralDefaults; ///< true if allows to store several cut default values
   TList mDefaultBricks;       ///< the list with the cut default values bricks
   TList mVariationBricks;     ///< the list with the cut variation values bricks
-  ClassDef(CutWithVariations, 1);
+  ClassDefOverride(CutWithVariations, 1);
 };
 
 /// \class SpecialCutBrick
@@ -503,7 +503,7 @@ class SpecialCutBrick : public TNamed
   BrickStatus mState = kPASSIVE;
   BrickMode mMode = kUNSELECTED;
 
-  ClassDef(SpecialCutBrick, 1);
+  ClassDefOverride(SpecialCutBrick, 1);
 };
 
 class TrackSelectionBrick : public SpecialCutBrick
@@ -626,7 +626,7 @@ class TrackSelectionBrick : public SpecialCutBrick
   // vector of ITS requirements (minNRequiredHits in specific requiredLayers)
   std::vector<std::pair<int8_t, std::set<uint8_t>>> mRequiredITSHits{};
 
-  ClassDef(TrackSelectionBrick, 1);
+  ClassDefOverride(TrackSelectionBrick, 1);
 };
 
 } // namespace PWGCF
