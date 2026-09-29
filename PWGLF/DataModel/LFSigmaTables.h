@@ -1452,7 +1452,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Xi0Mass, xi0Mass,
                              std::array<float, 3> pVecPi0{photon1Px + photon2Px, photon1Py + photon2Py, photon1Pz + photon2Pz};
                              std::array<float, 3> pVecLambda{lambdaPx, lambdaPy, lambdaPz};
                              auto arrMom = std::array{pVecPi0, pVecLambda};
-                             return RecoDecay::m(arrMom, std::array{o2::constants::physics::MassPi0, o2::constants::physics::MassXi0});
+                             return RecoDecay::m(arrMom, std::array{o2::constants::physics::MassPi0, o2::constants::physics::MassLambda0});
                            });
 
 DECLARE_SOA_DYNAMIC_COLUMN(PxPi0, pxPi0, //! Pi0 px
@@ -1607,11 +1607,12 @@ DECLARE_SOA_TABLE(Xi0Cores, "AOD", "XI0CORES",
                   Xi0Core::Pz<Xi0Core::Photon1Pz, Xi0Core::Photon2Pz, Xi0Core::LambdaPz>,
                   Xi0Core::Pt<Xi0Core::Photon1Px, Xi0Core::Photon1Py, Xi0Core::Photon2Px, Xi0Core::Photon2Py, Xi0Core::LambdaPx, Xi0Core::LambdaPy>,
                   Xi0Core::P<Xi0Core::Photon1Px, Xi0Core::Photon1Py, Xi0Core::Photon1Pz, Xi0Core::Photon2Px, Xi0Core::Photon2Py, Xi0Core::Photon2Pz, Xi0Core::LambdaPx, Xi0Core::LambdaPy, Xi0Core::LambdaPz>,
+                  Xi0Core::Xi0Mass<Xi0Core::Photon1Px, Xi0Core::Photon1Py, Xi0Core::Photon1Pz, Xi0Core::Photon2Px, Xi0Core::Photon2Py, Xi0Core::Photon2Pz, Xi0Core::LambdaPx, Xi0Core::LambdaPy, Xi0Core::LambdaPz>,
                   Xi0Core::Rapidity<Xi0Core::Photon1Px, Xi0Core::Photon1Py, Xi0Core::Photon1Pz, Xi0Core::Photon2Px, Xi0Core::Photon2Py, Xi0Core::Photon2Pz, Xi0Core::LambdaPx, Xi0Core::LambdaPy, Xi0Core::LambdaPz>,
                   Xi0Core::Phi<Xi0Core::Photon1Px, Xi0Core::Photon1Py, Xi0Core::Photon2Px, Xi0Core::Photon2Py, Xi0Core::LambdaPx, Xi0Core::LambdaPy>,
                   Xi0Core::Eta<Xi0Core::Photon1Px, Xi0Core::Photon1Py, Xi0Core::Photon1Pz, Xi0Core::Photon2Px, Xi0Core::Photon2Py, Xi0Core::Photon2Pz, Xi0Core::LambdaPx, Xi0Core::LambdaPy, Xi0Core::LambdaPz>,
                   Xi0Core::Radius<Xi0Core::X, Xi0Core::Y>,
-                  Xi0Core::CascCosPA<Xi0Core::X, Xi0Core::Y, Xi0Core::Z, Xi0Core::Photon1Px, Xi0Core::Photon1Py, Xi0Core::Photon1Pz, Xi0Core::Photon2Px, Xi0Core::Photon2Py, Xi0Core::Photon2Pz, Xi0Core::LambdaPx, Xi0Core::LambdaPy, Xi0Core::LambdaPz>,
+                  Xi0Core::CascCosPA<Xi0Core::X, Xi0Core::Y, Xi0Core::Z, Xi0Core::Photon1Px, Xi0Core::Photon2Px, Xi0Core::LambdaPx, Xi0Core::Photon1Py, Xi0Core::Photon2Py, Xi0Core::LambdaPy, Xi0Core::Photon1Pz, Xi0Core::Photon2Pz, Xi0Core::LambdaPz>,
 
                   // Dynamic columns for pi0
                   Xi0Core::PxPi0<Xi0Core::Photon1Px, Xi0Core::Photon2Px>,
@@ -1620,7 +1621,7 @@ DECLARE_SOA_TABLE(Xi0Cores, "AOD", "XI0CORES",
                   Xi0Core::Pi0Mass<Xi0Core::Photon1Px, Xi0Core::Photon1Py, Xi0Core::Photon1Pz, Xi0Core::Photon2Px, Xi0Core::Photon2Py, Xi0Core::Photon2Pz>,
                   Xi0Core::RadiusPi0<Xi0Core::XPi0, Xi0Core::YPi0>,
                   Xi0Core::Pi0CosPA<Xi0Core::XPi0, Xi0Core::YPi0, Xi0Core::ZPi0, Xi0Core::Photon1Px, Xi0Core::Photon1Py, Xi0Core::Photon1Pz, Xi0Core::Photon2Px, Xi0Core::Photon2Py, Xi0Core::Photon2Pz>,
-                  Xi0Core::DCAPi0ToPV<Xi0Core::XLambda, Xi0Core::YLambda, Xi0Core::ZLambda, Xi0Core::Photon1Px, Xi0Core::Photon1Py, Xi0Core::Photon1Pz, Xi0Core::Photon2Px, Xi0Core::Photon2Py, Xi0Core::Photon2Pz>,
+                  Xi0Core::DCAPi0ToPV<Xi0Core::XPi0, Xi0Core::YPi0, Xi0Core::ZPi0, Xi0Core::Photon1Px, Xi0Core::Photon1Py, Xi0Core::Photon1Pz, Xi0Core::Photon2Px, Xi0Core::Photon2Py, Xi0Core::Photon2Pz>,
 
                   // Dynamic columns for Lambda
                   Xi0Core::RadiusLambda<Xi0Core::XLambda, Xi0Core::YLambda>,
@@ -1884,11 +1885,11 @@ DECLARE_SOA_TABLE(Xi0MCCores, "AOD", "XI0MCCORES",
                   Xi0MCCore::MCRadius<Xi0MCCore::MCx, Xi0MCCore::MCy>,
                   Xi0MCCore::MCRadiusPi0<Xi0MCCore::Pi0MCx, Xi0MCCore::Pi0MCy>,
 
-                  Xi0MCCore::MCPx<Xi0MCCore::Photon1MCPx, Xi0MCCore::Photon2MCPx>,
-                  Xi0MCCore::MCPy<Xi0MCCore::Photon1MCPy, Xi0MCCore::Photon2MCPy>,
-                  Xi0MCCore::MCPz<Xi0MCCore::Photon1MCPz, Xi0MCCore::Photon2MCPz>,
-                  Xi0MCCore::MCPt<Xi0MCCore::Photon1MCPx, Xi0MCCore::Photon1MCPy, Xi0MCCore::Photon2MCPx, Xi0MCCore::Photon2MCPy>,
-                  Xi0MCCore::MCP<Xi0MCCore::Photon1MCPx, Xi0MCCore::Photon1MCPy, Xi0MCCore::Photon1MCPz, Xi0MCCore::Photon2MCPx, Xi0MCCore::Photon2MCPy, Xi0MCCore::Photon2MCPz>,
+                  Xi0MCCore::Pi0MCPx<Xi0MCCore::Photon1MCPx, Xi0MCCore::Photon2MCPx>,
+                  Xi0MCCore::Pi0MCPy<Xi0MCCore::Photon1MCPy, Xi0MCCore::Photon2MCPy>,
+                  Xi0MCCore::Pi0MCPz<Xi0MCCore::Photon1MCPz, Xi0MCCore::Photon2MCPz>,
+                  Xi0MCCore::Pi0MCPt<Xi0MCCore::Photon1MCPx, Xi0MCCore::Photon1MCPy, Xi0MCCore::Photon2MCPx, Xi0MCCore::Photon2MCPy>,
+                  Xi0MCCore::Pi0MCP<Xi0MCCore::Photon1MCPx, Xi0MCCore::Photon1MCPy, Xi0MCCore::Photon1MCPz, Xi0MCCore::Photon2MCPx, Xi0MCCore::Photon2MCPy, Xi0MCCore::Photon2MCPz>,
                   Xi0MCCore::Pi0MCMass<Xi0MCCore::Photon1MCPx, Xi0MCCore::Photon1MCPy, Xi0MCCore::Photon1MCPz, Xi0MCCore::Photon2MCPx, Xi0MCCore::Photon2MCPy, Xi0MCCore::Photon2MCPz>,
                   Xi0MCCore::Pi0RapidityMC<Xi0MCCore::Photon1MCPx, Xi0MCCore::Photon1MCPy, Xi0MCCore::Photon1MCPz, Xi0MCCore::Photon2MCPx, Xi0MCCore::Photon2MCPy, Xi0MCCore::Photon2MCPz>,
                   Xi0MCCore::Pi0MCPhi<Xi0MCCore::Photon1MCPx, Xi0MCCore::Photon1MCPy, Xi0MCCore::Photon2MCPx, Xi0MCCore::Photon2MCPy>,
