@@ -1432,8 +1432,8 @@ struct sigma0builder {
     return MCinfo;
   }
 
-  template <typename TV0, typename TCollision, typename TMCParticles>
-  Xi0MCInfo getXi0MCInfo(TV0 const& gamma1, TV0 const& gamma2, TV0 const& lambda, TCollision const& collision, TMCParticles const& mcparticles)
+  template <typename TV0, typename TMCParticles>
+  Xi0MCInfo getXi0MCInfo(TV0 const& gamma1, TV0 const& gamma2, TV0 const& lambda, TMCParticles const& mcparticles)
   {
     Xi0MCInfo MCinfo;
 
@@ -2843,7 +2843,7 @@ struct sigma0builder {
 
     // Check if MC data and populate corresponding table
     if constexpr (requires { collision.straMCCollisionId(); gamma1.motherMCPartId(); gamma2.motherMCPartId(); lambda.motherMCPartId(); }) {
-      auto xi0MCInfo = getXi0MCInfo(gamma1, gamma2, lambda, collision, mcparticles);
+      auto xi0MCInfo = getXi0MCInfo(gamma1, gamma2, lambda, mcparticles);
 
       xi0mccores(xi0MCInfo.gamma1MCpx, xi0MCInfo.gamma1MCpy, xi0MCInfo.gamma1MCpz,
                  xi0MCInfo.gamma1IsPhysicalPrimary, xi0MCInfo.gamma1PDGCodePos, xi0MCInfo.gamma1PDGCodeNeg, xi0MCInfo.gamma1PDGCode, xi0MCInfo.gamma1PDGCodeMother,
