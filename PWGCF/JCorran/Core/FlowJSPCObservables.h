@@ -38,42 +38,53 @@ class FlowJSPCObservables
     switch (index) {
       case 0: {
         LOGF(info, "Computing three harmonic SPC");
-        int harmonicArray01[maxNrComb][8] = {
-          {3, 6, -3, -3, 0, 0, 0, 0},
-          {3, 4, -2, -2, 0, 0, 0, 0},
+        // fResults slot j: num at 2j+0.5, denom at 2j+1.5. arXiv:2606.10258 nonflow refs in unused slots.
+        int const harmonicArray01[maxNrComb][8] = {
+          {3, 6, -3, -3, 0, 0, 0, 0}, // 0: C633 = <V3 V3 V6*>
+          {3, 4, -2, -2, 0, 0, 0, 0}, // 1: C422 = <V2 V2 V4*>
           {3, 8, -4, -4, 0, 0, 0, 0},
-          {3, 2, 4, -6, 0, 0, 0, 0},
-          {3, 2, 3, -5, 0, 0, 0, 0},
+          {3, 2, 4, -6, 0, 0, 0, 0}, // 3: C246 = <V2 V4 V6*>
+          {3, 2, 3, -5, 0, 0, 0, 0}, // 4: C235 = <V2 V3 V5*>
           {3, 3, 4, -7, 0, 0, 0, 0}, // These are three harmonic SPC!!
           {3, 2, 5, -7, 0, 0, 0, 0}, // These are three harmonic SPC!!
           {3, 3, 5, -8, 0, 0, 0, 0}, // These are three harmonic SPC!!
-          {0, 6, -2, -2, -2, 0, 0, 0},
-          {0, 2, -3, -4, 5, 0, 0, 0},
-          {0, 2, -3, -3, 4, 0, 0, 0},
-          {0, 3, 3, -2, -2, -2, 0, 0}};
+          // {0, 6, -2, -2, -2, 0, 0, 0},
+          // {0, 2, -3, -4, 5, 0, 0, 0},
+          // {0, 2, -3, -3, 4, 0, 0, 0},
+          // {0, 3, 3, -2, -2, -2, 0, 0},
+          {3, 1, 1, -2, 0, 0, 0, 0}, // 8: C112 = <V1 V1 V2*>, Eqs. (IV.7), (IV.18)
+          {3, 1, 2, -3, 0, 0, 0, 0}, // 9: C123 = <V1 V2 V3*>, Eqs. (IV.8), (IV.18)
+          {0, 0, 0, 0, 0, 0, 0, 0},
+          {0, 0, 0, 0, 0, 0, 0, 0}};
 
         memcpy(harmonicArray, harmonicArray01, sizeof(int) * maxNrComb * 8);
       } break;
       case 1: {
         LOGF(info, "Computing four harmonic SPC");
-        int harmonicArray02[maxNrComb][8] = {
-          {4, 6, -2, -2, -2, 0, 0, 0},
+        // fResults slot j: num at 2j+0.5, denom at 2j+1.5. arXiv:2606.10258: c1{4}=<<4>>-2<<2>>^2 after averaging, Eq. (IV.6).
+        int const harmonicArray02[maxNrComb][8] = {
+          {4, 6, -2, -2, -2, 0, 0, 0}, // 0: C6222 = <V2 V2 V2 V6*>
           {4, 2, -3, -4, 5, 0, 0, 0},
           {4, 2, -3, -3, 4, 0, 0, 0},
           {4, 2, 2, 3, -7, 0, 0, 0}, // These are three harmonic SPC!!
           {4, 2, 2, 4, -8, 0, 0, 0}, // These are three harmonic SPC!!
           {4, 2, 7, -4, -5, 0, 0, 0},
           {4, 3, -4, -4, 5, 0, 0, 0},
-          {0, 0, 0, 0, 0, 0, 0, 0},
-          {0, 0, 0, 0, 0, 0, 0, 0},
-          {0, 0, 0, 0, 0, 0, 0, 0},
+          // {0, 0, 0, 0, 0, 0, 0, 0},
+          // {0, 0, 0, 0, 0, 0, 0, 0},
+          // {0, 0, 0, 0, 0, 0, 0, 0},
+          // {0, 0, 0, 0, 0, 0, 0, 0},
+          // {0, 0, 0, 0, 0, 0, 0, 0},
+          {4, 1, 1, -1, -1, 0, 0, 0}, // 7: <<4>>_{1,1,-1,-1} for c1{4}
+          {2, 1, -1, 0, 0, 0, 0, 0}, // 8: <<2>>_{1,-1} = <V1 V1*>
+          {3, 1, 1, -2, 0, 0, 0, 0}, // 9: C112 on the 4-particle sample (mixed-order Eq. (IV.19))
           {0, 0, 0, 0, 0, 0, 0, 0},
           {0, 0, 0, 0, 0, 0, 0, 0}};
         memcpy(harmonicArray, harmonicArray02, sizeof(int) * maxNrComb * 8);
       } break;
       case 2: {
         LOGF(info, "Computing five and six harmonic SPC");
-        int harmonicArray03[maxNrComb][8] = {
+        int const harmonicArray03[maxNrComb][8] = {
           {5, 3, 3, -2, -2, -2, 0, 0},
           {5, 2, 2, -3, 4, -5, 0, 0},
           {5, 2, 3, 3, -4, -4, 0, 0},
@@ -90,7 +101,7 @@ class FlowJSPCObservables
       } break;
       case 3: {
         LOGF(info, "Computing slected five harmonic SPC");
-        int harmonicArray04[maxNrComb][8] = {
+        int const harmonicArray04[maxNrComb][8] = {
           {5, 3, 3, -2, -2, -2, 0, 0},
           {0, 2, 2, -3, 4, -5, 0, 0},
           {5, 2, 3, 3, -4, -4, 0, 0},

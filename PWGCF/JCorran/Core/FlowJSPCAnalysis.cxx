@@ -125,6 +125,19 @@ void FlowJSPCAnalysis::calculateCorrelators(const int fCentBin)
     correlationDenom = 0.;
     weightCorrelationDenom = 0.;
   }
+
+  // N_m = Re(Q_{0,1}); weight M_m. 3SPC → fN3, 4SPC → fN4.
+  if (mHistRegistry && qvecs) {
+    const double nSel = qvecs->QvectorQC[0][1].Re();
+    const float centX = static_cast<float>(fCentBin) + 0.5f;
+    if (nSel > 0.0 && std::isfinite(nSel)) {
+      if (mWhichSPC == 0 && fCorrelDenoms[2] > 0.0) {
+        mHistRegistry->fill(HIST("fN3"), centX, nSel, fCorrelDenoms[2]);
+      } else if (mWhichSPC == 1 && fCorrelDenoms[3] > 0.0) {
+        mHistRegistry->fill(HIST("fN4"), centX, nSel, fCorrelDenoms[3]);
+      }
+    }
+  }
 }
 
 void FlowJSPCAnalysis::fillHistograms(const int fCentBin, int ind, double cNum, double cDenom, double wNum, double wDenom)
