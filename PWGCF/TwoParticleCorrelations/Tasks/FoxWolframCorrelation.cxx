@@ -1090,24 +1090,24 @@ struct FoxWolframCorrelation {
   int countDF = 0;
 
   // Write buffered events to the tables consumed by the mixing task.
-  void processFILL(aod::Collisions const& collisions, aod::Tracks const& tracks)
+  void processFILL(aod::Collisions const& /*collisions*/, aod::Tracks const& /*tracks*/)
   {
     // Track data frames and report buffered event counts.
     countDF++;
 
-    LOGF(info, "Input data - ALL Collisions %d, Tracks %d -> DF no %d", collisions.size(), tracks.size(), countDF);
+    // LOGF(info, "Input data - ALL Collisions %d, Tracks %d -> DF no %d", collisions.size(), tracks.size(), countDF);
 
     for (int range = 0; range < 3; ++range) {
 
       auto& events = triTuples[range];
-      LOGF(info, "Selected events buffered in RANGE%d: %zu/%d", range + 1, events.size(), static_cast<int>(nSelEv));
+      // LOGF(info, "Selected events buffered in RANGE%d: %zu/%d", range + 1, events.size(), static_cast<int>(nSelEv));
 
       // Wait until a range reaches its event quota.
       if (events.size() < static_cast<size_t>(nSelEv)) {
         continue;
       }
 
-      LOGF(info, "-> FILL TABLES FOR RANGE%d <-", range + 1);
+      // LOGF(info, "-> FILL TABLES FOR RANGE%d <-", range + 1);
 
       // Write each buffered collision and its tracks to the output tables.
       for (const auto& col : events) {
@@ -1231,11 +1231,12 @@ struct FoxWolframCorrelationMixing {
       // Find leading tracks in the first mixed event.
       auto [triggTrk, triggTrkPart, foundPart] = findLeadingPart(tracks1);
 
-      LOGF(debug, "Mix TRI Ev (BIN%d): (%d, %d), z=(%.3f, %.3f), mult=(%d, %d)",
-           binIndex, c1.globalIndex(), c2.globalIndex(), c1.posZ(), c2.posZ(), tracks1.size(), tracks2.size());
+      // LOGF(debug, "Mix TRI Ev (BIN%d): (%d, %d), z=(%.3f, %.3f), mult=(%d, %d)",
+      //      binIndex, c1.globalIndex(), c2.globalIndex(), c1.posZ(), c2.posZ(), tracks1.size(), tracks2.size());
 
       // Select tracks from different events using the configured pair rules.
       for (const auto& [track1, track2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+
         if (!passesLeadAssoc(leadAssocMode.value, foundPart, track1, track2, triggTrk, triggTrkPart)) {
           continue;
         }
