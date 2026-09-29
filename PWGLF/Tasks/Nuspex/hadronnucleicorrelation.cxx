@@ -91,10 +91,19 @@ struct HadronNucleiCorrelation {
   Configurable<bool> doQA{"doQA", true, "save QA histograms"};
   Configurable<bool> doMCQA{"doMCQA", false, "save MC QA histograms"};
   Configurable<bool> isMC{"isMC", false, "is MC"};
-  Configurable<bool> isMCGen{"isMCGen", false, "is isMCGen"};
   Configurable<bool> isPrim{"isPrim", true, "is isPrim"};
   Configurable<bool> doCorrection{"doCorrection", false, "do efficiency correction"};
   Configurable<bool> doQuadraticPID{"doQuadraticPID", false, "do PID with sum in quadrature of TOF and TPC"};
+
+  struct : ConfigurableGroup {
+    std::string prefix = "Coalescence"; // JSON group name
+    Configurable<bool> doMCGenCoalescence{"doMCGenCoalescence", false, "do a simple coalescence on the generated level"};
+    // Coalescence parameters used in Eur. Phys. J. A 59 (2023) 72:
+    //   p_max = 0.148 GeV/c
+    //   r_max = 2 fm
+    Configurable<float> pMax{"pMax", 0.148, "maximum momentum for coalescence"};
+    Configurable<float> rMax{"rMax", 2.0, "maximum radius for coalescence"};
+  } settingsCoalescence;
 
   Configurable<std::string> fCorrectionPath{"fCorrectionPath", "", "Correction path to file"};
   Configurable<std::string> fCorrectionHisto{"fCorrectionHisto", "", "Correction histogram"};
@@ -516,11 +525,11 @@ struct HadronNucleiCorrelation {
         registry.add("hReco_Pt_Proton_TPCEl", "Reco (anti)protons in reco collisions", {HistType::kTH1F, {ptAxisSmall}});
         registry.add("hReco_Pt_Proton_TPCEl_or_TOF", "Reco (anti)protons in reco collisions", {HistType::kTH1F, {ptAxisSmall}});
         registry.add("hReco_Pt_Deuteron_TPCEl", "Reco (anti)deuterons in reco collisions", {HistType::kTH1F, {ptAxisSmall}});
-        registry.add("hReco_Pt_Deuteron_TPCEl_or_TOF", "Reco (anti)protons in reco collisions", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hReco_Pt_Deuteron_TPCEl_or_TOF", "Reco (anti)deuterons in reco collisions", {HistType::kTH1F, {ptAxisSmall}});
       }
     }
 
-    if (isMCGen) {
+    if (doprocessMixedEventGen || doprocessSameEventGen) {
       registry.add("Generated/hNEventsMC", "hNEventsMC", {HistType::kTH1D, {{1, 0.f, 1.f}}});
       registry.get<TH1>(HIST("Generated/hNEventsMC"))->GetXaxis()->SetBinLabel(1, "All");
 
@@ -549,6 +558,8 @@ struct HadronNucleiCorrelation {
       registry.add("Generated/hAntiDeuteronsVsPt", "hAntiDeuteronsVsPt", {HistType::kTH1D, {ptAxisGen}});
       registry.add("Generated/hProtonsVsPt", "hProtonsVsPt", {HistType::kTH1D, {ptAxisGen}});
       registry.add("Generated/hAntiProtonsVsPt", "hAntiProtonsVsPt", {HistType::kTH1D, {ptAxisGen}});
+    } else if (settingsCoalescence.doMCGenCoalescence.value) {
+      LOG(fatal) << "This is not a Gen Run but the Gen coalescence is required. Turn off doMCGenCoalescence";
     }
   }
 
@@ -1695,10 +1706,222 @@ struct HadronNucleiCorrelation {
 
     registry.fill(HIST("Generated/hNEventsMC"), 0.5);
 
+    // Local representation of a generated particle.
+    struct GenCoalescenceCandidate {
+      GenCandidate kinematics;
+
+      int pdg = 0;
+      float x = 0.f;
+      float y = 0.f;
+      float z = 0.f;
+      float t = 0.f;
+
+      bool physicalPrimary = false;
+
+      [[nodiscard]] float pt() const { return kinematics.pt(); }
+      [[nodiscard]] float eta() const { return kinematics.eta(); }
+      [[nodiscard]] float phi() const { return kinematics.phi(); }
+      [[nodiscard]] float pz() const { return kinematics.pz(); }
+
+      [[nodiscard]] float px() const { return pt() * std::cos(phi()); }
+      [[nodiscard]] float py() const { return pt() * std::sin(phi()); }
+
+      [[nodiscard]] float mass() const
+      {
+        switch (std::abs(pdg)) {
+          case PDG_t::kProton:
+            return o2::track::PID::getMass(o2::track::PID::Proton);
+          case PDG_t::kNeutron:
+            return o2::constants::physics::MassNeutron;
+          case o2::constants::physics::Pdg::kDeuteron:
+            return o2::track::PID::getMass(o2::track::PID::Deuteron);
+          default:
+            LOG(fatal) << "Unhandled pdg " << pdg;
+            return 0.f;
+        }
+      }
+      [[nodiscard]] float energy() const { return std::hypot(kinematics.p(), mass()); }
+      [[nodiscard]] float rapidity() const { return kinematics.rapidityForMass(mass()); }
+      [[nodiscard]] bool isPhysicalPrimary() const { return physicalPrimary; }
+      [[nodiscard]] int pdgCode() const { return pdg; }
+    };
+
+    std::vector<GenCoalescenceCandidate> particlesToProcess;
+    particlesToProcess.reserve(mcParticles.size());
+
+    int64_t localIndex = 0;
+    for (const auto& particle : mcParticles) {
+      switch (particle.pdgCode()) {
+        case PDG_t::kProton:
+        case PDG_t::kProtonBar:
+        case PDG_t::kNeutron:
+        case PDG_t::kNeutronBar:
+        case o2::constants::physics::Pdg::kDeuteron:
+        case -o2::constants::physics::Pdg::kDeuteron:
+          particlesToProcess.push_back({.kinematics = {particle.pt(), particle.eta(), particle.phi()},
+                                        .pdg = particle.pdgCode(),
+                                        .x = particle.vx(),
+                                        .y = particle.vy(),
+                                        .z = particle.vz(),
+                                        .t = particle.vt(),
+                                        .physicalPrimary = particle.isPhysicalPrimary()});
+          break;
+        default:
+          break;
+      }
+    }
+
+    if (settingsCoalescence.doMCGenCoalescence.value) {
+      std::vector<bool> consumed(particlesToProcess.size(), false);
+      std::vector<GenParticle> deuterons;
+
+      // Try p+n -> d and pbar+nbar -> dbar independently.
+      for (const int sign : {+1, -1}) {
+        const int protonPDG = sign * PDG_t::kProton;
+        const int neutronPDG = sign * PDG_t::kNeutron;
+        const int deuteronPDG = sign * o2::constants::physics::Pdg::kDeuteron;
+
+        for (size_t ip = 0; ip < particlesToProcess.size(); ++ip) {
+          if (consumed[ip] || particlesToProcess[ip].pdgCode() != protonPDG) {
+            continue;
+          }
+
+          const auto& proton = particlesToProcess[ip];
+
+          for (size_t in = 0; in < particlesToProcess.size(); ++in) {
+            if (consumed[in] || particlesToProcess[in].pdgCode() != neutronPDG) {
+              continue;
+            }
+
+            const auto& neutron = particlesToProcess[in];
+
+            const float ep = proton.energy();
+            const float en = neutron.energy();
+
+            // Propagate the particle freezing out first to the freeze-out time of the other particle
+            float xp = proton.vx;
+            float yp = proton.vy;
+            float zp = proton.vz;
+
+            float xn = neutron.vx;
+            float yn = neutron.vy;
+            float zn = neutron.vz;
+
+            const float commonTime = std::max(static_cast<float>(proton.vt), static_cast<float>(neutron.vt));
+
+            if (proton.vt < commonTime) {
+              const float dt = commonTime - proton.vt;
+              xp += proton.px / ep * dt;
+              yp += proton.py / ep * dt;
+              zp += proton.pz / ep * dt;
+            }
+
+            if (neutron.vt < commonTime) {
+              const float dt = commonTime - neutron.vt;
+              xn += neutron.px / en * dt;
+              yn += neutron.py / en * dt;
+              zn += neutron.pz / en * dt;
+            }
+
+            // Velocity of the p-n centre-of-mass frame.
+            const float totalE = ep + en;
+            const float totalPx = proton.px + neutron.px;
+            const float totalPy = proton.py + neutron.py;
+            const float totalPz = proton.pz + neutron.pz;
+
+            const float bx = totalPx / totalE;
+            const float by = totalPy / totalE;
+            const float bz = totalPz / totalE;
+
+            const float beta2 = bx * bx + by * by + bz * bz;
+            if (beta2 >= 1.) {
+              continue;
+            }
+
+            const float gamma = 1. / std::sqrt(1. - beta2);
+
+            // Boost the proton momentum into the p-n rest frame.
+            // In that frame p_p* = -p_n*, therefore |p_p*| is the relative momentum entering the coalescence cut.
+            float pxStar = proton.px;
+            float pyStar = proton.py;
+            float pzStar = proton.pz;
+
+            if (beta2 > 0.) {
+              const float betaDotP = bx * proton.px + by * proton.py + bz * proton.pz;
+
+              const float factor = ((gamma - 1.) * betaDotP / beta2) - gamma * ep;
+
+              pxStar += factor * bx;
+              pyStar += factor * by;
+              pzStar += factor * bz;
+            }
+
+            const float pRelative = std::sqrt(pxStar * pxStar + pyStar * pyStar + pzStar * pzStar);
+
+            if (pRelative >= settingsCoalescence.pMax.value) {
+              continue;
+            }
+
+            // The two particles have already been propagated to equal time in the lab. Transform their spatial separation to the pair CM frame.
+            float dx = xp - xn;
+            float dy = yp - yn;
+            float dz = zp - zn;
+
+            if (beta2 > 0.) {
+              const float betaDotR = bx * dx + by * dy + bz * dz;
+              const float factor = (gamma - 1.) * betaDotR / beta2;
+
+              dx += factor * bx;
+              dy += factor * by;
+              dz += factor * bz;
+            }
+
+            const float rRelative = std::sqrt(dx * dx + dy * dy + dz * dz);
+
+            if (rRelative >= settingsCoalescence.rMax.value) {
+              continue;
+            }
+
+            // Successful coalescence: remove the constituent proton and neutron and replace them by a deuteron carrying their total three-momentum
+            consumed[ip] = true;
+            consumed[in] = true;
+
+            deuterons.push_back({deuteronPDG,
+                                 static_cast<float>(totalPx),
+                                 static_cast<float>(totalPy),
+                                 static_cast<float>(totalPz),
+                                 static_cast<float>(0.5 * (xp + xn)),
+                                 static_cast<float>(0.5 * (yp + yn)),
+                                 static_cast<float>(0.5 * (zp + zn)),
+                                 static_cast<float>(commonTime),
+                                 proton.isPhysicalPrimary() && neutron.isPhysicalPrimary(),
+                                 localIndex++});
+            break;
+          }
+        }
+      }
+
+      // Construct the post-coalescence particle list.
+      std::vector<GenParticle> coalescedParticles;
+      coalescedParticles.reserve(particlesToProcess.size() + deuterons.size());
+
+      for (size_t i = 0; i < particlesToProcess.size(); ++i) {
+        if (!consumed[i]) {
+          coalescedParticles.push_back(std::move(particlesToProcess[i]));
+        }
+      }
+
+      for (auto& deuteron : deuterons) {
+        coalescedParticles.push_back(std::move(deuteron));
+      }
+
+      particlesToProcess = std::move(coalescedParticles);
+    }
+
     // Pairing candidates are collected during the QA loop below (which already visits every particle)
     GenCollisionCache genCache;
 
-    for (const auto& particle : mcParticles) {
+    for (const auto& particle : particlesToProcess) {
       auto fillGeneratedQa = [this, &particle](const float binPosition) {
         switch (particle.pdgCode()) {
           case PDG_t::kProton:
