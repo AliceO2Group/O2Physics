@@ -290,7 +290,7 @@ struct FlowSP {
   std::unique_ptr<TF1> fMultCutHigh = nullptr;
   std::unique_ptr<TF1> fMultMultPVCut = nullptr;
 
-  //Track selection DCA cut 
+  // Track selection DCA cut
   std::unique_ptr<TF1> fDCACut = std::make_unique<TF1>("fDCACut", Form("%s", cfg.cTrackSelsDCAfunc.value.c_str()), 0, 100);
 
   enum SelectionCriteria {
@@ -567,7 +567,6 @@ struct FlowSP {
         registry.get<TH2>(HIST("trackMCReco/incl/hPtPerTrackSelection"))->GetYaxis()->SetBinLabel(trackSel_ZeroCharge + 1, "Only charged");
         registry.get<TH2>(HIST("trackMCReco/incl/hPtPerTrackSelection"))->GetYaxis()->SetBinLabel(trackSel_ParticleWeights + 1, "Apply weights");
 
-
         registry.add("trackMCReco/hTrackSize_unFiltered", "", {HistType::kTH2D, {{100, 0, 4000}, axisCentrality}});
         registry.add("trackMCReco/hTrackSize_Filtered", "", {HistType::kTH2D, {{100, 0, 4000}, axisCentrality}});
         registry.add("trackMCReco/after/incl/hPt_hadron", "", {HistType::kTH3D, {axisPt, axisEta, axisCentrality}});
@@ -700,8 +699,8 @@ struct FlowSP {
           registry.addClone("incl/", "neg/");
         }
       }
-
-    } if (doprocessMCGen || doprocessMCReco ) {
+    }
+    if (doprocessMCGen || doprocessMCReco) {
       registry.add("trackMCGen/nCollReconstructedPerMcCollision", "", {HistType::kTH1D, {{10, -5, 5}}});
       registry.add("trackMCGen/after/incl/hPt_hadron", "", {HistType::kTH3D, {axisPt, axisEta, axisCentrality}});
       registry.add("trackMCGen/after/incl/hPt_proton", "", {HistType::kTH3D, {axisPt, axisEta, axisCentrality}});
@@ -788,7 +787,7 @@ struct FlowSP {
     int etaind = hNUA->GetYaxis()->FindBin(eta);
     int vzind = hNUA->GetZaxis()->FindBin(vtxz);
     float weight = hNUA->GetBinContent(xind, etaind, vzind);
-    if (weight != 0){
+    if (weight != 0) {
       return 1. / weight;
     }
     return 1;
@@ -871,7 +870,7 @@ struct FlowSP {
   void loadCorrections(uint64_t timestamp)
   {
     // corrections saved on CCDB as TList {incl, pos, neg} of GFWWeights (acc) TH1D (eff) objects!
-    if (conf.correctionsLoaded){
+    if (conf.correctionsLoaded) {
       return;
     }
 
@@ -886,8 +885,7 @@ struct FlowSP {
         int sizeAcc = conf.mAcceptance.size();
         if (sizeAcc < nWeights) {
           LOGF(fatal, "Could not load acceptance weights from %s", cfg.cCCDB_NUA.value.c_str());
-        }
-        else {
+        } else {
           LOGF(info, "Loaded acceptance weights from %s", cfg.cCCDB_NUA.value.c_str());
         }
       } else {
@@ -913,10 +911,9 @@ struct FlowSP {
       conf.mEfficiency.push_back(reinterpret_cast<TH1D*>(listCorrections->FindObject("Efficiency_pos")));
       conf.mEfficiency.push_back(reinterpret_cast<TH1D*>(listCorrections->FindObject("Efficiency_neg")));
       int sizeEff = conf.mEfficiency.size();
-      if (sizeEff < nWeights){
+      if (sizeEff < nWeights) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfg.cCCDB_NUE.value.c_str());
-      }
-      else{
+      } else {
         LOGF(info, "Loaded efficiency histogram from %s", cfg.cCCDB_NUE.value.c_str());
       }
     } else {
@@ -929,10 +926,9 @@ struct FlowSP {
       conf.mEfficiency2D.push_back(reinterpret_cast<TH2D*>(listCorrections->FindObject("Efficiency_pos")));
       conf.mEfficiency2D.push_back(reinterpret_cast<TH2D*>(listCorrections->FindObject("Efficiency_neg")));
       int sizeEff = conf.mEfficiency2D.size();
-      if (sizeEff < nWeights){
+      if (sizeEff < nWeights) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfg.cCCDB_NUE.value.c_str());
-      }
-      else{
+      } else {
         LOGF(info, "Loaded efficiency histogram from %s", cfg.cCCDB_NUE.value.c_str());
       }
     } else {
@@ -1005,7 +1001,7 @@ struct FlowSP {
     return true;
   }
 
-    template <FillType ft, ChargeType ct, typename McParticleObject>
+  template <FillType ft, ChargeType ct, typename McParticleObject>
   inline void fillPrimaryHistos(const McParticleObject& mcparticle)
   {
 
@@ -1016,16 +1012,15 @@ struct FlowSP {
     }
   }
 
-
   template <typename TCollision>
   bool eventSelected(const TCollision& collision, const int& multTrk)
   {
-    if (!collision.sel8()){
+    if (!collision.sel8()) {
       return 0;
     }
     histos.fill(HIST("hEventCount"), evSel_sel8);
 
-    if (cfg.cEvtUseRCTFlagChecker && !rctChecker(collision)){
+    if (cfg.cEvtUseRCTFlagChecker && !rctChecker(collision)) {
       return 0;
     }
     histos.fill(HIST("hEventCount"), evSel_RCTFlagsZDC);
@@ -1035,7 +1030,7 @@ struct FlowSP {
       auto occupancy = collision.trackOccupancyInTimeRange();
       if (occupancy > cfg.cEvSelsMaxOccupancy || occupancy < cfg.cEvSelsMinOccupancy) {
         return 0;
-      } 
+      }
     }
     histos.fill(HIST("hEventCount"), evSel_occupancy);
 
@@ -1044,7 +1039,7 @@ struct FlowSP {
         // rejects collisions which are associated with the same "found-by-T0" bunch crossing
         // https://indico.cern.ch/event/1396220/#1-event-selection-with-its-rof
         return 0;
-      } 
+      }
     }
     histos.fill(HIST("hEventCount"), evSel_kNoSameBunchPileup);
     if (cfg.cEvSelsIsGoodZvtxFT0vsPV) {
@@ -1052,28 +1047,28 @@ struct FlowSP {
         // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference
         // use this cut at low multiplicities with caution
         return 0;
-      } 
+      }
     }
     histos.fill(HIST("hEventCount"), evSel_kIsGoodZvtxFT0vsPV);
     if (cfg.cEvSelsNoCollInTimeRangeStandard) {
       if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
         //  Rejection of the collisions which have other events nearby
         return 0;
-      } 
+      }
     }
     histos.fill(HIST("hEventCount"), evSel_kNoCollInTimeRangeStandard);
     if (cfg.cEvSelsNoCollInTimeRangeNarrow) {
       if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
         // Rejection of the collisions which have other events nearby
         return 0;
-      } 
+      }
     }
     histos.fill(HIST("hEventCount"), evSel_kNoCollInTimeRangeNarrow);
     if (cfg.cEvSelsIsVertexITSTPC) {
       if (!collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
         // selects collisions with at least one ITS-TPC track, and thus rejects vertices built from ITS-only tracks
         return 0;
-      } 
+      }
     }
     histos.fill(HIST("hEventCount"), evSel_kIsVertexITSTPC);
 
@@ -1082,13 +1077,13 @@ struct FlowSP {
         // New event selection bits to cut time intervals with dead ITS staves
         // https://indico.cern.ch/event/1493023/ (09-01-2025)
         return 0;
-      } 
+      }
     }
     histos.fill(HIST("hEventCount"), evSel_kIsGoodITSLayersAll);
     if (cfg.cEvSelsIsGoodITSLayer0123) {
       if (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123)) {
         return 0;
-      } 
+      }
     }
     histos.fill(HIST("hEventCount"), evSel_kIsGoodITSLayer0123);
 
@@ -1099,26 +1094,26 @@ struct FlowSP {
         float zRes = std::sqrt(collision.covZZ());
         float minzRes = 0.25;
         int maxNumContrib = 20;
-        if (zRes > minzRes && collision.numContrib() < maxNumContrib){
+        if (zRes > minzRes && collision.numContrib() < maxNumContrib) {
           vtxz = -999;
         }
       }
 
       auto multNTracksPV = collision.multNTracksPV();
 
-      if (vtxz > cfg.cEvSelsVtxZ || vtxz < -cfg.cEvSelsVtxZ){
+      if (vtxz > cfg.cEvSelsVtxZ || vtxz < -cfg.cEvSelsVtxZ) {
         return 0;
       }
-      if (multNTracksPV < fMultPVCutLow->Eval(collision.centFT0C())){
+      if (multNTracksPV < fMultPVCutLow->Eval(collision.centFT0C())) {
         return 0;
       }
-      if (multNTracksPV > fMultPVCutHigh->Eval(collision.centFT0C())){
+      if (multNTracksPV > fMultPVCutHigh->Eval(collision.centFT0C())) {
         return 0;
       }
-      if (multTrk < fMultCutLow->Eval(collision.centFT0C())){
+      if (multTrk < fMultCutLow->Eval(collision.centFT0C())) {
         return 0;
       }
-      if (multTrk > fMultCutHigh->Eval(collision.centFT0C())){
+      if (multTrk > fMultCutHigh->Eval(collision.centFT0C())) {
         return 0;
       }
     }
@@ -1130,38 +1125,38 @@ struct FlowSP {
   template <typename TrackObject>
   bool trackSelected(const TrackObject& track, const int& field)
   {
-    auto fillSpectraStudyMCReco = [&] (TrackSelections sel){
+    auto fillSpectraStudyMCReco = [&](TrackSelections sel) {
       if constexpr (o2::framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
         if (!track.has_mcParticle()) {
           return;
         }
         const auto mcParticle = track.template mcParticle_as<MCs>();
-        if(doprocessMCReco && mcParticle.isPhysicalPrimary()) {
+        if (doprocessMCReco && mcParticle.isPhysicalPrimary()) {
           registry.fill(HIST("trackMCReco/incl/hPtPerTrackSelection"), mcParticle.pt(), sel);
-          if(track.sign() > 0) {
+          if (track.sign() > 0) {
             registry.fill(HIST("trackMCReco/pos/hPtPerTrackSelection"), mcParticle.pt(), sel);
           } else if (track.sign() < 0) {
             registry.fill(HIST("trackMCReco/neg/hPtPerTrackSelection"), mcParticle.pt(), sel);
           }
         }
-    }
+      }
     };
 
-    if (std::fabs(track.eta()) > cfg.cTrackSelsEta){
+    if (std::fabs(track.eta()) > cfg.cTrackSelsEta) {
       return false;
     }
     histos.fill(HIST("hTrackCount"), trackSel_Eta);
     fillSpectraStudyMCReco(trackSel_Eta);
 
-    if (track.pt() < cfg.cTrackSelsPtmin || track.pt() > cfg.cTrackSelsPtmax){
+    if (track.pt() < cfg.cTrackSelsPtmin || track.pt() > cfg.cTrackSelsPtmax) {
       return false;
     }
     histos.fill(HIST("hTrackCount"), trackSel_Pt);
     fillSpectraStudyMCReco(trackSel_Pt);
 
-    float minFromGlobalTracksCRoverFCls = 0.8; 
+    float minFromGlobalTracksCRoverFCls = 0.8;
 
-    if (track.tpcNClsCrossedRows() < cfg.cTrackSelsNcls){
+    if (track.tpcNClsCrossedRows() < cfg.cTrackSelsNcls) {
       return false;
     }
     histos.fill(HIST("hTrackCount"), trackSel_NCls);
@@ -1174,45 +1169,45 @@ struct FlowSP {
     if (track.sign() < 0) {
       phimodn = o2::constants::math::TwoPI - phimodn;
     }
-    if (phimodn < 0){
+    if (phimodn < 0) {
       LOGF(warning, "phi < 0: %g", phimodn);
     }
 
     phimodn += o2::constants::math::PI / 18.0; // to center gap in the middle
     phimodn = fmod(phimodn, o2::constants::math::PI / 9.0);
-    if (cfg.cFillTrackQA && cfg.cFillQABefore){
+    if (cfg.cFillTrackQA && cfg.cFillQABefore) {
       histos.fill(HIST("incl/QA/before/pt_phi"), track.pt(), phimodn);
     }
 
     if (cfg.cTrackSelsUseAdditionalTrackCut) {
-      if (phimodn < fPhiCutHigh->Eval(track.pt()) && phimodn > fPhiCutLow->Eval(track.pt())){
+      if (phimodn < fPhiCutHigh->Eval(track.pt()) && phimodn > fPhiCutLow->Eval(track.pt())) {
         return false; // reject track
       }
     }
-    if (cfg.cFillTrackQA){
+    if (cfg.cFillTrackQA) {
       histos.fill(HIST("incl/QA/after/pt_phi"), track.pt(), phimodn);
     }
     histos.fill(HIST("hTrackCount"), trackSel_TPCBoundary);
     fillSpectraStudyMCReco(trackSel_TPCBoundary);
 
-    // Only fill primary/secondary histos for MC data. 
-    if constexpr (o2::framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>){
+    // Only fill primary/secondary histos for MC data.
+    if constexpr (o2::framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
       auto mcParticle = track.template mcParticle_as<MCs>();
 
-        fillPrimaryHistos<kBefore, kInclusive>(mcParticle);
+      fillPrimaryHistos<kBefore, kInclusive>(mcParticle);
       if (spm.charge == kPositive) {
         fillPrimaryHistos<kBefore, kPositive>(mcParticle);
       } else {
         fillPrimaryHistos<kBefore, kNegative>(mcParticle);
       }
 
-      if (std::fabs(track.dcaXY()) > cfg.cTrackSelsDCAxy || std::fabs(track.dcaXY()) > fDCACut->Eval(track.pt())){
+      if (std::fabs(track.dcaXY()) > cfg.cTrackSelsDCAxy || std::fabs(track.dcaXY()) > fDCACut->Eval(track.pt())) {
         return false;
       }
       histos.fill(HIST("hTrackCount"), trackSel_DCAxy);
       fillSpectraStudyMCReco(trackSel_DCAxy);
 
-      if (std::fabs(track.dcaZ()) > cfg.cTrackSelsDCAz || (cfg.cTrackSelsDoDCApt && std::fabs(track.dcaZ()) > fDCACut->Eval(track.pt()))){
+      if (std::fabs(track.dcaZ()) > cfg.cTrackSelsDCAz || (cfg.cTrackSelsDoDCApt && std::fabs(track.dcaZ()) > fDCACut->Eval(track.pt()))) {
         return false;
       }
       histos.fill(HIST("hTrackCount"), trackSel_DCAz);
@@ -1225,25 +1220,24 @@ struct FlowSP {
         fillPrimaryHistos<kAfter, kNegative>(mcParticle);
       }
     } else { // Only apply DCA-cuts for data
-        if (std::fabs(track.dcaXY()) > cfg.cTrackSelsDCAxy || std::fabs(track.dcaXY()) > fDCACut->Eval(track.pt())){
-          return false;
-        }
-        histos.fill(HIST("hTrackCount"), trackSel_DCAxy);
+      if (std::fabs(track.dcaXY()) > cfg.cTrackSelsDCAxy || std::fabs(track.dcaXY()) > fDCACut->Eval(track.pt())) {
+        return false;
+      }
+      histos.fill(HIST("hTrackCount"), trackSel_DCAxy);
 
-        if (std::fabs(track.dcaZ()) > cfg.cTrackSelsDCAz || (cfg.cTrackSelsDoDCApt && std::fabs(track.dcaZ()) > fDCACut->Eval(track.pt()))){
-          return false;
-        }
-        histos.fill(HIST("hTrackCount"), trackSel_DCAz);
+      if (std::fabs(track.dcaZ()) > cfg.cTrackSelsDCAz || (cfg.cTrackSelsDoDCApt && std::fabs(track.dcaZ()) > fDCACut->Eval(track.pt()))) {
+        return false;
+      }
+      histos.fill(HIST("hTrackCount"), trackSel_DCAz);
     }
 
-    if (track.tpcFractionSharedCls() > cfg.cTrackSelsFshcls){
+    if (track.tpcFractionSharedCls() > cfg.cTrackSelsFshcls) {
       return false;
     }
     histos.fill(HIST("hTrackCount"), trackSel_FshCls);
     fillSpectraStudyMCReco(trackSel_FshCls);
 
-
-    if(!track.isGlobalTrack()) {
+    if (!track.isGlobalTrack()) {
       return false;
     }
     histos.fill(HIST("hTrackCount"), trackSel_GlobalTracks);
@@ -1255,7 +1249,7 @@ struct FlowSP {
   template <FillType ft, typename CollisionObject, typename TracksObject>
   inline void fillEventQA(const CollisionObject& collision, const TracksObject& tracks)
   {
-    if (!cfg.cFillEventQA){
+    if (!cfg.cFillEventQA) {
       return;
     }
 
@@ -1370,7 +1364,7 @@ struct FlowSP {
   template <FillType ft, ChargeType ct, ParticleType par, typename TrackObject>
   inline void fillTrackQA(const TrackObject& track)
   {
-    if (!cfg.cFillTrackQA){
+    if (!cfg.cFillTrackQA) {
       return;
     }
 
@@ -1400,7 +1394,7 @@ struct FlowSP {
   template <FillType ft, ChargeType ct, typename TrackObject>
   inline void fillPIDQA(const TrackObject& track)
   {
-    if (!cfg.cFillTrackQA){
+    if (!cfg.cFillTrackQA) {
       return;
     }
     if constexpr (framework::has_type_v<aod::pidtof::TOFNSigmaPi, typename TrackObject::all_columns>) {
@@ -1500,7 +1494,7 @@ struct FlowSP {
       LOGF(info, "Size of mAcceptance: %i (should be 0)", (int)conf.mAcceptance.size());
     }
 
-    if (cfg.cFillQABefore){
+    if (cfg.cFillQABefore) {
       fillEventQA<kBefore>(collision, tracks);
     }
 
@@ -1508,24 +1502,24 @@ struct FlowSP {
 
     spm.centrality = collision.centFT0C();
 
-    if (cfg.cCentFT0Cvariant1){
+    if (cfg.cCentFT0Cvariant1) {
       spm.centrality = collision.centFT0CVariant1();
     }
-    if (cfg.cCentFT0M){
+    if (cfg.cCentFT0M) {
       spm.centrality = collision.centFT0M();
     }
-    if (cfg.cCentFV0A){
+    if (cfg.cCentFV0A) {
       spm.centrality = collision.centFV0A();
     }
-    if (cfg.cCentNGlobal){
+    if (cfg.cCentNGlobal) {
       spm.centrality = collision.centNGlobal();
     }
 
-    if (!eventSelected(collision, tracks.size())){
+    if (!eventSelected(collision, tracks.size())) {
       return;
     }
 
-    if (!collision.isSelected()) {// selected by ZDCQVectors task (checks signal in ZDC) --> only possible in data not MC
+    if (!collision.isSelected()) { // selected by ZDCQVectors task (checks signal in ZDC) --> only possible in data not MC
       return;
     }
     histos.fill(HIST("hEventCount"), evSel_isSelectedZDC);
@@ -1576,7 +1570,7 @@ struct FlowSP {
       histos.fill(HIST("QA/hFullEvPlaneRes"), spm.centrality, -1 * std::cos(spm.psiA - spm.psiC));
     }
 
-    if (spm.centrality > cfg.cCentMax || spm.centrality < cfg.cCentMin){
+    if (spm.centrality > cfg.cCentMax || spm.centrality < cfg.cCentMin) {
       return;
     }
 
@@ -1606,7 +1600,7 @@ struct FlowSP {
         conf.clEvPlaneRes = true;
       }
       evPlaneRes = conf.hEvPlaneRes->GetBinContent(conf.hEvPlaneRes->FindBin(spm.centrality));
-      if (evPlaneRes < 0){
+      if (evPlaneRes < 0) {
         LOGF(fatal, "<Cos(PsiA-PsiC)> > 0 for centrality %.2f! Cannot determine resolution.. Change centrality ranges!!!", spm.centrality);
       }
       evPlaneRes = std::sqrt(evPlaneRes);
@@ -1651,7 +1645,7 @@ struct FlowSP {
 
     for (const auto& track : tracks) {
 
-      if (track.sign() == 0){
+      if (track.sign() == 0) {
         continue;
       }
 
@@ -1663,7 +1657,7 @@ struct FlowSP {
         fillAllQA<kBefore, kUnidentified>(track);
       }
 
-      if (!trackSelected(track, field)){
+      if (!trackSelected(track, field)) {
         continue;
       }
 
@@ -1703,10 +1697,10 @@ struct FlowSP {
       }
 
       // Set weff and wacc for inclusive, negative and positive hadrons
-      if (!setCurrentParticleWeights(kInclusive, kUnidentified, phi, track.eta(), track.pt(), vtxz, spm.centrality)){
+      if (!setCurrentParticleWeights(kInclusive, kUnidentified, phi, track.eta(), track.pt(), vtxz, spm.centrality)) {
         continue;
       }
-      if (!setCurrentParticleWeights(spm.charge, kUnidentified, phi, track.eta(), track.pt(), vtxz, spm.centrality)){
+      if (!setCurrentParticleWeights(spm.charge, kUnidentified, phi, track.eta(), track.pt(), vtxz, spm.centrality)) {
         continue;
       }
 
@@ -1845,24 +1839,24 @@ struct FlowSP {
 
     spm.centrality = collision.centFT0C();
 
-    if (cfg.cCentFT0Cvariant1){
+    if (cfg.cCentFT0Cvariant1) {
       spm.centrality = collision.centFT0CVariant1();
     }
-    if (cfg.cCentFT0M){
+    if (cfg.cCentFT0M) {
       spm.centrality = collision.centFT0M();
     }
-    if (cfg.cCentFV0A){
+    if (cfg.cCentFV0A) {
       spm.centrality = collision.centFV0A();
     }
-    if (cfg.cCentNGlobal){
+    if (cfg.cCentNGlobal) {
       spm.centrality = collision.centNGlobal();
     }
 
-    if (!eventSelected(collision, tracks.size())){
+    if (!eventSelected(collision, tracks.size())) {
       return;
     }
 
-    if (!collision.isSelected()){ // selected by ZDCQVectors task (checks signal in ZDC) --> only possible in data not MC
+    if (!collision.isSelected()) { // selected by ZDCQVectors task (checks signal in ZDC) --> only possible in data not MC
       return;
     }
     histos.fill(HIST("hEventCount"), evSel_isSelectedZDC);
@@ -1883,7 +1877,7 @@ struct FlowSP {
     // https://twiki.cern.ch/twiki/pub/ALICE/DirectedFlowAnalysisNote/vn_ZDC_ALICE_INT_NOTE_version02.pdf
     spm.psiFull = 1.0 * std::atan2(spm.qyA + spm.qyC, spm.qxA + spm.qxC);
 
-    if (spm.centrality > cfg.cCentMax || spm.centrality < cfg.cCentMin){
+    if (spm.centrality > cfg.cCentMax || spm.centrality < cfg.cCentMin) {
       return;
     }
 
@@ -1911,7 +1905,7 @@ struct FlowSP {
         conf.clEvPlaneRes = true;
       }
       evPlaneRes = conf.hEvPlaneRes->GetBinContent(conf.hEvPlaneRes->FindBin(spm.centrality));
-      if (evPlaneRes < 0){
+      if (evPlaneRes < 0) {
         LOGF(fatal, "<Cos(PsiA-PsiC)> > 0 for centrality %.2f! Cannot determine resolution.. Change centrality ranges!!!", spm.centrality);
       }
       evPlaneRes = std::sqrt(evPlaneRes);
@@ -1939,7 +1933,7 @@ struct FlowSP {
 
       histos.fill(HIST("hPIDcounts"), trackPID, track.pt());
 
-      if (track.sign() == 0){
+      if (track.sign() == 0) {
         continue;
       }
 
@@ -1963,7 +1957,7 @@ struct FlowSP {
         }
       }
 
-      if (!trackSelected(track, field)){
+      if (!trackSelected(track, field)) {
         continue;
       }
 
@@ -2063,28 +2057,28 @@ struct FlowSP {
 
     spm.vz = collision.posZ();
     spm.centrality = collision.centFT0C();
-    if (cfg.cCentFT0Cvariant1){
+    if (cfg.cCentFT0Cvariant1) {
       spm.centrality = collision.centFT0CVariant1();
     }
-    if (cfg.cCentFT0M){
+    if (cfg.cCentFT0M) {
       spm.centrality = collision.centFT0M();
     }
-    if (cfg.cCentFV0A){
+    if (cfg.cCentFV0A) {
       spm.centrality = collision.centFV0A();
     }
-    if (cfg.cCentNGlobal){
+    if (cfg.cCentNGlobal) {
       spm.centrality = collision.centNGlobal();
     }
 
-    if (cfg.cFillQABefore){
+    if (cfg.cFillQABefore) {
       fillEventQA<kBefore>(collision, filteredTracks);
     }
 
-    if (!eventSelected(collision, filteredTracks.size())){
+    if (!eventSelected(collision, filteredTracks.size())) {
       return;
     }
 
-    if (spm.centrality > cfg.cCentMax || spm.centrality < cfg.cCentMin){
+    if (spm.centrality > cfg.cCentMax || spm.centrality < cfg.cCentMin) {
       return;
     }
 
@@ -2101,13 +2095,13 @@ struct FlowSP {
 
     for (const auto& track : tracks) {
 
-      if (!track.has_mcParticle()){
+      if (!track.has_mcParticle()) {
         continue;
       }
 
       auto mcParticle = track.mcParticle_as<MCs>();
 
-      if (track.sign() == 0.0){
+      if (track.sign() == 0.0) {
         continue;
       }
       histos.fill(HIST("hTrackCount"), trackSel_ZeroCharge);
@@ -2143,21 +2137,20 @@ struct FlowSP {
         }
       }
 
-
-      if (!trackSelected(track, field)){
+      if (!trackSelected(track, field)) {
         continue;
       }
 
-      if (!mcParticle.isPhysicalPrimary()){
+      if (!mcParticle.isPhysicalPrimary()) {
         continue;
       }
 
       registry.fill(HIST("trackMCReco/incl/hPtMCPtTrack"), mcParticle.pt(), track.pt());
       registry.fill(HIST("trackMCReco/incl/hEtaMCEtaTrack"), mcParticle.eta(), track.eta());
-      if(spm.charge == kPositive) { 
+      if (spm.charge == kPositive) {
         registry.fill(HIST("trackMCReco/pos/hPtMCPtTrack"), mcParticle.pt(), track.pt());
         registry.fill(HIST("trackMCReco/pos/hEtaMCEtaTrack"), mcParticle.eta(), track.eta());
-      } else if (spm.charge == kNegative){ 
+      } else if (spm.charge == kNegative) {
         registry.fill(HIST("trackMCReco/neg/hPtMCPtTrack"), mcParticle.pt(), track.pt());
         registry.fill(HIST("trackMCReco/neg/hEtaMCEtaTrack"), mcParticle.eta(), track.eta());
       }
@@ -2186,57 +2179,57 @@ struct FlowSP {
 
     } // end of track loop
 
-    if(cfg.cDoGeneratedInReco){
+    if (cfg.cDoGeneratedInReco) {
 
-      auto mcCollision = collision.mcCollision(); 
+      auto mcCollision = collision.mcCollision();
       float vtxz = mcCollision.posZ();
 
       // get McParticles which belong to mccollision
       auto partSlice = McParts.sliceBy(partPerMcCollision, mcCollision.globalIndex());
 
-      for(const auto& particle : partSlice){ 
+      for (const auto& particle : partSlice) {
 
-          if (!particle.isPhysicalPrimary()){
-            continue;
-          }
+        if (!particle.isPhysicalPrimary()) {
+          continue;
+        }
 
-          auto pdgCode = particle.pdgCode();
-          auto pdgInfo = pdg->GetParticle(pdgCode);
+        auto pdgCode = particle.pdgCode();
+        auto pdgInfo = pdg->GetParticle(pdgCode);
 
-          if (std::abs(pdgInfo->Charge()) < 1){
-            continue;
-          }
+        if (std::abs(pdgInfo->Charge()) < 1) {
+          continue;
+        }
 
-          spm.charge = (pdgInfo->Charge() > 0) ? kPositive : kNegative;
+        spm.charge = (pdgInfo->Charge() > 0) ? kPositive : kNegative;
 
-          int minVal = 100;
-          if (cfg.cFilterLeptons && std::abs(pdgCode) < minVal) {
-            continue;
-          }
+        int minVal = 100;
+        if (cfg.cFilterLeptons && std::abs(pdgCode) < minVal) {
+          continue;
+        }
 
-          fillMCPtHistos<kBefore, kGen>(particle, pdgCode);
+        fillMCPtHistos<kBefore, kGen>(particle, pdgCode);
 
-          registry.fill(HIST("trackMCGen/before/incl/phi_eta_vtxZ_gen"), particle.phi(), particle.eta(), vtxz);
+        registry.fill(HIST("trackMCGen/before/incl/phi_eta_vtxZ_gen"), particle.phi(), particle.eta(), vtxz);
 
-          if (spm.charge == kPositive) {
-            registry.fill(HIST("trackMCGen/before/pos/phi_eta_vtxZ_gen"), particle.phi(), particle.eta(), vtxz);
-          } else {
-            registry.fill(HIST("trackMCGen/before/neg/phi_eta_vtxZ_gen"), particle.phi(), particle.eta(), vtxz);
-          }
+        if (spm.charge == kPositive) {
+          registry.fill(HIST("trackMCGen/before/pos/phi_eta_vtxZ_gen"), particle.phi(), particle.eta(), vtxz);
+        } else {
+          registry.fill(HIST("trackMCGen/before/neg/phi_eta_vtxZ_gen"), particle.phi(), particle.eta(), vtxz);
+        }
 
-          if (particle.eta() < -cfg.cTrackSelsEta || particle.eta() > cfg.cTrackSelsEta || particle.pt() < cfg.cTrackSelsPtmin || particle.pt() > cfg.cTrackSelsPtmax){
-            continue;
-          }
+        if (particle.eta() < -cfg.cTrackSelsEta || particle.eta() > cfg.cTrackSelsEta || particle.pt() < cfg.cTrackSelsPtmin || particle.pt() > cfg.cTrackSelsPtmax) {
+          continue;
+        }
 
-          fillMCPtHistos<kAfter, kGen>(particle, pdgCode);
+        fillMCPtHistos<kAfter, kGen>(particle, pdgCode);
 
-          registry.fill(HIST("trackMCGen/after/incl/phi_eta_vtxZ_gen"), particle.phi(), particle.eta(), vtxz);
+        registry.fill(HIST("trackMCGen/after/incl/phi_eta_vtxZ_gen"), particle.phi(), particle.eta(), vtxz);
 
-          if (spm.charge == kPositive) {
-            registry.fill(HIST("trackMCGen/after/pos/phi_eta_vtxZ_gen"), particle.phi(), particle.eta(), vtxz);
-          } else {
-            registry.fill(HIST("trackMCGen/after/neg/phi_eta_vtxZ_gen"), particle.phi(), particle.eta(), vtxz);
-          }
+        if (spm.charge == kPositive) {
+          registry.fill(HIST("trackMCGen/after/pos/phi_eta_vtxZ_gen"), particle.phi(), particle.eta(), vtxz);
+        } else {
+          registry.fill(HIST("trackMCGen/after/neg/phi_eta_vtxZ_gen"), particle.phi(), particle.eta(), vtxz);
+        }
       }
     }
   }
@@ -2268,20 +2261,20 @@ struct FlowSP {
         auto filteredTrackSlice = filteredTracks.sliceBy(trackPerCollision, col.globalIndex());
 
         spm.centrality = col.centFT0C();
-        if (cfg.cCentFT0Cvariant1){
+        if (cfg.cCentFT0Cvariant1) {
           spm.centrality = col.centFT0CVariant1();
         }
-        if (cfg.cCentFT0M){
+        if (cfg.cCentFT0M) {
           spm.centrality = col.centFT0M();
         }
-        if (cfg.cCentFV0A){
+        if (cfg.cCentFV0A) {
           spm.centrality = col.centFV0A();
         }
-        if (cfg.cCentNGlobal){
+        if (cfg.cCentNGlobal) {
           spm.centrality = col.centNGlobal();
         }
 
-        if (cfg.cFillQABefore){
+        if (cfg.cFillQABefore) {
           fillEventQA<kBefore>(col, filteredTrackSlice);
         }
 
@@ -2304,21 +2297,21 @@ struct FlowSP {
 
       } // leave reconstructed collision loop
 
-      if (!colSelected){
+      if (!colSelected) {
         continue;
       }
 
       float vtxz = mcCollision.posZ();
 
       for (const auto& particle : partSlice) {
-        if (!particle.isPhysicalPrimary()){
+        if (!particle.isPhysicalPrimary()) {
           continue;
         }
 
         auto pdgCode = particle.pdgCode();
         auto pdgInfo = pdg->GetParticle(pdgCode);
 
-        if (std::abs(pdgInfo->Charge()) < 1){
+        if (std::abs(pdgInfo->Charge()) < 1) {
           continue;
         }
 
@@ -2339,7 +2332,7 @@ struct FlowSP {
           registry.fill(HIST("trackMCGen/before/neg/phi_eta_vtxZ_gen"), particle.phi(), particle.eta(), vtxz);
         }
 
-        if (particle.eta() < -cfg.cTrackSelsEta || particle.eta() > cfg.cTrackSelsEta || particle.pt() < cfg.cTrackSelsPtmin || particle.pt() > cfg.cTrackSelsPtmax){
+        if (particle.eta() < -cfg.cTrackSelsEta || particle.eta() > cfg.cTrackSelsEta || particle.pt() < cfg.cTrackSelsPtmin || particle.pt() > cfg.cTrackSelsPtmax) {
           continue;
         }
 
