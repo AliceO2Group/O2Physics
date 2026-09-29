@@ -70,7 +70,7 @@ o2physics_add_dpl_workflow(derivedcascadeanalysis
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(derivedxi0analysis
-    SOURCES derivedXi0Analysis.cxx
+    SOURCES derivedXi0analysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
     COMPONENT_NAME Analysis)
 
