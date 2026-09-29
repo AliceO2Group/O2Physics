@@ -252,7 +252,7 @@ struct JetSpectraEseTask {
   static constexpr int NumSubSmpl = 5;
   static constexpr int NumSavedRhoFitEvents = 5;
   std::array<std::shared_ptr<THnSparse>, NumSubSmpl> hSameSub;
-  std::array<std::shared_ptr<TH1>, NumSubSmpl> hCentralityAnalyzedSub;
+  std::array<std::shared_ptr<THnSparse>, NumSubSmpl> hNtrigSub;
 
   void applySystematicPreset()
   {
@@ -428,8 +428,8 @@ struct JetSpectraEseTask {
       for (int i = 0; i < NumSubSmpl; ++i) {
         std::string n = fmt::format("subsamples/thn_jethad_corr_same_subsample{}", i);
         hSameSub[i] = registry.add<THnSparse>(n, "same;...", o2::framework::HistType::kTHnSparseF, axes);
-        std::string n2 = fmt::format("subsamples/hCentralityAnalyzed_subsample{}", i);
-        hCentralityAnalyzedSub[i] = registry.add<TH1>(n2, ";Centrality;entries", o2::framework::HistType::kTH1F, {{centAxis}});
+        std::string n2 = fmt::format("subsamples/hNtrig_subsample{}", i);
+        hNtrigSub[i] = registry.add<THnSparse>(n2, "", o2::framework::HistType::kTHnSparseF, {{centAxis}, {jetPtAxis}, {dPhiAxis}, {eseAxis}});
       }
       registry.add("hNtrig", "", {HistType::kTHnSparseF, {{centAxis}, {jetPtAxis}, {dPhiAxis}, {eseAxis}}});
 
@@ -730,7 +730,6 @@ struct JetSpectraEseTask {
     registry.fill(HIST("eventQA/hRho"), centrality, collision.rho());
     registry.fill(HIST("eventQA/hCentralityAnalyzed"), centrality);
     int lRndInd = fRndm->Integer(NumSubSmpl);
-    hCentralityAnalyzedSub[lRndInd]->Fill(centrality);
 
     auto corrL = [&](const auto& j) { return j.pt() - evalRho(rhoFit.get(), jetR, j.phi(), collision.rho()) * j.area(); };
     for (const auto& jet : jets) {
@@ -763,6 +762,7 @@ struct JetSpectraEseTask {
       }
 
       registry.fill(HIST("hNtrig"), centrality, vCorrL, dPhi, qPerc[0]);
+      hNtrigSub[lRndInd]->Fill(centrality, vCorrL, dPhi, qPerc[0]);
       for (const auto& track : tracks) {
         if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
           continue;
