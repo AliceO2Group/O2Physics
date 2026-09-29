@@ -465,11 +465,11 @@ struct checkMCPairTemplate {
     static constexpr std::string_view charmed_mesons[] = {"Dplus", "D0", "Dsplus"}; // 411, 421, 431
     static constexpr std::string_view anti_charmed_mesons[] = {"Dminus", "D0bar", "Dsminus"};
     const int nm_c = sizeof(charmed_mesons) / sizeof(charmed_mesons[0]);
-    static constexpr std::string_view charmed_baryons[] = {"Lcplus", "Xicplus", "Xic0", "Omegac0"}; // 4122, 4232, 4132, 4332
-    static constexpr std::string_view anti_charmed_baryons[] = {"Lcminus", "Xicminus", "Xic0bar", "Omegac0bar"};
+    static constexpr std::string_view charmed_baryons[] = {"Lcplus", "Xic0", "Xicplus", "Omegac0"}; // 4122, 4132, 4232, 4332
+    static constexpr std::string_view anti_charmed_baryons[] = {"Lcminus", "Xic0bar", "Xicminus", "Omegac0bar"};
     const int nb_c = sizeof(charmed_baryons) / sizeof(charmed_baryons[0]);
     static constexpr std::string_view sum_charmed_mesons[] = {"Dpm", "D0", "Dspm"};
-    static constexpr std::string_view sum_charmed_baryons[] = {"Lcpm", "Xicpm", "Xic0", "Omegac0"};
+    static constexpr std::string_view sum_charmed_baryons[] = {"Lcpm", "Xic0", "Xicpm", "Omegac0"};
 
     if (cfgFillSeparateCharmHadronPairs) {
       for (int im = 0; im < nm_c; im++) {
