@@ -1153,8 +1153,6 @@ struct FlowSP {
     histos.fill(HIST("hTrackCount"), trackSel_Pt);
     fillSpectraStudyMCReco(trackSel_Pt);
 
-    float minFromGlobalTracksCRoverFCls = 0.8;
-
     if (track.tpcNClsCrossedRows() < cfg.cTrackSelsNcls) {
       return false;
     }
