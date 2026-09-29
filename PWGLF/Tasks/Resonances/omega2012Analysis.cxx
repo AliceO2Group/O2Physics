@@ -691,13 +691,13 @@ struct Omega2012Analysis {
   template <typename CandidateT>
   struct SelectedXiCandidate {
     CandidateT candidate;
-    std::array<int, 3> daughterIds;
+    std::array<int, 3> daughterIds{};
   };
 
   template <typename CandidateT>
   struct SelectedK0sCandidate {
     CandidateT candidate;
-    std::array<int, 2> daughterIds;
+    std::array<int, 2> daughterIds{};
   };
 
   template <bool FillQA, typename CollisionT, typename V0sT>
