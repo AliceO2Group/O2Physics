@@ -617,7 +617,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       } else {
         mCasc = casc.mOmega();
       }
-      auto arrMassCharmBaryon = std::array{0., 0.};
+      std::array<double, 2> arrMassCharmBaryon;
       if constexpr (DecayChannel == hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi) {
         arrMassCharmBaryon = {MassXiMinus, MassPiPlus};
       } else if constexpr (DecayChannel == hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi) {
