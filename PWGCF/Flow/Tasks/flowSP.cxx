@@ -1445,16 +1445,6 @@ struct FlowSP {
     }
   }
 
-  template <FillType ft, ChargeType ct, typename McParticleObject>
-  inline void fillPrimaryHistos(const McParticleObject& mcparticle)
-  {
-
-    if (!mcparticle.isPhysicalPrimary()) {
-      registry.fill(HIST("trackMCReco/") + HIST(Time[ft]) + HIST(Charge[ct]) + HIST("hIsPhysicalPrimary"), 0, spm.centrality, mcparticle.pt());
-    } else {
-      registry.fill(HIST("trackMCReco/") + HIST(Time[ft]) + HIST(Charge[ct]) + HIST("hIsPhysicalPrimary"), 1, spm.centrality, mcparticle.pt());
-    }
-  }
 
   template <FillType ft, ParticleType par, typename TrackObject>
   void fillAllQA(const TrackObject& track)
