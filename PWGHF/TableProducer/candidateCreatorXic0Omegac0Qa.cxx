@@ -259,7 +259,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
   HfEventSelection hfEvSel;
 
   // PDG Id of daughter tracks & V0s & cascades & charm baryons - Used in KFParticle
-  int pdgIdOfV0DauPos{}, pdgIdOfV0DauNeg{}, pdgIdOfBach{}, pdgIdOfCharmBach{};
+  int pdgIdOfV0DauPos{}, pdgIdOfV0DauNeg{}, pdgIdOfBach{}, pdgIdOfBachRej{}, pdgIdOfCharmBach{};
   int pdgIdOfV0{}, pdgIdOfCascade{}, pdgIdOfCharmBaryon{};
 
   // Track PID: PID value of tracks defined under o2::track::PID namespace
@@ -315,6 +315,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       pdgIdOfV0DauPos = kProton;
       pdgIdOfV0DauNeg = kPiMinus;
       pdgIdOfBach = kPiMinus;
+      pdgIdOfBachRej = 0; // -> Not used in XiPi channel
       pdgIdOfCharmBach = kPiPlus;
 
       pdgIdOfV0 = kLambda0;
@@ -332,6 +333,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       pdgIdOfV0DauPos = kProton;
       pdgIdOfV0DauNeg = kPiMinus;
       pdgIdOfBach = kKMinus;
+      pdgIdOfBachRej = kPiMinus;
       pdgIdOfCharmBach = kPiPlus;
 
       pdgIdOfV0 = kLambda0;
@@ -349,6 +351,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       pdgIdOfV0DauPos = kProton;
       pdgIdOfV0DauNeg = kPiMinus;
       pdgIdOfBach = kKMinus;
+      pdgIdOfBachRej = kPiMinus;
       pdgIdOfCharmBach = kKPlus;
 
       pdgIdOfV0 = kLambda0;
@@ -370,6 +373,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     LOGF(info, "  PDG ID of V0 negative daughter: %d", pdgIdOfV0DauNeg);
     LOGF(info, "  PDG ID of V0: %d", pdgIdOfV0);
     LOGF(info, "  PDG ID of Bachelor: %d", pdgIdOfBach);
+    LOGF(info, "  PDG ID of Bachelor Rej: %d", pdgIdOfBachRej);
     LOGF(info, "  PDG ID of Cascade: %d", pdgIdOfCascade);
     LOGF(info, "  PDG ID of Charm Bachelor: %d", pdgIdOfCharmBach);
     LOGF(info, "  PDG ID of Charm Baryon: %d", pdgIdOfCharmBaryon);
@@ -965,7 +969,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       KFParticle kfPos(kfTrack0, (isAnti ? -pdgIdOfV0DauNeg : pdgIdOfV0DauPos));
       KFParticle kfNeg(kfTrack1, (isAnti ? -pdgIdOfV0DauPos : pdgIdOfV0DauNeg));
       KFParticle kfBach(kfTrackBach, (isAnti ? -pdgIdOfBach : pdgIdOfBach));
-      KFParticle kfBachRej(kfTrackBach, (isAnti ? -pdgIdOfBach : pdgIdOfBach)); // Rej -> Used for Omegac0->OmegaPi only
+      KFParticle kfBachRej(kfTrackBach, (isAnti ? -pdgIdOfBachRej : pdgIdOfBachRej)); // Rej -> Used for Omegac0->OmegaPi only
 
       // ~~~~~~~Construct V0 with KF~~~~~~~
       const KFParticle* v0Daughters[2] = {&kfPos, &kfNeg};
