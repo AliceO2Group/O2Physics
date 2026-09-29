@@ -35,6 +35,7 @@
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
@@ -1000,7 +1001,7 @@ struct JetCrossSectionEfficiency {
         continue;
       }
 
-      const auto environment = truthEnvironments.find(static_cast<int64_t>(mccollision.globalIndex()));
+      const auto environment = truthEnvironments.find(mccollision.globalIndex());
       if (environment == truthEnvironments.end() || !environment->second.valid) {
         continue;
       }
