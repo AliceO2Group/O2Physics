@@ -49,6 +49,7 @@
 #include <TRandom.h>
 #include <TString.h>
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <cstddef>
@@ -570,11 +571,12 @@ class pidTPCModule
     std::unique_ptr<float[]> networkPrediction(new float[predictionSize * NParticleTypes]); // For each mass hypotheses
 
     const float nNclNormalization = response->GetNClNormalization();
-    float durationNetwork = 0;
+    float durationNetwork = 0.f;
 
     std::vector<float> trackProperties(trackPropSize);
+    std::vector<float> outputNetwork; // output buffer, allocation is reused for all mass hypotheses
     uint64_t counterTrackProps = 0;
-    int loopCounter = 0;
+    uint64_t loopCounter = 0;
 
     // To load the Hadronic rate once for each collision
     std::vector<float> hadronicRateForCollision(collisions.size(), 0.0f);
@@ -626,14 +628,13 @@ class pidTPCModule
       }
 
       const auto startNetworkEval = std::chrono::high_resolution_clock::now();
-      const float* const outputNetwork = network.evalModel(trackProperties);
+      network.evalModel(trackProperties, outputNetwork);
       const auto stopNetworkEval = std::chrono::high_resolution_clock::now();
       durationNetwork += std::chrono::duration<float, std::ratio<1, NanoToOne>>(stopNetworkEval - startNetworkEval).count();
-      for (uint64_t kPrediction = 0; kPrediction < predictionSize; kPrediction += outputDimensions) {
-        for (int lOutputDim = 0; lOutputDim < outputDimensions; ++lOutputDim) {
-          networkPrediction[kPrediction + lOutputDim + predictionSize * loopCounter] = outputNetwork[kPrediction + lOutputDim];
-        }
+      if (outputNetwork.size() != predictionSize) {
+        LOG(fatal) << "Network output size (" << outputNetwork.size() << ") does not match the expected prediction size (" << predictionSize << ")";
       }
+      std::copy(outputNetwork.begin(), outputNetwork.end(), networkPrediction.get() + predictionSize * loopCounter);
 
       counterTrackProps = 0;
       ++loopCounter;
