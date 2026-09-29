@@ -1445,7 +1445,6 @@ struct FlowSP {
     }
   }
 
-
   template <FillType ft, ParticleType par, typename TrackObject>
   void fillAllQA(const TrackObject& track)
   {
