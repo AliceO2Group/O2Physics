@@ -197,7 +197,7 @@ struct k892pmanalysis {
   double massAntiLambda0 = MassLambda0Bar;
 
   template <typename TrackType>
-  bool trackCut(const TrackType track)
+  bool trackCut(const TrackType& track)
   {
     // basic track cuts
     if (std::abs(track.pt()) < cMinPtcut)
@@ -219,7 +219,7 @@ struct k892pmanalysis {
   }
 
   template <typename V0Type>
-  bool V0Cut(const V0Type v0)
+  bool V0Cut(const V0Type& v0)
   {
     // V0 track cuts
     if (std::abs(v0.eta()) > cMaxV0Etacut)

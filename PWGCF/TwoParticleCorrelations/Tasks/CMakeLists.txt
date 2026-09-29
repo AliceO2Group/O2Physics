@@ -120,10 +120,20 @@ o2physics_add_dpl_workflow(casc-di-hadron-corr
 
 o2physics_add_dpl_workflow(two-particle-correlations-mpi
                            SOURCES twoParticleCorrelationsMpi.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore O2Physics::GFWCore
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(charge-balance-function
                            SOURCES chargeBalanceFunction.cxx
                            PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(lambda-proton-balance-function
+                           SOURCES lambdaProtonBalanceFunction.cxx
+                           PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(lambda-or-anti-lambda-producer-with-spin
+                           SOURCES lambdaOrAntiLambdaProducerWithSpin.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)

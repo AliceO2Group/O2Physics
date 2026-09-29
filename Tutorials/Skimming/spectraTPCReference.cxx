@@ -85,7 +85,7 @@ struct TPCSpectraReferenceTask {
                                                   aod::TrackSelection>>;
   void process(soa::Filtered<aod::Collisions>::iterator const& /*collision*/, TrackCandidates const& tracks)
   {
-    for (auto track : tracks) {
+    for (const auto& track : tracks) {
       const float nsigma[Np] = {track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(),
                                 track.tpcNSigmaKa(), track.tpcNSigmaPr(), track.tpcNSigmaDe(),
                                 track.tpcNSigmaTr(), track.tpcNSigmaHe(), track.tpcNSigmaAl()};

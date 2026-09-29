@@ -669,7 +669,7 @@ class CascadeBuilder
   }
 
   template <typename T1, typename T2, typename T3, typename T4>
-  void fillCascade(T1& collisionBuilder, T2& cascadeProducts, T3 const& cascade, T4 const& col, int bachelorIndex, int posDaughterIndex, int negDaughterIndex)
+  void fillCascade(T1& collisionBuilder, T2& cascadeProducts, T3 const& cascade, T4 const& col, int64_t bachelorIndex, int64_t posDaughterIndex, int64_t negDaughterIndex)
   {
     float strangeTofBachelor = 0.f;
     float strangeTofPosDau = 0.f;

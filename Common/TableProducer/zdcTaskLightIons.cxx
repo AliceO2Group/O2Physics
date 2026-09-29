@@ -97,7 +97,7 @@ struct ZdcTaskLightIons {
   }
 
   template <typename TCollision>
-  uint8_t eventSelected(TCollision collision)
+  uint8_t eventSelected(const TCollision& collision)
   {
     uint8_t selectionBits = 0;
     bool selected;

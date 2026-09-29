@@ -317,12 +317,18 @@ struct HfTreeCreatorDplusToPiKPi {
 
     std::vector<float> outputMl = {-999., -999.};
     if constexpr (DoMl) {
-      for (unsigned int iclass = 0; iclass < classMlIndexes->size(); iclass++) {
-        outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMlIndexes->at(iclass)];
+      if (candidate.mlProbDplusToPiKPi().empty()) {
+        rowCandidateMl(
+          -999.,
+          -999.);
+      } else {
+        for (unsigned int iclass = 0; iclass < classMlIndexes->size(); iclass++) {
+          outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMlIndexes->at(iclass)];
+        }
+        rowCandidateMl(
+          outputMl[0],
+          outputMl[1]);
       }
-      rowCandidateMl(
-        outputMl[0],
-        outputMl[1]);
     }
 
     float cent{-1.};
@@ -494,6 +500,35 @@ struct HfTreeCreatorDplusToPiKPi {
 
   PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processData, "Process data", true);
 
+  void processDataWMl(aod::Collisions const& collisions,
+                      soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>> const& candidates,
+                      TracksWPid const&)
+  {
+    // Filling event properties
+    rowCandidateFullEvents.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent(collision, 0, 1);
+    }
+
+    // Filling candidate properties
+    if (fillCandidateLiteTable) {
+      rowCandidateLite.reserve(candidates.size());
+    } else {
+      rowCandidateFull.reserve(candidates.size());
+    }
+    for (const auto& candidate : candidates) {
+      if (downSampleBkgFactor < 1.) {
+        float const pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
+        if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
+          continue;
+        }
+      }
+      fillCandidateTable<aod::Collisions, false, true>(candidate);
+    }
+  }
+
+  PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processDataWMl, "Process data with ML", false);
+
   void processDataWCent(CollisionsCent const& collisions,
                         soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfSelDplusToPiKPi>> const& candidates,
                         TracksWPid const&)
@@ -522,6 +557,35 @@ struct HfTreeCreatorDplusToPiKPi {
   }
 
   PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processDataWCent, "Process data with cent", false);
+
+  void processDataWCentMl(CollisionsCent const& collisions,
+                          soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>> const& candidates,
+                          TracksWPid const&)
+  {
+    // Filling event properties
+    rowCandidateFullEvents.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent(collision, 0, 1);
+    }
+
+    // Filling candidate properties
+    if (fillCandidateLiteTable) {
+      rowCandidateLite.reserve(candidates.size());
+    } else {
+      rowCandidateFull.reserve(candidates.size());
+    }
+    for (const auto& candidate : candidates) {
+      if (downSampleBkgFactor < 1.) {
+        float const pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
+        if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
+          continue;
+        }
+      }
+      fillCandidateTable<CollisionsCent, false, true>(candidate);
+    }
+  }
+
+  PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processDataWCentMl, "Process data with cent and ML", false);
 
   template <bool ApplyMl = false, typename CandTypeMcRec, typename CandTypeMcGen, typename CollType>
   void fillMcTables(CollType const& collisions,

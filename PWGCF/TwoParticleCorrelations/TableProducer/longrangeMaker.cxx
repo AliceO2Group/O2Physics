@@ -119,7 +119,6 @@ struct LongrangeMaker {
     Configurable<bool> isApplyGoodITSLayersAll{"isApplyGoodITSLayersAll", false, "Enable GoodITSLayersAll cut"};
     Configurable<bool> isApplyExtraCorrCut{"isApplyExtraCorrCut", false, "Enable extra NPVtracks vs FTOC correlation cut"};
     Configurable<bool> isApplyBestCollIndex{"isApplyBestCollIndex", true, "bestCollIndex"};
-    Configurable<bool> isrejectFlangeEvent{"isrejectFlangeEvent", false, "At least one channel with -350 TDC < time < -450 TDC"};
     Configurable<bool> isApplyNoCollInTimeRangeStandard{"isApplyNoCollInTimeRangeStandard", false, "Enable NoCollInTimeRangeStandard cut"};
     Configurable<bool> isApplyNoCollInTimeRangeStrict{"isApplyNoCollInTimeRangeStrict", false, "Enable NoCollInTimeRangeStrict cut"};
     Configurable<bool> isApplyNoCollInRofStandard{"isApplyNoCollInRofStandard", false, "Enable NoCollInRofStandard cut"};
@@ -236,6 +235,9 @@ struct LongrangeMaker {
     ConfigurableAxis axisPQA{"axisPQA", {100, 0.0, 10.0}, "p (GeV/c)"};
     ConfigurableAxis axisTpcSignal{"axisTpcSignal", {250, 0, 250}, "TPC dE/dx (a.u.)"};
     ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 15, 25, 30, 40, 50, 60, 80, 100, 150, 200}, "Multiplicity / Centrality"};
+
+    ConfigurableAxis axisMultQA{"axisMultQA", {500, -0.5, 499.5}, "multiplicity QA axis"};
+    ConfigurableAxis axisCentQA{"axisCentQA", {100, 0., 100.}, "centrality QA axis"};
   } cfgAxis;
 
   Configurable<std::vector<double>> itsNsigmaPidCut{"itsNsigmaPidCut", std::vector<double>{3, 2.5, 2, -3, -2.5, -2}, "ITS n-sigma cut for pions_posNsigma, kaons_posNsigma, protons_posNsigma, pions_negNsigma, kaons_negNsigma, protons_negNsigma"};
@@ -298,7 +300,7 @@ struct LongrangeMaker {
     x->SetBinLabel(13, "ApplyNoHighMultCollInPrevRof");
     x->SetBinLabel(14, "ApplyOccupancySelection");
     x->SetBinLabel(15, "ZvertexSelection");
-    x->SetBinLabel(16, "reject flange event");
+
     histos.add("hSelectionResult", "hSelectionResult", kTH1I, {{5, -0.5, 4.5}});
 
     histos.add("hMftTrkSel", "hMftTrkSel", kTH1D, {axisTrackSel}, false);
@@ -345,6 +347,9 @@ struct LongrangeMaker {
 
     histos.add("hTpcdEdx_pos_after", "Pos-prong dE/dx After PID;V0 Species;Multiplicity;p (GeV/c);TPC dE/dx", kTHnSparseF, {cfgAxis.axisV0Species, cfgAxis.axisMultiplicity, cfgAxis.axisPQA, cfgAxis.axisTpcSignal});
     histos.add("hTpcdEdx_neg_after", "Neg-prong dE/dx After PID;V0 Species;Multiplicity;p (GeV/c);TPC dE/dx", kTHnSparseF, {cfgAxis.axisV0Species, cfgAxis.axisMultiplicity, cfgAxis.axisPQA, cfgAxis.axisTpcSignal});
+
+    histos.add("Nch_vs_Centrality", "Nch_vs_Centrality", kTH2D, {cfgAxis.axisCentQA, cfgAxis.axisMultQA});
+    histos.add("PVtracks_vs_Centrality", "PVtracks_vs_Centrality", kTH2D, {cfgAxis.axisCentQA, cfgAxis.axisMultQA});
 
     myTrackFilter = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny,
                                                         TrackSelection::GlobalTrackRun3DCAxyCut::Default);
@@ -428,6 +433,9 @@ struct LongrangeMaker {
     }
     float multiplicity = countNTracks(tracks, col.posZ());
     float centrality = selColCent(col);
+    histos.fill(HIST("Nch_vs_Centrality"), col.centFT0C(), multiplicity);
+    histos.fill(HIST("PVtracks_vs_Centrality"), col.centFT0C(), col.multNTracksPV());
+
     if (cfgfittrksel.cfgVerbosity > 0) {
       LOGF(info, "Event multiplicity = %f | centrality = %f", multiplicity, centrality);
     }
@@ -467,14 +475,6 @@ struct LongrangeMaker {
     // ft0 loop
     if (col.has_foundFT0()) {
       const auto& ft0 = col.foundFT0();
-      if (cfgevtsel.isrejectFlangeEvent) {
-        constexpr int IsFlangeEventId = 7;
-        std::bitset<8> ft0TriggerMask = ft0.triggerMask();
-        if (ft0TriggerMask[IsFlangeEventId]) {
-          return;
-        }
-      }
-      histos.fill(HIST("EventHist"), 16);
       for (std::size_t iCh = 0; iCh < ft0.channelA().size(); iCh++) {
         auto chanelid = ft0.channelA()[iCh];
         float ampl = ft0.amplitudeA()[iCh];

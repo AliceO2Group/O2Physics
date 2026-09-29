@@ -300,7 +300,7 @@ struct CascadeSelector {
   }
 
   template <typename TCollision>
-  void fillMatchedHistos(LabeledCascades::iterator rec, int flag, TCollision collision)
+  void fillMatchedHistos(const LabeledCascades::iterator& rec, int flag, const TCollision& collision)
   {
     if (flag == 0)
       return;

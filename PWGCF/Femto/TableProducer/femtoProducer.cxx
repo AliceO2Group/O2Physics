@@ -295,6 +295,25 @@ struct FemtoProducer {
         LOG(warn) << "  - particles in pass-through, collisions not: the extra particle rows hang off "
                   << "a candidate-biased event sample, which will bias event-normalised observables.";
       }
+
+      // in mc pass-through every generated collision is written, but reco collisions of other
+      // sub-generators are still rejected in checkCollision -> biased event-loss denominator
+      if (mcBuilder.isPassThrough() && collisionBuilder.isPassThrough() && collisionBuilder.subGeneratorId() >= 0) {
+        LOG(warn) << "MC and collision pass-through are enabled, but CollisionFilter.subGeneratorId = "
+                  << collisionBuilder.subGeneratorId() << " still rejects reconstructed collisions of other sub-generators, "
+                  << "while all generated collisions are written. Set it to -1 for unbiased event/signal-loss corrections.";
+      }
+
+      // daughter tracks can be written a second time under the collision of their mother candidate;
+      // without FTrackExtras (fillType) these rows cannot be told apart from selected tracks downstream
+      const bool anyDaughterBuilder = k0shortBuilder.fillAnyTable() || lambdaBuilder.fillAnyTable() || antilambdaBuilder.fillAnyTable() ||
+                                      xiBuilder.fillAnyTable() || omegaBuilder.fillAnyTable() ||
+                                      sigmaBuilder.fillAnyTable() || sigmaPlusBuilder.fillAnyTable() ||
+                                      d0Builder.fillAnyTable() || d0barBuilder.fillAnyTable() || lcBuilder.fillAnyTable() || lcBarBuilder.fillAnyTable();
+      if (trackBuilder.isPassThrough() && anyDaughterBuilder && !trackBuilder.producingTrackExtras()) {
+        LOG(warn) << "Track pass-through is enabled together with candidates that register daughter tracks, but FTrackExtras is not produced. "
+                  << "Daughter-only track rows cannot be identified downstream (enable TrackTables.produceTrackExtras).";
+      }
     }
 
     // ---- guard: exactly one process function ---------------------------------
@@ -353,15 +372,14 @@ struct FemtoProducer {
     return true;
   }
 
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
-  bool processMcCollisions(T1 const& col, T2 const& mcCols, T3 const& /* bcs*/, T4 const& tracks, T5 const& mcParticles)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4>
+  bool processMcCollisions(T1 const& col, T2 const& mcCols, T3 const& /* bcs*/, T4 const& tracks)
   {
     collisionBuilder.reset();
-    // in pass-through the maps are built once per timeframe
-    // resetting here would wipe them and duplicate every mc collision and particle
-    if (!mcBuilder.isPassThrough()) {
-      mcBuilder.reset(mcCols, mcParticles);
-    }
+    // mcBuilder.reset() runs once per timeframe in the calling processTracksXXXMc function
+    // (both pass-through and lazy-fill mode); resetting here on every reco collision would
+    // wipe the dedup maps and duplicate every mc collision/particle referenced by more than
+    // one reco collision (e.g. split-vertex reconstruction under pileup)
     auto bc = col.template bc_as<T3>();
     collisionBuilder.initCollision<system>(bc, col, tracks, ccdb, hRegistry);
     if (!collisionBuilder.checkCollision(col, mcCols)) {
@@ -659,8 +677,10 @@ struct FemtoProducer {
   //  does no auto-grouping. Tables that are iterated over (tracks, v0s, cascades,
   //  kinks) are sliced per collision; the full track table is passed alongside so
   //  the v0/cascade/kink builders can resolve their daughter indices.
-  //  These functions own the per-timeframe reset of the mc builder maps, which is
-  //  why processMcCollisions skips its own reset in pass-through mode.
+  //  These functions own the per-timeframe reset of the mc builder maps (once, before the
+  //  reco-collision loop, in both pass-through and lazy-fill mode); processMcCollisions never
+  //  resets them itself, since it runs once per reco collision and the dedup maps have to
+  //  survive across all reco collisions in the timeframe.
   // ==========================================================================
 
   void processTracksRun3ppMc(rawinputs::Run3PpMcGenCollisions const& mcCols,
@@ -669,14 +689,14 @@ struct FemtoProducer {
                              rawinputs::Run3McRecoTracks const& tracks,
                              rawinputs::Run3McGenParticles const& mcParticles)
   {
+    mcBuilder.reset(mcCols, mcParticles);
     if (mcBuilder.isPassThrough()) {
-      mcBuilder.reset(mcCols, mcParticles);
-      mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts, pdgDb);
+      mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts);
     }
 
     for (const auto& col : cols) {
       auto tracksThisCol = tracks.sliceBy(perColRecoTracks, col.globalIndex());
-      if (!processMcCollisions<modes::System::kPP_Run3_MC>(col, mcCols, bcs, tracksThisCol, mcParticles)) {
+      if (!processMcCollisions<modes::System::kPP_Run3_MC>(col, mcCols, bcs, tracksThisCol)) {
         continue;
       }
       auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3McRecoTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
@@ -692,14 +712,14 @@ struct FemtoProducer {
                                rawinputs::Run3McRecoTracks const& tracks,
                                rawinputs::Run3McGenParticles const& mcParticles)
   {
+    mcBuilder.reset(mcCols, mcParticles);
     if (mcBuilder.isPassThrough()) {
-      mcBuilder.reset(mcCols, mcParticles);
-      mcBuilder.fillMcPassThrough<modes::System::kPbPb_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts, pdgDb);
+      mcBuilder.fillMcPassThrough<modes::System::kPbPb_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts);
     }
 
     for (const auto& col : cols) {
       auto tracksThisCol = tracks.sliceBy(perColRecoTracks, col.globalIndex());
-      if (!processMcCollisions<modes::System::kPbPb_Run3_MC>(col, mcCols, bcs, tracksThisCol, mcParticles)) {
+      if (!processMcCollisions<modes::System::kPbPb_Run3_MC>(col, mcCols, bcs, tracksThisCol)) {
         continue;
       }
       auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3McRecoTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
@@ -716,14 +736,14 @@ struct FemtoProducer {
                                 rawinputs::Run3RecoVzeros const& v0s,
                                 rawinputs::Run3McGenParticles const& mcParticles)
   {
+    mcBuilder.reset(mcCols, mcParticles);
     if (mcBuilder.isPassThrough()) {
-      mcBuilder.reset(mcCols, mcParticles);
-      mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts, pdgDb);
+      mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts);
     }
 
     for (const auto& col : cols) {
       auto tracksThisCol = tracks.sliceBy(perColRecoTracks, col.globalIndex());
-      if (!processMcCollisions<modes::System::kPP_Run3_MC>(col, mcCols, bcs, tracksThisCol, mcParticles)) {
+      if (!processMcCollisions<modes::System::kPP_Run3_MC>(col, mcCols, bcs, tracksThisCol)) {
         continue;
       }
       auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3McRecoTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
@@ -743,14 +763,14 @@ struct FemtoProducer {
                                   rawinputs::Run3RecoVzeros const& v0s,
                                   rawinputs::Run3McGenParticles const& mcParticles)
   {
+    mcBuilder.reset(mcCols, mcParticles);
     if (mcBuilder.isPassThrough()) {
-      mcBuilder.reset(mcCols, mcParticles);
-      mcBuilder.fillMcPassThrough<modes::System::kPbPb_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts, pdgDb);
+      mcBuilder.fillMcPassThrough<modes::System::kPbPb_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts);
     }
 
     for (const auto& col : cols) {
       auto tracksThisCol = tracks.sliceBy(perColRecoTracks, col.globalIndex());
-      if (!processMcCollisions<modes::System::kPbPb_Run3_MC>(col, mcCols, bcs, tracksThisCol, mcParticles)) {
+      if (!processMcCollisions<modes::System::kPbPb_Run3_MC>(col, mcCols, bcs, tracksThisCol)) {
         continue;
       }
       auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3McRecoTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
@@ -771,14 +791,14 @@ struct FemtoProducer {
                                         rawinputs::Run3RecoCascades const& cascades,
                                         rawinputs::Run3McGenParticles const& mcParticles)
   {
+    mcBuilder.reset(mcCols, mcParticles);
     if (mcBuilder.isPassThrough()) {
-      mcBuilder.reset(mcCols, mcParticles);
-      mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts, pdgDb);
+      mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts);
     }
 
     for (const auto& col : cols) {
       auto tracksThisCol = tracks.sliceBy(perColRecoTracks, col.globalIndex());
-      if (!processMcCollisions<modes::System::kPP_Run3_MC>(col, mcCols, bcs, tracksThisCol, mcParticles)) {
+      if (!processMcCollisions<modes::System::kPP_Run3_MC>(col, mcCols, bcs, tracksThisCol)) {
         continue;
       }
       auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3McRecoTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
@@ -802,14 +822,14 @@ struct FemtoProducer {
                                           rawinputs::Run3RecoCascades const& cascades,
                                           rawinputs::Run3McGenParticles const& mcParticles)
   {
+    mcBuilder.reset(mcCols, mcParticles);
     if (mcBuilder.isPassThrough()) {
-      mcBuilder.reset(mcCols, mcParticles);
-      mcBuilder.fillMcPassThrough<modes::System::kPbPb_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts, pdgDb);
+      mcBuilder.fillMcPassThrough<modes::System::kPbPb_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts);
     }
 
     for (const auto& col : cols) {
       auto tracksThisCol = tracks.sliceBy(perColRecoTracks, col.globalIndex());
-      if (!processMcCollisions<modes::System::kPbPb_Run3_MC>(col, mcCols, bcs, tracksThisCol, mcParticles)) {
+      if (!processMcCollisions<modes::System::kPbPb_Run3_MC>(col, mcCols, bcs, tracksThisCol)) {
         continue;
       }
       auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3McRecoTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
@@ -832,14 +852,14 @@ struct FemtoProducer {
                                   rawinputs::Run3Kinks const& kinks,
                                   rawinputs::Run3McGenParticles const& mcParticles)
   {
+    mcBuilder.reset(mcCols, mcParticles);
     if (mcBuilder.isPassThrough()) {
-      mcBuilder.reset(mcCols, mcParticles);
-      mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts, pdgDb);
+      mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts);
     }
 
     for (const auto& col : cols) {
       auto tracksThisCol = tracks.sliceBy(perColRecoTracks, col.globalIndex());
-      if (!processMcCollisions<modes::System::kPP_Run3_MC>(col, mcCols, bcs, tracksThisCol, mcParticles)) {
+      if (!processMcCollisions<modes::System::kPP_Run3_MC>(col, mcCols, bcs, tracksThisCol)) {
         continue;
       }
       auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3McRecoTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
@@ -860,14 +880,14 @@ struct FemtoProducer {
                                      rawinputs::Run3Kinks const& kinks,
                                      rawinputs::Run3McGenParticles const& mcParticles)
   {
+    mcBuilder.reset(mcCols, mcParticles);
     if (mcBuilder.isPassThrough()) {
-      mcBuilder.reset(mcCols, mcParticles);
-      mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts, pdgDb);
+      mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts);
     }
 
     for (const auto& col : cols) {
       auto tracksThisCol = tracks.sliceBy(perColRecoTracks, col.globalIndex());
-      if (!processMcCollisions<modes::System::kPP_Run3_MC>(col, mcCols, bcs, tracksThisCol, mcParticles)) {
+      if (!processMcCollisions<modes::System::kPP_Run3_MC>(col, mcCols, bcs, tracksThisCol)) {
         continue;
       }
       auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3McRecoTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
@@ -890,14 +910,14 @@ struct FemtoProducer {
                                 rawinputs::Run3RecoD0s const& d0s,
                                 rawinputs::Run3McGenParticles const& mcParticles)
   {
+    mcBuilder.reset(mcCols, mcParticles);
     if (mcBuilder.isPassThrough()) {
-      mcBuilder.reset(mcCols, mcParticles);
-      mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts, pdgDb);
+      mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts);
     }
 
     for (const auto& col : cols) {
       auto tracksThisCol = tracks.sliceBy(perColRecoTracks, col.globalIndex());
-      if (!processMcCollisions<modes::System::kPP_Run3_MC>(col, mcCols, bcs, tracksThisCol, mcParticles)) {
+      if (!processMcCollisions<modes::System::kPP_Run3_MC>(col, mcCols, bcs, tracksThisCol)) {
         continue;
       }
       auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3McRecoTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
@@ -917,14 +937,14 @@ struct FemtoProducer {
                                   rawinputs::Run3RecoD0s const& d0s,
                                   rawinputs::Run3McGenParticles const& mcParticles)
   {
+    mcBuilder.reset(mcCols, mcParticles);
     if (mcBuilder.isPassThrough()) {
-      mcBuilder.reset(mcCols, mcParticles);
-      mcBuilder.fillMcPassThrough<modes::System::kPbPb_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts, pdgDb);
+      mcBuilder.fillMcPassThrough<modes::System::kPbPb_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts);
     }
 
     for (const auto& col : cols) {
       auto tracksThisCol = tracks.sliceBy(perColRecoTracks, col.globalIndex());
-      if (!processMcCollisions<modes::System::kPbPb_Run3_MC>(col, mcCols, bcs, tracksThisCol, mcParticles)) {
+      if (!processMcCollisions<modes::System::kPbPb_Run3_MC>(col, mcCols, bcs, tracksThisCol)) {
         continue;
       }
       auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3McRecoTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
@@ -974,14 +994,14 @@ struct FemtoProducer {
                                 rawinputs::Run3RecoLcs const& lcs,
                                 rawinputs::Run3McGenParticles const& mcParticles)
   {
+    mcBuilder.reset(mcCols, mcParticles);
     if (mcBuilder.isPassThrough()) {
-      mcBuilder.reset(mcCols, mcParticles);
-      mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts, pdgDb);
+      mcBuilder.fillMcPassThrough<modes::System::kPP_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts);
     }
 
     for (const auto& col : cols) {
       auto tracksThisCol = tracks.sliceBy(perColRecoTracks, col.globalIndex());
-      if (!processMcCollisions<modes::System::kPP_Run3_MC>(col, mcCols, bcs, tracksThisCol, mcParticles)) {
+      if (!processMcCollisions<modes::System::kPP_Run3_MC>(col, mcCols, bcs, tracksThisCol)) {
         continue;
       }
       auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3McRecoTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
@@ -1001,14 +1021,14 @@ struct FemtoProducer {
                                   rawinputs::Run3RecoLcs const& lcs,
                                   rawinputs::Run3McGenParticles const& mcParticles)
   {
+    mcBuilder.reset(mcCols, mcParticles);
     if (mcBuilder.isPassThrough()) {
-      mcBuilder.reset(mcCols, mcParticles);
-      mcBuilder.fillMcPassThrough<modes::System::kPbPb_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts, pdgDb);
+      mcBuilder.fillMcPassThrough<modes::System::kPbPb_Run3_MC>(mcCols, mcParticles, perMcCollision, mcProducts);
     }
 
     for (const auto& col : cols) {
       auto tracksThisCol = tracks.sliceBy(perColRecoTracks, col.globalIndex());
-      if (!processMcCollisions<modes::System::kPbPb_Run3_MC>(col, mcCols, bcs, tracksThisCol, mcParticles)) {
+      if (!processMcCollisions<modes::System::kPbPb_Run3_MC>(col, mcCols, bcs, tracksThisCol)) {
         continue;
       }
       auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3McRecoTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,

@@ -330,7 +330,7 @@ constexpr int EvSelDefault[evSel::kNevSels][1]{
   {0}};
 
 template <typename Tcollision>
-bool eventSelection(const Tcollision& collision, o2::framework::HistogramRegistry& registry, o2::framework::LabeledArray<int> eventSelections, const float cutVertex, uint32_t& selectionFlag)
+bool eventSelection(const Tcollision& collision, o2::framework::HistogramRegistry& registry, const o2::framework::LabeledArray<int>& eventSelections, const float cutVertex, uint32_t& selectionFlag)
 {
   selectionFlag = 0;
   bool isSelected = true;
@@ -391,7 +391,7 @@ bool eventSelection(const Tcollision& collision, o2::framework::HistogramRegistr
  * then fills 1. if the centrality filling fails (return = -1.)
  */
 template <typename Tcollision>
-float getCentrality(Tcollision const& collision, const int centralityEstimator, std::shared_ptr<TH1> hFailCentrality = nullptr)
+float getCentrality(Tcollision const& collision, const int centralityEstimator, const std::shared_ptr<TH1>& hFailCentrality = nullptr)
 {
   if (hFailCentrality) {
     hFailCentrality->Fill(0.);

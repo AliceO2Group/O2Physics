@@ -1695,9 +1695,6 @@ struct HfTrackIndexSkimCreator {
       const std::vector<double> ptBinsMl{0., 1.e10};
       const std::vector<int> cutDirMl{o2::cuts_ml::CutDirection::CutGreater, o2::cuts_ml::CutDirection::CutSmaller, o2::cuts_ml::CutDirection::CutSmaller};
       const std::array<LabeledArray<double>, kN3ProngDecaysUsedMlForHfFilters> thresholdMlScore3Prongs{config.thresholdMlScoreDplusToPiKPi, config.thresholdMlScoreLcToPiKP, config.thresholdMlScoreDsToPiKK, config.thresholdMlScoreXicToPiKP};
-      const std::vector<std::string> inputFeatures2Prongs = {"ptProng0", "dcaXyProng0", "dcaZProng0", "ptProng1", "dcaXyProng1", "dcaZProng1"};
-      const std::vector<std::string> inputFeatures3Prongs = {"ptProng0", "dcaXyProng0", "dcaZProng0", "ptProng1", "dcaXyProng1", "dcaZProng1", "ptProng2", "dcaXyProng2", "dcaZProng2"};
-      const std::vector<std::string> inputFeatures3ProngsWithPid = {"ptProng0", "dcaXyProng0", "dcaZProng0", "ptProng1", "dcaXyProng1", "dcaZProng1", "ptProng2", "dcaXyProng2", "dcaZProng2", "tpcNSigmaPrProng0", "tpcNSigmaPrProng2", "tpcNSigmaPiProng0", "tpcNSigmaPiProng2", "tpcNSigmaKaProng1"};
 
       // initialise 2-prong ML response
       hfMlResponse2Prongs.configure(ptBinsMl, config.thresholdMlScoreD0ToKPi, cutDirMl, 3);
@@ -1707,7 +1704,6 @@ struct HfTrackIndexSkimCreator {
       } else {
         hfMlResponse2Prongs.setModelPathsLocal(onnxFileNames2Prongs);
       }
-      hfMlResponse2Prongs.cacheInputFeaturesIndices(inputFeatures2Prongs);
       hfMlResponse2Prongs.init();
 
       // initialise 3-prong ML responses
@@ -1723,12 +1719,39 @@ struct HfTrackIndexSkimCreator {
         } else {
           hfMlResponse3Prongs[iDecay3P].setModelPathsLocal(onnxFileNames3Prongs[iDecay3P]);
         }
-        if ((doprocess2And3ProngsWithPvRefitWithPidForHfFiltersBdt || doprocess2And3ProngsNoPvRefitWithPidForHfFiltersBdt) && iDecay3P == aod::hf_cand_3prong::DecayType::LcToPKPi) {
-          hfMlResponse3Prongs[iDecay3P].cacheInputFeaturesIndices(inputFeatures3ProngsWithPid);
-        } else {
-          hfMlResponse3Prongs[iDecay3P].cacheInputFeaturesIndices(inputFeatures3Prongs);
-        }
         hfMlResponse3Prongs[iDecay3P].init();
+      }
+    }
+  }
+
+  /// One track of the collision under study, propagated to that collision's primary vertex.
+  /// \tparam TTrackIndex is the iterator type of the track-collision associations
+  /// \tparam TTrack is the iterator type of the track table
+  template <typename TTrackIndex, typename TTrack>
+  struct HfPropagatedProng {
+    TTrackIndex trackIndex;             ///< track-collision association, carries isSelProng and isIdentifiedPid
+    TTrack track;                       ///< track row
+    o2::track::TrackParCov trackParVar; ///< track parameters at the PCA to the primary vertex
+    std::array<float, 3> pVec{};        ///< momentum at the PCA to the primary vertex
+    std::array<float, 2> dcaInfo{};     ///< DCA (xy, z) to the primary vertex
+  };
+
+  /// Fill the per-collision cache of tracks propagated to the collision's primary vertex, so that
+  /// each track is propagated once per collision instead of once per pair or triplet.
+  /// \param collision is the collision under study
+  /// \param trackIndices are the track associations of this collision
+  /// \param prongs is the cache to be filled, in the order of trackIndices
+  template <typename TTracks, typename TCollision, typename TTrackIndices, typename TProng>
+  void fillPropagatedProngCache(TCollision const& collision, TTrackIndices const& trackIndices, std::vector<TProng>& prongs)
+  {
+    prongs.clear();
+    const auto thisCollId = collision.globalIndex();
+    for (auto trackIndex = trackIndices.begin(); trackIndex != trackIndices.end(); ++trackIndex) {
+      const auto track = trackIndex.template track_as<TTracks>();
+      auto& prong = prongs.emplace_back(TProng{trackIndex, track, getTrackParCov(track), track.pVector(), {track.dcaXY(), track.dcaZ()}});
+      if (thisCollId != track.collisionId()) { // this is not the "default" collision for this track, we have to re-propagate it
+        o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, prong.trackParVar, 2.f, noMatCorr, &prong.dcaInfo);
+        getPxPyPz(prong.trackParVar, prong.pVec);
       }
     }
   }
@@ -2328,6 +2351,12 @@ struct HfTrackIndexSkimCreator {
     }
     */
 
+    // per-collision caches of the tracks propagated to the primary vertex, declared here so that their capacity is reused
+    using TrackIndexIterator = decltype(positiveFor2And3Prongs->sliceByCached(aod::track::collisionId, 0, cache).begin());
+    using PropagatedProng = HfPropagatedProng<TrackIndexIterator, decltype(tracks.rawIteratorAt(0))>;
+    std::vector<PropagatedProng> prongsPos{};
+    std::vector<PropagatedProng> prongsNeg{};
+
     for (const auto& collision : collisions) {
 
       /// retrieve PV contributors for the current collision
@@ -2407,38 +2436,35 @@ struct HfTrackIndexSkimCreator {
       std::optional<decltype(positiveSoftPions->sliceByCached(aod::track::collisionId, 0, cache))> groupedTrackIndicesSoftPionsPos;
       std::optional<decltype(negativeSoftPions->sliceByCached(aod::track::collisionId, 0, cache))> groupedTrackIndicesSoftPionsNeg;
       int lastFilledD0 = -1; // index to be filled in table for D* mesons
-      for (auto trackIndexPos1 = groupedTrackIndicesPos1.begin(); trackIndexPos1 != groupedTrackIndicesPos1.end(); ++trackIndexPos1) {
-        const auto trackPos1 = trackIndexPos1.template track_as<TTracks>();
+
+      // propagate each track to this collision's PV once, instead of once per pair or triplet
+      fillPropagatedProngCache<TTracks>(collision, groupedTrackIndicesPos1, prongsPos);
+      fillPropagatedProngCache<TTracks>(collision, groupedTrackIndicesNeg1, prongsNeg);
+
+      for (std::size_t iPos1 = 0; iPos1 < prongsPos.size(); ++iPos1) {
+        const auto& trackIndexPos1 = prongsPos[iPos1].trackIndex;
+        const auto& trackPos1 = prongsPos[iPos1].track;
+        const auto& trackParVarPos1 = prongsPos[iPos1].trackParVar;
+        const auto& pVecTrackPos1 = prongsPos[iPos1].pVec;
+        const auto& dcaInfoPos1 = prongsPos[iPos1].dcaInfo;
 
         // retrieve the selection flag that corresponds to this collision
         const auto isSelProngPos1 = trackIndexPos1.isSelProng();
         const bool sel2ProngStatusPos = TESTBIT(isSelProngPos1, CandidateType::Cand2Prong);
         const bool sel3ProngStatusPos1 = TESTBIT(isSelProngPos1, CandidateType::Cand3Prong);
 
-        auto trackParVarPos1 = getTrackParCov(trackPos1);
-        std::array pVecTrackPos1{trackPos1.pVector()};
-        std::array dcaInfoPos1{trackPos1.dcaXY(), trackPos1.dcaZ()};
-        if (thisCollId != trackPos1.collisionId()) { // this is not the "default" collision for this track, we have to re-propagate it
-          o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarPos1, 2.f, noMatCorr, &dcaInfoPos1);
-          getPxPyPz(trackParVarPos1, pVecTrackPos1);
-        }
-
         // first loop over negative tracks
-        for (auto trackIndexNeg1 = groupedTrackIndicesNeg1.begin(); trackIndexNeg1 != groupedTrackIndicesNeg1.end(); ++trackIndexNeg1) {
-          const auto trackNeg1 = trackIndexNeg1.template track_as<TTracks>();
+        for (std::size_t iNeg1 = 0; iNeg1 < prongsNeg.size(); ++iNeg1) {
+          const auto& trackIndexNeg1 = prongsNeg[iNeg1].trackIndex;
+          const auto& trackNeg1 = prongsNeg[iNeg1].track;
+          const auto& trackParVarNeg1 = prongsNeg[iNeg1].trackParVar;
+          const auto& pVecTrackNeg1 = prongsNeg[iNeg1].pVec;
+          const auto& dcaInfoNeg1 = prongsNeg[iNeg1].dcaInfo;
 
           // retrieve the selection flag that corresponds to this collision
           const auto isSelProngNeg1 = trackIndexNeg1.isSelProng();
           const bool sel2ProngStatusNeg = TESTBIT(isSelProngNeg1, CandidateType::Cand2Prong);
           const bool sel3ProngStatusNeg1 = TESTBIT(isSelProngNeg1, CandidateType::Cand3Prong);
-
-          auto trackParVarNeg1 = getTrackParCov(trackNeg1);
-          std::array pVecTrackNeg1{trackNeg1.pVector()};
-          std::array dcaInfoNeg1{trackNeg1.dcaXY(), trackNeg1.dcaZ()};
-          if (thisCollId != trackNeg1.collisionId()) { // this is not the "default" collision for this track, we have to re-propagate it
-            o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarNeg1, 2.f, noMatCorr, &dcaInfoNeg1);
-            getPxPyPz(trackParVarNeg1, pVecTrackNeg1);
-          }
 
           uint isSelected2ProngCand = n2ProngBit; // bitmap for checking status of two-prong candidates (1 is true, 0 is rejected)
 
@@ -2647,7 +2673,8 @@ struct HfTrackIndexSkimCreator {
 
           if (config.do3Prong && is2ProngCandidateGoodFor3Prong) { // if 3 prongs are enabled and the first 2 tracks are selected for the 3-prong channels
             // second loop over positive tracks
-            for (auto trackIndexPos2 = trackIndexPos1 + 1; trackIndexPos2 != groupedTrackIndicesPos1.end(); ++trackIndexPos2) {
+            for (std::size_t iPos2 = iPos1 + 1; iPos2 < prongsPos.size(); ++iPos2) {
+              const auto& trackIndexPos2 = prongsPos[iPos2].trackIndex;
 
               uint isSelected3ProngCand = n3ProngBit;
               if (!TESTBIT(trackIndexPos2.isSelProng(), CandidateType::Cand3Prong)) { // continue immediately
@@ -2664,18 +2691,13 @@ struct HfTrackIndexSkimCreator {
                 isSelected3ProngCand = 0;
               }
 
-              const auto trackPos2 = trackIndexPos2.template track_as<TTracks>();
-
-              auto trackParVarPos2 = getTrackParCov(trackPos2);
-              std::array dcaInfoPos2{trackPos2.dcaXY(), trackPos2.dcaZ()};
+              const auto& trackPos2 = prongsPos[iPos2].track;
+              const auto& trackParVarPos2 = prongsPos[iPos2].trackParVar;
+              const auto& dcaInfoPos2 = prongsPos[iPos2].dcaInfo;
 
               // preselection of 3-prong candidates
               if (isSelected3ProngCand) {
-                std::array pVecTrackPos2{trackPos2.pVector()};
-                if (thisCollId != trackPos2.collisionId()) { // this is not the "default" collision for this track and we still did not re-propagate it, we have to re-propagate it
-                  o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarPos2, 2.f, noMatCorr, &dcaInfoPos2);
-                  getPxPyPz(trackParVarPos2, pVecTrackPos2);
-                }
+                const auto& pVecTrackPos2 = prongsPos[iPos2].pVec;
 
                 if (config.debug) {
                   for (int iDecay3P = 0; iDecay3P < kN3ProngDecays; iDecay3P++) {
@@ -2922,7 +2944,8 @@ struct HfTrackIndexSkimCreator {
             }
 
             // second loop over negative tracks
-            for (auto trackIndexNeg2 = trackIndexNeg1 + 1; trackIndexNeg2 != groupedTrackIndicesNeg1.end(); ++trackIndexNeg2) {
+            for (std::size_t iNeg2 = iNeg1 + 1; iNeg2 < prongsNeg.size(); ++iNeg2) {
+              const auto& trackIndexNeg2 = prongsNeg[iNeg2].trackIndex;
 
               int isSelected3ProngCand = n3ProngBit;
               if (!TESTBIT(trackIndexNeg2.isSelProng(), CandidateType::Cand3Prong)) { // continue immediately
@@ -2939,17 +2962,13 @@ struct HfTrackIndexSkimCreator {
                 isSelected3ProngCand = 0;
               }
 
-              auto trackNeg2 = trackIndexNeg2.template track_as<TTracks>();
-              auto trackParVarNeg2 = getTrackParCov(trackNeg2);
-              std::array dcaInfoNeg2{trackNeg2.dcaXY(), trackNeg2.dcaZ()};
+              const auto& trackNeg2 = prongsNeg[iNeg2].track;
+              const auto& trackParVarNeg2 = prongsNeg[iNeg2].trackParVar;
+              const auto& dcaInfoNeg2 = prongsNeg[iNeg2].dcaInfo;
 
               // preselection of 3-prong candidates
               if (isSelected3ProngCand) {
-                std::array pVecTrackNeg2{trackNeg2.pVector()};
-                if (thisCollId != trackNeg2.collisionId()) { // this is not the "default" collision for this track and we still did not re-propagate it, we have to re-propagate it
-                  o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarNeg2, 2.f, noMatCorr, &dcaInfoNeg2);
-                  getPxPyPz(trackParVarNeg2, pVecTrackNeg2);
-                }
+                const auto& pVecTrackNeg2 = prongsNeg[iNeg2].pVec;
 
                 if (config.debug) {
                   for (int iDecay3P = 0; iDecay3P < kN3ProngDecays; iDecay3P++) {

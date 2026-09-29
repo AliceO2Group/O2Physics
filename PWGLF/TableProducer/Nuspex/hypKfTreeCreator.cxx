@@ -45,11 +45,12 @@ enum Decays { kTwoBody = 2,
               kThreeBody = 3 };
 
 struct TrackProperties {
-  TrackProperties() : x(0), y(0), z(0), px(0), py(0), pz(0), tpcNcls(0), itsNcls(0), tpcChi2(0), itsChi2(0), itsMeanClsSizeL(0), rigidity(0), tpcSignal(0), tpcNsigma(0), tpcNsigmaNhp(0), tpcNsigmaNlp(0), tofMass(0), dcaXY(0), dcaZ(0), isPvContributor(0), subMass(0) {}
+  TrackProperties() : x(0), y(0), z(0), px(0), py(0), pz(0), tpcNcls(0), itsNcls(0), tpcChi2(0), itsChi2(0), itsMeanClsSizeL(0), rigidity(0), tpcSignal(0), tpcNsigma(0), itsNsigma(0), tpcNclsPid(0), tpcNclsCr(0), pidForTrk(0), tofMass(0), dcaXY(0), dcaZ(0), isPvContributor(0), subMass(0) {}
   float x, y, z, px, py, pz;
   uint8_t tpcNcls, itsNcls;
   float tpcChi2, itsChi2, itsMeanClsSizeL;
-  float rigidity, tpcSignal, tpcNsigma, tpcNsigmaNhp, tpcNsigmaNlp;
+  float rigidity, tpcSignal, tpcNsigma, itsNsigma, tpcNclsPid, tpcNclsCr;
+  uint32_t pidForTrk;
   float tofMass, dcaXY, dcaZ;
   bool isPvContributor;
   float subMass;
@@ -125,8 +126,10 @@ DECLARE_SOA_COLUMN(D1ITSmeanClsSizeL, d1ITSmeanClsSizeL, float);
 DECLARE_SOA_COLUMN(D1Rigidity, d1Rigidity, float);
 DECLARE_SOA_COLUMN(D1TPCsignal, d1TPCsignal, float);
 DECLARE_SOA_COLUMN(D1TPCnSigma, d1TPCnSigma, float);
-DECLARE_SOA_COLUMN(D1TPCnSigmaNhp, d1TPCnSigmaNhp, float);
-DECLARE_SOA_COLUMN(D1TPCnSigmaNlp, d1TPCnSigmaNlp, float);
+DECLARE_SOA_COLUMN(D1TPCnClsPid, d1TPCnClsPid, uint8_t);
+DECLARE_SOA_COLUMN(D1TPCnClsCr, d1TPCnClsCr, uint8_t);
+DECLARE_SOA_COLUMN(D1ITSnSigma, d1ITSnSigma, float);
+DECLARE_SOA_COLUMN(D1PidForTrk, d1PidForTrk, uint32_t);
 DECLARE_SOA_COLUMN(D1TOFmass, d1TOFmass, float);
 DECLARE_SOA_COLUMN(D1DcaXY, d1DcaXY, float);
 DECLARE_SOA_COLUMN(D1DcaZ, d1DcaZ, float);
@@ -145,8 +148,10 @@ DECLARE_SOA_COLUMN(D2ITSmeanClsSizeL, d2ITSmeanClsSizeL, float);
 DECLARE_SOA_COLUMN(D2Rigidity, d2Rigidity, float);
 DECLARE_SOA_COLUMN(D2TPCsignal, d2TPCsignal, float);
 DECLARE_SOA_COLUMN(D2TPCnSigma, d2TPCnSigma, float);
-DECLARE_SOA_COLUMN(D2TPCnSigmaNhp, d2TPCnSigmaNhp, float);
-DECLARE_SOA_COLUMN(D2TPCnSigmaNlp, d2TPCnSigmaNlp, float);
+DECLARE_SOA_COLUMN(D2TPCnClsPid, d2TPCnClsPid, uint8_t);
+DECLARE_SOA_COLUMN(D2TPCnClsCr, d2TPCnClsCr, uint8_t);
+DECLARE_SOA_COLUMN(D2ITSnSigma, d2ITSnSigma, float);
+DECLARE_SOA_COLUMN(D2PidForTrk, d2PidForTrk, uint32_t);
 DECLARE_SOA_COLUMN(D2TOFmass, d2TOFmass, float);
 DECLARE_SOA_COLUMN(D2DcaXY, d2DcaXY, float);
 DECLARE_SOA_COLUMN(D2DcaZ, d2DcaZ, float);
@@ -165,8 +170,10 @@ DECLARE_SOA_COLUMN(D3ITSmeanClsSizeL, d3ITSmeanClsSizeL, float);
 DECLARE_SOA_COLUMN(D3Rigidity, d3Rigidity, float);
 DECLARE_SOA_COLUMN(D3TPCsignal, d3TPCsignal, float);
 DECLARE_SOA_COLUMN(D3TPCnSigma, d3TPCnSigma, float);
-DECLARE_SOA_COLUMN(D3TPCnSigmaNhp, d3TPCnSigmaNhp, float);
-DECLARE_SOA_COLUMN(D3TPCnSigmaNlp, d3TPCnSigmaNlp, float);
+DECLARE_SOA_COLUMN(D3TPCnClsPid, d3TPCnClsPid, uint8_t);
+DECLARE_SOA_COLUMN(D3TPCnClsCr, d3TPCnClsCr, uint8_t);
+DECLARE_SOA_COLUMN(D3ITSnSigma, d3ITSnSigma, float);
+DECLARE_SOA_COLUMN(D3PidForTrk, d3PidForTrk, uint32_t);
 DECLARE_SOA_COLUMN(D3TOFmass, d3TOFmass, float);
 DECLARE_SOA_COLUMN(D3DcaXY, d3DcaXY, float);
 DECLARE_SOA_COLUMN(D3DcaZ, d3DcaZ, float);
@@ -184,11 +191,11 @@ DECLARE_SOA_COLUMN(D3IsPvContributor, d3IsPvContributor, bool);
 
 #define HYPKFHYPNUCMC hypkftree::McTrue, hykfmc::IsPhysicalPrimary
 
-#define HYPKFD1 hypkftree::D1X, hypkftree::D1Y, hypkftree::D1Z, hypkftree::D1Px, hypkftree::D1Py, hypkftree::D1Pz, hypkftree::D1TPCnCls, hypkftree::D1TPCchi2, hypkftree::D1ITSnCls, hypkftree::D1ITSchi2, hypkftree::D1ITSmeanClsSizeL, hypkftree::D1Rigidity, hypkftree::D1TPCsignal, hypkftree::D1TPCnSigma, hypkftree::D1TPCnSigmaNhp, hypkftree::D1TPCnSigmaNlp, hypkftree::D1TOFmass, hypkftree::D1DcaXY, hypkftree::D1DcaZ, hypkftree::D1IsPvContributor
+#define HYPKFD1 hypkftree::D1X, hypkftree::D1Y, hypkftree::D1Z, hypkftree::D1Px, hypkftree::D1Py, hypkftree::D1Pz, hypkftree::D1TPCnCls, hypkftree::D1TPCnClsPid, hypkftree::D1TPCnClsCr, hypkftree::D1TPCchi2, hypkftree::D1ITSnCls, hypkftree::D1ITSchi2, hypkftree::D1ITSmeanClsSizeL, hypkftree::D1Rigidity, hypkftree::D1TPCsignal, hypkftree::D1TPCnSigma, hypkftree::D1ITSnSigma, hypkftree::D1PidForTrk, hypkftree::D1TOFmass, hypkftree::D1DcaXY, hypkftree::D1DcaZ, hypkftree::D1IsPvContributor
 
-#define HYPKFD2 hypkftree::D2X, hypkftree::D2Y, hypkftree::D2Z, hypkftree::D2Px, hypkftree::D2Py, hypkftree::D2Pz, hypkftree::D2TPCnCls, hypkftree::D2TPCchi2, hypkftree::D2ITSnCls, hypkftree::D2ITSchi2, hypkftree::D2ITSmeanClsSizeL, hypkftree::D2Rigidity, hypkftree::D2TPCsignal, hypkftree::D2TPCnSigma, hypkftree::D2TPCnSigmaNhp, hypkftree::D2TPCnSigmaNlp, hypkftree::D2TOFmass, hypkftree::D2DcaXY, hypkftree::D2DcaZ, hypkftree::D2IsPvContributor
+#define HYPKFD2 hypkftree::D2X, hypkftree::D2Y, hypkftree::D2Z, hypkftree::D2Px, hypkftree::D2Py, hypkftree::D2Pz, hypkftree::D2TPCnCls, hypkftree::D2TPCnClsPid, hypkftree::D2TPCnClsCr, hypkftree::D2TPCchi2, hypkftree::D2ITSnCls, hypkftree::D2ITSchi2, hypkftree::D2ITSmeanClsSizeL, hypkftree::D2Rigidity, hypkftree::D2TPCsignal, hypkftree::D2TPCnSigma, hypkftree::D2ITSnSigma, hypkftree::D2PidForTrk, hypkftree::D2TOFmass, hypkftree::D2DcaXY, hypkftree::D2DcaZ, hypkftree::D2IsPvContributor
 
-#define HYPKFD3 hypkftree::D3X, hypkftree::D3Y, hypkftree::D3Z, hypkftree::D3Px, hypkftree::D3Py, hypkftree::D3Pz, hypkftree::D3TPCnCls, hypkftree::D3TPCchi2, hypkftree::D3ITSnCls, hypkftree::D3ITSchi2, hypkftree::D3ITSmeanClsSizeL, hypkftree::D3Rigidity, hypkftree::D3TPCsignal, hypkftree::D3TPCnSigma, hypkftree::D3TPCnSigmaNhp, hypkftree::D3TPCnSigmaNlp, hypkftree::D3TOFmass, hypkftree::D3DcaXY, hypkftree::D3DcaZ, hypkftree::D3IsPvContributor
+#define HYPKFD3 hypkftree::D3X, hypkftree::D3Y, hypkftree::D3Z, hypkftree::D3Px, hypkftree::D3Py, hypkftree::D3Pz, hypkftree::D3TPCnCls, hypkftree::D3TPCnClsPid, hypkftree::D3TPCnClsCr, hypkftree::D3TPCchi2, hypkftree::D3ITSnCls, hypkftree::D3ITSchi2, hypkftree::D3ITSmeanClsSizeL, hypkftree::D3Rigidity, hypkftree::D3TPCsignal, hypkftree::D3TPCnSigma, hypkftree::D3ITSnSigma, hypkftree::D3PidForTrk, hypkftree::D3TOFmass, hypkftree::D3DcaXY, hypkftree::D3DcaZ, hypkftree::D3IsPvContributor
 
 #define HYPKFSDMASS hypkftree::D1d2Mass, hypkftree::D1d3Mass, hypkftree::D2d3Mass
 
@@ -252,10 +259,10 @@ struct HypKfTreeCreator {
         outputTableTwo(
           cand.species, cand.isMatter, cand.cent, cand.occu, cand.runNumber, cand.passedEvSel, cand.mass, cand.y, cand.pt, cand.ct, cand.cpaPv, cand.maxDcaTracks, cand.maxDcaTracksSv,
           cand.dcaToPvXY, cand.dcaToPvZ, cand.devToPvXY, cand.chi2, cand.pvx, cand.pvy, cand.pvz, cand.svx, cand.svy, cand.svz, cand.px, cand.py, cand.pz, cand.collisionMcTrue,
-          cand.mcTrue, cand.mcPhysicalPrimary, d1.x, d1.y, d1.z, d1.px, d1.py, d1.pz, d1.tpcNcls, d1.tpcChi2, d1.itsNcls, d1.itsChi2, d1.itsMeanClsSizeL,
-          d1.rigidity, d1.tpcSignal, d1.tpcNsigma, d1.tpcNsigmaNhp, d1.tpcNsigmaNlp, d1.tofMass, d1.dcaXY, d1.dcaZ, d1.isPvContributor,
-          d2.x, d2.y, d2.z, d2.px, d2.py, d2.pz, d2.tpcNcls, d2.tpcChi2, d2.itsNcls, d2.itsChi2, d2.itsMeanClsSizeL,
-          d2.rigidity, d2.tpcSignal, d2.tpcNsigma, d2.tpcNsigmaNhp, d2.tpcNsigmaNlp, d2.tofMass, d2.dcaXY, d2.dcaZ, d2.isPvContributor);
+          cand.mcTrue, cand.mcPhysicalPrimary, d1.x, d1.y, d1.z, d1.px, d1.py, d1.pz, d1.tpcNcls, d1.tpcNclsPid, d1.tpcNclsCr, d1.tpcChi2, d1.itsNcls, d1.itsChi2, d1.itsMeanClsSizeL,
+          d1.rigidity, d1.tpcSignal, d1.tpcNsigma, d1.itsNsigma, d1.pidForTrk, d1.tofMass, d1.dcaXY, d1.dcaZ, d1.isPvContributor,
+          d2.x, d2.y, d2.z, d2.px, d2.py, d2.pz, d2.tpcNcls, d2.tpcNclsPid, d2.tpcNclsCr, d2.tpcChi2, d2.itsNcls, d2.itsChi2, d2.itsMeanClsSizeL,
+          d2.rigidity, d2.tpcSignal, d2.tpcNsigma, d2.itsNsigma, d2.pidForTrk, d2.tofMass, d2.dcaXY, d2.dcaZ, d2.isPvContributor);
       if (isMC && cfgMCCombined)
         outputTableMcTwo(
           cand.speciesMC, cand.pdgCode, cand.isMatterMC, cand.isReconstructed, cand.isPhysicalPrimary, cand.passedEvSelMC, cand.yGen, cand.ptGen, cand.ctGen,
@@ -263,10 +270,10 @@ struct HypKfTreeCreator {
           cand.species, cand.isMatter, cand.cent, cand.occu, cand.runNumber, cand.passedEvSel, cand.mass, cand.y, cand.pt, cand.ct, cand.cpaPv, cand.maxDcaTracks,
           cand.maxDcaTracksSv, cand.dcaToPvXY, cand.dcaToPvZ, cand.devToPvXY,
           cand.chi2, cand.pvx, cand.pvy, cand.pvz, cand.svx, cand.svy, cand.svz, cand.px, cand.py, cand.pz, cand.collisionMcTrue,
-          d1.x, d1.y, d1.z, d1.px, d1.py, d1.pz, d1.tpcNcls, d1.tpcChi2, d1.itsNcls, d1.itsChi2, d1.itsMeanClsSizeL,
-          d1.rigidity, d1.tpcSignal, d1.tpcNsigma, d1.tpcNsigmaNhp, d1.tpcNsigmaNlp, d1.tofMass, d1.dcaXY, d1.dcaZ, d1.isPvContributor,
-          d2.x, d2.y, d2.z, d2.px, d2.py, d2.pz, d2.tpcNcls, d2.tpcChi2, d2.itsNcls, d2.itsChi2, d2.itsMeanClsSizeL,
-          d2.rigidity, d2.tpcSignal, d2.tpcNsigma, d2.tpcNsigmaNhp, d2.tpcNsigmaNlp, d2.tofMass, d2.dcaXY, d2.dcaZ, d2.isPvContributor);
+          d1.x, d1.y, d1.z, d1.px, d1.py, d1.pz, d1.tpcNcls, d1.tpcNclsPid, d1.tpcNclsCr, d1.tpcChi2, d1.itsNcls, d1.itsChi2, d1.itsMeanClsSizeL,
+          d1.rigidity, d1.tpcSignal, d1.tpcNsigma, d1.itsNsigma, d1.pidForTrk, d1.tofMass, d1.dcaXY, d1.dcaZ, d1.isPvContributor,
+          d2.x, d2.y, d2.z, d2.px, d2.py, d2.pz, d2.tpcNcls, d2.tpcNclsPid, d2.tpcNclsCr, d2.tpcChi2, d2.itsNcls, d2.itsChi2, d2.itsMeanClsSizeL,
+          d2.rigidity, d2.tpcSignal, d2.tpcNsigma, d2.itsNsigma, d2.pidForTrk, d2.tofMass, d2.dcaXY, d2.dcaZ, d2.isPvContributor);
     }
     if (cfgNprimDaughters == Decays::kThreeBody) {
       const auto& d1 = cand.daughterTracks.at(0);
@@ -277,12 +284,12 @@ struct HypKfTreeCreator {
           cand.species, cand.isMatter, cand.cent, cand.occu, cand.runNumber, cand.passedEvSel, cand.mass, cand.y, cand.pt, cand.ct, cand.cpaPv, cand.maxDcaTracks, cand.maxDcaTracksSv,
           cand.dcaToPvXY, cand.dcaToPvZ, cand.devToPvXY, cand.chi2, cand.pvx, cand.pvy, cand.pvz, cand.svx, cand.svy, cand.svz, cand.px, cand.py, cand.pz, cand.collisionMcTrue,
           cand.mcTrue, cand.mcPhysicalPrimary,
-          d1.x, d1.y, d1.z, d1.px, d1.py, d1.pz, d1.tpcNcls, d1.tpcChi2, d1.itsNcls, d1.itsChi2, d1.itsMeanClsSizeL,
-          d1.rigidity, d1.tpcSignal, d1.tpcNsigma, d1.tpcNsigmaNhp, d1.tpcNsigmaNlp, d1.tofMass, d1.dcaXY, d1.dcaZ, d1.isPvContributor,
-          d2.x, d2.y, d2.z, d2.px, d2.py, d2.pz, d2.tpcNcls, d2.tpcChi2, d2.itsNcls, d2.itsChi2, d2.itsMeanClsSizeL,
-          d2.rigidity, d2.tpcSignal, d2.tpcNsigma, d2.tpcNsigmaNhp, d2.tpcNsigmaNlp, d2.tofMass, d2.dcaXY, d2.dcaZ, d2.isPvContributor,
-          d3.x, d3.y, d3.z, d3.px, d3.py, d3.pz, d3.tpcNcls, d3.tpcChi2, d3.itsNcls, d3.itsChi2, d3.itsMeanClsSizeL,
-          d3.rigidity, d3.tpcSignal, d3.tpcNsigma, d3.tpcNsigmaNhp, d3.tpcNsigmaNlp, d3.tofMass, d3.dcaXY, d3.dcaZ, d3.isPvContributor,
+          d1.x, d1.y, d1.z, d1.px, d1.py, d1.pz, d1.tpcNcls, d1.tpcNclsPid, d1.tpcNclsCr, d1.tpcChi2, d1.itsNcls, d1.itsChi2, d1.itsMeanClsSizeL,
+          d1.rigidity, d1.tpcSignal, d1.tpcNsigma, d1.itsNsigma, d1.pidForTrk, d1.tofMass, d1.dcaXY, d1.dcaZ, d1.isPvContributor,
+          d2.x, d2.y, d2.z, d2.px, d2.py, d2.pz, d2.tpcNcls, d2.tpcNclsPid, d2.tpcNclsCr, d2.tpcChi2, d2.itsNcls, d2.itsChi2, d2.itsMeanClsSizeL,
+          d2.rigidity, d2.tpcSignal, d2.tpcNsigma, d2.itsNsigma, d2.pidForTrk, d2.tofMass, d2.dcaXY, d2.dcaZ, d2.isPvContributor,
+          d3.x, d3.y, d3.z, d3.px, d3.py, d3.pz, d3.tpcNcls, d3.tpcNclsPid, d3.tpcNclsCr, d3.tpcChi2, d3.itsNcls, d3.itsChi2, d3.itsMeanClsSizeL,
+          d3.rigidity, d3.tpcSignal, d3.tpcNsigma, d3.itsNsigma, d3.pidForTrk, d3.tofMass, d3.dcaXY, d3.dcaZ, d3.isPvContributor,
           d1.subMass, d2.subMass, d3.subMass);
       if (isMC && cfgMCCombined)
         outputTableMcThree(
@@ -291,12 +298,12 @@ struct HypKfTreeCreator {
           cand.species, cand.isMatter, cand.cent, cand.occu, cand.runNumber, cand.passedEvSel, cand.mass, cand.y, cand.pt, cand.ct, cand.cpaPv, cand.maxDcaTracks,
           cand.maxDcaTracksSv, cand.dcaToPvXY, cand.dcaToPvZ, cand.devToPvXY, cand.chi2, cand.pvx, cand.pvy, cand.pvz, cand.svx, cand.svy, cand.svz, cand.px, cand.py,
           cand.pz, cand.collisionMcTrue,
-          d1.x, d1.y, d1.z, d1.px, d1.py, d1.pz, d1.tpcNcls, d1.tpcChi2, d1.itsNcls, d1.itsChi2, d1.itsMeanClsSizeL,
-          d1.rigidity, d1.tpcSignal, d1.tpcNsigma, d1.tpcNsigmaNhp, d1.tpcNsigmaNlp, d1.tofMass, d1.dcaXY, d1.dcaZ, d1.isPvContributor,
-          d2.x, d2.y, d2.z, d2.px, d2.py, d2.pz, d2.tpcNcls, d2.tpcChi2, d2.itsNcls, d2.itsChi2, d2.itsMeanClsSizeL,
-          d2.rigidity, d2.tpcSignal, d2.tpcNsigma, d2.tpcNsigmaNhp, d2.tpcNsigmaNlp, d2.tofMass, d2.dcaXY, d2.dcaZ, d2.isPvContributor,
-          d3.x, d3.y, d3.z, d3.px, d3.py, d3.pz, d3.tpcNcls, d3.tpcChi2, d3.itsNcls, d3.itsChi2, d3.itsMeanClsSizeL,
-          d3.rigidity, d3.tpcSignal, d3.tpcNsigma, d3.tpcNsigmaNhp, d3.tpcNsigmaNlp, d3.tofMass, d3.dcaXY, d3.dcaZ, d3.isPvContributor,
+          d1.x, d1.y, d1.z, d1.px, d1.py, d1.pz, d1.tpcNcls, d1.tpcNclsPid, d1.tpcNclsCr, d1.tpcChi2, d1.itsNcls, d1.itsChi2, d1.itsMeanClsSizeL,
+          d1.rigidity, d1.tpcSignal, d1.tpcNsigma, d1.itsNsigma, d1.pidForTrk, d1.tofMass, d1.dcaXY, d1.dcaZ, d1.isPvContributor,
+          d2.x, d2.y, d2.z, d2.px, d2.py, d2.pz, d2.tpcNcls, d2.tpcNclsPid, d2.tpcNclsCr, d2.tpcChi2, d2.itsNcls, d2.itsChi2, d2.itsMeanClsSizeL,
+          d2.rigidity, d2.tpcSignal, d2.tpcNsigma, d2.itsNsigma, d2.pidForTrk, d2.tofMass, d2.dcaXY, d2.dcaZ, d2.isPvContributor,
+          d3.x, d3.y, d3.z, d3.px, d3.py, d3.pz, d3.tpcNcls, d3.tpcNclsPid, d3.tpcNclsCr, d3.tpcChi2, d3.itsNcls, d3.itsChi2, d3.itsMeanClsSizeL,
+          d3.rigidity, d3.tpcSignal, d3.tpcNsigma, d3.itsNsigma, d3.pidForTrk, d3.tofMass, d3.dcaXY, d3.dcaZ, d3.isPvContributor,
           d1.subMass, d2.subMass, d3.subMass);
     }
   }
@@ -349,8 +356,10 @@ struct HypKfTreeCreator {
       daughter.rigidity = track.rigidity();
       daughter.tpcSignal = track.tpcSignal();
       daughter.tpcNsigma = track.tpcNsigma();
-      daughter.tpcNsigmaNhp = track.tpcNsigmaNhp();
-      daughter.tpcNsigmaNlp = track.tpcNsigmaNlp();
+      daughter.itsNsigma = track.itsNsigma();
+      daughter.pidForTrk = track.pidForTrk();
+      daughter.tpcNclsPid = track.tpcNclsPid();
+      daughter.tpcNclsCr = track.tpcNclsCr();
       daughter.tofMass = track.tofMass();
       daughter.dcaXY = track.dcaXY();
       daughter.dcaZ = track.dcaZ();
@@ -438,7 +447,7 @@ struct HypKfTreeCreator {
   PROCESS_SWITCH(HypKfTreeCreator, processMC, "MC tree", false);
 
   //___________________________________________________________________________________________________________________________________________________________
-  std::vector<float> dcaTracksAll(std::vector<arr3>& posVec, TString opt = "")
+  std::vector<float> dcaTracksAll(std::vector<arr3>& posVec, const TString& opt = "")
   {
     std::vector<float> vec;
     int n = posVec.size();
@@ -450,7 +459,7 @@ struct HypKfTreeCreator {
     return vec;
   }
   template <class T>
-  std::vector<float> dcaTrackSvAll(std::vector<arr3>& posVec, T const& hypNuc, TString opt = "")
+  std::vector<float> dcaTrackSvAll(std::vector<arr3>& posVec, T const& hypNuc, const TString& opt = "")
   {
     std::vector<float> vec;
     for (size_t i = 0; i < posVec.size(); i++) {
@@ -463,14 +472,14 @@ struct HypKfTreeCreator {
   {
     return *max_element(vec.begin(), vec.end());
   }
-  float meanValue(std::vector<float> vec)
+  float meanValue(const std::vector<float>& vec)
   {
     float sum = 0;
     for (const auto& value : vec)
       sum += value;
     return sum / vec.size();
   }
-  float mean2Value(std::vector<float> vec)
+  float mean2Value(const std::vector<float>& vec)
   {
     float sum = 0;
     for (const auto& value : vec)
@@ -478,7 +487,7 @@ struct HypKfTreeCreator {
     return std::sqrt(sum / vec.size());
   }
 
-  float dcaTracks(std::vector<arr3> v, int track1, int track2, TString opt = "XY")
+  float dcaTracks(std::vector<arr3> v, int track1, int track2, const TString& opt = "XY")
   {
     if (opt == "XY")
       return RecoDecay::distanceXY(v.at(track1), v.at(track2));
@@ -488,7 +497,7 @@ struct HypKfTreeCreator {
       return RecoDecay::distance(v.at(track1), v.at(track2));
   }
   template <class T>
-  float dcaTrackSv(std::vector<arr3>& v, int track, T const& hypNuc, TString opt = "")
+  float dcaTrackSv(std::vector<arr3>& v, int track, T const& hypNuc, const TString& opt = "")
   {
     if (opt == "XY")
       return RecoDecay::distanceXY(v.at(track), decayVtx(hypNuc));

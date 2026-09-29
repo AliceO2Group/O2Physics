@@ -77,6 +77,14 @@ void o2::aod::dqmixing::SetUpMixing(MixingHandler* mh, const char* mixingVarible
     std::vector<float> fCentFT0CLimsHashing = {0.0f, 2.5f, 5.0f, 7.5f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f};
     mh->AddMixingVariable(VarManager::kCentFT0C, fCentFT0CLimsHashing);
   }
+  if (nameStr == "CentralityFT0C7") {
+    std::vector<float> fCentFT0CLimsHashing = {0.0f, 5.0f, 10.0f, 15.0f, 20.0f, 25.0f, 30.0f, 35.0f, 40.0f, 60.0f, 90.0f};
+    mh->AddMixingVariable(VarManager::kCentFT0C, fCentFT0CLimsHashing);
+  }
+  if (nameStr == "CentralityFT0C8") {
+    std::vector<float> fCentFT0CLimsHashing = {0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 60.0f, 90.0f};
+    mh->AddMixingVariable(VarManager::kCentFT0C, fCentFT0CLimsHashing);
+  }
   if (nameStr == "Mult1") {
     std::vector<float> fMultLimsHashing = {0.0f, 10.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 120.0f, 160.0f, 350.0f};
     mh->AddMixingVariable(VarManager::kVtxNcontrib, fMultLimsHashing);
@@ -240,7 +248,7 @@ void o2::aod::dqmixing::SetUpMixingFromJSON(MixingHandler* mh, const char* json)
     const auto& lims = obj["LimsHashing"];
     std::vector<float> limits;
     limits.reserve(lims.Size());
-    for (auto& v : lims.GetArray()) {
+    for (const auto& v : lims.GetArray()) {
       limits.push_back(v.GetFloat());
     }
 

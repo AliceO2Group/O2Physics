@@ -73,6 +73,9 @@ struct DiHadronCor {
   O2_DEFINE_CONFIGURABLE(cfgCutTPCCrossedRows, float, 70.0f, "minimum TPC crossed rows")
   O2_DEFINE_CONFIGURABLE(cfgCutITSclu, float, 5.0f, "minimum ITS clusters")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "max DCA to vertex z")
+  O2_DEFINE_CONFIGURABLE(cfgCutDCAxy, float, -1.0f, "max DCA to vertex xy, pT dependent in terms of N sigma. -1 for default cut")
+  O2_DEFINE_CONFIGURABLE(cfgDCAxyFunc, std::string, "(0.0026+0.005/(x^1.01))", "Functional form of pt-dependent DCAxy cut")
+  TF1* fPtDepDCAxy = nullptr;
   O2_DEFINE_CONFIGURABLE(cfgCutMerging, float, 0.0, "Merging cut on track merge")
   O2_DEFINE_CONFIGURABLE(cfgSelCollByNch, bool, true, "Select collisions by Nch or centrality")
   O2_DEFINE_CONFIGURABLE(cfgCutMultMin, int, 0, "Minimum multiplicity for collision")
@@ -160,7 +163,7 @@ struct DiHadronCor {
 
   // make the filters and cuts.
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgCutVtxZ);
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
+  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
   using FilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
   using FilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
   using FilteredTracksWithMCLabels = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>>;
@@ -287,6 +290,7 @@ struct DiHadronCor {
       registry.add("zVtx", "zVtx", {HistType::kTH1D, {axisVertex}});
       registry.add("zVtx_used", "zVtx_used", {HistType::kTH1D, {axisVertex}});
       registry.add("Trig_hist", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
+      registry.add("hDCAxy", "DCAxy after cuts; DCAxy (cm); Pt", {HistType::kTH2D, {{200, -1., 1.}, {200, 0, 5}}});
     }
     if (cfgSoloPtTrack && doprocessSame) {
       registry.add("Nch_final_pt", "pT", {HistType::kTH1D, {axisPtTrigger}});
@@ -345,6 +349,12 @@ struct DiHadronCor {
     same.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, userAxis));
     mixed.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, userAxis));
 
+    if (cfgCutDCAxy > 0.) {
+      fPtDepDCAxy = new TF1("ptDepDCAxy", Form("[0]*%s", cfgDCAxyFunc->c_str()), 0.001, 1000);
+      fPtDepDCAxy->SetParameter(0, cfgCutDCAxy);
+      LOGF(info, "DCAxy pt-dependence function: %s", Form("%0.1f * %s", cfgCutDCAxy.value, cfgDCAxyFunc->c_str()));
+    }
+
     LOGF(info, "End of init");
   }
 
@@ -387,13 +397,16 @@ struct DiHadronCor {
   }
 
   template <typename TTrack>
-  bool trackSelected(TTrack track)
+  bool trackSelected(const TTrack& track)
   {
+    if (cfgCutDCAxy > 0. && (std::fabs(track.dcaXY()) > fPtDepDCAxy->Eval(track.pt())))
+      return false;
+
     return ((track.tpcNClsFound() >= cfgCutTPCclu) && (track.tpcNClsCrossedRows() >= cfgCutTPCCrossedRows) && (track.itsNCls() >= cfgCutITSclu));
   }
 
   template <typename TTrack>
-  bool genTrackSelected(TTrack track)
+  bool genTrackSelected(const TTrack& track)
   {
     if (!track.isPhysicalPrimary()) {
       return false;
@@ -425,14 +438,14 @@ struct DiHadronCor {
       if (mEfficiency == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiency.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.value.c_str(), (void*)mEfficiency);
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.value.c_str(), static_cast<void*>(mEfficiency));
     }
     if (cfgCentralityWeight.value.empty() == false) {
       mCentralityWeight = ccdb->getForTimeStamp<TH1D>(cfgCentralityWeight, timestamp);
       if (mCentralityWeight == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgCentralityWeight.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgCentralityWeight.value.c_str(), (void*)mCentralityWeight);
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgCentralityWeight.value.c_str(), static_cast<void*>(mCentralityWeight));
     }
     correctionsLoaded = true;
   }
@@ -469,7 +482,7 @@ struct DiHadronCor {
 
   // fill multiple histograms
   template <typename TCollision, typename TTracks>
-  void fillYield(TCollision collision, TTracks tracks) // function to fill the yield and etaphi histograms.
+  void fillYield(const TCollision& collision, const TTracks& tracks) // function to fill the yield and etaphi histograms.
   {
     float weff1 = 1;
     float vtxz = collision.posZ();
@@ -511,7 +524,7 @@ struct DiHadronCor {
   }
 
   template <CorrelationContainer::CFStep step, typename TTracks, typename TTracksAssoc>
-  void fillCorrelations(TTracks tracks1, TTracksAssoc tracks2, float posZ, int system, int magneticField, float cent, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
+  void fillCorrelations(const TTracks& tracks1, const TTracksAssoc& tracks2, float posZ, int system, int magneticField, float cent, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
     // Cache efficiency for particles (too many FindBin lookups)
     if (mEfficiency) {
@@ -544,6 +557,7 @@ struct DiHadronCor {
       if (system == SameEvent) {
         registry.fill(HIST("Trig_hist"), fSampleIndex, posZ, track1.pt(), eventWeight * triggerWeight);
       }
+      registry.fill(HIST("hDCAxy"), track1.dcaXY(), track1.pt());
 
       for (auto const& track2 : tracks2) {
 
@@ -600,7 +614,7 @@ struct DiHadronCor {
   }
 
   template <CorrelationContainer::CFStep step, typename TTracks, typename TTracksAssoc>
-  void fillCorrelationsExcludeSoloTracks(TTracks tracks1, TTracksAssoc tracks2, float posZ, int magneticField, float cent, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
+  void fillCorrelationsExcludeSoloTracks(const TTracks& tracks1, const TTracksAssoc& tracks2, float posZ, int magneticField, float cent, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
     std::vector<int64_t> tracksSkipIndices;
     std::vector<int64_t> tracks2SkipIndices;
@@ -696,7 +710,7 @@ struct DiHadronCor {
   }
 
   template <CorrelationContainer::CFStep step, typename TTracks, typename TTracksAssoc>
-  void fillMCCorrelations(TTracks tracks1, TTracksAssoc tracks2, float posZ, int system, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
+  void fillMCCorrelations(const TTracks& tracks1, const TTracksAssoc& tracks2, float posZ, int system, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
     int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
 
@@ -744,7 +758,7 @@ struct DiHadronCor {
   }
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision, const int multTrk, const float centrality, const bool fillCounter)
+  bool eventSelected(const TCollision& collision, const int multTrk, const float centrality, const bool fillCounter)
   {
     registry.fill(HIST("hEventCountSpecific"), 0.5);
     if (cfgEvSelkNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {

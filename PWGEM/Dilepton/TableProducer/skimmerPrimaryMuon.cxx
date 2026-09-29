@@ -48,7 +48,6 @@
 #include <cstdint>
 #include <map>
 #include <string>
-#include <string_view>
 #include <tuple>
 #include <unordered_map>
 #include <utility>
@@ -294,7 +293,7 @@ struct skimmerPrimaryMuon {
   }
 
   template <bool isMC, bool withMFTCov, typename TFwdTracks, typename TMFTTracks, bool fillTable, typename TCollision, typename TFwdTrack, typename TMFTTracksCov>
-  bool fillFwdTrackTable(TCollision const& collision, TFwdTrack fwdtrack, TMFTTracksCov const& mftCovs, const bool isAmbiguous)
+  bool fillFwdTrackTable(TCollision const& collision, const TFwdTrack& fwdtrack, TMFTTracksCov const& mftCovs, const bool isAmbiguous)
   {
     if (fwdtrack.chi2MatchMCHMID() < 0.f) { // this should never happen. only for protection.
       return false;

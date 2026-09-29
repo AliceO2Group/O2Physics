@@ -18,12 +18,16 @@
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/runDataProcessing.h>
 
 #include <cmath>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -47,7 +51,7 @@ DECLARE_SOA_COLUMN(DetPt, detPt, std::vector<float>);
 DECLARE_SOA_COLUMN(DetEta, detEta, std::vector<float>);
 DECLARE_SOA_COLUMN(DetPhi, detPhi, std::vector<float>);
 DECLARE_SOA_COLUMN(DetTrackSel, detTrackSel, std::vector<uint8_t>);
-DECLARE_SOA_COLUMN(DetMcId, detMcId, std::vector<int>);
+DECLARE_SOA_COLUMN(DetMcId, detMcId, std::vector<int64_t>);
 
 DECLARE_SOA_COLUMN(GenPt, genPt, std::vector<float>);
 DECLARE_SOA_COLUMN(GenEta, genEta, std::vector<float>);
@@ -142,7 +146,7 @@ struct BerkeleyTreeProducer {
 
     std::vector<float> detPt, detEta, detPhi;
     std::vector<uint8_t> detTrackSel;
-    std::vector<int> detMcId; // track.mcParticleId() returns int/int32_t
+    std::vector<int64_t> detMcId; // track.mcParticleId() returns int/int32_t, casting to int64_t
 
     std::vector<float> genPt, genEta, genPhi, genE;
     std::vector<int> genCharge, pdgId;

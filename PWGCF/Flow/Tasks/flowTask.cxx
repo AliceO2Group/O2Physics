@@ -861,7 +861,7 @@ struct FlowTask {
   }
 
   template <DataType dt, typename TTrack>
-  inline void fillPtSums(TTrack track, float weff)
+  inline void fillPtSums(const TTrack& track, float weff)
   {
     if (std::abs(track.eta()) < cfgEtaVnPt) {
       (dt == kGen) ? fFCptgen->fill(1., track.pt()) : fFCpt->fill(weff, track.pt());
@@ -986,7 +986,7 @@ struct FlowTask {
   }
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision, const int multTrk, const float centrality)
+  bool eventSelected(const TCollision& collision, const int multTrk, const float centrality)
   {
     registry.fill(HIST("hEventCountSpecific"), 0.5);
     if (cfgEvSelkNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
@@ -1109,7 +1109,7 @@ struct FlowTask {
   }
 
   template <typename TTrack>
-  bool trackSelected(TTrack track)
+  bool trackSelected(const TTrack& track)
   {
     if (cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutObs] && (std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxy->Eval(track.pt())))
       return false;
@@ -1119,7 +1119,7 @@ struct FlowTask {
   }
 
   template <typename TTrack>
-  bool trackSelectedForNch(TTrack track)
+  bool trackSelectedForNch(const TTrack& track)
   {
     if (cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutNch] && (std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxyForNch->Eval(track.pt())))
       return false;
@@ -1129,7 +1129,7 @@ struct FlowTask {
   }
 
   template <typename TTrack>
-  bool rejectionTPCoverlap(TTrack track, const int field)
+  bool rejectionTPCoverlap(const TTrack& track, const int field)
   {
     double phimodn = track.phi();
     if (field < 0) // for negative polarity field

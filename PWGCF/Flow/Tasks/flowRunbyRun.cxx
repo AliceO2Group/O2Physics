@@ -285,7 +285,7 @@ struct FlowRunbyRun {
   }
 
   template <char... chars>
-  void fillProfile(const GFW::CorrConfig& corrconf, std::shared_ptr<TProfile> profile, const double& cent)
+  void fillProfile(const GFW::CorrConfig& corrconf, const std::shared_ptr<TProfile>& profile, const double& cent)
   {
     double dnx, val;
     dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
@@ -441,7 +441,7 @@ struct FlowRunbyRun {
   }
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision, const int multTrk, const float centrality, const int runNumber)
+  bool eventSelected(const TCollision& collision, const int multTrk, const float centrality, const int runNumber)
   {
     th1sList[runNumber][hEventCountSpecific]->Fill(0.5);
     if (cfgEvSelkNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
@@ -519,7 +519,7 @@ struct FlowRunbyRun {
   }
 
   template <typename TTrack>
-  bool trackSelected(TTrack track)
+  bool trackSelected(const TTrack& track)
   {
     if (cfgCutDCAzPtDepEnabled && (std::fabs(track.dcaZ()) > (0.004f + 0.013f / track.pt())))
       return false;

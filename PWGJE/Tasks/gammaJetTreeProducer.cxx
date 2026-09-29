@@ -1155,7 +1155,7 @@ struct GammaJetTreeProducer {
     if (std::find(mcCollisionsMultiRecCollisions.begin(), mcCollisionsMultiRecCollisions.end(), mcCollision.globalIndex()) != mcCollisionsMultiRecCollisions.end()) {
       isMultipleAssigned = true;
     }
-    mcEventsTable(eventsTable.lastIndex(), mcCollision.weight(), mcCollision.rho(), isMultipleAssigned);
+    mcEventsTable(eventsTable.lastIndex(), mcCollision.weight(), mcCollision.rho(), mcCollision.ptHard(), isMultipleAssigned);
   }
 
   // ---------------------

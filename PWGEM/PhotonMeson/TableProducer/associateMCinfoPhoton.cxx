@@ -13,6 +13,7 @@
 /// \brief This code produces EmMc tables were the McParticleIds get reshuffled due to not storing all McParticles
 /// \author Daiki Sekihata (daiki.sekihata@cern.ch), Marvin Hemmer (marvin.hemmer@cern.ch), Nicolas Strangmann (nicolas.strangmann@cern.ch)
 
+#include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/GammaTablesRedux.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
@@ -56,7 +57,7 @@ using namespace o2::soa;
 using namespace o2::aod::pwgem::photonmeson::utils::mcutil;
 using namespace o2::constants::physics;
 
-using MyCollisionsMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::EMEvSels>;
+using MyCollisionsMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PMEvSels>;
 using TracksMC = soa::Join<aod::TracksIU, aod::McTrackLabels>;
 using FwdTracksMC = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels>;
 using MyEMCClusters = soa::Join<aod::MinClusters, aod::EMCClusterMCLabels_001>;

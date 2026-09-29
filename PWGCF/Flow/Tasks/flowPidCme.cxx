@@ -230,14 +230,14 @@ struct FillPIDcolums {
   };
 
   template <typename TrackType>
-  bool selTrackPid(const TrackType track)
+  bool selTrackPid(const TrackType& track)
   {
     if ((track.pt() < cfgMinPtPID) || (track.pt() > cfgMaxPtPID))
       return false;
     if (std::abs(track.eta()) > cfgMaxEtaPID)
       return false;
     if (cfgRequireGlobalTrack) {
-      if (!(track.isGlobalTrackSDD() == (uint8_t) true))
+      if (!(track.isGlobalTrackSDD() == (uint8_t)true))
         return false;
     }
     if (cfgUseCostomTrackCuts) {
@@ -2624,7 +2624,7 @@ struct FlowPidCme {
   }
 
   template <typename TrackType>
-  bool selTrack(const TrackType track, float centrality)
+  bool selTrack(const TrackType& track, float centrality)
   {
     if (cfgkOpenDebugPIDCME) {
       LOGF(info, "====================Entering track selection=============================");

@@ -348,7 +348,7 @@ struct femtoWorldProducerTask {
   }
 
   /// Function to retrieve the nominal mgnetic field in kG (0.1T) and convert it directly to T
-  void getMagneticFieldTesla(aod::BCsWithTimestamps::iterator bc)
+  void getMagneticFieldTesla(const aod::BCsWithTimestamps::iterator& bc)
   {
     // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
     // get magnetic field for run

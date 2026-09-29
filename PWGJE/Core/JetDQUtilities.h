@@ -73,129 +73,6 @@ constexpr bool isDielectronMcTable()
 }
 
 /**
- * returns true if the candidate is matched to a reconstructed level candidate with the correct decay
- * * @param candidate candidate that is being checked
- */
-template <typename T>
-constexpr bool isMatchedDielectronCandidate(T const& /*candidate*/)
-{
-  if constexpr (isDielectronCandidate<T>()) {
-    // For now the decision to select signals is done in the DQ framework
-    return true;
-  } else if constexpr (isDielectronMcCandidate<T>()) {
-    return true; // this is true because we always only select Jpsi in our decay channel. If more channels are added this needs to be expanded
-  } else {
-    return false;
-  }
-}
-
-/**
- * returns true if the track is a daughter of the dielectron candidate
- *
- * @param track track that is being checked
- * @param candidate Dielectron candidate that is being checked
- */
-template <typename T, typename U>
-bool isDielectronDaughterTrack(T& track, U& candidate)
-{
-  if constexpr (isDielectronCandidate<U>()) {
-    if (candidate.prong0Id() == track.globalIndex() || candidate.prong1Id() == track.globalIndex()) {
-      return true;
-    } else {
-      return false;
-    }
-  } else {
-    return false;
-  }
-}
-
-/**
- * returns the index of the JMcParticle matched to the Dielectron candidate
- *
- * @param candidate dielectron candidate that is being checked
- * @param tracks track table
- * @param particles particle table
- */
-template <typename T, typename U, typename V>
-auto matchedDielectronParticleId(const T& candidate, const U& /*tracks*/, const V& /*particles*/)
-{
-  const auto candidateDaughterParticle = candidate.template prong1_as<U>().template mcParticle_as<V>();
-  return candidateDaughterParticle.template mothers_first_as<V>().globalIndex(); // can we get the Id directly?
-}
-
-/**
- * returns the JMcParticle matched to the Dielectron candidate
- *
- * @param candidate dielectron candidate that is being checked
- * @param tracks track table
- * @param particles particle table
- */
-template <typename T, typename U, typename V>
-auto matchedDielectronParticle(const T& candidate, const U& /*tracks*/, const V& /*particles*/)
-{
-  const auto candidateDaughterParticle = candidate.template prong1_as<U>().template mcParticle_as<V>();
-  return candidateDaughterParticle.template mothers_first_as<V>();
-}
-
-/**
- * returns a slice of the table depending on the index of the Dielectron candidate
- *
- * @param candidate dielectron candidate that is being checked
- * @param table the table to be sliced
- */
-template <typename T, typename U, typename V>
-auto slicedPerDielectronCandidate(T const& table, U const& candidate, V const& perDielectronCandidate)
-{
-  if constexpr (isDielectronCandidate<U>()) {
-    return table.sliceBy(perDielectronCandidate, candidate.globalIndex());
-  } else {
-    return table;
-  }
-}
-
-/**
- * returns a slice of the table depending on the index of the Dielectron jet
- * @param DielectronTable dielectron table type
- * @param jet jet that the slice is based on
- * @param table the table to be sliced
- */
-template <typename DielectronTable, typename T, typename U, typename V>
-auto slicedPerDielectronJet(T const& table, U const& jet, V const& perDielectronJet)
-{
-  if constexpr (isDielectronTable<DielectronTable>() || isDielectronMcTable<DielectronTable>()) {
-    return table.sliceBy(perDielectronJet, jet.globalIndex());
-  } else {
-    return table;
-  }
-}
-
-/**
- * returns the Dielectron collision Id of candidate based on type of Dielectron candidate
- *
- * @param candidate dielectron candidate that is being checked
- */
-template <typename T>
-int getDielectronCandidateCollisionId(T const& candidate)
-{
-  return candidate.reducedeventId();
-}
-
-/**
- * returns the Dielectron Mc collision Id of candidate based on type of Dielectron candidate
- *
- * @param candidate dielectron candidate that is being checked
- */
-template <typename T>
-int getDielectronMcCandidateCollisionId(T const& candidate)
-{
-  if constexpr (isDielectronMcCandidate<T>()) {
-    return candidate.dielectronmccollisionId();
-  } else {
-    return -1;
-  }
-}
-
-/**
  * returns the PDG of the candidate based on Dielectron Table
  *
  * @param candidate dielectron candidate that is being checked
@@ -261,6 +138,127 @@ template <typename T>
 float getDielectronCandidateInvariantMass(T const& candidate)
 {
   return candidate.mass();
+}
+
+/**
+ * returns true if the candidate is matched to a reconstructed level candidate with the correct decay
+ * * @param candidate candidate that is being checked
+ */
+template <typename T>
+constexpr bool isMatchedDielectronCandidate(T const& /*candidate*/)
+{
+  if constexpr (isDielectronCandidate<T>()) {
+    // For now the decision to select signals is done in the DQ framework
+    return true;
+  } else if constexpr (isDielectronMcCandidate<T>()) {
+    return true; // this is true because we always only select Jpsi in our decay channel. If more channels are added this needs to be expanded
+  } else {
+    return false;
+  }
+}
+
+/**
+ * returns true if the track is a daughter of the dielectron candidate
+ *
+ * @param track track that is being checked
+ * @param candidate Dielectron candidate that is being checked
+ */
+template <typename T, typename U>
+bool isDielectronDaughterTrack(T& track, U& candidate)
+{
+  if constexpr (isDielectronCandidate<U>()) {
+    if (candidate.prong0Id() == track.globalIndex() || candidate.prong1Id() == track.globalIndex()) {
+      return true;
+    } else {
+      return false;
+    }
+  } else {
+    return false;
+  }
+}
+
+/**
+ * returns the index of the JMcParticle matched to the Dielectron candidate
+ *
+ * @param candidate dielectron candidate that is being checked
+ * @param tracks track table
+ * @param particles particle table
+ */
+template <typename T, typename U, typename V>
+auto matchedDielectronParticleId(const T& candidate, const U& /*tracks*/, const V& particles)
+{
+  return RecoDecay::getMother(particles, candidate.template prong0_as<U>().template mcParticle_as<V>(), getDielectronCandidatePDG(candidate), true);
+}
+
+/**
+ * returns the JMcParticle matched to the Dielectron candidate
+ *
+ * @param candidate dielectron candidate that is being checked
+ * @param tracks track table
+ * @param particles particle table
+ */
+template <typename T, typename U, typename V>
+auto matchedDielectronParticle(const T& candidate, const U& /*tracks*/, const V& particles)
+{
+  return particles.iteratorAt(RecoDecay::getMother(particles, candidate.template prong0_as<U>().template mcParticle_as<V>(), getDielectronCandidatePDG(candidate), true));
+}
+
+/**
+ * returns a slice of the table depending on the index of the Dielectron candidate
+ *
+ * @param candidate dielectron candidate that is being checked
+ * @param table the table to be sliced
+ */
+template <typename T, typename U, typename V>
+auto slicedPerDielectronCandidate(T const& table, U const& candidate, V const& perDielectronCandidate)
+{
+  if constexpr (isDielectronCandidate<U>()) {
+    return table.sliceBy(perDielectronCandidate, candidate.globalIndex());
+  } else {
+    return table;
+  }
+}
+
+/**
+ * returns a slice of the table depending on the index of the Dielectron jet
+ * @param DielectronTable dielectron table type
+ * @param jet jet that the slice is based on
+ * @param table the table to be sliced
+ */
+template <typename DielectronTable, typename T, typename U, typename V>
+auto slicedPerDielectronJet(T const& table, U const& jet, V const& perDielectronJet)
+{
+  if constexpr (isDielectronTable<DielectronTable>() || isDielectronMcTable<DielectronTable>()) {
+    return table.sliceBy(perDielectronJet, jet.globalIndex());
+  } else {
+    return table;
+  }
+}
+
+/**
+ * returns the Dielectron collision Id of candidate based on type of Dielectron candidate
+ *
+ * @param candidate dielectron candidate that is being checked
+ */
+template <typename T>
+int getDielectronCandidateCollisionId(T const& candidate)
+{
+  return candidate.reducedeventId();
+}
+
+/**
+ * returns the Dielectron Mc collision Id of candidate based on type of Dielectron candidate
+ *
+ * @param candidate dielectron candidate that is being checked
+ */
+template <typename T>
+int getDielectronMcCandidateCollisionId(T const& candidate)
+{
+  if constexpr (isDielectronMcCandidate<T>()) {
+    return candidate.dielectronmccollisionId();
+  } else {
+    return -1;
+  }
 }
 
 template <typename T, typename U>

@@ -100,6 +100,7 @@ struct DeltaAnalysis {
     Configurable<int> cfgCentralityEstimator{"cfgCentralityEstimator", 0, "Centrality estimator: 0=FT0M 1=FT0A 2=FT0C 3=FV0A 4=NTPV"};
     Configurable<float> cfgCentMin{"cfgCentMin", 0.f, "Minimum centrality percentile"};
     Configurable<float> cfgCentMax{"cfgCentMax", 100.f, "Maximum centrality percentile"};
+    Configurable<bool> cfgUseMCTruthCentrality{"cfgUseMCTruthCentrality", false, "Use MC truth centrality for generated Delta histograms"};
   } evSel;
 
   struct : ConfigurableGroup {
@@ -189,7 +190,6 @@ struct DeltaAnalysis {
   struct : ConfigurableGroup {
     ConfigurableAxis cfgPtAxis{"cfgPtAxis", {VARIABLE_WIDTH, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.8, 3.2, 3.6, 4.0, 5.0, 7.0, 10.0}, "#it{p}_{T} (GeV/#it{c})"};
     ConfigurableAxis cfgCentAxis{"cfgCentAxis", {VARIABLE_WIDTH, 0.f, 10.f, 20.f, 30.f, 40.f, 50.f, 60.f, 70.f, 80.f, 90.f, 100.f}, "Centrality (%)"};
-    Configurable<int> cfgCentDistBins{"cfgCentDistBins", 1500, "Number of bins for centrality distribution"};
     ConfigurableAxis cfgVtxAxis{"cfgVtxAxis", {VARIABLE_WIDTH, -12.f, -10.f, -9.f, -8.f, -7.f, -6.f, -5.f, -4.f, -3.f, -2.f, -1.f, 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 12.f}, "Vertex z [cm]"};
     ConfigurableAxis cfgRapAxis{"cfgRapAxis", {20, -1.0, 1.0}, "Rapidity y"};
   } axes;
@@ -241,7 +241,6 @@ struct DeltaAnalysis {
     const AxisSpec ptAxis{200, 0., 10., "p_{T} (GeV/c)"};
     const AxisSpec massAxis{trackCuts.numberOfInvMassBins, 1.0, 8.0, "M_{inv} (GeV/#it{c}^{2})"};
     const AxisSpec centAxis{axes.cfgCentAxis, "Centrality (%)"};
-    const AxisSpec centDistAxis{axes.cfgCentDistBins, 0., 105., "Centrality (%)"};
     const AxisSpec vtxAxis{axes.cfgVtxAxis, "Vertex z [cm]"};
     const AxisSpec rapAxis{axes.cfgRapAxis, "Rapidity y"};
     const AxisSpec nSigmaTPCaxis{100, -10., 10., "n#sigma^{TPC}"};
@@ -260,7 +259,7 @@ struct DeltaAnalysis {
     histos.add("Event/hNcontributor", "PV contributors; N", kTH1F, {{2001, -0.5f, 2000.5f}});
     histos.add("Event/hCentrality", "Centrality", kTH1F, {centAxis});
     histos.add("Event/hOccupancy", "Occupancy in time range", kTH1F, {occupancyAxis});
-    histos.add("Event/centralitydistribution", "Centrality distribution (Data);vCentFT0M;Entries", kTH1F, {centDistAxis});
+    histos.add("Event/centralitydistribution", "Centrality distribution (Data);vCentFT0M;Entries", kTH1F, {centAxis});
 
     histos.add("CentQA/hCentralityVsVtxZ", "Centrality vs vertex z", kTH2F, {vtxAxis, centAxis});
     histos.add("CentQA/hCentralityVsOccupancy", "Centrality vs occupancy", kTH2F, {occupancyAxis, centAxis});
@@ -430,7 +429,7 @@ struct DeltaAnalysis {
       histos.add("QAMC/hEtaPhi_rec", "MC Reco #eta vs #varphi; #eta; #varphi", kTH2F, {etaAxis, {72, 0, 6.2832}});
 
       histos.add("MCRecoEvent/hRecoEvents", "Reconstructed INEL>0 events (Nrec, MC reco)", kTH1F, {centAxis});
-      histos.add("MCRecoEvent/centralitydistribution", "Centrality distribution (MC);vCentFT0M;Entries", kTH1F, {centDistAxis});
+      histos.add("MCRecoEvent/centralitydistribution", "Centrality distribution (MC);vCentFT0M;Entries", kTH1F, {centAxis});
     }
 
     // ── MC reconstructed event mixing: histograms (gated by the dedicated MC mixing switch,
@@ -1899,15 +1898,23 @@ struct DeltaAnalysis {
     histos.fill(HIST("CutFlow/MCGen/hEventCutFlow"), 4.f);         // Final generated event
     histos.fill(HIST("EfficiencyQA/hGeneratedEventCutFlow"), 3.f); // Final generated event
 
+    // ── MODIFIED BLOCK (per user request): centrality-source switch for generated Delta ────
+    // Added: evSel.cfgUseMCTruthCentrality (see Configurable added in evSel group above).
     bool hasAcceptedReco = false;
-    float genCentrality = mcCollision.centFT0M(); // fallback: MC-truth centrality proxy (see note above)
+    float genCentrality = mcCollision.centFT0M();
+
     for (auto const& collision : collisions) {
       if (passesEventSelection(collision)) {
         hasAcceptedReco = true;
-        genCentrality = getCentrality(collision); // real reconstructed centrality of an accepted associated collision
+
+        if (!evSel.cfgUseMCTruthCentrality) {
+          genCentrality = getCentrality(collision);
+        }
+
         break;
       }
     }
+
     if (hasAcceptedReco) {
       histos.fill(HIST("EfficiencyQA/hGeneratedEventCutFlow"), 4.f); // Associated reconstructed event accepted
     }

@@ -45,10 +45,10 @@
 #include <TPDGCode.h>
 #include <TProfile2D.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
-#include <cstdint>
 #include <span>
 #include <string>
 #include <string_view>
@@ -109,11 +109,15 @@ struct Lambdak0sflattenicity {
     true,
     true};
 
-  static constexpr int kNEstimators = 8;
+  static constexpr int kNEstimators = 7;
   // forward detector segmentation
   static constexpr int kNChannelsPerT0Sector = 4;
   static constexpr int kNSectorsT0A = 24;
   static constexpr int kNSectorsT0C = 28;
+  // One lattice cell per FT0 readout channel: the four channels of a sector are
+  // separate quadrants. Gain and vertex maps stay per sector, as CCDB holds them.
+  static constexpr int kNChannelsFT0A = kNSectorsT0A * kNChannelsPerT0Sector;
+  static constexpr int kNChannelsFT0C = kNSectorsT0C * kNChannelsPerT0Sector;
   static constexpr int kNChannelsPerFV0Ring = 8;
   static constexpr int kNFV0EtaRings = 5;
   static constexpr int kOuterFV0RingIndex = kNFV0EtaRings - 1;
@@ -121,17 +125,18 @@ struct Lambdak0sflattenicity {
   // TParticlePDG::Charge() is in units of e/3
   static constexpr float kMinCharge = 0.01f;
 
+  // eFV0FT0C is the weighted amplitude sum, a multiplicity estimator, not a 1-rho
   static constexpr std::array<std::string_view, kNEstimators> kHEst = {
     "eGlobaltrack", "eFV0", "e1flatencityFV0", "eFT0",
-    "e1flatencityFT0", "eFV0FT0C", "e1flatencityFV0FT0C", "ePtTrig"};
+    "e1flatencityFT0", "eFV0FT0C", "ePtTrig"};
   static constexpr std::array<std::string_view, kNEstimators> kTEst = {
     "GlobalTrk", "FV0", "1-flatencity_FV0", "FT0",
-    "1-flatencityFT0", "FV0_FT0C", "1-flatencity_FV0_FT0C", "PtTrig"};
+    "1-flatencityFT0", "FV0_FT0C", "PtTrig"};
   static constexpr std::array<std::string_view, kNEstimators> kHPtEst = {
     "ptVsGlobaltrack", "ptVsFV0",
     "ptVs1flatencityFV0", "ptVsFT0",
     "ptVs1flatencityFT0", "ptVsFV0FT0C",
-    "ptVs1flatencityFV0FT0C", "pTVsPtTrig"};
+    "pTVsPtTrig"};
 
   // Histogram binning. The pT and 1-rho axes are ConfigurableAxis: pass
   // {nbins, lo, hi} for uniform bins or {VARIABLE_WIDTH, e0, e1, ...} for the
@@ -204,14 +209,21 @@ struct Lambdak0sflattenicity {
                                              "Calculate Flattenicity with FV0"};
     Configurable<bool> isflattenicitywithFT0{"isflattenicitywithFT0", true,
                                              "Calculate Flattenicity with FT0"};
-    Configurable<bool> isflattenicitywithFV0FT0C{"isflattenicitywithFV0FT0C", true,
-                                                 "Calculate Flattenicity with FV0+FT0C"};
     Configurable<int> flattenicityforanalysis{"flattenicityforanalysis", 0,
-                                              "Which Flattenicity to be used for analysis, 0 for FV0, 1 for FT0, 2 for FV0+FT0C"};
+                                              "Which Flattenicity to be used for analysis, 0 for FV0, 1 for FT0"};
+    // On a sparse lattice sigma/<rho> is quantised -- one lit cell gives exactly
+    // sqrt((N-1)/N) whatever the amplitude -- which puts spikes in 1-rho. Tune
+    // against the hNActiveCells* histograms. 0 disables.
+    Configurable<int> minLitCellsFV0{"minLitCellsFV0", 0,
+                                     "Minimum lit FV0 cells (of 48), applied when flattenicityforanalysis=0"};
+    Configurable<int> minLitCellsFT0A{"minLitCellsFT0A", 0,
+                                      "Minimum lit FT0A cells (of 96), applied when flattenicityforanalysis=1"};
+    Configurable<int> minLitCellsFT0C{"minLitCellsFT0C", 0,
+                                      "Minimum lit FT0C cells (of 112), applied when flattenicityforanalysis=1"};
     Configurable<bool> flattenicityforLossCorrRec{"flattenicityforLossCorrRec", true,
                                                   "Flattenicity from Rec Tracks are used for Signal and Event loss calculations"};
-    // same cell convention as the detector lattice, so that gen vs rec is a
-    // detector effect and not a difference of definitions
+    // FV0 only: same cell convention as the detector lattice, so gen vs rec is
+    // a detector effect and not a difference of definitions
     Configurable<bool> genFlatDetectorLikeNorm{"genFlatDetectorLikeNorm", true,
                                                "Weight the generator-level FV0 cells the way the detector lattice does"};
   } flatSel;
@@ -309,7 +321,6 @@ struct Lambdak0sflattenicity {
   // values for flattenicityforanalysis
   static constexpr int kFlatFromFV0 = 0;
   static constexpr int kFlatFromFT0 = 1;
-  static constexpr int kFlatFromFV0FT0C = 2;
 
   // FT0M percentile class: run once over the full range for MB and once with a
   // narrow window for HM. Grouped because the framework only decomposes 100
@@ -346,8 +357,17 @@ struct Lambdak0sflattenicity {
   // Configurable<float> v0etacut{"v0etacut", 0.8, "v0etacut"};
 
   int nbin = 1;
-  // hEventsSelected bin for the flattenicity requirement, -1 if not applied
+  // hEventsSelected bins for the stages inside estimateFlattenicity(), -1 if unused
+  int nbinFlatDetHit = -1;
+  int nbinFlatOccupancy = -1;
   int nbinFlattenicity = -1;
+
+  // how far estimateFlattenicity() got, so its rejections show in the cut flow
+  static constexpr int kFlatStageNoDetector = 0;
+  static constexpr int kFlatStageLowOccupancy = 1;
+  static constexpr int kFlatStageNoSignal = 2;
+  static constexpr int kFlatStageOk = 3;
+  int flatStage = kFlatStageNoDetector;
   // do not fill the detector QA twice when processGenMC runs with a rec-level process
   bool fillFlattenicityQAInGenMC = true;
 
@@ -404,9 +424,9 @@ struct Lambdak0sflattenicity {
     AxisSpec ptResAxis = {binning.axisPtRes, "(#it{p}_{T}^{rec} - #it{p}_{T}^{gen})/#it{p}_{T}^{gen}"};
     AxisSpec motherAxis = {kNFeedDownMothers, -0.5, kNFeedDownMothers - 0.5, "mother"};
 
-    std::array<int, 8> nBinsEst = {100, 500, 102, 500, 102, 500, 102, 150};
-    std::array<float, 8> lowEdgeEst = {-0.5, -0.5, -0.01, -0.5, -0.01, -0.5, -0.01, .0};
-    std::array<float, 8> upEdgeEst = {99.5, 49999.5, 1.01, 499.5, 1.01, 499.5, 1.01, 150.0};
+    std::array<int, kNEstimators> nBinsEst = {100, 500, 102, 500, 102, 500, 150};
+    std::array<float, kNEstimators> lowEdgeEst = {-0.5, -0.5, -0.01, -0.5, -0.01, -0.5, .0};
+    std::array<float, kNEstimators> upEdgeEst = {99.5, 49999.5, 1.01, 499.5, 1.01, 499.5, 150.0};
 
     ccdb->setURL(ccdbConf.ccdbUrl.value);
     ccdb->setCaching(true);
@@ -448,10 +468,15 @@ struct Lambdak0sflattenicity {
     if (evSel.isINELgt0) {
       rEventSelection.get<TH1>(HIST("hEventsSelected"))->GetXaxis()->SetBinLabel(nbin++, "INEL>0");
     }
-    // events without FV0/FT0 are rejected below, they need their own counter
+    // estimateFlattenicity() drops events on three grounds: no detector record,
+    // too few lit cells, undefined 1-rho. One counter each.
     if (doprocessDataRun3LambdaK0s || doprocessRecMCLambdaK0s ||
         doprocessDataRun3Cascade || doprocessRecMCRun3Cascade ||
         doprocessFlatDistData || doprocessFlatDistMC) {
+      nbinFlatDetHit = nbin;
+      rEventSelection.get<TH1>(HIST("hEventsSelected"))->GetXaxis()->SetBinLabel(nbin++, "flatDetHit");
+      nbinFlatOccupancy = nbin;
+      rEventSelection.get<TH1>(HIST("hEventsSelected"))->GetXaxis()->SetBinLabel(nbin++, "flatOccupancy");
       nbinFlattenicity = nbin;
       rEventSelection.get<TH1>(HIST("hEventsSelected"))->GetXaxis()->SetBinLabel(nbin++, "flattenicity");
     }
@@ -486,6 +511,12 @@ struct Lambdak0sflattenicity {
         doprocessFlatDistMC) {
       rEventSelection.add("hTrueFV0amplvsFlat", "TrueFV0MvsFlat", HistType::kTH2D,
                           {{500, -0.5, +499.5, "True Nch in FV0 region"}, flatTrueAxis});
+      rEventSelection.add("hTrueFT0amplvsFlat", "TrueFT0MvsFlat", HistType::kTH2D,
+                          {{500, -0.5, +499.5, "True Nch in FT0 region"}, flatTrueAxis});
+      rEventSelection.add("hNActiveCellsFT0AMCGen", "hNActiveCellsFT0AMCGen", HistType::kTH1D,
+                          {{kNChannelsFT0A + 1, -0.5, kNChannelsFT0A + 0.5, "occupied generated FT0A cells"}});
+      rEventSelection.add("hNActiveCellsFT0CMCGen", "hNActiveCellsFT0CMCGen", HistType::kTH1D,
+                          {{kNChannelsFT0C + 1, -0.5, kNChannelsFT0C + 0.5, "occupied generated FT0C cells"}});
     }
     if (doprocessRecMCLambdaK0s || doprocessRecMCRun3Cascade || doprocessFlatDistMC) {
       rEventSelection.add("hFlattenicityDistributionMCGen_Rec", "hFlattenicityDistributionMCGen_Rec",
@@ -878,6 +909,16 @@ struct Lambdak0sflattenicity {
                         {{2000, -0.5, 1999.5, "FT0C amplitude per channel"}});
       rFlattenicity.add("hFT0A", "FT0A", HistType::kTH1D,
                         {{2000, -0.5, 1999.5, "FT0A amplitude per channel"}});
+      // lattice occupancy, what the minLitCells cuts are tuned on
+      rFlattenicity.add("hNActiveFT0Channels", "hNActiveFT0Channels", HistType::kTH1D,
+                        {{kNChannelsFT0 + 1, -0.5, kNChannelsFT0 + 0.5,
+                          "FT0 channels with amplitude > 0"}});
+      rFlattenicity.add("hNActiveCellsFV0", "hNActiveCellsFV0", HistType::kTH1D,
+                        {{kNCells + 1, -0.5, kNCells + 0.5, "occupied FV0 lattice cells"}});
+      rFlattenicity.add("hNActiveCellsFT0A", "hNActiveCellsFT0A", HistType::kTH1D,
+                        {{kNChannelsFT0A + 1, -0.5, kNChannelsFT0A + 0.5, "occupied FT0A lattice cells"}});
+      rFlattenicity.add("hNActiveCellsFT0C", "hNActiveCellsFT0C", HistType::kTH1D,
+                        {{kNChannelsFT0C + 1, -0.5, kNChannelsFT0C + 0.5, "occupied FT0C lattice cells"}});
       rFlattenicity.add("hFV0amplvsFlat", "FV0MvsFlat", HistType::kTH2D,
                         {{4000, -0.5, +49999.5, "FV0 amplitude"}, flatAxis});
 
@@ -973,25 +1014,16 @@ struct Lambdak0sflattenicity {
     // tied to the owner so a new process function cannot bring the double fill back
     fillFlattenicityQAInGenMC = (eventHistOwner == kOwnerNone);
 
-    // the generated 1-rho covers the FV0 only, the other estimators would
-    // classify rec and gen with two different observables
-    if ((doprocessRecMCLambdaK0s || doprocessRecMCRun3Cascade || doprocessGenMC ||
-         doprocessFlatDistMC) &&
-        flatSel.flattenicityforanalysis != kFlatFromFV0) {
-      LOGF(fatal,
-           "flattenicityforanalysis!=0 has no generator-level counterpart: "
-           "estimateFlattenicityFV0MC covers the FV0 acceptance only");
+    // both estimators have a generator-level counterpart, so only check the switch
+    if (flatSel.flattenicityforanalysis != kFlatFromFV0 &&
+        flatSel.flattenicityforanalysis != kFlatFromFT0) {
+      LOGF(fatal, "flattenicityforanalysis must be 0 (FV0) or 1 (FT0)");
     }
-
-    // the estimator used for the analysis has to be computed
-    if (flatSel.flattenicityforanalysis == kFlatFromFV0 && !flatSel.isflattenicitywithFV0 && !flatSel.isflattenicitywithFV0FT0C) {
-      LOGF(fatal, "flattenicityforanalysis=0 (FV0) needs isflattenicitywithFV0 or isflattenicitywithFV0FT0C enabled");
+    if (flatSel.flattenicityforanalysis == kFlatFromFV0 && !flatSel.isflattenicitywithFV0) {
+      LOGF(fatal, "flattenicityforanalysis=0 (FV0) needs isflattenicitywithFV0 enabled");
     }
     if (flatSel.flattenicityforanalysis == kFlatFromFT0 && !flatSel.isflattenicitywithFT0) {
       LOGF(fatal, "flattenicityforanalysis=1 (FT0) needs isflattenicitywithFT0 enabled");
-    }
-    if (flatSel.flattenicityforanalysis == kFlatFromFV0FT0C && !(flatSel.isflattenicitywithFV0FT0C || (flatSel.isflattenicitywithFV0 && flatSel.isflattenicitywithFT0))) {
-      LOGF(fatal, "flattenicityforanalysis=2 (FV0+FT0C) needs isflattenicitywithFV0FT0C enabled");
     }
   }
 
@@ -1030,7 +1062,7 @@ struct Lambdak0sflattenicity {
   float getFlatenicity(std::span<float> signals)
   {
     int entries = signals.size();
-    float flat = 9999;
+    float flat = kFlatUndefined;
     float mRho = 0;
     for (int iCell = 0; iCell < entries; ++iCell) {
       mRho += 1.0 * signals[iCell];
@@ -1049,7 +1081,18 @@ struct Lambdak0sflattenicity {
     }
     return flat;
   }
-  // V0A signal and flatenicity calculation
+  // occupied cells of a flattenicity lattice
+  template <typename TArray>
+  static int countActiveCells(TArray const& lattice)
+  {
+    int nActive = 0;
+    for (const auto& cell : lattice) {
+      if (cell > 0.f) {
+        nActive++;
+      }
+    }
+    return nActive;
+  }
 
   static constexpr int kNeta5 = 2; // FT0C + FT0A
   static constexpr std::array<float, kNeta5> kWeigthsEta5 = {0.0490638, 0.010958415};
@@ -1064,8 +1107,10 @@ struct Lambdak0sflattenicity {
   static constexpr float kMinEtaFV0 = 2.2;
   static constexpr float kDetaFV0 = (kMaxEtaFV0 - kMinEtaFV0) / 5.0;
 
-  // no FV0/FT0 information
+  // 1-rho not available for this collision
   static constexpr float kInvalidFlattenicity = -1.f;
+  // lattice carries no signal, sigma/<rho> undefined
+  static constexpr float kFlatUndefined = 9999.f;
 
   static constexpr int kNCells = 48; // 48 sectors in FV0
   static constexpr std::array<int, kNCells> kFV0PhiIndex = {
@@ -1079,10 +1124,21 @@ struct Lambdak0sflattenicity {
   std::array<float, kNCells> rhoLatticeFV0AMC{};
   std::array<float, kNCells> ampchannel{};
   std::array<float, kNCells> ampchannelBefore{};
-  static constexpr int kNCellsT0A = 24;
-  std::array<float, kNCellsT0A> rhoLatticeT0A{};
-  static constexpr int kNCellsT0C = 28;
-  std::array<float, kNCellsT0C> rhoLatticeT0C{};
+  std::array<float, kNChannelsFT0A> rhoLatticeT0A{};
+  std::array<float, kNChannelsFT0C> rhoLatticeT0C{};
+  std::array<float, kNChannelsFT0A> rhoLatticeFT0AMC{};
+  std::array<float, kNChannelsFT0C> rhoLatticeFT0CMC{};
+  static constexpr int kNChannelsFT0 = kNChannelsFT0A + kNChannelsFT0C;
+
+  // Generator-level FT0 lattice: detector cell counts and acceptance. The real
+  // channel map is not an eta-phi grid, so cell shapes are approximate.
+  static constexpr float kMinEtaFT0A = 3.5f;
+  static constexpr float kMaxEtaFT0A = 4.9f;
+  static constexpr float kMinEtaFT0C = -3.3f;
+  static constexpr float kMaxEtaFT0C = -2.1f;
+  static constexpr int kNEtaBinsFT0MC = 4;
+  static constexpr int kNPhiBinsFT0AMC = kNChannelsFT0A / kNEtaBinsFT0MC;
+  static constexpr int kNPhiBinsFT0CMC = kNChannelsFT0C / kNEtaBinsFT0MC;
 
   std::array<float, kNEstimators> estimator{};
 
@@ -1220,6 +1276,21 @@ struct Lambdak0sflattenicity {
       return false;
     }
     return true;
+  }
+
+  // cut-flow bins for the stages inside estimateFlattenicity(); without these
+  // the events it drops leave no trace
+  void fillFlattenicityStages()
+  {
+    if (nbinFlatDetHit > 0 && flatStage >= kFlatStageLowOccupancy) {
+      rEventSelection.fill(HIST("hEventsSelected"), nbinFlatDetHit - 0.5);
+    }
+    if (nbinFlatOccupancy > 0 && flatStage >= kFlatStageNoSignal) {
+      rEventSelection.fill(HIST("hEventsSelected"), nbinFlatOccupancy - 0.5);
+    }
+    if (nbinFlattenicity > 0 && flatStage == kFlatStageOk) {
+      rEventSelection.fill(HIST("hEventsSelected"), nbinFlattenicity - 0.5);
+    }
   }
 
   // 1-rho on the fine axis for the percentile boundaries, inclusive, INEL>0 and
@@ -1363,8 +1434,8 @@ struct Lambdak0sflattenicity {
     mRunNumber = run;
     if (flatSel.applyCalibCh) {
       gainFV0 = fetchGainEq(ccdbConf.gainEqPath.value + "/FV0", run, kNCells);
-      gainFT0A = fetchGainEq(ccdbConf.gainEqPath.value + "/FT0A", run, kNCellsT0A);
-      gainFT0C = fetchGainEq(ccdbConf.gainEqPath.value + "/FT0C", run, kNCellsT0C);
+      gainFT0A = fetchGainEq(ccdbConf.gainEqPath.value + "/FT0A", run, kNSectorsT0A);
+      gainFT0C = fetchGainEq(ccdbConf.gainEqPath.value + "/FT0C", run, kNSectorsT0C);
     }
     if (flatSel.applyCalibVtx) {
       vtxEqFV0 = fetchVtxEq(ccdbConf.vtxEqPath.value + "/FV0", run);
@@ -1399,6 +1470,12 @@ struct Lambdak0sflattenicity {
   float estimateFlattenicity(TCollision const& collision, Tracks const& tracks, bool fillQA = true)
   {
     const bool flattenicityQAhere = flatSel.flattenicityQA && fillQA;
+    flatStage = kFlatStageNoDetector;
+    // a detector contributes only if it has a record and the config reads it
+    const bool hasFV0 = collision.has_foundFV0();
+    const bool hasFT0 = collision.has_foundFT0();
+    const bool fv0Read = flatSel.isflattenicitywithFV0 && hasFV0;
+    const bool ft0Read = flatSel.isflattenicitywithFT0 && hasFT0;
     if (flatSel.applyCalibCh || flatSel.applyCalibVtx) {
       initCcdb(collision.template bc_as<soa::Join<aod::BCs, aod::Timestamps>>());
     }
@@ -1416,8 +1493,7 @@ struct Lambdak0sflattenicity {
     ampchannelBefore.fill(0.0);
     rhoLattice.fill(0);
 
-    if ((flatSel.isflattenicitywithFV0 || flatSel.isflattenicitywithFV0FT0C) &&
-        collision.has_foundFV0()) {
+    if (fv0Read) {
 
       auto fv0 = collision.foundFV0();
       for (std::size_t ich = 0; ich < fv0.amplitude().size(); ich++) {
@@ -1463,8 +1539,8 @@ struct Lambdak0sflattenicity {
       }
     }
 
-    float flattenicityfv0 = 9999;
-    if (flatSel.isflattenicitywithFV0 || flatSel.isflattenicitywithFV0FT0C) {
+    float flattenicityfv0 = kFlatUndefined;
+    if (fv0Read) {
       flattenicityfv0 = getFlatenicity({rhoLattice.data(), rhoLattice.size()});
     }
 
@@ -1484,52 +1560,56 @@ struct Lambdak0sflattenicity {
     // FT0
     float sumAmpFT0A = 0.f;
     float sumAmpFT0C = 0.f;
+    int nActiveFT0Ch = 0;
     float sumAmpFT0ABeforeVtx = 0.f;
     float sumAmpFT0CBeforeVtx = 0.f;
 
     rhoLatticeT0A.fill(0);
     rhoLatticeT0C.fill(0);
 
-    if ((flatSel.isflattenicitywithFT0 || flatSel.isflattenicitywithFV0FT0C) &&
-        collision.has_foundFT0()) {
+    if (ft0Read) {
       auto ft0 = collision.foundFT0();
-      if (flatSel.isflattenicitywithFT0) {
-        for (std::size_t i_a = 0; i_a < ft0.amplitudeA().size(); i_a++) {
-          float amplitude = ft0.amplitudeA()[i_a];
-          uint8_t channel = ft0.channelA()[i_a];
-          int sector = getT0ASector(channel);
-          float amplitudeBeforeVtx = amplitude;
-          if (sector >= 0 && sector < kNCellsT0A) {
-            if (flattenicityQAhere) {
-              rFlattenicity.fill(HIST("hAmpT0AVsChBeforeCalibration"), sector,
-                                 amplitude);
-            }
-            if (flatSel.applyCalibCh) {
-              amplitude /= gainEqFactor(gainFT0A, sector);
-            }
-            if (flattenicityQAhere) {
-              rFlattenicity.fill(HIST("hAmpT0AVsCh"), sector, amplitude);
-            }
-            amplitudeBeforeVtx = amplitude;
-            if (flatSel.applyCalibVtx) {
-              amplitude *= vtxEqFactor(vtxEqFT0A, sector, vtxZ);
-            }
-            rhoLatticeT0A[sector] += amplitude;
-          }
-          sumAmpFT0A += amplitude;
-          sumAmpFT0ABeforeVtx += amplitudeBeforeVtx;
+      for (std::size_t i_a = 0; i_a < ft0.amplitudeA().size(); i_a++) {
+        float amplitude = ft0.amplitudeA()[i_a];
+        const int channel = ft0.channelA()[i_a];
+        if (amplitude > 0.f) {
+          nActiveFT0Ch++;
+        }
+        const int sector = getT0ASector(channel);
+        float amplitudeBeforeVtx = amplitude;
+        if (channel >= 0 && channel < kNChannelsFT0A && sector >= 0) {
           if (flattenicityQAhere) {
-            rFlattenicity.fill(HIST("hFT0A"), amplitude);
+            rFlattenicity.fill(HIST("hAmpT0AVsChBeforeCalibration"), sector,
+                               amplitude);
           }
+          if (flatSel.applyCalibCh) {
+            amplitude /= gainEqFactor(gainFT0A, sector);
+          }
+          if (flattenicityQAhere) {
+            rFlattenicity.fill(HIST("hAmpT0AVsCh"), sector, amplitude);
+          }
+          amplitudeBeforeVtx = amplitude;
+          if (flatSel.applyCalibVtx) {
+            amplitude *= vtxEqFactor(vtxEqFT0A, sector, vtxZ);
+          }
+          rhoLatticeT0A[channel] += amplitude;
+        }
+        sumAmpFT0A += amplitude;
+        sumAmpFT0ABeforeVtx += amplitudeBeforeVtx;
+        if (flattenicityQAhere) {
+          rFlattenicity.fill(HIST("hFT0A"), amplitude);
         }
       }
 
       for (std::size_t i_c = 0; i_c < ft0.amplitudeC().size(); i_c++) {
         float amplitude = ft0.amplitudeC()[i_c];
-        uint8_t channel = ft0.channelC()[i_c];
-        int sector = getT0CSector(channel);
+        const int channel = ft0.channelC()[i_c];
+        if (amplitude > 0.f) {
+          nActiveFT0Ch++;
+        }
+        const int sector = getT0CSector(channel);
         float amplitudeBeforeVtx = amplitude;
-        if (sector >= 0 && sector < kNCellsT0C) {
+        if (channel >= 0 && channel < kNChannelsFT0C && sector >= 0) {
           if (flattenicityQAhere) {
             rFlattenicity.fill(HIST("hAmpT0CVsChBeforeCalibration"), sector,
                                amplitude);
@@ -1544,7 +1624,7 @@ struct Lambdak0sflattenicity {
           if (flatSel.applyCalibVtx) {
             amplitude *= vtxEqFactor(vtxEqFT0C, sector, vtxZ);
           }
-          rhoLatticeT0C[sector] += amplitude;
+          rhoLatticeT0C[channel] += amplitude;
         }
         sumAmpFT0C += amplitude;
         sumAmpFT0CBeforeVtx += amplitudeBeforeVtx;
@@ -1561,13 +1641,25 @@ struct Lambdak0sflattenicity {
         rFlattenicity.fill(HIST("hAmpT0CvsVtx"), vtxZ, sumAmpFT0C);
       }
     }
-    float flatenicityT0a = 9999;
-    if (flatSel.isflattenicitywithFT0) {
+    const int nLitFV0 = countActiveCells(rhoLattice);
+    const int nLitFT0A = countActiveCells(rhoLatticeT0A);
+    const int nLitFT0C = countActiveCells(rhoLatticeT0C);
+    if (flattenicityQAhere) {
+      if (fv0Read) {
+        rFlattenicity.fill(HIST("hNActiveCellsFV0"), nLitFV0);
+      }
+      if (ft0Read) {
+        rFlattenicity.fill(HIST("hNActiveFT0Channels"), nActiveFT0Ch);
+        rFlattenicity.fill(HIST("hNActiveCellsFT0A"), nLitFT0A);
+        rFlattenicity.fill(HIST("hNActiveCellsFT0C"), nLitFT0C);
+      }
+    }
+
+    float flatenicityT0a = kFlatUndefined;
+    float flatenicityT0c = kFlatUndefined;
+    if (ft0Read) {
       flatenicityT0a =
         getFlatenicity({rhoLatticeT0A.data(), rhoLatticeT0A.size()});
-    }
-    float flatenicityT0c = 9999;
-    if (flatSel.isflattenicitywithFT0 || flatSel.isflattenicitywithFV0FT0C) {
       flatenicityT0c =
         getFlatenicity({rhoLatticeT0C.data(), rhoLatticeT0C.size()});
     }
@@ -1581,10 +1673,30 @@ struct Lambdak0sflattenicity {
       estimator[iEe] = 0;
     }
 
-    if (!collision.has_foundFV0() || !collision.has_foundFT0()) {
-      // no FV0/FT0, flattenicity undefined
+    // FV0 and FT0 are missing on different collisions, so require only the
+    // detector the selected estimator reads
+    const bool detectorsOk =
+      (flatSel.flattenicityforanalysis == kFlatFromFT0) ? hasFT0 : hasFV0;
+    if (!detectorsOk) {
       return kInvalidFlattenicity;
     }
+    flatStage = kFlatStageLowOccupancy;
+
+    // Reject a lattice too sparse for sigma/<rho> to be continuous. Only the one
+    // the analysis estimator reads is tested; the other still fills QA.
+    const bool occupancyOk =
+      (flatSel.flattenicityforanalysis == kFlatFromFT0)
+        ? (nLitFT0A >= flatSel.minLitCellsFT0A && nLitFT0C >= flatSel.minLitCellsFT0C)
+        : (nLitFV0 >= flatSel.minLitCellsFV0);
+    if (!occupancyOk) {
+      return kInvalidFlattenicity;
+    }
+    flatStage = kFlatStageNoSignal;
+
+    // an estimator with an unread detector holds a sentinel, keep it out of the QA
+    const bool estFV0Ok = fv0Read;
+    const bool estFT0Ok = ft0Read;
+    const bool estFV0FT0COk = fv0Read && ft0Read;
 
     float allWeights = 0;
     // option 5
@@ -1630,9 +1742,13 @@ struct Lambdak0sflattenicity {
       }
     }
     if (flattenicityQAhere) {
-      rFlattenicity.fill(HIST("hFT0Aampl"), sumAmpFT0A);
-      rFlattenicity.fill(HIST("hFT0Campl"), sumAmpFT0C);
-      rFlattenicity.fill(HIST("hFV0amplRing1to4"), sumAmpFV01to4Ch);
+      if (ft0Read) {
+        rFlattenicity.fill(HIST("hFT0Aampl"), sumAmpFT0A);
+        rFlattenicity.fill(HIST("hFT0Campl"), sumAmpFT0C);
+      }
+      if (fv0Read) {
+        rFlattenicity.fill(HIST("hFV0amplRing1to4"), sumAmpFV01to4Ch);
+      }
       rFlattenicity.fill(HIST("hEv"), 4);
     }
     estimator[0] = multGlob;
@@ -1642,18 +1758,21 @@ struct Lambdak0sflattenicity {
     float flatenicityFT0 = (flatenicityT0a + flatenicityT0c) / 2.0;
     estimator[4] = 1.0 - flatenicityFT0;
     estimator[5] = combinedEstimator6;
-    float flatenicityFT0v0 = 0.5 * flattenicityfv0 + 0.5 * flatenicityT0c;
-    estimator[6] = 1.0 - flatenicityFT0v0;
-    estimator[7] = ptT;
+    estimator[6] = ptT;
     if (flattenicityQAhere) {
       rFlattenicity.fill(HIST(kHEst[0]), estimator[0], estimator[0]);
-      rFlattenicity.fill(HIST(kHEst[1]), estimator[1], estimator[0]);
-      rFlattenicity.fill(HIST(kHEst[2]), estimator[2], estimator[0]);
-      rFlattenicity.fill(HIST(kHEst[3]), estimator[3], estimator[0]);
-      rFlattenicity.fill(HIST(kHEst[4]), estimator[4], estimator[0]);
-      rFlattenicity.fill(HIST(kHEst[5]), estimator[5], estimator[0]);
       rFlattenicity.fill(HIST(kHEst[6]), estimator[6], estimator[0]);
-      rFlattenicity.fill(HIST(kHEst[7]), estimator[7], estimator[0]);
+      if (estFV0Ok) {
+        rFlattenicity.fill(HIST(kHEst[1]), estimator[1], estimator[0]);
+        rFlattenicity.fill(HIST(kHEst[2]), estimator[2], estimator[0]);
+      }
+      if (estFT0Ok) {
+        rFlattenicity.fill(HIST(kHEst[3]), estimator[3], estimator[0]);
+        rFlattenicity.fill(HIST(kHEst[4]), estimator[4], estimator[0]);
+      }
+      if (estFV0FT0COk) {
+        rFlattenicity.fill(HIST(kHEst[5]), estimator[5], estimator[0]);
+      }
 
       // plot pt vs estimators
       for (const auto& track : tracks) {
@@ -1662,37 +1781,44 @@ struct Lambdak0sflattenicity {
         }
         float pt = track.pt();
         rFlattenicity.fill(HIST(kHPtEst[0]), estimator[0], pt);
-        rFlattenicity.fill(HIST(kHPtEst[1]), estimator[1], pt);
-        rFlattenicity.fill(HIST(kHPtEst[2]), estimator[2], pt);
-        rFlattenicity.fill(HIST(kHPtEst[3]), estimator[3], pt);
-        rFlattenicity.fill(HIST(kHPtEst[4]), estimator[4], pt);
-        rFlattenicity.fill(HIST(kHPtEst[5]), estimator[5], pt);
         rFlattenicity.fill(HIST(kHPtEst[6]), estimator[6], pt);
-        rFlattenicity.fill(HIST(kHPtEst[7]), estimator[7], pt);
+        if (estFV0Ok) {
+          rFlattenicity.fill(HIST(kHPtEst[1]), estimator[1], pt);
+          rFlattenicity.fill(HIST(kHPtEst[2]), estimator[2], pt);
+        }
+        if (estFT0Ok) {
+          rFlattenicity.fill(HIST(kHPtEst[3]), estimator[3], pt);
+          rFlattenicity.fill(HIST(kHPtEst[4]), estimator[4], pt);
+        }
+        if (estFV0FT0COk) {
+          rFlattenicity.fill(HIST(kHPtEst[5]), estimator[5], pt);
+        }
       }
 
-      if (flatSel.isflattenicitywithFV0) {
+      if (estFV0Ok) {
         for (int iCh = 0; iCh < kNCells; ++iCh) {
           rFlattenicity.fill(HIST("hAmpV0VsCh"), iCh, ampchannel[iCh]);
           rFlattenicity.fill(HIST("hAmpV0VsChBeforeCalibration"), iCh,
                              ampchannelBefore[iCh]);
         }
+        rFlattenicity.fill(HIST("fMultFv0"), sumAmpFV0);
       }
-
-      rFlattenicity.fill(HIST("fMultFv0"), sumAmpFV0);
-      rFlattenicity.fill(HIST("hFlatFT0CvsFlatFT0A"), flatenicityT0c,
-                         flatenicityT0a);
+      if (estFT0Ok) {
+        rFlattenicity.fill(HIST("hFlatFT0CvsFlatFT0A"), flatenicityT0c,
+                           flatenicityT0a);
+      }
     }
     float finalflattenicity = estimator[2];
-    if (flattenicityQAhere) {
+    if (flattenicityQAhere && estFV0Ok) {
       rFlattenicity.fill(HIST("hFV0amplvsFlat"), sumAmpFV0, estimator[2]);
     }
 
     if (flatSel.flattenicityforanalysis == kFlatFromFT0) {
       finalflattenicity = estimator[4];
     }
-    if (flatSel.flattenicityforanalysis == kFlatFromFV0FT0C) {
-      finalflattenicity = estimator[6];
+    // a lattice with no signal leaves a sentinel, which the callers reject as negative
+    if (finalflattenicity >= 0.f) {
+      flatStage = kFlatStageOk;
     }
     return finalflattenicity;
   }
@@ -1785,12 +1911,93 @@ struct Lambdak0sflattenicity {
       }
     }
 
-    const float flattenicity =
-      1.0 - getFlatenicity({rhoLatticeFV0AMC.data(), rhoLatticeFV0AMC.size()});
+    const float flatFV0 =
+      getFlatenicity({rhoLatticeFV0AMC.data(), rhoLatticeFV0AMC.size()});
+    if (flatFV0 >= kFlatUndefined) {
+      return kInvalidFlattenicity;
+    }
+    const float flattenicity = 1.0 - flatFV0;
     if (fillQA) {
       rEventSelection.fill(HIST("hTrueFV0amplvsFlat"), multFV0, flattenicity);
     }
     return flattenicity;
+  }
+
+  // Generated counterpart of the FT0 branch of estimateFlattenicity(): same cell
+  // counts, same average of the two rho. Weights are uniform and a per-side
+  // constant cancels in sigma/<rho>, so genFlatDetectorLikeNorm does not apply.
+  template <typename McParticles>
+  float estimateFlattenicityFT0MC(McParticles const& mcParticles, bool fillQA = true)
+  {
+    rhoLatticeFT0AMC.fill(0);
+    rhoLatticeFT0CMC.fill(0);
+    int multFT0 = 0;
+
+    const float detaFT0A = (kMaxEtaFT0A - kMinEtaFT0A) / kNEtaBinsFT0MC;
+    const float detaFT0C = (kMaxEtaFT0C - kMinEtaFT0C) / kNEtaBinsFT0MC;
+
+    for (const auto& mcParticle : mcParticles) {
+      if (eventClass.genFlatPrimariesOnly && !mcParticle.isPhysicalPrimary()) {
+        continue;
+      }
+      if (!(mcParticle.pt() > 0)) {
+        continue;
+      }
+      auto pdgParticle = pdg->GetParticle(mcParticle.pdgCode());
+      if (!(pdgParticle && std::abs(pdgParticle->Charge()) > kMinCharge)) {
+        continue;
+      }
+
+      const float etap = mcParticle.eta();
+      const float phip = mcParticle.phi();
+      const bool inA = (etap >= kMinEtaFT0A && etap < kMaxEtaFT0A);
+      const bool inC = (etap >= kMinEtaFT0C && etap < kMaxEtaFT0C);
+      if (!inA && !inC) {
+        continue;
+      }
+
+      const int nphi = inA ? kNPhiBinsFT0AMC : kNPhiBinsFT0CMC;
+      const float eta0 = inA ? kMinEtaFT0A : kMinEtaFT0C;
+      const float deta = inA ? detaFT0A : detaFT0C;
+      int ieta = static_cast<int>((etap - eta0) / deta);
+      int iphi = static_cast<int>(phip * nphi / constants::math::TwoPI);
+      ieta = std::clamp(ieta, 0, kNEtaBinsFT0MC - 1);
+      iphi = std::clamp(iphi, 0, nphi - 1);
+      const int icell = ieta * nphi + iphi;
+
+      if (inA) {
+        rhoLatticeFT0AMC[icell] += 1.f;
+      } else {
+        rhoLatticeFT0CMC[icell] += 1.f;
+      }
+      multFT0++;
+    }
+
+    const float flatA =
+      getFlatenicity({rhoLatticeFT0AMC.data(), rhoLatticeFT0AMC.size()});
+    const float flatC =
+      getFlatenicity({rhoLatticeFT0CMC.data(), rhoLatticeFT0CMC.size()});
+    // in pp one side can be left completely empty, and the average is then undefined
+    if (flatA >= kFlatUndefined || flatC >= kFlatUndefined) {
+      return kInvalidFlattenicity;
+    }
+    const float flattenicity = 1.0 - (flatA + flatC) / 2.0;
+    if (fillQA) {
+      rEventSelection.fill(HIST("hTrueFT0amplvsFlat"), multFT0, flattenicity);
+      rEventSelection.fill(HIST("hNActiveCellsFT0AMCGen"), countActiveCells(rhoLatticeFT0AMC));
+      rEventSelection.fill(HIST("hNActiveCellsFT0CMCGen"), countActiveCells(rhoLatticeFT0CMC));
+    }
+    return flattenicity;
+  }
+
+  // the generator-level counterpart of whichever estimator the analysis uses
+  template <typename McParticles>
+  float estimateFlattenicityGen(McParticles const& mcParticles, bool fillQA = true)
+  {
+    if (flatSel.flattenicityforanalysis == kFlatFromFT0) {
+      return estimateFlattenicityFT0MC(mcParticles, fillQA);
+    }
+    return estimateFlattenicityFV0MC(mcParticles, fillQA);
   }
   // ====================== Flattenicity estimation ends =====================
 
@@ -1827,11 +2034,13 @@ struct Lambdak0sflattenicity {
     auto vtxX = collision.posX();
 
     float flattenicity = estimateFlattenicity(collision, tracks);
+    if (own) {
+      fillFlattenicityStages();
+    }
     if (flattenicity < 0.f) {
       return;
     }
     if (own) {
-      rEventSelection.fill(HIST("hEventsSelected"), nbinFlattenicity - 0.5);
 
       rEventSelection.fill(HIST("hVertexZ"), vtxZ);
       rEventSelection.fill(HIST("hFlattenicityDistribution"), flattenicity);
@@ -2008,11 +2217,13 @@ struct Lambdak0sflattenicity {
 
       auto tracksThisCollision = tracks.sliceBy(perColTracksMC, collision.globalIndex());
       float flattenicity = estimateFlattenicity(collision, tracksThisCollision);
+      if (own) {
+        fillFlattenicityStages();
+      }
       if (flattenicity < 0.f) {
         continue;
       }
       if (own) {
-        rEventSelection.fill(HIST("hEventsSelected"), nbinFlattenicity - 0.5);
 
         rEventSelection.fill(HIST("hVertexZ"), vtxZ);
         rEventSelection.fill(HIST("hFlattenicityDistribution"), flattenicity);
@@ -2026,7 +2237,7 @@ struct Lambdak0sflattenicity {
       const auto& mcCollision = collision.mcCollision_as<aod::McCollisions>();
 
       const auto particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache1);
-      const float flattenicityMCGen = estimateFlattenicityFV0MC(particlesInCollision, own);
+      const float flattenicityMCGen = estimateFlattenicityGen(particlesInCollision, own);
       if (own) {
         rEventSelection.fill(HIST("hFlattenicityDistributionMCGen_Rec"), flattenicityMCGen);
         rEventSelection.fill(HIST("hFlattenicity_Corr_Gen_vs_Rec"), flattenicityMCGen, flattenicity);
@@ -2294,7 +2505,7 @@ struct Lambdak0sflattenicity {
         break;
       }
     }
-    const float flattenicityTrue = estimateFlattenicityFV0MC(mcParticles, fillFlattenicityQAInGenMC);
+    const float flattenicityTrue = estimateFlattenicityGen(mcParticles, fillFlattenicityQAInGenMC);
     rEventSelection.fill(HIST("hFlattenicityDistributionRecMCGen"), flattenicityRec);
     rEventSelection.fill(HIST("hFlattenicityDistributionMCGen"), flattenicityTrue);
 
@@ -2595,11 +2806,13 @@ struct Lambdak0sflattenicity {
     auto vtxX = collision.posX();
 
     float flattenicity = estimateFlattenicity(collision, tracks);
+    if (own) {
+      fillFlattenicityStages();
+    }
     if (flattenicity < 0.f) {
       return;
     }
     if (own) {
-      rEventSelection.fill(HIST("hEventsSelected"), nbinFlattenicity - 0.5);
 
       rEventSelection.fill(HIST("hVertexZ"), vtxZ);
       rEventSelection.fill(HIST("hFlattenicityDistribution"), flattenicity);
@@ -2671,11 +2884,13 @@ struct Lambdak0sflattenicity {
 
       auto tracksThisCollision = tracks.sliceBy(perColDauTracksMC, collision.globalIndex());
       float flattenicity = estimateFlattenicity(collision, tracksThisCollision);
+      if (own) {
+        fillFlattenicityStages();
+      }
       if (flattenicity < 0.f) {
         continue;
       }
       if (own) {
-        rEventSelection.fill(HIST("hEventsSelected"), nbinFlattenicity - 0.5);
 
         rEventSelection.fill(HIST("hVertexZ"), vtxZ);
         rEventSelection.fill(HIST("hFlattenicityDistribution"), flattenicity);
@@ -2689,7 +2904,7 @@ struct Lambdak0sflattenicity {
       const auto& mcCollision = collision.mcCollision_as<aod::McCollisions>();
 
       const auto particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cacheCasc);
-      const float flattenicityMCGen = estimateFlattenicityFV0MC(particlesInCollision, own);
+      const float flattenicityMCGen = estimateFlattenicityGen(particlesInCollision, own);
       if (own) {
         rEventSelection.fill(HIST("hFlattenicityDistributionMCGen_Rec"), flattenicityMCGen);
         rEventSelection.fill(HIST("hFlattenicity_Corr_Gen_vs_Rec"), flattenicityMCGen, flattenicity);
@@ -2785,11 +3000,13 @@ struct Lambdak0sflattenicity {
       return;
     }
     const float flattenicity = estimateFlattenicity(collision, tracks);
+    if (own) {
+      fillFlattenicityStages();
+    }
     if (flattenicity < 0.f) {
       return;
     }
     if (own) {
-      rEventSelection.fill(HIST("hEventsSelected"), nbinFlattenicity - 0.5);
       rEventSelection.fill(HIST("hVertexZ"), collision.posZ());
       rEventSelection.fill(HIST("hFlattenicityDistribution"), flattenicity);
       rEventSelection.fill(HIST("hCentFT0M"), collision.centFT0M());
@@ -2816,13 +3033,15 @@ struct Lambdak0sflattenicity {
       }
       auto tracksThisCollision = tracks.sliceBy(perColTracksMC, collision.globalIndex());
       const float flattenicity = estimateFlattenicity(collision, tracksThisCollision);
+      if (own) {
+        fillFlattenicityStages();
+      }
       if (flattenicity < 0.f) {
         continue;
       }
       if (!own) {
         continue;
       }
-      rEventSelection.fill(HIST("hEventsSelected"), nbinFlattenicity - 0.5);
       rEventSelection.fill(HIST("hVertexZ"), collision.posZ());
       rEventSelection.fill(HIST("hFlattenicityDistribution"), flattenicity);
       rEventSelection.fill(HIST("hCentFT0M"), collision.centFT0M());
@@ -2832,7 +3051,7 @@ struct Lambdak0sflattenicity {
 
       const auto& mcCollision = collision.mcCollision_as<aod::McCollisions>();
       const auto particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache1);
-      const float flattenicityMCGen = estimateFlattenicityFV0MC(particlesInCollision);
+      const float flattenicityMCGen = estimateFlattenicityGen(particlesInCollision);
       rEventSelection.fill(HIST("hFlattenicityDistributionMCGen_Rec"), flattenicityMCGen);
       rEventSelection.fill(HIST("hFlattenicity_Corr_Gen_vs_Rec"), flattenicityMCGen, flattenicity);
       rEventSelection.fill(HIST("hFlatGenVsRecFine"), flattenicityMCGen, flattenicity);

@@ -26,12 +26,9 @@
 
 #include <TH1.h>
 
-#include <Rtypes.h>
-
 #include <array>
 #include <map>
 #include <string>
-#include <string_view>
 #include <vector>
 
 namespace o2::analysis::femto::paircleaner

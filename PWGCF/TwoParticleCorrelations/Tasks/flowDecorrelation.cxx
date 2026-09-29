@@ -72,7 +72,9 @@ struct FlowDecorrelation {
     O2_DEFINE_CONFIGURABLE(cfgCutTPCCrossedRows, float, 70.0f, "minimum TPC crossed rows")
     O2_DEFINE_CONFIGURABLE(cfgCutITSclu, float, 5.0f, "minimum ITS clusters")
     O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "max DCA to vertex z")
-    O2_DEFINE_CONFIGURABLE(cfgCutDCAxy, float, 7.0f, "max DCA to vertex xy")
+    O2_DEFINE_CONFIGURABLE(cfgCutDCAxy, float, -1.0f, "max DCA to vertex xy, pT dependent in terms of N sigma. -1 for default cut")
+    O2_DEFINE_CONFIGURABLE(cfgDCAxyFunc, std::string, "(0.0026+0.005/(x^1.01))", "Functional form of pt-dependent DCAxy cut")
+    TF1* fPtDepDCAxy = nullptr;
     O2_DEFINE_CONFIGURABLE(cfgCutMultMin, int, 0, "Minimum multiplicity for collision")
     O2_DEFINE_CONFIGURABLE(cfgCutMultMax, int, 10, "Maximum multiplicity for collision")
     O2_DEFINE_CONFIGURABLE(cfgCutCentMin, float, 60.0f, "Minimum centrality for collision")
@@ -181,7 +183,7 @@ struct FlowDecorrelation {
   AxisSpec axisChID = {220, 0, 220};
   // make the filters and cuts.
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgGeneralCuts.cfgCutVtxZ);
-  Filter trackFilter = (aod::track::pt > cfgGeneralCuts.cfgCutPtMin) && (aod::track::pt < cfgGeneralCuts.cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(true))) && (aod::track::tpcChi2NCl < cfgGeneralCuts.cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgGeneralCuts.cfgCutDCAz) && (nabs(aod::track::dcaXY) < cfgGeneralCuts.cfgCutDCAxy);
+  Filter trackFilter = (aod::track::pt > cfgGeneralCuts.cfgCutPtMin) && (aod::track::pt < cfgGeneralCuts.cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(true))) && (aod::track::tpcChi2NCl < cfgGeneralCuts.cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgGeneralCuts.cfgCutDCAz);
   using FilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
   using FilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
 
@@ -200,8 +202,8 @@ struct FlowDecorrelation {
   o2::ft0::Geometry ft0Det;
   o2::fv0::Geometry* fv0Det{};
   static constexpr uint64_t Ft0IndexA = 96;
-  std::vector<o2::detectors::AlignParam>* offsetFT0;
-  std::vector<o2::detectors::AlignParam>* offsetFV0;
+  std::vector<o2::detectors::AlignParam>* offsetFT0{};
+  std::vector<o2::detectors::AlignParam>* offsetFV0{};
   std::vector<float> cstFT0RelGain{};
 
   // Corrections
@@ -256,9 +258,6 @@ struct FlowDecorrelation {
     kFT0COuterRingMin = 144,
     kFT0COuterRingMax = 207
   };
-  std::array<float, 6> tofNsigmaCut;
-  std::array<float, 6> itsNsigmaCut;
-  std::array<float, 6> tpcNsigmaCut;
   struct Ft0cCConstants {
     double zFt0cDistance = -83.44;
     double maxWidth = 12.;
@@ -283,7 +282,6 @@ struct FlowDecorrelation {
       LOGF(fatal, "Centrality table is unavailable, cannot select collisions by centrality");
     }
     const AxisSpec axisPhi{72, 0.0, constants::math::TwoPI, "#varphi"};
-    const AxisSpec axisEta{40, -1., 1., "#eta"};
     const AxisSpec axisEtaFull{90, -6., 6., "#eta"};
     const AxisSpec axisCentrality{20, 0., 100., "cent"};
 
@@ -370,6 +368,7 @@ struct FlowDecorrelation {
     if (doprocessSameTpcFt0a || doprocessSameTpcFt0c || doprocessSameFt0aFt0c || doprocessSameTpcMft || doprocessSameTpcFv0) {
       registry.add("Phi", "Phi", {HistType::kTH1D, {axisPhi}});
       registry.add("Eta", "Eta", {HistType::kTH1D, {axisEta}});
+      registry.add("hDCAxy", "DCAxy after cuts; DCAxy (cm); Pt", {HistType::kTH2D, {{200, -1., 1.}, {200, 0, 5}}});
       registry.add("EtaCorrected", "EtaCorrected", {HistType::kTH1D, {axisEta}});
       registry.add("Nch", "N_{ch}", {HistType::kTH1D, {axisMultiplicity}});
       registry.add("Nch_used", "N_{ch}", {HistType::kTH1D, {axisMultiplicity}}); // histogram to see how many events are in the same and mixed event
@@ -494,6 +493,13 @@ struct FlowDecorrelation {
       same.setObject(new CorrelationContainer("sameEvent_TPC_FV0", "sameEvent_TPC_FT0A", corrAxisTpcFt0a, effAxis, userAxis));
       mixed.setObject(new CorrelationContainer("mixedEvent_TPC_FV0", "mixedEvent_TPC_FT0A", corrAxisTpcFt0a, effAxis, userAxis));
     }
+
+    if (cfgGeneralCuts.cfgCutDCAxy > 0.) {
+      cfgGeneralCuts.fPtDepDCAxy = new TF1("ptDepDCAxy", Form("[0]*%s", cfgGeneralCuts.cfgDCAxyFunc->c_str()), 0.001, 1000);
+      cfgGeneralCuts.fPtDepDCAxy->SetParameter(0, cfgGeneralCuts.cfgCutDCAxy);
+      LOGF(info, "DCAxy pt-dependence function: %s", Form("%0.1f * %s", cfgGeneralCuts.cfgCutDCAxy.value, cfgGeneralCuts.cfgDCAxyFunc->c_str()));
+    }
+
     LOGF(info, "End of init");
   }
 
@@ -613,8 +619,11 @@ struct FlowDecorrelation {
   }
 
   template <typename TTrack>
-  bool trackSelected(TTrack track)
+  bool trackSelected(const TTrack& track)
   {
+    if (cfgGeneralCuts.cfgCutDCAxy > 0. && (std::fabs(track.dcaXY()) > cfgGeneralCuts.fPtDepDCAxy->Eval(track.pt())))
+      return false;
+
     return ((track.tpcNClsFound() >= cfgGeneralCuts.cfgCutTPCclu) && (track.tpcNClsCrossedRows() >= cfgGeneralCuts.cfgCutTPCCrossedRows) && (track.itsNCls() >= cfgGeneralCuts.cfgCutITSclu));
   }
 
@@ -671,14 +680,14 @@ struct FlowDecorrelation {
       if (mEfficiency == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiency.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.value.c_str(), (void*)mEfficiency);
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.value.c_str(), static_cast<void*>(mEfficiency));
     }
     if (cfgCentralityWeight.value.empty() == false) {
       mCentralityWeight = ccdb->getForTimeStamp<TH1D>(cfgCentralityWeight, timestamp);
       if (mCentralityWeight == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgCentralityWeight.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgCentralityWeight.value.c_str(), (void*)mCentralityWeight);
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgCentralityWeight.value.c_str(), static_cast<void*>(mCentralityWeight));
     }
     correctionsLoaded = true;
   }
@@ -715,7 +724,7 @@ struct FlowDecorrelation {
 
   // fill multiple histograms
   template <typename TCollision, typename TTracks>
-  void fillYield(TCollision collision, TTracks tracks) // function to fill the yield and etaphi histograms.
+  void fillYield(const TCollision& collision, const TTracks& tracks) // function to fill the yield and etaphi histograms.
   {
     float weff1 = 1;
     float vtxz = collision.posZ();
@@ -762,7 +771,7 @@ struct FlowDecorrelation {
   }
 
   template <CorrelationContainer::CFStep step, typename TTracks, typename TFT0s>
-  void fillCorrelationsTPCFIT(TTracks tracks1, TFT0s const& ft0, float posZ, int system, int corType, float cent, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
+  void fillCorrelationsTPCFIT(const TTracks& tracks1, TFT0s const& ft0, float posZ, int system, int corType, float cent, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
     if (system == SameEvent) {
       if (!cfgCentTableUnavailable)
@@ -788,6 +797,7 @@ struct FlowDecorrelation {
         if (cfgDrawEtaPhiDis && corType == kFT0A)
           registry.fill(HIST("EtaPhi"), track1.eta(), track1.phi(), eventWeight * triggerWeight);
       }
+      registry.fill(HIST("hDCAxy"), track1.dcaXY(), track1.pt());
 
       std::size_t channelSize = 0;
       if (corType == kFT0A)
@@ -899,7 +909,7 @@ struct FlowDecorrelation {
   }
 
   template <CorrelationContainer::CFStep step, typename TTracks, typename TFT0s>
-  void fillCorrelationsTPCFV0(TTracks tracks1, TFT0s const& fv0, float posZ, int system, float cent, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
+  void fillCorrelationsTPCFV0(const TTracks& tracks1, TFT0s const& fv0, float posZ, int system, float cent, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
     if (system == SameEvent) {
       if (!cfgCentTableUnavailable)
@@ -920,6 +930,7 @@ struct FlowDecorrelation {
       if (system == SameEvent) {
         registry.fill(HIST("Trig_hist_TPC_FV0"), fSampleIndex, posZ, track1.eta(), eventWeight * triggerWeight);
       }
+      registry.fill(HIST("hDCAxy"), track1.dcaXY(), track1.pt());
 
       std::size_t channelSize = 0;
       channelSize = fv0.channel().size();
@@ -952,7 +963,7 @@ struct FlowDecorrelation {
   }
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision, const int multTrk, const float centrality, const bool fillCounter)
+  bool eventSelected(const TCollision& collision, const int multTrk, const float centrality, const bool fillCounter)
   {
     registry.fill(HIST("hEventCountSpecific"), 0.5);
     if (cfgEvSelkNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
@@ -1093,8 +1104,6 @@ struct FlowDecorrelation {
       if (y < (Ft0aLocations.blockFar + Ft0aLocations.offSetY) && y > (Ft0aLocations.blockClose + Ft0aLocations.offSetY)) {
         return true;
       }
-    }
-    if (x < (Ft0aLocations.blockFar + Ft0aLocations.offSetX) && x > (Ft0aLocations.blockClose + Ft0aLocations.offSetX)) {
       if (y > (-Ft0aLocations.blockFar + Ft0aLocations.offSetY) && y < (-Ft0aLocations.blockClose + Ft0aLocations.offSetY)) {
         return true;
       }
@@ -1104,8 +1113,6 @@ struct FlowDecorrelation {
       if (y < (Ft0aLocations.blockFar + Ft0aLocations.offSetY) && y > (Ft0aLocations.blockClose + Ft0aLocations.offSetY)) {
         return true;
       }
-    }
-    if (x > (-Ft0aLocations.blockFar + Ft0aLocations.offSetX) && x < (-Ft0aLocations.blockClose + Ft0aLocations.offSetX)) {
       if (y > (-Ft0aLocations.blockFar + Ft0aLocations.offSetY) && y < (-Ft0aLocations.blockClose + Ft0aLocations.offSetY)) {
         return true;
       }
@@ -1115,9 +1122,6 @@ struct FlowDecorrelation {
       if (y > (-Ft0aLocations.blockFar + Ft0aLocations.offSetY - Ft0aLocations.rectOffSet) && y < (-Ft0aLocations.blockClose + Ft0aLocations.offSetY - Ft0aLocations.rectOffSet)) {
         return true;
       }
-    }
-
-    if (x < (Ft0aLocations.blockClose + Ft0aLocations.offSetX) && x > (-Ft0aLocations.blockClose + Ft0aLocations.offSetX)) {
       if (y < (Ft0aLocations.blockFar + Ft0aLocations.offSetY + Ft0aLocations.rectOffSet) && y > (Ft0aLocations.blockClose + Ft0aLocations.offSetY + Ft0aLocations.rectOffSet)) {
         return true;
       }
@@ -1127,13 +1131,11 @@ struct FlowDecorrelation {
       if (x > (-Ft0aLocations.blockFar + Ft0aLocations.offSetX - Ft0aLocations.rectOffSet) && x < (-Ft0aLocations.blockClose + Ft0aLocations.offSetX - Ft0aLocations.rectOffSet)) {
         return true;
       }
-    }
-
-    if (y < (Ft0aLocations.blockClose + Ft0aLocations.offSetY) && y > (-Ft0aLocations.blockClose + Ft0aLocations.offSetY)) {
       if (x < (Ft0aLocations.blockFar + Ft0aLocations.offSetX + Ft0aLocations.rectOffSet) && x > (Ft0aLocations.blockClose + Ft0aLocations.offSetX + Ft0aLocations.rectOffSet)) {
         return true;
       }
     }
+
     return false;
   }
 
@@ -1452,7 +1454,7 @@ struct FlowDecorrelation {
   PROCESS_SWITCH(FlowDecorrelation, processMixedFt0aFt0c, "Process mixed events for FT0A-FT0C correlation", false);
 
   template <CorrelationContainer::CFStep step, typename TTracks, typename TTracksAssoc>
-  void fillCorrelationsTPCMFT(TTracks tracks1, TTracksAssoc tracks2, float posZ, int system, float cent, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
+  void fillCorrelationsTPCMFT(const TTracks& tracks1, const TTracksAssoc& tracks2, float posZ, int system, float cent, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
     if (system == SameEvent) {
       if (!cfgCentTableUnavailable)
@@ -1474,6 +1476,7 @@ struct FlowDecorrelation {
       if (system == SameEvent) {
         registry.fill(HIST("Trig_hist_TPC_MFT"), fSampleIndex, posZ, track1.pt(), eventWeight * triggerWeight);
       }
+      registry.fill(HIST("hDCAxy"), track1.dcaXY(), track1.pt());
 
       for (auto const& track2 : tracks2) {
 
@@ -1714,7 +1717,7 @@ struct FlowDecorrelation {
   PROCESS_SWITCH(FlowDecorrelation, processMixedTpcFv0, "Process mixed events for TPC-FV0 correlation", false);
 
   template <CorrelationContainer::CFStep step, typename TTracks, typename TTracksAssoc>
-  void fillMCCorrelations(TTracks tracks1, TTracksAssoc tracks2, float posZ, int system, float eventWeight, int corType) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
+  void fillMCCorrelations(const TTracks& tracks1, const TTracksAssoc& tracks2, float posZ, int system, float eventWeight, int corType) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
     int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
     double tpcEtaAcceptance = 0.9;

@@ -235,14 +235,14 @@ struct twoParticleCorrelations {
       return fhN2_vsDEtaDPhi[0][0]->GetBin(deltaeta_ix + 1, deltaphi_ix + 1);
     }
 
-    void storeTrackCorrections(std::vector<TH3*> corrs)
+    void storeTrackCorrections(const std::vector<TH3*>& corrs)
     {
       LOGF(info, "Stored NUA&NUE corrections for %d track species", corrs.size());
       fhNuaNue_vsZEtaPhiPt = corrs;
       ccdbstored = true;
     }
 
-    void storePtAverages(std::vector<TH2*> ptavgs)
+    void storePtAverages(const std::vector<TH2*>& ptavgs)
     {
       LOGF(info, "Stored pT average for %d track species", ptavgs.size());
       fhPtAvg_vsEtaPhi = ptavgs;
@@ -415,7 +415,7 @@ struct twoParticleCorrelations {
       }
     }
 
-    void init(TList* fOutputList, std::vector<std::string> idnames)
+    void init(TList* fOutputList, const std::vector<std::string>& idnames)
     {
       LOGF(info, "Correlations processing engine::init()");
       using namespace twopcorrelations;
@@ -425,7 +425,7 @@ struct twoParticleCorrelations {
       TH1::AddDirectory(kFALSE);
 
       /* load the species names */
-      for (auto id : idnames) {
+      for (const auto& id : idnames) {
         LOGF(info, "Adding particle species %s", id.c_str());
         tname.push_back(std::string(id.c_str()));
       }
@@ -787,7 +787,7 @@ struct twoParticleCorrelations {
 
   /// \brief Get the data collecting engine index corresponding to the passed collision
   template <typename FilteredCollision>
-  int getDCEindex(FilteredCollision collision)
+  int getDCEindex(const FilteredCollision& collision)
   {
     int ixDCE = -1;
     float cm = collision.centmult()[fMultiplicityIndex];
@@ -837,7 +837,7 @@ struct twoParticleCorrelations {
   {
     using namespace twopcorrelations;
     LOGF(TWOPCORRLOGCOLLISIONS, "Received collision with mask 0x%016lx and %ld tracks", collision.selflags(), tracks.size());
-    auto passOptions = [](auto options, auto mask) {
+    auto passOptions = [](const auto& options, auto mask) {
       bool all = true;
       for (auto option : options) {
         all = all && ((option & mask) != 0UL);

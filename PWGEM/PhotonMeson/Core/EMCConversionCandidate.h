@@ -17,6 +17,7 @@
 #define PWGEM_PHOTONMESON_CORE_EMCCONVERSIONCANDIDATE_H_
 
 #include <concepts>
+#include <cstdint>
 
 namespace o2::analysis::em
 {
@@ -34,6 +35,13 @@ concept IsEmcConversionCandidate = requires(T const& c) {
   { c.e2() } -> std::convertible_to<float>;
   { c.e1() } -> std::convertible_to<float>;
   { c.deltaPhi() } -> std::convertible_to<float>;
+  { c.harmonicEt() } -> std::convertible_to<float>;
+  { c.m021() } -> std::convertible_to<float>;
+  { c.m022() } -> std::convertible_to<float>;
+  { c.time1() } -> std::convertible_to<float>;
+  { c.time2() } -> std::convertible_to<float>;
+  { c.ncell1() } -> std::convertible_to<uint8_t>;
+  { c.ncell2() } -> std::convertible_to<uint8_t>;
 };
 
 struct EMCConversionCandidate {
@@ -46,6 +54,13 @@ struct EMCConversionCandidate {
   float mE2;
   float mE1;
   float mDeltaPhi;
+  float mHarmonicEt;
+  float mM021;
+  float mM022;
+  float mTime1;
+  float mTime2;
+  uint8_t mNcell1;
+  uint8_t mNcell2;
 
   [[nodiscard]] float minv() const { return mMinv; }
   [[nodiscard]] float deltaEta() const { return mDeltaEta; }
@@ -56,6 +71,13 @@ struct EMCConversionCandidate {
   [[nodiscard]] float e2() const { return mE2; }
   [[nodiscard]] float e1() const { return mE1; }
   [[nodiscard]] float deltaPhi() const { return mDeltaPhi; }
+  [[nodiscard]] float harmonicEt() const { return mHarmonicEt; }
+  [[nodiscard]] float m021() const { return mM021; }
+  [[nodiscard]] float m022() const { return mM022; }
+  [[nodiscard]] float time1() const { return mTime1; }
+  [[nodiscard]] float time2() const { return mTime2; }
+  [[nodiscard]] uint8_t ncell1() const { return mNcell1; }
+  [[nodiscard]] uint8_t ncell2() const { return mNcell2; }
 };
 
 } // namespace o2::analysis::em

@@ -16,6 +16,8 @@
 #ifndef PWGCF_FEMTO_CORE_PARTITIONS_H_
 #define PWGCF_FEMTO_CORE_PARTITIONS_H_
 
+#include <Framework/Expressions.h>
+
 // collsion selection
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define MAKE_COLLISION_FILTER(selection)                                                                                \
@@ -205,7 +207,8 @@
 // macros for mc particle (mc only)
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define MAKE_MC_PARTICLE_PARTITION(selection)                                                                                                                                              \
-  ifnode((selection).pdgCodeAbs.node() == 0, true, (selection).pdgCodeAbs == nabs(o2::aod::femtomcparticle::pdgCode)) &&                                                                   \
+  ifnode((selection).requireOrigin.node(), o2::aod::femtomcparticle::origin == o2::framework::expressions::as<uint8_t>((selection).origin), true) &&                                       \
+    ifnode((selection).pdgCodeAbs.node() == 0, true, (selection).pdgCodeAbs == nabs(o2::aod::femtomcparticle::pdgCode)) &&                                                                 \
     ifnode((selection).chargeSign.node() != 0, ifnode((selection).chargeSign.node() > 0, o2::aod::femtobase::stored::signedPt > 0.f, o2::aod::femtobase::stored::signedPt < 0.f), true) && \
     (nabs(o2::aod::femtobase::stored::signedPt) > (selection).ptMin) &&                                                                                                                    \
     (nabs(o2::aod::femtobase::stored::signedPt) < (selection).ptMax) &&                                                                                                                    \

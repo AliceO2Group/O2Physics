@@ -194,6 +194,40 @@ class MlResponse
     return std::vector<TypeOutputScore>{outputPtr, outputPtr + mNClasses};
   }
 
+  /// Get vector with model predictions for a batch of candidates
+  /// \param input a flattened vector containing features for nRows candidates,
+  ///        row-major: [row0_feat0, row0_feat1, ..., row1_feat0, row1_feat1, ...]
+  /// \param nModel is the model index (same bin must apply to every row in the batch)
+  /// \param nRows is the number of candidates packed into input
+  /// \return flat vector of size nRows * mNClasses, row-major: [row][class]
+  template <typename T1, typename T2>
+  std::vector<TypeOutputScore> getModelOutputBatched(T1& input, const T2& nModel, std::size_t nRows)
+  {
+    if (nModel < 0 || static_cast<std::size_t>(nModel) >= mModels.size()) {
+      LOG(fatal) << "Model index " << nModel << " is out of range! The number of initialised models is " << mModels.size() << ". Please check your configurables.";
+    }
+    if (nRows == 0) {
+      return {};
+    }
+
+    const int numInputNodes = mModels[nModel].getNumInputNodes();
+    const std::size_t numInputFeatures = input.size();
+
+    if (numInputFeatures % nRows != 0) {
+      LOG(fatal) << "Flattened input size (" << numInputFeatures << ") is not divisible by nRows (" << nRows << ")";
+    }
+    const std::size_t featuresPerRow = numInputFeatures / nRows;
+    if (numInputNodes >= 0 && static_cast<int>(featuresPerRow) != numInputNodes) {
+      LOG(fatal) << "Number of input nodes in the model " << mPaths[nModel] << " differs from features per row (" << numInputNodes << " vs " << featuresPerRow << ")";
+    }
+
+    TypeOutputScore* outputPtr = mModels[nModel].template evalModel<TypeOutputScore>(input);
+    if (outputPtr == nullptr) {
+      LOG(fatal) << "Batched model evaluation failed for model " << mPaths[nModel];
+    }
+    return std::vector<TypeOutputScore>{outputPtr, outputPtr + nRows * mNClasses};
+  }
+
   /// ML selections
   /// \param input is the input features
   /// \param candVar is the variable value (e.g. pT) used to select which model to use
