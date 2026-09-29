@@ -122,6 +122,11 @@ struct K1AnalysisMicro {
   static constexpr double PIDGridStep = 0.25;
   static constexpr double PIDGridMax = 3.5;
   static constexpr double GridTolerance = 1e-4;
+  static constexpr std::size_t MinPtBinEdges = 2;          // a pT dependent PID table needs at least one bin
+  static constexpr float ProducerDCAPtP0 = 0.004f;         // resonanceModuleInitializer cfgTightDCAOffset default
+  static constexpr float ProducerDCAPtCoeff = 0.013f;      // resonanceModuleInitializer cfgTightDCAPtCoefficient default
+  static constexpr float ProducerDCAPtPower = 1.f;         // resonanceModuleInitializer cfgTightDCAPtPower default
+  static constexpr float ConfigTolerance = 1e-6f;
   static constexpr int NCandidateStages = 12;
 
   SliceCache cache;
@@ -297,14 +302,14 @@ struct K1AnalysisMicro {
     // Consistency of the pT dependent PID configuration
     if (pionPID.cPionUsePtDepPID) {
       const auto& bins = pionPID.cPionPIDPtBins.value;
-      if (bins.size() < 2 || pionPID.cPionTPCNSigmaCuts.value.size() != bins.size() - 1 ||
+      if (bins.size() < MinPtBinEdges || pionPID.cPionTPCNSigmaCuts.value.size() != bins.size() - 1 ||
           pionPID.cPionTOFNSigmaCuts.value.size() != bins.size() - 1 || pionPID.cPionTOFRequired.value.size() != bins.size() - 1) {
         LOG(fatal) << "Pion pT dependent PID vectors must have (number of pT bin edges - 1) entries";
       }
     }
     if (kaonPID.cKaonUsePtDepPID) {
       const auto& bins = kaonPID.cKaonPIDPtBins.value;
-      if (bins.size() < 2 || kaonPID.cKaonTPCNSigmaCuts.value.size() != bins.size() - 1 ||
+      if (bins.size() < MinPtBinEdges || kaonPID.cKaonTPCNSigmaCuts.value.size() != bins.size() - 1 ||
           kaonPID.cKaonTOFNSigmaCuts.value.size() != bins.size() - 1 || kaonPID.cKaonTOFRequired.value.size() != bins.size() - 1) {
         LOG(fatal) << "Kaon pT dependent PID vectors must have (number of pT bin edges - 1) entries";
       }
@@ -329,7 +334,7 @@ struct K1AnalysisMicro {
       };
       if (trackCuts.cfgUsePtDepDCA) {
         LOG(info) << "Micro tracks use the producer pT dependent DCA flags (0.004 + 0.013 / pT); cDCAToPVByPt* are ignored";
-        if (std::abs(trackCuts.cDCAToPVByPtP0 - 0.004f) > 1e-6f || std::abs(trackCuts.cDCAToPVByPtCoeff - 0.013f) > 1e-6f || std::abs(trackCuts.cDCAToPVByPtPower - 1.f) > 1e-6f) {
+        if (std::abs(trackCuts.cDCAToPVByPtP0 - ProducerDCAPtP0) > ConfigTolerance || std::abs(trackCuts.cDCAToPVByPtCoeff - ProducerDCAPtCoeff) > ConfigTolerance || std::abs(trackCuts.cDCAToPVByPtPower - ProducerDCAPtPower) > ConfigTolerance) {
           LOG(warning) << "cDCAToPVByPt* differ from the producer defaults, but micro tracks always use the producer formula";
         }
       } else {
@@ -356,24 +361,24 @@ struct K1AnalysisMicro {
         checkPIDGrid("cMaxTOFnSigmaKaon", kaonPID.cMaxTOFnSigmaKaon);
       }
       if (pionPID.cPionUsePtDepPID) {
-        for (const auto cut : pionPID.cPionTPCNSigmaCuts.value) {
+        for (const auto& cut : pionPID.cPionTPCNSigmaCuts.value) {
           if (isCutEnabled(cut)) {
             checkPIDGrid("cPionTPCNSigmaCuts", cut);
           }
         }
-        for (const auto cut : pionPID.cPionTOFNSigmaCuts.value) {
+        for (const auto& cut : pionPID.cPionTOFNSigmaCuts.value) {
           if (isCutEnabled(cut)) {
             checkPIDGrid("cPionTOFNSigmaCuts", cut);
           }
         }
       }
       if (kaonPID.cKaonUsePtDepPID) {
-        for (const auto cut : kaonPID.cKaonTPCNSigmaCuts.value) {
+        for (const auto& cut : kaonPID.cKaonTPCNSigmaCuts.value) {
           if (isCutEnabled(cut)) {
             checkPIDGrid("cKaonTPCNSigmaCuts", cut);
           }
         }
-        for (const auto cut : kaonPID.cKaonTOFNSigmaCuts.value) {
+        for (const auto& cut : kaonPID.cKaonTOFNSigmaCuts.value) {
           if (isCutEnabled(cut)) {
             checkPIDGrid("cKaonTOFNSigmaCuts", cut);
           }
