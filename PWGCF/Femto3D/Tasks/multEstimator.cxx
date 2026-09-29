@@ -45,6 +45,7 @@
 
 #include <array>
 #include <cmath>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
