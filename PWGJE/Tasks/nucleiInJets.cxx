@@ -2495,7 +2495,7 @@ struct nucleiInJets {
     }
 
     // Select the accepted detector-level leading jet before considering matches.
-    int64_t leadingDetJetId = -1;
+    int32_t leadingDetJetId = -1;
     float leadingDetJetPt = -1.f;
     if (isWithLeadingJet) {
       for (const auto& mcdjet : mcdjets) {
@@ -2510,7 +2510,7 @@ struct nucleiInJets {
       }
     }
 
-    std::vector<int64_t> mcdJetIds{};
+    std::vector<int32_t> mcdJetIds{};
     std::vector<double> mcdJetPt{};
     std::vector<double> mcdJetPhi{};
     std::vector<double> mcdJetEta{};
