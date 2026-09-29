@@ -1708,27 +1708,40 @@ struct HadronNucleiCorrelation {
 
     // Local representation of a generated particle.
     struct GenCoalescenceCandidate {
-      GenCandidate kinematics;
-
-      int pdg = 0;
-      float x = 0.f;
-      float y = 0.f;
-      float z = 0.f;
-      float t = 0.f;
-
-      bool physicalPrimary = false;
-
-      [[nodiscard]] float pt() const { return kinematics.pt(); }
-      [[nodiscard]] float eta() const { return kinematics.eta(); }
-      [[nodiscard]] float phi() const { return kinematics.phi(); }
-      [[nodiscard]] float pz() const { return kinematics.pz(); }
+      GenCoalescenceCandidate(float pt,
+                              float eta,
+                              float phi,
+                              int pdg,
+                              float vx,
+                              float vy,
+                              float vz,
+                              float vt,
+                              bool physicalPrimary)
+        : mKinematics{pt, eta, phi},
+          mPdg{pdg},
+          mVx{vx},
+          mVy{vy},
+          mVz{vz},
+          mVt{vt},
+          mPhysicalPrimary{physicalPrimary}
+      {
+      }
+      [[nodiscard]] float pt() const { return mKinematics.pt(); }
+      [[nodiscard]] float eta() const { return mKinematics.eta(); }
+      [[nodiscard]] float phi() const { return mKinematics.phi(); }
 
       [[nodiscard]] float px() const { return pt() * std::cos(phi()); }
       [[nodiscard]] float py() const { return pt() * std::sin(phi()); }
+      [[nodiscard]] float pz() const { return mKinematics.pz(); }
+
+      [[nodiscard]] float vx() const { return mVx; }
+      [[nodiscard]] float vy() const { return mVy; }
+      [[nodiscard]] float vz() const { return mVz; }
+      [[nodiscard]] float vt() const { return mVt; }
 
       [[nodiscard]] float mass() const
       {
-        switch (std::abs(pdg)) {
+        switch (std::abs(mPdg)) {
           case PDG_t::kProton:
             return o2::track::PID::getMass(o2::track::PID::Proton);
           case PDG_t::kNeutron:
@@ -1736,20 +1749,31 @@ struct HadronNucleiCorrelation {
           case o2::constants::physics::Pdg::kDeuteron:
             return o2::track::PID::getMass(o2::track::PID::Deuteron);
           default:
-            LOG(fatal) << "Unhandled pdg " << pdg;
+            LOG(fatal) << "Unhandled pdg " << mPdg;
             return 0.f;
         }
       }
-      [[nodiscard]] float energy() const { return std::hypot(kinematics.p(), mass()); }
-      [[nodiscard]] float rapidity() const { return kinematics.rapidityForMass(mass()); }
-      [[nodiscard]] bool isPhysicalPrimary() const { return physicalPrimary; }
-      [[nodiscard]] int pdgCode() const { return pdg; }
+      [[nodiscard]] float energy() const { return std::hypot(mKinematics.p(), mass()); }
+      [[nodiscard]] float rapidity() const { return mKinematics.rapidityForMass(mass()); }
+      [[nodiscard]] float y() const { return rapidity(); }
+      [[nodiscard]] bool isPhysicalPrimary() const { return mPhysicalPrimary; }
+      [[nodiscard]] int pdgCode() const { return mPdg; }
+
+     private:
+      GenCandidate mKinematics;
+
+      int mPdg = 0;
+      float mVx = 0.f;
+      float mVy = 0.f;
+      float mVz = 0.f;
+      float mVt = 0.f;
+
+      bool mPhysicalPrimary = false;
     };
 
     std::vector<GenCoalescenceCandidate> particlesToProcess;
     particlesToProcess.reserve(mcParticles.size());
 
-    int64_t localIndex = 0;
     for (const auto& particle : mcParticles) {
       switch (particle.pdgCode()) {
         case PDG_t::kProton:
@@ -1758,13 +1782,15 @@ struct HadronNucleiCorrelation {
         case PDG_t::kNeutronBar:
         case o2::constants::physics::Pdg::kDeuteron:
         case -o2::constants::physics::Pdg::kDeuteron:
-          particlesToProcess.push_back({.kinematics = {particle.pt(), particle.eta(), particle.phi()},
-                                        .pdg = particle.pdgCode(),
-                                        .x = particle.vx(),
-                                        .y = particle.vy(),
-                                        .z = particle.vz(),
-                                        .t = particle.vt(),
-                                        .physicalPrimary = particle.isPhysicalPrimary()});
+          particlesToProcess.emplace_back(particle.pt(),
+                                          particle.eta(),
+                                          particle.phi(),
+                                          particle.pdgCode(),
+                                          particle.vx(),
+                                          particle.vy(),
+                                          particle.vz(),
+                                          particle.vt(),
+                                          particle.isPhysicalPrimary());
           break;
         default:
           break;
@@ -1773,7 +1799,7 @@ struct HadronNucleiCorrelation {
 
     if (settingsCoalescence.doMCGenCoalescence.value) {
       std::vector<bool> consumed(particlesToProcess.size(), false);
-      std::vector<GenParticle> deuterons;
+      std::vector<GenCoalescenceCandidate> deuterons;
 
       // Try p+n -> d and pbar+nbar -> dbar independently.
       for (const int sign : {+1, -1}) {
@@ -1799,35 +1825,37 @@ struct HadronNucleiCorrelation {
             const float en = neutron.energy();
 
             // Propagate the particle freezing out first to the freeze-out time of the other particle
-            float xp = proton.vx;
-            float yp = proton.vy;
-            float zp = proton.vz;
+            float xp = proton.vx();
+            float yp = proton.vy();
+            float zp = proton.vz();
+            const float tp = proton.vt();
 
-            float xn = neutron.vx;
-            float yn = neutron.vy;
-            float zn = neutron.vz;
+            float xn = neutron.vx();
+            float yn = neutron.vy();
+            float zn = neutron.vz();
+            const float tn = neutron.vt();
 
-            const float commonTime = std::max(static_cast<float>(proton.vt), static_cast<float>(neutron.vt));
+            const float commonTime = std::max(static_cast<float>(tp), static_cast<float>(tn));
 
-            if (proton.vt < commonTime) {
-              const float dt = commonTime - proton.vt;
-              xp += proton.px / ep * dt;
-              yp += proton.py / ep * dt;
-              zp += proton.pz / ep * dt;
+            if (tp < commonTime) {
+              const float dt = commonTime - tp;
+              xp += proton.px() / ep * dt;
+              yp += proton.py() / ep * dt;
+              zp += proton.pz() / ep * dt;
             }
 
-            if (neutron.vt < commonTime) {
-              const float dt = commonTime - neutron.vt;
-              xn += neutron.px / en * dt;
-              yn += neutron.py / en * dt;
-              zn += neutron.pz / en * dt;
+            if (tn < commonTime) {
+              const float dt = commonTime - tn;
+              xn += neutron.px() / en * dt;
+              yn += neutron.py() / en * dt;
+              zn += neutron.pz() / en * dt;
             }
 
             // Velocity of the p-n centre-of-mass frame.
             const float totalE = ep + en;
-            const float totalPx = proton.px + neutron.px;
-            const float totalPy = proton.py + neutron.py;
-            const float totalPz = proton.pz + neutron.pz;
+            const float totalPx = proton.px() + neutron.px();
+            const float totalPy = proton.py() + neutron.py();
+            const float totalPz = proton.pz() + neutron.pz();
 
             const float bx = totalPx / totalE;
             const float by = totalPy / totalE;
@@ -1842,12 +1870,12 @@ struct HadronNucleiCorrelation {
 
             // Boost the proton momentum into the p-n rest frame.
             // In that frame p_p* = -p_n*, therefore |p_p*| is the relative momentum entering the coalescence cut.
-            float pxStar = proton.px;
-            float pyStar = proton.py;
-            float pzStar = proton.pz;
+            float pxStar = proton.px();
+            float pyStar = proton.py();
+            float pzStar = proton.pz();
 
             if (beta2 > 0.) {
-              const float betaDotP = bx * proton.px + by * proton.py + bz * proton.pz;
+              const float betaDotP = bx * proton.px() + by * proton.py() + bz * proton.pz();
 
               const float factor = ((gamma - 1.) * betaDotP / beta2) - gamma * ep;
 
@@ -1886,23 +1914,26 @@ struct HadronNucleiCorrelation {
             consumed[ip] = true;
             consumed[in] = true;
 
-            deuterons.push_back({deuteronPDG,
-                                 static_cast<float>(totalPx),
-                                 static_cast<float>(totalPy),
-                                 static_cast<float>(totalPz),
-                                 static_cast<float>(0.5 * (xp + xn)),
-                                 static_cast<float>(0.5 * (yp + yn)),
-                                 static_cast<float>(0.5 * (zp + zn)),
-                                 static_cast<float>(commonTime),
-                                 proton.isPhysicalPrimary() && neutron.isPhysicalPrimary(),
-                                 localIndex++});
+            const float deuteronPt = std::hypot(totalPx, totalPy);
+            const float deuteronPhi = std::atan2(totalPy, totalPx);
+            const float deuteronEta = std::asinh(totalPz / std::max(deuteronPt, 1.e-12f));
+
+            deuterons.emplace_back(deuteronPt,
+                                   deuteronEta,
+                                   deuteronPhi,
+                                   deuteronPDG,
+                                   0.5f * (xp + xn),
+                                   0.5f * (yp + yn),
+                                   0.5f * (zp + zn),
+                                   commonTime,
+                                   proton.isPhysicalPrimary() && neutron.isPhysicalPrimary());
             break;
           }
         }
       }
 
       // Construct the post-coalescence particle list.
-      std::vector<GenParticle> coalescedParticles;
+      std::vector<GenCoalescenceCandidate> coalescedParticles;
       coalescedParticles.reserve(particlesToProcess.size() + deuterons.size());
 
       for (size_t i = 0; i < particlesToProcess.size(); ++i) {
