@@ -46,6 +46,7 @@
 #include <TParticlePDG.h>
 #include <TString.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstddef>
