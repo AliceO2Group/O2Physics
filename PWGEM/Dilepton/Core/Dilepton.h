@@ -670,9 +670,8 @@ struct Dilepton {
       const o2::framework::AxisSpec axis_sp{ConfSPBins, Form("#vec{u}_{%d,ll} #upoint #vec{Q}_{%d}^{%s}", nmod, nmod, qvec_det_names[cfgQvecEstimator].data())};
 
       fRegistry.add("Pair/same/uls/hs", "dilepton", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_y, axis_sp}, true);
-      if(flowcorrectionGroup.cfgFillNUAHist){
+      if (flowcorrectionGroup.cfgFillNUAHist) {
         fRegistry.add("Pair/same/uls/hNUA", "NUA Histogram;#phi (rad.);#eta;VtxZ;", o2::framework::HistType::kTH3D, {flowcorrectionGroup.ConfNUAPhiBins, flowcorrectionGroup.ConfNUAEtaBins, flowcorrectionGroup.ConfNUAZVtxBins}, true);
-        
       }
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
@@ -1103,17 +1102,17 @@ struct Dilepton {
         float sp = RecoDecay::dotProd(std::array<float, 2>{static_cast<float>(std::cos(nmod * v12.Phi())), static_cast<float>(std::sin(nmod * v12.Phi()))}, qvectors[nmod][cfgQvecEstimator]) / getSPresolution(collision.centFT0C(), collision.trackOccupancyInTimeRange());
         if (t1.sign() * t2.sign() < 0) { // ULS
           fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), pair_dca, v12.Rapidity(), sp, weight);
-          if(flowcorrectionGroup.cfgFillNUAHist){
+          if (flowcorrectionGroup.cfgFillNUAHist) {
             fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hNUA"), v12.Phi(), v12.Eta(), collision.posZ(), weight);
           }
         } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
           fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), pair_dca, v12.Rapidity(), sp, weight);
-          if(flowcorrectionGroup.cfgFillNUAHist){
+          if (flowcorrectionGroup.cfgFillNUAHist) {
             fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hNUA"), v12.Phi(), v12.Eta(), collision.posZ(), weight);
           }
         } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
           fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), pair_dca, v12.Rapidity(), sp, weight);
-          if(flowcorrectionGroup.cfgFillNUAHist){
+          if (flowcorrectionGroup.cfgFillNUAHist) {
             fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hNUA"), v12.Phi(), v12.Eta(), collision.posZ(), weight);
           }
         }
