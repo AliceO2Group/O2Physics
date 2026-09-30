@@ -1299,7 +1299,7 @@ struct ZdcQVectors {
 
         cal.lastRunNumber = runnumber;
         return;
-      } else {
+      }
         // vector of 4
         corrQxA.clear();
         corrQyA.clear();
@@ -1339,7 +1339,6 @@ struct ZdcQVectors {
 
             pb++;
           }
-        }
 
         double totalCorrectionQxAshift = std::accumulate(corrQxA.begin(), corrQxA.end(), 0.0);
         double totalCorrectionQyAshift = std::accumulate(corrQyA.begin(), corrQyA.end(), 0.0);
