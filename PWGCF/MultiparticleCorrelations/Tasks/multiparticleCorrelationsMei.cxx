@@ -134,10 +134,10 @@ enum EMiscHistograms {
   eMiscHistograms_N
 };
 
-enum EExternalHistograms {
+enum EWeightsHistograms {
   ePhi = 0,
   ePt,
-  eExternalHistograms_N
+  eWeightsHistograms_N
 };
 
 enum EObservables {
@@ -159,7 +159,7 @@ static constexpr std::array<const char*, eMultiplicityTables_N> MultiplicityTabl
   "multFT0M",
   "multNTracksPV"};
 
-static constexpr std::array<const char*, eExternalHistograms_N> WeightsNames = {
+static constexpr std::array<const char*, eWeightsHistograms_N> WeightsNames = {
   "ePhi",
   "ePt"};
 
@@ -187,7 +187,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
 
   // *) external root files
   Configurable<bool> cfExternalFileSwitch{"cfExternalFileSwitch", false, "choose to include external root files or not"};
-  Configurable<std::string> cfFileWithWeights{"cfFileWithWeights", "/alice-ccdb.cern.ch/Users/m/mei/O2challenge-", "path to external ROOT file which holds all particle weights"};
+  Configurable<std::string> cfFileWithWeights{"cfFileWithWeights", "/alice-ccdb.cern.ch/Users/m/mei/thesis-", "path to external ROOT file which holds all particle weights"};
 
   // *) binnings
   Configurable<bool> cfALICECentBinSwitch{"cfALICECentBinSwitch", true, "switch on or off to use ALICE default binning"};
@@ -247,7 +247,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
   // *) External histograms:
   struct ExternalHistograms {
     TList* fExternalHistogramsList = nullptr;
-    std::array<std::array<TH1F*, eCuts_N>, eExternalHistograms_N> fWeights{}; //! [type][before, after cuts]
+    std::array<std::array<TH1F*, eCuts_N>, eWeightsHistograms_N> fWeights{}; //! [type][before, after cuts]
   } ex;
 
   struct Observables {
@@ -275,7 +275,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
   }
 
   template <typename T1>
-  void updateQVectorsTable(std::vector<std::vector<TComplex>>& QVectorsTable, T1 phi, T1 weight = T1(1))
+  void updateQVectorsTable(std::vector<std::vector<TComplex>>& QVectorsTable, T1 const& phi, T1 weight = T1(1))
   {
     const int maxHarmonic = QVectorsTable.size();
     const int maxPower = QVectorsTable.empty() ? 0 : QVectorsTable[0].size();
@@ -526,9 +526,9 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
 
   // templates
   template <typename T1>
-  float chooseCent(T1 const& collision)
+  float chooseCent(T1 const& collision, int const& whichEstimator)
   {
-    switch (centralityEstimator) {
+    switch (whichEstimator) {
       case eFT0C:
         return static_cast<float>(collision.centFT0C());
       case eFT0M:
@@ -544,9 +544,9 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
   }
 
   template <typename T1>
-  float chooseMult(T1 const& collision)
+  float chooseMult(T1 const& collision, int const& whichTable)
   {
-    switch (multiplicityTables) {
+    switch (whichTable) {
       case eMultTPC:
         return static_cast<float>(collision.multTPC());
       case eMultFV0M:
@@ -598,8 +598,8 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     if constexpr (rs == eRec || rs == eRecAndSim) {
       // Fill reconstructed-level event histograms
       if (rm == eReal) {
-        auto thisCent = chooseCent(collision);
-        auto thisRefMult = chooseMult(collision);
+        auto thisCent = chooseCent(collision, centralityEstimator);
+        auto thisRefMult = chooseMult(collision, multiplicityTables);
         int multiplicityRec = static_cast<int>(tracks.size());
         if constexpr (cuts == eBefore) {
           ec.fEventHist[eHistMultiplicity][eRec][eBefore]->Fill(multiplicityRec);
@@ -772,10 +772,13 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
 
   void loadWeights(int runNumber)
   {
-    for (int i = 0; i < eExternalHistograms_N; ++i) {
+    for (int i = 0; i < eWeightsHistograms_N; ++i) {
       for (int j = 0; j < eCuts_N; ++j) {
-        ex.fWeights[i][j] =
-          getHistogramWithWeights(cfFileWithWeights.value.c_str(), Form("%d", runNumber), Form("[%s][%s]", WeightsNames[i], CutsNames[j]));
+        ex.fWeights[i][j] = getHistogramWithWeights(cfFileWithWeights.value.c_str(), Form("%d", runNumber), Form("[%s][%s]", WeightsNames[i], CutsNames[j]));
+        if (!ex.fWeights[i][j]) {
+          LOGF(info, "[%s][%s] not found", WeightsNames[i], CutsNames[j]);
+          continue;
+        }
         ex.fExternalHistogramsList->Add(ex.fWeights[i][j]);
       }
     }
@@ -784,7 +787,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
   template <ERecSim rs, typename T1>
   void qaFill(T1 const& collision)
   {
-    auto thisCent = chooseCent(collision);
+    auto thisCent = chooseCent(collision, centralityEstimator);
     if constexpr (rs == eRecAndSim || rs == eSim) {
       if (!collision.has_mcCollision()) {
         return;
@@ -807,7 +810,8 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     if (tc.fDryRun) {
       return;
     }
-    int thisRunNumber = collision.bc().runNumber();
+    const int thisRunNumber = collision.bc().runNumber();
+    LOGF(info, "Successfully running, run number is %d", thisRunNumber);
 
     if (isFirstCollision) {
       // Get run number
@@ -848,27 +852,30 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     auto track = tracks.iteratorAt(0); // set the type and scope from one instance
     for (int64_t i = 0; i < tracks.size(); i++) {
       track = tracks.iteratorAt(i);
-      const float thisPhi = track.phi();
-      const float thisPt = track.pt();
-      float wPhiBefore = 1.f;
-      float wPhiAfter = 1.f;
-      float wPtBefore = 1.f;
-      float wPtAfter = 1.f;
-      if (cfExternalFileSwitch && ex.fWeights[ePhi][eBefore]) {
-        wPhiBefore = ex.fWeights[ePhi][eBefore]->GetBinContent(ex.fWeights[ePhi][eBefore]->FindBin(thisPhi));
-        wPhiAfter = ex.fWeights[ePhi][eAfter]->GetBinContent(ex.fWeights[ePhi][eAfter]->FindBin(thisPhi));
-        wPtBefore = ex.fWeights[ePt][eBefore]->GetBinContent(ex.fWeights[ePt][eBefore]->FindBin(thisPt));
-        wPtAfter = ex.fWeights[ePt][eAfter]->GetBinContent(ex.fWeights[ePt][eAfter]->FindBin(thisPt));
+      float thisPhi = track.phi();
+      float thisPt = track.pt();
+      std::array<float, 2> thisPhiAndPt = {thisPhi, thisPt};
+      std::array<std::array<float, 2>, 2> thisWeights = {{{1.f, 1.f}, {1.f, 1.f}}}; // {{wPhiBefore, wPhiAfter},{wPtBefore,  wPtAfter}}
+
+      // eWeightsHistograms_N
+      if (cfExternalFileSwitch) {
+        for (int i = 0; i < eWeightsHistograms_N; ++i) {
+          for (int j = 0; j < eCuts_N; ++j) {
+            if (ex.fWeights[i][j]) {
+              thisWeights[i][j] = ex.fWeights[i][j]->GetBinContent(ex.fWeights[i][j]->FindBin(thisPhiAndPt[i]));
+            }
+          }
+        }
       }
 
       particleHistFill<rs, eReal, eBefore>(track);
       particleHistFill<rs, eMC, eBefore>(track);
-      updateQVectorsTable(qVectorsTableBeforeCutsReal, thisPhi, wPhiBefore * wPtBefore);
+      updateQVectorsTable(qVectorsTableBeforeCutsReal, thisPhi, thisWeights[ePhi][eBefore] * thisWeights[ePt][eBefore]);
 
       if (cfMasterCutSwitch) {
         if (passesEventCutsReal && particleCuts<rs, eReal>(track)) {
           particleHistFill<rs, eReal, eAfter>(track);
-          updateQVectorsTable(qVectorsTableAfterCutsReal, thisPhi, wPhiAfter * wPtAfter);
+          updateQVectorsTable(qVectorsTableAfterCutsReal, thisPhi, thisWeights[ePhi][eAfter] * thisWeights[ePt][eAfter]);
         }
         if (passesEventCutsMC && particleCuts<rs, eMC>(track)) {
           particleHistFill<rs, eMC, eAfter>(track);
