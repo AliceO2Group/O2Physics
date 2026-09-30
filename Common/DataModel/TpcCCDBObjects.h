@@ -29,6 +29,9 @@
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 
+#include <TBufferFile.h> // IWYU pragma: keep (needed by DECLARE_SOA_CCDB_COLUMN...)
+#include <TClass.h>      // IWYU pragma: keep (needed by DECLARE_SOA_CCDB_COLUMN...)
+
 namespace o2::aod
 {
 namespace ccdbTpc
