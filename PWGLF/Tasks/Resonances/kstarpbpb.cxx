@@ -488,44 +488,44 @@ struct Kstarpbpb {
       if (doprocessMCClosure || doprocessMCClosureME) {
         const AxisSpec massAxis{configThnAxisInvMass, "#it{M}_{K#pi} (GeV/#it{c}^{2})"};
         const AxisSpec ptAxis{configThnAxisPt, "#it{p}_{T} (GeV/#it{c})"};
-        const AxisSpec centAxis{configThnAxisCentrality, "Centrality (%)"};
+        const AxisSpec centAxisClosureKstar{configThnAxisCentrality, "Centrality (%)"};
         if (doprocessMCClosure) {
           // bins: 0 all MC events, 1 no reco event, 2 more than one reco event, 3 selected (eff sample), 4 selected (test sample)
           histos.add("closureKstar/hMC", "MC event statistics", kTH1F, {{5, 0.0f, 5.0f}});
           // Acc x Eff sample
-          histos.add("closureKstar/hSparseGenEff", "Generated K*, efficiency sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxis}, true);
-          histos.add("closureKstar/hSparseRecTrueEff", "Reconstructed true K*, efficiency sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxis}, true);
+          histos.add("closureKstar/hSparseGenEff", "Generated K*, efficiency sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxisClosureKstar}, true);
+          histos.add("closureKstar/hSparseRecTrueEff", "Reconstructed true K*, efficiency sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxisClosureKstar}, true);
           // test sample
-          histos.add("closureKstar/hSparseGen", "Generated K* (input), test sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxis}, true);
-          histos.add("closureKstar/hSparseRecTrue", "Reconstructed true K*, test sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxis}, true);
-          histos.add("closureKstar/hSparseSE", "Same-event unlike-sign K#pi pairs, test sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxis}, true);
+          histos.add("closureKstar/hSparseGen", "Generated K* (input), test sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxisClosureKstar}, true);
+          histos.add("closureKstar/hSparseRecTrue", "Reconstructed true K*, test sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxisClosureKstar}, true);
+          histos.add("closureKstar/hSparseSE", "Same-event unlike-sign K#pi pairs, test sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxisClosureKstar}, true);
           if (closure.fillRotBkg) {
-            histos.add("closureKstar/hSparseRot", "Rotated unlike-sign K#pi pairs, test sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxis}, true);
+            histos.add("closureKstar/hSparseRot", "Rotated unlike-sign K#pi pairs, test sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxisClosureKstar}, true);
           }
           histos.add("closureKstar/hCosThetaStarGenVsRec", "cos(#vartheta*) gen vs rec, true K*", kTH2F, {cosFineAxis, cosFineAxis});
         }
         if (doprocessMCClosureME) {
-          histos.add("closureKstar/hSparseME", "Mixed-event unlike-sign K#pi pairs, test sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxis}, true);
+          histos.add("closureKstar/hSparseME", "Mixed-event unlike-sign K#pi pairs, test sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxisClosureKstar}, true);
         }
       }
       if (doprocessMCClosurePhi || doprocessMCClosureMEPhi) {
         const AxisSpec massAxis{phiSA.configThnAxisInvMass, "#it{M}_{KK} (GeV/#it{c}^{2})"};
         const AxisSpec ptAxis{phiSA.configThnAxisPt, "#it{p}_{T} (GeV/#it{c})"};
-        const AxisSpec centAxis{phiSA.configThnAxisCentrality, "Centrality (%)"};
+        const AxisSpec centAxisClosurePhi{phiSA.configThnAxisCentrality, "Centrality (%)"};
         if (doprocessMCClosurePhi) {
           histos.add("closurePhi/hMC", "MC event statistics", kTH1F, {{5, 0.0f, 5.0f}});
-          histos.add("closurePhi/hSparseGenEff", "Generated phi, efficiency sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxis}, true);
-          histos.add("closurePhi/hSparseRecTrueEff", "Reconstructed true phi, efficiency sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxis}, true);
-          histos.add("closurePhi/hSparseGen", "Generated phi (input), test sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxis}, true);
-          histos.add("closurePhi/hSparseRecTrue", "Reconstructed true phi, test sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxis}, true);
-          histos.add("closurePhi/hSparseSE", "Same-event K^{+}K^{-} pairs, test sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxis}, true);
+          histos.add("closurePhi/hSparseGenEff", "Generated phi, efficiency sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxisClosurePhi}, true);
+          histos.add("closurePhi/hSparseRecTrueEff", "Reconstructed true phi, efficiency sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxisClosurePhi}, true);
+          histos.add("closurePhi/hSparseGen", "Generated phi (input), test sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxisClosurePhi}, true);
+          histos.add("closurePhi/hSparseRecTrue", "Reconstructed true phi, test sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxisClosurePhi}, true);
+          histos.add("closurePhi/hSparseSE", "Same-event K^{+}K^{-} pairs, test sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxisClosurePhi}, true);
           if (closure.fillRotBkg) {
-            histos.add("closurePhi/hSparseRot", "Rotated K^{+}K^{-} pairs, test sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxis}, true);
+            histos.add("closurePhi/hSparseRot", "Rotated K^{+}K^{-} pairs, test sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxisClosurePhi}, true);
           }
           histos.add("closurePhi/hCosThetaStarGenVsRec", "cos(#vartheta*) gen vs rec, true phi", kTH2F, {cosFineAxis, cosFineAxis});
         }
         if (doprocessMCClosureMEPhi) {
-          histos.add("closurePhi/hSparseME", "Mixed-event K^{+}K^{-} pairs, test sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxis}, true);
+          histos.add("closurePhi/hSparseME", "Mixed-event K^{+}K^{-} pairs, test sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxisClosurePhi}, true);
         }
       }
     }
