@@ -15,6 +15,7 @@
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/TableHelper.h"
+#include "Common/Core/Zorro.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -92,7 +93,7 @@ struct FilterCF {
   O2_DEFINE_CONFIGURABLE(cfgCutMCPt, float, 0.5f, "Minimal pT for particles");
   O2_DEFINE_CONFIGURABLE(cfgCutMCEta, float, 0.8f, "Eta range for particles");
   O2_DEFINE_CONFIGURABLE(cfgVerbosity, int, 1, "Verbosity level (0 = major, 1 = per collision)");
-  O2_DEFINE_CONFIGURABLE(cfgTrigger, int, 7, "Trigger choice: (0 = none, 7 = sel7, 8 = sel8, 9 = sel8 + kNoSameBunchPileup + kIsGoodZvtxFT0vsPV, 10 = sel8 before April, 2024, 11 = sel8 for MC, 12 = sel8 with low occupancy cut, 13 = sel8 + kNoSameBunchPileup + kIsGoodITSLayersAll -- for OO/NeNe) ");
+  O2_DEFINE_CONFIGURABLE(cfgTrigger, int, 7, "Trigger choice: (0 = none, 7 = sel7, 8 = sel8, 9 = sel8 + kNoSameBunchPileup + kIsGoodZvtxFT0vsPV, 10 = sel8 before April, 2024, 11 = sel8 for MC, 12 = sel8 with low occupancy cut, 13 = sel8 + kNoSameBunchPileup + kIsGoodITSLayersAll -- for OO/NeNe, 14 = fHighTrackMult (pp), 15 = fHighMultFv0 (pp), 16 = fHighTrackMult || fHighMultFv0 (pp))");
   O2_DEFINE_CONFIGURABLE(cfgMinOcc, int, 0, "minimum occupancy selection");
   O2_DEFINE_CONFIGURABLE(cfgMaxOcc, int, 3000, "maximum occupancy selection");
   O2_DEFINE_CONFIGURABLE(cfgCollisionFlags, uint16_t, aod::collision::CollisionFlagsRun2::Run2VertexerTracks, "Request collision flags if non-zero (0 = off, 1 = Run2VertexerTracks)");
@@ -134,6 +135,9 @@ struct FilterCF {
   OutputObj<TH3F> etaphi{TH3F("etaphi", "centrality vs eta vs phi", 100, 0, 100, 100, -2, 2, 200, 0, o2::constants::math::TwoPI)};
 
   HistogramRegistry registrytrackQA{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+
+  Zorro zorro;
+  int zorroRun = 0;
 
   Produces<aod::CFCollisions> outputCollisions;
   Produces<aod::CFCollisionsExtra> outputCollisionsExtra;
@@ -194,11 +198,12 @@ struct FilterCF {
           return;
         }
         localMultiplicityEfficiency.reset(dynamic_cast<THn*>(efficiency->Clone()));
-      } else {
-        ccdb->setURL("http://alice-ccdb.cern.ch");
-        ccdb->setCaching(true);
-        ccdb->setLocalObjectValidityChecking();
       }
+    }
+    if ((cfgTrigger >= 14 && cfgTrigger <= 16) || (!cfgEfficiencyMultiplicity.value.empty() && cfgLocalEfficiency == 0)) { // o2-linter: disable=magic-number (documented legacy trigger-selection code)
+      ccdb->setURL("http://alice-ccdb.cern.ch");
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
     }
     if (doprocessTrackQA) {
       registrytrackQA.add("zvtx", "Z Vertex position;  posz (cm); Events", HistType::kTH1F, {{100, -12, 12}});
@@ -248,6 +253,26 @@ struct FilterCF {
     }
     if (cfgTrigger == 13) { // relevant for pO/OO/NeNe, recommended by Physics Board on 27.01.2026; o2-linter: disable=magic-number (documented legacy trigger-selection code)
       return isMultSelected && collision.sel8() && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV);
+    }
+
+    // Zorro-based trigger selection
+    if (cfgTrigger >= 14 && cfgTrigger <= 16) { // o2-linter: disable=magic-number (documented legacy trigger-selection code)
+      std::string zorroMask;
+      if (cfgTrigger == 14) { // High-multiplicity pp trigger based on tracks (PWGMM/multFilter.cxx); o2-linter: disable=magic-number (documented legacy trigger-selection code)
+        zorroMask = "fHighTrackMult";
+      }
+      if (cfgTrigger == 15) { // High-multiplicity pp trigger based on FV0 amplitude (PWGMM/multFilter.cxx); o2-linter: disable=magic-number (documented legacy trigger-selection code)
+        zorroMask = "fHighMultFv0";
+      }
+      if (cfgTrigger == 16) { // High-multiplicity pp trigger based on tracks or FV0 amplitude (PWGMM/multFilter.cxx); o2-linter: disable=magic-number (documented legacy trigger-selection code)
+        zorroMask = "fHighTrackMult,fHighMultFv0";
+      }
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      if (zorroRun != bc.runNumber()) {
+        zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), zorroMask);
+        zorroRun = bc.runNumber();
+      }
+      return isMultSelected && zorro.isSelected(bc.globalBC(), 0); // Set BC threshold to zero to not admit nearby low-multiplicity collisions
     }
     return false;
   }
@@ -488,7 +513,7 @@ struct FilterCF {
   }
   PROCESS_SWITCH(FilterCF, processDataMults, "Process data with multiplicity sets", false);
 
-  void processTrackQA(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CFMultiplicities>>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>> const& tracks)
+  void processTrackQA(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CFMultiplicities>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>> const& tracks)
   {
     if (!keepCollision(collision)) {
       return;
