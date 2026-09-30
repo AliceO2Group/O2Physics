@@ -3020,7 +3020,7 @@ struct derivedlambdakzeroanalysis {
         BITSET(selMap, selPhysPrimAntiLambda);
       }
 
-      analyseCandidate(v0, pt, centrality, selMap, selGapSide, nK0Shorts, nLambdas, nAntiLambdas);
+      analyseCandidate(v0, pt, yLambda, yK0Short, centrality, selMap, selGapSide, nK0Shorts, nLambdas, nAntiLambdas);
 
       if constexpr (requires { collision.straMCCollisionId(); }) {
         if (doCollisionAssociationQA) {
