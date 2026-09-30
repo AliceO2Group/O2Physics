@@ -44,9 +44,9 @@ class FlowJSPCAnalysis
 
   using JQVectorsT = JQVectors<TComplex, 113, 15, false>;
   /// Fill-grid size for Q_{n,p}: (v8 * nPartDen)+1 harmonics, nPartDen+1 powers.
-  static constexpr uint32_t Nh3p = 49;  // 3-particle SPC, 6-particle denominator
+  static constexpr uint32_t Nh3p = 49; // 3-particle SPC, 6-particle denominator
   static constexpr uint32_t Nk3p = 7;
-  static constexpr uint32_t Nh4p = 65;  // 4-particle SPC, 8-particle denominator
+  static constexpr uint32_t Nh4p = 65; // 4-particle SPC, 8-particle denominator
   static constexpr uint32_t Nk4p = 9;
   static constexpr uint32_t NhFull = 113;
   static constexpr uint32_t NkFull = 15;
