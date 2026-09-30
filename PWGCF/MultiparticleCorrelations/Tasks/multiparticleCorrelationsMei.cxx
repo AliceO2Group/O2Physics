@@ -219,6 +219,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
   // *) misc
   Configurable<double> sigmaInel{"sigmaInel", 7.71, "inelastic cross section in mb"};
   Configurable<bool> qualityAssuranceSwitch{"qualityAssuranceSwitch", false, "quality assurance switch"};
+  Configurable<bool> runMessageSwitch{"runMessageSwitch", false, "run message switch"};
 
   // *) Define and initialize all data members to be called in the main process* functions:
   // **) Task configuration:
@@ -811,7 +812,9 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       return;
     }
     const int thisRunNumber = collision.bc().runNumber();
-    LOGF(info, "Successfully running, run number is %d", thisRunNumber);
+    if (runMessageSwitch) {
+      LOGF(info, "Successfully running, run number is %d", thisRunNumber);
+    }
 
     if (isFirstCollision) {
       // Get run number
@@ -859,10 +862,10 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
 
       // eWeightsHistograms_N
       if (cfExternalFileSwitch) {
-        for (int i = 0; i < eWeightsHistograms_N; ++i) {
+        for (int k = 0; k < eWeightsHistograms_N; ++k) {
           for (int j = 0; j < eCuts_N; ++j) {
-            if (ex.fWeights[i][j]) {
-              thisWeights[i][j] = ex.fWeights[i][j]->GetBinContent(ex.fWeights[i][j]->FindBin(thisPhiAndPt[i]));
+            if (ex.fWeights[k][j]) {
+              thisWeights[k][j] = ex.fWeights[k][j]->GetBinContent(ex.fWeights[k][j]->FindBin(thisPhiAndPt[k]));
             }
           }
         }
