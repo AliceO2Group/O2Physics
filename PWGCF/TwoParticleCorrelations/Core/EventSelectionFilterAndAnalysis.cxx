@@ -474,8 +474,6 @@ void EventSelectionFilterAndAnalysis::StoreArmedMask()
   }
   mOptArmedMask.push_back(optMask);
   optMask = 0UL;
-  if (mTriggerSelection != nullptr) {
-  }
   if (mZVertex != nullptr) {
     armedBrick(mZVertex);
   }

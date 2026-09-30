@@ -290,8 +290,8 @@ struct MultiplicityQa {
       return;
     }
 
-    long NcontribsTOF = 0;
-    long NcontribsTRD = 0;
+    int64_t NcontribsTOF = 0;
+    int64_t NcontribsTRD = 0;
     for (auto& track : tracks) {
       if (track.isPVContributor()) {
         if (track.hasTRD())

@@ -86,7 +86,7 @@ enum CorEventDep {
   kCENDEP,
   kLAST_CorEventDep
 };
-const std::string CorEventDepNames[kLAST_CorEventDep] = {
+const std::array<std::string, kLAST_CorEventDep> CorEventDepNames{
   "[kINTEGRATED]",
   "[kMULDEP]",
   "[kCENDEP]"};
@@ -101,7 +101,7 @@ enum CorTrackDep {
   kETADEP,
   kLAST_CorTrackDep
 };
-const std::string CorTrackDepNames[kLAST_CorTrackDep] = {
+const std::array<std::string, kLAST_CorTrackDep> CorTrackDepNames{
   "[kPTDEP]",
   "[kETADEP]"};
 std::vector<std::vector<double>> CorTrackDepDefaultBins = {
@@ -121,7 +121,7 @@ enum EventVariable {
   kMULTPC,
   kLAST_EventVariable
 };
-static constexpr std::string_view EventVariableNames[kLAST_EventVariable] = {
+static constexpr std::array<std::string_view, kLAST_EventVariable> EventVariableNames{
   "EventVariable_VertexX",
   "EventVariable_VertexY",
   "EventVariable_VertexZ",
@@ -201,10 +201,10 @@ std::vector<std::array<float, kLAST_CUT>> TrackVariableDefaultCuts = {
   {0., 6., 1.}};           // kITSCLUSTERS
 
 // common info string for all configurables
-const std::string BinningSuffix = std::string("-Binning");
-const std::string CutSuffix = std::string("-Cut");
-const std::string CorrelatorHistPrefix = std::string("CorDepBinning_");
-const std::vector<std::string> CutInfo = {std::string("Low"), std::string("High"), std::string("Option")};
+static constexpr std::string BinningSuffix{"-Binning"};
+static constexpr std::string CutSuffix{"-Cut"};
+static constexpr std::string CorrelatorHistPrefix{"CorDepBinning_"};
+static const std::vector<std::string> cutInfo{"Low", "High", "Option"};
 
 const int MaxHarmonic = 10;
 const int MaxPower = 10;
@@ -259,7 +259,7 @@ struct MultiParticleCorrelationsARTask {
     ""};
   Configurable<LabeledArray<float>> cfgEventCutVX{
     std::string(AR::EventVariableNames[AR::kVX]) + AR::CutSuffix,
-    {AR::EventVariableDefaultCuts.at(AR::kVX).data(), 3, AR::CutInfo},
+    {AR::EventVariableDefaultCuts.at(AR::kVX).data(), 3, AR::cutInfo},
     ""};
   ConfigurableAxis cfgEventAxisVY{
     std::string(AR::EventVariableNames[AR::kVY]) + AR::BinningSuffix,
@@ -267,7 +267,7 @@ struct MultiParticleCorrelationsARTask {
     ""};
   Configurable<LabeledArray<float>> cfgEventCutVY{
     std::string(AR::EventVariableNames[AR::kVY]) + AR::CutSuffix,
-    {AR::EventVariableDefaultCuts.at(AR::kVY).data(), 3, AR::CutInfo},
+    {AR::EventVariableDefaultCuts.at(AR::kVY).data(), 3, AR::cutInfo},
     ""};
   ConfigurableAxis cfgEventAxisVZ{
     std::string(AR::EventVariableNames[AR::kVZ]) + AR::BinningSuffix,
@@ -275,7 +275,7 @@ struct MultiParticleCorrelationsARTask {
     ""};
   Configurable<LabeledArray<float>> cfgEventCutVZ{
     std::string(AR::EventVariableNames[AR::kVZ]) + AR::CutSuffix,
-    {AR::EventVariableDefaultCuts.at(AR::kVZ).data(), 3, AR::CutInfo},
+    {AR::EventVariableDefaultCuts.at(AR::kVZ).data(), 3, AR::cutInfo},
     ""};
   ConfigurableAxis cfgEventAxisVABS{
     std::string(AR::EventVariableNames[AR::kVABS]) + AR::BinningSuffix,
@@ -283,7 +283,7 @@ struct MultiParticleCorrelationsARTask {
     ""};
   Configurable<LabeledArray<float>> cfgEventCutVABS{
     std::string(AR::EventVariableNames[AR::kVABS]) + AR::CutSuffix,
-    {AR::EventVariableDefaultCuts.at(AR::kVABS).data(), 3, AR::CutInfo},
+    {AR::EventVariableDefaultCuts.at(AR::kVABS).data(), 3, AR::cutInfo},
     ""};
   ConfigurableAxis cfgEventAxisCEN{
     std::string(AR::EventVariableNames[AR::kCEN]) + AR::BinningSuffix,
@@ -291,7 +291,7 @@ struct MultiParticleCorrelationsARTask {
     ""};
   Configurable<LabeledArray<float>> cfgEventCutCEN{
     std::string(AR::EventVariableNames[AR::kCEN]) + AR::CutSuffix,
-    {AR::EventVariableDefaultCuts.at(AR::kCEN).data(), 3, AR::CutInfo},
+    {AR::EventVariableDefaultCuts.at(AR::kCEN).data(), 3, AR::cutInfo},
     ""};
   ConfigurableAxis cfgEventAxisMULQ{
     std::string(AR::EventVariableNames[AR::kMULQ]) + AR::BinningSuffix,
@@ -299,7 +299,7 @@ struct MultiParticleCorrelationsARTask {
     ""};
   Configurable<LabeledArray<float>> cfgEventCutMULQ{
     std::string(AR::EventVariableNames[AR::kMULQ]) + AR::CutSuffix,
-    {AR::EventVariableDefaultCuts.at(AR::kMULQ).data(), 3, AR::CutInfo},
+    {AR::EventVariableDefaultCuts.at(AR::kMULQ).data(), 3, AR::cutInfo},
     ""};
   ConfigurableAxis cfgEventAxisMULW{
     std::string(AR::EventVariableNames[AR::kMULW]) + AR::BinningSuffix,
@@ -307,7 +307,7 @@ struct MultiParticleCorrelationsARTask {
     ""};
   Configurable<LabeledArray<float>> cfgEventCutMULW{
     std::string(AR::EventVariableNames[AR::kMULW]) + AR::CutSuffix,
-    {AR::EventVariableDefaultCuts.at(AR::kMULW).data(), 3, AR::CutInfo},
+    {AR::EventVariableDefaultCuts.at(AR::kMULW).data(), 3, AR::cutInfo},
     ""};
   ConfigurableAxis cfgEventAxisMULNC{
     std::string(AR::EventVariableNames[AR::kMULNC]) + AR::BinningSuffix,
@@ -315,7 +315,7 @@ struct MultiParticleCorrelationsARTask {
     ""};
   Configurable<LabeledArray<float>> cfgEventCutMULNC{
     std::string(AR::EventVariableNames[AR::kMULNC]) + AR::CutSuffix,
-    {AR::EventVariableDefaultCuts.at(AR::kMULNC).data(), 3, AR::CutInfo},
+    {AR::EventVariableDefaultCuts.at(AR::kMULNC).data(), 3, AR::cutInfo},
     ""};
   ConfigurableAxis cfgEventAxisMULTPC{
     std::string(AR::EventVariableNames[AR::kMULTPC]) + AR::BinningSuffix,
@@ -323,7 +323,7 @@ struct MultiParticleCorrelationsARTask {
     ""};
   Configurable<LabeledArray<float>> cfgEventCutMULTPC{
     std::string(AR::EventVariableNames[AR::kMULTPC]) + AR::CutSuffix,
-    {AR::EventVariableDefaultCuts.at(AR::kMULTPC).data(), 3, AR::CutInfo},
+    {AR::EventVariableDefaultCuts.at(AR::kMULTPC).data(), 3, AR::cutInfo},
     ""};
   std::vector<ConfigurableAxis> cfgEventBinning = {
     cfgEventAxisVX,
@@ -343,7 +343,7 @@ struct MultiParticleCorrelationsARTask {
     ""};
   Configurable<LabeledArray<float>> cfgTrackCutPT{
     std::string(AR::TrackVariableNames[AR::kPT]) + AR::CutSuffix,
-    {AR::TrackVariableDefaultCuts.at(AR::kPT).data(), 3, AR::CutInfo},
+    {AR::TrackVariableDefaultCuts.at(AR::kPT).data(), 3, AR::cutInfo},
     ""};
   ConfigurableAxis cfgTrackAxisPHI{
     std::string(AR::TrackVariableNames[AR::kPHI]) + AR::BinningSuffix,
@@ -351,7 +351,7 @@ struct MultiParticleCorrelationsARTask {
     ""};
   Configurable<LabeledArray<float>> cfgTrackCutPHI{
     std::string(AR::TrackVariableNames[AR::kPHI]) + AR::CutSuffix,
-    {AR::TrackVariableDefaultCuts.at(AR::kPHI).data(), 3, AR::CutInfo},
+    {AR::TrackVariableDefaultCuts.at(AR::kPHI).data(), 3, AR::cutInfo},
     ""};
   ConfigurableAxis cfgTrackAxisETA{
     std::string(AR::TrackVariableNames[AR::kETA]) + AR::BinningSuffix,
@@ -359,7 +359,7 @@ struct MultiParticleCorrelationsARTask {
     ""};
   Configurable<LabeledArray<float>> cfgTrackCutETA{
     std::string(AR::TrackVariableNames[AR::kETA]) + AR::CutSuffix,
-    {AR::TrackVariableDefaultCuts.at(AR::kETA).data(), 3, AR::CutInfo},
+    {AR::TrackVariableDefaultCuts.at(AR::kETA).data(), 3, AR::cutInfo},
     ""};
   ConfigurableAxis cfgTrackAxisCHARGE{
     std::string(AR::TrackVariableNames[AR::kCHARGE]) + AR::BinningSuffix,
@@ -367,7 +367,7 @@ struct MultiParticleCorrelationsARTask {
     ""};
   Configurable<LabeledArray<float>> cfgTrackCutCHARGE{
     std::string(AR::TrackVariableNames[AR::kCHARGE]) + AR::CutSuffix,
-    {AR::TrackVariableDefaultCuts.at(AR::kCHARGE).data(), 3, AR::CutInfo},
+    {AR::TrackVariableDefaultCuts.at(AR::kCHARGE).data(), 3, AR::cutInfo},
     ""};
   ConfigurableAxis cfgTrackAxisDCAZ{
     std::string(AR::TrackVariableNames[AR::kDCAZ]) + AR::BinningSuffix,
@@ -375,7 +375,7 @@ struct MultiParticleCorrelationsARTask {
     ""};
   Configurable<LabeledArray<float>> cfgTrackCutDCAZ{
     std::string(AR::TrackVariableNames[AR::kDCAZ]) + AR::CutSuffix,
-    {AR::TrackVariableDefaultCuts.at(AR::kDCAZ).data(), 3, AR::CutInfo},
+    {AR::TrackVariableDefaultCuts.at(AR::kDCAZ).data(), 3, AR::cutInfo},
     ""};
   ConfigurableAxis cfgTrackAxisDCAXY{
     std::string(AR::TrackVariableNames[AR::kDCAXY]) + AR::BinningSuffix,
@@ -383,7 +383,7 @@ struct MultiParticleCorrelationsARTask {
     ""};
   Configurable<LabeledArray<float>> cfgTrackCutDCAXY{
     std::string(AR::TrackVariableNames[AR::kDCAXY]) + AR::CutSuffix,
-    {AR::TrackVariableDefaultCuts.at(AR::kDCAXY).data(), 3, AR::CutInfo},
+    {AR::TrackVariableDefaultCuts.at(AR::kDCAXY).data(), 3, AR::cutInfo},
     ""};
   ConfigurableAxis cfgTrackAxisTPCCLUSTERS{
     std::string(AR::TrackVariableNames[AR::kTPCCLUSTERS]) + AR::BinningSuffix,
@@ -391,7 +391,7 @@ struct MultiParticleCorrelationsARTask {
     ""};
   Configurable<LabeledArray<float>> cfgTrackCutTPCCLUSTERS{
     std::string(AR::TrackVariableNames[AR::kTPCCLUSTERS]) + AR::CutSuffix,
-    {AR::TrackVariableDefaultCuts.at(AR::kTPCCLUSTERS).data(), 3, AR::CutInfo},
+    {AR::TrackVariableDefaultCuts.at(AR::kTPCCLUSTERS).data(), 3, AR::cutInfo},
     ""};
   ConfigurableAxis cfgTrackAxisTPCCROSSEDROWS{
     std::string(AR::TrackVariableNames[AR::kTPCCROSSEDROWS]) + AR::BinningSuffix,
@@ -399,7 +399,7 @@ struct MultiParticleCorrelationsARTask {
     ""};
   Configurable<LabeledArray<float>> cfgTrackCutTPCCROSSEDROWS{
     std::string(AR::TrackVariableNames[AR::kTPCCROSSEDROWS]) + AR::CutSuffix,
-    {AR::TrackVariableDefaultCuts.at(AR::kTPCCROSSEDROWS).data(), 3, AR::CutInfo},
+    {AR::TrackVariableDefaultCuts.at(AR::kTPCCROSSEDROWS).data(), 3, AR::cutInfo},
     ""};
   ConfigurableAxis cfgTrackAxisTPCCHI2{
     std::string(AR::TrackVariableNames[AR::kTPCCHI2]) + AR::BinningSuffix,
@@ -407,7 +407,7 @@ struct MultiParticleCorrelationsARTask {
     ""};
   Configurable<LabeledArray<float>> cfgTrackCutTPCCHI2{
     std::string(AR::TrackVariableNames[AR::kTPCCHI2]) + AR::CutSuffix,
-    {AR::TrackVariableDefaultCuts.at(AR::kTPCCHI2).data(), 3, AR::CutInfo},
+    {AR::TrackVariableDefaultCuts.at(AR::kTPCCHI2).data(), 3, AR::cutInfo},
     ""};
   ConfigurableAxis cfgTrackAxisITSCLUSTERS{
     std::string(AR::TrackVariableNames[AR::kITSCLUSTERS]) + AR::BinningSuffix,
@@ -415,7 +415,7 @@ struct MultiParticleCorrelationsARTask {
     ""};
   Configurable<LabeledArray<float>> cfgTrackCutITSCLUSTERS{
     std::string(AR::TrackVariableNames[AR::kITSCLUSTERS]) + AR::CutSuffix,
-    {AR::TrackVariableDefaultCuts.at(AR::kITSCLUSTERS).data(), 3, AR::CutInfo},
+    {AR::TrackVariableDefaultCuts.at(AR::kITSCLUSTERS).data(), 3, AR::cutInfo},
     ""};
   std::vector<ConfigurableAxis> cfgTrackBinning = {
     cfgTrackAxisPT,

@@ -46,7 +46,7 @@ DECLARE_SOA_COLUMN(DeltaTPi, deltaTPi, float);               //! Difference betw
 DECLARE_SOA_COLUMN(DeltaTKa, deltaTKa, float);               //! Difference between the tofSignal and the kaon expected signal
 DECLARE_SOA_COLUMN(DeltaTPr, deltaTPr, float);               //! Difference between the tofSignal and the proton expected signal
 DECLARE_SOA_COLUMN(DoubleDelta, doubleDelta, float);         //! Double difference between DeltaT
-DECLARE_SOA_COLUMN(RefSign, refSign, short);                 //! Sign of the reference track
+DECLARE_SOA_COLUMN(RefSign, refSign, int16_t);               //! Sign of the reference track
 DECLARE_SOA_COLUMN(PIDForTracking, pidForTracking, uint8_t); //! Index for mass hypothesis used in tracking see PID.h for definition
 DECLARE_SOA_COLUMN(EvTimeT0AC, evTimeT0AC, float);           //! Event time of the track computed with the T0AC
 DECLARE_SOA_COLUMN(EvTimeT0ACErr, evTimeT0ACErr, float);     //! Resolution of the event time of the track computed with the T0AC

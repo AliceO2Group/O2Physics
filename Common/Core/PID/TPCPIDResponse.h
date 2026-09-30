@@ -77,7 +77,7 @@ class Response
   float GetExpectedSigma(const CollisionType& collision, const TrackType& trk, const o2::track::PID::ID id) const;
   /// Gets the expected resolution of the track with multTPC explicitly provided
   template <typename TrackType>
-  float GetExpectedSigmaAtMultiplicity(const long multTPC, const TrackType& trk, const o2::track::PID::ID id) const;
+  float GetExpectedSigmaAtMultiplicity(const int64_t multTPC, const TrackType& trk, const o2::track::PID::ID id) const;
   /// Gets the number of sigmas with respect the expected value
   template <typename CollisionType, typename TrackType>
   float GetNumberOfSigma(const CollisionType& collision, const TrackType& trk, const o2::track::PID::ID id) const;
@@ -86,7 +86,7 @@ class Response
   float GetNumberOfSigmaMCTuned(const CollisionType& collision, const TrackType& trk, const o2::track::PID::ID id, float mcTunedTPCSignal) const;
   // Number of sigmas with respect to expected for MC, defining a tune-on-data signal value, explicit multTPC
   template <typename TrackType>
-  float GetNumberOfSigmaMCTunedAtMultiplicity(const long multTPC, const TrackType& trk, const o2::track::PID::ID id, float mcTunedTPCSignal) const;
+  float GetNumberOfSigmaMCTunedAtMultiplicity(const int64_t multTPC, const TrackType& trk, const o2::track::PID::ID id, float mcTunedTPCSignal) const;
   /// Gets the deviation to the expected signal
   template <typename TrackType>
   float GetSignalDelta(const TrackType& trk, const o2::track::PID::ID id) const;
@@ -99,7 +99,7 @@ class Response
  private:
   /// Compute expected sigma given a pre-computed expected signal, avoiding a redundant Bethe-Bloch call.
   template <typename TrackType>
-  float sigmaFromSignal(float expectedSignal, const long multTPC, const TrackType& track, const o2::track::PID::ID id) const;
+  float sigmaFromSignal(float expectedSignal, const int64_t multTPC, const TrackType& track, const o2::track::PID::ID id) const;
 
   std::array<float, 5> mBetheBlochParams = {0.03209809958934784, 19.9768009185791, 2.5266601063857674e-16, 2.7212300300598145, 6.080920219421387};
   std::array<float, 2> mResolutionParamsDefault = {0.07, 0.0};
@@ -135,7 +135,7 @@ inline float Response::GetExpectedSigma(const CollisionType& collision, const Tr
 
 /// Gets the expected resolution of the measurement
 template <typename TrackType>
-inline float Response::GetExpectedSigmaAtMultiplicity(const long multTPC, const TrackType& track, const o2::track::PID::ID id) const
+inline float Response::GetExpectedSigmaAtMultiplicity(const int64_t multTPC, const TrackType& track, const o2::track::PID::ID id) const
 {
   if (!track.hasTPC()) {
     return -999.f;
@@ -144,7 +144,7 @@ inline float Response::GetExpectedSigmaAtMultiplicity(const long multTPC, const 
 }
 
 template <typename TrackType>
-inline float Response::sigmaFromSignal(float expectedSignal, const long multTPC, const TrackType& track, const o2::track::PID::ID id) const
+inline float Response::sigmaFromSignal(float expectedSignal, const int64_t multTPC, const TrackType& track, const o2::track::PID::ID id) const
 {
   float resolution = 0.f;
   if (mUseDefaultResolutionParam) {
@@ -188,7 +188,7 @@ inline float Response::GetNumberOfSigmaMCTuned(const CollisionType& collision, c
 }
 
 template <typename TrackType>
-inline float Response::GetNumberOfSigmaMCTunedAtMultiplicity(const long multTPC, const TrackType& trk, const o2::track::PID::ID id, float mcTunedTPCSignal) const
+inline float Response::GetNumberOfSigmaMCTunedAtMultiplicity(const int64_t multTPC, const TrackType& trk, const o2::track::PID::ID id, float mcTunedTPCSignal) const
 {
   const float signal = GetExpectedSignal(trk, id);
   if (signal < 0.f) {

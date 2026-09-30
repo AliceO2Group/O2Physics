@@ -46,7 +46,7 @@ class CutBrick : public TNamed
   CutBrick();
   CutBrick(const char*, const char*);
   CutBrick(const CutBrick&) = delete;
-  virtual ~CutBrick() override = default;
+  ~CutBrick() override = default;
   CutBrick& operator=(const CutBrick&) = delete;
 
  public:
@@ -110,14 +110,14 @@ class CutBrickLimit : public CutBrick<TValueToFilter>
  public:
   CutBrickLimit();
   CutBrickLimit(const char*, const TValueToFilter&);
-  CutBrickLimit(const TString&);
-  virtual ~CutBrickLimit() override = default;
+  explicit CutBrickLimit(const TString&);
+  ~CutBrickLimit() override = default;
   CutBrickLimit(const CutBrickLimit&) = delete;
   CutBrickLimit& operator=(const CutBrickLimit&) = delete;
 
-  virtual std::vector<bool> IsArmed() override;
-  virtual std::vector<bool> Filter(const TValueToFilter&) override;
-  virtual int Length() override { return 1; }
+  std::vector<bool> IsArmed() override;
+  std::vector<bool> Filter(const TValueToFilter&) override;
+  int Length() override { return 1; }
 
  private:
   void ConstructCutFromString(const TString&);
@@ -154,13 +154,13 @@ class CutBrickFnLimit : public CutBrickLimit<TValueToFilter>
  public:
   CutBrickFnLimit();
   CutBrickFnLimit(const char*, const TF1&);
-  CutBrickFnLimit(const TString&);
-  virtual ~CutBrickFnLimit() override = default;
+  explicit CutBrickFnLimit(const TString&);
+  ~CutBrickFnLimit() override = default;
   CutBrickFnLimit(const CutBrickFnLimit&) = delete;
   CutBrickFnLimit& operator=(const CutBrickFnLimit&) = delete;
 
   /// sets the value of the limit according the passed variable value
-  virtual void setIndependentFnVar(float x) override
+  void setIndependentFnVar(float x) override
   {
     this->mLimit = TValueToFilter(mFunction.Eval(x));
   }
@@ -181,14 +181,14 @@ class CutBrickThreshold : public CutBrick<TValueToFilter>
  public:
   CutBrickThreshold();
   CutBrickThreshold(const char*, const TValueToFilter&);
-  CutBrickThreshold(const TString&);
-  virtual ~CutBrickThreshold() override = default;
+  explicit CutBrickThreshold(const TString&);
+  ~CutBrickThreshold() override = default;
   CutBrickThreshold(const CutBrickThreshold&) = delete;
   CutBrickThreshold& operator=(const CutBrickThreshold&) = delete;
 
-  virtual std::vector<bool> IsArmed() override;
-  virtual std::vector<bool> Filter(const TValueToFilter&) override;
-  virtual int Length() override { return 1; }
+  std::vector<bool> IsArmed() override;
+  std::vector<bool> Filter(const TValueToFilter&) override;
+  int Length() override { return 1; }
 
  private:
   void ConstructCutFromString(const TString&);
@@ -225,13 +225,13 @@ class CutBrickFnThreshold : public CutBrickThreshold<TValueToFilter>
  public:
   CutBrickFnThreshold();
   CutBrickFnThreshold(const char*, const TF1&);
-  CutBrickFnThreshold(const TString&);
-  virtual ~CutBrickFnThreshold() override = default;
+  explicit CutBrickFnThreshold(const TString&);
+  ~CutBrickFnThreshold() override = default;
   CutBrickFnThreshold(const CutBrickFnThreshold&) = delete;
   CutBrickFnThreshold& operator=(const CutBrickFnThreshold&) = delete;
 
   /// sets the value of the threshold according the passed variable value
-  virtual void setIndependentFnVar(float x) override
+  void setIndependentFnVar(float x) override
   {
     this->mThreshold = TValueToFilter(mFunction.Eval(x));
   }
@@ -252,14 +252,14 @@ class CutBrickRange : public CutBrick<TValueToFilter>
  public:
   CutBrickRange();
   CutBrickRange(const char*, const TValueToFilter&, const TValueToFilter&);
-  CutBrickRange(const TString&);
-  virtual ~CutBrickRange() override = default;
+  explicit CutBrickRange(const TString&);
+  ~CutBrickRange() override = default;
   CutBrickRange(const CutBrickRange&) = delete;
   CutBrickRange& operator=(const CutBrickRange&) = delete;
 
-  virtual std::vector<bool> IsArmed() override;
-  virtual std::vector<bool> Filter(const TValueToFilter&) override;
-  virtual int Length() override { return 1; }
+  std::vector<bool> IsArmed() override;
+  std::vector<bool> Filter(const TValueToFilter&) override;
+  int Length() override { return 1; }
 
  private:
   void ConstructCutFromString(const TString&);
@@ -297,13 +297,13 @@ class CutBrickFnRange : public CutBrickRange<TValueToFilter>
  public:
   CutBrickFnRange();
   CutBrickFnRange(const char*, const TF1&, const TF1&);
-  CutBrickFnRange(const TString&);
-  virtual ~CutBrickFnRange() override = default;
+  explicit CutBrickFnRange(const TString&);
+  ~CutBrickFnRange() override = default;
   CutBrickFnRange(const CutBrickFnRange&) = delete;
   CutBrickFnRange& operator=(const CutBrickFnRange&) = delete;
 
   /// sets the value of the limits according the passed variable value
-  virtual void setIndependentFnVar(float x) override
+  void setIndependentFnVar(float x) override
   {
     this->mLow = TValueToFilter(mLowFunction.Eval(x));
     this->mUp = TValueToFilter(mUpFunction.Eval(x));
@@ -326,14 +326,14 @@ class CutBrickExtToRange : public CutBrick<TValueToFilter>
  public:
   CutBrickExtToRange();
   CutBrickExtToRange(const char*, const TValueToFilter&, const TValueToFilter&);
-  CutBrickExtToRange(const TString&);
-  virtual ~CutBrickExtToRange() override = default;
+  explicit CutBrickExtToRange(const TString&);
+  ~CutBrickExtToRange() override = default;
   CutBrickExtToRange(const CutBrickExtToRange&) = delete;
   CutBrickExtToRange& operator=(const CutBrickExtToRange&) = delete;
 
-  virtual std::vector<bool> IsArmed() override;
-  virtual std::vector<bool> Filter(const TValueToFilter&) override;
-  virtual int Length() override { return 1; }
+  std::vector<bool> IsArmed() override;
+  std::vector<bool> Filter(const TValueToFilter&) override;
+  int Length() override { return 1; }
 
  private:
   void ConstructCutFromString(const TString&);
@@ -371,13 +371,13 @@ class CutBrickFnExtToRange : public CutBrickExtToRange<TValueToFilter>
  public:
   CutBrickFnExtToRange();
   CutBrickFnExtToRange(const char*, const TF1&, const TF1&);
-  CutBrickFnExtToRange(const TString&);
-  virtual ~CutBrickFnExtToRange() override = default;
+  explicit CutBrickFnExtToRange(const TString&);
+  ~CutBrickFnExtToRange() override = default;
   CutBrickFnExtToRange(const CutBrickFnExtToRange&) = delete;
   CutBrickFnExtToRange& operator=(const CutBrickFnExtToRange&) = delete;
 
   /// sets the value of the limits according the passed variable value
-  virtual void setIndependentFnVar(float x) override
+  void setIndependentFnVar(float x) override
   {
     this->mLow = TValueToFilter(mLowFunction.Eval(x));
     this->mUp = TValueToFilter(mUpFunction.Eval(x));
@@ -402,17 +402,17 @@ class CutBrickSelectorMultipleRanges : public CutBrick<TValueToFilter>
  public:
   CutBrickSelectorMultipleRanges();
   CutBrickSelectorMultipleRanges(const char*, const std::vector<TValueToFilter>&);
-  CutBrickSelectorMultipleRanges(const TString&);
-  virtual ~CutBrickSelectorMultipleRanges() override = default;
+  explicit CutBrickSelectorMultipleRanges(const TString&);
+  ~CutBrickSelectorMultipleRanges() override = default;
   CutBrickSelectorMultipleRanges(const CutBrickSelectorMultipleRanges&) = delete;
   CutBrickSelectorMultipleRanges& operator=(const CutBrickSelectorMultipleRanges&) = delete;
 
-  virtual std::vector<bool> IsArmed() override;
-  virtual std::vector<bool> Filter(const TValueToFilter&) override;
+  std::vector<bool> IsArmed() override;
+  std::vector<bool> Filter(const TValueToFilter&) override;
   /// Return the length needed to code the brick status
   /// The length is in brick units. The actual length is implementation dependent
   /// \returns Brick length in units of bricks
-  virtual int Length() override { return mActive.size(); }
+  int Length() override { return mActive.size(); }
 
  private:
   void ConstructCutFromString(const TString&);
@@ -432,8 +432,8 @@ class CutWithVariations : public CutBrick<TValueToFilter>
   /// Default constructor
   CutWithVariations();
   CutWithVariations(const char*, const char*, bool);
-  CutWithVariations(const TString&);
-  virtual ~CutWithVariations() override = default;
+  explicit CutWithVariations(const TString&);
+  ~CutWithVariations() override = default;
   CutWithVariations(const CutWithVariations&) = delete;
   CutWithVariations& operator=(const CutWithVariations&) = delete;
 
@@ -441,10 +441,10 @@ class CutWithVariations : public CutBrick<TValueToFilter>
   bool AddVariationBrick(CutBrick<TValueToFilter>* brick);
   TList& getDefaultBricks() { return mDefaultBricks; }
   TList& getVariantBricks() { return mVariationBricks; }
-  virtual std::vector<bool> IsArmed() override;
-  virtual std::vector<bool> Filter(const TValueToFilter&) override;
-  virtual int Length() override;
-  virtual int getArmedIndex() override;
+  std::vector<bool> IsArmed() override;
+  std::vector<bool> Filter(const TValueToFilter&) override;
+  int Length() override;
+  int getArmedIndex() override;
 
  private:
   void ConstructCutFromString(const TString&);
@@ -467,7 +467,7 @@ class SpecialCutBrick : public TNamed
   SpecialCutBrick();
   SpecialCutBrick(const char*, const char*);
   SpecialCutBrick(const SpecialCutBrick&) = delete;
-  virtual ~SpecialCutBrick() override = default;
+  ~SpecialCutBrick() override = default;
   SpecialCutBrick& operator=(const SpecialCutBrick&) = delete;
 
  public:
@@ -510,8 +510,8 @@ class TrackSelectionBrick : public SpecialCutBrick
 {
  public:
   TrackSelectionBrick() = default;
-  TrackSelectionBrick(const TString&);
-  virtual ~TrackSelectionBrick() override = default;
+  explicit TrackSelectionBrick(const TString&);
+  ~TrackSelectionBrick() override = default;
 
   enum class TrackCuts : int {
     kTrackType = 0,
@@ -530,9 +530,9 @@ class TrackSelectionBrick : public SpecialCutBrick
     kNCuts
   };
 
-  static const std::string mCutNames[static_cast<int>(TrackCuts::kNCuts)];
+  static const std::array<std::string, static_cast<int>(TrackSelectionBrick::TrackCuts::kNCuts)> mCutNames;
 
-  virtual std::vector<bool> IsArmed() override;
+  std::vector<bool> IsArmed() override;
   template <typename TrackToFilter>
   bool Filter(TrackToFilter const& track)
   {

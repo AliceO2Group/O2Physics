@@ -1234,7 +1234,7 @@ DECLARE_SOA_COLUMN(Signed1Pt, signed1Pt, float);   //! (sign of charge)/Pt in c/
 DECLARE_SOA_COLUMN(Eta, eta, float);               //!
 DECLARE_SOA_COLUMN(Phi, phi, float);               //!
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float signed1Pt) -> float { return 1.f / std::fabs(signed1Pt); });
-DECLARE_SOA_DYNAMIC_COLUMN(Sign, sign, [](float signed1Pt) -> short { return (signed1Pt > 0) ? 1 : -1; }); //! Charge: positive: 1, negative: -1
+DECLARE_SOA_DYNAMIC_COLUMN(Sign, sign, [](float signed1Pt) -> int16_t { return (signed1Pt > 0) ? 1 : -1; }); //! Charge: positive: 1, negative: -1
 } // namespace emprimarytrack
 
 DECLARE_SOA_TABLE_VERSIONED(EMPrimaryTracks_000, "AOD", "EMPRIMARYTRACK", 0, //! primary charged track table for 2PC
@@ -1281,13 +1281,13 @@ DECLARE_SOA_INDEX_COLUMN(EMThinEvent, emthinevent); //!
 DECLARE_SOA_COLUMN(Pt1, pt1, float);                //!
 DECLARE_SOA_COLUMN(Eta1, eta1, float);              //!
 DECLARE_SOA_COLUMN(Phi1, phi1, float);              //!
-DECLARE_SOA_COLUMN(Sign1, sign1, short);            //!
+DECLARE_SOA_COLUMN(Sign1, sign1, int16_t);          //!
 DECLARE_SOA_COLUMN(DCA1, dca1, float);              //! DCA in sigma. Users should decide 3D or XY or Z
 DECLARE_SOA_COLUMN(Pt2, pt2, float);                //!
 DECLARE_SOA_COLUMN(Eta2, eta2, float);              //!
 DECLARE_SOA_COLUMN(Phi2, phi2, float);              //!
 DECLARE_SOA_COLUMN(DCA2, dca2, float);              //! DCA in sigma. Users should decide 3D or XY or Z
-DECLARE_SOA_COLUMN(Sign2, sign2, short);            //!
+DECLARE_SOA_COLUMN(Sign2, sign2, int16_t);          //!
 DECLARE_SOA_COLUMN(Weight, weight, float);          //! possible pair weight
 } // namespace emdilepton
 
