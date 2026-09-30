@@ -53,6 +53,7 @@
 #include <TProfile2D.h>
 #include <TProfile3D.h>
 
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
@@ -64,7 +65,6 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include <array>
 
 using namespace o2;
 using namespace o2::framework;
@@ -352,9 +352,9 @@ struct FlowSP {
     nParticleTypes
   };
 
-  static constexpr std::array<std::string_view,3> Charge = {"incl/", "pos/", "neg/"};
-  static constexpr std::array<std::string_view,4> Species = {"", "pion/", "kaon/", "proton/"};
-  static constexpr std::array<std::string_view,2> Time = {"before/", "after/"};
+  static constexpr std::array<std::string_view, 3> Charge = {"incl/", "pos/", "neg/"};
+  static constexpr std::array<std::string_view, 4> Species = {"", "pion/", "kaon/", "proton/"};
+  static constexpr std::array<std::string_view, 2> Time = {"before/", "after/"};
 
   void init(InitContext const&)
   {
@@ -502,7 +502,7 @@ struct FlowSP {
           histos.add<TH3>("incl/QA/after/hPhi_Eta_Pt_corrected", "", kTH3D, {axisPhi, axisEta, axisPt});
         }
 
-        if (cfg.cFillQABefore){
+        if (cfg.cFillQABefore) {
           histos.addClone("incl/QA/after/", "incl/QA/before/");
         }
       }
@@ -830,13 +830,11 @@ struct FlowSP {
       }
     }
 
-    
     if (nIdentified == 1) {
       return valPID;
-    } 
-      
-   return kUnidentified; // Multiple PID matches found
-    
+    }
+
+    return kUnidentified; // Multiple PID matches found
   }
 
   int getMagneticField(uint64_t timestamp)
