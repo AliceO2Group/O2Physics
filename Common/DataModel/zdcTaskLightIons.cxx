@@ -13,11 +13,12 @@
 /// \brief Task for ZDC in light ions
 /// \author chiara.oppedisano@cern.ch
 
-#include <CCDB/BasicCCDBManager.h>
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/ZDCLightIons.h"
+
+#include <CCDB/BasicCCDBManager.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -180,11 +181,11 @@ struct ZdcTaskLightIons {
     std::map<std::string, std::string> metadata;
     // use getSpecific to set metadata to avoid crashes related to specific run number
     auto grplhcif = ccdbMgr.getSpecific<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", timeStamp, metadata);
-    //auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", timeStamp);
+    // auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", timeStamp);
     if (grplhcif == nullptr) {
       LOG(fatal) << "GRPLHCIFData not in database, timestamp:" << timeStamp;
     }
-    
+
     beamPatternA = grplhcif->getBunchFilling().getBeamPattern(0);
     beamPatternC = grplhcif->getBunchFilling().getBeamPattern(1);
     bcPatternB = grplhcif->getBunchFilling().getBCPattern();
@@ -195,26 +196,25 @@ struct ZdcTaskLightIons {
     for (const auto& bc : bcs) {
 
       if (bc.has_zdc()) {
-        
-        //int64_t timestamp = bc.timestamp();
+
+        // int64_t timestamp = bc.timestamp();
         auto timestampFromSOR = (bc.timestamp() - grplhcif->getFillNumberTime()) / 1e3; // Convert to seconds
 
         int bcInOrbit = bc.globalBC() % nBCsPerOrbit;
-        
+
         uint8_t maskSel = 0;
-        if(bcPatternB[bcInOrbit]){
+        if (bcPatternB[bcInOrbit]) {
           maskSel |= (uint8_t)(0x1u << bcMask_beamB);
         }
-        if(bcPatternA[bcInOrbit]){
+        if (bcPatternA[bcInOrbit]) {
           maskSel |= (uint8_t)(0x1u << bcMask_beamA);
         }
-        if(bcPatternC[bcInOrbit]){
+        if (bcPatternC[bcInOrbit]) {
           maskSel |= (uint8_t)(0x1u << bcMask_beamC);
         }
-        if(bcPatternE[bcInOrbit]){
+        if (bcPatternE[bcInOrbit]) {
           maskSel |= (uint8_t)(0x1u << bcMask_beamE);
         }
-
 
         auto tdcZNA = bc.zdc().timeZNA();
         auto tdcZNC = bc.zdc().timeZNC();
@@ -403,4 +403,5 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) // o2-linter: disab
 {
   return WorkflowSpec{
     adaptAnalysisTask<ZdcTaskLightIons>(cfgc)};
-}Common/Tasks/zdcTableReader.cxx
+}
+Common / Tasks / zdcTableReader.cxx
