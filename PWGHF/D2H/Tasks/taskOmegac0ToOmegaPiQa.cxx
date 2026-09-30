@@ -102,10 +102,10 @@ struct HfTaskOmegac0ToOmegaPiQa {
 
   void init(InitContext&)
   {
-    std::array<bool, 20> doprocess{doprocessDataDCAFitter, doprocessDataDCAFitterMl, doprocessDataDCAFitterFT0C, doprocessDataDCAFitterMlFT0C, 
+    std::array<bool, 20> doprocess{doprocessDataDCAFitter, doprocessDataDCAFitterMl, doprocessDataDCAFitterFT0C, doprocessDataDCAFitterMlFT0C,
                                    doprocessDataDCAFitterFT0M, doprocessDataDCAFitterMlFT0M,
                                    doprocessDataKFParticle, doprocessDataKFParticleMl, doprocessDataKFParticleFT0C, doprocessDataKFParticleMlFT0C,
-                                   doprocessDataKFParticleFT0M, doprocessDataKFParticleMlFT0M, 
+                                   doprocessDataKFParticleFT0M, doprocessDataKFParticleMlFT0M,
                                    doprocessMcDCAFitter, doprocessMcDCAFitterMl,
                                    doprocessMcDCAFitterFT0M, doprocessMcDCAFitterMlFT0M,
                                    doprocessMcKFParticle, doprocessMcKFParticleMl,
@@ -128,12 +128,12 @@ struct HfTaskOmegac0ToOmegaPiQa {
     std::vector<AxisSpec> axes = {thnAxisMass, thnAxisPt, thnAxisY};
     std::vector<AxisSpec> axesMcGen = {thnAxisPt, thnAxisPtB, thnAxisY, thnAxisOrigin};
 
-    if (doprocessDataDCAFitterFT0C || doprocessDataDCAFitterMlFT0C|| doprocessDataDCAFitterFT0M || doprocessDataDCAFitterMlFT0M || doprocessDataKFParticleFT0C || doprocessDataKFParticleMlFT0C || doprocessDataKFParticleFT0M || doprocessDataKFParticleMlFT0M) {
+    if (doprocessDataDCAFitterFT0C || doprocessDataDCAFitterMlFT0C || doprocessDataDCAFitterFT0M || doprocessDataDCAFitterMlFT0M || doprocessDataKFParticleFT0C || doprocessDataKFParticleMlFT0C || doprocessDataKFParticleFT0M || doprocessDataKFParticleMlFT0M) {
       axes.push_back(thnAxisCent);
       axes.emplace_back(thnConfigAxisNumPvContr);
     }
 
-    if (doprocessMcDCAFitterFT0M || doprocessMcDCAFitterMlFT0M ||doprocessMcKFParticleFT0M || doprocessMcKFParticleMlFT0M) {
+    if (doprocessMcDCAFitterFT0M || doprocessMcDCAFitterMlFT0M || doprocessMcKFParticleFT0M || doprocessMcKFParticleMlFT0M) {
       axes.push_back(thnAxisCentMc);
       axes.emplace_back(thnConfigAxisNumPvContr);
       axesMcGen.push_back(thnAxisCentMc);
@@ -170,7 +170,7 @@ struct HfTaskOmegac0ToOmegaPiQa {
       if (!(candidate.resultSelections() == true || (candidate.resultSelections() == false && !selectionFlagOmegac0))) {
         continue;
       }
-        
+
       double yOmegac{0.};
       if constexpr (UseKfParticle) {
         yOmegac = candidate.kfRapOmegac();
@@ -211,7 +211,7 @@ struct HfTaskOmegac0ToOmegaPiQa {
     if constexpr (UseCentrality) {
       float const cent = o2::hf_centrality::getCentralityColl(collision);
       if constexpr (ApplyMl) {
-        registry.fill(HIST("hReco"), candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), yOmegac, 
+        registry.fill(HIST("hReco"), candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), yOmegac,
                       cent, numPvContributors, candidate.mlProbOmegac()[0]);
       } else {
         registry.fill(HIST("hReco"), candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), yOmegac,
@@ -280,7 +280,7 @@ struct HfTaskOmegac0ToOmegaPiQa {
       if (!(candidate.resultSelections() == true || (candidate.resultSelections() == false && !selectionFlagOmegac0))) {
         continue;
       }
-      
+
       double yOmegac{0.};
       if constexpr (UseKfParticle) {
         yOmegac = candidate.kfRapOmegac();
@@ -408,8 +408,8 @@ struct HfTaskOmegac0ToOmegaPiQa {
       }
     }
   }
-  PROCESS_SWITCH(HfTaskOmegac0ToOmegaPiQa, processDataDCAFitterMlFT0M, "process data with DCAFitter, ML selections, FT0M centrality", false); 
-  
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegaPiQa, processDataDCAFitterMlFT0M, "process data with DCAFitter, ML selections, FT0M centrality", false);
+
   ////////////////////////////////////
   ///    Data with KFParticle       //
   ////////////////////////////////////
@@ -467,7 +467,7 @@ struct HfTaskOmegac0ToOmegaPiQa {
 
   void processDataKFParticleMlFT0M(Omegac0CandsMlKF const& candidates,
                                    CollisionsWithFT0M const& collisions)
- {
+  {
     for (const auto& collision : collisions) {
       auto groupedOmegacCandidates = candidates.sliceBy(candOmegacKFMlPerCollision, collision.globalIndex());
 
@@ -495,7 +495,7 @@ struct HfTaskOmegac0ToOmegaPiQa {
     processMc<false, true>(omegac0CandidatesMlMc, mcParticles);
   }
   PROCESS_SWITCH(HfTaskOmegac0ToOmegaPiQa, processMcDCAFitterMl, "Process MC with DCAFitter, ML selections", false);
-  
+
   void processMcDCAFitterFT0M(Omegac0CandsMc const& omegaC0CandidatesMc,
                               Omegac0Gen const& mcParticles,
                               CollisionsWithMcLabels const& collisions,

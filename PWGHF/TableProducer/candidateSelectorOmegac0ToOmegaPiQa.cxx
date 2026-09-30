@@ -69,7 +69,7 @@ enum {
 
 /// Struct for applying Omegac0 -> Omega pi selection cuts
 struct HfCandidateSelectorToOmegaPiQa {
-  // DCAFitter and KFParticle 
+  // DCAFitter and KFParticle
   Produces<aod::HfSelToOmegaPi> hfSelToOmegaPi;
   // ML selection - filled for both DCAFitter and KFParticle
   Produces<aod::HfMlSelOmegacToOmegaPi> hfMlSelToOmegaPi;
@@ -369,7 +369,7 @@ struct HfCandidateSelectorToOmegaPiQa {
 
     registry.add("hInvMassCharmBaryon", "Charm baryon invariant mass; inv. mass; entries", {HistType::kTH1F, {{500, 2.3, 3.1}}});
     registry.add("hPtCharmBaryon", "Charm baryon transverse momentum; p_{T} (GeV/#it{c}); entries", {HistType::kTH1F, {{8000, 0., 80.}}});
-    
+
     if (doprocessOmegac0SelectorWithKFParticle) {
       registry.add("hSelCompetingCasc", "hSelCompetingCasc;status;entries", {HistType::kTH1F, {axisSel}});
       registry.add("hInvMassXiMinus_rej_cut", "hInvMassXiMinus_rej_cut;m_{#Lambda#pi} under Xi hypothesis (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{1000, 1.25f, 1.65f}}});
@@ -670,7 +670,7 @@ struct HfCandidateSelectorToOmegaPiQa {
 
   // template <bool dokf, typename TCandTable>
   template <int svReco, typename TCandTable>
-  void runOmegac0Selector(TCandTable const& candidates, 
+  void runOmegac0Selector(TCandTable const& candidates,
                           TracksSel const& tracks,
                           TracksSelLf const& lfTracks)
   {
@@ -696,11 +696,11 @@ struct HfCandidateSelectorToOmegaPiQa {
         registry.fill(HIST("hSelSignDec"), 1); // anti-particle decay
       } else {
         registry.fill(HIST("hSelSignDec"), 0); // particle decay
-      } 
+      }
 
       // pT selection
       auto ptCandOmegac = RecoDecay::pt(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());
-      
+
       if (ptCandOmegac <= ptCandMin || ptCandOmegac >= ptCandMax) {
         resultSelections = false;
       }
@@ -725,7 +725,7 @@ struct HfCandidateSelectorToOmegaPiQa {
       if (!selectionResOnLF || !selectionResOnHF) {
         resultSelections = false;
       }
-      
+
       // if (std::abs(etaV0PosDau) > etaTrackLFDauMax) {
       //   resultSelections = false;
       //   registry.fill(HIST("hSelEtaPosV0Dau"), 0);
@@ -1222,8 +1222,8 @@ struct HfCandidateSelectorToOmegaPiQa {
   ///////////////////////////////////
   ///    Process with DCAFitter    //
   ///////////////////////////////////
-  void processOmegac0SelectorWithDCAFitter(aod::HfCandToOmegaPi const& candidates, 
-                                           TracksSel const& tracks, 
+  void processOmegac0SelectorWithDCAFitter(aod::HfCandToOmegaPi const& candidates,
+                                           TracksSel const& tracks,
                                            TracksSelLf const& lfTracks)
   {
     runOmegac0Selector<doDcaFitter>(candidates, tracks, lfTracks);
@@ -1233,8 +1233,8 @@ struct HfCandidateSelectorToOmegaPiQa {
   ////////////////////////////////////
   ///    Process with KFParticle    //
   ////////////////////////////////////
-  void processOmegac0SelectorWithKFParticle(soa::Join<aod::HfCandToOmegaPi, aod::HfOmegacKf> const& candidates, 
-                                            TracksSel const& tracks, 
+  void processOmegac0SelectorWithKFParticle(soa::Join<aod::HfCandToOmegaPi, aod::HfOmegacKf> const& candidates,
+                                            TracksSel const& tracks,
                                             TracksSelLf const& lfTracks)
   {
     runOmegac0Selector<doKfParticle>(candidates, tracks, lfTracks);

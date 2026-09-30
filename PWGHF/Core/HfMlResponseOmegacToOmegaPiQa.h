@@ -30,10 +30,9 @@
 // Fill the map of available input features
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP_OMEGAC0(FEATURE)                                         \
-  {                                                                       \
-    #FEATURE, static_cast<uint8_t>(InputFeaturesOmegacToOmegaPi::FEATURE) \
-  }
+#define FILL_MAP_OMEGAC0(FEATURE) \
+  {                               \
+    #FEATURE, static_cast<uint8_t>(InputFeaturesOmegacToOmegaPi::FEATURE)}
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
 // matches the entry in EnumInputFeatures associated to this FEATURE
@@ -70,7 +69,7 @@ enum class InputFeaturesOmegacToOmegaPi : uint8_t {
   impactParCascZ,
   cosPACharmBaryon,
   cosPACasc,
-  
+
   // KFParticle variables
   cosPaOmegacToPv,
   kfDcaXYPiFromOmegac,
@@ -113,7 +112,7 @@ class HfMlResponseOmegacToOmegaPi : public HfMlResponse<TypeOutputScore>
     std::vector<float> inputFeatures;
 
     for (const auto& idx : MlResponse<TypeOutputScore>::mCachedIndices) {
-      
+
       // Variables common to DCAFitter and KFParticle
       switch (idx) {
 
@@ -124,7 +123,7 @@ class HfMlResponseOmegacToOmegaPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_OMEGAC0_FULL(cascProng, nSigmaTPCKaFromCasc, tpcNSigmaKa);
         CHECK_AND_FILL_VEC_OMEGAC0_FULL(charmBaryonProng, nSigmaTPCPiFromOmegac, tpcNSigmaPi);
       }
-      
+
       // DCAFitter variables
       if constexpr (reconstructionType == aod::hf_cand_casc_lf::ConstructMethod::DcaFitter) {
 
@@ -138,7 +137,7 @@ class HfMlResponseOmegacToOmegaPi : public HfMlResponse<TypeOutputScore>
           CHECK_AND_FILL_VEC_OMEGAC0(cosPACasc);
         }
       }
-        
+
       // KFParticle variables
       if constexpr (reconstructionType == aod::hf_cand_casc_lf::ConstructMethod::KfParticle) {
 
@@ -180,8 +179,7 @@ class HfMlResponseOmegacToOmegaPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_OMEGAC0(dcaCascDau),
       FILL_MAP_OMEGAC0(nSigmaTPCPiFromV0),
       FILL_MAP_OMEGAC0(nSigmaTPCPiFromOmegac),
-      FILL_MAP_OMEGAC0(nSigmaTPCKaFromCasc)
-    };
+      FILL_MAP_OMEGAC0(nSigmaTPCKaFromCasc)};
 
     // DCAFitter variables
     if constexpr (reconstructionType == aod::hf_cand_casc_lf::ConstructMethod::DcaFitter) {
@@ -193,8 +191,7 @@ class HfMlResponseOmegacToOmegaPi : public HfMlResponse<TypeOutputScore>
         FILL_MAP_OMEGAC0(impactParCascXY),
         FILL_MAP_OMEGAC0(impactParCascZ),
         FILL_MAP_OMEGAC0(cosPACharmBaryon),
-        FILL_MAP_OMEGAC0(cosPACasc)
-      };
+        FILL_MAP_OMEGAC0(cosPACasc)};
 
       MlResponse<TypeOutputScore>::mAvailableInputFeatures.insert(mapDcaFeatures.begin(), mapDcaFeatures.end());
     }
@@ -221,8 +218,7 @@ class HfMlResponseOmegacToOmegaPi : public HfMlResponse<TypeOutputScore>
         FILL_MAP_OMEGAC0(chi2NdfTopoCascToOmegac),
         FILL_MAP_OMEGAC0(chi2NdfTopoCascToPv),
         FILL_MAP_OMEGAC0(chi2GeoOmegac),
-        FILL_MAP_OMEGAC0(chi2GeoCasc)
-      };
+        FILL_MAP_OMEGAC0(chi2GeoCasc)};
 
       MlResponse<TypeOutputScore>::mAvailableInputFeatures.insert(mapKfFeatures.begin(), mapKfFeatures.end());
     }
