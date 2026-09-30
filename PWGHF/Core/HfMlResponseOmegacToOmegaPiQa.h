@@ -104,6 +104,8 @@ class HfMlResponseOmegacToOmegaPi : public HfMlResponse<TypeOutputScore>
   /// Method to get the input features vector needed for ML inference
   /// \param candidate is the OMEGAC0 candidate
   /// \param lamProngPi is the candidate's lamProngPi
+  /// \param cascProng is the bachelor track from the Omega decay
+  /// \param charmBaryonProng is the bachelor pion from the OmegaC decay
   /// \return inputFeatures vector
   template <typename T1, typename T2, typename T3>
   std::vector<float> getInputFeatures(T1 const& candidate, T2 const& lamProngPi, T2 const& cascProng, T3 const& charmBaryonProng)

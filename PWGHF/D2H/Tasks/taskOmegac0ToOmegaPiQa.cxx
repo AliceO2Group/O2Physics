@@ -63,7 +63,7 @@ struct HfTaskOmegac0ToOmegaPiQa {
   using Omegac0Cands = soa::Filtered<soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi>>;
   using Omegac0CandsKF = soa::Filtered<soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi, aod::HfOmegacKf>>;
   using Omegac0CandsMc = soa::Filtered<soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi, aod::HfToOmegaPiMCRec>>;
-  using OmegaC0CandsMcKF = soa::Filtered<soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi, aod::HfOmegacKf, aod::HfToOmegaPiMCRec>>;
+  using Omegac0CandsMcKF = soa::Filtered<soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi, aod::HfOmegacKf, aod::HfToOmegaPiMCRec>>;
   using Omegac0CandsMl = soa::Filtered<soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi, aod::HfMlSelOmegacToOmegaPi>>;
   using Omegac0CandsMlKF = soa::Filtered<soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi, aod::HfMlSelOmegacToOmegaPi, aod::HfOmegacKf>>;
   using Omegac0CandsMlMc = soa::Filtered<soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi, aod::HfMlSelOmegacToOmegaPi, aod::HfToOmegaPiMCRec>>;
@@ -518,7 +518,7 @@ struct HfTaskOmegac0ToOmegaPiQa {
   ///    MC with KFParticle         //
   ////////////////////////////////////
 
-  void processMcKFParticle(OmegaC0CandsMcKF const& omegaC0CandidatesMcKF,
+  void processMcKFParticle(Omegac0CandsMcKF const& omegaC0CandidatesMcKF,
                            Omegac0Gen const& mcParticles)
   {
     processMc<true, false>(omegaC0CandidatesMcKF, mcParticles);
@@ -532,7 +532,7 @@ struct HfTaskOmegac0ToOmegaPiQa {
   }
   PROCESS_SWITCH(HfTaskOmegac0ToOmegaPiQa, processMcKFParticleMl, "Process MC with KFParticle, ML selections", false);
 
-  void processMcKFParticleFT0M(OmegaC0CandsMcKF const& omegaC0CandidatesMcKF,
+  void processMcKFParticleFT0M(Omegac0CandsMcKF const& omegaC0CandidatesMcKF,
                                Omegac0Gen const& mcParticles,
                                CollisionsWithMcLabels const& collisions,
                                McCollisionsWithFT0M const& mcCollisions)
