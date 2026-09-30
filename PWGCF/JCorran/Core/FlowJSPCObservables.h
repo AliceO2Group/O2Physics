@@ -76,8 +76,8 @@ class FlowJSPCObservables
           // {0, 0, 0, 0, 0, 0, 0, 0},
           // {0, 0, 0, 0, 0, 0, 0, 0},
           {4, 1, 1, -1, -1, 0, 0, 0}, // 7: <<4>>_{1,1,-1,-1} for c1{4}
-          {2, 1, -1, 0, 0, 0, 0, 0}, // 8: <<2>>_{1,-1} = <V1 V1*>
-          {3, 1, 1, -2, 0, 0, 0, 0}, // 9: C112 on the 4-particle sample (mixed-order Eq. (IV.19))
+          {2, 1, -1, 0, 0, 0, 0, 0},  // 8: <<2>>_{1,-1} = <V1 V1*>
+          {3, 1, 1, -2, 0, 0, 0, 0},  // 9: C112 on the 4-particle sample (mixed-order Eq. (IV.19))
           {0, 0, 0, 0, 0, 0, 0, 0},
           {0, 0, 0, 0, 0, 0, 0, 0}};
         memcpy(harmonicArray, harmonicArray02, sizeof(int) * maxNrComb * 8);
