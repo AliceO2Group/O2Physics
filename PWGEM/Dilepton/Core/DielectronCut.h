@@ -177,9 +177,9 @@ class DielectronCut : public TNamed
   template <bool dont_require_pteta = false, typename TTrack>
   bool IsSelectedTrack(TTrack const& track) const
   {
-    if (!track.hasITS() || !track.hasTPC()) {
-      return false;
-    }
+    // if (!track.hasITS() || !track.hasTPC()) {
+    //   return false;
+    // }
 
     if (!dont_require_pteta) {
       if (!IsSelectedTrack(track, DielectronCuts::kTrackPtRange)) {
