@@ -64,6 +64,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <array>
 
 using namespace o2;
 using namespace o2::framework;
@@ -71,7 +72,7 @@ using namespace o2::framework::expressions;
 using namespace o2::aod::rctsel;
 // using namespace o2::analysis;
 
-#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
+#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP}; // NOLINT(bugprone-macro-parentheses)
 
 struct FlowSP {
 
@@ -196,16 +197,16 @@ struct FlowSP {
   Preslice<TCs> trackPerCollision = aod::track::collisionId;
 
   //  Connect to ccdb
-  Service<ccdb::BasicCCDBManager> ccdb;
-  Service<o2::framework::O2DatabasePDG> pdg;
+  Service<ccdb::BasicCCDBManager> ccdb{};
+  Service<o2::framework::O2DatabasePDG> pdg{};
 
   // struct to hold the correction histos/
   struct Config {
-    std::vector<TH1D*> mEfficiency = {};
-    std::vector<TH2D*> mEfficiency2D = {};
-    std::vector<TH3D*> mEfficiency3D = {};
-    std::vector<GFWWeights*> mAcceptance = {};
-    std::vector<TH3D*> mAcceptance2D = {};
+    std::vector<TH1D*> mEfficiency;
+    std::vector<TH2D*> mEfficiency2D;
+    std::vector<TH3D*> mEfficiency3D;
+    std::vector<GFWWeights*> mAcceptance;
+    std::vector<TH3D*> mAcceptance2D;
     bool correctionsLoaded = false;
     int lastRunNumber = 0;
 
@@ -290,7 +291,7 @@ struct FlowSP {
   std::unique_ptr<TF1> fMultMultPVCut = nullptr;
 
   // Track selection DCA cut
-  std::unique_ptr<TF1> fDCACut = std::make_unique<TF1>("fDCACut", Form("%s", cfg.cTrackSelsDCAfunc.value.c_str()), 0, 100);
+  std::unique_ptr<TF1> fDCACut = std::make_unique<TF1>("fDCACut", cfg.cTrackSelsDCAfunc.value.c_str(), 0, 100);
 
   enum SelectionCriteria {
     evSel_FilteredEvent,
@@ -351,9 +352,9 @@ struct FlowSP {
     nParticleTypes
   };
 
-  static constexpr std::string_view Charge[] = {"incl/", "pos/", "neg/"};
-  static constexpr std::string_view Species[] = {"", "pion/", "kaon/", "proton/"};
-  static constexpr std::string_view Time[] = {"before/", "after/"};
+  static constexpr std::array<std::string_view,3> Charge = {"incl/", "pos/", "neg/"};
+  static constexpr std::array<std::string_view,4> Species = {"", "pion/", "kaon/", "proton/"};
+  static constexpr std::array<std::string_view,2> Time = {"before/", "after/"};
 
   void init(InitContext const&)
   {
@@ -501,8 +502,9 @@ struct FlowSP {
           histos.add<TH3>("incl/QA/after/hPhi_Eta_Pt_corrected", "", kTH3D, {axisPhi, axisEta, axisPt});
         }
 
-        if (cfg.cFillQABefore)
+        if (cfg.cFillQABefore){
           histos.addClone("incl/QA/after/", "incl/QA/before/");
+        }
       }
 
       if (cfg.cFillPIDQA && doprocessDataPID) {
@@ -828,13 +830,13 @@ struct FlowSP {
       }
     }
 
-    if (nIdentified == 0) {
-      return kUnidentified; // No PID match found
-    } else if (nIdentified == 1) {
+    
+    if (nIdentified == 1) {
       return valPID;
-    } else {
-      return kUnidentified; // Multiple PID matches found
-    }
+    } 
+      
+   return kUnidentified; // Multiple PID matches found
+    
   }
 
   int getMagneticField(uint64_t timestamp)
@@ -876,11 +878,11 @@ struct FlowSP {
     int nWeights = 3;
 
     if (cfg.cUseNUA1D) {
-      if (cfg.cCCDB_NUA.value.empty() == false) {
-        TList* listCorrections = ccdb->getForTimeStamp<TList>(cfg.cCCDB_NUA, timestamp);
-        conf.mAcceptance.push_back(reinterpret_cast<GFWWeights*>(listCorrections->FindObject("weights")));
-        conf.mAcceptance.push_back(reinterpret_cast<GFWWeights*>(listCorrections->FindObject("weights_positive")));
-        conf.mAcceptance.push_back(reinterpret_cast<GFWWeights*>(listCorrections->FindObject("weights_negative")));
+      if (!cfg.cCCDB_NUA.value.empty()) {
+        auto* listCorrections = ccdb->getForTimeStamp<TList>(cfg.cCCDB_NUA, timestamp);
+        conf.mAcceptance.push_back(dynamic_cast<GFWWeights*>(listCorrections->FindObject("weights")));
+        conf.mAcceptance.push_back(dynamic_cast<GFWWeights*>(listCorrections->FindObject("weights_positive")));
+        conf.mAcceptance.push_back(dynamic_cast<GFWWeights*>(listCorrections->FindObject("weights_negative")));
         int sizeAcc = conf.mAcceptance.size();
         if (sizeAcc < nWeights) {
           LOGF(fatal, "Could not load acceptance weights from %s", cfg.cCCDB_NUA.value.c_str());
@@ -891,8 +893,8 @@ struct FlowSP {
         LOGF(info, "cfg.cCCDB_NUA empty! No corrections loaded");
       }
     } else if (cfg.cUseNUA2D) {
-      if (cfg.cCCDB_NUA.value.empty() == false) {
-        TH3D* hNUA2D = ccdb->getForTimeStamp<TH3D>(cfg.cCCDB_NUA, timestamp);
+      if (!cfg.cCCDB_NUA.value.empty()) {
+        auto* hNUA2D = ccdb->getForTimeStamp<TH3D>(cfg.cCCDB_NUA, timestamp);
         if (!hNUA2D) {
           LOGF(fatal, "Could not load acceptance weights from %s", cfg.cCCDB_NUA.value.c_str());
         } else {
@@ -904,11 +906,11 @@ struct FlowSP {
       }
     }
     // Get Efficiency correction
-    if (cfg.cCCDB_NUE.value.empty() == false) {
-      TList* listCorrections = ccdb->getForTimeStamp<TList>(cfg.cCCDB_NUE, timestamp);
-      conf.mEfficiency.push_back(reinterpret_cast<TH1D*>(listCorrections->FindObject("Efficiency")));
-      conf.mEfficiency.push_back(reinterpret_cast<TH1D*>(listCorrections->FindObject("Efficiency_pos")));
-      conf.mEfficiency.push_back(reinterpret_cast<TH1D*>(listCorrections->FindObject("Efficiency_neg")));
+    if (!cfg.cCCDB_NUE.value.empty()) {
+      auto* listCorrections = ccdb->getForTimeStamp<TList>(cfg.cCCDB_NUE, timestamp);
+      conf.mEfficiency.push_back(dynamic_cast<TH1D*>(listCorrections->FindObject("Efficiency")));
+      conf.mEfficiency.push_back(dynamic_cast<TH1D*>(listCorrections->FindObject("Efficiency_pos")));
+      conf.mEfficiency.push_back(dynamic_cast<TH1D*>(listCorrections->FindObject("Efficiency_neg")));
       int sizeEff = conf.mEfficiency.size();
       if (sizeEff < nWeights) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfg.cCCDB_NUE.value.c_str());
@@ -919,11 +921,11 @@ struct FlowSP {
       LOGF(info, "cfg.cCCDB_NUE empty! No corrections loaded");
     }
     // Get Efficiency correction
-    if (cfg.cCCDB_NUE2D.value.empty() == false) {
-      TList* listCorrections = ccdb->getForTimeStamp<TList>(cfg.cCCDB_NUE2D, timestamp);
-      conf.mEfficiency2D.push_back(reinterpret_cast<TH2D*>(listCorrections->FindObject("Efficiency")));
-      conf.mEfficiency2D.push_back(reinterpret_cast<TH2D*>(listCorrections->FindObject("Efficiency_pos")));
-      conf.mEfficiency2D.push_back(reinterpret_cast<TH2D*>(listCorrections->FindObject("Efficiency_neg")));
+    if (!cfg.cCCDB_NUE2D.value.empty()) {
+      auto* listCorrections = ccdb->getForTimeStamp<TList>(cfg.cCCDB_NUE2D, timestamp);
+      conf.mEfficiency2D.push_back(dynamic_cast<TH2D*>(listCorrections->FindObject("Efficiency")));
+      conf.mEfficiency2D.push_back(dynamic_cast<TH2D*>(listCorrections->FindObject("Efficiency_pos")));
+      conf.mEfficiency2D.push_back(dynamic_cast<TH2D*>(listCorrections->FindObject("Efficiency_neg")));
       int sizeEff = conf.mEfficiency2D.size();
       if (sizeEff < nWeights) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfg.cCCDB_NUE.value.c_str());
@@ -934,11 +936,11 @@ struct FlowSP {
       LOGF(info, "cfg.cCCDB_NUE2 empty! No corrections loaded");
     }
 
-    if (cfg.cCCDB_NUE3D.value.empty() == false) {
-      TList* listCorrections = ccdb->getForTimeStamp<TList>(cfg.cCCDB_NUE3D, timestamp);
-      conf.mEfficiency3D.push_back(reinterpret_cast<TH3D*>(listCorrections->FindObject("Efficiency")));
-      conf.mEfficiency3D.push_back(reinterpret_cast<TH3D*>(listCorrections->FindObject("Efficiency_pos")));
-      conf.mEfficiency3D.push_back(reinterpret_cast<TH3D*>(listCorrections->FindObject("Efficiency_neg")));
+    if (!cfg.cCCDB_NUE3D.value.empty()) {
+      auto* listCorrections = ccdb->getForTimeStamp<TList>(cfg.cCCDB_NUE3D, timestamp);
+      conf.mEfficiency3D.push_back(dynamic_cast<TH3D*>(listCorrections->FindObject("Efficiency")));
+      conf.mEfficiency3D.push_back(dynamic_cast<TH3D*>(listCorrections->FindObject("Efficiency_pos")));
+      conf.mEfficiency3D.push_back(dynamic_cast<TH3D*>(listCorrections->FindObject("Efficiency_neg")));
       int sizeEff = conf.mEfficiency3D.size();
       if (sizeEff < nWeights)
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfg.cCCDB_NUE.value.c_str());
@@ -1566,12 +1568,12 @@ struct FlowSP {
     // Only load once!
     // If not loaded set to 1
 
-    if (cfg.cCCDBdir_QQ.value.empty() == false) {
+    if (!cfg.cCCDBdir_QQ.value.empty()) {
       if (!conf.clQQ) {
-        TList* hcorrList = ccdb->getForTimeStamp<TList>(cfg.cCCDBdir_QQ.value, bc.timestamp());
-        conf.hcorrQQ = reinterpret_cast<TProfile*>(hcorrList->FindObject("qAqCXY"));
-        conf.hcorrQQx = reinterpret_cast<TProfile*>(hcorrList->FindObject("qAqCX"));
-        conf.hcorrQQy = reinterpret_cast<TProfile*>(hcorrList->FindObject("qAqCY"));
+        auto* hcorrList = ccdb->getForTimeStamp<TList>(cfg.cCCDBdir_QQ.value, bc.timestamp());
+        conf.hcorrQQ = dynamic_cast<TProfile*>(hcorrList->FindObject("qAqCXY"));
+        conf.hcorrQQx = dynamic_cast<TProfile*>(hcorrList->FindObject("qAqCX"));
+        conf.hcorrQQy = dynamic_cast<TProfile*>(hcorrList->FindObject("qAqCY"));
         conf.clQQ = true;
       }
       spm.corrQQ = conf.hcorrQQ->GetBinContent(conf.hcorrQQ->FindBin(spm.centrality));
@@ -1580,7 +1582,7 @@ struct FlowSP {
     }
 
     double evPlaneRes = 1.;
-    if (cfg.cCCDBdir_SP.value.empty() == false) {
+    if (!cfg.cCCDBdir_SP.value.empty()) {
       if (!conf.clEvPlaneRes) {
         conf.hEvPlaneRes = ccdb->getForTimeStamp<TProfile>(cfg.cCCDBdir_SP.value, bc.timestamp());
         conf.clEvPlaneRes = true;
@@ -1593,7 +1595,7 @@ struct FlowSP {
     }
 
     spm.centWeight = 1.;
-    if (cfg.cCCDBdir_centrality.value.empty() == false) {
+    if (!cfg.cCCDBdir_centrality.value.empty()) {
       if (!conf.clCentrality) {
         conf.hCentrality = ccdb->getForTimeStamp<TH1D>(cfg.cCCDBdir_centrality.value, bc.timestamp());
         conf.clCentrality = true;
@@ -1648,7 +1650,7 @@ struct FlowSP {
       }
 
       spm.meanPtWeight = 1.0;
-      if (cfg.cCCDBdir_meanPt.value.empty() == false) {
+      if (!cfg.cCCDBdir_meanPt.value.empty()) {
         if (!conf.clMeanPt) {
           conf.hMeanPt = ccdb->getForTimeStamp<TProfile2D>(cfg.cCCDBdir_meanPt.value, bc.timestamp());
           conf.clMeanPt = true;
@@ -1871,12 +1873,12 @@ struct FlowSP {
     // Only load once!
     // If not loaded set to 1
 
-    if (cfg.cCCDBdir_QQ.value.empty() == false) {
+    if (!cfg.cCCDBdir_QQ.value.empty()) {
       if (!conf.clQQ) {
-        TList* hcorrList = ccdb->getForTimeStamp<TList>(cfg.cCCDBdir_QQ.value, bc.timestamp());
-        conf.hcorrQQ = reinterpret_cast<TProfile*>(hcorrList->FindObject("qAqCXY"));
-        conf.hcorrQQx = reinterpret_cast<TProfile*>(hcorrList->FindObject("qAqCX"));
-        conf.hcorrQQy = reinterpret_cast<TProfile*>(hcorrList->FindObject("qAqCY"));
+        auto* hcorrList = ccdb->getForTimeStamp<TList>(cfg.cCCDBdir_QQ.value, bc.timestamp());
+        conf.hcorrQQ = dynamic_cast<TProfile*>(hcorrList->FindObject("qAqCXY"));
+        conf.hcorrQQx = dynamic_cast<TProfile*>(hcorrList->FindObject("qAqCX"));
+        conf.hcorrQQy = dynamic_cast<TProfile*>(hcorrList->FindObject("qAqCY"));
         conf.clQQ = true;
       }
       spm.corrQQ = conf.hcorrQQ->GetBinContent(conf.hcorrQQ->FindBin(spm.centrality));
@@ -1885,7 +1887,7 @@ struct FlowSP {
     }
 
     double evPlaneRes = 1.;
-    if (cfg.cCCDBdir_SP.value.empty() == false) {
+    if (!cfg.cCCDBdir_SP.value.empty()) {
       if (!conf.clEvPlaneRes) {
         conf.hEvPlaneRes = ccdb->getForTimeStamp<TProfile>(cfg.cCCDBdir_SP.value, bc.timestamp());
         conf.clEvPlaneRes = true;
@@ -1898,7 +1900,7 @@ struct FlowSP {
     }
 
     spm.centWeight = 1.;
-    if (cfg.cCCDBdir_centrality.value.empty() == false) {
+    if (!cfg.cCCDBdir_centrality.value.empty()) {
       if (!conf.clCentrality) {
         conf.hCentrality = ccdb->getForTimeStamp<TH1D>(cfg.cCCDBdir_centrality.value, bc.timestamp());
         conf.clCentrality = true;
