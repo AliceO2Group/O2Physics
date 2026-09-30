@@ -181,7 +181,7 @@ struct RadialFlowDecorr {
   Configurable<int> cfgNchOMax{"cfgNchOMax", 800, "Max Nch range for OO collisions"};
 
   Configurable<int> cfgSys{"cfgSys", 1, "Which collision system? 1-->PbPb, 2-->NeNe, 3-->OO, 4-->pp"};
-  Configurable<int> cfgSystType{"cfgSystType", 0, "Systematic variation: 0=Base,1=systDCA,2=systEff,3=systFlat,4=systNEta,5=systNITS,6=systNTPC,7=systPileup,8=systVz,9=systEtaBinning"};
+  Configurable<int> cfgSystType{"cfgSystType", 0, "Systematic variation: 0=Base,1=systDCA,2=systEff,3=systFlat,4=systNITS,5=systNTPC,6=systPileup,7=systVz,8=systEtaBinning"};
   Configurable<int> cfgNBootstrap{"cfgNBootstrap", 16, "Number of Poisson bootstrap samples (base data run only)"};
   Configurable<int> cfgBootstrapSeed{"cfgBootstrapSeed", 0, "TRandom3 seed for bootstrap (0 = machine-random per job)"};
 
