@@ -41,11 +41,11 @@ struct ZDCLIAnalysis {
   Configurable<int> nBinstStamp{"nBinstStamp", 1000, "no. bins in histo vs. timestamp"};
   Configurable<float> tStampMax{"tStampMax", 1000, ",maximum value for timestamp"};
   //
-  Configurable<bool>  tdcCut{"tdcCut", false, "Flag for TDC cut"};
+  Configurable<bool> tdcCut{"tdcCut", false, "Flag for TDC cut"};
   Configurable<float> tdcZNmincut{"tdcZNmincut", -1.5, "Min. ZN TDC cut value"};
-  Configurable<float> tdcZNmaxcut{"tdcZNmaxcut", 1.5, "Max. ZN TDC cut value"}; 
+  Configurable<float> tdcZNmaxcut{"tdcZNmaxcut", 1.5, "Max. ZN TDC cut value"};
   Configurable<float> tdcZPmincut{"tdcZPmincut", -1.5, "Min. ZP TDC cut value"};
-  Configurable<float> tdcZPmaxcut{"tdcZPmaxcut", 1.5, "Max. ZP TDC cut value"}; 
+  Configurable<float> tdcZPmaxcut{"tdcZPmaxcut", 1.5, "Max. ZP TDC cut value"};
   //
   Configurable<int> nBinsADC{"nBinsADC", 1000, "n bins 4 ZDC ADCs"};
   Configurable<int> nBinsAmpZN{"nBinsAmpZN", 1025, "n bins 4 ZN amplitudes"};
@@ -235,22 +235,28 @@ struct ZDCLIAnalysis {
         if ((tdczpc < tdcZPmincut) || (tdczpc > tdcZPmaxcut))
           isZPCtdc = false;
       }
-      
+
       bool eventSelected = false;
 
       // for BC events -------
       if (selectBC) {
-        //printf("BCmask: %x \n", bcMask);
+        // printf("BCmask: %x \n", bcMask);
 
         registry.get<TH1>(HIST("hBCmask"))->Fill(0., 1.);
         auto isB = CHECK_BIT(bcMask, 0);
-        if (isB) registry.get<TH1>(HIST("hBCmask"))->Fill(1., 1.);
-        if (CHECK_BIT(bcMask, 1)) registry.get<TH1>(HIST("hBCmask"))->Fill(2., 1.);
-        if (CHECK_BIT(bcMask, 2)) registry.get<TH1>(HIST("hBCmask"))->Fill(3., 1.);
-        if (CHECK_BIT(bcMask, 3)) registry.get<TH1>(HIST("hBCmask"))->Fill(4., 1.);
+        if (isB)
+          registry.get<TH1>(HIST("hBCmask"))->Fill(1., 1.);
+        if (CHECK_BIT(bcMask, 1))
+          registry.get<TH1>(HIST("hBCmask"))->Fill(2., 1.);
+        if (CHECK_BIT(bcMask, 2))
+          registry.get<TH1>(HIST("hBCmask"))->Fill(3., 1.);
+        if (CHECK_BIT(bcMask, 3))
+          registry.get<TH1>(HIST("hBCmask"))->Fill(4., 1.);
         //
-        if(selectOnlyB && isB) eventSelected = true;
-        else if(!selectOnlyB)  eventSelected = true;
+        if (selectOnlyB && isB)
+          eventSelected = true;
+        else if (!selectOnlyB)
+          eventSelected = true;
       }
 
       // for collision events -------
@@ -315,27 +321,40 @@ struct ZDCLIAnalysis {
         else if (triggetTVX && CHECK_BIT(selectionBits, 9))
           istriggerTVX = true;
 
-        if (zvtxSel && ottoSel && istriggerTVX && isdoOccupancySel && isnoSameBunchPileupCut && isGoodZvtxFT0vsPVsel && isnoCollInTimeRangeStandard && isnoTimeFrameBorder && isnoITSROFFrameBorder && isGoodITSLayersAllsel) eventSelected = true;
-        //if (zvtxSel && ottoSel && isnoSameBunchPileupCut) eventSelected = true;
-        
-        if(eventSelected){
+        if (zvtxSel && ottoSel && istriggerTVX && isdoOccupancySel && isnoSameBunchPileupCut && isGoodZvtxFT0vsPVsel && isnoCollInTimeRangeStandard && isnoTimeFrameBorder && isnoITSROFFrameBorder && isGoodITSLayersAllsel)
+          eventSelected = true;
+        // if (zvtxSel && ottoSel && isnoSameBunchPileupCut) eventSelected = true;
+
+        if (eventSelected) {
           registry.get<TH1>(HIST("hcounts"))->Fill(0., 1.);
-          if(isZNAtdc) registry.get<TH1>(HIST("hcounts"))->Fill(1., 1.);
-          if(isZPAtdc) registry.get<TH1>(HIST("hcounts"))->Fill(2., 1.);
-          if(isZNCtdc) registry.get<TH1>(HIST("hcounts"))->Fill(3., 1.);
-          if(isZPCtdc) registry.get<TH1>(HIST("hcounts"))->Fill(4., 1.);
-          if(isZNAtdc || isZNCtdc) registry.get<TH1>(HIST("hcounts"))->Fill(5., 1.);
-          if(isZNAtdc || isZPAtdc)  registry.get<TH1>(HIST("hcounts"))->Fill(6., 1.);
-          if(isZNCtdc || isZPCtdc)  registry.get<TH1>(HIST("hcounts"))->Fill(7., 1.);
-          if(isZNAtdc || isZPAtdc || isZNCtdc || isZPCtdc) registry.get<TH1>(HIST("hcounts"))->Fill(8., 1.);
-          if(isZNAtdc && isZNCtdc) registry.get<TH1>(HIST("hcounts"))->Fill(9., 1.);
-          if(isZNAtdc && isZPAtdc) registry.get<TH1>(HIST("hcounts"))->Fill(10., 1.);
-          if(isZNCtdc && isZPCtdc) registry.get<TH1>(HIST("hcounts"))->Fill(11., 1.);
-          if(isZEMtdc) registry.get<TH1>(HIST("hcounts"))->Fill(12., 1.);
+          if (isZNAtdc)
+            registry.get<TH1>(HIST("hcounts"))->Fill(1., 1.);
+          if (isZPAtdc)
+            registry.get<TH1>(HIST("hcounts"))->Fill(2., 1.);
+          if (isZNCtdc)
+            registry.get<TH1>(HIST("hcounts"))->Fill(3., 1.);
+          if (isZPCtdc)
+            registry.get<TH1>(HIST("hcounts"))->Fill(4., 1.);
+          if (isZNAtdc || isZNCtdc)
+            registry.get<TH1>(HIST("hcounts"))->Fill(5., 1.);
+          if (isZNAtdc || isZPAtdc)
+            registry.get<TH1>(HIST("hcounts"))->Fill(6., 1.);
+          if (isZNCtdc || isZPCtdc)
+            registry.get<TH1>(HIST("hcounts"))->Fill(7., 1.);
+          if (isZNAtdc || isZPAtdc || isZNCtdc || isZPCtdc)
+            registry.get<TH1>(HIST("hcounts"))->Fill(8., 1.);
+          if (isZNAtdc && isZNCtdc)
+            registry.get<TH1>(HIST("hcounts"))->Fill(9., 1.);
+          if (isZNAtdc && isZPAtdc)
+            registry.get<TH1>(HIST("hcounts"))->Fill(10., 1.);
+          if (isZNCtdc && isZPCtdc)
+            registry.get<TH1>(HIST("hcounts"))->Fill(11., 1.);
+          if (isZEMtdc)
+            registry.get<TH1>(HIST("hcounts"))->Fill(12., 1.);
         }
       }
-      
-      if(eventSelected) {
+
+      if (eventSelected) {
 
         if (enCalibZNA > 0.) {
           zna *= enCalibZNA;
@@ -364,40 +383,61 @@ struct ZDCLIAnalysis {
 
         registry.get<TH1>(HIST("hzvertex"))->Fill(zvtx);
 
-        
         if (!applyZDCcut) {
 
-          if (isZNAtdc) registry.get<TH1>(HIST("hZNApmc"))->Fill(zna);
-          if (isZNCtdc) registry.get<TH1>(HIST("hZNCpmc"))->Fill(znc);
-          if (isZPAtdc) registry.get<TH1>(HIST("hZPApmc"))->Fill(zpa);
-          if (isZPCtdc) registry.get<TH1>(HIST("hZPCpmc"))->Fill(zpc);
+          if (isZNAtdc)
+            registry.get<TH1>(HIST("hZNApmc"))->Fill(zna);
+          if (isZNCtdc)
+            registry.get<TH1>(HIST("hZNCpmc"))->Fill(znc);
+          if (isZPAtdc)
+            registry.get<TH1>(HIST("hZPApmc"))->Fill(zpa);
+          if (isZPCtdc)
+            registry.get<TH1>(HIST("hZPCpmc"))->Fill(zpc);
           //
-          if (isZNAtdc || isZPAtdc) registry.get<TH1>(HIST("hZDCA"))->Fill(zna + zpa);
-          if (isZNCtdc || isZPCtdc) registry.get<TH1>(HIST("hZDCC"))->Fill(znc + zpc);
+          if (isZNAtdc || isZPAtdc)
+            registry.get<TH1>(HIST("hZDCA"))->Fill(zna + zpa);
+          if (isZNCtdc || isZPCtdc)
+            registry.get<TH1>(HIST("hZDCC"))->Fill(znc + zpc);
           //
-          if (isZNAtdc) registry.get<TH2>(HIST("hZNAamplvsADC"))->Fill(znaADC, zna);
-          if (isZNCtdc) registry.get<TH2>(HIST("hZNCamplvsADC"))->Fill(zncADC, znc);
-          if (isZPAtdc) registry.get<TH2>(HIST("hZPAamplvsADC"))->Fill(zpaADC, zpa);
-          if (isZPCtdc) registry.get<TH2>(HIST("hZPCamplvsADC"))->Fill(zpcADC, zpc);
+          if (isZNAtdc)
+            registry.get<TH2>(HIST("hZNAamplvsADC"))->Fill(znaADC, zna);
+          if (isZNCtdc)
+            registry.get<TH2>(HIST("hZNCamplvsADC"))->Fill(zncADC, znc);
+          if (isZPAtdc)
+            registry.get<TH2>(HIST("hZPAamplvsADC"))->Fill(zpaADC, zpa);
+          if (isZPCtdc)
+            registry.get<TH2>(HIST("hZPCamplvsADC"))->Fill(zpcADC, zpc);
           //
-          if (isZNAtdc || isZNCtdc) registry.get<TH2>(HIST("hZNAvsZNC"))->Fill(znc, zna);
-          if (isZPAtdc || isZPCtdc) registry.get<TH2>(HIST("hZPAvsZPC"))->Fill(zpc, zpa);
-          if (isZNAtdc || isZPAtdc) registry.get<TH2>(HIST("hZNAvsZPA"))->Fill(zpa, zna);
-          if (isZNCtdc || isZPCtdc) registry.get<TH2>(HIST("hZNCvsZPC"))->Fill(zpc, znc);
+          if (isZNAtdc || isZNCtdc)
+            registry.get<TH2>(HIST("hZNAvsZNC"))->Fill(znc, zna);
+          if (isZPAtdc || isZPCtdc)
+            registry.get<TH2>(HIST("hZPAvsZPC"))->Fill(zpc, zpa);
+          if (isZNAtdc || isZPAtdc)
+            registry.get<TH2>(HIST("hZNAvsZPA"))->Fill(zpa, zna);
+          if (isZNCtdc || isZPCtdc)
+            registry.get<TH2>(HIST("hZNCvsZPC"))->Fill(zpc, znc);
           //
-          if (isZNAtdc) registry.get<TH2>(HIST("hZNAvstdc"))->Fill(tdczna, zna);
-          if (isZNCtdc) registry.get<TH2>(HIST("hZNCvstdc"))->Fill(tdcznc, znc);
-          if (isZPAtdc) registry.get<TH2>(HIST("hZPAvstdc"))->Fill(tdczpa, zpa);
-          if (isZPCtdc) registry.get<TH2>(HIST("hZPCvstdc"))->Fill(tdczpc, zpc);
+          if (isZNAtdc)
+            registry.get<TH2>(HIST("hZNAvstdc"))->Fill(tdczna, zna);
+          if (isZNCtdc)
+            registry.get<TH2>(HIST("hZNCvstdc"))->Fill(tdcznc, znc);
+          if (isZPAtdc)
+            registry.get<TH2>(HIST("hZPAvstdc"))->Fill(tdczpa, zpa);
+          if (isZPCtdc)
+            registry.get<TH2>(HIST("hZPCvstdc"))->Fill(tdczpc, zpc);
           //
-          if (isZNAtdc) registry.get<TH2>(HIST("hZNAcvsZNAsum"))->Fill(0.25 * (znapm1 + znapm2 + znapm3 + znapm4), zna);
-          if (isZNCtdc) registry.get<TH2>(HIST("hZNCcvsZNCsum"))->Fill(0.25 * (zncpm1 + zncpm2 + zncpm3 + zncpm4), znc);
+          if (isZNAtdc)
+            registry.get<TH2>(HIST("hZNAcvsZNAsum"))->Fill(0.25 * (znapm1 + znapm2 + znapm3 + znapm4), zna);
+          if (isZNCtdc)
+            registry.get<TH2>(HIST("hZNCcvsZNCsum"))->Fill(0.25 * (zncpm1 + zncpm2 + zncpm3 + zncpm4), znc);
           //
-          if (isZNAtdc || isZNCtdc) registry.get<TH2>(HIST("hZNvsV0A"))->Fill(multV0A / 100., zna + znc);
-          if (isZNAtdc) registry.get<TH2>(HIST("hZNAvsFT0A"))->Fill((multFT0A) / 100., zna);
-          if (isZNCtdc) registry.get<TH2>(HIST("hZNCvsFT0C"))->Fill((multFT0C) / 100., znc);
-        }
-        else {
+          if (isZNAtdc || isZNCtdc)
+            registry.get<TH2>(HIST("hZNvsV0A"))->Fill(multV0A / 100., zna + znc);
+          if (isZNAtdc)
+            registry.get<TH2>(HIST("hZNAvsFT0A"))->Fill((multFT0A) / 100., zna);
+          if (isZNCtdc)
+            registry.get<TH2>(HIST("hZNCvsFT0C"))->Fill((multFT0C) / 100., znc);
+        } else {
           bool isZNChigh = false;
           if (znc >= zdccCutLow)
             isZNChigh = true;
@@ -411,47 +451,69 @@ struct ZDCLIAnalysis {
           if (zpc >= zdccCutLow)
             isZPChigh = true;
           //
-          if (isZNAtdc && isZNChigh) registry.get<TH1>(HIST("hZNApmc"))->Fill(zna);
-          if (isZNCtdc && isZNAhigh) registry.get<TH1>(HIST("hZNCpmc"))->Fill(znc);
-          if (isZPAtdc && isZPChigh) registry.get<TH1>(HIST("hZPApmc"))->Fill(zpa);
-          if (isZPCtdc && isZPAhigh) registry.get<TH1>(HIST("hZPCpmc"))->Fill(zpc);
+          if (isZNAtdc && isZNChigh)
+            registry.get<TH1>(HIST("hZNApmc"))->Fill(zna);
+          if (isZNCtdc && isZNAhigh)
+            registry.get<TH1>(HIST("hZNCpmc"))->Fill(znc);
+          if (isZPAtdc && isZPChigh)
+            registry.get<TH1>(HIST("hZPApmc"))->Fill(zpa);
+          if (isZPCtdc && isZPAhigh)
+            registry.get<TH1>(HIST("hZPCpmc"))->Fill(zpc);
           //
-          if ((isZNAtdc || isZPAtdc) && (isZNChigh && isZPChigh)) registry.get<TH1>(HIST("hZDCA"))->Fill(zna + zpa);
-          if ((isZNCtdc || isZPCtdc) && (isZNAhigh && isZPAhigh)) registry.get<TH1>(HIST("hZDCC"))->Fill(znc + zpc);
+          if ((isZNAtdc || isZPAtdc) && (isZNChigh && isZPChigh))
+            registry.get<TH1>(HIST("hZDCA"))->Fill(zna + zpa);
+          if ((isZNCtdc || isZPCtdc) && (isZNAhigh && isZPAhigh))
+            registry.get<TH1>(HIST("hZDCC"))->Fill(znc + zpc);
           //
-          if (isZNAtdc && isZNChigh) registry.get<TH2>(HIST("hZNAamplvsADC"))->Fill(znaADC, zna);
-          if (isZNCtdc && isZNAhigh) registry.get<TH2>(HIST("hZNCamplvsADC"))->Fill(zncADC, znc);
-          if (isZPAtdc && isZPChigh) registry.get<TH2>(HIST("hZPAamplvsADC"))->Fill(zpaADC, zpa);
-          if (isZPCtdc && isZPAhigh) registry.get<TH2>(HIST("hZPCamplvsADC"))->Fill(zpcADC, zpc);
+          if (isZNAtdc && isZNChigh)
+            registry.get<TH2>(HIST("hZNAamplvsADC"))->Fill(znaADC, zna);
+          if (isZNCtdc && isZNAhigh)
+            registry.get<TH2>(HIST("hZNCamplvsADC"))->Fill(zncADC, znc);
+          if (isZPAtdc && isZPChigh)
+            registry.get<TH2>(HIST("hZPAamplvsADC"))->Fill(zpaADC, zpa);
+          if (isZPCtdc && isZPAhigh)
+            registry.get<TH2>(HIST("hZPCamplvsADC"))->Fill(zpcADC, zpc);
           //
-          if (isZNAtdc && isZNChigh) registry.get<TH2>(HIST("hZNAvstdc"))->Fill(tdczna, zna);
-          if (isZNCtdc && isZNAhigh) registry.get<TH2>(HIST("hZNCvstdc"))->Fill(tdcznc, znc);
-          if (isZPAtdc && isZPChigh) registry.get<TH2>(HIST("hZPAvstdc"))->Fill(tdczpa, zpa);
-          if (isZPCtdc && isZPAhigh) registry.get<TH2>(HIST("hZPCvstdc"))->Fill(tdczpc, zpc);
+          if (isZNAtdc && isZNChigh)
+            registry.get<TH2>(HIST("hZNAvstdc"))->Fill(tdczna, zna);
+          if (isZNCtdc && isZNAhigh)
+            registry.get<TH2>(HIST("hZNCvstdc"))->Fill(tdcznc, znc);
+          if (isZPAtdc && isZPChigh)
+            registry.get<TH2>(HIST("hZPAvstdc"))->Fill(tdczpa, zpa);
+          if (isZPCtdc && isZPAhigh)
+            registry.get<TH2>(HIST("hZPCvstdc"))->Fill(tdczpc, zpc);
           //
-          if (isZNAtdc && isZNChigh) registry.get<TH2>(HIST("hZNAcvsZNAsum"))->Fill(0.25 * (znapm1 + znapm2 + znapm3 + znapm4), zna);
-          if (isZNCtdc && isZNAhigh) registry.get<TH2>(HIST("hZNCcvsZNCsum"))->Fill(0.25 * (zncpm1 + zncpm2 + zncpm3 + zncpm4), znc);
+          if (isZNAtdc && isZNChigh)
+            registry.get<TH2>(HIST("hZNAcvsZNAsum"))->Fill(0.25 * (znapm1 + znapm2 + znapm3 + znapm4), zna);
+          if (isZNCtdc && isZNAhigh)
+            registry.get<TH2>(HIST("hZNCcvsZNCsum"))->Fill(0.25 * (zncpm1 + zncpm2 + zncpm3 + zncpm4), znc);
           //
-          if (isZNAtdc && isZNChigh) registry.get<TH2>(HIST("hZNAvsFT0A"))->Fill((multFT0A) / 100., zna);
-          if (isZNCtdc && isZNAhigh) registry.get<TH2>(HIST("hZNCvsFT0C"))->Fill((multFT0C) / 100., znc);
+          if (isZNAtdc && isZNChigh)
+            registry.get<TH2>(HIST("hZNAvsFT0A"))->Fill((multFT0A) / 100., zna);
+          if (isZNCtdc && isZNAhigh)
+            registry.get<TH2>(HIST("hZNCvsFT0C"))->Fill((multFT0C) / 100., znc);
         }
-        
-        // Timestamp  
+
+        // Timestamp
         if (tStampOffset > timestamp) {
           printf("\n\n #################  OFFSET timestamp too large!!!!!!!!!!!!!!!!!!!!!!!!!! >  timestamp %lu \n\n", timestamp);
           return;
         }
-        //float tsh = (timestamp / 1000.) - (tStampOffset / 1000.); // in hours
+        // float tsh = (timestamp / 1000.) - (tStampOffset / 1000.); // in hours
         if (timestamp > tStampMax) {
           printf("\n\n MAXIMUM timestamp too small!!!!!!!!!!!!!!!!!!!!!!!!!! > timestamp-offset %f \n\n", timestamp);
           return;
         }
 
-        if (!applyZDCcut) { 
-          if (isZNAtdc) registry.get<TH2>(HIST("hZNAvstimestamp"))->Fill(timestamp, zna);
-          if (isZNCtdc) registry.get<TH2>(HIST("hZNCvstimestamp"))->Fill(timestamp, znc);
-          if (isZPAtdc) registry.get<TH2>(HIST("hZPAvstimestamp"))->Fill(timestamp, zpa);
-          if (isZPCtdc) registry.get<TH2>(HIST("hZPCvstimestamp"))->Fill(timestamp, zpc);
+        if (!applyZDCcut) {
+          if (isZNAtdc)
+            registry.get<TH2>(HIST("hZNAvstimestamp"))->Fill(timestamp, zna);
+          if (isZNCtdc)
+            registry.get<TH2>(HIST("hZNCvstimestamp"))->Fill(timestamp, znc);
+          if (isZPAtdc)
+            registry.get<TH2>(HIST("hZPAvstimestamp"))->Fill(timestamp, zpa);
+          if (isZPCtdc)
+            registry.get<TH2>(HIST("hZPCvstimestamp"))->Fill(timestamp, zpc);
         } else {
           if (isZNAtdc && znc >= zdccCutLow) {
             registry.get<TH2>(HIST("hZNAvstimestamp"))->Fill(timestamp, zna);
@@ -473,50 +535,69 @@ struct ZDCLIAnalysis {
           }
         }
         // TDCs
-        if (isZNAtdc) registry.get<TH1>(HIST("hZNAtdc"))->Fill(tdczna);
-        if (isZNCtdc) registry.get<TH1>(HIST("hZNCtdc"))->Fill(tdcznc);
-        if (isZPAtdc) registry.get<TH1>(HIST("hZPAtdc"))->Fill(tdczpa);
-        if (isZPCtdc) registry.get<TH1>(HIST("hZPCtdc"))->Fill(tdczpc);
+        if (isZNAtdc)
+          registry.get<TH1>(HIST("hZNAtdc"))->Fill(tdczna);
+        if (isZNCtdc)
+          registry.get<TH1>(HIST("hZNCtdc"))->Fill(tdcznc);
+        if (isZPAtdc)
+          registry.get<TH1>(HIST("hZPAtdc"))->Fill(tdczpa);
+        if (isZPCtdc)
+          registry.get<TH1>(HIST("hZPCtdc"))->Fill(tdczpc);
         //
-        if(isZEMtdc) {
+        if (isZEMtdc) {
           registry.get<TH1>(HIST("hZEM"))->Fill(zem1 + zem2);
           registry.get<TH2>(HIST("hZNAvsZEM"))->Fill(zem1 + zem2, zna);
           registry.get<TH2>(HIST("hZNCvsZEM"))->Fill(zem1 + zem2, znc);
           registry.get<TH2>(HIST("hZPAvsZEM"))->Fill(zem1 + zem2, zpa);
           registry.get<TH2>(HIST("hZPCvsZEM"))->Fill(zem1 + zem2, zpc);
         }
-        if(isZNAtdc || isZNCtdc) registry.get<TH2>(HIST("hZNvsZEM"))->Fill(zem1 + zem2, zna + znc);
-        if(isZPAtdc || isZPCtdc) registry.get<TH2>(HIST("hZPvsZEM"))->Fill(zem1 + zem2, zpa + zpc);
+        if (isZNAtdc || isZNCtdc)
+          registry.get<TH2>(HIST("hZNvsZEM"))->Fill(zem1 + zem2, zna + znc);
+        if (isZPAtdc || isZPCtdc)
+          registry.get<TH2>(HIST("hZPvsZEM"))->Fill(zem1 + zem2, zpa + zpc);
         //
-        if (isZNAtdc || isZNCtdc || isZPAtdc || isZPCtdc) registry.get<TH2>(HIST("hZDCCvsA"))->Fill(zna + zpa, znc + zpc);
+        if (isZNAtdc || isZNCtdc || isZPAtdc || isZPCtdc)
+          registry.get<TH2>(HIST("hZDCCvsA"))->Fill(zna + zpa, znc + zpc);
         //
-        if(centrFT0C > -1. && centrFT0C < 101.) {
-          if (isZNAtdc) registry.get<TH2>(HIST("hZNAvscentrFT0C"))->Fill(centrFT0C, zna);
-          if (isZPAtdc) registry.get<TH2>(HIST("hZPAvscentrFT0C"))->Fill(centrFT0C, zpa);
-          if (isZNCtdc) registry.get<TH2>(HIST("hZNCvscentrFT0C"))->Fill(centrFT0C, znc);
-          if (isZPCtdc) registry.get<TH2>(HIST("hZPCvscentrFT0C"))->Fill(centrFT0C, zpc);
-          registry.get<TH2>(HIST("hNnZNAvscentrFT0C"))->Fill(centrFT0C, zna/2.680);
-          registry.get<TH2>(HIST("hNnZNCvscentrFT0C"))->Fill(centrFT0C, znc/2.680);
-          registry.get<TH2>(HIST("hNpZPAvscentrFT0C"))->Fill(centrFT0C, zpa/2.680);
-          registry.get<TH2>(HIST("hNpZPCvscentrFT0C"))->Fill(centrFT0C, zpc/2.680);
+        if (centrFT0C > -1. && centrFT0C < 101.) {
+          if (isZNAtdc)
+            registry.get<TH2>(HIST("hZNAvscentrFT0C"))->Fill(centrFT0C, zna);
+          if (isZPAtdc)
+            registry.get<TH2>(HIST("hZPAvscentrFT0C"))->Fill(centrFT0C, zpa);
+          if (isZNCtdc)
+            registry.get<TH2>(HIST("hZNCvscentrFT0C"))->Fill(centrFT0C, znc);
+          if (isZPCtdc)
+            registry.get<TH2>(HIST("hZPCvscentrFT0C"))->Fill(centrFT0C, zpc);
+          registry.get<TH2>(HIST("hNnZNAvscentrFT0C"))->Fill(centrFT0C, zna / 2.680);
+          registry.get<TH2>(HIST("hNnZNCvscentrFT0C"))->Fill(centrFT0C, znc / 2.680);
+          registry.get<TH2>(HIST("hNpZPAvscentrFT0C"))->Fill(centrFT0C, zpa / 2.680);
+          registry.get<TH2>(HIST("hNpZPCvscentrFT0C"))->Fill(centrFT0C, zpc / 2.680);
         }
-        if(centrFT0A > -1. && centrFT0A < 101.) {
-          if (isZNAtdc) registry.get<TH2>(HIST("hZNAvscentrFT0A"))->Fill(centrFT0A, zna);
-          if (isZPAtdc) registry.get<TH2>(HIST("hZPAvscentrFT0A"))->Fill(centrFT0A, zpa);
-          if (isZNCtdc) registry.get<TH2>(HIST("hZNCvscentrFT0A"))->Fill(centrFT0A, znc);
-          if (isZPCtdc) registry.get<TH2>(HIST("hZPCvscentrFT0A"))->Fill(centrFT0A, zpc);
+        if (centrFT0A > -1. && centrFT0A < 101.) {
+          if (isZNAtdc)
+            registry.get<TH2>(HIST("hZNAvscentrFT0A"))->Fill(centrFT0A, zna);
+          if (isZPAtdc)
+            registry.get<TH2>(HIST("hZPAvscentrFT0A"))->Fill(centrFT0A, zpa);
+          if (isZNCtdc)
+            registry.get<TH2>(HIST("hZNCvscentrFT0A"))->Fill(centrFT0A, znc);
+          if (isZPCtdc)
+            registry.get<TH2>(HIST("hZPCvscentrFT0A"))->Fill(centrFT0A, zpc);
         }
-        if(centrFT0M > -1. && centrFT0M < 101.) {
-          if (isZNAtdc) registry.get<TH2>(HIST("hZNAvscentrFT0M"))->Fill(centrFT0M, zna);
-          if (isZPAtdc) registry.get<TH2>(HIST("hZPAvscentrFT0M"))->Fill(centrFT0M, zpa);
-          if (isZNCtdc) registry.get<TH2>(HIST("hZNCvscentrFT0M"))->Fill(centrFT0M, znc);
-          if (isZPCtdc) registry.get<TH2>(HIST("hZPCvscentrFT0M"))->Fill(centrFT0M, zpc);
-          registry.get<TH2>(HIST("hNnZNAvscentrFT0M"))->Fill(centrFT0M, zna/2.680);
-          registry.get<TH2>(HIST("hNnZNCvscentrFT0M"))->Fill(centrFT0M, znc/2.680);
-          registry.get<TH2>(HIST("hNpZPAvscentrFT0M"))->Fill(centrFT0M, zpa/2.680);
-          registry.get<TH2>(HIST("hNpZPCvscentrFT0M"))->Fill(centrFT0M, zpc/2.680);
-          registry.get<TH2>(HIST("hNpvsNnZNA"))->Fill(zna/2.680, zpa/2.680);
-          registry.get<TH2>(HIST("hNpvsNnZNC"))->Fill(znc/2.680, zpc/2.680);
+        if (centrFT0M > -1. && centrFT0M < 101.) {
+          if (isZNAtdc)
+            registry.get<TH2>(HIST("hZNAvscentrFT0M"))->Fill(centrFT0M, zna);
+          if (isZPAtdc)
+            registry.get<TH2>(HIST("hZPAvscentrFT0M"))->Fill(centrFT0M, zpa);
+          if (isZNCtdc)
+            registry.get<TH2>(HIST("hZNCvscentrFT0M"))->Fill(centrFT0M, znc);
+          if (isZPCtdc)
+            registry.get<TH2>(HIST("hZPCvscentrFT0M"))->Fill(centrFT0M, zpc);
+          registry.get<TH2>(HIST("hNnZNAvscentrFT0M"))->Fill(centrFT0M, zna / 2.680);
+          registry.get<TH2>(HIST("hNnZNCvscentrFT0M"))->Fill(centrFT0M, znc / 2.680);
+          registry.get<TH2>(HIST("hNpZPAvscentrFT0M"))->Fill(centrFT0M, zpa / 2.680);
+          registry.get<TH2>(HIST("hNpZPCvscentrFT0M"))->Fill(centrFT0M, zpc / 2.680);
+          registry.get<TH2>(HIST("hNpvsNnZNA"))->Fill(zna / 2.680, zpa / 2.680);
+          registry.get<TH2>(HIST("hNpvsNnZNC"))->Fill(znc / 2.680, zpc / 2.680);
         }
       }
     }
