@@ -1300,45 +1300,45 @@ struct ZdcQVectors {
         cal.lastRunNumber = runnumber;
         return;
       }
-        // vector of 4
-        corrQxA.clear();
-        corrQyA.clear();
-        corrQxC.clear();
-        corrQyC.clear();
+      // vector of 4
+      corrQxA.clear();
+      corrQyA.clear();
+      corrQxC.clear();
+      corrQyC.clear();
 
-        if (cal.isSelected && cfgFillHistRegistry && !cfgFillNothing && isEventSelected) {
-          fillCommonRegistry<kAfter>(qXaShift, qYaShift, qXcShift, qYcShift, cal.v, cent, rsTimestamp);
+      if (cal.isSelected && cfgFillHistRegistry && !cfgFillNothing && isEventSelected) {
+        fillCommonRegistry<kAfter>(qXaShift, qYaShift, qXcShift, qYcShift, cal.v, cent, rsTimestamp);
+      }
+
+      for (int it = 1; it <= cfgNIterationsAfterShift; it++) {
+        corrQxA.push_back(getCorrection<THnSparse, kRecShift>(names[0][0].Data(), it, 1));
+        corrQyA.push_back(getCorrection<THnSparse, kRecShift>(names[0][1].Data(), it, 1));
+        corrQxC.push_back(getCorrection<THnSparse, kRecShift>(names[0][2].Data(), it, 1));
+        corrQyC.push_back(getCorrection<THnSparse, kRecShift>(names[0][3].Data(), it, 1));
+
+        if (cfgFillHistRegistry && !cfgFillNothing && isEventSelected) {
+          registry.get<TH2>(HIST("recentering/QXA_vs_iteration"))->Fill(pb + 1, qXaShift - std::accumulate(corrQxA.begin(), corrQxA.end(), 0.0));
+          registry.get<TH2>(HIST("recentering/QYA_vs_iteration"))->Fill(pb + 1, qYaShift - std::accumulate(corrQyA.begin(), corrQyA.end(), 0.0));
+          registry.get<TH2>(HIST("recentering/QXC_vs_iteration"))->Fill(pb + 1, qXcShift - std::accumulate(corrQxC.begin(), corrQxC.end(), 0.0));
+          registry.get<TH2>(HIST("recentering/QYC_vs_iteration"))->Fill(pb + 1, qYcShift - std::accumulate(corrQyC.begin(), corrQyC.end(), 0.0));
         }
+        pb++;
 
-        for (int it = 1; it <= cfgNIterationsAfterShift; it++) {
-          corrQxA.push_back(getCorrection<THnSparse, kRecShift>(names[0][0].Data(), it, 1));
-          corrQyA.push_back(getCorrection<THnSparse, kRecShift>(names[0][1].Data(), it, 1));
-          corrQxC.push_back(getCorrection<THnSparse, kRecShift>(names[0][2].Data(), it, 1));
-          corrQyC.push_back(getCorrection<THnSparse, kRecShift>(names[0][3].Data(), it, 1));
+        for (int step = 2; step <= nSteps; step++) {
+          corrQxA.push_back(getCorrection<TProfile, kRecShift>(names[step - 1][0].Data(), it, step));
+          corrQyA.push_back(getCorrection<TProfile, kRecShift>(names[step - 1][1].Data(), it, step));
+          corrQxC.push_back(getCorrection<TProfile, kRecShift>(names[step - 1][2].Data(), it, step));
+          corrQyC.push_back(getCorrection<TProfile, kRecShift>(names[step - 1][3].Data(), it, step));
 
           if (cfgFillHistRegistry && !cfgFillNothing && isEventSelected) {
-            registry.get<TH2>(HIST("recentering/QXA_vs_iteration"))->Fill(pb + 1, qXaShift - std::accumulate(corrQxA.begin(), corrQxA.end(), 0.0));
-            registry.get<TH2>(HIST("recentering/QYA_vs_iteration"))->Fill(pb + 1, qYaShift - std::accumulate(corrQyA.begin(), corrQyA.end(), 0.0));
-            registry.get<TH2>(HIST("recentering/QXC_vs_iteration"))->Fill(pb + 1, qXcShift - std::accumulate(corrQxC.begin(), corrQxC.end(), 0.0));
-            registry.get<TH2>(HIST("recentering/QYC_vs_iteration"))->Fill(pb + 1, qYcShift - std::accumulate(corrQyC.begin(), corrQyC.end(), 0.0));
+            registry.get<TH2>(HIST("recentering/QXA_vs_iteration"))->Fill(pb + 1, q[0] - std::accumulate(corrQxA.begin(), corrQxA.end(), 0.0));
+            registry.get<TH2>(HIST("recentering/QYA_vs_iteration"))->Fill(pb + 1, q[1] - std::accumulate(corrQyA.begin(), corrQyA.end(), 0.0));
+            registry.get<TH2>(HIST("recentering/QXC_vs_iteration"))->Fill(pb + 1, q[2] - std::accumulate(corrQxC.begin(), corrQxC.end(), 0.0));
+            registry.get<TH2>(HIST("recentering/QYC_vs_iteration"))->Fill(pb + 1, q[3] - std::accumulate(corrQyC.begin(), corrQyC.end(), 0.0));
           }
+
           pb++;
-
-          for (int step = 2; step <= nSteps; step++) {
-            corrQxA.push_back(getCorrection<TProfile, kRecShift>(names[step - 1][0].Data(), it, step));
-            corrQyA.push_back(getCorrection<TProfile, kRecShift>(names[step - 1][1].Data(), it, step));
-            corrQxC.push_back(getCorrection<TProfile, kRecShift>(names[step - 1][2].Data(), it, step));
-            corrQyC.push_back(getCorrection<TProfile, kRecShift>(names[step - 1][3].Data(), it, step));
-
-            if (cfgFillHistRegistry && !cfgFillNothing && isEventSelected) {
-              registry.get<TH2>(HIST("recentering/QXA_vs_iteration"))->Fill(pb + 1, q[0] - std::accumulate(corrQxA.begin(), corrQxA.end(), 0.0));
-              registry.get<TH2>(HIST("recentering/QYA_vs_iteration"))->Fill(pb + 1, q[1] - std::accumulate(corrQyA.begin(), corrQyA.end(), 0.0));
-              registry.get<TH2>(HIST("recentering/QXC_vs_iteration"))->Fill(pb + 1, q[2] - std::accumulate(corrQxC.begin(), corrQxC.end(), 0.0));
-              registry.get<TH2>(HIST("recentering/QYC_vs_iteration"))->Fill(pb + 1, q[3] - std::accumulate(corrQyC.begin(), corrQyC.end(), 0.0));
-            }
-
-            pb++;
-          }
+        }
 
         double totalCorrectionQxAshift = std::accumulate(corrQxA.begin(), corrQxA.end(), 0.0);
         double totalCorrectionQyAshift = std::accumulate(corrQyA.begin(), corrQyA.end(), 0.0);
