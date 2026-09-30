@@ -142,6 +142,7 @@ struct createResolutionMapDerived {
     Configurable<float> cfg_max_phiposition_track{"cfg_max_phiposition_track", 6.3, "max phi position for single track at certain radius"};
     Configurable<bool> acceptOnlyCorrectMatch{"acceptOnlyCorrectMatch", false, "flag to accept only correct match between ITS and TPC"}; // this is only for MC study, as we don't know correct match in data.
     Configurable<bool> acceptOnlyWrongMatch{"acceptOnlyWrongMatch", false, "flag to accept only wrong match between ITS and TPC"};       // this is only for MC study, as we don't know correct match in data.
+    Configurable<bool> acceptOnlyPhysicalPrimary{"acceptOnlyPhysicalPrimary", false, "flag to accept only Physical Primary electrons"};
 
     Configurable<int> cfg_pid_scheme{"cfg_pid_scheme", static_cast<int>(DielectronCut::PIDSchemes::kTPChadrejORTOFreq), "pid scheme [kTOFreq : 0, kTPChadrej : 1, kTPChadrejORTOFreq : 2, kTPConly : 3, kTOFif = 4, kPIDML = 5]"};
     Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -2.0, "min. TPC n sigma for electron inclusion"};
@@ -454,6 +455,9 @@ struct createResolutionMapDerived {
             continue;
           }
           if (electroncuts.acceptOnlyWrongMatch && !o2::aod::pwgem::dilepton::utils::mcutil::hasFakeMatchITSTPC(track)) {
+            continue;
+          }
+          if (electroncuts.acceptOnlyPhysicalPrimary && !mcParticle.isPhysicalPrimary()) {
             continue;
           }
 

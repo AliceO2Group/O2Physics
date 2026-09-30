@@ -239,6 +239,7 @@ struct HfCorrelatorD0Hadrons {
   Configurable<bool> storeAutoCorrelationFlag{"storeAutoCorrelationFlag", false, "Store flag that indicates if the track is paired to its D-meson mother instead of skipping it"};
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "Number of events mixed in ME process"};
   Configurable<bool> useCentrality{"useCentrality", false, "Flag for centrality dependent analyses"};
+  Configurable<bool> enableCentralityQA{"enableCentralityQA", false, "Enable FT0M centrality vs multiplicity QA in processData"};
 
   int leadingIndex = 0;
   double softPiMass = 0.14543; // pion mass + Q-value of the D*->D0pi decay
@@ -366,6 +367,9 @@ struct HfCorrelatorD0Hadrons {
     registry.get<TH1>(HIST("hTrackCounter"))->GetXaxis()->SetBinLabel(5, "fake tracks");
     registry.add("hZvtx", "z vertex", {HistType::kTH1F, {axisPosZ}});
     registry.add("hMultFT0M", "Multiplicity FT0M", {HistType::kTH1F, {axisMultFT0M}});
+    if (enableCentralityQA) {
+      registry.add("hCentFT0MVsMultFT0M", "Centrality FT0M vs multiplicity FT0M", {HistType::kTH2D, {axisMultFT0M, axisCent}});
+    }
     registry.add("hCollisionPoolBin", "collision pool bin", {HistType::kTH1F, {axisPoolBin}});
     registry.add("hD0PoolBin", "D0 selected in pool Bin", {HistType::kTH1F, {axisPoolBin}});
     registry.add("hTracksPoolBin", "Particles associated pool bin", {HistType::kTH1F, {axisPoolBin}});
@@ -398,6 +402,9 @@ struct HfCorrelatorD0Hadrons {
     registry.fill(HIST("hCollisionPoolBin"), poolBin);
     registry.fill(HIST("hZvtx"), collision.posZ());
     registry.fill(HIST("hMultFT0M"), collision.multFT0M());
+    if (enableCentralityQA) {
+      registry.fill(HIST("hCentFT0MVsMultFT0M"), collision.multFT0M(), collision.centFT0M());
+    }
 
     int nTracks = 0;
     if (collision.numContrib() > 1) {

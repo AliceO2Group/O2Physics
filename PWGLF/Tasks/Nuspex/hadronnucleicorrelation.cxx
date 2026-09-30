@@ -46,6 +46,7 @@
 #include <TParticlePDG.h>
 #include <TString.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstddef>
@@ -91,10 +92,19 @@ struct HadronNucleiCorrelation {
   Configurable<bool> doQA{"doQA", true, "save QA histograms"};
   Configurable<bool> doMCQA{"doMCQA", false, "save MC QA histograms"};
   Configurable<bool> isMC{"isMC", false, "is MC"};
-  Configurable<bool> isMCGen{"isMCGen", false, "is isMCGen"};
   Configurable<bool> isPrim{"isPrim", true, "is isPrim"};
   Configurable<bool> doCorrection{"doCorrection", false, "do efficiency correction"};
   Configurable<bool> doQuadraticPID{"doQuadraticPID", false, "do PID with sum in quadrature of TOF and TPC"};
+
+  struct : ConfigurableGroup {
+    std::string prefix = "Coalescence"; // JSON group name
+    Configurable<bool> doMCGenCoalescence{"doMCGenCoalescence", false, "do a simple coalescence on the generated level"};
+    // Coalescence parameters used in Eur. Phys. J. A 59 (2023) 72:
+    //   p_max = 0.148 GeV/c
+    //   r_max = 2 fm
+    Configurable<float> pMax{"pMax", 0.148, "maximum momentum for coalescence"};
+    Configurable<float> rMax{"rMax", 2.0, "maximum radius for coalescence"};
+  } settingsCoalescence;
 
   Configurable<std::string> fCorrectionPath{"fCorrectionPath", "", "Correction path to file"};
   Configurable<std::string> fCorrectionHisto{"fCorrectionHisto", "", "Correction histogram"};
@@ -145,13 +155,12 @@ struct HadronNucleiCorrelation {
   // pT/A bins
   Configurable<std::vector<double>> pTBins{"pTBins", {0.6f, 1.0f, 1.2f, 2.f}, "p_{T} bins"};
 
-  ConfigurableAxis axisNSigma{"axisNSigma", {35, -7.f, 7.f}, "n#sigma"};
-  ConfigurableAxis deltaPhiAxis = {"deltaPhiAxis", {46, -1 * o2::constants::math::PIHalf, 3 * o2::constants::math::PIHalf}, "#Delta#phi (rad)"};
-
   struct : ConfigurableGroup {
     std::string prefix = "axes"; // JSON group name
     ConfigurableAxis axisDeltaEta{"axisDeltaEta", {300, -1.5, 1.5}, "#Delta#eta"};
     ConfigurableAxis axisDeltaRap{"axisDeltaRap", {300, -1.5, 1.5}, "#Delta y"};
+    ConfigurableAxis axisDeltaPhi{"deltaPhiAxis", {46, -1 * o2::constants::math::PIHalf, 3 * o2::constants::math::PIHalf}, "#Delta #phi"};
+    ConfigurableAxis axisNSigma{"axisNSigma", {35, -7.f, 7.f}, "n#sigma"};
   } settingsAxes;
 
   using FilteredCollisions = soa::Filtered<aod::SingleCollSels>;
@@ -259,6 +268,7 @@ struct HadronNucleiCorrelation {
     LOG(info) << "DeltaEta axis: from " << deltaEtaAxis.binEdges[0] << " to " << deltaEtaAxis.binEdges[1];
     const AxisSpec deltaRapAxis = {settingsAxes.axisDeltaRap, "#Delta y"};
     LOG(info) << "DeltaRap axis: from " << deltaRapAxis.binEdges[0] << " to " << deltaRapAxis.binEdges[1];
+    const AxisSpec deltaPhiAxis = {settingsAxes.axisDeltaPhi, "#Delta#phi"};
 
     if (doprocessSameEvent || doprocessSameEventEvSel) {
       registry.add("hNEvents", "hNEvents", {HistType::kTH1D, {{7, 0.f, 7.f}}});
@@ -365,15 +375,24 @@ struct HadronNucleiCorrelation {
       }
     }
 
+    const AxisSpec dcaPtAxis = {100, 0.f, 10.f, "#it{p}_{T} GeV/#it{c}"};
     if (doprocessSameEvent || doprocessSameEventEvSel || doprocessMC) {
-      registry.add("hPrDCAxy", "DCAxy p", {HistType::kTH2D, {{600, -3.f, 3.f, "DCA xy (cm)"}, {100, 0.f, 10.f, "p_{T} GeV/c"}}});
-      registry.add("hAntiPrDCAxy", "DCAxy #bar{p}", {HistType::kTH2D, {{600, -3.f, 3.f, "DCA xy (cm)"}, {100, 0.f, 10.f, "p_{T} GeV/c"}}});
-      registry.add("hDeDCAxy", "DCAxy d", {HistType::kTH2D, {{600, -3.f, 3.f, "DCA xy (cm)"}, {100, 0.f, 10.f, "p_{T} GeV/c"}}});
-      registry.add("hAntiDeDCAxy", "DCAxy #bar{d}", {HistType::kTH2D, {{600, -3.f, 3.f, "DCA xy (cm)"}, {100, 0.f, 10.f, "p_{T} GeV/c"}}});
+      const AxisSpec dcaXyAxis = {600, -3.f, 3.f, "DCA xy (cm)"};
+      registry.add("hPrDCAxy", "DCAxy p", {HistType::kTH2D, {dcaXyAxis, dcaPtAxis}});
+      registry.add("hAntiPrDCAxy", "DCAxy #bar{p}", {HistType::kTH2D, {dcaXyAxis, dcaPtAxis}});
+      registry.add("hDeDCAxy", "DCAxy d", {HistType::kTH2D, {dcaXyAxis, dcaPtAxis}});
+      registry.add("hAntiDeDCAxy", "DCAxy #bar{d}", {HistType::kTH2D, {dcaXyAxis, dcaPtAxis}});
     }
     registry.add("hMult", "multiplicity", {HistType::kTH1D, {{200, 0.f, 200.f, "N_{ch}"}}});
 
+    const AxisSpec tofNSigmaAxis = {settingsAxes.axisNSigma, "n#sigma TOF"};
+    const AxisSpec tpcNSigmaAxis = {settingsAxes.axisNSigma, "n#sigma TPC"};
+    const AxisSpec itsNSigmaAxis = {settingsAxes.axisNSigma, "n#sigma ITS"};
+
     if (doQA && (doprocessSameEvent || doprocessSameEventEvSel || doprocessMC)) {
+      const AxisSpec dcaXyAxis = {200, -0.2f, 0.2f, "DCA xy (cm)"};
+      const AxisSpec dcaZAxis = {200, -0.2f, 0.2f, "DCA z (cm)"};
+
       // Track QA
       registryQa.add("QA/hVtxZ_trk", "#it{z}_{vtx}", {HistType::kTH1D, {{150, -15.f, 15.f, "#it{z}_{vtx} (cm)"}}});
       registryQa.add("QA/hTPCnClusters", "N TPC Clusters; N TPC Clusters", {HistType::kTH1D, {{200, 0.f, 200.f}}});
@@ -381,16 +400,13 @@ struct HadronNucleiCorrelation {
       registryQa.add("QA/hTPCchi2", "TPC chi2/Ncls; TPC chi2/Ncls", {HistType::kTH1D, {{100, 0.f, 10.f}}});
       registryQa.add("QA/hTPCcrossedRowsOverFindableCls", "TPC crossed Rows Over Findable Cls; TPC Crossed Rows Over Findable Cls", {HistType::kTH1D, {{100, 0.f, 2.f}}});
       registryQa.add("QA/hITSchi2", "ITS chi2/Ncls; ITS chi2/Ncls", {HistType::kTH1D, {{100, 0.f, 20.f}}});
-      registryQa.add("QA/hDCAxy", "DCAxy", {HistType::kTH2D, {{200, -0.2f, 0.2f, "DCA xy (cm)"}, {100, 0.f, 10.f, "p_{T} GeV/c"}}});
-      registryQa.add("QA/hDCAz", "DCAz", {HistType::kTH2D, {{200, -0.2f, 0.2f, "DCA z (cm)"}, {100, 0.f, 10.f, "p_{T} GeV/c"}}});
+      registryQa.add("QA/hDCAxy", "DCAxy", {HistType::kTH2D, {dcaXyAxis, dcaPtAxis}});
+      registryQa.add("QA/hDCAz", "DCAz", {HistType::kTH2D, {dcaZAxis, dcaPtAxis}});
       registryQa.add("QA/TPCChi2VsPZ", "TPCChi2VsPZ", {HistType::kTH2D, {{100, 0.f, 10.f, "p_{TPC}/Z (GeV/c)"}, {120, 0.f, 6.f, "TPC Chi2"}}});
-      const AxisSpec tofNSigmaAxis = {axisNSigma, "n#sigma TOF"};
-      const AxisSpec tpcNSigmaAxis = {axisNSigma, "n#sigma TPC"};
-      const AxisSpec itsNSigmaAxis = {axisNSigma, "n#sigma ITS"};
-      registryQa.add("QA/h3dTPCTOF_Pr", "n#sigma TPC vs n#sigma TOF; n#sigma TPC;n#sigma TOF;p_{T} (GeV/c)", {HistType::kTH3D, {tpcNSigmaAxis, tofNSigmaAxis, ptAxis}});
-      registryQa.add("QA/h3dTPCTOF_AntiPr", "n#sigma TPC vs n#sigma TOF; n#sigma TPC;n#sigma TOF;p_{T} (GeV/c)", {HistType::kTH3D, {tpcNSigmaAxis, tofNSigmaAxis, ptAxis}});
-      registryQa.add("QA/h3dTPCTOF_De", "n#sigma TPC vs n#sigma TOF; n#sigma TPC;n#sigma TOF;p_{T} (GeV/c)", {HistType::kTH3D, {tpcNSigmaAxis, tofNSigmaAxis, ptAxis}});
-      registryQa.add("QA/h3dTPCTOF_AntiDe", "n#sigma TPC vs n#sigma TOF; n#sigma TPC;n#sigma TOF;p_{T} (GeV/c)", {HistType::kTH3D, {tpcNSigmaAxis, tofNSigmaAxis, ptAxis}});
+      registryQa.add("QA/h3dTPCTOF_Pr", "n#sigma TPC vs n#sigma TOF", {HistType::kTH3D, {tpcNSigmaAxis, tofNSigmaAxis, ptAxis}});
+      registryQa.add("QA/h3dTPCTOF_AntiPr", "n#sigma TPC vs n#sigma TOF", {HistType::kTH3D, {tpcNSigmaAxis, tofNSigmaAxis, ptAxis}});
+      registryQa.add("QA/h3dTPCTOF_De", "n#sigma TPC vs n#sigma TOF", {HistType::kTH3D, {tpcNSigmaAxis, tofNSigmaAxis, ptAxis}});
+      registryQa.add("QA/h3dTPCTOF_AntiDe", "n#sigma TPC vs n#sigma TOF", {HistType::kTH3D, {tpcNSigmaAxis, tofNSigmaAxis, ptAxis}});
       registryQa.add("QA/hnSigmaTPCVsPt_El", "n#sigma TPC vs p_{T} for e hypothesis (all tracks)", {HistType::kTH2D, {ptAxis, tpcNSigmaAxis}});
       registryQa.add("QA/hnSigmaTPCVsPt_Pr", "n#sigma TPC vs p_{T} for p hypothesis (all tracks)", {HistType::kTH2D, {ptAxis, tpcNSigmaAxis}});
       registryQa.add("QA/hnSigmaTPCVsPt_De", "n#sigma TPC vs p_{T} for d hypothesis (all tracks)", {HistType::kTH2D, {ptAxis, tpcNSigmaAxis}});
@@ -447,52 +463,59 @@ struct HadronNucleiCorrelation {
       registry.add("hSec_EtaPhiPt_Proton", "Secondary (anti)protons", {HistType::kTH3F, {etaAxis, phiAxis, ptAxisSmall}});
       registry.add("hPrimSec_EtaPhiPt_Proton", "Primary + Secondary (anti)protons", {HistType::kTH3F, {etaAxis, phiAxis, ptAxisSmall}});
 
-      registry.add("hnSigmaTPCVsPt_Pr_MC", "n#sigma TPC vs p_{T} for p hypothesis true MC; p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2F, {ptAxis, axisNSigma}});
-      registry.add("hnSigmaTPCVsPt_De_MC", "n#sigma TPC vs p_{T} for d hypothesis true MC; p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2F, {ptAxis, axisNSigma}});
-      registry.add("hnSigmaTOFVsPt_Pr_MC", "n#sigma TOF vs p_{T} for p hypothesis true MC; p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2F, {ptAxis, axisNSigma}});
-      registry.add("hnSigmaTOFVsPt_De_MC", "n#sigma TOF vs p_{T} for d hypothesis true MC; p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2F, {ptAxis, axisNSigma}});
+      registry.add("hnSigmaTPCVsPt_Pr_MC", "n#sigma TPC vs p_{T} for p hypothesis true MC", {HistType::kTH2F, {ptAxis, tpcNSigmaAxis}});
+      registry.add("hnSigmaTPCVsPt_De_MC", "n#sigma TPC vs p_{T} for d hypothesis true MC", {HistType::kTH2F, {ptAxis, tpcNSigmaAxis}});
+      registry.add("hnSigmaTOFVsPt_Pr_MC", "n#sigma TOF vs p_{T} for p hypothesis true MC", {HistType::kTH2F, {ptAxis, tofNSigmaAxis}});
+      registry.add("hnSigmaTOFVsPt_De_MC", "n#sigma TOF vs p_{T} for d hypothesis true MC", {HistType::kTH2F, {ptAxis, tofNSigmaAxis}});
 
-      registry.add("hResPt_Proton", "; p_{T}(gen) [GeV/c]; p_{T}(reco) - p_{T}(gen) ", {HistType::kTH2F, {{100, 0.f, 10.f, "p_{T}(gen) GeV/c"}, {200, -1.f, 1.f, "p_{T}(reco) - p_{T}(gen) "}}});
-      registry.add("hResPt_Deuteron", "; p_{T}(gen) [GeV/c]; p_{T}(reco) - p_{T}(gen) ", {HistType::kTH2F, {{100, 0.f, 10.f, "p_{T}(gen) GeV/c"}, {200, -1.f, 1.f, "p_{T}(reco) - p_{T}(gen) "}}});
-      registry.add("hResPt_AntiProton", "; p_{T}(gen) [GeV/c]; p_{T}(reco) - p_{T}(gen) ", {HistType::kTH2F, {{100, 0.f, 10.f, "p_{T}(gen) GeV/c"}, {200, -1.f, 1.f, "p_{T}(reco) - p_{T}(gen) "}}});
-      registry.add("hResPt_AntiDeuteron", "; p_{T}(gen) [GeV/c]; p_{T}(reco) - p_{T}(gen) ", {HistType::kTH2F, {{100, 0.f, 10.f, "p_{T}(gen) GeV/c"}, {200, -1.f, 1.f, "p_{T}(reco) - p_{T}(gen) "}}});
+      const AxisSpec genPtAxis = {100, 0.f, 10.f, "p_{T}(gen) (GeV/c)"};
+      const AxisSpec resPtAxis = {200, -1.f, 1.f, "p_{T}(reco) - p_{T}(gen) (GeV/c)"};
+      registry.add("hResPt_Proton", "p pT residual", {HistType::kTH2F, {genPtAxis, resPtAxis}});
+      registry.add("hResPt_Deuteron", "d pT residual", {HistType::kTH2F, {genPtAxis, resPtAxis}});
+      registry.add("hResPt_AntiProton", "#bar{p} pT residual", {HistType::kTH2F, {genPtAxis, resPtAxis}});
+      registry.add("hResPt_AntiDeuteron", "#bar{d} pT residual", {HistType::kTH2F, {genPtAxis, resPtAxis}});
 
-      registry.add("hNumeratorPurity_Proton", " p(#bar{p}); p_{T} (GeV/c);S", {HistType::kTH1F, {ptAxisSmall}});
-      registry.add("hNumeratorPurity_Deuteron", " d(#bar{d}); p_{T} (GeV/c);S", {HistType::kTH1F, {ptAxisSmall}});
-      registry.add("hDenominatorPurity_Proton", " p(#bar{p}); p_{T} (GeV/c);(S + B)", {HistType::kTH1F, {ptAxisSmall}});
-      registry.add("hDenominatorPurity_Deuteron", " d(#bar{d}); p_{T} (GeV/c); (S + B)", {HistType::kTH1F, {ptAxisSmall}});
+      registry.add("hNumeratorPurity_Proton", " p(#bar{p});;S", {HistType::kTH1F, {ptAxisSmall}});
+      registry.add("hNumeratorPurity_Deuteron", " d(#bar{d});;S", {HistType::kTH1F, {ptAxisSmall}});
+      registry.add("hDenominatorPurity_Proton", " p(#bar{p});;(S + B)", {HistType::kTH1F, {ptAxisSmall}});
+      registry.add("hDenominatorPurity_Deuteron", " d(#bar{d});;(S + B)", {HistType::kTH1F, {ptAxisSmall}});
 
       if (doMCQA) {
 
-        registry.add("hResEta_Proton", "; #eta(gen); #eta(reco) - #eta(gen)  ", {HistType::kTH2F, {{100, -1.f, 1.f, "#eta(gen)"}, {200, -0.5f, 0.5f, "#eta(reco) - #eta(gen) "}}});
-        registry.add("hResEta_Deuteron", "; #eta(gen); #eta(reco) - #eta(gen) ", {HistType::kTH2F, {{100, -1.f, 1.f, "#eta(gen)"}, {200, -0.5f, 0.5f, "#eta(reco) - #eta(gen) "}}});
-        registry.add("hResPhi_Proton", "; #phi(gen); #phi(reco) - #phi(gen)", {HistType::kTH2F, {{100, 0.f, o2::constants::math::TwoPI, "#phi(gen)"}, {200, -0.5f, 0.5f, "#phi(reco) - #phi(gen)"}}});
-        registry.add("hResPhi_Deuteron", "; #phi(gen); #phi(reco) - #phi(gen)", {HistType::kTH2F, {{100, 0.f, o2::constants::math::TwoPI, "#phi(gen)"}, {200, -0.5f, 0.5f, "#phi(reco) - #phi(gen)"}}});
-        registry.add("hResEta_AntiProton", "; #eta(gen); #eta(reco) - #eta(gen)  ", {HistType::kTH2F, {{100, -1.f, 1.f, "#eta(gen)"}, {200, -0.5f, 0.5f, "#eta(reco) - #eta(gen) "}}});
-        registry.add("hResEta_AntiDeuteron", "; #eta(gen); #eta(reco) - #eta(gen) ", {HistType::kTH2F, {{100, -1.f, 1.f, "#eta(gen)"}, {200, -0.5f, 0.5f, "#eta(reco) - #eta(gen) "}}});
-        registry.add("hResPhi_AntiProton", "; #phi(gen); #phi(reco) - #phi(gen)", {HistType::kTH2F, {{100, 0.f, o2::constants::math::TwoPI, "#phi(gen)"}, {200, -0.5f, 0.5f, "#phi(reco) - #phi(gen)"}}});
-        registry.add("hResPhi_AntiDeuteron", "; #phi(gen); #phi(reco) - #phi(gen)", {HistType::kTH2F, {{100, 0.f, o2::constants::math::TwoPI, "#phi(gen)"}, {200, -0.5f, 0.5f, "#phi(reco) - #phi(gen)"}}});
+        const AxisSpec genEtaAxis = {100, -1.f, 1.f, "#eta(gen)"};
+        const AxisSpec resEtaAxis = {200, -0.5f, 0.5f, "#eta(reco) - #eta(gen) "};
 
-        registry.add("hNumeratorPurity_Proton_TPC", " p(#bar{p}); p_{T} (GeV/c);S", {HistType::kTH1F, {ptAxisSmall}});
-        registry.add("hNumeratorPurity_Deuteron_TPC", " d(#bar{d}); p_{T} (GeV/c);S", {HistType::kTH1F, {ptAxisSmall}});
-        registry.add("hNumeratorPurity_Proton_TPCTOF", " p(#bar{p}); p_{T} (GeV/c);S", {HistType::kTH1F, {ptAxisSmall}});
-        registry.add("hNumeratorPurity_Deuteron_TPCTOF", " d(#bar{d}); p_{T} (GeV/c);S", {HistType::kTH1F, {ptAxisSmall}});
-        registry.add("hNumeratorPurity_Proton_TPC_or_TOF", " p(#bar{p}); p_{T} (GeV/c);S", {HistType::kTH1F, {ptAxisSmall}});
-        registry.add("hNumeratorPurity_Deuteron_TPC_or_TOF", " d(#bar{d}); p_{T} (GeV/c);S", {HistType::kTH1F, {ptAxisSmall}});
-        registry.add("hNumeratorPurity_Proton_TPCEl_or_TOF", " p(#bar{p}); p_{T} (GeV/c);S", {HistType::kTH1F, {ptAxisSmall}});
-        registry.add("hNumeratorPurity_Proton_TPCEl", " p(#bar{p}); p_{T} (GeV/c);S", {HistType::kTH1F, {ptAxisSmall}});
-        registry.add("hNumeratorPurity_Deuteron_TPCEl", " d(#bar{d}); p_{T} (GeV/c);S", {HistType::kTH1F, {ptAxisSmall}});
-        registry.add("hNumeratorPurity_Deuteron_TPCEl_or_TOF", " d(#bar{d}); p_{T} (GeV/c);S", {HistType::kTH1F, {ptAxisSmall}});
-        registry.add("hDenominatorPurity_Proton_TPC", " p(#bar{p}); p_{T} (GeV/c); (S + B)", {HistType::kTH1F, {ptAxisSmall}});
-        registry.add("hDenominatorPurity_Deuteron_TPC", " d(#bar{d}); p_{T} (GeV/c); (S + B)", {HistType::kTH1F, {ptAxisSmall}});
-        registry.add("hDenominatorPurity_Proton_TPCTOF", " p(#bar{p}); p_{T} (GeV/c); (S + B)", {HistType::kTH1F, {ptAxisSmall}});
-        registry.add("hDenominatorPurity_Deuteron_TPCTOF", " d(#bar{d}); p_{T} (GeV/c); (S + B)", {HistType::kTH1F, {ptAxisSmall}});
-        registry.add("hDenominatorPurity_Proton_TPC_or_TOF", " p(#bar{p}); p_{T} (GeV/c); (S + B)", {HistType::kTH1F, {ptAxisSmall}});
-        registry.add("hDenominatorPurity_Deuteron_TPC_or_TOF", " d(#bar{d}); p_{T} (GeV/c); (S + B)", {HistType::kTH1F, {ptAxisSmall}});
-        registry.add("hDenominatorPurity_Proton_TPCEl", " p(#bar{p}); p_{T} (GeV/c); (S + B)", {HistType::kTH1F, {ptAxisSmall}});
-        registry.add("hDenominatorPurity_Proton_TPCEl_or_TOF", " p(#bar{p}); p_{T} (GeV/c); (S + B)", {HistType::kTH1F, {ptAxisSmall}});
-        registry.add("hDenominatorPurity_Deuteron_TPCEl", " d(#bar{d}); p_{T} (GeV/c); (S + B)", {HistType::kTH1F, {ptAxisSmall}});
-        registry.add("hDenominatorPurity_Deuteron_TPCEl_or_TOF", " d(#bar{d}); p_{T} (GeV/c); (S + B)", {HistType::kTH1F, {ptAxisSmall}});
+        const AxisSpec genPhiAxis = {100, 0.f, o2::constants::math::TwoPI, "#phi(gen)"};
+        const AxisSpec resPhiAxis = {200, -0.5f, 0.5f, "#phi(reco) - #phi(gen)"};
+        registry.add("hResEta_Proton", "p eta residual", {HistType::kTH2F, {genEtaAxis, resEtaAxis}});
+        registry.add("hResEta_Deuteron", "d eta residual ", {HistType::kTH2F, {genEtaAxis, resEtaAxis}});
+        registry.add("hResPhi_Proton", "p phi residual", {HistType::kTH2F, {genPhiAxis, resPhiAxis}});
+        registry.add("hResPhi_Deuteron", "d phi residual", {HistType::kTH2F, {genPhiAxis, resPhiAxis}});
+        registry.add("hResEta_AntiProton", "p eta residual", {HistType::kTH2F, {genEtaAxis, resEtaAxis}});
+        registry.add("hResEta_AntiDeuteron", "p eta residual ", {HistType::kTH2F, {genEtaAxis, resEtaAxis}});
+        registry.add("hResPhi_AntiProton", "p phi residual", {HistType::kTH2F, {genPhiAxis, resPhiAxis}});
+        registry.add("hResPhi_AntiDeuteron", "d phi residual", {HistType::kTH2F, {genPhiAxis, resPhiAxis}});
+
+        registry.add("hNumeratorPurity_Proton_TPC", " p(#bar{p});;S", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hNumeratorPurity_Deuteron_TPC", " d(#bar{d});;S", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hNumeratorPurity_Proton_TPCTOF", " p(#bar{p});;S", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hNumeratorPurity_Deuteron_TPCTOF", " d(#bar{d});;S", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hNumeratorPurity_Proton_TPC_or_TOF", " p(#bar{p});;S", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hNumeratorPurity_Deuteron_TPC_or_TOF", " d(#bar{d});;S", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hNumeratorPurity_Proton_TPCEl_or_TOF", " p(#bar{p});;S", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hNumeratorPurity_Proton_TPCEl", " p(#bar{p});;S", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hNumeratorPurity_Deuteron_TPCEl", " d(#bar{d});;S", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hNumeratorPurity_Deuteron_TPCEl_or_TOF", " d(#bar{d});;S", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hDenominatorPurity_Proton_TPC", " p(#bar{p});;(S + B)", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hDenominatorPurity_Deuteron_TPC", " d(#bar{d});;(S + B)", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hDenominatorPurity_Proton_TPCTOF", " p(#bar{p});;(S + B)", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hDenominatorPurity_Deuteron_TPCTOF", " d(#bar{d});;(S + B)", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hDenominatorPurity_Proton_TPC_or_TOF", " p(#bar{p});;(S + B)", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hDenominatorPurity_Deuteron_TPC_or_TOF", " d(#bar{d});;(S + B)", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hDenominatorPurity_Proton_TPCEl", " p(#bar{p});;(S + B)", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hDenominatorPurity_Proton_TPCEl_or_TOF", " p(#bar{p});;(S + B)", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hDenominatorPurity_Deuteron_TPCEl", " d(#bar{d});;(S + B)", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hDenominatorPurity_Deuteron_TPCEl_or_TOF", " d(#bar{d});;(S + B)", {HistType::kTH1F, {ptAxisSmall}});
 
         registry.add("hReco_Pt_Proton_TPC", "Reco (anti)protons in reco collisions", {HistType::kTH1F, {ptAxisSmall}});
         registry.add("hReco_Pt_Deuteron_TPC", "Reco (anti)deuterons in reco collisions", {HistType::kTH1F, {ptAxisSmall}});
@@ -503,11 +526,11 @@ struct HadronNucleiCorrelation {
         registry.add("hReco_Pt_Proton_TPCEl", "Reco (anti)protons in reco collisions", {HistType::kTH1F, {ptAxisSmall}});
         registry.add("hReco_Pt_Proton_TPCEl_or_TOF", "Reco (anti)protons in reco collisions", {HistType::kTH1F, {ptAxisSmall}});
         registry.add("hReco_Pt_Deuteron_TPCEl", "Reco (anti)deuterons in reco collisions", {HistType::kTH1F, {ptAxisSmall}});
-        registry.add("hReco_Pt_Deuteron_TPCEl_or_TOF", "Reco (anti)protons in reco collisions", {HistType::kTH1F, {ptAxisSmall}});
+        registry.add("hReco_Pt_Deuteron_TPCEl_or_TOF", "Reco (anti)deuterons in reco collisions", {HistType::kTH1F, {ptAxisSmall}});
       }
     }
 
-    if (isMCGen) {
+    if (doprocessMixedEventGen || doprocessSameEventGen) {
       registry.add("Generated/hNEventsMC", "hNEventsMC", {HistType::kTH1D, {{1, 0.f, 1.f}}});
       registry.get<TH1>(HIST("Generated/hNEventsMC"))->GetXaxis()->SetBinLabel(1, "All");
 
@@ -536,6 +559,8 @@ struct HadronNucleiCorrelation {
       registry.add("Generated/hAntiDeuteronsVsPt", "hAntiDeuteronsVsPt", {HistType::kTH1D, {ptAxisGen}});
       registry.add("Generated/hProtonsVsPt", "hProtonsVsPt", {HistType::kTH1D, {ptAxisGen}});
       registry.add("Generated/hAntiProtonsVsPt", "hAntiProtonsVsPt", {HistType::kTH1D, {ptAxisGen}});
+    } else if (settingsCoalescence.doMCGenCoalescence.value) {
+      LOG(fatal) << "This is not a Gen Run but the Gen coalescence is required. Turn off doMCGenCoalescence";
     }
   }
 
@@ -784,8 +809,14 @@ struct HadronNucleiCorrelation {
     if (isPrim && !particle.isPhysicalPrimary()) {
       return;
     }
-    if (std::abs(particle.eta()) > etaCut) {
-      return;
+    if (doRapidity) {
+      if (std::abs(particle.y()) > etaCut) {
+        return;
+      }
+    } else {
+      if (std::abs(particle.eta()) > etaCut) {
+        return;
+      }
     }
     const int pdg = particle.pdgCode();
     if (pdg != pdgPart0 && pdg != pdgPart1) {
@@ -1676,10 +1707,253 @@ struct HadronNucleiCorrelation {
 
     registry.fill(HIST("Generated/hNEventsMC"), 0.5);
 
+    // Local representation of a generated particle.
+    struct GenCoalescenceCandidate {
+      GenCoalescenceCandidate(float pt,
+                              float eta,
+                              float phi,
+                              int pdg,
+                              float vx,
+                              float vy,
+                              float vz,
+                              float vt,
+                              bool physicalPrimary)
+        : mKinematics{pt, eta, phi},
+          mPdg{pdg},
+          mVx{vx},
+          mVy{vy},
+          mVz{vz},
+          mVt{vt},
+          mPhysicalPrimary{physicalPrimary}
+      {
+      }
+      [[nodiscard]] float pt() const { return mKinematics.pt(); }
+      [[nodiscard]] float eta() const { return mKinematics.eta(); }
+      [[nodiscard]] float phi() const { return mKinematics.phi(); }
+
+      [[nodiscard]] float px() const { return pt() * std::cos(phi()); }
+      [[nodiscard]] float py() const { return pt() * std::sin(phi()); }
+      [[nodiscard]] float pz() const { return mKinematics.pz(); }
+
+      [[nodiscard]] float vx() const { return mVx; }
+      [[nodiscard]] float vy() const { return mVy; }
+      [[nodiscard]] float vz() const { return mVz; }
+      [[nodiscard]] float vt() const { return mVt; }
+
+      [[nodiscard]] float mass() const
+      {
+        switch (std::abs(mPdg)) {
+          case PDG_t::kProton:
+            return o2::track::PID::getMass(o2::track::PID::Proton);
+          case PDG_t::kNeutron:
+            return o2::constants::physics::MassNeutron;
+          case o2::constants::physics::Pdg::kDeuteron:
+            return o2::track::PID::getMass(o2::track::PID::Deuteron);
+          default:
+            LOG(fatal) << "Unhandled pdg " << mPdg;
+            return 0.f;
+        }
+      }
+      [[nodiscard]] float energy() const { return std::hypot(mKinematics.p(), mass()); }
+      [[nodiscard]] float rapidity() const { return mKinematics.rapidityForMass(mass()); }
+      [[nodiscard]] float y() const { return rapidity(); }
+      [[nodiscard]] bool isPhysicalPrimary() const { return mPhysicalPrimary; }
+      [[nodiscard]] int pdgCode() const { return mPdg; }
+
+     private:
+      GenCandidate mKinematics;
+
+      int mPdg = 0;
+      float mVx = 0.f;
+      float mVy = 0.f;
+      float mVz = 0.f;
+      float mVt = 0.f;
+
+      bool mPhysicalPrimary = false;
+    };
+
+    std::vector<GenCoalescenceCandidate> particlesToProcess;
+    particlesToProcess.reserve(mcParticles.size());
+
+    for (const auto& particle : mcParticles) {
+      switch (particle.pdgCode()) {
+        case PDG_t::kProton:
+        case PDG_t::kProtonBar:
+        case PDG_t::kNeutron:
+        case PDG_t::kNeutronBar:
+        case o2::constants::physics::Pdg::kDeuteron:
+        case -o2::constants::physics::Pdg::kDeuteron:
+          particlesToProcess.emplace_back(particle.pt(),
+                                          particle.eta(),
+                                          particle.phi(),
+                                          particle.pdgCode(),
+                                          particle.vx(),
+                                          particle.vy(),
+                                          particle.vz(),
+                                          particle.vt(),
+                                          particle.isPhysicalPrimary());
+          break;
+        default:
+          break;
+      }
+    }
+
+    if (settingsCoalescence.doMCGenCoalescence.value) {
+      std::vector<bool> consumed(particlesToProcess.size(), false);
+      std::vector<GenCoalescenceCandidate> deuterons;
+
+      // Try p+n -> d and pbar+nbar -> dbar independently.
+      for (const int sign : {+1, -1}) {
+        const int protonPDG = sign * PDG_t::kProton;
+        const int neutronPDG = sign * PDG_t::kNeutron;
+        const int deuteronPDG = sign * o2::constants::physics::Pdg::kDeuteron;
+
+        for (size_t ip = 0; ip < particlesToProcess.size(); ++ip) {
+          if (consumed[ip] || particlesToProcess[ip].pdgCode() != protonPDG) {
+            continue;
+          }
+
+          const auto& proton = particlesToProcess[ip];
+
+          for (size_t in = 0; in < particlesToProcess.size(); ++in) {
+            if (consumed[in] || particlesToProcess[in].pdgCode() != neutronPDG) {
+              continue;
+            }
+
+            const auto& neutron = particlesToProcess[in];
+
+            const float ep = proton.energy();
+            const float en = neutron.energy();
+
+            // Propagate the particle freezing out first to the freeze-out time of the other particle
+            float xp = proton.vx();
+            float yp = proton.vy();
+            float zp = proton.vz();
+            const float tp = proton.vt();
+
+            float xn = neutron.vx();
+            float yn = neutron.vy();
+            float zn = neutron.vz();
+            const float tn = neutron.vt();
+
+            const float commonTime = std::max(static_cast<float>(tp), static_cast<float>(tn));
+
+            if (tp < commonTime) {
+              const float dt = commonTime - tp;
+              xp += proton.px() / ep * dt;
+              yp += proton.py() / ep * dt;
+              zp += proton.pz() / ep * dt;
+            }
+
+            if (tn < commonTime) {
+              const float dt = commonTime - tn;
+              xn += neutron.px() / en * dt;
+              yn += neutron.py() / en * dt;
+              zn += neutron.pz() / en * dt;
+            }
+
+            // Velocity of the p-n centre-of-mass frame.
+            const float totalE = ep + en;
+            const float totalPx = proton.px() + neutron.px();
+            const float totalPy = proton.py() + neutron.py();
+            const float totalPz = proton.pz() + neutron.pz();
+
+            const float bx = totalPx / totalE;
+            const float by = totalPy / totalE;
+            const float bz = totalPz / totalE;
+
+            const float beta2 = bx * bx + by * by + bz * bz;
+            if (beta2 >= 1.) {
+              continue;
+            }
+
+            const float gamma = 1. / std::sqrt(1. - beta2);
+
+            // Boost the proton momentum into the p-n rest frame.
+            // In that frame p_p* = -p_n*, therefore |p_p*| is the relative momentum entering the coalescence cut.
+            float pxStar = proton.px();
+            float pyStar = proton.py();
+            float pzStar = proton.pz();
+
+            if (beta2 > 0.) {
+              const float betaDotP = bx * proton.px() + by * proton.py() + bz * proton.pz();
+
+              const float factor = ((gamma - 1.) * betaDotP / beta2) - gamma * ep;
+
+              pxStar += factor * bx;
+              pyStar += factor * by;
+              pzStar += factor * bz;
+            }
+
+            const float pRelative = std::sqrt(pxStar * pxStar + pyStar * pyStar + pzStar * pzStar);
+
+            if (pRelative >= settingsCoalescence.pMax.value) {
+              continue;
+            }
+
+            // The two particles have already been propagated to equal time in the lab. Transform their spatial separation to the pair CM frame.
+            float dx = xp - xn;
+            float dy = yp - yn;
+            float dz = zp - zn;
+
+            if (beta2 > 0.) {
+              const float betaDotR = bx * dx + by * dy + bz * dz;
+              const float factor = (gamma - 1.) * betaDotR / beta2;
+
+              dx += factor * bx;
+              dy += factor * by;
+              dz += factor * bz;
+            }
+
+            const float rRelative = std::sqrt(dx * dx + dy * dy + dz * dz);
+
+            if (rRelative >= settingsCoalescence.rMax.value) {
+              continue;
+            }
+
+            // Successful coalescence: remove the constituent proton and neutron and replace them by a deuteron carrying their total three-momentum
+            consumed[ip] = true;
+            consumed[in] = true;
+
+            const float deuteronPt = std::hypot(totalPx, totalPy);
+            const float deuteronPhi = std::atan2(totalPy, totalPx);
+            const float deuteronEta = std::asinh(totalPz / std::max(deuteronPt, 1.e-12f));
+
+            deuterons.emplace_back(deuteronPt,
+                                   deuteronEta,
+                                   deuteronPhi,
+                                   deuteronPDG,
+                                   0.5f * (xp + xn),
+                                   0.5f * (yp + yn),
+                                   0.5f * (zp + zn),
+                                   commonTime,
+                                   proton.isPhysicalPrimary() && neutron.isPhysicalPrimary());
+            break;
+          }
+        }
+      }
+
+      // Construct the post-coalescence particle list.
+      std::vector<GenCoalescenceCandidate> coalescedParticles;
+      coalescedParticles.reserve(particlesToProcess.size() + deuterons.size());
+
+      for (size_t i = 0; i < particlesToProcess.size(); ++i) {
+        if (!consumed[i]) {
+          coalescedParticles.push_back(std::move(particlesToProcess[i]));
+        }
+      }
+
+      for (auto& deuteron : deuterons) {
+        coalescedParticles.push_back(std::move(deuteron));
+      }
+
+      particlesToProcess = std::move(coalescedParticles);
+    }
+
     // Pairing candidates are collected during the QA loop below (which already visits every particle)
     GenCollisionCache genCache;
 
-    for (const auto& particle : mcParticles) {
+    for (const auto& particle : particlesToProcess) {
       auto fillGeneratedQa = [this, &particle](const float binPosition) {
         switch (particle.pdgCode()) {
           case PDG_t::kProton:
@@ -1732,10 +2006,9 @@ struct HadronNucleiCorrelation {
         }
       }
 
-      if (std::abs(particle.eta()) > etaCut) {
-        continue;
+      if (std::abs(particle.eta()) < etaCut) {
+        fillGeneratedQa(2.5);
       }
-      fillGeneratedQa(2.5);
 
       // (anti)neutrons are accepted by fillGeneratedQa for QA counting only: they have no
       // eta-phi-pt histogram and must not reach the switch below (whose default is fatal)
@@ -1757,9 +2030,6 @@ struct HadronNucleiCorrelation {
           break;
         case -o2::constants::physics::Pdg::kDeuteron:
           registry.fill(HIST("hGen_EtaPhiPt_Deuteron"), particle.eta(), particle.phi(), -1. * particle.pt());
-          break;
-        case PDG_t::kNeutron:
-        case -PDG_t::kNeutron:
           break;
         default:
           LOG(fatal) << "Unhandled PDG code, should not happen, check the code! " << particle.pdgCode();
@@ -1809,7 +2079,7 @@ struct HadronNucleiCorrelation {
     using BinningTypeMC = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::mccollision::PosZ, decltype(getMultiplicity)>;
     BinningTypeMC colBinningGen{{getMultiplicity}, {confVtxBins, confMultBins}, true};
 
-    for (const auto& [collision1, collision2] : soa::selfCombinations(colBinningGen, 5, -1, mcCollisions, mcCollisions)) {
+    for (const auto& [collision1, collision2] : soa::selfCombinations(colBinningGen, maxmixcollsGen.value, -1, mcCollisions, mcCollisions)) {
       const auto& cache1 = genCaches.at(collision1.globalIndex());
       const auto& cache2 = genCaches.at(collision2.globalIndex());
 

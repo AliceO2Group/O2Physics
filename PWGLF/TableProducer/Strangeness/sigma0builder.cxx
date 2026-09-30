@@ -43,7 +43,8 @@
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <ReconstructionDataFormats/TrackParametrization.h>
+#include <ReconstructionDataFormats/Track.h>
+#include <ReconstructionDataFormats/TrackParametrizationWithError.h>
 
 #include <Math/Vector3D.h> // IWYU pragma: keep (do not replace with Math/Vector3Dfwd.h)
 #include <Math/Vector3Dfwd.h>
@@ -1511,7 +1512,7 @@ struct sigma0builder {
             if (MCMother_pi0.globalIndex() == MCMother_lambda.globalIndex()) { // check that lambda and pi0 have the same mother.
               MCinfo.xi0PDGCode = MCMother_pi0.pdgCode();
               MCinfo.xi0MCProcess = MCMother_pi0.getProcess();
-              MCinfo.pi0IsPhysicalPrimary = MCMother_pi0.isPhysicalPrimary();
+              MCinfo.xi0IsPhysicalPrimary = MCMother_pi0.isPhysicalPrimary();
               MCinfo.xi0X = MCMother_pi0.vx();
               MCinfo.xi0Y = MCMother_pi0.vy();
               MCinfo.xi0Z = MCMother_pi0.vz();
@@ -2703,7 +2704,7 @@ struct sigma0builder {
   //_______________________________________________
   // Build Xi0 candidate for analysis
   template <typename TV0Object, typename TCollision, typename TMCParticles>
-  bool buildXi0(TV0Object const& gamma1, TV0Object const& gamma2, TV0Object const& lambda, TCollision const& collision, TMCParticles const& mcparticles)
+  bool buildXi0(TV0Object const& gamma1, TV0Object const& gamma2, TV0Object const& lambda, V0PairTopoInfo& pi0Info, TCollision const& collision, TMCParticles const& mcparticles)
   {
     Xi0Info cascade;
     //_______________________________________________
@@ -2764,6 +2765,8 @@ struct sigma0builder {
       return false;
     }
 
+    cascade.pi0DaughterDCA = pi0Info.daughterDCA;
+
     lGamma1Track.getPxPyPzGlo(cascade.gamma1Momentum);
     lGamma2Track.getPxPyPzGlo(cascade.gamma2Momentum);
     lLambdaTrack.getPxPyPzGlo(cascade.lambdaMomentum);
@@ -2775,6 +2778,10 @@ struct sigma0builder {
     if (std::hypot(cascade.cascadePosition[0], cascade.cascadePosition[1]) < cascadeSelections.radiusCascade) {
       return false;
     }
+
+    cascade.pi0Position[0] = pi0Info.position[0];
+    cascade.pi0Position[1] = pi0Info.position[1];
+    cascade.pi0Position[2] = pi0Info.position[2];
 
     double cosPA = RecoDecay::cpa(
       std::array{collision.posX(), collision.posY(), collision.posZ()},
@@ -2805,7 +2812,7 @@ struct sigma0builder {
 
     std::array<float, 3> momPi0{gamma1.px() + gamma2.px(), gamma1.py() + gamma2.py(), gamma1.pz() + gamma2.pz()};
     auto arrMom = std::array{momPi0, momLambda};
-    cascade.xi0Mass = RecoDecay::m(arrMom, std::array{o2::constants::physics::MassPi0, o2::constants::physics::MassXi0});
+    cascade.xi0Mass = RecoDecay::m(arrMom, std::array{o2::constants::physics::MassPi0, o2::constants::physics::MassLambda0});
 
     // Calculate position covariance matrix
     auto covVtxV = fitter3Prongs.calcPCACovMatrix(0);
@@ -3418,7 +3425,7 @@ struct sigma0builder {
             auto gamma1 = fullV0s.rawIteratorAt(pi0Candidates[j].v01Index);
             auto gamma2 = fullV0s.rawIteratorAt(pi0Candidates[j].v02Index);
             // Building pi0 candidate & filling tables
-            if (!buildXi0(gamma1, gamma2, lambda, coll, mcparticles))
+            if (!buildXi0(gamma1, gamma2, lambda, pi0Candidates[j], coll, mcparticles))
               continue;
           }
         }
