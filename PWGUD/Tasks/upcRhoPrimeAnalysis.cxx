@@ -18,13 +18,21 @@
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
-#include <Math/Vector4D.h>
-#include <TH1F.h>
-#include <TH2F.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep
+#include <Math/Vector4Dfwd.h>
+#include <TH1.h>
+#include <TH2.h>
 
+#include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 
@@ -321,7 +329,7 @@ struct upcRhoPrimeAnalysis {
         return info;
       }
     }
-    auto mother = *motherIt;
+    const auto& mother = *motherIt;
     info.found = true;
     info.pdg = mother.pdgCode();
     info.px = mother.px();
