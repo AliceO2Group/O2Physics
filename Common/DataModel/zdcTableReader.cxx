@@ -23,6 +23,8 @@
 #include <TH1F.h>
 #include <TH2F.h>
 
+#include <cstdio>
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -39,7 +41,7 @@ struct ZDCLIAnalysis {
   //
   Configurable<uint64_t> tStampOffset{"tStampOffset", 0, "offset value for timestamp"};
   Configurable<int> nBinstStamp{"nBinstStamp", 1000, "no. bins in histo vs. timestamp"};
-  Configurable<float> tStampMax{"tStampMax", 1000, ",maximum value for timestamp"};
+  Configurable<float> tStampMax{"tStampMax", 1000, ", maximum value for timestamp"};
   //
   Configurable<bool> tdcCut{"tdcCut", false, "Flag for TDC cut"};
   Configurable<float> tdcZNmincut{"tdcZNmincut", -1.5, "Min. ZN TDC cut value"};
@@ -70,7 +72,7 @@ struct ZDCLIAnalysis {
   //
   Configurable<bool> selectZvtx{"selectZvtx", true, "Activate Z vertex selection"};
   Configurable<bool> sel8{"sel8", true, "Activate sel8 selection"};
-  Configurable<bool> triggetTVX{"triggerTVX", true, "Activate trigger TVX selection"};
+  Configurable<bool> triggerTVX{"triggerTVX", true, "Activate trigger TVX selection"};
   Configurable<bool> doOccupancySel{"doOccupancySel", false, "Activate occupancy selection"};
   Configurable<bool> noSameBunchPileupCut{"noSameBunchPileupCut", true, "Activate no same bunch pileup selection"};
   Configurable<bool> isGoodZvtxFT0vsPV{"isGoodZvtxFT0vsPV", true, "Activate is good Z vertex FT0 vs PV selection"};
@@ -316,9 +318,9 @@ struct ZDCLIAnalysis {
           isGoodITSLayersAllsel = true;
         //
         bool istriggerTVX = false;
-        if (!triggetTVX)
+        if (triggerTVX && CHECK_BIT(selectionBits, 9))
           istriggerTVX = true;
-        else if (triggetTVX && CHECK_BIT(selectionBits, 9))
+        else if (!triggerTVX)
           istriggerTVX = true;
 
         if (zvtxSel && ottoSel && istriggerTVX && isdoOccupancySel && isnoSameBunchPileupCut && isGoodZvtxFT0vsPVsel && isnoCollInTimeRangeStandard && isnoTimeFrameBorder && isnoITSROFFrameBorder && isGoodITSLayersAllsel)
