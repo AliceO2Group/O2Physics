@@ -85,8 +85,10 @@ using ConfOmegaCleaner2 = ConfParticleCleaner<PrefixOmegaCleaner2>;
 
 constexpr const char PrefixMcParticleCleaner1[] = "McParticleCleaner1";
 constexpr const char PrefixMcParticleCleaner2[] = "McParticleCleaner2";
+constexpr const char PrefixMcParticleCleaner3[] = "McParticleCleaner3";
 using ConfMcParticleCleaner1 = ConfParticleCleaner<PrefixMcParticleCleaner1>;
 using ConfMcParticleCleaner2 = ConfParticleCleaner<PrefixMcParticleCleaner2>;
+using ConfMcParticleCleaner3 = ConfParticleCleaner<PrefixMcParticleCleaner3>;
 
 class ParticleCleaner
 {

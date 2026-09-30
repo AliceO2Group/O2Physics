@@ -23,12 +23,10 @@
 #include "PWGDQ/Core/MixingHandler.h"
 #include "PWGDQ/Core/MixingLibrary.h"
 #include "PWGDQ/Core/VarManager.h"
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
 
 #include "ALICE3/DataModel/ReducedTablesAlice3.h"
 #include "Common/Core/TableHelper.h"
 
-#include <DetectorsBase/MatLayerCylSet.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -43,7 +41,6 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
-#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>

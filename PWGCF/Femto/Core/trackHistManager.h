@@ -55,6 +55,9 @@ enum TrackHist {
   kTpcClusterOverCrossedRows,
   kTpcClusterShared,
   kTpcClusterFractionShared,
+  kItsChi2,
+  kTpcChi2,
+  kTrackType,
   // 2d qa
   kPtVsEta,
   kPtVsPhi,
@@ -65,6 +68,8 @@ enum TrackHist {
   kPtVsTpcClusterOverCrossedRows,
   kPtVsTpcClusterShared,
   kPtVsTpcClusterFractionShared,
+  kPtVsItsChi2,
+  kPtVsTpcChi2,
   kTpcClusterVsTpcCrossedRows,
   kTpcClusterVsTpcClusterShared,
   kPtVsDcaxy,
@@ -193,6 +198,11 @@ using ConfLc1PionDauBinning = ConfTrackBinning<PrefixLc1PionDauBinning>;
 using ConfCascadePosDauBinning = ConfTrackBinning<PrefixCascadePosDauBinning>;
 using ConfCascadeNegDauBinning = ConfTrackBinning<PrefixCascadeNegDauBinning>;
 using ConfCascadeBachelorBinning = ConfTrackBinning<PrefixCascadeBachelorBinning>;
+// for dN/deta tracks
+constexpr const char PrefixDndetaTrackGlobalBinning[] = "DndetaTrackGlobalBinning";
+constexpr const char PrefixDndetaTrackItsOnlyBinning[] = "DndetaTrackItsOnlyBinning";
+using ConfDndetaTrackGlobalBinning = ConfTrackBinning<PrefixDndetaTrackGlobalBinning>;
+using ConfDndetaTrackItsOnlyBinning = ConfTrackBinning<PrefixDndetaTrackItsOnlyBinning>;
 using ConfKinkChaDauBinning = ConfTrackBinning<PrefixKinkChaDauBinning>;
 // for resonance daughters
 using ConfResonancePosDauBinning = ConfTrackBinning<PrefixResonancePosDauBinning>;
@@ -224,6 +234,8 @@ struct ConfTrackQaBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis tpcClusterOverCrossedRows{"tpcClusterOverCrossedRows", {{75, 0, 1.5}}, "TPC cluster over TPC crossed rows"};
   o2::framework::ConfigurableAxis tpcClusterShared{"tpcClusterShared", {{161, -0.5, 160.5}}, "TPC cluster shared"};
   o2::framework::ConfigurableAxis tpcClusterFractionShared{"tpcClusterFractionShared", {{60, 0, 1.2}}, "TPC cluster fraction shared"};
+  o2::framework::ConfigurableAxis itsChi2{"itsChi2", {{100, 0, 50}}, "ITS chi2 / cluster"};
+  o2::framework::ConfigurableAxis tpcChi2{"tpcChi2", {{100, 0, 10}}, "TPC chi2 / cluster"};
   o2::framework::ConfigurableAxis dcaXy{"dcaXy", {{300, -0.3, 0.3}}, "DCA_xy"};
   o2::framework::ConfigurableAxis dcaZ{"dcaZ", {{300, -0.3, 0.3}}, "DCA_Z"};
   o2::framework::ConfigurableAxis dca{"dca", {{300, 0, 0.3}}, "DCA"};
@@ -289,6 +301,11 @@ constexpr const char PrefixKinkChaDauQaBinning[] = "KinkChaDauQaBinning";
 
 using ConfTrackQaBinning1 = ConfTrackQaBinning<PrefixTrackQaBinning1>;
 using ConfTrackQaBinning2 = ConfTrackQaBinning<PrefixTrackQaBinning2>;
+// for dN/deta tracks
+constexpr const char PrefixDndetaTrackGlobalQaBinning[] = "DndetaTrackGlobalQaBinning";
+constexpr const char PrefixDndetaTrackItsOnlyQaBinning[] = "DndetaTrackItsOnlyQaBinning";
+using ConfDndetaTrackGlobalQaBinning = ConfTrackQaBinning<PrefixDndetaTrackGlobalQaBinning>;
+using ConfDndetaTrackItsOnlyQaBinning = ConfTrackQaBinning<PrefixDndetaTrackItsOnlyQaBinning>;
 using ConfResonancePosDauQaBinning = ConfTrackQaBinning<PrefixResonancePosDauQaBinning>;
 using ConfResonanceNegDauQaBinning = ConfTrackQaBinning<PrefixResonanceNegDauQaBinning>;
 using ConfV01PosDauQaBinning = ConfTrackQaBinning<PrefixV01PosDauQaBinning>;
@@ -323,7 +340,10 @@ constexpr std::array<histmanager::HistInfo<TrackHist>, kTrackHistLast>
       {kTpcCluster, o2::framework::HistType::kTH1F, "hTpcCluster", "TPC cluster found; TPC cluster found; Entries"},
       {kTpcClusterOverCrossedRows, o2::framework::HistType::kTH1F, "hTpcClusterOverCrossedRows", "TPC cluster found  over TPC crossed rows; TPC cluster found / Tpc crossed rows; Entries"},
       {kTpcClusterShared, o2::framework::HistType::kTH1F, "hTpcClusterShared", "TPC cluster shared; TPC cluster shared ; Entries"},
-      {kTpcClusterFractionShared, o2::framework::HistType::kTH1F, "hTpcClusterFractionShared", "TPC cluster fraction shared; TPC cluster found / TPC cluster shared ; Entries"},
+      {kTpcClusterFractionShared, o2::framework::HistType::kTH1F, "hTpcClusterFractionShared", "TPC cluster fraction shared; TPC cluster shared / TPC cluster found ; Entries"},
+      {kItsChi2, o2::framework::HistType::kTH1F, "hItsChi2", "ITS #chi^{2} / cluster; #chi^{2}_{ITS} / N_{cls}; Entries"},
+      {kTpcChi2, o2::framework::HistType::kTH1F, "hTpcChi2", "TPC #chi^{2} / cluster; #chi^{2}_{TPC} / N_{cls}; Entries"},
+      {kTrackType, o2::framework::HistType::kTH1F, "hTrackType", "Type the track row was stored as; Track type; Entries"},
       {kPtVsEta, o2::framework::HistType::kTH2F, "hPtVsEta", "p_{T} vs #eta; p_{T} (GeV/#it{c}) ; #eta"},
       {kPtVsPhi, o2::framework::HistType::kTH2F, "hPtVsPhi", "p_{T} vs #varphi; p_{T} (GeV/#it{c}) ; #varphi"},
       {kPhiVsEta, o2::framework::HistType::kTH2F, "hPhiVsEta", "#varphi vs #eta; #varphi ; #eta"},
@@ -333,6 +353,8 @@ constexpr std::array<histmanager::HistInfo<TrackHist>, kTrackHistLast>
       {kPtVsTpcClusterOverCrossedRows, o2::framework::HistType::kTH2F, "hPtVsTpcClusterOverCrossedRows", "p_{T} vs TPC cluster found over crossed rows; p_{T} (GeV/#it{c}) ; TPC cluster found / TPC crossed rows"},
       {kPtVsTpcClusterShared, o2::framework::HistType::kTH2F, "hPtVsTpcClusterShared", "p_{T} vs TPC cluster shared; p_{T} (GeV/#it{c}) ; TPC cluster shared"},
       {kPtVsTpcClusterFractionShared, o2::framework::HistType::kTH2F, "hPtVsTpcClusterSharedFraction", "p_{T} vs TPC cluster shared over TPC cluster found; p_{T} (GeV/#it{c}) ; TPC cluster shared / TPC cluster found"},
+      {kPtVsItsChi2, o2::framework::HistType::kTH2F, "hPtVsItsChi2", "p_{T} vs ITS #chi^{2} / cluster; p_{T} (GeV/#it{c}) ; #chi^{2}_{ITS} / N_{cls}"},
+      {kPtVsTpcChi2, o2::framework::HistType::kTH2F, "hPtVsTpcChi2", "p_{T} vs TPC #chi^{2} / cluster; p_{T} (GeV/#it{c}) ; #chi^{2}_{TPC} / N_{cls}"},
       {kTpcClusterVsTpcCrossedRows, o2::framework::HistType::kTH2F, "hTpcClusterVsTpcCrossedRows", "TPC cluster found vs TPC crossed rows; TPC cluster found; TPC crossed rows"},
       {kTpcClusterVsTpcClusterShared, o2::framework::HistType::kTH2F, "hTpcClusterVsTpcClusterShared", "TPC cluster found vs TPC cluster shared; TPC cluster found; TPC cluster shared"},
       {kPtVsDcaxy, o2::framework::HistType::kTH2F, "hPtVsDcaxy", "p_{T} vs DCA_{XY}; p_{T} (GeV/#it{c}); DCA_{XY} (cm)"},
@@ -341,7 +363,7 @@ constexpr std::array<histmanager::HistInfo<TrackHist>, kTrackHistLast>
       {kPtVsDcaxyVsDcaz, o2::framework::HistType::kTHnSparseF, "hPtVsDcaxyVsDcaz", "Transverse momentum vs DCA_{xy} vs DCA_{z}; p_{T} (GeV/#it{c}); DCA_{XY} (cm); DCA_{Z} (cm);"},
       {kPVsPTpc, o2::framework::HistType::kTH2F, "hPVsPTpc", "Correlation p_{global} and p_{TPC}; p_{global} (GeV/#it{c}); p_{tpc} (GeV/#it{c})"},
       {kItsSignal, o2::framework::HistType::kTH2F, "hItsSignal", "ITS Signal; p (GeV/#it{c}) ; <ITS Cluster Size> x <cos #lambda>"},
-      {kItsElectron, o2::framework::HistType::kTH2F, "hItsPidElectron", "ITS PID Electron; p (GeV/#it{c}) ; n#sigma_{TPC,el}"},
+      {kItsElectron, o2::framework::HistType::kTH2F, "hItsPidElectron", "ITS PID Electron; p (GeV/#it{c}) ; n#sigma_{ITS,el}"},
       {kItsPion, o2::framework::HistType::kTH2F, "hItsPidPion", "ITS PID Pion; p (GeV/#it{c}) ; n#sigma_{ITS,pi}"},
       {kItsKaon, o2::framework::HistType::kTH2F, "hItsPidKaon", "ITS PID Kaon; p (GeV/#it{c}) ; n#sigma_{ITS,ka}"},
       {kItsProton, o2::framework::HistType::kTH2F, "hItsPidProton", "ITS PID Proton; p (GeV/#it{c}) ; n#sigma_{ITS,pr}"},
@@ -365,14 +387,14 @@ constexpr std::array<histmanager::HistInfo<TrackHist>, kTrackHistLast>
       {kTofDeuteron, o2::framework::HistType::kTH2F, "hTofPidDeuteron", "TOF PID Deuteron; p (GeV/#it{c}) ; n#sigma_{TOF,de}"},
       {kTofTriton, o2::framework::HistType::kTH2F, "hTofPidTriton", "TOF PID Triton; p (GeV/#it{c}) ; n#sigma_{TOF,tr}"},
       {kTofHelium, o2::framework::HistType::kTH2F, "hTofPidHelium", "TOF PID Helium; p (GeV/#it{c}) ; n#sigma_{TOF,he}"},
-      {kTpcitsElectron, o2::framework::HistType::kTH2F, "hTpcitsPidElectron", "its PID Electron; p (GeV/#it{c}) ; n#sigma_{its,el}"},
+      {kTpcitsElectron, o2::framework::HistType::kTH2F, "hTpcitsPidElectron", "TPC+ITS PID Electron; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,el}^{2}+n#sigma_{ITS,el}^{2}}"},
       {kTpcitsPion, o2::framework::HistType::kTH2F, "hTpcitsPidPion", "TPC+ITS PID Pion; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,pi}^{2}+n#sigma_{its,pi}^{2}}"},
       {kTpcitsKaon, o2::framework::HistType::kTH2F, "hTpcitsPidKaon", "TPC+ITS PID Kaon; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,ka}^{2}+n#sigma_{its,ka}^{2}}"},
       {kTpcitsProton, o2::framework::HistType::kTH2F, "hTpcitsPidProton", "TPC+ITS PID Proton; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,pr}^{2}+n#sigma_{its,pr}^{2}}"},
       {kTpcitsDeuteron, o2::framework::HistType::kTH2F, "hTpcitsPidDeuteron", "TPC+ITS PID Deuteron; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,de}^{2}+n#sigma_{its,de}^{2}}"},
       {kTpcitsTriton, o2::framework::HistType::kTH2F, "hTpcitsPidTriton", "TPC+ITS PID Triton; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,tr}^{2}+n#sigma_{its,tr}^{2}}"},
       {kTpcitsHelium, o2::framework::HistType::kTH2F, "hTpcitsPidHelium", "TPC+ITS PID Helium; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,he}^{2}+n#sigma_{its,he}^{2}}"},
-      {kTpctofElectron, o2::framework::HistType::kTH2F, "hTpctofPidElectron", "TOF PID Electron; p (GeV/#it{c}) ; n#sigma_{TOF,el}"},
+      {kTpctofElectron, o2::framework::HistType::kTH2F, "hTpctofPidElectron", "TPC+TOF PID Electron; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,el}^{2}+n#sigma_{TOF,el}^{2}}"},
       {kTpctofPion, o2::framework::HistType::kTH2F, "hTpctofPidPion", "TPC+TOF PID Pion; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,pi}^{2}+n#sigma_{TOF,pi}^{2}}"},
       {kTpctofKaon, o2::framework::HistType::kTH2F, "hTpctofPidKaon", "TPC+TOF PID Kaon; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,ka}^{2}+n#sigma_{TOF,ka}^{2}}"},
       {kTpctofProton, o2::framework::HistType::kTH2F, "hTpctofPidProton", "TPC+TOF PID Proton; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,pr}^{2}+n#sigma_{TOF,pr}^{2}}"},
@@ -420,6 +442,8 @@ constexpr std::array<histmanager::HistInfo<TrackHist>, kTrackHistLast>
     {kPtVsTpcClusterOverCrossedRows, {(confAnalysis).pt, (confQa).tpcClusterOverCrossedRows}}, \
     {kPtVsTpcClusterShared, {(confAnalysis).pt, (confQa).tpcClusterShared}},                   \
     {kPtVsTpcClusterFractionShared, {(confAnalysis).pt, (confQa).tpcClusterFractionShared}},   \
+    {kPtVsItsChi2, {(confAnalysis).pt, (confQa).itsChi2}},                                     \
+    {kPtVsTpcChi2, {(confAnalysis).pt, (confQa).tpcChi2}},                                     \
     {kTpcClusterVsTpcCrossedRows, {(confQa).tpcCluster, (confQa).tpcCrossedRows}},             \
     {kTpcClusterVsTpcClusterShared, {(confQa).tpcCluster, (confQa).tpcClusterShared}},         \
     {kTpcCrossedRows, {(confQa).tpcCrossedRows}},                                              \
@@ -427,6 +451,8 @@ constexpr std::array<histmanager::HistInfo<TrackHist>, kTrackHistLast>
     {kTpcClusterOverCrossedRows, {(confQa).tpcClusterOverCrossedRows}},                        \
     {kTpcClusterShared, {(confQa).tpcClusterShared}},                                          \
     {kTpcClusterFractionShared, {(confQa).tpcClusterFractionShared}},                          \
+    {kItsChi2, {(confQa).itsChi2}},                                                            \
+    {kTpcChi2, {(confQa).tpcChi2}},                                                            \
     {kPtVsDcaxy, {(confAnalysis).pt, (confQa).dcaXy}},                                         \
     {kPtVsDcaz, {(confAnalysis).pt, (confQa).dcaZ}},                                           \
     {kPtVsDca, {(confAnalysis).pt, (confQa).dca}},                                             \
@@ -534,6 +560,9 @@ auto makeTrackMcQaHistSpecMap(T1 const& confBinningAnalysis, T2 const& confBinni
 constexpr char PrefixTrackQa[] = "TrackQA/";
 constexpr char PrefixTrack1[] = "Track1/";
 constexpr char PrefixTrack2[] = "Track2/";
+// for dN/deta tracks
+constexpr char PrefixDndetaTrackGlobal[] = "DndetaTrackGlobal/";
+constexpr char PrefixDndetaTrackItsOnly[] = "DndetaTrackItsOnly/";
 constexpr char PrefixTrack3[] = "Track3/";
 
 constexpr char PrefixResonancePosDaughter[] = "ResonancePosDau/";
@@ -724,6 +753,16 @@ class TrackHistManager
     mHistogramRegistry->add(qaDir + getHistNameV2(kTpcClusterOverCrossedRows, HistTable), getHistDesc(kTpcClusterOverCrossedRows, HistTable), getHistType(kTpcClusterOverCrossedRows, HistTable), {Specs.at(kTpcClusterOverCrossedRows)});
     mHistogramRegistry->add(qaDir + getHistNameV2(kTpcClusterShared, HistTable), getHistDesc(kTpcClusterShared, HistTable), getHistType(kTpcClusterShared, HistTable), {Specs.at(kTpcClusterShared)});
     mHistogramRegistry->add(qaDir + getHistNameV2(kTpcClusterFractionShared, HistTable), getHistDesc(kTpcClusterFractionShared, HistTable), getHistType(kTpcClusterFractionShared, HistTable), {Specs.at(kTpcClusterFractionShared)});
+    mHistogramRegistry->add(qaDir + getHistNameV2(kItsChi2, HistTable), getHistDesc(kItsChi2, HistTable), getHistType(kItsChi2, HistTable), {Specs.at(kItsChi2)});
+    mHistogramRegistry->add(qaDir + getHistNameV2(kTpcChi2, HistTable), getHistDesc(kTpcChi2, HistTable), getHistType(kTpcChi2, HistTable), {Specs.at(kTpcChi2)});
+
+    // track type: shows e.g. whether rows were only stored as daughters of a candidate
+    const int nTrackTypes = static_cast<int>(modes::Track::kTrackTypeLast);
+    const o2::framework::AxisSpec axisTrackType = {nTrackTypes, -0.5, static_cast<double>(nTrackTypes) - 0.5};
+    mHistogramRegistry->add(qaDir + getHistNameV2(kTrackType, HistTable), getHistDesc(kTrackType, HistTable), getHistType(kTrackType, HistTable), {axisTrackType});
+    for (int i = 0; i < nTrackTypes; i++) {
+      mHistogramRegistry->get<TH1>(HIST(prefix) + HIST(QaDir) + HIST(histmanager::getHistName(kTrackType, HistTable)))->GetXaxis()->SetBinLabel(1 + i, modes::trackTypeToString(static_cast<modes::Track>(i)));
+    }
 
     // qa 2d
     if (mPlot2d) {
@@ -736,6 +775,8 @@ class TrackHistManager
       mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsTpcClusterOverCrossedRows, HistTable), getHistDesc(kPtVsTpcClusterOverCrossedRows, HistTable), getHistType(kPtVsTpcClusterOverCrossedRows, HistTable), {Specs.at(kPtVsTpcClusterOverCrossedRows)});
       mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsTpcClusterShared, HistTable), getHistDesc(kPtVsTpcClusterShared, HistTable), getHistType(kPtVsTpcClusterShared, HistTable), {Specs.at(kPtVsTpcClusterShared)});
       mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsTpcClusterFractionShared, HistTable), getHistDesc(kPtVsTpcClusterFractionShared, HistTable), getHistType(kPtVsTpcClusterFractionShared, HistTable), {Specs.at(kPtVsTpcClusterFractionShared)});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsItsChi2, HistTable), getHistDesc(kPtVsItsChi2, HistTable), getHistType(kPtVsItsChi2, HistTable), {Specs.at(kPtVsItsChi2)});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsTpcChi2, HistTable), getHistDesc(kPtVsTpcChi2, HistTable), getHistType(kPtVsTpcChi2, HistTable), {Specs.at(kPtVsTpcChi2)});
       mHistogramRegistry->add(qaDir + getHistNameV2(kTpcClusterVsTpcCrossedRows, HistTable), getHistDesc(kTpcClusterVsTpcCrossedRows, HistTable), getHistType(kTpcClusterVsTpcCrossedRows, HistTable), {Specs.at(kTpcClusterVsTpcCrossedRows)});
       mHistogramRegistry->add(qaDir + getHistNameV2(kTpcClusterVsTpcClusterShared, HistTable), getHistDesc(kTpcClusterVsTpcClusterShared, HistTable), getHistType(kTpcClusterVsTpcClusterShared, HistTable), {Specs.at(kTpcClusterVsTpcClusterShared)});
       // dca
@@ -751,66 +792,80 @@ class TrackHistManager
 
     std::string pidDir = std::string(prefix) + std::string(PidDir);
 
-    mHistogramRegistry->add(pidDir + getHistNameV2(kItsSignal, HistTable), getHistDesc(kItsSignal, HistTable), getHistType(kItsSignal, HistTable), {Specs.at(kItsSignal)});
-    mHistogramRegistry->add(pidDir + getHistNameV2(kTpcSignal, HistTable), getHistDesc(kTpcSignal, HistTable), getHistType(kTpcSignal, HistTable), {Specs.at(kTpcSignal)});
-    mHistogramRegistry->add(pidDir + getHistNameV2(kTofBeta, HistTable), getHistDesc(kTofBeta, HistTable), getHistType(kTofBeta, HistTable), {Specs.at(kTofBeta)});
-    mHistogramRegistry->add(pidDir + getHistNameV2(kTofMass, HistTable), getHistDesc(kTofMass, HistTable), getHistType(kTofMass, HistTable), {Specs.at(kTofMass)});
+    this->addPidHistogram(pidDir, kItsSignal, Specs);
+    this->addPidHistogram(pidDir, kTpcSignal, Specs);
+    this->addPidHistogram(pidDir, kTofBeta, Specs);
+    this->addPidHistogram(pidDir, kTofMass, Specs);
 
     if (mPlotElectronPid) {
-      mHistogramRegistry->add(pidDir + getHistNameV2(kItsElectron, HistTable), getHistDesc(kItsElectron, HistTable), getHistType(kItsElectron, HistTable), {Specs.at(kItsElectron)});
-      mHistogramRegistry->add(pidDir + getHistNameV2(kTpcElectron, HistTable), getHistDesc(kTpcElectron, HistTable), getHistType(kTpcElectron, HistTable), {Specs.at(kTpcElectron)});
-      mHistogramRegistry->add(pidDir + getHistNameV2(kTofElectron, HistTable), getHistDesc(kTofElectron, HistTable), getHistType(kTofElectron, HistTable), {Specs.at(kTofElectron)});
-      mHistogramRegistry->add(pidDir + getHistNameV2(kTpcitsElectron, HistTable), getHistDesc(kTpcitsElectron, HistTable), getHistType(kTpcitsElectron, HistTable), {Specs.at(kTpcitsElectron)});
-      mHistogramRegistry->add(pidDir + getHistNameV2(kTpctofElectron, HistTable), getHistDesc(kTpctofElectron, HistTable), getHistType(kTpctofElectron, HistTable), {Specs.at(kTpctofElectron)});
+      this->addPidHistogram(pidDir, kItsElectron, Specs);
+      this->addPidHistogram(pidDir, kTpcElectron, Specs);
+      this->addPidHistogram(pidDir, kTofElectron, Specs);
+      this->addPidHistogram(pidDir, kTpcitsElectron, Specs);
+      this->addPidHistogram(pidDir, kTpctofElectron, Specs);
     }
 
     if (mPlotPionPid) {
-      mHistogramRegistry->add(pidDir + getHistNameV2(kItsPion, HistTable), getHistDesc(kItsPion, HistTable), getHistType(kItsPion, HistTable), {Specs.at(kItsPion)});
-      mHistogramRegistry->add(pidDir + getHistNameV2(kTpcPion, HistTable), getHistDesc(kTpcPion, HistTable), getHistType(kTpcPion, HistTable), {Specs.at(kTpcPion)});
-      mHistogramRegistry->add(pidDir + getHistNameV2(kTofPion, HistTable), getHistDesc(kTofPion, HistTable), getHistType(kTofPion, HistTable), {Specs.at(kTofPion)});
-      mHistogramRegistry->add(pidDir + getHistNameV2(kTpcitsPion, HistTable), getHistDesc(kTpcitsPion, HistTable), getHistType(kTpcitsPion, HistTable), {Specs.at(kTpcitsPion)});
-      mHistogramRegistry->add(pidDir + getHistNameV2(kTpctofPion, HistTable), getHistDesc(kTpctofPion, HistTable), getHistType(kTpctofPion, HistTable), {Specs.at(kTpctofPion)});
+      this->addPidHistogram(pidDir, kItsPion, Specs);
+      this->addPidHistogram(pidDir, kTpcPion, Specs);
+      this->addPidHistogram(pidDir, kTofPion, Specs);
+      this->addPidHistogram(pidDir, kTpcitsPion, Specs);
+      this->addPidHistogram(pidDir, kTpctofPion, Specs);
     }
 
     if (mPlotKaonPid) {
-      mHistogramRegistry->add(pidDir + getHistNameV2(kItsKaon, HistTable), getHistDesc(kItsKaon, HistTable), getHistType(kItsKaon, HistTable), {Specs.at(kItsKaon)});
-      mHistogramRegistry->add(pidDir + getHistNameV2(kTpcKaon, HistTable), getHistDesc(kTpcKaon, HistTable), getHistType(kTpcKaon, HistTable), {Specs.at(kTpcKaon)});
-      mHistogramRegistry->add(pidDir + getHistNameV2(kTofKaon, HistTable), getHistDesc(kTofKaon, HistTable), getHistType(kTofKaon, HistTable), {Specs.at(kTofKaon)});
-      mHistogramRegistry->add(pidDir + getHistNameV2(kTpcitsKaon, HistTable), getHistDesc(kTpcitsKaon, HistTable), getHistType(kTpcitsKaon, HistTable), {Specs.at(kTpcitsKaon)});
-      mHistogramRegistry->add(pidDir + getHistNameV2(kTpctofKaon, HistTable), getHistDesc(kTpctofKaon, HistTable), getHistType(kTpctofKaon, HistTable), {Specs.at(kTpctofKaon)});
+      this->addPidHistogram(pidDir, kItsKaon, Specs);
+      this->addPidHistogram(pidDir, kTpcKaon, Specs);
+      this->addPidHistogram(pidDir, kTofKaon, Specs);
+      this->addPidHistogram(pidDir, kTpcitsKaon, Specs);
+      this->addPidHistogram(pidDir, kTpctofKaon, Specs);
     }
 
     if (mPlotProtonPid) {
-      mHistogramRegistry->add(pidDir + getHistNameV2(kItsProton, HistTable), getHistDesc(kItsProton, HistTable), getHistType(kItsProton, HistTable), {Specs.at(kItsProton)});
-      mHistogramRegistry->add(pidDir + getHistNameV2(kTpcProton, HistTable), getHistDesc(kTpcProton, HistTable), getHistType(kTpcProton, HistTable), {Specs.at(kTpcProton)});
-      mHistogramRegistry->add(pidDir + getHistNameV2(kTofProton, HistTable), getHistDesc(kTofProton, HistTable), getHistType(kTofProton, HistTable), {Specs.at(kTofProton)});
-      mHistogramRegistry->add(pidDir + getHistNameV2(kTpcitsProton, HistTable), getHistDesc(kTpcitsProton, HistTable), getHistType(kTpcitsProton, HistTable), {Specs.at(kTpcitsProton)});
-      mHistogramRegistry->add(pidDir + getHistNameV2(kTpctofProton, HistTable), getHistDesc(kTpctofProton, HistTable), getHistType(kTpctofProton, HistTable), {Specs.at(kTpctofProton)});
+      this->addPidHistogram(pidDir, kItsProton, Specs);
+      this->addPidHistogram(pidDir, kTpcProton, Specs);
+      this->addPidHistogram(pidDir, kTofProton, Specs);
+      this->addPidHistogram(pidDir, kTpcitsProton, Specs);
+      this->addPidHistogram(pidDir, kTpctofProton, Specs);
     }
 
     if (mPlotDeuteronPid) {
-      mHistogramRegistry->add(pidDir + getHistNameV2(kItsDeuteron, HistTable), getHistDesc(kItsDeuteron, HistTable), getHistType(kItsDeuteron, HistTable), {Specs.at(kItsDeuteron)});
-      mHistogramRegistry->add(pidDir + getHistNameV2(kTpcDeuteron, HistTable), getHistDesc(kTpcDeuteron, HistTable), getHistType(kTpcDeuteron, HistTable), {Specs.at(kTpcDeuteron)});
-      mHistogramRegistry->add(pidDir + getHistNameV2(kTofDeuteron, HistTable), getHistDesc(kTofDeuteron, HistTable), getHistType(kTofDeuteron, HistTable), {Specs.at(kTofDeuteron)});
-      mHistogramRegistry->add(pidDir + getHistNameV2(kTpcitsDeuteron, HistTable), getHistDesc(kTpcitsDeuteron, HistTable), getHistType(kTpcitsDeuteron, HistTable), {Specs.at(kTpcitsDeuteron)});
-      mHistogramRegistry->add(pidDir + getHistNameV2(kTpctofDeuteron, HistTable), getHistDesc(kTpctofDeuteron, HistTable), getHistType(kTpctofDeuteron, HistTable), {Specs.at(kTpctofDeuteron)});
+      this->addPidHistogram(pidDir, kItsDeuteron, Specs);
+      this->addPidHistogram(pidDir, kTpcDeuteron, Specs);
+      this->addPidHistogram(pidDir, kTofDeuteron, Specs);
+      this->addPidHistogram(pidDir, kTpcitsDeuteron, Specs);
+      this->addPidHistogram(pidDir, kTpctofDeuteron, Specs);
     }
 
     if (mPlotTritonPid) {
-      mHistogramRegistry->add(pidDir + getHistNameV2(kItsTriton, HistTable), getHistDesc(kItsTriton, HistTable), getHistType(kItsTriton, HistTable), {Specs.at(kItsTriton)});
-      mHistogramRegistry->add(pidDir + getHistNameV2(kTpcTriton, HistTable), getHistDesc(kTpcTriton, HistTable), getHistType(kTpcTriton, HistTable), {Specs.at(kTpcTriton)});
-      mHistogramRegistry->add(pidDir + getHistNameV2(kTofTriton, HistTable), getHistDesc(kTofTriton, HistTable), getHistType(kTofTriton, HistTable), {Specs.at(kTofTriton)});
-      mHistogramRegistry->add(pidDir + getHistNameV2(kTpcitsTriton, HistTable), getHistDesc(kTpcitsTriton, HistTable), getHistType(kTpcitsTriton, HistTable), {Specs.at(kTpcitsTriton)});
-      mHistogramRegistry->add(pidDir + getHistNameV2(kTpctofTriton, HistTable), getHistDesc(kTpctofTriton, HistTable), getHistType(kTpctofTriton, HistTable), {Specs.at(kTpctofTriton)});
+      this->addPidHistogram(pidDir, kItsTriton, Specs);
+      this->addPidHistogram(pidDir, kTpcTriton, Specs);
+      this->addPidHistogram(pidDir, kTofTriton, Specs);
+      this->addPidHistogram(pidDir, kTpcitsTriton, Specs);
+      this->addPidHistogram(pidDir, kTpctofTriton, Specs);
     }
 
     if (mPlotHeliumPid) {
-      mHistogramRegistry->add(pidDir + getHistNameV2(kItsHelium, HistTable), getHistDesc(kItsHelium, HistTable), getHistType(kItsHelium, HistTable), {Specs.at(kItsHelium)});
-      mHistogramRegistry->add(pidDir + getHistNameV2(kTpcHelium, HistTable), getHistDesc(kTpcHelium, HistTable), getHistType(kTpcHelium, HistTable), {Specs.at(kTpcHelium)});
-      mHistogramRegistry->add(pidDir + getHistNameV2(kTofHelium, HistTable), getHistDesc(kTofHelium, HistTable), getHistType(kTofHelium, HistTable), {Specs.at(kTofHelium)});
-      mHistogramRegistry->add(pidDir + getHistNameV2(kTpcitsHelium, HistTable), getHistDesc(kTpcitsHelium, HistTable), getHistType(kTpcitsHelium, HistTable), {Specs.at(kTpcitsHelium)});
-      mHistogramRegistry->add(pidDir + getHistNameV2(kTpctofHelium, HistTable), getHistDesc(kTpctofHelium, HistTable), getHistType(kTpctofHelium, HistTable), {Specs.at(kTpctofHelium)});
+      this->addPidHistogram(pidDir, kItsHelium, Specs);
+      this->addPidHistogram(pidDir, kTpcHelium, Specs);
+      this->addPidHistogram(pidDir, kTofHelium, Specs);
+      this->addPidHistogram(pidDir, kTpcitsHelium, Specs);
+      this->addPidHistogram(pidDir, kTpctofHelium, Specs);
     }
+  }
+
+  /// add a PID histogram, replacing the x-axis title of the table description
+  /// with the one matching the configured momentum type
+  void addPidHistogram(std::string const& pidDir, TrackHist hist, std::map<TrackHist, std::vector<o2::framework::AxisSpec>> const& Specs)
+  {
+    // descriptions have the form "title; x axis ; y axis"
+    std::string desc(getHistDesc(hist, HistTable));
+    const auto first = desc.find(';');
+    const auto second = (first == std::string::npos) ? std::string::npos : desc.find(';', first + 1);
+    if (second != std::string::npos) {
+      desc.replace(first + 1, second - first - 1, " " + std::string(modes::momentumTypeToAxisTitle(mMomentumType)) + " ");
+    }
+    mHistogramRegistry->add(pidDir + getHistNameV2(hist, HistTable), desc.c_str(), getHistType(hist, HistTable), {Specs.at(hist)});
   }
 
   void initMc(std::map<TrackHist, std::vector<o2::framework::AxisSpec>> const& Specs)
@@ -880,6 +935,9 @@ class TrackHistManager
     mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(getHistName(kTpcClusterOverCrossedRows, HistTable)), static_cast<float>(track.tpcNClsFound()) / static_cast<float>(track.tpcNClsCrossedRows()));
     mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(getHistName(kTpcClusterShared, HistTable)), static_cast<float>(track.tpcNClsShared()));
     mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(getHistName(kTpcClusterFractionShared, HistTable)), track.tpcSharedOverFound());
+    mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(getHistName(kItsChi2, HistTable)), track.itsChi2NCl());
+    mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(getHistName(kTpcChi2, HistTable)), track.tpcChi2NCl());
+    mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(getHistName(kTrackType, HistTable)), static_cast<float>(track.fillType()));
 
     if (mPlot2d) {
       mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(getHistName(kPtVsEta, HistTable)), mAbsCharge * track.pt(), track.eta());
@@ -891,6 +949,8 @@ class TrackHistManager
       mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(getHistName(kPtVsTpcClusterOverCrossedRows, HistTable)), mAbsCharge * track.pt(), static_cast<float>(track.tpcNClsFound()) / static_cast<float>(track.tpcNClsCrossedRows()));
       mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(getHistName(kPtVsTpcClusterShared, HistTable)), mAbsCharge * track.pt(), static_cast<float>(track.tpcNClsShared()));
       mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(getHistName(kPtVsTpcClusterFractionShared, HistTable)), mAbsCharge * track.pt(), static_cast<float>(track.tpcNClsShared()) / static_cast<float>(track.tpcNClsFound()));
+      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(getHistName(kPtVsItsChi2, HistTable)), mAbsCharge * track.pt(), track.itsChi2NCl());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(getHistName(kPtVsTpcChi2, HistTable)), mAbsCharge * track.pt(), track.tpcChi2NCl());
       mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(getHistName(kTpcClusterVsTpcCrossedRows, HistTable)), static_cast<float>(track.tpcNClsFound()), static_cast<float>(track.tpcNClsCrossedRows()));
       mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(getHistName(kTpcClusterVsTpcClusterShared, HistTable)), static_cast<float>(track.tpcNClsFound()), static_cast<float>(track.tpcNClsShared()));
       mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(getHistName(kPtVsDcaxy, HistTable)), mAbsCharge * track.pt(), track.dcaXY());

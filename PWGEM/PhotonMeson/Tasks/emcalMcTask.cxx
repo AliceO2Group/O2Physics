@@ -133,7 +133,7 @@ struct EmcalMcTask {
 
   SliceCache cache;
 
-  using EMCalPhotons = soa::Join<aod::EMCEMEventIds, aod::MinClusters, aod::EMEMCClusterMCLabels>;
+  using EMCalPhotons = soa::Join<aod::EMCEMEventIds, aod::MinClusters, aod::EMEMCClusterMCLabels_001>;
 
   using Colls = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMMCEventLabels, aod::EmMagFields>;
 
@@ -297,13 +297,13 @@ struct EmcalMcTask {
 
   // One templated fill function instead of 9 copy-pasted blocks
   template <const int type, o2::soa::is_iterator TCluster, o2::soa::is_iterator TMC>
-  void fillClusterHistos(HistogramRegistry& histRegistry, TCluster const& clu, TMC const& mcPart, float centOrMult)
+  void fillClusterHistos(TCluster const& cluster, TMC const& mcPart, float centOrMult)
   {
-    static constexpr std::string_view subDir = kSubDirs[type];
+    static constexpr std::string_view SubDir = kSubDirs[type];
 
-    histRegistry.fill(HIST(subDir) + HIST("hM02"), clu.m02(), clu.e(), centOrMult);
-    histRegistry.fill(HIST(subDir) + HIST("hEtaRel"), clu.eta() - mcPart.eta(), clu.e(), centOrMult);
-    histRegistry.fill(HIST(subDir) + HIST("hPhiRel"), clu.phi() - mcPart.phi(), clu.e(), centOrMult);
+    registry.fill(HIST(SubDir) + HIST("hM02"), cluster.m02(), cluster.e(), centOrMult);
+    registry.fill(HIST(SubDir) + HIST("hEtaRel"), cluster.eta() - mcPart.eta(), cluster.e(), centOrMult);
+    registry.fill(HIST(SubDir) + HIST("hPhiRel"), cluster.phi() - mcPart.phi(), cluster.e(), centOrMult);
   }
 
   // PCM-EMCal same event
@@ -340,23 +340,23 @@ struct EmcalMcTask {
         mcPhoton1.setCursor(photonEMC.emmcparticleIds()[0]);
 
         if (std::abs(mcPhoton1.pdgCode()) == PDG_t::kGamma) {
-          fillClusterHistos<o2::em::emcal::mc::ParticleType::kPhoton>(registry, photonEMC, mcPhoton1, centOrMult);
-        } else if (std::abs(mcPhoton1.pdgCode()) == PDG_t::kElectron) {
-          fillClusterHistos<o2::em::emcal::mc::ParticleType::kElectron>(registry, photonEMC, mcPhoton1, centOrMult);
-        } else if (mcPhoton1.pdgCode() == -PDG_t::kElectron) {
-          fillClusterHistos<o2::em::emcal::mc::ParticleType::kPositron>(registry, photonEMC, mcPhoton1, centOrMult);
+          fillClusterHistos<o2::em::emcal::mc::ParticleType::kPhoton>(photonEMC, mcPhoton1, centOrMult);
+        } else if (mcPhoton1.pdgCode() == PDG_t::kElectron) {
+          fillClusterHistos<o2::em::emcal::mc::ParticleType::kElectron>(photonEMC, mcPhoton1, centOrMult);
+        } else if (mcPhoton1.pdgCode() == PDG_t::kPositron) {
+          fillClusterHistos<o2::em::emcal::mc::ParticleType::kPositron>(photonEMC, mcPhoton1, centOrMult);
         } else if (std::abs(mcPhoton1.pdgCode()) == PDG_t::kPi0) {
-          fillClusterHistos<o2::em::emcal::mc::ParticleType::kPi0>(registry, photonEMC, mcPhoton1, centOrMult);
+          fillClusterHistos<o2::em::emcal::mc::ParticleType::kPi0>(photonEMC, mcPhoton1, centOrMult);
         } else if (std::abs(mcPhoton1.pdgCode()) == o2::constants::physics::Pdg::kEta) {
-          fillClusterHistos<o2::em::emcal::mc::ParticleType::kEta>(registry, photonEMC, mcPhoton1, centOrMult);
+          fillClusterHistos<o2::em::emcal::mc::ParticleType::kEta>(photonEMC, mcPhoton1, centOrMult);
         } else if (std::abs(mcPhoton1.pdgCode()) == o2::constants::physics::Pdg::kOmega) {
-          fillClusterHistos<o2::em::emcal::mc::ParticleType::kOmega>(registry, photonEMC, mcPhoton1, centOrMult);
+          fillClusterHistos<o2::em::emcal::mc::ParticleType::kOmega>(photonEMC, mcPhoton1, centOrMult);
         } else if (std::abs(mcPhoton1.pdgCode()) == PDG_t::kPiPlus) {
-          fillClusterHistos<o2::em::emcal::mc::ParticleType::kPion>(registry, photonEMC, mcPhoton1, centOrMult);
+          fillClusterHistos<o2::em::emcal::mc::ParticleType::kPion>(photonEMC, mcPhoton1, centOrMult);
         } else if (std::abs(mcPhoton1.pdgCode()) == PDG_t::kKPlus) {
-          fillClusterHistos<o2::em::emcal::mc::ParticleType::kKaon>(registry, photonEMC, mcPhoton1, centOrMult);
+          fillClusterHistos<o2::em::emcal::mc::ParticleType::kKaon>(photonEMC, mcPhoton1, centOrMult);
         } else {
-          fillClusterHistos<o2::em::emcal::mc::ParticleType::kOther>(registry, photonEMC, mcPhoton1, centOrMult);
+          fillClusterHistos<o2::em::emcal::mc::ParticleType::kOther>(photonEMC, mcPhoton1, centOrMult);
         }
       } // for (const auto& photonEMC : photonsEMCPerCollision) {
     }

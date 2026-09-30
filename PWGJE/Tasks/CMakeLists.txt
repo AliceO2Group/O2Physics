@@ -436,7 +436,7 @@ if(FastJet_FOUND)
     o2physics_add_dpl_workflow(jet-cross-section-efficiency
                         SOURCES jetCrossSectionEfficiency.cxx
                         REUSE_FROM JetSubstructureHFPCH
-                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2::DataFormatsITSMFT O2Physics::PWGJECore O2Physics::AnalysisCore O2Physics::AnalysisCCDB
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(gamma-jet-tree-producer
                         SOURCES gammaJetTreeProducer.cxx
@@ -467,6 +467,10 @@ if(FastJet_FOUND)
     o2physics_add_dpl_workflow(jet-correlation-d0
                         SOURCES jetCorrelationD0.cxx
                         REUSE_FROM JetSubstructureHFPCH
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-correlation-dmeson
+                        SOURCES jetCorrelationDmeson.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(hf-debug

@@ -530,7 +530,7 @@ struct AnalysisEnergyCorrelator {
 
   template <bool MixedEvent, uint32_t TTrackFillMap, typename TTrack1, typename TTrack2, typename THadron, typename TEvent>
   void runDileptonHadron(TTrack1 const& track1, TTrack2 const& track2, int iEleCut,
-                         THadron const& hadron, TEvent const& event, aod::McParticles const& /*mcParticles*/)
+                         THadron const& hadron, TEvent const& dileptonEvent, TEvent const& event, aod::McParticles const& /*mcParticles*/)
   {
 
     // Check that hadron is not one of the dilepton legs
@@ -556,6 +556,7 @@ struct AnalysisEnergyCorrelator {
     float Effweight_rec = 1.0f;
     float Accweight_gen = 1.0f;
     if (fConfigDileptonHadronOptions.fConfigApplyEfficiency) {
+      VarManager::FillPair<VarManager::kDecayToEE, TTrackFillMap>(track1, track2, VarManager::fgValues);
       float dilepton_pt = VarManager::fgValues[VarManager::kPt];
       float dilepton_eta = VarManager::fgValues[VarManager::kEta];
       float dilepton_phi = VarManager::fgValues[VarManager::kPhi];
@@ -594,7 +595,7 @@ struct AnalysisEnergyCorrelator {
 
     // Fill dilepton-hadron variables
     std::vector<float> fTransRange = fConfigDileptonHadronOptions.fConfigTransRange;
-    VarManager::FillEnergyCorrelatorTriple(track1, track2, hadron, VarManager::fgValues, fTransRange[0], fTransRange[1], fConfigDileptonHadronOptions.fConfigApplyMassEC.value, -1, 1. / Effweight_rec);
+    VarManager::FillEnergyCorrelatorTriple<VarManager::kDecayToEE, gkEventFillMapWithMults, TTrackFillMap>(dileptonEvent, track1, track2, hadron, VarManager::fgValues, fTransRange[0], fTransRange[1], fConfigDileptonHadronOptions.fConfigApplyMassEC.value, -1, 1. / Effweight_rec);
     if (fConfigDileptonHadronOptions.fConfigUsePionMass.value) {
       VarManager::FillEnergyCorrelatorsUnfoldingTriple<VarManager::kJpsiPionMass>(track1, track2, hadron, motherParticle, hadronMC, VarManager::fgValues, fConfigDileptonHadronOptions.fConfigApplyMassEC.value, 1. / Effweight_rec, 1. / Accweight_gen, fTransRange[0], fTransRange[1]);
     } else {
@@ -826,7 +827,7 @@ struct AnalysisEnergyCorrelator {
             // Process dilepton-hadron correlation for each common cut
             for (size_t iCut = 0; iCut < fTrackCuts.size(); iCut++) {
               if (twoTrackFilter & (static_cast<uint32_t>(1) << iCut)) {
-                runDileptonHadron<false, gkTrackFillMapWithCov>(t1, t2, iCut, hadron, event, mcParticles);
+                runDileptonHadron<false, gkTrackFillMapWithCov>(t1, t2, iCut, hadron, event, event, mcParticles);
               }
             }
           } // end hadron loop
@@ -945,7 +946,7 @@ struct AnalysisEnergyCorrelator {
             // Process dilepton-hadron correlation for each common cut
             for (size_t iCut = 0; iCut < fTrackCuts.size(); iCut++) {
               if (twoTrackFilter & (static_cast<uint32_t>(1) << iCut)) {
-                runDileptonHadron<true, gkTrackFillMapWithCov>(t1, t2, iCut, hadron, event2, mcParticles);
+                runDileptonHadron<true, gkTrackFillMapWithCov>(t1, t2, iCut, hadron, event1, event2, mcParticles);
               }
             }
           } // end hadron loop

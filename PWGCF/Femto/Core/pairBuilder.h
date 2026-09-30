@@ -20,6 +20,7 @@
 #include "PWGCF/Femto/Core/charmHadronHistManager.h"
 #include "PWGCF/Femto/Core/closePairRejection.h"
 #include "PWGCF/Femto/Core/collisionHistManager.h"
+#include "PWGCF/Femto/Core/femtoUtils.h"
 #include "PWGCF/Femto/Core/kinkHistManager.h"
 #include "PWGCF/Femto/Core/mcParticleHistManager.h"
 #include "PWGCF/Femto/Core/modes.h"
@@ -147,13 +148,14 @@ class PairTrackTrackBuilder
   }
 
   // data
+  /// \return true if at least one pair passed all pair selections (usable as pair trigger)
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5>
-  void processSameEvent(T1 const& col, T2& trackTable, T3& partition1, T4& partition2, T5& cache)
+  bool processSameEvent(T1 const& col, T2& trackTable, T3& partition1, T4& partition2, T5& cache)
   {
     if (mSameSpecies) {
       auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       if (trackSlice1.size() < nLimitPartitionIdenticalParticles) {
-        return;
+        return false;
       }
       mColHistManager.template fill<mode>(col);
       mCprSe.setMagField(col.magField());
@@ -161,27 +163,28 @@ class PairTrackTrackBuilder
       if (mMixIdenticalParticles) {
         pairOrder = static_cast<pairprocesshelpers::PairOrder>(mDist(mRng));
       }
-      pairprocesshelpers::processSameEvent<mode>(trackSlice1, trackTable, col, mTrackHistManager1, mPairHistManagerSe, mCprSe, mPcSe, pairOrder);
-    } else {
-      auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      if (trackSlice1.size() < nLimitPartitionParticles || trackSlice2.size() < nLimitPartitionParticles) {
-        return;
-      }
-      mColHistManager.template fill<mode>(col);
-      mCprSe.setMagField(col.magField());
-      pairprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, trackTable, col, mTrackHistManager1, mTrackHistManager2, mPairHistManagerSe, mCprSe, mPcSe);
+      return pairprocesshelpers::processSameEvent<mode>(trackSlice1, trackTable, col, mTrackHistManager1, mPairHistManagerSe, mCprSe, mPcSe, pairOrder);
     }
+
+    auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (trackSlice1.size() < nLimitPartitionParticles || trackSlice2.size() < nLimitPartitionParticles) {
+      return false;
+    }
+    mColHistManager.template fill<mode>(col);
+    mCprSe.setMagField(col.magField());
+    return pairprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, trackTable, col, mTrackHistManager1, mTrackHistManager2, mPairHistManagerSe, mCprSe, mPcSe);
   }
 
   // mc
+  /// \return true if at least one pair passed all pair selections (usable as pair trigger)
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
-  void processSameEvent(T1 const& col, T2 const& mcCols, T3& trackTable, T4& partition1, T5& partition2, T6 const& mcParticles, T7 const& mcMothers, T8 const& mcPartonicMothers, T9& cache)
+  bool processSameEvent(T1 const& col, T2 const& mcCols, T3& trackTable, T4& partition1, T5& partition2, T6 const& mcParticles, T7 const& mcMothers, T8 const& mcPartonicMothers, T9& cache)
   {
     if (mSameSpecies) {
       auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       if (trackSlice1.size() < nLimitPartitionIdenticalParticles) {
-        return;
+        return false;
       }
       mColHistManager.template fill<mode>(col, mcCols);
       mCprSe.setMagField(col.magField());
@@ -189,21 +192,21 @@ class PairTrackTrackBuilder
       if (mMixIdenticalParticles) {
         pairOrder = static_cast<pairprocesshelpers::PairOrder>(mDist(mRng));
       }
-      pairprocesshelpers::processSameEvent<mode>(trackSlice1, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mPairHistManagerSe, mTrackCleaner1, mCprSe, mPcSe, pairOrder);
-    } else {
-      auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      if (trackSlice1.size() < nLimitPartitionParticles || trackSlice2.size() < nLimitPartitionParticles) {
-        return;
-      }
-      mColHistManager.template fill<mode>(col, mcCols);
-      mCprSe.setMagField(col.magField());
-      pairprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mTrackHistManager2, mPairHistManagerSe, mTrackCleaner1, mTrackCleaner2, mCprSe, mPcSe);
+      return pairprocesshelpers::processSameEvent<mode>(trackSlice1, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mPairHistManagerSe, mTrackCleaner1, mCprSe, mPcSe, pairOrder);
     }
+
+    auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (trackSlice1.size() < nLimitPartitionParticles || trackSlice2.size() < nLimitPartitionParticles) {
+      return false;
+    }
+    mColHistManager.template fill<mode>(col, mcCols);
+    mCprSe.setMagField(col.magField());
+    return pairprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mTrackHistManager2, mPairHistManagerSe, mTrackCleaner1, mTrackCleaner2, mCprSe, mPcSe);
   }
 
-  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
-  void processMixedEvent(T1 const& cols, T2& trackTable, T3& partition1, T4& partition2, T5& cache, T6& binsVtxMult, T7& binsVtxCent, T8& binsVtxMultCent)
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
+  void processMixedEvent(T1 const& cols, T2& trackTable, T3& partition1, T4& partition2, T5& cache, T6& binsVtxMult, T7& binsVtxCent, T8& binsVtxMultCent, T9& binsVtxCentEventPlaneAngle)
   {
 
     if (mSameSpecies) {
@@ -216,6 +219,13 @@ class PairTrackTrackBuilder
           break;
         case static_cast<int>(pairhistmanager::kVtxMultCent):
           pairprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, trackTable, cache, binsVtxMultCent, mMixingDepth, mPairHistManagerMe, mCprMe, mPcMe);
+          break;
+        case static_cast<int>(pairhistmanager::kVtxCentEventPlaneAngle):
+          if constexpr (utils::HasEventShape<T1>) {
+            pairprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, trackTable, cache, binsVtxCentEventPlaneAngle, mMixingDepth, mPairHistManagerMe, mCprMe, mPcMe);
+          } else {
+            LOG(fatal) << "Mixing policy kVtxCentEventPlaneAngle requires a collision table with event-shape columns. Breaking...";
+          }
           break;
         default:
           LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
@@ -231,14 +241,21 @@ class PairTrackTrackBuilder
         case static_cast<int>(pairhistmanager::kVtxMultCent):
           pairprocesshelpers::processMixedEvent<mode>(cols, partition1, partition2, trackTable, cache, binsVtxMultCent, mMixingDepth, mPairHistManagerMe, mCprMe, mPcMe);
           break;
+        case static_cast<int>(pairhistmanager::kVtxCentEventPlaneAngle):
+          if constexpr (utils::HasEventShape<T1>) {
+            pairprocesshelpers::processMixedEvent<mode>(cols, partition1, partition2, trackTable, cache, binsVtxCentEventPlaneAngle, mMixingDepth, mPairHistManagerMe, mCprMe, mPcMe);
+          } else {
+            LOG(fatal) << "Mixing policy kVtxCentEventPlaneAngle requires a collision table with event-shape columns. Breaking...";
+          }
+          break;
         default:
           LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
       }
     }
   }
 
-  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12>
-  void processMixedEvent(T1 const& cols, T2 const& mcCols, T3& trackTable, T4& partition1, T5& partition2, T6 const& mcParticles, T7 const& mcMothers, T8 const& mcPartonicMothers, T9& cache, T10& binsVtxMult, T11& binsVtxCent, T12& binsVtxMultCent)
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12, typename T13>
+  void processMixedEvent(T1 const& cols, T2 const& mcCols, T3& trackTable, T4& partition1, T5& partition2, T6 const& mcParticles, T7 const& mcMothers, T8 const& mcPartonicMothers, T9& cache, T10& binsVtxMult, T11& binsVtxCent, T12& binsVtxMultCent, T13& binsVtxCentEventPlaneAngle)
   {
     if (mSameSpecies) {
       switch (mMixingPolicy) {
@@ -250,6 +267,13 @@ class PairTrackTrackBuilder
           break;
         case static_cast<int>(pairhistmanager::kVtxMultCent):
           pairprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMultCent, mMixingDepth, mPairHistManagerMe, mTrackCleaner1, mTrackCleaner1, mCprMe, mPcMe);
+          break;
+        case static_cast<int>(pairhistmanager::kVtxCentEventPlaneAngle):
+          if constexpr (utils::HasEventShape<T1>) {
+            pairprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxCentEventPlaneAngle, mMixingDepth, mPairHistManagerMe, mTrackCleaner1, mTrackCleaner1, mCprMe, mPcMe);
+          } else {
+            LOG(fatal) << "Mixing policy kVtxCentEventPlaneAngle requires a collision table with event-shape columns. Breaking...";
+          }
           break;
         default:
           LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
@@ -264,6 +288,13 @@ class PairTrackTrackBuilder
           break;
         case static_cast<int>(pairhistmanager::kVtxMultCent):
           pairprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition2, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMultCent, mMixingDepth, mPairHistManagerMe, mTrackCleaner1, mTrackCleaner2, mCprMe, mPcMe);
+          break;
+        case static_cast<int>(pairhistmanager::kVtxCentEventPlaneAngle):
+          if constexpr (utils::HasEventShape<T1>) {
+            pairprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition2, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxCentEventPlaneAngle, mMixingDepth, mPairHistManagerMe, mTrackCleaner1, mTrackCleaner2, mCprMe, mPcMe);
+          } else {
+            LOG(fatal) << "Mixing policy kVtxCentEventPlaneAngle requires a collision table with event-shape columns. Breaking...";
+          }
           break;
         default:
           LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
@@ -367,14 +398,6 @@ class PairV0V0Builder
                   << "). Overriding sameSpecies to false.";
         mSameSpecies = false;
       }
-    } else {
-      // same v0 species: both values are legitimate (e.g. lambda-lambda vs lambda-antilambda),
-      // but running as different species only makes sense if the two selections are disjoint
-      if (!mSameSpecies && confV0Selection1.sign.value == confV0Selection2.sign.value) {
-        LOG(warn) << "sameSpecies=false for identical v0 species with identical sign ("
-                  << confV0Selection1.sign.value << "). If both selections match the same "
-                  << "candidates, this produces self-pairs and double counting.";
-      }
     }
 
     mColHistManager.template init<modeSe>(registry, colHistSpec, confCollisionBinning);
@@ -427,13 +450,14 @@ class PairV0V0Builder
     }
   }
 
+  /// \return true if at least one pair passed all pair selections (usable as pair trigger)
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-  void processSameEvent(T1 const& col, T2 const& trackTable, T3& /*v0table*/, T4& partition1, T5& partition2, T6& cache)
+  bool processSameEvent(T1 const& col, T2 const& trackTable, T3& /*v0table*/, T4& partition1, T5& partition2, T6& cache)
   {
     if (mSameSpecies) {
       auto v0Slice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       if (v0Slice1.size() < nLimitPartitionIdenticalParticles) {
-        return;
+        return false;
       }
       mColHistManager.template fill<mode>(col);
       mCprSe.setMagField(col.magField());
@@ -441,27 +465,28 @@ class PairV0V0Builder
       if (mMixIdenticalParticles) {
         pairOrder = static_cast<pairprocesshelpers::PairOrder>(mDist(mRng));
       }
-      pairprocesshelpers::processSameEvent<mode>(v0Slice1, trackTable, col, mV0HistManager1, mPairHistManagerSe, mCprSe, mPcSe, pairOrder);
-    } else {
-      auto v0Slice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      auto v0Slice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      if (v0Slice1.size() < nLimitPartitionParticles || v0Slice2.size() < nLimitPartitionParticles) {
-        return;
-      }
-      mColHistManager.template fill<mode>(col);
-      mCprSe.setMagField(col.magField());
-      pairprocesshelpers::processSameEvent<mode>(v0Slice1, v0Slice2, trackTable, col, mV0HistManager1, mV0HistManager2, mPairHistManagerSe, mCprSe, mPcSe);
+      return pairprocesshelpers::processSameEvent<mode>(v0Slice1, trackTable, col, mV0HistManager1, mPairHistManagerSe, mCprSe, mPcSe, pairOrder);
     }
+
+    auto v0Slice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto v0Slice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (v0Slice1.size() < nLimitPartitionParticles || v0Slice2.size() < nLimitPartitionParticles) {
+      return false;
+    }
+    mColHistManager.template fill<mode>(col);
+    mCprSe.setMagField(col.magField());
+    return pairprocesshelpers::processSameEvent<mode>(v0Slice1, v0Slice2, trackTable, col, mV0HistManager1, mV0HistManager2, mPairHistManagerSe, mCprSe, mPcSe);
   }
 
   // mc
+  /// \return true if at least one pair passed all pair selections (usable as pair trigger)
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
-  void processSameEvent(T1 const& col, T2 const& mcCols, T3 const& trackTable, T4 const& /*v0table*/, T5& partition1, T6& partition2, T7 const& mcParticles, T8 const& mcMothers, T9 const& mcPartonicMothers, T10& cache)
+  bool processSameEvent(T1 const& col, T2 const& mcCols, T3 const& trackTable, T4 const& /*v0table*/, T5& partition1, T6& partition2, T7 const& mcParticles, T8 const& mcMothers, T9 const& mcPartonicMothers, T10& cache)
   {
     if (mSameSpecies) {
       auto v0Slice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       if (v0Slice1.size() < nLimitPartitionIdenticalParticles) {
-        return;
+        return false;
       }
       mColHistManager.template fill<mode>(col, mcCols);
       mCprSe.setMagField(col.magField());
@@ -469,17 +494,17 @@ class PairV0V0Builder
       if (mMixIdenticalParticles) {
         pairOrder = static_cast<pairprocesshelpers::PairOrder>(mDist(mRng));
       }
-      pairprocesshelpers::processSameEvent<mode>(v0Slice1, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mV0HistManager1, mPairHistManagerSe, mV0Cleaner1, mCprSe, mPcSe, pairOrder);
-    } else {
-      auto v0Slice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      auto v0Slice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      if (v0Slice1.size() < nLimitPartitionParticles || v0Slice2.size() < nLimitPartitionParticles) {
-        return;
-      }
-      mColHistManager.template fill<mode>(col, mcCols);
-      mCprSe.setMagField(col.magField());
-      pairprocesshelpers::processSameEvent<mode>(v0Slice1, v0Slice2, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mV0HistManager1, mV0HistManager2, mPairHistManagerSe, mV0Cleaner1, mV0Cleaner2, mCprSe, mPcSe);
+      return pairprocesshelpers::processSameEvent<mode>(v0Slice1, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mV0HistManager1, mPairHistManagerSe, mV0Cleaner1, mCprSe, mPcSe, pairOrder);
     }
+
+    auto v0Slice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto v0Slice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (v0Slice1.size() < nLimitPartitionParticles || v0Slice2.size() < nLimitPartitionParticles) {
+      return false;
+    }
+    mColHistManager.template fill<mode>(col, mcCols);
+    mCprSe.setMagField(col.magField());
+    return pairprocesshelpers::processSameEvent<mode>(v0Slice1, v0Slice2, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mV0HistManager1, mV0HistManager2, mPairHistManagerSe, mV0Cleaner1, mV0Cleaner2, mCprSe, mPcSe);
   }
 
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
@@ -712,13 +737,14 @@ class PairD0D0Builder
     }
   }
 
+  /// \return true if at least one pair passed all pair selections (usable as pair trigger)
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-  void processSameEvent(T1 const& col, T2 const& trackTable, T3& /*d0table*/, T4& partition1, T5& partition2, T6& cache)
+  bool processSameEvent(T1 const& col, T2 const& trackTable, T3& /*d0table*/, T4& partition1, T5& partition2, T6& cache)
   {
     if (mSameSpecies) {
       auto d0Slice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       if (d0Slice1.size() < nLimitPartitionIdenticalParticles) {
-        return;
+        return false;
       }
       mColHistManager.template fill<mode>(col);
       mCprSe.setMagField(col.magField());
@@ -726,27 +752,28 @@ class PairD0D0Builder
       if (mMixIdenticalParticles) {
         pairOrder = static_cast<pairprocesshelpers::PairOrder>(mDist(mRng));
       }
-      pairprocesshelpers::processSameEvent<mode>(d0Slice1, trackTable, col, mD0HistManager1, mPairHistManagerSe, mCprSe, mPcSe, pairOrder);
-    } else {
-      auto d0Slice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      auto d0Slice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      if (d0Slice1.size() < nLimitPartitionParticles || d0Slice2.size() < nLimitPartitionParticles) {
-        return;
-      }
-      mColHistManager.template fill<mode>(col);
-      mCprSe.setMagField(col.magField());
-      pairprocesshelpers::processSameEvent<mode>(d0Slice1, d0Slice2, trackTable, col, mD0HistManager1, mD0HistManager2, mPairHistManagerSe, mCprSe, mPcSe);
+      return pairprocesshelpers::processSameEvent<mode>(d0Slice1, trackTable, col, mD0HistManager1, mPairHistManagerSe, mCprSe, mPcSe, pairOrder);
     }
+
+    auto d0Slice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto d0Slice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (d0Slice1.size() < nLimitPartitionParticles || d0Slice2.size() < nLimitPartitionParticles) {
+      return false;
+    }
+    mColHistManager.template fill<mode>(col);
+    mCprSe.setMagField(col.magField());
+    return pairprocesshelpers::processSameEvent<mode>(d0Slice1, d0Slice2, trackTable, col, mD0HistManager1, mD0HistManager2, mPairHistManagerSe, mCprSe, mPcSe);
   }
 
   // mc
+  /// \return true if at least one pair passed all pair selections (usable as pair trigger)
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
-  void processSameEvent(T1 const& col, T2 const& mcCols, T3 const& trackTable, T4 const& /*d0table*/, T5& partition1, T6& partition2, T7 const& mcParticles, T8 const& mcMothers, T9 const& mcPartonicMothers, T10& cache)
+  bool processSameEvent(T1 const& col, T2 const& mcCols, T3 const& trackTable, T4 const& /*d0table*/, T5& partition1, T6& partition2, T7 const& mcParticles, T8 const& mcMothers, T9 const& mcPartonicMothers, T10& cache)
   {
     if (mSameSpecies) {
       auto d0Slice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       if (d0Slice1.size() < nLimitPartitionIdenticalParticles) {
-        return;
+        return false;
       }
       mColHistManager.template fill<mode>(col, mcCols);
       mCprSe.setMagField(col.magField());
@@ -754,17 +781,16 @@ class PairD0D0Builder
       if (mMixIdenticalParticles) {
         pairOrder = static_cast<pairprocesshelpers::PairOrder>(mDist(mRng));
       }
-      pairprocesshelpers::processSameEvent<mode>(d0Slice1, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mD0HistManager1, mPairHistManagerSe, mD0Cleaner1, mCprSe, mPcSe, pairOrder);
-    } else {
-      auto d0Slice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      auto d0Slice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      if (d0Slice1.size() < nLimitPartitionParticles || d0Slice2.size() < nLimitPartitionParticles) {
-        return;
-      }
-      mColHistManager.template fill<mode>(col, mcCols);
-      mCprSe.setMagField(col.magField());
-      pairprocesshelpers::processSameEvent<mode>(d0Slice1, d0Slice2, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mD0HistManager1, mD0HistManager2, mPairHistManagerSe, mD0Cleaner1, mD0Cleaner2, mCprSe, mPcSe);
+      return pairprocesshelpers::processSameEvent<mode>(d0Slice1, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mD0HistManager1, mPairHistManagerSe, mD0Cleaner1, mCprSe, mPcSe, pairOrder);
     }
+    auto d0Slice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto d0Slice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (d0Slice1.size() < nLimitPartitionParticles || d0Slice2.size() < nLimitPartitionParticles) {
+      return false;
+    }
+    mColHistManager.template fill<mode>(col, mcCols);
+    mCprSe.setMagField(col.magField());
+    return pairprocesshelpers::processSameEvent<mode>(d0Slice1, d0Slice2, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mD0HistManager1, mD0HistManager2, mPairHistManagerSe, mD0Cleaner1, mD0Cleaner2, mCprSe, mPcSe);
   }
 
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
@@ -947,17 +973,18 @@ class PairTrackD0Builder
     mMixingDepth = confMixing.depth.value;
   }
 
+  /// \return true if at least one pair passed all pair selections (usable as pair trigger)
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-  void processSameEvent(T1 const& col, T2& trackTable, T3& trackPartition, T4& /*d0table*/, T5& d0Partition, T6& cache)
+  bool processSameEvent(T1 const& col, T2& trackTable, T3& trackPartition, T4& /*d0table*/, T5& d0Partition, T6& cache)
   {
     auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     auto d0Slice = d0Partition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     if (trackSlice.size() < nLimitPartitionParticles || d0Slice.size() < nLimitPartitionParticles) {
-      return;
+      return false;
     }
     mColHistManager.template fill<mode>(col);
     mCprSe.setMagField(col.magField());
-    pairprocesshelpers::processSameEvent<mode>(trackSlice, d0Slice, trackTable, col, mTrackHistManager, mD0HistManager, mPairHistManagerSe, mCprSe, mPcSe);
+    return pairprocesshelpers::processSameEvent<mode>(trackSlice, d0Slice, trackTable, col, mTrackHistManager, mD0HistManager, mPairHistManagerSe, mCprSe, mPcSe);
   }
 
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
@@ -978,17 +1005,18 @@ class PairTrackD0Builder
     }
   }
 
+  /// \return true if at least one pair passed all pair selections (usable as pair trigger)
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
-  void processSameEvent(T1 const& col, T2 const& mcCols, T3 const& trackTable, T4& trackPartition, T5 const& /*d0table*/, T6& d0Partition, T7 const& mcParticles, T8 const& mcMothers, T9 const& mcPartonicMothers, T10& cache)
+  bool processSameEvent(T1 const& col, T2 const& mcCols, T3 const& trackTable, T4& trackPartition, T5 const& /*d0table*/, T6& d0Partition, T7 const& mcParticles, T8 const& mcMothers, T9 const& mcPartonicMothers, T10& cache)
   {
     auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     auto d0Slice = d0Partition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     if (trackSlice.size() < nLimitPartitionParticles || d0Slice.size() < nLimitPartitionParticles) {
-      return;
+      return false;
     }
     mColHistManager.template fill<mode>(col, mcCols);
     mCprSe.setMagField(col.magField());
-    pairprocesshelpers::processSameEvent<mode>(trackSlice, d0Slice, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager, mD0HistManager, mPairHistManagerSe, mTrackCleaner, mD0Cleaner, mCprSe, mPcSe);
+    return pairprocesshelpers::processSameEvent<mode>(trackSlice, d0Slice, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager, mD0HistManager, mPairHistManagerSe, mTrackCleaner, mD0Cleaner, mCprSe, mPcSe);
   }
 
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12>
@@ -1103,17 +1131,18 @@ class PairTrackLcBuilder
     mMixingDepth = confMixing.depth.value;
   }
 
+  /// \return true if at least one pair passed all pair selections (usable as pair trigger)
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-  void processSameEvent(T1 const& col, T2& trackTable, T3& trackPartition, T4& /*lcTable*/, T5& lcPartition, T6& cache)
+  bool processSameEvent(T1 const& col, T2& trackTable, T3& trackPartition, T4& /*lcTable*/, T5& lcPartition, T6& cache)
   {
     auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     auto lcSlice = lcPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     if (trackSlice.size() < nLimitPartitionParticles || lcSlice.size() < nLimitPartitionParticles) {
-      return;
+      return false;
     }
     mColHistManager.template fill<mode>(col);
     mCprSe.setMagField(col.magField());
-    pairprocesshelpers::processSameEvent<mode>(trackSlice, lcSlice, trackTable, col, mTrackHistManager, mLcHistManager, mPairHistManagerSe, mCprSe, mPcSe);
+    return pairprocesshelpers::processSameEvent<mode>(trackSlice, lcSlice, trackTable, col, mTrackHistManager, mLcHistManager, mPairHistManagerSe, mCprSe, mPcSe);
   }
 
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
@@ -1134,17 +1163,18 @@ class PairTrackLcBuilder
     }
   }
 
+  /// \return true if at least one pair passed all pair selections (usable as pair trigger)
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
-  void processSameEvent(T1 const& col, T2 const& mcCols, T3 const& trackTable, T4& trackPartition, T5 const& /*lcTable*/, T6& lcPartition, T7 const& mcParticles, T8 const& mcMothers, T9 const& mcPartonicMothers, T10& cache)
+  bool processSameEvent(T1 const& col, T2 const& mcCols, T3 const& trackTable, T4& trackPartition, T5 const& /*lcTable*/, T6& lcPartition, T7 const& mcParticles, T8 const& mcMothers, T9 const& mcPartonicMothers, T10& cache)
   {
     auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     auto lcSlice = lcPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     if (trackSlice.size() < nLimitPartitionParticles || lcSlice.size() < nLimitPartitionParticles) {
-      return;
+      return false;
     }
     mColHistManager.template fill<mode>(col, mcCols);
     mCprSe.setMagField(col.magField());
-    pairprocesshelpers::processSameEvent<mode>(trackSlice, lcSlice, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager, mLcHistManager, mPairHistManagerSe, mTrackCleaner, mLcCleaner, mCprSe, mPcSe);
+    return pairprocesshelpers::processSameEvent<mode>(trackSlice, lcSlice, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager, mLcHistManager, mPairHistManagerSe, mTrackCleaner, mLcCleaner, mCprSe, mPcSe);
   }
 
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12>
@@ -1274,30 +1304,32 @@ class PairTrackV0Builder
     mMixingDepth = confMixing.depth.value;
   }
 
+  /// \return true if at least one pair passed all pair selections (usable as pair trigger)
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-  void processSameEvent(T1 const& col, T2& trackTable, T3& trackPartition, T4& /*v0table*/, T5& v0Partition, T6& cache)
+  bool processSameEvent(T1 const& col, T2& trackTable, T3& trackPartition, T4& /*v0table*/, T5& v0Partition, T6& cache)
   {
     auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     auto v0Slice = v0Partition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     if (trackSlice.size() < nLimitPartitionParticles || v0Slice.size() < nLimitPartitionParticles) {
-      return;
+      return false;
     }
     mColHistManager.template fill<mode>(col);
     mCprSe.setMagField(col.magField());
-    pairprocesshelpers::processSameEvent<mode>(trackSlice, v0Slice, trackTable, col, mTrackHistManager, mV0HistManager, mPairHistManagerSe, mCprSe, mPcSe);
+    return pairprocesshelpers::processSameEvent<mode>(trackSlice, v0Slice, trackTable, col, mTrackHistManager, mV0HistManager, mPairHistManagerSe, mCprSe, mPcSe);
   }
 
+  /// \return true if at least one pair passed all pair selections (usable as pair trigger)
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
-  void processSameEvent(T1 const& col, T2 const& mcCols, T3 const& trackTable, T4& trackPartition, T5 const& /*v0table*/, T6& v0Partition, T7 const& mcParticles, T8 const& mcMothers, T9 const& mcPartonicMothers, T10& cache)
+  bool processSameEvent(T1 const& col, T2 const& mcCols, T3 const& trackTable, T4& trackPartition, T5 const& /*v0table*/, T6& v0Partition, T7 const& mcParticles, T8 const& mcMothers, T9 const& mcPartonicMothers, T10& cache)
   {
     auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     auto v0Slice = v0Partition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     if (trackSlice.size() < nLimitPartitionParticles || v0Slice.size() < nLimitPartitionParticles) {
-      return;
+      return false;
     }
     mColHistManager.template fill<mode>(col, mcCols);
     mCprSe.setMagField(col.magField());
-    pairprocesshelpers::processSameEvent<mode>(trackSlice, v0Slice, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager, mV0HistManager, mPairHistManagerSe, mTrackCleaner, mV0Cleaner, mCprSe, mPcSe);
+    return pairprocesshelpers::processSameEvent<mode>(trackSlice, v0Slice, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager, mV0HistManager, mPairHistManagerSe, mTrackCleaner, mV0Cleaner, mCprSe, mPcSe);
   }
 
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
@@ -1423,17 +1455,18 @@ class PairTrackTwoTrackResonanceBuilder
     mMixingDepth = confMixing.depth.value;
   }
 
+  /// \return true if at least one pair passed all pair selections (usable as pair trigger)
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-  void processSameEvent(T1 const& col, T2& trackTable, T3& trackPartition, T4& /*resonanceTable*/, T5& resonancePartition, T6& cache)
+  bool processSameEvent(T1 const& col, T2& trackTable, T3& trackPartition, T4& /*resonanceTable*/, T5& resonancePartition, T6& cache)
   {
     auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     auto resonanaceSlice = resonancePartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     if (trackSlice.size() < nLimitPartitionParticles || resonanaceSlice.size() < nLimitPartitionParticles) {
-      return;
+      return false;
     }
     mColHistManager.template fill<mode>(col);
     mCprSe.setMagField(col.magField());
-    pairprocesshelpers::processSameEvent<mode>(trackSlice, resonanaceSlice, trackTable, col, mTrackHistManager, mResonanceHistManager, mPairHistManagerSe, mCprSe, mPcSe);
+    return pairprocesshelpers::processSameEvent<mode>(trackSlice, resonanaceSlice, trackTable, col, mTrackHistManager, mResonanceHistManager, mPairHistManagerSe, mCprSe, mPcSe);
   }
 
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
@@ -1552,17 +1585,18 @@ class PairV0TwoTrackResonanceBuilder
     mMixingDepth = confMixing.depth.value;
   }
 
+  /// \return true if at least one pair passed all pair selections (usable as pair trigger)
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5>
-  void processSameEvent(T1 const& col, T2& trackTable, T3& v0Partition, T4& resonancePartition, T5& cache)
+  bool processSameEvent(T1 const& col, T2& trackTable, T3& v0Partition, T4& resonancePartition, T5& cache)
   {
     auto v0Slice = v0Partition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     auto resonanaceSlice = resonancePartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     if (v0Slice.size() < nLimitPartitionParticles || resonanaceSlice.size() < nLimitPartitionParticles) {
-      return;
+      return false;
     }
     mColHistManager.template fill<mode>(col);
     mCprSe.setMagField(col.magField());
-    pairprocesshelpers::processSameEvent<mode>(v0Slice, resonanaceSlice, trackTable, col, mV0HistManager, mResonanceHistManager, mPairHistManagerSe, mCprSe, mPcSe);
+    return pairprocesshelpers::processSameEvent<mode>(v0Slice, resonanaceSlice, trackTable, col, mV0HistManager, mResonanceHistManager, mPairHistManagerSe, mCprSe, mPcSe);
   }
 
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
@@ -1672,30 +1706,32 @@ class PairTrackKinkBuilder
     mMixingDepth = confMixing.depth.value;
   }
 
+  /// \return true if at least one pair passed all pair selections (usable as pair trigger)
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-  void processSameEvent(T1 const& col, T2& trackTable, T3& trackPartition, T4& /*kinktable*/, T5& kinkPartition, T6& cache)
+  bool processSameEvent(T1 const& col, T2& trackTable, T3& trackPartition, T4& /*kinktable*/, T5& kinkPartition, T6& cache)
   {
     auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     auto kinkSlice = kinkPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     if (trackSlice.size() < nLimitPartitionParticles || kinkSlice.size() < nLimitPartitionParticles) {
-      return;
+      return false;
     }
     mColHistManager.template fill<mode>(col);
     mCprSe.setMagField(col.magField());
-    pairprocesshelpers::processSameEvent<mode>(trackSlice, kinkSlice, trackTable, col, mTrackHistManager, mKinkHistManager, mPairHistManagerSe, mCprSe, mPcSe);
+    return pairprocesshelpers::processSameEvent<mode>(trackSlice, kinkSlice, trackTable, col, mTrackHistManager, mKinkHistManager, mPairHistManagerSe, mCprSe, mPcSe);
   }
 
+  /// \return true if at least one pair passed all pair selections (usable as pair trigger)
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
-  void processSameEvent(T1 const& col, T2 const& mcCols, T3& trackTable, T4& trackPartition, T5& /*kinktable*/, T6& kinkPartition, T7 const& mcParticles, T8 const& mcMothers, T9 const& mcPartonicMothers, T10& cache)
+  bool processSameEvent(T1 const& col, T2 const& mcCols, T3& trackTable, T4& trackPartition, T5& /*kinktable*/, T6& kinkPartition, T7 const& mcParticles, T8 const& mcMothers, T9 const& mcPartonicMothers, T10& cache)
   {
     auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     auto kinkSlice = kinkPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     if (trackSlice.size() < nLimitPartitionParticles || kinkSlice.size() < nLimitPartitionParticles) {
-      return;
+      return false;
     }
     mColHistManager.template fill<mode>(col, mcCols);
     mCprSe.setMagField(col.magField());
-    pairprocesshelpers::processSameEvent<mode>(trackSlice, kinkSlice, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager, mKinkHistManager, mPairHistManagerSe, mTrackCleaner, mKinkCleaner, mCprSe, mPcSe);
+    return pairprocesshelpers::processSameEvent<mode>(trackSlice, kinkSlice, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager, mKinkHistManager, mPairHistManagerSe, mTrackCleaner, mKinkCleaner, mCprSe, mPcSe);
   }
 
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
@@ -1837,44 +1873,46 @@ class PairTrackCascadeBuilder
     mMixingDepth = confMixing.depth.value;
   }
 
+  /// \return true if at least one pair passed all pair selections (usable as pair trigger)
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-  void processSameEvent(T1 const& col, T2& trackTable, T3& trackPartition, T4& /*cascadeTable*/, T5& cascadePartition, T6& cache)
+  bool processSameEvent(T1 const& col, T2& trackTable, T3& trackPartition, T4& /*cascadeTable*/, T5& cascadePartition, T6& cache)
   {
     auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     auto cascadeSlice = cascadePartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     if (trackSlice.size() < nLimitPartitionParticles || cascadeSlice.size() < nLimitPartitionParticles) {
-      return;
+      return false;
     }
     mColHistManager.template fill<mode>(col);
     mCprSe.setMagField(col.magField());
-    pairprocesshelpers::processSameEvent<mode>(trackSlice, cascadeSlice, trackTable, col, mTrackHistManager, mCascadeHistManager, mPairHistManagerSe, mCprSe, mPcSe);
+    return pairprocesshelpers::processSameEvent<mode>(trackSlice, cascadeSlice, trackTable, col, mTrackHistManager, mCascadeHistManager, mPairHistManagerSe, mCprSe, mPcSe);
   }
 
+  /// \return true if at least one pair passed all pair selections (usable as pair trigger)
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
-  void processSameEvent(T1 const& col, T2 const& mcCols, T3 const& trackTable, T4& trackPartition, T5 const& /*cascadeTabel*/, T6& cascadePartition, T7 const& mcParticles, T8 const& mcMothers, T9 const& mcPartonicMothers, T10& cache)
+  bool processSameEvent(T1 const& col, T2 const& mcCols, T3 const& trackTable, T4& trackPartition, T5 const& /*cascadeTabel*/, T6& cascadePartition, T7 const& mcParticles, T8 const& mcMothers, T9 const& mcPartonicMothers, T10& cache)
   {
     auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     auto cascadeSlice = cascadePartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     if (trackSlice.size() < nLimitPartitionParticles || cascadeSlice.size() < nLimitPartitionParticles) {
-      return;
+      return false;
     }
     mColHistManager.template fill<mode>(col, mcCols);
     mCprSe.setMagField(col.magField());
-    pairprocesshelpers::processSameEvent<mode>(trackSlice, cascadeSlice, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager, mCascadeHistManager, mPairHistManagerSe, mTrackCleaner, mCascadeCleaner, mCprSe, mPcSe);
+    return pairprocesshelpers::processSameEvent<mode>(trackSlice, cascadeSlice, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager, mCascadeHistManager, mPairHistManagerSe, mTrackCleaner, mCascadeCleaner, mCprSe, mPcSe);
   }
 
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
-  void processMixedEvent(T1 const& cols, T2& trackTable, T3& trackPartition, T4& v0Partition, T5& cache, T6& binsVtxMult, T7& binsVtxCent, T8& binsVtxMultCent)
+  void processMixedEvent(T1 const& cols, T2& trackTable, T3& trackPartition, T4& cascadePartition, T5& cache, T6& binsVtxMult, T7& binsVtxCent, T8& binsVtxMultCent)
   {
     switch (mMixingPolicy) {
       case static_cast<int>(pairhistmanager::kVtxMult):
-        pairprocesshelpers::processMixedEvent<mode>(cols, trackPartition, v0Partition, trackTable, cache, binsVtxMult, mMixingDepth, mPairHistManagerMe, mCprMe, mPcMe);
+        pairprocesshelpers::processMixedEvent<mode>(cols, trackPartition, cascadePartition, trackTable, cache, binsVtxMult, mMixingDepth, mPairHistManagerMe, mCprMe, mPcMe);
         break;
       case static_cast<int>(pairhistmanager::kVtxCent):
-        pairprocesshelpers::processMixedEvent<mode>(cols, trackPartition, v0Partition, trackTable, cache, binsVtxCent, mMixingDepth, mPairHistManagerMe, mCprMe, mPcMe);
+        pairprocesshelpers::processMixedEvent<mode>(cols, trackPartition, cascadePartition, trackTable, cache, binsVtxCent, mMixingDepth, mPairHistManagerMe, mCprMe, mPcMe);
         break;
       case static_cast<int>(pairhistmanager::kVtxMultCent):
-        pairprocesshelpers::processMixedEvent<mode>(cols, trackPartition, v0Partition, trackTable, cache, binsVtxMultCent, mMixingDepth, mPairHistManagerMe, mCprMe, mPcMe);
+        pairprocesshelpers::processMixedEvent<mode>(cols, trackPartition, cascadePartition, trackTable, cache, binsVtxMultCent, mMixingDepth, mPairHistManagerMe, mCprMe, mPcMe);
         break;
       default:
         LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
@@ -2016,30 +2054,31 @@ class PairMcParticleMcParticleBuilder
   }
 
   // only mc
+  /// \return true if at least one pair passed all pair selections (usable as pair trigger)
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
-  void processSameEvent(T1 const& col, T2 const& mcParticles, T3 const& mcMothers, T4 const& mcPartonicMothers, T5& partition1, T6& partition2, T7& cache)
+  bool processSameEvent(T1 const& col, T2 const& mcParticles, T3 const& mcMothers, T4 const& mcPartonicMothers, T5& partition1, T6& partition2, T7& cache)
   {
     if (mSameSpecies) {
-      auto mcParticleSlice = partition1->sliceByCached(o2::aod::femtomcparticle::fMcColId, col.globalIndex(), cache);
+      auto mcParticleSlice = partition1->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, col.globalIndex(), cache);
 
       if (mcParticleSlice.size() < nLimitPartitionIdenticalParticles) {
-        return;
+        return false;
       }
       mColHistManager.template fill<mode>(col);
       pairprocesshelpers::PairOrder pairOrder = pairprocesshelpers::kOrder12;
       if (mMixIdenticalParticles) {
         pairOrder = static_cast<pairprocesshelpers::PairOrder>(mDist(mRng));
       }
-      pairprocesshelpers::processSameEvent<mode>(mcParticleSlice, mcParticles, mcMothers, mcPartonicMothers, col, mMcParticleHistManager1, mPairHistManagerSe, mMcParticleCleaner1, mCprSe, mPcSe, pairOrder);
-    } else {
-      auto mcParticleSlice1 = partition1->sliceByCached(o2::aod::femtomcparticle::fMcColId, col.globalIndex(), cache);
-      auto mcParticleSlice2 = partition2->sliceByCached(o2::aod::femtomcparticle::fMcColId, col.globalIndex(), cache);
-      if (mcParticleSlice1.size() < nLimitPartitionParticles || mcParticleSlice2.size() < nLimitPartitionParticles) {
-        return;
-      }
-      mColHistManager.template fill<mode>(col);
-      pairprocesshelpers::processSameEvent<mode>(mcParticleSlice1, mcParticleSlice2, mcParticles, mcMothers, mcPartonicMothers, col, mMcParticleHistManager1, mMcParticleHistManager2, mPairHistManagerSe, mMcParticleCleaner1, mMcParticleCleaner2, mCprSe, mPcSe);
+      return pairprocesshelpers::processSameEvent<mode>(mcParticleSlice, mcParticles, mcMothers, mcPartonicMothers, col, mMcParticleHistManager1, mPairHistManagerSe, mMcParticleCleaner1, mCprSe, mPcSe, pairOrder);
     }
+
+    auto mcParticleSlice1 = partition1->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, col.globalIndex(), cache);
+    auto mcParticleSlice2 = partition2->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, col.globalIndex(), cache);
+    if (mcParticleSlice1.size() < nLimitPartitionParticles || mcParticleSlice2.size() < nLimitPartitionParticles) {
+      return false;
+    }
+    mColHistManager.template fill<mode>(col);
+    return pairprocesshelpers::processSameEvent<mode>(mcParticleSlice1, mcParticleSlice2, mcParticles, mcMothers, mcPartonicMothers, col, mMcParticleHistManager1, mMcParticleHistManager2, mPairHistManagerSe, mMcParticleCleaner1, mMcParticleCleaner2, mCprSe, mPcSe);
   }
 
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>

@@ -36,6 +36,7 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <string>
 #include <vector>
 
 using namespace o2;

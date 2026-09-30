@@ -58,7 +58,6 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -85,62 +84,20 @@ constexpr float MaxAbsVertexZ = 10.f;
 constexpr int NumBetheBlochParameters = 5;
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 static const std::vector<std::string> particleName{"He3"};
-std::shared_ptr<TH1> hEvents;
-std::shared_ptr<TH1> hEventsZorro;
-std::shared_ptr<TH1> hZvtx;
-std::shared_ptr<TH1> hCentFT0A;
-std::shared_ptr<TH1> hCentFT0C;
-std::shared_ptr<TH1> hCentFT0M;
-std::shared_ptr<TH2> hNsigma3HeSel;
-std::shared_ptr<TH2> hDeDx3HeSel;
-std::shared_ptr<TH2> hDeDxTot;
-std::shared_ptr<TH1> hH3LMassBefSel;
-std::shared_ptr<TH1> hH3LMassTracked;
-std::shared_ptr<TH1> hH4LMassBefSel;
-std::shared_ptr<TH1> hH4LMassTracked;
-std::shared_ptr<TH1> hDecayChannel;
-std::shared_ptr<TH1> hIsMatterGen;
-std::shared_ptr<TH1> hIsMatterGenTwoBody;
-std::shared_ptr<TH1> hEvtMC;
-std::shared_ptr<TH1> hImpactParamGen;
-std::shared_ptr<TH1> hImpactParamGenOneReco;
-std::shared_ptr<TH1> hImpactParamReco;
-std::shared_ptr<TH1> hGen3HLBeforeEvtSel;
-std::shared_ptr<TH1> hGen3HLAfterSel;
-std::shared_ptr<TH1> hGenOneRecoCentrality;
-std::shared_ptr<TH1> hRecoCentrality;
-std::shared_ptr<TH2> hGenEventsNchEta05;
-std::shared_ptr<TH2> hGenEventsNchEta08;
-std::shared_ptr<TH2> hGenCentralityColvsMultiplicityGenEta05;
-std::shared_ptr<TH2> hGenCentralityColvsMultiplicityGenEta08;
-std::shared_ptr<TH2> hGenCentralityColvsImpactParamGen;
-std::shared_ptr<TH2> hGenCentralityColvsFT0Cmultiplicity;
-std::shared_ptr<TH2> hRecoCentralityColvsMultiplicityRecoEta05;
-std::shared_ptr<TH2> hRecoCentralityColvsMultiplicityRecoEta08;
-std::shared_ptr<TH2> hRecoCentralityColvsImpactParamReco;
-std::shared_ptr<TH2> hRecoCentralityColvsFT0Cmultiplicity;
-std::shared_ptr<TH2> hGen3HLvsImpactParameterBeforeEvtSel;
-std::shared_ptr<TH2> hGen3HLvsImpactParameterAfterSel;
-std::shared_ptr<TH2> hGen3HLvsMultiplicityGenEta05BeforeEvtSel;
-std::shared_ptr<TH2> hGen3HLvsMultiplicityGenEta05AfterSel;
-std::shared_ptr<TH2> hGen3HLvsMultiplicityGenEta08BeforeEvtSel;
-std::shared_ptr<TH2> hGen3HLvsMultiplicityGenEta08AfterSel;
-std::shared_ptr<TH2> hGen3HLvsMultiplicityFT0CBeforeEvtSel;
-std::shared_ptr<TH2> hGen3HLvsMultiplicityFT0CAfterSel;
 
 } // namespace
 
 struct hyperCandidate {
-  float recoPtHe3() const { return std::hypot(momHe3[0], momHe3[1]); }
-  float recoPhiHe3() const { return std::atan2(momHe3[1], momHe3[0]); }
-  float recoEtaHe3() const { return std::asinh(momHe3[2] / recoPtHe3()); }
-  float recoPtPi() const { return std::hypot(momPi[0], momPi[1]); }
-  float recoPhiPi() const { return std::atan2(momPi[1], momPi[0]); }
-  float recoEtaPi() const { return std::asinh(momPi[2] / recoPtPi()); }
-  float genPt() const { return std::hypot(gMom[0], gMom[1]); }
-  float genPtHe3() const { return std::hypot(gMomHe3[0], gMomHe3[1]); }
-  float genPhi() const { return std::atan2(gMom[1], gMom[0]); }
-  float genEta() const { return std::asinh(gMom[2] / genPt()); }
+  [[nodiscard]] float recoPtHe3() const { return std::hypot(momHe3[0], momHe3[1]); }
+  [[nodiscard]] float recoPhiHe3() const { return std::atan2(momHe3[1], momHe3[0]); }
+  [[nodiscard]] float recoEtaHe3() const { return std::asinh(momHe3[2] / recoPtHe3()); }
+  [[nodiscard]] float recoPtPi() const { return std::hypot(momPi[0], momPi[1]); }
+  [[nodiscard]] float recoPhiPi() const { return std::atan2(momPi[1], momPi[0]); }
+  [[nodiscard]] float recoEtaPi() const { return std::asinh(momPi[2] / recoPtPi()); }
+  [[nodiscard]] float genPt() const { return std::hypot(gMom[0], gMom[1]); }
+  [[nodiscard]] float genPtHe3() const { return std::hypot(gMomHe3[0], gMomHe3[1]); }
+  [[nodiscard]] float genPhi() const { return std::atan2(gMom[1], gMom[0]); }
+  [[nodiscard]] float genEta() const { return std::asinh(gMom[2] / genPt()); }
 
   int v0ID = -1;
   int heTrackID = -1;
@@ -192,6 +149,7 @@ struct HyperRecoTask {
   Produces<aod::DataHypCands> outputDataTable;
   Produces<aod::DataHypCandsFlow> outputDataTableWithFlow;
   Produces<aod::MCHypCands> outputMCTable;
+  Produces<aod::MCHypCandsWColl> outputMCTableWithCollID;
   Produces<aod::DataHypCandsWColl> outputDataTableWithCollID;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Zorro zorro;
@@ -320,80 +278,80 @@ struct HyperRecoTask {
     const AxisSpec ptAxis{binsPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec multAxis = {binsMult, "Multiplicity #eta <0.5"};
 
-    hNsigma3HeSel = qaRegistry.add<TH2>("hNsigma3HeSel", "; p_{TPC}/z (GeV/#it{c}); n_{#sigma} ({}^{3}He)", HistType::kTH2F, {rigidityAxis, nSigma3HeAxis});
-    hDeDx3HeSel = qaRegistry.add<TH2>("hDeDx3HeSel", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dedxAxis});
-    hDeDxTot = qaRegistry.add<TH2>("hDeDxTot", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dedxAxis});
-    hH3LMassBefSel = qaRegistry.add<TH1>("hH3LMassBefSel", ";M (GeV/#it{c}^{2}); ", HistType::kTH1D, {{60, 2.96, 3.04}});
-    hH3LMassTracked = qaRegistry.add<TH1>("hH3LMassTracked", ";M (GeV/#it{c}^{2}); ", HistType::kTH1D, {{60, 2.96, 3.04}});
-    hH4LMassBefSel = qaRegistry.add<TH1>("hH4LMassBefSel", ";M (GeV/#it{c}^{2}); ", HistType::kTH1D, {{60, 3.76, 3.84}});
-    hH4LMassTracked = qaRegistry.add<TH1>("hH4LMassTracked", ";M (GeV/#it{c}^{2}); ", HistType::kTH1D, {{60, 3.76, 3.84}});
+    qaRegistry.add<TH2>("hNsigma3HeSel", "; p_{TPC}/z (GeV/#it{c}); n_{#sigma} ({}^{3}He)", HistType::kTH2F, {rigidityAxis, nSigma3HeAxis});
+    qaRegistry.add<TH2>("hDeDx3HeSel", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dedxAxis});
+    qaRegistry.add<TH2>("hDeDxTot", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dedxAxis});
+    qaRegistry.add<TH1>("hH3LMassBefSel", ";M (GeV/#it{c}^{2}); ", HistType::kTH1D, {{60, 2.96, 3.04}});
+    qaRegistry.add<TH1>("hH3LMassTracked", ";M (GeV/#it{c}^{2}); ", HistType::kTH1D, {{60, 2.96, 3.04}});
+    qaRegistry.add<TH1>("hH4LMassBefSel", ";M (GeV/#it{c}^{2}); ", HistType::kTH1D, {{60, 3.76, 3.84}});
+    qaRegistry.add<TH1>("hH4LMassTracked", ";M (GeV/#it{c}^{2}); ", HistType::kTH1D, {{60, 3.76, 3.84}});
 
-    hEvents = qaRegistry.add<TH1>("hEvents", ";Events; ", HistType::kTH1D, {{5, -0.5, 4.5}});
+    const auto hEvents = qaRegistry.add<TH1>("hEvents", ";Events; ", HistType::kTH1D, {{5, -0.5, 4.5}});
     hEvents->GetXaxis()->SetBinLabel(1, "All");
     hEvents->GetXaxis()->SetBinLabel(2, "sel8");
     hEvents->GetXaxis()->SetBinLabel(3, "z_{vtx}");
     hEvents->GetXaxis()->SetBinLabel(4, "kNoSameBunchPileup");
     hEvents->GetXaxis()->SetBinLabel(5, "kIsGoodZvtxFT0vsPV");
 
-    hEventsZorro = qaRegistry.add<TH1>("hEventsZorro", ";Events; ", HistType::kTH1D, {{2, -0.5, 1.5}});
+    const auto hEventsZorro = qaRegistry.add<TH1>("hEventsZorro", ";Events; ", HistType::kTH1D, {{2, -0.5, 1.5}});
     hEventsZorro->GetXaxis()->SetBinLabel(1, "Zorro before evsel");
     hEventsZorro->GetXaxis()->SetBinLabel(2, "Zorro after evsel");
 
-    if (doprocessMC || doprocessMCTracked) {
-      hDecayChannel = qaRegistry.add<TH1>("hDecayChannel", ";Decay channel; ", HistType::kTH1D, {{2, -0.5, 1.5}});
+    if (doprocessMC || doprocessMCWithCollID || doprocessMCTracked) {
+      const auto hDecayChannel = qaRegistry.add<TH1>("hDecayChannel", ";Decay channel; ", HistType::kTH1D, {{2, -0.5, 1.5}});
       hDecayChannel->GetXaxis()->SetBinLabel(1, "2-body");
       hDecayChannel->GetXaxis()->SetBinLabel(2, "3-body");
-      hIsMatterGen = qaRegistry.add<TH1>("hIsMatterGen", ";; ", HistType::kTH1D, {{2, -0.5, 1.5}});
+      const auto hIsMatterGen = qaRegistry.add<TH1>("hIsMatterGen", ";; ", HistType::kTH1D, {{2, -0.5, 1.5}});
       hIsMatterGen->GetXaxis()->SetBinLabel(1, "Matter");
       hIsMatterGen->GetXaxis()->SetBinLabel(2, "Antimatter");
-      hIsMatterGenTwoBody = qaRegistry.add<TH1>("hIsMatterGenTwoBody", ";; ", HistType::kTH1D, {{2, -0.5, 1.5}});
+      const auto hIsMatterGenTwoBody = qaRegistry.add<TH1>("hIsMatterGenTwoBody", ";; ", HistType::kTH1D, {{2, -0.5, 1.5}});
       hIsMatterGenTwoBody->GetXaxis()->SetBinLabel(1, "Matter");
       hIsMatterGenTwoBody->GetXaxis()->SetBinLabel(2, "Antimatter");
     }
-    hZvtx = qaRegistry.add<TH1>("hZvtx", ";z_{vtx} (cm); ", HistType::kTH1D, {{100, -20, 20}});
-    hCentFT0A = qaRegistry.add<TH1>("hCentFT0A", ";Centrality; ", HistType::kTH1D, {{100, 0, 100}});
-    hCentFT0C = qaRegistry.add<TH1>("hCentFT0C", ";Centrality; ", HistType::kTH1D, {{100, 0, 100}});
-    hCentFT0M = qaRegistry.add<TH1>("hCentFT0M", ";Centrality; ", HistType::kTH1D, {{100, 0, 100}});
+    qaRegistry.add<TH1>("hZvtx", ";z_{vtx} (cm); ", HistType::kTH1D, {{100, -20, 20}});
+    qaRegistry.add<TH1>("hCentFT0A", ";Centrality; ", HistType::kTH1D, {{100, 0, 100}});
+    qaRegistry.add<TH1>("hCentFT0C", ";Centrality; ", HistType::kTH1D, {{100, 0, 100}});
+    qaRegistry.add<TH1>("hCentFT0M", ";Centrality; ", HistType::kTH1D, {{100, 0, 100}});
 
     if (doprocessEventLossMC) {
       // Infomation for all generated collisions
-      hEvtMC = qaRegistry.add<TH1>("QAEvent/hEvtMC", ";; ", HistType::kTH1D, {{3, -0.5, 2.5}});
+      const auto hEvtMC = qaRegistry.add<TH1>("QAEvent/hEvtMC", ";; ", HistType::kTH1D, {{3, -0.5, 2.5}});
       hEvtMC->GetXaxis()->SetBinLabel(1, "All gen evts");
       hEvtMC->GetXaxis()->SetBinLabel(2, "Gen evts with al least one reconstructed");
       hEvtMC->GetXaxis()->SetBinLabel(3, "Gen evts with no reconstructed collisions");
-      hGenEventsNchEta05 = qaRegistry.add<TH2>("QAEvent/hGenEventsNchEta05", ";;", HistType::kTH2D, {{multAxis}, {2, -0.5f, +1.5f}});
+      const auto hGenEventsNchEta05 = qaRegistry.add<TH2>("QAEvent/hGenEventsNchEta05", ";;", HistType::kTH2D, {{multAxis}, {2, -0.5f, +1.5f}});
       hGenEventsNchEta05->GetYaxis()->SetBinLabel(1, "All gen. events");
       hGenEventsNchEta05->GetYaxis()->SetBinLabel(2, "Gen evts with at least 1 rec. collisions");
-      hGenEventsNchEta08 = qaRegistry.add<TH2>("QAEvent/hGenEventsNchEta08", ";;", HistType::kTH2D, {{multAxis}, {2, -0.5f, +1.5f}});
+      const auto hGenEventsNchEta08 = qaRegistry.add<TH2>("QAEvent/hGenEventsNchEta08", ";;", HistType::kTH2D, {{multAxis}, {2, -0.5f, +1.5f}});
       hGenEventsNchEta08->GetYaxis()->SetBinLabel(1, "All gen. events");
       hGenEventsNchEta08->GetYaxis()->SetBinLabel(2, "Gen evts with at least 1 rec. collisions");
-      hImpactParamGen = qaRegistry.add<TH1>("QAEvent/McColAll/hImpactParamGen", "Impact parameter of generated MC events; Impact Parameter (b); Counts", HistType::kTH1D, {impactParamAxis});
+      qaRegistry.add<TH1>("QAEvent/McColAll/hImpactParamGen", "Impact parameter of generated MC events; Impact Parameter (b); Counts", HistType::kTH1D, {impactParamAxis});
       // Infomation for generated collisions which at least one rec. collision and passed the event selection
-      hImpactParamGenOneReco = qaRegistry.add<TH1>("QAEvent/McColPassedEvSel/hImpactParamGenOneReco", "Impact parameter of generated MC events with at least one rec. evt and passed the event selection; Impact Parameter (b); Counts", HistType::kTH1D, {impactParamAxis});
-      hGenOneRecoCentrality = qaRegistry.add<TH1>("QAEvent/McColPassedEvSel/hGenOneRecoCentrality", "Centrality distribution of generated MC events with at least one rec. evt and passed the event selection; Centrality (FT0C %); Counts", HistType::kTH1D, {centFT0CAxis});
-      hGenCentralityColvsMultiplicityGenEta05 = qaRegistry.add<TH2>("QAEvent/McColPassedEvSel/hGenCentralityColvsMultiplicityGenEta05", "Correlation between FT0C centrality and charged particle multiplicity in generated MC events with at least one rec. evt and passed the event selection; Multiplicity #eta <0.5; Counts", HistType::kTH2D, {centFT0CAxis, multAxis});
-      hGenCentralityColvsMultiplicityGenEta08 = qaRegistry.add<TH2>("QAEvent/McColPassedEvSel/hGenCentralityColvsMultiplicityGenEta08", "Correlation between FT0C centrality and charged particle multiplicity in generated MC events with at least one rec. evt and passed the event selection; Multiplicity #eta <0.8; Counts", HistType::kTH2D, {centFT0CAxis, multAxis});
-      hGenCentralityColvsImpactParamGen = qaRegistry.add<TH2>("QAEvent/McColPassedEvSel/hGenCentralityColvsImpactParamGen", "Correlation between FT0C centrality and impact parameter in generated MC events with at least one rec. evt and passed the event selection; Multiplicity #eta <0.8; Counts", HistType::kTH2D, {centFT0CAxis, impactParamAxis});
-      hGenCentralityColvsFT0Cmultiplicity = qaRegistry.add<TH2>("QAEvent/McColPassedEvSel/hGenCentralityColvsFT0Cmultiplicity", "Correlation between FT0C centrality and FT0C multiplicity in generated MC events with at least one rec. evt and passed the event selection; FT0c multiplicity", HistType::kTH2D, {centFT0CAxis, binsFT0CMultAxis});
+      qaRegistry.add<TH1>("QAEvent/McColPassedEvSel/hImpactParamGenOneReco", "Impact parameter of generated MC events with at least one rec. evt and passed the event selection; Impact Parameter (b); Counts", HistType::kTH1D, {impactParamAxis});
+      qaRegistry.add<TH1>("QAEvent/McColPassedEvSel/hGenOneRecoCentrality", "Centrality distribution of generated MC events with at least one rec. evt and passed the event selection; Centrality (FT0C %); Counts", HistType::kTH1D, {centFT0CAxis});
+      qaRegistry.add<TH2>("QAEvent/McColPassedEvSel/hGenCentralityColvsMultiplicityGenEta05", "Correlation between FT0C centrality and charged particle multiplicity in generated MC events with at least one rec. evt and passed the event selection; Multiplicity #eta <0.5; Counts", HistType::kTH2D, {centFT0CAxis, multAxis});
+      qaRegistry.add<TH2>("QAEvent/McColPassedEvSel/hGenCentralityColvsMultiplicityGenEta08", "Correlation between FT0C centrality and charged particle multiplicity in generated MC events with at least one rec. evt and passed the event selection; Multiplicity #eta <0.8; Counts", HistType::kTH2D, {centFT0CAxis, multAxis});
+      qaRegistry.add<TH2>("QAEvent/McColPassedEvSel/hGenCentralityColvsImpactParamGen", "Correlation between FT0C centrality and impact parameter in generated MC events with at least one rec. evt and passed the event selection; Multiplicity #eta <0.8; Counts", HistType::kTH2D, {centFT0CAxis, impactParamAxis});
+      qaRegistry.add<TH2>("QAEvent/McColPassedEvSel/hGenCentralityColvsFT0Cmultiplicity", "Correlation between FT0C centrality and FT0C multiplicity in generated MC events with at least one rec. evt and passed the event selection; FT0c multiplicity", HistType::kTH2D, {centFT0CAxis, binsFT0CMultAxis});
       // Infomation for all reconstructed collisions passed the event selection (for Event Splitting)
-      hImpactParamReco = qaRegistry.add<TH1>("QAEvent/McColAll/hImpactParamReco", "Impact parameter of generated MC events with at least one rec. evt; Impact Parameter (b); Counts", HistType::kTH1D, {impactParamAxis});
-      hRecoCentrality = qaRegistry.add<TH1>("QAEvent/McColAll/hRecoCentrality", "Centrality distribution of reconstructed MC events passed the event selection; Centrality (FT0C %); Counts", HistType::kTH1D, {centFT0CAxis});
-      hRecoCentralityColvsMultiplicityRecoEta05 = qaRegistry.add<TH2>("QAEvent/McColAll/hRecoCentralityColvsMultiplicityRecoEta05", "Correlation between FT0C centrality and charged particle multiplicity in reconstructed MC events passed the event selection; Multiplicity #eta <0.5; Counts", HistType::kTH2D, {centFT0CAxis, multAxis});
-      hRecoCentralityColvsMultiplicityRecoEta08 = qaRegistry.add<TH2>("QAEvent/McColAll/hRecoCentralityColvsMultiplicityRecoEta08", "Correlation between FT0C centrality and charged particle multiplicity in reconstructed MC events passed the event selection; Multiplicity #eta <0.8; Counts", HistType::kTH2D, {centFT0CAxis, multAxis});
-      hRecoCentralityColvsImpactParamReco = qaRegistry.add<TH2>("QAEvent/McColAll/hRecoCentralityColvsImpactParamReco", "Correlation between FT0C centrality and impact parameter in reconstructed MC events passed the event selection; Impact Parameter (b); Counts", HistType::kTH2D, {centFT0CAxis, impactParamAxis});
-      hRecoCentralityColvsFT0Cmultiplicity = qaRegistry.add<TH2>("QAEvent/McColAll/hRecoCentralityColvsFT0Cmultiplicity", "Correlation between FT0C centrality and FT0C multiplicity in reconstructed MC events passed the event selection; FT0C (%); FT0c multiplicity", HistType::kTH2D, {centFT0CAxis, binsFT0CMultAxis});
+      qaRegistry.add<TH1>("QAEvent/McColAll/hImpactParamReco", "Impact parameter of generated MC events with at least one rec. evt; Impact Parameter (b); Counts", HistType::kTH1D, {impactParamAxis});
+      qaRegistry.add<TH1>("QAEvent/McColAll/hRecoCentrality", "Centrality distribution of reconstructed MC events passed the event selection; Centrality (FT0C %); Counts", HistType::kTH1D, {centFT0CAxis});
+      qaRegistry.add<TH2>("QAEvent/McColAll/hRecoCentralityColvsMultiplicityRecoEta05", "Correlation between FT0C centrality and charged particle multiplicity in reconstructed MC events passed the event selection; Multiplicity #eta <0.5; Counts", HistType::kTH2D, {centFT0CAxis, multAxis});
+      qaRegistry.add<TH2>("QAEvent/McColAll/hRecoCentralityColvsMultiplicityRecoEta08", "Correlation between FT0C centrality and charged particle multiplicity in reconstructed MC events passed the event selection; Multiplicity #eta <0.8; Counts", HistType::kTH2D, {centFT0CAxis, multAxis});
+      qaRegistry.add<TH2>("QAEvent/McColAll/hRecoCentralityColvsImpactParamReco", "Correlation between FT0C centrality and impact parameter in reconstructed MC events passed the event selection; Impact Parameter (b); Counts", HistType::kTH2D, {centFT0CAxis, impactParamAxis});
+      qaRegistry.add<TH2>("QAEvent/McColAll/hRecoCentralityColvsFT0Cmultiplicity", "Correlation between FT0C centrality and FT0C multiplicity in reconstructed MC events passed the event selection; FT0C (%); FT0c multiplicity", HistType::kTH2D, {centFT0CAxis, binsFT0CMultAxis});
       // Information of generated 3HL in generated events
-      hGen3HLBeforeEvtSel = qaRegistry.add<TH1>("QAEvent/McCol3HL/hGen3HLBeforeEvtSel", "3HL generated #it{p}_{T} distribution in all gen evt;#it{p}_{T} (GeV/#it{c}); Counts", HistType::kTH1D, {ptAxis});
-      hGen3HLvsImpactParameterBeforeEvtSel = qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsImpactParameterBeforeEvtSel", "Correlation 3HL generated #it{p}_{T} and impact parameter in all gen evt;#it{p}_{T} (GeV/#it{c}); Impact parameter (b)", HistType::kTH2D, {ptAxis, impactParamAxis});
-      hGen3HLvsMultiplicityGenEta05BeforeEvtSel = qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsMultiplicityGenEta05BeforeEvtSel", "Correlation 3HL generated #it{p}_{T} and charged particle multiplicity in all gen evt;#it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.5", HistType::kTH2D, {ptAxis, multAxis});
-      hGen3HLvsMultiplicityGenEta08BeforeEvtSel = qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsMultiplicityGenEta08BeforeEvtSel", "Correlation 3HL generated #it{p}_{T} and charged particle multiplicity in all gen evt;#it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.8", HistType::kTH2D, {ptAxis, multAxis});
-      hGen3HLvsMultiplicityFT0CBeforeEvtSel = qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsMultiplicityFT0CBeforeEvtSel", "Correlation 3HL generated #it{p}_{T} and FT0C multiplicity in all gen evt;#it{p}_{T} (GeV/#it{c}); FT0C Multiplicity", HistType::kTH2D, {ptAxis, binsFT0CMultAxis});
+      qaRegistry.add<TH1>("QAEvent/McCol3HL/hGen3HLBeforeEvtSel", "3HL generated #it{p}_{T} distribution in all gen evt;#it{p}_{T} (GeV/#it{c}); Counts", HistType::kTH1D, {ptAxis});
+      qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsImpactParameterBeforeEvtSel", "Correlation 3HL generated #it{p}_{T} and impact parameter in all gen evt;#it{p}_{T} (GeV/#it{c}); Impact parameter (b)", HistType::kTH2D, {ptAxis, impactParamAxis});
+      qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsMultiplicityGenEta05BeforeEvtSel", "Correlation 3HL generated #it{p}_{T} and charged particle multiplicity in all gen evt;#it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.5", HistType::kTH2D, {ptAxis, multAxis});
+      qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsMultiplicityGenEta08BeforeEvtSel", "Correlation 3HL generated #it{p}_{T} and charged particle multiplicity in all gen evt;#it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.8", HistType::kTH2D, {ptAxis, multAxis});
+      qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsMultiplicityFT0CBeforeEvtSel", "Correlation 3HL generated #it{p}_{T} and FT0C multiplicity in all gen evt;#it{p}_{T} (GeV/#it{c}); FT0C Multiplicity", HistType::kTH2D, {ptAxis, binsFT0CMultAxis});
       // Information of generated 3HL in generated events with at least one rec. event and passed the event selection
-      hGen3HLAfterSel = qaRegistry.add<TH1>("QAEvent/McCol3HL/hGen3HLAfterSel", "3HL generated #it{p}_{T} distribution in gen. evts with at least one rec. evt; #it{p}_{T} (GeV/#it{c}); Counts", HistType::kTH1D, {ptAxis});
-      hGen3HLvsImpactParameterAfterSel = qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsImpactParameterAfterSel", "Correlation 3HL generated #it{p}_{T} and impact parameter in gen. evts with at least one rec. evt;#it{p}_{T} (GeV/#it{c}); Impact parameter (b)", HistType::kTH2D, {ptAxis, impactParamAxis});
-      hGen3HLvsMultiplicityGenEta05AfterSel = qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsMultiplicityGenEta05AfterSel", "Correlation 3HL generated #it{p}_{T} and charged particle multiplicity in gen. evts with at least one rec. evt;#it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.5", HistType::kTH2D, {ptAxis, multAxis});
-      hGen3HLvsMultiplicityGenEta08AfterSel = qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsMultiplicityGenEta08AfterSel", "Correlation 3HL generated #it{p}_{T} and charged particle multiplicity in gen. evts with at least one rec. evt;#it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.8", HistType::kTH2D, {ptAxis, multAxis});
-      hGen3HLvsMultiplicityFT0CAfterSel = qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsMultiplicityFT0CAfterSel", "Correlation 3HL generated #it{p}_{T} and FT0C multiplicity in gen. evts with at least one rec;#it{p}_{T} (GeV/#it{c}); FT0C Multiplicity", HistType::kTH2D, {ptAxis, binsFT0CMultAxis});
+      qaRegistry.add<TH1>("QAEvent/McCol3HL/hGen3HLAfterSel", "3HL generated #it{p}_{T} distribution in gen. evts with at least one rec. evt; #it{p}_{T} (GeV/#it{c}); Counts", HistType::kTH1D, {ptAxis});
+      qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsImpactParameterAfterSel", "Correlation 3HL generated #it{p}_{T} and impact parameter in gen. evts with at least one rec. evt;#it{p}_{T} (GeV/#it{c}); Impact parameter (b)", HistType::kTH2D, {ptAxis, impactParamAxis});
+      qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsMultiplicityGenEta05AfterSel", "Correlation 3HL generated #it{p}_{T} and charged particle multiplicity in gen. evts with at least one rec. evt;#it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.5", HistType::kTH2D, {ptAxis, multAxis});
+      qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsMultiplicityGenEta08AfterSel", "Correlation 3HL generated #it{p}_{T} and charged particle multiplicity in gen. evts with at least one rec. evt;#it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.8", HistType::kTH2D, {ptAxis, multAxis});
+      qaRegistry.add<TH2>("QAEvent/McCol3HL/hGen3HLvsMultiplicityFT0CAfterSel", "Correlation 3HL generated #it{p}_{T} and FT0C multiplicity in gen. evts with at least one rec;#it{p}_{T} (GeV/#it{c}); FT0C Multiplicity", HistType::kTH2D, {ptAxis, binsFT0CMultAxis});
     }
   }
 
@@ -462,7 +420,7 @@ struct HyperRecoTask {
     for (const auto& collision : collisions) {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
-      hEvents->Fill(0.);
+      qaRegistry.fill(HIST("hEvents"), 0.);
 
       if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && !disableITSROFCut) {
         continue;
@@ -473,7 +431,7 @@ struct HyperRecoTask {
         // accounting done after ITS border cut, to properly correct with the MC
         zorroSelected = zorro.isSelected(collision.template bc_as<aod::BCsWithTimestamps>().globalBC());
         if (zorroSelected) {
-          hEventsZorro->Fill(0.);
+          qaRegistry.fill(HIST("hEventsZorro"), 0.);
         }
       }
 
@@ -481,35 +439,35 @@ struct HyperRecoTask {
         continue;
       }
 
-      hEvents->Fill(1.);
+      qaRegistry.fill(HIST("hEvents"), 1.);
 
       if (std::abs(collision.posZ()) > MaxAbsVertexZ) {
         continue;
       }
-      hEvents->Fill(2.);
+      qaRegistry.fill(HIST("hEvents"), 2.);
 
       if (zorroSelected) {
-        hEventsZorro->Fill(1.);
+        qaRegistry.fill(HIST("hEventsZorro"), 1.);
       }
 
       if (cfgEvSelkNoSameBunchPileup) {
         if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
           continue;
         }
-        hEvents->Fill(3.);
+        qaRegistry.fill(HIST("hEvents"), 3.);
       }
       if (cfgEvSelkIsGoodZvtxFT0vsPV) {
         if (!collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
           continue;
         }
-        hEvents->Fill(4.);
+        qaRegistry.fill(HIST("hEvents"), 4.);
       }
 
       goodCollision[collision.globalIndex()] = true;
-      hZvtx->Fill(collision.posZ());
-      hCentFT0A->Fill(collision.centFT0A());
-      hCentFT0C->Fill(collision.centFT0C());
-      hCentFT0M->Fill(collision.centFT0M());
+      qaRegistry.fill(HIST("hZvtx"), collision.posZ());
+      qaRegistry.fill(HIST("hCentFT0A"), collision.centFT0A());
+      qaRegistry.fill(HIST("hCentFT0C"), collision.centFT0C());
+      qaRegistry.fill(HIST("hCentFT0M"), collision.centFT0M());
     }
   }
 
@@ -519,41 +477,42 @@ struct HyperRecoTask {
     for (const auto& collision : collisions) {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
-      hEvents->Fill(0.);
+      qaRegistry.fill(HIST("hEvents"), 0.);
       if (collision.has_mcCollision()) {
         recoCollisionIds[collision.mcCollisionId()] = collision.globalIndex();
       }
-      if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
+      if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
         continue;
+      }
 
-      hEvents->Fill(1.);
+      qaRegistry.fill(HIST("hEvents"), 1.);
 
       if (std::abs(collision.posZ()) > MaxAbsVertexZ) {
         continue;
       }
-      hEvents->Fill(2.);
+      qaRegistry.fill(HIST("hEvents"), 2.);
 
       if (cfgEvSelkNoSameBunchPileup) {
         if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
           continue;
         }
-        hEvents->Fill(3.);
+        qaRegistry.fill(HIST("hEvents"), 3.);
       }
       if (cfgEvSelkIsGoodZvtxFT0vsPV) {
         if (!collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
           continue;
         }
-        hEvents->Fill(4.);
+        qaRegistry.fill(HIST("hEvents"), 4.);
       }
 
       if (collision.has_mcCollision()) {
         isSurvEvSelCollision[collision.mcCollisionId()] = true;
       }
       goodCollision[collision.globalIndex()] = true;
-      hZvtx->Fill(collision.posZ());
-      hCentFT0A->Fill(collision.centFT0A());
-      hCentFT0C->Fill(collision.centFT0C());
-      hCentFT0M->Fill(collision.centFT0M());
+      qaRegistry.fill(HIST("hZvtx"), collision.posZ());
+      qaRegistry.fill(HIST("hCentFT0A"), collision.centFT0A());
+      qaRegistry.fill(HIST("hCentFT0C"), collision.centFT0C());
+      qaRegistry.fill(HIST("hCentFT0M"), collision.centFT0M());
     }
   }
   template <class Ttrack, class Tcolls>
@@ -577,11 +536,12 @@ struct HyperRecoTask {
     hypCand.clusterSizeITSPi = piTrack.itsClusterSizes();
     bool heliumPID = heTrack.pidForTracking() == o2::track::PID::Helium3 || heTrack.pidForTracking() == o2::track::PID::Alpha;
     hypCand.momHe3TPC = (heliumPID && cfgCompensatePIDinTracking) ? heTrack.tpcInnerParam() / 2 : heTrack.tpcInnerParam();
-    if (hypCand.momHe3TPC < tpcRigidityMinHe)
+    if (hypCand.momHe3TPC < tpcRigidityMinHe) {
       return;
+    }
     hypCand.momPiTPC = piTrack.tpcInnerParam();
-    hDeDxTot->Fill(hypCand.momHe3TPC * heTrack.sign(), heTrack.tpcSignal());
-    hDeDxTot->Fill(hypCand.momPiTPC * piTrack.sign(), piTrack.tpcSignal());
+    qaRegistry.fill(HIST("hDeDxTot"), hypCand.momHe3TPC * heTrack.sign(), heTrack.tpcSignal());
+    qaRegistry.fill(HIST("hDeDxTot"), hypCand.momPiTPC * piTrack.sign(), piTrack.tpcSignal());
     hypCand.flags |= static_cast<uint8_t>((heTrack.pidForTracking() & 0xF) << 4);
     hypCand.flags |= static_cast<uint8_t>(piTrack.pidForTracking() & 0xF);
     auto heTrackCov = getTrackParCov(heTrack);
@@ -620,23 +580,27 @@ struct HyperRecoTask {
       hypMom[i] = hypCand.momHe3[i] + hypCand.momPi[i];
     }
     float hypPt = std::hypot(hypMom[0], hypMom[1]);
-    if (hypPt < ptMin)
+    if (hypPt < ptMin) {
       return;
+    }
     float massH3L = std::sqrt(h3lE * h3lE - hypMom[0] * hypMom[0] - hypMom[1] * hypMom[1] - hypMom[2] * hypMom[2]);
     float massH4L = std::sqrt(h4lE * h4lE - hypMom[0] * hypMom[0] - hypMom[1] * hypMom[1] - hypMom[2] * hypMom[2]);
     bool isHypMass = false;
-    if (massH3L > o2::constants::physics::MassHyperTriton - massWidth && massH3L < o2::constants::physics::MassHyperTriton + massWidth)
+    if (massH3L > o2::constants::physics::MassHyperTriton - massWidth && massH3L < o2::constants::physics::MassHyperTriton + massWidth) {
       isHypMass = true;
-    if (massH4L > o2::constants::physics::MassHyperhydrog4 - massWidth && massH4L < o2::constants::physics::MassHyperhydrog4 + massWidth)
+    }
+    if (massH4L > o2::constants::physics::MassHyperhydrog4 - massWidth && massH4L < o2::constants::physics::MassHyperhydrog4 + massWidth) {
       isHypMass = true;
-    if (!isHypMass)
+    }
+    if (!isHypMass) {
       return;
+    }
 
-    hH3LMassBefSel->Fill(massH3L);
-    hH4LMassBefSel->Fill(massH4L);
+    qaRegistry.fill(HIST("hH3LMassBefSel"), massH3L);
+    qaRegistry.fill(HIST("hH4LMassBefSel"), massH4L);
     if (!trackedClSize.empty() && trackedClSize[hypCand.v0ID] > 0) {
-      hH3LMassTracked->Fill(massH3L);
-      hH4LMassTracked->Fill(massH4L);
+      qaRegistry.fill(HIST("hH3LMassTracked"), massH3L);
+      qaRegistry.fill(HIST("hH4LMassTracked"), massH4L);
     }
 
     hypCand.dcaV0dau = std::sqrt(fitter.getChi2AtPCACandidate());
@@ -695,8 +659,8 @@ struct HyperRecoTask {
       hypCand.massTOFHe3 = hypCand.momHe3TPC * 2.f * std::sqrt(1.f / (beta * beta) - 1.f);
     }
 
-    hDeDx3HeSel->Fill(heTrack.sign() * hypCand.momHe3TPC, heTrack.tpcSignal());
-    hNsigma3HeSel->Fill(heTrack.sign() * hypCand.momHe3TPC, hypCand.nSigmaHe3);
+    qaRegistry.fill(HIST("hDeDx3HeSel"), heTrack.sign() * hypCand.momHe3TPC, heTrack.tpcSignal());
+    qaRegistry.fill(HIST("hNsigma3HeSel"), heTrack.sign() * hypCand.momHe3TPC, hypCand.nSigmaHe3);
     hyperCandidates.push_back(hypCand);
   }
 
@@ -712,8 +676,9 @@ struct HyperRecoTask {
       auto posTrack = tracks.rawIteratorAt(v0.posTrackId());
       auto negTrack = tracks.rawIteratorAt(v0.negTrackId());
 
-      if (std::abs(posTrack.eta()) > etaMax || std::abs(negTrack.eta()) > etaMax)
+      if (std::abs(posTrack.eta()) > etaMax || std::abs(negTrack.eta()) > etaMax) {
         continue;
+      }
 
       // temporary fix: tpcInnhRecoCentralityColvsFT0CmultiplicityerParam() returns the momentum in all the software tags before: https://github.com/AliceO2Group/AliceO2/pull/12521
       auto nSigmaTPCpos = computeNSigmaHe3(posTrack);
@@ -752,24 +717,30 @@ struct HyperRecoTask {
 
     for (const auto& track : tracks) {
 
-      if (std::abs(track.eta()) > etaMax)
+      if (std::abs(track.eta()) > etaMax) {
         continue;
+      }
 
-      if (!track.hasITS())
+      if (!track.hasITS()) {
         continue;
+      }
 
       auto nSigmaHe = computeNSigmaHe3(track);
       bool isHe = nSigmaHe > -1 * nSigmaMaxHe;
       int pdgHypo = isHe ? heDauPdg : PDG_t::kPiPlus;
       // LOG(info) << "ncls found: " << track.tpcNClsFound();
-      if (isHe && track.tpcNClsFound() < nTPCClusMinHe)
+      if (isHe && track.tpcNClsFound() < nTPCClusMinHe) {
         continue;
-      if (!isHe && track.tpcNClsFound() < nTPCClusMinPi)
+      }
+      if (!isHe && track.tpcNClsFound() < nTPCClusMinPi) {
         continue;
-      if (isHe && track.tpcNClsCrossedRows() < nTPCCrossedRowsMinHe)
+      }
+      if (isHe && track.tpcNClsCrossedRows() < nTPCCrossedRowsMinHe) {
         continue;
-      if (!isHe && track.tpcNClsCrossedRows() < nTPCCrossedRowsMinPi)
+      }
+      if (!isHe && track.tpcNClsCrossedRows() < nTPCCrossedRowsMinPi) {
         continue;
+      }
 
       svCreator.appendTrackCand(track, collisions, pdgHypo, ambiguousTracks, bcs);
     }
@@ -797,12 +768,15 @@ struct HyperRecoTask {
         if (mcTrackHe.has_mothers() && mcTrackPi.has_mothers()) {
           for (const auto& heMother : mcTrackHe.mothers_as<aod::McParticles>()) {
             for (const auto& piMother : mcTrackPi.mothers_as<aod::McParticles>()) {
-              if (heMother.globalIndex() != piMother.globalIndex())
+              if (heMother.globalIndex() != piMother.globalIndex()) {
                 continue;
-              if (std::abs(mcTrackHe.pdgCode()) != heDauPdg || std::abs(mcTrackPi.pdgCode()) != PDG_t::kPiPlus)
+              }
+              if (std::abs(mcTrackHe.pdgCode()) != heDauPdg || std::abs(mcTrackPi.pdgCode()) != PDG_t::kPiPlus) {
                 continue;
-              if (std::abs(heMother.pdgCode()) != hyperPdg)
+              }
+              if (std::abs(heMother.pdgCode()) != hyperPdg) {
                 continue;
+              }
 
               auto primVtx = std::array<float, 3>{heMother.vx(), heMother.vy(), heMother.vz()};
               auto secVtx = std::array<float, 3>{mcTrackHe.vx(), mcTrackHe.vy(), mcTrackHe.vz()};
@@ -821,6 +795,143 @@ struct HyperRecoTask {
           }
         }
       }
+    }
+  }
+
+  template <bool withCollID, typename... Columns>
+  void fillMCCandidate(int64_t collisionId, int64_t heTrackId, int64_t piTrackId, Columns const&... columns)
+  {
+    if constexpr (withCollID) {
+      outputMCTableWithCollID(collisionId, heTrackId, piTrackId, columns...);
+    } else {
+      outputMCTable(columns...);
+    }
+  }
+
+  template <bool withCollID>
+  void runMC(CollisionsFullMC const& collisions, aod::McCollisions const& mcCollisions, aod::V0s const& V0s, TracksFull const& tracks, aod::AmbiguousTracks const& ambiTracks, aod::BCsWithTimestamps const& bcs, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
+  {
+    filledMothers.clear();
+    recoCollisionIds.clear();
+    recoCollisionIds.resize(mcCollisions.size(), -1);
+    isSurvEvSelCollision.clear();
+    isSurvEvSelCollision.resize(mcCollisions.size(), false);
+    goodCollision.clear();
+    goodCollision.resize(collisions.size(), false);
+    hyperCandidates.clear();
+
+    selectGoodCollisionsMC(collisions);
+    useCustomVertexer ? fillCustomV0s(collisions, tracks, ambiTracks, bcs) : fillV0s(collisions, tracks, V0s);
+    fillMCinfo(trackLabelsMC, particlesMC);
+    for (const auto& hypCand : hyperCandidates) {
+      auto collision = collisions.rawIteratorAt(hypCand.collisionID);
+      if (!hypCand.isSignal && mcSignalOnly) {
+        continue;
+      }
+      int chargeFactor = -1 + 2 * (hypCand.pdgCode > 0);
+      float trackedHypClSize = !trackedClSize.empty() ? trackedClSize[hypCand.v0ID] : 0;
+      fillMCCandidate<withCollID>(hypCand.collisionID, hypCand.heTrackID, hypCand.piTrackID,
+                                  collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
+                                  collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(),
+                                  collision.posX(), collision.posY(), collision.posZ(),
+                                  mRunNumber, hypCand.isMatter,
+                                  hypCand.recoPtHe3(), hypCand.recoPhiHe3(), hypCand.recoEtaHe3(),
+                                  hypCand.recoPtPi(), hypCand.recoPhiPi(), hypCand.recoEtaPi(),
+                                  hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
+                                  hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
+                                  hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi, hypCand.nTPCpidClusHe3, hypCand.nTPCpidClusPi, hypCand.nTPCCrossedRowsHe3, hypCand.nTPCCrossedRowsPi,
+                                  hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi, hypCand.tpcChi2He3, hypCand.itsChi2He3, hypCand.itsChi2Pi,
+                                  hypCand.massTOFHe3,
+                                  hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, trackedHypClSize,
+                                  chargeFactor * hypCand.genPt(), hypCand.genPhi(), hypCand.genEta(), hypCand.genPtHe3(),
+                                  hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2],
+                                  hypCand.isReco, hypCand.isFakeHeOnITSLayer, hypCand.isSignal, hypCand.isRecoMCCollision, hypCand.isSurvEvSelection, 1, 0);
+    }
+
+    // now we fill only the signal candidates that were not reconstructed
+    for (const auto& mcPart : particlesMC) {
+
+      if (std::abs(mcPart.pdgCode()) != hyperPdg) {
+        continue;
+      }
+      std::array<float, 3> secVtx{0.f, 0.f, 0.f};
+      std::array<float, 3> lastDaugVtx{0.f, 0.f, 0.f};
+      std::array<float, 3> primVtx = {mcPart.vx(), mcPart.vy(), mcPart.vz()};
+      std::array<float, 3> momMother = {mcPart.px(), mcPart.py(), mcPart.pz()};
+      std::array<float, 3> momHe3{0.f, 0.f, 0.f};
+      bool isHeFound = false;
+      int mcProcess = {0};
+      for (const auto& mcDaught : mcPart.daughters_as<aod::McParticles>()) {
+        if (mcDaught.pdgCode() != PDG_t::kElectron) { // we do not care about delta electrons
+          lastDaugVtx = {mcDaught.vx(), mcDaught.vy(), mcDaught.vz()};
+          mcProcess = mcDaught.getProcess();
+        }
+        if (std::abs(mcDaught.pdgCode()) == heDauPdg) {
+          secVtx = lastDaugVtx;
+          momHe3 = {mcDaught.px(), mcDaught.py(), mcDaught.pz()};
+          isHeFound = true;
+        }
+      }
+      if (mcPart.pdgCode() > 0) {
+        qaRegistry.fill(HIST("hIsMatterGen"), 0.);
+      } else {
+        qaRegistry.fill(HIST("hIsMatterGen"), 1.);
+      }
+      if (!isHeFound) {
+        qaRegistry.fill(HIST("hDecayChannel"), 1.);
+      }
+      qaRegistry.fill(HIST("hDecayChannel"), 0.);
+      if (mcPart.pdgCode() > 0) {
+        qaRegistry.fill(HIST("hIsMatterGenTwoBody"), 0.);
+      } else {
+        qaRegistry.fill(HIST("hIsMatterGenTwoBody"), 1.);
+      }
+      if (std::find(filledMothers.begin(), filledMothers.end(), mcPart.globalIndex()) != std::end(filledMothers)) {
+        continue;
+      }
+      hyperCandidate hypCand;
+      hypCand.pdgCode = mcPart.pdgCode();
+      hypCand.isRecoMCCollision = recoCollisionIds[mcPart.mcCollisionId()] >= 0;
+      hypCand.isSurvEvSelection = isSurvEvSelCollision[mcPart.mcCollisionId()];
+      int chargeFactor = -1 + 2 * (hypCand.pdgCode > 0);
+      for (std::size_t i = 0; i < hypCand.gDecVtx.size(); i++) {
+        hypCand.gDecVtx[i] = (isHeFound ? secVtx[i] : lastDaugVtx[i]) - primVtx[i];
+        hypCand.gMom[i] = momMother[i];
+        hypCand.gMomHe3[i] = momHe3[i];
+      }
+      hypCand.heTrackID = -1;
+      hypCand.piTrackID = -1;
+      hypCand.isSignal = true;
+
+      float centFT0A = -1, centFT0C = -1, centFT0M = -1;
+      int trackOccupancyInTimeRange = -1;
+      float ft0cOccupancyInTimeRange = -1.f;
+      int recoCollisionId = -1;
+      if (hypCand.isRecoMCCollision) {
+        recoCollisionId = recoCollisionIds[mcPart.mcCollisionId()];
+        auto recoCollision = collisions.rawIteratorAt(recoCollisionId);
+        centFT0A = recoCollision.centFT0A();
+        centFT0C = recoCollision.centFT0C();
+        centFT0M = recoCollision.centFT0M();
+        trackOccupancyInTimeRange = recoCollision.trackOccupancyInTimeRange();
+        ft0cOccupancyInTimeRange = recoCollision.ft0cOccupancyInTimeRange();
+      }
+
+      fillMCCandidate<withCollID>(recoCollisionId, -1, -1,
+                                  centFT0A, centFT0C, centFT0M,
+                                  trackOccupancyInTimeRange, ft0cOccupancyInTimeRange,
+                                  primVtx[0], primVtx[1], primVtx[2],
+                                  mRunNumber, 0,
+                                  -1, -1, -1,
+                                  -1, -1, -1,
+                                  -1, -1, -1,
+                                  -1, -1, -1,
+                                  -1, -1, -1, -1, -1, -1, -1,
+                                  -1, -1, -1, -1, 0, 0, 0, 0,
+                                  -1, -1, -1, false,
+                                  chargeFactor * hypCand.genPt(), hypCand.genPhi(), hypCand.genEta(), hypCand.genPtHe3(),
+                                  hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2],
+                                  hypCand.isReco, -1, hypCand.isSignal, hypCand.isRecoMCCollision, hypCand.isSurvEvSelection, isHeFound, mcProcess);
     }
   }
 
@@ -914,7 +1025,8 @@ struct HyperRecoTask {
     for (const auto& hypCand : hyperCandidates) {
       auto collision = collisions.rawIteratorAt(hypCand.collisionID);
       float trackedHypClSize = !trackedClSize.empty() ? trackedClSize[hypCand.v0ID] : 0;
-      outputDataTableWithCollID(hypCand.collisionID, collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
+      outputDataTableWithCollID(hypCand.collisionID, hypCand.heTrackID, hypCand.piTrackID,
+                                collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
                                 collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(),
                                 collision.posX(), collision.posY(), collision.posZ(),
                                 mRunNumber, hypCand.isMatter,
@@ -934,125 +1046,15 @@ struct HyperRecoTask {
 
   void processMC(CollisionsFullMC const& collisions, aod::McCollisions const& mcCollisions, aod::V0s const& V0s, TracksFull const& tracks, aod::AmbiguousTracks const& ambiTracks, aod::BCsWithTimestamps const& bcs, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
   {
-    filledMothers.clear();
-    recoCollisionIds.clear();
-    recoCollisionIds.resize(mcCollisions.size(), -1);
-    isSurvEvSelCollision.clear();
-    isSurvEvSelCollision.resize(mcCollisions.size(), false);
-    goodCollision.clear();
-    goodCollision.resize(collisions.size(), false);
-    hyperCandidates.clear();
-
-    selectGoodCollisionsMC(collisions);
-    useCustomVertexer ? fillCustomV0s(collisions, tracks, ambiTracks, bcs) : fillV0s(collisions, tracks, V0s);
-    fillMCinfo(trackLabelsMC, particlesMC);
-    for (const auto& hypCand : hyperCandidates) {
-      auto collision = collisions.rawIteratorAt(hypCand.collisionID);
-      if (!hypCand.isSignal && mcSignalOnly)
-        continue;
-      int chargeFactor = -1 + 2 * (hypCand.pdgCode > 0);
-      float trackedHypClSize = !trackedClSize.empty() ? trackedClSize[hypCand.v0ID] : 0;
-      outputMCTable(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
-                    collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(),
-                    collision.posX(), collision.posY(), collision.posZ(),
-                    mRunNumber, hypCand.isMatter,
-                    hypCand.recoPtHe3(), hypCand.recoPhiHe3(), hypCand.recoEtaHe3(),
-                    hypCand.recoPtPi(), hypCand.recoPhiPi(), hypCand.recoEtaPi(),
-                    hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
-                    hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
-                    hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi, hypCand.nTPCpidClusHe3, hypCand.nTPCpidClusPi, hypCand.nTPCCrossedRowsHe3, hypCand.nTPCCrossedRowsPi,
-                    hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi, hypCand.tpcChi2He3, hypCand.itsChi2He3, hypCand.itsChi2Pi,
-                    hypCand.massTOFHe3,
-                    hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, trackedHypClSize,
-                    chargeFactor * hypCand.genPt(), hypCand.genPhi(), hypCand.genEta(), hypCand.genPtHe3(),
-                    hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2],
-                    hypCand.isReco, hypCand.isFakeHeOnITSLayer, hypCand.isSignal, hypCand.isRecoMCCollision, hypCand.isSurvEvSelection, 1, 0);
-    }
-
-    // now we fill only the signal candidates that were not reconstructed
-    for (const auto& mcPart : particlesMC) {
-
-      if (std::abs(mcPart.pdgCode()) != hyperPdg) {
-        continue;
-      }
-      std::array<float, 3> secVtx{0.f, 0.f, 0.f};
-      std::array<float, 3> lastDaugVtx{0.f, 0.f, 0.f};
-      std::array<float, 3> primVtx = {mcPart.vx(), mcPart.vy(), mcPart.vz()};
-      std::array<float, 3> momMother = {mcPart.px(), mcPart.py(), mcPart.pz()};
-      std::array<float, 3> momHe3{0.f, 0.f, 0.f};
-      bool isHeFound = false;
-      int mcProcess = {0};
-      for (const auto& mcDaught : mcPart.daughters_as<aod::McParticles>()) {
-        if (mcDaught.pdgCode() != PDG_t::kElectron) { // we do not care about delta electrons
-          lastDaugVtx = {mcDaught.vx(), mcDaught.vy(), mcDaught.vz()};
-          mcProcess = mcDaught.getProcess();
-        }
-        if (std::abs(mcDaught.pdgCode()) == heDauPdg) {
-          secVtx = lastDaugVtx;
-          momHe3 = {mcDaught.px(), mcDaught.py(), mcDaught.pz()};
-          isHeFound = true;
-        }
-      }
-      if (mcPart.pdgCode() > 0) {
-        hIsMatterGen->Fill(0.);
-      } else {
-        hIsMatterGen->Fill(1.);
-      }
-      if (!isHeFound) {
-        hDecayChannel->Fill(1.);
-      }
-      hDecayChannel->Fill(0.);
-      if (mcPart.pdgCode() > 0) {
-        hIsMatterGenTwoBody->Fill(0.);
-      } else {
-        hIsMatterGenTwoBody->Fill(1.);
-      }
-      if (std::find(filledMothers.begin(), filledMothers.end(), mcPart.globalIndex()) != std::end(filledMothers)) {
-        continue;
-      }
-      hyperCandidate hypCand;
-      hypCand.pdgCode = mcPart.pdgCode();
-      hypCand.isRecoMCCollision = recoCollisionIds[mcPart.mcCollisionId()] >= 0;
-      hypCand.isSurvEvSelection = isSurvEvSelCollision[mcPart.mcCollisionId()];
-      int chargeFactor = -1 + 2 * (hypCand.pdgCode > 0);
-      for (std::size_t i = 0; i < hypCand.gDecVtx.size(); i++) {
-        hypCand.gDecVtx[i] = (isHeFound ? secVtx[i] : lastDaugVtx[i]) - primVtx[i];
-        hypCand.gMom[i] = momMother[i];
-        hypCand.gMomHe3[i] = momHe3[i];
-      }
-      hypCand.heTrackID = -1;
-      hypCand.piTrackID = -1;
-      hypCand.isSignal = true;
-
-      float centFT0A = -1, centFT0C = -1, centFT0M = -1;
-      int trackOccupancyInTimeRange = -1;
-      float ft0cOccupancyInTimeRange = -1.f;
-      if (hypCand.isRecoMCCollision) {
-        auto recoCollision = collisions.rawIteratorAt(recoCollisionIds[mcPart.mcCollisionId()]);
-        centFT0A = recoCollision.centFT0A();
-        centFT0C = recoCollision.centFT0C();
-        centFT0M = recoCollision.centFT0M();
-        trackOccupancyInTimeRange = recoCollision.trackOccupancyInTimeRange();
-        ft0cOccupancyInTimeRange = recoCollision.ft0cOccupancyInTimeRange();
-      }
-
-      outputMCTable(centFT0A, centFT0C, centFT0M,
-                    trackOccupancyInTimeRange, ft0cOccupancyInTimeRange,
-                    primVtx[0], primVtx[1], primVtx[2],
-                    mRunNumber, 0,
-                    -1, -1, -1,
-                    -1, -1, -1,
-                    -1, -1, -1,
-                    -1, -1, -1,
-                    -1, -1, -1, -1, -1, -1, -1,
-                    -1, -1, -1, -1, 0, 0, 0, 0,
-                    -1, -1, -1, false,
-                    chargeFactor * hypCand.genPt(), hypCand.genPhi(), hypCand.genEta(), hypCand.genPtHe3(),
-                    hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2],
-                    hypCand.isReco, -1, hypCand.isSignal, hypCand.isRecoMCCollision, hypCand.isSurvEvSelection, isHeFound, mcProcess);
-    }
+    runMC<false>(collisions, mcCollisions, V0s, tracks, ambiTracks, bcs, trackLabelsMC, particlesMC);
   }
   PROCESS_SWITCH(HyperRecoTask, processMC, "MC analysis", false);
+
+  void processMCWithCollID(CollisionsFullMC const& collisions, aod::McCollisions const& mcCollisions, aod::V0s const& V0s, TracksFull const& tracks, aod::AmbiguousTracks const& ambiTracks, aod::BCsWithTimestamps const& bcs, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
+  {
+    runMC<true>(collisions, mcCollisions, V0s, tracks, ambiTracks, bcs, trackLabelsMC, particlesMC);
+  }
+  PROCESS_SWITCH(HyperRecoTask, processMCWithCollID, "MC analysis with collision ID", false);
 
   void processMCTracked(CollisionsFullMC const& collisions, aod::McCollisions const& mcCollisions, aod::V0s const& V0s, aod::TrackedV0s const& tV0s, TracksFull const& tracks, aod::AmbiguousTracks const& ambiTracks, aod::BCsWithTimestamps const& bcs, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
   {
@@ -1068,17 +1070,21 @@ struct HyperRecoTask {
   template <typename CollType>
   bool passEvtSel(const CollType& collision)
   {
-    if (!collision.sel8())
+    if (!collision.sel8()) {
       return false;
+    }
 
-    if ((std::abs(collision.posZ())) > MaxAbsVertexZ)
+    if ((std::abs(collision.posZ())) > MaxAbsVertexZ) {
       return false;
+    }
 
-    if (cfgEvSelkNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup))
+    if (cfgEvSelkNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return false;
+    }
 
-    if (cfgEvSelkIsGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+    if (cfgEvSelkIsGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
+    }
 
     return true;
   }
@@ -1092,14 +1098,14 @@ struct HyperRecoTask {
     //////////// Event loss estimation via impact parameter and multiplicity by MCFT0C
 
     // Fill all generated events
-    hEvtMC->Fill(0);
-    hImpactParamGen->Fill(mcCollision.impactParameter());
-    hGenEventsNchEta05->Fill(mcCollision.multMCNParticlesEta05(), 0);
-    hGenEventsNchEta08->Fill(mcCollision.multMCNParticlesEta08(), 0);
+    qaRegistry.fill(HIST("QAEvent/hEvtMC"), 0);
+    qaRegistry.fill(HIST("QAEvent/McColAll/hImpactParamGen"), mcCollision.impactParameter());
+    qaRegistry.fill(HIST("QAEvent/hGenEventsNchEta05"), mcCollision.multMCNParticlesEta05(), 0);
+    qaRegistry.fill(HIST("QAEvent/hGenEventsNchEta08"), mcCollision.multMCNParticlesEta08(), 0);
 
     // Fill generated events with no reconstructed collisions
     if (collisions.size() == 0) {
-      hEvtMC->Fill(1);
+      qaRegistry.fill(HIST("QAEvent/hEvtMC"), 1);
     }
 
     // Define the generated events with at least one reconstructed event
@@ -1117,33 +1123,35 @@ struct HyperRecoTask {
         centralityFT0C = col.centFT0C();
       }
       atLeastOneRecoEvt = true;
-      hImpactParamReco->Fill(mcCollision.impactParameter());
-      hRecoCentrality->Fill(col.centFT0C());
-      hRecoCentralityColvsMultiplicityRecoEta05->Fill(col.centFT0C(), mcCollision.multMCNParticlesEta05());
-      hRecoCentralityColvsMultiplicityRecoEta08->Fill(col.centFT0C(), mcCollision.multMCNParticlesEta08());
-      hRecoCentralityColvsImpactParamReco->Fill(col.centFT0C(), mcCollision.impactParameter());
-      hRecoCentralityColvsFT0Cmultiplicity->Fill(col.centFT0C(), mcCollision.multMCFT0C());
+      qaRegistry.fill(HIST("QAEvent/McColAll/hImpactParamReco"), mcCollision.impactParameter());
+      qaRegistry.fill(HIST("QAEvent/McColAll/hRecoCentrality"), col.centFT0C());
+      qaRegistry.fill(HIST("QAEvent/McColAll/hRecoCentralityColvsMultiplicityRecoEta05"), col.centFT0C(), mcCollision.multMCNParticlesEta05());
+      qaRegistry.fill(HIST("QAEvent/McColAll/hRecoCentralityColvsMultiplicityRecoEta08"), col.centFT0C(), mcCollision.multMCNParticlesEta08());
+      qaRegistry.fill(HIST("QAEvent/McColAll/hRecoCentralityColvsImpactParamReco"), col.centFT0C(), mcCollision.impactParameter());
+      qaRegistry.fill(HIST("QAEvent/McColAll/hRecoCentralityColvsFT0Cmultiplicity"), col.centFT0C(), mcCollision.multMCFT0C());
     }
 
     if (atLeastOneRecoEvt) {
-      hEvtMC->Fill(2);
-      hGenEventsNchEta05->Fill(mcCollision.multMCNParticlesEta05(), 1);
-      hGenEventsNchEta08->Fill(mcCollision.multMCNParticlesEta08(), 1);
-      hImpactParamGenOneReco->Fill(mcCollision.impactParameter());
-      hGenOneRecoCentrality->Fill(centralityFT0C);
-      hGenCentralityColvsMultiplicityGenEta05->Fill(centralityFT0C, mcCollision.multMCNParticlesEta05());
-      hGenCentralityColvsMultiplicityGenEta08->Fill(centralityFT0C, mcCollision.multMCNParticlesEta08());
-      hGenCentralityColvsImpactParamGen->Fill(centralityFT0C, mcCollision.impactParameter());
-      hGenCentralityColvsFT0Cmultiplicity->Fill(centralityFT0C, mcCollision.multMCFT0C());
+      qaRegistry.fill(HIST("QAEvent/hEvtMC"), 2);
+      qaRegistry.fill(HIST("QAEvent/hGenEventsNchEta05"), mcCollision.multMCNParticlesEta05(), 1);
+      qaRegistry.fill(HIST("QAEvent/hGenEventsNchEta08"), mcCollision.multMCNParticlesEta08(), 1);
+      qaRegistry.fill(HIST("QAEvent/McColPassedEvSel/hImpactParamGenOneReco"), mcCollision.impactParameter());
+      qaRegistry.fill(HIST("QAEvent/McColPassedEvSel/hGenOneRecoCentrality"), centralityFT0C);
+      qaRegistry.fill(HIST("QAEvent/McColPassedEvSel/hGenCentralityColvsMultiplicityGenEta05"), centralityFT0C, mcCollision.multMCNParticlesEta05());
+      qaRegistry.fill(HIST("QAEvent/McColPassedEvSel/hGenCentralityColvsMultiplicityGenEta08"), centralityFT0C, mcCollision.multMCNParticlesEta08());
+      qaRegistry.fill(HIST("QAEvent/McColPassedEvSel/hGenCentralityColvsImpactParamGen"), centralityFT0C, mcCollision.impactParameter());
+      qaRegistry.fill(HIST("QAEvent/McColPassedEvSel/hGenCentralityColvsFT0Cmultiplicity"), centralityFT0C, mcCollision.multMCFT0C());
     }
     // Construct the H3L 4-vector based on the generated daugthers identification by PDG
     ROOT::Math::PxPyPzMVector daugh1, daugh2, mother;
 
     for (const auto& genParticle : GenParticles) {
-      if (std::abs(genParticle.y()) > 1)
+      if (std::abs(genParticle.y()) > 1) {
         continue;
-      if (std::abs(genParticle.pdgCode()) != hyperPdg)
+      }
+      if (std::abs(genParticle.pdgCode()) != hyperPdg) {
         continue;
+      }
 
       auto daughters = genParticle.daughters_as<aod::McParticles>();
 
@@ -1166,25 +1174,26 @@ struct HyperRecoTask {
         }
       }
       // Check pairs to avoid wrong charge associations
-      if (!((dauHe3 && dauPiMinus) || !(dauAntiHe3 && dauPiPos)))
+      if (!((dauHe3 && dauPiMinus) || !(dauAntiHe3 && dauPiPos))) {
         continue;
+      }
 
       mother = daugh1 + daugh2;
 
       // Fill informations for generated 3HL in all generated events
-      hGen3HLBeforeEvtSel->Fill(mother.pt());
-      hGen3HLvsImpactParameterBeforeEvtSel->Fill(mother.pt(), mcCollision.impactParameter());
-      hGen3HLvsMultiplicityGenEta05BeforeEvtSel->Fill(mother.pt(), mcCollision.multMCNParticlesEta05());
-      hGen3HLvsMultiplicityGenEta08BeforeEvtSel->Fill(mother.pt(), mcCollision.multMCNParticlesEta08());
-      hGen3HLvsMultiplicityFT0CBeforeEvtSel->Fill(mother.pt(), mcCollision.multMCFT0C());
+      qaRegistry.fill(HIST("QAEvent/McCol3HL/hGen3HLBeforeEvtSel"), mother.pt());
+      qaRegistry.fill(HIST("QAEvent/McCol3HL/hGen3HLvsImpactParameterBeforeEvtSel"), mother.pt(), mcCollision.impactParameter());
+      qaRegistry.fill(HIST("QAEvent/McCol3HL/hGen3HLvsMultiplicityGenEta05BeforeEvtSel"), mother.pt(), mcCollision.multMCNParticlesEta05());
+      qaRegistry.fill(HIST("QAEvent/McCol3HL/hGen3HLvsMultiplicityGenEta08BeforeEvtSel"), mother.pt(), mcCollision.multMCNParticlesEta08());
+      qaRegistry.fill(HIST("QAEvent/McCol3HL/hGen3HLvsMultiplicityFT0CBeforeEvtSel"), mother.pt(), mcCollision.multMCFT0C());
 
       // Fill informations for generated 3HL in generated events with at least one reconstructed event
       if (atLeastOneRecoEvt) {
-        hGen3HLAfterSel->Fill(mother.pt());
-        hGen3HLvsImpactParameterAfterSel->Fill(mother.pt(), mcCollision.impactParameter());
-        hGen3HLvsMultiplicityGenEta05AfterSel->Fill(mother.pt(), mcCollision.multMCNParticlesEta05());
-        hGen3HLvsMultiplicityGenEta08AfterSel->Fill(mother.pt(), mcCollision.multMCNParticlesEta08());
-        hGen3HLvsMultiplicityFT0CAfterSel->Fill(mother.pt(), mcCollision.multMCFT0C());
+        qaRegistry.fill(HIST("QAEvent/McCol3HL/hGen3HLAfterSel"), mother.pt());
+        qaRegistry.fill(HIST("QAEvent/McCol3HL/hGen3HLvsImpactParameterAfterSel"), mother.pt(), mcCollision.impactParameter());
+        qaRegistry.fill(HIST("QAEvent/McCol3HL/hGen3HLvsMultiplicityGenEta05AfterSel"), mother.pt(), mcCollision.multMCNParticlesEta05());
+        qaRegistry.fill(HIST("QAEvent/McCol3HL/hGen3HLvsMultiplicityGenEta08AfterSel"), mother.pt(), mcCollision.multMCNParticlesEta08());
+        qaRegistry.fill(HIST("QAEvent/McCol3HL/hGen3HLvsMultiplicityFT0CAfterSel"), mother.pt(), mcCollision.multMCFT0C());
       }
     }
   }

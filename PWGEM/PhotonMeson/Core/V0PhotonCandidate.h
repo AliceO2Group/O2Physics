@@ -89,8 +89,8 @@ struct V0PhotonCandidate {
     dcaXYV0ToPV = RecoDecay::sqrtSumOfSquares(dcaXV0ToPV, dcaYV0ToPV) * tmpSign;
     dcaZV0ToPV = (v0DecayVtx.GetZ() - v0DecayVtx.GetPz() * cospa_ * length / v0mom) - collision.posZ();
 
-    alpha = v0_alpha(posPx, posPy, posPz, elePx, elePy, elePz);
-    qt = v0_qt(posPx, posPy, posPz, elePx, elePy, elePz);
+    alpha = v0Alpha(posPx, posPy, posPz, elePx, elePy, elePz);
+    qt = v0Qt(posPx, posPy, posPz, elePx, elePy, elePz);
 
     cospa = cospa_;
     cospaRZ = cospaRZ_;

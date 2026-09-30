@@ -164,19 +164,19 @@ void EventPlaneHelper::DoRescale(float& qx, float& qy, float ap, float am)
     qy /= am;
 }
 
-void EventPlaneHelper::GetCorrRecentering(const std::shared_ptr<TH2> histQ, float& meanX, float& meanY)
+void EventPlaneHelper::GetCorrRecentering(const std::shared_ptr<TH2>& histQ, float& meanX, float& meanY)
 {
   meanX = histQ->GetMean(1);
   meanY = histQ->GetMean(2);
 }
 
-void EventPlaneHelper::GetCorrWidth(const std::shared_ptr<TH2> histQ, float& stdX, float& stdY)
+void EventPlaneHelper::GetCorrWidth(const std::shared_ptr<TH2>& histQ, float& stdX, float& stdY)
 {
   stdX = histQ->GetStdDev(1);
   stdY = histQ->GetStdDev(2);
 }
 
-void EventPlaneHelper::GetCorrTwistRecale(const std::shared_ptr<TH2> histQ,
+void EventPlaneHelper::GetCorrTwistRecale(const std::shared_ptr<TH2>& histQ,
                                           float& aPlus, float& aMinus,
                                           float& lambdaPlus, float& lambdaMinus)
 {

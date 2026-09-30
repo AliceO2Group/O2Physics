@@ -106,7 +106,7 @@ struct CFTutorialTask4 {
     auto groupNegative = negative->sliceByCached(aod::track::collisionId, coll.globalIndex(), cache);
     histos.fill(HIST("hZvtx"), coll.posZ());
 
-    for (auto track : groupPositive) {
+    for (const auto& track : groupPositive) {
       histos.fill(HIST("hChargePos"), track.sign());
       histos.fill(HIST("hP"), track.p());
       histos.fill(HIST("hPt"), track.pt());
@@ -114,7 +114,7 @@ struct CFTutorialTask4 {
       histos.fill(HIST("hNsigmaTPCP"), track.p(), track.tpcNSigmaPi());
     }
 
-    for (auto track : groupNegative) {
+    for (const auto& track : groupNegative) {
       histos.fill(HIST("hChargeNeg"), track.sign());
       histos.fill(HIST("hP"), track.p());
       histos.fill(HIST("hPt"), track.pt());

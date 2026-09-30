@@ -177,6 +177,7 @@ struct HfDataCreatorCharmHadPiReduced {
     Configurable<double> invMassWindowCharmHadPi{"invMassWindowCharmHadPi", 0.3, "invariant-mass window for CharmHad-Pi pair preselections (GeV/c2)"};
     // MC extra
     Configurable<bool> checkDecayTypeMc{"checkDecayTypeMc", false, "flag to enable MC checks on decay type"};
+    Configurable<int> nMcLoops{"nMcLoops", 0, "number of extra loops over generated particles per MC collision"};
   } configs;
   // vertexing
   struct : o2::framework::ConfigurableGroup {
@@ -196,6 +197,11 @@ struct HfDataCreatorCharmHadPiReduced {
     Configurable<std::vector<double>> binsPtPion{"binsPtPion", std::vector<double>{hf_cuts_single_track::vecBinsPtTrack}, "track pT bin limits for pion DCA XY pT-dependent cut"};
     Configurable<LabeledArray<double>> cutsTrackPionDCA{"cutsTrackPionDCA", {hf_cuts_single_track::CutsTrack[0], hf_cuts_single_track::NBinsPtTrack, hf_cuts_single_track::NCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for pions"};
   } trackPionConfigurations;
+  // B hadron selection
+  struct : o2::framework::ConfigurableGroup {
+    Configurable<double> cpaMin{"cpaMin", 0., "Minimum cosine of pointing angle for B candidates"};
+    Configurable<double> decLenMin{"decLenMin", 0., "Minimum decay length for B candidates"};
+  } bhadronConfigurations;
   // HF flags
   struct : o2::framework::ConfigurableGroup {
     Configurable<int> selectionFlagDplus{"selectionFlagDplus", 7, "Selection Flag for D+"};
@@ -272,7 +278,7 @@ struct HfDataCreatorCharmHadPiReduced {
     PresliceUnsorted<CollisionsWCentAndMcLabels> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
   } preslices;
 
-  std::shared_ptr<TH1> hCandidatesD0, hCandidatesDPlus, hCandidatesDs, hCandidatesLc, hCandidatesD0FromDstar;
+  std::shared_ptr<TH1> hCandidatesD0, hCandidatesDPlus, hCandidatesDs, hCandidatesLc, hCandidatesD0FromDstar, hCandidatesBHadron;
   HistogramRegistry registry{"registry"};
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
@@ -311,6 +317,15 @@ struct HfDataCreatorCharmHadPiReduced {
     invMass2ChHadPiMax = (massB + configs.invMassWindowCharmHadPi) * (massB + configs.invMassWindowCharmHadPi);
 
     // Initialize fitter
+    // D0 + B hadrons
+    df2.setPropagateToPCA(vertexConfigurations.propagateToPCA);
+    df2.setMaxR(vertexConfigurations.maxR);
+    df2.setMaxDZIni(vertexConfigurations.maxDZIni);
+    df2.setMinParamChange(vertexConfigurations.minParamChange);
+    df2.setMinRelChi2Change(vertexConfigurations.minRelChi2Change);
+    df2.setUseAbsDCA(vertexConfigurations.useAbsDCA);
+    df2.setWeightedFinalPCA(vertexConfigurations.useWeightedFinalPCA);
+    df2.setMatCorrType(noMatCorr);
     if (doprocessDplusPiData || doprocessDplusPiDataWithMl || doprocessDplusPiDataWithQvec || doprocessDplusPiDataWithMlAndQvec || doprocessDplusPiMc || doprocessDplusPiMcWithMl ||
         doprocessDsPiData || doprocessDsPiDataWithMl || doprocessDsPiDataWithQvec || doprocessDsPiDataWithMlAndQvec || doprocessDsPiMc || doprocessDsPiMcWithMl ||
         doprocessLcPiData || doprocessLcPiDataWithMl || doprocessLcPiMc || doprocessLcPiMcWithMl) {
@@ -322,16 +337,6 @@ struct HfDataCreatorCharmHadPiReduced {
       df3.setUseAbsDCA(vertexConfigurations.useAbsDCA);
       df3.setWeightedFinalPCA(vertexConfigurations.useWeightedFinalPCA);
       df3.setMatCorrType(noMatCorr);
-    } else if (doprocessD0PiData || doprocessD0PiDataWithMl || doprocessD0PiDataWithQvec || doprocessD0PiDataWithMlAndQvec || doprocessD0PiMc || doprocessD0PiMcWithMl ||
-               doprocessDstarPiData || doprocessDstarPiDataWithMl || doprocessDstarPiDataWithQvec || doprocessDstarPiDataWithMlAndQvec || doprocessDstarPiMc || doprocessDstarPiMcWithMl) {
-      df2.setPropagateToPCA(vertexConfigurations.propagateToPCA);
-      df2.setMaxR(vertexConfigurations.maxR);
-      df2.setMaxDZIni(vertexConfigurations.maxDZIni);
-      df2.setMinParamChange(vertexConfigurations.minParamChange);
-      df2.setMinRelChi2Change(vertexConfigurations.minRelChi2Change);
-      df2.setUseAbsDCA(vertexConfigurations.useAbsDCA);
-      df2.setWeightedFinalPCA(vertexConfigurations.useWeightedFinalPCA);
-      df2.setMatCorrType(noMatCorr);
     }
 
     // Configure CCDB access
@@ -389,12 +394,17 @@ struct HfDataCreatorCharmHadPiReduced {
     hCandidatesDs = registry.add<TH1>("hCandidatesDs", "Ds candidate counter", {HistType::kTH1D, {axisCands}});
     hCandidatesLc = registry.add<TH1>("hCandidatesLc", "Lc candidate counter", {HistType::kTH1D, {axisCands}});
     hCandidatesD0FromDstar = registry.add<TH1>("hCandidatesD0FromDstar", "D0 from D* candidate counter", {HistType::kTH1D, {axisCands}});
+    hCandidatesBHadron = registry.add<TH1>("hCandidatesBHadron", "B hadron candidate counter", {HistType::kTH1D, {axisCands}});
+    if (configs.nMcLoops > 0) {
+      registry.add("hNMatchedMcLoops", "matches found in extra MC loops;matches per MC collision;entries", {HistType::kTH1D, {{100, -0.5, 99.5}}});
+    }
 
     setLabelHistoCands(hCandidatesD0);
     setLabelHistoCands(hCandidatesDPlus);
     setLabelHistoCands(hCandidatesDs);
     setLabelHistoCands(hCandidatesLc);
     setLabelHistoCands(hCandidatesD0FromDstar);
+    setLabelHistoCands(hCandidatesBHadron);
 
     // init HF event selection helper
     hfEvSel.init(registry, &zorroSummary);
@@ -1017,6 +1027,26 @@ struct HfDataCreatorCharmHadPiReduced {
     }
   }
 
+  /// B hadron preselections
+  /// \param momentum is the B meson momentum
+  /// \param secondaryVertex is the reconstructed secondary vertex
+  /// \param collision is the reconstructed collision
+  template <typename T1, typename T2, typename T3>
+  bool isBHadronSelected(const T1& momentum, const T2& secondaryVertex, const T3& collision)
+  {
+    // B candidate CPA
+    if (RecoDecay::cpa(std::array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertex, momentum) < bhadronConfigurations.cpaMin) {
+      return false;
+    }
+
+    // B candidate decay length
+    if (RecoDecay::distance(std::array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertex) < bhadronConfigurations.decLenMin) {
+      return false;
+    }
+
+    return true;
+  }
+
   template <bool DoMc, bool WithMl, uint8_t DecChannel, bool WithQvec, typename PParticles, typename TTracks, typename CCharmCands, typename Coll, typename BBCs>
   void runDataCreation(Coll const& collision,
                        CCharmCands const& candsC,
@@ -1307,12 +1337,33 @@ struct HfDataCreatorCharmHadPiReduced {
         }
 
         registry.fill(HIST("hPtPion"), trackParCovPion.getPt());
+
         // compute invariant mass square and apply selection
         auto invMass2DPi = RecoDecay::m2(std::array{pVecCharm, pVecPion}, std::array{massC, MassPiPlus});
         if ((invMass2DPi < invMass2ChHadPiMin) || (invMass2DPi > invMass2ChHadPiMax)) {
           continue;
         }
 
+        std::array<float, 3> pVecBHad{}, pVecDHad{}, pVecDau{};
+
+        hCandidatesBHadron->Fill(SVFitting::BeforeFit);
+        try {
+          if (df2.process(trackParCovCharmHad, trackParCovPion) == 0) {
+            continue;
+          }
+        } catch (const std::runtime_error& error) {
+          LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN cannot work, skipping the candidate.";
+          hCandidatesBHadron->Fill(SVFitting::Fail);
+          continue;
+        }
+        hCandidatesBHadron->Fill(SVFitting::FitOk);
+        auto secondaryVertexBHad = df2.getPCACandidate();
+        df2.getTrack(0).getPxPyPzGlo(pVecDHad);
+        df2.getTrack(1).getPxPyPzGlo(pVecDau);
+        pVecBHad = RecoDecay::pVec(pVecDHad, pVecDau);
+        if (!isBHadronSelected(pVecBHad, secondaryVertexBHad, collision)) {
+          continue;
+        }
         // fill Pion tracks table
         // if information on track already stored, go to next track
         if (!selectedTracksPion.count(trackPion.globalIndex())) {
@@ -1746,6 +1797,20 @@ struct HfDataCreatorCharmHadPiReduced {
                                    ptProngs[1], yProngs[1], etaProngs[1], hfRejMap, centFT0C, centFT0M);
       }
     } // gen
+
+    // extra loops over generated particles (increases CPU time)
+    if (configs.nMcLoops > 0) {
+      int nMatched{0};
+      for (int iLoop = 0; iLoop < configs.nMcLoops; ++iLoop) {
+        for (const auto& particle : mcParticlesPerMcColl) {
+          nMatched += RecoDecay::isMatchedMCGen<true>(particlesMc, particle, Pdg::kB0, std::array{-static_cast<int>(Pdg::kDPlus), +kPiPlus}, true);
+          nMatched += RecoDecay::isMatchedMCGen<true>(particlesMc, particle, Pdg::kBPlus, std::array{-static_cast<int>(Pdg::kDPlus), +kPiPlus}, true);
+          nMatched += RecoDecay::isMatchedMCGen<true>(particlesMc, particle, Pdg::kBS, std::array{-static_cast<int>(Pdg::kDPlus), +kPiPlus}, true);
+          nMatched += RecoDecay::isMatchedMCGen<true>(particlesMc, particle, Pdg::kLambdaB0, std::array{-static_cast<int>(Pdg::kDPlus), +kPiPlus}, true);
+        }
+      }
+      registry.fill(HIST("hNMatchedMcLoops"), nMatched);
+    }
   }
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////

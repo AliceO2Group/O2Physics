@@ -16,8 +16,6 @@
 #ifndef PWGCF_FEMTO_CORE_TRACKBUILDER_H_
 #define PWGCF_FEMTO_CORE_TRACKBUILDER_H_
 
-#include "femtoUtils.h"
-
 #include "PWGCF/Femto/Core/baseSelection.h"
 #include "PWGCF/Femto/Core/dataTypes.h"
 #include "PWGCF/Femto/Core/femtoUtils.h"
@@ -63,6 +61,8 @@ struct ConfTrackBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> itsIbClustersMin{"itsIbClustersMin", {3.f}, "Minimum number of clusters in inner barrel (max 3) of ITS"};
   o2::framework::Configurable<std::vector<std::string>> dcaxyMax{"dcaxyMax", {"0.004 + 0.013*pow(x, -1)"}, "Maximum |dca_xy| as a function of pT. Has to be a valid TForumal, where x=pt"};
   o2::framework::Configurable<std::vector<std::string>> dcazMax{"dcazMax", {"0.004 + 0.013*pow(x, -1)"}, "Maximum |dca_z| as a function of pT. Has to be a valid TForumal, where x=pt"};
+  o2::framework::Configurable<std::vector<float>> itsChi2Max{"itsChi2Max", {}, "Maximum ITS chi2 per cluster"};
+  o2::framework::Configurable<std::vector<float>> tpcChi2Max{"tpcChi2Max", {}, "Maximum TPC chi2 per cluster"};
 
   // Electron PID cuts
   o2::framework::Configurable<bool> requirePidElectron{"requirePidElectron", false, "Make election PID optional"};
@@ -134,7 +134,7 @@ struct ConfTrackSelection : public o2::framework::ConfigurableGroup {
   std::string prefix = Prefix; // Unique prefix based on the template argument
   // configuration parameters
   o2::framework::Configurable<int> pdgCodeAbs{"pdgCodeAbs", 2212, "Absolute value of PDG code. Set sign of charge to -1 for antiparticle."};
-  o2::framework::Configurable<int> chargeAbs{"chargeAbs", 1, "Absolute value of charge (e.g. 1 for most tracks, 2 for He3). Set sign of charge to -1 for antiparticle"};
+  o2::framework::Configurable<int> chargeAbs{"chargeAbs", 1, "Absolute value of charge (e.g. 1 for most tracks, 2 for He3)"};
   o2::framework::Configurable<int> chargeSign{"chargeSign", 1, "Track charge sign: +1 for positive, -1 for negative, 0 for both"};
   // filters for kinematics
   o2::framework::Configurable<float> ptMin{"ptMin", 0.0f, "Minimum pT (GeV/c)"};
@@ -166,6 +166,11 @@ constexpr const char PrefixPionMinus[] = "PionMinusSelection";
 constexpr const char PrefixKaonPlus[] = "KaonPlusSelection";
 constexpr const char PrefixKaonMinus[] = "KaonMinusSelection";
 
+// for dN/deta: tracks with TPC (ITS + TPC quality bits) and tracks without TPC (ITS quality bits only)
+// set maskLowMomentum = maskHighMomentum (quality bits only), chargeSign = 0 and the eta/pT range of the measurement
+constexpr const char PrefixTrackSelectionDndetaGlobal[] = "TrackSelectionDndetaGlobal";   // Global = ITS + TPC
+constexpr const char PrefixTrackSelectionDndetaItsOnly[] = "TrackSelectionDndetaItsOnly"; // ITS only
+
 // Instantiate different instances with unique prefixes
 using ConfTrackSelection1 = ConfTrackSelection<PrefixTrackSelection1>;
 using ConfTrackSelection2 = ConfTrackSelection<PrefixTrackSelection2>;
@@ -175,6 +180,9 @@ using ConfPionPlusSelection = ConfTrackSelection<PrefixPionPlus>;
 using ConfPionMinusSelection = ConfTrackSelection<PrefixPionMinus>;
 using ConfKaonPlusSelection = ConfTrackSelection<PrefixKaonPlus>;
 using ConfKaonMinusSelection = ConfTrackSelection<PrefixKaonMinus>;
+
+using ConfTrackSelectionDndetaGlobal = ConfTrackSelection<PrefixTrackSelectionDndetaGlobal>;
+using ConfTrackSelectionDndetaItsOnly = ConfTrackSelection<PrefixTrackSelectionDndetaItsOnly>;
 
 /// enum for all track selections
 enum TrackSels {
@@ -188,6 +196,8 @@ enum TrackSels {
   kITSnClsIbMin,        ///< Min. number of ITS clusters in the inner barrel
   kDCAxyMax,            ///< Max. |DCA_xy| (cm) as a function of pT
   kDCAzMax,             ///< Max. |DCA_z| (cm) as a function of pT
+  kITSchi2Max,          ///< Max. ITS chi2 per cluster
+  kTPCchi2Max,          ///< Max. TPC chi2 per cluster
 
   /// track pid cuts
   kItsElectron, ///< ITS Electon PID
@@ -246,6 +256,8 @@ const std::unordered_map<TrackSels, std::string> trackSelectionNames = {
   {kITSnClsIbMin, "Min. number of ITS clusters in the inner barrel"},
   {kDCAxyMax, "Max. |DCA_xy| (cm) as a function of pT"},
   {kDCAzMax, "Max. |DCA_z| (cm) as a function of pT"},
+  {kITSchi2Max, "Max. ITS chi2 per cluster"},
+  {kTPCchi2Max, "Max. TPC chi2 per cluster"},
 
   {kItsElectron, "ITS Electron PID"},
   {kItsPion, "ITS Pion PID"},
@@ -339,6 +351,8 @@ class TrackSelection : public baseselection::BaseSelection<float, datatypes::Tra
     this->addSelection(kITSnClsIbMin, trackSelectionNames.at(kITSnClsIbMin), config.itsIbClustersMin.value, limits::kLowerLimit, true, true, false);
     this->addSelection(kDCAxyMax, trackSelectionNames.at(kDCAxyMax), filter.ptMin.value, filter.ptMax.value, config.dcaxyMax.value, limits::kAbsUpperFunctionLimit, true, true, false);
     this->addSelection(kDCAzMax, trackSelectionNames.at(kDCAzMax), filter.ptMin.value, filter.ptMax.value, config.dcazMax.value, limits::kAbsUpperFunctionLimit, true, true, false);
+    this->addSelection(kITSchi2Max, trackSelectionNames.at(kITSchi2Max), config.itsChi2Max.value, limits::kUpperLimit, true, true, false);
+    this->addSelection(kTPCchi2Max, trackSelectionNames.at(kTPCchi2Max), config.tpcChi2Max.value, limits::kUpperLimit, true, true, false);
 
     // add selections for Electron pid
     this->addSelection(kItsElectron, trackSelectionNames.at(kItsElectron), config.itsElectron.value, false, false, config.requirePidElectron);
@@ -484,6 +498,8 @@ class TrackSelection : public baseselection::BaseSelection<float, datatypes::Tra
     this->evaluateObservable(kDCAxyMax, Track.dcaXY());
     this->updateLimits(kDCAzMax, Track.pt());
     this->evaluateObservable(kDCAzMax, Track.dcaZ());
+    this->evaluateObservable(kITSchi2Max, Track.itsChi2NCl());
+    this->evaluateObservable(kTPCchi2Max, Track.tpcChi2NCl());
 
     // first pass: threshold-aware PID evaluation
     // determines if the track passes any optional selection and if should be stored in the first place
@@ -684,7 +700,13 @@ class TrackBuilder
                                         track.tpcNClsFound(),
                                         track.tpcNClsCrossedRows(),
                                         track.tpcNClsShared(),
-                                        track.beta());
+                                        track.beta(),
+                                        track.tpcChi2NCl(),
+                                        track.detectorMap(),
+                                        // fillType distinguishes selected tracks (kTrack) from rows that only exist to resolve a daughter index.
+                                        // A daughter whose collisionId differs from the one of its mother candidate is written a second time
+                                        // under the mother's collision, so downstream counting must skip isDaughterOnly() rows.
+                                        static_cast<datatypes::TrackType>(type));
     }
     if (mProduceElectronPids) {
       float itsEl = 0.f;
@@ -805,6 +827,7 @@ class TrackBuilder
   [[nodiscard]] bool isPassThrough() const { return mTrackSelection.isPassThrough(); }
   [[nodiscard]] bool producingTracks() const { return mProduceTracks; }
   [[nodiscard]] bool producingLiteTracks() const { return mProduceLiteTracks; }
+  [[nodiscard]] bool producingTrackExtras() const { return mProduceTrackExtras; }
 
   template <typename T>
   void reset(T const& tracks)
@@ -917,6 +940,41 @@ class TrackBuilderDerivedToDerived
 
     const int64_t idx = trackProducts.producedTracks.lastIndex();
     indexMap.emplace(track.globalIndex(), idx);
+    return idx;
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12>
+  void processTracksWithMc(T1& col, T2& /*trackTable*/, T3& partitionTrack1, T4& partitionTrack2, T5& cache,
+                           T6& newTrackTable, T7& newCollisionTable,
+                           T8& mcBuilder, T9 const& mcCols, T10 const& mcParticles, T11 const& mcMothers, T12 const& mcPartonicMothers, auto& mcProducts)
+  {
+    if (mLimitTrack1 > 0) {
+      auto trackSlice1 = partitionTrack1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+      for (auto const& track : trackSlice1) {
+        this->fillTrackWithMcLabel(track, newTrackTable, newCollisionTable, mcBuilder, mcCols, mcParticles, mcMothers, mcPartonicMothers, mcProducts);
+      }
+    }
+    if (mLimitTrack2 > 0) {
+      auto trackSlice2 = partitionTrack2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+      for (auto const& track : trackSlice2) {
+        this->fillTrackWithMcLabel(track, newTrackTable, newCollisionTable, mcBuilder, mcCols, mcParticles, mcMothers, mcPartonicMothers, mcProducts);
+      }
+    }
+  }
+
+  /// Same as fillTrack, but writes the matching FTrackLabels row. The indexMap
+  /// lookup happens first, so a track selected by both partitions produces
+  /// exactly one track row and exactly one label row.
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
+  int64_t fillTrackWithMcLabel(T1 const& track, T2& trackProducts, T3& collisionProducts,
+                               T4& mcBuilder, T5 const& mcCols, T6 const& mcParticles, T7 const& mcMothers, T8 const& mcPartonicMothers, T9& mcProducts)
+  {
+    auto index = utils::getIndex(track.globalIndex(), indexMap);
+    if (index) {
+      return index.value();
+    }
+    const int64_t idx = this->fillTrack(track, trackProducts, collisionProducts);
+    mcBuilder.fillTrackWithLabel(track, mcCols, mcParticles, mcMothers, mcPartonicMothers, mcProducts);
     return idx;
   }
 

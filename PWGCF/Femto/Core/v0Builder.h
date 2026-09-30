@@ -116,11 +116,11 @@ struct ConfK0shortBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<datatypes::V0MaskType> mask{"mask", 0, "Bitmask for v0 selection"};
 
 // base selection for analysis task for lambdas
-template <auto& Prefix>
+template <auto& Prefix, int DefaultSign = 1>
 struct ConfLambdaSelection : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
   V0_DEFAULT_SELECTIONS(1.0, 1.2, 3122)
-  o2::framework::Configurable<int> sign{"sign", 1, "Sign of the Lambda (+1: Lambda; -1: Antilambda; 0: both)"};
+  o2::framework::Configurable<int> sign{"sign", DefaultSign, "Sign of the Lambda (+1: Lambda; -1: Antilambda; 0: both)"};
 };
 
 // base selection for analysis task for k0short
@@ -141,6 +141,12 @@ constexpr const char PrefixK0shortSelection1[] = "K0shortSelection1";
 constexpr const char PrefixK0shortSelection2[] = "K0shortSelection2";
 using ConfK0shortSelection1 = ConfK0shortSelection<PrefixK0shortSelection1>;
 using ConfK0shortSelection2 = ConfK0shortSelection<PrefixK0shortSelection2>;
+
+// selections for strangeness yields (e.g. strangeness enhancement in dN/deta tasks), independent of any pair/triplet selection
+constexpr const char PrefixLambdaSelectionStrangeness[] = "LambdaSelectionStrangeness";
+using ConfLambdaSelectionStrangeness = ConfLambdaSelection<PrefixLambdaSelectionStrangeness, 0>; // lambdas and antilambdas by default
+constexpr const char PrefixK0shortSelectionStrangeness[] = "K0shortSelectionStrangeness";
+using ConfK0shortSelectionStrangeness = ConfK0shortSelection<PrefixK0shortSelectionStrangeness>;
 
 /// The different selections for v0s
 enum V0Sels {

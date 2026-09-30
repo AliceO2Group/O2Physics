@@ -27,7 +27,7 @@
 #include <string>
 #include <vector>
 
-void getMenu(int runNumber, std::string baseCCDBPath = "Users/m/mpuccio/EventFiltering/OTS/Chunked/")
+void getMenu(int runNumber, const std::string& baseCCDBPath = "Users/m/mpuccio/EventFiltering/OTS/Chunked/")
 {
   auto& ccdb = o2::ccdb::BasicCCDBManager::instance();
   TH1* counters = ccdb.getForRun<TH1>(baseCCDBPath + "FilterCounters", runNumber);
@@ -84,7 +84,7 @@ std::vector<std::string> getMenuForPeriod(std::string period)
   return binLabels;
 }
 
-void getMenu(std::string periods)
+void getMenu(const std::string& periods)
 {
   std::stringstream ss(periods);
   std::string period;

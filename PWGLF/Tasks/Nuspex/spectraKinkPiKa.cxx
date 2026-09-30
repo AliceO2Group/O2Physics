@@ -558,7 +558,7 @@ struct SpectraKinkPiKa {
     }
   }
 
-  double computeMotherMass(ROOT::Math::PxPyPzMVector pmoth, ROOT::Math::PxPyPzMVector pdaug)
+  double computeMotherMass(const ROOT::Math::PxPyPzMVector& pmoth, const ROOT::Math::PxPyPzMVector& pdaug)
   {
     // Infer neutrino momentum from conservation
     ROOT::Math::XYZVector pnuvec = pmoth.Vect() - pdaug.Vect();
@@ -573,7 +573,7 @@ struct SpectraKinkPiKa {
     double m2 = etotal * etotal - ptotalsq;
     return (m2 > 0) ? std::sqrt(m2) : -1.0;
   }
-  double computeQt(ROOT::Math::PxPyPzMVector pmoth, ROOT::Math::PxPyPzMVector pdaug)
+  double computeQt(const ROOT::Math::PxPyPzMVector& pmoth, const ROOT::Math::PxPyPzMVector& pdaug)
   {
     TVector3 pdlab(pdaug.Px(), pdaug.Py(), pdaug.Pz());
     // Compute transverse component

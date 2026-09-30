@@ -269,21 +269,24 @@ struct Lambda1520pbpb {
     histos.add("QAafter/Kaon/h2d_Kapr_nsigma_tof_p", " Kaons proton", kTH2F, {axisPpid, axisTOFNsigma});
     histos.add("QAafter/Kaon/h2d_ka_nsigma_tof_vs_tpc", "n#sigma(TOF) vs n#sigma(TPC) Kaons", kTH2F, {axisTPCNsigma, axisTOFNsigma});
 
+    // ── Polarization-frame activation (shared by data and MC booking) ───────
+    int nActiveFrames = static_cast<int>(cActivateHelicityFrame) +
+                        static_cast<int>(cActivateCollinsSoperFrame) +
+                        static_cast<int>(cActivateProductionFrame) +
+                        static_cast<int>(cActivateBeamAxisFrame) +
+                        static_cast<int>(cActivateRandomFrame);
+
+    bool polActive = nActiveFrames > 0;
+
+    if (nActiveFrames > 1) {
+      LOG(fatal) << "Multiple polarization frames activated, but axisPolFrame was removed! "
+                 << "Please activate only ONE frame at a time to prevent data mixing in the 4D sparse.";
+    }
+
+    const AxisSpec axisCosTheta{cCosThetaBins, "cos#theta*"};
+
     // Analysis
     if (!doprocessMC) {
-      int nActiveFrames = static_cast<int>(cActivateHelicityFrame) +
-                          static_cast<int>(cActivateCollinsSoperFrame) +
-                          static_cast<int>(cActivateProductionFrame) +
-                          static_cast<int>(cActivateBeamAxisFrame) +
-                          static_cast<int>(cActivateRandomFrame);
-
-      bool polActive = nActiveFrames > 0;
-
-      if (nActiveFrames > 1) {
-        LOG(fatal) << "Multiple polarization frames activated, but axisPolFrame was removed! "
-                   << "Please activate only ONE frame at a time to prevent data mixing in the 4D sparse.";
-      }
-
       if (!polActive) {
         histos.add("Analysis/h4d_lstar_invm_US_PM", "THn #Lambda(1520)", kTHnSparseF, {axisInvM, axisPt, axisCent, axisOccupancy});
         histos.add("Analysis/h4d_lstar_invm_US_MP", "THn #bar #Lambda(1520)", kTHnSparseF, {axisInvM, axisPt, axisCent, axisOccupancy});
@@ -305,8 +308,6 @@ struct Lambda1520pbpb {
 
       // ── 4D Polarization / cosThetaStar histograms ──────────────────────────
       if (polActive) {
-        const AxisSpec axisCosTheta{cCosThetaBins, "cos#theta*"};
-
         histos.add("Analysis/h4d_pol_US_PM", "cos#theta* #Lambda(1520)", kTHnSparseF, {axisInvM, axisPt, axisCent, axisCosTheta});
         histos.add("Analysis/h4d_pol_US_MP", "cos#theta* #bar{#Lambda}(1520)", kTHnSparseF, {axisInvM, axisPt, axisCent, axisCosTheta});
         histos.add("Analysis/h4d_pol_LS_PP", "cos#theta* Like Signs p K^{+}", kTHnSparseF, {axisInvM, axisPt, axisCent, axisCosTheta});
@@ -340,6 +341,20 @@ struct Lambda1520pbpb {
       histos.add("Analysis/h3d_rec_lstar_MP", "Reconstructed #bar{#Lambda}(1520) p_{T}", kTHnSparseF, {axisInvM, axisPt, axisCent});
       histos.add("Analysis/h3d_reso_lstar_PM", "Resolution #Lambda(1520) p_{T}", kTHnSparseF, {{200, -0.05, 0.05}, axisPt, axisCent});
       histos.add("Analysis/h3d_reso_lstar_MP", "Resolution #bar{#Lambda}(1520) p_{T}", kTHnSparseF, {{200, -0.05, 0.05}, axisPt, axisCent});
+
+      if (polActive) {
+        const AxisSpec axisMassRes{200, -0.05, 0.05, "M_{rec} - M_{gen} (GeV/#it{c}^{2})"};
+
+        histos.add("Analysis/h4d_pol_rec_PM", "cos#theta* Reconstructed (truth-matched) #Lambda(1520)", kTHnSparseF, {axisInvM, axisPt, axisCent, axisCosTheta});
+        histos.add("Analysis/h4d_pol_rec_MP", "cos#theta* Reconstructed (truth-matched) #bar{#Lambda}(1520)", kTHnSparseF, {axisInvM, axisPt, axisCent, axisCosTheta});
+        histos.add("Analysis/h4d_pol_reso_PM", "cos#theta* vs mass resolution #Lambda(1520)", kTHnSparseF, {axisMassRes, axisPt, axisCent, axisCosTheta});
+        histos.add("Analysis/h4d_pol_reso_MP", "cos#theta* vs mass resolution #bar{#Lambda}(1520)", kTHnSparseF, {axisMassRes, axisPt, axisCent, axisCosTheta});
+      }
+    }
+
+    if (doprocessMCGenPol && polActive) {
+      histos.add("Analysis/h4d_pol_gen_PM", "cos#theta* Generated (truth) #Lambda(1520)", kTHnSparseF, {axisInvM, axisPt, axisCent, axisCosTheta});
+      histos.add("Analysis/h4d_pol_gen_MP", "cos#theta* Generated (truth) #bar{#Lambda}(1520)", kTHnSparseF, {axisInvM, axisPt, axisCent, axisCosTheta});
     }
 
     if (doprocessMCGen) {
@@ -591,7 +606,10 @@ struct Lambda1520pbpb {
                           Rotated,
                           Mixed,
                           LikeSign,
-                          LikeSignMixed };
+                          LikeSignMixed,
+                          McTrue,
+                          McTrueRes,
+                          GenTrue };
 
   template <PolBkgMode Mode>
   void fillPolarization(float candMass, float candPt,
@@ -629,6 +647,21 @@ struct Lambda1520pbpb {
           histos.fill(HIST("Analysis/h4d_pol_LS_PP_mix"), candMass, candPt, mult, cosTheta);
         else
           histos.fill(HIST("Analysis/h4d_pol_LS_MM_mix"), candMass, candPt, mult, cosTheta);
+      } else if constexpr (Mode == PolBkgMode::McTrue) {
+        if (protonIsPositive)
+          histos.fill(HIST("Analysis/h4d_pol_rec_PM"), candMass, candPt, mult, cosTheta);
+        else
+          histos.fill(HIST("Analysis/h4d_pol_rec_MP"), candMass, candPt, mult, cosTheta);
+      } else if constexpr (Mode == PolBkgMode::McTrueRes) {
+        if (protonIsPositive)
+          histos.fill(HIST("Analysis/h4d_pol_reso_PM"), candMass, candPt, mult, cosTheta);
+        else
+          histos.fill(HIST("Analysis/h4d_pol_reso_MP"), candMass, candPt, mult, cosTheta);
+      } else if constexpr (Mode == PolBkgMode::GenTrue) {
+        if (protonIsPositive)
+          histos.fill(HIST("Analysis/h4d_pol_gen_PM"), candMass, candPt, mult, cosTheta);
+        else
+          histos.fill(HIST("Analysis/h4d_pol_gen_MP"), candMass, candPt, mult, cosTheta);
       } else {
         if (protonIsPositive)
           histos.fill(HIST("Analysis/h4d_pol_US_PM"), candMass, candPt, mult, cosTheta);
@@ -975,6 +1008,17 @@ struct Lambda1520pbpb {
             histos.fill(HIST("Analysis/h3d_rec_lstar_MP"), candMass, candPt, mult);
             histos.fill(HIST("Analysis/h3d_reso_lstar_MP"), candMassRes, candPt, mult);
           }
+
+          if (polActive) {
+            float eProton = std::sqrt(pxPr * pxPr + pyPr * pyPr + pzPr * pzPr + MassProton * MassProton);
+            float eKaon = std::sqrt(pxKa * pxKa + pyKa * pyKa + pzKa * pzKa + MassKaonCharged * MassKaonCharged);
+            std::array<float, 3> protonP = {pxPr, pyPr, pzPr};
+            std::array<float, 3> kaonP = {pxKa, pyKa, pzKa};
+            std::array<float, 3> motherP = {pxPr + pxKa, pyPr + pyKa, pzPr + pzKa};
+            float motherE = eProton + eKaon;
+            fillPolarization<PolBkgMode::McTrue>(candMass, candPt, motherP, motherE, protonP, eProton, kaonP, eKaon, mult, trkPr.motherPDG() > 0);
+            fillPolarization<PolBkgMode::McTrueRes>(candMassRes, candPt, motherP, motherE, protonP, eProton, kaonP, eKaon, mult, trkPr.motherPDG() > 0);
+          }
         }
       }
     }
@@ -1072,6 +1116,56 @@ struct Lambda1520pbpb {
     }
   }
   PROCESS_SWITCH(Lambda1520pbpb, processMC, "Process Event for MC", false);
+
+  void processMCGenPol(ResoMCCols::iterator const& collision, aod::ResoMCParents const& resoParents, aod::McParticles const& mcParticles)
+  {
+    auto mult = collision.cent();
+    bool polActive = static_cast<bool>(cActivateHelicityFrame) ||
+                     static_cast<bool>(cActivateCollinsSoperFrame) ||
+                     static_cast<bool>(cActivateProductionFrame) ||
+                     static_cast<bool>(cActivateBeamAxisFrame) ||
+                     static_cast<bool>(cActivateRandomFrame);
+    if (!polActive)
+      return;
+
+    for (auto const& part : resoParents) {
+      if (std::abs(part.pdgCode()) != lambda1520id)
+        continue;
+      float yshift = std::abs(part.y()) - cfgRapidityShift;
+      if (std::abs(yshift) > cfgRapidityCut)
+        continue;
+
+      bool pass1 = std::abs(part.daughterPDG1()) == kProton || std::abs(part.daughterPDG2()) == kProton;
+      bool pass2 = std::abs(part.daughterPDG1()) == kKPlus || std::abs(part.daughterPDG2()) == kKPlus;
+      if (!pass1 || !pass2)
+        continue;
+
+      std::array<float, 3> pvec = {part.px(), part.py(), part.pz()};
+      float mass = RecoDecay::m(pvec, part.e());
+
+      auto motherMc = mcParticles.iteratorAt(part.mcParticleId());
+      bool foundProton = false, foundKaon = false;
+      std::array<float, 3> protonP{}, kaonP{};
+      float protonE = 0.f, kaonE = 0.f;
+      for (auto const& dau : motherMc.daughters_as<aod::McParticles>()) {
+        if (!foundProton && std::abs(dau.pdgCode()) == kProton) {
+          protonP = {dau.px(), dau.py(), dau.pz()};
+          protonE = dau.e();
+          foundProton = true;
+        } else if (!foundKaon && std::abs(dau.pdgCode()) == kKPlus) {
+          kaonP = {dau.px(), dau.py(), dau.pz()};
+          kaonE = dau.e();
+          foundKaon = true;
+        }
+      }
+      if (!foundProton || !foundKaon)
+        continue;
+
+      std::array<float, 3> motherP = {part.px(), part.py(), part.pz()};
+      fillPolarization<PolBkgMode::GenTrue>(mass, part.pt(), motherP, part.e(), protonP, protonE, kaonP, kaonE, mult, part.pdgCode() > 0);
+    }
+  }
+  PROCESS_SWITCH(Lambda1520pbpb, processMCGenPol, "Standalone generator-level polarization pass (run separately from processMC)", false);
 
   void processMCGen(ResoMCCols::iterator const& collision, aod::ResoMCParents const& resoParents)
   {

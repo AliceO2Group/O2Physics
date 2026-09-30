@@ -12,7 +12,7 @@
 /// \file   bjetTaggingGnn.cxx
 /// \brief  b-jet tagging using GNN
 ///
-/// \author Changhwan Choi <changhwan.choi@cern.ch>, Pusan National University
+/// \author Changhwan Choi <changhwan.choi@cern.ch>, Yonsei University
 
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetTaggingUtilities.h"
@@ -196,8 +196,12 @@ struct BjetTaggingGnn {
   Configurable<float> trackNppCrit{"trackNppCrit", 0.95, "track not physical primary ratio"};
 
   // jet level configurables
+  Configurable<int> jetPtNbins{"jetPtNbins", 300, "number of bins for jet pT"};
   Configurable<float> jetPtMin{"jetPtMin", 0.0, "minimum jet pT"};
-  Configurable<float> jetPtMax{"jetPtMax", 1000.0, "maximum jet pT"};
+  Configurable<float> jetPtMax{"jetPtMax", 300.0, "maximum jet pT"};
+  Configurable<int> jetPtSubNbins{"jetPtSubNbins", 300, "number of bins for UE-subtracted jet pT"};
+  Configurable<float> jetPtSubMin{"jetPtSubMin", -50.0, "minimum UE-subtracted jet pT"};
+  Configurable<float> jetPtSubMax{"jetPtSubMax", 250.0, "maximum UE-subtracted jet pT"};
   Configurable<float> jetEtaMin{"jetEtaMin", -0.9, "minimum jet pseudorapidity"};
   Configurable<float> jetEtaMax{"jetEtaMax", 0.9, "maximum jet pseudorapidity"};
   Configurable<float> leadingConstituentPtMin{"leadingConstituentPtMin", -99.0, "minimum pT selection on jet constituent"};
@@ -330,9 +334,9 @@ struct BjetTaggingGnn {
 
     const AxisSpec axisTrackpT{200, 0., 200., "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisTrackpTFine{1000, 0., 10., "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec axisJetpT{250, 0., 250., "#it{p}_{T, ch jet} (GeV/#it{c})"};
+    const AxisSpec axisJetpT{jetPtNbins, jetPtMin, jetPtMax, "#it{p}_{T, ch jet} (GeV/#it{c})"};
     // Used in place of axisJetpT for every "_sub"-suffixed histogram (UE-subtracted jet pT can go negative).
-    const AxisSpec axisJetpTSub{300, -50., 250., "#it{p}_{T, ch jet}^{sub} (GeV/#it{c})"};
+    const AxisSpec axisJetpTSub{jetPtSubNbins, jetPtSubMin, jetPtSubMax, "#it{p}_{T, ch jet}^{sub} (GeV/#it{c})"};
     const AxisSpec axisJetEta{200, -0.8, 0.8, "#it{#eta}_{jet}"};
     const AxisSpec axisDb{200, dbMin, dbMax, "#it{D}_{b}"};
     const AxisSpec axisDbFine{dbNbins, dbMin, dbMax, "#it{D}_{b}"};
@@ -1134,8 +1138,32 @@ struct BjetTaggingGnn {
     if (doDataDriven && doDataDrivenSV) {
       if constexpr (withSub) {
         registry.fill(HIST("hSparse_Incljets_sub"), jetpT, analysisJet.scoreML(), nTracks, massSV, weightEvt);
+        if (jetFlavor == JetTaggingSpecies::beauty) {
+          registry.fill(HIST("hSparse_bjets_sub"), jetpT, analysisJet.scoreML(), nTracks, massSV, weightEvt);
+        } else if (jetFlavor == JetTaggingSpecies::charm) {
+          registry.fill(HIST("hSparse_cjets_sub"), jetpT, analysisJet.scoreML(), nTracks, massSV, weightEvt);
+        } else {
+          registry.fill(HIST("hSparse_lfjets_sub"), jetpT, analysisJet.scoreML(), nTracks, massSV, weightEvt);
+          if (jetFlavor == JetTaggingSpecies::none) {
+            registry.fill(HIST("hSparse_lfjets_none_sub"), jetpT, analysisJet.scoreML(), nTracks, massSV, weightEvt);
+          } else {
+            registry.fill(HIST("hSparse_lfjets_matched_sub"), jetpT, analysisJet.scoreML(), nTracks, massSV, weightEvt);
+          }
+        }
       } else {
         registry.fill(HIST("hSparse_Incljets"), jetpT, analysisJet.scoreML(), nTracks, massSV, weightEvt);
+        if (jetFlavor == JetTaggingSpecies::beauty) {
+          registry.fill(HIST("hSparse_bjets"), jetpT, analysisJet.scoreML(), nTracks, massSV, weightEvt);
+        } else if (jetFlavor == JetTaggingSpecies::charm) {
+          registry.fill(HIST("hSparse_cjets"), jetpT, analysisJet.scoreML(), nTracks, massSV, weightEvt);
+        } else {
+          registry.fill(HIST("hSparse_lfjets"), jetpT, analysisJet.scoreML(), nTracks, massSV, weightEvt);
+          if (jetFlavor == JetTaggingSpecies::none) {
+            registry.fill(HIST("hSparse_lfjets_none"), jetpT, analysisJet.scoreML(), nTracks, massSV, weightEvt);
+          } else {
+            registry.fill(HIST("hSparse_lfjets_matched"), jetpT, analysisJet.scoreML(), nTracks, massSV, weightEvt);
+          }
+        }
       }
     }
 

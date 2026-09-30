@@ -30,11 +30,10 @@
 #include <TVectorDfwd.h>
 
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <fstream>
 #include <string>
-
-using namespace o2::delphes;
 
 namespace o2::fastsim
 {
@@ -57,7 +56,7 @@ void FlatLutWriter::print() const
 
 std::string FlatLutWriter::LutBinning::toString() const
 {
-  std::string str = "";
+  std::string str;
   str.append(log ? "log" : "lin");
   str.append(" nbins: ");
   str.append(std::to_string(nbins));
@@ -85,7 +84,7 @@ bool FlatLutWriter::fatSolve(lutEntry_t& lutEntry,
   o2::upgrade::convertTLorentzVectorToO2Track(q, tlv, {0.f, 0.f, 0.f}, trkIn);
 
   o2::track::TrackParCov trkOut;
-  const int status = fat.FastTrack(trkIn, trkOut, nch);
+  const int status = fat.fastTrack(trkIn, trkOut, nch);
   if (status <= mAtLeastHits) {
     LOGF(debug, "fatSolve: FastTrack failed with status %d (threshold %d)", status, mAtLeastHits);
     return false;
@@ -94,28 +93,31 @@ bool FlatLutWriter::fatSolve(lutEntry_t& lutEntry,
   LOGF(debug, "fatSolve: FastTrack succeeded with status %d", status);
 
   lutEntry.valid = true;
-  lutEntry.itof = fat.GetGoodHitProb(itof);
-  lutEntry.otof = fat.GetGoodHitProb(otof);
+  lutEntry.itof = fat.getGoodHitProb(itof);
+  lutEntry.otof = fat.getGoodHitProb(otof);
 
-  static constexpr int nCov = 15;
-  for (int i = 0; i < nCov; ++i)
+  for (int i = 0; i < kNumCovarianceTerms; ++i) {
     lutEntry.covm[i] = trkOut.getCov()[i];
+  }
 
   // Define the efficiency
   auto totfake = 0.f;
   lutEntry.eff = 1.f;
-  for (size_t i = 1; i < fat.GetNLayers(); ++i) {
-    if (fat.IsLayerInert(i))
+  for (size_t i = 1; i < fat.getNLayers(); ++i) {
+    if (fat.isLayerInert(i)) {
       continue; // skip inert layers
-    auto igoodhit = fat.GetGoodHitProb(i);
-    if (igoodhit <= 0.f || i == itof || i == otof)
+    }
+    auto igoodhit = fat.getGoodHitProb(i);
+    if (igoodhit <= 0.f || i == itof || i == otof) {
       continue;
+    }
     lutEntry.eff *= igoodhit;
     auto pairfake = 0.f;
-    for (size_t j = i + 1; j < fat.GetNLayers(); ++j) {
-      auto jgoodhit = fat.GetGoodHitProb(j);
-      if (jgoodhit <= 0.f || j == itof || j == otof)
+    for (size_t j = i + 1; j < fat.getNLayers(); ++j) {
+      auto jgoodhit = fat.getGoodHitProb(j);
+      if (jgoodhit <= 0.f || j == itof || j == otof) {
         continue;
+      }
       pairfake = (1.f - igoodhit) * (1.f - jgoodhit);
       break;
     }
@@ -127,14 +129,14 @@ bool FlatLutWriter::fatSolve(lutEntry_t& lutEntry,
 }
 
 #ifdef USE_FWD_PARAM
-bool FlatLutWriter::fwdSolve(float* covm, float pt, float eta, float mass)
+bool FlatLutWriter::fwdSolve(CovarianceArray covm, float pt, float eta, float mass)
 {
   if (fwdRes(covm, pt, eta, mass) < 0)
     return false;
   return true;
 }
 #else
-bool FlatLutWriter::fwdSolve(float*, float, float, float)
+bool FlatLutWriter::fwdSolve(CovarianceArray, float, float, float)
 {
   return false;
 }
@@ -155,9 +157,8 @@ bool FlatLutWriter::fwdPara(lutEntry_t& lutEntry, float pt, float eta, float mas
     return false;
   }
 
-  static constexpr int nCov = 15;
-  float covmbarrel[nCov] = {0.f};
-  for (int i = 0; i < nCov; ++i) {
+  CovarianceArray covmbarrel = {0.f};
+  for (int i = 0; i < kNumCovarianceTerms; ++i) {
     covmbarrel[i] = lutEntry.covm[i];
   }
 
@@ -242,7 +243,7 @@ void FlatLutWriter::lutWrite(const char* filename, int pdg, float field, size_t 
   }
 
   lutHeader.mass = particle->Mass();
-  const int q = std::abs(particle->Charge()) / 3;
+  const int q = std::abs(static_cast<int>(particle->Charge())) / 3;
   if (q <= 0) {
     LOGF(error, "Negative or null charge (%f) for pdg code %d", particle->Charge(), pdg);
     lutFile.close();
@@ -290,7 +291,7 @@ void FlatLutWriter::lutWrite(const char* filename, int pdg, float field, size_t 
     LOGF(info, "Writing nch bin %d/%d", inch, nnch);
     auto nch = lutHeader.nchmap.eval(inch);
     lutEntry.nch = nch;
-    fat.SetdNdEtaCent(nch);
+    fat.setdNdEtaCent(static_cast<int>(nch));
 
     for (int irad = 0; irad < nrad; ++irad) {
       for (int ieta = 0; ieta < neta; ++ieta) {
@@ -379,10 +380,9 @@ void FlatLutWriter::lutWrite(const char* filename, int pdg, float field, size_t 
 
 void FlatLutWriter::diagonalise(lutEntry_t& lutEntry)
 {
-  static constexpr int kEig = 5;
-  TMatrixDSym m(kEig);
+  TMatrixDSym m(kNumEigenModes);
 
-  for (int i = 0, k = 0; i < kEig; ++i) {
+  for (int i = 0, k = 0; i < kNumEigenModes; ++i) {
     for (int j = 0; j < i + 1; ++j, ++k) {
       m(i, j) = lutEntry.covm[k];
       m(j, i) = lutEntry.covm[k];
@@ -393,40 +393,49 @@ void FlatLutWriter::diagonalise(lutEntry_t& lutEntry)
 
   // Eigenvalues
   const TVectorD& eigenVal = eigen.GetEigenValues();
-  for (int i = 0; i < kEig; ++i)
+  for (int i = 0; i < kNumEigenModes; ++i) {
     lutEntry.eigval[i] = eigenVal[i];
+  }
 
   // Eigenvectors
   TMatrixD eigenVec = eigen.GetEigenVectors();
-  for (int i = 0; i < kEig; ++i)
-    for (int j = 0; j < kEig; ++j)
+  for (int i = 0; i < kNumEigenModes; ++i) {
+    for (int j = 0; j < kNumEigenModes; ++j) {
       lutEntry.eigvec[i][j] = eigenVec[i][j];
+    }
+  }
 
   // Inverse eigenvectors
   eigenVec.Invert();
-  for (int i = 0; i < kEig; ++i)
-    for (int j = 0; j < kEig; ++j)
+  for (int i = 0; i < kNumEigenModes; ++i) {
+    for (int j = 0; j < kNumEigenModes; ++j) {
       lutEntry.eiginv[i][j] = eigenVec[i][j];
+    }
+  }
 }
 
 TGraph* FlatLutWriter::lutRead(const char* filename, int pdg, int what, int vs, float nch, float radius, float eta, float pt)
 {
   LOGF(info, "Reading LUT file: %s", filename);
 
-  static const int kNch = 0;
-  static const int kEta = 1;
-  static const int kPt = 2;
+  enum VsType : uint8_t {
+    kNch = 0,
+    kEta = 1,
+    kPt = 2
+  };
 
-  static const int kEfficiency = 0;
-  static const int kEfficiency2 = 1;
-  static const int kEfficiencyInnerTOF = 2;
-  static const int kEfficiencyOuterTOF = 3;
-  static const int kPtResolution = 4;
-  static const int kRPhiResolution = 5;
-  static const int kZResolution = 6;
+  enum WhatType : uint8_t {
+    kEfficiency = 0,
+    kEfficiency2 = 1,
+    kEfficiencyInnerTOF = 2,
+    kEfficiencyOuterTOF = 3,
+    kPtResolution = 4,
+    kRPhiResolution = 5,
+    kZResolution = 6
+  };
 
   // Use TrackSmearer to load and access the LUT
-  o2::delphes::TrackSmearer smearer;
+  o2::fastsim::TrackSmearer smearer;
   if (!smearer.loadTable(pdg, filename)) {
     LOGF(error, "Failed to load LUT from %s", filename);
     return nullptr;
@@ -452,7 +461,7 @@ TGraph* FlatLutWriter::lutRead(const char* filename, int pdg, int what, int vs, 
       lutMap = lutHeader->ptmap;
       break;
     default:
-      LOGF(error, "Unknown vs: %d", vs);
+      LOG(fatal) << "Unknown vs: " << vs;
       return nullptr;
   }
 
@@ -475,6 +484,10 @@ TGraph* FlatLutWriter::lutRead(const char* filename, int pdg, int what, int vs, 
       LOGF(info, "Plot versus Pt");
       g->GetXaxis()->SetTitle("p_{T} (GeV/c)");
       break;
+    default:
+      LOG(fatal) << "Unknown vs: " << vs;
+      delete g;
+      return nullptr;
   }
 
   switch (what) {
@@ -507,7 +520,7 @@ TGraph* FlatLutWriter::lutRead(const char* filename, int pdg, int what, int vs, 
       g->GetYaxis()->SetTitle("Z Resolution (#mum)");
       break;
     default:
-      LOGF(error, "Unknown what: %d", what);
+      LOG(fatal) << "Unknown what: " << what;
       delete g;
       return nullptr;
   }
@@ -525,6 +538,10 @@ TGraph* FlatLutWriter::lutRead(const char* filename, int pdg, int what, int vs, 
       case kPt:
         pt = lutMap.eval(i);
         break;
+      default:
+        LOG(fatal) << "Unknown vs: " << vs;
+        delete g;
+        return nullptr;
     }
 
     float eff = 0.f;
@@ -549,6 +566,10 @@ TGraph* FlatLutWriter::lutRead(const char* filename, int pdg, int what, int vs, 
       case kPt:
         cen = lutEntry->pt;
         break;
+      default:
+        LOG(fatal) << "Unknown vs: " << vs;
+        delete g;
+        return nullptr;
     }
 
     double val = 0.f;
@@ -575,8 +596,9 @@ TGraph* FlatLutWriter::lutRead(const char* filename, int pdg, int what, int vs, 
         val = std::sqrt(lutEntry->covm[1]) * 1.e4f; // z resolution (um)
         break;
       default:
-        LOGF(error, "Unknown what: %d", what);
-        break;
+        LOG(fatal) << "Unknown what: " << what;
+        delete g;
+        return nullptr;
     }
     g->AddPoint(cen, val);
   }

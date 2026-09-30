@@ -177,7 +177,7 @@ struct PhotonResoTask {
 
   SliceCache cache;
 
-  using EMCalPhotons = soa::Join<aod::EMCEMEventIds, aod::MinClusters, aod::EMEMCClusterMCLabels>;
+  using EMCalPhotons = soa::Join<aod::EMCEMEventIds, aod::MinClusters, aod::EMEMCClusterMCLabels_001>;
   using PcmPhotons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
 
   using PcmMcLegs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
