@@ -297,7 +297,7 @@ void GFWWeights::createNUE(bool IntegrateOverCentrality)
     return;
   }
 };
-void GFWWeights::readAndMerge(TString filelinks, TString listName, bool addData, bool addRec, bool addGen)
+void GFWWeights::readAndMerge(const TString& filelinks, const TString& listName, bool addData, bool addRec, bool addGen)
 {
   FILE* flist = fopen(filelinks.Data(), "r");
   char str[150];

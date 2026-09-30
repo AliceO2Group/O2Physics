@@ -24,6 +24,8 @@
 #include <Framework/ProcessingContext.h>
 #include <Framework/runDataProcessing.h>
 
+#include <algorithm>
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -51,11 +53,11 @@ struct applyModel {
   void run(ProcessingContext& pc)
   {
 
-    // Here we evaluate the model
-    float* modelOutput = network.evalModel(modelInput);
+    // Here we evaluate the model. The output tensor is copied into a std::vector owned by us
+    const std::vector<float> modelOutput = network.evalModel(modelInput);
 
     // And now we print the output
-    for (int i = 0; i < 5; i++) {
+    for (std::size_t i = 0; i < std::min(modelInput.size(), modelOutput.size()); i++) {
       LOG(info) << "Input: " << modelInput[i] << ", Output: " << modelOutput[i];
     }
     pc.services().get<ControlService>().endOfStream();

@@ -257,13 +257,13 @@ struct HfCandidateCreatorXicToXiPiPi {
       }
     }
 
-    if (std::abs(nSigTpcBachelorPi) < softTrigCuts.maxNsigmaXiDaus || (hasTofBachelorPi && std::abs(nSigTofBachelorPi) < softTrigCuts.maxNsigmaXiDaus)) {
+    if (std::abs(nSigTpcBachelorPi) > softTrigCuts.maxNsigmaXiDaus || (hasTofBachelorPi && std::abs(nSigTofBachelorPi) > softTrigCuts.maxNsigmaXiDaus)) {
       return false;
     }
-    if (std::abs(nSigTpcPiFromLambda) < softTrigCuts.maxNsigmaXiDaus || (hasTofPiFromLambda && std::abs(nSigTofPiFromLambda) < softTrigCuts.maxNsigmaXiDaus)) {
+    if (std::abs(nSigTpcPiFromLambda) > softTrigCuts.maxNsigmaXiDaus || (hasTofPiFromLambda && std::abs(nSigTofPiFromLambda) > softTrigCuts.maxNsigmaXiDaus)) {
       return false;
     }
-    if (std::abs(nSigTpcPrFromLambda) < softTrigCuts.maxNsigmaXiDaus || (hasTofPrFromLambda && std::abs(nSigTofPrFromLambda) < softTrigCuts.maxNsigmaXiDaus)) {
+    if (std::abs(nSigTpcPrFromLambda) > softTrigCuts.maxNsigmaXiDaus || (hasTofPrFromLambda && std::abs(nSigTofPrFromLambda) > softTrigCuts.maxNsigmaXiDaus)) {
       return false;
     }
 

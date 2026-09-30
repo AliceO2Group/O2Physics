@@ -179,7 +179,7 @@ struct ConfMixing : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis vtxBins{"vtxBins", {o2::framework::VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
   o2::framework::ConfigurableAxis eventPlaneAngle{"eventPlaneAngle", {10, 0.f, 1.f * o2::constants::math::TwoPI}, "Mixing bins - event plane angle"};
   o2::framework::Configurable<int> depth{"depth", 5, "Number of events for mixing"};
-  o2::framework::Configurable<int> policy{"policy", 0, "Binning policy for mixing (alywas in combination with z-vertex) -> 0: multiplicity, -> 1: centrality, -> 2: both"};
+  o2::framework::Configurable<int> policy{"policy", 0, "Binning policy for mixing (alywas in combination with z-vertex) -> 0: multiplicity, -> 1: centrality, -> 2: multiplicity and centrality, -> 3: centrality and event plane angle"};
   o2::framework::Configurable<bool> sameSpecies{"sameSpecies", false, "Enable if particle 1 and particle 2 are the same"};
   o2::framework::Configurable<int> seed{"seed", -1, "Seed to randomize particle 1 and particle 2 (if they are identical). Set to negative value to deactivate. Set to 0 to generate unique seed in time."};
   o2::framework::Configurable<bool> enablePairCorrelationQa{"enablePairCorrelationQa", true, "Enable pair-level correlation QA (same-event + mixed-event)"};
@@ -234,7 +234,7 @@ struct ConfPairBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis qout{"qout", {{300, -1.5f, 1.5f}}, "q_{out} (GeV/c) in LCMS"};
   o2::framework::ConfigurableAxis qside{"qside", {{300, -1.5f, 1.5f}}, "q_{side} (GeV/c) in LCMS"};
   o2::framework::ConfigurableAxis qlong{"qlong", {{300, -1.5f, 1.5f}}, "q_{long} (GeV/c) in LCMS"};
-  o2::framework::Configurable<bool> plotEventShape{"plotEventShape", false, "(Reco/Mc) Enable 5D (q_out, q_side, q_long, event plane anglke, qvector) histogram"};
+  o2::framework::Configurable<bool> plotEventShape{"plotEventShape", false, "(Reco/Mc) Enable 7D (q_out, q_side, q_long, mt, centrality event plane angle, qvector) histogram"};
   o2::framework::ConfigurableAxis eventPlaneAngle{"eventPlaneAngle", {{10, 0.f, 1.f * o2::constants::math::TwoPI}}, "event plane angle"};
   o2::framework::ConfigurableAxis qvector{"qvector", {{o2::framework::VARIABLE_WIDTH, 0.50f, 68.50f, 100.50f, 126.50f, 151.50f, 176.50f, 203.50f, 232.50f, 269.50f, 322.50f, 833.50f}}, "qvector"};
   o2::framework::Configurable<bool> plotSH{"plotSH", false, "(Reco) Enable spherical-harmonics decomposition of the pair momentum-difference vector"};
@@ -363,7 +363,7 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
       {kTrueQoutVsQout, o2::framework::HistType::kTH2F, "hTrueQoutVsQout", "q_{out,True} vs q_{out}; q_{out,True} (GeV/#it{c}); q_{out} (GeV/#it{c})"},
       {kTrueQsideVsQside, o2::framework::HistType::kTH2F, "hTrueQsideVsQside", "q_{side,True} vs q_{side}; q_{side,True} (GeV/#it{c}); q_{side} (GeV/#it{c})"},
       {kTrueQlongVsQlong, o2::framework::HistType::kTH2F, "hTrueQlongVsQlong", "q_{long,True} vs q_{long}; q_{long,True} (GeV/#it{c}); q_{long} (GeV/#it{c})"},
-      {kQoutVsQsideVsQlongVsMtVsCentVsEventPlaneAngleVsQvector, o2::framework::HistType::kTHnSparseF, "hQoutQsideQlongEventPlaneAngleQvector", "Event shape enginering; q_{out} (GeV/#it{c}); q_{side} (GeV/#it{c}); q_{long} (GeV/#it{c}); #varphi_{EP}; q-vector;"},
+      {kQoutVsQsideVsQlongVsMtVsCentVsEventPlaneAngleVsQvector, o2::framework::HistType::kTHnSparseF, "hQoutVsQsideVsQlongVsMtVsCentVsEventPlaneAngleVsQvector", "Event shape enginering; q_{out} (GeV/#it{c}); q_{side} (GeV/#it{c}); q_{long} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); centrality (%); #varphi_{pair} - #Psi_{EP}; q-vector;"},
     }};
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -760,6 +760,14 @@ class PairHistManager
     mTrueMinv = getMinv(mTrueParticle1, mTrueParticle2);
     mTrueKstar = getKstar(mTrueParticle1, mTrueParticle2);
 
+    // in the pure mc-truth path there is no reco counterpart, so the generated values are also
+    // stored in the reco members; they are used by getKinematic(), i.e. by the kinematic histograms
+    // of the pair cleaner and of the close pair rejection
+    mKt = mTrueKt;
+    mMt = mTrueMt;
+    mMassInv = mTrueMinv;
+    mKstar = mTrueKstar;
+
     if (mPlotBertschPratt) {
       std::tie(mTrueQout, mTrueQside, mTrueQlong) = computeBertschPrattLCMS(mTrueParticle1, mTrueParticle2);
     }
@@ -785,6 +793,20 @@ class PairHistManager
     setPairMcTruth(particle1, particle2);
     mTrueMult = 0.5f * (col1.mult() + col2.mult());
     mTrueCent = 0.5f * (col1.cent() + col2.cent());
+  }
+
+  /// pair cuts on the mc-truth values, for the pure mc-truth path (kMc without kReco),
+  /// where the reco values are never set
+  bool checkPairCutsMcTruth() const
+  {
+    return (!(mKstarMin > 0.f) || mTrueKstar > mKstarMin) &&
+           (!(mKstarMax > 0.f) || mTrueKstar < mKstarMax) &&
+           (!(mKtMin > 0.f) || mTrueKt > mKtMin) &&
+           (!(mKtMax > 0.f) || mTrueKt < mKtMax) &&
+           (!(mMtMin > 0.f) || mTrueMt > mMtMin) &&
+           (!(mMtMax > 0.f) || mTrueMt < mMtMax) &&
+           (!(mMassInvMin > 0.f) || mTrueMinv > mMassInvMin) &&
+           (!(mMassInvMax > 0.f) || mTrueMinv < mMassInvMax);
   }
 
   bool checkPairCuts() const

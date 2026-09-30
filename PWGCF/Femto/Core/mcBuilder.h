@@ -105,22 +105,28 @@ struct ConfMcCollisionFilters : o2::framework::ConfigurableGroup {
 template <auto& Prefix>
 struct ConfMcParticleSelection : o2::framework::ConfigurableGroup {
   std::string prefix = std::string(Prefix);
-  // kinematic cuts for filtering tracks
+  // kinematic cuts
   o2::framework::Configurable<float> ptMin{"ptMin", 0.2f, "Minimum pT"};
   o2::framework::Configurable<float> ptMax{"ptMax", 6.f, "Maximum pT"};
   o2::framework::Configurable<float> etaMin{"etaMin", -0.9f, "Minimum eta"};
   o2::framework::Configurable<float> etaMax{"etaMax", 0.9f, "Maximum eta"};
   o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};
   o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};
+  // pdg code and charge
   o2::framework::Configurable<int> pdgCodeAbs{"pdgCodeAbs", 2212, "Absolute value of PDG code. Set sign of charge to -1 for antiparticle."};
   o2::framework::Configurable<int> chargeSign{"chargeSign", 1, "Particle charge sign: +1 for positive, -1 for negative, 0 for both"};
+  // origin
+  o2::framework::Configurable<bool> requireOrigin{"requireOrigin", false, "If true, only particles with the origin given in 'origin' are selected"};
+  o2::framework::Configurable<int> origin{"origin", static_cast<int>(modes::McOrigin::kPhysicalPrimary), "Required mc origin, only used if requireOrigin is true (see modes::McOrigin; 2: physical primary)"};
 };
 
 constexpr const char PrefixMcParticleSelection1[] = "McParticleSelection1";
 constexpr const char PrefixMcParticleSelection2[] = "McParticleSelection2";
+constexpr const char PrefixMcParticleSelection3[] = "McParticleSelection3";
 
 using ConfMcParticleSelection1 = ConfMcParticleSelection<PrefixMcParticleSelection1>;
 using ConfMcParticleSelection2 = ConfMcParticleSelection<PrefixMcParticleSelection2>;
+using ConfMcParticleSelection3 = ConfMcParticleSelection<PrefixMcParticleSelection3>;
 
 class McBuilder
 {
@@ -143,18 +149,18 @@ class McBuilder
     mProduceMcParticles = utils::enableTable("FMcParticles_001", table.produceMcParticles.value, initContext);
     mProduceMcMothers = utils::enableTable("FMcMothers_001", table.produceMcMothers.value, initContext);
     mProduceMcPartonicMothers = utils::enableTable("FMcPartMoths_001", table.produceMcPartonicMothers.value, initContext);
-    mProduceMcMotherLabels = utils::enableTable("FMcMotherLabels", table.producedMcMotherLabels.value, initContext);
+    mProduceMcMotherLabels = utils::enableTable("FMcMotherLabels_001", table.producedMcMotherLabels.value, initContext);
 
-    mProduceCollisionLabels = utils::enableTable("FColLabels", table.producedCollisionLabels.value, initContext);
-    mProduceTrackLabels = utils::enableTable("FTrackLabels", table.producedTrackLabels.value, initContext);
-    mProduceLambdaLabels = utils::enableTable("FLambdaLabels", table.producedLambdaLabels.value, initContext);
-    mProduceK0shortLabels = utils::enableTable("FK0shortLabels", table.producedK0shortLabels.value, initContext);
-    mProduceD0Labels = utils::enableTable("FD0Labels", table.producedD0Labels.value, initContext);
-    mProduceLcLabels = utils::enableTable("FLcLabels", table.producedLcLabels.value, initContext);
-    mProduceSigmaLabels = utils::enableTable("FSigmaLabels", table.producedSigmaLabels.value, initContext);
-    mProduceSigmaPlusLabels = utils::enableTable("FSigmaPlusLabels", table.producedSigmaPlusLabels.value, initContext);
-    mProduceXiLabels = utils::enableTable("FXiLabels", table.producedXiLabels.value, initContext);
-    mProduceOmegaLabels = utils::enableTable("FOmegaLabels", table.producedOmegaLabels.value, initContext);
+    mProduceCollisionLabels = utils::enableTable("FColLabels_001", table.producedCollisionLabels.value, initContext);
+    mProduceTrackLabels = utils::enableTable("FTrackLabels_001", table.producedTrackLabels.value, initContext);
+    mProduceLambdaLabels = utils::enableTable("FLambdaLabels_001", table.producedLambdaLabels.value, initContext);
+    mProduceK0shortLabels = utils::enableTable("FK0shortLabels_001", table.producedK0shortLabels.value, initContext);
+    mProduceD0Labels = utils::enableTable("FD0Labels_001", table.producedD0Labels.value, initContext);
+    mProduceLcLabels = utils::enableTable("FLcLabels_001", table.producedLcLabels.value, initContext);
+    mProduceSigmaLabels = utils::enableTable("FSigmaLabels_001", table.producedSigmaLabels.value, initContext);
+    mProduceSigmaPlusLabels = utils::enableTable("FSigmaPlusLabels_001", table.producedSigmaPlusLabels.value, initContext);
+    mProduceXiLabels = utils::enableTable("FXiLabels_001", table.producedXiLabels.value, initContext);
+    mProduceOmegaLabels = utils::enableTable("FOmegaLabels_001", table.producedOmegaLabels.value, initContext);
 
     if (mProduceMcCollisions || mProduceCollisionLabels ||
         mProduceMcParticles || mProduceMcMotherLabels ||
@@ -284,9 +290,14 @@ class McBuilder
     this->getOrCreateMcParticleRow<system>(mcParticle, mcParticles, mcCol, mcProducts);
   }
 
-  /// Write the generated primary charged particles needed for the dNch/deta calculation
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
-  void fillMcPassThrough(T1 const& mcCols, T2 const& mcParticles, T3& perMcCollision, T4& mcProducts, T5& pdgDb)
+  /// Write all generated physical primaries within the eta acceptance.
+  /// No charge requirement is applied here: neutral primaries (e.g. Lambdas) are needed for generator-level
+  /// pair triggers. Charge (and any other) selection has to be done downstream.
+  /// NOTE: FMcParticles also contains rows created through reco labels (secondaries, particles outside the
+  ///       acceptance), so a dNch/deta loop must still require origin == kPhysicalPrimary, a charged pdg code
+  ///       and the eta acceptance
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4>
+  void fillMcPassThrough(T1 const& mcCols, T2 const& mcParticles, T3& perMcCollision, T4& mcProducts)
   {
     if (!mPassThrough) {
       return;
@@ -298,10 +309,6 @@ class McBuilder
       auto particlesThisCollision = mcParticles.sliceBy(perMcCollision, mcCol.globalIndex());
       for (const auto& mcParticle : particlesThisCollision) {
         if (!mcParticle.isPhysicalPrimary() || std::fabs(mcParticle.eta()) > mEtaAcceptanceMcReco) {
-          continue;
-        }
-        const auto* pdgParticle = pdgDb->GetParticle(mcParticle.pdgCode());
-        if (pdgParticle == nullptr || std::fabs(pdgParticle->Charge()) < o2::constants::math::Almost0) {
           continue;
         }
         // NOTE: full mcParticles table, never the slice - the ancestry walk resolves global indices

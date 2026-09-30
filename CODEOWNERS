@@ -36,7 +36,7 @@
 /PWGCF/DataModel @alibuild @jgrosseo @jaelpark @victor-gonzalez @dsarkaralice @lauraser
 /PWGCF/TableProducer @alibuild @jgrosseo @jaelpark @victor-gonzalez @dsarkaralice @lauraser
 /PWGCF/Tasks @alibuild @jgrosseo @jaelpark @victor-gonzalez @dsarkaralice @lauraser
-/PWGCF/EbyEFluctuations @alibuild @SwatiSaha-1997 @isputows @victor-gonzalez @dsarkaralice @lauraser
+/PWGCF/EbyEFluctuations @alibuild @SwatiSaha-1997 @isputows @victor-gonzalez @dsarkaralice @lauraser @fsii
 /PWGCF/Femto @alibuild @lauraser @ariedel-cern @dimihayl @victor-gonzalez @dsarkaralice @wrzesaCERN
 /PWGCF/FemtoDream @alibuild @lauraser @ariedel-cern @dimihayl @victor-gonzalez @dsarkaralice @wrzesaCERN
 /PWGCF/Femto3D @alibuild @glromane @sofiatomassini @lauraser @dimihayl @victor-gonzalez @dsarkaralice @wrzesaCERN
@@ -78,7 +78,7 @@
 /PWGUD @alibuild @amatyja @rolavick
 /PWGJE @alibuild @nzardosh @fjonasALICE @jaimenorman @mhemmer-cern
 /Tools/PIDML @alibuild @saganatt
-/Tools/ML @alibuild @fcatalan92 @fmazzasc
+/Tools/ML @alibuild @fcatalan92 @fmazzasc @ChSonnabend
 /Tutorials/PWGCF @alibuild @jgrosseo @victor-gonzalez @zchochul
 /Tutorials/PWGDQ @alibuild @iarsene @mcoquet642 @XiaozhiBai @mguilbau
 /Tutorials/PWGEM @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu

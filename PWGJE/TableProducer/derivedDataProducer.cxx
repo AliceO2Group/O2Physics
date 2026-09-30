@@ -164,7 +164,6 @@ struct JetDerivedDataProducerTask {
 
     Configurable<bool> includeTriggers{"includeTriggers", false, "fill the collision information with software trigger decisions"};
     Configurable<bool> includeHadronicRate{"includeHadronicRate", true, "fill the collision information with the hadronic rate"};
-    Configurable<bool> includeUpcs{"includeUpcs", true, "include option to identify UPC events"};
     Configurable<bool> v0ChargedDecaysOnly{"v0ChargedDecaysOnly", true, "store V0s (at particle-level) only if they decay to charged particles"};
     Configurable<bool> isMCGenOnly{"isMCGenOnly", false, "analysis is run over mcGen only"};
 
@@ -221,11 +220,13 @@ struct JetDerivedDataProducerTask {
       }
     }
 
-    upcCuts.SetNDtcoll(config.upcBCRangeTimeWindow);
-    upcCuts.SetMinNBCs(config.upcMinNBCs);
-    upcCuts.SetNTracks(config.upcMinNTracks, config.upcMaxNTracks);
-    upcCuts.SetMaxFITtime(config.upcMaxFITTime);
-    upcCuts.SetFITAmpLimits({config.upcMaxFV0AAmplitude, config.upcMaxFT0AAmplitude, config.upcMaxFT0CAmplitude, config.upcMaxFDDAAmplitude, config.upcMaxFDDCAmplitude});
+    if (doprocessCollisionsUPC) {
+      upcCuts.SetNDtcoll(config.upcBCRangeTimeWindow);
+      upcCuts.SetMinNBCs(config.upcMinNBCs);
+      upcCuts.SetNTracks(config.upcMinNTracks, config.upcMaxNTracks);
+      upcCuts.SetMaxFITtime(config.upcMaxFITTime);
+      upcCuts.SetFITAmpLimits({config.upcMaxFV0AAmplitude, config.upcMaxFT0AAmplitude, config.upcMaxFT0CAmplitude, config.upcMaxFDDAAmplitude, config.upcMaxFDDCAmplitude});
+    }
 
     if (config.applyTrackingEfficiency) {
       trackingEfficiencyRandomNumber.SetSeed(0);
@@ -297,7 +298,7 @@ struct JetDerivedDataProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processBunchCrossingsWithoutSels, "produces derived bunch crossing table with bunch crossing selections", false);
 
-  void processCollisions(soa::Join<aod::Collisions, aod::EvSels, aod::FV0Mults, aod::FT0Mults, aod::CentFV0As, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFT0CVariant1s>::iterator const& collision, soa::Join<aod::BCs, aod::BcSels, aod::Timestamps> const& bcs, aod::FT0s const&, aod::FV0As const&, aod::FDDs const&)
+  void processCollisions(soa::Join<aod::Collisions, aod::EvSels, aod::FV0Mults, aod::FT0Mults, aod::CentFV0As, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFT0CVariant1s>::iterator const& collision, soa::Join<aod::BCs, aod::BcSels, aod::Timestamps> const&, aod::FT0s const&, aod::FV0As const&, aod::FDDs const&)
   {
     auto bc = collision.bc_as<soa::Join<aod::BCs, aod::BcSels, aod::Timestamps>>();
     if (config.includeHadronicRate) {
@@ -313,32 +314,63 @@ struct JetDerivedDataProducerTask {
     }
 
     int upcGapResult = o2::aod::sgselector::NoGap;
-    if (config.includeUpcs) {
-      amplitudesFV0.clear();
-      amplitudesFT0A.clear();
-      amplitudesFT0C.clear();
-      amplitudesFDDA.clear();
-      amplitudesFDDC.clear();
-      if (collision.has_foundBC()) {
-        auto const upcBC = collision.foundBC_as<soa::Join<aod::BCs, aod::BcSels, aod::Timestamps>>();
-        auto const upcBCRange = udhelpers::compatibleBCs(collision, upcCuts.NDtcoll(), bcs, upcCuts.minNBCs());
-        auto const upcResult = upcSelector.IsSelected(upcCuts, collision, upcBCRange, upcBC, &amplitudesFV0, &amplitudesFT0A, &amplitudesFT0C, &amplitudesFDDA, &amplitudesFDDC);
-        upcGapResult = upcResult.value;
-        if (upcGapResult != o2::aod::sgselector::SingleGapA && upcGapResult != o2::aod::sgselector::SingleGapC && upcGapResult != o2::aod::sgselector::DoubleGap) {
-          amplitudesFV0.clear();
-          amplitudesFT0A.clear();
-          amplitudesFT0C.clear();
-          amplitudesFDDA.clear();
-          amplitudesFDDC.clear();
-        }
-      }
-      products.jCollisionUPCsTable(amplitudesFV0, amplitudesFT0A, amplitudesFT0C, amplitudesFDDA, amplitudesFDDC);
-    }
 
     products.jCollisionsTable(collision.bcId(), collision.posX(), collision.posY(), collision.posZ(), collision.collisionTime(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(), collision.centFV0A(), -1.0, collision.centFT0A(), collision.centFT0C(), collision.centFT0M(), collision.centFT0CVariant1(), hadronicRate, collision.trackOccupancyInTimeRange(), collision.alias_raw(), jetderiveddatautilities::setEventSelectionBit(collision, upcGapResult), collision.rct_raw(), triggerBit); // note change multFT0C to multFT0M when problems with multFT0A are fixed
     products.jCollisionsParentIndexTable(collision.globalIndex());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processCollisions, "produces derived collision tables", true);
+
+  void processCollisionsUPC(soa::Join<aod::Collisions, aod::EvSels, aod::FV0Mults, aod::FT0Mults, aod::CentFV0As, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFT0CVariant1s>::iterator const& collision, soa::Join<aod::BCs, aod::BcSels, aod::Timestamps, aod::Run3MatchedToBCSparse> const& bcs, aod::FT0s const&, aod::FV0As const&, aod::FDDs const&, aod::Zdcs const&)
+  {
+    auto bc = collision.bc_as<soa::Join<aod::BCs, aod::BcSels, aod::Timestamps, aod::Run3MatchedToBCSparse>>();
+    if (config.includeHadronicRate) {
+      if (runNumber != bc.runNumber()) {
+        runNumber = bc.runNumber();
+        hadronicRate = rateFetcher.fetch(ccdb.service, bc.timestamp(), runNumber, "ZNC hadronic") * 0.001;
+      }
+    }
+    uint64_t triggerBit = 0;
+    if (config.includeTriggers) {
+      triggerDecider.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), jetderiveddatautilities::JTriggerMasks);
+      triggerBit = jetderiveddatautilities::setTriggerSelectionBit(triggerDecider.getTriggerOfInterestResults(bc.globalBC()));
+    }
+
+    int upcGapResult = o2::aod::sgselector::NoGap;
+    amplitudesFV0.clear();
+    amplitudesFT0A.clear();
+    amplitudesFT0C.clear();
+    amplitudesFDDA.clear();
+    amplitudesFDDC.clear();
+    if (collision.has_foundBC()) {
+      auto const upcBC = collision.foundBC_as<soa::Join<aod::BCs, aod::BcSels, aod::Timestamps, aod::Run3MatchedToBCSparse>>();
+      auto const upcBCRange = udhelpers::compatibleBCs(collision, upcCuts.NDtcoll(), bcs, upcCuts.minNBCs());
+      auto const upcResult = upcSelector.IsSelected(upcCuts, collision, upcBCRange, upcBC, &amplitudesFV0, &amplitudesFT0A, &amplitudesFT0C, &amplitudesFDDA, &amplitudesFDDC);
+      upcGapResult = upcResult.value;
+      if (upcGapResult != o2::aod::sgselector::SingleGapA && upcGapResult != o2::aod::sgselector::SingleGapC && upcGapResult != o2::aod::sgselector::DoubleGap) {
+        amplitudesFV0.clear();
+        amplitudesFT0A.clear();
+        amplitudesFT0C.clear();
+        amplitudesFDDA.clear();
+        amplitudesFDDC.clear();
+      }
+    }
+    float energyCommonZNA = -1.0;
+    float energyCommonZNC = -1.0;
+    float timeZNA = -1.0;
+    float timeZNC = -1.0;
+    if (bc.has_zdc()) {
+      auto const& zdc = bc.zdc_as<aod::Zdcs>();
+      energyCommonZNA = zdc.energyCommonZNA();
+      energyCommonZNC = zdc.energyCommonZNC();
+      timeZNA = zdc.timeZNA();
+      timeZNC = zdc.timeZNC();
+    }
+    products.jCollisionUPCsTable(amplitudesFV0, amplitudesFT0A, amplitudesFT0C, amplitudesFDDA, amplitudesFDDC, energyCommonZNA, energyCommonZNC, timeZNA, timeZNC);
+
+    products.jCollisionsTable(collision.bcId(), collision.posX(), collision.posY(), collision.posZ(), collision.collisionTime(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(), collision.centFV0A(), -1.0, collision.centFT0A(), collision.centFT0C(), collision.centFT0M(), collision.centFT0CVariant1(), hadronicRate, collision.trackOccupancyInTimeRange(), collision.alias_raw(), jetderiveddatautilities::setEventSelectionBit(collision, upcGapResult), collision.rct_raw(), triggerBit); // note change multFT0C to multFT0M when problems with multFT0A are fixed
+    products.jCollisionsParentIndexTable(collision.globalIndex());
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processCollisionsUPC, "produces derived collision tables with UPC information", false);
 
   void processCollisionsWithoutCentralityAndMultiplicity(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<aod::BCs, aod::Timestamps> const&)
   {
