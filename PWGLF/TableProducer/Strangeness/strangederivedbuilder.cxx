@@ -580,7 +580,7 @@ struct strangederivedbuilder {
       bool strange = V0Table_thisColl.size() > 0 ||
                      CascTable_thisColl.size() > 0 ||
                      KFCascTable_thisColl.size() > 0 ||
-                      TraCascTable_thisColl.size() > 0;
+                     TraCascTable_thisColl.size() > 0;
 
       auto bc = collision.template bc_as<bcType>();
 
