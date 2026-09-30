@@ -14,20 +14,19 @@
 /// \since 31 May 2023
 
 #include "PWGCF/Femto3D/DataModel/PIDutils.h"
-#include "PWGCF/Femto3D/DataModel/singletrackselector.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
-#include <CommonConstants/MathConstants.h>
-#include <DetectorsBase/Propagator.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -42,9 +41,10 @@
 
 #include <TH1.h>
 #include <TH2.h>
+#include <TString.h>
 
-#include <array>
 #include <cmath>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <utility>

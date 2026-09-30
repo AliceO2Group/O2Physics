@@ -50,7 +50,6 @@
 #include "Common/Core/RecoDecay.h"
 
 #include <CCDB/BasicCCDBManager.h>
-#include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
@@ -64,8 +63,6 @@
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
-#include <TH2.h>
-#include <TPDGCode.h>
 
 #include <array>
 #include <cmath>
