@@ -257,18 +257,18 @@ struct FilterCF {
 
     // Zorro-based trigger selection
     if (cfgTrigger >= 14 && cfgTrigger <= 16) { // o2-linter: disable=magic-number (documented legacy trigger-selection code)
-      std::string zorroMask;
-      if (cfgTrigger == 14) { // High-multiplicity pp trigger based on tracks (PWGMM/multFilter.cxx); o2-linter: disable=magic-number (documented legacy trigger-selection code)
-        zorroMask = "fHighTrackMult";
-      }
-      if (cfgTrigger == 15) { // High-multiplicity pp trigger based on FV0 amplitude (PWGMM/multFilter.cxx); o2-linter: disable=magic-number (documented legacy trigger-selection code)
-        zorroMask = "fHighMultFv0";
-      }
-      if (cfgTrigger == 16) { // High-multiplicity pp trigger based on tracks or FV0 amplitude (PWGMM/multFilter.cxx); o2-linter: disable=magic-number (documented legacy trigger-selection code)
-        zorroMask = "fHighTrackMult,fHighMultFv0";
-      }
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       if (zorroRun != bc.runNumber()) {
+        std::string zorroMask;
+        if (cfgTrigger == 14) { // High-multiplicity pp trigger based on tracks (PWGMM/multFilter.cxx); o2-linter: disable=magic-number (documented legacy trigger-selection code)
+          zorroMask = "fHighTrackMult";
+        }
+        if (cfgTrigger == 15) { // High-multiplicity pp trigger based on FV0 amplitude (PWGMM/multFilter.cxx); o2-linter: disable=magic-number (documented legacy trigger-selection code)
+          zorroMask = "fHighMultFv0";
+        }
+        if (cfgTrigger == 16) { // High-multiplicity pp trigger based on tracks or FV0 amplitude (PWGMM/multFilter.cxx); o2-linter: disable=magic-number (documented legacy trigger-selection code)
+          zorroMask = "fHighTrackMult,fHighMultFv0";
+        }        
         zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), zorroMask);
         zorroRun = bc.runNumber();
       }
