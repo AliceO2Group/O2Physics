@@ -304,7 +304,7 @@ struct HfDerivedDataCreatorDplusToPiKPi {
             }
           }
           if constexpr (OnlySig) {
-            if (std::abs(flagMcRec) != hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) {
+            if (!acceptCorrelatedBkgs && (std::abs(flagMcRec) != hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi)) {
               continue;
             }
           }
