@@ -175,6 +175,9 @@ struct Kstarpbpb {
     Configurable<double> confRapidity{"confRapidity", 0.5, "Rapidity cut"};
     Configurable<bool> genacceptancecut{"genacceptancecut", true, "use acceptance cut for generated"};
     Configurable<bool> avoidsplitrackMC{"avoidsplitrackMC", false, "avoid split track in MC"};
+    // same-event backgrounds, as for K* (off by default: processSEPhi then behaves exactly as before)
+    Configurable<bool> fillRotation{"fillRotation", false, "Fill the same-event rotated K+K- background (K+ rotated, with confMinRot, confMaxRot and nBkgRotations as for K*)"};
+    Configurable<bool> fillLikeSign{"fillLikeSign", false, "Fill the same-event like-sign (K+K+ and K-K-) background"};
     ConfigurableAxis configThnAxisInvMass{"configThnAxisInvMass", {120, 0.98, 1.1}, "#it{M} (GeV/#it{c}^{2})"};
     ConfigurableAxis configThnAxisPt{"configThnAxisPt", {100, 0.0, 10.}, "#it{p}_{T} (GeV/#it{c})"};
     ConfigurableAxis configThnAxisCosThetaStar{"configThnAxisCosThetaStar", {10, -1.0, 1.}, "cos(#vartheta)"};
@@ -437,6 +440,16 @@ struct Kstarpbpb {
       if (doprocessSEPhi) {
         histos.add("phi/hSparseV2SameEventSA", "hSparseV2SameEventSA", HistType::kTHnSparseF, {thnAxisInvMassPhi, thnAxisPtPhi, thnAxisSAPhi, thnAxisRapidityPhi, thnAxisCentralityPhi});
         histos.add("phi/hSparseV2SameEventCosThetaStar", "hSparseV2SameEventCosThetaStar", HistType::kTHnSparseF, {thnAxisInvMassPhi, thnAxisPtPhi, thnAxisCosThetaStarPhi, thnAxisRapidityPhi, thnAxisCentralityPhi});
+        if (phiSA.fillRotation) {
+          histos.add("phi/hSparseV2RotationSA", "hSparseV2RotationSA", HistType::kTHnSparseF, {thnAxisInvMassPhi, thnAxisPtPhi, thnAxisSAPhi, thnAxisRapidityPhi, thnAxisCentralityPhi});
+          histos.add("phi/hSparseV2RotationCosThetaStar", "hSparseV2RotationCosThetaStar", HistType::kTHnSparseF, {thnAxisInvMassPhi, thnAxisPtPhi, thnAxisCosThetaStarPhi, thnAxisRapidityPhi, thnAxisCentralityPhi});
+        }
+        if (phiSA.fillLikeSign) {
+          histos.add("phi/hSparseV2SameEventLikeSA", "hSparseV2SameEventLikeSA", HistType::kTHnSparseF, {thnAxisInvMassPhi, thnAxisPtPhi, thnAxisSAPhi, thnAxisRapidityPhi, thnAxisCentralityPhi});
+          histos.add("phi/hSparseV2SameEventLikeCosThetaStar", "hSparseV2SameEventLikeCosThetaStar", HistType::kTHnSparseF, {thnAxisInvMassPhi, thnAxisPtPhi, thnAxisCosThetaStarPhi, thnAxisRapidityPhi, thnAxisCentralityPhi});
+          histos.add("phi/hMassSameEventLikePP", "Same-event like-sign (++) mass", kTH2F, {thnAxisInvMassPhi, thnAxisCentralityPhi});
+          histos.add("phi/hMassSameEventLikeNN", "Same-event like-sign (--) mass", kTH2F, {thnAxisInvMassPhi, thnAxisCentralityPhi});
+        }
       }
       if (doprocessMEPhi) {
         histos.add("phi/hSparseV2MixedEventSA", "hSparseV2MixedEventSA", HistType::kTHnSparseF, {thnAxisInvMassPhi, thnAxisPtPhi, thnAxisSAPhi, thnAxisRapidityPhi, thnAxisCentralityPhi});
@@ -1661,7 +1674,7 @@ struct Kstarpbpb {
       histos.fill(HIST("phi/hPsiRandom"), centrality, psiSA);
     }
 
-    ROOT::Math::PxPyPzMVector kaonPlusPhi, kaonMinusPhi, phiMother;
+    ROOT::Math::PxPyPzMVector kaonPlusPhi, kaonMinusPhi, phiMother, kaonPlusRot, phiRot;
     for (const auto& track1 : tracks) {
       if (!(track1.signed1Pt() > cfgCutCharge.value)) { // positive kaon
         continue;
@@ -1695,6 +1708,68 @@ struct Kstarpbpb {
         }
         histos.fill(HIST("phi/hSparseV2SameEventSA"), phiMother.M(), phiMother.Pt(), sa, absRapidity, centrality);
         histos.fill(HIST("phi/hSparseV2SameEventCosThetaStar"), phiMother.M(), phiMother.Pt(), cosThetaStar, absRapidity, centrality);
+
+        // rotated background, same rotation as for K* in processSE: rotate the K+, cos(theta*) of the K- in the rotated pair
+        if (phiSA.fillRotation && nBkgRotations.value > 1) {
+          const double angleStart = confMinRot.value;
+          const double angleStep = (confMaxRot.value - angleStart) / (nBkgRotations.value - 1.0);
+          for (int irot = 0; irot < nBkgRotations.value; irot++) {
+            const double rotAngle = angleStart + irot * angleStep;
+            kaonPlusRot = ROOT::Math::PxPyPzMVector(track1.px() * std::cos(rotAngle) - track1.py() * std::sin(rotAngle), track1.px() * std::sin(rotAngle) + track1.py() * std::cos(rotAngle), track1.pz(), MassKa);
+            phiRot = kaonPlusRot + kaonMinusPhi;
+            auto absRapidityRot = std::abs(phiRot.Rapidity());
+            if (absRapidityRot > phiSA.confRapidity) {
+              continue;
+            }
+            // production-plane axis must follow the rotated candidate
+            auto [cosThetaStarRot, saRot] = getSAValuesPhi(phiRot, kaonMinusPhi, getSAAxis(phiRot, psiSA), psiSA);
+            histos.fill(HIST("phi/hSparseV2RotationSA"), phiRot.M(), phiRot.Pt(), saRot, absRapidityRot, centrality);
+            histos.fill(HIST("phi/hSparseV2RotationCosThetaStar"), phiRot.M(), phiRot.Pt(), cosThetaStarRot, absRapidityRot, centrality);
+          }
+        }
+      }
+    }
+
+    // like-sign background (K+K+ and K-K-): same track, PID and pair cuts as the unlike-sign pairs, each pair taken once;
+    // cos(theta*) of the first kaon of the pair (the two kaons are back to back in the pair rest frame, so the choice only flips the sign)
+    if (phiSA.fillLikeSign) {
+      ROOT::Math::PxPyPzMVector kaonLike1, kaonLike2, pairLike;
+      for (const auto& track1 : tracks) {
+        if (!selectionTrackPhi(track1) || !selectionPIDPhi(track1)) {
+          continue;
+        }
+        for (const auto& track2 : tracks) {
+          if (track2.globalIndex() <= track1.globalIndex()) {
+            continue;
+          }
+          if (track1.sign() * track2.sign() <= 0) {
+            continue;
+          }
+          if (!selectionTrackPhi(track2) || !selectionPIDPhi(track2)) {
+            continue;
+          }
+          if (!selectionPairPhi(track1, track2)) {
+            continue;
+          }
+          if (phiSA.removeFakeTrack && (isFakeKaonPhi(track1) || isFakeKaonPhi(track2))) {
+            continue;
+          }
+          kaonLike1 = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), MassKa);
+          kaonLike2 = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), MassKa);
+          pairLike = kaonLike1 + kaonLike2;
+          auto absRapidityLike = std::abs(pairLike.Rapidity());
+          if (absRapidityLike > phiSA.confRapidity) {
+            continue;
+          }
+          auto [cosThetaStarLike, saLike] = getSAValuesPhi(pairLike, kaonLike1, getSAAxis(pairLike, psiSA), psiSA);
+          histos.fill(HIST("phi/hSparseV2SameEventLikeSA"), pairLike.M(), pairLike.Pt(), saLike, absRapidityLike, centrality);
+          histos.fill(HIST("phi/hSparseV2SameEventLikeCosThetaStar"), pairLike.M(), pairLike.Pt(), cosThetaStarLike, absRapidityLike, centrality);
+          if (track1.sign() > 0) {
+            histos.fill(HIST("phi/hMassSameEventLikePP"), pairLike.M(), centrality);
+          } else {
+            histos.fill(HIST("phi/hMassSameEventLikeNN"), pairLike.M(), centrality);
+          }
+        }
       }
     }
   }
