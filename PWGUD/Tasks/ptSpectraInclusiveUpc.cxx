@@ -12,7 +12,9 @@
 /// \file ptSpectraInclusiveUpc.cxx
 /// \executable o2-analysis-ud-pt-spectra-inclusive-upc
 /// \brief Task for the of pT spectra of pions, kaons and protons in inclusive UPC events.
-///        Used to obtain the templates for the DCA_xy fits for the primary fractions
+///        Used to obtain the templates for the DCA_xy fits for the primary fractions.
+///        Fractions are obtained separately for TPC and TOF spectra: a particle passing both PID
+//         selections will contribute to both histograms.
 ///
 /// \author Andrea Giovanni Riffero andrea.giovanni.riffero@cern.ch
 
@@ -77,6 +79,8 @@ struct PtSpectraInclusiveUpc {
   const int nFindableMin = 70;
   const double sigmaMax = 3.;
   const double dcaZlimit = 2.;
+  const double maxChi2TPC = 4.;
+  const double maxChi2ITS = 36.;
 
   void init(InitContext const&)
   {
@@ -127,74 +131,123 @@ struct PtSpectraInclusiveUpc {
 
     histos.add("myEventCounter", "Event counter;Event type;Counts", kTH1F, {axisEventCounter});
 
-    //histos.add("DCAxy_primary_pions", "DCAxy_primary_pions", kTH1F, {axisDCAxy});
-    //histos.add("DCAxy_secondary_pions", "DCAxy_secondary_pions", kTH1F, {axisDCAxy});
-    //histos.add("DCAxy_primary_kaons", "DCAxy_primary_kaons", kTH1F, {axisDCAxy});
-    //histos.add("DCAxy_secondary_kaons", "DCAxy_secondary_kaons", kTH1F, {axisDCAxy});
-    //histos.add("DCAxy_primary_protons", "DCAxy_primary_protons", kTH1F, {axisDCAxy});
-    //histos.add("DCAxy_secondary_protons", "DCAxy_secondary_protons", kTH1F, {axisDCAxy});
-    //histos.add("DCAxy_material_protons", "DCAxy_material_protons", kTH1F, {axisDCAxy});
-    //histos.add("DCAxy_data_pions", "DCAxy_data_pions", kTH1F, {axisDCAxy});
-    //histos.add("DCAxy_data_kaons", "DCAxy_data_kaons", kTH1F, {axisDCAxy});
-    //histos.add("DCAxy_data_protons", "DCAxy_data_protons", kTH1F, {axisDCAxy});
-
     histos.add(
-      "DCAxy_primary_pions",
-      "Primary pions;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)",
+      "DCAxy_TPC_primary_pions",
+      "Primary pions (TPC);#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)",
       kTH2F,
       {axisPt, axisDCAxy});
 
     histos.add(
-      "DCAxy_secondary_pions",
-      "Secondary pions;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)",
+      "DCAxy_TPC_secondary_pions",
+      "Secondary pions (TPC);#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)",
       kTH2F,
       {axisPt, axisDCAxy});
 
     histos.add(
-      "DCAxy_primary_kaons",
-      "Primary kaons;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)",
+      "DCAxy_TPC_primary_kaons",
+      "Primary kaons (TPC);#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)",
       kTH2F,
       {axisPt, axisDCAxy});
 
     histos.add(
-      "DCAxy_secondary_kaons",
-      "Secondary kaons;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)",
+      "DCAxy_TPC_secondary_kaons",
+      "Secondary kaons (TPC);#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)",
       kTH2F,
       {axisPt, axisDCAxy});
 
     histos.add(
-      "DCAxy_primary_protons",
-      "Primary protons;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)",
+      "DCAxy_TPC_primary_protons",
+      "Primary protons (TPC);#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)",
       kTH2F,
       {axisPt, axisDCAxy});
 
     histos.add(
-      "DCAxy_secondary_protons",
-      "Secondary protons from decays;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)",
+      "DCAxy_TPC_secondary_protons",
+      "Secondary protons from decays (TPC);#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)",
       kTH2F,
       {axisPt, axisDCAxy});
 
     histos.add(
-      "DCAxy_material_protons",
-      "Secondary protons from material;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)",
+      "DCAxy_TPC_material_protons",
+      "Secondary protons from material (TPC);#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)",
       kTH2F,
       {axisPt, axisDCAxy});
 
     histos.add(
-      "DCAxy_data_pions",
-      "Data pion candidates;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)",
+      "DCAxy_TPC_data_pions",
+      "Data pion candidates (TPC);#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)",
       kTH2F,
       {axisPt, axisDCAxy});
 
     histos.add(
-      "DCAxy_data_kaons",
-      "Data kaon candidates;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)",
+      "DCAxy_TPC_data_kaons",
+      "Data kaon candidates (TPC);#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)",
       kTH2F,
       {axisPt, axisDCAxy});
 
     histos.add(
-      "DCAxy_data_protons",
-      "Data proton candidates;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)",
+      "DCAxy_TPC_data_protons",
+      "Data proton candidates (TPC);#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)",
+      kTH2F,
+      {axisPt, axisDCAxy});
+
+    histos.add(
+      "DCAxy_TOF_primary_pions",
+      "Primary pions (TOF);#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)",
+      kTH2F,
+      {axisPt, axisDCAxy});
+
+    histos.add(
+      "DCAxy_TOF_secondary_pions",
+      "Secondary pions (TOF);#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)",
+      kTH2F,
+      {axisPt, axisDCAxy});
+
+    histos.add(
+      "DCAxy_TOF_primary_kaons",
+      "Primary kaons (TOF);#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)",
+      kTH2F,
+      {axisPt, axisDCAxy});
+
+    histos.add(
+      "DCAxy_TOF_secondary_kaons",
+      "Secondary kaons (TOF);#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)",
+      kTH2F,
+      {axisPt, axisDCAxy});
+
+    histos.add(
+      "DCAxy_TOF_primary_protons",
+      "Primary protons (TOF);#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)",
+      kTH2F,
+      {axisPt, axisDCAxy});
+
+    histos.add(
+      "DCAxy_TOF_secondary_protons",
+      "Secondary protons from decays (TOF);#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)",
+      kTH2F,
+      {axisPt, axisDCAxy});
+
+    histos.add(
+      "DCAxy_TOF_material_protons",
+      "Secondary protons from material (TOF);#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)",
+      kTH2F,
+      {axisPt, axisDCAxy});
+
+    histos.add(
+      "DCAxy_TOF_data_pions",
+      "Data pion candidates (TOF);#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)",
+      kTH2F,
+      {axisPt, axisDCAxy});
+
+    histos.add(
+      "DCAxy_TOF_data_kaons",
+      "Data kaon candidates (TOF);#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)",
+      kTH2F,
+      {axisPt, axisDCAxy});
+
+    histos.add(
+      "DCAxy_TOF_data_protons",
+      "Data proton candidates (TOF);#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)",
       kTH2F,
       {axisPt, axisDCAxy});
   }
@@ -239,7 +292,8 @@ struct PtSpectraInclusiveUpc {
     }
   }
 
-  void processReco(CCMC const&, TCMCs const& tracks, aod::UDMcParticles const&)
+  template <bool isMc, typename TTracks, typename TCollision>
+  void selectDataAndFillHistos(TCollision const& /*collision*/, TTracks const& tracks)
   {
 
     double dcaXyLimit = 0;
@@ -258,7 +312,17 @@ struct PtSpectraInclusiveUpc {
         continue;
       }
 
-      if (track.hasTPC() && track.tpcNClsFindable() < nFindableMin) {
+      // here TPC selection on findable number of clusters
+      if (track.hasTPC()) {
+        if (track.tpcNClsFindable() < nFindableMin) {
+          continue;
+        }
+        if (track.tpcChi2NCl() > maxChi2TPC) {
+          continue;
+        }
+      }
+
+      if(track.itsChi2NCl() > maxChi2ITS) {
         continue;
       }
 
@@ -275,56 +339,75 @@ struct PtSpectraInclusiveUpc {
         passDCAxyCut = false;
       }
 
-      if (!track.has_udMcParticle()) {
-        continue;
+      bool isPrimary = false;
+      bool isDecay = false;
+      if constexpr (isMc) {
+        if (!track.has_udMcParticle()) {
+          continue;
+        }
+        const auto mcParticle = track.udMcParticle();
+        isPrimary = mcParticle.isPhysicalPrimary();
+        isDecay = mcParticle.getProcess() == kPDecay;
       }
-      auto mcParticle = track.udMcParticle();
 
       trackMomentum[0] = track.px();
       trackMomentum[1] = track.py();
       trackMomentum[2] = track.pz();
 
       // compute rapidity for each ma
-      bool hasTpc = false;
       // TPC tracks
       if (track.hasTPC()) {
-        hasTpc = true;
         nSigmaPi = track.tpcNSigmaPi();
         nSigmaKa = track.tpcNSigmaKa();
         nSigmaPr = track.tpcNSigmaPr();
 
         if (std::abs(nSigmaPi) < sigmaMax) {
           if (std::abs(RecoDecay::y(trackMomentum, o2::constants::physics::MassPionCharged)) < yMax) {
-            if (mcParticle.isPhysicalPrimary()) {
-              if(passDCAxyCut) histos.fill(HIST("ptReconstructedTPCPion"), track.pt());
-              histos.fill(HIST("DCAxy_primary_pions"), track.pt(), track.dcaXY());
+            if constexpr (isMc) {
+              if (isPrimary) {
+                if(passDCAxyCut) histos.fill(HIST("ptReconstructedTPCPion"), track.pt());
+                histos.fill(HIST("DCAxy_TPC_primary_pions"), track.pt(), track.dcaXY());
+              } else {
+                histos.fill(HIST("DCAxy_TPC_secondary_pions"), track.pt(), track.dcaXY());
+              }
             } else {
-              histos.fill(HIST("DCAxy_secondary_pions"), track.pt(), track.dcaXY());
+              if(passDCAxyCut) histos.fill(HIST("ptDataTPCPion"), track.pt());
+              histos.fill(HIST("DCAxy_TPC_data_pions"), track.pt(), track.dcaXY());
             }
           }
         }
         if (std::abs(nSigmaKa) < sigmaMax) {
           if (std::abs(RecoDecay::y(trackMomentum, o2::constants::physics::MassKaonCharged)) < yMax) {
-            if (mcParticle.isPhysicalPrimary()) {
-              if(passDCAxyCut) histos.fill(HIST("ptReconstructedTPCKaon"), track.pt());
-              histos.fill(HIST("DCAxy_primary_kaons"), track.pt(), track.dcaXY());
+            if constexpr (isMc) {
+              if (isPrimary) {
+                if(passDCAxyCut) histos.fill(HIST("ptReconstructedTPCKaon"), track.pt());
+                histos.fill(HIST("DCAxy_TPC_primary_kaons"), track.pt(), track.dcaXY());
+              } else {
+                histos.fill(HIST("DCAxy_TPC_secondary_kaons"), track.pt(), track.dcaXY());
+              }
             } else {
-              histos.fill(HIST("DCAxy_secondary_kaons"), track.pt(), track.dcaXY());
+              if(passDCAxyCut) histos.fill(HIST("ptDataTPCKaon"), track.pt());
+              histos.fill(HIST("DCAxy_TPC_data_kaons"), track.pt(), track.dcaXY());
             }
           }
         }
 
         if (std::abs(nSigmaPr) < sigmaMax) {
           if (std::abs(RecoDecay::y(trackMomentum, o2::constants::physics::MassProton)) < yMax) {
-            if (mcParticle.isPhysicalPrimary()) {
-              if(passDCAxyCut) histos.fill(HIST("ptReconstructedTPCProton"), track.pt());
-              histos.fill(HIST("DCAxy_primary_protons"), track.pt(), track.dcaXY());
-            } else {
-              if (mcParticle.getProcess() == kPDecay) {
-                histos.fill(HIST("DCAxy_secondary_protons"), track.pt(), track.dcaXY());
+            if constexpr (isMc) {
+              if (isPrimary) {
+                if(passDCAxyCut) histos.fill(HIST("ptReconstructedTPCProton"), track.pt());
+                histos.fill(HIST("DCAxy_TPC_primary_protons"), track.pt(), track.dcaXY());
               } else {
-                histos.fill(HIST("DCAxy_material_protons"), track.pt(), track.dcaXY());
+                if (isDecay) {
+                  histos.fill(HIST("DCAxy_TPC_secondary_protons"), track.pt(), track.dcaXY());
+                } else {
+                  histos.fill(HIST("DCAxy_TPC_material_protons"), track.pt(), track.dcaXY());
+                }
               }
+            } else {
+              if(passDCAxyCut) histos.fill(HIST("ptDataTPCProton"), track.pt());
+              histos.fill(HIST("DCAxy_TPC_data_protons"), track.pt(), track.dcaXY());
             }
           }
         }
@@ -338,44 +421,52 @@ struct PtSpectraInclusiveUpc {
 
         if (std::abs(nSigmaPi) < sigmaMax) {
           if (std::abs(RecoDecay::y(trackMomentum, o2::constants::physics::MassPionCharged)) < yMax) {
-            if (mcParticle.isPhysicalPrimary()) {
-              if(passDCAxyCut) histos.fill(HIST("ptReconstructedTOFPion"), track.pt());
-              if (!hasTpc)
-                histos.fill(HIST("DCAxy_primary_pions"), track.pt(), track.dcaXY());
+            if constexpr (isMc) {
+              if (isPrimary) {
+                if(passDCAxyCut) histos.fill(HIST("ptReconstructedTOFPion"), track.pt());
+                histos.fill(HIST("DCAxy_TOF_primary_pions"), track.pt(), track.dcaXY());
+              } else {
+                histos.fill(HIST("DCAxy_TOF_secondary_pions"), track.pt(), track.dcaXY());
+              }
             } else {
-              if (!hasTpc)
-                histos.fill(HIST("DCAxy_secondary_pions"), track.pt(), track.dcaXY());
+              if(passDCAxyCut) histos.fill(HIST("ptDataTOFPion"), track.pt());
+              histos.fill(HIST("DCAxy_TOF_data_pions"), track.pt(), track.dcaXY());
             }
           }
         }
 
         if (std::abs(nSigmaKa) < sigmaMax) {
           if (std::abs(RecoDecay::y(trackMomentum, o2::constants::physics::MassKaonCharged)) < yMax) {
-            if (mcParticle.isPhysicalPrimary()) {
-              if(passDCAxyCut) histos.fill(HIST("ptReconstructedTOFKaon"), track.pt());
-              if (!hasTpc)
-                histos.fill(HIST("DCAxy_primary_kaons"), track.pt(), track.dcaXY());
+            if constexpr (isMc) {
+              if (isPrimary) {
+                if(passDCAxyCut) histos.fill(HIST("ptReconstructedTOFKaon"), track.pt());
+                histos.fill(HIST("DCAxy_TOF_primary_kaons"), track.pt(), track.dcaXY());
+              } else {
+                histos.fill(HIST("DCAxy_TOF_secondary_kaons"), track.pt(), track.dcaXY());
+              }
             } else {
-              if (!hasTpc)
-                histos.fill(HIST("DCAxy_secondary_kaons"), track.pt(), track.dcaXY());
+              if(passDCAxyCut) histos.fill(HIST("ptDataTOFKaon"), track.pt());
+              histos.fill(HIST("DCAxy_TOF_data_kaons"), track.pt(), track.dcaXY());
             }
           }
         }
 
         if (std::abs(nSigmaPr) < sigmaMax) {
           if (std::abs(RecoDecay::y(trackMomentum, o2::constants::physics::MassProton)) < yMax) {
-            if (mcParticle.isPhysicalPrimary()) {
-              if(passDCAxyCut) histos.fill(HIST("ptReconstructedTOFProton"), track.pt());
-              if (!hasTpc)
-                histos.fill(HIST("DCAxy_primary_protons"), track.pt(), track.dcaXY());
-            } else {
-              if (!hasTpc) {
-                if (mcParticle.getProcess() == kPDecay) {
-                  histos.fill(HIST("DCAxy_secondary_protons"), track.pt(), track.dcaXY());
+            if constexpr (isMc) {
+              if (isPrimary) {
+                if(passDCAxyCut) histos.fill(HIST("ptReconstructedTOFProton"), track.pt());
+                histos.fill(HIST("DCAxy_TOF_primary_protons"), track.pt(), track.dcaXY());
+              } else {
+                if (isDecay) {
+                  histos.fill(HIST("DCAxy_TOF_secondary_protons"), track.pt(), track.dcaXY());
                 } else {
-                  histos.fill(HIST("DCAxy_material_protons"), track.pt(), track.dcaXY());
+                  histos.fill(HIST("DCAxy_TOF_material_protons"), track.pt(), track.dcaXY());
                 }
               }
+            } else {
+              if(passDCAxyCut) histos.fill(HIST("ptDataTOFProton"), track.pt());
+              histos.fill(HIST("DCAxy_TOF_data_protons"), track.pt(), track.dcaXY());
             }
           }
         }
@@ -384,107 +475,14 @@ struct PtSpectraInclusiveUpc {
     }
   }
 
-  void processData(CC const&, TCs const& tracks)
+  void processReco(CCMC const& collision, TCMCs const& tracks, aod::UDMcParticles const&)
   {
+    selectDataAndFillHistos<true>(collision, tracks);
+  }
 
-    double dcaXyLimit = 0;
-    bool passDCAxyCut = true;
-    
-    auto nSigmaPi = -999.;
-    auto nSigmaKa = -999.;
-    auto nSigmaPr = -999.;
-
-    std::array<float, 3> trackMomentum;
-
-    for (const auto& track : tracks) {
-      passDCAxyCut = true;
-
-      if (!track.isPVContributor()) {
-        continue;
-      }
-
-      if (track.hasTPC() && track.tpcNClsFindable() < nFindableMin) {
-        continue;
-      }
-
-      if (track.pt() < ptMin) {
-        continue;
-      }
-
-      if (!(std::abs(track.dcaZ()) < dcaZlimit)) {
-        continue;
-      }
-
-      dcaXyLimit = 0.0105 + 0.035 / std::pow(track.pt(), 1.1);
-      if ((std::abs(track.dcaXY()) > dcaXyLimit)) {
-        passDCAxyCut = false;
-      }
-
-      trackMomentum[0] = track.px();
-      trackMomentum[1] = track.py();
-      trackMomentum[2] = track.pz();
-
-      bool hasTpc = false;
-      // TPC tracks
-      if (track.hasTPC()) {
-        hasTpc = true;
-        nSigmaPi = track.tpcNSigmaPi();
-        nSigmaKa = track.tpcNSigmaKa();
-        nSigmaPr = track.tpcNSigmaPr();
-
-        if (std::abs(nSigmaPi) < sigmaMax) {
-          if (std::abs(RecoDecay::y(trackMomentum, o2::constants::physics::MassPionCharged)) < yMax) {
-            if(passDCAxyCut) histos.fill(HIST("ptDataTPCPion"), track.pt());
-            histos.fill(HIST("DCAxy_data_pions"), track.pt(), track.dcaXY());
-          }
-        }
-
-        if (std::abs(nSigmaKa) < sigmaMax) {
-          if (std::abs(RecoDecay::y(trackMomentum, o2::constants::physics::MassKaonCharged)) < yMax) {
-            if(passDCAxyCut) histos.fill(HIST("ptDataTPCKaon"), track.pt());
-            histos.fill(HIST("DCAxy_data_kaons"), track.pt(), track.dcaXY());
-          }
-        }
-
-        if (std::abs(nSigmaPr) < sigmaMax) {
-          if (std::abs(RecoDecay::y(trackMomentum, o2::constants::physics::MassProton)) < yMax) {
-            if(passDCAxyCut) histos.fill(HIST("ptDataTPCProton"), track.pt());
-            histos.fill(HIST("DCAxy_data_protons"), track.pt(), track.dcaXY());
-          }
-        }
-      }
-
-      // TOF tracks
-      if (track.hasTOF()) {
-        nSigmaPi = track.tofNSigmaPi();
-        nSigmaKa = track.tofNSigmaKa();
-        nSigmaPr = track.tofNSigmaPr();
-
-        if (std::abs(nSigmaPi) < sigmaMax) {
-          if (std::abs(RecoDecay::y(trackMomentum, o2::constants::physics::MassPionCharged)) < yMax) {
-            if(passDCAxyCut) histos.fill(HIST("ptDataTOFPion"), track.pt());
-            if (!hasTpc)
-              histos.fill(HIST("DCAxy_data_pions"), track.pt(), track.dcaXY());
-          }
-        }
-
-        if (std::abs(nSigmaKa) < sigmaMax) {
-          if (std::abs(RecoDecay::y(trackMomentum, o2::constants::physics::MassKaonCharged)) < yMax) {
-            if(passDCAxyCut) histos.fill(HIST("ptDataTOFKaon"), track.pt());
-            if (!hasTpc)
-              histos.fill(HIST("DCAxy_data_kaons"), track.pt(), track.dcaXY());
-          }
-        }
-
-        if (std::abs(nSigmaPr) < sigmaMax) {
-          if (std::abs(RecoDecay::y(trackMomentum, o2::constants::physics::MassProton)) < yMax) {
-            if(passDCAxyCut) histos.fill(HIST("ptDataTOFProton"), track.pt());
-            if (!hasTpc)
-              histos.fill(HIST("DCAxy_data_protons"), track.pt(), track.dcaXY());
-          }
-        }
-      }
-    }
+  void processData(CC const& collision, TCs const& tracks)
+  {
+    selectDataAndFillHistos<false>(collision, tracks);
   }
 
   PROCESS_SWITCH(PtSpectraInclusiveUpc, processSim, "processSim", false);
