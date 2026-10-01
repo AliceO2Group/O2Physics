@@ -27,9 +27,9 @@
 ///
 /// \author Madalina Tarzila
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
 
 // Reco headers — compiled but used only by processReco (switched off for now)
 #include "Common/DataModel/EventSelection.h"
