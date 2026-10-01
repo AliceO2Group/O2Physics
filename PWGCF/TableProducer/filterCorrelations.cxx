@@ -268,7 +268,7 @@ struct FilterCF {
         }
         if (cfgTrigger == 16) { // High-multiplicity pp trigger based on tracks or FV0 amplitude (PWGMM/multFilter.cxx); o2-linter: disable=magic-number (documented legacy trigger-selection code)
           zorroMask = "fHighTrackMult,fHighMultFv0";
-        }        
+        }
         zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), zorroMask);
         zorroRun = bc.runNumber();
       }
