@@ -115,6 +115,7 @@ struct femtoDreamPairTaskTrackTrack {
     ConfigurableAxis DKlong{"DKlong", {500, -2., 2.}, "binning DKlong for the 3-D femtoscopy plot: R_long(LCMS) vs mT vs multiplicity percentile vs qnBin vs pait phi wrt EP (set <<do3DFemto>> to true)"};
     ConfigurableAxis qnBins{"qnBins", {10, 0, 10}, "binning of qn interval"};
     ConfigurableAxis pairPhiBins{"pairPhiBins", {12, 0., TMath::Pi()}, "binning of pair phi"};
+    Configurable<bool> storeEProt{"storeEProt", false, "Store EP-rotated (B-frame) DK_x,DK_y,DK_z instead of out,side,long in the 3D qn histogram"};
   } EPCal;
 
   using FilteredCollisions = soa::Filtered<FDCollisions>;
@@ -333,6 +334,8 @@ struct femtoDreamPairTaskTrackTrack {
     }
 
     if (EPCal.do3DFemto) {
+      sameEventQnCont.setStoreEProt(EPCal.storeEProt);
+      mixedEventQnCont.setStoreEProt(EPCal.storeEProt);
       sameEventQnCont.init_3Dqn(&Registry, EPCal.DKout, EPCal.DKside, EPCal.DKlong,
                                 Binning4D.mT, Binning4D.multPercentile, Option.IsMC, EPCal.qnBins, EPCal.pairPhiBins, Option.SmearingByOrigin);
       mixedEventQnCont.init_3Dqn(&Registry, EPCal.DKout, EPCal.DKside, EPCal.DKlong,
