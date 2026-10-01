@@ -175,7 +175,7 @@ struct HfTaskOmegac0ToOmegaPiQa {
       if constexpr (UseKfParticle) {
         yOmegac = candidate.kfRapOmegac();
       } else {
-        yOmegac = candidate.y(o2::constants::physics::MassOmegaC0);
+        yOmegac = RecoDecay::y(std::array{candidate.pxCharmBaryon(), candidate.pyCharmBaryon(), candidate.pzCharmBaryon()}, o2::constants::physics::MassOmegaC0);
       }
       if (yCandRecoMax >= 0. && std::abs(yOmegac) > yCandRecoMax) {
         continue;
@@ -200,7 +200,7 @@ struct HfTaskOmegac0ToOmegaPiQa {
     if constexpr (UseKfParticle) {
       yOmegac = candidate.kfRapOmegac();
     } else {
-      yOmegac = candidate.y(o2::constants::physics::MassOmegaC0);
+      yOmegac = RecoDecay::y(std::array{candidate.pxCharmBaryon(), candidate.pyCharmBaryon(), candidate.pzCharmBaryon()}, o2::constants::physics::MassOmegaC0);
     }
 
     if (yCandRecoMax >= 0. && std::abs(yOmegac) > yCandRecoMax) {
@@ -239,7 +239,7 @@ struct HfTaskOmegac0ToOmegaPiQa {
       if constexpr (UseKfParticle) {
         yOmegac = candidate.kfRapOmegac();
       } else {
-        yOmegac = candidate.y(o2::constants::physics::MassOmegaC0);
+        yOmegac = RecoDecay::y(std::array{candidate.pxCharmBaryon(), candidate.pyCharmBaryon(), candidate.pzCharmBaryon()}, o2::constants::physics::MassOmegaC0);
       }
 
       if (yCandRecoMax >= 0. && std::abs(yOmegac) > yCandRecoMax) {
@@ -285,7 +285,7 @@ struct HfTaskOmegac0ToOmegaPiQa {
       if constexpr (UseKfParticle) {
         yOmegac = candidate.kfRapOmegac();
       } else {
-        yOmegac = candidate.y(o2::constants::physics::MassOmegaC0);
+        yOmegac = RecoDecay::y(std::array{candidate.pxCharmBaryon(), candidate.pyCharmBaryon(), candidate.pzCharmBaryon()}, o2::constants::physics::MassOmegaC0);
       }
 
       if (yCandRecoMax >= 0. && std::abs(yOmegac) > yCandRecoMax) {

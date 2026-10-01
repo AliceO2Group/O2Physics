@@ -343,8 +343,8 @@ struct HfCandidateSelectorToOmegaPiQa {
       registry.get<TH1>(HIST("hSelStatusLf"))->GetXaxis()->SetBinLabel(13, "dcaXYToPvCascDau");
       registry.get<TH1>(HIST("hSelStatusLf"))->GetXaxis()->SetBinLabel(14, "ptKaFromCasc");
       registry.get<TH1>(HIST("hSelStatusLf"))->GetXaxis()->SetBinLabel(15, "cosPaV0ToCasc");
-      registry.get<TH1>(HIST("hSelStatusLf"))->GetXaxis()->SetBinLabel(16, "chi2GeoV0");
-      registry.get<TH1>(HIST("hSelStatusLf"))->GetXaxis()->SetBinLabel(17, "chi2GeoCasc");
+      registry.get<TH1>(HIST("hSelStatusLf"))->GetXaxis()->SetBinLabel(16, "v0Chi2OverNdf");
+      registry.get<TH1>(HIST("hSelStatusLf"))->GetXaxis()->SetBinLabel(17, "cascChi2OverNdf");
       registry.get<TH1>(HIST("hSelStatusLf"))->GetXaxis()->SetBinLabel(18, "chi2TopoCascToPv");
       registry.get<TH1>(HIST("hSelStatusLf"))->GetXaxis()->SetBinLabel(19, "chi2TopoV0ToCasc");
       registry.get<TH1>(HIST("hSelStatusLf"))->GetXaxis()->SetBinLabel(20, "v0ldl");
@@ -359,7 +359,7 @@ struct HfCandidateSelectorToOmegaPiQa {
       registry.get<TH1>(HIST("hSelStatusHf"))->GetXaxis()->SetBinLabel(4, "ptPiFromCharmBaryon");
       registry.get<TH1>(HIST("hSelStatusHf"))->GetXaxis()->SetBinLabel(5, "kfptOmegac");
       registry.get<TH1>(HIST("hSelStatusHf"))->GetXaxis()->SetBinLabel(6, "cosPaCascToOmegac");
-      registry.get<TH1>(HIST("hSelStatusHf"))->GetXaxis()->SetBinLabel(7, "chi2GeoOmegac");
+      registry.get<TH1>(HIST("hSelStatusHf"))->GetXaxis()->SetBinLabel(7, "omegacChi2OverNdf");
       registry.get<TH1>(HIST("hSelStatusHf"))->GetXaxis()->SetBinLabel(8, "chi2TopoOmegacToPv");
       registry.get<TH1>(HIST("hSelStatusHf"))->GetXaxis()->SetBinLabel(9, "chi2TopoCascToOmegac");
       registry.get<TH1>(HIST("hSelStatusHf"))->GetXaxis()->SetBinLabel(10, "decayLenXYOmegac");
@@ -513,11 +513,11 @@ struct HfCandidateSelectorToOmegaPiQa {
         registry.fill(HIST("hSelStatusLf"), 14.0);
 
         // Chi2
-        if (candidate.chi2GeoV0() < 0 || candidate.chi2GeoV0() > kfConfigurableGroup.v0Chi2OverNdfMax) {
+        if (candidate.v0Chi2OverNdf() < 0 || candidate.v0Chi2OverNdf() > kfConfigurableGroup.v0Chi2OverNdfMax) {
           return false;
         }
         registry.fill(HIST("hSelStatusLf"), 15.0);
-        if (candidate.chi2GeoCasc() < 0 || candidate.chi2GeoCasc() > kfConfigurableGroup.cascChi2OverNdfMax) {
+        if (candidate.cascChi2OverNdf() < 0 || candidate.cascChi2OverNdf() > kfConfigurableGroup.cascChi2OverNdfMax) {
           return false;
         }
         registry.fill(HIST("hSelStatusLf"), 16.0);
@@ -621,7 +621,7 @@ struct HfCandidateSelectorToOmegaPiQa {
         registry.fill(HIST("hSelStatusHf"), 5.0);
 
         // Chi2
-        if (candidate.chi2GeoOmegac() < 0 || candidate.chi2GeoOmegac() > kfConfigurableGroup.omegacChi2OverNdfMax) {
+        if (candidate.omegacChi2OverNdf() < 0 || candidate.omegacChi2OverNdf() > kfConfigurableGroup.omegacChi2OverNdfMax) {
           return false;
         }
         registry.fill(HIST("hSelStatusHf"), 6.0);

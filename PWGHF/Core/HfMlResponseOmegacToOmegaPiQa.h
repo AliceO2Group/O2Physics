@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file HfMlResponseOmegacToOmegaPiQa.h
-/// \brief Class to compute the ML response for Ωc± → Ω∓ π±  analysis selections
+/// \brief Class to compute the ML response for Ωc0 → Ω- π+ (and charge-conjugate) analysis selections
 /// \author Yunfan Liu <yunfan.liu@cern.ch>, China University of Geosciences
 /// \author Maria Fernanda Torres Cabrera <maria.fernanda.torres.cabrera@cern.ch>, University of Houston
 
