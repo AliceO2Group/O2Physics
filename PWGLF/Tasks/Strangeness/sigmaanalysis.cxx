@@ -94,8 +94,6 @@ struct sigmaanalysis {
   ctpRateFetcher rateFetcher;
   o2::analysis::ResonanceMlResponse<float> mlResponse;
 
-  float score = -1.f;
-
   //__________________________________________________
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 

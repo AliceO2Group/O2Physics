@@ -83,7 +83,6 @@ struct k892hadronphotonBkg {
   o2::ccdb::CcdbApi ccdbApi;
   ctpRateFetcher rateFetcher;
   o2::analysis::ResonanceMlResponse<float> mlResponse;
-  float score = -1.f;
 
   TRandom3 rotRng{12345}; // struct member; fixed seed for reproducibility across grid jobs
 
