@@ -32,10 +32,10 @@
 
 #include <TH1.h>
 #include <TH2.h>
-#include <map>
-#include <string>
 
 #include <cstdint>
+#include <map>
+#include <string>
 
 using namespace o2;
 using namespace o2::aod;
