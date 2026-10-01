@@ -1022,12 +1022,20 @@ struct HadronNucleiCorrelation {
         registryQa.fill(HIST("QA/hnSigmaITSVsPt_Pr"), track.pt() * track.sign(), track.itsNSigmaPr());
         registryQa.fill(HIST("QA/hnSigmaITSVsPt_De"), track.pt() * track.sign(), track.itsNSigmaDe());
         if (track.sign() > 0) {
-          registryQa.fill(HIST("QA/h3dTPCTOF_Pr"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
-          registryQa.fill(HIST("QA/h3dTPCTOF_De"), track.tpcNSigmaDe(), track.tofNSigmaDe(), track.pt());
+          if (track.pt() >= pTthrprTOF.value || !doITSPID.value || track.itsNSigmaPr() > nsigmaITSPr.value) {
+            registryQa.fill(HIST("QA/h3dTPCTOF_Pr"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
+          }
+          if (track.pt() >= pTthrdeTOF.value || !doITSPID.value || track.itsNSigmaDe() > nsigmaITSDe.value) {
+            registryQa.fill(HIST("QA/h3dTPCTOF_De"), track.tpcNSigmaDe(), track.tofNSigmaDe(), track.pt());
+          }
         }
         if (track.sign() < 0) {
-          registryQa.fill(HIST("QA/h3dTPCTOF_AntiPr"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
-          registryQa.fill(HIST("QA/h3dTPCTOF_AntiDe"), track.tpcNSigmaDe(), track.tofNSigmaDe(), track.pt());
+          if (track.pt() >= pTthrprTOF.value || !doITSPID.value || track.itsNSigmaPr() > nsigmaITSPr.value) {
+            registryQa.fill(HIST("QA/h3dTPCTOF_AntiPr"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
+          }
+          if (track.pt() >= pTthrdeTOF.value || !doITSPID.value || track.itsNSigmaDe() > nsigmaITSDe.value) {
+            registryQa.fill(HIST("QA/h3dTPCTOF_AntiDe"), track.tpcNSigmaDe(), track.tofNSigmaDe(), track.pt());
+          }
         }
 
         if (isProton(track, -1)) {
