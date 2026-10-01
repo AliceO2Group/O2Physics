@@ -42,7 +42,6 @@
 
 #include <fmt/format.h>
 
-#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdlib>
