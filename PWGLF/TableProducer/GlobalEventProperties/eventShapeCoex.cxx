@@ -24,6 +24,7 @@
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/InitContext.h>
@@ -31,6 +32,7 @@
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/runDataProcessing.h>
 
+#include <array>
 #include <cmath>
 #include <cstdint>
 
@@ -64,7 +66,7 @@ struct SubEventSums {
     qy4 += 2. * sin2 * cos2;
   }
 
-  float meanPt() const { return (n > 0) ? static_cast<float>(sumPt / n) : std::nanf(""); }
+  [[nodiscard]] float meanPt() const { return (n > 0) ? static_cast<float>(sumPt / n) : std::nanf(""); }
 };
 } // namespace
 
@@ -73,7 +75,7 @@ struct EventShapeCoex {
   Produces<aod::EvShapeCoexGen> coexGen;
   Produces<aod::EvShapeCoexMcLabels> coexMcLabels;
 
-  Service<o2::framework::O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg{};
 
   Configurable<float> vtxZCut{"vtxZCut", 10.0f, "Max |PV z| (cm)"};
   Configurable<float> ptMin{"ptMin", 0.15f, "Minimum track pT (GeV/c)"};
@@ -134,7 +136,7 @@ struct EventShapeCoex {
 
     // bit i of qaBits = QaBitOrder[i]
     static constexpr int NQaBits = 12;
-    static constexpr o2::aod::evsel::EventSelectionFlags QaBitOrder[NQaBits] = {
+    static constexpr std::array<o2::aod::evsel::EventSelectionFlags, NQaBits> QaBitOrder = {
       o2::aod::evsel::kNoSameBunchPileup, o2::aod::evsel::kIsGoodZvtxFT0vsPV,
       o2::aod::evsel::kIsVertexITSTPC, o2::aod::evsel::kIsVertexTOFmatched,
       o2::aod::evsel::kNoCollInTimeRangeNarrow, o2::aod::evsel::kNoCollInTimeRangeStrict,
