@@ -138,7 +138,7 @@ struct Kstarpbpb {
   // spin-alignment quantization axis
   Configurable<int> cfgSAFrame{"cfgSAFrame", 0, "SA quantization axis: 0 = event plane (FT0C), 1 = production plane, 2 = random event plane"};
   Configurable<int> cfgRndSeed{"cfgRndSeed", 0, "Seed for random event plane (0 = unique seed per job)"};
-  Configurable<float> cfgEPNormalHarmonic{"cfgEPNormalHarmonic", 2.0f, "EP normal = (sin(n*Psi), -cos(n*Psi), 0); n = 2 is the previous behaviour, n = 1 is the normal to the Psi2 plane"};
+  Configurable<float> cfgEPNormalHarmonic{"cfgEPNormalHarmonic", 1.0f, "EP normal = (sin(n*Psi), -cos(n*Psi), 0); n = 1 is the normal to the Psi2 plane (default), n = 2 is the old behaviour (axis at 2*Psi2 - pi/2, not the normal; the R2 resolution correction does not apply)"};
   // phi(1020) -> K+K- reflection veto for K* (off by default: the task then behaves exactly as before)
   Configurable<bool> cfgPhiVeto{"cfgPhiVeto", false, "Reject K pi pairs whose KK mass (pion candidate given the kaon mass) is near the phi(1020) mass"};
   Configurable<float> cfgPhiVetoWindow{"cfgPhiVetoWindow", 0.010f, "Half-width of the phi(1020) veto window (GeV/c^2)"};
@@ -230,9 +230,16 @@ struct Kstarpbpb {
   using FilTrackMCRecTable = soa::Filtered<TrackMCRecTable>;
 
   Preslice<TrackMCRecTable> perCollision = aod::track::collisionId;
+  // reconstructed MC collisions for the closure: adds EPCalibrationTables (psiFT0C etc.) on top of CollisionMCRecTableCentFT0C,
+  // so the closure can optionally use the reconstructed (finite-resolution) Psi_FT0C instead of the MC true event plane
+  using CollisionMCRecTableClosure = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Cs, aod::EvSels, aod::EPCalibrationTables>>;
   // reconstructed MC collisions for the closure mixed event (posZ and centrality filters as in data)
   using CollisionMCRecMixTable = soa::Filtered<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFT0Cs, aod::EvSels>>;
+  // same as CollisionMCRecMixTable, plus EPCalibrationTables (psiFT0C etc.) for the reconstructed-event-plane closure
+  using CollisionMCRecMixTableRecoEP = soa::Filtered<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFT0Cs, aod::EvSels, aod::EPCalibrationTables>>;
   using BinningTypeMCClosure = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
+  // same as BinningTypeMCClosure, plus Psi_FT0C (as in data's BinningTypeVertexContributor), for the reconstructed-EP closure ME
+  using BinningTypeMCClosureRecoEP = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C, aod::epcalibrationtable::PsiFT0C>;
 
   SliceCache cache;
   // Partition<TrackCandidates> posTracks = aod::track::signed1Pt > cfgCutCharge;
@@ -256,6 +263,9 @@ struct Kstarpbpb {
 
     if (cfgSAFrame.value < kEventPlane || cfgSAFrame.value > kRandomEventPlane) {
       LOGF(fatal, "cfgSAFrame = %d not supported (0 = event plane, 1 = production plane, 2 = random event plane)", cfgSAFrame.value);
+    }
+    if (cfgSAFrame.value != kProductionPlane && cfgEPNormalHarmonic.value != 1.0f) {
+      LOGF(warning, "cfgEPNormalHarmonic = %.1f: the SA axis is not the normal to the Psi2 plane, so the R2 = <cos 2(Psi_obs - Psi_true)> resolution correction does not close", cfgEPNormalHarmonic.value);
     }
     rndGen.SetSeed(cfgRndSeed);
 
@@ -526,6 +536,76 @@ struct Kstarpbpb {
         }
         if (doprocessMCClosureMEPhi) {
           histos.add("closurePhi/hSparseME", "Mixed-event K^{+}K^{-} pairs, test sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxisClosurePhi}, true);
+        }
+      }
+    }
+
+    // MC closure test of the cos(theta*) chain, using the reconstructed (finite-resolution) Psi_FT0C instead of the MC true event plane.
+    // Needs EPCalibrationTables on the MC sample (i.e. the epvector producer run on it), unlike the true-EP closure above.
+    if (doprocessMCClosureRecoEP || doprocessMCClosureMERecoEP || doprocessMCClosureRecoEPPhi || doprocessMCClosureMERecoEPPhi) {
+      if (closure.rho00Inj.value < 0.f || closure.rho00Inj.value > 1.f) {
+        LOGF(fatal, "closure.rho00Inj = %f is outside [0,1]", closure.rho00Inj.value);
+      }
+      const AxisSpec cosAxisClosure{closure.axisCosThetaStar, "cos(#vartheta*)"};
+      const AxisSpec cosFineAxis{100, -1.0, 1.0, "cos(#vartheta*)"};
+      if (doprocessMCClosureRecoEP || doprocessMCClosureMERecoEP) {
+        const AxisSpec massAxis{configThnAxisInvMass, "#it{M}_{K#pi} (GeV/#it{c}^{2})"};
+        const AxisSpec ptAxis{configThnAxisPt, "#it{p}_{T} (GeV/#it{c})"};
+        const AxisSpec centAxisClosureKstar{configThnAxisCentrality, "Centrality (%)"};
+        if (doprocessMCClosureRecoEP) {
+          // bins: 0 all MC events, 1 no reco event, 2 more than one reco event, 3 selected (eff sample), 4 selected (test sample)
+          histos.add("closureKstarRecoEP/hMC", "MC event statistics", kTH1F, {{5, 0.0f, 5.0f}});
+          // Acc x Eff sample
+          histos.add("closureKstarRecoEP/hSparseGenEff", "Generated K*, efficiency sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxisClosureKstar}, true);
+          histos.add("closureKstarRecoEP/hSparseRecTrueEff", "Reconstructed true K*, efficiency sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxisClosureKstar}, true);
+          // test sample
+          histos.add("closureKstarRecoEP/hSparseGen", "Generated K* (input), test sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxisClosureKstar}, true);
+          histos.add("closureKstarRecoEP/hSparseRecTrue", "Reconstructed true K*, test sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxisClosureKstar}, true);
+          histos.add("closureKstarRecoEP/hSparseSE", "Same-event unlike-sign K#pi pairs, test sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxisClosureKstar}, true);
+          if (closure.fillRotBkg) {
+            histos.add("closureKstarRecoEP/hSparseRot", "Rotated unlike-sign K#pi pairs, test sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxisClosureKstar}, true);
+          }
+          histos.add("closureKstarRecoEP/hCosThetaStarGenVsRec", "cos(#vartheta*) gen vs rec, true K*", kTH2F, {cosFineAxis, cosFineAxis});
+          // sub-event resolution of the closure sample, needed to derive R2 and un-smear rho00 downstream; same definition as the data ResFT0C*SP
+          histos.add("closureKstarRecoEP/ResFT0CTPCSP", "ResFT0CTPCSP", kTH2F, {centAxis, resAxis});
+          histos.add("closureKstarRecoEP/ResFT0CFT0ASP", "ResFT0CFT0ASP", kTH2F, {centAxis, resAxis});
+          histos.add("closureKstarRecoEP/ResFT0ATPCSP", "ResFT0ATPCSP", kTH2F, {centAxis, resAxis});
+          // plain (unweighted) sub-event resolution, as needed by the EP-method correction formula; same definition as the data ResFT0CTPC etc.
+          histos.add("closureKstarRecoEP/ResFT0CTPC", "ResFT0CTPC", kTH2F, {centAxis, resAxis});
+          histos.add("closureKstarRecoEP/ResFT0CFT0A", "ResFT0CFT0A", kTH2F, {centAxis, resAxis});
+          histos.add("closureKstarRecoEP/ResFT0ATPC", "ResFT0ATPC", kTH2F, {centAxis, resAxis});
+          // closure-only: Psi_FT0C vs the MC true event plane, to cross-check R from sub-events against the true R
+          histos.add("closureKstarRecoEP/ResTrueFT0C", "ResTrueFT0C", kTH2F, {centAxis, resAxis});
+        }
+        if (doprocessMCClosureMERecoEP) {
+          histos.add("closureKstarRecoEP/hSparseME", "Mixed-event unlike-sign K#pi pairs, test sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxisClosureKstar}, true);
+        }
+      }
+      if (doprocessMCClosureRecoEPPhi || doprocessMCClosureMERecoEPPhi) {
+        const AxisSpec massAxis{phiSA.configThnAxisInvMass, "#it{M}_{KK} (GeV/#it{c}^{2})"};
+        const AxisSpec ptAxis{phiSA.configThnAxisPt, "#it{p}_{T} (GeV/#it{c})"};
+        const AxisSpec centAxisClosurePhi{phiSA.configThnAxisCentrality, "Centrality (%)"};
+        if (doprocessMCClosureRecoEPPhi) {
+          histos.add("closurePhiRecoEP/hMC", "MC event statistics", kTH1F, {{5, 0.0f, 5.0f}});
+          histos.add("closurePhiRecoEP/hSparseGenEff", "Generated phi, efficiency sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxisClosurePhi}, true);
+          histos.add("closurePhiRecoEP/hSparseRecTrueEff", "Reconstructed true phi, efficiency sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxisClosurePhi}, true);
+          histos.add("closurePhiRecoEP/hSparseGen", "Generated phi (input), test sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxisClosurePhi}, true);
+          histos.add("closurePhiRecoEP/hSparseRecTrue", "Reconstructed true phi, test sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxisClosurePhi}, true);
+          histos.add("closurePhiRecoEP/hSparseSE", "Same-event K^{+}K^{-} pairs, test sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxisClosurePhi}, true);
+          if (closure.fillRotBkg) {
+            histos.add("closurePhiRecoEP/hSparseRot", "Rotated K^{+}K^{-} pairs, test sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxisClosurePhi}, true);
+          }
+          histos.add("closurePhiRecoEP/hCosThetaStarGenVsRec", "cos(#vartheta*) gen vs rec, true phi", kTH2F, {cosFineAxis, cosFineAxis});
+          histos.add("closurePhiRecoEP/ResFT0CTPCSP", "ResFT0CTPCSP", kTH2F, {centAxis, resAxis});
+          histos.add("closurePhiRecoEP/ResFT0CFT0ASP", "ResFT0CFT0ASP", kTH2F, {centAxis, resAxis});
+          histos.add("closurePhiRecoEP/ResFT0ATPCSP", "ResFT0ATPCSP", kTH2F, {centAxis, resAxis});
+          histos.add("closurePhiRecoEP/ResFT0CTPC", "ResFT0CTPC", kTH2F, {centAxis, resAxis});
+          histos.add("closurePhiRecoEP/ResFT0CFT0A", "ResFT0CFT0A", kTH2F, {centAxis, resAxis});
+          histos.add("closurePhiRecoEP/ResFT0ATPC", "ResFT0ATPC", kTH2F, {centAxis, resAxis});
+          histos.add("closurePhiRecoEP/ResTrueFT0C", "ResTrueFT0C", kTH2F, {centAxis, resAxis});
+        }
+        if (doprocessMCClosureMERecoEPPhi) {
+          histos.add("closurePhiRecoEP/hSparseME", "Mixed-event K^{+}K^{-} pairs, test sample", HistType::kTHnSparseD, {massAxis, ptAxis, cosAxisClosure, centAxisClosurePhi}, true);
         }
       }
     }
@@ -2013,7 +2093,7 @@ struct Kstarpbpb {
     if (!collision1.has_mcCollision() || !collision2.has_mcCollision()) {
       return false;
     }
-    if (!isClosureTestSample(collision1.mcCollisionId())) {
+    if (!isClosureTestSample(collision1.mcCollisionId()) || !isClosureTestSample(collision2.mcCollisionId())) {
       return false;
     }
     if (closure.meRequireSingleReco && (nRecPerMc[collision1.mcCollisionId()] != 1 || nRecPerMc[collision2.mcCollisionId()] != 1)) {
@@ -2027,6 +2107,33 @@ struct Kstarpbpb {
   bool selectionEventMC(const TCollision& collision)
   {
     return collision.sel8() && selectionEventBits(collision) && std::abs(collision.posZ()) < cfgCutVertex && std::abs(collision.centFT0C()) < cfgCutCentrality;
+  }
+
+  // reco-event selection of the reconstructed-Psi_FT0C closure: selectionEventMC plus the EP-calibration trigger required
+  // on data (processSE / processSEPhi via selectionEventCuts), only available once EPCalibrationTables is joined
+  template <typename TCollision>
+  bool selectionEventMCRecoEP(const TCollision& collision)
+  {
+    return selectionEventMC(collision) && collision.triggereventep();
+  }
+
+  // mixed-event pair of the reconstructed-Psi_FT0C closure test sample: same as selectionClosurePairME, with the EP trigger
+  template <typename TCollision>
+  bool selectionClosurePairMERecoEP(const TCollision& collision1, const TCollision& collision2, const std::vector<int>& nRecPerMc)
+  {
+    if (!selectionEventMCRecoEP(collision1) || !selectionEventMCRecoEP(collision2) || collision1.bcId() == collision2.bcId()) {
+      return false;
+    }
+    if (!collision1.has_mcCollision() || !collision2.has_mcCollision()) {
+      return false;
+    }
+    if (!isClosureTestSample(collision1.mcCollisionId()) || !isClosureTestSample(collision2.mcCollisionId())) {
+      return false;
+    }
+    if (closure.meRequireSingleReco && (nRecPerMc[collision1.mcCollisionId()] != 1 || nRecPerMc[collision2.mcCollisionId()] != 1)) {
+      return false;
+    }
+    return true;
   }
 
   // K pi pair from the decay of one primary K*0 / anti-K*0 (|y| < confRapidity)
@@ -2173,8 +2280,9 @@ struct Kstarpbpb {
             kstarGen = kaonGen + pionGen;
             const double cosGen = getCosThetaStar(kstarGen, kaonGen, getSAAxis(kstarGen, psi));
             weight = getInjectionWeight(cosGen);
+            // Acc x Eff must come from an unweighted (unpolarized) sample, independent of the injected rho00 under test
             if (isEffSample) {
-              histos.fill(HIST("closureKstar/hSparseRecTrueEff"), kstar.M(), kstar.Pt(), cosRec, centrality, weight);
+              histos.fill(HIST("closureKstar/hSparseRecTrueEff"), kstar.M(), kstar.Pt(), cosRec, centrality, 1.0);
             }
             if (isTestSample) {
               histos.fill(HIST("closureKstar/hSparseRecTrue"), kstar.M(), kstar.Pt(), cosRec, centrality, weight);
@@ -2242,11 +2350,12 @@ struct Kstarpbpb {
           continue;
         }
         const double cosGen = getCosThetaStar(kstarGen, kaonGen, getSAAxis(kstarGen, psi));
-        const double weight = getInjectionWeight(cosGen);
+        // Acc x Eff must come from an unweighted (unpolarized) sample, independent of the injected rho00 under test
         if (isEffSample) {
-          histos.fill(HIST("closureKstar/hSparseGenEff"), kstarGen.M(), kstarGen.Pt(), cosGen, centrality, weight);
+          histos.fill(HIST("closureKstar/hSparseGenEff"), kstarGen.M(), kstarGen.Pt(), cosGen, centrality, 1.0);
         }
         if (isTestSample) {
+          const double weight = getInjectionWeight(cosGen);
           histos.fill(HIST("closureKstar/hSparseGen"), kstarGen.M(), kstarGen.Pt(), cosGen, centrality, weight);
         }
       }
@@ -2303,7 +2412,7 @@ struct Kstarpbpb {
 
   // ---------------- phi(1020): same event, true reco, generated ----------------
   // track1 = K+, track2 = K-, as in processSEPhi; cos(theta*) of the K-.
-  // The axis is built with getSAAxisPhiMC, as in processMCPhi (the phi efficiency).
+  // The axis is built with getSAAxis, as in processSEPhi/processMEPhi (the real data analysis).
   void processMCClosurePhi(CollisionMCTrueTable::iterator const& trueCollision, CollisionMCRecTableCentFT0C const& recCollisions, TrackMCTrueTable const& genParticles, FilTrackMCRecTable const& recTracks)
   {
     ROOT::Math::PxPyPzMVector kaonPlus, kaonMinus, phi, kaonPlusRot, phiRot, kaonPlusGen, kaonMinusGen, phiGen;
@@ -2361,7 +2470,7 @@ struct Kstarpbpb {
           if (std::abs(phi.Rapidity()) > phiSA.confRapidity) {
             continue;
           }
-          const double cosRec = getCosThetaStar(phi, kaonMinus, getSAAxisPhiMC(phi, psi));
+          const double cosRec = getCosThetaStar(phi, kaonMinus, getSAAxis(phi, psi));
 
           double weight = 1.0;
           if (isTruePhiPair(track1, track2)) {
@@ -2370,10 +2479,11 @@ struct Kstarpbpb {
             kaonPlusGen = ROOT::Math::PxPyPzMVector(mcPlus.px(), mcPlus.py(), mcPlus.pz(), MassKa);
             kaonMinusGen = ROOT::Math::PxPyPzMVector(mcMinus.px(), mcMinus.py(), mcMinus.pz(), MassKa);
             phiGen = kaonPlusGen + kaonMinusGen;
-            const double cosGen = getCosThetaStar(phiGen, kaonMinusGen, getSAAxisPhiMC(phiGen, psi));
+            const double cosGen = getCosThetaStar(phiGen, kaonMinusGen, getSAAxis(phiGen, psi));
             weight = getInjectionWeight(cosGen);
+            // Acc x Eff must come from an unweighted (unpolarized) sample, independent of the injected rho00 under test
             if (isEffSample) {
-              histos.fill(HIST("closurePhi/hSparseRecTrueEff"), phi.M(), phi.Pt(), cosRec, centrality, weight);
+              histos.fill(HIST("closurePhi/hSparseRecTrueEff"), phi.M(), phi.Pt(), cosRec, centrality, 1.0);
             }
             if (isTestSample) {
               histos.fill(HIST("closurePhi/hSparseRecTrue"), phi.M(), phi.Pt(), cosRec, centrality, weight);
@@ -2396,7 +2506,7 @@ struct Kstarpbpb {
               if (std::abs(phiRot.Rapidity()) > phiSA.confRapidity) {
                 continue;
               }
-              const double cosRot = getCosThetaStar(phiRot, kaonMinus, getSAAxisPhiMC(phiRot, psi));
+              const double cosRot = getCosThetaStar(phiRot, kaonMinus, getSAAxis(phiRot, psi));
               histos.fill(HIST("closurePhi/hSparseRot"), phiRot.M(), phiRot.Pt(), cosRot, centrality);
             }
           }
@@ -2434,12 +2544,13 @@ struct Kstarpbpb {
           continue;
         }
         phiGen = kaonPlusGen + kaonMinusGen;
-        const double cosGen = getCosThetaStar(phiGen, kaonMinusGen, getSAAxisPhiMC(phiGen, psi));
-        const double weight = getInjectionWeight(cosGen);
+        const double cosGen = getCosThetaStar(phiGen, kaonMinusGen, getSAAxis(phiGen, psi));
+        // Acc x Eff must come from an unweighted (unpolarized) sample, independent of the injected rho00 under test
         if (isEffSample) {
-          histos.fill(HIST("closurePhi/hSparseGenEff"), phiGen.M(), phiGen.Pt(), cosGen, centrality, weight);
+          histos.fill(HIST("closurePhi/hSparseGenEff"), phiGen.M(), phiGen.Pt(), cosGen, centrality, 1.0);
         }
         if (isTestSample) {
+          const double weight = getInjectionWeight(cosGen);
           histos.fill(HIST("closurePhi/hSparseGen"), phiGen.M(), phiGen.Pt(), cosGen, centrality, weight);
         }
       }
@@ -2492,12 +2603,460 @@ struct Kstarpbpb {
         if (std::abs(phi.Rapidity()) > phiSA.confRapidity) {
           continue;
         }
-        const double cosRec = getCosThetaStar(phi, kaonMinus, getSAAxisPhiMC(phi, psi));
+        const double cosRec = getCosThetaStar(phi, kaonMinus, getSAAxis(phi, psi));
         histos.fill(HIST("closurePhi/hSparseME"), phi.M(), phi.Pt(), cosRec, centrality);
       }
     }
   }
   PROCESS_SWITCH(Kstarpbpb, processMCClosureMEPhi, "Process MC closure of cos(theta*) for phi(1020): mixed event", false);
+
+  // ================= MC closure test of the cos(theta*) chain, reconstructed (finite-resolution) Psi_FT0C =================
+  // Same as processMCClosure(Phi)/processMCClosureME(Phi) above, but Psi is the reconstructed Psi_FT0C (as on data) instead of
+  // the MC true event plane, and the sub-event resolution of the sample is filled too (ResFT0C*SP, needed to derive R2 and
+  // un-smear the fitted raw rho00 downstream). Kept as separate process functions (own histogram directories, own collision
+  // tables joined with EPCalibrationTables) so the true-EP closure above keeps zero dependency on the EP-calibration producer.
+
+  // ---------------- K*0: same event, true reco, generated (reconstructed Psi_FT0C) ----------------
+  void processMCClosureRecoEP(CollisionMCTrueTable::iterator const& trueCollision, CollisionMCRecTableClosure const& recCollisions, TrackMCTrueTable const& genParticles, FilTrackMCRecTable const& recTracks)
+  {
+    ROOT::Math::PxPyPzMVector kaon, pion, kstar, kaonRot, kstarRot, kaonGen, pionGen, kstarGen;
+    static constexpr std::size_t NumberOfDaughters = 2;
+
+    histos.fill(HIST("closureKstarRecoEP/hMC"), 0.5);
+    if (recCollisions.size() == 0) {
+      histos.fill(HIST("closureKstarRecoEP/hMC"), 1.5);
+      return;
+    }
+    if (recCollisions.size() > 1) {
+      histos.fill(HIST("closureKstarRecoEP/hMC"), 2.5);
+      return;
+    }
+    const bool isEffSample = isClosureEffSample(trueCollision.globalIndex());
+    const bool isTestSample = isClosureTestSample(trueCollision.globalIndex());
+    // true axis: defines the injected weight and the Gen/GenEff truth, so the test is not tautological against the smeared axis
+    const double psiTrue = getSAEventAngle(trueCollision.eventPlaneAngle());
+    for (const auto& recCollision : recCollisions) {
+      if (!selectionEventMCRecoEP(recCollision)) {
+        continue;
+      }
+      if (isEffSample) {
+        histos.fill(HIST("closureKstarRecoEP/hMC"), 3.5);
+      }
+      if (isTestSample) {
+        histos.fill(HIST("closureKstarRecoEP/hMC"), 4.5);
+      }
+      const auto centrality = recCollision.centFT0C();
+      const double recoPsiFT0C = recCollision.psiFT0C();
+      const double psi = getSAEventAngle(recoPsiFT0C); // measured axis: defines cosRec (SE/ME/RecTrue/RecTrueEff/Rot) only
+      {
+        const double psiTPC = recCollision.psiTPC();
+        const double psiFT0A = recCollision.psiFT0A();
+        const double qFT0C = recCollision.qFT0C();
+        const double qTPC = recCollision.qTPC();
+        const double qFT0A = recCollision.qFT0A();
+        histos.fill(HIST("closureKstarRecoEP/ResFT0CTPCSP"), centrality, qFT0C * qTPC * std::cos(2.0 * (recoPsiFT0C - psiTPC)));
+        histos.fill(HIST("closureKstarRecoEP/ResFT0CFT0ASP"), centrality, qFT0C * qFT0A * std::cos(2.0 * (recoPsiFT0C - psiFT0A)));
+        histos.fill(HIST("closureKstarRecoEP/ResFT0ATPCSP"), centrality, qTPC * qFT0A * std::cos(2.0 * (psiTPC - psiFT0A)));
+        // plain (unweighted) sub-event resolution, as needed by the EP-method correction formula; same definition as the data ResFT0CTPC etc.
+        histos.fill(HIST("closureKstarRecoEP/ResFT0CTPC"), centrality, std::cos(2.0 * (recoPsiFT0C - psiTPC)));
+        histos.fill(HIST("closureKstarRecoEP/ResFT0CFT0A"), centrality, std::cos(2.0 * (recoPsiFT0C - psiFT0A)));
+        histos.fill(HIST("closureKstarRecoEP/ResFT0ATPC"), centrality, std::cos(2.0 * (psiTPC - psiFT0A)));
+        // closure-only: Psi_FT0C vs the MC true event plane, to cross-check R from sub-events against the true R
+        histos.fill(HIST("closureKstarRecoEP/ResTrueFT0C"), centrality, std::cos(2.0 * (recoPsiFT0C - trueCollision.eventPlaneAngle())));
+      }
+      auto recTracksThisColl = recTracks.sliceBy(perCollision, recCollision.globalIndex());
+
+      // ---- reconstructed pairs ----
+      for (const auto& track1 : recTracksThisColl) {
+        if (!selectionTrack(track1) || !selectionClosurePrimary(track1)) {
+          continue;
+        }
+        if (!isTOFOnly && !strategySelectionPID(track1, 0, strategyPID)) {
+          continue;
+        }
+        if (isTOFOnly && !selectionPID2(track1, 0)) {
+          continue;
+        }
+        for (const auto& track2 : recTracksThisColl) {
+          if (track2.globalIndex() == track1.globalIndex()) {
+            continue;
+          }
+          if (track1.sign() * track2.sign() > 0) {
+            continue;
+          }
+          if (!selectionTrack(track2) || !selectionClosurePrimary(track2)) {
+            continue;
+          }
+          if (!isTOFOnly && !strategySelectionPID(track2, 1, strategyPID)) {
+            continue;
+          }
+          if (isTOFOnly && !selectionPID2(track2, 1)) {
+            continue;
+          }
+          kaon = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), MassKa);
+          pion = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), MassPi);
+          kstar = kaon + pion;
+          if (std::abs(kstar.Rapidity()) > confRapidity) {
+            continue;
+          }
+          if (isPhiReflection(kaon, pion)) {
+            continue;
+          }
+          const double cosRec = getCosThetaStar(kstar, kaon, getSAAxis(kstar, psi));
+
+          double weight = 1.0;
+          if (isTrueKstarPair(track1, track2)) {
+            const auto mcKaon = track1.mcParticle();
+            const auto mcPion = track2.mcParticle();
+            kaonGen = ROOT::Math::PxPyPzMVector(mcKaon.px(), mcKaon.py(), mcKaon.pz(), MassKa);
+            pionGen = ROOT::Math::PxPyPzMVector(mcPion.px(), mcPion.py(), mcPion.pz(), MassPi);
+            kstarGen = kaonGen + pionGen;
+            const double cosGen = getCosThetaStar(kstarGen, kaonGen, getSAAxis(kstarGen, psiTrue));
+            weight = getInjectionWeight(cosGen);
+            // Acc x Eff must come from an unweighted (unpolarized) sample, independent of the injected rho00 under test
+            if (isEffSample) {
+              histos.fill(HIST("closureKstarRecoEP/hSparseRecTrueEff"), kstar.M(), kstar.Pt(), cosRec, centrality, 1.0);
+            }
+            if (isTestSample) {
+              histos.fill(HIST("closureKstarRecoEP/hSparseRecTrue"), kstar.M(), kstar.Pt(), cosRec, centrality, weight);
+              histos.fill(HIST("closureKstarRecoEP/hCosThetaStarGenVsRec"), cosGen, cosRec);
+            }
+          }
+          if (!isTestSample) {
+            continue;
+          }
+          histos.fill(HIST("closureKstarRecoEP/hSparseSE"), kstar.M(), kstar.Pt(), cosRec, centrality, weight);
+
+          // rotated background, same rotation as in processSE (weight 1)
+          if (closure.fillRotBkg && nBkgRotations.value > 1) {
+            const double angleStart = confMinRot.value;
+            const double angleStep = (confMaxRot.value - angleStart) / (nBkgRotations.value - 1.0);
+            for (int irot = 0; irot < nBkgRotations.value; irot++) {
+              const double rotAngle = angleStart + irot * angleStep;
+              kaonRot = ROOT::Math::PxPyPzMVector(track1.px() * std::cos(rotAngle) - track1.py() * std::sin(rotAngle), track1.px() * std::sin(rotAngle) + track1.py() * std::cos(rotAngle), track1.pz(), MassKa);
+              kstarRot = kaonRot + pion;
+              if (std::abs(kstarRot.Rapidity()) > confRapidity) {
+                continue;
+              }
+              if (isPhiReflection(kaonRot, pion)) {
+                continue;
+              }
+              const double cosRot = getCosThetaStar(kstarRot, kaonRot, getSAAxis(kstarRot, psi));
+              histos.fill(HIST("closureKstarRecoEP/hSparseRot"), kstarRot.M(), kstarRot.Pt(), cosRot, centrality);
+            }
+          }
+        }
+      }
+
+      // ---- generated K*0 / anti-K*0: Acc x Eff denominator (eff sample) and input truth (test sample) ----
+      for (const auto& mcParticle : genParticles) {
+        if (std::abs(mcParticle.y()) > confRapidity) {
+          continue;
+        }
+        if (std::abs(mcParticle.pdgCode()) != o2::constants::physics::kK0Star892) {
+          continue;
+        }
+        auto daughters = mcParticle.daughters_as<aod::McParticles>();
+        if (daughters.size() != NumberOfDaughters) {
+          continue;
+        }
+        bool hasKaon = false;
+        bool hasPion = false;
+        for (const auto& dau : daughters) {
+          if (!dau.isPhysicalPrimary()) {
+            continue;
+          }
+          const bool inAcceptance = !closure.genAcceptanceCut || (dau.pt() > cfgCutPT && std::abs(dau.eta()) < cfgCutEta);
+          if (std::abs(dau.pdgCode()) == PDG_t::kKPlus) {
+            hasKaon = hasKaon || inAcceptance;
+            kaonGen = ROOT::Math::PxPyPzMVector(dau.px(), dau.py(), dau.pz(), MassKa);
+          } else if (std::abs(dau.pdgCode()) == PDG_t::kPiPlus) {
+            hasPion = hasPion || inAcceptance;
+            pionGen = ROOT::Math::PxPyPzMVector(dau.px(), dau.py(), dau.pz(), MassPi);
+          }
+        }
+        if (!hasKaon || !hasPion) {
+          continue;
+        }
+        kstarGen = kaonGen + pionGen;
+        if (std::abs(kstarGen.Rapidity()) > confRapidity) {
+          continue;
+        }
+        const double cosGen = getCosThetaStar(kstarGen, kaonGen, getSAAxis(kstarGen, psiTrue));
+        // Acc x Eff must come from an unweighted (unpolarized) sample, independent of the injected rho00 under test
+        if (isEffSample) {
+          histos.fill(HIST("closureKstarRecoEP/hSparseGenEff"), kstarGen.M(), kstarGen.Pt(), cosGen, centrality, 1.0);
+        }
+        if (isTestSample) {
+          const double weight = getInjectionWeight(cosGen);
+          histos.fill(HIST("closureKstarRecoEP/hSparseGen"), kstarGen.M(), kstarGen.Pt(), cosGen, centrality, weight);
+        }
+      }
+    } // rec collision loop
+  }
+  PROCESS_SWITCH(Kstarpbpb, processMCClosureRecoEP, "Process MC closure of cos(theta*) for K*, reconstructed Psi_FT0C: SE, true rec, gen", false);
+
+  // ---------------- K*0: mixed event of the test sample (reconstructed Psi_FT0C) ----------------
+  void processMCClosureMERecoEP(CollisionMCRecMixTableRecoEP const& collisions, FilTrackMCRecTable const& tracks, aod::McCollisions const& mcCollisions, aod::McCollisionLabels const& mcLabels, aod::McParticles const&)
+  {
+    ROOT::Math::PxPyPzMVector kaon, pion, kstar;
+    const auto nRecPerMc = countRecoPerMcCollision(mcLabels, mcCollisions.size());
+    auto tracksTuple = std::make_tuple(tracks);
+    BinningTypeMCClosureRecoEP binningOnPositions{{axisVertex, axisMultiplicityClass, axisEPAngle}, true};
+    SameKindPair<CollisionMCRecMixTableRecoEP, FilTrackMCRecTable, BinningTypeMCClosureRecoEP> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
+    for (const auto& [collision1, tracks1, collision2, tracks2] : pair) {
+      if (!selectionClosurePairMERecoEP(collision1, collision2, nRecPerMc)) {
+        continue;
+      }
+      const auto centrality = collision1.centFT0C();
+      const double psi = getSAEventAngle(collision1.psiFT0C());
+      for (const auto& [track1, track2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+        if (track1.sign() * track2.sign() > 0) {
+          continue;
+        }
+        if (!selectionTrack(track1) || !selectionTrack(track2)) {
+          continue;
+        }
+        if (!selectionClosurePrimary(track1) || !selectionClosurePrimary(track2)) {
+          continue;
+        }
+        if (!isTOFOnly && (!strategySelectionPID(track1, 0, strategyPID) || !strategySelectionPID(track2, 1, strategyPID))) {
+          continue;
+        }
+        if (isTOFOnly && (!selectionPID2(track1, 0) || !selectionPID2(track2, 1))) {
+          continue;
+        }
+        kaon = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), MassKa);
+        pion = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), MassPi);
+        kstar = kaon + pion;
+        if (std::abs(kstar.Rapidity()) > confRapidity) {
+          continue;
+        }
+        if (isPhiReflection(kaon, pion)) {
+          continue;
+        }
+        const double cosRec = getCosThetaStar(kstar, kaon, getSAAxis(kstar, psi));
+        histos.fill(HIST("closureKstarRecoEP/hSparseME"), kstar.M(), kstar.Pt(), cosRec, centrality);
+      }
+    }
+  }
+  PROCESS_SWITCH(Kstarpbpb, processMCClosureMERecoEP, "Process MC closure of cos(theta*) for K*, reconstructed Psi_FT0C: mixed event", false);
+
+  // ---------------- phi(1020): same event, true reco, generated (reconstructed Psi_FT0C) ----------------
+  void processMCClosureRecoEPPhi(CollisionMCTrueTable::iterator const& trueCollision, CollisionMCRecTableClosure const& recCollisions, TrackMCTrueTable const& genParticles, FilTrackMCRecTable const& recTracks)
+  {
+    ROOT::Math::PxPyPzMVector kaonPlus, kaonMinus, phi, kaonPlusRot, phiRot, kaonPlusGen, kaonMinusGen, phiGen;
+    static constexpr std::size_t NumberOfDaughters = 2;
+
+    histos.fill(HIST("closurePhiRecoEP/hMC"), 0.5);
+    if (recCollisions.size() == 0) {
+      histos.fill(HIST("closurePhiRecoEP/hMC"), 1.5);
+      return;
+    }
+    if (recCollisions.size() > 1) {
+      histos.fill(HIST("closurePhiRecoEP/hMC"), 2.5);
+      return;
+    }
+    const bool isEffSample = isClosureEffSample(trueCollision.globalIndex());
+    const bool isTestSample = isClosureTestSample(trueCollision.globalIndex());
+    // true axis: defines the injected weight and the Gen/GenEff truth, so the test is not tautological against the smeared axis
+    const double psiTrue = getSAEventAngle(trueCollision.eventPlaneAngle());
+    for (const auto& recCollision : recCollisions) {
+      if (!selectionEventMCRecoEP(recCollision)) {
+        continue;
+      }
+      if (isEffSample) {
+        histos.fill(HIST("closurePhiRecoEP/hMC"), 3.5);
+      }
+      if (isTestSample) {
+        histos.fill(HIST("closurePhiRecoEP/hMC"), 4.5);
+      }
+      const auto centrality = recCollision.centFT0C();
+      const double recoPsiFT0C = recCollision.psiFT0C();
+      const double psi = getSAEventAngle(recoPsiFT0C); // measured axis: defines cosRec (SE/ME/RecTrue/RecTrueEff/Rot) only
+      {
+        const double psiTPC = recCollision.psiTPC();
+        const double psiFT0A = recCollision.psiFT0A();
+        const double qFT0C = recCollision.qFT0C();
+        const double qTPC = recCollision.qTPC();
+        const double qFT0A = recCollision.qFT0A();
+        histos.fill(HIST("closurePhiRecoEP/ResFT0CTPCSP"), centrality, qFT0C * qTPC * std::cos(2.0 * (recoPsiFT0C - psiTPC)));
+        histos.fill(HIST("closurePhiRecoEP/ResFT0CFT0ASP"), centrality, qFT0C * qFT0A * std::cos(2.0 * (recoPsiFT0C - psiFT0A)));
+        histos.fill(HIST("closurePhiRecoEP/ResFT0ATPCSP"), centrality, qTPC * qFT0A * std::cos(2.0 * (psiTPC - psiFT0A)));
+        // plain (unweighted) sub-event resolution, as needed by the EP-method correction formula; same definition as the data ResFT0CTPC etc.
+        histos.fill(HIST("closurePhiRecoEP/ResFT0CTPC"), centrality, std::cos(2.0 * (recoPsiFT0C - psiTPC)));
+        histos.fill(HIST("closurePhiRecoEP/ResFT0CFT0A"), centrality, std::cos(2.0 * (recoPsiFT0C - psiFT0A)));
+        histos.fill(HIST("closurePhiRecoEP/ResFT0ATPC"), centrality, std::cos(2.0 * (psiTPC - psiFT0A)));
+        // closure-only: Psi_FT0C vs the MC true event plane, to cross-check R from sub-events against the true R
+        histos.fill(HIST("closurePhiRecoEP/ResTrueFT0C"), centrality, std::cos(2.0 * (recoPsiFT0C - trueCollision.eventPlaneAngle())));
+      }
+      auto recTracksThisColl = recTracks.sliceBy(perCollision, recCollision.globalIndex());
+
+      // ---- reconstructed pairs ----
+      for (const auto& track1 : recTracksThisColl) {
+        if (!(track1.signed1Pt() > cfgCutCharge.value)) { // K+
+          continue;
+        }
+        if (!selectionTrackPhi(track1) || !selectionPIDPhi(track1) || !selectionClosurePrimary(track1)) {
+          continue;
+        }
+        for (const auto& track2 : recTracksThisColl) {
+          if (!(track2.signed1Pt() < cfgCutCharge.value)) { // K-
+            continue;
+          }
+          if (!selectionTrackPhi(track2) || !selectionPIDPhi(track2) || !selectionClosurePrimary(track2)) {
+            continue;
+          }
+          if (!selectionPairPhi(track1, track2)) {
+            continue;
+          }
+          if (phiSA.removeFakeTrack && (isFakeKaonPhi(track1) || isFakeKaonPhi(track2))) {
+            continue;
+          }
+          kaonPlus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), MassKa);
+          kaonMinus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), MassKa);
+          phi = kaonPlus + kaonMinus;
+          if (std::abs(phi.Rapidity()) > phiSA.confRapidity) {
+            continue;
+          }
+          const double cosRec = getCosThetaStar(phi, kaonMinus, getSAAxis(phi, psi));
+
+          double weight = 1.0;
+          if (isTruePhiPair(track1, track2)) {
+            const auto mcPlus = track1.mcParticle();
+            const auto mcMinus = track2.mcParticle();
+            kaonPlusGen = ROOT::Math::PxPyPzMVector(mcPlus.px(), mcPlus.py(), mcPlus.pz(), MassKa);
+            kaonMinusGen = ROOT::Math::PxPyPzMVector(mcMinus.px(), mcMinus.py(), mcMinus.pz(), MassKa);
+            phiGen = kaonPlusGen + kaonMinusGen;
+            const double cosGen = getCosThetaStar(phiGen, kaonMinusGen, getSAAxis(phiGen, psiTrue));
+            weight = getInjectionWeight(cosGen);
+            // Acc x Eff must come from an unweighted (unpolarized) sample, independent of the injected rho00 under test
+            if (isEffSample) {
+              histos.fill(HIST("closurePhiRecoEP/hSparseRecTrueEff"), phi.M(), phi.Pt(), cosRec, centrality, 1.0);
+            }
+            if (isTestSample) {
+              histos.fill(HIST("closurePhiRecoEP/hSparseRecTrue"), phi.M(), phi.Pt(), cosRec, centrality, weight);
+              histos.fill(HIST("closurePhiRecoEP/hCosThetaStarGenVsRec"), cosGen, cosRec);
+            }
+          }
+          if (!isTestSample) {
+            continue;
+          }
+          histos.fill(HIST("closurePhiRecoEP/hSparseSE"), phi.M(), phi.Pt(), cosRec, centrality, weight);
+
+          // rotated background: rotate the K+ (weight 1)
+          if (closure.fillRotBkg && nBkgRotations.value > 1) {
+            const double angleStart = confMinRot.value;
+            const double angleStep = (confMaxRot.value - angleStart) / (nBkgRotations.value - 1.0);
+            for (int irot = 0; irot < nBkgRotations.value; irot++) {
+              const double rotAngle = angleStart + irot * angleStep;
+              kaonPlusRot = ROOT::Math::PxPyPzMVector(track1.px() * std::cos(rotAngle) - track1.py() * std::sin(rotAngle), track1.px() * std::sin(rotAngle) + track1.py() * std::cos(rotAngle), track1.pz(), MassKa);
+              phiRot = kaonPlusRot + kaonMinus;
+              if (std::abs(phiRot.Rapidity()) > phiSA.confRapidity) {
+                continue;
+              }
+              const double cosRot = getCosThetaStar(phiRot, kaonMinus, getSAAxis(phiRot, psi));
+              histos.fill(HIST("closurePhiRecoEP/hSparseRot"), phiRot.M(), phiRot.Pt(), cosRot, centrality);
+            }
+          }
+        }
+      }
+
+      // ---- generated phi: Acc x Eff denominator (eff sample) and input truth (test sample) ----
+      for (const auto& mcParticle : genParticles) {
+        if (std::abs(mcParticle.y()) > phiSA.confRapidity) {
+          continue;
+        }
+        if (mcParticle.pdgCode() != o2::constants::physics::kPhi) {
+          continue;
+        }
+        auto daughters = mcParticle.daughters_as<aod::McParticles>();
+        if (daughters.size() != NumberOfDaughters) {
+          continue;
+        }
+        bool hasKPlus = false;
+        bool hasKMinus = false;
+        for (const auto& dau : daughters) {
+          if (!dau.isPhysicalPrimary()) {
+            continue;
+          }
+          const bool inAcceptance = !closure.genAcceptanceCut || (dau.pt() > cfgCutPT && std::abs(dau.eta()) < cfgCutEta);
+          if (dau.pdgCode() == PDG_t::kKPlus) {
+            hasKPlus = hasKPlus || inAcceptance;
+            kaonPlusGen = ROOT::Math::PxPyPzMVector(dau.px(), dau.py(), dau.pz(), MassKa);
+          } else if (dau.pdgCode() == PDG_t::kKMinus) {
+            hasKMinus = hasKMinus || inAcceptance;
+            kaonMinusGen = ROOT::Math::PxPyPzMVector(dau.px(), dau.py(), dau.pz(), MassKa);
+          }
+        }
+        if (!hasKPlus || !hasKMinus) {
+          continue;
+        }
+        phiGen = kaonPlusGen + kaonMinusGen;
+        const double cosGen = getCosThetaStar(phiGen, kaonMinusGen, getSAAxis(phiGen, psiTrue));
+        // Acc x Eff must come from an unweighted (unpolarized) sample, independent of the injected rho00 under test
+        if (isEffSample) {
+          histos.fill(HIST("closurePhiRecoEP/hSparseGenEff"), phiGen.M(), phiGen.Pt(), cosGen, centrality, 1.0);
+        }
+        if (isTestSample) {
+          const double weight = getInjectionWeight(cosGen);
+          histos.fill(HIST("closurePhiRecoEP/hSparseGen"), phiGen.M(), phiGen.Pt(), cosGen, centrality, weight);
+        }
+      }
+    } // rec collision loop
+  }
+  PROCESS_SWITCH(Kstarpbpb, processMCClosureRecoEPPhi, "Process MC closure of cos(theta*) for phi(1020), reconstructed Psi_FT0C: SE, true rec, gen", false);
+
+  // ---------------- phi(1020): mixed event of the test sample (reconstructed Psi_FT0C) ----------------
+  void processMCClosureMERecoEPPhi(CollisionMCRecMixTableRecoEP const& collisions, FilTrackMCRecTable const& tracks, aod::McCollisions const& mcCollisions, aod::McCollisionLabels const& mcLabels, aod::McParticles const&)
+  {
+    ROOT::Math::PxPyPzMVector kaonPlus, kaonMinus, phi;
+    const auto nRecPerMc = countRecoPerMcCollision(mcLabels, mcCollisions.size());
+    auto tracksTuple = std::make_tuple(tracks);
+    BinningTypeMCClosureRecoEP binningOnPositions{{axisVertex, axisMultiplicityClass, axisEPAngle}, true};
+    SameKindPair<CollisionMCRecMixTableRecoEP, FilTrackMCRecTable, BinningTypeMCClosureRecoEP> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
+    for (const auto& [collision1, tracks1, collision2, tracks2] : pair) {
+      if (!selectionClosurePairMERecoEP(collision1, collision2, nRecPerMc)) {
+        continue;
+      }
+      const auto centrality = collision1.centFT0C();
+      const double psi = getSAEventAngle(collision1.psiFT0C());
+      for (const auto& [track1, track2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+        if (track1.sign() * track2.sign() > 0) {
+          continue;
+        }
+        if (!selectionTrackPhi(track1) || !selectionTrackPhi(track2)) {
+          continue;
+        }
+        if (!selectionClosurePrimary(track1) || !selectionClosurePrimary(track2)) {
+          continue;
+        }
+        if (!selectionPIDPhi(track1) || !selectionPIDPhi(track2)) {
+          continue;
+        }
+        if (!selectionPairPhi(track1, track2)) {
+          continue;
+        }
+        if (phiSA.removeFakeTrack && (isFakeKaonPhi(track1) || isFakeKaonPhi(track2))) {
+          continue;
+        }
+        if (track1.sign() > 0) {
+          kaonPlus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), MassKa);
+          kaonMinus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), MassKa);
+        } else {
+          kaonMinus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), MassKa);
+          kaonPlus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), MassKa);
+        }
+        phi = kaonPlus + kaonMinus;
+        if (std::abs(phi.Rapidity()) > phiSA.confRapidity) {
+          continue;
+        }
+        const double cosRec = getCosThetaStar(phi, kaonMinus, getSAAxis(phi, psi));
+        histos.fill(HIST("closurePhiRecoEP/hSparseME"), phi.M(), phi.Pt(), cosRec, centrality);
+      }
+    }
+  }
+  PROCESS_SWITCH(Kstarpbpb, processMCClosureMERecoEPPhi, "Process MC closure of cos(theta*) for phi(1020), reconstructed Psi_FT0C: mixed event", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
