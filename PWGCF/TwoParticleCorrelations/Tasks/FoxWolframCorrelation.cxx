@@ -192,7 +192,6 @@ struct FoxWolframCorrelation {
   Configurable<float> vtxRange{"vtxRange", 10.0f, "Vertex Z range to consider"};
   Configurable<float> etaRange{"etaRange", 0.8f, "eta range to consider"};
   Configurable<float> dcaZ{"dcaZ", 0.2f, "custom DCA Z cut (ignored if negative)"};
-  Configurable<bool> doMultipSampling{"doMultipSampling", false, "doMultipSampling"};
   Configurable<bool> doSameEvent{"doSameEvent", true, "Fill same-event TRI correlations"};
   Configurable<bool> doFWMCorrelations{"doFWMCorrelations", false,
                                        "Fill H_i-H_j correlation histograms for RANGE1-RANGE3"};
@@ -247,45 +246,6 @@ struct FoxWolframCorrelation {
   Configurable<int> bin10Max{"bin10Max", 280, "maxBIN10"};
 
   Configurable<int> noOfMultipBins{"noOfMultipBins", 10, "noOfMultipBins"};
-
-  // Provide reference multiplicity weights for optional sampling.
-  std::array<int, 500> limMultip{
-    7058, 43307, 85345, 110727, 118857, 118652, 115912, 112011, 109254, 106044,
-    102421, 100599, 97952, 95908, 93883, 91890, 90264, 88097, 86388, 84582,
-    82542, 81212, 79240, 77903, 75562, 74099, 71973, 70777, 69100, 67880,
-    66162, 64827, 63513, 62101, 61110, 59307, 58419, 57719, 56344, 55228,
-    54615, 53847, 52387, 51925, 51560, 50217, 49962, 48766, 48005, 47651,
-    46758, 46046, 45531, 45063, 44271, 43530, 43151, 42489, 42347, 41576,
-    40991, 40166, 39959, 39494, 39367, 38830, 38225, 37781, 37435, 36934,
-    36501, 35980, 35846, 35312, 34926, 34640, 33693, 33721, 33296, 32570,
-    32272, 32122, 31690, 31390, 31125, 30532, 29855, 29623, 29486, 29032,
-    28534, 28140, 27491, 27430, 26760, 26601, 26217, 25625, 25464, 25067,
-    24395, 24271, 23722, 23240, 22953, 22474, 22166, 21621, 21312, 20935,
-    20444, 20157, 19714, 19077, 18774, 18284, 18005, 17391, 16963, 16864,
-    16184, 15722, 15456, 14956, 14386, 14248, 13853, 13419, 13132, 12602,
-    12192, 11667, 11397, 10967, 10701, 10316, 9831, 9758, 9371, 8905,
-    8759, 8255, 7992, 7603, 7363, 7150, 6816, 6477, 6168, 5940,
-    5638, 5502, 5154, 5014, 4686, 4434, 4263, 3998, 3959, 3623,
-    3479, 3323, 3196, 3005, 2923, 2770, 2607, 2354, 2226, 2187,
-    2058, 1980, 1794, 1739, 1601, 1515, 1419, 1321, 1292, 1175,
-    1144, 1048, 995, 909, 860, 783, 783, 745, 680, 571,
-    566, 524, 533, 462, 444, 427, 367, 320, 303, 317,
-    270, 250, 227, 221, 207, 193, 188, 163, 131, 151,
-    139, 104, 105, 70, 94, 83, 68, 62, 85, 70,
-    46, 38, 43, 47, 39, 33, 38, 23, 28, 27,
-    24, 17, 24, 17, 14, 27, 22, 14, 11, 11,
-    10, 11, 7, 6, 5, 6, 6, 7, 2, 5,
-    6, 4, 2, 5, 3, 2, 3, 1, 0, 0,
-    2, 0, 1, 3, 2, 0, 1, 3, 1, 1,
-    2, 0, 1, 1, 0, 0, 0, 1, 2, 0,
-    0, 0, 1, 0, 0, 1, 0, 1, 0, 0,
-    0, 0, 1, 0, 0, 0, 3, 0, 0, 0,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 1, 0, 0, 0, 1,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-  std::array<int, 500> countMultip{};
 
   static constexpr std::array<std::string_view, 10> binNames = {
     "BIN1", "BIN2", "BIN3", "BIN4", "BIN5",
@@ -776,16 +736,6 @@ struct FoxWolframCorrelation {
       (topologyMode.value == kAllEvents) ||
       (topologyMode.value == kTriEvents && isTRI) ||
       (topologyMode.value == kIsoEvents && isISO);
-
-    // Optionally cap the sampled events at each multiplicity.
-    int bin = std::clamp<int>(nGlobalTracks, 0, 499);
-    if (doMultipSampling) {
-      if (countMultip[bin] >= limMultip[bin]) {
-        return;
-      }
-
-      ++countMultip[bin];
-    }
 
     // Fill inclusive event multiplicity and recoil.
     histos.fill(HIST("Multip/ITSTPC_Multiplicity"), nGlobalTracks);
