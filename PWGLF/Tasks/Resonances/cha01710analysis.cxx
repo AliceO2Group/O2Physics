@@ -191,6 +191,8 @@ struct Cha01710analysis {
 
     histos.add("Kaon/hTPCNSigma", "charged kaon TPC PID", HistType::kTH2F, {cfgAxisPt, {120, -6., 6.}});
     histos.add("Kaon/hTOFNSigma", "charged kaon TOF PID", HistType::kTH2F, {cfgAxisPt, {120, -6., 6.}});
+    histos.add("Kaon/hTPCNSigmaSelected", "charged kaon TPC PID", HistType::kTH2F, {cfgAxisPt, {120, -6., 6.}});
+    histos.add("Kaon/hTOFNSigmaSelected", "charged kaon TOF PID", HistType::kTH2F, {cfgAxisPt, {120, -6., 6.}});
 
     histos.add("Pair/hSignalPlus", "K0S K+ same-event versus EP", HistType::kTHnSparseF, {cfgAxisMass, cfgAxisPt, cfgAxisCent, cfgAxisEP});
     histos.add("Pair/hSignalMinus", "K0S K- same-event versus EP", HistType::kTHnSparseF, {cfgAxisMass, cfgAxisPt, cfgAxisCent, cfgAxisEP});
@@ -339,6 +341,9 @@ struct Cha01710analysis {
         if (track.globalIndex() == pos.globalIndex() || track.globalIndex() == neg.globalIndex() || !selectKaon(track)) {
           continue;
         }
+        histos.fill(HIST("Kaon/hTPCNSigmaSelected"), track.pt(), track.tpcNSigmaKa());
+        histos.fill(HIST("Kaon/hTOFNSigmaSelected"), track.pt(), track.tofNSigmaKa());
+
         ROOT::Math::PxPyPzMVector kaon(track.px(), track.py(), track.pz(), constants::physics::MassKaonCharged);
         auto mother = k0 + kaon;
         if (std::abs(mother.Rapidity()) > cfgMotherRapidityMax) {
