@@ -1012,8 +1012,8 @@ struct k892hadronphotonBkg {
           // Opening angle between photon and hadron
           double cosOA = gammaLeg.Vect().Dot(hadronLeg.Vect()) / (gammaLeg.P() * hadronLeg.P());
           double openAngle = std::acos(cosOA);
-          double pt = reso.Pt();
-          double mass = reso.M();
+          // double pt = reso.Pt();
+          // double mass = reso.M();
 
           // // To:Do BDT selection (Lambda(1520))
           // if constexpr (resonance == kResoLambdaStar) {
