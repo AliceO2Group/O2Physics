@@ -119,11 +119,6 @@ void FlowJSPCAnalysis::calculateCorrelators(const int fCentBin)
 
     // Histogram filling
     fillHistograms(fCentBin, j, correlationNum, correlationDenom, weightCorrelationNum, weightCorrelationDenom);
-
-    correlationNum = 0.;
-    weightCorrelationNum = 0.;
-    correlationDenom = 0.;
-    weightCorrelationDenom = 0.;
   }
 
   // N_m = Re(Q_{0,1}); weight M_m. 3SPC → fN3, 4SPC → fN4.
