@@ -287,7 +287,7 @@ struct HfDerivedDataCreatorDsToKKPi {
             }
           }
           if constexpr (OnlySig) {
-            if (std::abs(flagMcRec) != hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) {
+            if (!acceptCorrelatedBkgs && (std::abs(flagMcRec) != hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK)) {
               continue;
             }
           }
