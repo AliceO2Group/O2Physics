@@ -109,7 +109,7 @@ DECLARE_SOA_COLUMN(NSigmaTofPi, nSigmaTofPi, float);                //! TOF nσ 
 DECLARE_SOA_COLUMN(NItsClusters, nItsClusters, float);              //! Number of ITS clusters used in the track fit
 DECLARE_SOA_COLUMN(NItsNClusterSize, nItsNClusterSize, float);      //! Number of ITS clusters size used in the track fit
 DECLARE_SOA_COLUMN(NTpcClusters, nTpcClusters, float);              //! Number of TPC clusters used in the track fit
-DECLARE_SOA_COLUMN(TpcNClsFoundDe, tpcNClsFoundDe, uint16_t);        //! Number of found TPC clusters for the selected deuteron prong
+DECLARE_SOA_COLUMN(TpcNClsFoundDe, tpcNClsFoundDe, uint16_t);       //! Number of found TPC clusters for the selected deuteron prong
 DECLARE_SOA_COLUMN(NTpcSignalsDe, nTpcSignalsDe, float);            //! Number of TPC signas for deuteron
 DECLARE_SOA_COLUMN(NTpcSignalsPi, nTpcSignalsPi, float);            //! Number of TPC signas for pion
 DECLARE_SOA_COLUMN(NTpcSignalsKa, nTpcSignalsKa, float);            //! Number of TPC signas for kaon
