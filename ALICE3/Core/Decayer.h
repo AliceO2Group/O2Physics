@@ -157,16 +157,16 @@ class Decayer
     decay.Generate();
 
     std::vector<o2::upgrade::OTFParticle> decayProducts;
+    decayProducts.reserve(dauMasses.size());
     for (size_t i = 0; i < dauMasses.size(); ++i) {
-      o2::upgrade::OTFParticle particle;
-      TLorentzVector dau = *decay.GetDecay(i);
-      particle.setPDG(pdgCodesDaughters[i]);
-      particle.setVxVyVz(mVx, mVy, mVz);
-      particle.setPxPyPzE(dau.Px(), dau.Py(), dau.Pz(), dau.E());
-      particle.setBitOn(o2::upgrade::DecayerBits::ProducedByDecayer);
-      decayProducts.push_back(particle);
+      o2::upgrade::OTFParticle daughter;
+      const TLorentzVector& dau = *decay.GetDecay(i);
+      daughter.setPDG(pdgCodesDaughters[i]);
+      daughter.setVxVyVz(mVx, mVy, mVz);
+      daughter.setPxPyPzE(dau.Px(), dau.Py(), dau.Pz(), dau.E());
+      daughter.setBitOn(o2::upgrade::DecayerBits::ProducedByDecayer);
+      decayProducts.push_back(daughter);
     }
-
     return decayProducts;
   }
 
