@@ -28,6 +28,8 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/Logger.h>
 
+#include <fmt/format.h>
+
 #include <array>
 #include <cstddef>
 #include <cstdlib>
@@ -304,8 +306,8 @@ void FemtoDreamV0Selection::init(o2::framework::HistogramRegistry* QAregistry, o
     }
     for (int istage = 0; istage < femtoDreamSelection::kNcutStages; istage++) {
       std::string folderName =
-        static_cast<std::string>(o2::aod::femtodreamparticle::ParticleTypeName[part]) + "/" +
-        static_cast<std::string>(femtoDreamSelection::mCutStage[istage]);
+        fmt::format("{}/{}", o2::aod::femtodreamparticle::ParticleTypeName[part],
+                    femtoDreamSelection::mCutStage[istage]);
       /// \todo initialize histograms for children tracks of v0s
       mQAHistogramRegistry->add((folderName + "/hPt").c_str(),
                                 "; #it{p}_{T} (GeV/#it{c}); Entries", o2::framework::HistType::kTH1F,

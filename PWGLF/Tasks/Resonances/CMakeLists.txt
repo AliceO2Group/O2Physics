@@ -124,8 +124,8 @@ o2physics_add_dpl_workflow(chargedkstaranalysis
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(lambda1520-pbpb
-    SOURCES lambda1520_PbPb.cxx
+o2physics_add_dpl_workflow(lambda1520pbpb
+    SOURCES lambda1520pbpb.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
@@ -327,4 +327,29 @@ o2physics_add_dpl_workflow(chk892li
 o2physics_add_dpl_workflow(lambda1520-analysis-po
     SOURCES lambda1520analysispo.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(cha01710analysis
+    SOURCES cha01710analysis.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(xi1530kaoncorrelation
+    SOURCES xi1530kaoncorrelation.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(f0phiproxy
+    SOURCES f0phiproxy.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(lambdastarproxy
+    SOURCES lambdastarproxy.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(hresonancecorrelation
+    SOURCES hResonanceCorrelation.cxx
+    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)

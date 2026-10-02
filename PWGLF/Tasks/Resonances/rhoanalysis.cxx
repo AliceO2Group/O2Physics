@@ -305,11 +305,11 @@ struct rhoanalysis {
     if (std::abs(events.mcCollision().posZ()) > cfgCutVertex) {
       return;
     }
-    for (auto track1 : tracks) {
+    for (const auto& track1 : tracks) {
       histos.fill(HIST("hNsigmaPionTPCvspT"), track1.pt(), track1.tpcNSigmaPi());
       if (abs(track1.tpcNSigmaPi()) > nsigmaCutCombined)
         continue;
-      for (auto track2 : tracks) {
+      for (const auto& track2 : tracks) {
 
         if (abs(track2.tpcNSigmaPi()) > nsigmaCutCombined)
           continue;
@@ -367,7 +367,7 @@ struct rhoanalysis {
       if (kDaughters.size() != 2)
         continue;
 
-      for (auto kCurrentDaughter : kDaughters) {
+      for (const auto& kCurrentDaughter : kDaughters) {
 
         if (!kCurrentDaughter.isPhysicalPrimary())
           continue;

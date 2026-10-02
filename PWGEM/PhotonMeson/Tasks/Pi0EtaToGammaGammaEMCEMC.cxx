@@ -29,9 +29,9 @@ using namespace o2::aod::pwgem::photonmeson::photonpair;
 
 using MyEMCClusters = soa::Join<aod::EMCEMEventIds, aod::MinClusters>;
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<Pi0EtaToGammaGamma<PairType::kEMCEMC, MyEMCClusters, MinMTracks, MinMSTracks>>(cfgc, TaskName{"pi0eta-to-gammagamma-emcemc"}),
+    adaptAnalysisTask<Pi0EtaToGammaGamma<PairType::kEMCEMC, MyEMCClusters, MinMTracks, MinMSTracks>>(context, TaskName{"pi0eta-to-gammagamma-emcemc"}),
   };
 }

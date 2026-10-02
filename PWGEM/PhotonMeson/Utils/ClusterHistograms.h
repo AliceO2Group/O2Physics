@@ -19,13 +19,13 @@
 #include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
 
 #include <CommonConstants/MathConstants.h>
-#include <Framework/ASoA.h>
 #include <Framework/Concepts.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 
 #include <TH2.h>
 
+#include <array>
 #include <cstddef>
 #include <string_view>
 
@@ -113,7 +113,7 @@ inline void fillClusterHistograms(o2::framework::HistogramRegistry* fRegistry, T
   const auto eta = cluster.eta();
   const auto phi = cluster.phi();
 
-  static constexpr std::string_view ClusterTypes[2] = {"Cluster/before/", "Cluster/after/"};
+  static constexpr std::array<std::string_view, 2> ClusterTypes = {"Cluster/before/", "Cluster/after/"};
 
   if constexpr (HasTrackMatching<TCluster>) {
     for (size_t iTrack = 0; iTrack < cluster.deltaEta().size(); ++iTrack) {
@@ -130,7 +130,7 @@ inline void fillClusterHistograms(o2::framework::HistogramRegistry* fRegistry, T
     }
   }
 
-  if constexpr (HasPrimaries<TMatchedTracks> && IsTrackContainer<TMatchedTracks>) {
+  if constexpr (HasPrimaries<TMatchedTracks> && IsFullTrackContainer<TMatchedTracks>) {
     for (const auto& primTrack : primTracks) {
       if (do2DQA) {
         fillTrackQA2D(fRegistry, HIST(ClusterTypes[cls_id]), e, primTrack.deltaEta(), primTrack.deltaPhi(), primTrack.trackP(), primTrack.trackPt(), weight);
@@ -140,7 +140,7 @@ inline void fillClusterHistograms(o2::framework::HistogramRegistry* fRegistry, T
     }
   }
 
-  if constexpr (HasSecondaries<TMatchedSecondaries> && IsTrackContainer<TMatchedSecondaries>) {
+  if constexpr (HasSecondaries<TMatchedSecondaries> && IsFullTrackContainer<TMatchedSecondaries>) {
     for (const auto& secTrack : secTracks) {
       const auto trackP = secTrack.trackP();
       if (do2DQA) {
@@ -166,11 +166,11 @@ inline void fillClusterHistograms(o2::framework::HistogramRegistry* fRegistry, T
     // primary matched tracks are stored directly inside cluster
     fRegistry->fill(HIST(ClusterTypes[cls_id]) + HIST("hNTracks"),
                     cluster.deltaEta().size(), weight);
-  } else if constexpr (HasPrimaries<TMatchedTracks> && IsTrackContainer<TMatchedTracks>) {
+  } else if constexpr (HasPrimaries<TMatchedTracks> && IsFullTrackContainer<TMatchedTracks>) {
     // primary matched tracks are stored as their own table
     fRegistry->fill(HIST(ClusterTypes[cls_id]) + HIST("hNTracks"), primTracks.size(), weight);
   }
-  if constexpr (HasSecondaries<TMatchedSecondaries> && IsTrackContainer<TMatchedSecondaries>) {
+  if constexpr (HasSecondaries<TMatchedSecondaries> && IsFullTrackContainer<TMatchedSecondaries>) {
     // secondary matched tracks are stored as their own table
     fRegistry->fill(HIST(ClusterTypes[cls_id]) + HIST("hNSecTracks"), secTracks.size(), weight);
   }

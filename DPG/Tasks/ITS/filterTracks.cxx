@@ -225,7 +225,7 @@ struct FilterTracks {
   {
   }
 
-  void fillTableData(auto track)
+  void fillTableData(const auto& track)
   {
 
     filteredTracksCollIdx(track.collisionId());
@@ -235,7 +235,7 @@ struct FilterTracks {
     filteredTracksTableExtraDet(track.itsClusterSizes(), track.itsChi2NCl(), track.tpcChi2NCl(), track.tpcNClsFound(), track.trackTime());
   }
 
-  void fillTableDataMC(auto track, aod::McParticles const& mcParticles)
+  void fillTableDataMC(const auto& track, aod::McParticles const& mcParticles)
   {
 
     fillTableData(track);

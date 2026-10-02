@@ -17,6 +17,8 @@
 #ifndef PWGLF_DATAMODEL_VTX3BODYTABLES_H_
 #define PWGLF_DATAMODEL_VTX3BODYTABLES_H_
 
+#include "PWGLF/DataModel/LFHypernucleiTables.h"
+
 #include "Common/Core/RecoDecay.h"
 
 #include <CommonConstants/PhysicsConstants.h>
@@ -97,6 +99,9 @@ DECLARE_SOA_COLUMN(TPCNSigmaPr, tpcNSigmaPr, float);         //! nsigma proton o
 DECLARE_SOA_COLUMN(TPCNSigmaPi, tpcNSigmaPi, float);         //! nsigma pion of TPC PID of the pion daughter
 DECLARE_SOA_COLUMN(TPCNSigmaDe, tpcNSigmaDe, float);         //! nsigma deuteron of TPC PID of the bachelor daughter
 DECLARE_SOA_COLUMN(TPCNSigmaPiBach, tpcNSigmaPiBach, float); //! nsigma pion of TPC PID of the bachelor daughter
+DECLARE_SOA_COLUMN(TPCSignalPr, tpcSignalPr, float);         //! TPC signal of proton daughter
+DECLARE_SOA_COLUMN(TPCSignalPi, tpcSignalPi, float);         //! TPC signal of pion daughter
+DECLARE_SOA_COLUMN(TPCSignalDe, tpcSignalDe, float);         //! TPC signal of deuteron daughter
 DECLARE_SOA_COLUMN(TOFNSigmaDe, tofNSigmaDe, float);         //! nsigma deuteron of TOF PID of the bachelor daughter
 DECLARE_SOA_COLUMN(PIDTrackingDe, pidTrackingDe, uint32_t);  //! PID during tracking of bachelor daughter
 
@@ -125,12 +130,15 @@ DECLARE_SOA_COLUMN(GenCt, genCt, float);               // generated Ct of the hy
 DECLARE_SOA_COLUMN(GenPhi, genPhi, float);             // generated Phi of the hypertriton
 DECLARE_SOA_COLUMN(GenEta, genEta, float);             // Eta of the hypertriton
 DECLARE_SOA_COLUMN(GenRap, genRap, float);             // generated rapidity of the hypertriton
-DECLARE_SOA_COLUMN(GenPPr, genPPr, float);             //! generated momentum proton daughter particle
-DECLARE_SOA_COLUMN(GenPPi, genPPi, float);             //! generated momentum pion daughter particle
-DECLARE_SOA_COLUMN(GenPDe, genPDe, float);             //! generated momentum deuteron daughter particle
-DECLARE_SOA_COLUMN(GenPtPr, genPtPr, float);           //! generated transverse momentum proton daughter particle
-DECLARE_SOA_COLUMN(GenPtPi, genPtPi, float);           //! generated transverse momentum pion daughter particle
-DECLARE_SOA_COLUMN(GenPtDe, genPtDe, float);           //! generated transverse momentum deuteron daughter particle
+DECLARE_SOA_COLUMN(GenPxPr, genPxPr, float);           //! generated Px of proton daughter particle
+DECLARE_SOA_COLUMN(GenPyPr, genPyPr, float);           //! generated Py of proton daughter particle
+DECLARE_SOA_COLUMN(GenPzPr, genPzPr, float);           //! generated Pz of proton daughter particle
+DECLARE_SOA_COLUMN(GenPxPi, genPxPi, float);           //! generated Px of pion daughter particle
+DECLARE_SOA_COLUMN(GenPyPi, genPyPi, float);           //! generated Py of pion daughter particle
+DECLARE_SOA_COLUMN(GenPzPi, genPzPi, float);           //! generated Pz of pion daughter particle
+DECLARE_SOA_COLUMN(GenPxDe, genPxDe, float);           //! generated Px of deuteron daughter particle
+DECLARE_SOA_COLUMN(GenPyDe, genPyDe, float);           //! generated Py of deuteron daughter particle
+DECLARE_SOA_COLUMN(GenPzDe, genPzDe, float);           //! generated Pz of deuteron daughter particle
 DECLARE_SOA_COLUMN(MotherPdgCode, motherPdgCode, int); //! PDG code of the mother particle
 DECLARE_SOA_COLUMN(PrPdgCode, prPdgCode, int);         //! MC particle proton PDG code
 DECLARE_SOA_COLUMN(PiPdgCode, piPdgCode, int);         //! MC particle pion PDG code
@@ -141,8 +149,8 @@ DECLARE_SOA_COLUMN(IsReco, isreco, int);               //! flag if candidate was
 DECLARE_SOA_COLUMN(MotherLabel, motherLabel, int);     //! label of the mother particle (signal: MC index, bkg: negative value)
 
 // strangeness tracking information
-DECLARE_SOA_COLUMN(ITSTrackDCAXYToSVXY, itsTrackDcaXYToSv, float); //! DCAxy of ITS track to SV
-DECLARE_SOA_COLUMN(ITSTrackDCAZToSVXY, itsTrackDcaZToSv, float);   //! DCAz of ITS track to SV
+DECLARE_SOA_COLUMN(ITSTrackDCAXYToSV, itsTrackDcaXYToSv, float); //! DCAxy of ITS track to SV
+DECLARE_SOA_COLUMN(ITSTrackDCAZToSV, itsTrackDcaZToSv, float);   //! DCAz of ITS track to SV
 
 // Derived expressions
 // Momenta
@@ -231,6 +239,7 @@ DECLARE_SOA_TABLE(Vtx3BodyDatas, "AOD", "VTX3BODYDATA", //!
                   vtx3body::DCAVtxToDaughtersAv,
                   vtx3body::CosPA, vtx3body::Ct,
                   vtx3body::TPCNSigmaPr, vtx3body::TPCNSigmaPi, vtx3body::TPCNSigmaDe, vtx3body::TPCNSigmaPiBach,
+                  vtx3body::TPCSignalPr, vtx3body::TPCSignalPi, vtx3body::TPCSignalDe,
                   vtx3body::TOFNSigmaDe,
                   vtx3body::ITSClSizePr, vtx3body::ITSClSizePi, vtx3body::ITSClSizeDe,
                   vtx3body::TPCNClTrackPr, vtx3body::TPCNClTrackPi, vtx3body::TPCNClTrackDe,
@@ -264,8 +273,24 @@ DECLARE_SOA_TABLE(Vtx3BodyCovs, "AOD", "VTX3BODYCOV", //!
 
 // strangeness tracked extra table
 DECLARE_SOA_TABLE(Vtx3BodyTrackedInfo, "AOD", "VTX3BODYTR", //!
-                  vtx3body::ITSTrackDCAXYToSVXY,
-                  vtx3body::ITSTrackDCAZToSVXY);
+                  vtx3body::ITSTrackDCAXYToSV,
+                  vtx3body::ITSTrackDCAZToSV);
+
+// collision info table
+DECLARE_SOA_TABLE(Vtx3BodyCollision, "AOD", "VTX3BODYCOLL", //!
+                  o2::soa::Index<>,
+                  hyperrec::CentralityFT0A, hyperrec::CentralityFT0C, hyperrec::CentralityFT0M,
+                  hyperrec::TrackOccupancyInTimeRange, hyperrec::Ft0cOccupancyInTimeRange,
+                  hyperrec::XPrimVtx, hyperrec::YPrimVtx, hyperrec::ZPrimVtx,
+                  hyperrec::RunNumber);
+
+DECLARE_SOA_TABLE(McVtx3BodyCollision, "AOD", "MCVTX3BODYCOLL", //!
+                  o2::soa::Index<>,
+                  hyperrec::IsRecoMCCollision,
+                  hyperrec::CentralityFT0A, hyperrec::CentralityFT0C, hyperrec::CentralityFT0M,
+                  hyperrec::TrackOccupancyInTimeRange, hyperrec::Ft0cOccupancyInTimeRange,
+                  hyperrec::XPrimVtx, hyperrec::YPrimVtx, hyperrec::ZPrimVtx,
+                  hyperrec::RunNumber);
 
 // MC candidate table for analysis
 DECLARE_SOA_TABLE(McVtx3BodyDatas, "AOD", "MC3BODYDATA", //!
@@ -288,6 +313,7 @@ DECLARE_SOA_TABLE(McVtx3BodyDatas, "AOD", "MC3BODYDATA", //!
                   vtx3body::DCAVtxToDaughtersAv,
                   vtx3body::CosPA, vtx3body::Ct,
                   vtx3body::TPCNSigmaPr, vtx3body::TPCNSigmaPi, vtx3body::TPCNSigmaDe, vtx3body::TPCNSigmaPiBach,
+                  vtx3body::TPCSignalPr, vtx3body::TPCSignalPi, vtx3body::TPCSignalDe,
                   vtx3body::TOFNSigmaDe,
                   vtx3body::ITSClSizePr, vtx3body::ITSClSizePi, vtx3body::ITSClSizeDe,
                   vtx3body::TPCNClTrackPr, vtx3body::TPCNClTrackPi, vtx3body::TPCNClTrackDe,
@@ -298,8 +324,9 @@ DECLARE_SOA_TABLE(McVtx3BodyDatas, "AOD", "MC3BODYDATA", //!
                   vtx3body::GenX, vtx3body::GenY, vtx3body::GenZ,
                   vtx3body::GenCt,
                   vtx3body::GenPhi, vtx3body::GenEta, vtx3body::GenRap,
-                  vtx3body::GenPPr, vtx3body::GenPPi, vtx3body::GenPDe,
-                  vtx3body::GenPtPr, vtx3body::GenPtPi, vtx3body::GenPtDe,
+                  vtx3body::GenPxPr, vtx3body::GenPyPr, vtx3body::GenPzPr,
+                  vtx3body::GenPxPi, vtx3body::GenPyPi, vtx3body::GenPzPi,
+                  vtx3body::GenPxDe, vtx3body::GenPyDe, vtx3body::GenPzDe,
                   vtx3body::IsReco,
                   vtx3body::MotherLabel,
                   vtx3body::MotherPdgCode,

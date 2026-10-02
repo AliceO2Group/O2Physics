@@ -29,6 +29,11 @@ o2physics_add_dpl_workflow(femto-producer-kink-pt-converter
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(femto-producer-mask-converter-001-to-002
+          SOURCES ./femtoProducerMaskConverter001To002.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(femto-producer-resonances
           SOURCES ./femtoProducerResonances.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore

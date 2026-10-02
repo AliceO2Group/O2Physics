@@ -40,6 +40,7 @@
 #include <fastjet/PseudoJet.hh>
 
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -71,6 +72,8 @@ struct JetFinderTask {
   o2::framework::Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum track eta"};
   o2::framework::Configurable<float> trackPhiMin{"trackPhiMin", -999, "minimum track phi"};
   o2::framework::Configurable<float> trackPhiMax{"trackPhiMax", 999, "maximum track phi"};
+  o2::framework::Configurable<float> phiExclusionMin{"phiExclusionMin", -999, "minimum of phi exclusion region which is applied for tracks and for jets (jetR is added to the exclusion region for jets)"};
+  o2::framework::Configurable<float> phiExclusionMax{"phiExclusionMax", 999, "maximum of phi exclusion region which is applied for tracks and for jets (jetR is added to the exclusion region for jets)"};
   o2::framework::Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
   o2::framework::Configurable<std::string> particleSelections{"particleSelections", "PhysicalPrimary", "set particle selections"};
 
@@ -139,6 +142,15 @@ struct JetFinderTask {
       jetFinder.phiMin = -1.0 * M_PI;
       jetFinder.phiMax = 2.0 * M_PI;
     }
+
+    if (phiExclusionMin > -998.0) {
+      jetFinder.phiExclusionMin = phiExclusionMin;
+      jetFinder.phiExclusionMax = phiExclusionMax;
+      if (phiExclusionMin >= phiExclusionMax) {
+        throw std::runtime_error("Invalid phi exclusion range: require phiExclusionMin < phiExclusionMax when both are set.");
+      }
+    }
+
     jetFinder.jetPhiMin = jetPhiMin;
     jetFinder.jetPhiMax = jetPhiMax;
     if (jetPhiMin < -98.0) {
@@ -184,8 +196,8 @@ struct JetFinderTask {
 
   o2::framework::expressions::Filter collisionFilter = (nabs(o2::aod::jcollision::posZ) < vertexZCut && o2::aod::jcollision::centFT0M >= centralityMin && o2::aod::jcollision::centFT0M < centralityMax && o2::aod::jcollision::trackOccupancyInTimeRange <= trackOccupancyInTimeRangeMax); // should we add a posZ vtx cut here or leave it to analysers?
   o2::framework::expressions::Filter mcCollisionFilter = (nabs(o2::aod::jmccollision::posZ) < vertexZCut);
-  o2::framework::expressions::Filter trackCuts = (o2::aod::jtrack::pt >= trackPtMin && o2::aod::jtrack::pt < trackPtMax && o2::aod::jtrack::eta >= trackEtaMin && o2::aod::jtrack::eta <= trackEtaMax && o2::aod::jtrack::phi >= trackPhiMin && o2::aod::jtrack::phi <= trackPhiMax); // do we need eta cut both here and in globalselection?
-  o2::framework::expressions::Filter partCuts = (o2::aod::jmcparticle::pt >= trackPtMin && o2::aod::jmcparticle::pt < trackPtMax && o2::aod::jmcparticle::eta >= trackEtaMin && o2::aod::jmcparticle::eta <= trackEtaMax && o2::aod::jmcparticle::phi >= trackPhiMin && o2::aod::jmcparticle::phi <= trackPhiMax);
+  o2::framework::expressions::Filter trackCuts = (o2::aod::jtrack::pt >= trackPtMin && o2::aod::jtrack::pt < trackPtMax && o2::aod::jtrack::eta >= trackEtaMin && o2::aod::jtrack::eta <= trackEtaMax && o2::aod::jtrack::phi >= trackPhiMin && o2::aod::jtrack::phi <= trackPhiMax && (phiExclusionMin < -998.0 || (o2::aod::jtrack::phi <= phiExclusionMin || o2::aod::jtrack::phi >= phiExclusionMax))); // do we need eta cut both here and in globalselection?
+  o2::framework::expressions::Filter partCuts = (o2::aod::jmcparticle::pt >= trackPtMin && o2::aod::jmcparticle::pt < trackPtMax && o2::aod::jmcparticle::eta >= trackEtaMin && o2::aod::jmcparticle::eta <= trackEtaMax && o2::aod::jmcparticle::phi >= trackPhiMin && o2::aod::jmcparticle::phi <= trackPhiMax && (phiExclusionMin < -998.0 || (o2::aod::jmcparticle::phi <= phiExclusionMin || o2::aod::jmcparticle::phi >= phiExclusionMax)));
   o2::framework::expressions::Filter clusterFilter = (o2::aod::jcluster::eta >= clusterEtaMin && o2::aod::jcluster::eta <= clusterEtaMax && o2::aod::jcluster::phi >= clusterPhiMin && o2::aod::jcluster::phi <= clusterPhiMax && o2::aod::jcluster::energy >= clusterEnergyMin && o2::aod::jcluster::time > clusterTimeMin && o2::aod::jcluster::time < clusterTimeMax && (!clusterRejectExotics || o2::aod::jcluster::isExotic != true));
 
   void processChargedJets(o2::soa::Filtered<o2::aod::JetCollisions>::iterator const& collision,

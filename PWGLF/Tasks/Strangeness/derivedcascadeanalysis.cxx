@@ -17,6 +17,7 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/RecoDecay.h"
@@ -84,6 +85,16 @@ struct Derivedcascadeanalysis {
   Configurable<int> nPtBinsForNsigmaTPC{"nPtBinsForNsigmaTPC", 100, ""};
   Configurable<std::string> irSource{"irSource", "T0VTX", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
   Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> histoCCDBPath{"histoCCDBPath", "Users/l/lhusova/LHC2025/PointingAngleSelection", "Path for the selection histograms in the CCDB"};
+
+  o2::aod::rctsel::RCTFlagsChecker rctFlagsChecker{rctConfigurations.cfgRCTLabel.value};
+
+  struct : ConfigurableGroup {
+    std::string prefix = "rctConfigurations"; // JSON group name
+    Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "", "Which detector condition requirements? (CBT, CBT_hadronPID, CBT_electronPID, CBT_calo, CBT_muon, CBT_muon_glo)"};
+    Configurable<bool> cfgCheckZDC{"cfgCheckZDC", false, "Include ZDC flags in the bit selection (for Pb-Pb only)"};
+    Configurable<bool> cfgTreatLimitedAcceptanceAsBad{"cfgTreatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
+  } rctConfigurations;
 
   struct : ConfigurableGroup {
     std::string prefix = "qa";
@@ -114,6 +125,7 @@ struct Derivedcascadeanalysis {
     Configurable<bool> doNoCollInRofStandardCut{"doNoCollInRofStandardCut", true, "Enable an evevnt selection which rejects a collision if there are other events within the same ITS ROF with mult above threshold"};
     Configurable<bool> doMultiplicityCorrCut{"doMultiplicityCorrCut", false, "Enable multiplicity vs centrality correlation cut"};
     Configurable<bool> doITSallLayersCut{"doITSallLayersCut", false, "Enable event selection which rejects collisions when ITS was rebooting."};
+    Configurable<bool> doCBTselection{"doCBTselection", true, "Require only events with good PID (CBT_hadronPID)"};
     Configurable<int> minOccupancy{"minOccupancy", -1, "Minimal occupancy"};
     Configurable<int> maxOccupancy{"maxOccupancy", -1, "Maximal occupancy"};
     Configurable<float> minOccupancyFT0{"minOccupancyFT0", -1, "Minimal occupancy"};
@@ -190,6 +202,7 @@ struct Derivedcascadeanalysis {
     Configurable<bool> doAtLeastOneTrackAB{"doAtLeastOneTrackAB", false, "require that at least one of the daughter tracks is from Afterburner"};
     Configurable<bool> doBachelorITSTracking{"doBachelorITSTracking", false, "require that the bachelor track is from the ITS tracking"};
     Configurable<bool> doAllTracksMinITSClusters{"doAllTracksMinITSClusters", false, "require that all daughter tracks have minimal ITS hits"};
+    Configurable<bool> useInterpolationForCosPACut{"useInterpolationForCosPACut", true, "use interpolation for pt dependent cosPA cut"};
   } candidateSelectionFlags;
 
   struct : ConfigurableGroup {
@@ -244,6 +257,11 @@ struct Derivedcascadeanalysis {
     Configurable<float> dcaCacsDauPtSelectionLow{"dcaCacsDauPtSelectionLow", 1.0, "low pt selection for range where DCA selection changes to Par1"};
     Configurable<float> dcaCacsDauPtSelectionHigh{"dcaCacsDauPtSelectionHigh", 4.0, "high pt selection for range where DCA selection changes to Par2"};
   } candidateSelectionValues;
+
+  TH1F* hXiPointingAngleSelection = nullptr;
+  TH1F* hOmegaPointingAngleSelection = nullptr;
+  TH1F* hXiLambdaPointingAngleSelection = nullptr;
+  TH1F* hOmegaLambdaPointingAngleSelection = nullptr;
 
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -311,13 +329,15 @@ struct Derivedcascadeanalysis {
       SETBIT(selectionCheckMask, 11);
     }
 
+    rctFlagsChecker.init(rctConfigurations.cfgRCTLabel.value, rctConfigurations.cfgCheckZDC, rctConfigurations.cfgTreatLimitedAcceptanceAsBad);
+
     histos.add("hEventVertexZ", "hEventVertexZ", kTH1F, {vertexZ});
     histos.add("hEventMultFt0C", "", kTH1F, {{500, 0, 5000}});
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{101, 0, 101}});
 
     histos.add("hEventSelection", "hEventSelection", kTH1F, {{22, 0, 22}});
     // TODO adjust labels
-    std::array<TString, 22> eventSelLabelRun3 = {"all", "sel8", "TVX", "PV_{z}", "cent", "kNoSameBunchPileup", "kIsGoodZvtxFT0vsPV", "kIsVertexITSTPC", "kIsVertexTOFmatched", "kIsVertexTRDmatched", "kNoITSROFrameBorder", "kNoTimeFrameBorder", "MultCorrCut", "kNoCollInTimeRangeStrict", "kNoCollInTimeRangeStandard", "min Occup", "mxOccup", "kNoCollInRofStrict", "kNoCollInRofStandard", "kIsGoodITSLayersAll", "occupFt0", "-"};
+    std::array<TString, 22> eventSelLabelRun3 = {"all", "sel8", "TVX", "PV_{z}", "cent", "kNoSameBunchPileup", "kIsGoodZvtxFT0vsPV", "kIsVertexITSTPC", "kIsVertexTOFmatched", "kIsVertexTRDmatched", "kNoITSROFrameBorder", "kNoTimeFrameBorder", "MultCorrCut", "kNoCollInTimeRangeStrict", "kNoCollInTimeRangeStandard", "min Occup", "mxOccup", "kNoCollInRofStrict", "kNoCollInRofStandard", "kIsGoodITSLayersAll", "occupFt0", "CBT sel"};
     std::array<TString, 22> eventSelLabelRun2 = {"all", "sel8", "TVX", "PV_{z}", "cent", "sel7", "kINT7", "kNoIncompleteDAQ", "kNoInconsistentVtx", "kNoPileupFromSPD", "kNoV0PFPileup", "kNoPileupInMultBins", "kNoPileupMV", "kNoPileupTPC", "kNoV0MOnVsOfPileup", "kNoSPDOnVsOfPileup", "kNoSPDClsVsTklBG", "INEL0", "-", "-", "-", "-"};
     for (int i = 1; i <= histos.get<TH1>(HIST("hEventSelection"))->GetNbinsX(); i++) {
       if (doprocessCascades || doprocessCascadesMCrec || doprocessCascadesMCforEff) {
@@ -561,6 +581,20 @@ struct Derivedcascadeanalysis {
       }
     }
   }
+  void initCosPASelectionHistograms(float timeStamp)
+  {
+
+    auto* listHistograms = ccdb->getForTimeStamp<TList>(histoCCDBPath, timeStamp);
+
+    if (!listHistograms) {
+      LOG(fatal) << "Problem getting TList object with histograms!";
+    }
+
+    hOmegaLambdaPointingAngleSelection = dynamic_cast<TH1F*>(listHistograms->FindObject("hOmegaLambdaPointingAngleSelection"));
+    hXiPointingAngleSelection = dynamic_cast<TH1F*>(listHistograms->FindObject("hXiPointingAngleSelection"));
+    hOmegaPointingAngleSelection = dynamic_cast<TH1F*>(listHistograms->FindObject("hOmegaPointingAngleSelection"));
+    hXiLambdaPointingAngleSelection = dynamic_cast<TH1F*>(listHistograms->FindObject("hXiLambdaPointingAngleSelection"));
+  }
   // Return slicing output
   template <bool run3, typename TCollisions>
   auto getGroupedCollisions(TCollisions const& collisions, int globalIndex)
@@ -577,12 +611,28 @@ struct Derivedcascadeanalysis {
 
     if (ptdepcut) {
       double ptdepCut = -1;
-      if (isCascPa) {
-        ptdepCut = candidateSelectionValues.cosPApar0 + candidateSelectionValues.cosPApar1 * casc.pt();
+      if (candidateSelectionFlags.useInterpolationForCosPACut) {
+        if (isCascPa) {
+          if (isXi) {
+            ptdepCut = hXiPointingAngleSelection->Interpolate(casc.pt());
+          } else {
+            ptdepCut = hOmegaPointingAngleSelection->Interpolate(casc.pt());
+          }
+        } else {
+          if (isXi) {
+            ptdepCut = hXiLambdaPointingAngleSelection->Interpolate(casc.pt());
+          } else {
+            ptdepCut = hOmegaLambdaPointingAngleSelection->Interpolate(casc.pt());
+          }
+        }
       } else {
-        ptdepCut = candidateSelectionValues.v0cosPApar0 + candidateSelectionValues.v0cosPApar1 * casc.pt();
+        if (isCascPa) {
+          ptdepCut = candidateSelectionValues.cosPApar0 + candidateSelectionValues.cosPApar1 * casc.pt();
+        } else {
+          ptdepCut = candidateSelectionValues.v0cosPApar0 + candidateSelectionValues.v0cosPApar1 * casc.pt();
+        }
       }
-      if (ptdepCut > candidateSelectionValues.ptdepCosPACutMaxValue && casc.pt() < candidateSelectionValues.minPtForCosPAcut) {
+      if (ptdepCut > candidateSelectionValues.ptdepCosPACutMaxValue) {
         ptdepCut = candidateSelectionValues.ptdepCosPACutMaxValue;
       }
       if (ptdepCut < candidateSelectionValues.ptdepCosPACutMinValue) {
@@ -798,6 +848,13 @@ struct Derivedcascadeanalysis {
       }
 
       interactionRate = rateFetcher.fetch(ccdb.service, coll.timestamp(), coll.runNumber(), irSource) * 1.e-3;
+
+      if (eventSelectionRun3Flags.doCBTselection && !rctConfigurations.cfgRCTLabel.value.empty() && !rctFlagsChecker(coll)) {
+        return false;
+      }
+      if (fillHists) {
+        histos.fill(HIST("hEventSelection"), 21.5 /* Pass CBT condition */);
+      }
     } else {
       centrality = eventSelectionRun2Flags.useSPDTrackletsCent ? coll.centRun2SPDTracklets() : coll.centRun2V0M();
 
@@ -1188,6 +1245,10 @@ struct Derivedcascadeanalysis {
     float centrality = -1;
     float nChEta1 = -1;
     float occupancy = -2;
+
+    if (candidateSelectionFlags.useInterpolationForCosPACut) {
+      initCosPASelectionHistograms(coll.timestamp());
+    }
 
     if constexpr (requires { coll.centFT0C(); }) {
       nChEta1 = coll.multNTracksPVeta1();

@@ -122,7 +122,7 @@ struct cascademcbuilder {
   }
 
   template <typename TCascadeTable, typename TMCParticleTable>
-  void generateCascadeMCinfo(TCascadeTable cascTable, TMCParticleTable mcParticles)
+  void generateCascadeMCinfo(const TCascadeTable& cascTable, const TMCParticleTable& mcParticles)
   {
 
     // to be used if using the asymmetric mode, kept empty otherwise

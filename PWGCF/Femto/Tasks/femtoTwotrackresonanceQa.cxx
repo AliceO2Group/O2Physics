@@ -40,7 +40,7 @@ using namespace o2::analysis::femto;
 struct FemtoTwotrackresonanceQa {
 
   // setup tables
-  using FemtoCollisions = o2::soa::Join<o2::aod::FCols, o2::aod::FColMasks, o2::aod::FColPos, o2::aod::FColSphericities, o2::aod::FColMults>;
+  using FemtoCollisions = o2::soa::Join<o2::aod::FCols, o2::aod::FColMasks, o2::aod::FColPos, o2::aod::FColSphericities, o2::aod::FColMults, o2::aod::FColCents>;
   using FemtoCollision = FemtoCollisions::iterator;
 
   using FilteredFemtoCollisions = o2::soa::Filtered<FemtoCollisions>;

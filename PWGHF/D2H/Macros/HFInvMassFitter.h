@@ -22,11 +22,15 @@
 #ifndef PWGHF_D2H_MACROS_HFINVMASSFITTER_H_
 #define PWGHF_D2H_MACROS_HFINVMASSFITTER_H_
 
+#include <RooAbsPdf.h>
+#include <RooDataHist.h>
+#include <RooFitResult.h>
 #include <RooPlot.h>
 #include <RooRealVar.h>
 #include <RooWorkspace.h>
 #include <TF1.h>
 #include <TH1.h>
+#include <TH2.h>
 #include <TNamed.h>
 #include <TRandom3.h>
 #include <TVirtualPad.h>
@@ -52,28 +56,28 @@ class HFInvMassFitter : public TNamed
  public:
   enum TypeOfBkgPdf {
     Expo = 0,
-    Poly1 = 1,
-    Poly2 = 2,
-    Pow = 3,
-    PowExpo = 4,
-    Poly3 = 5,
-    NoBkg = 6,
+    Poly1,   // 1
+    Poly2,   // 2
+    Pow,     // 3
+    PowExpo, // 4
+    Poly3,   // 5
+    NoBkg,   // 6
     NTypesOfBkgPdf
   };
   std::array<std::string, NTypesOfBkgPdf> namesOfBkgPdf{"bkgFuncExpo", "bkgFuncPoly1", "bkgFuncPoly2", "bkgFuncPow", "bkgFuncPowExpo", "bkgFuncPoly3"};
   enum TypeOfSgnPdf {
     SingleGaus = 0,
-    DoubleGaus = 1,
-    DoubleGausSigmaRatioPar = 2,
-    GausSec = 3,
-    DoubleSidedCrystalBall = 4,
+    DoubleGaus,              // 1
+    DoubleGausSigmaRatioPar, // 2
+    GausSec,                 // 3
+    DoubleSidedCrystalBall,  // 4
     NTypesOfSgnPdf
   };
   enum TypeOfReflPdf {
     SingleGausRefl = 0,
-    DoubleGausRefl = 1,
-    Poly3Refl = 2,
-    Poly6Refl = 3,
+    DoubleGausRefl, // 1
+    Poly3Refl,      // 2
+    Poly6Refl,      // 3
     NTypesOfReflPdf
   };
   std::array<std::string, NTypesOfReflPdf> namesOfReflPdf{"reflFuncGaus", "reflFuncDoubleGaus", "reflFuncPoly3", "reflFuncPoly6"};
@@ -84,9 +88,9 @@ class HFInvMassFitter : public TNamed
   void setUseLikelihoodFit() { mFitOption = "L,E"; }
   void setUseChi2Fit() { mFitOption = "Chi2"; }
   void setFitOption(const std::string& opt) { mFitOption = opt; }
-  RooAbsPdf* createBackgroundFitFunction(RooWorkspace* w1) const;
-  RooAbsPdf* createSignalFitFunction(RooWorkspace* w1);
-  RooAbsPdf* createReflectionFitFunction(RooWorkspace* w1) const;
+  RooAbsPdf* createBackgroundFitFunction(RooWorkspace* workspace) const;
+  RooAbsPdf* createSignalFitFunction(RooWorkspace* workspace);
+  RooAbsPdf* createReflectionFitFunction(RooWorkspace* workspace) const;
 
   void setFitRange(double minValue, double maxValue);
   void setFitFunctions(int fitTypeBkg, int fitTypeSgn);
@@ -125,8 +129,8 @@ class HFInvMassFitter : public TNamed
   void setDscbNRInitialValue(double value) { mDscbNRInitialValue = value; }
   void setDscbNRLowLimit(double value) { mDscbNRLowLimit = value; }
   void setDscbNRUpLimit(double value) { mDscbNRUpLimit = value; }
-  void plotBkg(RooAbsPdf* mFunc, Color_t color = kRed);
-  void plotRefl(RooAbsPdf* mFunc);
+  void plotBkg(RooAbsPdf* pdf, Color_t color = kRed);
+  void plotRefl(RooAbsPdf* pdf);
   void setReflFuncFixed();
   void doFit();
   void setInitialReflOverSgn(double reflOverSgn) { mReflOverSgn = reflOverSgn; }
@@ -161,16 +165,22 @@ class HFInvMassFitter : public TNamed
   [[nodiscard]] double getFracDoubleGaus() const { return mRooFracDoubleGaus->getVal(); }
   [[nodiscard]] double getFracDoubleGausUncertainty() const { return mRooFracDoubleGaus->getError(); }
   [[nodiscard]] double getReflOverSig() const { return mReflPdf != nullptr ? mReflOverSgn : 0.; }
-  void calculateSignal(double& signal, double& signalErr) const;
-  void countSignal(double& signal, double& signalErr) const;
-  void calculateBackground(double& bkg, double& bkgErr) const;
-  void calculateSignificance(double& significance, double& significanceErr) const;
+  [[nodiscard]] int getFitStatus() const { return mFitStatus; }
+  [[nodiscard]] int getCovQual() const { return mCovQual; }
+  [[nodiscard]] double getEDM() const { return mEdm; }
+  [[nodiscard]] double getMinNll() const { return mMinNll; }
+  [[nodiscard]] double getSgnGlobalCorrelCoeff() const { return mSgnGlobalCorrelCoeff; }
+  [[nodiscard]] TH2* getCovCorrMatrix() const { return mCovCorrMatrix; }
+  void calculateSignal(double& signal, double& errSignal) const;
+  void countSignal(double& signal, double& errSignal) const;
+  void calculateBackground(double& bkg, double& errBkg) const;
+  void calculateSignificance(double& significance, double& errSignificance) const;
   void checkForSignal(double& estimatedSignal);
   void calculateFitToDataRatio() const;
-  void drawFit(TVirtualPad* c, const std::vector<std::string>& plotLabels, bool writeParInfo = true);
-  void drawResidual(TVirtualPad* c);
-  void drawRatio(TVirtualPad* c);
-  void drawReflection(TVirtualPad* c);
+  void drawFit(TVirtualPad* pad, const std::vector<std::string>& plotLabels, bool writeParInfo = true);
+  void drawResidual(TVirtualPad* pad);
+  void drawRatio(TVirtualPad* pad);
+  void drawReflection(TVirtualPad* pad);
 
  private:
   HFInvMassFitter(const HFInvMassFitter& source);
@@ -179,6 +189,9 @@ class HFInvMassFitter : public TNamed
   void highlightPeakRegion(const RooPlot* plot, Color_t color = kGray + 1, Width_t width = 1, Style_t style = 2) const;
   [[nodiscard]] double randomizeInitialParameter(const ParameterRanges& parameterRanges) const;
   [[nodiscard]] std::pair<double, double> getRangesOfSignal() const;
+  [[nodiscard]] double integrateHistoInvMassOverWorkspaceRanges(const std::vector<std::string>& ranges) const;
+  void cutRangesFromHisto(TH1* histo, const std::vector<std::string>& ranges) const;
+  static TH2* fillCovCorrMatrix(const RooFitResult* fitResult);
 
   TH1* mHistoInvMass; // histogram to fit
   std::string mFitOption;
@@ -261,7 +274,6 @@ class HFInvMassFitter : public TNamed
   RooHist* mResidualHist;          /// residual histogram
   RooPlot* mRatioFrame;            /// fit/data ratio frame
   RooWorkspace* mWorkspace;        /// workspace
-  double mIntegralHisto;           /// integral of histogram to fit
   double mIntegralBkg;             /// integral of background fit function
   double mIntegralSgn;             /// integral of signal fit function
   TH1* mHistoTemplateRefl;         /// reflection histogram
@@ -269,6 +281,12 @@ class HFInvMassFitter : public TNamed
   bool mHighlightPeakRegion;       /// draw vertical lines showing the peak region (usually +- 3 sigma)
   int mRandomSeed;                 /// seed for random engine for fit's initial parameters randomization
   TRandom3* mRandomGen;            /// engine for fit's initial parameters randomization
+  int mFitStatus;                  /// fit result status, see https://root-forum.cern.ch/t/meaning-of-values-returned-by-roofitresult-status/16355/2
+  int mCovQual;                    /// fit result covariance matrix quality, see https://root.cern.ch/doc/v620/Minuit2Minimizer_8cxx_source.html#l01121
+  double mEdm;                     /// fit quality metrics: Estimated Distance to Minimum
+  double mMinNll;                  /// fit quality metrics: minimum negative log-likelihood (NLL) value achieved at the best-fit parameter values
+  double mSgnGlobalCorrelCoeff;    /// global correlation coefficient of mRooNSgn with other fit parameters
+  TH2* mCovCorrMatrix;             /// covariance (upper left + diagonal) and correlation (lower right) matrix of free fit parameters
 
   ClassDefOverride(HFInvMassFitter, 1);
 };

@@ -54,6 +54,7 @@ enum JCollisionSel {
   selUPCSingleGapA = 10,
   selUPCSingleGapC = 11,
   selUPCDoubleGap = 12,
+  selTriggerTrackSignal = 13 // special bit for derived data. not used like other selection bits
 };
 
 enum JCollisionSubGeneratorId {
@@ -62,7 +63,7 @@ enum JCollisionSubGeneratorId {
 };
 
 template <typename T>
-bool selectCollision(T const& collision, const std::vector<int>& eventSelectionMaskBits, bool skipMBGapEvents = true, bool rctSelection = true, std::string rctLabel = "CBT_hadronPID", bool rejectLimitedAcceptanceRct = false, bool requireZDCRct = false)
+bool selectCollision(T const& collision, const std::vector<int>& eventSelectionMaskBits, bool skipMBGapEvents = true, bool rctSelection = true, const std::string& rctLabel = "CBT_hadronPID", bool rejectLimitedAcceptanceRct = false, bool requireZDCRct = false)
 {
 
   if (skipMBGapEvents && collision.getSubGeneratorId() == JCollisionSubGeneratorId::mbGap) {
@@ -95,7 +96,7 @@ bool selectCollision(T const& collision, const std::vector<int>& eventSelectionM
   return !isOrCondition;
 }
 
-bool eventSelectionMasksContainSelection(const std::string& eventSelectionMasks, std::string selection)
+bool eventSelectionMasksContainSelection(const std::string& eventSelectionMasks, const std::string& selection)
 {
   size_t position = 0;
   while ((position = eventSelectionMasks.find(selection, position)) != std::string::npos) {
@@ -324,7 +325,7 @@ bool selectTrigger(T const& collision, int triggerMaskBit)
   return collision.triggerSel() & (1ULL << triggerMaskBit);
 }
 
-bool triggerMasksContainTrigger(const std::string& triggerMasks, std::string trigger)
+bool triggerMasksContainTrigger(const std::string& triggerMasks, const std::string& trigger)
 {
   size_t position = 0;
   while ((position = triggerMasks.find(trigger, position)) != std::string::npos) {
@@ -716,6 +717,7 @@ uint8_t setSingleTrackSelectionBit(int trackSelection)
   if (trackSelection != -1) {
     SETBIT(bit, trackSelection);
   }
+  SETBIT(bit, JTrackSel::notBadMcTrack);
   return bit;
 }
 
@@ -731,7 +733,7 @@ bool selectTrackDcaZ(T const& track, double dcaZmax = 99.)
   return std::abs(track.dcaZ()) < dcaZmax;
 }
 
-std::vector<int> initialiseClusterDefinitions(const std::string clusterDefinitions)
+std::vector<int> initialiseClusterDefinitions(const std::string& clusterDefinitions)
 {
   std::vector<int> clusterDefinitionsVec;
   if (clusterDefinitions.empty()) {

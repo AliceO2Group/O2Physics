@@ -65,9 +65,7 @@
 #include <type_traits>
 #include <vector>
 
-namespace o2::analysis
-{
-namespace hf_charm_reso
+namespace o2::analysis::hf_charm_reso
 {
 
 // event types
@@ -226,7 +224,7 @@ template <bool DoMc, DMesonType DType>
 void addHistograms(o2::framework::HistogramRegistry& registry)
 {
   constexpr uint8_t NumBinsEvents = EventType::NEventType;
-  std::string labels[NumBinsEvents];
+  std::array<std::string, NumBinsEvents> labels;
   labels[EventType::Processed] = "processed";
   labels[EventType::NoDV0Selected] = "without DV0 pairs";
   labels[EventType::DV0Selected] = "with DV0 pairs";
@@ -542,7 +540,7 @@ bool buildAndSelectGamma(const Coll& collision, const std::array<int, 3>& dDaugh
     return false;
   }
 
-  std::array<float, 2> dcaInfo;
+  std::array<float, 2> dcaInfo{};
   auto trackParPos = getTrackParCov(trackPos);
   if (o2::pwgem::photonmeson::isTPConlyTrack(trackPos) && !vDriftMgr->moveTPCTrack<BCs, Colls>(collision, trackPos, trackParPos)) {
     LOGP(error, "failed correction for positive tpc track");
@@ -568,7 +566,7 @@ bool buildAndSelectGamma(const Coll& collision, const std::array<int, 3>& dDaugh
     return false;
   }
 
-  float gammaVtx[3] = {0.f, 0.f, 0.f};
+  std::array<float, 3> gammaVtx = {0.f, 0.f, 0.f};
   Vtx_recalculationParCov(o2::base::Propagator::Instance(), trackParPropPos, trackParPropNeg, gammaVtx, matCorr);
   float radiusXy = std::hypot(gammaVtx[0], gammaVtx[1]);
   const float maxX{83.1f};    // max X for track IU
@@ -585,17 +583,17 @@ bool buildAndSelectGamma(const Coll& collision, const std::array<int, 3>& dDaugh
   KFPTrack kfpTrackNeg = createKFPTrackFromTrackParCov(trackParPropNeg, trackNeg.sign(), trackNeg.tpcNClsFound(), trackNeg.tpcChi2NCl());
   KFParticle kfPartPos(kfpTrackPos, kPositron);
   KFParticle kfPartNeg(kfpTrackNeg, kElectron);
-  const KFParticle* gammaDaughters[2] = {&kfPartPos, &kfPartNeg};
+  std::array<const KFParticle*, 2> gammaDaughters = {&kfPartPos, &kfPartNeg};
 
   KFParticle gamma;
   gamma.SetConstructMethod(2);
-  gamma.Construct(gammaDaughters, 2);
+  gamma.Construct(gammaDaughters.data(), 2);
   KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
   KFParticle KFPV(kfpVertex);
 
   // Transport the gamma to the recalculated decay vertex
   KFParticle gammaDecayVtx = gamma; // with respect to (0,0,0)
-  gammaDecayVtx.TransportToPoint(gammaVtx);
+  gammaDecayVtx.TransportToPoint(gammaVtx.data());
   v0.cosPA = cpaFromKF(gammaDecayVtx, KFPV);
   if (v0.cosPA < cfgGammaCuts.cosPa.value) {
     return false;
@@ -634,10 +632,10 @@ bool buildAndSelectGamma(const Coll& collision, const std::array<int, 3>& dDaugh
     return false;
   }
 
-  KFParticle kfPartDecayVtxPos = kfPartPos;     // Don't set Primary Vertex
-  KFParticle kfPartDecayVtxNeg = kfPartNeg;     // Don't set Primary Vertex
-  kfPartDecayVtxPos.TransportToPoint(gammaVtx); // Don't set Primary Vertex
-  kfPartDecayVtxNeg.TransportToPoint(gammaVtx); // Don't set Primary Vertex
+  KFParticle kfPartDecayVtxPos = kfPartPos;            // Don't set Primary Vertex
+  KFParticle kfPartDecayVtxNeg = kfPartNeg;            // Don't set Primary Vertex
+  kfPartDecayVtxPos.TransportToPoint(gammaVtx.data()); // Don't set Primary Vertex
+  kfPartDecayVtxNeg.TransportToPoint(gammaVtx.data()); // Don't set Primary Vertex
   v0.dcaDau = kfPartDecayVtxPos.GetDistanceFromParticle(kfPartDecayVtxNeg);
   v0.momPos = RecoDecay::pVec(std::array{kfPartDecayVtxPos.GetPx(), kfPartDecayVtxPos.GetPy(), kfPartDecayVtxPos.GetPz()});
   v0.momNeg = RecoDecay::pVec(std::array{kfPartDecayVtxNeg.GetPx(), kfPartDecayVtxNeg.GetPy(), kfPartDecayVtxNeg.GetPz()});
@@ -2013,7 +2011,6 @@ void runMcGen(McParticles const& mcParticles,
     }
   }
 }
-} // namespace hf_charm_reso
-} // namespace o2::analysis
+} // namespace o2::analysis::hf_charm_reso
 
 #endif // PWGHF_D2H_CORE_DATACREATIONCHARMRESO_H_

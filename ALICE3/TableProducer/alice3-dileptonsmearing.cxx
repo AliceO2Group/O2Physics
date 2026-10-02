@@ -73,7 +73,24 @@ struct alice3dileptonsmearer {
     Configurable<float> cfgMinPt{"cfgMinPt", -1, "if ptgen is smaller than this threshold, this value is used as input for ptgen."};
   } electron_filenames;
 
+  struct : ConfigurableGroup {
+    std::string prefix = "pion_filename_group";
+    Configurable<bool> cfgNDSmearing{"cfgNDSmearing", false, "apply ND-correlated smearing"};
+    Configurable<std::string> cfgResFileName{"cfgResFileName", "", "name of resolution file"};
+    Configurable<std::string> cfgResNDHistName{"cfgResNDHistName", "hs_reso", "name of ND resolution file"};
+    Configurable<std::string> cfgResPtHistName{"cfgResPtHistName", "RelPtResArrCocktail", "histogram name for pt in resolution file"};
+    Configurable<std::string> cfgResEtaHistName{"cfgResEtaHistName", "EtaResArr", "histogram name for eta in resolution file"};
+    Configurable<std::string> cfgResPhiPosHistName{"cfgResPhiPosHistName", "PhiPosResArr", "histogram name for phi pos in resolution file"};
+    Configurable<std::string> cfgResPhiNegHistName{"cfgResPhiNegHistName", "PhiEleResArr", "hisogram for phi neg in resolution file"};
+    Configurable<std::string> cfgEffFileName{"cfgEffFileName", "", "name of efficiency file"};
+    Configurable<std::string> cfgEffHistName{"cfgEffHistName", "fhwEffpT", "name of efficiency histogram"};
+    Configurable<std::string> cfgCcdbPathRes{"cfgCcdbPathRes", "", "path to the ccdb object for resolution"};
+    Configurable<std::string> cfgCcdbPathEff{"cfgCcdbPathEff", "", "path to the ccdb object for efficiency"};
+    Configurable<float> cfgMinPt{"cfgMinPt", -1, "if ptgen is smaller than this threshold, this value is used as input for ptgen."};
+  } pion_filenames;
+
   MomentumSmearer smearer_Electron;
+  MomentumSmearer smearer_Pion;
   Service<ccdb::BasicCCDBManager> ccdb;
 
   void init(InitContext&)
@@ -99,6 +116,19 @@ struct alice3dileptonsmearer {
     smearer_Electron.setDCAHistName("");
     smearer_Electron.setMinPt(electron_filenames.cfgMinPt);
 
+    smearer_Pion.setNDSmearing(pion_filenames.cfgNDSmearing.value);
+    smearer_Pion.setResFileName(TString(pion_filenames.cfgResFileName));
+    smearer_Pion.setResNDHistName(TString(pion_filenames.cfgResNDHistName));
+    smearer_Pion.setResPtHistName(TString(pion_filenames.cfgResPtHistName));
+    smearer_Pion.setResEtaHistName(TString(pion_filenames.cfgResEtaHistName));
+    smearer_Pion.setResPhiPosHistName(TString(pion_filenames.cfgResPhiPosHistName));
+    smearer_Pion.setResPhiNegHistName(TString(pion_filenames.cfgResPhiNegHistName));
+    smearer_Pion.setEffFileName(TString(pion_filenames.cfgEffFileName));
+    smearer_Pion.setEffHistName(TString(pion_filenames.cfgEffHistName));
+    smearer_Pion.setDCAFileName("");
+    smearer_Pion.setDCAHistName("");
+    smearer_Pion.setMinPt(pion_filenames.cfgMinPt);
+
     if (cfgFromCcdb) {
       ccdb->setURL(cfgCcdbUrl);
       ccdb->setCaching(true);
@@ -111,8 +141,17 @@ struct alice3dileptonsmearer {
       smearer_Electron.setCcdbPathDCA("");
       smearer_Electron.setTimestamp(timestamp);
       smearer_Electron.setCcdb(ccdb);
+
+      smearer_Pion.setCcdbPathRes(TString(pion_filenames.cfgCcdbPathRes));
+      smearer_Pion.setCcdbPathEff(TString(pion_filenames.cfgCcdbPathEff));
+      // smearer_Pion.setCcdbPathDCA(TString(pion_filenames.fConfigCcdbPathDCA));
+      smearer_Pion.setCcdbPathDCA("");
+      smearer_Pion.setTimestamp(timestamp);
+      smearer_Pion.setCcdb(ccdb);
     }
+
     smearer_Electron.init();
+    smearer_Pion.init();
   }
 
   void processACTSHybrid(MyTracks const& tracks, const aod::McParticles& /*mcParticles*/)
@@ -143,6 +182,30 @@ struct alice3dileptonsmearer {
           // Select
           if (myRandom < efficiency) {
             selected = true;
+          } else {
+            selected = false;
+          }
+          // fill the table
+          smearedelectron(ptsmeared, etasmeared, phismeared, selected);
+        } else if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus) {
+          int ch = -1;
+          if (mcParticle.pdgCode() < 0) {
+            ch = 1;
+          }
+          float ptsmeared = 0, etasmeared = 0, phismeared = 0;
+          // apply smearing for electrons or muons.
+          smearer_Pion.applySmearing(centrality, ch, ptgen, etagen, phigen, ptsmeared, etasmeared, phismeared);
+          // get the efficiency if there, otherwise applied zero
+          if ((TString(pion_filenames.cfgCcdbPathEff).CompareTo("") != 0) || (TString(pion_filenames.cfgEffFileName).CompareTo("") != 0)) {
+            float efficiency = smearer_Pion.getEfficiency(ptgen, etagen, phigen);
+            // Generate a random double between 0 and 1
+            double myRandom = gRandom->Uniform(0, 1);
+            // Select
+            if (myRandom < efficiency) {
+              selected = true;
+            } else {
+              selected = false;
+            }
           } else {
             selected = false;
           }
@@ -213,6 +276,7 @@ struct alice3dileptonchecksmearer {
     }
 
     registry.addClone("Electron/", "Others/");
+    registry.addClone("Electron/", "Pions/");
   }
 
   void processCheckACTSHybrid(MyTracksWithSmearing const& tracks, const aod::McParticles& /*mcParticles*/)
@@ -222,13 +286,13 @@ struct alice3dileptonchecksmearer {
         continue;
       }
       const auto mcParticle = track.mcParticle_as<aod::McParticles>();
+      float deltaptoverpt = -1000.f;
+      if (mcParticle.pt() > 0.f) {
+        deltaptoverpt = (mcParticle.pt() - track.ptSmeared()) / mcParticle.pt();
+      }
+      float deltaeta = mcParticle.eta() - track.etaSmeared();
+      float deltaphi = mcParticle.phi() - track.phiSmeared();
       if (std::abs(mcParticle.pdgCode()) == PDG_t::kElectron) {
-        float deltaptoverpt = -1000.f;
-        if (mcParticle.pt() > 0.f) {
-          deltaptoverpt = (mcParticle.pt() - track.ptSmeared()) / mcParticle.pt();
-        }
-        float deltaeta = mcParticle.eta() - track.etaSmeared();
-        float deltaphi = mcParticle.phi() - track.phiSmeared();
         registry.fill(HIST("Electron/PtGen_DeltaPtOverPtGen"), mcParticle.pt(), deltaptoverpt);
         registry.fill(HIST("Electron/PtGen_DeltaEta"), mcParticle.pt(), deltaeta);
         if (mcParticle.pdgCode() < 0) { // e+
@@ -244,13 +308,23 @@ struct alice3dileptonchecksmearer {
         if (track.selected()) {
           registry.fill(HIST("Electron/PtEtaRec"), mcParticle.pt(), mcParticle.eta());
         }
-      } else {
-        float deltaptoverpt = -1000.f;
-        if (mcParticle.pt() > 0.f) {
-          deltaptoverpt = (mcParticle.pt() - track.ptSmeared()) / mcParticle.pt();
+      } else if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus) {
+        registry.fill(HIST("Pions/PtGen_DeltaPtOverPtGen"), mcParticle.pt(), deltaptoverpt);
+        registry.fill(HIST("Pions/PtGen_DeltaEta"), mcParticle.pt(), deltaeta);
+        if (mcParticle.pdgCode() < 0) { // e+
+          registry.fill(HIST("Pions/PtGen_DeltaPhi_Pos"), mcParticle.pt(), deltaphi);
+        } else { // e-
+          registry.fill(HIST("Pions/PtGen_DeltaPhi_Neg"), mcParticle.pt(), deltaphi);
         }
-        float deltaeta = mcParticle.eta() - track.etaSmeared();
-        float deltaphi = mcParticle.phi() - track.phiSmeared();
+        registry.fill(HIST("Pions/hCorrelation_Pt"), mcParticle.pt(), track.ptSmeared());
+        registry.fill(HIST("Pions/hCorrelation_Eta"), mcParticle.eta(), track.etaSmeared());
+        registry.fill(HIST("Pions/hCorrelation_Phi"), mcParticle.phi(), track.phiSmeared());
+        // efficiency
+        registry.fill(HIST("Pions/PtEtaGen"), mcParticle.pt(), mcParticle.eta());
+        if (track.selected()) {
+          registry.fill(HIST("Pions/PtEtaRec"), mcParticle.pt(), mcParticle.eta());
+        }
+      } else {
         registry.fill(HIST("Others/PtGen_DeltaPtOverPtGen"), mcParticle.pt(), deltaptoverpt);
         registry.fill(HIST("Others/PtGen_DeltaEta"), mcParticle.pt(), deltaeta);
         if (mcParticle.pdgCode() < 0) { // e+

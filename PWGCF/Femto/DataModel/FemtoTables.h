@@ -18,6 +18,7 @@
 
 #include "PWGCF/Femto/Core/dataTypes.h"
 #include "PWGCF/Femto/Core/femtoUtils.h"
+#include "PWGCF/Femto/Core/modes.h"
 
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -26,6 +27,7 @@
 #include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/DataTypes.h>
 
 #include <cmath>
 #include <cstdint>
@@ -37,24 +39,34 @@ namespace femtocollisions
 DECLARE_SOA_COLUMN(Mask, mask, o2::analysis::femto::datatypes::CollisionMaskType);                //! Bitmask for collision selections
 DECLARE_SOA_COLUMN(CollisionTag, collisionTag, o2::analysis::femto::datatypes::CollisionTagType); //! Bitmask for collision selections
 
-DECLARE_SOA_COLUMN(PosX, posX, float);             //! x coordinate of vertex
-DECLARE_SOA_COLUMN(PosY, posY, float);             //! y coordinate of vertex
-DECLARE_SOA_COLUMN(PosZ, posZ, float);             //! z coordinate of vertex
-DECLARE_SOA_COLUMN(Mult, mult, float);             //! Multiplicity estimator set by producer
-DECLARE_SOA_COLUMN(Cent, cent, float);             //! Centrality (~= multiplicity percentile) estimator set by producer
-DECLARE_SOA_COLUMN(MagField, magField, int8_t);    //! Magnetic field in kG (5 kG at normal configuration and 2kG in low B field configuration)
-DECLARE_SOA_COLUMN(Sphericity, sphericity, float); //! Sphericity of the event
-DECLARE_SOA_COLUMN(Qn, qn, float);                 //! qn bins for dividing eventsfemtab
+DECLARE_SOA_COLUMN(PosX, posX, float);                       //! x coordinate of vertex
+DECLARE_SOA_COLUMN(PosY, posY, float);                       //! y coordinate of vertex
+DECLARE_SOA_COLUMN(PosZ, posZ, float);                       //! z coordinate of vertex
+DECLARE_SOA_COLUMN(Mult, mult, float);                       //! Multiplicity estimator set by producer
+DECLARE_SOA_COLUMN(Cent, cent, float);                       //! Centrality (~= multiplicity percentile) estimator set by producer
+DECLARE_SOA_COLUMN(MagField, magField, int8_t);              //! Magnetic field in kG (5 kG at normal configuration and 2kG in low B field configuration)
+DECLARE_SOA_COLUMN(Sphericity, sphericity, float);           //! Sphericity of the event
+DECLARE_SOA_COLUMN(Qvec, qvec, float);                       //! qvector
+DECLARE_SOA_COLUMN(EventPlaneAngle, eventPlaneAngle, float); //! event plane angle (for corresponding q vector)
 
 namespace lite
 {
 constexpr float PosZMin = -20.f;
 constexpr float PosZMax = 20.f;
 constexpr float PosZStep = 0.5f; // bin vtz in 0.5cm steps
+
 constexpr float CentMin = 0.f;
 constexpr float CentMax = 100.f;
 constexpr float CentStep = 0.5f; // bin centrality in 0.5% steps
-constexpr float MultStep = 1.f;  // round multiplicity to nearest integer
+
+constexpr float MultStep = 1.f; // round multiplicity to nearest integer
+
+constexpr float QvecMin = 1e-3f; // close to 0, but not 0 due to log
+constexpr float QvecMax = 1e3f;  // usual range for qvector
+
+constexpr float EventPlaneAngleMin = 0.f;
+constexpr float EventPlaneAngleMax = o2::constants::math::TwoPI; // angle bound in [0,2pi)
+constexpr float EventPlaneAngleStep = (EventPlaneAngleMax - EventPlaneAngleMin) / 65536.f;
 
 inline uint8_t binPosZ(float posZ) { return o2::analysis::femto::utils::binLinear<uint8_t>(posZ, PosZMin, PosZMax, PosZStep); }
 inline float unBinPosZ(uint8_t binned) { return o2::analysis::femto::utils::unBinLinear<uint8_t>(binned, PosZMin, PosZStep); }
@@ -65,9 +77,17 @@ inline float unBinCent(uint8_t binned) { return o2::analysis::femto::utils::unBi
 inline uint16_t binMult(float mult) { return o2::analysis::femto::utils::binLinear<uint16_t>(mult, 0.f, 65535.f, MultStep); } // use full range of uint16_t
 inline float unBinMult(uint16_t binned) { return o2::analysis::femto::utils::unBinLinear<uint16_t>(binned, 0.f, MultStep); }
 
+inline uint16_t binQvec(float qvec) { return o2::analysis::femto::utils::binLogUnsigned<uint16_t>(qvec, QvecMin, QvecMax); }
+inline float unBinQvec(uint16_t binned) { return o2::analysis::femto::utils::unBinLogUnsigned<uint16_t>(binned, QvecMin, QvecMax); }
+
+inline uint16_t binEventPlaneAngle(float eventPlaneAngle) { return o2::analysis::femto::utils::binLinear<uint16_t>(eventPlaneAngle, EventPlaneAngleMin, EventPlaneAngleMax, EventPlaneAngleStep); }
+inline float unBinEventPlaneAngle(uint16_t binned) { return o2::analysis::femto::utils::unBinLinear<uint16_t>(binned, EventPlaneAngleMin, EventPlaneAngleStep); }
+
 DECLARE_SOA_COLUMN(BinnedPosZ, binnedPosZ, uint8_t);
 DECLARE_SOA_COLUMN(BinnedMult, binnedMult, uint16_t);
 DECLARE_SOA_COLUMN(BinnedCent, binnedCent, uint8_t);
+DECLARE_SOA_COLUMN(BinnedQvec, binnedQvec, uint16_t);
+DECLARE_SOA_COLUMN(BinnedEventPlaneAngle, binnedEventPlaneAngle, uint16_t);
 
 DECLARE_SOA_DYNAMIC_COLUMN(PosZ, posZ,
                            [](uint8_t binnedPosZ) -> float {
@@ -80,6 +100,14 @@ DECLARE_SOA_DYNAMIC_COLUMN(Mult, mult,
 DECLARE_SOA_DYNAMIC_COLUMN(Cent, cent,
                            [](uint8_t binnedCent) -> float {
                              return unBinCent(binnedCent);
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(Qvec, qvec,
+                           [](uint16_t binnedQvec) -> float {
+                             return unBinQvec(binnedQvec);
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(EventPlaneAngle, eventPlaneAngle,
+                           [](uint16_t binnedEventPlaneAngle) -> float {
+                             return unBinEventPlaneAngle(binnedEventPlaneAngle);
                            });
 } // namespace lite
 } // namespace femtocollisions
@@ -119,10 +147,21 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FColSphericities_001, "FCOLSPHERICITY", 1, //
                                    femtocollisions::Sphericity);
 using FColSphericities = FColSphericities_001;
 
-// table for qn values
-DECLARE_SOA_TABLE_STAGED_VERSIONED(FColQns_001, "FCOLQN", 1, //! qn vector
-                                   femtocollisions::Qn);
-using FColQns = FColQns_001;
+// table for event shape analysis
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FColShapes_001, "FCOLSHAPE", 1, //! event shape
+                                   femtocollisions::Qvec,
+                                   femtocollisions::EventPlaneAngle);
+using FColShapes = FColShapes_001;
+using StoredFColShapes = StoredFColShapes_001;
+
+// lite table for event shape analysis
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteColShapes_001, "FLITECOLSHAPE", 1, //! event shape
+                                   femtocollisions::lite::BinnedQvec,
+                                   femtocollisions::lite::BinnedEventPlaneAngle,
+                                   femtocollisions::lite::Qvec<femtocollisions::lite::BinnedQvec>,
+                                   femtocollisions::lite::EventPlaneAngle<femtocollisions::lite::BinnedEventPlaneAngle>);
+using FLiteColShapes = FLiteColShapes_001;
+using StoredFLiteColShapes = StoredFLiteColShapes_001;
 
 // table for primary vertex location
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FColPos_001, "FCOLPOS", 1, //! full vertex position
@@ -131,18 +170,21 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FColPos_001, "FCOLPOS", 1, //! full vertex po
 using FColPos = FColPos_001;
 
 // table for different multiplicity estimators
-DECLARE_SOA_TABLE_STAGED_VERSIONED(FColMults_001, "FCOLMULT", 1,   //! multiplicities
-                                   mult::MultFT0A, mult::MultFT0C, //! FIT detectors
-                                   mult::MultNTracksPVeta1,        //! number of PV contribs total
-                                   mult::MultNTracksPVetaHalf,     //! global track multiplicities
-                                   evsel::NumTracksInTimeRange,    //! occupancy (number of track in time range)
-                                   evsel::SumAmpFT0CInTimeRange);  //! occupancy (FT0C amplitude in time range)
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FColMults_001, "FCOLMULT", 1,  //! multiplicities
+                                   mult::MultFT0A,                //! FT0A detectors
+                                   mult::MultFT0C,                //! FT0C detectors
+                                   collision::NumContrib,         //! number of tracks used tto find PV
+                                   mult::MultNTracksPVeta1,       //! number of PV contribs total
+                                   mult::MultNTracksPVetaHalf,    //! global track multiplicities
+                                   evsel::NumTracksInTimeRange,   //! occupancy (number of tracks from different collisions in time range)
+                                   evsel::SumAmpFT0CInTimeRange); //! occupancy (FT0C amplitude in time range)
 using FColMults = FColMults_001;
 
 // table for different centrality (multiplicity percentile) estimators
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FColCents_001, "FCOLCENT", 1, //! centralities
                                    cent::CentFT0A,               //! centrality from FT0A
-                                   cent::CentFT0C);              //! centrality from FT0C
+                                   cent::CentFT0C,               //! centrality from FT0C
+                                   cent::CentFT0M);              //! centrality from FT0M
 using FColCents = FColCents_001;
 
 namespace femtobase
@@ -174,11 +216,11 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! transverse momentum
                            });
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //! momentum in x
                            [](float pt, float phi) -> float {
-                             return std::fabs(pt) * std::sin(phi);
+                             return std::fabs(pt) * std::cos(phi);
                            });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //! momentum in y
                            [](float pt, float phi) -> float {
-                             return std::fabs(pt) * std::cos(phi);
+                             return std::fabs(pt) * std::sin(phi);
                            });
 DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //! momentum in z
                            [](float pt, float eta) -> float {
@@ -289,6 +331,17 @@ DECLARE_SOA_COLUMN(TpcNClsShared, tpcNClsShared, uint8_t);         //! Number of
 DECLARE_SOA_DYNAMIC_COLUMN(TpcSharedOverFound, tpcSharedOverFound, //! Number of crossed rows over found Tpc clusters
                            [](uint8_t tpcNclsFound, uint8_t tpcNClsShared) -> float { return static_cast<float>(tpcNClsShared) / static_cast<float>(tpcNclsFound); });
 DECLARE_SOA_COLUMN(TpcChi2NCl, tpcChi2NCl, float); //! Tpc chi2
+
+// detector map and row type
+DECLARE_SOA_COLUMN(DetectorMap, detectorMap, uint8_t);                                                                     //! Detector map of the track (same bit layout as o2::aod::track::DetectorMap)
+DECLARE_SOA_DYNAMIC_COLUMN(HasIts, hasIts, [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::ITS; }); //! Track has ITS
+DECLARE_SOA_DYNAMIC_COLUMN(HasTpc, hasTpc, [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::TPC; }); //! Track has TPC
+DECLARE_SOA_DYNAMIC_COLUMN(HasTof, hasTof, [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::TOF; }); //! Track has TOF
+DECLARE_SOA_COLUMN(FillType, fillType, o2::analysis::femto::datatypes::TrackType);                                         //! modes::Track this row was written as (kTrack = selected track, otherwise daughter-only row)
+DECLARE_SOA_DYNAMIC_COLUMN(IsDaughterOnly, isDaughterOnly,                                                                 //! True if the row was only written to resolve a daughter index (not a selected track)
+                           [](o2::analysis::femto::datatypes::TrackType fillType) -> bool {
+                             return fillType != static_cast<o2::analysis::femto::datatypes::TrackType>(o2::analysis::femto::modes::Track::kTrack);
+                           });
 
 // tof related information
 DECLARE_SOA_COLUMN(TofBeta, tofBeta, float); //! Tof beta
@@ -406,8 +459,15 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FTrackExtras_001, "FTRACKEXTRA", 1, //! track
                                    femtotracks::TpcNClsCrossedRows,
                                    femtotracks::TpcNClsShared,
                                    femtotracks::TofBeta,
+                                   femtotracks::TpcChi2NCl,
+                                   femtotracks::DetectorMap,
+                                   femtotracks::FillType,
                                    femtotracks::TpcCrossedRowsOverFound<femtotracks::TpcNClsFound, femtotracks::TpcNClsCrossedRows>,
-                                   femtotracks::TpcSharedOverFound<femtotracks::TpcNClsFound, femtotracks::TpcNClsShared>);
+                                   femtotracks::TpcSharedOverFound<femtotracks::TpcNClsFound, femtotracks::TpcNClsShared>,
+                                   femtotracks::HasIts<femtotracks::DetectorMap>,
+                                   femtotracks::HasTpc<femtotracks::DetectorMap>,
+                                   femtotracks::HasTof<femtotracks::DetectorMap>,
+                                   femtotracks::IsDaughterOnly<femtotracks::FillType>);
 using FTrackExtras = FTrackExtras_001;
 
 // table for extra PID information
@@ -550,19 +610,30 @@ namespace femtov0s
 {
 // columns for bit masks
 DECLARE_SOA_COLUMN(Mask, mask, o2::analysis::femto::datatypes::V0MaskType); //! Bitmask for v0 selections
+//
+namespace legacy001
+{
+DECLARE_SOA_COLUMN(Mask, mask, o2::analysis::femto::datatypes::V0MaskType001); //! Bitmask for v0 selections
+}
 
 // columns for debug information
 DECLARE_SOA_COLUMN(MassAnti, massAnti, float);             //! mass of particle using antiparticle hypothesis (for Lambda/AntiLambda extra table)
 DECLARE_SOA_COLUMN(MassLambda, massLambda, float);         //! Mass of Lambda (for k0short table)
 DECLARE_SOA_COLUMN(MassAntiLambda, massAntiLambda, float); //! Mass of AntiLambda (for k0short table)
 DECLARE_SOA_COLUMN(MassK0short, massK0short, float);       //! Mass of K0short (for lambda/antitlambda table)
-DECLARE_SOA_COLUMN(CosPa, cosPa, float);                   //! Lambda daughter DCA at decay vertex
-DECLARE_SOA_COLUMN(DauDca, dauDca, float);                 //! Lambda daughter DCA at decay vertex
-DECLARE_SOA_COLUMN(TransRadius, transRadius, float);       //! Lambda transvers radius
-DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);           //! x coordinate of Lambda decay vertex
-DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);           //! y coordinate of Lambda decay vertex
-DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);           //! z coordinate of Lambda decay vertex
-DECLARE_SOA_DYNAMIC_COLUMN(DecayVtx, decayVtx,             //! distance of decay vertex from nominal interaction point
+DECLARE_SOA_COLUMN(CosPa, cosPa, float);                   //! Cosine of poiting angle
+DECLARE_SOA_DYNAMIC_COLUMN(Pa, pa,                         //! pointing angle
+                           [](float cosPa) -> float {
+                             return std::acos(cosPa);
+                           });
+DECLARE_SOA_COLUMN(DauDca, dauDca, float);                     //! Lambda daughter DCA at decay vertex
+DECLARE_SOA_COLUMN(StrangeTofPosDau, strangeTofPosDau, float); //! TOF Strangeness for positive daughter
+DECLARE_SOA_COLUMN(StrangeTofNegDau, strangeTofNegDau, float); //! TOF Strangeness for negative daughter
+DECLARE_SOA_COLUMN(TransRadius, transRadius, float);           //! Lambda transvers radius
+DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);               //! x coordinate of Lambda decay vertex
+DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);               //! y coordinate of Lambda decay vertex
+DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);               //! z coordinate of Lambda decay vertex
+DECLARE_SOA_DYNAMIC_COLUMN(DecayVtx, decayVtx,                 //! distance of decay vertex from nominal interaction point
                            [](float vtxX, float vtxY, float vtxZ) -> float {
                              return std::hypot(vtxX, vtxY, vtxZ);
                            });
@@ -649,21 +720,28 @@ using FLiteLambdas = FLiteLambdas_001;
 using FLiteLambda = FLiteLambdas::iterator;
 using StoredFLiteLambdas = StoredFLiteLambdas_001;
 
-DECLARE_SOA_TABLE_STAGED_VERSIONED(FLambdaMasks_001, "FLAMBDAMASK", 1, //! lambda masks
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLambdaMasks_001, "FLAMBDAMASK", 1, //! legacy lambda mask
+                                   femtov0s::legacy001::Mask);
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLambdaMasks_002, "FLAMBDAMASK", 2, //! lambda mask
                                    femtov0s::Mask);
-using FLambdaMasks = FLambdaMasks_001;
-using StoredFLambdaMasks = StoredFLambdaMasks_001;
+
+using FLambdaMasks = FLambdaMasks_002;
+using StoredFLambdaMasks = StoredFLambdaMasks_002;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FLambdaExtras_001, "FLAMBDAEXTRA", 1, //! lambda extra information
                                    femtov0s::MassAnti,                   // put mass of antiparticle, i.e. antilambda mass for lambdas and vice versa
                                    femtov0s::MassK0short,
                                    femtov0s::CosPa,
                                    femtov0s::DauDca,
+                                   femtov0s::StrangeTofPosDau,
+                                   femtov0s::StrangeTofNegDau,
                                    femtov0s::TransRadius,
                                    femtov0s::DecayVtxX,
                                    femtov0s::DecayVtxY,
                                    femtov0s::DecayVtxZ,
-                                   femtov0s::DecayVtx<femtov0s::DecayVtxX, femtov0s::DecayVtxY, femtov0s::DecayVtxZ>);
+                                   femtov0s::DecayVtx<femtov0s::DecayVtxX, femtov0s::DecayVtxY, femtov0s::DecayVtxZ>,
+                                   femtov0s::Pa<femtov0s::CosPa>);
 
 using FLambdaExtras = FLambdaExtras_001;
 
@@ -703,21 +781,27 @@ using FLiteK0shorts = FLiteK0shorts_001;
 using FLiteK0short = FLiteK0shorts::iterator;
 using StoredFLiteK0shorts = StoredFLiteK0shorts_001;
 
-DECLARE_SOA_TABLE_STAGED_VERSIONED(FK0shortMasks_001, "FK0SHORTMASK", 1, //! k0short masks
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FK0shortMasks_001, "FK0SHORTMASK", 1, //! legacy k0short masks
+                                   femtov0s::legacy001::Mask);
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FK0shortMasks_002, "FK0SHORTMASK", 2, //! k0short masks
                                    femtov0s::Mask);
-using FK0shortMasks = FK0shortMasks_001;
-using StoredFK0shortMasks = StoredFK0shortMasks_001;
+using FK0shortMasks = FK0shortMasks_002;
+using StoredFK0shortMasks = StoredFK0shortMasks_002;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FK0shortExtras_001, "FK0SHORTEXTRA", 1, //! k0short extra information
                                    femtov0s::MassLambda,
                                    femtov0s::MassAntiLambda,
                                    femtov0s::CosPa,
                                    femtov0s::DauDca,
+                                   femtov0s::StrangeTofPosDau,
+                                   femtov0s::StrangeTofNegDau,
                                    femtov0s::TransRadius,
                                    femtov0s::DecayVtxX,
                                    femtov0s::DecayVtxY,
                                    femtov0s::DecayVtxZ,
-                                   femtov0s::DecayVtx<femtov0s::DecayVtxX, femtov0s::DecayVtxY, femtov0s::DecayVtxZ>);
+                                   femtov0s::DecayVtx<femtov0s::DecayVtxX, femtov0s::DecayVtxY, femtov0s::DecayVtxZ>,
+                                   femtov0s::Pa<femtov0s::CosPa>);
 
 using FK0shortExtras = FK0shortExtras_001;
 
@@ -876,6 +960,7 @@ using StoredFLiteSigmaPlus = StoredFLiteSigmaPlus_001;
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusMasks_001, "FSIGMAPLUSMASKS", 1,
                                    femtokinks::Mask);
 using FSigmaPlusMasks = FSigmaPlusMasks_001;
+using StoredFSigmaPlusMasks = StoredFSigmaPlusMasks_001;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusExtras_001, "FSIGMAPLUSEXTRAS", 1,
                                    femtokinks::KinkAngle,
@@ -893,10 +978,19 @@ namespace femtocascades
 // columns for cascade bit masks
 DECLARE_SOA_COLUMN(Mask, mask, o2::analysis::femto::datatypes::CascadeMaskType); //! Bitmask for cascade selections
 
+namespace legacy001
+{
+DECLARE_SOA_COLUMN(Mask, mask, o2::analysis::femto::datatypes::CascadeMaskType001); //! Bitmask for cascade selections
+}
+
 // columns for cascad debug information
-DECLARE_SOA_COLUMN(MassXi, massXi, float);                         //! Mass of xi
-DECLARE_SOA_COLUMN(MassOmega, massOmega, float);                   //! Mass of omega
-DECLARE_SOA_COLUMN(CascadeCosPa, cascadeCosPa, float);             //! cosine of the poiting angle at decay vertex
+DECLARE_SOA_COLUMN(MassXi, massXi, float);             //! Mass of xi
+DECLARE_SOA_COLUMN(MassOmega, massOmega, float);       //! Mass of omega
+DECLARE_SOA_COLUMN(CascadeCosPa, cascadeCosPa, float); //! cosine of the poiting angle at decay vertex
+DECLARE_SOA_DYNAMIC_COLUMN(CascadePa, cascadePa,       //! pointing angle
+                           [](float cosPa) -> float {
+                             return std::acos(cosPa);
+                           });
 DECLARE_SOA_COLUMN(CascadeDauDca, cascadeDauDca, float);           //! Lambda daughter DCA at decay vertex
 DECLARE_SOA_COLUMN(CascadeTransRadius, cascadeTransRadius, float); //! Lambda transvers radius
 DECLARE_SOA_COLUMN(LambdaMass, lambdaMass, float);                 //! Lambda daughter mass
@@ -904,6 +998,7 @@ DECLARE_SOA_COLUMN(LambdaCosPa, lambdaCosPa, float);               //! cosine of
 DECLARE_SOA_COLUMN(LambdaDauDca, lambdaDauDca, float);             //! Lambda daughter DCA at decay vertex
 DECLARE_SOA_COLUMN(LambdaTransRadius, lambdaTransRadius, float);   //! Lambda transvers radius
 DECLARE_SOA_COLUMN(LambdaDcaToPv, lambdaDcaToPv, float);           //! Lambda transvers radius
+DECLARE_SOA_COLUMN(StrangeTofBachelor, strangeTofBachelor, float); //! Lambda transvers radius
 
 // id columns for bachelor
 // following same style as strangeness tables were we do not store the id of the lambda, but its daughters
@@ -987,10 +1082,13 @@ using FLiteXis = FLiteXis_001;
 using FLiteXi = FLiteXis::iterator;
 using StoredFLiteXis = StoredFLiteXis_001;
 
-DECLARE_SOA_TABLE_STAGED_VERSIONED(FXiMasks_001, "FXIMASK", 1, //! xi masks
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FXiMasks_001, "FXIMASK", 1, //! legacy xi masks
+                                   femtocascades::legacy001::Mask);
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FXiMasks_002, "FXIMASK", 2, //! xi masks
                                    femtocascades::Mask);
-using FXiMasks = FXiMasks_001;
-using StoredFXiMasks = StoredFXiMasks_001;
+using FXiMasks = FXiMasks_002;
+using StoredFXiMasks = StoredFXiMasks_002;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FXiExtras_001, "FXIEXTRA", 1, //! xi extra information
                                    femtocascades::MassOmega,
@@ -1001,7 +1099,11 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FXiExtras_001, "FXIEXTRA", 1, //! xi extra in
                                    femtocascades::LambdaCosPa,
                                    femtocascades::LambdaDauDca,
                                    femtocascades::LambdaTransRadius,
-                                   femtocascades::LambdaDcaToPv);
+                                   femtocascades::LambdaDcaToPv,
+                                   femtocascades::StrangeTofBachelor,
+                                   femtov0s::StrangeTofPosDau,
+                                   femtov0s::StrangeTofNegDau,
+                                   femtocascades::CascadePa<femtocascades::CascadeCosPa>);
 using FXiExtras = FXiExtras_001;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegas_001, "FOMEGA", 1, //! femto omegas
@@ -1046,10 +1148,13 @@ using FLiteOmegas = FLiteOmegas_001;
 using FLiteOmega = FLiteOmegas::iterator;
 using StoredFLiteOmegas = StoredFLiteOmegas_001;
 
-DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegaMasks_001, "FOMEGAMASK", 1, //! omega masks
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegaMasks_001, "FOMEGAMASK", 1, //! legacy omega masks
+                                   femtocascades::legacy001::Mask);
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegaMasks_002, "FOMEGAMASK", 2, //! omega masks
                                    femtocascades::Mask);
-using FOmegaMasks = FOmegaMasks_001;
-using StoredFOmegaMasks = StoredFOmegaMasks_001;
+using FOmegaMasks = FOmegaMasks_002;
+using StoredFOmegaMasks = StoredFOmegaMasks_002;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegaExtras_001, "FOMEGAEXTRA", 1, //! omega extra information
                                    femtocascades::MassXi,
@@ -1060,107 +1165,12 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegaExtras_001, "FOMEGAEXTRA", 1, //! omega
                                    femtocascades::LambdaCosPa,
                                    femtocascades::LambdaDauDca,
                                    femtocascades::LambdaTransRadius,
-                                   femtocascades::LambdaDcaToPv);
+                                   femtocascades::LambdaDcaToPv,
+                                   femtocascades::StrangeTofBachelor,
+                                   femtov0s::StrangeTofPosDau,
+                                   femtov0s::StrangeTofNegDau,
+                                   femtocascades::CascadePa<femtocascades::CascadeCosPa>);
 using FOmegaExtras = FOmegaExtras_001;
-
-// tables for monte carlo
-
-namespace femtomccollisions
-{
-// DECLARE_SOA_COLUMN(Mult, mult, int);   //! Multiplicity of the event as given by the generator in |eta|<0.8
-// DECLARE_SOA_COLUMN(Cent, cent, float);
-//
-} // namespace femtomccollisions
-
-DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcCols_001, "FMCCOL", 1, //! femto mc collisions
-                                   o2::soa::Index<>,
-                                   femtocollisions::PosZ, //! Multiplicity of the event as given by the generator in |eta|<0.8
-                                   femtocollisions::Mult,
-                                   femtocollisions::Cent);
-using FMcCols = FMcCols_001;
-using FMcCol = FMcCols_001::iterator;
-
-namespace femtomcparticle
-{
-DECLARE_SOA_COLUMN(Origin, origin, o2::analysis::femto::datatypes::McOriginType); //! Multiplicity of the event as given by the generator in |eta|<0.8
-DECLARE_SOA_COLUMN(PdgCode, pdgCode, int);                                        //! Multiplicity of the event as given by the generator in |eta|<0.8
-DECLARE_SOA_INDEX_COLUMN(FMcCol, fMcCol);                                         //!
-} // namespace femtomcparticle
-
-// table for basic track information
-DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcParticles_001, "FMCPARTICLE", 1, //! femto tracks
-                                   o2::soa::Index<>,
-                                   femtomcparticle::FMcColId,
-                                   femtomcparticle::Origin,
-                                   femtomcparticle::PdgCode,
-                                   femtobase::stored::SignedPt,
-                                   femtobase::stored::Eta,
-                                   femtobase::stored::Phi,
-                                   femtobase::dynamic::Sign<femtobase::stored::SignedPt>,
-                                   femtobase::dynamic::Pt<femtobase::stored::SignedPt>,
-                                   femtobase::dynamic::P<femtobase::stored::SignedPt, femtobase::stored::Eta>,
-                                   femtobase::dynamic::Px<femtobase::stored::SignedPt, femtobase::stored::Phi>,
-                                   femtobase::dynamic::Py<femtobase::stored::SignedPt, femtobase::stored::Phi>,
-                                   femtobase::dynamic::Pz<femtobase::stored::SignedPt, femtobase::stored::Eta>,
-                                   femtobase::dynamic::Theta<femtobase::stored::Eta>);
-using FMcParticles = FMcParticles_001;
-using FMcParticle = FMcParticles::iterator;
-
-DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcMothers_001, "FMCMOTHER", 1, //! first direct mother of the monte carlo particle
-                                   o2::soa::Index<>,               // no collision index needed since the mother is retrieved from the daughter mc particle
-                                   femtomcparticle::Origin,
-                                   femtomcparticle::PdgCode,
-                                   femtobase::stored::SignedPt,
-                                   femtobase::stored::Eta,
-                                   femtobase::stored::Phi,
-                                   femtobase::dynamic::Sign<femtobase::stored::SignedPt>,
-                                   femtobase::dynamic::Pt<femtobase::stored::SignedPt>,
-                                   femtobase::dynamic::P<femtobase::stored::SignedPt, femtobase::stored::Eta>,
-                                   femtobase::dynamic::Px<femtobase::stored::SignedPt, femtobase::stored::Phi>,
-                                   femtobase::dynamic::Py<femtobase::stored::SignedPt, femtobase::stored::Phi>,
-                                   femtobase::dynamic::Pz<femtobase::stored::SignedPt, femtobase::stored::Eta>,
-                                   femtobase::dynamic::Theta<femtobase::stored::Eta>);
-
-using FMcMothers = FMcMothers_001;
-using FMcMother = FMcMothers::iterator;
-
-DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcPartMoths_001, "FMCPARTMOTH", 1, //! first partonic mother of the monte carlo particle after hadronization
-                                   o2::soa::Index<>,
-                                   femtomcparticle::PdgCode);
-using FMcPartMoths = FMcPartMoths_001;
-using FMcPartMoth = FMcPartMoths::iterator;
-
-namespace femtolabels
-{
-DECLARE_SOA_INDEX_COLUMN(FMcCol, fMcCol);           //!
-DECLARE_SOA_INDEX_COLUMN(FMcParticle, fMcParticle); //!
-
-DECLARE_SOA_INDEX_COLUMN(FMcMother, fMcMother);     //!
-DECLARE_SOA_INDEX_COLUMN(FMcPartMoth, fMcPartMoth); //!
-} // namespace femtolabels
-
-DECLARE_SOA_TABLE(FColLabels, "AOD", "FCOLMCLABEL", femtolabels::FMcColId);
-
-DECLARE_SOA_TABLE(FTrackLabels, "AOD", "FTRACKLABEL", femtolabels::FMcParticleId);
-
-DECLARE_SOA_TABLE(FLambdaLabels, "AOD", "FLAMBDALABEL", femtolabels::FMcParticleId);
-
-DECLARE_SOA_TABLE(FK0shortLabels, "AOD", "FK0SHORTLABEL", femtolabels::FMcParticleId);
-
-DECLARE_SOA_TABLE(FD0Labels, "AOD", "FD0LABEL", femtolabels::FMcParticleId);
-
-DECLARE_SOA_TABLE(FSigmaLabels, "AOD", "FSIGMALABEL", femtolabels::FMcParticleId);
-
-DECLARE_SOA_TABLE(FSigmaPlusLabels, "AOD", "FSIGMAPLUSLABEL", femtolabels::FMcParticleId);
-
-DECLARE_SOA_TABLE(FXiLabels, "AOD", "FXILABEL", femtolabels::FMcParticleId);
-
-DECLARE_SOA_TABLE(FOmegaLabels, "AOD", "FOMEGALABEL", femtolabels::FMcParticleId);
-
-// for mc only processing, we also need Labels pointing from mc particles to mothers and partonic mothers
-DECLARE_SOA_TABLE(FMcMotherLabels, "AOD", "FMCMOTHERLABEL",
-                  femtolabels::FMcMotherId,
-                  femtolabels::FMcPartMothId);
 
 namespace femtocharmhadrons
 {
@@ -1170,16 +1180,24 @@ DECLARE_SOA_COLUMN(Mask, mask, o2::analysis::femto::datatypes::CharmHadronMaskTy
 // daughter links: row indices into the femto track table
 DECLARE_SOA_INDEX_COLUMN_FULL(PosDau, posDau, int32_t, FTracks, "_PosDau"); //! + prong (pion in D0)
 DECLARE_SOA_INDEX_COLUMN_FULL(NegDau, negDau, int32_t, FTracks, "_NegDau"); //! - prong (kaon in D0)
+// daughter links, 3-prong: row indices into the femto track table.
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0Dau, prong0Dau, int32_t, FTracks, "_Prong0Dau"); //! prong 0 (proton in Lc -> p K pi)
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1Dau, prong1Dau, int32_t, FTracks, "_Prong1Dau"); //! prong 1 (kaon, opposite sign to the mother)
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong2Dau, prong2Dau, int32_t, FTracks, "_Prong2Dau"); //! prong 2 (pion in Lc -> p K pi)
 
 // QA/debug columns
-DECLARE_SOA_COLUMN(MassD0, massD0, float);       //! Kpi-hypothesis mass
-DECLARE_SOA_COLUMN(MassD0bar, massD0bar, float); //! piK-hypothesis mass
 DECLARE_SOA_COLUMN(Cpa, cpa, float);
 DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);
 DECLARE_SOA_COLUMN(DecayLength, decayLength, float);
 DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);
 DECLARE_SOA_COLUMN(ImpactParameterProduct, impactParameterProduct, float); //! d0*d0 of the two prongs
 DECLARE_SOA_COLUMN(CosThetaStar, cosThetaStar, float);
+// QA/debug columns, 3-prong only
+DECLARE_SOA_COLUMN(Chi2PCA, chi2PCA, float);                                     //! sum of distances of the secondary vertex to its prongs
+DECLARE_SOA_COLUMN(ImpactParameterProngSqSum, impactParameterProngSqSum, float); //! sum of squared prong impact parameters, 3-prong analogue of d0*d0
+DECLARE_SOA_COLUMN(ImpactParameter0, impactParameter0, float);                   //! impact parameter of prong 0
+DECLARE_SOA_COLUMN(ImpactParameter1, impactParameter1, float);                   //! impact parameter of prong 1
+DECLARE_SOA_COLUMN(ImpactParameter2, impactParameter2, float);                   //! impact parameter of prong 2
 // ML BDT scores: [0] background, [1] prompt (D0 from c), [2] non-prompt (D0 from b decay)
 DECLARE_SOA_COLUMN(MlProbD0Bkg, mlProbD0Bkg, float);                   //! D0 hypothesis: background score
 DECLARE_SOA_COLUMN(MlProbD0Prompt, mlProbD0Prompt, float);             //! D0 hypothesis: prompt score
@@ -1189,6 +1207,17 @@ DECLARE_SOA_COLUMN(MlProbD0barPrompt, mlProbD0barPrompt, float);       //! D0bar
 DECLARE_SOA_COLUMN(MlProbD0barNonPrompt, mlProbD0barNonPrompt, float); //! D0bar hypothesis: non-prompt
 DECLARE_SOA_COLUMN(IsSelD0, isSelD0, int8_t);                          //! PWGHF selection flag
 DECLARE_SOA_COLUMN(IsSelD0bar, isSelD0bar, int8_t);                    //! PWGHF selection flag
+// ML BDT scores for Lc, both mass hypotheses: [0] background, [1] prompt, [2] non-prompt
+DECLARE_SOA_COLUMN(MlProbLcToPKPiBkg, mlProbLcToPKPiBkg, float);             //! Lc -> p K pi hypothesis: background score
+DECLARE_SOA_COLUMN(MlProbLcToPKPiPrompt, mlProbLcToPKPiPrompt, float);       //! Lc -> p K pi hypothesis: prompt score
+DECLARE_SOA_COLUMN(MlProbLcToPKPiNonPrompt, mlProbLcToPKPiNonPrompt, float); //! Lc -> p K pi hypothesis: non-prompt score
+DECLARE_SOA_COLUMN(MlProbLcToPiKPBkg, mlProbLcToPiKPBkg, float);             //! Lc -> pi K p hypothesis: background score
+DECLARE_SOA_COLUMN(MlProbLcToPiKPPrompt, mlProbLcToPiKPPrompt, float);       //! Lc -> pi K p hypothesis: prompt score
+DECLARE_SOA_COLUMN(MlProbLcToPiKPNonPrompt, mlProbLcToPiKPNonPrompt, float); //! Lc -> pi K p hypothesis: non-prompt score
+DECLARE_SOA_COLUMN(IsSelLcToPKPi, isSelLcToPKPi, int8_t);                    //! PWGHF selection flag
+DECLARE_SOA_COLUMN(IsSelLcToPiKP, isSelLcToPiKP, int8_t);                    //! PWGHF selection flag
+// mass under the competing hypothesis, following the MassK0short-in-lambda-table pattern
+DECLARE_SOA_COLUMN(MassCompetingHypothesis, massCompetingHypothesis, float); //! Lc mass under the hypothesis that was not accepted
 } // namespace femtocharmhadrons
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FD0s_001, "FD0", 1, //! femto D0/D0bar (kinematics only)
@@ -1216,8 +1245,6 @@ using FD0Masks = FD0Masks_001;
 using StoredFD0Masks = StoredFD0Masks_001;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FD0Extras_001, "FD0EXTRA", 1, //! femto D0 QA / debug
-                                   femtocharmhadrons::MassD0,    // both hypotheses; the main
-                                   femtocharmhadrons::MassD0bar, // table only stores the accepted one
                                    femtocharmhadrons::Cpa,
                                    femtocharmhadrons::CpaXY,
                                    femtocharmhadrons::DecayLength,
@@ -1233,5 +1260,217 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FD0Extras_001, "FD0EXTRA", 1, //! femto D0 QA
                                    femtocharmhadrons::IsSelD0, // raw PWGHF selection flags
                                    femtocharmhadrons::IsSelD0bar);
 using FD0Extras = FD0Extras_001;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLcs_001, "FLC", 1, //! femto Lc/Lcbar (kinematics only)
+                                   o2::soa::Index<>,
+                                   femtobase::stored::FColId,
+                                   femtobase::stored::SignedPt, //! sign encodes Lc(+)/Lcbar(-)
+                                   femtobase::stored::Eta,
+                                   femtobase::stored::Phi,
+                                   femtobase::stored::Mass, //! mass of the accepted hypothesis
+                                   femtocharmhadrons::Prong0DauId,
+                                   femtocharmhadrons::Prong1DauId,
+                                   femtocharmhadrons::Prong2DauId,
+                                   femtobase::dynamic::Sign<femtobase::stored::SignedPt>,
+                                   femtobase::dynamic::Pt<femtobase::stored::SignedPt>,
+                                   femtobase::dynamic::P<femtobase::stored::SignedPt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Px<femtobase::stored::SignedPt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Py<femtobase::stored::SignedPt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Pz<femtobase::stored::SignedPt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Theta<femtobase::stored::Eta>);
+using FLcs = FLcs_001;
+using StoredFLcs = StoredFLcs_001;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLcMasks_001, "FLCMASK", 1, //! femto Lc selection bitmask
+                                   femtocharmhadrons::Mask);
+using FLcMasks = FLcMasks_001;
+using StoredFLcMasks = StoredFLcMasks_001;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLcExtras_001, "FLCEXTRA", 1, //! femto Lc QA / debug
+                                   femtocharmhadrons::Cpa,
+                                   femtocharmhadrons::CpaXY,
+                                   femtocharmhadrons::DecayLength,
+                                   femtocharmhadrons::DecayLengthXY,
+                                   femtocharmhadrons::Chi2PCA,
+                                   femtocharmhadrons::ImpactParameterProngSqSum,
+                                   femtocharmhadrons::ImpactParameter0,
+                                   femtocharmhadrons::ImpactParameter1,
+                                   femtocharmhadrons::ImpactParameter2,
+                                   femtocharmhadrons::MassCompetingHypothesis,
+                                   femtocharmhadrons::MlProbLcToPKPiBkg,
+                                   femtocharmhadrons::MlProbLcToPKPiPrompt,
+                                   femtocharmhadrons::MlProbLcToPKPiNonPrompt,
+                                   femtocharmhadrons::MlProbLcToPiKPBkg,
+                                   femtocharmhadrons::MlProbLcToPiKPPrompt,
+                                   femtocharmhadrons::MlProbLcToPiKPNonPrompt,
+                                   femtocharmhadrons::IsSelLcToPKPi, // raw PWGHF selection flags
+                                   femtocharmhadrons::IsSelLcToPiKP);
+using FLcExtras = FLcExtras_001;
+
+// tables for monte carlo
+namespace femtomccollisions
+{
+// DECLARE_SOA_COLUMN(Mult, mult, int);   //! Multiplicity of the event as given by the generator in |eta|<0.8
+// DECLARE_SOA_COLUMN(Cent, cent, float);
+//
+} // namespace femtomccollisions
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcCols_001, "FMCCOL", 1, //! femto mc collisions
+                                   o2::soa::Index<>,
+                                   femtocollisions::PosZ,
+                                   femtocollisions::Mult,
+                                   femtocollisions::Cent);
+using FMcCols = FMcCols_001;
+using FMcCol = FMcCols_001::iterator;
+using StoredFMcCols = StoredFMcCols_001;
+using StoredFMcCol = StoredFMcCols_001::iterator;
+
+namespace femtomcparticle
+{
+DECLARE_SOA_COLUMN(Origin, origin, o2::analysis::femto::datatypes::McOriginType); //! Multiplicity of the event as given by the generator in |eta|<0.8
+DECLARE_SOA_COLUMN(PdgCode, pdgCode, int);                                        //! Multiplicity of the event as given by the generator in |eta|<0.8
+DECLARE_SOA_INDEX_COLUMN(FMcCol, fMcCol);                                         //!
+} // namespace femtomcparticle
+
+// table for basic track information
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcParticles_001, "FMCPARTICLE", 1, //! femto tracks
+                                   o2::soa::Index<>,
+                                   femtomcparticle::FMcColId,
+                                   femtomcparticle::Origin,
+                                   femtomcparticle::PdgCode,
+                                   femtobase::stored::SignedPt,
+                                   femtobase::stored::Eta,
+                                   femtobase::stored::Phi,
+                                   femtobase::dynamic::Sign<femtobase::stored::SignedPt>,
+                                   femtobase::dynamic::Pt<femtobase::stored::SignedPt>,
+                                   femtobase::dynamic::P<femtobase::stored::SignedPt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Px<femtobase::stored::SignedPt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Py<femtobase::stored::SignedPt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Pz<femtobase::stored::SignedPt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Theta<femtobase::stored::Eta>);
+using FMcParticles = FMcParticles_001;
+using FMcParticle = FMcParticles::iterator;
+using StoredFMcParticles = StoredFMcParticles_001;
+using StoredFMcParticle = StoredFMcParticles::iterator;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcMothers_001, "FMCMOTHER", 1, //! first direct mother of the monte carlo particle
+                                   o2::soa::Index<>,               // no collision index needed since the mother is retrieved from the daughter mc particle
+                                   femtomcparticle::Origin,
+                                   femtomcparticle::PdgCode,
+                                   femtobase::stored::SignedPt,
+                                   femtobase::stored::Eta,
+                                   femtobase::stored::Phi,
+                                   femtobase::dynamic::Sign<femtobase::stored::SignedPt>,
+                                   femtobase::dynamic::Pt<femtobase::stored::SignedPt>,
+                                   femtobase::dynamic::P<femtobase::stored::SignedPt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Px<femtobase::stored::SignedPt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Py<femtobase::stored::SignedPt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Pz<femtobase::stored::SignedPt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Theta<femtobase::stored::Eta>);
+
+using FMcMothers = FMcMothers_001;
+using FMcMother = FMcMothers::iterator;
+using StoredFMcMothers = StoredFMcMothers_001;
+using StoredFMcMother = StoredFMcMothers::iterator;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcPartMoths_001, "FMCPARTMOTH", 1, //! first partonic mother of the monte carlo particle after hadronization
+                                   o2::soa::Index<>,
+                                   femtomcparticle::PdgCode);
+using FMcPartMoths = FMcPartMoths_001;
+using FMcPartMoth = FMcPartMoths::iterator;
+using StoredFMcPartMoths = StoredFMcPartMoths_001;
+using StoredFMcPartMoth = StoredFMcPartMoths::iterator;
+
+namespace femtolabels
+{
+DECLARE_SOA_INDEX_COLUMN(FMcCol, fMcCol);           //!
+DECLARE_SOA_INDEX_COLUMN(FMcParticle, fMcParticle); //!
+
+DECLARE_SOA_INDEX_COLUMN(FMcMother, fMcMother);     //!
+DECLARE_SOA_INDEX_COLUMN(FMcPartMoth, fMcPartMoth); //!
+} // namespace femtolabels
+
+// Labels are staged like the tables they point into: the derived-to-derived
+// producer writes the Stored* variant, so MC information survives a second
+// derived-data pass.
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FColLabels_001, "FCOLMCLABEL", 1, //! label from femto collision to femto mc collision
+                                   femtolabels::FMcColId);
+using FColLabels = FColLabels_001;
+using FColLabel = FColLabels::iterator;
+using StoredFColLabels = StoredFColLabels_001;
+using StoredFColLabel = StoredFColLabels::iterator;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FTrackLabels_001, "FTRACKLABEL", 1, //! label from femto track to femto mc particle
+                                   femtolabels::FMcParticleId);
+using FTrackLabels = FTrackLabels_001;
+using FTrackLabel = FTrackLabels::iterator;
+using StoredFTrackLabels = StoredFTrackLabels_001;
+using StoredFTrackLabel = StoredFTrackLabels::iterator;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLambdaLabels_001, "FLAMBDALABEL", 1, //! label from femto lambda to femto mc particle
+                                   femtolabels::FMcParticleId);
+using FLambdaLabels = FLambdaLabels_001;
+using FLambdaLabel = FLambdaLabels::iterator;
+using StoredFLambdaLabels = StoredFLambdaLabels_001;
+using StoredFLambdaLabel = StoredFLambdaLabels::iterator;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FK0shortLabels_001, "FK0SHORTLABEL", 1, //! label from femto k0short to femto mc particle
+                                   femtolabels::FMcParticleId);
+using FK0shortLabels = FK0shortLabels_001;
+using FK0shortLabel = FK0shortLabels::iterator;
+using StoredFK0shortLabels = StoredFK0shortLabels_001;
+using StoredFK0shortLabel = StoredFK0shortLabels::iterator;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FD0Labels_001, "FD0LABEL", 1, //! label from femto d0 to femto mc particle
+                                   femtolabels::FMcParticleId);
+using FD0Labels = FD0Labels_001;
+using FD0Label = FD0Labels::iterator;
+using StoredFD0Labels = StoredFD0Labels_001;
+using StoredFD0Label = StoredFD0Labels::iterator;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLcLabels_001, "FLCLABEL", 1, //! label from femto lc to femto mc particle
+                                   femtolabels::FMcParticleId);
+using FLcLabels = FLcLabels_001;
+using FLcLabel = FLcLabels::iterator;
+using StoredFLcLabels = StoredFLcLabels_001;
+using StoredFLcLabel = StoredFLcLabels::iterator;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaLabels_001, "FSIGMALABEL", 1, //! label from femto sigma to femto mc particle
+                                   femtolabels::FMcParticleId);
+using FSigmaLabels = FSigmaLabels_001;
+using FSigmaLabel = FSigmaLabels::iterator;
+using StoredFSigmaLabels = StoredFSigmaLabels_001;
+using StoredFSigmaLabel = StoredFSigmaLabels::iterator;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusLabels_001, "FSIGMAPLUSLABEL", 1, //! label from femto sigma plus to femto mc particle
+                                   femtolabels::FMcParticleId);
+using FSigmaPlusLabels = FSigmaPlusLabels_001;
+using FSigmaPlusLabel = FSigmaPlusLabels::iterator;
+using StoredFSigmaPlusLabels = StoredFSigmaPlusLabels_001;
+using StoredFSigmaPlusLabel = StoredFSigmaPlusLabels::iterator;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FXiLabels_001, "FXILABEL", 1, //! label from femto xi to femto mc particle
+                                   femtolabels::FMcParticleId);
+using FXiLabels = FXiLabels_001;
+using FXiLabel = FXiLabels::iterator;
+using StoredFXiLabels = StoredFXiLabels_001;
+using StoredFXiLabel = StoredFXiLabels::iterator;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegaLabels_001, "FOMEGALABEL", 1, //! label from femto omega to femto mc particle
+                                   femtolabels::FMcParticleId);
+using FOmegaLabels = FOmegaLabels_001;
+using FOmegaLabel = FOmegaLabels::iterator;
+using StoredFOmegaLabels = StoredFOmegaLabels_001;
+using StoredFOmegaLabel = StoredFOmegaLabels::iterator;
+
+// for mc only processing, we also need Labels pointing from mc particles to mothers and partonic mothers
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcMotherLabels_001, "FMCMOTHERLABEL", 1, //! labels from femto mc particle to its mother and partonic mother
+                                   femtolabels::FMcMotherId,
+                                   femtolabels::FMcPartMothId);
+using FMcMotherLabels = FMcMotherLabels_001;
+using FMcMotherLabel = FMcMotherLabels::iterator;
+using StoredFMcMotherLabels = StoredFMcMotherLabels_001;
+using StoredFMcMotherLabel = StoredFMcMotherLabels::iterator;
+
 } // namespace o2::aod
 #endif // PWGCF_FEMTO_DATAMODEL_FEMTOTABLES_H_

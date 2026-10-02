@@ -114,7 +114,7 @@ struct ParticleCounter {
         continue;
       }
       // is charged
-      if (abs(p->Charge()) == 0) {
+      if (std::abs(p->Charge()) == 0) {
         continue;
       }
       // in acceptance

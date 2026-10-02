@@ -247,6 +247,22 @@ struct spvector {
     Configurable<std::string> confRecentereVzTimeSp3{"confRecentereVzTimeSp3", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "TH3F path for (Vz,time) recentering, cycle 3"};
     Configurable<std::string> confRecentereVzTimeSp4{"confRecentereVzTimeSp4", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "TH3F path for (Vz,time) recentering, cycle 4"};
     Configurable<std::string> confRecentereVzTimeSp5{"confRecentereVzTimeSp5", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "TH3F path for (Vz,time) recentering, cycle 5"};
+
+    Configurable<bool> useWidthEqualization{
+      "useWidthEqualization",
+      false,
+      "Apply Q-vector width equalization"};
+
+    Configurable<std::string> confWidthSigma{
+      "confWidthSigma",
+      "Users/p/prottay/My/Object/ZDC/widthEq",
+      "TH2F path for Q-vector width equalization"};
+
+    Configurable<std::string> confWidthMean{
+      "confWidthMean",
+      "Users/p/prottay/My/Object/ZDC/widthEq",
+      "TH2F path for Q-vector mean equalization"};
+
   } confignewpro;
 
   struct : ConfigurableGroup {
@@ -503,6 +519,59 @@ struct spvector {
   std::array<TH3F*, 6> hrecenterecentvySpA{};
   std::array<TH3F*, 6> hrecenterecentvzSpA{};
   std::array<TH3F*, 5> hrecenterevztimeSpA{};
+  TH2F* hWidthMean = nullptr;
+  TH2F* hWidthSigma = nullptr;
+
+  bool CorrectWidthEqualization(TH2F* hMean,
+                                TH2F* hWidth,
+                                auto centrality,
+                                auto& qxZDCA,
+                                auto& qyZDCA,
+                                auto& qxZDCC,
+                                auto& qyZDCC)
+  {
+
+    if (!hMean || !hWidth) {
+      return false;
+    }
+
+    const double meanQxA = hMean->GetBinContent(
+      hMean->FindBin(centrality + 0.00001, 0.5));
+
+    const double meanQyA = hMean->GetBinContent(
+      hMean->FindBin(centrality + 0.00001, 1.5));
+
+    const double meanQxC = hMean->GetBinContent(
+      hMean->FindBin(centrality + 0.00001, 2.5));
+
+    const double meanQyC = hMean->GetBinContent(
+      hMean->FindBin(centrality + 0.00001, 3.5));
+
+    const double sigmaQxA = hWidth->GetBinContent(
+      hWidth->FindBin(centrality + 0.00001, 0.5));
+
+    const double sigmaQyA = hWidth->GetBinContent(
+      hWidth->FindBin(centrality + 0.00001, 1.5));
+
+    const double sigmaQxC = hWidth->GetBinContent(
+      hWidth->FindBin(centrality + 0.00001, 2.5));
+
+    const double sigmaQyC = hWidth->GetBinContent(
+      hWidth->FindBin(centrality + 0.00001, 3.5));
+
+    if (sigmaQxA <= 0.0 || sigmaQyA <= 0.0 ||
+        sigmaQxC <= 0.0 || sigmaQyC <= 0.0) {
+      return false;
+    }
+
+    qxZDCA = (qxZDCA - meanQxA) / sigmaQxA;
+    qyZDCA = (qyZDCA - meanQyA) / sigmaQyA;
+
+    qxZDCC = (qxZDCC - meanQxC) / sigmaQxC;
+    qyZDCC = (qyZDCC - meanQyC) / sigmaQyC;
+
+    return true;
+  }
 
   bool CorrectfineCent(TH2F* hrecenterecentSp,
                        auto centrality,
@@ -1402,6 +1471,19 @@ struct spvector {
           }
           if (!CorrectfineCentVz(hrecenterecentvzSpA[5], centrality, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
             LOGF(fatal, "Cannot apply fine (cent,Vz) recentering, stage 6");
+          }
+        }
+
+        // -------------------- Width equalization --------------------
+        if (confignewpro.useWidthEqualization) {
+          if (currentRunNumber != lastRunNumber) {
+
+            hWidthMean = ccdb->getForTimeStamp<TH2F>(confignewpro.confWidthMean.value, bc.timestamp());
+            hWidthSigma = ccdb->getForTimeStamp<TH2F>(confignewpro.confWidthSigma.value, bc.timestamp());
+          }
+
+          if (!CorrectWidthEqualization(hWidthMean, hWidthSigma, centrality, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply Q-vector width equalization");
           }
         }
       }

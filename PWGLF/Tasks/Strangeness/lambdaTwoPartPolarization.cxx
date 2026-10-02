@@ -184,6 +184,7 @@ struct LfLambdaTwoPartPolarization {
     histos.add("AnaHL/ALambdaSignalSin2", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, massAxis, cosSigAxis}});
     histos.add("AnaHL/ALambdaSignalCos2", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, massAxis, cosSigAxis}});
 
+    histos.add("AnaHL/RefTrig", "", {HistType::kTH2F, {ptAxis, centAxis}});
     histos.add("AnaHL/Ref", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis}});
 
     fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
@@ -334,12 +335,14 @@ struct LfLambdaTwoPartPolarization {
       if (!selectTrack(trk1)) {
         continue;
       }
+
+      histos.fill(HIST("AnaHL/RefTrig"), trk1.pt(), centrality);
       for (const auto& trk2 : trks2) {
         if (!selectTrack(trk2)) {
           continue;
         }
 
-        if (trk1.globalIndex() >= trk2.globalIndex()) {
+        if (doprocessDataSame && trk1.globalIndex() >= trk2.globalIndex()) {
           continue;
         }
 
@@ -370,8 +373,10 @@ struct LfLambdaTwoPartPolarization {
           aLambdaTag = 1;
         }
 
-        if (postrack_v01.globalIndex() == trk.globalIndex() || negtrack_v01.globalIndex() == trk.globalIndex()) {
-          continue;
+        if (doprocessDataSame) {
+          if (postrack_v01.globalIndex() == trk.globalIndex() || negtrack_v01.globalIndex() == trk.globalIndex()) {
+            continue;
+          }
         }
 
         if (LambdaTag == aLambdaTag) {
@@ -536,11 +541,10 @@ struct LfLambdaTwoPartPolarization {
                              TrackCandidates const& tracks, aod::V0Datas const& V0s,
                              aod::BCsWithTimestamps const&)
   {
+    centrality = collision.centFT0M();
     if (cfgCentEst == kFT0C) {
       centrality = collision.centFT0C();
     } else if (cfgCentEst == kFT0M) {
-      centrality = collision.centFT0M();
-    } else {
       centrality = collision.centFT0M();
     }
     if (!eventSelected(collision) && cfgEvtSel) {
@@ -568,11 +572,10 @@ struct LfLambdaTwoPartPolarization {
                        TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s,
                        aod::BCsWithTimestamps const&)
   {
+    centrality = collision.centFT0M();
     if (cfgCentEst == kFT0C) {
       centrality = collision.centFT0C();
     } else if (cfgCentEst == kFT0M) {
-      centrality = collision.centFT0M();
-    } else {
       centrality = collision.centFT0M();
     }
     if (!eventSelected(collision) && cfgEvtSel) {

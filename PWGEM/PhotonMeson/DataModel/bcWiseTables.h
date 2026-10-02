@@ -8,19 +8,21 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-///
+
 /// \file bcWiseTables.h
-///
 /// \brief This header provides the table definitions to store very lightweight EMCal clusters per BC
-///
 /// \author Nicolas Strangmann (nicolas.strangmann@cern.ch) - Goethe University Frankfurt
-///
 
 #ifndef PWGEM_PHOTONMESON_DATAMODEL_BCWISETABLES_H_
 #define PWGEM_PHOTONMESON_DATAMODEL_BCWISETABLES_H_
 
+#include <DataFormatsParameters/GRPLHCIFData.h>
 #include <Framework/AnalysisDataModel.h>
 
+#include <TBufferFile.h> // IWYU pragma: keep
+#include <TClass.h>      // IWYU pragma: keep
+
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <limits>
@@ -48,7 +50,7 @@ enum Observable {
 };
 
 // Values in tables are stored in downscaled format to save disk space
-const float downscalingFactors[nObservables]{
+constexpr std::array<float, nObservables> downscalingFactors{
   1E0,   // Cluster definition
   1E3,   // Cluster energy
   1E4,   // Cluster eta
@@ -96,6 +98,17 @@ DECLARE_SOA_DYNAMIC_COLUMN(ZVtx, zVtx, [](int16_t storedzvtx) -> float { return 
 } // namespace bcwisecollision
 DECLARE_SOA_TABLE(BCWiseCollisions, "AOD", "BCWISECOLL", //! table of skimmed EMCal clusters
                   o2::soa::Index<>, BCWiseBCId, bcwisecollision::StoredZVtx, bcwisecollision::ZVtx<bcwisecollision::StoredZVtx>);
+
+// ccdbMgr.getSpecific<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", timeStamp, metadata);
+namespace bcwiseCcdb
+{
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+DECLARE_SOA_CCDB_COLUMN(GrpLhcFData, grpLhcFData, o2::parameters::GRPLHCIFData, "GLO/Config/GRPLHCIF"); //! GRPLHCIFData for BC Timestamps
+} // namespace bcwiseCcdb
+
+/// Full table — join with aod::BCsWithTimestamps to obtain all four objects.
+DECLARE_SOA_TIMESTAMPED_TABLE(BcLhcIfObjects, aod::Timestamps, o2::aod::timestamp::Timestamp, 0, "BCLHCIFOBJECTS", //!
+                              bcwiseCcdb::GrpLhcFData);
 
 namespace bcwisecluster
 {

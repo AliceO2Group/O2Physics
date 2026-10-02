@@ -159,7 +159,7 @@ void GeometryEntry::replaceValue(const std::string& layerName, const std::string
   setValue(layerName, key, value);
 }
 
-std::string GeometryEntry::accessFile(const std::string& path, const std::string downloadPath, o2::ccdb::BasicCCDBManager* ccdb, int timeoutSeconds)
+std::string GeometryEntry::accessFile(const std::string& path, const std::string& downloadPath, o2::ccdb::BasicCCDBManager* ccdb, int timeoutSeconds)
 {
 
   if (path.rfind("ccdb:", 0) == 0) {

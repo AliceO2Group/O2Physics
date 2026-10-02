@@ -55,6 +55,9 @@ constexpr const char PrefixD0Cleaner2[] = "D0Cleaner2";
 using ConfD0Cleaner1 = ConfParticleCleaner<PrefixD0Cleaner1>;
 using ConfD0Cleaner2 = ConfParticleCleaner<PrefixD0Cleaner2>;
 
+constexpr const char PrefixLcCleaner1[] = "LcCleaner1";
+using ConfLcCleaner1 = ConfParticleCleaner<PrefixLcCleaner1>;
+
 constexpr const char PrefixK0shortCleaner1[] = "K0shortCleaner1";
 constexpr const char PrefixK0shortCleaner2[] = "K0shortCleaner2";
 using ConfK0shortCleaner1 = ConfParticleCleaner<PrefixK0shortCleaner1>;
@@ -82,8 +85,10 @@ using ConfOmegaCleaner2 = ConfParticleCleaner<PrefixOmegaCleaner2>;
 
 constexpr const char PrefixMcParticleCleaner1[] = "McParticleCleaner1";
 constexpr const char PrefixMcParticleCleaner2[] = "McParticleCleaner2";
+constexpr const char PrefixMcParticleCleaner3[] = "McParticleCleaner3";
 using ConfMcParticleCleaner1 = ConfParticleCleaner<PrefixMcParticleCleaner1>;
 using ConfMcParticleCleaner2 = ConfParticleCleaner<PrefixMcParticleCleaner2>;
+using ConfMcParticleCleaner3 = ConfParticleCleaner<PrefixMcParticleCleaner3>;
 
 class ParticleCleaner
 {

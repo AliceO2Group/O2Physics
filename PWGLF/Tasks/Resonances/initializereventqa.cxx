@@ -169,7 +169,7 @@ struct Initializereventqa {
   Partition<DauTracks> globalTracksIUEta05 = (nabs(aod::track::eta) < globalEta05) && (requireGlobalTrackInFilter());
 
   template <typename TMcParticles>
-  uint16_t getGenNchInFT0Mregion(TMcParticles particles)
+  uint16_t getGenNchInFT0Mregion(const TMcParticles& particles)
   {
     float region1FT0 = -3.3f;
     float region2FT0 = -2.1f;

@@ -84,6 +84,21 @@ enum class MomentumType : o2::analysis::femto::datatypes::MomentumType {
   kPTpc = 2,  // momentum at inner wall of tpc
 };
 
+/// axis title for the momentum used on the x axis of PID histograms
+constexpr const char* momentumTypeToAxisTitle(MomentumType type)
+{
+  switch (type) {
+    case MomentumType::kPt:
+      return "p_{T} (GeV/#it{c})";
+    case MomentumType::kPAtPv:
+      return "p (GeV/#it{c})";
+    case MomentumType::kPTpc:
+      return "p_{TPC} (GeV/#it{c})";
+    default:
+      return "p (GeV/#it{c})";
+  }
+}
+
 enum class TransverseMassType : o2::analysis::femto::datatypes::TransverseMassType {
   kAveragePdgMass = 0,
   kReducedPdgMass = 1,
@@ -101,12 +116,12 @@ enum class Particle : o2::analysis::femto::datatypes::ParticleType {
 };
 
 enum class McOrigin : o2::analysis::femto::datatypes::McOriginType {
-  kNoMcParticle = 0,       // no associated mc particle normally indicated a wrongly reconstruced partilce
-  kFromWrongCollision = 1, // partilce originates from the wrong collision or a collision which was wrongly reconstructed (like a split vertex)
+  kNoMcParticle = 0,       // no associated mc particle, normally indicated by wrongly reconstructed particle
+  kFromWrongCollision = 1, // particle originates from the wrong collision or a collision which was wrongly reconstructed (like a split vertex)
   kPhysicalPrimary = 2,    // primary particle
   kFromSecondaryDecay = 3, // particle from secondary decay
-  kFromMaterial = 4,       // partilce orginates from material
-  kMissidentified = 5,     // partilce was kMissidentified (also know as fake)
+  kFromMaterial = 4,       // particle originates from material
+  kMissidentified = 5,     // particle was kMissidentified (also know as fake)
   kPrompt = 6,             // HF only: charm hadron produced promptly (from c quark)
   kNonPrompt = 7,          // HF only: charm hadron from beauty decay
   kMcOriginLast = 8
@@ -144,8 +159,56 @@ enum class Track : o2::analysis::femto::datatypes::TrackType {
   kCascadeBachelor,
   kResonanceDaughter,
   kKinkDaughter,
-  kCharmDaughter
+  kCharmDaughter,
+  kTrackTypeLast
 };
+
+constexpr const char* trackTypeToString(Track type)
+{
+  switch (type) {
+    case Track::kTrack:
+      return "Track";
+    case Track::kV0Daughter:
+      return "V0Daughter";
+    case Track::kCascadeBachelor:
+      return "CascadeBachelor";
+    case Track::kResonanceDaughter:
+      return "ResonanceDaughter";
+    case Track::kKinkDaughter:
+      return "KinkDaughter";
+    case Track::kCharmDaughter:
+      return "CharmDaughter";
+    default:
+      return "UnknownTrackType";
+  }
+}
+
+enum class Trigger : uint8_t {
+  kMinimumBias,
+  kTrackTrack,
+  kTrackV0,
+  kTrackTrackTrack,
+  kTrackTrackV0,
+  kTriggerLast
+};
+
+constexpr const char* triggerToString(Trigger trigger)
+{
+  switch (trigger) {
+    case Trigger::kMinimumBias:
+      return "MinimumBias";
+    case Trigger::kTrackTrack:
+      return "TrackTrack";
+    case Trigger::kTrackV0:
+      return "TrackV0";
+    case Trigger::kTrackTrackTrack:
+      return "TrackTrackTrack";
+    case Trigger::kTrackTrackV0:
+      return "TrackTrackV0";
+    default:
+      return "UnknownTrigger";
+  }
+}
 
 enum class V0 : o2::analysis::femto::datatypes::V0Type {
   kLambda,
@@ -174,8 +237,28 @@ enum class TwoTrackResonance : o2::analysis::femto::datatypes::TwoTrackResonance
 enum class CharmHadron : o2::analysis::femto::datatypes::CharmHadronType {
   kD0,
   kD0Bar,
-  kDplus,
-  kLc
+  kLc,
+  kLcBar
+};
+
+enum class EventShapeDetector : o2::analysis::femto::datatypes::EventShapeDetectorType {
+  kFT0C = 0,
+  kFT0A = 1,
+  kEventShapeDetectorLast = 2
+};
+
+enum class QvecHarmonic : o2::analysis::femto::datatypes::QvecHarmonicType {
+  kN2 = 2,
+  kN3 = 3,
+  kQvecHarmonicLast = 4
+};
+
+enum class KinematicVariable : o2::analysis::femto::datatypes::KinematicVariableType {
+  kKstar = 0,
+  kKt = 1,
+  kMt = 2,
+  kQ3 = 3,
+  kKinematicVariableLast = 4
 };
 
 }; // namespace o2::analysis::femto::modes

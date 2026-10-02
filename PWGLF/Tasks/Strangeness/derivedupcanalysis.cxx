@@ -489,7 +489,7 @@ struct Derivedupcanalysis {
   }
 
   template <int partID, typename TCand, typename TCollision>
-  void fillHistogramsV0(TCand cand, TCollision coll, int gap)
+  void fillHistogramsV0(const TCand& cand, const TCollision& coll, int gap)
   {
     float invMass = 0;
     float ft0ampl = -1.f;
@@ -614,7 +614,7 @@ struct Derivedupcanalysis {
   }
 
   template <int partID, typename TCand, typename TCollision>
-  void fillHistogramsCasc(TCand cand, TCollision coll, const int gap)
+  void fillHistogramsCasc(const TCand& cand, const TCollision& coll, const int gap)
   {
     float invMass = 0;
     float centrality = -1.f;

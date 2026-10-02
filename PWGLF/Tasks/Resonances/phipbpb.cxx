@@ -635,7 +635,7 @@ struct phipbpb {
     int Npostrack = 0;
     float weight1 = 1.0;
     float weight2 = 1.0;
-    for (auto track1 : posThisColl) {
+    for (const auto& track1 : posThisColl) {
       // track selection
       if (!selectionTrack(track1)) {
         continue;
@@ -673,7 +673,7 @@ struct phipbpb {
           weight1 = 1;
         }
       }
-      for (auto track2 : negThisColl) {
+      for (const auto& track2 : negThisColl) {
         // track selection
         if (!selectionTrack(track2)) {
           continue;
@@ -862,7 +862,7 @@ struct phipbpb {
     }
 
     int Npostrack = 0;
-    for (auto track1 : posThisColl) {
+    for (const auto& track1 : posThisColl) {
       // track selection
       if (!selectionTrack(track1)) {
         continue;
@@ -881,7 +881,7 @@ struct phipbpb {
         continue;
       }
       auto track1ID = track1.globalIndex();
-      for (auto track2 : negThisColl) {
+      for (const auto& track2 : negThisColl) {
         // track selection
         if (!selectionTrack(track2)) {
           continue;
@@ -1465,7 +1465,7 @@ struct phipbpb {
       auto oldindex = -999;
       auto Rectrackspart = RecTracks.sliceBy(perCollision, RecCollision.globalIndex());
       // loop over reconstructed particle
-      for (auto track1 : Rectrackspart) {
+      for (const auto& track1 : Rectrackspart) {
         if (!selectionTrack(track1)) {
           continue;
         }
@@ -1479,7 +1479,7 @@ struct phipbpb {
           continue;
         }
         auto track1ID = track1.index();
-        for (auto track2 : Rectrackspart) {
+        for (const auto& track2 : Rectrackspart) {
           auto track2ID = track2.index();
           if (track2ID <= track1ID) {
             continue;
@@ -1576,7 +1576,7 @@ struct phipbpb {
         }
         auto daughtp = false;
         auto daughtm = false;
-        for (auto kCurrentDaughter : kDaughters) {
+        for (const auto& kCurrentDaughter : kDaughters) {
           if (!kCurrentDaughter.isPhysicalPrimary()) {
             continue;
           }
@@ -1760,7 +1760,7 @@ struct phipbpb {
       auto oldindex = -999;
       auto Rectrackspart = RecTracks.sliceBy(perCollision, RecCollision.globalIndex());
       // loop over reconstructed particle
-      for (auto track1 : Rectrackspart) {
+      for (const auto& track1 : Rectrackspart) {
         if (!track1.has_mcParticle()) {
           continue;
         }
@@ -1775,7 +1775,7 @@ struct phipbpb {
           histos.fill(HIST("hSparsePhiMCRecKaonMissMatchWeight"), centclass, GetPhiInRange(mctrack1.phi() - psiFT0C), TMath::Power(TMath::Cos(4.0 * GetPhiInRange(mctrack1.phi() - psiFT0C)), 1.0), mctrack1.pt(), mctrack1.eta());
         }
         auto track1ID = track1.index();
-        for (auto track2 : Rectrackspart) {
+        for (const auto& track2 : Rectrackspart) {
           if (!track2.has_mcParticle()) {
             continue;
           }
@@ -1854,7 +1854,7 @@ struct phipbpb {
         }
         auto daughtp = false;
         auto daughtm = false;
-        for (auto kCurrentDaughter : kDaughters) {
+        for (const auto& kCurrentDaughter : kDaughters) {
           if (!kCurrentDaughter.isPhysicalPrimary()) {
             continue;
           }

@@ -47,7 +47,7 @@ double ctpRateFetcher::fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStam
     } else {
       double_t ret = fetchCTPratesClasses(ccdb, timeStamp, runNumber, "CMTVX-B-NOPF");
       if (ret < 0.) {
-        LOG(info) << "Trying different class";
+        LOG(debug) << "Trying different class";
         ret = fetchCTPratesClasses(ccdb, timeStamp, runNumber, "CMTVX-NONE");
         if ((ret < 0) && fCrashOnNull) {
           LOG(fatal) << "None of the classes used for lumi found";
@@ -72,7 +72,7 @@ double ctpRateFetcher::fetchCTPratesClasses(o2::ccdb::BasicCCDBManager* /*ccdb*/
     }
   }
   if (classIndex == -1) {
-    LOG(warn) << "Trigger class " << className << " not found in CTPConfiguration";
+    LOG(debug) << "Trigger class " << className << " not found in CTPConfiguration";
     return -1.;
   }
   auto rate{mScalers->getRateGivenT(timeStamp * 1.e-3, classIndex, inputType, 1)};

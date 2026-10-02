@@ -16,6 +16,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <vector>
 
 // Creating output TTree for ML analysis
 namespace o2::aod
@@ -237,8 +238,8 @@ DECLARE_SOA_TABLE(CascMLCandidates, "AOD", "CAMLCANDIDATES",
 
 namespace CascMLSelection
 {
-DECLARE_SOA_COLUMN(XiBDTScore, xiBDTScore, float);
-DECLARE_SOA_COLUMN(OmegaBDTScore, omegaBDTScore, float);
+DECLARE_SOA_COLUMN(XiBDTScore, xiBDTScore, std::vector<float>);
+DECLARE_SOA_COLUMN(OmegaBDTScore, omegaBDTScore, std::vector<float>);
 } // namespace CascMLSelection
 
 DECLARE_SOA_TABLE(CascXiMLScores, "AOD", "CASCXIMLSCORES",

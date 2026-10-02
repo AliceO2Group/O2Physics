@@ -39,8 +39,11 @@ DECLARE_SOA_COLUMN(Time1, time1, float);            //! time of first cluster in
 DECLARE_SOA_COLUMN(Time2, time2, float);            //! time of second cluster in ns
 DECLARE_SOA_COLUMN(NCells1, nCells1, uint8_t);      //! NCells of first cluster
 DECLARE_SOA_COLUMN(NCells2, nCells2, uint8_t);      //! NCells of second cluster
-DECLARE_SOA_COLUMN(TruthLabel, truthLabel, int8_t); //! truth label for ML training (0 == conversion, 1 == from Pi0, 2 == background)
+DECLARE_SOA_COLUMN(TruthLabel, truthLabel, int8_t); //! truth label for ML training -- see TruthClass enum for the mapping
 DECLARE_SOA_COLUMN(CentOrMult, centOrMult, float);  //! centrality or multiplicity value of the collision
+DECLARE_SOA_COLUMN(Purity1, purity1, float);        // leading-contributor amplitude fraction, cluster 1
+DECLARE_SOA_COLUMN(Purity2, purity2, float);        // leading-contributor amplitude fraction, cluster 2
+
 } // namespace convtag
 DECLARE_SOA_TABLE(ConvTagCandidates, "AOD", "CONVTAGCAND",
                   convtag::PMEvent,
@@ -48,6 +51,14 @@ DECLARE_SOA_TABLE(ConvTagCandidates, "AOD", "CONVTAGCAND",
                   convtag::E1, convtag::E2, convtag::M021, convtag::M022,
                   convtag::Time1, convtag::Time2, convtag::NCells1, convtag::NCells2,
                   convtag::TruthLabel, convtag::CentOrMult);
+
+DECLARE_SOA_TABLE_VERSIONED(ConvTagCandidates_001, "AOD", "CONVTAGCAND", 1,
+                            convtag::PMEvent,
+                            convtag::Minv, convtag::HarmonicET, convtag::DeltaEta, convtag::DeltaPhi, convtag::Phiv,
+                            convtag::E1, convtag::E2, convtag::M021, convtag::M022,
+                            convtag::Time1, convtag::Time2, convtag::NCells1, convtag::NCells2, convtag::Purity1, convtag::Purity2,
+                            convtag::TruthLabel, convtag::CentOrMult);
+
 } // namespace o2::aod
 
 #endif // PWGEM_PHOTONMESON_DATAMODEL_CONVERSIONML_H_

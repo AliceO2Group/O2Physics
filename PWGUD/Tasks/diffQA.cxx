@@ -657,7 +657,7 @@ struct DiffQA {
     int64_t lastBCwFV0 = fv0s.begin().bc_as<BCs>().globalBC();
     auto lastOrbit = lastBCwFV0 / o2::constants::lhc::LHCMaxBunches;
 
-    for (auto fv0 : fv0s) {
+    for (const auto& fv0 : fv0s) {
 
       // side A
       for (size_t ind = 0; ind < fv0.channel().size(); ind++) {
@@ -692,7 +692,7 @@ struct DiffQA {
 
     int64_t lastBCwFT0 = ft0s.begin().bc_as<BCs>().globalBC();
     auto lastOrbit = lastBCwFT0 / o2::constants::lhc::LHCMaxBunches;
-    for (auto ft0 : ft0s) {
+    for (const auto& ft0 : ft0s) {
 
       // side A
       for (size_t ind = 0; ind < ft0.channelA().size(); ind++) {
@@ -883,7 +883,7 @@ struct DiffQA {
 
     int64_t lastBCwFDD = fdds.begin().bc_as<BCs>().globalBC();
     auto lastOrbit = lastBCwFDD / o2::constants::lhc::LHCMaxBunches;
-    for (auto fdd : fdds) {
+    for (const auto& fdd : fdds) {
 
       // side A
       for (auto ind = 0; ind < 8; ind++) {
@@ -947,7 +947,7 @@ struct DiffQA {
   void processTest(CCs const& collisions, BCs const& bcs)
   {
     uint64_t bc1, bc2, bc3;
-    for (auto col : collisions) {
+    for (const auto& col : collisions) {
       bc1 = -1;
       bc2 = -2;
       bc3 = -3;

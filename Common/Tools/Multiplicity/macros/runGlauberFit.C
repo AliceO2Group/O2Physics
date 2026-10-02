@@ -87,7 +87,7 @@ Double_t GetBoundaryForPercentile(TH1* histo, Double_t lPercentileRequested)
 /// @param lFreef free f: keep f value free (default Pb-Pb: fixed at 0.8)
 /// @param lfvalue f value: the value to use for fixed f
 /// @param outputFile name of output file
-int runGlauberFit(TString lInputFileName = "AnalysisResultsLHC24ar.root", TString histogramName = "hFT0C_BCs", int ancestorMode = 2, Bool_t lFreek = kFALSE, Bool_t use_dMu_dNanc = kFALSE, Bool_t lFreef = kFALSE, Float_t lfvalue = 0.800, TString outputFile = "output.root")
+int runGlauberFit(const TString& lInputFileName = "AnalysisResultsLHC24ar.root", const TString& histogramName = "hFT0C_BCs", int ancestorMode = 2, Bool_t lFreek = kFALSE, Bool_t use_dMu_dNanc = kFALSE, Bool_t lFreef = kFALSE, Float_t lfvalue = 0.800, const TString& outputFile = "output.root")
 {
   gStyle->SetLineScalePS(1);
   gStyle->SetOptStat(0);

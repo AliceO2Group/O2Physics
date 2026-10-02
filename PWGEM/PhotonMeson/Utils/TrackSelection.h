@@ -16,7 +16,6 @@
 #ifndef PWGEM_PHOTONMESON_UTILS_TRACKSELECTION_H_
 #define PWGEM_PHOTONMESON_UTILS_TRACKSELECTION_H_
 
-#include <Framework/ASoA.h>
 #include <Framework/Concepts.h>
 
 #include <TPDGCode.h>

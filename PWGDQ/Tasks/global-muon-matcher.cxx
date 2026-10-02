@@ -26,6 +26,7 @@
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/LHCConstants.h>
 #include <CommonConstants/MathConstants.h>
+#include <CommonUtils/ConfigurableParam.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/Propagator.h>
@@ -201,6 +202,9 @@ struct GlobalMuonMatching {
     Configurable<float> cfgMFTAlignmentCorrYOffsetTop{"cfgMFTAlignmentCorrYOffsetTop", 0.f, "MFT Y offset correction - top half"};
     Configurable<float> cfgMFTAlignmentCorrYOffsetBottom{"cfgMFTAlignmentCorrYOffsetBottom", 0.f, "MFT Y offset correction - bottom half"};
   } configMftAlignmentCorrections;
+
+  // Magnetic field position bias
+  Configurable<float> cfgFieldOriginBiasZ{"cfgFieldOriginBiasZ", 0.0f, "Bias applied to the magnetic field z position"};
 
   // Variables for CCDB objects access and retrieval
   struct : ConfigurableGroup {
@@ -754,6 +758,9 @@ struct GlobalMuonMatching {
     ccdbManager->setLocalObjectValidityChecking();
     fCCDBApi.init(configCcdb.cfgCcdbUrl);
     mRunNumber = 0;
+
+    // configure magnetic field position bias
+    o2::conf::ConfigurableParam::setValue("FieldOriginBias.z", std::to_string(cfgFieldOriginBiasZ.value));
 
     // Configuration for track fitter
     const auto& trackerParam = mch::TrackerParam::Instance();

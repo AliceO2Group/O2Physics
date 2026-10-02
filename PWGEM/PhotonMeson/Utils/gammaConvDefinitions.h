@@ -35,7 +35,7 @@ o2::framework::AxisSpec const gAxis_TPCdEdxSig{401, -10.025f, 10.025f};
 o2::framework::AxisSpec const gAxis_radRes{800, -o2::constants::math::PI, o2::constants::math::PI};
 o2::framework::AxisSpec const gAxis_xyz{2400, -300.f, 300.f};
 o2::framework::AxisSpec const gAxis_chi2{501, -1.f, 500.f};
-o2::framework::AxisSpec gAxis_pT_log{800, 0.01f, 25.f};
+o2::framework::AxisSpec const gAxis_pT_log{800, 0.01f, 25.f};
 
 o2::framework::HistogramSpec const gHistoSpec_hCollisionZ_all_MCTrue{"hCollisionZ_all_MCTrue", "hCollisionZ_all_MCTrue;z (cm);counts", {o2::framework::HistType::kTH1F, {gAxis_zColl}}};
 o2::framework::HistogramSpec const gHistoSpec_hCollisionZ_MCTrue{"hCollisionZ_MCTrue", "hCollisionZ_MCTrue;z (cm);counts", {o2::framework::HistType::kTH1F, {gAxis_zColl}}};

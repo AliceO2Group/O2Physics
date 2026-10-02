@@ -16,6 +16,8 @@
 #ifndef PWGCF_FEMTO_CORE_PARTITIONS_H_
 #define PWGCF_FEMTO_CORE_PARTITIONS_H_
 
+#include <Framework/Expressions.h>
+
 // collsion selection
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define MAKE_COLLISION_FILTER(selection)                                                                                \
@@ -179,6 +181,22 @@
     (o2::aod::femtobase::stored::mass < (selection).massMax) &&                                                                                \
     ncheckbit(o2::aod::femtocharmhadrons::mask, (selection).mask)
 
+// partition for 3-prong charm hadrons
+// sign of signedPt encodes particle (+) / antiparticle (-)
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define MAKE_CHARM3PRONG_PARTITION(selection)                                                                                                  \
+  ifnode((selection).sign.node() != 0,                                                                                                         \
+         ifnode((selection).sign.node() > 0, o2::aod::femtobase::stored::signedPt > 0.f, o2::aod::femtobase::stored::signedPt < 0.f), true) && \
+    (nabs(o2::aod::femtobase::stored::signedPt) > (selection).ptMin) &&                                                                        \
+    (nabs(o2::aod::femtobase::stored::signedPt) < (selection).ptMax) &&                                                                        \
+    (o2::aod::femtobase::stored::eta > (selection).etaMin) &&                                                                                  \
+    (o2::aod::femtobase::stored::eta < (selection).etaMax) &&                                                                                  \
+    (o2::aod::femtobase::stored::phi > (selection).phiMin) &&                                                                                  \
+    (o2::aod::femtobase::stored::phi < (selection).phiMax) &&                                                                                  \
+    (o2::aod::femtobase::stored::mass > (selection).massMin) &&                                                                                \
+    (o2::aod::femtobase::stored::mass < (selection).massMax) &&                                                                                \
+    ncheckbit(o2::aod::femtocharmhadrons::mask, (selection).mask)
+
 // macros for mc collisions (mc only)
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define MAKE_MC_COLLISION_FILTER(selection)                                                                             \
@@ -189,7 +207,8 @@
 // macros for mc particle (mc only)
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define MAKE_MC_PARTICLE_PARTITION(selection)                                                                                                                                              \
-  ifnode((selection).pdgCodeAbs.node() == 0, true, (selection).pdgCodeAbs == nabs(o2::aod::femtomcparticle::pdgCode)) &&                                                                   \
+  ifnode((selection).requireOrigin.node(), o2::aod::femtomcparticle::origin == o2::framework::expressions::as<uint8_t>((selection).origin), true) &&                                       \
+    ifnode((selection).pdgCodeAbs.node() == 0, true, (selection).pdgCodeAbs == nabs(o2::aod::femtomcparticle::pdgCode)) &&                                                                 \
     ifnode((selection).chargeSign.node() != 0, ifnode((selection).chargeSign.node() > 0, o2::aod::femtobase::stored::signedPt > 0.f, o2::aod::femtobase::stored::signedPt < 0.f), true) && \
     (nabs(o2::aod::femtobase::stored::signedPt) > (selection).ptMin) &&                                                                                                                    \
     (nabs(o2::aod::femtobase::stored::signedPt) < (selection).ptMax) &&                                                                                                                    \

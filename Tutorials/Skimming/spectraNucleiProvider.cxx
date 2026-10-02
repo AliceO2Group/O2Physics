@@ -82,7 +82,7 @@ struct NucleiSpectraProviderTask {
       outputCollisions(collision.posZ());
       uint32_t pNsigma = 0xFFFFFF00; // 15 bit precision for Nsigma - does this respect the sign?
       outputTracks.reserve(tracks.size());
-      for (auto track : tracks) {
+      for (const auto& track : tracks) {
         outputTracks(outputCollisions.lastIndex(), track.pt(), track.eta(), track.phi(),
                      // truncateFloatFraction(track.tpcNSigmaEl(), pNsigma), truncateFloatFraction(track.tpcNSigmaMu(), pNsigma),
                      truncateFloatFraction(track.tpcNSigmaPi(), pNsigma), truncateFloatFraction(track.tpcNSigmaKa(), pNsigma),

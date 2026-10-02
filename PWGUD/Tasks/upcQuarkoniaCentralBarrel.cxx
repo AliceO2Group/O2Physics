@@ -230,7 +230,7 @@ struct upcQuarkoniaCentralBarrel {
   }
 
   template <typename TCollision>
-  void fillEventHistograms(TCollision collision, int& selGapSide)
+  void fillEventHistograms(const TCollision& collision, int& selGapSide)
   {
     // in case we want to push the analysis to Pb-Pb UPC
     int gapSide = collision.gapSide();
@@ -252,7 +252,7 @@ struct upcQuarkoniaCentralBarrel {
   }
 
   template <typename TTrack>
-  bool isTrackSelected(TTrack track)
+  bool isTrackSelected(const TTrack& track)
   {
     //
     // acceptance cut
@@ -321,7 +321,7 @@ struct upcQuarkoniaCentralBarrel {
   }
 
   template <typename TTrack, typename TTrackMC>
-  bool checkMCAssociation(TTrack track, TTrackMC trackMC)
+  bool checkMCAssociation(const TTrack& track, const TTrackMC& trackMC)
   // MC association (if asked)
   {
     if (track.sign() * trackMC.pdgCode() != 2212)
@@ -332,7 +332,7 @@ struct upcQuarkoniaCentralBarrel {
   }
 
   template <typename TTrack>
-  void fillQAplot(TTrack track, bool afterSel = false)
+  void fillQAplot(const TTrack& track, bool afterSel = false)
   { // fill QA information about proton/antiproton track
     if (afterSel) {
       if (track.sign() > 0) { // Proton Candidates after selections
@@ -395,7 +395,7 @@ struct upcQuarkoniaCentralBarrel {
   }
 
   template <typename TTrack, typename TTrackMCs>
-  void analyseTrackPairCandidate(TTrack proton, TTrack antiProton, TTrackMCs const& fullTrackMCs, uint8_t gapSide)
+  void analyseTrackPairCandidate(const TTrack& proton, const TTrack& antiProton, TTrackMCs const& fullTrackMCs, uint8_t gapSide)
   // fill information related to the quarkonium mother
   {
     float pt = RecoDecay::pt(proton.px() + antiProton.px(), proton.py() + antiProton.py());
@@ -477,7 +477,7 @@ struct upcQuarkoniaCentralBarrel {
   }
 
   template <typename TTracks, typename TTrackMCs>
-  void buildProtonAntiProtonPairs(TTracks const& fullTracks, TTrackMCs const& fullMCTracks, std::vector<bool> selProtonIndices, std::vector<bool> selAntiProtonIndices, uint8_t gapSide)
+  void buildProtonAntiProtonPairs(TTracks const& fullTracks, TTrackMCs const& fullMCTracks, const std::vector<bool>& selProtonIndices, const std::vector<bool>& selAntiProtonIndices, uint8_t gapSide)
   {
     // 1st loop over all protons
     for (const auto& proton : fullTracks) {

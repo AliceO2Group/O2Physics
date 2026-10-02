@@ -410,7 +410,7 @@ struct mcJetTrackCollisionQa {
 
   // fill qa histograms for selected tracks in collision
   template <class ValidationTracks, typename coll>
-  void fillMcTrackHistos(ValidationTracks const& mct, coll collision, bool mc) // could give collision as argument for additional association
+  void fillMcTrackHistos(ValidationTracks const& mct, const coll& collision, bool mc) // could give collision as argument for additional association
   {
     for (const auto& track : mct) {
       if (!jetderiveddatautilities::selectTrack(track, trackSelection) || !(track.collisionId() == collision.globalIndex())) {

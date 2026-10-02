@@ -21,6 +21,8 @@
 #include "PWGHF/Core/DecayChannelsLegacy.h"
 #include "PWGJE/DataModel/Jet.h"
 
+#include "Common/Core/RecoDecay.h"
+
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 
@@ -432,6 +434,130 @@ constexpr bool isHFMcTable()
 }
 
 /**
+ * returns the PDG of the candidate based on HF Table
+ *
+ * @param candidate HF candidate that is being checked
+ */
+template <typename T>
+int getHFCandidatePDG(T const& /*candidate*/)
+{
+  if constexpr (isD0Candidate<T>() || isD0McCandidate<T>()) {
+    return static_cast<int>(o2::constants::physics::Pdg::kD0);
+  } else if constexpr (isDplusCandidate<T>() || isDplusMcCandidate<T>()) {
+    return static_cast<int>(o2::constants::physics::Pdg::kDPlus);
+  } else if constexpr (isDsCandidate<T>() || isDsMcCandidate<T>()) {
+    return static_cast<int>(o2::constants::physics::Pdg::kDS);
+  } else if constexpr (isDstarCandidate<T>() || isDstarMcCandidate<T>()) {
+    return static_cast<int>(o2::constants::physics::Pdg::kDStar);
+  } else if constexpr (isLcCandidate<T>() || isLcMcCandidate<T>()) {
+    return static_cast<int>(o2::constants::physics::Pdg::kLambdaCPlus);
+  } else if constexpr (isB0Candidate<T>() || isB0McCandidate<T>()) {
+    return static_cast<int>(o2::constants::physics::Pdg::kB0);
+  } else if constexpr (isBplusCandidate<T>() || isBplusMcCandidate<T>()) {
+    return static_cast<int>(o2::constants::physics::Pdg::kBPlus);
+  } else if constexpr (isXicToXiPiPiCandidate<T>() || isXicToXiPiPiMcCandidate<T>()) {
+    return static_cast<int>(o2::constants::physics::Pdg::kXiCPlus);
+  } else {
+    return 0;
+  }
+}
+
+/**
+ * returns the PDG of the candidates in the table type
+ */
+template <typename T>
+int getHFTablePDG()
+{
+  if constexpr (isD0Table<T>() || isD0McTable<T>()) {
+    return static_cast<int>(o2::constants::physics::Pdg::kD0);
+  } else if constexpr (isDplusTable<T>() || isDplusMcTable<T>()) {
+    return static_cast<int>(o2::constants::physics::Pdg::kDPlus);
+  } else if constexpr (isDsTable<T>() || isDsMcTable<T>()) {
+    return static_cast<int>(o2::constants::physics::Pdg::kDS);
+  } else if constexpr (isDstarTable<T>() || isDstarMcTable<T>()) {
+    return static_cast<int>(o2::constants::physics::Pdg::kDStar);
+  } else if constexpr (isLcTable<T>() || isLcMcTable<T>()) {
+    return static_cast<int>(o2::constants::physics::Pdg::kLambdaCPlus);
+  } else if constexpr (isB0Table<T>() || isB0McTable<T>()) {
+    return static_cast<int>(o2::constants::physics::Pdg::kB0);
+  } else if constexpr (isBplusTable<T>() || isBplusMcTable<T>()) {
+    return static_cast<int>(o2::constants::physics::Pdg::kBPlus);
+  } else if constexpr (isXicToXiPiPiTable<T>() || isXicToXiPiPiMcTable<T>()) {
+    return static_cast<int>(o2::constants::physics::Pdg::kXiCPlus);
+  } else {
+    return 0;
+  }
+}
+
+/**
+ * returns the mass of the candidate based on HF Table
+ *
+ * @param candidate HF candidate that is being checked
+ */
+template <typename T>
+float getHFCandidatePDGMass(T const& /*candidate*/)
+{
+  if constexpr (isD0Candidate<T>() || isD0McCandidate<T>()) {
+    return static_cast<float>(o2::constants::physics::MassD0);
+  } else if constexpr (isDplusCandidate<T>() || isDplusMcCandidate<T>()) {
+    return static_cast<float>(o2::constants::physics::MassDPlus);
+  } else if constexpr (isDsCandidate<T>() || isDsMcCandidate<T>()) {
+    return static_cast<float>(o2::constants::physics::MassDS);
+  } else if constexpr (isDstarCandidate<T>() || isDstarMcCandidate<T>()) {
+    return static_cast<float>(o2::constants::physics::MassDStar);
+  } else if constexpr (isLcCandidate<T>() || isLcMcCandidate<T>()) {
+    return static_cast<float>(o2::constants::physics::MassLambdaCPlus);
+  } else if constexpr (isB0Candidate<T>() || isB0McCandidate<T>()) {
+    return static_cast<float>(o2::constants::physics::MassB0);
+  } else if constexpr (isBplusCandidate<T>() || isBplusMcCandidate<T>()) {
+    return static_cast<float>(o2::constants::physics::MassBPlus);
+  } else if constexpr (isXicToXiPiPiCandidate<T>() || isXicToXiPiPiMcCandidate<T>()) {
+    return static_cast<float>(o2::constants::physics::MassXiCPlus);
+  } else {
+    return -1.0;
+  }
+}
+
+/**
+ * returns the mass of the candidates in the table type
+ *
+ */
+template <typename T>
+float getHFTablePDGMass()
+{
+  if constexpr (isD0Table<T>() || isD0McTable<T>()) {
+    return static_cast<float>(o2::constants::physics::MassD0);
+  } else if constexpr (isDplusTable<T>() || isDplusMcTable<T>()) {
+    return static_cast<float>(o2::constants::physics::MassDPlus);
+  } else if constexpr (isDsTable<T>() || isDsMcTable<T>()) {
+    return static_cast<float>(o2::constants::physics::MassDS);
+  } else if constexpr (isDstarTable<T>() || isDstarMcTable<T>()) {
+    return static_cast<float>(o2::constants::physics::MassDStar);
+  } else if constexpr (isLcTable<T>() || isLcMcTable<T>()) {
+    return static_cast<float>(o2::constants::physics::MassLambdaCPlus);
+  } else if constexpr (isB0Table<T>() || isB0McTable<T>()) {
+    return static_cast<float>(o2::constants::physics::MassB0);
+  } else if constexpr (isBplusTable<T>() || isBplusMcTable<T>()) {
+    return static_cast<float>(o2::constants::physics::MassBPlus);
+  } else if constexpr (isXicToXiPiPiTable<T>() || isXicToXiPiPiMcTable<T>()) {
+    return static_cast<float>(o2::constants::physics::MassXiCPlus);
+  } else {
+    return -1.0;
+  }
+}
+
+/**
+ * returns the mass of the candidate based on HF Table
+ *
+ * @param candidate HF candidate that is being checked
+ */
+template <typename T>
+float getHFCandidateInvariantMass(T const& candidate)
+{
+  return candidate.m();
+}
+
+/**
  * returns true if the candidate is matched to a reconstructed level candidate with the correct decay
  * * @param candidate candidate that is being checked
  */
@@ -609,60 +735,9 @@ bool isHFDaughterTrack(T& track, U& candidate)
  * @param particles particle table
  */
 template <typename T, typename U, typename V>
-auto matchedHFParticle(const T& candidate, const U& /*tracks*/, const V& /*particles*/, bool& isMatched)
+auto matchedHFParticle(const T& candidate, const U& /*tracks*/, const V& particles)
 {
-
-  typename V::iterator candidateDaughterParticle;
-  isMatched = false;
-  if constexpr (isD0Candidate<T>()) {
-    if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
-      candidateDaughterParticle = candidate.template prong0_as<U>().template mcParticle_as<V>();
-      isMatched = true;
-    }
-  }
-  if constexpr (isDplusCandidate<T>()) {
-    if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) {
-      candidateDaughterParticle = candidate.template prong0_as<U>().template mcParticle_as<V>();
-      isMatched = true;
-    }
-  }
-  if constexpr (isDsCandidate<T>()) {
-    if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) {
-      candidateDaughterParticle = candidate.template prong0_as<U>().template mcParticle_as<V>();
-      isMatched = true;
-    }
-  }
-  if constexpr (isDstarCandidate<T>()) {
-    if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi) {
-      candidateDaughterParticle = candidate.template prong2_as<U>().template mcParticle_as<V>();
-      isMatched = true;
-    }
-  }
-  if constexpr (isLcCandidate<T>()) {
-    if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
-      candidateDaughterParticle = candidate.template prong0_as<U>().template mcParticle_as<V>();
-      isMatched = true;
-    }
-  }
-  if constexpr (isB0Candidate<T>()) {
-    if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_beauty::DecayChannelMain::B0ToDminusPi) {
-      candidateDaughterParticle = candidate.template prong3_as<U>().template mcParticle_as<V>();
-      isMatched = true;
-    }
-  }
-  if constexpr (isBplusCandidate<T>()) {
-    if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_beauty::DecayChannelMain::BplusToD0Pi) {
-      candidateDaughterParticle = candidate.template prong2_as<U>().template mcParticle_as<V>();
-      isMatched = true;
-    }
-  }
-  if constexpr (isXicToXiPiPiCandidate<T>()) {
-    if (std::abs(candidate.flagMcMatchRec()) == o2::aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi) {
-      candidateDaughterParticle = candidate.template prong0_as<U>().template mcParticle_as<V>();
-      isMatched = true;
-    }
-  }
-  return candidateDaughterParticle.template mothers_first_as<V>();
+  return particles.iteratorAt(RecoDecay::getMother(particles, candidate.template prong0_as<U>().template mcParticle_as<V>(), getHFCandidatePDG(candidate), true));
 }
 
 /**
@@ -675,13 +750,8 @@ auto matchedHFParticle(const T& candidate, const U& /*tracks*/, const V& /*parti
 template <typename T, typename U, typename V>
 auto matchedHFParticleId(const T& candidate, const U& tracks, const V& particles)
 {
-  bool isMatched = false;
-  auto matchedParticle = matchedHFParticle(candidate, tracks, particles, isMatched);
-  if (isMatched) {
-    return matchedParticle.globalIndex();
-  } else {
-    return int64_t{-1}; // does this clash with the case where a track doesnt have an associated particle?
-  }
+  auto matchedParticle = matchedHFParticle(candidate, tracks, particles);
+  return matchedParticle.globalIndex();
 }
 
 /**
@@ -765,130 +835,6 @@ template <typename T>
 int getHFMcCandidateCollisionId(T const& candidate)
 {
   return candidate.hfMcCollBaseId();
-}
-
-/**
- * returns the PDG of the candidate based on HF Table
- *
- * @param candidate HF candidate that is being checked
- */
-template <typename T>
-int getHFCandidatePDG(T const& /*candidate*/)
-{
-  if constexpr (isD0Candidate<T>() || isD0McCandidate<T>()) {
-    return static_cast<int>(o2::constants::physics::Pdg::kD0);
-  } else if constexpr (isDplusCandidate<T>() || isDplusMcCandidate<T>()) {
-    return static_cast<int>(o2::constants::physics::Pdg::kDPlus);
-  } else if constexpr (isDsCandidate<T>() || isDsMcCandidate<T>()) {
-    return static_cast<int>(o2::constants::physics::Pdg::kDS);
-  } else if constexpr (isDstarCandidate<T>() || isDstarMcCandidate<T>()) {
-    return static_cast<int>(o2::constants::physics::Pdg::kDStar);
-  } else if constexpr (isLcCandidate<T>() || isLcMcCandidate<T>()) {
-    return static_cast<int>(o2::constants::physics::Pdg::kLambdaCPlus);
-  } else if constexpr (isB0Candidate<T>() || isB0McCandidate<T>()) {
-    return static_cast<int>(o2::constants::physics::Pdg::kB0);
-  } else if constexpr (isBplusCandidate<T>() || isBplusMcCandidate<T>()) {
-    return static_cast<int>(o2::constants::physics::Pdg::kBPlus);
-  } else if constexpr (isXicToXiPiPiCandidate<T>() || isXicToXiPiPiMcCandidate<T>()) {
-    return static_cast<int>(o2::constants::physics::Pdg::kXiCPlus);
-  } else {
-    return 0;
-  }
-}
-
-/**
- * returns the PDG of the candidates in the table type
- */
-template <typename T>
-int getHFTablePDG()
-{
-  if constexpr (isD0Table<T>() || isD0McTable<T>()) {
-    return static_cast<int>(o2::constants::physics::Pdg::kD0);
-  } else if constexpr (isDplusTable<T>() || isDplusMcTable<T>()) {
-    return static_cast<int>(o2::constants::physics::Pdg::kDPlus);
-  } else if constexpr (isDsTable<T>() || isDsMcTable<T>()) {
-    return static_cast<int>(o2::constants::physics::Pdg::kDS);
-  } else if constexpr (isDstarTable<T>() || isDstarMcTable<T>()) {
-    return static_cast<int>(o2::constants::physics::Pdg::kDStar);
-  } else if constexpr (isLcTable<T>() || isLcMcTable<T>()) {
-    return static_cast<int>(o2::constants::physics::Pdg::kLambdaCPlus);
-  } else if constexpr (isB0Table<T>() || isB0McTable<T>()) {
-    return static_cast<int>(o2::constants::physics::Pdg::kB0);
-  } else if constexpr (isBplusTable<T>() || isBplusMcTable<T>()) {
-    return static_cast<int>(o2::constants::physics::Pdg::kBPlus);
-  } else if constexpr (isXicToXiPiPiTable<T>() || isXicToXiPiPiMcTable<T>()) {
-    return static_cast<int>(o2::constants::physics::Pdg::kXiCPlus);
-  } else {
-    return 0;
-  }
-}
-
-/**
- * returns the mass of the candidate based on HF Table
- *
- * @param candidate HF candidate that is being checked
- */
-template <typename T>
-float getHFCandidatePDGMass(T const& /*candidate*/)
-{
-  if constexpr (isD0Candidate<T>() || isD0McCandidate<T>()) {
-    return static_cast<float>(o2::constants::physics::MassD0);
-  } else if constexpr (isDplusCandidate<T>() || isDplusMcCandidate<T>()) {
-    return static_cast<float>(o2::constants::physics::MassDPlus);
-  } else if constexpr (isDsCandidate<T>() || isDsMcCandidate<T>()) {
-    return static_cast<float>(o2::constants::physics::MassDS);
-  } else if constexpr (isDstarCandidate<T>() || isDstarMcCandidate<T>()) {
-    return static_cast<float>(o2::constants::physics::MassDStar);
-  } else if constexpr (isLcCandidate<T>() || isLcMcCandidate<T>()) {
-    return static_cast<float>(o2::constants::physics::MassLambdaCPlus);
-  } else if constexpr (isB0Candidate<T>() || isB0McCandidate<T>()) {
-    return static_cast<float>(o2::constants::physics::MassB0);
-  } else if constexpr (isBplusCandidate<T>() || isBplusMcCandidate<T>()) {
-    return static_cast<float>(o2::constants::physics::MassBPlus);
-  } else if constexpr (isXicToXiPiPiCandidate<T>() || isXicToXiPiPiMcCandidate<T>()) {
-    return static_cast<float>(o2::constants::physics::MassXiCPlus);
-  } else {
-    return -1.0;
-  }
-}
-
-/**
- * returns the mass of the candidates in the table type
- *
- */
-template <typename T>
-float getHFTablePDGMass()
-{
-  if constexpr (isD0Table<T>() || isD0McTable<T>()) {
-    return static_cast<float>(o2::constants::physics::MassD0);
-  } else if constexpr (isDplusTable<T>() || isDplusMcTable<T>()) {
-    return static_cast<float>(o2::constants::physics::MassDPlus);
-  } else if constexpr (isDsTable<T>() || isDsMcTable<T>()) {
-    return static_cast<float>(o2::constants::physics::MassDS);
-  } else if constexpr (isDstarTable<T>() || isDstarMcTable<T>()) {
-    return static_cast<float>(o2::constants::physics::MassDStar);
-  } else if constexpr (isLcTable<T>() || isLcMcTable<T>()) {
-    return static_cast<float>(o2::constants::physics::MassLambdaCPlus);
-  } else if constexpr (isB0Table<T>() || isB0McTable<T>()) {
-    return static_cast<float>(o2::constants::physics::MassB0);
-  } else if constexpr (isBplusTable<T>() || isBplusMcTable<T>()) {
-    return static_cast<float>(o2::constants::physics::MassBPlus);
-  } else if constexpr (isXicToXiPiPiTable<T>() || isXicToXiPiPiMcTable<T>()) {
-    return static_cast<float>(o2::constants::physics::MassXiCPlus);
-  } else {
-    return -1.0;
-  }
-}
-
-/**
- * returns the mass of the candidate based on HF Table
- *
- * @param candidate HF candidate that is being checked
- */
-template <typename T>
-float getHFCandidateInvariantMass(T const& candidate)
-{
-  return candidate.m();
 }
 
 template <typename T, typename U>

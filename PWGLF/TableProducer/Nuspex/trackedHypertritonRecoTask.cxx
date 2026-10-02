@@ -101,7 +101,9 @@ struct TrackedHypertritonRecoTask {
   Produces<aod::Vtx3BodyDatas> vtx3BodyDatas;
   Produces<aod::Vtx3BodyCovs> vtx3BodyCovs;
   Produces<aod::Vtx3BodyTrackedInfo> vtx3BodyTrackedInfo;
+  Produces<aod::Vtx3BodyCollision> vtx3BodyCollision;
   Produces<aod::McVtx3BodyDatas> mcVtx3BodyDatas;
+  Produces<aod::McVtx3BodyCollision> mcVtx3BodyCollision;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -226,7 +228,7 @@ struct TrackedHypertritonRecoTask {
     bool isSignal = false;
     bool isRecoMCCollision = false;
     bool survivedEventSelection = false;
-    uint8_t fakeHeITSLayerMap = 0;
+    uint8_t fakeHeITSLayerMap{};
     int motherLabel = -1;
     int statusCode = 0;
   };
@@ -238,12 +240,9 @@ struct TrackedHypertritonRecoTask {
     float genPhi = -1.f;
     float genEta = -1.f;
     float genRapidity = -1.f;
-    float genMomentumProton = -1.f;
-    float genMomentumPion = -1.f;
-    float genMomentumDeuteron = -1.f;
-    float genPtProton = -1.f;
-    float genPtPion = -1.f;
-    float genPtDeuteron = -1.f;
+    std::array<float, 3> genMomProton{-1.f, -1.f, -1.f};
+    std::array<float, 3> genMomPion{-1.f, -1.f, -1.f};
+    std::array<float, 3> genMomDeuteron{-1.f, -1.f, -1.f};
     bool isReco = true;
     int motherLabel = -1;
     int motherPdgCode = 0;
@@ -251,6 +250,7 @@ struct TrackedHypertritonRecoTask {
     int pionPdgCode = -1;
     int deuteronPdgCode = -1;
     bool isDeuteronPrimary = false;
+    bool isRecoMCCollision = false;
     bool survivedEventSelection = false;
   };
 
@@ -322,6 +322,13 @@ struct TrackedHypertritonRecoTask {
     zorroEvents->GetXaxis()->SetBinLabel(2, "fTracked3Body");
     zorroEvents->GetYaxis()->SetBinLabel(1, "before sel8");
     zorroEvents->GetYaxis()->SetBinLabel(2, "after sel8");
+
+    registry.add("hTrackProtonTPCSignal", "hTrackProtonTPCSignal", HistType::kTH2F, {{100, -10.0f, 10.0f, "p/z (GeV/c)"}, {2000, 0.0f, 2000.0f, "d#it{E}/d#it{x}"}});
+    registry.add("hTrackPionTPCSignal", "hTrackPionTPCSignal", HistType::kTH2F, {{100, -10.0f, 10.0f, "p/z (GeV/c)"}, {2000, 0.0f, 2000.0f, "d#it{E}/d#it{x}"}});
+    registry.add("hTrackDeuteronTPCSignal", "hTrackDeuteronTPCSignal", HistType::kTH2F, {{100, -10.0f, 10.0f, "p/z (GeV/c)"}, {2000, 0.0f, 2000.0f, "d#it{E}/d#it{x}"}});
+    registry.add("hTrackProtonTPCSignalSelected", "hTrackProtonTPCSignalSelected", HistType::kTH2F, {{100, -10.0f, 10.0f, "p/z (GeV/c)"}, {2000, 0.0f, 2000.0f, "d#it{E}/d#it{x}"}});
+    registry.add("hTrackPionTPCSignalSelected", "hTrackPionTPCSignalSelected", HistType::kTH2F, {{100, -10.0f, 10.0f, "p/z (GeV/c)"}, {2000, 0.0f, 2000.0f, "d#it{E}/d#it{x}"}});
+    registry.add("hTrackDeuteronTPCSignalSelected", "hTrackDeuteronTPCSignalSelected", HistType::kTH2F, {{100, -10.0f, 10.0f, "p/z (GeV/c)"}, {2000, 0.0f, 2000.0f, "d#it{E}/d#it{x}"}});
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -514,12 +521,9 @@ struct TrackedHypertritonRecoTask {
     info.pionPdgCode = mcPion.pdgCode();
     info.deuteronPdgCode = mcDeuteron.pdgCode();
     info.isDeuteronPrimary = mcDeuteron.isPhysicalPrimary();
-    info.genMomentumProton = mcProton.p();
-    info.genMomentumPion = mcPion.p();
-    info.genMomentumDeuteron = mcDeuteron.p();
-    info.genPtProton = mcProton.pt();
-    info.genPtPion = mcPion.pt();
-    info.genPtDeuteron = mcDeuteron.pt();
+    info.genMomProton = {mcProton.px(), mcProton.py(), mcProton.pz()};
+    info.genMomPion = {mcPion.px(), mcPion.py(), mcPion.pz()};
+    info.genMomDeuteron = {mcDeuteron.px(), mcDeuteron.py(), mcDeuteron.pz()};
 
     const int motherLabel = findCommonMother(mcProton, mcPion, mcDeuteron);
     if (motherLabel < 0) {
@@ -541,7 +545,8 @@ struct TrackedHypertritonRecoTask {
     info.genPhi = mother.phi();
     info.genEta = mother.eta();
     info.genRapidity = mother.y();
-    if (mother.mcCollisionId() >= 0 && mother.mcCollisionId() < static_cast<int>(survivedMCEventSelection.size())) {
+    if (mother.mcCollisionId() >= 0 && mother.mcCollisionId() < static_cast<int>(recoCollisionForMC.size())) {
+      info.isRecoMCCollision = recoCollisionForMC[mother.mcCollisionId()] >= 0;
       info.survivedEventSelection = survivedMCEventSelection[mother.mcCollisionId()];
     }
     return info;
@@ -575,14 +580,13 @@ struct TrackedHypertritonRecoTask {
     std::array<float, 6> xyzpxpypz{};
     trackHeliumCov.getPxPyPzGlo(pxpypz);
     trackHeliumCov.getXYZGlo(xyz);
-    for (int i = 0; i < 3; ++i) {
+    for (std::size_t i = 0; i < xyz.size(); ++i) {
       xyzpxpypz[i] = xyz[i];
-      xyzpxpypz[i + 3] = pxpypz[i] * 2;
+      xyzpxpypz[i + xyz.size()] = pxpypz[i] * 2;
     }
     std::array<float, 21> cv{};
     trackHeliumCov.getCovXYZPxPyPzGlo(cv);
-    KFParticle kfHelium;
-    kfHelium.Create(xyzpxpypz.data(), cv.data(), trackHelium.sign() * 2, constants::physics::MassHelium3);
+    kfpHelium.Create(xyzpxpypz.data(), cv.data(), trackHelium.sign() * 2, constants::physics::MassHelium3);
     // pion
     kfpPion = createKFParticleFromTrackParCov(trackPionCov, trackPion.sign(), constants::physics::MassPionCharged);
 
@@ -684,7 +688,7 @@ struct TrackedHypertritonRecoTask {
 
     // get SV position
     const auto& secondaryVertex = fitter2Body.getPCACandidate();
-    for (int i = 0; i < 3; i++) {
+    for (std::size_t i = 0; i < v0.decayVertex.size(); i++) {
       v0.decayVertex[i] = secondaryVertex[i];
     }
     v0.chi2 = std::sqrt(fitter2Body.getChi2AtPCACandidate());
@@ -738,6 +742,7 @@ struct TrackedHypertritonRecoTask {
     flags |= static_cast<uint8_t>(piTrack.pidForTracking() & 0xf);
 
     fillCandidate(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
+                  collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(),
                   collision.posX(), collision.posY(), collision.posZ(),
                   runNumber, heTrack.sign() > 0,
                   std::hypot(v0.momHelium[0], v0.momHelium[1]), std::atan2(v0.momHelium[1], v0.momHelium[0]), RecoDecay::eta(v0.momHelium),
@@ -773,7 +778,18 @@ struct TrackedHypertritonRecoTask {
     return deuteronTOFPIDMC.GetTOFNSigma(tofResponse, track, originalCollision, collision);
   }
 
-  void fillThreeBodyTables()
+  template <class TTracksTo, typename TTracked3body>
+  std::array<float, 2> getItsTrackDCAToSV(TTracked3body const& tracked3Body)
+  {
+    const auto itsTrack = tracked3Body.template itsTrack_as<TTracksTo>();
+    auto itsTrackParCov = getTrackParCov(itsTrack);
+    std::array<float, 2> dcaInfo{};
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({builder3Body.decay3body.position[0], builder3Body.decay3body.position[1], builder3Body.decay3body.position[2]}, itsTrackParCov, 2.f, fitter2Body.getMatCorrType(), &dcaInfo);
+    return dcaInfo;
+  }
+
+  template <typename TCollision>
+  void fillThreeBodyTables(TCollision const& collision)
   {
     const auto& candidate = builder3Body.decay3body;
     vtx3BodyDatas(static_cast<float>(candidate.sign),
@@ -792,12 +808,17 @@ struct TrackedHypertritonRecoTask {
                   candidate.daughterDCAtoSV[0], candidate.daughterDCAtoSV[1], candidate.daughterDCAtoSV[2],
                   candidate.daughterDCAtoSVaverage, candidate.cosPA, candidate.ctau,
                   candidate.tpcNsigma[0], candidate.tpcNsigma[1], candidate.tpcNsigma[2], candidate.tpcNsigma[3],
+                  candidate.tpcSignal[0], candidate.tpcSignal[1], candidate.tpcSignal[2],
                   static_cast<float>(candidate.tofNsigmaDeuteron),
                   candidate.averageITSClSize[0], candidate.averageITSClSize[1], candidate.averageITSClSize[2],
                   static_cast<int>(candidate.tpcNCl[0]), static_cast<int>(candidate.tpcNCl[1]), static_cast<int>(candidate.tpcNCl[2]),
                   static_cast<uint32_t>(candidate.pidForTrackingDeuteron));
     vtx3BodyCovs(candidate.covProton.data(), candidate.covPion.data(), candidate.covDeuteron.data(), candidate.covariance.data());
     vtx3BodyTrackedInfo(candidate.itsTrackDCAToSV[0], candidate.itsTrackDCAToSV[1]);
+    vtx3BodyCollision(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
+                      collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(),
+                      collision.posX(), collision.posY(), collision.posZ(),
+                      runNumber);
   }
 
   void fillThreeBodyMCTable(ThreeBodyMCInfo const& info)
@@ -819,6 +840,7 @@ struct TrackedHypertritonRecoTask {
                     candidate.daughterDCAtoSV[0], candidate.daughterDCAtoSV[1], candidate.daughterDCAtoSV[2],
                     candidate.daughterDCAtoSVaverage, candidate.cosPA, candidate.ctau,
                     candidate.tpcNsigma[0], candidate.tpcNsigma[1], candidate.tpcNsigma[2], candidate.tpcNsigma[3],
+                    candidate.tpcSignal[0], candidate.tpcSignal[1], candidate.tpcSignal[2],
                     static_cast<float>(candidate.tofNsigmaDeuteron),
                     candidate.averageITSClSize[0], candidate.averageITSClSize[1], candidate.averageITSClSize[2],
                     static_cast<int>(candidate.tpcNCl[0]), static_cast<int>(candidate.tpcNCl[1]), static_cast<int>(candidate.tpcNCl[2]),
@@ -826,42 +848,61 @@ struct TrackedHypertritonRecoTask {
                     info.genMomentum[0], info.genMomentum[1], info.genMomentum[2],
                     info.genDecayVertex[0], info.genDecayVertex[1], info.genDecayVertex[2],
                     info.genCt, info.genPhi, info.genEta, info.genRapidity,
-                    info.genMomentumProton, info.genMomentumPion, info.genMomentumDeuteron,
-                    info.genPtProton, info.genPtPion, info.genPtDeuteron,
+                    info.genMomProton[0], info.genMomProton[1], info.genMomProton[2],
+                    info.genMomPion[0], info.genMomPion[1], info.genMomPion[2],
+                    info.genMomDeuteron[0], info.genMomDeuteron[1], info.genMomDeuteron[2],
                     static_cast<int>(info.isReco), info.motherLabel, info.motherPdgCode,
                     info.protonPdgCode, info.pionPdgCode, info.deuteronPdgCode,
                     info.isDeuteronPrimary, static_cast<int>(info.survivedEventSelection));
+    vtx3BodyCovs(candidate.covProton.data(), candidate.covPion.data(), candidate.covDeuteron.data(), candidate.covariance.data());
+    vtx3BodyTrackedInfo(candidate.itsTrackDCAToSV[0], candidate.itsTrackDCAToSV[1]);
   }
 
   void fillGeneratedThreeBodyMCTable(ThreeBodyMCInfo const& info)
   {
-    mcVtx3BodyDatas(-1.f,
-                    -1.f, -1.f,       // mass, massV0
-                    -1.f, -1.f, -1.f, // position
-                    -1.f, -1.f, -1.f, // momentum
-                    -1.f, -1.f,       // chi2, trackedClSize
-                    -1.f, -1.f, -1.f, // proton momentum
-                    -1.f, -1.f, -1.f, // pion momentum
-                    -1.f, -1.f, -1.f, // deuteron momentum
-                    -1.f, -1.f, -1.f, // daughter x at inner update
-                    -1.f, -1.f, -1.f, // track DCAxy to PV
-                    -1.f, -1.f, -1.f, // track DCA to PV
-                    -1.f, -1.f, -1.f, // propagated track DCAxy to PV
-                    -1.f, -1.f, -1.f, // propagated track DCA to PV
-                    -1.f, -1.f, -1.f, // daughter DCA to SV
-                    -1.f, -1.f, -1.f, // average daughter DCA, cosPA, ctau
-                    -1.f, -1.f, -1.f, -1.f,
-                    -1.f,
-                    -1.f, -1.f, -1.f,
+    mcVtx3BodyDatas(-1.f,                   // sign
+                    -1.f, -1.f,             // mass, massV0
+                    -1.f, -1.f, -1.f,       // position
+                    -1.f, -1.f, -1.f,       // momentum
+                    -1.f, -1.f,             // chi2, trackedClSize
+                    -1.f, -1.f, -1.f,       // proton momentum
+                    -1.f, -1.f, -1.f,       // pion momentum
+                    -1.f, -1.f, -1.f,       // deuteron momentum
+                    -1.f, -1.f, -1.f,       // daughter x at inner update
+                    -1.f, -1.f, -1.f,       // track DCAxy to PV
+                    -1.f, -1.f, -1.f,       // track DCA to PV
+                    -1.f, -1.f, -1.f,       // propagated track DCAxy to PV
+                    -1.f, -1.f, -1.f,       // propagated track DCA to PV
+                    -1.f, -1.f, -1.f,       // daughter DCA to SV
+                    -1.f, -1.f, -1.f,       // average daughter DCA, cosPA, ctau
+                    -1.f, -1.f, -1.f, -1.f, // TPC nSigmas
+                    -1.f, 1.f, -1.f,        // TPC signals
+                    -1.f,                   // TOF nSigma deuteron
+                    -1.f, -1.f, -1.f,       // average cluster sizes
                     -1, -1, -1, std::numeric_limits<uint32_t>::max(),
                     info.genMomentum[0], info.genMomentum[1], info.genMomentum[2],
                     info.genDecayVertex[0], info.genDecayVertex[1], info.genDecayVertex[2],
                     info.genCt, info.genPhi, info.genEta, info.genRapidity,
-                    info.genMomentumProton, info.genMomentumPion, info.genMomentumDeuteron,
-                    info.genPtProton, info.genPtPion, info.genPtDeuteron,
+                    info.genMomProton[0], info.genMomProton[1], info.genMomProton[2],
+                    info.genMomPion[0], info.genMomPion[1], info.genMomPion[2],
+                    info.genMomDeuteron[0], info.genMomDeuteron[1], info.genMomDeuteron[2],
                     0, info.motherLabel, info.motherPdgCode,
                     info.protonPdgCode, info.pionPdgCode, info.deuteronPdgCode,
                     info.isDeuteronPrimary, static_cast<int>(info.survivedEventSelection));
+  }
+
+  template <typename TTrack>
+  void fillQAHistograms(TTrack const& trackProton, TTrack const& trackPion, TTrack const& trackDeuteron, bool isSelected)
+  {
+    if (!isSelected) {
+      registry.fill(HIST("hTrackProtonTPCSignal"), trackProton.sign() * trackProton.tpcInnerParam(), trackProton.tpcSignal());
+      registry.fill(HIST("hTrackPionTPCSignal"), trackPion.sign() * trackPion.tpcInnerParam(), trackPion.tpcSignal());
+      registry.fill(HIST("hTrackDeuteronTPCSignal"), trackDeuteron.sign() * trackDeuteron.tpcInnerParam(), trackDeuteron.tpcSignal());
+    } else {
+      registry.fill(HIST("hTrackProtonTPCSignalSelected"), trackProton.sign() * trackProton.tpcInnerParam(), trackProton.tpcSignal());
+      registry.fill(HIST("hTrackPionTPCSignalSelected"), trackPion.sign() * trackPion.tpcInnerParam(), trackPion.tpcSignal());
+      registry.fill(HIST("hTrackDeuteronTPCSignalSelected"), trackDeuteron.sign() * trackDeuteron.tpcInnerParam(), trackDeuteron.tpcSignal());
+    }
   }
 
   void processData(Collisions const& collisions,
@@ -875,13 +916,13 @@ struct TrackedHypertritonRecoTask {
     selectCollisions(collisions, skimmedProcessing);
 
     for (const auto& trackedV0 : trackedV0s) {
-      const auto v0 = trackedV0.v0_as<aod::V0s>();
-      if (v0.collisionId() < 0 || !goodCollision[v0.collisionId()] || (skimmedProcessing && !zorroDecision[v0.collisionId()][kHe])) {
+      const auto inputV0 = trackedV0.v0_as<aod::V0s>();
+      if (inputV0.collisionId() < 0 || !goodCollision[inputV0.collisionId()] || (skimmedProcessing && !zorroDecision[inputV0.collisionId()][kHe])) {
         continue;
       }
-      const auto collision = v0.collision_as<Collisions>();
-      const auto positiveTrack = v0.posTrack_as<Tracks>();
-      const auto negativeTrack = v0.negTrack_as<Tracks>();
+      const auto collision = inputV0.collision_as<Collisions>();
+      const auto positiveTrack = inputV0.posTrack_as<Tracks>();
+      const auto negativeTrack = inputV0.negTrack_as<Tracks>();
       const float nSigmaPositive = nSigmaHe3(positiveTrack);
       const float nSigmaNegative = nSigmaHe3(negativeTrack);
       const bool positiveTrackedAsHe = positiveTrack.pidForTracking() == o2::track::PID::Helium3 || positiveTrack.pidForTracking() == o2::track::PID::Alpha;
@@ -920,23 +961,23 @@ struct TrackedHypertritonRecoTask {
       const auto trackProton = trackDeuteron.sign() > 0 ? trackPositive : trackNegative;
       const auto trackPion = trackDeuteron.sign() > 0 ? trackNegative : trackPositive;
 
+      fillQAHistograms(trackProton, trackPion, trackDeuteron, false);
+
       if (builder3Body.buildDecay3BodyCandidate(collision, trackProton, trackPion, trackDeuteron,
                                                 decay3Body.globalIndex(), deuteronTOFNSigma(collision, trackDeuteron), tracked3Body.itsClsSize(),
                                                 threeBody.useKFParticle, threeBody.setTopologicalConstraint,
                                                 threeBody.useSelections, threeBody.useChi2Selection, threeBody.useTPCforPion,
                                                 threeBody.acceptTPCOnly, threeBody.askOnlyITSMatch, threeBody.calculateCovariance)) {
         // get DCA of ITS track to SV
-        const auto itsTrack = tracked3Body.itsTrack_as<Tracks>();
-        auto itsTrackParCov = getTrackParCov(itsTrack);
-        std::array<float, 2> dcaInfoItsTrack{};
-        o2::base::Propagator::Instance()->propagateToDCABxByBz({builder3Body.decay3body.position[0], builder3Body.decay3body.position[1], builder3Body.decay3body.position[2]}, itsTrackParCov, 2.f, fitter2Body.getMatCorrType(), &dcaInfoItsTrack);
+        std::array<float, 2> dcaInfoItsTrack = getItsTrackDCAToSV<Tracks>(tracked3Body);
         builder3Body.decay3body.itsTrackDCAToSV[0] = dcaInfoItsTrack[0];
         builder3Body.decay3body.itsTrackDCAToSV[1] = dcaInfoItsTrack[1];
         if (threeBody.useSelections && (std::abs(builder3Body.decay3body.itsTrackDCAToSV[0]) > threeBody.maxITSDCAxytrackToSV || std::abs(builder3Body.decay3body.itsTrackDCAToSV[1]) > threeBody.maxITSDCAztrackToSV)) {
           continue;
         }
 
-        fillThreeBodyTables();
+        fillQAHistograms(trackProton, trackPion, trackDeuteron, true);
+        fillThreeBodyTables(collision);
       }
     }
   }
@@ -957,13 +998,13 @@ struct TrackedHypertritonRecoTask {
     std::vector<bool> reconstructedThreeBody(mcParticles.size(), false);
 
     for (const auto& trackedV0 : trackedV0s) {
-      const auto v0 = trackedV0.v0_as<aod::V0s>();
-      if (v0.collisionId() < 0 || !goodCollision[v0.collisionId()]) {
+      const auto inputV0 = trackedV0.v0_as<aod::V0s>();
+      if (inputV0.collisionId() < 0 || !goodCollision[inputV0.collisionId()]) {
         continue;
       }
-      const auto collision = v0.collision_as<CollisionsMC>();
-      const auto positiveTrack = v0.posTrack_as<TracksMC>();
-      const auto negativeTrack = v0.negTrack_as<TracksMC>();
+      const auto collision = inputV0.collision_as<CollisionsMC>();
+      const auto positiveTrack = inputV0.posTrack_as<TracksMC>();
+      const auto negativeTrack = inputV0.negTrack_as<TracksMC>();
       const float nSigmaPositive = nSigmaHe3(positiveTrack);
       const float nSigmaNegative = nSigmaHe3(negativeTrack);
       const bool positiveTrackedAsHe = positiveTrack.pidForTracking() == o2::track::PID::Helium3 || positiveTrack.pidForTracking() == o2::track::PID::Alpha;
@@ -1014,18 +1055,39 @@ struct TrackedHypertritonRecoTask {
       const auto trackDeuteron = decay3Body.track2_as<TracksMC>();
       const auto trackProton = trackDeuteron.sign() > 0 ? trackPositive : trackNegative;
       const auto trackPion = trackDeuteron.sign() > 0 ? trackNegative : trackPositive;
+
+      fillQAHistograms(trackProton, trackPion, trackDeuteron, false);
+
       if (!builder3Body.buildDecay3BodyCandidate(collision, trackProton, trackPion, trackDeuteron,
                                                  decay3Body.globalIndex(), deuteronTOFNSigmaMC(collision, trackDeuteron), tracked3Body.itsClsSize(),
                                                  threeBody.useKFParticle, threeBody.setTopologicalConstraint,
                                                  threeBody.useSelections, threeBody.useChi2Selection, threeBody.useTPCforPion,
                                                  threeBody.acceptTPCOnly, threeBody.askOnlyITSMatch, threeBody.calculateCovariance)) {
+
         continue;
       }
+
+      fillQAHistograms(trackProton, trackPion, trackDeuteron, true);
       const auto mcInfo = getThreeBodyMCInfo(trackProton, trackPion, trackDeuteron, collision, mcParticles);
       if (mcInfo.motherLabel < 0 && !mc.storeBackground) {
         continue;
       }
+
+      // get DCA of ITS track to SV
+      std::array<float, 2> dcaInfoItsTrack = getItsTrackDCAToSV<TracksMC>(tracked3Body);
+      builder3Body.decay3body.itsTrackDCAToSV[0] = dcaInfoItsTrack[0];
+      builder3Body.decay3body.itsTrackDCAToSV[1] = dcaInfoItsTrack[1];
+      if (threeBody.useSelections && (std::abs(builder3Body.decay3body.itsTrackDCAToSV[0]) > threeBody.maxITSDCAxytrackToSV || std::abs(builder3Body.decay3body.itsTrackDCAToSV[1]) > threeBody.maxITSDCAztrackToSV)) {
+        continue;
+      }
+
       fillThreeBodyMCTable(mcInfo);
+      mcVtx3BodyCollision(true, // IsRecoMCCollision
+                          collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
+                          collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(),
+                          collision.posX(), collision.posY(), collision.posZ(),
+                          runNumber);
+
       if (mcInfo.motherLabel >= 0) {
         reconstructedThreeBody[mcInfo.motherLabel] = true;
       }
@@ -1066,19 +1128,16 @@ struct TrackedHypertritonRecoTask {
           hasPionTwoBody = true;
           hasPionThreeBody = true;
           threeBodyInfo.pionPdgCode = daughter.pdgCode();
-          threeBodyInfo.genMomentumPion = daughter.p();
-          threeBodyInfo.genPtPion = daughter.pt();
+          threeBodyInfo.genMomPion = {daughter.px(), daughter.py(), daughter.pz()};
         } else if (daughter.pdgCode() == sign * PDG_t::kProton) {
           hasProton = true;
           threeBodyInfo.protonPdgCode = daughter.pdgCode();
-          threeBodyInfo.genMomentumProton = daughter.p();
-          threeBodyInfo.genPtProton = daughter.pt();
+          threeBodyInfo.genMomProton = {daughter.px(), daughter.py(), daughter.pz()};
           threeBodyInfo.genDecayVertex = {daughter.vx(), daughter.vy(), daughter.vz()};
         } else if (daughter.pdgCode() == sign * constants::physics::Pdg::kDeuteron) {
           hasDeuteron = true;
           threeBodyInfo.deuteronPdgCode = daughter.pdgCode();
-          threeBodyInfo.genMomentumDeuteron = daughter.p();
-          threeBodyInfo.genPtDeuteron = daughter.pt();
+          threeBodyInfo.genMomDeuteron = {daughter.px(), daughter.py(), daughter.pz()};
           threeBodyInfo.isDeuteronPrimary = daughter.isPhysicalPrimary();
         }
       }
@@ -1087,6 +1146,8 @@ struct TrackedHypertritonRecoTask {
         float centralityFT0A = -1.f;
         float centralityFT0C = -1.f;
         float centralityFT0M = -1.f;
+        int trackOccupancyInTimeRange = -1;
+        float ft0cOccupancyInTimeRange = -1.f;
         float primaryVertexX = -1.f;
         float primaryVertexY = -1.f;
         float primaryVertexZ = -1.f;
@@ -1101,12 +1162,15 @@ struct TrackedHypertritonRecoTask {
             centralityFT0A = collision.centFT0A();
             centralityFT0C = collision.centFT0C();
             centralityFT0M = collision.centFT0M();
+            trackOccupancyInTimeRange = collision.trackOccupancyInTimeRange();
+            ft0cOccupancyInTimeRange = collision.ft0cOccupancyInTimeRange();
             primaryVertexX = collision.posX();
             primaryVertexY = collision.posY();
             primaryVertexZ = collision.posZ();
           }
         }
         mcHypCands(centralityFT0A, centralityFT0C, centralityFT0M,
+                   trackOccupancyInTimeRange, ft0cOccupancyInTimeRange,
                    primaryVertexX, primaryVertexY, primaryVertexZ,
                    runNumber, mother.pdgCode() > 0,
                    -1.f, -1.f, -1.f,
@@ -1122,11 +1186,40 @@ struct TrackedHypertritonRecoTask {
       }
 
       if (hasProton && hasPionThreeBody && hasDeuteron && !reconstructedThreeBody[mother.globalIndex()]) {
+        float centralityFT0A = -1.f;
+        float centralityFT0C = -1.f;
+        float centralityFT0M = -1.f;
+        int trackOccupancyInTimeRange = -1;
+        float ft0cOccupancyInTimeRange = -1.f;
+        float primaryVertexX = -1.f;
+        float primaryVertexY = -1.f;
+        float primaryVertexZ = -1.f;
+        bool isRecoMCCollision = false;
+        if (mother.mcCollisionId() >= 0 && mother.mcCollisionId() < static_cast<int>(recoCollisionForMC.size())) {
+          const int recoCollisionId = recoCollisionForMC[mother.mcCollisionId()];
+          isRecoMCCollision = recoCollisionId >= 0;
+          if (isRecoMCCollision) {
+            const auto collision = collisions.rawIteratorAt(recoCollisionId);
+            centralityFT0A = collision.centFT0A();
+            centralityFT0C = collision.centFT0C();
+            centralityFT0M = collision.centFT0M();
+            trackOccupancyInTimeRange = collision.trackOccupancyInTimeRange();
+            ft0cOccupancyInTimeRange = collision.ft0cOccupancyInTimeRange();
+            primaryVertexX = collision.posX();
+            primaryVertexY = collision.posY();
+            primaryVertexZ = collision.posZ();
+          }
+        }
         threeBodyInfo.genCt = RecoDecay::sqrtSumOfSquares(threeBodyInfo.genDecayVertex[0] - mother.vx(),
                                                           threeBodyInfo.genDecayVertex[1] - mother.vy(),
                                                           threeBodyInfo.genDecayVertex[2] - mother.vz()) *
                               constants::physics::MassHyperTriton / (mother.p() + 1.e-10f);
         fillGeneratedThreeBodyMCTable(threeBodyInfo);
+        mcVtx3BodyCollision(isRecoMCCollision,
+                            centralityFT0A, centralityFT0C, centralityFT0M,
+                            trackOccupancyInTimeRange, ft0cOccupancyInTimeRange,
+                            primaryVertexX, primaryVertexY, primaryVertexZ,
+                            runNumber);
       }
     }
   }

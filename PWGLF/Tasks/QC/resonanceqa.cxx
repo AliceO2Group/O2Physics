@@ -275,7 +275,7 @@ struct resonanceqa {
     histos.fill(HIST("hCentrality"), multiplicity);
     histos.fill(HIST("hNcontributor"), collision.numContrib());
     histos.fill(HIST("hVtxZ"), collision.posZ());
-    for (auto track1 : tracks) {
+    for (const auto& track1 : tracks) {
       if (!selectionTrack(track1)) {
         continue;
       }
@@ -289,7 +289,7 @@ struct resonanceqa {
       histos.fill(HIST("hNsigmaProtonTPC"), track1.tpcNSigmaPr());
       histos.fill(HIST("hNsigmaProtonTOF"), track1.tofNSigmaPr());
       auto track1ID = track1.globalIndex();
-      for (auto track2 : tracks) {
+      for (const auto& track2 : tracks) {
         if (!selectionTrack(track2)) {
           continue;
         }
@@ -388,7 +388,7 @@ struct resonanceqa {
         }
         auto daughtp = false;
         auto daughtm = false;
-        for (auto kCurrentDaughter : kDaughters) {
+        for (const auto& kCurrentDaughter : kDaughters) {
           if (!kCurrentDaughter.isPhysicalPrimary()) {
             continue;
           }
@@ -425,7 +425,7 @@ struct resonanceqa {
       return;
     }
     histos.fill(HIST("hMC"), 1.5);
-    for (auto track1 : tracks) {
+    for (const auto& track1 : tracks) {
       if (!selectionTrack(track1)) {
         continue;
       }
@@ -433,7 +433,7 @@ struct resonanceqa {
         continue;
       }
       auto track1ID = track1.globalIndex();
-      for (auto track2 : tracks) {
+      for (const auto& track2 : tracks) {
         if (!track2.has_mcParticle()) {
           continue;
         }

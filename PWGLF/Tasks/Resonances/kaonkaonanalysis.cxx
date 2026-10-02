@@ -454,7 +454,7 @@ struct kaonkaonAnalysisRun3 {
       histos.fill(HIST("multdist_FT0A"), collision.multFT0A());
       histos.fill(HIST("multdist_FT0C"), collision.multFT0C());
     }
-    for (auto track1 : tracks) {
+    for (const auto& track1 : tracks) {
       if (!selectionTrack(track1)) {
         continue;
       }
@@ -467,7 +467,7 @@ struct kaonkaonAnalysisRun3 {
         histos.fill(HIST("hNsigmaKaonTOF_TPC_before"), track1.tofNSigmaKa(), track1.tpcNSigmaKa());
       }
       auto track1ID = track1.index();
-      for (auto track2 : tracks) {
+      for (const auto& track2 : tracks) {
         if (!selectionTrack(track2)) {
           continue;
         }
@@ -605,7 +605,7 @@ struct kaonkaonAnalysisRun3 {
       }
       auto daughtp = false;
       auto daughtm = false;
-      for (auto kCurrentDaughter : kDaughters) {
+      for (const auto& kCurrentDaughter : kDaughters) {
         if (!kCurrentDaughter.isPhysicalPrimary()) {
           continue;
         }
@@ -634,7 +634,7 @@ struct kaonkaonAnalysisRun3 {
     histos.fill(HIST("Recmutiplicity"), multiplicity);
     histos.fill(HIST("hMC"), 5.5);
     auto oldindex = -999;
-    for (auto track1 : tracks) {
+    for (const auto& track1 : tracks) {
       if (!selectionTrack(track1)) {
         continue;
       }
@@ -642,7 +642,7 @@ struct kaonkaonAnalysisRun3 {
         continue;
       }
       auto track1ID = track1.index();
-      for (auto track2 : tracks) {
+      for (const auto& track2 : tracks) {
         if (!track2.has_mcParticle()) {
           continue;
         }

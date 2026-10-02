@@ -157,10 +157,11 @@ struct TrackSelectionTask {
     }
     if (isRun3) {
       for (const auto& track : tracks) {
+        const o2::aod::track::TrackSelectionFlags::flagtype trackflagGlob = globalTracks.IsSelectedMask(track);
 
         if (produceTable == 1) {
           filterTable((uint8_t)0,
-                      globalTracks.IsSelectedMask(track),
+                      trackflagGlob,
                       filtBit1.IsSelected(track),
                       filtBit2.IsSelected(track),
                       filtBit3.IsSelected(track),
@@ -168,7 +169,6 @@ struct TrackSelectionTask {
                       filtBit5.IsSelected(track));
         }
         if (produceFBextendedTable == 1) {
-          o2::aod::track::TrackSelectionFlags::flagtype trackflagGlob = globalTracks.IsSelectedMask(track);
           o2::aod::track::TrackSelectionFlags::flagtype trackflagFB1 = filtBit1.IsSelectedMask(track);
           o2::aod::track::TrackSelectionFlags::flagtype trackflagFB2 = filtBit2.IsSelectedMask(track);
           // o2::aod::track::TrackSelectionFlags::flagtype trackflagFB3 = filtBit3.IsSelectedMask(track); // only temporarily commented, will be used
@@ -201,7 +201,7 @@ struct TrackSelectionTask {
       o2::aod::track::TrackSelectionFlags::flagtype trackflagGlob = globalTracks.IsSelectedMask(track);
       if (produceTable == 1) {
         filterTable((uint8_t)globalTracksSDD.IsSelected(track),
-                    globalTracks.IsSelectedMask(track),
+                    trackflagGlob,
                     filtBit1.IsSelected(track),
                     filtBit2.IsSelected(track),
                     filtBit3.IsSelected(track),

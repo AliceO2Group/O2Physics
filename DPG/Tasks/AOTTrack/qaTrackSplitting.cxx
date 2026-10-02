@@ -134,10 +134,11 @@ struct qaTrackSplitting {
     if (!collision.sel8()) {
       return;
     }
-    typedef std::shared_ptr<TrackCandidatesMC::iterator> trkType;
+    using TrackType = const TrackCandidatesMC::iterator;
+    using TrackTypePtr = std::shared_ptr<TrackType>;
 
-    std::map<int64_t, std::vector<trkType>> particleUsageCounter;
-    for (auto track : tracks) {
+    std::map<int64_t, std::vector<TrackTypePtr>> particleUsageCounter;
+    for (const auto& track : tracks) {
       histos.fill(HIST("tracks"), 0);
       if (!track.has_mcParticle()) {
         continue;
@@ -156,7 +157,7 @@ struct qaTrackSplitting {
         continue;
       }
       histos.fill(HIST("tracks"), 4);
-      particleUsageCounter[track.mcParticleId()].push_back(std::make_shared<decltype(track)>(track));
+      particleUsageCounter[track.mcParticleId()].push_back(std::make_shared<TrackType>(track));
     }
     for (const auto& [mcId, tracksMatched] : particleUsageCounter) {
       histos.fill(HIST("numberOfRecoed"), tracksMatched.size());

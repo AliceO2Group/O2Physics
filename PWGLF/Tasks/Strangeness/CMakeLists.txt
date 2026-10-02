@@ -69,6 +69,11 @@ o2physics_add_dpl_workflow(derivedcascadeanalysis
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore O2Physics::AnalysisCCDB
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(derivedxi0analysis
+    SOURCES derivedXi0analysis.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(cascpostprocessing
     SOURCES cascpostprocessing.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -199,4 +204,9 @@ o2physics_add_dpl_workflow(strange-casc-track
 o2physics_add_dpl_workflow(zdccalderived
     SOURCES zdccalderived.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(forwardlambdakzeroanalysis
+    SOURCES forwardlambdakzeroanalysis.cxx
+    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2::GlobalTracking O2::DCAFitter
     COMPONENT_NAME Analysis)

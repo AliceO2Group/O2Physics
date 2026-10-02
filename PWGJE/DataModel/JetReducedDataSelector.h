@@ -26,14 +26,18 @@ namespace o2::aod
 namespace jetreduceddataselector
 {
 DECLARE_SOA_COLUMN(IsCollisionSelected, isCollisionSelected, bool);
+DECLARE_SOA_COLUMN(IsCollisionSelectedForSignalTriggerTrack, isCollisionSelectedForSignalTriggerTrack, bool);
 DECLARE_SOA_COLUMN(IsMcCollisionSelected, isMcCollisionSelected, bool);
+DECLARE_SOA_COLUMN(IsMcCollisionSelectedForSignalTriggerTrack, isMcCollisionSelectedForSignalTriggerTrack, bool);
 
 } // namespace jetreduceddataselector
 DECLARE_SOA_TABLE(JCollisionSelections, "AOD", "JCOLLSELECTION",
-                  jetreduceddataselector::IsCollisionSelected);
+                  jetreduceddataselector::IsCollisionSelected,
+                  jetreduceddataselector::IsCollisionSelectedForSignalTriggerTrack);
 
 DECLARE_SOA_TABLE(JMcCollisionSelections, "AOD", "JMCCOLLSELECTION",
-                  jetreduceddataselector::IsMcCollisionSelected);
+                  jetreduceddataselector::IsMcCollisionSelected,
+                  jetreduceddataselector::IsMcCollisionSelectedForSignalTriggerTrack);
 } // namespace o2::aod
 
 #endif // PWGJE_DATAMODEL_JETREDUCEDDATASELECTOR_H_

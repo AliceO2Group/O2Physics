@@ -23,7 +23,7 @@ typedef std::vector<int> HarSet;
 class GFWPowerArray
 {
  public:
-  static HarSet GetPowerArray(std::vector<HarSet> inHarmonics);
+  static HarSet GetPowerArray(const std::vector<HarSet>& inHarmonics);
   static void PowerArrayTest();
 
  private:

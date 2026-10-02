@@ -87,6 +87,10 @@ struct Chargedkstaranalysis {
     kAssocReco,
     kNSteps
   };
+  enum CollisionSystem : int {
+    OO = 1,
+    pp = 2
+  };
 
   const int nSteps = static_cast<int>(EvtStep::kNSteps);
 
@@ -95,6 +99,7 @@ struct Chargedkstaranalysis {
   Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
   bool currentIsGen = false;
   bool mcClosure = false;
+  bool sigLossDen = false;
   struct : ConfigurableGroup {
     ConfigurableAxis cfgvtxbins{"cfgvtxbins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
     ConfigurableAxis cfgmultbins{"cfgmultbins", {VARIABLE_WIDTH, 0., 1., 5., 10., 30., 50., 70., 100., 110.}, "Mixing bins - multiplicity"};
@@ -122,10 +127,13 @@ struct Chargedkstaranalysis {
     // Other cuts on Ks
     Configurable<int> rotationalCut{"rotationalCut", 6, "Cut value (Rotation angle pi - pi/cut and pi + pi/cut)"};
 
+    // for Kinematics checks
+    Configurable<bool> genKinematicsChecks{"genKinematicsChecks", false, "Activate the Kinematics cuts on the gen MC"};
+
     // fixed variables
     float rapidityMotherData = 0.5;
     float beamEnergy = 13600.0;
-    double beamMomentum = std::sqrt(beamEnergy * beamEnergy / 4 - o2::constants::physics::MassProton * o2::constants::physics::MassProton); // GeV
+    float beamEnergyOo = 5360.0;
     int noOfDaughters = 2;
   } helicityCfgs;
 
@@ -222,6 +230,8 @@ struct Chargedkstaranalysis {
     Configurable<float> cfgEventCentralityMin{"cfgEventCentralityMin", 0.0f, "Event sel: minimum centrality"};
     Configurable<float> cfgEventCentralityMax{"cfgEventCentralityMax", 100.0f, "Event sel: maximum centrality"};
     Configurable<int> cfgCentEst{"cfgCentEst", static_cast<int>(CentralityEstimator::FT0C), "Centrality estimator: 1=FT0C, 2=FT0M"};
+    Configurable<int> cfgColSyst{"cfgColSyst", static_cast<int>(CollisionSystem::pp), "Collision system: 1=OO, 2=pp"};
+
   } eventCutCfgs;
 
   // MC configurables
@@ -310,8 +320,9 @@ struct Chargedkstaranalysis {
   // int kPiPlus = kPiPlus;
   int kPDGK0 = kK0;
   // Variable declaration
-  ROOT::Math::PxPyPzEVector beam1{0., 0., -helicityCfgs.beamMomentum, 13600. / 2.};
-  ROOT::Math::PxPyPzEVector beam2{0., 0., helicityCfgs.beamMomentum, 13600. / 2.};
+
+  ROOT::Math::PxPyPzEVector beam1{0.0, 0.0, 0.0, 0.0};
+  ROOT::Math::PxPyPzEVector beam2{0.0, 0.0, 0.0, 0.0};
   double fMaxPosPV = 1e-2;
   void init(o2::framework::InitContext&)
   {
@@ -509,6 +520,15 @@ struct Chargedkstaranalysis {
     }
     // MC
     if (doprocessMC) {
+      histos.add("hEvtSelInfoMc", "hEvtSelInfoMc", kTH1F, {{5, 0, 5.0}});
+      auto hCutFlowMc = histos.get<TH1>(HIST("hEvtSelInfoMc"));
+      if (hCutFlowMc) {
+        hCutFlowMc->GetXaxis()->SetBinLabel(1, "All Events");
+        hCutFlowMc->GetXaxis()->SetBinLabel(2, "coll cuts");
+        hCutFlowMc->GetXaxis()->SetBinLabel(3, "rctChecker");
+        hCutFlowMc->GetXaxis()->SetBinLabel(4, "Multiplicity");
+        hCutFlowMc->GetXaxis()->SetBinLabel(5, "IsINELgt0");
+      }
       if (isQaRequired) {
         histos.add("QA/MC/QACent_woCut", "Centrality without cut", HistType::kTH1F, {centAxis});
         histos.add("QA/MC/QACent_woCentCut", "Centrality without cent cut", HistType::kTH1F, {centAxis});
@@ -565,9 +585,9 @@ struct Chargedkstaranalysis {
         histosMc.add("h3ChaKstarInvMassDSMcGen", "h3ChaKstarInvMassDSMcGen", kTHnSparseF, {centAxis, ptAxis, invMassAxisReso, thnAxisPOL}, true);
         histosMc.add("h3ChaKstarInvMassDSMcRec", "h3ChaKstarInvMassDSMcRec", kTHnSparseF, {centAxis, ptAxis, invMassAxisReso, thnAxisPOL}, true);
         histosMc.add("h3ChaKstarInvMassDSMcRecClosure", "h3ChaKstarInvMassDSMcRecClosure", kTHnSparseF, {centAxis, ptAxis, invMassAxisReso, thnAxisPOL}, true);
+        histosMc.add("sigLoss_den_pri_threeD", "sigLoss_den_pri_threeD", kTHnSparseF, {centAxis, ptAxis, thnAxisPOL}, true);
 
         if (mcCfgs.doBkgMc) {
-          histosMc.add("h3ChaKstarInvMassRotMcGen", "h3ChaKstarInvMassRotMcGen", kTHnSparseF, {centAxis, ptAxis, invMassAxisReso, thnAxisPOL}, true);
           histosMc.add("h3ChaKstarInvMassRotMcRec", "h3ChaKstarInvMassRotMcRec", kTHnSparseF, {centAxis, ptAxis, invMassAxisReso, thnAxisPOL}, true);
           histosMc.add("h3ChaKstarInvMassRotMcRecClosure", "h3ChaKstarInvMassRotMcRecClosure", kTHnSparseF, {centAxis, ptAxis, invMassAxisReso, thnAxisPOL}, true);
         }
@@ -591,7 +611,15 @@ struct Chargedkstaranalysis {
       hstep->GetXaxis()->SetBinLabel(3, "INEL>0");
       hstep->GetXaxis()->SetBinLabel(4, "Assoc with reco coll");
     }
-
+    if (eventCutCfgs.cfgColSyst == static_cast<int>(CollisionSystem::OO)) {
+      double selectedBeamMomentum = std::sqrt((helicityCfgs.beamEnergyOo * helicityCfgs.beamEnergyOo / 4.0) - (o2::constants::physics::MassProton * o2::constants::physics::MassProton));
+      beam1.SetPxPyPzE(0., 0., -selectedBeamMomentum, helicityCfgs.beamEnergyOo / 2.);
+      beam2.SetPxPyPzE(0., 0., selectedBeamMomentum, helicityCfgs.beamEnergyOo / 2.);
+    } else {
+      double selectedBeamMomentum = std::sqrt((helicityCfgs.beamEnergy * helicityCfgs.beamEnergy / 4.0) - (o2::constants::physics::MassProton * o2::constants::physics::MassProton));
+      beam1.SetPxPyPzE(0., 0., -selectedBeamMomentum, helicityCfgs.beamEnergy / 2.);
+      beam2.SetPxPyPzE(0., 0., selectedBeamMomentum, helicityCfgs.beamEnergy / 2.);
+    }
     ccdb->setURL(cfgURL);
     ccdbApi.init("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
@@ -817,9 +845,11 @@ struct Chargedkstaranalysis {
 
     // 2. MC Generated Path
     if (currentIsGen) {
-      if (isRot) {
-        histosMc.fill(HIST("h3ChaKstarInvMassRotMcGen"), multiplicity, mother.Pt(), mother.M(), cosTheta);
+      if (sigLossDen) {
+        // Fill ONLY the Signal Loss Denominator 3D Histograms
+        histosMc.fill(HIST("sigLoss_den_pri_threeD"), multiplicity, mother.Pt(), cosTheta);
       } else {
+        // Fill standard 4D MC Gen Histograms
         histosMc.fill(HIST("h3ChaKstarInvMassDSMcGen"), multiplicity, mother.Pt(), mother.M(), cosTheta);
       }
       return;
@@ -840,7 +870,6 @@ struct Chargedkstaranalysis {
       }
     }
   }
-
   template <typename T>
   void fillInvMass(const T& mother, float multiplicity, const T& daughter1, const T& daughter2, bool isMix)
   {
@@ -887,7 +916,7 @@ struct Chargedkstaranalysis {
     auto phiCS = std::atan2(yAxisCS.Dot(v1CM), xAxisCS.Dot(v1CM));
     phiCS = RecoDecay::constrainAngle(phiCS, 0.0);
 
-    bool doRotation = !doprocessMC || mcCfgs.doBkgMc;
+    bool doRotation = !doprocessMC || (!currentIsGen && mcCfgs.doBkgMc);
     // if (std::abs(mother.Rapidity()) < config.rapidityMotherData) {
     if (helicityCfgs.activateHelicityFrame) {
       // helicityVec = mother.Vect(); // 3 vector of mother in COM frame
@@ -1067,8 +1096,8 @@ struct Chargedkstaranalysis {
   void fillHistograms(const CollisionType& collision, const TracksType& dTracks1, const TracksTypeK0s& dTracks2)
   {
     if (!doprocessMC && isQaRequired) {
-      histos.fill(HIST("QA/before/CentDist"), collision.centFT0M());
-      histos.fill(HIST("QA/before/CentDist1"), collision.centFT0M());
+      histos.fill(HIST("QA/before/CentDist"), getCentrality(collision));
+      histos.fill(HIST("QA/before/CentDist1"), getCentrality(collision));
     }
 
     ROOT::Math::PxPyPzMVector lResoSecondary, lDecayDaughter_bach, lResoKstar, chargeKstarrot;
@@ -1349,7 +1378,7 @@ struct Chargedkstaranalysis {
   }
   PROCESS_SWITCH(Chargedkstaranalysis, processDataME, "Process Event for data without Partitioning", true);
 
-  void processMC(soa::Join<aod::McCollisions, aod::McCentFT0Ms> const& mccolls, aod::McParticles const& mcParticles, soa::Join<EventCandidates, aod::McCollisionLabels> const& events, MCV0Candidates const& v0s, MCTrackCandidates const& tracks)
+  void processMC(soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::McCentFT0Cs> const& mccolls, aod::McParticles const& mcParticles, soa::Join<EventCandidates, aod::McCollisionLabels> const& events, MCV0Candidates const& v0s, MCTrackCandidates const& tracks)
   {
     allowedMcIds.clear();
     centTruthByAllowed.clear();
@@ -1361,11 +1390,11 @@ struct Chargedkstaranalysis {
       if (!coll.has_mcCollision()) {
         continue;
       }
-
+      histos.fill(HIST("hEvtSelInfoMc"), 0.5);
       const auto mcid = coll.mcCollisionId();
 
-      const auto mccoll = coll.template mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>();
-      const float lCentrality = mccoll.centFT0M();
+      const auto mccoll = coll.template mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::McCentFT0Cs>>();
+      const float lCentrality = getCentrality(mccoll);
 
       if (doprocessMC && isQaRequired) {
         histos.fill(HIST("QA/MC/QACent_woCut"), lCentrality);
@@ -1374,21 +1403,24 @@ struct Chargedkstaranalysis {
       if (!colCuts.isSelected(coll)) {
         continue;
       }
+      histos.fill(HIST("hEvtSelInfoMc"), 1.5);
       if (rctCut.requireRCTFlagChecker && !rctCut.rctChecker(coll)) {
         continue;
       }
+      histos.fill(HIST("hEvtSelInfoMc"), 2.5);
+      if (lCentrality < eventCutCfgs.cfgEventCentralityMin || lCentrality > eventCutCfgs.cfgEventCentralityMax) {
+        continue;
+      }
+      histos.fill(HIST("hEvtSelInfoMc"), 3.5);
       if (!coll.isInelGt0()) {
         continue;
       }
+      histos.fill(HIST("hEvtSelInfoMc"), 4.5);
       colCuts.fillQA(coll);
 
       if (doprocessMC && isQaRequired) {
         histos.fill(HIST("QA/MC/QACent_woCentCut"), lCentrality);
         histos.fill(HIST("QA/MC/QAvtxz_wVtxzCut"), coll.posZ());
-      }
-
-      if (lCentrality < eventCutCfgs.cfgEventCentralityMin || lCentrality > eventCutCfgs.cfgEventCentralityMax) {
-        continue;
       }
 
       if (doprocessMC && isQaRequired) {
@@ -1420,13 +1452,13 @@ struct Chargedkstaranalysis {
 
       const auto mcid = coll.globalIndex();
       refClassIds.insert(mcid);
-      const float lCentrality = coll.centFT0M();
+      const float lCentrality = getCentrality(coll);
       refCentByMcId.emplace(mcid, lCentrality);
     }
-
+    currentIsGen = true;
+    sigLossDen = false;
     // Calculating the generated Kstar
     for (const auto& part : mcParticles) {
-      currentIsGen = true;
       if (!part.has_mcCollision()) {
         continue;
       }
@@ -1446,15 +1478,35 @@ struct Chargedkstaranalysis {
         const int pdg1 = d1.pdgCode();
         if (pdg1 == pionWanted) {
           lDecayDaughter_bach = LorentzVectorSetXYZM(d1.px(), d1.py(), d1.pz(), MassPionCharged);
+          if (helicityCfgs.genKinematicsChecks) {
+            if (lDecayDaughter_bach.pt() <= trackCutCfgs.cMinPtcut || std::abs(lDecayDaughter_bach.eta()) >= trackCutCfgs.cMaxEtacut) {
+              continue;
+            }
+          }
           hasRightPion = true;
         } else if (std::abs(pdg1) == kPDGK0) {
           for (const auto& d2 : d1.template daughters_as<aod::McParticles>()) {
             if (std::abs(d2.pdgCode()) == kPDGK0s) {
+              if (helicityCfgs.genKinematicsChecks) {
+                if (d2.pt() <= secondaryCutsCfgs.cSecondaryPtMin || std::abs(d2.eta()) >= secondaryCutsCfgs.cSecondaryRapidityMax) {
+                  continue;
+                }
+              }
               bool seenPip = false, seenPim = false;
               for (const auto& d3 : d2.template daughters_as<aod::McParticles>()) {
                 if (d3.pdgCode() == +kPiPlus) {
+                  if (helicityCfgs.genKinematicsChecks) {
+                    if (d3.pt() <= trackCutCfgs.cMinPtcut || std::abs(d3.eta()) >= trackCutCfgs.cMaxEtacut) {
+                      continue;
+                    }
+                  }
                   seenPip = true;
                 } else if (d3.pdgCode() == -kPiPlus) {
+                  if (helicityCfgs.genKinematicsChecks) {
+                    if (d3.pt() <= trackCutCfgs.cMinPtcut || std::abs(d3.eta()) >= trackCutCfgs.cMaxEtacut) {
+                      continue;
+                    }
+                  }
                   seenPim = true;
                 }
               }
@@ -1488,18 +1540,111 @@ struct Chargedkstaranalysis {
       const float lCentrality = iter->second;
 
       histos.fill(HIST("EffKstar/genKstar"), part.pt(), lCentrality);
+      if (part.vt() == 0) {
+        histos.fill(HIST("EffKstar/genKstar_pri"), part.pt(), lCentrality); // To check the primary particle
+        if (helicityCfgs.cCosWithKShot) {
+          fillInvMass(lResoKstar, lCentrality, lResoSecondary, lDecayDaughter_bach, eventCutCfgs.confIsMix);
+        } else {
+          fillInvMass(lResoKstar, lCentrality, lDecayDaughter_bach, lResoSecondary, eventCutCfgs.confIsMix);
+        }
+      }
+    }
+    sigLossDen = true;
+    // To calculate the denominator -> To check the all the events have chk892
+    for (auto const& part : mcParticles) {
+      if (!part.has_mcCollision()) {
+        continue;
+      }
+      if (std::abs(part.pdgCode()) != kKstarPlus) {
+        continue;
+      }
+      if (std::abs(part.y()) > kstarCutCfgs.cKstarMaxRap) {
+        continue;
+      }
+
+      const auto mcid = part.mcCollisionId();
+      if (!refClassIds.contains(mcid)) {
+        continue;
+      }
+
+      auto iter = refCentByMcId.find(mcid);
+      if (iter == refCentByMcId.end()) {
+        continue;
+      }
+
+      const float lCentrality = iter->second;
+
+      histos.fill(HIST("Correction/sigLoss_den"), part.pt(), lCentrality);
+      if (part.vt() == 0) {
+        histos.fill(HIST("Correction/sigLoss_den_pri"), part.pt(), lCentrality);
+      }
+      LorentzVectorSetXYZM lResoSecondary, lDecayDaughter_bach, lResoKstar, lDaughterRot;
+      lResoKstar = LorentzVectorSetXYZM(part.px(), part.py(), part.pz(), MassKPlusStar892);
+      const int pionWanted = (part.pdgCode() > 0) ? +kPiPlus : -kPiPlus;
+      bool hasRightPion = false;
+      bool hasK0sToPipi = false;
+      for (const auto& d1 : part.template daughters_as<aod::McParticles>()) {
+        const int pdg1 = d1.pdgCode();
+        if (pdg1 == pionWanted) {
+          lDecayDaughter_bach = LorentzVectorSetXYZM(d1.px(), d1.py(), d1.pz(), MassPionCharged);
+          if (helicityCfgs.genKinematicsChecks) {
+            if (lDecayDaughter_bach.pt() <= trackCutCfgs.cMinPtcut || std::abs(lDecayDaughter_bach.eta()) >= trackCutCfgs.cMaxEtacut) {
+              continue;
+            }
+          }
+          hasRightPion = true;
+        } else if (std::abs(pdg1) == kPDGK0) {
+          for (const auto& d2 : d1.template daughters_as<aod::McParticles>()) {
+            if (std::abs(d2.pdgCode()) == kPDGK0s) {
+              if (helicityCfgs.genKinematicsChecks) {
+                if (d2.pt() <= secondaryCutsCfgs.cSecondaryPtMin || std::abs(d2.eta()) >= secondaryCutsCfgs.cSecondaryRapidityMax) {
+                  continue;
+                }
+              }
+              bool seenPip = false, seenPim = false;
+              for (const auto& d3 : d2.template daughters_as<aod::McParticles>()) {
+                if (d3.pdgCode() == +kPiPlus) {
+                  if (helicityCfgs.genKinematicsChecks) {
+                    if (d3.pt() <= trackCutCfgs.cMinPtcut || std::abs(d3.eta()) >= trackCutCfgs.cMaxEtacut) {
+                      continue;
+                    }
+                  }
+                  seenPip = true;
+                } else if (d3.pdgCode() == -kPiPlus) {
+                  if (helicityCfgs.genKinematicsChecks) {
+                    if (d3.pt() <= trackCutCfgs.cMinPtcut || std::abs(d3.eta()) >= trackCutCfgs.cMaxEtacut) {
+                      continue;
+                    }
+                  }
+                  seenPim = true;
+                }
+              }
+              if (seenPip && seenPim) {
+                lResoSecondary = LorentzVectorSetXYZM(d2.px(), d2.py(), d2.pz(), MassK0Short);
+                hasK0sToPipi = true;
+                break;
+              }
+            }
+          }
+        }
+        if (hasRightPion && hasK0sToPipi) {
+          break;
+        }
+      }
+
+      if (!(hasRightPion && hasK0sToPipi)) {
+        continue;
+      }
       if (helicityCfgs.cCosWithKShot) {
         fillInvMass(lResoKstar, lCentrality, lResoSecondary, lDecayDaughter_bach, eventCutCfgs.confIsMix);
       } else {
         fillInvMass(lResoKstar, lCentrality, lDecayDaughter_bach, lResoSecondary, eventCutCfgs.confIsMix);
       }
-      if (part.vt() == 0) {
-        histos.fill(HIST("EffKstar/genKstar_pri"), part.pt(), lCentrality); // To check the primary particle
-      }
     }
+
+    currentIsGen = false;
     // To store the recoKstar
     for (const auto& v0 : v0s) {
-      currentIsGen = false;
       auto coll = v0.template collision_as<MCEventCandidates>();
 
       if (!coll.has_mcCollision()) {
@@ -1510,8 +1655,8 @@ struct Chargedkstaranalysis {
         continue; // To check the event is allowed or not
       }
 
-      const auto mccoll = coll.template mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>();
-      const float lCentrality = mccoll.centFT0M();
+      const auto mccoll = coll.template mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::McCentFT0Cs>>();
+      const float lCentrality = getCentrality(mccoll);
 
       if (!secondaryCutsCfgs.cfgByPassDauPIDSelection) {
         auto posDauTrack = v0.template posTrack_as<MCTrackCandidates>();
@@ -1639,35 +1784,6 @@ struct Chargedkstaranalysis {
       histos.fill(HIST("Correction/sigLoss_num"), part.pt(), lCentrality);
       if (part.vt() == 0) {
         histos.fill(HIST("Correction/sigLoss_num_pri"), part.pt(), lCentrality);
-      }
-    }
-    // To calculate the denominator -> To check the all the events have chk892
-    for (auto const& part : mcParticles) {
-      if (!part.has_mcCollision()) {
-        continue;
-      }
-      if (std::abs(part.pdgCode()) != kKstarPlus) {
-        continue;
-      }
-      if (std::abs(part.y()) > kstarCutCfgs.cKstarMaxRap) {
-        continue;
-      }
-
-      const auto mcid = part.mcCollisionId();
-      if (!refClassIds.contains(mcid)) {
-        continue;
-      }
-
-      auto iter = refCentByMcId.find(mcid);
-      if (iter == refCentByMcId.end()) {
-        continue;
-      }
-
-      const float lCentrality = iter->second;
-
-      histos.fill(HIST("Correction/sigLoss_den"), part.pt(), lCentrality);
-      if (part.vt() == 0) {
-        histos.fill(HIST("Correction/sigLoss_den_pri"), part.pt(), lCentrality);
       }
     }
     // To calculate the event fraction correction
