@@ -18,6 +18,7 @@
 #include "PWGLF/Utils/rsnOutput.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -62,6 +63,7 @@ using namespace o2;
 using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::aod::rctsel;
 
 struct PhianalysisTHnSparse {
 
@@ -98,11 +100,15 @@ struct PhianalysisTHnSparse {
     Configurable<float> etatrack{"etatrack", 1.0f, "Cut: Maximal value of tracks eta."};
     Configurable<float> dcaXY{"dcaXY", 1.0f, "Cut: Maximal value of tracks DCA XY."};
     Configurable<float> dcaZ{"dcaZ", 1.0f, "Cut: Maximal value of tracks DCA Z."};
+    Configurable<bool> ptDependentDCA{"ptDependentDCA", false, "Use pT dependent DCA cut according to formula dcaXY = n_sigma * (0.0105 + 0.0350 * pow(pt, -1.1))."};
+    Configurable<float> dcaNSigma{"dcaNSigma", 7.0f, "Cut: Maximal value of tracks DCA NSigma."};
     Configurable<float> tpcnSigmaPos{"tpcnSigmaPos", 10.0f, "Cut: Maximal value of TPC NSigma of the positive particle."};
     Configurable<float> tpcnSigmaNeg{"tpcnSigmaNeg", 10.0f, "Cut: Maximal value of TPC NSigma of the negative particle."};
     Configurable<bool> tpcPidOnly{"tpcPidOnly", false, "Use TPC only for PID."};
     Configurable<float> combinedNSigma{"combinedNSigma", 3.0f, "Cut: Maximal value of NSigma for combined TPC and TOF NSigma cut."};
     Configurable<float> ptTOFThreshold{"ptTOFThreshold", 0.5f, "Cut: Minimal value of tracks pt for using TOF PID."};
+    Configurable<float> tofNSigmaPosShift{"tofNSigmaPosShift", 0.0f, "Shift of TOF NSigma of the positive particle."};
+    Configurable<float> tofNSigmaNegShift{"tofNSigmaNegShift", 0.0f, "Shift of TOF NSigma of the negative particle."};
     Configurable<int> tpcNClsFound{"tpcNClsFound", 0, "Cut: Minimal value of found TPC clusters"};
     Configurable<int> tpcNClsCrossedRows{"tpcNClsCrossedRows", 0, "Cut: Minimal value of crossed rows in TPC"};
     Configurable<bool> globalTrack{"globalTrack", false, "Use isGlobalTrack track selection."};
@@ -110,6 +116,17 @@ struct PhianalysisTHnSparse {
     Configurable<bool> pvContributor{"pvContributor", false, "Use isPVContributor track selection."};
     Configurable<float> rapidity{"rapidity", 0.5f, "Cut: Maximal value of particle rapidity."};
   } trackCuts;
+
+  struct : ConfigurableGroup {
+    Configurable<bool> bcBorderCutsGen{"bcBorderCutsGen", false, "Use BC TF/ITS ROF border cuts on Gen events."};
+    Configurable<bool> rctCheckGen{"rctCheckGen", false, "Use RCT flag cut on Gen events."};
+    Configurable<std::string> rctCheckerLabel{"rctCheckerLabel", "CBT_hadronPID", "RCT flag checker label"};
+    Configurable<bool> rctCheckerZDC{"rctCheckerZDC", false, "RCT flag checker ZDC check"};
+    Configurable<bool> rctCheckerLimitAcceptAsBad{"rctCheckerLimitAcceptAsBad", false, "RCT flag checker treat Limited Acceptance As Bad"};
+
+  } mcCuts;
+
+  RCTFlagsChecker rctChecker;
 
   Configurable<std::vector<std::string>> sparseAxes{"sparseAxes", std::vector<std::string>{o2::analysis::rsn::pair_axis::names}, "Axes."};
   Configurable<std::vector<std::string>> sysAxes{"sysAxes", std::vector<std::string>{o2::analysis::rsn::systematic_axis::names}, "Axes."};
@@ -148,8 +165,8 @@ struct PhianalysisTHnSparse {
 
   // Axes specifications
   AxisSpec vzQAaxis = {200, -20., 20., "V_{z} (cm)"};
-  AxisSpec dcaXYQAaxis = {200, -0.5, 0.5, "DCA_{xy} (cm)"};
-  AxisSpec dcaZQAaxis = {200, -0.5, 0.5, "DCA_{z} (cm)"};
+  AxisSpec dcaXYQAaxis = {2000, -0.2, 0.2, "DCA_{xy} (cm)"};
+  AxisSpec dcaZQAaxis = {2000, -0.2, 0.2, "DCA_{z} (cm)"};
   AxisSpec etaQAaxis = {200, -1.0, 1.0, "#eta"};
   AxisSpec rapidityQAaxis = {200, -1.0, 1.0, "y"};
   AxisSpec tpcNClsQAaxis = {200, 0., 200., "TPC NClusters"};
@@ -238,6 +255,8 @@ struct PhianalysisTHnSparse {
     rsnOutput = new o2::analysis::rsn::OutputSparse();
     rsnOutput->init(sparseAxes, allAxes, sysAxes, allAxesSys, static_cast<bool>(produce.produceMC), mixingType, static_cast<bool>(produce.produceLikesign), static_cast<bool>(produce.produceRotational), static_cast<bool>(eventCuts.inelGt0), &registry);
 
+    rctChecker.init(mcCuts.rctCheckerLabel, mcCuts.rctCheckerZDC, mcCuts.rctCheckerLimitAcceptAsBad, mcCuts.rctCheckGen);
+
     // Print summary of configuration
     LOGF(info, "=== PhianalysisTHnSparse configuration summary ===");
     LOGF(info, "produceMC: %s", static_cast<bool>(produce.produceMC) ? "true" : "false");
@@ -261,6 +280,8 @@ struct PhianalysisTHnSparse {
     LOGF(info, "tpcPidOnly: %s", static_cast<bool>(trackCuts.tpcPidOnly) ? "true" : "false");
     LOGF(info, "combinedNSigma: %.2f", static_cast<float>(trackCuts.combinedNSigma));
     LOGF(info, "ptTOFThreshold: %.2f", static_cast<float>(trackCuts.ptTOFThreshold));
+    LOGF(info, "tofNSigmaPosShift: %.2f", static_cast<float>(trackCuts.tofNSigmaPosShift));
+    LOGF(info, "tofNSigmaNegShift: %.2f", static_cast<float>(trackCuts.tofNSigmaNegShift));
     LOGF(info, "tpcNClsFound: %d", static_cast<int>(trackCuts.tpcNClsFound));
     LOGF(info, "tpcNClsCrossedRows: %d", static_cast<int>(trackCuts.tpcNClsCrossedRows));
     LOGF(info, "globalTrack: %s", static_cast<bool>(trackCuts.globalTrack) ? "true" : "false");
@@ -446,24 +467,28 @@ struct PhianalysisTHnSparse {
 
       // ----------------------- MC Corrections -----------------------
 
-      registry.add("QAMC/Gen/hNEvents", "Number of MC Gen Events", kTH1F, {{6, 0.0f, 6.0f}});
+      registry.add("QAMC/Gen/hNEvents", "Number of MC Gen Events", kTH1F, {{8, 0.0f, 8.0f}});
       auto hNEventsGen = registry.get<TH1>(HIST("QAMC/Gen/hNEvents"));
-      hNEventsGen->GetXaxis()->SetBinLabel(1, "all");          // All generated events
-      hNEventsGen->GetXaxis()->SetBinLabel(2, "V_z cut");      // Generated events passing Vz cut
-      hNEventsGen->GetXaxis()->SetBinLabel(3, "INEL");         // Generated events passing INEL cut
-      hNEventsGen->GetXaxis()->SetBinLabel(4, "INEL>0");       // Passing INELgt0 cut --> EL numerator for INEL>0
-      hNEventsGen->GetXaxis()->SetBinLabel(5, "ALORE INEL");   // Passing ALORE INEL cut
-      hNEventsGen->GetXaxis()->SetBinLabel(6, "ALORE INEL>0"); // Passing ALORE INEL>0 cut
+      hNEventsGen->GetXaxis()->SetBinLabel(1, "all");                  // All generated events
+      hNEventsGen->GetXaxis()->SetBinLabel(2, "V_z cut");              // Generated events passing Vz cut
+      hNEventsGen->GetXaxis()->SetBinLabel(3, "BC TF/ITS ROF border"); // Passing BC TF/ITS ROF border cut
+      hNEventsGen->GetXaxis()->SetBinLabel(4, "RCTFlagsChecker");      // Passing RCTFlagsChecker cut
+      hNEventsGen->GetXaxis()->SetBinLabel(5, "INEL");                 // Generated events passing INEL cut
+      hNEventsGen->GetXaxis()->SetBinLabel(6, "INEL>0");               // Passing INELgt0 cut --> EL numerator for INEL>0
+      hNEventsGen->GetXaxis()->SetBinLabel(7, "ALORE INEL");           // Passing ALORE INEL cut
+      hNEventsGen->GetXaxis()->SetBinLabel(8, "ALORE INEL>0");         // Passing ALORE INEL>0 cut
       hNEventsGen->SetMinimum(0.1);
 
-      registry.add("QAMC/Gen/hNEventsCent", "Generated events", HistType::kTH2F, {centQAAxis, {6, 0, 6}});
+      registry.add("QAMC/Gen/hNEventsCent", "Generated events", HistType::kTH2F, {centQAAxis, {8, 0, 8}});
       auto hNEventsGenCent = registry.get<TH2>(HIST("QAMC/Gen/hNEventsCent"));
       hNEventsGenCent->GetYaxis()->SetBinLabel(1, "all");
       hNEventsGenCent->GetYaxis()->SetBinLabel(2, "V_z cut");
-      hNEventsGenCent->GetYaxis()->SetBinLabel(3, "INEL");
-      hNEventsGenCent->GetYaxis()->SetBinLabel(4, "INEL>0");
-      hNEventsGenCent->GetYaxis()->SetBinLabel(5, "ALORE INEL");
-      hNEventsGenCent->GetYaxis()->SetBinLabel(6, "ALORE INEL>0");
+      hNEventsGenCent->GetYaxis()->SetBinLabel(3, "BC TF/ITS ROF border");
+      hNEventsGenCent->GetYaxis()->SetBinLabel(4, "RCTFlagsChecker");
+      hNEventsGenCent->GetYaxis()->SetBinLabel(5, "INEL");
+      hNEventsGenCent->GetYaxis()->SetBinLabel(6, "INEL>0");
+      hNEventsGenCent->GetYaxis()->SetBinLabel(7, "ALORE INEL");
+      hNEventsGenCent->GetYaxis()->SetBinLabel(8, "ALORE INEL>0");
 
       registry.add("QAMC/Rec/hNEvents", "Number of MC Rec Events", kTH1F, {{3, 0.0f, 3.0f}});
       auto hNEventsRec = registry.get<TH1>(HIST("QAMC/Rec/hNEvents"));
@@ -600,13 +625,14 @@ struct PhianalysisTHnSparse {
   {
     float tofNsigma = 0.0f;
     int particleType = (track.sign() > 0) ? static_cast<int>(daughterPos) : static_cast<int>(daughterNeg);
+    float tofNSigmaShift = (track.sign() > 0) ? static_cast<float>(trackCuts.tofNSigmaPosShift) : static_cast<float>(trackCuts.tofNSigmaNegShift);
 
     if (particleType == pion) {
-      tofNsigma = track.tofNSigmaPi();
+      tofNsigma = track.tofNSigmaPi() + tofNSigmaShift;
     } else if (particleType == kaon) {
-      tofNsigma = track.tofNSigmaKa();
+      tofNsigma = track.tofNSigmaKa() + tofNSigmaShift;
     } else if (particleType == proton) {
-      tofNsigma = track.tofNSigmaPr();
+      tofNsigma = track.tofNSigmaPr() + tofNSigmaShift;
     }
     return tofNsigma;
   }
@@ -631,7 +657,13 @@ struct PhianalysisTHnSparse {
       registry.fill(HIST("QA/Track/hSelection"), 2.5);
     }
 
-    if (std::abs(track.dcaXY()) >= static_cast<float>(trackCuts.dcaXY) ||
+    float dcaXY = static_cast<float>(trackCuts.dcaXY);
+    if (static_cast<bool>(trackCuts.ptDependentDCA)) {
+      double dcaNSigma = static_cast<double>(trackCuts.dcaNSigma);
+      dcaXY = (dcaNSigma / 7) * (0.0105 + 0.0350 / std::pow(track.pt(), 1.1));
+    }
+
+    if (std::abs(track.dcaXY()) >= dcaXY ||
         std::abs(track.dcaZ()) >= static_cast<float>(trackCuts.dcaZ)) {
       return false;
     }
@@ -729,6 +761,30 @@ struct PhianalysisTHnSparse {
     pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::vzm)] = vzm;
 
     return pointPair;
+  }
+
+  template <typename T>
+  bool selectedGenEventBcBorderCuts(T const& bc)
+  {
+    if (!static_cast<bool>(mcCuts.bcBorderCutsGen)) {
+      return true;
+    }
+    if (static_cast<bool>(eventCuts.noTimeFrameBorder) && !bc.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+      return false;
+    }
+    if (static_cast<bool>(eventCuts.noITSROFrameBorder) && !bc.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+      return false;
+    }
+    return true;
+  }
+
+  template <typename TBC>
+  bool selectedGenEventRCT(TBC const& bc)
+  {
+    if (!static_cast<bool>(mcCuts.rctCheckGen)) {
+      return true;
+    }
+    return !static_cast<bool>(mcCuts.rctCheckGen) || rctChecker(bc);
   }
 
   void processQA(EventCandidate const& collision, TrackCandidates const& tracks)
@@ -1569,14 +1625,29 @@ struct PhianalysisTHnSparse {
     registry.fill(HIST("QAMC/Gen/hNEvents"), 1.5);
     registry.fill(HIST("QAMC/Gen/hNEventsCent"), mcCollision.centFT0M(), 1.5);
 
+    // Accepted generated border cuts
+    const auto bc = mcCollision.bc_as<soa::Join<aod::BCsWithTimestamps, aod::BcSels>>();
+    if (!selectedGenEventBcBorderCuts(bc)) {
+      return;
+    }
     registry.fill(HIST("QAMC/Gen/hNEvents"), 2.5);
     registry.fill(HIST("QAMC/Gen/hNEventsCent"), mcCollision.centFT0M(), 2.5);
+
+    // Accepted generated event RCT flags
+    if (!selectedGenEventRCT(bc)) {
+      return;
+    }
+    registry.fill(HIST("QAMC/Gen/hNEvents"), 3.5);
+    registry.fill(HIST("QAMC/Gen/hNEventsCent"), mcCollision.centFT0M(), 3.5);
+
+    registry.fill(HIST("QAMC/Gen/hNEvents"), 4.5);
+    registry.fill(HIST("QAMC/Gen/hNEventsCent"), mcCollision.centFT0M(), 4.5);
 
     bool isINELgt0 = false;
     if (pwglf::isINELgtNmc(mcParticles, 0, pdg)) {
       isINELgt0 = true;
-      registry.fill(HIST("QAMC/Gen/hNEvents"), 3.5);
-      registry.fill(HIST("QAMC/Gen/hNEventsCent"), mcCollision.centFT0M(), 3.5); // Event Loss Denominator
+      registry.fill(HIST("QAMC/Gen/hNEvents"), 5.5);
+      registry.fill(HIST("QAMC/Gen/hNEventsCent"), mcCollision.centFT0M(), 5.5); // Event Loss Denominator
     }
 
     for (const auto& mcParticle : mcParticles) {
@@ -1641,12 +1712,12 @@ struct PhianalysisTHnSparse {
       return;
     }
 
-    registry.fill(HIST("QAMC/Gen/hNEvents"), 4.5);
-    registry.fill(HIST("QAMC/Gen/hNEventsCent"), mcCollision.centFT0M(), 4.5);
+    registry.fill(HIST("QAMC/Gen/hNEvents"), 6.5);
+    registry.fill(HIST("QAMC/Gen/hNEventsCent"), mcCollision.centFT0M(), 6.5);
 
     if (nRecoInelGt0Coll > 0) {
-      registry.fill(HIST("QAMC/Gen/hNEvents"), 5.5);
-      registry.fill(HIST("QAMC/Gen/hNEventsCent"), mcCollision.centFT0M(), 5.5); // Event Loss Numerator
+      registry.fill(HIST("QAMC/Gen/hNEvents"), 7.5);
+      registry.fill(HIST("QAMC/Gen/hNEventsCent"), mcCollision.centFT0M(), 7.5); // Event Loss Numerator
     }
 
     for (const auto& mcParticle : mcParticles) {
