@@ -59,12 +59,18 @@ struct PtSpectraInclusiveUpc {
                      2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0},
     "#it{p}_{T} (GeV/#it{c})"};
 
-  Configurable<int> nBinsDCAxy{
-    "nBinsDCAxy",
-    100,
-    "Number of bins in DCA_{xy} histograms"};
+  Configurable<int> nBinsDCAxy{"nBinsDCAxy", 1000, "Number of bins in DCA_{xy} histograms"};
   Configurable<bool> applyKineCutsInGen{"applyKineCutsInGen", false, "Apply kinematic cuts in the generated level"};
 
+  Configurable<double> etaMax{"etaMax", 0.9, "Maximum track pseudorapidity"};
+  Configurable<double> yMax{"yMax", 0.9, "Maximum particle rapidity"};
+  Configurable<double> ptMin{"ptMin", 0.1, "Minimum track transverse momentum (GeV/c)"};
+  Configurable<int> nFindableMin{"nFindableMin", 70, "Minimum number of findable TPC clusters"};
+  Configurable<double> sigmaMax{"sigmaMax", 3., "Maximum absolute PID n-sigma"};
+  Configurable<double> dcaZlimit{"dcaZlimit", 2., "Maximum absolute DCA in z (cm)"};
+  Configurable<double> maxChi2TPC{"maxChi2TPC", 4., "Maximum TPC chi2 per cluster"};
+  Configurable<double> maxChi2ITS{"maxChi2ITS", 36., "Maximum ITS chi2 per cluster"};
+  
   // define abbreviations
   using CCs = soa::Join<aod::UDCollisions, aod::UDCollisionsSels>;
   using CC = CCs::iterator;
@@ -72,15 +78,6 @@ struct PtSpectraInclusiveUpc {
   using CCMC = CCMCs::iterator;
   using TCs = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
   using TCMCs = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA, aod::UDMcTrackLabels>;
-
-  const double etaMax = 0.9;
-  const double yMax = 0.9;
-  const double ptMin = 0.1;
-  const int nFindableMin = 70;
-  const double sigmaMax = 3.;
-  const double dcaZlimit = 2.;
-  const double maxChi2TPC = 4.;
-  const double maxChi2ITS = 36.;
 
   void init(InitContext const&)
   {
