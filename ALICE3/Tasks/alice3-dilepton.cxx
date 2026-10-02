@@ -528,7 +528,8 @@ struct Alice3Dilepton {
   SliceCache cache_rec;
 
   Configurable<int> pdg{"pdg", 11, "pdg code for analysis. dielectron:11, dimuon:13"};
-  Configurable<bool> requireHFEid{"requireHFEid", true, "Require HFE identification"};
+  Configurable<bool> requireDCid{"requireDCid", false, "Require pi0 or photon as mother"};
+  Configurable<bool> requireHFEid{"requireHFEid", false, "Require HFE identification"};
   Configurable<bool> contamination{"contamination", false, "Fill only pairs with one misidentifixed electrons"};
   Configurable<float> ptMin{"ptMin", 0.f, "Lower limit in pT"};
   Configurable<float> ptMax{"ptMax", 5.f, "Upper limit in pT"};
@@ -628,6 +629,26 @@ struct Alice3Dilepton {
       }
       return true;
     }
+  }
+
+  template <typename TTrack, typename TMCParticles>
+  bool IsDC(TTrack const& track, TMCParticles const& mcparticles)
+  {
+    if (!track.has_mcParticle()) {
+      return false;
+    }
+    const auto p1 = track.template mcParticle_as<aod::McParticles>();
+    if (!p1.has_mothers()) {
+      return false;
+    }
+    int motherId = p1.mothersIds()[0];
+    if (motherId > -1) {
+      auto mp = mcparticles.rawIteratorAt(motherId);
+      if ((std::abs(mp.pdgCode()) == PDG_t::kPi0) || (std::abs(mp.pdgCode()) == PDG_t::kGamma)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   template <typename TTrack, typename TMCParticles>
@@ -843,6 +864,11 @@ struct Alice3Dilepton {
             continue;
           }
         }
+        if (requireDCid) {
+          if (!IsDC(t1, mcParticles) && !IsDC(t2, mcParticles)) {
+            continue;
+          }
+        }
         float pair_dca_xy = 999.f;
         ROOT::Math::PtEtaPhiMVector v12 = buildPairDCA<isWithSmearing>(t1, t2, pair_dca_xy);
 
@@ -870,6 +896,11 @@ struct Alice3Dilepton {
         }
         if (requireHFEid) {
           if (!IsHF(t1, mcParticles) && !IsHF(t2, mcParticles)) {
+            continue;
+          }
+        }
+        if (requireDCid) {
+          if (!IsDC(t1, mcParticles) && !IsDC(t2, mcParticles)) {
             continue;
           }
         }
