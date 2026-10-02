@@ -19,6 +19,7 @@
 #include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
 
 #include <CommonConstants/PhysicsConstants.h>
+#include <CommonConstants/MathConstants.h>
 #include <Framework/Concepts.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -32,10 +33,11 @@
 
 namespace o2::aod::pwgem::photonmeson::utils::nmhistogram
 {
+using namespace o2::constants::math;
 inline void addNMHistograms(o2::framework::HistogramRegistry* fRegistry, bool isMC, 
   bool sparseFullAxes = false,
   std::vector<double> const& occBins = {0, 500, 1000, 2000, 3000, 5000, 10000},
-  std::vector<double> const& epBins  = {-M_PI/2, -M_PI/4, 0, M_PI/4, M_PI/2},
+  std::vector<double> const& epBins  = {-PIHalf, -PIQuarter, 0, PIQuarter, PIHalf},
   std::vector<double> const& vtxBins = {-10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10},
   const char* pairname = "#gamma#gamma")
 {
