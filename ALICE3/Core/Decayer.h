@@ -19,10 +19,13 @@
 #ifndef ALICE3_CORE_DECAYER_H_
 #define ALICE3_CORE_DECAYER_H_
 
+#include "ALICE3/Core/ConfigurationParser.h"
 #include "ALICE3/Core/OTFParticle.h"
 #include "ALICE3/Core/TrackUtilities.h"
 
+#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
+#include <Framework/Logger.h>
 #include <MathUtils/Primitive2D.h>
 #include <ReconstructionDataFormats/Track.h>
 
@@ -34,6 +37,10 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <map>
+#include <sstream>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace o2::upgrade
@@ -44,6 +51,53 @@ class Decayer
  public:
   // Default constructor
   Decayer() = default;
+
+  static constexpr double BranchingRatioTolerance = 0.01;
+
+  struct DecayChannel {
+    double branchingRatio{};
+    std::vector<int> daughters;
+  };
+
+  template <typename TDatabase>
+  void loadDecayTable(const std::string& path, const TDatabase& pdgDB, o2::ccdb::BasicCCDBManager* ccdb = nullptr)
+  {
+    std::string fileName = o2::fastsim::ConfigurationParser::accessFile(path, "./.ALICE3/Configuration/", ccdb);
+    std::vector<std::string> mothers;
+    const std::map<std::string, std::map<std::string, std::string>> config = o2::fastsim::ConfigurationParser::parseTEnvConfiguration(fileName, mothers);
+
+    mDecayTable.clear();
+    for (const auto& [motherName, channels] : config) {
+      const int motherPdg = std::stoi(motherName);
+      if (!pdgDB->GetParticle(motherPdg)) {
+        LOG(fatal) << "Decay table: unknown mother PDG code " << motherPdg;
+      }
+      for (const auto& [channelName, value] : channels) {
+        DecayChannel channel;
+        std::istringstream stream(value);
+        stream >> channel.branchingRatio;
+        int daughterPdg{};
+        while (stream >> daughterPdg) {
+          if (!pdgDB->GetParticle(daughterPdg)) {
+            LOG(fatal) << "Decay table: unknown daughter PDG code " << daughterPdg << " in " << motherName << "." << channelName;
+          }
+          channel.daughters.push_back(daughterPdg);
+        }
+        if (!stream.eof() || channel.branchingRatio <= 0. || channel.daughters.size() < 2) {
+          LOG(fatal) << "Decay table: invalid channel " << motherName << "." << channelName << ": \"" << value << "\"";
+        }
+        mDecayTable[motherPdg].push_back(channel);
+      }
+      double brTotal = 0.;
+      for (const auto& channel : mDecayTable[motherPdg]) {
+        brTotal += channel.branchingRatio;
+      }
+      if (std::abs(brTotal - 1.) > BranchingRatioTolerance) {
+        LOG(fatal) << "Decay table: branching ratios of PDG " << motherPdg << " sum to " << brTotal << ", expected 1 within " << BranchingRatioTolerance;
+      }
+      LOG(info) << "Decay table: overriding " << mDecayTable[motherPdg].size() << " decay channel(s) of PDG " << motherPdg;
+    }
+  }
 
   template <typename TDatabase>
   std::vector<o2::upgrade::OTFParticle> decayParticle(const OTFParticle& particle, const TDatabase& pdgDB)
@@ -69,21 +123,22 @@ class Decayer
       py = particle.py() * std::cos(mTheta) + particle.px() * std::sin(mTheta);
     }
 
-    double brTotal = 0.;
     e = std::sqrt(mass * mass + px * px + py * py + particle.pz() * particle.pz());
-    for (int ch = 0; ch < particleInfo->NDecayChannels(); ++ch) {
-      brTotal += particleInfo->DecayChannel(ch)->BranchingRatio();
+    const std::vector<DecayChannel> channels = getDecayChannels(particle.pdgCode(), particleInfo);
+
+    double brTotal = 0.;
+    for (const auto& channel : channels) {
+      brTotal += channel.branchingRatio;
     }
 
     double brSum = 0.;
     std::vector<double> dauMasses;
     std::vector<int> pdgCodesDaughters;
     const double randomChannel = mRand3.Uniform(0., brTotal);
-    for (int ch = 0; ch < particleInfo->NDecayChannels(); ++ch) {
-      brSum += particleInfo->DecayChannel(ch)->BranchingRatio();
+    for (const auto& channel : channels) {
+      brSum += channel.branchingRatio;
       if (randomChannel < brSum) {
-        for (int dau = 0; dau < particleInfo->DecayChannel(ch)->NDaughters(); ++dau) {
-          const int pdgDau = particleInfo->DecayChannel(ch)->DaughterPdgCode(dau);
+        for (const int pdgDau : channel.daughters) {
           pdgCodesDaughters.push_back(pdgDau);
           const auto& dauInfo = pdgDB->GetParticle(pdgDau);
           dauMasses.push_back(dauInfo->Mass());
@@ -166,6 +221,27 @@ class Decayer
   [[nodiscard]] float getDecayRadius() const { return static_cast<float>(std::hypot(mVx, mVy)); }
 
  private:
+  /// Decay channels from the loaded decay table if the mother is listed there, otherwise from TDatabasePDG
+  template <typename TParticleInfo>
+  std::vector<DecayChannel> getDecayChannels(const int pdgCode, const TParticleInfo& particleInfo) const
+  {
+    if (const auto it = mDecayTable.find(pdgCode); it != mDecayTable.end()) {
+      return it->second;
+    }
+
+    std::vector<DecayChannel> channels;
+    for (int ch = 0; ch < particleInfo->NDecayChannels(); ++ch) {
+      DecayChannel channel;
+      channel.branchingRatio = particleInfo->DecayChannel(ch)->BranchingRatio();
+      for (int dau = 0; dau < particleInfo->DecayChannel(ch)->NDaughters(); ++dau) {
+        channel.daughters.push_back(particleInfo->DecayChannel(ch)->DaughterPdgCode(dau));
+      }
+      channels.push_back(channel);
+    }
+    return channels;
+  }
+
+  std::unordered_map<int, std::vector<DecayChannel>> mDecayTable;
   double mBz{20.}; // kG
   double mVx{-1.}, mVy{-1.}, mVz{-1.};
   double mTheta{};
