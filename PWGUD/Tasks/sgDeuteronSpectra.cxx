@@ -30,7 +30,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct SGDeuteronSpectra {
-  //UPC cuts
+  // UPC cuts
   SGSelector sgSelector;
   Configurable<float> FV0_cut{"FV0", 50., "FV0A threshold"};
   Configurable<float> ZDC_cut{"ZDC", 10., "ZDC threshold"};
@@ -39,7 +39,7 @@ struct SGDeuteronSpectra {
   Configurable<float> FDDA_cut{"FDDA", 10000., "FDDA threshold"};
   Configurable<float> FDDC_cut{"FDDC", 10000., "FDDC threshold"};
 
-  //Track cuts
+  // Track cuts
   Configurable<float> PV_cut{"PV_cut", 1.0, "Use Only PV tracks"};
   Configurable<float> dcaZ_cut{"dcaZ_cut", 2.0, "dcaZ cut"};
   Configurable<float> dcaXY_cut{"dcaXY_cut", 0.0, "dcaXY cut (0 for Pt-function)"};
@@ -49,19 +49,19 @@ struct SGDeuteronSpectra {
   Configurable<float> eta_cut{"eta_cut", 0.9, "Track Pseudorapidity"};
   Configurable<float> pt_cut{"pt_cut", 0.1, "Track Pt"};
 
-  //configurable axis for histograms
+  // Configurable axis for histograms
   ConfigurableAxis ptAxis{"ptAxis", {200, 0.0, 10.0}, "p_{T}"};
-  ConfigurableAxis nsigmaAxis{"nSigmaAxis", {800,-20.0,20.0}, "nSigma axis for TPC and TOF"};
+  ConfigurableAxis nsigmaAxis{"nSigmaAxis", {800, -20.0, 20.0}, "nSigma axis for TPC and TOF"};
 
-  // initialize histogram registry
-  HistogramRegistry registry{"registry",{}};
+  // Initialize histogram registry
+  HistogramRegistry registry{"registry", {}};
 
   void init(InitContext&)
   {
     const AxisSpec axispt{ptAxis, "p_{T}"};
     const AxisSpec axistpc{nsigmaAxis, "n#sigma_{TPC}"};
     const AxisSpec axistof{nsigmaAxis, "n#sigma_{TOF}"};
-    
+
     // Collision histograms
     registry.add("collisions/GapSide", "Gap Side: A, C, A+C", {HistType::kTH1F, {{3, -0.5, 2.5}}});
     registry.add("collisions/TrueGapSide", "Gap Side: A, C, A+C", {HistType::kTH1F, {{4, -1.5, 2.5}}});
@@ -83,18 +83,15 @@ struct SGDeuteronSpectra {
     registry.add("tracks/Antideut_Pt_TPC_DoubleGap", "", {HistType::kTH2F, {axispt, axistpc}});
     registry.add("tracks/Antideut_Pt_TOF_DoubleGap", "", {HistType::kTH2F, {axispt, axistof}});
     registry.add("tracks/Antideut_Pt_TOF_DoubleGap_TPCpresel", "", {HistType::kTH2F, {axispt, axistof}});
-    
-  }  
+  }
 
-
-  // define data types
+  // Define data types
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>; // UDCollisions
   using UDCollisionFull = UDCollisionsFull::iterator;
   using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksPIDExtra, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
 
   void process(UDCollisionFull const& coll, UDTracksFull const& tracks)
   {
-    
     registry.fill(HIST("collisions/GapSide"), coll.gapSide(), 1.);
     float FIT_cut[5] = {FV0_cut, FT0A_cut, FT0C_cut, FDDA_cut, FDDC_cut};
     int truegapSide = sgSelector.trueGap(coll, FIT_cut[0], FIT_cut[1], FIT_cut[2], ZDC_cut);
@@ -112,14 +109,13 @@ struct SGDeuteronSpectra {
             if (TMath::Abs(t.tpcNSigmaDe()) < 3.0) {
               registry.fill(HIST("tracks/Deut_Pt_TOF_GapA_TPCpresel"), t.pt(), t.tofNSigmaDe());
             }
-          }
-          else {
+          } else {
             registry.fill(HIST("tracks/Antideut_Pt_TPC_GapA"), t.pt(), t.tpcNSigmaDe());
             registry.fill(HIST("tracks/Antideut_Pt_TOF_GapA"), t.pt(), t.tofNSigmaDe());
             if (TMath::Abs(t.tpcNSigmaDe()) < 3.0) {
               registry.fill(HIST("tracks/Antideut_Pt_TOF_GapA_TPCpresel"), t.pt(), t.tofNSigmaDe());
             }
-          } 
+          }
         }
 
         if (truegapSide == 1) {
@@ -129,30 +125,28 @@ struct SGDeuteronSpectra {
             if (TMath::Abs(t.tpcNSigmaDe()) < 3.0) {
               registry.fill(HIST("tracks/Deut_Pt_TOF_GapC_TPCpresel"), t.pt(), t.tofNSigmaDe());
             }
-          }
-          else {
+          } else {
             registry.fill(HIST("tracks/Antideut_Pt_TPC_GapC"), t.pt(), t.tpcNSigmaDe());
             registry.fill(HIST("tracks/Antideut_Pt_TOF_GapC"), t.pt(), t.tofNSigmaDe());
             if (TMath::Abs(t.tpcNSigmaDe()) < 3.0) {
               registry.fill(HIST("tracks/Antideut_Pt_TOF_GapC_TPCpresel"), t.pt(), t.tofNSigmaDe());
             }
-          } 
+          }
         }
-        
+
         if (truegapSide == 2) {
           if (t.sign() > 0) {
             registry.fill(HIST("tracks/Deut_Pt_TPC_DoubleGap"), t.pt(), t.tpcNSigmaDe());
             registry.fill(HIST("tracks/Deut_Pt_TOF_DoubleGap"), t.pt(), t.tofNSigmaDe());
             if (TMath::Abs(t.tpcNSigmaDe()) < 3.0) {                registry.fill(HIST("tracks/Deut_Pt_TOF_DoubleGap_TPCpresel"), t.pt(), t.tofNSigmaDe());
             }
-          }
-          else {
-            registry.fill(HIST("tracks/Antideut_Pt_TPC_DoubleGap"),t.pt(), t.tpcNSigmaDe());
+          } else {
+            registry.fill(HIST("tracks/Antideut_Pt_TPC_DoubleGap"), t.pt(), t.tpcNSigmaDe());
             registry.fill(HIST("tracks/Antideut_Pt_TOF_DoubleGap"), t.pt(), t.tofNSigmaDe());
             if (TMath::Abs(t.tpcNSigmaDe()) < 3.0) {
               registry.fill(HIST("tracks/Antideut_Pt_TOF_DoubleGap_TPCpresel"), t.pt(), t.tofNSigmaDe());
             }
-          } 
+          }
         }
       }
     }
