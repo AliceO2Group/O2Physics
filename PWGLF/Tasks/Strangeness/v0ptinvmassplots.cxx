@@ -104,7 +104,8 @@ struct V0PtInvMassPlots {
   Configurable<float> itsMinHits{"itsMinHits", 1.0, "Minimum Hits of Daughter Tracks in the ITS"};
 
   // Configurables switches for event selection
-  struct EventSelectionConfig {
+  struct EventSelectionConfig : ConfigurableGroup {
+    std::string prefix = "eventSelections"; // JSON group name
     Configurable<bool> dosel8{"dosel8", true, "Enable sel8 event selection"};
     Configurable<bool> doNoTimeFrameBorder{"doNoTimeFrameBorder", true, "Enable NoTimeFrameBorder event selection"};
     Configurable<bool> doNoITSROFrameBorder{"doNoITSROFrameBorder", true, "Enable NoITSROFrameBorder event selection"};
@@ -118,14 +119,16 @@ struct V0PtInvMassPlots {
   };
 
   // Configurables switches for v0 selection
-  struct V0SelectionConfig {
+  struct V0SelectionConfig : ConfigurableGroup {
+    std::string prefix = "v0Selections"; // JSON group name
     Configurable<bool> doDaughterPseudorapidityCut{"doDaughterPseudorapidityCut", true, "Enable Daughter pseudorapidity v0 selection"};
     Configurable<bool> doisNotITSAfterburner{"doisNotITSAfterburner", true, "Enable Tracks do not come from Afterburner"};
     Configurable<bool> doitsMinHits{"doitsMinHits", true, "Enable ITS Minimum hits"};
   };
 
   // Configurables switches for K0sh selection
-  struct K0shSelectionConfig {
+  struct K0shSelectionConfig : ConfigurableGroup {
+    std::string prefix = "k0shSelections"; // JSON group name
     Configurable<bool> doK0shRapidityCut{"doK0shRapidityCut", true, "Enable rapidity K0sh selection"};
     Configurable<bool> dotruthK0sh{"dotruthK0sh", true, "Enable K0sh MC Matching"};
     Configurable<bool> doK0shTPCPID{"doK0shTPCPID", true, "Enable K0sh TPC PID"};
@@ -140,7 +143,8 @@ struct V0PtInvMassPlots {
   };
 
   // Configurables switches for Lambda selection
-  struct LambdaSelectionConfig {
+  struct LambdaSelectionConfig : ConfigurableGroup {
+    std::string prefix = "lambdaSelections"; // JSON group name
     Configurable<bool> doLambdaRapidityCut{"doLambdaRapidityCut", true, "Enable rapidity Lambda selection"};
     Configurable<bool> dotruthLambda{"dotruthLambda", true, "Enable Lambda MC Matching"};
     Configurable<bool> doLambdaTPCPID{"doLambdaTPCPID", true, "Enable Lambda TPC PID"};
@@ -155,7 +159,8 @@ struct V0PtInvMassPlots {
   };
 
   // Configurables switches for AntiLambda selection
-  struct AntiLambdaSelectionConfig {
+  struct AntiLambdaSelectionConfig : ConfigurableGroup {
+    std::string prefix = "antilambdaSelections"; // JSON group name
     Configurable<bool> doAntiLambdaRapidityCut{"doAntiLambdaRapidityCut", true, "Enable rapidity AntiLambda selection"};
     Configurable<bool> dotruthAntiLambda{"dotruthAntiLambda", true, "Enable AntiLambda MC Matching"};
     Configurable<bool> doAntilambdaTPCPID{"doAntilambdaTPCPID", true, "Enable AntiLambda TPC PID"};
