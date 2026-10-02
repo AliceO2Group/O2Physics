@@ -16,19 +16,23 @@
 #include "PWGLF/DataModel/LFStrangenessMLTables.h"
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/Utils/ResonanceMlResponse.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
+#include "Tools/ML/MlResponse.h"
 
 #include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
 #include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
@@ -50,6 +54,7 @@
 #include <vector>
 
 using namespace o2;
+using namespace o2::ml;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
@@ -73,7 +78,10 @@ enum BkgResonance {
 
 struct k892hadronphotonBkg {
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
+  o2::ccdb::CcdbApi ccdbApi;
   ctpRateFetcher rateFetcher;
+  o2::analysis::ResonanceMlResponse<float> mlResponse;
+
   TRandom3 rotRng{12345}; // struct member; fixed seed for reproducibility across grid jobs
 
   // Histogram registry
@@ -118,6 +126,22 @@ struct k892hadronphotonBkg {
     Configurable<float> rotationalFactor{"rotationalFactor", 1.f, "Factor to scale the angle of rotation (rotationalFactor * PI)"};
     Configurable<bool> rotGamma{"rotGamma", false, "Flag to rotate the photon direction"};
   } lstarBkgConfig;
+
+  struct : ConfigurableGroup {
+    std::string prefix = "bdt"; // JSON group name
+    Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+    Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"BDTModel.onnx"}, "Local .onnx file names, one per pT bin"};
+    Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"Users/o/obenchik/MLModels/BDT"}, "Model paths on CCDB, one per pT bin (each model needs its own folder)"};
+    Configurable<int64_t> timestampCCDB{"timestampCCDB", 1695750420200, "timestamp of the ONNX file for ML model used to query in CCDB. Please use 1695750420200"};
+    Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
+    Configurable<bool> enableOptimizations{"enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
+    Configurable<int> numThreads{"numThreads", 1, "ONNX intra-op threads. 0 lets ONNX Runtime default to one thread per physical core"};
+    Configurable<bool> enableML{"enableML", false, "Enables bdt model"};
+    Configurable<std::vector<double>> ptBinEdges{"ptBinEdges", {0., 30.}, "Pair-pT bin edges of the BDT models, one model per bin (pairs outside are rejected)"};
+    Configurable<LabeledArray<double>> scoreCuts{"scoreCuts", {std::array<double, 2>{0., 0.}.data(), 1, 2, {"pT bin 0"}, {"Background score", "Signal score"}}, "BDT score cuts, one row per pT bin"};
+    Configurable<std::vector<int>> cutDir{"cutDir", std::vector<int>{o2::cuts_ml::CutNot, o2::cuts_ml::CutNot}, "Cut direction per class: 0 = keep score < cut, 1 = keep score >= cut, 2 = no cut"};
+    Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"lambdaDCADau", "lambdaAlpha", "lambdaDCANegPV", "lambdaDCAPosPV", "lambdaQt", "photonAlpha", "photonCosPA", "photonDCADau", "photonDCANegPV", "photonDCAPosPV", "photonQt", "photonRadius", "opAngle"}, "Names and order of the BDT input features (see ResonanceMlResponse.h): must match FeaturesToTrain"};
+  } bdt;
 
   ConfigurableAxis axisVertexMixBkg{"axisVertexMixBkg", {VARIABLE_WIDTH, -10.f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "z-vertex bins for mixing"};
   ConfigurableAxis axisCentralityMixBkg{"axisCentralityMixBkg", {VARIABLE_WIDTH, 0.0f, 1.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 110.0f}, "centrality bins for mixing"};
@@ -250,6 +274,14 @@ struct k892hadronphotonBkg {
     ConfigurableAxis axisAPQt{"axisAPQt", {220, 0.0f, 1.1f}, "Resonance AP q_{T} (GeV/c)"};
     ConfigurableAxis axisCandSel{"axisCandSel", {15, 0.5f, +15.5f}, "Candidate Selection"};
     ConfigurableAxis axisOPAngle{"axisOPAngle", {140, 0.0f, 7.0f}, "Opening angle (rad)"};
+    // BDT QA axes
+    ConfigurableAxis mlProb{"mlProb", {100, 0.0f, 1.0f}, "BDT signal score"};
+    ConfigurableAxis axisCosPA{"axisCosPA", {200, 0.5f, 1.0f}, "Cosine of pointing angle"};
+    ConfigurableAxis axisDCAdau{"axisDCAdau", {50, 0.0f, 5.0f}, "DCA (cm)"};
+    ConfigurableAxis axisSignedDCAtoPV{"axisSignedDCAtoPV", {1000, -50.0f, 50.0f}, "signed DCA (cm)"};
+    ConfigurableAxis axisSignedDCAtoPVLambda{"axisSignedDCAtoPVLambda", {500, -10.0f, 10.0f}, "signed DCA (cm)"};
+    ConfigurableAxis axisV0APQt{"axisV0APQt", {220, 0.0f, 0.5f}, "V0 AP q_{T} (GeV/c)"};
+    ConfigurableAxis axisV0Radius{"axisV0Radius", {240, 0.0f, 120.0f}, "V0 radius (cm)"};
   } axisConfig;
 
   void init(InitContext const&)
@@ -258,6 +290,58 @@ struct k892hadronphotonBkg {
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setFatalWhenNull(false);
+
+    if (bdt.enableML) {
+      ccdb->setURL(bdt.ccdbUrl.value);
+
+      // One model per pair-pT bin. MlResponse checks the model files and cutDir, not the rows of scoreCuts
+      constexpr uint8_t NClassesML = 2; // background, signal
+      if (bdt.scoreCuts.value.rows() != bdt.ptBinEdges.value.size() - 1 || bdt.scoreCuts.value.cols() != NClassesML) {
+        LOG(fatal) << "bdt.scoreCuts needs one row per pT bin and " << static_cast<int>(NClassesML) << " columns";
+      }
+      mlResponse.configure(bdt.ptBinEdges.value, bdt.scoreCuts.value, bdt.cutDir.value, NClassesML);
+      mlResponse.cacheInputFeaturesIndices(bdt.namesInputFeatures);
+
+      if (bdt.loadModelsFromCCDB) {
+        ccdbApi.init(bdt.ccdbUrl);
+        LOG(info) << "Fetching models for timestamp: " << bdt.timestampCCDB.value;
+        mlResponse.setModelPathsCCDB(bdt.onnxFileNames.value, ccdbApi, bdt.modelPathsCCDB.value, bdt.timestampCCDB.value);
+      } else {
+        mlResponse.setModelPathsLocal(bdt.onnxFileNames.value);
+      }
+      mlResponse.init(bdt.enableOptimizations.value, bdt.numThreads.value);
+
+      // It is applied to the Lambda(1520) MIXED background only (for now!!)
+      if (!lstarBkgConfig.doSameEvtRotation && !lstarBkgConfig.doEvtMixing) {
+        LOG(warning) << "bdt.enableML is set but no Lambda(1520) background is requested: the BDT will not be applied.";
+      }
+      if (kstarBkgConfig.doSameEvtRotation || kstarBkgConfig.doEvtMixing) {
+        LOG(info) << "The BDT (gamma + Lambda features) is not applied to the K*(892) background.";
+      }
+
+      histos.add("BDT/hScoreSignal", "hScoreSignal", kTH1D, {axisConfig.mlProb});
+      histos.add("BDT/hScoreBackground", "hScoreBackground", kTH1D, {axisConfig.mlProb});
+      histos.add("BDT/h2dScoreVsMassSignal", "h2dScoreVsMassSignal", kTH2D, {axisConfig.axisLambdaStarMass, axisConfig.mlProb});
+      histos.add("BDT/h2dScoreVsPtSignal", "h2dScoreVsPtSignal", kTH2D, {axisConfig.axisPt, axisConfig.mlProb});
+      histos.add("BDT/h3dScoreSignal", "h3dScoreSignal", kTH3D, {axisConfig.axisPt, axisConfig.axisLambdaStarMass, axisConfig.mlProb});
+      histos.add("BDT/h2dScoreVsMassBackground", "h2dScoreVsMassBackground", kTH2D, {axisConfig.axisLambdaStarMass, axisConfig.mlProb});
+      histos.add("BDT/h2dScoreVsPtBackground", "h2dScoreVsPtBackground", kTH2D, {axisConfig.axisPt, axisConfig.mlProb});
+      histos.add("BDT/h3dScoreBackground", "h3dScoreBackground", kTH3D, {axisConfig.axisPt, axisConfig.axisLambdaStarMass, axisConfig.mlProb});
+      histos.add("BDT/h2dLambdaDCADaughters", "h2dLambdaDCADaughters", kTH2D, {axisConfig.mlProb, axisConfig.axisDCAdau});
+
+      histos.add("BDT/h2dLambdaAlpha", "h2dLambdaAlpha", kTH2D, {axisConfig.mlProb, axisConfig.axisAPAlpha});
+      histos.add("BDT/h2dLambdaDCANegPV", "h2dLambdaDCANegPV", kTH2D, {axisConfig.mlProb, axisConfig.axisSignedDCAtoPVLambda});
+      histos.add("BDT/h2dLambdaDCAPosPV", "h2dLambdaDCAPosPV", kTH2D, {axisConfig.mlProb, axisConfig.axisSignedDCAtoPVLambda});
+      histos.add("BDT/h2dLambdaQt", "h2dLambdaQt", kTH2D, {axisConfig.mlProb, axisConfig.axisV0APQt});
+      histos.add("BDT/h2dPhotonAlpha", "h2dPhotonAlpha", kTH2D, {axisConfig.mlProb, axisConfig.axisAPAlpha});
+      histos.add("BDT/h2dPhotonCosPA", "h2dPhotonCosPA", kTH2D, {axisConfig.mlProb, axisConfig.axisCosPA});
+      histos.add("BDT/h2dPhotonDCADau", "h2dPhotonDCADau", kTH2D, {axisConfig.mlProb, axisConfig.axisDCAdau});
+      histos.add("BDT/h2dPhotonDCANegPV", "h2dPhotonDCANegPV", kTH2D, {axisConfig.mlProb, axisConfig.axisSignedDCAtoPV});
+      histos.add("BDT/h2dPhotonDCAPosPV", "h2dPhotonDCAPosPV", kTH2D, {axisConfig.mlProb, axisConfig.axisSignedDCAtoPV});
+      histos.add("BDT/h2dPhotonQt", "h2dPhotonQt", kTH2D, {axisConfig.mlProb, axisConfig.axisV0APQt});
+      histos.add("BDT/h2dPhotonRadius", "h2dPhotonRadius", kTH2D, {axisConfig.mlProb, axisConfig.axisV0Radius});
+      histos.add("BDT/h2dOPAngle", "h2dOPAngle", kTH2D, {axisConfig.mlProb, axisConfig.axisOPAngle});
+    }
 
     histos.add("hEventCentrality", "hEventCentrality", kTH1D, {axisConfig.axisCentrality});
 
@@ -351,6 +435,8 @@ struct k892hadronphotonBkg {
         histos.add("LambdaStarBkg/h4dMixedLambdaStarPtVsAPAlphaVsAPQt", "h4dMixedLambdaStarPtVsAPAlphaVsAPQt", kTHnD, {axisConfig.axisAPAlpha, axisConfig.axisAPQt, axisConfig.axisPt, axisConfig.axisLambdaStarMass});
       }
     }
+
+    histos.print();
   }
 
   //_______________________________________________
@@ -794,6 +880,73 @@ struct k892hadronphotonBkg {
   }
 
   //_______________________________________________
+  // The two V0s share a daughter track (or are the same V0): rejected by the builder
+  template <typename TV0Object>
+  static bool shareDaughters(TV0Object const& photon, TV0Object const& hadron)
+  {
+    return photon.globalIndex() == hadron.globalIndex() ||
+           photon.posTrackExtraId() == hadron.posTrackExtraId() ||
+           photon.negTrackExtraId() == hadron.negTrackExtraId() ||
+           photon.posTrackExtraId() == hadron.negTrackExtraId() ||
+           photon.negTrackExtraId() == hadron.posTrackExtraId();
+  }
+
+  //_______________________________________________
+  // Fill BDT performance QA
+  template <typename TV0Object>
+  void fillBDTPerformance(TV0Object const& lambda, TV0Object const& photon, float openAngle, float score, float pt, float mass)
+  {
+    float bkgScore = 1.0f - score;
+
+    // Signal-probability output
+    histos.fill(HIST("BDT/hScoreSignal"), score);
+    histos.fill(HIST("BDT/h2dScoreVsMassSignal"), mass, score);
+    histos.fill(HIST("BDT/h2dScoreVsPtSignal"), pt, score);
+    histos.fill(HIST("BDT/h3dScoreSignal"), pt, mass, score);
+
+    // Background-probability output
+    histos.fill(HIST("BDT/hScoreBackground"), bkgScore);
+    histos.fill(HIST("BDT/h2dScoreVsMassBackground"), mass, bkgScore);
+    histos.fill(HIST("BDT/h2dScoreVsPtBackground"), pt, bkgScore);
+    histos.fill(HIST("BDT/h3dScoreBackground"), pt, mass, bkgScore);
+
+    // Signal score vs the main topological variables
+    histos.fill(HIST("BDT/h2dLambdaDCADaughters"), score, lambda.dcaV0daughters());
+    histos.fill(HIST("BDT/h2dLambdaAlpha"), score, lambda.alpha());
+    histos.fill(HIST("BDT/h2dLambdaDCANegPV"), score, lambda.dcanegtopv());
+    histos.fill(HIST("BDT/h2dLambdaDCAPosPV"), score, lambda.dcapostopv());
+    histos.fill(HIST("BDT/h2dLambdaQt"), score, lambda.qtarm());
+    histos.fill(HIST("BDT/h2dPhotonAlpha"), score, photon.alpha());
+    histos.fill(HIST("BDT/h2dPhotonCosPA"), score, photon.v0cosPA());
+    histos.fill(HIST("BDT/h2dPhotonDCADau"), score, photon.dcaV0daughters());
+    histos.fill(HIST("BDT/h2dPhotonDCANegPV"), score, photon.dcanegtopv());
+    histos.fill(HIST("BDT/h2dPhotonDCAPosPV"), score, photon.dcapostopv());
+    histos.fill(HIST("BDT/h2dPhotonQt"), score, photon.qtarm());
+    histos.fill(HIST("BDT/h2dPhotonRadius"), score, photon.v0radius());
+    histos.fill(HIST("BDT/h2dOPAngle"), score, openAngle);
+  }
+
+  //_______________________________________________
+  // BDT selection of a Lambda + photon pair
+  template <typename TV0Object>
+  bool selectML(TV0Object const& lambda, TV0Object const& photon,
+                float openAngle, float pt, float mass)
+  {
+    // No model outside the bdt.ptBinEdges range
+    if (pt < bdt.ptBinEdges.value.front() || pt >= bdt.ptBinEdges.value.back())
+      return false;
+
+    // Features in the order of bdt.namesInputFeatures
+    auto inputFeatures = mlResponse.getInputFeatures(lambda, photon, openAngle);
+    std::vector<float> outputMl;
+    const bool isSelected = mlResponse.isSelectedMl(inputFeatures, pt, outputMl); // model and cut of the pT bin
+
+    fillBDTPerformance(lambda, photon, openAngle, outputMl[1], pt, mass);
+
+    return isSelected;
+  }
+
+  //_______________________________________________
   // Compute same-event rotational background within a single collision.
   template <int resonance, typename TCollision, typename TV0s>
   void calculateRotBackground(TCollision const& coll,
@@ -819,6 +972,10 @@ struct k892hadronphotonBkg {
 
       for (const int& pIdx : photonIndices) {
         const auto& photon = fullV0s.rawIteratorAt(pIdx);
+
+        // Same pair rejection
+        if (shareDaughters(photon, hadron))
+          continue;
 
         // photon as a massless 4-vector
         ROOT::Math::PtEtaPhiMVector pGamma(photon.pt(),
@@ -853,6 +1010,16 @@ struct k892hadronphotonBkg {
           // Opening angle between photon and hadron
           double cosOA = gammaLeg.Vect().Dot(hadronLeg.Vect()) / (gammaLeg.P() * hadronLeg.P());
           double openAngle = std::acos(cosOA);
+          // double pt = reso.Pt();
+          // double mass = reso.M();
+
+          // // To:Do BDT selection (Lambda(1520))
+          // if constexpr (resonance == kResoLambdaStar) {
+          //   if (bdt.enableML) {
+          //     if (!selectML(hadron, photon, openAngle, pt, mass))
+          //       continue;
+          //   }
+          // }
 
           // Armenteros-Podolanski of the rotated pair
           const std::array<float, 3> gammaMom{static_cast<float>(gammaLeg.Px()), static_cast<float>(gammaLeg.Py()), static_cast<float>(gammaLeg.Pz())};
@@ -882,9 +1049,9 @@ struct k892hadronphotonBkg {
 
   //_______________________________________________
   // Mixed-event pairing: hadrons and photons come from two different collisions.
-  // Centrality is taken from the reference collision (the first of the pair)
-  template <int resonance, typename TCollision, typename TV0s>
-  void calculateMixedBackground(TCollision const& refColl,
+  // Centrality is taken from the reference collision (the first of the pair).
+  template <int resonance, typename TRefColl, typename TV0s>
+  void calculateMixedBackground(TRefColl const& refColl,
                                 std::vector<int> const& hadronIndices,
                                 std::vector<int> const& photonIndices,
                                 TV0s const& fullV0s)
@@ -909,6 +1076,11 @@ struct k892hadronphotonBkg {
 
       for (const int& pIdx : photonIndices) {
         const auto& photon = fullV0s.rawIteratorAt(pIdx);
+
+        // Same pair rejection as the builder
+        if (shareDaughters(photon, hadron))
+          continue;
+
         float pP = std::hypot(photon.px(), photon.py(), photon.pz());
         ROOT::Math::PxPyPzEVector fourMomPhoton(
           photon.px(), photon.py(), photon.pz(), pP);
@@ -930,6 +1102,14 @@ struct k892hadronphotonBkg {
           continue;
         if (std::abs(rapidity) > maxRap)
           continue;
+
+        // BDT selection (Lambda(1520) only)
+        if constexpr (resonance == kResoLambdaStar) {
+          if (bdt.enableML) {
+            if (!selectML(hadron, photon, openAngle, pt, mass))
+              continue;
+          }
+        }
 
         // Armenteros-Podolanski of the mixed pair
         const std::array<float, 3> gammaMom{photon.px(), photon.py(), photon.pz()};
