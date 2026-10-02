@@ -410,7 +410,7 @@ struct GammaJetTreeProducer {
       return false;
     }
     mHistograms.fill(HIST("eventQA"), 1);
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, true, true, rctLabel)) {
       return false;
     }
     mHistograms.fill(HIST("eventQA"), 2);
@@ -809,9 +809,10 @@ struct GammaJetTreeProducer {
   // return recursive list of all daughter IDs
   /// \brief Gets all daughter particle IDs in the decay chain
   /// \param particle The particle to start from
+  /// \param mcParticles The MC particles collection
   /// \return Vector of daughter particle IDs
-  template <typename T>
-  void getDaughtersInChain(const T& particle, std::vector<int>& daughters, int depth = 0)
+  template <typename T, typename U>
+  void getDaughtersInChain(const T& particle, U const& mcParticles, std::vector<int>& daughters, int depth = 0)
   {
     // Limit recursion depth to avoid infinite loops
     if (depth > MaxRecursionDepth) { // 100 generations should be more than enough
@@ -822,10 +823,12 @@ struct GammaJetTreeProducer {
       return;
     }
 
-    const auto& daughterParticles = particle.template daughters_as<aod::JMcParticles>();
-    for (const auto& daughter : daughterParticles) {
-      daughters.push_back(daughter.globalIndex());
-      getDaughtersInChain(daughter, daughters, depth + 1);
+    // Daughter indices are a contiguous inclusive range. Resolve them on the full table
+    // so the IDs match cluster MC labels.
+    const auto daughterIds = particle.daughtersIds();
+    for (int daughterId = daughterIds[0]; daughterId <= daughterIds[1]; ++daughterId) {
+      daughters.push_back(daughterId);
+      getDaughtersInChain(mcParticles.iteratorAt(daughterId), mcParticles, daughters, depth + 1);
     }
   }
   /// \brief Finds the first physical primary particle in the decay chain (upwards)
@@ -885,34 +888,37 @@ struct GammaJetTreeProducer {
     if (motherIndex != -1) {
       const auto& mother = mcParticles.iteratorAt(motherIndex);
 
-      // get daughters of pi0 mother
-      auto daughtersMother = mother.template daughters_as<aod::JMcParticles>();
-      // check if there are two daughters that are both photons
-      if (daughtersMother.size() == 2) { // o2-linter: disable=magic-number (it is just counting number of daughters)
-        const auto& daughter1 = daughtersMother.iteratorAt(0);
-        const auto& daughter2 = daughtersMother.iteratorAt(1);
-        if (daughter1.pdgCode() == PDG_t::kGamma && daughter2.pdgCode() == PDG_t::kGamma) {
-          // get the full stack of particles that these daughters create
-          std::vector<int> fullDecayChain1;
-          std::vector<int> fullDecayChain2;
-          getDaughtersInChain(daughter1, fullDecayChain1);
-          getDaughtersInChain(daughter2, fullDecayChain2);
-          bool photon1Found = false;
-          bool photon2Found = false;
+      // Daughter indices are the inclusive [first, last] range stored on the mother.
+      // Resolve them on the full MC table, same index space as the cluster labels.
+      if (mother.has_daughters()) {
+        const auto daughterIds = mother.daughtersIds();
+        const bool hasTwoDaughters = daughterIds[1] == daughterIds[0] + 1; // o2-linter: disable=magic-number (two-body decay)
+        if (hasTwoDaughters) {
+          const auto& daughter1 = mcParticles.iteratorAt(daughterIds[0]);
+          const auto& daughter2 = mcParticles.iteratorAt(daughterIds[1]);
+          if (daughter1.pdgCode() == PDG_t::kGamma && daughter2.pdgCode() == PDG_t::kGamma) {
+            // include the decay photons themselves, since unconverted photons are usually the cluster inducers
+            std::vector<int> fullDecayChain1{daughterIds[0]};
+            std::vector<int> fullDecayChain2{daughterIds[1]};
+            getDaughtersInChain(daughter1, mcParticles, fullDecayChain1);
+            getDaughtersInChain(daughter2, mcParticles, fullDecayChain2);
+            bool photon1Found = false;
+            bool photon2Found = false;
 
-          // check if any of the particles in the fullDecayChain are leading or subleading in the cluster
-          for (const auto& particleID : fullDecayChain1) {
-            if (particleID == inducerIDs[0] || particleID == inducerIDs[1]) {
-              photon1Found = true;
+            // check if any of the particles in the fullDecayChain are leading or subleading in the cluster
+            for (const auto& particleID : fullDecayChain1) {
+              if (particleID == inducerIDs[0] || particleID == inducerIDs[1]) {
+                photon1Found = true;
+              }
             }
-          }
-          for (const auto& particleID : fullDecayChain2) {
-            if (particleID == inducerIDs[0] || particleID == inducerIDs[1]) {
-              photon2Found = true;
+            for (const auto& particleID : fullDecayChain2) {
+              if (particleID == inducerIDs[0] || particleID == inducerIDs[1]) {
+                photon2Found = true;
+              }
             }
-          }
-          if (photon1Found && photon2Found) {
-            isMerged = true;
+            if (photon1Found && photon2Found) {
+              isMerged = true;
+            }
           }
         }
       }
@@ -1242,7 +1248,7 @@ struct GammaJetTreeProducer {
     for (const auto& mcCluster : mcClusters) {
       mHistograms.fill(HIST("clusterMC_E_All"), mcCluster.energy());
       auto [origin, mcIndex] = getClusterOrigin(mcCluster, mcParticles);
-      float leadingEnergyFraction = mcCluster.amplitudeA()[0] / mcCluster.energy();
+      float leadingEnergyFraction = mcCluster.amplitudeA()[0]; // amplitudes are already stored as energy fractions
       // Fill MC origin QA histograms
       if (TESTBIT(origin, static_cast<uint16_t>(gjanalysis::ClusterOrigin::kPhoton))) {
         mHistograms.fill(HIST("clusterMC_E_Photon"), mcCluster.energy());
