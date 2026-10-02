@@ -33,7 +33,8 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include <Math/Vector4D.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 #include <TH1.h>
 #include <TString.h>
 
@@ -59,36 +60,36 @@ constexpr float DefaultFloat = -999.f;   // value of float columns without infor
 constexpr uint32_t DefaultMIDBoards = 0; // value of MID-board columns without information
 
 enum EventSelection {
-  kEvSelAll = 0,
-  kEvSelFV0Veto,
-  kEvSelNumContrib,
-  kEvSelTwoTracks,
-  kEvSelInvariantMass,
-  kEvSelSystemPt,
-  kEvSelOneTrackMomentum,
-  kEvSelBothTracksMomentum,
-  kNEvSels
+  EvSelAll = 0,
+  EvSelFV0Veto,
+  EvSelNumContrib,
+  EvSelTwoTracks,
+  EvSelInvariantMass,
+  EvSelSystemPt,
+  EvSelOneTrackMomentum,
+  EvSelBothTracksMomentum,
+  NEvSels
 };
 
 enum FwdTrackSelection {
-  kTrkSelAll = 0,
-  kTrkSelType,
-  kTrkSelPt,
-  kTrkSelEta,
-  kTrkSelRabs,
-  kTrkSelPDca,
-  kTrkSelChi2,
-  kTrkSelChi2MatchMCHMFT,
-  kNTrkSels
+  TrkSelAll = 0,
+  TrkSelType,
+  TrkSelPt,
+  TrkSelEta,
+  TrkSelRabs,
+  TrkSelPDca,
+  TrkSelChi2,
+  TrkSelChi2MatchMCHMFT,
+  NTrkSels
 };
 
 enum TruthTrouble {
-  kTroubleTooManyMothers = 1,
-  kTroubleTooManyDaughters,
-  kTroubleNoTrack,
-  kTroubleMoreTracks,
-  kTroubleDifferentCandidates,
-  kNTroubles
+  TroubleTooManyMothers = 1,
+  TroubleTooManyDaughters,
+  TroubleNoTrack,
+  TroubleMoreTracks,
+  TroubleDifferentCandidates,
+  NTroubles
 };
 
 // reco-level information of one row, shared by the measured and the simulated table
@@ -100,8 +101,8 @@ struct RecoInfo {
   float posY{DefaultFloat};
   float posZ{DefaultFloat};
   float totalFV0AmplitudeA{DefaultFloat};
-  std::vector<float> amplitudesV0A{};
-  std::vector<int8_t> ampRelBCsV0A{};
+  std::vector<float> amplitudesV0A;
+  std::vector<int8_t> ampRelBCsV0A;
   float energyCommonZNA{DefaultFloat};
   float energyCommonZNC{DefaultFloat};
   float timeZNA{DefaultFloat};
@@ -194,38 +195,38 @@ struct TwoFwdTracksEventTableProducer {
     if (verboseInfo)
       printMediumMessage("INIT METHOD");
 
-    histos.add("Reco/hSelections", "Effect of selections;;Number of events (-)", HistType::kTH1D, {{kNEvSels, -0.5, kNEvSels - 0.5}});
+    histos.add("Reco/hSelections", "Effect of selections;;Number of events (-)", HistType::kTH1D, {{NEvSels, -0.5, static_cast<double>(NEvSels) - 0.5}});
     auto hSel = histos.get<TH1>(HIST("Reco/hSelections"));
-    hSel->GetXaxis()->SetBinLabel(kEvSelAll + 1, "All");
-    hSel->GetXaxis()->SetBinLabel(kEvSelFV0Veto + 1, "FV0A veto");
-    hSel->GetXaxis()->SetBinLabel(kEvSelNumContrib + 1, "N contrib.");
-    hSel->GetXaxis()->SetBinLabel(kEvSelTwoTracks + 1, "2 sel. tracks");
-    hSel->GetXaxis()->SetBinLabel(kEvSelInvariantMass + 1, "Inv. mass");
-    hSel->GetXaxis()->SetBinLabel(kEvSelSystemPt + 1, "System pT");
-    hSel->GetXaxis()->SetBinLabel(kEvSelOneTrackMomentum + 1, "One trk p");
-    hSel->GetXaxis()->SetBinLabel(kEvSelBothTracksMomentum + 1, "Both trks p");
+    hSel->GetXaxis()->SetBinLabel(EvSelAll + 1, "All");
+    hSel->GetXaxis()->SetBinLabel(EvSelFV0Veto + 1, "FV0A veto");
+    hSel->GetXaxis()->SetBinLabel(EvSelNumContrib + 1, "N contrib.");
+    hSel->GetXaxis()->SetBinLabel(EvSelTwoTracks + 1, "2 sel. tracks");
+    hSel->GetXaxis()->SetBinLabel(EvSelInvariantMass + 1, "Inv. mass");
+    hSel->GetXaxis()->SetBinLabel(EvSelSystemPt + 1, "System pT");
+    hSel->GetXaxis()->SetBinLabel(EvSelOneTrackMomentum + 1, "One trk p");
+    hSel->GetXaxis()->SetBinLabel(EvSelBothTracksMomentum + 1, "Both trks p");
 
-    histos.add("Reco/hFwdTrackSelections", "Effect of forward track selections;;Number of tracks (-)", HistType::kTH1D, {{kNTrkSels, -0.5, kNTrkSels - 0.5}});
+    histos.add("Reco/hFwdTrackSelections", "Effect of forward track selections;;Number of tracks (-)", HistType::kTH1D, {{NTrkSels, -0.5, static_cast<double>(NTrkSels) - 0.5}});
     auto hTrkSel = histos.get<TH1>(HIST("Reco/hFwdTrackSelections"));
-    hTrkSel->GetXaxis()->SetBinLabel(kTrkSelAll + 1, "All");
-    hTrkSel->GetXaxis()->SetBinLabel(kTrkSelType + 1, "Track type");
-    hTrkSel->GetXaxis()->SetBinLabel(kTrkSelPt + 1, "pT");
-    hTrkSel->GetXaxis()->SetBinLabel(kTrkSelEta + 1, "#eta");
-    hTrkSel->GetXaxis()->SetBinLabel(kTrkSelRabs + 1, "R_{abs}");
-    hTrkSel->GetXaxis()->SetBinLabel(kTrkSelPDca + 1, "pDCA");
-    hTrkSel->GetXaxis()->SetBinLabel(kTrkSelChi2 + 1, "#chi^{2}");
-    hTrkSel->GetXaxis()->SetBinLabel(kTrkSelChi2MatchMCHMFT + 1, "#chi^{2}_{MCH-MFT}");
+    hTrkSel->GetXaxis()->SetBinLabel(TrkSelAll + 1, "All");
+    hTrkSel->GetXaxis()->SetBinLabel(TrkSelType + 1, "Track type");
+    hTrkSel->GetXaxis()->SetBinLabel(TrkSelPt + 1, "pT");
+    hTrkSel->GetXaxis()->SetBinLabel(TrkSelEta + 1, "#eta");
+    hTrkSel->GetXaxis()->SetBinLabel(TrkSelRabs + 1, "R_{abs}");
+    hTrkSel->GetXaxis()->SetBinLabel(TrkSelPDca + 1, "pDCA");
+    hTrkSel->GetXaxis()->SetBinLabel(TrkSelChi2 + 1, "#chi^{2}");
+    hTrkSel->GetXaxis()->SetBinLabel(TrkSelChi2MatchMCHMFT + 1, "#chi^{2}_{MCH-MFT}");
 
     histos.add("Reco/hNanalyzedPerRun", "N analyzed events per run;Run number (-);Number of analyzed events (-)", HistType::kTH1D, {{1, 0., 1.}});
     histos.add("Reco/hNselectedPerRun", "N selected events per run;Run number (-);Number of selected events (-)", HistType::kTH1D, {{1, 0., 1.}});
 
-    histos.add("Truth/hTroubles", "Counter of unwanted issues;;Number of troubles (-)", HistType::kTH1D, {{kNTroubles - 1, 0.5, kNTroubles - 0.5}});
+    histos.add("Truth/hTroubles", "Counter of unwanted issues;;Number of troubles (-)", HistType::kTH1D, {{NTroubles - 1, 0.5, static_cast<double>(NTroubles) - 0.5}});
     auto hTroubles = histos.get<TH1>(HIST("Truth/hTroubles"));
-    hTroubles->GetXaxis()->SetBinLabel(kTroubleTooManyMothers + 1, "> 2 mothers");
-    hTroubles->GetXaxis()->SetBinLabel(kTroubleTooManyDaughters + 1, "> 2 charged daughters");
-    hTroubles->GetXaxis()->SetBinLabel(kTroubleNoTrack + 1, "Daughter without track");
-    hTroubles->GetXaxis()->SetBinLabel(kTroubleMoreTracks + 1, "Daughter in > 1 cand.");
-    hTroubles->GetXaxis()->SetBinLabel(kTroubleDifferentCandidates + 1, "Daughters in diff. cand.");
+    hTroubles->GetXaxis()->SetBinLabel(TroubleTooManyMothers + 1, "> 2 mothers");
+    hTroubles->GetXaxis()->SetBinLabel(TroubleTooManyDaughters + 1, "> 2 charged daughters");
+    hTroubles->GetXaxis()->SetBinLabel(TroubleNoTrack + 1, "Daughter without track");
+    hTroubles->GetXaxis()->SetBinLabel(TroubleMoreTracks + 1, "Daughter in > 1 cand.");
+    hTroubles->GetXaxis()->SetBinLabel(TroubleDifferentCandidates + 1, "Daughters in diff. cand.");
   } // end init
 
   bool isAcceptedTrackType(uint8_t trackType)
@@ -264,11 +265,11 @@ struct TwoFwdTracksEventTableProducer {
       if (fillHistos)
         histos.fill(HIST("Reco/hFwdTrackSelections"), step);
     };
-    countPassed(kTrkSelAll);
+    countPassed(TrkSelAll);
 
     if (!isAcceptedTrackType(track.trackType()))
       return false;
-    countPassed(kTrkSelType);
+    countPassed(TrkSelType);
 
     if (!cutFwdTrack.applyFwdTrackSelection)
       return true;
@@ -276,28 +277,28 @@ struct TwoFwdTracksEventTableProducer {
     const auto vec = muonVector(track);
     if (vec.Pt() < cutFwdTrack.cutMinPt || vec.Pt() > cutFwdTrack.cutMaxPt)
       return false;
-    countPassed(kTrkSelPt);
+    countPassed(TrkSelPt);
 
     if (vec.Eta() < cutFwdTrack.cutMinEta || vec.Eta() > cutFwdTrack.cutMaxEta)
       return false;
-    countPassed(kTrkSelEta);
+    countPassed(TrkSelEta);
 
     if (track.rAtAbsorberEnd() < cutFwdTrack.cutMinRabs || track.rAtAbsorberEnd() > cutFwdTrack.cutMaxRabs)
       return false;
-    countPassed(kTrkSelRabs);
+    countPassed(TrkSelRabs);
 
     float maxPDca = track.rAtAbsorberEnd() < upchelpers::AbsorberMid ? cutFwdTrack.cutMaxPDcaLowRabs : cutFwdTrack.cutMaxPDcaHighRabs;
     if (track.pDca() > maxPDca)
       return false;
-    countPassed(kTrkSelPDca);
+    countPassed(TrkSelPDca);
 
     if (track.chi2() > cutFwdTrack.cutMaxChi2)
       return false;
-    countPassed(kTrkSelChi2);
+    countPassed(TrkSelChi2);
 
     if (hasMFT(track.trackType()) && track.chi2MatchMCHMFT() > cutFwdTrack.cutMaxChi2MatchMCHMFT)
       return false;
-    countPassed(kTrkSelChi2MatchMCHMFT);
+    countPassed(TrkSelChi2MatchMCHMFT);
 
     return true;
   }
@@ -402,15 +403,15 @@ struct TwoFwdTracksEventTableProducer {
     const char* srun = Form("%d", cand.runNumber());
     histos.get<TH1>(HIST("Reco/hNanalyzedPerRun"))->Fill(srun, 1);
 
-    histos.fill(HIST("Reco/hSelections"), kEvSelAll);
+    histos.fill(HIST("Reco/hSelections"), EvSelAll);
 
     if (cutSample.useFV0Veto && getMaxFV0Amplitude(cand, cutSample.cutFV0RelBcRange) > cutSample.cutMaxFV0Amp)
       return;
-    histos.fill(HIST("Reco/hSelections"), kEvSelFV0Veto);
+    histos.fill(HIST("Reco/hSelections"), EvSelFV0Veto);
 
     if (cutSample.useNumContrib && cand.numContrib() != cutSample.cutNumContrib)
       return;
-    histos.fill(HIST("Reco/hSelections"), kEvSelNumContrib);
+    histos.fill(HIST("Reco/hSelections"), EvSelNumContrib);
 
     RecoInfo info;
     std::array<ROOT::Math::PxPyPzMVector, NumTracks> daug;
@@ -428,7 +429,7 @@ struct TwoFwdTracksEventTableProducer {
     // Critical selection, without it the rest of the process function will fail
     if (nSelected != NumTracks)
       return;
-    histos.fill(HIST("Reco/hSelections"), kEvSelTwoTracks);
+    histos.fill(HIST("Reco/hSelections"), EvSelTwoTracks);
 
     const auto mother = daug[0] + daug[1];
 
@@ -436,22 +437,22 @@ struct TwoFwdTracksEventTableProducer {
     // invariant mass
     if (mother.M() < cutPreselect.preselMinInvariantMass || mother.M() > cutPreselect.preselMaxInvariantMass)
       return;
-    histos.fill(HIST("Reco/hSelections"), kEvSelInvariantMass);
+    histos.fill(HIST("Reco/hSelections"), EvSelInvariantMass);
 
     // system pt
     if (cutPreselect.preselUseOppositeSystemPtCut ? mother.Pt() < cutPreselect.preselSystemPtCut : mother.Pt() > cutPreselect.preselSystemPtCut)
       return;
-    histos.fill(HIST("Reco/hSelections"), kEvSelSystemPt);
+    histos.fill(HIST("Reco/hSelections"), EvSelSystemPt);
 
     // one track momentum
     if (daug[0].P() < cutPreselect.preselMinTrackMomentum && daug[1].P() < cutPreselect.preselMinTrackMomentum)
       return;
-    histos.fill(HIST("Reco/hSelections"), kEvSelOneTrackMomentum);
+    histos.fill(HIST("Reco/hSelections"), EvSelOneTrackMomentum);
 
     // both tracks momentum
     if (cutPreselect.preselUseMinMomentumOnBothTracks && (daug[0].P() < cutPreselect.preselMinTrackMomentum || daug[1].P() < cutPreselect.preselMinTrackMomentum))
       return;
-    histos.fill(HIST("Reco/hSelections"), kEvSelBothTracksMomentum);
+    histos.fill(HIST("Reco/hSelections"), EvSelBothTracksMomentum);
 
     histos.get<TH1>(HIST("Reco/hNselectedPerRun"))->Fill(srun, 1);
 
@@ -484,7 +485,7 @@ struct TwoFwdTracksEventTableProducer {
         if (static_cast<int>(daughterIds.size()) >= NumTracks) {
           if (verboseInfo)
             printLargeMessage("Truth collision has more than 2 total charged daughters. Breaking the daughter loop.");
-          histos.fill(HIST("Truth/hTroubles"), kTroubleTooManyDaughters);
+          histos.fill(HIST("Truth/hTroubles"), TroubleTooManyDaughters);
           truth.problem = true;
           return false;
         }
@@ -509,7 +510,7 @@ struct TwoFwdTracksEventTableProducer {
         if (countMothers > NumTracks) {
           if (verboseInfo)
             printLargeMessage("Truth collision has more than 2 no mother particles. Breaking the particle loop.");
-          histos.fill(HIST("Truth/hTroubles"), kTroubleTooManyMothers);
+          histos.fill(HIST("Truth/hTroubles"), TroubleTooManyMothers);
           truth.problem = true;
           break;
         }
@@ -548,12 +549,12 @@ struct TwoFwdTracksEventTableProducer {
         if (candTracks.empty()) {
           if (verboseInfo)
             printLargeMessage("Daughter has no associated track. Skipping this daughter.");
-          histos.fill(HIST("Truth/hTroubles"), kTroubleNoTrack);
+          histos.fill(HIST("Truth/hTroubles"), TroubleNoTrack);
           truth.problem = true;
           continue;
         }
         if (candTracks.size() > 1)
-          histos.fill(HIST("Truth/hTroubles"), kTroubleMoreTracks);
+          histos.fill(HIST("Truth/hTroubles"), TroubleMoreTracks);
         nRecoDaughters++;
       } // daughters
 
@@ -579,7 +580,7 @@ struct TwoFwdTracksEventTableProducer {
         if (bestScore.first < nRecoDaughters) {
           if (verboseInfo)
             printLargeMessage("Daughters are reconstructed in different candidates.");
-          histos.fill(HIST("Truth/hTroubles"), kTroubleDifferentCandidates);
+          histos.fill(HIST("Truth/hTroubles"), TroubleDifferentCandidates);
           truth.problem = true;
         }
         truth.hasRecoColl = true;
