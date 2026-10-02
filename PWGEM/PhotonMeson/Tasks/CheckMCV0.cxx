@@ -14,14 +14,15 @@
 /// \author daiki.sekihata@cern.ch felix.schlepper@cern.ch
 /// \dependencies: o2-analysis-lf-lambdakzeromcfinder
 
+#include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/mcV0Tables.h"
 #include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
 //
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
+#include "Common/DataModel/GloCCDBObjects.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/LHCConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/MatLayerCylSet.h>
@@ -51,7 +52,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
-#include <string>
 #include <string_view>
 
 using namespace o2;
@@ -91,6 +91,7 @@ struct CheckMCV0 {
   using FilteredTracksMC = soa::Filtered<TracksMC>;
   using CollisionsMC = soa::Join<aod::McCollisionLabels, aod::Collisions>;
   using V0s = aod::V0Datas;
+  using BCsWithCCDB = soa::Join<aod::BCsWithTimestamps, aod::PcmObjects, aod::GeomCCDBObjects>;
 
   // Histogram Parameters
   Configurable<int> tglNBins{"tglNBins", 500, "nBins for tgl"};
@@ -164,16 +165,8 @@ struct CheckMCV0 {
   };
   static_assert(checkV0legLabels.size() == checkV0legEnum::MINCROSSEDROWSTPC);
 
-  // CCDB
-  Configurable<std::string> mCCDBPath{"ccdb-path", "GLO/GRP/GRP", "path to the ccdb object"};
-  Configurable<std::string> mGRPMagPath{"grpmagPath", "GLO/Config/GRPMagField", "path to the GRPMagField object"};
-  Configurable<std::string> mLUTPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
-  Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
-  Configurable<std::string> mCCDBUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Service<o2::ccdb::BasicCCDBManager> mCCDB{};
+  // Only needed to avoid re-installing the magnetic field, which is global state
   int mRunNumber{-1};
-  o2::base::MatLayerCylSet* mLUT{nullptr};
-  o2::parameters::GRPMagField* mGRPMagField{nullptr};
 
   // params
   std::array<float, 6> mcPosXYZEtaTglPtProp{};
@@ -186,12 +179,6 @@ struct CheckMCV0 {
 
   void init(InitContext const& /*unused*/)
   {
-    // setup CCDB
-    mCCDB->setURL(mCCDBUrl);
-    mCCDB->setCaching(true);
-    mCCDB->setLocalObjectValidityChecking();
-    mLUT = o2::base::MatLayerCylSet::rectifyPtrFromFile(mCCDB->get<o2::base::MatLayerCylSet>(mLUTPath));
-
     // maybe logarithmic
     if (ptLogAxis) {
       axisPt.makeLogarithmic();
@@ -247,11 +234,11 @@ struct CheckMCV0 {
   }
 
   Preslice<aod::V0Datas> perCollision = aod::v0data::collisionId;
-  void processMCV0(CollisionsMC const& collisions, V0s const& v0s, FilteredTracksMC const& /*unused*/, aod::McParticles const& /*unused*/, aod::McCollisions const& /*unused*/, aod::BCsWithTimestamps const& /*unused*/)
+  void processMCV0(CollisionsMC const& collisions, V0s const& v0s, FilteredTracksMC const& /*unused*/, aod::McParticles const& /*unused*/, aod::McCollisions const& /*unused*/, BCsWithCCDB const& /*unused*/)
   {
     // Check for new ccdb parameters
     for (auto& collision : collisions) {
-      const auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      const auto bc = collision.template bc_as<BCsWithCCDB>();
       initCCDB(bc);
 
       // Get the V0 candidates belonging to the current collision
@@ -505,12 +492,12 @@ struct CheckMCV0 {
   template <typename BC>
   inline void initCCDB(BC const& bc)
   {
+    // pointer store only; refreshed every time since the column buffer may be relocated
+    o2::base::Propagator::Instance()->setMatLUT(&bc.matLUT());
     if (mRunNumber == bc.runNumber()) {
       return;
     }
-    mGRPMagField = mCCDB->getForTimeStamp<o2::parameters::GRPMagField>(mGRPMagPath, bc.timestamp());
-    o2::base::Propagator::initFieldFromGRP(mGRPMagField);
-    o2::base::Propagator::Instance()->setMatLUT(mLUT);
+    o2::base::Propagator::initFieldFromGRP(&bc.grpMagField());
     mRunNumber = bc.runNumber();
   }
 };

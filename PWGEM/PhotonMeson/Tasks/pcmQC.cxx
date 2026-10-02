@@ -47,7 +47,6 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 
-#include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/MathConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
@@ -233,7 +232,6 @@ struct PCMQC {
   } recoQASettingsGroup;
 
   o2::ccdb::CcdbApi ccdbApi;
-  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb{};
   int mRunNumber = 0;
   float d_bz = 0;
   static constexpr std::array<std::string_view, 2> event_types = {"before/", "after/"};
@@ -250,11 +248,6 @@ struct PCMQC {
 
     mRunNumber = 0;
     d_bz = 0;
-
-    ccdb->setURL(ccdburl);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    ccdb->setFatalWhenNull(false);
   }
 
   template <o2::soa::is_iterator TCollision>

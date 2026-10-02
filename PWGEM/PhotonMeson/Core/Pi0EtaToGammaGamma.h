@@ -36,7 +36,6 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 
-#include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
@@ -296,7 +295,6 @@ struct Pi0EtaToGammaGamma {
   std::vector<float> occ_bin_edges;
 
   o2::ccdb::CcdbApi ccdbApi;
-  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb{};
   int mRunNumber = -1;
   float d_bz = 0;
   o2::emcal::Geometry* emcalGeom = nullptr;
@@ -445,11 +443,6 @@ struct Pi0EtaToGammaGamma {
 
     mRunNumber = 0;
     d_bz = 0;
-
-    ccdb->setURL(ccdburl);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    ccdb->setFatalWhenNull(false);
   }
 
   template <o2::soa::is_iterator TCollision>

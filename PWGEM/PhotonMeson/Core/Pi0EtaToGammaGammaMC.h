@@ -36,7 +36,6 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 
-#include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
@@ -268,7 +267,6 @@ struct Pi0EtaToGammaGammaMC {
   static constexpr std::array<std::string_view, 2> kParnames = {"Pi0/", "Eta/"};
 
   o2::ccdb::CcdbApi ccdbApi;
-  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb{};
   int mRunNumber = 0;
   float d_bz = 0;
 
@@ -300,11 +298,6 @@ struct Pi0EtaToGammaGammaMC {
 
     mRunNumber = 0;
     d_bz = 0;
-
-    ccdb->setURL(ccdburl);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    ccdb->setFatalWhenNull(false);
   }
 
   template <o2::soa::is_iterator TCollision>
