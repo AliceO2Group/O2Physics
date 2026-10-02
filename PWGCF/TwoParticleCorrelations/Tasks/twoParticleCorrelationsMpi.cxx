@@ -117,6 +117,11 @@ struct TwoParticleCorrelationsMpi {
     Configurable<int> cfgCentBinsForMC{"cfgCentBinsForMC", 0, "0 = generated multiplicity; 1 = reconstructed multiplicity and all associated collisions"};
   } cfgGeneral;
   Configurable<uint16_t> cfgTrackBitMask{"cfgTrackBitMask", 0, "BitMask for track selection systematics; refer to the enum TrackSelectionCuts in filtering task"};
+  Configurable<float> dcaxymax{"dcaxymax", 999.f, "maximum dcaxy of tracks"};
+  Configurable<float> dcazmax{"dcazmax", 999.f, "maximum dcaz of tracks"};
+  Configurable<bool> enablePtDepDCAxy{"enablePtDepDCAxy", false, "Enable pT-dependent DCAxy cut: |DCAxy| < a + b/pT"};
+  Configurable<float> dcaXyConst{"dcaXyConst", 0.004f, "Constant term 'a' for pT-dependent DCAxy cut: |DCAxy| < a + b/pT (cm)"};
+  Configurable<float> dcaXySlope{"dcaXySlope", 0.013f, "Slope term 'b' for pT-dependent DCAxy cut: |DCAxy| < a + b/pT (cm x GeV/c)"};
   Configurable<uint16_t> cfgMultCorrelationsMask{"cfgMultCorrelationsMask", 0, "Selection bitmask for the multiplicity correlations. This should match the filter selection cfgEstimatorBitMask."};
   Configurable<std::string> cfgMultCutFormula{"cfgMultCutFormula", "", "Multiplicity correlations cut formula. A result greater than zero results in accepted event. Parameters: [cFT0C] FT0C centrality, [mFV0A] V0A multiplicity, [mGlob] global track multiplicity, [mPV] PV track multiplicity, [cFT0M] FT0M centrality"};
 
@@ -182,7 +187,11 @@ struct TwoParticleCorrelationsMpi {
   Filter collisionVertexTypeFilter = (aod::collision::flags & static_cast<uint16_t>(aod::collision::CollisionFlagsRun2::Run2VertexerTracks)) == static_cast<uint16_t>(aod::collision::CollisionFlagsRun2::Run2VertexerTracks);
 
   // Track filters
-  Filter trackFilter = (nabs(aod::track::eta) < cfgGeneral.cfgCutEta) && (aod::track::pt > cfgGeneral.cfgCutPt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true));
+  Filter trackFilter = (nabs(aod::track::eta) < cfgGeneral.cfgCutEta) && (aod::track::pt > cfgGeneral.cfgCutPt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) &&
+                       (nabs(aod::track::dcaZ) < dcazmax) &&
+                       ifnode(enablePtDepDCAxy.node() == true,
+                              nabs(aod::track::dcaXY) < (dcaXyConst + dcaXySlope / aod::track::pt),
+                              nabs(aod::track::dcaXY) < dcaxymax);
   Filter cfTrackFilter = (nabs(aod::cftrack::eta) < cfgGeneral.cfgCutEta) && (aod::cftrack::pt > cfgGeneral.cfgCutPt) && ncheckbit(aod::track::trackType, as<uint8_t>(cfgTrackBitMask));
 
   // MC filters
@@ -327,7 +336,7 @@ struct TwoParticleCorrelationsMpi {
   Service<o2::framework::O2DatabasePDG> pdg{};
 
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>>;
-  using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>;
+  using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksDCA>>;
 
   using DerivedCollisions = soa::Filtered<aod::CFCollisions>;
   using DerivedCollisionsCorrected = soa::Filtered<aod::CFCollisionsWithExtra>;
@@ -367,7 +376,7 @@ struct TwoParticleCorrelationsMpi {
     if (cfgFillAcceptanceWeights && !cfgAcceptance.value.empty()) {
       LOGF(fatal, "cfgFillAcceptanceWeights and cfgAcceptance are mutually exclusive: produce and apply acceptance weights in separate jobs");
     }
-    if (cfgFillAcceptanceWeights && !(doprocessSameDerived || doprocessSameDerivedCorrected || doprocessSameDerivedMultSet || doprocessSameDerivedMultSetCorrected || doprocessMCSameDerived)) {
+    if (cfgFillAcceptanceWeights && !(doprocessSameDerived || doprocessSameDerivedCorrected || doprocessSameDerivedMultSet || doprocessSame DerivedMultSetCorrected || doprocessMCSameDerived)) {
       LOGF(fatal, "cfgFillAcceptanceWeights requires a reconstructed derived same-event process");
     }
     if (cfgAcceptancePhiBins < 1 || cfgAcceptanceEtaBins < 1) {
