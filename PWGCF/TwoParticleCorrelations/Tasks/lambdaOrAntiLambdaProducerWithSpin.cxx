@@ -1520,7 +1520,7 @@ struct LambdaAntiLambdaPairAnalysis {
 
   // Mixed-Event Compatablity variables
   Configurable<float> mixedEventMaxDeltaMultiplicity{"mixedEventMaxDeltaMultiplicity", 10.f, "Maximum multiplicity difference between mixed events"};
-  Configurable<int> maxMixedEvents{"maxMixedEvents", 200, "Maximum accepted mixed collision combinations per dataframe"};
+  Configurable<int> maxMixedEvents{"maxMixedEvents", 200, "Maximum multiplicity-compatible collision combinations with selected candidates in both collisions per dataframe"};
 
   // Short-range pairs
   Configurable<float> sameEventShortRangePairMaxDeltaRapidity{"sameEventShortRangePairMaxDeltaRapidity", 0.5f, "ShortRangePai Maximum absolute rapidity difference for same-event pairs"};
@@ -2306,6 +2306,12 @@ struct LambdaAntiLambdaPairAnalysis {
 
       const auto antiLambdas1 = antiLambdas.sliceBy(antiLambdasPerCollision, collision1.globalIndex());
       const auto antiLambdas2 = antiLambdas.sliceBy(antiLambdasPerCollision, collision2.globalIndex());
+
+      // Empty collisions must not consume the mixing allowance.
+      if ((lambdas1.size() == 0 && antiLambdas1.size() == 0) ||
+          (lambdas2.size() == 0 && antiLambdas2.size() == 0)) {
+        continue;
+      }
 
       // Lambda–anti-Lambda requires at least one of each.
       if (lambdas1.size() > 0 && antiLambdas2.size() > 0) {
