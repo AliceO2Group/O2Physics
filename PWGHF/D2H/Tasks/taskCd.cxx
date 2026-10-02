@@ -109,6 +109,7 @@ DECLARE_SOA_COLUMN(NSigmaTofPi, nSigmaTofPi, float);                //! TOF nσ 
 DECLARE_SOA_COLUMN(NItsClusters, nItsClusters, float);              //! Number of ITS clusters used in the track fit
 DECLARE_SOA_COLUMN(NItsNClusterSize, nItsNClusterSize, float);      //! Number of ITS clusters size used in the track fit
 DECLARE_SOA_COLUMN(NTpcClusters, nTpcClusters, float);              //! Number of TPC clusters used in the track fit
+DECLARE_SOA_COLUMN(TpcNClsFoundDe, tpcNClsFoundDe, uint16_t);        //! Number of found TPC clusters for the selected deuteron prong
 DECLARE_SOA_COLUMN(NTpcSignalsDe, nTpcSignalsDe, float);            //! Number of TPC signas for deuteron
 DECLARE_SOA_COLUMN(NTpcSignalsPi, nTpcSignalsPi, float);            //! Number of TPC signas for pion
 DECLARE_SOA_COLUMN(NTpcSignalsKa, nTpcSignalsKa, float);            //! Number of TPC signas for kaon
@@ -210,7 +211,8 @@ DECLARE_SOA_TABLE(HfCandCdFull, "AOD", "HFCANDCDFULL",
                   full::Cent,
                   full::VtxZ,
                   full::GIndexCol,
-                  full::TimeStamp);
+                  full::TimeStamp,
+                  full::TpcNClsFoundDe);
 
 DECLARE_SOA_TABLE(HfCandCdGen, "AOD", "HFCANDCDGEN",
                   full::Pt,
@@ -624,7 +626,7 @@ struct HfTaskCd {
               candidate.ct(o2::constants::physics::MassCDeuteron) * CmToMum,
               candFlag, candSign, candidate.flagMcMatchRec(), isCandidateSwapped, hypothesisMask, candidateGlobalIndex, candidate.originMcRec(),
               candidate.flagMcDecayChanRec(), ctGen, collision.numContrib(), o2::hf_centrality::getCentralityColl(collision),
-              collision.posZ(), collision.globalIndex(), timeStamp);
+              collision.posZ(), collision.globalIndex(), timeStamp, deuteronProng.tpcNClsFound());
           }
         };
 
@@ -905,7 +907,7 @@ struct HfTaskCd {
               nSigmaTpcPi, nSigmaTofPi, nSigmaTpcKa, nSigmaTofKa,
               candidate.ct(o2::constants::physics::MassCDeuteron),
               candFlag, candSign, 0, -1, hypothesisMask, candidateGlobalIndex, 0, 0, -1.f, collision.numContrib(), cent,
-              collision.posZ(), collision.globalIndex(), timeStamp);
+              collision.posZ(), collision.globalIndex(), timeStamp, deuteronProng.tpcNClsFound());
           }
         };
 
