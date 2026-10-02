@@ -11,6 +11,7 @@
 
 #include "FlatTrackSmearer.h"
 
+#include "ALICE3/Core/ConfigurationParser.h"
 #include "ALICE3/Core/FlatLutEntry.h"
 #include "ALICE3/Core/GeometryContainer.h"
 
@@ -96,7 +97,7 @@ bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
   }
 
   LOGF(info, "Loading %s LUT file: '%s'", getParticleName(pdg), filename);
-  const std::string localFilename = o2::fastsim::GeometryEntry::accessFile(filename, "./.ALICE3/LUTs/", mCcdbManager, 10);
+  const std::string localFilename = o2::fastsim::ConfigurationParser::accessFile(filename, "./.ALICE3/LUTs/", mCcdbManager, o2::fastsim::GeometryContainer::cleanLutWhenLoaded() ? 10 : 0);
 
   std::ifstream lutFile(localFilename, std::ifstream::binary);
   if (!lutFile.is_open()) {
