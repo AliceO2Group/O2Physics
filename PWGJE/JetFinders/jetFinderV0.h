@@ -60,6 +60,7 @@ struct JetFinderV0Task {
   o2::framework::Configurable<std::string> triggerMasks{"triggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
   o2::framework::Configurable<bool> skipMBGapEvents{"skipMBGapEvents", true, "decide to run over MB gap events or not"};
   o2::framework::Configurable<bool> applyRCTSelections{"applyRCTSelections", true, "decide to apply RCT selections"};
+  o2::framework::Configurable<bool> isEmbedding{"isEmbedding", false, "running on an embedded dataset"};
 
   // track level configurables
   o2::framework::Configurable<float> trackPtMin{"trackPtMin", 0.15, "minimum track pT"};
@@ -208,7 +209,7 @@ struct JetFinderV0Task {
           }
         }
         */
-    jetfindingutilities::analyseTracksMultipleCandidates(inputParticles, tracks, trackSelection, candidates);
+    jetfindingutilities::analyseTracksMultipleCandidates(inputParticles, tracks, trackSelection, isEmbedding, candidates);
 
     jetfindingutilities::findJets(jetFinder, inputParticles, minJetPt, maxJetPt, jetRadius, jetAreaFractionMin, collision, jetsTableInput, constituentsTableInput, registry.get<THn>(HIST("hJet")), fillTHnSparse, saveJetsWithCandidatesOnly);
   }

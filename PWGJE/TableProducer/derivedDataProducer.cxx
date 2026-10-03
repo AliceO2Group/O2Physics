@@ -298,7 +298,7 @@ struct JetDerivedDataProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processBunchCrossingsWithoutSels, "produces derived bunch crossing table with bunch crossing selections", false);
 
-  void processCollisions(soa::Join<aod::Collisions, aod::EvSels, aod::FV0Mults, aod::FT0Mults, aod::CentFV0As, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFT0CVariant1s>::iterator const& collision, soa::Join<aod::BCs, aod::BcSels, aod::Timestamps> const&, aod::FT0s const&, aod::FV0As const&, aod::FDDs const&)
+  void processCollisions(soa::Join<aod::Collisions, aod::EvSels, aod::FV0Mults, aod::FT0Mults, aod::CentFV0As, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFT0CVariant1s>::iterator const& collision, soa::Join<aod::BCs, aod::BcSels, aod::Timestamps> const&)
   {
     auto bc = collision.bc_as<soa::Join<aod::BCs, aod::BcSels, aod::Timestamps>>();
     if (config.includeHadronicRate) {
@@ -342,9 +342,8 @@ struct JetDerivedDataProducerTask {
     amplitudesFDDA.clear();
     amplitudesFDDC.clear();
     if (collision.has_foundBC()) {
-      auto const upcBC = collision.foundBC_as<soa::Join<aod::BCs, aod::BcSels, aod::Timestamps, aod::Run3MatchedToBCSparse>>();
       auto const upcBCRange = udhelpers::compatibleBCs(collision, upcCuts.NDtcoll(), bcs, upcCuts.minNBCs());
-      auto const upcResult = upcSelector.IsSelected(upcCuts, collision, upcBCRange, upcBC, &amplitudesFV0, &amplitudesFT0A, &amplitudesFT0C, &amplitudesFDDA, &amplitudesFDDC);
+      auto const upcResult = upcSelector.IsSelected(upcCuts, collision, upcBCRange, bc, &amplitudesFV0, &amplitudesFT0A, &amplitudesFT0C, &amplitudesFDDA, &amplitudesFDDC);
       upcGapResult = upcResult.value;
       if (upcGapResult != o2::aod::sgselector::SingleGapA && upcGapResult != o2::aod::sgselector::SingleGapC && upcGapResult != o2::aod::sgselector::DoubleGap) {
         amplitudesFV0.clear();
