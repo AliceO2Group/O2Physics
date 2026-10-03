@@ -1542,9 +1542,9 @@ struct RadialFlowDecorr {
       histos.fill(HIST("Fake_eta"), eta, fake);
       histos.fill(HIST("wgt_eta"), eta, w);
 
-      histos.fill(HIST("hEtaPhiReco"), vz, sign, pt, eta, phi);
-      histos.fill(HIST("hEtaPhiRecoWtd"), vz, sign, pt, eta, phi, w);
-      histos.fill(HIST("hEtaPhiRecoEffWtd"), vz, sign, pt, eta, phi, (1.0 - fake) / eff);
+      histos.fill(HIST("MCReco/hEtaPhiReco"), vz, sign, pt, eta, phi);
+      histos.fill(HIST("MCReco/hEtaPhiRecoWtd"), vz, sign, pt, eta, phi, w);
+      histos.fill(HIST("MCReco/hEtaPhiRecoEffWtd"), vz, sign, pt, eta, phi, (1.0 - fake) / eff);
     }
 
     // subevent mean-pT maps
@@ -1692,9 +1692,9 @@ struct RadialFlowDecorr {
         }
       }
 
-      histos.fill(HIST("hEtaPhiReco"), vz, sign, pt, eta, phi);
-      histos.fill(HIST("hEtaPhiRecoWtd"), vz, sign, pt, eta, phi, w);
-      histos.fill(HIST("hEtaPhiRecoEffWtd"), vz, sign, pt, eta, phi, (1.0 - fake) / eff);
+      histos.fill(HIST("MCReco/hEtaPhiReco"), vz, sign, pt, eta, phi);
+      histos.fill(HIST("MCReco/hEtaPhiRecoWtd"), vz, sign, pt, eta, phi, w);
+      histos.fill(HIST("MCReco/hEtaPhiRecoEffWtd"), vz, sign, pt, eta, phi, (1.0 - fake) / eff);
     }
 
     for (int ieta = 0; ieta < nEta; ++ieta) {
