@@ -9,10 +9,7 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-add_subdirectory(QC)
-add_subdirectory(Common)
-
-add_subdirectory(GlobalEventProperties)
-add_subdirectory(Nuspex)
-add_subdirectory(Strangeness)
-add_subdirectory(Resonances)
+o2physics_add_dpl_workflow(event-shape-coex
+    SOURCES eventShapeCoex.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
