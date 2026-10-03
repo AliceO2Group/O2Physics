@@ -32,7 +32,7 @@ std::function<void(const double*, double*)> field()
     // ***********************
 
     // RADIUS
-    Rc = 185.; // [cm]
+    Rc = 165.; // [cm]
     R1 = 220.; // [cm]
     R2 = 290.; // [cm]
 
