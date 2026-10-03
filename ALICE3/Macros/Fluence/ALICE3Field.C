@@ -22,8 +22,8 @@ std::function<void(const double*, double*)> field()
     double R2;
     double B1;
     double B2;
-    double beamStart = 500.;       // [cm]
-    double tokGauss = 1. / 0.1;    // conversion from Tesla to kGauss
+    double beamStart = 500.;    // [cm]
+    double tokGauss = 1. / 0.1; // conversion from Tesla to kGauss
 
     bool isMagAbs = true;
 
@@ -37,7 +37,7 @@ std::function<void(const double*, double*)> field()
     R2 = 290.; // [cm]
 
     // To set the B2
-    B1 = 2.;                                      // [T]
+    B1 = 2.;                                    // [T]
     B2 = -Rc * Rc * B1 / ((R2 * R2 - R1 * R1)); // [T]
 
     if ((abs(x[2]) <= beamStart) && (sqrt(x[0] * x[0] + x[1] * x[1]) < Rc)) {

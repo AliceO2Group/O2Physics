@@ -18,7 +18,7 @@ python3 analyze_geant.py
 SETUP
 -----
 
-Create a working directory, enter it, and source the setup script: 
+Create a working directory, enter it, and source the setup script:
 
 mkdir FluenceStudy
 cd FluenceStudy
