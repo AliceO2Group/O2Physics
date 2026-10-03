@@ -326,6 +326,7 @@ struct Dilepton {
 
   struct : o2::framework::ConfigurableGroup {
     std::string prefix = "flowcorrection_group";
+    o2::framework::Configurable<bool> cfgFillNUAHist{"cfgFillNUAHist", true, "flag to fill the NUA correction hist"};
     o2::framework::Configurable<bool> cfgApplyWeightNUA{"cfgApplyWeightNUA", false, "flag to apply q-vector Non-uniform acceptance  weighting"};
     o2::framework::Configurable<std::string> nuaPath{"nuaPath", "Users/o/omassen/Dielectron/NUAWeights/LHC23_PbPb_pass5", "Path to NUA-weights file"};
     o2::framework::ConfigurableAxis ConfNUAPhiBins{"ConfNUAPhiBins", {60, -M_PI, M_PI}, "NUA histogram bins - phi-angle"};
@@ -669,7 +670,9 @@ struct Dilepton {
       const o2::framework::AxisSpec axis_sp{ConfSPBins, Form("#vec{u}_{%d,ll} #upoint #vec{Q}_{%d}^{%s}", nmod, nmod, qvec_det_names[cfgQvecEstimator].data())};
 
       fRegistry.add("Pair/same/uls/hs", "dilepton", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_y, axis_sp}, true);
-      fRegistry.add("Pair/same/uls/hNUA", "NUA Histogram;#phi (rad.);#eta;VtxZ;", o2::framework::HistType::kTH3D, {flowcorrectionGroup.ConfNUAPhiBins, flowcorrectionGroup.ConfNUAEtaBins, flowcorrectionGroup.ConfNUAZVtxBins}, true);
+      if (flowcorrectionGroup.cfgFillNUAHist) {
+        fRegistry.add("Pair/same/uls/hNUA", "NUA Histogram;#phi (rad.);#eta;VtxZ;", o2::framework::HistType::kTH3D, {flowcorrectionGroup.ConfNUAPhiBins, flowcorrectionGroup.ConfNUAEtaBins, flowcorrectionGroup.ConfNUAZVtxBins}, true);
+      }
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
 
@@ -1099,13 +1102,19 @@ struct Dilepton {
         float sp = RecoDecay::dotProd(std::array<float, 2>{static_cast<float>(std::cos(nmod * v12.Phi())), static_cast<float>(std::sin(nmod * v12.Phi()))}, qvectors[nmod][cfgQvecEstimator]) / getSPresolution(collision.centFT0C(), collision.trackOccupancyInTimeRange());
         if (t1.sign() * t2.sign() < 0) { // ULS
           fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), pair_dca, v12.Rapidity(), sp, weight);
-          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hNUA"), v12.Phi(), v12.Eta(), collision.posZ(), weight);
+          if (flowcorrectionGroup.cfgFillNUAHist) {
+            fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hNUA"), v12.Phi(), v12.Eta(), collision.posZ(), weight);
+          }
         } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
           fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), pair_dca, v12.Rapidity(), sp, weight);
-          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hNUA"), v12.Phi(), v12.Eta(), collision.posZ(), weight);
+          if (flowcorrectionGroup.cfgFillNUAHist) {
+            fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hNUA"), v12.Phi(), v12.Eta(), collision.posZ(), weight);
+          }
         } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
           fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), pair_dca, v12.Rapidity(), sp, weight);
-          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hNUA"), v12.Phi(), v12.Eta(), collision.posZ(), weight);
+          if (flowcorrectionGroup.cfgFillNUAHist) {
+            fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hNUA"), v12.Phi(), v12.Eta(), collision.posZ(), weight);
+          }
         }
       } else if constexpr (ev_id == 1) {
         if (t1.sign() * t2.sign() < 0) { // ULS
