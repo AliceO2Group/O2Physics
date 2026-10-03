@@ -13,6 +13,8 @@
 /// \author Paul Veen <paul.veen@cern.ch>
 /// \author Chi Zhang <chi.zhang@cern.ch>
 
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/DataModel/EventSelection.h"
 
 #include <CCDB/BasicCCDBManager.h>
@@ -83,6 +85,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
+using MyBCs = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
 using MyMuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;
 using MyMFTs = aod::MFTTracks;
 
@@ -185,6 +188,16 @@ struct muonQa {
     Configurable<bool> fEnableSingleMuonDiMuonCorrelations{"cfgEnableMuonDiMuonCorrelations", false, "Enable muon-dimuon QA checks"};
   } configQAs;
 
+  ////   Variables for selecting events
+  struct : ConfigurableGroup {
+    Configurable<bool> fEvSelRequireGoodRCT{"cfgEvSelRequireGoodRCT", false, "Require good detector flags in Run Condition Table"};
+    Configurable<bool> fEvSelRequireFrameBordersExclusion{"cfgEvSelRequireFrameBordersExclusion", false, "Exclude events in the TF and ITS ROF borders"};
+    Configurable<bool> fEvSelRequireNoCollInTimeRange{"cfgEvSelRequireNoCollInTimeRange", false, "Exclude events with multiple collisions in time range (standard)"};
+    Configurable<bool> fEvSelRequireNoSameBunch{"cfgEvSelRequireNoSameBunch", false, "Exclude events with multiple collisions in the same bunch crossing"};
+    Configurable<float> fEvSelVtxZMin{"cfgEvSelVtxZMin", -10.0f, "Minimum accepted value for vertex z position"};
+    Configurable<float> fEvSelVtxZMax{"cfgEvSelVtxZMax", 10.0f, "Maximum accepted value for vertex z position"};
+  } configEvSel;
+
   ////   Variables for selecting muon tracks
   struct : ConfigurableGroup {
     Configurable<float> fPMchLow{"cfgPMchLow", 0.0f, ""};
@@ -213,6 +226,9 @@ struct muonQa {
   ////   Variables for selecting dimuon DCA candidates
   Configurable<float> fDimuonDCAMassLow{"cfgDimuonDCAMassLow", 2.8f, ""};
   Configurable<float> fDimuonDCAMassHigh{"cfgDimuonDCAMassHigh", 3.4f, ""};
+
+  // Magnetic field position bias
+  Configurable<float> fFieldOriginBiasZ{"cfgFieldOriginBiasZ", 0.0f, "Bias applied to the magnetic field z position"};
 
   ////   Variables for alignment corrections
   Configurable<bool> fEnableMFTAlignmentCorrections{"cfgEnableMFTAlignmentCorrections", false, ""};
@@ -272,6 +288,8 @@ struct muonQa {
   Service<ccdb::BasicCCDBManager> ccdb;
   o2::field::MagneticField* fieldB = nullptr;
   double Bz; // Bz for MFT
+
+  o2::aod::rctsel::RCTFlagsChecker rctChecker{"CBT_muon_glo", false, false, true};
 
   geo::TransformationCreator transformation;
   std::map<int, math_utils::Transform3D> transformRef; // reference geometry w.r.t track data
@@ -2345,7 +2363,8 @@ struct muonQa {
     fgValues = {};
   }
 
-  void initCCDB(aod::BCsWithTimestamps const& bcs)
+  template <typename BC>
+  void initCCDB(BC const& bcs)
   {
     // Update CCDB informations
     if (bcs.size() > 0 && fCurrentRun != bcs.begin().runNumber()) {
@@ -2406,6 +2425,9 @@ struct muonQa {
     ccdb->setURL(configCCDB.ccdburl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
+
+    // configure magnetic field position bias
+    o2::conf::ConfigurableParam::setValue("FieldOriginBias.z", std::to_string(fFieldOriginBiasZ.value));
 
     // Configuration for track fitter
     const auto& trackerParam = TrackerParam::Instance();
@@ -2685,6 +2707,38 @@ struct muonQa {
   {
     for (auto const& collision : collisions) {
 
+      const auto& bc = bcs.rawIteratorAt(collision.bcId());
+
+      if (configEvSel.fEvSelRequireFrameBordersExclusion) {
+        // remove TF/ROF borders and ambiguous collisions
+        if (!bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) ||
+            !bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+          continue;
+        }
+      }
+
+      // remove events with multiple collisions in one bunch crossing
+      if (configEvSel.fEvSelRequireNoCollInTimeRange &&
+          !bc.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+        continue;
+      }
+
+      // remove events with multiple collisions in one bunch crossing
+      if (configEvSel.fEvSelRequireNoSameBunch &&
+          !bc.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+        continue;
+      }
+
+      // remove events with bad RCT flags
+      if (configEvSel.fEvSelRequireGoodRCT && !rctChecker(collision)) {
+        continue;
+      }
+
+      if (collision.posZ() < configEvSel.fEvSelVtxZMin ||
+          collision.posZ() > configEvSel.fEvSelVtxZMax) {
+        continue;
+      }
+
       uint64_t collisionIndex = collision.globalIndex();
       auto muonsThisCollision = muons.sliceBy(fwdtracksPerCollision, collisionIndex);
       auto mftsThisCollision = mfts.sliceBy(mftPerCollision, collisionIndex);
@@ -2695,7 +2749,7 @@ struct muonQa {
 
       auto& fgValuesColl = collisionSel[collisionIndex];
       FillCollision(collision, fgValuesColl);
-      fgValuesColl.bc = bcs.rawIteratorAt(collision.bcId()).globalBC();
+      fgValuesColl.bc = bc.globalBC();
       fgValuesColl.multMFT = mftsThisCollision.size();
     }
   }
@@ -2708,7 +2762,7 @@ struct muonQa {
 
       //// Get collision information if associated
       VarColl fgValuesColl;
-      if (muon.has_collision()) {
+      if (muon.has_collision() && collisions.contains(muon.collisionId())) {
         fgValuesColl = collisions.at(muon.collisionId());
       } else {
         continue;
@@ -2897,8 +2951,14 @@ struct muonQa {
 
     for (const auto& [muon1, muon2] : muonPairs) {
       auto collisionIndex1 = muon1.first;
+      if (!collisions.contains(collisionIndex1)) {
+        continue;
+      }
       auto const& collision1 = collisions.at(collisionIndex1);
       auto collisionIndex2 = muon2.first;
+      if (!collisions.contains(collisionIndex2)) {
+        continue;
+      }
       auto const& collision2 = collisions.at(collisionIndex2);
 
       auto mchIndex1 = muon1.second;
@@ -3840,7 +3900,7 @@ struct muonQa {
     }
   }
 
-  void processMuonQa(MyEvents const& collisions, aod::BCsWithTimestamps const& bcs, MyMuonsWithCov const& muontracks, MyMFTs const& mfttracks, aod::FwdTrkCls const& muonclusters)
+  void processMuonQa(MyEvents const& collisions, MyBCs const& bcs, MyMuonsWithCov const& muontracks, MyMFTs const& mfttracks, aod::FwdTrkCls const& muonclusters)
   {
     std::map<uint64_t, VarColl> collisionSel;
     std::map<uint64_t, std::vector<uint64_t>> matchingCandidates;
