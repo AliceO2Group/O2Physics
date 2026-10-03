@@ -1520,7 +1520,7 @@ struct LambdaAntiLambdaPairAnalysis {
 
   // Mixed-Event Compatablity variables
   Configurable<float> mixedEventMaxDeltaMultiplicity{"mixedEventMaxDeltaMultiplicity", 10.f, "Maximum multiplicity difference between mixed events"};
-  Configurable<int> maxMixedEvents{"maxMixedEvents", 200, "Maximum multiplicity-compatible collision combinations with selected candidates in both collisions per dataframe"};
+  Configurable<int> maxMixedEvents{"maxMixedEvents", 5, "Maximum multiplicity-compatible collision combinations with selected candidates in both collisions per dataframe"};
 
   // Short-range pairs
   Configurable<float> sameEventShortRangePairMaxDeltaRapidity{"sameEventShortRangePairMaxDeltaRapidity", 0.5f, "ShortRangePai Maximum absolute rapidity difference for same-event pairs"};
