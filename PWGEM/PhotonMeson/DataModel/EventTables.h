@@ -23,8 +23,8 @@
 #include <EMCALCalib/BadChannelMap.h>
 #include <Framework/AnalysisDataModel.h>
 
-#include <TBufferFile.h> // IWYU pragma: keep
-#include <TClass.h>      // IWYU pragma: keep
+#include <TBufferFile.h> // IWYU pragma: keep (needed by DECLARE_SOA_CCDB_COLUMN...)
+#include <TClass.h>      // IWYU pragma: keep (needed by DECLARE_SOA_CCDB_COLUMN...)
 
 #include <Rtypes.h> // for BIT
 
