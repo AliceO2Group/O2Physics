@@ -131,9 +131,10 @@ struct derivedlambdakzeroanalysis {
 
   // for MC
   Configurable<bool> doMCAssociation{"doMCAssociation", true, "if MC, do MC association"};
-  Configurable<bool> doTreatPiToMuon{"doTreatPiToMuon", false, "Take pi decay into muon into account in MC"};
+  Configurable<bool> doTreatPiToMuon{"doTreatPiToMuon", true, "Take pi decay into muon into account in MC"};
   Configurable<bool> doCollisionAssociationQA{"doCollisionAssociationQA", true, "check collision association"};
   Configurable<int> doSecondaryV0s{"doSecondaryV0s", 0, "Look at secondary V0s? 0: No; 1: yes via a loop on V0MCCores; 2: yes via a loop on CascMCCores"};
+  Configurable<bool> doQAfeeddown{"doQAfeeddown", true, "if MC, fill feeddown QA histograms"};
 
   struct : ConfigurableGroup {
     std::string prefix = "eventSelections"; // JSON group name
@@ -374,6 +375,8 @@ struct derivedlambdakzeroanalysis {
 
     // MC coll assoc QA axis
     ConfigurableAxis axisMonteCarloNch{"axisMonteCarloNch", {300, 0.0f, 3000.0f}, "N_{ch} MC"};
+
+    ConfigurableAxis axisPDGCodeMothers{"axisPDGCodeMothers", {7001, -3500.5, 3500.5}, "PDG code of mother particle"};
   } axisConfigurations;
 
   // UPC selections
@@ -457,6 +460,7 @@ struct derivedlambdakzeroanalysis {
   uint64_t maskSelectionLambda = 0;
   uint64_t maskSelectionAntiLambda = 0;
 
+  uint64_t secondaryMaskSelectionK0Short = 0;
   uint64_t secondaryMaskSelectionLambda = 0;
   uint64_t secondaryMaskSelectionAntiLambda = 0;
 
@@ -669,6 +673,7 @@ struct derivedlambdakzeroanalysis {
     BITSET(maskSelectionAntiLambda, selPhysPrimAntiLambda);
 
     // No primary requirement for feeddown matrix
+    secondaryMaskSelectionK0Short = maskTopological | maskTrackProperties | maskK0ShortSpecific;
     secondaryMaskSelectionLambda = maskTopological | maskTrackProperties | maskLambdaSpecific;
     secondaryMaskSelectionAntiLambda = maskTopological | maskTrackProperties | maskAntiLambdaSpecific;
 
@@ -1113,6 +1118,25 @@ struct derivedlambdakzeroanalysis {
         histos.add("h3dMassSecAntiLambdaFromXi", "h3dMassSecAntiLambdaFromXi", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
         histos.add("h3dMassSecAntiLambdaFromXiAndXi0", "h3dMassSecAntiLambdaFromXiAndXi0", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
       }
+    }
+
+    if (analyseK0Short && doQAfeeddown && (doprocessMonteCarloRun3 || doprocessMonteCarloRun2)) {
+      histos.add("h2dK0ShortMothers", "h2dK0ShortMothers", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisPDGCodeMothers});
+      histos.add("h2dK0ShortMothersIsPrimary", "h2dK0ShortMothersIsPrimary", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisPDGCodeMothers});
+      histos.add("h3dK0ShortMothers", "h3dK0ShortMothers", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisPDGCodeMothers});
+      histos.add("h3dK0ShortMothersIsPrimary", "h3dK0ShortMothersIsPrimary", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisPDGCodeMothers});
+    }
+    if (analyseLambda && doQAfeeddown && (doprocessMonteCarloRun3 || doprocessMonteCarloRun2)) {
+      histos.add("h2dLambdaMothers", "h2dLambdaMothers", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisPDGCodeMothers});
+      histos.add("h2dLambdaMothersIsPrimary", "h2dLambdaMothersIsPrimary", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisPDGCodeMothers});
+      histos.add("h3dLambdaMothers", "h3dLambdaMothers", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisPDGCodeMothers});
+      histos.add("h3dLambdaMothersIsPrimary", "h3dLambdaMothersIsPrimary", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisPDGCodeMothers});
+    }
+    if (analyseAntiLambda && doQAfeeddown && (doprocessMonteCarloRun3 || doprocessMonteCarloRun2)) {
+      histos.add("h2dAntiLambdaMothers", "h2dAntiLambdaMothers", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisPDGCodeMothers});
+      histos.add("h2dAntiLambdaMothersIsPrimary", "h2dAntiLambdaMothersIsPrimary", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisPDGCodeMothers});
+      histos.add("h3dAntiLambdaMothers", "h3dAntiLambdaMothers", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisPDGCodeMothers});
+      histos.add("h3dAntiLambdaMothersIsPrimary", "h3dAntiLambdaMothersIsPrimary", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisPDGCodeMothers});
     }
 
     if (analyseK0Short)
@@ -1706,18 +1730,22 @@ struct derivedlambdakzeroanalysis {
 
     if (v0.pdgCode() == PDG_t::kK0Short && isPositivePion && isNegativePion) {
       BITSET(bitMap, selConsiderK0Short);
-      if (v0.isPhysicalPrimary())
+      if (v0.isPhysicalPrimary()) {
         BITSET(bitMap, selPhysPrimK0Short);
+        LOG(info) << "coucou1";
+      }
     }
     if (v0.pdgCode() == PDG_t::kLambda0 && isPositiveProton && isNegativePion) {
       BITSET(bitMap, selConsiderLambda);
-      if (v0.isPhysicalPrimary())
+      if (v0.isPhysicalPrimary()) {
         BITSET(bitMap, selPhysPrimLambda);
+      }
     }
     if (v0.pdgCode() == PDG_t::kLambda0Bar && isPositivePion && isNegativeProton) {
       BITSET(bitMap, selConsiderAntiLambda);
-      if (v0.isPhysicalPrimary())
+      if (v0.isPhysicalPrimary()) {
         BITSET(bitMap, selPhysPrimAntiLambda);
+      }
     }
     return bitMap;
   }
@@ -2375,6 +2403,43 @@ struct derivedlambdakzeroanalysis {
     }
   }
 
+  template <typename TV0>
+  void fillFeeddownQA(TV0 const& v0, float pt, float centrality, uint64_t selMap)
+  // fill feeddown matrix for Lambdas or AntiLambdas
+  // fixme: a potential improvement would be to consider mass windows for the l/al
+  {
+    if (!v0.has_motherMCPart())
+      return; // does not have mother particle in record, skip
+
+    auto v0mother = v0.motherMCPart();
+
+    // __________________________________________
+    if (verifyMask(selMap, secondaryMaskSelectionK0Short) && analyseK0Short) {
+      histos.fill(HIST("h2dK0ShortMothers"), pt, v0mother.pdgCode());
+      histos.fill(HIST("h3dK0ShortMothers"), centrality, pt, v0mother.pdgCode());
+      if (v0mother.isPhysicalPrimary()) {
+        histos.fill(HIST("h2dK0ShortMothersIsPrimary"), pt, v0mother.pdgCode());
+        histos.fill(HIST("h3dK0ShortMothersIsPrimary"), centrality, pt, v0mother.pdgCode());
+      }
+    }
+    if (verifyMask(selMap, secondaryMaskSelectionLambda) && analyseLambda) {
+      histos.fill(HIST("h2dLambdaMothers"), pt, v0mother.pdgCode());
+      histos.fill(HIST("h3dLambdaMothers"), centrality, pt, v0mother.pdgCode());
+      if (v0mother.isPhysicalPrimary()) {
+        histos.fill(HIST("h2dLambdaMothersIsPrimary"), pt, v0mother.pdgCode());
+        histos.fill(HIST("h3dLambdaMothersIsPrimary"), centrality, pt, v0mother.pdgCode());
+      }
+    }
+    if (verifyMask(selMap, secondaryMaskSelectionAntiLambda) && analyseAntiLambda) {
+      histos.fill(HIST("h2dAntiLambdaMothers"), pt, v0mother.pdgCode());
+      histos.fill(HIST("h3dAntiLambdaMothers"), centrality, pt, v0mother.pdgCode());
+      if (v0mother.isPhysicalPrimary()) {
+        histos.fill(HIST("h2dAntiLambdaMothersIsPrimary"), pt, v0mother.pdgCode());
+        histos.fill(HIST("h3dAntiLambdaMothersIsPrimary"), centrality, pt, v0mother.pdgCode());
+      }
+    }
+  }
+
   template <typename TCollision>
   bool isEventAccepted(TCollision const& collision, bool fillHists)
   // check whether the collision passes our collision selections
@@ -3000,12 +3065,15 @@ struct derivedlambdakzeroanalysis {
       histos.fill(HIST("GeneralQA/h2dArmenterosAll"), v0.alpha(), v0.qtarm());
 
       uint64_t selMap = computeReconstructionBitmap(v0, collision, yK0Short, yLambda);
-      BITSET(selMap, selMapMCassociation);
+      selMap |= selMapMCassociation;
 
       // feeddown matrix always with association
       if constexpr (requires { v0.motherMCPartId(); }) {
         if (calculateFeeddownMatrix) {
           fillFeeddownMatrix(v0, ptMC, centrality, selMap);
+        }
+        if (doQAfeeddown) {
+          fillFeeddownQA(v0, ptMC, centrality, selMap);
         }
       }
 
