@@ -327,7 +327,7 @@ struct femtoWorldPairTaskTrackPhi {
   void processMixedEvent(o2::aod::FemtoWorldCollisions& cols,
                          o2::aod::FemtoWorldParticles&)
   {
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtoworldcollision::MultV0M> colBinning{{CfgVtxBins, CfgMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtoworldcollision::MultV0M> colBinning{{CfgVtxBins, CfgMultBins}};
 
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, ConfNEventsMix, -1, cols, cols)) {
 

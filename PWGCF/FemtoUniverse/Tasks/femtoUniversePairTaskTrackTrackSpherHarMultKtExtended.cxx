@@ -264,8 +264,8 @@ struct FemtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   ConfigurableAxis confmTBins3D{"confmTBins3D", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<twotracksconfigs.confUse3D>> to true in order to use)"};
   ConfigurableAxis confmultBins3D{"confmultBins3D", {VARIABLE_WIDTH, 0.0f, 20.0f, 30.0f, 40.0f, 99999.0f}, "multiplicity Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<twotracksconfigs.confUse3D>> to true in order to use)"};
 
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBinsCent}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningNtr{{confVtxBins, confMultBinsMult}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBinsCent}};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningNtr{{confVtxBins, confMultBinsMult}};
 
   ConfigurableAxis confkstarBins{"confkstarBins", {60, 0.0, 0.3}, "binning kstar"};
   ConfigurableAxis confkTBins{"confkTBins", {150, 0., 9.}, "binning kT"};
@@ -482,8 +482,8 @@ struct FemtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   void init(InitContext&)
   {
 
-    colBinningCent = ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M>{{confVtxBins, confMultBinsCent}, true};
-    colBinningNtr = ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr>{{confVtxBins, confMultBinsMult}, true};
+    colBinningCent = ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M>{{confVtxBins, confMultBinsCent}};
+    colBinningNtr = ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr>{{confVtxBins, confMultBinsMult}};
 
     eventHisto.init(&qaRegistry);
     trackHistoPartOne.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarBins, twotracksconfigs.confIsMC, trackonefilter.confPDGCodePartOne, true);
