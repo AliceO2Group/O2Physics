@@ -5,7 +5,7 @@ LINES FOR FULL EXECUTION (EASY TO FIND, DETAILS BELOW)
 
 mkdir FluenceStudy
 cd FluenceStudy
-source /path/to/O2Physics/ALICE3/Macros/Fluence/SetupFluenceStudyGeant.sh 
+source /path/to/O2Physics/ALICE3/Macros/Fluence/SetupFluenceStudyGeant.sh
 
 python3 simulation.py all --events 15000 --bins-r 640 --bins-z 1000
 # Note: debug first on a few events, even 10-20 is ok
@@ -30,15 +30,15 @@ All the required files will be copied into the current working directory.
 INITIAL FILES AT ONE LEVEL
 --------------------------
 
-Generation: 
-ALICE3Field.C  
-scoring_g4_alice3.in  
-02_make_g4config.sh  
-00_prepare.sh  
-01_run.sh  
-02_check.sh  
-03_clean.sh  
-simulation.py  
+Generation:
+ALICE3Field.C
+scoring_g4_alice3.in
+02_make_g4config.sh
+00_prepare.sh
+01_run.sh
+02_check.sh
+03_clean.sh
+simulation.py
 
 Analysis (basic):
 analyze_geant.py
@@ -97,16 +97,16 @@ Both files remain at the same top level as the code.
 TOP-LEVEL FILES AFTER FIRST PREPARE
 -----------------------------------
 
-ALICE3Field.C  
-scoring_g4_alice3.in  
-02_make_g4config.sh  
-rd50_niel.root  
-rd50_niel.csv  
-00_prepare.sh  
-01_run.sh  
-02_check.sh  
-03_clean.sh  
-simulation.py  
+ALICE3Field.C
+scoring_g4_alice3.in
+02_make_g4config.sh
+rd50_niel.root
+rd50_niel.csv
+00_prepare.sh
+01_run.sh
+02_check.sh
+03_clean.sh
+simulation.py
 
 
 SCORING
@@ -178,7 +178,7 @@ o2-sim-serial-run5 \
   -n "$N_EVENTS" \
   -g pythia8pp \
   --seed "$SEED" \
-  --configKeyValues "$CONFIG_KEYS" 
+  --configKeyValues "$CONFIG_KEYS"
 
 And modify what you need (note: running with FT3 option FT3Base.layoutFT3=kSegmented)
 
@@ -313,7 +313,7 @@ Produce geometry_points.csv from the root geometry file:
 By default it takes the file ./Simulation_files/ALICE3_geometry.root
 Source, destination R and Z range can be changed using the arguments of the function.
 
-A geometry_points.csv with the reference geometry is copied anyway with the setup. 
+A geometry_points.csv with the reference geometry is copied anyway with the setup.
 
 Run the Geant4 TID/NIEL analysis with:
 
