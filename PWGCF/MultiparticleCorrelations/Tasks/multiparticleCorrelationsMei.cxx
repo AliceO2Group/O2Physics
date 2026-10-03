@@ -973,19 +973,23 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     } // end of for (int64_t nTrack = 0; nTrack < tracks.size(); ++nTrack) {
 
     std::vector<TComplex> resultMultCorr(2, TComplex(0., 0.));
-    if (cfMasterCutSwitch && passEventCutsReal && passTechnicalCut) {
-      resultMultCorr = two(qVectorsTableReal, n2);
-      if (noneZeroDenom(resultMultCorr)) {
-        obs.fProfTwo[eRec]->Fill(thisCollCent, (resultMultCorr[0] / resultMultCorr[1].Re()).Re());
-      }
-
-      if (rs == eRecAndSim && passEventCutsMC) {
-        resultMultCorr = two(qVectorsTableMC, n2);
+    if (cfMasterCutSwitch) {
+      if (passEventCutsReal && passTechnicalCut) {
+        resultMultCorr = two(qVectorsTableReal, n2);
         if (noneZeroDenom(resultMultCorr)) {
-          obs.fProfTwo[eSim]->Fill(thisCollCent, (resultMultCorr[0] / resultMultCorr[1].Re()).Re());
+          obs.fProfTwo[eRec]->Fill(thisCollCent, (resultMultCorr[0] / resultMultCorr[1].Re()).Re());
         }
       }
-    }
+
+      if constexpr (rs == eRecAndSim) {
+        if (passEventCutsMC) {
+          resultMultCorr = two(qVectorsTableMC, n2);
+          if (noneZeroDenom(resultMultCorr)) {
+            obs.fProfTwo[eSim]->Fill(thisCollCent, (resultMultCorr[0] / resultMultCorr[1].Re()).Re());
+          }
+        } // end of if (passEventCutsMC) {
+      } // end of if constexpr (rs == eRecAndSim) {
+    } // end of if (cfMasterCutSwitch) {
 
     isFirstCollision = false; // Now the first collision ends
   } // end of template <ERecSim rs, typename T1, typename T2> void steer(T1 const& collision, T2 const& tracks) {
