@@ -25,6 +25,8 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
+#include <vector>
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -97,7 +99,6 @@ struct SGDeuteronSpectra {
     int truegapSide = sgSelector.trueGap(coll, FIT_cut[0], FIT_cut[1], FIT_cut[2], ZDC_cut);
     registry.fill(HIST("collisions/TrueGapSide"), truegapSide, 1.);
 
-
     std::vector<float> parameters = {PV_cut, dcaZ_cut, dcaXY_cut, tpcChi2_cut, tpcNClsFindable_cut, itsChi2_cut, eta_cut, pt_cut};
 
     for (const auto& t : tracks) {
@@ -138,7 +139,8 @@ struct SGDeuteronSpectra {
           if (t.sign() > 0) {
             registry.fill(HIST("tracks/Deut_Pt_TPC_DoubleGap"), t.pt(), t.tpcNSigmaDe());
             registry.fill(HIST("tracks/Deut_Pt_TOF_DoubleGap"), t.pt(), t.tofNSigmaDe());
-            if (TMath::Abs(t.tpcNSigmaDe()) < 3.0) {                registry.fill(HIST("tracks/Deut_Pt_TOF_DoubleGap_TPCpresel"), t.pt(), t.tofNSigmaDe());
+            if (TMath::Abs(t.tpcNSigmaDe()) < 3.0) {
+              registry.fill(HIST("tracks/Deut_Pt_TOF_DoubleGap_TPCpresel"), t.pt(), t.tofNSigmaDe());
             }
           } else {
             registry.fill(HIST("tracks/Antideut_Pt_TPC_DoubleGap"), t.pt(), t.tpcNSigmaDe());
