@@ -332,6 +332,7 @@ struct HadNucleiFemto {
   Produces<aod::HadNucleiMEDiagLinks> mOutputMEDiagnosticLinks;
 
   struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
     std::string prefix{"meDiagnostic"};
     Configurable<bool> saveRejectedEvents{"saveRejectedEvents", false, "Save rejected collision rows too (potentially very large); rejection counters are always recorded"};
     Configurable<bool> savePartnerLinks{"savePartnerLinks", true, "Save one diagnostic row per undirected mixed-event combination"};
