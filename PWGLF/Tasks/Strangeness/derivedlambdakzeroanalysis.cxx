@@ -1732,7 +1732,6 @@ struct derivedlambdakzeroanalysis {
       BITSET(bitMap, selConsiderK0Short);
       if (v0.isPhysicalPrimary()) {
         BITSET(bitMap, selPhysPrimK0Short);
-        LOG(info) << "coucou1";
       }
     }
     if (v0.pdgCode() == PDG_t::kLambda0 && isPositiveProton && isNegativePion) {
