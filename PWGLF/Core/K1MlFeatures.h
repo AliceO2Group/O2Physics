@@ -744,11 +744,6 @@ static_assert(detail::isStrictlyIncreasingBelow(RelationalV1Projection, NMasterF
 static_assert(detail::isStrictlyIncreasingBelow(SubstructureV1Projection, NMasterFeatures), "SubstructureV1 projection indices must be strictly increasing and below NMasterFeatures");
 inline constexpr std::string_view FeatureContractSha256 = "39f38ece001581d8ebf57392fad045759a63ba49f57c411b9b566d7c1cc58b8a";
 
-// The kaon mass is the O2 constant (exactly 0.493677). The pion mass keeps the
-// frozen feature-contract literal; O2 MassPionCharged differs (0.1395704).
-inline constexpr double K1ChargedKaonMassGeV = o2::constants::physics::MassKaonCharged;
-inline constexpr double ChargedPionMassGeV = 0.13957039; // o2-linter: disable=pdg/explicit-mass (frozen feature contract value; O2 MassPionCharged is 0.1395704)
-
 inline FeaturePack buildMasterFeatures(CandidateSnapshot const& candidate)
 {
   FeaturePack pack;
@@ -769,7 +764,7 @@ inline FeaturePack buildMasterFeatures(CandidateSnapshot const& candidate)
 
   std::array<detail::Kinematics, NCandidateTracks> kin{};
   for (std::size_t i = 0; i < NCandidateTracks; ++i) {
-    if (!detail::getKinematics(candidate.tracks[i], i == 0 ? K1ChargedKaonMassGeV : ChargedPionMassGeV, kin[i])) {
+    if (!detail::getKinematics(candidate.tracks[i], i == 0 ? o2::constants::physics::MassKaonCharged : o2::constants::physics::MassPionCharged, kin[i])) {
       pack.status = BuildStatus::InvalidKinematics;
       return pack;
     }
