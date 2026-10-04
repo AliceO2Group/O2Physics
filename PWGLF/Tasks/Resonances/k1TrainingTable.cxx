@@ -34,6 +34,7 @@
 #include <Framework/runDataProcessing.h>
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 #include <TH1.h>
 
 #include <array>
@@ -145,7 +146,7 @@ struct K1TrainingTable {
     k1MlTracks(k1MlEventRow, static_cast<int64_t>(track.trackId()), track.px(), track.py(), track.pz(),
                track.pidNSigmaPiFlag(), track.pidNSigmaKaFlag(), track.pidNSigmaPrFlag(),
                track.trackSelectionFlags(), track.trackFlags(), track.tpcNClsCrossedRows(), track.itsClusterMap());
-    const auto row = static_cast<int64_t>(k1MlTracks.lastIndex());
+    const int64_t row = k1MlTracks.lastIndex();
     k1MlTrackRows.emplace(id, row);
     return row;
   }
@@ -155,9 +156,9 @@ struct K1TrainingTable {
   {
     k1MlTrackRows.clear();
     // ResoCollisions_001 carries no run number or BC; the reduced collision row identifies the event within its DF.
-    k1MlEvents(static_cast<int64_t>(collision.globalIndex()),
+    k1MlEvents(collision.globalIndex(),
                collision.posZ(), collision.bMagField(), collision.cent(), collision.multiplicity(), collision.isRecINELgt0());
-    k1MlEventRow = static_cast<int64_t>(k1MlEvents.lastIndex());
+    k1MlEventRow = k1MlEvents.lastIndex();
   }
 
   template <typename Collision>
@@ -168,7 +169,7 @@ struct K1TrainingTable {
     }
     uint64_t hash = FnvOffsetBasis;
     for (const auto& value : pack.master) {
-      const uint32_t bits = std::bit_cast<uint32_t>(value);
+      const auto bits = std::bit_cast<uint32_t>(value);
       for (unsigned int shift = 0; shift < BitsPerFloat; shift += BitsPerByte) {
         hash = (hash ^ ((bits >> shift) & ByteMask)) * FnvPrime;
       }
@@ -209,7 +210,7 @@ struct K1TrainingTable {
                    static_cast<float>(mother.Pt()), static_cast<float>(mother.Rapidity()),
                    static_cast<float>(mother.Eta()), static_cast<float>(mother.Phi()),
                    static_cast<int8_t>(kaon.sign()), passBits);
-    const auto row = static_cast<int64_t>(k1MlCandidates.lastIndex());
+    const int64_t row = k1MlCandidates.lastIndex();
     k1MlInputs(row, pack.master.data(), static_cast<uint8_t>(pack.status));
     if constexpr (IsMC) {
       const bool matched = channel != K1TruthChannel::None;
@@ -266,7 +267,7 @@ struct K1TrainingTable {
       return;
     }
     core.forEachGeneratedK1(histos, resoParents, [&](auto const& part, K1TruthChannel channel) {
-      k1MlGenAudit(static_cast<int64_t>(collision.globalIndex()), static_cast<int64_t>(part.originalMcParticleId()),
+      k1MlGenAudit(collision.globalIndex(), static_cast<int64_t>(part.originalMcParticleId()),
                    part.pdgCode(), part.daughterPDG1(), part.daughterPDG2(), static_cast<uint8_t>(channel),
                    part.pt(), part.y(), true);
     });

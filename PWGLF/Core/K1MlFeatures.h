@@ -169,21 +169,21 @@ struct EncodedValue {
 inline EncodedValue encodePID(float decoded)
 {
   if (std::isnan(decoded)) {
-    return {0.f, 0.f, 0.f};
+    return {.value = 0.f, .valid = 0.f, .overflow = 0.f};
   }
   if (std::isinf(decoded)) {
-    return {std::signbit(decoded) ? -3.5f : 3.5f, 1.f, 1.f};
+    return {.value = std::signbit(decoded) ? -3.5f : 3.5f, .valid = 1.f, .overflow = 1.f};
   }
-  return {decoded, 1.f, 0.f};
+  return {.value = decoded, .valid = 1.f, .overflow = 0.f};
 }
 
 inline EncodedValue encodeDCA(float decoded)
 {
   if (!std::isfinite(decoded)) {
-    return {0.f, 0.f, 0.f};
+    return {.value = 0.f, .valid = 0.f, .overflow = 0.f};
   }
   const bool overflow = decoded == o2::aod::resomicrodaughter001::DCAEncoding::MaxDCA;
-  return {decoded, 1.f, overflow ? 1.f : 0.f};
+  return {.value = decoded, .valid = 1.f, .overflow = overflow ? 1.f : 0.f};
 }
 
 struct Kinematics {
@@ -798,7 +798,7 @@ inline FeaturePack buildMasterFeatures(CandidateSnapshot const& candidate)
       detail::append(pack.master, index, detail::encodePID(decoded));
     }
     for (const float& decoded : track.tofNSigma) {
-      detail::append(pack.master, index, track.hasTOF ? detail::encodePID(decoded) : detail::EncodedValue{0.f, 0.f, 0.f});
+      detail::append(pack.master, index, track.hasTOF ? detail::encodePID(decoded) : detail::EncodedValue{.value = 0.f, .valid = 0.f, .overflow = 0.f});
     }
     detail::append(pack.master, index, detail::encodeDCA(track.dcaXY));
     detail::append(pack.master, index, detail::encodeDCA(track.dcaZ));

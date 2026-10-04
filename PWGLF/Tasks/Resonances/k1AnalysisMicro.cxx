@@ -18,7 +18,6 @@
 #include "PWGLF/Core/ResoAnalysisSelectionCore.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
 
-#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
@@ -34,6 +33,7 @@
 #include <Framework/runDataProcessing.h>
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 
 #include <array>
 #include <cmath>

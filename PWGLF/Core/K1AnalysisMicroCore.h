@@ -21,7 +21,6 @@
 
 #include "PWGLF/Core/K1MlFeatures.h"
 #include "PWGLF/Core/ResoAnalysisSelectionCore.h"
-#include "PWGLF/DataModel/LFResonanceTables.h"
 
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoAHelpers.h>
@@ -32,6 +31,7 @@
 
 #include <Math/GenVector/VectorUtil.h>
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 #include <TH1.h>
 #include <TH2.h>
 #include <TPDGCode.h>
@@ -521,7 +521,7 @@ class K1AnalysisMicroCore
         }
 
         // Stage L common acceptance uses the existing inclusive rapidity window.
-        values.inRapidity = !(lResonanceK1.Rapidity() > mCandidateCuts.cK1MaxRap || lResonanceK1.Rapidity() < mCandidateCuts.cK1MinRap);
+        values.inRapidity = lResonanceK1.Rapidity() >= mCandidateCuts.cK1MinRap && lResonanceK1.Rapidity() <= mCandidateCuts.cK1MaxRap;
         if (!values.inRapidity) {
           if constexpr (HasCandidateHook) {
             if (tripletSelected) {
@@ -553,11 +553,11 @@ class K1AnalysisMicroCore
 
         // Candidate cuts (each one is evaluated only if switched on)
         values.passesCandidateCuts =
-          !(isK892Mode && mSecondaryWindowOn && (!isInWindow(values.mass13, o2::constants::physics::MassK0Star892, mSecondaryCuts.cSecondaryMasswindow) || pion1.sign() == bTrack.sign())) &&
-          !(mAnotherMassCutOn && !isInRange(isK892Mode ? lResonanceSecondary.M() : values.mass13, mSecondaryCuts.cMinAnotherSecondaryMassCut, mSecondaryCuts.cMaxAnotherSecondaryMassCut)) &&
-          !(mPiKaMassCutOn && !isInRange(values.mass23, mSecondaryCuts.cMinPiKaMassCut, mSecondaryCuts.cMaxPiKaMassCut)) &&
-          !(mAngleCutOn && !isInRange(values.angle, mSecondaryCuts.cMinAngle, mSecondaryCuts.cMaxAngle)) &&
-          !(mPairAsymCutOn && !isInRange(values.pairAsym, mSecondaryCuts.cMinPairAsym, mSecondaryCuts.cMaxPairAsym));
+          (!isK892Mode || !mSecondaryWindowOn || (isInWindow(values.mass13, o2::constants::physics::MassK0Star892, mSecondaryCuts.cSecondaryMasswindow) && pion1.sign() != bTrack.sign())) &&
+          (!mAnotherMassCutOn || isInRange(isK892Mode ? lResonanceSecondary.M() : values.mass13, mSecondaryCuts.cMinAnotherSecondaryMassCut, mSecondaryCuts.cMaxAnotherSecondaryMassCut)) &&
+          (!mPiKaMassCutOn || isInRange(values.mass23, mSecondaryCuts.cMinPiKaMassCut, mSecondaryCuts.cMaxPiKaMassCut)) &&
+          (!mAngleCutOn || isInRange(values.angle, mSecondaryCuts.cMinAngle, mSecondaryCuts.cMaxAngle)) &&
+          (!mPairAsymCutOn || isInRange(values.pairAsym, mSecondaryCuts.cMinPairAsym, mSecondaryCuts.cMaxPairAsym));
         auto exportCandidate = [&](uint16_t passBits) {
           if constexpr (IsResoMicrotrack && !IsMix && HasExportHook) {
             onExport(collision, bTrack, pion2, pion1, flowChannel, passBits);
