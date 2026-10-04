@@ -17,6 +17,7 @@
 #ifndef PWGLF_CORE_K1ANALYSISMICROCORE_H_
 #define PWGLF_CORE_K1ANALYSISMICROCORE_H_
 
+#include "PWGLF/Core/K1MlFeatures.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
 
 #include <CommonConstants/MathConstants.h>
@@ -40,6 +41,7 @@
 #include <cstdint>
 #include <limits>
 #include <set>
+#include <type_traits>
 #include <vector>
 
 namespace o2::analysis::k1micro
@@ -99,6 +101,16 @@ enum class QAFolder {
   After,  // QAcut/*: after the candidate cuts
   MC      // QAMC/*: matched K1 truth candidates
 };
+
+// Cumulative selection bits of an unlike-sign candidate handed to the candidate callback.
+enum CandidatePassBit : uint16_t {
+  kPassLoose = 1,     // valid canonical candidate inside the K1 rapidity window
+  kPassQuality = 2,   // track quality of all three tracks
+  kPassPID = 4,       // TOF requirement and PID of all three tracks
+  kPassPair = 8,      // pion-pair pT and secondary mass window
+  kPassCandidate = 16 // candidate cuts
+};
+inline constexpr uint16_t PassBitsSelected = kPassLoose | kPassQuality | kPassPID | kPassPair | kPassCandidate;
 
 // Resolved PID cut of one species at a given pT.
 struct PIDCut {
@@ -219,6 +231,13 @@ struct ProcessModes {
   bool mcReco = false;      // reconstructed MC with full or micro tracks
   bool mcRecoMicro = false; // reconstructed MC with micro tracks
   bool mcGen = false;       // generated K1 parents in selected reconstructed events
+};
+
+/// Loose-stage traversal of unlike-sign micro candidates for the candidate callback.
+/// With the defaults and without a callback, the candidate loop applies only the conventional selection.
+struct LooseStageOptions {
+  bool audit = false;          // fill ML/looseCutflow and ML/looseMassPtActivity
+  bool exportSelected = false; // hand candidates to the callback at the selected stage instead of the loose stage
 };
 
 // A cut is on unless it carries the disabled value (tolerant to the float parsing of the JSON value).
@@ -453,7 +472,8 @@ class K1AnalysisMicroCore
             EventCuts const& eventCuts, TrackCuts const& trackCuts,
             PionPidCuts const& pionPidCuts, KaonPidCuts const& kaonPidCuts,
             SecondaryCuts const& secondaryCuts, CandidateCuts const& candidateCuts,
-            HistogramOptions const& histogramOptions, ProcessModes const& modes)
+            HistogramOptions const& histogramOptions, ProcessModes const& modes,
+            LooseStageOptions const& looseOptions = {})
   {
     mEventCuts = eventCuts;
     mTrackCuts = trackCuts;
@@ -462,6 +482,7 @@ class K1AnalysisMicroCore
     mSecondaryCuts = secondaryCuts;
     mCandidateCuts = candidateCuts;
     mHistogramOptions = histogramOptions;
+    mLooseOptions = looseOptions;
     mTruthDebugCounts = {};
 
     mSecondaryWindowOn = isCutEnabled(mSecondaryCuts.cSecondaryMasswindow);
@@ -707,13 +728,16 @@ class K1AnalysisMicroCore
   }
 
   // Unordered (pion, pion, kaon) candidate loop of one collision (or one mixed pair of collisions).
-  // dTracks1: bachelor kaons, dTracks2: pions.
-  template <bool IsMC, bool IsMix, bool IsResoMicrotrack, typename CollisionType, typename TracksType>
-  void fillHistograms(o2::framework::HistogramRegistry& histos, const CollisionType& collision, const TracksType& dTracks1, const TracksType& dTracks2)
+  // dTracks1: bachelor kaons, dTracks2: pions. The optional callback receives the unlike-sign micro
+  // same-event candidates in the canonical roles (collision, kaon, same-sign pion, opposite-sign pion,
+  // truth channel, pass bits) at the loose or selected stage configured by LooseStageOptions.
+  template <bool IsMC, bool IsMix, bool IsResoMicrotrack, typename CollisionType, typename TracksType, typename Callback = std::nullptr_t>
+  void fillHistograms(o2::framework::HistogramRegistry& histos, const CollisionType& collision, const TracksType& dTracks1, const TracksType& dTracks2, Callback callback = nullptr)
   {
     if (dTracks1.size() == 0 || dTracks2.size() == 0) {
       return;
     }
+    constexpr bool HasCallback = !std::is_same_v<Callback, std::nullptr_t>;
     // Sets are local to this reconstructed collision: IDs cannot leak across DFs.
     // Source-file/DF deduplication across split collisions belongs in the audit.
     std::array<std::set<int>, NTruthChannels> matchedMothers;
@@ -725,6 +749,24 @@ class K1AnalysisMicroCore
     const int64_t firstPionIndex = dTracks2.begin().index();
     const auto kaonSelected = buildSelectionCache<IsResoMicrotrack, Species::Kaon, FillCutFlow>(histos, dTracks1, firstKaonIndex);
     const auto pionSelected = buildSelectionCache<IsResoMicrotrack, Species::Pion, FillCutFlow>(histos, dTracks2, firstPionIndex);
+
+    // Only micro same-event ML work needs traversal before conventional cuts.
+    // The canonical-candidate validity is also required before a selected-stage callback.
+    bool visitLoose = false;
+    bool checkValidity = false;
+    if constexpr (IsResoMicrotrack && !IsMix) {
+      visitLoose = mLooseOptions.audit || (!mLooseOptions.exportSelected && HasCallback);
+      checkValidity = visitLoose || (mLooseOptions.exportSelected && HasCallback);
+    }
+    std::vector<uint8_t> kaonQuality(dTracks1.size(), 0), pionQuality(dTracks2.size(), 0);
+    if (visitLoose) {
+      for (const auto& track : dTracks1) {
+        kaonQuality[getCacheIndex(track, firstKaonIndex, kaonQuality.size())] = trackQualityStage<IsResoMicrotrack>(track) == kTrkClusters;
+      }
+      for (const auto& track : dTracks2) {
+        pionQuality[getCacheIndex(track, firstPionIndex, pionQuality.size())] = trackQualityStage<IsResoMicrotrack>(track) == kTrkClusters;
+      }
+    }
 
     // Values needed only by switched-on cuts or QA are computed only then
     const bool isK892Mode = mSecondaryCuts.cfgModeK892orRho;
@@ -745,7 +787,7 @@ class K1AnalysisMicroCore
       const bool pionsSelected = pionSelected[getCacheIndex(trk1, firstPionIndex, pionSelected.size())] && pionSelected[getCacheIndex(trk2, firstPionIndex, pionSelected.size())];
       bool pairPt = false;
       bool rhoWindow = true;
-      if (pionsSelected) {
+      if (pionsSelected || visitLoose) {
         // Resonance reconstruction
         lDecayDaughter1.SetCoordinates(trk1.px(), trk1.py(), trk1.pz(), o2::constants::physics::MassPionCharged);
         lDecayDaughter2.SetCoordinates(trk2.px(), trk2.py(), trk2.pz(), o2::constants::physics::MassPionCharged);
@@ -777,27 +819,29 @@ class K1AnalysisMicroCore
           }
         }
       }
-      if (!pionsSelected) {
+      if (!pionsSelected && !visitLoose) {
         continue;
       }
 
-      if (fillQA) {
+      if (fillQA && pionsSelected) {
         fillPionQA<QAFolder::Before>(histos, trk1, true);
         fillPionQA<QAFolder::Before>(histos, trk2, false);
       }
 
-      if (!pairPt) {
+      if (!pairPt && !visitLoose) {
         continue;
       }
 
-      if (fillQA) {
+      if (fillQA && pionsSelected && pairPt) {
         histos.fill(HIST("QA/hInvmassSecon"), lResonanceSecondary.M());
       }
       if constexpr (IsMC) {
-        histos.fill(HIST("QAMC/hpT_Secondary"), lResonanceSecondary.Pt());
+        if (pionsSelected && pairPt) {
+          histos.fill(HIST("QAMC/hpT_Secondary"), lResonanceSecondary.Pt());
+        }
       }
       // Secondary mass window (rho mode): the bachelor loop is skipped for rejected pairs
-      if (!rhoWindow) {
+      if (!rhoWindow && !visitLoose) {
         continue;
       }
 
@@ -819,13 +863,19 @@ class K1AnalysisMicroCore
             }
           }
         };
-        countCandidate(6);
-        if (!kaonSelected[getCacheIndex(bTrack, firstKaonIndex, kaonSelected.size())]) {
+        const bool pairSelected = pionsSelected && pairPt && rhoWindow;
+        const bool bachelorSelected = kaonSelected[getCacheIndex(bTrack, firstKaonIndex, kaonSelected.size())];
+        if (pairSelected) {
+          countCandidate(6);
+        }
+        if ((!pairSelected || !bachelorSelected) && !visitLoose) {
           continue;
         }
-        countCandidate(7);
+        if (pairSelected && bachelorSelected) {
+          countCandidate(7);
+        }
 
-        if (fillQA) {
+        if (fillQA && pairSelected && bachelorSelected) {
           fillKaonQA<QAFolder::Before>(histos, bTrack);
         }
 
@@ -843,11 +893,37 @@ class K1AnalysisMicroCore
         lDecayDaughter_bach.SetCoordinates(bTrack.px(), bTrack.py(), bTrack.pz(), o2::constants::physics::MassKaonCharged);
         lResonanceK1 = lResonanceSecondary + lDecayDaughter_bach;
 
-        // Cuts
+        auto countMl = [&](int stage) {
+          if (mLooseOptions.audit && isUnlikeSign) {
+            histos.fill(HIST("ML/looseCutflow"), stage, 0);
+            if (flowChannel != K1TruthChannel::None) {
+              const int stratum = 2 * static_cast<int>(flowChannel) - (bTrack.sign() > 0 ? 1 : 0);
+              histos.fill(HIST("ML/looseCutflow"), stage, stratum);
+            }
+          }
+        };
+        bool validLoose = false;
+        if constexpr (IsResoMicrotrack && !IsMix) {
+          if (checkValidity && isUnlikeSign) {
+            const auto canonical = o2::analysis::k1ml::canonicalizeUS(o2::analysis::k1ml::makeTrackSnapshot(bTrack), o2::analysis::k1ml::makeTrackSnapshot(pion2), o2::analysis::k1ml::makeTrackSnapshot(pion1));
+            validLoose = canonical.status == o2::analysis::k1ml::BuildStatus::Ok &&
+                         std::isfinite(lResonanceK1.M()) && std::isfinite(lResonanceK1.Pt()) &&
+                         std::isfinite(lResonanceK1.Rapidity()) && std::isfinite(lResonanceK1.Eta()) &&
+                         std::isfinite(lResonanceK1.Phi()) &&
+                         o2::analysis::k1ml::buildMasterFeatures(canonical.candidate).status == o2::analysis::k1ml::BuildStatus::Ok;
+            if (validLoose) {
+              countMl(0);
+            }
+          }
+        }
+
+        // Stage L common acceptance uses the existing inclusive rapidity window.
         if (lResonanceK1.Rapidity() > mCandidateCuts.cK1MaxRap || lResonanceK1.Rapidity() < mCandidateCuts.cK1MinRap) {
           continue;
         }
-        countCandidate(8);
+        if (pairSelected && bachelorSelected) {
+          countCandidate(8);
+        }
 
         double mass13 = 0.;
         double mass23 = 0.;
@@ -870,6 +946,54 @@ class K1AnalysisMicroCore
                                  : (lResonanceSecondary.E() - lDecayDaughter_bach.E()) / (lResonanceSecondary.E() + lDecayDaughter_bach.E());
         }
 
+        // Candidate cuts (each one is evaluated only if switched on)
+        const bool candidateCutsPass =
+          !(isK892Mode && mSecondaryWindowOn && (!isInWindow(mass13, o2::constants::physics::MassK0Star892, mSecondaryCuts.cSecondaryMasswindow) || pion1.sign() == bTrack.sign())) &&
+          !(mAnotherMassCutOn && !isInRange(isK892Mode ? lResonanceSecondary.M() : mass13, mSecondaryCuts.cMinAnotherSecondaryMassCut, mSecondaryCuts.cMaxAnotherSecondaryMassCut)) &&
+          !(mPiKaMassCutOn && !isInRange(mass23, mSecondaryCuts.cMinPiKaMassCut, mSecondaryCuts.cMaxPiKaMassCut)) &&
+          !(mAngleCutOn && !isInRange(lK1Angle, mSecondaryCuts.cMinAngle, mSecondaryCuts.cMaxAngle)) &&
+          !(mPairAsymCutOn && !isInRange(lPairAsym, mSecondaryCuts.cMinPairAsym, mSecondaryCuts.cMaxPairAsym));
+        auto emitCandidate = [&](uint16_t passBits) {
+          if constexpr (IsResoMicrotrack && !IsMix && HasCallback) {
+            callback(collision, bTrack, pion2, pion1, flowChannel, passBits);
+          } else {
+            static_cast<void>(passBits);
+          }
+        };
+        if (visitLoose && validLoose) {
+          countMl(1);
+          if (mLooseOptions.audit) {
+            histos.fill(HIST("ML/looseMassPtActivity"), lResonanceK1.M(), lResonanceK1.Pt(), collision.cent());
+          }
+          const bool qualityPass = kaonQuality[getCacheIndex(bTrack, firstKaonIndex, kaonQuality.size())] &&
+                                   pionQuality[getCacheIndex(trk1, firstPionIndex, pionQuality.size())] &&
+                                   pionQuality[getCacheIndex(trk2, firstPionIndex, pionQuality.size())];
+          uint16_t passBits = kPassLoose;
+          if (qualityPass) {
+            passBits |= kPassQuality;
+            countMl(2);
+            if (pionsSelected && bachelorSelected) {
+              passBits |= kPassPID;
+              countMl(3);
+              if (pairPt && rhoWindow) {
+                passBits |= kPassPair;
+                countMl(4);
+                if (candidateCutsPass) {
+                  passBits |= kPassCandidate;
+                  countMl(5);
+                }
+              }
+            }
+          }
+          if (!mLooseOptions.exportSelected) {
+            emitCandidate(passBits);
+          }
+        }
+        // Stage C retains the frozen conventional selections and QA population.
+        if (!pairSelected || !bachelorSelected) {
+          continue;
+        }
+
         // QA histogram before the candidate cuts
         if (fillQA) {
           histos.fill(HIST("QA/K1OA"), lK1Angle);
@@ -879,20 +1003,7 @@ class K1AnalysisMicroCore
           histos.fill(HIST("QA/hpT_Secondary"), lResonanceSecondary.Pt());
         }
 
-        // Candidate cuts (each one is evaluated only if switched on)
-        if (isK892Mode && mSecondaryWindowOn && (!isInWindow(mass13, o2::constants::physics::MassK0Star892, mSecondaryCuts.cSecondaryMasswindow) || pion1.sign() == bTrack.sign())) {
-          continue;
-        }
-        if (mAnotherMassCutOn && !isInRange(isK892Mode ? lResonanceSecondary.M() : mass13, mSecondaryCuts.cMinAnotherSecondaryMassCut, mSecondaryCuts.cMaxAnotherSecondaryMassCut)) {
-          continue;
-        }
-        if (mPiKaMassCutOn && !isInRange(mass23, mSecondaryCuts.cMinPiKaMassCut, mSecondaryCuts.cMaxPiKaMassCut)) {
-          continue;
-        }
-        if (mAngleCutOn && !isInRange(lK1Angle, mSecondaryCuts.cMinAngle, mSecondaryCuts.cMaxAngle)) {
-          continue;
-        }
-        if (mPairAsymCutOn && !isInRange(lPairAsym, mSecondaryCuts.cMinPairAsym, mSecondaryCuts.cMaxPairAsym)) {
+        if (!candidateCutsPass) {
           continue;
         }
         countCandidate(9);
@@ -911,6 +1022,9 @@ class K1AnalysisMicroCore
         }
 
         countCandidate(isUnlikeSign ? 10 : 11);
+        if (isUnlikeSign && mLooseOptions.exportSelected && validLoose) {
+          emitCandidate(PassBitsSelected);
+        }
         if constexpr (IsMC && IsResoMicrotrack && !IsMix) {
           if (flowChannel != K1TruthChannel::None) {
             const int mother = flowChannel == K1TruthChannel::RhoK ? bTrack.motherId() : std::abs(pion1.motherPDG()) == o2::constants::physics::Pdg::kK1_1270Plus ? pion1.motherId()
@@ -979,11 +1093,12 @@ class K1AnalysisMicroCore
     }
   } // fillHistograms
 
-  // Generated K1 parents of a selected reconstructed MC collision.
+  // Generated K1 parents of a selected reconstructed MC collision. The optional callback receives
+  // (parent, immediate channel) for the parents inside the K1 rapidity window.
   // Parents belong to selected reconstructed events; split reco collisions
   // repeat parent sets. This is not an unconditional generated denominator.
-  template <typename ParentsType>
-  void fillGenerated(o2::framework::HistogramRegistry& histos, const ParentsType& resoParents)
+  template <typename ParentsType, typename Callback = std::nullptr_t>
+  void fillGenerated(o2::framework::HistogramRegistry& histos, const ParentsType& resoParents, Callback callback = nullptr)
   {
     for (const auto& part : resoParents) {
       if (std::abs(part.pdgCode()) != o2::constants::physics::Pdg::kK1_1270Plus) {
@@ -999,6 +1114,9 @@ class K1AnalysisMicroCore
       // Keep other/unresolved immediate decays too; never require both pairs.
       histos.fill(HIST("MCGen/chargeChannel"), charge, static_cast<int>(channel));
       histos.fill(HIST("MCGen/ptChannel"), static_cast<int>(channel), part.pt());
+      if constexpr (!std::is_same_v<Callback, std::nullptr_t>) {
+        callback(part, channel);
+      }
     }
   }
 
@@ -1142,6 +1260,20 @@ class K1AnalysisMicroCore
     // THnSparse
     AxisSpec axisAnti = {BinAnti::kNAEnd, 0, BinAnti::kNAEnd, "Type of bin: Normal or Anti"};
     AxisSpec axisType = {BinType::kTYEnd, 0, BinType::kTYEnd, "Type of bin with charge and mix"};
+
+    if (mLooseOptions.audit) {
+      auto flow = histos.add<TH2>("ML/looseCutflow", "US triplets;stage;signal stratum", HistType::kTH2D, {{6, -0.5, 5.5}, {5, -0.5, 4.5}});
+      const std::array<const char*, 6> labels{"structural US", "loose acceptance", "track quality", "TOF + PID", "pair requirements", "selected US"};
+      const std::array<const char*, 5> strata{"all US", "rhoK+", "rhoK-", "KstarPi+", "KstarPi-"};
+      for (std::size_t i = 0; i < labels.size(); ++i) {
+        flow->GetXaxis()->SetBinLabel(i + 1, labels[i]);
+      }
+      for (std::size_t i = 0; i < strata.size(); ++i) {
+        flow->GetYaxis()->SetBinLabel(i + 1, strata[i]);
+      }
+      histos.add("ML/looseMassPtActivity", "Loose US;mass (GeV/c^{2});pT (GeV/c);FT0M percentile", HistType::kTH3D,
+                 {{300, 0.7, 3.7}, {{0., 0.5, 1., 2., 3., 5., 8., 15., 30., 100.}, "pT"}, {{0., 10., 30., 50., 70., 100., 110.}, "FT0M percentile"}});
+    }
 
     // Micro-only instrumentation: category 0 includes all combinations, not just unmatched.
     auto trackFlow = histos.add<TH2>("CutFlow/tracks", "Micro tracks, once per selected collision;stage;species", HistType::kTH2D, {{static_cast<int>(kTrkNStages), -0.5, static_cast<int>(kTrkNStages) - 0.5}, {2, -0.5, 1.5}});
@@ -1299,6 +1431,7 @@ class K1AnalysisMicroCore
   SecondaryCuts mSecondaryCuts;
   CandidateCuts mCandidateCuts;
   HistogramOptions mHistogramOptions;
+  LooseStageOptions mLooseOptions;
 
   // Derived once in init(): which candidate cuts are switched on.
   bool mSecondaryWindowOn = false;
