@@ -683,15 +683,13 @@ class K1AnalysisMicroCore
       return false;
     }
     const bool hasTOF = track.hasTOF();
-    double tpcNSigma = std::numeric_limits<double>::quiet_NaN();
+    const double tpcNSigma = (S == Species::Pion) ? track.tpcNSigmaPi() : track.tpcNSigmaKa();
     double tofNSigma = std::numeric_limits<double>::quiet_NaN(); // TOF value is only valid with hasTOF
     if constexpr (S == Species::Pion) {
-      tpcNSigma = track.tpcNSigmaPi();
       if (hasTOF) {
         tofNSigma = track.tofNSigmaPi();
       }
     } else {
-      tpcNSigma = track.tpcNSigmaKa();
       if (hasTOF) {
         tofNSigma = track.tofNSigmaKa();
       }
