@@ -123,6 +123,18 @@
     (o2::aod::femtobase::stored::mass < (selection).massMax) && \
     ncheckbit(o2::aod::femtov0s::mask, (selection).mask)
 
+// partition for photons (PCM)
+// no sign/mass handling: photons are their own antiparticle and have no mass window
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define MAKE_PHOTON_PARTITION(selection)                      \
+  (o2::aod::femtobase::stored::pt > (selection).ptMin) &&     \
+    (o2::aod::femtobase::stored::pt < (selection).ptMax) &&   \
+    (o2::aod::femtobase::stored::eta > (selection).etaMin) && \
+    (o2::aod::femtobase::stored::eta < (selection).etaMax) && \
+    (o2::aod::femtobase::stored::phi > (selection).phiMin) && \
+    (o2::aod::femtobase::stored::phi < (selection).phiMax) && \
+    ncheckbit(o2::aod::femtophotons::mask, (selection).mask)
+
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define MAKE_CASCADE_PARTITION(selection)                                                                                                      \
   ifnode((selection).sign.node() != 0,                                                                                                         \
