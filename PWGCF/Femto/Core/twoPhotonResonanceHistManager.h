@@ -48,10 +48,10 @@ enum TwoPhotonResonanceHist {
 };
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define TWOPHOTONRESONANCE_DEFAULT_BINNING(defaultMassMin, defaultMassMax)                          \
-  o2::framework::ConfigurableAxis pt{"pt", {{600, 0, 6}}, "Pt"};                                    \
-  o2::framework::ConfigurableAxis eta{"eta", {{300, -1.5, 1.5}}, "Eta"};                            \
-  o2::framework::ConfigurableAxis phi{"phi", {{720, 0, 1.f * o2::constants::math::TwoPI}}, "Phi"};  \
+#define TWOPHOTONRESONANCE_DEFAULT_BINNING(defaultMassMin, defaultMassMax)                         \
+  o2::framework::ConfigurableAxis pt{"pt", {{600, 0, 6}}, "Pt"};                                   \
+  o2::framework::ConfigurableAxis eta{"eta", {{300, -1.5, 1.5}}, "Eta"};                           \
+  o2::framework::ConfigurableAxis phi{"phi", {{720, 0, 1.f * o2::constants::math::TwoPI}}, "Phi"}; \
   o2::framework::ConfigurableAxis mass{"mass", {{200, (defaultMassMin), (defaultMassMax)}}, "Mass"};
 
 struct ConfPi0Binning : o2::framework::ConfigurableGroup {
@@ -85,10 +85,10 @@ constexpr std::array<histmanager::HistInfo<TwoPhotonResonanceHist>, kTwoPhotonRe
     {kPtVsMass, {(conf).pt, (conf).mass}},
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define TWOPHOTONRESONANCE_HIST_QA_MAP(conf)  \
-  {kPtVsEta, {(conf).pt, (conf).eta}},        \
-    {kPtVsPhi, {(conf).pt, (conf).phi}},      \
-    {kPhiVsEta, {(conf).phi, (conf).eta}},    \
+#define TWOPHOTONRESONANCE_HIST_QA_MAP(conf) \
+  {kPtVsEta, {(conf).pt, (conf).eta}},       \
+    {kPtVsPhi, {(conf).pt, (conf).phi}},     \
+    {kPhiVsEta, {(conf).phi, (conf).eta}},   \
     {kPtVsMass, {(conf).pt, (conf).mass}},
 
 template <typename T>
