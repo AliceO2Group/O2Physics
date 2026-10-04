@@ -163,6 +163,8 @@ std::map<PhotonHist, std::vector<o2::framework::AxisSpec>> makePhotonQaHistSpecM
 #undef PHOTON_HIST_QA_MAP
 
 constexpr char PrefixPhotonQa[] = "PhotonQA/";
+constexpr char PrefixTwoPhotonResonanceDau1Qa[] = "TwoPhotonResonanceDau1Qa/";
+constexpr char PrefixTwoPhotonResonanceDau2Qa[] = "TwoPhotonResonanceDau2Qa/";
 
 constexpr std::string_view AnalysisDir = "Analysis/";
 constexpr std::string_view QaDir = "QA/";

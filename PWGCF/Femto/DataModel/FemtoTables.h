@@ -899,6 +899,60 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FPhotonExtras_001, "FPHOTONEXTRA", 1, //! pho
 using FPhotonExtras = FPhotonExtras_001;
 using StoredFPhotonExtras = StoredFPhotonExtras_001;
 
+namespace femtotwophotonresonances
+{
+// columns for daughter (photon) bit masks -- no momentum-threshold bit: photon daughters have no
+// momentum-dependent PID switch the way charged-track daughters do in femtotwotrackresonances
+DECLARE_SOA_COLUMN(MaskDau1, maskDau1, o2::analysis::femto::datatypes::PhotonMaskType); //! Bitmask for first photon daughter
+DECLARE_SOA_COLUMN(MaskDau2, maskDau2, o2::analysis::femto::datatypes::PhotonMaskType); //! Bitmask for second photon daughter
+
+// id columns for the two photon daughters (unordered, no pos/neg distinction)
+DECLARE_SOA_INDEX_COLUMN_FULL(Dau1, dau1, int32_t, FPhotons, "_Dau1"); //! index column for first photon daughter
+DECLARE_SOA_INDEX_COLUMN_FULL(Dau2, dau2, int32_t, FPhotons, "_Dau2"); //! index column for second photon daughter
+} // namespace femtotwophotonresonances
+
+// table for pi0s (-> gamma gamma)
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FPi0s_001, "FPI0", 1, //! femto pi0s
+                                   o2::soa::Index<>,
+                                   femtobase::stored::FColId,
+                                   femtobase::stored::Pt,
+                                   femtobase::stored::Eta,
+                                   femtobase::stored::Phi,
+                                   femtobase::stored::Mass,
+                                   femtotwophotonresonances::Dau1Id,
+                                   femtotwophotonresonances::Dau2Id,
+                                   femtobase::dynamic::P<femtobase::stored::Pt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Px<femtobase::stored::Pt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Py<femtobase::stored::Pt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Pz<femtobase::stored::Pt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Theta<femtobase::stored::Eta>);
+using FPi0s = FPi0s_001;
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FPi0Masks_001, "FPI0MASK", 1, //! mask for pi0s
+                                   femtotwophotonresonances::MaskDau1,
+                                   femtotwophotonresonances::MaskDau2);
+using FPi0Masks = FPi0Masks_001;
+
+// table for etas (-> gamma gamma)
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FEtas_001, "FETA", 1, //! femto etas
+                                   o2::soa::Index<>,
+                                   femtobase::stored::FColId,
+                                   femtobase::stored::Pt,
+                                   femtobase::stored::Eta,
+                                   femtobase::stored::Phi,
+                                   femtobase::stored::Mass,
+                                   femtotwophotonresonances::Dau1Id,
+                                   femtotwophotonresonances::Dau2Id,
+                                   femtobase::dynamic::P<femtobase::stored::Pt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Px<femtobase::stored::Pt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Py<femtobase::stored::Pt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Pz<femtobase::stored::Pt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Theta<femtobase::stored::Eta>);
+using FEtas = FEtas_001;
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FEtaMasks_001, "FETAMASK", 1, //! mask for etas
+                                   femtotwophotonresonances::MaskDau1,
+                                   femtotwophotonresonances::MaskDau2);
+using FEtaMasks = FEtaMasks_001;
+
 namespace femtokinks
 {
 // columns for bit masks
