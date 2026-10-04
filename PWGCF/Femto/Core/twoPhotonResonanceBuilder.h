@@ -58,16 +58,16 @@ using ConfEtaFilters = ConfTwoPhotonResonanceFilters<PrefixEtaFilters>;
 // unlike TWOTRACKRESONANCE_DEFAULT_SELECTION there is no pos/neg split and no momentum-threshold PID
 // switch: photon daughters are unordered and have no momentum-dependent PID regime.
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define TWOPHOTONRESONANCE_DEFAULT_SELECTION(defaultMassMin, defaultMassMax)                                               \
-  o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};                                                    \
-  o2::framework::Configurable<float> ptMax{"ptMax", 10.f, "Maximum pT"};                                                   \
-  o2::framework::Configurable<float> etaMin{"etaMin", -0.9f, "Minimum eta"};                                               \
-  o2::framework::Configurable<float> etaMax{"etaMax", 0.9f, "Maximum eta"};                                                \
-  o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};                                                 \
-  o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};                    \
-  o2::framework::Configurable<float> massMin{"massMin", (defaultMassMin), "Minimum invariant mass for the resonance"};     \
-  o2::framework::Configurable<float> massMax{"massMax", (defaultMassMax), "Maximum invariant mass for the resonance"};     \
-  o2::framework::Configurable<datatypes::PhotonMaskType> dau1Mask{"dau1Mask", 0, "Bitmask required for first photon daughter"};  \
+#define TWOPHOTONRESONANCE_DEFAULT_SELECTION(defaultMassMin, defaultMassMax)                                                    \
+  o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};                                                         \
+  o2::framework::Configurable<float> ptMax{"ptMax", 10.f, "Maximum pT"};                                                        \
+  o2::framework::Configurable<float> etaMin{"etaMin", -0.9f, "Minimum eta"};                                                    \
+  o2::framework::Configurable<float> etaMax{"etaMax", 0.9f, "Maximum eta"};                                                     \
+  o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};                                                      \
+  o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};                         \
+  o2::framework::Configurable<float> massMin{"massMin", (defaultMassMin), "Minimum invariant mass for the resonance"};          \
+  o2::framework::Configurable<float> massMax{"massMax", (defaultMassMax), "Maximum invariant mass for the resonance"};          \
+  o2::framework::Configurable<datatypes::PhotonMaskType> dau1Mask{"dau1Mask", 0, "Bitmask required for first photon daughter"}; \
   o2::framework::Configurable<datatypes::PhotonMaskType> dau2Mask{"dau2Mask", 0, "Bitmask required for second photon daughter"};
 
 struct ConfPi0Selection : o2::framework::ConfigurableGroup {

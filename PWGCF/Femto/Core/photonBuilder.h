@@ -62,15 +62,15 @@ struct ConfPhotonFilters : o2::framework::ConfigurableGroup {
 
 // selection bits for photons (PCM)
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define PHOTON_DEFAULT_BITS                                                                                                                                                       \
-  o2::framework::Configurable<bool> passThrough{"passThrough", false, "If true, all photons are passed through. Bits for all selections are stored."};                          \
-  o2::framework::Configurable<std::vector<float>> cosPaMin{"cosPaMin", {-1.f}, "Minimum cosine of pointing angle (not used by EMPhotonFilter, default is permissive)"};           \
-  o2::framework::Configurable<std::vector<float>> dcaToPvXYAbsMax{"dcaToPvXYAbsMax", {1e10f}, "Maximum |DCAxy| of the photon (V0) to the PV (cm)"};                               \
-  o2::framework::Configurable<std::vector<float>> dcaToPvZAbsMax{"dcaToPvZAbsMax", {1e10f}, "Maximum |DCAz| of the photon (V0) to the PV (cm)"};                                  \
-  o2::framework::Configurable<std::vector<float>> chi2NdfMax{"chi2NdfMax", {1e10f}, "Maximum chi2/NDF of the KF conversion vertex"};                                              \
-  o2::framework::Configurable<std::vector<float>> v0RadiusMin{"v0RadiusMin", {0.f}, "Minimum transverse radius of the conversion point (cm)"};                                   \
-  o2::framework::Configurable<std::vector<float>> v0RadiusMax{"v0RadiusMax", {1e10f}, "Maximum transverse radius of the conversion point (cm)"};                                 \
-  o2::framework::Configurable<std::vector<float>> dauAbsEtaMax{"dauAbsEtaMax", {0.9f}, "Maximum |eta| for daughter tracks (matches EMPhotonFilter maxeta_v0, though unused there)"}; \
+#define PHOTON_DEFAULT_BITS                                                                                                                                                                  \
+  o2::framework::Configurable<bool> passThrough{"passThrough", false, "If true, all photons are passed through. Bits for all selections are stored."};                                       \
+  o2::framework::Configurable<std::vector<float>> cosPaMin{"cosPaMin", {-1.f}, "Minimum cosine of pointing angle (not used by EMPhotonFilter, default is permissive)"};                      \
+  o2::framework::Configurable<std::vector<float>> dcaToPvXYAbsMax{"dcaToPvXYAbsMax", {1e10f}, "Maximum |DCAxy| of the photon (V0) to the PV (cm)"};                                          \
+  o2::framework::Configurable<std::vector<float>> dcaToPvZAbsMax{"dcaToPvZAbsMax", {1e10f}, "Maximum |DCAz| of the photon (V0) to the PV (cm)"};                                             \
+  o2::framework::Configurable<std::vector<float>> chi2NdfMax{"chi2NdfMax", {1e10f}, "Maximum chi2/NDF of the KF conversion vertex"};                                                         \
+  o2::framework::Configurable<std::vector<float>> v0RadiusMin{"v0RadiusMin", {0.f}, "Minimum transverse radius of the conversion point (cm)"};                                               \
+  o2::framework::Configurable<std::vector<float>> v0RadiusMax{"v0RadiusMax", {1e10f}, "Maximum transverse radius of the conversion point (cm)"};                                             \
+  o2::framework::Configurable<std::vector<float>> dauAbsEtaMax{"dauAbsEtaMax", {0.9f}, "Maximum |eta| for daughter tracks (matches EMPhotonFilter maxeta_v0, though unused there)"};         \
   o2::framework::Configurable<std::vector<float>> dauTpcNSigmaElAbsMax{"dauTpcNSigmaElAbsMax", {3.5f}, "Maximum |TPC nSigma_e| for V0 daughters (from EMPhotonFilter isSelectedSecondary)"}; \
   o2::framework::Configurable<bool> keepDaughtersWithoutTpc{"keepDaughtersWithoutTpc", true, "If true, a daughter without a TPC signal is not rejected by the TPC electron PID cut (matches EMPhotonFilter behaviour)"};
 
@@ -101,13 +101,13 @@ using ConfPhotonSelection1 = ConfPhotonSelection<PrefixPhotonSelection1>;
 
 /// The different selections for photons (PCM)
 enum PhotonSels {
-  kCosPaMin,         ///< Min. CPA (cosine pointing angle) of the conversion to the PV
-  kDcaToPvXYAbsMax,  ///< Max. |DCAxy| of the photon to the PV
-  kDcaToPvZAbsMax,   ///< Max. |DCAz| of the photon to the PV
-  kChi2NdfMax,       ///< Max. chi2/NDF of the KF conversion vertex
-  kV0RadiusMin,      ///< Min. transverse radius of the conversion point
-  kV0RadiusMax,      ///< Max. transverse radius of the conversion point
-  kDauAbsEtaMax,     ///< Max. absolute pseudorapidity of the daughters
+  kCosPaMin,          ///< Min. CPA (cosine pointing angle) of the conversion to the PV
+  kDcaToPvXYAbsMax,   ///< Max. |DCAxy| of the photon to the PV
+  kDcaToPvZAbsMax,    ///< Max. |DCAz| of the photon to the PV
+  kChi2NdfMax,        ///< Max. chi2/NDF of the KF conversion vertex
+  kV0RadiusMin,       ///< Min. transverse radius of the conversion point
+  kV0RadiusMax,       ///< Max. transverse radius of the conversion point
+  kDauAbsEtaMax,      ///< Max. absolute pseudorapidity of the daughters
   kPosDauTpcNSigmaEl, ///< TPC electron PID for positive daughter
   kNegDauTpcNSigmaEl, ///< TPC electron PID for negative daughter
   kPhotonSelsMax

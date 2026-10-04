@@ -123,25 +123,25 @@ constexpr std::array<histmanager::HistInfo<PhotonHist>, kPhotonHistLast> HistTab
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define PHOTON_HIST_QA_MAP(confAnalysis, confQa)                                \
   {kCosPa, {(confQa).cosPa}},                                                   \
-    {kPa, {(confQa).pa}},                                                      \
-    {kDcaToPvXY, {(confQa).dcaToPv}},                                          \
-    {kDcaToPvZ, {(confQa).dcaToPv}},                                           \
-    {kChi2Ndf, {(confQa).chi2Ndf}},                                            \
-    {kV0Radius, {(confQa).v0Radius}},                                         \
-    {kDecayVtxX, {(confQa).decayVertex}},                                      \
-    {kDecayVtxY, {(confQa).decayVertex}},                                      \
-    {kDecayVtxZ, {(confQa).decayVertex}},                                      \
-    {kDecayVtx, {(confQa).decayVertex}},                                       \
-    {kPosDauTpcNSigmaEl, {(confQa).tpcNSigmaEl}},                              \
-    {kNegDauTpcNSigmaEl, {(confQa).tpcNSigmaEl}},                              \
-    {kPosDauPt, {(confQa).dauPt}},                                            \
-    {kNegDauPt, {(confQa).dauPt}},                                            \
-    {kPtVsEta, {(confAnalysis).pt, (confAnalysis).eta}},                       \
-    {kPtVsPhi, {(confAnalysis).pt, (confAnalysis).phi}},                       \
-    {kPhiVsEta, {(confAnalysis).phi, (confAnalysis).eta}},                     \
-    {kPtVsCosPa, {(confAnalysis).pt, (confQa).cosPa}},                         \
+    {kPa, {(confQa).pa}},                                                       \
+    {kDcaToPvXY, {(confQa).dcaToPv}},                                           \
+    {kDcaToPvZ, {(confQa).dcaToPv}},                                            \
+    {kChi2Ndf, {(confQa).chi2Ndf}},                                             \
+    {kV0Radius, {(confQa).v0Radius}},                                           \
+    {kDecayVtxX, {(confQa).decayVertex}},                                       \
+    {kDecayVtxY, {(confQa).decayVertex}},                                       \
+    {kDecayVtxZ, {(confQa).decayVertex}},                                       \
+    {kDecayVtx, {(confQa).decayVertex}},                                        \
+    {kPosDauTpcNSigmaEl, {(confQa).tpcNSigmaEl}},                               \
+    {kNegDauTpcNSigmaEl, {(confQa).tpcNSigmaEl}},                               \
+    {kPosDauPt, {(confQa).dauPt}},                                              \
+    {kNegDauPt, {(confQa).dauPt}},                                              \
+    {kPtVsEta, {(confAnalysis).pt, (confAnalysis).eta}},                        \
+    {kPtVsPhi, {(confAnalysis).pt, (confAnalysis).phi}},                        \
+    {kPhiVsEta, {(confAnalysis).phi, (confAnalysis).eta}},                      \
+    {kPtVsCosPa, {(confAnalysis).pt, (confQa).cosPa}},                          \
     {kPosDauVsNegDauTpcNSigmaEl, {(confQa).tpcNSigmaEl, (confQa).tpcNSigmaEl}}, \
-    {kPosDauTpcSignalVsP, {(confQa).dauTpcInnerParam, (confQa).dauTpcSignal}}, \
+    {kPosDauTpcSignalVsP, {(confQa).dauTpcInnerParam, (confQa).dauTpcSignal}},  \
     {kNegDauTpcSignalVsP, {(confQa).dauTpcInnerParam, (confQa).dauTpcSignal}},
 
 template <typename T>

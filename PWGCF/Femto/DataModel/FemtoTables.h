@@ -817,27 +817,27 @@ namespace femtophotons
 DECLARE_SOA_COLUMN(Mask, mask, o2::analysis::femto::datatypes::PhotonMaskType); //! Bitmask for photon (PCM) selections
 
 // columns for debug information
-DECLARE_SOA_COLUMN(CosPa, cosPa, float);                   //! Cosine of pointing angle of the V0 (conversion) to the primary vertex
-DECLARE_SOA_DYNAMIC_COLUMN(Pa, pa,                         //! pointing angle
+DECLARE_SOA_COLUMN(CosPa, cosPa, float); //! Cosine of pointing angle of the V0 (conversion) to the primary vertex
+DECLARE_SOA_DYNAMIC_COLUMN(Pa, pa,       //! pointing angle
                            [](float cosPa) -> float {
                              return std::acos(cosPa);
                            });
-DECLARE_SOA_COLUMN(DcaToPvXY, dcaToPvXY, float);           //! DCAxy of the photon (V0) to the primary vertex
-DECLARE_SOA_COLUMN(DcaToPvZ, dcaToPvZ, float);             //! DCAz of the photon (V0) to the primary vertex
-DECLARE_SOA_COLUMN(Chi2Ndf, chi2Ndf, float);                //! Chi2 / NDF of the reconstructed conversion vertex (KF)
-DECLARE_SOA_COLUMN(V0Radius, v0Radius, float);             //! Transverse radius of the conversion point
-DECLARE_SOA_COLUMN(PosDauTpcNSigmaEl, posDauTpcNSigmaEl, float); //! TPC electron nSigma of the positive daughter
-DECLARE_SOA_COLUMN(NegDauTpcNSigmaEl, negDauTpcNSigmaEl, float); //! TPC electron nSigma of the negative daughter
-DECLARE_SOA_COLUMN(PosDauPt, posDauPt, float);                   //! pT of the positive daughter (at the conversion point)
-DECLARE_SOA_COLUMN(NegDauPt, negDauPt, float);                   //! pT of the negative daughter (at the conversion point)
+DECLARE_SOA_COLUMN(DcaToPvXY, dcaToPvXY, float);                     //! DCAxy of the photon (V0) to the primary vertex
+DECLARE_SOA_COLUMN(DcaToPvZ, dcaToPvZ, float);                       //! DCAz of the photon (V0) to the primary vertex
+DECLARE_SOA_COLUMN(Chi2Ndf, chi2Ndf, float);                         //! Chi2 / NDF of the reconstructed conversion vertex (KF)
+DECLARE_SOA_COLUMN(V0Radius, v0Radius, float);                       //! Transverse radius of the conversion point
+DECLARE_SOA_COLUMN(PosDauTpcNSigmaEl, posDauTpcNSigmaEl, float);     //! TPC electron nSigma of the positive daughter
+DECLARE_SOA_COLUMN(NegDauTpcNSigmaEl, negDauTpcNSigmaEl, float);     //! TPC electron nSigma of the negative daughter
+DECLARE_SOA_COLUMN(PosDauPt, posDauPt, float);                       //! pT of the positive daughter (at the conversion point)
+DECLARE_SOA_COLUMN(NegDauPt, negDauPt, float);                       //! pT of the negative daughter (at the conversion point)
 DECLARE_SOA_COLUMN(PosDauTpcInnerParam, posDauTpcInnerParam, float); //! momentum of the positive daughter at the inner wall of the TPC
 DECLARE_SOA_COLUMN(NegDauTpcInnerParam, negDauTpcInnerParam, float); //! momentum of the negative daughter at the inner wall of the TPC
-DECLARE_SOA_COLUMN(PosDauTpcSignal, posDauTpcSignal, float);     //! TPC dE/dx of the positive daughter
-DECLARE_SOA_COLUMN(NegDauTpcSignal, negDauTpcSignal, float);     //! TPC dE/dx of the negative daughter
-DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);           //! x coordinate of conversion point
-DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);           //! y coordinate of conversion point
-DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);           //! z coordinate of conversion point
-DECLARE_SOA_DYNAMIC_COLUMN(DecayVtx, decayVtx,             //! distance of conversion point from nominal interaction point
+DECLARE_SOA_COLUMN(PosDauTpcSignal, posDauTpcSignal, float);         //! TPC dE/dx of the positive daughter
+DECLARE_SOA_COLUMN(NegDauTpcSignal, negDauTpcSignal, float);         //! TPC dE/dx of the negative daughter
+DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);                     //! x coordinate of conversion point
+DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);                     //! y coordinate of conversion point
+DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);                     //! z coordinate of conversion point
+DECLARE_SOA_DYNAMIC_COLUMN(DecayVtx, decayVtx,                       //! distance of conversion point from nominal interaction point
                            [](float vtxX, float vtxY, float vtxZ) -> float {
                              return std::hypot(vtxX, vtxY, vtxZ);
                            });
