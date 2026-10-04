@@ -316,7 +316,7 @@ o2physics_add_dpl_workflow(k892hadronphoton
 
 o2physics_add_dpl_workflow(k892hadronphotonbkg
     SOURCES k892hadronphotonBkg.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::MLCore
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(chk892li
@@ -347,4 +347,9 @@ o2physics_add_dpl_workflow(f0phiproxy
 o2physics_add_dpl_workflow(lambdastarproxy
     SOURCES lambdastarproxy.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(hresonancecorrelation
+    SOURCES hResonanceCorrelation.cxx
+    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)

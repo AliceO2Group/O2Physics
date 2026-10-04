@@ -379,7 +379,7 @@ struct OnTheFlyTracker {
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
   // Track smearer array, one per geometry
-  std::vector<std::unique_ptr<o2::delphes::TrackSmearer>> mSmearer;
+  std::vector<std::unique_ptr<o2::fastsim::TrackSmearer>> mSmearer;
   // Configuration defined at init time
   o2::fastsim::GeometryContainer mGeoContainer;
   float mMagneticField = 0.0f;
@@ -442,7 +442,7 @@ struct OnTheFlyTracker {
     decayer.setBField(mMagneticField);
     for (int igeo = 0; igeo < nGeometries; ++igeo) {
       const std::string histPath = "Configuration_" + std::to_string(igeo) + "/";
-      mSmearer.emplace_back(std::make_unique<o2::delphes::TrackSmearer>());
+      mSmearer.emplace_back(std::make_unique<o2::fastsim::TrackSmearer>());
       mSmearer[igeo]->setCcdbManager(ccdb.operator->());
       std::map<std::string, std::string> globalConfiguration = mGeoContainer.getConfiguration(igeo, "global");
       if (enablePrimarySmearing) {

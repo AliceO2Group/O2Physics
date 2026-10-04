@@ -1033,8 +1033,8 @@ struct femtoUniversePairTaskTrackCascadeExtended { // NOLINT(cppcoreguidelines-p
   template <class TableType, typename PartitionType, typename MCParticles = std::nullptr_t>
   void doMixedEvent(const FilteredFDCollisions& cols, const TableType& parts, PartitionType& partsOne, PartitionType& partsTwo, [[maybe_unused]] const MCParticles& mcParts = nullptr)
   {
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}, true};
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}};
 
     auto mixedCollProcessFunc = [&](auto& collision1, auto& collision2) -> void {
       const int multCol = confUseCent ? static_cast<int>(collision1.multV0M()) : static_cast<int>(collision1.multNtr());
@@ -1132,7 +1132,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // NOLINT(cppcoreguidelines-p
   template <class TableType, typename PartitionType>
   void doMixedEventCasc(const FilteredFDCollisions& cols, const TableType& parts, PartitionType& partsTwo)
   {
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confVtxBins, confMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confVtxBins, confMultBins}};
 
     for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
       const int multCol = confUseCent ? static_cast<int>(collision1.multV0M()) : static_cast<int>(collision1.multNtr());
@@ -1229,7 +1229,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // NOLINT(cppcoreguidelines-p
   template <class TableType, typename PartitionType>
   void doMixedEventTrack(const FilteredFDCollisions& cols, const TableType& parts, PartitionType& partsOne, PartitionType& partsTwo)
   {
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confVtxBins, confMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confVtxBins, confMultBins}};
 
     for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
       const int multCol = confUseCent ? static_cast<int>(collision1.multV0M()) : static_cast<int>(collision1.multNtr());
@@ -1379,7 +1379,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // NOLINT(cppcoreguidelines-p
   // MC truth for track - cascade
   void processMixedEventMCgen(const FilteredFDCollisions& cols, [[maybe_unused]] const aod::FDParticles& parts)
   {
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confVtxBins, confMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confVtxBins, confMultBins}};
 
     for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
       const int multCol = confUseCent ? static_cast<int>(collision1.multV0M()) : static_cast<int>(collision1.multNtr());
@@ -1408,7 +1408,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // NOLINT(cppcoreguidelines-p
   // MC truth for cascade - cascade
   void processMixedEventCascMCgen(const FilteredFDCollisions& cols, [[maybe_unused]] const aod::FDParticles& parts)
   {
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confVtxBins, confMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confVtxBins, confMultBins}};
 
     for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
       const int multCol = confUseCent ? static_cast<int>(collision1.multV0M()) : static_cast<int>(collision1.multNtr());

@@ -88,7 +88,7 @@ struct HfTaskDeuteronFromLb {
   using CollisionCandidates = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
   using MCTrackCandidates = o2::soa::Join<o2::aod::TracksIU, o2::aod::TracksExtra, o2::aod::TracksDCA, o2::aod::McTrackLabels, o2::aod::pidTPCFullDe, o2::aod::pidTOFFullDe>;
   using MCCollisionCandidates = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::McCollisionLabels>;
-  using TrackCandidates = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksDCA, o2::aod::TrackSelection, o2::aod::pidTPCFullDe, o2::aod::pidTOFFullDe>;
+  using TrackCandidates = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksDCA, o2::aod::TrackSelection, o2::aod::pidTPCFullDe, o2::aod::pidTOFFullDe, o2::aod::pidTPCFullPi, o2::aod::pidTPCFullKa, o2::aod::pidTPCFullPr>;
 
   Preslice<o2::aod::TrackAssoc> trackIndicesPerCollision = o2::aod::track_association::collisionId;
 
@@ -139,6 +139,7 @@ struct HfTaskDeuteronFromLb {
     qaHistos.add("Data/etaAntideuteron", "etaAntideuteron", {HistType::kTH1F, {{100, -1.0f, 1.0f, "eta #bar{d}"}}});
     qaHistos.add("Data/hVtxZ", "Z-Vertex distribution after selection;Z (cm)", HistType::kTH1F, {{100, -50, 50}});
     qaHistos.add("Data/hnSigmaTOFVsPtPurity", "n#sigma TOF vs p_{T} for #bar{d} hypothesis for Data-driven purity check; p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2D, {ptAxis, nSigmaAxis}});
+    qaHistos.add("Data/hnSigmaTOFVsPtPurityVeto", "n#sigma TOF vs p_{T} for #bar{d} hypothesis for Data-driven purity check with TPC veto for pi,K,p; p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2D, {ptAxis, nSigmaAxis}});
     qaHistos.add("Data/hnSigmaTPCVsPtPurity", "n#sigma TPC vs p_{T} for #bar{d} hypothesis for Data-driven purity check; p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2D, {ptAxis, nSigmaAxis}});
     qaHistos.add("Data/hnSigmaITSVsPt", "n#sigma ITS vs p_{T} for #bar{d} hypothesis, used to clean up the TPC/TOF purity sample; p_{T} (GeV/c); n#sigma ITS", {HistType::kTH2D, {ptAxis, nSigmaAxis}});
     // MC generated-level histograms
@@ -295,6 +296,11 @@ struct HfTaskDeuteronFromLb {
 
         qaHistos.fill(HIST("Data/hnSigmaITSVsPt"), track.pt(), track.itsNSigmaDe());
 
+        const bool isTPCDeClean = isTPCDe &&
+                                  std::abs(track.tpcNSigmaPi()) > cfgTPCNsigma &&
+                                  std::abs(track.tpcNSigmaKa()) > cfgTPCNsigma &&
+                                  std::abs(track.tpcNSigmaPr()) > cfgTPCNsigma;
+
         if (track.pt() < ptThresholdforPID) {
           if (isITSDe) {
             qaHistos.fill(HIST("Data/hnSigmaTPCVsPtPurity"), track.pt(), track.tpcNSigmaDe());
@@ -302,6 +308,9 @@ struct HfTaskDeuteronFromLb {
         } else {
           if (isTPCDe && track.hasTOF()) {
             qaHistos.fill(HIST("Data/hnSigmaTOFVsPtPurity"), track.pt(), track.tofNSigmaDe());
+          }
+          if (isTPCDeClean && track.hasTOF()) {
+            qaHistos.fill(HIST("Data/hnSigmaTOFVsPtPurityVeto"), track.pt(), track.tofNSigmaDe());
           }
         }
 

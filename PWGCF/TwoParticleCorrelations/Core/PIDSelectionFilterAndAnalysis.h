@@ -145,7 +145,7 @@ class PIDSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
   std::vector<CutBrick<float>*> mCloseNsigmasTOF;
   std::vector<CutBrick<float>*> mBayesProbability;
 
-  ClassDef(PIDSelectionFilterAndAnalysis, 1);
+  ClassDefOverride(PIDSelectionFilterAndAnalysis, 1);
 };
 
 /// \brief Fills the filter cuts mask

@@ -191,7 +191,7 @@ struct FemtoUniversePairTaskTrackNucleus {
   ConfigurableAxis confMtBins3D{"confMtBins3D", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<twoobjectsconfigs.confUse3D>> to true in order to use)"};
   ConfigurableAxis confMultBins3D{"confMultBins3D", {VARIABLE_WIDTH, 0.0f, 20.0f, 30.0f, 40.0f, 99999.0f}, "Multiplicity binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<twoobjectsconfigs.confUse3D>> to true in order to use)"};
 
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinning{{confVtxBins, confMultBins}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinning{{confVtxBins, confMultBins}};
 
   ConfigurableAxis confKstarBins{"confKstarBins", {1500, 0., 6.}, "Binning kstar"};
   ConfigurableAxis confKtBins{"confKtBins", {150, 0., 9.}, "Binning kT"};

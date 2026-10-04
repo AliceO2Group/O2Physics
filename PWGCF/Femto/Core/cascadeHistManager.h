@@ -475,7 +475,7 @@ class CascadeHistManager
       this->fillAnalysis(cascadeCandidate);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
-      this->fillQa(cascadeCandidate, bachelor, negDaughter, posDaughter);
+      this->fillQa(cascadeCandidate, bachelor, posDaughter, negDaughter);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kMc)) {
       this->template fillMc<mode>(cascadeCandidate, col, mcParticles, mcMothers, mcPartonicMothers);

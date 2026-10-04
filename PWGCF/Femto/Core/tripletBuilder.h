@@ -1076,7 +1076,7 @@ class TripletMcParticleMcParticleMcParticleBuilder
     tripletprocesshelpers::TripletOrder tripletOrder = tripletprocesshelpers::kOrder123;
 
     if (mParticle1Particle2Particle3AreSameSpecies) {
-      auto mcParticleSlice1 = partition1->sliceByCached(o2::aod::femtomcparticle::fMcColId, mcCol.globalIndex(), cache);
+      auto mcParticleSlice1 = partition1->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, mcCol.globalIndex(), cache);
       if (mcParticleSlice1.size() < nLimitPartitionIdenticalParticles123) {
         return false;
       }
@@ -1088,8 +1088,8 @@ class TripletMcParticleMcParticleMcParticleBuilder
     }
 
     if (mParticle1Particle2AreSameSpecies) {
-      auto mcParticleSlice1 = partition1->sliceByCached(o2::aod::femtomcparticle::fMcColId, mcCol.globalIndex(), cache);
-      auto mcParticleSlice3 = partition3->sliceByCached(o2::aod::femtomcparticle::fMcColId, mcCol.globalIndex(), cache);
+      auto mcParticleSlice1 = partition1->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, mcCol.globalIndex(), cache);
+      auto mcParticleSlice3 = partition3->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, mcCol.globalIndex(), cache);
       if (mcParticleSlice1.size() < nLimitPartitionIdenticalParticles12 || mcParticleSlice3.size() < nLimitPartitionParticles) {
         return false;
       }
@@ -1100,9 +1100,9 @@ class TripletMcParticleMcParticleMcParticleBuilder
       return tripletprocesshelpers::processSameEventMcTruth<mode>(mcParticleSlice1, mcParticleSlice3, mcParticles, mcMothers, mcPartonicMothers, mcCol, mMcParticleHistManager1, mMcParticleHistManager3, mTripletHistManagerSe, mMcParticleCleaner1, mMcParticleCleaner3, mCtrSe, mTcSe, tripletOrder);
     }
 
-    auto mcParticleSlice1 = partition1->sliceByCached(o2::aod::femtomcparticle::fMcColId, mcCol.globalIndex(), cache);
-    auto mcParticleSlice2 = partition2->sliceByCached(o2::aod::femtomcparticle::fMcColId, mcCol.globalIndex(), cache);
-    auto mcParticleSlice3 = partition3->sliceByCached(o2::aod::femtomcparticle::fMcColId, mcCol.globalIndex(), cache);
+    auto mcParticleSlice1 = partition1->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, mcCol.globalIndex(), cache);
+    auto mcParticleSlice2 = partition2->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, mcCol.globalIndex(), cache);
+    auto mcParticleSlice3 = partition3->sliceByCachedUnsorted(o2::aod::femtomcparticle::fMcColId, mcCol.globalIndex(), cache);
     if (mcParticleSlice1.size() < nLimitPartitionParticles || mcParticleSlice2.size() < nLimitPartitionParticles || mcParticleSlice3.size() < nLimitPartitionParticles) {
       return false;
     }

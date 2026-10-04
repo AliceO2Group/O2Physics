@@ -119,7 +119,7 @@ class EventSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
   CutBrick<float>* mZVertex;                      //! the z vertex selection cuts
   PileUpRejBrick* mPileUpRejection;               //! the pile-up rejection criteria
 
-  ClassDef(EventSelectionFilterAndAnalysis, 1)
+  ClassDefOverride(EventSelectionFilterAndAnalysis, 1)
 };
 
 /// \brief Stores the different multiplicities needed for proper collision filtering

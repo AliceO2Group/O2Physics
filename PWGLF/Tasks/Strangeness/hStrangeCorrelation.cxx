@@ -125,8 +125,10 @@ struct HStrangeCorrelation {
     Configurable<bool> doCorrelationOmegaPlus{"doCorrelationOmegaPlus", false, "do OmegaPlus correlation"};
     Configurable<bool> doCorrelationPion{"doCorrelationPion", false, "do Pion correlation"};
     Configurable<bool> doGenEventSelection{"doGenEventSelection", true, "use event selections when performing closure test for the gen events"};
+    Configurable<bool> doClosureTestPureMC{"doClosureTestPureMC", false, "fill regular ClosureTest histograms without event or reconstructed-trigger selection, using MC vertex z and centrality 0.05; keep truth-particle selections"};
     Configurable<bool> selectINELgtZERO{"selectINELgtZERO", true, "select INEL>0 events"};
-    Configurable<bool> selectINELgtONE{"selectINELgtONE", false, "select INEL>1 events (at least 2 charged particles in |eta| < 1)"};
+    Configurable<bool> selectINELgtN{"selectINELgtN", false, "select INEL>N events (more than N charged particles in |eta| < 1), N = inelGtNThreshold"};
+    Configurable<int> inelGtNThreshold{"inelGtNThreshold", 1, "N of the INEL>N selection (reco: PV contributors, gen: charged physical primaries, both in |eta| < 1)"};
     Configurable<float> zVertexCut{"zVertexCut", 10, "Cut on PV position"};
     Configurable<bool> requireAllGoodITSLayers{"requireAllGoodITSLayers", false, " require that in the event all ITS are good"};
     Configurable<bool> rejectSameBunchPileup{"rejectSameBunchPileup", false, "reject collisions associated with the same found-by-T0 bunch crossing"};
@@ -3265,6 +3267,37 @@ struct HStrangeCorrelation {
     }
   }
 
+  // INEL>N at reconstructed level: more than N PV contributors in |eta| < 1.
+  // multNTracksPVeta1 is exactly this count (filled by multcenttable), so this is
+  // collision.isInelGt0() / isInelGt1() with a free N and needs no track table
+  template <typename TCollision>
+  bool isInelGtNReco(TCollision const& collision, int threshold)
+  {
+    return collision.multNTracksPVeta1() > threshold;
+  }
+
+  // INEL>N at generated level: more than N charged physical primaries in |eta| < 1,
+  // counted the same way as multcenttable fills multMCNParticlesEta10
+  template <typename TMcParticles>
+  bool isInelGtNGen(TMcParticles const& mcParticles, int threshold)
+  {
+    constexpr double ChargeTolerance = 1e-3; // |charge| below this counts as neutral
+    int nChEta1 = 0;
+    for (auto const& mcParticle : mcParticles) {
+      if (!mcParticle.isPhysicalPrimary()) {
+        continue;
+      }
+      auto const* pdgParticle = pdgDB->GetParticle(mcParticle.pdgCode());
+      if (pdgParticle == nullptr || std::abs(pdgParticle->Charge()) < ChargeTolerance) {
+        continue;
+      }
+      if (std::abs(mcParticle.eta()) < 1.0f) {
+        ++nChEta1;
+      }
+    }
+    return nChEta1 > threshold;
+  }
+
   // this function allows for all event selections to be done in a modular way
   template <typename TCollision>
   bool isCollisionSelected(TCollision const& collision)
@@ -3287,7 +3320,7 @@ struct HStrangeCorrelation {
     if (!collision.isInelGt0() && masterConfigurations.selectINELgtZERO) {
       return false;
     }
-    if (!collision.isInelGt1() && masterConfigurations.selectINELgtONE) {
+    if (!isInelGtNReco(collision, masterConfigurations.inelGtNThreshold) && masterConfigurations.selectINELgtN) {
       return false;
     }
     if (!collision.selection_bit(aod::evsel::kIsGoodITSLayersAll) && masterConfigurations.requireAllGoodITSLayers) {
@@ -4261,7 +4294,7 @@ struct HStrangeCorrelation {
     float bestCollisionVtxZ = 0.0f;
     bool bestCollisionSel8 = false;
     bool bestCollisionINELgtZERO = false;
-    bool bestCollisionINELgtONE = false;
+    bool bestCollisionINELgtN = false;
     bool bestCollisionNoSameBunchPileup = false;
     bool bestCollisionGoodTriggerTVX = false;
     bool bestCollisionGoodZvtxFT0vsPV = false;
@@ -4280,7 +4313,7 @@ struct HStrangeCorrelation {
           bestCollisionSel8 = collision.sel8();
           bestCollisionVtxZ = collision.posZ();
           bestCollisionINELgtZERO = collision.isInelGt0();
-          bestCollisionINELgtONE = collision.isInelGt1();
+          bestCollisionINELgtN = isInelGtNReco(collision, masterConfigurations.inelGtNThreshold);
           bestCollisionNoSameBunchPileup = collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
           bestCollisionGoodTriggerTVX = collision.selection_bit(aod::evsel::kIsTriggerTVX);
           bestCollisionGoodZvtxFT0vsPV = collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
@@ -4332,7 +4365,7 @@ struct HStrangeCorrelation {
       if (!bestCollisionINELgtZERO) {
         return;
       }
-      if (masterConfigurations.selectINELgtONE && !bestCollisionINELgtONE) {
+      if (masterConfigurations.selectINELgtN && !bestCollisionINELgtN) {
         return;
       }
       if (masterConfigurations.rejectSameBunchPileup && !bestCollisionNoSameBunchPileup) {
@@ -4471,9 +4504,9 @@ struct HStrangeCorrelation {
   {
     // Part 3: a self-contained generator-level study. It deliberately touches no
     // reconstructed quantity in its event selection or in any of its axes: the
-    // event is selected on generated INEL>0 and the generated vertex only, the
-    // multiplicity is counted from generated particles, and every object is
-    // filled with generated coordinates.
+    // event is selected on generated INEL>0 (INEL>N if enabled) and the generated
+    // vertex only, the multiplicity is counted from generated particles, and every
+    // object is filled with generated coordinates.
     //
     // Reconstruction enters in exactly one place -- whether a generated object
     // has a reconstructed counterpart at all -- and that splits the very same
@@ -4494,9 +4527,9 @@ struct HStrangeCorrelation {
       histos.fill(HIST("PairLossK0/GenStudy/hEventCounter"), 0.0f);
 
       // Generated-level event selection. No reconstructed variable is used.
-      // INEL>1 implies INEL>0, so only the tighter enabled selection has to be evaluated
-      if (masterConfigurations.selectINELgtONE) {
-        if (!o2::pwglf::isINELgt1mc(mcParticles, pdgDB)) {
+      // INEL>N (N >= 0) implies INEL>0, so only the tighter enabled selection has to be evaluated
+      if (masterConfigurations.selectINELgtN) {
+        if (!isInelGtNGen(mcParticles, masterConfigurations.inelGtNThreshold)) {
           return;
         }
       } else if (masterConfigurations.selectINELgtZERO) {
@@ -4787,7 +4820,7 @@ struct HStrangeCorrelation {
       float genBestCollisionVtxZ = 0.0f;
       bool genBestCollisionSel8 = false;
       bool genBestCollisionINELgtZERO = false;
-      bool genBestCollisionINELgtONE = false;
+      bool genBestCollisionINELgtN = false;
       bool genBestCollisionNoSameBunchPileup = false;
       bool genBestCollisionGoodTriggerTVX = false;
       bool genBestCollisionGoodZvtxFT0vsPV = false;
@@ -4807,7 +4840,7 @@ struct HStrangeCorrelation {
           genBestCollisionSel8 = recCollision.sel8();
           genBestCollisionVtxZ = recCollision.posZ();
           genBestCollisionINELgtZERO = recCollision.isInelGt0();
-          genBestCollisionINELgtONE = recCollision.isInelGt1();
+          genBestCollisionINELgtN = isInelGtNReco(recCollision, masterConfigurations.inelGtNThreshold);
           genBestCollisionNoSameBunchPileup = recCollision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
           genBestCollisionGoodTriggerTVX = recCollision.selection_bit(aod::evsel::kIsTriggerTVX);
           genBestCollisionGoodZvtxFT0vsPV = recCollision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
@@ -4821,7 +4854,7 @@ struct HStrangeCorrelation {
         genEventSelected = genEventSelected && genCollisionSelected;
       } else if (masterConfigurations.doGenEventSelection) {
         genEventSelected = genEventSelected && genBestCollisionSel8 && std::abs(genBestCollisionVtxZ) <= masterConfigurations.zVertexCut &&
-                           genBestCollisionINELgtZERO && (!masterConfigurations.selectINELgtONE || genBestCollisionINELgtONE) &&
+                           genBestCollisionINELgtZERO && (!masterConfigurations.selectINELgtN || genBestCollisionINELgtN) &&
                            (!masterConfigurations.rejectSameBunchPileup || genBestCollisionNoSameBunchPileup) &&
                            (!masterConfigurations.requireGoodTriggerTVX || genBestCollisionGoodTriggerTVX) &&
                            (!masterConfigurations.requireGoodZvtxFT0vsPV || genBestCollisionGoodZvtxFT0vsPV) &&
@@ -6181,71 +6214,82 @@ struct HStrangeCorrelation {
 
     float bestCollisionCentpercentile = -1;
     float bestCollisionVtxZ = 0.0f;
-    bool bestCollisionSel8 = false;
-    bool bestCollisionINELgtZERO = false;
-    bool bestCollisionINELgtONE = false;
-    bool bestCollisionNoSameBunchPileup = false;
-    bool bestCollisionGoodTriggerTVX = false;
-    bool bestCollisionGoodZvtxFT0vsPV = false;
-    bool isCollisionSelect = false;
-    int biggestNContribs = -1;
-    uint32_t bestCollisionTriggerPresenceMap = 0;
+    // Pure MC defines an inclusive generated-event reference, independent of
+    // reconstructed collisions and triggerPresenceMap. Particle/pair selections
+    // below still define the observable. PairLossK0 diagnostics above retain
+    // their own event selection.
+    if (masterConfigurations.doClosureTestPureMC) {
+      bestCollisionCentpercentile = 0.05f;
+      bestCollisionVtxZ = mcCollision.posZ();
+    } else {
+      bool bestCollisionSel8 = false;
+      bool bestCollisionINELgtZERO = false;
+      bool bestCollisionINELgtN = false;
+      bool bestCollisionNoSameBunchPileup = false;
+      bool bestCollisionGoodTriggerTVX = false;
+      bool bestCollisionGoodZvtxFT0vsPV = false;
+      bool isCollisionSelect = false;
+      int biggestNContribs = -1;
+      uint32_t bestCollisionTriggerPresenceMap = 0;
 
-    for (auto const& recCollision : recCollisions) {
-      if (biggestNContribs < recCollision.numContrib()) {
-        biggestNContribs = recCollision.numContrib();
-        bestCollisionCentpercentile = masterConfigurations.doPPAnalysis ? recCollision.centFT0M() : recCollision.centFT0C();
-        if (masterConfigurations.applyNewMCSelection) {
-          isCollisionSelect = ((masterConfigurations.doPPAnalysis && isCollisionSelected(recCollision)) || (!masterConfigurations.doPPAnalysis && isCollisionSelectedPbPb(recCollision, false)));
-        } else {
-          bestCollisionSel8 = recCollision.sel8();
+      for (auto const& recCollision : recCollisions) {
+        if (biggestNContribs < recCollision.numContrib()) {
+          biggestNContribs = recCollision.numContrib();
+          bestCollisionCentpercentile = masterConfigurations.doPPAnalysis ? recCollision.centFT0M() : recCollision.centFT0C();
+          // Both branches fill the generated-level THns with this vertex position, so it
+          // is taken from the best collision regardless of which event selection is used.
           bestCollisionVtxZ = recCollision.posZ();
-          bestCollisionINELgtZERO = recCollision.isInelGt0();
-          bestCollisionINELgtONE = recCollision.isInelGt1();
-          bestCollisionNoSameBunchPileup = recCollision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
-          bestCollisionGoodTriggerTVX = recCollision.selection_bit(aod::evsel::kIsTriggerTVX);
-          bestCollisionGoodZvtxFT0vsPV = recCollision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
-        }
-        if (triggerPresenceMap.size() > 0) {
-          bestCollisionTriggerPresenceMap = triggerPresenceMap[recCollision.globalIndex()];
+          if (masterConfigurations.applyNewMCSelection) {
+            isCollisionSelect = ((masterConfigurations.doPPAnalysis && isCollisionSelected(recCollision)) || (!masterConfigurations.doPPAnalysis && isCollisionSelectedPbPb(recCollision, false)));
+          } else {
+            bestCollisionSel8 = recCollision.sel8();
+            bestCollisionINELgtZERO = recCollision.isInelGt0();
+            bestCollisionINELgtN = isInelGtNReco(recCollision, masterConfigurations.inelGtNThreshold);
+            bestCollisionNoSameBunchPileup = recCollision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
+            bestCollisionGoodTriggerTVX = recCollision.selection_bit(aod::evsel::kIsTriggerTVX);
+            bestCollisionGoodZvtxFT0vsPV = recCollision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
+          }
+          if (triggerPresenceMap.size() > 0) {
+            bestCollisionTriggerPresenceMap = triggerPresenceMap[recCollision.globalIndex()];
+          }
         }
       }
-    }
-    // ________________________________________________
-    // skip if desired trigger not found
-    if (triggerPresenceMap.size() > 0 && !TESTBIT(bestCollisionTriggerPresenceMap, triggerBinToSelect)) {
-      return;
-    }
-
-    if (masterConfigurations.applyNewMCSelection) {
-      if (!isCollisionSelect) {
+      // ________________________________________________
+      // skip if desired trigger not found
+      if (triggerPresenceMap.size() > 0 && !TESTBIT(bestCollisionTriggerPresenceMap, triggerBinToSelect)) {
         return;
       }
-    } else {
-      if (masterConfigurations.doGenEventSelection) {
-        if (!bestCollisionSel8) {
+
+      if (masterConfigurations.applyNewMCSelection) {
+        if (!isCollisionSelect) {
           return;
         }
-        if (std::abs(bestCollisionVtxZ) > masterConfigurations.zVertexCut) {
-          return;
-        }
-        if (!bestCollisionINELgtZERO) {
-          return;
-        }
-        if (masterConfigurations.selectINELgtONE && !bestCollisionINELgtONE) {
-          return;
-        }
-        if (masterConfigurations.rejectSameBunchPileup && !bestCollisionNoSameBunchPileup) {
-          return;
-        }
-        if (masterConfigurations.requireGoodTriggerTVX && !bestCollisionGoodTriggerTVX) {
-          return;
-        }
-        if (masterConfigurations.requireGoodZvtxFT0vsPV && !bestCollisionGoodZvtxFT0vsPV) {
-          return;
-        }
-        if (bestCollisionCentpercentile > axisRanges[5][1] || bestCollisionCentpercentile < axisRanges[5][0]) {
-          return;
+      } else {
+        if (masterConfigurations.doGenEventSelection) {
+          if (!bestCollisionSel8) {
+            return;
+          }
+          if (std::abs(bestCollisionVtxZ) > masterConfigurations.zVertexCut) {
+            return;
+          }
+          if (!bestCollisionINELgtZERO) {
+            return;
+          }
+          if (masterConfigurations.selectINELgtN && !bestCollisionINELgtN) {
+            return;
+          }
+          if (masterConfigurations.rejectSameBunchPileup && !bestCollisionNoSameBunchPileup) {
+            return;
+          }
+          if (masterConfigurations.requireGoodTriggerTVX && !bestCollisionGoodTriggerTVX) {
+            return;
+          }
+          if (masterConfigurations.requireGoodZvtxFT0vsPV && !bestCollisionGoodZvtxFT0vsPV) {
+            return;
+          }
+          if (bestCollisionCentpercentile > axisRanges[5][1] || bestCollisionCentpercentile < axisRanges[5][0]) {
+            return;
+          }
         }
       }
     }
@@ -6575,9 +6619,9 @@ struct HStrangeCorrelation {
     float multEta08 = -1;
     float multEta05 = -1;
     histos.fill(HIST("Prediction/hEventSelection"), 0.5);
-    // INEL>1 implies INEL>0, so only the tighter enabled selection has to be evaluated
-    if (masterConfigurations.selectINELgtONE) {
-      if (!o2::pwglf::isINELgt1mc(mcParticles, pdgDB)) {
+    // INEL>N (N >= 0) implies INEL>0, so only the tighter enabled selection has to be evaluated
+    if (masterConfigurations.selectINELgtN) {
+      if (!isInelGtNGen(mcParticles, masterConfigurations.inelGtNThreshold)) {
         return;
       }
     } else if (masterConfigurations.selectINELgtZERO) {

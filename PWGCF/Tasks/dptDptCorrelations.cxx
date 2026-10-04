@@ -112,7 +112,7 @@ struct DptDptCorrelations {
     // The DptDptCorrelationsAnalysisTask output objects
     //============================================================================================
     /* histograms */
-    TH1F* fhVertexZA;                                                            //!<! the z vertex distribution for the current multiplicity/centrality class
+    TH1F* fhVertexZA = nullptr;                                                  //!<! the z vertex distribution for the current multiplicity/centrality class
     std::vector<TH1F*> fhN1VsPt{nch, nullptr};                                   //!<! weighted single particle distribution vs \f$p_T\f$, for the different species
     std::vector<TH2F*> fhN1VsPtEta{nch, nullptr};                                //!<! weighted single particle distribution vs \f$p_T,\;\eta\f$, for the different species
     std::vector<TH2F*> fhN1VsEtaPhi{nch, nullptr};                               //!<! weighted single particle distribution vs \f$\eta,\;\phi\f$, for the different species
@@ -352,7 +352,7 @@ struct DptDptCorrelations {
       ccdbstored = true;
     }
 
-    void storePtAverages(std::vector<TH2*> ptavgs)
+    void storePtAverages(const std::vector<TH2*>& ptavgs)
     {
       LOGF(info, "Stored pT average for %d track ids", ptavgs.size());
       for (uint i = 0; i < ptavgs.size(); ++i) {
@@ -905,9 +905,9 @@ struct DptDptCorrelations {
   float* fCentMultMax = nullptr;
 
   /* the data collecting engine instances */
-  DataCollectingEngine<false>** dataCE;
-  DataCollectingEngine<true>** dataCEsmall;
-  DataCollectingEngine<false>** dataCEME;
+  DataCollectingEngine<false>** dataCE = nullptr;
+  DataCollectingEngine<true>** dataCEsmall = nullptr;
+  DataCollectingEngine<false>** dataCEME = nullptr;
 
   /* the input file structure from CCDB */
   TList* ccdblst = nullptr;
@@ -1248,14 +1248,14 @@ struct DptDptCorrelations {
           return dataCE[ixDCE]->isCCDBstored();
         }
       };
-      auto storePtAverages = [&](auto& ptavgs) {
+      auto storePtAverages = [&](const auto& ptavgs) {
         if (cfgSmallDCE.value) {
           dataCEsmall[ixDCE]->storePtAverages(ptavgs);
         } else {
           dataCE[ixDCE]->storePtAverages(ptavgs);
         }
       };
-      auto storeTrackCorrections = [&](auto& corrs) {
+      auto storeTrackCorrections = [&](const auto& corrs) {
         if (cfgSmallDCE.value) {
           dataCEsmall[ixDCE]->storeTrackCorrections(corrs);
         } else {
@@ -1583,6 +1583,7 @@ struct DptDptCorrelations {
         LOGF(DPTDPTLOGCOLLISIONS, "Received generated collision pair: %ld (%f, %f): %s, %ld (%f, %f): %s",
              collision1.globalIndex(), collision1.posZ(), collision1.centmult(), collision1.collisionaccepted() ? "accepted" : "not accepted",
              collision2.globalIndex(), collision2.posZ(), collision2.centmult(), collision2.collisionaccepted() ? "accepted" : "not accepted");
+        logcomb++;
       }
       if (!collision1.collisionaccepted() || !collision2.collisionaccepted()) {
         LOGF(error, "Received collision pair: %ld (%f, %f): %s, %ld (%f, %f): %s",
@@ -1621,6 +1622,7 @@ struct DptDptCorrelations {
              collision2.posZ(),
              collision2.centmult(),
              collision2.collisionaccepted() ? "accepted" : "not accepted");
+        logcomb++;
       }
       if (!collision1.collisionaccepted() || !collision2.collisionaccepted()) {
         LOGF(error,

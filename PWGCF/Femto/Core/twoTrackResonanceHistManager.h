@@ -216,8 +216,8 @@ class TwoTrackResonanceHistManager
         negDauPdgCodeAbs = std::abs(PDG_t::kPiMinus);
       } else {
         mPdgCode = -1 * mPdgCode;
-        posDauPdgCodeAbs = std::abs(PDG_t::kKMinus);
-        negDauPdgCodeAbs = std::abs(PDG_t::kPiPlus);
+        posDauPdgCodeAbs = std::abs(PDG_t::kPiPlus);
+        negDauPdgCodeAbs = std::abs(PDG_t::kKMinus);
       }
     } else {
       LOG(fatal) << "PDG code for TwoTrackResonance has to be either Rho, Phi or K^0*(892)";
