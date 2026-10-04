@@ -274,12 +274,12 @@ struct HResonanceCorrelation {
 
   struct ValidCollision {
     struct ValidParticle {
-      float eta;
-      float phi;
-      float pt;
-      int region;
-      float efficiency;
-      float efficiencyError;
+      float eta = 0.f;
+      float phi = 0.f;
+      float pt = 0.f;
+      int region = -1;
+      float efficiency = 1.f;
+      float efficiencyError = 0.f;
       float mass = 0.f; // only meaningful for Phi/K*0 buffered candidates when
                         // masterConfigurations.fillCorrelationHistWithMass is
                         // set; unused (stays 0) for trigger particles and for
@@ -2178,7 +2178,7 @@ struct HResonanceCorrelation {
     if (!TESTBIT(doCorrelation, IndexHadron)) {
       return;
     }
-    // LOGF(info, "SameEventHadron: collisions=%d triggers=%zu assocHadrons=%zu", collision.globalIndex(), triggerTracks.size(), assocHadrons.size());
+    LOGF(info, "SameEventHadron: collisions=%d triggers=%zu assocHadrons=%zu", collision.globalIndex(), triggerTracks.size(), assocHadrons.size());
 
     BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
 
@@ -2270,7 +2270,7 @@ struct HResonanceCorrelation {
     if (!TESTBIT(doCorrelation, IndexPion)) {
       return;
     }
-    // LOGF(info, "SameEventPion: collisions=%d triggers=%zu assocPions=%zu", collision.globalIndex(), triggerTracks.size(), associatedPions.size());
+    LOGF(info, "SameEventPion: collisions=%d triggers=%zu assocPions=%zu", collision.globalIndex(), triggerTracks.size(), associatedPions.size());
 
     BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
     // ________________________________________________
@@ -2341,7 +2341,7 @@ struct HResonanceCorrelation {
     if (!TESTBIT(doCorrelation, IndexKaon)) {
       return;
     }
-    // LOGF(info, "SameEventKaon: collisions=%d triggers=%zu assocKaons=%zu", collision.globalIndex(), triggerTracks.size(), associatedKaons.size());
+    LOGF(info, "SameEventKaon: collisions=%d triggers=%zu assocKaons=%zu", collision.globalIndex(), triggerTracks.size(), associatedKaons.size());
 
     BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
     // ________________________________________________
@@ -2411,7 +2411,7 @@ struct HResonanceCorrelation {
     if (!TESTBIT(doCorrelation, IndexPhi)) {
       return;
     }
-    // LOGF(info, "SameEventPhi: collisions=%d triggers=%zu assocPhi=%zu", collision.globalIndex(), triggerTracks.size(), associatedPhis.size());
+    LOGF(info, "SameEventPhi: collisions=%d triggers=%zu assocPhi=%zu", collision.globalIndex(), triggerTracks.size(), associatedPhis.size());
 
     BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
 
@@ -2488,7 +2488,7 @@ struct HResonanceCorrelation {
     if (!TESTBIT(doCorrelation, IndexKstar)) {
       return;
     }
-    // LOGF(info, "SameEventKstar: collisions=%d triggers=%zu assocKstar=%zu", collision.globalIndex(), triggerTracks.size(), associatedKstars.size());
+    LOGF(info, "SameEventKstar: collisions=%d triggers=%zu assocKstar=%zu", collision.globalIndex(), triggerTracks.size(), associatedKstars.size());
 
     BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
 
