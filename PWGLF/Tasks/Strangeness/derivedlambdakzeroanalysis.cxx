@@ -62,6 +62,7 @@
 #include <TH2.h>
 #include <TPDGCode.h>
 #include <TProfile.h>
+#include <TObject.h>
 
 #include <sys/types.h>
 
