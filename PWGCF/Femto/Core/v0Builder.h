@@ -715,7 +715,9 @@ class V0Builder
         v0.v0radius(),
         v0.x(),
         v0.y(),
-        v0.z());
+        v0.z(),
+        v0.alpha(),
+        v0.qtarm());
     }
   }
 
@@ -754,7 +756,9 @@ class V0Builder
         v0.v0radius(),
         v0.x(),
         v0.y(),
-        v0.z());
+        v0.z(),
+        v0.alpha(),
+        v0.qtarm());
     }
   }
 

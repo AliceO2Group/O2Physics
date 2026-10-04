@@ -19,8 +19,10 @@
 #include "PWGCF/Femto/Core/kinkBuilder.h"
 #include "PWGCF/Femto/Core/mcBuilder.h"
 #include "PWGCF/Femto/Core/modes.h"
+#include "PWGCF/Femto/Core/photonBuilder.h"
 #include "PWGCF/Femto/Core/trackBuilder.h"
 #include "PWGCF/Femto/Core/v0Builder.h"
+#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGLF/DataModel/LFKinkDecayTables.h"
@@ -101,6 +103,7 @@ struct FemtoProducer {
   o2::framework::Preslice<rawinputs::Run3McGenParticles> perMcCollision = o2::aod::mcparticle::mcCollisionId;
   o2::framework::Preslice<rawinputs::Run3McRecoTracks> perColRecoTracks = o2::aod::track::collisionId;
   o2::framework::Preslice<rawinputs::Run3RecoVzeros> perColRecoV0s = o2::aod::v0data::collisionId;
+  o2::framework::Preslice<o2::aod::V0PhotonsKF> perColRecoPCMPhotons = o2::aod::v0photonkf::collisionId;
   o2::framework::Preslice<rawinputs::Run3RecoCascades> perColRecoCascades = o2::aod::cascdata::collisionId;
   o2::framework::Preslice<rawinputs::Run3Kinks> perColRecoKinks = o2::aod::kinkcand::collisionId;
   o2::framework::Preslice<rawinputs::Run3RecoD0s> perColRecoD0s = o2::aod::hf_cand::collisionId;
@@ -133,6 +136,13 @@ struct FemtoProducer {
   v0builder::ConfLambdaBits confLambdaBits;
   v0builder::V0Builder<modes::V0::kLambda, v0builder::LambdaSelHistName, v0builder::LambdaFilterHistName> lambdaBuilder;
   v0builder::V0Builder<modes::V0::kAntiLambda, v0builder::AntilambdaSelHistName, v0builder::AntiLambdaFilterHistName> antilambdaBuilder;
+
+  // photon (PCM) builder
+  photonbuilder::PhotonBuilderProducts photonBuilderProducts;
+  photonbuilder::ConfPhotonTables confPhotonTables;
+  photonbuilder::ConfPhotonFilters confPhotonFilters;
+  photonbuilder::ConfPhotonBits confPhotonBits;
+  photonbuilder::PhotonBuilder photonBuilder;
 
   // charm hadron builder
   charmhadronbuilder::CharmHadronBuilderProducts charmHadronBuilderProducts;
@@ -198,6 +208,8 @@ struct FemtoProducer {
     lambdaBuilder.init(&hRegistry, confLambdaBits, confV0Filters, confV0Tables, context, trackBuilder);
     antilambdaBuilder.init(&hRegistry, confLambdaBits, confV0Filters, confV0Tables, context, trackBuilder);
 
+    photonBuilder.init(&hRegistry, confPhotonBits, confPhotonFilters, confPhotonTables, context);
+
     d0Builder.init(&hRegistry, confD0Bits, confCharmHadronFilters, confCharmHadronTables, context);
     d0barBuilder.init(&hRegistry, confD0Bits, confCharmHadronFilters, confCharmHadronTables, context);
 
@@ -228,6 +240,9 @@ struct FemtoProducer {
          !doprocessTracksV0sCascadesRun3ppMc && !doprocessTracksV0sCascadesRun3PbPbMc &&
          !doprocessTracksV0sKinksRun3ppMc)) {
       LOG(fatal) << "At least one v0 table is enabled, but wrong process function is enabled. Breaking...";
+    }
+    if (photonBuilder.fillAnyTable() && (!doprocessTracksPhotonsRun3pp && !doprocessTracksPhotonsRun3PbPb)) {
+      LOG(fatal) << "At least one photon table is enabled, but wrong process function is enabled. Breaking...";
     }
     if ((sigmaBuilder.fillAnyTable() || sigmaPlusBuilder.fillAnyTable()) &&
         (!doprocessTracksKinksRun3pp && !doprocessTracksV0sCascadesKinksRun3pp &&
@@ -269,6 +284,7 @@ struct FemtoProducer {
       add("k0short", k0shortBuilder.fillAnyTable(), k0shortBuilder.isPassThrough());
       add("lambda", lambdaBuilder.fillAnyTable(), lambdaBuilder.isPassThrough());
       add("antilambda", antilambdaBuilder.fillAnyTable(), antilambdaBuilder.isPassThrough());
+      add("photon", photonBuilder.fillAnyTable(), photonBuilder.isPassThrough());
       add("d0", d0Builder.fillAnyTable(), d0Builder.isPassThrough());
       add("d0bar", d0barBuilder.fillAnyTable(), d0barBuilder.isPassThrough());
       add("lc", lcBuilder.fillAnyTable(), lcBuilder.isPassThrough());
@@ -322,6 +338,8 @@ struct FemtoProducer {
       static_cast<int>(doprocessTracksRun3PbPb) +
       static_cast<int>(doprocessTracksRun3PbPbWithEventShape) +
       static_cast<int>(doprocessTracksV0sRun3pp) +
+      static_cast<int>(doprocessTracksPhotonsRun3pp) +
+      static_cast<int>(doprocessTracksPhotonsRun3PbPb) +
       static_cast<int>(doprocessTracksV0sRun3PbPb) +
       static_cast<int>(doprocessTracksV0sCascadesRun3pp) +
       static_cast<int>(doprocessTracksV0sCascadesRun3PbPb) +
@@ -422,6 +440,13 @@ struct FemtoProducer {
     lambdaBuilder.fillMcV0s<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, v0builderProducts, v0s, tracks, trackBuilder, mcParticles, mcBuilder, mcProducts);
     antilambdaBuilder.fillMcV0s<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, v0builderProducts, v0s, tracks, trackBuilder, mcParticles, mcBuilder, mcProducts);
     k0shortBuilder.fillMcV0s<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, v0builderProducts, v0s, tracks, trackBuilder, mcParticles, mcBuilder, mcProducts);
+  }
+
+  // processing photons (PCM)
+  template <modes::System system, typename T1, typename T2, typename T3>
+  void processPhotons(T1 const& col, T2 const& photons, T3 const& v0legs)
+  {
+    photonBuilder.fillPhotons<system>(col, collisionBuilder, collisionBuilderProducts, photonBuilderProducts, photons, v0legs);
   }
 
   // processing kinks
@@ -539,6 +564,42 @@ struct FemtoProducer {
     processV0s<modes::System::kPP_Run3>(col, tracks, v0s);
   }
   PROCESS_SWITCH(FemtoProducer, processTracksV0sRun3pp, "Provide tracks and v0s", false);
+
+  void processTracksPhotonsRun3pp(rawinputs::Run3PpCollisions::iterator const& col,
+                                  o2::aod::BCsWithTimestamps const& bcs,
+                                  rawinputs::Run3FullPidTracks const& tracks,
+                                  o2::aod::V0PhotonsKF const& photons,
+                                  o2::aod::V0Legs const& v0legs)
+  {
+    if (!processCollisions<modes::System::kPP_Run3>(col, bcs, tracks)) {
+      return;
+    }
+    auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                            o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracks);
+    processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
+    // V0PhotonsKF/V0Legs carry a plain CollisionId column (not a framework index column), so they
+    // are not auto-grouped by the DPL binder and must be sliced manually, same as EMPhotonFilter.cxx
+    auto photonsThisCol = photons.sliceBy(perColRecoPCMPhotons, col.globalIndex());
+    processPhotons<modes::System::kPP_Run3>(col, photonsThisCol, v0legs);
+  }
+  PROCESS_SWITCH(FemtoProducer, processTracksPhotonsRun3pp, "Provide tracks and PCM photons", false);
+
+  void processTracksPhotonsRun3PbPb(rawinputs::Run3PbPbCollisions::iterator const& col,
+                                    o2::aod::BCsWithTimestamps const& bcs,
+                                    rawinputs::Run3FullPidTracks const& tracks,
+                                    o2::aod::V0PhotonsKF const& photons,
+                                    o2::aod::V0Legs const& v0legs)
+  {
+    if (!processCollisions<modes::System::kPbPb_Run3>(col, bcs, tracks)) {
+      return;
+    }
+    auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                            o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracks);
+    processTracks<modes::System::kPbPb_Run3>(col, tracksWithItsPid);
+    auto photonsThisCol = photons.sliceBy(perColRecoPCMPhotons, col.globalIndex());
+    processPhotons<modes::System::kPbPb_Run3>(col, photonsThisCol, v0legs);
+  }
+  PROCESS_SWITCH(FemtoProducer, processTracksPhotonsRun3PbPb, "Provide tracks and PCM photons in PbPb collisions", false);
 
   void processTracksV0sRun3PbPb(rawinputs::Run3PbPbCollisions::iterator const& col,
                                 o2::aod::BCsWithTimestamps const& bcs,
