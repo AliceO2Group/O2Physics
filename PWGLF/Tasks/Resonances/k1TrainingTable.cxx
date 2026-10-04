@@ -16,6 +16,7 @@
 
 #include "PWGLF/Core/K1AnalysisMicroCore.h"
 #include "PWGLF/Core/K1MlFeatures.h"
+#include "PWGLF/Core/ResoAnalysisSelectionCore.h"
 #include "PWGLF/DataModel/LFK1MlTables.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
 
@@ -48,6 +49,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::constants::physics;
+using namespace o2::analysis::resonance;
 using namespace o2::analysis::k1micro;
 
 static_assert(std::extent_v<aod::k1ml::K1MasterFeatures::type> == o2::analysis::k1ml::NMasterFeatures,
@@ -85,7 +87,6 @@ struct K1TrainingTable {
   KaonPidCuts kaonPID;
   SecondaryCuts secondaryCuts;
   CandidateCuts candidateCuts;
-  HistogramOptions histogramOptions;
 
   Configurable<std::string> k1MlExportStage{"k1MlExportStage", "loose", "Candidate export stage: loose (pass bits >= 1) or selected (pass bits = 31)"};
   Configurable<bool> k1MlLooseAudit{"k1MlLooseAudit", true, "Record loose US cutflow and mass/pT/activity spectrum"};
@@ -117,7 +118,11 @@ struct K1TrainingTable {
     LooseStageOptions looseOptions;
     looseOptions.audit = k1MlLooseAudit;
     looseOptions.exportSelected = k1MlExportStage.value == "selected";
-    core.init(histos, eventCuts, trackCuts, pionPID, kaonPID, secondaryCuts, candidateCuts, histogramOptions, modes, looseOptions);
+    core.init(histos, eventCuts, trackCuts, pionPID, kaonPID, secondaryCuts, candidateCuts, modes, looseOptions);
+    if (doprocessMCMicro) {
+      histos.add("MCReco/collisions", "Selected reconstructed MC collisions", HistType::kTH1D, {{1, 0, 1}});
+      histos.add("MCReco/microTracks", "Input micro tracks in selected MC collisions", HistType::kTH1D, {{1, 0, 1}});
+    }
 
     // Candidates that violate the canonical or feature contract are skipped, never written.
     auto skipped = histos.add<TH1>("ML/exportSkipped", "Skipped candidates;K1 ML build status;candidates", HistType::kTH1D, {{6, -0.5, 5.5}});
@@ -229,11 +234,12 @@ struct K1TrainingTable {
       return;
     }
     writeK1MlEvent(collision);
-    core.fillHistograms<false, false, true>(histos, collision, tracks, tracks,
-                                            [this](auto const& coll, auto const& kaon, auto const& samePion, auto const& oppPion,
-                                                   K1TruthChannel channel, uint16_t passBits) {
-                                              writeK1MlCandidate<false>(coll, kaon, samePion, oppPion, channel, passBits);
-                                            });
+    // Selection only: the K1 analysis histograms belong to the K1 analysis task
+    core.forEachCandidate<false, false, true>(histos, collision, tracks, tracks, false, nullptr, nullptr,
+                                              [this](auto const& coll, auto const& kaon, auto const& samePion, auto const& oppPion,
+                                                     K1TruthChannel channel, uint16_t passBits) {
+                                                writeK1MlCandidate<false>(coll, kaon, samePion, oppPion, channel, passBits);
+                                              });
   }
   PROCESS_SWITCH(K1TrainingTable, processResoMicroTracks, "Write K1 candidates from data micro v001 tables", true);
 
@@ -246,11 +252,11 @@ struct K1TrainingTable {
     histos.fill(HIST("MCReco/collisions"), 0.5);
     histos.fill(HIST("MCReco/microTracks"), 0.5, tracks.size());
     writeK1MlEvent(collision);
-    core.fillHistograms<true, false, true>(histos, collision, tracks, tracks,
-                                           [this](auto const& coll, auto const& kaon, auto const& samePion, auto const& oppPion,
-                                                  K1TruthChannel channel, uint16_t passBits) {
-                                             writeK1MlCandidate<true>(coll, kaon, samePion, oppPion, channel, passBits);
-                                           });
+    core.forEachCandidate<true, false, true>(histos, collision, tracks, tracks, false, nullptr, nullptr,
+                                             [this](auto const& coll, auto const& kaon, auto const& samePion, auto const& oppPion,
+                                                    K1TruthChannel channel, uint16_t passBits) {
+                                               writeK1MlCandidate<true>(coll, kaon, samePion, oppPion, channel, passBits);
+                                             });
   }
   PROCESS_SWITCH(K1TrainingTable, processMCMicro, "Write K1 candidates with truth from reconstructed MC micro v001 tables", false);
 
@@ -259,7 +265,7 @@ struct K1TrainingTable {
     if (!core.passesEventCuts(collision) || !core.passesMCEventCuts(collision)) {
       return;
     }
-    core.fillGenerated(histos, resoParents, [&](auto const& part, K1TruthChannel channel) {
+    core.forEachGeneratedK1(histos, resoParents, [&](auto const& part, K1TruthChannel channel) {
       k1MlGenAudit(static_cast<int64_t>(collision.globalIndex()), static_cast<int64_t>(part.originalMcParticleId()),
                    part.pdgCode(), part.daughterPDG1(), part.daughterPDG2(), static_cast<uint8_t>(channel),
                    part.pt(), part.y(), true);
