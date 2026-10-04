@@ -97,7 +97,6 @@ struct HResonanceCorrelation {
 
   struct : ConfigurableGroup {
     std::string prefix = "masterConfigurations";
-    Configurable<bool> doPPAnalysis{"doPPAnalysis", true, "if in pp, set to true"};
     Configurable<int> collisionHasTriggOrAssoc{"collisionHasTriggOrAssoc", 0, "require the collisions containing (0:no requirement 1:trig 2:assoc 3:trig or assoc 4:trig and assoc"};
     Configurable<bool> doFullCorrelationStudy{"doFullCorrelationStudy", true, "if true, do full correlation study by creating all THnSparse histograms for the correlation function"};
     Configurable<bool> doCorrelationHadron{"doCorrelationHadron", false, "do Hadron correlation"};
@@ -106,11 +105,14 @@ struct HResonanceCorrelation {
     Configurable<bool> doCorrelationPion{"doCorrelationPion", false, "do Pion correlation"};
     Configurable<bool> doCorrelationKaon{"doCorrelationKaon", false, "do Kaon correlation"};
     Configurable<bool> doGenEventSelection{"doGenEventSelection", true, "use event selections when performing closure test for the gen events"};
-    Configurable<bool> selectINELgtZERO{"selectINELgtZERO", true, "select INEL>0 events"};
-    Configurable<float> zVertexCut{"zVertexCut", 10, "Cut on PV position"};
-    Configurable<bool> requireAllGoodITSLayers{"requireAllGoodITSLayers", false, " require that in the event all ITS are good"};
-    Configurable<bool> requireGoodTriggerTVX{"requireGoodTriggerTVX", false, " require acceptable FT0C-FT0A time difference"};
-    Configurable<bool> requireGoodZvtxFT0vsPV{"requireGoodZvtxFT0vsPV", false, " require small difference between z-vertex from PV and from FT0"};
+    // Used by the generator-level (MC-truth) selection in processPrediction,
+    // not by isSelectedEvents() below -- that's a different, reconstructed-
+    // level selection now driven entirely by configEvents.* to match the
+    // filter task (hResonanceCorrelationFilter.cxx) exactly.
+    Configurable<bool> selectINELgtZERO{"selectINELgtZERO", true, "select INEL>0 events (generator level, see processPrediction)"};
+    // Still used directly by the closure-test/prediction blocks (reconstructed
+    // vs. generated z-vertex checks), independent of isSelectedEvents().
+    Configurable<float> zVertexCut{"zVertexCut", 10, "Cut on PV position (closure test / prediction only)"};
     Configurable<bool> skipUnderOverflowInTHn{"skipUnderOverflowInTHn", false, "skip under/overflow in THns"};
     Configurable<int> mixingParameter{"mixingParameter", 10, "how many events are mixed"};
     Configurable<bool> doMCassociation{"doMCassociation", false, "fill everything only for MC associated"};
@@ -127,7 +129,6 @@ struct HResonanceCorrelation {
   Configurable<bool> doAssocPhysicalPrimaryInGen{"doAssocPhysicalPrimaryInGen", false, "require physical primary for associated particles in Generated Partilces"};
   Configurable<bool> doAutocorrelationRejection{"doAutocorrelationRejection", true, "reject pairs where trigger Id is the same as daughter particle Id"};
   Configurable<bool> doMixingQAandEventQA{"doMixingQAandEventQA", true, "if true, add EvnetQA and MixingQA hist to histos"};
-  Configurable<bool> doITSClustersQA{"doITSClustersQA", true, "if true, add ITSCluster hist to histos"};
   Configurable<bool> doDeltaPhiStarCheck{"doDeltaPhiStarCheck", false, "if true, create and fill delta phi star histograms"};
 
   Configurable<int> triggerBinToSelect{"triggerBinToSelect", 0, "trigger bin to select on if processSelectEventWithTrigger enabled"};
@@ -136,9 +137,23 @@ struct HResonanceCorrelation {
   Configurable<float> ySel{"ySel", 0.5, "Selection in rapidity for consistency checks"};
 
   Configurable<bool> useTheLeadingParticleAsTrigger{"useTheLeadingParticleAsTrigger", false, "if true, use the leading particle in the event as trigger particle"};
-  // used for event selections in Pb-Pb
-  Configurable<int> cfgCutOccupancyHigh{"cfgCutOccupancyHigh", 3000, "High cut on TPC occupancy"};
-  Configurable<int> cfgCutOccupancyLow{"cfgCutOccupancyLow", 0, "Low cut on TPC occupancy"};
+
+  // Reconstructed-event selection cuts -- deliberately the same cut set and
+  // names as configEvents in hResonanceCorrelationFilter.cxx, so a collision
+  // that was selected to produce the trigger/associated/candidate tables is
+  // selected identically here (previously this task re-derived its own,
+  // different cut list via isisCollisionSelect()/isisCollisionSelectPbPb(),
+  // which could disagree with the filter task's selection).
+  struct : ConfigurableGroup {
+    std::string prefix = "configEvents";
+    Configurable<float> cfgEvtZvtx{"cfgEvtZvtx", 10.0f, "Evt sel: Max. z-Vertex (cm)"};
+    Configurable<bool> cfgEvtTriggerTVXSel{"cfgEvtTriggerTVXSel", true, "Evt sel: triggerTVX selection (MB)"};
+    Configurable<bool> cfgEvtNoTFBorderCut{"cfgEvtNoTFBorderCut", true, "Evt sel: apply TF border cut"};
+    Configurable<bool> cfgEvtNoITSROFrameBorderCut{"cfgEvtNoITSROFrameBorderCut", true, "Evt sel: apply NoITSRO border cut"};
+    Configurable<bool> cfgEvtSel8{"cfgEvtSel8", true, "Evt Sel 8 check for offline selection"};
+    Configurable<bool> cfgEvtNoSameBunchPileupCut{"cfgEvtNoSameBunchPileupCut", true, "Evt sel: reject collisions associated with the same found-by-T0 bunch crossing"};
+    Configurable<bool> cfgEvtGoodZvtxFT0vsPVCut{"cfgEvtGoodZvtxFT0vsPVCut", true, "Evt sel: require small difference between z-vertex from PV and from FT0"};
+  } configEvents;
 
   // Axes - configurable for smaller sizes
   struct : ConfigurableGroup {
@@ -348,6 +363,11 @@ struct HResonanceCorrelation {
   static constexpr int IndexHadron = 4;
 
   uint16_t doCorrelation = 0;
+  // Which species' processSameEventH<X>() is responsible for filling the
+  // shared CollCutCounts/EventQA histograms for a given collision, computed
+  // once in init() -- see the comment there. -1 means none of the same-event
+  // process functions are actually enabled (bit + switch), so nothing fills them.
+  int eventQAOwnerIndex = -1;
   int mRunNumber = 0;
   int mRunNumberZorro = 0;
 
@@ -464,6 +484,27 @@ struct HResonanceCorrelation {
       SETBIT(doCorrelation, IndexKaon);
     if (masterConfigurations.doCorrelationHadron)
       SETBIT(doCorrelation, IndexHadron);
+
+    // Pick exactly one "owner" species for the shared CollCutCounts/EventQA
+    // fills: the highest-priority species (Phi > Kstar > Pion > Kaon >
+    // Hadron) that will actually run its processSameEventH<X>() (both its
+    // doCorrelation bit AND its PROCESS_SWITCH on). Every processSameEventH<X>
+    // calls isSelectedEvents(collision, eventQAOwnerIndex == IndexX) -- only
+    // the owner's call passes fillHist=true, so a collision examined by
+    // several same-event process functions in the same run (e.g. Phi and
+    // K*0 both enabled) is still only counted once, instead of once per
+    // enabled species.
+    if (TESTBIT(doCorrelation, IndexPhi) && doprocessSameEventHPhis) {
+      eventQAOwnerIndex = IndexPhi;
+    } else if (TESTBIT(doCorrelation, IndexKstar) && doprocessSameEventHKstars) {
+      eventQAOwnerIndex = IndexKstar;
+    } else if (TESTBIT(doCorrelation, IndexPion) && doprocessSameEventHPions) {
+      eventQAOwnerIndex = IndexPion;
+    } else if (TESTBIT(doCorrelation, IndexKaon) && doprocessSameEventHKaons) {
+      eventQAOwnerIndex = IndexKaon;
+    } else if (TESTBIT(doCorrelation, IndexHadron) && doprocessSameEventHHadrons) {
+      eventQAOwnerIndex = IndexHadron;
+    }
 
     // Store axis ranges to prevent spurious filling
     // axis status:
@@ -642,13 +683,20 @@ struct HResonanceCorrelation {
         validCollisions[i].reserve(masterConfigurations.mixingParameter);
       }
     }
-    if (!masterConfigurations.doPPAnalysis) {
-      // event selections in Pb-Pb
-      histos.add("hEventSelection", "hEventSelection", kTH1F, {{10, 0, 10}});
-      TString eventSelLabel[] = {"all", "sel8", "kIsTriggerTVX", "PV_{z}", "kIsGoodITSLayersAll", "kIsGoodZvtxFT0vsPV", "OccupCut", "kNoTimeFrameBorder", "kNoITSROFrameBorder", "kNoSameBunchPileup "};
-      for (int i = 1; i <= histos.get<TH1>(HIST("hEventSelection"))->GetNbinsX(); i++) {
-        histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(i, eventSelLabel[i - 1]);
-      }
+    // Event-selection cut-flow, same cut set/order/labels as CollCutCounts in
+    // hResonanceCorrelationFilter.cxx, filled by isSelectedEvents() -- see
+    // eventQAOwnerIndex above for why only one process function fills it.
+    if (eventQAOwnerIndex != -1) {
+      histos.add("CollCutCounts", "No. of event after cuts", kTH1I, {{10, 0, 10}});
+      histos.get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(1, "All Events");
+      histos.get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(2, "|Vz| < cut");
+      histos.get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(3, "kIsTriggerTVX");
+      histos.get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(4, "kNoTimeFrameBorder");
+      histos.get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(5, "kNoITSROFrameBorder");
+      histos.get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(6, "sel8");
+      histos.get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(7, "kNoSameBunchPileup");
+      histos.get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(8, "kIsGoodZvtxFT0vsPV");
+      histos.get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(9, "All Passed Events");
     }
 
     // ========================================================================
@@ -706,6 +754,24 @@ struct HResonanceCorrelation {
         } else { // Hadron
           doSE = doprocessSameEventHHadrons;
           doME = doprocessMixedEventHHadrons;
+        }
+
+        // Same-/mixed-event invariant-mass cross-check (Phi/K*0 only). Booked
+        // independent of doFullCorrelationStudy/fillCorrelationHistWithMass
+        // since these are standalone QA histograms, not part of the
+        // Signal/LeftBg/RightBg THnF family -- just need doSE/doME (the
+        // process switch(es) for this species) to actually get filled.
+        if (i == IndexPhi && doSE) {
+          histos.add("hPhiInvMass", "Phi candidate invariant mass, same event", kTH3F, {axesConfigurations.axisPhiMass, axesConfigurations.axisPtAssoc, axesConfigurations.axisMult});
+        }
+        if (i == IndexKstar && doSE) {
+          histos.add("hKstarInvMass", "K*0 candidate invariant mass, same event", kTH3F, {axesConfigurations.axisKstarMass, axesConfigurations.axisPtAssoc, axesConfigurations.axisMult});
+        }
+        if (i == IndexPhi && doME) {
+          histos.add("hPhiMixedEventInvMass", "Phi candidate invariant mass, mixed event", kTH3F, {axesConfigurations.axisPhiMass, axesConfigurations.axisPtAssoc, axesConfigurations.axisMult});
+        }
+        if (i == IndexKstar && doME) {
+          histos.add("hKstarMixedEventInvMass", "K*0 candidate invariant mass, mixed event", kTH3F, {axesConfigurations.axisKstarMass, axesConfigurations.axisPtAssoc, axesConfigurations.axisMult});
         }
 
         // Kinematic QA (Only for Phi)
@@ -955,27 +1021,77 @@ struct HResonanceCorrelation {
     }
   }
 
-  // this function allows for all event selections to be done in a modular way
+  // Single event-selection predicate, cut-for-cut and bin-for-bin the same as
+  // isSelectedEvents() in hResonanceCorrelationFilter.cxx, so a collision is
+  // selected identically whether the filter task is producing its tables or
+  // this task is correlating them. Replaces the former isisCollisionSelect()
+  // (pp) / isisCollisionSelectPbPb() (Pb-Pb) pair, which carried their own,
+  // different cut lists (centrality-range, INEL>0, ITS-good-layers, TPC
+  // occupancy) that could disagree with the filter task's selection.
+  //
+  // fillHist controls the CollCutCounts cut-flow and EventQA/hMult+hPvz
+  // fills: pass true only from the one process function that "owns" this
+  // collision for QA purposes (see eventQAOwnerIndex in init()) so a
+  // collision examined by several enabled same-event process functions is
+  // still only counted once. Mixed-event callers always pass false, since ME
+  // revisits the same collisions many times per mixing pool and has its own
+  // separate MixingQA histograms.
   template <typename TCollision>
-  bool isisCollisionSelect(TCollision const& collision)
+  bool isSelectedEvents(TCollision const& collision, bool fillHist = true)
   {
-    // ________________________________________________
-    // Perform basic event selection
-    if (!collision.sel8()) {
+    auto applyCut = [&](bool enabled, bool condition, int bin) {
+      if (!enabled) {
+        return true;
+      }
+      if (!condition) {
+        return false;
+      }
+      if (fillHist) {
+        histos.fill(HIST("CollCutCounts"), bin);
+      }
+      return true;
+    };
+
+    if (fillHist) {
+      histos.fill(HIST("CollCutCounts"), 0);
+    }
+
+    if (!applyCut(true, std::abs(collision.posZ()) <= configEvents.cfgEvtZvtx, 1)) {
       return false;
     }
-    if (std::abs(collision.posZ()) > masterConfigurations.zVertexCut) {
+
+    if (!applyCut(configEvents.cfgEvtTriggerTVXSel,
+                  collision.selection_bit(aod::evsel::kIsTriggerTVX), 2)) {
       return false;
     }
-    if (collision.centFT0M() > axisRanges[5][1] || collision.centFT0M() < axisRanges[5][0]) {
+
+    if (!applyCut(configEvents.cfgEvtNoTFBorderCut,
+                  collision.selection_bit(aod::evsel::kNoTimeFrameBorder), 3)) {
       return false;
     }
-    if (!collision.isInelGt0() && masterConfigurations.selectINELgtZERO) {
+
+    if (!applyCut(configEvents.cfgEvtNoITSROFrameBorderCut,
+                  collision.selection_bit(aod::evsel::kNoITSROFrameBorder), 4)) {
       return false;
     }
-    if (!collision.selection_bit(aod::evsel::kIsGoodITSLayersAll) && masterConfigurations.requireAllGoodITSLayers) {
+
+    if (!applyCut(configEvents.cfgEvtSel8, collision.sel8(), 5)) {
       return false;
     }
+
+    if (!applyCut(configEvents.cfgEvtNoSameBunchPileupCut,
+                  collision.selection_bit(aod::evsel::kNoSameBunchPileup), 6)) {
+      return false;
+    }
+
+    if (!applyCut(configEvents.cfgEvtGoodZvtxFT0vsPVCut,
+                  collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV), 7)) {
+      return false;
+    }
+
+    // Zorro trigger-skim accounting: this task's own feature, not part of the
+    // filter task's cut set (which has no skim awareness) -- opt-in via
+    // zorroMask, off by default, so it doesn't change the baseline cut set.
     if (zorroMask.value != "") {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initZorro(bc);
@@ -984,86 +1100,13 @@ struct HResonanceCorrelation {
         return false;
       }
     }
-    return true;
-  }
 
-  // event selections in Pb-Pb
-  template <typename TCollision>
-  bool isisCollisionSelectPbPb(TCollision const& collision, bool fillHists)
-  {
-    if (fillHists)
-      histos.fill(HIST("hEventSelection"), 0.5 /* all collisions */);
-
-    // Perform basic event selection
-    if (!collision.sel8()) {
-      return false;
+    if (fillHist) {
+      histos.fill(HIST("CollCutCounts"), 8);
+      histos.fill(HIST("EventQA/hMult"), collision.centFT0M());
+      histos.fill(HIST("EventQA/hPvz"), collision.posZ());
     }
-    if (fillHists)
-      histos.fill(HIST("hEventSelection"), 1.5 /* collisions  after sel8*/);
 
-    if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) && masterConfigurations.requireGoodTriggerTVX) {
-      return false;
-    }
-    if (fillHists)
-      histos.fill(HIST("hEventSelection"), 2.5 /* FT0 vertex (acceptable FT0C-FT0A time difference) collisions */);
-
-    if (std::abs(collision.posZ()) > masterConfigurations.zVertexCut) {
-      return false;
-    }
-    if (fillHists)
-      histos.fill(HIST("hEventSelection"), 3.5 /* collisions  after sel pvz sel*/);
-
-    if (!collision.selection_bit(aod::evsel::kIsGoodITSLayersAll) && masterConfigurations.requireAllGoodITSLayers) {
-      // cut time intervals with dead ITS staves
-      return false;
-    }
-    if (fillHists)
-      histos.fill(HIST("hEventSelection"), 4.5 /* collisions  after cut time intervals with dead ITS staves*/);
-
-    if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV) && masterConfigurations.requireGoodZvtxFT0vsPV) {
-      // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference
-      // use this cut at low multiplicities with caution
-      return false;
-    }
-    if (fillHists)
-      histos.fill(HIST("hEventSelection"), 5.5 /* removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference*/);
-
-    auto occupancy = collision.trackOccupancyInTimeRange();
-    if (occupancy < cfgCutOccupancyLow || occupancy > cfgCutOccupancyHigh)
-      return false;
-    if (fillHists)
-      histos.fill(HIST("hEventSelection"), 6.5 /* Below min occupancy and Above max occupancy*/);
-
-    /*
-    if (collision.alias_bit(kTVXinTRD)) {
-      // TRD triggered
-      return false;
-    }
-    */
-
-    if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-      // reject collisions close to Time Frame borders
-      // O2-4623
-      return false;
-    }
-    if (fillHists)
-      histos.fill(HIST("hEventSelection"), 7.5 /* reject collisions close to Time Frame borders*/);
-
-    if (!collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
-      // reject events affected by the ITS ROF border
-      // O2-4309
-      return false;
-    }
-    if (fillHists)
-      histos.fill(HIST("hEventSelection"), 8.5 /* reject events affected by the ITS ROF border*/);
-
-    if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
-      // rejects collisions which are associated with the same "found-by-T0" bunch crossing
-      // https://indico.cern.ch/event/1396220/#1-event-selection-with-its-rof
-      return false;
-    }
-    if (fillHists)
-      histos.fill(HIST("hEventSelection"), 9.5 /* rejects collisions which are associated with the same "found-by-T0" bunch crossing*/);
     return true;
   }
 
@@ -2106,7 +2149,7 @@ struct HResonanceCorrelation {
     for (auto const& collision : collisions) {
       // ________________________________________________
       // Perform basic event selection
-      if (!isisCollisionSelect(collision)) {
+      if (!isSelectedEvents(collision, false)) {
         continue;
       }
 
@@ -2126,6 +2169,15 @@ struct HResonanceCorrelation {
 
   void processSameEventHHadrons(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>::iterator const& collision, aod::AssocHadrons const& assocHadrons, aod::TriggerTracks const& triggerTracks, TracksComplete const&, aod::BCsWithTimestamps const&)
   {
+    // Guard against the fatal "histogram not found" crash: the per-species
+    // histograms this function fills are only booked in init() when
+    // TESTBIT(doCorrelation, IndexHadron) is also set (see init(), ~line 831)
+    // -- doCorrelation defaults to 0 (masterConfigurations.doCorrelationHadron
+    // defaults false) while this PROCESS_SWITCH defaults true, so without this
+    // guard the default config fills unbooked histograms and crashes.
+    if (!TESTBIT(doCorrelation, IndexHadron)) {
+      return;
+    }
     LOGF(info, "SameEventHadron: collisions=%d triggers=%zu assocHadrons=%zu", collision.globalIndex(), triggerTracks.size(), assocHadrons.size());
 
     BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
@@ -2144,15 +2196,15 @@ struct HResonanceCorrelation {
     }
 
     // ________________________________________________
-    // Perform basic event selection
-    if (!isisCollisionSelect(collision)) {
+    // Perform basic event selection. fillHist=true only from the owning
+    // species (see eventQAOwnerIndex in init()) so CollCutCounts/EventQA
+    // aren't multi-counted when several same-event species run together.
+    if (!isSelectedEvents(collision, eventQAOwnerIndex == IndexHadron)) {
       return;
     }
     // ________________________________________________
-    if (!doprocessSameEventHPhis && !doprocessSameEventHKstars && !doprocessSameEventHPions && !doprocessSameEventHKaons && doMixingQAandEventQA) {
+    if (eventQAOwnerIndex == IndexHadron && doMixingQAandEventQA) {
       histos.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({collision.posZ(), collision.centFT0M()}));
-      histos.fill(HIST("EventQA/hMult"), collision.centFT0M());
-      histos.fill(HIST("EventQA/hPvz"), collision.posZ());
     }
 
     // Do basic QA
@@ -2212,6 +2264,12 @@ struct HResonanceCorrelation {
 
   void processSameEventHPions(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>::iterator const& collision, soa::Join<aod::AssocHadrons, aod::AssocPID> const& associatedPions, soa::Join<aod::TriggerTracks, aod::TriggerTrackExtras> const& triggerTracks, TracksComplete const&, aod::BCsWithTimestamps const&)
   {
+    // See the matching comment in processSameEventHHadrons: without this,
+    // the default config (doCorrelationPion=false, this switch=true) fills
+    // hPionEtaVsPtAllSelected etc. before they're booked -> fatal.
+    if (!TESTBIT(doCorrelation, IndexPion)) {
+      return;
+    }
     LOGF(info, "SameEventPion: collisions=%d triggers=%zu assocPions=%zu", collision.globalIndex(), triggerTracks.size(), associatedPions.size());
 
     BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
@@ -2228,15 +2286,14 @@ struct HResonanceCorrelation {
     }
 
     // ________________________________________________
-    // Perform basic event selection
-    if (!isisCollisionSelect(collision)) {
+    // Perform basic event selection. See the matching comment in
+    // processSameEventHHadrons for fillHist/eventQAOwnerIndex.
+    if (!isSelectedEvents(collision, eventQAOwnerIndex == IndexPion)) {
       return;
     }
     // ________________________________________________
-    if (!doprocessSameEventHPhis && !doprocessSameEventHKstars && doMixingQAandEventQA) {
+    if (eventQAOwnerIndex == IndexPion && doMixingQAandEventQA) {
       histos.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({collision.posZ(), collision.centFT0M()}));
-      histos.fill(HIST("EventQA/hMult"), collision.centFT0M());
-      histos.fill(HIST("EventQA/hPvz"), collision.posZ());
     }
     // Do basic QA
     for (auto const& pion : associatedPions) {
@@ -2277,6 +2334,13 @@ struct HResonanceCorrelation {
 
   void processSameEventHKaons(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>::iterator const& collision, soa::Join<aod::AssocHadrons, aod::AssocPID> const& associatedKaons, soa::Join<aod::TriggerTracks, aod::TriggerTrackExtras> const& triggerTracks, TracksComplete const&, aod::BCsWithTimestamps const&)
   {
+    // See the matching comment in processSameEventHHadrons: without this,
+    // the default config (doCorrelationKaon=false, this switch=true) fills
+    // hKaonEtaVsPtAllSelected etc. before they're booked -> fatal (this is
+    // the exact FATAL reported: "hKaonEtaVsPtAllSelected" not found).
+    if (!TESTBIT(doCorrelation, IndexKaon)) {
+      return;
+    }
     LOGF(info, "SameEventKaon: collisions=%d triggers=%zu assocKaons=%zu", collision.globalIndex(), triggerTracks.size(), associatedKaons.size());
 
     BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
@@ -2293,15 +2357,14 @@ struct HResonanceCorrelation {
     }
 
     // ________________________________________________
-    // Perform basic event selection
-    if (!isisCollisionSelect(collision)) {
+    // Perform basic event selection. See the matching comment in
+    // processSameEventHHadrons for fillHist/eventQAOwnerIndex.
+    if (!isSelectedEvents(collision, eventQAOwnerIndex == IndexKaon)) {
       return;
     }
     // ________________________________________________
-    if (!doprocessSameEventHPhis && !doprocessSameEventHKstars && !doprocessSameEventHPions && doMixingQAandEventQA) {
+    if (eventQAOwnerIndex == IndexKaon && doMixingQAandEventQA) {
       histos.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({collision.posZ(), collision.centFT0M()}));
-      histos.fill(HIST("EventQA/hMult"), collision.centFT0M());
-      histos.fill(HIST("EventQA/hPvz"), collision.posZ());
     }
     // Do basic QA
     for (auto const& kaon : associatedKaons) {
@@ -2342,6 +2405,12 @@ struct HResonanceCorrelation {
 
   void processSameEventHPhis(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>::iterator const& collision, aod::AssocPhis const& associatedPhis, aod::TriggerTracks const& triggerTracks, TracksComplete const&, aod::BCsWithTimestamps const&)
   {
+    // See the matching comment in processSameEventHHadrons: without this,
+    // the default config (doCorrelationPhi=false, this switch=true) fills
+    // sameEvent/Signal/Phi etc. before they're booked -> fatal.
+    if (!TESTBIT(doCorrelation, IndexPhi)) {
+      return;
+    }
     LOGF(info, "SameEventPhi: collisions=%d triggers=%zu assocPhi=%zu", collision.globalIndex(), triggerTracks.size(), associatedPhis.size());
 
     BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
@@ -2358,14 +2427,14 @@ struct HResonanceCorrelation {
       initEfficiencyFromCCDB(bc);
     }
 
-    if (!isisCollisionSelect(collision)) {
+    // See the matching comment in processSameEventHHadrons for
+    // fillHist/eventQAOwnerIndex.
+    if (!isSelectedEvents(collision, eventQAOwnerIndex == IndexPhi)) {
       return;
     }
 
-    if (doMixingQAandEventQA) {
+    if (eventQAOwnerIndex == IndexPhi && doMixingQAandEventQA) {
       histos.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({collision.posZ(), collision.centFT0M()}));
-      histos.fill(HIST("EventQA/hMult"), collision.centFT0M());
-      histos.fill(HIST("EventQA/hPvz"), collision.posZ());
     }
 
     // -----------------------------
@@ -2391,14 +2460,34 @@ struct HResonanceCorrelation {
       histos.fill(HIST("hTrackEtaVsPtVsPhi"), track.pt(), track.eta(), track.phi());
     }
 
+    // Same-event invariant-mass cross-check: raw per-candidate mass, read
+    // straight off the already-computed Mass column -- no kinematics
+    // recomputed here. See the matching comment at hPhiMixedEventInvMass's
+    // booking in init() for why this is the mixed-event counterpart.
+    for (auto const& cand : associatedPhis) {
+      histos.fill(HIST("hPhiInvMass"), cand.mass(), cand.pt(), collision.centFT0M());
+    }
+
     // -----------------------------
     // h-phi correlation
     // -----------------------------
-    fillCorrelationsPhi(triggerTracks, associatedPhis, false, false, collision.posZ(), collision.centFT0M(), bField);
+    // Guarded by doFullCorrelationStudy to match how sameEvent/Signal/Phi is
+    // booked in init() (~line 753) -- this call used to be unconditional,
+    // which would fill that THnF even when doFullCorrelationStudy=false (and
+    // it was therefore never booked).
+    if (masterConfigurations.doFullCorrelationStudy) {
+      fillCorrelationsPhi(triggerTracks, associatedPhis, false, false, collision.posZ(), collision.centFT0M(), bField);
+    }
   }
 
   void processSameEventHKstars(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>::iterator const& collision, aod::AssocKstars const& associatedKstars, aod::TriggerTracks const& triggerTracks, TracksComplete const&, aod::BCsWithTimestamps const&)
   {
+    // See the matching comment in processSameEventHHadrons: without this,
+    // the default config (doCorrelationKstar=false, this switch=true) fills
+    // sameEvent/Signal/Kstar0 etc. before they're booked -> fatal.
+    if (!TESTBIT(doCorrelation, IndexKstar)) {
+      return;
+    }
     LOGF(info, "SameEventKstar: collisions=%d triggers=%zu assocKstar=%zu", collision.globalIndex(), triggerTracks.size(), associatedKstars.size());
 
     BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
@@ -2415,14 +2504,14 @@ struct HResonanceCorrelation {
       initEfficiencyFromCCDB(bc);
     }
 
-    if (!isisCollisionSelect(collision)) {
+    // See the matching comment in processSameEventHHadrons for
+    // fillHist/eventQAOwnerIndex.
+    if (!isSelectedEvents(collision, eventQAOwnerIndex == IndexKstar)) {
       return;
     }
 
-    if (doMixingQAandEventQA) {
+    if (eventQAOwnerIndex == IndexKstar && doMixingQAandEventQA) {
       histos.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({collision.posZ(), collision.centFT0M()}));
-      histos.fill(HIST("EventQA/hMult"), collision.centFT0M());
-      histos.fill(HIST("EventQA/hPvz"), collision.posZ());
     }
 
     // -----------------------------
@@ -2448,15 +2537,30 @@ struct HResonanceCorrelation {
       histos.fill(HIST("hTrackEtaVsPtVsPhi"), track.pt(), track.eta(), track.phi());
     }
 
+    // Same-event invariant-mass cross-check -- see the matching comment in
+    // processSameEventHPhis.
+    for (auto const& cand : associatedKstars) {
+      histos.fill(HIST("hKstarInvMass"), cand.mass(), cand.pt(), collision.centFT0M());
+    }
+
     // -----------------------------
     // h-K*0 correlation
     // -----------------------------
-    fillCorrelationsKstar(triggerTracks, associatedKstars, false, false, collision.posZ(), collision.centFT0M(), bField);
+    // Guarded by doFullCorrelationStudy for the same reason as the Phi call
+    // above -- matches how sameEvent/Signal/Kstar0 is booked in init().
+    if (masterConfigurations.doFullCorrelationStudy) {
+      fillCorrelationsKstar(triggerTracks, associatedKstars, false, false, collision.posZ(), collision.centFT0M(), bField);
+    }
   }
 
   void
     processMixedEventHHadrons(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults> const& collisions, aod::AssocHadrons const& assocHadrons, aod::TriggerTracks const& triggerTracks, TracksComplete const&, aod::BCsWithTimestamps const&)
   {
+    // See the matching comment in processSameEventHHadrons -- mixedEvent/Signal/Hadron
+    // is booked only when TESTBIT(doCorrelation, IndexHadron) is set.
+    if (!TESTBIT(doCorrelation, IndexHadron)) {
+      return;
+    }
     BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
     for (auto const& [collision1, collision2] : soa::selfCombinations(colBinning, masterConfigurations.mixingParameter, -1, collisions, collisions)) {
       auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
@@ -2473,7 +2577,7 @@ struct HResonanceCorrelation {
 
       // ________________________________________________
       // Perform basic event selection on both collisions
-      if (!isisCollisionSelect(collision1) || !isisCollisionSelect(collision2)) {
+      if (!isSelectedEvents(collision1, false) || !isSelectedEvents(collision2, false)) {
         continue;
       }
       if (collision1.centFT0M() > axisRanges[5][1] || collision1.centFT0M() < axisRanges[5][0])
@@ -2501,6 +2605,11 @@ struct HResonanceCorrelation {
 
   void processMixedEventHPions(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults> const& collisions, soa::Join<aod::AssocHadrons, aod::AssocPID> const& assocPions, soa::Join<aod::TriggerTracks, aod::TriggerTrackExtras> const& triggerTracks, TracksComplete const&, aod::BCsWithTimestamps const&)
   {
+    // See the matching comment in processSameEventHHadrons -- mixedEvent/Signal/Pion
+    // is booked only when TESTBIT(doCorrelation, IndexPion) is set.
+    if (!TESTBIT(doCorrelation, IndexPion)) {
+      return;
+    }
     BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
     for (auto const& [collision1, collision2] : soa::selfCombinations(colBinning, masterConfigurations.mixingParameter, -1, collisions, collisions)) {
       auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
@@ -2517,7 +2626,7 @@ struct HResonanceCorrelation {
 
       // ________________________________________________
       // Perform basic event selection on both collisions
-      if (!isisCollisionSelect(collision1) || !isisCollisionSelect(collision2)) {
+      if (!isSelectedEvents(collision1, false) || !isSelectedEvents(collision2, false)) {
         continue;
       }
       if (collision1.centFT0M() > axisRanges[5][1] || collision1.centFT0M() < axisRanges[5][0])
@@ -2545,6 +2654,11 @@ struct HResonanceCorrelation {
 
   void processMixedEventHKaons(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults> const& collisions, soa::Join<aod::AssocHadrons, aod::AssocPID> const& assocKaons, soa::Join<aod::TriggerTracks, aod::TriggerTrackExtras> const& triggerTracks, TracksComplete const&, aod::BCsWithTimestamps const&)
   {
+    // See the matching comment in processSameEventHHadrons -- mixedEvent/Signal/Kaon
+    // is booked only when TESTBIT(doCorrelation, IndexKaon) is set.
+    if (!TESTBIT(doCorrelation, IndexKaon)) {
+      return;
+    }
     BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
     for (auto const& [collision1, collision2] : soa::selfCombinations(colBinning, masterConfigurations.mixingParameter, -1, collisions, collisions)) {
       auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
@@ -2561,7 +2675,7 @@ struct HResonanceCorrelation {
 
       // ________________________________________________
       // Perform basic event selection on both collisions
-      if (!isisCollisionSelect(collision1) || !isisCollisionSelect(collision2)) {
+      if (!isSelectedEvents(collision1, false) || !isSelectedEvents(collision2, false)) {
         continue;
       }
       if (collision1.centFT0M() > axisRanges[5][1] || collision1.centFT0M() < axisRanges[5][0])
@@ -2589,6 +2703,11 @@ struct HResonanceCorrelation {
 
   void processMixedEventHPhis(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults> const& collisions, aod::AssocPhis const& assocPhis, aod::TriggerTracks const& triggerTracks, TracksComplete const&, aod::BCsWithTimestamps const&)
   {
+    // See the matching comment in processSameEventHHadrons -- mixedEvent/Signal/Phi
+    // is booked only when TESTBIT(doCorrelation, IndexPhi) is set.
+    if (!TESTBIT(doCorrelation, IndexPhi)) {
+      return;
+    }
     BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
 
     for (auto const& [collision1, collision2] : soa::selfCombinations(colBinning, masterConfigurations.mixingParameter, -1, collisions, collisions)) {
@@ -2604,7 +2723,7 @@ struct HResonanceCorrelation {
         continue;
       }
 
-      if (!isisCollisionSelect(collision1) || !isisCollisionSelect(collision2)) {
+      if (!isSelectedEvents(collision1, false) || !isSelectedEvents(collision2, false)) {
         continue;
       }
 
@@ -2626,6 +2745,14 @@ struct HResonanceCorrelation {
 
       auto slicedAssocPhis = assocPhis.sliceBy(collisionSlicePhis, collision2.globalIndex());
 
+      // Mixed-event invariant-mass cross-check: reuses the Mass/Rapidity
+      // columns already stored by the filter task (no kinematics
+      // recomputed here) and this same mixing pool, so it's directly
+      // comparable to the same-event mass QA and to the real ME background.
+      for (auto const& cand : slicedAssocPhis) {
+        histos.fill(HIST("hPhiMixedEventInvMass"), cand.mass(), cand.pt(), collision1.centFT0M());
+      }
+
       if (masterConfigurations.doFullCorrelationStudy) {
         // Use the per-collision slices computed above, not the full unsliced
         // triggerTracks/assocPhis tables -- passing the whole dataframe here
@@ -2638,6 +2765,11 @@ struct HResonanceCorrelation {
 
   void processMixedEventHKstars(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults> const& collisions, aod::AssocKstars const& assocKstars, aod::TriggerTracks const& triggerTracks, TracksComplete const&, aod::BCsWithTimestamps const&)
   {
+    // See the matching comment in processSameEventHHadrons -- mixedEvent/Signal/Kstar0
+    // is booked only when TESTBIT(doCorrelation, IndexKstar) is set.
+    if (!TESTBIT(doCorrelation, IndexKstar)) {
+      return;
+    }
     BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
 
     for (auto const& [collision1, collision2] : soa::selfCombinations(colBinning, masterConfigurations.mixingParameter, -1, collisions, collisions)) {
@@ -2653,7 +2785,7 @@ struct HResonanceCorrelation {
         continue;
       }
 
-      if (!isisCollisionSelect(collision1) || !isisCollisionSelect(collision2)) {
+      if (!isSelectedEvents(collision1, false) || !isSelectedEvents(collision2, false)) {
         continue;
       }
 
@@ -2674,6 +2806,12 @@ struct HResonanceCorrelation {
       auto slicedTriggerTracks = triggerTracks.sliceBy(collisionSliceTracks, collision1.globalIndex());
 
       auto slicedAssocKstars = assocKstars.sliceBy(collisionSliceKstars, collision2.globalIndex());
+
+      // Mixed-event invariant-mass cross-check -- see the matching comment
+      // in processMixedEventHPhis.
+      for (auto const& cand : slicedAssocKstars) {
+        histos.fill(HIST("hKstarMixedEventInvMass"), cand.mass(), cand.pt(), collision1.centFT0M());
+      }
 
       if (masterConfigurations.doFullCorrelationStudy) {
         // Same reasoning as processMixedEventHPhis above -- use this collision
@@ -2776,7 +2914,11 @@ struct HResonanceCorrelation {
       bestCollisionFT0Cpercentile = collision.centFT0C();
 
       if (masterConfigurations.applyNewMCSelection) {
-        isCollisionSelect = (masterConfigurations.doPPAnalysis && isisCollisionSelect(collision)) || (!masterConfigurations.doPPAnalysis && isisCollisionSelectPbPb(collision, false));
+        // isSelectedEvents() is the one selection used everywhere in this
+        // task now (pp and Pb-Pb alike), matching the filter task; see its
+        // own comment for why -- no more doPPAnalysis branch to a different
+        // cut set here.
+        isCollisionSelect = isSelectedEvents(collision, false);
       } else {
         bestCollisionSel8 = collision.sel8();
         bestCollisionVtxZ = collision.posZ();
@@ -3092,6 +3234,11 @@ struct HResonanceCorrelation {
 
   void processMixedEventHPhisInBuffer(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults> const& collisions, aod::TriggerTracks const& triggerTracks, aod::AssocPhis const& assocPhis, TracksComplete const&, aod::BCsWithTimestamps const&)
   {
+    // See the matching comment in processSameEventHHadrons -- mixedEvent/Signal/Phi
+    // is booked only when TESTBIT(doCorrelation, IndexPhi) is set.
+    if (!TESTBIT(doCorrelation, IndexPhi)) {
+      return;
+    }
     for (auto const& collision : collisions) {
 
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -3104,12 +3251,21 @@ struct HResonanceCorrelation {
       auto slicedTriggerTracks = triggerTracks.sliceBy(collisionSliceTracks, collision.globalIndex());
       auto slicedAssocPhis = assocPhis.sliceBy(collisionSlicePhis, collision.globalIndex());
 
-      fillCorrelationsPhi(slicedTriggerTracks, slicedAssocPhis, true, true, collision.posZ(), collision.centFT0M(), dBz);
+      // Guarded by doFullCorrelationStudy -- see the matching comment in
+      // processSameEventHPhis; this call used to be unconditional.
+      if (masterConfigurations.doFullCorrelationStudy) {
+        fillCorrelationsPhi(slicedTriggerTracks, slicedAssocPhis, true, true, collision.posZ(), collision.centFT0M(), dBz);
+      }
     }
   }
 
   void processMixedEventHKstarsInBuffer(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults> const& collisions, aod::TriggerTracks const& triggerTracks, aod::AssocKstars const& assocKstars, TracksComplete const&, aod::BCsWithTimestamps const&)
   {
+    // See the matching comment in processSameEventHHadrons -- mixedEvent/Signal/Kstar0
+    // is booked only when TESTBIT(doCorrelation, IndexKstar) is set.
+    if (!TESTBIT(doCorrelation, IndexKstar)) {
+      return;
+    }
     for (auto const& collision : collisions) {
 
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -3118,7 +3274,10 @@ struct HResonanceCorrelation {
       auto slicedTriggerTracks = triggerTracks.sliceBy(collisionSliceTracks, collision.globalIndex());
       auto slicedAssocKstars = assocKstars.sliceBy(collisionSliceKstars, collision.globalIndex());
 
-      fillCorrelationsKstar(slicedTriggerTracks, slicedAssocKstars, true, true, collision.posZ(), collision.centFT0M(), dBz);
+      // Guarded by doFullCorrelationStudy -- see the matching comment above.
+      if (masterConfigurations.doFullCorrelationStudy) {
+        fillCorrelationsKstar(slicedTriggerTracks, slicedAssocKstars, true, true, collision.posZ(), collision.centFT0M(), dBz);
+      }
     }
   }
 
