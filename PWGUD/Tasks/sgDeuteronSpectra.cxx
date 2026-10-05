@@ -96,7 +96,7 @@ struct SGDeuteronSpectra {
   void process(UDCollisionFull const& coll, UDTracksFull const& tracks)
   {
     registry.fill(HIST("collisions/GapSide"), coll.gapSide(), 1.);
-    std::vector <float> FIT_cut = {FV0_cut, FT0A_cut, FT0C_cut, FDDA_cut, FDDC_cut};
+    std::vector<float> FIT_cut = {FV0_cut, FT0A_cut, FT0C_cut, FDDA_cut, FDDC_cut};
     int truegapSide = sgSelector.trueGap(coll, FIT_cut[0], FIT_cut[1], FIT_cut[2], ZDC_cut);
     registry.fill(HIST("collisions/TrueGapSide"), truegapSide, 1.);
 
