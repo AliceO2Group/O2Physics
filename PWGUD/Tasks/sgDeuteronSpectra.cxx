@@ -26,6 +26,7 @@
 #include <Framework/runDataProcessing.h>
 
 #include <vector>
+#include <TMath.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -95,14 +96,14 @@ struct SGDeuteronSpectra {
   void process(UDCollisionFull const& coll, UDTracksFull const& tracks)
   {
     registry.fill(HIST("collisions/GapSide"), coll.gapSide(), 1.);
-    float FIT_cut[5] = {FV0_cut, FT0A_cut, FT0C_cut, FDDA_cut, FDDC_cut};
+    std::vector <float> FIT_cut = {FV0_cut, FT0A_cut, FT0C_cut, FDDA_cut, FDDC_cut};
     int truegapSide = sgSelector.trueGap(coll, FIT_cut[0], FIT_cut[1], FIT_cut[2], ZDC_cut);
     registry.fill(HIST("collisions/TrueGapSide"), truegapSide, 1.);
 
     std::vector<float> parameters = {PV_cut, dcaZ_cut, dcaXY_cut, tpcChi2_cut, tpcNClsFindable_cut, itsChi2_cut, eta_cut, pt_cut};
 
     for (const auto& t : tracks) {
-      if (trackselector(t, parameters)) {
+      if (trackselector(t, parameters) != 0) {
         if (truegapSide == 0) {
           if (t.sign() > 0) {
             registry.fill(HIST("tracks/Deut_Pt_TPC_GapA"), t.pt(), t.tpcNSigmaDe());
