@@ -36,7 +36,7 @@ namespace o2::aod::pwgem::photonmeson::utils::nmhistogram
 inline void addNMHistograms(o2::framework::HistogramRegistry* fRegistry, bool isMC,
                             bool sparseFullAxes = false,
                             std::vector<double> const& occBins = {0, 500, 1000, 2000, 3000, 5000, 10000},
-                            std::vector<double> const& epBins  = {-o2::constants::math::PIHalf, -o2::constants::math::PIQuarter, 0, o2::constants::math::PIQuarter, o2::constants::math::PIHalf},
+                            std::vector<double> const& epBins = {-o2::constants::math::PIHalf, -o2::constants::math::PIQuarter, 0, o2::constants::math::PIQuarter, o2::constants::math::PIHalf},
                             std::vector<double> const& vtxBins = {-10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10},
                             const char* pairname = "#gamma#gamma")
 {
@@ -58,7 +58,7 @@ inline void addNMHistograms(o2::framework::HistogramRegistry* fRegistry, bool is
   const o2::framework::AxisSpec axis_pt{ptbins, Form("p_{T,%s} (GeV/c)", pairname)};
   const o2::framework::AxisSpec axis_mass{400, 0, 0.8, Form("m_{%s} (GeV/c^{2})", pairname)};
   const o2::framework::AxisSpec axis_occ{occBins, "occupancy"};
-  const o2::framework::AxisSpec axis_ep{epBins,  "#Psi_{2} (rad)"};
+  const o2::framework::AxisSpec axis_ep{epBins, "#Psi_{2} (rad)"};
   const o2::framework::AxisSpec axis_vtx{vtxBins, "Z_{vtx} (cm)"};
 
   if (isMC) {
@@ -93,7 +93,7 @@ inline void addNMHistograms(o2::framework::HistogramRegistry* fRegistry, bool is
                      {axis_mass, axis_pt}, true);
     }
     fRegistry->addClone("Pair/same/", "Pair/mix/");
-  }  
+  }
 }
 
 template <typename TDiphoton, o2::soa::is_iterator TMCParitlce, o2::soa::is_table TMCParticles, o2::soa::is_table TMCCollisions>
