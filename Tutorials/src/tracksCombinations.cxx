@@ -83,7 +83,7 @@ struct ConfigurableBinnedCollisionCombinations {
   void process(soa::Join<aod::Collisions, aod::Mults> const& collisions)
   {
     using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFV0M<aod::mult::MultFV0A, aod::mult::MultFV0C>>;
-    BinningType colBinning{{axisVertex, axisMultiplicity}, true};
+    BinningType colBinning{{axisVertex, axisMultiplicity}};
 
     int count = 0;
     // Strictly upper tracks binned by x and y position

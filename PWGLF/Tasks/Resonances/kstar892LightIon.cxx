@@ -1539,10 +1539,10 @@ struct Kstar892LightIon {
   using BinningTypeFT0C = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
   using BinningTypeFV0A = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFV0A>;
 
-  BinningTypeFT0M binningOnFT0M{{axisVertex, axisCentrality}, true};
-  BinningTypeFT0A binningOnFT0A{{axisVertex, axisCentrality}, true};
-  BinningTypeFT0C binningOnFT0C{{axisVertex, axisCentrality}, true};
-  BinningTypeFV0A binningOnFV0A{{axisVertex, axisCentrality}, true};
+  BinningTypeFT0M binningOnFT0M{{axisVertex, axisCentrality}};
+  BinningTypeFT0A binningOnFT0A{{axisVertex, axisCentrality}};
+  BinningTypeFT0C binningOnFT0C{{axisVertex, axisCentrality}};
+  BinningTypeFV0A binningOnFV0A{{axisVertex, axisCentrality}};
 
   SameKindPair<EventCandidates, TrackCandidates, BinningTypeFT0M> pair1{binningOnFT0M, selectionConfig.cfgNoMixedEvents, -1, &cache};
   SameKindPair<EventCandidates, TrackCandidates, BinningTypeFT0A> pair2{binningOnFT0A, selectionConfig.cfgNoMixedEvents, -1, &cache};
@@ -1612,10 +1612,10 @@ struct Kstar892LightIon {
   using BinningTypeMCFT0C = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
   using BinningTypeMCFV0A = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFV0A>;
 
-  BinningTypeMCFT0M binningOnMCFT0M{{axisVertex, axisCentrality}, true};
-  BinningTypeMCFT0A binningOnMCFT0A{{axisVertex, axisCentrality}, true};
-  BinningTypeMCFT0C binningOnMCFT0C{{axisVertex, axisCentrality}, true};
-  BinningTypeMCFV0A binningOnMCFV0A{{axisVertex, axisCentrality}, true};
+  BinningTypeMCFT0M binningOnMCFT0M{{axisVertex, axisCentrality}};
+  BinningTypeMCFT0A binningOnMCFT0A{{axisVertex, axisCentrality}};
+  BinningTypeMCFT0C binningOnMCFT0C{{axisVertex, axisCentrality}};
+  BinningTypeMCFV0A binningOnMCFV0A{{axisVertex, axisCentrality}};
 
   SameKindPair<EventCandidatesMC, TrackCandidatesMC, BinningTypeMCFT0M> pairmc1{binningOnMCFT0M, selectionConfig.cfgNoMixedEvents, -1, &cache};
   SameKindPair<EventCandidatesMC, TrackCandidatesMC, BinningTypeMCFT0A> pairmc2{binningOnMCFT0A, selectionConfig.cfgNoMixedEvents, -1, &cache};

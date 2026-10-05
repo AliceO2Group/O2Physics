@@ -557,7 +557,7 @@ struct K1AnalysisMicro {
   void processME(ResoCollisions const& collisions, ResoTracks const& resotracks)
   {
     auto tracksTuple = std::make_tuple(resotracks);
-    BinningTypeVtxZT0M colBinning{{cfgVtxBins, cfgMultBins}, true};
+    BinningTypeVtxZT0M colBinning{{cfgVtxBins, cfgMultBins}};
     SameKindPair<ResoCollisions, ResoTracks, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
@@ -573,7 +573,7 @@ struct K1AnalysisMicro {
   void processMEMicro(ResoCollisions const& collisions, ResoMicroTracks const& resomicrotracks)
   {
     auto tracksTuple = std::make_tuple(resomicrotracks);
-    BinningTypeVtxZT0M colBinning{{cfgVtxBins, cfgMultBins}, true};
+    BinningTypeVtxZT0M colBinning{{cfgVtxBins, cfgMultBins}};
     SameKindPair<ResoCollisions, ResoMicroTracks, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {

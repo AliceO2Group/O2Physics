@@ -1429,11 +1429,11 @@ struct DeltaAnalysis {
   using BinningTypeFV0A = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFV0A>;
   using BinningTypeNTPV = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentNTPV>;
 
-  BinningTypeFT0M binningFT0M{{axes.cfgVtxAxis, axes.cfgCentAxis}, true};
-  BinningTypeFT0A binningFT0A{{axes.cfgVtxAxis, axes.cfgCentAxis}, true};
-  BinningTypeFT0C binningFT0C{{axes.cfgVtxAxis, axes.cfgCentAxis}, true};
-  BinningTypeFV0A binningFV0A{{axes.cfgVtxAxis, axes.cfgCentAxis}, true};
-  BinningTypeNTPV binningNTPV{{axes.cfgVtxAxis, axes.cfgCentAxis}, true};
+  BinningTypeFT0M binningFT0M{{axes.cfgVtxAxis, axes.cfgCentAxis}};
+  BinningTypeFT0A binningFT0A{{axes.cfgVtxAxis, axes.cfgCentAxis}};
+  BinningTypeFT0C binningFT0C{{axes.cfgVtxAxis, axes.cfgCentAxis}};
+  BinningTypeFV0A binningFV0A{{axes.cfgVtxAxis, axes.cfgCentAxis}};
+  BinningTypeNTPV binningNTPV{{axes.cfgVtxAxis, axes.cfgCentAxis}};
 
   SameKindPair<EventCandidates, TrackCandidates, BinningTypeFT0M> pairFT0M{binningFT0M, mixingCfg.cfgNoMixedEvents, -1, &cache};
   SameKindPair<EventCandidates, TrackCandidates, BinningTypeFT0A> pairFT0A{binningFT0A, mixingCfg.cfgNoMixedEvents, -1, &cache};

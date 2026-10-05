@@ -2445,7 +2445,7 @@ struct lambdapolsp {
   // Processing Event Mixing
   /*
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
-  BinningType colBinning{{meGrp.axisVertex, meGrp.axisMultiplicityClass}, true};
+  BinningType colBinning{{meGrp.axisVertex, meGrp.axisMultiplicityClass}};
   Preslice<v0Candidates> tracksPerCollisionV0Mixed = o2::aod::v0data::straCollisionId; // for derived data only
 
   void processDerivedDataMixed(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps, aod::StraZDCSP> const& collisions, v0Candidates const& V0s, dauTracks const&)

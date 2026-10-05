@@ -605,7 +605,7 @@ struct FlowCorrelationsUpc {
     };
 
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::collision::PosZ, decltype(getTracksSize)>;
-    MixedBinning binningOnVtxAndMult{{getTracksSize}, {vtxMix, multMix}, true};
+    MixedBinning binningOnVtxAndMult{{getTracksSize}, {vtxMix, multMix}};
     auto tracksTuple = std::make_tuple(tracks);
     SameKindPair<UDCollisionsFull, UdTracksFull, MixedBinning> pairs{binningOnVtxAndMult, cfgMinMixEventNum, -1, collisions, tracksTuple, &cache};
 

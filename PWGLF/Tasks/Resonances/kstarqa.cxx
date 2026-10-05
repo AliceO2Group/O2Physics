@@ -1337,15 +1337,15 @@ struct Kstarqa {
   using BinningTypeMCFT0C = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
   using BinningTypeMCFV0A = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFV0A>;
 
-  BinningTypeFT0M binningOnFT0M{{axisVertex, axisMultiplicity}, true};
-  BinningTypeFT0A binningOnFT0A{{axisVertex, axisMultiplicity}, true};
-  BinningTypeFT0C binningOnFT0C{{axisVertex, axisMultiplicity}, true};
-  BinningTypeFV0A binningOnFV0A{{axisVertex, axisMultiplicity}, true};
+  BinningTypeFT0M binningOnFT0M{{axisVertex, axisMultiplicity}};
+  BinningTypeFT0A binningOnFT0A{{axisVertex, axisMultiplicity}};
+  BinningTypeFT0C binningOnFT0C{{axisVertex, axisMultiplicity}};
+  BinningTypeFV0A binningOnFV0A{{axisVertex, axisMultiplicity}};
 
-  BinningTypeMCFT0M binningOnMCFT0M{{axisVertex, axisMultiplicity}, true};
-  BinningTypeMCFT0A binningOnMCFT0A{{axisVertex, axisMultiplicity}, true};
-  BinningTypeMCFT0C binningOnMCFT0C{{axisVertex, axisMultiplicity}, true};
-  BinningTypeMCFV0A binningOnMCFV0A{{axisVertex, axisMultiplicity}, true};
+  BinningTypeMCFT0M binningOnMCFT0M{{axisVertex, axisMultiplicity}};
+  BinningTypeMCFT0A binningOnMCFT0A{{axisVertex, axisMultiplicity}};
+  BinningTypeMCFT0C binningOnMCFT0C{{axisVertex, axisMultiplicity}};
+  BinningTypeMCFV0A binningOnMCFV0A{{axisVertex, axisMultiplicity}};
 
   SameKindPair<EventCandidates, TrackCandidates, BinningTypeFT0M> pair1{binningOnFT0M, configGp.cfgNoMixedEvents, -1, &cache};
   SameKindPair<EventCandidates, TrackCandidates, BinningTypeFT0A> pair2{binningOnFT0A, configGp.cfgNoMixedEvents, -1, &cache};

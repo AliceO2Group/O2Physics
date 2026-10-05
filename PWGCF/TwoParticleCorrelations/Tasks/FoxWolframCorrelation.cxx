@@ -1144,16 +1144,16 @@ struct FoxWolframCorrelationMixing {
 
   // Mix events in vertex and multiplicity intervals.
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::collision::Multip>;
-  BinningType binningOnPosMultip1{{axisVtx, axisMult1}, true};
-  BinningType binningOnPosMultip2{{axisVtx, axisMult2}, true};
-  BinningType binningOnPosMultip3{{axisVtx, axisMult3}, true};
-  BinningType binningOnPosMultip4{{axisVtx, axisMult4}, true};
-  BinningType binningOnPosMultip5{{axisVtx, axisMult5}, true};
-  BinningType binningOnPosMultip6{{axisVtx, axisMult6}, true};
-  BinningType binningOnPosMultip7{{axisVtx, axisMult7}, true};
-  BinningType binningOnPosMultip8{{axisVtx, axisMult8}, true};
-  BinningType binningOnPosMultip9{{axisVtx, axisMult9}, true};
-  BinningType binningOnPosMultip10{{axisVtx, axisMult10}, true};
+  BinningType binningOnPosMultip1{{axisVtx, axisMult1}};
+  BinningType binningOnPosMultip2{{axisVtx, axisMult2}};
+  BinningType binningOnPosMultip3{{axisVtx, axisMult3}};
+  BinningType binningOnPosMultip4{{axisVtx, axisMult4}};
+  BinningType binningOnPosMultip5{{axisVtx, axisMult5}};
+  BinningType binningOnPosMultip6{{axisVtx, axisMult6}};
+  BinningType binningOnPosMultip7{{axisVtx, axisMult7}};
+  BinningType binningOnPosMultip8{{axisVtx, axisMult8}};
+  BinningType binningOnPosMultip9{{axisVtx, axisMult9}};
+  BinningType binningOnPosMultip10{{axisVtx, axisMult10}};
 
   // Create independent mixing pools for the ten multiplicity intervals.
   SameKindPair<aod::TriangleCollisions, aod::TriangleTracks, BinningType> pairBIN1{binningOnPosMultip1, nMixedEvents, -1, &cache_bin1};

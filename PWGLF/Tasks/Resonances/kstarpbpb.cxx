@@ -1166,7 +1166,7 @@ struct Kstarpbpb {
     double v2 = 0.;
 
     auto tracksTuple = std::make_tuple(tracks);
-    BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicityClass, axisEPAngle}, true};
+    BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicityClass, axisEPAngle}};
     SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
     for (const auto& [collision1, tracks1, collision2, tracks2] : pair) {
       if (!selectionEventPairME(collision1, collision2)) {
@@ -1778,7 +1778,7 @@ struct Kstarpbpb {
   void processMEPhi(EventCandidates const& collisions, TrackCandidates const& tracks)
   {
     auto tracksTuple = std::make_tuple(tracks);
-    BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicityClass, axisEPAngle}, true};
+    BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicityClass, axisEPAngle}};
     SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
     ROOT::Math::PxPyPzMVector kaonPlusPhi, kaonMinusPhi, phiMother;
     for (const auto& [collision1, tracks1, collision2, tracks2] : pair) {
@@ -2445,7 +2445,7 @@ struct Kstarpbpb {
     ROOT::Math::PxPyPzMVector kaon, pion, kstar;
     const auto nRecPerMc = countRecoPerMcCollision(mcLabels, mcCollisions.size());
     auto tracksTuple = std::make_tuple(tracks);
-    BinningTypeMCClosure binningOnPositions{{axisVertex, axisMultiplicityClass}, true};
+    BinningTypeMCClosure binningOnPositions{{axisVertex, axisMultiplicityClass}};
     SameKindPair<CollisionMCRecMixTable, FilTrackMCRecTable, BinningTypeMCClosure> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
     for (const auto& [collision1, tracks1, collision2, tracks2] : pair) {
       if (!selectionClosurePairME(collision1, collision2, nRecPerMc)) {
@@ -2640,7 +2640,7 @@ struct Kstarpbpb {
     ROOT::Math::PxPyPzMVector kaonPlus, kaonMinus, phi;
     const auto nRecPerMc = countRecoPerMcCollision(mcLabels, mcCollisions.size());
     auto tracksTuple = std::make_tuple(tracks);
-    BinningTypeMCClosure binningOnPositions{{axisVertex, axisMultiplicityClass}, true};
+    BinningTypeMCClosure binningOnPositions{{axisVertex, axisMultiplicityClass}};
     SameKindPair<CollisionMCRecMixTable, FilTrackMCRecTable, BinningTypeMCClosure> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
     for (const auto& [collision1, tracks1, collision2, tracks2] : pair) {
       if (!selectionClosurePairME(collision1, collision2, nRecPerMc)) {
@@ -2877,7 +2877,7 @@ struct Kstarpbpb {
     ROOT::Math::PxPyPzMVector kaon, pion, kstar;
     const auto nRecPerMc = countRecoPerMcCollision(mcLabels, mcCollisions.size());
     auto tracksTuple = std::make_tuple(tracks);
-    BinningTypeMCClosureRecoEP binningOnPositions{{axisVertex, axisMultiplicityClass, axisEPAngle}, true};
+    BinningTypeMCClosureRecoEP binningOnPositions{{axisVertex, axisMultiplicityClass, axisEPAngle}};
     SameKindPair<CollisionMCRecMixTableRecoEP, FilTrackMCRecTable, BinningTypeMCClosureRecoEP> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
     for (const auto& [collision1, tracks1, collision2, tracks2] : pair) {
       if (!selectionClosurePairMERecoEP(collision1, collision2, nRecPerMc)) {
@@ -3088,7 +3088,7 @@ struct Kstarpbpb {
     ROOT::Math::PxPyPzMVector kaonPlus, kaonMinus, phi;
     const auto nRecPerMc = countRecoPerMcCollision(mcLabels, mcCollisions.size());
     auto tracksTuple = std::make_tuple(tracks);
-    BinningTypeMCClosureRecoEP binningOnPositions{{axisVertex, axisMultiplicityClass, axisEPAngle}, true};
+    BinningTypeMCClosureRecoEP binningOnPositions{{axisVertex, axisMultiplicityClass, axisEPAngle}};
     SameKindPair<CollisionMCRecMixTableRecoEP, FilTrackMCRecTable, BinningTypeMCClosureRecoEP> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
     for (const auto& [collision1, tracks1, collision2, tracks2] : pair) {
       if (!selectionClosurePairMERecoEP(collision1, collision2, nRecPerMc)) {

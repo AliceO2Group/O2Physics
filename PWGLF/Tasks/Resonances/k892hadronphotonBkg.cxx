@@ -1204,7 +1204,7 @@ struct k892hadronphotonBkg {
 
     // Build the mixing binning locally: a struct member initialized from a
     // ConfigurableAxis captures the default bins at task construction time
-    BkgBinningType bkgColBinning{{axisVertexMixBkg, axisCentralityMixBkg}, true};
+    BkgBinningType bkgColBinning{{axisVertexMixBkg, axisCentralityMixBkg}};
 
     for (const auto& [coll1, coll2] : selfCombinations(bkgColBinning, kstarBkgConfig.nMix, -1,
                                                        collisions, collisions)) {

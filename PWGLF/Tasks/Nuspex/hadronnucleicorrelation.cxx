@@ -2108,7 +2108,7 @@ struct HadronNucleiCorrelation {
     };
 
     using BinningTypeMC = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::mccollision::PosZ, decltype(getMultiplicity)>;
-    BinningTypeMC colBinningGen{{getMultiplicity}, {confVtxBins, confMultBins}, true};
+    BinningTypeMC colBinningGen{{getMultiplicity}, {confVtxBins, confMultBins}};
 
     for (const auto& [collision1, collision2] : soa::selfCombinations(colBinningGen, maxmixcollsGen.value, -1, mcCollisions, mcCollisions)) {
       const auto& cache1 = genCaches.at(collision1.globalIndex());
