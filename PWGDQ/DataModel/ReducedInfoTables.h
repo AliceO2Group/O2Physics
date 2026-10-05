@@ -1261,9 +1261,7 @@ DECLARE_SOA_TABLE(DileptonTrackTrackCandidates, "AOD", "RTDQUADPLET", //!
                   dileptonTrackTrackCandidate::VertexingLxyProjected,
                   dileptonTrackTrackCandidate::VertexingLxyzProjected,
                   dileptonTrackTrackCandidate::VertexingTauzProjected,
-                  dileptonTrackTrackCandidate::VertexingTauxyProjected,
-                  dileptonTrackTrackCandidate::DileptonFilterMap,
-                  dileptonTrackTrackCandidate::QuadFilterMap);
+                  dileptonTrackTrackCandidate::VertexingTauxyProjected);
 
 using DileptonTrackTrackCandidate = DileptonTrackTrackCandidates::iterator;
 
