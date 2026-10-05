@@ -11,10 +11,10 @@
 ///
 /// \file ptSpectraInclusiveUpc.cxx
 /// \executable o2-analysis-ud-pt-spectra-inclusive-upc
-/// \brief Task for the of pT spectra of pions, kaons and protons in inclusive UPC events.
+/// \brief Task for pT spectra of pions, kaons and protons in inclusive UPC events.
 ///        Used to obtain the templates for the DCA_xy fits for the primary fractions.
 ///        Fractions are obtained separately for TPC and TOF spectra: a particle passing both PID
-//         selections will contribute to both histograms.
+///        selections will contribute to both histograms.
 ///
 /// \author Andrea Giovanni Riffero andrea.giovanni.riffero@cern.ch
 
@@ -52,8 +52,7 @@ struct PtSpectraInclusiveUpc {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  ConfigurableAxis ptBinning{
-    "ptBinning",
+  ConfigurableAxis ptBinning{"ptBinning",
     {VARIABLE_WIDTH, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0,
                      1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0,
                      2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0},
@@ -70,7 +69,7 @@ struct PtSpectraInclusiveUpc {
   Configurable<double> dcaZlimit{"dcaZlimit", 2., "Maximum absolute DCA in z (cm)"};
   Configurable<double> maxChi2TPC{"maxChi2TPC", 4., "Maximum TPC chi2 per cluster"};
   Configurable<double> maxChi2ITS{"maxChi2ITS", 36., "Maximum ITS chi2 per cluster"};
-  
+
   // define abbreviations
   using CCs = soa::Join<aod::UDCollisions, aod::UDCollisionsSels>;
   using CC = CCs::iterator;
