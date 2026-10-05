@@ -222,9 +222,9 @@ class FemtoDreamContainer
   /// Initialize the histograms for pairs with 3D component in divided qn bins
   template <typename T>
   void init_base_3Dqn(const std::string& folderName, const std::string& femtoDKout, const std::string& femtoDKside, const std::string& femtoDKlong,
-                      T& femtoDKoutAxis, T& femtoDKsideAxis, T& femtoDKlongAxis, T& mTAxi4D, T& multPercentileAxis4D, T& qnAxis, T& pairPhiAxis, bool storeEProt)
+                      T& femtoDKoutAxis, T& femtoDKsideAxis, T& femtoDKlongAxis, T& mTAxi4D, T& multPercentileAxis4D, T& qnAxis, T& pairPhiAxis)
   {
-    if (storeEProt) {
+    if (mStoreEProt) {
       // DK_x, DK_y, DK_z are the EP-rotated (B-frame) axes; DK_y is out-of-plane (||B).
       mHistogramRegistry->add((folderName + "/relPair3dEProtRmTMultPercentileQnPairphi").c_str(), "; DK_{x} (GeV/#it{c}); DK_{y} (GeV/#it{c}); DK_{z} (GeV/#it{c}); #it{m}_{T} (GeV/#it{c}); Centrality; qn; #varphi_{pair} - #Psi_{EP}", o2::framework::HistType::kTHnSparseF, {femtoDKoutAxis, femtoDKsideAxis, femtoDKlongAxis, mTAxi4D, multPercentileAxis4D, qnAxis, pairPhiAxis});
     } else {
@@ -278,12 +278,12 @@ class FemtoDreamContainer
     std::string folderName = static_cast<std::string>(mFolderSuffix[mEventType]) + static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kRecon]) + static_cast<std::string>("_3Dqn");
 
     init_base_3Dqn(folderName, femtoObsDKout, femtoObsDKside, femtoObsDKlong,
-                   mom1Axis, mom2Axis, mom3Axis, mTAxis4D, multPercentileAxis4D, qnAxis, pairPhiAxis, mStoreEProt);
+                   mom1Axis, mom2Axis, mom3Axis, mTAxis4D, multPercentileAxis4D, qnAxis, pairPhiAxis);
 
     if (isMC) {
       folderName = static_cast<std::string>(mFolderSuffix[mEventType]) + static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]) + static_cast<std::string>("_3Dqn");
       init_base_3Dqn(folderName, femtoObsDKout, femtoObsDKside, femtoObsDKlong,
-                     mom1Axis, mom2Axis, mom3Axis, mTAxis4D, multPercentileAxis4D, qnAxis, pairPhiAxis, mStoreEProt);
+                     mom1Axis, mom2Axis, mom3Axis, mTAxis4D, multPercentileAxis4D, qnAxis, pairPhiAxis);
       init_3Dqn_MC(folderName, femtoObsDKout, femtoObsDKside, femtoObsDKlong,
                    DKoutAxis, DKsideAxis, DKlongAxis, smearingByOrigin);
     }
@@ -518,42 +518,21 @@ class FemtoDreamContainer
     }
   }
 
-  /// Signed φ_pair − Ψ_EP (same as FemtoDreamMath::getPairPhiEP but without the final |·|); used as the B-frame rotation angle.
-  template <typename T1, typename T2>
-  static float getPairPhiEPSigned(const T1& part1, const float mass1, const T2& part2, const float mass2, const float Psi_ep)
-  {
-    const ROOT::Math::PtEtaPhiMVector vecpart1(part1.pt(), part1.eta(), part1.phi(), mass1);
-    const ROOT::Math::PtEtaPhiMVector vecpart2(part2.pt(), part2.eta(), part2.phi(), mass2);
-    const ROOT::Math::PtEtaPhiMVector trackSum = vecpart1 + vecpart2;
-    return TVector2::Phi_mpi_pi(trackSum.Phi() - Psi_ep);
-  }
-
-  /// Signed counterpart of the plane-calibrated (two-event-plane) FemtoDreamMath::getPairPhiEP.
-  template <typename T1, typename T2>
-  static float getPairPhiEPSigned(const T1& part1, const float mass1, const T2& part2, const float mass2, const float Psi_ep1, const float Psi_ep2)
-  {
-    const ROOT::Math::PtEtaPhiMVector vecpart1(part1.pt(), part1.eta(), part1.phi(), mass1);
-    const ROOT::Math::PtEtaPhiMVector vecpart2(part2.pt(), part2.eta(), part2.phi(), mass2);
-    const float psidiff = Psi_ep2 - Psi_ep1;
-    const float newPhi2 = TVector2::Phi_mpi_pi(vecpart2.Phi() - psidiff);
-    const ROOT::Math::PtEtaPhiMVector vecpart2_calibd(vecpart2.Pt(), vecpart2.Eta(), newPhi2, vecpart2.M());
-    const ROOT::Math::PtEtaPhiMVector trackSum = vecpart1 + vecpart2_calibd;
-    return TVector2::Phi_mpi_pi(trackSum.Phi() - Psi_ep1);
-  }
-
   /// Pass a pair to the container and compute all the relevant observables in divided qn bins
   template <o2::aod::femtodreamMCparticle::MCType mc>
-  void setPair_3Dqn_base(const float femtoDKout, const float femtoDKside, const float femtoDKlong, const float mT, const float multPercentile, const float myQnBin, const float pairPhiEP, bool storeEProt, const float pairPhiEPforRot)
+  void setPair_3Dqn_base(const float femtoDKout, const float femtoDKside, const float femtoDKlong, const float mT, const float multPercentile, const float myQnBin, const float pairPhiEP)
   {
-    if (storeEProt) {
-      // Rotate (out, side) by the signed φ_pair − Ψ_EP so DK_y is out-of-plane (||B); DK_z unchanged.
-      const float DKx = femtoDKout * std::cos(pairPhiEPforRot) - femtoDKside * std::sin(pairPhiEPforRot);
-      const float DKy = femtoDKout * std::sin(pairPhiEPforRot) + femtoDKside * std::cos(pairPhiEPforRot);
-      const float DKz = femtoDKlong;
-      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("_3Dqn") + HIST("/relPair3dEProtRmTMultPercentileQnPairphi"), DKx, DKy, DKz, mT, multPercentile, myQnBin, pairPhiEP);
-    } else {
-      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("_3Dqn") + HIST("/relPair3dRmTMultPercentileQnPairphi"), femtoDKout, femtoDKside, femtoDKlong, mT, multPercentile, myQnBin, pairPhiEP);
-    }
+    mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("_3Dqn") + HIST("/relPair3dRmTMultPercentileQnPairphi"), femtoDKout, femtoDKside, femtoDKlong, mT, multPercentile, myQnBin, pairPhiEP);
+  }
+
+  /// EP-rotated (B-frame) version: rotate (out, side) by the signed φ_pair − Ψ_EP so DK_y is out-of-plane (||B); DK_z unchanged.
+  template <o2::aod::femtodreamMCparticle::MCType mc>
+  void setPair_3Dqn_base(const float femtoDKout, const float femtoDKside, const float femtoDKlong, const float mT, const float multPercentile, const float myQnBin, const float pairPhiEP, const float pairPhiEPforRot)
+  {
+    const float DKx = femtoDKout * std::cos(pairPhiEPforRot) - femtoDKside * std::sin(pairPhiEPforRot);
+    const float DKy = femtoDKout * std::sin(pairPhiEPforRot) + femtoDKside * std::cos(pairPhiEPforRot);
+    const float DKz = femtoDKlong;
+    mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("_3Dqn") + HIST("/relPair3dEProtRmTMultPercentileQnPairphi"), DKx, DKy, DKz, mT, multPercentile, myQnBin, pairPhiEP);
   }
 
   /// Called by setPair_3Dqn only in case of Monte Carlo truth
@@ -583,10 +562,14 @@ class FemtoDreamContainer
     const float mT = FemtoDreamMath::getmT(part1, mMassOne, part2, mMassTwo);
 
     const float pairPhiEP = FemtoDreamMath::getPairPhiEP(part1, mMassOne, part2, mMassTwo, eventPlane);
-    const float pairPhiEPforRot = mStoreEProt ? getPairPhiEPSigned(part1, mMassOne, part2, mMassTwo, eventPlane) : 0.f;
+    const float pairPhiEPforRot = mStoreEProt ? FemtoDreamMath::getPairPhiEPSigned(part1, mMassOne, part2, mMassTwo, eventPlane) : 0.f;
 
     if (mHistogramRegistry) {
-      setPair_3Dqn_base<o2::aod::femtodreamMCparticle::MCType::kRecon>(DKout, DKside, DKlong, mT, multPercentile, myQnBin, pairPhiEP, mStoreEProt, pairPhiEPforRot);
+      if (mStoreEProt) {
+        setPair_3Dqn_base<o2::aod::femtodreamMCparticle::MCType::kRecon>(DKout, DKside, DKlong, mT, multPercentile, myQnBin, pairPhiEP, pairPhiEPforRot);
+      } else {
+        setPair_3Dqn_base<o2::aod::femtodreamMCparticle::MCType::kRecon>(DKout, DKside, DKlong, mT, multPercentile, myQnBin, pairPhiEP);
+      }
 
       if constexpr (isMC) {
         if (part1.has_fdMCParticle() && part2.has_fdMCParticle()) {
@@ -598,10 +581,14 @@ class FemtoDreamContainer
           }
           const float mTMC = FemtoDreamMath::getmT(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo);
           const float pairPhiEPMC = FemtoDreamMath::getPairPhiEP(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo, eventPlane);
-          const float pairPhiEPMCforRot = mStoreEProt ? getPairPhiEPSigned(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo, eventPlane) : 0.f;
+          const float pairPhiEPMCforRot = mStoreEProt ? FemtoDreamMath::getPairPhiEPSigned(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo, eventPlane) : 0.f;
 
           if (std::abs(part1.fdMCParticle().pdgMCTruth()) == mPDGOne && std::abs(part2.fdMCParticle().pdgMCTruth()) == mPDGTwo) { // Note: all pair-histogramms are filled with MC truth information ONLY in case of non-fake candidates
-            setPair_3Dqn_base<o2::aod::femtodreamMCparticle::MCType::kTruth>(k3dMC[1], k3dMC[2], k3dMC[3], mTMC, multPercentile, myQnBin, pairPhiEPMC, mStoreEProt, pairPhiEPMCforRot);
+            if (mStoreEProt) {
+              setPair_3Dqn_base<o2::aod::femtodreamMCparticle::MCType::kTruth>(k3dMC[1], k3dMC[2], k3dMC[3], mTMC, multPercentile, myQnBin, pairPhiEPMC, pairPhiEPMCforRot);
+            } else {
+              setPair_3Dqn_base<o2::aod::femtodreamMCparticle::MCType::kTruth>(k3dMC[1], k3dMC[2], k3dMC[3], mTMC, multPercentile, myQnBin, pairPhiEPMC);
+            }
             setPair_3Dqn_MC(k3dMC, k3d, part1.fdMCParticle().partOriginMCTruth(), part2.fdMCParticle().partOriginMCTruth(), smearingByOrigin);
           } else {
             mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]) + HIST("/hFakePairsCounter"), 0);
@@ -630,10 +617,14 @@ class FemtoDreamContainer
     const float mT = FemtoDreamMath::getmT(part1, mMassOne, part2, mMassTwo);
 
     const float pairPhiEP = FemtoDreamMath::getPairPhiEP(part1, mMassOne, part2, mMassTwo, EP1, EP2);
-    const float pairPhiEPforRot = mStoreEProt ? getPairPhiEPSigned(part1, mMassOne, part2, mMassTwo, EP1, EP2) : 0.f;
+    const float pairPhiEPforRot = mStoreEProt ? FemtoDreamMath::getPairPhiEPSigned(part1, mMassOne, part2, mMassTwo, EP1, EP2) : 0.f;
 
     if (mHistogramRegistry) {
-      setPair_3Dqn_base<o2::aod::femtodreamMCparticle::MCType::kRecon>(DKout, DKside, DKlong, mT, multPercentile, myQnBin, pairPhiEP, mStoreEProt, pairPhiEPforRot);
+      if (mStoreEProt) {
+        setPair_3Dqn_base<o2::aod::femtodreamMCparticle::MCType::kRecon>(DKout, DKside, DKlong, mT, multPercentile, myQnBin, pairPhiEP, pairPhiEPforRot);
+      } else {
+        setPair_3Dqn_base<o2::aod::femtodreamMCparticle::MCType::kRecon>(DKout, DKside, DKlong, mT, multPercentile, myQnBin, pairPhiEP);
+      }
 
       if constexpr (isMC) {
         if (part1.has_fdMCParticle() && part2.has_fdMCParticle()) {
@@ -645,10 +636,14 @@ class FemtoDreamContainer
           }
           const float mTMC = FemtoDreamMath::getmT(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo);
           const float pairPhiEPMC = FemtoDreamMath::getPairPhiEP(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo, EP1, EP2);
-          const float pairPhiEPMCforRot = mStoreEProt ? getPairPhiEPSigned(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo, EP1, EP2) : 0.f;
+          const float pairPhiEPMCforRot = mStoreEProt ? FemtoDreamMath::getPairPhiEPSigned(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo, EP1, EP2) : 0.f;
 
           if (std::abs(part1.fdMCParticle().pdgMCTruth()) == mPDGOne && std::abs(part2.fdMCParticle().pdgMCTruth()) == mPDGTwo) { // Note: all pair-histogramms are filled with MC truth information ONLY in case of non-fake candidates
-            setPair_3Dqn_base<o2::aod::femtodreamMCparticle::MCType::kTruth>(k3dMC[1], k3dMC[2], k3dMC[3], mTMC, multPercentile, myQnBin, pairPhiEPMC, mStoreEProt, pairPhiEPMCforRot);
+            if (mStoreEProt) {
+              setPair_3Dqn_base<o2::aod::femtodreamMCparticle::MCType::kTruth>(k3dMC[1], k3dMC[2], k3dMC[3], mTMC, multPercentile, myQnBin, pairPhiEPMC, pairPhiEPMCforRot);
+            } else {
+              setPair_3Dqn_base<o2::aod::femtodreamMCparticle::MCType::kTruth>(k3dMC[1], k3dMC[2], k3dMC[3], mTMC, multPercentile, myQnBin, pairPhiEPMC);
+            }
             setPair_3Dqn_MC(k3dMC, k3d, part1.fdMCParticle().partOriginMCTruth(), part2.fdMCParticle().partOriginMCTruth(), smearingByOrigin);
           } else {
             mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]) + HIST("/hFakePairsCounter"), 0);
