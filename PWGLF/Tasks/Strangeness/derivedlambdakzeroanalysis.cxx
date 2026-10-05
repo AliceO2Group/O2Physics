@@ -3064,7 +3064,7 @@ struct derivedlambdakzeroanalysis {
       // fill AP plot for all V0s
       histos.fill(HIST("GeneralQA/h2dArmenterosAll"), v0.alpha(), v0.qtarm());
 
-      uint64_t selMap = computeReconstructionBitmap(v0, collision, yK0Short, yLambda);
+      uint64_t selMap = computeReconstructionBitmap(v0, collision, yLambda, yK0Short);
       selMap |= selMapMCassociation;
 
       // feeddown matrix always with association
