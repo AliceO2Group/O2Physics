@@ -33,6 +33,7 @@
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Vertex.h>
 
 #include <TH1.h>
 #include <TH3.h>
@@ -93,7 +94,7 @@ struct Derivedupcanalysis {
   Configurable<bool> analyseOmega{"analyseOmega", true, "process Omega-like candidates"};
   Configurable<bool> analyseAntiOmega{"analyseAntiOmega", true, "process AntiOmega-like candidates"};
 
-  Configurable<std::vector<int>> generatorIds{"generatorIds", std::vector<int>{-1}, "MC generatorIds to process"};
+  Configurable<std::vector<int>> generatorIds{"generatorIds", std::vector<int>{-1}, "generator IDs for candidate truth origins and generated particles; event QA uses vertex labels"};
 
   // Event selections
   struct : ConfigurableGroup {
@@ -177,6 +178,7 @@ struct Derivedupcanalysis {
   static constexpr int kOmegaPartID = 5;
   static constexpr int kAntiOmegaPartID = 6;
   static constexpr float kNoPidNsigmaCut = 1e5f;
+  static constexpr float kNoTofDeltaTimeCut = 1e9f;
   static constexpr float kDefaultInvalidRapidity = 1e6f;
   static constexpr float kDefaultInvalidCtau = 1e6f;
   static constexpr float kDisabledArmenterosCut = 1e-4f;
@@ -258,7 +260,7 @@ struct Derivedupcanalysis {
   } axisDetectors;
 
   // for MC
-  Configurable<bool> doMCAssociation{"doMCAssociation", true, "if MC, do MC association"};
+  Configurable<bool> doMCAssociation{"doMCAssociation", true, "identify candidate species and generator from MC truth; if disabled, select events by vertex generator"};
   Configurable<bool> doTreatPiToMuon{"doTreatPiToMuon", false, "Take pi decay into muon into account in MC"};
   Configurable<bool> calculateFeeddownMatrix{"calculateFeeddownMatrix", true, "fill feeddown matrix if MC"};
   ConfigurableAxis axisGeneratorIds{"axisGeneratorIds", {256, -0.5f, 255.5f}, "axis for generatorIds"};
@@ -346,6 +348,14 @@ struct Derivedupcanalysis {
     for (const int& sel : selections) {
       mask.set(sel);
     }
+  }
+
+  void setTOFSelection(std::bitset<kSelNum>& mask, float nsigmaCut, float deltaTimeCut, int nsigmaSelection, int deltaTimeSelection)
+  {
+    if (nsigmaCut < kNoPidNsigmaCut)
+      mask.set(nsigmaSelection);
+    if (deltaTimeCut < kNoTofDeltaTimeCut)
+      mask.set(deltaTimeSelection);
   }
 
   template <int partID>
@@ -521,7 +531,8 @@ struct Derivedupcanalysis {
     int negITSclusMap = computeITSclusBitmap(negTrackExtra.itsClusterMap(), negIsFromAfterburner);
 
     if (partID == kK0ShortPartID) {
-      histos.fill(HIST("generalQA/h2dArmenterosSelected"), cand.alpha(), cand.qtarm());
+      if (doPlainTopoQA)
+        histos.fill(HIST("generalQA/h2dArmenterosSelected"), cand.alpha(), cand.qtarm());
       invMass = cand.mK0Short();
       rapidity = cand.yK0Short();
       ctau = cand.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * o2::constants::physics::MassK0Short;
@@ -596,8 +607,8 @@ struct Derivedupcanalysis {
       histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dNegTPCsignalVsTrackPtot"), ft0ampl, cand.negativept() * std::cosh(cand.negativeeta()), negTrackExtra.tpcSignal());
       histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dPosTPCsignalVsTrackPt"), ft0ampl, cand.positivept(), posTrackExtra.tpcSignal());
       histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dNegTPCsignalVsTrackPt"), ft0ampl, cand.negativept(), negTrackExtra.tpcSignal());
-      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dPosNsigmaTPCvsTrackPt"), ft0ampl, cand.positivept(), posTrackExtra.tpcNSigmaPi());
-      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dNegNsigmaTPCvsTrackPt"), ft0ampl, cand.negativept(), negTrackExtra.tpcNSigmaPi());
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dPosNsigmaTPCvsTrackPt"), ft0ampl, cand.positivept(), tpcNsigmaPos);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dNegNsigmaTPCvsTrackPt"), ft0ampl, cand.negativept(), tpcNsigmaNeg);
       histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dPosNsigmaTPCvsTrackPtot"), ft0ampl, cand.positivept() * std::cosh(cand.positiveeta()), tpcNsigmaPos);
       histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dNegNsigmaTPCvsTrackPtot"), ft0ampl, cand.negativept() * std::cosh(cand.negativeeta()), tpcNsigmaNeg);
       histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dPosNsigmaTPC"), ft0ampl, pT, tpcNsigmaPos);
@@ -657,7 +668,7 @@ struct Derivedupcanalysis {
 
     if (partID == kXiPartID) {
       invMass = cand.mXi();
-      ctau = totalMom != 0 ? o2::constants::physics::MassXiMinus * decayPos / (totalMom * ctauxiPDG) : kDefaultInvalidCtau;
+      ctau = totalMom != 0 ? o2::constants::physics::MassXiMinus * decayPos / totalMom : kDefaultInvalidCtau;
       rapidity = cand.yXi();
 
       if (PIDConfigurations.doTPCQA) {
@@ -672,7 +683,7 @@ struct Derivedupcanalysis {
       }
     } else if (partID == kAntiXiPartID) {
       invMass = cand.mXi();
-      ctau = totalMom != 0 ? o2::constants::physics::MassXiPlusBar * decayPos / (totalMom * ctauxiPDG) : kDefaultInvalidCtau;
+      ctau = totalMom != 0 ? o2::constants::physics::MassXiPlusBar * decayPos / totalMom : kDefaultInvalidCtau;
       rapidity = cand.yXi();
 
       if (PIDConfigurations.doTPCQA) {
@@ -688,7 +699,7 @@ struct Derivedupcanalysis {
 
     } else if (partID == kOmegaPartID) {
       invMass = cand.mOmega();
-      ctau = totalMom != 0 ? o2::constants::physics::MassOmegaMinus * decayPos / (totalMom * ctauomegaPDG) : kDefaultInvalidCtau;
+      ctau = totalMom != 0 ? o2::constants::physics::MassOmegaMinus * decayPos / totalMom : kDefaultInvalidCtau;
       rapidity = cand.yOmega();
 
       if (PIDConfigurations.doTPCQA) {
@@ -697,14 +708,14 @@ struct Derivedupcanalysis {
         tpcNsigmaBach = bachTrackExtra.tpcNSigmaKa();
       }
       if (PIDConfigurations.doTOFQA) {
-        tofDeltaTPos = cand.posTOFDeltaTOmPi();
-        tofDeltaTNeg = cand.posTOFDeltaTOmPr();
+        tofDeltaTPos = cand.posTOFDeltaTOmPr();
+        tofDeltaTNeg = cand.negTOFDeltaTOmPi();
         tofDeltaTBach = cand.bachTOFDeltaTOmKa();
       }
 
     } else if (partID == kAntiOmegaPartID) {
       invMass = cand.mOmega();
-      ctau = totalMom != 0 ? o2::constants::physics::MassOmegaPlusBar * decayPos / (totalMom * ctauomegaPDG) : kDefaultInvalidCtau;
+      ctau = totalMom != 0 ? o2::constants::physics::MassOmegaPlusBar * decayPos / totalMom : kDefaultInvalidCtau;
       rapidity = cand.yOmega();
 
       if (PIDConfigurations.doTPCQA) {
@@ -713,8 +724,8 @@ struct Derivedupcanalysis {
         tpcNsigmaBach = bachTrackExtra.tpcNSigmaKa();
       }
       if (PIDConfigurations.doTOFQA) {
-        tofDeltaTPos = cand.posTOFDeltaTOmPr();
-        tofDeltaTNeg = cand.posTOFDeltaTOmPi();
+        tofDeltaTPos = cand.posTOFDeltaTOmPi();
+        tofDeltaTNeg = cand.negTOFDeltaTOmPr();
         tofDeltaTBach = cand.bachTOFDeltaTOmKa();
       }
     }
@@ -730,8 +741,8 @@ struct Derivedupcanalysis {
       histos.fill(HIST(kParticlenames[partID]) + HIST("/hCascCosPA"), pT, cand.casccosPA(coll.posX(), coll.posY(), coll.posZ()));
       histos.fill(HIST(kParticlenames[partID]) + HIST("/hDCACascDaughters"), pT, cand.dcacascdaughters());
       histos.fill(HIST(kParticlenames[partID]) + HIST("/hCascRadius"), pT, cand.cascradius());
-      histos.fill(HIST(kParticlenames[partID]) + HIST("/hMesonDCAToPV"), pT, cand.dcanegtopv());
-      histos.fill(HIST(kParticlenames[partID]) + HIST("/hBaryonDCAToPV"), pT, cand.dcapostopv());
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/hMesonDCAToPV"), pT, cand.sign() > 0 ? cand.dcapostopv() : cand.dcanegtopv());
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/hBaryonDCAToPV"), pT, cand.sign() > 0 ? cand.dcanegtopv() : cand.dcapostopv());
       histos.fill(HIST(kParticlenames[partID]) + HIST("/hBachDCAToPV"), pT, cand.dcabachtopv());
       histos.fill(HIST(kParticlenames[partID]) + HIST("/hV0CosPA"), pT, cand.v0cosPA(coll.posX(), coll.posY(), coll.posZ()));
       histos.fill(HIST(kParticlenames[partID]) + HIST("/hV0Radius"), pT, cand.v0radius());
@@ -787,7 +798,7 @@ struct Derivedupcanalysis {
 
   void init(InitContext const&)
   {
-    if (doprocessV0s && doprocessCascades) {
+    if ((doprocessV0s && doprocessCascades) || (doprocessV0sMC && doprocessCascadesMC)) {
       LOG(fatal) << "Unable to analyze both v0s and cascades simultaneously. Please enable only one process at a time";
     }
 
@@ -842,20 +853,14 @@ struct Derivedupcanalysis {
         maskOmegaSpecific.set(selTPCPIDPositiveProton);
         maskAntiOmegaSpecific.set(selTPCPIDPositivePion);
       }
-      // TOF PID
-      if (PIDConfigurations.tofPidNsigmaCutK0Pi < kNoPidNsigmaCut) { // safeguard for no cut
-        setBits(maskK0ShortSpecific, {selTOFNSigmaPositivePionK0Short, selTOFDeltaTPositivePionK0Short});
-      }
-      if (PIDConfigurations.tofPidNsigmaCutLaPr < kNoPidNsigmaCut) { // safeguard for no cut
-        setBits(maskLambdaSpecific, {selTOFNSigmaPositiveProtonLambda, selTOFDeltaTPositiveProtonLambda});
-        setBits(maskXiSpecific, {selTOFNSigmaPositiveProtonLambdaXi, selTOFDeltaTPositiveProtonLambdaXi});
-        setBits(maskOmegaSpecific, {selTOFNSigmaPositiveProtonLambdaOmega, selTOFDeltaTPositiveProtonLambdaOmega});
-      }
-      if (PIDConfigurations.tofPidNsigmaCutLaPi < kNoPidNsigmaCut) { // safeguard for no cut
-        setBits(maskAntiLambdaSpecific, {selTOFNSigmaPositivePionLambda, selTOFDeltaTPositivePionLambda});
-        setBits(maskAntiXiSpecific, {selTOFNSigmaPositivePionLambdaXi, selTOFDeltaTPositivePionLambdaXi});
-        setBits(maskAntiOmegaSpecific, {selTOFNSigmaPositivePionLambdaOmega, selTOFDeltaTPositivePionLambdaOmega});
-      }
+      // TOF PID: nsigma and time selections can be enabled independently.
+      setTOFSelection(maskK0ShortSpecific, PIDConfigurations.tofPidNsigmaCutK0Pi, PIDConfigurations.maxDeltaTimePion, selTOFNSigmaPositivePionK0Short, selTOFDeltaTPositivePionK0Short);
+      setTOFSelection(maskLambdaSpecific, PIDConfigurations.tofPidNsigmaCutLaPr, PIDConfigurations.maxDeltaTimeProton, selTOFNSigmaPositiveProtonLambda, selTOFDeltaTPositiveProtonLambda);
+      setTOFSelection(maskXiSpecific, PIDConfigurations.tofPidNsigmaCutLaPr, PIDConfigurations.maxDeltaTimeProton, selTOFNSigmaPositiveProtonLambdaXi, selTOFDeltaTPositiveProtonLambdaXi);
+      setTOFSelection(maskOmegaSpecific, PIDConfigurations.tofPidNsigmaCutLaPr, PIDConfigurations.maxDeltaTimeProton, selTOFNSigmaPositiveProtonLambdaOmega, selTOFDeltaTPositiveProtonLambdaOmega);
+      setTOFSelection(maskAntiLambdaSpecific, PIDConfigurations.tofPidNsigmaCutLaPi, PIDConfigurations.maxDeltaTimePion, selTOFNSigmaPositivePionLambda, selTOFDeltaTPositivePionLambda);
+      setTOFSelection(maskAntiXiSpecific, PIDConfigurations.tofPidNsigmaCutLaPi, PIDConfigurations.maxDeltaTimePion, selTOFNSigmaPositivePionLambdaXi, selTOFDeltaTPositivePionLambdaXi);
+      setTOFSelection(maskAntiOmegaSpecific, PIDConfigurations.tofPidNsigmaCutLaPi, PIDConfigurations.maxDeltaTimePion, selTOFNSigmaPositivePionLambdaOmega, selTOFDeltaTPositivePionLambdaOmega);
     }
     // negative track
     if (TrackConfigurations.requireNegITSonly) {
@@ -873,20 +878,14 @@ struct Derivedupcanalysis {
         maskOmegaSpecific.set(selTPCPIDNegativePion);
         maskAntiOmegaSpecific.set(selTPCPIDNegativeProton);
       }
-      // TOF PID
-      if (PIDConfigurations.tofPidNsigmaCutK0Pi < kNoPidNsigmaCut) { // safeguard for no cut
-        setBits(maskK0ShortSpecific, {selTOFNSigmaNegativePionK0Short, selTOFDeltaTNegativePionK0Short});
-      }
-      if (PIDConfigurations.tofPidNsigmaCutLaPr < kNoPidNsigmaCut) { // safeguard for no cut
-        setBits(maskAntiLambdaSpecific, {selTOFNSigmaNegativeProtonLambda, selTOFDeltaTNegativeProtonLambda});
-        setBits(maskAntiXiSpecific, {selTOFNSigmaNegativeProtonLambdaXi, selTOFDeltaTNegativeProtonLambdaXi});
-        setBits(maskAntiOmegaSpecific, {selTOFNSigmaNegativeProtonLambdaOmega, selTOFDeltaTNegativeProtonLambdaOmega});
-      }
-      if (PIDConfigurations.tofPidNsigmaCutLaPi < kNoPidNsigmaCut) { // safeguard for no cut
-        setBits(maskLambdaSpecific, {selTOFNSigmaNegativePionLambda, selTOFDeltaTNegativePionLambda});
-        setBits(maskXiSpecific, {selTOFNSigmaNegativePionLambdaXi, selTOFDeltaTNegativePionLambdaXi});
-        setBits(maskOmegaSpecific, {selTOFNSigmaNegativePionLambdaOmega, selTOFDeltaTNegativePionLambdaOmega});
-      }
+      // TOF PID: nsigma and time selections can be enabled independently.
+      setTOFSelection(maskK0ShortSpecific, PIDConfigurations.tofPidNsigmaCutK0Pi, PIDConfigurations.maxDeltaTimePion, selTOFNSigmaNegativePionK0Short, selTOFDeltaTNegativePionK0Short);
+      setTOFSelection(maskAntiLambdaSpecific, PIDConfigurations.tofPidNsigmaCutLaPr, PIDConfigurations.maxDeltaTimeProton, selTOFNSigmaNegativeProtonLambda, selTOFDeltaTNegativeProtonLambda);
+      setTOFSelection(maskAntiXiSpecific, PIDConfigurations.tofPidNsigmaCutLaPr, PIDConfigurations.maxDeltaTimeProton, selTOFNSigmaNegativeProtonLambdaXi, selTOFDeltaTNegativeProtonLambdaXi);
+      setTOFSelection(maskAntiOmegaSpecific, PIDConfigurations.tofPidNsigmaCutLaPr, PIDConfigurations.maxDeltaTimeProton, selTOFNSigmaNegativeProtonLambdaOmega, selTOFDeltaTNegativeProtonLambdaOmega);
+      setTOFSelection(maskLambdaSpecific, PIDConfigurations.tofPidNsigmaCutLaPi, PIDConfigurations.maxDeltaTimePion, selTOFNSigmaNegativePionLambda, selTOFDeltaTNegativePionLambda);
+      setTOFSelection(maskXiSpecific, PIDConfigurations.tofPidNsigmaCutLaPi, PIDConfigurations.maxDeltaTimePion, selTOFNSigmaNegativePionLambdaXi, selTOFDeltaTNegativePionLambdaXi);
+      setTOFSelection(maskOmegaSpecific, PIDConfigurations.tofPidNsigmaCutLaPi, PIDConfigurations.maxDeltaTimePion, selTOFNSigmaNegativePionLambdaOmega, selTOFDeltaTNegativePionLambdaOmega);
     }
     // bachelor track
     maskTrackPropertiesCasc = maskTrackPropertiesV0;
@@ -901,15 +900,11 @@ struct Derivedupcanalysis {
         maskOmegaSpecific.set(selTPCPIDBachKaon);
         maskAntiOmegaSpecific.set(selTPCPIDBachKaon);
       }
-      // TOF PID
-      if (PIDConfigurations.tofPidNsigmaCutXiPi < kNoPidNsigmaCut) { // safeguard for no cut
-        setBits(maskXiSpecific, {selTOFNSigmaBachPionXi, selTOFDeltaTBachPionXi});
-        setBits(maskAntiXiSpecific, {selTOFNSigmaBachPionXi, selTOFDeltaTBachPionXi});
-      }
-      if (PIDConfigurations.tofPidNsigmaCutOmegaKaon < kNoPidNsigmaCut) { // safeguard for no cut
-        setBits(maskOmegaSpecific, {selTOFNSigmaBachKaonOmega, selTOFDeltaTBachKaonOmega});
-        setBits(maskAntiOmegaSpecific, {selTOFNSigmaBachKaonOmega, selTOFDeltaTBachKaonOmega});
-      }
+      // TOF PID: nsigma and time selections can be enabled independently.
+      setTOFSelection(maskXiSpecific, PIDConfigurations.tofPidNsigmaCutXiPi, PIDConfigurations.maxDeltaTimePion, selTOFNSigmaBachPionXi, selTOFDeltaTBachPionXi);
+      setTOFSelection(maskAntiXiSpecific, PIDConfigurations.tofPidNsigmaCutXiPi, PIDConfigurations.maxDeltaTimePion, selTOFNSigmaBachPionXi, selTOFDeltaTBachPionXi);
+      setTOFSelection(maskOmegaSpecific, PIDConfigurations.tofPidNsigmaCutOmegaKaon, PIDConfigurations.maxDeltaTimeKaon, selTOFNSigmaBachKaonOmega, selTOFDeltaTBachKaonOmega);
+      setTOFSelection(maskAntiOmegaSpecific, PIDConfigurations.tofPidNsigmaCutOmegaKaon, PIDConfigurations.maxDeltaTimeKaon, selTOFNSigmaBachKaonOmega, selTOFDeltaTBachKaonOmega);
     }
 
     if (TrackConfigurations.skipTPConly) {
@@ -1018,16 +1013,29 @@ struct Derivedupcanalysis {
     }
 
     if (doprocessV0sMC) {
-      if (analyseLambda && calculateFeeddownMatrix)
+      histos.add("generalQA/mc/h3dV0CollisionAssociation", "V0 truth candidates before candidate selection; Candidate generator; Vertex generator; Same MC collision", kTH3D, {axisGeneratorIds, axisGeneratorIds, {2, -0.5f, 1.5f}});
+      if (analyseLambda && calculateFeeddownMatrix) {
         histos.add(Form("%s/h3dLambdaFeeddown", kParticlenames[kLambdaPartID].data()), "h3dLambdaFeeddown", kTH3F, {axisNTracksGlobal, axisPt, axisPt});
-      if (analyseAntiLambda && calculateFeeddownMatrix)
+        histos.add(Form("%s/h5dLambdaFeeddown", kParticlenames[kLambdaPartID].data()), "h5dLambdaFeeddown", kTHnSparseF, {axisNTracksGlobal, axisPt, axisPt, axisSelGap, axisInvMass.at(kLambdaPartID)});
+      }
+      if (analyseAntiLambda && calculateFeeddownMatrix) {
         histos.add(Form("%s/h3dAntiLambdaFeeddown", kParticlenames[kAntiLambdaPartID].data()), "h3dAntiLambdaFeeddown", kTH3F, {axisNTracksGlobal, axisPt, axisPt});
+        histos.add(Form("%s/h5dAntiLambdaFeeddown", kParticlenames[kAntiLambdaPartID].data()), "h5dAntiLambdaFeeddown", kTHnSparseF, {axisNTracksGlobal, axisPt, axisPt, axisSelGap, axisInvMass.at(kAntiLambdaPartID)});
+      }
+    }
+
+    if (doprocessCascadesMC) {
+      histos.add("generalQA/mc/h3dCascadeCollisionAssociation", "Cascade truth candidates before candidate selection; Candidate generator; Vertex generator; Same MC collision", kTH3D, {axisGeneratorIds, axisGeneratorIds, {2, -0.5f, 1.5f}});
     }
 
     if (doprocessGenerated) {
       for (int partID = kK0ShortPartID; partID <= kAntiOmegaPartID; partID++) {
         histos.add(Form("%s/mc/h7dGen", kParticlenames[partID].data()), "h7dGen", kTHnSparseF, {axisDetectors.axisFT0ampl, axisNchInvMass, axisNchInvMass, axisPt, axisSelGap, axisRap, axisGeneratorIds});
       }
+      if (analyseLambda && calculateFeeddownMatrix)
+        histos.add(Form("%s/mc/h4dGenXiFeeddown", kParticlenames[kLambdaPartID].data()), "h4dGenXiFeeddown", kTHnSparseF, {axisNTracksGlobal, axisPt, axisRap, axisGeneratorIds});
+      if (analyseAntiLambda && calculateFeeddownMatrix)
+        histos.add(Form("%s/mc/h4dGenAntiXiFeeddown", kParticlenames[kAntiLambdaPartID].data()), "h4dGenAntiXiFeeddown", kTHnSparseF, {axisNTracksGlobal, axisPt, axisRap, axisGeneratorIds});
     }
 
     if (doprocessV0s || doprocessV0sMC) {
@@ -1063,6 +1071,9 @@ struct Derivedupcanalysis {
     }
 
     if (doprocessCascades || doprocessCascadesMC) {
+      histos.add("eventQA/hCascadeChargeSelection", "Selected Xi charge; Charge; Entries", kTH1D, {{2, -0.5f, 1.5f}});
+      histos.get<TH1>(HIST("eventQA/hCascadeChargeSelection"))->GetXaxis()->SetBinLabel(1, "Xi-");
+      histos.get<TH1>(HIST("eventQA/hCascadeChargeSelection"))->GetXaxis()->SetBinLabel(2, "AntiXi+");
       // For all candidates
       if (doPlainTopoQA) {
         histos.add("generalQA/hPt", "hPt", kTH1F, {axisPtCoarse});
@@ -1422,10 +1433,11 @@ struct Derivedupcanalysis {
     }
 
     // Additional check for UPC collision flag
-    if (evSels.useUPCflag && collision.flags() < 1) {
+    const bool hasUPCFlag = (collision.flags() & o2::dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) != 0;
+    if (evSels.useUPCflag && !hasUPCFlag) {
       return false;
     }
-    if (collision.flags() >= 1 && fillQA) {
+    if (hasUPCFlag && fillQA) {
       histos.fill(HIST("eventQA/hEventSelection"), 16.0); // UPC event
     }
 
@@ -1577,9 +1589,9 @@ struct Derivedupcanalysis {
     if (std::fabs(rapidityOmega) < rapidityCut)
       bitMap.set(selOmegaRapidity);
     if (std::fabs(poseta) < daughterEtaCut)
-      bitMap.set(selNegEta);
-    if (std::fabs(negeta) < daughterEtaCut)
       bitMap.set(selPosEta);
+    if (std::fabs(negeta) < daughterEtaCut)
+      bitMap.set(selNegEta);
     if (std::fabs(bacheta) < daughterEtaCut)
       bitMap.set(selBachEta);
 
@@ -1673,8 +1685,8 @@ struct Derivedupcanalysis {
       bitMap.set(selTOFNSigmaPositiveProtonLambdaXi);
     }
     if (std::fabs(casc.tofNSigmaOmLaPr()) < PIDConfigurations.tofPidNsigmaCutLaPr) {
-      bitMap.set(selTOFNSigmaNegativePionLambdaOmega);
-      bitMap.set(selTOFNSigmaPositivePionLambdaOmega);
+      bitMap.set(selTOFNSigmaNegativeProtonLambdaOmega);
+      bitMap.set(selTOFNSigmaPositiveProtonLambdaOmega);
     }
     // bachelor track
     if (std::fabs(casc.tofNSigmaXiPi()) < PIDConfigurations.tofPidNsigmaCutXiPi) {
@@ -1853,8 +1865,8 @@ struct Derivedupcanalysis {
       histos.fill(HIST("generalQA/hCascCosPA"), casc.pt(), casc.casccosPA(coll.posX(), coll.posY(), coll.posZ()));
       histos.fill(HIST("generalQA/hDCACascDaughters"), casc.pt(), casc.dcacascdaughters());
       histos.fill(HIST("generalQA/hCascRadius"), casc.pt(), casc.cascradius());
-      histos.fill(HIST("generalQA/hMesonDCAToPV"), casc.pt(), casc.dcanegtopv());
-      histos.fill(HIST("generalQA/hBaryonDCAToPV"), casc.pt(), casc.dcapostopv());
+      histos.fill(HIST("generalQA/hMesonDCAToPV"), casc.pt(), casc.sign() > 0 ? casc.dcapostopv() : casc.dcanegtopv());
+      histos.fill(HIST("generalQA/hBaryonDCAToPV"), casc.pt(), casc.sign() > 0 ? casc.dcanegtopv() : casc.dcapostopv());
       histos.fill(HIST("generalQA/hBachDCAToPV"), casc.pt(), casc.dcabachtopv());
       histos.fill(HIST("generalQA/hV0CosPA"), casc.pt(), casc.v0cosPA(coll.posX(), coll.posY(), coll.posZ()));
       histos.fill(HIST("generalQA/hV0Radius"), casc.pt(), casc.v0radius());
@@ -1867,22 +1879,24 @@ struct Derivedupcanalysis {
     }
 
     // Xi
-    if (verifyMask(selMap, maskSelectionXi) && analyseXi) {
+    if (casc.sign() < 0 && verifyMask(selMap, maskSelectionXi) && analyseXi) {
+      histos.fill(HIST("eventQA/hCascadeChargeSelection"), 0.);
       fillHistogramsCasc<3>(casc, coll, gap);
     }
 
     // Anti-Xi
-    if (verifyMask(selMap, maskSelectionAntiXi) && analyseAntiXi) {
+    if (casc.sign() > 0 && verifyMask(selMap, maskSelectionAntiXi) && analyseAntiXi) {
+      histos.fill(HIST("eventQA/hCascadeChargeSelection"), 1.);
       fillHistogramsCasc<4>(casc, coll, gap);
     }
 
     // Omega
-    if (verifyMask(selMap, maskSelectionOmega) && analyseOmega) {
+    if (casc.sign() < 0 && verifyMask(selMap, maskSelectionOmega) && analyseOmega) {
       fillHistogramsCasc<5>(casc, coll, gap);
     }
 
     // Anti-Omega
-    if (verifyMask(selMap, maskSelectionAntiOmega) && analyseAntiOmega) {
+    if (casc.sign() > 0 && verifyMask(selMap, maskSelectionAntiOmega) && analyseAntiOmega) {
       fillHistogramsCasc<6>(casc, coll, gap);
     }
   }
@@ -1936,13 +1950,13 @@ struct Derivedupcanalysis {
 
     const bool isPositiveProton = (pdgPos == PDG_t::kProton);
 
-    const bool isPositivePion = (pdgPos == PDG_t::kPiPlus);
-    const bool isBachelorPositivePion = (pdgBach == PDG_t::kPiPlus);
+    const bool isPositivePion = (pdgPos == PDG_t::kPiPlus) || (doTreatPiToMuon && pdgPos == PDG_t::kMuonPlus);
+    const bool isBachelorPositivePion = (pdgBach == PDG_t::kPiPlus) || (doTreatPiToMuon && pdgBach == PDG_t::kMuonPlus);
 
     const bool isNegativeProton = (pdgNeg == kProtonBar);
 
-    const bool isNegativePion = (pdgNeg == PDG_t::kPiMinus);
-    const bool isBachelorNegativePion = (pdgBach == PDG_t::kPiMinus);
+    const bool isNegativePion = (pdgNeg == PDG_t::kPiMinus) || (doTreatPiToMuon && pdgNeg == PDG_t::kMuonMinus);
+    const bool isBachelorNegativePion = (pdgBach == PDG_t::kPiMinus) || (doTreatPiToMuon && pdgBach == PDG_t::kMuonMinus);
 
     const bool isBachelorPositiveKaon = (pdgBach == PDG_t::kKPlus);
     const bool isBachelorNegativeKaon = (pdgBach == PDG_t::kKMinus);
@@ -1996,9 +2010,8 @@ struct Derivedupcanalysis {
       histos.fill(HIST("generalQA/hV0Radius"), v0.v0radius());
       histos.fill(HIST("generalQA/h2dPositiveITSvsTPCpts"), posTrackExtra.tpcCrossedRows(), posTrackExtra.itsNCls());
       histos.fill(HIST("generalQA/h2dNegativeITSvsTPCpts"), negTrackExtra.tpcCrossedRows(), negTrackExtra.itsNCls());
+      histos.fill(HIST("generalQA/h2dArmenterosAll"), v0.alpha(), v0.qtarm());
     }
-
-    histos.fill(HIST("generalQA/h2dArmenterosAll"), v0.alpha(), v0.qtarm());
 
     // K0s
     if (verifyMask(selMap, maskSelectionK0Short) && analyseK0Short) {
@@ -2026,6 +2039,9 @@ struct Derivedupcanalysis {
     std::vector<int> listBestCollisionIds(mcCollisions.size(), -1);
 
     for (auto const& mcCollision : mcCollisions) {
+      if (std::abs(mcCollision.posZ()) > maxZVtxPosition)
+        continue;
+
       if (std::find(generatorIds->begin(), generatorIds->end(), mcCollision.generatorsID()) == generatorIds->end()) {
         continue;
       }
@@ -2033,6 +2049,9 @@ struct Derivedupcanalysis {
       // Group collisions and neutrons by MC collision index
       auto groupedCollisions = collisions.sliceBy(perMcCollision, mcCollision.globalIndex());
       auto groupedNeutrons = neutrons.sliceBy(neutronsPerMcCollision, mcCollision.globalIndex());
+      if (!acceptGeneratedNeutronSelection(groupedNeutrons))
+        continue;
+
       // Find the collision with the biggest nbr of PV contributors
       // Follows what was done here: https://github.com/AliceO2Group/O2Physics/blob/master/Common/TableProducer/mcCollsExtra.cxx#L93
       int biggestNContribs = -1;
@@ -2070,6 +2089,10 @@ struct Derivedupcanalysis {
         continue;
       }
 
+      auto groupedNeutrons = neutrons.sliceBy(neutronsPerMcCollision, mcCollision.globalIndex());
+      if (!acceptGeneratedNeutronSelection(groupedNeutrons))
+        continue;
+
       histos.fill(HIST("eventQA/mc/hSelGeneratorsId"), mcCollision.generatorsID());
 
       histos.fill(HIST("eventQA/mc/hEventSelectionMC"), 0.0, mcCollision.multMCNParticlesEta08(), mcCollision.generatorsID());
@@ -2081,7 +2104,6 @@ struct Derivedupcanalysis {
 
       // Group collisions and neutrons by MC collision index
       auto groupedCollisions = collisions.sliceBy(perMcCollision, mcCollision.globalIndex());
-      auto groupedNeutrons = neutrons.sliceBy(neutronsPerMcCollision, mcCollision.globalIndex());
 
       bool atLeastOne = false;
       float centrality = -1.f;
@@ -2133,7 +2155,7 @@ struct Derivedupcanalysis {
   }
 
   template <typename TCollision, typename TV0>
-  void fillFeeddownMatrix(TCollision const& collision, TV0 const& v0, std::bitset<kSelNum> const& selMap)
+  void fillFeeddownMatrix(TCollision const& collision, TV0 const& v0, std::bitset<kSelNum> const& selMap, int gap)
   {
     if (!v0.has_motherMCPart()) {
       return;
@@ -2156,11 +2178,13 @@ struct Derivedupcanalysis {
     if (analyseLambda && verifyMask(selMap, secondaryMaskSelectionLambda) &&
         (v0mother.pdgCode() == PDG_t::kXiMinus) && v0mother.isPhysicalPrimary()) {
       histos.fill(HIST(kParticlenames[1]) + HIST("/h3dLambdaFeeddown"), mult, v0pt, motherPt);
+      histos.fill(HIST(kParticlenames[1]) + HIST("/h5dLambdaFeeddown"), mult, v0pt, motherPt, gap, v0.mLambda());
     }
 
     if (analyseAntiLambda && verifyMask(selMap, secondaryMaskSelectionAntiLambda) &&
         (v0mother.pdgCode() == PDG_t::kXiPlusBar) && v0mother.isPhysicalPrimary()) {
       histos.fill(HIST(kParticlenames[2]) + HIST("/h3dAntiLambdaFeeddown"), mult, v0pt, motherPt);
+      histos.fill(HIST(kParticlenames[2]) + HIST("/h5dAntiLambdaFeeddown"), mult, v0pt, motherPt, gap, v0.mAntiLambda());
     }
   }
 
@@ -2227,33 +2251,44 @@ struct Derivedupcanalysis {
 
       const auto& mcCollision = collision.straMCCollision_as<StraMCCollisionsFull>(); // take gen. collision associated to the rec. collision
 
-      if (std::find(generatorIds->begin(), generatorIds->end(), mcCollision.generatorsID()) == generatorIds->end()) {
+      // Vertex labels classify event QA, not the origin of particles at this vertex.
+      const bool selectedVertexGenerator = std::find(generatorIds->begin(), generatorIds->end(), mcCollision.generatorsID()) != generatorIds->end();
+      if (!doMCAssociation && !selectedVertexGenerator) {
         continue;
       }
 
-      if (!acceptEvent(collision, true)) {
+      if (!acceptEvent(collision, selectedVertexGenerator)) {
         continue;
       } // event is accepted
 
-      if (collision.isUPC()) {
-        fillPreSelTimingHistograms(collision);
+      if (selectedVertexGenerator) {
+        if (collision.isUPC()) {
+          fillPreSelTimingHistograms(collision);
+        }
+        histos.fill(HIST("eventQA/hRawGapSide"), collision.gapSide());
       }
-      histos.fill(HIST("eventQA/hRawGapSide"), collision.gapSide());
 
       auto groupedNeutrons = neutrons.sliceBy(neutronsPerMcCollision, mcCollision.globalIndex());
       int selGapSideNoNeutrons = collision.isUPC() ? getGapSideWithoutRecoZDC(collision) : o2::aod::sgselector::NoGap;
+
+      if (evSels.studyUPConly && (selGapSideNoNeutrons < 0))
+        continue;
+
+      if (selectedVertexGenerator)
+        histos.fill(HIST("eventQA/hSelGapSideNoNeutrons"), selGapSideNoNeutrons);
+
       int selGapSide = applyGeneratedNeutronSelection(selGapSideNoNeutrons, groupedNeutrons);
 
       if (evSels.studyUPConly && (selGapSide < 0))
         continue;
 
-      histos.fill(HIST("eventQA/hSelGapSideNoNeutrons"), selGapSideNoNeutrons);
-      fillHistogramsQA(collision, selGapSide);
-
-      histos.fill(HIST("eventQA/mc/hNTracksGlobalvsMCNParticlesEta08rec"), collision.multNTracksGlobal(), mcCollision.multMCNParticlesEta08());
-      histos.fill(HIST("eventQA/mc/hNTracksPVeta1vsMCNParticlesEta10rec"), collision.multNTracksPVeta1(), mcCollision.multMCNParticlesEta10());
-      histos.fill(HIST("eventQA/mc/hNTracksGlobalvstotalMultMCParticles"), collision.multNTracksGlobal(), mcCollision.totalMultMCParticles());
-      histos.fill(HIST("eventQA/mc/hNTracksPVeta1vstotalMultMCParticles"), collision.multNTracksPVeta1(), mcCollision.totalMultMCParticles());
+      if (selectedVertexGenerator) {
+        fillHistogramsQA(collision, selGapSide);
+        histos.fill(HIST("eventQA/mc/hNTracksGlobalvsMCNParticlesEta08rec"), collision.multNTracksGlobal(), mcCollision.multMCNParticlesEta08());
+        histos.fill(HIST("eventQA/mc/hNTracksPVeta1vsMCNParticlesEta10rec"), collision.multNTracksPVeta1(), mcCollision.multMCNParticlesEta10());
+        histos.fill(HIST("eventQA/mc/hNTracksGlobalvstotalMultMCParticles"), collision.multNTracksGlobal(), mcCollision.totalMultMCParticles());
+        histos.fill(HIST("eventQA/mc/hNTracksPVeta1vstotalMultMCParticles"), collision.multNTracksPVeta1(), mcCollision.totalMultMCParticles());
+      }
 
       std::size_t nV0sThisColl = v0sGrouped[collision.globalIndex()].size();
 
@@ -2267,9 +2302,15 @@ struct Derivedupcanalysis {
         if (doMCAssociation) {
           if (v0.has_v0MCCore()) {
             const auto& v0MC = v0.v0MCCore_as<V0MCCoresFull>();
-            computeV0MCAssociation(v0MC, selMap);
-            if (calculateFeeddownMatrix) {
-              fillFeeddownMatrix(collision, v0, selMap);
+            if (v0MC.has_straMCCollision()) {
+              const auto& candidateCollision = v0MC.straMCCollision_as<StraMCCollisionsFull>();
+              if (std::find(generatorIds->begin(), generatorIds->end(), candidateCollision.generatorsID()) != generatorIds->end()) {
+                histos.fill(HIST("generalQA/mc/h3dV0CollisionAssociation"), candidateCollision.generatorsID(), mcCollision.generatorsID(), v0MC.straMCCollisionId() == mcCollision.globalIndex());
+                computeV0MCAssociation(v0MC, selMap);
+                if (calculateFeeddownMatrix) {
+                  fillFeeddownMatrix(collision, v0, selMap, selGapSide);
+                }
+              }
             }
           }
         } else {
@@ -2345,33 +2386,44 @@ struct Derivedupcanalysis {
 
       const auto& mcCollision = collision.straMCCollision_as<StraMCCollisionsFull>(); // take gen. collision associated to the rec. collision
 
-      if (std::find(generatorIds->begin(), generatorIds->end(), mcCollision.generatorsID()) == generatorIds->end()) {
+      // Vertex labels classify event QA, not the origin of particles at this vertex.
+      const bool selectedVertexGenerator = std::find(generatorIds->begin(), generatorIds->end(), mcCollision.generatorsID()) != generatorIds->end();
+      if (!doMCAssociation && !selectedVertexGenerator) {
         continue;
       }
 
-      if (!acceptEvent(collision, true)) {
+      if (!acceptEvent(collision, selectedVertexGenerator)) {
         continue;
       } // event is accepted
 
-      if (collision.isUPC()) {
-        fillPreSelTimingHistograms(collision);
+      if (selectedVertexGenerator) {
+        if (collision.isUPC()) {
+          fillPreSelTimingHistograms(collision);
+        }
+        histos.fill(HIST("eventQA/hRawGapSide"), collision.gapSide());
       }
-      histos.fill(HIST("eventQA/hRawGapSide"), collision.gapSide());
 
       auto groupedNeutrons = neutrons.sliceBy(neutronsPerMcCollision, mcCollision.globalIndex());
       int selGapSideNoNeutrons = collision.isUPC() ? getGapSideWithoutRecoZDC(collision) : o2::aod::sgselector::NoGap;
+
+      if (evSels.studyUPConly && (selGapSideNoNeutrons < 0))
+        continue;
+
+      if (selectedVertexGenerator)
+        histos.fill(HIST("eventQA/hSelGapSideNoNeutrons"), selGapSideNoNeutrons);
+
       int selGapSide = applyGeneratedNeutronSelection(selGapSideNoNeutrons, groupedNeutrons);
 
       if (evSels.studyUPConly && (selGapSide < 0))
         continue;
 
-      histos.fill(HIST("eventQA/hSelGapSideNoNeutrons"), selGapSideNoNeutrons);
-      fillHistogramsQA(collision, selGapSide);
-
-      histos.fill(HIST("eventQA/mc/hNTracksGlobalvsMCNParticlesEta08rec"), collision.multNTracksGlobal(), mcCollision.multMCNParticlesEta08());
-      histos.fill(HIST("eventQA/mc/hNTracksPVeta1vsMCNParticlesEta10rec"), collision.multNTracksPVeta1(), mcCollision.multMCNParticlesEta10());
-      histos.fill(HIST("eventQA/mc/hNTracksGlobalvstotalMultMCParticles"), collision.multNTracksGlobal(), mcCollision.totalMultMCParticles());
-      histos.fill(HIST("eventQA/mc/hNTracksPVeta1vstotalMultMCParticles"), collision.multNTracksPVeta1(), mcCollision.totalMultMCParticles());
+      if (selectedVertexGenerator) {
+        fillHistogramsQA(collision, selGapSide);
+        histos.fill(HIST("eventQA/mc/hNTracksGlobalvsMCNParticlesEta08rec"), collision.multNTracksGlobal(), mcCollision.multMCNParticlesEta08());
+        histos.fill(HIST("eventQA/mc/hNTracksPVeta1vsMCNParticlesEta10rec"), collision.multNTracksPVeta1(), mcCollision.multMCNParticlesEta10());
+        histos.fill(HIST("eventQA/mc/hNTracksGlobalvstotalMultMCParticles"), collision.multNTracksGlobal(), mcCollision.totalMultMCParticles());
+        histos.fill(HIST("eventQA/mc/hNTracksPVeta1vstotalMultMCParticles"), collision.multNTracksPVeta1(), mcCollision.totalMultMCParticles());
+      }
 
       std::size_t nCascadesThisColl = cascadesGrouped[collision.globalIndex()].size();
 
@@ -2382,7 +2434,13 @@ struct Derivedupcanalysis {
         if (doMCAssociation) {
           if (casc.has_cascMCCore()) {
             const auto& cascMC = casc.cascMCCore_as<CascMCCoresFull>();
-            computeCascadeMCAssociation(cascMC, selMap);
+            if (cascMC.has_straMCCollision()) {
+              const auto& candidateCollision = cascMC.straMCCollision_as<StraMCCollisionsFull>();
+              if (std::find(generatorIds->begin(), generatorIds->end(), candidateCollision.generatorsID()) != generatorIds->end()) {
+                histos.fill(HIST("generalQA/mc/h3dCascadeCollisionAssociation"), candidateCollision.generatorsID(), mcCollision.generatorsID(), cascMC.straMCCollisionId() == mcCollision.globalIndex());
+                computeCascadeMCAssociation(cascMC, selMap);
+              }
+            }
           }
         } else {
           // the candidate may belong to any particle species
@@ -2483,8 +2541,6 @@ struct Derivedupcanalysis {
       } else if ((cascMC.pdgCode() == PDG_t::kOmegaMinus) || (cascMC.pdgCode() == PDG_t::kOmegaPlusBar)) {
         ymc = cascMC.rapidityMC(2);
       }
-      if (std::abs(ymc) > rapidityCut)
-        continue;
 
       const auto& mcCollision = cascMC.straMCCollision_as<StraMCCollisionsFull>(); // take gen. collision
       if (std::abs(mcCollision.posZ()) > maxZVtxPosition)
@@ -2511,7 +2567,22 @@ struct Derivedupcanalysis {
         } else if (static_cast<int>(upcCuts.genGapSide) == 1) {
           ft0ampl = collision.totalFT0AmplitudeA();
         }
+        nTracksGlobal = collision.multNTracksGlobal();
       }
+
+      // All generated Xi parents, before daughter topology cuts. Requires asymmetric
+      // CascMCCores populated with generated Xi of both charges in this rapidity range.
+      if (calculateFeeddownMatrix && nTracksGlobal >= 0 && std::abs(ymc) <= kMotherRapidityMax) {
+        if (analyseLambda && cascMC.pdgCode() == PDG_t::kXiMinus) {
+          histos.fill(HIST(kParticlenames[kLambdaPartID]) + HIST("/mc/h4dGenXiFeeddown"), nTracksGlobal, pTmc, ymc, mcCollision.generatorsID());
+        }
+        if (analyseAntiLambda && cascMC.pdgCode() == PDG_t::kXiPlusBar) {
+          histos.fill(HIST(kParticlenames[kAntiLambdaPartID]) + HIST("/mc/h4dGenAntiXiFeeddown"), nTracksGlobal, pTmc, ymc, mcCollision.generatorsID());
+        }
+      }
+
+      if (std::abs(ymc) > rapidityCut)
+        continue;
 
       const int pdgPos = cascMC.pdgCodePositive();
       const int pdgNeg = cascMC.pdgCodeNegative();
@@ -2520,13 +2591,13 @@ struct Derivedupcanalysis {
 
       const bool isPositiveProton = (pdgPos == PDG_t::kProton);
 
-      const bool isPositivePion = (pdgPos == PDG_t::kPiPlus);
-      const bool isBachelorPositivePion = (pdgBach == PDG_t::kPiPlus);
+      const bool isPositivePion = (pdgPos == PDG_t::kPiPlus) || (doTreatPiToMuon && pdgPos == PDG_t::kMuonPlus);
+      const bool isBachelorPositivePion = (pdgBach == PDG_t::kPiPlus) || (doTreatPiToMuon && pdgBach == PDG_t::kMuonPlus);
 
       const bool isNegativeProton = (pdgNeg == kProtonBar);
 
-      const bool isNegativePion = (pdgNeg == PDG_t::kPiMinus);
-      const bool isBachelorNegativePion = (pdgBach == PDG_t::kPiMinus);
+      const bool isNegativePion = (pdgNeg == PDG_t::kPiMinus) || (doTreatPiToMuon && pdgNeg == PDG_t::kMuonMinus);
+      const bool isBachelorNegativePion = (pdgBach == PDG_t::kPiMinus) || (doTreatPiToMuon && pdgBach == PDG_t::kMuonMinus);
 
       const bool isBachelorPositiveKaon = (pdgBach == PDG_t::kKPlus);
       const bool isBachelorNegativeKaon = (pdgBach == PDG_t::kKMinus);
