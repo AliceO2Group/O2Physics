@@ -3425,8 +3425,8 @@ struct AnalysisDileptonTrackTrack {
   }
 
   // Template function to run pair - hadron combinations
-  template <int TCandidateType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks, typename TTrackAssocs, typename TDileptons>
-  void runDileptonTrackTrack(TEvent const& event, TTrackAssocs const& assocs, TTracks const& tracks, TDileptons const& dileptons, ReducedMCEvents const& /*mcEvents*/, ReducedMCTracks const& /*mcTracks*/)
+  template <int TCandidateType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TBCs, typename TTracks, typename TDileptons>
+  void runDileptonTrackTrack(TEvent const& event, TBCs const& /*bcs*/, soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts> const& assocs, TTracks const& tracks, TDileptons const& dileptons, McCollisions const& /*mcEvents*/, McParticles const& /*mcTracks*/)
   {
     VarManager::ResetValues(0, VarManager::kNVars, fValuesQuadruplet);
     VarManager::FillEvent<TEventFillMap>(event, fValuesQuadruplet);
@@ -3599,7 +3599,7 @@ struct AnalysisDileptonTrackTrack {
       }
       auto groupedBarrelAssocs = assocs.sliceBy(trackAssocsPerCollision, event.globalIndex());
       auto groupedDielectrons = dileptons.sliceBy(dielectronsPerCollision, event.globalIndex());
-      runDileptonTrackTrack<VarManager::kXtoJpsiPiPi, gkEventFillMapWithMults, gkTrackFillMapWithCov>(event, groupedBarrelAssocs, tracks, groupedDielectrons, mcEvents, mcTracks);
+      runDileptonTrackTrack<VarManager::kXtoJpsiPiPi, gkEventFillMapWithMults, gkTrackFillMapWithCov>(event, bcs, groupedBarrelAssocs, tracks, groupedDielectrons, mcEvents, mcTracks);
     }
   }
 
@@ -3622,7 +3622,7 @@ struct AnalysisDileptonTrackTrack {
       }
       auto groupedBarrelAssocs = assocs.sliceBy(trackAssocsPerCollision, event.globalIndex());
       auto groupedDielectrons = dileptons.sliceBy(dielectronsPerCollision, event.globalIndex());
-      runDileptonTrackTrack<VarManager::kPsi2StoJpsiPiPi, gkEventFillMapWithMults, gkTrackFillMapWithCov>(event, groupedBarrelAssocs, tracks, groupedDielectrons, mcEvents, mcTracks);
+      runDileptonTrackTrack<VarManager::kPsi2StoJpsiPiPi, gkEventFillMapWithMults, gkTrackFillMapWithCov>(event, bcs, groupedBarrelAssocs, tracks, groupedDielectrons, mcEvents, mcTracks);
     }
   }
 
