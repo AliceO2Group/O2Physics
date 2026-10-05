@@ -3264,10 +3264,10 @@ struct AnalysisDileptonTrackTrack {
 
     if (isDummy) {
       if (isPsi2S || isX3872 || isMCGen) {
-        LOG(fatal) << "Dummy function is enabled even if there are normal process functions running! Fix your config!" << endl;
+        LOG(fatal) << "Dummy function is enabled even if there are normal process functions running! Fix your config!";
         return;
       } else {
-        LOG(info) << "Dummy function is enabled. Skipping the rest of the init function" << endl;
+        LOG(info) << "Dummy function is enabled. Skipping the rest of the init function";
         return;
       }
     }
@@ -3398,7 +3398,7 @@ struct AnalysisDileptonTrackTrack {
   void initParamsFromCCDB(uint64_t timestamp)
   {
     if (fConfigCCDBOptions.fConfigUseRemoteField.value) {
-      o2::parameters::GRPMagField* grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(fConfigGRPmagPath.value, timestamp);
+      o2::parameters::GRPMagField* grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(fConfigCCDBOptions.fConfigGRPmagPath.value, timestamp);
       float magField = 0.0;
       if (grpmag != nullptr) {
         magField = grpmag->getNominalL3Field();
@@ -3576,7 +3576,7 @@ struct AnalysisDileptonTrackTrack {
     } // end loop over dileptons
   }
 
-  Preslice<aod::soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts>> trackAssocsPerCollision = aod::reducedtrack_association::reducedeventId;
+  Preslice<soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts>> trackAssocsPerCollision = aod::reducedtrack_association::reducedeventId;
   Preslice<MyDielectronCandidates> dielectronsPerCollision = aod::reducedpair::reducedeventId;
   // Preslice<MyDitrackCandidates> ditracksPerCollision = aod::reducedpair::reducedeventId;
 
@@ -3599,7 +3599,7 @@ struct AnalysisDileptonTrackTrack {
       }
       auto groupedBarrelAssocs = assocs.sliceBy(trackAssocsPerCollision, event.globalIndex());
       auto groupedDielectrons = dileptons.sliceBy(dielectronsPerCollision, event.globalIndex());
-      runDileptonTrackTrack<VarManager::kXtoJpsiPiPi, gkEventFillMapWithCov, gkTrackFillMapWithCov>(event, groupedBarrelAssocs, tracks, groupedDielectrons, mcEvents, mcTracks);
+      runDileptonTrackTrack<VarManager::kXtoJpsiPiPi, gkEventFillMapWithMults, gkTrackFillMapWithCov>(event, groupedBarrelAssocs, tracks, groupedDielectrons, mcEvents, mcTracks);
     }
   }
 
@@ -3622,7 +3622,7 @@ struct AnalysisDileptonTrackTrack {
       }
       auto groupedBarrelAssocs = assocs.sliceBy(trackAssocsPerCollision, event.globalIndex());
       auto groupedDielectrons = dileptons.sliceBy(dielectronsPerCollision, event.globalIndex());
-      runDileptonTrackTrack<VarManager::kPsi2StoJpsiPiPi, gkEventFillMapWithCov, gkTrackFillMapWithCov>(event, groupedBarrelAssocs, tracks, groupedDielectrons, mcEvents, mcTracks);
+      runDileptonTrackTrack<VarManager::kPsi2StoJpsiPiPi, gkEventFillMapWithMults, gkTrackFillMapWithCov>(event, groupedBarrelAssocs, tracks, groupedDielectrons, mcEvents, mcTracks);
     }
   }
 
@@ -3681,11 +3681,11 @@ struct AnalysisDileptonTrackTrack {
       if (!event.isEventSelected_bit(0)) {
         continue;
       }
-      if (!event.has_reducedMCevent()) {
+      if (!event.has_mcCollision()) {
         continue;
       }
 
-      auto groupedMCTracks = mcTracks.sliceBy(perReducedMcEvent, event.reducedMCeventId());
+      auto groupedMCTracks = mcTracks.sliceBy(perReducedMcEvent, event.mcCollisionId());
       groupedMCTracks.bindInternalIndicesTo(&mcTracks);
       for (auto& track : groupedMCTracks) {
 
