@@ -25,7 +25,7 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TMath.h>
+#include <TMathBase.h>
 
 #include <vector>
 
