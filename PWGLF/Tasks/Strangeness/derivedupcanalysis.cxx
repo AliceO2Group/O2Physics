@@ -359,143 +359,145 @@ struct Derivedupcanalysis {
   }
 
   template <int partID>
-  void addTopoHistograms(HistogramRegistry& histos)
+  void addTopoHistograms(HistogramRegistry& registry)
   {
-    const bool isCascade = partID >= kFirstCascadePartID;
-    if (isCascade) {
-      histos.add(Form("%s/hCascCosPA", kParticlenames[partID].data()), "hCascCosPA", kTH2F, {axisPtCoarse, {100, 0.9f, 1.0f}});
-      histos.add(Form("%s/hDCACascDaughters", kParticlenames[partID].data()), "hDCACascDaughters", kTH2F, {axisPtCoarse, {44, 0.0f, 2.2f}});
-      histos.add(Form("%s/hCascRadius", kParticlenames[partID].data()), "hCascRadius", kTH2D, {axisPtCoarse, {500, 0.0f, 50.0f}});
-      histos.add(Form("%s/hMesonDCAToPV", kParticlenames[partID].data()), "hMesonDCAToPV", kTH2F, {axisPtCoarse, axisDCAtoPV});
-      histos.add(Form("%s/hBaryonDCAToPV", kParticlenames[partID].data()), "hBaryonDCAToPV", kTH2F, {axisPtCoarse, axisDCAtoPV});
-      histos.add(Form("%s/hBachDCAToPV", kParticlenames[partID].data()), "hBachDCAToPV", kTH2F, {axisPtCoarse, {200, -1.0f, 1.0f}});
-      histos.add(Form("%s/hV0CosPA", kParticlenames[partID].data()), "hV0CosPA", kTH2F, {axisPtCoarse, {100, 0.9f, 1.0f}});
-      histos.add(Form("%s/hV0Radius", kParticlenames[partID].data()), "hV0Radius", kTH2D, {axisPtCoarse, axisV0Radius});
-      histos.add(Form("%s/hDCAV0Daughters", kParticlenames[partID].data()), "hDCAV0Daughters", kTH2F, {axisPtCoarse, axisDCAdau});
-      histos.add(Form("%s/hDCAV0ToPV", kParticlenames[partID].data()), "hDCAV0ToPV", kTH2F, {axisPtCoarse, {44, 0.0f, 2.2f}});
-      histos.add(Form("%s/hMassLambdaDau", kParticlenames[partID].data()), "hMassLambdaDau", kTH2F, {axisPtCoarse, axisLambdaMass});
-      histos.add(Form("%s/hCtau", kParticlenames[partID].data()), "hCtau", kTH2F, {axisPtCoarse, axisCtau});
+    // Template instantiations intentionally make this particle-type comparison constant.
+    // cppcheck-suppress knownConditionTrueFalse
+    if constexpr (partID >= kFirstCascadePartID) {
+      registry.add(Form("%s/hCascCosPA", kParticlenames[partID].data()), "hCascCosPA", kTH2F, {axisPtCoarse, {100, 0.9f, 1.0f}});
+      registry.add(Form("%s/hDCACascDaughters", kParticlenames[partID].data()), "hDCACascDaughters", kTH2F, {axisPtCoarse, {44, 0.0f, 2.2f}});
+      registry.add(Form("%s/hCascRadius", kParticlenames[partID].data()), "hCascRadius", kTH2D, {axisPtCoarse, {500, 0.0f, 50.0f}});
+      registry.add(Form("%s/hMesonDCAToPV", kParticlenames[partID].data()), "hMesonDCAToPV", kTH2F, {axisPtCoarse, axisDCAtoPV});
+      registry.add(Form("%s/hBaryonDCAToPV", kParticlenames[partID].data()), "hBaryonDCAToPV", kTH2F, {axisPtCoarse, axisDCAtoPV});
+      registry.add(Form("%s/hBachDCAToPV", kParticlenames[partID].data()), "hBachDCAToPV", kTH2F, {axisPtCoarse, {200, -1.0f, 1.0f}});
+      registry.add(Form("%s/hV0CosPA", kParticlenames[partID].data()), "hV0CosPA", kTH2F, {axisPtCoarse, {100, 0.9f, 1.0f}});
+      registry.add(Form("%s/hV0Radius", kParticlenames[partID].data()), "hV0Radius", kTH2D, {axisPtCoarse, axisV0Radius});
+      registry.add(Form("%s/hDCAV0Daughters", kParticlenames[partID].data()), "hDCAV0Daughters", kTH2F, {axisPtCoarse, axisDCAdau});
+      registry.add(Form("%s/hDCAV0ToPV", kParticlenames[partID].data()), "hDCAV0ToPV", kTH2F, {axisPtCoarse, {44, 0.0f, 2.2f}});
+      registry.add(Form("%s/hMassLambdaDau", kParticlenames[partID].data()), "hMassLambdaDau", kTH2F, {axisPtCoarse, axisLambdaMass});
+      registry.add(Form("%s/hCtau", kParticlenames[partID].data()), "hCtau", kTH2F, {axisPtCoarse, axisCtau});
       if (doBachelorBaryonCut) {
-        histos.add(Form("%s/hBachBaryonCosPA", kParticlenames[partID].data()), "hBachBaryonCosPA", kTH2F, {axisPtCoarse, {100, 0.0f, 1.0f}});
-        histos.add(Form("%s/hBachBaryonDCAxyToPV", kParticlenames[partID].data()), "hBachBaryonDCAxyToPV", kTH2F, {axisPtCoarse, {300, -3.0f, 3.0f}});
+        registry.add(Form("%s/hBachBaryonCosPA", kParticlenames[partID].data()), "hBachBaryonCosPA", kTH2F, {axisPtCoarse, {100, 0.0f, 1.0f}});
+        registry.add(Form("%s/hBachBaryonDCAxyToPV", kParticlenames[partID].data()), "hBachBaryonDCAxyToPV", kTH2F, {axisPtCoarse, {300, -3.0f, 3.0f}});
       }
     } else {
-      histos.add(Form("%s/hPosDCAToPV", kParticlenames[partID].data()), "hPosDCAToPV", kTH1F, {axisDCAtoPV});
-      histos.add(Form("%s/hNegDCAToPV", kParticlenames[partID].data()), "hNegDCAToPV", kTH1F, {axisDCAtoPV});
-      histos.add(Form("%s/hDCADaughters", kParticlenames[partID].data()), "hDCADaughters", kTH1F, {axisDCAdau});
-      histos.add(Form("%s/hPointingAngle", kParticlenames[partID].data()), "hPointingAngle", kTH1F, {axisPointingAngle});
-      histos.add(Form("%s/hCosPA", kParticlenames[partID].data()), "hCosPA", kTH1F, {axisCosPA});
-      histos.add(Form("%s/hV0Radius", kParticlenames[partID].data()), "hV0Radius", kTH1F, {axisV0Radius});
-      histos.add(Form("%s/h2dPositiveITSvsTPCpts", kParticlenames[partID].data()), "h2dPositiveITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
-      histos.add(Form("%s/h2dNegativeITSvsTPCpts", kParticlenames[partID].data()), "h2dNegativeITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
-      histos.add(Form("%s/hCtau", kParticlenames[partID].data()), "hCtau", kTH2F, {axisPtCoarse, axisCtau});
+      registry.add(Form("%s/hPosDCAToPV", kParticlenames[partID].data()), "hPosDCAToPV", kTH1F, {axisDCAtoPV});
+      registry.add(Form("%s/hNegDCAToPV", kParticlenames[partID].data()), "hNegDCAToPV", kTH1F, {axisDCAtoPV});
+      registry.add(Form("%s/hDCADaughters", kParticlenames[partID].data()), "hDCADaughters", kTH1F, {axisDCAdau});
+      registry.add(Form("%s/hPointingAngle", kParticlenames[partID].data()), "hPointingAngle", kTH1F, {axisPointingAngle});
+      registry.add(Form("%s/hCosPA", kParticlenames[partID].data()), "hCosPA", kTH1F, {axisCosPA});
+      registry.add(Form("%s/hV0Radius", kParticlenames[partID].data()), "hV0Radius", kTH1F, {axisV0Radius});
+      registry.add(Form("%s/h2dPositiveITSvsTPCpts", kParticlenames[partID].data()), "h2dPositiveITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
+      registry.add(Form("%s/h2dNegativeITSvsTPCpts", kParticlenames[partID].data()), "h2dNegativeITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
+      registry.add(Form("%s/hCtau", kParticlenames[partID].data()), "hCtau", kTH2F, {axisPtCoarse, axisCtau});
     }
   }
 
   template <int partID>
-  void addTPCQAHistograms(HistogramRegistry& histos)
+  void addTPCQAHistograms(HistogramRegistry& registry)
   {
-    const bool isCascade = partID >= kFirstCascadePartID;
-    histos.add(Form("%s/h3dPosNsigmaTPC", kParticlenames[partID].data()), "h3dPosNsigmaTPC", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisNsigmaTPC});
-    histos.add(Form("%s/h3dNegNsigmaTPC", kParticlenames[partID].data()), "h3dNegNsigmaTPC", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisNsigmaTPC});
-    histos.add(Form("%s/h3dPosTPCsignal", kParticlenames[partID].data()), "h3dPosTPCsignal", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTPCsignal});
-    histos.add(Form("%s/h3dNegTPCsignal", kParticlenames[partID].data()), "h3dNegTPCsignal", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTPCsignal});
+    registry.add(Form("%s/h3dPosNsigmaTPC", kParticlenames[partID].data()), "h3dPosNsigmaTPC", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisNsigmaTPC});
+    registry.add(Form("%s/h3dNegNsigmaTPC", kParticlenames[partID].data()), "h3dNegNsigmaTPC", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisNsigmaTPC});
+    registry.add(Form("%s/h3dPosTPCsignal", kParticlenames[partID].data()), "h3dPosTPCsignal", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTPCsignal});
+    registry.add(Form("%s/h3dNegTPCsignal", kParticlenames[partID].data()), "h3dNegTPCsignal", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTPCsignal});
 
-    histos.add(Form("%s/h3dPosNsigmaTPCvsTrackPtot", kParticlenames[partID].data()), "h3dPosNsigmaTPCvsTrackPtot", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisNsigmaTPC});
-    histos.add(Form("%s/h3dNegNsigmaTPCvsTrackPtot", kParticlenames[partID].data()), "h3dNegNsigmaTPCvsTrackPtot", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisNsigmaTPC});
+    registry.add(Form("%s/h3dPosNsigmaTPCvsTrackPtot", kParticlenames[partID].data()), "h3dPosNsigmaTPCvsTrackPtot", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisNsigmaTPC});
+    registry.add(Form("%s/h3dNegNsigmaTPCvsTrackPtot", kParticlenames[partID].data()), "h3dNegNsigmaTPCvsTrackPtot", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisNsigmaTPC});
 
-    histos.add(Form("%s/h3dPosTPCsignalVsTrackPtot", kParticlenames[partID].data()), "h3dPosTPCsignalVsTrackPtot", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTPCsignal});
-    histos.add(Form("%s/h3dNegTPCsignalVsTrackPtot", kParticlenames[partID].data()), "h3dNegTPCsignalVsTrackPtot", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTPCsignal});
+    registry.add(Form("%s/h3dPosTPCsignalVsTrackPtot", kParticlenames[partID].data()), "h3dPosTPCsignalVsTrackPtot", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTPCsignal});
+    registry.add(Form("%s/h3dNegTPCsignalVsTrackPtot", kParticlenames[partID].data()), "h3dNegTPCsignalVsTrackPtot", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTPCsignal});
 
-    histos.add(Form("%s/h3dPosNsigmaTPCvsTrackPt", kParticlenames[partID].data()), "h3dPosNsigmaTPCvsTrackPt", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisNsigmaTPC});
-    histos.add(Form("%s/h3dNegNsigmaTPCvsTrackPt", kParticlenames[partID].data()), "h3dNegNsigmaTPCvsTrackPt", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisNsigmaTPC});
+    registry.add(Form("%s/h3dPosNsigmaTPCvsTrackPt", kParticlenames[partID].data()), "h3dPosNsigmaTPCvsTrackPt", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisNsigmaTPC});
+    registry.add(Form("%s/h3dNegNsigmaTPCvsTrackPt", kParticlenames[partID].data()), "h3dNegNsigmaTPCvsTrackPt", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisNsigmaTPC});
 
-    histos.add(Form("%s/h3dPosTPCsignalVsTrackPt", kParticlenames[partID].data()), "h3dPosTPCsignalVsTrackPt", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTPCsignal});
-    histos.add(Form("%s/h3dNegTPCsignalVsTrackPt", kParticlenames[partID].data()), "h3dNegTPCsignalVsTrackPt", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTPCsignal});
+    registry.add(Form("%s/h3dPosTPCsignalVsTrackPt", kParticlenames[partID].data()), "h3dPosTPCsignalVsTrackPt", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTPCsignal});
+    registry.add(Form("%s/h3dNegTPCsignalVsTrackPt", kParticlenames[partID].data()), "h3dNegTPCsignalVsTrackPt", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTPCsignal});
 
-    if (isCascade) {
-      histos.add(Form("%s/h3dBachTPCsignal", kParticlenames[partID].data()), "h3dBachTPCsignal", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTPCsignal});
-      histos.add(Form("%s/h3dBachNsigmaTPC", kParticlenames[partID].data()), "h3dBachNsigmaTPC", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisNsigmaTPC});
-      histos.add(Form("%s/h3dBachNsigmaTPCvsTrackPtot", kParticlenames[partID].data()), "h3dBachNsigmaTPCvsTrackPtot", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisNsigmaTPC});
-      histos.add(Form("%s/h3dBachTPCsignalVsTrackPtot", kParticlenames[partID].data()), "h3dBachTPCsignalVsTrackPtot", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTPCsignal});
-      histos.add(Form("%s/h3dBachNsigmaTPCvsTrackPt", kParticlenames[partID].data()), "h3dBachNsigmaTPCvsTrackPt", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisNsigmaTPC});
-      histos.add(Form("%s/h3dBachTPCsignalVsTrackPt", kParticlenames[partID].data()), "h3dBachTPCsignalVsTrackPt", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTPCsignal});
+    // cppcheck-suppress knownConditionTrueFalse
+    if constexpr (partID >= kFirstCascadePartID) {
+      registry.add(Form("%s/h3dBachTPCsignal", kParticlenames[partID].data()), "h3dBachTPCsignal", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTPCsignal});
+      registry.add(Form("%s/h3dBachNsigmaTPC", kParticlenames[partID].data()), "h3dBachNsigmaTPC", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisNsigmaTPC});
+      registry.add(Form("%s/h3dBachNsigmaTPCvsTrackPtot", kParticlenames[partID].data()), "h3dBachNsigmaTPCvsTrackPtot", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisNsigmaTPC});
+      registry.add(Form("%s/h3dBachTPCsignalVsTrackPtot", kParticlenames[partID].data()), "h3dBachTPCsignalVsTrackPtot", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTPCsignal});
+      registry.add(Form("%s/h3dBachNsigmaTPCvsTrackPt", kParticlenames[partID].data()), "h3dBachNsigmaTPCvsTrackPt", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisNsigmaTPC});
+      registry.add(Form("%s/h3dBachTPCsignalVsTrackPt", kParticlenames[partID].data()), "h3dBachTPCsignalVsTrackPt", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTPCsignal});
     }
   }
 
   template <int partID>
-  void addTOFQAHistograms(HistogramRegistry& histos)
+  void addTOFQAHistograms(HistogramRegistry& registry)
   {
-    const bool isCascade = partID >= kFirstCascadePartID;
-    histos.add(Form("%s/h3dPosTOFdeltaT", kParticlenames[partID].data()), "h3dPosTOFdeltaT", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTOFdeltaT});
-    histos.add(Form("%s/h3dNegTOFdeltaT", kParticlenames[partID].data()), "h3dNegTOFdeltaT", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTOFdeltaT});
-    histos.add(Form("%s/h3dPosTOFdeltaTvsTrackPtot", kParticlenames[partID].data()), "h3dPosTOFdeltaTvsTrackPtot", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTOFdeltaT});
-    histos.add(Form("%s/h3dNegTOFdeltaTvsTrackPtot", kParticlenames[partID].data()), "h3dNegTOFdeltaTvsTrackPtot", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTOFdeltaT});
-    histos.add(Form("%s/h3dPosTOFdeltaTvsTrackPt", kParticlenames[partID].data()), "h3dPosTOFdeltaTvsTrackPt", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTOFdeltaT});
-    histos.add(Form("%s/h3dNegTOFdeltaTvsTrackPt", kParticlenames[partID].data()), "h3dNegTOFdeltaTvsTrackPt", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTOFdeltaT});
-    if (isCascade) {
-      histos.add(Form("%s/h3dBachTOFdeltaT", kParticlenames[partID].data()), "h3dBachTOFdeltaT", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTOFdeltaT});
-      histos.add(Form("%s/h3dBachTOFdeltaTvsTrackPtot", kParticlenames[partID].data()), "h3dBachTOFdeltaTvsTrackPtot", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTOFdeltaT});
-      histos.add(Form("%s/h3dBachTOFdeltaTvsTrackPt", kParticlenames[partID].data()), "h3dBachTOFdeltaTvsTrackPt", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTOFdeltaT});
+    registry.add(Form("%s/h3dPosTOFdeltaT", kParticlenames[partID].data()), "h3dPosTOFdeltaT", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTOFdeltaT});
+    registry.add(Form("%s/h3dNegTOFdeltaT", kParticlenames[partID].data()), "h3dNegTOFdeltaT", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTOFdeltaT});
+    registry.add(Form("%s/h3dPosTOFdeltaTvsTrackPtot", kParticlenames[partID].data()), "h3dPosTOFdeltaTvsTrackPtot", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTOFdeltaT});
+    registry.add(Form("%s/h3dNegTOFdeltaTvsTrackPtot", kParticlenames[partID].data()), "h3dNegTOFdeltaTvsTrackPtot", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTOFdeltaT});
+    registry.add(Form("%s/h3dPosTOFdeltaTvsTrackPt", kParticlenames[partID].data()), "h3dPosTOFdeltaTvsTrackPt", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTOFdeltaT});
+    registry.add(Form("%s/h3dNegTOFdeltaTvsTrackPt", kParticlenames[partID].data()), "h3dNegTOFdeltaTvsTrackPt", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTOFdeltaT});
+    // cppcheck-suppress knownConditionTrueFalse
+    if constexpr (partID >= kFirstCascadePartID) {
+      registry.add(Form("%s/h3dBachTOFdeltaT", kParticlenames[partID].data()), "h3dBachTOFdeltaT", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTOFdeltaT});
+      registry.add(Form("%s/h3dBachTOFdeltaTvsTrackPtot", kParticlenames[partID].data()), "h3dBachTOFdeltaTvsTrackPtot", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTOFdeltaT});
+      registry.add(Form("%s/h3dBachTOFdeltaTvsTrackPt", kParticlenames[partID].data()), "h3dBachTOFdeltaTvsTrackPt", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTOFdeltaT});
     }
   }
 
   template <int partID>
-  void addKinematicQAHistograms(HistogramRegistry& histos)
+  void addKinematicQAHistograms(HistogramRegistry& registry)
   {
-    const bool isCascade = partID >= kFirstCascadePartID;
-    histos.add(Form("%s/h3dPosEtaPt", kParticlenames[partID].data()), "h3dPosEtaPt", kTH3F, {axisPtCoarse, axisEta, axisSelGap});
-    histos.add(Form("%s/h3dNegEtaPt", kParticlenames[partID].data()), "h3dNegEtaPt", kTH3F, {axisPtCoarse, axisEta, axisSelGap});
-    histos.add(Form("%s/h3dRapPt", kParticlenames[partID].data()), "h3dRapPt", kTH3F, {axisPtCoarse, axisRap, axisSelGap});
-    if (isCascade) {
-      histos.add(Form("%s/h3dBachEtaPt", kParticlenames[partID].data()), "h3dBachEtaPt", kTH3F, {axisPtCoarse, axisEta, axisSelGap});
+    registry.add(Form("%s/h3dPosEtaPt", kParticlenames[partID].data()), "h3dPosEtaPt", kTH3F, {axisPtCoarse, axisEta, axisSelGap});
+    registry.add(Form("%s/h3dNegEtaPt", kParticlenames[partID].data()), "h3dNegEtaPt", kTH3F, {axisPtCoarse, axisEta, axisSelGap});
+    registry.add(Form("%s/h3dRapPt", kParticlenames[partID].data()), "h3dRapPt", kTH3F, {axisPtCoarse, axisRap, axisSelGap});
+    // cppcheck-suppress knownConditionTrueFalse
+    if constexpr (partID >= kFirstCascadePartID) {
+      registry.add(Form("%s/h3dBachEtaPt", kParticlenames[partID].data()), "h3dBachEtaPt", kTH3F, {axisPtCoarse, axisEta, axisSelGap});
     }
   }
 
   template <int partID>
-  void addDetectorPropHistograms(HistogramRegistry& histos)
+  void addDetectorPropHistograms(HistogramRegistry& registry)
   {
-    const bool isCascade = partID >= kFirstCascadePartID;
     if (doDetectPropQA == kDetectPropQABase) {
-      if (isCascade) {
-        histos.add(Form("%s/h8dDetectPropVsCentrality", kParticlenames[partID].data()), "h8dDetectPropVsCentrality", kTHnSparseF, {axisDetectors.axisFT0ampl, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse});
+      // cppcheck-suppress knownConditionTrueFalse
+      if constexpr (partID >= kFirstCascadePartID) {
+        registry.add(Form("%s/h8dDetectPropVsCentrality", kParticlenames[partID].data()), "h8dDetectPropVsCentrality", kTHnSparseF, {axisDetectors.axisFT0ampl, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse});
       } else {
-        histos.add(Form("%s/h6dDetectPropVsCentrality", kParticlenames[partID].data()), "h6dDetectPropVsCentrality", kTHnSparseF, {axisDetectors.axisFT0ampl, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse});
+        registry.add(Form("%s/h6dDetectPropVsCentrality", kParticlenames[partID].data()), "h6dDetectPropVsCentrality", kTHnSparseF, {axisDetectors.axisFT0ampl, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse});
       }
-      histos.add(Form("%s/h4dPosDetectPropVsCentrality", kParticlenames[partID].data()), "h4dPosDetectPropVsCentrality", kTHnSparseF, {axisDetectors.axisFT0ampl, axisDetMap, axisITScluMap, axisPtCoarse});
-      histos.add(Form("%s/h4dNegDetectPropVsCentrality", kParticlenames[partID].data()), "h4dNegDetectPropVsCentrality", kTHnSparseF, {axisDetectors.axisFT0ampl, axisDetMap, axisITScluMap, axisPtCoarse});
-      histos.add(Form("%s/h4dBachDetectPropVsCentrality", kParticlenames[partID].data()), "h4dBachDetectPropVsCentrality", kTHnSparseF, {axisDetectors.axisFT0ampl, axisDetMap, axisITScluMap, axisPtCoarse});
+      registry.add(Form("%s/h4dPosDetectPropVsCentrality", kParticlenames[partID].data()), "h4dPosDetectPropVsCentrality", kTHnSparseF, {axisDetectors.axisFT0ampl, axisDetMap, axisITScluMap, axisPtCoarse});
+      registry.add(Form("%s/h4dNegDetectPropVsCentrality", kParticlenames[partID].data()), "h4dNegDetectPropVsCentrality", kTHnSparseF, {axisDetectors.axisFT0ampl, axisDetMap, axisITScluMap, axisPtCoarse});
+      registry.add(Form("%s/h4dBachDetectPropVsCentrality", kParticlenames[partID].data()), "h4dBachDetectPropVsCentrality", kTHnSparseF, {axisDetectors.axisFT0ampl, axisDetMap, axisITScluMap, axisPtCoarse});
     }
     if (doDetectPropQA == kDetectPropQAWithMass) {
-      if (isCascade) {
-        histos.add(Form("%s/h9dDetectPropVsCentrality", kParticlenames[partID].data()), "h9dDetectPropVsCentrality", kTHnSparseF, {axisDetectors.axisFT0ampl, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse, axisInvMass.at(partID)});
+      // cppcheck-suppress knownConditionTrueFalse
+      if constexpr (partID >= kFirstCascadePartID) {
+        registry.add(Form("%s/h9dDetectPropVsCentrality", kParticlenames[partID].data()), "h9dDetectPropVsCentrality", kTHnSparseF, {axisDetectors.axisFT0ampl, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse, axisInvMass.at(partID)});
       } else {
-        histos.add(Form("%s/h7dDetectPropVsCentrality", kParticlenames[partID].data()), "h7dDetectPropVsCentrality", kTHnSparseF, {axisDetectors.axisFT0ampl, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse, axisInvMass.at(partID)});
+        registry.add(Form("%s/h7dDetectPropVsCentrality", kParticlenames[partID].data()), "h7dDetectPropVsCentrality", kTHnSparseF, {axisDetectors.axisFT0ampl, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse, axisInvMass.at(partID)});
       }
-      histos.add(Form("%s/h5dPosDetectPropVsCentrality", kParticlenames[partID].data()), "h5dPosDetectPropVsCentrality", kTHnSparseF, {axisDetectors.axisFT0ampl, axisDetMap, axisITScluMap, axisPtCoarse, axisInvMass.at(partID)});
-      histos.add(Form("%s/h5dNegDetectPropVsCentrality", kParticlenames[partID].data()), "h5dNegDetectPropVsCentrality", kTHnSparseF, {axisDetectors.axisFT0ampl, axisDetMap, axisITScluMap, axisPtCoarse, axisInvMass.at(partID)});
-      histos.add(Form("%s/h5dBachDetectPropVsCentrality", kParticlenames[partID].data()), "h5dBachDetectPropVsCentrality", kTHnSparseF, {axisDetectors.axisFT0ampl, axisDetMap, axisITScluMap, axisPtCoarse, axisInvMass.at(partID)});
+      registry.add(Form("%s/h5dPosDetectPropVsCentrality", kParticlenames[partID].data()), "h5dPosDetectPropVsCentrality", kTHnSparseF, {axisDetectors.axisFT0ampl, axisDetMap, axisITScluMap, axisPtCoarse, axisInvMass.at(partID)});
+      registry.add(Form("%s/h5dNegDetectPropVsCentrality", kParticlenames[partID].data()), "h5dNegDetectPropVsCentrality", kTHnSparseF, {axisDetectors.axisFT0ampl, axisDetMap, axisITScluMap, axisPtCoarse, axisInvMass.at(partID)});
+      registry.add(Form("%s/h5dBachDetectPropVsCentrality", kParticlenames[partID].data()), "h5dBachDetectPropVsCentrality", kTHnSparseF, {axisDetectors.axisFT0ampl, axisDetMap, axisITScluMap, axisPtCoarse, axisInvMass.at(partID)});
     }
   }
 
   template <int partID>
-  void addHistograms(HistogramRegistry& histos)
+  void addHistograms(HistogramRegistry& registry)
   {
-    histos.add(Form("%s/h7dMass", kParticlenames[partID].data()), "h7dMass", kTHnSparseF, {axisDetectors.axisFT0ampl, axisPt, axisInvMass.at(partID), axisSelGap, axisNchInvMass, axisRap, axisEta});
-    histos.add(Form("%s/h2dMass", kParticlenames[partID].data()), "h2dMass", kTH2F, {axisInvMass.at(partID), axisSelGap});
+    registry.add(Form("%s/h7dMass", kParticlenames[partID].data()), "h7dMass", kTHnSparseF, {axisDetectors.axisFT0ampl, axisPt, axisInvMass.at(partID), axisSelGap, axisNchInvMass, axisRap, axisEta});
+    registry.add(Form("%s/h2dMass", kParticlenames[partID].data()), "h2dMass", kTH2F, {axisInvMass.at(partID), axisSelGap});
     if (doPlainTopoQA) {
-      addTopoHistograms<partID>(histos);
+      addTopoHistograms<partID>(registry);
     }
     if (PIDConfigurations.doTPCQA) {
-      addTPCQAHistograms<partID>(histos);
+      addTPCQAHistograms<partID>(registry);
     }
     if (PIDConfigurations.doTOFQA) {
-      addTOFQAHistograms<partID>(histos);
+      addTOFQAHistograms<partID>(registry);
     }
     if (doKienmaticQA) {
-      addKinematicQAHistograms<partID>(histos);
+      addKinematicQAHistograms<partID>(registry);
     }
-    addDetectorPropHistograms<partID>(histos);
+    addDetectorPropHistograms<partID>(registry);
   }
 
   template <int partID, typename TCand, typename TCollision>
@@ -1231,8 +1233,7 @@ struct Derivedupcanalysis {
   template <typename TCollision>
   int getGapSideWithoutRecoZDC(TCollision const& collision)
   {
-    int selGapSide = o2::aod::sgselector::NoGap;
-    selGapSide = sgSelector.trueGap(collision, upcCuts.fv0a, upcCuts.ft0a, upcCuts.ft0c, std::numeric_limits<float>::infinity());
+    int selGapSide = sgSelector.trueGap(collision, upcCuts.fv0a, upcCuts.ft0a, upcCuts.ft0c, std::numeric_limits<float>::infinity());
     return applyFITTiming(selGapSide, collision);
   }
 
@@ -1293,8 +1294,7 @@ struct Derivedupcanalysis {
   template <typename TCollision>
   int getGapSide(TCollision const& collision)
   {
-    int selGapSide = o2::aod::sgselector::NoGap;
-    selGapSide = sgSelector.trueGap(collision, upcCuts.fv0a, upcCuts.ft0a, upcCuts.ft0c, upcCuts.zdc);
+    int selGapSide = sgSelector.trueGap(collision, upcCuts.fv0a, upcCuts.ft0a, upcCuts.ft0c, upcCuts.zdc);
     selGapSide = applyZDCTiming(selGapSide, collision);
     return applyFITTiming(selGapSide, collision);
   }

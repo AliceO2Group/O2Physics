@@ -556,7 +556,7 @@ struct LfCascpostprocessing {
         if (TMath::Abs(candidate.massxi() - o2::constants::physics::MassXiMinus) < masswintpc) {
           isCandidate = 1;
         }
-      } else if (!isXi) {
+      } else {
         if (isMC) {
           isCorrectlyRec = ((TMath::Abs(candidate.mcPdgCode()) == PDG_t::kOmegaMinus) && (candidate.isPrimary() == 1)) ? 1 : 0;
         }
