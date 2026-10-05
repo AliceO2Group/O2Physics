@@ -73,7 +73,7 @@ DECLARE_SOA_COLUMN(ZDecayVtxCascade, zDecayVtxCascade, float);
 DECLARE_SOA_COLUMN(XDecayVtxV0, xDecayVtxV0, float);
 DECLARE_SOA_COLUMN(YDecayVtxV0, yDecayVtxV0, float);
 DECLARE_SOA_COLUMN(ZDecayVtxV0, zDecayVtxV0, float);
-DECLARE_SOA_COLUMN(SignDecay, signDecay, int8_t);                    // sign of ka <- omega
+DECLARE_SOA_COLUMN(SignDecay, signDecay, int8_t); // sign of ka <- omega
 DECLARE_SOA_COLUMN(PxCharmBaryon, pxCharmBaryon, float);
 DECLARE_SOA_COLUMN(PyCharmBaryon, pyCharmBaryon, float);
 DECLARE_SOA_COLUMN(PzCharmBaryon, pzCharmBaryon, float);
