@@ -173,6 +173,7 @@ struct Kstarqa {
   HistogramRegistry hInvMass{"hInvMass", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry hPID{"hPID", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry hOthers{"hOthers", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry hShift{"hShift", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   // Confugrable for QA histograms
   Configurable<bool> calcLikeSign{"calcLikeSign", true, "Calculate Like Sign"};
@@ -359,6 +360,21 @@ struct Kstarqa {
 
     if (doprocessRecPhi) {
       hInvMass.add("PhiMCChecks", "PhiMCChecks", kTHnSparseF, {ptAxis, etaAxis, phiAxis, subAxis, subAxis, subAxis}); // pT, eta, phi, deltaEta, deltaPhi, deltaR
+
+      hShift.add("h2D_dpx_vs_px_KaonFromPhi", "Kaon from Phi: dpx vs px", kTH2F, {{subAxis}, {ptAxis}});
+      hShift.add("h2D_dpy_vs_py_KaonFromPhi", "Kaon from Phi: dpy vs py", kTH2F, {{subAxis}, {ptAxis}});
+      hShift.add("h2D_dpz_vs_pz_KaonFromPhi", "Kaon from Phi: dpz vs pz", kTH2F, {{subAxis}, {ptAxis}});
+      hShift.add("h2D_dpt_vs_pt_KaonFromPhi", "Kaon from Phi: dpt vs pt", kTH2F, {{subAxis}, {ptAxis}});
+
+      hShift.add("h2D_dpx_vs_px_AllKaons", "Kaon from Phi: deta vs eta", kTH2F, {{subAxis}, {etaAxis}});
+      hShift.add("h2D_dpy_vs_py_AllKaons", "Kaon from Phi: dphi vs phi", kTH2F, {{subAxis}, {phiAxis}});
+      hShift.add("h2D_dpz_vs_pz_AllKaons", "Kaon from Phi: dR vs eta", kTH2F, {{subAxis}, {etaAxis}});
+      hShift.add("h2D_dpt_vs_pt_AllKaons", "Kaon from Phi: dR vs phi", kTH2F, {{subAxis}, {phiAxis}});
+
+      hShift.add("h2D_dpx_vs_px_Phi", "Pion from Phi: deta vs eta", kTH2F, {{subAxis}, {etaAxis}});
+      hShift.add("h2D_dpy_vs_py_Phi", "Pion from Phi: dphi vs phi", kTH2F, {{subAxis}, {phiAxis}});
+      hShift.add("h2D_dpz_vs_pz_Phi", "Pion from Phi: dR vs eta", kTH2F, {{subAxis}, {etaAxis}});
+      hShift.add("h2D_dpt_vs_pt_Phi", "Pion from Phi: dR vs phi", kTH2F, {{subAxis}, {phiAxis}});
     }
 
     // Signal Loss & Event Loss in Light Ion Collisions
@@ -3055,6 +3071,20 @@ struct Kstarqa {
         continue;
       }
 
+      // All Kaons (Filling single-track kaon resolution histograms)
+      const auto mctrack1_all = track1.mcParticle();
+      if (std::abs(mctrack1_all.pdgCode()) == PDG_t::kKPlus) {
+        double dpx_all = mctrack1_all.px() - track1.px();
+        double dpy_all = mctrack1_all.py() - track1.py();
+        double dpz_all = mctrack1_all.pz() - track1.pz();
+        double dpt_all = mctrack1_all.pt() - track1.pt();
+
+        hShift.fill(HIST("h2D_dpx_vs_px_AllKaons"), dpx_all, track1.px());
+        hShift.fill(HIST("h2D_dpy_vs_py_AllKaons"), dpy_all, track1.py());
+        hShift.fill(HIST("h2D_dpz_vs_pz_AllKaons"), dpz_all, track1.pz());
+        hShift.fill(HIST("h2D_dpt_vs_pt_AllKaons"), dpt_all, track1.pt());
+      }
+
       auto track1ID = track1.index();
       for (const auto& track2 : tracks) {
         rEventSelection.fill(HIST("recMCparticles"), 0.5);
@@ -3169,6 +3199,38 @@ struct Kstarqa {
               auto genPhiPhi = mothertrack1.phi();
 
               hInvMass.fill(HIST("PhiMCChecks"), mother.pt(), mother.eta(), mother.phi(), genpTPhi - mother.pt(), genEtaPhi - mother.eta(), genPhiPhi - mother.phi());
+
+              // Kaons from Phi daughter (Filling for daughter track1 & daughter track2)
+              double dpx_k1 = mctrack1.px() - track1.px();
+              double dpy_k1 = mctrack1.py() - track1.py();
+              double dpz_k1 = mctrack1.pz() - track1.pz();
+              double dpt_k1 = mctrack1.pt() - track1.pt();
+
+              hShift.fill(HIST("h2D_dpx_vs_px_KaonFromPhi"), dpx_k1, track1.px());
+              hShift.fill(HIST("h2D_dpy_vs_py_KaonFromPhi"), dpy_k1, track1.py());
+              hShift.fill(HIST("h2D_dpz_vs_pz_KaonFromPhi"), dpz_k1, track1.pz());
+              hShift.fill(HIST("h2D_dpt_vs_pt_KaonFromPhi"), dpt_k1, track1.pt());
+
+              double dpx_k2 = mctrack2.px() - track2.px();
+              double dpy_k2 = mctrack2.py() - track2.py();
+              double dpz_k2 = mctrack2.pz() - track2.pz();
+              double dpt_k2 = mctrack2.pt() - track2.pt();
+
+              hShift.fill(HIST("h2D_dpx_vs_px_KaonFromPhi"), dpx_k2, track2.px());
+              hShift.fill(HIST("h2D_dpy_vs_py_KaonFromPhi"), dpy_k2, track2.py());
+              hShift.fill(HIST("h2D_dpz_vs_pz_KaonFromPhi"), dpz_k2, track2.pz());
+              hShift.fill(HIST("h2D_dpt_vs_pt_KaonFromPhi"), dpt_k2, track2.pt());
+
+              // Phi Meson
+              double dpx_phi = mothertrack1.px() - mother.Px();
+              double dpy_phi = mothertrack1.py() - mother.Py();
+              double dpz_phi = mothertrack1.pz() - mother.Pz();
+              double dpt_phi = mothertrack1.pt() - mother.Pt();
+
+              hShift.fill(HIST("h2D_dpx_vs_px_Phi"), dpx_phi, mother.Px());
+              hShift.fill(HIST("h2D_dpy_vs_py_Phi"), dpy_phi, mother.Py());
+              hShift.fill(HIST("h2D_dpz_vs_pz_Phi"), dpz_phi, mother.Pz());
+              hShift.fill(HIST("h2D_dpt_vs_pt_Phi"), dpt_phi, mother.Pt());
             }
           }
         }
