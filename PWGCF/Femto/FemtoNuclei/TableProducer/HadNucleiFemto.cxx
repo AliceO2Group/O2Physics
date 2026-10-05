@@ -11,7 +11,7 @@
 //
 
 /// \file HadNucleiFemtoDcaPurity.cxx
-/// \brief Nuclei-hadron femtoscopy task with DCAfit
+/// \brief Nuclei-hadron femtoscopy task 
 /// \author CMY
 /// \date 2025-04-10
 
