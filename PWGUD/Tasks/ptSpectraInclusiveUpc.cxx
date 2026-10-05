@@ -58,7 +58,7 @@ struct PtSpectraInclusiveUpc {
                      2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0},
     "#it{p}_{T} (GeV/#it{c})"};
 
-  Configurable<int> nBinsDCAxy{"nBinsDCAxy", 1000, "Number of bins in DCA_{xy} histograms"};
+  ConfigurableAxis dcaXYaxis{"dcaXYaxis", {1000, -0.6, 0.6}, "DCA_{xy} (cm) binning"};
   Configurable<bool> applyKineCutsInGen{"applyKineCutsInGen", false, "Apply kinematic cuts in the generated level"};
 
   Configurable<double> etaMax{"etaMax", 0.9, "Maximum track pseudorapidity"};
@@ -94,9 +94,7 @@ struct PtSpectraInclusiveUpc {
       "Event type"};
 
     const AxisSpec axisDCAxy{
-      nBinsDCAxy,
-      -0.6,
-      0.6,
+      dcaXYaxis,
       "DCA_{xy} (cm)"};
 
     // histograms
