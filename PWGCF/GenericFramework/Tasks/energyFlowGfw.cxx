@@ -563,6 +563,7 @@ struct EnergyFlowGfw {
       std::unique_ptr<TFile> input(TFile::Open(efficiencyPath.value.c_str(), "READ"));
       if (!input || input->IsZombie()) {
         LOGF(fatal, "Could not open efficiency file %s", efficiencyPath.value.c_str());
+        return;
       }
       auto* source = dynamic_cast<THn*>(input->Get("ccdb_object"));
       if (!source || source->GetNdimensions() != 4) {
@@ -653,9 +654,9 @@ struct EnergyFlowGfw {
     return bestSpecies;
   }
 
-  double massForParticle(int particleId) const
+  double massForParticle(int pid) const
   {
-    switch (particleId) {
+    switch (pid) {
       case Pion:
         return o2::constants::physics::MassPionCharged;
       case Kaon:
@@ -668,12 +669,12 @@ struct EnergyFlowGfw {
   }
 
   template <typename TTrack>
-  double transverseEnergy(TTrack const& track, int particleId) const
+  double transverseEnergy(TTrack const& track, int pid) const
   {
     if (energy.weightMode.value == PtWeight) {
       return track.pt();
     }
-    const double mass = massForParticle(particleId);
+    const double mass = massForParticle(pid);
     if (energy.weightMode.value == MtWeight) {
       return std::hypot(track.pt(), mass);
     }
