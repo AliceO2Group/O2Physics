@@ -645,7 +645,7 @@ struct Sigmaplusbuilder {
     double timeMin = trackTimeNS - timeEncoding.getDeltaTBwd() - photonPoolTimeMarginNS;
     double timeMax = trackTimeNS + timeEncoding.getDeltaTFwd() + photonPoolTimeMarginNS;
     int firstCollIdx = track.collisionId();
-    int lastCollIdx = track.collisionId();
+    int lastCollIdx = firstCollIdx;
     for (int collIdx = 0; collIdx < static_cast<int>(collisionTimeNS.size()); ++collIdx) {
       if (collisionTimeNS[collIdx] >= timeMin && collisionTimeNS[collIdx] <= timeMax) {
         firstCollIdx = std::min(firstCollIdx, collIdx);
