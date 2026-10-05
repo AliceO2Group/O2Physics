@@ -24,8 +24,6 @@
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/Zorro.h"
-#include "Common/Core/ZorroSummary.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -89,12 +87,6 @@ struct HResonanceCorrelation {
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  // event filtering
-  Configurable<std::string> zorroMask{"zorroMask", "", "zorro trigger class to select on (empty: none)"};
-
-  Zorro zorro;
-  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
-
   struct : ConfigurableGroup {
     std::string prefix = "masterConfigurations";
     Configurable<int> collisionHasTriggOrAssoc{"collisionHasTriggOrAssoc", 0, "require the collisions containing (0:no requirement 1:trig 2:assoc 3:trig or assoc 4:trig and assoc"};
@@ -124,19 +116,40 @@ struct HResonanceCorrelation {
     Configurable<bool> fillCorrelationHistWithMass{"fillCorrelationHistWithMass", false, "if true, fill correlation histograms with particle mass"};
   } masterConfigurations;
 
-  // master analysis switches
-  Configurable<bool> doAssocPhysicalPrimary{"doAssocPhysicalPrimary", false, "require physical primary for associated particles"};
-  Configurable<bool> doAssocPhysicalPrimaryInGen{"doAssocPhysicalPrimaryInGen", false, "require physical primary for associated particles in Generated Partilces"};
-  Configurable<bool> doAutocorrelationRejection{"doAutocorrelationRejection", true, "reject pairs where trigger Id is the same as daughter particle Id"};
-  Configurable<bool> doMixingQAandEventQA{"doMixingQAandEventQA", true, "if true, add EvnetQA and MixingQA hist to histos"};
-  Configurable<bool> doDeltaPhiStarCheck{"doDeltaPhiStarCheck", false, "if true, create and fill delta phi star histograms"};
+  // Trigger-selection-mode flags: which trigger-pT bin to require (if
+  // processSelectEventWithTrigger is enabled), a charge cut on the trigger
+  // particle, and whether to use the event's leading particle as the sole
+  // trigger instead of every trigger candidate.
+  struct : ConfigurableGroup {
+    std::string prefix = "triggerSelection";
+    Configurable<int> triggerBinToSelect{"triggerBinToSelect", 0, "trigger bin to select on if processSelectEventWithTrigger enabled"};
+    Configurable<int> triggerParticleCharge{"triggerParticleCharge", 0, "For checks, if 0 all charged tracks, if -1 only neg., if 1 only positive"};
+    Configurable<bool> useTheLeadingParticleAsTrigger{"useTheLeadingParticleAsTrigger", false, "if true, use the leading particle in the event as trigger particle"};
+  } triggerSelection;
 
-  Configurable<int> triggerBinToSelect{"triggerBinToSelect", 0, "trigger bin to select on if processSelectEventWithTrigger enabled"};
-  Configurable<int> triggerParticleCharge{"triggerParticleCharge", 0, "For checks, if 0 all charged tracks, if -1 only neg., if 1 only positive"};
-  Configurable<float> etaSel{"etaSel", 0.8, "Selection in eta for trigger and associated particles"};
-  Configurable<float> ySel{"ySel", 0.5, "Selection in rapidity for consistency checks"};
+  // MC-truth physical-primary requirements, reconstructed-level and
+  // generator-level respectively.
+  struct : ConfigurableGroup {
+    std::string prefix = "mcSelections";
+    Configurable<bool> doAssocPhysicalPrimary{"doAssocPhysicalPrimary", false, "require physical primary for associated particles"};
+    Configurable<bool> doAssocPhysicalPrimaryInGen{"doAssocPhysicalPrimaryInGen", false, "require physical primary for associated particles in Generated Partilces"};
+  } mcSelections;
 
-  Configurable<bool> useTheLeadingParticleAsTrigger{"useTheLeadingParticleAsTrigger", false, "if true, use the leading particle in the event as trigger particle"};
+  // Histogram-booking/filling toggles, not physics cuts.
+  struct : ConfigurableGroup {
+    std::string prefix = "qaSwitches";
+    Configurable<bool> doMixingQAandEventQA{"doMixingQAandEventQA", true, "if true, add EvnetQA and MixingQA hist to histos"};
+    Configurable<bool> doDeltaPhiStarCheck{"doDeltaPhiStarCheck", false, "if true, create and fill delta phi star histograms"};
+  } qaSwitches;
+
+  // Generic phase-space cuts used across trigger, associated AND gen-level
+  // (MC-truth) particles alike -- not species- or reco/gen-specific, so not
+  // folded into configTriggerTracks/configAssocTracks.
+  struct : ConfigurableGroup {
+    std::string prefix = "phaseSpaceSelections";
+    Configurable<float> etaSel{"etaSel", 0.8, "Selection in eta for trigger and associated particles"};
+    Configurable<float> ySel{"ySel", 0.5, "Selection in rapidity for consistency checks"};
+  } phaseSpaceSelections;
 
   // Reconstructed-event selection cuts -- deliberately the same cut set and
   // names as configEvents in hResonanceCorrelationFilter.cxx, so a collision
@@ -235,41 +248,51 @@ struct HResonanceCorrelation {
     Configurable<bool> applyEffAsFunctionOfMult{"applyEffAsFunctionOfMult", false, "apply efficiency as a function of multiplicity as well"};
     Configurable<bool> applyEffAsFunctionOfMultAndPhi{"applyEffAsFunctionOfMultAndPhi", false, "apply efficiency as a function of multiplicity and phi"};
   } efficiencyFlags;
-  Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository to use"};
-  Configurable<std::string> efficiencyCCDBPath{"efficiencyCCDBPath", "GLO/Config/GeometryAligned", "Path of the efficiency corrections"};
-
-  // Configurables for doing subwagon systematics
   struct : ConfigurableGroup {
-    std::string prefix = "trackSelection";
-    // --- Track quality variations (single track, both trigger and assoc daughters)
-    Configurable<int> minTPCNCrossedRowsTrigger{"minTPCNCrossedRowsTrigger", 70, "Minimum TPC crossed rows (trigger)"};
-    Configurable<int> minTPCNCrossedRowsAssociated{"minTPCNCrossedRowsAssociated", 70, "Minimum TPC crossed rows (associated)"};
-    Configurable<bool> triggerRequireITS{"triggerRequireITS", true, "require ITS signal in trigger tracks"};
-    Configurable<bool> assocRequireITS{"assocRequireITS", true, "require ITS signal in associated primary tracks"};
-    Configurable<int> triggerMaxTPCSharedClusters{"triggerMaxTPCSharedClusters", 200, "maximum number of shared TPC clusters (inclusive)"};
-    Configurable<int> assocMaxTPCSharedClusters{"assocMaxTPCSharedClusters", 200, "maximum number of shared TPC clusters (inclusive) for assoc primary tracks"};
-    Configurable<bool> triggerRequireL0{"triggerRequireL0", false, "require ITS L0 cluster for trigger"};
-    Configurable<bool> assocRequireL0{"assocRequireL0", true, "require ITS L0 cluster for assoc primary track"};
-    Configurable<bool> requireDCAzCut{"requireDCAzCut", false, "require DCAz cut for trigger and associated primary tracks"};
+    std::string prefix = "ccdbConfigurations";
+    Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository to use"};
+    Configurable<std::string> efficiencyCCDBPath{"efficiencyCCDBPath", "GLO/Config/GeometryAligned", "Path of the efficiency corrections"};
+  } ccdbConfigurations;
 
-    // --- Trigger: DCA variation from basic formula: |DCAxy| <  0.004f + (0.013f / pt)
+  // Configurables for doing subwagon systematics.
+  // Split by who they apply to (trigger hadron vs. associated particle).
+  // requireDCAzCut is the one genuinely shared switch (it toggles the DCAz
+  // cut for BOTH isValidTrigger() and the assoc selection); rather than its
+  // own single-entry group, it lives in `checks` below alongside the other
+  // small behavioral toggles.
+  struct : ConfigurableGroup {
+    std::string prefix = "configTriggerTracks";
+    Configurable<int> minTPCNCrossedRowsTrigger{"minTPCNCrossedRowsTrigger", 70, "Minimum TPC crossed rows (trigger)"};
+    Configurable<bool> triggerRequireITS{"triggerRequireITS", true, "require ITS signal in trigger tracks"};
+    Configurable<int> triggerMaxTPCSharedClusters{"triggerMaxTPCSharedClusters", 200, "maximum number of shared TPC clusters (inclusive)"};
+    Configurable<bool> triggerRequireL0{"triggerRequireL0", false, "require ITS L0 cluster for trigger"};
+    // DCA variation from basic formula: |DCAxy| <  0.004f + (0.013f / pt)
     Configurable<float> dcaXYconstant{"dcaXYconstant", 0.004, "[0] in |DCAxy| < [0]+[1]/pT"};
     Configurable<float> dcaXYpTdep{"dcaXYpTdep", 0.013, "[1] in |DCAxy| < [0]+[1]/pT"};
-    // --- Assoc track: DCA variation from basic formula: |DCAxy| <  0.004f + (0.013f / pt)
-    Configurable<float> dcaXYconstantAssoc{"dcaXYconstantAssoc", 0.004, "[0] in |DCAxy| < [0]+[1]/pT"};
-    Configurable<float> dcaXYpTdepAssoc{"dcaXYpTdepAssoc", 0.013, "[1] in |DCAxy| < [0]+[1]/pT"};
-
     Configurable<float> dcaZconstant{"dcaZconstant", 0.004, "[0] in |DCAz| < [0]+[1]/pT"};
     Configurable<float> dcaZpTdep{"dcaZpTdep", 0.013, "[1] in |DCAz| < [0]+[1]/pT"};
+  } configTriggerTracks;
+
+  struct : ConfigurableGroup {
+    std::string prefix = "configAssocTracks";
+    Configurable<int> minTPCNCrossedRowsAssociated{"minTPCNCrossedRowsAssociated", 70, "Minimum TPC crossed rows (associated)"};
+    Configurable<bool> assocRequireITS{"assocRequireITS", true, "require ITS signal in associated primary tracks"};
+    Configurable<int> assocMaxTPCSharedClusters{"assocMaxTPCSharedClusters", 200, "maximum number of shared TPC clusters (inclusive) for assoc primary tracks"};
+    Configurable<bool> assocRequireL0{"assocRequireL0", true, "require ITS L0 cluster for assoc primary track"};
+    // DCA variation from basic formula: |DCAxy| <  0.004f + (0.013f / pt)
+    Configurable<float> dcaXYconstantAssoc{"dcaXYconstantAssoc", 0.004, "[0] in |DCAxy| < [0]+[1]/pT"};
+    Configurable<float> dcaXYpTdepAssoc{"dcaXYpTdepAssoc", 0.013, "[1] in |DCAxy| < [0]+[1]/pT"};
     Configurable<float> dcaZconstantAssoc{"dcaZconstantAssoc", 0.004, "[0] in |DCAz| < [0]+[1]/pT"};
     Configurable<float> dcaZpTdepAssoc{"dcaZpTdepAssoc", 0.013, "[1] in |DCAz| < [0]+[1]/pT"};
-  } trackSelection;
+  } configAssocTracks;
 
   struct : ConfigurableGroup {
     std::string prefix = "checks";
 
     // on the fly correction instead of mixingParameter
     Configurable<bool> doOnTheFlyFlattening{"doOnTheFlyFlattening", 0, "enable an on-the-fly correction instead of using mixing"};
+    Configurable<bool> doAutocorrelationRejection{"doAutocorrelationRejection", true, "reject pairs where trigger Id is the same as daughter particle Id"};
+    Configurable<bool> requireDCAzCut{"requireDCAzCut", false, "require DCAz cut for trigger and associated primary tracks"};
   } checks;
 
   struct ValidCollision {
@@ -369,7 +392,6 @@ struct HResonanceCorrelation {
   // process functions are actually enabled (bit + switch), so nothing fills them.
   int eventQAOwnerIndex = -1;
   int mRunNumber = 0;
-  int mRunNumberZorro = 0;
 
   std::vector<std::vector<float>> axisRanges;
 
@@ -391,20 +413,6 @@ struct HResonanceCorrelation {
     return shiftedDeltaPhi;
   }
 
-  /// Function to load zorro
-  /// \param bc provided such that the run number + timestamp can be used
-  void initZorro(aod::BCsWithTimestamps::iterator const& bc)
-  {
-    if (mRunNumberZorro == bc.runNumber()) {
-      return;
-    }
-
-    zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), zorroMask.value);
-    zorro.populateHistRegistry(histos, bc.runNumber());
-
-    mRunNumberZorro = bc.runNumber();
-  }
-
   /// Function to load efficiencies to memory from CCDB
   /// \param bc provided such that the run number can be used
   void initEfficiencyFromCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -416,7 +424,7 @@ struct HResonanceCorrelation {
     LOG(info) << "Loading efficiencies from CCDB for run " << mRunNumber << " now...";
     auto timeStamp = bc.timestamp();
 
-    TList* listEfficiencies = ccdb->getForTimeStamp<TList>(efficiencyCCDBPath, timeStamp);
+    TList* listEfficiencies = ccdb->getForTimeStamp<TList>(ccdbConfigurations.efficiencyCCDBPath, timeStamp);
 
     if (!listEfficiencies) {
       LOG(fatal) << "Problem getting TList object with efficiencies!";
@@ -454,9 +462,7 @@ struct HResonanceCorrelation {
 
   void init(InitContext const&)
   {
-    zorroSummary.setObject(zorro.getZorroSummary());
     mRunNumber = 0;
-    mRunNumberZorro = 0;
     hEfficiencyPion = 0x0;
     hEfficiencyKaon = 0x0;
     hEfficiencyPhi = 0x0;
@@ -705,7 +711,7 @@ struct HResonanceCorrelation {
     bool anySameEvent = doprocessSameEventHPhis || doprocessSameEventHKstars || doprocessSameEventHPions || doprocessSameEventHKaons || doprocessSameEventHHadrons;
     bool anyMixedEvent = doprocessMixedEventHPhis || doprocessMixedEventHPhisInBuffer || doprocessMixedEventHKstars || doprocessMixedEventHKstarsInBuffer || doprocessMixedEventHPions || doprocessMixedEventHKaons || doprocessMixedEventHHadrons;
 
-    if (doMixingQAandEventQA && (anySameEvent || anyMixedEvent)) {
+    if (qaSwitches.doMixingQAandEventQA && (anySameEvent || anyMixedEvent)) {
       if (anySameEvent)
         histos.add("MixingQA/hSECollisionBins", ";bin;Entries", kTH1F, {{140, -0.5, 139.5}});
       if (anyMixedEvent) {
@@ -820,7 +826,7 @@ struct HResonanceCorrelation {
             } else {
               histos.add(fmt::format("sameEvent/Signal/{}", Particlenames[i]).c_str(), "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
             }
-            if (doDeltaPhiStarCheck)
+            if (qaSwitches.doDeltaPhiStarCheck)
               histos.add(fmt::format("sameEvent/Signal/{}DeltaPhiStar", Particlenames[i]).c_str(), "", kTH3F, {{100, -0.3, 0.3}, {50, -0.05, 0.05}, {2, -1, 1}});
             if ((i == IndexPhi || i == IndexKstar) && !masterConfigurations.fillCorrelationHistWithMass) {
               needsSignalBgCloneSE = true;
@@ -837,7 +843,7 @@ struct HResonanceCorrelation {
             } else {
               histos.add(fmt::format("mixedEvent/Signal/{}", Particlenames[i]).c_str(), "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
             }
-            if (doDeltaPhiStarCheck)
+            if (qaSwitches.doDeltaPhiStarCheck)
               histos.add(fmt::format("mixedEvent/Signal/{}DeltaPhiStar", Particlenames[i]).c_str(), "", kTH3F, {{100, -0.3, 0.3}, {50, -0.05, 0.05}, {2, -1, 1}});
             if ((i == IndexPhi || i == IndexKstar) && !masterConfigurations.fillCorrelationHistWithMass) {
               needsSignalBgCloneME = true;
@@ -967,7 +973,7 @@ struct HResonanceCorrelation {
 
     if (doprocessPrediction) {
       mCounter.mPdgDatabase = pdgDB.service;
-      mCounter.mSelectPrimaries = doAssocPhysicalPrimary.value;
+      mCounter.mSelectPrimaries = mcSelections.doAssocPhysicalPrimary.value;
       histos.add("Prediction/hEventSelection", "hEventSelection", kTH1F, {{3, 0, 3}});
       TString eventSelLabel[] = {"Read", "INELgt0", "|Z|<10"};
       for (int i = 1; i <= histos.get<TH1>(HIST("Prediction/hEventSelection"))->GetNbinsX(); i++) {
@@ -1014,7 +1020,7 @@ struct HResonanceCorrelation {
     // initialize CCDB *only* if efficiency correction requested
     // skip if not requested, saves a bit of time
     if (efficiencyFlags.applyEfficiencyCorrection) {
-      ccdb->setURL(ccdburl);
+      ccdb->setURL(ccdbConfigurations.ccdburl);
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
       ccdb->setFatalWhenNull(false);
@@ -1089,18 +1095,6 @@ struct HResonanceCorrelation {
       return false;
     }
 
-    // Zorro trigger-skim accounting: this task's own feature, not part of the
-    // filter task's cut set (which has no skim awareness) -- opt-in via
-    // zorroMask, off by default, so it doesn't change the baseline cut set.
-    if (zorroMask.value != "") {
-      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-      initZorro(bc);
-      bool zorroSelected = zorro.isSelected(collision.template bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
-      if (!zorroSelected) {
-        return false;
-      }
-    }
-
     if (fillHist) {
       histos.fill(HIST("CollCutCounts"), 8);
       histos.fill(HIST("EventQA/hMult"), collision.centFT0M());
@@ -1113,36 +1107,36 @@ struct HResonanceCorrelation {
   template <class TTrack>
   bool isValidTrigger(TTrack const& track, bool isLeading)
   {
-    if (track.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsTrigger) {
+    if (track.tpcNClsCrossedRows() < configTriggerTracks.minTPCNCrossedRowsTrigger) {
       return false; // crossed rows
     }
-    if (!track.hasITS() && trackSelection.triggerRequireITS) {
+    if (!track.hasITS() && configTriggerTracks.triggerRequireITS) {
       return false; // skip, doesn't have ITS signal (skips lots of TPC-only!)
     }
-    if (track.tpcNClsShared() > trackSelection.triggerMaxTPCSharedClusters) {
+    if (track.tpcNClsShared() > configTriggerTracks.triggerMaxTPCSharedClusters) {
       return false; // skip, has shared clusters
     }
-    if (!(TESTBIT(track.itsClusterMap(), 0)) && trackSelection.triggerRequireL0) {
+    if (!(TESTBIT(track.itsClusterMap(), 0)) && configTriggerTracks.triggerRequireL0) {
       return false; // skip, doesn't have cluster in ITS L0
     }
     // systematic variations: trigger DCAxy
-    if (std::abs(track.dcaXY()) > trackSelection.dcaXYconstant + trackSelection.dcaXYpTdep * std::abs(track.signed1Pt())) {
+    if (std::abs(track.dcaXY()) > configTriggerTracks.dcaXYconstant + configTriggerTracks.dcaXYpTdep * std::abs(track.signed1Pt())) {
       return false;
     }
     // systematic variations: trigger DCAz
-    if (trackSelection.requireDCAzCut && std::abs(track.dcaZ()) > trackSelection.dcaZconstant + trackSelection.dcaZpTdep * std::abs(track.signed1Pt())) {
+    if (checks.requireDCAzCut && std::abs(track.dcaZ()) > configTriggerTracks.dcaZconstant + configTriggerTracks.dcaZpTdep * std::abs(track.signed1Pt())) {
       return false;
     }
     if (track.pt() > axisRanges[3][1] || track.pt() < axisRanges[3][0]) {
       return false;
     }
-    if (triggerParticleCharge > 0 && track.sign() < 0) {
+    if (triggerSelection.triggerParticleCharge > 0 && track.sign() < 0) {
       return false;
     }
-    if (triggerParticleCharge < 0 && track.sign() > 0) {
+    if (triggerSelection.triggerParticleCharge < 0 && track.sign() > 0) {
       return false;
     }
-    if (useTheLeadingParticleAsTrigger && !isLeading) {
+    if (triggerSelection.useTheLeadingParticleAsTrigger && !isLeading) {
       return false;
     }
     return true;
@@ -1150,24 +1144,24 @@ struct HResonanceCorrelation {
   template <class TTrack>
   bool isValidAssocHadron(TTrack const& track)
   {
-    if (track.tpcNClsCrossedRows() < trackSelection.minTPCNCrossedRowsAssociated) {
+    if (track.tpcNClsCrossedRows() < configAssocTracks.minTPCNCrossedRowsAssociated) {
       return false; // crossed rows
     }
-    if (!track.hasITS() && trackSelection.assocRequireITS) {
+    if (!track.hasITS() && configAssocTracks.assocRequireITS) {
       return false; // skip, doesn't have ITS signal (skips lots of TPC-only!)
     }
-    if (track.tpcNClsShared() > trackSelection.assocMaxTPCSharedClusters) {
+    if (track.tpcNClsShared() > configAssocTracks.assocMaxTPCSharedClusters) {
       return false; // skip, has shared clusters
     }
-    if (!(TESTBIT(track.itsClusterMap(), 0)) && trackSelection.assocRequireL0) {
+    if (!(TESTBIT(track.itsClusterMap(), 0)) && configAssocTracks.assocRequireL0) {
       return false; // skip, doesn't have cluster in ITS L0
     }
     // systematic variations: trigger DCAxy
-    if (std::abs(track.dcaXY()) > trackSelection.dcaXYconstantAssoc + trackSelection.dcaXYpTdepAssoc * std::abs(track.signed1Pt())) {
+    if (std::abs(track.dcaXY()) > configAssocTracks.dcaXYconstantAssoc + configAssocTracks.dcaXYpTdepAssoc * std::abs(track.signed1Pt())) {
       return false;
     }
     // systematic variations: trigger DCAz
-    if (trackSelection.requireDCAzCut && std::abs(track.dcaZ()) > trackSelection.dcaZconstantAssoc + trackSelection.dcaZpTdepAssoc * std::abs(track.signed1Pt())) {
+    if (checks.requireDCAzCut && std::abs(track.dcaZ()) > configAssocTracks.dcaZconstantAssoc + configAssocTracks.dcaZpTdepAssoc * std::abs(track.signed1Pt())) {
       return false;
     }
     if (track.pt() > axisRanges[2][1] || track.pt() < axisRanges[2][0]) {
@@ -1284,7 +1278,7 @@ struct HResonanceCorrelation {
         auto assoc = assocTrack.template track_as<TracksComplete>();
 
         //---] removing autocorrelations [---
-        if (doAutocorrelationRejection) {
+        if (checks.doAutocorrelationRejection) {
           if (trigg.globalIndex() == assoc.globalIndex()) {
             if constexpr (Species == IndexPion)
               histos.fill(HIST("hNumberOfRejectedPairsPion"), 0.5);
@@ -1298,7 +1292,7 @@ struct HResonanceCorrelation {
         //---] track quality check [---
         if (!isValidAssocHadron(assoc))
           continue;
-        if (doAssocPhysicalPrimary && !assocTrack.mcPhysicalPrimary()) {
+        if (mcSelections.doAssocPhysicalPrimary && !assocTrack.mcPhysicalPrimary()) {
           continue;
         }
         float deltaphi = computeDeltaPhi(trigg.phi(), assoc.phi());
@@ -1380,22 +1374,22 @@ struct HResonanceCorrelation {
         if (!mixing) {
           if constexpr (Species == IndexPion) {
             fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/Signal/Pion")), binFillThn, etaWeight, efficiency * efficiencyTrigger, totalEffUncert, purity * purityTrigger, totalPurityUncert);
-            if (triggSign == assocSign && doDeltaPhiStarCheck) {
+            if (triggSign == assocSign && qaSwitches.doDeltaPhiStarCheck) {
               histos.fill(HIST("sameEvent/Signal/Pion") + HIST("DeltaPhiStar"), deltaPhiStar, trigg.eta() - assoc.eta(), 0.5);
-            } else if (doDeltaPhiStarCheck) {
+            } else if (qaSwitches.doDeltaPhiStarCheck) {
               histos.fill(HIST("sameEvent/Signal/Pion") + HIST("DeltaPhiStar"), deltaPhiStar, trigg.eta() - assoc.eta(), -0.5);
             }
           } else if constexpr (Species == IndexKaon) {
             fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/Signal/Kaon")), binFillThn, etaWeight, efficiency * efficiencyTrigger, totalEffUncert, purity * purityTrigger, totalPurityUncert);
-            if (triggSign == assocSign && doDeltaPhiStarCheck) {
+            if (triggSign == assocSign && qaSwitches.doDeltaPhiStarCheck) {
               histos.fill(HIST("sameEvent/Signal/Kaon") + HIST("DeltaPhiStar"), deltaPhiStar, trigg.eta() - assoc.eta(), 0.5);
-            } else if (doDeltaPhiStarCheck) {
+            } else if (qaSwitches.doDeltaPhiStarCheck) {
               histos.fill(HIST("sameEvent/Signal/Kaon") + HIST("DeltaPhiStar"), deltaPhiStar, trigg.eta() - assoc.eta(), -0.5);
             }
           } else {
-            if (triggSign == assocSign && doDeltaPhiStarCheck) {
+            if (triggSign == assocSign && qaSwitches.doDeltaPhiStarCheck) {
               histos.fill(HIST("sameEvent/Signal/Hadron") + HIST("DeltaPhiStar"), deltaPhiStar, trigg.eta() - assoc.eta(), 0.5);
-            } else if (doDeltaPhiStarCheck) {
+            } else if (qaSwitches.doDeltaPhiStarCheck) {
               histos.fill(HIST("sameEvent/Signal/Hadron") + HIST("DeltaPhiStar"), deltaPhiStar, trigg.eta() - assoc.eta(), -0.5);
             }
             fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/Signal/Hadron")), binFillThn, etaWeight, efficiency * efficiencyTrigger, totalEffUncert, purity * purityTrigger, totalPurityUncert);
@@ -1443,7 +1437,7 @@ struct HResonanceCorrelation {
       int32_t globalIndexPos, globalIndexNeg;
       float efficiency, efficiencyError;
       bool isLeftBg, isSignal, isRightBg;
-      bool passesMcSelection; // (!doMCassociation || mcTruePhi()) && (!doAssocPhysicalPrimary || mcPhysicalPrimary())
+      bool passesMcSelection; // (!doMCassociation || mcTruePhi()) && (!mcSelections.doAssocPhysicalPrimary || mcPhysicalPrimary())
     };
     std::vector<CachedPhi> cache;
     cache.reserve(assocs.size());
@@ -1491,7 +1485,7 @@ struct HResonanceCorrelation {
       c.isRightBg = (massWindowConfigurationsPhi.minBgNSigma * sig < delta && delta < massWindowConfigurationsPhi.maxBgNSigma * sig);
 
       c.passesMcSelection = (!masterConfigurations.doMCassociation || assocCandidate.mcTruePhi()) &&
-                            (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary());
+                            (!mcSelections.doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary());
 
       // Candidate-level kinematic/spectrum QA, ported from the equivalent
       // block in hStrangeCorrelation.cxx (h3d<Species>Spectrum[Y],
@@ -1501,13 +1495,13 @@ struct HResonanceCorrelation {
       // correlation-pair QA, so filling them again per mixed pair would
       // overcount each candidate by the mixing-pool depth).
       // "SpectrumY" mirrors the V0 analog's rapidity cut (std::abs(rapidity) <
-      // ySel); AssocPhis has no exposed rapidity() accessor in this file, so
+      // phaseSpaceSelections.ySel); AssocPhis has no exposed rapidity() accessor in this file, so
       // pseudorapidity (c.eta) is used as a stand-in -- swap in a real
       // rapidity() call here if/when the table exposes one.
       if (!mixing) {
         float nSigmaVal = delta / sig;
         histos.fill(HIST("h3dPhiSpectrum"), c.pt, mult, nSigmaVal);
-        if (std::abs(c.eta) < ySel) {
+        if (std::abs(c.eta) < phaseSpaceSelections.ySel) {
           histos.fill(HIST("h3dPhiSpectrumY"), c.pt, mult, nSigmaVal);
         }
         // matches the two registration branches above (TH3F vs THnF-with-mult,
@@ -1586,7 +1580,7 @@ struct HResonanceCorrelation {
         firstLoop = true;
 
         //---] removing autocorrelations [---
-        if (doAutocorrelationRejection) {
+        if (checks.doAutocorrelationRejection) {
           if (trigg.globalIndex() == c.globalIndexPos || trigg.globalIndex() == c.globalIndexNeg) {
             histos.fill(HIST("hNumberOfRejectedPairsPhi"), 0.5);
             continue;
@@ -1634,7 +1628,7 @@ struct HResonanceCorrelation {
 
         if (!mixing && c.isLeftBg && !masterConfigurations.fillCorrelationHistWithMass) {
           fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/LeftBg/Phi")), binFillThn, etaWeight, c.efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
-          if (doDeltaPhiStarCheck) {
+          if (qaSwitches.doDeltaPhiStarCheck) {
             double deltaPhiStarPlus = calculateAverageDeltaPhiStar(triggForDeltaPhiStar, assocForDeltaPhiStarPlus, bField);
             double deltaPhiStarMinus = calculateAverageDeltaPhiStar(triggForDeltaPhiStar, assocForDeltaPhiStarMinus, bField);
             if (triggSign > 0) {
@@ -1648,7 +1642,7 @@ struct HResonanceCorrelation {
         }
         if (!mixing && (masterConfigurations.fillCorrelationHistWithMass || c.isSignal)) {
           fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/Signal/Phi")), masterConfigurations.fillCorrelationHistWithMass ? binFillThnMass : binFillThn, etaWeight, c.efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
-          if (doDeltaPhiStarCheck) {
+          if (qaSwitches.doDeltaPhiStarCheck) {
             double deltaPhiStarPlus = calculateAverageDeltaPhiStar(triggForDeltaPhiStar, assocForDeltaPhiStarPlus, bField);
             double deltaPhiStarMinus = calculateAverageDeltaPhiStar(triggForDeltaPhiStar, assocForDeltaPhiStarMinus, bField);
             if (triggSign > 0) {
@@ -1662,7 +1656,7 @@ struct HResonanceCorrelation {
         }
         if (!mixing && c.isRightBg && !masterConfigurations.fillCorrelationHistWithMass) {
           fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/RightBg/Phi")), binFillThn, etaWeight, c.efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
-          if (doDeltaPhiStarCheck) {
+          if (qaSwitches.doDeltaPhiStarCheck) {
             double deltaPhiStarPlus = calculateAverageDeltaPhiStar(triggForDeltaPhiStar, assocForDeltaPhiStarPlus, bField);
             double deltaPhiStarMinus = calculateAverageDeltaPhiStar(triggForDeltaPhiStar, assocForDeltaPhiStarMinus, bField);
             if (triggSign > 0) {
@@ -1805,7 +1799,7 @@ struct HResonanceCorrelation {
       int32_t globalIndexPos, globalIndexNeg;
       float efficiency, efficiencyError;
       bool isLeftBg, isSignal, isRightBg;
-      bool passesMcSelection; // (!doMCassociation || mcTrueKstar()) && (!doAssocPhysicalPrimary || mcPhysicalPrimary())
+      bool passesMcSelection; // (!doMCassociation || mcTrueKstar()) && (!mcSelections.doAssocPhysicalPrimary || mcPhysicalPrimary())
     };
     std::vector<CachedKstar> cache;
     cache.reserve(assocs.size());
@@ -1853,14 +1847,14 @@ struct HResonanceCorrelation {
       c.isRightBg = (massWindowConfigurationsKstar.minBgNSigma * sig < delta && delta < massWindowConfigurationsKstar.maxBgNSigma * sig);
 
       c.passesMcSelection = (!masterConfigurations.doMCassociation || assocCandidate.mcTrueKstar()) &&
-                            (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary());
+                            (!mcSelections.doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary());
 
       // Same candidate-level Spectrum/EtaVsPtVsPhi QA as fillCorrelationsPhi
       // above -- see the comment there for rationale.
       if (!mixing) {
         float nSigmaVal = delta / sig;
         histos.fill(HIST("h3dKstar0Spectrum"), c.pt, mult, nSigmaVal);
-        if (std::abs(c.eta) < ySel) {
+        if (std::abs(c.eta) < phaseSpaceSelections.ySel) {
           histos.fill(HIST("h3dKstar0SpectrumY"), c.pt, mult, nSigmaVal);
         }
         if (!efficiencyFlags.applyEffAsFunctionOfMultAndPhi) {
@@ -1937,7 +1931,7 @@ struct HResonanceCorrelation {
         firstLoop = true;
 
         //---] removing autocorrelations [---
-        if (doAutocorrelationRejection) {
+        if (checks.doAutocorrelationRejection) {
           if (trigg.globalIndex() == c.globalIndexPos || trigg.globalIndex() == c.globalIndexNeg) {
             histos.fill(HIST("hNumberOfRejectedPairsKstar0"), 0.5);
             continue;
@@ -1985,7 +1979,7 @@ struct HResonanceCorrelation {
 
         if (!mixing && c.isLeftBg && !masterConfigurations.fillCorrelationHistWithMass) {
           fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/LeftBg/Kstar0")), binFillThn, etaWeight, c.efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
-          if (doDeltaPhiStarCheck) {
+          if (qaSwitches.doDeltaPhiStarCheck) {
             double deltaPhiStarPlus = calculateAverageDeltaPhiStar(triggForDeltaPhiStar, assocForDeltaPhiStarPlus, bField);
             double deltaPhiStarMinus = calculateAverageDeltaPhiStar(triggForDeltaPhiStar, assocForDeltaPhiStarMinus, bField);
             if (triggSign > 0) {
@@ -1999,7 +1993,7 @@ struct HResonanceCorrelation {
         }
         if (!mixing && (masterConfigurations.fillCorrelationHistWithMass || c.isSignal)) {
           fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/Signal/Kstar0")), masterConfigurations.fillCorrelationHistWithMass ? binFillThnMass : binFillThn, etaWeight, c.efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
-          if (doDeltaPhiStarCheck) {
+          if (qaSwitches.doDeltaPhiStarCheck) {
             double deltaPhiStarPlus = calculateAverageDeltaPhiStar(triggForDeltaPhiStar, assocForDeltaPhiStarPlus, bField);
             double deltaPhiStarMinus = calculateAverageDeltaPhiStar(triggForDeltaPhiStar, assocForDeltaPhiStarMinus, bField);
             if (triggSign > 0) {
@@ -2013,7 +2007,7 @@ struct HResonanceCorrelation {
         }
         if (!mixing && c.isRightBg && !masterConfigurations.fillCorrelationHistWithMass) {
           fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/RightBg/Kstar0")), binFillThn, etaWeight, c.efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
-          if (doDeltaPhiStarCheck) {
+          if (qaSwitches.doDeltaPhiStarCheck) {
             double deltaPhiStarPlus = calculateAverageDeltaPhiStar(triggForDeltaPhiStar, assocForDeltaPhiStarPlus, bField);
             double deltaPhiStarMinus = calculateAverageDeltaPhiStar(triggForDeltaPhiStar, assocForDeltaPhiStarMinus, bField);
             if (triggSign > 0) {
@@ -2178,13 +2172,13 @@ struct HResonanceCorrelation {
     if (!TESTBIT(doCorrelation, IndexHadron)) {
       return;
     }
-    LOGF(info, "SameEventHadron: collisions=%d triggers=%zu assocHadrons=%zu", collision.globalIndex(), triggerTracks.size(), assocHadrons.size());
+    // LOGF(info, "SameEventHadron: collisions=%d triggers=%zu assocHadrons=%zu", collision.globalIndex(), triggerTracks.size(), assocHadrons.size());
 
     BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
 
     // ________________________________________________
     // skip if desired trigger not found
-    if (triggerPresenceMap.size() > 0 && !TESTBIT(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
+    if (triggerPresenceMap.size() > 0 && !TESTBIT(triggerPresenceMap[collision.globalIndex()], triggerSelection.triggerBinToSelect)) {
       return;
     }
 
@@ -2203,7 +2197,7 @@ struct HResonanceCorrelation {
       return;
     }
     // ________________________________________________
-    if (eventQAOwnerIndex == IndexHadron && doMixingQAandEventQA) {
+    if (eventQAOwnerIndex == IndexHadron && qaSwitches.doMixingQAandEventQA) {
       histos.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({collision.posZ(), collision.centFT0M()}));
     }
 
@@ -2250,7 +2244,7 @@ struct HResonanceCorrelation {
       float weight = efficiencyFlags.applyEfficiencyCorrection ? purity / efficiency : 1.0f;
       histos.fill(HIST("hAssocHadronsAllSelectedEtaVsPt"), assoc.pt(), assoc.eta(), collision.centFT0M(), weight);
       histos.fill(HIST("hAssocPtResolution"), assoc.pt(), assocTrack.mcOriginalPt());
-      if (doAssocPhysicalPrimary && !assocTrack.mcPhysicalPrimary())
+      if (mcSelections.doAssocPhysicalPrimary && !assocTrack.mcPhysicalPrimary())
         continue;
       histos.fill(HIST("hAssocPrimaryEtaVsPt"), assoc.pt(), assoc.eta(), collision.centFT0M());
       histos.fill(HIST("hAsssocTrackEtaVsPtVsPhi"), assoc.pt(), assoc.eta(), assoc.phi(), weight);
@@ -2270,12 +2264,12 @@ struct HResonanceCorrelation {
     if (!TESTBIT(doCorrelation, IndexPion)) {
       return;
     }
-    LOGF(info, "SameEventPion: collisions=%d triggers=%zu assocPions=%zu", collision.globalIndex(), triggerTracks.size(), associatedPions.size());
+    // LOGF(info, "SameEventPion: collisions=%d triggers=%zu assocPions=%zu", collision.globalIndex(), triggerTracks.size(), associatedPions.size());
 
     BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
     // ________________________________________________
     // skip if desired trigger not found
-    if (triggerPresenceMap.size() > 0 && !TESTBIT(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
+    if (triggerPresenceMap.size() > 0 && !TESTBIT(triggerPresenceMap[collision.globalIndex()], triggerSelection.triggerBinToSelect)) {
       return;
     }
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -2292,7 +2286,7 @@ struct HResonanceCorrelation {
       return;
     }
     // ________________________________________________
-    if (eventQAOwnerIndex == IndexPion && doMixingQAandEventQA) {
+    if (eventQAOwnerIndex == IndexPion && qaSwitches.doMixingQAandEventQA) {
       histos.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({collision.posZ(), collision.centFT0M()}));
     }
     // Do basic QA
@@ -2302,7 +2296,7 @@ struct HResonanceCorrelation {
         continue;
 
       histos.fill(HIST("hPionEtaVsPtAllSelected"), pionTrack.pt(), pionTrack.eta(), collision.centFT0M());
-      if (doAssocPhysicalPrimary && !pion.mcPhysicalPrimary())
+      if (mcSelections.doAssocPhysicalPrimary && !pion.mcPhysicalPrimary())
         continue;
       if (masterConfigurations.doMCassociation && std::abs(pion.pdgCode()) != PdgCodes[IndexPion])
         continue;
@@ -2341,12 +2335,12 @@ struct HResonanceCorrelation {
     if (!TESTBIT(doCorrelation, IndexKaon)) {
       return;
     }
-    LOGF(info, "SameEventKaon: collisions=%d triggers=%zu assocKaons=%zu", collision.globalIndex(), triggerTracks.size(), associatedKaons.size());
+    // LOGF(info, "SameEventKaon: collisions=%d triggers=%zu assocKaons=%zu", collision.globalIndex(), triggerTracks.size(), associatedKaons.size());
 
     BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
     // ________________________________________________
     // skip if desired trigger not found
-    if (triggerPresenceMap.size() > 0 && !TESTBIT(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
+    if (triggerPresenceMap.size() > 0 && !TESTBIT(triggerPresenceMap[collision.globalIndex()], triggerSelection.triggerBinToSelect)) {
       return;
     }
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -2363,7 +2357,7 @@ struct HResonanceCorrelation {
       return;
     }
     // ________________________________________________
-    if (eventQAOwnerIndex == IndexKaon && doMixingQAandEventQA) {
+    if (eventQAOwnerIndex == IndexKaon && qaSwitches.doMixingQAandEventQA) {
       histos.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({collision.posZ(), collision.centFT0M()}));
     }
     // Do basic QA
@@ -2373,7 +2367,7 @@ struct HResonanceCorrelation {
         continue;
 
       histos.fill(HIST("hKaonEtaVsPtAllSelected"), kaonTrack.pt(), kaonTrack.eta(), collision.centFT0M());
-      if (doAssocPhysicalPrimary && !kaon.mcPhysicalPrimary())
+      if (mcSelections.doAssocPhysicalPrimary && !kaon.mcPhysicalPrimary())
         continue;
       if (masterConfigurations.doMCassociation && std::abs(kaon.pdgCode()) != PdgCodes[IndexKaon])
         continue;
@@ -2411,12 +2405,12 @@ struct HResonanceCorrelation {
     if (!TESTBIT(doCorrelation, IndexPhi)) {
       return;
     }
-    LOGF(info, "SameEventPhi: collisions=%d triggers=%zu assocPhi=%zu", collision.globalIndex(), triggerTracks.size(), associatedPhis.size());
+    // LOGF(info, "SameEventPhi: collisions=%d triggers=%zu assocPhi=%zu", collision.globalIndex(), triggerTracks.size(), associatedPhis.size());
 
     BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
 
     // Skip if desired trigger not found
-    if (triggerPresenceMap.size() > 0 && !TESTBIT(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
+    if (triggerPresenceMap.size() > 0 && !TESTBIT(triggerPresenceMap[collision.globalIndex()], triggerSelection.triggerBinToSelect)) {
       return;
     }
 
@@ -2433,7 +2427,7 @@ struct HResonanceCorrelation {
       return;
     }
 
-    if (eventQAOwnerIndex == IndexPhi && doMixingQAandEventQA) {
+    if (eventQAOwnerIndex == IndexPhi && qaSwitches.doMixingQAandEventQA) {
       histos.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({collision.posZ(), collision.centFT0M()}));
     }
 
@@ -2488,12 +2482,12 @@ struct HResonanceCorrelation {
     if (!TESTBIT(doCorrelation, IndexKstar)) {
       return;
     }
-    LOGF(info, "SameEventKstar: collisions=%d triggers=%zu assocKstar=%zu", collision.globalIndex(), triggerTracks.size(), associatedKstars.size());
+    // LOGF(info, "SameEventKstar: collisions=%d triggers=%zu assocKstar=%zu", collision.globalIndex(), triggerTracks.size(), associatedKstars.size());
 
     BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
 
     // Skip if desired trigger not found
-    if (triggerPresenceMap.size() > 0 && !TESTBIT(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
+    if (triggerPresenceMap.size() > 0 && !TESTBIT(triggerPresenceMap[collision.globalIndex()], triggerSelection.triggerBinToSelect)) {
       return;
     }
 
@@ -2510,7 +2504,7 @@ struct HResonanceCorrelation {
       return;
     }
 
-    if (eventQAOwnerIndex == IndexKstar && doMixingQAandEventQA) {
+    if (eventQAOwnerIndex == IndexKstar && qaSwitches.doMixingQAandEventQA) {
       histos.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({collision.posZ(), collision.centFT0M()}));
     }
 
@@ -2571,7 +2565,7 @@ struct HResonanceCorrelation {
       }
       // ________________________________________________
       // skip if desired trigger not found
-      if (triggerPresenceMap.size() > 0 && (!TESTBIT(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !TESTBIT(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect))) {
+      if (triggerPresenceMap.size() > 0 && (!TESTBIT(triggerPresenceMap[collision1.globalIndex()], triggerSelection.triggerBinToSelect) || !TESTBIT(triggerPresenceMap[collision2.globalIndex()], triggerSelection.triggerBinToSelect))) {
         return;
       }
 
@@ -2584,7 +2578,7 @@ struct HResonanceCorrelation {
         continue;
       if (collision2.centFT0M() > axisRanges[5][1] || collision2.centFT0M() < axisRanges[5][0])
         continue;
-      if (doMixingQAandEventQA) {
+      if (qaSwitches.doMixingQAandEventQA) {
         if (collision1.globalIndex() == collision2.globalIndex()) {
           histos.fill(HIST("MixingQA/hMixingQA"), 0.0f); // same-collision pair counting
         }
@@ -2620,7 +2614,7 @@ struct HResonanceCorrelation {
       }
       // ________________________________________________
       // skip if desired trigger not found
-      if (triggerPresenceMap.size() > 0 && (!TESTBIT(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !TESTBIT(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect))) {
+      if (triggerPresenceMap.size() > 0 && (!TESTBIT(triggerPresenceMap[collision1.globalIndex()], triggerSelection.triggerBinToSelect) || !TESTBIT(triggerPresenceMap[collision2.globalIndex()], triggerSelection.triggerBinToSelect))) {
         continue;
       }
 
@@ -2633,7 +2627,7 @@ struct HResonanceCorrelation {
         continue;
       if (collision2.centFT0M() > axisRanges[5][1] || collision2.centFT0M() < axisRanges[5][0])
         continue;
-      if (doMixingQAandEventQA) {
+      if (qaSwitches.doMixingQAandEventQA) {
         if (collision1.globalIndex() == collision2.globalIndex()) {
           histos.fill(HIST("MixingQA/hMixingQA"), 0.0f); // same-collision pair counting
         }
@@ -2669,7 +2663,7 @@ struct HResonanceCorrelation {
       }
       // ________________________________________________
       // skip if desired trigger not found
-      if (triggerPresenceMap.size() > 0 && (!TESTBIT(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !TESTBIT(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect))) {
+      if (triggerPresenceMap.size() > 0 && (!TESTBIT(triggerPresenceMap[collision1.globalIndex()], triggerSelection.triggerBinToSelect) || !TESTBIT(triggerPresenceMap[collision2.globalIndex()], triggerSelection.triggerBinToSelect))) {
         continue;
       }
 
@@ -2682,7 +2676,7 @@ struct HResonanceCorrelation {
         continue;
       if (collision2.centFT0M() > axisRanges[5][1] || collision2.centFT0M() < axisRanges[5][0])
         continue;
-      if (doMixingQAandEventQA) {
+      if (qaSwitches.doMixingQAandEventQA) {
         if (collision1.globalIndex() == collision2.globalIndex()) {
           histos.fill(HIST("MixingQA/hMixingQA"), 0.0f); // same-collision pair counting
         }
@@ -2719,7 +2713,7 @@ struct HResonanceCorrelation {
         initEfficiencyFromCCDB(bc);
       }
 
-      if (triggerPresenceMap.size() > 0 && (!TESTBIT(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !TESTBIT(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect))) {
+      if (triggerPresenceMap.size() > 0 && (!TESTBIT(triggerPresenceMap[collision1.globalIndex()], triggerSelection.triggerBinToSelect) || !TESTBIT(triggerPresenceMap[collision2.globalIndex()], triggerSelection.triggerBinToSelect))) {
         continue;
       }
 
@@ -2735,7 +2729,7 @@ struct HResonanceCorrelation {
         continue;
       }
 
-      if (doMixingQAandEventQA) {
+      if (qaSwitches.doMixingQAandEventQA) {
         histos.fill(HIST("MixingQA/hMEpvz1"), collision1.posZ());
         histos.fill(HIST("MixingQA/hMEpvz2"), collision2.posZ());
         histos.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), collision1.centFT0M()}));
@@ -2781,7 +2775,7 @@ struct HResonanceCorrelation {
         initEfficiencyFromCCDB(bc);
       }
 
-      if (triggerPresenceMap.size() > 0 && (!TESTBIT(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !TESTBIT(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect))) {
+      if (triggerPresenceMap.size() > 0 && (!TESTBIT(triggerPresenceMap[collision1.globalIndex()], triggerSelection.triggerBinToSelect) || !TESTBIT(triggerPresenceMap[collision2.globalIndex()], triggerSelection.triggerBinToSelect))) {
         continue;
       }
 
@@ -2797,7 +2791,7 @@ struct HResonanceCorrelation {
         continue;
       }
 
-      if (doMixingQAandEventQA) {
+      if (qaSwitches.doMixingQAandEventQA) {
         histos.fill(HIST("MixingQA/hMEpvz1"), collision1.posZ());
         histos.fill(HIST("MixingQA/hMEpvz2"), collision2.posZ());
         histos.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), collision1.centFT0M()}));
@@ -2831,7 +2825,7 @@ struct HResonanceCorrelation {
 
     for (auto const& mcParticle : mcParticles) {
 
-      if (std::abs(mcParticle.eta()) > etaSel)
+      if (std::abs(mcParticle.eta()) > phaseSpaceSelections.etaSel)
         continue;
 
       float pt = mcParticle.pt();
@@ -2847,7 +2841,7 @@ struct HResonanceCorrelation {
 
       if (std::abs(mcParticle.pdgCode()) == Pdg::kPhi && masterConfigurations.doCorrelationPhi) {
 
-        // if (!doAssocPhysicalPrimaryInGen ||
+        // if (!mcSelections.doAssocPhysicalPrimaryInGen ||
         //   mcParticle.isPhysicalPrimary()) {
 
         histos.fill(HIST("hGeneratedQAPtAssociatedPhi"), pt, 0.0f);
@@ -2867,7 +2861,7 @@ struct HResonanceCorrelation {
         }
       }
 
-      if (doAssocPhysicalPrimaryInGen && !mcParticle.isPhysicalPrimary())
+      if (mcSelections.doAssocPhysicalPrimaryInGen && !mcParticle.isPhysicalPrimary())
         continue;
       // NOTE: intentionally restricted to Pion only (IndexPion..IndexPion); Kstar0 is
       // not extended to processMCGenerated/ClosureTest/Prediction in this version.
@@ -2932,13 +2926,13 @@ struct HResonanceCorrelation {
     if (collisions.size() > 1) {
       for (auto const& mcParticle : mcParticles) {
 
-        if (std::abs(mcParticle.y()) > ySel)
+        if (std::abs(mcParticle.y()) > phaseSpaceSelections.ySel)
           continue;
         if (std::abs(mcParticle.pdgCode()) == Pdg::kPhi) {
           histos.fill(HIST("GeneratedWithPV/hPhi") + HIST("_MidYVsMult_TwoPVsOrMore"), mcParticle.pt(), bestCollisionFT0Mpercentile);
         }
 
-        if (doAssocPhysicalPrimaryInGen && !mcParticle.isPhysicalPrimary())
+        if (mcSelections.doAssocPhysicalPrimaryInGen && !mcParticle.isPhysicalPrimary())
           continue;
 
         // NOTE: Pion only, see note above; Kstar0 not extended here.
@@ -2955,7 +2949,7 @@ struct HResonanceCorrelation {
     // Collision selection
     //---------------------------------------------
 
-    if (triggerPresenceMap.size() > 0 && !TESTBIT(bestCollisionTriggerPresenceMap, triggerBinToSelect))
+    if (triggerPresenceMap.size() > 0 && !TESTBIT(bestCollisionTriggerPresenceMap, triggerSelection.triggerBinToSelect))
       return;
 
     if (masterConfigurations.applyNewMCSelection) {
@@ -2983,7 +2977,7 @@ struct HResonanceCorrelation {
 
     for (auto const& mcParticle : mcParticles) {
 
-      if (std::abs(mcParticle.eta()) > etaSel)
+      if (std::abs(mcParticle.eta()) > phaseSpaceSelections.etaSel)
         continue;
 
       float pt = mcParticle.pt();
@@ -3002,7 +2996,7 @@ struct HResonanceCorrelation {
       if (std::abs(mcParticle.pdgCode()) != Pdg::kPhi)
         continue;
 
-      // if (doAssocPhysicalPrimaryInGen &&
+      // if (mcSelections.doAssocPhysicalPrimaryInGen &&
       //   !mcParticle.isPhysicalPrimary())
       // continue;
 
@@ -3025,11 +3019,11 @@ struct HResonanceCorrelation {
         } else {
           histos.fill(HIST("GeneratedWithPV/hPhi"), pt, mcParticle.eta(), bestCollisionFT0Mpercentile);
         }
-        if (std::abs(mcParticle.y()) < ySel)
+        if (std::abs(mcParticle.y()) < phaseSpaceSelections.ySel)
           histos.fill(HIST("GeneratedWithPV/hPhi") + HIST("_MidYVsMult"), pt, bestCollisionFT0Mpercentile);
       }
 
-      if (doAssocPhysicalPrimaryInGen && !mcParticle.isPhysicalPrimary()) {
+      if (mcSelections.doAssocPhysicalPrimaryInGen && !mcParticle.isPhysicalPrimary()) {
         continue;
       }
       if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus || std::abs(mcParticle.pdgCode()) == PDG_t::kKPlus || std::abs(mcParticle.pdgCode()) == PDG_t::kProton || std::abs(mcParticle.pdgCode()) == PDG_t::kElectron || std::abs(mcParticle.pdgCode()) == PDG_t::kMuonMinus) {
@@ -3059,7 +3053,7 @@ struct HResonanceCorrelation {
           } else {
             histos.fill(HIST("GeneratedWithPV/h") + HIST(Particlenames[Index]), pt, eta, bestCollisionFT0Mpercentile);
           }
-          if (std::abs(mcParticle.y()) < ySel)
+          if (std::abs(mcParticle.y()) < phaseSpaceSelections.ySel)
             histos.fill(HIST("GeneratedWithPV/h") + HIST(Particlenames[Index]) + HIST("_MidYVsMult"), pt, bestCollisionFT0Mpercentile);
         }
       });
@@ -3079,7 +3073,7 @@ struct HResonanceCorrelation {
 
     for (auto const& mcParticle : mcParticles) {
       double geta = mcParticle.eta();
-      if (std::abs(geta) > etaSel) {
+      if (std::abs(geta) > phaseSpaceSelections.etaSel) {
         continue;
       }
       double gpt = mcParticle.pt();
@@ -3089,7 +3083,7 @@ struct HResonanceCorrelation {
         }
       }
 
-      // if (!doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
+      // if (!mcSelections.doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
       if (std::abs(mcParticle.pdgCode()) == Pdg::kPhi && masterConfigurations.doCorrelationPhi) {
         histos.fill(HIST("hClosureQAPtAssociatedPhi"), gpt, 0.0f); // step 1: no event selection whatsoever
       }
@@ -3118,7 +3112,7 @@ struct HResonanceCorrelation {
     }
     // ________________________________________________
     // skip if desired trigger not found
-    if (triggerPresenceMap.size() > 0 && !TESTBIT(bestCollisionTriggerPresenceMap, triggerBinToSelect)) {
+    if (triggerPresenceMap.size() > 0 && !TESTBIT(bestCollisionTriggerPresenceMap, triggerSelection.triggerBinToSelect)) {
       return;
     }
 
@@ -3138,7 +3132,7 @@ struct HResonanceCorrelation {
 
     for (auto const& mcParticle : mcParticles) {
       double geta = mcParticle.eta();
-      if (std::abs(geta) > etaSel) {
+      if (std::abs(geta) > phaseSpaceSelections.etaSel) {
         continue;
       }
       double gpt = mcParticle.pt();
@@ -3148,7 +3142,7 @@ struct HResonanceCorrelation {
         }
       }
 
-      // if (!doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
+      // if (!mcSelections.doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
       if (std::abs(mcParticle.pdgCode()) == Pdg::kPhi && masterConfigurations.doCorrelationPhi) {
         histos.fill(HIST("hClosureQAPtAssociatedPhi"), gpt, 1.0f); // step 2: after event selection
       }
@@ -3161,7 +3155,7 @@ struct HResonanceCorrelation {
       double geta = mcParticle.eta();
       double gpt = mcParticle.pt();
       double gphi = mcParticle.phi();
-      if (std::abs(geta) > etaSel) {
+      if (std::abs(geta) > phaseSpaceSelections.etaSel) {
         continue;
       }
       if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus || std::abs(mcParticle.pdgCode()) == PDG_t::kKPlus || std::abs(mcParticle.pdgCode()) == PDG_t::kProton || std::abs(mcParticle.pdgCode()) == PDG_t::kElectron || std::abs(mcParticle.pdgCode()) == PDG_t::kMuonMinus) {
@@ -3170,13 +3164,13 @@ struct HResonanceCorrelation {
           histos.fill(HIST("ClosureTest/hTrigger"), gpt, geta, bestCollisionFT0Mpercentile);
         }
         if (masterConfigurations.doCorrelationHadron) {
-          if (!doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
+          if (!mcSelections.doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
             assocHadronIndices.emplace_back(iteratorNum);
             histos.fill(HIST("ClosureTest/hHadron"), gpt, geta, gphi);
           }
         }
       }
-      if (!doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
+      if (!mcSelections.doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
         if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus && masterConfigurations.doCorrelationPion) {
           piIndices.emplace_back(iteratorNum);
           histos.fill(HIST("ClosureTest/hPion"), gpt, geta, gphi);
@@ -3334,7 +3328,7 @@ struct HResonanceCorrelation {
       double geta = mcParticle.eta();
       double gpt = mcParticle.pt();
       double gphi = mcParticle.phi();
-      if (std::abs(geta) > etaSel) {
+      if (std::abs(geta) > phaseSpaceSelections.etaSel) {
         continue;
       }
       if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus || std::abs(mcParticle.pdgCode()) == PDG_t::kKPlus || std::abs(mcParticle.pdgCode()) == PDG_t::kProton || std::abs(mcParticle.pdgCode()) == PDG_t::kElectron || std::abs(mcParticle.pdgCode()) == PDG_t::kMuonMinus) {
@@ -3355,13 +3349,13 @@ struct HResonanceCorrelation {
           }
         }
         if (masterConfigurations.doCorrelationHadron) {
-          if (!doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
+          if (!mcSelections.doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
             assocHadronIndices.emplace_back(iteratorNum);
             histos.fill(HIST("Prediction/hHadron"), gpt, geta, gphi);
           }
         }
       }
-      if (!doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
+      if (!mcSelections.doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
         if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus && masterConfigurations.doCorrelationPion) {
           piIndices.emplace_back(iteratorNum);
           histos.fill(HIST("Prediction/hPion"), gpt, geta, gphi);
