@@ -83,6 +83,11 @@ struct HResonanceCorrelationFilter {
     Configurable<bool> cfgEvtSel8{"cfgEvtSel8", true, "Evt Sel 8 check for offline selection"};
     Configurable<bool> cfgEvtNoSameBunchPileupCut{"cfgEvtNoSameBunchPileupCut", true, "Evt sel: reject collisions associated with the same found-by-T0 bunch crossing"};
     Configurable<bool> cfgEvtGoodZvtxFT0vsPVCut{"cfgEvtGoodZvtxFT0vsPVCut", true, "Evt sel: require small difference between z-vertex from PV and from FT0"};
+    // Centrality source switch for hCentralitySelected: O-O collisions have a
+    // well-defined FT0C centrality estimator; p-O (asymmetric system) does
+    // not, so FV0A is used there instead. Only affects which estimator is
+    // read for that one QA histogram -- doesn't change any selection cut.
+    Configurable<bool> cfgUseFV0ACentrality{"cfgUseFV0ACentrality", false, "Centrality estimator for hCentralitySelected: false = O-O (FT0C), true = p-O (FV0A)"};
   } configEvents;
 
   // Merged from the formerly separate configTracks/generalSelections/
@@ -90,13 +95,19 @@ struct HResonanceCorrelationFilter {
   // track pair", just split by who last touched them. No member names
   // collided, so every Configurable below keeps its original key; only the
   // "<group>." prefix at each call site changed, to configTracks.
+  // General, species-agnostic track-quality cuts: applied identically to
+  // every track that reaches trackCut() -- trigger, associated hadron, AND
+  // Phi/K*0 daughter candidates alike (see trackCut() below, and its call
+  // sites at isValidTrigger(), isValidAssocTrack<Species>(), and both
+  // processPhis()/processKstars()). cfgCutEta/cMinPtcut additionally gate
+  // the framework-level `acceptanceFilter` Filter, applied to every track
+  // in every process function before any of the above ever sees it.
   struct : ConfigurableGroup {
     std::string prefix = "configTracks";
     // Pre-selection Track cuts
     Configurable<float> cMinPtcut{"cMinPtcut", 0.15f, "Minimal pT for tracks"};
     Configurable<float> cMinTPCNClsFound{"cMinTPCNClsFound", 120, "minimum TPCNClsFound value for good track"};
     Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
-    Configurable<float> cfgCutRapidity{"cfgCutRapidity", 0.5f, "rapidity range for particles"};
     Configurable<int> cfgMinCrossedRows{"cfgMinCrossedRows", 70, "min crossed rows for good track"};
     Configurable<float> cfgMaxTPCChi2NCl{"cfgMaxTPCChi2NCl", 4.0f, "max TPC chi2/clusters for good track"};
     Configurable<float> cfgMaxITSChi2NCl{"cfgMaxITSChi2NCl", 36.0f, "max ITS chi2/clusters for good track"};
@@ -115,30 +126,49 @@ struct HResonanceCorrelationFilter {
     Configurable<bool> cfgHasTOF{"cfgHasTOF", false, "Require TOF"};
     Configurable<bool> cTPCNClsFound{"cTPCNClsFound", false, "Switch to turn on/off TPCNClsFound cut"};
 
-    // Associated particle selections in phase space (formerly generalSelections)
-    Configurable<float> assocEtaMin{"assocEtaMin", -0.8, "triggeretamin"};
-    Configurable<float> assocEtaMax{"assocEtaMax", 0.8, "triggeretamax"};
-    Configurable<float> assocPtCutMin{"assocPtCutMin", 0.2, "assocptmin"};
-    Configurable<float> assocPtCutMax{"assocPtCutMax", 10, "assocptmax"};
-
-    // Trigger particle selections in phase space (formerly generalSelections)
-    Configurable<float> triggerEtaMin{"triggerEtaMin", -0.8, "triggeretamin"};
-    Configurable<float> triggerEtaMax{"triggerEtaMax", 0.8, "triggeretamax"};
-    Configurable<float> triggerPtCutMin{"triggerPtCutMin", 3, "triggerptmin"};
-    Configurable<float> triggerPtCutMax{"triggerPtCutMax", 20, "triggerptmax"};
-
-    // Track quality (formerly trackSelections)
+    // Track quality shared by trigger AND assoc selection (isValidTrigger()
+    // and isValidAssocTrack<Species>() both read this same configurable --
+    // it is NOT split into trigger-/assoc-only copies below).
     Configurable<int> minTPCNCrossedRows{"minTPCNCrossedRows", 70, "Minimum TPC crossed rows"};
-    Configurable<bool> triggerRequireITS{"triggerRequireITS", true, "require ITS signal in trigger tracks"};
-    Configurable<bool> assocRequireITS{"assocRequireITS", true, "require ITS signal in assoc tracks"};
-    Configurable<int> triggerMaxTPCSharedClusters{"triggerMaxTPCSharedClusters", 200, "maximum number of shared TPC clusters (inclusive)"};
-    Configurable<bool> triggerRequireL0{"triggerRequireL0", false, "require ITS L0 cluster for trigger"};
 
     // primary particle DCAxy selections (formerly trackSelections)
     // formula: |DCAxy| <  0.004f + (0.013f / pt)
     Configurable<float> dcaXYconstant{"dcaXYconstant", 0.004, "[0] in |DCAxy| < [0]+[1]/pT"};
     Configurable<float> dcaXYpTdep{"dcaXYpTdep", 0.013, "[1] in |DCAxy| < [0]+[1]/pT"};
   } configTracks;
+
+  // Phi/K*0 resonance-candidate cuts: applied to the RECONSTRUCTED candidate
+  // (the K+K- or K-pi 4-vector), not to the daughter tracks themselves --
+  // the daughters go through the shared configTracks/trackCut() cuts above
+  // like every other track. Currently holds just the one configurable; kept
+  // as its own group rather than folded into configTracks so it reads as
+  // "resonance-level", not "track-level".
+  struct : ConfigurableGroup {
+    std::string prefix = "configResoDauTracks";
+    Configurable<float> cfgCutRapidity{"cfgCutRapidity", 0.5f, "rapidity range for the reconstructed Phi/K*0 candidate"};
+  } configResoDauTracks;
+
+  // Trigger-hadron-only phase-space and quality cuts.
+  struct : ConfigurableGroup {
+    std::string prefix = "configTriggerTracks";
+    Configurable<float> triggerEtaMin{"triggerEtaMin", -0.8, "triggeretamin"};
+    Configurable<float> triggerEtaMax{"triggerEtaMax", 0.8, "triggeretamax"};
+    Configurable<float> triggerPtCutMin{"triggerPtCutMin", 2, "triggerptmin"};
+    Configurable<float> triggerPtCutMax{"triggerPtCutMax", 20, "triggerptmax"};
+    Configurable<bool> triggerRequireITS{"triggerRequireITS", true, "require ITS signal in trigger tracks"};
+    Configurable<int> triggerMaxTPCSharedClusters{"triggerMaxTPCSharedClusters", 200, "maximum number of shared TPC clusters (inclusive)"};
+    Configurable<bool> triggerRequireL0{"triggerRequireL0", false, "require ITS L0 cluster for trigger"};
+  } configTriggerTracks;
+
+  // Associated-hadron-only phase-space and quality cuts.
+  struct : ConfigurableGroup {
+    std::string prefix = "configAssocTracks";
+    Configurable<float> assocEtaMin{"assocEtaMin", -0.8, "triggeretamin"};
+    Configurable<float> assocEtaMax{"assocEtaMax", 0.8, "triggeretamax"};
+    Configurable<float> assocPtCutMin{"assocPtCutMin", 0.2, "assocptmin"};
+    Configurable<float> assocPtCutMax{"assocPtCutMax", 10, "assocptmax"};
+    Configurable<bool> assocRequireITS{"assocRequireITS", true, "require ITS signal in assoc tracks"};
+  } configAssocTracks;
 
   struct : ConfigurableGroup {
     std::string prefix = "configPID";
@@ -180,15 +210,6 @@ struct HResonanceCorrelationFilter {
     Configurable<float> assocPionNSigmaTPCFOF{"assocPionNSigmaTPCFOF", 3, "minimal n sigma in TOF and TPC for Pion ID"};
     Configurable<float> rejectSigma{"rejectSigma", 1, "n sigma for rejecting pion candidates"};
   } configPID;
-
-  // Unused in this file today -- nothing here reads from CCDB any more
-  // (Zorro was the only consumer and has been removed). Kept (grouped,
-  // rather than removed) since that's outside today's ask.
-  struct : ConfigurableGroup {
-    std::string prefix = "ccdbConfigurations";
-    Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository to use"};
-    Configurable<std::string> parameterCCDBPath{"parameterCCDBPath", "Users/k/kcui/LHC25b4a/parameter", "Path of the mean and sigma"};
-  } ccdbConfigurations;
 
   // must include windows for background and peak
   //
@@ -238,6 +259,8 @@ struct HResonanceCorrelationFilter {
     ConfigurableAxis axisDCAxyQA{"axisDCAxyQA", {200, -0.5f, 0.5f}, "DCA_{xy} (cm)"};
     ConfigurableAxis axisDCAzQA{"axisDCAzQA", {200, -0.5f, 0.5f}, "DCA_{z} (cm)"};
     ConfigurableAxis axisTPCCrossedRowsQA{"axisTPCCrossedRowsQA", {160, 0, 160}, "TPC crossed rows"};
+    ConfigurableAxis axisVertexZQA{"axisVertexZQA", {60, -15.0f, 15.0f}, "Vertex Z (cm)"};
+    ConfigurableAxis axisCentralityQA{"axisCentralityQA", {100, 0.0f, 100.0f}, "Centrality (%)"};
   } axesConfigurations;
 
   // QA
@@ -292,6 +315,12 @@ struct HResonanceCorrelationFilter {
   void init(InitContext const&)
   {
     histos.add("CollCutCounts", "No. of event after cuts", kTH1I, {{10, 0, 10}});
+    // Z-vertex and centrality of selected events (filled in isSelectedEvents()
+    // once a collision passes every cut, i.e. the same "All Passed Events"
+    // point as CollCutCounts bin 8). Centrality source for the latter is
+    // configEvents.cfgUseFV0ACentrality: FT0C for O-O, FV0A for p-O.
+    histos.add("hVertexZSelected", "Vertex Z of selected events", kTH1F, {axesConfigurations.axisVertexZQA});
+    histos.add("hCentralitySelected", "Centrality of selected events", kTH1F, {axesConfigurations.axisCentralityQA});
     histos.get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(1, "All Events");
     histos.get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(2, "|Vz| < cut");
     histos.get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(3, "kIsTriggerTVX");
@@ -326,6 +355,8 @@ struct HResonanceCorrelationFilter {
       histos.add((dir + "/hPtVsDCAz").c_str(), "p_{T} vs DCA_{z}", kTH2F, {axesConfigurations.axisPtQA, axesConfigurations.axisDCAzQA});
       histos.add((dir + "/hPtVsTPCNSigma").c_str(), "p_{T} vs TPC n#sigma", kTH2F, {axesConfigurations.axisPtQA, axesConfigurations.axisNSigmaQA});
       histos.add((dir + "/hPtVsTOFNSigma").c_str(), "p_{T} vs TOF n#sigma", kTH2F, {axesConfigurations.axisPtQA, axesConfigurations.axisNSigmaQA});
+      // TPC vs TOF nSigma correlation, for the usual PID "banana plot" check
+      histos.add((dir + "/hTPCNSigmaVsTOFNSigma").c_str(), "TPC n#sigma vs TOF n#sigma", kTH2F, {axesConfigurations.axisNSigmaQA, axesConfigurations.axisNSigmaQA});
     };
     bookDaughterQA("QA/Phi/Kaon");
     bookDaughterQA("QA/Kstar/Kaon");
@@ -360,6 +391,9 @@ struct HResonanceCorrelationFilter {
     histos.fill(HIST("QA/Phi/Kaon/hPtVsDCAz"), track.pt(), track.dcaZ());
     histos.fill(HIST("QA/Phi/Kaon/hPtVsTPCNSigma"), track.pt(), track.tpcNSigmaKa());
     histos.fill(HIST("QA/Phi/Kaon/hPtVsTOFNSigma"), track.pt(), track.tofNSigmaKa());
+    if (track.hasTOF()) {
+      histos.fill(HIST("QA/Phi/Kaon/hTPCNSigmaVsTOFNSigma"), track.tpcNSigmaKa(), track.tofNSigmaKa());
+    }
   }
 
   template <typename Track>
@@ -376,6 +410,9 @@ struct HResonanceCorrelationFilter {
     histos.fill(HIST("QA/Kstar/Kaon/hPtVsDCAz"), track.pt(), track.dcaZ());
     histos.fill(HIST("QA/Kstar/Kaon/hPtVsTPCNSigma"), track.pt(), track.tpcNSigmaKa());
     histos.fill(HIST("QA/Kstar/Kaon/hPtVsTOFNSigma"), track.pt(), track.tofNSigmaKa());
+    if (track.hasTOF()) {
+      histos.fill(HIST("QA/Kstar/Kaon/hTPCNSigmaVsTOFNSigma"), track.tpcNSigmaKa(), track.tofNSigmaKa());
+    }
   }
 
   template <typename Track>
@@ -392,6 +429,9 @@ struct HResonanceCorrelationFilter {
     histos.fill(HIST("QA/Kstar/Pion/hPtVsDCAz"), track.pt(), track.dcaZ());
     histos.fill(HIST("QA/Kstar/Pion/hPtVsTPCNSigma"), track.pt(), track.tpcNSigmaPi());
     histos.fill(HIST("QA/Kstar/Pion/hPtVsTOFNSigma"), track.pt(), track.tofNSigmaPi());
+    if (track.hasTOF()) {
+      histos.fill(HIST("QA/Kstar/Pion/hTPCNSigmaVsTOFNSigma"), track.tpcNSigmaPi(), track.tofNSigmaPi());
+    }
   }
 
   // Trigger hadrons carry no PID selection, so only the 5 non-PID variables
@@ -463,6 +503,14 @@ struct HResonanceCorrelationFilter {
 
     if (fillHist) {
       histos.fill(HIST("CollCutCounts"), 8);
+      histos.fill(HIST("hVertexZSelected"), collision.posZ());
+      // Guarded with if constexpr: isSelectedEvents() is called with several
+      // different collision join types (some callers pass fillHist=false and
+      // don't join centrality tables at all), so this only compiles/fills for
+      // callers whose collision type actually has both estimators joined.
+      if constexpr (requires { collision.centFT0C(); collision.centFV0A(); }) {
+        histos.fill(HIST("hCentralitySelected"), configEvents.cfgUseFV0ACentrality ? collision.centFV0A() : collision.centFT0C());
+      }
     }
 
     return true;
@@ -692,23 +740,23 @@ struct HResonanceCorrelationFilter {
     if (!trackCut(track)) {
       return false;
     }
-    if (track.eta() > configTracks.triggerEtaMax || track.eta() < configTracks.triggerEtaMin) {
+    if (track.eta() > configTriggerTracks.triggerEtaMax || track.eta() < configTriggerTracks.triggerEtaMin) {
       return false;
     }
     // if (track.sign()= 1 ) {continue;}
-    if (track.pt() > configTracks.triggerPtCutMax || track.pt() < configTracks.triggerPtCutMin) {
+    if (track.pt() > configTriggerTracks.triggerPtCutMax || track.pt() < configTriggerTracks.triggerPtCutMin) {
       return false;
     }
     if (track.tpcNClsCrossedRows() < configTracks.minTPCNCrossedRows) {
       return false; // crossed rows
     }
-    if (!track.hasITS() && configTracks.triggerRequireITS) {
+    if (!track.hasITS() && configTriggerTracks.triggerRequireITS) {
       return false; // skip, doesn't have ITS signal (skips lots of TPC-only!)
     }
-    if (track.tpcNClsShared() > configTracks.triggerMaxTPCSharedClusters) {
+    if (track.tpcNClsShared() > configTriggerTracks.triggerMaxTPCSharedClusters) {
       return false; // skip, has shared clusters
     }
-    if (!(BIT_CHECK(track.itsClusterMap(), 0)) && configTracks.triggerRequireL0) {
+    if (!(BIT_CHECK(track.itsClusterMap(), 0)) && configTriggerTracks.triggerRequireL0) {
       return false; // skip, doesn't have cluster in ITS L0
     }
     return true;
@@ -743,16 +791,16 @@ struct HResonanceCorrelationFilter {
     if (!trackCut(assoc)) {
       return false;
     }
-    if (assoc.eta() > configTracks.assocEtaMax || assoc.eta() < configTracks.assocEtaMin) {
+    if (assoc.eta() > configAssocTracks.assocEtaMax || assoc.eta() < configAssocTracks.assocEtaMin) {
       return false;
     }
-    if (assoc.pt() > configTracks.assocPtCutMax || assoc.pt() < configTracks.assocPtCutMin) {
+    if (assoc.pt() > configAssocTracks.assocPtCutMax || assoc.pt() < configAssocTracks.assocPtCutMin) {
       return false;
     }
     if (assoc.tpcNClsCrossedRows() < configTracks.minTPCNCrossedRows) {
       return false; // crossed rows
     }
-    if (!assoc.hasITS() && configTracks.assocRequireITS) {
+    if (!assoc.hasITS() && configAssocTracks.assocRequireITS) {
       return false; // skip, doesn't have ITS signal (skips lots of TPC-only!)
     }
 
@@ -827,11 +875,11 @@ struct HResonanceCorrelationFilter {
     float rapidity = -999.f;
     if constexpr (Species == AssocKaon) {
       rapidity = LorentzVectorPtEtaPhiMass(assoc.pt(), assoc.eta(), assoc.phi(),
-                                           o2::constants::physics::MassKPlus)
+                                            o2::constants::physics::MassKPlus)
                    .Rapidity();
     } else if constexpr (Species == AssocPion) {
       rapidity = LorentzVectorPtEtaPhiMass(assoc.pt(), assoc.eta(), assoc.phi(),
-                                           o2::constants::physics::MassPiPlus)
+                                            o2::constants::physics::MassPiPlus)
                    .Rapidity();
     }
 
@@ -855,7 +903,7 @@ struct HResonanceCorrelationFilter {
   }
 
   // for real data processing
-  void processTriggers(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::PVMults>::iterator const& collision, soa::Filtered<FullTracks> const& tracks)
+  void processTriggers(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFV0As, aod::PVMults>::iterator const& collision, soa::Filtered<FullTracks> const& tracks)
   {
     triggerCandidates.clear();
     if (!isSelectedEvents(collision)) {
@@ -894,7 +942,7 @@ struct HResonanceCorrelationFilter {
   }
 
   // for MC processing
-  void processTriggersMC(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::PVMults>::iterator const& collision, soa::Filtered<FullTracksMC> const& tracks, aod::McParticles const&)
+  void processTriggersMC(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFV0As, aod::PVMults>::iterator const& collision, soa::Filtered<FullTracksMC> const& tracks, aod::McParticles const&)
   {
     triggerCandidates.clear();
     if (!isSelectedEvents(collision)) {
@@ -1090,7 +1138,7 @@ struct HResonanceCorrelationFilter {
       float invMass = phi.M();
 
       // rapidity cut
-      if (std::abs(phi.Rapidity()) > configTracks.cfgCutRapidity) {
+      if (std::abs(phi.Rapidity()) > configResoDauTracks.cfgCutRapidity) {
         continue;
       }
 
@@ -1181,7 +1229,7 @@ struct HResonanceCorrelationFilter {
       float invMass = phi.M();
 
       // rapidity cut
-      if (std::abs(phi.Rapidity()) > configTracks.cfgCutRapidity) {
+      if (std::abs(phi.Rapidity()) > configResoDauTracks.cfgCutRapidity) {
         continue;
       }
 
@@ -1299,7 +1347,7 @@ struct HResonanceCorrelationFilter {
         float invMass = kstar.M();
 
         // rapidity cut
-        if (std::abs(kstar.Rapidity()) > configTracks.cfgCutRapidity) {
+        if (std::abs(kstar.Rapidity()) > configResoDauTracks.cfgCutRapidity) {
           continue;
         }
 
@@ -1388,7 +1436,7 @@ struct HResonanceCorrelationFilter {
         float invMass = kstar.M();
 
         // rapidity cut
-        if (std::abs(kstar.Rapidity()) > configTracks.cfgCutRapidity) {
+        if (std::abs(kstar.Rapidity()) > configResoDauTracks.cfgCutRapidity) {
           continue;
         }
 
