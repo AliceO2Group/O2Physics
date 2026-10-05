@@ -875,11 +875,11 @@ struct HResonanceCorrelationFilter {
     float rapidity = -999.f;
     if constexpr (Species == AssocKaon) {
       rapidity = LorentzVectorPtEtaPhiMass(assoc.pt(), assoc.eta(), assoc.phi(),
-                                            o2::constants::physics::MassKPlus)
+                                           o2::constants::physics::MassKPlus)
                    .Rapidity();
     } else if constexpr (Species == AssocPion) {
       rapidity = LorentzVectorPtEtaPhiMass(assoc.pt(), assoc.eta(), assoc.phi(),
-                                            o2::constants::physics::MassPiPlus)
+                                           o2::constants::physics::MassPiPlus)
                    .Rapidity();
     }
 
