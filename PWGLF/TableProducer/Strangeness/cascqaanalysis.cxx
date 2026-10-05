@@ -670,7 +670,7 @@ struct Cascqaanalysis {
     }
   }
 
-  void processMCgen(soa::Join<aod::McCollisions,  >::iterator const& mcCollision, // mcCollision.centFV0A() to be added
+  void processMCgen(soa::Join<aod::McCollisions, >::iterator const& mcCollision, // mcCollision.centFV0A() to be added
                     aod::McParticles const& mcParticles,
                     const soa::SmallGroups<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels, aod::PVMults, aod::FT0Mults, aod::CentFT0Ms, aod::CentFV0As>>& collisions,
                     BCsWithBcSels const&,
