@@ -25,8 +25,9 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
-#include <vector>
 #include <TMath.h>
+
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
