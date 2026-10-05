@@ -6738,7 +6738,7 @@ void VarManager::FillDileptonTrackTrackVertexing(C const& collision, T1 const& l
 
   if constexpr (candidateType == kXtoJpsiPiPi) {
     mMother = o2::constants::physics::MassX3872;
-  } 
+  }
 
   ROOT::Math::PtEtaPhiMVector v1(lepton1.pt(), lepton1.eta(), lepton1.phi(), mlepton1);
   ROOT::Math::PtEtaPhiMVector v2(lepton2.pt(), lepton2.eta(), lepton2.phi(), mlepton2);
