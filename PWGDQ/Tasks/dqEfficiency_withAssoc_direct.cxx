@@ -3578,7 +3578,7 @@ struct AnalysisDileptonTrackTrack {
     } // end loop over dileptons
   }
 
-  Preslice<soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts>> trackAssocsPerCollision = aod::reducedtrack_association::collisionId;
+  Preslice<soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts>> trackAssocsPerCollision = aod::track_association::collisionId;
   Preslice<MyDielectronCandidates> dielectronsPerCollision = aod::reducedpair::reducedeventId;
   // Preslice<MyDitrackCandidates> ditracksPerCollision = aod::reducedpair::reducedeventId;
 
