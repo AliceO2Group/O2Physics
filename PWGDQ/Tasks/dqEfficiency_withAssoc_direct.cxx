@@ -3430,7 +3430,10 @@ struct AnalysisDileptonTrackTrack {
   {
     VarManager::ResetValues(0, VarManager::kNVars, fValuesQuadruplet);
     VarManager::FillEvent<TEventFillMap>(event, fValuesQuadruplet);
-    VarManager::FillEvent<VarManager::ObjTypes::ReducedEventMC>(event.reducedMCevent(), fValuesQuadruplet);
+    // VarManager::FillEvent<VarManager::ObjTypes::ReducedEventMC>(event.reducedMCevent(), fValuesQuadruplet);
+    if (event.has_mcCollision()) {
+      VarManager::FillEvent<VarManager::ObjTypes::CollisionMC>(event.mcCollision(), fValuesQuadruplet);
+    }
 
     uint32_t mcDecision = static_cast<uint32_t>(0);
     size_t isig = 0;
@@ -3576,7 +3579,7 @@ struct AnalysisDileptonTrackTrack {
     } // end loop over dileptons
   }
 
-  Preslice<soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts>> trackAssocsPerCollision = aod::reducedtrack_association::reducedeventId;
+  Preslice<soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts>> trackAssocsPerCollision = aod::reducedtrack_association::collisionId;
   Preslice<MyDielectronCandidates> dielectronsPerCollision = aod::reducedpair::reducedeventId;
   // Preslice<MyDitrackCandidates> ditracksPerCollision = aod::reducedpair::reducedeventId;
 
