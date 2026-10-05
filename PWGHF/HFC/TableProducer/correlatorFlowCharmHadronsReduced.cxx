@@ -197,8 +197,8 @@ struct HfCorrelatorFlowCharmHadronsReduced {
       } else if (doprocessMixedEventHadHadWCentMix || doprocessMixedEventHadHadWMultMix) {
         registry.add("hSparseCorrelationsMEHadHad", "THn for ME Had-Had correlations", HistType::kTHnSparseF, axes);
       } else {
-        axes.insert(axes.end(), {axisInvMass});
-        // axes.insert(axes.end(), {axisInvMass, axisMlOne, axisMlTwo});
+        // axes.insert(axes.end(), {axisInvMass});
+        axes.insert(axes.end(), {axisInvMass, axisMlOne, axisMlTwo});
         if (doprocessSameEventCharmHadWCentMix || doprocessSameEventCharmHadWMultMix || doprocessSameEventCharmHadWCentMixBase) {
           registry.add("hSparseCorrelationsSECharmHad", "THn for SE Charm-Had correlations", HistType::kTHnSparseF, axes);
         } else if (doprocessMixedEventCharmHadWCentMix || doprocessMixedEventCharmHadWMultMix || doprocessMixedEventCharmHadWCentMixBase) {
@@ -298,7 +298,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
     if constexpr (FillSparses) {
       if constexpr (requires { trigCand.bdtScore0Trig(); }) { // Separate Charm-Had and Had-Had cases
         registry.fill(HIST("hSparseCorrelationsSECharmHad"), poolBin, ptTrig, pair.ptAssoc(), pair.deltaEta(),
-                      pair.deltaPhi(), trigCand.invMassTrig()); // , trigCand.bdtScore0Trig(), trigCand.bdtScore1Trig());
+                      pair.deltaPhi(), trigCand.invMassTrig(), trigCand.bdtScore0Trig(), trigCand.bdtScore1Trig());
       } else {
         registry.fill(HIST("hSparseCorrelationsSEHadHad"), poolBin, ptTrig, pair.ptAssoc(), pair.deltaEta(), pair.deltaPhi());
       }
@@ -366,7 +366,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
         if constexpr (FillSparses) {
           if constexpr (requires { trigCand.bdtScore0Trig(); }) { // Separate Charm-Had and Had-Had cases
             registry.fill(HIST("hSparseCorrelationsMECharmHad"), poolBinTrig, ptTrig, ptAssoc, deltaEta,
-                          deltaPhi, trigCand.invMassTrig()); //, trigCand.bdtScore0Trig(), trigCand.bdtScore1Trig());
+                          deltaPhi, trigCand.invMassTrig(), trigCand.bdtScore0Trig(), trigCand.bdtScore1Trig());
           } else {
             registry.fill(HIST("hSparseCorrelationsMEHadHad"), poolBinTrig, ptTrig, ptAssoc, deltaEta, deltaPhi);
           }
