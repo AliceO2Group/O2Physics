@@ -55,6 +55,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -143,20 +144,20 @@ struct PidLongRange {
     std::vector<double> multPVT0CCutPars{};
     std::vector<double> multGlobalPVCutPars{};
     std::vector<double> multMultV0ACutPars{};
-    TF1* fMultPVT0CCutLow = nullptr;
-    TF1* fMultPVT0CCutHigh = nullptr;
-    TF1* fMultT0CCutLow = nullptr;
-    TF1* fMultT0CCutHigh = nullptr;
-    TF1* fMultGlobalPVCutLow = nullptr;
-    TF1* fMultGlobalPVCutHigh = nullptr;
-    TF1* fMultMultV0ACutLow = nullptr;
-    TF1* fMultMultV0ACutHigh = nullptr;
-    TF1* fT0AV0AMean = nullptr;
-    TF1* fT0AV0ASigma = nullptr;
-    TF1* fPtDepDCAxy = nullptr;
-    TF1* fPtDepDCAxyForNch = nullptr;
-    TF1* fPtDepDCAz = nullptr;
-    TF1* fPtDepDCAzForNch = nullptr;
+    std::unique_ptr<TF1> fMultPVT0CCutLow = nullptr;
+    std::unique_ptr<TF1> fMultPVT0CCutHigh = nullptr;
+    std::unique_ptr<TF1> fMultT0CCutLow = nullptr;
+    std::unique_ptr<TF1> fMultT0CCutHigh = nullptr;
+    std::unique_ptr<TF1> fMultGlobalPVCutLow = nullptr;
+    std::unique_ptr<TF1> fMultGlobalPVCutHigh = nullptr;
+    std::unique_ptr<TF1> fMultMultV0ACutLow = nullptr;
+    std::unique_ptr<TF1> fMultMultV0ACutHigh = nullptr;
+    std::unique_ptr<TF1> fT0AV0AMean = nullptr;
+    std::unique_ptr<TF1> fT0AV0ASigma = nullptr;
+    std::unique_ptr<TF1> fPtDepDCAxy = nullptr;
+    std::unique_ptr<TF1> fPtDepDCAxyForNch = nullptr;
+    std::unique_ptr<TF1> fPtDepDCAz = nullptr;
+    std::unique_ptr<TF1> fPtDepDCAzForNch = nullptr;
     O2_DEFINE_CONFIGURABLE(cfgV0AT0Acut, int, 5, "V0AT0A cut")
   } cfgFuncParas;
 
@@ -253,7 +254,7 @@ struct PidLongRange {
   std::array<std::array<float, 3>, 6> nSigmaVals{};
 
   // define global variables
-  TRandom3* gRandom = new TRandom3();
+  TRandom3 fRandom{0};
 
   enum EventType {
     SameEvent = 1,
@@ -261,31 +262,31 @@ struct PidLongRange {
   };
 
   enum FITIndex {
-    kFT0A = 0,
-    kFT0C = 1
+    IndexFT0A = 0,
+    IndexFT0C = 1
   };
 
   enum PIDIndex {
-    kCharged = 0,
-    kPions,
-    kKaons,
-    kProtons,
-    kK0,
-    kLambda,
-    kPhi
+    UseCharged = 0,
+    UsePions,
+    UseKaons,
+    UseProtons,
+    UseK0,
+    UseLambda,
+    UsePhi
   };
   enum PiKpArrayIndex {
-    iPionUp = 0,
-    iKaonUp,
-    iProtonUp,
-    iPionLow,
-    iKaonLow,
-    iProtonLow
+    IndexPionUp = 0,
+    IndexKaonUp,
+    IndexProtonUp,
+    IndexPionLow,
+    IndexKaonLow,
+    IndexProtonLow
   };
   enum DetectorType {
-    kTPC = 0,
-    kTOF,
-    kITS
+    UseTPC = 0,
+    UseTof,
+    UseITS
   };
   enum Stage {
     Before = 0,
@@ -293,55 +294,55 @@ struct PidLongRange {
   };
 
   enum EventCutTypes {
-    kFilteredEvents = 0,
-    kAfterSel8,
-    kUseNoTimeFrameBorder,
-    kUseNoITSROFrameBorder,
-    kUseNoSameBunchPileup,
-    kUseGoodZvtxFT0vsPV,
-    kUseNoCollInTimeRangeStandard,
-    kUseGoodITSLayersAll,
-    kUseGoodITSLayer0123,
-    kUseNoCollInRofStandard,
-    kUseNoHighMultCollInPrevRof,
-    kUseOccupancy,
-    kUseMultCorrCut,
-    kUseT0AV0ACut,
-    kHaveFT0Cut,
-    kNEventCuts
+    FilteredEvents = 0,
+    AfterSel8,
+    UseNoTimeFrameBorder,
+    UseNoITSROFrameBorder,
+    UseNoSameBunchPileup,
+    UseGoodZvtxFT0vsPV,
+    UseNoCollInTimeRangeStandard,
+    UseGoodITSLayersAll,
+    UseGoodITSLayer0123,
+    UseNoCollInRofStandard,
+    UseNoHighMultCollInPrevRof,
+    UseOccupancy,
+    UseMultCorrCut,
+    UseT0AV0ACut,
+    HaveFT0Cut,
+    NumEventCuts
   };
 
   enum EventCutType {
-    kEvCut1 = 0,
-    kNEvCutTypes = 1
+    EvCut1 = 0,
+    NumEvCutTypes = 1
   };
 
   enum TrackCuts {
-    kPtMin = 0,
-    kPtMax,
-    kEtaCut,
-    kChi2PrTpcCls,
-    kTpcCluster,
-    kTpcCrossedRows,
-    kItsCluster,
-    DCAz,
-    kDCAzNsigma,
-    kDCAxyNsigma
+    TrkCutPtMin = 0,
+    TrkCutPtMax,
+    TrkCutEtaCut,
+    TrkCutChi2PrTpcCls,
+    TrkCutTpcCluster,
+    TrkCutTpcCrossedRows,
+    TrkCutItsCluster,
+    TrkCutDCAz,
+    TrkCutDCAzNsigma,
+    TrkCutDCAxyNsigma
   };
 
   enum TrackCutGroup {
-    useGenTrkCuts = 0,
-    useNchSelCuts = 1,
-    kNTrackCutTypes
+    UseGenTrkCuts = 0,
+    UseNchSelCuts = 1,
+    NumTrackCutTypes
   };
 
   enum CentEstimators {
-    kCentFT0C = 0,
-    kCentFT0CVariant1,
-    kCentFT0M,
-    kCentFV0A,
+    UseCentFT0C = 0,
+    UseCentFT0CVariant1,
+    UseCentFT0M,
+    UseCentFV0A,
     // Count the total number of enum
-    kCount_CentEstimators
+    NumCentEstimators
   };
 
   RCTFlagsChecker rctChecker{"CBT"};
@@ -368,92 +369,93 @@ struct PidLongRange {
       histos.get<TH1>(HIST("hEventCountRct"))->GetXaxis()->SetBinLabel(1, "rct fail");
       histos.get<TH1>(HIST("hEventCountRct"))->GetXaxis()->SetBinLabel(2, "rct pass");
       histos.add("hEventCount", "Number of Event;; Count", {HistType::kTH1D, {{15, -0.5, 14.5}}});
-      histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kFilteredEvents + 1, "Filtered events");
-      histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kAfterSel8 + 1, "After sel8");
-      histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kUseNoTimeFrameBorder + 1, "kNoTimeFrameBorder");
-      histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kUseNoITSROFrameBorder + 1, "kNoITSROFrameBorder");
-      histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kUseNoSameBunchPileup + 1, "kNoSameBunchPileup");
-      histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kUseGoodZvtxFT0vsPV + 1, "kIsGoodZvtxFT0vsPV");
-      histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kUseNoCollInTimeRangeStandard + 1, "kNoCollInTimeRangeStandard");
-      histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kUseGoodITSLayersAll + 1, "kIsGoodITSLayersAll");
-      histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kUseGoodITSLayer0123 + 1, "kIsGoodITSLayer0123");
-      histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kUseNoCollInRofStandard + 1, "kNoCollInRofStandard");
-      histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kUseNoHighMultCollInPrevRof + 1, "kNoHighMultCollInPrevRof");
-      histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kUseOccupancy + 1, "Occupancy Cut");
-      histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kUseMultCorrCut + 1, "MultCorrelation Cut");
-      histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kUseT0AV0ACut + 1, "T0AV0A cut");
-      histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kHaveFT0Cut + 1, "Event has FT0 cut");
+      histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(FilteredEvents + 1, "Filtered events");
+      histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(AfterSel8 + 1, "After sel8");
+      histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(UseNoTimeFrameBorder + 1, "kNoTimeFrameBorder");
+      histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(UseNoITSROFrameBorder + 1, "kNoITSROFrameBorder");
+      histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(UseNoSameBunchPileup + 1, "kNoSameBunchPileup");
+      histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(UseGoodZvtxFT0vsPV + 1, "kIsGoodZvtxFT0vsPV");
+      histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(UseNoCollInTimeRangeStandard + 1, "kNoCollInTimeRangeStandard");
+      histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(UseGoodITSLayersAll + 1, "kIsGoodITSLayersAll");
+      histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(UseGoodITSLayer0123 + 1, "kIsGoodITSLayer0123");
+      histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(UseNoCollInRofStandard + 1, "kNoCollInRofStandard");
+      histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(UseNoHighMultCollInPrevRof + 1, "kNoHighMultCollInPrevRof");
+      histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(UseOccupancy + 1, "Occupancy Cut");
+      histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(UseMultCorrCut + 1, "MultCorrelation Cut");
+      histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(UseT0AV0ACut + 1, "T0AV0A cut");
+      histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(HaveFT0Cut + 1, "Event has FT0 cut");
     }
 
     if ((doprocessSameFt0aFt0c || doprocessSameTpcFt0 || doprocessQA) && cfgQABasic) {
       histos.add("hPassedEventSelection", "Number of Event;; Count", {HistType::kTH1D, {{12, -0.5, 11.5}}});
-      histos.get<TH1>(HIST("hPassedEventSelection"))->GetXaxis()->SetBinLabel(kFilteredEvents + 1, "Filtered events");
-      histos.get<TH1>(HIST("hPassedEventSelection"))->GetXaxis()->SetBinLabel(kAfterSel8 + 1, "After sel8");
-      histos.get<TH1>(HIST("hPassedEventSelection"))->GetXaxis()->SetBinLabel(kUseNoTimeFrameBorder + 1, "kNoTimeFrameBorder");
-      histos.get<TH1>(HIST("hPassedEventSelection"))->GetXaxis()->SetBinLabel(kUseNoITSROFrameBorder + 1, "kNoITSROFrameBorder");
-      histos.get<TH1>(HIST("hPassedEventSelection"))->GetXaxis()->SetBinLabel(kUseNoSameBunchPileup + 1, "kNoSameBunchPileup");
-      histos.get<TH1>(HIST("hPassedEventSelection"))->GetXaxis()->SetBinLabel(kUseGoodZvtxFT0vsPV + 1, "kIsGoodZvtxFT0vsPV");
-      histos.get<TH1>(HIST("hPassedEventSelection"))->GetXaxis()->SetBinLabel(kUseNoCollInTimeRangeStandard + 1, "kNoCollInTimeRangeStandard");
-      histos.get<TH1>(HIST("hPassedEventSelection"))->GetXaxis()->SetBinLabel(kUseGoodITSLayersAll + 1, "kIsGoodITSLayersAll");
-      histos.get<TH1>(HIST("hPassedEventSelection"))->GetXaxis()->SetBinLabel(kUseGoodITSLayer0123 + 1, "kIsGoodITSLayer0123");
-      histos.get<TH1>(HIST("hPassedEventSelection"))->GetXaxis()->SetBinLabel(kUseNoCollInRofStandard + 1, "kNoCollInRofStandard");
-      histos.get<TH1>(HIST("hPassedEventSelection"))->GetXaxis()->SetBinLabel(kUseNoHighMultCollInPrevRof + 1, "kNoHighMultCollInPrevRof");
-      histos.get<TH1>(HIST("hPassedEventSelection"))->GetXaxis()->SetBinLabel(kUseOccupancy + 1, "Occupancy Cut");
+      histos.get<TH1>(HIST("hPassedEventSelection"))->GetXaxis()->SetBinLabel(FilteredEvents + 1, "Filtered events");
+      histos.get<TH1>(HIST("hPassedEventSelection"))->GetXaxis()->SetBinLabel(AfterSel8 + 1, "After sel8");
+      histos.get<TH1>(HIST("hPassedEventSelection"))->GetXaxis()->SetBinLabel(UseNoTimeFrameBorder + 1, "kNoTimeFrameBorder");
+      histos.get<TH1>(HIST("hPassedEventSelection"))->GetXaxis()->SetBinLabel(UseNoITSROFrameBorder + 1, "kNoITSROFrameBorder");
+      histos.get<TH1>(HIST("hPassedEventSelection"))->GetXaxis()->SetBinLabel(UseNoSameBunchPileup + 1, "kNoSameBunchPileup");
+      histos.get<TH1>(HIST("hPassedEventSelection"))->GetXaxis()->SetBinLabel(UseGoodZvtxFT0vsPV + 1, "kIsGoodZvtxFT0vsPV");
+      histos.get<TH1>(HIST("hPassedEventSelection"))->GetXaxis()->SetBinLabel(UseNoCollInTimeRangeStandard + 1, "kNoCollInTimeRangeStandard");
+      histos.get<TH1>(HIST("hPassedEventSelection"))->GetXaxis()->SetBinLabel(UseGoodITSLayersAll + 1, "kIsGoodITSLayersAll");
+      histos.get<TH1>(HIST("hPassedEventSelection"))->GetXaxis()->SetBinLabel(UseGoodITSLayer0123 + 1, "kIsGoodITSLayer0123");
+      histos.get<TH1>(HIST("hPassedEventSelection"))->GetXaxis()->SetBinLabel(UseNoCollInRofStandard + 1, "kNoCollInRofStandard");
+      histos.get<TH1>(HIST("hPassedEventSelection"))->GetXaxis()->SetBinLabel(UseNoHighMultCollInPrevRof + 1, "kNoHighMultCollInPrevRof");
+      histos.get<TH1>(HIST("hPassedEventSelection"))->GetXaxis()->SetBinLabel(UseOccupancy + 1, "Occupancy Cut");
     }
 
     // Multiplicity correlation cuts
-    if (eventCuts[kUseMultCorrCut][kEvCut1] != 0) {
+    if (eventCuts[UseMultCorrCut][EvCut1] != 0) {
       cfgFuncParas.multT0CCutPars = cfgFuncParas.cfgMultT0CCutPars;
       cfgFuncParas.multPVT0CCutPars = cfgFuncParas.cfgMultPVT0CCutPars;
       cfgFuncParas.multGlobalPVCutPars = cfgFuncParas.cfgMultGlobalPVCutPars;
       cfgFuncParas.multMultV0ACutPars = cfgFuncParas.cfgMultMultV0ACutPars;
-      cfgFuncParas.fMultPVT0CCutLow = new TF1("fMultPVT0CCutLow", cfgFuncParas.cfgMultCentLowCutFunction->c_str(), 0, 100);
+
+      cfgFuncParas.fMultPVT0CCutLow = std::make_unique<TF1>("fMultPVT0CCutLow", cfgFuncParas.cfgMultCentLowCutFunction->c_str(), 0, 100);
       cfgFuncParas.fMultPVT0CCutLow->SetParameters(cfgFuncParas.multPVT0CCutPars.data());
-      cfgFuncParas.fMultPVT0CCutHigh = new TF1("fMultPVT0CCutHigh", cfgFuncParas.cfgMultCentHighCutFunction->c_str(), 0, 100);
+      cfgFuncParas.fMultPVT0CCutHigh = std::make_unique<TF1>("fMultPVT0CCutHigh", cfgFuncParas.cfgMultCentHighCutFunction->c_str(), 0, 100);
       cfgFuncParas.fMultPVT0CCutHigh->SetParameters(cfgFuncParas.multPVT0CCutPars.data());
 
-      cfgFuncParas.fMultT0CCutLow = new TF1("fMultT0CCutLow", cfgFuncParas.cfgMultCentLowCutFunction->c_str(), 0, 100);
+      cfgFuncParas.fMultT0CCutLow = std::make_unique<TF1>("fMultT0CCutLow", cfgFuncParas.cfgMultCentLowCutFunction->c_str(), 0, 100);
       cfgFuncParas.fMultT0CCutLow->SetParameters(cfgFuncParas.multT0CCutPars.data());
-      cfgFuncParas.fMultT0CCutHigh = new TF1("fMultT0CCutHigh", cfgFuncParas.cfgMultCentHighCutFunction->c_str(), 0, 100);
+      cfgFuncParas.fMultT0CCutHigh = std::make_unique<TF1>("fMultT0CCutHigh", cfgFuncParas.cfgMultCentHighCutFunction->c_str(), 0, 100);
       cfgFuncParas.fMultT0CCutHigh->SetParameters(cfgFuncParas.multT0CCutPars.data());
 
-      cfgFuncParas.fMultGlobalPVCutLow = new TF1("fMultGlobalPVCutLow", cfgFuncParas.cfgMultMultPVLowCutFunction->c_str(), 0, 4000);
+      cfgFuncParas.fMultGlobalPVCutLow = std::make_unique<TF1>("fMultGlobalPVCutLow", cfgFuncParas.cfgMultMultPVLowCutFunction->c_str(), 0, 4000);
       cfgFuncParas.fMultGlobalPVCutLow->SetParameters(cfgFuncParas.multGlobalPVCutPars.data());
-      cfgFuncParas.fMultGlobalPVCutHigh = new TF1("fMultGlobalPVCutHigh", cfgFuncParas.cfgMultMultPVHighCutFunction->c_str(), 0, 4000);
+      cfgFuncParas.fMultGlobalPVCutHigh = std::make_unique<TF1>("fMultGlobalPVCutHigh", cfgFuncParas.cfgMultMultPVHighCutFunction->c_str(), 0, 4000);
       cfgFuncParas.fMultGlobalPVCutHigh->SetParameters(cfgFuncParas.multGlobalPVCutPars.data());
 
-      cfgFuncParas.fMultMultV0ACutLow = new TF1("fMultMultV0ACutLow", cfgFuncParas.cfgMultMultV0ALowCutFunction->c_str(), 0, 4000);
+      cfgFuncParas.fMultMultV0ACutLow = std::make_unique<TF1>("fMultMultV0ACutLow", cfgFuncParas.cfgMultMultV0ALowCutFunction->c_str(), 0, 4000);
       cfgFuncParas.fMultMultV0ACutLow->SetParameters(cfgFuncParas.multMultV0ACutPars.data());
-      cfgFuncParas.fMultMultV0ACutHigh = new TF1("fMultMultV0ACutHigh", cfgFuncParas.cfgMultMultV0AHighCutFunction->c_str(), 0, 4000);
+      cfgFuncParas.fMultMultV0ACutHigh = std::make_unique<TF1>("fMultMultV0ACutHigh", cfgFuncParas.cfgMultMultV0AHighCutFunction->c_str(), 0, 4000);
       cfgFuncParas.fMultMultV0ACutHigh->SetParameters(cfgFuncParas.multMultV0ACutPars.data());
     }
-    if (eventCuts[kUseT0AV0ACut][kEvCut1] != 0) {
-      cfgFuncParas.fT0AV0AMean = new TF1("fT0AV0AMean", "[0]+[1]*x", 0, 200000);
+    if (eventCuts[UseT0AV0ACut][EvCut1] != 0) {
+      cfgFuncParas.fT0AV0AMean = std::make_unique<TF1>("fT0AV0AMean", "[0]+[1]*x", 0, 200000);
       cfgFuncParas.fT0AV0AMean->SetParameters(-1601.0581, 9.417652e-01);
-      cfgFuncParas.fT0AV0ASigma = new TF1("fT0AV0ASigma", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 200000);
+      cfgFuncParas.fT0AV0ASigma = std::make_unique<TF1>("fT0AV0ASigma", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 200000);
       cfgFuncParas.fT0AV0ASigma->SetParameters(463.4144, 6.796509e-02, -9.097136e-07, 7.971088e-12, -2.600581e-17);
     }
 
-    if (trackCuts[kDCAxyNsigma][useGenTrkCuts]) {
-      cfgFuncParas.fPtDepDCAxy = new TF1("ptDepDCAxy", Form("[0]*%s", cfgTrackCutsDCAxy.value[0].c_str()), 0.001, 1000);
-      cfgFuncParas.fPtDepDCAxy->SetParameter(0, trackCuts[kDCAxyNsigma][useGenTrkCuts]);
-      LOGF(info, "DCAxy pt-dependence function: %s", Form("%0.1f * %s", trackCuts[kDCAxyNsigma][useGenTrkCuts], cfgTrackCutsDCAxy.value[0].c_str()));
+    if (trackCuts[TrkCutDCAxyNsigma][UseGenTrkCuts]) {
+      cfgFuncParas.fPtDepDCAxy = std::make_unique<TF1>("ptDepDCAxy", Form("[0]*%s", cfgTrackCutsDCAxy.value[0].c_str()), 0.001, 1000);
+      cfgFuncParas.fPtDepDCAxy->SetParameter(0, trackCuts[TrkCutDCAxyNsigma][UseGenTrkCuts]);
+      LOGF(info, "DCAxy pt-dependence function: %s", Form("%0.1f * %s", trackCuts[TrkCutDCAxyNsigma][UseGenTrkCuts], cfgTrackCutsDCAxy.value[0].c_str()));
     }
-    if (trackCuts[kDCAxyNsigma][useNchSelCuts]) {
-      cfgFuncParas.fPtDepDCAxyForNch = new TF1("ptDepDCAxyForNch", Form("[0]*%s", cfgTrackCutsDCAxy.value[1].c_str()), 0.001, 1000);
-      cfgFuncParas.fPtDepDCAxyForNch->SetParameter(0, trackCuts[kDCAxyNsigma][useNchSelCuts]);
-      LOGF(info, "DCAxy pt-dependence function for Nch: %s", Form("%0.1f * %s", trackCuts[kDCAxyNsigma][useNchSelCuts], cfgTrackCutsDCAxy.value[1].c_str()));
+    if (trackCuts[TrkCutDCAxyNsigma][UseNchSelCuts]) {
+      cfgFuncParas.fPtDepDCAxyForNch = std::make_unique<TF1>("ptDepDCAxyForNch", Form("[0]*%s", cfgTrackCutsDCAxy.value[1].c_str()), 0.001, 1000);
+      cfgFuncParas.fPtDepDCAxyForNch->SetParameter(0, trackCuts[TrkCutDCAxyNsigma][UseNchSelCuts]);
+      LOGF(info, "DCAxy pt-dependence function for Nch: %s", Form("%0.1f * %s", trackCuts[TrkCutDCAxyNsigma][UseNchSelCuts], cfgTrackCutsDCAxy.value[1].c_str()));
     }
 
-    if (trackCuts[kDCAzNsigma][useGenTrkCuts]) {
-      cfgFuncParas.fPtDepDCAz = new TF1("ptDepDCAz", Form("[0]*%s", cfgTrackCutsDCAz.value[0].c_str()), 0.001, 1000);
-      cfgFuncParas.fPtDepDCAz->SetParameter(0, trackCuts[kDCAzNsigma][useGenTrkCuts]);
-      LOGF(info, "DCAz pt-dependence function: %s", Form("%0.1f * %s", trackCuts[kDCAzNsigma][useGenTrkCuts], cfgTrackCutsDCAz.value[0].c_str()));
+    if (trackCuts[TrkCutDCAzNsigma][UseGenTrkCuts]) {
+      cfgFuncParas.fPtDepDCAz = std::make_unique<TF1>("ptDepDCAz", Form("[0]*%s", cfgTrackCutsDCAz.value[0].c_str()), 0.001, 1000);
+      cfgFuncParas.fPtDepDCAz->SetParameter(0, trackCuts[TrkCutDCAzNsigma][UseGenTrkCuts]);
+      LOGF(info, "DCAz pt-dependence function: %s", Form("%0.1f * %s", trackCuts[TrkCutDCAzNsigma][UseGenTrkCuts], cfgTrackCutsDCAz.value[0].c_str()));
     }
-    if (trackCuts[kDCAzNsigma][useNchSelCuts]) {
-      cfgFuncParas.fPtDepDCAzForNch = new TF1("ptDepDCAzForNch", Form("[0]*%s", cfgTrackCutsDCAz.value[1].c_str()), 0.001, 1000);
-      cfgFuncParas.fPtDepDCAzForNch->SetParameter(0, trackCuts[kDCAzNsigma][useNchSelCuts]);
-      LOGF(info, "DCAz pt-dependence function for Nch: %s", Form("%0.1f * %s", trackCuts[kDCAzNsigma][useNchSelCuts], cfgTrackCutsDCAz.value[1].c_str()));
+    if (trackCuts[TrkCutDCAzNsigma][UseNchSelCuts]) {
+      cfgFuncParas.fPtDepDCAzForNch = std::make_unique<TF1>("ptDepDCAzForNch", Form("[0]*%s", cfgTrackCutsDCAz.value[1].c_str()), 0.001, 1000);
+      cfgFuncParas.fPtDepDCAzForNch->SetParameter(0, trackCuts[TrkCutDCAzNsigma][UseNchSelCuts]);
+      LOGF(info, "DCAz pt-dependence function for Nch: %s", Form("%0.1f * %s", trackCuts[TrkCutDCAzNsigma][UseNchSelCuts], cfgTrackCutsDCAz.value[1].c_str()));
     }
 
     const AxisSpec axisT0C{70, 0, 70000, "N_{ch} (T0C)"};
@@ -639,16 +641,16 @@ struct PidLongRange {
   {
     double cent = 0.0;
     switch (cfgCentEstimator) {
-      case kCentFT0C:
+      case UseCentFT0C:
         cent = collision.centFT0C();
         break;
-      case kCentFT0CVariant1:
+      case UseCentFT0CVariant1:
         cent = collision.centFT0CVariant1();
         break;
-      case kCentFT0M:
+      case UseCentFT0M:
         cent = collision.centFT0M();
         break;
-      case kCentFV0A:
+      case UseCentFV0A:
         cent = collision.centFV0A();
         break;
       default:
@@ -678,101 +680,101 @@ struct PidLongRange {
   bool eventSelected(TCollision const& collision, const int mult, const double cent, const bool fillCounter)
   {
     if (fillCounter) {
-      histos.fill(HIST("hEventCount"), kFilteredEvents);
+      histos.fill(HIST("hEventCount"), FilteredEvents);
     }
     if (!collision.sel8()) {
       return false;
     }
     if (fillCounter) {
-      histos.fill(HIST("hEventCount"), kAfterSel8);
+      histos.fill(HIST("hEventCount"), AfterSel8);
     }
 
-    if (eventCuts[kUseNoTimeFrameBorder][kEvCut1] && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+    if (eventCuts[UseNoTimeFrameBorder][EvCut1] && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       return false;
     }
-    if (fillCounter && eventCuts[kUseNoTimeFrameBorder][kEvCut1]) {
-      histos.fill(HIST("hEventCount"), kUseNoTimeFrameBorder);
+    if (fillCounter && eventCuts[UseNoTimeFrameBorder][EvCut1]) {
+      histos.fill(HIST("hEventCount"), UseNoTimeFrameBorder);
     }
 
-    if (eventCuts[kUseNoITSROFrameBorder][kEvCut1] && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+    if (eventCuts[UseNoITSROFrameBorder][EvCut1] && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       return false;
     }
-    if (fillCounter && eventCuts[kUseNoITSROFrameBorder][kEvCut1]) {
-      histos.fill(HIST("hEventCount"), kUseNoITSROFrameBorder);
+    if (fillCounter && eventCuts[UseNoITSROFrameBorder][EvCut1]) {
+      histos.fill(HIST("hEventCount"), UseNoITSROFrameBorder);
     }
 
-    if (eventCuts[kUseNoSameBunchPileup][kEvCut1] && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+    if (eventCuts[UseNoSameBunchPileup][EvCut1] && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       // rejects collisions which are associated with the same "found-by-T0" bunch crossing
       // https://indico.cern.ch/event/1396220/#1-event-selection-with-its-rof
       return false;
     }
-    if (fillCounter && eventCuts[kUseNoSameBunchPileup][kEvCut1]) {
-      histos.fill(HIST("hEventCount"), kUseNoSameBunchPileup);
+    if (fillCounter && eventCuts[UseNoSameBunchPileup][EvCut1]) {
+      histos.fill(HIST("hEventCount"), UseNoSameBunchPileup);
     }
 
-    if (eventCuts[kUseGoodZvtxFT0vsPV][kEvCut1] && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    if (eventCuts[UseGoodZvtxFT0vsPV][EvCut1] && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference
       // use this cut at low multiplicities with caution
       return false;
     }
-    if (fillCounter && eventCuts[kUseGoodZvtxFT0vsPV][kEvCut1]) {
-      histos.fill(HIST("hEventCount"), kUseGoodZvtxFT0vsPV);
+    if (fillCounter && eventCuts[UseGoodZvtxFT0vsPV][EvCut1]) {
+      histos.fill(HIST("hEventCount"), UseGoodZvtxFT0vsPV);
     }
 
-    if (eventCuts[kUseNoCollInTimeRangeStandard][kEvCut1] && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+    if (eventCuts[UseNoCollInTimeRangeStandard][EvCut1] && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       // no collisions in specified time range
       return false;
     }
 
-    if (fillCounter && eventCuts[kUseNoCollInTimeRangeStandard][kEvCut1]) {
-      histos.fill(HIST("hEventCount"), kUseNoCollInTimeRangeStandard);
+    if (fillCounter && eventCuts[UseNoCollInTimeRangeStandard][EvCut1]) {
+      histos.fill(HIST("hEventCount"), UseNoCollInTimeRangeStandard);
     }
 
-    if (eventCuts[kUseGoodITSLayersAll][kEvCut1] && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+    if (eventCuts[UseGoodITSLayersAll][EvCut1] && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
       // from Jan 9 2025 AOT meeting
       // cut time intervals with dead ITS staves
       return false;
     }
 
-    if (fillCounter && eventCuts[kUseGoodITSLayersAll][kEvCut1]) {
-      histos.fill(HIST("hEventCount"), kUseGoodITSLayersAll);
+    if (fillCounter && eventCuts[UseGoodITSLayersAll][EvCut1]) {
+      histos.fill(HIST("hEventCount"), UseGoodITSLayersAll);
     }
 
-    if (eventCuts[kUseGoodITSLayer0123][kEvCut1] && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123)) {
+    if (eventCuts[UseGoodITSLayer0123][EvCut1] && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123)) {
       return false;
     }
-    if (fillCounter && eventCuts[kUseGoodITSLayer0123][kEvCut1]) {
-      histos.fill(HIST("hEventCount"), kUseGoodITSLayer0123);
+    if (fillCounter && eventCuts[UseGoodITSLayer0123][EvCut1]) {
+      histos.fill(HIST("hEventCount"), UseGoodITSLayer0123);
     }
 
-    if (eventCuts[kUseNoCollInRofStandard][kEvCut1] && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+    if (eventCuts[UseNoCollInRofStandard][EvCut1] && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
       // no other collisions in this Readout Frame with per-collision multiplicity above threshold
       return false;
     }
 
-    if (fillCounter && eventCuts[kUseNoCollInRofStandard][kEvCut1]) {
-      histos.fill(HIST("hEventCount"), kUseNoCollInRofStandard);
+    if (fillCounter && eventCuts[UseNoCollInRofStandard][EvCut1]) {
+      histos.fill(HIST("hEventCount"), UseNoCollInRofStandard);
     }
 
-    if (eventCuts[kUseNoHighMultCollInPrevRof][kEvCut1] && !collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+    if (eventCuts[UseNoHighMultCollInPrevRof][EvCut1] && !collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
       // veto an event if FT0C amplitude in previous ITS ROF is above threshold
       return false;
     }
-    if (fillCounter && eventCuts[kUseNoHighMultCollInPrevRof][kEvCut1]) {
-      histos.fill(HIST("hEventCount"), kUseNoHighMultCollInPrevRof);
+    if (fillCounter && eventCuts[UseNoHighMultCollInPrevRof][EvCut1]) {
+      histos.fill(HIST("hEventCount"), UseNoHighMultCollInPrevRof);
     }
 
     auto multNTracksPV = collision.multNTracksPV();
     auto occupancy = collision.trackOccupancyInTimeRange();
 
-    if (eventCuts[kUseOccupancy][kEvCut1] && (occupancy < cfgEventSelection.cfgCutOccupancyLow || occupancy > cfgEventSelection.cfgCutOccupancyHigh)) {
+    if (eventCuts[UseOccupancy][EvCut1] && (occupancy < cfgEventSelection.cfgCutOccupancyLow || occupancy > cfgEventSelection.cfgCutOccupancyHigh)) {
       return false;
     }
-    if (fillCounter && eventCuts[kUseOccupancy][kEvCut1]) {
-      histos.fill(HIST("hEventCount"), kUseOccupancy);
+    if (fillCounter && eventCuts[UseOccupancy][EvCut1]) {
+      histos.fill(HIST("hEventCount"), UseOccupancy);
     }
 
-    if (eventCuts[kUseMultCorrCut][kEvCut1]) {
+    if (eventCuts[UseMultCorrCut][EvCut1]) {
       if (cfgFuncParas.cfgMultPVT0CCutEnabled) {
         if (multNTracksPV < cfgFuncParas.fMultPVT0CCutLow->Eval(cent)) {
           return false;
@@ -807,16 +809,16 @@ struct PidLongRange {
       }
     }
 
-    if (fillCounter && eventCuts[kUseMultCorrCut][kEvCut1]) {
-      histos.fill(HIST("hEventCount"), kUseMultCorrCut);
+    if (fillCounter && eventCuts[UseMultCorrCut][EvCut1]) {
+      histos.fill(HIST("hEventCount"), UseMultCorrCut);
     }
 
     // V0A T0A 5 sigma cut
-    if (eventCuts[kUseT0AV0ACut][kEvCut1] && (std::fabs(collision.multFV0A() - cfgFuncParas.fT0AV0AMean->Eval(collision.multFT0A())) > cfgFuncParas.cfgV0AT0Acut * cfgFuncParas.fT0AV0ASigma->Eval(collision.multFT0A()))) {
+    if (eventCuts[UseT0AV0ACut][EvCut1] && (std::fabs(collision.multFV0A() - cfgFuncParas.fT0AV0AMean->Eval(collision.multFT0A())) > cfgFuncParas.cfgV0AT0Acut * cfgFuncParas.fT0AV0ASigma->Eval(collision.multFT0A()))) {
       return false;
     }
-    if (fillCounter && eventCuts[kUseT0AV0ACut][kEvCut1]) {
-      histos.fill(HIST("hEventCount"), kUseT0AV0ACut);
+    if (fillCounter && eventCuts[UseT0AV0ACut][EvCut1]) {
+      histos.fill(HIST("hEventCount"), UseT0AV0ACut);
     }
 
     return true;
@@ -825,51 +827,51 @@ struct PidLongRange {
   template <typename TCollision>
   void eventSelectedIndividually(TCollision const& collision)
   {
-    histos.fill(HIST("hPassedEventSelection"), kFilteredEvents);
+    histos.fill(HIST("hPassedEventSelection"), FilteredEvents);
 
     if (collision.sel8()) {
-      histos.fill(HIST("hPassedEventSelection"), kAfterSel8);
+      histos.fill(HIST("hPassedEventSelection"), AfterSel8);
     }
 
     if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-      histos.fill(HIST("hPassedEventSelection"), kUseNoTimeFrameBorder);
+      histos.fill(HIST("hPassedEventSelection"), UseNoTimeFrameBorder);
     }
 
     if (collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
-      histos.fill(HIST("hPassedEventSelection"), kUseNoITSROFrameBorder);
+      histos.fill(HIST("hPassedEventSelection"), UseNoITSROFrameBorder);
     }
 
     if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
-      histos.fill(HIST("hPassedEventSelection"), kUseNoSameBunchPileup);
+      histos.fill(HIST("hPassedEventSelection"), UseNoSameBunchPileup);
     }
 
     if (collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
-      histos.fill(HIST("hPassedEventSelection"), kUseGoodZvtxFT0vsPV);
+      histos.fill(HIST("hPassedEventSelection"), UseGoodZvtxFT0vsPV);
     }
 
     if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
-      histos.fill(HIST("hPassedEventSelection"), kUseNoCollInTimeRangeStandard);
+      histos.fill(HIST("hPassedEventSelection"), UseNoCollInTimeRangeStandard);
     }
 
     if (collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
-      histos.fill(HIST("hPassedEventSelection"), kUseGoodITSLayersAll);
+      histos.fill(HIST("hPassedEventSelection"), UseGoodITSLayersAll);
     }
 
     if (collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123)) {
-      histos.fill(HIST("hPassedEventSelection"), kUseGoodITSLayer0123);
+      histos.fill(HIST("hPassedEventSelection"), UseGoodITSLayer0123);
     }
 
     if (collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
-      histos.fill(HIST("hPassedEventSelection"), kUseNoCollInRofStandard);
+      histos.fill(HIST("hPassedEventSelection"), UseNoCollInRofStandard);
     }
 
     if (collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
-      histos.fill(HIST("hPassedEventSelection"), kUseNoHighMultCollInPrevRof);
+      histos.fill(HIST("hPassedEventSelection"), UseNoHighMultCollInPrevRof);
     }
 
     auto occupancy = collision.trackOccupancyInTimeRange();
-    if (eventCuts[kUseOccupancy][kEvCut1] && (occupancy > cfgEventSelection.cfgCutOccupancyLow || occupancy < cfgEventSelection.cfgCutOccupancyHigh)) {
-      histos.fill(HIST("hPassedEventSelection"), kUseOccupancy);
+    if (eventCuts[UseOccupancy][EvCut1] && (occupancy > cfgEventSelection.cfgCutOccupancyLow || occupancy < cfgEventSelection.cfgCutOccupancyHigh)) {
+      histos.fill(HIST("hPassedEventSelection"), UseOccupancy);
     }
   }
 
@@ -915,39 +917,39 @@ struct PidLongRange {
   template <typename TTrack>
   bool trackSelected(TTrack const& track)
   {
-    if (trackCuts[kDCAxyNsigma][useGenTrkCuts] && std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxy->Eval(track.pt())) {
+    if (trackCuts[TrkCutDCAxyNsigma][UseGenTrkCuts] && std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxy->Eval(track.pt())) {
       return false;
     }
 
-    if (trackCuts[kDCAzNsigma][useGenTrkCuts]) {
+    if (trackCuts[TrkCutDCAzNsigma][UseGenTrkCuts]) {
       if (std::fabs(track.dcaZ()) > cfgFuncParas.fPtDepDCAz->Eval(track.pt())) {
         return false;
       }
     } else {
-      if (std::fabs(track.dcaZ()) > trackCuts[DCAz][useGenTrkCuts]) {
+      if (std::fabs(track.dcaZ()) > trackCuts[TrkCutDCAz][UseGenTrkCuts]) {
         return false;
       }
     }
 
-    return ((track.pt() > trackCuts[kPtMin][useGenTrkCuts]) && (track.pt() < trackCuts[kPtMax][useGenTrkCuts]) && (std::abs(track.eta()) < trackCuts[kEtaCut][useGenTrkCuts]) && (track.tpcChi2NCl() < trackCuts[kChi2PrTpcCls][useGenTrkCuts]) && (track.tpcNClsFound() >= trackCuts[kTpcCluster][useGenTrkCuts]) && (track.tpcNClsCrossedRows() >= trackCuts[kTpcCrossedRows][useGenTrkCuts]) && (track.itsNCls() >= trackCuts[kItsCluster][useGenTrkCuts]));
+    return ((track.pt() > trackCuts[TrkCutPtMin][UseGenTrkCuts]) && (track.pt() < trackCuts[TrkCutPtMax][UseGenTrkCuts]) && (std::abs(track.eta()) < trackCuts[TrkCutEtaCut][UseGenTrkCuts]) && (track.tpcChi2NCl() < trackCuts[TrkCutChi2PrTpcCls][UseGenTrkCuts]) && (track.tpcNClsFound() >= trackCuts[TrkCutTpcCluster][UseGenTrkCuts]) && (track.tpcNClsCrossedRows() >= trackCuts[TrkCutTpcCrossedRows][UseGenTrkCuts]) && (track.itsNCls() >= trackCuts[TrkCutItsCluster][UseGenTrkCuts]));
   }
 
   template <typename TTrack>
   bool trackSelectedForNch(TTrack const& track)
   {
-    if (trackCuts[kDCAxyNsigma][useNchSelCuts] && (std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxyForNch->Eval(track.pt()))) {
+    if (trackCuts[TrkCutDCAxyNsigma][UseNchSelCuts] && (std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxyForNch->Eval(track.pt()))) {
       return false;
     }
-    if (trackCuts[kDCAzNsigma][useNchSelCuts]) {
+    if (trackCuts[TrkCutDCAzNsigma][UseNchSelCuts]) {
       if (std::fabs(track.dcaZ()) > cfgFuncParas.fPtDepDCAzForNch->Eval(track.pt())) {
         return false;
       }
     } else {
-      if (std::fabs(track.dcaZ()) > trackCuts[DCAz][useNchSelCuts]) {
+      if (std::fabs(track.dcaZ()) > trackCuts[TrkCutDCAz][UseNchSelCuts]) {
         return false;
       }
     }
-    return ((track.pt() > trackCuts[kPtMin][useNchSelCuts]) && (track.pt() < trackCuts[kPtMax][useNchSelCuts]) && (std::abs(track.eta()) < trackCuts[kEtaCut][useNchSelCuts]) && (track.tpcChi2NCl() < trackCuts[kChi2PrTpcCls][useNchSelCuts]) && (track.tpcNClsFound() >= trackCuts[kTpcCluster][useNchSelCuts]) && (track.tpcNClsCrossedRows() >= trackCuts[kTpcCrossedRows][useNchSelCuts]) && (track.itsNCls() >= trackCuts[kItsCluster][useNchSelCuts]));
+    return ((track.pt() > trackCuts[TrkCutPtMin][UseNchSelCuts]) && (track.pt() < trackCuts[TrkCutPtMax][UseNchSelCuts]) && (std::abs(track.eta()) < trackCuts[TrkCutEtaCut][UseNchSelCuts]) && (track.tpcChi2NCl() < trackCuts[TrkCutChi2PrTpcCls][UseNchSelCuts]) && (track.tpcNClsFound() >= trackCuts[TrkCutTpcCluster][UseNchSelCuts]) && (track.tpcNClsCrossedRows() >= trackCuts[TrkCutTpcCrossedRows][UseNchSelCuts]) && (track.itsNCls() >= trackCuts[TrkCutItsCluster][UseNchSelCuts]));
   }
 
   void loadGain(aod::BCsWithTimestamps::iterator const& bc)
@@ -978,7 +980,7 @@ struct PidLongRange {
   template <typename TFT0s>
   void getChannel(TFT0s const& ft0, std::size_t const& iCh, int& id, float& ampl, int fitType, int system)
   {
-    if (fitType == kFT0C) {
+    if (fitType == IndexFT0C) {
       id = ft0.channelC()[iCh];
       id = id + Ft0IndexA;
       ampl = ft0.amplitudeC()[iCh];
@@ -989,7 +991,7 @@ struct PidLongRange {
       if (system == SameEvent) {
         histos.fill(HIST("FT0AmpCorrect"), id, ampl);
       }
-    } else if (fitType == kFT0A) {
+    } else if (fitType == IndexFT0A) {
       id = ft0.channelA()[iCh];
       ampl = ft0.amplitudeA()[iCh];
       if (system == SameEvent) {
@@ -1014,8 +1016,8 @@ struct PidLongRange {
     int pid = -1; // -1 = not identified, 1 = pion, 2 = kaon, 3 = proton
 
     std::array<float, 3> nSigmaToUse = cfgPIDConfigs.cfgUseItsPID ? nSigmaITS : nSigmaTPC; // Choose which nSigma to use: TPC or ITS
-    int kIndexDetector = kTPC;
-    kIndexDetector = cfgPIDConfigs.cfgUseItsPID ? kITS : kTPC; // Choose which nSigma to use: TPC or ITS
+    int useIndexDetector = UseTPC;
+    useIndexDetector = cfgPIDConfigs.cfgUseItsPID ? UseITS : UseTPC; // Choose which nSigma to use: TPC or ITS
 
     bool isPion = false;
     bool isKaon = false;
@@ -1027,13 +1029,13 @@ struct PidLongRange {
     bool isTofKaon = false;
     bool isTofProton = false;
 
-    isDetectedPion = nSigmaToUse[iPionUp] < nSigmaVals[iPionUp][kIndexDetector] && nSigmaToUse[iPionUp] > nSigmaVals[iPionLow][kIndexDetector];
-    isDetectedKaon = nSigmaToUse[iKaonUp] < nSigmaVals[iKaonUp][kIndexDetector] && nSigmaToUse[iKaonUp] > nSigmaVals[iKaonLow][kIndexDetector];
-    isDetectedProton = nSigmaToUse[iProtonUp] < nSigmaVals[iProtonUp][kIndexDetector] && nSigmaToUse[iProtonUp] > nSigmaVals[iProtonLow][kIndexDetector];
+    isDetectedPion = nSigmaToUse[IndexPionUp] < nSigmaVals[IndexPionUp][useIndexDetector] && nSigmaToUse[IndexPionUp] > nSigmaVals[IndexPionLow][useIndexDetector];
+    isDetectedKaon = nSigmaToUse[IndexKaonUp] < nSigmaVals[IndexKaonUp][useIndexDetector] && nSigmaToUse[IndexKaonUp] > nSigmaVals[IndexKaonLow][useIndexDetector];
+    isDetectedProton = nSigmaToUse[IndexProtonUp] < nSigmaVals[IndexProtonUp][useIndexDetector] && nSigmaToUse[IndexProtonUp] > nSigmaVals[IndexProtonLow][useIndexDetector];
 
-    isTofPion = nSigmaTOF[iPionUp] < nSigmaVals[iPionUp][kTOF] && nSigmaTOF[iPionUp] > nSigmaVals[iPionLow][kTOF];
-    isTofKaon = nSigmaTOF[iKaonUp] < nSigmaVals[iKaonUp][kTOF] && nSigmaTOF[iKaonUp] > nSigmaVals[iKaonLow][kTOF];
-    isTofProton = nSigmaTOF[iProtonUp] < nSigmaVals[iProtonUp][kTOF] && nSigmaTOF[iProtonUp] > nSigmaVals[iProtonLow][kTOF];
+    isTofPion = nSigmaTOF[IndexPionUp] < nSigmaVals[IndexPionUp][UseTof] && nSigmaTOF[IndexPionUp] > nSigmaVals[IndexPionLow][UseTof];
+    isTofKaon = nSigmaTOF[IndexKaonUp] < nSigmaVals[IndexKaonUp][UseTof] && nSigmaTOF[IndexKaonUp] > nSigmaVals[IndexKaonLow][UseTof];
+    isTofProton = nSigmaTOF[IndexProtonUp] < nSigmaVals[IndexProtonUp][UseTof] && nSigmaTOF[IndexProtonUp] > nSigmaVals[IndexProtonLow][UseTof];
 
     if (track.pt() > cfgPIDConfigs.cfgTofPtCut && !track.hasTOF()) {
       return -1;
@@ -1053,11 +1055,11 @@ struct PidLongRange {
     }
 
     if (isPion) {
-      pid = kPions;
+      pid = UsePions;
     } else if (isKaon) {
-      pid = kKaons;
+      pid = UseKaons;
     } else if (isProton) {
-      pid = kProtons;
+      pid = UseProtons;
     } else {
       return -1; // no particle satisfies the criteria
     }
@@ -1209,14 +1211,14 @@ struct PidLongRange {
   void fillTrackQA(TTrack const& track, int pid, double eventClass, Stage stage, float weff) // function to fill the QA after Nsigma selection
   {
     if (cfgQABasic) {
-      if (stage == Before && pid == kCharged) {
-        histos.fill(HIST("Phi"), RecoDecay::constrainAngle(track.phi(), 0.0), kCharged);
-        histos.fill(HIST("Eta"), track.eta(), kCharged);
-        histos.fill(HIST("EtaCorrected"), track.eta(), kCharged, weff);
-        histos.fill(HIST("pTFiner"), track.pt(), kCharged, eventClass);
-        histos.fill(HIST("pTFinerCorrected"), track.pt(), kCharged, eventClass, weff);
+      if (stage == Before && pid == UseCharged) {
+        histos.fill(HIST("Phi"), RecoDecay::constrainAngle(track.phi(), 0.0), UseCharged);
+        histos.fill(HIST("Eta"), track.eta(), UseCharged);
+        histos.fill(HIST("EtaCorrected"), track.eta(), UseCharged, weff);
+        histos.fill(HIST("pTFiner"), track.pt(), UseCharged, eventClass);
+        histos.fill(HIST("pTFinerCorrected"), track.pt(), UseCharged, eventClass, weff);
 
-      } else if (stage == After && pid > kCharged) {
+      } else if (stage == After && pid > UseCharged) {
         histos.fill(HIST("Phi"), RecoDecay::constrainAngle(track.phi(), 0.0), pid);
         histos.fill(HIST("Eta"), track.eta(), pid);
         histos.fill(HIST("EtaCorrected"), track.eta(), pid, weff);
@@ -1225,14 +1227,14 @@ struct PidLongRange {
       }
     }
 
-    if (pid > kCharged) {
+    if (pid > UseCharged) {
       const bool useITS = cfgPIDConfigs.cfgUseItsPID;
       double tpcNSigma = 0.0;
       double tpcExpSigma = 0.0;
       double tofNSigma = 0.0;
       double itsNSigma = 0.0;
       switch (pid) {
-        case kPions: // For Pions
+        case UsePions: // For Pions
           tofNSigma = track.tofNSigmaPi();
           if (!useITS) {
             tpcNSigma = track.tpcNSigmaPi();
@@ -1241,7 +1243,7 @@ struct PidLongRange {
             itsNSigma = itsResponse.nSigmaITS<o2::track::PID::Pion>(track);
           }
           break;
-        case kKaons: // For Kaons
+        case UseKaons: // For Kaons
           tofNSigma = track.tofNSigmaKa();
           if (!useITS) {
             tpcNSigma = track.tpcNSigmaKa();
@@ -1251,7 +1253,7 @@ struct PidLongRange {
           }
           break;
 
-        case kProtons: // For Protons
+        case UseProtons: // For Protons
           tofNSigma = track.tofNSigmaPr();
           if (!useITS) {
             tpcNSigma = track.tpcNSigmaPr();
@@ -1297,7 +1299,7 @@ struct PidLongRange {
   template <typename TTracks, typename TFT0s>
   void fillCorrelationsTPCFT0(const TTracks& tracks1, TFT0s const& ft0, float posZ, int system, double eventClass, int corType, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
-    int fSampleIndex = static_cast<int>(gRandom->Uniform(0.0, cfgSampleSize));
+    int fSampleIndex = static_cast<int>(fRandom.Uniform(0.0, cfgSampleSize));
 
     float triggerWeight = 1.0f;
     // loop over all tracks
@@ -1310,35 +1312,35 @@ struct PidLongRange {
         continue;
       }
 
-      fillTrackQA(track1, kCharged, eventClass, Before, triggerWeight);
-      fillTrackQA(track1, kPions, eventClass, Before, triggerWeight);
-      fillTrackQA(track1, kKaons, eventClass, Before, triggerWeight);
-      fillTrackQA(track1, kProtons, eventClass, Before, triggerWeight);
+      fillTrackQA(track1, UseCharged, eventClass, Before, triggerWeight);
+      fillTrackQA(track1, UsePions, eventClass, Before, triggerWeight);
+      fillTrackQA(track1, UseKaons, eventClass, Before, triggerWeight);
+      fillTrackQA(track1, UseProtons, eventClass, Before, triggerWeight);
 
       int pidIndex = getNsigmaPID(track1);
 
-      if (pidIndex > kCharged) {
+      if (pidIndex > UseCharged) {
         fillTrackQA(track1, pidIndex, eventClass, After, triggerWeight);
       }
 
       if (system == SameEvent) {
-        if (corType == kFT0C) {
-          histos.fill(HIST("Trig_hist_TPC_FT0C"), fSampleIndex, posZ, eventClass, track1.pt(), kCharged, eventWeight * triggerWeight);
-          if (pidIndex > kCharged) {
+        if (corType == IndexFT0C) {
+          histos.fill(HIST("Trig_hist_TPC_FT0C"), fSampleIndex, posZ, eventClass, track1.pt(), UseCharged, eventWeight * triggerWeight);
+          if (pidIndex > UseCharged) {
             histos.fill(HIST("Trig_hist_TPC_FT0C"), fSampleIndex, posZ, eventClass, track1.pt(), pidIndex, eventWeight * triggerWeight);
           }
-        } else if (corType == kFT0A) {
-          histos.fill(HIST("Trig_hist_TPC_FT0A"), fSampleIndex, posZ, eventClass, track1.pt(), kCharged, eventWeight * triggerWeight);
-          if (pidIndex > kCharged) {
+        } else if (corType == IndexFT0A) {
+          histos.fill(HIST("Trig_hist_TPC_FT0A"), fSampleIndex, posZ, eventClass, track1.pt(), UseCharged, eventWeight * triggerWeight);
+          if (pidIndex > UseCharged) {
             histos.fill(HIST("Trig_hist_TPC_FT0A"), fSampleIndex, posZ, eventClass, track1.pt(), pidIndex, eventWeight * triggerWeight);
           }
         }
       }
 
       std::size_t channelSize = 0;
-      if (corType == kFT0C) {
+      if (corType == IndexFT0C) {
         channelSize = ft0.channelC().size();
-      } else if (corType == kFT0A) {
+      } else if (corType == IndexFT0A) {
         channelSize = ft0.channelA().size();
       } else {
         LOGF(fatal, "Cor Index %d out of range", corType);
@@ -1355,42 +1357,42 @@ struct PidLongRange {
         float deltaEta = track1.eta() - eta;
         // fill the right sparse and histograms
         if (system == SameEvent) {
-          if (corType == kFT0A) {
+          if (corType == IndexFT0A) {
             if (cfgQABasic) {
               histos.fill(HIST("Assoc_amp_same_TPC_FT0A"), chanelid, ampl);
               histos.fill(HIST("deltaEta_deltaPhi_same_TPC_FT0A"), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
             }
-            sameTpcFt0a->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, deltaPhi, deltaEta, track1.pt(), kCharged, ampl * eventWeight * triggerWeight);
-            if (pidIndex > kCharged) {
+            sameTpcFt0a->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, deltaPhi, deltaEta, track1.pt(), UseCharged, ampl * eventWeight * triggerWeight);
+            if (pidIndex > UseCharged) {
               sameTpcFt0a->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, deltaPhi, deltaEta, track1.pt(), pidIndex, ampl * eventWeight * triggerWeight);
             }
-          } else if (corType == kFT0C) {
+          } else if (corType == IndexFT0C) {
             if (cfgQABasic) {
               histos.fill(HIST("Assoc_amp_same_TPC_FT0C"), chanelid, ampl);
               histos.fill(HIST("deltaEta_deltaPhi_same_TPC_FT0C"), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
             }
-            sameTpcFt0c->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, deltaPhi, deltaEta, track1.pt(), kCharged, ampl * eventWeight * triggerWeight);
-            if (pidIndex > kCharged) {
+            sameTpcFt0c->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, deltaPhi, deltaEta, track1.pt(), UseCharged, ampl * eventWeight * triggerWeight);
+            if (pidIndex > UseCharged) {
               sameTpcFt0c->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, deltaPhi, deltaEta, track1.pt(), pidIndex, ampl * eventWeight * triggerWeight);
             }
           }
         } else if (system == MixedEvent) {
-          if (corType == kFT0A) {
+          if (corType == IndexFT0A) {
             if (cfgQABasic) {
               histos.fill(HIST("Assoc_amp_mixed_TPC_FT0A"), chanelid, ampl);
               histos.fill(HIST("deltaEta_deltaPhi_mixed_TPC_FT0A"), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
             }
-            mixedTpcFt0a->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, deltaPhi, deltaEta, track1.pt(), kCharged, ampl * eventWeight * triggerWeight);
-            if (pidIndex > kCharged) {
+            mixedTpcFt0a->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, deltaPhi, deltaEta, track1.pt(), UseCharged, ampl * eventWeight * triggerWeight);
+            if (pidIndex > UseCharged) {
               mixedTpcFt0a->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, deltaPhi, deltaEta, track1.pt(), pidIndex, ampl * eventWeight * triggerWeight);
             }
-          } else if (corType == kFT0C) {
+          } else if (corType == IndexFT0C) {
             if (cfgQABasic) {
               histos.fill(HIST("Assoc_amp_mixed_TPC_FT0C"), chanelid, ampl);
               histos.fill(HIST("deltaEta_deltaPhi_mixed_TPC_FT0C"), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
             }
-            mixedTpcFt0c->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, deltaPhi, deltaEta, track1.pt(), kCharged, ampl * eventWeight * triggerWeight);
-            if (pidIndex > kCharged) {
+            mixedTpcFt0c->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, deltaPhi, deltaEta, track1.pt(), UseCharged, ampl * eventWeight * triggerWeight);
+            if (pidIndex > UseCharged) {
               mixedTpcFt0c->getCorrHist()->Fill(0, fSampleIndex, posZ, eventClass, deltaPhi, deltaEta, track1.pt(), pidIndex, ampl * eventWeight * triggerWeight);
             }
           }
@@ -1402,7 +1404,7 @@ struct PidLongRange {
   template <typename TFT0s>
   void fillCorrelationsFT0AFT0C(TFT0s const& ft0Col1, TFT0s const& ft0Col2, float posZ, int system, double eventClass, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
-    int fSampleIndex = static_cast<int>(gRandom->Uniform(0.0, cfgSampleSize));
+    int fSampleIndex = static_cast<int>(fRandom.Uniform(0.0, cfgSampleSize));
 
     float triggerWeight = 1.0f;
     std::size_t channelASize = ft0Col1.channelA().size();
@@ -1412,9 +1414,9 @@ struct PidLongRange {
 
       int chanelAid = 0;
       float amplA = 0.;
-      getChannel(ft0Col1, iChA, chanelAid, amplA, kFT0A, system);
-      auto phiA = getPhiFT0(chanelAid, kFT0A);
-      auto etaA = getEtaFT0(chanelAid, kFT0A);
+      getChannel(ft0Col1, iChA, chanelAid, amplA, IndexFT0A, system);
+      auto phiA = getPhiFT0(chanelAid, IndexFT0A);
+      auto etaA = getEtaFT0(chanelAid, IndexFT0A);
 
       if (system == SameEvent) {
         histos.fill(HIST("Trig_hist_FT0A_FT0C"), fSampleIndex, posZ, eventClass, eventWeight * amplA);
@@ -1423,9 +1425,9 @@ struct PidLongRange {
       for (std::size_t iChC = 0; iChC < channelCSize; iChC++) {
         int chanelCid = 0;
         float amplC = 0.;
-        getChannel(ft0Col2, iChC, chanelCid, amplC, kFT0C, system);
-        auto phiC = getPhiFT0(chanelCid, kFT0C);
-        auto etaC = getEtaFT0(chanelCid, kFT0C);
+        getChannel(ft0Col2, iChC, chanelCid, amplC, IndexFT0C, system);
+        auto phiC = getPhiFT0(chanelCid, IndexFT0C);
+        auto etaC = getEtaFT0(chanelCid, IndexFT0C);
         float deltaPhi = RecoDecay::constrainAngle(phiA - phiC, -PIHalf);
         float deltaEta = etaA - etaC;
 
@@ -1484,7 +1486,7 @@ struct PidLongRange {
       return;
     }
 
-    histos.fill(HIST("hEventCount"), kHaveFT0Cut);
+    histos.fill(HIST("hEventCount"), HaveFT0Cut);
 
     loadAlignParam(bc.timestamp());
     loadGain(bc);
@@ -1527,10 +1529,10 @@ struct PidLongRange {
 
     const auto& ft0 = collision.foundFT0();
     if (cfgAnalyzeTPCFT0A) {
-      fillCorrelationsTPCFT0(tracks, ft0, collision.posZ(), SameEvent, eventClass, kFT0A, weightCent);
+      fillCorrelationsTPCFT0(tracks, ft0, collision.posZ(), SameEvent, eventClass, IndexFT0A, weightCent);
     }
     if (cfgAnalyzeTPCFT0C) {
-      fillCorrelationsTPCFT0(tracks, ft0, collision.posZ(), SameEvent, eventClass, kFT0C, weightCent);
+      fillCorrelationsTPCFT0(tracks, ft0, collision.posZ(), SameEvent, eventClass, IndexFT0C, weightCent);
     }
   }
   PROCESS_SWITCH(PidLongRange, processSameTpcFt0, "Process same event for TPC-FT0 correlation", false);
@@ -1616,10 +1618,10 @@ struct PidLongRange {
 
       const auto& ft0 = collision2.foundFT0();
       if (cfgAnalyzeTPCFT0A) {
-        fillCorrelationsTPCFT0(tracks1, ft0, collision1.posZ(), MixedEvent, eventClass, kFT0A, eventWeight * weightCent);
+        fillCorrelationsTPCFT0(tracks1, ft0, collision1.posZ(), MixedEvent, eventClass, IndexFT0A, eventWeight * weightCent);
       }
       if (cfgAnalyzeTPCFT0C) {
-        fillCorrelationsTPCFT0(tracks1, ft0, collision1.posZ(), MixedEvent, eventClass, kFT0C, eventWeight * weightCent);
+        fillCorrelationsTPCFT0(tracks1, ft0, collision1.posZ(), MixedEvent, eventClass, IndexFT0C, eventWeight * weightCent);
       }
     }
   }
@@ -1652,7 +1654,7 @@ struct PidLongRange {
     if (!collision.has_foundFT0()) {
       return;
     }
-    histos.fill(HIST("hEventCount"), kHaveFT0Cut);
+    histos.fill(HIST("hEventCount"), HaveFT0Cut);
 
     loadAlignParam(bc.timestamp());
     loadGain(bc);
@@ -1826,7 +1828,7 @@ struct PidLongRange {
     if (!collision.has_foundFT0()) {
       return;
     }
-    histos.fill(HIST("hEventCount"), kHaveFT0Cut);
+    histos.fill(HIST("hEventCount"), HaveFT0Cut);
 
     loadAlignParam(bc.timestamp());
     loadGain(bc);
@@ -1872,17 +1874,17 @@ struct PidLongRange {
       histos.fill(HIST("hChi2prITScls"), track.itsChi2NCl());
       histos.fill(HIST("hITSNclsFound"), track.itsNCls());
 
-      histos.fill(HIST("hDCAz_after"), track.dcaZ(), track.pt(), kCharged);
-      histos.fill(HIST("hDCAxy_after"), track.dcaXY(), track.pt(), kCharged);
+      histos.fill(HIST("hDCAz_after"), track.dcaZ(), track.pt(), UseCharged);
+      histos.fill(HIST("hDCAxy_after"), track.dcaXY(), track.pt(), UseCharged);
 
-      fillTrackQA(track, kCharged, eventClass, Before, triggerWeight);
-      fillTrackQA(track, kPions, eventClass, Before, triggerWeight);
-      fillTrackQA(track, kKaons, eventClass, Before, triggerWeight);
-      fillTrackQA(track, kProtons, eventClass, Before, triggerWeight);
+      fillTrackQA(track, UseCharged, eventClass, Before, triggerWeight);
+      fillTrackQA(track, UsePions, eventClass, Before, triggerWeight);
+      fillTrackQA(track, UseKaons, eventClass, Before, triggerWeight);
+      fillTrackQA(track, UseProtons, eventClass, Before, triggerWeight);
 
       int pidIndex = getNsigmaPID(track);
 
-      if (pidIndex > kCharged) {
+      if (pidIndex > UseCharged) {
         fillTrackQA(track, pidIndex, eventClass, After, triggerWeight);
         histos.fill(HIST("hDCAz_after"), track.dcaZ(), track.pt(), pidIndex);
         histos.fill(HIST("hDCAxy_after"), track.dcaXY(), track.pt(), pidIndex);
