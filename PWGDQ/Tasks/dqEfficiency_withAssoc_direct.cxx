@@ -3442,26 +3442,26 @@ struct AnalysisDileptonTrackTrack {
       int indexLepton2 = dilepton.index1Id();
       auto lepton1 = tracks.rawIteratorAt(dilepton.index0Id());
       auto lepton2 = tracks.rawIteratorAt(dilepton.index1Id());
-      auto lepton1MC = lepton1.reducedMCTrack();
-      auto lepton2MC = lepton2.reducedMCTrack();
+      auto lepton1MC = lepton1.mcParticle();
+      auto lepton2MC = lepton2.mcParticle();
       // Check that the dilepton has zero charge
       if (dilepton.sign() != 0) {
         continue;
       }
       VarManager::FillTrack<fgDileptonFillMap>(dilepton, fValuesQuadruplet);
 
-      bool isAmbiguousLepton = (dilepton.filterMap_raw() & (static_cast<uint32_t>(1) << 28)) ||
-                               (dilepton.filterMap_raw() & (static_cast<uint32_t>(1) << 29)) ||
-                               (dilepton.filterMap_raw() & (static_cast<uint32_t>(1) << 30)) ||
-                               (dilepton.filterMap_raw() & (static_cast<uint32_t>(1) << 31));
-      // if (isAmbi && isAmbiguousLepton)
-      //   continue; // skip ambiguous dileptons
-      if constexpr ((TTrackFillMap & VarManager::ObjTypes::AmbiTrack) > 0) {
-        if (isAmbiguousLepton) {
-          // LOGP(info, "Dilepton {} is ambiguous, skipping", dilepton.index0Id());
-          continue; // skip ambiguous dileptons
-        }
-      }
+      // bool isAmbiguousLepton = (dilepton.filterMap_raw() & (static_cast<uint32_t>(1) << 28)) ||
+      //                          (dilepton.filterMap_raw() & (static_cast<uint32_t>(1) << 29)) ||
+      //                          (dilepton.filterMap_raw() & (static_cast<uint32_t>(1) << 30)) ||
+      //                          (dilepton.filterMap_raw() & (static_cast<uint32_t>(1) << 31));
+      // // if (isAmbi && isAmbiguousLepton)
+      // //   continue; // skip ambiguous dileptons
+      // if constexpr ((TTrackFillMap & VarManager::ObjTypes::AmbiTrack) > 0) {
+      //   if (isAmbiguousLepton) {
+      //     // LOGP(info, "Dilepton {} is ambiguous, skipping", dilepton.index0Id());
+      //     continue; // skip ambiguous dileptons
+      //   }
+      // }
 
       // apply the dilepton cut
       if (!fDileptonCut.IsSelected(fValuesQuadruplet))
@@ -3479,8 +3479,8 @@ struct AnalysisDileptonTrackTrack {
         }
 
         // get the track from this association
-        auto track1 = a1.template reducedtrack_as<TTracks>();
-        auto track2 = a2.template reducedtrack_as<TTracks>();
+        auto track1 = tracks.rawIteratorAt(a1.trackId());
+        auto track2 = tracks.rawIteratorAt(a2.trackId());
         if (track1.sign() < 0 && track2.sign() > 0) {
           std::swap(track1, track2);
         }
@@ -3511,8 +3511,8 @@ struct AnalysisDileptonTrackTrack {
         //   VarManager::FillBdtScore(fOutputMlQuad, fValuesQuadruplet);
         // }
 
-        auto track1MC = track1.reducedMCTrack();
-        auto track2MC = track2.reducedMCTrack();
+        auto track1MC = track1.mcParticle();
+        auto track2MC = track2.mcParticle();
         mcDecision = 0;
         isig = 0;
         for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
