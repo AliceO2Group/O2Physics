@@ -24,6 +24,7 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 
+#include <array>
 #include <map>
 #include <string>
 #include <string_view>

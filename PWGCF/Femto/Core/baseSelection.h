@@ -377,7 +377,7 @@ class BaseSelection
 
   /// \brief Print the full configuration of all selections to the log.
   /// \param objectName Name of the object owning this selection (used as label in the log output).
-  void printSelections(const std::string& objectName) const
+  void printSelections(const char* objectName) const
   {
     LOG(info) << "Printing Configuration of " << objectName;
     for (size_t idx = 0; idx < mSelectionContainers.size(); ++idx) {
