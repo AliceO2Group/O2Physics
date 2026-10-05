@@ -3450,10 +3450,10 @@ struct AnalysisDileptonTrackTrack {
       }
       VarManager::FillTrack<fgDileptonFillMap>(dilepton, fValuesQuadruplet);
 
-      bool isAmbiguousLepton = (dilepton.filterMap_raw() & (static_cast<uint32_t>(1) << 28)) || 
-                         (dilepton.filterMap_raw() & (static_cast<uint32_t>(1) << 29)) ||
-                         (dilepton.filterMap_raw() & (static_cast<uint32_t>(1) << 30)) ||
-                         (dilepton.filterMap_raw() & (static_cast<uint32_t>(1) << 31));
+      bool isAmbiguousLepton = (dilepton.filterMap_raw() & (static_cast<uint32_t>(1) << 28)) ||
+                               (dilepton.filterMap_raw() & (static_cast<uint32_t>(1) << 29)) ||
+                               (dilepton.filterMap_raw() & (static_cast<uint32_t>(1) << 30)) ||
+                               (dilepton.filterMap_raw() & (static_cast<uint32_t>(1) << 31));
       // if (isAmbi && isAmbiguousLepton)
       //   continue; // skip ambiguous dileptons
       if constexpr ((TTrackFillMap & VarManager::ObjTypes::AmbiTrack) > 0) {
@@ -3462,7 +3462,6 @@ struct AnalysisDileptonTrackTrack {
           continue; // skip ambiguous dileptons
         }
       }
-
 
       // apply the dilepton cut
       if (!fDileptonCut.IsSelected(fValuesQuadruplet))
@@ -3517,7 +3516,7 @@ struct AnalysisDileptonTrackTrack {
         mcDecision = 0;
         isig = 0;
         for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
-          if ((*sig)->CheckSignal(true,lepton1MC, lepton2MC, track1MC, track2MC)) {
+          if ((*sig)->CheckSignal(true, lepton1MC, lepton2MC, track1MC, track2MC)) {
             mcDecision |= (static_cast<uint32_t>(1) << isig);
           }
         }
@@ -3560,7 +3559,7 @@ struct AnalysisDileptonTrackTrack {
         if (!CutDecision)
           continue;
         if (!mcDecision)
-          continue; 
+          continue;
         // if (fConfigML.applyBDT)
         //   continue; // skip filling table when BDT is applied for now
         DileptonTrackTrackTable(fValuesQuadruplet[VarManager::kQuadDefaultDileptonMass], fValuesQuadruplet[VarManager::kQuadPt], fValuesQuadruplet[VarManager::kQuadEta], fValuesQuadruplet[VarManager::kQuadPhi], fValuesQuadruplet[VarManager::kRap],
@@ -3571,7 +3570,7 @@ struct AnalysisDileptonTrackTrack {
                                 fValuesQuadruplet[VarManager::kDitrackMass], fValuesQuadruplet[VarManager::kDitrackPt], track1.pt(), track2.pt(), track1.eta(), track2.eta(), track1.phi(), track2.phi(), track1.sign(), track2.sign(), track1.tpcNSigmaPi(), track2.tpcNSigmaPi(), track1.tpcNSigmaKa(), track2.tpcNSigmaKa(), track1.tpcNSigmaPr(), track1.tpcNSigmaPr(), track1.tpcNClsFound(), track2.tpcNClsFound(),
                                 fValuesQuadruplet[VarManager::kKFMass], fValuesQuadruplet[VarManager::kVertexingProcCode], fValuesQuadruplet[VarManager::kVertexingChi2PCA], fValuesQuadruplet[VarManager::kCosPointingAngle], fValuesQuadruplet[VarManager::kKFDCAxyzBetweenProngs], fValuesQuadruplet[VarManager::kKFChi2OverNDFGeo],
                                 fValuesQuadruplet[VarManager::kVertexingLz], fValuesQuadruplet[VarManager::kVertexingLxy], fValuesQuadruplet[VarManager::kVertexingLxyz], fValuesQuadruplet[VarManager::kVertexingTauz], fValuesQuadruplet[VarManager::kVertexingTauxy], fValuesQuadruplet[VarManager::kVertexingLzErr], fValuesQuadruplet[VarManager::kVertexingLxyzErr],
-                                fValuesQuadruplet[VarManager::kVertexingTauzErr], fValuesQuadruplet[VarManager::kVertexingLzProjected], fValuesQuadruplet[VarManager::kVertexingLxyProjected], fValuesQuadruplet[VarManager::kVertexingLxyzProjected], fValuesQuadruplet[VarManager::kVertexingTauzProjected], fValuesQuadruplet[VarManager::kVertexingTauxyProjected], 
+                                fValuesQuadruplet[VarManager::kVertexingTauzErr], fValuesQuadruplet[VarManager::kVertexingLzProjected], fValuesQuadruplet[VarManager::kVertexingLxyProjected], fValuesQuadruplet[VarManager::kVertexingLxyzProjected], fValuesQuadruplet[VarManager::kVertexingTauzProjected], fValuesQuadruplet[VarManager::kVertexingTauxyProjected],
                                 dilepton.filterMap_raw(), CutDecision);
       } // end loop over associations
     } // end loop over dileptons
@@ -3582,9 +3581,9 @@ struct AnalysisDileptonTrackTrack {
   // Preslice<MyDitrackCandidates> ditracksPerCollision = aod::reducedpair::reducedeventId;
 
   void processX3872(soa::Filtered<MyEventsSelected> const& events, BCsWithTimestamps const& bcs,
-                     soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts> const& assocs,
-                     MyBarrelTracksWithCov const& tracks, soa::Filtered<MyDielectronCandidates> const& dileptons,
-                     McCollisions const& mcEvents, McParticles const& mcTracks)
+                    soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts> const& assocs,
+                    MyBarrelTracksWithCov const& tracks, soa::Filtered<MyDielectronCandidates> const& dileptons,
+                    McCollisions const& mcEvents, McParticles const& mcTracks)
   {
     // set up KF or DCAfitter
     if (events.size() == 0) {
@@ -3605,9 +3604,9 @@ struct AnalysisDileptonTrackTrack {
   }
 
   void processPsi2S(soa::Filtered<MyEventsSelected> const& events, BCsWithTimestamps const& bcs,
-                     soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts> const& assocs,
-                     MyBarrelTracksWithCov const& tracks, soa::Filtered<MyDielectronCandidates> const& dileptons,
-                     McCollisions const& mcEvents, McParticles const& mcTracks)
+                    soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts> const& assocs,
+                    MyBarrelTracksWithCov const& tracks, soa::Filtered<MyDielectronCandidates> const& dileptons,
+                    McCollisions const& mcEvents, McParticles const& mcTracks)
   {
     // set up KF or DCAfitter
     if (events.size() == 0) {
@@ -3644,7 +3643,7 @@ struct AnalysisDileptonTrackTrack {
           int daughterIdFirst = mctrack.daughtersIds()[0];
           int daughterIdEnd = mctrack.daughtersIds()[1];
           int Ndaughters = daughterIdEnd - daughterIdFirst + 1;
-          if (Ndaughters ==3) {
+          if (Ndaughters == 3) {
             auto dilepton = mcTracks.rawIteratorAt(daughterIdFirst);
             auto track1 = mcTracks.rawIteratorAt(daughterIdFirst + 1);
             auto track2 = mcTracks.rawIteratorAt(daughterIdFirst + 2);
@@ -3732,7 +3731,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<AnalysisTrackSelection>(cfgc),
     adaptAnalysisTask<AnalysisPrefilterSelection>(cfgc),
     adaptAnalysisTask<AnalysisSameEventPairing>(cfgc),
-    adaptAnalysisTask<AnalysisDileptonTrack>(cfgc), 
+    adaptAnalysisTask<AnalysisDileptonTrack>(cfgc),
     adaptAnalysisTask<AnalysisDileptonTrackTrack>(cfgc)};
 }
 
