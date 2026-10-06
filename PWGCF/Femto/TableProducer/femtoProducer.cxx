@@ -228,24 +228,25 @@ struct FemtoProducer {
     if ((xiBuilder.fillAnyTable() || omegaBuilder.fillAnyTable()) &&
         (!doprocessTracksV0sCascadesRun3pp && !doprocessTracksV0sCascadesRun3PbPb &&
          !doprocessTracksV0sCascadesRun3PbPbWithEventShape &&
-         !doprocessTracksV0sCascadesKinksRun3pp && !doprocessTracksV0sCascadesRun3ppMc &&
+         !doprocessTracksV0sCascadesKinksRun3pp && !doprocessTracksV0sCascadesKinksPhotonsRun3pp &&
+         !doprocessTracksV0sCascadesRun3ppMc &&
          !doprocessTracksV0sCascadesRun3PbPbMc)) {
       LOG(fatal) << "At least one cascade table is enabled, but wrong process function is enabled. Breaking...";
     }
     if ((lambdaBuilder.fillAnyTable() || antilambdaBuilder.fillAnyTable() || k0shortBuilder.fillAnyTable()) &&
         (!doprocessTracksV0sCascadesRun3pp && !doprocessTracksV0sCascadesRun3PbPb &&
-         !doprocessTracksV0sRun3pp && !doprocessTracksV0sCascadesKinksRun3pp &&
+         !doprocessTracksV0sRun3pp && !doprocessTracksV0sCascadesKinksRun3pp && !doprocessTracksV0sCascadesKinksPhotonsRun3pp &&
          !doprocessTracksV0sCascadesRun3PbPbWithEventShape &&
          !doprocessTracksV0sRun3ppMc && !doprocessTracksV0sRun3PbPb && !doprocessTracksV0sRun3PbPbMc &&
          !doprocessTracksV0sCascadesRun3ppMc && !doprocessTracksV0sCascadesRun3PbPbMc &&
          !doprocessTracksV0sKinksRun3ppMc)) {
       LOG(fatal) << "At least one v0 table is enabled, but wrong process function is enabled. Breaking...";
     }
-    if (photonBuilder.fillAnyTable() && (!doprocessTracksPhotonsRun3pp && !doprocessTracksPhotonsRun3PbPb)) {
+    if (photonBuilder.fillAnyTable() && (!doprocessTracksPhotonsRun3pp && !doprocessTracksPhotonsRun3PbPb && !doprocessTracksV0sCascadesKinksPhotonsRun3pp)) {
       LOG(fatal) << "At least one photon table is enabled, but wrong process function is enabled. Breaking...";
     }
     if ((sigmaBuilder.fillAnyTable() || sigmaPlusBuilder.fillAnyTable()) &&
-        (!doprocessTracksKinksRun3pp && !doprocessTracksV0sCascadesKinksRun3pp &&
+        (!doprocessTracksKinksRun3pp && !doprocessTracksV0sCascadesKinksRun3pp && !doprocessTracksV0sCascadesKinksPhotonsRun3pp &&
          !doprocessTracksKinksRun3ppMc && !doprocessTracksV0sKinksRun3ppMc)) {
       LOG(fatal) << "At least one kink table is enabled, but wrong process function is enabled. Breaking...";
     }
@@ -346,6 +347,7 @@ struct FemtoProducer {
       static_cast<int>(doprocessTracksV0sCascadesRun3PbPbWithEventShape) +
       static_cast<int>(doprocessTracksKinksRun3pp) +
       static_cast<int>(doprocessTracksV0sCascadesKinksRun3pp) +
+      static_cast<int>(doprocessTracksV0sCascadesKinksPhotonsRun3pp) +
       static_cast<int>(doprocessTracksD0sRun3pp) +
       static_cast<int>(doprocessTracksD0sRun3PbPb) +
       static_cast<int>(doprocessTracksRun3ppMc) +
@@ -700,6 +702,31 @@ struct FemtoProducer {
     processKinks<modes::System::kPP_Run3>(col, tracks, kinks);
   }
   PROCESS_SWITCH(FemtoProducer, processTracksV0sCascadesKinksRun3pp, "Provide tracks, v0s, cascades and kinks", false);
+
+  void processTracksV0sCascadesKinksPhotonsRun3pp(rawinputs::Run3PpCollisions::iterator const& col,
+                                                  o2::aod::BCsWithTimestamps const& bcs,
+                                                  rawinputs::Run3FullPidTracks const& tracks,
+                                                  rawinputs::Run3Vzeros const& v0s,
+                                                  rawinputs::Run3Cascades const& cascades,
+                                                  rawinputs::Run3Kinks const& kinks,
+                                                  o2::aod::V0PhotonsKF const& photons,
+                                                  o2::aod::V0Legs const& v0legs)
+  {
+    if (!processCollisions<modes::System::kPP_Run3>(col, bcs, tracks)) {
+      return;
+    }
+    auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                            o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracks);
+    processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
+    processV0s<modes::System::kPP_Run3>(col, tracks, v0s);
+    processCascades<modes::System::kPP_Run3>(col, tracks, cascades);
+    processKinks<modes::System::kPP_Run3>(col, tracks, kinks);
+    // V0PhotonsKF/V0Legs carry a plain CollisionId column (not a framework index column), so they
+    // are not auto-grouped by the DPL binder and must be sliced manually, same as EMPhotonFilter.cxx
+    auto photonsThisCol = photons.sliceBy(perColRecoPCMPhotons, col.globalIndex());
+    processPhotons<modes::System::kPP_Run3>(col, photonsThisCol, v0legs);
+  }
+  PROCESS_SWITCH(FemtoProducer, processTracksV0sCascadesKinksPhotonsRun3pp, "Provide tracks, v0s, cascades, kinks and PCM photons", false);
 
   void processTracksD0sRun3pp(rawinputs::Run3PpCollisions::iterator const& col,
                               o2::aod::BCsWithTimestamps const& bcs,

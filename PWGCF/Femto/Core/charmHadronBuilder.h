@@ -92,7 +92,7 @@ struct ConfD0Selection : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> ptMin{"ptMin", 1.f, "Minimum pT"};
   o2::framework::Configurable<float> ptMax{"ptMax", 3.f, "Maximum pT"};
   // acceptance is applied as a rapidity cut in the builder; the eta/phi windows
-  // are kept open and exist only to satisfy macro
+  // are kept open and exist only to satisfy the partition macro
   o2::framework::Configurable<float> etaMin{"etaMin", -0.8f, "Minimum eta"};
   o2::framework::Configurable<float> etaMax{"etaMax", 0.8f, "Maximum eta"};
   o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};
