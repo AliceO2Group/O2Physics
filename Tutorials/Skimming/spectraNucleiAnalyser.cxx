@@ -50,7 +50,7 @@ struct NucleiSpectraAnalyserTask {
 
     spectra.fill(HIST("fCollZpos"), collision.posZ());
 
-    for (auto track : tracks) { // start loop over tracks
+    for (const auto& track : tracks) { // start loop over tracks
       TLorentzVector cutVector{};
       cutVector.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassHelium3);
       if (cutVector.Rapidity() < yMin + yBeam || cutVector.Rapidity() > yMax + yBeam) {

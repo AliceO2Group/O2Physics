@@ -345,6 +345,7 @@ struct v0Configurables : o2::framework::ConfigurableGroup {
   std::string prefix = "v0BuilderOpts";
   o2::framework::Configurable<bool> generatePhotonCandidates{"generatePhotonCandidates", false, "generate gamma conversion candidates (V0s using TPC-only tracks)"};
   o2::framework::Configurable<bool> moveTPCOnlyTracks{"moveTPCOnlyTracks", true, "if dealing with TPC-only tracks, move them according to TPC drift / time info"};
+  o2::framework::Configurable<bool> useSideBasedCorrection{"useSideBasedCorrection", false, "when moving TPC-only tracks, use TPC side flags (with legacy fallback) instead of tgl sign"};
 
   // baseline conditionals of V0 building
   o2::framework::Configurable<int> minCrossedRows{"minCrossedRows", 50, "minimum TPC crossed rows for daughter tracks"};
@@ -835,6 +836,8 @@ class BuilderModule
     if (eventSelectOpts.cfgApplyRCTrequirement) {
       rctFlagsChecker.init(eventSelectOpts.cfgRCTLabel.value, eventSelectOpts.cfgCheckZDC, eventSelectOpts.cfgTreatLimitedAcceptanceAsBad);
     }
+
+    mVDriftMgr.setUseSideBasedCorrection(v0BuilderOpts.useSideBasedCorrection.value);
   }
 
   // for sorting
@@ -1262,7 +1265,7 @@ class BuilderModule
     sorted_v0 = sort_indices(v0List, (baseOpts.mc_findableMode.value > 0));
 
     // Cascade part if cores are requested, skip otherwise
-    if (baseOpts.mEnabledTables[kStoredCascCores] || baseOpts.mEnabledTables[kStoredKFCascCores]) {
+    if (baseOpts.mEnabledTables[kStoredCascCores] || baseOpts.mEnabledTables[kStoredKFCascCores] || baseOpts.mEnabledTables[kStoredTraCascCores]) {
       if (baseOpts.mc_findableMode.value < 2) {
         // simple passthrough: copy existing cascades to build list
         for (const auto& cascade : cascades) {
@@ -2807,7 +2810,7 @@ class BuilderModule
         // interlink always produced if base core table generated
         traCascIndices[cascade.globalIndex()] = products.tracascdata.lastIndex();
       }
-      if (baseOpts.mEnabledTables[kCascCovs]) {
+      if (baseOpts.mEnabledTables[kTraCascCovs]) {
         std::array<float, o2::track::kLabCovMatSize> traCovMat = {0.};
         strangeTrackParCov.getCovXYZPxPyPzGlo(traCovMat);
         float traCovMatArray[o2::track::kLabCovMatSize];
@@ -2815,7 +2818,7 @@ class BuilderModule
           traCovMatArray[ii] = traCovMat[ii];
         }
         products.tracasccovs(traCovMatArray);
-        histos.fill(HIST("hTableBuildingStatistics"), kCascCovs);
+        histos.fill(HIST("hTableBuildingStatistics"), kTraCascCovs);
       }
 
       //_________________________________________________________

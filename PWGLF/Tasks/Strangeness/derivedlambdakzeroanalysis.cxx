@@ -60,6 +60,7 @@
 
 #include <TH1.h>
 #include <TH2.h>
+#include <TObject.h>
 #include <TPDGCode.h>
 #include <TProfile.h>
 
@@ -131,9 +132,10 @@ struct derivedlambdakzeroanalysis {
 
   // for MC
   Configurable<bool> doMCAssociation{"doMCAssociation", true, "if MC, do MC association"};
-  Configurable<bool> doTreatPiToMuon{"doTreatPiToMuon", false, "Take pi decay into muon into account in MC"};
+  Configurable<bool> doTreatPiToMuon{"doTreatPiToMuon", true, "Take pi decay into muon into account in MC"};
   Configurable<bool> doCollisionAssociationQA{"doCollisionAssociationQA", true, "check collision association"};
   Configurable<int> doSecondaryV0s{"doSecondaryV0s", 0, "Look at secondary V0s? 0: No; 1: yes via a loop on V0MCCores; 2: yes via a loop on CascMCCores"};
+  Configurable<bool> doQAfeeddown{"doQAfeeddown", true, "if MC, fill feeddown QA histograms"};
 
   struct : ConfigurableGroup {
     std::string prefix = "eventSelections"; // JSON group name
@@ -374,6 +376,8 @@ struct derivedlambdakzeroanalysis {
 
     // MC coll assoc QA axis
     ConfigurableAxis axisMonteCarloNch{"axisMonteCarloNch", {300, 0.0f, 3000.0f}, "N_{ch} MC"};
+
+    ConfigurableAxis axisPDGCodeMothers{"axisPDGCodeMothers", {7001, -3500.5, 3500.5}, "PDG code of mother particle"};
   } axisConfigurations;
 
   // UPC selections
@@ -457,6 +461,7 @@ struct derivedlambdakzeroanalysis {
   uint64_t maskSelectionLambda = 0;
   uint64_t maskSelectionAntiLambda = 0;
 
+  uint64_t secondaryMaskSelectionK0Short = 0;
   uint64_t secondaryMaskSelectionLambda = 0;
   uint64_t secondaryMaskSelectionAntiLambda = 0;
 
@@ -669,6 +674,7 @@ struct derivedlambdakzeroanalysis {
     BITSET(maskSelectionAntiLambda, selPhysPrimAntiLambda);
 
     // No primary requirement for feeddown matrix
+    secondaryMaskSelectionK0Short = maskTopological | maskTrackProperties | maskK0ShortSpecific;
     secondaryMaskSelectionLambda = maskTopological | maskTrackProperties | maskLambdaSpecific;
     secondaryMaskSelectionAntiLambda = maskTopological | maskTrackProperties | maskAntiLambdaSpecific;
 
@@ -1115,6 +1121,25 @@ struct derivedlambdakzeroanalysis {
       }
     }
 
+    if (analyseK0Short && doQAfeeddown && (doprocessMonteCarloRun3 || doprocessMonteCarloRun2)) {
+      histos.add("h2dK0ShortMothers", "h2dK0ShortMothers", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisPDGCodeMothers});
+      histos.add("h2dK0ShortMothersIsPrimary", "h2dK0ShortMothersIsPrimary", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisPDGCodeMothers});
+      histos.add("h3dK0ShortMothers", "h3dK0ShortMothers", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisPDGCodeMothers});
+      histos.add("h3dK0ShortMothersIsPrimary", "h3dK0ShortMothersIsPrimary", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisPDGCodeMothers});
+    }
+    if (analyseLambda && doQAfeeddown && (doprocessMonteCarloRun3 || doprocessMonteCarloRun2)) {
+      histos.add("h2dLambdaMothers", "h2dLambdaMothers", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisPDGCodeMothers});
+      histos.add("h2dLambdaMothersIsPrimary", "h2dLambdaMothersIsPrimary", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisPDGCodeMothers});
+      histos.add("h3dLambdaMothers", "h3dLambdaMothers", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisPDGCodeMothers});
+      histos.add("h3dLambdaMothersIsPrimary", "h3dLambdaMothersIsPrimary", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisPDGCodeMothers});
+    }
+    if (analyseAntiLambda && doQAfeeddown && (doprocessMonteCarloRun3 || doprocessMonteCarloRun2)) {
+      histos.add("h2dAntiLambdaMothers", "h2dAntiLambdaMothers", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisPDGCodeMothers});
+      histos.add("h2dAntiLambdaMothersIsPrimary", "h2dAntiLambdaMothersIsPrimary", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisPDGCodeMothers});
+      histos.add("h3dAntiLambdaMothers", "h3dAntiLambdaMothers", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisPDGCodeMothers});
+      histos.add("h3dAntiLambdaMothersIsPrimary", "h3dAntiLambdaMothersIsPrimary", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisPDGCodeMothers});
+    }
+
     if (analyseK0Short)
       histos.add("hMassK0Short", "hMassK0Short", kTH1D, {axisConfigurations.axisK0Mass});
     if (analyseLambda)
@@ -1205,6 +1230,8 @@ struct derivedlambdakzeroanalysis {
     if (doprocessMonteCarloRun3 || doprocessMonteCarloRun2) {
       histos.add("GeneralQA/h2dRapVsRapGen", "h2dRapVsRapGen;Rapidity;Generated rapidity", kTH2D, {axisConfigurations.axisRapidity, axisConfigurations.axisRapidity});
       histos.add("GeneralQA/h2dPtVsPtGen", "h2dPtVsPtGen;#it{p}_{T} (GeV/#it{c});#it{p}_{T}^{MC} (GeV/#it{c})", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisPt});
+      histos.add("GeneralQA/h3dRapVsRapGen", "h3dRapVsRapGen;Centrality (%);Rapidity;Generated rapidity", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisRapidity, axisConfigurations.axisRapidity});
+      histos.add("GeneralQA/h3dPtVsPtGen", "h3dPtVsPtGen;Centrality (%);#it{p}_{T} (GeV/#it{c});#it{p}_{T}^{MC} (GeV/#it{c})", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisPt});
     }
 
     // Creation of histograms: MC generated
@@ -1430,7 +1457,7 @@ struct derivedlambdakzeroanalysis {
   }
 
   template <typename TV0, typename TCollision>
-  uint64_t computeReconstructionBitmap(TV0 const& v0, TCollision const& collision, float rapidityLambda, float rapidityK0Short, float /*pT*/)
+  uint64_t computeReconstructionBitmap(TV0 const& v0, TCollision const& collision, float rapidityLambda, float rapidityK0Short)
   // precalculate this information so that a check is one mask operation, not many
   {
     uint64_t bitMap = 0;
@@ -1704,18 +1731,21 @@ struct derivedlambdakzeroanalysis {
 
     if (v0.pdgCode() == PDG_t::kK0Short && isPositivePion && isNegativePion) {
       BITSET(bitMap, selConsiderK0Short);
-      if (v0.isPhysicalPrimary())
+      if (v0.isPhysicalPrimary()) {
         BITSET(bitMap, selPhysPrimK0Short);
+      }
     }
     if (v0.pdgCode() == PDG_t::kLambda0 && isPositiveProton && isNegativePion) {
       BITSET(bitMap, selConsiderLambda);
-      if (v0.isPhysicalPrimary())
+      if (v0.isPhysicalPrimary()) {
         BITSET(bitMap, selPhysPrimLambda);
+      }
     }
     if (v0.pdgCode() == PDG_t::kLambda0Bar && isPositivePion && isNegativeProton) {
       BITSET(bitMap, selConsiderAntiLambda);
-      if (v0.isPhysicalPrimary())
+      if (v0.isPhysicalPrimary()) {
         BITSET(bitMap, selPhysPrimAntiLambda);
+      }
     }
     return bitMap;
   }
@@ -1891,7 +1921,7 @@ struct derivedlambdakzeroanalysis {
       float k0shortScore = -1;
       if (mlConfigurations.calculateK0ShortScores) {
         // evaluate machine-learning scores
-        float* k0shortProbability = mlCustomModelK0Short.evalModel(inputFeatures);
+        const std::vector<float> k0shortProbability = mlCustomModelK0Short.evalModel(inputFeatures);
         k0shortScore = k0shortProbability[1];
       } else {
         k0shortScore = v0.k0ShortBDTScore();
@@ -1906,7 +1936,7 @@ struct derivedlambdakzeroanalysis {
       float lambdaScore = -1;
       if (mlConfigurations.calculateLambdaScores) {
         // evaluate machine-learning scores
-        float* lambdaProbability = mlCustomModelLambda.evalModel(inputFeatures);
+        const std::vector<float> lambdaProbability = mlCustomModelLambda.evalModel(inputFeatures);
         lambdaScore = lambdaProbability[1];
       } else {
         lambdaScore = v0.lambdaBDTScore();
@@ -1921,7 +1951,7 @@ struct derivedlambdakzeroanalysis {
       float antiLambdaScore = -1;
       if (mlConfigurations.calculateAntiLambdaScores) {
         // evaluate machine-learning scores
-        float* antilambdaProbability = mlCustomModelAntiLambda.evalModel(inputFeatures);
+        const std::vector<float> antilambdaProbability = mlCustomModelAntiLambda.evalModel(inputFeatures);
         antiLambdaScore = antilambdaProbability[1];
       } else {
         antiLambdaScore = v0.antiLambdaBDTScore();
@@ -2064,6 +2094,8 @@ struct derivedlambdakzeroanalysis {
       if (doprocessMonteCarloRun3 || doprocessMonteCarloRun2) {
         histos.fill(HIST("GeneralQA/h2dRapVsRapGen"), v0.yK0Short(), rapidityK0Short);
         histos.fill(HIST("GeneralQA/h2dPtVsPtGen"), v0.pt(), pt);
+        histos.fill(HIST("GeneralQA/h3dRapVsRapGen"), centrality, v0.yK0Short(), rapidityK0Short);
+        histos.fill(HIST("GeneralQA/h3dPtVsPtGen"), centrality, v0.pt(), pt);
       }
       nK0Shorts++;
     }
@@ -2154,6 +2186,8 @@ struct derivedlambdakzeroanalysis {
       if (doprocessMonteCarloRun3 || doprocessMonteCarloRun2) {
         histos.fill(HIST("GeneralQA/h2dRapVsRapGen"), v0.yLambda(), rapidityLambda);
         histos.fill(HIST("GeneralQA/h2dPtVsPtGen"), v0.pt(), pt);
+        histos.fill(HIST("GeneralQA/h3dRapVsRapGen"), centrality, v0.yLambda(), rapidityLambda);
+        histos.fill(HIST("GeneralQA/h3dPtVsPtGen"), centrality, v0.pt(), pt);
       }
       nLambdas++;
     }
@@ -2244,6 +2278,8 @@ struct derivedlambdakzeroanalysis {
       if (doprocessMonteCarloRun3 || doprocessMonteCarloRun2) {
         histos.fill(HIST("GeneralQA/h2dRapVsRapGen"), v0.yLambda(), rapidityLambda);
         histos.fill(HIST("GeneralQA/h2dPtVsPtGen"), v0.pt(), pt);
+        histos.fill(HIST("GeneralQA/h3dRapVsRapGen"), centrality, v0.yLambda(), rapidityLambda);
+        histos.fill(HIST("GeneralQA/h3dPtVsPtGen"), centrality, v0.pt(), pt);
       }
       nAntiLambdas++;
     }
@@ -2363,6 +2399,43 @@ struct derivedlambdakzeroanalysis {
             histos.fill(HIST("h3dMassSecAntiLambdaFromXiAndXi0"), centrality, pt, v0Selections.useUncheckedMass ? v0.mAntiLambda_unchecked() : v0.mAntiLambda());
           }
         }
+      }
+    }
+  }
+
+  template <typename TV0>
+  void fillFeeddownQA(TV0 const& v0, float pt, float centrality, uint64_t selMap)
+  // fill feeddown matrix for Lambdas or AntiLambdas
+  // fixme: a potential improvement would be to consider mass windows for the l/al
+  {
+    if (!v0.has_motherMCPart())
+      return; // does not have mother particle in record, skip
+
+    auto v0mother = v0.motherMCPart();
+
+    // __________________________________________
+    if (verifyMask(selMap, secondaryMaskSelectionK0Short) && analyseK0Short) {
+      histos.fill(HIST("h2dK0ShortMothers"), pt, v0mother.pdgCode());
+      histos.fill(HIST("h3dK0ShortMothers"), centrality, pt, v0mother.pdgCode());
+      if (v0mother.isPhysicalPrimary()) {
+        histos.fill(HIST("h2dK0ShortMothersIsPrimary"), pt, v0mother.pdgCode());
+        histos.fill(HIST("h3dK0ShortMothersIsPrimary"), centrality, pt, v0mother.pdgCode());
+      }
+    }
+    if (verifyMask(selMap, secondaryMaskSelectionLambda) && analyseLambda) {
+      histos.fill(HIST("h2dLambdaMothers"), pt, v0mother.pdgCode());
+      histos.fill(HIST("h3dLambdaMothers"), centrality, pt, v0mother.pdgCode());
+      if (v0mother.isPhysicalPrimary()) {
+        histos.fill(HIST("h2dLambdaMothersIsPrimary"), pt, v0mother.pdgCode());
+        histos.fill(HIST("h3dLambdaMothersIsPrimary"), centrality, pt, v0mother.pdgCode());
+      }
+    }
+    if (verifyMask(selMap, secondaryMaskSelectionAntiLambda) && analyseAntiLambda) {
+      histos.fill(HIST("h2dAntiLambdaMothers"), pt, v0mother.pdgCode());
+      histos.fill(HIST("h3dAntiLambdaMothers"), centrality, pt, v0mother.pdgCode());
+      if (v0mother.isPhysicalPrimary()) {
+        histos.fill(HIST("h2dAntiLambdaMothersIsPrimary"), pt, v0mother.pdgCode());
+        histos.fill(HIST("h3dAntiLambdaMothersIsPrimary"), centrality, pt, v0mother.pdgCode());
       }
     }
   }
@@ -2918,78 +2991,9 @@ struct derivedlambdakzeroanalysis {
   }
 
   // ______________________________________________________
-  // Real data processing - no MC subscription
-  template <typename TCollision, typename TV0s>
-  void analyzeRecoedV0sInRealData(TCollision const& collision, TV0s const& fullV0s)
-  {
-    // Fire up CCDB
-    if ((mlConfigurations.useK0ShortScores && mlConfigurations.calculateK0ShortScores) ||
-        (mlConfigurations.useLambdaScores && mlConfigurations.calculateLambdaScores) ||
-        (mlConfigurations.useAntiLambdaScores && mlConfigurations.calculateAntiLambdaScores) ||
-        v0Selections.rejectTPCsectorBoundary) {
-      initCCDB(collision);
-    }
-
-    if (!isEventAccepted(collision, true)) {
-      return;
-    }
-
-    float centrality = -1;
-    float collisionOccupancy = -2; // -1 already taken for the case where occupancy cannot be evaluated
-    double interactionRate = -1;
-    // gap side
-    int gapSide = -1;
-    int selGapSide = -1; // -1 --> Hadronic ; 0 --> Single Gap - A side ; 1 --> Single Gap - C side ; 2 --> Double Gap - both A & C sides
-    // Fill recoed event properties
-    fillReconstructedEventProperties(collision, centrality, collisionOccupancy, interactionRate, gapSide, selGapSide);
-
-    histos.fill(HIST("hInteractionRateVsOccupancy"), interactionRate, collisionOccupancy);
-
-    // __________________________________________
-    // perform main analysis
-    int nK0Shorts = 0;
-    int nLambdas = 0;
-    int nAntiLambdas = 0;
-    for (auto const& v0 : fullV0s) {
-      if (std::abs(v0.negativeeta()) > v0Selections.daughterEtaCut || std::abs(v0.positiveeta()) > v0Selections.daughterEtaCut)
-        continue; // remove acceptance that's badly reproduced by MC / superfluous in future
-
-      if (v0.v0Type() != v0Selections.v0TypeSelection && v0Selections.v0TypeSelection > -1)
-        continue; // skip V0s that are not standard
-
-      // fill AP plot for all V0s
-      histos.fill(HIST("GeneralQA/h2dArmenterosAll"), v0.alpha(), v0.qtarm());
-
-      uint64_t selMap = computeReconstructionBitmap(v0, collision, v0.yLambda(), v0.yK0Short(), v0.pt());
-
-      // consider for histograms for all species
-      BITSET(selMap, selConsiderK0Short);
-      BITSET(selMap, selConsiderLambda);
-      BITSET(selMap, selConsiderAntiLambda);
-
-      BITSET(selMap, selPhysPrimK0Short);
-      BITSET(selMap, selPhysPrimLambda);
-      BITSET(selMap, selPhysPrimAntiLambda);
-
-      analyseCandidate(v0, v0.pt(), v0.yLambda(), v0.yK0Short(), centrality, selMap, selGapSide, nK0Shorts, nLambdas, nAntiLambdas);
-    } // end v0 loop
-
-    // fill the histograms with the number of reconstructed K0s/Lambda/antiLambda per collision
-    if (analyseK0Short) {
-      histos.fill(HIST("h2dNbrOfK0ShortVsCentrality"), centrality, nK0Shorts);
-    }
-    if (analyseLambda) {
-      histos.fill(HIST("h2dNbrOfLambdaVsCentrality"), centrality, nLambdas);
-    }
-    if (analyseAntiLambda) {
-      histos.fill(HIST("h2dNbrOfAntiLambdaVsCentrality"), centrality, nAntiLambdas);
-    }
-  }
-
-  // ______________________________________________________
-  // Simulated processing (subscribes to MC information too)
+  // Recoed data and MC processing (can use MC info if subscribed to it)
   template <typename TCollision, typename TV0s, typename TMCCollisions>
-  void analyzeRecoedV0sInMonteCarlo(TCollision const& collision, TV0s const& fullV0s, TMCCollisions const& /*mcCollisions*/)
+  void analyzeRecoedV0s(TCollision const& collision, TV0s const& fullV0s, TMCCollisions const& /*mcCollisions*/)
   {
     // Fire up CCDB
     if ((mlConfigurations.useK0ShortScores && mlConfigurations.calculateK0ShortScores) ||
@@ -3012,8 +3016,6 @@ struct derivedlambdakzeroanalysis {
     // Fill recoed event properties
     fillReconstructedEventProperties(collision, centrality, collisionOccupancy, interactionRate, gapSide, selGapSide);
 
-    histos.fill(HIST("hInteractionRateVsOccupancy"), interactionRate, collisionOccupancy);
-
     // __________________________________________
     // perform main analysis
     int nK0Shorts = 0;
@@ -3026,27 +3028,54 @@ struct derivedlambdakzeroanalysis {
       if (v0.v0Type() != v0Selections.v0TypeSelection && v0Selections.v0TypeSelection > -1)
         continue; // skip V0s that are not standard
 
-      if (!v0.has_v0MCCore())
-        continue;
+      float pt = v0.pt();
+      float ptMC = -1.f;
+      float yK0Short = v0.yK0Short();
+      float yLambda = v0.yLambda();
+      bool correctCollision = false;
+      int mcNch = -1;
+      uint64_t selMapMCassociation = 0;
 
-      auto v0MC = v0.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
+      if constexpr (requires { v0.v0MCCoreId(); }) {
+        if (doMCAssociation) {
+          if (!v0.has_v0MCCore())
+            continue;
+
+          auto v0MC = v0.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
+
+          ptMC = RecoDecay::sqrtSumOfSquares(v0MC.pxPosMC() + v0MC.pxNegMC(), v0MC.pyPosMC() + v0MC.pyNegMC());
+          pt = ptMC;
+          yK0Short = RecoDecay::y(std::array{v0MC.pxPosMC() + v0MC.pxNegMC(), v0MC.pyPosMC() + v0MC.pyNegMC(), v0MC.pzPosMC() + v0MC.pzNegMC()}, o2::constants::physics::MassKaonNeutral);
+          yLambda = RecoDecay::y(std::array{v0MC.pxPosMC() + v0MC.pxNegMC(), v0MC.pyPosMC() + v0MC.pyNegMC(), v0MC.pzPosMC() + v0MC.pzNegMC()}, o2::constants::physics::MassLambda);
+
+          selMapMCassociation = computeMCAssociation(v0MC);
+
+          if constexpr (requires { collision.straMCCollisionId(); }) {
+            // check collision association explicitly
+            if (collision.has_straMCCollision()) {
+              auto mcCollision = collision.template straMCCollision_as<TMCCollisions>();
+              mcNch = mcCollision.multMCNParticlesEta05();
+              correctCollision = (v0MC.straMCCollisionId() == mcCollision.globalIndex());
+            }
+          }
+        }
+      }
 
       // fill AP plot for all V0s
       histos.fill(HIST("GeneralQA/h2dArmenterosAll"), v0.alpha(), v0.qtarm());
 
-      float ptmc = RecoDecay::sqrtSumOfSquares(v0MC.pxPosMC() + v0MC.pxNegMC(), v0MC.pyPosMC() + v0MC.pyNegMC());
-      float ymc = 1e3;
-      if (v0MC.pdgCode() == PDG_t::kK0Short)
-        ymc = RecoDecay::y(std::array{v0MC.pxPosMC() + v0MC.pxNegMC(), v0MC.pyPosMC() + v0MC.pyNegMC(), v0MC.pzPosMC() + v0MC.pzNegMC()}, o2::constants::physics::MassKaonNeutral);
-      else if (std::abs(v0MC.pdgCode()) == PDG_t::kLambda0)
-        ymc = RecoDecay::y(std::array{v0MC.pxPosMC() + v0MC.pxNegMC(), v0MC.pyPosMC() + v0MC.pyNegMC(), v0MC.pzPosMC() + v0MC.pzNegMC()}, o2::constants::physics::MassLambda);
-
-      uint64_t selMap = computeReconstructionBitmap(v0, collision, ymc, ymc, ptmc);
-      selMap = selMap | computeMCAssociation(v0MC);
+      uint64_t selMap = computeReconstructionBitmap(v0, collision, yLambda, yK0Short);
+      selMap |= selMapMCassociation;
 
       // feeddown matrix always with association
-      if (calculateFeeddownMatrix)
-        fillFeeddownMatrix(v0, ptmc, centrality, selMap);
+      if constexpr (requires { v0.motherMCPartId(); }) {
+        if (calculateFeeddownMatrix) {
+          fillFeeddownMatrix(v0, ptMC, centrality, selMap);
+        }
+        if (doQAfeeddown) {
+          fillFeeddownQA(v0, ptMC, centrality, selMap);
+        }
+      }
 
       // consider only associated candidates if asked to do so, disregard association
       if (!doMCAssociation) {
@@ -3059,18 +3088,13 @@ struct derivedlambdakzeroanalysis {
         BITSET(selMap, selPhysPrimAntiLambda);
       }
 
-      analyseCandidate(v0, ptmc, ymc, ymc, centrality, selMap, selGapSide, nK0Shorts, nLambdas, nAntiLambdas);
+      analyseCandidate(v0, pt, yLambda, yK0Short, centrality, selMap, selGapSide, nK0Shorts, nLambdas, nAntiLambdas);
 
-      if (doCollisionAssociationQA) {
-        // check collision association explicitly
-        bool correctCollision = false;
-        int mcNch = -1;
-        if (collision.has_straMCCollision()) {
-          auto mcCollision = collision.template straMCCollision_as<TMCCollisions>();
-          mcNch = mcCollision.multMCNParticlesEta05();
-          correctCollision = (v0MC.straMCCollisionId() == mcCollision.globalIndex());
+      if constexpr (requires { collision.straMCCollisionId(); }) {
+        if (doCollisionAssociationQA) {
+          // check collision association explicitly
+          analyseCollisionAssociation(v0, ptMC, mcNch, correctCollision, selMap);
         }
-        analyseCollisionAssociation(v0, ptmc, mcNch, correctCollision, selMap);
       }
 
     } // end v0 loop
@@ -3527,28 +3551,28 @@ struct derivedlambdakzeroanalysis {
   // Real data processing in Run 3 - no MC subscription
   void processRealDataRun3(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps, aod::StraEvTimes>::iterator const& collision, V0Candidates const& fullV0s, DauTracks const&)
   {
-    analyzeRecoedV0sInRealData(collision, fullV0s);
+    analyzeRecoedV0s(collision, fullV0s, static_cast<TObject*>(nullptr));
   }
 
   // ______________________________________________________
   // Real data processing in Run 2 - no MC subscription
   void processRealDataRun2(soa::Join<aod::StraCollisions, aod::StraCentsRun2, aod::StraEvSelsRun2, aod::StraStamps, aod::StraEvTimes>::iterator const& collision, V0Candidates const& fullV0s, DauTracks const&)
   {
-    analyzeRecoedV0sInRealData(collision, fullV0s);
+    analyzeRecoedV0s(collision, fullV0s, static_cast<TObject*>(nullptr));
   }
 
   // ______________________________________________________
   // Simulated processing in Run 3 (subscribes to MC information too)
   void processMonteCarloRun3(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps, aod::StraEvTimes, aod::StraCollLabels>::iterator const& collision, V0McCandidates const& fullV0s, DauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults, aod::McCentFV0As, aod::McCentFT0Ms, aod::McCentFT0Cs, aod::McCentFT0CVariant1s, aod::McCentNGlobals> const& mccollisions, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
   {
-    analyzeRecoedV0sInMonteCarlo(collision, fullV0s, mccollisions);
+    analyzeRecoedV0s(collision, fullV0s, mccollisions);
   }
 
   // ______________________________________________________
   // Simulated processing in Run 2 (subscribes to MC information too)
   void processMonteCarloRun2(soa::Join<aod::StraCollisions, aod::StraCentsRun2, aod::StraEvSelsRun2, aod::StraStamps, aod::StraEvTimes, aod::StraCollLabels>::iterator const& collision, V0McCandidates const& fullV0s, DauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& mccollisions, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
   {
-    analyzeRecoedV0sInMonteCarlo(collision, fullV0s, mccollisions);
+    analyzeRecoedV0s(collision, fullV0s, mccollisions);
   }
 
   // ______________________________________________________

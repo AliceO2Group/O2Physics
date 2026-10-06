@@ -161,13 +161,15 @@ class BaseSelection
   ///             -1 = optional cut, bit is stored in bitmask;
   ///              0 = cut is disabled, no bit stored;
   ///              1 = minimal (mandatory) cut, no extra bit stored since only one threshold exists.
+  ///             In pass-through mode, enabled selections (-1, 1) are stored as bits without being required,
+  ///             disabled selections (0) stay disabled so they do not occupy bits.
   void addSelection(int observableIndex,
                     std::string const& selectionName,
                     int mode)
   {
     int selectionMode = mode;
 
-    if (mPassThrough) {
+    if (mPassThrough && mode != 0) {
       selectionMode = 2;
     }
     switch (selectionMode) {
@@ -375,7 +377,7 @@ class BaseSelection
 
   /// \brief Print the full configuration of all selections to the log.
   /// \param objectName Name of the object owning this selection (used as label in the log output).
-  void printSelections(const std::string& objectName) const
+  void printSelections(const char* objectName) const
   {
     LOG(info) << "Printing Configuration of " << objectName;
     for (size_t idx = 0; idx < mSelectionContainers.size(); ++idx) {

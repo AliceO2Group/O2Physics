@@ -179,7 +179,7 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
   ConfigurableAxis confMultBins{"confMultBins", {VARIABLE_WIDTH, 0.0f, 23.0f, 38.0f, 53.0f, 81.0f, 110.0f, 157.0f, 205.0f, 278.0f, 351.0f, 455.0f, 559.0f, 703.0f, 848.0f, 1050.0f, 1253.0f, 1530.0f, 1668.0f, 1857.0f, 2047.0f, 99999.f}, "Mixing bins - multiplicity"};
   ConfigurableAxis confVtxBins{"confVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
 
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinning{{confVtxBins, confMultBins}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinning{{confVtxBins, confMultBins}};
 
   ConfigurableAxis confQ3Bins{"confQ3Bins", {2000, 0., 8.}, "binning Q3"};
   ConfigurableAxis confQ3BinsFor4D{"confQ3BinsFor4D", {500, 0., 2.}, "binning Q3 for 4D hist"};
@@ -316,7 +316,7 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
   }
 
   template <bool isMC, typename CollisionType>
-  void fillCollision(CollisionType col)
+  void fillCollision(const CollisionType& col)
   {
     threeBodyQARegistry.fill(HIST("TripletTaskQA/hSECollisionBins"), colBinning.getBin({col.posZ(), col.multNtr()}));
     eventHisto.fillQA<isMC>(col);
@@ -331,7 +331,7 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
   /// @param magFieldTesla magnetic field of the collision
   /// @param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType, typename PartType>
-  void doSameEvent(PartitionType groupSelectedTracks, PartitionType groupselectedV0s, PartType parts, float magFieldTesla, int multCol, float centCol)
+  void doSameEvent(const PartitionType& groupSelectedTracks, const PartitionType& groupselectedV0s, const PartType& parts, float magFieldTesla, int multCol, float centCol)
   {
     /// Histograming tracks
     for (const auto& part : groupSelectedTracks) {
@@ -570,7 +570,7 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
   /// \param magFieldTesla magnetic field of the collision
   /// \param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType, typename PartType>
-  void doMixedEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartitionType groupPartsThree, PartType parts, float magFieldTesla, int multCol)
+  void doMixedEvent(const PartitionType& groupPartsOne, const PartitionType& groupPartsTwo, const PartitionType& groupPartsThree, const PartType& parts, float magFieldTesla, int multCol)
   {
     for (const auto& [T1, T2, V0] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo, groupPartsThree))) {
       const auto& posChild = parts.iteratorAt(V0.globalIndex() - 2);

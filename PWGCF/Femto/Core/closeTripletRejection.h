@@ -29,10 +29,13 @@ namespace o2::analysis::femto::closetripletrejection
 constexpr const char PrefixCtrTrackTrackTrack[] = "CtrTrackTrackTrack";
 constexpr const char PrefixCtrTrackTrackV0[] = "CtrTrackTrackV0";
 constexpr const char PrefixCtrTrackTrackCascade[] = "CtrTrackTrackCascade";
+constexpr const char PrefixCtrMcParticleMcParticleMcParticle[] = "CtrMcParticleMcParticleMcParticle";
 
 using ConfCtrTrackTrackTrack = closepairrejection::ConfCpr<PrefixCtrTrackTrackTrack>;
 using ConfCtrTrackTrackV0 = closepairrejection::ConfCpr<PrefixCtrTrackTrackV0>;
 using ConfCtrTrackTrackCascade = closepairrejection::ConfCpr<PrefixCtrTrackTrackCascade>;
+// generated particles, no cut by default (close triplet rejection corrects a detector effect)
+using ConfCtrMcParticleMcParticleMcParticle = closepairrejection::ConfCpr<PrefixCtrMcParticleMcParticleMcParticle, false>;
 
 // directory names
 constexpr char PrefixTrack1Track2Se[] = "CPR_Track1Track2/SE/";
@@ -41,6 +44,13 @@ constexpr char PrefixTrack1Track3Se[] = "CPR_Track1Track3/SE/";
 constexpr char PrefixTrack1Track2Me[] = "CPR_Track1Track2/ME/";
 constexpr char PrefixTrack2Track3Me[] = "CPR_Track2Track3/ME/";
 constexpr char PrefixTrack1Track3Me[] = "CPR_Track1Track3/ME/";
+
+constexpr char PrefixMcParticle1McParticle2Se[] = "CPR_McParticle1McParticle2/SE/";
+constexpr char PrefixMcParticle2McParticle3Se[] = "CPR_McParticle2McParticle3/SE/";
+constexpr char PrefixMcParticle1McParticle3Se[] = "CPR_McParticle1McParticle3/SE/";
+constexpr char PrefixMcParticle1McParticle2Me[] = "CPR_McParticle1McParticle2/ME/";
+constexpr char PrefixMcParticle2McParticle3Me[] = "CPR_McParticle2McParticle3/ME/";
+constexpr char PrefixMcParticle1McParticle3Me[] = "CPR_McParticle1McParticle3/ME/";
 
 constexpr char PrefixTrack1V0Se[] = "CPR_Track1V0/SE/";
 constexpr char PrefixTrack2V0Se[] = "CPR_Track2V0/SE/";
@@ -203,6 +213,41 @@ class CloseTripletRejectionTrackTrackCascade
   closepairrejection::ClosePairRejectionTrackTrack<prefixTrack1Track2> mCtrTrack12;
   closepairrejection::ClosePairRejectionTrackCascade<prefixTrack1Bachelor, prefixTrack1V0Daughter> mCtrTrack1Cascade;
   closepairrejection::ClosePairRejectionTrackCascade<prefixTrack2Bachelor, prefixTrack2V0Daughter> mCtrTrack2Cascade;
+};
+
+// close triplet rejection for triplets of generated particles; checks all three constituent pairs
+template <auto& prefixMcParticle1McParticle2,
+          auto& prefixMcParticle2McParticle3,
+          auto& prefixMcParticle1McParticle3>
+class CloseTripletRejectionMcParticleMcParticleMcParticle
+{
+ public:
+  CloseTripletRejectionMcParticleMcParticleMcParticle() = default;
+  ~CloseTripletRejectionMcParticleMcParticleMcParticle() = default;
+
+  template <typename T>
+  void init(o2::framework::HistogramRegistry* registry,
+            std::map<closepairrejection::CprHist, std::vector<o2::framework::AxisSpec>> const& specs,
+            T const& confCpr)
+  {
+    mCtr12.init(registry, specs, confCpr);
+    mCtr23.init(registry, specs, confCpr);
+    mCtr13.init(registry, specs, confCpr);
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4>
+  [[nodiscard]] bool isCloseTriplet(T1 const& particle1, T2 const& particle2, T3 const& particle3, T4 const& tripletHistManager)
+  {
+    bool isClose12 = mCtr12.isClosePair(particle1, particle2, tripletHistManager);
+    bool isClose23 = mCtr23.isClosePair(particle2, particle3, tripletHistManager);
+    bool isClose13 = mCtr13.isClosePair(particle1, particle3, tripletHistManager);
+    return isClose12 || isClose23 || isClose13;
+  }
+
+ private:
+  closepairrejection::ClosePairRejectionMcParticleMcParticle<prefixMcParticle1McParticle2> mCtr12;
+  closepairrejection::ClosePairRejectionMcParticleMcParticle<prefixMcParticle2McParticle3> mCtr23;
+  closepairrejection::ClosePairRejectionMcParticleMcParticle<prefixMcParticle1McParticle3> mCtr13;
 };
 
 } // namespace o2::analysis::femto::closetripletrejection

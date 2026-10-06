@@ -75,6 +75,7 @@ enum V0Hist {
   kK0shortMassVsAntiLambdaMass,
   kStrangeTofVsTofPosDau,
   kStrangeTofVsTofNegDau,
+  kArmenterosQtVsAlpha,
   // mc
   kOrigin,
   kPdg,
@@ -145,6 +146,8 @@ struct ConfV0QaBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis massAntiLambda{"massAntiLambda", {{100, 1, 1.2}}, "mass for antiparticle hypothesis"};
   o2::framework::ConfigurableAxis massK0short{"massK0short", {{200, 0.45, 0.55}}, "Mass for k0short hypothesis"};
   o2::framework::ConfigurableAxis strangeTof{"strangeTof", {{500, -5, 5}}, "Strangeness TOF vs TOF Nsigma for daughters"};
+  o2::framework::ConfigurableAxis armenterosAlpha{"armenterosAlpha", {{200, -1, 1}}, "Armenteros-Podolanski alpha"};
+  o2::framework::ConfigurableAxis armenterosQt{"armenterosQt", {{150, 0, 0.3}}, "Armenteros-Podolanski qt (GeV/#it{c})"};
 };
 
 constexpr const char PrefixLambdaQaBinning1[] = "LambdaQaBinning1";
@@ -188,6 +191,7 @@ constexpr std::array<histmanager::HistInfo<V0Hist>, kV0HistLast> HistTable = {
    {kLambdaMassVsAntiLambdaMass, o2::framework::HistType::kTH2F, "hLambdaMassVsAntiLambdaMass", "#Lambda mass vs #bar{#Lambda}; m_{p#pi^{-}} (GeV/#it{c}^{2}); m_{#bar{p}#pi^{+}} (GeV/#it{c}^{2})"},
    {kStrangeTofVsTofPosDau, o2::framework::HistType::kTH2F, "hStrangeTofVsTofPosDau", "TOF_{Strange} vs TOF_{Tracking} of positive Daughter; n#sigma_{TOF, strange}; n#sigma_{TOF, tracking}"},
    {kStrangeTofVsTofNegDau, o2::framework::HistType::kTH2F, "hStrangeTofVsTofNegDau", "TOF_{Strange} vs TOF_{Tracking} of negative Daughter; n#sigma_{TOF, strange}; n#sigma_{TOF, tracking}"},
+   {kArmenterosQtVsAlpha, o2::framework::HistType::kTH2F, "hArmenterosPodolanski", "Armenteros-Podolanski; #alpha; q_{T} (GeV/#it{c})"},
    {kOrigin, o2::framework::HistType::kTH1F, "hOrigin", "Status Codes (=Origin); Status Code; Entries"},
    {kPdg, o2::framework::HistType::kTH1F, "hPdg", "PDG Codes of reconstructed v0; PDG Code; Entries"},
    {kPdgMother, o2::framework::HistType::kTH1F, "hPdgMother", "PDG Codes of mother of reconstructed v0; PDG Code; Entries"},
@@ -251,7 +255,8 @@ constexpr std::array<histmanager::HistInfo<V0Hist>, kV0HistLast> HistTable = {
     {kK0shortMassVsLambdaMass, {(confQa).massK0short, (confQa).massLambda}},         \
     {kK0shortMassVsAntiLambdaMass, {(confQa).massK0short, (confQa).massAntiLambda}}, \
     {kStrangeTofVsTofPosDau, {(confQa).strangeTof, (confQa).strangeTof}},            \
-    {kStrangeTofVsTofNegDau, {(confQa).strangeTof, (confQa).strangeTof}},
+    {kStrangeTofVsTofNegDau, {(confQa).strangeTof, (confQa).strangeTof}},            \
+    {kArmenterosQtVsAlpha, {(confQa).armenterosAlpha, (confQa).armenterosQt}},
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define V0_HIST_MC_QA_MAP(confAnalysis, confQa)                 \
@@ -518,6 +523,7 @@ class V0HistManager
       mHistogramRegistry->add(qaDir + getHistNameV2(kK0shortMassVsAntiLambdaMass, HistTable), getHistDesc(kK0shortMassVsAntiLambdaMass, HistTable), getHistType(kK0shortMassVsAntiLambdaMass, HistTable), {V0Specs.at(kK0shortMassVsAntiLambdaMass)});
       mHistogramRegistry->add(qaDir + getHistNameV2(kStrangeTofVsTofPosDau, HistTable), getHistDesc(kStrangeTofVsTofPosDau, HistTable), getHistType(kStrangeTofVsTofPosDau, HistTable), {V0Specs.at(kStrangeTofVsTofPosDau)});
       mHistogramRegistry->add(qaDir + getHistNameV2(kStrangeTofVsTofNegDau, HistTable), getHistDesc(kStrangeTofVsTofNegDau, HistTable), getHistType(kStrangeTofVsTofNegDau, HistTable), {V0Specs.at(kStrangeTofVsTofNegDau)});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kArmenterosQtVsAlpha, HistTable), getHistDesc(kArmenterosQtVsAlpha, HistTable), getHistType(kArmenterosQtVsAlpha, HistTable), {V0Specs.at(kArmenterosQtVsAlpha)});
     }
   }
 
@@ -618,7 +624,7 @@ class V0HistManager
       massLambda = v0candidate.massLambda();
       massAntiLambda = v0candidate.massAntiLambda();
       tofPosDau = posDau.tofNSigmaPi();
-      tofNegDau = posDau.tofNSigmaPi();
+      tofNegDau = negDau.tofNSigmaPi();
     }
 
     mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kMassLambda, HistTable)), massLambda);
@@ -640,6 +646,7 @@ class V0HistManager
       mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kK0shortMassVsAntiLambdaMass, HistTable)), massK0short, massAntiLambda);
       mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kStrangeTofVsTofPosDau, HistTable)), v0candidate.strangeTofPosDau(), tofPosDau);
       mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kStrangeTofVsTofNegDau, HistTable)), v0candidate.strangeTofNegDau(), tofNegDau);
+      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kArmenterosQtVsAlpha, HistTable)), v0candidate.alpha(), v0candidate.qtArm());
     }
   }
 

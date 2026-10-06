@@ -60,7 +60,7 @@ struct TrackCombinations {
 struct BinnedTrackCombinations {
   std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
   std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
-  ColumnBinningPolicy<aod::track::X, aod::track::Y> trackBinning{{xBins, yBins}, true};
+  ColumnBinningPolicy<aod::track::X, aod::track::Y> trackBinning{{xBins, yBins}};
 
   void process(aod::Tracks const& tracks)
   {
@@ -100,7 +100,7 @@ struct ConfigurableBinnedCollisionCombinations {
 struct BinnedTrackPartitionsCombinations {
   std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
   std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
-  ColumnBinningPolicy<aod::track::X, aod::track::Y> trackBinning{{xBins, yBins}, true};
+  ColumnBinningPolicy<aod::track::X, aod::track::Y> trackBinning{{xBins, yBins}};
   Configurable<float> philow{"phiLow", 1.0f, "lowest phi"};
 
   void process(aod::Tracks const& tracks)

@@ -20,6 +20,7 @@
 #include "ALICE3/Core/TrackUtilities.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
 
+#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -92,10 +93,12 @@ struct OnTheFlyDecayer {
 
   o2::upgrade::Decayer decayer;
   Service<o2::framework::O2DatabasePDG> pdgDB{};
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<int> seed{"seed", 0, "Set seed for particle decayer"};
   Configurable<float> magneticField{"magneticField", 20., "Magnetic field (kG)"};
+  Configurable<std::string> decayTable{"decayTable", "", "Decay table overriding the TDatabasePDG decay channels of the listed particles (local path or ccdb:<path>), empty to disable"};
   Configurable<LabeledArray<int>> enabledDecays{"enabledDecays",
                                                 {DefaultParameters[0].data(), NumDecays, NumParameters, particleNames, parameterNames},
                                                 "Enable option for particle to be decayed: 0 - no, 1 - yes"};
@@ -111,6 +114,10 @@ struct OnTheFlyDecayer {
     LOG(info) << " --- Using magnetic field: " << magneticField;
     decayer.setSeed(seed);
     decayer.setBField(magneticField);
+    if (!decayTable.value.empty()) {
+      LOG(info) << " --- Using decay table: " << decayTable.value;
+      decayer.loadDecayTable(decayTable.value, pdgDB, ccdb.operator->());
+    }
     for (int i = 0; i < NumDecays; ++i) {
       if (enabledDecays->get(particleNames[i].c_str(), "enable") != 0) {
         LOG(info) << " --- Decay enabled: " << pdgCodes[i];

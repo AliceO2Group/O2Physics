@@ -43,11 +43,16 @@
 #include <Framework/AnalysisTask.h>
 #include <Framework/Array2D.h>
 #include <Framework/BinningPolicy.h>
+#include <Framework/CallbackService.h>
 #include <Framework/Configurable.h>
+#include <Framework/DeviceSpec.h>
+#include <Framework/EndOfStreamContext.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
+#include <Framework/ProcessingContext.h>
+#include <Framework/TimingInfo.h>
 #include <Framework/runDataProcessing.h>
 #include <MathUtils/BetheBlochAleph.h>
 #include <MathUtils/Primitive2D.h>
@@ -62,6 +67,7 @@
 #include <TMCProcess.h>
 #include <TPDGCode.h>
 #include <TString.h>
+#include <TUUID.h>
 
 #include <algorithm>
 #include <array>
@@ -82,13 +88,22 @@ using std::array;
 
 using CollBracket = o2::math_utils::Bracket<int>;
 using HyperCandidates = aod::DataHypCandsWColl;
-using HyperCandidatesMC = aod::MCHypCands;
+using HyperCandidatesMC = aod::MCHypCandsWColl;
 using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::FT0Mults>;
+// The standard Femto producer stores multNTracksPV as its collision
+// multiplicity. Subscribe to PVMults only in the mixed-event process so the
+// same vertex--multiplicity pool definition can optionally be reproduced.
+using CollisionsFullWithPVMult = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::FT0Mults, aod::PVMults>;
 using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs, aod::FT0Mults>;
 using HadHyperCollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::FT0Mults>;
 using HadHyperCollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::FT0Mults>;
 using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::TOFSignal, aod::TOFEvTime>;
 using TrackCandidatesMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::TOFSignal, aod::TOFEvTime, aod::McTrackLabels>;
+// The DCA-template process explicitly subscribes to the propagated covariance
+// table. This makes the propagation service enter the branch where TrackTuner
+// corrections can be applied when enabled, without adding that dependency to
+// unrelated MC process switches.
+using TrackCandidatesMCDca = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::TOFSignal, aod::TOFEvTime, aod::McTrackLabels>;
 
 namespace
 {
@@ -313,6 +328,17 @@ struct HadNucleiFemto {
   Produces<aod::HadronHyperTable> mOutputHadHyperDataTable;
   Produces<aod::HadronHyperTableMC> mOutputHadHyperMCTable;
   Produces<aod::HadronNucleiMult> mOutputMultiplicityTable;
+  Produces<aod::HadNucleiMEDiag> mOutputMEDiagnostic;
+  Produces<aod::HadNucleiMEDiagLinks> mOutputMEDiagnosticLinks;
+
+  struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
+    std::string prefix{"meDiagnostic"};
+    Configurable<bool> saveRejectedEvents{"saveRejectedEvents", false, "Save rejected collision rows too (potentially very large); rejection counters are always recorded"};
+    Configurable<bool> savePartnerLinks{"savePartnerLinks", true, "Save one diagnostic row per undirected mixed-event combination"};
+    Configurable<std::string> productionTag{"productionTag", "unspecified", "Production label recorded with diagnostic instance UUID"};
+    Configurable<std::string> codeTag{"codeTag", "unspecified", "Exact source/build revision label for the diagnostic run"};
+  } meDiagnostic;
 
   struct : o2::framework::ConfigurableGroup {
     // cppcheck-suppress unusedStructMember
@@ -328,6 +354,7 @@ struct HadNucleiFemto {
     // Event selection and mixing configuration
     Configurable<float> settingCutVertex{"settingCutVertex", 10.0f, "Accepted z-vertex range"};
     Configurable<int> settingNoMixedEvents{"settingNoMixedEvents", 5, "Number of mixed events per event"};
+    Configurable<bool> settingUseMultiplicityBinning{"settingUseMultiplicityBinning", false, "Use vertex and multNTracksPV for event mixing instead of vertex and centrality"};
     Configurable<bool> settingRequireBothSpeciesForMixing{"settingRequireBothSpeciesForMixing", false, "Use only events containing at least one selected nucleus and one selected hadron for mixed-event pairing"};
     Configurable<bool> settingEnableBkgUS{"settingEnableBkgUS", false, "Enable US background"};
     Configurable<bool> settingSaveUSandLS{"settingSaveUSandLS", true, "Save All Pairs"};
@@ -356,7 +383,9 @@ struct HadNucleiFemto {
     Configurable<float> settingCutNsigTOFPrMin{"settingCutNsigTOFPrMin", 3.0f, "Minimum TOF Pr Nsigma cut for rejection"};
     Configurable<float> settingCutNsigTOFPiMin{"settingCutNsigTOFPiMin", 3.0f, "Minimum TOF Pi Nsigma cut for rejection"};
     Configurable<float> settingHadptMin{"settingHadptMin", 0.14f, "Minimum pT for the reference pion track cuts"};
-    Configurable<float> settingHadptMax{"settingHadptMax", 2.5f, "Maximum pT for the reference pion track cuts"};
+    Configurable<float> settingHadptMax{"settingHadptMax", 4.0f, "Maximum pT for the reference pion track cuts"};
+    Configurable<float> settingProtonPtMin{"settingProtonPtMin", 0.5f, "Minimum pT for proton candidates"};
+    Configurable<float> settingProtonPtMax{"settingProtonPtMax", 3.0f, "Maximum pT for proton candidates"};
     Configurable<int> settingPionITSInnerBarrelMin{"settingPionITSInnerBarrelMin", 3, "Minimum ITS inner barrel clusters for the reference pion track cuts"};
     Configurable<int> settingPionITSNClsMin{"settingPionITSNClsMin", 7, "Minimum ITS clusters for the reference pion track cuts"};
     Configurable<int> settingPionTPCNClsFoundMin{"settingPionTPCNClsFoundMin", 80, "Minimum found TPC clusters for the reference pion track cuts"};
@@ -388,7 +417,7 @@ struct HadNucleiFemto {
   struct : o2::framework::ConfigurableGroup {
     // cppcheck-suppress unusedStructMember
     std::string prefix{"helium3Pid"};
-    Configurable<float> settingRigidityMinHe3{"settingRigidityMinHe3", 0.8f, "Minimum He3 TPC rigidity"};
+    Configurable<float> settingRigidityMinHe3{"settingRigidityMinHe3", 0.0f, "Minimum He3 TPC rigidity"};
     Configurable<int> settingTPCNClsFoundMinHe3{"settingTPCNClsFoundMinHe3", 110, "Minimum found TPC clusters for He3"};
     Configurable<int> settingTPCCrossedRowsMinHe3{"settingTPCCrossedRowsMinHe3", 70, "Minimum crossed TPC rows for He3"};
     Configurable<float> settingTPCNSigmaMaxHe3{"settingTPCNSigmaMaxHe3", 3.f, "Maximum absolute TPC n-sigma for He3"};
@@ -435,7 +464,7 @@ struct HadNucleiFemto {
   struct : o2::framework::ConfigurableGroup {
     // cppcheck-suppress unusedStructMember
     std::string prefix{"fractionPurity"};
-    Configurable<float> settingHadronDcaFitAbsMax{"settingHadronDcaFitAbsMax", 2.4f, "Maximum absolute pion DCAxy and DCAz stored for the fraction fit"};
+    Configurable<float> settingHadronDcaFitAbsMax{"settingHadronDcaFitAbsMax", 2.4f, "Maximum absolute hadron DCAxy and DCAz stored for the fraction fit"};
     Configurable<float> settingNucleusDcaFitAbsMax{"settingNucleusDcaFitAbsMax", 1.0f, "Maximum absolute nucleus DCAxy and DCAz stored for the fraction fit"};
     Configurable<bool> settingRequireRecoMCCollisionMatch{"settingRequireRecoMCCollisionMatch", true, "For the base DCA templates, require the truth particle to belong to the reconstructed collision MC label; detailed templates always store both association classes"};
   } fractionPurity;
@@ -534,14 +563,14 @@ struct HadNucleiFemto {
     float phiPi{0.f};
     bool isMatter{false};
 
-    float pt() const { return std::hypot(momentum[0], momentum[1]); }
-    float eta() const
+    [[nodiscard]] float pt() const { return std::hypot(momentum[0], momentum[1]); }
+    [[nodiscard]] float eta() const
     {
       const float transverseMomentum = pt();
       return transverseMomentum > 0.f ? std::asinh(momentum[2] / transverseMomentum) : 999.f;
     }
-    float phi() const { return std::atan2(momentum[1], momentum[0]); }
-    int8_t sign() const { return isMatter ? 1 : -1; }
+    [[nodiscard]] float phi() const { return std::atan2(momentum[1], momentum[0]); }
+    [[nodiscard]] int8_t sign() const { return isMatter ? 1 : -1; }
   };
 
   struct HadHyperHadron {
@@ -556,10 +585,10 @@ struct HadNucleiFemto {
     float phiValue{0.f};
     int8_t signValue{0};
 
-    float pt() const { return std::hypot(momentum[0], momentum[1]); }
-    float eta() const { return etaValue; }
-    float phi() const { return phiValue; }
-    int8_t sign() const { return signValue; }
+    [[nodiscard]] float pt() const { return std::hypot(momentum[0], momentum[1]); }
+    [[nodiscard]] float eta() const { return etaValue; }
+    [[nodiscard]] float phi() const { return phiValue; }
+    [[nodiscard]] int8_t sign() const { return signValue; }
   };
 
   struct HadHyperEvent {
@@ -620,7 +649,9 @@ struct HadNucleiFemto {
   // binning for EM background
   ConfigurableAxis axisVertex{"axisVertex", {30, -10, 10}, "Binning for vtxz"};
   ConfigurableAxis axisCentrality{"axisCentrality", {40, 0, 100}, "Binning for centrality"};
-  using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
+  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0., 4., 8., 12., 16., 20., 24., 28., 32., 36., 40., 44., 48., 52., 56., 60., 64., 68., 72., 76., 80., 84., 88., 92., 96., 100., 200.}, "Variable-width multNTracksPV bins for event mixing"};
+  using CentralityBinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
+  using MultiplicityBinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultNTracksPV>;
 
   std::array<float, 6> mBBparamsNucleus{};
   float mMassHad{0.f};
@@ -633,6 +664,29 @@ struct HadNucleiFemto {
   int mMixingRunNumber{-1};
   int mHyperMixingRunNumber{-1};
   int mHyperMCMixingRunNumber{-1};
+  // A separate state machine: the ordinary ME pools and counters are untouched.
+  std::unordered_map<int, std::deque<BufferedCollision>> mDiagnosticPools;
+  TimingInfo mDiagnosticTiming;
+  std::string mDiagnosticUUID;
+  uint64_t mDiagnosticInstanceHi{0}, mDiagnosticInstanceLo{0};
+  uint64_t mDiagnosticCall{0}, mDiagnosticEpoch{0}, mDiagnosticBuffered{0};
+  uint64_t mDiagnosticExpected{0}, mDiagnosticAccepted{0}, mDiagnosticCombinations{0};
+  int64_t mNextDiagnosticEventId{0};
+  int mDiagnosticRun{-1};
+  static constexpr uint8_t DiagnosticEventKind = 3;
+  struct MEDiagnosticRow {
+    uint8_t kind{DiagnosticEventKind}, status{0};
+    int run{-1}, previousRun{-1};
+    int64_t eventId{-1}, inputCollisionId{-1};
+    uint64_t globalBC{0}, timestamp{0};
+    float z{0.f}, centrality{0.f}, multiplicity{0.f};
+    uint32_t numContrib{0}, nNuclei{0}, nHadrons{0};
+    int poolBin{-1};
+    uint32_t before{0}, after{0};
+    uint64_t expected{0}, accepted{0}, combinations{0};
+    uint64_t inputCollisions{0}, passedEventSelection{0}, passedZorro{0};
+  };
+  HistogramRegistry mDiagnosticRegistry{"MEDiagnostic", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   o2::vertexing::DCAFitterN<2> mFitter;
 
   int mRunNumber{0};
@@ -688,36 +742,36 @@ struct HadNucleiFemto {
 
      // Base inputs for Giorgio-style offline DCA fits. The origin axis is:
      // 0 primary, 1 weak decay, 2 material (every non-primary, non-decay process).
-     {"fraction/hDcaDataHad", "Pion DCA-fit input;signed reconstructed p_{T} (GeV/c);DCA_{xy} (cm);DCA_{z} (cm);centrality", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {40, 0.f, 100.f}}}},
+     {"fraction/hDcaDataHad", "Hadron DCA-fit input;signed reconstructed p_{T} (GeV/c);DCA_{xy} (cm);DCA_{z} (cm);centrality", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {40, 0.f, 100.f}}}},
      {"fraction/hDcaDataNu", "Nucleus DCA-fit input;signed physical reconstructed p_{T} (GeV/c);DCA_{xy} (cm);DCA_{z} (cm);centrality", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {NucleusDcaFitBins, -NucleusDcaFitAxisMax, NucleusDcaFitAxisMax}, {NucleusDcaFitBins, -NucleusDcaFitAxisMax, NucleusDcaFitAxisMax}, {40, 0.f, 100.f}}}},
-     {"fraction/hDcaTemplateHad", "Truth pion DCA templates;signed reconstructed p_{T} (GeV/c);DCA_{xy} (cm);DCA_{z} (cm);centrality;origin", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {40, 0.f, 100.f}, {NDcaOrigins, -0.5f, static_cast<float>(NDcaOrigins) - 0.5f}}}},
+     {"fraction/hDcaTemplateHad", "Truth hadron DCA templates;signed reconstructed p_{T} (GeV/c);DCA_{xy} (cm);DCA_{z} (cm);centrality;origin", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {40, 0.f, 100.f}, {NDcaOrigins, -0.5f, static_cast<float>(NDcaOrigins) - 0.5f}}}},
      {"fraction/hDcaTemplateNu", "Truth nucleus DCA templates;signed physical reconstructed p_{T} (GeV/c);DCA_{xy} (cm);DCA_{z} (cm);centrality;origin", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {NucleusDcaFitBins, -NucleusDcaFitAxisMax, NucleusDcaFitAxisMax}, {NucleusDcaFitBins, -NucleusDcaFitAxisMax, NucleusDcaFitAxisMax}, {40, 0.f, 100.f}, {NDcaOrigins, -0.5f, static_cast<float>(NDcaOrigins) - 0.5f}}}},
 
      // DCA shapes of selected candidates that are not the requested truth
      // species. They are kept separate from primary/weak/material so that
      // their normalisation can be fixed or constrained by the PID purity.
-     {"fraction/hDcaMisidentifiedHad", "Misidentified pion candidates;signed reconstructed p_{T} (GeV/c);DCA_{xy} (cm);DCA_{z} (cm);centrality;collision association", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {40, 0.f, 100.f}, {NCollisionAssociations, -0.5f, static_cast<float>(NCollisionAssociations) - 0.5f}}}},
+     {"fraction/hDcaMisidentifiedHad", "Misidentified hadron candidates;signed reconstructed p_{T} (GeV/c);DCA_{xy} (cm);DCA_{z} (cm);centrality;collision association", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {40, 0.f, 100.f}, {NCollisionAssociations, -0.5f, static_cast<float>(NCollisionAssociations) - 0.5f}}}},
      {"fraction/hDcaMisidentifiedNu", "Misidentified nucleus candidates;signed physical reconstructed p_{T} (GeV/c);DCA_{xy} (cm);DCA_{z} (cm);centrality;collision association", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {NucleusDcaFitBins, -NucleusDcaFitAxisMax, NucleusDcaFitAxisMax}, {NucleusDcaFitBins, -NucleusDcaFitAxisMax, NucleusDcaFitAxisMax}, {40, 0.f, 100.f}, {NCollisionAssociations, -0.5f, static_cast<float>(NCollisionAssociations) - 0.5f}}}},
-     {"fraction/hDcaNoMCLabelHad", "Selected pion candidates without an MC label;signed reconstructed p_{T} (GeV/c);DCA_{xy} (cm);DCA_{z} (cm);centrality", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {40, 0.f, 100.f}}}},
+     {"fraction/hDcaNoMCLabelHad", "Selected hadron candidates without an MC label;signed reconstructed p_{T} (GeV/c);DCA_{xy} (cm);DCA_{z} (cm);centrality", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {40, 0.f, 100.f}}}},
      {"fraction/hDcaNoMCLabelNu", "Selected nucleus candidates without an MC label;signed physical reconstructed p_{T} (GeV/c);DCA_{xy} (cm);DCA_{z} (cm);centrality", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {NucleusDcaFitBins, -NucleusDcaFitAxisMax, NucleusDcaFitAxisMax}, {NucleusDcaFitBins, -NucleusDcaFitAxisMax, NucleusDcaFitAxisMax}, {40, 0.f, 100.f}}}},
 
      // Superset templates for optional offline refinements. They retain the
      // same base origin plus collision association, direct-parent category,
      // and the particle production radius. Projecting away the extra axes
      // recovers the base shapes; selecting them enables species-specific fits.
-     {"fraction/hDcaTemplateDetailHad", "Detailed truth pion DCA templates;signed reconstructed p_{T} (GeV/c);DCA_{xy} (cm);DCA_{z} (cm);centrality;origin;collision association;parent category;production R_{xy} (cm)", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {40, 0.f, 100.f}, {NDcaOrigins, -0.5f, static_cast<float>(NDcaOrigins) - 0.5f}, {NCollisionAssociations, -0.5f, static_cast<float>(NCollisionAssociations) - 0.5f}, {NParentCategories, -0.5f, static_cast<float>(NParentCategories) - 0.5f}, {200, 0.f, 100.f}}}},
+     {"fraction/hDcaTemplateDetailHad", "Detailed truth hadron DCA templates;signed reconstructed p_{T} (GeV/c);DCA_{xy} (cm);DCA_{z} (cm);centrality;origin;collision association;parent category;production R_{xy} (cm)", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {40, 0.f, 100.f}, {NDcaOrigins, -0.5f, static_cast<float>(NDcaOrigins) - 0.5f}, {NCollisionAssociations, -0.5f, static_cast<float>(NCollisionAssociations) - 0.5f}, {NParentCategories, -0.5f, static_cast<float>(NParentCategories) - 0.5f}, {200, 0.f, 100.f}}}},
      {"fraction/hDcaTemplateDetailNu", "Detailed truth nucleus DCA templates;signed physical reconstructed p_{T} (GeV/c);DCA_{xy} (cm);DCA_{z} (cm);centrality;origin;collision association;parent category;production R_{xy} (cm)", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {NucleusDcaFitBins, -NucleusDcaFitAxisMax, NucleusDcaFitAxisMax}, {NucleusDcaFitBins, -NucleusDcaFitAxisMax, NucleusDcaFitAxisMax}, {40, 0.f, 100.f}, {NDcaOrigins, -0.5f, static_cast<float>(NDcaOrigins) - 0.5f}, {NCollisionAssociations, -0.5f, static_cast<float>(NCollisionAssociations) - 0.5f}, {NParentCategories, -0.5f, static_cast<float>(NParentCategories) - 0.5f}, {200, 0.f, 100.f}}}},
 
      // Mother-resolved templates. There is one entry per direct mother (or a
      // single zero-code entry when no mother is stored). Reconstruct the exact
      // PDG code offline as sign * (PDG high * 10000 + PDG low).
-     {"fraction/hDcaMotherPdgHad", "Pion DCA by exact direct-mother PDG; signed reconstructed p_{T} (GeV/c);DCA_{xy} (cm);DCA_{z} (cm);centrality;origin;collision association;mother PDG sign;mother PDG high;mother PDG low", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {40, 0.f, 100.f}, {NDcaOrigins, -0.5f, static_cast<float>(NDcaOrigins) - 0.5f}, {NCollisionAssociations, -0.5f, static_cast<float>(NCollisionAssociations) - 0.5f}, {3, -1.5f, 1.5f}, {MotherPdgHighMax + 1, -0.5f, static_cast<float>(MotherPdgHighMax) + 0.5f}, {MotherPdgChunkBase, -0.5f, static_cast<float>(MotherPdgChunkBase) - 0.5f}}}},
+     {"fraction/hDcaMotherPdgHad", "Hadron DCA by exact direct-mother PDG; signed reconstructed p_{T} (GeV/c);DCA_{xy} (cm);DCA_{z} (cm);centrality;origin;collision association;mother PDG sign;mother PDG high;mother PDG low", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {40, 0.f, 100.f}, {NDcaOrigins, -0.5f, static_cast<float>(NDcaOrigins) - 0.5f}, {NCollisionAssociations, -0.5f, static_cast<float>(NCollisionAssociations) - 0.5f}, {3, -1.5f, 1.5f}, {MotherPdgHighMax + 1, -0.5f, static_cast<float>(MotherPdgHighMax) + 0.5f}, {MotherPdgChunkBase, -0.5f, static_cast<float>(MotherPdgChunkBase) - 0.5f}}}},
      {"fraction/hDcaMotherPdgNu", "Nucleus DCA by exact direct-mother PDG; signed physical reconstructed p_{T} (GeV/c);DCA_{xy} (cm);DCA_{z} (cm);centrality;origin;collision association;mother PDG sign;mother PDG high;mother PDG low", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {NucleusDcaFitBins, -NucleusDcaFitAxisMax, NucleusDcaFitAxisMax}, {NucleusDcaFitBins, -NucleusDcaFitAxisMax, NucleusDcaFitAxisMax}, {40, 0.f, 100.f}, {NDcaOrigins, -0.5f, static_cast<float>(NDcaOrigins) - 0.5f}, {NCollisionAssociations, -0.5f, static_cast<float>(NCollisionAssociations) - 0.5f}, {3, -1.5f, 1.5f}, {MotherPdgHighMax + 1, -0.5f, static_cast<float>(MotherPdgHighMax) + 0.5f}, {MotherPdgChunkBase, -0.5f, static_cast<float>(MotherPdgChunkBase) - 0.5f}}}},
 
      // Hierarchical MC truth purity counters: all = correct species + mis-ID
      // + no label; correct species = correct collision + wrong collision;
      // correct collision = primary + weak + material.
-     {"purityMC/hHadron", "Selected pion truth composition;signed reconstructed p_{T} (GeV/c);category;centrality", {HistType::kTH3F, {{280, -7.f, 7.f}, {NPurityCategories, -0.5f, static_cast<float>(NPurityCategories) - 0.5f}, {40, 0.f, 100.f}}}},
+     {"purityMC/hHadron", "Selected hadron truth composition;signed reconstructed p_{T} (GeV/c);category;centrality", {HistType::kTH3F, {{280, -7.f, 7.f}, {NPurityCategories, -0.5f, static_cast<float>(NPurityCategories) - 0.5f}, {40, 0.f, 100.f}}}},
      {"purityMC/hNucleus", "Selected nucleus truth composition;signed physical reconstructed p_{T} (GeV/c);category;centrality", {HistType::kTH3F, {{280, -7.f, 7.f}, {NPurityCategories, -0.5f, static_cast<float>(NPurityCategories) - 0.5f}, {40, 0.f, 100.f}}}},
 
      // dE/dx
@@ -753,12 +807,12 @@ struct HadNucleiFemto {
      // Purity
      {"purity/h2NsigmaNuTPC_preselection", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {400, -10.0f, 10.0f}}}},
      {"purity/h2NsigmaNuTPC_preselecComp", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {400, -10.0f, 10.0f}}}},
-     {"purity/h2NSigmaNuITS_preselection", "NsigmaNu ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS} Nu", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {120, -3.0f, 3.0f}}}},
+     {"purity/h2NSigmaNuITS_preselection", "NsigmaNu ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS} Nu", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {120, -5.0f, 5.0f}}}},
      {"purity/h2NsigmaNuTOF_preselection", "NsigmaNu TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(Nu)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {400, -10.0f, 10.0f}}}},
-     {"purity/h2NsigmaNuComb_preselection", "NsigmaNu TPCTOF comb distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{comb}(Nu)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {100, 0.0f, 5.0f}}}},
+     {"purity/h2NsigmaNuComb_preselection", "NsigmaNu TPCTOF comb distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{comb}(Nu)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {100, 0.0f, 10.0f}}}},
      {"purity/h2NsigmaHadTPC_preselection", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {400, -10.0f, 10.0f}}}},
      {"purity/h2NsigmaHadTOF_preselection", "NsigmaHad TOF distribution; #iit{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {400, -10.0f, 10.0f}}}},
-     {"purity/h2NsigmaHadComb_preselection", "NsigmaHad TPCTOF comb distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{comb}(had)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {100, 0.0f, 5.0f}}}},
+     {"purity/h2NsigmaHadComb_preselection", "NsigmaHad TPCTOF comb distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{comb}(had)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {100, 0.0f, 10.0f}}}},
 
      // Hypertriton
      {"hHe3TPCnsigma", "NsigmaHe3 TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(He3)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {200, -5.0f, 5.0f}}}},
@@ -786,8 +840,44 @@ struct HadNucleiFemto {
     false,
     true};
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& initContext)
   {
+    if (doprocessMixedEventDiagnostic) {
+      // AnalysisTask does not automatically invoke a task endOfStream method.
+      // CallbackService appends this callback without replacing output flushing.
+      initContext.services().get<CallbackService>().set<CallbackService::Id::EndOfStream>(
+        [this](EndOfStreamContext& context) { endOfStream(context); });
+      if (doprocessMixedEvent || doprocessSameEvent || doprocessMC || doprocessHyper || doprocessMCHyper || doprocessPurity || doprocessDcaFractionData || doprocessDcaFractionPurityMC) {
+        LOG(fatal) << "processMixedEventDiagnostic must run alone; disable the other HadNucleiFemto processes to avoid shared selection-QA contamination";
+      }
+      if (eventMixing.settingNoMixedEvents.value <= 0) {
+        LOG(fatal) << "ME diagnostic requires a positive mixing depth";
+      }
+      mDiagnosticUUID = TUUID().AsString();
+      std::string uuidWords = mDiagnosticUUID;
+      uuidWords.erase(std::remove(uuidWords.begin(), uuidWords.end(), '-'), uuidWords.end());
+      mDiagnosticInstanceHi = std::stoull(uuidWords.substr(0, 16), nullptr, 16);
+      mDiagnosticInstanceLo = std::stoull(uuidWords.substr(16, 16), nullptr, 16);
+      const auto& device = initContext.services().get<DeviceSpec const>();
+      const char* alienJob = std::getenv("ALIEN_PROC_ID");
+      LOG(info) << "ME_DIAG INIT instance=" << mDiagnosticUUID << " device=" << device.id
+                << " rank=" << device.rank << " inputTimesliceId=" << device.inputTimesliceId
+                << " job=" << (alienJob ? alienJob : "unknown")
+                << " production=" << meDiagnostic.productionTag.value << " code=" << meDiagnostic.codeTag.value
+                << " depth=" << eventMixing.settingNoMixedEvents.value
+                << " requireBoth=" << eventMixing.settingRequireBothSpeciesForMixing.value
+                << " multiplicityBinning=" << eventMixing.settingUseMultiplicityBinning.value
+                << " applyCPR=" << CPR.settingApplyClosePairRejection.value;
+      for (const auto& name : {"hLifecycle", "hSelection"}) {
+        mDiagnosticRegistry.add(name, name, HistType::kTH1D, {{6, -0.5, 5.5}});
+      }
+      mDiagnosticRegistry.add("hPoolOccupancy", "Prior partners;partners;events", HistType::kTH1D, {{101, -0.5, 100.5}});
+      mDiagnosticRegistry.add("hPairs", "0=expected,1=accepted,2=CPR rejected;counter;pairs", HistType::kTH1D, {{3, -0.5, 2.5}});
+      // The global sink keys by task + histogram name, not registry directory.
+      for (const auto& name : {"hMEDiagKStar_LS_M", "hMEDiagKStar_LS_A", "hMEDiagKStar_US_M", "hMEDiagKStar_US_A"}) {
+        mDiagnosticRegistry.add(name, name, HistType::kTH1D, {{300, 0., 3.}});
+      }
+    }
     const bool processHyperPairs = doprocessHyper || doprocessMCHyper;
     if (processHyperPairs && hadHyper.maxOutputKstar.value == 0.f) {
       LOG(fatal) << "Hadron-hypertriton mode requires a nonzero output k* range";
@@ -1248,6 +1338,18 @@ struct HadNucleiFemto {
   }
 
   template <typename Ttrack>
+  bool selectProtonTrackForDcaFit(const Ttrack& candidate) const
+  {
+    constexpr float protonEtaMax = 0.8f;
+    constexpr int protonTPCNClsFoundMin = 90;
+    constexpr int protonTPCCrossedRowsMin = 80;
+    return std::abs(candidate.eta()) < protonEtaMax &&
+           std::abs(candidate.pt()) > 0.f &&
+           candidate.tpcNClsFound() > protonTPCNClsFoundMin &&
+           candidate.tpcNClsCrossedRows() > protonTPCCrossedRowsMin;
+  }
+
+  template <typename Ttrack>
   bool selectTritonTrackForDcaFit(const Ttrack& candidate) const
   {
     constexpr float maxAbsEta = 0.8f;
@@ -1270,9 +1372,11 @@ struct HadNucleiFemto {
     if (species.settingHadPDGCode.value == static_cast<int>(PDG_t::kPiPlus)) {
       return selectPionTrackForDcaFit(candidate);
     }
-    // The fraction feature is intended for pion-nucleus configurations. Keep
-    // the nominal selection for other supported hadrons instead of silently
-    // changing their established cuts.
+    if (species.settingHadPDGCode.value == static_cast<int>(PDG_t::kProton)) {
+      return selectProtonTrackForDcaFit(candidate);
+    }
+    // Keep the nominal selection for other supported hadrons instead of
+    // silently changing their established cuts.
     return selectTrackHadron(candidate);
   }
 
@@ -1459,8 +1563,6 @@ struct HadNucleiFemto {
   template <typename Ttrack>
   bool selectionPIDProton(const Ttrack& candidate)
   {
-    constexpr float protonPtMin = 0.5f;
-    constexpr float protonPtMax = 3.0f;
     constexpr float protonPCombMin = 0.75f;
     constexpr float protonTPCNsigmaMax = 3.0f;
     constexpr float protonCombNsigmaMax = 3.0f;
@@ -1468,7 +1570,7 @@ struct HadNucleiFemto {
     const float tpcNSigmaPr = candidate.tpcNSigmaPr();
     mQaRegistry.fill(HIST("h2NsigmaHadTPC_preselection"), candidate.sign() * candidate.tpcInnerParam(), tpcNSigmaPr);
 
-    if (std::abs(candidate.pt()) <= protonPtMin || std::abs(candidate.pt()) >= protonPtMax) {
+    if (std::abs(candidate.pt()) <= hadronPid.settingProtonPtMin || std::abs(candidate.pt()) >= hadronPid.settingProtonPtMax) {
       return false;
     }
 
@@ -3065,7 +3167,7 @@ struct HadNucleiFemto {
                          std::unordered_map<int, std::deque<HadHyperEvent>>& mixingPools,
                          int& mixingRunNumber)
   {
-    const BinningType configuredBinningPolicy{{axisVertex, axisCentrality}, true};
+    const CentralityBinningType configuredBinningPolicy{{axisVertex, axisCentrality}, true};
     for (const auto& collision : collisions) {
       if (!selectCollision<isMC>(collision, bcs)) {
         continue;
@@ -3217,10 +3319,11 @@ struct HadNucleiFemto {
   }
   PROCESS_SWITCH(HadNucleiFemto, processSameEvent, "Process Same event", false);
 
-  void processMixedEvent(const CollisionsFull& collisions, const TrackCandidates& tracks, const aod::BCsWithTimestamps&)
+  void processMixedEvent(const CollisionsFullWithPVMult& collisions, const TrackCandidates& tracks, const aod::BCsWithTimestamps&)
   {
     LOG(debug) << "Processing mixed event";
-    const BinningType configuredBinningPolicy{{axisVertex, axisCentrality}, true};
+    const CentralityBinningType centralityBinningPolicy{{axisVertex, axisCentrality}, true};
+    const MultiplicityBinningType multiplicityBinningPolicy{{axisVertex, axisMultiplicity}, true};
 
     for (const auto& collision : collisions) {
       mQaRegistry.fill(HIST("hMixedEventSelections"), 0);
@@ -3266,7 +3369,12 @@ struct HadNucleiFemto {
         continue;
       }
 
-      const int poolBin = configuredBinningPolicy.getBin(std::make_tuple(collision.posZ(), collision.centFT0C()));
+      const int poolBin = eventMixing.settingUseMultiplicityBinning.value
+                            ? multiplicityBinningPolicy.getBin(std::make_tuple(collision.posZ(), collision.multNTracksPV()))
+                            : centralityBinningPolicy.getBin(std::make_tuple(collision.posZ(), collision.centFT0C()));
+      if (poolBin < 0) {
+        continue;
+      }
       auto& pool = mMixingPools[poolBin];
       mQaRegistry.fill(HIST("hMixingPoolOccupancy"), pool.size());
 
@@ -3299,6 +3407,218 @@ struct HadNucleiFemto {
     }
   }
   PROCESS_SWITCH(HadNucleiFemto, processMixedEvent, "Process Mixed event", false);
+
+  void run(ProcessingContext& context)
+  {
+    if (doprocessMixedEventDiagnostic) {
+      // TimingInfo is stream-scoped; access it through the active context.
+      mDiagnosticTiming = context.services().get<TimingInfo>();
+    }
+  }
+
+  void writeMEDiagnostic(const MEDiagnosticRow& row)
+  {
+    mOutputMEDiagnostic(mDiagnosticInstanceHi, mDiagnosticInstanceLo, mDiagnosticCall,
+                        static_cast<uint64_t>(mDiagnosticTiming.timeslice), mDiagnosticTiming.tfCounter, mDiagnosticTiming.runNumber,
+                        row.kind, row.status, mDiagnosticEpoch, row.run, row.previousRun, row.eventId,
+                        row.inputCollisionId, row.globalBC, row.timestamp, row.z, row.centrality, row.multiplicity,
+                        row.numContrib, row.nNuclei, row.nHadrons, row.poolBin, row.before, row.after,
+                        mDiagnosticBuffered, static_cast<uint32_t>(mDiagnosticPools.size()),
+                        row.expected, row.accepted, row.expected - row.accepted, row.combinations,
+                        row.inputCollisions, row.passedEventSelection, row.passedZorro);
+    if (row.kind != DiagnosticEventKind) {
+      mDiagnosticRegistry.fill(HIST("hLifecycle"), row.kind);
+    }
+  }
+
+  bool fillDiagnosticMixedPair(const BufferedTrack& nucleus, const BufferedTrack& hadron)
+  {
+    // Same CPR predicate and kinematics as fillMixedPair; separate final QA,
+    // and never write the ordinary pair/multiplicity tables from this process.
+    if (isClosePair(nucleus, hadron, /*fillQA*/ true)) {
+      return false;
+    }
+    HadNucandidate candidate;
+    fillBufferedCandidateInfo(nucleus, hadron, candidate);
+    if (candidate.recoPtNu() > 0) {
+      if (candidate.isBkgUS) {
+        mDiagnosticRegistry.fill(HIST("hMEDiagKStar_US_M"), candidate.kstar);
+      } else {
+        mDiagnosticRegistry.fill(HIST("hMEDiagKStar_LS_M"), candidate.kstar);
+      }
+    } else if (candidate.isBkgUS) {
+      mDiagnosticRegistry.fill(HIST("hMEDiagKStar_US_A"), candidate.kstar);
+    } else {
+      mDiagnosticRegistry.fill(HIST("hMEDiagKStar_LS_A"), candidate.kstar);
+    }
+    return true;
+  }
+
+  void processMixedEventDiagnostic(const CollisionsFullWithPVMult& collisions, const TrackCandidates& tracks, const aod::BCsWithTimestamps&)
+  {
+    const CentralityBinningType centralityBinningPolicy{{axisVertex, axisCentrality}, true};
+    const MultiplicityBinningType multiplicityBinningPolicy{{axisVertex, axisMultiplicity}, true};
+    ++mDiagnosticCall;
+    MEDiagnosticRow call;
+    call.run = mDiagnosticRun;
+    call.inputCollisions = collisions.size();
+    if (mDiagnosticCall == 1) {
+      call.kind = 0; // Instance initialization, emitted in a valid table context.
+      writeMEDiagnostic(call);
+    }
+    call.kind = 1;
+    writeMEDiagnostic(call);
+    LOG(info) << "ME_DIAG BEGIN instance=" << mDiagnosticUUID << " call=" << mDiagnosticCall
+              << " timeslice=" << mDiagnosticTiming.timeslice << " tfCounter=" << mDiagnosticTiming.tfCounter
+              << " run=" << mDiagnosticRun << " buffered=" << mDiagnosticBuffered << " bins=" << mDiagnosticPools.size();
+
+    for (const auto& collision : collisions) {
+      const auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      MEDiagnosticRow row;
+      row.run = bc.runNumber();
+      row.inputCollisionId = collision.globalIndex();
+      row.globalBC = bc.globalBC();
+      row.timestamp = bc.timestamp();
+      row.z = collision.posZ();
+      row.centrality = collision.centFT0C();
+      row.multiplicity = collision.multNTracksPV();
+      row.numContrib = collision.numContrib();
+      mDiagnosticRegistry.fill(HIST("hSelection"), 0);
+      if (!passesEventSelection</*isMC*/ false>(collision)) {
+        row.status = 1;
+        if (meDiagnostic.saveRejectedEvents) {
+          writeMEDiagnostic(row);
+        }
+        continue;
+      }
+      ++call.passedEventSelection;
+      mDiagnosticRegistry.fill(HIST("hSelection"), 1);
+      if (!passesZorroSelection(collision)) {
+        row.status = 2;
+        if (meDiagnostic.saveRejectedEvents) {
+          writeMEDiagnostic(row);
+        }
+        continue;
+      }
+      ++call.passedZorro;
+      mDiagnosticRegistry.fill(HIST("hSelection"), 2);
+      // Match the ordinary ME ordering: observe the run before species/bin cuts.
+      if (mDiagnosticRun != bc.runNumber()) {
+        MEDiagnosticRow reset = row;
+        reset.kind = 2;
+        reset.status = mDiagnosticRun < 0 ? 0 : 1;
+        reset.previousRun = mDiagnosticRun;
+        ++mDiagnosticEpoch;
+        writeMEDiagnostic(reset); // Contains the pre-clear buffered totals.
+        LOG(info) << "ME_DIAG CLEAR instance=" << mDiagnosticUUID << " call=" << mDiagnosticCall
+                  << " reason=" << (mDiagnosticRun < 0 ? "first-run" : "run-change")
+                  << " oldRun=" << mDiagnosticRun << " newRun=" << bc.runNumber()
+                  << " epoch=" << mDiagnosticEpoch << " buffered=" << mDiagnosticBuffered
+                  << " bins=" << mDiagnosticPools.size();
+        mDiagnosticPools.clear();
+        mDiagnosticBuffered = 0;
+        mDiagnosticRun = bc.runNumber();
+      }
+      BufferedCollision current;
+      current.eventId = mNextDiagnosticEventId++;
+      current.posZ = collision.posZ();
+      current.numContrib = collision.numContrib();
+      current.centFT0C = collision.centFT0C();
+      current.multFT0C = collision.multFT0C();
+      row.eventId = current.eventId;
+      auto tracksThisCollision = tracks.sliceBy(mPerCol, collision.globalIndex());
+      tracksThisCollision.bindExternalIndices(&tracks);
+      for (const auto& track : tracksThisCollision) {
+        if (selectTrackNu(track) && selectionPIDNu(track)) {
+          current.nuclei.push_back(makeBufferedTrack(track, true, current.eventId));
+        }
+        if (selectTrackHadron(track) && selectionPIDHadron(track)) {
+          current.hadrons.push_back(makeBufferedTrack(track, false, current.eventId));
+        }
+      }
+      row.nNuclei = current.nuclei.size();
+      row.nHadrons = current.hadrons.size();
+      if (eventMixing.settingRequireBothSpeciesForMixing.value && (current.nuclei.empty() || current.hadrons.empty())) {
+        row.status = 3;
+        if (meDiagnostic.saveRejectedEvents) {
+          writeMEDiagnostic(row);
+        }
+        continue;
+      }
+      mDiagnosticRegistry.fill(HIST("hSelection"), 3);
+      row.poolBin = eventMixing.settingUseMultiplicityBinning.value
+                      ? multiplicityBinningPolicy.getBin(std::make_tuple(collision.posZ(), collision.multNTracksPV()))
+                      : centralityBinningPolicy.getBin(std::make_tuple(collision.posZ(), collision.centFT0C()));
+      if (row.poolBin < 0) {
+        row.status = 4;
+        if (meDiagnostic.saveRejectedEvents) {
+          writeMEDiagnostic(row);
+        }
+        continue;
+      }
+      mDiagnosticRegistry.fill(HIST("hSelection"), 4);
+      auto& pool = mDiagnosticPools[row.poolBin];
+      row.before = pool.size();
+      row.combinations = pool.size();
+      mDiagnosticRegistry.fill(HIST("hPoolOccupancy"), row.before);
+      for (const auto& partner : pool) {
+        const uint64_t expected = static_cast<uint64_t>(current.nuclei.size()) * partner.hadrons.size() +
+                                  static_cast<uint64_t>(partner.nuclei.size()) * current.hadrons.size();
+        uint64_t accepted = 0;
+        for (const auto& nucleus : current.nuclei) {
+          for (const auto& hadron : partner.hadrons) {
+            accepted += fillDiagnosticMixedPair(nucleus, hadron);
+          }
+        }
+        for (const auto& nucleus : partner.nuclei) {
+          for (const auto& hadron : current.hadrons) {
+            accepted += fillDiagnosticMixedPair(nucleus, hadron);
+          }
+        }
+        row.expected += expected;
+        row.accepted += accepted;
+        if (meDiagnostic.savePartnerLinks) {
+          mOutputMEDiagnosticLinks(mDiagnosticInstanceHi, mDiagnosticInstanceLo, mDiagnosticCall,
+                                   mDiagnosticEpoch, mDiagnosticRun, current.eventId, partner.eventId, row.poolBin, expected, accepted);
+        }
+      }
+      if (pool.size() >= static_cast<size_t>(eventMixing.settingNoMixedEvents.value)) {
+        pool.pop_front();
+      } else {
+        ++mDiagnosticBuffered;
+      }
+      pool.push_back(std::move(current));
+      row.after = pool.size();
+      writeMEDiagnostic(row);
+      call.expected += row.expected;
+      call.accepted += row.accepted;
+      call.combinations += row.combinations;
+      mDiagnosticRegistry.fill(HIST("hPairs"), 0., static_cast<double>(row.expected));
+      mDiagnosticRegistry.fill(HIST("hPairs"), 1., static_cast<double>(row.accepted));
+      mDiagnosticRegistry.fill(HIST("hPairs"), 2., static_cast<double>(row.expected - row.accepted));
+    }
+    call.kind = 4;
+    call.run = mDiagnosticRun;
+    writeMEDiagnostic(call);
+    mDiagnosticExpected += call.expected;
+    mDiagnosticAccepted += call.accepted;
+    mDiagnosticCombinations += call.combinations;
+    LOG(info) << "ME_DIAG END instance=" << mDiagnosticUUID << " call=" << mDiagnosticCall
+              << " buffered=" << mDiagnosticBuffered << " bins=" << mDiagnosticPools.size()
+              << " combinations=" << call.combinations << " expected=" << call.expected << " accepted=" << call.accepted;
+  }
+  PROCESS_SWITCH(HadNucleiFemto, processMixedEventDiagnostic, "Independent ME pool lifecycle diagnostic (run alone)", false);
+
+  void endOfStream(EndOfStreamContext&)
+  {
+    if (doprocessMixedEventDiagnostic) {
+      // EOS table writes are not guaranteed to be flushed; final snapshot in log.
+      LOG(info) << "ME_DIAG EOS instance=" << mDiagnosticUUID << " calls=" << mDiagnosticCall
+                << " epochs=" << mDiagnosticEpoch << " buffered=" << mDiagnosticBuffered
+                << " bins=" << mDiagnosticPools.size() << " combinations=" << mDiagnosticCombinations
+                << " expected=" << mDiagnosticExpected << " accepted=" << mDiagnosticAccepted;
+    }
+  }
 
   // Produce the data distributions fitted offline with the MC templates. All
   // nominal quality and PID selections are applied; only DCA is relaxed.
@@ -3453,7 +3773,7 @@ struct HadNucleiFemto {
 
   // MC DCA templates use the relaxed-DCA selection. MC purity uses the full
   // nominal candidate selection, including its DCA requirement.
-  void processDcaFractionPurityMC(const CollisionsFullMC& collisions, const TrackCandidatesMC& tracks, const aod::McParticles&, const aod::BCsWithTimestamps& bcs)
+  void processDcaFractionPurityMC(const CollisionsFullMC& collisions, const TrackCandidatesMCDca& tracks, const aod::McParticles&, const aod::BCsWithTimestamps& bcs)
   {
     for (const auto& collision : collisions) {
       if (!selectCollision</*isMC*/ true>(collision, bcs)) {
@@ -3602,10 +3922,12 @@ struct HadNucleiFemto {
         } else if (passTrackNu && useHelium3Nucleus()) {
           const float tpcNSigmaHe3 = computeNSigmaHe3(track);
           const float signedPtHe3 = track.sign() * 2.f * track.pt();
-          mQaRegistry.fill(HIST("purity/h2NsigmaNuTPC_preselection"), signedPtHe3, tpcNSigmaHe3);
           o2::aod::ITSResponse itsResponse;
           const float itsNSigmaHe3 = itsResponse.nSigmaITS<o2::track::PID::Helium3>(track.itsClusterSizes(), track.p(), track.eta());
           mQaRegistry.fill(HIST("purity/h2NSigmaNuITS_preselection"), signedPtHe3, itsNSigmaHe3);
+          if (itsNSigmaHe3 >= helium3Pid.settingITSNSigmaMinHe3) {
+            mQaRegistry.fill(HIST("purity/h2NsigmaNuTPC_preselection"), signedPtHe3, tpcNSigmaHe3);
+          }
         } else if (passTrackNu && useTritonNucleus()) {
           const float tpcNSigmaTr = track.tpcNSigmaTr();
           o2::aod::ITSResponse itsResponse;
