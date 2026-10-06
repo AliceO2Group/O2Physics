@@ -1059,6 +1059,7 @@ class VarManager : public TObject
     kDeltaR1,
     kDeltaR2,
     kDeltaR,
+    kVertexingQuadProcCode,
 
     // DQ-HF correlation variables
     kMassCharmHadron,
@@ -6782,6 +6783,8 @@ void VarManager::FillDileptonTrackTrackVertexing(C const& collision, T1 const& l
     // o2::track::TrackParCov parsDilepton = VarManager::fgFitterTwoProngBarrel.createParentTrackParCov(0);
     // procCodeDileptonTrackTrack = VarManager::fgFitterThreeProngBarrel.process(parsDilepton, pars3, pars4);
     procCodeDileptonTrackTrack = VarManager::fgFitterFourProngBarrel.process(pars1, pars2, pars3, pars4);
+    values[kVertexingProcCode] = procCodeDilepton;
+    values[kVertexingQuadProcCode] = procCodeDileptonTrackTrack;
 
     // fill values
     if (procCodeDilepton == 0 || procCodeDileptonTrackTrack == 0) {
