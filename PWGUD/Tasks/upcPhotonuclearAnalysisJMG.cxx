@@ -409,9 +409,9 @@ struct UpcPhotonuclearAnalysisJMG {
 
   // Binning only on PosZ without multiplicity
   // using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::udcollision::GapSide>;
-  // BinningType bindingOnVtx{{vtxBinsEdges, gapSideBinsEdges}, true};
+  // BinningType bindingOnVtx{{vtxBinsEdges, gapSideBinsEdges}};
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ>;
-  // BinningType bindingOnVtx{{vtxBinsEdges}, true};
+  // BinningType bindingOnVtx{{vtxBinsEdges}};
   // SameKindPair<FullSGUDCollision, FullUDTracks, BinningType> pairs{bindingOnVtx, nEventsMixed, -1, &cache};
 
   template <typename CSG>
@@ -896,8 +896,8 @@ struct UpcPhotonuclearAnalysisJMG {
     // int sgSide = reconstructedCollision.gapSide();
     // int sgSide = 0;
 
-    // BinningType bindingOnVtx{{vtxBinsEdges, gapSideBinsEdges}, true};
-    BinningType bindingOnVtx{{vtxBinsEdges}, true};
+    // BinningType bindingOnVtx{{vtxBinsEdges, gapSideBinsEdges}};
+    BinningType bindingOnVtx{{vtxBinsEdges}};
     auto tracksTuple = std::make_tuple(reconstructedTracks);
     SameKindPair<FullSGUDCollision, FullUDTracks, BinningType> pairs{bindingOnVtx, nEventsMixed, -1, reconstructedCollision, tracksTuple, &cache};
 

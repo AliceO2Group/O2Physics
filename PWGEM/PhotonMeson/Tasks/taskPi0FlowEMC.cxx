@@ -1173,7 +1173,7 @@ struct TaskPi0FlowEMC {
     fEMCCut.AreSelectedRunning(flags, clusters, matchedPrims, matchedSeconds);
 
     using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C, emevent::EP2FT0C<emevent::Q2xFT0C, emevent::Q2yFT0C>>;
-    BinningType binningMixedEvent{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins, mixingConfig.cfgEPBins}, true};
+    BinningType binningMixedEvent{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins, mixingConfig.cfgEPBins}};
 
     auto clustersTuple = std::make_tuple(clusters);
     SameKindPair<FilteredCollsWithQvecs, EMCalPhotons, BinningType> pair{binningMixedEvent, mixingConfig.cfgMixingDepth, -1, collisions, clustersTuple, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
@@ -1367,7 +1367,7 @@ struct TaskPi0FlowEMC {
     }
 
     using BinningTypeMixed = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C, emevent::EP2FT0C<emevent::Q2xFT0C, emevent::Q2yFT0C>>;
-    BinningTypeMixed binningOnPositions{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins, mixingConfig.cfgEPBins}, true};
+    BinningTypeMixed binningOnPositions{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins, mixingConfig.cfgEPBins}};
 
     auto associatedTables = std::make_tuple(clusters, pcmPhotons);
 
@@ -1576,7 +1576,7 @@ struct TaskPi0FlowEMC {
     }
 
     using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C, emevent::EP2FT0C<emevent::Q2xFT0C, emevent::Q2yFT0C>>;
-    BinningType binningMixedEvent{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins, mixingConfig.cfgEPBins}, true};
+    BinningType binningMixedEvent{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins, mixingConfig.cfgEPBins}};
 
     auto pcmPhotonTuple = std::make_tuple(pcmPhotons);
     SameKindPair<FilteredCollsWithQvecs, PCMPhotons, BinningType> pair{binningMixedEvent, mixingConfig.cfgMixingDepth, -1, collisions, pcmPhotonTuple, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored

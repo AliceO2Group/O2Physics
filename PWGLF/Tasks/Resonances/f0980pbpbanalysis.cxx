@@ -706,7 +706,7 @@ struct F0980pbpbanalysis {
     qVecDetInd = detId * 4 + 3 + (nmode - 2) * FlowConfig.cfgQvecNum * 4;
 
     auto trackTuple = std::make_tuple(tracks);
-    BinningTypeVertexContributor binningOnPositions{{mixAxisVertex, mixAxisCent}, true};
+    BinningTypeVertexContributor binningOnPositions{{mixAxisVertex, mixAxisCent}};
     SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor> pair{binningOnPositions, BkgMethodConfig.cfgBkgMixedNum, -1, collisions, trackTuple, &cache};
     ROOT::Math::PxPyPzMVector ptl1, ptl2, recoPtl;
     for (const auto& [c1, t1, c2, t2] : pair) {

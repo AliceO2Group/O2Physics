@@ -60,7 +60,9 @@ enum class InputFeaturesResonance : uint8_t {
   photonPosTPCNSigmaEl,
   photonNegTPCNSigmaEl,
   // Photon-Lambda pair
-  opAngle
+  opAngle,
+  apAlpha,
+  apQt
 };
 
 template <typename TypeOutputScore = float>
@@ -72,7 +74,7 @@ class ResonanceMlResponse : public MlResponse<TypeOutputScore>
 
   /// Input features of a photon-Lambda pair
   template <typename TDauTracks = o2::soa::Join<o2::aod::DauTrackExtras, o2::aod::DauTrackTPCPIDs>, typename TLambda, typename TPhoton>
-  std::vector<float> getInputFeatures(TLambda const& lambda, TPhoton const& photon, float opAngle)
+  std::vector<float> getInputFeatures(TLambda const& lambda, TPhoton const& photon, float opAngle, float apAlpha, float apQt)
   {
     // sigma0builder candidates carry prefixed columns (lambdaQt(), photonQt(), ...), derived V0s the plain V0 getters
     constexpr bool LambdaFromSigma0 = requires(TLambda const& cand) { cand.lambdaQt(); };
@@ -271,6 +273,14 @@ class ResonanceMlResponse : public MlResponse<TypeOutputScore>
         case InputFeaturesResonance::opAngle:
           inputFeatures.emplace_back(opAngle);
           break;
+
+        case InputFeaturesResonance::apAlpha:
+          inputFeatures.emplace_back(apAlpha);
+          break;
+
+        case InputFeaturesResonance::apQt:
+          inputFeatures.emplace_back(apQt);
+          break;
       }
     }
     return inputFeatures;
@@ -307,7 +317,9 @@ class ResonanceMlResponse : public MlResponse<TypeOutputScore>
       {"photonNegEta", static_cast<uint8_t>(InputFeaturesResonance::photonNegEta)},
       {"photonPosTPCNSigmaEl", static_cast<uint8_t>(InputFeaturesResonance::photonPosTPCNSigmaEl)},
       {"photonNegTPCNSigmaEl", static_cast<uint8_t>(InputFeaturesResonance::photonNegTPCNSigmaEl)},
-      {"opAngle", static_cast<uint8_t>(InputFeaturesResonance::opAngle)}};
+      {"opAngle", static_cast<uint8_t>(InputFeaturesResonance::opAngle)},
+      {"apAlpha", static_cast<uint8_t>(InputFeaturesResonance::apAlpha)},
+      {"apQt", static_cast<uint8_t>(InputFeaturesResonance::apQt)}};
   }
 };
 

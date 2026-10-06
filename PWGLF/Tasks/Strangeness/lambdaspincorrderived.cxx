@@ -1951,7 +1951,7 @@ struct lambdaspincorrderived {
   // Processing Event Mixing
   SliceCache cache;
   using BinningType = ColumnBinningPolicy<aod::lambdaevent::Posz, aod::lambdaevent::Cent>;
-  BinningType colBinning{{CfgVtxBins, CfgMultBins}, true};
+  BinningType colBinning{{CfgVtxBins, CfgMultBins}};
   Preslice<aod::LambdaPairs> tracksPerCollisionV0 = aod::lambdapair::lambdaeventId;
 
   void processMEV3(EventCandidates const& collisions, AllTrackCandidates const& V0s)

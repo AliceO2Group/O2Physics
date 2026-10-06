@@ -1164,7 +1164,7 @@ void PiHypertritonFemto::processPairs(const Tcollisions& collisions, const Ttrac
 {
   // Each invocation receives a new input-table scope; row indices can repeat in later frames.
   const uint64_t sourceFrameId = ++mSourceFrameId;
-  const BinningType configuredBinningPolicy{{axisVertex, axisCentrality}, true};
+  const BinningType configuredBinningPolicy{{axisVertex, axisCentrality}};
   for (const auto& collision : collisions) {
     if (!selectCollision<isMC>(collision, bcs)) {
       continue;

@@ -2640,7 +2640,7 @@ struct HfTaskFlow {
     // The first one that I call "Data" should work for data and mc rec
     using BinningTypeData = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
 
-    BinningTypeData binningWithTracksSize{{getMultiplicity}, {configAxis.binsMixingVertex, configAxis.binsMixingMultiplicity}, true};
+    BinningTypeData binningWithTracksSize{{getMultiplicity}, {configAxis.binsMixingVertex, configAxis.binsMixingMultiplicity}};
     auto tracksTuple = std::make_tuple(tracksTrigger, tracksAssoc);
     Pair<TCollisions, TTracksTrig, TTracksAssoc, BinningTypeData> pair{binningWithTracksSize, configTask.nMixedEvents, -1, collisions, tracksTuple, &cache};
 
@@ -2700,7 +2700,7 @@ struct HfTaskFlow {
     };
 
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
-    MixedBinning const binningOnVtxAndMult{{getMultiplicity}, {configAxis.binsMixingVertex, configAxis.binsMixingMultiplicity}, true};
+    MixedBinning const binningOnVtxAndMult{{getMultiplicity}, {configAxis.binsMixingVertex, configAxis.binsMixingMultiplicity}};
 
     for (auto const& [collision1, collision2] : soa::selfCombinations(binningOnVtxAndMult, configTask.nMixedEvents, -1, collisions, collisions)) {
 
@@ -2764,7 +2764,7 @@ struct HfTaskFlow {
     };
 
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
-    MixedBinning const binningOnVtxAndMult{{getMultiplicity}, {configAxis.binsMixingVertex, configAxis.binsMixingMultiplicity}, true};
+    MixedBinning const binningOnVtxAndMult{{getMultiplicity}, {configAxis.binsMixingVertex, configAxis.binsMixingMultiplicity}};
 
     for (auto const& [collision1, collision2] : soa::selfCombinations(binningOnVtxAndMult, configTask.nMixedEvents, -1, collisions, collisions)) {
 
@@ -2835,7 +2835,7 @@ struct HfTaskFlow {
     };
 
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
-    MixedBinning const binningOnVtxAndMult{{getMultiplicity}, {configAxis.binsMixingVertex, configAxis.binsMixingMultiplicity}, true};
+    MixedBinning const binningOnVtxAndMult{{getMultiplicity}, {configAxis.binsMixingVertex, configAxis.binsMixingMultiplicity}};
 
     for (auto const& [collision1, collision2] : soa::selfCombinations(binningOnVtxAndMult, configTask.nMixedEvents, -1, collisions, collisions)) {
 
@@ -2927,7 +2927,7 @@ struct HfTaskFlow {
     };
 
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
-    MixedBinning const binningOnVtxAndMult{{getMultiplicity}, {configAxis.binsMixingVertex, configAxis.binsMixingMultiplicity}, true};
+    MixedBinning const binningOnVtxAndMult{{getMultiplicity}, {configAxis.binsMixingVertex, configAxis.binsMixingMultiplicity}};
 
     for (auto const& [collision1, collision2] : soa::selfCombinations(binningOnVtxAndMult, configTask.nMixedEvents, -1, collisions, collisions)) {
 
@@ -4567,7 +4567,7 @@ struct HfTaskFlow {
     };
 
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::mccollision::PosZ, decltype(getTracksSize)>;
-    MixedBinning const binningOnVtxAndMult{{getTracksSize}, {configAxis.binsMixingVertex, configAxis.binsMixingMultiplicity}, true};
+    MixedBinning const binningOnVtxAndMult{{getTracksSize}, {configAxis.binsMixingVertex, configAxis.binsMixingMultiplicity}};
 
     auto tracksTuple = std::make_tuple(mcParticles, mcParticles);
 

@@ -1421,10 +1421,10 @@ struct PhianalysisTHnSparse {
 
     auto tracksTuple = std::make_tuple(tracks);
 
-    BinningTypeVzCe binningVzCe{{axisVertexMixing, axisCentralityMixing}, true};
+    BinningTypeVzCe binningVzCe{{axisVertexMixing, axisCentralityMixing}};
     SameKindPair<EventCandidates, TrackCandidates, BinningTypeVzCe> pairVzCe{binningVzCe, static_cast<int>(nMixedEvents), -1, collisions, tracksTuple, &cacheME};
 
-    BinningTypeVzMu binningVzMu{{axisVertexMixing, axisMultiplicityMixing}, true};
+    BinningTypeVzMu binningVzMu{{axisVertexMixing, axisMultiplicityMixing}};
     SameKindPair<EventCandidates, TrackCandidates, BinningTypeVzMu> pairVzMu{binningVzMu, static_cast<int>(nMixedEvents), -1, collisions, tracksTuple, &cacheME};
 
     if (mixingType == rsn::MixingType::ce) {

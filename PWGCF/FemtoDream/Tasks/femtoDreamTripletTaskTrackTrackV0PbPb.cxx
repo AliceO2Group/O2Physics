@@ -212,7 +212,7 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
 
     eventHisto.init(&qaRegistry, false);
 
-    colBinning = {{confVtxBins, confMultBins}, true};
+    colBinning = {{confVtxBins, confMultBins}};
 
     trackHistoselectedParts.init(&qaRegistry, confDummy, confDummy, confTempFitVarpTBins, confDummy, confDummy, confTempFitVarBinsTrack, confDummy, confDummy, confDummy, confDummy, confDummy, confDummy, confIsMC, confPDGCodePart);
     trackHistoALLselectedParts.init(&qaRegistry, confDummy, confDummy, confTempFitVarpTBins, confDummy, confDummy, confTempFitVarBinsTrack, confDummy, confDummy, confDummy, confDummy, confDummy, confDummy, confIsMC, confPDGCodePart);

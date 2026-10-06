@@ -225,9 +225,9 @@ struct femtoDreamPairTaskV0V0 {
   void init(InitContext&)
   {
     // setup columnpolicy for binning
-    colBinningMult = {{Mixing.VztxMixBins, Mixing.MultMixBins}, true};
-    colBinningMultPercentile = {{Mixing.VztxMixBins, Mixing.MultPercentileMixBins}, true};
-    colBinningMultMultPercentile = {{Mixing.VztxMixBins, Mixing.MultMixBins, Mixing.MultPercentileMixBins}, true};
+    colBinningMult = {{Mixing.VztxMixBins, Mixing.MultMixBins}};
+    colBinningMultPercentile = {{Mixing.VztxMixBins, Mixing.MultPercentileMixBins}};
+    colBinningMultMultPercentile = {{Mixing.VztxMixBins, Mixing.MultMixBins, Mixing.MultPercentileMixBins}};
 
     if (Option.RandomizePair.value) {
       random = new TRandom3(0);

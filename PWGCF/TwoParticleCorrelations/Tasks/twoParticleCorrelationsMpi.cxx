@@ -2177,7 +2177,7 @@ struct TwoParticleCorrelationsMpi {
       return getAnalysisMultiplicity(col);
     };
     using BinningTypeDerived = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
-    BinningTypeDerived configurableBinningDerived{{getMultiplicity}, {axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
+    BinningTypeDerived configurableBinningDerived{{getMultiplicity}, {axisVertex, axisMultiplicity}};
     const auto multiplicity = getMultiplicity(collision);
     if (cfgVerbosity > 0) {
       LOGF(info, "processSameDerivedT: Tracks for collision: %d/%d | Vertex: %.1f | Multiplicity/Centrality: %.1f", tracks1.size(), tracks2.size(), collision.posZ(), multiplicity);
@@ -2300,7 +2300,7 @@ struct TwoParticleCorrelationsMpi {
     // NOTE legacy function for O2 integration tests. Full version needs derived data
 
     // Strictly upper categorised collisions, for cfgNumMixedEvents combinations per bin, skipping those in entry -1
-    BinningTypeAOD configurableBinning{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
+    BinningTypeAOD configurableBinning{{axisVertex, axisMultiplicity}};
     auto tracksTuple = std::make_tuple(tracks);
     SameKindPair<AodCollisions, AodTracks, BinningTypeAOD> pairs{configurableBinning, cfgNumMixedEvents, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
@@ -2359,7 +2359,7 @@ struct TwoParticleCorrelationsMpi {
       };
 
     using BinningTypeDerived = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
-    BinningTypeDerived configurableBinningDerived{{getMultiplicity}, {axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
+    BinningTypeDerived configurableBinningDerived{{getMultiplicity}, {axisVertex, axisMultiplicity}};
     //  Strictly upper categorised collisions, for cfgNumMixedEvents combinations per bin, skipping those in entry -1
     auto tracksTuple = std::make_tuple(std::forward<TrackTypes>(tracks)...);
     using TA = std::tuple_element<0, decltype(tracksTuple)>::type;
@@ -2558,7 +2558,7 @@ struct TwoParticleCorrelationsMpi {
       };
 
     using BinningTypeMCDerived = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::mccollision::PosZ, decltype(getMultiplicity)>;
-    BinningTypeMCDerived configurableBinning{{getMultiplicity}, {axisVertex, axisMultiplicity}, true};
+    BinningTypeMCDerived configurableBinning{{getMultiplicity}, {axisVertex, axisMultiplicity}};
 
     // Strictly upper categorised collisions, for cfgNumMixedEvents combinations per bin, skipping those in entry -1
     auto tuple = std::make_tuple(std::forward<ParticleTypes>(particles)...);

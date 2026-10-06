@@ -157,7 +157,7 @@ struct femtoDreamTripletTaskTrackTrackCascade {
   void init(InitContext& context)
   {
     eventHisto.init(&qaRegistry, false);
-    colBinning = {{ConfVtxBins, ConfMultBins}, true};
+    colBinning = {{ConfVtxBins, ConfMultBins}};
     trackHistoSelectedParts.init(&qaRegistry, ConfDummy, ConfDummy, ConfTempFitVarpTBins, ConfDummy, ConfDummy, ConfTempFitVarBinsTrack, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfIsMC, ConfPDGCodePart);
     particleHistoSelectedCascades.init(&qaRegistry, ConfDummy, ConfDummy, ConfTempFitVarpTV0Bins, ConfDummy, ConfDummy, ConfTempFitVarBinsCascade, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfInvMassBins, ConfDummy, ConfIsMC, ConfPDGCodeCascade);
     particleHistoPosChild.init(&qaRegistry, ConfDummy, ConfDummy, ConfTempFitVarpTV0Child, ConfDummy, ConfDummy, ConfTempFitVarBinsCascadeChild, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfIsMC, 0);

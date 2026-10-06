@@ -3078,7 +3078,8 @@ struct derivedlambdakzeroanalysis {
       }
 
       // consider only associated candidates if asked to do so, disregard association
-      if (!doMCAssociation) {
+      // do not perform MC association when running over real data
+      if (doprocessRealDataRun3 || doprocessRealDataRun2 || !doMCAssociation) {
         BITSET(selMap, selConsiderK0Short);
         BITSET(selMap, selConsiderLambda);
         BITSET(selMap, selConsiderAntiLambda);

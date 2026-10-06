@@ -251,9 +251,9 @@ struct FemtoDreamPairTaskV0Reso {
   {
 
     // setup binnnig policy for mixing
-    colBinningMult = {{Mixing.binVztx, Mixing.binMult}, true};
-    colBinningMultPercentile = {{Mixing.binVztx, Mixing.binMultPercentile}, true};
-    colBinningMultMultPercentile = {{Mixing.binVztx, Mixing.binMult, Mixing.binMultPercentile}, true};
+    colBinningMult = {{Mixing.binVztx, Mixing.binMult}};
+    colBinningMultPercentile = {{Mixing.binVztx, Mixing.binMultPercentile}};
+    colBinningMultMultPercentile = {{Mixing.binVztx, Mixing.binMult, Mixing.binMultPercentile}};
 
     eventHisto.init(&registry, Option.isMC);
 
