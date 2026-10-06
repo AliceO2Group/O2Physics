@@ -591,7 +591,8 @@ struct cascadeFlow {
   double ComputeEPResolutionwShifts(const TCollision& coll, double psiT0C, double psiV0A, double psiT0A, double psiTPCA, double psiTPCC, TProfile3D* shiftprofileA, TProfile3D* shiftprofileB, TProfile3D* shiftprofileC, TProfile3D* shiftprofileD, TProfile3D* shiftprofileE)
   {
     float collcentrality = coll.centFT0C();
-    if (isCollisionCentrality == 1) collcentrality = coll.centFT0M();
+    if (isCollisionCentrality == 1)
+      collcentrality = coll.centFT0M();
     int nmode = 2;
     auto deltapsiFT0C = 0.0;
     auto deltapsiFV0A = 0.0;
@@ -806,7 +807,7 @@ struct cascadeFlow {
       invMassLambda = v0.mLambda();
     double ctauLambda = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * o2::constants::physics::MassLambda0;
     analysisLambdaSample(coll.centFT0C(),
-			 coll.centFT0M(),
+                         coll.centFT0M(),
                          hasEventPlane,
                          hasSpectatorPlane,
                          chargeIndex,
@@ -814,7 +815,7 @@ struct cascadeFlow {
                          v0.phi(),
                          v0.eta(),
                          invMassLambda,
-			 v0.mK0Short(),
+                         v0.mK0Short(),
                          ctauLambda,
                          v0.v0radius(),
                          v0.dcapostopv(),
@@ -2753,15 +2754,17 @@ struct cascadeFlow {
         theta1 = o2::constants::math::PI + theta; // pi/2 < theta1 < pi --> pi/4 < theta1/2 <  pi/2 --> 1 < tan (theta1/2) --> negative eta
 
       float cascMCeta = -std::log(std::tan(theta1 / 2));
-      
+
       float pxLambda = cascmc.pxPosMC() + cascmc.pxNegMC();
       float pyLambda = cascmc.pyPosMC() + cascmc.pyNegMC();
       float pzLambda = cascmc.pzPosMC() + cascmc.pzNegMC();
       float ptmcLambda = RecoDecay::sqrtSumOfSquares(pxLambda, pyLambda);
       float thetaLambda = std::atan(ptmcLambda / pzLambda);
       float theta1Lambda = 0;
-      if (thetaLambda > 0) theta1Lambda = thetaLambda;
-      else  theta1Lambda = o2::constants::math::PI + thetaLambda;
+      if (thetaLambda > 0)
+        theta1Lambda = thetaLambda;
+      else
+        theta1Lambda = o2::constants::math::PI + thetaLambda;
       float lambdaMCeta = -std::log(std::tan(theta1Lambda / 2));
 
       float cascMCy = 0;
@@ -2774,10 +2777,10 @@ struct cascadeFlow {
         if (std::abs(cascMCy) < yCascMCGen)
           histosMCGen.fill(HIST("h2DGenXiY05"), centrality, ptmc);
         histosMCGen.fill(HIST("hGenXiY"), cascMCy);
-	if (std::abs(cascMCy) < yXiToLambdaMCGen && std::abs(lambdaMCeta) < etaLambdaFromXiMCGen){
-	  histosMCGen.fill(HIST("h2DGenXiVsPtLambda"), centrality, ptmcLambda); //to compute secondary lambda efficiency
-	  histosMCGen.fill(HIST("h2DGenLambdaFromXiPtMatrix"), ptmc, ptmcLambda); 
-	}
+        if (std::abs(cascMCy) < yXiToLambdaMCGen && std::abs(lambdaMCeta) < etaLambdaFromXiMCGen) {
+          histosMCGen.fill(HIST("h2DGenXiVsPtLambda"), centrality, ptmcLambda); // to compute secondary lambda efficiency
+          histosMCGen.fill(HIST("h2DGenLambdaFromXiPtMatrix"), ptmc, ptmcLambda);
+        }
       } else if (std::abs(cascmc.pdgCode()) == PDG_t::kOmegaMinus) {
         cascMCy = RecoDecay::y(std::array{cascmc.pxMC(), cascmc.pyMC(), cascmc.pzMC()}, constants::physics::MassOmegaMinus);
         if (std::abs(cascMCeta) < etaCascMCGen) {
@@ -2899,9 +2902,9 @@ struct cascadeFlow {
         } else {
           histos.fill(HIST("hCentvsPtvsPrimaryFracLambda"), collisionCentrality, v0.pt(), 1);
           histos.fill(HIST("hCentvsPrimaryFracLambda"), collisionCentrality, 1);
-	  histosMCReco.fill(HIST("h2DRecoTrueLambdaSec"), collisionCentrality, ptmc);
-	  if (v0MC.pdgCodeMother() == PDG_t::kXiMinus)
-	    histosMCReco.fill(HIST("h2DRecoTrueLambdaFromXi"), collisionCentrality, ptmc);
+          histosMCReco.fill(HIST("h2DRecoTrueLambdaSec"), collisionCentrality, ptmc);
+          if (v0MC.pdgCodeMother() == PDG_t::kXiMinus)
+            histosMCReco.fill(HIST("h2DRecoTrueLambdaFromXi"), collisionCentrality, ptmc);
         }
       } else if (isTrueALambda) {
         if (isPrimary) {
@@ -2911,9 +2914,9 @@ struct cascadeFlow {
         } else {
           histos.fill(HIST("hCentvsPtvsPrimaryFracLambda"), collisionCentrality, v0.pt(), 3);
           histos.fill(HIST("hCentvsPrimaryFracLambda"), collisionCentrality, 3);
-	  histosMCReco.fill(HIST("h2DRecoTrueAntiLambdaSec"), collisionCentrality, ptmc);
-	  if (v0MC.pdgCodeMother() == -PDG_t::kXiMinus)
-	    histosMCReco.fill(HIST("h2DRecoTrueAntiLambdaFromXi"), collisionCentrality, ptmc);	  
+          histosMCReco.fill(HIST("h2DRecoTrueAntiLambdaSec"), collisionCentrality, ptmc);
+          if (v0MC.pdgCodeMother() == -PDG_t::kXiMinus)
+            histosMCReco.fill(HIST("h2DRecoTrueAntiLambdaFromXi"), collisionCentrality, ptmc);
         }
       }
     }
