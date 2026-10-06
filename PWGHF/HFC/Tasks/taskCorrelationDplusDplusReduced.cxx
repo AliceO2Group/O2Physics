@@ -228,7 +228,7 @@ struct HfTaskCorrelationDplusDplusReduced {
   {
     processLocalDataMcRec(localCandidates);
   }
-  PROCESS_SWITCH(HfTaskCorrelationDplusDplusReduced, processLocalDataMcRecFull, "Process local MC data for Full", true);
+  PROCESS_SWITCH(HfTaskCorrelationDplusDplusReduced, processLocalDataMcRecFull, "Process local MC data for Full", false);
 
   void processLocalDataMcGen(o2::aod::HfCandDpMcEvs::iterator const&,
                              SelectedMcParticles const& localMcParticles)
