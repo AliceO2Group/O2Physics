@@ -28,6 +28,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/LHCConstants.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/DCAFitterN.h>
@@ -38,20 +39,26 @@
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include <MathUtils/Primitive2D.h>
 #include <ReconstructionDataFormats/PID.h>
 #include <ReconstructionDataFormats/Track.h>
 
+#include <TAxis.h>
+#include <TH1.h>
+#include <TH2.h>
 #include <TMCProcess.h>
 #include <TPDGCode.h>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -413,7 +420,7 @@ struct Sigmaplusbuilder {
   // MC counter of generated Sigma+ -> p pi0 in acceptance
   void fillSigmaCounter(int sigmaId, int step)
   {
-    if (mGenSigmaWritten.count(sigmaId) > 0) {
+    if (mGenSigmaWritten.contains(sigmaId)) {
       histos.fill(HIST("MC/hSigmaPlusCounter"), step);
     }
   }
@@ -639,7 +646,7 @@ struct Sigmaplusbuilder {
   template <typename TTrack>
   TrackCand tpcOnlyTrackCand(const TTrack& track, const std::vector<double>& collisionBcNS, const std::vector<double>& collisionTimeNS)
   {
-    o2::aod::track::extensions::TPCTimeErrEncoding timeEncoding;
+    o2::aod::track::extensions::TPCTimeErrEncoding timeEncoding{};
     timeEncoding.encoding.timeErr = track.trackTimeRes();
     double trackTimeNS = collisionBcNS[track.collisionId()] + track.trackTime(); // trackTime() is relative to the BC of its collision
     double timeMin = trackTimeNS - timeEncoding.getDeltaTBwd() - photonPoolTimeMarginNS;
@@ -653,7 +660,7 @@ struct Sigmaplusbuilder {
       }
     }
     histos.fill(HIST("Photon/Inclusive/hTpcTimeRangeNColl"), lastCollIdx - firstCollIdx + 1);
-    return TrackCand{static_cast<int>(track.globalIndex()), {firstCollIdx, lastCollIdx}};
+    return TrackCand{.Idxtr = static_cast<int>(track.globalIndex()), .collBracket = {firstCollIdx, lastCollIdx}};
   }
 
   // electron-positron pairs with |theta+ - theta-| <= photonMaxDeltaTheta that share at least one collision (theta should be similar)
@@ -687,7 +694,7 @@ struct Sigmaplusbuilder {
           }
           lastPositronPaired[iElectron] = iPositron;
           const auto& electron = mElectronPool[iElectron];
-          pairs.push_back(SVCand{electron.Idxtr, positron.Idxtr, electron.collBracket.getOverlap(positron.collBracket)});
+          pairs.push_back(SVCand{.tr0Idx = electron.Idxtr, .tr1Idx = positron.Idxtr, .collBracket = electron.collBracket.getOverlap(positron.collBracket)});
         }
       }
     }
@@ -1345,7 +1352,7 @@ struct Sigmaplusbuilder {
       std::array<float, 3> helperAxis = std::abs(nHatOrig[2]) < MaxAbsNzForZHelperAxis ? std::array<float, 3>{0.f, 0.f, 1.f} : std::array<float, 3>{1.f, 0.f, 0.f};
       std::array<float, 3> tiltAxisU = normalize3(cross3(nHatOrig, helperAxis));
       std::array<float, 3> tiltAxisV = cross3(nHatOrig, tiltAxisU);
-      int nRings = static_cast<int>(candMaxTilt / candTiltStep + 0.5f);
+      int nRings = static_cast<int>(std::lround(candMaxTilt / candTiltStep));
       for (int ring = 1; ring <= nRings && discriminant < 0.f; ++ring) {
         float tilt = ring * candTiltStep;
         float bestRingDisc = -1.f;
@@ -1704,7 +1711,7 @@ struct Sigmaplusbuilder {
       return;
     }
     mRunNumber = bc.runNumber();
-    o2::parameters::GRPMagField* grpmag = ccdb->getForRun<o2::parameters::GRPMagField>(grpmagPath, mRunNumber);
+    auto* grpmag = ccdb->getForRun<o2::parameters::GRPMagField>(grpmagPath, mRunNumber);
     o2::base::Propagator::initFieldFromGRP(grpmag);
     mBz = grpmag->getNominalL3Field();
     fitter.setBz(mBz);
