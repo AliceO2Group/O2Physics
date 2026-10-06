@@ -936,8 +936,8 @@ struct JetChargedV2 {
     registry.fill(HIST("leadJetEtaMCP"), leadingJetEta);
   }
 
-  // Integrate the rho modulation fit over [phi - radius, phi + radius], wrapping phi into
-  // [0, 2pi) first (the fitted function is periodic in phi).
+  // Integrate the rho modulation fit over [phi - radius, phi + radius]. The integration
+  // limits are kept inside [0, 2pi) by splitting the window into two pieces whenever it
   double getRhoLocalIntegral(TF1* fitFunc, double phi, double radius, float fitRangeMargin)
   {
     if (!fitFunc) {
@@ -951,7 +951,16 @@ struct JetChargedV2 {
       }
     }
     phi = RecoDecay::constrainAngle(phi, 0.);
-    return fitFunc->Integral(phi - radius, phi + radius);
+    const double twoPi = o2::constants::math::TwoPI;
+    const double low = phi - radius;
+    const double high = phi + radius;
+    if (low < 0.) { // window crosses 0: split into two pieces
+      return fitFunc->Integral(low + twoPi, twoPi) + fitFunc->Integral(0., high);
+    }
+    if (high > twoPi) { // window crosses 2*pi: split into two pieces
+      return fitFunc->Integral(low, twoPi) + fitFunc->Integral(0., high - twoPi);
+    }
+    return fitFunc->Integral(low, high);
   }
 
   void getRhoLocalIntegral(TF1* fitFunc, double phi, double radius, float fitRangeMargin, double& integralValue)
