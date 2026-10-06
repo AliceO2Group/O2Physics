@@ -103,6 +103,7 @@ DECLARE_SOA_COLUMN(TimeToNeNext, timeToNeNext, float);           //!
 DECLARE_SOA_COLUMN(FT0TriggerMask, ft0TriggerMask, uint8_t); //!
 DECLARE_SOA_COLUMN(MultFV0AOuter, multFV0AOuter, float);     //! FV0 without innermost ring
 DECLARE_SOA_COLUMN(MultFT0AOuter, multFT0AOuter, float);     //! FT0A without innermost ring
+DECLARE_SOA_COLUMN(MultFT0COuter, multFT0COuter, float);     //! FT0C without innermost ring
 
 // Timing information
 DECLARE_SOA_COLUMN(TimeZNA, timeZNA, float); //!
@@ -144,7 +145,7 @@ DECLARE_SOA_TABLE(MFTMults, "AOD", "MFTMULT", //! Multiplicity with MFT
 DECLARE_SOA_TABLE(FITExtraMults, "AOD", "FITEXTRAMULT", //! Extra information from FIT detectors
                   mult::MultFV0AOuter,
                   mult::MultFT0AOuter,
-                  mult::FT0TriggerMask);
+                  mult::MultFT0COuter);
 
 using BarrelMults = soa::Join<TrackletMults, TPCMults, PVMults>;
 using Mults = soa::Join<BarrelMults, FV0Mults, FT0Mults, FDDMults, ZDCMults>;
@@ -311,6 +312,22 @@ DECLARE_SOA_TABLE_VERSIONED(MultBCs_001, "AOD", "MULTBC", 1, //!
                             mult::MultFV0AOuter,
                             mult::MultFT0AOuter);
 
+DECLARE_SOA_TABLE_VERSIONED(MultBCs_002, "AOD", "MULTBC", 2, //!
+                            mult::MultFT0A,
+                            mult::MultFT0C,
+                            mult::MultFV0A,
+                            mult::MultFDDA,
+                            mult::MultFDDC,
+                            mult::MultZNA,
+                            mult::MultZNC,
+                            mult::MultZEM1,
+                            mult::MultZEM2,
+                            mult::MultZPA,
+                            mult::MultZPC,
+                            mult::MultFV0AOuter,
+                            mult::MultFT0AOuter,
+                            mult::MultFT0COuter);
+
 DECLARE_SOA_TABLE(MultBcSel_000, "AOD", "MULTBCSEL", //! BC selection bits joinable with multBCs
                   evsel::Selection);
 
@@ -339,7 +356,7 @@ DECLARE_SOA_TABLE(TimeBCs, "AOD", "TIMEBC", //!
                   mult::TimeZPA,
                   mult::TimeZPC)
 
-using MultBCs = MultBCs_001;
+using MultBCs = MultBCs_002;
 using MultBcSel = MultBcSel_001;
 using MultBC = MultBCs::iterator;
 

@@ -19,6 +19,8 @@
 
 #include <RtypesCore.h>
 
+#include <algorithm>
+#include <cstdint>
 #include <experimental/type_traits>
 #include <type_traits>
 
@@ -52,11 +54,16 @@ class JQVectors : public std::conditional_t<gap, JQVectorsGapBase<Q, nh, nk>, JQ
   using hasInvMass = decltype(std::declval<T&>().invMass());
 
   template <class JInputClass>
-  inline void Calculate(JInputClass& inputInst, float etamin, float etamax, float massMin = 0.0f, float massMax = 999.9f)
+  inline void Calculate(JInputClass& inputInst, float etamin, float etamax, float massMin = 0.0f, float massMax = 999.9f,
+                        uint32_t nhUse = nh, uint32_t nkUse = nk)
   {
+    // nhUse/nkUse limit the filled (harmonic, power) grid. Defaults keep the full template size.
+    const uint32_t nH = std::min(nhUse, nh);
+    const uint32_t nK = std::min(nkUse, nk);
+
     // calculate Q-vector for QC method ( no subgroup )
-    for (UInt_t ih = 0; ih < nh; ++ih) {
-      for (UInt_t ik = 0; ik < nk; ++ik) {
+    for (UInt_t ih = 0; ih < nH; ++ih) {
+      for (UInt_t ik = 0; ik < nK; ++ik) {
         QvectorQC[ih][ik] = Q(0, 0);
         if constexpr (gap) {
           for (UInt_t isub = 0; isub < 2; ++isub)
@@ -64,7 +71,7 @@ class JQVectors : public std::conditional_t<gap, JQVectorsGapBase<Q, nh, nk>, JQ
         }
       }
     }
-    for (auto& track : inputInst) {
+    for (auto const& track : inputInst) {
       if (track.eta() < -etamax || track.eta() > etamax)
         continue;
       using JInputClassIter = typename JInputClass::iterator;
@@ -74,10 +81,15 @@ class JQVectors : public std::conditional_t<gap, JQVectorsGapBase<Q, nh, nk>, JQ
       }
 
       UInt_t isub = (UInt_t)(track.eta() > 0.0);
-      for (UInt_t ih = 0; ih < nh; ++ih) {
+      const Double_t phi = track.phi();
+      const Double_t c1 = TMath::Cos(phi);
+      const Double_t s1 = TMath::Sin(phi);
+      Double_t cn = 1.0; // cos(ih * phi), ih = 0
+      Double_t sn = 0.0; // sin(ih * phi)
+      for (UInt_t ih = 0; ih < nH; ++ih) {
         Double_t tf = 1.0;
-        for (UInt_t ik = 0; ik < nk; ++ik) {
-          Q q(tf * TMath::Cos(ih * track.phi()), tf * TMath::Sin(ih * track.phi()));
+        for (UInt_t ik = 0; ik < nK; ++ik) {
+          Q q(tf * cn, tf * sn);
           QvectorQC[ih][ik] += q;
 
           if constexpr (gap) {
@@ -90,6 +102,10 @@ class JQVectors : public std::conditional_t<gap, JQVectorsGapBase<Q, nh, nk>, JQ
           if constexpr (std::experimental::is_detected<hasWeightEff, const JInputClassIter>::value)
             tf *= track.weightEff();
         }
+        const Double_t cnNext = cn * c1 - sn * s1;
+        const Double_t snNext = cn * s1 + sn * c1;
+        cn = cnNext;
+        sn = snNext;
       }
     }
   }

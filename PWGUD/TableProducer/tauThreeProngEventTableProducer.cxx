@@ -171,6 +171,7 @@ struct TauThreeProngEventTableProducer {
   //  ConfigurableAxis minvAxis{"minvAxis", {100, 0.5, 5.0}, "M_{inv} (GeV/#it{c}^{2})"};
   //  ConfigurableAxis phiAxis{"phiAxis", {120, 0., 3.2}, "#phi"};
   Configurable<bool> verbose{"verbose", {}, "Additional print outs"};
+  Configurable<std::vector<int>> generatorIds{"generatorIds", std::vector<int>{31}, "MC generatorIds to process"};
 
   // cut selection configurables
   //  Configurable<float> zvertexcut{"zvertexcut", 10., "Z vertex cut"};
@@ -262,21 +263,22 @@ struct TauThreeProngEventTableProducer {
       registrySkim.add("skim/nTof", ";N_{TOFtrk};events", {HistType::kTH1F, {{10, -1., 9.}}});
     }
     if (doprocessMonteCarlo) {
-      registrySkim.add("skim/efficiencyMC", ";efficiency;events", {HistType::kTH1D, {{15, 0., 15.}}});
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(1, "1: All");
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(2, "2: N^{#tau}=2");
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(3, "3: |y^{#tau}| <= 0.9");
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(4, "4: |#eta^{ch}|<0.9");
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(5, "5: 4 or 6 trk");
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(6, "e+3#pi");
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(7, "#mu+3#pi");
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(8, "#pi+3#pi");
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(9, "6#pi");
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(10, "rec");
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(11, "rec e+3#pi");
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(12, "rec #mu+3#pi");
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(13, "rec #pi+3#pi");
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(14, "rec 6#pi");
+      registrySkim.add("skim/efficiencyMC", ";efficiency;events", {HistType::kTH1D, {{16, -1., 15.}}});
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(1, "All");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(2, "GenID");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(3, "N^{#tau}=2");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(4, "|y^{#tau}| <= 0.9");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(5, "|#eta^{ch}|<0.9");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(6, "4 or 6 trk");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(7, "e+3#pi");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(8, "#mu+3#pi");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(9, "#pi+3#pi");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(10, "6#pi");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(11, "rec");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(12, "rec e+3#pi");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(13, "rec #mu+3#pi");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(14, "rec #pi+3#pi");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(15, "rec 6#pi");
 
       registrySkim.add("skim/problemMC", ";problem;events", {HistType::kTH1D, {{10, 0., 10.}}});
 
@@ -294,23 +296,24 @@ struct TauThreeProngEventTableProducer {
       registrySkim.add("skim/daughterPtMC", ";p_{T}^{daughter};events", {HistType::kTH1F, {{100, 0, 5.0}}});
     }
     if (doprocessGenerated) {
-      registrySkim.add("gen/efficiencyMC", ";efficiency;events", {HistType::kTH1D, {{15, 0., 15.}}});
+      registrySkim.add("gen/efficiencyMC", ";efficiency;events", {HistType::kTH1D, {{16, -1., 15.}}});
       registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(1, "All");
-      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(2, "N^{#tau}=2");
-      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(3, "|y^{#tau}| <=0.9");
-      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(4, "|#eta^{ch}|<=0.9");
-      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(5, "4 or 6 trk");
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(2, "GenID");
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(3, "N^{#tau}=2");
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(4, "|y^{#tau}| <=0.9");
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(5, "|#eta^{ch}|<=0.9");
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(6, "4 or 6 trk");
       // registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(6, "6: 4 trk");
       // registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(7, "7: 6 trk");
-      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(6, "e+3#pi");
-      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(7, "#mu+3#pi");
-      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(8, "#pi+3#pi");
-      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(9, "6#pi");
-      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(10, "rec");
-      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(11, "rec e+3#pi");
-      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(12, "rec #mu+3#pi");
-      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(13, "rec #pi+3#pi");
-      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(14, "rec 6#pi");
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(7, "e+3#pi");
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(8, "#mu+3#pi");
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(9, "#pi+3#pi");
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(10, "6#pi");
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(11, "rec");
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(12, "rec e+3#pi");
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(13, "rec #mu+3#pi");
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(14, "rec #pi+3#pi");
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->GetXaxis()->SetBinLabel(15, "rec 6#pi");
 
       registrySkim.add("gen/problemMC", ";problem;events", {HistType::kTH1D, {{10, 0., 10.}}});
       registrySkim.get<TH1>(HIST("gen/problemMC"))->GetXaxis()->SetBinLabel(1, "1: NoProblem");
@@ -1149,9 +1152,27 @@ struct TauThreeProngEventTableProducer {
 
     // start loop over generated collisions
     for (const auto& mccoll : mcCollisions) {
+      // all collisions
       if (verbose)
         LOGF(info, "-- McColl GID %d", mccoll.globalIndex());
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(0., 1.); // all MC collisions
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(-1., 1.); // all MC collisions
+
+      // check Generator ID, for taus(1+3,3+3): GenID=31,32,33,34,35
+      if (verbose) {
+        LOGF(info, "generatorId desired (0) %d, in MC %d", generatorIds->at(0), mccoll.generatorsID());
+      }
+
+      if (std::find(generatorIds->begin(), generatorIds->end(), mccoll.generatorsID()) != generatorIds->end()) {
+        registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(0., 1.); // GenID
+        if (verbose) {
+          LOGF(info, "Event with good generatorID %d", mccoll.generatorsID());
+        }
+      } else {
+        if (verbose) {
+          LOGF(info, "Event with bad generatorID %d", mccoll.generatorsID());
+        }
+        continue;
+      }
 
       // set up default values per colission
       trueTauX[0] = -999.;
@@ -1719,7 +1740,6 @@ struct TauThreeProngEventTableProducer {
   PROCESS_SWITCH(TauThreeProngEventTableProducer, processMonteCarlo, "Iterate UD tables with simulated data created by SG-Candidate-Producer.", false);
 
   // only MC information and what events are reconstructed
-
   void processGenerated(aod::UDMcCollisions const& mcCollisions,
                         aod::UDMcParticles const& mcParticles,
                         FullMCSGUDCollisions const& collisions)
@@ -1750,9 +1770,27 @@ struct TauThreeProngEventTableProducer {
 
     // start loop over generated collisions
     for (const auto& mccoll : mcCollisions) {
+      // all collisions
       if (verbose)
         LOGF(info, "-- McColl GID %d", mccoll.globalIndex());
-      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->Fill(0., 1.); // all MC collisions
+      registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->Fill(-1., 1.); // all MC collisions
+
+      // check Generator ID, for taus(1+3,3+3): GenID=31,32,33,34,35
+      if (verbose) {
+        LOGF(info, "generatorId desired (0) %d, in MC %d", generatorIds->at(0), mccoll.generatorsID());
+      }
+
+      if (std::find(generatorIds->begin(), generatorIds->end(), mccoll.generatorsID()) != generatorIds->end()) {
+        registrySkim.get<TH1>(HIST("gen/efficiencyMC"))->Fill(0., 1.); // GenID
+        if (verbose) {
+          LOGF(info, "Event with good generatorID %d", mccoll.generatorsID());
+        }
+      } else {
+        if (verbose) {
+          LOGF(info, "Event with bad generatorID %d", mccoll.generatorsID());
+        }
+        continue;
+      }
 
       // set up default values per colission
       trueTauX[0] = -999.;

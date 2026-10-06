@@ -1116,8 +1116,8 @@ struct FemtoUniversePairTaskTrackV0Extended {
   template <typename PartType, typename PartitionType, typename MCParticles = std::nullptr_t>
   void doMixedEvent(FilteredFDCollisions const& cols, PartType const& parts, PartitionType& partsOne, PartitionType& partsTwo, [[maybe_unused]] const MCParticles& mcParts = nullptr)
   {
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}, true};
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}};
 
     std::array<std::array<float, 2>, 3> v0DaughPtLowTable = {{{ConfV0Selection.confLPtChildProton, ConfV0Selection.confLPtChildPion}, {ConfV0Selection.confLPtChildPion, ConfV0Selection.confLPtChildProton}, {ConfV0Selection.confLPtChildPion, ConfV0Selection.confLPtChildPion}}};
     std::array<std::array<float, 2>, 3> v0DaughPtHighTable = {{{ConfV0Selection.confHPtChildProton, ConfV0Selection.confHPtChildPion}, {ConfV0Selection.confHPtChildPion, ConfV0Selection.confHPtChildProton}, {ConfV0Selection.confHPtChildPion, ConfV0Selection.confHPtChildPion}}};
@@ -1221,8 +1221,8 @@ struct FemtoUniversePairTaskTrackV0Extended {
   template <typename PartType, typename PartitionType, typename MCParticles = std::nullptr_t>
   void doMixedEventV0(FilteredFDCollisions const& cols, PartType const& parts, PartitionType& partsTwo, [[maybe_unused]] const MCParticles& mcParts = nullptr)
   {
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}, true};
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}};
 
     std::array<std::array<float, 2>, 3> v0DaughPtLowTable = {{{ConfV0Selection.confLPtChildProton, ConfV0Selection.confLPtChildPion}, {ConfV0Selection.confLPtChildPion, ConfV0Selection.confLPtChildProton}, {ConfV0Selection.confLPtChildPion, ConfV0Selection.confLPtChildPion}}};
     std::array<std::array<float, 2>, 3> v0DaughPtHighTable = {{{ConfV0Selection.confHPtChildProton, ConfV0Selection.confHPtChildPion}, {ConfV0Selection.confHPtChildPion, ConfV0Selection.confHPtChildProton}, {ConfV0Selection.confHPtChildPion, ConfV0Selection.confHPtChildPion}}};
@@ -1403,8 +1403,8 @@ struct FemtoUniversePairTaskTrackV0Extended {
   /// This function processes MC mixed events for Track - V0
   void processMCMixedEvent(FilteredFDCollisions const& cols, FemtoFullParticles const& parts)
   {
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}, true};
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}};
 
     auto mixedCollProcessFunc = [&](auto& collision1, auto& collision2) -> void {
       const int multCol = confUseCent ? static_cast<int>(collision1.multV0M()) : collision1.multNtr();
@@ -1453,8 +1453,8 @@ struct FemtoUniversePairTaskTrackV0Extended {
   /// This function processes MC mixed events for V0 - V0
   void processMCMixedEventV0(FilteredFDCollisions const& cols, FemtoFullParticles const& /*parts*/)
   {
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}, true};
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}};
 
     auto mixedCollProcessFunc = [&](auto& collision1, auto& collision2) -> void {
       const int multCol = confUseCent ? static_cast<int>(collision1.multV0M()) : collision1.multNtr();
@@ -1545,8 +1545,8 @@ struct FemtoUniversePairTaskTrackV0Extended {
 
   void processPairFractions(FilteredFDCollisions const& cols, FemtoRecoParticles const& parts, aod::FdMCParticles const& mcparts)
   {
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}, true};
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}};
 
     std::array<std::array<float, 2>, 3> v0DaughPtLowTable = {{{ConfV0Selection.confLPtChildProton, ConfV0Selection.confLPtChildPion}, {ConfV0Selection.confLPtChildPion, ConfV0Selection.confLPtChildProton}, {ConfV0Selection.confLPtChildPion, ConfV0Selection.confLPtChildPion}}};
     std::array<std::array<float, 2>, 3> v0DaughPtHighTable = {{{ConfV0Selection.confHPtChildProton, ConfV0Selection.confHPtChildPion}, {ConfV0Selection.confHPtChildPion, ConfV0Selection.confHPtChildProton}, {ConfV0Selection.confHPtChildPion, ConfV0Selection.confHPtChildPion}}};
@@ -1621,8 +1621,8 @@ struct FemtoUniversePairTaskTrackV0Extended {
 
   void processPairFractionsV0(FilteredFDCollisions const& cols, FemtoRecoParticles const& parts, aod::FdMCParticles const& mcparts)
   {
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}, true};
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}};
 
     std::array<std::array<float, 2>, 3> v0DaughPtLowTable = {{{ConfV0Selection.confLPtChildProton, ConfV0Selection.confLPtChildPion}, {ConfV0Selection.confLPtChildPion, ConfV0Selection.confLPtChildProton}, {ConfV0Selection.confLPtChildPion, ConfV0Selection.confLPtChildPion}}};
     std::array<std::array<float, 2>, 3> v0DaughPtHighTable = {{{ConfV0Selection.confHPtChildProton, ConfV0Selection.confHPtChildPion}, {ConfV0Selection.confHPtChildPion, ConfV0Selection.confHPtChildProton}, {ConfV0Selection.confHPtChildPion, ConfV0Selection.confHPtChildPion}}};
@@ -1737,8 +1737,8 @@ struct FemtoUniversePairTaskTrackV0Extended {
 
   void processPairFractionsMCTruth(FilteredFDCollisions const& cols, FemtoFullParticles const& /*parts*/)
   {
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}, true};
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}};
 
     auto mixedCollProcessFunc = [&](auto& collision1, auto& collision2) -> void {
       auto groupPartsOne = partsOneMCFull->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
@@ -1774,8 +1774,8 @@ struct FemtoUniversePairTaskTrackV0Extended {
 
   void processPairFractionsMCTruthV0(FilteredFDCollisions const& cols, FemtoFullParticles const& /*parts*/)
   {
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}, true};
-    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}};
 
     auto mixedCollProcessFunc = [&](auto& collision1, auto& collision2) -> void {
       auto groupPartsOne = partsTwoMCFull->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);

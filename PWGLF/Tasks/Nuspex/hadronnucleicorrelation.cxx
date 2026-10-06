@@ -95,6 +95,7 @@ struct HadronNucleiCorrelation {
   Configurable<bool> isPrim{"isPrim", true, "is isPrim"};
   Configurable<bool> doCorrection{"doCorrection", false, "do efficiency correction"};
   Configurable<bool> doQuadraticPID{"doQuadraticPID", false, "do PID with sum in quadrature of TOF and TPC"};
+  Configurable<bool> doPIDRej{"doPIDRej", false, "do PID rejection of competing species"};
 
   struct : ConfigurableGroup {
     std::string prefix = "Coalescence"; // JSON group name
@@ -130,12 +131,13 @@ struct HadronNucleiCorrelation {
   Configurable<float> nsigmaElPr{"nsigmaElPr", 1.0f, "cut nsigma TPC El for protons"};
   Configurable<float> nsigmaElDe{"nsigmaElDe", 3.0f, "cut nsigma TPC El for protons"};
   Configurable<float> nsigmaTOF{"nsigmaTOF", 3.5f, "cut nsigma TOF"};
+  Configurable<float> nsigmaTOFPrRej{"nsigmaTOFPrRej", 3.f, "cut nsigma TOF for proton rejection"};
+  Configurable<bool> doPrRej{"doPrRej", true, "do TOF proton rejection"};
   Configurable<float> nsigmaQuadratic{"nsigmaQuadratic", 3.0f, "cut on sqrt(nsigmaTPC^2 + nsigmaTOF^2), used above the TOF pT threshold when doQuadraticPID is on"};
   Configurable<float> nsigmaITSPr{"nsigmaITSPr", -2.0f, "cut nsigma ITS Pr"};
   Configurable<float> nsigmaITSDe{"nsigmaITSDe", -2.0f, "cut nsigma ITS De"};
   Configurable<bool> doITSPID{"doITSPID", true, "do ITS PID"};
   Configurable<float> pTthrprTOF{"pTthrprTOF", 0.8f, "threshold pT proton to use TOF"};
-  Configurable<float> pTthrprTPCEl{"pTthrprTPCEl", 1.0f, "threshold pT proton to use TPC El rejection"};
   Configurable<float> pTthrdeTOF{"pTthrdeTOF", 1.0f, "threshold pT deuteron to use TOF"};
   Configurable<float> pTthrdeTPCEl{"pTthrdeTPCEl", 1.0f, "threshold pT deuteron to use TPC El rejection"};
   Configurable<bool> rejectionEl{"rejectionEl", true, "use TPC El rejection"};
@@ -150,7 +152,7 @@ struct HadronNucleiCorrelation {
   // Mixing parameters
   ConfigurableAxis confMultBins{"confMultBins", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 50.0f, 100.0f, 99999.f}, "Mixing bins - multiplicity"};
   ConfigurableAxis confVtxBins{"confVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
-  ColumnBinningPolicy<aod::singletrackselector::PosZ, aod::singletrackselector::Mult> colBinning{{confVtxBins, confMultBins}, true};
+  ColumnBinningPolicy<aod::singletrackselector::PosZ, aod::singletrackselector::Mult> colBinning{{confVtxBins, confMultBins}};
 
   // pT/A bins
   Configurable<std::vector<double>> pTBins{"pTBins", {0.6f, 1.0f, 1.2f, 2.f}, "p_{T} bins"};
@@ -407,6 +409,8 @@ struct HadronNucleiCorrelation {
       registryQa.add("QA/h3dTPCTOF_AntiPr", "n#sigma TPC vs n#sigma TOF", {HistType::kTH3D, {tpcNSigmaAxis, tofNSigmaAxis, ptAxis}});
       registryQa.add("QA/h3dTPCTOF_De", "n#sigma TPC vs n#sigma TOF", {HistType::kTH3D, {tpcNSigmaAxis, tofNSigmaAxis, ptAxis}});
       registryQa.add("QA/h3dTPCTOF_AntiDe", "n#sigma TPC vs n#sigma TOF", {HistType::kTH3D, {tpcNSigmaAxis, tofNSigmaAxis, ptAxis}});
+      registryQa.add("QA/h3dTPCTOF_De_Rej", "n#sigma TPC vs n#sigma TOF", {HistType::kTH3D, {tpcNSigmaAxis, tofNSigmaAxis, ptAxis}});
+      registryQa.add("QA/h3dTPCTOF_AntiDe_Rej", "n#sigma TPC vs n#sigma TOF", {HistType::kTH3D, {tpcNSigmaAxis, tofNSigmaAxis, ptAxis}});
       registryQa.add("QA/hnSigmaTPCVsPt_El", "n#sigma TPC vs p_{T} for e hypothesis (all tracks)", {HistType::kTH2D, {ptAxis, tpcNSigmaAxis}});
       registryQa.add("QA/hnSigmaTPCVsPt_Pr", "n#sigma TPC vs p_{T} for p hypothesis (all tracks)", {HistType::kTH2D, {ptAxis, tpcNSigmaAxis}});
       registryQa.add("QA/hnSigmaTPCVsPt_De", "n#sigma TPC vs p_{T} for d hypothesis (all tracks)", {HistType::kTH2D, {ptAxis, tpcNSigmaAxis}});
@@ -581,7 +585,6 @@ struct HadronNucleiCorrelation {
   {
     const bool isTPCPID = std::abs(track.tpcNSigmaPr()) < nsigmaTPC.value;
     const bool isTOFPID = std::abs(track.tofNSigmaPr()) < nsigmaTOF.value;
-    const bool isTPCElRejection = rejectionEl.value && track.beta() < BetahasTOFthr && track.pt() < pTthrprTPCEl.value && track.tpcNSigmaEl() >= nsigmaElPr.value;
     const bool isITSPID = track.itsNSigmaPr() > nsigmaITSPr.value;
 
     const bool isQuadraticPID = std::hypot(track.tpcNSigmaPr(), track.tofNSigmaPr()) < nsigmaQuadratic.value;
@@ -594,7 +597,7 @@ struct HadronNucleiCorrelation {
           if (!doITSPID.value || isITSPID) {
             return signCheck;
           }
-        } else if (isTPCElRejection || isTOFPID) {
+        } else if (isTOFPID) {
           return signCheck;
         }
       }
@@ -619,11 +622,15 @@ struct HadronNucleiCorrelation {
     const bool isTOFPID = std::abs(track.tofNSigmaDe()) < nsigmaTOF.value;
     const bool isTPCElRejection = rejectionEl.value && track.beta() < BetahasTOFthr && track.pt() < pTthrdeTPCEl.value && track.tpcNSigmaEl() >= nsigmaElDe.value;
     const bool isITSPID = track.itsNSigmaDe() > nsigmaITSDe.value;
+    const bool isNotPr = std::abs(track.tofNSigmaPr()) >= nsigmaTOFPrRej.value || !doPrRej.value;
 
     const bool isQuadraticPID = std::hypot(track.tpcNSigmaDe(), track.tofNSigmaDe()) < nsigmaQuadratic.value;
 
     // Check if the sign of the track matches the expected sign for deuterons or antideuterons
     const bool signCheck = (sign > 0 && track.sign() > 0) || (sign < 0 && track.sign() < 0);
+    if (!isNotPr) {
+      return false;
+    }
     if (!doQuadraticPID.value) {
       if (isTPCPID) {
         if (track.pt() < pTthrdeTOF.value) {
@@ -1021,12 +1028,23 @@ struct HadronNucleiCorrelation {
         registryQa.fill(HIST("QA/hnSigmaTOFVsPt_De"), track.pt() * track.sign(), track.tofNSigmaDe());
         registryQa.fill(HIST("QA/hnSigmaITSVsPt_Pr"), track.pt() * track.sign(), track.itsNSigmaPr());
         registryQa.fill(HIST("QA/hnSigmaITSVsPt_De"), track.pt() * track.sign(), track.itsNSigmaDe());
+
+        const bool isTPCElRejection = rejectionEl.value && track.beta() < BetahasTOFthr && track.pt() < pTthrdeTPCEl.value && track.tpcNSigmaEl() >= nsigmaElDe.value;
+        const bool isTOFPID = std::abs(track.tofNSigmaDe()) < nsigmaTOF.value;
+        const bool isNotPr = std::abs(track.tofNSigmaPr()) >= nsigmaTOFPrRej.value || !doPrRej.value;
+
         if (track.sign() > 0) {
+
           if (track.pt() >= pTthrprTOF.value || !doITSPID.value || track.itsNSigmaPr() > nsigmaITSPr.value) {
             registryQa.fill(HIST("QA/h3dTPCTOF_Pr"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
           }
           if (track.pt() >= pTthrdeTOF.value || !doITSPID.value || track.itsNSigmaDe() > nsigmaITSDe.value) {
-            registryQa.fill(HIST("QA/h3dTPCTOF_De"), track.tpcNSigmaDe(), track.tofNSigmaDe(), track.pt());
+            if (isNotPr) {
+              registryQa.fill(HIST("QA/h3dTPCTOF_De"), track.tpcNSigmaDe(), track.tofNSigmaDe(), track.pt());
+              if (isTPCElRejection || isTOFPID) {
+                registryQa.fill(HIST("QA/h3dTPCTOF_De_Rej"), track.tpcNSigmaDe(), track.tofNSigmaDe(), track.pt());
+              }
+            }
           }
         }
         if (track.sign() < 0) {
@@ -1034,7 +1052,12 @@ struct HadronNucleiCorrelation {
             registryQa.fill(HIST("QA/h3dTPCTOF_AntiPr"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
           }
           if (track.pt() >= pTthrdeTOF.value || !doITSPID.value || track.itsNSigmaDe() > nsigmaITSDe.value) {
-            registryQa.fill(HIST("QA/h3dTPCTOF_AntiDe"), track.tpcNSigmaDe(), track.tofNSigmaDe(), track.pt());
+            if (isNotPr) {
+              registryQa.fill(HIST("QA/h3dTPCTOF_AntiDe"), track.tpcNSigmaDe(), track.tofNSigmaDe(), track.pt());
+              if (isTPCElRejection || isTOFPID) {
+                registryQa.fill(HIST("QA/h3dTPCTOF_AntiDe_Rej"), track.tpcNSigmaDe(), track.tofNSigmaDe(), track.pt());
+              }
+            }
           }
         }
 

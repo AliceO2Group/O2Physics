@@ -279,9 +279,9 @@ struct HfTaskCharmHadronsV0FemtoDream {
     ConfigurableAxis mixingBinVztx{"mixingBinVztx", {VARIABLE_WIDTH, -10.0f, -4.f, 0.f, 4.f, 10.f}, "Mixing bins - z-vertex"};
   } AxisBinning;
 
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinningMult{{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMult}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinningMultPercentile{{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMultPercentile}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr, aod::femtodreamcollision::MultV0M> colBinningMultMultPercentile{{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMult, AxisBinning.mixingBinMultPercentile}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinningMult{{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMult}};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinningMultPercentile{{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMultPercentile}};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr, aod::femtodreamcollision::MultV0M> colBinningMultMultPercentile{{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMult, AxisBinning.mixingBinMultPercentile}};
 
   FemtoDreamContainer<femtoDreamContainer::EventType::same, femtoDreamContainer::Observable::kstar> sameEventCont;
   FemtoDreamContainer<femtoDreamContainer::EventType::mixed, femtoDreamContainer::Observable::kstar> mixedEventCont;

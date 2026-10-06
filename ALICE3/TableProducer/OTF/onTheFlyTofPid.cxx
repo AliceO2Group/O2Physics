@@ -166,8 +166,8 @@ struct OnTheFlyTofPid {
   std::array<std::array<std::shared_ptr<TH2>, NParticles>, NParticles> h2dOuterDeltaTrue;
 
   struct ParticleInfo {
-    std::string_view texName{};
-    std::string_view name{};
+    std::string_view texName;
+    std::string_view name;
     ParticleId type{};
     int pdgCode{};
     double mass{};
@@ -347,7 +347,7 @@ struct OnTheFlyTofPid {
           if (!doQaForParticle(Particles[iHyp].pdgCode)) {
             continue;
           }
-          const auto& pNameHypo = Particles[iHyp].texName;
+          const auto& pNameHypo = Particles[iHyp].name;
 
           const std::string nameTitleInner = std::format("h2dInnerNsigmaTrue{}Vs{}", pNameTrue, pNameHypo);
           const std::string nameTitleOuter = std::format("h2dOuterNsigmaTrue{}Vs{}", pNameTrue, pNameHypo);
