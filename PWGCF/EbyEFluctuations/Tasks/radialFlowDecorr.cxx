@@ -187,6 +187,8 @@ struct RadialFlowDecorr {
 
   Configurable<bool> cfgFlat{"cfgFlat", false, "Whether to use flattening weights"};
   Configurable<bool> cfgEff{"cfgEff", false, "Whether to use Efficiency weights"};
+  Configurable<float> cfgEffVarPercent{"cfgEffVarPercent", 0.f, "Signed relative efficiency variation (%): +10 or -10"};
+  Configurable<bool> cfgEffVarPtDep{"cfgEffVarPtDep", false, "false: constant variation; true: linear decrease with pT"};
   Configurable<bool> cfgZDC{"cfgZDC", false, "Whether to use ZDC for pileup histograms"};
 
   Configurable<std::string> cfgCCDBurl{"cfgCCDBurl", "https://alice-ccdb.cern.ch", "ccdb url"};
@@ -491,15 +493,36 @@ struct RadialFlowDecorr {
     return static_cast<float>(val);
   }
 
-  // Reject missing or invalid efficiency/fake corrections consistently in all passes.
+  float efficiencyVariationFactor(float pt) const
+  {
+    if (cfgSystType.value != kSystEff) {
+      return 1.f;
+    }
+    // Empirical shape: full variation at cfgPtMin, zero at cfgPtMax.
+    const float shape = cfgEffVarPtDep.value ? (cfgPtMax.value - pt) / (cfgPtMax.value - cfgPtMin.value) : 1.f;
+    return 1.f + 0.01f * cfgEffVarPercent.value * shape;
+  }
+
   bool getValidEffFake(float mult, float pt, float eta, bool useEff,
                        float& eff, float& fake) const
   {
     eff = getEfficiency(mult, pt, eta, 0, useEff);
     fake = getEfficiency(mult, pt, eta, 1, useEff);
-    return std::isfinite(eff) && std::isfinite(fake) &&
-           eff > KFloatEpsilon && eff <= 1.f &&
-           fake >= 0.f && fake < 1.f;
+
+    // Validate the nominal corrections before applying any variation.
+    if (!std::isfinite(eff) || !std::isfinite(fake) ||
+        eff <= KFloatEpsilon || eff > 1.f ||
+        fake < 0.f || fake >= 1.f) {
+      return false;
+    }
+
+    // Apply the variation once, in DATA mean/fluctuation jobs.
+    if (useEff && (cfgRunDataMean.value || cfgRunDataFluc.value)) {
+      eff *= efficiencyVariationFactor(pt);
+    }
+
+    // The varied efficiency is an effective correction denominator.
+    return std::isfinite(eff) && eff > KFloatEpsilon;
   }
 
   float getFlatteningWeight(float vz, float chg, float pt, float eta, float phi, bool useFlat) const
@@ -1487,7 +1510,7 @@ struct RadialFlowDecorr {
 
     histos.fill(HIST("MCGen/Prof_Cent_Nchrec"), cent, sumWiTruth[0]);
     histos.fill(HIST("MCGen/Prof_Mult_Nchrec"), multPV, sumWiTruth[0]);
-    if (sumWiTruth[0] > 1.0f) {
+    if (sumWiTruth[0] > KFloatEpsilon) {
       histos.fill(HIST("MCGen/Prof_Cent_MeanpT"), cent, sumWiptiTruth[0] / sumWiTruth[0]);
       histos.fill(HIST("MCGen/Prof_Mult_MeanpT"), multPV, sumWiptiTruth[0] / sumWiTruth[0]);
     }
@@ -1554,26 +1577,26 @@ struct RadialFlowDecorr {
         float nRecoAB = sumWiReco[ietaA] + sumWiReco[ietaC];
         float nCorrAB = sumWiRecoEffCorr[ietaA] + sumWiRecoEffCorr[ietaC];
 
-        if (nTruAB > 0) {
+        if (sumWiTruth[ietaA] > KFloatEpsilon && sumWiTruth[ietaC] > KFloatEpsilon) {
           histos.fill(HIST("Prof2D_MeanpTSub_Tru"), cent, ietaA, ietaC, (sumWiptiTruth[ietaA] + sumWiptiTruth[ietaC]) / nTruAB);
         }
-        if (nRecoAB > 0) {
+        if (sumWiReco[ietaA] > KFloatEpsilon && sumWiReco[ietaC] > KFloatEpsilon) {
           histos.fill(HIST("Prof2D_MeanpTSub_Reco"), cent, ietaA, ietaC, (sumWiptiReco[ietaA] + sumWiptiReco[ietaC]) / nRecoAB);
         }
-        if (nCorrAB > 0) {
+        if (sumWiRecoEffCorr[ietaA] > KFloatEpsilon && sumWiRecoEffCorr[ietaC] > KFloatEpsilon) {
           histos.fill(HIST("Prof2D_MeanpTSub_RecoEffCorr"), cent, ietaA, ietaC, (sumWiptiRecoEffCorr[ietaA] + sumWiptiRecoEffCorr[ietaC]) / nCorrAB);
         }
       }
 
-      if (sumWiTruth[ietaA] > 0) {
+      if (sumWiTruth[ietaA] > KFloatEpsilon) {
         histos.fill(HIST("pmeanTru_nch_etabin"), multPV, ietaA, sumWiptiTruth[ietaA] / sumWiTruth[ietaA]);
         histos.fill(HIST("pmeanMultTru_nch_etabin"), multPV, ietaA, sumWiTruth[ietaA]);
       }
-      if (sumWiReco[ietaA] > 0) {
+      if (sumWiReco[ietaA] > KFloatEpsilon) {
         histos.fill(HIST("pmeanReco_nch_etabin"), multPV, ietaA, sumWiptiReco[ietaA] / sumWiReco[ietaA]);
         histos.fill(HIST("pmeanMultReco_nch_etabin"), multPV, ietaA, sumWiReco[ietaA]);
       }
-      if (sumWiRecoEffCorr[ietaA] > 0) {
+      if (sumWiRecoEffCorr[ietaA] > KFloatEpsilon) {
         histos.fill(HIST("pmeanRecoEffcorr_nch_etabin"), multPV, ietaA, sumWiptiRecoEffCorr[ietaA] / sumWiRecoEffCorr[ietaA]);
         histos.fill(HIST("pmeanMultRecoEffcorr_nch_etabin"), multPV, ietaA, sumWiRecoEffCorr[ietaA]);
       }
@@ -1706,7 +1729,7 @@ struct RadialFlowDecorr {
       float mmptRecoEffCor = state.pmeanRecoEffcorrNchEtabinStep2->GetBinContent(ibx, iby);
 
       // truth
-      meanTru[ieta] = (sumWkTru[ieta][1] >= 1.0) ? (sumPmwkTru[ieta][1][1] / sumWkTru[ieta][1]) : std::numeric_limits<double>::quiet_NaN();
+      meanTru[ieta] = (sumWkTru[ieta][1] > KFloatEpsilon) ? (sumPmwkTru[ieta][1][1] / sumWkTru[ieta][1]) : std::numeric_limits<double>::quiet_NaN();
       c2Tru[ieta] = std::numeric_limits<double>::quiet_NaN();
       c3Tru[ieta] = std::numeric_limits<double>::quiet_NaN();
       p1kBarTru[ieta] = std::numeric_limits<double>::quiet_NaN();
@@ -1719,7 +1742,7 @@ struct RadialFlowDecorr {
         }
       }
       // reco
-      meanReco[ieta] = (sumWkReco[ieta][1] >= 1.0) ? (sumPmwkReco[ieta][1][1] / sumWkReco[ieta][1]) : std::numeric_limits<double>::quiet_NaN();
+      meanReco[ieta] = (sumWkReco[ieta][1] > KFloatEpsilon) ? (sumPmwkReco[ieta][1][1] / sumWkReco[ieta][1]) : std::numeric_limits<double>::quiet_NaN();
       c2Reco[ieta] = std::numeric_limits<double>::quiet_NaN();
       c3Reco[ieta] = std::numeric_limits<double>::quiet_NaN();
       p1kBarReco[ieta] = std::numeric_limits<double>::quiet_NaN();
@@ -1732,7 +1755,7 @@ struct RadialFlowDecorr {
         }
       }
       // reco, efficiency-corrected
-      meanRecoEffCor[ieta] = (sumWkRecoEffCor[ieta][1] >= 1.0) ? (sumPmwkRecoEffCor[ieta][1][1] / sumWkRecoEffCor[ieta][1]) : std::numeric_limits<double>::quiet_NaN();
+      meanRecoEffCor[ieta] = (sumWkRecoEffCor[ieta][1] > KFloatEpsilon) ? (sumPmwkRecoEffCor[ieta][1][1] / sumWkRecoEffCor[ieta][1]) : std::numeric_limits<double>::quiet_NaN();
       c2RecoEffCor[ieta] = std::numeric_limits<double>::quiet_NaN();
       c3RecoEffCor[ieta] = std::numeric_limits<double>::quiet_NaN();
       p1kBarRecoEffCor[ieta] = std::numeric_limits<double>::quiet_NaN();
@@ -1755,15 +1778,15 @@ struct RadialFlowDecorr {
       histos.fill(HIST("MCRecoEffCorr/Prof_Cent_NEta_Nchrec"), cent, ieta, sumWkRecoEffCor[ieta][1]);
       histos.fill(HIST("MCRecoEffCorr/Prof_Mult_NEta_Nchrec"), multPV, ieta, sumWkRecoEffCor[ieta][1]);
 
-      if (sumWkTru[ieta][1] > 1.0f) {
+      if (sumWkTru[ieta][1] > KFloatEpsilon) {
         histos.fill(HIST("MCGen/Prof_Cent_NEta_MeanpT"), cent, ieta, meanTru[ieta]);
         histos.fill(HIST("MCGen/Prof_Mult_NEta_MeanpT"), multPV, ieta, meanTru[ieta]);
       }
-      if (sumWkReco[ieta][1] > 1.0f) {
+      if (sumWkReco[ieta][1] > KFloatEpsilon) {
         histos.fill(HIST("MCReco/Prof_Cent_NEta_MeanpT"), cent, ieta, meanReco[ieta]);
         histos.fill(HIST("MCReco/Prof_Mult_NEta_MeanpT"), multPV, ieta, meanReco[ieta]);
       }
-      if (sumWkRecoEffCor[ieta][1] > 1.0f) {
+      if (sumWkRecoEffCor[ieta][1] > KFloatEpsilon) {
         histos.fill(HIST("MCRecoEffCorr/Prof_Cent_NEta_MeanpT"), cent, ieta, meanRecoEffCor[ieta]);
         histos.fill(HIST("MCRecoEffCorr/Prof_Mult_NEta_MeanpT"), multPV, ieta, meanRecoEffCor[ieta]);
       }
@@ -2059,7 +2082,7 @@ struct RadialFlowDecorr {
       }
     }
 
-    if (sumWi[0] >= 1.0f) {
+    if (sumWi[0] > KFloatEpsilon) {
       histos.fill(HIST("Prof_Cent_Nchrec"), cent, sumWi[0]);
       histos.fill(HIST("Prof_Mult_Nchrec"), coll.multNTracksPV(), sumWi[0]);
       histos.fill(HIST("Prof_Cent_MeanpT"), cent, sumWipti[0] / sumWi[0]);
@@ -2068,7 +2091,7 @@ struct RadialFlowDecorr {
 
     for (int ietaA = 0; ietaA < nEta; ++ietaA) {
       for (int ietaC = 0; ietaC < nEta; ++ietaC) {
-        if ((sumWi[ietaA] < 1.0f) || (sumWi[ietaC] < 1.0f)) {
+        if ((sumWi[ietaA] < KFloatEpsilon) || (sumWi[ietaC] < KFloatEpsilon)) {
           continue;
         }
         double wCorrAB = sumWi[ietaA] + sumWi[ietaC];
@@ -2077,7 +2100,7 @@ struct RadialFlowDecorr {
           histos.fill(HIST("Prof2D_MeanpTSub"), cent, ietaA, ietaC, mptsub);
         }
       }
-      if (sumWi[ietaA] >= 1.0f) {
+      if (sumWi[ietaA] > KFloatEpsilon) {
         double mpt = sumWipti[ietaA] / sumWi[ietaA];
         if (std::isfinite(mpt)) {
           histos.fill(HIST("pmean_nch_etabin"), coll.multNTracksPV(), ietaA, mpt);
@@ -2177,7 +2200,9 @@ struct RadialFlowDecorr {
       if (!getValidEffFake(coll.multNTracksPV(), pt, eta, cfgEff, eff, fake)) {
         continue;
       }
+
       float flatWeight = getFlatteningWeight(vz, sign, pt, eta, phi, cfgFlat);
+
       float w = flatWeight * (1.0f - fake) / eff;
       if (!std::isfinite(w) || w <= 0.f) {
         continue;
@@ -2203,9 +2228,7 @@ struct RadialFlowDecorr {
       float mmpt = state.pmeanNchEtabinStep2->GetBinContent(ibx, iby);
 
       meanMult[ieta] = sumwk[ieta][1];
-
-      // mean pT of the bin: valid only with >=1 (weighted) track
-      mean[ieta] = (sumwk[ieta][1] >= 1.0) ? (sumpmwk[ieta][1][1] / sumwk[ieta][1]) : std::numeric_limits<double>::quiet_NaN();
+      mean[ieta] = (sumwk[ieta][1] > KFloatEpsilon) ? (sumpmwk[ieta][1][1] / sumwk[ieta][1]) : std::numeric_limits<double>::quiet_NaN();
 
       // c2 (>=2 tracks), c3 (>=3 tracks) and the pT deviation need a usable reference
       c2[ieta] = std::numeric_limits<double>::quiet_NaN();
