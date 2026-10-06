@@ -4537,39 +4537,16 @@ struct HParticleCorrelationMixedEvent {
     float tofNSigma = 0.0f;
     float massHypothesis = 0.0f;
 
-    if constexpr (pairType == kHPhi) {
+    if constexpr (pairType == kHPhi || (pairType == kHKStar && dauType == kPosDau) || (pairType == kHKStarBar && dauType == kNegDau) ||
+                  (pairType == kHLambda && dauType == kNegDau) || (pairType == kHLambdaBar && dauType == kPosDau)) {
       tpcNSigma = track.tpcNSigmaKa();
       tofNSigma = track.tofNSigmaKa();
       massHypothesis = MassKPlus;
-    } else if constexpr (pairType == kHKStar && dauType == kPosDau) {
-      tpcNSigma = track.tpcNSigmaKa();
-      tofNSigma = track.tofNSigmaKa();
-      massHypothesis = MassKPlus;
-    } else if constexpr (pairType == kHKStar && dauType == kNegDau) {
+    } else if constexpr ((pairType == kHKStar && dauType == kNegDau) || (pairType == kHKStarBar && dauType == kPosDau)) {
       tpcNSigma = track.tpcNSigmaPi();
       tofNSigma = track.tofNSigmaPi();
       massHypothesis = MassPiPlus;
-    } else if constexpr (pairType == kHKStarBar && dauType == kPosDau) {
-      tpcNSigma = track.tpcNSigmaPi();
-      tofNSigma = track.tofNSigmaPi();
-      massHypothesis = MassPiPlus;
-    } else if constexpr (pairType == kHKStarBar && dauType == kNegDau) {
-      tpcNSigma = track.tpcNSigmaKa();
-      tofNSigma = track.tofNSigmaKa();
-      massHypothesis = MassKPlus;
-    } else if constexpr (pairType == kHLambda && dauType == kPosDau) {
-      tpcNSigma = track.tpcNSigmaPr();
-      tofNSigma = track.tofNSigmaPr();
-      massHypothesis = MassProton;
-    } else if constexpr (pairType == kHLambda && dauType == kNegDau) {
-      tpcNSigma = track.tpcNSigmaKa();
-      tofNSigma = track.tofNSigmaKa();
-      massHypothesis = MassKPlus;
-    } else if constexpr (pairType == kHLambdaBar && dauType == kPosDau) {
-      tpcNSigma = track.tpcNSigmaKa();
-      tofNSigma = track.tofNSigmaKa();
-      massHypothesis = MassKPlus;
-    } else if constexpr (pairType == kHLambdaBar && dauType == kNegDau) {
+    } else if constexpr ((pairType == kHLambda && dauType == kPosDau) || (pairType == kHLambdaBar && dauType == kNegDau)) {
       tpcNSigma = track.tpcNSigmaPr();
       tofNSigma = track.tofNSigmaPr();
       massHypothesis = MassProton;
