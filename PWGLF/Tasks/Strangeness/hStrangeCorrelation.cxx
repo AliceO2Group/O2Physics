@@ -126,6 +126,7 @@ struct HStrangeCorrelation {
     Configurable<bool> doCorrelationPion{"doCorrelationPion", false, "do Pion correlation"};
     Configurable<bool> doGenEventSelection{"doGenEventSelection", true, "use event selections when performing closure test for the gen events"};
     Configurable<bool> doClosureTestPureMC{"doClosureTestPureMC", false, "fill regular ClosureTest histograms without event or reconstructed-trigger selection, using MC vertex z and centrality 0.05; keep truth-particle selections"};
+    Configurable<bool> doEventRecoEfficiencyStudy{"doEventRecoEfficiencyStudy", false, "in processClosureTest, fill the generated charged-primary multiplicity in |eta| < 1 of all, reconstructed and selected MC collisions"};
     Configurable<bool> selectINELgtZERO{"selectINELgtZERO", true, "select INEL>0 events"};
     Configurable<bool> selectINELgtN{"selectINELgtN", false, "select INEL>N events (more than N charged particles in |eta| < 1), N = inelGtNThreshold"};
     Configurable<int> inelGtNThreshold{"inelGtNThreshold", 1, "N of the INEL>N selection (reco: PV contributors, gen: charged physical primaries, both in |eta| < 1)"};
@@ -186,6 +187,8 @@ struct HStrangeCorrelation {
     ConfigurableAxis axisLambdaMass{"axisLambdaMass", {200, 1.01f, 1.21f}, "Inv. Mass (GeV/c^{2})"};
     ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 20, 40, 60, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300}, "Binning of the Multiplicity axis in model prediction process"};
     ConfigurableAxis axisMidrapidityMultiplicity{"axisMidrapidityMultiplicity", {VARIABLE_WIDTH, 0, 20, 40, 60, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300}, "Binning of the Midrapidity Multiplicity axis in model prediction process"};
+    ConfigurableAxis axisNchGen{"axisNchGen", {151, -0.5f, 150.5f}, "generated charged primaries in |eta| < 1"};
+    ConfigurableAxis axisNRecoCollisions{"axisNRecoCollisions", {6, -0.5f, 5.5f}, "reconstructed collisions per MC collision"};
 
   } axesConfigurations;
 
@@ -3097,6 +3100,16 @@ struct HStrangeCorrelation {
       }
     }
     if (doprocessClosureTest) {
+      if (masterConfigurations.doEventRecoEfficiencyStudy) {
+        // Each histogram is a subset of the previous one, all with |vz_gen| < zVertexCut:
+        // HasRecoColl/All is the MC-collision reconstruction efficiency vs Nch^gen,
+        // EvSel/All the fraction of MC collisions entering the reconstructed analysis
+        histos.add("ClosureTest/EventRecoEfficiency/hNchGenAll", "all MC collisions;#it{N}_{ch}^{gen} (|#eta| < 1);MC collisions", kTH1D, {axesConfigurations.axisNchGen});
+        histos.add("ClosureTest/EventRecoEfficiency/hNchGenHasRecoColl", "MC collisions with at least one reconstructed collision;#it{N}_{ch}^{gen} (|#eta| < 1);MC collisions", kTH1D, {axesConfigurations.axisNchGen});
+        histos.add("ClosureTest/EventRecoEfficiency/hNchGenEvSelNoInel", "best reconstructed collision passes the event selection without INEL cuts;#it{N}_{ch}^{gen} (|#eta| < 1);MC collisions", kTH1D, {axesConfigurations.axisNchGen});
+        histos.add("ClosureTest/EventRecoEfficiency/hNchGenEvSel", "best reconstructed collision passes the full event selection;#it{N}_{ch}^{gen} (|#eta| < 1);MC collisions", kTH1D, {axesConfigurations.axisNchGen});
+        histos.add("ClosureTest/EventRecoEfficiency/hNchGenVsNRecoColl", "all MC collisions;#it{N}_{ch}^{gen} (|#eta| < 1);reconstructed collisions", kTH2D, {axesConfigurations.axisNchGen, axesConfigurations.axisNRecoCollisions});
+      }
       if (pairLossK0Configurations.doClosureTestStages) {
         // Naming inside ClosureTest/PairLossK0: each folder is one reconstruction
         // requirement imposed on the same truth h-K0 pair. "Any" means the object
@@ -3276,10 +3289,10 @@ struct HStrangeCorrelation {
     return collision.multNTracksPVeta1() > threshold;
   }
 
-  // INEL>N at generated level: more than N charged physical primaries in |eta| < 1,
+  // Number of charged physical primaries in |eta| < 1 at generated level,
   // counted the same way as multcenttable fills multMCNParticlesEta10
   template <typename TMcParticles>
-  bool isInelGtNGen(TMcParticles const& mcParticles, int threshold)
+  int countNchGenEta1(TMcParticles const& mcParticles)
   {
     constexpr double ChargeTolerance = 1e-3; // |charge| below this counts as neutral
     int nChEta1 = 0;
@@ -3295,12 +3308,33 @@ struct HStrangeCorrelation {
         ++nChEta1;
       }
     }
-    return nChEta1 > threshold;
+    return nChEta1;
+  }
+
+  // INEL>N at generated level: more than N charged physical primaries in |eta| < 1
+  template <typename TMcParticles>
+  bool isInelGtNGen(TMcParticles const& mcParticles, int threshold)
+  {
+    return countNchGenEta1(mcParticles) > threshold;
+  }
+
+  // reconstructed INEL>0 / INEL>N cuts of the pp event selection
+  template <typename TCollision>
+  bool isCollisionInelSelected(TCollision const& collision)
+  {
+    if (!collision.isInelGt0() && masterConfigurations.selectINELgtZERO) {
+      return false;
+    }
+    if (!isInelGtNReco(collision, masterConfigurations.inelGtNThreshold) && masterConfigurations.selectINELgtN) {
+      return false;
+    }
+    return true;
   }
 
   // this function allows for all event selections to be done in a modular way
+  // applyInelSelection = false skips only the reconstructed INEL>0 / INEL>N cuts
   template <typename TCollision>
-  bool isCollisionSelected(TCollision const& collision)
+  bool isCollisionSelected(TCollision const& collision, bool applyInelSelection = true)
   {
     // ________________________________________________
     // Perform basic event selection
@@ -3317,10 +3351,7 @@ struct HStrangeCorrelation {
     if (collision.centFT0M() > axisRanges[5][1] || collision.centFT0M() < axisRanges[5][0]) {
       return false;
     }
-    if (!collision.isInelGt0() && masterConfigurations.selectINELgtZERO) {
-      return false;
-    }
-    if (!isInelGtNReco(collision, masterConfigurations.inelGtNThreshold) && masterConfigurations.selectINELgtN) {
+    if (applyInelSelection && !isCollisionInelSelected(collision)) {
       return false;
     }
     if (!collision.selection_bit(aod::evsel::kIsGoodITSLayersAll) && masterConfigurations.requireAllGoodITSLayers) {
@@ -6211,6 +6242,42 @@ struct HStrangeCorrelation {
     }
 
     histos.fill(HIST("hClosureTestEventCounter"), 0.5f);
+
+    // MC-collision reconstruction efficiency vs Nch^gen. Filled before any
+    // selection below so that every MC collision within |vz_gen| is counted. The
+    // event selection is the one of the reconstructed analysis (processSameEvent*),
+    // evaluated on the best collision (largest number of contributors)
+    if (masterConfigurations.doEventRecoEfficiencyStudy && std::abs(mcCollision.posZ()) <= masterConfigurations.zVertexCut) {
+      const int nChGen = countNchGenEta1(mcParticles);
+      histos.fill(HIST("ClosureTest/EventRecoEfficiency/hNchGenAll"), nChGen);
+      histos.fill(HIST("ClosureTest/EventRecoEfficiency/hNchGenVsNRecoColl"), nChGen, recCollisions.size());
+      if (recCollisions.size() > 0) {
+        histos.fill(HIST("ClosureTest/EventRecoEfficiency/hNchGenHasRecoColl"), nChGen);
+        int largestNContributors = -1;
+        bool bestCollisionSelectedNoInel = false;
+        bool bestCollisionSelected = false;
+        for (auto const& recCollision : recCollisions) {
+          if (recCollision.numContrib() <= largestNContributors) {
+            continue;
+          }
+          largestNContributors = recCollision.numContrib();
+          if (masterConfigurations.doPPAnalysis) {
+            bestCollisionSelectedNoInel = isCollisionSelected(recCollision, false);
+            bestCollisionSelected = bestCollisionSelectedNoInel && isCollisionInelSelected(recCollision);
+          } else {
+            // no INEL cut in the Pb-Pb selection
+            bestCollisionSelectedNoInel = isCollisionSelectedPbPb(recCollision, false);
+            bestCollisionSelected = bestCollisionSelectedNoInel;
+          }
+        }
+        if (bestCollisionSelectedNoInel) {
+          histos.fill(HIST("ClosureTest/EventRecoEfficiency/hNchGenEvSelNoInel"), nChGen);
+        }
+        if (bestCollisionSelected) {
+          histos.fill(HIST("ClosureTest/EventRecoEfficiency/hNchGenEvSel"), nChGen);
+        }
+      }
+    }
 
     float bestCollisionCentpercentile = -1;
     float bestCollisionVtxZ = 0.0f;
