@@ -23,6 +23,7 @@
 #include "Common/Core/RecoDecay.h"
 
 #include <CommonConstants/PhysicsConstants.h>
+#include <CommonDataFormat/TimeStamp.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Array2D.h>
