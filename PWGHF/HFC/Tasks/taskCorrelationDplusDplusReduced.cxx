@@ -193,14 +193,14 @@ struct HfTaskCorrelationDplusDplusReduced {
   {
     processData(localCandidates);
   }
-  PROCESS_SWITCH(HfTaskCorrelationDplusDplusReduced, processLocalDataTiny, "Process local data for Tiny", true);
+  PROCESS_SWITCH(HfTaskCorrelationDplusDplusReduced, processLocalDataTiny, "Process local data for Tiny", false);
 
   void processLocalDataLite(o2::aod::HfCandDpFullEvs::iterator const&,
                             SelectedCandidatesLite const& localCandidates)
   {
     processData(localCandidates);
   }
-  PROCESS_SWITCH(HfTaskCorrelationDplusDplusReduced, processLocalDataLite, "Process local data for Lite", true);
+  PROCESS_SWITCH(HfTaskCorrelationDplusDplusReduced, processLocalDataLite, "Process local data for Lite", false);
 
   void processLocalDataFull(o2::aod::HfCandDpFullEvs::iterator const&,
                             SelectedCandidatesFull const& localCandidates)
@@ -228,7 +228,7 @@ struct HfTaskCorrelationDplusDplusReduced {
   {
     processLocalDataMcRec(localCandidates);
   }
-  PROCESS_SWITCH(HfTaskCorrelationDplusDplusReduced, processLocalDataMcRecFull, "Process local MC data for Full", false);
+  PROCESS_SWITCH(HfTaskCorrelationDplusDplusReduced, processLocalDataMcRecFull, "Process local MC data for Full", true);
 
   void processLocalDataMcGen(o2::aod::HfCandDpMcEvs::iterator const&,
                              SelectedMcParticles const& localMcParticles)

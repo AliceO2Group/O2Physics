@@ -90,12 +90,12 @@ struct HfCorrelatorDplusDplusReduced {
   Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
 
   Configurable<std::vector<double>> cutPtSkimming{"cutPtSkimming", {1, 5, 1000}, "pT bin limits for Skimming application"};
-  Configurable<std::vector<double>> minM{"minM", {0.7, 0.7}, "Mass minimal for the cut for each pt bin"};
-  Configurable<std::vector<double>> maxM{"maxM", {2.0, 2.1}, "Mass maximal for the cut for each pt bin"};
-  Configurable<std::vector<double>> minCosTheta{"minCosTheta", {0.96, 0.98}, "CosTheta minimal for the cut for each pt bin"};
-  Configurable<std::vector<double>> minDecayLength{"minDecayLength", {0.02, 0.03}, "DecayLength minimal for the cut for each pt bin"};
-  Configurable<std::vector<double>> maxNsigmaTPC{"maxNsigmaTPC", {3, 3}, "NsigmaTPC maximal for the cut for each pt bin"};
-  Configurable<std::vector<double>> maxNsigmaTOF{"maxNsigmaTOF", {3, 3}, "NsigmaTOF maximal for the cut for each pt bin"};
+  Configurable<std::vector<double>> Mmin{"Mmin", {0.7, 0.7}, "Mass minimal for the cut for each pt bin"};
+  Configurable<std::vector<double>> Mmax{"Mmax", {2.0, 2.1}, "Mass maximal for the cut for each pt bin"};
+  Configurable<std::vector<double>> CosThetamin{"CosThetamin", {0.96, 0.98}, "CosTheta minimal for the cut for each pt bin"};
+  Configurable<std::vector<double>> DecayLengthmin{"DecayLengthmin", {0.02, 0.03}, "DecayLength minimal for the cut for each pt bin"};
+  Configurable<std::vector<double>> NsigmaTPCmax{"NsigmaTPCmax", {3, 3}, "NsigmaTPC maximal for the cut for each pt bin"};
+  Configurable<std::vector<double>> NsigmaTOFmax{"NsigmaTOFmax", {3, 3}, "NsigmaTOF maximal for the cut for each pt bin"};
 
   Configurable<std::vector<double>> binsPtSkimming{"binsPtSkimming", {0}, "pT bin limits for Skimming application"};
 
@@ -153,24 +153,24 @@ struct HfCorrelatorDplusDplusReduced {
 
   bool skimming(auto const& candidate,
                 std::vector<double> const& PtcutSkimming,
-                std::vector<double> const& Mmin,
-                std::vector<double> const& Mmax,
-                std::vector<double> const& CosThetamin,
-                std::vector<double> const& DecayLengthmin,
-                std::vector<double> const& NsigmaTPCmax,
-                std::vector<double> const& NsigmaTOFmax)
+                std::vector<double> const& Mminimum,
+                std::vector<double> const& Mmaximum,
+                std::vector<double> const& CosThetaminimum,
+                std::vector<double> const& DecayLengthminimum,
+                std::vector<double> const& NsigmaTPCmaximum,
+                std::vector<double> const& NsigmaTOFmaximum)
   {
     if (candidate.pt() < PtcutSkimming[0] || candidate.pt() > PtcutSkimming[PtcutSkimming.size() - 1]) {
       return false;
     }
     for (size_t i = 1; i < PtcutSkimming.size(); i++) {
       if (candidate.pt() <= PtcutSkimming[i]) {
-        if (hfHelper.invMassDplusToPiKPi(candidate) < Mmin[i - 1] ||
-            hfHelper.invMassDplusToPiKPi(candidate) > Mmax[i - 1] ||
-            candidate.cpa() < CosThetamin[i - 1] ||
-            candidate.decayLength() < DecayLengthmin[i - 1] ||
-            abs(candidate.nSigTofKa1()) > NsigmaTOFmax[i - 1] ||
-            abs(candidate.nSigTpcKa1()) > NsigmaTPCmax[i - 1]) {
+        if (hfHelper.invMassDplusToPiKPi(candidate) < Mminimum[i - 1] ||
+            hfHelper.invMassDplusToPiKPi(candidate) > Mmaximum[i - 1] ||
+            candidate.cpa() < CosThetaminimum[i - 1] ||
+            candidate.decayLength() < DecayLengthminimum[i - 1] ||
+            abs(candidate.nSigTofKa1()) > NsigmaTOFmaximum[i - 1] ||
+            abs(candidate.nSigTpcKa1()) > NsigmaTPCmaximum[i - 1]) {
           return false;
         }
         return true;
@@ -364,12 +364,12 @@ struct HfCorrelatorDplusDplusReduced {
                    aod::BCsWithTimestamps const&)
   {
     std::vector<double> skimmingCutPt = cutPtSkimming;
-    std::vector<double> skimmingminM = minM;
-    std::vector<double> skimmingmaxM = maxM;
-    std::vector<double> skimmingminCosTheta = minCosTheta;
-    std::vector<double> skimmingminDecayLength = minDecayLength;
-    std::vector<double> skimmingmaxNsigmaTPC = maxNsigmaTPC;
-    std::vector<double> skimmingmaxNsigmaTOF = maxNsigmaTOF;
+    std::vector<double> skimmingMmin = Mmin;
+    std::vector<double> skimmingMmax = Mmax;
+    std::vector<double> skimmingCosThetamin = CosThetamin;
+    std::vector<double> skimmingDecayLengthmin = DecayLengthmin;
+    std::vector<double> skimmingNsigmaTPCmax = NsigmaTPCmax;
+    std::vector<double> skimmingNsigmaTOFmax = NsigmaTOFmax;
     static int lastRunNumber = -1;
     // reserve memory
     rowCandidateFullEvents.reserve(collisions.size());
@@ -408,18 +408,20 @@ struct HfCorrelatorDplusDplusReduced {
         if (applySkimming &&
             !skimming(candidate,
                       skimmingCutPt,
-                      skimmingminM,
-                      skimmingmaxM,
-                      skimmingminCosTheta,
-                      skimmingminDecayLength,
-                      skimmingmaxNsigmaTPC,
-                      skimmingmaxNsigmaTOF)) {
+                      skimmingMmin,
+                      skimmingMmax,
+                      skimmingCosThetamin,
+                      skimmingDecayLengthmin,
+                      skimmingNsigmaTPCmax,
+                      skimmingNsigmaTOFmax)) {
           continue;
         }
 
         if (applyMl) {
           std::vector<float> inputFeatures = hfMlResponse.getInputFeatures(candidate);
-          bool const isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, abs(candidate.pt()), outputML);
+          bool const isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures,
+                                                              abs(candidate.pt()),
+                                                              outputML);
           if (!isSelectedMl) {
             continue;
           }
@@ -435,12 +437,12 @@ struct HfCorrelatorDplusDplusReduced {
                     aod::Tracks const&)
   {
     std::vector<double> skimmingCutPt = cutPtSkimming;
-    std::vector<double> skimmingminM = minM;
-    std::vector<double> skimmingmaxM = maxM;
-    std::vector<double> skimmingminCosTheta = minCosTheta;
-    std::vector<double> skimmingminDecayLength = minDecayLength;
-    std::vector<double> skimmingmaxNsigmaTPC = maxNsigmaTPC;
-    std::vector<double> skimmingmaxNsigmaTOF = maxNsigmaTOF;
+    std::vector<double> skimmingMmin = Mmin;
+    std::vector<double> skimmingMmax = Mmax;
+    std::vector<double> skimmingCosThetamin = CosThetamin;
+    std::vector<double> skimmingDecayLengthmin = DecayLengthmin;
+    std::vector<double> skimmingNsigmaTPCmax = NsigmaTPCmax;
+    std::vector<double> skimmingNsigmaTOFmax = NsigmaTOFmax;
     // reserve memory
     rowCandidateFullEvents.reserve(collisions.size());
     if (fillCandidateTinyTable) {
@@ -465,17 +467,19 @@ struct HfCorrelatorDplusDplusReduced {
         if (applySkimming &&
             !skimming(candidate,
                       skimmingCutPt,
-                      skimmingminM,
-                      skimmingmaxM,
-                      skimmingminCosTheta,
-                      skimmingminDecayLength,
-                      skimmingmaxNsigmaTPC,
-                      skimmingmaxNsigmaTOF)) {
+                      skimmingMmin,
+                      skimmingMmax,
+                      skimmingCosThetamin,
+                      skimmingDecayLengthmin,
+                      skimmingNsigmaTPCmax,
+                      skimmingNsigmaTOFmax)) {
           continue;
         }
         if (applyMl) {
           std::vector<float> inputFeatures = hfMlResponse.getInputFeatures(candidate);
-          bool const isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, abs(candidate.pt()), outputML);
+          bool const isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures,
+                                                              abs(candidate.pt()),
+                                                              outputML);
           if (!isSelectedMl) {
             continue;
           }
