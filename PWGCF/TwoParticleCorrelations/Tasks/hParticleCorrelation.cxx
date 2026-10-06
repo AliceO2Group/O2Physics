@@ -625,6 +625,7 @@ enum CorrCountPtEnum {
   kNCorrCountPt
 };
 
+static constexpr int NCorrCountChannels = static_cast<int>(kNCorrCountTypes) * static_cast<int>(kNCorrCountPt);
 static constexpr std::array<std::string_view, kNCorrCountTypes> CorrCountTypeName = {
   "hh",
   "hPi",
@@ -1832,7 +1833,7 @@ struct HParticleCorrelationSameEvent {
     AxisSpec axisPoolOccupancy{cfgMixing.axisMixingOccupancy, "N eligible collisions"};
     nMixBins = axisVtxMixSpec.getNbins() * axisCentMixSpec.getNbins();
     const AxisSpec axisMixBin{nMixBins, -0.5, static_cast<double>(nMixBins) - 0.5, "Mixing bin"};
-    const AxisSpec axisCorrChannel{kNCorrCountTypes * kNCorrCountPt, -0.5, static_cast<double>(kNCorrCountTypes * kNCorrCountPt) - 0.5, "Correlation channel"};
+    const AxisSpec axisCorrChannel{NCorrCountChannels, -0.5, static_cast<double>(NCorrCountChannels) - 0.5, "Correlation channel"};
     const AxisSpec axisReadyBins{nMixBins + 1, -0.5, static_cast<double>(nMixBins) + 0.5, "N ready mixing bins"};
 
     const int nEventQABins = static_cast<int>(kNEventQABins);
@@ -3193,7 +3194,6 @@ struct HParticleCorrelationSameEvent {
     int assocNegDauSelTag = kTrackAccepted;
     int posDauIdMethod = kUnidentified;
     int negDauIdMethod = kUnidentified;
-    uint8_t massRegion = kMassNone;
     int pionIdMethod = kUnidentified;
     int kaonIdMethod = kUnidentified;
     int protonIdMethod = kUnidentified;
@@ -3719,7 +3719,7 @@ struct HParticleCorrelationSameEvent {
 
     //______________________________________________________________________________
     // Dataframe-level mixing-pool QA
-    std::array<uint64_t, kNCorrCountTypes * kNCorrCountPt> nReadyMixBins{};
+    std::array<uint64_t, NCorrCountChannels> nReadyMixBins{};
 
     for (int iMixBin = 0; iMixBin < nMixBins; ++iMixBin) {
       const auto& binStatus = mixingBinStatusPerDF[iMixBin];
@@ -3741,7 +3741,7 @@ struct HParticleCorrelationSameEvent {
       }
     }
 
-    for (int corrChannel = 0; corrChannel < kNCorrCountTypes * kNCorrCountPt; ++corrChannel) {
+    for (int corrChannel = 0; corrChannel < NCorrCountChannels; ++corrChannel) {
       mixingQA.fill(HIST("Mixing/PerDF/NReadyMixBins"), corrChannel, nReadyMixBins[corrChannel]);
     }
   }
