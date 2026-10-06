@@ -704,13 +704,13 @@ struct FemtoProducer {
   PROCESS_SWITCH(FemtoProducer, processTracksV0sCascadesKinksRun3pp, "Provide tracks, v0s, cascades and kinks", false);
 
   void processTracksV0sCascadesKinksPhotonsRun3pp(rawinputs::Run3PpCollisions::iterator const& col,
-                                                   o2::aod::BCsWithTimestamps const& bcs,
-                                                   rawinputs::Run3FullPidTracks const& tracks,
-                                                   rawinputs::Run3Vzeros const& v0s,
-                                                   rawinputs::Run3Cascades const& cascades,
-                                                   rawinputs::Run3Kinks const& kinks,
-                                                   o2::aod::V0PhotonsKF const& photons,
-                                                   o2::aod::V0Legs const& v0legs)
+                                                  o2::aod::BCsWithTimestamps const& bcs,
+                                                  rawinputs::Run3FullPidTracks const& tracks,
+                                                  rawinputs::Run3Vzeros const& v0s,
+                                                  rawinputs::Run3Cascades const& cascades,
+                                                  rawinputs::Run3Kinks const& kinks,
+                                                  o2::aod::V0PhotonsKF const& photons,
+                                                  o2::aod::V0Legs const& v0legs)
   {
     if (!processCollisions<modes::System::kPP_Run3>(col, bcs, tracks)) {
       return;

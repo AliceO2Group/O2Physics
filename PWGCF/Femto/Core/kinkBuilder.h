@@ -103,7 +103,7 @@ struct ConfSigmaPlusBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};                                               \
   o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};                  \
   o2::framework::Configurable<float> massMin{"massMin", (defaultMassMin), "Minimum invariant mass"};                     \
-  o2::framework::Configurable<float> massMax{"massMax", (defaultMassMax), "Maximum invariant mass"};                    \
+  o2::framework::Configurable<float> massMax{"massMax", (defaultMassMax), "Maximum invariant mass"};                     \
   o2::framework::Configurable<o2::analysis::femto::datatypes::KinkMaskType> mask{"mask", 0x0, "Bitmask for kink selection"};
 
 // base selection for analysis task for sigmas
