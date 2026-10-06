@@ -11,7 +11,7 @@
 //
 
 /// \file HadNucleiFemtoDcaPurity.cxx
-/// \brief Nuclei-hadron femtoscopy task with DCA-fraction and purity inputs
+/// \brief Nuclei-hadron femtoscopy task
 /// \author CMY
 /// \date 2025-04-10
 
@@ -767,6 +767,28 @@ struct HadNucleiFemto {
      // PDG code offline as sign * (PDG high * 10000 + PDG low).
      {"fraction/hDcaMotherPdgHad", "Hadron DCA by exact direct-mother PDG; signed reconstructed p_{T} (GeV/c);DCA_{xy} (cm);DCA_{z} (cm);centrality;origin;collision association;mother PDG sign;mother PDG high;mother PDG low", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {HadronDcaFitBins, -HadronDcaFitAxisMax, HadronDcaFitAxisMax}, {40, 0.f, 100.f}, {NDcaOrigins, -0.5f, static_cast<float>(NDcaOrigins) - 0.5f}, {NCollisionAssociations, -0.5f, static_cast<float>(NCollisionAssociations) - 0.5f}, {3, -1.5f, 1.5f}, {MotherPdgHighMax + 1, -0.5f, static_cast<float>(MotherPdgHighMax) + 0.5f}, {MotherPdgChunkBase, -0.5f, static_cast<float>(MotherPdgChunkBase) - 0.5f}}}},
      {"fraction/hDcaMotherPdgNu", "Nucleus DCA by exact direct-mother PDG; signed physical reconstructed p_{T} (GeV/c);DCA_{xy} (cm);DCA_{z} (cm);centrality;origin;collision association;mother PDG sign;mother PDG high;mother PDG low", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {NucleusDcaFitBins, -NucleusDcaFitAxisMax, NucleusDcaFitAxisMax}, {NucleusDcaFitBins, -NucleusDcaFitAxisMax, NucleusDcaFitAxisMax}, {40, 0.f, 100.f}, {NDcaOrigins, -0.5f, static_cast<float>(NDcaOrigins) - 0.5f}, {NCollisionAssociations, -0.5f, static_cast<float>(NCollisionAssociations) - 0.5f}, {3, -1.5f, 1.5f}, {MotherPdgHighMax + 1, -0.5f, static_cast<float>(MotherPdgHighMax) + 0.5f}, {MotherPdgChunkBase, -0.5f, static_cast<float>(MotherPdgChunkBase) - 0.5f}}}},
+
+     // Generator denominators and source-resolved response matrices for the
+     // hypertriton-to-primary He3 and triton constraints. Generated momenta
+     // are physical particle momenta and must never receive the reconstructed
+     // He3-track x2 rigidity conversion. The two-body histograms are
+     // conditional on their generated decay channel, so the physical
+     // branching ratios remain independent offline inputs.
+     {"fractionMCGen/hPrimaryHe3", "Physical-primary generated He3 in selected MC collisions;signed generated p_{T}^{He3} (GeV/c);generated y^{He3};centrality", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {120, -1.5f, 1.5f}, {40, 0.f, 100.f}}}},
+     {"fractionMCGen/hHypertriton", "Physical-primary generated hypertritons in selected MC collisions;signed generated p_{T}^{hypertriton} (GeV/c);generated y^{hypertriton};centrality", {HistType::kTHnSparseF, {{400, -10.f, 10.f}, {120, -1.5f, 1.5f}, {40, 0.f, 100.f}}}},
+     {"fractionMCGen/hHypertritonToHe3Pi", "Physical-primary generated hypertritons in the He3-pion channel;signed generated p_{T}^{hypertriton} (GeV/c);generated y^{hypertriton};centrality", {HistType::kTHnSparseF, {{400, -10.f, 10.f}, {120, -1.5f, 1.5f}, {40, 0.f, 100.f}}}},
+     {"fractionMCGen/hHypertritonDaughterHe3", "Generated direct He3 daughters in the hypertriton-He3-pion channel;signed generated p_{T}^{He3} (GeV/c);generated y^{He3};centrality", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {120, -1.5f, 1.5f}, {40, 0.f, 100.f}}}},
+     {"fractionMCGen/hHypertritonPtVsDaughterHe3Pt", "Generated hypertriton-to-He3 decay mapping;signed generated p_{T}^{hypertriton} (GeV/c);signed generated p_{T}^{He3} (GeV/c);generated y^{hypertriton};generated y^{He3};centrality", {HistType::kTHnSparseF, {{400, -10.f, 10.f}, {280, -7.f, 7.f}, {120, -1.5f, 1.5f}, {120, -1.5f, 1.5f}, {40, 0.f, 100.f}}}},
+     {"fractionMCGen/hPrimaryTriton", "Physical-primary generated tritons in selected MC collisions;signed generated p_{T}^{triton} (GeV/c);generated y^{triton};centrality", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {120, -1.5f, 1.5f}, {40, 0.f, 100.f}}}},
+     {"fractionMCGen/hHypertritonToTritonPi0", "Physical-primary generated hypertritons in the triton-pi0 channel;signed generated p_{T}^{hypertriton} (GeV/c);generated y^{hypertriton};centrality", {HistType::kTHnSparseF, {{400, -10.f, 10.f}, {120, -1.5f, 1.5f}, {40, 0.f, 100.f}}}},
+     {"fractionMCGen/hHypertritonDaughterTriton", "Generated direct triton daughters in the hypertriton-triton-pi0 channel;signed generated p_{T}^{triton} (GeV/c);generated y^{triton};centrality", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {120, -1.5f, 1.5f}, {40, 0.f, 100.f}}}},
+     {"fractionMCGen/hHypertritonPtVsDaughterTritonPt", "Generated hypertriton-to-triton decay mapping;signed generated p_{T}^{hypertriton} (GeV/c);signed generated p_{T}^{triton} (GeV/c);generated y^{hypertriton};generated y^{triton};centrality", {HistType::kTHnSparseF, {{400, -10.f, 10.f}, {280, -7.f, 7.f}, {120, -1.5f, 1.5f}, {120, -1.5f, 1.5f}, {40, 0.f, 100.f}}}},
+     {"fractionMCReco/hPrimaryHe3GenPtVsRecoPt", "DCA-selected physical-primary He3 response;signed generated p_{T}^{He3} (GeV/c);signed physical reconstructed p_{T}^{He3} (GeV/c);generated y^{He3};centrality", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {280, -7.f, 7.f}, {120, -1.5f, 1.5f}, {40, 0.f, 100.f}}}},
+     {"fractionMCReco/hHypertritonDaughterHe3GenPtVsRecoPt", "DCA-selected hypertriton-daughter He3 response;signed generated p_{T}^{He3} (GeV/c);signed physical reconstructed p_{T}^{He3} (GeV/c);generated y^{He3};centrality", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {280, -7.f, 7.f}, {120, -1.5f, 1.5f}, {40, 0.f, 100.f}}}},
+     {"fractionMCReco/hHypertritonParentPtVsDaughterRecoPt", "DCA-selected hypertriton parent-to-He3 response;signed generated p_{T}^{hypertriton} (GeV/c);signed physical reconstructed p_{T}^{He3} (GeV/c);generated y^{hypertriton};generated y^{He3};centrality", {HistType::kTHnSparseF, {{400, -10.f, 10.f}, {280, -7.f, 7.f}, {120, -1.5f, 1.5f}, {120, -1.5f, 1.5f}, {40, 0.f, 100.f}}}},
+     {"fractionMCReco/hPrimaryTritonGenPtVsRecoPt", "DCA-selected physical-primary triton response;signed generated p_{T}^{triton} (GeV/c);signed physical reconstructed p_{T}^{triton} (GeV/c);generated y^{triton};centrality", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {280, -7.f, 7.f}, {120, -1.5f, 1.5f}, {40, 0.f, 100.f}}}},
+     {"fractionMCReco/hHypertritonDaughterTritonGenPtVsRecoPt", "DCA-selected hypertriton-daughter triton response;signed generated p_{T}^{triton} (GeV/c);signed physical reconstructed p_{T}^{triton} (GeV/c);generated y^{triton};centrality", {HistType::kTHnSparseF, {{280, -7.f, 7.f}, {280, -7.f, 7.f}, {120, -1.5f, 1.5f}, {40, 0.f, 100.f}}}},
+     {"fractionMCReco/hHypertritonParentPtVsDaughterTritonRecoPt", "DCA-selected hypertriton parent-to-triton response;signed generated p_{T}^{hypertriton} (GeV/c);signed physical reconstructed p_{T}^{triton} (GeV/c);generated y^{hypertriton};generated y^{triton};centrality", {HistType::kTHnSparseF, {{400, -10.f, 10.f}, {280, -7.f, 7.f}, {120, -1.5f, 1.5f}, {120, -1.5f, 1.5f}, {40, 0.f, 100.f}}}},
 
      // Hierarchical MC truth purity counters: all = correct species + mis-ID
      // + no label; correct species = correct collision + wrong collision;
@@ -3687,6 +3709,54 @@ struct HadNucleiFemto {
     const float productionRadius = std::hypot(particle.vx(), particle.vy());
     const float signedPt = signedPhysicalPt(track, isNucleus);
 
+    // These response matrices use the relaxed DCA-fit selection under which
+    // this function is called. Keep only correct-collision He3 or triton so
+    // the reconstructed numerators match the selected-MC-collision generator
+    // denominators filled below. Hypertriton responses are conditional on the
+    // explicit He3-pion or triton-pi0 channel; physical branching ratios are
+    // deliberately not folded into these histograms.
+    const int absoluteParticlePdg = std::abs(particle.pdgCode());
+    if (isNucleus && matchesRecoCollision && (absoluteParticlePdg == He3PDG || absoluteParticlePdg == TritonPDG)) {
+      const float signedGeneratedPt = particle.pdgCode() > 0 ? particle.pt() : -particle.pt();
+      const float generatedRapidity = particle.y();
+      if (origin == Primary) {
+        if (absoluteParticlePdg == He3PDG) {
+          mQaRegistry.fill(HIST("fractionMCReco/hPrimaryHe3GenPtVsRecoPt"), signedGeneratedPt, signedPt, generatedRapidity, centrality);
+        } else {
+          mQaRegistry.fill(HIST("fractionMCReco/hPrimaryTritonGenPtVsRecoPt"), signedGeneratedPt, signedPt, generatedRapidity, centrality);
+        }
+      } else if (origin == WeakDecay && particle.has_mothers()) {
+        for (const auto& mother : particle.template mothers_as<aod::McParticles>()) {
+          if (std::abs(mother.pdgCode()) != HyperTritonPDG || !mother.isPhysicalPrimary() ||
+              ((mother.pdgCode() > 0) != (particle.pdgCode() > 0))) {
+            continue;
+          }
+          const int expectedPionPdg = absoluteParticlePdg == He3PDG
+                                        ? (mother.pdgCode() > 0 ? -PDG_t::kPiPlus : PDG_t::kPiPlus)
+                                        : PDG_t::kPi0;
+          bool hasExpectedPion = false;
+          for (const auto& daughter : mother.template daughters_as<aod::McParticles>()) {
+            if (daughter.pdgCode() == expectedPionPdg) {
+              hasExpectedPion = true;
+              break;
+            }
+          }
+          if (!hasExpectedPion) {
+            continue;
+          }
+          const float signedParentPt = mother.pdgCode() > 0 ? mother.pt() : -mother.pt();
+          if (absoluteParticlePdg == He3PDG) {
+            mQaRegistry.fill(HIST("fractionMCReco/hHypertritonDaughterHe3GenPtVsRecoPt"), signedGeneratedPt, signedPt, generatedRapidity, centrality);
+            mQaRegistry.fill(HIST("fractionMCReco/hHypertritonParentPtVsDaughterRecoPt"), signedParentPt, signedPt, mother.y(), generatedRapidity, centrality);
+          } else {
+            mQaRegistry.fill(HIST("fractionMCReco/hHypertritonDaughterTritonGenPtVsRecoPt"), signedGeneratedPt, signedPt, generatedRapidity, centrality);
+            mQaRegistry.fill(HIST("fractionMCReco/hHypertritonParentPtVsDaughterTritonRecoPt"), signedParentPt, signedPt, mother.y(), generatedRapidity, centrality);
+          }
+          break;
+        }
+      }
+    }
+
     // The detailed histogram is always filled for a truth-PDG-matched track,
     // including wrong-collision associations, so tighter choices can be made
     // offline without rerunning the table producer.
@@ -3771,13 +3841,91 @@ struct HadNucleiFemto {
     }
   }
 
+  using SelectedMcCollisionInfo = std::unordered_map<int64_t, std::pair<int, float>>;
+
+  void fillMCGeneratorNucleiFeedDown(const aod::McParticles& mcParticles, const SelectedMcCollisionInfo& selectedMcCollisions)
+  {
+    for (const auto& particle : mcParticles) {
+      const auto collision = selectedMcCollisions.find(particle.mcCollisionId());
+      if (collision == selectedMcCollisions.end()) {
+        continue;
+      }
+      const float centrality = collision->second.second;
+      const int particlePdg = particle.pdgCode();
+      const int absolutePdg = std::abs(particlePdg);
+      const float signedPt = particlePdg > 0 ? particle.pt() : -particle.pt();
+
+      if (absolutePdg == He3PDG && particle.isPhysicalPrimary()) {
+        mQaRegistry.fill(HIST("fractionMCGen/hPrimaryHe3"), signedPt, particle.y(), centrality);
+        continue;
+      }
+      if (absolutePdg == TritonPDG && particle.isPhysicalPrimary()) {
+        mQaRegistry.fill(HIST("fractionMCGen/hPrimaryTriton"), signedPt, particle.y(), centrality);
+        continue;
+      }
+      if (absolutePdg != HyperTritonPDG || !particle.isPhysicalPrimary()) {
+        continue;
+      }
+
+      mQaRegistry.fill(HIST("fractionMCGen/hHypertriton"), signedPt, particle.y(), centrality);
+
+      const int expectedHe3Pdg = particlePdg > 0 ? He3PDG : -He3PDG;
+      const int expectedTritonPdg = particlePdg > 0 ? TritonPDG : -TritonPDG;
+      const int expectedChargedPionPdg = particlePdg > 0 ? -PDG_t::kPiPlus : PDG_t::kPiPlus;
+      bool hasExpectedHe3 = false;
+      bool hasExpectedTriton = false;
+      bool hasExpectedChargedPion = false;
+      bool hasPi0 = false;
+      float signedHe3Pt = 0.f;
+      float he3Rapidity = 0.f;
+      float signedTritonPt = 0.f;
+      float tritonRapidity = 0.f;
+      for (const auto& daughter : particle.template daughters_as<aod::McParticles>()) {
+        if (daughter.pdgCode() == expectedHe3Pdg) {
+          hasExpectedHe3 = true;
+          signedHe3Pt = daughter.pdgCode() > 0 ? daughter.pt() : -daughter.pt();
+          he3Rapidity = daughter.y();
+        } else if (daughter.pdgCode() == expectedTritonPdg) {
+          hasExpectedTriton = true;
+          signedTritonPt = daughter.pdgCode() > 0 ? daughter.pt() : -daughter.pt();
+          tritonRapidity = daughter.y();
+        } else if (daughter.pdgCode() == expectedChargedPionPdg) {
+          hasExpectedChargedPion = true;
+        } else if (daughter.pdgCode() == PDG_t::kPi0) {
+          hasPi0 = true;
+        }
+      }
+
+      if (hasExpectedHe3 && hasExpectedChargedPion) {
+        mQaRegistry.fill(HIST("fractionMCGen/hHypertritonToHe3Pi"), signedPt, particle.y(), centrality);
+        mQaRegistry.fill(HIST("fractionMCGen/hHypertritonDaughterHe3"), signedHe3Pt, he3Rapidity, centrality);
+        mQaRegistry.fill(HIST("fractionMCGen/hHypertritonPtVsDaughterHe3Pt"), signedPt, signedHe3Pt, particle.y(), he3Rapidity, centrality);
+      }
+      if (hasExpectedTriton && hasPi0) {
+        mQaRegistry.fill(HIST("fractionMCGen/hHypertritonToTritonPi0"), signedPt, particle.y(), centrality);
+        mQaRegistry.fill(HIST("fractionMCGen/hHypertritonDaughterTriton"), signedTritonPt, tritonRapidity, centrality);
+        mQaRegistry.fill(HIST("fractionMCGen/hHypertritonPtVsDaughterTritonPt"), signedPt, signedTritonPt, particle.y(), tritonRapidity, centrality);
+      }
+    }
+  }
+
   // MC DCA templates use the relaxed-DCA selection. MC purity uses the full
   // nominal candidate selection, including its DCA requirement.
-  void processDcaFractionPurityMC(const CollisionsFullMC& collisions, const TrackCandidatesMCDca& tracks, const aod::McParticles&, const aod::BCsWithTimestamps& bcs)
+  void processDcaFractionPurityMC(const CollisionsFullMC& collisions, const TrackCandidatesMCDca& tracks, const aod::McParticles& mcParticles, const aod::BCsWithTimestamps& bcs)
   {
+    SelectedMcCollisionInfo selectedMcCollisions;
     for (const auto& collision : collisions) {
       if (!selectCollision</*isMC*/ true>(collision, bcs)) {
         continue;
+      }
+
+      if (collision.has_mcCollision()) {
+        const int64_t mcCollisionId = collision.mcCollisionId();
+        const int numberOfContributors = collision.numContrib();
+        const auto storedCollision = selectedMcCollisions.find(mcCollisionId);
+        if (storedCollision == selectedMcCollisions.end() || numberOfContributors > storedCollision->second.first) {
+          selectedMcCollisions[mcCollisionId] = {numberOfContributors, collision.centFT0C()};
+        }
       }
 
       const uint64_t collIdx = collision.globalIndex();
@@ -3840,6 +3988,7 @@ struct HadNucleiFemto {
         }
       }
     }
+    fillMCGeneratorNucleiFeedDown(mcParticles, selectedMcCollisions);
   }
   PROCESS_SWITCH(HadNucleiFemto, processDcaFractionPurityMC, "Produce MC DCA templates and truth-purity counters", false);
 
