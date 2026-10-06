@@ -91,10 +91,9 @@ struct ConfSigmaPlusBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> alphaAPMin{"alphaAPMin", {0.0f}, "Minimum Alpha_AP for SigmaPlus candidates"};
   o2::framework::Configurable<std::vector<float>> alphaAPMax{"alphaAPMax", {1.0f}, "Maximum Alpha_AP for SigmaPlus candidates"};
   o2::framework::Configurable<std::vector<float>> chaDauTpcProton{"chaDauTpcProton", {5.f}, "Maximum |nsigma_Proton| TPC for charged daughter tracks"};
-  o2::framework::Configurable<std::vector<float>> chaDauTofProton{"chaDauTofProton", {}, "Maximum |nsigma_Proton| TOF for charged daughter tracks (only used above pidThres)"};
-  o2::framework::Configurable<bool> requireTof{"requireTof", false, "If true, TOF PID is a minimal selection above pidThres. If false, TOF PID only sets bits"};
-  o2::framework::Configurable<bool> keepTracksWithoutTof{"keepTracksWithoutTof", true, "If true, daughters above pidThres without TOF signal pass all TOF selections"};
-  o2::framework::Configurable<float> pidThres{"pidThres", 0.75f, "Daughter momentum threshold (GeV/c). Below, only TPC PID is used and all TOF selections are passed"};
+  o2::framework::Configurable<std::vector<float>> chaDauTofProton{"chaDauTofProton", {}, "Maximum |nsigma_Proton| TOF for charged daughter tracks"};
+  o2::framework::Configurable<bool> requireTof{"requireTof", false, "If true, TOF PID is a minimal selection. If false, TOF PID is optional"};
+  o2::framework::Configurable<bool> keepTracksWithoutTof{"keepTracksWithoutTof", true, "If true, the bit mask for the TOF selection will be true for all limits if the daughter track has no TOF"};
 };
 
 #undef KINK_DEFAULT_BITS
@@ -243,7 +242,6 @@ class KinkSelection : public baseselection::BaseSelection<float, o2::analysis::f
     if constexpr (modes::isEqual(kinkType, modes::Kink::kSigmaPlus)) {
       mMassSigmaPlusLowerLimit = filter.massMinSigmaPlus.value;
       mMassSigmaPlusUpperLimit = filter.massMaxSigmaPlus.value;
-      mPidThreshold = config.pidThres.value;
       mKeepTracksWithoutTof = config.keepTracksWithoutTof.value;
       this->addSelection(kChaDaughTpcProton, kinkSelectionNames.at(kChaDaughTpcProton), config.chaDauTpcProton.value, limits::kAbsUpperLimit, true, true, false);
       this->addSelection(kChaDaughTofProton, kinkSelectionNames.at(kChaDaughTofProton), config.chaDauTofProton.value, limits::kAbsUpperLimit, true, config.requireTof.value, false);
@@ -320,7 +318,6 @@ class KinkSelection : public baseselection::BaseSelection<float, o2::analysis::f
     mCosPointingAngle = (vMotherNorm > 0.f && kinkMomP > 0.f) ? (std::inner_product(momMother.begin(), momMother.end(), vMother.begin(), 0.f)) / (kinkMomP * vMotherNorm) : 0.f;
     mTransRadius = std::hypot(kinkCand.xDecVtx(), kinkCand.yDecVtx());
 
-    mKinkDauP = kinkDauP;
     mKinkDauEta = RecoDecay::eta(momDaughter);
 
     mKinkAngle = 0.f;
@@ -364,9 +361,7 @@ class KinkSelection : public baseselection::BaseSelection<float, o2::analysis::f
     }
     if constexpr (modes::isEqual(kinkType, modes::Kink::kSigmaPlus)) {
       this->evaluateObservable(kChaDaughTpcProton, chaDaughter.tpcNSigmaPr());
-      if (mKinkDauP < mPidThreshold) {
-        this->evaluateObservable(kChaDaughTofProton, 0.f);
-      } else if (chaDaughter.hasTOF()) {
+      if (chaDaughter.hasTOF()) {
         this->evaluateObservable(kChaDaughTofProton, chaDaughter.tofNSigmaPr());
       } else {
         this->evaluateObservable(kChaDaughTofProton, mKeepTracksWithoutTof ? 0.f : 999.f);
@@ -471,7 +466,6 @@ class KinkSelection : public baseselection::BaseSelection<float, o2::analysis::f
   float mMassSigmaUpperLimit = 1.25f;
   float mMassSigmaPlusLowerLimit = 1.15f;
   float mMassSigmaPlusUpperLimit = 1.25f;
-  float mPidThreshold = 0.75f;
   bool mKeepTracksWithoutTof = true;
 
   // kinematic filters
@@ -494,7 +488,6 @@ class KinkSelection : public baseselection::BaseSelection<float, o2::analysis::f
   float mCosPointingAngle = 0.f;
   float mTransRadius = 0.f;
   float mKinkDauEta = 0.f;
-  float mKinkDauP = 0.f;
   float mKinkAngle = 0.f;
 };
 
