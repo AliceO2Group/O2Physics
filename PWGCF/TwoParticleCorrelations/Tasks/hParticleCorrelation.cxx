@@ -2832,39 +2832,16 @@ struct HParticleCorrelationSameEvent {
     float tofNSigma = 0.0f;
     float massHypothesis = 0.0f;
 
-    if constexpr (pairType == kHPhi) {
+    if constexpr (pairType == kHPhi || (pairType == kHKStar && dauType == kPosDau) || (pairType == kHKStarBar && dauType == kNegDau) ||
+                  (pairType == kHLambda && dauType == kNegDau) || (pairType == kHLambdaBar && dauType == kPosDau)) {
       tpcNSigma = track.tpcNSigmaKa();
       tofNSigma = track.tofNSigmaKa();
       massHypothesis = MassKPlus;
-    } else if constexpr (pairType == kHKStar && dauType == kPosDau) {
-      tpcNSigma = track.tpcNSigmaKa();
-      tofNSigma = track.tofNSigmaKa();
-      massHypothesis = MassKPlus;
-    } else if constexpr (pairType == kHKStar && dauType == kNegDau) {
+    } else if constexpr ((pairType == kHKStar && dauType == kNegDau) || (pairType == kHKStarBar && dauType == kPosDau)) {
       tpcNSigma = track.tpcNSigmaPi();
       tofNSigma = track.tofNSigmaPi();
       massHypothesis = MassPiPlus;
-    } else if constexpr (pairType == kHKStarBar && dauType == kPosDau) {
-      tpcNSigma = track.tpcNSigmaPi();
-      tofNSigma = track.tofNSigmaPi();
-      massHypothesis = MassPiPlus;
-    } else if constexpr (pairType == kHKStarBar && dauType == kNegDau) {
-      tpcNSigma = track.tpcNSigmaKa();
-      tofNSigma = track.tofNSigmaKa();
-      massHypothesis = MassKPlus;
-    } else if constexpr (pairType == kHLambda && dauType == kPosDau) {
-      tpcNSigma = track.tpcNSigmaPr();
-      tofNSigma = track.tofNSigmaPr();
-      massHypothesis = MassProton;
-    } else if constexpr (pairType == kHLambda && dauType == kNegDau) {
-      tpcNSigma = track.tpcNSigmaKa();
-      tofNSigma = track.tofNSigmaKa();
-      massHypothesis = MassKPlus;
-    } else if constexpr (pairType == kHLambdaBar && dauType == kPosDau) {
-      tpcNSigma = track.tpcNSigmaKa();
-      tofNSigma = track.tofNSigmaKa();
-      massHypothesis = MassKPlus;
-    } else if constexpr (pairType == kHLambdaBar && dauType == kNegDau) {
+    } else if constexpr ((pairType == kHLambda && dauType == kPosDau) || (pairType == kHLambdaBar && dauType == kNegDau)) {
       tpcNSigma = track.tpcNSigmaPr();
       tofNSigma = track.tofNSigmaPr();
       massHypothesis = MassProton;
@@ -3304,7 +3281,7 @@ struct HParticleCorrelationSameEvent {
   void executeCorrelation(H& histReg, const T& triggers, const A& associatesLowPt, const B& associatesHighPt, CorrCountArray& corrCountPerColl, ResoRegionCountArray& resoRegionCountsPerColl)
   {
     // Trigger Selection
-    int nTrigger = 0;
+    // int nTrigger = 0;
     int triggerSelTag = kTrackAccepted;
 
     // Option 1 : Trigger tracks wont be accepted as daughter track of reconstructed resonance.
@@ -3333,7 +3310,7 @@ struct HParticleCorrelationSameEvent {
       }
       // fillTrigQA
       fillCorrParticleQA<eventType, pairType, kQA, kTrigger>(histReg, trigger);
-      ++nTrigger;
+      // ++nTrigger;
 
       // triggerTrackIndexList.push_back(triggerTrack.globalIndex());
       executeTrigAssocCorrelation<FilterTrkType, eventType, pairType, kAssocLowPt>(histReg, trigger, associatesLowPt, triggerGIList, corrCountPerColl, resoRegionCountsPerColl);
@@ -3498,7 +3475,6 @@ struct HParticleCorrelationSameEvent {
       ResoRegionCountArray resoRegionCountsPerColl{};
 
       seEventQA.fill(HIST("SE/Events/EventSelection"), static_cast<float>(kEventPassedMinSelectedTracks));
-      nTrack = 0;
 
       // Get the Partitions
       auto triggerTracksPerColl = triggerTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -5290,10 +5266,10 @@ struct HParticleCorrelationMixedEvent {
   PROCESS_SWITCH(HParticleCorrelationMixedEvent, processMixEventInDeriveData, "Process Mix event in derive data", true);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HParticleCorrelationResonanceProducer>(cfgc),
-    adaptAnalysisTask<HParticleCorrelationSameEvent>(cfgc),
-    adaptAnalysisTask<HParticleCorrelationMixedEvent>(cfgc)};
+    adaptAnalysisTask<HParticleCorrelationResonanceProducer>(context),
+    adaptAnalysisTask<HParticleCorrelationSameEvent>(context),
+    adaptAnalysisTask<HParticleCorrelationMixedEvent>(context)};
 }
