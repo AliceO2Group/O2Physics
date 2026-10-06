@@ -398,6 +398,8 @@ struct sigmaanalysis {
       histos.add("BDT/h2dPhotonQt", "h2dPhotonQt", kTH2D, {mlProb, axisAPQt});
       histos.add("BDT/h2dPhotonRadius", "h2dPhotonRadius", kTH2D, {mlProb, axisV0Radius});
       histos.add("BDT/h2dOPAngle", "h2dOPAngle", kTH2D, {mlProb, axisOPAngle});
+      histos.add("BDT/h2dAPAlpha", "h2dAPAlpha", kTH2D, {mlProb, axisAPAlpha});
+      histos.add("BDT/h2dAPQt", "h2dAPQt", kTH2D, {mlProb, axisAPQt});
 
       // MC-truth-based score
       if (doprocessMonteCarlo) {
@@ -1773,6 +1775,8 @@ struct sigmaanalysis {
     histos.fill(HIST("BDT/h2dPhotonQt"), score, cand.photonQt());
     histos.fill(HIST("BDT/h2dPhotonRadius"), score, cand.photonRadius());
     histos.fill(HIST("BDT/h2dOPAngle"), score, cand.opAngle());
+    histos.fill(HIST("BDT/h2dAPAlpha"), score, cand.lStarAlpha());
+    histos.fill(HIST("BDT/h2dAPQt"), score, cand.lStarQtarm());
 
     // MC-truth-based separation (signal = particle + antiparticle)
     if constexpr (requires { cand.isSigma0(); cand.isLambdaStar(); }) {
@@ -1796,7 +1800,7 @@ struct sigmaanalysis {
       return false;
 
     // Features in the order of bdt.namesInputFeatures
-    auto inputFeatures = mlResponse.getInputFeatures(cand, cand, cand.opAngle());
+    auto inputFeatures = mlResponse.getInputFeatures(cand, cand, cand.opAngle(), cand.lStarAlpha(), cand.lStarQtarm());
     std::vector<float> outputMl;                                                  // [background, signal]
     const bool isSelected = mlResponse.isSelectedMl(inputFeatures, pt, outputMl); // model and cut of the pT bin
 
