@@ -1004,6 +1004,14 @@ struct Derivedupcanalysis {
       histos.add("eventQA/mc/hSelGeneratorsId", "hSelGeneratorsId", kTH1D, {axisGeneratorIds});
     }
 
+    if (doprocessV0sMC || doprocessCascadesMC || doprocessGenerated) {
+      histos.add("generalQA/mc/hInvalidMCReferences", "Out-of-range MC references; Reference type; Entries", kTH1D, {{7, -0.5, 6.5}});
+      const std::array<const char*, 7> referenceLabels{"Vertex collision", "V0 core", "V0 collision", "Cascade core", "Cascade collision", "Generated V0 collision", "Generated cascade collision"};
+      for (std::size_t i = 0; i < referenceLabels.size(); ++i) {
+        histos.get<TH1>(HIST("generalQA/mc/hInvalidMCReferences"))->GetXaxis()->SetBinLabel(i + 1, referenceLabels[i]);
+      }
+    }
+
     if (doprocessV0sMC || doprocessCascadesMC) {
       // Event QA
       histos.add("eventQA/mc/hFakeEvents", "hFakeEvents", {kTH1D, {{1, -0.5f, 0.5f}}});
@@ -2229,12 +2237,25 @@ struct Derivedupcanalysis {
     }
   }
 
+  bool hasValidMCReference(int64_t index, int64_t tableSize, int referenceType)
+  {
+    if (index < 0) {
+      return false;
+    }
+    // has_*() only checks the sign; older derived files can contain stale positive indices.
+    if (index >= tableSize) {
+      histos.fill(HIST("generalQA/mc/hInvalidMCReferences"), referenceType);
+      return false;
+    }
+    return true;
+  }
+
   void processV0sMC(StraCollisonsFullMC const& collisions,
                     V0CandidatesMC const& fullV0s,
                     DauTracks const&,
                     aod::MotherMCParts const&,
-                    StraMCCollisionsFull const&,
-                    V0MCCoresFull const&,
+                    StraMCCollisionsFull const& mcCollisions,
+                    V0MCCoresFull const& v0MCCores,
                     NeutronsMC const& neutrons)
   {
     v0sGrouped.clear();
@@ -2244,7 +2265,7 @@ struct Derivedupcanalysis {
     }
 
     for (const auto& collision : collisions) {
-      if (!collision.has_straMCCollision()) {
+      if (!hasValidMCReference(collision.straMCCollisionId(), mcCollisions.size(), 0)) {
         histos.fill(HIST("eventQA/mc/hFakeEvents"), 0); // no assoc. MC collisions
         continue;
       }
@@ -2300,9 +2321,9 @@ struct Derivedupcanalysis {
         std::bitset<kSelNum> selMap = computeBitmapV0(v0, collision);
 
         if (doMCAssociation) {
-          if (v0.has_v0MCCore()) {
+          if (hasValidMCReference(v0.v0MCCoreId(), v0MCCores.size(), 1)) {
             const auto& v0MC = v0.v0MCCore_as<V0MCCoresFull>();
-            if (v0MC.has_straMCCollision()) {
+            if (hasValidMCReference(v0MC.straMCCollisionId(), mcCollisions.size(), 2) && v0MC.pdgCode() != -1) {
               const auto& candidateCollision = v0MC.straMCCollision_as<StraMCCollisionsFull>();
               if (std::find(generatorIds->begin(), generatorIds->end(), candidateCollision.generatorsID()) != generatorIds->end()) {
                 histos.fill(HIST("generalQA/mc/h3dV0CollisionAssociation"), candidateCollision.generatorsID(), mcCollision.generatorsID(), v0MC.straMCCollisionId() == mcCollision.globalIndex());
@@ -2368,8 +2389,8 @@ struct Derivedupcanalysis {
                          CascadeCandidatesMC const& fullCascades,
                          DauTracks const&,
                          aod::MotherMCParts const&,
-                         StraMCCollisionsFull const&,
-                         CascMCCoresFull const&,
+                         StraMCCollisionsFull const& mcCollisions,
+                         CascMCCoresFull const& cascMCCores,
                          NeutronsMC const& neutrons)
   {
     cascadesGrouped.clear();
@@ -2379,7 +2400,7 @@ struct Derivedupcanalysis {
     }
 
     for (const auto& collision : collisions) {
-      if (!collision.has_straMCCollision()) {
+      if (!hasValidMCReference(collision.straMCCollisionId(), mcCollisions.size(), 0)) {
         histos.fill(HIST("eventQA/mc/hFakeEvents"), 0); // no assoc. MC collisions
         continue;
       }
@@ -2432,9 +2453,9 @@ struct Derivedupcanalysis {
         std::bitset<kSelNum> selMap = computeBitmapCascade(casc, collision);
 
         if (doMCAssociation) {
-          if (casc.has_cascMCCore()) {
+          if (hasValidMCReference(casc.cascMCCoreId(), cascMCCores.size(), 3)) {
             const auto& cascMC = casc.cascMCCore_as<CascMCCoresFull>();
-            if (cascMC.has_straMCCollision()) {
+            if (hasValidMCReference(cascMC.straMCCollisionId(), mcCollisions.size(), 4) && cascMC.pdgCode() != -1) {
               const auto& candidateCollision = cascMC.straMCCollision_as<StraMCCollisionsFull>();
               if (std::find(generatorIds->begin(), generatorIds->end(), candidateCollision.generatorsID()) != generatorIds->end()) {
                 histos.fill(HIST("generalQA/mc/h3dCascadeCollisionAssociation"), candidateCollision.generatorsID(), mcCollision.generatorsID(), cascMC.straMCCollisionId() == mcCollision.globalIndex());
@@ -2464,7 +2485,7 @@ struct Derivedupcanalysis {
     // V0 start
     for (auto const& v0MC : V0MCCores) {
       // Consider only primaries
-      if (!v0MC.has_straMCCollision() || !v0MC.isPhysicalPrimary())
+      if (!v0MC.isPhysicalPrimary() || !hasValidMCReference(v0MC.straMCCollisionId(), mcCollisions.size(), 5))
         continue;
 
       // Kinematics (|y| < rapidityCut)
@@ -2531,7 +2552,7 @@ struct Derivedupcanalysis {
     // Cascade start
     for (auto const& cascMC : CascMCCores) {
       // Consider only primaries
-      if (!cascMC.has_straMCCollision() || !cascMC.isPhysicalPrimary())
+      if (!cascMC.isPhysicalPrimary() || !hasValidMCReference(cascMC.straMCCollisionId(), mcCollisions.size(), 6))
         continue;
       // Kinematics (|y| < rapidityCut)
       float pTmc = cascMC.ptMC();
