@@ -215,13 +215,8 @@ struct RadialFlowDecorr {
   // binning and are rebuilt in init(). Placeholders here.
   AxisSpec etaAxis{9, -0.9, 0.9, "#eta"};
   AxisSpec etaBinAxis{10, -0.5, 9.5, "#eta bin Number"};
-
-  AxisSpec gapAxis{{-1.5, -1.3, -1.1, -0.9, -0.7, -0.5, -0.3, -0.1,
-                    0.1, 0.3, 0.5, 0.7, 0.9, 1.1, 1.3, 1.5},
-                   "Gap"};
-  AxisSpec sumAxis{{-1.5, -1.3, -1.1, -0.9, -0.7, -0.5, -0.3, -0.1,
-                    0.1, 0.3, 0.5, 0.7, 0.9, 1.1, 1.3, 1.5},
-                   "Sum"};
+  AxisSpec gapAxis{15, -1.5, 1.5, "#Delta#eta"};
+  AxisSpec sumAxis{15, -1.5, 1.5, "#Sigma#eta"};
 
   // --- process switches --------------------------------------------------------
   Configurable<bool> cfgRunGetEff{"cfgRunGetEff", false, "Run MC pass to build efficiency/fake maps"};
@@ -1096,8 +1091,12 @@ struct RadialFlowDecorr {
       }
       etaAxis = AxisSpec{obsEdges, "#eta"};
       etaBinAxis = AxisSpec{nEta + 1, -0.5, static_cast<double>(nEta) + 0.5, "#eta bin Number"};
-      LOGF(info, "Observable eta binning (%s): %d bins of width %.2f over |eta|<%.2f (+ reference), nEta=%d",
-           isMcRun ? "MC pinned" : "DATA", nbins, width, halfEta, nEta);
+      // (Delta eta, Sigma eta): fills are integer multiples of w, so 2N-1 bins
+      // of width w centred on them, out to (N-1/2) w.
+      const int nGS = 2 * nbins - 1;
+      const double gsMax = (nbins - 0.5) * width;
+      gapAxis = AxisSpec{nGS, -gsMax, gsMax, "#Delta#eta"};
+      sumAxis = AxisSpec{nGS, -gsMax, gsMax, "#Sigma#eta"};
     }
 
     // bootstrap active only for the base data fluctuation pass
@@ -1890,8 +1889,9 @@ struct RadialFlowDecorr {
       for (int ietaC = 1; ietaC < nEta; ++ietaC) {
         float etaValA = (etaLw[ietaA] + etaUp[ietaA]) / 2.0f;
         float etaValB = (etaLw[ietaC] + etaUp[ietaC]) / 2.0f;
-        float gap = etaValA - etaValB;
-        float sum = (etaValA + etaValB);
+        const float w = etaUp[ietaA] - etaLw[ietaA];
+        const float gap = (ietaA - ietaC) * w;
+        const float sum = 2.f * etaLw[1] + (ietaA + ietaC - 1) * w; // = cA + cC on the lattice
 
         float c2SubTru = (ietaA == ietaC) ? static_cast<float>(c2Tru[ietaA]) : p1kBarTru[ietaA] * p1kBarTru[ietaC];
         float c2SubReco = (ietaA == ietaC) ? static_cast<float>(c2Reco[ietaA]) : p1kBarReco[ietaA] * p1kBarReco[ietaC];
@@ -2308,8 +2308,9 @@ struct RadialFlowDecorr {
       for (int ietaC = 1; ietaC < nEta; ++ietaC) {
         float etaValA = (etaLw[ietaA] + etaUp[ietaA]) / 2.0f;
         float etaValB = (etaLw[ietaC] + etaUp[ietaC]) / 2.0f;
-        float gap = etaValA - etaValB;
-        float sum = (etaValA + etaValB);
+        const float w = etaUp[ietaA] - etaLw[ietaA];
+        const float gap = (ietaA - ietaC) * w;
+        const float sum = 2.f * etaLw[1] + (ietaA + ietaC - 1) * w; // = cA + cC on the lattice
 
         float c2Sub = (ietaA == ietaC) ? static_cast<float>(c2[ietaA]) : p1kBar[ietaA] * p1kBar[ietaC];
         // C3 sub-event map, ORDERED: cell (A,C) = c2[A] p1kBar[C] = <dpT dpT>_A <dpT>_C,
