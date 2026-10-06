@@ -3660,9 +3660,9 @@ struct AnalysisDileptonTrackTrack {
               VarManager::FillPairMC<VarManager::kDecayToEE>(lepton1, lepton2);
               // LOGP(info, "PDG of lepton1: {}, lepton2: {}", lepton1.pdgCode(), lepton2.pdgCode());
               if (lepton1.pt() > fConfigDileptonPtMin && lepton2.pt() > fConfigDileptonPtMin) {
-                if (TMath::Abs(lepton1.eta()) < fConfigDileptonEtaAbs && TMath::Abs(lepton2.eta()) < fConfigDileptonEtaAbs) {
+                if (std::abs(lepton1.eta()) < fConfigDileptonEtaAbs && std::abs(lepton2.eta()) < fConfigDileptonEtaAbs) {
                   if (track1.pt() > fConfigTrackPtMin && track2.pt() > fConfigTrackPtMin) {
-                    if (TMath::Abs(track1.eta()) < fConfigTrackEtaAbs && TMath::Abs(track2.eta()) < fConfigTrackEtaAbs) {
+                    if (std::abs(track1.eta()) < fConfigTrackEtaAbs && std::abs(track2.eta()) < fConfigTrackEtaAbs) {
                       fHistMan->FillHistClass(Form("MCTruthGenQuadAccepted_%s", sig->GetName()), VarManager::fgValues);
                     }
                   }
