@@ -94,8 +94,8 @@ struct HfCorrelatorDplusDplusReduced {
   Configurable<std::vector<double>> massMax{"massMax", {2.0, 2.1}, "Mass maximal for the cut for each pt bin"};
   Configurable<std::vector<double>> cosThetaMin{"cosThetaMin", {0.96, 0.98}, "CosTheta minimal for the cut for each pt bin"};
   Configurable<std::vector<double>> decayLengthMin{"decayLengthMin", {0.02, 0.03}, "DecayLength minimal for the cut for each pt bin"};
-  Configurable<std::vector<double>> nsigmaTpcMax{"nsigmaTpcMax", {3, 3}, "NsigmaTPC maximal for the cut for each pt bin"};
-  Configurable<std::vector<double>> nsigmaTofMax{"nsigmaTofMax", {3, 3}, "NsigmaTOF maximal for the cut for each pt bin"};
+  Configurable<std::vector<double>> nSigmaTpcMax{"nSigmaTpcMax", {3, 3}, "NsigmaTPC maximal for the cut for each pt bin"};
+  Configurable<std::vector<double>> nSigmaTofMax{"nSigmaTofMax", {3, 3}, "NsigmaTOF maximal for the cut for each pt bin"};
 
   Configurable<std::vector<double>> binsPtSkimming{"binsPtSkimming", {0}, "pT bin limits for Skimming application"};
 
@@ -152,25 +152,25 @@ struct HfCorrelatorDplusDplusReduced {
   }
 
   bool skimming(auto const& candidate,
-                std::vector<double> const& PtcutSkimming,
-                std::vector<double> const& Mminimum,
-                std::vector<double> const& Mmaximum,
-                std::vector<double> const& CosThetaminimum,
-                std::vector<double> const& DecayLengthminimum,
-                std::vector<double> const& NsigmaTPCmaximum,
-                std::vector<double> const& NsigmaTOFmaximum)
+                std::vector<double> const& ptCutSkimming,
+                std::vector<double> const& massMinimum,
+                std::vector<double> const& massMaximum,
+                std::vector<double> const& cosThetaminimum,
+                std::vector<double> const& decayLengthminimum,
+                std::vector<double> const& nSigmaTpcmaximum,
+                std::vector<double> const& nSigmaTofmaximum)
   {
-    if (candidate.pt() < PtcutSkimming[0] || candidate.pt() > PtcutSkimming[PtcutSkimming.size() - 1]) {
+    if (candidate.pt() < ptCutSkimming[0] || candidate.pt() > ptCutSkimming[ptCutSkimming.size() - 1]) {
       return false;
     }
-    for (size_t i = 1; i < PtcutSkimming.size(); i++) {
-      if (candidate.pt() <= PtcutSkimming[i]) {
-        if (hfHelper.invMassDplusToPiKPi(candidate) < Mminimum[i - 1] ||
-            hfHelper.invMassDplusToPiKPi(candidate) > Mmaximum[i - 1] ||
-            candidate.cpa() < CosThetaminimum[i - 1] ||
-            candidate.decayLength() < DecayLengthminimum[i - 1] ||
-            abs(candidate.nSigTofKa1()) > NsigmaTOFmaximum[i - 1] ||
-            abs(candidate.nSigTpcKa1()) > NsigmaTPCmaximum[i - 1]) {
+    for (size_t i = 1; i < ptCutSkimming.size(); i++) {
+      if (candidate.pt() <= ptCutSkimming[i]) {
+        if (hfHelper.invMassDplusToPiKPi(candidate) < massMinimum[i - 1] ||
+            hfHelper.invMassDplusToPiKPi(candidate) > massMaximum[i - 1] ||
+            candidate.cpa() < cosThetaminimum[i - 1] ||
+            candidate.decayLength() < decayLengthminimum[i - 1] ||
+            abs(candidate.nSigTofKa1()) > nSigmaTofmaximum[i - 1] ||
+            abs(candidate.nSigTpcKa1()) > nSigmaTpcmaximum[i - 1]) {
           return false;
         }
         return true;
@@ -368,8 +368,8 @@ struct HfCorrelatorDplusDplusReduced {
     std::vector<double> skimmingMassMax = massMax;
     std::vector<double> skimmingCosThetaMin = cosThetaMin;
     std::vector<double> skimmingDecayLengthMin = decayLengthMin;
-    std::vector<double> skimmingNsigmaTpcMax = nsigmaTpcMax;
-    std::vector<double> skimmingNsigmaTofMax = nsigmaTofMax;
+    std::vector<double> skimmingNSigmaTpcMax = nSigmaTpcMax;
+    std::vector<double> skimmingNSigmaTofMax = nSigmaTofMax;
     static int lastRunNumber = -1;
     // reserve memory
     rowCandidateFullEvents.reserve(collisions.size());
@@ -412,8 +412,8 @@ struct HfCorrelatorDplusDplusReduced {
                       skimmingMassMax,
                       skimmingCosThetaMin,
                       skimmingDecayLengthMin,
-                      skimmingNsigmaTpcMax,
-                      skimmingNsigmaTofMax)) {
+                      skimmingNSigmaTpcMax,
+                      skimmingNSigmaTofMax)) {
           continue;
         }
 
@@ -441,8 +441,8 @@ struct HfCorrelatorDplusDplusReduced {
     std::vector<double> skimmingMassMax = massMax;
     std::vector<double> skimmingCosThetaMin = cosThetaMin;
     std::vector<double> skimmingDecayLengthMin = decayLengthMin;
-    std::vector<double> skimmingNsigmaTpcMax = nsigmaTpcMax;
-    std::vector<double> skimmingNsigmaTofMax = nsigmaTofMax;
+    std::vector<double> skimmingNSigmaTpcMax = nSigmaTpcMax;
+    std::vector<double> skimmingNSigmaTofMax = nSigmaTofMax;
     // reserve memory
     rowCandidateFullEvents.reserve(collisions.size());
     if (fillCandidateTinyTable) {
@@ -471,8 +471,8 @@ struct HfCorrelatorDplusDplusReduced {
                       skimmingMassMax,
                       skimmingCosThetaMin,
                       skimmingDecayLengthMin,
-                      skimmingNsigmaTpcMax,
-                      skimmingNsigmaTofMax)) {
+                      skimmingNSigmaTpcMax,
+                      skimmingNSigmaTofMax)) {
           continue;
         }
         if (applyMl) {
