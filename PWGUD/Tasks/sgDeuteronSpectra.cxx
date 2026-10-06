@@ -11,7 +11,7 @@
 //
 /// \file sgDeuteronSpectra.cxx
 /// \brief Analysis for the (anti)deuteron production in UPC
-/// \author Marika Rasa 
+/// \author Marika Rasa
 /// \since September 2026
 
 #include "PWGUD/Core/SGSelector.h"
@@ -26,8 +26,8 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
-#include <vector>
 #include <cmath>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
