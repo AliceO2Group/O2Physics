@@ -1784,7 +1784,7 @@ struct HStrangeCorrelation {
       return;
     }
     for (const auto& collision : validCollisions[binnumb]) {
-      BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
+      BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}};
       // When 'collisionHasTriggOrAssoc' = 0:
       // binContent(hMECollisionBins) = Σ(Submitted jobs(done))[binContent(the same bin of hSECollisionBins) * masterConfigurations.mixingParameter - Σ(k=0 to min(masterConfigurations.mixingParameter,binContent)) k]
       // When 'collisionHasTriggOrAssoc' = 3
@@ -2122,7 +2122,7 @@ struct HStrangeCorrelation {
       return;
     }
     for (const auto& collision : validCollisions[binnumb]) {
-      BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
+      BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}};
       histos.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision.pvz, collision.mult}));
       for (const auto& trigger : collision.trigParticles) {
         for (const auto& assoc : currentCollision.assocParticles) {
@@ -3516,7 +3516,7 @@ struct HStrangeCorrelation {
                                 aod::AssocHadrons const& assocHadrons, aod::TriggerTracks const& triggerTracks,
                                 TracksComplete const&, aod::BCsWithTimestamps const&)
   {
-    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
+    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}};
 
     // ________________________________________________
     // skip if desired trigger not found
@@ -3616,8 +3616,8 @@ struct HStrangeCorrelation {
     std::variant<BinningTypePP, BinningTypePbPb> colBinning =
       masterConfigurations.doPPAnalysis
         ? std::variant<BinningTypePP, BinningTypePbPb>{
-            BinningTypePP{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}}
-        : std::variant<BinningTypePP, BinningTypePbPb>{BinningTypePbPb{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}};
+            BinningTypePP{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}}}
+        : std::variant<BinningTypePP, BinningTypePbPb>{BinningTypePbPb{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}}};
 
     if (!doprocessSameEventHCascades && doMixingQAandEventQA) {
       std::visit([&](auto const& binning) {
@@ -3793,8 +3793,8 @@ struct HStrangeCorrelation {
     std::variant<BinningTypePP, BinningTypePbPb> colBinning =
       masterConfigurations.doPPAnalysis
         ? std::variant<BinningTypePP, BinningTypePbPb>{
-            BinningTypePP{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}}
-        : std::variant<BinningTypePP, BinningTypePbPb>{BinningTypePbPb{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}};
+            BinningTypePP{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}}}
+        : std::variant<BinningTypePP, BinningTypePbPb>{BinningTypePbPb{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}}};
 
     double cent = masterConfigurations.doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
     // ________________________________________________
@@ -3951,7 +3951,7 @@ struct HStrangeCorrelation {
                               soa::Join<aod::AssocHadrons, aod::AssocPID> const& associatedPions, soa::Join<aod::TriggerTracks, aod::TriggerTrackExtras> const& triggerTracks,
                               TracksComplete const&, aod::BCsWithTimestamps const&)
   {
-    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
+    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}};
     // ________________________________________________
     // skip if desired trigger not found
     if (triggerPresenceMap.size() > 0 && !TESTBIT(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
@@ -4029,7 +4029,7 @@ struct HStrangeCorrelation {
                                  aod::AssocHadrons const& assocHadrons, aod::TriggerTracks const& triggerTracks,
                                  TracksComplete const&, aod::BCsWithTimestamps const&)
   {
-    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
+    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}};
     for (auto const& [collision1, collision2] : soa::selfCombinations(colBinning, masterConfigurations.mixingParameter, -1, collisions, collisions)) {
       auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
       auto bField = getMagneticField(bc.timestamp());
@@ -4081,8 +4081,8 @@ struct HStrangeCorrelation {
     std::variant<BinningTypePP, BinningTypePbPb> colBinning =
       masterConfigurations.doPPAnalysis
         ? std::variant<BinningTypePP, BinningTypePbPb>{
-            BinningTypePP{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}}
-        : std::variant<BinningTypePP, BinningTypePbPb>{BinningTypePbPb{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}};
+            BinningTypePP{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}}}
+        : std::variant<BinningTypePP, BinningTypePbPb>{BinningTypePbPb{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}}};
 
     std::visit([&](auto const& binning) {
       for (auto const& [collision1, collision2] : soa::selfCombinations(binning, masterConfigurations.mixingParameter, -1, collisions, collisions)) {
@@ -4140,8 +4140,8 @@ struct HStrangeCorrelation {
     std::variant<BinningTypePP, BinningTypePbPb> colBinning =
       masterConfigurations.doPPAnalysis
         ? std::variant<BinningTypePP, BinningTypePbPb>{
-            BinningTypePP{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}}
-        : std::variant<BinningTypePP, BinningTypePbPb>{BinningTypePbPb{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}};
+            BinningTypePP{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}}}
+        : std::variant<BinningTypePP, BinningTypePbPb>{BinningTypePbPb{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}}};
 
     std::visit([&](auto const& binning) {
       for (auto const& [collision1, collision2] : soa::selfCombinations(binning, masterConfigurations.mixingParameter, -1, collisions, collisions)) {
@@ -4195,7 +4195,7 @@ struct HStrangeCorrelation {
                                soa::Join<aod::AssocHadrons, aod::AssocPID> const& assocPions, soa::Join<aod::TriggerTracks, aod::TriggerTrackExtras> const& triggerTracks,
                                TracksComplete const&, aod::BCsWithTimestamps const&)
   {
-    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
+    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}};
     for (auto const& [collision1, collision2] : soa::selfCombinations(colBinning, masterConfigurations.mixingParameter, -1, collisions, collisions)) {
       auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
       auto bField = getMagneticField(bc.timestamp());

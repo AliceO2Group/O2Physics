@@ -3189,7 +3189,7 @@ struct HadNucleiFemto {
                          std::unordered_map<int, std::deque<HadHyperEvent>>& mixingPools,
                          int& mixingRunNumber)
   {
-    const CentralityBinningType configuredBinningPolicy{{axisVertex, axisCentrality}, true};
+    const CentralityBinningType configuredBinningPolicy{{axisVertex, axisCentrality}};
     for (const auto& collision : collisions) {
       if (!selectCollision<isMC>(collision, bcs)) {
         continue;
@@ -3344,8 +3344,8 @@ struct HadNucleiFemto {
   void processMixedEvent(const CollisionsFullWithPVMult& collisions, const TrackCandidates& tracks, const aod::BCsWithTimestamps&)
   {
     LOG(debug) << "Processing mixed event";
-    const CentralityBinningType centralityBinningPolicy{{axisVertex, axisCentrality}, true};
-    const MultiplicityBinningType multiplicityBinningPolicy{{axisVertex, axisMultiplicity}, true};
+    const CentralityBinningType centralityBinningPolicy{{axisVertex, axisCentrality}};
+    const MultiplicityBinningType multiplicityBinningPolicy{{axisVertex, axisMultiplicity}};
 
     for (const auto& collision : collisions) {
       mQaRegistry.fill(HIST("hMixedEventSelections"), 0);
@@ -3478,8 +3478,8 @@ struct HadNucleiFemto {
 
   void processMixedEventDiagnostic(const CollisionsFullWithPVMult& collisions, const TrackCandidates& tracks, const aod::BCsWithTimestamps&)
   {
-    const CentralityBinningType centralityBinningPolicy{{axisVertex, axisCentrality}, true};
-    const MultiplicityBinningType multiplicityBinningPolicy{{axisVertex, axisMultiplicity}, true};
+    const CentralityBinningType centralityBinningPolicy{{axisVertex, axisCentrality}};
+    const MultiplicityBinningType multiplicityBinningPolicy{{axisVertex, axisMultiplicity}};
     ++mDiagnosticCall;
     MEDiagnosticRow call;
     call.run = mDiagnosticRun;

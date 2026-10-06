@@ -1712,7 +1712,7 @@ struct HResonanceCorrelation {
       return;
 
     for (const auto& collision : validCollisions[binnumb]) {
-      BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
+      BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}};
       histos.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision.pvz, collision.mult}));
 
       for (const auto& trigger : collision.trigParticles) {
@@ -2066,7 +2066,7 @@ struct HResonanceCorrelation {
       return;
 
     for (const auto& collision : validCollisions[binnumb]) {
-      BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
+      BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}};
       histos.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision.pvz, collision.mult}));
 
       for (const auto& trigger : collision.trigParticles) {
@@ -2174,7 +2174,7 @@ struct HResonanceCorrelation {
     }
     // LOGF(info, "SameEventHadron: collisions=%d triggers=%zu assocHadrons=%zu", collision.globalIndex(), triggerTracks.size(), assocHadrons.size());
 
-    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
+    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}};
 
     // ________________________________________________
     // skip if desired trigger not found
@@ -2266,7 +2266,7 @@ struct HResonanceCorrelation {
     }
     // LOGF(info, "SameEventPion: collisions=%d triggers=%zu assocPions=%zu", collision.globalIndex(), triggerTracks.size(), associatedPions.size());
 
-    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
+    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}};
     // ________________________________________________
     // skip if desired trigger not found
     if (triggerPresenceMap.size() > 0 && !TESTBIT(triggerPresenceMap[collision.globalIndex()], triggerSelection.triggerBinToSelect)) {
@@ -2337,7 +2337,7 @@ struct HResonanceCorrelation {
     }
     // LOGF(info, "SameEventKaon: collisions=%d triggers=%zu assocKaons=%zu", collision.globalIndex(), triggerTracks.size(), associatedKaons.size());
 
-    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
+    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}};
     // ________________________________________________
     // skip if desired trigger not found
     if (triggerPresenceMap.size() > 0 && !TESTBIT(triggerPresenceMap[collision.globalIndex()], triggerSelection.triggerBinToSelect)) {
@@ -2407,7 +2407,7 @@ struct HResonanceCorrelation {
     }
     // LOGF(info, "SameEventPhi: collisions=%d triggers=%zu assocPhi=%zu", collision.globalIndex(), triggerTracks.size(), associatedPhis.size());
 
-    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
+    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}};
 
     // Skip if desired trigger not found
     if (triggerPresenceMap.size() > 0 && !TESTBIT(triggerPresenceMap[collision.globalIndex()], triggerSelection.triggerBinToSelect)) {
@@ -2484,7 +2484,7 @@ struct HResonanceCorrelation {
     }
     // LOGF(info, "SameEventKstar: collisions=%d triggers=%zu assocKstar=%zu", collision.globalIndex(), triggerTracks.size(), associatedKstars.size());
 
-    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
+    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}};
 
     // Skip if desired trigger not found
     if (triggerPresenceMap.size() > 0 && !TESTBIT(triggerPresenceMap[collision.globalIndex()], triggerSelection.triggerBinToSelect)) {
@@ -2555,7 +2555,7 @@ struct HResonanceCorrelation {
     if (!TESTBIT(doCorrelation, IndexHadron)) {
       return;
     }
-    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
+    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}};
     for (auto const& [collision1, collision2] : soa::selfCombinations(colBinning, masterConfigurations.mixingParameter, -1, collisions, collisions)) {
       auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
       auto bField = getMagneticField(bc.timestamp());
@@ -2604,7 +2604,7 @@ struct HResonanceCorrelation {
     if (!TESTBIT(doCorrelation, IndexPion)) {
       return;
     }
-    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
+    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}};
     for (auto const& [collision1, collision2] : soa::selfCombinations(colBinning, masterConfigurations.mixingParameter, -1, collisions, collisions)) {
       auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
       auto bField = getMagneticField(bc.timestamp());
@@ -2653,7 +2653,7 @@ struct HResonanceCorrelation {
     if (!TESTBIT(doCorrelation, IndexKaon)) {
       return;
     }
-    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
+    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}};
     for (auto const& [collision1, collision2] : soa::selfCombinations(colBinning, masterConfigurations.mixingParameter, -1, collisions, collisions)) {
       auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
       auto bField = getMagneticField(bc.timestamp());
@@ -2702,7 +2702,7 @@ struct HResonanceCorrelation {
     if (!TESTBIT(doCorrelation, IndexPhi)) {
       return;
     }
-    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
+    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}};
 
     for (auto const& [collision1, collision2] : soa::selfCombinations(colBinning, masterConfigurations.mixingParameter, -1, collisions, collisions)) {
 
@@ -2764,7 +2764,7 @@ struct HResonanceCorrelation {
     if (!TESTBIT(doCorrelation, IndexKstar)) {
       return;
     }
-    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
+    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}};
 
     for (auto const& [collision1, collision2] : soa::selfCombinations(colBinning, masterConfigurations.mixingParameter, -1, collisions, collisions)) {
 

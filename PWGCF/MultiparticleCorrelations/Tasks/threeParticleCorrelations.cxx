@@ -182,8 +182,8 @@ struct ThreeParticleCorrelations {
   using BinningType = ColumnBinningPolicy<aod::cent::CentFT0C, aod::collision::PosZ>;
   using BinningTypeMC = ColumnBinningPolicy<aod::mccollisionprop::BestCollisionCentFT0C, aod::mccollision::PosZ>;
 
-  BinningType collBinning{{confCentBins, confZvtxBins}, true};
-  BinningTypeMC collBinningMC{{confCentBins, confZvtxBins}, true};
+  BinningType collBinning{{confCentBins, confZvtxBins}};
+  BinningTypeMC collBinningMC{{confCentBins, confZvtxBins}};
   Pair<MyFilteredCollisions, aod::V0Datas, MyFilteredTracks, BinningType> pairData{collBinning, 5, -1, &cache};
   SameKindPair<MyFilteredMCGenCollisions, MyFilteredMCParticles, BinningTypeMC> pairMC{collBinningMC, 5, -1, &cache};
 

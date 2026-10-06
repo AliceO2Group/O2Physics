@@ -1328,7 +1328,7 @@ struct Chargedkstaranalysis {
   PROCESS_SWITCH(Chargedkstaranalysis, processDataSE, "Process Event for data without Partitioning", true);
 
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
-  BinningTypeVertexContributor binningOnPositions{{axisCfgs.cfgvtxbins, axisCfgs.cfgmultbins}, true};
+  BinningTypeVertexContributor binningOnPositions{{axisCfgs.cfgvtxbins, axisCfgs.cfgmultbins}};
   Pair<EventCandidates, TrackCandidates, V0Candidates, BinningTypeVertexContributor> pair{binningOnPositions, nEvtMixing, -1, &cache};
 
   void processDataME(EventCandidates const& /*collisions*/, TrackCandidates const& /*tracks*/, V0Candidates const& /*V0s*/)

@@ -1554,7 +1554,7 @@ struct Xi1820Analysis {
       return;
     }
     auto tracksTuple = std::make_tuple(resoTracks, resoV0s);
-    BinningTypeVertexContributor binning{{cfgVtxBins, cfgMultBins}, true};
+    BinningTypeVertexContributor binning{{cfgVtxBins, cfgMultBins}};
     Pair<ResoCollisions, ResoTracks, aod::ResoV0s, BinningTypeVertexContributor> pairs{binning, nEvtMixing, -1, resoCollisions, tracksTuple, &cache};
     for (auto& [collision1, tracks1, collision2, v0s2] : pairs) { // o2-linter: disable=const-ref-in-for-loop (structured bindings from Pair iterator cannot be const)
       if (!acceptsMixedCollisions(collision1, collision2)) {
@@ -1573,7 +1573,7 @@ struct Xi1820Analysis {
       return;
     }
     auto tracksTuple = std::make_tuple(resoMicroTracks, resoV0s);
-    BinningTypeVertexContributor binning{{cfgVtxBins, cfgMultBins}, true};
+    BinningTypeVertexContributor binning{{cfgVtxBins, cfgMultBins}};
     Pair<ResoCollisions, ResoMicroTracks, aod::ResoV0s, BinningTypeVertexContributor> pairs{binning, nEvtMixing, -1, resoCollisions, tracksTuple, &cache};
     for (auto& [collision1, tracks1, collision2, v0s2] : pairs) { // o2-linter: disable=const-ref-in-for-loop (structured bindings from Pair iterator cannot be const)
       if (!acceptsMixedCollisions(collision1, collision2)) {
@@ -1613,7 +1613,7 @@ struct Xi1820Analysis {
       mixingPools.clear();
       mixingBField = collision.bMagField();
     }
-    BinningTypeVertexContributor binning{{cfgVtxBins, cfgMultBins}, true};
+    BinningTypeVertexContributor binning{{cfgVtxBins, cfgMultBins}};
     const int bin = binning.getBin(std::make_tuple(collision.posZ(), collision.cent()));
     if (bin < 0) {
       return;
@@ -1654,7 +1654,7 @@ struct Xi1820Analysis {
       return;
     }
     auto v0sV0sTuple = std::make_tuple(resoV0s, resoV0s);
-    BinningTypeVertexContributor colBinning{{cfgVtxBins, cfgMultBins}, true};
+    BinningTypeVertexContributor colBinning{{cfgVtxBins, cfgMultBins}};
     Pair<ResoCollisions, aod::ResoV0s, aod::ResoV0s, BinningTypeVertexContributor> pairs{colBinning, nEvtMixing, -1, resoCollisions, v0sV0sTuple, &cache};
 
     for (auto& [collision1, k0s1, collision2, lambda2] : pairs) { // o2-linter: disable=const-ref-in-for-loop (structured bindings from Pair iterator cannot be const)
@@ -1678,7 +1678,7 @@ struct Xi1820Analysis {
       neutralMixingPools.clear();
       neutralMixingBField = collision.bMagField();
     }
-    BinningTypeVertexContributor binning{{cfgVtxBins, cfgMultBins}, true};
+    BinningTypeVertexContributor binning{{cfgVtxBins, cfgMultBins}};
     const int bin = binning.getBin(std::make_tuple(collision.posZ(), collision.cent()));
     if (bin < 0) {
       return;
