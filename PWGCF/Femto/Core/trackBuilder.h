@@ -59,13 +59,13 @@ struct ConfTrackBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> tpcSharedClusterFractionMax{"tpcSharedClusterFractionMax", {1.f}, "Maximum fraction of shared clusters in TPC"};
   o2::framework::Configurable<std::vector<float>> itsClustersMin{"itsClustersMin", {5.f}, "Minimum number of clusters in ITS"};
   o2::framework::Configurable<std::vector<float>> itsIbClustersMin{"itsIbClustersMin", {3.f}, "Minimum number of clusters in inner barrel (max 3) of ITS"};
-  o2::framework::Configurable<std::vector<std::string>> dcaxyMax{"dcaxyMax", {"0.004 + 0.013*pow(x, -1)"}, "Maximum |dca_xy| as a function of pT. Has to be a valid TForumal, where x=pt"};
-  o2::framework::Configurable<std::vector<std::string>> dcazMax{"dcazMax", {"0.004 + 0.013*pow(x, -1)"}, "Maximum |dca_z| as a function of pT. Has to be a valid TForumal, where x=pt"};
+  o2::framework::Configurable<std::vector<std::string>> dcaxyMax{"dcaxyMax", {"0.004 + 0.013*pow(x, -1)"}, "Maximum |dca_xy| as a function of pT. Has to be a valid TFormula, where x=pt"};
+  o2::framework::Configurable<std::vector<std::string>> dcazMax{"dcazMax", {"0.004 + 0.013*pow(x, -1)"}, "Maximum |dca_z| as a function of pT. Has to be a valid TFormula, where x=pt"};
   o2::framework::Configurable<std::vector<float>> itsChi2Max{"itsChi2Max", {}, "Maximum ITS chi2 per cluster"};
   o2::framework::Configurable<std::vector<float>> tpcChi2Max{"tpcChi2Max", {}, "Maximum TPC chi2 per cluster"};
 
   // Electron PID cuts
-  o2::framework::Configurable<bool> requirePidElectron{"requirePidElectron", false, "Make election PID optional"};
+  o2::framework::Configurable<bool> requirePidElectron{"requirePidElectron", false, "Make electron PID optional"};
   o2::framework::Configurable<float> minMomTofElectron{"minMomTofElectron", 0.3, "Minimum momentum to required TOF PID for Electron"};
   o2::framework::Configurable<std::vector<std::string>> itsElectron{"itsElectron", {}, "Ranges LowerLimit;UpperLimit for nsigma_ITS for Electron PID"};
   o2::framework::Configurable<std::vector<std::string>> tpcElectron{"tpcElectron", {}, "Ranges LowerLimit;UpperLimit for nsigma_TPC for Electron PID"};
@@ -74,7 +74,7 @@ struct ConfTrackBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> tpctofElectron{"tpctofElectron", {}, "Maximum nsigma_TPCTOF for Electron PID"};
 
   // Pion PID cuts
-  o2::framework::Configurable<bool> requirePidPion{"requirePidPion", false, "Make election PID optional"};
+  o2::framework::Configurable<bool> requirePidPion{"requirePidPion", false, "Make pion PID optional"};
   o2::framework::Configurable<float> minMomTofPion{"minMomTofPion", 0.5, "Minimum momentum to required TOF PID for Pion"};
   o2::framework::Configurable<std::vector<std::string>> itsPion{"itsPion", {}, "Ranges LowerLimit;UpperLimit for nsigma_ITS for Pion PID"};
   o2::framework::Configurable<std::vector<std::string>> tpcPion{"tpcPion", {}, "Ranges LowerLimit;UpperLimit for nsigma_TPC for Pion PID"};
@@ -83,7 +83,7 @@ struct ConfTrackBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> tpctofPion{"tpctofPion", {}, "Maximum nsigma_TPCTOF for Pion PID"};
 
   // Kaon PID cuts
-  o2::framework::Configurable<bool> requirePidKaon{"requirePidKaon", false, "Make election PID optional"};
+  o2::framework::Configurable<bool> requirePidKaon{"requirePidKaon", false, "Make kaon PID optional"};
   o2::framework::Configurable<float> minMomTofKaon{"minMomTofKaon", 0.4, "Minimum momentum to required TOF PID for Kaon"};
   o2::framework::Configurable<std::vector<std::string>> itsKaon{"itsKaon", {}, "Ranges LowerLimit;UpperLimit for nsigma_ITS for Kaon PID"};
   o2::framework::Configurable<std::vector<std::string>> tpcKaon{"tpcKaon", {}, "Ranges LowerLimit;UpperLimit for nsigma_TPC for Kaon PID"};
@@ -92,7 +92,7 @@ struct ConfTrackBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> tpctofKaon{"tpctofKaon", {}, "Maximum nsigma_TPCTOF for Kaon PID"};
 
   // Proton PID cuts
-  o2::framework::Configurable<bool> requirePidProton{"requirePidProton", true, "Make election PID optional"};
+  o2::framework::Configurable<bool> requirePidProton{"requirePidProton", true, "Make proton PID optional"};
   o2::framework::Configurable<float> minMomTofProton{"minMomTofProton", 0.75, "Minimum momentum to required TOF PID for Proton"};
   o2::framework::Configurable<std::vector<std::string>> itsProton{"itsProton", {}, "Ranges LowerLimit;UpperLimit for nsigma_ITS for Proton PID"};
   o2::framework::Configurable<std::vector<std::string>> tpcProton{"tpcProton", {}, "Ranges LowerLimit;UpperLimit for nsigma_TPC for Proton PID"};
@@ -101,7 +101,7 @@ struct ConfTrackBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> tpctofProton{"tpctofProton", {}, "Maximum nsigma_TPCTOF for Proton PID"};
 
   // Deuteron PID cuts
-  o2::framework::Configurable<bool> requirePidDeuteron{"requirePidDeuteron", false, "Make election PID optional"};
+  o2::framework::Configurable<bool> requirePidDeuteron{"requirePidDeuteron", false, "Make deuteron PID optional"};
   o2::framework::Configurable<float> minMomTofDeuteron{"minMomTofDeuteron", 1.2, "Minimum momentum to required TOF PID for Deuteron"};
   o2::framework::Configurable<std::vector<std::string>> itsDeuteron{"itsDeuteron", {}, "Ranges LowerLimit;UpperLimit for nsigma_ITS for Deuteron PID"};
   o2::framework::Configurable<std::vector<std::string>> tpcDeuteron{"tpcDeuteron", {}, "Ranges LowerLimit;UpperLimit for nsigma_TPC for Deuteron PID"};
@@ -110,7 +110,7 @@ struct ConfTrackBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> tpctofDeuteron{"tpctofDeuteron", {}, "Maximum nsigma_TPCTOF for Deuteron PID"};
 
   // Triton PID cuts
-  o2::framework::Configurable<bool> requirePidTriton{"requirePidTriton", false, "Make election PID optional"};
+  o2::framework::Configurable<bool> requirePidTriton{"requirePidTriton", false, "Make triton PID optional"};
   o2::framework::Configurable<float> minMomTofTriton{"minMomTofTriton", 1.4, "Minimum momentum to required TOF PID for Triton"};
   o2::framework::Configurable<std::vector<std::string>> itsTriton{"itsTriton", {}, "Ranges LowerLimit;UpperLimit for nsigma_ITS for Triton PID"};
   o2::framework::Configurable<std::vector<std::string>> tpcTriton{"tpcTriton", {}, "Ranges LowerLimit;UpperLimit for nsigma_TPC for Triton PID"};
@@ -119,7 +119,7 @@ struct ConfTrackBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> tpctofTriton{"tpctofTriton", {}, "Maximum nsigma_TPCTOF for Triton PID"};
 
   // Helium PID cuts
-  o2::framework::Configurable<bool> requirePidHelium{"requirePidHelium", false, "Make election PID optional"};
+  o2::framework::Configurable<bool> requirePidHelium{"requirePidHelium", false, "Make helium PID optional"};
   o2::framework::Configurable<float> minMomTofHelium{"minMomTofHelium", 1.6, "Minimum momentum to required TOF PID for Helium"};
   o2::framework::Configurable<std::vector<std::string>> itsHelium{"itsHelium", {}, "Ranges LowerLimit;UpperLimit for nsigma_ITS for Helium PID"};
   o2::framework::Configurable<std::vector<std::string>> tpcHelium{"tpcHelium", {}, "Ranges LowerLimit;UpperLimit for nsigma_TPC for Helium PID"};
@@ -200,7 +200,7 @@ enum TrackSels {
   kTPCchi2Max,          ///< Max. TPC chi2 per cluster
 
   /// track pid cuts
-  kItsElectron, ///< ITS Electon PID
+  kItsElectron, ///< ITS Electron PID
   kItsPion,     ///< ITS Pion PID
   kItsKaon,     ///< ITS Kaon PID
   kItsProton,   ///< ITS Proton PID
@@ -208,7 +208,7 @@ enum TrackSels {
   kItsTriton,   ///< ITS Triton PID
   kItsHelium,   ///< ITS He3 PID
 
-  kTpcElectron, ///< TPC Electon PID
+  kTpcElectron, ///< TPC Electron PID
   kTpcPion,     ///< TPC Pion PID
   kTpcKaon,     ///< TPC Kaon PID
   kTpcProton,   ///< TPC Proton PID
@@ -216,7 +216,7 @@ enum TrackSels {
   kTpcTriton,   ///< TPC Triton PID
   kTpcHelium,   ///< TPC He3 PID
 
-  kTofElectron, ///< TOF Electon PID
+  kTofElectron, ///< TOF Electron PID
   kTofPion,     ///< TOF Pion PID
   kTofKaon,     ///< TOF Kaon PID
   kTofProton,   ///< TOF Proton PID
@@ -224,7 +224,7 @@ enum TrackSels {
   kTofTriton,   ///< TOF Triton PID
   kTofHelium,   ///< TOF He3 PID
 
-  kTpcitsElectron, ///< TPC+ITS Electon PID
+  kTpcitsElectron, ///< TPC+ITS Electron PID
   kTpcitsPion,     ///< TPC+ITS Pion PID
   kTpcitsKaon,     ///< TPC+ITS Kaon PID
   kTpcitsProton,   ///< TPC+ITS Proton PID
@@ -232,7 +232,7 @@ enum TrackSels {
   kTpcitsTriton,   ///< TPC+ITS Triton PID
   kTpcitsHelium,   ///< TPC+ITS He3 PID
 
-  kTpctofElectron, ///< TPC+TOF Electon PID
+  kTpctofElectron, ///< TPC+TOF Electron PID
   kTpctofPion,     ///< TPC+TOF Pion PID
   kTpctofKaon,     ///< TPC+TOF Kaon PID
   kTpctofProton,   ///< TPC+TOF Proton PID
@@ -289,7 +289,7 @@ const std::unordered_map<TrackSels, std::string> trackSelectionNames = {
   {kTpcitsProton, "TPC+ITS Proton PID"},
   {kTpcitsDeuteron, "TPC+ITS Deuteron PID"},
   {kTpcitsTriton, "TPC+ITS Triton PID"},
-  {kTpcitsHelium, "TPC+ITS He PID"},
+  {kTpcitsHelium, "TPC+ITS He3 PID"},
 
   {kTpctofElectron, "TPC+TOF Electron PID"},
   {kTpctofPion, "TPC+TOF Pion PID"},
@@ -812,7 +812,7 @@ class TrackBuilder
   {
     auto result = utils::getIndex(daughter.globalIndex(), indexMap);
     if (result) {
-      // daugher already in track table
+      // daughter already in track table
       return result.value();
     }
     if (!this->template fillMcTrack<system, type>(daughter, daughter, trackProducts, mcCols, collisionBuilder, mcParticles, mcBuilder, mcProducts)) {
@@ -853,7 +853,7 @@ class TrackBuilder
   bool mProduceTritonPids = false;
   bool mProduceHeliumPids = false;
 
-  std::unordered_map<int64_t, int64_t> indexMap; // for mapping tracks to daughers of lambdas, cascades and resonances ...
+  std::unordered_map<int64_t, int64_t> indexMap; // for mapping tracks to daughters of lambdas, cascades and resonances ...
 };
 
 struct TrackBuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {

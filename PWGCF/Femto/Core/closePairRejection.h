@@ -66,10 +66,10 @@ struct ConfCpr : o2::framework::ConfigurableGroup {
   std::string prefix = std::string(Prefix);
   o2::framework::Configurable<bool> cutAverage{"cutAverage", DefaultCutAverage, "Apply CPR if the average deta-dphistar is below the configured values"};
   o2::framework::Configurable<bool> cutAnyRadius{"cutAnyRadius", false, "Apply CPR if the deta-dphistar is below the configured values at any radius"};
-  o2::framework::Configurable<bool> cutElipsoidal{"cutElipsoidal", true, "If true, apply CPR as episoidal cut. If false use rectangluar cut."};
+  o2::framework::Configurable<bool> cutElipsoidal{"cutElipsoidal", true, "If true, apply CPR as ellipsoidal cut. If false use rectangular cut."};
   o2::framework::Configurable<bool> plotAllRadii{"plotAllRadii", true, "Plot deta-dphi distribution at all radii"};
   o2::framework::Configurable<bool> plotAverage{"plotAverage", true, "Plot average deta dphi distribution"};
-  o2::framework::Configurable<bool> plotAngularCorrelation{"plotAngularCorrelation", false, "Plot angular correlation of particles (eta1 vs eta2 & phi1 vs phi2"};
+  o2::framework::Configurable<bool> plotAngularCorrelation{"plotAngularCorrelation", false, "Plot angular correlation of particles (eta1 vs eta2 & phi1 vs phi2)"};
   o2::framework::Configurable<bool> plotKinematic{"plotKinematic", true, "Plot kinematic (kstar/Q3) distribution of blocked pairs/triplets"};
   o2::framework::Configurable<float> detaMax{"detaMax", 0.01f, "Maximium deta"};
   o2::framework::Configurable<float> dphistarMax{"dphistarMax", 0.01f, "Maximum dphistar"};
@@ -172,7 +172,7 @@ constexpr std::array<histmanager::HistInfo<CprHist>, kCprHistogramLast> HistTabl
    {kRadius6, o2::framework::HistType::kTH2F, "hRadius6", "Radius 6: #Delta #eta vs #Delta #phi*; #Delta #eta; #Delta #phi*"},
    {kRadius7, o2::framework::HistType::kTH2F, "hRadius7", "Radius 7: #Delta #eta vs #Delta #phi*; #Delta #eta; #Delta #phi*"},
    {kRadius8, o2::framework::HistType::kTH2F, "hRadius8", "Radius 8: #Delta #eta vs #Delta #phi*; #Delta #eta; #Delta #phi*"},
-   {kKinematic, o2::framework::HistType::kTH1F, "hKinematic", "Kinematic distribution of blocked pairs; kinematic Variable (GeV/c#it{c}); Entries"},
+   {kKinematic, o2::framework::HistType::kTH1F, "hKinematic", "Kinematic distribution of blocked pairs; kinematic Variable (GeV/#it{c}); Entries"},
    {kPhi1VsPhi2, o2::framework::HistType::kTH2F, "hPhi1vsPhi2", "#phi_{1} vs #phi_{2}; #phi_{1}; #phi_{2}"},
    {kEta1VsEta2, o2::framework::HistType::kTH2F, "hEta1VsEta2", "#eta_{1} vs #eta_{2}; #eta_{1}; #eta_{2}"}}};
 
@@ -334,7 +334,7 @@ class CloseTrackRejection
         count++;
       }
     }
-    // for small momemeta the calculation of phistar might fail, if the particle did not reach one or more of the outer radii
+    // for small momenta the calculation of phistar might fail, if the particle did not reach one or more of the outer radii
     if (count > 0) {
       mAverageDphistar = std::accumulate(mDphistar.begin(), mDphistar.end(), 0.f) / count; // only average values if phistar could be computed
     } else {

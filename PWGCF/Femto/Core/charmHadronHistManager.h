@@ -94,7 +94,7 @@ enum CharmHadronHist {
   o2::framework::ConfigurableAxis phi{"phi", {{720, 0, 1.f * o2::constants::math::TwoPI}}, "Phi"};                                             \
   o2::framework::ConfigurableAxis mass{"mass", {{200, (defaultMassMin), (defaultMassMax)}}, "Mass"};                                           \
   o2::framework::ConfigurableAxis sign{"sign", {{3, -1.5, 1.5}}, "Sign"};                                                                      \
-  o2::framework::ConfigurableAxis charmHadrons{"charmHadrons", {{8001, -4000.5, 4000.5}}, "MC ONLY: CharmHadrons codes of reconstructed D0s"}; \
+  o2::framework::ConfigurableAxis charmHadrons{"charmHadrons", {{8001, -4000.5, 4000.5}}, "MC ONLY: PDG codes of reconstructed charm hadrons"}; \
   o2::framework::ConfigurableAxis pt2d{"pt2d", {{240, 0, 6}}, "Pt for 2D QA"};                                                                 \
   o2::framework::ConfigurableAxis eta2d{"eta2d", {{200, -1.5, 1.5}}, "Eta for 2D QA"};                                                         \
   o2::framework::ConfigurableAxis phi2d{"phi2d", {{200, 0, 1.f * o2::constants::math::TwoPI}}, "Phi for 2D QA"};

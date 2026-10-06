@@ -95,15 +95,15 @@ struct ConfSigmaPlusBits : o2::framework::ConfigurableGroup {
 // base selection for analysis task for kinks
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define KINK_DEFAULT_SELECTIONS(defaultMassMin, defaultMassMax, defaultPdgCode)                                          \
-  o2::framework::Configurable<int> pdgCodeAbs{"pdgCodeAbs", (defaultPdgCode), "PDG code. Select antipartilce via sign"}; \
+  o2::framework::Configurable<int> pdgCodeAbs{"pdgCodeAbs", (defaultPdgCode), "PDG code. Select antiparticle via sign"}; \
   o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};                                                  \
   o2::framework::Configurable<float> ptMax{"ptMax", 999.f, "Maximum pT"};                                                \
   o2::framework::Configurable<float> etaMin{"etaMin", -10.f, "Minimum eta"};                                             \
   o2::framework::Configurable<float> etaMax{"etaMax", 10.f, "Maximum eta"};                                              \
   o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};                                               \
   o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};                  \
-  o2::framework::Configurable<float> massMin{"massMin", (defaultMassMin), "Minimum invariant mass for Sigma"};           \
-  o2::framework::Configurable<float> massMax{"massMax", (defaultMassMax), "Maximum invariant mass for Sigma"};           \
+  o2::framework::Configurable<float> massMin{"massMin", (defaultMassMin), "Minimum invariant mass"};                     \
+  o2::framework::Configurable<float> massMax{"massMax", (defaultMassMax), "Maximum invariant mass"};                    \
   o2::framework::Configurable<o2::analysis::femto::datatypes::KinkMaskType> mask{"mask", 0x0, "Bitmask for kink selection"};
 
 // base selection for analysis task for sigmas
