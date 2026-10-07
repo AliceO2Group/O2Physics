@@ -410,6 +410,10 @@ struct FoxWolframCorrelation {
     for (int i = 1; i <= noOfMultipBins; i++) {
       histos.add(fmt::format("Multip/GlobalTrk_BIN{}", i).c_str(), fmt::format("GlobalTrk_BIN{}", i).c_str(), kTH1D, {axisMultip});
       histos.add(fmt::format("Multip/GlobalTrkTri_BIN{}", i).c_str(), fmt::format("GlobalTrkTri_BIN{}", i).c_str(), kTH1D, {axisMultip});
+      histos.add(fmt::format("Multip/GlobalTrkTri1_BIN{}", i).c_str(), fmt::format("GlobalTrkTri1_BIN{}", i).c_str(), kTH1D, {axisMultip});
+      histos.add(fmt::format("Multip/GlobalTrkTri2_BIN{}", i).c_str(), fmt::format("GlobalTrkTri2_BIN{}", i).c_str(), kTH1D, {axisMultip});
+      histos.add(fmt::format("Multip/GlobalTrkTri3_BIN{}", i).c_str(), fmt::format("GlobalTrkTri3_BIN{}", i).c_str(), kTH1D, {axisMultip});
+      histos.add(fmt::format("Multip/GlobalTrkTriAux_BIN{}", i).c_str(), fmt::format("GlobalTrkTriAux_BIN{}", i).c_str(), kTH1D, {axisMultip});
 
       histos.add(fmt::format("pTSpectra/pT_BIN{}", i).c_str(), fmt::format("pT_BIN{}", i).c_str(), kTH1D, {axispT});
       histos.add(fmt::format("pTSpectra/pTTri_BIN{}", i).c_str(), fmt::format("pTTri_BIN{}", i).c_str(), kTH1D, {axispT});
@@ -585,6 +589,7 @@ struct FoxWolframCorrelation {
       histos.fill(HIST("Events_Details/eventsNoTRI"), binIndex);
     }
 
+    // The remaining filters
     if (isTRI1) {
       histos.fill(HIST("Events_Details/eventsNoTRI1"), binIndex);
     }
@@ -628,8 +633,25 @@ struct FoxWolframCorrelation {
             histos.fill(HIST("Spectra/ptphiTri_") + HIST(binNames[idx]), track.phi(), track.pt());
           }
         }
+
+        // TRI Ev. Multip (the remaining filters)
+        if (isTRI1) {
+          histos.fill(HIST("Multip/GlobalTrkTri1_") + HIST(binNames[idx]), tracks.size());
+        }
+
+        if (isTRI2) {
+          histos.fill(HIST("Multip/GlobalTrkTri2_") + HIST(binNames[idx]), tracks.size());
+        }
+
+        if (isTRI3) {
+          histos.fill(HIST("Multip/GlobalTrkTri3_") + HIST(binNames[idx]), tracks.size());
+        }
+
+        if (isTRIAux) {
+          histos.fill(HIST("Multip/GlobalTrkTriAux_") + HIST(binNames[idx]), tracks.size());
+        }
       }
-    });
+    }); // per Multip Bin
   }
 
   // Fill same-event pair distributions for one multiplicity interval.
