@@ -298,7 +298,7 @@ struct JetDerivedDataProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processBunchCrossingsWithoutSels, "produces derived bunch crossing table with bunch crossing selections", false);
 
-  void processCollisions(soa::Join<aod::Collisions, aod::EvSels, aod::FV0Mults, aod::FT0Mults, aod::CentFV0As, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFT0CVariant1s>::iterator const& collision, soa::Join<aod::BCs, aod::BcSels, aod::Timestamps> const&, aod::FT0s const&, aod::FV0As const&, aod::FDDs const&)
+  void processCollisions(soa::Join<aod::Collisions, aod::EvSels, aod::FV0Mults, aod::FT0Mults, aod::CentFV0As, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFT0CVariant1s>::iterator const& collision, soa::Join<aod::BCs, aod::BcSels, aod::Timestamps> const&)
   {
     auto bc = collision.bc_as<soa::Join<aod::BCs, aod::BcSels, aod::Timestamps>>();
     if (config.includeHadronicRate) {
