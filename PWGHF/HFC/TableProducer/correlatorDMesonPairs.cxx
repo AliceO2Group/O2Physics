@@ -415,7 +415,7 @@ struct HfCorrelatorDMesonPairs {
     AxisSpec const axisPosZ = {binsZVtx, "PosZ"};
     AxisSpec const axisPoolBin = {binsPoolBin, "PoolBin"};
     AxisSpec const axisDcaXY = {binsDcaXY, "DCA xy"};
-    corrBinning = std::make_unique<BinningType>(BinningType{{binsZVtx, binsMultiplicity}, true});
+    corrBinning = std::make_unique<BinningType>(BinningType{{binsZVtx, binsMultiplicity}});
 
     if (applyMixedEvent) {
       registry.add("hMultiplicityPreSelection", "multiplicity prior to selection;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}});

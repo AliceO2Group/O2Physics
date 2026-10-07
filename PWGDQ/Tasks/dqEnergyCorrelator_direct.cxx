@@ -195,7 +195,7 @@ struct AnalysisEnergyCorrelator {
     std::vector<double> multBins = fConfigEventOptions.fConfigMultBins.value;
     multBins.insert(multBins.begin(), VARIABLE_WIDTH);
 
-    fMixingBinning = std::make_unique<MixingBinning>(std::array<std::vector<double>, 2>{zBins, multBins}, true);
+    fMixingBinning = std::make_unique<MixingBinning>(std::array<std::vector<double>, 2>{zBins, multBins});
 
     bool isBarrelME = context.mOptions.get<bool>("processBarrelMixedEvent");
     bool isMCGen_energycorrelators = context.mOptions.get<bool>("processMCGenEnergyCorrelators") || context.mOptions.get<bool>("processMCGenEnergyCorrelatorsPion");

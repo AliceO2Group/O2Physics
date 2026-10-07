@@ -127,9 +127,9 @@ struct HfTaskCharmHadronsCharmFemtoDream {
     if (mixSetting.mixingDepth < 0 || mixSetting.mixingBinPolicy < 0 || mixSetting.mixingBinPolicy > MixingBinPolicyMax || ptD0Min < 0 || ptD0Min >= ptD0Max || ptDstarMin < 0 || ptDstarMin >= ptDstarMax || etaCandMax <= 0 || massD0Min >= massD0Max || deltaMassDstarMin >= deltaMassDstarMax || massD0DaughterMin >= massD0DaughterMax || charmHadCandSel < 1 || eventSel.multMin > eventSel.multMax || eventSel.multPercentileMin > eventSel.multPercentileMax) {
       LOGP(fatal, "Invalid charm-charm selection or mixing configuration");
     }
-    colBinningMult = {{mixingBinVztx, mixingBinMult}, true};
-    colBinningMultPercentile = {{mixingBinVztx, mixingBinMultPercentile}, true};
-    colBinningMultMultPercentile = {{mixingBinVztx, mixingBinMult, mixingBinMultPercentile}, true};
+    colBinningMult = {{mixingBinVztx, mixingBinMult}};
+    colBinningMultPercentile = {{mixingBinVztx, mixingBinMultPercentile}};
+    colBinningMultMultPercentile = {{mixingBinVztx, mixingBinMult, mixingBinMultPercentile}};
     const AxisSpec kstar{400, 0., 2., "k* (GeV/c)"};
     const AxisSpec massD0{300, massD0Min.value, massD0Max.value, "M(Kpi) (GeV/c2)"};
     const AxisSpec deltaMass{310, deltaMassDstarMin.value, deltaMassDstarMax.value, "Delta M (GeV/c2)"};

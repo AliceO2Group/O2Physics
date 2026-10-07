@@ -341,6 +341,8 @@ struct k892hadronphotonBkg {
       histos.add("BDT/h2dPhotonQt", "h2dPhotonQt", kTH2D, {axisConfig.mlProb, axisConfig.axisV0APQt});
       histos.add("BDT/h2dPhotonRadius", "h2dPhotonRadius", kTH2D, {axisConfig.mlProb, axisConfig.axisV0Radius});
       histos.add("BDT/h2dOPAngle", "h2dOPAngle", kTH2D, {axisConfig.mlProb, axisConfig.axisOPAngle});
+      histos.add("BDT/h2dAPAlpha", "h2dAPAlpha", kTH2D, {axisConfig.mlProb, axisConfig.axisAPAlpha});
+      histos.add("BDT/h2dAPQt", "h2dAPQt", kTH2D, {axisConfig.mlProb, axisConfig.axisAPQt});
     }
 
     histos.add("hEventCentrality", "hEventCentrality", kTH1D, {axisConfig.axisCentrality});
@@ -894,7 +896,7 @@ struct k892hadronphotonBkg {
   //_______________________________________________
   // Fill BDT performance QA
   template <typename TV0Object>
-  void fillBDTPerformance(TV0Object const& lambda, TV0Object const& photon, float openAngle, float score, float pt, float mass)
+  void fillBDTPerformance(TV0Object const& lambda, TV0Object const& photon, float openAngle, float apAlpha, float apQt, float score, float pt, float mass)
   {
     float bkgScore = 1.0f - score;
 
@@ -924,24 +926,26 @@ struct k892hadronphotonBkg {
     histos.fill(HIST("BDT/h2dPhotonQt"), score, photon.qtarm());
     histos.fill(HIST("BDT/h2dPhotonRadius"), score, photon.v0radius());
     histos.fill(HIST("BDT/h2dOPAngle"), score, openAngle);
+    histos.fill(HIST("BDT/h2dAPAlpha"), score, apAlpha);
+    histos.fill(HIST("BDT/h2dAPQt"), score, apQt);
   }
 
   //_______________________________________________
   // BDT selection of a Lambda + photon pair
   template <typename TV0Object>
   bool selectML(TV0Object const& lambda, TV0Object const& photon,
-                float openAngle, float pt, float mass)
+                float openAngle, float apAlpha, float apQt, float pt, float mass)
   {
     // No model outside the bdt.ptBinEdges range
     if (pt < bdt.ptBinEdges.value.front() || pt >= bdt.ptBinEdges.value.back())
       return false;
 
     // Features in the order of bdt.namesInputFeatures
-    auto inputFeatures = mlResponse.getInputFeatures(lambda, photon, openAngle);
+    auto inputFeatures = mlResponse.getInputFeatures(lambda, photon, openAngle, apAlpha, apQt);
     std::vector<float> outputMl;
     const bool isSelected = mlResponse.isSelectedMl(inputFeatures, pt, outputMl); // model and cut of the pT bin
 
-    fillBDTPerformance(lambda, photon, openAngle, outputMl[1], pt, mass);
+    fillBDTPerformance(lambda, photon, openAngle, apAlpha, apQt, outputMl[1], pt, mass);
 
     return isSelected;
   }
@@ -1103,19 +1107,19 @@ struct k892hadronphotonBkg {
         if (std::abs(rapidity) > maxRap)
           continue;
 
-        // BDT selection (Lambda(1520) only)
-        if constexpr (resonance == kResoLambdaStar) {
-          if (bdt.enableML) {
-            if (!selectML(hadron, photon, openAngle, pt, mass))
-              continue;
-          }
-        }
-
         // Armenteros-Podolanski of the mixed pair
         const std::array<float, 3> gammaMom{photon.px(), photon.py(), photon.pz()};
         const std::array<float, 3> hadronMom{hadron.px(), hadron.py(), hadron.pz()};
         const float apAlpha = armenterosAlpha(gammaMom, hadronMom);
         const float apQt = armenterosQt(gammaMom, hadronMom);
+
+        // BDT selection (Lambda(1520) only)
+        if constexpr (resonance == kResoLambdaStar) {
+          if (bdt.enableML) {
+            if (!selectML(hadron, photon, openAngle, apAlpha, apQt, pt, mass))
+              continue;
+          }
+        }
 
         if constexpr (resonance == kResoKStar) {
           histos.fill(HIST("KStarBkg/h2dMixedKStarMassVsPt"), mass, pt);
@@ -1204,7 +1208,7 @@ struct k892hadronphotonBkg {
 
     // Build the mixing binning locally: a struct member initialized from a
     // ConfigurableAxis captures the default bins at task construction time
-    BkgBinningType bkgColBinning{{axisVertexMixBkg, axisCentralityMixBkg}, true};
+    BkgBinningType bkgColBinning{{axisVertexMixBkg, axisCentralityMixBkg}};
 
     for (const auto& [coll1, coll2] : selfCombinations(bkgColBinning, kstarBkgConfig.nMix, -1,
                                                        collisions, collisions)) {

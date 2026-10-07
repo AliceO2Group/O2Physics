@@ -110,7 +110,7 @@ struct HfCorrelatorDsHadronsReduced {
                           soa::Join<aod::AssocTrackReds, aod::AssocTrackSels> const& tracks)
   {
 
-    BinningTypeDerived const corrBinning{{zPoolBins, multPoolBins}, true};
+    BinningTypeDerived const corrBinning{{zPoolBins, multPoolBins}};
 
     for (const auto& collision : collisions) {
       int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multiplicity()));
@@ -157,7 +157,7 @@ struct HfCorrelatorDsHadronsReduced {
                             aod::AssocTrackReds const& tracks)
   {
 
-    BinningTypeDerived const corrBinning{{zPoolBins, multPoolBins}, true};
+    BinningTypeDerived const corrBinning{{zPoolBins, multPoolBins}};
 
     for (const auto& collision : collisions) {
       int const poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multiplicity()));

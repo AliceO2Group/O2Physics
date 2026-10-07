@@ -410,6 +410,10 @@ struct FoxWolframCorrelation {
     for (int i = 1; i <= noOfMultipBins; i++) {
       histos.add(fmt::format("Multip/GlobalTrk_BIN{}", i).c_str(), fmt::format("GlobalTrk_BIN{}", i).c_str(), kTH1D, {axisMultip});
       histos.add(fmt::format("Multip/GlobalTrkTri_BIN{}", i).c_str(), fmt::format("GlobalTrkTri_BIN{}", i).c_str(), kTH1D, {axisMultip});
+      histos.add(fmt::format("Multip/GlobalTrkTri1_BIN{}", i).c_str(), fmt::format("GlobalTrkTri1_BIN{}", i).c_str(), kTH1D, {axisMultip});
+      histos.add(fmt::format("Multip/GlobalTrkTri2_BIN{}", i).c_str(), fmt::format("GlobalTrkTri2_BIN{}", i).c_str(), kTH1D, {axisMultip});
+      histos.add(fmt::format("Multip/GlobalTrkTri3_BIN{}", i).c_str(), fmt::format("GlobalTrkTri3_BIN{}", i).c_str(), kTH1D, {axisMultip});
+      histos.add(fmt::format("Multip/GlobalTrkTriAux_BIN{}", i).c_str(), fmt::format("GlobalTrkTriAux_BIN{}", i).c_str(), kTH1D, {axisMultip});
 
       histos.add(fmt::format("pTSpectra/pT_BIN{}", i).c_str(), fmt::format("pT_BIN{}", i).c_str(), kTH1D, {axispT});
       histos.add(fmt::format("pTSpectra/pTTri_BIN{}", i).c_str(), fmt::format("pTTri_BIN{}", i).c_str(), kTH1D, {axispT});
@@ -585,6 +589,7 @@ struct FoxWolframCorrelation {
       histos.fill(HIST("Events_Details/eventsNoTRI"), binIndex);
     }
 
+    // The remaining filters
     if (isTRI1) {
       histos.fill(HIST("Events_Details/eventsNoTRI1"), binIndex);
     }
@@ -628,8 +633,25 @@ struct FoxWolframCorrelation {
             histos.fill(HIST("Spectra/ptphiTri_") + HIST(binNames[idx]), track.phi(), track.pt());
           }
         }
+
+        // TRI Ev. Multip (the remaining filters)
+        if (isTRI1) {
+          histos.fill(HIST("Multip/GlobalTrkTri1_") + HIST(binNames[idx]), tracks.size());
+        }
+
+        if (isTRI2) {
+          histos.fill(HIST("Multip/GlobalTrkTri2_") + HIST(binNames[idx]), tracks.size());
+        }
+
+        if (isTRI3) {
+          histos.fill(HIST("Multip/GlobalTrkTri3_") + HIST(binNames[idx]), tracks.size());
+        }
+
+        if (isTRIAux) {
+          histos.fill(HIST("Multip/GlobalTrkTriAux_") + HIST(binNames[idx]), tracks.size());
+        }
       }
-    });
+    }); // per Multip Bin
   }
 
   // Fill same-event pair distributions for one multiplicity interval.
@@ -1144,16 +1166,16 @@ struct FoxWolframCorrelationMixing {
 
   // Mix events in vertex and multiplicity intervals.
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::collision::Multip>;
-  BinningType binningOnPosMultip1{{axisVtx, axisMult1}, true};
-  BinningType binningOnPosMultip2{{axisVtx, axisMult2}, true};
-  BinningType binningOnPosMultip3{{axisVtx, axisMult3}, true};
-  BinningType binningOnPosMultip4{{axisVtx, axisMult4}, true};
-  BinningType binningOnPosMultip5{{axisVtx, axisMult5}, true};
-  BinningType binningOnPosMultip6{{axisVtx, axisMult6}, true};
-  BinningType binningOnPosMultip7{{axisVtx, axisMult7}, true};
-  BinningType binningOnPosMultip8{{axisVtx, axisMult8}, true};
-  BinningType binningOnPosMultip9{{axisVtx, axisMult9}, true};
-  BinningType binningOnPosMultip10{{axisVtx, axisMult10}, true};
+  BinningType binningOnPosMultip1{{axisVtx, axisMult1}};
+  BinningType binningOnPosMultip2{{axisVtx, axisMult2}};
+  BinningType binningOnPosMultip3{{axisVtx, axisMult3}};
+  BinningType binningOnPosMultip4{{axisVtx, axisMult4}};
+  BinningType binningOnPosMultip5{{axisVtx, axisMult5}};
+  BinningType binningOnPosMultip6{{axisVtx, axisMult6}};
+  BinningType binningOnPosMultip7{{axisVtx, axisMult7}};
+  BinningType binningOnPosMultip8{{axisVtx, axisMult8}};
+  BinningType binningOnPosMultip9{{axisVtx, axisMult9}};
+  BinningType binningOnPosMultip10{{axisVtx, axisMult10}};
 
   // Create independent mixing pools for the ten multiplicity intervals.
   SameKindPair<aod::TriangleCollisions, aod::TriangleTracks, BinningType> pairBIN1{binningOnPosMultip1, nMixedEvents, -1, &cache_bin1};

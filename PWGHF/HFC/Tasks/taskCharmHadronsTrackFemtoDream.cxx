@@ -312,9 +312,9 @@ struct HfTaskCharmHadronsTrackFemtoDream {
     massTwo = o2::analysis::femtoDream::getMass(charmSel.charmHadPDGCode.value);
 
     // setup columnpolicy for binning
-    colBinningMult = {{mixingBinVztx, mixingBinMult}, true};
-    colBinningMultPercentile = {{mixingBinVztx, mixingBinMultPercentile}, true};
-    colBinningMultMultPercentile = {{mixingBinVztx, mixingBinMult, mixingBinMultPercentile}, true};
+    colBinningMult = {{mixingBinVztx, mixingBinMult}};
+    colBinningMultPercentile = {{mixingBinVztx, mixingBinMultPercentile}};
+    colBinningMultMultPercentile = {{mixingBinVztx, mixingBinMult, mixingBinMultPercentile}};
     eventHisto.init(&registry);
     allTrackHisto.init(&registry, binmultTempFit, binMulPercentile, binpTTrack, binEta, binPhi, binTempFitVarTrack, binNSigmaTPC, binNSigmaTOF, binNSigmaTPCTOF, binTPCClusters, dummy, dummy, isMc, trackSel.pdgCodeTrack1, true);
     selectedTrackHisto.init(&registry, binmultTempFit, binMulPercentile, binpTTrack, binEta, binPhi, binTempFitVarTrack, binNSigmaTPC, binNSigmaTOF, binNSigmaTPCTOF, binTPCClusters, dummy, dummy, isMc, trackSel.pdgCodeTrack1, true);

@@ -76,9 +76,9 @@ struct ConfCascadeFilters : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> dauAbsEtaMax{"dauAbsEtaMax", {0.8f}, "Maximum |eta| of all daughters"};                                              \
   o2::framework::Configurable<std::vector<float>> dauAbsDcaxyMin{"dauAbsDcaxyMin", {0.05f}, "Minimum |DCAxy| of the daughters and bachelor from primary vertex (cm)"}; \
   o2::framework::Configurable<std::vector<float>> dauTpcClustersMin{"dauTpcClustersMin", {80.f}, "Minimum number of TPC clusters for daughter tracks"};                \
-  o2::framework::Configurable<std::vector<float>> posDauTpc{"posDauTpc", {5.f}, "Maximum |nsimga_Pion/Proton| TPC for positive daughter tracks"};                      \
-  o2::framework::Configurable<std::vector<float>> negDauTpc{"negDauTpc", {5.f}, "Maximum |nsimga_Pion/Proton| TPC for negative daughter tracks"};                      \
-  o2::framework::Configurable<std::vector<float>> posDauTof{"posDauTof", {}, "Maximum |nsimga_Pion/Proton| TOF for positive daughter tracks"};                         \
+  o2::framework::Configurable<std::vector<float>> posDauTpc{"posDauTpc", {5.f}, "Maximum |nsigma_Pion/Proton| TPC for positive daughter tracks"};                      \
+  o2::framework::Configurable<std::vector<float>> negDauTpc{"negDauTpc", {5.f}, "Maximum |nsigma_Pion/Proton| TPC for negative daughter tracks"};                      \
+  o2::framework::Configurable<std::vector<float>> posDauTof{"posDauTof", {}, "Maximum |nsigma_Pion/Proton| TOF for positive daughter tracks"};                         \
   o2::framework::Configurable<std::vector<float>> negDauTof{"negDauTof", {}, "Maximum |nsigma_Pion/Proton| TOF for negative daughter tracks"};                         \
   o2::framework::Configurable<bool> requireTof{"requireTof", false, "If true, TOF PID is a mandatory selection"};                                                      \
   o2::framework::Configurable<bool> keepTracksWithoutTof{"keepTracksWithoutTof", true, "If true, candidates whose daughters have no TOF signal are kept"};
@@ -86,15 +86,15 @@ struct ConfCascadeFilters : o2::framework::ConfigurableGroup {
 struct ConfXiBits : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("XiBits");
   CASCADE_DEFAULT_BITS
-  o2::framework::Configurable<std::vector<float>> bachelorTpcPion{"bachelorTpcPion", {5.f}, "Maximum |nsimga_Pion| TPC for bachelor tracks"};
-  o2::framework::Configurable<std::vector<float>> bachelorTofPion{"bachelorTofPion", {}, "Maximum |nsimga_Pion| TOF for bachelor tracks"};
+  o2::framework::Configurable<std::vector<float>> bachelorTpcPion{"bachelorTpcPion", {5.f}, "Maximum |nsigma_Pion| TPC for bachelor tracks"};
+  o2::framework::Configurable<std::vector<float>> bachelorTofPion{"bachelorTofPion", {}, "Maximum |nsigma_Pion| TOF for bachelor tracks"};
 };
 
 struct ConfOmegaBits : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("OmegaBits");
   CASCADE_DEFAULT_BITS
-  o2::framework::Configurable<std::vector<float>> bachelorTpcKaon{"bachelorTpcKaon", {5.f}, "Maximum |nsimga_Kaon| TPC for bachelor tracks"};
-  o2::framework::Configurable<std::vector<float>> bachelorTofKaon{"bachelorTofKaon", {}, "Maximum |nsimga_Kaon| TOF for bachelor tracks"};
+  o2::framework::Configurable<std::vector<float>> bachelorTpcKaon{"bachelorTpcKaon", {5.f}, "Maximum |nsigma_Kaon| TPC for bachelor tracks"};
+  o2::framework::Configurable<std::vector<float>> bachelorTofKaon{"bachelorTofKaon", {}, "Maximum |nsigma_Kaon| TOF for bachelor tracks"};
 };
 
 #undef CASCADE_DEFAULT_BITS
@@ -130,19 +130,19 @@ enum CascadeSels {
   // selections for cascades
   kCascadeCpaMin,      ///< Min. CPA (cosine pointing angle)
   kCascadePaMax,       ///< Max. PA (pointing angle in rad); disabled by default
-  kCascadeDcaDaughMax, ///< Max. DCA of the daughers at decay vertex
+  kCascadeDcaDaughMax, ///< Max. DCA of the daughters at decay vertex
   kCascadeTransRadMin, ///< max. transverse radius
 
   // selection for lambda daughter
   kLambdaCpaMin,      ///< Min. CPA of the lambda
   kLambdaDcaDauMax,   ///< Max. DCA between the lambda daughters at lambda decay vertex
-  kLambdaTransRadMin, ///< Min. tranverse radius of the lambda
+  kLambdaTransRadMin, ///< Min. transverse radius of the lambda
   kLambdaDcaToPvMin,  ///< Min. DCA of the lambda to the primary vertex
 
-  // selection for bachelor/daugthers
+  // selection for bachelor/daughters
   kDauAbsEtaMax,   ///< Max. |eta| of daughter tracks
   kDauTpcClsMin,   ///< Min. number of TPC clusters of daughters/bachelor
-  kDauAbsDcaxyMin, ///< Min. |DCAxy| of the daughers and bachelor from primary vertex
+  kDauAbsDcaxyMin, ///< Min. |DCAxy| of the daughters and bachelor from primary vertex
 
   // PID selection for cascade bachelor
   kBachelorTpcPion, ///< TPC Pion PID for bachelor
@@ -150,7 +150,7 @@ enum CascadeSels {
   kBachelorTofPion, ///< TOF Pion PID for bachelor
   kBachelorTofKaon, ///< TOF Kaon PID for bachelor
                     ///
-  // PID selection for lambda daughers
+  // PID selection for lambda daughters
   kPosDauTpc, ///< TPC PID for positive daughter
   kNegDauTpc, ///< TPC PID for negative daughter
   kPosDauTof, ///< TOF PID for positive daughter

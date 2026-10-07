@@ -241,14 +241,14 @@ struct phianalysisrun3 {
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {2000, 0, 10000}, "TPC multiplicity  for bin"};
 
   // using BinningType = BinningPolicy<aod::collision::PosZ, aod::mult::MultFT0M<aod::mult::MultFT0A, aod::mult::MultFT0C>>;
-  // BinningType binningOnPositions{{axisVertex, axisMultiplicityClass}, true};
+  // BinningType binningOnPositions{{axisVertex, axisMultiplicityClass}};
 
   // using BinningTypeTPCMultiplicity =  ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultTPC>;
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
   // using BinningTypeCentrality = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
 
   // using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultTPC>;
-  // BinningType binningOnPositions{{axisVertex, axisMultiplicity}, true};
+  // BinningType binningOnPositions{{axisVertex, axisMultiplicity}};
 
   void processSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& tracks, aod::BCs const&)
   {
@@ -306,7 +306,7 @@ struct phianalysisrun3 {
   {
     auto tracksTuple = std::make_tuple(tracks);
     //////// currently mixing the event with similar TPC multiplicity ////////
-    BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicity}, true};
+    BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicity}};
     SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
       if (applyEvsel && !c1.sel8()) {
