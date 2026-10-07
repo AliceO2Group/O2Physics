@@ -3954,6 +3954,7 @@ struct HfTaskFlow {
     loadEfficiencyCorrection(bc.timestamp());
 
     if (collision.has_foundFT0()) {
+
       loadGain(bc);
       const auto& ft0 = collision.foundFT0();
       auto multiplicity = 0;
