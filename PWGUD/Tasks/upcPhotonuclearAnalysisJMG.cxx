@@ -395,7 +395,7 @@ struct UpcPhotonuclearAnalysisJMG {
   }
 
   std::vector<double> vtxBinsEdges{VARIABLE_WIDTH, -10.0f, -7.0f, -5.0f, -2.5f, 0.0f, 2.5f, 5.0f, 7.0f, 10.0f};
-  std::vector<double> gapSideBinsEdges{VARIABLE_WIDTH, -0.5, 0.5, 1.5};
+  // std::vector<double> gapSideBinsEdges{VARIABLE_WIDTH, -0.5, 0.5, 1.5};
 
   enum EventType {
     SameEvent = 1,
@@ -924,9 +924,10 @@ struct UpcPhotonuclearAnalysisJMG {
         ++multiplicity;
       }
       // multiplicity = tracks1.size();
-      if (fillCollisionUD(mixed, multiplicity) == false) {
-        return;
-      }
+      // if (fillCollisionUD(mixed, multiplicity) == false) {
+      //   return;
+      // }
+      fillCollisionUD(mixed, multiplicity);
       histos.fill(HIST("Events/hCountCollisionsMixed"), 2);
       // histos.fill(HIST("eventcount"), bindingOnVtx.getBin({collision1.posZ()}));
       // histos.fill(HIST("eventcount"), bindingOnVtx.getBin({collision1.posZ(), collision1.gapSide()}));
@@ -1122,9 +1123,10 @@ struct UpcPhotonuclearAnalysisJMG {
       ++multiplicity;
     }
     // multiplicity = reconstructedTracks.size();
-    if (fillCollisionUD(same, multiplicity) == false) {
-      return;
-    }
+    // if (fillCollisionUD(same, multiplicity) == false) {
+    //   return;
+    // }
+    fillCollisionUD(same, multiplicity)
     // LOGF(debug, "Filling same events");
     histos.fill(HIST("eventcount"), -2);
     if (minMultiplicity <= multiplicity && multiplicity <= range1Max) {
