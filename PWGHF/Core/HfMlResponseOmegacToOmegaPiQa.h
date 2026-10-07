@@ -51,6 +51,7 @@
     inputFeatures.emplace_back(candidate.GETTER());                  \
     break;                                                           \
   }
+
 namespace o2::analysis
 {
 enum class InputFeaturesOmegacToOmegaPi : uint8_t {

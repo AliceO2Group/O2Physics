@@ -108,7 +108,7 @@ struct HfCandidateSelectorToOmegaPiQa {
   // Mass window
   Configurable<double> v0MassWindow{"v0MassWindow", 0.01, "V0 mass window"};
   Configurable<double> cascadeMassWindow{"cascadeMassWindow", 0.01, "Cascade mass window"};
-  Configurable<double> invMassCharmBaryonMin{"invMassCharmBaryonMin", 2.3, "Lower limit invariant mass spectrum charm baryon"}; // 2.4 Omegac0 only
+  Configurable<double> invMassCharmBaryonMin{"invMassCharmBaryonMin", 2.3, "Lower limit invariant mass spectrum charm baryon"};
   Configurable<double> invMassCharmBaryonMax{"invMassCharmBaryonMax", 3.1, "Upper limit invariant mass spectrum charm baryon"};
 
   // kinematic selections
@@ -131,8 +131,8 @@ struct HfCandidateSelectorToOmegaPiQa {
   Configurable<double> dcaCharmBaryonDauMax{"dcaCharmBaryonDauMax", 2.0, "Max DCA charm baryon daughters"};
 
   // PID options
-  Configurable<bool> usePidTpcOnly{"usePidTpcOnly", false, "Perform PID using only TPC"};
-  Configurable<bool> usePidTpcTofCombined{"usePidTpcTofCombined", true, "Perform PID using TPC & TOF"};
+  Configurable<bool> usePidTpcOnly{"usePidTpcOnly", true, "Perform PID using only TPC"};
+  Configurable<bool> usePidTpcTofCombined{"usePidTpcTofCombined", false, "Perform PID using TPC or TOF"};
 
   // PID - TPC selections
   Configurable<double> ptPiPidTpcMin{"ptPiPidTpcMin", -1, "Lower bound of track pT for TPC PID for pion selection"};
@@ -258,10 +258,6 @@ struct HfCandidateSelectorToOmegaPiQa {
     registry.get<TH1>(HIST("hSelStatusCluster"))->GetXaxis()->SetBinLabel(5, "TpcCluster PiFromCharm");
     registry.get<TH1>(HIST("hSelStatusCluster"))->GetXaxis()->SetBinLabel(6, "ItsCluster PiFromCharm");
 
-    // registry.add("hSelMassLam", "hSelMassLam;status;entries", {HistType::kTH1D, {axisSel}});
-    // registry.add("hSelMassCasc", "hSelMassCasc;status;entries", {HistType::kTH1D, {axisSel}});
-    // registry.add("hSelMassCharmBaryon", "hSelMassCharmBaryon;status;entries", {HistType::kTH1D, {axisSel}});
-
     registry.add("hSelStatusPID", "hSelStatusPID;# of events Passed;;", {HistType::kTH1F, {{4, -0.5, 3.5}}});
     registry.get<TH1>(HIST("hSelStatusPID"))->GetXaxis()->SetBinLabel(1, "All");
     registry.get<TH1>(HIST("hSelStatusPID"))->GetXaxis()->SetBinLabel(2, "Lambda");
@@ -378,7 +374,7 @@ struct HfCandidateSelectorToOmegaPiQa {
   // Selection on LF related informations
   // returns true if all cuts are passed
   template <int svReco, typename T>
-  bool selectOnLf(const T& candidate, const int& inputPtBin)
+  bool selectOnLf(const T& candidate)
   {
 
     registry.fill(HIST("hSelStatusLf"), 0.0);
@@ -656,7 +652,7 @@ struct HfCandidateSelectorToOmegaPiQa {
       // pT selection
       auto ptCandOmegac = RecoDecay::pt(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());
 
-      if (ptCandOmegac <= ptCandMin || ptCandOmegac >= ptCandMax) {
+      if (ptCandOmegac < ptCandMin || ptCandOmegac > ptCandMax) {
         resultSelections = false;
       }
 
@@ -666,7 +662,7 @@ struct HfCandidateSelectorToOmegaPiQa {
       }
 
       // Topological selection
-      const bool selectionResOnLF = selectOnLf<svReco>(candidate, pTBin);
+      const bool selectionResOnLF = selectOnLf<svReco>(candidate);
       const bool selectionResOnHF = selectOnHf<svReco>(candidate, pTBin);
       if (!selectionResOnLF || !selectionResOnHF) {
         resultSelections = false;
@@ -804,6 +800,12 @@ struct HfCandidateSelectorToOmegaPiQa {
         statusInvMassCharmBaryon = true;
       }
 
+      // Fill in selection result
+      if (!statusPidLambda || !statusPidCascade || !statusPidCharmBaryon ||
+          !statusInvMassLambda || !statusInvMassCascade || !statusInvMassCharmBaryon) {
+        resultSelections = false;
+      }
+
       // Check candidate pT range for ML inference
       if (applyMl && findBin(binsPtMl, ptCandOmegac) == -1) {
         resultSelections = false;
@@ -837,11 +839,6 @@ struct HfCandidateSelectorToOmegaPiQa {
         hfMlSelToOmegaPi(outputMlOmegac);
       }
 
-      // Fill in selection result
-      if (!statusPidLambda || !statusPidCascade || !statusPidCharmBaryon ||
-          !statusInvMassLambda || !statusInvMassCascade || !statusInvMassCharmBaryon) {
-        resultSelections = false;
-      }
       hfSelToOmegaPi(statusPidLambda, statusPidCascade, statusPidCharmBaryon, statusInvMassLambda, statusInvMassCascade, statusInvMassCharmBaryon, resultSelections, infoTpcStored, infoTofStored,
                      trackPiFromCharm.tpcNSigmaPi(), trackKaFromCasc.tpcNSigmaKa(), trackPiFromLam.tpcNSigmaPi(), trackPrFromLam.tpcNSigmaPr(),
                      trackPiFromCharm.tofNSigmaPi(), trackKaFromCasc.tofNSigmaKa(), trackPiFromLam.tofNSigmaPi(), trackPrFromLam.tofNSigmaPr());
