@@ -1489,7 +1489,7 @@ struct DptDptCorrelations {
   std::vector<double> multBinsEdges{VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0, 100.1f};
   SliceCache cache;
   using BinningZVtxMultRec = ColumnBinningPolicy<aod::collision::PosZ, aod::dptdptfilter::DptDptCFCollisionCentMult>;
-  BinningZVtxMultRec bindingOnVtxAndMultRec{{vtxBinsEdges, multBinsEdges}, true}; // true is for 'ignore overflows' (true by default)
+  BinningZVtxMultRec bindingOnVtxAndMultRec{{vtxBinsEdges, multBinsEdges}};
   static constexpr int KNoOfLoggingCombinations = 10;
 
   void processRecLevelMixed(soa::Filtered<aod::DptDptCFAcceptedCollisions> const& collisions, aod::BCsWithTimestamps const&, soa::Filtered<aod::ScannedTracks> const& tracks)
@@ -1569,7 +1569,7 @@ struct DptDptCorrelations {
   PROCESS_SWITCH(DptDptCorrelations, processRecLevelMixedNotStored, "Process reco level mixed events correlations for not stored derived data", false);
 
   using BinningZVtxMultGen = ColumnBinningPolicy<aod::mccollision::PosZ, aod::dptdptfilter::DptDptCFCollisionCentMult>;
-  BinningZVtxMultGen bindingOnVtxAndMultGen{{vtxBinsEdges, multBinsEdges}, true}; // true is for 'ignore overflows' (true by default)
+  BinningZVtxMultGen bindingOnVtxAndMultGen{{vtxBinsEdges, multBinsEdges}};
 
   void processGenLevelMixed(soa::Filtered<aod::DptDptCFAcceptedTrueCollisions> const& collisions, soa::Filtered<aod::ScannedTrueTracks> const& tracks)
   {

@@ -202,7 +202,7 @@ struct PiDeFemtoSystematics {
   ConfigurableAxis centralityAxis{"centralityAxis", {100, 0., 100.}, "centrality axis"};
 
   using MixingBinning = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
-  MixingBinning mixingBinning{{mixingVertexAxis, mixingCentralityAxis}, true};
+  MixingBinning mixingBinning{{mixingVertexAxis, mixingCentralityAxis}};
   SliceCache cache;
   SameKindPair<CollisionsFull, TrackCandidates, MixingBinning> mixedEventPairs{
     mixingBinning, eventCuts.numberOfMixedEvents, -1, &cache};

@@ -60,6 +60,7 @@
 
 #include <TH1.h>
 #include <TH2.h>
+#include <TObject.h>
 #include <TPDGCode.h>
 #include <TProfile.h>
 
@@ -1732,7 +1733,6 @@ struct derivedlambdakzeroanalysis {
       BITSET(bitMap, selConsiderK0Short);
       if (v0.isPhysicalPrimary()) {
         BITSET(bitMap, selPhysPrimK0Short);
-        LOG(info) << "coucou1";
       }
     }
     if (v0.pdgCode() == PDG_t::kLambda0 && isPositiveProton && isNegativePion) {
@@ -3064,7 +3064,7 @@ struct derivedlambdakzeroanalysis {
       // fill AP plot for all V0s
       histos.fill(HIST("GeneralQA/h2dArmenterosAll"), v0.alpha(), v0.qtarm());
 
-      uint64_t selMap = computeReconstructionBitmap(v0, collision, yK0Short, yLambda);
+      uint64_t selMap = computeReconstructionBitmap(v0, collision, yLambda, yK0Short);
       selMap |= selMapMCassociation;
 
       // feeddown matrix always with association
@@ -3078,7 +3078,8 @@ struct derivedlambdakzeroanalysis {
       }
 
       // consider only associated candidates if asked to do so, disregard association
-      if (!doMCAssociation) {
+      // do not perform MC association when running over real data
+      if (doprocessRealDataRun3 || doprocessRealDataRun2 || !doMCAssociation) {
         BITSET(selMap, selConsiderK0Short);
         BITSET(selMap, selConsiderLambda);
         BITSET(selMap, selConsiderAntiLambda);

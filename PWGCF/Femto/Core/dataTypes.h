@@ -35,6 +35,9 @@ using V0MaskType = uint32_t;
 using V0MaskType001 = uint16_t; // old data type, was too narrow
 using V0Type = uint16_t;
 
+// datatypes for photons
+using PhotonMaskType = uint16_t;
+
 // datatypes for kinks
 using KinkMaskType = uint32_t;
 using KinkType = uint8_t;
@@ -43,6 +46,9 @@ using KinkType = uint8_t;
 using TwoTrackResonanceMaskType = uint32_t;
 // two track resonance types
 using TwoTrackResonanceType = uint16_t;
+
+// datatype for resonances built from two photons (pi0, eta, ...)
+using TwoPhotonResonanceType = uint16_t;
 
 // datatypes for cascades
 using CascadeMaskType = uint32_t;

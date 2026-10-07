@@ -722,7 +722,7 @@ struct Phianalysisrun3pbpb {
     const int kCentFT0M = 2;
     const int kCentFV0A = 3;
     if (centestimator == kCentFT0C) {
-      BinningTypeVertexContributor1 binningOnPositions{{axisVertex, axisMultiplicity}, true};
+      BinningTypeVertexContributor1 binningOnPositions{{axisVertex, axisMultiplicity}};
       SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor1> pair{binningOnPositions, selectionConfig.cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
       for (const auto& [c1, tracks1, c2, tracks2] : pair) {
         if (rctCut.requireRCTFlagChecker && (!rctChecker(c1) || !rctChecker(c2))) {
@@ -734,7 +734,7 @@ struct Phianalysisrun3pbpb {
         fillMixedPairs(tracks1, tracks2, c1.centFT0C());
       }
     } else if (centestimator == kCentFT0A) {
-      BinningTypeVertexContributor2 binningOnPositions{{axisVertex, axisMultiplicity}, true};
+      BinningTypeVertexContributor2 binningOnPositions{{axisVertex, axisMultiplicity}};
       SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor2> pair{binningOnPositions, selectionConfig.cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
       for (const auto& [c1, tracks1, c2, tracks2] : pair) {
         if (rctCut.requireRCTFlagChecker && (!rctChecker(c1) || !rctChecker(c2))) {
@@ -746,7 +746,7 @@ struct Phianalysisrun3pbpb {
         fillMixedPairs(tracks1, tracks2, c1.centFT0A());
       }
     } else if (centestimator == kCentFT0M) {
-      BinningTypeVertexContributor3 binningOnPositions{{axisVertex, axisMultiplicity}, true};
+      BinningTypeVertexContributor3 binningOnPositions{{axisVertex, axisMultiplicity}};
       SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor3> pair{binningOnPositions, selectionConfig.cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
       for (const auto& [c1, tracks1, c2, tracks2] : pair) {
         if (rctCut.requireRCTFlagChecker && (!rctChecker(c1) || !rctChecker(c2))) {
@@ -758,7 +758,7 @@ struct Phianalysisrun3pbpb {
         fillMixedPairs(tracks1, tracks2, c1.centFT0M());
       }
     } else if (centestimator == kCentFV0A) {
-      BinningTypeVertexContributor4 binningOnPositions{{axisVertex, axisMultiplicity}, true};
+      BinningTypeVertexContributor4 binningOnPositions{{axisVertex, axisMultiplicity}};
       SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor4> pair{binningOnPositions, selectionConfig.cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
       for (const auto& [c1, tracks1, c2, tracks2] : pair) {
         if (rctCut.requireRCTFlagChecker && (!rctChecker(c1) || !rctChecker(c2))) {
@@ -1236,7 +1236,7 @@ struct Phianalysisrun3pbpb {
   {
 
     auto tracksTuple = std::make_tuple(RecTracks);
-    BinningTypeVertexContributor1 binningOnPositions{{axisVertex, axisMultiplicity}, true};
+    BinningTypeVertexContributor1 binningOnPositions{{axisVertex, axisMultiplicity}};
     SameKindPair<EventCandidatesMC, TrackCandidatesMC, BinningTypeVertexContributor1> pairs{binningOnPositions, selectionConfig.cfgNoMixedEvents, -1, recCollisions, tracksTuple, &cache};
 
     for (const auto& [c1, tracks1, c2, tracks2] : pairs) {

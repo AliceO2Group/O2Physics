@@ -98,7 +98,7 @@ class PIDSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
   PIDSelectionFilterAndAnalysis();
   PIDSelectionFilterAndAnalysis(const TString&, selmodes);
   PIDSelectionFilterAndAnalysis(const PIDSelectionConfigurable& pidsel, selmodes mode);
-  virtual ~PIDSelectionFilterAndAnalysis() override;
+  ~PIDSelectionFilterAndAnalysis() override;
 
   void SetPTOF(float ptof) { mPTOF = ptof; }
   void SetRequireTOF(bool requiretof = false) { mRequireTOF = requiretof; }
@@ -133,8 +133,8 @@ class PIDSelectionFilterAndAnalysis : public SelectionFilterAndAnalysis
 
  private:
   void ConstructCutFromString(const TString&);
-  virtual int CalculateMaskLength() override;
-  virtual void StoreArmedMask() override;
+  int CalculateMaskLength() override;
+  void StoreArmedMask() override;
 
   float mPTOF = 0.8f;           ///< the p threshold for cheking TOF information
   bool mRequireTOF = false;     ///< is TOF required

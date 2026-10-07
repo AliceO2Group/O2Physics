@@ -208,9 +208,9 @@ using ConfKinkChaDauBinning = ConfTrackBinning<PrefixKinkChaDauBinning>;
 using ConfResonancePosDauBinning = ConfTrackBinning<PrefixResonancePosDauBinning>;
 using ConfResonanceNegDauBinning = ConfTrackBinning<PrefixResonanceNegDauBinning>;
 using ConfPionPlusBinning = ConfTrackBinning<PrefixPionPlusBinning>;
-using ConfPionMinusBinning = ConfTrackBinning<PrefixPionPlusBinning>;
+using ConfPionMinusBinning = ConfTrackBinning<PrefixPionMinusBinning>;
 using ConfKaonPlusBinning = ConfTrackBinning<PrefixKaonPlusBinning>;
-using ConfKaonMinusBinning = ConfTrackBinning<PrefixKaonPlusBinning>;
+using ConfKaonMinusBinning = ConfTrackBinning<PrefixKaonMinusBinning>;
 
 template <auto& Prefix>
 struct ConfTrackQaBinning : o2::framework::ConfigurableGroup {
@@ -338,9 +338,9 @@ constexpr std::array<histmanager::HistInfo<TrackHist>, kTrackHistLast>
       {kItsClusterIb, o2::framework::HistType::kTH1F, "hItsClusterIb", "ITS cluster in inner barrel; ITS IB cluster; Entries"},
       {kTpcCrossedRows, o2::framework::HistType::kTH1F, "hTpcCrossedRows", "TPC crossed rows; TPC crossed rows; Entries"},
       {kTpcCluster, o2::framework::HistType::kTH1F, "hTpcCluster", "TPC cluster found; TPC cluster found; Entries"},
-      {kTpcClusterOverCrossedRows, o2::framework::HistType::kTH1F, "hTpcClusterOverCrossedRows", "TPC cluster found  over TPC crossed rows; TPC cluster found / Tpc crossed rows; Entries"},
-      {kTpcClusterShared, o2::framework::HistType::kTH1F, "hTpcClusterShared", "TPC cluster shared; TPC cluster shared ; Entries"},
-      {kTpcClusterFractionShared, o2::framework::HistType::kTH1F, "hTpcClusterFractionShared", "TPC cluster fraction shared; TPC cluster shared / TPC cluster found ; Entries"},
+      {kTpcClusterOverCrossedRows, o2::framework::HistType::kTH1F, "hTpcClusterOverCrossedRows", "TPC cluster found over TPC crossed rows; TPC cluster found / TPC crossed rows; Entries"},
+      {kTpcClusterShared, o2::framework::HistType::kTH1F, "hTpcClusterShared", "TPC cluster shared; TPC cluster shared; Entries"},
+      {kTpcClusterFractionShared, o2::framework::HistType::kTH1F, "hTpcClusterFractionShared", "TPC cluster fraction shared; TPC cluster shared / TPC cluster found; Entries"},
       {kItsChi2, o2::framework::HistType::kTH1F, "hItsChi2", "ITS #chi^{2} / cluster; #chi^{2}_{ITS} / N_{cls}; Entries"},
       {kTpcChi2, o2::framework::HistType::kTH1F, "hTpcChi2", "TPC #chi^{2} / cluster; #chi^{2}_{TPC} / N_{cls}; Entries"},
       {kTrackType, o2::framework::HistType::kTH1F, "hTrackType", "Type the track row was stored as; Track type; Entries"},
@@ -387,7 +387,7 @@ constexpr std::array<histmanager::HistInfo<TrackHist>, kTrackHistLast>
       {kTofDeuteron, o2::framework::HistType::kTH2F, "hTofPidDeuteron", "TOF PID Deuteron; p (GeV/#it{c}) ; n#sigma_{TOF,de}"},
       {kTofTriton, o2::framework::HistType::kTH2F, "hTofPidTriton", "TOF PID Triton; p (GeV/#it{c}) ; n#sigma_{TOF,tr}"},
       {kTofHelium, o2::framework::HistType::kTH2F, "hTofPidHelium", "TOF PID Helium; p (GeV/#it{c}) ; n#sigma_{TOF,he}"},
-      {kTpcitsElectron, o2::framework::HistType::kTH2F, "hTpcitsPidElectron", "TPC+ITS PID Electron; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,el}^{2}+n#sigma_{ITS,el}^{2}}"},
+      {kTpcitsElectron, o2::framework::HistType::kTH2F, "hTpcitsPidElectron", "TPC+ITS PID Electron; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,el}^{2}+n#sigma_{its,el}^{2}}"},
       {kTpcitsPion, o2::framework::HistType::kTH2F, "hTpcitsPidPion", "TPC+ITS PID Pion; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,pi}^{2}+n#sigma_{its,pi}^{2}}"},
       {kTpcitsKaon, o2::framework::HistType::kTH2F, "hTpcitsPidKaon", "TPC+ITS PID Kaon; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,ka}^{2}+n#sigma_{its,ka}^{2}}"},
       {kTpcitsProton, o2::framework::HistType::kTH2F, "hTpcitsPidProton", "TPC+ITS PID Proton; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,pr}^{2}+n#sigma_{its,pr}^{2}}"},
@@ -414,9 +414,9 @@ constexpr std::array<histmanager::HistInfo<TrackHist>, kTrackHistLast>
       {kFromMaterial, o2::framework::HistType::kTHnSparseF, "hFromMaterial", "Particles from material; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm);"},
       {kMissidentified, o2::framework::HistType::kTHnSparseF, "hMissidentified", "Missidentified particles (fake/wrong PDG code); p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm);"},
       {kSecondary1, o2::framework::HistType::kTHnSparseF, "hFromSecondary1", "Particles from secondary decay; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm);"},
-      {kSecondary2, o2::framework::HistType::kTHnSparseF, "hFromSecondary2", "Particles from seconary decay; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm);"},
-      {kSecondary3, o2::framework::HistType::kTHnSparseF, "hFromSecondary3", "Particles from seconary decay; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm);"},
-      {kSecondaryOther, o2::framework::HistType::kTHnSparseF, "hFromSecondaryOther", "Particles from every other seconary decay; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm);"},
+      {kSecondary2, o2::framework::HistType::kTHnSparseF, "hFromSecondary2", "Particles from secondary decay; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm);"},
+      {kSecondary3, o2::framework::HistType::kTHnSparseF, "hFromSecondary3", "Particles from secondary decay; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm);"},
+      {kSecondaryOther, o2::framework::HistType::kTHnSparseF, "hFromSecondaryOther", "Particles from every other secondary decay; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm);"},
     }};
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -1125,7 +1125,7 @@ class TrackHistManager
               }
               break;
             default:
-              LOG(warn) << "Encounted partilce with unknown origin!";
+              LOG(warn) << "Encountered particle with unknown origin!";
               break;
           }
         }

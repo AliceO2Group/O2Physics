@@ -109,7 +109,7 @@ struct Omega2012Analysis {
   using ResoMCMicroTracks = soa::Join<ResoMicroTracks, aod::ResoMCMicroTracks_001>;
 
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::Cent>;
-  BinningTypeVertexContributor colBinning{{cfgVtxBins, cfgMultBins}, true};
+  BinningTypeVertexContributor colBinning{{cfgVtxBins, cfgMultBins}};
 
   Omega2012AnalysisCore core;
 

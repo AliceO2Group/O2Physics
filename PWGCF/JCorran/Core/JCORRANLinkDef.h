@@ -9,8 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef PWGCF_JCORRAN_CORE_JCORRANLINKDEF_H_
-#define PWGCF_JCORRAN_CORE_JCORRANLINKDEF_H_
+// NOLINT(build/header_guard)
 
 #pragma link off all globals;
 #pragma link off all classes;
@@ -22,5 +21,3 @@
 #pragma link C++ class FlowJSPCAnalysis + ;
 #pragma link C++ class FlowJSPCObservables + ;
 #pragma link C++ class JEPFlowAnalysis + ;
-
-#endif // PWGCF_JCORRAN_CORE_JCORRANLINKDEF_H_

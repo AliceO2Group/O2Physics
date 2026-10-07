@@ -330,9 +330,9 @@ struct HfTaskCharmHadronsV0FemtoDream {
     bool processDstar = doprocessDataDstarV0;
 
     // setup columnpolicy for binning
-    colBinningMult = {{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMult}, true};
-    colBinningMultPercentile = {{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMultPercentile}, true};
-    colBinningMultMultPercentile = {{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMult, AxisBinning.mixingBinMultPercentile}, true};
+    colBinningMult = {{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMult}};
+    colBinningMultPercentile = {{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMultPercentile}};
+    colBinningMultMultPercentile = {{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMult, AxisBinning.mixingBinMultPercentile}};
     eventHisto.init(&registry);
     v0HistoPartOne.init(&registry, AxisBinning.binmultTempFit, AxisBinning.dummy, AxisBinning.binpTV0, AxisBinning.binEta, AxisBinning.binPhi, AxisBinning.binTempFitVarV0, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.binInvMassV0, AxisBinning.binInvMassV0, isMc, v0Sel.pdgCodeV0, true);
     v0HistoPartOneSelected.init(&registry, AxisBinning.binmultTempFit, AxisBinning.dummy, AxisBinning.binpTV0, AxisBinning.binEta, AxisBinning.binPhi, AxisBinning.binTempFitVarV0, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.binInvMassV0, AxisBinning.binInvMassV0, isMc, v0Sel.pdgCodeV0, true);

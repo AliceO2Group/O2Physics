@@ -18,6 +18,9 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/ZDCLightIons.h"
 
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/LHCConstants.h>
+#include <DataFormatsParameters/GRPLHCIFData.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -31,7 +34,10 @@
 #include <TH1.h>
 #include <TH2.h>
 
+#include <bitset>
 #include <cstdint>
+#include <map>
+#include <string>
 
 using namespace o2;
 using namespace o2::aod;
@@ -45,6 +51,14 @@ using ColEvSels = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::C
 struct ZdcTaskLightIons {
 
   Produces<aod::ZDCLightIons> zdcTableLI;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  static const int nBCsPerOrbit = o2::constants::lhc::LHCMaxBunches;
+  std::bitset<nBCsPerOrbit> beamPatternA;
+  std::bitset<nBCsPerOrbit> beamPatternC;
+  std::bitset<nBCsPerOrbit> bcPatternB;
+  std::bitset<nBCsPerOrbit> bcPatternA;
+  std::bitset<nBCsPerOrbit> bcPatternC;
+  std::bitset<nBCsPerOrbit> bcPatternE;
 
   // Configurable parameters
   Configurable<int> nBinsTiming{"nBinsTiming", 200, "n bins for debunching histo"};
@@ -76,6 +90,14 @@ struct ZdcTaskLightIons {
     evSel_kIsGoodITSLayersAll,
     evSel_allEvents,
     nEventSelections
+  };
+
+  enum bcMaskBits {
+    bcMask_beamB,
+    bcMask_beamA,
+    bcMask_beamC,
+    bcMask_beamE,
+    nBits
   };
 
   void init(InitContext const&)
@@ -158,8 +180,45 @@ struct ZdcTaskLightIons {
 
   void processZDCBC(BCsRun3 const& bcs, aod::Zdcs const& /*zdcs*/)
   {
+    auto& ccdbMgr = o2::ccdb::BasicCCDBManager::instance();
+    uint64_t timeStamp = bcs.iteratorAt(0).timestamp();
+    std::map<std::string, std::string> metadata;
+    // use getSpecific to set metadata to avoid crashes related to specific run number
+    auto grplhcif = ccdbMgr.getSpecific<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", timeStamp, metadata);
+    // auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", timeStamp);
+    if (grplhcif == nullptr) {
+      LOG(fatal) << "GRPLHCIFData not in database, timestamp:" << timeStamp;
+    }
+
+    beamPatternA = grplhcif->getBunchFilling().getBeamPattern(0);
+    beamPatternC = grplhcif->getBunchFilling().getBeamPattern(1);
+    bcPatternB = grplhcif->getBunchFilling().getBCPattern();
+    bcPatternA = beamPatternA & ~beamPatternC;
+    bcPatternC = ~beamPatternA & beamPatternC;
+    bcPatternE = ~beamPatternA & ~beamPatternC;
+
     for (const auto& bc : bcs) {
+
       if (bc.has_zdc()) {
+
+        // int64_t timestamp = bc.timestamp();
+        auto timestampFromSOR = (bc.timestamp() - grplhcif->getFillNumberTime()) / 1e3; // Convert to seconds
+
+        int bcInOrbit = bc.globalBC() % nBCsPerOrbit;
+
+        uint8_t maskSel = 0;
+        if (bcPatternB[bcInOrbit]) {
+          maskSel |= (uint8_t)(0x1u << bcMask_beamB);
+        }
+        if (bcPatternA[bcInOrbit]) {
+          maskSel |= (uint8_t)(0x1u << bcMask_beamA);
+        }
+        if (bcPatternC[bcInOrbit]) {
+          maskSel |= (uint8_t)(0x1u << bcMask_beamC);
+        }
+        if (bcPatternE[bcInOrbit]) {
+          maskSel |= (uint8_t)(0x1u << bcMask_beamE);
+        }
 
         auto tdcZNA = bc.zdc().timeZNA();
         auto tdcZNC = bc.zdc().timeZNC();
@@ -225,8 +284,9 @@ struct ZdcTaskLightIons {
                    -1, -1, -1,
                    -1.,
                    -1, -1, -1,
-                   bc.timestamp(),
-                   -1);
+                   timestampFromSOR,
+                   0,
+                   maskSel);
       }
     }
   }
@@ -333,7 +393,8 @@ struct ZdcTaskLightIons {
                    zv,
                    centralityFT0C, centralityFT0A, centralityFT0M,
                    foundBC.timestamp(),
-                   evSelection);
+                   evSelection,
+                   0);
       }
     }
   }

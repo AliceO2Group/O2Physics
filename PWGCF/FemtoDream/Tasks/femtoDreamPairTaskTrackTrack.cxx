@@ -283,11 +283,11 @@ struct femtoDreamPairTaskTrackTrack {
   {
 
     // setup columnpolicy for binning
-    colBinningMult = {{Mixing.VztxMixBins, Mixing.MultMixBins}, true};
-    colBinningMultPercentile = {{Mixing.VztxMixBins, Mixing.MultPercentileMixBins}, true};
-    colBinningMultMultPercentile = {{Mixing.VztxMixBins, Mixing.MultMixBins, Mixing.MultPercentileMixBins}, true};
-    colBinningMultPercentileqn = {{Mixing.VztxMixBins, Mixing.MultPercentileMixBins, Mixing.QnMixBins}, true};
-    colBinningMultPercentileEP = {{Mixing.VztxMixBins, Mixing.MultPercentileMixBins, Mixing.EPMixBins}, true};
+    colBinningMult = {{Mixing.VztxMixBins, Mixing.MultMixBins}};
+    colBinningMultPercentile = {{Mixing.VztxMixBins, Mixing.MultPercentileMixBins}};
+    colBinningMultMultPercentile = {{Mixing.VztxMixBins, Mixing.MultMixBins, Mixing.MultPercentileMixBins}};
+    colBinningMultPercentileqn = {{Mixing.VztxMixBins, Mixing.MultPercentileMixBins, Mixing.QnMixBins}};
+    colBinningMultPercentileEP = {{Mixing.VztxMixBins, Mixing.MultPercentileMixBins, Mixing.EPMixBins}};
 
     if (Option.RandomizePair.value) {
       random = new TRandom3(0);
