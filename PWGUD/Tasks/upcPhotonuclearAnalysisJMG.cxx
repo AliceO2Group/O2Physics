@@ -706,7 +706,7 @@ struct UpcPhotonuclearAnalysisJMG {
           nTracksCharged++;
           sumPt += track.pt();
           float phiVal = RecoDecay::constrainAngle(phi(track.px(), track.py()), 0.f);
-          float pTotal = momentum(track.px(), track.py(), track.pz()) * track.sign();
+          float pTotal = momentum(track.px(), track.py(), track.pz());
           float etaVal = eta(track.px(), track.py(), track.pz());
           histos.fill(HIST("Tracks/SGsideA/hTrackPt"), track.pt());
           histos.fill(HIST("Tracks/SGsideA/hTrackPhi"), phiVal);
@@ -782,7 +782,7 @@ struct UpcPhotonuclearAnalysisJMG {
           nTracksCharged++;
           sumPt += track.pt();
           float phiVal = RecoDecay::constrainAngle(phi(track.px(), track.py()), 0.f);
-          float pTotal = momentum(track.px(), track.py(), track.pz()) * track.sign();
+          float pTotal = momentum(track.px(), track.py(), track.pz());
           float etaVal = eta(track.px(), track.py(), track.pz());
           histos.fill(HIST("Tracks/SGsideC/hTrackPt"), track.pt());
           histos.fill(HIST("Tracks/SGsideC/hTrackPhi"), phiVal);
@@ -871,18 +871,18 @@ struct UpcPhotonuclearAnalysisJMG {
          vTrackChargeSideC,
          vTrackEtaSideC,
          vTrackPhiSideC,
-         vTrackTPCSignalSideA,
-         vTrackTOFSignalSideA,
-         vTrackTPCNSigmaPiSideA,
-         vTrackTOFNSigmaPiSideA,
-         vTrackTPCNSigmaKaSideA,
-         vTrackTOFNSigmaKaSideA,
-         vTrackTPCNSigmaProSideA,
-         vTrackTOFNSigmaProSideA,
-         vTrackTOFBetaSideA,
-         vTrackTOFBetaErrorSideA,
-         nTracksChargedSideA,
-         multiplicitySideA,
+         vTrackTPCSignalSideC,
+         vTrackTOFSignalSideC,
+         vTrackTPCNSigmaPiSideC,
+         vTrackTOFNSigmaPiSideC,
+         vTrackTPCNSigmaKaSideC,
+         vTrackTOFNSigmaKaSideC,
+         vTrackTPCNSigmaProSideC,
+         vTrackTOFNSigmaProSideC,
+         vTrackTOFBetaSideC,
+         vTrackTOFBetaErrorSideC,
+         nTracksChargedSideC,
+         multiplicitySideC,
          nTracksChargedSideC,
          multiplicitySideC);
     // nTracksChargedSideA = nTracksChargedSideC = multiplicitySideA = multiplicitySideC = 0;
