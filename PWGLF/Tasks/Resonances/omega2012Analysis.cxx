@@ -55,7 +55,6 @@
 #include <TPDGCode.h>
 
 #include <cmath>
-#include <cstdint>
 #include <tuple>
 
 using namespace o2;
@@ -481,8 +480,9 @@ struct Omega2012Analysis {
       // Look for Omega(2012)
       int pdg = mcParticle.pdgCode();
 
-      if (std::abs(pdg) != kOmega2012Minus)
+      if (std::abs(pdg) != kOmega2012Minus) {
         continue;
+      }
 
       // Fill generated level histograms
       auto pt = mcParticle.pt();
@@ -495,8 +495,9 @@ struct Omega2012Analysis {
 
       // Get daughters
       auto daughters = mcParticle.daughters_as<aod::McParticles>();
-      if (daughters.size() != NumExpectedDaughters)
+      if (daughters.size() != NumExpectedDaughters) {
         continue;
+      }
 
       int daughter1PDG = 0, daughter2PDG = 0;
       ROOT::Math::PxPyPzEVector p1, p2, pMother;
@@ -593,7 +594,7 @@ struct Omega2012Analysis {
     };
 
     const bool fillWrongSign = core.fillWrongSign();
-    auto onCandidate = [&](auto const& xi, auto const& pion, auto const& kaon, Xi1530KCandidateValues const& c) {
+    auto onCandidate = [&]([[maybe_unused]] auto const& xi, [[maybe_unused]] auto const& pion, [[maybe_unused]] auto const& kaon, Xi1530KCandidateValues const& c) {
       if (c.chargePattern != o2::analysis::omega2012ml::kSignalPattern) {
         // Charge-pattern controls: same event only, never in the signal histograms
         if constexpr (!IsMix) {

@@ -24,7 +24,6 @@
 
 #include "PWGLF/Core/Omega2012MlFeatures.h"
 #include "PWGLF/Core/ResoAnalysisSelectionCore.h"
-#include "PWGLF/DataModel/LFResonanceTables.h"
 
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/Configurable.h>
@@ -35,6 +34,7 @@
 
 #include <Math/GenVector/VectorUtil.h>
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 #include <TH1.h>
 #include <TH2.h>
 #include <TPDGCode.h>
@@ -74,27 +74,27 @@ inline constexpr int NGeneratedChannels = 3;
 
 // Last stage passed by a cascade (Xi selection, common to both modes).
 enum XiStage : int {
-  kXiInput = 0,    // failed |eta| or pT
-  kXiKinematics,   // passed |eta| and pT
-  kXiDCA,          // passed the cascade DCA to PV
-  kXiV0Topology,   // passed the Lambda topology and mass window
-  kXiCascTopology, // passed the cascade topology
-  kXiMass,         // passed the Xi mass window
+  kXiInput = 0,        // failed |eta| or pT
+  kXiKinematics = 1,   // passed |eta| and pT
+  kXiDCA = 2,          // passed the cascade DCA to PV
+  kXiV0Topology = 3,   // passed the Lambda topology and mass window
+  kXiCascTopology = 4, // passed the cascade topology
+  kXiMass = 5,         // passed the Xi mass window
   kXiSelected = kXiMass,
-  kXiNStages
+  kXiNStages = 6
 };
 
 // Last stage passed by a V0 (K0S selection of mode A).
 enum K0sStage : int {
-  kK0sInput = 0,  // failed |eta| or pT
-  kK0sKinematics, // passed |eta| and pT
-  kK0sTopology,   // passed cosPA, daughter DCAs, radius and DCA to PV
-  kK0sLifetime,   // passed the proper lifetime and the minimum qT
-  kK0sMass,       // passed the K0S mass window and the (anti)Lambda rejection
-  kK0sDaughters,  // passed the daughter pion TPC nSigma and crossed rows
-  kK0sArmenteros, // passed the Armenteros qT > coefficient * |alpha| cut
+  kK0sInput = 0,      // failed |eta| or pT
+  kK0sKinematics = 1, // passed |eta| and pT
+  kK0sTopology = 2,   // passed cosPA, daughter DCAs, radius and DCA to PV
+  kK0sLifetime = 3,   // passed the proper lifetime and the minimum qT
+  kK0sMass = 4,       // passed the K0S mass window and the (anti)Lambda rejection
+  kK0sDaughters = 5,  // passed the daughter pion TPC nSigma and crossed rows
+  kK0sArmenteros = 6, // passed the Armenteros qT > coefficient * |alpha| cut
   kK0sSelected = kK0sArmenteros,
-  kK0sNStages
+  kK0sNStages = 7
 };
 
 // The value is the species index of the PID configuration in ResoAnalysisSelectionCore.

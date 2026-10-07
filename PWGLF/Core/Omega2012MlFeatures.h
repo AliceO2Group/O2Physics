@@ -28,6 +28,7 @@
 #include <Math/GenVector/Boost.h>
 #include <Math/GenVector/VectorUtil.h>
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 
 #include <algorithm>
 #include <array>
@@ -368,31 +369,31 @@ struct EncodedValue {
 inline EncodedValue encodeNSigma10(int8_t code)
 {
   if (code == SaturatedLow || code == SaturatedHigh) {
-    return {0.f, 0.f, 0.f};
+    return {.value = 0.f, .valid = 0.f, .overflow = 0.f};
   }
-  return {static_cast<float>(code) / NSigmaScale, 1.f, 0.f};
+  return {.value = static_cast<float>(code) / NSigmaScale, .valid = 1.f, .overflow = 0.f};
 }
 
 // micro001 nSigma, as the K1 contract
 inline EncodedValue encodePID(float decoded)
 {
   if (std::isnan(decoded)) {
-    return {0.f, 0.f, 0.f};
+    return {.value = 0.f, .valid = 0.f, .overflow = 0.f};
   }
   if (std::isinf(decoded)) {
-    return {std::signbit(decoded) ? -MicroPidOverflow : MicroPidOverflow, 1.f, 1.f};
+    return {.value = std::signbit(decoded) ? -MicroPidOverflow : MicroPidOverflow, .valid = 1.f, .overflow = 1.f};
   }
-  return {decoded, 1.f, 0.f};
+  return {.value = decoded, .valid = 1.f, .overflow = 0.f};
 }
 
 // micro001 DCA, as the K1 contract
 inline EncodedValue encodeDCA(float decoded)
 {
   if (!std::isfinite(decoded)) {
-    return {0.f, 0.f, 0.f};
+    return {.value = 0.f, .valid = 0.f, .overflow = 0.f};
   }
   const bool overflow = decoded == o2::aod::resomicrodaughter001::DCAEncoding::MaxDCA;
-  return {decoded, 1.f, overflow ? 1.f : 0.f};
+  return {.value = decoded, .valid = 1.f, .overflow = overflow ? 1.f : 0.f};
 }
 
 template <std::size_t N>
@@ -501,7 +502,7 @@ void appendTrack(Writer<N>& w, TrackSnapshot const& track)
     w.addFull(encodePID(decoded));
   }
   for (const float& decoded : track.tofNSigma) {
-    w.addFull(track.hasTOF ? encodePID(decoded) : EncodedValue{0.f, 0.f, 0.f});
+    w.addFull(track.hasTOF ? encodePID(decoded) : EncodedValue{.value = 0.f, .valid = 0.f, .overflow = 0.f});
   }
   w.addFull(encodeDCA(track.dcaXY));
   w.addFull(encodeDCA(track.dcaZ));

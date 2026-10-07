@@ -167,7 +167,7 @@ struct Omega2012TrainingTable {
   {
     uint64_t hash = FnvOffsetBasis;
     for (const auto& value : features) {
-      const uint32_t bits = std::bit_cast<uint32_t>(value);
+      const auto bits = std::bit_cast<uint32_t>(value);
       for (unsigned int shift = 0; shift < BitsPerFloat; shift += BitsPerByte) {
         hash = (hash ^ ((bits >> shift) & ByteMask)) * FnvPrime;
       }
@@ -184,7 +184,7 @@ struct Omega2012TrainingTable {
     // ResoCollisions_001 carries no run number or BC; the reduced collision row identifies the event within its DF.
     mlEvents(static_cast<uint8_t>(mode), static_cast<int64_t>(collision.globalIndex()),
              collision.posZ(), collision.bMagField(), collision.cent(), collision.multiplicity(), collision.isRecINELgt0());
-    mlEventRow = static_cast<int64_t>(mlEvents.lastIndex());
+    mlEventRow = mlEvents.lastIndex();
   }
 
   template <typename Cascade>
@@ -207,7 +207,7 @@ struct Omega2012TrainingTable {
                xi.daughterTOFNSigmaNegPi10(), xi.daughterTOFNSigmaNegKa10(), xi.daughterTOFNSigmaNegPr10(),
                xi.daughterTOFNSigmaBachPi10(), xi.daughterTOFNSigmaBachKa10(), xi.daughterTOFNSigmaBachPr10(),
                xi.nCrossedRowsPos(), xi.nCrossedRowsNeg(), xi.nCrossedRowsBach(), daughterIds.data());
-    const auto row = static_cast<int64_t>(mlCascades.lastIndex());
+    const auto row = mlCascades.lastIndex();
     mlCascadeRows.emplace(id, row);
     return row;
   }
@@ -229,7 +229,7 @@ struct Omega2012TrainingTable {
           v0.daughterTOFNSigmaPosPi10(), v0.daughterTOFNSigmaPosKa10(), v0.daughterTOFNSigmaPosPr10(),
           v0.daughterTOFNSigmaNegPi10(), v0.daughterTOFNSigmaNegKa10(), v0.daughterTOFNSigmaNegPr10(),
           v0.nCrossedRowsPos(), v0.nCrossedRowsNeg(), daughterIds.data());
-    const auto row = static_cast<int64_t>(mlV0s.lastIndex());
+    const auto row = mlV0s.lastIndex();
     mlV0Rows.emplace(id, row);
     return row;
   }
@@ -244,7 +244,7 @@ struct Omega2012TrainingTable {
     mlTracks(mlEventRow, static_cast<int64_t>(track.trackId()), track.px(), track.py(), track.pz(),
              track.pidNSigmaPiFlag(), track.pidNSigmaKaFlag(), track.pidNSigmaPrFlag(),
              track.trackSelectionFlags(), track.trackFlags(), track.tpcNClsCrossedRows(), track.itsClusterMap());
-    const auto row = static_cast<int64_t>(mlTracks.lastIndex());
+    const auto row = mlTracks.lastIndex();
     mlTrackRows.emplace(id, row);
     return row;
   }
@@ -273,7 +273,7 @@ struct Omega2012TrainingTable {
                       static_cast<float>(values.omega.M()), static_cast<float>(values.omega.Pt()),
                       static_cast<float>(values.omega.Rapidity()), static_cast<float>(values.omega.Eta()),
                       static_cast<float>(values.omega.Phi()), values.alpha, static_cast<int8_t>(xi.sign()), passBits);
-    const auto row = static_cast<int64_t>(mlXiK0sCandidates.lastIndex());
+    const auto row = mlXiK0sCandidates.lastIndex();
     mlXiK0sInputs(row, pack.master.data(), static_cast<uint8_t>(pack.status));
     if constexpr (IsMC) {
       const bool matched = classifyXiK0sTruth(xi, v0) == XiK0sTruth::Matched;
@@ -316,7 +316,7 @@ struct Omega2012TrainingTable {
                         static_cast<float>(values.omega.Pt()), static_cast<float>(values.omega.Rapidity()),
                         static_cast<float>(values.omega.Eta()), static_cast<float>(values.omega.Phi()),
                         values.chargePattern, passBits);
-    const auto row = static_cast<int64_t>(mlXi1530KCandidates.lastIndex());
+    const auto row = mlXi1530KCandidates.lastIndex();
     mlXi1530KInputs(row, pack.master.data(), static_cast<uint8_t>(pack.status));
     if constexpr (IsMC) {
       const bool matched = classifyXi1530KTruth(xi, pion, kaon) == Xi1530KTruth::Matched;
@@ -333,7 +333,7 @@ struct Omega2012TrainingTable {
     writeEvent(collision, DecayMode::XiK0s);
     // Selection only: the analysis histograms belong to the Omega(2012) analysis task
     core.forEachXiK0sCandidate<IsMC, false>(histos, collision, collision, cascades, v0s, true, nullptr, nullptr, nullptr,
-                                            [this](auto const& coll, auto const& xi, auto const& v0, XiK0sCandidateValues const& values, uint16_t passBits) {
+                                            [&](auto const& coll, auto const& xi, auto const& v0, XiK0sCandidateValues const& values, uint16_t passBits) {
                                               writeXiK0sCandidate<IsMC>(coll, xi, v0, values, passBits);
                                             });
   }
@@ -343,8 +343,8 @@ struct Omega2012TrainingTable {
   {
     writeEvent(collision, DecayMode::Xi1530K);
     core.forEachXi1530KCandidate<IsMC, false, true>(histos, collision, cascades, tracks, nullptr, true, nullptr, nullptr, nullptr,
-                                                    [this](auto const& coll, auto const& xi, auto const& pion, auto const& kaon,
-                                                           Xi1530KCandidateValues const& values, uint16_t passBits) {
+                                                    [&](auto const& coll, auto const& xi, auto const& pion, auto const& kaon,
+                                                        Xi1530KCandidateValues const& values, uint16_t passBits) {
                                                       writeXi1530KCandidate<IsMC>(coll, xi, pion, kaon, values, passBits);
                                                     });
   }
@@ -391,7 +391,7 @@ struct Omega2012TrainingTable {
       return;
     }
     core.forEachGeneratedOmega2012(histos, resoParents, [&](auto const& part, GeneratedChannel channel) {
-      mlGenAudit(static_cast<int64_t>(collision.globalIndex()), static_cast<int64_t>(part.originalMcParticleId()),
+      mlGenAudit(collision.globalIndex(), static_cast<int64_t>(part.originalMcParticleId()),
                  part.pdgCode(), part.daughterPDG1(), part.daughterPDG2(), static_cast<uint8_t>(channel), part.pt(), part.y());
     });
   }
