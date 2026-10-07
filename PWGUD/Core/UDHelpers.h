@@ -425,14 +425,14 @@ bool cleanFDD(T& bc, float maxFITtime, float limitA, float limitC)
 //  lims[4]: FDDC
 
 template <typename T>
-bool cleanFIT(T& bc, float maxFITtime, std::vector<float> lims)
+bool cleanFIT(T& bc, float maxFITtime, std::vector<float> const& lims)
 {
   return cleanFV0(bc, maxFITtime, lims[0]) &&
          cleanFT0(bc, maxFITtime, lims[1], lims[2]) &&
          cleanFDD(bc, maxFITtime, lims[3], lims[4]);
 }
 template <typename T>
-bool cleanFITCollision(T& col, float maxFITtime, std::vector<float> lims)
+bool cleanFITCollision(T& col, float maxFITtime, std::vector<float> const& lims)
 {
   bool isCleanFV0 = true;
   if (col.has_foundFV0()) {
@@ -453,7 +453,7 @@ bool cleanFITCollision(T& col, float maxFITtime, std::vector<float> lims)
 
 // -----------------------------------------------------------------------------
 template <typename T>
-bool cleanFITA(T& bc, float maxFITtime, std::vector<float> lims)
+bool cleanFITA(T& bc, float maxFITtime, std::vector<float> const& lims)
 {
   return cleanFV0(bc, maxFITtime, lims[0]) &&
          cleanFT0A(bc, maxFITtime, lims[1]) &&
@@ -462,7 +462,7 @@ bool cleanFITA(T& bc, float maxFITtime, std::vector<float> lims)
 
 // -----------------------------------------------------------------------------
 template <typename T>
-bool cleanFITC(T& bc, float maxFITtime, std::vector<float> lims)
+bool cleanFITC(T& bc, float maxFITtime, std::vector<float> const& lims)
 {
   return cleanFT0C(bc, maxFITtime, lims[2]) &&
          cleanFDDC(bc, maxFITtime, lims[4]);
@@ -506,7 +506,7 @@ bool TCE(T& bc)
 
 // -----------------------------------------------------------------------------
 template <typename T>
-bool TOR(T& bc, float maxFITtime, std::vector<float> lims)
+bool TOR(T& bc, float maxFITtime, std::vector<float> const& lims)
 {
   auto torA = !cleanFT0A(bc, maxFITtime, lims[1]);
   auto torC = !cleanFT0C(bc, maxFITtime, lims[2]);
@@ -798,24 +798,15 @@ template <typename T>
 bool goodCollision(T const& coll, DGCutparHolder const& diffCuts)
 // Return true if collision is accepted according to user-chosen rules from event selection task
 {
-  bool accepted = true;
-  std::vector<int> sels = diffCuts.collisionSel();
-  if (sels[0])
-    accepted = accepted && cutNoTimeFrameBorder(coll);
-  if (sels[1])
-    accepted = accepted && cutNoSameBunchPileup(coll);
-  if (sels[2])
-    accepted = accepted && cutNoITSROFrameBorder(coll);
-  if (sels[3])
-    accepted = accepted && cutIsGoodZvtxFT0vsPV(coll);
-  if (sels[4])
-    accepted = accepted && cutIsVertexITSTPC(coll);
-  if (sels[5])
-    accepted = accepted && cutIsVertexTRDmatched(coll);
-  if (sels[6])
-    accepted = accepted && cutIsVertexTOFmatched(coll);
+  auto const sels = diffCuts.collisionSel();
 
-  return accepted;
+  return (!sels[0] || cutNoTimeFrameBorder(coll)) &&
+         (!sels[1] || cutNoSameBunchPileup(coll)) &&
+         (!sels[2] || cutNoITSROFrameBorder(coll)) &&
+         (!sels[3] || cutIsGoodZvtxFT0vsPV(coll)) &&
+         (!sels[4] || cutIsVertexITSTPC(coll)) &&
+         (!sels[5] || cutIsVertexTRDmatched(coll)) &&
+         (!sels[6] || cutIsVertexTOFmatched(coll));
 }
 
 // -----------------------------------------------------------------------------
