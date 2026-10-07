@@ -43,7 +43,7 @@ struct ZDCLIAnalysis {
   Configurable<bool> selectOnlyB{"selectOnlyB", 0, "Select BC with A && C"};
   Configurable<bool> selectColl{"selectColl", 0, "Select ALICE collision events"};
   //
-  Configurable<uint64_t> tStampOffset{"tStampOffset", 0, "offset value for timestamp"};
+  Configurable<int> tStampOffset{"tStampOffset", 0, "offset value for timestamp"};
   Configurable<int> nBinstStamp{"nBinstStamp", 1000, "no. bins in histo vs. timestamp"};
   Configurable<float> tStampMax{"tStampMax", 1000, ", maximum value for timestamp"};
   //
@@ -232,14 +232,18 @@ struct ZDCLIAnalysis {
       }
 
       if (tdcCut) { // TDC cuts applied
-        if ((tdczna < tdcZNmincut) || (tdczna > tdcZNmaxcut))
+        if ((tdczna < tdcZNmincut) || (tdczna > tdcZNmaxcut)) {
           isZNAtdc = false;
-        if ((tdcznc < tdcZNmincut) || (tdcznc > tdcZNmaxcut))
+        }
+        if ((tdcznc < tdcZNmincut) || (tdcznc > tdcZNmaxcut)) {
           isZNCtdc = false;
-        if ((tdczpa < tdcZPmincut) || (tdczpa > tdcZPmaxcut))
+        }
+        if ((tdczpa < tdcZPmincut) || (tdczpa > tdcZPmaxcut)) {
           isZPAtdc = false;
-        if ((tdczpc < tdcZPmincut) || (tdczpc > tdcZPmaxcut))
+        }
+        if ((tdczpc < tdcZPmincut) || (tdczpc > tdcZPmaxcut)) {
           isZPCtdc = false;
+        }
       }
 
       bool eventSelected = false;
@@ -250,34 +254,41 @@ struct ZDCLIAnalysis {
 
         registry.get<TH1>(HIST("hBCmask"))->Fill(0., 1.);
         auto isB = CHECK_BIT(bcMask, 0);
-        if (isB)
+        if (isB) {
           registry.get<TH1>(HIST("hBCmask"))->Fill(1., 1.);
-        if (CHECK_BIT(bcMask, 1))
+        }
+        if (CHECK_BIT(bcMask, 1)) {
           registry.get<TH1>(HIST("hBCmask"))->Fill(2., 1.);
-        if (CHECK_BIT(bcMask, 2))
+        }
+        if (CHECK_BIT(bcMask, 2)) {
           registry.get<TH1>(HIST("hBCmask"))->Fill(3., 1.);
-        if (CHECK_BIT(bcMask, 3))
+        }
+        if (CHECK_BIT(bcMask, 3)) {
           registry.get<TH1>(HIST("hBCmask"))->Fill(4., 1.);
+        }
         //
-        if (selectOnlyB && isB)
+        if (selectOnlyB && isB) {
           eventSelected = true;
-        else if (!selectOnlyB)
+        } else if (!selectOnlyB) {
           eventSelected = true;
+        }
       }
 
       // for collision events -------
       if (selectColl) {
         bool zvtxSel = false;
-        if (selectZvtx && CHECK_BIT(selectionBits, 0))
+        if (selectZvtx && CHECK_BIT(selectionBits, 0)) {
           zvtxSel = true;
-        else if (!selectZvtx)
+        } else if (!selectZvtx) {
           zvtxSel = true;
+        }
         //
         bool ottoSel = false;
-        if (sel8 && CHECK_BIT(selectionBits, 1))
+        if (sel8 && CHECK_BIT(selectionBits, 1)) {
           ottoSel = true;
-        else if (!sel8)
+        } else if (!sel8) {
           ottoSel = true;
+        }
         //
         bool isdoOccupancySel = false;
         if (doOccupancySel && CHECK_BIT(selectionBits, 2))
