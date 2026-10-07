@@ -249,6 +249,7 @@ class CascadeSelection : public baseselection::BaseSelection<float, o2::analysis
     mLambdaMassMax = filter.massLambdaMax.value;
     mRequireTof = config.requireTof.value;
     mKeepTracksWithoutTof = config.keepTracksWithoutTof.value;
+    const std::string tofComment = "requireTof = " + std::to_string(mRequireTof) + "; keepTracksWithoutTof = " + std::to_string(mKeepTracksWithoutTof);
 
     if constexpr (modes::isEqual(cascadeType, modes::Cascade::kXi)) {
       mXiMassLowerLimit = filter.massXiMin.value;
@@ -258,6 +259,7 @@ class CascadeSelection : public baseselection::BaseSelection<float, o2::analysis
       mOmegaMassUpperLimit = filter.rejectMassOmegaMax.value;
       this->addSelection(kBachelorTpcPion, cascadeSelectionNames.at(kBachelorTpcPion), config.bachelorTpcPion.value, limits::kAbsUpperLimit, true, true, false);
       this->addSelection(kBachelorTofPion, cascadeSelectionNames.at(kBachelorTofPion), config.bachelorTofPion.value, limits::kAbsUpperLimit, mRequireTof, mRequireTof, false);
+      this->addComments(kBachelorTofPion, tofComment);
     }
     if constexpr (modes::isEqual(cascadeType, modes::Cascade::kOmega)) {
       mOmegaMassLowerLimit = filter.massOmegaMin.value;
@@ -267,12 +269,15 @@ class CascadeSelection : public baseselection::BaseSelection<float, o2::analysis
       mXiMassUpperLimit = filter.rejectMassXiMax.value;
       this->addSelection(kBachelorTpcKaon, cascadeSelectionNames.at(kBachelorTpcKaon), config.bachelorTpcKaon.value, limits::kAbsUpperLimit, true, true, false);
       this->addSelection(kBachelorTofKaon, cascadeSelectionNames.at(kBachelorTofKaon), config.bachelorTofKaon.value, limits::kAbsUpperLimit, mRequireTof, mRequireTof, false);
+      this->addComments(kBachelorTofKaon, tofComment);
     }
 
     this->addSelection(kPosDauTpc, cascadeSelectionNames.at(kPosDauTpc), config.posDauTpc.value, limits::kAbsUpperLimit, true, true, false);
     this->addSelection(kNegDauTpc, cascadeSelectionNames.at(kNegDauTpc), config.negDauTpc.value, limits::kAbsUpperLimit, true, true, false);
     this->addSelection(kPosDauTof, cascadeSelectionNames.at(kPosDauTof), config.posDauTof.value, limits::kAbsUpperLimit, mRequireTof, mRequireTof, false);
     this->addSelection(kNegDauTof, cascadeSelectionNames.at(kNegDauTof), config.negDauTof.value, limits::kAbsUpperLimit, mRequireTof, mRequireTof, false);
+    this->addComments(kPosDauTof, tofComment);
+    this->addComments(kNegDauTof, tofComment);
 
     this->addSelection(kCascadeCpaMin, cascadeSelectionNames.at(kCascadeCpaMin), filter.ptMin.value, filter.ptMax.value, config.cascadeCpaMin.value, limits::kLowerFunctionLimit, true, true, false);
     this->addSelection(kCascadePaMax, cascadeSelectionNames.at(kCascadePaMax), filter.ptMin.value, filter.ptMax.value, config.cascadePaMax.value, limits::kUpperFunctionLimit, true, true, false);

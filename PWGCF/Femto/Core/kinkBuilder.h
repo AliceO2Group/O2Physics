@@ -245,6 +245,7 @@ class KinkSelection : public baseselection::BaseSelection<float, o2::analysis::f
       mKeepTracksWithoutTof = config.keepTracksWithoutTof.value;
       this->addSelection(kChaDaughTpcProton, kinkSelectionNames.at(kChaDaughTpcProton), config.chaDauTpcProton.value, limits::kAbsUpperLimit, true, true, false);
       this->addSelection(kChaDaughTofProton, kinkSelectionNames.at(kChaDaughTofProton), config.chaDauTofProton.value, limits::kAbsUpperLimit, true, config.requireTof.value, false);
+      this->addComments(kChaDaughTofProton, "requireTof = " + std::to_string(config.requireTof.value) + "; keepTracksWithoutTof = " + std::to_string(mKeepTracksWithoutTof));
     }
 
     this->addSelection(kKinkTopoDcaMax, kinkSelectionNames.at(kKinkTopoDcaMax), config.kinkTopoDcaMax.value, limits::kUpperLimit, true, true, false);

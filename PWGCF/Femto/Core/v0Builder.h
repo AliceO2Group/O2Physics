@@ -257,6 +257,7 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
     mPhiMax = filter.phiMax.value;
     mRequireTof = config.requireTof.value;
     mKeepTracksWithoutTof = config.keepTracksWithoutTof.value;
+    const std::string tofComment = "requireTof = " + std::to_string(mRequireTof) + "; keepTracksWithoutTof = " + std::to_string(mKeepTracksWithoutTof);
 
     if constexpr (modes::isEqual(v0Type, modes::V0::kLambda) || modes::isEqual(v0Type, modes::V0::kAntiLambda)) {
       mMassLambdaLowerLimit = filter.massMinLambda.value;
@@ -270,6 +271,8 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
         this->addSelection(kNegDaughTpcPion, v0SelectionNames.at(kNegDaughTpcPion), config.negDauTpcPion.value, limits::kAbsUpperLimit, true, true, false);
         this->addSelection(kPosDaughTofProton, v0SelectionNames.at(kPosDaughTofProton), config.posDauTofProton.value, limits::kAbsUpperLimit, mRequireTof, mRequireTof, false);
         this->addSelection(kNegDaughTofPion, v0SelectionNames.at(kNegDaughTofPion), config.negDauTofPion.value, limits::kAbsUpperLimit, mRequireTof, mRequireTof, false);
+        this->addComments(kPosDaughTofProton, tofComment);
+        this->addComments(kNegDaughTofPion, tofComment);
       }
 
       if constexpr (modes::isEqual(v0Type, modes::V0::kAntiLambda)) {
@@ -277,6 +280,8 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
         this->addSelection(kNegDaughTpcProton, v0SelectionNames.at(kNegDaughTpcProton), config.negDauTpcProton.value, limits::kAbsUpperLimit, true, true, false);
         this->addSelection(kPosDaughTofPion, v0SelectionNames.at(kPosDaughTofPion), config.posDauTofPion.value, limits::kAbsUpperLimit, mRequireTof, mRequireTof, false);
         this->addSelection(kNegDaughTofProton, v0SelectionNames.at(kNegDaughTofProton), config.negDauTofProton.value, limits::kAbsUpperLimit, mRequireTof, mRequireTof, false);
+        this->addComments(kPosDaughTofPion, tofComment);
+        this->addComments(kNegDaughTofProton, tofComment);
       }
     }
     if constexpr (modes::isEqual(v0Type, modes::V0::kK0short)) {
@@ -290,6 +295,8 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
       this->addSelection(kNegDaughTpcPion, v0SelectionNames.at(kNegDaughTpcPion), config.negDauTpcPion.value, limits::kAbsUpperLimit, true, true, false);
       this->addSelection(kPosDaughTofPion, v0SelectionNames.at(kPosDaughTofPion), config.posDauTofPion.value, limits::kAbsUpperLimit, mRequireTof, mRequireTof, false);
       this->addSelection(kNegDaughTofPion, v0SelectionNames.at(kNegDaughTofPion), config.negDauTofPion.value, limits::kAbsUpperLimit, mRequireTof, mRequireTof, false);
+      this->addComments(kPosDaughTofPion, tofComment);
+      this->addComments(kNegDaughTofPion, tofComment);
     }
 
     this->addSelection(kDcaDaughMax, v0SelectionNames.at(kDcaDaughMax), config.dcaDauMax.value, limits::kAbsUpperLimit, true, true, false);
