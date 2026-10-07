@@ -116,7 +116,7 @@ enum FT0DetectorChannels {
 
 enum FT0InnerOrOuter {
   FT0Error = 0,
-  FT0InnerRing = 1, 
+  FT0InnerRing = 1,
   FT0OuterRing = 2,
   NFT0InnerOrOuterSteps
 };
@@ -397,7 +397,7 @@ struct HfTaskFlow {
   // =========================
 
   using SmallGroupMcCollisions = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
-  // using FilteredMcCollisionsWMult = soa::Filtered<soa::Join<aod::McCollisions, aod::MultMCExtras>>;  
+  // using FilteredMcCollisionsWMult = soa::Filtered<soa::Join<aod::McCollisions, aod::MultMCExtras>>;
   using FilteredMcCollisionsWMult = soa::Join<aod::McCollisions, aod::MultMCExtras>;
   using FilteredMcCollisionsWMultWCollsExtra = soa::Filtered<soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultMCExtras>>;
   // using FilteredMcParticles = soa::Filtered<aod::McParticles>;
@@ -730,7 +730,7 @@ struct HfTaskFlow {
     //  =========================
 
     if (doprocessSameTpcMftChCh || doprocessSameTpcMftChChReassociated || doprocessSameTpcMftChChReassociated3d || doprocessSameTpcMftChChNonAmbiguous) {
-      
+
       if (!configTask.removeQAForSystematics) {
         addHistograms<Data, TpcMft, ChPartChPart>();
         addMftHistograms();
@@ -763,7 +763,7 @@ struct HfTaskFlow {
     }
 
     if (doprocessSameTpcMftLcCh || doprocessSameTpcMftLcChReassociated) {
-      
+
       if (!configTask.removeQAForSystematics) {
         addHistograms<Data, TpcMft, LcChPart>();
         addMftHistograms();
@@ -854,7 +854,7 @@ struct HfTaskFlow {
     }
 
     if (doprocessSameTpcFt0aD0Ch) {
-      
+
       if (!configTask.removeQAForSystematics) {
         addHistograms<Data, TpcFt0a, D0ChPart>();
         registry.add("Data/FT0Amp", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
@@ -882,7 +882,7 @@ struct HfTaskFlow {
     //  =========================
 
     if (doprocessSameMftFt0aChCh || doprocessSameMftFt0aChChReassociated || doprocessSameMftFt0aChChReassociated3d || doprocessSameMftFt0aChChNonAmbiguous) {
-      
+
       if (!configTask.removeQAForSystematics) {
         addHistograms<Data, MftFt0a, ChPartChPart>();
         addMftHistograms();
@@ -916,7 +916,7 @@ struct HfTaskFlow {
     //  =========================
 
     if (doprocessSameTpcFt0cChCh) {
-      
+
       if (!configTask.removeQAForSystematics) {
         addHistograms<Data, TpcFt0c, ChPartChPart>();
         registry.add("Data/FT0Amp", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
@@ -945,7 +945,7 @@ struct HfTaskFlow {
     }
 
     if (doprocessSameTpcFt0cD0Ch) {
-      
+
       if (!configTask.removeQAForSystematics) {
         addHistograms<Data, TpcFt0c, D0ChPart>();
         registry.add("Data/FT0Amp", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
@@ -957,7 +957,7 @@ struct HfTaskFlow {
     }
 
     if (doprocessSameTpcFt0cLcCh) {
-      
+
       if (!configTask.removeQAForSystematics) {
         addHistograms<Data, TpcFt0c, LcChPart>();
         registry.add("Data/FT0Amp", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
@@ -973,7 +973,7 @@ struct HfTaskFlow {
     //  =========================
 
     if (doprocessSameFt0aFt0cChCh) {
-      
+
       if (!configTask.removeQAForSystematics) {
         addHistograms<Data, Ft0aFt0c, ChPartChPart>();
         registry.add("Data/FT0Amp", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
@@ -1026,7 +1026,6 @@ struct HfTaskFlow {
         } else if (configTask.chooseCorrelationCase.value == static_cast<int>(CorrelationCase::Ft0aFt0c)) {
           addHistograms<Mc, Ft0aFt0c, ChPartChPart>();
         }
-
       }
 
       if (!configTask.doEtaDependentFlow && !configTask.doVariationContainers) {
@@ -1316,7 +1315,8 @@ struct HfTaskFlow {
     }
   }
 
-  int isInnerOrOuter(int channelId, int fitType) {
+  int isInnerOrOuter(int channelId, int fitType)
+  {
     if (fitType == isFT0C) {
       if (channelId >= FT0DetectorChannels::FT0CInnerRingMin && channelId <= FT0DetectorChannels::FT0CInnerRingMax) {
         if (!configTask.removeQAForSystematics) {
@@ -1473,9 +1473,9 @@ struct HfTaskFlow {
     if (weight == 0) {
       return false;
     }
-    
+
     if (!configTask.removeQAForSystematics) {
-    registry.fill(HIST("Data/hCentralityWeighted"), centrality, weight);
+      registry.fill(HIST("Data/hCentralityWeighted"), centrality, weight);
     }
 
     weightCent = weight;
@@ -1487,7 +1487,7 @@ struct HfTaskFlow {
   // =========================
 
   template <typename TCollision, typename TTracks>
-  bool isAcceptedEventActivity(TCollision const& collision, TTracks const& tracks, int& multiplicity, float& centrality, float& centralityWeight) 
+  bool isAcceptedEventActivity(TCollision const& collision, TTracks const& tracks, int& multiplicity, float& centrality, float& centralityWeight)
   {
     if (configCollision.useMultiplicityFromTracks) {
       if (!configTask.removeQAForSystematics) {
@@ -1497,7 +1497,7 @@ struct HfTaskFlow {
     } else {
       multiplicity = getMultiplicityEstimator(collision, true);
     }
-    
+
     centrality = getCentralityEstimator(collision, true);
     if (configCollision.useCentrality) {
       getCentralityWeight(centralityWeight, centrality);
@@ -2609,13 +2609,13 @@ struct HfTaskFlow {
             target->getPairHist()->Fill(step, eta1 - eta2, 0.5, pt1, multiplicity, deltaPhi, posZ,
                                         amplitude * centralityWeight * triggerWeight * associatedWeight);
           } else if (configTask.doEtaDependentFlow) {
-              if (!configFit.discriminateInnerOrOuter) {
-                target->getPairHist()->Fill(step, sampleIndex, posZ, eta2, eta1, deltaPhi, eta1 - eta2,
-                                            amplitude * centralityWeight * triggerWeight * associatedWeight);
-              } else {
-                target->getPairHist()->Fill(step, sampleIndex, posZ, isInnerOrOuter(channelId, fitType), eta1, deltaPhi, eta1 - eta2,
-                                            amplitude * centralityWeight * triggerWeight * associatedWeight);
-              }
+            if (!configFit.discriminateInnerOrOuter) {
+              target->getPairHist()->Fill(step, sampleIndex, posZ, eta2, eta1, deltaPhi, eta1 - eta2,
+                                          amplitude * centralityWeight * triggerWeight * associatedWeight);
+            } else {
+              target->getPairHist()->Fill(step, sampleIndex, posZ, isInnerOrOuter(channelId, fitType), eta1, deltaPhi, eta1 - eta2,
+                                          amplitude * centralityWeight * triggerWeight * associatedWeight);
+            }
           } else {
             target->getPairHist()->Fill(step, sampleIndex, posZ, pt1, multiplicity, deltaPhi, eta1 - eta2,
                                         amplitude * centralityWeight * triggerWeight * associatedWeight);
@@ -2680,7 +2680,7 @@ struct HfTaskFlow {
         } else if (configTask.doEtaDependentFlow) {
           // target->getPairHist()->Fill(step, sampleIndex, posZ, etaC, etaA, deltaPhi, etaA - etaC,
           //                             amplitudeA * amplitudeC * centralityWeight * triggerWeight * associatedWeight);
-                                      
+
           if (!configFit.discriminateInnerOrOuter) {
             target->getPairHist()->Fill(step, sampleIndex, posZ, etaC, etaA, deltaPhi, etaA - etaC,
                                         amplitudeA * amplitudeC * centralityWeight * triggerWeight * associatedWeight);
@@ -2714,7 +2714,7 @@ struct HfTaskFlow {
 
       if (configTask.useCutNeutralParticles) {
         auto pdgTriggerParticle = pdg->GetParticle(track1.pdgCode());
-        if (!pdgTriggerParticle || std::abs(pdgTriggerParticle->Charge()) < o2::constants::math::Almost0)  {
+        if (!pdgTriggerParticle || std::abs(pdgTriggerParticle->Charge()) < o2::constants::math::Almost0) {
           continue;
         }
       }
@@ -2758,7 +2758,7 @@ struct HfTaskFlow {
           fillTriggerQa<Mc, Ft0aFt0c, ChPartChPart>(multiplicity, track1.eta(), track1.phi(), track1.pt());
         }
       }
-      
+
       loopCounter++;
 
       for (auto const& track2 : tracksAssoc) {
@@ -3242,7 +3242,7 @@ struct HfTaskFlow {
     }
 
     if (!configTask.removeQAForSystematics) {
-    registry.fill(HIST("Data/hNTracks"), tracks.size());
+      registry.fill(HIST("Data/hNTracks"), tracks.size());
     }
 
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
@@ -3254,7 +3254,6 @@ struct HfTaskFlow {
     if (!isAcceptedEventActivity(collision, tracks, multiplicity, centrality, centralityWeight)) {
       return;
     }
-
 
     sameEventHf->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
     fillCorrelations(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, tracks, multiplicity, collision.posZ(), true, getMagneticField(bc.timestamp()), centralityWeight);
@@ -3352,7 +3351,7 @@ struct HfTaskFlow {
       registry.fill(HIST("Data/Mft/hNMftTracks"), mftTracks.size());
       registry.fill(HIST("Data/Mft/hNBestCollisionFwd"), reassociatedMftTracks.size());
     }
-    
+
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     loadEfficiencyCorrection(bc.timestamp());
     auto multiplicity = 0;
@@ -3382,7 +3381,7 @@ struct HfTaskFlow {
     if (!(isAcceptedCollision(collision, true))) {
       return;
     }
-    
+
     if (!configTask.removeQAForSystematics) {
       registry.fill(HIST("Data/hNTracks"), tracks.size());
       registry.fill(HIST("Data/Mft/hNMftTracks"), mftTracks.size());
@@ -3395,7 +3394,7 @@ struct HfTaskFlow {
     float centrality = 0.f;
     float centralityWeight = 1.f;
     auto uncorrectedMultiplicity = multiplicity;
-    
+
     if (!configTask.removeQAForSystematics) {
       registry.fill(HIST("Data/hMultiplicity_uncorrected_vs_corrected"), uncorrectedMultiplicity, multiplicity);
     }
@@ -3918,6 +3917,7 @@ struct HfTaskFlow {
     loadEfficiencyCorrection(bc.timestamp());
 
     if (collision.has_foundFT0()) {
+
       loadGain(bc);
       const auto& ft0 = collision.foundFT0();
       auto multiplicity = 0;
@@ -4156,7 +4156,7 @@ struct HfTaskFlow {
                         FilteredMcParticles const& mcParticles,
                         SmallGroupMcCollisions const& collisions)
   {
-    
+
     if (mcParticles.size() == 0) { // guard against empty filtered batch
       return;
     }
@@ -4576,7 +4576,6 @@ struct HfTaskFlow {
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
       auto& [collision1, tracks1, collision2, tracks2] = *it;
 
-      
       if (tracks1.size() == 0 || tracks2.size() == 0) { // guard against empty filtered batch
         return;
       }
