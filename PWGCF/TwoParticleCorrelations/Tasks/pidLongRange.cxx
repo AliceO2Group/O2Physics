@@ -148,10 +148,10 @@ struct PidLongRange {
     O2_DEFINE_CONFIGURABLE(cfgMultMultV0ALowCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x - 3.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
     O2_DEFINE_CONFIGURABLE(cfgMultMultV0ACutEnabled, bool, false, "Enable global multiplicity vs V0A multiplicity cut")
     Configurable<std::vector<double>> cfgMultMultV0ACutPars{"cfgMultMultV0ACutPars", std::vector<double>{534.893, 184.344, 0.423539, -0.00331436, 5.34622e-06, 871.239, 53.3735, -0.203528, 0.000122758, 5.41027e-07}, "Global multiplicity vs V0A multiplicity cut parameter values"};
-    std::vector<double> multT0CCutPars{};
-    std::vector<double> multPVT0CCutPars{};
-    std::vector<double> multGlobalPVCutPars{};
-    std::vector<double> multMultV0ACutPars{};
+    std::vector<double> multT0CCutPars;
+    std::vector<double> multPVT0CCutPars;
+    std::vector<double> multGlobalPVCutPars;
+    std::vector<double> multMultV0ACutPars;
     std::unique_ptr<TF1> fMultPVT0CCutLow = nullptr;
     std::unique_ptr<TF1> fMultPVT0CCutHigh = nullptr;
     std::unique_ptr<TF1> fMultT0CCutLow = nullptr;
@@ -226,7 +226,7 @@ struct PidLongRange {
   o2::ft0::Geometry ft0Det;
   static constexpr uint64_t Ft0IndexA = 96;
   std::vector<o2::detectors::AlignParam>* offsetFT0 = nullptr;
-  std::vector<float> cstFT0RelGain{};
+  std::vector<float> cstFT0RelGain;
 
   // Corrections
   TH3D* mEfficiency = nullptr;
@@ -328,7 +328,7 @@ struct PidLongRange {
 
   enum TrackCutGroup {
     UseGenTrkCuts = 0,
-    UseNchSelCuts = 1,
+    UseNchSelCuts,
     NumTrackCutTypes
   };
 
@@ -432,26 +432,26 @@ struct PidLongRange {
       cfgFuncParas.fT0AV0ASigma->SetParameters(463.4144, 6.796509e-02, -9.097136e-07, 7.971088e-12, -2.600581e-17);
     }
 
-    if (trackCuts[TrkCutDCAxyNsigma][UseGenTrkCuts]) {
-      cfgFuncParas.fPtDepDCAxy = std::make_unique<TF1>("ptDepDCAxy", Form("[0]*%s", cfgTrkSel.cfgTrackCutsDCAxy.value[0].c_str()), 0.001, 1000);
+    if (!cfgTrkSel.cfgTrackCutsDCAxy.value[UseGenTrkCuts].empty()) {
+      cfgFuncParas.fPtDepDCAxy = std::make_unique<TF1>("ptDepDCAxy", cfgTrkSel.cfgTrackCutsDCAxy.value[UseGenTrkCuts].c_str(), 0.001, 1000);
       cfgFuncParas.fPtDepDCAxy->SetParameter(0, trackCuts[TrkCutDCAxyNsigma][UseGenTrkCuts]);
-      LOGF(info, "DCAxy pt-dependence function: %s", Form("%0.1f * %s", trackCuts[TrkCutDCAxyNsigma][UseGenTrkCuts], cfgTrkSel.cfgTrackCutsDCAxy.value[0].c_str()));
+      LOGF(info, "DCAxy pt-dependence function: %0.1f * %s", trackCuts[TrkCutDCAxyNsigma][UseGenTrkCuts], cfgTrkSel.cfgTrackCutsDCAxy.value[UseGenTrkCuts].c_str());
     }
-    if (trackCuts[TrkCutDCAxyNsigma][UseNchSelCuts]) {
-      cfgFuncParas.fPtDepDCAxyForNch = std::make_unique<TF1>("ptDepDCAxyForNch", Form("[0]*%s", cfgTrkSel.cfgTrackCutsDCAxy.value[1].c_str()), 0.001, 1000);
+    if (!cfgTrkSel.cfgTrackCutsDCAxy.value[UseNchSelCuts].empty()) {
+      cfgFuncParas.fPtDepDCAxyForNch = std::make_unique<TF1>("ptDepDCAxyForNch", cfgTrkSel.cfgTrackCutsDCAxy.value[UseNchSelCuts].c_str(), 0.001, 1000);
       cfgFuncParas.fPtDepDCAxyForNch->SetParameter(0, trackCuts[TrkCutDCAxyNsigma][UseNchSelCuts]);
-      LOGF(info, "DCAxy pt-dependence function for Nch: %s", Form("%0.1f * %s", trackCuts[TrkCutDCAxyNsigma][UseNchSelCuts], cfgTrkSel.cfgTrackCutsDCAxy.value[1].c_str()));
+      LOGF(info, "DCAxy pt-dependence function for Nch: %0.1f * %s", trackCuts[TrkCutDCAxyNsigma][UseNchSelCuts], cfgTrkSel.cfgTrackCutsDCAxy.value[UseNchSelCuts].c_str());
     }
 
-    if (trackCuts[TrkCutDCAzNsigma][UseGenTrkCuts]) {
-      cfgFuncParas.fPtDepDCAz = std::make_unique<TF1>("ptDepDCAz", Form("[0]*%s", cfgTrkSel.cfgTrackCutsDCAz.value[0].c_str()), 0.001, 1000);
+    if (!cfgTrkSel.cfgTrackCutsDCAz.value[UseGenTrkCuts].empty()) {
+      cfgFuncParas.fPtDepDCAz = std::make_unique<TF1>("ptDepDCAz", cfgTrkSel.cfgTrackCutsDCAz.value[UseGenTrkCuts].c_str(), 0.001, 1000);
       cfgFuncParas.fPtDepDCAz->SetParameter(0, trackCuts[TrkCutDCAzNsigma][UseGenTrkCuts]);
-      LOGF(info, "DCAz pt-dependence function: %s", Form("%0.1f * %s", trackCuts[TrkCutDCAzNsigma][UseGenTrkCuts], cfgTrkSel.cfgTrackCutsDCAz.value[0].c_str()));
+      LOGF(info, "DCAz pt-dependence function: %0.1f * %s", trackCuts[TrkCutDCAzNsigma][UseGenTrkCuts], cfgTrkSel.cfgTrackCutsDCAz.value[UseGenTrkCuts].c_str());
     }
-    if (trackCuts[TrkCutDCAzNsigma][UseNchSelCuts]) {
-      cfgFuncParas.fPtDepDCAzForNch = std::make_unique<TF1>("ptDepDCAzForNch", Form("[0]*%s", cfgTrkSel.cfgTrackCutsDCAz.value[1].c_str()), 0.001, 1000);
+    if (!cfgTrkSel.cfgTrackCutsDCAz.value[UseNchSelCuts].empty()) {
+      cfgFuncParas.fPtDepDCAzForNch = std::make_unique<TF1>("ptDepDCAzForNch", cfgTrkSel.cfgTrackCutsDCAz.value[UseNchSelCuts].c_str(), 0.001, 1000);
       cfgFuncParas.fPtDepDCAzForNch->SetParameter(0, trackCuts[TrkCutDCAzNsigma][UseNchSelCuts]);
-      LOGF(info, "DCAz pt-dependence function for Nch: %s", Form("%0.1f * %s", trackCuts[TrkCutDCAzNsigma][UseNchSelCuts], cfgTrkSel.cfgTrackCutsDCAz.value[1].c_str()));
+      LOGF(info, "DCAz pt-dependence function for Nch: %0.1f * %s", trackCuts[TrkCutDCAzNsigma][UseNchSelCuts], cfgTrkSel.cfgTrackCutsDCAz.value[UseNchSelCuts].c_str());
     }
 
     const AxisSpec axisT0C{70, 0, 70000, "N_{ch} (T0C)"};
@@ -459,7 +459,7 @@ struct PidLongRange {
     const AxisSpec axisChi2{100, 0., 10.};
     const AxisSpec axisChID = {220, 0, 220};
 
-    double maxSample = static_cast<double>(cfgGeneral.cfgSampleSize);
+    auto maxSample = static_cast<double>(cfgGeneral.cfgSampleSize);
     AxisSpec axisSample{cfgGeneral.cfgSampleSize, 0, maxSample, "Sample"};
 
     // Choose if it is Nch selection or Centrality selection
@@ -916,11 +916,11 @@ struct PidLongRange {
   template <typename TTrack>
   bool trackSelected(TTrack const& track)
   {
-    if (trackCuts[TrkCutDCAxyNsigma][UseGenTrkCuts] && std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxy->Eval(track.pt())) {
+    if (!cfgTrkSel.cfgTrackCutsDCAxy.value[UseGenTrkCuts].empty() && std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxy->Eval(track.pt())) {
       return false;
     }
 
-    if (trackCuts[TrkCutDCAzNsigma][UseGenTrkCuts]) {
+    if (!cfgTrkSel.cfgTrackCutsDCAz.value[UseGenTrkCuts].empty()) {
       if (std::fabs(track.dcaZ()) > cfgFuncParas.fPtDepDCAz->Eval(track.pt())) {
         return false;
       }
@@ -936,10 +936,10 @@ struct PidLongRange {
   template <typename TTrack>
   bool trackSelectedForNch(TTrack const& track)
   {
-    if (trackCuts[TrkCutDCAxyNsigma][UseNchSelCuts] && (std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxyForNch->Eval(track.pt()))) {
+    if (!cfgTrkSel.cfgTrackCutsDCAxy.value[UseNchSelCuts].empty() && (std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxyForNch->Eval(track.pt()))) {
       return false;
     }
-    if (trackCuts[TrkCutDCAzNsigma][UseNchSelCuts]) {
+    if (!cfgTrkSel.cfgTrackCutsDCAz.value[UseNchSelCuts].empty()) {
       if (std::fabs(track.dcaZ()) > cfgFuncParas.fPtDepDCAzForNch->Eval(track.pt())) {
         return false;
       }
