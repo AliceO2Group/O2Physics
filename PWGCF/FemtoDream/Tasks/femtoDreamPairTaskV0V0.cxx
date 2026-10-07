@@ -208,9 +208,9 @@ struct femtoDreamPairTaskV0V0 {
     Configurable<int> Policy{"Policy", 0, "Binning policy for mixing - 0: multiplicity, 1: multipliciy percentile, 2: both"};
   } Mixing;
 
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinningMult{{Mixing.VztxMixBins, Mixing.MultMixBins}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinningMultPercentile{{Mixing.VztxMixBins, Mixing.MultPercentileMixBins}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr, aod::femtodreamcollision::MultV0M> colBinningMultMultPercentile{{Mixing.VztxMixBins, Mixing.MultMixBins, Mixing.MultPercentileMixBins}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinningMult{{Mixing.VztxMixBins, Mixing.MultMixBins}};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinningMultPercentile{{Mixing.VztxMixBins, Mixing.MultPercentileMixBins}};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr, aod::femtodreamcollision::MultV0M> colBinningMultMultPercentile{{Mixing.VztxMixBins, Mixing.MultMixBins, Mixing.MultPercentileMixBins}};
 
   FemtoDreamContainer<femtoDreamContainer::EventType::same, femtoDreamContainer::Observable::kstar> sameEventCont;
   FemtoDreamContainer<femtoDreamContainer::EventType::mixed, femtoDreamContainer::Observable::kstar> mixedEventCont;
@@ -225,9 +225,9 @@ struct femtoDreamPairTaskV0V0 {
   void init(InitContext&)
   {
     // setup columnpolicy for binning
-    colBinningMult = {{Mixing.VztxMixBins, Mixing.MultMixBins}, true};
-    colBinningMultPercentile = {{Mixing.VztxMixBins, Mixing.MultPercentileMixBins}, true};
-    colBinningMultMultPercentile = {{Mixing.VztxMixBins, Mixing.MultMixBins, Mixing.MultPercentileMixBins}, true};
+    colBinningMult = {{Mixing.VztxMixBins, Mixing.MultMixBins}};
+    colBinningMultPercentile = {{Mixing.VztxMixBins, Mixing.MultPercentileMixBins}};
+    colBinningMultMultPercentile = {{Mixing.VztxMixBins, Mixing.MultMixBins, Mixing.MultPercentileMixBins}};
 
     if (Option.RandomizePair.value) {
       random = new TRandom3(0);

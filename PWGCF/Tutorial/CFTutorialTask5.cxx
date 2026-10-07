@@ -150,7 +150,7 @@ struct CFTutorialTask5 {
 
   void processMixed(MyFilteredCollisions const& colls, MyFilteredTracks const&)
   {
-    BinningType colBinning{{ConfVtxBins, ConfMultBins}, true};
+    BinningType colBinning{{ConfVtxBins, ConfMultBins}};
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, colls, colls)) {
       auto groupPositive = positive->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
       auto groupNegative = negative->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
@@ -175,7 +175,7 @@ struct CFTutorialTask5 {
   void processMixedEventInterface(MyFilteredCollisions& colls, MyFilteredTracks& tracks)
   {
     auto tracksTuple = std::make_tuple(tracks);
-    BinningType colBinning{{ConfVtxBins, ConfMultBins}, true};
+    BinningType colBinning{{ConfVtxBins, ConfMultBins}};
     SameKindPair<MyFilteredCollisions, MyFilteredTracks, BinningType> pair{colBinning, 5, -1, colls, tracksTuple, &cache};
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
       Partition<MyFilteredTracks> groupPositive = aod::track::signed1Pt > ConfChargeCut;

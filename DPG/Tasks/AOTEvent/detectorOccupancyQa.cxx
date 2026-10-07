@@ -1087,7 +1087,6 @@ struct DetectorOccupancyQaTask {
         // July 2025: more for data vs MC:
         if (track.hasTPC() && occupancy >= 0 && confAddBasicQAhistos) {
           float pt = track.pt();
-          // pt 0.2-0.5
           if (pt > 0.2 && pt < 0.5) {
             if (nPV >= 10 && nPV < 400) {
               histos.fill(HIST("QA_noTPCcuts/nPV_10_200/tpcNClsFindable_vs_occup_pt_02_05"), track.tpcNClsFindable(), occupancy);
@@ -1098,9 +1097,7 @@ struct DetectorOccupancyQaTask {
               histos.fill(HIST("QA_noTPCcuts/nPV_above2000/tpcNClsFound_vs_occup_pt_02_05"), track.tpcNClsFound(), occupancy);
               histos.fill(HIST("QA_noTPCcuts/nPV_above2000/tpcChi2NCl_vs_occup_pt_02_05"), track.tpcChi2NCl(), occupancy);
             }
-          }
-          // pt 0.5-1.0
-          else if (pt > 0.5 && pt < 1.0) {
+          } else if (pt > 0.5 && pt < 1.0) {
             if (nPV >= 10 && nPV < 400) {
               histos.fill(HIST("QA_noTPCcuts/nPV_10_200/tpcNClsFindable_vs_occup_pt_05_10"), track.tpcNClsFindable(), occupancy);
               histos.fill(HIST("QA_noTPCcuts/nPV_10_200/tpcNClsFound_vs_occup_pt_05_10"), track.tpcNClsFound(), occupancy);
@@ -1110,9 +1107,7 @@ struct DetectorOccupancyQaTask {
               histos.fill(HIST("QA_noTPCcuts/nPV_above2000/tpcNClsFound_vs_occup_pt_05_10"), track.tpcNClsFound(), occupancy);
               histos.fill(HIST("QA_noTPCcuts/nPV_above2000/tpcChi2NCl_vs_occup_pt_05_10"), track.tpcChi2NCl(), occupancy);
             }
-          }
-          // pt > 1.0
-          else if (pt > 1.0) {
+          } else if (pt > 1.0) {
             if (nPV >= 10 && nPV < 400) {
               histos.fill(HIST("QA_noTPCcuts/nPV_10_200/tpcNClsFindable_vs_occup_pt_above1_0"), track.tpcNClsFindable(), occupancy);
               histos.fill(HIST("QA_noTPCcuts/nPV_10_200/tpcNClsFound_vs_occup_pt_above1_0"), track.tpcNClsFound(), occupancy);
@@ -1383,8 +1378,8 @@ struct DetectorOccupancyQaTask {
               int tpcNClsFound = track.tpcNClsFound();
               int tpcNClsCrossedRows = track.tpcNClsCrossedRows();
 
-              if (sign > 0) // positive tracks
-              {
+              if (sign > 0) {
+                // positive tracks
                 histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/PV_hPt_pos"), pt, occupancy);
                 histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/PV_hEta_pos"), eta, occupancy);
                 histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/PV_hPhi_pos"), phi, occupancy, pt);
@@ -1401,8 +1396,8 @@ struct DetectorOccupancyQaTask {
                   histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/QA_tpcNClsFound_pos"), tpcNClsFound);
                   histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/QA_tpcNClsCrossedRows_pos"), tpcNClsCrossedRows);
                 }
-              } else // negative tracks
-              {
+              } else {
+                // negative tracks
                 histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/PV_hPt_neg"), pt, occupancy);
                 histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/PV_hEta_neg"), eta, occupancy);
                 histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/PV_hPhi_neg"), phi, occupancy, pt);
@@ -1449,8 +1444,8 @@ struct DetectorOccupancyQaTask {
               } // end of TPC good global
 
               // July 2025: for data vs MC kine distr comparison
-              if (sign > 0) // positive tracks
-              {
+              if (sign > 0) {
+                // positive tracks
                 histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/PV_hPt_pos"), pt, occupancy);
                 histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/PV_hEta_pos"), eta, occupancy);
                 histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/PV_hPhi_pos"), phi, occupancy, pt);
@@ -1463,8 +1458,8 @@ struct DetectorOccupancyQaTask {
                     histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hPhi_posModifiedQA"), phi);
                   }
                 }
-              } else // negative tracks
-              {
+              } else {
+                // negative tracks
                 histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/PV_hPt_neg"), pt, occupancy);
                 histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/PV_hEta_neg"), eta, occupancy);
                 histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/PV_hPhi_neg"), phi, occupancy, pt);

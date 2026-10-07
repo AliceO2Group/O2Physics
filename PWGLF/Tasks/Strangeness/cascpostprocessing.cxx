@@ -271,11 +271,17 @@ struct LfCascpostprocessing {
     registry.add("hTPCNSigmaBachPi", "hTPCNSigmaBachPi", {HistType::kTH2F, {ptAxisPID, {120, -6.0f, 6.0f}}});
     registry.add("hTPCNSigmaBachKa", "hTPCNSigmaBachKa", {HistType::kTH2F, {ptAxisPID, {120, -6.0f, 6.0f}}});
     registry.add("hTOFNSigmaPosPi", "hTOFNSigmaPosPi", {HistType::kTH1F, {{120, -6.0f, 6.0f}}});
+    registry.add("hTOFNSigmaPosPiVsPt", "hTOFNSigmaPosPiVsPt", {HistType::kTH2F, {ptAxisPID, {120, -6.0f, 6.0f}}});
     registry.add("hTOFNSigmaNegPi", "hTOFNSigmaNegPi", {HistType::kTH1F, {{120, -6.0f, 6.0f}}});
+    registry.add("hTOFNSigmaNegPiVsPt", "hTOFNSigmaNegPiVsPt", {HistType::kTH2F, {ptAxisPID, {120, -6.0f, 6.0f}}});
     registry.add("hTOFNSigmaPosPr", "hTOFNSigmaPosPr", {HistType::kTH1F, {{120, -6.0f, 6.0f}}});
+    registry.add("hTOFNSigmaPosPrVsPt", "hTOFNSigmaPosPrVsPt", {HistType::kTH2F, {ptAxisPID, {120, -6.0f, 6.0f}}});
     registry.add("hTOFNSigmaNegPr", "hTOFNSigmaNegPr", {HistType::kTH1F, {{120, -6.0f, 6.0f}}});
+    registry.add("hTOFNSigmaNegPrVsPt", "hTOFNSigmaNegPrVsPt", {HistType::kTH2F, {ptAxisPID, {120, -6.0f, 6.0f}}});
     registry.add("hTOFNSigmaBachPi", "hTOFNSigmaBachPi", {HistType::kTH1F, {{120, -6.0f, 6.0f}}});
+    registry.add("hTOFNSigmaBachPiVsPt", "hTOFNSigmaBachPiVsPt", {HistType::kTH2F, {ptAxisPID, {120, -6.0f, 6.0f}}});
     registry.add("hTOFNSigmaBachKa", "hTOFNSigmaBachKa", {HistType::kTH1F, {{120, -6.0f, 6.0f}}});
+    registry.add("hTOFNSigmaBachKaVsPt", "hTOFNSigmaBachKaVsPt", {HistType::kTH2F, {ptAxisPID, {120, -6.0f, 6.0f}}});
     registry.add("hCascMinusEtaPos", "hCascMinusEtaPos", {HistType::kTH1F, {{100, -1.0f, 1.0f}}});
     registry.add("hCascMinusEtaNeg", "hCascMinusEtaNeg", {HistType::kTH1F, {{100, -1.0f, 1.0f}}});
     registry.add("hCascMinusEtaBach", "hCascMinusEtaBach", {HistType::kTH1F, {{100, -1.0f, 1.0f}}});
@@ -550,7 +556,7 @@ struct LfCascpostprocessing {
         if (TMath::Abs(candidate.massxi() - o2::constants::physics::MassXiMinus) < masswintpc) {
           isCandidate = 1;
         }
-      } else if (!isXi) {
+      } else {
         if (isMC) {
           isCorrectlyRec = ((TMath::Abs(candidate.mcPdgCode()) == PDG_t::kOmegaMinus) && (candidate.isPrimary() == 1)) ? 1 : 0;
         }
@@ -563,7 +569,13 @@ struct LfCascpostprocessing {
           registry.fill(HIST("hTPCNSigmaPosPr"), candidate.pt(), candidate.ntpcsigmapospr());
           registry.fill(HIST("hTPCNSigmaNegPi"), candidate.pt(), candidate.ntpcsigmanegpi());
           registry.fill(HIST("hTOFNSigmaPosPr"), candidate.ntofsigmapospr());
+          if (candidate.poshastof()) {
+            registry.fill(HIST("hTOFNSigmaPosPrVsPt"), candidate.pt(), candidate.ntofsigmapospr());
+          }
           registry.fill(HIST("hTOFNSigmaNegPi"), candidate.ntofsigmanegpi());
+          if (candidate.neghastof()) {
+            registry.fill(HIST("hTOFNSigmaNegPiVsPt"), candidate.pt(), candidate.ntofsigmanegpi());
+          }
           registry.fill(HIST("hCascMinusEtaPos"), candidate.poseta());
           registry.fill(HIST("hCascMinusEtaNeg"), candidate.negeta());
           registry.fill(HIST("hCascMinusEtaBach"), candidate.bacheta());
@@ -571,14 +583,26 @@ struct LfCascpostprocessing {
           registry.fill(HIST("hTPCNSigmaPosPi"), candidate.pt(), candidate.ntpcsigmapospi());
           registry.fill(HIST("hTPCNSigmaNegPr"), candidate.pt(), candidate.ntpcsigmanegpr());
           registry.fill(HIST("hTOFNSigmaPosPi"), candidate.ntofsigmapospi());
+          if (candidate.poshastof()) {
+            registry.fill(HIST("hTOFNSigmaPosPiVsPt"), candidate.pt(), candidate.ntofsigmapospi());
+          }
           registry.fill(HIST("hTOFNSigmaNegPr"), candidate.ntofsigmanegpr());
+          if (candidate.neghastof()) {
+            registry.fill(HIST("hTOFNSigmaNegPrVsPt"), candidate.pt(), candidate.ntofsigmanegpr());
+          }
         }
         if (isXi) {
           registry.fill(HIST("hTPCNSigmaBachPi"), candidate.pt(), candidate.ntpcsigmabachpi());
           registry.fill(HIST("hTOFNSigmaBachPi"), candidate.ntofsigmabachpi());
+          if (candidate.bachhastof()) {
+            registry.fill(HIST("hTOFNSigmaBachPiVsPt"), candidate.pt(), candidate.ntofsigmabachpi());
+          }
         } else {
           registry.fill(HIST("hTPCNSigmaBachKa"), candidate.pt(), candidate.ntpcsigmabachka());
           registry.fill(HIST("hTOFNSigmaBachKa"), candidate.ntofsigmabachka());
+          if (candidate.bachhastof()) {
+            registry.fill(HIST("hTOFNSigmaBachKaVsPt"), candidate.pt(), candidate.ntofsigmabachka());
+          }
         }
       }
       // registry.fill(HIST("hPosITSHits"), candidate.positshits());

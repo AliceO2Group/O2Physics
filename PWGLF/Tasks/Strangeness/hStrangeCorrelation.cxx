@@ -127,7 +127,8 @@ struct HStrangeCorrelation {
     Configurable<bool> doGenEventSelection{"doGenEventSelection", true, "use event selections when performing closure test for the gen events"};
     Configurable<bool> doClosureTestPureMC{"doClosureTestPureMC", false, "fill regular ClosureTest histograms without event or reconstructed-trigger selection, using MC vertex z and centrality 0.05; keep truth-particle selections"};
     Configurable<bool> selectINELgtZERO{"selectINELgtZERO", true, "select INEL>0 events"};
-    Configurable<bool> selectINELgtONE{"selectINELgtONE", false, "select INEL>1 events (at least 2 charged particles in |eta| < 1)"};
+    Configurable<bool> selectINELgtN{"selectINELgtN", false, "select INEL>N events (more than N charged particles in |eta| < 1), N = inelGtNThreshold"};
+    Configurable<int> inelGtNThreshold{"inelGtNThreshold", 1, "N of the INEL>N selection (reco: PV contributors, gen: charged physical primaries, both in |eta| < 1)"};
     Configurable<float> zVertexCut{"zVertexCut", 10, "Cut on PV position"};
     Configurable<bool> requireAllGoodITSLayers{"requireAllGoodITSLayers", false, " require that in the event all ITS are good"};
     Configurable<bool> rejectSameBunchPileup{"rejectSameBunchPileup", false, "reject collisions associated with the same found-by-T0 bunch crossing"};
@@ -1783,7 +1784,7 @@ struct HStrangeCorrelation {
       return;
     }
     for (const auto& collision : validCollisions[binnumb]) {
-      BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
+      BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}};
       // When 'collisionHasTriggOrAssoc' = 0:
       // binContent(hMECollisionBins) = Σ(Submitted jobs(done))[binContent(the same bin of hSECollisionBins) * masterConfigurations.mixingParameter - Σ(k=0 to min(masterConfigurations.mixingParameter,binContent)) k]
       // When 'collisionHasTriggOrAssoc' = 3
@@ -2121,7 +2122,7 @@ struct HStrangeCorrelation {
       return;
     }
     for (const auto& collision : validCollisions[binnumb]) {
-      BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
+      BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}};
       histos.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision.pvz, collision.mult}));
       for (const auto& trigger : collision.trigParticles) {
         for (const auto& assoc : currentCollision.assocParticles) {
@@ -3266,6 +3267,37 @@ struct HStrangeCorrelation {
     }
   }
 
+  // INEL>N at reconstructed level: more than N PV contributors in |eta| < 1.
+  // multNTracksPVeta1 is exactly this count (filled by multcenttable), so this is
+  // collision.isInelGt0() / isInelGt1() with a free N and needs no track table
+  template <typename TCollision>
+  bool isInelGtNReco(TCollision const& collision, int threshold)
+  {
+    return collision.multNTracksPVeta1() > threshold;
+  }
+
+  // INEL>N at generated level: more than N charged physical primaries in |eta| < 1,
+  // counted the same way as multcenttable fills multMCNParticlesEta10
+  template <typename TMcParticles>
+  bool isInelGtNGen(TMcParticles const& mcParticles, int threshold)
+  {
+    constexpr double ChargeTolerance = 1e-3; // |charge| below this counts as neutral
+    int nChEta1 = 0;
+    for (auto const& mcParticle : mcParticles) {
+      if (!mcParticle.isPhysicalPrimary()) {
+        continue;
+      }
+      auto const* pdgParticle = pdgDB->GetParticle(mcParticle.pdgCode());
+      if (pdgParticle == nullptr || std::abs(pdgParticle->Charge()) < ChargeTolerance) {
+        continue;
+      }
+      if (std::abs(mcParticle.eta()) < 1.0f) {
+        ++nChEta1;
+      }
+    }
+    return nChEta1 > threshold;
+  }
+
   // this function allows for all event selections to be done in a modular way
   template <typename TCollision>
   bool isCollisionSelected(TCollision const& collision)
@@ -3288,7 +3320,7 @@ struct HStrangeCorrelation {
     if (!collision.isInelGt0() && masterConfigurations.selectINELgtZERO) {
       return false;
     }
-    if (!collision.isInelGt1() && masterConfigurations.selectINELgtONE) {
+    if (!isInelGtNReco(collision, masterConfigurations.inelGtNThreshold) && masterConfigurations.selectINELgtN) {
       return false;
     }
     if (!collision.selection_bit(aod::evsel::kIsGoodITSLayersAll) && masterConfigurations.requireAllGoodITSLayers) {
@@ -3484,7 +3516,7 @@ struct HStrangeCorrelation {
                                 aod::AssocHadrons const& assocHadrons, aod::TriggerTracks const& triggerTracks,
                                 TracksComplete const&, aod::BCsWithTimestamps const&)
   {
-    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
+    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}};
 
     // ________________________________________________
     // skip if desired trigger not found
@@ -3584,8 +3616,8 @@ struct HStrangeCorrelation {
     std::variant<BinningTypePP, BinningTypePbPb> colBinning =
       masterConfigurations.doPPAnalysis
         ? std::variant<BinningTypePP, BinningTypePbPb>{
-            BinningTypePP{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}}
-        : std::variant<BinningTypePP, BinningTypePbPb>{BinningTypePbPb{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}};
+            BinningTypePP{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}}}
+        : std::variant<BinningTypePP, BinningTypePbPb>{BinningTypePbPb{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}}};
 
     if (!doprocessSameEventHCascades && doMixingQAandEventQA) {
       std::visit([&](auto const& binning) {
@@ -3761,8 +3793,8 @@ struct HStrangeCorrelation {
     std::variant<BinningTypePP, BinningTypePbPb> colBinning =
       masterConfigurations.doPPAnalysis
         ? std::variant<BinningTypePP, BinningTypePbPb>{
-            BinningTypePP{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}}
-        : std::variant<BinningTypePP, BinningTypePbPb>{BinningTypePbPb{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}};
+            BinningTypePP{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}}}
+        : std::variant<BinningTypePP, BinningTypePbPb>{BinningTypePbPb{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}}};
 
     double cent = masterConfigurations.doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
     // ________________________________________________
@@ -3919,7 +3951,7 @@ struct HStrangeCorrelation {
                               soa::Join<aod::AssocHadrons, aod::AssocPID> const& associatedPions, soa::Join<aod::TriggerTracks, aod::TriggerTrackExtras> const& triggerTracks,
                               TracksComplete const&, aod::BCsWithTimestamps const&)
   {
-    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
+    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}};
     // ________________________________________________
     // skip if desired trigger not found
     if (triggerPresenceMap.size() > 0 && !TESTBIT(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
@@ -3997,7 +4029,7 @@ struct HStrangeCorrelation {
                                  aod::AssocHadrons const& assocHadrons, aod::TriggerTracks const& triggerTracks,
                                  TracksComplete const&, aod::BCsWithTimestamps const&)
   {
-    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
+    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}};
     for (auto const& [collision1, collision2] : soa::selfCombinations(colBinning, masterConfigurations.mixingParameter, -1, collisions, collisions)) {
       auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
       auto bField = getMagneticField(bc.timestamp());
@@ -4049,8 +4081,8 @@ struct HStrangeCorrelation {
     std::variant<BinningTypePP, BinningTypePbPb> colBinning =
       masterConfigurations.doPPAnalysis
         ? std::variant<BinningTypePP, BinningTypePbPb>{
-            BinningTypePP{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}}
-        : std::variant<BinningTypePP, BinningTypePbPb>{BinningTypePbPb{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}};
+            BinningTypePP{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}}}
+        : std::variant<BinningTypePP, BinningTypePbPb>{BinningTypePbPb{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}}};
 
     std::visit([&](auto const& binning) {
       for (auto const& [collision1, collision2] : soa::selfCombinations(binning, masterConfigurations.mixingParameter, -1, collisions, collisions)) {
@@ -4108,8 +4140,8 @@ struct HStrangeCorrelation {
     std::variant<BinningTypePP, BinningTypePbPb> colBinning =
       masterConfigurations.doPPAnalysis
         ? std::variant<BinningTypePP, BinningTypePbPb>{
-            BinningTypePP{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}}
-        : std::variant<BinningTypePP, BinningTypePbPb>{BinningTypePbPb{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}};
+            BinningTypePP{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}}}
+        : std::variant<BinningTypePP, BinningTypePbPb>{BinningTypePbPb{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}}};
 
     std::visit([&](auto const& binning) {
       for (auto const& [collision1, collision2] : soa::selfCombinations(binning, masterConfigurations.mixingParameter, -1, collisions, collisions)) {
@@ -4163,7 +4195,7 @@ struct HStrangeCorrelation {
                                soa::Join<aod::AssocHadrons, aod::AssocPID> const& assocPions, soa::Join<aod::TriggerTracks, aod::TriggerTrackExtras> const& triggerTracks,
                                TracksComplete const&, aod::BCsWithTimestamps const&)
   {
-    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
+    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}};
     for (auto const& [collision1, collision2] : soa::selfCombinations(colBinning, masterConfigurations.mixingParameter, -1, collisions, collisions)) {
       auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
       auto bField = getMagneticField(bc.timestamp());
@@ -4262,7 +4294,7 @@ struct HStrangeCorrelation {
     float bestCollisionVtxZ = 0.0f;
     bool bestCollisionSel8 = false;
     bool bestCollisionINELgtZERO = false;
-    bool bestCollisionINELgtONE = false;
+    bool bestCollisionINELgtN = false;
     bool bestCollisionNoSameBunchPileup = false;
     bool bestCollisionGoodTriggerTVX = false;
     bool bestCollisionGoodZvtxFT0vsPV = false;
@@ -4281,7 +4313,7 @@ struct HStrangeCorrelation {
           bestCollisionSel8 = collision.sel8();
           bestCollisionVtxZ = collision.posZ();
           bestCollisionINELgtZERO = collision.isInelGt0();
-          bestCollisionINELgtONE = collision.isInelGt1();
+          bestCollisionINELgtN = isInelGtNReco(collision, masterConfigurations.inelGtNThreshold);
           bestCollisionNoSameBunchPileup = collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
           bestCollisionGoodTriggerTVX = collision.selection_bit(aod::evsel::kIsTriggerTVX);
           bestCollisionGoodZvtxFT0vsPV = collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
@@ -4333,7 +4365,7 @@ struct HStrangeCorrelation {
       if (!bestCollisionINELgtZERO) {
         return;
       }
-      if (masterConfigurations.selectINELgtONE && !bestCollisionINELgtONE) {
+      if (masterConfigurations.selectINELgtN && !bestCollisionINELgtN) {
         return;
       }
       if (masterConfigurations.rejectSameBunchPileup && !bestCollisionNoSameBunchPileup) {
@@ -4472,9 +4504,9 @@ struct HStrangeCorrelation {
   {
     // Part 3: a self-contained generator-level study. It deliberately touches no
     // reconstructed quantity in its event selection or in any of its axes: the
-    // event is selected on generated INEL>0 and the generated vertex only, the
-    // multiplicity is counted from generated particles, and every object is
-    // filled with generated coordinates.
+    // event is selected on generated INEL>0 (INEL>N if enabled) and the generated
+    // vertex only, the multiplicity is counted from generated particles, and every
+    // object is filled with generated coordinates.
     //
     // Reconstruction enters in exactly one place -- whether a generated object
     // has a reconstructed counterpart at all -- and that splits the very same
@@ -4495,9 +4527,9 @@ struct HStrangeCorrelation {
       histos.fill(HIST("PairLossK0/GenStudy/hEventCounter"), 0.0f);
 
       // Generated-level event selection. No reconstructed variable is used.
-      // INEL>1 implies INEL>0, so only the tighter enabled selection has to be evaluated
-      if (masterConfigurations.selectINELgtONE) {
-        if (!o2::pwglf::isINELgt1mc(mcParticles, pdgDB)) {
+      // INEL>N (N >= 0) implies INEL>0, so only the tighter enabled selection has to be evaluated
+      if (masterConfigurations.selectINELgtN) {
+        if (!isInelGtNGen(mcParticles, masterConfigurations.inelGtNThreshold)) {
           return;
         }
       } else if (masterConfigurations.selectINELgtZERO) {
@@ -4788,7 +4820,7 @@ struct HStrangeCorrelation {
       float genBestCollisionVtxZ = 0.0f;
       bool genBestCollisionSel8 = false;
       bool genBestCollisionINELgtZERO = false;
-      bool genBestCollisionINELgtONE = false;
+      bool genBestCollisionINELgtN = false;
       bool genBestCollisionNoSameBunchPileup = false;
       bool genBestCollisionGoodTriggerTVX = false;
       bool genBestCollisionGoodZvtxFT0vsPV = false;
@@ -4808,7 +4840,7 @@ struct HStrangeCorrelation {
           genBestCollisionSel8 = recCollision.sel8();
           genBestCollisionVtxZ = recCollision.posZ();
           genBestCollisionINELgtZERO = recCollision.isInelGt0();
-          genBestCollisionINELgtONE = recCollision.isInelGt1();
+          genBestCollisionINELgtN = isInelGtNReco(recCollision, masterConfigurations.inelGtNThreshold);
           genBestCollisionNoSameBunchPileup = recCollision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
           genBestCollisionGoodTriggerTVX = recCollision.selection_bit(aod::evsel::kIsTriggerTVX);
           genBestCollisionGoodZvtxFT0vsPV = recCollision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
@@ -4822,7 +4854,7 @@ struct HStrangeCorrelation {
         genEventSelected = genEventSelected && genCollisionSelected;
       } else if (masterConfigurations.doGenEventSelection) {
         genEventSelected = genEventSelected && genBestCollisionSel8 && std::abs(genBestCollisionVtxZ) <= masterConfigurations.zVertexCut &&
-                           genBestCollisionINELgtZERO && (!masterConfigurations.selectINELgtONE || genBestCollisionINELgtONE) &&
+                           genBestCollisionINELgtZERO && (!masterConfigurations.selectINELgtN || genBestCollisionINELgtN) &&
                            (!masterConfigurations.rejectSameBunchPileup || genBestCollisionNoSameBunchPileup) &&
                            (!masterConfigurations.requireGoodTriggerTVX || genBestCollisionGoodTriggerTVX) &&
                            (!masterConfigurations.requireGoodZvtxFT0vsPV || genBestCollisionGoodZvtxFT0vsPV) &&
@@ -6192,7 +6224,7 @@ struct HStrangeCorrelation {
     } else {
       bool bestCollisionSel8 = false;
       bool bestCollisionINELgtZERO = false;
-      bool bestCollisionINELgtONE = false;
+      bool bestCollisionINELgtN = false;
       bool bestCollisionNoSameBunchPileup = false;
       bool bestCollisionGoodTriggerTVX = false;
       bool bestCollisionGoodZvtxFT0vsPV = false;
@@ -6212,7 +6244,7 @@ struct HStrangeCorrelation {
           } else {
             bestCollisionSel8 = recCollision.sel8();
             bestCollisionINELgtZERO = recCollision.isInelGt0();
-            bestCollisionINELgtONE = recCollision.isInelGt1();
+            bestCollisionINELgtN = isInelGtNReco(recCollision, masterConfigurations.inelGtNThreshold);
             bestCollisionNoSameBunchPileup = recCollision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
             bestCollisionGoodTriggerTVX = recCollision.selection_bit(aod::evsel::kIsTriggerTVX);
             bestCollisionGoodZvtxFT0vsPV = recCollision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
@@ -6243,7 +6275,7 @@ struct HStrangeCorrelation {
           if (!bestCollisionINELgtZERO) {
             return;
           }
-          if (masterConfigurations.selectINELgtONE && !bestCollisionINELgtONE) {
+          if (masterConfigurations.selectINELgtN && !bestCollisionINELgtN) {
             return;
           }
           if (masterConfigurations.rejectSameBunchPileup && !bestCollisionNoSameBunchPileup) {
@@ -6587,9 +6619,9 @@ struct HStrangeCorrelation {
     float multEta08 = -1;
     float multEta05 = -1;
     histos.fill(HIST("Prediction/hEventSelection"), 0.5);
-    // INEL>1 implies INEL>0, so only the tighter enabled selection has to be evaluated
-    if (masterConfigurations.selectINELgtONE) {
-      if (!o2::pwglf::isINELgt1mc(mcParticles, pdgDB)) {
+    // INEL>N (N >= 0) implies INEL>0, so only the tighter enabled selection has to be evaluated
+    if (masterConfigurations.selectINELgtN) {
+      if (!isInelGtNGen(mcParticles, masterConfigurations.inelGtNThreshold)) {
         return;
       }
     } else if (masterConfigurations.selectINELgtZERO) {

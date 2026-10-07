@@ -18,6 +18,8 @@
 #ifndef ALICE3_CORE_GEOMETRYCONTAINER_H_
 #define ALICE3_CORE_GEOMETRYCONTAINER_H_
 
+#include "ALICE3/Core/ConfigurationParser.h"
+
 #include <CCDB/BasicCCDBManager.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
@@ -35,31 +37,13 @@ struct GeometryEntry {
   GeometryEntry() = default;
   explicit GeometryEntry(const std::string& filename, o2::ccdb::BasicCCDBManager* ccdb = nullptr)
   {
-    mFileName = accessFile(filename, "./.ALICE3/Configuration/", ccdb);
-    mConfigurations = GeometryEntry::parseTEnvConfiguration(mFileName, mLayerNames);
+    mFileName = ConfigurationParser::accessFile(filename, "./.ALICE3/Configuration/", ccdb);
+    mConfigurations = ConfigurationParser::parseTEnvConfiguration(mFileName, mLayerNames);
     LOG(info) << "Loaded geometry configuration from file: " << mFileName << " with " << mLayerNames.size() << " layers.";
     if (mLayerNames.empty()) {
       LOG(warning) << "No layers found in geometry configuration file: " << filename;
     }
   }
-
-  /**
-   * @brief Parses a TEnv configuration file and returns the key-value pairs split per entry
-   * @param filename Path to the TEnv configuration file
-   * @param layers Vector to store the order of the layers as they appear in the file
-   * @return A map where each key is a layer name and the value is another map of key-value pairs for that layer
-   */
-  static std::map<std::string, std::map<std::string, std::string>> parseTEnvConfiguration(std::string& filename, std::vector<std::string>& layers);
-
-  /**
-   * @brief Accesses a file given its path, which can be either a local path or a ccdb path (starting with "ccdb:"). In the first case it returns the local path, in the second it retrieves the file from ccdb and returns the local path to the retrieved file.
-   * @param path The path to the file, either local or ccdb (starting with "ccdb:")
-   * @param downloadPath The local path where to download the file if it's a ccdb path. Default is "/tmp/GeometryContainer/"
-   * @param ccdb Pointer to the CCDB manager to use for retrieving the file if it's a ccdb path. If nullptr, the function will create a temporary CCDB manager instance. Default is nullptr.
-   * @param timeoutSeconds If positive, then this function will wait for these seconds after download before removing the downloaded file.
-   * @return The local path to the file, either the original local path or the path to the retrieved file from ccdb
-   */
-  static std::string accessFile(const std::string& path, const std::string& downloadPath = "/tmp/GeometryContainer/", o2::ccdb::BasicCCDBManager* ccdb = nullptr, int timeoutSeconds = 0);
 
   std::map<std::string, std::map<std::string, std::string>> getConfigurations() const { return mConfigurations; }
   std::map<std::string, std::string> getConfiguration(const std::string& layerName) const;

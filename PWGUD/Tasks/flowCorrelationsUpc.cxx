@@ -78,7 +78,6 @@ struct FlowCorrelationsUpc {
   O2_DEFINE_CONFIGURABLE(cfgDcazCut, float, 2.0, "dcaz cut")
   O2_DEFINE_CONFIGURABLE(cfgMaxTPCChi2NCl, int, 4, "tpcchi2")
   O2_DEFINE_CONFIGURABLE(cfgGapSide, int, 1, "choose one side 0:A; 1:C")
-  O2_DEFINE_CONFIGURABLE(cfgGapSideMerge, bool, true, "merge A and C side")
   O2_DEFINE_CONFIGURABLE(cfgCutTPCCrossedRows, float, 70.0f, "minimum number of crossed TPC Rows")
   O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 50.0f, "minimum number of found TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgCutITSclu, float, 5.0f, "minimum number of ITS clusters")
@@ -122,11 +121,7 @@ struct FlowCorrelationsUpc {
 
   // make the filters and cuts.
   Filter trackFilter = (aod::udtrack::isPVContributor == true);
-  Filter collisionFilter = cfgGapSideMerge
-                             ? ((aod::udcollision::gapSide == (uint8_t)0 || aod::udcollision::gapSide == (uint8_t)1) &&
-                                (aod::upcservice::truegapside == 0 || aod::upcservice::truegapside == 1))
-                             : ((aod::udcollision::gapSide == (uint8_t)cfgGapSide) &&
-                                (aod::upcservice::truegapside == cfgGapSide));
+  Filter collisionFilter = ((aod::udcollision::gapSide == (uint8_t)cfgGapSide) && (aod::upcservice::truegapside == cfgGapSide));
 
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb{};
@@ -264,12 +259,12 @@ struct FlowCorrelationsUpc {
       registry.fill(HIST("neutronClass"), 0, 0);
     }
     if (std::abs(timeZNA) <= cfgZdcTimeCut && std::abs(timeZNC) > cfgZdcTimeCut) {
-      neutronClass = 1;
-      registry.fill(HIST("neutronClass"), 0, 1);
-    }
-    if (std::abs(timeZNA) > cfgZdcTimeCut && std::abs(timeZNC) <= cfgZdcTimeCut) {
       neutronClass = 2;
       registry.fill(HIST("neutronClass"), 1, 0);
+    }
+    if (std::abs(timeZNA) > cfgZdcTimeCut && std::abs(timeZNC) <= cfgZdcTimeCut) {
+      neutronClass = 1;
+      registry.fill(HIST("neutronClass"), 0, 1);
     }
     if (std::abs(timeZNA) <= cfgZdcTimeCut && std::abs(timeZNC) <= cfgZdcTimeCut) {
       neutronClass = 3;
@@ -281,15 +276,11 @@ struct FlowCorrelationsUpc {
         return false;
       }
       // if A or C gap is requested, keep corresponding neutron class
-      if (cfgGapSideMerge) {
-        // accepted
-      } else {
-        if (cfgGapSide == 0 || cfgGapSide == 1) {
-          if ((cfgGapSide == 0 && neutronClass == 1) || (cfgGapSide == 1 && neutronClass == 2)) { // o2-linter: disable=magic-number (ZDC time cut)
-            // accepted
-          } else {
-            return false;
-          }
+      if (cfgGapSide == 0 || cfgGapSide == 1) {
+        if ((cfgGapSide == 0 && neutronClass == 1) || (cfgGapSide == 1 && neutronClass == 2)) { // o2-linter: disable=magic-number (ZDC time cut)
+          // accepted
+        } else {
+          return false;
         }
       }
     }
@@ -326,10 +317,6 @@ struct FlowCorrelationsUpc {
       if (!isGoodRctFlag(collision)) { // check RCT flags
         return false;
       }
-    }
-
-    if (!zdcTimeCut(collision)) {
-      return false;
     }
 
     if (!zdcTimeCut(collision)) {
@@ -618,7 +605,7 @@ struct FlowCorrelationsUpc {
     };
 
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::collision::PosZ, decltype(getTracksSize)>;
-    MixedBinning binningOnVtxAndMult{{getTracksSize}, {vtxMix, multMix}, true};
+    MixedBinning binningOnVtxAndMult{{getTracksSize}, {vtxMix, multMix}};
     auto tracksTuple = std::make_tuple(tracks);
     SameKindPair<UDCollisionsFull, UdTracksFull, MixedBinning> pairs{binningOnVtxAndMult, cfgMinMixEventNum, -1, collisions, tracksTuple, &cache};
 

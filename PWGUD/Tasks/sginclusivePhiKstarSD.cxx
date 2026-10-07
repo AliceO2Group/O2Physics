@@ -1191,7 +1191,7 @@ struct SginclusivePhiKstarSD {
 
     std::vector<float> parameters = {pvCut, dcazCut, dcaxyCut, tpcChi2Cut, tpcNClsFindableCut, itsChi2Cut, etaCut, ptCut};
 
-    BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicityClass}, true};
+    BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicityClass}};
 
     for (auto const& [collision1, collision2] : o2::soa::selfCombinations(binningOnPositions, cfgNoMixedEvents, -1, collisions, collisions)) {
 
@@ -2334,7 +2334,7 @@ struct SginclusivePhiKstarSD {
 
     std::vector<float> parameters = {pvCut, dcazCut, dcaxyCut, tpcChi2Cut, tpcNClsFindableCut, itsChi2Cut, etaCut, ptCut};
 
-    BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicityClass}, true};
+    BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicityClass}};
 
     for (auto const& [collision1, collision2] : o2::soa::selfCombinations(binningOnPositions, cfgNoMixedEvents, -1, collisions, collisions)) {
 

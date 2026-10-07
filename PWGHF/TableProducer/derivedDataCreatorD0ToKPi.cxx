@@ -299,7 +299,7 @@ struct HfDerivedDataCreatorD0ToKPi {
             }
           }
           if constexpr (OnlySig) {
-            if (std::abs(flagMcRec) != o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
+            if (!acceptCorrelatedBkgs && (std::abs(flagMcRec) != o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK)) {
               continue;
             }
           }

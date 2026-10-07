@@ -116,9 +116,9 @@ struct ChargedJetHadron {
   using BinningTypePP = ColumnBinningPolicy<aod::jcollision::PosZ, aod::jcollision::CentFT0M>;
   using BinningType = ColumnBinningPolicy<aod::jcollision::PosZ, aod::jcollision::CentFT0C>;
   using BinningTypeMC = ColumnBinningPolicy<aod::jmccollision::PosZ, aod::jmccollision::CentFT0M>;
-  BinningType corrBinningPP{{binsZVtx, binsCentrality}, true};
-  BinningType corrBinning{{binsZVtx, binsCentrality}, true};
-  BinningTypeMC corrBinningMC{{binsZVtx, binsCentrality}, true};
+  BinningType corrBinningPP{{binsZVtx, binsCentrality}};
+  BinningType corrBinning{{binsZVtx, binsCentrality}};
+  BinningTypeMC corrBinningMC{{binsZVtx, binsCentrality}};
 
   HistogramRegistry registry; // histogram registry
   std::vector<int> eventSelectionBits;

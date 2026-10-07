@@ -258,11 +258,11 @@ struct femtoDreamPairTaskTrackTrack {
     Configurable<int> Policy{"Policy", 0, "Binning policy for mixing - 0: multiplicity, 1: multipliciy percentile, 2: both, 3: multipliciy percentile and qn value, 4: multipliciy percentile and event plane"};
   } Mixing;
 
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinningMult{{Mixing.VztxMixBins, Mixing.MultMixBins}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinningMultPercentile{{Mixing.VztxMixBins, Mixing.MultPercentileMixBins}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr, aod::femtodreamcollision::MultV0M> colBinningMultMultPercentile{{Mixing.VztxMixBins, Mixing.MultMixBins, Mixing.MultPercentileMixBins}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M, aod::femtodreamcollision::QnVal> colBinningMultPercentileqn{{Mixing.VztxMixBins, Mixing.MultPercentileMixBins, Mixing.QnMixBins}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M, aod::femtodreamcollision::EventPlane> colBinningMultPercentileEP{{Mixing.VztxMixBins, Mixing.MultPercentileMixBins, Mixing.EPMixBins}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinningMult{{Mixing.VztxMixBins, Mixing.MultMixBins}};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinningMultPercentile{{Mixing.VztxMixBins, Mixing.MultPercentileMixBins}};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr, aod::femtodreamcollision::MultV0M> colBinningMultMultPercentile{{Mixing.VztxMixBins, Mixing.MultMixBins, Mixing.MultPercentileMixBins}};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M, aod::femtodreamcollision::QnVal> colBinningMultPercentileqn{{Mixing.VztxMixBins, Mixing.MultPercentileMixBins, Mixing.QnMixBins}};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M, aod::femtodreamcollision::EventPlane> colBinningMultPercentileEP{{Mixing.VztxMixBins, Mixing.MultPercentileMixBins, Mixing.EPMixBins}};
 
   FemtoDreamContainer<femtoDreamContainer::EventType::same, femtoDreamContainer::Observable::kstar> sameEventCont;
   FemtoDreamContainer<femtoDreamContainer::EventType::mixed, femtoDreamContainer::Observable::kstar> mixedEventCont;
@@ -283,11 +283,11 @@ struct femtoDreamPairTaskTrackTrack {
   {
 
     // setup columnpolicy for binning
-    colBinningMult = {{Mixing.VztxMixBins, Mixing.MultMixBins}, true};
-    colBinningMultPercentile = {{Mixing.VztxMixBins, Mixing.MultPercentileMixBins}, true};
-    colBinningMultMultPercentile = {{Mixing.VztxMixBins, Mixing.MultMixBins, Mixing.MultPercentileMixBins}, true};
-    colBinningMultPercentileqn = {{Mixing.VztxMixBins, Mixing.MultPercentileMixBins, Mixing.QnMixBins}, true};
-    colBinningMultPercentileEP = {{Mixing.VztxMixBins, Mixing.MultPercentileMixBins, Mixing.EPMixBins}, true};
+    colBinningMult = {{Mixing.VztxMixBins, Mixing.MultMixBins}};
+    colBinningMultPercentile = {{Mixing.VztxMixBins, Mixing.MultPercentileMixBins}};
+    colBinningMultMultPercentile = {{Mixing.VztxMixBins, Mixing.MultMixBins, Mixing.MultPercentileMixBins}};
+    colBinningMultPercentileqn = {{Mixing.VztxMixBins, Mixing.MultPercentileMixBins, Mixing.QnMixBins}};
+    colBinningMultPercentileEP = {{Mixing.VztxMixBins, Mixing.MultPercentileMixBins, Mixing.EPMixBins}};
 
     if (Option.RandomizePair.value) {
       random = new TRandom3(0);

@@ -163,7 +163,7 @@ struct Omega2012Analysis {
   using ResoMCCollisions = soa::Join<ResoCollisions, aod::ResoMCCollisions_001>;
 
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::Cent>;
-  BinningTypeVertexContributor colBinning{{cfgVtxBins, cfgMultBins}, true};
+  BinningTypeVertexContributor colBinning{{cfgVtxBins, cfgMultBins}};
 
   void init(InitContext&)
   {

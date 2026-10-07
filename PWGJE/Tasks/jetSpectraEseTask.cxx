@@ -204,9 +204,9 @@ struct JetSpectraEseTask {
   using BinningTypeFT0C = ColumnBinningPolicy<aod::jcollision::PosZ, aod::jcollision::CentFT0C>;
   using BinningTypeFT0M = ColumnBinningPolicy<aod::jcollision::PosZ, aod::jcollision::CentFT0M>;
   using BinningTypeFT0CVariant1 = ColumnBinningPolicy<aod::jcollision::PosZ, aod::jcollision::CentFT0CVariant1>;
-  BinningTypeFT0C corrBinningFT0C{{binsZVtx, binsCentrality}, true};
-  BinningTypeFT0M corrBinningFT0M{{binsZVtx, binsCentrality}, true};
-  BinningTypeFT0CVariant1 corrBinningFT0CVariant1{{binsZVtx, binsCentrality}, true};
+  BinningTypeFT0C corrBinningFT0C{{binsZVtx, binsCentrality}};
+  BinningTypeFT0M corrBinningFT0M{{binsZVtx, binsCentrality}};
+  BinningTypeFT0CVariant1 corrBinningFT0CVariant1{{binsZVtx, binsCentrality}};
   Service<o2::framework::O2DatabasePDG> pdg{};
 
   enum class DetID { FT0C,

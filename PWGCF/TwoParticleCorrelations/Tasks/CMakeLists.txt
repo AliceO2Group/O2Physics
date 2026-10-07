@@ -146,4 +146,7 @@ o2physics_add_dpl_workflow(fox-wolfram-correlation
 o2physics_add_dpl_workflow(two-particle-correlations-mult-spher
                            SOURCES twoParticleCorrelationsMultSpher.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+o2physics_add_dpl_workflow(hparticle-correlation
+                           SOURCES hParticleCorrelation.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                            COMPONENT_NAME Analysis)

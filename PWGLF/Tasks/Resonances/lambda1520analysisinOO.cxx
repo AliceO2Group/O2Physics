@@ -1154,7 +1154,7 @@ struct Lstaranalysis {
 
   // Processing Event Mixing
   using BinningTypeVtxZT0M = ColumnBinningPolicy<collision::PosZ, cent::CentFT0M>;
-  BinningTypeVtxZT0M colBinning{{cfgVtxBins, cfgMultBins}, true};
+  BinningTypeVtxZT0M colBinning{{cfgVtxBins, cfgMultBins}};
 
   void processME(EventCandidates const& collision,
                  TrackCandidates const& tracks)

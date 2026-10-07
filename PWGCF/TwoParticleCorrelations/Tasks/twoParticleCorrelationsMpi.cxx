@@ -116,6 +116,13 @@ struct TwoParticleCorrelationsMpi {
     Configurable<bool> cfgDropStepRECO{"cfgDropStepRECO", false, "choice to drop step RECO if efficiency correction is used"};
     Configurable<int> cfgCentBinsForMC{"cfgCentBinsForMC", 0, "0 = generated multiplicity; 1 = reconstructed multiplicity and all associated collisions"};
   } cfgGeneral;
+  struct : ConfigurableGroup {
+    Configurable<float> dcaxymax{"dcaxymax", 999.f, "maximum dcaxy of tracks"};
+    Configurable<float> dcazmax{"dcazmax", 999.f, "maximum dcaz of tracks"};
+    Configurable<bool> enablePtDepDCAxy{"enablePtDepDCAxy", false, "Enable pT-dependent DCAxy cut: |DCAxy| < a + b/pT"};
+    Configurable<float> dcaXyConst{"dcaXyConst", 0.004f, "Constant term 'a' for pT-dependent DCAxy cut: |DCAxy| < a + b/pT (cm)"};
+    Configurable<float> dcaXySlope{"dcaXySlope", 0.013f, "Slope term 'b' for pT-dependent DCAxy cut: |DCAxy| < a + b/pT (cm x GeV/c)"};
+  } cfgDCA;
   Configurable<uint16_t> cfgTrackBitMask{"cfgTrackBitMask", 0, "BitMask for track selection systematics; refer to the enum TrackSelectionCuts in filtering task"};
   Configurable<uint16_t> cfgMultCorrelationsMask{"cfgMultCorrelationsMask", 0, "Selection bitmask for the multiplicity correlations. This should match the filter selection cfgEstimatorBitMask."};
   Configurable<std::string> cfgMultCutFormula{"cfgMultCutFormula", "", "Multiplicity correlations cut formula. A result greater than zero results in accepted event. Parameters: [cFT0C] FT0C centrality, [mFV0A] V0A multiplicity, [mGlob] global track multiplicity, [mPV] PV track multiplicity, [cFT0M] FT0M centrality"};
@@ -123,13 +130,16 @@ struct TwoParticleCorrelationsMpi {
   // Suggested values: Photon: 0.004; K0 and Lambda: 0.005
   Configurable<LabeledArray<float>> cfgPairCut{"cfgPairCut", {CfgPairCutDefaults.front().data(), 5, {"Photon", "K0", "Lambda", "Phi", "Rho"}}, "Pair cuts on various particles"};
 
-  Configurable<std::string> cfgEfficiencyTrigger{"cfgEfficiencyTrigger", "", "CCDB path to efficiency object for trigger particles"};
-  Configurable<std::string> cfgEfficiencyAssociated{"cfgEfficiencyAssociated", "", "CCDB path to efficiency object for associated particles"};
-  Configurable<std::string> cfgAcceptance{"cfgAcceptance", "", "CCDB path to the GFW acceptance object"};
-  Configurable<bool> cfgFillAcceptanceWeights{"cfgFillAcceptanceWeights", false, "Fill acceptance maps instead of physics outputs"};
-  Configurable<bool> cfgAcceptanceRunByRun{"cfgAcceptanceRunByRun", false, "Fill or load run-by-run acceptance weights"};
-  Configurable<int> cfgAcceptancePhiBins{"cfgAcceptancePhiBins", int{DefaultAcceptancePhiBins}, "Number of phi bins in acceptance maps"};
-  Configurable<int> cfgAcceptanceEtaBins{"cfgAcceptanceEtaBins", int{DefaultAcceptanceEtaBins}, "Number of eta bins in acceptance maps"};
+  struct : ConfigurableGroup {
+    Configurable<std::string> cfgEfficiencyTrigger{"cfgEfficiencyTrigger", "", "CCDB path to efficiency object for trigger particles"};
+    Configurable<std::string> cfgEfficiencyAssociated{"cfgEfficiencyAssociated", "", "CCDB path to efficiency object for associated particles"};
+    Configurable<std::string> cfgAcceptance{"cfgAcceptance", "", "CCDB path to the GFW acceptance object"};
+    Configurable<bool> cfgFillAcceptanceWeights{"cfgFillAcceptanceWeights", false, "Fill acceptance maps instead of physics outputs"};
+    Configurable<bool> cfgAcceptanceRunByRun{"cfgAcceptanceRunByRun", false, "Fill or load run-by-run acceptance weights"};
+    Configurable<int> cfgAcceptancePhiBins{"cfgAcceptancePhiBins", int{DefaultAcceptancePhiBins}, "Number of phi bins in acceptance maps"};
+    Configurable<int> cfgAcceptanceEtaBins{"cfgAcceptanceEtaBins", int{DefaultAcceptanceEtaBins}, "Number of eta bins in acceptance maps"};
+  } cfgCorrections;
+
   Configurable<std::string> cfgNuncSeedsTemplateFile{"cfgNuncSeedsTemplateFile", "", "Local ROOT file containing ensembleYieldTemplates"};
   Configurable<std::string> cfgNuncSeedsTemplate{"cfgNuncSeedsTemplate", "", "CCDB path to the ensemble-yield template ccdb_object"};
   Configurable<float> cfgMinPairAcceptance{"cfgMinPairAcceptance", 0.05f, "Minimum pair acceptance used by the event seed estimator"};
@@ -182,7 +192,11 @@ struct TwoParticleCorrelationsMpi {
   Filter collisionVertexTypeFilter = (aod::collision::flags & static_cast<uint16_t>(aod::collision::CollisionFlagsRun2::Run2VertexerTracks)) == static_cast<uint16_t>(aod::collision::CollisionFlagsRun2::Run2VertexerTracks);
 
   // Track filters
-  Filter trackFilter = (nabs(aod::track::eta) < cfgGeneral.cfgCutEta) && (aod::track::pt > cfgGeneral.cfgCutPt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true));
+  Filter trackFilter = (nabs(aod::track::eta) < cfgGeneral.cfgCutEta) && (aod::track::pt > cfgGeneral.cfgCutPt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) &&
+                       (nabs(aod::track::dcaZ) < cfgDCA.dcazmax) &&
+                       ifnode(cfgDCA.enablePtDepDCAxy.node() == true,
+                              nabs(aod::track::dcaXY) < (cfgDCA.dcaXyConst + cfgDCA.dcaXySlope / aod::track::pt),
+                              nabs(aod::track::dcaXY) < cfgDCA.dcaxymax);
   Filter cfTrackFilter = (nabs(aod::cftrack::eta) < cfgGeneral.cfgCutEta) && (aod::cftrack::pt > cfgGeneral.cfgCutPt) && ncheckbit(aod::track::trackType, as<uint8_t>(cfgTrackBitMask));
 
   // MC filters
@@ -327,7 +341,7 @@ struct TwoParticleCorrelationsMpi {
   Service<o2::framework::O2DatabasePDG> pdg{};
 
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>>;
-  using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>;
+  using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksDCA>>;
 
   using DerivedCollisions = soa::Filtered<aod::CFCollisions>;
   using DerivedCollisionsCorrected = soa::Filtered<aod::CFCollisionsWithExtra>;
@@ -361,16 +375,16 @@ struct TwoParticleCorrelationsMpi {
         (!(doprocessSameGenMC || doprocessMCSameDerived) ||
          doprocessSameAOD || enabledDerivedSameProcesses > 0 ||
          doprocessMixedAOD || enabledDerivedMixedProcesses > 0 || doprocessMCMixedDerived ||
-         cfgGeneral.cfgCentBinsForMC != 0 || cfgFillAcceptanceWeights)) {
+         cfgGeneral.cfgCentBinsForMC != 0 || cfgCorrections.cfgFillAcceptanceWeights)) {
       LOGF(fatal, "cfgUserAxis=3 supports generated MC same events only: enable processSameGenMC or processMCSameDerived and disable all other same/mixed processes");
     }
-    if (cfgFillAcceptanceWeights && !cfgAcceptance.value.empty()) {
+    if (cfgCorrections.cfgFillAcceptanceWeights && !cfgCorrections.cfgAcceptance.value.empty()) {
       LOGF(fatal, "cfgFillAcceptanceWeights and cfgAcceptance are mutually exclusive: produce and apply acceptance weights in separate jobs");
     }
-    if (cfgFillAcceptanceWeights && !(doprocessSameDerived || doprocessSameDerivedCorrected || doprocessSameDerivedMultSet || doprocessSameDerivedMultSetCorrected || doprocessMCSameDerived)) {
+    if (cfgCorrections.cfgFillAcceptanceWeights && !(doprocessSameDerived || doprocessSameDerivedCorrected || doprocessSameDerivedMultSet || doprocessSameDerivedMultSetCorrected || doprocessMCSameDerived)) {
       LOGF(fatal, "cfgFillAcceptanceWeights requires a reconstructed derived same-event process");
     }
-    if (cfgAcceptancePhiBins < 1 || cfgAcceptanceEtaBins < 1) {
+    if (cfgCorrections.cfgAcceptancePhiBins < 1 || cfgCorrections.cfgAcceptanceEtaBins < 1) {
       LOGF(fatal, "Acceptance-map bin counts must be positive");
     }
     if (!cfgNuncSeedsTemplateFile.value.empty() && !cfgNuncSeedsTemplate.value.empty()) {
@@ -531,9 +545,9 @@ struct TwoParticleCorrelationsMpi {
     registry.add("eventcount_mixed", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
     registry.add("trackcount_same", "bin", {HistType::kTH2F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}, {10, -0.5, 9.5}}});
     registry.add("trackcount_mixed", "bin", {HistType::kTH3F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}, {10, -0.5, 9.5}, {10, -0.5, 9.5}}});
-    if (cfgFillAcceptanceWeights && !cfgAcceptanceRunByRun) {
-      AxisSpec phiAxis{cfgAcceptancePhiBins, 0., o2::constants::math::TwoPI, "#varphi"};
-      AxisSpec etaAxis{cfgAcceptanceEtaBins, -cfgGeneral.cfgCutEta.value, cfgGeneral.cfgCutEta.value, "#eta"};
+    if (cfgCorrections.cfgFillAcceptanceWeights && !cfgCorrections.cfgAcceptanceRunByRun) {
+      AxisSpec phiAxis{cfgCorrections.cfgAcceptancePhiBins, 0., o2::constants::math::TwoPI, "#varphi"};
+      AxisSpec etaAxis{cfgCorrections.cfgAcceptanceEtaBins, -cfgGeneral.cfgCutEta.value, cfgGeneral.cfgCutEta.value, "#eta"};
       mAcceptanceWeights = registry.add<TH3>("phi_eta_vtxz_ref", "Reference-track acceptance;#varphi;#eta;z_{vtx} (cm)", {HistType::kTH3D, {phiAxis, etaAxis, axisVertex}});
     }
 
@@ -606,7 +620,7 @@ struct TwoParticleCorrelationsMpi {
     same->setTrackEtaCut(cfgGeneral.cfgCutEta);
     mixed->setTrackEtaCut(cfgGeneral.cfgCutEta);
 
-    if (!cfgEfficiencyAssociated.value.empty()) {
+    if (!cfgCorrections.cfgEfficiencyAssociated.value.empty()) {
       efficiencyAssociatedCache.reserve(512);
     }
 
@@ -655,7 +669,7 @@ struct TwoParticleCorrelationsMpi {
       ++nPtPtSubevents;
     }
 
-    if (!cfgFillAcceptanceWeights && (doprocessMCSameDerived || doprocessSameDerived || doprocessSameDerivedCorrected || doprocessSameDerivedMultSet || doprocessSameDerivedMultSetCorrected)) {
+    if (!cfgCorrections.cfgFillAcceptanceWeights && (doprocessMCSameDerived || doprocessSameDerived || doprocessSameDerivedCorrected || doprocessSameDerivedMultSet || doprocessSameDerivedMultSetCorrected)) {
       auto recoProfiles = std::make_unique<TObjArray>();
       addConfigObjectsToObjArray(recoProfiles.get(), mCorrConfigs, cfgUserAxis == EventSeedAxis && eventClassifierPercentileAxisEnabled);
       fFC.setObject(new FlowContainer("FlowContainer"));
@@ -669,7 +683,7 @@ struct TwoParticleCorrelationsMpi {
       fFCpt->initialise(axisMultiplicity, MaxPtCorrelationOrder, cfgCorrConfig.value, FlowNBootstrap);
       fFCpt->initialiseSubevent(axisMultiplicity, MaxPtCorrelationOrder, nPtPtSubevents, FlowNBootstrap);
     }
-    if (!cfgFillAcceptanceWeights && (doprocessMCSameDerived || doprocessSameGenMC)) {
+    if (!cfgCorrections.cfgFillAcceptanceWeights && (doprocessMCSameDerived || doprocessSameGenMC)) {
       auto generatedProfiles = std::make_unique<TObjArray>();
       addConfigObjectsToObjArray(generatedProfiles.get(), mCorrConfigs, cfgUserAxis == NMPIAxis && eventClassifierPercentileAxisEnabled);
       fFCGen.setObject(new FlowContainer("FlowContainer_gen"));
@@ -862,8 +876,8 @@ struct TwoParticleCorrelationsMpi {
       return existing->second;
     }
 
-    AxisSpec phiAxis{cfgAcceptancePhiBins, 0., o2::constants::math::TwoPI, "#varphi"};
-    AxisSpec etaAxis{cfgAcceptanceEtaBins, -cfgGeneral.cfgCutEta.value, cfgGeneral.cfgCutEta.value, "#eta"};
+    AxisSpec phiAxis{cfgCorrections.cfgAcceptancePhiBins, 0., o2::constants::math::TwoPI, "#varphi"};
+    AxisSpec etaAxis{cfgCorrections.cfgAcceptanceEtaBins, -cfgGeneral.cfgCutEta.value, cfgGeneral.cfgCutEta.value, "#eta"};
     const std::string histogramName = Form("%d/phi_eta_vtxz_ref", runNumber);
     const auto histogram = registry.add<TH3>(histogramName.c_str(), "Reference-track acceptance;#varphi;#eta;z_{vtx} (cm)", {HistType::kTH3D, {phiAxis, etaAxis, axisVertex}});
     mAcceptanceWeightsByRun.emplace(runNumber, histogram);
@@ -876,7 +890,7 @@ struct TwoParticleCorrelationsMpi {
     if (track.pt() <= fPtAxis->GetXmin() || track.pt() >= fPtAxis->GetXmax()) {
       return;
     }
-    const auto histogram = cfgAcceptanceRunByRun ? getAcceptanceWeightsForRun(runNumber) : mAcceptanceWeights;
+    const auto histogram = cfgCorrections.cfgAcceptanceRunByRun ? getAcceptanceWeightsForRun(runNumber) : mAcceptanceWeights;
     histogram->Fill(track.phi(), track.eta(), posZ);
   }
 
@@ -1983,46 +1997,46 @@ struct TwoParticleCorrelationsMpi {
     if (cfg.efficiencyLoaded) {
       return;
     }
-    if (!cfgEfficiencyTrigger.value.empty()) {
+    if (!cfgCorrections.cfgEfficiencyTrigger.value.empty()) {
       if (cfgGeneral.cfgLocalEfficiency > 0) {
-        TFile* fEfficiencyTrigger = TFile::Open(cfgEfficiencyTrigger.value.c_str(), "READ");
+        TFile* fEfficiencyTrigger = TFile::Open(cfgCorrections.cfgEfficiencyTrigger.value.c_str(), "READ");
         cfg.mEfficiencyTrigger = dynamic_cast<THn*>(fEfficiencyTrigger->Get("ccdb_object"));
       } else {
-        cfg.mEfficiencyTrigger = ccdb->getForTimeStamp<THnT<float>>(cfgEfficiencyTrigger, timestamp);
+        cfg.mEfficiencyTrigger = ccdb->getForTimeStamp<THnT<float>>(cfgCorrections.cfgEfficiencyTrigger, timestamp);
       }
       if (cfg.mEfficiencyTrigger == nullptr) {
-        LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiencyTrigger.value.c_str());
+        LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgCorrections.cfgEfficiencyTrigger.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram for trigger particles from %s", cfgEfficiencyTrigger.value.c_str());
+      LOGF(info, "Loaded efficiency histogram for trigger particles from %s", cfgCorrections.cfgEfficiencyTrigger.value.c_str());
     }
-    if (!cfgEfficiencyAssociated.value.empty()) {
+    if (!cfgCorrections.cfgEfficiencyAssociated.value.empty()) {
       if (cfgGeneral.cfgLocalEfficiency > 0) {
-        TFile* fEfficiencyAssociated = TFile::Open(cfgEfficiencyAssociated.value.c_str(), "READ");
+        TFile* fEfficiencyAssociated = TFile::Open(cfgCorrections.cfgEfficiencyAssociated.value.c_str(), "READ");
         cfg.mEfficiencyAssociated = dynamic_cast<THn*>(fEfficiencyAssociated->Get("ccdb_object"));
       } else {
-        cfg.mEfficiencyAssociated = ccdb->getForTimeStamp<THnT<float>>(cfgEfficiencyAssociated, timestamp);
+        cfg.mEfficiencyAssociated = ccdb->getForTimeStamp<THnT<float>>(cfgCorrections.cfgEfficiencyAssociated, timestamp);
       }
       if (cfg.mEfficiencyAssociated == nullptr) {
-        LOGF(fatal, "Could not load efficiency histogram for associated particles from %s", cfgEfficiencyAssociated.value.c_str());
+        LOGF(fatal, "Could not load efficiency histogram for associated particles from %s", cfgCorrections.cfgEfficiencyAssociated.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram for associated particles from %s", cfgEfficiencyAssociated.value.c_str());
+      LOGF(info, "Loaded efficiency histogram for associated particles from %s", cfgCorrections.cfgEfficiencyAssociated.value.c_str());
     }
     cfg.efficiencyLoaded = true;
   }
 
   void loadAcceptance(const uint64_t timestamp, const int runNumber)
   {
-    if (cfgFillAcceptanceWeights || cfgAcceptance.value.empty()) {
+    if (cfgCorrections.cfgFillAcceptanceWeights || cfgCorrections.cfgAcceptance.value.empty()) {
       cfg.mAcceptance = nullptr;
       cfg.acceptanceLoaded = true;
       return;
     }
-    if (cfg.acceptanceLoaded && (!cfgAcceptanceRunByRun || cfg.acceptanceRunNumber == runNumber)) {
+    if (cfg.acceptanceLoaded && (!cfgCorrections.cfgAcceptanceRunByRun || cfg.acceptanceRunNumber == runNumber)) {
       return;
     }
 
-    std::string path = cfgAcceptance.value;
-    if (cfgAcceptanceRunByRun) {
+    std::string path = cfgCorrections.cfgAcceptance.value;
+    if (cfgCorrections.cfgAcceptanceRunByRun) {
       if (path.back() != '/') {
         path += '/';
       }
@@ -2099,7 +2113,7 @@ struct TwoParticleCorrelationsMpi {
                         soa::Filtered<aod::CFMcParticles> const& mcParticles,
                         soa::SmallGroups<aod::CFCollisionsWithLabel> const& collisions)
   {
-    if (cfgFillAcceptanceWeights) {
+    if (cfgCorrections.cfgFillAcceptanceWeights) {
       return;
     }
     if (cfgUserAxis == NMPIAxis && mcCollision.nMPI() < 0) {
@@ -2163,12 +2177,12 @@ struct TwoParticleCorrelationsMpi {
       return getAnalysisMultiplicity(col);
     };
     using BinningTypeDerived = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
-    BinningTypeDerived configurableBinningDerived{{getMultiplicity}, {axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
+    BinningTypeDerived configurableBinningDerived{{getMultiplicity}, {axisVertex, axisMultiplicity}};
     const auto multiplicity = getMultiplicity(collision);
     if (cfgVerbosity > 0) {
       LOGF(info, "processSameDerivedT: Tracks for collision: %d/%d | Vertex: %.1f | Multiplicity/Centrality: %.1f", tracks1.size(), tracks2.size(), collision.posZ(), multiplicity);
     }
-    if (cfgFillAcceptanceWeights) {
+    if (cfgCorrections.cfgFillAcceptanceWeights) {
       for (const auto& track : tracks2) {
         fillAcceptanceWeights(track, collision.posZ(), collision.runNumber());
       }
@@ -2286,7 +2300,7 @@ struct TwoParticleCorrelationsMpi {
     // NOTE legacy function for O2 integration tests. Full version needs derived data
 
     // Strictly upper categorised collisions, for cfgNumMixedEvents combinations per bin, skipping those in entry -1
-    BinningTypeAOD configurableBinning{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
+    BinningTypeAOD configurableBinning{{axisVertex, axisMultiplicity}};
     auto tracksTuple = std::make_tuple(tracks);
     SameKindPair<AodCollisions, AodTracks, BinningTypeAOD> pairs{configurableBinning, cfgNumMixedEvents, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
@@ -2345,7 +2359,7 @@ struct TwoParticleCorrelationsMpi {
       };
 
     using BinningTypeDerived = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
-    BinningTypeDerived configurableBinningDerived{{getMultiplicity}, {axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
+    BinningTypeDerived configurableBinningDerived{{getMultiplicity}, {axisVertex, axisMultiplicity}};
     //  Strictly upper categorised collisions, for cfgNumMixedEvents combinations per bin, skipping those in entry -1
     auto tracksTuple = std::make_tuple(std::forward<TrackTypes>(tracks)...);
     using TA = std::tuple_element<0, decltype(tracksTuple)>::type;
@@ -2433,7 +2447,7 @@ struct TwoParticleCorrelationsMpi {
   template <class McCollision, class Particles1, class Particles2>
   void processMCSameDerivedT(McCollision const& mcCollision, Particles1 const& mcParticles1, Particles2 const& mcParticles2, soa::SmallGroups<aod::CFCollisionsWithLabel> const& collisions)
   {
-    if (cfgFillAcceptanceWeights) {
+    if (cfgCorrections.cfgFillAcceptanceWeights) {
       return;
     }
     if (cfgUserAxis == NMPIAxis && mcCollision.nMPI() < 0) {
@@ -2544,7 +2558,7 @@ struct TwoParticleCorrelationsMpi {
       };
 
     using BinningTypeMCDerived = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::mccollision::PosZ, decltype(getMultiplicity)>;
-    BinningTypeMCDerived configurableBinning{{getMultiplicity}, {axisVertex, axisMultiplicity}, true};
+    BinningTypeMCDerived configurableBinning{{getMultiplicity}, {axisVertex, axisMultiplicity}};
 
     // Strictly upper categorised collisions, for cfgNumMixedEvents combinations per bin, skipping those in entry -1
     auto tuple = std::make_tuple(std::forward<ParticleTypes>(particles)...);

@@ -170,9 +170,9 @@ struct FemtoTripletTrackTrackCascade {
   std::vector<double> defaultVtxBins{10, -10, 10};
   std::vector<double> defaultMultBins{50, 0, 200};
   std::vector<double> defaultCentBins{10, 0, 100};
-  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult> mixBinsVtxMult{{defaultVtxBins, defaultMultBins}, true};
-  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Cent> mixBinsVtxCent{{defaultVtxBins, defaultCentBins}, true};
-  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult, o2::aod::femtocollisions::Cent> mixBinsVtxMultCent{{defaultVtxBins, defaultMultBins, defaultCentBins}, true};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult> mixBinsVtxMult{{defaultVtxBins, defaultMultBins}};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Cent> mixBinsVtxCent{{defaultVtxBins, defaultCentBins}};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult, o2::aod::femtocollisions::Cent> mixBinsVtxMultCent{{defaultVtxBins, defaultMultBins, defaultCentBins}};
   triplethistmanager::ConfMixing confMixing;
 
   o2::framework::HistogramRegistry hRegistry{"FemtoTrackTrackCascade", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
@@ -200,9 +200,9 @@ struct FemtoTripletTrackTrackCascade {
     }
     // setup columnpolicy for binning
     // default values are used during instantiation, so we need to explicity update them here
-    mixBinsVtxMult = {{confMixing.vtxBins.value, confMixing.multBins.value}, true};
-    mixBinsVtxCent = {{confMixing.vtxBins.value, confMixing.centBins.value}, true};
-    mixBinsVtxMultCent = {{confMixing.vtxBins.value, confMixing.multBins.value, confMixing.centBins.value}, true};
+    mixBinsVtxMult = {{confMixing.vtxBins.value, confMixing.multBins.value}};
+    mixBinsVtxCent = {{confMixing.vtxBins.value, confMixing.centBins.value}};
+    mixBinsVtxMultCent = {{confMixing.vtxBins.value, confMixing.multBins.value, confMixing.centBins.value}};
 
     // setup histogram specs
     std::map<colhistmanager::ColHist, std::vector<o2::framework::AxisSpec>> colHistSpec;
