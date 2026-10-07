@@ -284,25 +284,27 @@ class KinkHistManager
             std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& ChaDauSpecs)
   {
     mHistogramRegistry = registry;
-    mPdgCode = std::abs(ConfKinkSelection.pdgCodeAbs.value) * ConfKinkSelection.sign.value;
+    mPdgCode = std::abs(ConfKinkSelection.pdgCodeAbs.value);
 
     int chaDauPdgCodeAbs = 0;
     int chaDauCharge = 0;
     const int absCharge = 1;
 
-    if (std::abs(mPdgCode) == PDG_t::kSigmaMinus) {
+    if (mPdgCode == PDG_t::kSigmaMinus) {
       if (ConfKinkSelection.sign.value < 0) {
         chaDauPdgCodeAbs = std::abs(PDG_t::kPiMinus);
         chaDauCharge = -1;
       } else {
+        mPdgCode = -1 * mPdgCode; // anti-Sigma- is positively charged and has negative pdg code
         chaDauPdgCodeAbs = std::abs(PDG_t::kPiPlus);
         chaDauCharge = 1;
       }
-    } else if (std::abs(mPdgCode) == PDG_t::kSigmaPlus) {
+    } else if (mPdgCode == PDG_t::kSigmaPlus) {
       if (ConfKinkSelection.sign.value > 0) {
         chaDauPdgCodeAbs = std::abs(PDG_t::kProton);
         chaDauCharge = 1;
       } else {
+        mPdgCode = -1 * mPdgCode; // anti-Sigma+ is negatively charged and has negative pdg code
         chaDauPdgCodeAbs = std::abs(PDG_t::kProtonBar);
         chaDauCharge = -1;
       }
@@ -332,26 +334,28 @@ class KinkHistManager
             T3 const& ConfChaDauBinningQa)
   {
     mHistogramRegistry = registry;
-    mPdgCode = std::abs(ConfKinkSelection.pdgCodeAbs.value) * ConfKinkSelection.sign.value;
+    mPdgCode = std::abs(ConfKinkSelection.pdgCodeAbs.value);
     this->enableOptionalHistograms(ConfKinkBinningQa);
 
     int chaDauPdgCodeAbs = 0;
     int chaDauCharge = 0;
     const int absCharge = 1;
 
-    if (std::abs(mPdgCode) == PDG_t::kSigmaMinus) {
+    if (mPdgCode == PDG_t::kSigmaMinus) {
       if (ConfKinkSelection.sign.value < 0) {
         chaDauPdgCodeAbs = std::abs(PDG_t::kPiMinus);
         chaDauCharge = -1;
       } else {
+        mPdgCode = -1 * mPdgCode; // anti-Sigma- is positively charged and has negative pdg code
         chaDauPdgCodeAbs = std::abs(PDG_t::kPiPlus);
         chaDauCharge = 1;
       }
-    } else if (std::abs(mPdgCode) == PDG_t::kSigmaPlus) {
+    } else if (mPdgCode == PDG_t::kSigmaPlus) {
       if (ConfKinkSelection.sign.value > 0) {
         chaDauPdgCodeAbs = std::abs(PDG_t::kProton);
         chaDauCharge = 1;
       } else {
+        mPdgCode = -1 * mPdgCode; // anti-Sigma+ is negatively charged and has negative pdg code
         chaDauPdgCodeAbs = std::abs(PDG_t::kProtonBar);
         chaDauCharge = -1;
       }
