@@ -19,6 +19,7 @@
 #include "Common/DataModel/ZDCLightIons.h"
 
 #include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/LHCConstants.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -33,6 +34,7 @@
 #include <TH1.h>
 #include <TH2.h>
 
+#include <bitset>
 #include <cstdint>
 #include <map>
 #include <string>
