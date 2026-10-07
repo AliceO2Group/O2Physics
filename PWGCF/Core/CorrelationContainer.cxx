@@ -36,6 +36,7 @@
 #include <Rtypes.h>
 #include <RtypesCore.h>
 
+#include <cstdint>
 #include <cstring>
 #include <vector>
 

@@ -23,6 +23,7 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
+#include <array>
 #include <cstdint>
 #include <cstdlib>
 #include <sstream>

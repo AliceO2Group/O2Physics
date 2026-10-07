@@ -15,6 +15,7 @@
 #include <Rtypes.h>
 #include <RtypesCore.h>
 
+#include <array>
 #include <cstdint>
 #include <map>
 #include <string>

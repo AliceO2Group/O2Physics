@@ -23,6 +23,7 @@
 
 #include <Rtypes.h>
 
+#include <array>
 #include <cstdint>
 #include <functional>
 #include <set>

@@ -43,6 +43,7 @@
 #include <TObject.h>
 #include <TString.h>
 
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <cstdint>

@@ -25,6 +25,7 @@
 
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <vector>
 
 namespace o2::pid::tpc

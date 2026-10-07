@@ -18,6 +18,7 @@
 
 #include <RtypesCore.h>
 
+#include <array>
 #include <cstdio>
 #include <map>
 #include <string>

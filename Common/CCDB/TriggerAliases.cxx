@@ -13,6 +13,7 @@
 
 #include <Framework/Logger.h>
 
+#include <array>
 #include <cstdint>
 #include <string>
 

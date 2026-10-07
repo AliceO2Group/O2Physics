@@ -29,6 +29,7 @@
 #include <TH2.h>
 
 #include <chrono>
+#include <cstdint>
 #include <string>
 
 using namespace o2::framework;
