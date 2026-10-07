@@ -100,16 +100,13 @@ struct SgDeuteronSpectra {
     registry.fill(HIST("collisions/GapSide"), coll.gapSide(), 1.);
     std::vector<float> fitCut = {fv0Cut, ft0aCut, ft0cCut, fddaCut, fddcCut};
     int truegapSide = sgSelector.trueGap(coll, fitCut[0], fitCut[1], fitCut[2], zdcCut);
-    int gapA = 0;
-    int gapC = 1;
-    int doubleGap = 2;
     registry.fill(HIST("collisions/TrueGapSide"), truegapSide, 1.);
 
     std::vector<float> parameters = {pvCut, dcaZCut, dcaXYCut, tpcChi2Cut, tpcNClsFindableCut, itsChi2Cut, etaCut, ptCut};
 
     for (const auto& t : tracks) {
       if (trackselector(t, parameters) != 0) {
-        if (truegapSide == gapA) {
+        if (truegapSide == o2::aod::sgselector::SingleGapA) {
           if (t.sign() > 0) {
             registry.fill(HIST("tracks/Deut_Pt_TPC_GapA"), t.pt(), t.tpcNSigmaDe());
             registry.fill(HIST("tracks/Deut_Pt_TOF_GapA"), t.pt(), t.tofNSigmaDe());
@@ -125,7 +122,7 @@ struct SgDeuteronSpectra {
           }
         }
 
-        if (truegapSide == gapC) {
+        if (truegapSide == o2::aod::sgselector::SingleGapC) {
           if (t.sign() > 0) {
             registry.fill(HIST("tracks/Deut_Pt_TPC_GapC"), t.pt(), t.tpcNSigmaDe());
             registry.fill(HIST("tracks/Deut_Pt_TOF_GapC"), t.pt(), t.tofNSigmaDe());
@@ -141,7 +138,7 @@ struct SgDeuteronSpectra {
           }
         }
 
-        if (truegapSide == doubleGap) {
+        if (truegapSide == o2::aod::sgselector::DoubleGap) {
           if (t.sign() > 0) {
             registry.fill(HIST("tracks/Deut_Pt_TPC_DoubleGap"), t.pt(), t.tpcNSigmaDe());
             registry.fill(HIST("tracks/Deut_Pt_TOF_DoubleGap"), t.pt(), t.tofNSigmaDe());
