@@ -82,7 +82,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 enum CorrelationCase {
-  TpcTpc,
+  TpcTpc = 0,
   TpcMft,
   TpcFv0a,
   MftFv0a,
@@ -395,9 +395,11 @@ struct HfTaskFlow {
   // =========================
 
   using SmallGroupMcCollisions = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
-  using FilteredMcCollisionsWMult = soa::Filtered<soa::Join<aod::McCollisions, aod::MultMCExtras>>;
+  // using FilteredMcCollisionsWMult = soa::Filtered<soa::Join<aod::McCollisions, aod::MultMCExtras>>;  
+  using FilteredMcCollisionsWMult = soa::Join<aod::McCollisions, aod::MultMCExtras>;
   using FilteredMcCollisionsWMultWCollsExtra = soa::Filtered<soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultMCExtras>>;
-  using FilteredMcParticles = soa::Filtered<aod::McParticles>;
+  // using FilteredMcParticles = soa::Filtered<aod::McParticles>;
+  using FilteredMcParticles = aod::McParticles;
 
   // =========================
   //      Filters & partitions : DATA
@@ -440,10 +442,11 @@ struct HfTaskFlow {
   //      Filters & partitions : MC
   // =========================
 
-  Filter mcParticleFilter = (((aod::mcparticle::eta > configTask.etaMcParticlesTriggerMin) && (aod::mcparticle::eta < configTask.etaMcParticlesTriggerMax)) || ((aod::mcparticle::eta > configTask.etaMcParticlesAssocMin) && (aod::mcparticle::eta < configTask.etaMcParticlesAssocMax)) || (nabs(aod::mcparticle::eta) < configCentral.etaCentralTrackMax)) && (aod::mcparticle::pt < configTask.ptMcParticlesTriggerMax);
+  // // Filter for McParticles
+  // Filter mcParticleFilter = (((aod::mcparticle::eta > configTask.etaMcParticlesTriggerMin) && (aod::mcparticle::eta < configTask.etaMcParticlesTriggerMax)) || ((aod::mcparticle::eta > configTask.etaMcParticlesAssocMin) && (aod::mcparticle::eta < configTask.etaMcParticlesAssocMax)) || (nabs(aod::mcparticle::eta) < configCentral.etaCentralTrackMax)) && (aod::mcparticle::pt < configTask.ptMcParticlesTriggerMax);
 
-  // Filter for MCcollisions
-  Filter mcCollisionFilter = nabs(aod::mccollision::posZ) < configCollision.zVertexMax;
+  // // Filter for MCcollisions
+  // Filter mcCollisionFilter = nabs(aod::mccollision::posZ) < configCollision.zVertexMax;
 
   // =========================
   //      Preslice : DATA
@@ -2666,8 +2669,16 @@ struct HfTaskFlow {
           target->getPairHist()->Fill(step, etaA - etaC, 0.5, 0.5, multiplicity, deltaPhi, posZ,
                                       amplitudeA * amplitudeC * centralityWeight * triggerWeight * associatedWeight);
         } else if (configTask.doEtaDependentFlow) {
-          target->getPairHist()->Fill(step, sampleIndex, posZ, etaC, etaA, deltaPhi, etaA - etaC,
-                                      amplitudeA * amplitudeC * centralityWeight * triggerWeight * associatedWeight);
+          // target->getPairHist()->Fill(step, sampleIndex, posZ, etaC, etaA, deltaPhi, etaA - etaC,
+          //                             amplitudeA * amplitudeC * centralityWeight * triggerWeight * associatedWeight);
+                                      
+          if (!configFit.discriminateInnerOrOuter) {
+            target->getPairHist()->Fill(step, sampleIndex, posZ, etaC, etaA, deltaPhi, etaA - etaC,
+                                        amplitudeA * amplitudeC * centralityWeight * triggerWeight * associatedWeight);
+          } else {
+            target->getPairHist()->Fill(step, sampleIndex, posZ, isInnerOrOuter(channelIdA, isFT0A), isInnerOrOuter(channelIdC, isFT0C), deltaPhi, etaA - etaC,
+                                        amplitudeA * amplitudeC * centralityWeight * triggerWeight * associatedWeight);
+          }
         } else {
           target->getPairHist()->Fill(step, sampleIndex, posZ, 0.5, multiplicity, deltaPhi, etaA - etaC,
                                       amplitudeA * amplitudeC * centralityWeight * triggerWeight * associatedWeight);
@@ -2689,20 +2700,8 @@ struct HfTaskFlow {
     auto associatedWeight = 1.0f;
     auto loopCounter = 0; // To avoid filling associated tracks QA many times, I fill it only for the first trigger track of the collision
     int sampleIndex = gRandom->Uniform(0, configTask.nSamples);
-    bool fillQaPlots = false;
-
-    if (configTask.fillOnlyStepAll) {
-      if (step == CorrelationContainer::kCFStepAll) {
-        fillQaPlots = true;
-      }
-    } else {
-      if (step == CorrelationContainer::kCFStepTrackedOnlyPrim) {
-        fillQaPlots = true;
-      }
-    }
 
     for (auto const& track1 : tracksTrigger) {
-      loopCounter++;
 
       if (configTask.useCutNeutralParticles) {
         auto pdgTriggerParticle = pdg->GetParticle(track1.pdgCode());
@@ -2729,7 +2728,7 @@ struct HfTaskFlow {
       }
 
       // FILL QA FOR TRIGGER PARTICLE
-      if (isSameEvent && fillQaPlots && !configTask.removeQAForSystematics) {
+      if (isSameEvent && !configTask.removeQAForSystematics) {
         if (configTask.chooseCorrelationCase.value == static_cast<int>(CorrelationCase::TpcTpc)) {
           fillTriggerQa<Mc, TpcTpc, ChPartChPart>(multiplicity, track1.eta(), track1.phi(), track1.pt());
         } else if (configTask.chooseCorrelationCase.value == static_cast<int>(CorrelationCase::TpcMft)) {
@@ -2748,6 +2747,8 @@ struct HfTaskFlow {
           fillTriggerQa<Mc, Ft0aFt0c, ChPartChPart>(multiplicity, track1.eta(), track1.phi(), track1.pt());
         }
       }
+      
+      loopCounter++;
 
       for (auto const& track2 : tracksAssoc) {
 
@@ -2769,8 +2770,8 @@ struct HfTaskFlow {
           continue;
         }
 
-        float deltaPhi = RecoDecay::constrainAngle(track2.phi() - track1.phi(), -PIHalf);
-        float deltaEta = track2.eta() - track1.eta();
+        float deltaPhi = RecoDecay::constrainAngle(track1.phi() - track2.phi(), -PIHalf);
+        float deltaEta = track1.eta() - track2.eta();
 
         if (!configTask.doEtaDependentFlow && !configTask.doVariationContainers) {
           target->getPairHist()->Fill(step, deltaEta, track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ,
@@ -2784,7 +2785,7 @@ struct HfTaskFlow {
         }
 
         // FILL QA PLOTS for associated particle
-        if (isSameEvent && fillQaPlots && (loopCounter == 1) && !configTask.removeQAForSystematics) {
+        if (isSameEvent && (loopCounter == 1) && !configTask.removeQAForSystematics) {
           if (configTask.chooseCorrelationCase.value == static_cast<int>(CorrelationCase::TpcTpc)) {
             fillAssociatedQa<Mc, TpcTpc, ChPartChPart>(multiplicity, track2.eta(), track2.phi());
           } else if (configTask.chooseCorrelationCase.value == static_cast<int>(CorrelationCase::TpcMft)) {
@@ -4142,6 +4143,11 @@ struct HfTaskFlow {
                         FilteredMcParticles const& mcParticles,
                         SmallGroupMcCollisions const& collisions)
   {
+    
+    if (mcParticles.size() == 0) { // guard against empty filtered batch
+      return;
+    }
+
     auto multiplicity = 0;
     if (configCollision.useMultiplicityFromTracks) {
       for (const auto& track : mcParticles) {
@@ -4556,6 +4562,11 @@ struct HfTaskFlow {
 
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
       auto& [collision1, tracks1, collision2, tracks2] = *it;
+
+      
+      if (tracks1.size() == 0 || tracks2.size() == 0) { // guard against empty filtered batch
+        return;
+      }
 
       auto multiplicityCollision1 = 0;
       auto multiplicityCollision2 = 0;
