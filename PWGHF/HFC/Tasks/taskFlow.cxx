@@ -186,6 +186,7 @@ enum SpecificEventSelectionStep {
   IsNoCollInTimeRangeStrict,
   IsNoHighMultCollInPrevRof,
   IsRctFlagChecked,
+  IsFoundFT0,
   NSpecificEventSelectionSteps
 };
 
@@ -278,6 +279,7 @@ struct HfTaskFlow {
     Configurable<bool> useCentrality{"useCentrality", false, "use centrality instead of multiplicity"};
     Configurable<bool> useMultiplicityFromTracks{"useMultiplicityFromTracks", false, "Use multiplicity from counting tracks"};
     Configurable<bool> useMultiplicityFromTracksCorrected{"useMultiplicityFromTracksCorrected", false, "Use multiplicity from counting tracks, corrected but takes a lot of computation time"};
+    Configurable<bool> useNoFoundFT0Cut{"useNoFoundFT0Cut", false, "Use cut on no FT0 signal"};
     Configurable<bool> requireRCTFlagChecker{"requireRCTFlagChecker", false, "Check event quality in run condition table"};
     Configurable<bool> requireCorrelationAnalysisRCTFlagChecker{"requireCorrelationAnalysisRCTFlagChecker", false, "Check event quality in run condition table for correlation analysis"};
     Configurable<std::string> setRCTFlagCheckerLabel{"setRCTFlagCheckerLabel", "CBT_muon_global", "Evt sel: RCT flag checker label"};
@@ -640,6 +642,7 @@ struct HfTaskFlow {
       labelsPreciseEventSelection[SpecificEventSelectionStep::IsNoCollInTimeRangeStrict] = "IsNoCollInTimeRangeStrict";
       labelsPreciseEventSelection[SpecificEventSelectionStep::IsNoHighMultCollInPrevRof] = "IsNoHighMultCollInPrevRof";
       labelsPreciseEventSelection[SpecificEventSelectionStep::IsRctFlagChecked] = "IsRctFlagChecked";
+      labelsPreciseEventSelection[SpecificEventSelectionStep::IsFoundFT0] = "IsFoundFT0";
       registry.get<TH1>(HIST("Data/hPreciseEventCounter"))->SetMinimum(0);
 
       for (int iBin = 0; iBin < SpecificEventSelectionStep::NSpecificEventSelectionSteps; iBin++) {
@@ -1587,10 +1590,16 @@ struct HfTaskFlow {
     }
     if (fillHistograms && !configTask.removeQAForSystematics) {
       registry.fill(HIST("Data/hPreciseEventCounter"), SpecificEventSelectionStep::IsRctFlagChecked);
-      registry.fill(HIST("Data/hEventCounter"), EventSelectionStep::AfterEventSelection);
+    }
+    if (configCollision.useNoFoundFT0Cut && !collision.has_foundFT0()) {
+      return false;
+    }
+    if (fillHistograms && !configTask.removeQAForSystematics) {
+      registry.fill(HIST("Data/hPreciseEventCounter"), SpecificEventSelectionStep::IsFoundFT0);
     }
 
     if (!configTask.removeQAForSystematics) {
+      registry.fill(HIST("Data/hEventCounter"), EventSelectionStep::AfterEventSelection);
       registry.fill(HIST("Data/hVtxZ"), collision.posZ());
     }
 
@@ -2705,7 +2714,9 @@ struct HfTaskFlow {
 
       if (configTask.useCutNeutralParticles) {
         auto pdgTriggerParticle = pdg->GetParticle(track1.pdgCode());
-        if (!pdgTriggerParticle || std::abs(pdgTriggerParticle->Charge()) < 0.01) continue;
+        if (!pdgTriggerParticle || std::abs(pdgTriggerParticle->Charge()) < o2::constants::math::Almost0)  {
+          continue;
+        }
       }
 
       if (track1.eta() < configTask.etaMcParticlesTriggerMin || track1.eta() > configTask.etaMcParticlesTriggerMax) {
@@ -2754,7 +2765,9 @@ struct HfTaskFlow {
 
         if (configTask.useCutNeutralParticles) {
           auto pdgAssociatedParticle = pdg->GetParticle(track2.pdgCode());
-          if (!pdgAssociatedParticle || std::abs(pdgAssociatedParticle->Charge()) < 0.01) continue;
+          if (!pdgAssociatedParticle || std::abs(pdgAssociatedParticle->Charge()) < o2::constants::math::Almost0) {
+            continue;
+          }
         }
 
         if (track1.globalIndex() == track2.globalIndex()) {
