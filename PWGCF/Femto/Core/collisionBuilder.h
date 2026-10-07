@@ -262,6 +262,7 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
 
     this->addSelection(kSel8, collisionSelectionNames.at(kSel8), config.sel8.value);
     this->addSelection(kRctFlags, collisionSelectionNames.at(kRctFlags), config.rctFlags.value);
+    this->addComments(kRctFlags, "label = " + confRct.label.value + "; useZdc = " + std::to_string(confRct.useZdc.value) + "; treatLimitedAcceptanceAsBad = " + std::to_string(confRct.treatLimitedAcceptanceAsBad.value));
     this->addSelection(kNoSameBunchPileUp, collisionSelectionNames.at(kNoSameBunchPileUp), config.noSameBunchPileup.value);
     this->addSelection(kIsVertexItsTpc, collisionSelectionNames.at(kIsVertexItsTpc), config.isVertexItsTpc.value);
     this->addSelection(kIsGoodZvtxFt0VsPv, collisionSelectionNames.at(kIsGoodZvtxFt0VsPv), config.isGoodZvtxFt0VsPv.value);
