@@ -27,8 +27,13 @@
 ///
 /// \author Madalina Tarzila
 
-#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
 // Reco headers — compiled but used only by processReco (switched off for now)
@@ -45,6 +50,7 @@
 #include <TMath.h>
 #include <TString.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <deque>
@@ -69,7 +75,6 @@ static constexpr const char* kPidNames[kNPidSpecies] = {"unid", "pion", "kaon", 
 //  Sphericity classes
 // ============================================================
 static constexpr int nSphClasses = 4;
-static constexpr double kSphMin[nSphClasses] = {0.0, 0.3, 0.6, 0.0};
 static constexpr double kSphMax[nSphClasses] = {0.3, 0.6, 1.0, 1.0};
 static constexpr const char* kSphLabels[nSphClasses] =
   {"jetty", "intermediate", "isotropic", "all"};
@@ -148,8 +153,8 @@ struct myExampleTask {
     float phi;
     float eta;
     float pt;
-    float y; // rapidity (from mass + kinematics); = eta for unidentified
-    int pdg; // PDG code: used only for SE sparse/TH2; 0 for reco
+    [[maybe_unused]] float y; // rapidity (from mass + kinematics); = eta for unidentified
+    int pdg;                  // PDG code: used only for SE sparse/TH2; 0 for reco
   };
 
   // ----------------------------------------------------------------
@@ -236,7 +241,7 @@ struct myExampleTask {
   //        pid 1-3 correspond to kPion=1, kKaon=2, kProton=3.
   // ----------------------------------------------------------------
   static constexpr int nPidStudy = 4; // all + pion + kaon + proton
-  static constexpr const char* kPidStudyLabels[nPidStudy] = {"all", "pion", "kaon", "proton"};
+  [[maybe_unused]] static constexpr const char* kPidStudyLabels[nPidStudy] = {"all", "pion", "kaon", "proton"};
 
   // pT (all selected tracks) × multBin — MC e Reco separati
   std::array<std::array<std::shared_ptr<TH2>, nPidStudy>, nSphClasses> hPt_sph_pid_MC{};
@@ -432,12 +437,10 @@ struct myExampleTask {
   {
     if (sph <= 0.)
       return -1;
-    if (sph <= 0.3)
-      return 0;
-    if (sph <= 0.6)
-      return 1;
-    if (sph <= 1.0)
-      return 2;
+    for (int ic = 0; ic < nSphClasses - 1; ++ic) {
+      if (sph <= kSphMax[ic])
+        return ic;
+    }
     return -1;
   }
 
@@ -556,17 +559,17 @@ struct myExampleTask {
                            std::shared_ptr<TH2>& hNtrig_,
                            std::array<std::shared_ptr<TH2>, nPidCorr>& hNtrigPID_,
                            std::array<std::shared_ptr<TH1>, nMultBins>& hSphMult_,
-                           std::array<std::array<std::shared_ptr<TH2>, nPidStudy>, nSphClasses>& hPt_sph_pid_,
-                           std::array<std::array<std::shared_ptr<TH2>, nPidStudy>, nSphClasses>& hPtLead_sph_pid_,
-                           std::array<std::array<std::shared_ptr<TH2>, nPidStudy>, nSphClasses>& hPtAssoc_sph_pid_,
-                           std::array<std::shared_ptr<TH2>, nPidStudy>& hSph_vs_mult_pid_,
-                           std::array<std::shared_ptr<TH2>, nPidStudy>& hMult_vs_sph_pid_,
-                           std::array<std::shared_ptr<TH2>, nPidStudy>& hSphTrack_vs_mult_pid_,
-                           std::array<std::shared_ptr<TH2>, nPidStudy>& hMultTrack_vs_sph_pid_,
-                           std::array<std::shared_ptr<TH2>, nPidStudy>& hSphLead_vs_mult_pid_,
-                           std::array<std::shared_ptr<TH2>, nPidStudy>& hMultLead_vs_sph_pid_,
-                           std::array<std::shared_ptr<TH2>, nPidStudy>& hMultReal_vs_sph_pid_,
-                           std::shared_ptr<TH2>& hMultReal_vs_pid_) {
+                           [[maybe_unused]] const std::array<std::array<std::shared_ptr<TH2>, nPidStudy>, nSphClasses>& hPt_sph_pid_,
+                           [[maybe_unused]] const std::array<std::array<std::shared_ptr<TH2>, nPidStudy>, nSphClasses>& hPtLead_sph_pid_,
+                           [[maybe_unused]] const std::array<std::array<std::shared_ptr<TH2>, nPidStudy>, nSphClasses>& hPtAssoc_sph_pid_,
+                           [[maybe_unused]] const std::array<std::shared_ptr<TH2>, nPidStudy>& hSph_vs_mult_pid_,
+                           [[maybe_unused]] const std::array<std::shared_ptr<TH2>, nPidStudy>& hMult_vs_sph_pid_,
+                           [[maybe_unused]] const std::array<std::shared_ptr<TH2>, nPidStudy>& hSphTrack_vs_mult_pid_,
+                           [[maybe_unused]] const std::array<std::shared_ptr<TH2>, nPidStudy>& hMultTrack_vs_sph_pid_,
+                           [[maybe_unused]] const std::array<std::shared_ptr<TH2>, nPidStudy>& hSphLead_vs_mult_pid_,
+                           [[maybe_unused]] const std::array<std::shared_ptr<TH2>, nPidStudy>& hMultLead_vs_sph_pid_,
+                           [[maybe_unused]] const std::array<std::shared_ptr<TH2>, nPidStudy>& hMultReal_vs_sph_pid_,
+                           [[maybe_unused]] const std::shared_ptr<TH2>& hMultReal_vs_pid_) {
       // QA
       // evSel bins: 1=read 2=zvtx 3=multBin 4=zvtxBin 5=leadPt 6=ST_valid 7=sphClass 8=SE_filled
       auto hQA = histos.add<TH1>(Form("evSel_%s", suf), Form("Event selection (%s)", suf), HistType::kTH1D, {{8, 0.5, 8.5}});
@@ -851,7 +854,7 @@ struct myExampleTask {
     std::vector<TrackSimple> selTracks;
     selTracks.reserve(64);
     int leadIdx = -1;
-    double pTlead = -1., phiLead = 0., etaLead = 0., yLead = 0.;
+    double pTlead = -1., phiLead = 0., etaLead = 0.;
 
     for (const auto& p : mcParticles) {
       if (!p.isPhysicalPrimary())
@@ -890,7 +893,6 @@ struct myExampleTask {
         pTlead = p.pt();
         phiLead = p.phi();
         etaLead = p.eta();
-        yLead = rap;
         leadIdx = idx;
       }
     }
@@ -1201,7 +1203,7 @@ struct myExampleTask {
     std::vector<TrackSimple> selTracks;
     selTracks.reserve(64);
     int leadIdx = -1;
-    double pTlead = -1., phiLead = 0., etaLead = 0., yLead = 0.;
+    double pTlead = -1., phiLead = 0., etaLead = 0.;
 
     for (const auto& track : tracks) {
       hTrackCutDebug_Reco->Fill(1); // seen
@@ -1265,7 +1267,6 @@ struct myExampleTask {
         pTlead = track.pt();
         phiLead = track.phi();
         etaLead = track.eta();
-        yLead = rap;
         leadIdx = idx;
       }
     }
