@@ -1733,9 +1733,9 @@ struct HfTrackIndexSkimCreator {
   /// \tparam TTrackIndex is the iterator type of the track-collision associations
   template <typename TTrackIndex>
   struct HfPropagatedSoftPion {
-    TTrackIndex trackIndex;      ///< track-collision association, carries isSelProng and isIdentifiedPid
-    int64_t trackGlobalIndex;    ///< track global index
-    std::array<float, 3> pVec{}; ///< momentum at the PCA to the primary vertex
+    TTrackIndex trackIndex;       ///< track-collision association, carries isSelProng and isIdentifiedPid
+    int64_t trackGlobalIndex{-1}; ///< track global index
+    std::array<float, 3> pVec{};  ///< momentum at the PCA to the primary vertex
   };
 
   /// One track of the collision under study, propagated to that collision's primary vertex.
@@ -1772,7 +1772,6 @@ struct HfTrackIndexSkimCreator {
         }
         prongs.push_back(TProng{trackIndex, track.globalIndex(), pVec});
       } else {
-        const auto track = trackIndex.template track_as<TTracks>();
         auto& prong = prongs.emplace_back(TProng{trackIndex, track, getTrackParCov(track), track.pVector(), {track.dcaXY(), track.dcaZ()}});
         if (thisCollId != track.collisionId()) { // this is not the "default" collision for this track, we have to re-propagate it
           o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, prong.trackParVar, 2.f, noMatCorr, &prong.dcaInfo);
