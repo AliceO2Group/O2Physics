@@ -234,7 +234,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
     }
   }
 
-  template<typename TColl> 
+  template <typename TColl>
   bool isSelCollision(const TColl& collision)
   {
     if (selCentrality) {
