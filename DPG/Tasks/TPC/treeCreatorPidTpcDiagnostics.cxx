@@ -43,6 +43,9 @@
 
 #include <TString.h>
 
+#include <boost/preprocessor/cat.hpp>
+#include <boost/preprocessor/seq/for_each.hpp>
+
 #include <array>
 #include <cmath>
 #include <cstdint>
@@ -53,16 +56,16 @@ using namespace o2::framework;
 using namespace o2::track;
 using namespace o2::dpg_tpcskimstablecreator;
 
-#define DO_FOR_ALL_PARTICLES(MACRO) \
-  MACRO(El, Electron)               \
-  MACRO(Mu, Muon)                   \
-  MACRO(Pi, Pion)                   \
-  MACRO(Ka, Kaon)                   \
-  MACRO(Pr, Proton)                 \
-  MACRO(De, Deuteron)               \
-  MACRO(Tr, Triton)                 \
-  MACRO(He, Helium3)                \
-  MACRO(Al, Alpha)
+#define DO_FOR_ALL_PARTICLES(MACRO, ARG) \
+  MACRO(El, Electron, ARG)               \
+  MACRO(Mu, Muon, ARG)                   \
+  MACRO(Pi, Pion, ARG)                   \
+  MACRO(Ka, Kaon, ARG)                   \
+  MACRO(Pr, Proton, ARG)                 \
+  MACRO(De, Deuteron, ARG)               \
+  MACRO(Tr, Triton, ARG)                 \
+  MACRO(He, Helium3, ARG)                \
+  MACRO(Al, Alpha, ARG)
 
 struct TreeCreatorPidTpcDiagnostics {
   Produces<o2::aod::PidTpcDiagnostics> rowPidTpcDiagnostics;
@@ -88,7 +91,7 @@ struct TreeCreatorPidTpcDiagnostics {
 
   struct ParticleWiseCuts : ConfigurableGroup {
 
-#define DECLARE_PARTICLE_WISE_CONFIGURABLES(ParticleNameShort, ParticleNameLong)                                                                                                                                                                             \
+#define DECLARE_PARTICLE_WISE_CONFIGURABLES(ParticleNameShort, ParticleNameLong, Unused)                                                                                                                                                                     \
   Configurable<float> cutTpcInnerParameterMin##ParticleNameLong{"cutTpcInnerParameterMin" #ParticleNameLong, 0.f, "Lower-value cut on tpcInnerParam for " #ParticleNameLong};      /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
   Configurable<float> cutTpcInnerParameterMax##ParticleNameLong{"cutTpcInnerParameterMax" #ParticleNameLong, 999.f, "Upper-value cut on tpcInnerParam for " #ParticleNameLong};    /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
   Configurable<float> cutExpSigmaMax##ParticleNameLong{"cutExpSigmaMax" #ParticleNameLong, 1e9f, "Upper-value cut on (positively-defined) expected sigma for " #ParticleNameLong}; /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
@@ -98,24 +101,25 @@ struct TreeCreatorPidTpcDiagnostics {
   Configurable<float> cutDeDxDiffMax##ParticleNameLong{"cutDeDxDiffMax" #ParticleNameLong, 1e9f, "Upper-value cut on real - expected dE/dx difference for " #ParticleNameLong};    /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
   Configurable<float> cutNSigmaTpcAbs##ParticleNameLong{"cutNSigmaTpcAbs" #ParticleNameLong, 999.f, "Cut on absolute value of nSigmaTpc for " #ParticleNameLong};                  // o2-linter: disable=name/configurable (Configurable defined in macro)
 
-    DO_FOR_ALL_PARTICLES(DECLARE_PARTICLE_WISE_CONFIGURABLES)
+    DO_FOR_ALL_PARTICLES(DECLARE_PARTICLE_WISE_CONFIGURABLES, _)
 #undef DECLARE_PARTICLE_WISE_CONFIGURABLES
   } particleWiseCuts;
 
-#define PACK_CONFIGURABLES_TO_ARRAY(ParticleNameShort, ParticleNameLong) &particleWiseCuts.cutTpcInnerParameterMin##ParticleNameLong,
-  std::array<Configurable<float>*, PID::Alpha + 1> cutTpcInnerParameterMin{
-    DO_FOR_ALL_PARTICLES(PACK_CONFIGURABLES_TO_ARRAY)};
-#undef PACK_CONFIGURABLES_TO_ARRAY
+#define PARTICLE_WISE_CUT_NAMES \
+  (cutTpcInnerParameterMin)(cutTpcInnerParameterMax)(cutNSigmaTpcAbs)
 
-#define PACK_CONFIGURABLES_TO_ARRAY(ParticleNameShort, ParticleNameLong) &particleWiseCuts.cutTpcInnerParameterMax##ParticleNameLong,
-  std::array<Configurable<float>*, PID::Alpha + 1> cutTpcInnerParameterMax{
-    DO_FOR_ALL_PARTICLES(PACK_CONFIGURABLES_TO_ARRAY)};
-#undef PACK_CONFIGURABLES_TO_ARRAY
+#define MAKE_PARTICLE_CUT_POINTER(ShortName, LongName, CutName) \
+  &particleWiseCuts.BOOST_PP_CAT(CutName, LongName),
 
-#define PACK_CONFIGURABLES_TO_ARRAY(ParticleNameShort, ParticleNameLong) &particleWiseCuts.cutNSigmaTpcAbs##ParticleNameLong,
-  std::array<Configurable<float>*, PID::Alpha + 1> cutNSigmaTpcAbs{
-    DO_FOR_ALL_PARTICLES(PACK_CONFIGURABLES_TO_ARRAY)};
+#define PACK_CONFIGURABLES_TO_ARRAY(Unused1, Unused2, CutName) \
+  std::array<Configurable<float>*, PID::Alpha + 1> CutName{    \
+    DO_FOR_ALL_PARTICLES(MAKE_PARTICLE_CUT_POINTER, CutName)};
+
+  BOOST_PP_SEQ_FOR_EACH(PACK_CONFIGURABLES_TO_ARRAY, _, PARTICLE_WISE_CUT_NAMES)
+
 #undef PACK_CONFIGURABLES_TO_ARRAY
+#undef MAKE_PARTICLE_CUT_POINTER
+#undef PARTICLE_WISE_CUT_NAMES
 
   HistogramRegistry registry{"registry", {}};
 
@@ -140,7 +144,7 @@ struct TreeCreatorPidTpcDiagnostics {
     int enabledProcesses{0};
 
     switch (ParticleId) {
-#define INIT_PARTICLE(ParticleNameShort, ParticleNameLong)                                                             \
+#define INIT_PARTICLE(ParticleNameShort, ParticleNameLong, Unused)                                                     \
   case PID::ParticleNameLong:                                                                                          \
     if (!doprocess##ParticleNameLong && !doprocessFull##ParticleNameLong && !doprocessFullWithTOF##ParticleNameLong) { \
       return false;                                                                                                    \
@@ -157,7 +161,7 @@ struct TreeCreatorPidTpcDiagnostics {
     LOG(info) << "Enabled TPC QA for " << #ParticleNameLong;                                                           \
     break;
 
-      DO_FOR_ALL_PARTICLES(INIT_PARTICLE)
+      DO_FOR_ALL_PARTICLES(INIT_PARTICLE, _)
 #undef INIT_PARTICLE
     }
     if (enabledProcesses != 1) {
@@ -273,7 +277,7 @@ struct TreeCreatorPidTpcDiagnostics {
     }
   }
 
-#define MAKE_PROCESS_FUNCTIONS(ParticleNameShort, ParticleNameLong)                                                                                                 \
+#define MAKE_PROCESS_FUNCTIONS(ParticleNameShort, ParticleNameLong, Unused)                                                                                         \
   void process##ParticleNameLong(CollisionsExtra const& collisions,                                                                                                 \
                                  soa::Join<TrackCandidates, aod::pidTPC##ParticleNameShort> const& tracks,                                                          \
                                  aod::BCsWithTimestamps const&)                                                                                                     \
@@ -298,7 +302,7 @@ struct TreeCreatorPidTpcDiagnostics {
   }                                                                                                                                                                 \
   PROCESS_SWITCH(TreeCreatorPidTpcDiagnostics, processFullWithTOF##ParticleNameLong, Form("Process for the %s hypothesis for full TPC PID QA with the TOF info added", #ParticleNameLong), false);
 
-  DO_FOR_ALL_PARTICLES(MAKE_PROCESS_FUNCTIONS)
+  DO_FOR_ALL_PARTICLES(MAKE_PROCESS_FUNCTIONS, _)
 #undef MAKE_PROCESS_FUNCTIONS
 };
 
