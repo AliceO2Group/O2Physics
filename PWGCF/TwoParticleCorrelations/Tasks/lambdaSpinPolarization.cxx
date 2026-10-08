@@ -64,6 +64,7 @@
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 using namespace o2;
@@ -132,15 +133,10 @@ using LambdaTrack = LambdaTracks::iterator;
 namespace lambdatrackext
 {
 DECLARE_SOA_COLUMN(LambdaSharingDaughter, lambdaSharingDaughter, bool);
-DECLARE_SOA_COLUMN(LambdaSharingDauIds, lambdaSharingDauIds,
-                   std::vector<int64_t>);
-DECLARE_SOA_COLUMN(TrueLambdaFlag, trueLambdaFlag, bool);
 } // namespace lambdatrackext
 
 DECLARE_SOA_TABLE(LambdaTracksExt, "AOD", "LAMBDATRACKSEXT",
-                  lambdatrackext::LambdaSharingDaughter,
-                  lambdatrackext::LambdaSharingDauIds,
-                  lambdatrackext::TrueLambdaFlag);
+                  lambdatrackext::LambdaSharingDaughter);
 using LambdaTrackExt = LambdaTracksExt::iterator;
 
 namespace lambdamcgentrack
@@ -183,6 +179,8 @@ namespace lambdamixeventtracks
 DECLARE_SOA_COLUMN(LambdaMixEventCollisionIdx, lambdaMixEventCollisionIdx, int);
 DECLARE_SOA_COLUMN(LambdaMixEventTrackIdx, lambdaMixEventTrackIdx, int);
 DECLARE_SOA_COLUMN(LambdaMixEventTimeStamp, lambdaMixEventTimeStamp, uint64_t);
+DECLARE_SOA_COLUMN(LambdaMixEventPosTrackIdx, lambdaMixEventPosTrackIdx, int);
+DECLARE_SOA_COLUMN(LambdaMixEventNegTrackIdx, lambdaMixEventNegTrackIdx, int);
 } // namespace lambdamixeventtracks
 
 DECLARE_SOA_TABLE(LambdaMixEventTracks, "AOD", "LAMBDAMIXTRKS",
@@ -192,7 +190,9 @@ DECLARE_SOA_TABLE(LambdaMixEventTracks, "AOD", "LAMBDAMIXTRKS",
                   lambdatrack::Py, lambdatrack::Pz, lambdatrack::Mass,
                   lambdatrack::PrPx, lambdatrack::PrPy, lambdatrack::PrPz,
                   lambdatrack::V0Type,
-                  lambdamixeventtracks::LambdaMixEventTimeStamp);
+                  lambdamixeventtracks::LambdaMixEventTimeStamp,
+                  lambdamixeventtracks::LambdaMixEventPosTrackIdx,
+                  lambdamixeventtracks::LambdaMixEventNegTrackIdx);
 using LambdaMixEventTrack = LambdaMixEventTracks::iterator;
 
 namespace lambdamixeventmcgentracks
@@ -276,7 +276,13 @@ enum PairTier { kSameEvent = 0,
                 kMixedEvent,
                 kMcGenSameEvent,
                 kMcGenSameEventInMixing,
-                kMcGenMixedEvent };
+                kMcGenMixedEvent,
+                kSameEventSharedDau,
+                kSameEventInMixingSharedDau };
+
+enum SharedDauRule { kSharedDauMaxSet = 0,
+                     kSharedDauPairVeto,
+                     kSharedDauDropAll };
 
 enum PairEventCount { kPeAll = 1,
                       kPeOneCand,
@@ -1240,14 +1246,6 @@ struct LambdaTracksExtProducer {
 
   Produces<aod::LambdaTracksExt> lambdaTrackExtTable;
 
-  Configurable<bool> cAcceptAllLambda{"cAcceptAllLambda", false, "Accept all lambda (ignore sharing)"};
-  Configurable<bool> cRejAllLambdaShaDau{"cRejAllLambdaShaDau", true, "Reject lambda sharing daughters"};
-  Configurable<bool> cSelLambdaMassPdg{"cSelLambdaMassPdg", false, "Select lambda closest to PDG mass"};
-  Configurable<bool> cSelLambdaTScore{"cSelLambdaTScore", false, "Select lambda by t-score"};
-  Configurable<float> cA{"cA", 0.6, "t-score weight: |mass - PDGmass|"};
-  Configurable<float> cB{"cB", 0.6, "t-score weight: DCA daughters"};
-  Configurable<float> cC{"cC", 0.6, "t-score weight: |cosPA - 1|"};
-
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext const&)
@@ -1261,8 +1259,6 @@ struct LambdaTracksExtProducer {
 
     histos.add("h1i_totlambda_mult", "Multiplicity", kTH1I, {axisMult});
     histos.add("h1i_totantilambda_mult", "Multiplicity", kTH1I, {axisMult});
-    histos.add("h1i_lambda_mult", "Multiplicity", kTH1I, {axisMult});
-    histos.add("h1i_antilambda_mult", "Multiplicity", kTH1I, {axisMult});
     histos.add("h2d_n2_etaphi_LaP_LaM", "#rho_{2}^{Share} #Lambda#bar{#Lambda}", kTH2D, {axisDEta, axisDPhi});
     histos.add("h2d_n2_etaphi_LaM_LaP", "#rho_{2}^{Share} #bar{#Lambda}#Lambda", kTH2D, {axisDEta, axisDPhi});
     histos.add("h2d_n2_etaphi_LaP_LaP", "#rho_{2}^{Share} #Lambda#Lambda", kTH2D, {axisDEta, axisDPhi});
@@ -1294,13 +1290,10 @@ struct LambdaTracksExtProducer {
 
   void process(aod::LambdaCollisions::iterator const&, aod::LambdaTracks const& tracks)
   {
-    int nTotLambda = 0, nTotAntiLambda = 0, nSelLambda = 0, nSelAntiLambda = 0;
+    int nTotLambda = 0, nTotAntiLambda = 0;
 
     for (auto const& lambda : tracks) {
-      bool lambdaMinDeltaMassFlag = true, lambdaMinTScoreFlag = true;
-      bool lambdaSharingDauFlag = false, trueLambdaFlag = false;
-      std::vector<int64_t> vSharedDauLambdaIndex;
-      float tLambda = 0., tTrack = 0.;
+      bool lambdaSharingDauFlag = false;
 
       if (lambda.v0Type() == kLambda) {
         ++nTotLambda;
@@ -1308,15 +1301,12 @@ struct LambdaTracksExtProducer {
         ++nTotAntiLambda;
       }
 
-      tLambda = (cA * std::abs(lambda.mass() - MassLambda0)) + (cB * lambda.dcaDau()) + (cC * std::abs(lambda.cosPA() - 1.));
-
       for (auto const& track : tracks) {
         if (lambda.index() == track.index()) {
           continue;
         }
 
         if (lambda.posTrackId() == track.posTrackId() || lambda.negTrackId() == track.negTrackId()) {
-          vSharedDauLambdaIndex.push_back(track.index());
           lambdaSharingDauFlag = true;
 
           if (lambda.v0Type() == kLambda && track.v0Type() == kAntiLambda) {
@@ -1328,15 +1318,6 @@ struct LambdaTracksExtProducer {
           } else if (lambda.v0Type() == kAntiLambda && track.v0Type() == kAntiLambda) {
             histos.fill(HIST("h2d_n2_etaphi_LaM_LaM"), lambda.eta() - track.eta(), RecoDecay::constrainAngle((lambda.phi() - track.phi()), -PIHalf));
           }
-
-          if (std::abs(lambda.mass() - MassLambda0) > std::abs(track.mass() - MassLambda0)) {
-            lambdaMinDeltaMassFlag = false;
-          }
-
-          tTrack = (cA * std::abs(track.mass() - MassLambda0)) + (cB * track.dcaDau()) + (cC * std::abs(track.cosPA() - 1.));
-          if (tLambda > tTrack) {
-            lambdaMinTScoreFlag = false;
-          }
         }
       }
 
@@ -1346,19 +1327,7 @@ struct LambdaTracksExtProducer {
         fillHistos<kUniqueLambda>(lambda);
       }
 
-      if (cAcceptAllLambda || (cRejAllLambdaShaDau && !lambdaSharingDauFlag) || (cSelLambdaMassPdg && lambdaMinDeltaMassFlag) || (cSelLambdaTScore && lambdaMinTScoreFlag)) {
-        trueLambdaFlag = true;
-      }
-
-      if (trueLambdaFlag) {
-        if (lambda.v0Type() == kLambda) {
-          ++nSelLambda;
-        } else if (lambda.v0Type() == kAntiLambda) {
-          ++nSelAntiLambda;
-        }
-      }
-
-      lambdaTrackExtTable(lambdaSharingDauFlag, vSharedDauLambdaIndex, trueLambdaFlag);
+      lambdaTrackExtTable(lambdaSharingDauFlag);
     }
 
     if (nTotLambda != 0) {
@@ -1366,12 +1335,6 @@ struct LambdaTracksExtProducer {
     }
     if (nTotAntiLambda != 0) {
       histos.fill(HIST("h1i_totantilambda_mult"), nTotAntiLambda);
-    }
-    if (nSelLambda != 0) {
-      histos.fill(HIST("h1i_lambda_mult"), nSelLambda);
-    }
-    if (nSelAntiLambda != 0) {
-      histos.fill(HIST("h1i_antilambda_mult"), nSelAntiLambda);
     }
   }
 };
@@ -1387,9 +1350,10 @@ struct LambdaSpinPolarization {
   Configurable<float> cMassHistMin{"cMassHistMin", 1.0806f, "Mass axes min (GeV/c2), below cMassAccMin"};
   Configurable<float> cMassHistMax{"cMassHistMax", 1.1806f, "Mass axes max (GeV/c2), above cMassAccMax"};
   Configurable<int> cNMassBins{"cNMassBins", 200, "Mass axes N bins"};
-  ConfigurableAxis axisMEReplacedMass{"axisMEReplacedMass", {VARIABLE_WIDTH, 1.0956, 1.1031, 1.1081, 1.1231, 1.1281, 1.1356}, "ME: mass of the replaced leg, binned by the analysis windows LSB | gap | Sig | gap | RSB (add edges, e.g. of the 3-sigma windows, to keep more window sets)"};
   ConfigurableAxis axisDeltaR{"axisDeltaR", {VARIABLE_WIDTH, 0.0, 0.4, 0.8, 1.2, 1.8, 2.4, 3.1, 3.5}, "DeltaR bins (last bin: outside the analysis windows)"};
   Configurable<int> cNBinsCosTS{"cNBinsCosTS", 10, "N costheta* bins"};
+  Configurable<int> cSharedDauRule{"cSharedDauRule", 0, "Candidates sharing a daughter track: 0 = keep the largest set without shared tracks per cluster (ties: closest to the PDG mass), 1 = veto only the pairs sharing a track, 2 = drop every candidate sharing a track"};
+  Configurable<int> cMinCandPerEvent{"cMinCandPerEvent", 2, "Collisions with fewer reconstructed Lambda + AntiLambda candidates are skipped by the pair, mixing and derived-table processes (the event QA counts all collisions)"};
 
   Configurable<int> cMEPoolDepth{"cMEPoolDepth", 100000, "Rolling ME pool: depth in donor events per (centrality, Vz) bin"};
   Configurable<int> cMEPoolMinEvents{"cMEPoolMinEvents", 20, "Rolling ME pool: events a pool must hold before its bin is mixed (warm-up)"};
@@ -1418,6 +1382,7 @@ struct LambdaSpinPolarization {
   Configurable<bool> cFillClosePairQA{"cFillClosePairQA", true, "Close-pair QA of the same-event pairs: SE (processDataReco) and SEproc (processDataRecoMixed)"};
   Configurable<float> cClosePairMassWindow{"cClosePairMassWindow", 0.004f, "Close-pair QA: both legs within |m - m_Lambda| < this (GeV/c2); <= 0: all pairs"};
   ConfigurableAxis axisClosePair{"axisClosePair", {100, -0.15, 0.15}, "Close-pair QA: bins of the daughter Delta eta, Delta y and Delta phi"};
+  Configurable<bool> cFillSharedDauQA{"cFillSharedDauQA", true, "Shared-daughter QA: SE and SEproc pairs with a candidate sharing a daughter track with another candidate, and the cluster sizes"};
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
@@ -1425,8 +1390,19 @@ struct LambdaSpinPolarization {
   uint64_t pairOrderSeed = 0;
   std::array<std::unique_ptr<THnBase>, 4> kinWeightMaps{};
   std::vector<TAxis> legAxesRef{};
-  TAxis replacedMassAxis{};
   bool kinWeightsLoaded = false;
+
+  struct SharedDauCand {
+    int64_t globalIdx;
+    int64_t posId;
+    int64_t negId;
+    float dMass;
+  };
+  static constexpr std::size_t MaxExactCluster = 16;
+  static constexpr int NoSharedTrackIdx = -1;
+  std::vector<SharedDauCand> sdCands;
+  std::vector<int64_t> sdConflicted;
+  std::vector<int64_t> sdDropped;
 
   struct PoolTrack {
     float mPx, mPy, mPz, mPt, mRap, mPhi, mMass;
@@ -1595,9 +1571,7 @@ struct LambdaSpinPolarization {
     const AxisSpec axisM2(cNMassBins, cMassHistMin, cMassHistMax, "M_{2} (GeV/#it{c}^{2})");
     const AxisSpec axisDR(axisDeltaR, "#DeltaR");
     const AxisSpec axisCosTS(cNBinsCosTS, -1, 1, "cos(#theta*)");
-    const AxisSpec axisReplacedMass(axisMEReplacedMass, "M_{replaced leg} (GeV/#it{c}^{2})");
     const std::vector<AxisSpec> pairAxes = {axisM1, axisM2, axisDR, axisCosTS};
-    const std::vector<AxisSpec> meAxes = {axisM1, axisM2, axisDR, axisCosTS, axisReplacedMass};
 
     auto nBins = [](int configured, float range, float window) {
       if (configured > 0) {
@@ -1608,24 +1582,26 @@ struct LambdaSpinPolarization {
     const AxisSpec axisLegPt(nBins(cNKinWPtBins, cMaxPt - cMinPt, cMaxDeltaPt), cMinPt, cMaxPt, "p_{T} (GeV/#it{c})");
     const AxisSpec axisLegRap(nBins(cNKinWRapBins, cMaxRap - cMinRap, cMaxDeltaRap), cMinRap, cMaxRap, "y");
     const AxisSpec axisLegPhi(nBins(cNKinWPhiBins, TwoPI, cMaxDeltaPhi), 0., TwoPI, "#varphi (rad)");
-    const std::vector<AxisSpec> legAxes = {axisLegPt, axisLegRap, axisLegPhi, axisReplacedMass};
+    const std::vector<AxisSpec> legAxes = {axisLegPt, axisLegRap, axisLegPhi};
     legAxesRef.clear();
     for (auto const& spec : legAxes) {
       const std::vector<double> edges = axisEdges(spec);
       legAxesRef.emplace_back(static_cast<int>(edges.size()) - 1, edges.data());
     }
-    replacedMassAxis = legAxesRef.back();
 
     if (!(cMassHistMin.value < cMassAccMin.value && cMassAccMax.value < cMassHistMax.value)) {
       LOGF(fatal, "The mass axes [%.4f, %.4f] must be wider than the accepted mass window [%.4f, %.4f]", cMassHistMin.value, cMassHistMax.value, cMassAccMin.value, cMassAccMax.value);
     }
-    std::vector<double> massEdges = axisEdges(axisReplacedMass);
-    massEdges.push_back(cMassAccMin.value);
-    massEdges.push_back(cMassAccMax.value);
-    for (auto const& edge : massEdges) {
+    for (auto const& edge : {cMassAccMin.value, cMassAccMax.value}) {
       if (!isOnMassBinEdge(edge)) {
-        LOGF(warning, "Mass %.5f (accepted window or axisMEReplacedMass) is not a bin edge of the mass axes [%.4f, %.4f] / %d", edge, cMassHistMin.value, cMassHistMax.value, cNMassBins.value);
+        LOGF(warning, "Accepted mass %.5f is not a bin edge of the mass axes [%.4f, %.4f] / %d", edge, cMassHistMin.value, cMassHistMax.value, cNMassBins.value);
       }
+    }
+    if (cSharedDauRule.value < kSharedDauMaxSet || cSharedDauRule.value > kSharedDauDropAll) {
+      LOGF(fatal, "cSharedDauRule must be %d (largest set without shared tracks), %d (veto pairs sharing a track) or %d (drop every candidate sharing a track)", static_cast<int>(kSharedDauMaxSet), static_cast<int>(kSharedDauPairVeto), static_cast<int>(kSharedDauDropAll));
+    }
+    if (cMinCandPerEvent.value < 1) {
+      LOGF(fatal, "cMinCandPerEvent must be at least 1, it is %d", cMinCandPerEvent.value);
     }
 
     if (doprocessDataRecoMixed || doprocessMcGenMixed) {
@@ -1665,7 +1641,7 @@ struct LambdaSpinPolarization {
         hStatus->GetXaxis()->SetBinLabel(kMEEventDonated, "donated to the pool");
         histos.add((dir + "hPoolEventsAtMixing").c_str(), "pool size when a collision is mixed;events in the pool;collisions", kTH1F, {axisPoolSize});
         histos.add((dir + "hMatchesLeg2").c_str(), "matches per replaced leg 2;N matches;pair type", kTH2F, {{100, -0.5, 99.5}, {4, -0.5, 3.5}});
-        histos.add((dir + "hDeltaRShift").c_str(), "ME entries are filed at the #DeltaR of their seed;#DeltaR_{seed};#DeltaR_{mixed pair} - #DeltaR_{seed}", kTH2F, {{35, 0., 3.5}, {100, -0.2, 0.2}});
+        histos.add((dir + "hDeltaRShift").c_str(), "ME pairs are filed at their own #DeltaR;#DeltaR_{seed};#DeltaR_{mixed pair} - #DeltaR_{seed}", kTH2F, {{35, 0., 3.5}, {100, -0.2, 0.2}});
         histos.add((dir + "hLambdaMultVsCent").c_str(), "ME #Lambda mult;cent;N", kTH2D, {axisCentME, {50, 0, 50}});
         histos.add((dir + "hAntiLambdaMultVsCent").c_str(), "ME #bar{#Lambda} mult;cent;N", kTH2D, {axisCentME, {50, 0, 50}});
       }
@@ -1725,7 +1701,7 @@ struct LambdaSpinPolarization {
         histos.add(("SE/hPair_" + pair).c_str(), ("SE " + pair).c_str(), kTHnSparseF, pairAxes);
       }
       if (doprocessDataRecoMixed) {
-        histos.add(("ME/hPair_" + pair).c_str(), ("ME " + pair).c_str(), kTHnSparseD, meAxes, true);
+        histos.add(("ME/hPair_" + pair).c_str(), ("ME " + pair).c_str(), kTHnSparseD, pairAxes, true);
       }
       if (doprocessDataRecoMixed && cFillSEInMixing) {
         histos.add(("SEproc/hPair_" + pair).c_str(), ("SE processed by the mixing " + pair).c_str(), kTHnSparseF, pairAxes);
@@ -1734,15 +1710,24 @@ struct LambdaSpinPolarization {
         histos.add(("KinW/SEproc/hLeg2_" + pair).c_str(), ("leg 2 of SEproc " + pair).c_str(), kTHnSparseD, legAxes);
         histos.add(("KinW/ME/hLeg2_" + pair).c_str(), ("candidates replacing leg 2 " + pair).c_str(), kTHnSparseD, legAxes, true);
       }
+      if (cFillSharedDauQA && doprocessDataReco) {
+        histos.add(("QA/SharedDau/SE/hPair_" + pair).c_str(), ("SE pairs with a candidate sharing a daughter " + pair).c_str(), kTHnSparseF, pairAxes);
+      }
+      if (cFillSharedDauQA && doprocessDataRecoMixed) {
+        histos.add(("QA/SharedDau/SEproc/hPair_" + pair).c_str(), ("SEproc pairs with a candidate sharing a daughter " + pair).c_str(), kTHnSparseF, pairAxes);
+      }
       if (doprocessMcGen) {
         histos.add(("McGen/SE/hPair_" + pair).c_str(), ("MC generated SE " + pair).c_str(), kTHnSparseF, pairAxes);
       }
       if (doprocessMcGenMixed) {
-        histos.add(("McGen/ME/hPair_" + pair).c_str(), ("MC generated ME " + pair).c_str(), kTHnSparseD, meAxes, true);
+        histos.add(("McGen/ME/hPair_" + pair).c_str(), ("MC generated ME " + pair).c_str(), kTHnSparseD, pairAxes, true);
       }
       if (doprocessMcGenMixed && cFillSEInMixing) {
         histos.add(("McGen/SEproc/hPair_" + pair).c_str(), ("MC generated SE processed by the mixing " + pair).c_str(), kTHnSparseF, pairAxes);
       }
+    }
+    if (cFillSharedDauQA && (doprocessDataReco || doprocessDataRecoMixed)) {
+      histos.add("QA/SharedDau/hClusterSize", "clusters of candidates sharing daughter tracks;candidates in the cluster;clusters", kTH1F, {{20, 0.5, 20.5}});
     }
 
     if (cFillClosePairQA && (doprocessDataReco || doprocessDataRecoMixed)) {
@@ -1863,10 +1848,11 @@ struct LambdaSpinPolarization {
   }
 
   template <PairTier tier, ParticlePairType part_pair>
-  void fillPair(PoolTrack const& p1, PoolTrack const& p2, float dR, float w, float mReplaced = 0.f)
+  void fillPair(PoolTrack const& p1, PoolTrack const& p2, float dR, float w)
   {
-    static constexpr std::array<std::string_view, 6> TierDir = {"SE/hPair_", "SEproc/hPair_", "ME/hPair_",
-                                                                "McGen/SE/hPair_", "McGen/SEproc/hPair_", "McGen/ME/hPair_"};
+    static constexpr std::array<std::string_view, 8> TierDir = {"SE/hPair_", "SEproc/hPair_", "ME/hPair_",
+                                                                "McGen/SE/hPair_", "McGen/SEproc/hPair_", "McGen/ME/hPair_",
+                                                                "QA/SharedDau/SE/hPair_", "QA/SharedDau/SEproc/hPair_"};
     static constexpr std::array<std::string_view, 4> PairTag = {"LaPLaM", "LaMLaP", "LaPLaP", "LaMLaM"};
 
     std::array<float, 4> l1 = {p1.px(), p1.py(), p1.pz(), p1.mass()};
@@ -1875,25 +1861,15 @@ struct LambdaSpinPolarization {
     std::array<float, 4> pr2 = {p2.prPx(), p2.prPy(), p2.prPz(), MassProton};
 
     const float ctheta = cosThetaStarAtlas(l1, l2, pr1, pr2);
-    if constexpr (tier == kMixedEvent || tier == kMcGenMixedEvent) {
-      histos.fill(HIST(TierDir[tier]) + HIST(PairTag[part_pair]), p1.mass(), p2.mass(), dR, ctheta, mReplaced, w);
-    } else {
-      histos.fill(HIST(TierDir[tier]) + HIST(PairTag[part_pair]), p1.mass(), p2.mass(), dR, ctheta, w);
-    }
+    histos.fill(HIST(TierDir[tier]) + HIST(PairTag[part_pair]), p1.mass(), p2.mass(), dR, ctheta, w);
   }
 
   template <bool IsME, ParticlePairType part_pair>
-  void fillLeg2Spectrum(PoolTrack const& leg, float mReplaced, float w)
+  void fillLeg2Spectrum(PoolTrack const& leg, float w)
   {
     static constexpr std::array<std::string_view, 2> Dir = {"KinW/SEproc/hLeg2_", "KinW/ME/hLeg2_"};
     static constexpr std::array<std::string_view, 4> PairTag = {"LaPLaM", "LaMLaP", "LaPLaP", "LaMLaM"};
-    histos.fill(HIST(Dir[IsME]) + HIST(PairTag[part_pair]), leg.pt(), leg.rap(), leg.phi(), mReplaced, w);
-  }
-
-  [[nodiscard]] bool isSameWindow(float m1, float m2) const
-  {
-    const int b = replacedMassAxis.FindFixBin(m1);
-    return b >= 1 && b <= replacedMassAxis.GetNbins() && b == replacedMassAxis.FindFixBin(m2);
+    histos.fill(HIST(Dir[IsME]) + HIST(PairTag[part_pair]), leg.pt(), leg.rap(), leg.phi(), w);
   }
 
   template <PairTier tier, int Cls, int Combo>
@@ -1936,15 +1912,15 @@ struct LambdaSpinPolarization {
            std::abs(RecoDecay::constrainAngle(cand.phi() - leg.phi(), -PI)) < cMaxDeltaPhi.value;
   }
 
-  static constexpr std::size_t NLegAxes = 4;
+  static constexpr std::size_t NLegAxes = 3;
   template <ParticlePairType part_pair>
-  float kinWeight(PoolTrack const& cand, float mReplaced) const
+  float kinWeight(PoolTrack const& cand) const
   {
     THnBase const* map = kinWeightMaps[part_pair].get();
     if (!map) {
       return 1.f;
     }
-    const std::array<double, NLegAxes> x = {cand.pt(), cand.rap(), cand.phi(), mReplaced};
+    const std::array<double, NLegAxes> x = {cand.pt(), cand.rap(), cand.phi()};
     std::array<int, NLegAxes> idx{};
     for (std::size_t i = 0; i < NLegAxes; ++i) {
       TAxis const* axis = map->GetAxis(i);
@@ -2000,7 +1976,7 @@ struct LambdaSpinPolarization {
       const std::string name = "hKinW_" + std::string(PairTag[i]);
       auto* map = dynamic_cast<THnBase*>(list->FindObject(name.c_str()));
       if (!map || !hasLegAxes(*map)) {
-        LOGF(fatal, "Kinematic weights: %s is missing, or its axes differ from KinW/*/hLeg2_%s (pT, y, phi, window of the replaced leg) of this configuration", name.c_str(), std::string(PairTag[i]).c_str());
+        LOGF(fatal, "Kinematic weights: %s is missing, or its axes differ from KinW/*/hLeg2_%s (pT, y, phi) of this configuration", name.c_str(), std::string(PairTag[i]).c_str());
         return;
       }
       kinWeightMaps[i].reset(static_cast<THnBase*>(map->Clone()));
@@ -2039,25 +2015,210 @@ struct LambdaSpinPolarization {
     return firstIsLo != swapped;
   }
 
+  template <typename T1, typename T2>
+  static bool sharesDaughter(T1 const& a, T2 const& b)
+  {
+    return a.posTrackId() == b.posTrackId() || a.negTrackId() == b.negTrackId();
+  }
+
+  [[nodiscard]] bool sharesDaughterCand(std::size_t a, std::size_t b) const
+  {
+    return a != b && (sdCands[a].posId == sdCands[b].posId || sdCands[a].negId == sdCands[b].negId);
+  }
+
+  [[nodiscard]] bool isDropped(int64_t globalIdx) const
+  {
+    return std::binary_search(sdDropped.begin(), sdDropped.end(), globalIdx);
+  }
+
+  [[nodiscard]] bool isConflicted(int64_t globalIdx) const
+  {
+    return std::binary_search(sdConflicted.begin(), sdConflicted.end(), globalIdx);
+  }
+
+  template <bool Reco, typename T>
+  [[nodiscard]] bool isKept(T const& trk) const
+  {
+    return !Reco || !isDropped(trk.globalIndex());
+  }
+
+  template <bool Reco, typename T>
+  [[nodiscard]] bool isUsable(T const& trk) const
+  {
+    return isAcceptedMass(trk.mass()) && isKept<Reco>(trk);
+  }
+
+  template <typename T>
+  [[nodiscard]] bool hasMinCandidates(T const& lTrks, T const& alTrks) const
+  {
+    return std::cmp_greater_equal(lTrks.size() + alTrks.size(), cMinCandPerEvent.value);
+  }
+
+  void selectLargestFreeSet(std::vector<std::size_t> const& members, std::vector<char>& keep) const
+  {
+    const std::size_t s = members.size();
+    keep.assign(s, 0);
+    if (s <= MaxExactCluster) {
+      std::array<uint32_t, MaxExactCluster> conf{};
+      for (std::size_t a = 0; a < s; ++a) {
+        for (std::size_t b = 0; b < s; ++b) {
+          if (sharesDaughterCand(members[a], members[b])) {
+            conf[a] |= static_cast<uint32_t>(1) << b;
+          }
+        }
+      }
+      uint32_t best = 0;
+      int bestN = -1;
+      float bestScore = 0.f;
+      const uint32_t nMasks = static_cast<uint32_t>(1) << s;
+      for (uint32_t mask = 1; mask < nMasks; ++mask) {
+        bool isFree = true;
+        int nIn = 0;
+        float score = 0.f;
+        for (std::size_t a = 0; a < s && isFree; ++a) {
+          if (((mask >> a) & 1U) == 0U) {
+            continue;
+          }
+          if ((conf[a] & mask) != 0U) {
+            isFree = false;
+            continue;
+          }
+          ++nIn;
+          score += sdCands[members[a]].dMass;
+        }
+        if (isFree && (nIn > bestN || (nIn == bestN && score < bestScore))) {
+          best = mask;
+          bestN = nIn;
+          bestScore = score;
+        }
+      }
+      for (std::size_t a = 0; a < s; ++a) {
+        keep[a] = static_cast<char>((best >> a) & 1U);
+      }
+      return;
+    }
+    std::vector<std::size_t> order(s);
+    for (std::size_t a = 0; a < s; ++a) {
+      order[a] = a;
+    }
+    std::sort(order.begin(), order.end(), [this, &members](std::size_t x, std::size_t y) {
+      SharedDauCand const& cx = sdCands[members[x]];
+      SharedDauCand const& cy = sdCands[members[y]];
+      return cx.dMass < cy.dMass || (cx.dMass == cy.dMass && cx.globalIdx < cy.globalIdx);
+    });
+    for (auto const& a : order) {
+      bool isFree = true;
+      for (std::size_t b = 0; b < s && isFree; ++b) {
+        if (keep[b] != 0 && sharesDaughterCand(members[a], members[b])) {
+          isFree = false;
+        }
+      }
+      if (isFree) {
+        keep[a] = 1;
+      }
+    }
+  }
+
+  template <typename T>
+  void resolveSharedDaughters(T const& lTrks, T const& alTrks, bool fillQA)
+  {
+    sdCands.clear();
+    sdConflicted.clear();
+    sdDropped.clear();
+    auto collect = [this](auto const& trks) {
+      for (auto const& trk : trks) {
+        if (trk.lambdaSharingDaughter()) {
+          sdCands.push_back(SharedDauCand{trk.globalIndex(), trk.posTrackId(), trk.negTrackId(), static_cast<float>(std::abs(trk.mass() - MassLambda0))});
+        }
+      }
+    };
+    collect(lTrks);
+    collect(alTrks);
+    const std::size_t n = sdCands.size();
+    if (n == 0) {
+      return;
+    }
+    std::sort(sdCands.begin(), sdCands.end(), [](SharedDauCand const& a, SharedDauCand const& b) { return a.globalIdx < b.globalIdx; });
+    std::vector<int> cluster(n, -1);
+    std::vector<std::size_t> members;
+    std::vector<std::size_t> stack;
+    std::vector<char> keep;
+    int nClusters = 0;
+    for (std::size_t seed = 0; seed < n; ++seed) {
+      if (cluster[seed] >= 0) {
+        continue;
+      }
+      members.clear();
+      stack.assign(1, seed);
+      cluster[seed] = nClusters;
+      while (!stack.empty()) {
+        const std::size_t a = stack.back();
+        stack.pop_back();
+        members.push_back(a);
+        for (std::size_t b = 0; b < n; ++b) {
+          if (cluster[b] < 0 && sharesDaughterCand(a, b)) {
+            cluster[b] = nClusters;
+            stack.push_back(b);
+          }
+        }
+      }
+      ++nClusters;
+      std::sort(members.begin(), members.end());
+      if (fillQA && cFillSharedDauQA) {
+        histos.fill(HIST("QA/SharedDau/hClusterSize"), members.size());
+      }
+      if (members.size() < NCandidatesForPair) {
+        continue;
+      }
+      for (auto const& a : members) {
+        sdConflicted.push_back(sdCands[a].globalIdx);
+      }
+      if (cSharedDauRule.value == kSharedDauPairVeto) {
+        continue;
+      }
+      if (cSharedDauRule.value == kSharedDauDropAll) {
+        keep.assign(members.size(), 0);
+      } else {
+        selectLargestFreeSet(members, keep);
+      }
+      for (std::size_t a = 0; a < members.size(); ++a) {
+        if (keep[a] == 0) {
+          sdDropped.push_back(sdCands[members[a]].globalIdx);
+        }
+      }
+    }
+    std::sort(sdConflicted.begin(), sdConflicted.end());
+    std::sort(sdDropped.begin(), sdDropped.end());
+  }
+
   template <PairTier tier, ParticlePairType part_pair, typename T>
   void analyzePairsSE(T const& trks_1, T const& trks_2)
   {
+    constexpr bool Reco = tier == kSameEvent;
     for (auto const& trk_1 : trks_1) {
-      if (!isAcceptedMass(trk_1.mass())) {
+      if (!isUsable<Reco>(trk_1)) {
         continue;
       }
       const PoolTrack p1 = toPoolTrack(trk_1);
 
       for (auto const& trk_2 : trks_2) {
-        if (!isCountedOrder(trk_1, trk_2) || !isAcceptedMass(trk_2.mass())) {
+        if (!isCountedOrder(trk_1, trk_2) || !isUsable<Reco>(trk_2)) {
           continue;
+        }
+        if constexpr (Reco) {
+          if (sharesDaughter(trk_1, trk_2)) {
+            continue;
+          }
         }
         const PoolTrack p2 = toPoolTrack(trk_2);
         const float dR = deltaR(p1, p2);
         fillPair<tier, part_pair>(p1, p2, dR, 1.f);
-        if constexpr (tier == kSameEvent) {
+        if constexpr (Reco) {
           if (cFillClosePairQA && isClosePairQAMass(p1.mass()) && isClosePairQAMass(p2.mass())) {
             fillClosePairQA<kSameEvent, part_pair>(p1, p2, dR);
+          }
+          if (cFillSharedDauQA && (isConflicted(trk_1.globalIndex()) || isConflicted(trk_2.globalIndex()))) {
+            fillPair<kSameEventSharedDau, part_pair>(p1, p2, dR, 1.f);
           }
         }
       }
@@ -2070,12 +2231,12 @@ struct LambdaSpinPolarization {
     static constexpr std::array<std::string_view, 2> EvDir = {"Events/", "McGen/Events/"};
     std::size_t nLambda = 0, nAntiLambda = 0;
     for (auto const& trk : lTrks) {
-      if (isAcceptedMass(trk.mass())) {
+      if (isUsable<!Gen>(trk)) {
         ++nLambda;
       }
     }
     for (auto const& trk : alTrks) {
-      if (isAcceptedMass(trk.mass())) {
+      if (isUsable<!Gen>(trk)) {
         ++nAntiLambda;
       }
     }
@@ -2099,12 +2260,12 @@ struct LambdaSpinPolarization {
       histos.fill(HIST(EvDir[Gen]) + HIST("hEventCount"), kPeAntiLambdaAntiLambda);
     }
     for (auto const& trk : lTrks) {
-      if (isAcceptedMass(trk.mass())) {
+      if (isUsable<!Gen>(trk)) {
         fillPairCandQA<Gen, kLambda>(trk);
       }
     }
     for (auto const& trk : alTrks) {
-      if (isAcceptedMass(trk.mass())) {
+      if (isUsable<!Gen>(trk)) {
         fillPairCandQA<Gen, kAntiLambda>(trk);
       }
     }
@@ -2137,14 +2298,19 @@ struct LambdaSpinPolarization {
     constexpr PairTier MeTier = Gen ? kMcGenMixedEvent : kMixedEvent;
     std::vector<PoolTrack const*> matches;
     for (auto const& trk1 : se_trks_1) {
-      if (!isAcceptedMass(trk1.mass())) {
+      if (!isUsable<!Gen>(trk1)) {
         continue;
       }
       const PoolTrack p1 = toPoolTrack(trk1);
 
       for (auto const& trk2 : se_trks_2) {
-        if (!isCountedOrder(trk1, trk2) || !isAcceptedMass(trk2.mass())) {
+        if (!isCountedOrder(trk1, trk2) || !isUsable<!Gen>(trk2)) {
           continue;
+        }
+        if constexpr (!Gen) {
+          if (sharesDaughter(trk1, trk2)) {
+            continue;
+          }
         }
         const PoolTrack p2 = toPoolTrack(trk2);
         const float dRSeed = deltaR(p1, p2);
@@ -2156,8 +2322,11 @@ struct LambdaSpinPolarization {
           if (cFillClosePairQA && isClosePairQAMass(p1.mass()) && isClosePairQAMass(p2.mass())) {
             fillClosePairQA<kSameEventInMixing, part_pair>(p1, p2, dRSeed);
           }
+          if (cFillSharedDauQA && (isConflicted(trk1.globalIndex()) || isConflicted(trk2.globalIndex()))) {
+            fillPair<kSameEventInMixingSharedDau, part_pair>(p1, p2, dRSeed, 1.f);
+          }
           if (cFillKinWSpectra) {
-            fillLeg2Spectrum<false, part_pair>(p2, p2.mass(), 1.f);
+            fillLeg2Spectrum<false, part_pair>(p2, 1.f);
           }
         }
 
@@ -2166,14 +2335,15 @@ struct LambdaSpinPolarization {
         for (auto const& meP2 : matches) {
           float kinW = 1.f;
           if constexpr (!Gen) {
-            kinW = kinWeight<part_pair>(*meP2, p2.mass());
+            kinW = kinWeight<part_pair>(*meP2);
           }
           const float w = kinW / static_cast<float>(matches.size());
-          fillPair<MeTier, part_pair>(p1, *meP2, dRSeed, w, p2.mass());
-          histos.fill(HIST(MixQaDir[Gen]) + HIST("hDeltaRShift"), dRSeed, deltaR(p1, *meP2) - dRSeed, w);
+          const float dRMixed = deltaR(p1, *meP2);
+          fillPair<MeTier, part_pair>(p1, *meP2, dRMixed, w);
+          histos.fill(HIST(MixQaDir[Gen]) + HIST("hDeltaRShift"), dRSeed, dRMixed - dRSeed, w);
           if constexpr (!Gen) {
-            if (cFillKinWSpectra && isSameWindow(meP2->mass(), p2.mass())) {
-              fillLeg2Spectrum<true, part_pair>(*meP2, p2.mass(), w);
+            if (cFillKinWSpectra) {
+              fillLeg2Spectrum<true, part_pair>(*meP2, w);
             }
           }
         }
@@ -2191,17 +2361,28 @@ struct LambdaSpinPolarization {
       histos.fill(HIST(MixQaDir[Gen]) + HIST("hEventStatus"), kMEEventOutsidePools);
       return;
     }
-    histos.fill(HIST(MixQaDir[Gen]) + HIST("hLambdaMultVsCent"), col.cent(), lTrks.size());
-    histos.fill(HIST(MixQaDir[Gen]) + HIST("hAntiLambdaMultVsCent"), col.cent(), alTrks.size());
+    std::size_t nLambda = 0, nAntiLambda = 0;
+    for (auto const& trk : lTrks) {
+      if (isKept<!Gen>(trk)) {
+        ++nLambda;
+      }
+    }
+    for (auto const& trk : alTrks) {
+      if (isKept<!Gen>(trk)) {
+        ++nAntiLambda;
+      }
+    }
+    histos.fill(HIST(MixQaDir[Gen]) + HIST("hLambdaMultVsCent"), col.cent(), nLambda);
+    histos.fill(HIST(MixQaDir[Gen]) + HIST("hAntiLambdaMultVsCent"), col.cent(), nAntiLambda);
 
     eventCands.clear();
     for (auto const& trk : lTrks) {
-      if (isAcceptedMass(trk.mass())) {
+      if (isUsable<!Gen>(trk)) {
         eventCands.push_back(toPoolTrack(trk));
       }
     }
     for (auto const& trk : alTrks) {
-      if (isAcceptedMass(trk.mass())) {
+      if (isUsable<!Gen>(trk)) {
         eventCands.push_back(toPoolTrack(trk));
       }
     }
@@ -2239,9 +2420,9 @@ struct LambdaSpinPolarization {
   Preslice<LambdaTracks> perCollisionLambda = aod::lambdatrack::lambdaCollisionId;
   SliceCache cache;
 
-  Partition<LambdaTracks> partLambdaTracks = (aod::lambdatrack::v0Type == (int8_t)kLambda) && (aod::lambdatrackext::trueLambdaFlag == true) && (aod::lambdatrack::v0PrmScd == (int8_t)kPrimary);
+  Partition<LambdaTracks> partLambdaTracks = (aod::lambdatrack::v0Type == (int8_t)kLambda) && (aod::lambdatrack::v0PrmScd == (int8_t)kPrimary);
 
-  Partition<LambdaTracks> partAntiLambdaTracks = (aod::lambdatrack::v0Type == (int8_t)kAntiLambda) && (aod::lambdatrackext::trueLambdaFlag == true) && (aod::lambdatrack::v0PrmScd == (int8_t)kPrimary);
+  Partition<LambdaTracks> partAntiLambdaTracks = (aod::lambdatrack::v0Type == (int8_t)kAntiLambda) && (aod::lambdatrack::v0PrmScd == (int8_t)kPrimary);
 
   SliceCache cachemc;
 
@@ -2257,8 +2438,12 @@ struct LambdaSpinPolarization {
     setPairOrderSeed(collision);
     auto lTrks = partLambdaTracks->sliceByCached(aod::lambdatrack::lambdaCollisionId, collision.globalIndex(), cache);
     auto alTrks = partAntiLambdaTracks->sliceByCached(aod::lambdatrack::lambdaCollisionId, collision.globalIndex(), cache);
+    resolveSharedDaughters(lTrks, alTrks, !doprocessDataRecoMixed);
     if (!doprocessDataRecoMixed) {
       fillEventQA<false>(collision.cent(), lTrks, alTrks);
+    }
+    if (!hasMinCandidates(lTrks, alTrks)) {
+      return;
     }
 
     analyzePairsSE<kSameEvent, kLambdaAntiLambda>(lTrks, alTrks);
@@ -2274,7 +2459,11 @@ struct LambdaSpinPolarization {
     for (auto const& col : cols) {
       auto lTrks = partLambdaTracks->sliceByCached(aod::lambdatrack::lambdaCollisionId, col.globalIndex(), cache);
       auto alTrks = partAntiLambdaTracks->sliceByCached(aod::lambdatrack::lambdaCollisionId, col.globalIndex(), cache);
+      resolveSharedDaughters(lTrks, alTrks, true);
       fillEventQA<false>(col.cent(), lTrks, alTrks);
+      if (!hasMinCandidates(lTrks, alTrks)) {
+        continue;
+      }
       mixCollision<false>(col, lTrks, alTrks, mePools, eventCands);
     }
   }
@@ -2287,6 +2476,9 @@ struct LambdaSpinPolarization {
     auto alTrks = partMcAntiLambdaTracks->sliceByCached(aod::lambdamcgentrack::lambdaMcGenCollisionId, collision.globalIndex(), cachemc);
     if (!doprocessMcGenMixed) {
       fillEventQA<true>(collision.cent(), lTrks, alTrks);
+    }
+    if (!hasMinCandidates(lTrks, alTrks)) {
+      return;
     }
 
     analyzePairsSE<kMcGenSameEvent, kLambdaAntiLambda>(lTrks, alTrks);
@@ -2303,6 +2495,9 @@ struct LambdaSpinPolarization {
       auto lTrks = partMcLambdaTracks->sliceByCached(aod::lambdamcgentrack::lambdaMcGenCollisionId, col.globalIndex(), cachemc);
       auto alTrks = partMcAntiLambdaTracks->sliceByCached(aod::lambdamcgentrack::lambdaMcGenCollisionId, col.globalIndex(), cachemc);
       fillEventQA<true>(col.cent(), lTrks, alTrks);
+      if (!hasMinCandidates(lTrks, alTrks)) {
+        continue;
+      }
       mixCollision<true>(col, lTrks, alTrks, mePoolsGen, eventCands);
     }
   }
@@ -2313,23 +2508,26 @@ struct LambdaSpinPolarization {
     auto lTrks = partLambdaTracks->sliceByCached(aod::lambdatrack::lambdaCollisionId, collision.globalIndex(), cache);
     auto alTrks = partAntiLambdaTracks->sliceByCached(aod::lambdatrack::lambdaCollisionId, collision.globalIndex(), cache);
 
-    if (lTrks.size() == 0 && alTrks.size() == 0) {
+    if (!hasMinCandidates(lTrks, alTrks)) {
       return;
     }
 
     lambdaMixEvtCol(collision.index(), collision.cent(), collision.posZ(), collision.timeStamp());
 
-    for (auto const& track : lTrks) {
+    auto fillMixEventTrack = [&](auto const& track) {
+      const bool shared = track.lambdaSharingDaughter();
       lambdaMixEvtTrk(collision.index(), track.globalIndex(), track.px(),
                       track.py(), track.pz(), track.mass(), track.prPx(),
                       track.prPy(), track.prPz(), track.v0Type(),
-                      collision.timeStamp());
+                      collision.timeStamp(),
+                      shared ? static_cast<int>(track.posTrackId()) : NoSharedTrackIdx,
+                      shared ? static_cast<int>(track.negTrackId()) : NoSharedTrackIdx);
+    };
+    for (auto const& track : lTrks) {
+      fillMixEventTrack(track);
     }
     for (auto const& track : alTrks) {
-      lambdaMixEvtTrk(collision.index(), track.globalIndex(), track.px(),
-                      track.py(), track.pz(), track.mass(), track.prPx(),
-                      track.prPy(), track.prPz(), track.v0Type(),
-                      collision.timeStamp());
+      fillMixEventTrack(track);
     }
   }
   PROCESS_SWITCH(LambdaSpinPolarization, processDataRecoMixEvent, "Mix-event table filling", false);
@@ -2339,7 +2537,7 @@ struct LambdaSpinPolarization {
     auto lTrks = partMcLambdaTracks->sliceByCached(aod::lambdamcgentrack::lambdaMcGenCollisionId, collision.globalIndex(), cachemc);
     auto alTrks = partMcAntiLambdaTracks->sliceByCached(aod::lambdamcgentrack::lambdaMcGenCollisionId, collision.globalIndex(), cachemc);
 
-    if (lTrks.size() == 0 && alTrks.size() == 0) {
+    if (!hasMinCandidates(lTrks, alTrks)) {
       return;
     }
 
