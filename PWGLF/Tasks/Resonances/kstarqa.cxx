@@ -366,15 +366,15 @@ struct Kstarqa {
       hShift.add("h2D_dpz_vs_pz_KaonFromPhi", "Kaon from Phi: dpz vs pz", kTH2F, {{subAxis}, {ptAxis}});
       hShift.add("h2D_dpt_vs_pt_KaonFromPhi", "Kaon from Phi: dpt vs pt", kTH2F, {{subAxis}, {ptAxis}});
 
-      hShift.add("h2D_dpx_vs_px_AllKaons", "Kaon from Phi: deta vs eta", kTH2F, {{subAxis}, {etaAxis}});
-      hShift.add("h2D_dpy_vs_py_AllKaons", "Kaon from Phi: dphi vs phi", kTH2F, {{subAxis}, {phiAxis}});
-      hShift.add("h2D_dpz_vs_pz_AllKaons", "Kaon from Phi: dR vs eta", kTH2F, {{subAxis}, {etaAxis}});
-      hShift.add("h2D_dpt_vs_pt_AllKaons", "Kaon from Phi: dR vs phi", kTH2F, {{subAxis}, {phiAxis}});
+      hShift.add("h2D_dpx_vs_px_AllKaons", "Kaon from Phi: dpx vs px", kTH2F, {{subAxis}, {ptAxis}});
+      hShift.add("h2D_dpy_vs_py_AllKaons", "Kaon from Phi: dpy vs py", kTH2F, {{subAxis}, {ptAxis}});
+      hShift.add("h2D_dpz_vs_pz_AllKaons", "Kaon from Phi: dpz vs pz", kTH2F, {{subAxis}, {ptAxis}});
+      hShift.add("h2D_dpt_vs_pt_AllKaons", "Kaon from Phi: dpt vs pt", kTH2F, {{subAxis}, {ptAxis}});
 
-      hShift.add("h2D_dpx_vs_px_Phi", "Pion from Phi: deta vs eta", kTH2F, {{subAxis}, {etaAxis}});
-      hShift.add("h2D_dpy_vs_py_Phi", "Pion from Phi: dphi vs phi", kTH2F, {{subAxis}, {phiAxis}});
-      hShift.add("h2D_dpz_vs_pz_Phi", "Pion from Phi: dR vs eta", kTH2F, {{subAxis}, {etaAxis}});
-      hShift.add("h2D_dpt_vs_pt_Phi", "Pion from Phi: dR vs phi", kTH2F, {{subAxis}, {phiAxis}});
+      hShift.add("h2D_dpx_vs_px_Phi", "Pion from Phi: dpx vs px", kTH2F, {{subAxis}, {ptAxis}});
+      hShift.add("h2D_dpy_vs_py_Phi", "Pion from Phi: dpy vs py", kTH2F, {{subAxis}, {ptAxis}});
+      hShift.add("h2D_dpz_vs_pz_Phi", "Pion from Phi: dpz vs pz", kTH2F, {{subAxis}, {ptAxis}});
+      hShift.add("h2D_dpt_vs_pt_Phi", "Pion from Phi: dpt vs pt", kTH2F, {{subAxis}, {ptAxis}});
     }
 
     // Signal Loss & Event Loss in Light Ion Collisions
