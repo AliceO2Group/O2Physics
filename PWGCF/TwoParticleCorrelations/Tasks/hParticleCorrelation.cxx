@@ -128,7 +128,7 @@ DECLARE_SOA_COLUMN(MixingBin, mixingBin, int32_t);
 DECLARE_SOA_COLUMN(CorrMask, corrMask, uint64_t);
 } // namespace hpcorrcollision
 
-DECLARE_SOA_TABLE(HPCorrCollisions, "AOD", "HPCORRCOLLS", o2::soa::Index<>,
+DECLARE_SOA_TABLE(HPCorrColls, "AOD", "HPCORRCOLL", o2::soa::Index<>,
                   hpcorrcollision::GlobalCollisionId,
                   hpcorrcollision::OriginalCollisionId,
                   o2::aod::origins::DataframeID,
@@ -144,7 +144,7 @@ DECLARE_SOA_TABLE(HPCorrCollisions, "AOD", "HPCORRCOLLS", o2::soa::Index<>,
 
 namespace hpcorrtrack
 {
-DECLARE_SOA_INDEX_COLUMN(HPCorrCollision, hpCorrCollision); // o2-linter: disable=name/o2-column (Keep HPCorrCollision naming consistent with the existing derived collision table)
+DECLARE_SOA_INDEX_COLUMN(HPCorrColl, hpCorrColl); // o2-linter: disable=name/o2-column (Keep HPCorrColl naming consistent with the existing derived collision table)
 
 DECLARE_SOA_COLUMN(GlobalColRefId, globalColRefId, int64_t);
 DECLARE_SOA_COLUMN(OriginalColRefId, originalColRefId, int64_t);
@@ -188,8 +188,8 @@ DECLARE_SOA_COLUMN(TofNSigmaDe, tofNSigmaDe, float);
 
 } // namespace hpcorrtrack
 
-DECLARE_SOA_TABLE(HPCorrTracks, "AOD", "HPCORRTRKS", o2::soa::Index<>,
-                  hpcorrtrack::HPCorrCollisionId,
+DECLARE_SOA_TABLE(HPCorrTracks, "AOD", "HPCORRTRACK", o2::soa::Index<>,
+                  hpcorrtrack::HPCorrCollId,
 
                   hpcorrtrack::GlobalColRefId,
                   hpcorrtrack::OriginalColRefId,
@@ -231,7 +231,7 @@ DECLARE_SOA_TABLE(HPCorrTracks, "AOD", "HPCORRTRKS", o2::soa::Index<>,
 //______________________________________________________________________________
 namespace hpcorrresonance
 {
-DECLARE_SOA_INDEX_COLUMN(HPCorrCollision, hpCorrCollision); // o2-linter: disable=name/o2-column (Keep HPCorrCollision naming consistent with the existing derived collision table)
+DECLARE_SOA_INDEX_COLUMN(HPCorrColl, hpCorrColl); // o2-linter: disable=name/o2-column (Keep HPCorrColl naming consistent with the existing derived collision table)
 DECLARE_SOA_INDEX_COLUMN_FULL(PosTrack, posTrack, int, HPCorrTracks, "_Pos");
 DECLARE_SOA_INDEX_COLUMN_FULL(NegTrack, negTrack, int, HPCorrTracks, "_Neg");
 
@@ -272,10 +272,10 @@ DECLARE_SOA_COLUMN(Lambda1520BarTag, lambda1520BarTag, uint8_t);
 
 } // namespace hpcorrresonance
 
-DECLARE_SOA_TABLE(HPCorrResonances, "AOD", "HPCORRRESOS", o2::soa::Index<>,
+DECLARE_SOA_TABLE(HPCorrResonances, "AOD", "HPCORRRESO", o2::soa::Index<>,
 
                   // Derived-table relations
-                  hpcorrresonance::HPCorrCollisionId,
+                  hpcorrresonance::HPCorrCollId,
                   hpcorrresonance::PosTrackId,
                   hpcorrresonance::NegTrackId,
 
@@ -1191,66 +1191,66 @@ void addIdentifiedQAHistos(H& histReg, const std::string& basePath, const AxisSp
 // Common Histograms booking functions are over
 //__________________________________________________________________________________________________________________________
 
-struct HParticleCorrelationResonanceProducer {
+struct HParticleCorrelation1ResonanceProducer {
   Produces<o2::aod::ResonanceCndts> resonanceCndts;
   HistogramRegistry resonanceQAPlots{"resonanceQAPlots", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   static constexpr float ResonancePidNSigmaMax = 3.5f;
 
   struct : ConfigurableGroup {
-    Configurable<bool> printDebugMessages{"printDebugMessages", false, "Print debug messages"};
+    Configurable<bool> c0001printDebugMessages{"c0001printDebugMessages", false, "Print debug messages"};
   } cfgDebug;
 
   struct : ConfigurableGroup {
-    Configurable<bool> requireSel8{"requireSel8", true, "Require sel8 event selection"};
-    Configurable<float> cutZvertex{"cutZvertex", 10.0f, "Maximum |z_{vtx}| (cm)"};
+    Configurable<bool> c0002requireSel8{"c0002requireSel8", true, "Require sel8 event selection"};
+    Configurable<float> c0003cutZvertex{"c0003cutZvertex", 10.0f, "Maximum |z_{vtx}| (cm)"};
   } cfgEvent;
 
   struct : ConfigurableGroup {
-    Configurable<float> ptMin{"ptMin", 0.15f, "Minimum track pT (GeV/c)"};
-    Configurable<float> ptMax{"ptMax", 100.0f, "Maximum track pT (GeV/c)"};
-    Configurable<float> etaMax{"etaMax", 0.8f, "Maximum |eta|"};
+    Configurable<float> c0004ptMin{"c0004ptMin", 0.15f, "Minimum track pT (GeV/c)"};
+    Configurable<float> c0005ptMax{"c0005ptMax", 100.0f, "Maximum track pT (GeV/c)"};
+    Configurable<float> c0006etaMax{"c0006etaMax", 0.8f, "Maximum |eta|"};
 
-    Configurable<bool> useFixedDCAxy{"useFixedDCAxy", false, "Apply fixed DCAxy cut"};
-    Configurable<float> dcaXYMax{"dcaXYMax", 0.1f, "Maximum |DCAxy| (cm)"};
+    Configurable<bool> c0007useFixedDCAxy{"c0007useFixedDCAxy", false, "Apply fixed DCAxy cut"};
+    Configurable<float> c0008dcaXYMax{"c0008dcaXYMax", 0.1f, "Maximum |DCAxy| (cm)"};
 
-    Configurable<bool> useFixedDCAz{"useFixedDCAz", false, "Apply fixed DCAz cut"};
-    Configurable<float> dcaZMax{"dcaZMax", 0.2f, "Maximum |DCAz| (cm)"};
+    Configurable<bool> c0009useFixedDCAz{"c0009useFixedDCAz", false, "Apply fixed DCAz cut"};
+    Configurable<float> c0010dcaZMax{"c0010dcaZMax", 0.2f, "Maximum |DCAz| (cm)"};
   } cfgTrackCuts;
 
   struct : ConfigurableGroup {
-    Configurable<bool> doPhi1020{"doPhi1020", true, "Build Phi(1020) candidates"};
-    Configurable<bool> doKStar892{"doKStar892", true, "Build K*(892)0 candidates"};
-    Configurable<bool> doKStar892Bar{"doKStar892Bar", true, "Build anti-K*(892)0 candidates"};
-    Configurable<bool> doLambda1520{"doLambda1520", true, "Build Lambda(1520) candidates"};
-    Configurable<bool> doLambda1520Bar{"doLambda1520Bar", true, "Build anti-Lambda(1520) candidates"};
+    Configurable<bool> c0011doPhi1020{"c0011doPhi1020", true, "Build Phi(1020) candidates"};
+    Configurable<bool> c0012doKStar892{"c0012doKStar892", true, "Build K*(892)0 candidates"};
+    Configurable<bool> c0013doKStar892Bar{"c0013doKStar892Bar", true, "Build anti-K*(892)0 candidates"};
+    Configurable<bool> c0014doLambda1520{"c0014doLambda1520", true, "Build Lambda(1520) candidates"};
+    Configurable<bool> c0015doLambda1520Bar{"c0015doLambda1520Bar", true, "Build anti-Lambda(1520) candidates"};
   } cfgResonances;
 
   struct : ConfigurableGroup {
-    Configurable<float> phi1020PeakLow{"phi1020PeakLow", 1.013f, "Phi(1020) peak lower mass"};
-    Configurable<float> phi1020PeakUp{"phi1020PeakUp", 1.026f, "Phi(1020) peak upper mass"};
-    Configurable<float> phi1020LSBLow{"phi1020LSBLow", 0.995f, "Phi(1020) LSB lower mass"};
-    Configurable<float> phi1020LSBUp{"phi1020LSBUp", 1.005f, "Phi(1020) LSB upper mass"};
-    Configurable<float> phi1020RSBLow{"phi1020RSBLow", 1.040f, "Phi(1020) RSB lower mass"};
-    Configurable<float> phi1020RSBUp{"phi1020RSBUp", 1.060f, "Phi(1020) RSB upper mass"};
+    Configurable<float> c0016phi1020PeakLow{"c0016phi1020PeakLow", 1.013f, "Phi(1020) peak lower mass"};
+    Configurable<float> c0017phi1020PeakUp{"c0017phi1020PeakUp", 1.026f, "Phi(1020) peak upper mass"};
+    Configurable<float> c0018phi1020LSBLow{"c0018phi1020LSBLow", 0.995f, "Phi(1020) LSB lower mass"};
+    Configurable<float> c0019phi1020LSBUp{"c0019phi1020LSBUp", 1.005f, "Phi(1020) LSB upper mass"};
+    Configurable<float> c0020phi1020RSBLow{"c0020phi1020RSBLow", 1.040f, "Phi(1020) RSB lower mass"};
+    Configurable<float> c0021phi1020RSBUp{"c0021phi1020RSBUp", 1.060f, "Phi(1020) RSB upper mass"};
   } cfgPhi1020Mass;
 
   struct : ConfigurableGroup {
-    Configurable<float> kstar892PeakLow{"kstar892PeakLow", 0.846f, "K*(892)0 peak lower mass"};
-    Configurable<float> kstar892PeakUp{"kstar892PeakUp", 0.946f, "K*(892)0 peak upper mass"};
-    Configurable<float> kstar892LSBLow{"kstar892LSBLow", 0.700f, "K*(892)0 LSB lower mass"};
-    Configurable<float> kstar892LSBUp{"kstar892LSBUp", 0.780f, "K*(892)0 LSB upper mass"};
-    Configurable<float> kstar892RSBLow{"kstar892RSBLow", 1.010f, "K*(892)0 RSB lower mass"};
-    Configurable<float> kstar892RSBUp{"kstar892RSBUp", 1.090f, "K*(892)0 RSB upper mass"};
+    Configurable<float> c0022kstar892PeakLow{"c0022kstar892PeakLow", 0.846f, "K*(892)0 peak lower mass"};
+    Configurable<float> c0023kstar892PeakUp{"c0023kstar892PeakUp", 0.946f, "K*(892)0 peak upper mass"};
+    Configurable<float> c0024kstar892LSBLow{"c0024kstar892LSBLow", 0.700f, "K*(892)0 LSB lower mass"};
+    Configurable<float> c0025kstar892LSBUp{"c0025kstar892LSBUp", 0.780f, "K*(892)0 LSB upper mass"};
+    Configurable<float> c0026kstar892RSBLow{"c0026kstar892RSBLow", 1.010f, "K*(892)0 RSB lower mass"};
+    Configurable<float> c0027kstar892RSBUp{"c0027kstar892RSBUp", 1.090f, "K*(892)0 RSB upper mass"};
   } cfgKstar892Mass;
 
   struct : ConfigurableGroup {
-    Configurable<float> lambda1520PeakLow{"lambda1520PeakLow", 1.500f, "Lambda(1520) peak lower mass"};
-    Configurable<float> lambda1520PeakUp{"lambda1520PeakUp", 1.540f, "Lambda(1520) peak upper mass"};
-    Configurable<float> lambda1520LSBLow{"lambda1520LSBLow", 1.440f, "Lambda(1520) LSB lower mass"};
-    Configurable<float> lambda1520LSBUp{"lambda1520LSBUp", 1.480f, "Lambda(1520) LSB upper mass"};
-    Configurable<float> lambda1520RSBLow{"lambda1520RSBLow", 1.560f, "Lambda(1520) RSB lower mass"};
-    Configurable<float> lambda1520RSBUp{"lambda1520RSBUp", 1.600f, "Lambda(1520) RSB upper mass"};
+    Configurable<float> c0028lambda1520PeakLow{"c0028lambda1520PeakLow", 1.500f, "Lambda(1520) peak lower mass"};
+    Configurable<float> c0029lambda1520PeakUp{"c0029lambda1520PeakUp", 1.540f, "Lambda(1520) peak upper mass"};
+    Configurable<float> c0030lambda1520LSBLow{"c0030lambda1520LSBLow", 1.440f, "Lambda(1520) LSB lower mass"};
+    Configurable<float> c0031lambda1520LSBUp{"c0031lambda1520LSBUp", 1.480f, "Lambda(1520) LSB upper mass"};
+    Configurable<float> c0032lambda1520RSBLow{"c0032lambda1520RSBLow", 1.560f, "Lambda(1520) RSB lower mass"};
+    Configurable<float> c0033lambda1520RSBUp{"c0033lambda1520RSBUp", 1.600f, "Lambda(1520) RSB upper mass"};
   } cfgLambda1520Mass;
 
   void init(InitContext const&)
@@ -1309,14 +1309,14 @@ struct HParticleCorrelationResonanceProducer {
   }
 
   // Event Filter
-  Filter eventFilter = (!cfgEvent.requireSel8) || (o2::aod::evsel::sel8 == true);
-  Filter posZFilter = (nabs(o2::aod::collision::posZ) < cfgEvent.cutZvertex);
+  Filter eventFilter = (!cfgEvent.c0002requireSel8) || (o2::aod::evsel::sel8 == true);
+  Filter posZFilter = (nabs(o2::aod::collision::posZ) < cfgEvent.c0003cutZvertex);
 
   // Track Filter
-  Filter ptFilter = (o2::aod::track::pt > cfgTrackCuts.ptMin) && (o2::aod::track::pt < cfgTrackCuts.ptMax);
-  Filter etaFilter = (nabs(o2::aod::track::eta) < cfgTrackCuts.etaMax);
-  Filter dcaFilter = ((!cfgTrackCuts.useFixedDCAxy) || (nabs(o2::aod::track::dcaXY) < cfgTrackCuts.dcaXYMax)) &&
-                     ((!cfgTrackCuts.useFixedDCAz) || (nabs(o2::aod::track::dcaZ) < cfgTrackCuts.dcaZMax));
+  Filter ptFilter = (o2::aod::track::pt > cfgTrackCuts.c0004ptMin) && (o2::aod::track::pt < cfgTrackCuts.c0005ptMax);
+  Filter etaFilter = (nabs(o2::aod::track::eta) < cfgTrackCuts.c0006etaMax);
+  Filter dcaFilter = ((!cfgTrackCuts.c0007useFixedDCAxy) || (nabs(o2::aod::track::dcaXY) < cfgTrackCuts.c0008dcaXYMax)) &&
+                     ((!cfgTrackCuts.c0009useFixedDCAz) || (nabs(o2::aod::track::dcaZ) < cfgTrackCuts.c0010dcaZMax));
   using MyFilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;
   using MyFilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TOFSignal, aod::pidTOFbeta, aod::pidTOFmass, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullEl, aod::pidTPCFullDe, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullEl, aod::pidTOFFullDe>>;
 
@@ -1326,21 +1326,21 @@ struct HParticleCorrelationResonanceProducer {
   Partition<MyFilteredTracks> negTracks = aod::track::signed1Pt < 0.0f;
 
   int dfNumber = 0;
-  // void processNothing(aod::HPCorrCollisions const&)
+  // void processNothing(aod::HPCorrColls const&)
   void processNothing(aod::Origins const& origins)
   {
-    if (cfgDebug.printDebugMessages) {
+    if (cfgDebug.c0001printDebugMessages) {
       LOG(info) << "DEBUG :: Process Nothing :: df_" << dfNumber << " :: origins = " << origins.size();
     }
     // Intentionally empty.
     // Keeps the task alive when running purely on derived data.
   }
-  PROCESS_SWITCH(HParticleCorrelationResonanceProducer, processNothing, "Dummy process for derived-data analysis", true);
+  PROCESS_SWITCH(HParticleCorrelation1ResonanceProducer, processNothing, "Dummy process for derived-data analysis", true);
 
   void processSameEvent(MyFilteredCollisions const& collisions, MyFilteredTracks const& fullTracks, o2::aod::Origins const& /*Origins*/)
   {
     dfNumber++;
-    if (cfgDebug.printDebugMessages) {
+    if (cfgDebug.c0001printDebugMessages) {
       LOG(info) << "DEBUG :: df_" << dfNumber << " :: SE :: collisions = " << collisions.size() << " :: fullTracks = " << fullTracks.size();
     }
 
@@ -1422,9 +1422,9 @@ struct HParticleCorrelationResonanceProducer {
           lambda1520BarTag = kMassOutside;
 
           // phi(1020) -> K+ + K-
-          if (cfgResonances.doPhi1020 && posIsKa && negIsKa) {
+          if (cfgResonances.c0011doPhi1020 && posIsKa && negIsKa) {
             mPhi1020 = RecoDecay::m(p, ePosKa + eNegKa);
-            phi1020Tag = getMassRegionTag(mPhi1020, cfgPhi1020Mass.phi1020LSBLow, cfgPhi1020Mass.phi1020LSBUp, cfgPhi1020Mass.phi1020PeakLow, cfgPhi1020Mass.phi1020PeakUp, cfgPhi1020Mass.phi1020RSBLow, cfgPhi1020Mass.phi1020RSBUp);
+            phi1020Tag = getMassRegionTag(mPhi1020, cfgPhi1020Mass.c0018phi1020LSBLow, cfgPhi1020Mass.c0019phi1020LSBUp, cfgPhi1020Mass.c0016phi1020PeakLow, cfgPhi1020Mass.c0017phi1020PeakUp, cfgPhi1020Mass.c0020phi1020RSBLow, cfgPhi1020Mass.c0021phi1020RSBUp);
             if (phi1020Tag != kMassOutside) {
               fillTable = true;
             }
@@ -1432,9 +1432,9 @@ struct HParticleCorrelationResonanceProducer {
           }
 
           // K(892)*   -> K+ + pi-
-          if (cfgResonances.doKStar892 && posIsKa && negIsPi) {
+          if (cfgResonances.c0012doKStar892 && posIsKa && negIsPi) {
             mKStar892 = RecoDecay::m(p, ePosKa + eNegPi);
-            kStar892Tag = getMassRegionTag(mKStar892, cfgKstar892Mass.kstar892LSBLow, cfgKstar892Mass.kstar892LSBUp, cfgKstar892Mass.kstar892PeakLow, cfgKstar892Mass.kstar892PeakUp, cfgKstar892Mass.kstar892RSBLow, cfgKstar892Mass.kstar892RSBUp);
+            kStar892Tag = getMassRegionTag(mKStar892, cfgKstar892Mass.c0024kstar892LSBLow, cfgKstar892Mass.c0025kstar892LSBUp, cfgKstar892Mass.c0022kstar892PeakLow, cfgKstar892Mass.c0023kstar892PeakUp, cfgKstar892Mass.c0026kstar892RSBLow, cfgKstar892Mass.c0027kstar892RSBUp);
             if (kStar892Tag != kMassOutside) {
               fillTable = true;
             }
@@ -1442,9 +1442,9 @@ struct HParticleCorrelationResonanceProducer {
           }
 
           // K(892)*Bar -> K- + pi+
-          if (cfgResonances.doKStar892Bar && posIsPi && negIsKa) {
+          if (cfgResonances.c0013doKStar892Bar && posIsPi && negIsKa) {
             mKStar892Bar = RecoDecay::m(p, ePosPi + eNegKa);
-            kStar892BarTag = getMassRegionTag(mKStar892Bar, cfgKstar892Mass.kstar892LSBLow, cfgKstar892Mass.kstar892LSBUp, cfgKstar892Mass.kstar892PeakLow, cfgKstar892Mass.kstar892PeakUp, cfgKstar892Mass.kstar892RSBLow, cfgKstar892Mass.kstar892RSBUp);
+            kStar892BarTag = getMassRegionTag(mKStar892Bar, cfgKstar892Mass.c0024kstar892LSBLow, cfgKstar892Mass.c0025kstar892LSBUp, cfgKstar892Mass.c0022kstar892PeakLow, cfgKstar892Mass.c0023kstar892PeakUp, cfgKstar892Mass.c0026kstar892RSBLow, cfgKstar892Mass.c0027kstar892RSBUp);
             if (kStar892BarTag != kMassOutside) {
               fillTable = true;
             }
@@ -1452,9 +1452,9 @@ struct HParticleCorrelationResonanceProducer {
           }
 
           // Λ(1520) -> P+ + Ka-
-          if (cfgResonances.doLambda1520 && posIsPr && negIsKa) {
+          if (cfgResonances.c0014doLambda1520 && posIsPr && negIsKa) {
             mLambda1520 = RecoDecay::m(p, ePosPr + eNegKa);
-            lambda1520Tag = getMassRegionTag(mLambda1520, cfgLambda1520Mass.lambda1520LSBLow, cfgLambda1520Mass.lambda1520LSBUp, cfgLambda1520Mass.lambda1520PeakLow, cfgLambda1520Mass.lambda1520PeakUp, cfgLambda1520Mass.lambda1520RSBLow, cfgLambda1520Mass.lambda1520RSBUp);
+            lambda1520Tag = getMassRegionTag(mLambda1520, cfgLambda1520Mass.c0030lambda1520LSBLow, cfgLambda1520Mass.c0031lambda1520LSBUp, cfgLambda1520Mass.c0028lambda1520PeakLow, cfgLambda1520Mass.c0029lambda1520PeakUp, cfgLambda1520Mass.c0032lambda1520RSBLow, cfgLambda1520Mass.c0033lambda1520RSBUp);
             if (lambda1520Tag != kMassOutside) {
               fillTable = true;
             }
@@ -1462,9 +1462,9 @@ struct HParticleCorrelationResonanceProducer {
           }
 
           // Λ(1520)Bar -> PBar + Ka+
-          if (cfgResonances.doLambda1520Bar && posIsKa && negIsPr) {
+          if (cfgResonances.c0015doLambda1520Bar && posIsKa && negIsPr) {
             mLambda1520Bar = RecoDecay::m(p, ePosKa + eNegPr);
-            lambda1520BarTag = getMassRegionTag(mLambda1520Bar, cfgLambda1520Mass.lambda1520LSBLow, cfgLambda1520Mass.lambda1520LSBUp, cfgLambda1520Mass.lambda1520PeakLow, cfgLambda1520Mass.lambda1520PeakUp, cfgLambda1520Mass.lambda1520RSBLow, cfgLambda1520Mass.lambda1520RSBUp);
+            lambda1520BarTag = getMassRegionTag(mLambda1520Bar, cfgLambda1520Mass.c0030lambda1520LSBLow, cfgLambda1520Mass.c0031lambda1520LSBUp, cfgLambda1520Mass.c0028lambda1520PeakLow, cfgLambda1520Mass.c0029lambda1520PeakUp, cfgLambda1520Mass.c0032lambda1520RSBLow, cfgLambda1520Mass.c0033lambda1520RSBUp);
             if (lambda1520BarTag != kMassOutside) {
               fillTable = true;
             }
@@ -1486,12 +1486,12 @@ struct HParticleCorrelationResonanceProducer {
       } // Pos Tracks
     } // collision Loop is over
   }
-  PROCESS_SWITCH(HParticleCorrelationResonanceProducer, processSameEvent, "Process Same event", true);
+  PROCESS_SWITCH(HParticleCorrelation1ResonanceProducer, processSameEvent, "Process Same event", true);
 };
 
-struct HParticleCorrelationSameEvent {
+struct HParticleCorrelation2SameEvent {
 
-  Produces<aod::HPCorrCollisions> derivedCollisions;
+  Produces<aod::HPCorrColls> derivedCollisions;
   Produces<aod::HPCorrTracks> derivedTracks;
   Produces<aod::HPCorrResonances> derivedResonances;
 
@@ -1509,220 +1509,220 @@ struct HParticleCorrelationSameEvent {
   HistogramRegistry mixingQA{"mixingQA", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   struct : ConfigurableGroup {
-    Configurable<bool> printDebugMessages{"printDebugMessages", false, "Print debug messages"};
+    Configurable<bool> c1001printDebugMessages{"c1001printDebugMessages", false, "Print debug messages"};
   } cfgDebug;
 
   struct : ConfigurableGroup {
     // Basic event selection
-    Configurable<float> cutZvertex{"cutZvertex", 10.f, "Maximum |z_{vtx}| (cm)"};        // Imp : All
-    Configurable<bool> requireSel8{"requireSel8", true, "Require sel8 event selection"}; // Imp : All
-    Configurable<bool> requireTriggerTVX{"requireTriggerTVX", false, "Require kIsTriggerTVX"};
+    Configurable<float> c1002cutZvertex{"c1002cutZvertex", 10.f, "Maximum |z_{vtx}| (cm)"};        // Imp : All
+    Configurable<bool> c1003requireSel8{"c1003requireSel8", true, "Require sel8 event selection"}; // Imp : All
+    Configurable<bool> c1004requireTriggerTVX{"c1004requireTriggerTVX", false, "Require kIsTriggerTVX"};
 
-    Configurable<int> minNFilteredTracks{"minNFilteredTracks", 3, "Minimum number of filtered tracks required per collision"};
-    Configurable<int> minNSelectedTracks{"minNSelectedTracks", 3, "Minimum number of selected tracks required per collision"};
+    Configurable<int> c1005minNFilteredTracks{"c1005minNFilteredTracks", 3, "Minimum number of filtered tracks required per collision"};
+    Configurable<int> c1006minNSelectedTracks{"c1006minNSelectedTracks", 3, "Minimum number of selected tracks required per collision"};
 
     // Time-frame / ROF border selections
-    Configurable<bool> requireNoITSROFrameBorder{"requireNoITSROFrameBorder", false, "Require kNoITSROFrameBorder"};
-    Configurable<bool> requireNoTimeFrameBorder{"requireNoTimeFrameBorder", false, "Require kNoTimeFrameBorder"};
+    Configurable<bool> c1007requireNoITSROFrameBorder{"c1007requireNoITSROFrameBorder", false, "Require kNoITSROFrameBorder"};
+    Configurable<bool> c1008requireNoTimeFrameBorder{"c1008requireNoTimeFrameBorder", false, "Require kNoTimeFrameBorder"};
 
     // Vertex quality
-    Configurable<bool> requireVertexITSTPC{"requireVertexITSTPC", true, "Require kIsVertexITSTPC"};           // Imp : Light Ions + pp
-    Configurable<bool> requireGoodZvtxFT0vsPV{"requireGoodZvtxFT0vsPV", false, "Require kIsGoodZvtxFT0vsPV"}; // Imp : Light Ions
-    Configurable<bool> requireVertexTOFmatched{"requireVertexTOFmatched", false, "Require kIsVertexTOFmatched"};
-    Configurable<bool> requireVertexTRDmatched{"requireVertexTRDmatched", false, "Require kIsVertexTRDmatched"};
-    Configurable<bool> requireGoodITSLayersAll{"requireGoodITSLayersAll", false, "Require kIsGoodITSLayersAll"}; // Imp : Light Ions
+    Configurable<bool> c1009requireVertexITSTPC{"c1009requireVertexITSTPC", true, "Require kIsVertexITSTPC"};           // Imp : Light Ions + pp
+    Configurable<bool> c1010requireGoodZvtxFT0vsPV{"c1010requireGoodZvtxFT0vsPV", false, "Require kIsGoodZvtxFT0vsPV"}; // Imp : Light Ions
+    Configurable<bool> c1011requireVertexTOFmatched{"c1011requireVertexTOFmatched", false, "Require kIsVertexTOFmatched"};
+    Configurable<bool> c1012requireVertexTRDmatched{"c1012requireVertexTRDmatched", false, "Require kIsVertexTRDmatched"};
+    Configurable<bool> c1013requireGoodITSLayersAll{"c1013requireGoodITSLayersAll", false, "Require kIsGoodITSLayersAll"}; // Imp : Light Ions
 
     // Pileup / neighbouring-collision rejection
-    Configurable<bool> requireNoSameBunchPileup{"requireNoSameBunchPileup", true, "Require kNoSameBunchPileup"}; // Imp : Light Ions + pp
-    Configurable<bool> requireNoCollInTimeRangeStandard{"requireNoCollInTimeRangeStandard", false, "Require kNoCollInTimeRangeStandard"};
-    Configurable<bool> requireNoCollInTimeRangeStrict{"requireNoCollInTimeRangeStrict", false, "Require kNoCollInTimeRangeStrict"};
-    Configurable<bool> requireNoCollInTimeRangeNarrow{"requireNoCollInTimeRangeNarrow", false, "Require kNoCollInTimeRangeNarrow"};
-    Configurable<bool> requireNoCollInRofStandard{"requireNoCollInRofStandard", false, "Require kNoCollInRofStandard"};
-    Configurable<bool> requireNoCollInRofStrict{"requireNoCollInRofStrict", false, "Require kNoCollInRofStrict"};
-    Configurable<bool> requireNoHighMultCollInPrevRof{"requireNoHighMultCollInPrevRof", false, "Require kNoHighMultCollInPrevRof"};
+    Configurable<bool> c1014requireNoSameBunchPileup{"c1014requireNoSameBunchPileup", true, "Require kNoSameBunchPileup"}; // Imp : Light Ions + pp
+    Configurable<bool> c1015requireNoCollInTimeRangeStandard{"c1015requireNoCollInTimeRangeStandard", false, "Require kNoCollInTimeRangeStandard"};
+    Configurable<bool> c1016requireNoCollInTimeRangeStrict{"c1016requireNoCollInTimeRangeStrict", false, "Require kNoCollInTimeRangeStrict"};
+    Configurable<bool> c1017requireNoCollInTimeRangeNarrow{"c1017requireNoCollInTimeRangeNarrow", false, "Require kNoCollInTimeRangeNarrow"};
+    Configurable<bool> c1018requireNoCollInRofStandard{"c1018requireNoCollInRofStandard", false, "Require kNoCollInRofStandard"};
+    Configurable<bool> c1019requireNoCollInRofStrict{"c1019requireNoCollInRofStrict", false, "Require kNoCollInRofStrict"};
+    Configurable<bool> c1020requireNoHighMultCollInPrevRof{"c1020requireNoHighMultCollInPrevRof", false, "Require kNoHighMultCollInPrevRof"};
 
     // INEL event classes
-    Configurable<bool> requireINELgt0{"requireINELgt0", false, "Require INEL > 0"};
-    Configurable<bool> requireINELgt1{"requireINELgt1", false, "Require INEL > 1"};
+    Configurable<bool> c1021requireINELgt0{"c1021requireINELgt0", false, "Require INEL > 0"};
+    Configurable<bool> c1022requireINELgt1{"c1022requireINELgt1", false, "Require INEL > 1"};
 
     // Multiplicity selection
-    Configurable<bool> useMultiplicitySelection{"useMultiplicitySelection", false, "Apply multiplicity selection"};
-    Configurable<int> multiplicityEstimator{"multiplicityEstimator", 0, "0: multNTracksPV, 1: numContrib, 2: multFT0C, 3: multFT0M"};
-    Configurable<float> minMultiplicity{"minMultiplicity", 0.f, "Minimum multiplicity"};
-    Configurable<float> maxMultiplicity{"maxMultiplicity", 1.e9f, "Maximum multiplicity"};
+    Configurable<bool> c1023useMultiplicitySelection{"c1023useMultiplicitySelection", false, "Apply multiplicity selection"};
+    Configurable<int> c1024multiplicityEstimator{"c1024multiplicityEstimator", 0, "0: multNTracksPV, 1: numContrib, 2: multFT0C, 3: multFT0M"};
+    Configurable<float> c1025minMultiplicity{"c1025minMultiplicity", 0.f, "Minimum multiplicity"};
+    Configurable<float> c1026maxMultiplicity{"c1026maxMultiplicity", 1.e9f, "Maximum multiplicity"};
 
     // Centrality selection
-    Configurable<bool> useCentralitySelection{"useCentralitySelection", false, "Apply centrality selection"};
-    Configurable<int> centralityEstimator{"centralityEstimator", 0, "0: centFT0C, 1: centFT0M, 2: centFT0A, 3: centFV0A"};
-    Configurable<float> minCentrality{"minCentrality", 0.f, "Minimum centrality percentile"};
-    Configurable<float> maxCentrality{"maxCentrality", 100.f, "Maximum centrality percentile"};
+    Configurable<bool> c1027useCentralitySelection{"c1027useCentralitySelection", false, "Apply centrality selection"};
+    Configurable<int> c1028centralityEstimator{"c1028centralityEstimator", 0, "0: centFT0C, 1: centFT0M, 2: centFT0A, 3: centFV0A"};
+    Configurable<float> c1029minCentrality{"c1029minCentrality", 0.f, "Minimum centrality percentile"};
+    Configurable<float> c1030maxCentrality{"c1030maxCentrality", 100.f, "Maximum centrality percentile"};
 
     // Occupancy selection
-    Configurable<bool> useOccupancySelection{"useOccupancySelection", false, "Apply event occupancy selection"};
-    Configurable<bool> useFT0CbasedOccupancy{"useFT0CbasedOccupancy", false, "Use FT0C occupancy instead of track occupancy"};
-    Configurable<float> minOccupancy{"minOccupancy", -1.f, "Minimum occupancy"};
-    Configurable<float> maxOccupancy{"maxOccupancy", 1.e9f, "Maximum occupancy"};
+    Configurable<bool> c1031useOccupancySelection{"c1031useOccupancySelection", false, "Apply event occupancy selection"};
+    Configurable<bool> c1032useFT0CbasedOccupancy{"c1032useFT0CbasedOccupancy", false, "Use FT0C occupancy instead of track occupancy"};
+    Configurable<float> c1033minOccupancy{"c1033minOccupancy", -1.f, "Minimum occupancy"};
+    Configurable<float> c1034maxOccupancy{"c1034maxOccupancy", 1.e9f, "Maximum occupancy"};
 
     // Interaction-rate selection
-    Configurable<bool> useInteractionRateSelection{"useInteractionRateSelection", false, "Apply interaction-rate selection"};
-    Configurable<float> minInteractionRate{"minInteractionRate", -1.f, "Minimum interaction rate"};
-    Configurable<float> maxInteractionRate{"maxInteractionRate", 1.e9f, "Maximum interaction rate"};
+    Configurable<bool> c1035useInteractionRateSelection{"c1035useInteractionRateSelection", false, "Apply interaction-rate selection"};
+    Configurable<float> c1036minInteractionRate{"c1036minInteractionRate", -1.f, "Minimum interaction rate"};
+    Configurable<float> c1037maxInteractionRate{"c1037maxInteractionRate", 1.e9f, "Maximum interaction rate"};
 
     // RCT / detector-quality selection
-    Configurable<bool> requireRCTFlagChecker{"requireRCTFlagChecker", false, "Apply Run Condition Table event-quality selection"};
-    Configurable<bool> requireCorrelationAnalysisRCTFlagChecker{"requireCorrelationAnalysisRCTFlagChecker", false, "Apply correlation-analysis RCT selection"};
-    Configurable<std::string> rctFlagCheckerLabel{"rctFlagCheckerLabel", "CBT_muon_global", "RCT flag checker label"};
-    Configurable<bool> rctCheckZDC{"rctCheckZDC", false, "Include ZDC in RCT detector-quality check"};
-    Configurable<bool> rctTreatLimitedAcceptanceAsBad{"rctTreatLimitedAcceptanceAsBad", false, "Treat limited detector acceptance as bad"};
+    Configurable<bool> c1038requireRCTFlagChecker{"c1038requireRCTFlagChecker", false, "Apply Run Condition Table event-quality selection"};
+    Configurable<bool> c1039requireCorrelationAnalysisRCTFlagChecker{"c1039requireCorrelationAnalysisRCTFlagChecker", false, "Apply correlation-analysis RCT selection"};
+    Configurable<std::string> c1040rctFlagCheckerLabel{"c1040rctFlagCheckerLabel", "CBT_muon_global", "RCT flag checker label"};
+    Configurable<bool> c1041rctCheckZDC{"c1041rctCheckZDC", false, "Include ZDC in RCT detector-quality check"};
+    Configurable<bool> c1042rctTreatLimitedAcceptanceAsBad{"c1042rctTreatLimitedAcceptanceAsBad", false, "Treat limited detector acceptance as bad"};
   } cfgEvent;
 
   struct : ConfigurableGroup {
     // Kinematics
-    Configurable<float> ptMin{"ptMin", 0.2f, "Minimum track pT (GeV/c)"};
-    Configurable<float> ptMax{"ptMax", 1.e10f, "Maximum track pT (GeV/c)"};
-    Configurable<float> etaMax{"etaMax", 0.8f, "Maximum |eta|"};
+    Configurable<float> c1043ptMin{"c1043ptMin", 0.2f, "Minimum track pT (GeV/c)"};
+    Configurable<float> c1044ptMax{"c1044ptMax", 1.e10f, "Maximum track pT (GeV/c)"};
+    Configurable<float> c1045etaMax{"c1045etaMax", 0.8f, "Maximum |eta|"};
 
     // Standard O2 track-selection flags
-    Configurable<bool> requireGlobalTrack{"requireGlobalTrack", false, "Require isGlobalTrack()"};
-    Configurable<bool> requireGlobalTrackWoDCA{"requireGlobalTrackWoDCA", false, "Require isGlobalTrackWoDCA()"};
-    Configurable<bool> requirePVContributor{"requirePVContributor", false, "Require track to be a PV contributor"};
+    Configurable<bool> c1046requireGlobalTrack{"c1046requireGlobalTrack", false, "Require isGlobalTrack()"};
+    Configurable<bool> c1047requireGlobalTrackWoDCA{"c1047requireGlobalTrackWoDCA", false, "Require isGlobalTrackWoDCA()"};
+    Configurable<bool> c1048requirePVContributor{"c1048requirePVContributor", false, "Require track to be a PV contributor"};
 
     // Detector matching / presence
-    Configurable<bool> requireITS{"requireITS", false, "Require ITS information"};
-    Configurable<bool> requireTPC{"requireTPC", false, "Require TPC information"};
-    Configurable<bool> requireTOF{"requireTOF", false, "Require TOF information"};
-    Configurable<bool> requireTRD{"requireTRD", false, "Require TRD information"};
+    Configurable<bool> c1049requireITS{"c1049requireITS", false, "Require ITS information"};
+    Configurable<bool> c1050requireTPC{"c1050requireTPC", false, "Require TPC information"};
+    Configurable<bool> c1051requireTOF{"c1051requireTOF", false, "Require TOF information"};
+    Configurable<bool> c1052requireTRD{"c1052requireTRD", false, "Require TRD information"};
 
     // TPC quality
-    Configurable<int> tpcNClsFoundMin{"tpcNClsFoundMin", 0, "Minimum number of found TPC clusters"};
-    Configurable<int> tpcNClsCrossedRowsMin{"tpcNClsCrossedRowsMin", 80, "Minimum number of TPC crossed rows"};
-    Configurable<float> tpcCrossedRowsOverFindableMin{"tpcCrossedRowsOverFindableMin", 0.f, "Minimum TPC crossed rows / findable clusters"};
-    Configurable<float> tpcFoundOverFindableMin{"tpcFoundOverFindableMin", 0.f, "Minimum TPC found / findable clusters"};
-    Configurable<float> tpcFractionSharedMax{"tpcFractionSharedMax", 1.f, "Maximum fraction of shared TPC clusters"};
-    Configurable<float> tpcChi2NClMin{"tpcChi2NClMin", 0.f, "Minimum TPC chi2 per cluster"};
-    Configurable<float> tpcChi2NClMax{"tpcChi2NClMax", 1.e10f, "Maximum TPC chi2 per cluster"};
+    Configurable<int> c1053tpcNClsFoundMin{"c1053tpcNClsFoundMin", 0, "Minimum number of found TPC clusters"};
+    Configurable<int> c1054tpcNClsCrossedRowsMin{"c1054tpcNClsCrossedRowsMin", 80, "Minimum number of TPC crossed rows"};
+    Configurable<float> c1055tpcCrossedRowsOverFindableMin{"c1055tpcCrossedRowsOverFindableMin", 0.f, "Minimum TPC crossed rows / findable clusters"};
+    Configurable<float> c1056tpcFoundOverFindableMin{"c1056tpcFoundOverFindableMin", 0.f, "Minimum TPC found / findable clusters"};
+    Configurable<float> c1057tpcFractionSharedMax{"c1057tpcFractionSharedMax", 1.f, "Maximum fraction of shared TPC clusters"};
+    Configurable<float> c1058tpcChi2NClMin{"c1058tpcChi2NClMin", 0.f, "Minimum TPC chi2 per cluster"};
+    Configurable<float> c1059tpcChi2NClMax{"c1059tpcChi2NClMax", 1.e10f, "Maximum TPC chi2 per cluster"};
 
     // ITS quality
-    Configurable<int> itsNClsMin{"itsNClsMin", 0, "Minimum number of ITS clusters"};
-    Configurable<int> itsNClsMax{"itsNClsMax", 7, "Maximum number of ITS clusters"};
-    Configurable<int> itsNClsInnerBarrelMin{"itsNClsInnerBarrelMin", 0, "Minimum number of ITS inner-barrel clusters"};
-    Configurable<float> itsChi2NClMin{"itsChi2NClMin", 0.f, "Minimum ITS chi2 per cluster"};
-    Configurable<float> itsChi2NClMax{"itsChi2NClMax", 1.e10f, "Maximum ITS chi2 per cluster"};
+    Configurable<int> c1060itsNClsMin{"c1060itsNClsMin", 0, "Minimum number of ITS clusters"};
+    Configurable<int> c1061itsNClsMax{"c1061itsNClsMax", 7, "Maximum number of ITS clusters"};
+    Configurable<int> c1062itsNClsInnerBarrelMin{"c1062itsNClsInnerBarrelMin", 0, "Minimum number of ITS inner-barrel clusters"};
+    Configurable<float> c1063itsChi2NClMin{"c1063itsChi2NClMin", 0.f, "Minimum ITS chi2 per cluster"};
+    Configurable<float> c1064itsChi2NClMax{"c1064itsChi2NClMax", 1.e10f, "Maximum ITS chi2 per cluster"};
 
     // Fixed DCA
-    Configurable<bool> useFixedDCAxy{"useFixedDCAxy", true, "Apply fixed |DCAxy| cut"};
-    Configurable<float> dcaXYMax{"dcaXYMax", 0.1f, "Maximum fixed |DCAxy| (cm)"};
-    Configurable<bool> useFixedDCAz{"useFixedDCAz", true, "Apply fixed |DCAz| cut"};
-    Configurable<float> dcaZMax{"dcaZMax", 0.2f, "Maximum fixed |DCAz| (cm)"};
+    Configurable<bool> c1065useFixedDCAxy{"c1065useFixedDCAxy", true, "Apply fixed |DCAxy| cut"};
+    Configurable<float> c1066dcaXYMax{"c1066dcaXYMax", 0.1f, "Maximum fixed |DCAxy| (cm)"};
+    Configurable<bool> c1067useFixedDCAz{"c1067useFixedDCAz", true, "Apply fixed |DCAz| cut"};
+    Configurable<float> c1068dcaZMax{"c1068dcaZMax", 0.2f, "Maximum fixed |DCAz| (cm)"};
 
     // pT-dependent DCAxy:
     // |DCAxy| < A + B * pT^C
-    Configurable<bool> usePtDependentDCAxy{"usePtDependentDCAxy", false, "Apply pT-dependent DCAxy cut"};
-    Configurable<float> dcaXYPtA{"dcaXYPtA", 0.0105f, "A coefficient of pT-dependent DCAxy cut"};
-    Configurable<float> dcaXYPtB{"dcaXYPtB", 0.035f, "B coefficient of pT-dependent DCAxy cut"};
-    Configurable<float> dcaXYPtC{"dcaXYPtC", 1.1f, "Power C of pT-dependent DCAxy cut"};
+    Configurable<bool> c1069usePtDependentDCAxy{"c1069usePtDependentDCAxy", false, "Apply pT-dependent DCAxy cut"};
+    Configurable<float> c1070dcaXYPtA{"c1070dcaXYPtA", 0.0105f, "A coefficient of pT-dependent DCAxy cut"};
+    Configurable<float> c1071dcaXYPtB{"c1071dcaXYPtB", 0.035f, "B coefficient of pT-dependent DCAxy cut"};
+    Configurable<float> c1072dcaXYPtC{"c1072dcaXYPtC", 1.1f, "Power C of pT-dependent DCAxy cut"};
 
     // pT-dependent DCAz:
     // |DCAz| < A + B * pT^C
-    Configurable<bool> usePtDependentDCAz{"usePtDependentDCAz", false, "Apply pT-dependent DCAz cut"};
-    Configurable<float> dcaZPtA{"dcaZPtA", 0.1f, "A coefficient of pT-dependent DCAz cut"};
-    Configurable<float> dcaZPtB{"dcaZPtB", 0.0f, "B coefficient of pT-dependent DCAz cut"};
-    Configurable<float> dcaZPtC{"dcaZPtC", 0.0f, "Power C of pT-dependent DCAz cut"};
+    Configurable<bool> c1073usePtDependentDCAz{"c1073usePtDependentDCAz", false, "Apply pT-dependent DCAz cut"};
+    Configurable<float> c1074dcaZPtA{"c1074dcaZPtA", 0.1f, "A coefficient of pT-dependent DCAz cut"};
+    Configurable<float> c1075dcaZPtB{"c1075dcaZPtB", 0.0f, "B coefficient of pT-dependent DCAz cut"};
+    Configurable<float> c1076dcaZPtC{"c1076dcaZPtC", 0.0f, "Power C of pT-dependent DCAz cut"};
   } cfgTrackCuts;
 
   struct : ConfigurableGroup {
-    Configurable<float> triggerPtLow{"triggerPtLow", 4.0f, "Minimum pT for trigger tracks"};
-    Configurable<float> triggerPtHigh{"triggerPtHigh", 8.0f, "Maximum pT for trigger tracks"};
-    Configurable<float> assocPtLowMin{"assocPtLowMin", 0.0f, "Minimum pT for low-pT associated tracks"};
-    Configurable<float> assocPtLowMax{"assocPtLowMax", 2.0f, "Maximum pT for low-pT associated tracks"};
-    Configurable<float> assocPtHighMin{"assocPtHighMin", 2.0f, "Minimum pT for high-pT associated tracks"};
-    Configurable<float> assocPtHighMax{"assocPtHighMax", 4.0f, "Maximum pT for high-pT associated tracks"};
+    Configurable<float> c1077triggerPtLow{"c1077triggerPtLow", 4.0f, "Minimum pT for trigger tracks"};
+    Configurable<float> c1078triggerPtHigh{"c1078triggerPtHigh", 8.0f, "Maximum pT for trigger tracks"};
+    Configurable<float> c1079assocPtLowMin{"c1079assocPtLowMin", 0.0f, "Minimum pT for low-pT associated tracks"};
+    Configurable<float> c1080assocPtLowMax{"c1080assocPtLowMax", 2.0f, "Maximum pT for low-pT associated tracks"};
+    Configurable<float> c1081assocPtHighMin{"c1081assocPtHighMin", 2.0f, "Minimum pT for high-pT associated tracks"};
+    Configurable<float> c1082assocPtHighMax{"c1082assocPtHighMax", 4.0f, "Maximum pT for high-pT associated tracks"};
   } cfgPartitions;
 
   struct : ConfigurableGroup {
-    Configurable<float> resoRapidityMin{"resoRapidityMin", -0.5f, "Minimum rapidity for resonance candidates"};
-    Configurable<float> resoRapidityMax{"resoRapidityMax", 0.5f, "Maximum rapidity for resonance candidates"};
+    Configurable<float> c1083resoRapidityMin{"c1083resoRapidityMin", -0.5f, "Minimum rapidity for resonance candidates"};
+    Configurable<float> c1084resoRapidityMax{"c1084resoRapidityMax", 0.5f, "Maximum rapidity for resonance candidates"};
 
-    Configurable<float> phiPtLowMin{"phiPtLowMin", 0.0f, "Minimum pT for low-pT Phi(1020)"};
-    Configurable<float> phiPtLowMax{"phiPtLowMax", 2.0f, "Maximum pT for low-pT Phi(1020)"};
-    Configurable<float> phiPtHighMin{"phiPtHighMin", 2.0f, "Minimum pT for high-pT Phi(1020)"};
-    Configurable<float> phiPtHighMax{"phiPtHighMax", 4.0f, "Maximum pT for high-pT Phi(1020)"};
+    Configurable<float> c1085phiPtLowMin{"c1085phiPtLowMin", 0.0f, "Minimum pT for low-pT Phi(1020)"};
+    Configurable<float> c1086phiPtLowMax{"c1086phiPtLowMax", 2.0f, "Maximum pT for low-pT Phi(1020)"};
+    Configurable<float> c1087phiPtHighMin{"c1087phiPtHighMin", 2.0f, "Minimum pT for high-pT Phi(1020)"};
+    Configurable<float> c1088phiPtHighMax{"c1088phiPtHighMax", 4.0f, "Maximum pT for high-pT Phi(1020)"};
 
-    Configurable<float> kstarPtLowMin{"kstarPtLowMin", 0.0f, "Minimum pT for low-pT K*(892)0"};
-    Configurable<float> kstarPtLowMax{"kstarPtLowMax", 2.0f, "Maximum pT for low-pT K*(892)0"};
-    Configurable<float> kstarPtHighMin{"kstarPtHighMin", 2.0f, "Minimum pT for high-pT K*(892)0"};
-    Configurable<float> kstarPtHighMax{"kstarPtHighMax", 4.0f, "Maximum pT for high-pT K*(892)0"};
+    Configurable<float> c1089kstarPtLowMin{"c1089kstarPtLowMin", 0.0f, "Minimum pT for low-pT K*(892)0"};
+    Configurable<float> c1090kstarPtLowMax{"c1090kstarPtLowMax", 2.0f, "Maximum pT for low-pT K*(892)0"};
+    Configurable<float> c1091kstarPtHighMin{"c1091kstarPtHighMin", 2.0f, "Minimum pT for high-pT K*(892)0"};
+    Configurable<float> c1092kstarPtHighMax{"c1092kstarPtHighMax", 4.0f, "Maximum pT for high-pT K*(892)0"};
 
-    Configurable<float> kstarBarPtLowMin{"kstarBarPtLowMin", 0.0f, "Minimum pT for low-pT anti-K*(892)0"};
-    Configurable<float> kstarBarPtLowMax{"kstarBarPtLowMax", 2.0f, "Maximum pT for low-pT anti-K*(892)0"};
-    Configurable<float> kstarBarPtHighMin{"kstarBarPtHighMin", 2.0f, "Minimum pT for high-pT anti-K*(892)0"};
-    Configurable<float> kstarBarPtHighMax{"kstarBarPtHighMax", 4.0f, "Maximum pT for high-pT anti-K*(892)0"};
+    Configurable<float> c1093kstarBarPtLowMin{"c1093kstarBarPtLowMin", 0.0f, "Minimum pT for low-pT anti-K*(892)0"};
+    Configurable<float> c1094kstarBarPtLowMax{"c1094kstarBarPtLowMax", 2.0f, "Maximum pT for low-pT anti-K*(892)0"};
+    Configurable<float> c1095kstarBarPtHighMin{"c1095kstarBarPtHighMin", 2.0f, "Minimum pT for high-pT anti-K*(892)0"};
+    Configurable<float> c1096kstarBarPtHighMax{"c1096kstarBarPtHighMax", 4.0f, "Maximum pT for high-pT anti-K*(892)0"};
 
-    Configurable<float> lambda1520PtLowMin{"lambda1520PtLowMin", 0.0f, "Minimum pT for low-pT Lambda(1520)"};
-    Configurable<float> lambda1520PtLowMax{"lambda1520PtLowMax", 2.0f, "Maximum pT for low-pT Lambda(1520)"};
-    Configurable<float> lambda1520PtHighMin{"lambda1520PtHighMin", 2.0f, "Minimum pT for high-pT Lambda(1520)"};
-    Configurable<float> lambda1520PtHighMax{"lambda1520PtHighMax", 4.0f, "Maximum pT for high-pT Lambda(1520)"};
+    Configurable<float> c1097lambda1520PtLowMin{"c1097lambda1520PtLowMin", 0.0f, "Minimum pT for low-pT Lambda(1520)"};
+    Configurable<float> c1098lambda1520PtLowMax{"c1098lambda1520PtLowMax", 2.0f, "Maximum pT for low-pT Lambda(1520)"};
+    Configurable<float> c1099lambda1520PtHighMin{"c1099lambda1520PtHighMin", 2.0f, "Minimum pT for high-pT Lambda(1520)"};
+    Configurable<float> c1100lambda1520PtHighMax{"c1100lambda1520PtHighMax", 4.0f, "Maximum pT for high-pT Lambda(1520)"};
 
-    Configurable<float> lambda1520BarPtLowMin{"lambda1520BarPtLowMin", 0.0f, "Minimum pT for low-pT anti-Lambda(1520)"};
-    Configurable<float> lambda1520BarPtLowMax{"lambda1520BarPtLowMax", 2.0f, "Maximum pT for low-pT anti-Lambda(1520)"};
-    Configurable<float> lambda1520BarPtHighMin{"lambda1520BarPtHighMin", 2.0f, "Minimum pT for high-pT anti-Lambda(1520)"};
-    Configurable<float> lambda1520BarPtHighMax{"lambda1520BarPtHighMax", 4.0f, "Maximum pT for high-pT anti-Lambda(1520)"};
+    Configurable<float> c1101lambda1520BarPtLowMin{"c1101lambda1520BarPtLowMin", 0.0f, "Minimum pT for low-pT anti-Lambda(1520)"};
+    Configurable<float> c1102lambda1520BarPtLowMax{"c1102lambda1520BarPtLowMax", 2.0f, "Maximum pT for low-pT anti-Lambda(1520)"};
+    Configurable<float> c1103lambda1520BarPtHighMin{"c1103lambda1520BarPtHighMin", 2.0f, "Minimum pT for high-pT anti-Lambda(1520)"};
+    Configurable<float> c1104lambda1520BarPtHighMax{"c1104lambda1520BarPtHighMax", 4.0f, "Maximum pT for high-pT anti-Lambda(1520)"};
   } cfgResPartitions;
 
   struct : ConfigurableGroup {
-    ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {80, -2.0f, 6.0f}, "#Delta#varphi"};
-    ConfigurableAxis axisDeltaEta{"axisDeltaEta", {84, -2.1f, 2.1f}, "#Delta#eta"};
+    ConfigurableAxis c1105axisDeltaPhi{"c1105axisDeltaPhi", {80, -2.0f, 6.0f}, "#Delta#varphi"};
+    ConfigurableAxis c1106axisDeltaEta{"c1106axisDeltaEta", {84, -2.1f, 2.1f}, "#Delta#eta"};
 
-    ConfigurableAxis axisCorrSparseTriggerPt{"axisCorrSparseTriggerPt", {8, 4.0f, 8.0f}, "#it{p}_{T}^{trig} (GeV/#it{c})"};
-    ConfigurableAxis axisCorrSparseAssocPt{"axisCorrSparseAssocPt", {8, 0.0f, 4.0f}, "#it{p}_{T}^{assoc} (GeV/#it{c})"};
-    ConfigurableAxis axisCorrSparseDeltaPhi{"axisCorrSparseDeltaPhi", {32, -2.0f, 6.0f}, "#Delta#varphi"};
-    ConfigurableAxis axisCorrSparseDeltaEta{"axisCorrSparseDeltaEta", {24, -2.1f, 2.1f}, "#Delta#eta"};
+    ConfigurableAxis c1107axisCorrSparseTriggerPt{"c1107axisCorrSparseTriggerPt", {8, 4.0f, 8.0f}, "#it{p}_{T}^{trig} (GeV/#it{c})"};
+    ConfigurableAxis c1108axisCorrSparseAssocPt{"c1108axisCorrSparseAssocPt", {8, 0.0f, 4.0f}, "#it{p}_{T}^{assoc} (GeV/#it{c})"};
+    ConfigurableAxis c1109axisCorrSparseDeltaPhi{"c1109axisCorrSparseDeltaPhi", {32, -2.0f, 6.0f}, "#Delta#varphi"};
+    ConfigurableAxis c1110axisCorrSparseDeltaEta{"c1110axisCorrSparseDeltaEta", {24, -2.1f, 2.1f}, "#Delta#eta"};
   } cfgAxis;
 
-  Configurable<bool> fillDauQAOnce{"fillDauQAOnce", false, "Fill each resonance daughter in QA only once per event"};
-  Configurable<bool> rejectResoWithAnyTriggerDaughter{"rejectResoWithAnyTriggerDaughter", false, "Reject resonance if either daughter belongs to the event trigger population"};
-  Configurable<bool> requireSelectedTriggerForInvariantMass{"requireSelectedTriggerForInvariantMass", true, "Require at least one selected trigger track before filling resonance invariant-mass spectra"};
+  Configurable<bool> c1111fillDauQAOnce{"c1111fillDauQAOnce", false, "Fill each resonance daughter in QA only once per event"};
+  Configurable<bool> c1112rejectResoWithAnyTriggerDaughter{"c1112rejectResoWithAnyTriggerDaughter", false, "Reject resonance if either daughter belongs to the event trigger population"};
+  Configurable<bool> c1113requireSelectedTriggerForInvariantMass{"c1113requireSelectedTriggerForInvariantMass", true, "Require at least one selected trigger track before filling resonance invariant-mass spectra"};
 
   struct : ConfigurableGroup {
-    Configurable<float> phi1020PeakLow{"phi1020PeakLow", 1.013f, "Phi(1020) peak lower mass"};
-    Configurable<float> phi1020PeakUp{"phi1020PeakUp", 1.026f, "Phi(1020) peak upper mass"};
-    Configurable<float> phi1020LSBLow{"phi1020LSBLow", 0.995f, "Phi(1020) LSB lower mass"};
-    Configurable<float> phi1020LSBUp{"phi1020LSBUp", 1.005f, "Phi(1020) LSB upper mass"};
-    Configurable<float> phi1020RSBLow{"phi1020RSBLow", 1.040f, "Phi(1020) RSB lower mass"};
-    Configurable<float> phi1020RSBUp{"phi1020RSBUp", 1.060f, "Phi(1020) RSB upper mass"};
+    Configurable<float> c1114phi1020PeakLow{"c1114phi1020PeakLow", 1.013f, "Phi(1020) peak lower mass"};
+    Configurable<float> c1115phi1020PeakUp{"c1115phi1020PeakUp", 1.026f, "Phi(1020) peak upper mass"};
+    Configurable<float> c1116phi1020LSBLow{"c1116phi1020LSBLow", 0.995f, "Phi(1020) LSB lower mass"};
+    Configurable<float> c1117phi1020LSBUp{"c1117phi1020LSBUp", 1.005f, "Phi(1020) LSB upper mass"};
+    Configurable<float> c1118phi1020RSBLow{"c1118phi1020RSBLow", 1.040f, "Phi(1020) RSB lower mass"};
+    Configurable<float> c1119phi1020RSBUp{"c1119phi1020RSBUp", 1.060f, "Phi(1020) RSB upper mass"};
   } cfgPhi1020CorrMass;
 
   struct : ConfigurableGroup {
-    Configurable<float> kStar892PeakLow{"kStar892PeakLow", 0.846f, "K*(892)0 correlation peak lower mass"};
-    Configurable<float> kStar892PeakUp{"kStar892PeakUp", 0.946f, "K*(892)0 correlation peak upper mass"};
-    Configurable<float> kStar892LSBLow{"kStar892LSBLow", 0.700f, "K*(892)0 correlation LSB lower mass"};
-    Configurable<float> kStar892LSBUp{"kStar892LSBUp", 0.780f, "K*(892)0 correlation LSB upper mass"};
-    Configurable<float> kStar892RSBLow{"kStar892RSBLow", 1.010f, "K*(892)0 correlation RSB lower mass"};
-    Configurable<float> kStar892RSBUp{"kStar892RSBUp", 1.090f, "K*(892)0 correlation RSB upper mass"};
+    Configurable<float> c1120kStar892PeakLow{"c1120kStar892PeakLow", 0.846f, "K*(892)0 correlation peak lower mass"};
+    Configurable<float> c1121kStar892PeakUp{"c1121kStar892PeakUp", 0.946f, "K*(892)0 correlation peak upper mass"};
+    Configurable<float> c1122kStar892LSBLow{"c1122kStar892LSBLow", 0.700f, "K*(892)0 correlation LSB lower mass"};
+    Configurable<float> c1123kStar892LSBUp{"c1123kStar892LSBUp", 0.780f, "K*(892)0 correlation LSB upper mass"};
+    Configurable<float> c1124kStar892RSBLow{"c1124kStar892RSBLow", 1.010f, "K*(892)0 correlation RSB lower mass"};
+    Configurable<float> c1125kStar892RSBUp{"c1125kStar892RSBUp", 1.090f, "K*(892)0 correlation RSB upper mass"};
   } cfgKStar892CorrMass;
 
   struct : ConfigurableGroup {
-    Configurable<float> lambda1520PeakLow{"lambda1520PeakLow", 1.500f, "Lambda(1520) correlation peak lower mass"};
-    Configurable<float> lambda1520PeakUp{"lambda1520PeakUp", 1.540f, "Lambda(1520) correlation peak upper mass"};
-    Configurable<float> lambda1520LSBLow{"lambda1520LSBLow", 1.440f, "Lambda(1520) correlation LSB lower mass"};
-    Configurable<float> lambda1520LSBUp{"lambda1520LSBUp", 1.480f, "Lambda(1520) correlation LSB upper mass"};
-    Configurable<float> lambda1520RSBLow{"lambda1520RSBLow", 1.560f, "Lambda(1520) correlation RSB lower mass"};
-    Configurable<float> lambda1520RSBUp{"lambda1520RSBUp", 1.600f, "Lambda(1520) correlation RSB upper mass"};
+    Configurable<float> c1126lambda1520PeakLow{"c1126lambda1520PeakLow", 1.500f, "Lambda(1520) correlation peak lower mass"};
+    Configurable<float> c1127lambda1520PeakUp{"c1127lambda1520PeakUp", 1.540f, "Lambda(1520) correlation peak upper mass"};
+    Configurable<float> c1128lambda1520LSBLow{"c1128lambda1520LSBLow", 1.440f, "Lambda(1520) correlation LSB lower mass"};
+    Configurable<float> c1129lambda1520LSBUp{"c1129lambda1520LSBUp", 1.480f, "Lambda(1520) correlation LSB upper mass"};
+    Configurable<float> c1130lambda1520RSBLow{"c1130lambda1520RSBLow", 1.560f, "Lambda(1520) correlation RSB lower mass"};
+    Configurable<float> c1131lambda1520RSBUp{"c1131lambda1520RSBUp", 1.600f, "Lambda(1520) correlation RSB upper mass"};
   } cfgLambda1520CorrMass;
 
   struct : ConfigurableGroup {
-    Configurable<uint64_t> pairMask{"pairMask", 0ULL, "Correlation mask to store; 0 = any non-zero correlation"};
-    Configurable<int> mixingBin{"mixingBin", -1, "Mixing bin to store; -1 = all valid mixing bins"};
-    Configurable<bool> requireAllPairBits{"requireAllPairBits", false, "Require all requested pair-mask bits instead of any requested bit"};
-    Configurable<bool> resetGlobalCountersPerDF{"resetGlobalCountersPerDF", false, "Reset derived-data global counters at the beginning of every dataframe"};
+    Configurable<uint64_t> c1132pairMask{"c1132pairMask", 0ULL, "Correlation mask to store; 0 = any non-zero correlation"};
+    Configurable<int> c1133mixingBin{"c1133mixingBin", -1, "Mixing bin to store; -1 = all valid mixing bins"};
+    Configurable<bool> c1134requireAllPairBits{"c1134requireAllPairBits", false, "Require all requested pair-mask bits instead of any requested bit"};
+    Configurable<bool> c1135resetGlobalCountersPerDF{"c1135resetGlobalCountersPerDF", false, "Reset derived-data global counters at the beginning of every dataframe"};
   } cfgDerivedData;
 
   struct : ConfigurableGroup {
-    Configurable<int> nEvtMixing{"nEvtMixing", 5, "Number of events to mix"};
-    Configurable<int> mixingEstimator{"mixingEstimator", kMixCentFT0C, "Mixing estimator: 0=FT0C, 1=FT0M, 2=FT0A, 3=FV0A"};
-    ConfigurableAxis axisVtxMixing{"axisVtxMixing", {VARIABLE_WIDTH, -10.0, -8.0, -6.0, -4.0, -2.0, 0.0, 2.0, 4.0, 6.0, 8.0, 10.0}, "Mixing bins - z vertex"};
-    ConfigurableAxis axisCentMixing{"axisCentMixing", {VARIABLE_WIDTH, -1.0, 20.0, 50.0, 80.0, 101.0}, "Mixing bins - centrality"};
-    ConfigurableAxis axisMixingOccupancy{"axisMixingOccupancy", {101, -0.5, 100.5}, "Number of collisions in mixing pool"};
+    Configurable<int> c1136nEvtMixing{"c1136nEvtMixing", 5, "Number of events to mix"};
+    Configurable<int> c1137mixingEstimator{"c1137mixingEstimator", kMixCentFT0C, "Mixing estimator: 0=FT0C, 1=FT0M, 2=FT0A, 3=FV0A"};
+    ConfigurableAxis c1138axisVtxMixing{"c1138axisVtxMixing", {VARIABLE_WIDTH, -10.0, -8.0, -6.0, -4.0, -2.0, 0.0, 2.0, 4.0, 6.0, 8.0, 10.0}, "Mixing bins - z vertex"};
+    ConfigurableAxis c1139axisCentMixing{"c1139axisCentMixing", {VARIABLE_WIDTH, -1.0, 20.0, 50.0, 80.0, 101.0}, "Mixing bins - centrality"};
+    ConfigurableAxis c1140axisMixingOccupancy{"c1140axisMixingOccupancy", {101, -0.5, 100.5}, "Number of collisions in mixing pool"};
   } cfgMixing;
 
   using BinningTypeVtxZFT0C = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
@@ -1730,17 +1730,17 @@ struct HParticleCorrelationSameEvent {
   using BinningTypeVtxZFT0A = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0A>;
   using BinningTypeVtxZFV0A = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFV0A>;
 
-  BinningTypeVtxZFT0C colBinningFT0C{{cfgMixing.axisVtxMixing, cfgMixing.axisCentMixing}, true};
-  BinningTypeVtxZFT0M colBinningFT0M{{cfgMixing.axisVtxMixing, cfgMixing.axisCentMixing}, true};
-  BinningTypeVtxZFT0A colBinningFT0A{{cfgMixing.axisVtxMixing, cfgMixing.axisCentMixing}, true};
-  BinningTypeVtxZFV0A colBinningFV0A{{cfgMixing.axisVtxMixing, cfgMixing.axisCentMixing}, true};
+  BinningTypeVtxZFT0C colBinningFT0C{{cfgMixing.c1138axisVtxMixing, cfgMixing.c1139axisCentMixing}, true};
+  BinningTypeVtxZFT0M colBinningFT0M{{cfgMixing.c1138axisVtxMixing, cfgMixing.c1139axisCentMixing}, true};
+  BinningTypeVtxZFT0A colBinningFT0A{{cfgMixing.c1138axisVtxMixing, cfgMixing.c1139axisCentMixing}, true};
+  BinningTypeVtxZFV0A colBinningFV0A{{cfgMixing.c1138axisVtxMixing, cfgMixing.c1139axisCentMixing}, true};
 
   int nMixBins = 0;
 
   template <typename C>
   int getMixingBin(const C& collision)
   {
-    switch (cfgMixing.mixingEstimator) {
+    switch (cfgMixing.c1137mixingEstimator) {
       case kMixCentFT0C:
         return colBinningFT0C.getBin({collision.posZ(), collision.centFT0C()});
       case kMixCentFT0M:
@@ -1757,7 +1757,7 @@ struct HParticleCorrelationSameEvent {
   template <typename C>
   float getMixingEstimatorValue(const C& collision)
   {
-    switch (cfgMixing.mixingEstimator) {
+    switch (cfgMixing.c1137mixingEstimator) {
       case kMixCentFT0C:
         return collision.centFT0C();
       case kMixCentFT0M:
@@ -1772,14 +1772,14 @@ struct HParticleCorrelationSameEvent {
   }
 
   struct : ConfigurableGroup {
-    Configurable<LabeledArray<double>> pidConfigSetting{"pidConfigSetting", {DefaultPIDcheckValues[0].data(), kNPid, kNCutSettings, {"Pi", "Ka", "Pr", "El", "Mu", "De"}, {"ThrPforTOF", "IdCutTypeLowP", "NSigmaTPCLowP", "NSigmaTOFLowP", "NSigmaRadLowP", "IdCutTypeHighP", "NSigmaTPCHighP", "NSigmaTOFHighP", "NSigmaRadHighP", "doVetoOthers", "doRelativeTPCCheck", "doRelativeTOFcheck", "doRelativeTPCTOFcheck"}}, "Cut values for particle identification"};
-    Configurable<LabeledArray<double>> pidVetoSetting{"pidVetoSetting", {DefaultPidVetoValues[0].data(), kNPid, kNVetoSettings, {"Pi", "Ka", "Pr", "El", "Mu", "De"}, {"doVetoTPC", "doVetoTOF", "vetoTPC", "vetoTOF"}}, "Veto cuts for particle identification"};
-    Configurable<bool> cfgId07CheckTofBeta{"cfgId07CheckTofBeta", false, "Require beta > 0 for reliable TOF"};
+    Configurable<LabeledArray<double>> c1141pidConfigSetting{"c1141pidConfigSetting", {DefaultPIDcheckValues[0].data(), kNPid, kNCutSettings, {"Pi", "Ka", "Pr", "El", "Mu", "De"}, {"ThrPforTOF", "IdCutTypeLowP", "NSigmaTPCLowP", "NSigmaTOFLowP", "NSigmaRadLowP", "IdCutTypeHighP", "NSigmaTPCHighP", "NSigmaTOFHighP", "NSigmaRadHighP", "doVetoOthers", "doRelativeTPCCheck", "doRelativeTOFcheck", "doRelativeTPCTOFcheck"}}, "Cut values for particle identification"};
+    Configurable<LabeledArray<double>> c1142pidVetoSetting{"c1142pidVetoSetting", {DefaultPidVetoValues[0].data(), kNPid, kNVetoSettings, {"Pi", "Ka", "Pr", "El", "Mu", "De"}, {"doVetoTPC", "doVetoTOF", "vetoTPC", "vetoTOF"}}, "Veto cuts for particle identification"};
+    Configurable<bool> c1143cfgId07CheckTofBeta{"c1143cfgId07CheckTofBeta", false, "Require beta > 0 for reliable TOF"};
   } cfgIdCut;
 
   void init(InitContext const&)
   {
-    if (cfgDebug.printDebugMessages) {
+    if (cfgDebug.c1001printDebugMessages) {
       LOGF(info, "Starting init");
     }
     // Axes
@@ -1815,22 +1815,22 @@ struct HParticleCorrelationSameEvent {
     const AxisSpec axisTOFNSigma = {200, -10.0f, 10.0f, "n#sigma_{TOF}"};
     const AxisSpec axisIdMethod = {2, -0.5f, 1.5f, "ID method (0=TPC, 1=TPC+TOF)"};
 
-    AxisSpec axisDeltaPhiSpec{cfgAxis.axisDeltaPhi, "#Delta#varphi"};
-    AxisSpec axisDeltaEtaSpec{cfgAxis.axisDeltaEta, "#Delta#eta"};
+    AxisSpec axisDeltaPhiSpec{cfgAxis.c1105axisDeltaPhi, "#Delta#varphi"};
+    AxisSpec axisDeltaEtaSpec{cfgAxis.c1106axisDeltaEta, "#Delta#eta"};
 
-    AxisSpec axisCorrSparseTriggerPt{cfgAxis.axisCorrSparseTriggerPt, "#it{p}_{T}^{trig} (GeV/#it{c})"};
-    AxisSpec axisCorrSparseAssocPt{cfgAxis.axisCorrSparseAssocPt, "#it{p}_{T}^{assoc} (GeV/#it{c})"};
-    AxisSpec axisCorrSparseDeltaPhi{cfgAxis.axisCorrSparseDeltaPhi, "#Delta#varphi"};
-    AxisSpec axisCorrSparseDeltaEta{cfgAxis.axisCorrSparseDeltaEta, "#Delta#eta"};
+    AxisSpec axisCorrSparseTriggerPt{cfgAxis.c1107axisCorrSparseTriggerPt, "#it{p}_{T}^{trig} (GeV/#it{c})"};
+    AxisSpec axisCorrSparseAssocPt{cfgAxis.c1108axisCorrSparseAssocPt, "#it{p}_{T}^{assoc} (GeV/#it{c})"};
+    AxisSpec axisCorrSparseDeltaPhi{cfgAxis.c1109axisCorrSparseDeltaPhi, "#Delta#varphi"};
+    AxisSpec axisCorrSparseDeltaEta{cfgAxis.c1110axisCorrSparseDeltaEta, "#Delta#eta"};
 
     const AxisSpec axisPhi1020Mass = {300, 0.98f, 1.08f, "m_{K^{+}K^{-}} (GeV/#it{c}^{2})"};
     const AxisSpec axisKStar892Mass = {300, 0.65f, 1.15f, "m_{K#pi} (GeV/#it{c}^{2})"};
     const AxisSpec axisLambda1520Mass = {300, 1.40f, 1.65f, "m_{pK} (GeV/#it{c}^{2})"};
     const AxisSpec axisResoMassCent = {102, -1.0f, 101.0f, "Centrality (%)"};
 
-    AxisSpec axisVtxMixSpec{cfgMixing.axisVtxMixing, "z_{vtx} (cm)"};
-    AxisSpec axisCentMixSpec{cfgMixing.axisCentMixing, "Centrality (%)"};
-    AxisSpec axisPoolOccupancy{cfgMixing.axisMixingOccupancy, "N eligible collisions"};
+    AxisSpec axisVtxMixSpec{cfgMixing.c1138axisVtxMixing, "z_{vtx} (cm)"};
+    AxisSpec axisCentMixSpec{cfgMixing.c1139axisCentMixing, "Centrality (%)"};
+    AxisSpec axisPoolOccupancy{cfgMixing.c1140axisMixingOccupancy, "N eligible collisions"};
     nMixBins = axisVtxMixSpec.getNbins() * axisCentMixSpec.getNbins();
     const AxisSpec axisMixBin{nMixBins, -0.5, static_cast<double>(nMixBins) - 0.5, "Mixing bin"};
     const AxisSpec axisCorrChannel{NCorrCountChannels, -0.5, static_cast<double>(NCorrCountChannels) - 0.5, "Correlation channel"};
@@ -2123,7 +2123,7 @@ struct HParticleCorrelationSameEvent {
     setCorrChannelLabels(mixingQA.get<TH2>(HIST("Mixing/PerDF/ReadyPoolMap"))->GetYaxis());
     setCorrChannelLabels(mixingQA.get<TH2>(HIST("Mixing/PerDF/NReadyMixBins"))->GetXaxis());
 
-    if (cfgDebug.printDebugMessages) {
+    if (cfgDebug.c1001printDebugMessages) {
       LOGF(info, "Finishing init");
     }
   } // Init function is over.
@@ -2141,20 +2141,20 @@ struct HParticleCorrelationSameEvent {
   {
     // Static is only run once, ever.
     static const std::array<bool, kNPid> doVetoTPC = {
-      getCfg<bool>(cfgIdCut.pidVetoSetting, kPi, kDoVetoTPC),
-      getCfg<bool>(cfgIdCut.pidVetoSetting, kKa, kDoVetoTPC),
-      getCfg<bool>(cfgIdCut.pidVetoSetting, kPr, kDoVetoTPC),
-      getCfg<bool>(cfgIdCut.pidVetoSetting, kEl, kDoVetoTPC),
-      getCfg<bool>(cfgIdCut.pidVetoSetting, kMu, kDoVetoTPC),
-      getCfg<bool>(cfgIdCut.pidVetoSetting, kDe, kDoVetoTPC)};
+      getCfg<bool>(cfgIdCut.c1142pidVetoSetting, kPi, kDoVetoTPC),
+      getCfg<bool>(cfgIdCut.c1142pidVetoSetting, kKa, kDoVetoTPC),
+      getCfg<bool>(cfgIdCut.c1142pidVetoSetting, kPr, kDoVetoTPC),
+      getCfg<bool>(cfgIdCut.c1142pidVetoSetting, kEl, kDoVetoTPC),
+      getCfg<bool>(cfgIdCut.c1142pidVetoSetting, kMu, kDoVetoTPC),
+      getCfg<bool>(cfgIdCut.c1142pidVetoSetting, kDe, kDoVetoTPC)};
 
     static const std::array<float, kNPid> vetoTPC = {
-      getCfg<float>(cfgIdCut.pidVetoSetting, kPi, kVetoTPC),
-      getCfg<float>(cfgIdCut.pidVetoSetting, kKa, kVetoTPC),
-      getCfg<float>(cfgIdCut.pidVetoSetting, kPr, kVetoTPC),
-      getCfg<float>(cfgIdCut.pidVetoSetting, kEl, kVetoTPC),
-      getCfg<float>(cfgIdCut.pidVetoSetting, kMu, kVetoTPC),
-      getCfg<float>(cfgIdCut.pidVetoSetting, kDe, kVetoTPC)};
+      getCfg<float>(cfgIdCut.c1142pidVetoSetting, kPi, kVetoTPC),
+      getCfg<float>(cfgIdCut.c1142pidVetoSetting, kKa, kVetoTPC),
+      getCfg<float>(cfgIdCut.c1142pidVetoSetting, kPr, kVetoTPC),
+      getCfg<float>(cfgIdCut.c1142pidVetoSetting, kEl, kVetoTPC),
+      getCfg<float>(cfgIdCut.c1142pidVetoSetting, kMu, kVetoTPC),
+      getCfg<float>(cfgIdCut.c1142pidVetoSetting, kDe, kVetoTPC)};
 
     return applyVetoOthersTPC<pidMode>(track, doVetoTPC, vetoTPC);
   }
@@ -2164,20 +2164,20 @@ struct HParticleCorrelationSameEvent {
   {
     // Only computed once
     static const std::array<bool, kNPid> doVetoTOF = {
-      getCfg<bool>(cfgIdCut.pidVetoSetting, kPi, kDoVetoTOF),
-      getCfg<bool>(cfgIdCut.pidVetoSetting, kKa, kDoVetoTOF),
-      getCfg<bool>(cfgIdCut.pidVetoSetting, kPr, kDoVetoTOF),
-      getCfg<bool>(cfgIdCut.pidVetoSetting, kEl, kDoVetoTOF),
-      getCfg<bool>(cfgIdCut.pidVetoSetting, kMu, kDoVetoTOF),
-      getCfg<bool>(cfgIdCut.pidVetoSetting, kDe, kDoVetoTOF)};
+      getCfg<bool>(cfgIdCut.c1142pidVetoSetting, kPi, kDoVetoTOF),
+      getCfg<bool>(cfgIdCut.c1142pidVetoSetting, kKa, kDoVetoTOF),
+      getCfg<bool>(cfgIdCut.c1142pidVetoSetting, kPr, kDoVetoTOF),
+      getCfg<bool>(cfgIdCut.c1142pidVetoSetting, kEl, kDoVetoTOF),
+      getCfg<bool>(cfgIdCut.c1142pidVetoSetting, kMu, kDoVetoTOF),
+      getCfg<bool>(cfgIdCut.c1142pidVetoSetting, kDe, kDoVetoTOF)};
 
     static const std::array<float, kNPid> vetoTOF = {
-      getCfg<float>(cfgIdCut.pidVetoSetting, kPi, kVetoTOF),
-      getCfg<float>(cfgIdCut.pidVetoSetting, kKa, kVetoTOF),
-      getCfg<float>(cfgIdCut.pidVetoSetting, kPr, kVetoTOF),
-      getCfg<float>(cfgIdCut.pidVetoSetting, kEl, kVetoTOF),
-      getCfg<float>(cfgIdCut.pidVetoSetting, kMu, kVetoTOF),
-      getCfg<float>(cfgIdCut.pidVetoSetting, kDe, kVetoTOF)};
+      getCfg<float>(cfgIdCut.c1142pidVetoSetting, kPi, kVetoTOF),
+      getCfg<float>(cfgIdCut.c1142pidVetoSetting, kKa, kVetoTOF),
+      getCfg<float>(cfgIdCut.c1142pidVetoSetting, kPr, kVetoTOF),
+      getCfg<float>(cfgIdCut.c1142pidVetoSetting, kEl, kVetoTOF),
+      getCfg<float>(cfgIdCut.c1142pidVetoSetting, kMu, kVetoTOF),
+      getCfg<float>(cfgIdCut.c1142pidVetoSetting, kDe, kVetoTOF)};
 
     return applyVetoOthersTOF<pidMode>(track, doVetoTOF, vetoTOF);
   }
@@ -2194,7 +2194,7 @@ struct HParticleCorrelationSameEvent {
   inline bool checkReliableTOF(const T& track)
   {
     // which check makes the information of TOF relaiable? should track.beta() be checked? e.g.:
-    if (cfgIdCut.cfgId07CheckTofBeta) {
+    if (cfgIdCut.c1143cfgId07CheckTofBeta) {
       return (track.hasTOF() && track.beta() > 0.0f);
     }
     return track.hasTOF();
@@ -2219,7 +2219,7 @@ struct HParticleCorrelationSameEvent {
       nSigmaIdDistSq = 1000000;
     }
 
-    static const bool doVetoOthers = getCfg<bool>(cfgIdCut.pidConfigSetting, pidMode, kDoVetoOthers);
+    static const bool doVetoOthers = getCfg<bool>(cfgIdCut.c1141pidConfigSetting, pidMode, kDoVetoOthers);
     if (doVetoOthers) {
       if (!vetoIdOthersTPC<pidMode>(track)) {
         // If vetoIdOthers = true; it passed all veto checks
@@ -2228,7 +2228,7 @@ struct HParticleCorrelationSameEvent {
       }
     }
 
-    static const bool doRelativeTPCcheck = getCfg<bool>(cfgIdCut.pidConfigSetting, pidMode, kDoRelativeTPCcheck);
+    static const bool doRelativeTPCcheck = getCfg<bool>(cfgIdCut.c1141pidConfigSetting, pidMode, kDoRelativeTPCcheck);
     if (doRelativeTPCcheck) {
       if (!relativeIdOthersTPC<pidMode>(track)) {
         // If relativeIdOthersTPC = true; particle has stronger nSigma compared to others
@@ -2272,7 +2272,7 @@ struct HParticleCorrelationSameEvent {
     } else {
       nSigmaIdDistSq = 1000000;
     }
-    static const bool doVetoOthers = getCfg<bool>(cfgIdCut.pidConfigSetting, pidMode, kDoVetoOthers);
+    static const bool doVetoOthers = getCfg<bool>(cfgIdCut.c1141pidConfigSetting, pidMode, kDoVetoOthers);
     if (doVetoOthers) {
       if (!vetoIdOthersTPCTOF<pidMode>(track)) {
         // If vetoIdOthers = true; it passed all veto checks
@@ -2281,7 +2281,7 @@ struct HParticleCorrelationSameEvent {
       }
     }
 
-    static const bool doRelativeTOFcheck = getCfg<bool>(cfgIdCut.pidConfigSetting, pidMode, kDoRelativeTOFcheck);
+    static const bool doRelativeTOFcheck = getCfg<bool>(cfgIdCut.c1141pidConfigSetting, pidMode, kDoRelativeTOFcheck);
     if (doRelativeTOFcheck) {
       if (!relativeIdOthersTOF<pidMode>(track)) {
         // If relativeIdOthersTOF = true; particle has stronger nSigma compared to others
@@ -2290,7 +2290,7 @@ struct HParticleCorrelationSameEvent {
       }
     }
 
-    static const bool doRelativeTPCTOFcheck = getCfg<bool>(cfgIdCut.pidConfigSetting, pidMode, kDoRelativeTPCTOFcheck);
+    static const bool doRelativeTPCTOFcheck = getCfg<bool>(cfgIdCut.c1141pidConfigSetting, pidMode, kDoRelativeTPCTOFcheck);
     if (doRelativeTPCTOFcheck) {
       if (!relativeIdOthersTPCTOF<pidMode>(track)) {
         // If relativeIdOthersTPCTOF = true; particle has stronger nSigma compared to others
@@ -2315,15 +2315,15 @@ struct HParticleCorrelationSameEvent {
   bool selPdependent(const T& track, int& IdMethod, float& nSigmaIdDistSq)
   {
     // Static cache inside function - initialized once on first call
-    static const auto thrPforTOF = getCfg<float>(cfgIdCut.pidConfigSetting, pidMode, kThrPforTOF);
-    static const auto idCutTypeLowP = getCfg<int>(cfgIdCut.pidConfigSetting, pidMode, kIdCutTypeLowP);
-    static const auto nSigmaTPCLowP = getCfg<float>(cfgIdCut.pidConfigSetting, pidMode, kNSigmaTPCLowP);
-    static const auto nSigmaTOFLowP = getCfg<float>(cfgIdCut.pidConfigSetting, pidMode, kNSigmaTOFLowP);
-    static const auto nSigmaRadLowP = getCfg<float>(cfgIdCut.pidConfigSetting, pidMode, kNSigmaRadLowP);
-    static const auto idCutTypeHighP = getCfg<int>(cfgIdCut.pidConfigSetting, pidMode, kIdCutTypeHighP);
-    static const auto nSigmaTPCHighP = getCfg<float>(cfgIdCut.pidConfigSetting, pidMode, kNSigmaTPCHighP);
-    static const auto nSigmaTOFHighP = getCfg<float>(cfgIdCut.pidConfigSetting, pidMode, kNSigmaTOFHighP);
-    static const auto nSigmaRadHighP = getCfg<float>(cfgIdCut.pidConfigSetting, pidMode, kNSigmaRadHighP);
+    static const auto thrPforTOF = getCfg<float>(cfgIdCut.c1141pidConfigSetting, pidMode, kThrPforTOF);
+    static const auto idCutTypeLowP = getCfg<int>(cfgIdCut.c1141pidConfigSetting, pidMode, kIdCutTypeLowP);
+    static const auto nSigmaTPCLowP = getCfg<float>(cfgIdCut.c1141pidConfigSetting, pidMode, kNSigmaTPCLowP);
+    static const auto nSigmaTOFLowP = getCfg<float>(cfgIdCut.c1141pidConfigSetting, pidMode, kNSigmaTOFLowP);
+    static const auto nSigmaRadLowP = getCfg<float>(cfgIdCut.c1141pidConfigSetting, pidMode, kNSigmaRadLowP);
+    static const auto idCutTypeHighP = getCfg<int>(cfgIdCut.c1141pidConfigSetting, pidMode, kIdCutTypeHighP);
+    static const auto nSigmaTPCHighP = getCfg<float>(cfgIdCut.c1141pidConfigSetting, pidMode, kNSigmaTPCHighP);
+    static const auto nSigmaTOFHighP = getCfg<float>(cfgIdCut.c1141pidConfigSetting, pidMode, kNSigmaTOFHighP);
+    static const auto nSigmaRadHighP = getCfg<float>(cfgIdCut.c1141pidConfigSetting, pidMode, kNSigmaRadHighP);
 
     if (track.p() < thrPforTOF) {
       if (checkReliableTOF(track)) {
@@ -2439,83 +2439,83 @@ struct HParticleCorrelationSameEvent {
   CollisionRejectionTag selCollision(T const& collision)
   {
     // Basic event selection
-    if (cfgEvent.requireSel8 && !collision.sel8()) {
+    if (cfgEvent.c1003requireSel8 && !collision.sel8()) {
       return kCollRejectSel8;
     }
 
-    if (std::abs(collision.posZ()) >= cfgEvent.cutZvertex) {
+    if (std::abs(collision.posZ()) >= cfgEvent.c1002cutZvertex) {
       return kCollRejectVertexZ;
     }
 
-    if (cfgEvent.requireTriggerTVX && !collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+    if (cfgEvent.c1004requireTriggerTVX && !collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
       return kCollRejectTriggerTVX;
     }
 
     // TF / ITS-ROF borders
-    if (cfgEvent.requireNoITSROFrameBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+    if (cfgEvent.c1007requireNoITSROFrameBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       return kCollRejectITSROFrameBorder;
     }
 
-    if (cfgEvent.requireNoTimeFrameBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+    if (cfgEvent.c1008requireNoTimeFrameBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
       return kCollRejectTimeFrameBorder;
     }
 
     // Vertex quality
-    if (cfgEvent.requireVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+    if (cfgEvent.c1009requireVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
       return kCollRejectVertexITSTPC;
     }
 
-    if (cfgEvent.requireGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    if (cfgEvent.c1010requireGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return kCollRejectGoodZvtxFT0vsPV;
     }
 
-    if (cfgEvent.requireVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
+    if (cfgEvent.c1011requireVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
       return kCollRejectVertexTOFmatched;
     }
 
-    if (cfgEvent.requireVertexTRDmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
+    if (cfgEvent.c1012requireVertexTRDmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
       return kCollRejectVertexTRDmatched;
     }
 
-    if (cfgEvent.requireGoodITSLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+    if (cfgEvent.c1013requireGoodITSLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
       return kCollRejectGoodITSLayersAll;
     }
 
     // Pileup / neighbouring-collision rejection
-    if (cfgEvent.requireNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+    if (cfgEvent.c1014requireNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       return kCollRejectSameBunchPileup;
     }
 
-    if (cfgEvent.requireNoCollInTimeRangeStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+    if (cfgEvent.c1015requireNoCollInTimeRangeStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return kCollRejectCollInTimeRangeStandard;
     }
 
-    if (cfgEvent.requireNoCollInTimeRangeStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
+    if (cfgEvent.c1016requireNoCollInTimeRangeStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
       return kCollRejectCollInTimeRangeStrict;
     }
 
-    if (cfgEvent.requireNoCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
+    if (cfgEvent.c1017requireNoCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
       return kCollRejectCollInTimeRangeNarrow;
     }
 
-    if (cfgEvent.requireNoCollInRofStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+    if (cfgEvent.c1018requireNoCollInRofStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
       return kCollRejectCollInRofStandard;
     }
 
-    if (cfgEvent.requireNoCollInRofStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
+    if (cfgEvent.c1019requireNoCollInRofStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
       return kCollRejectCollInRofStrict;
     }
 
-    if (cfgEvent.requireNoHighMultCollInPrevRof && !collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+    if (cfgEvent.c1020requireNoHighMultCollInPrevRof && !collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
       return kCollRejectHighMultCollInPrevRof;
     }
 
     // INEL classes
-    if (cfgEvent.requireINELgt0 && !collision.isInelGt0()) {
+    if (cfgEvent.c1021requireINELgt0 && !collision.isInelGt0()) {
       return kCollRejectINELgt0;
     }
 
-    if (cfgEvent.requireINELgt1 && !collision.isInelGt1()) {
+    if (cfgEvent.c1022requireINELgt1 && !collision.isInelGt1()) {
       return kCollRejectINELgt1;
     }
 
@@ -2526,83 +2526,83 @@ struct HParticleCorrelationSameEvent {
   TrackRejectionTag selectionTrack(T const& track)
   {
     // Standard O2 flags
-    if (cfgTrackCuts.requireGlobalTrack && !track.isGlobalTrack()) {
+    if (cfgTrackCuts.c1046requireGlobalTrack && !track.isGlobalTrack()) {
       return kTrackRejectGlobalTrack;
     }
 
-    if (cfgTrackCuts.requireGlobalTrackWoDCA && !track.isGlobalTrackWoDCA()) {
+    if (cfgTrackCuts.c1047requireGlobalTrackWoDCA && !track.isGlobalTrackWoDCA()) {
       return kTrackRejectGlobalTrackWoDCA;
     }
 
-    if (cfgTrackCuts.requirePVContributor && !track.isPVContributor()) {
+    if (cfgTrackCuts.c1048requirePVContributor && !track.isPVContributor()) {
       return kTrackRejectPVContributor;
     }
 
     // Detector presence
-    if (cfgTrackCuts.requireITS && !track.hasITS()) {
+    if (cfgTrackCuts.c1049requireITS && !track.hasITS()) {
       return kTrackRejectITS;
     }
 
-    if (cfgTrackCuts.requireTPC && !track.hasTPC()) {
+    if (cfgTrackCuts.c1050requireTPC && !track.hasTPC()) {
       return kTrackRejectTPC;
     }
 
-    if (cfgTrackCuts.requireTOF && !track.hasTOF()) {
+    if (cfgTrackCuts.c1051requireTOF && !track.hasTOF()) {
       return kTrackRejectTOF;
     }
 
-    if (cfgTrackCuts.requireTRD && !track.hasTRD()) {
+    if (cfgTrackCuts.c1052requireTRD && !track.hasTRD()) {
       return kTrackRejectTRD;
     }
 
     // TPC quality
-    if (track.tpcNClsFound() < cfgTrackCuts.tpcNClsFoundMin) {
+    if (track.tpcNClsFound() < cfgTrackCuts.c1053tpcNClsFoundMin) {
       return kTrackRejectTPCNClsFound;
     }
 
-    if (track.tpcNClsCrossedRows() < cfgTrackCuts.tpcNClsCrossedRowsMin) {
+    if (track.tpcNClsCrossedRows() < cfgTrackCuts.c1054tpcNClsCrossedRowsMin) {
       return kTrackRejectTPCCrossedRows;
     }
 
-    if (track.tpcCrossedRowsOverFindableCls() < cfgTrackCuts.tpcCrossedRowsOverFindableMin) {
+    if (track.tpcCrossedRowsOverFindableCls() < cfgTrackCuts.c1055tpcCrossedRowsOverFindableMin) {
       return kTrackRejectTPCCrossedRowsOverFindable;
     }
 
-    if (track.tpcFoundOverFindableCls() < cfgTrackCuts.tpcFoundOverFindableMin) {
+    if (track.tpcFoundOverFindableCls() < cfgTrackCuts.c1056tpcFoundOverFindableMin) {
       return kTrackRejectTPCFoundOverFindable;
     }
 
-    if (track.tpcFractionSharedCls() > cfgTrackCuts.tpcFractionSharedMax) {
+    if (track.tpcFractionSharedCls() > cfgTrackCuts.c1057tpcFractionSharedMax) {
       return kTrackRejectTPCFractionShared;
     }
 
-    if (track.tpcChi2NCl() < cfgTrackCuts.tpcChi2NClMin || track.tpcChi2NCl() > cfgTrackCuts.tpcChi2NClMax) {
+    if (track.tpcChi2NCl() < cfgTrackCuts.c1058tpcChi2NClMin || track.tpcChi2NCl() > cfgTrackCuts.c1059tpcChi2NClMax) {
       return kTrackRejectTPCChi2;
     }
 
     // ITS quality
-    if (track.itsNCls() < cfgTrackCuts.itsNClsMin || track.itsNCls() > cfgTrackCuts.itsNClsMax) {
+    if (track.itsNCls() < cfgTrackCuts.c1060itsNClsMin || track.itsNCls() > cfgTrackCuts.c1061itsNClsMax) {
       return kTrackRejectITSNCls;
     }
 
-    if (track.itsNClsInnerBarrel() < cfgTrackCuts.itsNClsInnerBarrelMin) {
+    if (track.itsNClsInnerBarrel() < cfgTrackCuts.c1062itsNClsInnerBarrelMin) {
       return kTrackRejectITSNClsInnerBarrel;
     }
 
-    if (track.itsChi2NCl() < cfgTrackCuts.itsChi2NClMin || track.itsChi2NCl() > cfgTrackCuts.itsChi2NClMax) {
+    if (track.itsChi2NCl() < cfgTrackCuts.c1063itsChi2NClMin || track.itsChi2NCl() > cfgTrackCuts.c1064itsChi2NClMax) {
       return kTrackRejectITSChi2;
     }
 
     // pT-dependent DCA
-    if (cfgTrackCuts.usePtDependentDCAxy) {
-      const float dcaXYMax = cfgTrackCuts.dcaXYPtA + cfgTrackCuts.dcaXYPtB / std::pow(track.pt(), cfgTrackCuts.dcaXYPtC);
+    if (cfgTrackCuts.c1069usePtDependentDCAxy) {
+      const float dcaXYMax = cfgTrackCuts.c1070dcaXYPtA + cfgTrackCuts.c1071dcaXYPtB / std::pow(track.pt(), cfgTrackCuts.c1072dcaXYPtC);
       if (std::abs(track.dcaXY()) > dcaXYMax) {
         return kTrackRejectPtDependentDCAxy;
       }
     }
 
-    if (cfgTrackCuts.usePtDependentDCAz) {
-      const float dcaZMax = cfgTrackCuts.dcaZPtA;
+    if (cfgTrackCuts.c1073usePtDependentDCAz) {
+      const float dcaZMax = cfgTrackCuts.c1074dcaZPtA;
       if (std::abs(track.dcaZ()) > dcaZMax) {
         return kTrackRejectPtDependentDCAz;
       }
@@ -2931,19 +2931,19 @@ struct HParticleCorrelationSameEvent {
   {
     if constexpr (pairType == kHPhi) {
       invMass = associate.mPhi1020();
-      return getMassRegionTag(invMass, cfgPhi1020CorrMass.phi1020LSBLow, cfgPhi1020CorrMass.phi1020LSBUp, cfgPhi1020CorrMass.phi1020PeakLow, cfgPhi1020CorrMass.phi1020PeakUp, cfgPhi1020CorrMass.phi1020RSBLow, cfgPhi1020CorrMass.phi1020RSBUp);
+      return getMassRegionTag(invMass, cfgPhi1020CorrMass.c1116phi1020LSBLow, cfgPhi1020CorrMass.c1117phi1020LSBUp, cfgPhi1020CorrMass.c1114phi1020PeakLow, cfgPhi1020CorrMass.c1115phi1020PeakUp, cfgPhi1020CorrMass.c1118phi1020RSBLow, cfgPhi1020CorrMass.c1119phi1020RSBUp);
     } else if constexpr (pairType == kHKStar) {
       invMass = associate.mKStar892();
-      return getMassRegionTag(invMass, cfgKStar892CorrMass.kStar892LSBLow, cfgKStar892CorrMass.kStar892LSBUp, cfgKStar892CorrMass.kStar892PeakLow, cfgKStar892CorrMass.kStar892PeakUp, cfgKStar892CorrMass.kStar892RSBLow, cfgKStar892CorrMass.kStar892RSBUp);
+      return getMassRegionTag(invMass, cfgKStar892CorrMass.c1122kStar892LSBLow, cfgKStar892CorrMass.c1123kStar892LSBUp, cfgKStar892CorrMass.c1120kStar892PeakLow, cfgKStar892CorrMass.c1121kStar892PeakUp, cfgKStar892CorrMass.c1124kStar892RSBLow, cfgKStar892CorrMass.c1125kStar892RSBUp);
     } else if constexpr (pairType == kHKStarBar) {
       invMass = associate.mKStar892Bar();
-      return getMassRegionTag(invMass, cfgKStar892CorrMass.kStar892LSBLow, cfgKStar892CorrMass.kStar892LSBUp, cfgKStar892CorrMass.kStar892PeakLow, cfgKStar892CorrMass.kStar892PeakUp, cfgKStar892CorrMass.kStar892RSBLow, cfgKStar892CorrMass.kStar892RSBUp);
+      return getMassRegionTag(invMass, cfgKStar892CorrMass.c1122kStar892LSBLow, cfgKStar892CorrMass.c1123kStar892LSBUp, cfgKStar892CorrMass.c1120kStar892PeakLow, cfgKStar892CorrMass.c1121kStar892PeakUp, cfgKStar892CorrMass.c1124kStar892RSBLow, cfgKStar892CorrMass.c1125kStar892RSBUp);
     } else if constexpr (pairType == kHLambda) {
       invMass = associate.mLambda1520();
-      return getMassRegionTag(invMass, cfgLambda1520CorrMass.lambda1520LSBLow, cfgLambda1520CorrMass.lambda1520LSBUp, cfgLambda1520CorrMass.lambda1520PeakLow, cfgLambda1520CorrMass.lambda1520PeakUp, cfgLambda1520CorrMass.lambda1520RSBLow, cfgLambda1520CorrMass.lambda1520RSBUp);
+      return getMassRegionTag(invMass, cfgLambda1520CorrMass.c1128lambda1520LSBLow, cfgLambda1520CorrMass.c1129lambda1520LSBUp, cfgLambda1520CorrMass.c1126lambda1520PeakLow, cfgLambda1520CorrMass.c1127lambda1520PeakUp, cfgLambda1520CorrMass.c1130lambda1520RSBLow, cfgLambda1520CorrMass.c1131lambda1520RSBUp);
     } else if constexpr (pairType == kHLambdaBar) {
       invMass = associate.mLambda1520Bar();
-      return getMassRegionTag(invMass, cfgLambda1520CorrMass.lambda1520LSBLow, cfgLambda1520CorrMass.lambda1520LSBUp, cfgLambda1520CorrMass.lambda1520PeakLow, cfgLambda1520CorrMass.lambda1520PeakUp, cfgLambda1520CorrMass.lambda1520RSBLow, cfgLambda1520CorrMass.lambda1520RSBUp);
+      return getMassRegionTag(invMass, cfgLambda1520CorrMass.c1128lambda1520LSBLow, cfgLambda1520CorrMass.c1129lambda1520LSBUp, cfgLambda1520CorrMass.c1126lambda1520PeakLow, cfgLambda1520CorrMass.c1127lambda1520PeakUp, cfgLambda1520CorrMass.c1130lambda1520RSBLow, cfgLambda1520CorrMass.c1131lambda1520RSBUp);
     }
 
     invMass = -1.0f;
@@ -3033,12 +3033,12 @@ struct HParticleCorrelationSameEvent {
     const float pz = dau1.pz() + dau2.pz();
     const float energy = RecoDecay::e(dau1.px() + dau2.px(), dau1.py() + dau2.py(), pz, mass);
     const float rapidity = 0.5f * std::log((energy + pz) / (energy - pz));
-    if (rapidity < cfgResPartitions.resoRapidityMin || rapidity > cfgResPartitions.resoRapidityMax) {
+    if (rapidity < cfgResPartitions.c1083resoRapidityMin || rapidity > cfgResPartitions.c1084resoRapidityMax) {
       return false;
     }
 
     float centrality = -1.0f;
-    switch (cfgEvent.centralityEstimator) {
+    switch (cfgEvent.c1028centralityEstimator) {
       case 0:
         centrality = collision.centFT0C();
         break;
@@ -3145,17 +3145,17 @@ struct HParticleCorrelationSameEvent {
       return false;
     }
 
-    if (cfgDerivedData.mixingBin >= 0 && mixingBin != cfgDerivedData.mixingBin) {
+    if (cfgDerivedData.c1133mixingBin >= 0 && mixingBin != cfgDerivedData.c1133mixingBin) {
       return false;
     }
 
-    const uint64_t requestedMask = cfgDerivedData.pairMask;
+    const uint64_t requestedMask = cfgDerivedData.c1132pairMask;
 
     if (requestedMask == 0ULL) {
       return corrMask != 0ULL;
     }
 
-    if (cfgDerivedData.requireAllPairBits) {
+    if (cfgDerivedData.c1134requireAllPairBits) {
       return (corrMask & requestedMask) == requestedMask;
     }
 
@@ -3234,12 +3234,12 @@ struct HParticleCorrelationSameEvent {
         float invMass = -1.0f;
         const uint8_t massRegion = getResonanceMassRegion<pairType>(associate, invMass);
         const float rapidity = computeRapidity(associate, invMass);
-        if (rapidity < cfgResPartitions.resoRapidityMin || rapidity > cfgResPartitions.resoRapidityMax) {
+        if (rapidity < cfgResPartitions.c1083resoRapidityMin || rapidity > cfgResPartitions.c1084resoRapidityMax) {
           continue;
         }
 
         // Trigger-resonance daughter overlap -----expensive check ----
-        if (rejectResoWithAnyTriggerDaughter) {
+        if (c1112rejectResoWithAnyTriggerDaughter) {
           // Strict mode: reject the whole resonance if either daughter belongs to the event trigger population.
           if (checkTrackInList(posDauTrack, triggerGIList) || checkTrackInList(negDauTrack, triggerGIList)) {
             continue;
@@ -3294,7 +3294,7 @@ struct HParticleCorrelationSameEvent {
     std::vector<int64_t> posDauGIListRSSB;
     std::vector<int64_t> negDauGIListRSSB;
 
-    if (rejectResoWithAnyTriggerDaughter) {
+    if (c1112rejectResoWithAnyTriggerDaughter) {
       for (const auto& trigger : triggers) {
         if (selectionTrack(trigger) != kTrackAccepted) {
           continue;
@@ -3319,14 +3319,14 @@ struct HParticleCorrelationSameEvent {
   } // execute Correlation Function is over
 
   // Event Filter
-  Filter eventFilter = (!cfgEvent.requireSel8) || (o2::aod::evsel::sel8 == true);
-  Filter posZFilter = (nabs(o2::aod::collision::posZ) < cfgEvent.cutZvertex);
+  Filter eventFilter = (!cfgEvent.c1003requireSel8) || (o2::aod::evsel::sel8 == true);
+  Filter posZFilter = (nabs(o2::aod::collision::posZ) < cfgEvent.c1002cutZvertex);
 
   // Track Filter
-  Filter ptFilter = (o2::aod::track::pt > cfgTrackCuts.ptMin) && (o2::aod::track::pt < cfgTrackCuts.ptMax);
-  Filter etaFilter = (nabs(o2::aod::track::eta) < cfgTrackCuts.etaMax);
-  Filter dcaFilter = ((!cfgTrackCuts.useFixedDCAxy) || (nabs(o2::aod::track::dcaXY) < cfgTrackCuts.dcaXYMax)) &&
-                     ((!cfgTrackCuts.useFixedDCAz) || (nabs(o2::aod::track::dcaZ) < cfgTrackCuts.dcaZMax));
+  Filter ptFilter = (o2::aod::track::pt > cfgTrackCuts.c1043ptMin) && (o2::aod::track::pt < cfgTrackCuts.c1044ptMax);
+  Filter etaFilter = (nabs(o2::aod::track::eta) < cfgTrackCuts.c1045etaMax);
+  Filter dcaFilter = ((!cfgTrackCuts.c1065useFixedDCAxy) || (nabs(o2::aod::track::dcaXY) < cfgTrackCuts.c1066dcaXYMax)) &&
+                     ((!cfgTrackCuts.c1067useFixedDCAz) || (nabs(o2::aod::track::dcaZ) < cfgTrackCuts.c1068dcaZMax));
   using MyFilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::CentFV0As, aod::Mults>>; // ,
   // using MyFilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TOFSignal, aod::pidTOFbeta, aod::pidTOFmass, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullEl, aod::pidTPCFullDe, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullEl, aod::pidTOFFullDe>>;
   using MyFilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TOFSignal, aod::pidTOFbeta, aod::pidTOFmass, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullDe, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullDe>>;
@@ -3336,27 +3336,27 @@ struct HParticleCorrelationSameEvent {
 
   // // definition of partitions
   SliceCache cache;
-  Partition<MyFilteredTracks> triggerTracks = cfgPartitions.triggerPtLow < aod::track::pt && aod::track::pt < cfgPartitions.triggerPtHigh;
+  Partition<MyFilteredTracks> triggerTracks = cfgPartitions.c1077triggerPtLow < aod::track::pt && aod::track::pt < cfgPartitions.c1078triggerPtHigh;
   Partition<MyFilteredTracks> posTracks = aod::track::signed1Pt > 0.0f;
   Partition<MyFilteredTracks> negTracks = aod::track::signed1Pt < 0.0f;
 
-  Partition<MyFilteredTracks> assocTracksLowPt = cfgPartitions.assocPtLowMin < aod::track::pt && aod::track::pt < cfgPartitions.assocPtLowMax;
-  Partition<MyFilteredTracks> assocTracksHighPt = cfgPartitions.assocPtHighMin < aod::track::pt && aod::track::pt < cfgPartitions.assocPtHighMax;
+  Partition<MyFilteredTracks> assocTracksLowPt = cfgPartitions.c1079assocPtLowMin < aod::track::pt && aod::track::pt < cfgPartitions.c1080assocPtLowMax;
+  Partition<MyFilteredTracks> assocTracksHighPt = cfgPartitions.c1081assocPtHighMin < aod::track::pt && aod::track::pt < cfgPartitions.c1082assocPtHighMax;
 
-  Partition<aod::ResonanceCndts> assocPhiLowPt = (cfgResPartitions.phiPtLowMin < aod::resonancecndt::pt) && (aod::resonancecndt::pt < cfgResPartitions.phiPtLowMax) && (aod::resonancecndt::phi1020Tag != static_cast<uint8_t>(kMassOutside));
-  Partition<aod::ResonanceCndts> assocPhiHighPt = (cfgResPartitions.phiPtHighMin < aod::resonancecndt::pt) && (aod::resonancecndt::pt < cfgResPartitions.phiPtHighMax) && (aod::resonancecndt::phi1020Tag != static_cast<uint8_t>(kMassOutside));
+  Partition<aod::ResonanceCndts> assocPhiLowPt = (cfgResPartitions.c1085phiPtLowMin < aod::resonancecndt::pt) && (aod::resonancecndt::pt < cfgResPartitions.c1086phiPtLowMax) && (aod::resonancecndt::phi1020Tag != static_cast<uint8_t>(kMassOutside));
+  Partition<aod::ResonanceCndts> assocPhiHighPt = (cfgResPartitions.c1087phiPtHighMin < aod::resonancecndt::pt) && (aod::resonancecndt::pt < cfgResPartitions.c1088phiPtHighMax) && (aod::resonancecndt::phi1020Tag != static_cast<uint8_t>(kMassOutside));
 
-  Partition<aod::ResonanceCndts> assocKStarLowPt = (cfgResPartitions.kstarPtLowMin < aod::resonancecndt::pt) && (aod::resonancecndt::pt < cfgResPartitions.kstarPtLowMax) && (aod::resonancecndt::kStar892Tag != static_cast<uint8_t>(kMassOutside));
-  Partition<aod::ResonanceCndts> assocKStarHighPt = (cfgResPartitions.kstarPtHighMin < aod::resonancecndt::pt) && (aod::resonancecndt::pt < cfgResPartitions.kstarPtHighMax) && (aod::resonancecndt::kStar892Tag != static_cast<uint8_t>(kMassOutside));
+  Partition<aod::ResonanceCndts> assocKStarLowPt = (cfgResPartitions.c1089kstarPtLowMin < aod::resonancecndt::pt) && (aod::resonancecndt::pt < cfgResPartitions.c1090kstarPtLowMax) && (aod::resonancecndt::kStar892Tag != static_cast<uint8_t>(kMassOutside));
+  Partition<aod::ResonanceCndts> assocKStarHighPt = (cfgResPartitions.c1091kstarPtHighMin < aod::resonancecndt::pt) && (aod::resonancecndt::pt < cfgResPartitions.c1092kstarPtHighMax) && (aod::resonancecndt::kStar892Tag != static_cast<uint8_t>(kMassOutside));
 
-  Partition<aod::ResonanceCndts> assocKStarBarLowPt = (cfgResPartitions.kstarBarPtLowMin < aod::resonancecndt::pt) && (aod::resonancecndt::pt < cfgResPartitions.kstarBarPtLowMax) && (aod::resonancecndt::kStar892BarTag != static_cast<uint8_t>(kMassOutside));
-  Partition<aod::ResonanceCndts> assocKStarBarHighPt = (cfgResPartitions.kstarBarPtHighMin < aod::resonancecndt::pt) && (aod::resonancecndt::pt < cfgResPartitions.kstarBarPtHighMax) && (aod::resonancecndt::kStar892BarTag != static_cast<uint8_t>(kMassOutside));
+  Partition<aod::ResonanceCndts> assocKStarBarLowPt = (cfgResPartitions.c1093kstarBarPtLowMin < aod::resonancecndt::pt) && (aod::resonancecndt::pt < cfgResPartitions.c1094kstarBarPtLowMax) && (aod::resonancecndt::kStar892BarTag != static_cast<uint8_t>(kMassOutside));
+  Partition<aod::ResonanceCndts> assocKStarBarHighPt = (cfgResPartitions.c1095kstarBarPtHighMin < aod::resonancecndt::pt) && (aod::resonancecndt::pt < cfgResPartitions.c1096kstarBarPtHighMax) && (aod::resonancecndt::kStar892BarTag != static_cast<uint8_t>(kMassOutside));
 
-  Partition<aod::ResonanceCndts> assocLambda1520LowPt = (cfgResPartitions.lambda1520PtLowMin < aod::resonancecndt::pt) && (aod::resonancecndt::pt < cfgResPartitions.lambda1520PtLowMax) && (aod::resonancecndt::lambda1520Tag != static_cast<uint8_t>(kMassOutside));
-  Partition<aod::ResonanceCndts> assocLambda1520HighPt = (cfgResPartitions.lambda1520PtHighMin < aod::resonancecndt::pt) && (aod::resonancecndt::pt < cfgResPartitions.lambda1520PtHighMax) && (aod::resonancecndt::lambda1520Tag != static_cast<uint8_t>(kMassOutside));
+  Partition<aod::ResonanceCndts> assocLambda1520LowPt = (cfgResPartitions.c1097lambda1520PtLowMin < aod::resonancecndt::pt) && (aod::resonancecndt::pt < cfgResPartitions.c1098lambda1520PtLowMax) && (aod::resonancecndt::lambda1520Tag != static_cast<uint8_t>(kMassOutside));
+  Partition<aod::ResonanceCndts> assocLambda1520HighPt = (cfgResPartitions.c1099lambda1520PtHighMin < aod::resonancecndt::pt) && (aod::resonancecndt::pt < cfgResPartitions.c1100lambda1520PtHighMax) && (aod::resonancecndt::lambda1520Tag != static_cast<uint8_t>(kMassOutside));
 
-  Partition<aod::ResonanceCndts> assocLambda1520BarLowPt = (cfgResPartitions.lambda1520BarPtLowMin < aod::resonancecndt::pt) && (aod::resonancecndt::pt < cfgResPartitions.lambda1520BarPtLowMax) && (aod::resonancecndt::lambda1520BarTag != static_cast<uint8_t>(kMassOutside));
-  Partition<aod::ResonanceCndts> assocLambda1520BarHighPt = (cfgResPartitions.lambda1520BarPtHighMin < aod::resonancecndt::pt) && (aod::resonancecndt::pt < cfgResPartitions.lambda1520BarPtHighMax) && (aod::resonancecndt::lambda1520BarTag != static_cast<uint8_t>(kMassOutside));
+  Partition<aod::ResonanceCndts> assocLambda1520BarLowPt = (cfgResPartitions.c1101lambda1520BarPtLowMin < aod::resonancecndt::pt) && (aod::resonancecndt::pt < cfgResPartitions.c1102lambda1520BarPtLowMax) && (aod::resonancecndt::lambda1520BarTag != static_cast<uint8_t>(kMassOutside));
+  Partition<aod::ResonanceCndts> assocLambda1520BarHighPt = (cfgResPartitions.c1103lambda1520BarPtHighMin < aod::resonancecndt::pt) && (aod::resonancecndt::pt < cfgResPartitions.c1104lambda1520BarPtHighMax) && (aod::resonancecndt::lambda1520BarTag != static_cast<uint8_t>(kMassOutside));
 
   int dfNumber = 0;
   int64_t iCollGlobalCount = -1;
@@ -3368,13 +3368,13 @@ struct HParticleCorrelationSameEvent {
 
   void processNothing(aod::Origins const& origins)
   {
-    if (cfgDebug.printDebugMessages) {
+    if (cfgDebug.c1001printDebugMessages) {
       LOG(info) << "DEBUG :: Process Nothing :: df_" << dfNumber << " :: origins = " << origins.size();
     }
     // Intentionally empty.
     // Keeps the task alive when running purely on derived data.
   }
-  PROCESS_SWITCH(HParticleCorrelationSameEvent, processNothing, "Dummy process for derived-data analysis", true);
+  PROCESS_SWITCH(HParticleCorrelation2SameEvent, processNothing, "Dummy process for derived-data analysis", true);
 
   void processSameEvent(MyFilteredCollisions const& collisions, MyFilteredTracks const& fullTracks, aod::ResonanceCndts const& resonanceCndts, o2::aod::Origins const& Origins, aod::BCsWithTimestamps const&)
   {
@@ -3384,7 +3384,7 @@ struct HParticleCorrelationSameEvent {
     // LOG(info)<<"DEBUG :: Origins :: "<<Origins.size()<<" :: "<<Origins.iteratorAt(0).globalIndex()<<" :: "<<Origins.iteratorAt(0).dataframeID();
     uint64_t dataframeID = 0;
 
-    if (cfgDerivedData.resetGlobalCountersPerDF) {
+    if (cfgDerivedData.c1135resetGlobalCountersPerDF) {
       iCollGlobalCount = -1;
       iTrackGlobalCount = -1;
       iResonanceGlobalCount = -1;
@@ -3411,10 +3411,10 @@ struct HParticleCorrelationSameEvent {
     if (collisions.size() == 0) {
       seEventQA.fill(HIST("SE/Events/DataFrameQA"), kDFWithZeroFilteredColls);
 
-      if (cfgDebug.printDebugMessages) {
+      if (cfgDebug.c1001printDebugMessages) {
         LOG(info) << "DEBUG :: df_" << dfNumber << " :: SE :: collisions = 0 :: No filtered collisions found in this dataframe";
       }
-    } else if (cfgDebug.printDebugMessages) {
+    } else if (cfgDebug.c1001printDebugMessages) {
       auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
       int currentRunNumber = bc.runNumber();
 
@@ -3441,7 +3441,7 @@ struct HParticleCorrelationSameEvent {
       seEventQA.fill(HIST("SE/Events/EventSelection"), static_cast<float>(kEventPassedSelCollision));
 
       const auto tracksPerCollision = fullTracks.sliceBy(tracksPerCollisionPreslice, collision.globalIndex());
-      if (tracksPerCollision.size() < cfgEvent.minNFilteredTracks) {
+      if (tracksPerCollision.size() < cfgEvent.c1005minNFilteredTracks) {
         continue;
       }
       seEventQA.fill(HIST("SE/Events/EventSelection"), static_cast<float>(kEventPassedMinFilteredTracks));
@@ -3463,7 +3463,7 @@ struct HParticleCorrelationSameEvent {
         nTrack++;
       } // track loop is over.
 
-      if (nTrack < cfgEvent.minNSelectedTracks) {
+      if (nTrack < cfgEvent.c1006minNSelectedTracks) {
         continue;
       }
 
@@ -3508,7 +3508,7 @@ struct HParticleCorrelationSameEvent {
       // Unlike Sign Signal
       // LikeSign Signal
       bool hasSelectedTrigger = false;
-      if (requireSelectedTriggerForInvariantMass) {
+      if (c1113requireSelectedTriggerForInvariantMass) {
         for (const auto& trigger : triggerTracksPerColl) {
           if (selectionTrack(trigger) == kTrackAccepted) {
             hasSelectedTrigger = true;
@@ -3517,7 +3517,7 @@ struct HParticleCorrelationSameEvent {
         }
       }
 
-      if (!requireSelectedTriggerForInvariantMass || hasSelectedTrigger) {
+      if (!c1113requireSelectedTriggerForInvariantMass || hasSelectedTrigger) {
         auto posTracksPerColl = posTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
         auto negTracksPerColl = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
@@ -3579,7 +3579,7 @@ struct HParticleCorrelationSameEvent {
                           collision.centFT0M(),
                           collision.centFT0A(),
                           collision.centFV0A(),
-                          static_cast<uint8_t>(cfgMixing.mixingEstimator),
+                          static_cast<uint8_t>(cfgMixing.c1137mixingEstimator),
                           mixingBin,
                           corrPresenceMask);
 
@@ -3709,7 +3709,7 @@ struct HParticleCorrelationSameEvent {
           mixingQA.fill(HIST("Mixing/PerDF/EligiblePoolOccupancy"), iMixBin, corrChannel, nEligibleCollisions);
           mixingQA.fill(HIST("Mixing/PerDF/PoolOccupancyDistribution"), corrChannel, nEligibleCollisions);
 
-          if (nEligibleCollisions >= static_cast<uint64_t>(cfgMixing.nEvtMixing)) {
+          if (nEligibleCollisions >= static_cast<uint64_t>(cfgMixing.c1136nEvtMixing)) {
             ++nReadyMixBins[corrChannel];
             mixingQA.fill(HIST("Mixing/PerDF/ReadyPoolMap"), iMixBin, corrChannel);
           }
@@ -3721,10 +3721,10 @@ struct HParticleCorrelationSameEvent {
       mixingQA.fill(HIST("Mixing/PerDF/NReadyMixBins"), corrChannel, nReadyMixBins[corrChannel]);
     }
   }
-  PROCESS_SWITCH(HParticleCorrelationSameEvent, processSameEvent, "Process Same event", true);
+  PROCESS_SWITCH(HParticleCorrelation2SameEvent, processSameEvent, "Process Same event", true);
 };
 
-struct HParticleCorrelationMixedEvent {
+struct HParticleCorrelation3MixedEvent {
 
   HistogramRegistry hhCorrelation{"hhCorrelation", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry hIdCorrelation{"hIdCorrelation", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -3809,101 +3809,101 @@ struct HParticleCorrelationMixedEvent {
   }
 
   struct : ConfigurableGroup {
-    Configurable<bool> printDebugMessages{"printDebugMessages", false, "Print debug messages"};
+    Configurable<bool> c2001printDebugMessages{"c2001printDebugMessages", false, "Print debug messages"};
   } cfgDebug;
 
   struct : ConfigurableGroup {
-    ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {80, -2.0f, 6.0f}, "#Delta#varphi"};
-    ConfigurableAxis axisDeltaEta{"axisDeltaEta", {84, -2.1f, 2.1f}, "#Delta#eta"};
-    ConfigurableAxis axisCorrSparseTriggerPt{"axisCorrSparseTriggerPt", {8, 4.0f, 8.0f}, "#it{p}_{T}^{trig} (GeV/#it{c})"};
-    ConfigurableAxis axisCorrSparseAssocPt{"axisCorrSparseAssocPt", {8, 0.0f, 4.0f}, "#it{p}_{T}^{assoc} (GeV/#it{c})"};
-    ConfigurableAxis axisCorrSparseDeltaPhi{"axisCorrSparseDeltaPhi", {32, -2.0f, 6.0f}, "#Delta#varphi"};
-    ConfigurableAxis axisCorrSparseDeltaEta{"axisCorrSparseDeltaEta", {24, -2.1f, 2.1f}, "#Delta#eta"};
+    ConfigurableAxis c2002axisDeltaPhi{"c2002axisDeltaPhi", {80, -2.0f, 6.0f}, "#Delta#varphi"};
+    ConfigurableAxis c2003axisDeltaEta{"c2003axisDeltaEta", {84, -2.1f, 2.1f}, "#Delta#eta"};
+    ConfigurableAxis c2004axisCorrSparseTriggerPt{"c2004axisCorrSparseTriggerPt", {8, 4.0f, 8.0f}, "#it{p}_{T}^{trig} (GeV/#it{c})"};
+    ConfigurableAxis c2005axisCorrSparseAssocPt{"c2005axisCorrSparseAssocPt", {8, 0.0f, 4.0f}, "#it{p}_{T}^{assoc} (GeV/#it{c})"};
+    ConfigurableAxis c2006axisCorrSparseDeltaPhi{"c2006axisCorrSparseDeltaPhi", {32, -2.0f, 6.0f}, "#Delta#varphi"};
+    ConfigurableAxis c2007axisCorrSparseDeltaEta{"c2007axisCorrSparseDeltaEta", {24, -2.1f, 2.1f}, "#Delta#eta"};
   } cfgAxis;
 
   struct : ConfigurableGroup {
-    Configurable<int> nEvtMixing{"nEvtMixing", 5, "Number of events to mix"};
-    Configurable<int> mixingEstimator{"mixingEstimator", kMixCentFT0C, "Mixing estimator: 0=FT0C, 1=FT0M, 2=FT0A, 3=FV0A"};
-    ConfigurableAxis axisVtxMixing{"axisVtxMixing", {VARIABLE_WIDTH, -10.0, -8.0, -6.0, -4.0, -2.0, 0.0, 2.0, 4.0, 6.0, 8.0, 10.0}, "Mixing bins - z vertex"};
-    ConfigurableAxis axisCentMixing{"axisCentMixing", {VARIABLE_WIDTH, -1.0, 20.0, 50.0, 80.0, 101.0}, "Mixing bins - centrality"};
+    Configurable<int> c2008nEvtMixing{"c2008nEvtMixing", 5, "Number of events to mix"};
+    Configurable<int> c2009mixingEstimator{"c2009mixingEstimator", kMixCentFT0C, "Mixing estimator: 0=FT0C, 1=FT0M, 2=FT0A, 3=FV0A"};
+    ConfigurableAxis c2010axisVtxMixing{"c2010axisVtxMixing", {VARIABLE_WIDTH, -10.0, -8.0, -6.0, -4.0, -2.0, 0.0, 2.0, 4.0, 6.0, 8.0, 10.0}, "Mixing bins - z vertex"};
+    ConfigurableAxis c2011axisCentMixing{"c2011axisCentMixing", {VARIABLE_WIDTH, -1.0, 20.0, 50.0, 80.0, 101.0}, "Mixing bins - centrality"};
   } cfgMixing;
 
   struct : ConfigurableGroup {
-    Configurable<float> triggerPtLow{"triggerPtLow", 4.0f, "Minimum pT for trigger tracks"};
-    Configurable<float> triggerPtHigh{"triggerPtHigh", 8.0f, "Maximum pT for trigger tracks"};
-    Configurable<float> assocPtLowMin{"assocPtLowMin", 0.0f, "Minimum pT for low-pT associated tracks"};
-    Configurable<float> assocPtLowMax{"assocPtLowMax", 2.0f, "Maximum pT for low-pT associated tracks"};
-    Configurable<float> assocPtHighMin{"assocPtHighMin", 2.0f, "Minimum pT for high-pT associated tracks"};
-    Configurable<float> assocPtHighMax{"assocPtHighMax", 4.0f, "Maximum pT for high-pT associated tracks"};
+    Configurable<float> c2012triggerPtLow{"c2012triggerPtLow", 4.0f, "Minimum pT for trigger tracks"};
+    Configurable<float> c2013triggerPtHigh{"c2013triggerPtHigh", 8.0f, "Maximum pT for trigger tracks"};
+    Configurable<float> c2014assocPtLowMin{"c2014assocPtLowMin", 0.0f, "Minimum pT for low-pT associated tracks"};
+    Configurable<float> c2015assocPtLowMax{"c2015assocPtLowMax", 2.0f, "Maximum pT for low-pT associated tracks"};
+    Configurable<float> c2016assocPtHighMin{"c2016assocPtHighMin", 2.0f, "Minimum pT for high-pT associated tracks"};
+    Configurable<float> c2017assocPtHighMax{"c2017assocPtHighMax", 4.0f, "Maximum pT for high-pT associated tracks"};
   } cfgPartitions;
 
   struct : ConfigurableGroup {
-    Configurable<float> resoRapidityMin{"resoRapidityMin", -0.5f, "Minimum rapidity for resonance candidates"};
-    Configurable<float> resoRapidityMax{"resoRapidityMax", 0.5f, "Maximum rapidity for resonance candidates"};
+    Configurable<float> c2018resoRapidityMin{"c2018resoRapidityMin", -0.5f, "Minimum rapidity for resonance candidates"};
+    Configurable<float> c2019resoRapidityMax{"c2019resoRapidityMax", 0.5f, "Maximum rapidity for resonance candidates"};
 
-    Configurable<float> phiPtLowMin{"phiPtLowMin", 0.0f, "Minimum pT for low-pT Phi(1020)"};
-    Configurable<float> phiPtLowMax{"phiPtLowMax", 2.0f, "Maximum pT for low-pT Phi(1020)"};
-    Configurable<float> phiPtHighMin{"phiPtHighMin", 2.0f, "Minimum pT for high-pT Phi(1020)"};
-    Configurable<float> phiPtHighMax{"phiPtHighMax", 4.0f, "Maximum pT for high-pT Phi(1020)"};
+    Configurable<float> c2020phiPtLowMin{"c2020phiPtLowMin", 0.0f, "Minimum pT for low-pT Phi(1020)"};
+    Configurable<float> c2021phiPtLowMax{"c2021phiPtLowMax", 2.0f, "Maximum pT for low-pT Phi(1020)"};
+    Configurable<float> c2022phiPtHighMin{"c2022phiPtHighMin", 2.0f, "Minimum pT for high-pT Phi(1020)"};
+    Configurable<float> c2023phiPtHighMax{"c2023phiPtHighMax", 4.0f, "Maximum pT for high-pT Phi(1020)"};
 
-    Configurable<float> kstarPtLowMin{"kstarPtLowMin", 0.0f, "Minimum pT for low-pT K*(892)0"};
-    Configurable<float> kstarPtLowMax{"kstarPtLowMax", 2.0f, "Maximum pT for low-pT K*(892)0"};
-    Configurable<float> kstarPtHighMin{"kstarPtHighMin", 2.0f, "Minimum pT for high-pT K*(892)0"};
-    Configurable<float> kstarPtHighMax{"kstarPtHighMax", 4.0f, "Maximum pT for high-pT K*(892)0"};
+    Configurable<float> c2024kstarPtLowMin{"c2024kstarPtLowMin", 0.0f, "Minimum pT for low-pT K*(892)0"};
+    Configurable<float> c2025kstarPtLowMax{"c2025kstarPtLowMax", 2.0f, "Maximum pT for low-pT K*(892)0"};
+    Configurable<float> c2026kstarPtHighMin{"c2026kstarPtHighMin", 2.0f, "Minimum pT for high-pT K*(892)0"};
+    Configurable<float> c2027kstarPtHighMax{"c2027kstarPtHighMax", 4.0f, "Maximum pT for high-pT K*(892)0"};
 
-    Configurable<float> kstarBarPtLowMin{"kstarBarPtLowMin", 0.0f, "Minimum pT for low-pT anti-K*(892)0"};
-    Configurable<float> kstarBarPtLowMax{"kstarBarPtLowMax", 2.0f, "Maximum pT for low-pT anti-K*(892)0"};
-    Configurable<float> kstarBarPtHighMin{"kstarBarPtHighMin", 2.0f, "Minimum pT for high-pT anti-K*(892)0"};
-    Configurable<float> kstarBarPtHighMax{"kstarBarPtHighMax", 4.0f, "Maximum pT for high-pT anti-K*(892)0"};
+    Configurable<float> c2028kstarBarPtLowMin{"c2028kstarBarPtLowMin", 0.0f, "Minimum pT for low-pT anti-K*(892)0"};
+    Configurable<float> c2029kstarBarPtLowMax{"c2029kstarBarPtLowMax", 2.0f, "Maximum pT for low-pT anti-K*(892)0"};
+    Configurable<float> c2030kstarBarPtHighMin{"c2030kstarBarPtHighMin", 2.0f, "Minimum pT for high-pT anti-K*(892)0"};
+    Configurable<float> c2031kstarBarPtHighMax{"c2031kstarBarPtHighMax", 4.0f, "Maximum pT for high-pT anti-K*(892)0"};
 
-    Configurable<float> lambda1520PtLowMin{"lambda1520PtLowMin", 0.0f, "Minimum pT for low-pT Lambda(1520)"};
-    Configurable<float> lambda1520PtLowMax{"lambda1520PtLowMax", 2.0f, "Maximum pT for low-pT Lambda(1520)"};
-    Configurable<float> lambda1520PtHighMin{"lambda1520PtHighMin", 2.0f, "Minimum pT for high-pT Lambda(1520)"};
-    Configurable<float> lambda1520PtHighMax{"lambda1520PtHighMax", 4.0f, "Maximum pT for high-pT Lambda(1520)"};
+    Configurable<float> c2032lambda1520PtLowMin{"c2032lambda1520PtLowMin", 0.0f, "Minimum pT for low-pT Lambda(1520)"};
+    Configurable<float> c2033lambda1520PtLowMax{"c2033lambda1520PtLowMax", 2.0f, "Maximum pT for low-pT Lambda(1520)"};
+    Configurable<float> c2034lambda1520PtHighMin{"c2034lambda1520PtHighMin", 2.0f, "Minimum pT for high-pT Lambda(1520)"};
+    Configurable<float> c2035lambda1520PtHighMax{"c2035lambda1520PtHighMax", 4.0f, "Maximum pT for high-pT Lambda(1520)"};
 
-    Configurable<float> lambda1520BarPtLowMin{"lambda1520BarPtLowMin", 0.0f, "Minimum pT for low-pT anti-Lambda(1520)"};
-    Configurable<float> lambda1520BarPtLowMax{"lambda1520BarPtLowMax", 2.0f, "Maximum pT for low-pT anti-Lambda(1520)"};
-    Configurable<float> lambda1520BarPtHighMin{"lambda1520BarPtHighMin", 2.0f, "Minimum pT for high-pT anti-Lambda(1520)"};
-    Configurable<float> lambda1520BarPtHighMax{"lambda1520BarPtHighMax", 4.0f, "Maximum pT for high-pT anti-Lambda(1520)"};
+    Configurable<float> c2036lambda1520BarPtLowMin{"c2036lambda1520BarPtLowMin", 0.0f, "Minimum pT for low-pT anti-Lambda(1520)"};
+    Configurable<float> c2037lambda1520BarPtLowMax{"c2037lambda1520BarPtLowMax", 2.0f, "Maximum pT for low-pT anti-Lambda(1520)"};
+    Configurable<float> c2038lambda1520BarPtHighMin{"c2038lambda1520BarPtHighMin", 2.0f, "Minimum pT for high-pT anti-Lambda(1520)"};
+    Configurable<float> c2039lambda1520BarPtHighMax{"c2039lambda1520BarPtHighMax", 4.0f, "Maximum pT for high-pT anti-Lambda(1520)"};
   } cfgResPartitions;
 
   struct : ConfigurableGroup {
-    Configurable<float> phi1020PeakLow{"phi1020PeakLow", 1.013f, "Phi(1020) peak lower mass"};
-    Configurable<float> phi1020PeakUp{"phi1020PeakUp", 1.026f, "Phi(1020) peak upper mass"};
-    Configurable<float> phi1020LSBLow{"phi1020LSBLow", 0.995f, "Phi(1020) LSB lower mass"};
-    Configurable<float> phi1020LSBUp{"phi1020LSBUp", 1.005f, "Phi(1020) LSB upper mass"};
-    Configurable<float> phi1020RSBLow{"phi1020RSBLow", 1.040f, "Phi(1020) RSB lower mass"};
-    Configurable<float> phi1020RSBUp{"phi1020RSBUp", 1.060f, "Phi(1020) RSB upper mass"};
+    Configurable<float> c2040phi1020PeakLow{"c2040phi1020PeakLow", 1.013f, "Phi(1020) peak lower mass"};
+    Configurable<float> c2041phi1020PeakUp{"c2041phi1020PeakUp", 1.026f, "Phi(1020) peak upper mass"};
+    Configurable<float> c2042phi1020LSBLow{"c2042phi1020LSBLow", 0.995f, "Phi(1020) LSB lower mass"};
+    Configurable<float> c2043phi1020LSBUp{"c2043phi1020LSBUp", 1.005f, "Phi(1020) LSB upper mass"};
+    Configurable<float> c2044phi1020RSBLow{"c2044phi1020RSBLow", 1.040f, "Phi(1020) RSB lower mass"};
+    Configurable<float> c2045phi1020RSBUp{"c2045phi1020RSBUp", 1.060f, "Phi(1020) RSB upper mass"};
   } cfgPhi1020CorrMass;
 
   struct : ConfigurableGroup {
-    Configurable<float> kStar892PeakLow{"kStar892PeakLow", 0.846f, "K*(892)0 correlation peak lower mass"};
-    Configurable<float> kStar892PeakUp{"kStar892PeakUp", 0.946f, "K*(892)0 correlation peak upper mass"};
-    Configurable<float> kStar892LSBLow{"kStar892LSBLow", 0.700f, "K*(892)0 correlation LSB lower mass"};
-    Configurable<float> kStar892LSBUp{"kStar892LSBUp", 0.780f, "K*(892)0 correlation LSB upper mass"};
-    Configurable<float> kStar892RSBLow{"kStar892RSBLow", 1.010f, "K*(892)0 correlation RSB lower mass"};
-    Configurable<float> kStar892RSBUp{"kStar892RSBUp", 1.090f, "K*(892)0 correlation RSB upper mass"};
+    Configurable<float> c2046kStar892PeakLow{"c2046kStar892PeakLow", 0.846f, "K*(892)0 correlation peak lower mass"};
+    Configurable<float> c2047kStar892PeakUp{"c2047kStar892PeakUp", 0.946f, "K*(892)0 correlation peak upper mass"};
+    Configurable<float> c2048kStar892LSBLow{"c2048kStar892LSBLow", 0.700f, "K*(892)0 correlation LSB lower mass"};
+    Configurable<float> c2049kStar892LSBUp{"c2049kStar892LSBUp", 0.780f, "K*(892)0 correlation LSB upper mass"};
+    Configurable<float> c2050kStar892RSBLow{"c2050kStar892RSBLow", 1.010f, "K*(892)0 correlation RSB lower mass"};
+    Configurable<float> c2051kStar892RSBUp{"c2051kStar892RSBUp", 1.090f, "K*(892)0 correlation RSB upper mass"};
   } cfgKStar892CorrMass;
 
   struct : ConfigurableGroup {
-    Configurable<float> lambda1520PeakLow{"lambda1520PeakLow", 1.500f, "Lambda(1520) correlation peak lower mass"};
-    Configurable<float> lambda1520PeakUp{"lambda1520PeakUp", 1.540f, "Lambda(1520) correlation peak upper mass"};
-    Configurable<float> lambda1520LSBLow{"lambda1520LSBLow", 1.440f, "Lambda(1520) correlation LSB lower mass"};
-    Configurable<float> lambda1520LSBUp{"lambda1520LSBUp", 1.480f, "Lambda(1520) correlation LSB upper mass"};
-    Configurable<float> lambda1520RSBLow{"lambda1520RSBLow", 1.560f, "Lambda(1520) correlation RSB lower mass"};
-    Configurable<float> lambda1520RSBUp{"lambda1520RSBUp", 1.600f, "Lambda(1520) correlation RSB upper mass"};
+    Configurable<float> c2052lambda1520PeakLow{"c2052lambda1520PeakLow", 1.500f, "Lambda(1520) correlation peak lower mass"};
+    Configurable<float> c2053lambda1520PeakUp{"c2053lambda1520PeakUp", 1.540f, "Lambda(1520) correlation peak upper mass"};
+    Configurable<float> c2054lambda1520LSBLow{"c2054lambda1520LSBLow", 1.440f, "Lambda(1520) correlation LSB lower mass"};
+    Configurable<float> c2055lambda1520LSBUp{"c2055lambda1520LSBUp", 1.480f, "Lambda(1520) correlation LSB upper mass"};
+    Configurable<float> c2056lambda1520RSBLow{"c2056lambda1520RSBLow", 1.560f, "Lambda(1520) correlation RSB lower mass"};
+    Configurable<float> c2057lambda1520RSBUp{"c2057lambda1520RSBUp", 1.600f, "Lambda(1520) correlation RSB upper mass"};
   } cfgLambda1520CorrMass;
 
   struct : ConfigurableGroup {
-    Configurable<LabeledArray<double>> pidConfigSetting{"pidConfigSetting", {DefaultPIDcheckValues[0].data(), kNPid, kNCutSettings, {"Pi", "Ka", "Pr", "El", "Mu", "De"}, {"ThrPforTOF", "IdCutTypeLowP", "NSigmaTPCLowP", "NSigmaTOFLowP", "NSigmaRadLowP", "IdCutTypeHighP", "NSigmaTPCHighP", "NSigmaTOFHighP", "NSigmaRadHighP", "doVetoOthers", "doRelativeTPCCheck", "doRelativeTOFcheck", "doRelativeTPCTOFcheck"}}, "Cut values for particle identification"};
-    Configurable<LabeledArray<double>> pidVetoSetting{"pidVetoSetting", {DefaultPidVetoValues[0].data(), kNPid, kNVetoSettings, {"Pi", "Ka", "Pr", "El", "Mu", "De"}, {"doVetoTPC", "doVetoTOF", "vetoTPC", "vetoTOF"}}, "Veto cuts for particle identification"};
-    Configurable<bool> cfgId07CheckTofBeta{"cfgId07CheckTofBeta", false, "Require beta > 0 for reliable TOF"};
+    Configurable<LabeledArray<double>> c2058pidConfigSetting{"c2058pidConfigSetting", {DefaultPIDcheckValues[0].data(), kNPid, kNCutSettings, {"Pi", "Ka", "Pr", "El", "Mu", "De"}, {"ThrPforTOF", "IdCutTypeLowP", "NSigmaTPCLowP", "NSigmaTOFLowP", "NSigmaRadLowP", "IdCutTypeHighP", "NSigmaTPCHighP", "NSigmaTOFHighP", "NSigmaRadHighP", "doVetoOthers", "doRelativeTPCCheck", "doRelativeTOFcheck", "doRelativeTPCTOFcheck"}}, "Cut values for particle identification"};
+    Configurable<LabeledArray<double>> c2059pidVetoSetting{"c2059pidVetoSetting", {DefaultPidVetoValues[0].data(), kNPid, kNVetoSettings, {"Pi", "Ka", "Pr", "El", "Mu", "De"}, {"doVetoTPC", "doVetoTOF", "vetoTPC", "vetoTOF"}}, "Veto cuts for particle identification"};
+    Configurable<bool> c2060cfgId07CheckTofBeta{"c2060cfgId07CheckTofBeta", false, "Require beta > 0 for reliable TOF"};
   } cfgIdCut;
 
   void init(InitContext const&)
   {
 
-    if (cfgDebug.printDebugMessages) {
+    if (cfgDebug.c2001printDebugMessages) {
       LOGF(info, "Starting init");
     }
 
@@ -3926,25 +3926,25 @@ struct HParticleCorrelationMixedEvent {
     const AxisSpec axisTOFNSigma = {200, -10.0f, 10.0f, "n#sigma_{TOF}"};
     const AxisSpec axisIdMethod = {2, -0.5f, 1.5f, "ID method (0=TPC, 1=TPC+TOF)"};
 
-    AxisSpec axisDeltaPhiSpec{cfgAxis.axisDeltaPhi, "#Delta#varphi"};
-    AxisSpec axisDeltaEtaSpec{cfgAxis.axisDeltaEta, "#Delta#eta"};
-    AxisSpec axisCorrSparseTriggerPt{cfgAxis.axisCorrSparseTriggerPt, "#it{p}_{T}^{trig} (GeV/#it{c})"};
-    AxisSpec axisCorrSparseAssocPt{cfgAxis.axisCorrSparseAssocPt, "#it{p}_{T}^{assoc} (GeV/#it{c})"};
-    AxisSpec axisCorrSparseDeltaPhi{cfgAxis.axisCorrSparseDeltaPhi, "#Delta#varphi"};
-    AxisSpec axisCorrSparseDeltaEta{cfgAxis.axisCorrSparseDeltaEta, "#Delta#eta"};
+    AxisSpec axisDeltaPhiSpec{cfgAxis.c2002axisDeltaPhi, "#Delta#varphi"};
+    AxisSpec axisDeltaEtaSpec{cfgAxis.c2003axisDeltaEta, "#Delta#eta"};
+    AxisSpec axisCorrSparseTriggerPt{cfgAxis.c2004axisCorrSparseTriggerPt, "#it{p}_{T}^{trig} (GeV/#it{c})"};
+    AxisSpec axisCorrSparseAssocPt{cfgAxis.c2005axisCorrSparseAssocPt, "#it{p}_{T}^{assoc} (GeV/#it{c})"};
+    AxisSpec axisCorrSparseDeltaPhi{cfgAxis.c2006axisCorrSparseDeltaPhi, "#Delta#varphi"};
+    AxisSpec axisCorrSparseDeltaEta{cfgAxis.c2007axisCorrSparseDeltaEta, "#Delta#eta"};
 
     const AxisSpec axisPhi1020Mass = {300, 0.98f, 1.08f, "m_{K^{+}K^{-}} (GeV/#it{c}^{2})"};
     const AxisSpec axisKStar892Mass = {300, 0.65f, 1.15f, "m_{K#pi} (GeV/#it{c}^{2})"};
     const AxisSpec axisLambda1520Mass = {300, 1.40f, 1.65f, "m_{pK} (GeV/#it{c}^{2})"};
 
-    AxisSpec axisVtxMixOperation{cfgMixing.axisVtxMixing, "z_{vtx} (cm)"};
-    AxisSpec axisCentMixOperation{cfgMixing.axisCentMixing, "Centrality (%)"};
+    AxisSpec axisVtxMixOperation{cfgMixing.c2010axisVtxMixing, "z_{vtx} (cm)"};
+    AxisSpec axisCentMixOperation{cfgMixing.c2011axisCentMixing, "Centrality (%)"};
 
     const int nMixOperationBins = axisVtxMixOperation.getNbins() * axisCentMixOperation.getNbins();
 
     const AxisSpec axisMixOperationBin = {nMixOperationBins, -0.5, static_cast<double>(nMixOperationBins) - 0.5, "Mixing bin"};
     const AxisSpec axisMixOperationChannel = {NMixOperationChannels, -0.5, static_cast<double>(NMixOperationChannels) - 0.5, "Mixing channel"};
-    const AxisSpec axisMixPartners = {static_cast<int>(cfgMixing.nEvtMixing) + 1, -0.5, static_cast<double>(cfgMixing.nEvtMixing) + 0.5, "N mixed partner events"};
+    const AxisSpec axisMixPartners = {static_cast<int>(cfgMixing.c2008nEvtMixing) + 1, -0.5, static_cast<double>(cfgMixing.c2008nEvtMixing) + 0.5, "N mixed partner events"};
 
     const AxisSpec axisMixVtxZQA = {100, -10.0f, 10.0f, "z_{vtx} (cm)"};
     const AxisSpec axisMixDeltaVtxZQA = {100, -20.0f, 20.0f, "#Delta z_{vtx} (cm)"};
@@ -4076,15 +4076,15 @@ struct HParticleCorrelationMixedEvent {
   using BinningTypeVtxZFT0A = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0A>;
   using BinningTypeVtxZFV0A = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFV0A>;
 
-  BinningTypeVtxZFT0C colBinningFT0C{{cfgMixing.axisVtxMixing, cfgMixing.axisCentMixing}, true};
-  BinningTypeVtxZFT0M colBinningFT0M{{cfgMixing.axisVtxMixing, cfgMixing.axisCentMixing}, true};
-  BinningTypeVtxZFT0A colBinningFT0A{{cfgMixing.axisVtxMixing, cfgMixing.axisCentMixing}, true};
-  BinningTypeVtxZFV0A colBinningFV0A{{cfgMixing.axisVtxMixing, cfgMixing.axisCentMixing}, true};
+  BinningTypeVtxZFT0C colBinningFT0C{{cfgMixing.c2010axisVtxMixing, cfgMixing.c2011axisCentMixing}, true};
+  BinningTypeVtxZFT0M colBinningFT0M{{cfgMixing.c2010axisVtxMixing, cfgMixing.c2011axisCentMixing}, true};
+  BinningTypeVtxZFT0A colBinningFT0A{{cfgMixing.c2010axisVtxMixing, cfgMixing.c2011axisCentMixing}, true};
+  BinningTypeVtxZFV0A colBinningFV0A{{cfgMixing.c2010axisVtxMixing, cfgMixing.c2011axisCentMixing}, true};
 
   template <typename C>
   int getDerivedMixingBin(const C& collision)
   {
-    switch (cfgMixing.mixingEstimator) {
+    switch (cfgMixing.c2009mixingEstimator) {
       case kMixCentFT0C:
         return colBinningFT0C.getBin({collision.posZ(), collision.centFT0C()});
       case kMixCentFT0M:
@@ -4101,7 +4101,7 @@ struct HParticleCorrelationMixedEvent {
   template <typename C>
   float getDerivedMixingEstimatorValue(const C& collision)
   {
-    switch (cfgMixing.mixingEstimator) {
+    switch (cfgMixing.c2009mixingEstimator) {
       case kMixCentFT0C:
         return collision.centFT0C();
       case kMixCentFT0M:
@@ -4128,20 +4128,20 @@ struct HParticleCorrelationMixedEvent {
   {
     // Static is only run once, ever.
     static const std::array<bool, kNPid> doVetoTPC = {
-      getCfg<bool>(cfgIdCut.pidVetoSetting, kPi, kDoVetoTPC),
-      getCfg<bool>(cfgIdCut.pidVetoSetting, kKa, kDoVetoTPC),
-      getCfg<bool>(cfgIdCut.pidVetoSetting, kPr, kDoVetoTPC),
-      getCfg<bool>(cfgIdCut.pidVetoSetting, kEl, kDoVetoTPC),
-      getCfg<bool>(cfgIdCut.pidVetoSetting, kMu, kDoVetoTPC),
-      getCfg<bool>(cfgIdCut.pidVetoSetting, kDe, kDoVetoTPC)};
+      getCfg<bool>(cfgIdCut.c2059pidVetoSetting, kPi, kDoVetoTPC),
+      getCfg<bool>(cfgIdCut.c2059pidVetoSetting, kKa, kDoVetoTPC),
+      getCfg<bool>(cfgIdCut.c2059pidVetoSetting, kPr, kDoVetoTPC),
+      getCfg<bool>(cfgIdCut.c2059pidVetoSetting, kEl, kDoVetoTPC),
+      getCfg<bool>(cfgIdCut.c2059pidVetoSetting, kMu, kDoVetoTPC),
+      getCfg<bool>(cfgIdCut.c2059pidVetoSetting, kDe, kDoVetoTPC)};
 
     static const std::array<float, kNPid> vetoTPC = {
-      getCfg<float>(cfgIdCut.pidVetoSetting, kPi, kVetoTPC),
-      getCfg<float>(cfgIdCut.pidVetoSetting, kKa, kVetoTPC),
-      getCfg<float>(cfgIdCut.pidVetoSetting, kPr, kVetoTPC),
-      getCfg<float>(cfgIdCut.pidVetoSetting, kEl, kVetoTPC),
-      getCfg<float>(cfgIdCut.pidVetoSetting, kMu, kVetoTPC),
-      getCfg<float>(cfgIdCut.pidVetoSetting, kDe, kVetoTPC)};
+      getCfg<float>(cfgIdCut.c2059pidVetoSetting, kPi, kVetoTPC),
+      getCfg<float>(cfgIdCut.c2059pidVetoSetting, kKa, kVetoTPC),
+      getCfg<float>(cfgIdCut.c2059pidVetoSetting, kPr, kVetoTPC),
+      getCfg<float>(cfgIdCut.c2059pidVetoSetting, kEl, kVetoTPC),
+      getCfg<float>(cfgIdCut.c2059pidVetoSetting, kMu, kVetoTPC),
+      getCfg<float>(cfgIdCut.c2059pidVetoSetting, kDe, kVetoTPC)};
 
     return applyVetoOthersTPC<pidMode>(track, doVetoTPC, vetoTPC);
   }
@@ -4151,20 +4151,20 @@ struct HParticleCorrelationMixedEvent {
   {
     // Only computed once
     static const std::array<bool, kNPid> doVetoTOF = {
-      getCfg<bool>(cfgIdCut.pidVetoSetting, kPi, kDoVetoTOF),
-      getCfg<bool>(cfgIdCut.pidVetoSetting, kKa, kDoVetoTOF),
-      getCfg<bool>(cfgIdCut.pidVetoSetting, kPr, kDoVetoTOF),
-      getCfg<bool>(cfgIdCut.pidVetoSetting, kEl, kDoVetoTOF),
-      getCfg<bool>(cfgIdCut.pidVetoSetting, kMu, kDoVetoTOF),
-      getCfg<bool>(cfgIdCut.pidVetoSetting, kDe, kDoVetoTOF)};
+      getCfg<bool>(cfgIdCut.c2059pidVetoSetting, kPi, kDoVetoTOF),
+      getCfg<bool>(cfgIdCut.c2059pidVetoSetting, kKa, kDoVetoTOF),
+      getCfg<bool>(cfgIdCut.c2059pidVetoSetting, kPr, kDoVetoTOF),
+      getCfg<bool>(cfgIdCut.c2059pidVetoSetting, kEl, kDoVetoTOF),
+      getCfg<bool>(cfgIdCut.c2059pidVetoSetting, kMu, kDoVetoTOF),
+      getCfg<bool>(cfgIdCut.c2059pidVetoSetting, kDe, kDoVetoTOF)};
 
     static const std::array<float, kNPid> vetoTOF = {
-      getCfg<float>(cfgIdCut.pidVetoSetting, kPi, kVetoTOF),
-      getCfg<float>(cfgIdCut.pidVetoSetting, kKa, kVetoTOF),
-      getCfg<float>(cfgIdCut.pidVetoSetting, kPr, kVetoTOF),
-      getCfg<float>(cfgIdCut.pidVetoSetting, kEl, kVetoTOF),
-      getCfg<float>(cfgIdCut.pidVetoSetting, kMu, kVetoTOF),
-      getCfg<float>(cfgIdCut.pidVetoSetting, kDe, kVetoTOF)};
+      getCfg<float>(cfgIdCut.c2059pidVetoSetting, kPi, kVetoTOF),
+      getCfg<float>(cfgIdCut.c2059pidVetoSetting, kKa, kVetoTOF),
+      getCfg<float>(cfgIdCut.c2059pidVetoSetting, kPr, kVetoTOF),
+      getCfg<float>(cfgIdCut.c2059pidVetoSetting, kEl, kVetoTOF),
+      getCfg<float>(cfgIdCut.c2059pidVetoSetting, kMu, kVetoTOF),
+      getCfg<float>(cfgIdCut.c2059pidVetoSetting, kDe, kVetoTOF)};
 
     return applyVetoOthersTOF<pidMode>(track, doVetoTOF, vetoTOF);
   }
@@ -4181,7 +4181,7 @@ struct HParticleCorrelationMixedEvent {
   inline bool checkReliableTOF(const T& track)
   {
     // which check makes the information of TOF relaiable? should track.beta() be checked? e.g.:
-    if (cfgIdCut.cfgId07CheckTofBeta) {
+    if (cfgIdCut.c2060cfgId07CheckTofBeta) {
       return (track.hasTOF() && track.beta() > 0.0f);
     }
     return track.hasTOF();
@@ -4206,7 +4206,7 @@ struct HParticleCorrelationMixedEvent {
       nSigmaIdDistSq = 1000000;
     }
 
-    static const bool doVetoOthers = getCfg<bool>(cfgIdCut.pidConfigSetting, pidMode, kDoVetoOthers);
+    static const bool doVetoOthers = getCfg<bool>(cfgIdCut.c2058pidConfigSetting, pidMode, kDoVetoOthers);
     if (doVetoOthers) {
       if (!vetoIdOthersTPC<pidMode>(track)) {
         // If vetoIdOthers = true; it passed all veto checks
@@ -4215,7 +4215,7 @@ struct HParticleCorrelationMixedEvent {
       }
     }
 
-    static const bool doRelativeTPCcheck = getCfg<bool>(cfgIdCut.pidConfigSetting, pidMode, kDoRelativeTPCcheck);
+    static const bool doRelativeTPCcheck = getCfg<bool>(cfgIdCut.c2058pidConfigSetting, pidMode, kDoRelativeTPCcheck);
     if (doRelativeTPCcheck) {
       if (!relativeIdOthersTPC<pidMode>(track)) {
         // If relativeIdOthersTPC = true; particle has stronger nSigma compared to others
@@ -4259,7 +4259,7 @@ struct HParticleCorrelationMixedEvent {
     } else {
       nSigmaIdDistSq = 1000000;
     }
-    static const bool doVetoOthers = getCfg<bool>(cfgIdCut.pidConfigSetting, pidMode, kDoVetoOthers);
+    static const bool doVetoOthers = getCfg<bool>(cfgIdCut.c2058pidConfigSetting, pidMode, kDoVetoOthers);
     if (doVetoOthers) {
       if (!vetoIdOthersTPCTOF<pidMode>(track)) {
         // If vetoIdOthers = true; it passed all veto checks
@@ -4268,7 +4268,7 @@ struct HParticleCorrelationMixedEvent {
       }
     }
 
-    static const bool doRelativeTOFcheck = getCfg<bool>(cfgIdCut.pidConfigSetting, pidMode, kDoRelativeTOFcheck);
+    static const bool doRelativeTOFcheck = getCfg<bool>(cfgIdCut.c2058pidConfigSetting, pidMode, kDoRelativeTOFcheck);
     if (doRelativeTOFcheck) {
       if (!relativeIdOthersTOF<pidMode>(track)) {
         // If relativeIdOthersTOF = true; particle has stronger nSigma compared to others
@@ -4277,7 +4277,7 @@ struct HParticleCorrelationMixedEvent {
       }
     }
 
-    static const bool doRelativeTPCTOFcheck = getCfg<bool>(cfgIdCut.pidConfigSetting, pidMode, kDoRelativeTPCTOFcheck);
+    static const bool doRelativeTPCTOFcheck = getCfg<bool>(cfgIdCut.c2058pidConfigSetting, pidMode, kDoRelativeTPCTOFcheck);
     if (doRelativeTPCTOFcheck) {
       if (!relativeIdOthersTPCTOF<pidMode>(track)) {
         // If relativeIdOthersTPCTOF = true; particle has stronger nSigma compared to others
@@ -4302,15 +4302,15 @@ struct HParticleCorrelationMixedEvent {
   bool selPdependent(const T& track, int& IdMethod, float& nSigmaIdDistSq)
   {
     // Static cache inside function - initialized once on first call
-    static const auto thrPforTOF = getCfg<float>(cfgIdCut.pidConfigSetting, pidMode, kThrPforTOF);
-    static const auto idCutTypeLowP = getCfg<int>(cfgIdCut.pidConfigSetting, pidMode, kIdCutTypeLowP);
-    static const auto nSigmaTPCLowP = getCfg<float>(cfgIdCut.pidConfigSetting, pidMode, kNSigmaTPCLowP);
-    static const auto nSigmaTOFLowP = getCfg<float>(cfgIdCut.pidConfigSetting, pidMode, kNSigmaTOFLowP);
-    static const auto nSigmaRadLowP = getCfg<float>(cfgIdCut.pidConfigSetting, pidMode, kNSigmaRadLowP);
-    static const auto idCutTypeHighP = getCfg<int>(cfgIdCut.pidConfigSetting, pidMode, kIdCutTypeHighP);
-    static const auto nSigmaTPCHighP = getCfg<float>(cfgIdCut.pidConfigSetting, pidMode, kNSigmaTPCHighP);
-    static const auto nSigmaTOFHighP = getCfg<float>(cfgIdCut.pidConfigSetting, pidMode, kNSigmaTOFHighP);
-    static const auto nSigmaRadHighP = getCfg<float>(cfgIdCut.pidConfigSetting, pidMode, kNSigmaRadHighP);
+    static const auto thrPforTOF = getCfg<float>(cfgIdCut.c2058pidConfigSetting, pidMode, kThrPforTOF);
+    static const auto idCutTypeLowP = getCfg<int>(cfgIdCut.c2058pidConfigSetting, pidMode, kIdCutTypeLowP);
+    static const auto nSigmaTPCLowP = getCfg<float>(cfgIdCut.c2058pidConfigSetting, pidMode, kNSigmaTPCLowP);
+    static const auto nSigmaTOFLowP = getCfg<float>(cfgIdCut.c2058pidConfigSetting, pidMode, kNSigmaTOFLowP);
+    static const auto nSigmaRadLowP = getCfg<float>(cfgIdCut.c2058pidConfigSetting, pidMode, kNSigmaRadLowP);
+    static const auto idCutTypeHighP = getCfg<int>(cfgIdCut.c2058pidConfigSetting, pidMode, kIdCutTypeHighP);
+    static const auto nSigmaTPCHighP = getCfg<float>(cfgIdCut.c2058pidConfigSetting, pidMode, kNSigmaTPCHighP);
+    static const auto nSigmaTOFHighP = getCfg<float>(cfgIdCut.c2058pidConfigSetting, pidMode, kNSigmaTOFHighP);
+    static const auto nSigmaRadHighP = getCfg<float>(cfgIdCut.c2058pidConfigSetting, pidMode, kNSigmaRadHighP);
 
     if (track.p() < thrPforTOF) {
       if (checkReliableTOF(track)) {
@@ -4626,19 +4626,19 @@ struct HParticleCorrelationMixedEvent {
   {
     if constexpr (pairType == kHPhi) {
       invMass = associate.mPhi1020();
-      return getMassRegionTag(invMass, cfgPhi1020CorrMass.phi1020LSBLow, cfgPhi1020CorrMass.phi1020LSBUp, cfgPhi1020CorrMass.phi1020PeakLow, cfgPhi1020CorrMass.phi1020PeakUp, cfgPhi1020CorrMass.phi1020RSBLow, cfgPhi1020CorrMass.phi1020RSBUp);
+      return getMassRegionTag(invMass, cfgPhi1020CorrMass.c2042phi1020LSBLow, cfgPhi1020CorrMass.c2043phi1020LSBUp, cfgPhi1020CorrMass.c2040phi1020PeakLow, cfgPhi1020CorrMass.c2041phi1020PeakUp, cfgPhi1020CorrMass.c2044phi1020RSBLow, cfgPhi1020CorrMass.c2045phi1020RSBUp);
     } else if constexpr (pairType == kHKStar) {
       invMass = associate.mKStar892();
-      return getMassRegionTag(invMass, cfgKStar892CorrMass.kStar892LSBLow, cfgKStar892CorrMass.kStar892LSBUp, cfgKStar892CorrMass.kStar892PeakLow, cfgKStar892CorrMass.kStar892PeakUp, cfgKStar892CorrMass.kStar892RSBLow, cfgKStar892CorrMass.kStar892RSBUp);
+      return getMassRegionTag(invMass, cfgKStar892CorrMass.c2048kStar892LSBLow, cfgKStar892CorrMass.c2049kStar892LSBUp, cfgKStar892CorrMass.c2046kStar892PeakLow, cfgKStar892CorrMass.c2047kStar892PeakUp, cfgKStar892CorrMass.c2050kStar892RSBLow, cfgKStar892CorrMass.c2051kStar892RSBUp);
     } else if constexpr (pairType == kHKStarBar) {
       invMass = associate.mKStar892Bar();
-      return getMassRegionTag(invMass, cfgKStar892CorrMass.kStar892LSBLow, cfgKStar892CorrMass.kStar892LSBUp, cfgKStar892CorrMass.kStar892PeakLow, cfgKStar892CorrMass.kStar892PeakUp, cfgKStar892CorrMass.kStar892RSBLow, cfgKStar892CorrMass.kStar892RSBUp);
+      return getMassRegionTag(invMass, cfgKStar892CorrMass.c2048kStar892LSBLow, cfgKStar892CorrMass.c2049kStar892LSBUp, cfgKStar892CorrMass.c2046kStar892PeakLow, cfgKStar892CorrMass.c2047kStar892PeakUp, cfgKStar892CorrMass.c2050kStar892RSBLow, cfgKStar892CorrMass.c2051kStar892RSBUp);
     } else if constexpr (pairType == kHLambda) {
       invMass = associate.mLambda1520();
-      return getMassRegionTag(invMass, cfgLambda1520CorrMass.lambda1520LSBLow, cfgLambda1520CorrMass.lambda1520LSBUp, cfgLambda1520CorrMass.lambda1520PeakLow, cfgLambda1520CorrMass.lambda1520PeakUp, cfgLambda1520CorrMass.lambda1520RSBLow, cfgLambda1520CorrMass.lambda1520RSBUp);
+      return getMassRegionTag(invMass, cfgLambda1520CorrMass.c2054lambda1520LSBLow, cfgLambda1520CorrMass.c2055lambda1520LSBUp, cfgLambda1520CorrMass.c2052lambda1520PeakLow, cfgLambda1520CorrMass.c2053lambda1520PeakUp, cfgLambda1520CorrMass.c2056lambda1520RSBLow, cfgLambda1520CorrMass.c2057lambda1520RSBUp);
     } else if constexpr (pairType == kHLambdaBar) {
       invMass = associate.mLambda1520Bar();
-      return getMassRegionTag(invMass, cfgLambda1520CorrMass.lambda1520LSBLow, cfgLambda1520CorrMass.lambda1520LSBUp, cfgLambda1520CorrMass.lambda1520PeakLow, cfgLambda1520CorrMass.lambda1520PeakUp, cfgLambda1520CorrMass.lambda1520RSBLow, cfgLambda1520CorrMass.lambda1520RSBUp);
+      return getMassRegionTag(invMass, cfgLambda1520CorrMass.c2054lambda1520LSBLow, cfgLambda1520CorrMass.c2055lambda1520LSBUp, cfgLambda1520CorrMass.c2052lambda1520PeakLow, cfgLambda1520CorrMass.c2053lambda1520PeakUp, cfgLambda1520CorrMass.c2056lambda1520RSBLow, cfgLambda1520CorrMass.c2057lambda1520RSBUp);
     }
 
     invMass = -1.0f;
@@ -4777,7 +4777,7 @@ struct HParticleCorrelationMixedEvent {
           continue;
         }
         const float rapidity = computeDerivedRapidity(associate, invMass);
-        if (rapidity < cfgResPartitions.resoRapidityMin || rapidity > cfgResPartitions.resoRapidityMax) {
+        if (rapidity < cfgResPartitions.c2018resoRapidityMin || rapidity > cfgResPartitions.c2019resoRapidityMax) {
           continue;
         }
         if (requiredMassRegion != kMassNone && massRegion != requiredMassRegion) {
@@ -4818,94 +4818,94 @@ struct HParticleCorrelationMixedEvent {
     }
   }
 
-  Preslice<aod::HPCorrTracks> drTracksPerCollisionPreslice = aod::hpcorrtrack::hpCorrCollisionId;
-  Preslice<aod::HPCorrResonances> drResoPerCollisionPreslice = aod::hpcorrresonance::hpCorrCollisionId;
+  Preslice<aod::HPCorrTracks> drTracksPerCollisionPreslice = aod::hpcorrtrack::hpCorrCollId;
+  Preslice<aod::HPCorrResonances> drResoPerCollisionPreslice = aod::hpcorrresonance::hpCorrCollId;
 
   // definition of partitions
   SliceCache cache;
-  Partition<aod::HPCorrCollisions> drMixHHLowPt = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHHLowPt)) != static_cast<uint64_t>(0ULL);
-  Partition<aod::HPCorrCollisions> drMixHHHighPt = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHHHighPt)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHHLowPt = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHHLowPt)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHHHighPt = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHHHighPt)) != static_cast<uint64_t>(0ULL);
 
-  Partition<aod::HPCorrCollisions> drMixHPiLowPt = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHPiLowPt)) != static_cast<uint64_t>(0ULL);
-  Partition<aod::HPCorrCollisions> drMixHPiHighPt = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHPiHighPt)) != static_cast<uint64_t>(0ULL);
-  Partition<aod::HPCorrCollisions> drMixHKaLowPt = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHKaLowPt)) != static_cast<uint64_t>(0ULL);
-  Partition<aod::HPCorrCollisions> drMixHKaHighPt = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHKaHighPt)) != static_cast<uint64_t>(0ULL);
-  Partition<aod::HPCorrCollisions> drMixHPrLowPt = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHPrLowPt)) != static_cast<uint64_t>(0ULL);
-  Partition<aod::HPCorrCollisions> drMixHPrHighPt = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHPrHighPt)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHPiLowPt = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHPiLowPt)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHPiHighPt = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHPiHighPt)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHKaLowPt = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHKaLowPt)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHKaHighPt = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHKaHighPt)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHPrLowPt = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHPrLowPt)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHPrHighPt = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHPrHighPt)) != static_cast<uint64_t>(0ULL);
 
-  Partition<aod::HPCorrCollisions> drMixHPhiLowPtPeak = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHPhiLowPtPeak)) != static_cast<uint64_t>(0ULL);
-  Partition<aod::HPCorrCollisions> drMixHPhiLowPtLSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHPhiLowPtLSB)) != static_cast<uint64_t>(0ULL);
-  Partition<aod::HPCorrCollisions> drMixHPhiLowPtRSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHPhiLowPtRSB)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHPhiLowPtPeak = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHPhiLowPtPeak)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHPhiLowPtLSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHPhiLowPtLSB)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHPhiLowPtRSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHPhiLowPtRSB)) != static_cast<uint64_t>(0ULL);
 
-  Partition<aod::HPCorrCollisions> drMixHPhiHighPtPeak = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHPhiHighPtPeak)) != static_cast<uint64_t>(0ULL);
-  Partition<aod::HPCorrCollisions> drMixHPhiHighPtLSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHPhiHighPtLSB)) != static_cast<uint64_t>(0ULL);
-  Partition<aod::HPCorrCollisions> drMixHPhiHighPtRSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHPhiHighPtRSB)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHPhiHighPtPeak = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHPhiHighPtPeak)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHPhiHighPtLSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHPhiHighPtLSB)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHPhiHighPtRSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHPhiHighPtRSB)) != static_cast<uint64_t>(0ULL);
 
-  Partition<aod::HPCorrCollisions> drMixHKStarLowPtPeak = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHKStarLowPtPeak)) != static_cast<uint64_t>(0ULL);
-  Partition<aod::HPCorrCollisions> drMixHKStarLowPtLSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHKStarLowPtLSB)) != static_cast<uint64_t>(0ULL);
-  Partition<aod::HPCorrCollisions> drMixHKStarLowPtRSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHKStarLowPtRSB)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHKStarLowPtPeak = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHKStarLowPtPeak)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHKStarLowPtLSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHKStarLowPtLSB)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHKStarLowPtRSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHKStarLowPtRSB)) != static_cast<uint64_t>(0ULL);
 
-  Partition<aod::HPCorrCollisions> drMixHKStarHighPtPeak = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHKStarHighPtPeak)) != static_cast<uint64_t>(0ULL);
-  Partition<aod::HPCorrCollisions> drMixHKStarHighPtLSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHKStarHighPtLSB)) != static_cast<uint64_t>(0ULL);
-  Partition<aod::HPCorrCollisions> drMixHKStarHighPtRSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHKStarHighPtRSB)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHKStarHighPtPeak = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHKStarHighPtPeak)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHKStarHighPtLSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHKStarHighPtLSB)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHKStarHighPtRSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHKStarHighPtRSB)) != static_cast<uint64_t>(0ULL);
 
-  Partition<aod::HPCorrCollisions> drMixHKStarBarLowPtPeak = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHKStarBarLowPtPeak)) != static_cast<uint64_t>(0ULL);
-  Partition<aod::HPCorrCollisions> drMixHKStarBarLowPtLSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHKStarBarLowPtLSB)) != static_cast<uint64_t>(0ULL);
-  Partition<aod::HPCorrCollisions> drMixHKStarBarLowPtRSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHKStarBarLowPtRSB)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHKStarBarLowPtPeak = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHKStarBarLowPtPeak)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHKStarBarLowPtLSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHKStarBarLowPtLSB)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHKStarBarLowPtRSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHKStarBarLowPtRSB)) != static_cast<uint64_t>(0ULL);
 
-  Partition<aod::HPCorrCollisions> drMixHKStarBarHighPtPeak = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHKStarBarHighPtPeak)) != static_cast<uint64_t>(0ULL);
-  Partition<aod::HPCorrCollisions> drMixHKStarBarHighPtLSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHKStarBarHighPtLSB)) != static_cast<uint64_t>(0ULL);
-  Partition<aod::HPCorrCollisions> drMixHKStarBarHighPtRSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHKStarBarHighPtRSB)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHKStarBarHighPtPeak = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHKStarBarHighPtPeak)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHKStarBarHighPtLSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHKStarBarHighPtLSB)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHKStarBarHighPtRSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHKStarBarHighPtRSB)) != static_cast<uint64_t>(0ULL);
 
-  Partition<aod::HPCorrCollisions> drMixHLambdaLowPtPeak = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHLambdaLowPtPeak)) != static_cast<uint64_t>(0ULL);
-  Partition<aod::HPCorrCollisions> drMixHLambdaLowPtLSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHLambdaLowPtLSB)) != static_cast<uint64_t>(0ULL);
-  Partition<aod::HPCorrCollisions> drMixHLambdaLowPtRSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHLambdaLowPtRSB)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHLambdaLowPtPeak = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHLambdaLowPtPeak)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHLambdaLowPtLSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHLambdaLowPtLSB)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHLambdaLowPtRSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHLambdaLowPtRSB)) != static_cast<uint64_t>(0ULL);
 
-  Partition<aod::HPCorrCollisions> drMixHLambdaHighPtPeak = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHLambdaHighPtPeak)) != static_cast<uint64_t>(0ULL);
-  Partition<aod::HPCorrCollisions> drMixHLambdaHighPtLSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHLambdaHighPtLSB)) != static_cast<uint64_t>(0ULL);
-  Partition<aod::HPCorrCollisions> drMixHLambdaHighPtRSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHLambdaHighPtRSB)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHLambdaHighPtPeak = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHLambdaHighPtPeak)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHLambdaHighPtLSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHLambdaHighPtLSB)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHLambdaHighPtRSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHLambdaHighPtRSB)) != static_cast<uint64_t>(0ULL);
 
-  Partition<aod::HPCorrCollisions> drMixHLambdaBarLowPtPeak = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHLambdaBarLowPtPeak)) != static_cast<uint64_t>(0ULL);
-  Partition<aod::HPCorrCollisions> drMixHLambdaBarLowPtLSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHLambdaBarLowPtLSB)) != static_cast<uint64_t>(0ULL);
-  Partition<aod::HPCorrCollisions> drMixHLambdaBarLowPtRSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHLambdaBarLowPtRSB)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHLambdaBarLowPtPeak = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHLambdaBarLowPtPeak)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHLambdaBarLowPtLSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHLambdaBarLowPtLSB)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHLambdaBarLowPtRSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHLambdaBarLowPtRSB)) != static_cast<uint64_t>(0ULL);
 
-  Partition<aod::HPCorrCollisions> drMixHLambdaBarHighPtPeak = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHLambdaBarHighPtPeak)) != static_cast<uint64_t>(0ULL);
-  Partition<aod::HPCorrCollisions> drMixHLambdaBarHighPtLSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHLambdaBarHighPtLSB)) != static_cast<uint64_t>(0ULL);
-  Partition<aod::HPCorrCollisions> drMixHLambdaBarHighPtRSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHLambdaBarHighPtRSB)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHLambdaBarHighPtPeak = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHLambdaBarHighPtPeak)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHLambdaBarHighPtLSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHLambdaBarHighPtLSB)) != static_cast<uint64_t>(0ULL);
+  Partition<aod::HPCorrColls> drMixHLambdaBarHighPtRSB = (aod::hpcorrcollision::corrMask & static_cast<uint64_t>(kMaskHLambdaBarHighPtRSB)) != static_cast<uint64_t>(0ULL);
 
-  Partition<aod::HPCorrTracks> drTriggerTracks = cfgPartitions.triggerPtLow < aod::hpcorrtrack::pt && aod::hpcorrtrack::pt < cfgPartitions.triggerPtHigh;
+  Partition<aod::HPCorrTracks> drTriggerTracks = cfgPartitions.c2012triggerPtLow < aod::hpcorrtrack::pt && aod::hpcorrtrack::pt < cfgPartitions.c2013triggerPtHigh;
   Partition<aod::HPCorrTracks> drPosTracks = aod::hpcorrtrack::sign > static_cast<int8_t>(0);
   Partition<aod::HPCorrTracks> drNegTracks = aod::hpcorrtrack::sign < static_cast<int8_t>(0);
-  Partition<aod::HPCorrTracks> drAssocTracksLowPt = cfgPartitions.assocPtLowMin < aod::hpcorrtrack::pt && aod::hpcorrtrack::pt < cfgPartitions.assocPtLowMax;
-  Partition<aod::HPCorrTracks> drAssocTracksHighPt = cfgPartitions.assocPtHighMin < aod::hpcorrtrack::pt && aod::hpcorrtrack::pt < cfgPartitions.assocPtHighMax;
+  Partition<aod::HPCorrTracks> drAssocTracksLowPt = cfgPartitions.c2014assocPtLowMin < aod::hpcorrtrack::pt && aod::hpcorrtrack::pt < cfgPartitions.c2015assocPtLowMax;
+  Partition<aod::HPCorrTracks> drAssocTracksHighPt = cfgPartitions.c2016assocPtHighMin < aod::hpcorrtrack::pt && aod::hpcorrtrack::pt < cfgPartitions.c2017assocPtHighMax;
 
-  Partition<aod::HPCorrResonances> drAssocPhiLowPt = cfgResPartitions.phiPtLowMin < aod::hpcorrresonance::pt && aod::hpcorrresonance::pt < cfgResPartitions.phiPtLowMax && aod::hpcorrresonance::phi1020Tag != static_cast<uint8_t>(kMassOutside);
-  Partition<aod::HPCorrResonances> drAssocPhiHighPt = cfgResPartitions.phiPtHighMin < aod::hpcorrresonance::pt && aod::hpcorrresonance::pt < cfgResPartitions.phiPtHighMax && aod::hpcorrresonance::phi1020Tag != static_cast<uint8_t>(kMassOutside);
-  Partition<aod::HPCorrResonances> drAssocKStarLowPt = cfgResPartitions.kstarPtLowMin < aod::hpcorrresonance::pt && aod::hpcorrresonance::pt < cfgResPartitions.kstarPtLowMax && aod::hpcorrresonance::kStar892Tag != static_cast<uint8_t>(kMassOutside);
-  Partition<aod::HPCorrResonances> drAssocKStarHighPt = cfgResPartitions.kstarPtHighMin < aod::hpcorrresonance::pt && aod::hpcorrresonance::pt < cfgResPartitions.kstarPtHighMax && aod::hpcorrresonance::kStar892Tag != static_cast<uint8_t>(kMassOutside);
-  Partition<aod::HPCorrResonances> drAssocKStarBarLowPt = cfgResPartitions.kstarBarPtLowMin < aod::hpcorrresonance::pt && aod::hpcorrresonance::pt < cfgResPartitions.kstarBarPtLowMax && aod::hpcorrresonance::kStar892BarTag != static_cast<uint8_t>(kMassOutside);
-  Partition<aod::HPCorrResonances> drAssocKStarBarHighPt = cfgResPartitions.kstarBarPtHighMin < aod::hpcorrresonance::pt && aod::hpcorrresonance::pt < cfgResPartitions.kstarBarPtHighMax && aod::hpcorrresonance::kStar892BarTag != static_cast<uint8_t>(kMassOutside);
-  Partition<aod::HPCorrResonances> drAssocLambda1520LowPt = cfgResPartitions.lambda1520PtLowMin < aod::hpcorrresonance::pt && aod::hpcorrresonance::pt < cfgResPartitions.lambda1520PtLowMax && aod::hpcorrresonance::lambda1520Tag != static_cast<uint8_t>(kMassOutside);
-  Partition<aod::HPCorrResonances> drAssocLambda1520HighPt = cfgResPartitions.lambda1520PtHighMin < aod::hpcorrresonance::pt && aod::hpcorrresonance::pt < cfgResPartitions.lambda1520PtHighMax && aod::hpcorrresonance::lambda1520Tag != static_cast<uint8_t>(kMassOutside);
-  Partition<aod::HPCorrResonances> drAssocLambda1520BarLowPt = cfgResPartitions.lambda1520BarPtLowMin < aod::hpcorrresonance::pt && aod::hpcorrresonance::pt < cfgResPartitions.lambda1520BarPtLowMax && aod::hpcorrresonance::lambda1520BarTag != static_cast<uint8_t>(kMassOutside);
-  Partition<aod::HPCorrResonances> drAssocLambda1520BarHighPt = cfgResPartitions.lambda1520BarPtHighMin < aod::hpcorrresonance::pt && aod::hpcorrresonance::pt < cfgResPartitions.lambda1520BarPtHighMax && aod::hpcorrresonance::lambda1520BarTag != static_cast<uint8_t>(kMassOutside);
+  Partition<aod::HPCorrResonances> drAssocPhiLowPt = cfgResPartitions.c2020phiPtLowMin < aod::hpcorrresonance::pt && aod::hpcorrresonance::pt < cfgResPartitions.c2021phiPtLowMax && aod::hpcorrresonance::phi1020Tag != static_cast<uint8_t>(kMassOutside);
+  Partition<aod::HPCorrResonances> drAssocPhiHighPt = cfgResPartitions.c2022phiPtHighMin < aod::hpcorrresonance::pt && aod::hpcorrresonance::pt < cfgResPartitions.c2023phiPtHighMax && aod::hpcorrresonance::phi1020Tag != static_cast<uint8_t>(kMassOutside);
+  Partition<aod::HPCorrResonances> drAssocKStarLowPt = cfgResPartitions.c2024kstarPtLowMin < aod::hpcorrresonance::pt && aod::hpcorrresonance::pt < cfgResPartitions.c2025kstarPtLowMax && aod::hpcorrresonance::kStar892Tag != static_cast<uint8_t>(kMassOutside);
+  Partition<aod::HPCorrResonances> drAssocKStarHighPt = cfgResPartitions.c2026kstarPtHighMin < aod::hpcorrresonance::pt && aod::hpcorrresonance::pt < cfgResPartitions.c2027kstarPtHighMax && aod::hpcorrresonance::kStar892Tag != static_cast<uint8_t>(kMassOutside);
+  Partition<aod::HPCorrResonances> drAssocKStarBarLowPt = cfgResPartitions.c2028kstarBarPtLowMin < aod::hpcorrresonance::pt && aod::hpcorrresonance::pt < cfgResPartitions.c2029kstarBarPtLowMax && aod::hpcorrresonance::kStar892BarTag != static_cast<uint8_t>(kMassOutside);
+  Partition<aod::HPCorrResonances> drAssocKStarBarHighPt = cfgResPartitions.c2030kstarBarPtHighMin < aod::hpcorrresonance::pt && aod::hpcorrresonance::pt < cfgResPartitions.c2031kstarBarPtHighMax && aod::hpcorrresonance::kStar892BarTag != static_cast<uint8_t>(kMassOutside);
+  Partition<aod::HPCorrResonances> drAssocLambda1520LowPt = cfgResPartitions.c2032lambda1520PtLowMin < aod::hpcorrresonance::pt && aod::hpcorrresonance::pt < cfgResPartitions.c2033lambda1520PtLowMax && aod::hpcorrresonance::lambda1520Tag != static_cast<uint8_t>(kMassOutside);
+  Partition<aod::HPCorrResonances> drAssocLambda1520HighPt = cfgResPartitions.c2034lambda1520PtHighMin < aod::hpcorrresonance::pt && aod::hpcorrresonance::pt < cfgResPartitions.c2035lambda1520PtHighMax && aod::hpcorrresonance::lambda1520Tag != static_cast<uint8_t>(kMassOutside);
+  Partition<aod::HPCorrResonances> drAssocLambda1520BarLowPt = cfgResPartitions.c2036lambda1520BarPtLowMin < aod::hpcorrresonance::pt && aod::hpcorrresonance::pt < cfgResPartitions.c2037lambda1520BarPtLowMax && aod::hpcorrresonance::lambda1520BarTag != static_cast<uint8_t>(kMassOutside);
+  Partition<aod::HPCorrResonances> drAssocLambda1520BarHighPt = cfgResPartitions.c2038lambda1520BarPtHighMin < aod::hpcorrresonance::pt && aod::hpcorrresonance::pt < cfgResPartitions.c2039lambda1520BarPtHighMax && aod::hpcorrresonance::lambda1520BarTag != static_cast<uint8_t>(kMassOutside);
 
   int dfNumber = 0;
   void processNothing(aod::Origins const& origins)
   {
-    if (cfgDebug.printDebugMessages) {
+    if (cfgDebug.c2001printDebugMessages) {
       LOG(info) << "DEBUG :: Process Nothing :: df_" << dfNumber << " :: origins = " << origins.size();
     }
     // Intentionally empty.
     // Keeps the task alive when running purely on derived data.
   }
-  PROCESS_SWITCH(HParticleCorrelationMixedEvent, processNothing, "Dummy process for analysis", true);
+  PROCESS_SWITCH(HParticleCorrelation3MixedEvent, processNothing, "Dummy process for analysis", true);
 
   int nColl = 0;
-  void processMixEventInDeriveData(aod::Origins const& origins, aod::HPCorrCollisions const& drCollisions, aod::HPCorrTracks const& drFullTracks, aod::HPCorrResonances const& drResonanceCndts /*, o2::aod::Origins const& Origins, aod::BCsWithTimestamps const&*/)
+  void processMixEventInDeriveData(aod::Origins const& origins, aod::HPCorrColls const& drCollisions, aod::HPCorrTracks const& drFullTracks, aod::HPCorrResonances const& drResonanceCndts /*, o2::aod::Origins const& Origins, aod::BCsWithTimestamps const&*/)
   {
     dfNumber++;
-    if (cfgDebug.printDebugMessages) {
+    if (cfgDebug.c2001printDebugMessages) {
       LOG(info) << "DEBUG :: df_" << dfNumber << " :: origins = " << origins.size() << " :: drCollisions = " << drCollisions.size() << " :: drFullTracks = " << drFullTracks.size() << " :: drResonanceCndts = " << drResonanceCndts.size();
     }
 
@@ -4916,15 +4916,15 @@ struct HParticleCorrelationMixedEvent {
     int64_t nBadResonanceCollision = 0;
     int64_t nBadResonanceDaughters = 0;
     for (const auto& coll : drCollisions) {
-      auto drTracksPerColl = drFullTracks.sliceByCached(aod::hpcorrtrack::hpCorrCollisionId, coll.globalIndex(), cache);
-      auto drResonancesPerColl = drResonanceCndts.sliceByCached(aod::hpcorrresonance::hpCorrCollisionId, coll.globalIndex(), cache);
-      auto drTriggerTracksPerColl = drTriggerTracks->sliceByCached(aod::hpcorrtrack::hpCorrCollisionId, coll.globalIndex(), cache);
-      auto drPosTracksPerColl = drPosTracks->sliceByCached(aod::hpcorrtrack::hpCorrCollisionId, coll.globalIndex(), cache);
-      auto drNegTracksPerColl = drNegTracks->sliceByCached(aod::hpcorrtrack::hpCorrCollisionId, coll.globalIndex(), cache);
-      auto drAssocTracksLowPtPerColl = drAssocTracksLowPt->sliceByCached(aod::hpcorrtrack::hpCorrCollisionId, coll.globalIndex(), cache);
-      auto drAssocTracksHighPtPerColl = drAssocTracksHighPt->sliceByCached(aod::hpcorrtrack::hpCorrCollisionId, coll.globalIndex(), cache);
-      auto drAssocPhiLowPtPerColl = drAssocPhiLowPt->sliceByCached(aod::hpcorrresonance::hpCorrCollisionId, coll.globalIndex(), cache);
-      auto drAssocPhiHighPtPerColl = drAssocPhiHighPt->sliceByCached(aod::hpcorrresonance::hpCorrCollisionId, coll.globalIndex(), cache);
+      auto drTracksPerColl = drFullTracks.sliceByCached(aod::hpcorrtrack::hpCorrCollId, coll.globalIndex(), cache);
+      auto drResonancesPerColl = drResonanceCndts.sliceByCached(aod::hpcorrresonance::hpCorrCollId, coll.globalIndex(), cache);
+      auto drTriggerTracksPerColl = drTriggerTracks->sliceByCached(aod::hpcorrtrack::hpCorrCollId, coll.globalIndex(), cache);
+      auto drPosTracksPerColl = drPosTracks->sliceByCached(aod::hpcorrtrack::hpCorrCollId, coll.globalIndex(), cache);
+      auto drNegTracksPerColl = drNegTracks->sliceByCached(aod::hpcorrtrack::hpCorrCollId, coll.globalIndex(), cache);
+      auto drAssocTracksLowPtPerColl = drAssocTracksLowPt->sliceByCached(aod::hpcorrtrack::hpCorrCollId, coll.globalIndex(), cache);
+      auto drAssocTracksHighPtPerColl = drAssocTracksHighPt->sliceByCached(aod::hpcorrtrack::hpCorrCollId, coll.globalIndex(), cache);
+      auto drAssocPhiLowPtPerColl = drAssocPhiLowPt->sliceByCached(aod::hpcorrresonance::hpCorrCollId, coll.globalIndex(), cache);
+      auto drAssocPhiHighPtPerColl = drAssocPhiHighPt->sliceByCached(aod::hpcorrresonance::hpCorrCollId, coll.globalIndex(), cache);
 
       if (coll.globalIndex() != coll.globalCollisionId()) {
         nBadCollisionIndex++;
@@ -4933,9 +4933,9 @@ struct HParticleCorrelationMixedEvent {
 
       for (const auto& track : drTracksPerColl) {
         nTrackChecks++;
-        if (track.hpCorrCollisionId() != coll.globalIndex()) {
+        if (track.hpCorrCollId() != coll.globalIndex()) {
           nBadTrackCollision++;
-          LOG(error) << "TRACK CHECK :: hpCorrCollisionId mismatch :: " << track.hpCorrCollisionId() << " != " << coll.globalIndex();
+          LOG(error) << "TRACK CHECK :: hpCorrCollId mismatch :: " << track.hpCorrCollId() << " != " << coll.globalIndex();
         }
         if (track.globalColRefId() != coll.globalCollisionId()) {
           nBadTrackCollision++;
@@ -4958,9 +4958,9 @@ struct HParticleCorrelationMixedEvent {
       for (const auto& resonance : drResonancesPerColl) {
         nResonanceChecks++;
 
-        if (resonance.hpCorrCollisionId() != coll.globalIndex()) {
+        if (resonance.hpCorrCollId() != coll.globalIndex()) {
           nBadResonanceCollision++;
-          LOG(error) << "RESONANCE CHECK :: hpCorrCollisionId mismatch :: " << resonance.hpCorrCollisionId() << " != " << coll.globalIndex();
+          LOG(error) << "RESONANCE CHECK :: hpCorrCollId mismatch :: " << resonance.hpCorrCollId() << " != " << coll.globalIndex();
         }
         if (resonance.globalColRefId() != coll.globalCollisionId()) {
           nBadResonanceCollision++;
@@ -5018,13 +5018,13 @@ struct HParticleCorrelationMixedEvent {
           LOG(error) << "DAUGHTER CHECK :: resonance/negTrack dataframeID mismatch :: " << resonance.dataframeID() << " != " << negTrack.dataframeID();
         }
 
-        if (posTrack.hpCorrCollisionId() != coll.globalIndex()) {
+        if (posTrack.hpCorrCollId() != coll.globalIndex()) {
           nBadResonanceDaughters++;
-          LOG(error) << "DAUGHTER CHECK :: positive daughter belongs to wrong collision :: " << posTrack.hpCorrCollisionId() << " != " << coll.globalIndex();
+          LOG(error) << "DAUGHTER CHECK :: positive daughter belongs to wrong collision :: " << posTrack.hpCorrCollId() << " != " << coll.globalIndex();
         }
-        if (negTrack.hpCorrCollisionId() != coll.globalIndex()) {
+        if (negTrack.hpCorrCollId() != coll.globalIndex()) {
           nBadResonanceDaughters++;
-          LOG(error) << "DAUGHTER CHECK :: negative daughter belongs to wrong collision :: " << negTrack.hpCorrCollisionId() << " != " << coll.globalIndex();
+          LOG(error) << "DAUGHTER CHECK :: negative daughter belongs to wrong collision :: " << negTrack.hpCorrCollId() << " != " << coll.globalIndex();
         }
 
         if (posTrack.originalColRefId() != coll.originalCollisionId()) {
@@ -5057,11 +5057,11 @@ struct HParticleCorrelationMixedEvent {
       nColl++;
     } // Collision loop is over
 
-    if (cfgDebug.printDebugMessages) {
+    if (cfgDebug.c2001printDebugMessages) {
       LOG(info) << "DEBUG :: SANITY CHECK SUMMARY :: bad collision indices = " << nBadCollisionIndex << " :: tracks checked = " << nTrackChecks << " :: bad track references = " << nBadTrackCollision << " :: resonances checked = " << nResonanceChecks << " :: bad resonance collision references = " << nBadResonanceCollision << " :: bad resonance daughter references = " << nBadResonanceDaughters;
     }
     if (nBadCollisionIndex == 0 && nBadTrackCollision == 0 && nBadResonanceCollision == 0 && nBadResonanceDaughters == 0) {
-      if (cfgDebug.printDebugMessages) {
+      if (cfgDebug.c2001printDebugMessages) {
         LOG(info) << "DEBUG :: SANITY CHECK PASSED";
       }
     } else {
@@ -5077,7 +5077,7 @@ struct HParticleCorrelationMixedEvent {
         partnerCountPerTriggerEvent[collision.globalIndex()] = 0;
       }
 
-      for (const auto& [collision1, collision2] : selfCombinations(colBinning, cfgMixing.nEvtMixing, -1, collisionPool, collisionPool)) {
+      for (const auto& [collision1, collision2] : selfCombinations(colBinning, cfgMixing.c2008nEvtMixing, -1, collisionPool, collisionPool)) {
         nMixedEventPairs++;
 
         if (collision1.dataframeID() == collision2.dataframeID() && collision1.originalCollisionId() == collision2.originalCollisionId()) {
@@ -5139,8 +5139,8 @@ struct HParticleCorrelationMixedEvent {
       static_assert(MixChannel >= 0, "Invalid track mixing-operation channel");
 
       runRestrictedMixing(colBinning, collisionPool, MixChannel, [&](const auto& collision1, const auto& collision2) {
-        auto triggerTracks1 = drTriggerTracks->sliceByCached(aod::hpcorrtrack::hpCorrCollisionId, collision1.globalIndex(), cache);
-        auto associates2 = assocPartition->sliceByCached(aod::hpcorrtrack::hpCorrCollisionId, collision2.globalIndex(), cache);
+        auto triggerTracks1 = drTriggerTracks->sliceByCached(aod::hpcorrtrack::hpCorrCollId, collision1.globalIndex(), cache);
+        auto associates2 = assocPartition->sliceByCached(aod::hpcorrtrack::hpCorrCollId, collision2.globalIndex(), cache);
 
         executeDerivedCorrelationRole<aod::HPCorrTracks, pairType, roleType, requiredMask>(histReg, triggerTracks1, associates2);
       });
@@ -5165,8 +5165,8 @@ struct HParticleCorrelationMixedEvent {
       static_assert(MixChannel >= 0, "Invalid resonance mixing-operation channel");
 
       runRestrictedMixing(colBinning, collisionPool, MixChannel, [&](const auto& collision1, const auto& collision2) {
-        auto triggerTracks1 = drTriggerTracks->sliceByCached(aod::hpcorrtrack::hpCorrCollisionId, collision1.globalIndex(), cache);
-        auto associates2 = assocPartition->sliceByCached(aod::hpcorrresonance::hpCorrCollisionId, collision2.globalIndex(), cache);
+        auto triggerTracks1 = drTriggerTracks->sliceByCached(aod::hpcorrtrack::hpCorrCollId, collision1.globalIndex(), cache);
+        auto associates2 = assocPartition->sliceByCached(aod::hpcorrresonance::hpCorrCollId, collision2.globalIndex(), cache);
 
         associates2.bindExternalIndices(&drFullTracks);
 
@@ -5211,7 +5211,7 @@ struct HParticleCorrelationMixedEvent {
       runResoRegionMixing.template operator()<kHLambdaBar, kAssocHighPt, kMaskHLambdaBarHighPtRSB, kMassRSB>(colBinning, drMixHLambdaBarHighPtRSB, drAssocLambda1520BarHighPt, hLambdaBarCorrelation);
     };
 
-    switch (cfgMixing.mixingEstimator) {
+    switch (cfgMixing.c2009mixingEstimator) {
       case kMixCentFT0C:
         runAllTrackMixing(colBinningFT0C);
         runAllResoMixing(colBinningFT0C);
@@ -5233,20 +5233,20 @@ struct HParticleCorrelationMixedEvent {
         break;
 
       default:
-        LOG(fatal) << "DEBUG :: Invalid mixingEstimator = " << static_cast<int>(cfgMixing.mixingEstimator);
+        LOG(fatal) << "DEBUG :: Invalid mixingEstimator = " << static_cast<int>(cfgMixing.c2009mixingEstimator);
         break;
     }
-    if (cfgDebug.printDebugMessages) {
+    if (cfgDebug.c2001printDebugMessages) {
       LOG(info) << "DEBUG :: EVENT MIXING SUMMARY :: mixed collision pairs = " << nMixedEventPairs;
     }
   }
-  PROCESS_SWITCH(HParticleCorrelationMixedEvent, processMixEventInDeriveData, "Process Mix event in derive data", true);
+  PROCESS_SWITCH(HParticleCorrelation3MixedEvent, processMixEventInDeriveData, "Process Mix event in derive data", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HParticleCorrelationResonanceProducer>(context),
-    adaptAnalysisTask<HParticleCorrelationSameEvent>(context),
-    adaptAnalysisTask<HParticleCorrelationMixedEvent>(context)};
+    adaptAnalysisTask<HParticleCorrelation1ResonanceProducer>(context),
+    adaptAnalysisTask<HParticleCorrelation2SameEvent>(context),
+    adaptAnalysisTask<HParticleCorrelation3MixedEvent>(context)};
 }
