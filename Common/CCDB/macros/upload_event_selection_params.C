@@ -257,7 +257,7 @@ void upload_event_selection_params()
     auto sor = o2::ccdb::BasicCCDBManager::getRunDuration(ccdb, runFirst[i]).first;
     auto eor = o2::ccdb::BasicCCDBManager::getRunDuration(ccdb, runLast[i]).second;
 
-    printf("sor=%llu eor=%llu\n", sor, eor);
+    printf("sor=%ld eor=%ld\n", sor, eor);
     metadata["period"] = period[i];
     metadata["run_first"] = Form("%d", runFirst[i]);
     metadata["run_last"] = Form("%d", runLast[i]);
