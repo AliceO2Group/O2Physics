@@ -19,22 +19,22 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 #include <limits>
 #include <stdexcept>
 #include <string>
-#include <utility>
 #include <vector>
 
 int GFWPowerArray::getHighestHarmonic(const HarSet& inhar)
 {
   // Highest possible harmonic: sum of same-sign harmonics
-  int64_t maxPos = 0, maxNeg = 0;
+  std::int64_t maxPos = 0, maxNeg = 0;
   for (const int& val : inhar) {
     if (val > 0)
       maxPos += val;
     else
-      maxNeg += std::abs(static_cast<int64_t>(val));
+      maxNeg += std::abs(static_cast<std::int64_t>(val));
     if (maxPos >= std::numeric_limits<int>::max() || maxNeg >= std::numeric_limits<int>::max())
       throw std::overflow_error("Harmonic sum exceeds the supported range");
   }
@@ -42,7 +42,7 @@ int GFWPowerArray::getHighestHarmonic(const HarSet& inhar)
 };
 HarSet GFWPowerArray::trimVec(const HarSet& hars, int ind)
 {
-  HarSet retVec = std::move(hars);
+  HarSet retVec = hars;
   retVec.erase(retVec.begin() + ind);
   return retVec;
 };

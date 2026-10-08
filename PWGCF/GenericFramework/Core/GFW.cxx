@@ -82,19 +82,23 @@ void GFW::AddRegion(const string& refName, const std::vector<int>& lNparVec, dou
   (fRegions.end() - 1)->NparVec = lNparVec;
   (fRegions.end() - 1)->powsDefined = true;
 };
-void GFW::AddRegion(string refName, int lNhar, int lNpar, double lEtaMin, double lEtaMax, int lNpT, int BitMask)
+void GFW::AddRegion(const string& refName, int lNhar, int lNpar, double lEtaMin, double lEtaMax, int lNpT, int BitMask)
 {
   std::vector<int> tVec = {};
+  if (lNhar > 0)
+    tVec.reserve(lNhar);
   for (int i = 0; i < lNhar; i++)
     tVec.push_back(lNpar);
-  AddRegion(std::move(refName), tVec, lEtaMin, lEtaMax, lNpT, BitMask);
+  AddRegion(refName, tVec, lEtaMin, lEtaMax, lNpT, BitMask);
 };
-void GFW::AddRegion(string refName, int lNhar, int* lNparVec, double lEtaMin, double lEtaMax, int lNpT, int BitMask)
+void GFW::AddRegion(const string& refName, int lNhar, int* lNparVec, double lEtaMin, double lEtaMax, int lNpT, int BitMask)
 {
   std::vector<int> tVec = {};
+  if (lNhar > 0)
+    tVec.reserve(lNhar);
   for (int i = 0; i < lNhar; i++)
     tVec.push_back(lNparVec[i]);
-  AddRegion(std::move(refName), tVec, lEtaMin, lEtaMax, lNpT, BitMask);
+  AddRegion(refName, tVec, lEtaMin, lEtaMax, lNpT, BitMask);
 };
 int GFW::CreateRegions()
 {
@@ -135,6 +139,7 @@ complex<double> GFW::TwoRec(int n1, int n2, int p1, int p2, int ptbin, GFWCumula
 complex<double> GFW::RecursiveCorr(GFWCumulant* qpoi, GFWCumulant* qref, GFWCumulant* qol, int ptbin, std::vector<int>& hars)
 {
   std::vector<int> pows;
+  pows.reserve(hars.size());
   for (int i = 0; i < static_cast<int>(hars.size()); i++)
     pows.push_back(1);
   return RecursiveCorr(qpoi, qref, qol, ptbin, hars, pows);
