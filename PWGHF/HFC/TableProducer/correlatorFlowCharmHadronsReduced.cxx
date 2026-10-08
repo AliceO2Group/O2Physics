@@ -234,7 +234,8 @@ struct HfCorrelatorFlowCharmHadronsReduced {
     }
   }
 
-  bool isSelCollision(const aod::HfcRedCorrColls& collision)
+  template<typename TColl> 
+  bool isSelCollision(const TColl& collision)
   {
     if (selCentrality) {
       return (collision.centrality() >= centralityMin && collision.centrality() <= centralityMax);
