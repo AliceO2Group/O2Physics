@@ -2,15 +2,47 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v6.0.0
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c # frozen: v6.0.0
     hooks:
-      - id: trailing-whitespace
+      - id: check-added-large-files
+      - id: check-ast
+      - id: check-case-conflict
+      - id: check-executables-have-shebangs
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-yaml
       - id: end-of-file-fixer
+      - id: trailing-whitespace
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: a6564f5d57444e123433a5c9af733e3975c77229 # frozen: v0.11.0.1-1
+    hooks:
+      - id: shellcheck
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: f12be1ebaa5351c1fc76472de98db2c3446c8253 # frozen: v0.16.10
+    hooks:
+      - id: ruff-check # linter
+        args: ["--fix"]
+      - id: ruff-format # formatter
+  - repo: local
+    hooks:
+      - id: format-includes
+        name: format includes
+        language: python
+        entry: Scripts/format_includes.py
+        types: [c++]
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: v20.1.3 # clang-format version (keep synced with https://github.com/alisw/ali-bot/blob/master/.github/workflows/c++-code-formatting.yml)
+    # clang-format version (keep synced with https://github.com/alisw/ali-bot/blob/master/.github/workflows/c++-code-formatting.yml)
+    rev: 7ec07eeb4135dc6ecf410d24ac4ead986a5d413d # frozen: v20.1.3
     hooks:
       - id: clang-format
   - repo: https://github.com/cpplint/cpplint
-    rev: 2.0.2
+    rev: 350702a4d39395571bd118c9a3cff0a573488d61 # frozen: 2.0.2
     hooks:
       - id: cpplint
+  - repo: local
+    hooks:
+      - id: O2 linter
+        name: O2 linter
+        language: python
+        entry: Scripts/o2_linter.py
+        types_or: [c++, cmake, python]
