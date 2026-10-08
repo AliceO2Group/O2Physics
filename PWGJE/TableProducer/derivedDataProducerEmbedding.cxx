@@ -183,7 +183,6 @@ struct JetDerivedDataEmbeddingProducerTask {
 
     Configurable<bool> includeTriggers{"includeTriggers", false, "fill the collision information with software trigger decisions"};
     Configurable<bool> includeHadronicRate{"includeHadronicRate", true, "fill the collision information with the hadronic rate"};
-    Configurable<bool> includeUpcs{"includeUpcs", true, "include option to identify UPC events"};
     Configurable<bool> v0ChargedDecaysOnly{"v0ChargedDecaysOnly", true, "store V0s (at particle-level) only if they decay to charged particles"};
     Configurable<bool> isMCGenOnly{"isMCGenOnly", false, "analysis is run over mcGen only"};
 
@@ -497,7 +496,7 @@ struct JetDerivedDataEmbeddingProducerTask {
       }
     }
   }
-  PROCESS_SWITCH(JetDerivedDataEmbeddingProducerTask, processMcCollisionLabels, "produces derived MC collision labels table", false);
+  PROCESS_SWITCH(JetDerivedDataEmbeddingProducerTask, processMcCollisionLabels, "produces derived MC collision labels table", true);
 
   void processMcCollisions(soa::Join<aod::McCollisionsFrom<o2::aod::Hash<"EMB"_h>>, aod::HepMCXSectionsFrom<o2::aod::Hash<"EMB"_h>>, aod::MultsExtraMCFrom<o2::aod::Hash<"EMB"_h>>, aod::McCentFT0MsFrom<o2::aod::Hash<"EMB"_h>>>::iterator const& mcCollision)
   {
@@ -515,7 +514,7 @@ struct JetDerivedDataEmbeddingProducerTask {
     products.jMcCollisionsTable(bcId, mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.multMCFV0A(), mcCollision.multMCFT0A(), mcCollision.multMCFT0C(), mcCollision.centFT0M(), mcCollision.weight(), mcCollision.accepted(), mcCollision.attempted(), mcCollision.xsectGen(), mcCollision.xsectErr(), mcCollision.ptHard(), selDecision, rctDecision, mcCollision.getGeneratorId(), mcCollision.getSubGeneratorId(), mcCollision.getSourceId(), mcCollision.impactParameter(), mcCollision.eventPlaneAngle());
     products.jMcCollisionsParentIndexTable(mcCollision.globalIndex());
   }
-  PROCESS_SWITCH(JetDerivedDataEmbeddingProducerTask, processMcCollisions, "produces derived MC collision table", false);
+  PROCESS_SWITCH(JetDerivedDataEmbeddingProducerTask, processMcCollisions, "produces derived MC collision table", true);
 
   void processMcCollisionsWithoutCentralityAndMultiplicity(soa::Join<aod::McCollisionsFrom<o2::aod::Hash<"EMB"_h>>, aod::HepMCXSectionsFrom<o2::aod::Hash<"EMB"_h>>>::iterator const& mcCollision)
   {
@@ -815,7 +814,7 @@ struct JetDerivedDataEmbeddingProducerTask {
     products.jMcParticlesTable(particle.mcCollisionId(), particle.pt(), particle.eta(), particle.phi(), particle.y(), particle.e(), particle.pdgCode(), particle.statusCode(), particle.flags(), mothersId, daughtersId);
     products.jParticlesParentIndexTable(particle.globalIndex());
   }
-  PROCESS_SWITCH(JetDerivedDataEmbeddingProducerTask, processParticles, "produces derived parrticle table", false);
+  PROCESS_SWITCH(JetDerivedDataEmbeddingProducerTask, processParticles, "produces derived parrticle table", true);
 
   void processClusters(aod::Collision const&, aod::EMCALClusters const& clusters, aod::EMCALClusterCells const& cells, aod::Calos const&, aod::EMCALMatchedTracks const& matchedTracks, soa::Join<aod::Tracks, aod::TracksExtra> const&)
   {
