@@ -575,6 +575,10 @@ struct RecoDecay {
       return;
     }
 
+    if (particle.mothersIds().front() == particle.globalIndex()) {
+      return;
+    }
+
     if (!searchUpToQuark) {
       motherIdsOrdered.push_back(particle.mothersIds().front());
     } else {
