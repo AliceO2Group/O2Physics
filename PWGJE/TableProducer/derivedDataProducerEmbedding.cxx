@@ -13,9 +13,9 @@
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
-#include "PWGJE/Core/JetDQUtilities.h"
+// #include "PWGJE/Core/JetDQUtilities.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/Core/JetV0Utilities.h"
+// #include "PWGJE/Core/JetV0Utilities.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/DataModel/EMCALMatchedCollisions.h"
 #include "PWGJE/DataModel/JetReducedData.h"
@@ -23,17 +23,17 @@
 #include "PWGJE/DataModel/JetReducedDataHF.h"
 #include "PWGJE/DataModel/JetReducedDataV0.h"
 //
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
-#include "PWGHF/DataModel/DerivedTables.h"
+// #include "PWGDQ/DataModel/ReducedInfoTables.h"
+// #include "PWGHF/DataModel/DerivedTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
+// #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGUD/Core/SGCutParHolder.h"
 #include "PWGUD/Core/SGSelector.h"
 #include "PWGUD/Core/UDHelpers.h"
 
 #include "Common/CCDB/ctpRateFetcher.h"
-#include "Common/Core/RecoDecay.h"
+// #include "Common/Core/RecoDecay.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
@@ -53,6 +53,7 @@
 #include <Framework/Configurable.h>
 #include <Framework/InitContext.h>
 #include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/StringHelpers.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/Vertex.h>
@@ -819,7 +820,7 @@ struct JetDerivedDataEmbeddingProducerTask {
   void processClusters(aod::Collision const&, aod::EMCALClusters const& clusters, aod::EMCALClusterCells const& cells, aod::Calos const&, aod::EMCALMatchedTracks const& matchedTracks, soa::Join<aod::Tracks, aod::TracksExtra> const&)
   {
 
-    for (auto cluster : clusters) {
+    for (auto const& cluster : clusters) {
 
       auto const clusterCells = cells.sliceBy(preslices.perClusterCells, cluster.globalIndex());
 
