@@ -1733,9 +1733,9 @@ struct HfTrackIndexSkimCreator {
   /// \tparam TTrackIndex is the iterator type of the track-collision associations
   template <typename TTrackIndex>
   struct HfPropagatedSoftPion {
-    TTrackIndex trackIndex;             ///< track-collision association, carries isSelProng and isIdentifiedPid
-    int64_t trackGlobalIndex; ///< track-collision association, carries isSelProng and isIdentifiedPid
-    std::array<float, 3> pVec{};        ///< momentum at the PCA to the primary vertex
+    TTrackIndex trackIndex;      ///< track-collision association, carries isSelProng and isIdentifiedPid
+    int64_t trackGlobalIndex;    ///< track global index
+    std::array<float, 3> pVec{}; ///< momentum at the PCA to the primary vertex
   };
 
   /// One track of the collision under study, propagated to that collision's primary vertex.
@@ -1764,7 +1764,7 @@ struct HfTrackIndexSkimCreator {
       const auto track = trackIndex.template track_as<TTracks>();
       if constexpr (IsSoftPion) {
         std::array<float, 3> pVec = track.pVector();
-        if (thisCollId != track.collisionId()) { // rare: build the TrackParCov only here
+        if (thisCollId != track.collisionId()) { // this is not the "default" collision for this track, we have to re-propagate it
           auto trackParCov = getTrackParCov(track);
           std::array<float, 2> dcaInfo{};
           o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCov, 2.f, noMatCorr, &dcaInfo);
@@ -1782,7 +1782,10 @@ struct HfTrackIndexSkimCreator {
     }
   }
 
-  // optional overload
+  /// Overloaded function of fillPropagatedProngCache to handle optional track indices.
+  /// \param collision is the collision under study
+  /// \param trackIndices are the track associations of this collision
+  /// \param prongs is the cache to be filled, in the order of trackIndices
   template <bool IsSoftPion, typename TTracks, typename TCollision, typename TTrackIndices, typename TProng>
   void fillPropagatedProngCache(TCollision const& collision, std::optional<TTrackIndices> const& trackIndices, std::vector<TProng>& prongs)
   {
@@ -2480,8 +2483,8 @@ struct HfTrackIndexSkimCreator {
       int lastFilledD0 = -1; // index to be filled in table for D* mesons
 
       // propagate each track to this collision's PV once, instead of once per pair or triplet
-      fillPropagatedProngCache<false,TTracks>(collision, groupedTrackIndicesPos1, prongsPos);
-      fillPropagatedProngCache<false,TTracks>(collision, groupedTrackIndicesNeg1, prongsNeg);
+      fillPropagatedProngCache<false, TTracks>(collision, groupedTrackIndicesPos1, prongsPos);
+      fillPropagatedProngCache<false, TTracks>(collision, groupedTrackIndicesNeg1, prongsNeg);
 
       for (std::size_t iPos1 = 0; iPos1 < prongsPos.size(); ++iPos1) {
         const auto& trackIndexPos1 = prongsPos[iPos1].trackIndex;
@@ -3263,7 +3266,7 @@ struct HfTrackIndexSkimCreator {
             // second loop over positive tracks
             if (TESTBIT(whichHypo2Prong[kN2ProngDecays], 0) && (!config.applyKaonPidIn3Prongs || TESTBIT(trackIndexNeg1.isIdentifiedPid(), ChannelKaonPid))) { // only for D0 candidates; moreover if kaon PID enabled, apply to the negative track
 
-              // Skip the processing if the D0 candidate mass is outside the maximum allowed window across pt
+              // Compute D0 invariant mass for all D* candidates
               const std::array arrMomD0{pVecTrackPos1, pVecTrackNeg1};
               const float invMassD0 = RecoDecay::m(arrMomD0, std::array{MassPiPlus, MassKPlus});
 
@@ -3305,7 +3308,7 @@ struct HfTrackIndexSkimCreator {
             // second loop over negative tracks
             if (TESTBIT(whichHypo2Prong[kN2ProngDecays], 1) && (!config.applyKaonPidIn3Prongs || TESTBIT(trackIndexPos1.isIdentifiedPid(), ChannelKaonPid))) { // only for D0bar candidates; moreover if kaon PID enabled, apply to the positive track
 
-              // Skip the processing if the D0 candidate mass is outside the maximum allowed window across pt
+              // Compute D0 invariant mass for all D* candidates
               const std::array arrMomD0{pVecTrackNeg1, pVecTrackPos1};
               const float invMassD0 = RecoDecay::m(arrMomD0, std::array{MassPiPlus, MassKPlus});
 
