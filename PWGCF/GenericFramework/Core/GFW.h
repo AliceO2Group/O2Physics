@@ -85,6 +85,6 @@ class GFW
   bool s_contains(const std::string& instr, const std::string& pattern);
   void s_replace(std::string& instr, const std::string& pattern1, const std::string& pattern2, const int& spos = 0);
   void s_replace_all(std::string& instr, const std::string& pattern1, const std::string& pattern2);
-  bool s_tokenize(std::string& instr, std::string& substr, int& spos, const std::string& delim);
+  bool s_tokenize(const std::string& instr, std::string& substr, int& spos, const std::string& delim);
 };
 #endif // PWGCF_GENERICFRAMEWORK_CORE_GFW_H_

@@ -393,7 +393,7 @@ void GFW::s_replace_all(string& instr, const string& pattern1, const string& pat
     lpos = s_index(instr, pattern1, lpos);
   }
 };
-bool GFW::s_tokenize(string& instr, string& subs, int& spos, const string& delim)
+bool GFW::s_tokenize(const string& instr, string& subs, int& spos, const string& delim)
 {
   if (spos < 0 || spos >= static_cast<int>(instr.size())) {
     spos = -1;

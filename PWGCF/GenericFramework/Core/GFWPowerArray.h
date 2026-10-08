@@ -23,8 +23,8 @@ typedef std::vector<int> HarSet;
 class GFWPowerArray
 {
  public:
-  static HarSet GetPowerArray(std::vector<HarSet> inHarmonics); // o2-linter: disable=name/function-variable (preserve existing public API)
-  static void PowerArrayTest();                                 // o2-linter: disable=name/function-variable (preserve existing public API)
+  static HarSet GetPowerArray(const std::vector<HarSet>& inHarmonics); // o2-linter: disable=name/function-variable (preserve existing public API)
+  static void PowerArrayTest();                                        // o2-linter: disable=name/function-variable (preserve existing public API)
 
  private:
   static int getHighestHarmonic(const HarSet& inhar);

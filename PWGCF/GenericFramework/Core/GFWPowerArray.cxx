@@ -82,7 +82,7 @@ void GFWPowerArray::printVector(const HarSet& singleSet)
   output += "}";
   LOGF(info, "%s", output.c_str());
 }
-HarSet GFWPowerArray::GetPowerArray(std::vector<HarSet> inHarmonics) // o2-linter: disable=name/function-variable (preserve existing public API)
+HarSet GFWPowerArray::GetPowerArray(const std::vector<HarSet>& inHarmonics) // o2-linter: disable=name/function-variable (preserve existing public API)
 {
   // First, find maximum number of particle correlations ( = max power) and maximum (sum of) harmonics
   int maxHar = 0;
