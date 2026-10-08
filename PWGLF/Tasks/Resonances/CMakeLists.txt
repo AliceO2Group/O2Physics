@@ -99,6 +99,11 @@ o2physics_add_dpl_workflow(f0980pbpbanalysis
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(f0980-flow-sp
+    SOURCES f0980FlowSP.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(lambda1520spherocityanalysis
     SOURCES lambda1520SpherocityAnalysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
