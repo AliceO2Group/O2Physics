@@ -30,6 +30,7 @@
 #include <tuple>       // std::apply
 #include <type_traits> // std::decay_t
 #include <utility>     // std::move
+#include <numeric>     // std::iota
 #include <vector>      // std::vector
 
 /// Base class for calculating properties of reconstructed decays
@@ -49,6 +50,10 @@ struct RecoDecay {
   };
 
   static constexpr int8_t StatusCodeAfterFlavourOscillation{92}; // decay products after B0(s) flavour oscillation
+  static constexpr int8_t StatusCodePrimaryMin{81};              // primary particles (after hadronization) have status code >= 81
+  static constexpr int8_t StatusCodePrimaryMax{89};              // primary particles (after hadronization) have status code <= 89
+  static constexpr int8_t StatusCodeRhadronMin{101};             // R-hadrons (after hadronization) have status code >= 101
+  static constexpr int8_t StatusCodeRhadronMax{109};             // R-hadrons (after hadronization) have status code <= 109
   static constexpr int PdgQuarkMax{8};                           // largest quark PDG code; o2-linter: disable=pdg/explicit-code (t' does not have a named constant.)
   static constexpr int PdgBosonMin{PDG_t::kGluon};               // smallest boson (gauge or H) PDG code
   static constexpr int PdgBosonMax{37};                          // largest boson (gauge or H) PDG code; o2-linter: disable=pdg/explicit-code (H+ does not have a named constant.)
@@ -1059,6 +1064,7 @@ struct RecoDecay {
     while (arrayIds[-stage].size() > 0) {
       // vector of mother indices for the current stage
       std::vector<int64_t> arrayIdsStage{};
+      std::vector<int64_t> motherIds{};
       for (auto iPart : arrayIds[-stage]) { // check all the particles that were the mothers at the previous stage, o2-linter: disable=const-ref-in-for-loop (int elements)
         auto particleMother = particlesMC.rawIteratorAt(iPart - particlesMC.offset());
         if (particleMother.has_mothers()) {
@@ -1072,8 +1078,29 @@ struct RecoDecay {
             }
           }
 
-          for (auto iMother = particleMother.mothersIds().front(); iMother <= particleMother.mothersIds().back(); ++iMother) { // loop over the mother particles of the analysed particle
-            if (std::find(arrayIdsStage.begin(), arrayIdsStage.end(), iMother) != arrayIdsStage.end()) {                       // if a mother is still present in the vector, do not check it again
+          if (particleMother.mothersIds().size() == 2) {
+            if (particleMother.mothersIds().front() == particleMother.mothersIds().back()) {
+              motherIds.push_back(particleMother.mothersIds().front());
+            } else if (particleMother.mothersIds().front() < particleMother.mothersIds().back()) {
+              auto absStatusCode = std::abs(particleMother.getGenStatusCode());
+              if ((absStatusCode >= StatusCodePrimaryMin && absStatusCode <= StatusCodePrimaryMax) || (absStatusCode >= StatusCodeRhadronMin && absStatusCode <= StatusCodeRhadronMax)) {
+                std::iota(motherIds.begin(), motherIds.end(), particleMother.mothersIds().front());
+              } else {
+                motherIds.push_back(particleMother.mothersIds().front());
+                motherIds.push_back(particleMother.mothersIds().back());
+              }
+            } else if (particleMother.mothersIds().front() > particleMother.mothersIds().back()) {
+              if (particleMother.mothersIds().back() != 0) {
+                motherIds.push_back(particleMother.mothersIds().back());                
+              }
+              motherIds.push_back(particleMother.mothersIds().front());                
+            }
+          } else if (particleMother.mothersIds().size() == 1) {
+            motherIds.push_back(particleMother.mothersIds().front());
+          }
+
+          for (auto const& iMother : motherIds) {                                                         // loop over the mother particles of the analysed particle
+            if (std::find(arrayIdsStage.begin(), arrayIdsStage.end(), iMother) != arrayIdsStage.end()) {  // if a mother is still present in the vector, do not check it again
               continue;
             }
             auto mother = particlesMC.rawIteratorAt(iMother - particlesMC.offset());
