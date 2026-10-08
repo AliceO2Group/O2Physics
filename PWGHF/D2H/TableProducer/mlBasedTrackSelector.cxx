@@ -151,8 +151,8 @@ constexpr TrackMlRole trackRoles3Prongs[NChannels3Prong][NMassHypos][N3Prongs] =
 
 constexpr double PtMaxModel = 1.e10;
 
-constexpr uint32_t MaskSameSignAny = (1u << RolePionD0) | (1u << RolePionDplus) | (1u << RolePionDs) | (1u << RoleKaonDs) | (1u << RoleSoftPiDstar);
-constexpr uint32_t MaskOppSignAny = (1u << RoleKaonD0) | (1u << RoleKaonDplus) | (1u << RoleKaonDs);
+constexpr uint32_t MaskSameSignAny = (1u << RolePionD0) | (1u << RoleKaonD0) | (1u << RolePionDplus) | (1u << RolePionDs) | (1u << RoleKaonDs) | (1u << RoleSoftPiDstar);
+constexpr uint32_t MaskOppSignAny = (1u << RolePionD0) | (1u << RoleKaonD0) | (1u << RoleKaonDplus) | (1u << RoleKaonDs);
 
 /// Where the combinatorics spends its time, accumulated in seconds into hTiming.
 enum TimingStep {
@@ -349,25 +349,25 @@ struct HfTrackSelectorTagSelTracks {
     Configurable<float> ptMinSoftPi{"ptMinSoftPi", 0.1f, "min. soft pion track pT entering the charm combinatorics"};
     Configurable<bool> enableTiming{"enableTiming", false, "fill hTiming with the CPU of the feature building and of each model evaluation (adds two clock reads per call)"};
     // D0 model
-    Configurable<bool> applyMlD0{"applyMlD0", true, "evaluate the D0 track model"};
+    Configurable<bool> applyMlD0{"applyMlD0", false, "evaluate the D0 track model"};
     Configurable<std::string> onnxFileNameD0{"onnxFileNameD0", "ModelHandler_D0Tracks.onnx", "ONNX file name of the D0 track model"};
     Configurable<std::vector<std::string>> inputFeaturesD0{"inputFeaturesD0", std::vector<std::string>{"pt", "eta", "dcaXY", "dcaZ", "sigmaDcaXY", "sigmaDcaZ", "normDcaXY", "normDcaZ", "signed1Pt", "tgl", "sign", "isPvContributor", "itsNCls", "itsNClsInnerBarrel", "itsChi2NCl", "tpcNClsFound", "tpcCrossedRowsOverFindableCls", "tpcChi2NCl", "tpcFractionSharedCls", "tpcNSigmaPi", "tpcNSigmaKa"}, "input features of the D0 model, in the order it expects"};
     Configurable<double> thresholdScorePionD0{"thresholdScorePionD0", 0., "min. D0 pion-class score"};
     Configurable<double> thresholdScoreKaonD0{"thresholdScoreKaonD0", 0., "min. D0 kaon-class score"};
     // D+ model
-    Configurable<bool> applyMlDplus{"applyMlDplus", true, "evaluate the D+ track model"};
+    Configurable<bool> applyMlDplus{"applyMlDplus", false, "evaluate the D+ track model"};
     Configurable<std::string> onnxFileNameDplus{"onnxFileNameDplus", "ModelHandler_DplusTracks.onnx", "ONNX file name of the D+ track model"};
     Configurable<std::vector<std::string>> inputFeaturesDplus{"inputFeaturesDplus", std::vector<std::string>{"pt", "eta", "dcaXY", "dcaZ", "sigmaDcaXY", "sigmaDcaZ", "normDcaXY", "normDcaZ", "signed1Pt", "tgl", "sign", "isPvContributor", "itsNCls", "itsNClsInnerBarrel", "itsChi2NCl", "tpcNClsFound", "tpcCrossedRowsOverFindableCls", "tpcChi2NCl", "tpcFractionSharedCls", "tpcNSigmaPi", "tpcNSigmaKa"}, "input features of the D+ model, in the order it expects"};
     Configurable<double> thresholdScorePionDplus{"thresholdScorePionDplus", 0., "min. D+ pion-class score"};
     Configurable<double> thresholdScoreKaonDplus{"thresholdScoreKaonDplus", 0., "min. D+ kaon-class score"};
     // Ds model
-    Configurable<bool> applyMlDs{"applyMlDs", true, "evaluate the Ds track model"};
+    Configurable<bool> applyMlDs{"applyMlDs", false, "evaluate the Ds track model"};
     Configurable<std::string> onnxFileNameDs{"onnxFileNameDs", "ModelHandler_DsTracks.onnx", "ONNX file name of the Ds track model"};
     Configurable<std::vector<std::string>> inputFeaturesDs{"inputFeaturesDs", std::vector<std::string>{"pt", "eta", "dcaXY", "dcaZ", "sigmaDcaXY", "sigmaDcaZ", "normDcaXY", "normDcaZ", "signed1Pt", "tgl", "sign", "isPvContributor", "itsNCls", "itsNClsInnerBarrel", "itsChi2NCl", "tpcNClsFound", "tpcCrossedRowsOverFindableCls", "tpcChi2NCl", "tpcFractionSharedCls", "tpcNSigmaPi", "tpcNSigmaKa"}, "input features of the Ds model, in the order it expects"};
     Configurable<double> thresholdScorePionDs{"thresholdScorePionDs", 0., "min. Ds pion-class score"};
     Configurable<double> thresholdScoreKaonDs{"thresholdScoreKaonDs", 0., "min. Ds kaon-class score"};
     // D* model
-    Configurable<bool> applyMlDstar{"applyMlDstar", true, "evaluate the D* track model"};
+    Configurable<bool> applyMlDstar{"applyMlDstar", false, "evaluate the D* track model"};
     Configurable<std::string> onnxFileNameDstar{"onnxFileNameDstar", "ModelHandler_DstarTracks.onnx", "ONNX file name of the D* track model"};
     Configurable<std::vector<std::string>> inputFeaturesDstar{"inputFeaturesDstar", std::vector<std::string>{"pt", "eta", "dcaXY", "dcaZ", "sigmaDcaXY", "sigmaDcaZ", "normDcaXY", "normDcaZ", "signed1Pt", "tgl", "sign", "isPvContributor", "itsNCls", "itsNClsInnerBarrel", "itsChi2NCl", "tpcNClsFound", "tpcCrossedRowsOverFindableCls", "tpcChi2NCl", "tpcFractionSharedCls", "tpcNSigmaPi", "tpcNSigmaKa"}, "input features of the D* model, in the order it expects"};
     Configurable<double> thresholdScorePionDstar{"thresholdScorePionDstar", 0., "min. D* pion-class score"};
@@ -439,6 +439,7 @@ struct HfTrackSelectorTagSelTracks {
   /// \param features are the input feature names, in the order the model expects
   /// \param thrPion, thrKaon are the score thresholds
   /// \param name is used in the log message
+  template<bool IsBinaryModel = false>
   void configureModel(HfTrackModel& model,
                       std::string const& onnxFile,
                       std::string const& ccdbPath,
@@ -452,7 +453,7 @@ struct HfTrackSelectorTagSelTracks {
 
     const std::vector<double> binsPtSingle{0., PtMaxModel};
     const std::vector<std::string> onnxFiles{onnxFile};
-    const auto nOut = static_cast<std::size_t>(HfTrackMlClass::NClasses);
+    const auto nOut = IsBinaryModel ? static_cast<std::size_t>(2) : static_cast<std::size_t>(HfTrackMlClass::NClasses);
     const std::vector<int> cutDir(nOut, o2::cuts_ml::CutDirection::CutNot);
     const std::vector<double> dummyCutValues(nOut, 0.);
     const o2::framework::LabeledArray<double> dummyCuts{dummyCutValues.data(), 1u, static_cast<uint32_t>(nOut), {}, {}};
@@ -483,21 +484,21 @@ struct HfTrackSelectorTagSelTracks {
     }
 
     if (config.applyMlD0) {
-      configureModel(models2Prong[ChannelD0ToPiK], config.onnxFileNameD0, config.mlModelPathCcdbD0, config.inputFeaturesD0,
+      configureModel<false>(models2Prong[ChannelD0ToPiK], config.onnxFileNameD0, config.mlModelPathCcdbD0, config.inputFeaturesD0,
                      config.thresholdScorePionD0, config.thresholdScoreKaonD0, "D0 track model");
     }
     if (config.applyMlDplus) {
-      configureModel(models3Prong[ChannelDplusToPiKPi], config.onnxFileNameDplus, config.mlModelPathCcdbDplus, config.inputFeaturesDplus,
+      configureModel<false>(models3Prong[ChannelDplusToPiKPi], config.onnxFileNameDplus, config.mlModelPathCcdbDplus, config.inputFeaturesDplus,
                      config.thresholdScorePionDplus, config.thresholdScoreKaonDplus, "D+ track model");
     }
     if (config.applyMlDs) {
-      configureModel(models3Prong[ChannelDsToKKPi], config.onnxFileNameDs, config.mlModelPathCcdbDs, config.inputFeaturesDs,
+      configureModel<false>(models3Prong[ChannelDsToKKPi], config.onnxFileNameDs, config.mlModelPathCcdbDs, config.inputFeaturesDs,
                      config.thresholdScorePionDs, config.thresholdScoreKaonDs, "Ds track model");
     }
     if (config.applyMlDstar) {
       double thresholdScoreKaonDstar = 0; // D* model has no kaon score, but the configureModel() function expects a value
-      configureModel(modelSoftPiDstar, config.onnxFileNameDstar, config.mlModelPathCcdbDstar, config.inputFeaturesDstar,
-                     config.thresholdScorePionDstar, thresholdScoreKaonDstar, "D* track model");
+      configureModel<true>(modelSoftPiDstar, config.onnxFileNameDstar, config.mlModelPathCcdbDstar, config.inputFeaturesDstar,
+                           config.thresholdScorePionDstar, thresholdScoreKaonDstar, "D* track model");
     }
     if (!models2Prong[ChannelD0ToPiK].enabled &&
         !models3Prong[ChannelDplusToPiKPi].enabled &&
@@ -613,10 +614,11 @@ struct HfTrackSelectorTagSelTracks {
   /// \param scores is filled with (background, pion-role, kaon-role); -1 if not evaluated
   /// \param isSelPion, isSelKaon are filled with the threshold decisions
   /// \return true if the model was actually evaluated
+  template<size_t NClasses>
   bool evaluateModel(HfTrackModel& model, HfTrackMlFeatures const& features,
-                     std::array<float, 3>& scores, bool& isSelPion, bool& isSelKaon)
+                     std::array<float, NClasses>& scores, bool& isSelPion, bool& isSelKaon)
   {
-    scores = {-1.f, -1.f, -1.f};
+    scores.fill(-1.f);
     isSelPion = false;
     isSelKaon = false;
     if (!model.enabled) {
@@ -625,13 +627,15 @@ struct HfTrackSelectorTagSelTracks {
     auto inputFeatures = model.response.getInputFeatures(features);
     // one model for the whole pT range, so the bin index is always 0
     const auto output = model.response.getModelOutput(inputFeatures, 0);
-    if (output.size() != scores.size()) {
-      LOGP(fatal, "the model emitted {} scores, expected {}: only 3-class (bkg/pi/K) models are supported for D0, D+, Ds, only 2-class models are supported for D* candidates", output.size(), scores.size());
+    if (output.size() != NClasses) {
+      LOGP(fatal, "the model emitted {} scores, expected {}: only 3-class (bkg/pi/K) models are supported for D0, D+, Ds, only 2-class models are supported for D* candidates", output.size(), NClasses);
     }
     std::copy(output.begin(), output.end(), scores.begin());
 
     isSelPion = scores[1] > model.thresholdPion;
-    isSelKaon = scores[2] > model.thresholdKaon;
+    if constexpr (NClasses > 2) {
+      isSelKaon = scores[2] > model.thresholdKaon;
+    }
     return true;
   }
 
@@ -683,6 +687,7 @@ struct HfTrackSelectorTagSelTracks {
       }
 
       std::array<float, 3> scores{};
+      std::array<float, 2> scoresSoftPi{};
       bool isSelPion{false}, isSelKaon{false};
       bool from2Prong{false}, from3Prong{false}, fromDstar{false};
 
@@ -692,7 +697,7 @@ struct HfTrackSelectorTagSelTracks {
         }
 
         tStart = tickIf(doTiming);
-        const bool evaluatedDstar = evaluateModel(modelSoftPiDstar, features, scores, isSelPion, isSelKaon);
+        const bool evaluatedDstar = evaluateModel(modelSoftPiDstar, features, scoresSoftPi, isSelPion, isSelKaon);
         if (doTiming) {
           timing[TrackTimeModelDstar] += elapsedSeconds(tStart);
         }
@@ -702,7 +707,7 @@ struct HfTrackSelectorTagSelTracks {
             fromDstar = true;
           }
           if (config.fillHistograms) {
-            registry.fill(HIST("hScoreSoftPiDstar"), features.pt, scores[1]);
+            registry.fill(HIST("hScoreSoftPiDstar"), features.pt, scoresSoftPi[1]);
           }
         }
       }
@@ -856,6 +861,7 @@ struct HfMlBasedTrackSelector {
   struct : ConfigurableGroup {
     Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
     Configurable<bool> do2Prongs{"do2Prongs", true, "store 2-prong candidates"};
+    Configurable<bool> do3Prongs{"do3Prongs", true, "store 3-prong candidates"};
     Configurable<bool> doDstar{"doDstar", true, "store D* candidates"};
     // preselection
     Configurable<double> ptTolerance{"ptTolerance", 0.1, "pT tolerance in GeV/c for applying preselections before vertex reconstruction"};
@@ -906,7 +912,7 @@ struct HfMlBasedTrackSelector {
   // cuts and pT binning, one entry per channel
   std::array<LabeledArray<double>, NChannels2Prong> cut2Prong{};
   std::array<std::vector<double>, NChannels2Prong> binsPt2Prong{};
-  LabeledArray<double> cutDstar{};
+  LabeledArray<double> cutsDstar{};
   std::vector<double> binsPtDstar{};
   std::array<LabeledArray<double>, NChannels3Prong> cut3Prong{};
   std::array<std::vector<double>, NChannels3Prong> binsPt3Prong{};
@@ -963,6 +969,9 @@ struct HfMlBasedTrackSelector {
     if (!doprocessCandidates) {
       return;
     }
+    if (!config.do2Prongs && !config.do3Prongs && !config.doDstar) {
+      LOGP(fatal, "At least one of do2Prongs, do3Prongs or doDstar must be true!");
+    }
     doTiming = config.enableTiming && config.fillHistograms;
 
     arrMass2Prong[ChannelD0ToPiK] = std::array{std::array{MassPiPlus, MassKPlus},
@@ -977,7 +986,7 @@ struct HfMlBasedTrackSelector {
     // cuts retrieved by json, in the order of Channel3Prong
     cut2Prong = {config.cutsD0ToPiK};
     binsPt2Prong = {config.binsPtD0ToPiK};
-    cutDstar = {config.cutsDstarToD0Pi};
+    cutsDstar = {config.cutsDstarToD0Pi};
     binsPtDstar = {config.binsPtDstarToD0Pi};
 
     // cuts retrieved by json, in the order of Channel3Prong
@@ -1036,7 +1045,7 @@ struct HfMlBasedTrackSelector {
       registry.add("hVtx2ProngZ", "2-prong candidates;#it{z}_{sec. vtx.} (cm);entries", {HistType::kTH1D, {{1000, -20., 20.}}});
       registry.add("hNCand2Prong", "2-prong candidates preselected;# of candidates;entries", {HistType::kTH1D, {axisNumCands}});
       registry.add("hNCand2ProngVsNTracks", "2-prong candidates preselected;# of selected tracks;# of candidates;entries", {HistType::kTH2D, {axisNumTracks, axisNumCands}});
-      registry.add("hMassD0ToPiK", "D^{0} candidates;inv. mass (#pi K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
+      registry.add("hMassD0ToPiK", "D^{0} candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
       registry.add("hVtx3ProngX", "3-prong candidates;#it{x}_{sec. vtx.} (cm);entries", {HistType::kTH1D, {{1000, -2., 2.}}});
       registry.add("hVtx3ProngY", "3-prong candidates;#it{y}_{sec. vtx.} (cm);entries", {HistType::kTH1D, {{1000, -2., 2.}}});
       registry.add("hVtx3ProngZ", "3-prong candidates;#it{z}_{sec. vtx.} (cm);entries", {HistType::kTH1D, {{1000, -20., 20.}}});
@@ -1406,10 +1415,12 @@ struct HfMlBasedTrackSelector {
   /// \param whichHypo information of the mass hypoteses that were selected
   /// \param isSelected is a bitmap with selection outcome
   /// \param pt2Prong is the pt of the 2-prong candidate
-  // void applySelection2Prong(const T1& pVecCand, const T2& secVtx, const T3& primVtx, T4& cutStatus, auto& isSelected)
   template <typename T1, typename T2, typename T3, typename T4, typename T5>
   void applySelection2Prong(const T1& pVecCand, T2 const& prong0, T2 const& prong1, const T3& secVtx, const T4& primVtx, T5& whichHypo, auto& isSelected)
   {
+    if (isSelected == 0) {
+      return;
+    }
 
     const auto pt2Prong = RecoDecay::pt(pVecCand[0], pVecCand[1]);
     const auto impParProduct = prong0.dcaInfo[0] * prong1.dcaInfo[0];
@@ -1461,6 +1472,22 @@ struct HfMlBasedTrackSelector {
           CLRBIT(isSelected, iDecay2P);
         }
       }
+
+      // additional check for D0 to be used in D* finding
+      if (iDecay2P == ChannelD0ToPiK && config.doDstar && TESTBIT(isSelected, iDecay2P)) {
+        const auto binPtDstar = findBin(&binsPtDstar, pt2Prong * 1.2); // assuming the D* pT about 20% higher than the one of the D0 to be safe
+        if (binPtDstar >= 0) {
+          whichHypo[NChannels2Prong] = whichHypo[hf_cand_2prong::DecayType::D0ToPiK];
+          const double deltaMass = cutsDstar.get(binPtDstar, 1u);
+
+          if (TESTBIT(whichHypo[iDecay2P], 0) && (massHypos[0] > (MassD0 + deltaMass) * (MassD0 + deltaMass) || massHypos[0] < (MassD0 - deltaMass) * (MassD0 - deltaMass))) {
+            CLRBIT(whichHypo[NChannels2Prong], 0);
+          }
+          if (TESTBIT(whichHypo[iDecay2P], 1) && (massHypos[1] > (MassD0 + deltaMass) * (MassD0 + deltaMass) || massHypos[1] < (MassD0 - deltaMass) * (MassD0 - deltaMass))) {
+            CLRBIT(whichHypo[NChannels2Prong], 1);
+          }
+        }
+      }
     }
   }
 
@@ -1469,10 +1496,10 @@ struct HfMlBasedTrackSelector {
   /// \param prong0,1 are the track informations
   template <typename TProngInfo>
   void processPair(SelectedCollisions::iterator const& collision,
-                   TProngInfo const& prong0, TProngInfo const& prong1)
+                   TProngInfo const& prong0, TProngInfo const& prong1,
+                   std::array<int, NChannels2Prong>& whichHypo2Prong)
   {
     uint32_t isSelected2ProngCand = BIT(NChannels2Prong) - 1;
-    std::array<int, NChannels2Prong> whichHypo2Prong{};
     whichHypo2Prong.fill(BIT(NMassHypos) - 1); // 2 bits on, all mass hypotheses alive
 
     std::array<uint32_t, N2Prongs> isIdentifiedPid{prong0.mask, prong1.mask};
@@ -1508,8 +1535,12 @@ struct HfMlBasedTrackSelector {
       registry.fill(HIST("hVtx2ProngY"), secondaryVertex2[1]);
       registry.fill(HIST("hVtx2ProngZ"), secondaryVertex2[2]);
       const std::array arr2Mom{pvec0, pvec1};
-      registry.fill(HIST("hMassD0ToPiK"), RecoDecay::m(arr2Mom, arrMass2Prong[ChannelD0ToPiK][0]));
-      registry.fill(HIST("hMassD0ToPiK"), RecoDecay::m(arr2Mom, arrMass2Prong[ChannelD0ToPiK][1]));
+      if (TESTBIT(whichHypo2Prong[ChannelD0ToPiK], 0)) {
+        registry.fill(HIST("hMassD0ToPiK"), RecoDecay::m(arr2Mom, arrMass2Prong[ChannelD0ToPiK][0]));
+      }
+      if (TESTBIT(whichHypo2Prong[ChannelD0ToPiK], 1)) {
+        registry.fill(HIST("hMassD0ToPiK"), RecoDecay::m(arr2Mom, arrMass2Prong[ChannelD0ToPiK][1]));
+      }
     }
   }
 
@@ -1528,21 +1559,21 @@ struct HfMlBasedTrackSelector {
     const auto pt = RecoDecay::pt(pVecTrack0, pVecTrack1, pVecTrack2) + config.ptTolerance; // add tolerance because of no reco decay vertex
 
     // pT
-    const auto binPt = findBin(config.binsPtDstarToD0Pi, pt);
+    const auto binPt = findBin(&binsPtDstar, pt);
     // return immediately if it is outside the defined pT bins
     if (binPt == -1) {
       return;
     }
 
     // D0 mass
-    const double deltaMassD0 = config.cutsDstarToD0Pi->get(binPt, 1u); // 1u == deltaMassD0Index
+    const double deltaMassD0 = cutsDstar.get(binPt, 1u); // 1u == deltaMassD0Index
     const double invMassD0 = RecoDecay::m(arrMomD0, std::array{MassPiPlus, MassKPlus});
     if (std::abs(invMassD0 - MassD0) > deltaMassD0) {
       return;
     }
 
     // D*+ mass
-    const double maxDeltaMass = config.cutsDstarToD0Pi->get(binPt, 0u); // 0u == deltaMassIndex
+    const double maxDeltaMass = cutsDstar.get(binPt, 0u); // 0u == deltaMassIndex
     const double invMassDstar = RecoDecay::m(arrMom, std::array{MassPiPlus, MassKPlus, MassPiPlus});
     const double deltaMass = invMassDstar - invMassD0;
     if (deltaMass > maxDeltaMass) {
@@ -1600,13 +1631,21 @@ struct HfMlBasedTrackSelector {
   /// \param sameSignCache holds the prongs of the charge the candidate carries; its sameSign
   ///        list supplies the two same-sign slots
   /// \param oppSignCache holds the opposite charge; its oppSign list supplies the kaon slot
+  template <bool Store2Prongs>
   void runCombinatorics(SelectedCollisions::iterator const& collision,
                         HfProngCache const& sameSignCache, HfProngCache const& oppSignCache)
   {
+
+    bool store2Prongs = Store2Prongs && config.do2Prongs;
+    bool storeDstar = Store2Prongs && config.doDstar;
+
     const std::vector<int>& sameSignList = sameSignCache.sameSign;
     const std::vector<int>& oppSignList = oppSignCache.oppSign;
     constexpr std::size_t NSameSign3Prongs = N3Prongs - 1; // two of the three prongs carry the candidate charge
-    if ((!config.do2Prongs && !config.doDstar && sameSignList.size() < NSameSign3Prongs) || oppSignList.empty()) {
+    if (oppSignList.empty()) {
+      return;
+    }
+    if (!store2Prongs && !storeDstar && sameSignList.size() < NSameSign3Prongs) {
       return;
     }
     const auto tStartLoop = tickIf(doTiming);
@@ -1625,14 +1664,16 @@ struct HfMlBasedTrackSelector {
         if (!canBe2Prong && !canBe3Prong) {
           continue;
         }
-        if (!canBe3Prong && !config.do2Prongs && !config.doDstar) {
+        if (!canBe3Prong && !store2Prongs && !storeDstar) {
           continue;
         }
         ++counters[CountPairsCandidateOk];
 
         int lastFilledD0 = rowTrackIndexProng2.lastIndex();
         // optional 2-track vertex to skip the pair early
-        if (useTwoTrackVertex || config.do2Prongs || config.doDstar) {
+        bool do2ProngVertex = useTwoTrackVertex || store2Prongs || storeDstar;
+        std::array<int, NChannels2Prong + 1> whichHypo2Prong{}; // Add one more for D0 from D* selection
+        if (do2ProngVertex) {
           const auto tStart2Prong = tickIf(doTiming);
           ++counters[CountFit2Prong];
           int nVtxFrom2ProngFitter = 0;
@@ -1648,43 +1689,65 @@ struct HfMlBasedTrackSelector {
             ++counters[CountPairsRejected2P];
             continue;
           }
-          const auto tStartD0 = tickIf(doTiming);
-          if (config.do2Prongs || config.doDstar) {
-            processPair(collision, prong1, prongOpp);
+          if (store2Prongs || storeDstar) {
+            const auto tStartD0 = tickIf(doTiming);
+            processPair(collision, prong1, prongOpp, whichHypo2Prong);
+            if (doTiming) {
+              timing[TimeProcessD0] += elapsedSeconds(tStartD0);
+            }
           }
-          if (doTiming) {
-            timing[TimeProcessD0] += elapsedSeconds(tStartD0);
+          if (useTwoTrackVertex) {
+            isTwoProngVtxGoodFor3Prongs = isTwoTrackVertexSelectedFor3Prongs(df2.getPCACandidate(), pvCoord2Prong, df2);
           }
-          isTwoProngVtxGoodFor3Prongs = isTwoTrackVertexSelectedFor3Prongs(df2.getPCACandidate(), pvCoord2Prong, df2);
         }
 
         // D* -> D0 pi+ candidates
-        const auto tStartDstar = tickIf(doTiming);
-        if (config.doDstar &&
+         const auto tStartDstar = tickIf(doTiming);
+        if (storeDstar &&
             lastFilledD0 != rowTrackIndexProng2.lastIndex()) { // we have a new D0 candidate, so we can try to form a D* candidate
 
           lastFilledD0 = rowTrackIndexProng2.lastIndex();
           // Loop over all tracks to search for soft pions
-          for (std::size_t iSoftPi = 0; iSoftPi < sameSignList.size(); ++iSoftPi) {
-            const auto& prongSoftPi = sameSignCache.prongs[sameSignList[iSoftPi]];
+          if (TESTBIT(whichHypo2Prong[NChannels2Prong], 0)) { // D0 -> pi+ K-, loop on positive soft pions
+            for (std::size_t iSoftPi = 0; iSoftPi < sameSignList.size(); ++iSoftPi) {
+              const auto& prongSoftPi = sameSignCache.prongs[sameSignList[iSoftPi]];
 
-            if (iSoftPi == i1) {
-              continue; // skip the same track
-            }
-            if (!TESTBIT(prongSoftPi.mask, RoleSoftPiDstar)) {
-              continue; // skip if the second same-sign prong is not a soft pion candidate
-            }
-            ++counters[CountDstarsEnumerated];
+              if (iSoftPi == static_cast<std::size_t>(i1)) {
+                continue; // skip the same track
+              }
+              if (!TESTBIT(prongSoftPi.mask, RoleSoftPiDstar)) {
+                continue; // skip if the second same-sign prong is not a soft pion candidate
+              }
+              ++counters[CountDstarsEnumerated];
 
-            // Update the index of the last filled D0 candidate
-            processDstar(collision, lastFilledD0, prongSoftPi.globalIndex,
-                         prong1.pVec, prongOpp.pVec, prongSoftPi.pVec);
+              // Update the index of the last filled D0 candidate
+              processDstar(collision, lastFilledD0, prongSoftPi.globalIndex,
+                           prong1.pVec, prongOpp.pVec, prongSoftPi.pVec);
+            }
+          }
+          if (TESTBIT(whichHypo2Prong[NChannels2Prong], 1)) { // D0bar -> K+ pi-, loop on negative soft pions
+            for (std::size_t iSoftPi = 0; iSoftPi < oppSignList.size(); ++iSoftPi) {
+              const auto& prongSoftPi = oppSignCache.prongs[oppSignList[iSoftPi]];
+
+              if (oppSignList[iSoftPi] == iOpp) {
+                continue; // skip the same track
+              }
+              if (!TESTBIT(prongSoftPi.mask, RoleSoftPiDstar)) {
+                continue; // skip if the second same-sign prong is not a soft pion candidate
+              }
+              ++counters[CountDstarsEnumerated];
+
+              // Update the index of the last filled D0 candidate
+              processDstar(collision, lastFilledD0, prongSoftPi.globalIndex,
+                           prong1.pVec, prongOpp.pVec, prongSoftPi.pVec);
+            }
           }
         }
         if (doTiming) {
           timing[TimeProcessDstar] += elapsedSeconds(tStartDstar);
         }
 
+        if (!config.do3Prongs) { continue; }
         if (!canBe3Prong) { continue; }
         if (!isTwoProngVtxGoodFor3Prongs) {
           ++counters[CountPairsRejected2P];
@@ -1743,8 +1806,8 @@ struct HfMlBasedTrackSelector {
 
       // D+ -> pi+ K- pi+ / Ds -> K+ K- pi+ and their charge conjugates: the same-sign pair carries
       // the charge of the candidate, the opposite-sign prong is the kaon in both channels
-      runCombinatorics(collision, cachePos, cacheNeg);
-      runCombinatorics(collision, cacheNeg, cachePos);
+      runCombinatorics<true>(collision, cachePos, cacheNeg);
+      runCombinatorics<false>(collision, cacheNeg, cachePos);
 
       nCand2 = rowTrackIndexProng2.lastIndex() - nCand2; // number of 2-prong candidates in this collision
       counters[CountPairsWritten] = nCand2;
