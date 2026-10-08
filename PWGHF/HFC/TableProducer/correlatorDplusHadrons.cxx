@@ -99,13 +99,12 @@ struct HfCorrelatorDplusHadronsDplusSelection {
                                  CandidatesDplusData const& candidates)
   {
     bool isSelColl = true;
-    bool isDplusFound = true;
+    bool isDplusFound = !doSelDplusCollision;
     bool isSel8 = true;
     bool isNosameBunchPileUp = true;
     if (doSelDplusCollision) {
       for (const auto& candidate : candidates) {
         if (std::abs(HfHelper::yDplus(candidate)) > yCandMax || candidate.pt() < ptCandMin) {
-          isDplusFound = false;
           continue;
         }
         isDplusFound = true;
@@ -127,7 +126,7 @@ struct HfCorrelatorDplusHadronsDplusSelection {
                                   CandidatesDplusMcRec const& candidates)
   {
     bool isSelColl = true;
-    bool isDplusFound = false;
+    bool isDplusFound = !doSelDplusCollision;
     bool isSel8 = true;
     bool isNosameBunchPileUp = true;
     if (doSelDplusCollision) {
