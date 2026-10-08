@@ -57,8 +57,8 @@ static const std::vector<std::string> labelsCutsBdt = {"BDT background", "BDT pr
 } // namespace bdtcuts
 
 enum class DmesonType {
-	D0,
-	Dplus
+  D0,
+  Dplus
 };
 
 // Declarations of various short names
@@ -143,9 +143,9 @@ struct taskJPsiHf {
         }
         if constexpr (TDmeson == DmesonType::Dplus) {
           minItsClsDmesDau = std::min({dmeson.numItsClsDmesProng0(), dmeson.numItsClsDmesProng1(), dmeson.numItsClsDmesProng2()});
-	        minTpcCrossRowsDmesDau = std::min({dmeson.numTpcCrossedRowsDmesProng0(), dmeson.numTpcCrossedRowsDmesProng1(), dmeson.numTpcCrossedRowsDmesProng2()});
-	        minPtDmesDau = std::min({dmeson.ptDmesProng0(), dmeson.ptDmesProng1(), dmeson.ptDmesProng2()});
-	        minAbsEtaDmesDau = std::min({std::abs(dmeson.etaDmesProng0()), std::abs(dmeson.etaDmesProng1()), std::abs(dmeson.etaDmesProng2())});
+          minTpcCrossRowsDmesDau = std::min({dmeson.numTpcCrossedRowsDmesProng0(), dmeson.numTpcCrossedRowsDmesProng1(), dmeson.numTpcCrossedRowsDmesProng2()});
+          minPtDmesDau = std::min({dmeson.ptDmesProng0(), dmeson.ptDmesProng1(), dmeson.ptDmesProng2()});
+          minAbsEtaDmesDau = std::min({std::abs(dmeson.etaDmesProng0()), std::abs(dmeson.etaDmesProng1()), std::abs(dmeson.etaDmesProng2())});
         }
 
         if constexpr (TDmeson == DmesonType::D0) {
