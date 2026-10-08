@@ -113,6 +113,18 @@ struct zdc2stagecalibration {
   // 4 sums of QxA,QyA,QxC,QyC. Feature 0 is unity, so its sum is N.
   static constexpr int kQRecenteringFlatnessNMoments = kQRecenteringMultidimNFeatures + kQRecenteringNComponents;
 
+  // Structured regression diagnostic basis. The existing 35 cubic features are
+  // kept unchanged and augmented with truncated-cubic 1D basis functions for
+  // time, Vx, Vy and Vz. The additional basis is intentionally overcomplete so
+  // that the final subset and regularisation can be chosen offline without
+  // another derivation pass.
+  static constexpr int kQRecenteringStructuredNKnots = 9;
+  static constexpr int kQRecenteringStructuredNFeatures = kQRecenteringMultidimNFeatures + 4 * kQRecenteringStructuredNKnots;
+  static constexpr int kQRecenteringStructuredNMatrixMoments = kQRecenteringStructuredNFeatures * (kQRecenteringStructuredNFeatures + 1) / 2;
+  static constexpr int kQRecenteringStructuredNMoments = kQRecenteringStructuredNMatrixMoments + kQRecenteringNComponents * kQRecenteringStructuredNFeatures + kQRecenteringNComponents;
+  // Per conditioning bin store sum(features), sum(Q) and sum(Q^2).
+  static constexpr int kQRecenteringStructuredFlatnessNMoments = kQRecenteringStructuredNFeatures + 2 * kQRecenteringNComponents;
+
   void init(o2::framework::InitContext&)
   {
     rctChecker.init(rctCut.cfgEvtRCTFlagCheckerLabel, rctCut.cfgEvtRCTFlagCheckerZDCCheck, rctCut.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
@@ -133,9 +145,11 @@ struct zdc2stagecalibration {
     AxisSpec qRecenteringMomentAxis = {kQRecenteringNMoments, 0.0, static_cast<double>(kQRecenteringNMoments), "regression moment"};
     AxisSpec qRecenteringMultidimMomentAxis = {kQRecenteringMultidimNMoments, 0.0, static_cast<double>(kQRecenteringMultidimNMoments), "multidimensional regression moment"};
     AxisSpec qRecenteringFlatnessMomentAxis = {kQRecenteringFlatnessNMoments, 0.0, static_cast<double>(kQRecenteringFlatnessNMoments), "flatness sufficient-statistic index"};
+    AxisSpec qRecenteringStructuredMomentAxis = {kQRecenteringStructuredNMoments, 0.0, static_cast<double>(kQRecenteringStructuredNMoments), "structured regression moment"};
+    AxisSpec qRecenteringStructuredFlatnessMomentAxis = {kQRecenteringStructuredFlatnessNMoments, 0.0, static_cast<double>(kQRecenteringStructuredFlatnessNMoments), "structured flatness sufficient-statistic index"};
     AxisSpec centralityAxis = {80, 0.0, 80.0, "centrality (%)"};
     AxisSpec resolutionCentralityAxis = {50, 0.0, 50.0, "centrality (%)"};
-    AxisSpec vertexXYAxis = {100, -0.5, 0.5, "vertex x/y (cm)"};
+    AxisSpec vertexXYAxis = {100, -0.1, 0.1, "vertex x/y (cm)"};
     AxisSpec vertexZAxis = {100, -10.0, 10.0, "vertex z (cm)"};
     AxisSpec qComponentAxis = {4, 0.0, 4.0, "Q component"};
     AxisSpec qCorrelationComponentAxis = {4, 0.0, 4.0, "A-C correlation component"};
@@ -213,6 +227,19 @@ struct zdc2stagecalibration {
       histos.add("QRecenteringCalibration/hFlatnessMomentsVx", "Flatness sufficient statistics vs v_{x};centrality (%);v_{x} (cm);statistic index", kTH3D, {centralityAxis, vertexXYAxis, qRecenteringFlatnessMomentAxis});
       histos.add("QRecenteringCalibration/hFlatnessMomentsVy", "Flatness sufficient statistics vs v_{y};centrality (%);v_{y} (cm);statistic index", kTH3D, {centralityAxis, vertexXYAxis, qRecenteringFlatnessMomentAxis});
       histos.add("QRecenteringCalibration/hFlatnessMomentsVz", "Flatness sufficient statistics vs v_{z};centrality (%);v_{z} (cm);statistic index", kTH3D, {centralityAxis, vertexZAxis, qRecenteringFlatnessMomentAxis});
+
+      // Additional train/validation sufficient statistics for the structured
+      // regression test. These do not modify the current 35-feature correction.
+      histos.add("QRecenteringCalibration/hRegressionMomentsStructuredTrain", "Structured Q recentering moments (train);centrality (%);moment index", kTH2D, {centralityAxis, qRecenteringStructuredMomentAxis});
+      histos.add("QRecenteringCalibration/hRegressionMomentsStructuredValidation", "Structured Q recentering moments (validation);centrality (%);moment index", kTH2D, {centralityAxis, qRecenteringStructuredMomentAxis});
+      histos.add("QRecenteringCalibration/hStructuredFlatnessMomentsTimeTrain", "Structured flatness statistics vs time (train);centrality (%);time from SOR (h);statistic index", kTH3D, {centralityAxis, timeAxis, qRecenteringStructuredFlatnessMomentAxis});
+      histos.add("QRecenteringCalibration/hStructuredFlatnessMomentsVxTrain", "Structured flatness statistics vs v_{x} (train);centrality (%);v_{x} (cm);statistic index", kTH3D, {centralityAxis, vertexXYAxis, qRecenteringStructuredFlatnessMomentAxis});
+      histos.add("QRecenteringCalibration/hStructuredFlatnessMomentsVyTrain", "Structured flatness statistics vs v_{y} (train);centrality (%);v_{y} (cm);statistic index", kTH3D, {centralityAxis, vertexXYAxis, qRecenteringStructuredFlatnessMomentAxis});
+      histos.add("QRecenteringCalibration/hStructuredFlatnessMomentsVzTrain", "Structured flatness statistics vs v_{z} (train);centrality (%);v_{z} (cm);statistic index", kTH3D, {centralityAxis, vertexZAxis, qRecenteringStructuredFlatnessMomentAxis});
+      histos.add("QRecenteringCalibration/hStructuredFlatnessMomentsTimeValidation", "Structured flatness statistics vs time (validation);centrality (%);time from SOR (h);statistic index", kTH3D, {centralityAxis, timeAxis, qRecenteringStructuredFlatnessMomentAxis});
+      histos.add("QRecenteringCalibration/hStructuredFlatnessMomentsVxValidation", "Structured flatness statistics vs v_{x} (validation);centrality (%);v_{x} (cm);statistic index", kTH3D, {centralityAxis, vertexXYAxis, qRecenteringStructuredFlatnessMomentAxis});
+      histos.add("QRecenteringCalibration/hStructuredFlatnessMomentsVyValidation", "Structured flatness statistics vs v_{y} (validation);centrality (%);v_{y} (cm);statistic index", kTH3D, {centralityAxis, vertexXYAxis, qRecenteringStructuredFlatnessMomentAxis});
+      histos.add("QRecenteringCalibration/hStructuredFlatnessMomentsVzValidation", "Structured flatness statistics vs v_{z} (validation);centrality (%);v_{z} (cm);statistic index", kTH3D, {centralityAxis, vertexZAxis, qRecenteringStructuredFlatnessMomentAxis});
     }
 
     histos.add("QRecenteringQA/pQBeforeVsCentrality", "Q before recentering vs centrality;centrality (%);Q component;<Q>", kTProfile2D, {centralityAxis, qComponentAxis});
@@ -372,6 +399,42 @@ struct zdc2stagecalibration {
             t2 * x, t2 * y, t2 * z, x2 * t, x2 * y, x2 * z,
             y2 * t, y2 * x, y2 * z, z2 * t, z2 * x, z2 * y,
             t * x * y, t * x * z, t * y * z, x * y * z};
+  }
+
+  std::array<double, kQRecenteringStructuredNFeatures> makeQRecenteringStructuredFeatures(float timeFromSOR, float vx, float vy, float vz) const
+  {
+    const auto baseFeatures = makeQRecenteringMultidimFeatures(timeFromSOR, vx, vy, vz);
+    std::array<double, kQRecenteringStructuredNFeatures> features{};
+
+    for (int i = 0; i < kQRecenteringMultidimNFeatures; ++i) {
+      features[i] = baseFeatures[i];
+    }
+
+    const double runHours = (eorTimestamp > sorTimestamp) ? static_cast<double>(eorTimestamp - sorTimestamp) * 1.e-3 / 3600.0 : static_cast<double>(cfgMaxRunHours.value);
+    const double t = (runHours > 0.0) ? (2.0 * static_cast<double>(timeFromSOR) / runHours - 1.0) : 0.0;
+    const double x = static_cast<double>(vx) / 0.1;
+    const double y = static_cast<double>(vy) / 0.1;
+    const double z = static_cast<double>(vz) / 10.0;
+
+    // Internal knots in the normalized [-1,1] coordinate. Together with the
+    // existing 1,u,u^2,u^3 terms this is a cubic regression-spline basis.
+    constexpr std::array<double, kQRecenteringStructuredNKnots> knots = {
+      -0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8};
+
+    int index = kQRecenteringMultidimNFeatures;
+    auto appendSplineTerms = [&](double value) {
+      for (int i = 0; i < kQRecenteringStructuredNKnots; ++i) {
+        const double delta = value - knots[i];
+        features[index++] = delta > 0.0 ? delta * delta * delta : 0.0;
+      }
+    };
+
+    appendSplineTerms(t);
+    appendSplineTerms(x);
+    appendSplineTerms(y);
+    appendSplineTerms(z);
+
+    return features;
   }
 
   using MyCollisions = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::Mults, o2::aod::FT0sCorrected, o2::aod::CentFT0Cs>;
@@ -768,6 +831,91 @@ struct zdc2stagecalibration {
           histos.fill(HIST("QRecenteringCalibration/hFlatnessMomentsVx"), centrality, vx, index + 0.5, value);
           histos.fill(HIST("QRecenteringCalibration/hFlatnessMomentsVy"), centrality, vy, index + 0.5, value);
           histos.fill(HIST("QRecenteringCalibration/hFlatnessMomentsVz"), centrality, vz, index + 0.5, value);
+        }
+
+        // Structured regression moments. Events are deterministically split
+        // 50/50 using a mixed global-BC key, avoiding any dependence on the
+        // regression variables themselves.
+        const auto structuredFeatures = makeQRecenteringStructuredFeatures(timeFromSOR, vx, vy, vz);
+        uint64_t splitKey = globalBC + 0x9e3779b97f4a7c15ULL;
+        splitKey = (splitKey ^ (splitKey >> 30)) * 0xbf58476d1ce4e5b9ULL;
+        splitKey = (splitKey ^ (splitKey >> 27)) * 0x94d049bb133111ebULL;
+        splitKey = splitKey ^ (splitKey >> 31);
+        const bool isValidation = (splitKey & 1ULL) != 0ULL;
+
+        int structuredMoment = 0;
+        for (int i = 0; i < kQRecenteringStructuredNFeatures; ++i) {
+          for (int j = i; j < kQRecenteringStructuredNFeatures; ++j) {
+            const double value = structuredFeatures[i] * structuredFeatures[j];
+            if (isValidation) {
+              histos.fill(HIST("QRecenteringCalibration/hRegressionMomentsStructuredValidation"), centrality, structuredMoment + 0.5, value);
+            } else {
+              histos.fill(HIST("QRecenteringCalibration/hRegressionMomentsStructuredTrain"), centrality, structuredMoment + 0.5, value);
+            }
+            ++structuredMoment;
+          }
+        }
+
+        for (int component = 0; component < kQRecenteringNComponents; ++component) {
+          for (int i = 0; i < kQRecenteringStructuredNFeatures; ++i) {
+            const int index = kQRecenteringStructuredNMatrixMoments + component * kQRecenteringStructuredNFeatures + i;
+            const double value = structuredFeatures[i] * qValues[component];
+            if (isValidation) {
+              histos.fill(HIST("QRecenteringCalibration/hRegressionMomentsStructuredValidation"), centrality, index + 0.5, value);
+            } else {
+              histos.fill(HIST("QRecenteringCalibration/hRegressionMomentsStructuredTrain"), centrality, index + 0.5, value);
+            }
+          }
+
+          const int q2Index = kQRecenteringStructuredNMatrixMoments + kQRecenteringNComponents * kQRecenteringStructuredNFeatures + component;
+          const double q2Value = qValues[component] * qValues[component];
+          if (isValidation) {
+            histos.fill(HIST("QRecenteringCalibration/hRegressionMomentsStructuredValidation"), centrality, q2Index + 0.5, q2Value);
+          } else {
+            histos.fill(HIST("QRecenteringCalibration/hRegressionMomentsStructuredTrain"), centrality, q2Index + 0.5, q2Value);
+          }
+        }
+
+        for (int i = 0; i < kQRecenteringStructuredNFeatures; ++i) {
+          const double value = structuredFeatures[i];
+          if (isValidation) {
+            histos.fill(HIST("QRecenteringCalibration/hStructuredFlatnessMomentsTimeValidation"), centrality, timeFromSOR, i + 0.5, value);
+            histos.fill(HIST("QRecenteringCalibration/hStructuredFlatnessMomentsVxValidation"), centrality, vx, i + 0.5, value);
+            histos.fill(HIST("QRecenteringCalibration/hStructuredFlatnessMomentsVyValidation"), centrality, vy, i + 0.5, value);
+            histos.fill(HIST("QRecenteringCalibration/hStructuredFlatnessMomentsVzValidation"), centrality, vz, i + 0.5, value);
+          } else {
+            histos.fill(HIST("QRecenteringCalibration/hStructuredFlatnessMomentsTimeTrain"), centrality, timeFromSOR, i + 0.5, value);
+            histos.fill(HIST("QRecenteringCalibration/hStructuredFlatnessMomentsVxTrain"), centrality, vx, i + 0.5, value);
+            histos.fill(HIST("QRecenteringCalibration/hStructuredFlatnessMomentsVyTrain"), centrality, vy, i + 0.5, value);
+            histos.fill(HIST("QRecenteringCalibration/hStructuredFlatnessMomentsVzTrain"), centrality, vz, i + 0.5, value);
+          }
+        }
+
+        for (int component = 0; component < kQRecenteringNComponents; ++component) {
+          const int qIndex = kQRecenteringStructuredNFeatures + component;
+          const int q2Index = kQRecenteringStructuredNFeatures + kQRecenteringNComponents + component;
+          const double qValue = qValues[component];
+          const double q2Value = qValue * qValue;
+
+          if (isValidation) {
+            histos.fill(HIST("QRecenteringCalibration/hStructuredFlatnessMomentsTimeValidation"), centrality, timeFromSOR, qIndex + 0.5, qValue);
+            histos.fill(HIST("QRecenteringCalibration/hStructuredFlatnessMomentsVxValidation"), centrality, vx, qIndex + 0.5, qValue);
+            histos.fill(HIST("QRecenteringCalibration/hStructuredFlatnessMomentsVyValidation"), centrality, vy, qIndex + 0.5, qValue);
+            histos.fill(HIST("QRecenteringCalibration/hStructuredFlatnessMomentsVzValidation"), centrality, vz, qIndex + 0.5, qValue);
+            histos.fill(HIST("QRecenteringCalibration/hStructuredFlatnessMomentsTimeValidation"), centrality, timeFromSOR, q2Index + 0.5, q2Value);
+            histos.fill(HIST("QRecenteringCalibration/hStructuredFlatnessMomentsVxValidation"), centrality, vx, q2Index + 0.5, q2Value);
+            histos.fill(HIST("QRecenteringCalibration/hStructuredFlatnessMomentsVyValidation"), centrality, vy, q2Index + 0.5, q2Value);
+            histos.fill(HIST("QRecenteringCalibration/hStructuredFlatnessMomentsVzValidation"), centrality, vz, q2Index + 0.5, q2Value);
+          } else {
+            histos.fill(HIST("QRecenteringCalibration/hStructuredFlatnessMomentsTimeTrain"), centrality, timeFromSOR, qIndex + 0.5, qValue);
+            histos.fill(HIST("QRecenteringCalibration/hStructuredFlatnessMomentsVxTrain"), centrality, vx, qIndex + 0.5, qValue);
+            histos.fill(HIST("QRecenteringCalibration/hStructuredFlatnessMomentsVyTrain"), centrality, vy, qIndex + 0.5, qValue);
+            histos.fill(HIST("QRecenteringCalibration/hStructuredFlatnessMomentsVzTrain"), centrality, vz, qIndex + 0.5, qValue);
+            histos.fill(HIST("QRecenteringCalibration/hStructuredFlatnessMomentsTimeTrain"), centrality, timeFromSOR, q2Index + 0.5, q2Value);
+            histos.fill(HIST("QRecenteringCalibration/hStructuredFlatnessMomentsVxTrain"), centrality, vx, q2Index + 0.5, q2Value);
+            histos.fill(HIST("QRecenteringCalibration/hStructuredFlatnessMomentsVyTrain"), centrality, vy, q2Index + 0.5, q2Value);
+            histos.fill(HIST("QRecenteringCalibration/hStructuredFlatnessMomentsVzTrain"), centrality, vz, q2Index + 0.5, q2Value);
+          }
         }
       }
     }
