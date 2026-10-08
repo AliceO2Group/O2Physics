@@ -86,25 +86,33 @@ struct TreeCreatorPidTpcDiagnostics {
   Configurable<bool> treatLimitedAcceptanceAsBad{"treatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
   Configurable<bool> requireGoodRct{"requireGoodRct", false, "require good detector flag in run condtion table"};
 
-#define DECLARE_PARTICLE_WISE_CONFIGURABLES(ParticleNameShort, ParticleNameLong)                                                                                                                                                                          \
-  Configurable<float> cutTpcInnerParameterMin##ParticleNameLong{"cutTpcInnerParameterMin" #ParticleNameLong, 0.f, "Lower-value cut on tpcInnerParam for " #ParticleNameLong};   /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
-  Configurable<float> cutTpcInnerParameterMax##ParticleNameLong{"cutTpcInnerParameterMax" #ParticleNameLong, 999.f, "Upper-value cut on tpcInnerParam for " #ParticleNameLong}; /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
-  Configurable<float> cutNSigmaTpcAbs##ParticleNameLong{"cutNSigmaTpcAbs" #ParticleNameLong, 999.f, "Cut on absolute value of nSigmaTpc for " #ParticleNameLong};               // o2-linter: disable=name/configurable (Configurable defined in macro)
+  struct ParticleWiseCuts : ConfigurableGroup {
 
-  DO_FOR_ALL_PARTICLES(DECLARE_PARTICLE_WISE_CONFIGURABLES)
+#define DECLARE_PARTICLE_WISE_CONFIGURABLES(ParticleNameShort, ParticleNameLong)                                                                                                                                                                             \
+  Configurable<float> cutTpcInnerParameterMin##ParticleNameLong{"cutTpcInnerParameterMin" #ParticleNameLong, 0.f, "Lower-value cut on tpcInnerParam for " #ParticleNameLong};      /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
+  Configurable<float> cutTpcInnerParameterMax##ParticleNameLong{"cutTpcInnerParameterMax" #ParticleNameLong, 999.f, "Upper-value cut on tpcInnerParam for " #ParticleNameLong};    /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
+  Configurable<float> cutExpSigmaMax##ParticleNameLong{"cutExpSigmaMax" #ParticleNameLong, 1e9f, "Upper-value cut on (positively-defined) expected sigma for " #ParticleNameLong}; /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
+  Configurable<float> cutDeDxExpectedMin##ParticleNameLong{"cutDeDxExpectedMin" #ParticleNameLong, -1e9f, "Lower-value cut on expected dE/dx for " #ParticleNameLong};             /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
+  Configurable<float> cutDeDxExpectedMax##ParticleNameLong{"cutDeDxExpectedMax" #ParticleNameLong, 1e9f, "Upper-value cut on expected dE/dx for " #ParticleNameLong};              /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
+  Configurable<float> cutDeDxDiffMin##ParticleNameLong{"cutDeDxDiffMin" #ParticleNameLong, -1e9f, "Lower-value cut on real - expected dE/dx difference for " #ParticleNameLong};   /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
+  Configurable<float> cutDeDxDiffMax##ParticleNameLong{"cutDeDxDiffMax" #ParticleNameLong, 1e9f, "Upper-value cut on real - expected dE/dx difference for " #ParticleNameLong};    /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
+  Configurable<float> cutNSigmaTpcAbs##ParticleNameLong{"cutNSigmaTpcAbs" #ParticleNameLong, 999.f, "Cut on absolute value of nSigmaTpc for " #ParticleNameLong};                  // o2-linter: disable=name/configurable (Configurable defined in macro)
+
+    DO_FOR_ALL_PARTICLES(DECLARE_PARTICLE_WISE_CONFIGURABLES)
 #undef DECLARE_PARTICLE_WISE_CONFIGURABLES
+  } particleWiseCuts;
 
-#define PACK_CONFIGURABLES_TO_ARRAY(ParticleNameShort, ParticleNameLong) &cutTpcInnerParameterMin##ParticleNameLong,
+#define PACK_CONFIGURABLES_TO_ARRAY(ParticleNameShort, ParticleNameLong) &particleWiseCuts.cutTpcInnerParameterMin##ParticleNameLong,
   std::array<Configurable<float>*, PID::Alpha + 1> cutTpcInnerParameterMin{
     DO_FOR_ALL_PARTICLES(PACK_CONFIGURABLES_TO_ARRAY)};
 #undef PACK_CONFIGURABLES_TO_ARRAY
 
-#define PACK_CONFIGURABLES_TO_ARRAY(ParticleNameShort, ParticleNameLong) &cutTpcInnerParameterMax##ParticleNameLong,
+#define PACK_CONFIGURABLES_TO_ARRAY(ParticleNameShort, ParticleNameLong) &particleWiseCuts.cutTpcInnerParameterMax##ParticleNameLong,
   std::array<Configurable<float>*, PID::Alpha + 1> cutTpcInnerParameterMax{
     DO_FOR_ALL_PARTICLES(PACK_CONFIGURABLES_TO_ARRAY)};
 #undef PACK_CONFIGURABLES_TO_ARRAY
 
-#define PACK_CONFIGURABLES_TO_ARRAY(ParticleNameShort, ParticleNameLong) &cutNSigmaTpcAbs##ParticleNameLong,
+#define PACK_CONFIGURABLES_TO_ARRAY(ParticleNameShort, ParticleNameLong) &particleWiseCuts.cutNSigmaTpcAbs##ParticleNameLong,
   std::array<Configurable<float>*, PID::Alpha + 1> cutNSigmaTpcAbs{
     DO_FOR_ALL_PARTICLES(PACK_CONFIGURABLES_TO_ARRAY)};
 #undef PACK_CONFIGURABLES_TO_ARRAY
