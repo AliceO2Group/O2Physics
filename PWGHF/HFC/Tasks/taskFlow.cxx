@@ -63,6 +63,7 @@
 #include <sys/types.h>
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
@@ -115,9 +116,9 @@ enum FT0DetectorChannels {
 };
 
 enum FT0InnerOrOuter {
-  FT0Error = 0,
-  FT0InnerRing = 1,
-  FT0OuterRing = 2,
+  FT0Error,
+  FT0InnerRing,
+  FT0OuterRing,
   NFT0InnerOrOuterSteps
 };
 
@@ -195,12 +196,11 @@ enum TrackSelection {
   TrackSelectionGlobalTrack
 };
 
-// static constexpr std::string_view whatEventType[] = {"SameEvent/", "MixedEvent/"};
-static constexpr std::string_view WhatDataType[] = {"Data/", "MC/"};
-static constexpr std::string_view WhatCorrelationCase[] = {"TpcTpc/", "TpcMft/", "TpcFv0a/", "MftFv0a/", "TpcFt0a/", "MftFt0a/", "TpcFt0c/", "Ft0aFt0c/"};
-static constexpr std::string_view WhatParticles[] = {"ChPartChPart/", "D0ChPart/", "LcChPart/"};
-static constexpr std::string_view WhatCentralityEstimator[] = {"centFT0C", "CentFT0CVariant1", "centFT0M"};
-static constexpr std::string_view WhatMultiplicityEstimator[] = {"multNTracksPV", "multNumContrib", "multFT0C", "multFT0M"};
+static constexpr std::array<std::string_view, 2> WhatDataType = {"Data/", "MC/"};
+static constexpr std::array<std::string_view, 8> WhatCorrelationCase = {"TpcTpc/", "TpcMft/", "TpcFv0a/", "MftFv0a/", "TpcFt0a/", "MftFt0a/", "TpcFt0c/", "Ft0aFt0c/"};
+static constexpr std::array<std::string_view, 3> WhatParticles = {"ChPartChPart/", "D0ChPart/", "LcChPart/"};
+static constexpr std::array<std::string_view, 3> WhatCentralityEstimator = {"centFT0C", "CentFT0CVariant1", "centFT0M"};
+static constexpr std::array<std::string_view, 4> WhatMultiplicityEstimator = {"multNTracksPV", "multNumContrib", "multFT0C", "multFT0M"};
 auto static constexpr MinFt0cCell = 96;
 
 static constexpr TrackSelectionFlags::flagtype TrackSelectionIts =
@@ -215,7 +215,7 @@ static constexpr TrackSelectionFlags::flagtype TrackSelectionDca =
 static constexpr TrackSelectionFlags::flagtype TrackSelectionDcaxyOnly =
   TrackSelectionFlags::kDCAxy;
 
-static constexpr float PairCutDefaults[1][5] = {{-1, -1, -1, -1, -1}};
+static constexpr std::array<std::array<float, 5>, 1> PairCutDefaults{{{{-1, -1, -1, -1, -1}}}};
 
 struct HfTaskFlow {
 
@@ -308,7 +308,7 @@ struct HfTaskFlow {
     Configurable<float> minMergingRadius{"minMergingRadius", 0.8, "max radius for merging cut"};
     Configurable<float> minTpcClusters{"minTpcClusters", 50.0f, "cut for minimum TPC clusters"};
     Configurable<float> minTpcCrossedRows{"minTpcCrossedRows", 70.0f, "cut for minimum TOC crossed rows"};
-    Configurable<LabeledArray<float>> pairCut{"pairCut", {PairCutDefaults[0], 5, {"Photon", "K0", "Lambda", "Phi", "Rho"}}, "Pair cuts on various particles"};
+    Configurable<LabeledArray<float>> pairCut{"pairCut", {PairCutDefaults[0].data(), 5, {"Photon", "K0", "Lambda", "Phi", "Rho"}}, "Pair cuts on various particles"};
     Configurable<float> ptCentralTrackMin{"ptCentralTrackMin", 0.2f, "min. pT of central tracks"};
     Configurable<float> ptCentralTrackMax{"ptCentralTrackMax", 10.0f, "max. pT of central tracks"};
     Configurable<int> trackSelectionType{"trackSelectionType", 1, "Track selection: 0 -> kGlobalTrack or isGlobalTrackSDD , 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> No globalTrack selection"};
@@ -367,7 +367,7 @@ struct HfTaskFlow {
   o2::ccdb::CcdbApi ccdbApi;
   o2::ft0::Geometry ft0Det;
   // o2::fv0::Geometry* fv0Det{};
-  std::vector<float> cstFT0RelGain{};
+  std::vector<float> cstFT0RelGain;
   RCTFlagsChecker rctChecker;
   RCTFlagsChecker correlationAnalysisRctChecker{kFT0Bad, kITSBad, kTPCBadTracking, kTPCBadPID, kMFTBad, kITSLimAccMCRepr, kMFTLimAccMCRepr, kTPCLimAccMCRepr};
 
@@ -534,7 +534,7 @@ struct HfTaskFlow {
   void addMftHistograms()
   {
     registry.add("Data/Mft/hAmbiguityOfMftTracks", "hAmbiguityOfMftTracks", {HistType::kTH1D, {{MftTrackAmbiguityStep::NMftAmbiguitySteps, -0.5, +MftTrackAmbiguityStep::NMftAmbiguitySteps - 0.5}}});
-    std::string labelsAmbiguityOfMftTracks[MftTrackAmbiguityStep::NMftAmbiguitySteps];
+    std::array<std::string, MftTrackAmbiguityStep::NMftAmbiguitySteps> labelsAmbiguityOfMftTracks{};
     labelsAmbiguityOfMftTracks[MftTrackAmbiguityStep::AllMftTracks] = "all MFT tracks";
     labelsAmbiguityOfMftTracks[MftTrackAmbiguityStep::AfterTrackSelection] = "MFT tracks after selection";
     labelsAmbiguityOfMftTracks[MftTrackAmbiguityStep::NumberOfAmbiguousTracks] = "how much tracks are ambigous";
@@ -546,7 +546,7 @@ struct HfTaskFlow {
     }
 
     registry.add("Data/Mft/hMftTracksSelection", "hMftTracksSelection", {HistType::kTH1D, {{MftTrackSelectionStep::NMftTrackSelectionSteps, -0.5, +MftTrackSelectionStep::NMftTrackSelectionSteps - 0.5}}});
-    std::string labelsMftTracksSelection[MftTrackSelectionStep::NMftTrackSelectionSteps];
+    std::array<std::string, MftTrackSelectionStep::NMftTrackSelectionSteps> labelsMftTracksSelection{};
     labelsMftTracksSelection[MftTrackSelectionStep::NoSelection] = "all MFT tracks";
     labelsMftTracksSelection[MftTrackSelectionStep::Eta] = "MFT tracks after eta selection";
     labelsMftTracksSelection[MftTrackSelectionStep::Cluster] = "MFT tracks after clusters selection";
@@ -564,7 +564,7 @@ struct HfTaskFlow {
     }
 
     registry.add("Data/Mft/hReassociationMftTracks", "hReassociationMftTracks", {HistType::kTH1D, {{ReassociationMftTracks::NReassociationMftTracksSteps, -0.5, +ReassociationMftTracks::NReassociationMftTracksSteps - 0.5}}});
-    std::string labelsReassociationMftTracks[ReassociationMftTracks::NReassociationMftTracksSteps];
+    std::array<std::string, ReassociationMftTracks::NReassociationMftTracksSteps> labelsReassociationMftTracks{};
     labelsReassociationMftTracks[ReassociationMftTracks::NotReassociatedMftTracks] = "Ambiguous MFT tracks after track selection";
     labelsReassociationMftTracks[ReassociationMftTracks::ReassociatedMftTracks] = "Reassociated MFT tracks by DCAxy method";
     registry.get<TH1>(HIST("Data/Mft/hReassociationMftTracks"))->SetMinimum(0);
@@ -581,6 +581,22 @@ struct HfTaskFlow {
     registry.add("Data/Mft/hDcaZMft", "", {HistType::kTH1D, {configAxis.axisDcaZ}});
     registry.add("Data/Mft/hNMftTracks", "", {HistType::kTH1F, {configAxis.axisMultiplicity}});
     registry.add("Data/Mft/hNBestCollisionFwd", "", {HistType::kTH1F, {configAxis.axisMultiplicity}});
+  }
+
+  void addFt0Histograms()
+  {
+    registry.add("Data/FT0Amp", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
+    registry.add("Data/FT0AmpCorr", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
+
+    registry.add("Data/FT0IsInnerOrOuter", "FT0IsInnerOrOuter", {HistType::kTH1D, {{FT0InnerOrOuter::NFT0InnerOrOuterSteps, -0.5, +FT0InnerOrOuter::NFT0InnerOrOuterSteps - 0.5}}});
+    std::array<std::string, FT0InnerOrOuter::NFT0InnerOrOuterSteps> labels{};
+    labels[FT0InnerOrOuter::FT0InnerRing] = "FT0InnerRing";
+    labels[FT0InnerOrOuter::FT0OuterRing] = "FT0OuterRing";
+    registry.get<TH1>(HIST("Data/FT0IsInnerOrOuter"))->SetMinimum(0);
+
+    for (int iBin = 0; iBin < FT0InnerOrOuter::NFT0InnerOrOuterSteps; iBin++) {
+      registry.get<TH1>(HIST("Data/FT0IsInnerOrOuter"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
+    }
   }
 
   //  =========================
@@ -620,7 +636,7 @@ struct HfTaskFlow {
       registry.add("Data/hCentralityUsed", "", {HistType::kTH1D, {configAxis.axisCentrality}});
 
       registry.add("Data/hEventCounter", "hEventCounter", {HistType::kTH1D, {{EventSelectionStep::NEventSelectionSteps, -0.5, +EventSelectionStep::NEventSelectionSteps - 0.5}}});
-      std::string labels[EventSelectionStep::NEventSelectionSteps];
+      std::array<std::string, EventSelectionStep::NEventSelectionSteps> labels{};
       labels[EventSelectionStep::AllEvents] = "all";
       labels[EventSelectionStep::AfterEventSelection] = "after Physics selection";
       registry.get<TH1>(HIST("Data/hEventCounter"))->SetMinimum(0);
@@ -630,7 +646,7 @@ struct HfTaskFlow {
       }
 
       registry.add("Data/hPreciseEventCounter", "hPreciseEventCounter", {HistType::kTH1D, {{SpecificEventSelectionStep::NSpecificEventSelectionSteps, -0.5, +SpecificEventSelectionStep::NSpecificEventSelectionSteps - 0.5}}});
-      std::string labelsPreciseEventSelection[SpecificEventSelectionStep::NSpecificEventSelectionSteps];
+      std::array<std::string, SpecificEventSelectionStep::NSpecificEventSelectionSteps> labelsPreciseEventSelection{};
       labelsPreciseEventSelection[SpecificEventSelectionStep::AllEventsPrecise] = "all";
       labelsPreciseEventSelection[SpecificEventSelectionStep::IsSel8] = "sel8";
       labelsPreciseEventSelection[SpecificEventSelectionStep::IsNoSameBunchPileup] = "IsNoSameBunchPileup";
@@ -828,14 +844,7 @@ struct HfTaskFlow {
     if (doprocessSameTpcFt0aChCh) {
       if (!configTask.removeQAForSystematics) {
         addHistograms<Data, TpcFt0a, ChPartChPart>();
-        registry.add("Data/FT0Amp", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
-        registry.add("Data/FT0AmpCorr", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
-
-        registry.add("Data/FT0IsInnerOrOuter", "FT0IsInnerOrOuter", {HistType::kTH1D, {{FT0InnerOrOuter::NFT0InnerOrOuterSteps, -0.5, +FT0InnerOrOuter::NFT0InnerOrOuterSteps - 0.5}}});
-        std::string labels[FT0InnerOrOuter::NFT0InnerOrOuterSteps];
-        labels[FT0InnerOrOuter::FT0InnerRing] = "FT0InnerRing";
-        labels[FT0InnerOrOuter::FT0OuterRing] = "FT0OuterRing";
-        registry.get<TH1>(HIST("Data/FT0IsInnerOrOuter"))->SetMinimum(0);
+        addFt0Histograms();
       }
 
       if (!configTask.doEtaDependentFlow && !configTask.doVariationContainers) {
@@ -886,14 +895,7 @@ struct HfTaskFlow {
       if (!configTask.removeQAForSystematics) {
         addHistograms<Data, MftFt0a, ChPartChPart>();
         addMftHistograms();
-        registry.add("Data/FT0Amp", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
-        registry.add("Data/FT0AmpCorr", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
-
-        registry.add("Data/FT0IsInnerOrOuter", "FT0IsInnerOrOuter", {HistType::kTH1D, {{FT0InnerOrOuter::NFT0InnerOrOuterSteps, -0.5, +FT0InnerOrOuter::NFT0InnerOrOuterSteps - 0.5}}});
-        std::string labels[FT0InnerOrOuter::NFT0InnerOrOuterSteps];
-        labels[FT0InnerOrOuter::FT0InnerRing] = "FT0InnerRing";
-        labels[FT0InnerOrOuter::FT0OuterRing] = "FT0OuterRing";
-        registry.get<TH1>(HIST("Data/FT0IsInnerOrOuter"))->SetMinimum(0);
+        addFt0Histograms();
       }
 
       if (!configTask.doEtaDependentFlow && !configTask.doVariationContainers) {
@@ -919,14 +921,7 @@ struct HfTaskFlow {
 
       if (!configTask.removeQAForSystematics) {
         addHistograms<Data, TpcFt0c, ChPartChPart>();
-        registry.add("Data/FT0Amp", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
-        registry.add("Data/FT0AmpCorr", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
-
-        registry.add("Data/FT0IsInnerOrOuter", "FT0IsInnerOrOuter", {HistType::kTH1D, {{FT0InnerOrOuter::NFT0InnerOrOuterSteps, -0.5, +FT0InnerOrOuter::NFT0InnerOrOuterSteps - 0.5}}});
-        std::string labels[FT0InnerOrOuter::NFT0InnerOrOuterSteps];
-        labels[FT0InnerOrOuter::FT0InnerRing] = "FT0InnerRing";
-        labels[FT0InnerOrOuter::FT0OuterRing] = "FT0OuterRing";
-        registry.get<TH1>(HIST("Data/FT0IsInnerOrOuter"))->SetMinimum(0);
+        addFt0Histograms();
       }
 
       if (!configTask.doEtaDependentFlow && !configTask.doVariationContainers) {
@@ -976,14 +971,9 @@ struct HfTaskFlow {
 
       if (!configTask.removeQAForSystematics) {
         addHistograms<Data, Ft0aFt0c, ChPartChPart>();
+        addFt0Histograms();
         registry.add("Data/FT0Amp", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
         registry.add("Data/FT0AmpCorr", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
-
-        registry.add("Data/FT0IsInnerOrOuter", "FT0IsInnerOrOuter", {HistType::kTH1D, {{FT0InnerOrOuter::NFT0InnerOrOuterSteps, -0.5, +FT0InnerOrOuter::NFT0InnerOrOuterSteps - 0.5}}});
-        std::string labels[FT0InnerOrOuter::NFT0InnerOrOuterSteps];
-        labels[FT0InnerOrOuter::FT0InnerRing] = "FT0InnerRing";
-        labels[FT0InnerOrOuter::FT0OuterRing] = "FT0OuterRing";
-        registry.get<TH1>(HIST("Data/FT0IsInnerOrOuter"))->SetMinimum(0);
       }
 
       if (!configTask.doEtaDependentFlow && !configTask.doVariationContainers) {
@@ -1292,7 +1282,7 @@ struct HfTaskFlow {
   void loadGain(aod::BCsWithTimestamps::iterator const& bc)
   {
     cstFT0RelGain.clear();
-    cstFT0RelGain = {};
+    // cstFT0RelGain = {};
     std::string fullPath;
 
     auto timestamp = bc.timestamp();
@@ -1358,28 +1348,28 @@ struct HfTaskFlow {
     if (areCorrectionsLoaded) {
       return;
     }
-    if (configTask.loadEfficienciesForTpc.value.empty() == false) {
+    if (!configTask.loadEfficienciesForTpc.value.empty()) {
       mEfficiencyTpc = ccdb->getForTimeStamp<TH3D>(configTask.loadEfficienciesForTpc, timestamp);
       if (mEfficiencyTpc == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for TPC tracks from %s", configTask.loadEfficienciesForTpc.value.c_str());
       }
       LOGF(info, "Loaded efficiency histogram from %s (%p)", configTask.loadEfficienciesForTpc.value.c_str(), static_cast<void*>(mEfficiencyTpc));
     }
-    if (configTask.loadEfficienciesForMft.value.empty() == false) {
+    if (!configTask.loadEfficienciesForMft.value.empty()) {
       mEfficiencyMft = ccdb->getForTimeStamp<TH3D>(configTask.loadEfficienciesForMft, timestamp);
       if (mEfficiencyMft == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for MFT tracks from %s", configTask.loadEfficienciesForMft.value.c_str());
       }
       LOGF(info, "Loaded efficiency histogram from %s (%p)", configTask.loadEfficienciesForMft.value.c_str(), static_cast<void*>(mEfficiencyMft));
     }
-    if (configTask.loadEfficienciesForNch.value.empty() == false) {
+    if (!configTask.loadEfficienciesForNch.value.empty()) {
       mEfficiencyNch = ccdb->getForTimeStamp<TH1D>(configTask.loadEfficienciesForNch, timestamp);
       if (!mEfficiencyNch) {
         LOGF(fatal, "Could not load efficiency histogram for Nch estimator from %s", configTask.loadEfficienciesForNch.value.c_str());
       }
       LOGF(info, "Loaded efficiency histogram from %s (%p)", configTask.loadEfficienciesForNch.value.c_str(), static_cast<void*>(mEfficiencyNch));
     }
-    if (configTask.loadCentralityWeight.value.empty() == false) {
+    if (!configTask.loadCentralityWeight.value.empty()) {
       mCentralityWeight = ccdb->getForTimeStamp<TH1D>(configTask.loadCentralityWeight, timestamp);
       if (mCentralityWeight == nullptr) {
         LOGF(fatal, "Could not load centrality weight correction from %s", configTask.loadCentralityWeight.value.c_str());
@@ -1430,14 +1420,14 @@ struct HfTaskFlow {
   }
 
   template <typename TTracks>
-  double getCorrectedMultiplicity(const TTracks& tracks) // function to count the number of tracks in the event and fill the histogram
+  float getCorrectedMultiplicity(const TTracks& tracks) // function to count the number of tracks in the event and fill the histogram
   {
-    auto trackCounter = 0;
+    float trackCounter = 0.f;
     auto weightMultiplicity = 1.0f;
     for (auto const& track : tracks) {
 
-      if (std::abs(track.eta()) < configCentral.etaCentralTrackMax && track.pt() >= configCentral.ptCentralTrackMin && track.pt() <= configCentral.ptCentralTrackMax) {
-        trackCounter += 1;
+      if (std::abs(track.eta()) > configCentral.etaCentralTrackMax || track.pt() <= configCentral.ptCentralTrackMin || track.pt() >= configCentral.ptCentralTrackMax) {
+        continue;
       }
 
       auto efficiencyNch = 1.0f;
@@ -1449,12 +1439,13 @@ struct HfTaskFlow {
         }
 
         if (efficiencyNch == 0) {
-          return false;
+          // return false;
+          efficiencyNch = 1.0f;
         }
 
         weightMultiplicity = 1. / efficiencyNch;
       } else {
-        weightMultiplicity = 0;
+        weightMultiplicity = 1.0f;
       }
 
       trackCounter += weightMultiplicity;
@@ -1487,7 +1478,7 @@ struct HfTaskFlow {
   // =========================
 
   template <typename TCollision, typename TTracks>
-  bool isAcceptedEventActivity(TCollision const& collision, TTracks const& tracks, int& multiplicity, float& centrality, float& centralityWeight)
+  bool isAcceptedEventActivity(TCollision const& collision, TTracks const& tracks, auto& multiplicity, float& centrality, float& centralityWeight)
   {
     if (configCollision.useMultiplicityFromTracks) {
       if (!configTask.removeQAForSystematics) {
@@ -1787,7 +1778,7 @@ struct HfTaskFlow {
     auto triggerWeight = 1.0f;
     auto associatedWeight = 1.0f;
     auto loopCounter = 0; // To avoid filling associated tracks QA many times, I fill it only for the first trigger track of the collision
-    int sampleIndex = gRandom->Uniform(0, configTask.nSamples);
+    int sampleIndex = static_cast<int>(gRandom->Uniform(0, configTask.nSamples));
 
     // TRIGGER PARTICLE
     for (const auto& track1 : tracksTrigger) {
@@ -1919,18 +1910,18 @@ struct HfTaskFlow {
 
             const double kLimit = 3.0 * configCentral.mergingCut;
 
-            bool bIsBelow = false;
+            [[maybe_unused]] bool bIsBelow = false;
 
             if (std::abs(dPhiStarLow) < kLimit || std::abs(dPhiStarHigh) < kLimit || dPhiStarLow * dPhiStarHigh < 0) {
-              for (double rad(configCentral.minMergingRadius); rad < configCentral.maxMergingRadius; rad += 0.01) { // FIXME: Variable 'rad' with floating point type 'double' should not be used as a loop counter.
+              constexpr double StepRad = 0.01;
+              const int nSteps = static_cast<int>((configCentral.maxMergingRadius - configCentral.minMergingRadius) / StepRad);
+              for (int iStep = 1; iStep < nSteps; ++iStep) {
+                double rad = configCentral.minMergingRadius + iStep * StepRad;
                 double dPhiStar = getDPhiStar(track1, track2, rad, magneticField);
                 if (std::abs(dPhiStar) < kLimit) {
                   bIsBelow = true;
                   break;
                 }
-              }
-              if (bIsBelow) {
-                continue;
               }
             }
           }
@@ -2023,7 +2014,7 @@ struct HfTaskFlow {
     auto triggerWeight = 1.0f;
     auto associatedWeight = 1.0f;
     auto loopCounter = 0; // To avoid filling associated tracks QA many times, I fill it only for the first trigger track of the collision
-    int sampleIndex = gRandom->Uniform(0, configTask.nSamples);
+    int sampleIndex = static_cast<int>(gRandom->Uniform(0, configTask.nSamples));
 
     // TRIGGER PARTICLE
     for (const auto& track1 : tracksTrigger) {
@@ -2220,7 +2211,7 @@ struct HfTaskFlow {
     auto triggerWeight = 1.0f;
     auto associatedWeight = 1.0f;
     auto loopCounter = 0; // To avoid filling associated tracks QA many times, I fill it only for the first trigger track of the collision
-    int sampleIndex = gRandom->Uniform(0, configTask.nSamples);
+    int sampleIndex = static_cast<int>(gRandom->Uniform(0, configTask.nSamples));
 
     // TRIGGER PARTICLE
     for (auto const& track1 : tracksTrigger) {
@@ -2489,7 +2480,7 @@ struct HfTaskFlow {
     auto triggerWeight = 1.0f;
     auto associatedWeight = 1.0f;
     auto loopCounter = 0; // To avoid filling associated tracks QA many times, I fill it only for the first trigger track of the collision
-    int sampleIndex = gRandom->Uniform(0, configTask.nSamples);
+    int sampleIndex = static_cast<int>(gRandom->Uniform(0, configTask.nSamples));
 
     // TRIGGER PARTICLE
     for (auto const& track1 : tracksTrigger) {
@@ -2640,7 +2631,7 @@ struct HfTaskFlow {
     auto triggerWeight = 1.0f;
     auto associatedWeight = 1.0f;
     auto loopCounter = 0; // To avoid filling associated tracks QA many times, I fill it only for the first trigger track of the collision
-    int sampleIndex = gRandom->Uniform(0, configTask.nSamples);
+    int sampleIndex = static_cast<int>(gRandom->Uniform(0, configTask.nSamples));
 
     // TRIGGER PARTICLE FROM FT0A
     for (std::size_t indexChannelA = 0; indexChannelA < ft0as.channelA().size(); indexChannelA++) {
@@ -2708,7 +2699,7 @@ struct HfTaskFlow {
     auto triggerWeight = 1.0f;
     auto associatedWeight = 1.0f;
     auto loopCounter = 0; // To avoid filling associated tracks QA many times, I fill it only for the first trigger track of the collision
-    int sampleIndex = gRandom->Uniform(0, configTask.nSamples);
+    int sampleIndex = static_cast<int>(gRandom->Uniform(0, configTask.nSamples));
 
     for (auto const& track1 : tracksTrigger) {
 
@@ -2863,7 +2854,7 @@ struct HfTaskFlow {
 
       auto bc = collision1.template bc_as<aod::BCsWithTimestamps>();
       loadEfficiencyCorrection(bc.timestamp());
-      auto multiplicity = 0;
+      float multiplicity = 0.f;
       if (configCollision.useMultiplicityFromTracks) {
         multiplicity = tracks1.size();
       } else {
@@ -2874,12 +2865,12 @@ struct HfTaskFlow {
       if (configCollision.useCentrality) {
         getCentralityWeight(centralityWeight, getCentralityEstimator(collision1, true));
         if (getCentralityEstimator(collision1, false) < configCollision.minCentrality || getCentralityEstimator(collision1, false) >= configCollision.maxCentrality) {
-          return;
+          continue;
         }
-      } else {
-        if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
-          return;
-        }
+      }
+
+      if (!configCollision.useCentrality && (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity)) {
+        continue;
       }
 
       corrContainer->fillEvent(multiplicity, step);
@@ -2924,7 +2915,7 @@ struct HfTaskFlow {
 
       auto bc = collision1.template bc_as<aod::BCsWithTimestamps>();
       loadEfficiencyCorrection(bc.timestamp());
-      auto multiplicity = 0;
+      float multiplicity = 0.f;
       if (configCollision.useMultiplicityFromTracks) {
         multiplicity = tracksTrigger.size();
       } else {
@@ -2935,12 +2926,12 @@ struct HfTaskFlow {
       if (configCollision.useCentrality) {
         getCentralityWeight(centralityWeight, getCentralityEstimator(collision1, true));
         if (getCentralityEstimator(collision1, false) < configCollision.minCentrality || getCentralityEstimator(collision1, false) >= configCollision.maxCentrality) {
-          return;
+          continue;
         }
-      } else {
-        if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
-          return;
-        }
+      }
+
+      if (!configCollision.useCentrality && (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity)) {
+        continue;
       }
 
       auto slicedTriggerTracks = tracksTrigger.sliceBy(presliceTrigger, collision1.globalIndex());
@@ -2986,7 +2977,7 @@ struct HfTaskFlow {
       auto bc = collision1.template bc_as<aod::BCsWithTimestamps>();
       loadEfficiencyCorrection(bc.timestamp());
       auto tracksForMultiplicity = tracksTpc.sliceByCached(o2::aod::track::collisionId, collision1.globalIndex(), cache);
-      auto multiplicity = 0;
+      float multiplicity = 0.f;
       if (configCollision.useMultiplicityFromTracks) {
         multiplicity = tracksForMultiplicity.size();
       } else {
@@ -2997,12 +2988,12 @@ struct HfTaskFlow {
       if (configCollision.useCentrality) {
         getCentralityWeight(centralityWeight, getCentralityEstimator(collision1, true));
         if (getCentralityEstimator(collision1, false) < configCollision.minCentrality || getCentralityEstimator(collision1, false) >= configCollision.maxCentrality) {
-          return;
+          continue;
         }
-      } else {
-        if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
-          return;
-        }
+      }
+
+      if (!configCollision.useCentrality && (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity)) {
+        continue;
       }
 
       // if TPC-MFT cases
@@ -3065,7 +3056,7 @@ struct HfTaskFlow {
       //     auto tracksForMultiplicity = tracksTpc.sliceByCached(o2::aod::track::collisionId, collision1.globalIndex(), cache);
       //     const auto& fv0 = collision2.foundFV0();
 
-      //     auto multiplicity = 0;
+      //     float multiplicity = 0.f;
       //     if (configCollision.useMultiplicityFromTracks) {
       //       multiplicity = tracksForMultiplicity.size();
       //     } else {
@@ -3073,7 +3064,7 @@ struct HfTaskFlow {
       //     }
 
       //     if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
-      //       return;
+      //       continue;
       //     }
 
       //     corrContainer->fillEvent(multiplicity, step);
@@ -3088,7 +3079,7 @@ struct HfTaskFlow {
           auto tracksForMultiplicity = tracksTpc.sliceByCached(o2::aod::track::collisionId, collision1.globalIndex(), cache);
           const auto& ft0 = collision2.foundFT0();
 
-          auto multiplicity = 0;
+          float multiplicity = 0.f;
           if (configCollision.useMultiplicityFromTracks) {
             multiplicity = tracksForMultiplicity.size();
           } else {
@@ -3099,12 +3090,12 @@ struct HfTaskFlow {
           if (configCollision.useCentrality) {
             getCentralityWeight(centralityWeight, getCentralityEstimator(collision1, true));
             if (getCentralityEstimator(collision1, false) < configCollision.minCentrality || getCentralityEstimator(collision1, false) >= configCollision.maxCentrality) {
-              return;
+              continue;
             }
-          } else {
-            if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
-              return;
-            }
+          }
+
+          if (!configCollision.useCentrality && (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity)) {
+            continue;
           }
 
           corrContainer->fillEvent(multiplicity, step);
@@ -3155,7 +3146,7 @@ struct HfTaskFlow {
         auto bc = collision1.template bc_as<aod::BCsWithTimestamps>();
         loadEfficiencyCorrection(bc.timestamp());
         auto tracksForMultiplicity = tracksTpc.sliceByCached(o2::aod::track::collisionId, collision1.globalIndex(), cache);
-        auto multiplicity = 0;
+        float multiplicity = 0.f;
         if (configCollision.useMultiplicityFromTracks) {
           multiplicity = tracksForMultiplicity.size();
         } else {
@@ -3166,12 +3157,12 @@ struct HfTaskFlow {
         if (configCollision.useCentrality) {
           getCentralityWeight(centralityWeight, getCentralityEstimator(collision1, true));
           if (getCentralityEstimator(collision1, false) < configCollision.minCentrality || getCentralityEstimator(collision1, false) >= configCollision.maxCentrality) {
-            return;
+            continue;
           }
-        } else {
-          if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
-            return;
-          }
+        }
+
+        if (!configCollision.useCentrality && (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity)) {
+          continue;
         }
 
         corrContainer->fillEvent(multiplicity, step);
@@ -3208,7 +3199,7 @@ struct HfTaskFlow {
 
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     loadEfficiencyCorrection(bc.timestamp());
-    auto multiplicity = 0;
+    float multiplicity = 0.f;
     float centrality = 0.f;
     float centralityWeight = 1.f;
 
@@ -3247,7 +3238,7 @@ struct HfTaskFlow {
 
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     loadEfficiencyCorrection(bc.timestamp());
-    auto multiplicity = 0;
+    float multiplicity = 0.f;
     float centrality = 0.f;
     float centralityWeight = 1.f;
 
@@ -3286,7 +3277,7 @@ struct HfTaskFlow {
 
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     loadEfficiencyCorrection(bc.timestamp());
-    auto multiplicity = 0;
+    float multiplicity = 0.f;
     float centrality = 0.f;
     float centralityWeight = 1.f;
 
@@ -3318,7 +3309,7 @@ struct HfTaskFlow {
 
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     loadEfficiencyCorrection(bc.timestamp());
-    auto multiplicity = 0;
+    float multiplicity = 0.f;
     float centrality = 0.f;
     float centralityWeight = 1.f;
 
@@ -3354,7 +3345,7 @@ struct HfTaskFlow {
 
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     loadEfficiencyCorrection(bc.timestamp());
-    auto multiplicity = 0;
+    float multiplicity = 0.f;
     float centrality = 0.f;
     float centralityWeight = 1.f;
 
@@ -3390,21 +3381,22 @@ struct HfTaskFlow {
 
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     loadEfficiencyCorrection(bc.timestamp());
-    auto multiplicity = 0;
+    float multiplicity = 0.f;
     float centrality = 0.f;
     float centralityWeight = 1.f;
-    auto uncorrectedMultiplicity = multiplicity;
 
-    if (!configTask.removeQAForSystematics) {
-      registry.fill(HIST("Data/hMultiplicity_uncorrected_vs_corrected"), uncorrectedMultiplicity, multiplicity);
+    if (!isAcceptedEventActivity(collision, tracks, multiplicity, centrality, centralityWeight)) {
+      return;
     }
+
+    auto uncorrectedMultiplicity = multiplicity;
 
     if (configCollision.useMultiplicityFromTracksCorrected) {
       multiplicity = getCorrectedMultiplicity(tracks);
     }
 
-    if (!isAcceptedEventActivity(collision, tracks, multiplicity, centrality, centralityWeight)) {
-      return;
+    if (!configTask.removeQAForSystematics) {
+      registry.fill(HIST("Data/hMultiplicity_uncorrected_vs_corrected"), uncorrectedMultiplicity, multiplicity);
     }
 
     if (!configTask.doEtaDependentFlow && !configTask.doVariationContainers) {
@@ -3435,7 +3427,7 @@ struct HfTaskFlow {
 
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     loadEfficiencyCorrection(bc.timestamp());
-    auto multiplicity = 0;
+    float multiplicity = 0.f;
     float centrality = 0.f;
     float centralityWeight = 1.f;
 
@@ -3476,7 +3468,7 @@ struct HfTaskFlow {
 
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     loadEfficiencyCorrection(bc.timestamp());
-    auto multiplicity = 0;
+    float multiplicity = 0.f;
     float centrality = 0.f;
     float centralityWeight = 1.f;
 
@@ -3502,7 +3494,7 @@ struct HfTaskFlow {
 
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     loadEfficiencyCorrection(bc.timestamp());
-    auto multiplicity = 0;
+    float multiplicity = 0.f;
     float centrality = 0.f;
     float centralityWeight = 1.f;
 
@@ -3538,7 +3530,7 @@ struct HfTaskFlow {
 
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     loadEfficiencyCorrection(bc.timestamp());
-    auto multiplicity = 0;
+    float multiplicity = 0.f;
     float centrality = 0.f;
     float centralityWeight = 1.f;
 
@@ -3564,7 +3556,7 @@ struct HfTaskFlow {
 
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     loadEfficiencyCorrection(bc.timestamp());
-    auto multiplicity = 0;
+    float multiplicity = 0.f;
     float centrality = 0.f;
     float centralityWeight = 1.f;
 
@@ -3776,7 +3768,7 @@ struct HfTaskFlow {
       if (!configTask.removeQAForSystematics) {
         registry.fill(HIST("Data/hNTracks"), tracks.size());
       }
-      auto multiplicity = 0;
+      float multiplicity = 0.f;
       float centrality = 0.f;
       float centralityWeight = 1.f;
 
@@ -3815,7 +3807,7 @@ struct HfTaskFlow {
     if (collision.has_foundFT0()) {
       loadGain(bc);
       const auto& ft0 = collision.foundFT0();
-      auto multiplicity = 0;
+      float multiplicity = 0.f;
       float centrality = 0.f;
       float centralityWeight = 1.f;
 
@@ -3849,7 +3841,7 @@ struct HfTaskFlow {
     if (collision.has_foundFT0()) {
       loadGain(bc);
       const auto& ft0 = collision.foundFT0();
-      auto multiplicity = 0;
+      float multiplicity = 0.f;
       float centrality = 0.f;
       float centralityWeight = 1.f;
 
@@ -3883,7 +3875,7 @@ struct HfTaskFlow {
     if (collision.has_foundFT0()) {
       loadGain(bc);
       const auto& ft0 = collision.foundFT0();
-      auto multiplicity = 0;
+      float multiplicity = 0.f;
       float centrality = 0.f;
       float centralityWeight = 1.f;
 
@@ -3920,7 +3912,7 @@ struct HfTaskFlow {
 
       loadGain(bc);
       const auto& ft0 = collision.foundFT0();
-      auto multiplicity = 0;
+      float multiplicity = 0.f;
       float centrality = 0.f;
       float centralityWeight = 1.f;
 
@@ -3957,7 +3949,7 @@ struct HfTaskFlow {
 
       loadGain(bc);
       const auto& ft0 = collision.foundFT0();
-      auto multiplicity = 0;
+      float multiplicity = 0.f;
       float centrality = 0.f;
       float centralityWeight = 1.f;
 
@@ -3993,7 +3985,7 @@ struct HfTaskFlow {
     if (collision.has_foundFT0()) {
       loadGain(bc);
       const auto& ft0 = collision.foundFT0();
-      auto multiplicity = 0;
+      float multiplicity = 0.f;
       float centrality = 0.f;
       float centralityWeight = 1.f;
 
@@ -4034,7 +4026,7 @@ struct HfTaskFlow {
       if (!configTask.removeQAForSystematics) {
         registry.fill(HIST("Data/hNTracks"), tracks.size());
       }
-      auto multiplicity = 0;
+      float multiplicity = 0.f;
       float centrality = 0.f;
       float centralityWeight = 1.f;
 
@@ -4068,7 +4060,7 @@ struct HfTaskFlow {
     if (collision.has_foundFT0()) {
       loadGain(bc);
       const auto& ft0 = collision.foundFT0();
-      auto multiplicity = 0;
+      float multiplicity = 0.f;
       float centrality = 0.f;
       float centralityWeight = 1.f;
 
@@ -4102,7 +4094,7 @@ struct HfTaskFlow {
     if (collision.has_foundFT0()) {
       loadGain(bc);
       const auto& ft0 = collision.foundFT0();
-      auto multiplicity = 0;
+      float multiplicity = 0.f;
       float centrality = 0.f;
       float centralityWeight = 1.f;
 
@@ -4135,7 +4127,7 @@ struct HfTaskFlow {
     if (collision.has_foundFT0()) {
       loadGain(bc);
       const auto& ft0 = collision.foundFT0();
-      auto multiplicity = 0;
+      float multiplicity = 0.f;
       float centrality = 0.f;
       float centralityWeight = 1.f;
 
@@ -4162,7 +4154,7 @@ struct HfTaskFlow {
       return;
     }
 
-    auto multiplicity = 0;
+    float multiplicity = 0.f;
     if (configCollision.useMultiplicityFromTracks) {
       for (const auto& track : mcParticles) {
         if (std::abs(track.eta()) < configCentral.etaCentralTrackMax && track.pt() >= configCentral.ptCentralTrackMin && track.pt() <= configCentral.ptCentralTrackMax) {
@@ -4554,7 +4546,7 @@ struct HfTaskFlow {
 
     auto getTracksSize = [&mcParticles, this](soa::Join<aod::McCollisions, aod::MultMCExtras>::iterator const& mcCollision) {
       auto associatedTracks = mcParticles.sliceByCached(o2::aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), this->cache);
-      auto multiplicity = 0;
+      float multiplicity = 0.f;
       if (configCollision.useMultiplicityFromTracks) {
         for (const auto& track : associatedTracks) {
           if (std::abs(track.eta()) < configCentral.etaCentralTrackMax && track.pt() >= configCentral.ptCentralTrackMin && track.pt() <= configCentral.ptCentralTrackMax) {
@@ -4711,7 +4703,7 @@ struct HfTaskFlow {
       }
 
       auto groupedreassociated3dMftTracks = reassociated3dMftTracks.sliceBy(perColReassociated3dTracks, reconstructedCollision.globalIndex());
-      for (const auto& reassociated3dMftTrack : reassociated3dMftTracks) {
+      for (const auto& reassociated3dMftTrack : groupedreassociated3dMftTracks) {
         if (!reassociated3dMftTrack.has_mcParticle()) {
           continue;
         }
