@@ -34,6 +34,7 @@
 #include <TProfile2D.h>
 #include <TString.h>
 
+#include <algorithm>
 #include <map>
 #include <memory>
 #include <string>
@@ -41,26 +42,28 @@
 
 using namespace o2;
 using namespace o2::framework;
-std::shared_ptr<TH1> particlePdgCodes;
-std::map<int, std::shared_ptr<TH1>> particlePtDistribution;
-std::map<int, std::shared_ptr<TH1>> particleEtaDistribution;
-std::map<int, std::shared_ptr<TH1>> ptDistribution;
-std::map<int, std::shared_ptr<TH2>> ptResolutionVsPt;
-std::map<int, std::shared_ptr<TProfile2D>> ptResolutionVsEta;
-std::map<int, std::shared_ptr<TH2>> invPtResolutionVsPt;
-std::map<int, std::shared_ptr<TProfile2D>> invPtResolutionVsEta;
-std::map<int, std::shared_ptr<TH2>> dcaXyResolutionVsPt;
-std::map<int, std::shared_ptr<TH2>> dcaZResolutionVsPt;
-std::map<int, std::shared_ptr<TH2>> covariancePtPtVsPt;
-std::map<int, std::shared_ptr<TH2>> covarianceDcaXyDcaXyVsPt;
-std::map<int, std::shared_ptr<TH2>> covarianceDcaZDcaZVsPt;
 
 struct Alice3TrackingPerformance {
-  Configurable<std::vector<int>> pdgCodes{"pdgCodes", {211}, "List of PDG codes to consider for efficiency calculation."};
+  Configurable<std::vector<int>> pdgCodes{"pdgCodes", {211}, "List of signed PDG codes to consider for performance evaluation"};
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   ConfigurableAxis ptAxis{"ptAxis", {500, 0, 100}, "#it{p}_{T} (GeV/#it{c})"};
   ConfigurableAxis etaAxis{"etaAxis", {100, -5.f, 5.f}, "#eta"};
   ConfigurableAxis invPtDeltaAxis{"invPtDeltaAxis", {1000, -0.1f, 0.1f}, "1./#it{p}_{T}^{gen} - 1./#it{p}_{T}^{reco} (GeV/#it{c})^{-1}"};
+
+  // Histograms
+  std::shared_ptr<TH1> particlePdgCodes;
+  std::map<int, std::shared_ptr<TH1>> particlePtDistribution;
+  std::map<int, std::shared_ptr<TH1>> particleEtaDistribution;
+  std::map<int, std::shared_ptr<TH1>> ptDistribution;
+  std::map<int, std::shared_ptr<TH2>> ptResolutionVsPt;
+  std::map<int, std::shared_ptr<TProfile2D>> ptResolutionVsEta;
+  std::map<int, std::shared_ptr<TH2>> invPtResolutionVsPt;
+  std::map<int, std::shared_ptr<TProfile2D>> invPtResolutionVsEta;
+  std::map<int, std::shared_ptr<TH2>> dcaXyResolutionVsPt;
+  std::map<int, std::shared_ptr<TH2>> dcaZResolutionVsPt;
+  std::map<int, std::shared_ptr<TH2>> covariancePtPtVsPt;
+  std::map<int, std::shared_ptr<TH2>> covarianceDcaXyDcaXyVsPt;
+  std::map<int, std::shared_ptr<TH2>> covarianceDcaZDcaZVsPt;
 
   void init(o2::framework::InitContext&)
   {
@@ -77,7 +80,8 @@ struct Alice3TrackingPerformance {
     const AxisSpec axisCovariancePtPt{100, 0, 10, "cov(#it{p}_{T}, #it{p}_{T}) ((GeV/#it{c})^{2})"};
     const AxisSpec axisCovarianceDcaXyDcaXy{100, 0, 1, "cov(DCA_{xy}, DCA_{xy}) (cm^{2})"};
     const AxisSpec axisCovarianceDcaZDcaZ{100, 0, 1, "cov(DCA_{z}, DCA_{z}) (cm^{2})"};
-    particlePdgCodes = histos.add<TH1>("particlePdgCodes", "", kTH1D, {AxisSpec{pdgCodes.value.size(), -0.5, -0.5 + pdgCodes.value.size(), "PDG Code"}});
+    const int nBinsPdgCodes = static_cast<int>(pdgCodes.value.size());
+    particlePdgCodes = histos.add<TH1>("particlePdgCodes", "", kTH1D, {AxisSpec{nBinsPdgCodes, -0.5, -0.5 + nBinsPdgCodes, "PDG Code"}});
     for (const int& pdg : pdgCodes.value) {
       std::string prefix = Form("%i", pdg);
       if (pdg < 0) {
