@@ -220,7 +220,6 @@ struct TaskPi0FlowEMC {
     Configurable<float> minOpenAngle{"minOpenAngle", 0.0202, "apply min opening angle. Default value one EMCal cell"};
     Configurable<bool> enableTanThetadPhi{"enableTanThetadPhi", false, "flag to turn cut opening angle in delta theta delta phi on/off"};
     Configurable<float> minTanThetadPhi{"minTanThetadPhi", 4., "apply min opening angle in delta theta delta phi to cut on late conversion"};
-    Configurable<float> maxEnergyAsymmetry{"maxEnergyAsymmetry", 1., "apply max energy asymmetry for meson candidate"};
     Configurable<bool> cfgEnableQA{"cfgEnableQA", false, "flag to turn QA plots on/off"};
     ConfigurableAxis thConfigAxisTanThetaPhi{"thConfigAxisTanThetaPhi", {180, -90.f, 90.f}, ""};
   } mesonConfig;
@@ -420,6 +419,12 @@ struct TaskPi0FlowEMC {
     const AxisSpec thnAxisMixingEP{mixingConfig.cfgEPBins, Form("cos(%d#varphi)", harmonic.value)};
     const AxisSpec thAxisEtaPhiAngle{thConfigAxisEtaPhiAngle, "atan2(#Delta#eta,#Delta#varphi) (rad)"};
 
+    const AxisSpec thnQaAxisMinv{16, 0, 0.8, "#it{M}_{#gamma#gamma} (GeV/#it{c}^{2})"}; // bin witdh 0.05 GeV/c^2
+    const AxisSpec thnQaAxisPt{10, 0, 20., "#it{p}_{T} (GeV/#it{c})"};                  // bin width 2 GeV/c
+    const AxisSpec thnQaAxisDeltaEta{20, -1.6, 1.6, "|#Delta#eta|"};                    // bin witdh 0.16
+    const AxisSpec thnQaAxisDeltaPhi{24, 0, o2::constants::math::PI, "#Delta#varphi"};  // bin width 7.5 degrees in rad
+    const AxisSpec thnQaAxisCent{10, 0, 100, "Centrality (%)"};                         // bin width 10%
+
     if (!doprocessM02) {
       registry.add("hSparsePi0Flow", "<v_n> vs m_{inv} vs p_T vs cent for same event", HistType::kTProfile3D, {thnAxisInvMass, thnAxisPt, thnAxisCent});
       registry.add("hSparsePi0", "m_{inv} vs p_T vs cent for same event", HistType::kTH3D, {thnAxisInvMass, thnAxisPt, thnAxisCent});
@@ -474,6 +479,8 @@ struct TaskPi0FlowEMC {
       registry.add("mesonQA/hAlphaPtMixed", "Histo of meson asymmetry vs pT for mixed event", HistType::kTH2D, {thAxisAlpha, thnAxisPt});
       registry.add("mesonQA/hEtaPhiAngleMassCent", "atan2(#Delta#eta,#Delta#varphi) vs m_{inv} vs cent, same event", HistType::kTH3D, {thAxisEtaPhiAngle, thnAxisInvMass, thnAxisCent});
       registry.add("mesonQA/hEtaPhiAngleMassCentMixed", "atan2(#Delta#eta,#Delta#varphi) vs m_{inv} vs cent, mixed event", HistType::kTH3D, {thAxisEtaPhiAngle, thnAxisInvMass, thnAxisCent});
+      registry.add("mesonQA/hDeltaEtaDeltaPhiMinvPtCentSE", "#it{m}_{inv} vs #it{p}_{T} vs #Delta#eta vs #Delta#varphi vs cent for same event", HistType::kTHnF, {thnQaAxisMinv, thnQaAxisPt, thnQaAxisDeltaEta, thnQaAxisDeltaPhi, thnQaAxisCent});
+      registry.add("mesonQA/hDeltaEtaDeltaPhiMinvPtCentME", "#it{m}_{inv} vs #it{p}_{T} vs #Delta#eta vs #Delta#varphi vs cent for mixed event", HistType::kTHnF, {thnQaAxisMinv, thnQaAxisPt, thnQaAxisDeltaEta, thnQaAxisDeltaPhi, thnQaAxisCent});
     }
 
     if (correctionConfig.doEMCalCalib.value) {
@@ -1094,6 +1101,7 @@ struct TaskPi0FlowEMC {
         registry.fill(HIST("mesonQA/hTanThetaPhi"), vMeson.M(), getAngleDegree(std::atan(dTheta / dPhi)));
         registry.fill(HIST("mesonQA/hAlphaPt"), (v1.E() - v2.E()) / (v1.E() + v2.E()), vMeson.Pt());
         registry.fill(HIST("mesonQA/hEtaPhiAngleMassCent"), RecoDecay::constrainAngle(std::atan2(dEta, dPhi), -o2::constants::math::PI), vMeson.M(), getCentrality(collision));
+        registry.fill(HIST("mesonQA/hDeltaEtaDeltaPhiMinvPtCentSE"), vMeson.M(), vMeson.Pt(), dEta, std::fabs(RecoDecay::constrainAngle(dPhi, -o2::constants::math::PI)), getCentrality(collision));
       }
       if (mesonConfig.enableTanThetadPhi.value && mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
         registry.fill(HIST("hMesonCuts"), 5);
@@ -1254,6 +1262,7 @@ struct TaskPi0FlowEMC {
           registry.fill(HIST("mesonQA/hTanThetaPhiMixed"), vMeson.M(), getAngleDegree(std::atan(dTheta / dPhi)));
           registry.fill(HIST("mesonQA/hAlphaPtMixed"), (v1.E() - v2.E()) / (v1.E() + v2.E()), vMeson.Pt());
           registry.fill(HIST("mesonQA/hEtaPhiAngleMassCentMixed"), RecoDecay::constrainAngle(std::atan2(dEta, dPhi), -o2::constants::math::PI), vMeson.M(), getCentrality(c1));
+          registry.fill(HIST("mesonQA/hDeltaEtaDeltaPhiMinvPtCentME"), vMeson.M(), vMeson.Pt(), dEta, std::fabs(RecoDecay::constrainAngle(dPhi, -o2::constants::math::PI)), getCentrality(c1));
         }
         if (mesonConfig.enableTanThetadPhi.value && mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
           registry.fill(HIST("hMesonCutsMixed"), 5);
@@ -1326,6 +1335,7 @@ struct TaskPi0FlowEMC {
 
         float dTheta = v1.Theta() - v2.Theta();
         float dPhi = v1.Phi() - v2.Phi();
+        float dEta = v1.Eta() - v2.Eta();
         float openingAngle = std::acos(v1.Vect().Dot(v2.Vect()) / (v1.P() * v2.P()));
         registry.fill(HIST("hMesonCuts"), 1);
         if (openingAngle <= mesonConfig.minOpenAngle) {
@@ -1347,6 +1357,8 @@ struct TaskPi0FlowEMC {
           registry.fill(HIST("mesonQA/hInvMassPt"), vMeson.M(), vMeson.Pt());
           registry.fill(HIST("mesonQA/hTanThetaPhi"), vMeson.M(), getAngleDegree(std::atan(dTheta / dPhi)));
           registry.fill(HIST("mesonQA/hAlphaPt"), (v1.E() - v2.E()) / (v1.E() + v2.E()), vMeson.Pt());
+          registry.fill(HIST("mesonQA/hEtaPhiAngleMassCent"), RecoDecay::constrainAngle(std::atan2(dEta, dPhi), -o2::constants::math::PI), vMeson.M(), getCentrality(collision));
+          registry.fill(HIST("mesonQA/hDeltaEtaDeltaPhiMinvPtCentSE"), vMeson.M(), vMeson.Pt(), dEta, std::fabs(RecoDecay::constrainAngle(dPhi, -o2::constants::math::PI)), getCentrality(collision));
         }
         if (mesonConfig.enableTanThetadPhi.value && mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
           registry.fill(HIST("hMesonCuts"), 5);
@@ -1422,6 +1434,7 @@ struct TaskPi0FlowEMC {
 
         float dTheta = v1.Theta() - v2.Theta();
         float dPhi = v1.Phi() - v2.Phi();
+        float dEta = v1.Eta() - v2.Eta();
         float openingAngle = std::acos(v1.Vect().Dot(v2.Vect()) / (v1.P() * v2.P()));
 
         registry.fill(HIST("hMesonCutsMixed"), 1);
@@ -1441,6 +1454,8 @@ struct TaskPi0FlowEMC {
           registry.fill(HIST("mesonQA/hInvMassPtMixed"), vMeson.M(), vMeson.Pt());
           registry.fill(HIST("mesonQA/hTanThetaPhiMixed"), vMeson.M(), getAngleDegree(std::atan(dTheta / dPhi)));
           registry.fill(HIST("mesonQA/hAlphaPtMixed"), (v1.E() - v2.E()) / (v1.E() + v2.E()), vMeson.Pt());
+          registry.fill(HIST("mesonQA/hEtaPhiAngleMassCentMixed"), RecoDecay::constrainAngle(std::atan2(dEta, dPhi), -o2::constants::math::PI), vMeson.M(), getCentrality(c1));
+          registry.fill(HIST("mesonQA/hDeltaEtaDeltaPhiMinvPtCentME"), vMeson.M(), vMeson.Pt(), dEta, std::fabs(RecoDecay::constrainAngle(dPhi, -o2::constants::math::PI)), getCentrality(c1));
         }
         if (mesonConfig.enableTanThetadPhi.value && mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
           registry.fill(HIST("hMesonCutsMixed"), 5);
@@ -1540,6 +1555,8 @@ struct TaskPi0FlowEMC {
         ROOT::Math::PtEtaPhiMVector v2(g2.corrPt(), g2.eta(), g2.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
 
+        float dPhi = v1.Phi() - v2.Phi();
+        float dEta = v1.Eta() - v2.Eta();
         float openingAngle = std::acos(v1.Vect().Dot(v2.Vect()) / (v1.P() * v2.P()));
 
         registry.fill(HIST("hMesonCuts"), 1);
@@ -1558,6 +1575,8 @@ struct TaskPi0FlowEMC {
         if (mesonConfig.cfgEnableQA.value) {
           registry.fill(HIST("mesonQA/hInvMassPt"), vMeson.M(), vMeson.Pt());
           registry.fill(HIST("mesonQA/hAlphaPt"), (v1.E() - v2.E()) / (v1.E() + v2.E()), vMeson.Pt());
+          registry.fill(HIST("mesonQA/hEtaPhiAngleMassCent"), RecoDecay::constrainAngle(std::atan2(dEta, dPhi), -o2::constants::math::PI), vMeson.M(), getCentrality(collision));
+          registry.fill(HIST("mesonQA/hDeltaEtaDeltaPhiMinvPtCentSE"), vMeson.M(), vMeson.Pt(), dEta, std::fabs(RecoDecay::constrainAngle(dPhi, -o2::constants::math::PI)), getCentrality(collision));
         }
         registry.fill(HIST("hMesonCuts"), 6);
         runFlowAnalysis<0>(collision, vMeson);
@@ -1611,6 +1630,8 @@ struct TaskPi0FlowEMC {
         ROOT::Math::PtEtaPhiMVector v2(g2.corrPt(), g2.eta(), g2.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
 
+        float dPhi = v1.Phi() - v2.Phi();
+        float dEta = v1.Eta() - v2.Eta();
         float openingAngle = std::acos(v1.Vect().Dot(v2.Vect()) / (v1.P() * v2.P()));
 
         registry.fill(HIST("hMesonCutsMixed"), 1);
@@ -1629,6 +1650,8 @@ struct TaskPi0FlowEMC {
         if (mesonConfig.cfgEnableQA.value) {
           registry.fill(HIST("mesonQA/hInvMassPtMixed"), vMeson.M(), vMeson.Pt());
           registry.fill(HIST("mesonQA/hAlphaPtMixed"), (v1.E() - v2.E()) / (v1.E() + v2.E()), vMeson.Pt());
+          registry.fill(HIST("mesonQA/hEtaPhiAngleMassCent"), RecoDecay::constrainAngle(std::atan2(dEta, dPhi), -o2::constants::math::PI), vMeson.M(), getCentrality(c1));
+          registry.fill(HIST("mesonQA/hDeltaEtaDeltaPhiMinvPtCentME"), vMeson.M(), vMeson.Pt(), dEta, std::fabs(RecoDecay::constrainAngle(dPhi, -o2::constants::math::PI)), getCentrality(c1));
         }
         registry.fill(HIST("hMesonCutsMixed"), 6);
         runFlowAnalysis<2>(c1, vMeson);
