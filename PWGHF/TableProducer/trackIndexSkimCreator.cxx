@@ -3262,7 +3262,7 @@ struct HfTrackIndexSkimCreator {
           }
 
           if (config.doDstar && TESTBIT(isSelected2ProngCand, hf_cand_2prong::DecayType::D0ToPiK) && (pt2Prong + config.ptTolerance) * 1.2 > binsPtDstar[0] && whichHypo2Prong[kN2ProngDecays] != 0) { // o2-linter: disable="magic-number" (see comment below)
-                                                                                                                                                                                                                 // if D* enabled and pt of the D0 is larger than the minimum of the D* one within 20% (D* and D0 momenta are very similar, always within 20% according to PYTHIA8)
+                                                                                                                                                                                                       // if D* enabled and pt of the D0 is larger than the minimum of the D* one within 20% (D* and D0 momenta are very similar, always within 20% according to PYTHIA8)
             // second loop over positive tracks
             if (TESTBIT(whichHypo2Prong[kN2ProngDecays], 0) && (!config.applyKaonPidIn3Prongs || TESTBIT(trackIndexNeg1.isIdentifiedPid(), ChannelKaonPid))) { // only for D0 candidates; moreover if kaon PID enabled, apply to the negative track
 
