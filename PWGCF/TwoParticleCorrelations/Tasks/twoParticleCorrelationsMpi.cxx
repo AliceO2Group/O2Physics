@@ -116,13 +116,6 @@ struct TwoParticleCorrelationsMpi {
     Configurable<bool> cfgDropStepRECO{"cfgDropStepRECO", false, "choice to drop step RECO if efficiency correction is used"};
     Configurable<int> cfgCentBinsForMC{"cfgCentBinsForMC", 0, "0 = generated multiplicity; 1 = reconstructed multiplicity and all associated collisions"};
   } cfgGeneral;
-  struct : ConfigurableGroup {
-    Configurable<float> dcaxymax{"dcaxymax", 999.f, "maximum dcaxy of tracks"};
-    Configurable<float> dcazmax{"dcazmax", 999.f, "maximum dcaz of tracks"};
-    Configurable<bool> enablePtDepDCAxy{"enablePtDepDCAxy", false, "Enable pT-dependent DCAxy cut: |DCAxy| < a + b/pT"};
-    Configurable<float> dcaXyConst{"dcaXyConst", 0.004f, "Constant term 'a' for pT-dependent DCAxy cut: |DCAxy| < a + b/pT (cm)"};
-    Configurable<float> dcaXySlope{"dcaXySlope", 0.013f, "Slope term 'b' for pT-dependent DCAxy cut: |DCAxy| < a + b/pT (cm x GeV/c)"};
-  } cfgDCA;
   Configurable<uint16_t> cfgTrackBitMask{"cfgTrackBitMask", 0, "BitMask for track selection systematics; refer to the enum TrackSelectionCuts in filtering task"};
   Configurable<uint16_t> cfgMultCorrelationsMask{"cfgMultCorrelationsMask", 0, "Selection bitmask for the multiplicity correlations. This should match the filter selection cfgEstimatorBitMask."};
   Configurable<std::string> cfgMultCutFormula{"cfgMultCutFormula", "", "Multiplicity correlations cut formula. A result greater than zero results in accepted event. Parameters: [cFT0C] FT0C centrality, [mFV0A] V0A multiplicity, [mGlob] global track multiplicity, [mPV] PV track multiplicity, [cFT0M] FT0M centrality"};
@@ -192,11 +185,7 @@ struct TwoParticleCorrelationsMpi {
   Filter collisionVertexTypeFilter = (aod::collision::flags & static_cast<uint16_t>(aod::collision::CollisionFlagsRun2::Run2VertexerTracks)) == static_cast<uint16_t>(aod::collision::CollisionFlagsRun2::Run2VertexerTracks);
 
   // Track filters
-  Filter trackFilter = (nabs(aod::track::eta) < cfgGeneral.cfgCutEta) && (aod::track::pt > cfgGeneral.cfgCutPt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) &&
-                       (nabs(aod::track::dcaZ) < cfgDCA.dcazmax) &&
-                       ifnode(cfgDCA.enablePtDepDCAxy.node() == true,
-                              nabs(aod::track::dcaXY) < (cfgDCA.dcaXyConst + cfgDCA.dcaXySlope / aod::track::pt),
-                              nabs(aod::track::dcaXY) < cfgDCA.dcaxymax);
+  Filter trackFilter = (nabs(aod::track::eta) < cfgGeneral.cfgCutEta) && (aod::track::pt > cfgGeneral.cfgCutPt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true));
   Filter cfTrackFilter = (nabs(aod::cftrack::eta) < cfgGeneral.cfgCutEta) && (aod::cftrack::pt > cfgGeneral.cfgCutPt) && ncheckbit(aod::track::trackType, as<uint8_t>(cfgTrackBitMask));
 
   // MC filters
@@ -345,6 +334,7 @@ struct TwoParticleCorrelationsMpi {
 
   using DerivedCollisions = soa::Filtered<aod::CFCollisions>;
   using DerivedCollisionsCorrected = soa::Filtered<aod::CFCollisionsWithExtra>;
+  using DerivedMCClosureCollisions = soa::Join<aod::CFCollisions, aod::CFCollisionsExtra, aod::CFCollLabels>;
   using DerivedCollisionsMultSet = soa::Filtered<soa::Join<aod::CFCollisions, aod::CFMultSets>>;
   using DerivedCollisionsMultSetCorrected = soa::Filtered<soa::Join<aod::CFCollisions, aod::CFCollisionsExtra, aod::CFMultSets>>;
   using DerivedTracks = soa::Filtered<aod::CFTracks>;
@@ -365,11 +355,23 @@ struct TwoParticleCorrelationsMpi {
     if (enabledDerivedMixedProcesses > 1) {
       LOGF(fatal, "Only one reconstructed derived mixed-event process can be enabled");
     }
-    if (doprocessMCSameDerived && enabledDerivedSameProcesses > 0) {
-      LOGF(fatal, "processMCSameDerived is mutually exclusive with the reconstructed derived same-event processes because it also fills those outputs");
+    if ((doprocessMCSameDerived || doprocessMCDetectorClosure) && enabledDerivedSameProcesses > 0) {
+      LOGF(fatal, "The MC generated/reconstructed same-event processes are mutually exclusive with the reconstructed derived same-event processes because they also fill those outputs");
     }
-    if (doprocessSameGenMC && doprocessMCSameDerived) {
-      LOGF(fatal, "processSameGenMC and processMCSameDerived are mutually exclusive because both fill the generated same-event outputs");
+    if (doprocessMCSameDerived && doprocessMCDetectorClosure) {
+      LOGF(fatal, "processMCSameDerived and processMCDetectorClosure are mutually exclusive because both fill generated and reconstructed same-event outputs");
+    }
+    if (doprocessSameGenMC && (doprocessMCSameDerived || doprocessMCDetectorClosure)) {
+      LOGF(fatal, "processSameGenMC is mutually exclusive with processMCSameDerived and processMCDetectorClosure because they fill the same generated outputs");
+    }
+    if (doprocessMCDetectorClosure && cfgGeneral.cfgCentBinsForMC != 0) {
+      LOGF(fatal, "processMCDetectorClosure requires cfgCentBinsForMC=0 so generated and reconstructed outputs are both filled versus true charged multiplicity");
+    }
+    if (doprocessMCDetectorClosure && cfgUserAxis == NMPIAxis) {
+      LOGF(fatal, "processMCDetectorClosure does not support cfgUserAxis=3 (true N MPI); use the true charged-multiplicity axis for detector closure");
+    }
+    if (doprocessMCDetectorClosure && cfgCorrections.cfgFillAcceptanceWeights) {
+      LOGF(fatal, "processMCDetectorClosure cannot be used to produce acceptance weights");
     }
     if (cfgUserAxis == NMPIAxis &&
         (!(doprocessSameGenMC || doprocessMCSameDerived) ||
@@ -460,6 +462,18 @@ struct TwoParticleCorrelationsMpi {
       registry.add("multCorrelations", "Multiplicity correlations", {HistType::kTHnSparseF, multAxes});
     }
     registry.add("multiplicity", "event multiplicity", {HistType::kTH1F, {{100, 0, 100, "/multiplicity/centrality"}}});
+    if (doprocessMCDetectorClosure) {
+      registry.add("detectorClosure/rawMultiplicityVsTrue", "raw reconstructed versus true charged multiplicity;N_{ch}^{true};N_{ch}^{raw,reco}", {HistType::kTH2F, {axisMultiplicity, axisMultiplicity}});
+      registry.add("detectorClosure/correctedMultiplicityVsTrue", "corrected reconstructed versus true charged multiplicity;N_{ch}^{true};N_{ch}^{corr,reco}", {HistType::kTH2F, {axisMultiplicity, axisMultiplicity}});
+      registry.add("detectorClosure/profileCorrectedMultiplicityVsTrue", "mean corrected reconstructed multiplicity versus true multiplicity;N_{ch}^{true};#LT N_{ch}^{corr,reco} #GT", {HistType::kTProfile, {axisMultiplicity}});
+      registry.add("detectorClosure/profileTrueMultiplicityVsCorrected", "mean true multiplicity versus corrected reconstructed multiplicity;N_{ch}^{corr,reco};#LT N_{ch}^{true} #GT", {HistType::kTProfile, {axisMultiplicity}});
+      registry.add("detectorClosure/recoCollisionsPerMCCollision", "accepted reconstructed collisions per MC collision;N_{coll}^{reco};events", {HistType::kTH1F, {{11, -0.5, 10.5}}});
+      registry.add("detectorClosure/status", "detector-closure event status;status;events", {HistType::kTH1F, {{3, -0.5, 2.5}}});
+      auto* detectorClosureStatus = registry.get<TH1>(HIST("detectorClosure/status")).get();
+      detectorClosureStatus->GetXaxis()->SetBinLabel(1, "no reconstructed collision");
+      detectorClosureStatus->GetXaxis()->SetBinLabel(2, "one best collision");
+      detectorClosureStatus->GetXaxis()->SetBinLabel(3, "invalid best-collision count");
+    }
     if (eventSeedEstimatorEnabled) {
       registry.add("eventSeedEstimator", "event-level template estimator", {HistType::kTHnSparseF, {{100, 0, 100, "multiplicity"}, {100, -0.5, 99.5, "N_{trig}"}, {200, 0, 20, "Y_{near}"}, {200, 0, 20, "Y_{away}"}, {200, 0, 100, "N_{uncorrelated seeds}"}}});
       registry.add("eventSeedPairProbabilities", "summed pair probabilities", {HistType::kTH3F, {{200, 0, 200, "#Sigma P_{baseline}"}, {200, 0, 200, "#Sigma P_{near}"}, {200, 0, 200, "#Sigma P_{away}"}}});
@@ -669,7 +683,7 @@ struct TwoParticleCorrelationsMpi {
       ++nPtPtSubevents;
     }
 
-    if (!cfgCorrections.cfgFillAcceptanceWeights && (doprocessMCSameDerived || doprocessSameDerived || doprocessSameDerivedCorrected || doprocessSameDerivedMultSet || doprocessSameDerivedMultSetCorrected)) {
+    if (!cfgCorrections.cfgFillAcceptanceWeights && (doprocessMCSameDerived || doprocessMCDetectorClosure || doprocessSameDerived || doprocessSameDerivedCorrected || doprocessSameDerivedMultSet || doprocessSameDerivedMultSetCorrected)) {
       auto recoProfiles = std::make_unique<TObjArray>();
       addConfigObjectsToObjArray(recoProfiles.get(), mCorrConfigs, cfgUserAxis == EventSeedAxis && eventClassifierPercentileAxisEnabled);
       fFC.setObject(new FlowContainer("FlowContainer"));
@@ -683,7 +697,7 @@ struct TwoParticleCorrelationsMpi {
       fFCpt->initialise(axisMultiplicity, MaxPtCorrelationOrder, cfgCorrConfig.value, FlowNBootstrap);
       fFCpt->initialiseSubevent(axisMultiplicity, MaxPtCorrelationOrder, nPtPtSubevents, FlowNBootstrap);
     }
-    if (!cfgCorrections.cfgFillAcceptanceWeights && (doprocessMCSameDerived || doprocessSameGenMC)) {
+    if (!cfgCorrections.cfgFillAcceptanceWeights && (doprocessMCSameDerived || doprocessMCDetectorClosure || doprocessSameGenMC)) {
       auto generatedProfiles = std::make_unique<TObjArray>();
       addConfigObjectsToObjArray(generatedProfiles.get(), mCorrConfigs, cfgUserAxis == NMPIAxis && eventClassifierPercentileAxisEnabled);
       fFCGen.setObject(new FlowContainer("FlowContainer_gen"));
@@ -1759,11 +1773,12 @@ struct TwoParticleCorrelationsMpi {
   }
 
   template <CorrelationContainer::CFStep step, typename TTarget, typename TTracks1, typename TTracks2>
-  void fillCorrelations(TTarget target, TTracks1& tracks1, TTracks2& tracks2, float multiplicity, float posZ, int magField, float eventWeight, EventSeedEstimate* seedEstimate = nullptr, std::vector<PendingSeedTriggerFill>* pendingTriggerFills = nullptr, std::vector<PendingSeedPairFill>* pendingPairFills = nullptr, double userAxisValue = -1.0, bool fillEstimatorAcceptanceQA = true, bool fillLoopQA = true)
+  void fillCorrelations(TTarget target, TTracks1& tracks1, TTracks2& tracks2, float multiplicity, float posZ, int magField, float eventWeight, EventSeedEstimate* seedEstimate = nullptr, std::vector<PendingSeedTriggerFill>* pendingTriggerFills = nullptr, std::vector<PendingSeedPairFill>* pendingPairFills = nullptr, double userAxisValue = -1.0, bool fillEstimatorAcceptanceQA = true, bool fillLoopQA = true, float efficiencyMultiplicity = -1.f)
   {
     if (multiplicity < 0.f) {
       return;
     }
+    const float efficiencyLookupMultiplicity = efficiencyMultiplicity >= 0.f ? efficiencyMultiplicity : multiplicity;
 
     // Cache efficiency for particles (too many FindBin lookups)
     if constexpr (step == CorrelationContainer::kCFStepCorrected) {
@@ -1771,7 +1786,7 @@ struct TwoParticleCorrelationsMpi {
         efficiencyAssociatedCache.clear();
         efficiencyAssociatedCache.reserve(tracks2.size());
         for (const auto& track : tracks2) {
-          efficiencyAssociatedCache.push_back(getEfficiencyCorrection(cfg.mEfficiencyAssociated, track.eta(), track.pt(), multiplicity, posZ));
+          efficiencyAssociatedCache.push_back(getEfficiencyCorrection(cfg.mEfficiencyAssociated, track.eta(), track.pt(), efficiencyLookupMultiplicity, posZ));
         }
       }
     }
@@ -1833,7 +1848,7 @@ struct TwoParticleCorrelationsMpi {
       float triggerWeight = eventWeight;
       if constexpr (step == CorrelationContainer::kCFStepCorrected) {
         if (cfg.mEfficiencyTrigger) {
-          triggerWeight *= getEfficiencyCorrection(cfg.mEfficiencyTrigger, track1.eta(), track1.pt(), multiplicity, posZ);
+          triggerWeight *= getEfficiencyCorrection(cfg.mEfficiencyTrigger, track1.eta(), track1.pt(), efficiencyLookupMultiplicity, posZ);
         }
       }
 
@@ -2171,14 +2186,16 @@ struct TwoParticleCorrelationsMpi {
   PROCESS_SWITCH(TwoParticleCorrelationsMpi, processSameGenMC, "Process generated MC events from derived data and validate against the stored HepMC N MPI", false);
 
   template <class CollType, class TTracks1, class TTracks2>
-  void processSameDerivedT(CollType const& collision, TTracks1 const& tracks1, TTracks2 const& tracks2, const int* trueNMPI = nullptr)
+  void processSameDerivedT(CollType const& collision, TTracks1 const& tracks1, TTracks2 const& tracks2, const int* trueNMPI = nullptr, const float* outputMultiplicityOverride = nullptr, const float* efficiencyMultiplicityOverride = nullptr)
   {
     auto getMultiplicity = [](const auto& col) {
       return getAnalysisMultiplicity(col);
     };
     using BinningTypeDerived = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
-    BinningTypeDerived configurableBinningDerived{{getMultiplicity}, {axisVertex, axisMultiplicity}};
-    const auto multiplicity = getMultiplicity(collision);
+    BinningTypeDerived configurableBinningDerived{{getMultiplicity}, {axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
+    const float collisionMultiplicity = getMultiplicity(collision);
+    const float multiplicity = outputMultiplicityOverride ? *outputMultiplicityOverride : collisionMultiplicity;
+    const float efficiencyMultiplicity = efficiencyMultiplicityOverride ? *efficiencyMultiplicityOverride : collisionMultiplicity;
     if (cfgVerbosity > 0) {
       LOGF(info, "processSameDerivedT: Tracks for collision: %d/%d | Vertex: %.1f | Multiplicity/Centrality: %.1f", tracks1.size(), tracks2.size(), collision.posZ(), multiplicity);
     }
@@ -2200,8 +2217,8 @@ struct TwoParticleCorrelationsMpi {
     fGFW->Clear();
     fFCpt->clearVector();
     for (const auto& track : tracks2) {
-      fillPtSums<Reco>(track, multiplicity, collision.posZ());
-      fillGFW<Reco>(track, multiplicity, collision.posZ());
+      fillPtSums<Reco>(track, efficiencyMultiplicity, collision.posZ());
+      fillGFW<Reco>(track, efficiencyMultiplicity, collision.posZ());
     }
 
     int bin = configurableBinningDerived.getBin(std::tuple(collision.posZ(), multiplicity));
@@ -2230,14 +2247,14 @@ struct TwoParticleCorrelationsMpi {
         flushSeedAxisFills<CorrelationContainer::kCFStepReconstructed>(same, pendingTriggerFills, pendingPairFills, seedEstimate.nuncSeeds());
       } else if (hasEfficiency) {
         fillContainerEvent(same, multiplicity, CorrelationContainer::kCFStepCorrected);
-        fillCorrelations<CorrelationContainer::kCFStepCorrected>(same, tracks1, tracks2, multiplicity, collision.posZ(), field, 1.0f, &seedEstimate, &pendingTriggerFills, &pendingPairFills);
+        fillCorrelations<CorrelationContainer::kCFStepCorrected>(same, tracks1, tracks2, multiplicity, collision.posZ(), field, 1.0f, &seedEstimate, &pendingTriggerFills, &pendingPairFills, -1.0, true, true, efficiencyMultiplicity);
         finalizeEventSeedEstimate(seedEstimate);
         flushSeedAxisFills<CorrelationContainer::kCFStepCorrected>(same, pendingTriggerFills, pendingPairFills, seedEstimate.nuncSeeds());
       }
 
       if (fillReco && hasEfficiency) {
         fillContainerEvent(same, multiplicity, CorrelationContainer::kCFStepCorrected);
-        fillCorrelations<CorrelationContainer::kCFStepCorrected>(same, tracks1, tracks2, multiplicity, collision.posZ(), field, 1.0f, nullptr, nullptr, nullptr, getEventSeedUserAxisValue(multiplicity, seedEstimate.nuncSeeds()));
+        fillCorrelations<CorrelationContainer::kCFStepCorrected>(same, tracks1, tracks2, multiplicity, collision.posZ(), field, 1.0f, nullptr, nullptr, nullptr, getEventSeedUserAxisValue(multiplicity, seedEstimate.nuncSeeds()), true, true, efficiencyMultiplicity);
       }
       const auto seedClass = getEventSeedClass(multiplicity, seedEstimate.nuncSeeds());
       fillOutputContainers<Reco>(multiplicity, fRndm->Rndm(), seedClass);
@@ -2254,7 +2271,7 @@ struct TwoParticleCorrelationsMpi {
     }
     if (hasEfficiency) {
       fillContainerEvent(same, multiplicity, CorrelationContainer::kCFStepCorrected);
-      fillCorrelations<CorrelationContainer::kCFStepCorrected>(same, tracks1, tracks2, multiplicity, collision.posZ(), field, 1.0f, fillReco ? nullptr : &seedEstimate);
+      fillCorrelations<CorrelationContainer::kCFStepCorrected>(same, tracks1, tracks2, multiplicity, collision.posZ(), field, 1.0f, fillReco ? nullptr : &seedEstimate, nullptr, nullptr, -1.0, true, true, efficiencyMultiplicity);
     }
     finalizeEventSeedEstimate(seedEstimate);
     fillOutputContainers<Reco>(multiplicity, fRndm->Rndm());
@@ -2444,8 +2461,8 @@ struct TwoParticleCorrelationsMpi {
   }
   PROCESS_SWITCH(TwoParticleCorrelationsMpi, processMixedDerivedMultSetCorrected, "Process mixed events on derived data with corrected multiplicity and multiplicity sets", false);
 
-  template <class McCollision, class Particles1, class Particles2>
-  void processMCSameDerivedT(McCollision const& mcCollision, Particles1 const& mcParticles1, Particles2 const& mcParticles2, soa::SmallGroups<aod::CFCollisionsWithLabel> const& collisions)
+  template <class McCollision, class Particles1, class Particles2, class Collisions>
+  void processMCSameDerivedT(McCollision const& mcCollision, Particles1 const& mcParticles1, Particles2 const& mcParticles2, Collisions const& collisions)
   {
     if (cfgCorrections.cfgFillAcceptanceWeights) {
       return;
@@ -2470,7 +2487,7 @@ struct TwoParticleCorrelationsMpi {
                                            ? getTrueNMPIUserAxisValue(multiplicity, mcCollision.nMPI())
                                            : -1.0;
 
-    if (!(doprocessMCSameDerived || doprocessSameDerived || doprocessSameDerivedCorrected || doprocessSameDerivedMultSet || doprocessSameDerivedMultSetCorrected)) {
+    if (!(doprocessMCSameDerived || doprocessMCDetectorClosure || doprocessSameDerived || doprocessSameDerivedCorrected || doprocessSameDerivedMultSet || doprocessSameDerivedMultSetCorrected)) {
       if constexpr (std::experimental::is_detected<HasDecay, typename Particles1::iterator>::value) {
         fillQA(mcCollision, multiplicity, mcCollision.posZ(), mcParticles1, mcParticles2);
       } else {
@@ -2539,6 +2556,60 @@ struct TwoParticleCorrelationsMpi {
     }
   }
   PROCESS_SWITCH(TwoParticleCorrelationsMpi, processMCSameDerived, "Process generated and reconstructed MC same events on derived data and validate against HepMC N MPI", false);
+
+  void processMCDetectorClosure(soa::Filtered<aod::CFMcCollisionsWithExtra>::iterator const& mcCollision,
+                                soa::Filtered<aod::CFMcParticles> const& mcParticles,
+                                soa::SmallGroups<DerivedMCClosureCollisions> const& collisions,
+                                soa::Filtered<aod::CFTracks> const& tracks)
+  {
+    registry.fill(HIST("detectorClosure/recoCollisionsPerMCCollision"), static_cast<float>(collisions.size()));
+
+    int bestRecoCollisionCount = 0;
+    for (const auto& collision : collisions) {
+      if (collision.bestRecoCollision()) {
+        ++bestRecoCollisionCount;
+      }
+    }
+
+    if (collisions.size() == 0) {
+      registry.fill(HIST("detectorClosure/status"), 0.0);
+    } else if (bestRecoCollisionCount == 1) {
+      registry.fill(HIST("detectorClosure/status"), 1.0);
+    } else {
+      registry.fill(HIST("detectorClosure/status"), 2.0);
+      LOGF(fatal, "processMCDetectorClosure expected exactly one best reconstructed collision for MC collision %d, found %d among %d reconstructed collisions",
+           mcCollision.globalIndex(), bestRecoCollisionCount, collisions.size());
+    }
+
+    // Fill generated steps once. kCFStepVertex is filled only when at least one
+    // selected reconstructed collision is associated with this MC collision.
+    processMCSameDerivedT(mcCollision, mcParticles, mcParticles, collisions);
+
+    if (bestRecoCollisionCount == 0) {
+      return;
+    }
+
+    const float trueMultiplicity = mcCollision.multiplicity();
+    const int trueNMPI = mcCollision.nMPI();
+    for (const auto& collision : collisions) {
+      if (!collision.bestRecoCollision()) {
+        continue;
+      }
+
+      const float rawMultiplicity = collision.multiplicity();
+      const float correctedMultiplicity = collision.multiplicityCorrected();
+      registry.fill(HIST("detectorClosure/rawMultiplicityVsTrue"), trueMultiplicity, rawMultiplicity);
+      registry.fill(HIST("detectorClosure/correctedMultiplicityVsTrue"), trueMultiplicity, correctedMultiplicity);
+      registry.fill(HIST("detectorClosure/profileCorrectedMultiplicityVsTrue"), trueMultiplicity, correctedMultiplicity);
+      registry.fill(HIST("detectorClosure/profileTrueMultiplicityVsCorrected"), correctedMultiplicity, trueMultiplicity);
+
+      auto collisionTracks = tracks.sliceBy(derivedTracksPerCollision, collision.globalIndex());
+      // Physics histograms use true multiplicity, while efficiency weights use
+      // the reconstructed multiplicity coordinate for which the map was made.
+      processSameDerivedT(collision, collisionTracks, collisionTracks, &trueNMPI, &trueMultiplicity, &rawMultiplicity);
+    }
+  }
+  PROCESS_SWITCH(TwoParticleCorrelationsMpi, processMCDetectorClosure, "Fill generated, raw reconstructed, and efficiency-corrected MC correlations versus true charged multiplicity", false);
 
   PresliceUnsorted<aod::CFCollisionsWithLabel> collisionPerMCCollision = aod::cfcollision::cfMcCollisionId;
   template <typename... ParticleTypes>
