@@ -29,7 +29,6 @@
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
@@ -43,6 +42,7 @@
 #include <Rtypes.h>
 
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <numeric>
 #include <vector>

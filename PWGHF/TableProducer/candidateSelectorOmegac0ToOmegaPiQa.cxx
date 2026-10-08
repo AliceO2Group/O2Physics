@@ -177,7 +177,7 @@ struct HfCandidateSelectorToOmegaPiQa {
 
   o2::analysis::HfMlResponseOmegacToOmegaPi<float, aod::hf_cand_casc_lf::ConstructMethod::DcaFitter> hfMlResponseDca;
   o2::analysis::HfMlResponseOmegacToOmegaPi<float, aod::hf_cand_casc_lf::ConstructMethod::KfParticle> hfMlResponseKf;
-  std::vector<float> outputMlOmegac = {};
+  std::vector<float> outputMlOmegac;
   o2::ccdb::CcdbApi ccdbApi;
 
   TrackSelectorPi selectorPion;
