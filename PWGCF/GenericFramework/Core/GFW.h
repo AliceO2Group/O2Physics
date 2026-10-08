@@ -27,7 +27,8 @@ class GFW
 {
  public:
   struct Region {
-    int Nhar, NpT;
+    int Nhar = 0;
+    int NpT = 0;
     std::vector<int> NparVec{};
     double EtaMin = -999;
     double EtaMax = -999;
@@ -80,8 +81,8 @@ class GFW
   std::complex<double> Calculate(int poi, int ref, std::vector<int> hars, int ptbin = 0); // For differential, need POI and reference
   std::complex<double> Calculate(int poi, std::vector<int> hars);                         // For integrated case
   // Operations on strings. Equivalent to TString operations, but one to rid of root dependence
-  int s_index(std::string& instr, const std::string& pattern, const int& spos = 0);
-  bool s_contains(std::string& instr, const std::string& pattern);
+  int s_index(const std::string& instr, const std::string& pattern, const int& spos = 0);
+  bool s_contains(const std::string& instr, const std::string& pattern);
   void s_replace(std::string& instr, const std::string& pattern1, const std::string& pattern2, const int& spos = 0);
   void s_replace_all(std::string& instr, const std::string& pattern1, const std::string& pattern2);
   bool s_tokenize(std::string& instr, std::string& substr, int& spos, const std::string& delim);

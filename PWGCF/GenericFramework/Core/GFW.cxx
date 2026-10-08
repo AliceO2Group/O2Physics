@@ -72,7 +72,7 @@ void GFW::AddRegion(const string& refName, double lEtaMin, double lEtaMax, int l
   lOneRegion.BitMask = BitMask;   // Bit mask
   AddRegion(lOneRegion);
 };
-void GFW::AddRegion(string refName, std::vector<int> lNparVec, double lEtaMin, double lEtaMax, int lNpT, int BitMask)
+void GFW::AddRegion(const string& refName, const std::vector<int>& lNparVec, double lEtaMin, double lEtaMax, int lNpT, int BitMask)
 {
   const auto oldSize = fRegions.size();
   AddRegion(refName, lEtaMin, lEtaMax, lNpT, BitMask);
@@ -201,8 +201,6 @@ GFW::CorrConfig GFW::GetCorrelatorConfig(string config, string head, bool ptdif)
   // Then make sure we don't have any double-spaces:
   while (s_index(config, "  ") > -1)
     s_replace_all(config, "  ", " ");
-  std::vector<int> regs;
-  std::vector<int> hars;
   int sz1 = 0;
   int szend = 0;
   string ts, ts2;
@@ -371,13 +369,14 @@ int GFW::FindRegionByName(const string& refName)
   return -1;
 };
 // String processing:
-int GFW::s_index(string& instr, const string& pattern, const int& spos)
+int GFW::s_index(const string& instr, const string& pattern, const int& spos)
 {
-  return instr.find(pattern, spos);
+  const auto position = instr.find(pattern, spos);
+  return position == string::npos ? -1 : static_cast<int>(position);
 };
-bool GFW::s_contains(string& instr, const string& pattern)
+bool GFW::s_contains(const string& instr, const string& pattern)
 {
-  return (s_index(instr, pattern) > -1);
+  return instr.find(pattern) != string::npos;
 };
 void GFW::s_replace(string& instr, const string& pattern1, const string& pattern2, const int& spos)
 {

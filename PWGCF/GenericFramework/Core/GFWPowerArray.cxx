@@ -48,13 +48,8 @@ HarSet GFWPowerArray::trimVec(const HarSet& hars, int ind)
 };
 HarSet GFWPowerArray::addConstant(const HarSet& hars, int offset)
 {
-<<<<<<< HEAD
-  HarSet retVec = std::move(hars);
-  for (int& val : retVec)
-=======
   HarSet retVec = hars;
   for (int& val : retVec) // o2-linter: disable=const-ref-in-for-loop (updates each harmonic)
->>>>>>> d563a1043 (more linter cleanup in GFW)
     val += offset;
   return retVec;
 };

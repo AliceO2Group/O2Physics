@@ -333,33 +333,30 @@ void GFWWeights::createNUA(bool IntegrateOverCentAndPt)
   TH1D* h1;
   if (!fW_data || fW_data->GetEntries() < 1)
     return;
-  if (IntegrateOverCentAndPt) {
-    if (fAccInt)
-      delete fAccInt;
-    fAccInt = reinterpret_cast<TH3D*>(fW_data->At(0)->Clone("IntegratedAcceptance"));
-    fAccInt->SetDirectory(0);
-    fAccInt->Sumw2();
-    for (int etai = 1; etai <= fAccInt->GetNbinsY(); etai++) {
-      fAccInt->GetYaxis()->SetRange(etai, etai);
+  if (fAccInt)
+    delete fAccInt;
+  fAccInt = reinterpret_cast<TH3D*>(fW_data->At(0)->Clone("IntegratedAcceptance"));
+  fAccInt->SetDirectory(0);
+  fAccInt->Sumw2();
+  for (int etai = 1; etai <= fAccInt->GetNbinsY(); etai++) {
+    fAccInt->GetYaxis()->SetRange(etai, etai);
+    if (fAccInt->Integral() < 1)
+      continue;
+    for (int vzi = 1; vzi <= fAccInt->GetNbinsZ(); vzi++) {
+      fAccInt->GetZaxis()->SetRange(vzi, vzi);
       if (fAccInt->Integral() < 1)
         continue;
-      for (int vzi = 1; vzi <= fAccInt->GetNbinsZ(); vzi++) {
-        fAccInt->GetZaxis()->SetRange(vzi, vzi);
-        if (fAccInt->Integral() < 1)
-          continue;
-        h1 = reinterpret_cast<TH1D*>(fAccInt->Project3D("x"));
-        double maxv = h1->GetMaximum();
-        for (int phii = 1; phii <= h1->GetNbinsX(); phii++) {
-          fAccInt->SetBinContent(phii, etai, vzi, fAccInt->GetBinContent(phii, etai, vzi) / maxv);
-          fAccInt->SetBinError(phii, etai, vzi, fAccInt->GetBinError(phii, etai, vzi) / maxv);
-        }
-        delete h1;
+      h1 = reinterpret_cast<TH1D*>(fAccInt->Project3D("x"));
+      double maxv = h1->GetMaximum();
+      for (int phii = 1; phii <= h1->GetNbinsX(); phii++) {
+        fAccInt->SetBinContent(phii, etai, vzi, fAccInt->GetBinContent(phii, etai, vzi) / maxv);
+        fAccInt->SetBinError(phii, etai, vzi, fAccInt->GetBinError(phii, etai, vzi) / maxv);
       }
-      fAccInt->GetZaxis()->SetRange(1, fAccInt->GetNbinsZ());
+      delete h1;
     }
-    fAccInt->GetYaxis()->SetRange(1, fAccInt->GetNbinsY());
-    return;
+    fAccInt->GetZaxis()->SetRange(1, fAccInt->GetNbinsZ());
   }
+  fAccInt->GetYaxis()->SetRange(1, fAccInt->GetNbinsY());
 };
 TH1D* GFWWeights::getdNdPhi()
 {
@@ -393,21 +390,18 @@ void GFWWeights::createNUE(bool IntegrateOverCentrality)
   TH3D* den = 0;
   if (!fW_mcrec || !fW_mcgen || fW_mcrec->GetEntries() < 1 || fW_mcgen->GetEntries() < 1)
     return;
-  if (IntegrateOverCentrality) {
-    num = reinterpret_cast<TH3D*>(fW_mcrec->At(0));
-    den = reinterpret_cast<TH3D*>(fW_mcgen->At(0));
-    num->Sumw2();
-    den->Sumw2();
-    num->RebinY(2);
-    den->RebinY(2);
-    num->RebinZ(5);
-    den->RebinZ(5);
-    delete fEffInt;
-    fEffInt = reinterpret_cast<TH3D*>(num->Clone("Efficiency_Integrated"));
-    fEffInt->SetDirectory(0);
-    fEffInt->Divide(den);
-    return;
-  }
+  num = reinterpret_cast<TH3D*>(fW_mcrec->At(0));
+  den = reinterpret_cast<TH3D*>(fW_mcgen->At(0));
+  num->Sumw2();
+  den->Sumw2();
+  num->RebinY(2);
+  den->RebinY(2);
+  num->RebinZ(5);
+  den->RebinZ(5);
+  delete fEffInt;
+  fEffInt = reinterpret_cast<TH3D*>(num->Clone("Efficiency_Integrated"));
+  fEffInt->SetDirectory(0);
+  fEffInt->Divide(den);
 };
 void GFWWeights::readAndMerge(const TString& filelinks, const TString& listName, bool addData, bool addRec, bool addGen)
 {
