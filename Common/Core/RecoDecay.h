@@ -584,6 +584,7 @@ struct RecoDecay {
         } else if (particle.mothersIds().front() < particle.mothersIds().back()) {
           auto absStatusCode = std::abs(particle.getGenStatusCode());
           if ((absStatusCode >= StatusCodePrimaryMin && absStatusCode <= StatusCodePrimaryMax) || (absStatusCode >= StatusCodeRhadronMin && absStatusCode <= StatusCodeRhadronMax)) {
+            motherIdsOrdered.resize(particle.mothersIds().back() - particle.mothersIds().front() + 1);
             std::iota(motherIdsOrdered.begin(), motherIdsOrdered.end(), particle.mothersIds().front());
           } else {
             motherIdsOrdered.push_back(particle.mothersIds().front());
