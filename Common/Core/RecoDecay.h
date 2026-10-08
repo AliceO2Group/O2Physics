@@ -27,10 +27,10 @@
 #include <cmath>       // std::abs, std::sqrt
 #include <cstddef>     // std::size_t
 #include <cstdint>     // intX_t
+#include <numeric>     // std::iota
 #include <tuple>       // std::apply
 #include <type_traits> // std::decay_t
 #include <utility>     // std::move
-#include <numeric>     // std::iota
 #include <vector>      // std::vector
 
 /// Base class for calculating properties of reconstructed decays
@@ -592,16 +592,15 @@ struct RecoDecay {
           }
         } else if (particle.mothersIds().front() > particle.mothersIds().back()) {
           if (particle.mothersIds().back() != 0) {
-            motherIdsOrdered.push_back(particle.mothersIds().back());                
+            motherIdsOrdered.push_back(particle.mothersIds().back());
           }
-          motherIdsOrdered.push_back(particle.mothersIds().front());                
+          motherIdsOrdered.push_back(particle.mothersIds().front());
         }
       } else if (particle.mothersIds().size() == 1) {
         motherIdsOrdered.push_back(particle.mothersIds().front());
       }
     }
- }
-
+  }
 
   /// Finds the mother of an MC particle by looking for the expected PDG code in the mother chain.
   /// \tparam acceptFlavourOscillation  switch to accept decays where the mother oscillated (e.g. B0 -> B0bar)
@@ -1118,8 +1117,8 @@ struct RecoDecay {
           }
 
           getOrderedMotherIds(particleMother, motherIdsOrdered, searchUpToQuark);
-          for (auto const& iMother : motherIdsOrdered) {                                                  // loop over the mother particles of the analysed particle
-            if (std::find(arrayIdsStage.begin(), arrayIdsStage.end(), iMother) != arrayIdsStage.end()) {  // if a mother is still present in the vector, do not check it again
+          for (auto const& iMother : motherIdsOrdered) {                                                 // loop over the mother particles of the analysed particle
+            if (std::find(arrayIdsStage.begin(), arrayIdsStage.end(), iMother) != arrayIdsStage.end()) { // if a mother is still present in the vector, do not check it again
               continue;
             }
             auto mother = particlesMC.rawIteratorAt(iMother - particlesMC.offset());
@@ -1210,8 +1209,8 @@ struct RecoDecay {
           std::vector<int64_t> motherIdsOrdered{};
           getOrderedMotherIds(particleMother, motherIdsOrdered, searchUpToQuark);
 
-          for (auto const& iMother : motherIdsOrdered) {                                                  // loop over the mother particles of the analysed particle
-            if (std::find(arrayIdsStage.begin(), arrayIdsStage.end(), iMother) != arrayIdsStage.end()) {  // if a mother is still present in the vector, do not check it again
+          for (auto const& iMother : motherIdsOrdered) {                                                 // loop over the mother particles of the analysed particle
+            if (std::find(arrayIdsStage.begin(), arrayIdsStage.end(), iMother) != arrayIdsStage.end()) { // if a mother is still present in the vector, do not check it again
               continue;
             }
             auto mother = particlesMC.rawIteratorAt(iMother - particlesMC.offset());
