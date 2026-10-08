@@ -578,25 +578,25 @@ struct RecoDecay {
     if (!searchUpToQuark) {
       motherIdsOrdered.push_back(particle.mothersIds().front());
     } else {
-      if (particleMother.mothersIds().size() == 2) {
-        if (particleMother.mothersIds().front() == particleMother.mothersIds().back()) {
-          motherIdsOrdered.push_back(particleMother.mothersIds().front());
-        } else if (particleMother.mothersIds().front() < particleMother.mothersIds().back()) {
-          auto absStatusCode = std::abs(particleMother.getGenStatusCode());
+      if (particle.mothersIds().size() == 2) {
+        if (particle.mothersIds().front() == particle.mothersIds().back()) {
+          motherIdsOrdered.push_back(particle.mothersIds().front());
+        } else if (particle.mothersIds().front() < particle.mothersIds().back()) {
+          auto absStatusCode = std::abs(particle.getGenStatusCode());
           if ((absStatusCode >= StatusCodePrimaryMin && absStatusCode <= StatusCodePrimaryMax) || (absStatusCode >= StatusCodeRhadronMin && absStatusCode <= StatusCodeRhadronMax)) {
-            std::iota(motherIdsOrdered.begin(), motherIdsOrdered.end(), particleMother.mothersIds().front());
+            std::iota(motherIdsOrdered.begin(), motherIdsOrdered.end(), particle.mothersIds().front());
           } else {
-            motherIdsOrdered.push_back(particleMother.mothersIds().front());
-            motherIdsOrdered.push_back(particleMother.mothersIds().back());
+            motherIdsOrdered.push_back(particle.mothersIds().front());
+            motherIdsOrdered.push_back(particle.mothersIds().back());
           }
-        } else if (particleMother.mothersIds().front() > particleMother.mothersIds().back()) {
-          if (particleMother.mothersIds().back() != 0) {
-            motherIdsOrdered.push_back(particleMother.mothersIds().back());                
+        } else if (particle.mothersIds().front() > particle.mothersIds().back()) {
+          if (particle.mothersIds().back() != 0) {
+            motherIdsOrdered.push_back(particle.mothersIds().back());                
           }
-          motherIdsOrdered.push_back(particleMother.mothersIds().front());                
+          motherIdsOrdered.push_back(particle.mothersIds().front());                
         }
-      } else if (particleMother.mothersIds().size() == 1) {
-        motherIdsOrdered.push_back(particleMother.mothersIds().front());
+      } else if (particle.mothersIds().size() == 1) {
+        motherIdsOrdered.push_back(particle.mothersIds().front());
       }
     }
  }
