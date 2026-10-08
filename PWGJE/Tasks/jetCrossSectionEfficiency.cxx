@@ -47,6 +47,7 @@
 #include <THnSparse.h>
 
 #include <algorithm>
+#include <array>
 #include <cinttypes>
 #include <cmath>
 #include <cstddef>
@@ -151,6 +152,7 @@ struct JetCrossSectionEfficiency {
   static constexpr float ConfigSwitchHigh = 9998.0f;
   static constexpr float BrokenPtHardSentinel = 1.0f;
   static constexpr int MinITSClustersForOccupancy = 5;
+  static constexpr int NumberOfHasCollSelectionConditionDiagnostics = 5;
   static constexpr int HasCollQaMaxCount = 500;
   static constexpr int HasCollQaMaxDeltaGlobalBC = 100000;
   static constexpr int64_t NoOtherTruthCollision = -1;
@@ -370,6 +372,8 @@ struct JetCrossSectionEfficiency {
 
       if (isSel8FullPbPb) {
         AxisSpec axisPbPbTruthSelectionOnly = {PbPbTruthSelectionOnlyNBins, 0.5, static_cast<double>(PbPbTruthSelectionOnlyNBins) + 0.5, "event selection (PbPb truth-only)"};
+        AxisSpec selectionConditionAxis = {NumberOfHasCollSelectionConditionDiagnostics, 0.5, static_cast<double>(NumberOfHasCollSelectionConditionDiagnostics) + 0.5, "selection condition"};
+        AxisSpec hasCollSelectionStateAxis = {4, 0.5, 4.5, "hasColl and selection-condition state"};
         std::vector<std::string> timeRangeOnlyLabels = {"INEL", "+RCT_pass", "+kTVX(truth)", "+kNoTFB(truth)", "+kNoITSROFB(truth)", "+kNoCollInTimeRangeStandard(truth)", "+hasColl", "+|zReco|<10", "+noSplit"};
         std::vector<std::string> rofOnlyLabels = {"INEL", "+RCT_pass", "+kTVX(truth)", "+kNoTFB(truth)", "+kNoITSROFB(truth)", "+kNoCollInRofStandard(truth)", "+hasColl", "+|zReco|<10", "+noSplit"};
 
@@ -390,6 +394,19 @@ struct JetCrossSectionEfficiency {
                      {HistType::kTH1F, {axisPbPbTruthSelectionOnly}});
         setAxisLabels(registry.get<TH2>(HIST("h2_jet_pt_part_eventselection_bcBitsFirst_rofOnly_truth"))->GetYaxis(), rofOnlyLabels);
         setAxisLabels(registry.get<TH1>(HIST("h_mccollisions_eventselection_bcBitsFirst_rofOnly_truth"))->GetXaxis(), rofOnlyLabels);
+
+        registry.add("h2_mccollisions_selection_bit_vs_has_coll_state",
+                     "weighted MC collisions after common RCT+TVX baseline with valid PbPb truth-proxy evaluation;selection condition;hasColl and selection-condition state",
+                     {HistType::kTH2F, {selectionConditionAxis, hasCollSelectionStateAxis}});
+        registry.add("h2_mcpjets_selection_bit_vs_has_coll_state",
+                     "weighted selected MCP jets after common RCT+TVX baseline with valid PbPb truth-proxy evaluation;selection condition;hasColl and selection-condition state",
+                     {HistType::kTH2F, {selectionConditionAxis, hasCollSelectionStateAxis}});
+        std::vector<std::string> selectionConditionLabels = {"kNoTimeFrameBorder", "kNoITSROFrameBorder", "kNoSameBunchPileup (truth proxy)", "kNoCollInTimeRangeStandard (truth proxy)", "kNoCollInRofStandard (truth proxy)"};
+        std::vector<std::string> hasCollSelectionStateLabels = {"noColl, fail", "noColl, pass", "hasColl, fail", "hasColl, pass"};
+        setAxisLabels(registry.get<TH2>(HIST("h2_mccollisions_selection_bit_vs_has_coll_state"))->GetXaxis(), selectionConditionLabels);
+        setAxisLabels(registry.get<TH2>(HIST("h2_mccollisions_selection_bit_vs_has_coll_state"))->GetYaxis(), hasCollSelectionStateLabels);
+        setAxisLabels(registry.get<TH2>(HIST("h2_mcpjets_selection_bit_vs_has_coll_state"))->GetXaxis(), selectionConditionLabels);
+        setAxisLabels(registry.get<TH2>(HIST("h2_mcpjets_selection_bit_vs_has_coll_state"))->GetYaxis(), hasCollSelectionStateLabels);
       }
     }
 
@@ -1369,11 +1386,12 @@ struct JetCrossSectionEfficiency {
     bool passesNoTFBTruth = truthBC.selection_bit(aod::evsel::kNoTimeFrameBorder);
     bool passesNoITSROFBTruth = truthBC.selection_bit(aod::evsel::kNoITSROFrameBorder);
 
-    bool truthNoSBP = true;
-    if (applySBP) {
+    bool truthNoSBPDiagnostic = true;
+    if (applySBP || isSel8FullPbPb) {
       auto sameBC = allMcCollisions.sliceBy(mcCollsPerBC, mccollision.bcId());
-      truthNoSBP = (sameBC.size() == 1);
+      truthNoSBPDiagnostic = (sameBC.size() == 1);
     }
+    bool truthNoSBP = applySBP ? truthNoSBPDiagnostic : true;
 
     bool hasRecoColl = (collisions.size() >= 1);
     bool passesZvtxCutReco = false;
@@ -1398,6 +1416,38 @@ struct JetCrossSectionEfficiency {
     }
 
     bool passesRct = applyRCT ? (truthBC.rct_raw() & rctMask) == 0 : true;
+    float weight = mccollision.weight();
+
+    if (isSel8FullPbPb && passesRct && passesTVXTruth && truthPbPbSelections.valid) {
+      // The five selection conditions are evaluated independently on the same RCT+TVX
+      // baseline with valid PbPb truth-proxy evaluation.
+      const std::array<bool, NumberOfHasCollSelectionConditionDiagnostics> selectionConditionPasses = {
+        passesNoTFBTruth,
+        passesNoITSROFBTruth,
+        truthNoSBPDiagnostic,
+        truthPbPbSelections.noCollInTimeRangeStandard,
+        truthPbPbSelections.noCollInRofStandard};
+      for (size_t conditionIndex = 0; conditionIndex < selectionConditionPasses.size(); ++conditionIndex) {
+        const int hasCollSelectionState = (hasRecoColl ? 3 : 1) + (selectionConditionPasses[conditionIndex] ? 1 : 0);
+        registry.fill(HIST("h2_mccollisions_selection_bit_vs_has_coll_state"), static_cast<double>(conditionIndex + 1), hasCollSelectionState, weight);
+      }
+
+      float pTHatDiagnostic = computePtHat(mccollision);
+      if (pTHatDiagnostic >= pTHatAbsoluteMin) {
+        for (const auto& jet : jets) {
+          if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax) ||
+              jet.pt() < jetPtMin || jet.pt() > pTHatMaxMCP * pTHatDiagnostic ||
+              !isAcceptedJet<aod::JetParticles>(jet)) {
+            continue;
+          }
+          for (size_t conditionIndex = 0; conditionIndex < selectionConditionPasses.size(); ++conditionIndex) {
+            const int hasCollSelectionState = (hasRecoColl ? 3 : 1) + (selectionConditionPasses[conditionIndex] ? 1 : 0);
+            registry.fill(HIST("h2_mcpjets_selection_bit_vs_has_coll_state"), static_cast<double>(conditionIndex + 1), hasCollSelectionState, weight);
+          }
+        }
+      }
+    }
+
     std::vector<bool> pass = {true, passesRct, passesTVXTruth,
                               applyTFB ? passesNoTFBTruth : true,
                               applyROFB ? passesNoITSROFBTruth : true};
@@ -1413,8 +1463,6 @@ struct JetCrossSectionEfficiency {
     pass.push_back(hasRecoColl);
     pass.push_back(passesZvtxCutReco);
     pass.push_back(hasRecoColl && noSplitPass);
-
-    float weight = mccollision.weight();
 
     int sMaxTimeRangeOnly = 0;
     int sMaxRofOnly = 0;

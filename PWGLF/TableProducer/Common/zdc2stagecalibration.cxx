@@ -108,6 +108,10 @@ struct zdc2stagecalibration {
   static constexpr int kQRecenteringMultidimNFeatures = 35;
   static constexpr int kQRecenteringMultidimNMatrixMoments = kQRecenteringMultidimNFeatures * (kQRecenteringMultidimNFeatures + 1) / 2;
   static constexpr int kQRecenteringMultidimNMoments = kQRecenteringMultidimNMatrixMoments + kQRecenteringNComponents * kQRecenteringMultidimNFeatures;
+  // Additional sufficient statistics for the flatness-constrained multidimensional fit.
+  // Per conditioning bin store 35 sums of the cubic features followed by
+  // 4 sums of QxA,QyA,QxC,QyC. Feature 0 is unity, so its sum is N.
+  static constexpr int kQRecenteringFlatnessNMoments = kQRecenteringMultidimNFeatures + kQRecenteringNComponents;
 
   void init(o2::framework::InitContext&)
   {
@@ -128,7 +132,9 @@ struct zdc2stagecalibration {
     AxisSpec ratioAxis = {240, 0.0, 2.4, "#Sigma tower/common"};
     AxisSpec qRecenteringMomentAxis = {kQRecenteringNMoments, 0.0, static_cast<double>(kQRecenteringNMoments), "regression moment"};
     AxisSpec qRecenteringMultidimMomentAxis = {kQRecenteringMultidimNMoments, 0.0, static_cast<double>(kQRecenteringMultidimNMoments), "multidimensional regression moment"};
+    AxisSpec qRecenteringFlatnessMomentAxis = {kQRecenteringFlatnessNMoments, 0.0, static_cast<double>(kQRecenteringFlatnessNMoments), "flatness sufficient-statistic index"};
     AxisSpec centralityAxis = {80, 0.0, 80.0, "centrality (%)"};
+    AxisSpec resolutionCentralityAxis = {50, 0.0, 50.0, "centrality (%)"};
     AxisSpec vertexXYAxis = {100, -0.5, 0.5, "vertex x/y (cm)"};
     AxisSpec vertexZAxis = {100, -10.0, 10.0, "vertex z (cm)"};
     AxisSpec qComponentAxis = {4, 0.0, 4.0, "Q component"};
@@ -198,6 +204,17 @@ struct zdc2stagecalibration {
     histos.add("QRecenteringCalibration/hRegressionMoments", "Q recentering regression moments;centrality (%);moment index", kTH2D, {centralityAxis, qRecenteringMomentAxis});
     histos.add("QRecenteringCalibration/hRegressionMomentsMultidim", "Multidimensional cubic Q recentering regression moments;centrality (%);moment index", kTH2D, {centralityAxis, qRecenteringMultidimMomentAxis});
 
+    // Sufficient statistics used only when deriving the multidimensional map with
+    // an additional flatness penalty. They do not alter the 35-feature model or
+    // the application-side CCDB format. For each (centrality,conditioning) bin:
+    // indices 0..34 = sum(X_i), indices 35..38 = sum(QxA,QyA,QxC,QyC).
+    if (deriveQRecentering.value && qRecenteringMethod.value == 1) {
+      histos.add("QRecenteringCalibration/hFlatnessMomentsTime", "Flatness sufficient statistics vs time;centrality (%);time from SOR (h);statistic index", kTH3D, {centralityAxis, timeAxis, qRecenteringFlatnessMomentAxis});
+      histos.add("QRecenteringCalibration/hFlatnessMomentsVx", "Flatness sufficient statistics vs v_{x};centrality (%);v_{x} (cm);statistic index", kTH3D, {centralityAxis, vertexXYAxis, qRecenteringFlatnessMomentAxis});
+      histos.add("QRecenteringCalibration/hFlatnessMomentsVy", "Flatness sufficient statistics vs v_{y};centrality (%);v_{y} (cm);statistic index", kTH3D, {centralityAxis, vertexXYAxis, qRecenteringFlatnessMomentAxis});
+      histos.add("QRecenteringCalibration/hFlatnessMomentsVz", "Flatness sufficient statistics vs v_{z};centrality (%);v_{z} (cm);statistic index", kTH3D, {centralityAxis, vertexZAxis, qRecenteringFlatnessMomentAxis});
+    }
+
     histos.add("QRecenteringQA/pQBeforeVsCentrality", "Q before recentering vs centrality;centrality (%);Q component;<Q>", kTProfile2D, {centralityAxis, qComponentAxis});
     histos.add("QRecenteringQA/pQBeforeVsTime", "Q before recentering vs time;time from SOR (h);Q component;<Q>", kTProfile2D, {timeAxis, qComponentAxis});
     histos.add("QRecenteringQA/pQBeforeVsVx", "Q before recentering vs v_{x};v_{x} (cm);Q component;<Q>", kTProfile2D, {vertexXYAxis, qComponentAxis});
@@ -208,6 +225,7 @@ struct zdc2stagecalibration {
     histos.add("QRecenteringQA/pQAfterVsVx", "Q after recentering vs v_{x};v_{x} (cm);Q component;<Q>", kTProfile2D, {vertexXYAxis, qComponentAxis});
     histos.add("QRecenteringQA/pQAfterVsVy", "Q after recentering vs v_{y};v_{y} (cm);Q component;<Q>", kTProfile2D, {vertexXYAxis, qComponentAxis});
     histos.add("QRecenteringQA/pQAfterVsVz", "Q after recentering vs v_{z};v_{z} (cm);Q component;<Q>", kTProfile2D, {vertexZAxis, qComponentAxis});
+    histos.add("ResolutionQA/pCosPsiAPsiCVsCentrality", "ZDC A-C spectator-plane correlation;centrality (%);<#cos(#Psi_{A}-#Psi_{C})>", kTProfile, {resolutionCentralityAxis});
     histos.add("QRecentering2DQA/pQxAAfterVsCentralityTime", "QxA after recentering;centrality (%);time from SOR (h);<Q_{x}^{A}>", kTProfile2D, {centralityAxis, timeAxis});
     histos.add("QRecentering2DQA/pQyAAfterVsCentralityTime", "QyA after recentering;centrality (%);time from SOR (h);<Q_{y}^{A}>", kTProfile2D, {centralityAxis, timeAxis});
     histos.add("QRecentering2DQA/pQxCAfterVsCentralityTime", "QxC after recentering;centrality (%);time from SOR (h);<Q_{x}^{C}>", kTProfile2D, {centralityAxis, timeAxis});
@@ -732,6 +750,25 @@ struct zdc2stagecalibration {
             histos.fill(HIST("QRecenteringCalibration/hRegressionMomentsMultidim"), centrality, index + 0.5, qFeatures[i] * qValues[component]);
           }
         }
+
+        // Store only the compact per-bin sums needed to add conditional-mean
+        // flatness penalties in the post-processing builder. The first feature
+        // is 1, therefore sum(X_0) is the number of events in that bin.
+        for (int i = 0; i < kQRecenteringMultidimNFeatures; ++i) {
+          const double value = qFeatures[i];
+          histos.fill(HIST("QRecenteringCalibration/hFlatnessMomentsTime"), centrality, timeFromSOR, i + 0.5, value);
+          histos.fill(HIST("QRecenteringCalibration/hFlatnessMomentsVx"), centrality, vx, i + 0.5, value);
+          histos.fill(HIST("QRecenteringCalibration/hFlatnessMomentsVy"), centrality, vy, i + 0.5, value);
+          histos.fill(HIST("QRecenteringCalibration/hFlatnessMomentsVz"), centrality, vz, i + 0.5, value);
+        }
+        for (int component = 0; component < kQRecenteringNComponents; ++component) {
+          const int index = kQRecenteringMultidimNFeatures + component;
+          const double value = qValues[component];
+          histos.fill(HIST("QRecenteringCalibration/hFlatnessMomentsTime"), centrality, timeFromSOR, index + 0.5, value);
+          histos.fill(HIST("QRecenteringCalibration/hFlatnessMomentsVx"), centrality, vx, index + 0.5, value);
+          histos.fill(HIST("QRecenteringCalibration/hFlatnessMomentsVy"), centrality, vy, index + 0.5, value);
+          histos.fill(HIST("QRecenteringCalibration/hFlatnessMomentsVz"), centrality, vz, index + 0.5, value);
+        }
       }
     }
 
@@ -818,6 +855,12 @@ struct zdc2stagecalibration {
 
     const double phiRecenteringA = std::atan2(qValues[1], qValues[0]);
     const double phiRecenteringC = std::atan2(qValues[3], qValues[2]);
+    // ZDC resolution
+    const double qMagA = std::hypot(qValues[0], qValues[1]);
+    const double qMagC = std::hypot(qValues[2], qValues[3]);
+    if (centrality >= 0.f && centrality < 50.f && qMagA > 0. && qMagC > 0.) {
+      histos.fill(HIST("ResolutionQA/pCosPsiAPsiCVsCentrality"), centrality, std::cos(phiRecenteringA - phiRecenteringC));
+    }
     histos.fill(HIST("PhiQA/hPhiAfterRecenteringZNA"), phiRecenteringA);
     histos.fill(HIST("PhiQA/hPhiAfterRecenteringZNC"), phiRecenteringC);
     histos.fill(HIST("PhiQA/hPhiAfterRecenteringVsCentralityZNA"), centrality, phiRecenteringA);

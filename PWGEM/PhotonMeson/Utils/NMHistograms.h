@@ -18,6 +18,7 @@
 
 #include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
 
+#include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/Concepts.h>
 #include <Framework/HistogramRegistry.h>
@@ -32,7 +33,12 @@
 
 namespace o2::aod::pwgem::photonmeson::utils::nmhistogram
 {
-inline void addNMHistograms(o2::framework::HistogramRegistry* fRegistry, bool isMC, const char* pairname = "#gamma#gamma")
+inline void addNMHistograms(o2::framework::HistogramRegistry* fRegistry, bool isMC,
+                            bool sparseFullAxes = false,
+                            std::vector<double> const& occBins = {0, 500, 1000, 2000, 3000, 5000, 10000},
+                            std::vector<double> const& epBins = {-o2::constants::math::PIHalf, -o2::constants::math::PIQuarter, 0, o2::constants::math::PIQuarter, o2::constants::math::PIHalf},
+                            std::vector<double> const& vtxBins = {-10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10},
+                            const char* pairname = "#gamma#gamma")
 {
   // !!Don't change pt,eta,y binning. These binnings have to be consistent with binned data at skimming.!!
   std::vector<double> ptbins;
@@ -51,6 +57,9 @@ inline void addNMHistograms(o2::framework::HistogramRegistry* fRegistry, bool is
   }
   const o2::framework::AxisSpec axis_pt{ptbins, Form("p_{T,%s} (GeV/c)", pairname)};
   const o2::framework::AxisSpec axis_mass{400, 0, 0.8, Form("m_{%s} (GeV/c^{2})", pairname)};
+  const o2::framework::AxisSpec axis_occ{occBins, "occupancy"};
+  const o2::framework::AxisSpec axis_ep{epBins, "#Psi_{2} (rad)"};
+  const o2::framework::AxisSpec axis_vtx{vtxBins, "Z_{vtx} (cm)"};
 
   if (isMC) {
     fRegistry->add("Pair/Pi0/hs_Primary", "rec. true pi0", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt}, true);
@@ -74,7 +83,15 @@ inline void addNMHistograms(o2::framework::HistogramRegistry* fRegistry, bool is
     fRegistry->get<TH2>(HIST("Generated/Eta/hPtY"))->SetXTitle("p_{T} (GeV/c)");
     fRegistry->get<TH2>(HIST("Generated/Eta/hPtY"))->SetYTitle("rapidity |y|");
   } else {
-    fRegistry->add("Pair/same/hs", "diphoton", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt}, true);
+    if (sparseFullAxes) {
+      fRegistry->add("Pair/same/hs", "diphoton",
+                     o2::framework::HistType::kTHnSparseD,
+                     {axis_mass, axis_pt, axis_ep, axis_occ, axis_vtx}, true);
+    } else {
+      fRegistry->add("Pair/same/hs", "diphoton",
+                     o2::framework::HistType::kTHnSparseD,
+                     {axis_mass, axis_pt}, true);
+    }
     fRegistry->addClone("Pair/same/", "Pair/mix/");
   }
 }

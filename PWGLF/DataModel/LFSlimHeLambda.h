@@ -54,12 +54,18 @@ DECLARE_SOA_COLUMN(DCAPVProton, dcaPVProton, float);
 DECLARE_SOA_COLUMN(DCAPVPion, dcaPVPion, float);
 DECLARE_SOA_COLUMN(V0Radius, v0Radius, float);
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);
+DECLARE_SOA_COLUMN(Ct, ct, float);
+DECLARE_SOA_COLUMN(DCAPVPos, dcaPVPos, float);
+DECLARE_SOA_COLUMN(DCAPVNeg, dcaPVNeg, float);
+DECLARE_SOA_COLUMN(NsigmaTPCPosPion, nSigmaTPCPosPion, float);
+DECLARE_SOA_COLUMN(NsigmaTPCNegPion, nSigmaTPCNegPion, float);
 } // namespace lfv0he3
 DECLARE_SOA_TABLE_VERSIONED(LFHe3_000, "AOD", "LFHE3V0", 0, lfv0he3::LFEventId, lfv0he3::Pt, lfv0he3::Eta, lfv0he3::Phi, lfv0he3::DCAxy, lfv0he3::DCAz, lfv0he3::TPCnCls, lfv0he3::ITSClusterSizes, lfv0he3::NsigmaTPC, lfv0he3::Sign);
 DECLARE_SOA_TABLE_VERSIONED(LFLambda_000, "AOD", "LFLAMBDA", 0, lfv0he3::LFEventId, lfv0he3::Pt, lfv0he3::Eta, lfv0he3::Phi, lfv0he3::Mass, lfv0he3::CosPA, lfv0he3::DCAdaughters, lfv0he3::DCAPVProton, lfv0he3::DCAPVPion, lfv0he3::V0Radius, lfv0he3::Sign);
 
 DECLARE_SOA_TABLE_VERSIONED(LFHe3_001, "AOD", "LFHE3V0", 1, lfv0he3::LFEventId, lfv0he3::Pt, lfv0he3::Eta, lfv0he3::Phi, lfv0he3::DCAxy, lfv0he3::DCAz, lfv0he3::TPCnCls, lfv0he3::TPCnClsPID, lfv0he3::ITSClusterSizes, lfv0he3::NsigmaTPC, lfv0he3::Sign);
 DECLARE_SOA_TABLE_VERSIONED(LFLambda_001, "AOD", "LFLAMBDA", 1, lfv0he3::LFEventId, lfv0he3::Pt, lfv0he3::Eta, lfv0he3::Phi, lfv0he3::Mass, lfv0he3::CosPA, lfv0he3::DCAdaughters, lfv0he3::DCAPVProton, lfv0he3::DCAPVPion, lfv0he3::V0Radius, lfv0he3::NsigmaTPCProton, lfv0he3::NsigmaTPCPion, lfv0he3::Sign);
+DECLARE_SOA_TABLE(LFK0s, "AOD", "LFK0S", lfv0he3::LFEventId, lfv0he3::Pt, lfv0he3::Eta, lfv0he3::Phi, lfv0he3::Mass, lfv0he3::Ct, lfv0he3::CosPA, lfv0he3::DCAdaughters, lfv0he3::DCAPVPos, lfv0he3::DCAPVNeg, lfv0he3::V0Radius, lfv0he3::NsigmaTPCPosPion, lfv0he3::NsigmaTPCNegPion);
 } // namespace o2::aod
 
 struct he3Candidate {
@@ -85,6 +91,19 @@ struct lambdaCandidate {
   float protonNSigmaTPC = -999.f; // Proton TPC nSigma
   float pionNSigmaTPC = -999.f;   // Pion TPC nSigma
   int8_t sign = 0;                // Charge sign of the Lambda candidate
+};
+
+struct k0sCandidate {
+  ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<double>> momentum;
+  float mass = -1.f;
+  float ct = -1.f; // Proper decay length in cm
+  float cosPA = -2.f;
+  float dcaV0Daughters = -999.f;
+  float dcaPosToPV = -999.f;
+  float dcaNegToPV = -999.f;
+  float v0Radius = -1.f;
+  float posPionNSigmaTPC = -999.f;
+  float negPionNSigmaTPC = -999.f;
 };
 
 #endif // PWGLF_DATAMODEL_LFSLIMHELAMBDA_H_

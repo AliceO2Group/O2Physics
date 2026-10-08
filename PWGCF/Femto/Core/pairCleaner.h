@@ -158,13 +158,13 @@ class BasePairCleaner
   bool mcPairHasNonCommonAncestor(T1 const& particle1, T2 const& particle2, T3 const& partonicMothers) const
   {
     if (mUseMotherAsAncestor) {
-      // if one of the two particles has no associated mother, we cannot know if they have a common anchestor, so we break out with false
+      // if one of the two particles has no associated mother, we cannot know if they have a common ancestor, so we break out with false
       if (!particle1.has_fMcMother() || !particle2.has_fMcMother()) {
         return false;
       }
       return !this->mcPairHasCommonMother(particle1, particle2);
     }
-    // if one of the two particles has no associated partonic mother, we cannot know if they have a common anchestor, so we break out with false
+    // if one of the two particles has no associated partonic mother, we cannot know if they have a common ancestor, so we break out with false
     if (!particle1.has_fMcPartMoth() || !particle2.has_fMcPartMoth()) {
       return false;
     }
@@ -175,7 +175,7 @@ class BasePairCleaner
   template <typename T1, typename T2, typename T3, typename T4>
   bool pairHasCommonAncestor(T1 const& particle1, T2 const& particle2, T3 const& /*mcparticles*/, T4 const& partonicMothers) const
   {
-    // if one of the two particles has no associated mc particle, we cannot know if they have a common anchestor, so we break out with false
+    // if one of the two particles has no associated mc particle, we cannot know if they have a common ancestor, so we break out with false
     if (!particle1.has_fMcParticle() || !particle2.has_fMcParticle()) {
       return false;
     }
@@ -190,7 +190,7 @@ class BasePairCleaner
   template <typename T1, typename T2, typename T3, typename T4>
   bool pairHasNonCommonAncestor(T1 const& particle1, T2 const& particle2, T3 const& /*mcparticles*/, T4 const& partonicMothers) const
   {
-    // if one of the two particles has no associated mc particle, we cannot know if they have a common anchestor, so we break out with false
+    // if one of the two particles has no associated mc particle, we cannot know if they have a common ancestor, so we break out with false
     if (!particle1.has_fMcParticle() || !particle2.has_fMcParticle()) {
       return false;
     }
@@ -210,7 +210,7 @@ class BasePairCleaner
   template <typename T1, typename T2, typename T3>
   bool mcPairHasCommonPartonicMother(T1 const& particle1, T2 const& particle2, T3 const& /*partonicMothers*/) const
   {
-    // if one of the two particles has no associated partonic mother, we cannot know if they have a common anchestor, so we break out with false
+    // if one of the two particles has no associated partonic mother, we cannot know if they have a common ancestor, so we break out with false
     if (!particle1.has_fMcPartMoth() || !particle2.has_fMcPartMoth()) {
       return false;
     }
@@ -227,7 +227,7 @@ class BasePairCleaner
   template <typename T1, typename T2>
   bool mcPairHasCommonMother(T1 const& particle1, T2 const& particle2) const
   {
-    // if one of the two particles has no associated mother, we cannot know if they have a common anchestor, so we break out with false
+    // if one of the two particles has no associated mother, we cannot know if they have a common ancestor, so we break out with false
     if (!particle1.has_fMcMother() || !particle2.has_fMcMother()) {
       return false;
     }

@@ -970,7 +970,7 @@ struct CorrelationTask {
   void processSameDerivedT(CollType const& collision, TTracks1 const& tracks1, TTracks2 const& tracks2)
   {
     using BinningTypeDerived = ColumnBinningPolicy<aod::collision::PosZ, aod::cfcollision::Multiplicity>;
-    BinningTypeDerived configurableBinningDerived{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
+    BinningTypeDerived configurableBinningDerived{{axisVertex, axisMultiplicity}};
     if (cfgVerbosity > 0) {
       LOGF(info, "processSameDerivedT: Tracks for collision: %d/%d | Vertex: %.1f | Multiplicity/Centrality: %.1f", tracks1.size(), tracks2.size(), collision.posZ(), collision.multiplicity());
     }
@@ -1049,7 +1049,7 @@ struct CorrelationTask {
     // NOTE legacy function for O2 integration tests. Full version needs derived data
 
     // Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
-    BinningTypeAOD configurableBinning{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
+    BinningTypeAOD configurableBinning{{axisVertex, axisMultiplicity}};
     auto tracksTuple = std::make_tuple(tracks);
     SameKindPair<AodCollisions, AodTracks, BinningTypeAOD> pairs{configurableBinning, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
@@ -1102,7 +1102,7 @@ struct CorrelationTask {
       };
 
     using BinningTypeDerived = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
-    BinningTypeDerived configurableBinningDerived{{getMultiplicity}, {axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
+    BinningTypeDerived configurableBinningDerived{{getMultiplicity}, {axisVertex, axisMultiplicity}};
     //  Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
     auto tracksTuple = std::make_tuple(std::forward<TrackTypes>(tracks)...);
     using TA = std::tuple_element<0, decltype(tracksTuple)>::type;
@@ -1544,7 +1544,7 @@ struct CorrelationTask {
       };
 
     using BinningTypeMCDerived = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::mccollision::PosZ, decltype(getMultiplicity)>;
-    BinningTypeMCDerived configurableBinning{{getMultiplicity}, {axisVertex, axisMultiplicity}, true};
+    BinningTypeMCDerived configurableBinning{{getMultiplicity}, {axisVertex, axisMultiplicity}};
 
     // Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
     auto tuple = std::make_tuple(std::forward<ParticleTypes>(particles)...);

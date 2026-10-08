@@ -109,6 +109,8 @@ struct flowJSPCAnalysis {
 
   std::unique_ptr<TFormula> multCutFormula;
   std::array<uint, aod::cfmultset::NMultiplicityEstimators> multCutFormulaParamIndex;
+  uint32_t mNhUse = FlowJSPCAnalysis::NhFull;
+  uint32_t mNkUse = FlowJSPCAnalysis::NkFull;
 
   void init(InitContext const&)
   {
@@ -118,6 +120,8 @@ struct flowJSPCAnalysis {
 
     spcObservables.setSPCObservables(cfgWhichSPC);
     spcAnalysis.setFullCorrSet(spcObservables.harmonicArray);
+    spcAnalysis.qVectorGrid(cfgWhichSPC, mNhUse, mNkUse);
+    LOGF(info, "Q-vector fill grid: nh=%u nk=%u (cfgWhichSPC=%d)", mNhUse, mNkUse, cfgWhichSPC.value);
 
     histManager.setHistRegistryQA(&qaHistRegistry);
     histManager.setDebugLog(false);
@@ -186,7 +190,7 @@ struct flowJSPCAnalysis {
     if (cfgFillQA)
       histManager.fillEventQA<1>(collision, cBin, cent, nTracks);
 
-    jqvecs.Calculate(tracks, 0.0, cfgTrackCuts.cfgEtaMax);
+    jqvecs.Calculate(tracks, 0.0, cfgTrackCuts.cfgEtaMax, 0.0f, 999.9f, mNhUse, mNkUse);
     spcAnalysis.setQvectors(&jqvecs);
     spcAnalysis.calculateCorrelators(cBin);
   }

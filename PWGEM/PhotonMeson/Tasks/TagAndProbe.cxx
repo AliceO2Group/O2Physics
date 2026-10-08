@@ -349,9 +349,9 @@ struct TagAndProbe {
   using BinningType_M = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
   using BinningType_A = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0A>;
   using BinningType_C = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
-  BinningType_M colBinning_M{{ConfVtxBins, ConfCentBins}, true};
-  BinningType_A colBinning_A{{ConfVtxBins, ConfCentBins}, true};
-  BinningType_C colBinning_C{{ConfVtxBins, ConfCentBins}, true};
+  BinningType_M colBinning_M{{ConfVtxBins, ConfCentBins}};
+  BinningType_A colBinning_A{{ConfVtxBins, ConfCentBins}};
+  BinningType_C colBinning_C{{ConfVtxBins, ConfCentBins}};
 
   template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2, typename TTagCut, typename TProbeCuts, typename TPairCuts, typename TLegs, typename TMixedBinning>
   void MixedEventPairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TTagCut const& tagcut, TProbeCuts const& probecuts, TPairCuts const& paircuts, TLegs const& /*legs*/, TMixedBinning const& colBinning)

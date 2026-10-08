@@ -118,10 +118,10 @@ struct FemtoPairTrackTrack {
   std::vector<double> defaultMultBins{50, 0, 200};
   std::vector<double> defaultCentBins{10, 0, 100};
   std::vector<double> defaultEventPlaneAngleBins{10, 0, o2::constants::math::TwoPI};
-  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult> mixBinsVtxMult{{defaultVtxBins, defaultMultBins}, true};
-  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Cent> mixBinsVtxCent{{defaultVtxBins, defaultCentBins}, true};
-  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult, o2::aod::femtocollisions::Cent> mixBinsVtxMultCent{{defaultVtxBins, defaultMultBins, defaultCentBins}, true};
-  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Cent, o2::aod::femtocollisions::EventPlaneAngle> mixBinsVtxCentEventPlaneAngle{{defaultVtxBins, defaultCentBins, defaultEventPlaneAngleBins}, true};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult> mixBinsVtxMult{{defaultVtxBins, defaultMultBins}};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Cent> mixBinsVtxCent{{defaultVtxBins, defaultCentBins}};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult, o2::aod::femtocollisions::Cent> mixBinsVtxMultCent{{defaultVtxBins, defaultMultBins, defaultCentBins}};
+  o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Cent, o2::aod::femtocollisions::EventPlaneAngle> mixBinsVtxCentEventPlaneAngle{{defaultVtxBins, defaultCentBins, defaultEventPlaneAngleBins}};
   pairhistmanager::ConfMixing confMixing;
 
   o2::framework::HistogramRegistry hRegistry{"FemtoTrackTrack", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
@@ -140,10 +140,10 @@ struct FemtoPairTrackTrack {
 
     // setup columnpolicy for binning
     // default values are used during instantiation, so we need to explicity update them here
-    mixBinsVtxMult = {{confMixing.vtxBins.value, confMixing.multBins.value}, true};
-    mixBinsVtxCent = {{confMixing.vtxBins.value, confMixing.centBins.value}, true};
-    mixBinsVtxMultCent = {{confMixing.vtxBins.value, confMixing.multBins.value, confMixing.centBins.value}, true};
-    mixBinsVtxCentEventPlaneAngle = {{confMixing.vtxBins.value, confMixing.centBins.value, confMixing.eventPlaneAngle.value}, true};
+    mixBinsVtxMult = {{confMixing.vtxBins.value, confMixing.multBins.value}};
+    mixBinsVtxCent = {{confMixing.vtxBins.value, confMixing.centBins.value}};
+    mixBinsVtxMultCent = {{confMixing.vtxBins.value, confMixing.multBins.value, confMixing.centBins.value}};
+    mixBinsVtxCentEventPlaneAngle = {{confMixing.vtxBins.value, confMixing.centBins.value, confMixing.eventPlaneAngle.value}};
 
     // setup histogram specs
     std::map<colhistmanager::ColHist, std::vector<o2::framework::AxisSpec>> colHistSpec;

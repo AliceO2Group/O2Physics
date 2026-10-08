@@ -280,7 +280,7 @@ struct HfDerivedDataCreatorLcToPKPi {
             }
           }
           if constexpr (OnlySig) {
-            if (std::abs(flagMcRec) != hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
+            if (!acceptCorrelatedBkgs && (std::abs(flagMcRec) != hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi)) {
               continue;
             }
           }

@@ -359,7 +359,7 @@ struct forwardlambdakzeroanalysis {
 
   // Build the mixing binning locally: a struct member initialized from a
   // ConfigurableAxis captures the default bins at task construction time
-  ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M> bkgColBinning{{eventMixingConfigurations.axisVertexMixing, eventMixingConfigurations.axisCentralityMixing}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M> bkgColBinning{{eventMixingConfigurations.axisVertexMixing, eventMixingConfigurations.axisCentralityMixing}};
 
   // Taken from https://github.com/AliceO2Group/O2Physics/blob/master/PWGLF/TableProducer/Strangeness/sigma0builder.cxx#L319
   // Thanks Gianni!

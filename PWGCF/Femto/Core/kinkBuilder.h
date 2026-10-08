@@ -27,6 +27,7 @@
 #include "Common/Core/RecoDecay.h"
 
 #include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
@@ -60,24 +61,26 @@ struct ConfKinkFilters : o2::framework::ConfigurableGroup {
 
 // selections bits for all kinks
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define KINK_DEFAULT_BITS                                                                                                                            \
-  o2::framework::Configurable<bool> passThrough{"passThrough", false, "If true, all Kinks are passed through. Bits for all selections are stored."}; \
-  o2::framework::Configurable<std::vector<float>> kinkTopoDcaMax{"kinkTopoDcaMax", {2.0f}, "Maximum kink topological DCA"};                          \
-  o2::framework::Configurable<std::vector<float>> transRadMin{"transRadMin", {20.f}, "Minimum transverse radius (cm)"};                              \
-  o2::framework::Configurable<std::vector<float>> transRadMax{"transRadMax", {100.f}, "Maximum transverse radius (cm)"};                             \
-  o2::framework::Configurable<std::vector<float>> dauAbsEtaMax{"dauAbsEtaMax", {1.0f}, "Maximum absolute pseudorapidity for daughter track"};        \
-  o2::framework::Configurable<std::vector<float>> dauDcaPvMin{"dauDcaPvMin", {0.1f}, "Minimum DCA of daughter from primary vertex (cm)"};            \
-  o2::framework::Configurable<std::vector<float>> mothDcaPvMax{"mothDcaPvMax", {1.0f}, "Maximum DCA of mother from primary vertex (cm)"};            \
-  o2::framework::Configurable<std::vector<float>> alphaAPMin{"alphaAPMin", {-1.0f}, "Minimum Alpha_AP for Sigma candidates"};                        \
-  o2::framework::Configurable<std::vector<float>> alphaAPMax{"alphaAPMax", {0.0f}, "Maximum Alpha_AP for Sigma candidates"};                         \
-  o2::framework::Configurable<std::vector<float>> qtAPMin{"qtAPMin", {0.15f}, "Minimum qT_AP for Sigma candidates"};                                 \
-  o2::framework::Configurable<std::vector<float>> qtAPMax{"qtAPMax", {0.2f}, "Maximum qT_AP for Sigma candidates"};                                  \
-  o2::framework::Configurable<std::vector<float>> cosPointingAngleMin{"cosPointingAngleMin", {0.0f}, "Minimum cosine of pointing angle"};
+#define KINK_DEFAULT_BITS                                                                                                                                 \
+  o2::framework::Configurable<bool> passThrough{"passThrough", false, "If true, all Kinks are passed through. Bits for all selections are stored."};      \
+  o2::framework::Configurable<std::vector<float>> kinkTopoDcaMax{"kinkTopoDcaMax", {2.0f}, "Maximum kink topological DCA"};                               \
+  o2::framework::Configurable<std::vector<float>> transRadMin{"transRadMin", {19.6f}, "Minimum transverse radius (cm)"};                                  \
+  o2::framework::Configurable<std::vector<float>> transRadMax{"transRadMax", {100.f}, "Maximum transverse radius (cm)"};                                  \
+  o2::framework::Configurable<std::vector<float>> dauAbsEtaMax{"dauAbsEtaMax", {1.0f}, "Maximum absolute pseudorapidity for daughter track"};             \
+  o2::framework::Configurable<std::vector<float>> dauDcaPvMin{"dauDcaPvMin", {0.1f}, "Minimum DCA of daughter from primary vertex (cm)"};                 \
+  o2::framework::Configurable<std::vector<float>> mothDcaPvMax{"mothDcaPvMax", {1.0f}, "Maximum DCA of mother from primary vertex (cm)"};                 \
+  o2::framework::Configurable<std::vector<float>> qtAPMin{"qtAPMin", {0.15f}, "Minimum qT_AP for Sigma candidates"};                                      \
+  o2::framework::Configurable<std::vector<float>> qtAPMax{"qtAPMax", {0.2f}, "Maximum qT_AP for Sigma candidates"};                                       \
+  o2::framework::Configurable<std::vector<float>> cosPointingAngleMin{"cosPointingAngleMin", {0.0f}, "Minimum cosine of pointing angle"};                 \
+  o2::framework::Configurable<std::vector<float>> ptOriginalMin{"ptOriginalMin", {1.2f}, "Minimum original (not recalculated) pT of the mother (GeV/c)"}; \
+  o2::framework::Configurable<std::vector<float>> ptOriginalMax{"ptOriginalMax", {10.f}, "Maximum original (not recalculated) pT of the mother (GeV/c)"};
 
 // derived selection bits for sigma
 struct ConfSigmaBits : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("SigmaBits");
   KINK_DEFAULT_BITS
+  o2::framework::Configurable<std::vector<float>> alphaAPMin{"alphaAPMin", {-1.0f}, "Minimum Alpha_AP for Sigma candidates"};
+  o2::framework::Configurable<std::vector<float>> alphaAPMax{"alphaAPMax", {0.0f}, "Maximum Alpha_AP for Sigma candidates"};
   o2::framework::Configurable<std::vector<float>> chaDauTpcPion{"chaDauTpcPion", {5.f}, "Maximum |nsigma_Pion| TPC for charged daughter tracks"};
 };
 
@@ -85,9 +88,12 @@ struct ConfSigmaBits : o2::framework::ConfigurableGroup {
 struct ConfSigmaPlusBits : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("SigmaPlusBits");
   KINK_DEFAULT_BITS
+  o2::framework::Configurable<std::vector<float>> alphaAPMin{"alphaAPMin", {0.0f}, "Minimum Alpha_AP for SigmaPlus candidates"};
+  o2::framework::Configurable<std::vector<float>> alphaAPMax{"alphaAPMax", {1.0f}, "Maximum Alpha_AP for SigmaPlus candidates"};
   o2::framework::Configurable<std::vector<float>> chaDauTpcProton{"chaDauTpcProton", {5.f}, "Maximum |nsigma_Proton| TPC for charged daughter tracks"};
-  o2::framework::Configurable<std::vector<float>> chaDauTofProton{"chaDauTofProton", {5.f}, "Maximum combined |nsigma_Proton| (TPC+TOF) for charged daughter tracks"};
-  o2::framework::Configurable<float> pidThres{"pidThres", 0.75f, "Momentum threshold for using TOF/combined pid for daughter tracks (GeV/c)"};
+  o2::framework::Configurable<std::vector<float>> chaDauTofProton{"chaDauTofProton", {}, "Maximum |nsigma_Proton| TOF for charged daughter tracks"};
+  o2::framework::Configurable<bool> requireTof{"requireTof", false, "If true, TOF PID is a minimal selection. If false, TOF PID is optional"};
+  o2::framework::Configurable<bool> keepTracksWithoutTof{"keepTracksWithoutTof", true, "If true, the bit mask for the TOF selection will be true for all limits if the daughter track has no TOF"};
 };
 
 #undef KINK_DEFAULT_BITS
@@ -95,15 +101,15 @@ struct ConfSigmaPlusBits : o2::framework::ConfigurableGroup {
 // base selection for analysis task for kinks
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define KINK_DEFAULT_SELECTIONS(defaultMassMin, defaultMassMax, defaultPdgCode)                                          \
-  o2::framework::Configurable<int> pdgCodeAbs{"pdgCodeAbs", (defaultPdgCode), "PDG code. Select antipartilce via sign"}; \
+  o2::framework::Configurable<int> pdgCodeAbs{"pdgCodeAbs", (defaultPdgCode), "PDG code. Select antiparticle via sign"}; \
   o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};                                                  \
   o2::framework::Configurable<float> ptMax{"ptMax", 999.f, "Maximum pT"};                                                \
   o2::framework::Configurable<float> etaMin{"etaMin", -10.f, "Minimum eta"};                                             \
   o2::framework::Configurable<float> etaMax{"etaMax", 10.f, "Maximum eta"};                                              \
   o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};                                               \
   o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};                  \
-  o2::framework::Configurable<float> massMin{"massMin", (defaultMassMin), "Minimum invariant mass for Sigma"};           \
-  o2::framework::Configurable<float> massMax{"massMax", (defaultMassMax), "Maximum invariant mass for Sigma"};           \
+  o2::framework::Configurable<float> massMin{"massMin", (defaultMassMin), "Minimum invariant mass"};                     \
+  o2::framework::Configurable<float> massMax{"massMax", (defaultMassMax), "Maximum invariant mass"};                     \
   o2::framework::Configurable<o2::analysis::femto::datatypes::KinkMaskType> mask{"mask", 0x0, "Bitmask for kink selection"};
 
 // base selection for analysis task for sigmas
@@ -153,6 +159,9 @@ enum KinkSeles {
   kQtAPMax,
   kCosPointingAngleMin,
 
+  kPtOriginalMin,
+  kPtOriginalMax,
+
   kKinkSelsMax
 };
 
@@ -173,7 +182,9 @@ const std::unordered_map<KinkSeles, std::string> kinkSelectionNames = {
   {kAlphaAPMax, "alphaAPMax"},
   {kQtAPMin, "qtAPMin"},
   {kQtAPMax, "qtAPMax"},
-  {kCosPointingAngleMin, "cosPointingAngleMin"}};
+  {kCosPointingAngleMin, "cosPointingAngleMin"},
+  {kPtOriginalMin, "ptOriginalMin"},
+  {kPtOriginalMax, "ptOriginalMax"}};
 
 /// enum for all kink pre-filters (evaluated in checkFilters, before the selection bitmask)
 enum KinkFilters {
@@ -231,9 +242,10 @@ class KinkSelection : public baseselection::BaseSelection<float, o2::analysis::f
     if constexpr (modes::isEqual(kinkType, modes::Kink::kSigmaPlus)) {
       mMassSigmaPlusLowerLimit = filter.massMinSigmaPlus.value;
       mMassSigmaPlusUpperLimit = filter.massMaxSigmaPlus.value;
-      mPidThreshold = config.pidThres.value;
-      this->addSelection(kChaDaughTpcProton, kinkSelectionNames.at(kChaDaughTpcProton), config.chaDauTpcProton.value, limits::kAbsUpperLimit, false, false, true);
-      this->addSelection(kChaDaughTofProton, kinkSelectionNames.at(kChaDaughTofProton), config.chaDauTofProton.value, limits::kUpperLimit, false, false, true);
+      mKeepTracksWithoutTof = config.keepTracksWithoutTof.value;
+      this->addSelection(kChaDaughTpcProton, kinkSelectionNames.at(kChaDaughTpcProton), config.chaDauTpcProton.value, limits::kAbsUpperLimit, true, true, false);
+      this->addSelection(kChaDaughTofProton, kinkSelectionNames.at(kChaDaughTofProton), config.chaDauTofProton.value, limits::kAbsUpperLimit, true, config.requireTof.value, false);
+      this->addComments(kChaDaughTofProton, "requireTof = " + std::to_string(config.requireTof.value) + "; keepTracksWithoutTof = " + std::to_string(mKeepTracksWithoutTof));
     }
 
     this->addSelection(kKinkTopoDcaMax, kinkSelectionNames.at(kKinkTopoDcaMax), config.kinkTopoDcaMax.value, limits::kUpperLimit, true, true, false);
@@ -247,6 +259,8 @@ class KinkSelection : public baseselection::BaseSelection<float, o2::analysis::f
     this->addSelection(kQtAPMin, kinkSelectionNames.at(kQtAPMin), config.qtAPMin.value, limits::kLowerLimit, true, true, false);
     this->addSelection(kQtAPMax, kinkSelectionNames.at(kQtAPMax), config.qtAPMax.value, limits::kUpperLimit, true, true, false);
     this->addSelection(kCosPointingAngleMin, kinkSelectionNames.at(kCosPointingAngleMin), config.cosPointingAngleMin.value, limits::kLowerLimit, true, true, false);
+    this->addSelection(kPtOriginalMin, kinkSelectionNames.at(kPtOriginalMin), config.ptOriginalMin.value, limits::kLowerLimit, true, true, false);
+    this->addSelection(kPtOriginalMax, kinkSelectionNames.at(kPtOriginalMax), config.ptOriginalMax.value, limits::kUpperLimit, true, true, false);
 
     this->setupSelectionHistogram<SelectionHistName>(registry);
 
@@ -281,7 +295,7 @@ class KinkSelection : public baseselection::BaseSelection<float, o2::analysis::f
   };
 
   template <typename T1, typename T2, typename T3>
-  void computeKinkKinematics(T1 const& kinkCand, T2 const& /*tracks*/, T3 const& col)
+  void computeKinkKinematics(T1 const& kinkCand, T2 const& /*tracks*/, T3 const& /*col*/)
   {
     std::array<float, 3> momMother = {kinkCand.pxMoth(), kinkCand.pyMoth(), kinkCand.pzMoth()};
     float kinkMomP = RecoDecay::p(momMother);
@@ -300,12 +314,11 @@ class KinkSelection : public baseselection::BaseSelection<float, o2::analysis::f
     float p2A = kinkDauP * kinkDauP;
     mQtAp = (p2V0 > 0.f) ? std::sqrt(std::max(0.f, p2A - dp * dp / p2V0)) : 0.f;
 
-    std::array<float, 3> vMother = {kinkCand.xDecVtx() - col.posX(), kinkCand.yDecVtx() - col.posY(), kinkCand.zDecVtx() - col.posZ()};
+    std::array<float, 3> vMother = {kinkCand.xDecVtx(), kinkCand.yDecVtx(), kinkCand.zDecVtx()};
     float vMotherNorm = std::sqrt(std::inner_product(vMother.begin(), vMother.end(), vMother.begin(), 0.f));
     mCosPointingAngle = (vMotherNorm > 0.f && kinkMomP > 0.f) ? (std::inner_product(momMother.begin(), momMother.end(), vMother.begin(), 0.f)) / (kinkMomP * vMotherNorm) : 0.f;
     mTransRadius = std::hypot(kinkCand.xDecVtx(), kinkCand.yDecVtx());
 
-    mKinkDauP = kinkDauP;
     mKinkDauEta = RecoDecay::eta(momDaughter);
 
     mKinkAngle = 0.f;
@@ -327,6 +340,9 @@ class KinkSelection : public baseselection::BaseSelection<float, o2::analysis::f
     this->evaluateObservable(kQtAPMin, mQtAp);
     this->evaluateObservable(kQtAPMax, mQtAp);
     this->evaluateObservable(kCosPointingAngleMin, mCosPointingAngle);
+    // the stored pT is the recalculated one, the original pT is only available as selection bits
+    this->evaluateObservable(kPtOriginalMin, mKinkMotherPtOriginal);
+    this->evaluateObservable(kPtOriginalMax, mKinkMotherPtOriginal);
     this->evaluateObservable(kKinkTopoDcaMax, kinkCand.dcaKinkTopo());
 
     // Compute transRadius
@@ -345,14 +361,11 @@ class KinkSelection : public baseselection::BaseSelection<float, o2::analysis::f
       this->evaluateObservable(kChaDaughTpcPion, chaDaughter.tpcNSigmaPi());
     }
     if constexpr (modes::isEqual(kinkType, modes::Kink::kSigmaPlus)) {
-      if (mKinkDauP < mPidThreshold) {
-        this->evaluateObservable(kChaDaughTpcProton, chaDaughter.tpcNSigmaPr());
+      this->evaluateObservable(kChaDaughTpcProton, chaDaughter.tpcNSigmaPr());
+      if (chaDaughter.hasTOF()) {
+        this->evaluateObservable(kChaDaughTofProton, chaDaughter.tofNSigmaPr());
       } else {
-        if (chaDaughter.hasTOF()) {
-          this->evaluateObservable(kChaDaughTofProton, std::abs(chaDaughter.tofNSigmaPr()));
-        } else {
-          this->evaluateObservable(kChaDaughTofProton, 999.f);
-        }
+        this->evaluateObservable(kChaDaughTofProton, mKeepTracksWithoutTof ? 0.f : 999.f);
       }
     }
 
@@ -368,9 +381,20 @@ class KinkSelection : public baseselection::BaseSelection<float, o2::analysis::f
     mKinkMotherEta = RecoDecay::eta(momMother);
     mKinkMotherPhi = RecoDecay::phi(momMother);
 
-    // Recalculate pT using kinematic constraints
-    float ptRecalc = utils::calcPtnew(momMother[0], momMother[1], momMother[2], momDaughter[0], momDaughter[1], momDaughter[2]);
-    mKinkMotherPt = (ptRecalc > 0.f) ? ptRecalc : std::hypot(momMother[0], momMother[1]);
+    // Recalculate pT using kinematic constraints of the decay channel
+    float ptRecalc = -999.f;
+    if constexpr (modes::isEqual(kinkType, modes::Kink::kSigma)) {
+      // Sigma- -> pi- n
+      ptRecalc = utils::calcPtnew(momMother[0], momMother[1], momMother[2], momDaughter[0], momDaughter[1], momDaughter[2],
+                                  o2::constants::physics::MassSigmaMinus, o2::constants::physics::MassPionCharged, o2::constants::physics::MassNeutron);
+    }
+    if constexpr (modes::isEqual(kinkType, modes::Kink::kSigmaPlus)) {
+      // Sigma+ -> p pi0
+      ptRecalc = utils::calcPtnew(momMother[0], momMother[1], momMother[2], momDaughter[0], momDaughter[1], momDaughter[2],
+                                  o2::constants::physics::MassSigmaPlus, o2::constants::physics::MassProton, o2::constants::physics::MassPionNeutral);
+    }
+    mKinkMotherPtOriginal = std::hypot(momMother[0], momMother[1]);
+    mKinkMotherPt = (ptRecalc > 0.f) ? ptRecalc : mKinkMotherPtOriginal;
   }
 
   template <typename T>
@@ -443,7 +467,7 @@ class KinkSelection : public baseselection::BaseSelection<float, o2::analysis::f
   float mMassSigmaUpperLimit = 1.25f;
   float mMassSigmaPlusLowerLimit = 1.15f;
   float mMassSigmaPlusUpperLimit = 1.25f;
-  float mPidThreshold = 0.75f;
+  bool mKeepTracksWithoutTof = true;
 
   // kinematic filters
   float mPtMin = 0.f;
@@ -454,7 +478,8 @@ class KinkSelection : public baseselection::BaseSelection<float, o2::analysis::f
   float mPhiMax = o2::constants::math::TwoPI;
 
   // mother kinematic
-  float mKinkMotherPt = 0.f;
+  float mKinkMotherPt = 0.f;         // recalculated pT (falls back to the original pT if the recalculation fails)
+  float mKinkMotherPtOriginal = 0.f; // pT of the mother track as reconstructed
   float mKinkMotherEta = 0.f;
   float mKinkMotherPhi = 0.f;
 
@@ -464,7 +489,6 @@ class KinkSelection : public baseselection::BaseSelection<float, o2::analysis::f
   float mCosPointingAngle = 0.f;
   float mTransRadius = 0.f;
   float mKinkDauEta = 0.f;
-  float mKinkDauP = 0.f;
   float mKinkAngle = 0.f;
 };
 
@@ -549,7 +573,8 @@ class KinkBuilder
       }
     }
 
-    if (mProduceSigmas || mProduceSigmaMasks || mProduceSigmaExtras || mProduceSigmaPlus || mProduceSigmaPlusMasks || mProduceSigmaPlusExtras) {
+    if (mProduceSigmas || mProduceLiteSigmas || mProduceSigmaMasks || mProduceSigmaExtras ||
+        mProduceSigmaPlus || mProduceLiteSigmaPlus || mProduceSigmaPlusMasks || mProduceSigmaPlusExtras) {
       mFillAnyTable = true;
     } else {
       LOG(info) << "No tables configured, Selection object will not be configured...";

@@ -61,7 +61,8 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 using MyTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA,
-                           aod::pidTPCPi, aod::pidTPCPr, aod::pidTOFPr,
+                           aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa, aod::pidTPCEl,
+                           aod::pidTOFPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFEl,
                            aod::pidTOFbeta, aod::TrackSelection>;
 
 namespace
@@ -244,6 +245,8 @@ struct LambdaProtonBalanceFunction {
   Configurable<bool> cFillEtaSpace{"cFillEtaSpace", false, "Fill eta-space rho1/rho2 histograms"};
   Configurable<bool> cUseQinvCut{"cUseQinvCut", false, "Apply q_inv > cQinvCutValue pair cut (false = no q_inv rejection)"};
   Configurable<float> cQinvCutValue{"cQinvCutValue", 0.01f, "q_inv cut value (GeV/c)"};
+  Configurable<int> cQinvQABins{"cQinvQABins", 6000, "Number of bins for QA q_inv histograms"};
+  Configurable<float> cQinvQAMax{"cQinvQAMax", 6.0f, "Max q_inv for QA histograms (GeV/c)"};
   Configurable<bool> cFillCentHists{"cFillCentHists", true, "Fill centrality-differential rho1/rho2 histograms in separate rho1ANDrho2_LP_CentralityBased folder"};
   Configurable<bool> cUseFT0C{"cUseFT0C", false, "Use FT0C instead of FT0M as centrality estimator"};
   ConfigurableAxis cCentBins{"cCentBins", {VARIABLE_WIDTH, 0.f, 5.f, 10.f, 20.f, 40.f, 60.f, 80.f}, "Centrality bins (%)"};
@@ -278,6 +281,13 @@ struct LambdaProtonBalanceFunction {
   Configurable<float> pProtonTPCNsigma{"pProtonTPCNsigma", 2.0f, "pProtonTPCNsigma"};
   Configurable<float> lambdaV0DaughterProtonTPCNsigma{"lambdaV0DaughterProtonTPCNsigma", 2.0f, "lambdaV0DaughterProtonTPCNsigma"};
   Configurable<float> pProtonTOFNsigma{"pProtonTOFNsigma", 2.0f, "pProtonTOFNsigma"};
+
+  // Contaminant veto for primary (anti)protons: reject track if compatible with pi/K/e
+  Configurable<bool> cUseContaminantVeto{"cUseContaminantVeto", true, "Reject primary (anti)protons compatible with pi/K/e hypotheses"};
+  Configurable<bool> cVetoUseTOF{"cVetoUseTOF", true, "Also apply TOF veto whenever the track has TOF"};
+  Configurable<float> pProtonVetoPionNsigma{"pProtonVetoPionNsigma", 3.0f, "Reject if |nSigma_pi| < this"};
+  Configurable<float> pProtonVetoKaonNsigma{"pProtonVetoKaonNsigma", 3.0f, "Reject if |nSigma_K| < this"};
+  Configurable<float> pProtonVetoElectronNsigma{"pProtonVetoElectronNsigma", 3.0f, "Reject if |nSigma_e| < this"};
 
   // // V0 daughter beta cuts (particle-dependent) //BETACUTCommented
   // Configurable<float> cV0protonDauMinBeta{"cV0protonDauMinBeta", 0.4f, "Min TOF beta for (anti)proton V0 daughter"}; //BETACUTCommented
@@ -479,6 +489,28 @@ struct LambdaProtonBalanceFunction {
       return false;
     }
     return std::abs(trk.tofNSigmaPr()) < pProtonTOFNsigma.value;
+  }
+
+  // true => track survives the pi/K/e contaminant veto
+  template <typename TTrack>
+  bool passesContaminantVeto(TTrack const& trk) const
+  {
+    if (!cUseContaminantVeto.value) {
+      return true;
+    }
+    if (std::abs(trk.tpcNSigmaPi()) < pProtonVetoPionNsigma.value ||
+        std::abs(trk.tpcNSigmaKa()) < pProtonVetoKaonNsigma.value ||
+        std::abs(trk.tpcNSigmaEl()) < pProtonVetoElectronNsigma.value) {
+      return false;
+    }
+    if (cVetoUseTOF.value && trk.hasTOF()) {
+      if (std::abs(trk.tofNSigmaPi()) < pProtonVetoPionNsigma.value ||
+          std::abs(trk.tofNSigmaKa()) < pProtonVetoKaonNsigma.value ||
+          std::abs(trk.tofNSigmaEl()) < pProtonVetoElectronNsigma.value) {
+        return false;
+      }
+    }
+    return true;
   }
   // ─────────────────────────────────────────────────────────────────────
 
@@ -1275,7 +1307,7 @@ struct LambdaProtonBalanceFunction {
     AxisSpec axisCosPA_zoom = {200, 0.99f, 1.0f, "Cos(PA)"};
     AxisSpec axisDecayR = {100, 0.0f, 50.0f, "cm"};
     AxisSpec axisCtau = {100, 0.0f, 50.0f, "ctau (cm)"};
-    AxisSpec axisCutFlow = {14, 0.5f, 14.5f, "Cut stage"};
+    AxisSpec axisCutFlow = {15, 0.5f, 15.5f, "Cut stage"};
 
     auto addProtonQAForStage = [&](const char* species, const char* stage) {
       // Kinematics
@@ -1428,8 +1460,9 @@ struct LambdaProtonBalanceFunction {
       hCF->GetXaxis()->SetBinLabel(10, "|y| window");
       hCF->GetXaxis()->SetBinLabel(11, "DCA xy,z");
       hCF->GetXaxis()->SetBinLabel(12, "PID (TPC/TOF)");
-      hCF->GetXaxis()->SetBinLabel(13, "V0-daughter veto");
-      hCF->GetXaxis()->SetBinLabel(14, "Selected");
+      hCF->GetXaxis()->SetBinLabel(13, "pi/K/e veto");
+      hCF->GetXaxis()->SetBinLabel(14, "V0-daughter veto");
+      hCF->GetXaxis()->SetBinLabel(15, "Selected");
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -1667,59 +1700,65 @@ struct LambdaProtonBalanceFunction {
     // ─────────────────────────────────────────────────────────────────────
 
     // ── QA3: SplitTrackQA — q_inv and shared-cluster fraction ─────────────
+    float qinvMax = cQinvQAMax.value;
+    int qinvBins = cQinvQABins.value;
+    if (qinvMax / qinvBins < 0.001f) {
+      qinvBins = static_cast<int>(qinvMax / 0.001f);
+    }
+
     // "Before_qinvCut": filled for every accepted pair, prior to the q_inv
     // cut (kQinvCut), so they show the complete original q_inv distributions.
     registryCorrelationQA.add(
       "QA3/SplitTrackQA/h1f_qinv_PP_Before_qinvCut",
       "Split-track QA: q_{inv} for p-p pairs, before q_{inv} cut;q_{inv} (GeV/c);Counts",
-      {HistType::kTH1F, {{600, 0.0f, 6.0f, "q_{inv} (GeV/c)"}}});
+      {HistType::kTH1F, {{qinvBins, 0.0f, qinvMax, "q_{inv} (GeV/c)"}}});
     registryCorrelationQA.add(
       "QA3/SplitTrackQA/h1f_qinv_LP_Before_qinvCut",
       "Split-track QA: q_{inv} for #Lambda/#bar{#Lambda}-p/#bar{p} pairs (all four LP combos), before q_{inv} cut;q_{inv} (GeV/c);Counts",
-      {HistType::kTH1F, {{600, 0.0f, 6.0f, "q_{inv} (GeV/c)"}}});
+      {HistType::kTH1F, {{qinvBins, 0.0f, qinvMax, "q_{inv} (GeV/c)"}}});
     registryCorrelationQA.add(
       "QA3/SplitTrackQA/h1f_qinv_LL_Before_qinvCut",
       "Split-track QA: q_{inv} for #Lambda/#bar{#Lambda}-#Lambda/#bar{#Lambda} pairs (all four LL combos), before q_{inv} cut;q_{inv} (GeV/c);Counts",
-      {HistType::kTH1F, {{600, 0.0f, 6.0f, "q_{inv} (GeV/c)"}}});
+      {HistType::kTH1F, {{qinvBins, 0.0f, qinvMax, "q_{inv} (GeV/c)"}}});
     // "After_qinvCut": filled only for pairs surviving the q_inv cut
     // (q_inv > kQinvCut), applied uniformly to all pair types (PP, pAp, App, ApAp, LP-family, LL-family).
     registryCorrelationQA.add(
       "QA3/SplitTrackQA/h1f_qinv_PP_After_qinvCut",
       "Split-track QA: q_{inv} for p-p pairs, after q_{inv} cut (q_{inv} > 0.01 GeV/c);q_{inv} (GeV/c);Counts",
-      {HistType::kTH1F, {{600, 0.0f, 6.0f, "q_{inv} (GeV/c)"}}});
+      {HistType::kTH1F, {{qinvBins, 0.0f, qinvMax, "q_{inv} (GeV/c)"}}});
     registryCorrelationQA.add(
       "QA3/SplitTrackQA/h1f_qinv_LP_After_qinvCut",
       "Split-track QA: q_{inv} for #Lambda/#bar{#Lambda}-p/#bar{p} pairs (all four LP combos), after q_{inv} cut (q_{inv} > 0.01 GeV/c);q_{inv} (GeV/c);Counts",
-      {HistType::kTH1F, {{600, 0.0f, 6.0f, "q_{inv} (GeV/c)"}}});
+      {HistType::kTH1F, {{qinvBins, 0.0f, qinvMax, "q_{inv} (GeV/c)"}}});
     registryCorrelationQA.add(
       "QA3/SplitTrackQA/h1f_qinv_LL_After_qinvCut",
       "Split-track QA: q_{inv} for #Lambda/#bar{#Lambda}-#Lambda/#bar{#Lambda} pairs (all four LL combos), after q_{inv} cut (q_{inv} > 0.01 GeV/c);q_{inv} (GeV/c);Counts",
-      {HistType::kTH1F, {{600, 0.0f, 6.0f, "q_{inv} (GeV/c)"}}});
+      {HistType::kTH1F, {{qinvBins, 0.0f, qinvMax, "q_{inv} (GeV/c)"}}});
     // q_inv Before/After QA for p-pbar, pbar-p and pbar-pbar pairs
     registryCorrelationQA.add(
       "QA3/SplitTrackQA/h1f_qinv_pAp_Before_qinvCut",
       "Split-track QA: q_{inv} for p-#bar{p} pairs, before q_{inv} cut;q_{inv} (GeV/c);Counts",
-      {HistType::kTH1F, {{600, 0.0f, 6.0f, "q_{inv} (GeV/c)"}}});
+      {HistType::kTH1F, {{qinvBins, 0.0f, qinvMax, "q_{inv} (GeV/c)"}}});
     registryCorrelationQA.add(
       "QA3/SplitTrackQA/h1f_qinv_pAp_After_qinvCut",
       "Split-track QA: q_{inv} for p-#bar{p} pairs, after q_{inv} cut (q_{inv} > 0.01 GeV/c);q_{inv} (GeV/c);Counts",
-      {HistType::kTH1F, {{600, 0.0f, 6.0f, "q_{inv} (GeV/c)"}}});
+      {HistType::kTH1F, {{qinvBins, 0.0f, qinvMax, "q_{inv} (GeV/c)"}}});
     registryCorrelationQA.add(
       "QA3/SplitTrackQA/h1f_qinv_App_Before_qinvCut",
       "Split-track QA: q_{inv} for #bar{p}-p pairs, before q_{inv} cut;q_{inv} (GeV/c);Counts",
-      {HistType::kTH1F, {{600, 0.0f, 6.0f, "q_{inv} (GeV/c)"}}});
+      {HistType::kTH1F, {{qinvBins, 0.0f, qinvMax, "q_{inv} (GeV/c)"}}});
     registryCorrelationQA.add(
       "QA3/SplitTrackQA/h1f_qinv_App_After_qinvCut",
       "Split-track QA: q_{inv} for #bar{p}-p pairs, after q_{inv} cut (q_{inv} > 0.01 GeV/c);q_{inv} (GeV/c);Counts",
-      {HistType::kTH1F, {{600, 0.0f, 6.0f, "q_{inv} (GeV/c)"}}});
+      {HistType::kTH1F, {{qinvBins, 0.0f, qinvMax, "q_{inv} (GeV/c)"}}});
     registryCorrelationQA.add(
       "QA3/SplitTrackQA/h1f_qinv_ApAp_Before_qinvCut",
       "Split-track QA: q_{inv} for #bar{p}-#bar{p} pairs, before q_{inv} cut;q_{inv} (GeV/c);Counts",
-      {HistType::kTH1F, {{600, 0.0f, 6.0f, "q_{inv} (GeV/c)"}}});
+      {HistType::kTH1F, {{qinvBins, 0.0f, qinvMax, "q_{inv} (GeV/c)"}}});
     registryCorrelationQA.add(
       "QA3/SplitTrackQA/h1f_qinv_ApAp_After_qinvCut",
       "Split-track QA: q_{inv} for #bar{p}-#bar{p} pairs, after q_{inv} cut (q_{inv} > 0.01 GeV/c);q_{inv} (GeV/c);Counts",
-      {HistType::kTH1F, {{600, 0.0f, 6.0f, "q_{inv} (GeV/c)"}}});
+      {HistType::kTH1F, {{qinvBins, 0.0f, qinvMax, "q_{inv} (GeV/c)"}}});
     registryCorrelationQA.add("QA3/Kstar/h1f_kstar_Lp_BeforeQinvCut", "k* of #Lambda-p pairs before q_{inv} cut;k* (GeV/c);Counts", {HistType::kTH1F, {{200, 0.0f, 2.0f}}});
     registryCorrelationQA.add("QA3/Kstar/h1f_kstar_Lp", "k* of #Lambda-p pairs after q_{inv} cut;k* (GeV/c);Counts", {HistType::kTH1F, {{200, 0.0f, 2.0f}}});
     registryCorrelationQA.add("QA3/Kstar/h1f_kstar_LAp_BeforeQinvCut", "k* of #Lambda-#bar{p} pairs before q_{inv} cut;k* (GeV/c);Counts", {HistType::kTH1F, {{200, 0.0f, 2.0f}}});
@@ -1728,6 +1767,71 @@ struct LambdaProtonBalanceFunction {
     registryCorrelationQA.add("QA3/Kstar/h1f_kstar_ALp", "k* of #bar{#Lambda}-p pairs after q_{inv} cut;k* (GeV/c);Counts", {HistType::kTH1F, {{200, 0.0f, 2.0f}}});
     registryCorrelationQA.add("QA3/Kstar/h1f_kstar_ALAp_BeforeQinvCut", "k* of #bar{#Lambda}-#bar{p} pairs before q_{inv} cut;k* (GeV/c);Counts", {HistType::kTH1F, {{200, 0.0f, 2.0f}}});
     registryCorrelationQA.add("QA3/Kstar/h1f_kstar_ALAp", "k* of #bar{#Lambda}-#bar{p} pairs after q_{inv} cut;k* (GeV/c);Counts", {HistType::kTH1F, {{200, 0.0f, 2.0f}}});
+
+    // ── QA3: 3D q_inv vs ΔΦ vs Δη and q_inv vs ΔΦ vs ΔY ─────────────────
+    // Filled BEFORE the q_inv cut so the full distribution is visible.
+    // Nomenclature: "Lp"  = Lambda(V0)  vs primary proton
+    //               "Lp_dau" = Lambda daughter proton vs primary proton
+    //               "LAp"/"LAp_dau" = Lambda (V0/dau) vs primary antiproton
+    //               "ALp"/"ALp_dau" = AntiLambda (V0/dau) vs primary proton
+    //               "ALAp"/"ALAp_dau" = AntiLambda (V0/dau) vs primary antiproton
+    {
+      AxisSpec axisQinv3D = {100, 0.0f, 2.0f, "q_{inv} (GeV/c)"};
+      AxisSpec axisDPhi3D = {64, -o2::constants::math::PI / 2.0f, 3.0f * o2::constants::math::PI / 2.0f, "#Delta#varphi"};
+      AxisSpec axisDEta3D = {40, -2.0f, 2.0f, "#Delta#eta"};
+      AxisSpec axisDY3D = {40, -2.0f, 2.0f, "#Deltay"};
+      // ── eta space ─────────────────────────────────────────────────────
+      registryCorrelationQA.add("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_Lp",
+                                "q_{inv} vs #Delta#varphi vs #Delta#eta: #Lambda (V0) - p;q_{inv} (GeV/c);#Delta#varphi;#Delta#eta",
+                                {HistType::kTH3F, {axisQinv3D, axisDPhi3D, axisDEta3D}});
+      registryCorrelationQA.add("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_Lp_dau",
+                                "q_{inv} vs #Delta#varphi vs #Delta#eta: #Lambda dau p - p;q_{inv} (GeV/c);#Delta#varphi;#Delta#eta",
+                                {HistType::kTH3F, {axisQinv3D, axisDPhi3D, axisDEta3D}});
+      registryCorrelationQA.add("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_LAp",
+                                "q_{inv} vs #Delta#varphi vs #Delta#eta: #Lambda (V0) - #bar{p};q_{inv} (GeV/c);#Delta#varphi;#Delta#eta",
+                                {HistType::kTH3F, {axisQinv3D, axisDPhi3D, axisDEta3D}});
+      registryCorrelationQA.add("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_LAp_dau",
+                                "q_{inv} vs #Delta#varphi vs #Delta#eta: #Lambda dau p - #bar{p};q_{inv} (GeV/c);#Delta#varphi;#Delta#eta",
+                                {HistType::kTH3F, {axisQinv3D, axisDPhi3D, axisDEta3D}});
+      registryCorrelationQA.add("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_ALp",
+                                "q_{inv} vs #Delta#varphi vs #Delta#eta: #bar{#Lambda} (V0) - p;q_{inv} (GeV/c);#Delta#varphi;#Delta#eta",
+                                {HistType::kTH3F, {axisQinv3D, axisDPhi3D, axisDEta3D}});
+      registryCorrelationQA.add("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_ALp_dau",
+                                "q_{inv} vs #Delta#varphi vs #Delta#eta: #bar{#Lambda} dau #bar{p} - p;q_{inv} (GeV/c);#Delta#varphi;#Delta#eta",
+                                {HistType::kTH3F, {axisQinv3D, axisDPhi3D, axisDEta3D}});
+      registryCorrelationQA.add("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_ALAp",
+                                "q_{inv} vs #Delta#varphi vs #Delta#eta: #bar{#Lambda} (V0) - #bar{p};q_{inv} (GeV/c);#Delta#varphi;#Delta#eta",
+                                {HistType::kTH3F, {axisQinv3D, axisDPhi3D, axisDEta3D}});
+      registryCorrelationQA.add("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_ALAp_dau",
+                                "q_{inv} vs #Delta#varphi vs #Delta#eta: #bar{#Lambda} dau #bar{p} - #bar{p};q_{inv} (GeV/c);#Delta#varphi;#Delta#eta",
+                                {HistType::kTH3F, {axisQinv3D, axisDPhi3D, axisDEta3D}});
+      // ── y space ───────────────────────────────────────────────────────
+      registryCorrelationQA.add("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_Lp",
+                                "q_{inv} vs #Delta#varphi vs #Deltay: #Lambda (V0) - p;q_{inv} (GeV/c);#Delta#varphi;#Deltay",
+                                {HistType::kTH3F, {axisQinv3D, axisDPhi3D, axisDY3D}});
+      registryCorrelationQA.add("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_Lp_dau",
+                                "q_{inv} vs #Delta#varphi vs #Deltay: #Lambda dau p - p;q_{inv} (GeV/c);#Delta#varphi;#Deltay",
+                                {HistType::kTH3F, {axisQinv3D, axisDPhi3D, axisDY3D}});
+      registryCorrelationQA.add("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_LAp",
+                                "q_{inv} vs #Delta#varphi vs #Deltay: #Lambda (V0) - #bar{p};q_{inv} (GeV/c);#Delta#varphi;#Deltay",
+                                {HistType::kTH3F, {axisQinv3D, axisDPhi3D, axisDY3D}});
+      registryCorrelationQA.add("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_LAp_dau",
+                                "q_{inv} vs #Delta#varphi vs #Deltay: #Lambda dau p - #bar{p};q_{inv} (GeV/c);#Delta#varphi;#Deltay",
+                                {HistType::kTH3F, {axisQinv3D, axisDPhi3D, axisDY3D}});
+      registryCorrelationQA.add("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_ALp",
+                                "q_{inv} vs #Delta#varphi vs #Deltay: #bar{#Lambda} (V0) - p;q_{inv} (GeV/c);#Delta#varphi;#Deltay",
+                                {HistType::kTH3F, {axisQinv3D, axisDPhi3D, axisDY3D}});
+      registryCorrelationQA.add("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_ALp_dau",
+                                "q_{inv} vs #Delta#varphi vs #Deltay: #bar{#Lambda} dau #bar{p} - p;q_{inv} (GeV/c);#Delta#varphi;#Deltay",
+                                {HistType::kTH3F, {axisQinv3D, axisDPhi3D, axisDY3D}});
+      registryCorrelationQA.add("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_ALAp",
+                                "q_{inv} vs #Delta#varphi vs #Deltay: #bar{#Lambda} (V0) - #bar{p};q_{inv} (GeV/c);#Delta#varphi;#Deltay",
+                                {HistType::kTH3F, {axisQinv3D, axisDPhi3D, axisDY3D}});
+      registryCorrelationQA.add("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_ALAp_dau",
+                                "q_{inv} vs #Delta#varphi vs #Deltay: #bar{#Lambda} dau #bar{p} - #bar{p};q_{inv} (GeV/c);#Delta#varphi;#Deltay",
+                                {HistType::kTH3F, {axisQinv3D, axisDPhi3D, axisDY3D}});
+    }
+    // ─────────────────────────────────────────────────────────────────────
     registryCorrelationQA.add(
       "QA3/SplitTrackQA/h1f_sharedClsFraction_t1",
       "Split-track QA: TPC shared-cluster fraction, track 1 (p-p: first proton; #Lambda-p: V0 daughter) in close pairs;Fraction;Counts",
@@ -2655,6 +2759,12 @@ struct LambdaProtonBalanceFunction {
       }
       registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 12.0f);
 
+      // pi/K/e contaminant veto
+      if (!passesContaminantVeto(trk)) {
+        continue;
+      }
+      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 13.0f);
+
       // TOF Matching Fraction check on selected protons
       registryQaDetector.fill(HIST("Selection/TOF_Matching/hTOFMatchedFractionVsPt"), trk.pt(), trk.hasTOF() ? 1.0f : 0.0f);
       // ── Item 4: 2D TOF-matching efficiency map for primary protons ──────
@@ -2708,11 +2818,11 @@ struct LambdaProtonBalanceFunction {
         }
         continue;
       }
-      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 13.0f);
+      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 14.0f);
       // ─────────────────────────────────────────────────────────────────
 
       // ── Classify into proton / antiproton lists ───────────────────────
-      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 14.0f);
+      registryQaDetector.fill(HIST("Selection/TOF_Matching/hCutFlow"), 15.0f);
       // VS Code: commented out unused variables.
       // const float pz = trk.pt() * std::sinh(trk.eta());
       // const float eta = trk.eta();
@@ -2990,16 +3100,43 @@ struct LambdaProtonBalanceFunction {
         // QA3/SplitTrackQA: q_inv for every accepted Lambda-proton pair
         float qinvLP = 0.0f;
         {
-          const float v0pmag = std::sqrt(v0.px() * v0.px() + v0.py() * v0.py() + v0.pz() * v0.pz());
+          const float dauPmag = std::sqrt(v0PosDau.px() * v0PosDau.px() + v0PosDau.py() * v0PosDau.py() + v0PosDau.pz() * v0PosDau.pz());
           const float pprmag = std::sqrt(primProton.px() * primProton.px() + primProton.py() * primProton.py() + primProton.pz() * primProton.pz());
-          const float Ev0 = std::sqrt(v0pmag * v0pmag + kMassLambda * kMassLambda);
+          const float Edau = std::sqrt(dauPmag * dauPmag + kMassProton * kMassProton);
           const float Eppr = std::sqrt(pprmag * pprmag + kMassProton * kMassProton);
-          qinvLP = computeQinv(v0.px(), v0.py(), v0.pz(), Ev0, primProton.px(), primProton.py(), primProton.pz(), Eppr);
+          qinvLP = computeQinv(v0PosDau.px(), v0PosDau.py(), v0PosDau.pz(), Edau, primProton.px(), primProton.py(), primProton.pz(), Eppr);
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_Before_qinvCut"), qinvLP);
         }
         // QA3/SplitTrackQA: q_inv Before and After cut
         if (!failsQinvCut(qinvLP)) {
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_After_qinvCut"), qinvLP);
+        }
+        // QA3/QinvVsAngles: 3D fills for Lambda(V0)-primProton and Lambda dau proton-primProton
+        {
+          constexpr float PIHalf3D = o2::constants::math::PI / 2.0f;
+          // Angular variables w.r.t. Lambda (V0)
+          const float dPhi_V0_p = RecoDecay::constrainAngle((v0.phi() - primProton.phi()), -PIHalf3D);
+          const float dEta_V0_p = v0.eta() - primProton.eta();
+          const float yLambda = v0.rapidity(1);
+          const float yPrimP = protonRapidity(primProton);
+          const float dY_V0_p = yLambda - yPrimP;
+          // q_inv using Lambda (V0) four-momentum (kMassLambda hypothesis)
+          const float v0pmag_3d = std::sqrt(v0.px() * v0.px() + v0.py() * v0.py() + v0.pz() * v0.pz());
+          const float Ev0_3d = std::sqrt(v0pmag_3d * v0pmag_3d + kMassLambda * kMassLambda);
+          const float pprmag_3d = std::sqrt(primProton.px() * primProton.px() + primProton.py() * primProton.py() + primProton.pz() * primProton.pz());
+          const float Eppr_3d = std::sqrt(pprmag_3d * pprmag_3d + kMassProton * kMassProton);
+          const float qinvLP_V0 = computeQinv(v0.px(), v0.py(), v0.pz(), Ev0_3d, primProton.px(), primProton.py(), primProton.pz(), Eppr_3d);
+          // Angular variables w.r.t. Lambda daughter proton
+          const float dPhi_dau_p = RecoDecay::constrainAngle((v0PosDau.phi() - primProton.phi()), -PIHalf3D);
+          const float dEta_dau_p = v0PosDau.eta() - primProton.eta();
+          const float yDauP = protonRapidity(v0PosDau);
+          const float dY_dau_p = yDauP - yPrimP;
+          // eta space
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_Lp"), qinvLP_V0, dPhi_V0_p, dEta_V0_p);
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_Lp_dau"), qinvLP, dPhi_dau_p, dEta_dau_p);
+          // y space
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_Lp"), qinvLP_V0, dPhi_V0_p, dY_V0_p);
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_Lp_dau"), qinvLP, dPhi_dau_p, dY_dau_p);
         }
         // QA3/SplitTrackQA: close-pair block for daughter-overlap diagnosed split tracks
         {
@@ -3066,16 +3203,43 @@ struct LambdaProtonBalanceFunction {
         // QA3/SplitTrackQA: q_inv for every accepted Lambda-antiproton pair
         float qinvLAp = 0.0f;
         {
-          const float v0pmag2 = std::sqrt(v0.px() * v0.px() + v0.py() * v0.py() + v0.pz() * v0.pz());
+          const float dauPmag = std::sqrt(v0PosDau.px() * v0PosDau.px() + v0PosDau.py() * v0PosDau.py() + v0PosDau.pz() * v0PosDau.pz());
           const float paprmag = std::sqrt(primAntiProton.px() * primAntiProton.px() + primAntiProton.py() * primAntiProton.py() + primAntiProton.pz() * primAntiProton.pz());
-          const float Ev02 = std::sqrt(v0pmag2 * v0pmag2 + kMassLambda * kMassLambda);
+          const float Edau = std::sqrt(dauPmag * dauPmag + kMassProton * kMassProton);
           const float Epapr = std::sqrt(paprmag * paprmag + kMassProton * kMassProton);
-          qinvLAp = computeQinv(v0.px(), v0.py(), v0.pz(), Ev02, primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), Epapr);
+          qinvLAp = computeQinv(v0PosDau.px(), v0PosDau.py(), v0PosDau.pz(), Edau, primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), Epapr);
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_Before_qinvCut"), qinvLAp);
         }
         // QA3/SplitTrackQA: q_inv Before and After cut
         if (!failsQinvCut(qinvLAp)) {
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_After_qinvCut"), qinvLAp);
+        }
+        // QA3/QinvVsAngles: 3D fills for Lambda(V0)-primAntiProton and Lambda dau proton-primAntiProton
+        {
+          constexpr float PIHalf3D = o2::constants::math::PI / 2.0f;
+          // Angular variables w.r.t. Lambda (V0)
+          const float dPhi_V0_ap = RecoDecay::constrainAngle((v0.phi() - primAntiProton.phi()), -PIHalf3D);
+          const float dEta_V0_ap = v0.eta() - primAntiProton.eta();
+          const float yLambdaL = v0.rapidity(1);
+          const float yPrimAp = protonRapidity(primAntiProton);
+          const float dY_V0_ap = yLambdaL - yPrimAp;
+          // q_inv using Lambda (V0) four-momentum (kMassLambda hypothesis)
+          const float v0pmag_3dL = std::sqrt(v0.px() * v0.px() + v0.py() * v0.py() + v0.pz() * v0.pz());
+          const float Ev0_3dL = std::sqrt(v0pmag_3dL * v0pmag_3dL + kMassLambda * kMassLambda);
+          const float paprmag_3dL = std::sqrt(primAntiProton.px() * primAntiProton.px() + primAntiProton.py() * primAntiProton.py() + primAntiProton.pz() * primAntiProton.pz());
+          const float Epapr_3dL = std::sqrt(paprmag_3dL * paprmag_3dL + kMassProton * kMassProton);
+          const float qinvLAp_V0 = computeQinv(v0.px(), v0.py(), v0.pz(), Ev0_3dL, primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), Epapr_3dL);
+          // Angular variables w.r.t. Lambda daughter proton
+          const float dPhi_dau_ap = RecoDecay::constrainAngle((v0PosDau.phi() - primAntiProton.phi()), -PIHalf3D);
+          const float dEta_dau_ap = v0PosDau.eta() - primAntiProton.eta();
+          const float yDauPL = protonRapidity(v0PosDau);
+          const float dY_dau_ap = yDauPL - yPrimAp;
+          // eta space
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_LAp"), qinvLAp_V0, dPhi_V0_ap, dEta_V0_ap);
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_LAp_dau"), qinvLAp, dPhi_dau_ap, dEta_dau_ap);
+          // y space
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_LAp"), qinvLAp_V0, dPhi_V0_ap, dY_V0_ap);
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_LAp_dau"), qinvLAp, dPhi_dau_ap, dY_dau_ap);
         }
         // QA3/RawPairDensity: Lambda-antiproton → same LP histogram
         {
@@ -3197,16 +3361,43 @@ struct LambdaProtonBalanceFunction {
         // QA3/SplitTrackQA: q_inv for every accepted AntiLambda-proton pair
         float qinvALp = 0.0f;
         {
-          const float alpmag = std::sqrt(v0.px() * v0.px() + v0.py() * v0.py() + v0.pz() * v0.pz());
+          const float dauPmag = std::sqrt(v0NegDau.px() * v0NegDau.px() + v0NegDau.py() * v0NegDau.py() + v0NegDau.pz() * v0NegDau.pz());
           const float pprmag3 = std::sqrt(primProton.px() * primProton.px() + primProton.py() * primProton.py() + primProton.pz() * primProton.pz());
-          const float EalL = std::sqrt(alpmag * alpmag + kMassLambda * kMassLambda);
+          const float Edau = std::sqrt(dauPmag * dauPmag + kMassProton * kMassProton);
           const float Eppr3 = std::sqrt(pprmag3 * pprmag3 + kMassProton * kMassProton);
-          qinvALp = computeQinv(v0.px(), v0.py(), v0.pz(), EalL, primProton.px(), primProton.py(), primProton.pz(), Eppr3);
+          qinvALp = computeQinv(v0NegDau.px(), v0NegDau.py(), v0NegDau.pz(), Edau, primProton.px(), primProton.py(), primProton.pz(), Eppr3);
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_Before_qinvCut"), qinvALp);
         }
         // QA3/SplitTrackQA: q_inv Before and After cut
         if (!failsQinvCut(qinvALp)) {
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_After_qinvCut"), qinvALp);
+        }
+        // QA3/QinvVsAngles: 3D fills for AntiLambda(V0)-primProton and AntiLambda dau antiproton-primProton
+        {
+          constexpr float PIHalf3D = o2::constants::math::PI / 2.0f;
+          // Angular variables w.r.t. AntiLambda (V0)
+          const float dPhi_AL_p = RecoDecay::constrainAngle((v0.phi() - primProton.phi()), -PIHalf3D);
+          const float dEta_AL_p = v0.eta() - primProton.eta();
+          const float yAL = v0.rapidity(2);
+          const float yPrimP3 = protonRapidity(primProton);
+          const float dY_AL_p = yAL - yPrimP3;
+          // q_inv using AntiLambda (V0) four-momentum (kMassLambda hypothesis)
+          const float almag_3d = std::sqrt(v0.px() * v0.px() + v0.py() * v0.py() + v0.pz() * v0.pz());
+          const float EalL_3d = std::sqrt(almag_3d * almag_3d + kMassLambda * kMassLambda);
+          const float pprmag3_3d = std::sqrt(primProton.px() * primProton.px() + primProton.py() * primProton.py() + primProton.pz() * primProton.pz());
+          const float Eppr3_3d = std::sqrt(pprmag3_3d * pprmag3_3d + kMassProton * kMassProton);
+          const float qinvALp_V0 = computeQinv(v0.px(), v0.py(), v0.pz(), EalL_3d, primProton.px(), primProton.py(), primProton.pz(), Eppr3_3d);
+          // Angular variables w.r.t. AntiLambda daughter antiproton
+          const float dPhi_dauAL_p = RecoDecay::constrainAngle((v0NegDau.phi() - primProton.phi()), -PIHalf3D);
+          const float dEta_dauAL_p = v0NegDau.eta() - primProton.eta();
+          const float yDauAL = protonRapidity(v0NegDau);
+          const float dY_dauAL_p = yDauAL - yPrimP3;
+          // eta space
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_ALp"), qinvALp_V0, dPhi_AL_p, dEta_AL_p);
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_ALp_dau"), qinvALp, dPhi_dauAL_p, dEta_dauAL_p);
+          // y space
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_ALp"), qinvALp_V0, dPhi_AL_p, dY_AL_p);
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_ALp_dau"), qinvALp, dPhi_dauAL_p, dY_dauAL_p);
         }
         // QA3/RawPairDensity: AntiLambda-proton → same LP histogram
         {
@@ -3256,16 +3447,43 @@ struct LambdaProtonBalanceFunction {
         // QA3/SplitTrackQA: q_inv for every accepted AntiLambda-antiproton pair
         float qinvALAp = 0.0f;
         {
-          const float alpmag2 = std::sqrt(v0.px() * v0.px() + v0.py() * v0.py() + v0.pz() * v0.pz());
+          const float dauPmag = std::sqrt(v0NegDau.px() * v0NegDau.px() + v0NegDau.py() * v0NegDau.py() + v0NegDau.pz() * v0NegDau.pz());
           const float paprmag2 = std::sqrt(primAntiProton.px() * primAntiProton.px() + primAntiProton.py() * primAntiProton.py() + primAntiProton.pz() * primAntiProton.pz());
-          const float EalL2 = std::sqrt(alpmag2 * alpmag2 + kMassLambda * kMassLambda);
+          const float Edau = std::sqrt(dauPmag * dauPmag + kMassProton * kMassProton);
           const float Epapr2 = std::sqrt(paprmag2 * paprmag2 + kMassProton * kMassProton);
-          qinvALAp = computeQinv(v0.px(), v0.py(), v0.pz(), EalL2, primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), Epapr2);
+          qinvALAp = computeQinv(v0NegDau.px(), v0NegDau.py(), v0NegDau.pz(), Edau, primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), Epapr2);
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_Before_qinvCut"), qinvALAp);
         }
         // QA3/SplitTrackQA: q_inv Before and After cut
         if (!failsQinvCut(qinvALAp)) {
           registryCorrelationQA.fill(HIST("QA3/SplitTrackQA/h1f_qinv_LP_After_qinvCut"), qinvALAp);
+        }
+        // QA3/QinvVsAngles: 3D fills for AntiLambda(V0)-primAntiProton and AntiLambda dau antiproton-primAntiProton
+        {
+          constexpr float PIHalf3D = o2::constants::math::PI / 2.0f;
+          // Angular variables w.r.t. AntiLambda (V0)
+          const float dPhi_AL_ap = RecoDecay::constrainAngle((v0.phi() - primAntiProton.phi()), -PIHalf3D);
+          const float dEta_AL_ap = v0.eta() - primAntiProton.eta();
+          const float yAL2 = v0.rapidity(2);
+          const float yPrimAp2 = protonRapidity(primAntiProton);
+          const float dY_AL_ap = yAL2 - yPrimAp2;
+          // q_inv using AntiLambda (V0) four-momentum (kMassLambda hypothesis)
+          const float almag2_3d = std::sqrt(v0.px() * v0.px() + v0.py() * v0.py() + v0.pz() * v0.pz());
+          const float EalL2_3d = std::sqrt(almag2_3d * almag2_3d + kMassLambda * kMassLambda);
+          const float paprmag2_3d = std::sqrt(primAntiProton.px() * primAntiProton.px() + primAntiProton.py() * primAntiProton.py() + primAntiProton.pz() * primAntiProton.pz());
+          const float Epapr2_3d = std::sqrt(paprmag2_3d * paprmag2_3d + kMassProton * kMassProton);
+          const float qinvALAp_V0 = computeQinv(v0.px(), v0.py(), v0.pz(), EalL2_3d, primAntiProton.px(), primAntiProton.py(), primAntiProton.pz(), Epapr2_3d);
+          // Angular variables w.r.t. AntiLambda daughter antiproton
+          const float dPhi_dauAL_ap = RecoDecay::constrainAngle((v0NegDau.phi() - primAntiProton.phi()), -PIHalf3D);
+          const float dEta_dauAL_ap = v0NegDau.eta() - primAntiProton.eta();
+          const float yDauAL2 = protonRapidity(v0NegDau);
+          const float dY_dauAL_ap = yDauAL2 - yPrimAp2;
+          // eta space
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_ALAp"), qinvALAp_V0, dPhi_AL_ap, dEta_AL_ap);
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/eta/h3f_qinv_dPhi_dEta_ALAp_dau"), qinvALAp, dPhi_dauAL_ap, dEta_dauAL_ap);
+          // y space
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_ALAp"), qinvALAp_V0, dPhi_AL_ap, dY_AL_ap);
+          registryCorrelationQA.fill(HIST("QA3/QinvVsAngles/y/h3f_qinv_dPhi_dY_ALAp_dau"), qinvALAp, dPhi_dauAL_ap, dY_dauAL_ap);
         }
         // QA3/SplitTrackQA: close-pair block for daughter-overlap diagnosed split tracks
         {

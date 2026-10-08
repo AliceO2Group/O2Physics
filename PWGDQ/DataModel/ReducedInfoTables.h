@@ -1198,6 +1198,8 @@ DECLARE_SOA_COLUMN(VertexingLxyProjected, vertexingLxyProjected, float);     //!
 DECLARE_SOA_COLUMN(VertexingLxyzProjected, vertexingLxyzProjected, float);   //!
 DECLARE_SOA_COLUMN(VertexingTauzProjected, vertexingTauzProjected, float);   //!
 DECLARE_SOA_COLUMN(VertexingTauxyProjected, vertexingTauxyProjected, float); //!
+DECLARE_SOA_BITMAP_COLUMN(DileptonFilterMap, dileptonFilterMap, 32);         //!
+DECLARE_SOA_BITMAP_COLUMN(QuadFilterMap, quadFilterMap, 32);                 //!
 } // namespace dileptonTrackTrackCandidate
 
 DECLARE_SOA_TABLE(DileptonTrackTrackCandidates, "AOD", "RTDQUADPLET", //!
