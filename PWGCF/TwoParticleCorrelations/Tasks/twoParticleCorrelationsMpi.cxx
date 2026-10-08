@@ -116,13 +116,6 @@ struct TwoParticleCorrelationsMpi {
     Configurable<bool> cfgDropStepRECO{"cfgDropStepRECO", false, "choice to drop step RECO if efficiency correction is used"};
     Configurable<int> cfgCentBinsForMC{"cfgCentBinsForMC", 0, "0 = generated multiplicity; 1 = reconstructed multiplicity and all associated collisions"};
   } cfgGeneral;
-  struct : ConfigurableGroup {
-    Configurable<float> dcaxymax{"dcaxymax", 999.f, "maximum dcaxy of tracks"};
-    Configurable<float> dcazmax{"dcazmax", 999.f, "maximum dcaz of tracks"};
-    Configurable<bool> enablePtDepDCAxy{"enablePtDepDCAxy", false, "Enable pT-dependent DCAxy cut: |DCAxy| < a + b/pT"};
-    Configurable<float> dcaXyConst{"dcaXyConst", 0.004f, "Constant term 'a' for pT-dependent DCAxy cut: |DCAxy| < a + b/pT (cm)"};
-    Configurable<float> dcaXySlope{"dcaXySlope", 0.013f, "Slope term 'b' for pT-dependent DCAxy cut: |DCAxy| < a + b/pT (cm x GeV/c)"};
-  } cfgDCA;
   Configurable<uint16_t> cfgTrackBitMask{"cfgTrackBitMask", 0, "BitMask for track selection systematics; refer to the enum TrackSelectionCuts in filtering task"};
   Configurable<uint16_t> cfgMultCorrelationsMask{"cfgMultCorrelationsMask", 0, "Selection bitmask for the multiplicity correlations. This should match the filter selection cfgEstimatorBitMask."};
   Configurable<std::string> cfgMultCutFormula{"cfgMultCutFormula", "", "Multiplicity correlations cut formula. A result greater than zero results in accepted event. Parameters: [cFT0C] FT0C centrality, [mFV0A] V0A multiplicity, [mGlob] global track multiplicity, [mPV] PV track multiplicity, [cFT0M] FT0M centrality"};
@@ -192,11 +185,7 @@ struct TwoParticleCorrelationsMpi {
   Filter collisionVertexTypeFilter = (aod::collision::flags & static_cast<uint16_t>(aod::collision::CollisionFlagsRun2::Run2VertexerTracks)) == static_cast<uint16_t>(aod::collision::CollisionFlagsRun2::Run2VertexerTracks);
 
   // Track filters
-  Filter trackFilter = (nabs(aod::track::eta) < cfgGeneral.cfgCutEta) && (aod::track::pt > cfgGeneral.cfgCutPt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) &&
-                       (nabs(aod::track::dcaZ) < cfgDCA.dcazmax) &&
-                       ifnode(cfgDCA.enablePtDepDCAxy.node() == true,
-                              nabs(aod::track::dcaXY) < (cfgDCA.dcaXyConst + cfgDCA.dcaXySlope / aod::track::pt),
-                              nabs(aod::track::dcaXY) < cfgDCA.dcaxymax);
+  Filter trackFilter = (nabs(aod::track::eta) < cfgGeneral.cfgCutEta) && (aod::track::pt > cfgGeneral.cfgCutPt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true));
   Filter cfTrackFilter = (nabs(aod::cftrack::eta) < cfgGeneral.cfgCutEta) && (aod::cftrack::pt > cfgGeneral.cfgCutPt) && ncheckbit(aod::track::trackType, as<uint8_t>(cfgTrackBitMask));
 
   // MC filters
