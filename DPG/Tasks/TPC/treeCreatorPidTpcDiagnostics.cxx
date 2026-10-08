@@ -91,28 +91,28 @@ struct TreeCreatorPidTpcDiagnostics {
 
   struct ParticleWiseCuts : ConfigurableGroup {
 
-#define DECLARE_PARTICLE_WISE_CONFIGURABLES(ParticleNameShort, ParticleNameLong, Unused)                                                                                                                                                                     \
-  Configurable<float> cutTpcInnerParameterMin##ParticleNameLong{"cutTpcInnerParameterMin" #ParticleNameLong, 0.f, "Lower-value cut on tpcInnerParam for " #ParticleNameLong};      /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
-  Configurable<float> cutTpcInnerParameterMax##ParticleNameLong{"cutTpcInnerParameterMax" #ParticleNameLong, 999.f, "Upper-value cut on tpcInnerParam for " #ParticleNameLong};    /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
-  Configurable<float> cutExpSigmaMax##ParticleNameLong{"cutExpSigmaMax" #ParticleNameLong, 1e9f, "Upper-value cut on (positively-defined) expected sigma for " #ParticleNameLong}; /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
-  Configurable<float> cutDeDxExpectedMin##ParticleNameLong{"cutDeDxExpectedMin" #ParticleNameLong, -1e9f, "Lower-value cut on expected dE/dx for " #ParticleNameLong};             /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
-  Configurable<float> cutDeDxExpectedMax##ParticleNameLong{"cutDeDxExpectedMax" #ParticleNameLong, 1e9f, "Upper-value cut on expected dE/dx for " #ParticleNameLong};              /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
-  Configurable<float> cutDeDxDiffMin##ParticleNameLong{"cutDeDxDiffMin" #ParticleNameLong, -1e9f, "Lower-value cut on real - expected dE/dx difference for " #ParticleNameLong};   /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
-  Configurable<float> cutDeDxDiffMax##ParticleNameLong{"cutDeDxDiffMax" #ParticleNameLong, 1e9f, "Upper-value cut on real - expected dE/dx difference for " #ParticleNameLong};    /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
-  Configurable<float> cutNSigmaTpcAbs##ParticleNameLong{"cutNSigmaTpcAbs" #ParticleNameLong, 999.f, "Cut on absolute value of nSigmaTpc for " #ParticleNameLong};                  // o2-linter: disable=name/configurable (Configurable defined in macro)
+#define DECLARE_PARTICLE_WISE_CONFIGURABLES(ParticleNameShort, ParticleNameLong, Unused)                                                                                                                                                                   \
+  Configurable<float> cutTpcInnerParameterMin##ParticleNameLong{"cutTpcInnerParameterMin" #ParticleNameLong, 0.f, "Lower-value cut on tpcInnerParam for " #ParticleNameLong};    /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
+  Configurable<float> cutTpcInnerParameterMax##ParticleNameLong{"cutTpcInnerParameterMax" #ParticleNameLong, 999.f, "Upper-value cut on tpcInnerParam for " #ParticleNameLong};  /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
+  Configurable<float> cutExpSigmaMax##ParticleNameLong{"cutExpSigmaMax" #ParticleNameLong, 1e9f, "Upper-value cut on expected sigma for " #ParticleNameLong};                    /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
+  Configurable<float> cutDeDxExpectedMin##ParticleNameLong{"cutDeDxExpectedMin" #ParticleNameLong, -1e9f, "Lower-value cut on expected dE/dx for " #ParticleNameLong};           /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
+  Configurable<float> cutDeDxExpectedMax##ParticleNameLong{"cutDeDxExpectedMax" #ParticleNameLong, 1e9f, "Upper-value cut on expected dE/dx for " #ParticleNameLong};            /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
+  Configurable<float> cutDeDxDiffMin##ParticleNameLong{"cutDeDxDiffMin" #ParticleNameLong, -1e9f, "Lower-value cut on real - expected dE/dx difference for " #ParticleNameLong}; /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
+  Configurable<float> cutDeDxDiffMax##ParticleNameLong{"cutDeDxDiffMax" #ParticleNameLong, 1e9f, "Upper-value cut on real - expected dE/dx difference for " #ParticleNameLong};  /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
+  Configurable<float> cutNSigmaTpcAbs##ParticleNameLong{"cutNSigmaTpcAbs" #ParticleNameLong, 999.f, "Cut on absolute value of nSigmaTpc for " #ParticleNameLong};                // o2-linter: disable=name/configurable (Configurable defined in macro)
 
     DO_FOR_ALL_PARTICLES(DECLARE_PARTICLE_WISE_CONFIGURABLES, _)
 #undef DECLARE_PARTICLE_WISE_CONFIGURABLES
   } particleWiseCuts;
 
 #define PARTICLE_WISE_CUT_NAMES \
-  (cutTpcInnerParameterMin)(cutTpcInnerParameterMax)(cutNSigmaTpcAbs)
+  (cutTpcInnerParameterMin)(cutTpcInnerParameterMax)(cutExpSigmaMax)(cutDeDxExpectedMin)(cutDeDxExpectedMax)(cutDeDxDiffMin)(cutDeDxDiffMax)(cutNSigmaTpcAbs)
 
 #define MAKE_PARTICLE_CUT_POINTER(ShortName, LongName, CutName) \
   &particleWiseCuts.BOOST_PP_CAT(CutName, LongName),
 
-#define PACK_CONFIGURABLES_TO_ARRAY(Unused1, Unused2, CutName) \
-  std::array<Configurable<float>*, PID::Alpha + 1> CutName{    \
+#define PACK_CONFIGURABLES_TO_ARRAY(Unused1, Unused2, CutName)    \
+  const std::array<Configurable<float>*, PID::Alpha + 1> CutName{ \
     DO_FOR_ALL_PARTICLES(MAKE_PARTICLE_CUT_POINTER, CutName)};
 
   BOOST_PP_SEQ_FOR_EACH(PACK_CONFIGURABLES_TO_ARRAY, _, PARTICLE_WISE_CUT_NAMES)
@@ -245,10 +245,6 @@ struct TreeCreatorPidTpcDiagnostics {
         isGoodTrack &= (tpcInnerParam <= *cutTpcInnerParameterMax.at(ParticleId));
         isGoodTrack &= (std::fabs(nSigmaTpc) <= *cutNSigmaTpcAbs.at(ParticleId));
 
-        if (!isGoodTrack) {
-          continue;
-        }
-
         float dedxDiff{UndefValueFloat};
         float dedxExpected{UndefValueFloat};
         float expSigma{UndefValueFloat};
@@ -257,6 +253,16 @@ struct TreeCreatorPidTpcDiagnostics {
           dedxDiff = o2::aod::pidutils::tpcExpSignalDiff<ParticleId>(track);
           dedxExpected = track.tpcSignal() - dedxDiff;
           expSigma = o2::aod::pidutils::tpcExpSigma<ParticleId>(track);
+
+          isGoodTrack &= (expSigma <= *cutExpSigmaMax.at(ParticleId));
+          isGoodTrack &= (dedxExpected >= *cutDeDxExpectedMin.at(ParticleId));
+          isGoodTrack &= (dedxExpected <= *cutDeDxExpectedMax.at(ParticleId));
+          isGoodTrack &= (dedxDiff >= *cutDeDxDiffMin.at(ParticleId));
+          isGoodTrack &= (dedxDiff <= *cutDeDxDiffMax.at(ParticleId));
+        }
+
+        if (!isGoodTrack) {
+          continue;
         }
 
         float nSigmaTof{UndefValueFloat};
