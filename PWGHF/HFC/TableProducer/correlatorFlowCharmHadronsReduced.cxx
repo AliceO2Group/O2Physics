@@ -96,8 +96,13 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   Configurable<std::vector<double>> bdtScore0PtMaxs{"bdtScore0PtMaxs", std::vector<double>{0.1, 0.1, 0.1, 0.1, 0.1}, "pT-differential maximum score 0 for charm candidates"};
   Configurable<std::vector<double>> bdtScore1PtMins{"bdtScore1PtMins", std::vector<double>{0.1, 0.1, 0.1, 0.1, 0.1}, "pT-differential minimum score 1 for charm candidates"};
   Configurable<std::vector<double>> binsPtAssoc{"binsPtAssoc", std::vector<double>{0.3, 1., 2., 50.}, "pT bin limits for associated particles"};
+  Configurable<bool> selCentrality{"selCentrality", false, "Use centrality to select events"};
+  Configurable<bool> selMultiplicity{"selMultiplicity", false, "Use multiplicity to select events"};
+  Configurable<bool> countCharmCandsPerCollision{"countCharmCandsPerCollision", false, "Count charm candidates per collision"};
   Configurable<float> centralityMin{"centralityMin", 0, "min. centrality"};
   Configurable<float> centralityMax{"centralityMax", 10., "max. centrality"};
+  Configurable<float> multiplicityMin{"multiplicityMin", 0, "min. multiplicity"};
+  Configurable<float> multiplicityMax{"multiplicityMax", 10., "max. multiplicity"};
   Configurable<float> deltaEtaAbsMin{"deltaEtaAbsMin", 0.5, "min. pair delta eta"};
   Configurable<float> deltaEtaAbsMax{"deltaEtaAbsMax", 2., "max. pair delta eta"};
   Configurable<float> dcaXYTrackMax{"dcaXYTrackMax", 1., "max. track DCA XY"};
@@ -106,7 +111,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   Configurable<int> itsNClsMin{"itsNClsMin", 1, "min. ITS clusters"};
   Configurable<float> downSamplePairs{"downSamplePairs", 1., "Fraction of pairs to keep"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
-  Configurable<float> centMaxForDownSample{"centMaxForDownSample", 10., "Maximum centrality for the application of the downsampling factor"};
+  Configurable<float> centMultMaxForDownSample{"centMultMaxForDownSample", 10., "Maximum centrality for the application of the downsampling factor"};
 
   SliceCache cache;
 
@@ -131,10 +136,8 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   ConfigurableAxis binsMultFT0M{"binsMultFT0M", {100, 0., 10000.}, "Multiplicity as FT0M signal amplitude"};
   ConfigurableAxis binsCent{"binsCent", {100, 0., 100.}, "Centrality bins"};
   ConfigurableAxis binsPosZ{"binsPosZ", {100, -10., 10.}, "Primary vertex z coordinate"};
-  ConfigurableAxis binsEta{"binsEta", {50, -2., 2.}, "Eta bins"};
-  ConfigurableAxis binsPhi{"binsPhi", {64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, "Phi bins"};
   ConfigurableAxis binsDeltaEta{"binsDeltaEta", {100, -2., 2.}, "Delta Eta bins"};
-  ConfigurableAxis binsDeltaPhi{"binsDeltaPhi", {64, -3., 3.}, "Delta Phi bins"};
+  ConfigurableAxis binsDeltaPhi{"binsDeltaPhi", {64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, "Delta Phi bins"};
   ConfigurableAxis binsMlOne{"binsMlOne", {100, 0., 1.}, "ML score index 1 bins"};
   ConfigurableAxis binsMlTwo{"binsMlTwo", {100, 0., 1.}, "ML score index 2 bins"};
 
@@ -142,6 +145,21 @@ struct HfCorrelatorFlowCharmHadronsReduced {
 
   void init(InitContext&)
   {
+    if (selCentrality && selMultiplicity) {
+      LOGP(fatal, "You cannot select events based on both centrality and multiplicity! Please check your configuration!");
+    }
+    if (!selCentrality && !selMultiplicity) {
+      LOGP(fatal, "You must select events based on either centrality or multiplicity! Please check your configuration!");
+    }
+
+    // Fatal if selCentrality and process functions using multiplicity mixing, or selMultiplicity and process functions using centrality mixing
+    if (selCentrality && (doprocessSameEventCharmHadWMultMix || doprocessMixedEventCharmHadWMultMix || doprocessSameEventHadHadWMultMix || doprocessMixedEventHadHadWMultMix)) {
+      LOGP(fatal, "You cannot select events based on centrality and process functions using multiplicity mixing! Please check your configuration!");
+    }
+    if (selMultiplicity && (doprocessSameEventCharmHadWCentMix || doprocessMixedEventCharmHadWCentMix || doprocessSameEventHadHadWCentMix || doprocessMixedEventHadHadWCentMix)) {
+      LOGP(fatal, "You cannot select events based on multiplicity and process functions using centrality mixing! Please check your configuration!");
+    }
+
     if ((doprocessSameEventCharmHadWCentMix && doprocessMixedEventCharmHadWMultMix) ||
         (doprocessSameEventCharmHadWMultMix && doprocessMixedEventCharmHadWCentMix) ||
         (doprocessSameEventHadHadWCentMix && doprocessMixedEventHadHadWMultMix) ||
@@ -185,6 +203,8 @@ struct HfCorrelatorFlowCharmHadronsReduced {
     }
     registry.add("hZVtxPoolBinSE", "z vertex SE", {HistType::kTH2F, {{axisPosZ}, {axisPoolBin}}});
     registry.add("hZVtxPoolBinME", "z vertex ME", {HistType::kTH2F, {{axisPosZ}, {axisPoolBin}}});
+    registry.add("hCollisionsCentMultAll", "Collision centrality vs multiplicity", {HistType::kTH2F, {{axisCent}, {axisMultFT0M}}});
+    registry.add("hCollisionsCentMultSel", "Collision centrality vs multiplicity", {HistType::kTH2F, {{axisCent}, {axisMultFT0M}}});
     registry.add("hPoolBinTrigSE", "Trigger candidates pool bin SE", {HistType::kTH1F, {axisPoolBin}});
     registry.add("hPoolBinTrigME", "Trigger candidates pool bin ME", {HistType::kTH1F, {axisPoolBin}});
     registry.add("hPoolBinAssocSE", "Associated particles pool bin SE", {HistType::kTH1F, {axisPoolBin}});
@@ -205,10 +225,23 @@ struct HfCorrelatorFlowCharmHadronsReduced {
           registry.add("hSparseCorrelationsMECharmHad", "THn for ME Charm-Had correlations", HistType::kTHnSparseF, axes);
         }
         if (doprocessCharmTriggers) {
+          if (countCharmCandsPerCollision) {
+            axesTrigger.push_back({100, -0.5, 99.5, "nCharmCandidates"});
+          }
           registry.add("hSparseTrigCandsCharm", "THn for Charm trigger candidates", HistType::kTHnSparseF, axesTrigger);
         }
       }
     }
+  }
+
+  bool isSelCollision(const aod::HfcRedCorrColls& collision)
+  {
+    if (selCentrality) {
+      return (collision.centrality() >= centralityMin && collision.centrality() <= centralityMax);
+    } else if (selMultiplicity) {
+      return (collision.multiplicity() >= multiplicityMin && collision.multiplicity() <= multiplicityMax);
+    }
+    return false;
   }
 
   /// Get the binning pool associated to the collision
@@ -265,9 +298,12 @@ struct HfCorrelatorFlowCharmHadronsReduced {
                      const TBinningType& binPolicy)
   {
     auto collision = pair.template hfcRedCorrColl_as<o2::aod::HfcRedCorrColls>();
-    if (collision.centrality() < centralityMin || collision.centrality() > centralityMax) {
+    registry.fill(HIST("hCollisionsCentMultAll"), collision.centrality(), collision.multiplicity());
+    if (!isSelCollision(collision)) {
       return;
     }
+    registry.fill(HIST("hCollisionsCentMultSel"), collision.centrality(), collision.multiplicity());
+
     double const ptTrig = trigCand.ptTrig();
     if constexpr (requires { trigCand.bdtScore0Trig(); }) { // ML selection on bkg score for Charm-Had case
       if (!isSelBdtScoreCut(trigCand, ptTrig)) {
@@ -276,7 +312,8 @@ struct HfCorrelatorFlowCharmHadronsReduced {
     }
     if (downSamplePairs < 1.) {
       float const pseudoRndm = ptTrig * 1000. - static_cast<int64_t>(ptTrig * 1000);
-      if (ptTrig < ptMaxForDownSample && collision.centrality() < centMaxForDownSample && pseudoRndm >= downSamplePairs) {
+      float collCentMult = selCentrality ? collision.centrality() : collision.multiplicity();
+      if (ptTrig < ptMaxForDownSample && collCentMult < centMultMaxForDownSample && pseudoRndm >= downSamplePairs) {
         return;
       }
     }
@@ -317,10 +354,14 @@ struct HfCorrelatorFlowCharmHadronsReduced {
       if (trigCands.size() == 0 || assocTracks.size() == 0) {
         continue;
       }
-      if (trigColl.centrality() < centralityMin || trigColl.centrality() > centralityMax ||
-          assocColl.centrality() < centralityMin || assocColl.centrality() > centralityMax) {
+      registry.fill(HIST("hCollisionsCentMultAll"), trigColl.centrality(), trigColl.multiplicity());
+      registry.fill(HIST("hCollisionsCentMultAll"), assocColl.centrality(), assocColl.multiplicity());
+      if (!isSelCollision(trigColl) || !isSelCollision(assocColl)) {
         continue;
       }
+      registry.fill(HIST("hCollisionsCentMultSel"), trigColl.centrality(), trigColl.multiplicity());
+      registry.fill(HIST("hCollisionsCentMultSel"), assocColl.centrality(), assocColl.multiplicity());
+
       int const poolBinTrig = getPoolBin<true>(trigColl, binPolicy);
       int const poolBinAssoc = getPoolBin<true>(assocColl, binPolicy);
       if (poolBinAssoc != poolBinTrig) {
@@ -345,8 +386,10 @@ struct HfCorrelatorFlowCharmHadronsReduced {
         double const ptAssoc = getPt(assocTrack);
         if (downSamplePairs < 1.) {
           float const pseudoRndm = ptAssoc * 1000. - static_cast<int64_t>(ptAssoc * 1000);
-          if (ptTrig < ptMaxForDownSample && trigColl.centrality() < centMaxForDownSample &&
-              assocColl.centrality() < centMaxForDownSample && pseudoRndm >= downSamplePairs) {
+          float trigCollCentMult = selCentrality ? trigColl.centrality() : trigColl.multiplicity();
+          float assocCollCentMult = selCentrality ? assocColl.centrality() : assocColl.multiplicity();
+          if (ptTrig < ptMaxForDownSample && trigCollCentMult < centMultMaxForDownSample &&
+              assocCollCentMult < centMultMaxForDownSample && pseudoRndm >= downSamplePairs) {
             continue;
           }
         }
@@ -430,12 +473,15 @@ struct HfCorrelatorFlowCharmHadronsReduced {
     Pair<TCollision, TTrigCand, TTrackAssoc, TBinningType> pairData{binPolicy, numberEventsMixed, -1, collisions, tracksTuple, &cache};
 
     for (const auto& [c1, tracks1, c2, tracks2] : pairData) {
+      if (!isSelCollision(c1) || !isSelCollision(c2)) {
+        continue;
+      }
       if (tracks1.size() == 0) {
         continue;
       }
 
-      int poolBin = binPolicy.getBin({c2.posZ(), c2.centrality()});
-      int poolBinTrigCand = binPolicy.getBin({c1.posZ(), c1.centrality()});
+      int poolBin = binPolicy.getBin({c2.posZ(), selCentrality ? c2.centrality() : c2.multiplicity()});
+      int poolBinTrigCand = binPolicy.getBin({c1.posZ(), selCentrality ? c1.centrality() : c1.multiplicity()});
 
       if (poolBin != poolBinTrigCand) {
         LOGF(info, "Error, poolBins are different");
@@ -446,7 +492,6 @@ struct HfCorrelatorFlowCharmHadronsReduced {
         if (!isSelBdtScoreCut(trigCand, trigCand.ptTrig())) {
           continue;
         }
-        LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d)", trigCand.index(), assTrk.index(), c1.index(), c2.index(), trigCand.hfcRedCorrCollId(), assTrk.hfcRedCorrCollId());
 
         double deltaPhi = RecoDecay::constrainAngle(assTrk.phiAssoc() - trigCand.phiTrig(), -o2::constants::math::PIHalf);
         double deltaEta = assTrk.etaAssoc() - trigCand.etaTrig();
@@ -476,7 +521,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
       fillSameEvent<false, true>(pair, trigCand, binPolicyPosZMult);
     }
   }
-  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processSameEventCharmHadWMultMix, "Process Same Event for Charm-Had with multiplicity pools", true);
+  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processSameEventCharmHadWMultMix, "Process Same Event for Charm-Had with multiplicity pools", false);
 
   void processSameEventHadHadWMultMix(SameEvtPairsHadHad::iterator const& pair,
                                       aod::HfcRedTrigTracks const&,
@@ -595,15 +640,27 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   void processCharmTriggers(aod::HfcRedTrigCharms const& trigCands,
                             aod::HfcRedCorrColls const&)
   {
+
+    std::unordered_map<int, int> nCharmCandidatesPerCollision;
+    for (const auto& cand : trigCands) {
+      auto collision = cand.template hfcRedCorrColl_as<o2::aod::HfcRedCorrColls>();
+      ++nCharmCandidatesPerCollision[collision.globalIndex()];
+    }
+
     for (const auto& trigCand : trigCands) {
       auto collision = trigCand.template hfcRedCorrColl_as<o2::aod::HfcRedCorrColls>();
-      if (collision.centrality() < centralityMin || collision.centrality() > centralityMax) {
+      if (!isSelCollision(collision)) {
         continue;
       }
       if (!isSelBdtScoreCut(trigCand, trigCand.ptTrig())) {
         continue;
       }
-      registry.fill(HIST("hSparseTrigCandsCharm"), trigCand.invMassTrig(), trigCand.ptTrig(), trigCand.bdtScore0Trig(), trigCand.bdtScore1Trig());
+      const auto nCharmCandidates = nCharmCandidatesPerCollision[collision.globalIndex()];
+      if (countCharmCandsPerCollision) {
+        registry.fill(HIST("hSparseTrigCandsCharm"), trigCand.invMassTrig(), trigCand.ptTrig(), trigCand.bdtScore0Trig(), trigCand.bdtScore1Trig(), nCharmCandidates);
+      } else {
+        registry.fill(HIST("hSparseTrigCandsCharm"), trigCand.invMassTrig(), trigCand.ptTrig(), trigCand.bdtScore0Trig(), trigCand.bdtScore1Trig());
+      }
     }
   }
   PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processCharmTriggers, "Process charm trigger info", false);
@@ -615,7 +672,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
     BinningCentPosZ binPolicyPosZCent{{zPoolBins, centPoolBins}};
 
     for (const auto& collision : collisions) {
-      if (collision.centrality() < centralityMin || collision.centrality() > centralityMax) {
+      if (!isSelCollision(collision)) {
         continue;
       }
       int poolBin = binPolicyPosZCent.getBin({collision.posZ(), collision.centrality()});
