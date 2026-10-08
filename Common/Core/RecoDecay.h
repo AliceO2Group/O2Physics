@@ -567,11 +567,11 @@ struct RecoDecay {
   }
 
   template <typename PPart>
-  void getOrderedMotherIds(const PPart& particle,
-                           std::vector<int>& motherIdsOrdered,
-                           const bool searchUpToQuark = false)
+  static void getOrderedMotherIds(const PPart& particle,
+                                  std::vector<int64_t>& motherIdsOrdered,
+                                  const bool searchUpToQuark = false)
   {
-    if (!particle.has_mother()) {
+    if (!particle.has_mothers()) {
       return;
     }
 
@@ -641,7 +641,7 @@ struct RecoDecay {
         auto particleMother = particlesMC.rawIteratorAt(iPart - particlesMC.offset());
         if (particleMother.has_mothers()) {
 
-          std::vector<int> motherIdsOrdered{};
+          std::vector<int64_t> motherIdsOrdered{};
           getOrderedMotherIds(particleMother, motherIdsOrdered, searchUpToQuark);
 
           for (auto const& iMother : motherIdsOrdered) {                                                 // loop over the mother particles of the analysed particle
@@ -1206,7 +1206,7 @@ struct RecoDecay {
         auto particleMother = particlesMC.rawIteratorAt(iPart - particlesMC.offset());
         if (particleMother.has_mothers()) {
 
-          std::vector<int> motherIdsOrdered{};
+          std::vector<int64_t> motherIdsOrdered{};
           getOrderedMotherIds(particleMother, motherIdsOrdered, searchUpToQuark);
 
           for (auto const& iMother : motherIdsOrdered) {                                                  // loop over the mother particles of the analysed particle
