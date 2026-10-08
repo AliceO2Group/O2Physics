@@ -95,7 +95,6 @@ struct HadronNucleiCorrelation {
   Configurable<bool> isPrim{"isPrim", true, "is isPrim"};
   Configurable<bool> doCorrection{"doCorrection", false, "do efficiency correction"};
   Configurable<bool> doQuadraticPID{"doQuadraticPID", false, "do PID with sum in quadrature of TOF and TPC"};
-  Configurable<bool> doPIDRej{"doPIDRej", false, "do PID rejection of competing species"};
 
   struct : ConfigurableGroup {
     std::string prefix = "Coalescence"; // JSON group name
@@ -116,7 +115,7 @@ struct HadronNucleiCorrelation {
   Configurable<bool> removeSameBunchPileup{"removeSameBunchPileup", false, "remove Same Bunch Pileup"};
 
   // Track selection
-  Configurable<bool> doClosePairRejection{"doClosePairRejection", false, "doClosePairRejection"};
+  Configurable<bool> doClosePairRejection{"doClosePairRejection", false, "doClosePairRejection for non identical particles"};
   Configurable<double> dcaPar0{"dcaPar0", 0.004, "par 0"};
   Configurable<double> dcaPar1{"dcaPar1", 0.013, "par 1"};
   Configurable<bool> doDCAZ{"doDCAZ", true, "do DCA z cut"};
@@ -131,8 +130,8 @@ struct HadronNucleiCorrelation {
   Configurable<float> nsigmaElPr{"nsigmaElPr", 1.0f, "cut nsigma TPC El for protons"};
   Configurable<float> nsigmaElDe{"nsigmaElDe", 3.0f, "cut nsigma TPC El for protons"};
   Configurable<float> nsigmaTOF{"nsigmaTOF", 3.5f, "cut nsigma TOF"};
-  Configurable<float> nsigmaTOFPrRej{"nsigmaTOFPrRej", 3.f, "cut nsigma TOF for proton rejection"};
-  Configurable<bool> doPrRej{"doPrRej", true, "do TOF proton rejection"};
+  Configurable<float> nsigmaTPCPrRej{"nsigmaTPCPrRej", 3.f, "cut nsigma TPC for proton rejection"};
+  Configurable<bool> doPrRej{"doPrRej", true, "do TPC proton rejection"};
   Configurable<float> nsigmaQuadratic{"nsigmaQuadratic", 3.0f, "cut on sqrt(nsigmaTPC^2 + nsigmaTOF^2), used above the TOF pT threshold when doQuadraticPID is on"};
   Configurable<float> nsigmaITSPr{"nsigmaITSPr", -2.0f, "cut nsigma ITS Pr"};
   Configurable<float> nsigmaITSDe{"nsigmaITSDe", -2.0f, "cut nsigma ITS De"};
@@ -622,7 +621,7 @@ struct HadronNucleiCorrelation {
     const bool isTOFPID = std::abs(track.tofNSigmaDe()) < nsigmaTOF.value;
     const bool isTPCElRejection = rejectionEl.value && track.beta() < BetahasTOFthr && track.pt() < pTthrdeTPCEl.value && track.tpcNSigmaEl() >= nsigmaElDe.value;
     const bool isITSPID = track.itsNSigmaDe() > nsigmaITSDe.value;
-    const bool isNotPr = std::abs(track.tofNSigmaPr()) >= nsigmaTOFPrRej.value || !doPrRej.value;
+    const bool isNotPr = std::abs(track.tpcNSigmaPr()) >= nsigmaTPCPrRej.value || !doPrRej.value;
 
     const bool isQuadraticPID = std::hypot(track.tpcNSigmaDe(), track.tofNSigmaDe()) < nsigmaQuadratic.value;
 
@@ -1031,7 +1030,7 @@ struct HadronNucleiCorrelation {
 
         const bool isTPCElRejection = rejectionEl.value && track.beta() < BetahasTOFthr && track.pt() < pTthrdeTPCEl.value && track.tpcNSigmaEl() >= nsigmaElDe.value;
         const bool isTOFPID = std::abs(track.tofNSigmaDe()) < nsigmaTOF.value;
-        const bool isNotPr = std::abs(track.tofNSigmaPr()) >= nsigmaTOFPrRej.value || !doPrRej.value;
+        const bool isNotPr = std::abs(track.tpcNSigmaPr()) >= nsigmaTPCPrRej.value || !doPrRej.value;
 
         if (track.sign() > 0) {
 
