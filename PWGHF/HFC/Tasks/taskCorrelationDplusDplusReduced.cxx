@@ -30,6 +30,7 @@
 #include <Framework/runDataProcessing.h>
 
 #include <cstdlib>
+#include <utility>
 
 using namespace o2;
 using namespace o2::framework;
