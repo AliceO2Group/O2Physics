@@ -61,6 +61,7 @@
 #include <cmath>
 #include <cstddef>
 #include <deque>
+#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -86,6 +87,29 @@ static constexpr int NSphClasses = 4;
 static constexpr std::array<double, NSphClasses> SphMax{0.3, 0.6, 1.0, 1.0};
 static constexpr std::array<const char*, NSphClasses> SphLabels{"jetty", "intermediate", "isotropic", "all"};
 
+// Half a bin: puts integer-valued axes (indices, cut-flow steps) at bin centres.
+static constexpr double HalfBin = 0.5;
+
+// ============================================================
+//  Cut-flow steps (bin numbers of the evSel_* and track cut-flow histograms)
+// ============================================================
+enum EventCut { EventCutRead = 1,
+                EventCutZvtx,
+                EventCutMultBin,
+                EventCutZvtxBin,
+                EventCutLeadPt,
+                EventCutSphericity,
+                EventCutSphClass,
+                EventCutSeFilled,
+                NEventCuts = EventCutSeFilled };
+enum TrackCut { TrackCutSeen = 1,
+                TrackCutGlobal,
+                TrackCutDcaXY,
+                TrackCutDcaZ,
+                TrackCutEta,
+                TrackCutPt,
+                NTrackCuts = TrackCutPt };
+
 // ============================================================
 struct TwoParticleCorrelationsMultSpher {
 
@@ -108,51 +132,43 @@ struct TwoParticleCorrelationsMultSpher {
   // pT=0.5 GeV/c, proton y_max~0.48, so |y|<0.5 keeps full acceptance for
   // that species. Reference: ALICE 2511.10399 (arXiv, Nov 2025), Sec. 4 --
   // "tracks reconstructed within |eta|<0.8, with the additional rapidity
-  // cut of |y|<0.5" (verified 2026-08-11, quoted directly from the paper).
+  // cut of |y|<0.5".
   Configurable<double> maxRapPID{"maxRapPID", 0.5, "Max |y| for PID-identified tracks (pion/kaon/proton), independent of maxEta"};
 
   // Reco-specific configurables
   Configurable<double> maxDcaXY{"maxDcaXY", 2.0, "Max DCA XY (cm) for reco tracks"};
   Configurable<double> maxDcaZ{"maxDcaZ", 2.0, "Max DCA Z (cm) for reco tracks"};
   // Combined TPC+TOF PID criterion per ALICE 2511.10399 Sec. 4: two
-  // DIFFERENT thresholds, not one -- selection at 2 sigma, ambiguity
-  // rejection at 3 sigma (verified directly against the paper text
-  // 2026-08-11; an earlier draft of this instruction conflated the two
-  // into a single 2-sigma threshold, corrected here).
+  // different thresholds -- selection at 2 sigma, ambiguity rejection
+  // at 3 sigma.
   Configurable<double> maxNSigmaPID{"maxNSigmaPID", 2.0, "Max combined N_sigma,PID for species selection (ALICE 2511.10399)"};
   Configurable<double> maxNSigmaPIDAmbig{"maxNSigmaPIDAmbig", 3.0, "N_sigma,PID threshold for ambiguity rejection (>1 species below this -> PidUnidentified)"};
 
-  // Pre-2026-08-11 PID thresholds, restored (not reused for anything else)
-  // so the legacy gating style below can be toggled back on without
-  // deleting the ALICE 2511.10399 criterion. Values match the original
-  // (myExampleTask_BeforeOnlyProtons.cxx): independent 3-sigma cuts on
-  // TPC and TOF, no combined quadrature, no pT-dependent TOF gating.
+  // Thresholds of the legacy PID gating (independent 3-sigma cuts on TPC
+  // and TOF, no combined quadrature, no pT-dependent TOF gating), kept so
+  // that it can be switched on with useLegacyNSigmaGating without removing
+  // the ALICE 2511.10399 criterion.
   Configurable<double> maxNSigmaTPC{"maxNSigmaTPC", 3.0, "[legacy] Max |N_sigma| TPC for PID, used only when useLegacyNSigmaGating=true"};
   Configurable<double> maxNSigmaTOF{"maxNSigmaTOF", 3.0, "[legacy] Max |N_sigma| TOF for PID, used only when useLegacyNSigmaGating=true"};
 
-  // Three independently toggleable flags to compare pre-2026-08-11 PID
-  // methodology against the current ALICE 2511.10399-based one, for the
-  // PID-methodology-vs-statistics study (requested 2026-08-13). Each
-  // isolates one component instead of a single "old vs new" switch, so
-  // any combination of the 8 can be run to see which change drives a
-  // statistics difference. Gating/selection defaults still reproduce the
-  // 2511.10399 behavior exactly; setting all three to the legacy side
-  // reproduces myExampleTask_BeforeOnlyProtons.cxx's pidFromNSigma exactly.
+  // Three independently toggleable flags to compare the legacy PID
+  // methodology (independent 3-sigma TPC/TOF cuts, minimum-chi2 species
+  // choice, no rapidity cut) with the ALICE 2511.10399-based one. Each
+  // isolates one component, so any combination of the 8 can be run to
+  // see which change drives a statistics difference. The gating and
+  // selection defaults reproduce the 2511.10399 behaviour; setting all
+  // three to the legacy side reproduces the legacy pidFromNSigma.
   //
-  // applyRapidityCutPID defaults to false as of 2026-09-03, per the
-  // completed PID-methodology-vs-statistics study (49-file MC, see
-  // ~/EventShape-Wiki/Physics/PID-Methodology-Statistics-Impact-Study.md):
-  // the |y|<0.5 cut only discarded already-correctly-identified tracks
-  // between |y|=0.5 and the |eta|<0.8 acceptance, so dropping it raises
-  // both yield and purity simultaneously -- no tradeoff. Gating/selection
-  // are kept at the current (non-legacy) values by the same decision:
-  // gating relaxation was found to be a real purity-for-statistics
-  // tradeoff, not a free win, and was declined.
-  Configurable<bool> useLegacyNSigmaGating{"useLegacyNSigmaGating", false, "false=pT-gated combined N_sigma,PID (2511.10399); true=independent TPC/TOF 3-sigma AND-gate, TOF always required when available (pre-2026-08-11)"};
-  Configurable<bool> useLegacyPIDSelection{"useLegacyPIDSelection", false, "false=reject if >1 species below ambiguity threshold; true=pick minimum-chi2 species among those passing the gate, no rejection (pre-2026-08-11)"};
+  // applyRapidityCutPID defaults to false: the |y|<0.5 cut only discarded
+  // already-correctly-identified tracks between |y|=0.5 and the |eta|<0.8
+  // acceptance, so dropping it raises both yield and purity at the same
+  // time. Gating and selection stay at the 2511.10399 values, because
+  // relaxing the gating trades purity for statistics.
+  Configurable<bool> useLegacyNSigmaGating{"useLegacyNSigmaGating", false, "false=pT-gated combined N_sigma,PID (2511.10399); true=independent TPC/TOF 3-sigma AND-gate, TOF always required when available (legacy)"};
+  Configurable<bool> useLegacyPIDSelection{"useLegacyPIDSelection", false, "false=reject if >1 species below ambiguity threshold; true=pick minimum-chi2 species among those passing the gate, no rejection (legacy)"};
   Service<o2::framework::O2DatabasePDG> pdg{};
 
-  Configurable<bool> applyRapidityCutPID{"applyRapidityCutPID", false, "false=skip the |y|<maxRapPID cut entirely for PID-identified tracks (pre-2026-08-11 had no such cut) -- default as of 2026-09-03, see PID-methodology study"};
+  Configurable<bool> applyRapidityCutPID{"applyRapidityCutPID", false, "false=skip the |y|<maxRapPID cut entirely for PID-identified tracks (the legacy methodology had no such cut); true=apply it"};
 
   // ----------------------------------------------------------------
   //  Per-track container stored in mixing pool
@@ -186,13 +202,13 @@ struct TwoParticleCorrelationsMultSpher {
 
   // ----------------------------------------------------------------
   //  Mixing pools
-  //  [sphClass][zvtxBin][multBin]     — "all" (esistente)
-  //  [pidIdx][sphClass][zvtxBin][multBin] — per specie PID
+  //  [sphClass][zvtxBin][multBin]     — "all" (existing)
+  //  [pidIdx][sphClass][zvtxBin][multBin] — per PID species
   //    pidIdx: 0=pion, 1=kaon, 2=proton
   // ----------------------------------------------------------------
   static constexpr int NPidCorr = 3; // pion, kaon, proton
   static constexpr std::array<const char*, NPidCorr> PidCorrNames{"pion", "kaon", "proton"};
-  // PDG codes corrispondenti a pidIdx
+  // PDG codes corresponding to pidIdx
   static int pidCorrPDG(int idx)
   {
     if (idx == 0) {
@@ -203,26 +219,20 @@ struct TwoParticleCorrelationsMultSpher {
     }
     return PDG_t::kProton;
   }
-  // Mappa PidSpecies -> pidIdx (-1 se non e' pion/kaon/proton)
+  /// Index of a pion/kaon/proton in the NPidCorr-sized arrays, or -1 for any other species.
   static int pidSpeciesToIdx(PidSpecies pid)
   {
-    if (pid == PidPion) {
-      return 0;
+    if (pid < PidPion || pid > PidProton) {
+      return -1;
     }
-    if (pid == PidKaon) {
-      return 1;
-    }
-    if (pid == PidProton) {
-      return 2;
-    }
-    return -1;
+    return pid - PidPion;
   }
 
   using EventPool = std::deque<std::vector<TrackSimple>>;
   // Pool "all" — separate per MC (generated) and Reco (reconstructed)
   std::array<std::array<std::array<EventPool, NMultBins>, NZvtxBins>, NSphClasses> eventPoolsMC;
   std::array<std::array<std::array<EventPool, NMultBins>, NZvtxBins>, NSphClasses> eventPoolsReco;
-  // Pool per specie PID (like-sign) — separate per MC e Reco
+  // Pool per PID species (like-sign) — separate for MC and Reco
   std::array<std::array<std::array<std::array<EventPool, NMultBins>, NZvtxBins>, NSphClasses>, NPidCorr> eventPoolsPidMC;
   std::array<std::array<std::array<std::array<EventPool, NMultBins>, NZvtxBins>, NSphClasses>, NPidCorr> eventPoolsPidReco;
 
@@ -231,25 +241,25 @@ struct TwoParticleCorrelationsMultSpher {
   // ----------------------------------------------------------------
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  // SE/ME TH2D "all": [sphClass][multBin] — MC e Reco separati
+  // SE/ME TH2D "all": [sphClass][multBin] — MC and Reco separate
   std::array<std::array<std::shared_ptr<TH2>, NMultBins>, NSphClasses> hSeMC{};
   std::array<std::array<std::shared_ptr<TH2>, NMultBins>, NSphClasses> hMeMC{};
   std::array<std::array<std::shared_ptr<TH2>, NMultBins>, NSphClasses> hSeReco{};
   std::array<std::array<std::shared_ptr<TH2>, NMultBins>, NSphClasses> hMeReco{};
 
-  // SE/ME TH2D like-sign per specie: [pidIdx][sphClass][multBin] — MC e Reco separati
+  // SE/ME TH2D like-sign per species: [pidIdx][sphClass][multBin] — MC and Reco separate
   std::array<std::array<std::array<std::shared_ptr<TH2>, NMultBins>, NSphClasses>, NPidCorr> hSePidMC{};
   std::array<std::array<std::array<std::shared_ptr<TH2>, NMultBins>, NSphClasses>, NPidCorr> hMePidMC{};
   std::array<std::array<std::array<std::shared_ptr<TH2>, NMultBins>, NSphClasses>, NPidCorr> hSePidReco{};
   std::array<std::array<std::array<std::shared_ptr<TH2>, NMultBins>, NSphClasses>, NPidCorr> hMePidReco{};
 
-  // Trigger counter: axes = mult bin (x) x sphClass (y) — MC e Reco separati
+  // Trigger counter: axes = mult bin (x) x sphClass (y) — MC and Reco separate
   std::shared_ptr<TH2> hNtrigMC;
   std::shared_ptr<TH2> hNtrigReco;
   std::array<std::shared_ptr<TH2>, NPidCorr> hNtrigPidMC{};
   std::array<std::shared_ptr<TH2>, NPidCorr> hNtrigPidReco{};
 
-  // Per-mult sphericity — MC e Reco separati
+  // Per-mult sphericity — MC and Reco separate
   std::array<std::shared_ptr<TH1>, NMultBins> hSphMultMC{};
   std::array<std::shared_ptr<TH1>, NMultBins> hSphMultReco{};
 
@@ -264,12 +274,10 @@ struct TwoParticleCorrelationsMultSpher {
   // ----------------------------------------------------------------
   //  PID confusion matrix (true species from PDG vs. tagged species from
   //  pidFromNSigma applied to the SAME reconstructed track, per pT bin).
-  //  "Rapid" contamination estimate requested 2026-08-14 -- reports
-  //  contamination as a systematic, does NOT correct anything. Filled
-  //  only by processMCConfusion (needs both MC truth and reconstructed
-  //  nSigma together, unlike processMC/processReco which only ever see
-  //  one or the other). See auto-memory / STATUS.md for the "rapid vs
-  //  riguros" design discussion this came out of.
+  //  Quick contamination estimate, reported as a systematic; it does NOT
+  //  correct anything. Filled only by processMCConfusion (needs both MC
+  //  truth and reconstructed nSigma together, unlike
+  //  processMC/processReco which only ever see one or the other).
   // ----------------------------------------------------------------
   std::shared_ptr<TH3> hPidConfusionMC;
 
@@ -280,11 +288,11 @@ struct TwoParticleCorrelationsMultSpher {
   static PidSpecies pidFromPDG(int pdg)
   {
     switch (std::abs(pdg)) {
-      case 211:
+      case PDG_t::kPiPlus:
         return PidPion;
-      case 321:
+      case PDG_t::kKPlus:
         return PidKaon;
-      case 2212:
+      case PDG_t::kProton:
         return PidProton;
       default:
         return PidUnidentified;
@@ -292,17 +300,15 @@ struct TwoParticleCorrelationsMultSpher {
   }
 
   /// PID from TPC(+TOF) nSigma for reconstructed tracks. Two independently
-  /// toggleable behaviors (2026-08-13, added to compare pre-2026-08-11 PID
-  /// methodology against the current ALICE 2511.10399-based one, without
-  /// deleting either -- see useLegacyNSigmaGating/useLegacyPIDSelection
-  /// Configurables):
+  /// toggleable behaviors (see the useLegacyNSigmaGating and
+  /// useLegacyPIDSelection Configurables), so that the legacy and the
+  /// ALICE 2511.10399-based methodologies can be compared:
   ///
   /// legacyGating (gate = "does this species hypothesis pass at all"):
   ///   false (default): pT>0.5 && TOF available -> combined
   ///     N_sigma,PID = sqrt(nsTPC^2+nsTOF^2) < maxSel (2 sigma, per ALICE
   ///     2511.10399 Sec. 4); else TPC-only.
-  ///   true: pre-2026-08-11 style, matches myExampleTask_BeforeOnlyProtons.cxx
-  ///     exactly -- |nsTPC| < maxTPC AND (if TOF available) |nsTOF| < maxTOF,
+  ///   true: legacy style -- |nsTPC| < maxTPC AND (if TOF available) |nsTOF| < maxTOF,
   ///     independently (no quadrature sum for the gate itself), TOF
   ///     required whenever available regardless of pT.
   ///
@@ -312,7 +318,7 @@ struct TwoParticleCorrelationsMultSpher {
   ///     threshold maxAmbig (3 sigma) -- this comparison always uses the
   ///     combined-quadrature N_sigma,PID, regardless of legacyGating, so
   ///     the two flags stay independently meaningful.
-  ///   true: pre-2026-08-11 style -- among hypotheses passing the gate,
+  ///   true: legacy style -- among hypotheses passing the gate,
   ///     pick the one with minimum chi2 = nsTPC^2+nsTOF^2 (or nsTPC^2
   ///     alone if no TOF); no rejection for multiple passing hypotheses.
   ///
@@ -330,9 +336,9 @@ struct TwoParticleCorrelationsMultSpher {
       double nsTPC = 0.;
       double nsTOF = 0.;
     };
-    const std::array<Hypo, 3> hypos{{{PidPion, track.tpcNSigmaPi(), track.tofNSigmaPi()},
-                                     {PidKaon, track.tpcNSigmaKa(), track.tofNSigmaKa()},
-                                     {PidProton, track.tpcNSigmaPr(), track.tofNSigmaPr()}}};
+    const std::array<Hypo, NPidCorr> hypos{{{PidPion, track.tpcNSigmaPi(), track.tofNSigmaPi()},
+                                            {PidKaon, track.tpcNSigmaKa(), track.tofNSigmaKa()},
+                                            {PidProton, track.tpcNSigmaPr(), track.tofNSigmaPr()}}};
 
     // TOF unavailable -> nSigma returns -999; check with any species
     bool hasTOF = (std::fabs(track.tofNSigmaPi()) < MaxValidNSigma);
@@ -350,9 +356,9 @@ struct TwoParticleCorrelationsMultSpher {
 
     if (legacySelection) {
       // Best-fit (min chi2) among hypotheses passing the gate -- no
-      // ambiguity rejection (pre-2026-08-11 style).
+      // ambiguity rejection (legacy style).
       PidSpecies best = PidUnidentified;
-      double bestChi2 = 1e9;
+      double bestChi2 = std::numeric_limits<double>::max();
       for (const auto& h : hypos) {
         if (!passesGate(h)) {
           continue;
@@ -470,18 +476,17 @@ struct TwoParticleCorrelationsMultSpher {
     const AxisSpec axisPhi{60, 0., o2::constants::math::TwoPI, "#phi"};
     const AxisSpec axisDphi{30, -o2::constants::math::PIHalf, o2::constants::math::PI + o2::constants::math::PIHalf, "#Delta#phi"};
     const AxisSpec axisDeta{32, -1.6, 1.6, "#Delta#eta"};
-    // Reserved for a future rapidity-differentiated analysis -- unused
-    // while the PID correlations run pseudorapidity-only (see
-    // eventshape-pid-pseudorapidity-only auto-memory, 2026-09-15).
+    // Reserved for a possible rapidity-differentiated analysis -- unused
+    // while the PID correlations run pseudorapidity-only.
     [[maybe_unused]] const AxisSpec axisDy{32, -1.6, 1.6, "#Delta y"};
     const AxisSpec axisPt{nBinsPt, 0., 10., "p_{T} (GeV/c)"};
     const AxisSpec axisSph{100, 0., 1., "S_{T}"};
     const AxisSpec axisPt2{nBinsPt2, 0., 5., "p_{T} (GeV/c)"};
 
     // ----------------------------------------------------------------
-    //  Lambda comuna: creeaza un set complet de histograme pentru un
-    //  "canal" (MC sau Reco), cu toate numele suffixate corespunzator.
-    //  Primeste referinte la toti membrii specifici canalului.
+    //  Common lambda: books a complete set of histograms for one
+    //  "channel" (MC or Reco), with all names suffixed accordingly.
+    //  Takes references to all channel-specific members.
     // ----------------------------------------------------------------
     auto bookChannel = [&](const char* suf,
                            std::array<std::array<std::shared_ptr<TH2>, NMultBins>, NSphClasses>& hSE,
@@ -492,16 +497,15 @@ struct TwoParticleCorrelationsMultSpher {
                            std::array<std::shared_ptr<TH2>, NPidCorr>& hNtrigPID,
                            std::array<std::shared_ptr<TH1>, NMultBins>& hSphMult) {
       // QA
-      // evSel bins: 1=read 2=zvtx 3=multBin 4=zvtxBin 5=leadPt 6=ST_valid 7=sphClass 8=SE_filled
-      auto hQA = histos.add<TH1>(Form("evSel_%s", suf), Form("Event selection (%s)", suf), HistType::kTH1D, {{8, 0.5, 8.5}});
-      hQA->GetXaxis()->SetBinLabel(1, "Events read");
-      hQA->GetXaxis()->SetBinLabel(2, "|z_{vtx}|<10");
-      hQA->GetXaxis()->SetBinLabel(3, "multBin OK");
-      hQA->GetXaxis()->SetBinLabel(4, "zvtxBin OK");
-      hQA->GetXaxis()->SetBinLabel(5, "leadPt #in [min,max]");
-      hQA->GetXaxis()->SetBinLabel(6, "S_{T} valid");
-      hQA->GetXaxis()->SetBinLabel(7, "sphClass OK");
-      hQA->GetXaxis()->SetBinLabel(8, "SE filled");
+      auto hQA = histos.add<TH1>(Form("evSel_%s", suf), Form("Event selection (%s)", suf), HistType::kTH1D, {{NEventCuts, HalfBin, static_cast<double>(NEventCuts) + HalfBin}});
+      hQA->GetXaxis()->SetBinLabel(EventCutRead, "Events read");
+      hQA->GetXaxis()->SetBinLabel(EventCutZvtx, "|z_{vtx}|<10");
+      hQA->GetXaxis()->SetBinLabel(EventCutMultBin, "multBin OK");
+      hQA->GetXaxis()->SetBinLabel(EventCutZvtxBin, "zvtxBin OK");
+      hQA->GetXaxis()->SetBinLabel(EventCutLeadPt, "leadPt #in [min,max]");
+      hQA->GetXaxis()->SetBinLabel(EventCutSphericity, "S_{T} valid");
+      hQA->GetXaxis()->SetBinLabel(EventCutSphClass, "sphClass OK");
+      hQA->GetXaxis()->SetBinLabel(EventCutSeFilled, "SE filled");
 
       histos.add(Form("Zvertex_%s", suf), Form("z_{vtx} (%s);z_{vtx} (cm);events", suf), kTH1D, {axisZvtx});
       histos.add(Form("multHist_%s", suf), Form("N_{ch} (%s);N_{ch};events", suf), kTH1D, {axisMult});
@@ -526,8 +530,8 @@ struct TwoParticleCorrelationsMultSpher {
         Form("hNtrig%s", suf),
         Form("N_{trig} (%s);mult bin;sph class", suf),
         HistType::kTH2D,
-        {{NMultBins, -0.5, static_cast<double>(NMultBins) - 0.5},
-         {NSphClasses, -0.5, static_cast<double>(NSphClasses) - 0.5}});
+        {{NMultBins, -HalfBin, static_cast<double>(NMultBins) - HalfBin},
+         {NSphClasses, -HalfBin, static_cast<double>(NSphClasses) - HalfBin}});
       for (int im = 0; im < NMultBins; ++im) {
         hNtrig->GetXaxis()->SetBinLabel(im + 1, multLabel(im).c_str());
       }
@@ -549,14 +553,12 @@ struct TwoParticleCorrelationsMultSpher {
         }
       }
 
-      // ---- SE/ME like-sign per specie PID: [pidIdx][sphClass][multBin] ---
-      // Pseudorapidity-only regime (confirmed 2026-09-15, see Claude Code
-      // auto-memory eventshape-pid-pseudorapidity-only): PID correlations
-      // use Delta-eta, same as the inclusive hSE/hME histograms, NOT
-      // Delta-y. The rapidity infrastructure (computeRapidity(), the
-      // per-track y field, axisDy below) is kept for a future
-      // higher-statistics rapidity-differentiated analysis -- it is
-      // deliberately unused here for now, not dead code to remove.
+      // ---- SE/ME like-sign per PID species: [pidIdx][sphClass][multBin] ---
+      // PID correlations use Delta-eta, same as the inclusive hSE/hME
+      // histograms, NOT Delta-y. The rapidity infrastructure
+      // (computeRapidity(), the per-track y field, axisDy) is kept for a
+      // possible rapidity-differentiated analysis and is deliberately
+      // unused for now.
       for (int ip = 0; ip < NPidCorr; ++ip) {
         for (int ic = 0; ic < NSphClasses; ++ic) {
           for (int im = 0; im < NMultBins; ++im) {
@@ -572,13 +574,13 @@ struct TwoParticleCorrelationsMultSpher {
               HistType::kTH2D, {axisDphi, axisDeta});
           }
         }
-        // Trigger counter per specie PID
+        // Trigger counter per PID species
         hNtrigPID[ip] = histos.add<TH2>(
           Form("hNtrig%s_pid%d", suf, ip),
           Form("N_{trig} %s (%s);mult bin;sph class", PidCorrNames[ip], suf),
           HistType::kTH2D,
-          {{NMultBins, -0.5, static_cast<double>(NMultBins) - 0.5},
-           {NSphClasses, -0.5, static_cast<double>(NSphClasses) - 0.5}});
+          {{NMultBins, -HalfBin, static_cast<double>(NMultBins) - HalfBin},
+           {NSphClasses, -HalfBin, static_cast<double>(NSphClasses) - HalfBin}});
         for (int im = 0; im < NMultBins; ++im) {
           hNtrigPID[ip]->GetXaxis()->SetBinLabel(im + 1, multLabel(im).c_str());
         }
@@ -602,18 +604,18 @@ struct TwoParticleCorrelationsMultSpher {
     hTrackCutDebugReco = histos.add<TH1>(
       "hTrackCutDebug_Reco",
       "Track cut flow (Reco, DEBUG);cut;tracks",
-      HistType::kTH1D, {{6, 0.5, 6.5}});
-    hTrackCutDebugReco->GetXaxis()->SetBinLabel(1, "seen");
-    hTrackCutDebugReco->GetXaxis()->SetBinLabel(2, "passed isGlobalTrackWoDCA");
-    hTrackCutDebugReco->GetXaxis()->SetBinLabel(3, "passed DCAxy");
-    hTrackCutDebugReco->GetXaxis()->SetBinLabel(4, "passed DCAz");
-    hTrackCutDebugReco->GetXaxis()->SetBinLabel(5, "passed eta");
-    hTrackCutDebugReco->GetXaxis()->SetBinLabel(6, "passed pt (selected)");
+      HistType::kTH1D, {{NTrackCuts, HalfBin, static_cast<double>(NTrackCuts) + HalfBin}});
+    hTrackCutDebugReco->GetXaxis()->SetBinLabel(TrackCutSeen, "seen");
+    hTrackCutDebugReco->GetXaxis()->SetBinLabel(TrackCutGlobal, "passed isGlobalTrackWoDCA");
+    hTrackCutDebugReco->GetXaxis()->SetBinLabel(TrackCutDcaXY, "passed DCAxy");
+    hTrackCutDebugReco->GetXaxis()->SetBinLabel(TrackCutDcaZ, "passed DCAz");
+    hTrackCutDebugReco->GetXaxis()->SetBinLabel(TrackCutEta, "passed eta");
+    hTrackCutDebugReco->GetXaxis()->SetBinLabel(TrackCutPt, "passed pt (selected)");
 
-    // PID confusion matrix (rapid contamination estimate, 2026-08-14) --
+    // PID confusion matrix (contamination estimate) --
     // axes: pT, true species (PDG), tagged species (pidFromNSigma).
     // Species axis order matches PidSpecies: 0=unid,1=pion,2=kaon,3=proton.
-    const AxisSpec axisPidSpecies{static_cast<int>(NPidSpecies), -0.5, static_cast<double>(NPidSpecies) - 0.5, "species"};
+    const AxisSpec axisPidSpecies{static_cast<int>(NPidSpecies), -HalfBin, static_cast<double>(NPidSpecies) - HalfBin, "species"};
     hPidConfusionMC = histos.add<TH3>(
       "hPidConfusion_MC",
       "True vs. tagged PID species (MC);p_{T} (GeV/c);true species;tagged species",
@@ -630,13 +632,13 @@ struct TwoParticleCorrelationsMultSpher {
   void processMC(aod::McCollision const& mcCollision,
                  aod::McParticles const& mcParticles)
   {
-    histos.fill(HIST("evSel_MC"), 1);
+    histos.fill(HIST("evSel_MC"), EventCutRead);
 
     const double zvtx = mcCollision.posZ();
     if (std::fabs(zvtx) > maxZvtx) {
       return;
     }
-    histos.fill(HIST("evSel_MC"), 2);
+    histos.fill(HIST("evSel_MC"), EventCutZvtx);
     histos.fill(HIST("Zvertex_MC"), zvtx);
 
     // ---- one-pass: build selTracks + find leading ---------------
@@ -696,13 +698,13 @@ struct TwoParticleCorrelationsMultSpher {
     if (mBin < 0) {
       return;
     }
-    histos.fill(HIST("evSel_MC"), 3);
+    histos.fill(HIST("evSel_MC"), EventCutMultBin);
 
     const int zBin = o2::analysis::findBin(&ZvtxEdges, zvtx);
     if (zBin < 0) {
       return;
     }
-    histos.fill(HIST("evSel_MC"), 4);
+    histos.fill(HIST("evSel_MC"), EventCutZvtxBin);
 
     // ---- leading particle pT cut [minLeadPt, maxLeadPt] -----------
     if (leadIdx < 0) {
@@ -711,7 +713,7 @@ struct TwoParticleCorrelationsMultSpher {
     if (pTlead < minLeadPt || pTlead > maxLeadPt) {
       return;
     }
-    histos.fill(HIST("evSel_MC"), 5);
+    histos.fill(HIST("evSel_MC"), EventCutLeadPt);
     histos.fill(HIST("ptLeadHistogram_MC"), pTlead);
 
     // ---- sphericity ---------------------------------------------
@@ -723,7 +725,7 @@ struct TwoParticleCorrelationsMultSpher {
     if (sph < 0.) {
       return; // fewer than 3 tracks
     }
-    histos.fill(HIST("evSel_MC"), 6);
+    histos.fill(HIST("evSel_MC"), EventCutSphericity);
     histos.fill(HIST("sphericity_MC"), sph);
     hSphMultMC[mBin]->Fill(sph);
 
@@ -731,7 +733,7 @@ struct TwoParticleCorrelationsMultSpher {
     if (sphCls < 0) {
       return;
     }
-    histos.fill(HIST("evSel_MC"), 7);
+    histos.fill(HIST("evSel_MC"), EventCutSphClass);
 
     const PidSpecies pidLead = pidFromPDG(selTracks[leadIdx].pdg);
 
@@ -749,7 +751,7 @@ struct TwoParticleCorrelationsMultSpher {
       }
       const auto& assoc = selTracks[ia];
       if (assoc.pt >= pTlead) {
-        continue; // asociat pT < leading pT
+        continue; // associated pT < leading pT
       }
       if (assoc.pt < minAssocCorr || assoc.pt > maxAssocCorr) {
         continue;
@@ -767,9 +769,8 @@ struct TwoParticleCorrelationsMultSpher {
       // TH2D SE: "all" class (uses Delta-eta)
       hSeMC[NSphClasses - 1][mBin]->Fill(dphi, deta);
 
-      // SE like-sign: fill solo se trigger e associato sono la stessa specie
-      // Uses Delta-eta (pseudorapidity-only regime, see
-      // eventshape-pid-pseudorapidity-only auto-memory)
+      // SE like-sign: fill only if trigger and associated are the same species
+      // Uses Delta-eta (pseudorapidity-only regime)
       int pidLeadIdx = pidSpeciesToIdx(pidLead);
       int pidAssocIdx = pidSpeciesToIdx(pidAssoc);
       if (pidLeadIdx >= 0 && pidLeadIdx == pidAssocIdx) {
@@ -780,10 +781,10 @@ struct TwoParticleCorrelationsMultSpher {
       seHasPairs = true;
     }
     if (seHasPairs) {
-      histos.fill(HIST("evSel_MC"), 8);
+      histos.fill(HIST("evSel_MC"), EventCutSeFilled);
     }
 
-    // ---- hNtrigMC per specie PID leading --------------------------
+    // ---- hNtrigMC per PID species leading --------------------------
     int pidLeadIdx = pidSpeciesToIdx(pidLead);
     if (pidLeadIdx >= 0) {
       hNtrigPidMC[pidLeadIdx]->Fill(static_cast<double>(mBin), static_cast<double>(sphCls));
@@ -810,9 +811,9 @@ struct TwoParticleCorrelationsMultSpher {
       }
     }
 
-    // Pool per specie PID — contiene solo i track di quella specie
+    // Pool per PID species — contains only the tracks of that species
     for (int ip = 0; ip < NPidCorr; ++ip) {
-      // Costruisci un vettore con solo i track della specie ip
+      // Build a vector with only the tracks of species ip
       std::vector<TrackSimple> pidTracks;
       for (const auto& t : selTracks) {
         if (pidSpeciesToIdx(pidFromPDG(t.pdg)) == ip) {
@@ -865,11 +866,10 @@ struct TwoParticleCorrelationsMultSpher {
     doMixing(NSphClasses - 1);
 
     // ================================================================
-    //  MIXED-EVENT like-sign per specie PID
-    //  Trigger = leading della specie pidLeadIdx
-    //  Associati = track della stessa specie dal pool PID
-    //  Uses Delta-eta (pseudorapidity-only regime, see
-    //  eventshape-pid-pseudorapidity-only auto-memory)
+    //  MIXED-EVENT like-sign per PID species
+    //  Trigger = leading track of species pidLeadIdx
+    //  Associated = tracks of the same species from the PID pool
+    //  Uses Delta-eta (pseudorapidity-only regime)
     // ================================================================
     if (pidLeadIdx >= 0) {
       auto doMixingPID = [&](int poolIdx) {
@@ -906,7 +906,7 @@ struct TwoParticleCorrelationsMultSpher {
   void processReco(ColReco::iterator const& col,
                    TrackReco const& tracks)
   {
-    histos.fill(HIST("evSel_Reco"), 1);
+    histos.fill(HIST("evSel_Reco"), EventCutRead);
 
     // ---- event selection ----
     if (!col.sel8()) {
@@ -916,7 +916,7 @@ struct TwoParticleCorrelationsMultSpher {
     if (std::fabs(zvtx) > maxZvtx) {
       return;
     }
-    histos.fill(HIST("evSel_Reco"), 2);
+    histos.fill(HIST("evSel_Reco"), EventCutZvtx);
     histos.fill(HIST("Zvertex_Reco"), zvtx);
 
     // ---- one-pass: build selTracks + find leading ---------------
@@ -926,36 +926,36 @@ struct TwoParticleCorrelationsMultSpher {
     double pTlead = -1., phiLead = 0., etaLead = 0.;
 
     for (const auto& track : tracks) {
-      hTrackCutDebugReco->Fill(1); // seen
+      hTrackCutDebugReco->Fill(TrackCutSeen); // seen
 
       // Quality selection: global track without DCA (apply DCA separately)
       if (!track.isGlobalTrackWoDCA()) {
         continue;
       }
-      hTrackCutDebugReco->Fill(2); // passed isGlobalTrackWoDCA
+      hTrackCutDebugReco->Fill(TrackCutGlobal); // passed isGlobalTrackWoDCA
 
       // DCA cuts
       if (std::fabs(track.dcaXY()) > maxDcaXY) {
         continue;
       }
-      hTrackCutDebugReco->Fill(3); // passed DCAxy
+      hTrackCutDebugReco->Fill(TrackCutDcaXY); // passed DCAxy
       if (std::fabs(track.dcaZ()) > maxDcaZ) {
         continue;
       }
-      hTrackCutDebugReco->Fill(4); // passed DCAz
+      hTrackCutDebugReco->Fill(TrackCutDcaZ); // passed DCAz
 
       // Kinematic cuts (same as MC)
       if (std::fabs(track.eta()) > maxEta) {
         continue;
       }
-      hTrackCutDebugReco->Fill(5); // passed eta
+      hTrackCutDebugReco->Fill(TrackCutEta); // passed eta
       if (track.pt() < minAssocPt) {
         continue;
       }
-      hTrackCutDebugReco->Fill(6); // passed pt (selected)
+      hTrackCutDebugReco->Fill(TrackCutPt); // passed pt (selected)
 
       // PID from nSigma (combined TPC+TOF, ALICE 2511.10399, unless the
-      // legacy flags below switch to pre-2026-08-11 gating/selection)
+      // legacy flags below switch to legacy gating/selection)
       PidSpecies pid = pidFromNSigma(track, maxNSigmaPID, maxNSigmaPIDAmbig,
                                      maxNSigmaTPC, maxNSigmaTOF,
                                      useLegacyNSigmaGating, useLegacyPIDSelection);
@@ -997,13 +997,13 @@ struct TwoParticleCorrelationsMultSpher {
     if (mBin < 0) {
       return;
     }
-    histos.fill(HIST("evSel_Reco"), 3);
+    histos.fill(HIST("evSel_Reco"), EventCutMultBin);
 
     const int zBin = o2::analysis::findBin(&ZvtxEdges, zvtx);
     if (zBin < 0) {
       return;
     }
-    histos.fill(HIST("evSel_Reco"), 4);
+    histos.fill(HIST("evSel_Reco"), EventCutZvtxBin);
 
     // ---- leading particle pT cut [minLeadPt, maxLeadPt] -----------
     if (leadIdx < 0) {
@@ -1012,7 +1012,7 @@ struct TwoParticleCorrelationsMultSpher {
     if (pTlead < minLeadPt || pTlead > maxLeadPt) {
       return;
     }
-    histos.fill(HIST("evSel_Reco"), 5);
+    histos.fill(HIST("evSel_Reco"), EventCutLeadPt);
     histos.fill(HIST("ptLeadHistogram_Reco"), pTlead);
 
     // ---- sphericity ---------------------------------------------
@@ -1023,7 +1023,7 @@ struct TwoParticleCorrelationsMultSpher {
     if (sph < 0.) {
       return;
     }
-    histos.fill(HIST("evSel_Reco"), 6);
+    histos.fill(HIST("evSel_Reco"), EventCutSphericity);
     histos.fill(HIST("sphericity_Reco"), sph);
     hSphMultReco[mBin]->Fill(sph);
 
@@ -1031,7 +1031,7 @@ struct TwoParticleCorrelationsMultSpher {
     if (sphCls < 0) {
       return;
     }
-    histos.fill(HIST("evSel_Reco"), 7);
+    histos.fill(HIST("evSel_Reco"), EventCutSphClass);
 
     const PidSpecies pidLead = pidFromPDG(selTracks[leadIdx].pdg);
 
@@ -1066,8 +1066,7 @@ struct TwoParticleCorrelationsMultSpher {
       hSeReco[sphCls][mBin]->Fill(dphi, deta);
       hSeReco[NSphClasses - 1][mBin]->Fill(dphi, deta);
 
-      // PID SE — same species, Delta-eta (pseudorapidity-only regime, see
-      // eventshape-pid-pseudorapidity-only auto-memory)
+      // PID SE — same species, Delta-eta (pseudorapidity-only regime)
       int pidLeadIdx = pidSpeciesToIdx(pidLead);
       int pidAssocIdx = pidSpeciesToIdx(pidAssoc);
       if (pidLeadIdx >= 0 && pidLeadIdx == pidAssocIdx) {
@@ -1078,10 +1077,10 @@ struct TwoParticleCorrelationsMultSpher {
       seHasPairs = true;
     }
     if (seHasPairs) {
-      histos.fill(HIST("evSel_Reco"), 8);
+      histos.fill(HIST("evSel_Reco"), EventCutSeFilled);
     }
 
-    // ---- hNtrigReco per specie PID leading --------------------------
+    // ---- hNtrigReco per PID species leading --------------------------
     int pidLeadIdx = pidSpeciesToIdx(pidLead);
     if (pidLeadIdx >= 0) {
       hNtrigPidReco[pidLeadIdx]->Fill(static_cast<double>(mBin), static_cast<double>(sphCls));
@@ -1157,8 +1156,7 @@ struct TwoParticleCorrelationsMultSpher {
     doMixing(NSphClasses - 1);
 
     // ================================================================
-    //  MIXED-EVENT PID (Delta-eta, pseudorapidity-only regime, see
-    //  eventshape-pid-pseudorapidity-only auto-memory)
+    //  MIXED-EVENT PID (Delta-eta, pseudorapidity-only regime)
     // ================================================================
     if (pidLeadIdx >= 0) {
       auto doMixingPID = [&](int poolIdx) {
@@ -1185,15 +1183,13 @@ struct TwoParticleCorrelationsMultSpher {
   PROCESS_SWITCH(TwoParticleCorrelationsMultSpher, processReco, "Process reconstructed data", false);
 
   // ----------------------------------------------------------------
-  //  processMCConfusion -- "rapid" PID contamination estimate, requested
-  //  2026-08-14. Fills hPidConfusionMC (pT, true species, tagged
+  //  processMCConfusion -- PID contamination estimate. Fills hPidConfusionMC (pT, true species, tagged
   //  species) on MC only -- needs BOTH the truth PDG (via McTrackLabels)
   //  AND the reconstructed track's nSigma values on the SAME track,
   //  which neither processMC (truth only) nor processReco (no truth
   //  link) has access to, hence a dedicated process function. Reports
-  //  contamination as a systematic; does NOT correct anything (that's
-  //  the separate, not-yet-started "riguros" unfolding approach -- see
-  //  STATUS.md). Off by default, like the other MC-only diagnostics.
+  //  contamination as a systematic; does NOT correct anything (no
+  //  unfolding is implemented). Off by default, like the other MC-only diagnostics.
   // ----------------------------------------------------------------
   using TrackRecoMC = soa::Join<TrackReco, aod::McTrackLabels>;
 
@@ -1243,9 +1239,7 @@ struct TwoParticleCorrelationsMultSpher {
 
       // Same rapidity cut as processReco applies to its "tagged" PID --
       // without this, applyRapidityCutPID=false would silently have zero
-      // effect on this matrix (found 2026-08-14, comparing Phase 1
-      // rapidityOnly against baseline: identical confusion-matrix numbers
-      // despite different processReco yields, before this fix).
+      // effect on this matrix even though it changes the processReco yields.
       if (applyRapidityCutPID && taggedPid != PidUnidentified) {
         double tagMass = pidMass(taggedPid);
         double tagRap = computeRapidity(track.pt(), track.eta(), tagMass);
