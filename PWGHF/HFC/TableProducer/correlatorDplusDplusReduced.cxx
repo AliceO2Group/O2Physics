@@ -90,7 +90,7 @@ struct HfCorrelatorDplusDplusReduced {
   Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
 
   Configurable<std::vector<double>> cutPtSkimming{"cutPtSkimming", {1, 5, 1000}, "pT bin limits for Skimming application"};
-  Configurable<std::vector<double>> massMin{"massMin", {0.7, 0.7}, "Mass minimal for the cut for each pt bin"};
+  Configurable<std::vector<double>> massMin{"massMin", {1.7, 1.7}, "Mass minimal for the cut for each pt bin"};
   Configurable<std::vector<double>> massMax{"massMax", {2.0, 2.1}, "Mass maximal for the cut for each pt bin"};
   Configurable<std::vector<double>> cosThetaMin{"cosThetaMin", {0.96, 0.98}, "CosTheta minimal for the cut for each pt bin"};
   Configurable<std::vector<double>> decayLengthMin{"decayLengthMin", {0.02, 0.03}, "DecayLength minimal for the cut for each pt bin"};
