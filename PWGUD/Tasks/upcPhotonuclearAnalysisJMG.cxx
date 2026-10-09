@@ -755,7 +755,6 @@ struct UpcPhotonuclearAnalysisJMG {
         histos.fill(HIST("Events/SGsideA/hTrackPV"), nchPVGapSideA, nchGapSideA);
         nTracksChargedSideA = nTracksCharged;
         multiplicitySideA = reconstructedTracks.size();
-        nTracksCharged = sumPt = 0;
         break;
       case 1: // gap for side C
         if (isCollisionCutSG(reconstructedCollision, 1) == false) {
@@ -831,7 +830,6 @@ struct UpcPhotonuclearAnalysisJMG {
         histos.fill(HIST("Events/SGsideC/hTrackPV"), nchPVGapSideC, nchGapSideC);
         nTracksChargedSideC = nTracksCharged;
         multiplicitySideC = reconstructedTracks.size();
-        nTracksCharged = sumPt = 0;
         break;
       default:
         return;
@@ -881,8 +879,8 @@ struct UpcPhotonuclearAnalysisJMG {
          vTrackTOFNSigmaProSideC,
          vTrackTOFBetaSideC,
          vTrackTOFBetaErrorSideC,
-         nTracksChargedSideC,
-         multiplicitySideC,
+         nTracksChargedSideA,
+         multiplicitySideA,
          nTracksChargedSideC,
          multiplicitySideC);
     // nTracksChargedSideA = nTracksChargedSideC = multiplicitySideA = multiplicitySideC = 0;
