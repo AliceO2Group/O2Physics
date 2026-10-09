@@ -187,12 +187,10 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
 {
   // *) Base TList to hold all output objects:
   TString sBaseListName = "Default list name"; // yes, I declare it separately, because I need it also later in BailOut() function
-  OutputObj<TList> fBaseList{sBaseListName.Data(),
-                             OutputObjHandlingPolicy::AnalysisObject,
-                             OutputObjSourceType::OutputObjSource};
+  OutputObj<TList> fBaseList{sBaseListName.Data(), OutputObjHandlingPolicy::AnalysisObject, OutputObjSourceType::OutputObjSource};
 
   // *) CCDB:
-  Service<ccdb::BasicCCDBManager> ccdb{}; // support for offline callibration data base, not needed for the time being...
+  Service<ccdb::BasicCCDBManager> ccdb{}; // support for offline callibration data base
   Service<o2::framework::O2DatabasePDG> pdg{};
 
   // *) Define configurables:
@@ -207,9 +205,9 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
   // *) Binnings
   Configurable<bool> cfALICECentBinSwitch{"cfALICECentBinSwitch", true, "switch on or off to use ALICE default binning"};
   Configurable<std::vector<float>> cfCentBins{"cfCentBins", {100, 0., 100.}, "Centrality bins: nCentBins, centMin, centMax"};
-  Configurable<std::vector<float>> cfMultBins{"cfMultBins", {400, 0., 40000.}, "Multiplicity bins: nMultBins, multMin, multMax"};
-  Configurable<std::vector<float>> cfMultBinsRef{"cfMultBinsRef", {400, 0., 40000.}, "Reference mult bins: nMultBins, multMin, multMax"};
-  Configurable<std::vector<float>> cfContribBins{"cfContribBins", {400, 0., 6500.}, "Number of contributors bins: nBinsContrib, contribMin, contribMax"};
+  Configurable<std::vector<float>> cfMultBins{"cfMultBins", {400, 0., 30000.}, "Multiplicity bins: nMultBins, multMin, multMax"};
+  Configurable<std::vector<float>> cfMultBinsRef{"cfMultBinsRef", {400, 0., 25000.}, "Reference mult bins: nMultBins, multMin, multMax"};
+  Configurable<std::vector<float>> cfContribBins{"cfContribBins", {400, 0., 7000.}, "Number of contributors bins: nBinsContrib, contribMin, contribMax"};
   Configurable<std::vector<float>> cfVxBins{"cfVxBins", {500, -0.04, 0.04}, "Vertex X hist: nVxBins, vxMin, vxMax"};
   Configurable<std::vector<float>> cfVyBins{"cfVyBins", {500, -0.015, 0.015}, "Vertex Y hist: nVyBins, vyMin, vyMax"};
   Configurable<std::vector<float>> cfVzBins{"cfVzBins", {500, -20., 20.}, "Vertex Z hist: nVzBins, vzMin, vzMax"};
@@ -228,6 +226,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
   Configurable<bool> cfEventCutSwitch{"cfEventCutSwitch", true, "switch to apply event level cut"};
   Configurable<std::vector<float>> cfVertexZCutRange{"cfVertexZCutRange", {-10., 10.}, "vertex z position range: {min, max}[cm], with convention: min <= Vz <= max"};
   Configurable<std::vector<float>> cfCentCutRange{"cfCentCutRange", {0., 80.}, "centrality range: {min, max}[cm], with convention: min <= cent <= max"};
+  Configurable<int> cfNContribCutInf{"cfNContribCutInf", 2, "Cuts on number of tracks used for the vertex, only numContrib > cfNContribCutInf survives"};
 
   // particle level cuts
   Configurable<bool> cfPtCutSwitch{"cfPtCutSwitch", true, "switch to apply pt cut"};
@@ -244,36 +243,38 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
   // *) Define and initialize all data members to be called in the main process* functions:
   // **) Task configuration:
   struct TaskConfiguration {
-    std::array<bool, eProcess_N> fProcess{false}; // Set what to process. See enum EProcess for full description. Set via implicit variables within a PROCESS_SWITCH clause.
-    bool fDryRun = false;                         // book all histos and run without filling and calculating anything
+    double fSigmaInel = 7.71;
+
+    std::vector<std::string> fTechnicalCutSwitch = {"1NoCollInTimeRangeStandard", "1NoCollInRofStandard", "1NoSameBunchPileUp", "1IsVertexITSTPC", "1IsGoodITSLayersAll", "1IsGoodZvtxFT0vsPV", "1NoHighMultCollInPrevRof"};
+
+    std::vector<float> fVertexZCutRange = {-10., 10.};
+    std::vector<float> fCentCutRange = {0., 80.};
+    std::vector<float> fPtCutRange = {0.2, 5.};
+    std::vector<float> fEtaCutRange = {-0.8, 0.8};
+
+    std::string fFileWithWeights = "/alice-ccdb.cern.ch/Users/m/mei/thesis-";
+
     int fCentralityEstimator = 0;
     int fMultiplicityTables = 0;
+    int fNContribCutInf = 2;
 
+    bool fDryRun = false; // book all histos and run without filling and calculating anything
     bool fExternalFileSwitch = false;
-    std::string fFileWithWeights = "/alice-ccdb.cern.ch/Users/m/mei/thesis-";
     bool fALICECentBinSwitch = true;
 
     bool fMasterCutSwitch = true;
-    std::vector<std::string> fTechnicalCutSwitch = {"1NoCollInTimeRangeStandard", "1NoCollInRofStandard", "1NoSameBunchPileUp", "1IsVertexITSTPC", "1IsGoodITSLayersAll", "1IsGoodZvtxFT0vsPV", "1NoHighMultCollInPrevRof"};
-
     bool fEventCutSwitch = true;
-    std::vector<float> fVertexZCutRange = {-10., 10.};
-    std::vector<float> fCentCutRange = {0., 80.};
-
     bool fPtCutSwitch = true;
-    std::vector<float> fPtCutRange = {0.2, 5.};
     bool fEtaCutSwitch = true;
-    std::vector<float> fEtaCutRange = {-0.8, 0.8};
-
     bool fChargeCutSwitch = true;
-
-    double fSigmaInel = 7.71;
     bool fQualityAssuranceSwitch = false;
     bool fRunMessageSwitch = false;
-  } tc; // you have to prepend "tc." for all objects name in this group later in the code
+
+    std::array<bool, eProcess_N> fProcess{false}; // Set what to process. See enum EProcess for full description. Set via implicit variables within a PROCESS_SWITCH clause.
+  } tc;
 
   struct ParticleHistograms {
-    TList* fParticleHistList = nullptr; //!<! list to hold all control particle histograms
+    TList* fParticleHistList = nullptr;
     std::array<std::array<std::array<TH1F*, eCuts_N>, 2>, eParticleHistograms_N> fParticleHist{};
   } pc;
 
@@ -289,7 +290,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
 
   struct ExternalHistograms {
     TList* fExternalHistogramsList = nullptr;
-    std::array<TH1F*, eWeightsHistograms_N> fWeights{}; //! [type]
+    std::array<TH1F*, eWeightsHistograms_N> fWeights{};
   } ex;
 
   struct Observables {
@@ -298,7 +299,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
   } obs;
 
   struct QualityAssurance {
-    TList* fQualityAssuranceList = nullptr; //!<! list to hold all qualityAssurance histograms
+    TList* fQualityAssuranceList = nullptr;
     std::array<TH2F*, eCuts_N> fHistCentralityRecSim{};
     std::array<TH2F*, eCuts_N> fHistMultNContrib{};
   } qa;
@@ -627,7 +628,6 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     if (tc.fTechnicalCutSwitch[eNoHighMultCollInPrevRof] == "1NoHighMultCollInPrevRof" && !collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
       return false;
     }
-
     return true;
   }
 
@@ -640,28 +640,32 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       }
     }
     if constexpr (rs == eRec || rs == eRecAndSim) {
-      if (tc.fEventCutSwitch) // event level cuts for Rec
-      {
+      if (tc.fEventCutSwitch) { // event level cuts for Rec
         if constexpr (rm == eReal) {
-          if (collision.posZ() > tc.fVertexZCutRange[1] || collision.posZ() < tc.fVertexZCutRange[0]) {
+          if (!collision.sel8()) { // sel8 cut
             return false;
-          } // vertex z cut
+          }
+          if (collision.posZ() > tc.fVertexZCutRange[1] || collision.posZ() < tc.fVertexZCutRange[0]) { // vertex z cut
+            return false;
+          }
           auto thisCent = chooseCent(collision, tc.fCentralityEstimator);
-          if (thisCent > tc.fCentCutRange[1] || thisCent < tc.fCentCutRange[0]) {
+          if (thisCent > tc.fCentCutRange[1] || thisCent < tc.fCentCutRange[0]) { // centrality cut
             return false;
-          } // centrality cut
+          }
+          if (collision.numContrib() < tc.fNContribCutInf) { // number of contribution cuts
+            return false;
+          }
         }
-        if constexpr (rs == eRecAndSim && rm == eMC) // event level cuts for Sim
-        {
+        if constexpr (rs == eRecAndSim && rm == eMC) { // event level cuts for Sim
           auto thisMCCollision = collision.mcCollision();
           auto impactParameter = thisMCCollision.impactParameter();
           auto centralityMC = math::PI * impactParameter * impactParameter / tc.fSigmaInel;
-          if (thisMCCollision.posZ() > tc.fVertexZCutRange[1] || thisMCCollision.posZ() < tc.fVertexZCutRange[0]) {
+          if (thisMCCollision.posZ() > tc.fVertexZCutRange[1] || thisMCCollision.posZ() < tc.fVertexZCutRange[0]) { // vertex z cut
             return false;
-          } // vertex z cut
-          if (centralityMC > tc.fCentCutRange[1] || centralityMC < tc.fCentCutRange[0]) {
+          }
+          if (centralityMC > tc.fCentCutRange[1] || centralityMC < tc.fCentCutRange[0]) { // centrality cut
             return false;
-          } // centrality cut
+          }
         }
       }
     }
@@ -735,45 +739,39 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       }
     }
     if constexpr (rs == eRec || rs == eRecAndSim) {
-      if (tc.fPtCutSwitch) // pt cuts for Rec
-      {
+      if (tc.fPtCutSwitch) { // pt cuts for Rec
         if constexpr (rm == eReal) {
           if (track.pt() < tc.fPtCutRange[0] || track.pt() > tc.fPtCutRange[1]) {
             return false;
           }
         }
-        if constexpr (rs == eRecAndSim && rm == eMC) // pt cuts for Sim
-        {
+        if constexpr (rs == eRecAndSim && rm == eMC) { // pt cuts for Sim
           auto thisMCParticle = track.mcParticle();
           if (thisMCParticle.pt() < tc.fPtCutRange[0] || thisMCParticle.pt() > tc.fPtCutRange[1]) {
             return false;
           }
         }
       }
-      if (tc.fEtaCutSwitch) // eta cuts for Rec
-      {
-        if constexpr (rm == eReal) {
+      if (tc.fEtaCutSwitch) {
+        if constexpr (rm == eReal) { // eta cuts for Rec
           if (track.eta() < tc.fEtaCutRange[0] || track.eta() > tc.fEtaCutRange[1]) {
             return false;
           }
         }
-        if constexpr (rs == eRecAndSim && rm == eMC) // eta cuts for Sim
-        {
+        if constexpr (rs == eRecAndSim && rm == eMC) { // eta cuts for Sim
           auto thisMCParticle = track.mcParticle();
           if (thisMCParticle.eta() < tc.fEtaCutRange[0] || thisMCParticle.eta() > tc.fEtaCutRange[1]) {
             return false;
           }
         }
       }
-      if (tc.fChargeCutSwitch) // charge cuts for Rec
-      {
-        if constexpr (rm == eReal) {
+      if (tc.fChargeCutSwitch) {
+        if constexpr (rm == eReal) { // charge cuts for Rec
           if (track.sign() != 1 && track.sign() != -1) {
             return false;
           }
         }
-        if constexpr (rs == eRecAndSim && rm == eMC) // charge cuts for Sim
-        {
+        if constexpr (rs == eRecAndSim && rm == eMC) { // charge cuts for Sim
           auto thisMCParticle = track.mcParticle();
           TParticlePDG* particlePDG = pdg->GetParticle(thisMCParticle.pdgCode());
           if (particlePDG) {
@@ -879,7 +877,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
   bool isFirstCollision = true; // this is used to ensure that weights hist are booked once and only once, otherwise, a crash
   int collisionCounter = 0;
   int thisRunNumber = 0;
-  const int runMessagePeriod = 100;
+  static constexpr int RunMessagePeriod = 100;
 
   // *) Define all member functions to be called in the main process* functions:
   template <ERecSim rs, typename T1, typename T2>
@@ -900,7 +898,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     }
 
     if (tc.fRunMessageSwitch) {
-      if (collisionCounter % runMessagePeriod == 0) {
+      if (collisionCounter % RunMessagePeriod == 0) {
         LOGF(info, "Successfully running, run number is %d", thisRunNumber);
         collisionCounter = 0;
       }
@@ -918,20 +916,16 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     eventHistFill<rs, eMC, eBefore>(collision, tracks);
 
     bool passEventCutsReal = eventCuts<rs, eReal>(collision);
-    bool passEventCutsMC = eventCuts<rs, eMC>(collision);
+    // bool passEventCutsMC = eventCuts<rs, eMC>(collision); // this is currently useless
     bool passTechnicalCut = technicalCuts(collision);
 
     // Fill event hist and qa hist after cuts
     if (tc.fMasterCutSwitch) {
       if (passEventCutsReal && passTechnicalCut) {
         eventHistFill<rs, eReal, eAfter>(collision, tracks);
-        if (tc.fQualityAssuranceSwitch) {
-          qaFill<rs, eReal, eAfter>(collision);
-        }
-      }
-      if (passEventCutsMC) {
         eventHistFill<rs, eMC, eAfter>(collision, tracks);
         if (tc.fQualityAssuranceSwitch) {
+          qaFill<rs, eReal, eAfter>(collision);
           qaFill<rs, eMC, eAfter>(collision);
         }
       }
@@ -977,7 +971,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
           particleHistFill<rs, eReal, eAfter>(track);
           updateQVectorsTable(qVectorsTableReal, thisPhiRec, thisWeights[ePhiRec] * thisWeights[ePt]);
         }
-        if (passEventCutsMC && particleCuts<rs, eMC>(track)) {
+        if (passEventCutsReal && passTechnicalCut && particleCuts<rs, eMC>(track)) {
           particleHistFill<rs, eMC, eAfter>(track);
           if (hasMCP) {
             updateQVectorsTable(qVectorsTableMC, thisPhiSim, thisWeights[ePhiSim] * thisWeights[ePt]);
@@ -996,14 +990,14 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       }
 
       if constexpr (rs == eRecAndSim) {
-        if (passEventCutsMC) {
+        if (passEventCutsReal && passTechnicalCut) {
           auto impactParam = collision.mcCollision().impactParameter();
           auto thisCollCentMC = math::PI * impactParam * impactParam / tc.fSigmaInel;
           resultTwo = two(qVectorsTableMC, n2);
           if (noneZeroDenom(resultTwo)) {
             obs.fProfTwo[eSim]->Fill(thisCollCentMC, (resultTwo[0] / resultTwo[1].Re()).Re());
           }
-        } // end of if (passEventCutsMC) {
+        } // end of if (passEventCutsReal && passTechnicalCut) {
       } // end of if constexpr (rs == eRecAndSim) {
     } // end of if (tc.fMasterCutSwitch) {
 
@@ -1038,6 +1032,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     tc.fEventCutSwitch = cfEventCutSwitch;
     tc.fVertexZCutRange = cfVertexZCutRange.value;
     tc.fCentCutRange = cfCentCutRange.value;
+    tc.fNContribCutInf = cfNContribCutInf;
 
     tc.fPtCutSwitch = cfPtCutSwitch;
     tc.fPtCutRange = cfPtCutRange.value;
@@ -1094,9 +1089,9 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     const float minEta = lEtaBins[1];
     const float maxEta = lEtaBins[2];
 
-    const int nBinsCharge = 5;
-    const float minCharge = -2.5;
-    const float maxCharge = 2.5;
+    constexpr int NBinsCharge = 5;
+    constexpr float MinCharge = -2.5;
+    constexpr float MaxCharge = 2.5;
 
     if (doprocessRec || doprocessRecSim) {
       pc.fParticleHist[eHistPt][eRec][eBefore] = new TH1F("[eHistPt][eRec][eBefore]", "p_{T} distribution for reconstructed particles before cuts", nBinsPt, minPt, maxPt);
@@ -1108,7 +1103,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       pc.fParticleHist[eHistEta][eRec][eBefore] = new TH1F("[eHistEta][eRec][eBefore]", "#eta distribution for reconstructed particles before cuts", nBinsEta, minEta, maxEta);
       pc.fParticleHist[eHistEta][eRec][eBefore]->GetXaxis()->SetTitle("#eta");
 
-      pc.fParticleHist[eHistCharge][eRec][eBefore] = new TH1F("[eHistCharge][eRec][eBefore]", "charge distribution for reconstructed particles before cuts", nBinsCharge, minCharge, maxCharge);
+      pc.fParticleHist[eHistCharge][eRec][eBefore] = new TH1F("[eHistCharge][eRec][eBefore]", "charge distribution for reconstructed particles before cuts", NBinsCharge, MinCharge, MaxCharge);
       pc.fParticleHist[eHistCharge][eRec][eBefore]->GetXaxis()->SetTitle("Particle charge");
 
       for (int i = 0; i < eParticleHistograms_N; ++i) {
@@ -1126,7 +1121,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
         pc.fParticleHist[eHistEta][eRec][eAfter] = new TH1F("[eHistEta][eRec][eAfter]", "#eta distribution for reconstructed particles after cuts", nBinsEta, minEta, maxEta);
         pc.fParticleHist[eHistEta][eRec][eAfter]->GetXaxis()->SetTitle("#eta");
 
-        pc.fParticleHist[eHistCharge][eRec][eAfter] = new TH1F("[eHistCharge][eRec][eAfter]", "charge distribution for reconstructed particles after cuts", nBinsCharge, minCharge, maxCharge);
+        pc.fParticleHist[eHistCharge][eRec][eAfter] = new TH1F("[eHistCharge][eRec][eAfter]", "charge distribution for reconstructed particles after cuts", NBinsCharge, MinCharge, MaxCharge);
         pc.fParticleHist[eHistCharge][eRec][eAfter]->GetXaxis()->SetTitle("Particle charge");
 
         for (int i = 0; i < eParticleHistograms_N; ++i) {
@@ -1146,7 +1141,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
       pc.fParticleHist[eHistEta][eSim][eBefore] = new TH1F("[eHistEta][eSim][eBefore]", "#eta distribution for simulated particles before cuts", nBinsEta, minEta, maxEta);
       pc.fParticleHist[eHistEta][eSim][eBefore]->GetXaxis()->SetTitle("#eta");
 
-      pc.fParticleHist[eHistCharge][eSim][eBefore] = new TH1F("[eHistCharge][eSim][eBefore]", "charge distribution for simulated particles before cuts", nBinsCharge, minCharge, maxCharge);
+      pc.fParticleHist[eHistCharge][eSim][eBefore] = new TH1F("[eHistCharge][eSim][eBefore]", "charge distribution for simulated particles before cuts", NBinsCharge, MinCharge, MaxCharge);
       pc.fParticleHist[eHistCharge][eSim][eBefore]->GetXaxis()->SetTitle("Particle charge");
 
       for (int i = 0; i < eParticleHistograms_N; ++i) {
@@ -1164,7 +1159,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
         pc.fParticleHist[eHistEta][eSim][eAfter] = new TH1F("[eHistEta][eSim][eAfter]", "#eta distribution for simulated particles after cuts", nBinsEta, minEta, maxEta);
         pc.fParticleHist[eHistEta][eSim][eAfter]->GetXaxis()->SetTitle("#eta");
 
-        pc.fParticleHist[eHistCharge][eSim][eAfter] = new TH1F("[eHistCharge][eSim][eAfter]", "charge distribution for simulated particles after cuts", nBinsCharge, minCharge, maxCharge);
+        pc.fParticleHist[eHistCharge][eSim][eAfter] = new TH1F("[eHistCharge][eSim][eAfter]", "charge distribution for simulated particles after cuts", NBinsCharge, MinCharge, MaxCharge);
         pc.fParticleHist[eHistCharge][eSim][eAfter]->GetXaxis()->SetTitle("Particle charge");
 
         for (int i = 0; i < eParticleHistograms_N; ++i) {
@@ -1180,8 +1175,8 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     ec.fEventHistList->SetOwner(true);
     fBaseList->Add(ec.fEventHistList);
 
-    float defaultCentBoundaries[] = {0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
-    const int nDefaultCentBins = sizeof(defaultCentBoundaries) / sizeof(defaultCentBoundaries[0]) - 1;
+    constexpr std::array<float, 12> DefaultCentBoundaries = {0.f, 5.f, 10.f, 20.f, 30.f, 40.f, 50.f, 60.f, 70.f, 80.f, 90.f, 100.f};
+    constexpr int NDefaultCentBins = DefaultCentBoundaries.size() - 1;
 
     std::vector<float> lCent = cfCentBins.value;
     const int nBinsCent = static_cast<int>(lCent[0]);
@@ -1218,11 +1213,9 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     const float minIp = lIp[1];
     const float maxIp = lIp[2];
 
-    // eEventHistograms_N
-
     if (doprocessRec || doprocessRecSim) {
       if (tc.fALICECentBinSwitch) {
-        ec.fEventHist[eHistCentrality][eRec][eBefore] = new TH1F("[eHistCentrality][eRec][eBefore]", "Centrality (reconstructed) before cuts", nDefaultCentBins, defaultCentBoundaries);
+        ec.fEventHist[eHistCentrality][eRec][eBefore] = new TH1F("[eHistCentrality][eRec][eBefore]", "Centrality (reconstructed) before cuts", NDefaultCentBins, DefaultCentBoundaries.data());
       } else {
         ec.fEventHist[eHistCentrality][eRec][eBefore] = new TH1F("[eHistCentrality][eRec][eBefore]", "Centrality (reconstructed) before cuts", nBinsCent, minCent, maxCent);
       }
@@ -1252,7 +1245,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
 
       if (tc.fMasterCutSwitch) {
         if (tc.fALICECentBinSwitch) {
-          ec.fEventHist[eHistCentrality][eRec][eAfter] = new TH1F("[eHistCentrality][eRec][eAfter]", "Centrality (reconstructed) after cuts", nDefaultCentBins, defaultCentBoundaries);
+          ec.fEventHist[eHistCentrality][eRec][eAfter] = new TH1F("[eHistCentrality][eRec][eAfter]", "Centrality (reconstructed) after cuts", NDefaultCentBins, DefaultCentBoundaries.data());
         } else {
           ec.fEventHist[eHistCentrality][eRec][eAfter] = new TH1F("[eHistCentrality][eRec][eAfter]", "Centrality (reconstructed) after cuts", nBinsCent, minCent, maxCent);
         }
@@ -1284,7 +1277,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
 
     if (doprocessSim || doprocessRecSim) {
       if (tc.fALICECentBinSwitch) {
-        ec.fEventHist[eHistCentrality][eSim][eBefore] = new TH1F("[eHistCentrality][eSim][eBefore]", "Centrality (simulated) before cuts", nDefaultCentBins, defaultCentBoundaries);
+        ec.fEventHist[eHistCentrality][eSim][eBefore] = new TH1F("[eHistCentrality][eSim][eBefore]", "Centrality (simulated) before cuts", NDefaultCentBins, DefaultCentBoundaries.data());
       } else {
         ec.fEventHist[eHistCentrality][eSim][eBefore] = new TH1F("[eHistCentrality][eSim][eBefore]", "Centrality (simulated) before cuts", nBinsCent, minCent, maxCent);
       }
@@ -1314,7 +1307,7 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
 
       if (tc.fMasterCutSwitch) {
         if (tc.fALICECentBinSwitch) {
-          ec.fEventHist[eHistCentrality][eSim][eAfter] = new TH1F("[eHistCentrality][eSim][eAfter]", "Centrality (simulated) after cuts", nDefaultCentBins, defaultCentBoundaries);
+          ec.fEventHist[eHistCentrality][eSim][eAfter] = new TH1F("[eHistCentrality][eSim][eAfter]", "Centrality (simulated) after cuts", NDefaultCentBins, DefaultCentBoundaries.data());
         } else {
           ec.fEventHist[eHistCentrality][eSim][eAfter] = new TH1F("[eHistCentrality][eSim][eAfter]", "Centrality (simulated) after cuts", nBinsCent, minCent, maxCent);
         }
@@ -1351,21 +1344,13 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
     fBaseList->Add(obs.fObservablesList);
 
     if (doprocessRec || doprocessRecSim) {
-      if (tc.fALICECentBinSwitch) {
-        obs.fProfTwo[eRec] = new TProfile("fProfTwo[eRec]", "Two particle correlation for reconstructed data after cuts", nDefaultCentBins, defaultCentBoundaries);
-      } else {
-        obs.fProfTwo[eRec] = new TProfile("fProfTwo[eRec]", "Two particle correlation for reconstructed data after cuts", nBinsCent, minCent, maxCent);
-      }
+      obs.fProfTwo[eRec] = new TProfile("fProfTwo[eRec]", "Two particle correlation for reconstructed data after cuts", NDefaultCentBins, DefaultCentBoundaries.data());
       obs.fProfTwo[eRec]->GetYaxis()->SetTitle("#LT#LTk#GT#GT");
       obs.fProfTwo[eRec]->Sumw2();
       obs.fObservablesList->Add(obs.fProfTwo[eRec]);
 
       if (doprocessRecSim) {
-        if (tc.fALICECentBinSwitch) {
-          obs.fProfTwo[eSim] = new TProfile("fProfTwo[eSim]", "Two particle correlation for simulated data after cuts", nDefaultCentBins, defaultCentBoundaries);
-        } else {
-          obs.fProfTwo[eSim] = new TProfile("fProfTwo[eSim]", "Two particle correlation for simulated data after cuts", nBinsCent, minCent, maxCent);
-        }
+        obs.fProfTwo[eSim] = new TProfile("fProfTwo[eSim]", "Two particle correlation for simulated data after cuts", NDefaultCentBins, DefaultCentBoundaries.data());
         obs.fProfTwo[eSim]->GetYaxis()->SetTitle("#LT#LTk#GT#GT");
         obs.fProfTwo[eSim]->Sumw2();
         obs.fObservablesList->Add(obs.fProfTwo[eSim]);
@@ -1390,17 +1375,17 @@ struct MultiparticleCorrelationsMei // this name is used in lower-case format to
           qa.fHistMultNContrib[i]->GetYaxis()->SetTitle("Number of contributors");
           qa.fQualityAssuranceList->Add(qa.fHistMultNContrib[i]);
         }
-      }
 
-      if (doprocessRecSim) {
-        for (int i = 0; i < eCuts_N; ++i) {
-          qa.fHistCentralityRecSim[i] = new TH2F(Form("fHistCentralityRecSim[%s]", CutsNames[i]), Form("Centrality Rec vs Sim %s cuts", CutsNames[i]), nBinsCent, minCent, maxCent, nBinsCent, minCent, maxCent);
-          qa.fHistCentralityRecSim[i]->GetXaxis()->SetTitle("Centrality (reconstructed)");
-          qa.fHistCentralityRecSim[i]->GetYaxis()->SetTitle("Centrality (simulated)");
-          qa.fQualityAssuranceList->Add(qa.fHistCentralityRecSim[i]);
-        }
-      }
-    }
+        if (doprocessRecSim) {
+          for (int i = 0; i < eCuts_N; ++i) {
+            qa.fHistCentralityRecSim[i] = new TH2F(Form("fHistCentralityRecSim[%s]", CutsNames[i]), Form("Centrality Rec vs Sim %s cuts", CutsNames[i]), nBinsCent, minCent, maxCent, nBinsCent, minCent, maxCent);
+            qa.fHistCentralityRecSim[i]->GetXaxis()->SetTitle("Centrality (reconstructed)");
+            qa.fHistCentralityRecSim[i]->GetYaxis()->SetTitle("Centrality (simulated)");
+            qa.fQualityAssuranceList->Add(qa.fHistCentralityRecSim[i]);
+          }
+        } // end of if (doprocessRecSim) {
+      } // end of if (doprocessRec || doprocessRecSim) {
+    } // end of if (tc.fQualityAssuranceSwitch) {
   } // end of void init(InitContext&) {
 
   // A) Process only reconstructed data:
