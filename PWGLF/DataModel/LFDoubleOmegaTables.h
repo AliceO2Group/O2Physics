@@ -21,7 +21,7 @@ namespace o2::aod
 
 namespace DoubleOmegaTables
 {
-DECLARE_SOA_COLUMN(PtDoubleOmega, ptDoubleOmega, float);
+DECLARE_SOA_COLUMN(PtDoubleOmega, ptDoubleOmega, float); // Signed transverse momentum of the double-Omega candidate, signed by the charge of the direct kaon.
 DECLARE_SOA_COLUMN(EtaDoubleOmega, etaDoubleOmega, float);
 DECLARE_SOA_COLUMN(PhiDoubleOmega, phiDoubleOmega, float);
 DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);
@@ -55,7 +55,7 @@ DECLARE_SOA_COLUMN(MassDoubleOmega, massDoubleOmega, float);
 DECLARE_SOA_COLUMN(MassOmega, massOmega, float);
 DECLARE_SOA_COLUMN(MassXi, massXi, float);
 
-DECLARE_SOA_COLUMN(GenPt, genPt, float);
+DECLARE_SOA_COLUMN(GenPt, genPt, float); // Signed transverse momentum of the generated double-Omega candidate, signed by the charge of the direct kaon.
 DECLARE_SOA_COLUMN(GenEta, genEta, float);
 DECLARE_SOA_COLUMN(GenPhi, genPhi, float);
 DECLARE_SOA_COLUMN(GenDecayLength, genDecayLength, float);

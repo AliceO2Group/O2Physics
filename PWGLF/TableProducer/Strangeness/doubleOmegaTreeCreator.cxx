@@ -96,6 +96,7 @@ struct DoubleOmegaCandidate {
   float mass = -999.f;
   float massOmega = -999.f;
   float massXi = -999.f;
+  int8_t sign = 0;
 };
 
 struct DoubleOmegaMCInfo {
@@ -110,6 +111,7 @@ struct DoubleOmegaMCInfo {
   std::array<float, 3> genProductionVertex{-999.f, -999.f, -999.f};
   std::array<float, 3> genDecayVertex{-999.f, -999.f, -999.f};
   std::array<float, 3> genOmegaDecayVertex{-999.f, -999.f, -999.f};
+  int8_t sign = 0;
 };
 
 struct LambdaCandidate {
@@ -669,6 +671,7 @@ struct doubleOmegaTreeCreator {
     }
     cand.massOmega = omega.massOmega;
     cand.massXi = omega.massXi;
+    cand.sign = omega.sign;
     return true;
   }
 
@@ -681,9 +684,9 @@ struct doubleOmegaTreeCreator {
 
     auto mcPosTrack = posTrack.template mcParticle_as<aod::McParticles>();
     auto mcNegTrack = negTrack.template mcParticle_as<aod::McParticles>();
-    const int expectedPosPdg = sign < 0 ? 2212 : 211;
-    const int expectedNegPdg = sign < 0 ? -211 : -2212;
-    const int expectedLambdaPdg = sign < 0 ? 3122 : -3122;
+    const int expectedPosPdg = sign < 0 ? PDG_t::kProton : PDG_t::kPiPlus;
+    const int expectedNegPdg = sign < 0 ? PDG_t::kPiMinus : PDG_t::kProtonBar;
+    const int expectedLambdaPdg = sign < 0 ? PDG_t::kLambda0 : PDG_t::kLambda0Bar;
     if (mcPosTrack.pdgCode() != expectedPosPdg || mcNegTrack.pdgCode() != expectedNegPdg) {
       return -1;
     }
@@ -712,8 +715,8 @@ struct doubleOmegaTreeCreator {
 
     auto mcLambda = mcParticles.rawIteratorAt(lambdaLabel);
     auto mcBachelor = bachelorTrack.template mcParticle_as<aod::McParticles>();
-    const int expectedBachelorPdg = sign < 0 ? -321 : 321;
-    const int expectedOmegaPdg = sign < 0 ? 3334 : -3334;
+    const int expectedBachelorPdg = sign < 0 ? PDG_t::kKMinus : PDG_t::kKPlus;
+    const int expectedOmegaPdg = sign < 0 ? PDG_t::kOmegaMinus : PDG_t::kOmegaPlusBar;
     if (mcBachelor.pdgCode() != expectedBachelorPdg) {
       return -1;
     }
@@ -746,7 +749,7 @@ struct doubleOmegaTreeCreator {
     auto mcOmega = mcParticles.rawIteratorAt(omegaLabel);
     auto mcLambda = mcParticles.rawIteratorAt(lambdaLabel);
     auto mcKaon = directKaonTrack.template mcParticle_as<aod::McParticles>();
-    const int expectedKaonPdg = sign < 0 ? -321 : 321;
+    const int expectedKaonPdg = sign < 0 ? PDG_t::kKMinus : PDG_t::kKPlus;
     const int expectedDoubleOmegaPdg = sign < 0 ? kDoubleOmegaPdg : -kDoubleOmegaPdg;
     if (mcKaon.pdgCode() != expectedKaonPdg) {
       return false;
@@ -770,6 +773,7 @@ struct doubleOmegaTreeCreator {
                                             mcOmega.vy() - omegaMother.vy(),
                                             mcOmega.vz() - omegaMother.vz());
             mcInfo.pdgCode = omegaMother.pdgCode();
+            mcInfo.sign = sign;
             return true;
           }
         }
@@ -786,9 +790,9 @@ struct doubleOmegaTreeCreator {
     }
 
     const bool isMatter = particle.pdgCode() > 0;
-    const int expectedOmegaPdg = isMatter ? 3334 : -3334;
-    const int expectedLambdaPdg = isMatter ? 3122 : -3122;
-    const int expectedKaonPdg = isMatter ? -321 : 321;
+    const int expectedOmegaPdg = isMatter ? PDG_t::kOmegaMinus : PDG_t::kOmegaPlusBar;
+    const int expectedLambdaPdg = isMatter ? PDG_t::kLambda0 : PDG_t::kLambda0Bar;
+    const int expectedKaonPdg = isMatter ? PDG_t::kKMinus : PDG_t::kKPlus;
     bool foundOmega = false;
     bool foundLambda = false;
     bool foundKaon = false;
@@ -825,6 +829,7 @@ struct doubleOmegaTreeCreator {
     info.genProductionVertex = {particle.vx(), particle.vy(), particle.vz()};
     info.genDecayVertex = decayVertex;
     info.genOmegaDecayVertex = omegaDecayVertex;
+    info.sign = isMatter ? -1 : 1;
     return true;
   }
 
@@ -847,7 +852,7 @@ struct doubleOmegaTreeCreator {
 
   void writeDataCandidate(DoubleOmegaCandidate const& cand)
   {
-    doubleOmegaTable(cand.pt,
+    doubleOmegaTable(cand.pt * cand.sign,
                      cand.eta,
                      cand.phi,
                      cand.x,
@@ -879,7 +884,7 @@ struct doubleOmegaTreeCreator {
 
   void writeMCCandidate(DoubleOmegaCandidate const& cand, DoubleOmegaMCInfo const& mcInfo, bool isReco)
   {
-    doubleOmegaTableMC(cand.pt,
+    doubleOmegaTableMC(cand.pt * cand.sign,
                        cand.eta,
                        cand.phi,
                        cand.x,
@@ -907,7 +912,7 @@ struct doubleOmegaTreeCreator {
                        cand.mass,
                        cand.massOmega,
                        cand.massXi,
-                       mcInfo.pt,
+                       mcInfo.pt * mcInfo.sign,
                        mcInfo.eta,
                        mcInfo.phi,
                        mcInfo.decayLength,
