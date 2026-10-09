@@ -53,10 +53,10 @@ struct PtSpectraInclusiveUpc {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   ConfigurableAxis ptBinning{"ptBinning",
-    {VARIABLE_WIDTH, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0,
-                     1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0,
-                     2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0},
-    "#it{p}_{T} (GeV/#it{c})"};
+                             {VARIABLE_WIDTH, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0,
+                              1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0,
+                              2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0},
+                             "#it{p}_{T} (GeV/#it{c})"};
 
   ConfigurableAxis dcaXYaxis{"dcaXYaxis", {1000, -0.6, 0.6}, "DCA_{xy} (cm) binning"};
   Configurable<bool> applyKineCutsInGen{"applyKineCutsInGen", false, "Apply kinematic cuts in the generated level"};
@@ -316,7 +316,7 @@ struct PtSpectraInclusiveUpc {
         }
       }
 
-      if(track.itsChi2NCl() > maxChi2ITS) {
+      if (track.itsChi2NCl() > maxChi2ITS) {
         continue;
       }
 
@@ -359,13 +359,15 @@ struct PtSpectraInclusiveUpc {
           if (std::abs(RecoDecay::y(trackMomentum, o2::constants::physics::MassPionCharged)) < yMax) {
             if constexpr (isMc) {
               if (isPrimary) {
-                if(passDCAxyCut) histos.fill(HIST("ptReconstructedTPCPion"), track.pt());
+                if (passDCAxyCut)
+                  histos.fill(HIST("ptReconstructedTPCPion"), track.pt());
                 histos.fill(HIST("DCAxy_TPC_primary_pions"), track.pt(), track.dcaXY());
               } else {
                 histos.fill(HIST("DCAxy_TPC_secondary_pions"), track.pt(), track.dcaXY());
               }
             } else {
-              if(passDCAxyCut) histos.fill(HIST("ptDataTPCPion"), track.pt());
+              if (passDCAxyCut)
+                histos.fill(HIST("ptDataTPCPion"), track.pt());
               histos.fill(HIST("DCAxy_TPC_data_pions"), track.pt(), track.dcaXY());
             }
           }
@@ -374,13 +376,15 @@ struct PtSpectraInclusiveUpc {
           if (std::abs(RecoDecay::y(trackMomentum, o2::constants::physics::MassKaonCharged)) < yMax) {
             if constexpr (isMc) {
               if (isPrimary) {
-                if(passDCAxyCut) histos.fill(HIST("ptReconstructedTPCKaon"), track.pt());
+                if (passDCAxyCut)
+                  histos.fill(HIST("ptReconstructedTPCKaon"), track.pt());
                 histos.fill(HIST("DCAxy_TPC_primary_kaons"), track.pt(), track.dcaXY());
               } else {
                 histos.fill(HIST("DCAxy_TPC_secondary_kaons"), track.pt(), track.dcaXY());
               }
             } else {
-              if(passDCAxyCut) histos.fill(HIST("ptDataTPCKaon"), track.pt());
+              if (passDCAxyCut)
+                histos.fill(HIST("ptDataTPCKaon"), track.pt());
               histos.fill(HIST("DCAxy_TPC_data_kaons"), track.pt(), track.dcaXY());
             }
           }
@@ -390,7 +394,8 @@ struct PtSpectraInclusiveUpc {
           if (std::abs(RecoDecay::y(trackMomentum, o2::constants::physics::MassProton)) < yMax) {
             if constexpr (isMc) {
               if (isPrimary) {
-                if(passDCAxyCut) histos.fill(HIST("ptReconstructedTPCProton"), track.pt());
+                if (passDCAxyCut)
+                  histos.fill(HIST("ptReconstructedTPCProton"), track.pt());
                 histos.fill(HIST("DCAxy_TPC_primary_protons"), track.pt(), track.dcaXY());
               } else {
                 if (isDecay) {
@@ -400,7 +405,8 @@ struct PtSpectraInclusiveUpc {
                 }
               }
             } else {
-              if(passDCAxyCut) histos.fill(HIST("ptDataTPCProton"), track.pt());
+              if (passDCAxyCut)
+                histos.fill(HIST("ptDataTPCProton"), track.pt());
               histos.fill(HIST("DCAxy_TPC_data_protons"), track.pt(), track.dcaXY());
             }
           }
@@ -417,13 +423,15 @@ struct PtSpectraInclusiveUpc {
           if (std::abs(RecoDecay::y(trackMomentum, o2::constants::physics::MassPionCharged)) < yMax) {
             if constexpr (isMc) {
               if (isPrimary) {
-                if(passDCAxyCut) histos.fill(HIST("ptReconstructedTOFPion"), track.pt());
+                if (passDCAxyCut)
+                  histos.fill(HIST("ptReconstructedTOFPion"), track.pt());
                 histos.fill(HIST("DCAxy_TOF_primary_pions"), track.pt(), track.dcaXY());
               } else {
                 histos.fill(HIST("DCAxy_TOF_secondary_pions"), track.pt(), track.dcaXY());
               }
             } else {
-              if(passDCAxyCut) histos.fill(HIST("ptDataTOFPion"), track.pt());
+              if (passDCAxyCut)
+                histos.fill(HIST("ptDataTOFPion"), track.pt());
               histos.fill(HIST("DCAxy_TOF_data_pions"), track.pt(), track.dcaXY());
             }
           }
@@ -433,13 +441,15 @@ struct PtSpectraInclusiveUpc {
           if (std::abs(RecoDecay::y(trackMomentum, o2::constants::physics::MassKaonCharged)) < yMax) {
             if constexpr (isMc) {
               if (isPrimary) {
-                if(passDCAxyCut) histos.fill(HIST("ptReconstructedTOFKaon"), track.pt());
+                if (passDCAxyCut)
+                  histos.fill(HIST("ptReconstructedTOFKaon"), track.pt());
                 histos.fill(HIST("DCAxy_TOF_primary_kaons"), track.pt(), track.dcaXY());
               } else {
                 histos.fill(HIST("DCAxy_TOF_secondary_kaons"), track.pt(), track.dcaXY());
               }
             } else {
-              if(passDCAxyCut) histos.fill(HIST("ptDataTOFKaon"), track.pt());
+              if (passDCAxyCut)
+                histos.fill(HIST("ptDataTOFKaon"), track.pt());
               histos.fill(HIST("DCAxy_TOF_data_kaons"), track.pt(), track.dcaXY());
             }
           }
@@ -449,7 +459,8 @@ struct PtSpectraInclusiveUpc {
           if (std::abs(RecoDecay::y(trackMomentum, o2::constants::physics::MassProton)) < yMax) {
             if constexpr (isMc) {
               if (isPrimary) {
-                if(passDCAxyCut) histos.fill(HIST("ptReconstructedTOFProton"), track.pt());
+                if (passDCAxyCut)
+                  histos.fill(HIST("ptReconstructedTOFProton"), track.pt());
                 histos.fill(HIST("DCAxy_TOF_primary_protons"), track.pt(), track.dcaXY());
               } else {
                 if (isDecay) {
@@ -459,12 +470,12 @@ struct PtSpectraInclusiveUpc {
                 }
               }
             } else {
-              if(passDCAxyCut) histos.fill(HIST("ptDataTOFProton"), track.pt());
+              if (passDCAxyCut)
+                histos.fill(HIST("ptDataTOFProton"), track.pt());
               histos.fill(HIST("DCAxy_TOF_data_protons"), track.pt(), track.dcaXY());
             }
           }
         }
-
       }
     }
   }
