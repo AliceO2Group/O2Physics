@@ -26,7 +26,6 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 
-#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
@@ -72,8 +71,8 @@ namespace pairutil = o2::aod::pwgem::photonmeson::utils::pairutil;
 
 // ─── Event Information Tables ────────────────────────────────────────────
 
-using MyCollisions = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMEventsQvec_001>;
-using MyCollisionsMC = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMEventsQvec_001, aod::EMMCEventLabels>;
+using MyCollisions = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMEventsQvec_001, aod::EmMagFields>;
+using MyCollisionsMC = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMEventsQvec_001, aod::EMMCEventLabels, aod::EmMagFields>;
 
 // ─── Photon Tables ────────────────────────────────────────────
 
@@ -160,8 +159,6 @@ struct PairQCTask {
     bool evaluated{false};
   };
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb{};
-  Configurable<std::string> cfgCcdbUrl{"cfgCcdbUrl", "http://alice-ccdb.cern.ch", "CCDB url"};
   Configurable<float> cfgBzOverrideT{"cfgBzOverrideT", -999.f, "Bz in Tesla; used instead of CCDB if > -100"};
 
   struct : ConfigurableGroup {
@@ -385,9 +382,6 @@ struct PairQCTask {
     mDedupCfg.maxLegDeDxAsym = dedup.cfgDupMaxLegDeDxAsym.value;
     mDedupCfg.maxDVtx3D = dedup.cfgDupMaxDVtx3D.value;
     mDedupCfg.requireBothLegs = dedup.cfgDupRequireBothLegs.value;
-    ccdb->setURL(cfgCcdbUrl);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
 
     o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&fRegistry);
     fRegistry.add("Photon/hPtEtaPhi", "selected V0 photons;p_{T} (GeV/c);#eta;#varphi (rad)", kTH3F, {{100, 0.f, 2.f}, {40, -0.8f, 0.8f}, {72, 0.f, 6.2832f}}, true); // o2-linter: disable=magic-number (axis definition)
@@ -418,8 +412,7 @@ struct PairQCTask {
       mBzT = cfgBzOverrideT.value;
       return;
     }
-    auto grpmag = ccdb->getForRun<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", mRunNumber);
-    mBzT = 0.1f * static_cast<float>(grpmag->getNominalL3Field()); // o2-linter: disable=magic-number (kGauss -> Tesla)
+    mBzT = 0.1f * static_cast<float>(collision.grpMagField().getNominalL3Field()); // o2-linter: disable=magic-number (kGauss -> Tesla)
     LOGF(info, "pairQC: run %d, Bz = %.2f T", mRunNumber, mBzT);
   }
 

@@ -26,7 +26,6 @@
 
 #include "Common/Core/RecoDecay.h"
 
-#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/ASoAHelpers.h>
@@ -77,8 +76,6 @@ enum class MapLevel {
 };
 
 struct PhotonResoTask {
-  o2::framework::Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  o2::framework::Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
 
   // configurable axis
   ConfigurableAxis thnConfigAxisInvMass{"thnConfigAxisInvMass", {400, 0.0, 0.8}, "invariant mass axis for the neutral meson"};
@@ -194,7 +191,6 @@ struct PhotonResoTask {
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
-  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb{};
   int mRunNumber{-1};
   float dBz{0.f};
 
@@ -272,11 +268,6 @@ struct PhotonResoTask {
   {
     mRunNumber = 0;
     dBz = 0;
-
-    ccdb->setURL(ccdbUrl);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    ccdb->setFatalWhenNull(false);
 
     defineEMEventCut();
     defineEMCCut();

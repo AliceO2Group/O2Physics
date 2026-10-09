@@ -27,7 +27,6 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 
-#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
 #include <EMCALBase/Geometry.h>
 #include <EMCALBase/GeometryBase.h>
@@ -112,7 +111,6 @@ enum class MapLevel {
 struct CalibTaskEmc {
   // configurable for flow
   Configurable<int> centEstimator{"centEstimator", 2, "Centrality estimation (FT0A: 1, FT0C: 2, FT0M: 3)"};
-  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<int> cfgEMCalMapLevelBackground{"cfgEMCalMapLevelBackground", 4, "Different levels of correction for the background, the smaller number includes the level of the higher number (4: none, 3: only inside EMCal, 2: exclude bad channels, 1: remove edges)"};
   Configurable<int> cfgEMCalMapLevelSameEvent{"cfgEMCalMapLevelSameEvent", 4, "Different levels of correction for the same event, the smaller number includes the level of the higher number (4: none, 3: only inside EMCal, 2: exclude bad channels, 1: remove edges)"};
   Configurable<int> cfgDistanceToEdge{"cfgDistanceToEdge", 1, "Distance to edge in cells required for rotated cluster to be accepted"};
@@ -229,16 +227,15 @@ struct CalibTaskEmc {
   } correctionConfig;
 
   SliceCache cache;
-  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb{};
   int runNow = 0;
   int runBefore = -1;
 
   Filter collisionFilter = (nabs(aod::collision::posZ) <= eventcuts.cfgZvtxMax) && (aod::evsel::ft0cOccupancyInTimeRange <= eventcuts.cfgFT0COccupancyMax) && (aod::evsel::ft0cOccupancyInTimeRange >= eventcuts.cfgFT0COccupancyMin);
   using EMCalPhotons = soa::Join<aod::EMCEMEventIds, aod::MinClusters, aod::NonLinEmcClusters>;
   using PCMPhotons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds, aod::NonLinV0s>;
-  using FilteredCollsWithQvecs = soa::Filtered<soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000>>;
-  using CollsWithQvecs = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000>;
-  using Colls = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000>;
+  using FilteredCollsWithQvecs = soa::Filtered<soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EmEmcalObjects>>;
+  using CollsWithQvecs = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EmEmcalObjects>;
+  using Colls = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EmEmcalObjects>;
 
   PresliceOptional<EMCalPhotons> perCollisionEMC = o2::aod::emccluster::pmeventId;
   PresliceOptional<PCMPhotons> perCollisionPCM = aod::v0photonkf::pmeventId;
@@ -248,7 +245,6 @@ struct CalibTaskEmc {
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
   o2::emcal::Geometry* emcalGeom{};
-  o2::emcal::BadChannelMap* mBadChannels{};
   // Constants for eta and phi ranges for the look up table
   static constexpr double EtaMin = -0.75, etaMax = 0.75;
   static constexpr int NBinsEta = 150; // 150 bins for eta
@@ -425,11 +421,6 @@ struct CalibTaskEmc {
       registry.add("mesonQA/hAlphaPtMixed", "Histo of meson asymmetry vs pT for mixed event", HistType::kTH2D, {thAxisAlpha, thnAxisPtCalib});
     }
 
-    ccdb->setURL(ccdbUrl);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    ccdb->setFatalWhenNull(false);
-
   }; // end init
 
   /// Change radians to degree
@@ -519,14 +510,11 @@ struct CalibTaskEmc {
     return false;
   }
 
-  bool isCellMasked(int cellID)
+  template <o2::soa::is_iterator TCollision>
+  bool isCellMasked(int cellID, TCollision const& collision)
   {
-    bool masked = false;
-    if (mBadChannels) {
-      auto maskStatus = mBadChannels->getChannelStatus(cellID);
-      masked = (maskStatus != o2::emcal::BadChannelMap::MaskType_t::GOOD_CELL);
-    }
-    return masked;
+    auto maskStatus = collision.badChannelMap().getChannelStatus(cellID);
+    return maskStatus != o2::emcal::BadChannelMap::MaskType_t::GOOD_CELL;
   }
 
   template <o2::soa::is_iterator TCollision>
@@ -534,8 +522,6 @@ struct CalibTaskEmc {
   {
     // Load EMCal geometry
     emcalGeom = o2::emcal::Geometry::GetInstanceFromRunNumber(collision.runNumber());
-    // Load Bad Channel map
-    mBadChannels = ccdb->getForTimeStamp<o2::emcal::BadChannelMap>("EMC/Calib/BadChannelMap", collision.timestamp());
     lookupTable1D.fill(-1);
     double binWidthEta = (etaMax - EtaMin) / NBinsEta;
     double binWidthPhi = (phiMax - PhiMin) / NBinsPhi;
@@ -555,7 +541,7 @@ struct CalibTaskEmc {
             // Check conditions for the cell
             if (isTooCloseToEdge(cellID, 1)) {
               lookupTable1D[getIndex(iEta, iPhi)] = 2; // Edge
-            } else if (isCellMasked(cellID)) {
+            } else if (isCellMasked(cellID, collision)) {
               lookupTable1D[getIndex(iEta, iPhi)] = 1; // Bad
             } else {
               lookupTable1D[getIndex(iEta, iPhi)] = 0; // Good

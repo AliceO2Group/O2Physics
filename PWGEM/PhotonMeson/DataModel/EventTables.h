@@ -18,6 +18,7 @@
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TpcCCDBObjects.h"
 
 #include <DataFormatsParameters/GRPMagField.h>
 #include <EMCALCalib/BadChannelMap.h>
@@ -117,6 +118,11 @@ DECLARE_SOA_CCDB_COLUMN(BadChannelMap, badChannelMap, o2::emcal::BadChannelMap, 
 /// Full table — join with aod::BCsWithTimestamps to obtain all four objects.
 DECLARE_SOA_TIMESTAMPED_TABLE(EmEmcalObjects, aod::PMEvents, o2::aod::timestamp::Timestamp, 0, "EMEMCALOBJECTS", //!
                               em::ccdbEmcal::BadChannelMap);
+
+/// TPC drift velocity for EmEvents. Reuses the shared column (same label and path).
+/// Timestamp-uniform since the drift velocity changes within a run.
+DECLARE_SOA_TIMESTAMPED_TABLE(EmTpcObjects, aod::PMEvents, o2::aod::timestamp::Timestamp, 0, "EMTPCOBJECTS", //!
+                              ccdbTpc::VDriftTgl);
 
 } // namespace o2::aod
 
