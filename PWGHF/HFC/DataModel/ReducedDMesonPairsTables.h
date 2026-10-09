@@ -109,7 +109,7 @@ DECLARE_SOA_TABLE(HfCandDpTinys, "AOD", "HFCANDDPTINY", o2::soa::Index<>,
                   hf_cand_mc_flag::OriginMcRec,
                   hf_cand_mc_flag::FlagMcDecayChanRec)
 
-DECLARE_SOA_TABLE(HfCandDpLites, "AOD", "HFCANDDPLITE", o2::soa::Index<>,
+DECLARE_SOA_TABLE(HfCandDpSimplifieds, "AOD", "HFCANDDPSYMPLIFIED", o2::soa::Index<>,
                   hf_cand::Chi2PCA,
                   full::DecayLength,
                   full::DecayLengthXY,

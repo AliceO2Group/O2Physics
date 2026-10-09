@@ -43,7 +43,7 @@ struct HfTaskCorrelationDplusDplusReduced {
   Configurable<bool> applySkimming{"applySkimming", false, "Flag to apply Skimming selections"};
 
   using SelectedCandidatesTiny = soa::Filtered<o2::aod::HfCandDpTinys>;
-  using SelectedCandidatesLite = soa::Filtered<o2::aod::HfCandDpLites>;
+  using SelectedCandidatesLite = soa::Filtered<o2::aod::HfCandDpSimplifieds>;
   using SelectedCandidatesFull = soa::Filtered<o2::aod::HfCandDpFulls>;
   using SelectedMcParticles = o2::aod::HfCandDpMcPs;
 
