@@ -113,8 +113,8 @@ struct TreeCreatorPidTpcDiagnostics {
 #define MAKE_PARTICLE_CUT_POINTER(Unused, ParticleNameLong, CfgName) \
   &particleWiseCfgs.BOOST_PP_CAT(CfgName, ParticleNameLong),
 
-#define PACK_CONFIGURABLES_TO_ARRAY(Unused1, Unused2, CfgName)    \
-  const std::array<Configurable<float>*, PID::Alpha + 1> CfgName{ \
+#define PACK_CONFIGURABLES_TO_ARRAY(Unused1, Unused2, CfgName) \
+  std::array<Configurable<float>*, PID::Alpha + 1> CfgName{    \
     DO_FOR_ALL_PARTICLES(MAKE_PARTICLE_CUT_POINTER, CfgName)};
 
   BOOST_PP_SEQ_FOR_EACH(PACK_CONFIGURABLES_TO_ARRAY, _, PARTICLE_WISE_CFG_NAMES)
@@ -131,7 +131,7 @@ struct TreeCreatorPidTpcDiagnostics {
 
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
 
-  TRandom3 mRnd{};
+  TRandom3 mRnd;
 
   using CollisionsExtra = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>;
