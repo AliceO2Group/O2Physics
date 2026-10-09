@@ -25,12 +25,14 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
+#include <Framework/Logger.h>
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
 
+#include <cmath>
 #include <cstdlib>
 #include <string>
 #include <vector>
@@ -50,11 +52,13 @@ using SlimCollision = SlimCollisions::iterator;
 namespace slmccollision
 {
 DECLARE_SOA_COLUMN(McWeight, mcWeight, float);
-}
+DECLARE_SOA_COLUMN(PtHard, ptHard, float);
+} // namespace slmccollision
 DECLARE_SOA_TABLE(SlMcCollisions, "AOD", "SLMCCOLLISION",
                   o2::soa::Index<>,
                   o2::aod::mccollision::PosZ,
-                  slmccollision::McWeight);
+                  slmccollision::McWeight,
+                  slmccollision::PtHard);
 using SlMcCollision = SlMcCollisions::iterator;
 namespace slimtracks
 {
@@ -198,6 +202,16 @@ struct SlimTablesProducer {
                  soa::Filtered<aod::JetParticles> const& particles)
   {
     float eventWeightMC = mccollision.weight();
+
+    // --- TEST pT hat (a retirer une fois la formule validee) ---
+    float ptHardTrue = mccollision.ptHard();
+    float ptHardFromW = 10.f * std::pow(eventWeightMC, -0.25f);
+    static int nPrint = 0;
+    if (nPrint < 50) {
+      LOG(info) << "ptHard vrai = " << ptHardTrue << "   |   ptHard formule = " << ptHardFromW;
+      ++nPrint;
+    }
+
     if (collisions.size() != 1) { // skip the mccollision if it has mre than 1 associated rec collision
       return;
     }
@@ -237,7 +251,7 @@ struct SlimTablesProducer {
         histos.fill(HIST("Ntracks_pT"), track.pt(), eventWeight);
         slimTracks(slimCollIndex, track.px(), track.py(), track.pz());
       }
-      slimMcCollisions(mccollision.posZ(), eventWeightMC);
+      slimMcCollisions(mccollision.posZ(), eventWeightMC, ptHardFromW);
       auto slimMcCollIndex = slimMcCollisions.lastIndex();
       for (const auto& particle : particles) {
         if (!particle.isPhysicalPrimary()) {
