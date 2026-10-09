@@ -95,28 +95,19 @@ struct HfTaskCorrelationDplusDplusReduced {
           sign2 = -1;
         }
         if (flattening == 0) {
-          if (sign1 == sign2) {
-            if (sign1 == 1) {
-              registry.fill(HIST("hMassDplusPair"), mass2, mass1);
-            } else {
-              registry.fill(HIST("hMassDminusPair"), mass2, mass1);
-            }
-          } else {
-            registry.fill(HIST("hMassDplusminusPair"), mass2, mass1);
-          }
+          std::swap(mass1, mass2);
           flattening = 1;
-        }
-        if (flattening == 1) {
-          if (sign1 == sign2) {
-            if (sign1 == 1) {
-              registry.fill(HIST("hMassDplusPair"), mass1, mass2);
-            } else {
-              registry.fill(HIST("hMassDminusPair"), mass1, mass2);
-            }
-          } else {
-            registry.fill(HIST("hMassDplusminusPair"), mass1, mass2);
-          }
+        } else if (flattening == 1) {
           flattening = 0;
+        }
+        if (sign1 == sign2) {
+          if (sign1 == 1) {
+            registry.fill(HIST("hMassDplusPair"), mass2, mass1);
+          } else {
+            registry.fill(HIST("hMassDminusPair"), mass2, mass1);
+          }
+        } else {
+          registry.fill(HIST("hMassDplusminusPair"), mass2, mass1);
         }
       }
     }
@@ -149,40 +140,25 @@ struct HfTaskCorrelationDplusDplusReduced {
           sign2 = -1;
         }
         if (flattening == 0) {
-          if (sign1 == sign2) {
-            if (sign1 == 1) {
-              registry.fill(HIST("hMassDplusPair"), mass1, mass2);
-              if (std::abs(cand2.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi && std::abs(cand1.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi)
-                registry.fill(HIST("hMassDplusPairsMatched"), mass1, mass2);
-            } else {
-              registry.fill(HIST("hMassDminusPair"), mass1, mass2);
-              if (std::abs(cand2.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi && std::abs(cand1.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi)
-                registry.fill(HIST("hMassDminusPairsMatched"), mass1, mass2);
-            }
-          } else {
-            registry.fill(HIST("hMassDplusminusPair"), mass1, mass2);
-            if (std::abs(cand2.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi && std::abs(cand1.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi)
-              registry.fill(HIST("hMassDplusminusPairsMatched"), mass1, mass2);
-          }
+          std::swap(mass1, mass2);
           flattening = 1;
-        }
-        if (flattening == 1) {
-          if (sign1 == sign2) {
-            if (sign1 == 1) {
-              registry.fill(HIST("hMassDplusPair"), mass2, mass1);
-              if (std::abs(cand2.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi && std::abs(cand1.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi)
-                registry.fill(HIST("hMassDplusPairsMatched"), mass2, mass1);
-            } else {
-              registry.fill(HIST("hMassDminusPair"), mass2, mass1);
-              if (std::abs(cand2.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi && std::abs(cand1.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi)
-                registry.fill(HIST("hMassDminusPairsMatched"), mass2, mass1);
-            }
-          } else {
-            registry.fill(HIST("hMassDplusminusPair"), mass2, mass1);
-            if (std::abs(cand2.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi && std::abs(cand1.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi)
-              registry.fill(HIST("hMassDplusminusPairsMatched"), mass2, mass1);
-          }
+        } else if (flattening == 1) {
           flattening = 0;
+        }
+        if (sign1 == sign2) {
+          if (sign1 == 1) {
+            registry.fill(HIST("hMassDplusPair"), mass1, mass2);
+            if (std::abs(cand2.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi && std::abs(cand1.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi)
+              registry.fill(HIST("hMassDplusPairsMatched"), mass1, mass2);
+          } else {
+            registry.fill(HIST("hMassDminusPair"), mass1, mass2);
+            if (std::abs(cand2.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi && std::abs(cand1.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi)
+              registry.fill(HIST("hMassDminusPairsMatched"), mass1, mass2);
+          }
+        } else {
+          registry.fill(HIST("hMassDplusminusPair"), mass1, mass2);
+          if (std::abs(cand2.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi && std::abs(cand1.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi)
+            registry.fill(HIST("hMassDplusminusPairsMatched"), mass1, mass2);
         }
       }
     }

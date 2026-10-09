@@ -151,26 +151,19 @@ struct HfCorrelatorDplusDplusReduced {
     }
   }
 
-  bool skimming(auto const& candidate,
-                std::vector<double> const& ptCutSkimming,
-                std::vector<double> const& massMinimum,
-                std::vector<double> const& massMaximum,
-                std::vector<double> const& cosThetaminimum,
-                std::vector<double> const& decayLengthminimum,
-                std::vector<double> const& nSigmaTpcmaximum,
-                std::vector<double> const& nSigmaTofmaximum)
+  bool skimming(auto const& candidate)
   {
-    if (candidate.pt() < ptCutSkimming[0] || candidate.pt() > ptCutSkimming[ptCutSkimming.size() - 1]) {
+    if (candidate.pt() < cutPtSkimming.value.at(0) || candidate.pt() > cutPtSkimming.value.at(cutPtSkimming.value.size() - 1)) {
       return false;
     }
-    for (size_t i = 0; i < ptCutSkimming.size() - 1; i++) {
-      if (candidate.pt() <= ptCutSkimming[i + 1]) {
-        if (hfHelper.invMassDplusToPiKPi(candidate) < massMinimum[i] ||
-            hfHelper.invMassDplusToPiKPi(candidate) > massMaximum[i] ||
-            candidate.cpa() < cosThetaminimum[i] ||
-            candidate.decayLength() < decayLengthminimum[i] ||
-            abs(candidate.nSigTofKa1()) > nSigmaTofmaximum[i] ||
-            abs(candidate.nSigTpcKa1()) > nSigmaTpcmaximum[i]) {
+    for (size_t i = 0; i < cutPtSkimming.value.size() - 1; i++) {
+      if (candidate.pt() <= cutPtSkimming.value.at(i + 1)) {
+        if (hfHelper.invMassDplusToPiKPi(candidate) < massMin.value.at(i) ||
+            hfHelper.invMassDplusToPiKPi(candidate) > massMax.value.at(i) ||
+            candidate.cpa() < cosThetaMin.value.at(i) ||
+            candidate.decayLength() < decayLengthMin.value.at(i) ||
+            std::abs(candidate.nSigTofKa1()) > nSigmaTofMax.value.at(i) ||
+            std::abs(candidate.nSigTpcKa1()) > nSigmaTpcMax.value.at(i)) {
           return false;
         }
         return true;
@@ -202,14 +195,14 @@ struct HfCorrelatorDplusDplusReduced {
       channelMc = candidate.flagMcDecayChanRec();
     }
 
-    std::vector<float> outML = {-999., -999.};
+    std::vector<float> mlProb = {-999., -999.};
     if constexpr (DoMl) {
       for (unsigned int iclass = 0; iclass < classMlIndexes->size(); iclass++) {
-        outML[iclass] = candidate.mlProbDplusToPiKPi()[classMlIndexes->at(iclass)];
+        mlProb[iclass] = candidate.mlProbDplusToPiKPi()[classMlIndexes->at(iclass)];
       }
       rowCandidateMl(
-        outML[0],
-        outML[1]);
+        mlProb[0],
+        mlProb[1]);
     }
 
     float cent{-1.};
@@ -363,13 +356,6 @@ struct HfCorrelatorDplusDplusReduced {
                    aod::Tracks const&,
                    aod::BCsWithTimestamps const&)
   {
-    std::vector<double> skimmingCutPt = cutPtSkimming;
-    std::vector<double> skimmingMassMin = massMin;
-    std::vector<double> skimmingMassMax = massMax;
-    std::vector<double> skimmingCosThetaMin = cosThetaMin;
-    std::vector<double> skimmingDecayLengthMin = decayLengthMin;
-    std::vector<double> skimmingNSigmaTpcMax = nSigmaTpcMax;
-    std::vector<double> skimmingNSigmaTofMax = nSigmaTofMax;
     static int lastRunNumber = -1;
     // reserve memory
     rowCandidateFullEvents.reserve(collisions.size());
@@ -406,21 +392,14 @@ struct HfCorrelatorDplusDplusReduced {
         auto candidateSign = -prongCandidate.sign();
 
         if (applySkimming &&
-            !skimming(candidate,
-                      skimmingCutPt,
-                      skimmingMassMin,
-                      skimmingMassMax,
-                      skimmingCosThetaMin,
-                      skimmingDecayLengthMin,
-                      skimmingNSigmaTpcMax,
-                      skimmingNSigmaTofMax)) {
+            !skimming(candidate)) {
           continue;
         }
 
         if (applyMl) {
           std::vector<float> inputFeatures = hfMlResponse.getInputFeatures(candidate);
           bool const isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures,
-                                                              abs(candidate.pt()),
+                                                              std::abs(candidate.pt()),
                                                               outputML);
           if (!isSelectedMl) {
             continue;
@@ -436,13 +415,6 @@ struct HfCorrelatorDplusDplusReduced {
                     SelectedCandidatesMc const& candidates,
                     aod::Tracks const&)
   {
-    std::vector<double> skimmingCutPt = cutPtSkimming;
-    std::vector<double> skimmingMassMin = massMin;
-    std::vector<double> skimmingMassMax = massMax;
-    std::vector<double> skimmingCosThetaMin = cosThetaMin;
-    std::vector<double> skimmingDecayLengthMin = decayLengthMin;
-    std::vector<double> skimmingNSigmaTpcMax = nSigmaTpcMax;
-    std::vector<double> skimmingNSigmaTofMax = nSigmaTofMax;
     // reserve memory
     rowCandidateFullEvents.reserve(collisions.size());
     if (fillCandidateTinyTable) {
@@ -465,20 +437,13 @@ struct HfCorrelatorDplusDplusReduced {
         auto candidateSign = -prongCandidate.sign();
 
         if (applySkimming &&
-            !skimming(candidate,
-                      skimmingCutPt,
-                      skimmingMassMin,
-                      skimmingMassMax,
-                      skimmingCosThetaMin,
-                      skimmingDecayLengthMin,
-                      skimmingNSigmaTpcMax,
-                      skimmingNSigmaTofMax)) {
+            !skimming(candidate)) {
           continue;
         }
         if (applyMl) {
           std::vector<float> inputFeatures = hfMlResponse.getInputFeatures(candidate);
           bool const isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures,
-                                                              abs(candidate.pt()),
+                                                              std::abs(candidate.pt()),
                                                               outputML);
           if (!isSelectedMl) {
             continue;
