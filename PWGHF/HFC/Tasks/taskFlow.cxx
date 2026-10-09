@@ -399,7 +399,7 @@ struct HfTaskFlow {
   using SmallGroupMcCollisions = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
   // using FilteredMcCollisionsWMult = soa::Filtered<soa::Join<aod::McCollisions, aod::MultMCExtras>>;
   using FilteredMcCollisionsWMult = soa::Join<aod::McCollisions, aod::MultMCExtras>;
-  using FilteredMcCollisionsWMultWCollsExtra = soa::Filtered<soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultMCExtras>>;
+  using FilteredMcCollisionsWMultWCollsExtra = soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultMCExtras>;
   // using FilteredMcParticles = soa::Filtered<aod::McParticles>;
   using FilteredMcParticles = aod::McParticles;
 
@@ -3088,7 +3088,7 @@ struct HfTaskFlow {
 
           float centralityWeight = 1.0f;
           if (configCollision.useCentrality) {
-            getCentralityWeight(centralityWeight, getCentralityEstimator(collision1, true));
+            getCentralityWeight(centralityWeight, getCentralityEstimator(collision1, false));
             if (getCentralityEstimator(collision1, false) < configCollision.minCentrality || getCentralityEstimator(collision1, false) >= configCollision.maxCentrality) {
               continue;
             }
@@ -3200,7 +3200,7 @@ struct HfTaskFlow {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     loadEfficiencyCorrection(bc.timestamp());
     float multiplicity = 0.f;
-    float centrality = 0.f;
+    float centrality = -1.f;
     float centralityWeight = 1.f;
 
     if (!isAcceptedEventActivity(collision, tracks, multiplicity, centrality, centralityWeight)) {
@@ -3239,7 +3239,7 @@ struct HfTaskFlow {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     loadEfficiencyCorrection(bc.timestamp());
     float multiplicity = 0.f;
-    float centrality = 0.f;
+    float centrality = -1.f;
     float centralityWeight = 1.f;
 
     if (!isAcceptedEventActivity(collision, tracks, multiplicity, centrality, centralityWeight)) {
@@ -3278,7 +3278,7 @@ struct HfTaskFlow {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     loadEfficiencyCorrection(bc.timestamp());
     float multiplicity = 0.f;
-    float centrality = 0.f;
+    float centrality = -1.f;
     float centralityWeight = 1.f;
 
     if (!isAcceptedEventActivity(collision, tracks, multiplicity, centrality, centralityWeight)) {
@@ -3310,7 +3310,7 @@ struct HfTaskFlow {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     loadEfficiencyCorrection(bc.timestamp());
     float multiplicity = 0.f;
-    float centrality = 0.f;
+    float centrality = -1.f;
     float centralityWeight = 1.f;
 
     if (!isAcceptedEventActivity(collision, tracks, multiplicity, centrality, centralityWeight)) {
@@ -3346,7 +3346,7 @@ struct HfTaskFlow {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     loadEfficiencyCorrection(bc.timestamp());
     float multiplicity = 0.f;
-    float centrality = 0.f;
+    float centrality = -1.f;
     float centralityWeight = 1.f;
 
     if (!isAcceptedEventActivity(collision, tracks, multiplicity, centrality, centralityWeight)) {
@@ -3382,7 +3382,7 @@ struct HfTaskFlow {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     loadEfficiencyCorrection(bc.timestamp());
     float multiplicity = 0.f;
-    float centrality = 0.f;
+    float centrality = -1.f;
     float centralityWeight = 1.f;
 
     if (!isAcceptedEventActivity(collision, tracks, multiplicity, centrality, centralityWeight)) {
@@ -3428,7 +3428,7 @@ struct HfTaskFlow {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     loadEfficiencyCorrection(bc.timestamp());
     float multiplicity = 0.f;
-    float centrality = 0.f;
+    float centrality = -1.f;
     float centralityWeight = 1.f;
 
     if (!isAcceptedEventActivity(collision, tracks, multiplicity, centrality, centralityWeight)) {
@@ -3469,7 +3469,7 @@ struct HfTaskFlow {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     loadEfficiencyCorrection(bc.timestamp());
     float multiplicity = 0.f;
-    float centrality = 0.f;
+    float centrality = -1.f;
     float centralityWeight = 1.f;
 
     if (!isAcceptedEventActivity(collision, tracks, multiplicity, centrality, centralityWeight)) {
@@ -3495,7 +3495,7 @@ struct HfTaskFlow {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     loadEfficiencyCorrection(bc.timestamp());
     float multiplicity = 0.f;
-    float centrality = 0.f;
+    float centrality = -1.f;
     float centralityWeight = 1.f;
 
     if (!isAcceptedEventActivity(collision, tracks, multiplicity, centrality, centralityWeight)) {
@@ -3531,7 +3531,7 @@ struct HfTaskFlow {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     loadEfficiencyCorrection(bc.timestamp());
     float multiplicity = 0.f;
-    float centrality = 0.f;
+    float centrality = -1.f;
     float centralityWeight = 1.f;
 
     if (!isAcceptedEventActivity(collision, tracks, multiplicity, centrality, centralityWeight)) {
@@ -3557,7 +3557,7 @@ struct HfTaskFlow {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     loadEfficiencyCorrection(bc.timestamp());
     float multiplicity = 0.f;
-    float centrality = 0.f;
+    float centrality = -1.f;
     float centralityWeight = 1.f;
 
     if (!isAcceptedEventActivity(collision, tracks, multiplicity, centrality, centralityWeight)) {
@@ -3769,7 +3769,7 @@ struct HfTaskFlow {
         registry.fill(HIST("Data/hNTracks"), tracks.size());
       }
       float multiplicity = 0.f;
-      float centrality = 0.f;
+      float centrality = -1.f;
       float centralityWeight = 1.f;
 
       if (!isAcceptedEventActivity(collision, tracks, multiplicity, centrality, centralityWeight)) {
@@ -3808,7 +3808,7 @@ struct HfTaskFlow {
       loadGain(bc);
       const auto& ft0 = collision.foundFT0();
       float multiplicity = 0.f;
-      float centrality = 0.f;
+      float centrality = -1.f;
       float centralityWeight = 1.f;
 
       if (!isAcceptedEventActivity(collision, tracks, multiplicity, centrality, centralityWeight)) {
@@ -3842,7 +3842,7 @@ struct HfTaskFlow {
       loadGain(bc);
       const auto& ft0 = collision.foundFT0();
       float multiplicity = 0.f;
-      float centrality = 0.f;
+      float centrality = -1.f;
       float centralityWeight = 1.f;
 
       if (!isAcceptedEventActivity(collision, tracks, multiplicity, centrality, centralityWeight)) {
@@ -3876,7 +3876,7 @@ struct HfTaskFlow {
       loadGain(bc);
       const auto& ft0 = collision.foundFT0();
       float multiplicity = 0.f;
-      float centrality = 0.f;
+      float centrality = -1.f;
       float centralityWeight = 1.f;
 
       if (!isAcceptedEventActivity(collision, tracks, multiplicity, centrality, centralityWeight)) {
@@ -3913,7 +3913,7 @@ struct HfTaskFlow {
       loadGain(bc);
       const auto& ft0 = collision.foundFT0();
       float multiplicity = 0.f;
-      float centrality = 0.f;
+      float centrality = -1.f;
       float centralityWeight = 1.f;
 
       if (!isAcceptedEventActivity(collision, tracks, multiplicity, centrality, centralityWeight)) {
@@ -3950,7 +3950,7 @@ struct HfTaskFlow {
       loadGain(bc);
       const auto& ft0 = collision.foundFT0();
       float multiplicity = 0.f;
-      float centrality = 0.f;
+      float centrality = -1.f;
       float centralityWeight = 1.f;
 
       if (!isAcceptedEventActivity(collision, tracks, multiplicity, centrality, centralityWeight)) {
@@ -3986,7 +3986,7 @@ struct HfTaskFlow {
       loadGain(bc);
       const auto& ft0 = collision.foundFT0();
       float multiplicity = 0.f;
-      float centrality = 0.f;
+      float centrality = -1.f;
       float centralityWeight = 1.f;
 
       if (!isAcceptedEventActivity(collision, tracks, multiplicity, centrality, centralityWeight)) {
@@ -4027,7 +4027,7 @@ struct HfTaskFlow {
         registry.fill(HIST("Data/hNTracks"), tracks.size());
       }
       float multiplicity = 0.f;
-      float centrality = 0.f;
+      float centrality = -1.f;
       float centralityWeight = 1.f;
 
       if (!isAcceptedEventActivity(collision, tracks, multiplicity, centrality, centralityWeight)) {
@@ -4061,7 +4061,7 @@ struct HfTaskFlow {
       loadGain(bc);
       const auto& ft0 = collision.foundFT0();
       float multiplicity = 0.f;
-      float centrality = 0.f;
+      float centrality = -1.f;
       float centralityWeight = 1.f;
 
       if (!isAcceptedEventActivity(collision, tracks, multiplicity, centrality, centralityWeight)) {
@@ -4095,7 +4095,7 @@ struct HfTaskFlow {
       loadGain(bc);
       const auto& ft0 = collision.foundFT0();
       float multiplicity = 0.f;
-      float centrality = 0.f;
+      float centrality = -1.f;
       float centralityWeight = 1.f;
 
       if (!isAcceptedEventActivity(collision, tracks, multiplicity, centrality, centralityWeight)) {
@@ -4128,7 +4128,7 @@ struct HfTaskFlow {
       loadGain(bc);
       const auto& ft0 = collision.foundFT0();
       float multiplicity = 0.f;
-      float centrality = 0.f;
+      float centrality = -1.f;
       float centralityWeight = 1.f;
 
       if (!isAcceptedEventActivity(collision, tracks, multiplicity, centrality, centralityWeight)) {
@@ -4145,12 +4145,16 @@ struct HfTaskFlow {
   // MONTE-CARLO
   // ===================================================================================================================================================================================================================================================================
 
-  void processSameMcGen(FilteredMcCollisionsWMult::iterator const& mcCollision,
+  void processSameMcGen(FilteredMcCollisionsWMultWCollsExtra::iterator const& mcCollision,
                         FilteredMcParticles const& mcParticles,
                         SmallGroupMcCollisions const& collisions)
   {
 
     if (mcParticles.size() == 0) { // guard against empty filtered batch
+      return;
+    }
+
+    if (collisions.size() == 0) {
       return;
     }
 
@@ -4165,12 +4169,27 @@ struct HfTaskFlow {
       multiplicity = mcCollision.multMCPVz();
     }
 
-    if ((multiplicity < configCollision.minMultiplicity) || (multiplicity >= configCollision.maxMultiplicity)) {
-      return;
+    float centrality = -1.f;
+    for (const auto& collision : collisions) {
+      // if (!collision.sel8()) {
+      //   continue;
+      // }
+      // if (collision.globalIndex() != mcCollision.bestCollisionIndex()) {
+      //   continue;
+      // }
+      centrality = getCentralityEstimator(collision, false);
+      // break;
     }
 
-    if (collisions.size() == 0) {
-      return;
+    if (configCollision.useCentrality) {
+      if (centrality < configCollision.minCentrality || centrality >= configCollision.maxCentrality) {
+        return;
+      }
+    }
+    if (!configCollision.useCentrality) {
+      if ((multiplicity < configCollision.minMultiplicity) || (multiplicity >= configCollision.maxMultiplicity)) {
+        return;
+      }
     }
 
     sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepAll);
@@ -4539,12 +4558,12 @@ struct HfTaskFlow {
   // MONTE-CARLO
   // ===================================================================================================================================================================================================================================================================
 
-  void processMixedMcGen(FilteredMcCollisionsWMult const& mcCollisions,
+  void processMixedMcGen(FilteredMcCollisionsWMultWCollsExtra const& mcCollisions,
                          FilteredMcParticles const& mcParticles,
                          SmallGroupMcCollisions const& collisions)
   {
 
-    auto getTracksSize = [&mcParticles, this](soa::Join<aod::McCollisions, aod::MultMCExtras>::iterator const& mcCollision) {
+    auto getTracksSize = [&mcParticles, this](soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultMCExtras>::iterator const& mcCollision) {
       auto associatedTracks = mcParticles.sliceByCached(o2::aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), this->cache);
       float multiplicity = 0.f;
       if (configCollision.useMultiplicityFromTracks) {
@@ -4564,17 +4583,26 @@ struct HfTaskFlow {
 
     auto tracksTuple = std::make_tuple(mcParticles, mcParticles);
 
-    Pair<FilteredMcCollisionsWMult, FilteredMcParticles, FilteredMcParticles, MixedBinning> pairs{binningOnVtxAndMult, configTask.nMixedEvents, -1, mcCollisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
+    Pair<FilteredMcCollisionsWMultWCollsExtra, FilteredMcParticles, FilteredMcParticles, MixedBinning> pairs{binningOnVtxAndMult, configTask.nMixedEvents, -1, mcCollisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
       auto& [collision1, tracks1, collision2, tracks2] = *it;
 
       if (tracks1.size() == 0 || tracks2.size() == 0) { // guard against empty filtered batch
-        return;
+        continue;
       }
 
-      auto multiplicityCollision1 = 0;
-      auto multiplicityCollision2 = 0;
+      auto groupedCollisions1 = collisions.sliceBy(collisionPerMcCollision, collision1.globalIndex());
+      auto groupedCollisions2 = collisions.sliceBy(collisionPerMcCollision, collision2.globalIndex());
+      if (groupedCollisions1.size() == 0) {
+        continue;
+      }
+      if (groupedCollisions2.size() == 0) {
+        continue;
+      }
+
+      float multiplicityCollision1 = 0.f;
+      float multiplicityCollision2 = 0.f;
 
       if (configCollision.useMultiplicityFromTracks) {
         for (const auto& track : tracks1) {
@@ -4592,20 +4620,42 @@ struct HfTaskFlow {
         multiplicityCollision2 = collision2.multMCPVz();
       }
 
-      if ((multiplicityCollision1 < configCollision.minMultiplicity || multiplicityCollision1 >= configCollision.maxMultiplicity)) {
-        continue;
+      float centralityCollision1 = 999.f;
+      float centralityCollision2 = 999.f;
+      for (const auto& reconstructedCollision1 : groupedCollisions1) {
+        // if (!collision1.sel8()) {
+        //   continue;
+        // }
+        // if (reconstructedCollision1.globalIndex() != collision1.bestCollisionIndex()) {
+        //   continue;
+        // }
+        centralityCollision1 = getCentralityEstimator(reconstructedCollision1, false);
+        // break;
       }
-      if ((multiplicityCollision2 < configCollision.minMultiplicity || multiplicityCollision2 >= configCollision.maxMultiplicity)) {
-        continue;
+      for (const auto& reconstructedCollision2 : groupedCollisions2) {
+        // if (reconstructedCollision2.globalIndex() != collision2.bestCollisionIndex()) {
+        //   continue;
+        // }
+        centralityCollision2 = getCentralityEstimator(reconstructedCollision2, false);
+        // break;
       }
 
-      auto groupedCollisions1 = collisions.sliceBy(collisionPerMcCollision, collision1.globalIndex());
-      auto groupedCollisions2 = collisions.sliceBy(collisionPerMcCollision, collision2.globalIndex());
-      if (groupedCollisions1.size() == 0) {
-        continue;
+      if (configCollision.useCentrality) {
+        if (centralityCollision1 < configCollision.minCentrality || centralityCollision1 >= configCollision.maxCentrality) {
+          continue;
+        }
+        if (centralityCollision2 < configCollision.minCentrality || centralityCollision2 >= configCollision.maxCentrality) {
+          continue;
+        }
       }
-      if (groupedCollisions2.size() == 0) {
-        continue;
+
+      if (!configCollision.useCentrality) {
+        if ((multiplicityCollision1 < configCollision.minMultiplicity || multiplicityCollision1 >= configCollision.maxMultiplicity)) {
+          continue;
+        }
+        if ((multiplicityCollision2 < configCollision.minMultiplicity || multiplicityCollision2 >= configCollision.maxMultiplicity)) {
+          continue;
+        }
       }
 
       mixedEvent->fillEvent(multiplicityCollision1, CorrelationContainer::kCFStepAll);
