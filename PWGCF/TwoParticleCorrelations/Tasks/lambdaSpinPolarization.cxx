@@ -30,11 +30,9 @@
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -45,7 +43,6 @@
 
 #include <TAxis.h>
 #include <TH1.h>
-#include <TH2.h>
 #include <THnBase.h>
 #include <TList.h>
 #include <TNamed.h>
@@ -1389,7 +1386,7 @@ struct LambdaSpinPolarization {
 
   uint64_t pairOrderSeed = 0;
   std::array<std::unique_ptr<THnBase>, 4> kinWeightMaps{};
-  std::vector<TAxis> legAxesRef{};
+  std::vector<TAxis> legAxesRef;
   bool kinWeightsLoaded = false;
 
   struct SharedDauCand {
@@ -1450,8 +1447,8 @@ struct LambdaSpinPolarization {
     {
       for (auto const& cand : event) {
         const int64_t seq = seqBase + static_cast<int64_t>(slots.size());
-        slots.push_back(Slot{cand, NoSeq});
-        auto [it, isNew] = cells[cand.species()].try_emplace(cellKey(cand), Cell{seq, seq});
+        slots.push_back(Slot{.cand = cand, .next = NoSeq});
+        auto [it, isNew] = cells[cand.species()].try_emplace(cellKey(cand), Cell{.head = seq, .tail = seq});
         if (!isNew) {
           slot(it->second.tail).next = seq;
           it->second.tail = seq;
@@ -1554,16 +1551,16 @@ struct LambdaSpinPolarization {
 
     Grid grid{};
     int maxEvents = 0;
-    std::deque<Slot> slots{};
-    std::deque<int> nPerEvent{};
+    std::deque<Slot> slots;
+    std::deque<int> nPerEvent;
     int64_t seqBase = 0;
     std::array<std::unordered_map<int64_t, Cell>, 2> cells{};
   };
 
-  std::vector<RollingPool> mePools{};
-  std::vector<RollingPool> mePoolsGen{};
-  TAxis mePoolAxisCent{};
-  TAxis mePoolAxisVz{};
+  std::vector<RollingPool> mePools;
+  std::vector<RollingPool> mePoolsGen;
+  TAxis mePoolAxisCent;
+  TAxis mePoolAxisVz;
 
   void init(InitContext const&)
   {
@@ -1589,7 +1586,8 @@ struct LambdaSpinPolarization {
       legAxesRef.emplace_back(static_cast<int>(edges.size()) - 1, edges.data());
     }
 
-    if (!(cMassHistMin.value < cMassAccMin.value && cMassAccMax.value < cMassHistMax.value)) {
+    const bool massAxesContainWindow = cMassHistMin.value < cMassAccMin.value && cMassAccMax.value < cMassHistMax.value;
+    if (!massAxesContainWindow) {
       LOGF(fatal, "The mass axes [%.4f, %.4f] must be wider than the accepted mass window [%.4f, %.4f]", cMassHistMin.value, cMassHistMax.value, cMassAccMin.value, cMassAccMax.value);
     }
     for (auto const& edge : {cMassAccMin.value, cMassAccMax.value}) {
@@ -1610,18 +1608,18 @@ struct LambdaSpinPolarization {
       mePoolAxisCent.Set(static_cast<int>(centEdges.size()) - 1, centEdges.data());
       mePoolAxisVz.Set(static_cast<int>(vzEdges.size()) - 1, vzEdges.data());
 
-      static constexpr std::array<double, 3> PoolSizeSteps = {1., 2., 5.};
-      static constexpr double PoolSizeDecade = 10.;
-      const double depth = std::max(1, cMEPoolDepth.value);
+      static constexpr std::array<int64_t, 3> PoolSizeSteps = {1, 2, 5};
+      static constexpr int64_t PoolSizeDecade = 10;
+      const int64_t depth = std::max(1, cMEPoolDepth.value);
       std::vector<double> poolSizeEdges = {0.};
-      for (double decade = 1.; decade < depth; decade *= PoolSizeDecade) {
+      for (int64_t decade = 1; decade < depth; decade *= PoolSizeDecade) {
         for (auto const& step : PoolSizeSteps) {
           if (step * decade < depth) {
-            poolSizeEdges.push_back(step * decade);
+            poolSizeEdges.push_back(static_cast<double>(step * decade));
           }
         }
       }
-      poolSizeEdges.push_back(depth);
+      poolSizeEdges.push_back(static_cast<double>(depth));
       const AxisSpec axisPoolSize(poolSizeEdges, "events in the pool");
 
       std::vector<std::string> mixQaDirs;
@@ -1658,7 +1656,7 @@ struct LambdaSpinPolarization {
       grid.nRap = std::max(1, static_cast<int>(std::ceil((cMaxRap.value - cMinRap.value) / grid.cellRap)));
       grid.nPhi = std::max(1, static_cast<int>(std::floor(TwoPI / cMaxDeltaPhi.value)));
       grid.cellPhi = TwoPI / static_cast<float>(grid.nPhi);
-      const auto nPools = static_cast<std::size_t>(mePoolAxisCent.GetNbins() * mePoolAxisVz.GetNbins());
+      const auto nPools = static_cast<std::size_t>(mePoolAxisCent.GetNbins()) * static_cast<std::size_t>(mePoolAxisVz.GetNbins());
       if (doprocessDataRecoMixed) {
         mePools.assign(nPools, RollingPool(grid, cMEPoolDepth.value));
       }
@@ -1968,7 +1966,7 @@ struct LambdaSpinPolarization {
       return;
     }
     auto const* guard = dynamic_cast<TNamed const*>(list->FindObject("kinWeightGuardStatus"));
-    if (guard && !TString(guard->GetTitle()).BeginsWith("OK")) {
+    if (guard != nullptr && !TString(guard->GetTitle()).BeginsWith("OK")) {
       LOGF(fatal, "Kinematic weights at %s are flagged by their builder: %s", cKinWeightCcdbPath.value.c_str(), guard->GetTitle());
       return;
     }
@@ -1979,7 +1977,7 @@ struct LambdaSpinPolarization {
         LOGF(fatal, "Kinematic weights: %s is missing, or its axes differ from KinW/*/hLeg2_%s (pT, y, phi) of this configuration", name.c_str(), std::string(PairTag[i]).c_str());
         return;
       }
-      kinWeightMaps[i].reset(static_cast<THnBase*>(map->Clone()));
+      kinWeightMaps[i].reset(dynamic_cast<THnBase*>(map->Clone()));
     }
     auto const* form = dynamic_cast<TNamed const*>(list->FindObject("kinWeightForm"));
     kinWeightsLoaded = true;
