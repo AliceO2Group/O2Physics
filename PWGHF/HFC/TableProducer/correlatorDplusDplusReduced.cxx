@@ -169,8 +169,8 @@ struct HfCorrelatorDplusDplusReduced {
             hfHelper.invMassDplusToPiKPi(candidate) > massMaximum[i] ||
             candidate.cpa() < cosThetaminimum[i] ||
             candidate.decayLength() < decayLengthminimum[i] ||
-            abs(candidate.nSigTofKa1()) > nSigmaTofmaximum[i] ||
-            abs(candidate.nSigTpcKa1()) > nSigmaTpcmaximum[i]) {
+            std::abs(candidate.nSigTofKa1()) > nSigmaTofmaximum[i] ||
+            std::abs(candidate.nSigTpcKa1()) > nSigmaTpcmaximum[i]) {
           return false;
         }
         return true;
