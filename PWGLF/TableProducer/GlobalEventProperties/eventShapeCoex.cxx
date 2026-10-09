@@ -109,19 +109,19 @@ struct Config {
 };
 constexpr int NConfigs = 13;
 constexpr int INominal = 0;
-constexpr std::array<Config, NConfigs> Configs = {{{"NOM", 1, 3, kCondOwn, 1, 3, kV1},
-                                                   {"GAP02", 1, 3, kCondAll, 4, 3, kV1},
-                                                   {"GAP03", 2, 3, kCondAll, 4, 3, kV1},
-                                                   {"GAP04", 3, 3, kCondAll, 4, 3, kV1},
-                                                   {"GAP05", 4, 3, kCondAll, 4, 3, kV1},
-                                                   {"PT10", 1, 1, kCondUnwindowed, 1, 1, kV1},
-                                                   {"PT15", 1, 2, kCondUnwindowed, 1, 1, kV1},
-                                                   {"PT20", 1, 3, kCondUnwindowed, 1, 1, kV1},
-                                                   {"PT30", 1, 4, kCondUnwindowed, 1, 1, kV1},
-                                                   {"PT50", 1, 5, kCondUnwindowed, 1, 1, kV1},
-                                                   {"EVV0", 1, 3, kCondOwn, 1, 3, kV0},
-                                                   {"EVV3", 1, 3, kCondOwn, 1, 3, kV3},
-                                                   {"EVV6", 1, 3, kCondOwn, 1, 3, kV6}}};
+constexpr std::array<Config, NConfigs> Configs = {{{.name = "NOM", .etaFirst = 1, .ptEnd = 3, .cond = kCondOwn, .validEtaFirst = 1, .validPtEnd = 3, .evVariant = kV1},
+                                                   {.name = "GAP02", .etaFirst = 1, .ptEnd = 3, .cond = kCondAll, .validEtaFirst = 4, .validPtEnd = 3, .evVariant = kV1},
+                                                   {.name = "GAP03", .etaFirst = 2, .ptEnd = 3, .cond = kCondAll, .validEtaFirst = 4, .validPtEnd = 3, .evVariant = kV1},
+                                                   {.name = "GAP04", .etaFirst = 3, .ptEnd = 3, .cond = kCondAll, .validEtaFirst = 4, .validPtEnd = 3, .evVariant = kV1},
+                                                   {.name = "GAP05", .etaFirst = 4, .ptEnd = 3, .cond = kCondAll, .validEtaFirst = 4, .validPtEnd = 3, .evVariant = kV1},
+                                                   {.name = "PT10", .etaFirst = 1, .ptEnd = 1, .cond = kCondUnwindowed, .validEtaFirst = 1, .validPtEnd = 1, .evVariant = kV1},
+                                                   {.name = "PT15", .etaFirst = 1, .ptEnd = 2, .cond = kCondUnwindowed, .validEtaFirst = 1, .validPtEnd = 1, .evVariant = kV1},
+                                                   {.name = "PT20", .etaFirst = 1, .ptEnd = 3, .cond = kCondUnwindowed, .validEtaFirst = 1, .validPtEnd = 1, .evVariant = kV1},
+                                                   {.name = "PT30", .etaFirst = 1, .ptEnd = 4, .cond = kCondUnwindowed, .validEtaFirst = 1, .validPtEnd = 1, .evVariant = kV1},
+                                                   {.name = "PT50", .etaFirst = 1, .ptEnd = 5, .cond = kCondUnwindowed, .validEtaFirst = 1, .validPtEnd = 1, .evVariant = kV1},
+                                                   {.name = "EVV0", .etaFirst = 1, .ptEnd = 3, .cond = kCondOwn, .validEtaFirst = 1, .validPtEnd = 3, .evVariant = kV0},
+                                                   {.name = "EVV3", .etaFirst = 1, .ptEnd = 3, .cond = kCondOwn, .validEtaFirst = 1, .validPtEnd = 3, .evVariant = kV3},
+                                                   {.name = "EVV6", .etaFirst = 1, .ptEnd = 3, .cond = kCondOwn, .validEtaFirst = 1, .validPtEnd = 3, .evVariant = kV6}}};
 
 constexpr int NCountBins = 64;    // larger counts in the overflow bin
 constexpr int NSubCountBins = 32; // per sub-event
@@ -221,8 +221,8 @@ void monomials(double xF, double xB, double vF, double vB, int nMono, std::array
 /// Moment sums of one reconstructed half or of the generated events
 struct Sums {
   std::array<std::shared_ptr<TH3>, NConfigs> config{}; // (N_fwd, stratum count, monomial)
-  std::shared_ptr<THn> strata3{};                      // (N_fwd, n_F, n_B, first-order monomial)
-  std::shared_ptr<TH3> occupancy{};                    // (configuration, N_fwd, stratum count)
+  std::shared_ptr<THn> strata3;                        // (N_fwd, n_F, n_B, first-order monomial)
+  std::shared_ptr<TH3> occupancy;                      // (configuration, N_fwd, stratum count)
 };
 
 /// Nominal-configuration observables of an event
@@ -274,9 +274,18 @@ struct EventShapeCoex {
     const AxisSpec monoAxis{NMono, -0.5, NMono - 0.5, "monomial"};
     const AxisSpec mono1Axis{NMono1, -0.5, NMono1 - 0.5, "monomial"};
     const AxisSpec configAxis{NConfigs, -0.5, NConfigs - 0.5, "configuration"};
-    const std::string label = "[half " + half + "] moment sums ";
+    std::string label = "[half ";
+    label += half;
+    label += "] moment sums ";
     for (int c = 0; c < nConfigs; ++c) {
-      sums.config[c] = registry.add<TH3>(dir + "/" + Configs[c].name + "/" + half, (label + Configs[c].name).c_str(), HistType::kTH3D, {nFwdAxis, countAxis, monoAxis});
+      std::string name = dir;
+      name += "/";
+      name += Configs[c].name;
+      name += "/";
+      name += half;
+      std::string title = label;
+      title += Configs[c].name;
+      sums.config[c] = registry.add<TH3>(name, title.c_str(), HistType::kTH3D, {nFwdAxis, countAxis, monoAxis});
       sums.config[c]->SetBit(TH1::kIsNotW); // no Sumw2
     }
     sums.strata3 = registry.add<THn>(dir + "/NOM3/" + half, (label + "NOM in (n_F, n_B) strata").c_str(), HistType::kTHnD, {nFwdAxis, subCountAxis, subCountAxis, mono1Axis});
@@ -362,7 +371,7 @@ struct EventShapeCoex {
       }
       sums.occupancy->Fill(c, nFwd, nCond);
       if (c == INominal) {
-        nominal = {true, nCond, xF, xB, vF, vB};
+        nominal = {.valid = true, .nMid = nCond, .xF = xF, .xB = xB, .vF = vF, .vB = vB};
       }
     }
 
