@@ -163,14 +163,14 @@ struct HfCorrelatorDplusDplusReduced {
     if (candidate.pt() < ptCutSkimming[0] || candidate.pt() > ptCutSkimming[ptCutSkimming.size() - 1]) {
       return false;
     }
-    for (size_t i = 1; i < ptCutSkimming.size(); i++) {
-      if (candidate.pt() <= ptCutSkimming[i]) {
-        if (hfHelper.invMassDplusToPiKPi(candidate) < massMinimum[i - 1] ||
-            hfHelper.invMassDplusToPiKPi(candidate) > massMaximum[i - 1] ||
-            candidate.cpa() < cosThetaminimum[i - 1] ||
-            candidate.decayLength() < decayLengthminimum[i - 1] ||
-            abs(candidate.nSigTofKa1()) > nSigmaTofmaximum[i - 1] ||
-            abs(candidate.nSigTpcKa1()) > nSigmaTpcmaximum[i - 1]) {
+    for (size_t i = 0; i < ptCutSkimming.size() - 1; i++) {
+      if (candidate.pt() <= ptCutSkimming[i + 1]) {
+        if (hfHelper.invMassDplusToPiKPi(candidate) < massMinimum[i] ||
+            hfHelper.invMassDplusToPiKPi(candidate) > massMaximum[i] ||
+            candidate.cpa() < cosThetaminimum[i] ||
+            candidate.decayLength() < decayLengthminimum[i] ||
+            abs(candidate.nSigTofKa1()) > nSigmaTofmaximum[i] ||
+            abs(candidate.nSigTpcKa1()) > nSigmaTpcmaximum[i]) {
           return false;
         }
         return true;

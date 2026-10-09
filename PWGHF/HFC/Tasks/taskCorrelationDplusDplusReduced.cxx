@@ -37,7 +37,7 @@ using namespace o2::framework::expressions;
 
 struct HfTaskCorrelationDplusDplusReduced {
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 1, "Selection Flag for Dplus"};
-  Configurable<double> selectionCutRapidity{"selectionCutRapidity", 1, "Selection the cut of rapidity"};
+  Configurable<double> rapidityMax{"rapidityMax", 1, "Selection the cut of rapidity"};
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
   Configurable<bool> applySkimming{"applySkimming", false, "Flag to apply Skimming selections"};
 
@@ -237,7 +237,7 @@ struct HfTaskCorrelationDplusDplusReduced {
 
     for (const auto& part1 : localMcParticles) {
       for (auto part2 = part1 + 1; part2 != localMcParticles.end(); ++part2) {
-        if (part1.eta() < selectionCutRapidity && part2.eta() < selectionCutRapidity) {
+        if (std::abs(part1.eta()) < rapidityMax && std::abs(part2.eta()) < rapidityMax) {
           registry.fill(HIST("hDltPhiMcGen"), part2.phi() - part1.phi());
         }
       }
