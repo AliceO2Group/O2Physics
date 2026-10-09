@@ -41,7 +41,11 @@
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/PID.h>
 
+#include <TRandom3.h>
 #include <TString.h>
+
+#include <boost/preprocessor/cat.hpp>
+#include <boost/preprocessor/seq/for_each.hpp>
 
 #include <array>
 #include <cmath>
@@ -53,16 +57,16 @@ using namespace o2::framework;
 using namespace o2::track;
 using namespace o2::dpg_tpcskimstablecreator;
 
-#define DO_FOR_ALL_PARTICLES(MACRO) \
-  MACRO(El, Electron)               \
-  MACRO(Mu, Muon)                   \
-  MACRO(Pi, Pion)                   \
-  MACRO(Ka, Kaon)                   \
-  MACRO(Pr, Proton)                 \
-  MACRO(De, Deuteron)               \
-  MACRO(Tr, Triton)                 \
-  MACRO(He, Helium3)                \
-  MACRO(Al, Alpha)
+#define DO_FOR_ALL_PARTICLES(MACRO, ARG) \
+  MACRO(El, Electron, ARG)               \
+  MACRO(Mu, Muon, ARG)                   \
+  MACRO(Pi, Pion, ARG)                   \
+  MACRO(Ka, Kaon, ARG)                   \
+  MACRO(Pr, Proton, ARG)                 \
+  MACRO(De, Deuteron, ARG)               \
+  MACRO(Tr, Triton, ARG)                 \
+  MACRO(He, Helium3, ARG)                \
+  MACRO(Al, Alpha, ARG)
 
 struct TreeCreatorPidTpcDiagnostics {
   Produces<o2::aod::PidTpcDiagnostics> rowPidTpcDiagnostics;
@@ -86,28 +90,38 @@ struct TreeCreatorPidTpcDiagnostics {
   Configurable<bool> treatLimitedAcceptanceAsBad{"treatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
   Configurable<bool> requireGoodRct{"requireGoodRct", false, "require good detector flag in run condtion table"};
 
-#define DECLARE_PARTICLE_WISE_CONFIGURABLES(ParticleNameShort, ParticleNameLong)                                                                                                                                                                          \
-  Configurable<float> cutTpcInnerParameterMin##ParticleNameLong{"cutTpcInnerParameterMin" #ParticleNameLong, 0.f, "Lower-value cut on tpcInnerParam for " #ParticleNameLong};   /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
-  Configurable<float> cutTpcInnerParameterMax##ParticleNameLong{"cutTpcInnerParameterMax" #ParticleNameLong, 999.f, "Upper-value cut on tpcInnerParam for " #ParticleNameLong}; /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
-  Configurable<float> cutNSigmaTpcAbs##ParticleNameLong{"cutNSigmaTpcAbs" #ParticleNameLong, 999.f, "Cut on absolute value of nSigmaTpc for " #ParticleNameLong};               // o2-linter: disable=name/configurable (Configurable defined in macro)
+  struct ParticleWiseCfgs : ConfigurableGroup {
 
-  DO_FOR_ALL_PARTICLES(DECLARE_PARTICLE_WISE_CONFIGURABLES)
+#define DECLARE_PARTICLE_WISE_CONFIGURABLES(Unused1, ParticleNameLong, Unused2)                                                                                                                                                                            \
+  Configurable<float> cutTpcInnerParameterMin##ParticleNameLong{"cutTpcInnerParameterMin" #ParticleNameLong, 0.f, "Lower-value cut on tpcInnerParam for " #ParticleNameLong};    /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
+  Configurable<float> cutTpcInnerParameterMax##ParticleNameLong{"cutTpcInnerParameterMax" #ParticleNameLong, 999.f, "Upper-value cut on tpcInnerParam for " #ParticleNameLong};  /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
+  Configurable<float> cutExpSigmaMax##ParticleNameLong{"cutExpSigmaMax" #ParticleNameLong, 1e9f, "Upper-value cut on expected sigma for " #ParticleNameLong};                    /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
+  Configurable<float> cutDeDxExpectedMin##ParticleNameLong{"cutDeDxExpectedMin" #ParticleNameLong, -1e9f, "Lower-value cut on expected dE/dx for " #ParticleNameLong};           /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
+  Configurable<float> cutDeDxExpectedMax##ParticleNameLong{"cutDeDxExpectedMax" #ParticleNameLong, 1e9f, "Upper-value cut on expected dE/dx for " #ParticleNameLong};            /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
+  Configurable<float> cutDeDxDiffMin##ParticleNameLong{"cutDeDxDiffMin" #ParticleNameLong, -1e9f, "Lower-value cut on real - expected dE/dx difference for " #ParticleNameLong}; /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
+  Configurable<float> cutDeDxDiffMax##ParticleNameLong{"cutDeDxDiffMax" #ParticleNameLong, 1e9f, "Upper-value cut on real - expected dE/dx difference for " #ParticleNameLong};  /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
+  Configurable<float> cutNSigmaTpcAbs##ParticleNameLong{"cutNSigmaTpcAbs" #ParticleNameLong, 999.f, "Cut on absolute value of nSigmaTpc for " #ParticleNameLong};                /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
+  Configurable<float> downsampleFactor##ParticleNameLong{"downsampleFactor" #ParticleNameLong, 1.f, "Downsampling factor for " #ParticleNameLong};                               // o2-linter: disable=name/configurable (Configurable defined in macro)
+
+    DO_FOR_ALL_PARTICLES(DECLARE_PARTICLE_WISE_CONFIGURABLES, _)
 #undef DECLARE_PARTICLE_WISE_CONFIGURABLES
+  } particleWiseCfgs;
 
-#define PACK_CONFIGURABLES_TO_ARRAY(ParticleNameShort, ParticleNameLong) &cutTpcInnerParameterMin##ParticleNameLong,
-  std::array<Configurable<float>*, PID::Alpha + 1> cutTpcInnerParameterMin{
-    DO_FOR_ALL_PARTICLES(PACK_CONFIGURABLES_TO_ARRAY)};
-#undef PACK_CONFIGURABLES_TO_ARRAY
+#define PARTICLE_WISE_CFG_NAMES \
+  (cutTpcInnerParameterMin)(cutTpcInnerParameterMax)(cutExpSigmaMax)(cutDeDxExpectedMin)(cutDeDxExpectedMax)(cutDeDxDiffMin)(cutDeDxDiffMax)(cutNSigmaTpcAbs)(downsampleFactor)
 
-#define PACK_CONFIGURABLES_TO_ARRAY(ParticleNameShort, ParticleNameLong) &cutTpcInnerParameterMax##ParticleNameLong,
-  std::array<Configurable<float>*, PID::Alpha + 1> cutTpcInnerParameterMax{
-    DO_FOR_ALL_PARTICLES(PACK_CONFIGURABLES_TO_ARRAY)};
-#undef PACK_CONFIGURABLES_TO_ARRAY
+#define MAKE_PARTICLE_CUT_POINTER(Unused, ParticleNameLong, CfgName) \
+  &particleWiseCfgs.BOOST_PP_CAT(CfgName, ParticleNameLong),
 
-#define PACK_CONFIGURABLES_TO_ARRAY(ParticleNameShort, ParticleNameLong) &cutNSigmaTpcAbs##ParticleNameLong,
-  std::array<Configurable<float>*, PID::Alpha + 1> cutNSigmaTpcAbs{
-    DO_FOR_ALL_PARTICLES(PACK_CONFIGURABLES_TO_ARRAY)};
+#define PACK_CONFIGURABLES_TO_ARRAY(Unused1, Unused2, CfgName) \
+  std::array<Configurable<float>*, PID::Alpha + 1> CfgName{    \
+    DO_FOR_ALL_PARTICLES(MAKE_PARTICLE_CUT_POINTER, CfgName)};
+
+  BOOST_PP_SEQ_FOR_EACH(PACK_CONFIGURABLES_TO_ARRAY, _, PARTICLE_WISE_CFG_NAMES)
+
 #undef PACK_CONFIGURABLES_TO_ARRAY
+#undef MAKE_PARTICLE_CUT_POINTER
+#undef PARTICLE_WISE_CFG_NAMES
 
   HistogramRegistry registry{"registry", {}};
 
@@ -116,6 +130,8 @@ struct TreeCreatorPidTpcDiagnostics {
   ctpRateFetcher mRateFetcher;
 
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
+
+  TRandom3 mRnd;
 
   using CollisionsExtra = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>;
@@ -132,7 +148,7 @@ struct TreeCreatorPidTpcDiagnostics {
     int enabledProcesses{0};
 
     switch (ParticleId) {
-#define INIT_PARTICLE(ParticleNameShort, ParticleNameLong)                                                             \
+#define INIT_PARTICLE(Unused1, ParticleNameLong, Unused2)                                                              \
   case PID::ParticleNameLong:                                                                                          \
     if (!doprocess##ParticleNameLong && !doprocessFull##ParticleNameLong && !doprocessFullWithTOF##ParticleNameLong) { \
       return false;                                                                                                    \
@@ -149,7 +165,7 @@ struct TreeCreatorPidTpcDiagnostics {
     LOG(info) << "Enabled TPC QA for " << #ParticleNameLong;                                                           \
     break;
 
-      DO_FOR_ALL_PARTICLES(INIT_PARTICLE)
+      DO_FOR_ALL_PARTICLES(INIT_PARTICLE, _)
 #undef INIT_PARTICLE
     }
     if (enabledProcesses != 1) {
@@ -212,6 +228,10 @@ struct TreeCreatorPidTpcDiagnostics {
       const auto tracksFromCollision = tracks.sliceBy(perCollisionTracks, static_cast<int>(collision.globalIndex()));
 
       for (const auto& track : tracksFromCollision) {
+        if (*downsampleFactor.at(ParticleId) < 1.f && mRnd.Uniform(1) > *downsampleFactor.at(ParticleId)) {
+          continue;
+        }
+
         bool isGoodTrack = isTrackSelected(track, trackSelection);
         isGoodTrack &= (!requireGlobalTrack || track.isGlobalTrack());
         isGoodTrack &= (!requireIts || track.hasITS());
@@ -233,10 +253,6 @@ struct TreeCreatorPidTpcDiagnostics {
         isGoodTrack &= (tpcInnerParam <= *cutTpcInnerParameterMax.at(ParticleId));
         isGoodTrack &= (std::fabs(nSigmaTpc) <= *cutNSigmaTpcAbs.at(ParticleId));
 
-        if (!isGoodTrack) {
-          continue;
-        }
-
         float dedxDiff{UndefValueFloat};
         float dedxExpected{UndefValueFloat};
         float expSigma{UndefValueFloat};
@@ -245,6 +261,16 @@ struct TreeCreatorPidTpcDiagnostics {
           dedxDiff = o2::aod::pidutils::tpcExpSignalDiff<ParticleId>(track);
           dedxExpected = track.tpcSignal() - dedxDiff;
           expSigma = o2::aod::pidutils::tpcExpSigma<ParticleId>(track);
+
+          isGoodTrack &= (expSigma <= *cutExpSigmaMax.at(ParticleId));
+          isGoodTrack &= (dedxExpected >= *cutDeDxExpectedMin.at(ParticleId));
+          isGoodTrack &= (dedxExpected <= *cutDeDxExpectedMax.at(ParticleId));
+          isGoodTrack &= (dedxDiff >= *cutDeDxDiffMin.at(ParticleId));
+          isGoodTrack &= (dedxDiff <= *cutDeDxDiffMax.at(ParticleId));
+        }
+
+        if (!isGoodTrack) {
+          continue;
         }
 
         float nSigmaTof{UndefValueFloat};
@@ -265,7 +291,7 @@ struct TreeCreatorPidTpcDiagnostics {
     }
   }
 
-#define MAKE_PROCESS_FUNCTIONS(ParticleNameShort, ParticleNameLong)                                                                                                 \
+#define MAKE_PROCESS_FUNCTIONS(ParticleNameShort, ParticleNameLong, Unused)                                                                                         \
   void process##ParticleNameLong(CollisionsExtra const& collisions,                                                                                                 \
                                  soa::Join<TrackCandidates, aod::pidTPC##ParticleNameShort> const& tracks,                                                          \
                                  aod::BCsWithTimestamps const&)                                                                                                     \
@@ -290,12 +316,12 @@ struct TreeCreatorPidTpcDiagnostics {
   }                                                                                                                                                                 \
   PROCESS_SWITCH(TreeCreatorPidTpcDiagnostics, processFullWithTOF##ParticleNameLong, Form("Process for the %s hypothesis for full TPC PID QA with the TOF info added", #ParticleNameLong), false);
 
-  DO_FOR_ALL_PARTICLES(MAKE_PROCESS_FUNCTIONS)
+  DO_FOR_ALL_PARTICLES(MAKE_PROCESS_FUNCTIONS, _)
 #undef MAKE_PROCESS_FUNCTIONS
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  return WorkflowSpec{adaptAnalysisTask<TreeCreatorPidTpcDiagnostics>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<TreeCreatorPidTpcDiagnostics>(context)};
 }
 #undef DO_FOR_ALL_PARTICLES
