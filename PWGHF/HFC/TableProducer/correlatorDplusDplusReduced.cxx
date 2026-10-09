@@ -101,7 +101,7 @@ struct HfCorrelatorDplusDplusReduced {
 
   HfMlResponseDplusToPiKPi<float> hfMlResponse;
 
-  std::vector<float> outputMl;
+  std::vector<float> outputML;
   o2::ccdb::CcdbApi ccdbApi;
 
   HfHelper hfHelper;
