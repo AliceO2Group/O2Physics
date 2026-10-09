@@ -311,6 +311,10 @@ class Calculator
   TH1D* getV02MeansK0(int i, double min, double max);
   TH1D* getV02MeansLambda(int i, double min, double max);
 
+  // Two-component model
+  TH1D* getAlpha(int i, double min, double max);
+  TH1D* getBeta(int i, double min, double max);
+
   TH1D* getCorrVsPt(int nhar, int npar, std::string id, int i, double min, double max);
 
   double getIntegratedValue(TH1D* inhist, double min, double max);

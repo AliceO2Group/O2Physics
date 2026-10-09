@@ -2664,6 +2664,7 @@ TH1D* Calculator::getV0Weighted(int i, int pidIndex, double min, double max)
   nB->Scale(denominatorScale);
   result->Divide(nB.get());
   result->SetName(Form("V0Weighted_%d_%d_%.1f_%.1f", pidIndex, i, min, max));
+  result->GetXaxis()->SetTitle("#it{p}_{T} (GeV/#it{c})");
   return result.release();
 }
 
@@ -2680,6 +2681,7 @@ TH1D* Calculator::getV02Weighted(int i, int pidIndex, double min, double max)
   nC->Scale(denominatorScale);
   result->Divide(nC.get());
   result->SetName(Form("V02Weighted_%d_%d_%.1f_%.1f", pidIndex, i, min, max));
+  result->GetXaxis()->SetTitle("#it{p}_{T} (GeV/#it{c})");
   return result.release();
 }
 
@@ -3136,6 +3138,72 @@ TH1D* Calculator::getIntegratedV02(int i)
   reth->Divide(v22);
   reth->SetTitle("; Centrality (%); v_{02}");
   return reth;
+}
+
+TH1D* Calculator::getAlpha(int i, double min, double max)
+{
+  // centrality-dependent observables
+  TH1D* v0 = getIntegratedV0(i);
+  TH1D* v02 = getIntegratedV02(i);
+  TH1D* cv22pt = getCV22pt(i);
+  TH1D* varV22 = getVarV22(i);
+  TH1D* c22 = getC22(i);
+  TH1D* getVarPt = getMu2sub(i);
+  TH1D* sigmav22 = powerHistogram(varV22, 0.5);
+  TH1D* sigmapt = powerHistogram(getVarPt, 0.5);
+
+  // Get constant value in given centrality
+  double v0_const = getIntegratedValue(v0, min, max);
+  double v02_const = getIntegratedValue(v02, min, max);
+  double cv22pt_const = getIntegratedValue(cv22pt, min, max);
+  double varv22_const = getIntegratedValue(varV22, min, max);
+  double c22_const = getIntegratedValue(c22, min, max);
+  double sigmapt_const = getIntegratedValue(sigmapt, min, max);
+
+  // pt-dependent quantities (Charged-particle only)
+  TH1D* v0pt = getV0Weighted(i, 0, min, max);
+  TH1D* v02pt = getV02Weighted(i, 0, min, max);
+
+  double denominator = sigmapt_const * varv22_const * v0_const - cv22pt_const * v02_const * c22_const;
+  v0pt->Scale(varv22_const * sigmapt_const / denominator);
+  v02pt->Scale(cv22pt_const * c22_const / denominator);
+  TH1D* alpha = (TH1D*)v0pt->Clone(Form("alphapt_%i_%g%g", i, min, max));
+  alpha->Add(v02pt, -1);
+  alpha->SetTitle("; #it{p}_{T} (GeV/#it{c}); #alpha");
+  return alpha;
+}
+
+TH1D* Calculator::getBeta(int i, double min, double max)
+{
+  // centrality-dependent observables
+  TH1D* v0 = getIntegratedV0(i);
+  TH1D* v02 = getIntegratedV02(i);
+  TH1D* cv22pt = getCV22pt(i);
+  TH1D* varV22 = getVarV22(i);
+  TH1D* c22 = getC22(i);
+  TH1D* getVarPt = getMu2sub(i);
+  TH1D* sigmav22 = powerHistogram(varV22, 0.5);
+  TH1D* sigmapt = powerHistogram(getVarPt, 0.5);
+
+  // Get constant value in given centrality
+  double v0_const = getIntegratedValue(v0, min, max);
+  double v02_const = getIntegratedValue(v02, min, max);
+  double cv22pt_const = getIntegratedValue(cv22pt, min, max);
+  double varv22_const = getIntegratedValue(varV22, min, max);
+  double c22_const = getIntegratedValue(c22, min, max);
+  double sigmapt_const = getIntegratedValue(sigmapt, min, max);
+
+  // pt-dependent quantities (Charged-particle only)
+  TH1D* v0pt = getV0Weighted(i, 0, min, max);
+  TH1D* v02pt = getV02Weighted(i, 0, min, max);
+
+  double denominator = sigmapt_const * varv22_const * v0_const - cv22pt_const * v02_const * c22_const;
+  v0pt->Scale(sigmapt_const * v02_const * c22_const / denominator);
+  v02pt->Scale(sigmapt_const * v0_const * c22_const / denominator);
+  TH1D* beta = (TH1D*)v02pt->Clone(Form("betapt_%i_%g%g", i, min, max));
+  beta->Add(v0pt, -1);
+  beta->SetTitle("; #it{p}_{T} (GeV/#it{c}); #beta");
+  return beta;
 }
 
 TH1D* Calculator::getVNN(int nhar, int npar, std::string id, int i)

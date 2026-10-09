@@ -940,6 +940,11 @@ std::string OutputHandler::getLatexName(Calculator::PtDiffFunc func)
   if (func == &Calculator::getV02MeansLambda)
     str = "#LT v_{2}^{2}#GT#LT n(#it{p}_{T})#GT";
 
+  if (func == &Calculator::getAlpha)
+    str = "#alpha";
+  if (func == &Calculator::getBeta)
+    str = "#beta";
+
   return str;
 }
 std::string OutputHandler::getName(Calculator::ObsFunc func)
@@ -1314,6 +1319,11 @@ std::string OutputHandler::getName(Calculator::PtDiffFunc func, double min, doub
     str = toplevelname ? "v02meansk0" : Form("v02meansk0_%g%g", min, max);
   if (func == &Calculator::getV02MeansLambda)
     str = toplevelname ? "v02meanslambda" : Form("v02meanslambda_%g%g", min, max);
+
+  if (func == &Calculator::getAlpha)
+    str = toplevelname ? "alpha" : Form("alpha_%g%g", min, max);
+  if (func == &Calculator::getBeta)
+    str = toplevelname ? "beta" : Form("beta_%g%g", min, max);
 
   return str;
 }

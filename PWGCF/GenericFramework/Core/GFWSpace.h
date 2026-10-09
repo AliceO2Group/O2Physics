@@ -181,6 +181,10 @@ Calculator::PtDiffFunc kV02WeightedLambda = &Calculator::getV02WeightedLambda;
 Calculator::PtDiffFunc kV02K0Alt = &Calculator::getV02K0Alt;
 Calculator::PtDiffFunc kV02LambdaAlt = &Calculator::getV02LambdaAlt;
 
+// Two-component model
+Calculator::PtDiffFunc kAlpha = &Calculator::getAlpha;
+Calculator::PtDiffFunc kBeta = &Calculator::getBeta;
+
 Calculator::ObsFunc kVarV22 = &Calculator::getVarV22; // Var(v_2^2)
 
 // Transverse momentum observables
